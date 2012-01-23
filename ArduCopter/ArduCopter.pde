@@ -1961,7 +1961,7 @@ static void tuning(){
 			break;
 
 		case CH6_LOITER_P:
-			g.rc_6.set_range(0,1000);
+			g.rc_6.set_range(0,2000);
 			g.pi_loiter_lat.kP(tuning_value);
 			g.pi_loiter_lon.kP(tuning_value);
 			break;
