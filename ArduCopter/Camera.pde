@@ -4,8 +4,9 @@
 
 static void init_camera()
 {
-  APM_RC.enable_out(CH_CAM_PITCH);
-  APM_RC.enable_out(CH_CAM_ROLL);
+	APM_RC.enable_out(CH_CAM_PITCH);
+	APM_RC.enable_out(CH_CAM_ROLL);
+
 	// ch 6 high(right) is down.
 	g.rc_camera_pitch.set_angle(4500);
 	g.rc_camera_roll.set_angle(4500);
