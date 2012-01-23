@@ -13,6 +13,8 @@ using ZedGraph; // Graphs
 using ArdupilotMega;
 using System.Reflection;
 
+using System.Drawing.Drawing2D;
+
 // Written by Michael Oborne
 namespace ArdupilotMega.GCSViews
 {
@@ -903,45 +905,16 @@ namespace ArdupilotMega.GCSViews
                 
 
 
-                var answer = HIL.Utils.EarthRatesToBodyRatesRyan(att.roll * -rad2deg, att.pitch * rad2deg, att.yaw * rad2deg, aeroin.Model_fAngVelX * rad2deg, aeroin.Model_fAngVelY * rad2deg, aeroin.Model_fAngVelZ * rad2deg);
+                var answer = HIL.Utils.EarthRatesToBodyRatesMine(att.roll * rad2deg, att.pitch * rad2deg, att.yaw * rad2deg, aeroin.Model_fAngVelX * rad2deg, aeroin.Model_fAngVelY * rad2deg, aeroin.Model_fAngVelZ * rad2deg);
                 Console.WriteLine("\n{0:0.000} {1:0.000} {2:0.000} ", answer.Item1 * deg2rad, answer.Item2 * deg2rad, answer.Item3 * deg2rad);
 
-                //answer = HIL.Utils.OGLtoBCBF(aeroin.Model_fAngVelX * rad2deg, aeroin.Model_fAngVelY * rad2deg, aeroin.Model_fAngVelZ * rad2deg, att.pitch * rad2deg, att.roll * rad2deg, att.yaw * rad2deg);
-                //Console.WriteLine("{0:0.000} {1:0.000} {2:0.000} ", answer.Item1 * deg2rad, answer.Item2 * deg2rad, answer.Item3 * deg2rad);
-
-//                answer = HIL.Utils.EarthRatesToBodyRatesRyan(att.roll * rad2deg, att.pitch * rad2deg, att.yaw * rad2deg, aeroin.Model_fAngVelY * rad2deg, aeroin.Model_fAngVelX * rad2deg, aeroin.Model_fAngVelZ * rad2deg);
-                //Console.WriteLine("{0:0.000} {1:0.000} {2:0.000} ", answer.Item1 * deg2rad, answer.Item2 * deg2rad, answer.Item3 * deg2rad);
-
-//                answer = HIL.Utils.EarthRatesToBodyRatesRyan(att.roll * rad2deg, att.pitch * rad2deg, att.yaw * rad2deg, aeroin.Model_fAngVelX * rad2deg, aeroin.Model_fAngVelZ * rad2deg, aeroin.Model_fAngVelY * rad2deg);
-                //Console.WriteLine("{0:0.000} {1:0.000} {2:0.000} ", answer.Item1 * deg2rad, answer.Item2 * deg2rad, answer.Item3 * deg2rad);
-
-//                answer = HIL.Utils.EarthRatesToBodyRatesRyan(att.roll * rad2deg, att.pitch * rad2deg, att.yaw * rad2deg, aeroin.Model_fAngVelZ * rad2deg, aeroin.Model_fAngVelY * rad2deg, aeroin.Model_fAngVelX * rad2deg);
-                //Console.WriteLine("{0:0.000} {1:0.000} {2:0.000} ", answer.Item1 * deg2rad, answer.Item2 * deg2rad, answer.Item3 * deg2rad);
-
-//                answer = HIL.Utils.EarthRatesToBodyRatesRyan(att.roll * rad2deg, att.pitch * rad2deg, att.yaw * rad2deg, aeroin.Model_fAngVelY * rad2deg, aeroin.Model_fAngVelZ * rad2deg, aeroin.Model_fAngVelX * rad2deg);
-                //Console.WriteLine("{0:0.000} {1:0.000} {2:0.000} ", answer.Item1 * deg2rad, answer.Item2 * deg2rad, answer.Item3 * deg2rad);
-
-                //answer = HIL.Utils.EarthRatesToBodyRatesRyan(att.roll * rad2deg, att.pitch * rad2deg, att.yaw * rad2deg, aeroin.Model_fAngVelZ * rad2deg, aeroin.Model_fAngVelX * rad2deg, aeroin.Model_fAngVelY * rad2deg);
-                //Console.WriteLine("{0:0.000} {1:0.000} {2:0.000} ", answer.Item1 * deg2rad, answer.Item2 * deg2rad, answer.Item3 * deg2rad);
-
-
-                //att.pitchspeed = (float)answer.Item1 * deg2rad;
-                //att.rollspeed = (float)answer.Item2 * deg2rad;
-                //att.yawspeed = (float)answer.Item3 * deg2rad;
+//                att.pitchspeed = (float)answer.Item1 * -deg2rad;
+  //              att.rollspeed = (float)answer.Item2 * -deg2rad;
+    //            att.yawspeed = (float)answer.Item3 * -deg2rad;
 
                 //att.pitchspeed = (float)(Math.Cos(att.yaw) * aeroin.Model_fAngVelX - Math.Sin(att.yaw) * aeroin.Model_fAngVelY);
                 //att.rollspeed = (float)(Math.Sin(att.yaw) * aeroin.Model_fAngVelX + Math.Cos(att.yaw) * aeroin.Model_fAngVelY);
 //                att.yawspeed = (float)-aeroin.Model_fAngVelZ * deg2rad;
-
-             //   if (aeroin.Model_fAngVelX > 2 || aeroin.Model_fAngVelZ < -2 || aeroin.Model_fAngVelY > 2 || aeroin.Model_fAngVelY < -2)
-                   // Console.Write("head {0:0.000}\troll {1:0.000}\tx {2:0.000}  \ty {3:0.000} x2 {4:0.000} y2 {5:0.000}          \n", aeroin.Model_fHeading * rad2deg, att.roll * rad2deg, aeroin.Model_fAngVelX, aeroin.Model_fAngVelY, att.pitchspeed, att.rollspeed);
-
-
-                //att.pitchspeed = 0;
-                //att.rollspeed = 0;
-  //              att.pitchspeed = (float)answer.Item1 * deg2rad;
-//                att.rollspeed = (float)answer.Item2 * deg2rad;
-                //att.yawspeed = (float)answer.Item3 * -deg2rad;
 
 
 #if MAVLINK10

@@ -90,10 +90,6 @@ namespace ArdupilotMega.HIL
             var Ro = radians(yawRate);
             var Qo = radians(rollRate);
 
-            // CpCy, CpSy, -Sp					| local_ax
-            // SrSpCy-CrSy, SrSpSy+CrCy, SrCp	| local_ay
-            // CrSpCy+SrSy, CrSpSy-SrCy, CrCp	| local_az
-
             var P = Po * cos(psi) * cos(theta) - Ro * sin(theta) + Qo * cos(theta) * sin(psi);
 
             var Q = Qo * (cos(phi) * cos(psi) + sin(phi) * sin(psi) * sin(theta)) - Po * (cos(phi) * sin(psi) - cos(psi) * sin(phi) * sin(theta)) + Ro * cos(theta) * sin(phi);
@@ -101,6 +97,61 @@ namespace ArdupilotMega.HIL
             var R = Po * (sin(phi) * sin(psi) + cos(phi) * cos(psi) * sin(theta)) - Qo * (cos(psi) * sin(phi) - cos(phi) * sin(psi) * sin(theta)) + Ro * cos(phi) * cos(theta);
 
             return new Tuple<double, double, double>(degrees(P), degrees(Q), degrees(R));
+        }
+
+        public static Tuple<double, double, double> EarthRatesToBodyRatesMine(double roll, double pitch, double yaw,
+                 double rollRate, double pitchRate, double yawRate)
+        {
+            // thanks to ryan beall
+
+            var phi = radians(roll);
+            var theta = radians(pitch);
+            var psi = radians(yaw);
+            var Po = radians(pitchRate);
+            var Ro = radians(yawRate);
+            var Qo = radians(rollRate);
+
+            var Q = Po * cos(psi) + Qo * sin(psi);
+
+            var P = Po * sin(psi) + Qo * cos(psi); ;
+
+            var R = Ro;
+
+            return new Tuple<double, double, double>(degrees(P), degrees(Q), degrees(R));
+
+
+            /*
+            double Cr, Cp, Cz;
+            double Sr, Sp, Sz;
+
+            var phi = radians(roll);
+            var theta = radians(pitch);
+            var psi = radians(yaw);
+            var Po = radians(rollRate);
+            var Ro = radians(pitchRate);
+            var Qo = radians(yawRate);
+
+            Cr = Math.Cos((phi));
+            Cp = Math.Cos((theta));
+            Cz = Math.Cos((psi));
+            Sr = Math.Sin((phi));
+            Sp = Math.Sin((theta));
+            Sz = Math.Sin((psi));
+
+            // http://planning.cs.uiuc.edu/node102.html
+            //        Z    Y     X
+            // roll  -Sp, CpSr, CpCr
+            // pitch SzCp, SzSpSr+CzCr, SzSpCr-CpCr
+            // yaw   CzCp, CzSpSr-SzCr, CzSpCr+SzSr
+            
+            var P = -(Qo * Sp) + Po * Cp * Sr + Ro * Cp * Cr;
+
+            var Q = Qo * (Sz * Cp) + Po * (Sz * Sp * Sr + Cz * Cr) + Ro * (Sz * Sp * Cr - Cp * Cr);
+
+            var R = Qo * (Cz * Cp) + Po * (Cz * Sp * Sr - Sz * Cr) + Ro * (Cz * Sp * Cr + Sz * Sr);
+            
+            return new Tuple<double, double, double>(degrees(P), degrees(Q), degrees(R));
+             * */
         }
 
         public static Tuple<double, double, double> OGLtoBCBF(double phi, double theta, double psi,double x, double y, double z)
