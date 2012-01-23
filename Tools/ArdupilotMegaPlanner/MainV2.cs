@@ -97,21 +97,16 @@ namespace ArdupilotMega
 
             Application.DoEvents();
 
+            instance = this;
+
+            InitializeComponent();
+
             srtm.datadirectory = Path.GetDirectoryName(Application.ExecutablePath) + Path.DirectorySeparatorChar + "srtm";
 
             var t = Type.GetType("Mono.Runtime");
             MONO = (t != null);
 
             //talk.SpeakAsync("Welcome to APM Planner");
-
-            try
-            {
-                checkForUpdate();
-            }
-            catch { Console.WriteLine("update check failed"); }
-
-
-            InitializeComponent();
 
             MyRenderer.currentpressed = MenuFlightData;
 
@@ -251,7 +246,7 @@ namespace ArdupilotMega
 
             Application.DoEvents();
 
-            instance = this;
+
             splash.Close();
         }
 
@@ -1234,7 +1229,6 @@ namespace ArdupilotMega
             //comPort.requestDatastream((byte)MAVLink.MAV_DATA_STREAM.MAV_DATA_STREAM_ALL,3);
             //
 
-
             MenuFlightData_Click(sender, e);
 
             try
@@ -1267,6 +1261,12 @@ namespace ArdupilotMega
                 Name = "Main Serial reader"
             };
             t11.Start();
+
+            try
+            {
+                checkForUpdate();
+            }
+            catch { Console.WriteLine("update check failed"); }
         }
 
         public static String ComputeWebSocketHandshakeSecurityHash09(String secWebSocketKey)
@@ -1689,13 +1689,45 @@ namespace ArdupilotMega
                     DialogResult dr = MessageBox.Show("Update Found\n\nDo you wish to update now?", "Update Now", MessageBoxButtons.YesNo);
                     if (dr == DialogResult.Yes)
                     {
-                        GCSViews.Help.BUT_updatecheck_Click(null, null);
+                        doupdate();
                     }
                     else
                     {
                         return;
                     }
                 }
+        }
+
+        public static void doupdate()
+        {
+            //System.Threading.Thread t12 = new System.Threading.Thread(delegate()
+            { 
+
+            Form loading = new Form();
+            loading.Width = 400;
+            loading.Height = 150;
+            loading.StartPosition = FormStartPosition.CenterScreen;
+            loading.TopMost = true;
+            System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(MainV2));
+            loading.Icon = ((System.Drawing.Icon)(resources.GetObject("$this.Icon")));
+
+            Label loadinglabel = new Label();
+            loadinglabel.Location = new System.Drawing.Point(50, 40);
+            loadinglabel.Name = "load";
+            loadinglabel.AutoSize = true;
+            loadinglabel.Text = "Checking...";
+            loadinglabel.Size = new System.Drawing.Size(100, 20);
+
+            loading.Controls.Add(loadinglabel);
+            loading.Show();
+
+            try { MainV2.updatecheck(loadinglabel); } catch (Exception ex) { Console.WriteLine(ex.ToString()); } 
+            
+            }
+            //); 
+            //t12.Name = "Update check thread";
+            //t12.Start();
+            //MainV2.threads.Add(t12);
         }
 
         private static bool updatecheck(Label loadinglabel, string baseurl, string subdir)
