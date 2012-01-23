@@ -1096,7 +1096,7 @@ static void print_enabled(boolean b)
 static void
 init_esc()
 {
-  motors_output_enable();
+	motors_output_enable();
 	while(1){
 		read_radio();
 		delay(100);

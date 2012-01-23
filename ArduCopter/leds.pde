@@ -19,7 +19,11 @@ static void update_GPS_light(void)
 	switch (g_gps->status()){
 
 		case(2):
-			digitalWrite(C_LED_PIN, LED_ON);  //Turn LED C on when gps has valid fix.
+			if(home_is_set) {                      // JLN update
+			    digitalWrite(C_LED_PIN, LED_ON);  //Turn LED C on when gps has valid fix AND home is set.
+			} else {
+            	digitalWrite(C_LED_PIN, LED_OFF);
+            }
 			break;
 
 		case(1):

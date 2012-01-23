@@ -154,7 +154,6 @@ static void read_trim_switch()
 				// 1 = takeoff
 				// 2 = WP 2
 				// 3 = command total
-
 			}
 		}
 	}

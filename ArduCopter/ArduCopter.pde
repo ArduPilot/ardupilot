@@ -325,9 +325,6 @@ static int16_t y_actual_speed;
 static int16_t x_rate_error;
 static int16_t y_rate_error;
 
-//static int16_t my_max_speed; // used for debugging logs
-//static int16_t target_x_rate;
-
 ////////////////////////////////////////////////////////////////////////////////
 // Radio
 ////////////////////////////////////////////////////////////////////////////////
@@ -1883,6 +1880,7 @@ adjust_altitude()
 		manual_boost = g.rc_3.control_in - 180;
 		manual_boost = max(-120, manual_boost);
 		update_throttle_cruise();
+
 	}else if  (g.rc_3.control_in >= 650){
 		// we add 0 to 100 PWM to hover
 		manual_boost = g.rc_3.control_in - 650;
