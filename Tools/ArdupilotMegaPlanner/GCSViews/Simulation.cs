@@ -13,6 +13,8 @@ using ZedGraph; // Graphs
 using ArdupilotMega;
 using System.Reflection;
 
+using System.Drawing.Drawing2D;
+
 // Written by Michael Oborne
 namespace ArdupilotMega.GCSViews
 {
@@ -897,9 +899,22 @@ namespace ArdupilotMega.GCSViews
                 att.roll = (aeroin.Model_fRoll * -1);
                 att.yaw = (float)((aeroin.Model_fHeading));
 
-                att.pitchspeed = (float)-aeroin.Model_fAngVelX;
-                att.rollspeed = (float)-aeroin.Model_fAngVelY;
-                att.yawspeed = (float)-aeroin.Model_fAngVelZ;
+                //Console.WriteLine("degs r {0:0.000} p {1:0.000} y {2:0.000} rates {3:0.000} {4:0.000} {5:0.000}", att.roll * -rad2deg, att.pitch * rad2deg, att.yaw * rad2deg, aeroin.Model_fAngVelX * rad2deg, aeroin.Model_fAngVelY * rad2deg, aeroin.Model_fAngVelZ * rad2deg);
+
+                //Console.WriteLine("mine2 {0} {1} {2} ", answer.Item1 , answer.Item2 , answer.Item3 );
+                
+
+
+                var answer = HIL.Utils.EarthRatesToBodyRatesMine(att.roll * rad2deg, att.pitch * rad2deg, att.yaw * rad2deg, aeroin.Model_fAngVelX * rad2deg, aeroin.Model_fAngVelY * rad2deg, aeroin.Model_fAngVelZ * rad2deg);
+                Console.WriteLine("\n{0:0.000} {1:0.000} {2:0.000} ", answer.Item1 * deg2rad, answer.Item2 * deg2rad, answer.Item3 * deg2rad);
+
+//                att.pitchspeed = (float)answer.Item1 * -deg2rad;
+  //              att.rollspeed = (float)answer.Item2 * -deg2rad;
+    //            att.yawspeed = (float)answer.Item3 * -deg2rad;
+
+                //att.pitchspeed = (float)(Math.Cos(att.yaw) * aeroin.Model_fAngVelX - Math.Sin(att.yaw) * aeroin.Model_fAngVelY);
+                //att.rollspeed = (float)(Math.Sin(att.yaw) * aeroin.Model_fAngVelX + Math.Cos(att.yaw) * aeroin.Model_fAngVelY);
+//                att.yawspeed = (float)-aeroin.Model_fAngVelZ * deg2rad;
 
 
 #if MAVLINK10
@@ -1334,7 +1349,10 @@ namespace ArdupilotMega.GCSViews
                 rudder_out = (float)MainV2.cs.hilch4 / ruddergain;
 
                 if (RAD_aerosimrc.Checked && CHK_quad.Checked)
-                    throttle_out = (float)(MainV2.cs.hilch3 - 1100) / throttlegain;
+                {
+                    throttle_out = ((float)MainV2.cs.hilch7 / 2 + 5000) / throttlegain;
+                    //throttle_out = (float)(MainV2.cs.hilch7 - 1100) / throttlegain;
+                }
             }
 
 
@@ -1423,6 +1441,26 @@ namespace ArdupilotMega.GCSViews
                 if (heli)
                 {
                     Array.Copy(BitConverter.GetBytes((double)(collective_out)), 0, AeroSimRC, 24, 8);
+                }
+
+                if (CHK_quad.Checked && false)
+                {
+                    //MainV2.cs.ch1out = 1100; 
+                    //MainV2.cs.ch2out = 1100;
+                    //MainV2.cs.ch3out = 1100;
+                    //MainV2.cs.ch4out = 1100;
+
+                    //ac
+                    // 3 front
+                    // 1 left
+                    // 4 back
+                    // 2 left
+
+                    Array.Copy(BitConverter.GetBytes((double)((MainV2.cs.ch3out - 1100) / 800 * 2 - 1)), 0, AeroSimRC, 0, 8); // motor 1 = front
+                    Array.Copy(BitConverter.GetBytes((double)((MainV2.cs.ch1out - 1100) / 800 * 2 - 1)), 0, AeroSimRC, 8, 8); // motor 2 = right
+                    Array.Copy(BitConverter.GetBytes((double)((MainV2.cs.ch4out - 1100) / 800 * 2 - 1)), 0, AeroSimRC, 16, 8);// motor 3 = back
+                    Array.Copy(BitConverter.GetBytes((double)((MainV2.cs.ch2out - 1100) / 800 * 2 - 1)), 0, AeroSimRC, 24, 8);// motor 4 = left
+
                 }
 
                 try

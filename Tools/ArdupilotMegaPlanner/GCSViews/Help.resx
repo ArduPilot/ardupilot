@@ -196,7 +196,7 @@
     <value>BUT_updatecheck</value>
   </data>
   <data name="&gt;&gt;BUT_updatecheck.Type" xml:space="preserve">
-    <value>ArdupilotMega.MyButton, ArdupilotMegaPlanner, Version=1.0.4199.27022, Culture=neutral, PublicKeyToken=ff91852278f5092c</value>
+    <value>ArdupilotMega.MyButton, ArdupilotMegaPlanner, Version=1.0.0.0, Culture=neutral, PublicKeyToken=38326cb7e06851fc</value>
   </data>
   <data name="&gt;&gt;BUT_updatecheck.Parent" xml:space="preserve">
     <value>$this</value>
@@ -220,9 +220,9 @@
     <value>Help</value>
   </data>
   <data name="&gt;&gt;$this.Type" xml:space="preserve">
-    <value>System.Windows.Forms.UserControl, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+    <value>System.Windows.Forms.MyUserControl, ArdupilotMegaPlanner, Version=1.0.0.0, Culture=neutral, PublicKeyToken=38326cb7e06851fc</value>
   </data>
-  <data name="Help_text" type="System.Resources.ResXFileRef, System.Windows.Forms">
+  <data name="help_text" type="System.Resources.ResXFileRef, System.Windows.Forms">
     <value>..\Resources\Welcome_to_Michael_Oborne.rtf;System.String, mscorlib, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089;Windows-1252</value>
   </data>
 </root>

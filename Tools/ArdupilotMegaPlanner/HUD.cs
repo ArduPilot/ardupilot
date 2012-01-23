@@ -240,7 +240,7 @@ namespace hud
 
         protected override void OnPaint(PaintEventArgs e)
         {
-            //GL.Enable(EnableCap.AlphaTest);
+            //GL.Enable(EnableCap.AlphaTest)
 
             if (this.DesignMode)
             {
