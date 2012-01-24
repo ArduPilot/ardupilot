@@ -52,8 +52,8 @@ static void init_barometer(void)
 
 static void reset_baro(void)
 {
-		ground_pressure 	= barometer.get_pressure();
-		ground_temperature	= barometer.get_temperature();
+	ground_pressure 	= barometer.get_pressure();
+	ground_temperature	= barometer.get_temperature();
 }
 
 static int32_t read_barometer(void)
@@ -107,8 +107,8 @@ static void read_battery(void)
 		battery_voltage1 = 0;
 		return;
 	}
-    
-    if(g.battery_monitoring == 3 || g.battery_monitoring == 4) 
+
+    if(g.battery_monitoring == 3 || g.battery_monitoring == 4)
 		battery_voltage1 = BATTERY_VOLTAGE(analogRead(BATTERY_PIN_1)) * .1 + battery_voltage1 * .9;
 	if(g.battery_monitoring == 4) {
 		current_amps1	 = CURRENT_AMPS(analogRead(CURRENT_PIN_1)) * .1 + current_amps1 * .9; 	//reads power sensor current pin
