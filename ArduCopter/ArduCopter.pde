@@ -69,6 +69,7 @@ http://code.google.com/p/ardupilot-mega/downloads/list
 #include <AP_TimerProcess.h>            // TimerProcess is the scheduler for MPU6000 reads.
 #include <AP_DCM.h>         // ArduPilot Mega DCM Library
 #include <APM_PI.h>            	// PI library
+#include <PID.h>            // PID library
 #include <RC_Channel.h>     // RC Channel Library
 #include <AP_RangeFinder.h>	// Range finder library
 #include <AP_OpticalFlow.h> // Optical Flow library
@@ -1989,17 +1990,22 @@ static void tuning(){
 			break;
 
 		case CH6_OPTFLOW_KP:
-			g.rc_6.set_range(0,10000);     // 0 to 10
+			g.rc_6.set_range(0,5000);     // 0 to 5
 			g.pi_optflow_roll.kP(tuning_value);
 			g.pi_optflow_pitch.kP(tuning_value);
 			break;
 
 		case CH6_OPTFLOW_KI:
-			g.rc_6.set_range(0,100);     // 0 to 0.1
+			g.rc_6.set_range(0,10000);     // 0 to 10
 			g.pi_optflow_roll.kI(tuning_value);
 			g.pi_optflow_pitch.kI(tuning_value);
 			break;
 
+		case CH6_OPTFLOW_KD:
+			g.rc_6.set_range(0,200);    // 0 to 0.2
+			g.pi_optflow_roll.kD(tuning_value);
+			g.pi_optflow_pitch.kD(tuning_value);
+			break;
 	}
 }
 
