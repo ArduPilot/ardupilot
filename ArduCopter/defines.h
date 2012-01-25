@@ -163,6 +163,7 @@
 // optical flow controller
 #define CH6_OPTFLOW_KP 17
 #define CH6_OPTFLOW_KI 18
+#define CH6_OPTFLOW_KD 19
 
 
 // nav byte mask
