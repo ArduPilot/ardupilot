@@ -312,6 +312,10 @@ void display_motion()
 	    flowSensor.update();
 		flowSensor.update_position(0,0,0,1,100);
 
+		// check for errors
+		if( flowSensor._overflow )
+		    Serial.println("overflow!!");
+
 		// x,y,squal
 		//if( flowSensor.motion() || first_time ) {
 			Serial.print("x/dx: ");
