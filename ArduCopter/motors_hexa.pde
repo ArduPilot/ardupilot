@@ -1,6 +1,6 @@
 /// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 
-#if (FRAME_CONFIG ==	HEXA_X_FRAME) || (FRAME_CONFIG == HEXA_PLUS_FRAME)
+#if FRAME_CONFIG ==	HEXA_FRAME
 
 static void init_motors_out()
 {
