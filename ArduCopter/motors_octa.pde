@@ -1,6 +1,6 @@
 /// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 
-#if (FRAME_CONFIG == OCTA_FRAME) || (FRAME_CONFIG == OCTA_V_FRAME)
+#if FRAME_CONFIG == OCTA_FRAME
 
 static void init_motors_out()
 {
@@ -39,7 +39,6 @@ static void output_motors_armed()
 	g.rc_3.calc_pwm();
 	g.rc_4.calc_pwm();
 
-#if FRAME_TYPE == OCTA_FRAME
 	if(g.frame_orientation == X_FRAME){
 		roll_out 	 	= (float)g.rc_1.pwm_out * 0.4;
 		pitch_out 	 	= (float)g.rc_2.pwm_out * 0.4;
@@ -79,8 +78,8 @@ static void output_motors_armed()
 		motor_out[MOT_7]		= g.rc_3.radio_out - roll_out - pitch_out;	// CCW 	BACK RIGHT
 		motor_out[MOT_6]		= g.rc_3.radio_out - g.rc_2.pwm_out;		// CW	BACK
 		motor_out[MOT_5]		= g.rc_3.radio_out + roll_out - pitch_out;	// CCW	BACK LEFT
-  }
-#elif FRAME_TYPE == OCTA_V_FRAME
+
+  }else if(g.frame_orientation == V_FRAME){
 
 		int roll_out2, pitch_out2;
 		int roll_out3, pitch_out3;
@@ -111,8 +110,8 @@ static void output_motors_armed()
 		motor_out[MOT_8]	= g.rc_3.radio_out - g.rc_2.pwm_out + roll_out4;	// CW  BACK LEFT
 		motor_out[MOT_1]	= g.rc_3.radio_out - g.rc_2.pwm_out - roll_out4;	// CCW BACK RIGHT
 
-#endif // FRAME_TYPE 
 
+  }
 	// Yaw
 	motor_out[MOT_1]		+= g.rc_4.pwm_out;	// CCW
 	motor_out[MOT_3]		+= g.rc_4.pwm_out;	// CCW
