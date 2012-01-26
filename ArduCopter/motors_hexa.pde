@@ -55,14 +55,14 @@ static void output_motors_armed()
 		pitch_out 	 	= g.rc_2.pwm_out / 2;
 
 		//FRONT SIDE
-		motor_out[MOT_1] 	    = g.rc_3.radio_out - roll_out + pitch_out;	// FRONT RIGHT	CCW
-		motor_out[MOT_2]		= g.rc_3.radio_out + g.rc_2.pwm_out;		// FRONT		CW
-		motor_out[MOT_3] 	    = g.rc_3.radio_out + roll_out + pitch_out;	// FRONT LEFT	CCW
+		motor_out[MOT_5] 	    = g.rc_3.radio_out - roll_out + pitch_out;	// FRONT RIGHT	CCW
+		motor_out[MOT_6]		= g.rc_3.radio_out + g.rc_2.pwm_out;		// FRONT		CW
+		motor_out[MOT_1] 	    = g.rc_3.radio_out + roll_out + pitch_out;	// FRONT LEFT	CCW
 
 		//BACK SIDE
-		motor_out[MOT_4]		= g.rc_3.radio_out + roll_out - pitch_out;	// BACK LEFT	CW
-		motor_out[MOT_5]		= g.rc_3.radio_out - g.rc_2.pwm_out;		// BACK			CCW
-		motor_out[MOT_6]		= g.rc_3.radio_out - roll_out - pitch_out;	// BACK RIGHT	CW
+		motor_out[MOT_2]		= g.rc_3.radio_out + roll_out - pitch_out;	// BACK LEFT	CW
+		motor_out[MOT_3]		= g.rc_3.radio_out - g.rc_2.pwm_out;		// BACK			CCW
+		motor_out[MOT_4]		= g.rc_3.radio_out - roll_out - pitch_out;	// BACK RIGHT	CW
   }
 
 	// Yaw
