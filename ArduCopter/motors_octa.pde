@@ -96,19 +96,20 @@ static void output_motors_armed()
 
 		//Front side
 		motor_out[MOT_4]	= g.rc_3.radio_out + g.rc_2.pwm_out - roll_out;		// CW  FRONT RIGHT
-		motor_out[MOT_5] 	= g.rc_3.radio_out + g.rc_2.pwm_out + roll_out;		// CCW FRONT LEFT
+		motor_out[MOT_6] 	= g.rc_3.radio_out + g.rc_2.pwm_out + roll_out;		// CCW FRONT LEFT
 
 		//Left side
-		motor_out[MOT_6] 	= g.rc_3.radio_out + g.rc_1.pwm_out + pitch_out2; 	// CW  LEFT FRONT
-		motor_out[MOT_7] 	= g.rc_3.radio_out + g.rc_1.pwm_out - pitch_out3;	// CCW LEFT BACK
+		motor_out[MOT_2] 	= g.rc_3.radio_out + g.rc_1.pwm_out + pitch_out2; 	// CW  LEFT FRONT
+		motor_out[MOT_8] 	= g.rc_3.radio_out + g.rc_1.pwm_out - pitch_out3;	// CCW LEFT BACK
 
 		//Right side
-		motor_out[MOT_3] 	= g.rc_3.radio_out - g.rc_1.pwm_out - pitch_out3;	// CW  RIGHT BACK
-		motor_out[MOT_2]	= g.rc_3.radio_out - g.rc_1.pwm_out + pitch_out2;	// CCW RIGHT FRONT
+		motor_out[MOT_5] 	= g.rc_3.radio_out - g.rc_1.pwm_out - pitch_out3;	// CW  RIGHT BACK
+		motor_out[MOT_1]	= g.rc_3.radio_out - g.rc_1.pwm_out + pitch_out2;	// CCW RIGHT FRONT
 
 		//Back side
-		motor_out[MOT_8]	= g.rc_3.radio_out - g.rc_2.pwm_out + roll_out4;	// CW  BACK LEFT
-		motor_out[MOT_1]	= g.rc_3.radio_out - g.rc_2.pwm_out - roll_out4;	// CCW BACK RIGHT
+		motor_out[MOT_3]	= g.rc_3.radio_out - g.rc_2.pwm_out + roll_out4;	// CW  BACK LEFT
+		motor_out[MOT_7]	= g.rc_3.radio_out - g.rc_2.pwm_out - roll_out4;	// CCW BACK RIGHT
+
 
 
   }
