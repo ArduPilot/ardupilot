@@ -33,7 +33,7 @@ namespace ArdupilotMega.GCSViews
         bool sethome = false;
         bool polygongridmode = false;
         Hashtable param = new Hashtable();
-        public static Hashtable hashdefines = new Hashtable();
+
         public static List<PointLatLngAlt> pointlist = new List<PointLatLngAlt>(); // used to calc distance
         static public Object thisLock = new Object();
         private TextBox textBox1;
@@ -85,7 +85,7 @@ namespace ArdupilotMega.GCSViews
                             System.Diagnostics.Debug.WriteLine(matchs[i].Groups[1].Value.ToString() + " = " + matchs[i].Groups[2].Value.ToString() + " = " + num.ToString());
                             try
                             {
-                                hashdefines.Add(matchs[i].Groups[1].Value.ToString(), num);
+                             //   hashdefines.Add(matchs[i].Groups[1].Value.ToString(), num);
                             }
                             catch (Exception) { }
                         }
@@ -95,10 +95,10 @@ namespace ArdupilotMega.GCSViews
                 sr.Close();
 
 
-                if (!hashdefines.ContainsKey("WP_START_BYTE"))
+               // if (!hashdefines.ContainsKey("WP_START_BYTE"))
                 {
                     MessageBox.Show("Your Ardupilot Mega project defines.h is Invalid");
-                    return false;
+                    //return false;
                 }
             }
             catch (Exception)
@@ -514,12 +514,6 @@ namespace ArdupilotMega.GCSViews
 
             Up.Image = global::ArdupilotMega.Properties.Resources.up;
             Down.Image = global::ArdupilotMega.Properties.Resources.down;
-
-            hashdefines.Clear();
-            if (File.Exists(Path.GetDirectoryName(Application.ExecutablePath) + Path.DirectorySeparatorChar + "defines.h"))
-            {
-                readdefines(Path.GetDirectoryName(Application.ExecutablePath) + Path.DirectorySeparatorChar + "defines.h");
-            }
         }
 
         void updateCMDParams()
@@ -868,24 +862,6 @@ namespace ArdupilotMega.GCSViews
                     }
                 }
             }
-
-            DataGridViewTextBoxCell cell1;
-            cell1 = Commands.Rows[selectedrow].Cells[1] as DataGridViewTextBoxCell;
-
-            byte res;
-            if (byte.TryParse(cell1.Value.ToString(), out res))
-            {
-
-            }
-            else
-            {
-                try
-                {
-                    cell1.Value = (byte)(int)hashdefines[cell1.Value.ToString().ToUpper().Trim()];
-                }
-                catch { }
-            }
-
         }
 
         /// <summary>
@@ -1499,21 +1475,21 @@ namespace ArdupilotMega.GCSViews
                     }
                 }
 
-                string hold_alt = ((float)param["ALT_HOLD_RTL"] * MainV2.cs.multiplierdist).ToString("0");
+                string hold_alt = ((int)((float)param["ALT_HOLD_RTL"] * MainV2.cs.multiplierdist)).ToString();
 
-                if (hold_alt != "-1")
+                if (!hold_alt.Equals("-1"))
                 {
                     TXT_DefaultAlt.Text = hold_alt;
                 }
 
-                TXT_WPRad.Text = ((float)param["WP_RADIUS"] * MainV2.cs.multiplierdist).ToString("0");
+                TXT_WPRad.Text = ((int)((float)param["WP_RADIUS"] * MainV2.cs.multiplierdist)).ToString();
                 try
                 {
-                    TXT_loiterrad.Text = ((float)param["LOITER_RADIUS"] * MainV2.cs.multiplierdist).ToString("0");
+                    TXT_loiterrad.Text = ((int)((float)param["LOITER_RADIUS"] * MainV2.cs.multiplierdist)).ToString();
                 }
                 catch
                 {
-                    TXT_loiterrad.Text = ((float)param["WP_LOITER_RAD"] * MainV2.cs.multiplierdist).ToString("0");
+                    TXT_loiterrad.Text = ((int)((float)param["WP_LOITER_RAD"] * MainV2.cs.multiplierdist)).ToString();
                 }
                 CHK_holdalt.Checked = Convert.ToBoolean((float)param["ALT_HOLD_RTL"] > 0);
 

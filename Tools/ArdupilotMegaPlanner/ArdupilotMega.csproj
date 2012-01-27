@@ -253,6 +253,9 @@
     <Compile Include="Controls\XorPlus.Designer.cs">
       <DependentUpon>XorPlus.cs</DependentUpon>
     </Compile>
+    <Compile Include="GCSViews\Firmware.Designer.cs">
+      <DependentUpon>Firmware.cs</DependentUpon>
+    </Compile>
     <Compile Include="HIL\Utils.cs" />
     <Compile Include="ResEdit.cs">
       <SubType>Form</SubType>
@@ -652,9 +655,6 @@
     <EmbeddedResource Include="GCSViews\Terminal.zh-Hans.resx">
       <DependentUpon>Terminal.cs</DependentUpon>
     </EmbeddedResource>
-    <EmbeddedResource Include="HUD.resx">
-      <DependentUpon>HUD.cs</DependentUpon>
-    </EmbeddedResource>
     <EmbeddedResource Include="JoystickSetup.resx">
       <DependentUpon>JoystickSetup.cs</DependentUpon>
       <SubType>Designer</SubType>
@@ -731,9 +731,6 @@
     </None>
     <None Include="app.config" />
     <None Include="arducopter-xplane.zip">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </None>
-    <None Include="defines.h">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
     <None Include="m3u\networklink.kml">

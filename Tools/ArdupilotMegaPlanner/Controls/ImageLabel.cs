@@ -9,7 +9,7 @@ using System.Windows.Forms;
 
 namespace ArdupilotMega
 {
-    public partial class ImageLabel : UserControl
+    public partial class ImageLabel :         UserControl
     {
         public new event EventHandler Click;
 
