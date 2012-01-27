@@ -79,22 +79,28 @@ namespace ArdupilotMega.HIL
         }
 
         public static Tuple<double, double, double> EarthRatesToBodyRatesRyan(double roll, double pitch, double yaw,
-                         double rollRate, double pitchRate, double yawRate)
+                         double x, double y, double z)
         {
             // thanks to ryan beall
 
             var phi = radians(roll);
             var theta = radians(pitch);
-            var psi = radians(yaw);
-            var Po = radians(pitchRate);
-            var Ro = radians(yawRate);
-            var Qo = radians(rollRate);
+            var psi = radians((360 - yaw) * 1.0);
+            var Po = radians(x);
+            var Qo = radians(y);
+            var Ro = radians(-z);
 
             var P = Po * cos(psi) * cos(theta) - Ro * sin(theta) + Qo * cos(theta) * sin(psi);
 
             var Q = Qo * (cos(phi) * cos(psi) + sin(phi) * sin(psi) * sin(theta)) - Po * (cos(phi) * sin(psi) - cos(psi) * sin(phi) * sin(theta)) + Ro * cos(theta) * sin(phi);
 
             var R = Po * (sin(phi) * sin(psi) + cos(phi) * cos(psi) * sin(theta)) - Qo * (cos(psi) * sin(phi) - cos(phi) * sin(psi) * sin(theta)) + Ro * cos(phi) * cos(theta);
+
+
+//            P = 0;
+            //Q = 0;
+            //R = 0;
+
 
             return new Tuple<double, double, double>(degrees(P), degrees(Q), degrees(R));
         }

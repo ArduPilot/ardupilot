@@ -99,7 +99,14 @@ namespace ArdupilotMega
             get {
                 try
                 {
-                    return (int)((ch3out - float.Parse(MainV2.comPort.param["RC3_MIN"].ToString())) / (float.Parse(MainV2.comPort.param["RC3_MAX"].ToString()) - float.Parse(MainV2.comPort.param["RC3_MIN"].ToString())) * 100);
+                    if (MainV2.comPort.param.ContainsKey("RC3_MIN"))
+                    {
+                        return (int)((ch3out - float.Parse(MainV2.comPort.param["RC3_MIN"].ToString())) / (float.Parse(MainV2.comPort.param["RC3_MAX"].ToString()) - float.Parse(MainV2.comPort.param["RC3_MIN"].ToString())) * 100);
+                    }
+                    else
+                    {
+                        return 0;
+                    }
                 }
                 catch {
                     return 0;
@@ -140,6 +147,24 @@ namespace ArdupilotMega
         private float _battery_voltage;
         public float battery_remaining { get { return _battery_remaining; } set { _battery_remaining = value / 1000; if (_battery_remaining < 0 || _battery_remaining > 100) _battery_remaining = 0; } }
         private float _battery_remaining;
+
+        // pressure
+        public float press_abs { get; set; }
+        public int press_temp { get; set; }
+
+        // sensor offsets
+        public int mag_ofs_x { get; set; }
+        public int mag_ofs_y { get; set; }
+        public int mag_ofs_z { get; set; }
+        public float mag_declination { get; set; }
+        public int raw_press { get; set; }
+        public int raw_temp { get; set; }
+        public float gyro_cal_x { get; set; }
+        public float gyro_cal_y { get; set; }
+        public float gyro_cal_z { get; set; }
+        public float accel_cal_x { get; set; }
+        public float accel_cal_y { get; set; }
+        public float accel_cal_z { get; set; }
 
         // HIL
         public int hilch1 { get; set; }
@@ -190,6 +215,7 @@ namespace ArdupilotMega
             ratestatus = 1;
             ratesensors = 3;
             raterc = 3;
+            datetime = DateTime.MinValue;
         }
 
         const float rad2deg = (float)(180 / Math.PI);
@@ -229,6 +255,7 @@ namespace ArdupilotMega
                     int ind = logdata.IndexOf('\0');
                     if (ind != -1)
                         logdata = logdata.Substring(0, ind);
+
                     if (messages.Count > 5)
                     {
                         messages.RemoveAt(0);
@@ -519,6 +546,51 @@ namespace ArdupilotMega
                     //MAVLink.packets[ArdupilotMega.MAVLink.MAVLINK_MSG_ID_SYS_STATUS] = null;
                 }				
 #endif
+
+                if (mavinterface.packets[MAVLink.MAVLINK_MSG_ID_SCALED_PRESSURE] != null)
+                {
+                    var pres = new ArdupilotMega.MAVLink.__mavlink_scaled_pressure_t();
+
+                    object temp = pres;
+
+                    MAVLink.ByteArrayToStructure(mavinterface.packets[MAVLink.MAVLINK_MSG_ID_SCALED_PRESSURE], ref temp, 6);
+
+                    pres = (MAVLink.__mavlink_scaled_pressure_t)(temp);
+
+                    press_abs = pres.press_abs;
+
+                    press_temp = pres.temperature;                  
+
+                }
+
+                if (mavinterface.packets[MAVLink.MAVLINK_MSG_ID_SENSOR_OFFSETS] != null)
+                {
+                    var sensofs = new ArdupilotMega.MAVLink.__mavlink_sensor_offsets_t();
+
+                    object temp = sensofs;
+
+                    MAVLink.ByteArrayToStructure(mavinterface.packets[MAVLink.MAVLINK_MSG_ID_SENSOR_OFFSETS], ref temp, 6);
+
+                    sensofs = (MAVLink.__mavlink_sensor_offsets_t)(temp);
+
+                    mag_ofs_x = sensofs.mag_ofs_x;
+                    mag_ofs_y = sensofs.mag_ofs_y;
+                    mag_ofs_z = sensofs.mag_ofs_z;
+                    mag_declination = sensofs.mag_declination;
+
+                    raw_press = sensofs.raw_press;
+                    raw_temp = sensofs.raw_temp;
+
+                    gyro_cal_x = sensofs.gyro_cal_x;
+                    gyro_cal_y = sensofs.gyro_cal_y;
+                    gyro_cal_z = sensofs.gyro_cal_z;
+
+                    accel_cal_x = sensofs.accel_cal_x;
+                    accel_cal_y = sensofs.accel_cal_y;
+                    accel_cal_z = sensofs.accel_cal_z;
+
+                }
+
                 if (mavinterface.packets[MAVLink.MAVLINK_MSG_ID_ATTITUDE] != null)
                 {
                     var att = new ArdupilotMega.MAVLink.__mavlink_attitude_t();
@@ -819,6 +891,7 @@ namespace ArdupilotMega
             {
                 if (bs != null)
                 {
+                    //System.Diagnostics.Debug.WriteLine(DateTime.Now.Millisecond);
                     //Console.WriteLine(DateTime.Now.Millisecond);
                     bs.DataSource = this;
                     //Console.WriteLine(DateTime.Now.Millisecond + " 1 " + updatenow);
