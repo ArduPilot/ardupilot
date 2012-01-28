@@ -24,8 +24,12 @@
 */
 
 #include "AP_OpticalFlow_ADNS3080.h"
-#include "WProgram.h"
 #include "SPI.h"
+#if defined(ARDUINO) && ARDUINO >= 100
+	#include "Arduino.h"
+#else
+	#include "WProgram.h"
+#endif
 
 #define AP_SPI_TIMEOUT 1000
 

@@ -39,8 +39,12 @@ extern "C" {
   // AVR LibC Includes
   #include <inttypes.h>
   #include <avr/interrupt.h>
-  #include "WConstants.h"
 }
+#if defined(ARDUINO) && ARDUINO >= 100
+  #include "Arduino.h"
+#else
+  #include "WConstants.h"
+#endif
 
 #include <AP_Common.h>
 #include <AP_Math.h>		// ArduPilot Mega Vector/Matrix math Library

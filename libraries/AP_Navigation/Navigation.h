@@ -6,7 +6,11 @@
 #define XTRACK_ENTRY_ANGLE 3000			// Max angle used to correct for track following	degrees*100
 #include <GPS.h>						// ArduPilot GPS Library
 #include "Waypoints.h"					// ArduPilot Waypoints Library
-#include "WProgram.h"
+#if defined(ARDUINO) && ARDUINO >= 100
+	#include "Arduino.h"
+#else
+	#include "WProgram.h"
+#endif
 
 #define T7 10000000
 
