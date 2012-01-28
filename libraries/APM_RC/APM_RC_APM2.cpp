@@ -20,7 +20,11 @@
 */
 #include "APM_RC_APM2.h"
 
-#include "WProgram.h"
+#if defined(ARDUINO) && ARDUINO >= 100
+	#include "Arduino.h"
+#else
+	#include "WProgram.h"
+#endif
 
 #if !defined(__AVR_ATmega1280__) && !defined(__AVR_ATmega2560__)
 # error Please check the Tools/Board menu to ensure you have selected Arduino Mega as your target.

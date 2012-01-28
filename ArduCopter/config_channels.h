@@ -49,8 +49,7 @@
 //
 //
 #if CONFIG_APM_HARDWARE == APM_HARDWARE_APM2
-/* TODO find out correct channel for APM2 TRI_YAW */
-# define CH_TRI_YAW   (-1)
+# define CH_TRI_YAW   CH_7
 #elif CONFIG_APM_HARDWARE == APM_HARDWARE_APM1
 # define CH_TRI_YAW   CH_7
 #endif

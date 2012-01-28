@@ -176,7 +176,7 @@
 # endif
 #elif CONFIG_SONAR_SOURCE == SONAR_SOURCE_ANALOG_PIN
 # ifndef CONFIG_SONAR_SOURCE_ANALOG_PIN
-#  define CONFIG_SONAR_SOURCE_ANALOG_PIN A1
+#  define CONFIG_SONAR_SOURCE_ANALOG_PIN A0
 # endif
 #else
 # warning Invalid value for CONFIG_SONAR_SOURCE, disabling sonar
@@ -313,21 +313,30 @@
 #ifndef OPTFLOW_ORIENTATION
 # define OPTFLOW_ORIENTATION 	AP_OPTICALFLOW_ADNS3080_PINS_FORWARD
 #endif
+#ifndef OPTFLOW_RESOLUTION
+# define OPTFLOW_RESOLUTION 	ADNS3080_RESOLUTION_1600
+#endif
 #ifndef OPTFLOW_FOV
 # define OPTFLOW_FOV 			AP_OPTICALFLOW_ADNS3080_08_FOV
 #endif
 // optical flow based loiter PI values
 #ifndef OPTFLOW_ROLL_P
-  #define OPTFLOW_ROLL_P 6.4
+  #define OPTFLOW_ROLL_P 2.5
 #endif
 #ifndef OPTFLOW_ROLL_I
-  #define OPTFLOW_ROLL_I 0.068
+  #define OPTFLOW_ROLL_I 6.2
+#endif
+#ifndef OPTFLOW_ROLL_D
+  #define OPTFLOW_ROLL_D 0.12
 #endif
 #ifndef OPTFLOW_PITCH_P
-  #define OPTFLOW_PITCH_P 6.4
+  #define OPTFLOW_PITCH_P 2.5
 #endif
 #ifndef OPTFLOW_PITCH_I
-  #define OPTFLOW_PITCH_I 0.068
+  #define OPTFLOW_PITCH_I 6.2
+#endif
+#ifndef OPTFLOW_PITCH_D
+  #define OPTFLOW_PITCH_D 0.12
 #endif
 #ifndef OPTFLOW_IMAX
   #define OPTFLOW_IMAX 4
@@ -494,6 +503,18 @@
 # define SUPER_SIMPLE		DISABLED
 #endif
 
+// LOITER Mode
+#ifndef OF_LOITER_YAW
+# define OF_LOITER_YAW 		YAW_HOLD
+#endif
+
+#ifndef OF_LOITER_RP
+# define OF_LOITER_RP 			ROLL_PITCH_STABLE_OF
+#endif
+
+#ifndef OF_LOITER_THR
+# define OF_LOITER_THR			THROTTLE_HOLD
+#endif
 
 //////////////////////////////////////////////////////////////////////////////
 // Attitude Control

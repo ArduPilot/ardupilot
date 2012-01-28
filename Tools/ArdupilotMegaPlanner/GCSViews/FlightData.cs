@@ -81,7 +81,9 @@ namespace ArdupilotMega.GCSViews
         protected override void Dispose(bool disposing)
         {
             threadrun = 0;
+            MainV2.comPort.logreadmode = false;
             MainV2.config["FlightSplitter"] = MainH.SplitterDistance.ToString();
+            System.Threading.Thread.Sleep(100);
             base.Dispose(disposing);
         }
 
@@ -295,7 +297,9 @@ namespace ArdupilotMega.GCSViews
 
                 if (MainV2.comPort.logreadmode && MainV2.comPort.logplaybackfile != null)
                 {
-                    this.Invoke((System.Windows.Forms.MethodInvoker)delegate()
+                    if (threadrun == 0) { return; }
+
+                        this.BeginInvoke((System.Windows.Forms.MethodInvoker)delegate()
 {
     try
     {
@@ -319,7 +323,7 @@ namespace ArdupilotMega.GCSViews
                     int act = (int)(MainV2.comPort.lastlogread - logplayback).TotalMilliseconds;
 
                     if (act > 9999 || act < 0)
-                        act = 1;
+                        act = 0;
 
                     int ts = 0;
                     try
@@ -329,6 +333,8 @@ namespace ArdupilotMega.GCSViews
                     catch { }
                     if (ts > 0)
                         System.Threading.Thread.Sleep(ts);
+
+                    if (threadrun == 0) { return; }
 
                     tracklast = tracklast.AddMilliseconds(ts - act);
                     tunning = tunning.AddMilliseconds(ts - act);
@@ -1320,7 +1326,7 @@ namespace ArdupilotMega.GCSViews
             Form selectform = new Form()
             {
                 Name = "select",
-                Width = 750,
+                Width = 50,
                 Height = 250,
                 Text = "Graph This"
             };
@@ -1400,6 +1406,8 @@ namespace ArdupilotMega.GCSViews
                 {
                     x += 100;
                     y = 10;
+
+                    selectform.Width = x + 100;
                 }
             }
             MainV2.fixtheme(selectform);
@@ -1596,6 +1604,16 @@ namespace ArdupilotMega.GCSViews
         void ScriptStart()
         {
             string myscript = @"
+# cs.???? = currentstate, any variable on the status tab in the planner can be used.
+# Script = options are 
+# Script.Sleep(ms)
+# Script.ChangeParam(name,value)
+# Script.GetParam(name)
+# Script.ChangeMode(mode) - same as displayed in mode setup screen 'AUTO'
+# Script.WaitFor(string,timeout)
+# Script.SendRC(channel,pwm,sendnow)
+# 
+
 print 'Start Script'
 for chan in range(1,9):
     Script.SendRC(chan,1500,False)

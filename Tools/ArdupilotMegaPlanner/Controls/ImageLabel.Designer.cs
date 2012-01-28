@@ -39,6 +39,9 @@
             | System.Windows.Forms.AnchorStyles.Left) 
             | System.Windows.Forms.AnchorStyles.Right)));
             this.pictureBox1.Cursor = System.Windows.Forms.Cursors.Hand;
+            this.pictureBox1.ErrorImage = global::ArdupilotMega.Properties.Resources.bg;
+            this.pictureBox1.Image = global::ArdupilotMega.Properties.Resources.bg;
+            this.pictureBox1.InitialImage = global::ArdupilotMega.Properties.Resources.bg;
             this.pictureBox1.Location = new System.Drawing.Point(0, 0);
             this.pictureBox1.Name = "pictureBox1";
             this.pictureBox1.Size = new System.Drawing.Size(170, 155);
@@ -55,6 +58,7 @@
             this.label1.Name = "label1";
             this.label1.Size = new System.Drawing.Size(170, 13);
             this.label1.TabIndex = 1;
+            this.label1.Text = "None";
             this.label1.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
             // 
             // ImageLabel

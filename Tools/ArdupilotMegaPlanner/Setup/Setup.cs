@@ -284,6 +284,9 @@ namespace ArdupilotMega.Setup
 
         private void tabControl1_SelectedIndexChanged(object sender, EventArgs e)
         {
+            int monosux = 0;
+            monosux *= 5;
+
             if (tabControl1.SelectedTab == tabRadioIn)
             {
                 startup = true;

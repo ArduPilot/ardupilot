@@ -6,8 +6,11 @@
 #ifndef AP_EEPROMB_h
 #define AP_EEPROMB_h
 
-//#include <stdint.h>
-#include "WProgram.h"
+#if defined(ARDUINO) && ARDUINO >= 100
+	#include "Arduino.h"
+#else
+	#include "WProgram.h"
+#endif
 
 /// @class	AP_EEPROMB
 /// @brief	Object for reading and writing to the EEPROM

@@ -42,6 +42,8 @@ namespace hud
 
         public bool opengl { get { return base.UseOpenGL; } set { base.UseOpenGL = value; } }
 
+        bool started = false;
+
         public HUD()
         {
             if (this.DesignMode)
@@ -50,12 +52,12 @@ namespace hud
                 //return;
             }
 
-            InitializeComponent();
+            //InitializeComponent();
 
             graphicsObject = this;
             graphicsObjectGDIP = Graphics.FromImage(objBitmap);
         }
-
+        /*
         private void InitializeComponent()
         {
             System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(HUD));
@@ -68,33 +70,33 @@ namespace hud
             resources.ApplyResources(this, "$this");
             this.ResumeLayout(false);
 
-        }
+        }*/
 
-        float _roll;
-        float _navroll;
-        float _pitch;
-        float _navpitch;
-        float _heading;
-        float _targetheading;
-        float _alt;
-        float _targetalt;
-        float _groundspeed;
-        float _airspeed;
-        float _targetspeed;
-        float _batterylevel;
-        float _batteryremaining;
-        float _gpsfix;
-        float _gpshdop;
-        float _disttowp;
-        float _groundcourse;
-        float _xtrack_error;
-        float _turnrate;
-        float _verticalspeed;
-        float _linkqualitygcs;
+        float _roll = 0;
+        float _navroll = 0;
+        float _pitch = 0;
+        float _navpitch = 0;
+        float _heading = 0;
+        float _targetheading = 0;
+        float _alt = 0;
+        float _targetalt = 0;
+        float _groundspeed = 0;
+        float _airspeed = 0;
+        float _targetspeed = 0;
+        float _batterylevel = 0;
+        float _batteryremaining = 0;
+        float _gpsfix = 0;
+        float _gpshdop = 0;
+        float _disttowp = 0;
+        float _groundcourse = 0;
+        float _xtrack_error = 0;
+        float _turnrate = 0;
+        float _verticalspeed = 0;
+        float _linkqualitygcs = 0;
         DateTime _datetime;
         string _mode = "Manual";
-        int _wpno;
-
+        int _wpno = 0;
+        
         [System.ComponentModel.Browsable(true), System.ComponentModel.Category("Values")]
         public float roll { get { return _roll; } set { if (_roll != value) { _roll = value; this.Invalidate(); } } }
         [System.ComponentModel.Browsable(true), System.ComponentModel.Category("Values")]
@@ -146,6 +148,7 @@ namespace hud
 
         [System.ComponentModel.Browsable(true), System.ComponentModel.Category("Values")]
         public int status { get; set; }
+        
         int statuslast = 0;
         DateTime armedtimer = DateTime.MinValue;
 
@@ -180,9 +183,6 @@ namespace hud
 
         protected override void OnLoad(EventArgs e)
         {
-            if (this.DesignMode) 
-                return;
-
             if (opengl)
             {
                 try
@@ -236,11 +236,16 @@ namespace hud
                 }
                 catch { }
             }
+
+            started = true;
         }
 
         protected override void OnPaint(PaintEventArgs e)
         {
             //GL.Enable(EnableCap.AlphaTest)
+
+            if (!started)
+                return;
 
             if (this.DesignMode)
             {
@@ -691,14 +696,14 @@ namespace hud
 
                 graphicsObject.TranslateTransform(this.Width / 2, this.Height / 2);
 
-                graphicsObject.RotateTransform(-roll);
+                graphicsObject.RotateTransform(-_roll);
 
                 int fontsize = this.Height / 30; // = 10
                 int fontoffset = fontsize - 10;
 
                 float every5deg = -this.Height / 60;
 
-                float pitchoffset = -pitch * every5deg;
+                float pitchoffset = -_pitch * every5deg;
 
                 int halfwidth = this.Width / 2;
                 int halfheight = this.Height / 2;
@@ -742,7 +747,7 @@ namespace hud
                 graphicsObject.SetClip(new Rectangle(0, this.Height / 14, this.Width, this.Height - this.Height / 14));
 
                 graphicsObject.TranslateTransform(this.Width / 2, this.Height / 2);
-                graphicsObject.RotateTransform(-roll);
+                graphicsObject.RotateTransform(-_roll);
 
                 // draw armed
 
@@ -776,7 +781,7 @@ namespace hud
                 for (int a = -90; a <= 90; a += 5)
                 {
                     // limit to 40 degrees
-                    if (a >= pitch - 34 && a <= pitch + 25)
+                    if (a >= _pitch - 34 && a <= _pitch + 25)
                     {
                         if (a % 10 == 0)
                         {
@@ -804,7 +809,7 @@ namespace hud
 
                 graphicsObject.TranslateTransform(this.Width / 2, this.Height / 2 + this.Height / 14);
 
-                graphicsObject.RotateTransform(-roll);
+                graphicsObject.RotateTransform(-_roll);
 
                 Point[] pointlist = new Point[3];
 
@@ -816,7 +821,7 @@ namespace hud
                 pointlist[1] = new Point(-lengthlong, -lengthlong - extra);
                 pointlist[2] = new Point(lengthlong, -lengthlong - extra);
 
-                if (Math.Abs(roll) > 45)
+                if (Math.Abs(_roll) > 45)
                 {
                     redPen.Width = 10;
                 }
@@ -870,30 +875,30 @@ namespace hud
                 graphicsObject.DrawLine(whitePen, headbg.Left + 5, headbg.Bottom - 5, headbg.Width - 5, headbg.Bottom - 5);
 
                 float space = (headbg.Width - 10) / 60.0f;
-                int start = (int)Math.Round((heading - 30),1);
+                int start = (int)Math.Round((_heading - 30),1);
 
                 // draw for outside the 60 deg
-                if (targetheading < start)
+                if (_targetheading < start)
                 {
                     greenPen.Width = 6;
                     graphicsObject.DrawLine(greenPen, headbg.Left + 5 + space * 0, headbg.Bottom, headbg.Left + 5 + space * (0), headbg.Top);
                 }
-                if (targetheading > heading + 30)
+                if (_targetheading > _heading + 30)
                 {
                     greenPen.Width = 6;
                     graphicsObject.DrawLine(greenPen, headbg.Left + 5 + space * 60, headbg.Bottom, headbg.Left + 5 + space * (60), headbg.Top);
                 }
 
-                for (int a = start; a <= heading + 30; a += 1)
+                for (int a = start; a <= _heading + 30; a += 1)
                 {
                     // target heading
-                    if (((int)(a + 360) % 360) == (int)targetheading)
+                    if (((int)(a + 360) % 360) == (int)_targetheading)
                     {
                         greenPen.Width = 6;
                         graphicsObject.DrawLine(greenPen, headbg.Left + 5 + space * (a - start), headbg.Bottom, headbg.Left + 5 + space * (a - start), headbg.Top);
                     }
 
-                    if (((int)(a + 360) % 360) == (int)groundcourse)
+                    if (((int)(a + 360) % 360) == (int)_groundcourse)
                     {
                         blackPen.Width = 6;
                         graphicsObject.DrawLine(blackPen, headbg.Left + 5 + space * (a - start), headbg.Bottom, headbg.Left + 5 + space * (a - start), headbg.Top);
@@ -940,7 +945,7 @@ namespace hud
                 float xtspace = this.Width / 10.0f / 3.0f;
                 int pad = 10;
 
-                float myxtrack_error = xtrack_error;
+                float myxtrack_error = _xtrack_error;
 
                 myxtrack_error = Math.Min(myxtrack_error, 40);
                 myxtrack_error = Math.Max(myxtrack_error, -40);
@@ -977,7 +982,7 @@ namespace hud
 
                 graphicsObject.DrawLine(whitePen, this.Width / 10 + xtspace * 2 - xtspace / 2, headbg.Bottom + this.Height / 10 + 10, this.Width / 10 + xtspace * 2 - xtspace / 2 + xtspace, headbg.Bottom + this.Height / 10 + 10);
 
-                float myturnrate = turnrate;
+                float myturnrate = _turnrate;
                 float trwidth = (this.Width / 10 + xtspace * 2 - xtspace / 2) - (this.Width / 10 - xtspace * 2 - xtspace / 2);
 
                 float range = 12;
@@ -1023,21 +1028,21 @@ namespace hud
 
                 int viewrange = 26;
 
-                float speed = airspeed;
+                float speed = _airspeed;
                 if (speed == 0)
-                    speed = groundspeed;
+                    speed = _groundspeed;
 
                 space = (scrollbg.Height) / (float)viewrange;
                 start = ((int)speed - viewrange / 2);
 
-                if (start > targetspeed)
+                if (start > _targetspeed)
                 {
                     greenPen.Color = Color.FromArgb(128, greenPen.Color);
                     greenPen.Width = 6;
                     graphicsObject.DrawLine(greenPen, scrollbg.Left, scrollbg.Top, scrollbg.Left + scrollbg.Width, scrollbg.Top);
                     greenPen.Color = Color.FromArgb(255, greenPen.Color);
                 }
-                if ((speed + viewrange / 2) < targetspeed)
+                if ((speed + viewrange / 2) < _targetspeed)
                 {
                     greenPen.Color = Color.FromArgb(128, greenPen.Color);
                     greenPen.Width = 6;
@@ -1047,7 +1052,7 @@ namespace hud
 
                 for (int a = (int)start; a <= (speed + viewrange / 2); a += 1)
                 {
-                    if (a == (int)targetspeed && targetspeed != 0)
+                    if (a == (int)_targetspeed && _targetspeed != 0)
                     {
                         greenPen.Width = 6;
                         graphicsObject.DrawLine(greenPen, scrollbg.Left, scrollbg.Top - space * (a - start), scrollbg.Left + scrollbg.Width, scrollbg.Top - space * (a - start));
@@ -1068,8 +1073,8 @@ namespace hud
 
                 // extra text data
 
-                drawstring(graphicsObject, "AS " + airspeed.ToString("0.0"), font, fontsize, whiteBrush, 1, scrollbg.Bottom + 5);
-                drawstring(graphicsObject, "GS " + groundspeed.ToString("0.0"), font, fontsize, whiteBrush, 1, scrollbg.Bottom + fontsize + 2 + 10);
+                drawstring(graphicsObject, "AS " + _airspeed.ToString("0.0"), font, fontsize, whiteBrush, 1, scrollbg.Bottom + 5);
+                drawstring(graphicsObject, "GS " + _groundspeed.ToString("0.0"), font, fontsize, whiteBrush, 1, scrollbg.Bottom + fontsize + 2 + 10);
 
                 //drawstring(e,, new Font("Arial", fontsize + 2), whiteBrush, 1, scrollbg.Bottom + fontsize + 2 + 10);
 
@@ -1099,16 +1104,16 @@ namespace hud
                 viewrange = 26;
 
                 space = (scrollbg.Height) / (float)viewrange;
-                start = ((int)alt - viewrange / 2);
+                start = ((int)_alt - viewrange / 2);
 
-                if (start > targetalt)
+                if (start > _targetalt)
                 {
                     greenPen.Color = Color.FromArgb(128, greenPen.Color);
                     greenPen.Width = 6;
                     graphicsObject.DrawLine(greenPen, scrollbg.Left, scrollbg.Top, scrollbg.Left + scrollbg.Width, scrollbg.Top);
                     greenPen.Color = Color.FromArgb(255, greenPen.Color);
                 }
-                if ((alt + viewrange / 2) < targetalt)
+                if ((_alt + viewrange / 2) < _targetalt)
                 {
                     greenPen.Color = Color.FromArgb(128, greenPen.Color);
                     greenPen.Width = 6;
@@ -1116,9 +1121,9 @@ namespace hud
                     greenPen.Color = Color.FromArgb(255, greenPen.Color);
                 }
 
-                for (int a = (int)start; a <= (alt + viewrange / 2); a += 1)
+                for (int a = (int)start; a <= (_alt + viewrange / 2); a += 1)
                 {
-                    if (a == Math.Round(targetalt) && targetalt != 0)
+                    if (a == Math.Round(_targetalt) && _targetalt != 0)
                     {
                         greenPen.Width = 6;
                         graphicsObject.DrawLine(greenPen, scrollbg.Left, scrollbg.Top - space * (a - start), scrollbg.Left + scrollbg.Width, scrollbg.Top - space * (a - start));
@@ -1148,10 +1153,10 @@ namespace hud
 
                 viewrange = 12;
 
-                verticalspeed = Math.Min(viewrange / 2, verticalspeed);
-                verticalspeed = Math.Max(viewrange / -2, verticalspeed);
+                _verticalspeed = Math.Min(viewrange / 2, _verticalspeed);
+                _verticalspeed = Math.Max(viewrange / -2, _verticalspeed);
 
-                float scaledvalue = verticalspeed / -viewrange * (scrollbg.Bottom - scrollbg.Top);
+                float scaledvalue = _verticalspeed / -viewrange * (scrollbg.Bottom - scrollbg.Top);
 
                 float linespace = (float)1 / -viewrange * (scrollbg.Bottom - scrollbg.Top);
 
@@ -1199,53 +1204,53 @@ namespace hud
                 graphicsObject.ResetTransform();
                 graphicsObject.TranslateTransform(0, this.Height / 2);
 
-                drawstring(graphicsObject, ((int)alt).ToString("0"), font, 10, Brushes.AliceBlue, scrollbg.Left + 10, -9);
+                drawstring(graphicsObject, ((int)_alt).ToString("0"), font, 10, Brushes.AliceBlue, scrollbg.Left + 10, -9);
                 graphicsObject.ResetTransform();
 
                 // mode and wp dist and wp
 
-                drawstring(graphicsObject, mode, font, fontsize, whiteBrush, scrollbg.Left - 30, scrollbg.Bottom + 5);
-                drawstring(graphicsObject, (int)disttowp + ">" + wpno, font, fontsize, whiteBrush, scrollbg.Left - 30, scrollbg.Bottom + fontsize + 2 + 10);
+                drawstring(graphicsObject, _mode, font, fontsize, whiteBrush, scrollbg.Left - 30, scrollbg.Bottom + 5);
+                drawstring(graphicsObject, (int)_disttowp + ">" + _wpno, font, fontsize, whiteBrush, scrollbg.Left - 30, scrollbg.Bottom + fontsize + 2 + 10);
 
                 graphicsObject.DrawLine(greenPen, scrollbg.Left - 5, scrollbg.Top - (int)(fontsize * 2.2) - 2 - 20, scrollbg.Left - 5, scrollbg.Top - (int)(fontsize) - 2 - 20);
                 graphicsObject.DrawLine(greenPen, scrollbg.Left - 10, scrollbg.Top - (int)(fontsize * 2.2) - 2 - 15, scrollbg.Left - 10, scrollbg.Top - (int)(fontsize) - 2 - 20);
                 graphicsObject.DrawLine(greenPen, scrollbg.Left - 15, scrollbg.Top - (int)(fontsize * 2.2) - 2 - 10, scrollbg.Left - 15, scrollbg.Top - (int)(fontsize ) - 2 - 20);
 
-                drawstring(graphicsObject, linkqualitygcs.ToString("0") + "%", font, fontsize, whiteBrush, scrollbg.Left, scrollbg.Top - (int)(fontsize * 2.2) - 2 - 20);
-                if (linkqualitygcs == 0)
+                drawstring(graphicsObject, _linkqualitygcs.ToString("0") + "%", font, fontsize, whiteBrush, scrollbg.Left, scrollbg.Top - (int)(fontsize * 2.2) - 2 - 20);
+                if (_linkqualitygcs == 0)
                 {
                     graphicsObject.DrawLine(redPen, scrollbg.Left, scrollbg.Top - (int)(fontsize * 2.2) - 2 - 20, scrollbg.Left + 50, scrollbg.Top - (int)(fontsize * 2.2) - 2);
 
                     graphicsObject.DrawLine(redPen, scrollbg.Left, scrollbg.Top - (int)(fontsize * 2.2) - 2, scrollbg.Left + 50, scrollbg.Top - (int)(fontsize * 2.2) - 2 - 20);
                 }
-                drawstring(graphicsObject, datetime.ToString("HH:mm:ss"), font, fontsize, whiteBrush, scrollbg.Left - 20, scrollbg.Top - fontsize - 2 - 20);
+                drawstring(graphicsObject, _datetime.ToString("HH:mm:ss"), font, fontsize, whiteBrush, scrollbg.Left - 20, scrollbg.Top - fontsize - 2 - 20);
 
 
                 // battery
 
                 graphicsObject.ResetTransform();
 
-                drawstring(graphicsObject, resources.GetString("Bat"), font, fontsize + 2, whiteBrush, fontsize, this.Height - 30 - fontoffset);
-                drawstring(graphicsObject, batterylevel.ToString("0.00v"), font, fontsize + 2, whiteBrush, fontsize * 4, this.Height - 30 - fontoffset);
-                drawstring(graphicsObject, batteryremaining.ToString("0%"), font, fontsize + 2, whiteBrush, fontsize * 9, this.Height - 30 - fontoffset);
+                drawstring(graphicsObject, "Bat", font, fontsize + 2, whiteBrush, fontsize, this.Height - 30 - fontoffset);
+                drawstring(graphicsObject, _batterylevel.ToString("0.00v"), font, fontsize + 2, whiteBrush, fontsize * 4, this.Height - 30 - fontoffset);
+                drawstring(graphicsObject, _batteryremaining.ToString("0%"), font, fontsize + 2, whiteBrush, fontsize * 9, this.Height - 30 - fontoffset);
 
                 // gps
 
                 string gps = "";
 
-                if (gpsfix == 0)
+                if (_gpsfix == 0)
                 {
                     gps = ("GPS: No GPS");
                 }
-                else if (gpsfix == 1)
+                else if (_gpsfix == 1)
                 {
                     gps = ("GPS: No Fix");
                 }
-                else if (gpsfix == 2)
+                else if (_gpsfix == 2)
                 {
                     gps = ("GPS: 3D Fix");
                 }
-                else if (gpsfix == 3)
+                else if (_gpsfix == 3)
                 {
                     gps = ("GPS: 3D Fix");
                 }
@@ -1462,8 +1467,7 @@ namespace hud
                 return;
 
             pth.Reset();
-
-
+            
             if (text != null)
                 pth.AddString(text, font.FontFamily, 0, fontsize + 5, new Point((int)x, (int)y), StringFormat.GenericTypographic);
 
@@ -1471,8 +1475,12 @@ namespace hud
             // this uses lots of cpu time
 
             //e.SmoothingMode = SmoothingMode.HighSpeed;
+
+            if (e == null || P == null || pth == null || pth.PointCount == 0)
+                return;
             
-            e.DrawPath(P, pth);
+            if (!ArdupilotMega.MainV2.MONO)
+                e.DrawPath(P, pth);
 
             //Draw the face
 
@@ -1507,7 +1515,7 @@ namespace hud
 
         protected override void OnResize(EventArgs e)
         {
-            if (DesignMode)
+            if (DesignMode || !started)
                 return;
             this.Height = (int)(this.Width / 1.333f);
             base.OnResize(e);

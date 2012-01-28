@@ -26,7 +26,11 @@
 */
 
 // AVR LibC Includes
-#include "WConstants.h"
+#if defined(ARDUINO) && ARDUINO >= 100
+	#include "Arduino.h"
+#else
+	#include "WConstants.h"
+#endif
 #include "AP_RangeFinder_SharpGP2Y.h"
 
 // Constructor //////////////////////////////////////////////////////////////
