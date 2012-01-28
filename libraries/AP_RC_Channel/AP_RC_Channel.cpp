@@ -88,11 +88,14 @@ AP_RC_Channel::set_pwm(int pwm)
 		control_in = pwm_to_angle();
 		control_in = (abs(control_in) < dead_zone) ? 0 : control_in;
 
+		/*
+		// coming soon ??
 		if(expo) {
 			long temp = control_in;
 			temp = (temp * temp) / (long)_high;
 			control_in = (int)((control_in >= 0) ? temp : -temp);
 		}
+		*/
 	}
 }
 
