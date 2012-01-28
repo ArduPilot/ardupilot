@@ -503,6 +503,18 @@
 # define SUPER_SIMPLE		DISABLED
 #endif
 
+// LOITER Mode
+#ifndef OF_LOITER_YAW
+# define OF_LOITER_YAW 		YAW_HOLD
+#endif
+
+#ifndef OF_LOITER_RP
+# define OF_LOITER_RP 			ROLL_PITCH_STABLE_OF
+#endif
+
+#ifndef OF_LOITER_THR
+# define OF_LOITER_THR			THROTTLE_HOLD
+#endif
 
 //////////////////////////////////////////////////////////////////////////////
 // Attitude Control
