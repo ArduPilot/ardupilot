@@ -30,7 +30,7 @@ ModeFilter mode_filter;
     AP_ADC_ADS7844 adc;
     AP_AnalogSource_ADC adc_source(&adc, AP_RANGEFINDER_PITOT_TYPE_ADC_CHANNEL, 0.25);    // use Pitot tube
 #else
-    AP_AnalogSource_Arduino adc_source(A1);   // use AN1 analog pin (APM1: on oilpan at back right near the CLI switch.  APM2: on left)
+    AP_AnalogSource_Arduino adc_source(A0);   // use AN0 analog pin for APM2 on left
 #endif
 
 // create the range finder object

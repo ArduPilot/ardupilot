@@ -31,7 +31,12 @@
 
 //#include "../AP_Common/AP_Common.h"
 #include "FastSerial.h"
-#include "WProgram.h"
+
+#if defined(ARDUINO) && ARDUINO >= 100
+	#include "Arduino.h"
+#else
+	#include "WProgram.h"
+#endif
 
 #if   defined(UDR3)
 # define FS_MAX_PORTS   4
@@ -197,6 +202,30 @@ void FastSerial::flush(void)
 	_txBuffer->tail = _txBuffer->head;
 }
 
+#if defined(ARDUINO) && ARDUINO >= 100
+size_t FastSerial::write(uint8_t c)
+{
+	uint16_t i;
+
+	if (!_open) // drop bytes if not open
+		return 0;
+
+	// wait for room in the tx buffer
+	i = (_txBuffer->head + 1) & _txBuffer->mask;
+	while (i == _txBuffer->tail)
+		;
+
+	// add byte to the buffer
+	_txBuffer->bytes[_txBuffer->head] = c;
+	_txBuffer->head = i;
+
+	// enable the data-ready interrupt, as it may be off if the buffer is empty
+	*_ucsrb |= _portTxBits;
+
+	// return number of bytes written (always 1)
+	return 1;
+}
+#else
 void FastSerial::write(uint8_t c)
 {
 	uint16_t i;
@@ -216,6 +245,7 @@ void FastSerial::write(uint8_t c)
 	// enable the data-ready interrupt, as it may be off if the buffer is empty
 	*_ucsrb |= _portTxBits;
 }
+#endif
 
 // Buffer management ///////////////////////////////////////////////////////////
 

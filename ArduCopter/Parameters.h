@@ -309,8 +309,8 @@ public:
 	APM_PI		pi_acro_roll;
 	APM_PI		pi_acro_pitch;
 
-	APM_PI		pi_optflow_roll;
-	APM_PI		pi_optflow_pitch;
+	PID			pi_optflow_roll;
+	PID			pi_optflow_pitch;
 
 	uint8_t		junk;
 
@@ -435,8 +435,8 @@ public:
 	pi_acro_roll		(k_param_pi_acro_roll,			PSTR("ACRO_RLL_"),	ACRO_ROLL_P,		ACRO_ROLL_I,		ACRO_ROLL_IMAX * 100),
 	pi_acro_pitch		(k_param_pi_acro_pitch,			PSTR("ACRO_PIT_"),	ACRO_PITCH_P,		ACRO_PITCH_I,		ACRO_PITCH_IMAX * 100),
 
-	pi_optflow_roll		(k_param_pi_optflow_roll,		PSTR("OF_RLL_"),	OPTFLOW_ROLL_P,		OPTFLOW_ROLL_I,		OPTFLOW_IMAX * 100),
-	pi_optflow_pitch	(k_param_pi_optflow_pitch,		PSTR("OF_PIT_"),	OPTFLOW_PITCH_P,	OPTFLOW_PITCH_I,	OPTFLOW_IMAX * 100),
+	pi_optflow_roll		(k_param_pi_optflow_roll,		PSTR("OF_RLL_"),	OPTFLOW_ROLL_P,		OPTFLOW_ROLL_I,		OPTFLOW_ROLL_D,		OPTFLOW_IMAX * 100),
+	pi_optflow_pitch	(k_param_pi_optflow_pitch,		PSTR("OF_PIT_"),	OPTFLOW_PITCH_P,	OPTFLOW_PITCH_I,	OPTFLOW_PITCH_D,	OPTFLOW_IMAX * 100),
 
 	junk(0)		// XXX just so that we can add things without worrying about the trailing comma
 	{

@@ -591,11 +591,11 @@ namespace ArdupilotMega
 
             temp.Dock = DockStyle.Fill;
 
-            MyView.Controls.Add(temp);
-
             temp.ForeColor = Color.White;
 
             temp.BackColor = Color.FromArgb(0x26, 0x27, 0x28);
+
+            MyView.Controls.Add(temp);
         }
 
         private void MenuTerminal_Click(object sender, EventArgs e)
@@ -1109,6 +1109,8 @@ namespace ArdupilotMega
 
                             GCSViews.FlightData.myhud.Invalidate();
                         }
+
+                        GC.Collect();
                     }
 
                     if (speechenable && talk != null && (MainV2.comPort.logreadmode || comPort.BaseStream.IsOpen))
@@ -1127,7 +1129,10 @@ namespace ArdupilotMega
                     }
 
                     if (!comPort.BaseStream.IsOpen || givecomport == true)
+                    {
+                        System.Threading.Thread.Sleep(100);
                         continue;
+                    }
 
                     if (heatbeatsend.Second != DateTime.Now.Second)
                     {

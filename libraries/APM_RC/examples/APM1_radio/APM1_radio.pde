@@ -16,6 +16,14 @@ void setup()
 {
     isr_registry.init();
 	APM_RC.Init(&isr_registry);	 // APM Radio initialization
+  APM_RC.enable_out(CH_1);
+  APM_RC.enable_out(CH_2);
+  APM_RC.enable_out(CH_3);
+  APM_RC.enable_out(CH_4);
+  APM_RC.enable_out(CH_5);
+  APM_RC.enable_out(CH_6);
+  APM_RC.enable_out(CH_7);
+  APM_RC.enable_out(CH_8);
 
 	Serial.begin(115200);
 	Serial.println("ArduPilot Mega RC library test");

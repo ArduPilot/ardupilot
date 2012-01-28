@@ -238,6 +238,18 @@ static void init_motors_out()
 	#endif
 }
 
+static void motors_output_enable()
+{
+  APM_RC.enable_out(CH_1);
+  APM_RC.enable_out(CH_2);
+  APM_RC.enable_out(CH_3);
+  APM_RC.enable_out(CH_4);
+  APM_RC.enable_out(CH_5);
+  APM_RC.enable_out(CH_6);
+  APM_RC.enable_out(CH_7);
+  APM_RC.enable_out(CH_8);
+}
+
 // these are not really motors, they're servos but we don't rename the function because it fits with the rest of the code better
 static void output_motors_armed()
 {

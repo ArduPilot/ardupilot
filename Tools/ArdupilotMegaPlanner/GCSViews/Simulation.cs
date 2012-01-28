@@ -190,7 +190,22 @@ namespace ArdupilotMega.GCSViews
             // Fuel (gas & jet models)
             public float Model_fFuelConsumed;            // l
             public float Model_fFuelTankCapacity;        // l
+
+            // Ver > 3.81
+            // Screen size
+            public short Win_nScreenSizeDX; public short Win_nScreenSizeDY; // Screen Size, used to resize and reposition simulator window
+
+            // Model Orientation Matrix
+            public float Model_fAxisRight_x; public float Model_fAxisRight_y; public float Model_fAxisRight_z;
+            public float Model_fAxisFront_x; public float Model_fAxisFront_y; public float Model_fAxisFront_z;
+            public float Model_fAxisUp_x; public float Model_fAxisUp_y; public float Model_fAxisUp_z;
+
+            // Model data in body frame coordinates (X=Right, Y=Front, Z=Up)
+            public float Model_fVel_Body_X; public float Model_fVel_Body_Y; public float Model_fVel_Body_Z;    // m/s    Model velocity in body coordinates
+            public float Model_fAngVel_Body_X; public float Model_fAngVel_Body_Y; public float Model_fAngVel_Body_Z; // rad/s  Model angular velocity in body coordinates
+            public float Model_fAccel_Body_X; public float Model_fAccel_Body_Y; public float Model_fAccel_Body_Z;  // m/s/s  Model acceleration in body coordinates
         };
+
 
         ~Simulation()
         {
@@ -558,7 +573,7 @@ namespace ArdupilotMega.GCSViews
                             RECVprocess(udpdata, recv, comPort);
                         }
                     }
-                    catch (Exception ex) { //OutputLog.AppendText("Xplanes Data Problem - You need DATA IN/OUT 3, 4, 17, 18, 19, 20\n" + ex.Message + "\n");
+                    catch { //OutputLog.AppendText("Xplanes Data Problem - You need DATA IN/OUT 3, 4, 17, 18, 19, 20\n" + ex.Message + "\n");
                     }
                 }
                 if (MavLink != null && MavLink.Client != null && MavLink.Client.Connected && MavLink.Available > 0)
@@ -885,7 +900,7 @@ namespace ArdupilotMega.GCSViews
                 //stream.Write(data, 0, receviedbytes);
                 //stream.Close();
             }
-            else if (receviedbytes == 582)
+            else if (receviedbytes == 658)
             {
                 aeroin = new TDataFromAeroSimRC();
 
@@ -902,19 +917,16 @@ namespace ArdupilotMega.GCSViews
                 //Console.WriteLine("degs r {0:0.000} p {1:0.000} y {2:0.000} rates {3:0.000} {4:0.000} {5:0.000}", att.roll * -rad2deg, att.pitch * rad2deg, att.yaw * rad2deg, aeroin.Model_fAngVelX * rad2deg, aeroin.Model_fAngVelY * rad2deg, aeroin.Model_fAngVelZ * rad2deg);
 
                 //Console.WriteLine("mine2 {0} {1} {2} ", answer.Item1 , answer.Item2 , answer.Item3 );
-                
 
+                //StreamWriter SW = new StreamWriter("aerosim.txt",true);
 
-                var answer = HIL.Utils.EarthRatesToBodyRatesMine(att.roll * rad2deg, att.pitch * rad2deg, att.yaw * rad2deg, aeroin.Model_fAngVelX * rad2deg, aeroin.Model_fAngVelY * rad2deg, aeroin.Model_fAngVelZ * rad2deg);
-                Console.WriteLine("\n{0:0.000} {1:0.000} {2:0.000} ", answer.Item1 * deg2rad, answer.Item2 * deg2rad, answer.Item3 * deg2rad);
+                //SW.WriteLine(aeroin.Model_fRoll + "," + aeroin.Model_fPitch + "," + aeroin.Model_fHeading + "," + aeroin.Model_fAngVelX + "," + aeroin.Model_fAngVelY + "," + aeroin.Model_fAngVelZ);
 
-//                att.pitchspeed = (float)answer.Item1 * -deg2rad;
-  //              att.rollspeed = (float)answer.Item2 * -deg2rad;
-    //            att.yawspeed = (float)answer.Item3 * -deg2rad;
+                //SW.Close();
 
-                //att.pitchspeed = (float)(Math.Cos(att.yaw) * aeroin.Model_fAngVelX - Math.Sin(att.yaw) * aeroin.Model_fAngVelY);
-                //att.rollspeed = (float)(Math.Sin(att.yaw) * aeroin.Model_fAngVelX + Math.Cos(att.yaw) * aeroin.Model_fAngVelY);
-//                att.yawspeed = (float)-aeroin.Model_fAngVelZ * deg2rad;
+                att.pitchspeed = (float)aeroin.Model_fAngVel_Body_X;
+                att.rollspeed = (float)aeroin.Model_fAngVel_Body_Y;
+                att.yawspeed = (float)-aeroin.Model_fAngVel_Body_Z;
 
 
 #if MAVLINK10
@@ -922,18 +934,18 @@ namespace ArdupilotMega.GCSViews
 				#else
 				imu.usec = ((ulong)DateTime.Now.ToBinary());
 				#endif
-                imu.xgyro = (short)(aeroin.Model_fAngVelX * 1000); // roll - yes
+                imu.xgyro = (short)(aeroin.Model_fAngVel_Body_X * 1000); // roll - yes
                 //imu.xmag = (short)(Math.Sin(head * deg2rad) * 1000);
-                imu.ygyro = (short)(aeroin.Model_fAngVelY * 1000); // pitch - yes
+                imu.ygyro = (short)(aeroin.Model_fAngVel_Body_Y * 1000); // pitch - yes
                 //imu.ymag = (short)(Math.Cos(head * deg2rad) * 1000);
-                imu.zgyro = (short)(aeroin.Model_fAngVelZ * 1000);
+                imu.zgyro = (short)(aeroin.Model_fAngVel_Body_Z * 1000);
                 //imu.zmag = 0;
 
                 YLScsDrawing.Drawing3d.Vector3d accel3D = HIL.QuadCopter.RPY_to_XYZ(att.roll, att.pitch, 0, -9.8); //DATA[18][2]
 
-                imu.xacc = (Int16)((accel3D.X + aeroin.Model_fAccelX) * 1000); // pitch
-                imu.yacc = (Int16)((accel3D.Y + aeroin.Model_fAccelY) * 1000); // roll
-                imu.zacc = (Int16)((accel3D.Z + aeroin.Model_fAccelZ) * 1000);
+                imu.xacc = (Int16)((accel3D.X + aeroin.Model_fAccel_Body_X) * 1000); // pitch
+                imu.yacc = (Int16)((accel3D.Y + aeroin.Model_fAccel_Body_Y) * 1000); // roll
+                imu.zacc = (Int16)((accel3D.Z + aeroin.Model_fAccel_Body_Z) * 1000);
 
 //                Console.WriteLine("x {0} y {1} z {2}", imu.xacc, imu.yacc, imu.zacc);
 
@@ -1443,7 +1455,7 @@ namespace ArdupilotMega.GCSViews
                     Array.Copy(BitConverter.GetBytes((double)(collective_out)), 0, AeroSimRC, 24, 8);
                 }
 
-                if (CHK_quad.Checked && false)
+                if (CHK_quad.Checked)
                 {
                     //MainV2.cs.ch1out = 1100; 
                     //MainV2.cs.ch2out = 1100;
@@ -1460,6 +1472,10 @@ namespace ArdupilotMega.GCSViews
                     Array.Copy(BitConverter.GetBytes((double)((MainV2.cs.ch1out - 1100) / 800 * 2 - 1)), 0, AeroSimRC, 8, 8); // motor 2 = right
                     Array.Copy(BitConverter.GetBytes((double)((MainV2.cs.ch4out - 1100) / 800 * 2 - 1)), 0, AeroSimRC, 16, 8);// motor 3 = back
                     Array.Copy(BitConverter.GetBytes((double)((MainV2.cs.ch2out - 1100) / 800 * 2 - 1)), 0, AeroSimRC, 24, 8);// motor 4 = left
+
+                }
+                else
+                {
 
                 }
 
@@ -1596,20 +1612,12 @@ namespace ArdupilotMega.GCSViews
 
         private void RAD_softXplanes_CheckedChanged(object sender, EventArgs e)
         {
-            if (RAD_softXplanes.Checked && RAD_softFlightGear.Checked)
-            {
-                RAD_softFlightGear.Checked = false;
-                RAD_aerosimrc.Checked = false;
-            }
+
         }
 
         private void RAD_softFlightGear_CheckedChanged(object sender, EventArgs e)
         {
-            if (RAD_softFlightGear.Checked && RAD_softXplanes.Checked)
-            {
-                RAD_softXplanes.Checked = false;
-                RAD_aerosimrc.Checked = false;
-            }
+
         }
 
         private void CHKREV_roll_CheckedChanged(object sender, EventArgs e)
@@ -2067,11 +2075,7 @@ namespace ArdupilotMega.GCSViews
 
         private void RAD_aerosimrc_CheckedChanged(object sender, EventArgs e)
         {
-            if (RAD_aerosimrc.Checked && RAD_softXplanes.Checked)
-            {
-                RAD_softXplanes.Checked = false;
-                RAD_softFlightGear.Checked = false;
-            }
+
         }
 
         private void RAD_JSBSim_CheckedChanged(object sender, EventArgs e)

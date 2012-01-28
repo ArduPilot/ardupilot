@@ -122,7 +122,8 @@
 #define CIRCLE 7			// AUTO control
 #define POSITION 8			// AUTO control
 #define LAND 9				// AUTO control
-#define NUM_MODES 10
+#define OF_LOITER 10			// Hold a single location using optical flow sensor
+#define NUM_MODES 11
 
 #define INITIALISING 9     // in startup routines
 
@@ -163,6 +164,7 @@
 // optical flow controller
 #define CH6_OPTFLOW_KP 17
 #define CH6_OPTFLOW_KI 18
+#define CH6_OPTFLOW_KD 19
 
 
 // nav byte mask

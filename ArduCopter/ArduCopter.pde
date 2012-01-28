@@ -69,6 +69,7 @@ http://code.google.com/p/ardupilot-mega/downloads/list
 #include <AP_TimerProcess.h>            // TimerProcess is the scheduler for MPU6000 reads.
 #include <AP_DCM.h>         // ArduPilot Mega DCM Library
 #include <APM_PI.h>            	// PI library
+#include <PID.h>            // PID library
 #include <RC_Channel.h>     // RC Channel Library
 #include <AP_RangeFinder.h>	// Range finder library
 #include <AP_OpticalFlow.h> // Optical Flow library
@@ -291,7 +292,8 @@ static const char* flight_mode_strings[] = {
 	"RTL",
 	"CIRCLE",
 	"POSITION",
-	"LAND"};
+	"LAND",
+	"OF_LOITER"};
 
 /* Radio values
 		Channel assignments
@@ -1439,15 +1441,9 @@ void update_roll_pitch_mode(void)
 			if(do_simple && new_radio_frame){
 				update_simple_mode();
 			}
-
-			// in this mode, nav_roll and nav_pitch = the iterm
-			#if WIND_COMP_STAB == 1
-			g.rc_1.servo_out = get_stabilize_roll(get_of_roll(g.rc_1.control_in + nav_roll));
-			g.rc_2.servo_out = get_stabilize_pitch(get_of_pitch(g.rc_2.control_in + nav_pitch));
-			#else
+			// mix in user control with optical flow
 			g.rc_1.servo_out = get_stabilize_roll(get_of_roll(g.rc_1.control_in));
 			g.rc_2.servo_out = get_stabilize_pitch(get_of_pitch(g.rc_2.control_in));
-			#endif
 			break;
 	}
 
@@ -1989,17 +1985,22 @@ static void tuning(){
 			break;
 
 		case CH6_OPTFLOW_KP:
-			g.rc_6.set_range(0,10000);     // 0 to 10
+			g.rc_6.set_range(0,5000);     // 0 to 5
 			g.pi_optflow_roll.kP(tuning_value);
 			g.pi_optflow_pitch.kP(tuning_value);
 			break;
 
 		case CH6_OPTFLOW_KI:
-			g.rc_6.set_range(0,100);     // 0 to 0.1
+			g.rc_6.set_range(0,10000);     // 0 to 10
 			g.pi_optflow_roll.kI(tuning_value);
 			g.pi_optflow_pitch.kI(tuning_value);
 			break;
 
+		case CH6_OPTFLOW_KD:
+			g.rc_6.set_range(0,200);    // 0 to 0.2
+			g.pi_optflow_roll.kD(tuning_value);
+			g.pi_optflow_pitch.kD(tuning_value);
+			break;
 	}
 }
 

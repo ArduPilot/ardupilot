@@ -92,6 +92,8 @@ static void init_optflow()
 	    SendDebug("\nFailed to Init OptFlow ");
 	}
 	optflow.set_orientation(OPTFLOW_ORIENTATION);			// set optical flow sensor's orientation on aircraft
+	optflow.set_frame_rate(2000);							// set minimum update rate (which should lead to maximum low light performance
+	optflow.set_resolution(OPTFLOW_RESOLUTION);				// set optical flow sensor's resolution
 	optflow.set_field_of_view(OPTFLOW_FOV);					// set optical flow sensor's field of view
 	// setup timed read of sensor
 	//timer_scheduler.register_process(&AP_OpticalFlow::read);

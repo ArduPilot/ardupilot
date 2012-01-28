@@ -13,6 +13,7 @@ static void motors_output_enable()
   APM_RC.enable_out(MOT_1);
   APM_RC.enable_out(MOT_2);
   APM_RC.enable_out(MOT_4);
+  APM_RC.enable_out(CH_TRI_YAW);
 }
 
 

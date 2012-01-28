@@ -100,7 +100,8 @@ class AP_OpticalFlow_ADNS3080 : public AP_OpticalFlow
   public:
 	int _cs_pin;     // pin used for chip select
 	int _reset_pin;  // pin used for chip reset
-	bool _motion;  	// true if there has been motion
+	bool _motion;  	 // true if there has been motion
+	bool _overflow;  // true if the x or y data buffers overflowed
 
   public:
   	AP_OpticalFlow_ADNS3080(int cs_pin = ADNS3080_CHIP_SELECT, int reset_pin = ADNS3080_RESET);
