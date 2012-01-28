@@ -100,8 +100,8 @@ static void init_rc_out()
 
 void output_min()
 {
-  motors_output_enable();
-    #if FRAME_CONFIG ==	HELI_FRAME
+	motors_output_enable();
+	#if FRAME_CONFIG == HELI_FRAME
         heli_move_servos_to_mid();
 	#else
 	    APM_RC.OutputCh(MOT_1, 	g.rc_3.radio_min);					// Initialization of servo outputs
@@ -111,11 +111,15 @@ void output_min()
 	#endif
 
 	APM_RC.OutputCh(MOT_5,   g.rc_3.radio_min);
-  APM_RC.OutputCh(MOT_6,   g.rc_3.radio_min);
+	APM_RC.OutputCh(MOT_6,   g.rc_3.radio_min);
+
+	#if FRAME_CONFIG == TRI_FRAME
+	APM_RC.OutputCh(CH_TRI_YAW,   g.rc_4.radio_trim); // Yaw servo middle position
+	#endif
 
 	#if FRAME_CONFIG ==	OCTA_FRAME
 	APM_RC.OutputCh(MOT_7,   g.rc_3.radio_min);
-  APM_RC.OutputCh(MOT_8,   g.rc_3.radio_min);
+	APM_RC.OutputCh(MOT_8,   g.rc_3.radio_min);
 	#endif
 
 }
