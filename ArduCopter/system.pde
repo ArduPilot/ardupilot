@@ -408,13 +408,13 @@ static void set_mode(byte mode)
 	// if we don't have GPS lock
 	if(home_is_set == false){
 		// our max mode should be
-		if (mode > ALT_HOLD)
+		if (mode > ALT_HOLD && mode != OF_LOITER)
 			mode = STABILIZE;
 	}
 
-	// nothing but Loiter for OptFlow only
+	// nothing but OF_LOITER for OptFlow only
 	if (g.optflow_enabled && GPS_enabled == false){
-		if (mode > ALT_HOLD && mode != LOITER)
+		if (mode > ALT_HOLD && mode != OF_LOITER)
 			mode = STABILIZE;
 	}
 
@@ -518,6 +518,13 @@ static void set_mode(byte mode)
 			throttle_mode 	= RTL_THR;
 
 			do_RTL();
+			break;
+
+		case OF_LOITER:
+			yaw_mode 		= OF_LOITER_YAW;
+			roll_pitch_mode = OF_LOITER_RP;
+			throttle_mode 	= OF_LOITER_THR;
+			set_next_WP(&current_loc);
 			break;
 
 		default:

@@ -122,7 +122,8 @@
 #define CIRCLE 7			// AUTO control
 #define POSITION 8			// AUTO control
 #define LAND 9				// AUTO control
-#define NUM_MODES 10
+#define OF_LOITER 10			// Hold a single location using optical flow sensor
+#define NUM_MODES 11
 
 #define INITIALISING 9     // in startup routines
 

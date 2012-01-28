@@ -292,7 +292,8 @@ static const char* flight_mode_strings[] = {
 	"RTL",
 	"CIRCLE",
 	"POSITION",
-	"LAND"};
+	"LAND",
+	"OF_LOITER"};
 
 /* Radio values
 		Channel assignments
@@ -1440,15 +1441,9 @@ void update_roll_pitch_mode(void)
 			if(do_simple && new_radio_frame){
 				update_simple_mode();
 			}
-
-			// in this mode, nav_roll and nav_pitch = the iterm
-			#if WIND_COMP_STAB == 1
-			g.rc_1.servo_out = get_stabilize_roll(get_of_roll(g.rc_1.control_in + nav_roll));
-			g.rc_2.servo_out = get_stabilize_pitch(get_of_pitch(g.rc_2.control_in + nav_pitch));
-			#else
+			// mix in user control with optical flow
 			g.rc_1.servo_out = get_stabilize_roll(get_of_roll(g.rc_1.control_in));
 			g.rc_2.servo_out = get_stabilize_pitch(get_of_pitch(g.rc_2.control_in));
-			#endif
 			break;
 	}
 
