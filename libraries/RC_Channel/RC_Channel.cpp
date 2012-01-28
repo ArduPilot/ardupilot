@@ -11,7 +11,11 @@
 
 #include <math.h>
 #include <avr/eeprom.h>
-#include "WProgram.h"
+#if defined(ARDUINO) && ARDUINO >= 100
+	#include "Arduino.h"
+#else
+	#include "WProgram.h"
+#endif
 #include "RC_Channel.h"
 
 #define RC_CHANNEL_ANGLE 0

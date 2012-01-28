@@ -2,8 +2,12 @@
 #define Waypoints_h
 
 #include <inttypes.h>
-#include "WProgram.h"
 #include <avr/eeprom.h>
+#if defined(ARDUINO) && ARDUINO >= 100
+	#include "Arduino.h"
+#else
+	#include "WProgram.h"
+#endif
 
 class Waypoints
 {

@@ -10,12 +10,15 @@
 #include "../FastSerial/FastSerial.h"
 #include "../AP_Math/AP_Math.h"
 #include <inttypes.h>
-#include "WProgram.h"
 #include "../AP_Compass/AP_Compass.h"
 #include "../AP_ADC/AP_ADC.h"
 #include "../AP_GPS/AP_GPS.h"
 #include "../AP_IMU/AP_IMU.h"
-
+#if defined(ARDUINO) && ARDUINO >= 100
+	#include "Arduino.h"
+#else
+	#include "WProgram.h"
+#endif
 
 class AP_DCM
 {

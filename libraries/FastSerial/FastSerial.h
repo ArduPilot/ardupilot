@@ -116,7 +116,11 @@ public:
 	virtual int read(void);
 	virtual int peek(void);
 	virtual void flush(void);
+#if defined(ARDUINO) && ARDUINO >= 100
+	virtual size_t write(uint8_t c);
+#else
 	virtual void write(uint8_t c);
+#endif
 	using BetterStream::write;
 	//@}
 

@@ -15,8 +15,12 @@
 
 // AVR LibC Includes
 #include <math.h>
-#include "WConstants.h"
 #include <FastSerial.h>
+#if defined(ARDUINO) && ARDUINO >= 100
+	#include "Arduino.h"
+#else
+	#include "WConstants.h"
+#endif
 
 #include <I2C.h>
 #include "AP_Compass_HMC5843.h"

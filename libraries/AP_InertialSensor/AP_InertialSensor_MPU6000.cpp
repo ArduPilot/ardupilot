@@ -3,8 +3,12 @@
 
 #include "AP_InertialSensor_MPU6000.h"
 
-#include <wiring.h>
 #include <SPI.h>
+#if defined(ARDUINO) && ARDUINO >= 100
+	#include "Arduino.h"
+#else
+	#include <wiring.h>
+#endif
 
 // MPU 6000 registers
 #define MPUREG_WHOAMI 0x75 //

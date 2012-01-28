@@ -13,7 +13,11 @@
 
 #include "AP_GPS_MTK16.h"
 #include <stdint.h>
-#include <wiring.h>
+#if defined(ARDUINO) && ARDUINO >= 100
+	#include "Arduino.h"
+#else
+	#include <wiring.h>
+#endif
 
 // Constructors ////////////////////////////////////////////////////////////////
 AP_GPS_MTK16::AP_GPS_MTK16(Stream *s) : GPS(s)

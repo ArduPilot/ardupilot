@@ -44,15 +44,19 @@
 	Channel 7 : Differential pressure sensor port
 
 */
+#include "AP_ADC_ADS7844.h"
+
 extern "C" {
 	// AVR LibC Includes
 	#include <inttypes.h>
 	#include <stdint.h>
 	#include <avr/interrupt.h>
-	#include "WConstants.h"
 }
-
-#include "AP_ADC_ADS7844.h"
+#if defined(ARDUINO) && ARDUINO >= 100
+	#include "Arduino.h"
+#else
+	#include "WConstants.h"
+#endif
 
 // Commands for reading ADC channels on ADS7844
 static const unsigned char 		adc_cmd[9]		= { 0x87, 0xC7, 0x97, 0xD7, 0xA7, 0xE7, 0xB7, 0xF7, 0x00 };

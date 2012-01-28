@@ -5,9 +5,13 @@
 extern "C" {
 #include <inttypes.h>
 #include <stdint.h>
-#include "WConstants.h"
 #include <avr/interrupt.h>
 }
+#if defined(ARDUINO) && ARDUINO >= 100
+	#include "Arduino.h"
+#else
+	#include "WConstants.h"
+#endif
 
 uint8_t AP_TimerProcess::_period;
 ap_procedure AP_TimerProcess::_proc[AP_TIMERPROCESS_MAX_PROCS];

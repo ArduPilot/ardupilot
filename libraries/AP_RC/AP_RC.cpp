@@ -10,8 +10,12 @@
 */
 
 #include "AP_RC.h"
-#include "WProgram.h"
 #include <avr/interrupt.h>
+#if defined(ARDUINO) && ARDUINO >= 100
+	#include "Arduino.h"
+#else
+	#include "WProgram.h"
+#endif
 
 // Variable definition for interrupt
 volatile uint16_t timer1count   = 0;
