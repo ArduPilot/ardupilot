@@ -3,21 +3,26 @@
 	2010 Code by Jason Short. DIYDrones.com
 */
 
+#include <Arduino_Mega_ISR_Registry.h>
 #include <FastSerial.h>
 #include <AP_Common.h>
 #include <APM_RC.h> // ArduPilot RC Library
-#include <PID.h> // ArduPilot Mega RC Library
+#include <AP_PID.h> // ArduPilot Mega RC Library
 
 long radio_in;
 long radio_trim;
 
-PID pid();
+Arduino_Mega_ISR_Registry isr_registry;
+AP_PID pid;
+APM_RC_APM1 APM_RC;
 
 void setup()
 {
-	Serial.begin(38400);
-	Serial.println("ArduPilot Mega PID library test");
-	APM_RC.Init();		// APM Radio initialization
+	Serial.begin(115200);
+	Serial.println("ArduPilot Mega AP_PID library test");
+
+	isr_registry.init();
+	APM_RC.Init(&isr_registry);	 // APM Radio initialization
 
 	delay(1000);
 	//rc.trim();
@@ -27,12 +32,10 @@ void setup()
 	pid.kI(0);
 	pid.kD(0.5);
 	pid.imax(50);
-	pid.save_gains();
 	pid.kP(0);
 	pid.kI(0);
 	pid.kD(0);
 	pid.imax(0);
-	pid.load_gains();
 	Serial.printf("P %f  I %f  D %f  imax %f\n", pid.kP(), pid.kI(), pid.kD(), pid.imax());
 }
 
