@@ -23,7 +23,7 @@ QGC WPL 110
 
 # MAV_CMD_NAV_LOITER_TURNS
 #					Turns											lat			lon			alt			continue
-6	0	3	18		2			0			0			0			0  			0			20			1
+#6	0	3	18		2			0			0			0			0  			0			20			1
 
 # MAV_CMD_DO_SET_ROI, MAV_ROI_WPNEXT = 1
 #					MAV_ROI		WP index	ROI index				lat			lon			alt			continue
