@@ -114,6 +114,7 @@ static void read_trim_switch()
 					// reset the mission
 					CH7_wp_index = 0;
 					g.command_total.set_and_save(1);
+					set_mode(RTL);
 					return;
 				}
 
