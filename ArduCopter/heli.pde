@@ -7,6 +7,7 @@
 
 static bool heli_swash_initialised = false;
 static int heli_throttle_mid = 0;  // throttle mid point in pwm form (i.e. 0 ~ 1000)
+static float heli_coll_scalar = 1;  // throttle scalar to convert pwm form (i.e. 0 ~ 1000) passed in to actual servo range (i.e 1250~1750 would be 500)
 
 // heli_servo_averaging:
 //   0 or 1 = no averaging, 250hz
@@ -20,27 +21,12 @@ static int heli_throttle_mid = 0;  // throttle mid point in pwm form (i.e. 0 ~ 1
 static void heli_reset_swash()
 {
 	// free up servo ranges
-	if( g.heli_servo_1.get_reverse() ) {
-		g.heli_servo_1.radio_min = 3000 - g.rc_3.radio_max + (g.heli_servo_1.radio_trim-1500);
-		g.heli_servo_1.radio_max = 3000 - g.rc_3.radio_min + (g.heli_servo_1.radio_trim-1500);
-	}else{
-		g.heli_servo_1.radio_min = g.rc_3.radio_min + (g.heli_servo_1.radio_trim-1500);
-		g.heli_servo_1.radio_max = g.rc_3.radio_max + (g.heli_servo_1.radio_trim-1500);
-	}
-	if( g.heli_servo_2.get_reverse() ) {
-		g.heli_servo_2.radio_min = 3000 - g.rc_3.radio_max + (g.heli_servo_2.radio_trim-1500);
-		g.heli_servo_2.radio_max = 3000 - g.rc_3.radio_min + (g.heli_servo_2.radio_trim-1500);
-	}else{
-		g.heli_servo_2.radio_min = g.rc_3.radio_min + (g.heli_servo_2.radio_trim-1500);
-		g.heli_servo_2.radio_max = g.rc_3.radio_max + (g.heli_servo_2.radio_trim-1500);
-	}
-	if( g.heli_servo_3.get_reverse() ) {
-		g.heli_servo_3.radio_min = 3000 - g.rc_3.radio_max + (g.heli_servo_3.radio_trim-1500);
-		g.heli_servo_3.radio_max = 3000 - g.rc_3.radio_min + (g.heli_servo_3.radio_trim-1500);
-	}else{
-		g.heli_servo_3.radio_min = g.rc_3.radio_min + (g.heli_servo_3.radio_trim-1500);
-		g.heli_servo_3.radio_max = g.rc_3.radio_max + (g.heli_servo_3.radio_trim-1500);
-	}
+	g.heli_servo_1.radio_min = 1000;
+	g.heli_servo_1.radio_max = 2000;
+	g.heli_servo_2.radio_min = 1000;
+	g.heli_servo_2.radio_max = 2000;
+	g.heli_servo_3.radio_min = 1000;
+	g.heli_servo_3.radio_max = 2000;
 
 	// pitch factors
 	heli_pitchFactor[CH_1] = cos(radians(g.heli_servo1_pos - g.heli_phase_angle));
@@ -52,6 +38,9 @@ static void heli_reset_swash()
 	heli_rollFactor[CH_2] = cos(radians(g.heli_servo2_pos + 90 - g.heli_phase_angle));
 	heli_rollFactor[CH_3] = cos(radians(g.heli_servo3_pos + 90 - g.heli_phase_angle));
 
+	// set throttle scaling
+	heli_coll_scalar = ((float)(g.rc_3.radio_max - g.rc_3.radio_min))/1000.0;
+
 	// we must be in set-up mode so mark swash as uninitialised
 	heli_swash_initialised = false;
 }
@@ -60,7 +49,6 @@ static void heli_reset_swash()
 static void heli_init_swash()
 {
     int i;
-	float coll_range_comp = 1;   // factor to negate collective range's effect on roll & pitch range
 
 	// swash servo initialisation
 	g.heli_servo_1.set_range(0,1000);
@@ -75,45 +63,29 @@ static void heli_init_swash()
 	}
 	g.heli_coll_mid = constrain(g.heli_coll_mid, g.heli_coll_min, g.heli_coll_max);
 
-	// calculate compensation for collective range on roll & pitch range
-	if( g.heli_coll_max - g.heli_coll_min > 100 )
-	    coll_range_comp = 1000 / (g.heli_coll_max - g.heli_coll_min);
-
 	// calculate throttle mid point
-	heli_throttle_mid = (g.heli_coll_mid-g.heli_coll_min)*(1000.0/(g.heli_coll_max-g.heli_coll_min));
+	heli_throttle_mid = ((float)(g.heli_coll_mid-g.heli_coll_min))/((float)(g.heli_coll_max-g.heli_coll_min))*1000.0;
+
+	// determine scalar throttle input
+	heli_coll_scalar = ((float)(g.heli_coll_max-g.heli_coll_min))/1000.0;
 
 	// pitch factors
-	heli_pitchFactor[CH_1] = cos(radians(g.heli_servo1_pos - g.heli_phase_angle)) * coll_range_comp;
-	heli_pitchFactor[CH_2] = cos(radians(g.heli_servo2_pos - g.heli_phase_angle)) * coll_range_comp;
-	heli_pitchFactor[CH_3] = cos(radians(g.heli_servo3_pos - g.heli_phase_angle)) * coll_range_comp;
+	heli_pitchFactor[CH_1] = cos(radians(g.heli_servo1_pos - g.heli_phase_angle));
+	heli_pitchFactor[CH_2] = cos(radians(g.heli_servo2_pos - g.heli_phase_angle));
+	heli_pitchFactor[CH_3] = cos(radians(g.heli_servo3_pos - g.heli_phase_angle));
 
 	// roll factors
-    heli_rollFactor[CH_1] = cos(radians(g.heli_servo1_pos + 90 - g.heli_phase_angle)) * coll_range_comp;
-	heli_rollFactor[CH_2] = cos(radians(g.heli_servo2_pos + 90 - g.heli_phase_angle)) * coll_range_comp;
-	heli_rollFactor[CH_3] = cos(radians(g.heli_servo3_pos + 90 - g.heli_phase_angle)) * coll_range_comp;
+	heli_rollFactor[CH_1] = cos(radians(g.heli_servo1_pos + 90 - g.heli_phase_angle));
+	heli_rollFactor[CH_2] = cos(radians(g.heli_servo2_pos + 90 - g.heli_phase_angle));
+	heli_rollFactor[CH_3] = cos(radians(g.heli_servo3_pos + 90 - g.heli_phase_angle));
 
 	// servo min/max values
-	if( g.heli_servo_1.get_reverse() ) {
-		g.heli_servo_1.radio_min = 3000 - g.heli_coll_max + (g.heli_servo_1.radio_trim-1500);
-		g.heli_servo_1.radio_max = 3000 - g.heli_coll_min + (g.heli_servo_1.radio_trim-1500);
-	}else{
-		g.heli_servo_1.radio_min = g.heli_coll_min + (g.heli_servo_1.radio_trim-1500);
-		g.heli_servo_1.radio_max = g.heli_coll_max + (g.heli_servo_1.radio_trim-1500);
-	}
-	if( g.heli_servo_2.get_reverse() ) {
-		g.heli_servo_2.radio_min = 3000 - g.heli_coll_max + (g.heli_servo_2.radio_trim-1500);
-		g.heli_servo_2.radio_max = 3000 - g.heli_coll_min + (g.heli_servo_2.radio_trim-1500);
-	}else{
-		g.heli_servo_2.radio_min = g.heli_coll_min + (g.heli_servo_2.radio_trim-1500);
-		g.heli_servo_2.radio_max = g.heli_coll_max + (g.heli_servo_2.radio_trim-1500);
-	}
-	if( g.heli_servo_3.get_reverse() ) {
-		g.heli_servo_3.radio_min = 3000 - g.heli_coll_max + (g.heli_servo_3.radio_trim-1500);
-		g.heli_servo_3.radio_max = 3000 - g.heli_coll_min + (g.heli_servo_3.radio_trim-1500);
-	}else{
-		g.heli_servo_3.radio_min = g.heli_coll_min + (g.heli_servo_3.radio_trim-1500);
-		g.heli_servo_3.radio_max = g.heli_coll_max + (g.heli_servo_3.radio_trim-1500);
-	}
+	g.heli_servo_1.radio_min = 1000;
+	g.heli_servo_1.radio_max = 2000;
+	g.heli_servo_2.radio_min = 1000;
+	g.heli_servo_2.radio_max = 2000;
+	g.heli_servo_3.radio_min = 1000;
+	g.heli_servo_3.radio_max = 2000;
 
 	// reset the servo averaging
 	for( i=0; i<=3; i++ )
@@ -148,13 +120,15 @@ static void heli_move_servos_to_mid()
 //
 static void heli_move_swash(int roll_out, int pitch_out, int coll_out, int yaw_out)
 {
-    int yaw_offset = 0;
+	int yaw_offset = 0;
+	int coll_out_scaled;
 
 	if( g.heli_servo_manual == 1 ) {  // are we in manual servo mode? (i.e. swash set-up mode)?
 		// check if we need to freeup the swash
 		if( heli_swash_initialised ) {
 			heli_reset_swash();
 		}
+		coll_out_scaled = coll_out * heli_coll_scalar + g.rc_3.radio_min - 1000;
 	}else{  // regular flight mode
 
 		// check if we need to reinitialise the swash
@@ -166,19 +140,20 @@ static void heli_move_swash(int roll_out, int pitch_out, int coll_out, int yaw_o
 		roll_out = constrain(roll_out, (int)-g.heli_roll_max, (int)g.heli_roll_max);
 		pitch_out = constrain(pitch_out, (int)-g.heli_pitch_max, (int)g.heli_pitch_max);
 		coll_out = constrain(coll_out, 0, 1000);
+		coll_out_scaled = coll_out * heli_coll_scalar + g.heli_coll_min - 1000;
 
 		// rudder feed forward based on collective
 		#if HIL_MODE == HIL_MODE_DISABLED  // don't do rudder feed forward in simulator
 		if( !g.heli_ext_gyro_enabled ) {
-			yaw_offset = g.heli_coll_yaw_effect * (coll_out - g.heli_coll_mid);
+			yaw_offset = g.heli_coll_yaw_effect * (coll_out_scaled - g.heli_coll_mid);
 		}
 		#endif
 	}
 
 	// swashplate servos
-	g.heli_servo_1.servo_out = (heli_rollFactor[CH_1] * roll_out + heli_pitchFactor[CH_1] * pitch_out)/10 + coll_out + (g.heli_servo_1.radio_trim-1500);
-	g.heli_servo_2.servo_out = (heli_rollFactor[CH_2] * roll_out + heli_pitchFactor[CH_2] * pitch_out)/10 + coll_out + (g.heli_servo_2.radio_trim-1500);
-	g.heli_servo_3.servo_out = (heli_rollFactor[CH_3] * roll_out + heli_pitchFactor[CH_3] * pitch_out)/10 + coll_out + (g.heli_servo_3.radio_trim-1500);
+	g.heli_servo_1.servo_out = (heli_rollFactor[CH_1] * roll_out + heli_pitchFactor[CH_1] * pitch_out)/10 + coll_out_scaled + (g.heli_servo_1.radio_trim-1500);
+	g.heli_servo_2.servo_out = (heli_rollFactor[CH_2] * roll_out + heli_pitchFactor[CH_2] * pitch_out)/10 + coll_out_scaled + (g.heli_servo_2.radio_trim-1500);
+	g.heli_servo_3.servo_out = (heli_rollFactor[CH_3] * roll_out + heli_pitchFactor[CH_3] * pitch_out)/10 + coll_out_scaled + (g.heli_servo_3.radio_trim-1500);
 	g.heli_servo_4.servo_out = yaw_out + yaw_offset;
 
 	// use servo_out to calculate pwm_out and radio_out
