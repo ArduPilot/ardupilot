@@ -519,10 +519,10 @@ def fly_ArduCopter(viewerip=None):
             print("land failed")
             failed = True
 
-        print("# disarm motors")
-        if not disarm_motors(mavproxy, mav):
-            print("disarm_motors failed")
-            failed = True
+        #print("# disarm motors")
+        #if not disarm_motors(mavproxy, mav):
+        #    print("disarm_motors failed")
+        #    failed = True
     except pexpect.TIMEOUT, e:
         failed = True
 
