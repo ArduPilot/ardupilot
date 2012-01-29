@@ -366,7 +366,7 @@ static bool verify_land_sonar()
 	}
 
 	if(current_loc.alt < 200 ){
-		wp_control 		= NO_NAV_MODE;
+		wp_control 	= NO_NAV_MODE;
 	}
 
 	if(current_loc.alt < 150 ){
@@ -401,15 +401,15 @@ static bool verify_land_baro()
 		landing_boost++;
 		landing_boost = min(landing_boost, 40);
 	}
+
 	if(current_loc.alt < 200 ){
 		wp_control 	= NO_NAV_MODE;
 	}
 
 	if(current_loc.alt < 150 ){
 		if(abs(climb_rate) < 20) {
+			landing_boost++;
 			if(ground_detector++ > 30) {
-				//landing_boost = 100;
-				//Serial.print("land_complete\n");
 				land_complete = true;
 				ground_detector = 0;
 				// init disarm motors
