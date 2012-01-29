@@ -17,7 +17,7 @@ public:
 	// The increment will prevent old parameters from being used incorrectly
 	// by newer code.
 	//
-	static const uint16_t k_format_version = 114;
+	static const uint16_t k_format_version = 115;
 
 	// The parameter software_type is set up solely for ground station use
 	// and identifies the software type (eg ArduPilotMega versus ArduCopterMega)
@@ -26,7 +26,6 @@ public:
 	//
 	static const uint16_t k_software_type = 10;		// 0 for APM trunk
 
-	//
 	// Parameter identities.
 	//
 	// The enumeration defined here is used to ensure that every parameter
@@ -168,23 +167,20 @@ public:
 	// 235: PI/D Controllers
 	//
 	k_param_stabilize_d = 234,
-	k_param_pi_rate_roll = 235,
-	k_param_pi_rate_pitch,
-	k_param_pi_rate_yaw,
+	k_param_pid_rate_roll = 235,
+	k_param_pid_rate_pitch,
+	k_param_pid_rate_yaw,
 	k_param_pi_stabilize_roll,
 	k_param_pi_stabilize_pitch,
 	k_param_pi_stabilize_yaw,
 	k_param_pi_loiter_lat,
 	k_param_pi_loiter_lon,
-	k_param_pi_nav_lat,
-	k_param_pi_nav_lon,
+	k_param_pid_nav_lat,
+	k_param_pid_nav_lon,
 	k_param_pi_alt_hold,
-	k_param_pi_throttle,
-	k_param_pi_acro_roll,
-	k_param_pi_acro_pitch,
-	k_param_pi_optflow_roll,
-	k_param_pi_optflow_pitch,  // 250
-	k_param_loiter_d,
+	k_param_pid_throttle,
+	k_param_pid_optflow_roll,
+	k_param_pid_optflow_pitch,  // 250
 
     // 254,255: reserved
 	};
@@ -286,31 +282,24 @@ public:
 	AP_Float	camera_pitch_gain;
 	AP_Float	camera_roll_gain;
 	AP_Float	stablize_d;
-	AP_Float	loiter_d;
 
 	// PI/D controllers
-	APM_PI		pi_rate_roll;
-	APM_PI		pi_rate_pitch;
-	APM_PI		pi_rate_yaw;
+	AC_PID		pid_rate_roll;
+	AC_PID		pid_rate_pitch;
+	AC_PID		pid_rate_yaw;
+	AC_PID		pid_nav_lat;
+	AC_PID		pid_nav_lon;
 
-	APM_PI		pi_stabilize_roll;
-	APM_PI		pi_stabilize_pitch;
-	APM_PI		pi_stabilize_yaw;
+	AC_PID		pid_throttle;
+	AC_PID		pid_optflow_roll;
+	AC_PID		pid_optflow_pitch;
 
 	APM_PI		pi_loiter_lat;
 	APM_PI		pi_loiter_lon;
-
-	APM_PI		pi_nav_lat;
-	APM_PI		pi_nav_lon;
-
+	APM_PI		pi_stabilize_roll;
+	APM_PI		pi_stabilize_pitch;
+	APM_PI		pi_stabilize_yaw;
 	APM_PI		pi_alt_hold;
-	APM_PI		pi_throttle;
-
-	APM_PI		pi_acro_roll;
-	APM_PI		pi_acro_pitch;
-
-	PID			pi_optflow_roll;
-	PID			pi_optflow_pitch;
 
 	uint8_t		junk;
 
@@ -369,7 +358,7 @@ public:
 	radio_tuning 			(0, 						k_param_radio_tuning, 					PSTR("TUNE")),
 	frame_orientation 		(FRAME_ORIENTATION, 		k_param_frame_orientation, 				PSTR("FRAME")),
 	top_bottom_ratio 		(TOP_BOTTOM_RATIO, 			k_param_top_bottom_ratio, 				PSTR("TB_RATIO")),
-	ch7_option 				(CH7_SAVE_WP, 				k_param_ch7_option, 					PSTR("CH7_OPT")),
+	ch7_option 				(CH7_OPTION, 				k_param_ch7_option, 					PSTR("CH7_OPT")),
 
 	#if FRAME_CONFIG ==	HELI_FRAME
 	heli_servo_1			(k_param_heli_servo_1,		PSTR("HS1_")),
@@ -409,34 +398,32 @@ public:
 	//-------------------------------------------------------------------------------------------------------------------
 	camera_pitch_gain 		(CAM_PITCH_GAIN, 			k_param_camera_pitch_gain, 				PSTR("CAM_P_G")),
 	camera_roll_gain 		(CAM_ROLL_GAIN, 			k_param_camera_roll_gain,	 			PSTR("CAM_R_G")),
-
 	stablize_d 				(STABILIZE_D, 				k_param_stabilize_d,	 				PSTR("STAB_D")),
-	loiter_d 				(LOITER_D, 					k_param_loiter_d,	 					PSTR("LOITER_D")),
+
+	// PID controller	group key						name				initial P	   	    initial I		 	initial D       initial imax
+	//--------------------------------------------------------------------------------------------------------------------------------------------------------------------
+	pid_rate_roll       (k_param_pid_rate_roll,         PSTR("RATE_RLL_"),  RATE_ROLL_P,        RATE_ROLL_I,        RATE_ROLL_D,    RATE_ROLL_IMAX * 100),
+	pid_rate_pitch      (k_param_pid_rate_pitch,        PSTR("RATE_PIT_"),  RATE_PITCH_P,       RATE_PITCH_I,       RATE_PITCH_D,   RATE_PITCH_IMAX * 100),
+	pid_rate_yaw        (k_param_pid_rate_yaw,          PSTR("RATE_YAW_"),  RATE_YAW_P,         RATE_YAW_I,         RATE_YAW_D,     RATE_YAW_IMAX * 100),
+
+	pid_nav_lat			(k_param_pid_nav_lat,			PSTR("NAV_LAT_"),	NAV_P,				NAV_I,				NAV_D,			NAV_IMAX * 100),
+	pid_nav_lon			(k_param_pid_nav_lon,			PSTR("NAV_LON_"),	NAV_P,				NAV_I,				NAV_D,			NAV_IMAX * 100),
+
+	pid_throttle		(k_param_pid_throttle,			PSTR("THR_RATE_"),	THROTTLE_P,			THROTTLE_I,			THROTTLE_D,		THROTTLE_IMAX),
+	pid_optflow_roll	(k_param_pid_optflow_roll,		PSTR("OF_RLL_"),	OPTFLOW_ROLL_P,		OPTFLOW_ROLL_I,		OPTFLOW_IMAX * 100),
+	pid_optflow_pitch	(k_param_pid_optflow_pitch,		PSTR("OF_PIT_"),	OPTFLOW_PITCH_P,	OPTFLOW_PITCH_I,	OPTFLOW_IMAX * 100),
+
 
 	// PI controller	group key						name				initial P			initial I			initial imax
 	//--------------------------------------------------------------------------------------------------------------------------------------------------------------------
-	pi_rate_roll		(k_param_pi_rate_roll,			PSTR("RATE_RLL_"),	RATE_ROLL_P,		RATE_ROLL_I,		RATE_ROLL_IMAX * 100),
-	pi_rate_pitch		(k_param_pi_rate_pitch,			PSTR("RATE_PIT_"),	RATE_PITCH_P,		RATE_PITCH_I,		RATE_PITCH_IMAX * 100),
-	pi_rate_yaw			(k_param_pi_rate_yaw,			PSTR("RATE_YAW_"),	RATE_YAW_P,			RATE_YAW_I,			RATE_YAW_IMAX * 100),
-
 	pi_stabilize_roll	(k_param_pi_stabilize_roll,		PSTR("STB_RLL_"),	STABILIZE_ROLL_P,	STABILIZE_ROLL_I,	STABILIZE_ROLL_IMAX * 100),
 	pi_stabilize_pitch	(k_param_pi_stabilize_pitch,	PSTR("STB_PIT_"),	STABILIZE_PITCH_P,	STABILIZE_PITCH_I,	STABILIZE_PITCH_IMAX * 100),
 	pi_stabilize_yaw	(k_param_pi_stabilize_yaw,		PSTR("STB_YAW_"),	STABILIZE_YAW_P,	STABILIZE_YAW_I,	STABILIZE_YAW_IMAX * 100),
 
+	pi_alt_hold			(k_param_pi_alt_hold,			PSTR("THR_ALT_"),	ALT_HOLD_P,			ALT_HOLD_I,			ALT_HOLD_IMAX),
 	pi_loiter_lat		(k_param_pi_loiter_lat,			PSTR("HLD_LAT_"),	LOITER_P,			LOITER_I,			LOITER_IMAX * 100),
 	pi_loiter_lon		(k_param_pi_loiter_lon,			PSTR("HLD_LON_"),	LOITER_P,			LOITER_I,			LOITER_IMAX * 100),
 
-	pi_nav_lat			(k_param_pi_nav_lat,			PSTR("NAV_LAT_"),	NAV_P,				NAV_I,				NAV_IMAX * 100),
-	pi_nav_lon			(k_param_pi_nav_lon,			PSTR("NAV_LON_"),	NAV_P,				NAV_I,				NAV_IMAX * 100),
-
-	pi_alt_hold			(k_param_pi_alt_hold,			PSTR("THR_ALT_"),	THR_HOLD_P,			THR_HOLD_I,			THR_HOLD_IMAX),
-	pi_throttle			(k_param_pi_throttle,			PSTR("THR_RATE_"),	THROTTLE_P,			THROTTLE_I,			THROTTLE_IMAX),
-
-	pi_acro_roll		(k_param_pi_acro_roll,			PSTR("ACRO_RLL_"),	ACRO_ROLL_P,		ACRO_ROLL_I,		ACRO_ROLL_IMAX * 100),
-	pi_acro_pitch		(k_param_pi_acro_pitch,			PSTR("ACRO_PIT_"),	ACRO_PITCH_P,		ACRO_PITCH_I,		ACRO_PITCH_IMAX * 100),
-
-	pi_optflow_roll		(k_param_pi_optflow_roll,		PSTR("OF_RLL_"),	OPTFLOW_ROLL_P,		OPTFLOW_ROLL_I,		OPTFLOW_ROLL_D,		OPTFLOW_IMAX * 100),
-	pi_optflow_pitch	(k_param_pi_optflow_pitch,		PSTR("OF_PIT_"),	OPTFLOW_PITCH_P,	OPTFLOW_PITCH_I,	OPTFLOW_PITCH_D,	OPTFLOW_IMAX * 100),
 
 	junk(0)		// XXX just so that we can add things without worrying about the trailing comma
 	{
