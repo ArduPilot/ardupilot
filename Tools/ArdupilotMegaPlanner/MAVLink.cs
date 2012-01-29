@@ -2006,7 +2006,7 @@ namespace ArdupilotMega
                     }
                     catch (Exception e) { Console.WriteLine("MAVLink readpacket read error: " + e.Message); break; }
 
-                    if (temp[0] != 254 && temp[0] != 'U' || lastbad[0] == 'I' && lastbad[1] == 'M') // out of sync
+                    if (temp[0] != 254 && temp[0] != 'U' || lastbad[0] == 'I' && lastbad[1] == 'M' || lastbad[1] == 'G') // out of sync
                     {
                         if (temp[0] >= 0x20 && temp[0] <= 127 || temp[0] == '\n' || temp[0] == '\r')
                         {
