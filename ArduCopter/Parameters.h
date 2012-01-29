@@ -410,8 +410,8 @@ public:
 	pid_nav_lon			(k_param_pid_nav_lon,			PSTR("NAV_LON_"),	NAV_P,				NAV_I,				NAV_D,			NAV_IMAX * 100),
 
 	pid_throttle		(k_param_pid_throttle,			PSTR("THR_RATE_"),	THROTTLE_P,			THROTTLE_I,			THROTTLE_D,		THROTTLE_IMAX),
-	pid_optflow_roll	(k_param_pid_optflow_roll,		PSTR("OF_RLL_"),	OPTFLOW_ROLL_P,		OPTFLOW_ROLL_I,		OPTFLOW_IMAX * 100),
-	pid_optflow_pitch	(k_param_pid_optflow_pitch,		PSTR("OF_PIT_"),	OPTFLOW_PITCH_P,	OPTFLOW_PITCH_I,	OPTFLOW_IMAX * 100),
+	pid_optflow_roll	(k_param_pid_optflow_roll,		PSTR("OF_RLL_"),	OPTFLOW_ROLL_P,		OPTFLOW_ROLL_I,		OPTFLOW_ROLL_D,	OPTFLOW_IMAX * 100),
+	pid_optflow_pitch	(k_param_pid_optflow_pitch,		PSTR("OF_PIT_"),	OPTFLOW_PITCH_P,	OPTFLOW_PITCH_I,	OPTFLOW_PITCH_D,OPTFLOW_IMAX * 100),
 
 
 	// PI controller	group key						name				initial P			initial I			initial imax
