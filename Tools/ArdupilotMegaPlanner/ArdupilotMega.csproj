@@ -253,6 +253,12 @@
     <Compile Include="Controls\XorPlus.Designer.cs">
       <DependentUpon>XorPlus.cs</DependentUpon>
     </Compile>
+    <Compile Include="SerialInput.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="SerialInput.Designer.cs">
+      <DependentUpon>SerialInput.cs</DependentUpon>
+    </Compile>
     <Compile Include="GCSViews\Firmware.Designer.cs">
       <DependentUpon>Firmware.cs</DependentUpon>
     </Compile>
@@ -431,6 +437,9 @@
     </EmbeddedResource>
     <EmbeddedResource Include="Controls\XorPlus.resx">
       <DependentUpon>XorPlus.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="SerialInput.resx">
+      <DependentUpon>SerialInput.cs</DependentUpon>
     </EmbeddedResource>
     <EmbeddedResource Include="GCSViews\Configuration.fr.resx">
       <DependentUpon>Configuration.cs</DependentUpon>

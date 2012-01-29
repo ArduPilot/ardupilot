@@ -348,7 +348,6 @@ namespace ArdupilotMega.GCSViews
                 ArdupilotMega.MainV2.config["REV_pitch"] = CHKREV_pitch.Checked.ToString();
                 ArdupilotMega.MainV2.config["REV_rudder"] = CHKREV_rudder.Checked.ToString();
                 ArdupilotMega.MainV2.config["GPSrate"] = GPSrate.Text;
-                ArdupilotMega.MainV2.config["Xplanes"] = RAD_softXplanes.Checked.ToString();
 
                 ArdupilotMega.MainV2.config["MAVrollgain"] = TXT_rollgain.Text;
                 ArdupilotMega.MainV2.config["MAVpitchgain"] = TXT_pitchgain.Text;
@@ -388,9 +387,6 @@ namespace ArdupilotMega.GCSViews
                             break;
                         case "GPSrate":
                             GPSrate.Text = ArdupilotMega.MainV2.config[key].ToString();
-                            break;
-                        case "Xplanes":
-                            RAD_softXplanes.Checked = bool.Parse(ArdupilotMega.MainV2.config[key].ToString());
                             break;
                         case "MAVrollgain":
                             TXT_rollgain.Text = ArdupilotMega.MainV2.config[key].ToString();
