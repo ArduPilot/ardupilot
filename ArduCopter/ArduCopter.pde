@@ -30,6 +30,8 @@ Jack Dunkle			:Alpha testing
 Christof Schmid		:Alpha testing
 Oliver				:Piezo support
 Guntars				:Arming safety suggestion
+Igor van Airde 		:Control Law optimization
+Jean-Louis Naudin 	:Auto Landing
 
 And much more so PLEASE PM me on DIYDRONES to add your contribution to the List
 
