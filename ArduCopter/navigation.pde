@@ -208,7 +208,7 @@ static void calc_nav_lon(int rate)
 
 static void calc_nav_lat(int rate)
 {
-	nav_lat		= g.pid_nav_lon.get_pid(rate, dTnav);
+	nav_lat		= g.pid_nav_lat.get_pid(rate, dTnav);
 	nav_lat		= get_corrected_angle(rate, nav_lat);
 	nav_lat		= constrain(nav_lat, -3000, 3000);
 }
