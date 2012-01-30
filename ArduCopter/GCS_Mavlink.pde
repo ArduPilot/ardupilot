@@ -824,7 +824,7 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
 					break;
 
 				case MAV_ACTION_EMCY_LAND:
-					//set_mode(LAND);
+					set_mode(LAND);
 					break;
 
 				case MAV_ACTION_HALT:
@@ -1529,6 +1529,23 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
             imu.set_gyro(gyros);
 			*/
             //imu.set_accel(accels);
+
+            // rad/sec            // JLN update - FOR HIL SIMULATION WITH AEROSIM
+            Vector3f gyros;
+            gyros.x = (float)packet.rollspeed / 1000.0;
+            gyros.y = (float)packet.pitchspeed / 1000.0;
+            gyros.z = (float)packet.yawspeed / 1000.0;
+
+            imu.set_gyro(gyros);
+
+            // m/s/s
+            Vector3f accels;
+            accels.x = (float)packet.roll * gravity / 1000.0;
+            accels.y = (float)packet.pitch * gravity / 1000.0;
+            accels.z = (float)packet.yaw * gravity / 1000.0;
+
+            imu.set_accel(accels);
+
             break;
         }
 #endif

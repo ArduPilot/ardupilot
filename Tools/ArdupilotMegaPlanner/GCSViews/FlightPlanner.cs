@@ -290,11 +290,13 @@ namespace ArdupilotMega.GCSViews
                 }
 
                 float ans;
-                if (float.TryParse(TXT_homealt.Text, out result) && float.TryParse(cell.Value.ToString(), out ans))
+                if (float.TryParse(cell.Value.ToString(), out ans))
                 {
                     ans = (int)ans;
-                    if (alt != 0)
+                    if (alt != 0) // use passed in value;
                         cell.Value = alt.ToString();
+                    if (ans == 0)
+                        cell.Value = 50;
                     //   online          verify height
                     if (isonline && CHK_geheight.Checked)
                     {
@@ -314,7 +316,7 @@ namespace ArdupilotMega.GCSViews
                         {
                             cell.Value = (float.Parse(TXT_homealt.Text) + int.Parse(TXT_DefaultAlt.Text)).ToString();
                         } // is relative and check height
-                        else if (float.TryParse(TXT_homealt.Text, out result) && isonline && CHK_geheight.Checked)
+                        else if (isonline && CHK_geheight.Checked)
                         {
                             alt = (int)getGEAlt(lat, lng);
 
@@ -327,10 +329,6 @@ namespace ArdupilotMega.GCSViews
                             {
                                 cell.Style.BackColor = Color.LightGreen;
                             }
-                        }
-                        else
-                        {
-                            cell.Value = 100 ;
                         }
 
                     }

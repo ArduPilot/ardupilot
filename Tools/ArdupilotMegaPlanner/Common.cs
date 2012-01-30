@@ -198,9 +198,41 @@ namespace ArdupilotMega
             this.Lng = pll.Lng;
         }
 
+        public PointLatLngAlt(PointLatLngAlt plla)
+        {
+            this.Lat = plla.Lat;
+            this.Lng = plla.Lng;
+            this.Alt = plla.Alt;
+            this.color = plla.color;
+            this.Tag = plla.Tag;
+        }
+
         public PointLatLng Point()
         {
             return new PointLatLng(Lat, Lng);
+        }
+
+        public override bool Equals(Object pllaobj)
+         {
+             PointLatLngAlt plla = (PointLatLngAlt)pllaobj;
+
+             if (plla == null)
+                 return false;
+
+             if (this.Lat == plla.Lat &&
+             this.Lng == plla.Lng &&
+             this.Alt == plla.Alt &&
+             this.color == plla.color &&
+             this.Tag == plla.Tag)
+             {
+                 return true;
+             }
+             return false;
+         }
+
+        public override int GetHashCode()
+        {
+            return (int)((Lat + Lng + Alt) * 100);
         }
 
         /// <summary>
@@ -263,7 +295,8 @@ namespace ArdupilotMega
             RTL = 6,				// AUTO control
             CIRCLE = 7,
             POSITION = 8,
-            LAND = 9				// AUTO control
+            LAND = 9,				// AUTO control
+            OF_LOITER = 10
         }        
 
         public static void linearRegression()

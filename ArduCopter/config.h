@@ -525,114 +525,98 @@
 #ifdef MOTORS_JD880
 # define STABILIZE_ROLL_P 		3.6
 # define STABILIZE_ROLL_I 		0.0
-# define STABILIZE_ROLL_IMAX 	        40.0		// degrees
+# define STABILIZE_ROLL_IMAX 	40.0		// degrees
 # define STABILIZE_PITCH_P		3.6
 # define STABILIZE_PITCH_I		0.0
-# define STABILIZE_PITCH_IMAX	        40.0		// degrees
+# define STABILIZE_PITCH_IMAX	40.0		// degrees
 #endif
 
 #ifdef MOTORS_JD850
 # define STABILIZE_ROLL_P 		4.0
 # define STABILIZE_ROLL_I 		0.0
-# define STABILIZE_ROLL_IMAX 	        40.0		// degrees
+# define STABILIZE_ROLL_IMAX 	40.0		// degrees
 # define STABILIZE_PITCH_P		4.0
 # define STABILIZE_PITCH_I		0.0
-# define STABILIZE_PITCH_IMAX	        40.0		// degrees
+# define STABILIZE_PITCH_IMAX	40.0		// degrees
 #endif
 
 
 #ifndef STABILIZE_D
-# define STABILIZE_D 		.03
+# define STABILIZE_D 		.12
 #endif
 
 // Jasons default values that are good for smaller payload motors.
 #ifndef STABILIZE_ROLL_P
-# define STABILIZE_ROLL_P 		4.6
+# define STABILIZE_ROLL_P 		4.5
 #endif
 #ifndef STABILIZE_ROLL_I
-# define STABILIZE_ROLL_I 		0.1
+# define STABILIZE_ROLL_I 		0.0
 #endif
 #ifndef STABILIZE_ROLL_IMAX
 # define STABILIZE_ROLL_IMAX 	40		// degrees
 #endif
 
 #ifndef STABILIZE_PITCH_P
-# define STABILIZE_PITCH_P		4.6
+# define STABILIZE_PITCH_P		4.5
 #endif
 #ifndef STABILIZE_PITCH_I
-# define STABILIZE_PITCH_I		0.1
+# define STABILIZE_PITCH_I		0.0
 #endif
 #ifndef STABILIZE_PITCH_IMAX
 # define STABILIZE_PITCH_IMAX	40		// degrees
 #endif
 
-//////////////////////////////////////////////////////////////////////////////
-// Acro Rate Control
-//
-#ifndef ACRO_ROLL_P
-# define ACRO_ROLL_P         0.155
+#ifndef  STABILIZE_YAW_P
+# define STABILIZE_YAW_P		7.5		// increase for more aggressive Yaw Hold, decrease if it's bouncy
 #endif
-#ifndef ACRO_ROLL_I
-# define ACRO_ROLL_I         0.0
+#ifndef  STABILIZE_YAW_I
+# define STABILIZE_YAW_I		0.01
 #endif
-#ifndef ACRO_ROLL_IMAX
-# define ACRO_ROLL_IMAX	 	15			// degrees
+#ifndef  STABILIZE_YAW_IMAX
+# define STABILIZE_YAW_IMAX		8		// degrees * 100
 #endif
 
-#ifndef ACRO_PITCH_P
-# define ACRO_PITCH_P       0.155
-#endif
-#ifndef ACRO_PITCH_I
-# define ACRO_PITCH_I		0 //0.18
-#endif
-#ifndef ACRO_PITCH_IMAX
-# define ACRO_PITCH_IMAX   	15			// degrees
-#endif
 
 //////////////////////////////////////////////////////////////////////////////
 // Stabilize Rate Control
 //
 #ifndef RATE_ROLL_P
-# define RATE_ROLL_P         0.155
+# define RATE_ROLL_P        0.14
 #endif
 #ifndef RATE_ROLL_I
-# define RATE_ROLL_I         0.0
+# define RATE_ROLL_I        0.0
+#endif
+#ifndef RATE_ROLL_D
+# define RATE_ROLL_D        0
 #endif
 #ifndef RATE_ROLL_IMAX
 # define RATE_ROLL_IMAX	 	15			// degrees
 #endif
 
 #ifndef RATE_PITCH_P
-# define RATE_PITCH_P       0.155
+# define RATE_PITCH_P       0.14
 #endif
 #ifndef RATE_PITCH_I
-# define RATE_PITCH_I		0 //0.18
+# define RATE_PITCH_I		0 // 0.18
+#endif
+#ifndef RATE_PITCH_D
+# define RATE_PITCH_D       0 // 0.002
 #endif
 #ifndef RATE_PITCH_IMAX
 # define RATE_PITCH_IMAX   	15			// degrees
 #endif
 
-//////////////////////////////////////////////////////////////////////////////
-// YAW Control
-//
-#ifndef  STABILIZE_YAW_P
-# define STABILIZE_YAW_P		7.5			// increase for more aggressive Yaw Hold, decrease if it's bouncy
-#endif
-#ifndef  STABILIZE_YAW_I
-# define STABILIZE_YAW_I		0.01		// set to .0001 to try and get over user's steady state error caused by poor balance
-#endif
-#ifndef  STABILIZE_YAW_IMAX
-# define STABILIZE_YAW_IMAX		8			// degrees * 100
-#endif
-
 #ifndef RATE_YAW_P
-# define RATE_YAW_P     .13			// used to control response in turning
+# define RATE_YAW_P    		 .13
 #endif
 #ifndef RATE_YAW_I
-# define RATE_YAW_I     0.0
+# define RATE_YAW_I    		 0.0
+#endif
+#ifndef RATE_YAW_D
+# define RATE_YAW_D    		 .002
 #endif
 #ifndef RATE_YAW_IMAX
-# define RATE_YAW_IMAX   50
+# define RATE_YAW_IMAX 		  50		// degrees
 #endif
 
 
@@ -640,37 +624,37 @@
 // Loiter control gains
 //
 #ifndef LOITER_P
-# define LOITER_P			1.5		// was .25 in previous
+# define LOITER_P			.4		// was .25 in previous
 #endif
 #ifndef LOITER_I
-# define LOITER_I			0.09	// Wind control
+# define LOITER_I			0.2	// Wind control
 #endif
 #ifndef LOITER_IMAX
-# define LOITER_IMAX		30		// degrees°
-#endif
-#ifndef LOITER_D
-# define LOITER_D			2.2		// rate control
+# define LOITER_IMAX		30		// degrees
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
 // WP Navigation control gains
 //
 #ifndef NAV_P
-# define NAV_P				3.0			// 3 was causing rapid oscillations in Loiter
+# define NAV_P				2.3			// 3 was causing rapid oscillations in Loiter
 #endif
 #ifndef NAV_I
 # define NAV_I				0			//
+#endif
+#ifndef NAV_D
+# define NAV_D				0.015		//
 #endif
 #ifndef NAV_IMAX
 # define NAV_IMAX			30			// degrees
 #endif
 
 #ifndef WAYPOINT_SPEED_MAX
-# define WAYPOINT_SPEED_MAX			600			// for 6m/s error = 13mph
+# define WAYPOINT_SPEED_MAX		600			// 6m/s error = 13mph
 #endif
 
 #ifndef WAYPOINT_SPEED_MIN
-# define WAYPOINT_SPEED_MIN			100			// for 6m/s error = 13mph
+# define WAYPOINT_SPEED_MIN		100			// 1m/s
 #endif
 
 
@@ -678,28 +662,31 @@
 // Throttle control gains
 //
 #ifndef THROTTLE_CRUISE
-# define THROTTLE_CRUISE	350			//
+# define THROTTLE_CRUISE	350		//
 #endif
 
-#ifndef THR_HOLD_P
-# define THR_HOLD_P		0.4			//
+#ifndef ALT_HOLD_P
+# define ALT_HOLD_P			0.4		//
 #endif
-#ifndef THR_HOLD_I
-# define THR_HOLD_I		0.01		// with 4m error, 12.5s windup
+#ifndef ALT_HOLD_I
+# define ALT_HOLD_I			0.02
 #endif
-#ifndef THR_HOLD_IMAX
-# define THR_HOLD_IMAX	300
+#ifndef ALT_HOLD_IMAX
+# define ALT_HOLD_IMAX		300
 #endif
 
 // RATE control
 #ifndef THROTTLE_P
-# define THROTTLE_P		0.5			//
+# define THROTTLE_P			0.35	//
 #endif
 #ifndef THROTTLE_I
-# define THROTTLE_I		0.0			//
+# define THROTTLE_I			0.0		//
+#endif
+#ifndef THROTTLE_D
+# define THROTTLE_D			0.02	//
 #endif
 #ifndef THROTTLE_IMAX
-# define THROTTLE_IMAX	300
+# define THROTTLE_IMAX		300
 #endif
 
 

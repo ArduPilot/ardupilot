@@ -3,134 +3,131 @@
 static int
 get_stabilize_roll(int32_t target_angle)
 {
-	int32_t error = 0;
-	int32_t rate = 0;
-
-	static float current_rate = 0;
-
 	// angle error
-	error 		= wrap_180(target_angle - dcm.roll_sensor);
+	target_angle 		= wrap_180(target_angle - dcm.roll_sensor);
 
 #if FRAME_CONFIG == HELI_FRAME
+
 	// limit the error we're feeding to the PID
-	error 		= constrain(error, -4500, 4500);
+	target_angle 		= constrain(target_angle, -4500, 4500);
 
 	// convert to desired Rate:
-	rate 		= g.pi_stabilize_roll.get_pi(error, G_Dt);
+	target_angle 		= g.pi_stabilize_roll.get_pi(target_angle, G_Dt);
 
 	// output control:
-	rate = constrain(rate, -4500, 4500);
-	return (int)rate;
+	return constrain(target_angle, -4500, 4500);
 #else
+
 	// limit the error we're feeding to the PID
-	error 		= constrain(error, -2500, 2500);
+	target_angle 		= constrain(target_angle, -2500, 2500);
 
 	// conver to desired Rate:
-	rate 		= g.pi_stabilize_roll.get_p(error);
+	int32_t target_rate = g.pi_stabilize_roll.get_p(target_angle);
+	int16_t iterm 		= g.pi_stabilize_roll.get_i(target_angle, G_Dt);
 
-	// experiment to pipe iterm directly into the output
-	int16_t iterm = g.pi_stabilize_roll.get_i(error, G_Dt);
-
-	// rate control
-	error 		= rate - (omega.x * DEGX100);
-	rate 		= g.pi_rate_roll.get_pi(error, G_Dt);
-
-	// D term
-	current_rate 	= (current_rate *.7) + (omega.x * DEGX100) * .3;
-	int16_t d_temp 	= current_rate * g.stablize_d;
-	rate -= d_temp;
-
-	// output control:
-	rate = constrain(rate, -2500, 2500);
-	return (int)rate + iterm;
+	return get_rate_roll(target_rate) + iterm;
 #endif
 }
 
 static int
 get_stabilize_pitch(int32_t target_angle)
 {
-	int32_t error = 0;
-	int32_t rate = 0;
-	static float current_rate  = 0;
-
 	// angle error
-	error 		= wrap_180(target_angle - dcm.pitch_sensor);
+	target_angle 		= wrap_180(target_angle - dcm.pitch_sensor);
 
 #if FRAME_CONFIG == HELI_FRAME
 	// limit the error we're feeding to the PID
-	error 		= constrain(error, -4500, 4500);
+	target_angle 		= constrain(target_angle, -4500, 4500);
 
 	// convert to desired Rate:
-	rate 		= g.pi_stabilize_pitch.get_pi(error, G_Dt);
+	target_angle 		= g.pi_stabilize_pitch.get_pi(target_angle, G_Dt);
 
 	// output control:
-	rate = constrain(rate, -4500, 4500);
-	return (int)rate;
+	return constrain(target_angle, -4500, 4500);
 #else
-	// angle error
-	error 		= constrain(error, -2500, 2500);
+	// limit the error we're feeding to the PID
+	target_angle 		= constrain(target_angle, -2500, 2500);
 
 	// conver to desired Rate:
-	rate 		= g.pi_stabilize_pitch.get_p(error);
+	int32_t target_rate = g.pi_stabilize_pitch.get_p(target_angle);
+	int16_t iterm 		= g.pi_stabilize_pitch.get_i(target_angle, G_Dt);
 
-	// experiment to pipe iterm directly into the output
-	int16_t iterm = g.pi_stabilize_pitch.get_i(error, G_Dt);
-
-	// rate control
-	error 		= rate - (omega.y * DEGX100);
-
-	//error 		= rate - (omega.y * DEGX100);
-	rate 		= g.pi_rate_pitch.get_pi(error, G_Dt);
-
-	// D term
-	current_rate 	= (current_rate *.7) + (omega.y * DEGX100) * .3;
-	int16_t d_temp 	= current_rate * g.stablize_d;
-	rate -= d_temp;
-
-	// output control:
-	rate = constrain(rate, -2500, 2500);
-	return (int)rate + iterm;
+	return get_rate_pitch(target_rate) + iterm;
 #endif
 }
 
-
-#define YAW_ERROR_MAX 2000
 static int
 get_stabilize_yaw(int32_t target_angle)
 {
-	int32_t error;
-	int32_t rate;
-
 	// angle error
-	error 		= wrap_180(target_angle - dcm.yaw_sensor);
+	target_angle 		= wrap_180(target_angle - dcm.yaw_sensor);
 
 	// limit the error we're feeding to the PID
-	error 		= constrain(error, -YAW_ERROR_MAX, YAW_ERROR_MAX);
+	target_angle 		= constrain(target_angle, -2000, 2000);
 
-	// convert to desired Rate:
-	rate 		= g.pi_stabilize_yaw.get_p(error);
-
-	// experiment to pipe iterm directly into the output
-	int16_t iterm = g.pi_stabilize_yaw.get_i(error, G_Dt);
+	// conver to desired Rate:
+	int32_t target_rate = g.pi_stabilize_yaw.get_p(target_angle);
+	int16_t iterm 		= g.pi_stabilize_yaw.get_i(target_angle, G_Dt);
 
 #if FRAME_CONFIG == HELI_FRAME  // cannot use rate control for helicopters
-	if( !g.heli_ext_gyro_enabled ) {
-		error 	= rate - (omega.z * DEGX100);
-		rate 	= g.pi_rate_yaw.get_pi(error, G_Dt);
+	if(!g.heli_ext_gyro_enabled){
+		return get_rate_yaw(target_rate) + iterm;
+	}else{
+		return constrain((target_rate + iterm), -4500, 4500);
 	}
-	// output control:
-	rate = constrain(rate, -4500, 4500);
 #else
-	error 		= rate - (omega.z * DEGX100);
-	rate 		= g.pi_rate_yaw.get_pi(error, G_Dt);
+	return get_rate_yaw(target_rate) + iterm;
+#endif
+}
+
+static int
+get_rate_roll(int32_t target_rate)
+{
+	static int32_t last_rate 	= 0;
+	int32_t current_rate 	= (omega.x * DEGX100);
+
+	// rate control
+	target_rate		 		= target_rate - current_rate;
+	target_rate 			= g.pid_rate_roll.get_pid(target_rate, G_Dt);
+
+	// Dampening
+	target_rate 			-= constrain((current_rate - last_rate) * g.stablize_d, -500, 500);
+	last_rate 				= current_rate;
 
 	// output control:
-	int16_t yaw_input = 1400 + abs(g.rc_4.control_in);
-	// smoother Yaw control:
-	rate = constrain(rate, -yaw_input, yaw_input);
-#endif
+	return constrain(target_rate, -2500, 2500);
+}
 
-	return (int)rate + iterm;
+static int
+get_rate_pitch(int32_t target_rate)
+{
+	static int32_t last_rate 	= 0;
+	int32_t current_rate 	= (omega.y * DEGX100);
+
+	// rate control
+	target_rate	 			= target_rate - current_rate;
+	target_rate 			= g.pid_rate_pitch.get_pid(target_rate, G_Dt);
+
+	// Dampening
+	target_rate 			-= constrain((current_rate - last_rate) * g.stablize_d, -500, 500);
+	last_rate 				= current_rate;
+
+	// output control:
+	return constrain(target_rate, -2500, 2500);
+}
+
+static int
+get_rate_yaw(int32_t target_rate)
+{
+	// rate control
+	target_rate	 	= target_rate - (omega.z * DEGX100);
+	target_rate 	= g.pid_rate_yaw.get_pid(target_rate, G_Dt);
+
+	// output control:
+	int16_t yaw_limit = 1400 + abs(g.rc_4.control_in);
+
+	// smoother Yaw control:
+	return constrain(target_rate, -yaw_limit, yaw_limit);
 }
 
 #define ALT_ERROR_MAX 400
@@ -138,10 +135,8 @@ static int16_t
 get_nav_throttle(int32_t z_error)
 {
 	static int16_t old_output = 0;
-	//static int16_t rate_d = 0;
-
-	int16_t rate_error;
-	int16_t output;
+	int16_t rate_error = 0;
+	int16_t output = 0;
 
 	// limit error to prevent I term run up
 	z_error 		= constrain(z_error, -ALT_ERROR_MAX, ALT_ERROR_MAX);
@@ -155,17 +150,10 @@ get_nav_throttle(int32_t z_error)
 	// calculate rate error
 	rate_error 		= rate_error - climb_rate;
 
-	// limit the rate - iterm is not used
-	output =  constrain((int)g.pi_throttle.get_p(rate_error), -160, 180);
-
-	// a positive climb rate means we're going up
-	//rate_d =  ((rate_d + climb_rate)>>1) * .1; // replace with gain
-
-	// slight adjustment to alt hold output
-	//output -= constrain(rate_d, -25, 25);
+	// limit the rate
+	output =  constrain(g.pid_throttle.get_pid(rate_error, .1), -160, 180);
 
 	// light filter of output
-	//output = (old_output * 3 + output) / 4;
 	output = (old_output + output) / 2;
 
 	// save our output
@@ -173,33 +161,6 @@ get_nav_throttle(int32_t z_error)
 
 	// output control:
 	return output + iterm;
-}
-
-static int
-get_rate_roll(int32_t target_rate)
-{
-	int32_t error	= (target_rate * 3.5) - (omega.x * DEGX100);
-	error = constrain(error, -20000, 20000);
-	return g.pi_acro_roll.get_pi(error, G_Dt);
-}
-
-static int
-get_rate_pitch(int32_t target_rate)
-{
-	int32_t error	= (target_rate * 3.5) - (omega.y * DEGX100);
-	error = constrain(error, -20000, 20000);
-	return  g.pi_acro_pitch.get_pi(error, G_Dt);
-}
-
-static int
-get_rate_yaw(int32_t target_rate)
-{
-
-	int32_t error	= (target_rate * 4.5) - (omega.z * DEGX100);
-	target_rate = g.pi_rate_yaw.get_pi(error, G_Dt);
-
-	// output control:
-	return (int)constrain(target_rate, -2500, 2500);
 }
 
 // Keeps old data out of our calculation / logs
@@ -247,17 +208,15 @@ static void reset_I_all(void)
 
 static void reset_rate_I()
 {
-	g.pi_rate_roll.reset_I();
-	g.pi_rate_pitch.reset_I();
-	g.pi_acro_roll.reset_I();
-	g.pi_acro_pitch.reset_I();
-	g.pi_rate_yaw.reset_I();
+	g.pid_rate_roll.reset_I();
+	g.pid_rate_pitch.reset_I();
+	g.pid_rate_yaw.reset_I();
 }
 
 static void reset_optflow_I(void)
 {
-	g.pi_optflow_roll.reset_I();
-	g.pi_optflow_pitch.reset_I();
+	g.pid_optflow_roll.reset_I();
+	g.pid_optflow_pitch.reset_I();
 	of_roll = 0;
 	of_pitch = 0;
 }
@@ -272,15 +231,15 @@ static void reset_wind_I(void)
 static void reset_nav_I(void)
 {
 	// Rate control for WP navigation
-	g.pi_nav_lat.reset_I();
-	g.pi_nav_lon.reset_I();
+	g.pid_nav_lat.reset_I();
+	g.pid_nav_lon.reset_I();
 }
 
 static void reset_throttle_I(void)
 {
 	// For Altitude Hold
 	g.pi_alt_hold.reset_I();
-	g.pi_throttle.reset_I();
+	g.pid_throttle.reset_I();
 }
 
 static void reset_stability_I(void)
@@ -325,7 +284,7 @@ static int get_angle_boost(int value)
 	float temp = cos_pitch_x * cos_roll_x;
 	temp = 1.0 - constrain(temp, .5, 1.0);
 	int16_t output = temp * value;
-	return constrain(output, 0, 100);
+	return constrain(output, 0, 200);
 //	return (int)(temp * value);
 }
 
@@ -482,9 +441,9 @@ get_of_roll(int32_t control_roll)
 
 		// only stop roll if caller isn't modifying roll
 		if( control_roll == 0 && current_loc.alt < 1500) {
-			new_roll = g.pi_optflow_roll.get_pid(-tot_x_cm, 1.0, 1.0);  // we could use the last update time to calculate the time change
+			//new_roll = g.pid_optflow_roll.get_pid(-tot_x_cm, 1.0, 1.0);  // we could use the last update time to calculate the time change
 		}else{
-		    g.pi_optflow_roll.reset_I();
+		    g.pid_optflow_roll.reset_I();
 			tot_x_cm = 0;
 		}
 		// limit amount of change and maximum angle
@@ -516,10 +475,10 @@ get_of_pitch(int32_t control_pitch)
 
 		// only stop roll if caller isn't modifying pitch
 		if( control_pitch == 0 && current_loc.alt < 1500 ) {
-			new_pitch = g.pi_optflow_pitch.get_pid(tot_y_cm, 1.0, 1.0);  // we could use the last update time to calculate the time change
+			//new_pitch = g.pid_optflow_pitch.get_pid(tot_y_cm, 1.0, 1.0);  // we could use the last update time to calculate the time change
 		}else{
 		    tot_y_cm = 0;
-		    g.pi_optflow_pitch.reset_I();
+		    g.pid_optflow_pitch.reset_I();
 		}
 
 		// limit amount of change
