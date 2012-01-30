@@ -130,7 +130,6 @@ get_rate_yaw(int32_t target_rate)
 	return constrain(target_rate, -yaw_limit, yaw_limit);
 }
 
-#define ALT_ERROR_MAX 400
 static int16_t
 get_nav_throttle(int32_t z_error)
 {
@@ -138,11 +137,12 @@ get_nav_throttle(int32_t z_error)
 	int16_t rate_error = 0;
 	int16_t output = 0;
 
-	// limit error to prevent I term run up
-	z_error 		= constrain(z_error, -ALT_ERROR_MAX, ALT_ERROR_MAX);
-
 	// convert to desired Rate:
-	rate_error 	= g.pi_alt_hold.get_p(z_error); //_p = .85
+	rate_error 		= g.pi_alt_hold.get_p(z_error);
+	rate_error 		= constrain(rate_error, -100, 100);
+
+	// limit error to prevent I term wind up
+	z_error 		= constrain(z_error, -400, 400);
 
 	// compensates throttle setpoint error for hovering
 	int16_t iterm = g.pi_alt_hold.get_i(z_error, .1);
