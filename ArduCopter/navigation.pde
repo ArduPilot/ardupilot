@@ -55,20 +55,16 @@ static void calc_XY_velocity(){
 
 	// straightforward approach:
 	///*
-	int16_t	x_estimate	= (float)(g_gps->longitude - last_longitude) * tmp;
-	int16_t	y_estimate	= (float)(g_gps->latitude  - last_latitude)  * tmp;
-
-	// slight averaging filter
-	x_actual_speed = (x_actual_speed  + x_estimate) >> 1;
-	y_actual_speed = (y_actual_speed  + y_estimate) >> 1;
+	x_actual_speed	= (float)(g_gps->longitude - last_longitude) * tmp;
+	y_actual_speed	= (float)(g_gps->latitude  - last_latitude)  * tmp;
 
 	/*
 	// Ryan Beall's forward estimator:
 	int16_t	x_speed_new = (float)(g_gps->longitude - last_longitude) * tmp;
 	int16_t	y_speed_new = (float)(g_gps->latitude  - last_latitude)  * tmp;
 
-	x_GPS_speed 	= x_speed_new + (x_speed_new - x_speed_old);
-	y_GPS_speed 	= y_speed_new + (y_speed_new - y_speed_old);
+	x_actual_speed 	= x_speed_new + (x_speed_new - x_speed_old);
+	y_actual_speed 	= y_speed_new + (y_speed_new - y_speed_old);
 
 	x_speed_old 	= x_speed_new;
 	y_speed_old 	= y_speed_new;
@@ -396,6 +392,9 @@ static int32_t get_new_altitude()
 		}
 	}
 
+	// we use the elapsed time as our altitude offset
+	// 1000 = 1 sec
+	// 1000 >> 4 = 64cm/s descent by default
 	int32_t change = (millis() - alt_change_timer) >> _scale;
 
 	if(alt_change_flag == ASCENDING){
