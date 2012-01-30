@@ -114,6 +114,7 @@ static void read_trim_switch()
 					// reset the mission
 					CH7_wp_index = 0;
 					g.command_total.set_and_save(1);
+					set_mode(RTL);
 					return;
 				}
 
@@ -154,7 +155,6 @@ static void read_trim_switch()
 				// 1 = takeoff
 				// 2 = WP 2
 				// 3 = command total
-
 			}
 		}
 	}

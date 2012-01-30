@@ -590,7 +590,7 @@ static void Log_Write_Control_Tuning()
 	DataFlash.WriteInt(climb_rate);						// 10
 	DataFlash.WriteInt(g.rc_3.servo_out);				// 11
 	DataFlash.WriteInt(g.pi_alt_hold.get_integrator());	// 12
-	DataFlash.WriteInt(g.pi_throttle.get_integrator());	// 13
+	DataFlash.WriteInt(g.pid_throttle.get_integrator());	// 13
 
 	DataFlash.WriteByte(END_BYTE);
 }

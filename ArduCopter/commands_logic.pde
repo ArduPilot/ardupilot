@@ -16,6 +16,7 @@ static void process_nav_command()
 			break;
 
 		case MAV_CMD_NAV_LAND:	// 21 LAND to Waypoint
+			yaw_mode 		= YAW_HOLD;
 			do_land();
 			break;
 
@@ -121,8 +122,6 @@ static void process_now_command()
 
 static bool verify_must()
 {
-	//Serial.printf("vmust: %d\n", command_nav_ID);
-
 	switch(command_nav_queue.id) {
 
 		case MAV_CMD_NAV_TAKEOFF:
@@ -130,7 +129,11 @@ static bool verify_must()
 			break;
 
 		case MAV_CMD_NAV_LAND:
-			return verify_land();
+			if(g.sonar_enabled == true){
+				return verify_land_sonar();
+			}else{
+				return verify_land_baro();
+			}
 			break;
 
 		case MAV_CMD_NAV_WAYPOINT:
@@ -265,13 +268,21 @@ static void do_land()
 {
 	wp_control = LOITER_MODE;
 
+	// just to make sure
 	land_complete		= false;
+
+	// landing boost lowers the main throttle to mimmick
+	// the effect of a user's hand
+	landing_boost 		= 0;
+
+	// A counter that goes up if our climb rate stalls out.
+	ground_detector 	= 0;
 
 	// hold at our current location
 	set_next_WP(&current_loc);
 
-	// Set a new target altitude
-	set_new_altitude(-200);
+	// Set a new target altitude very low, incase we are landing on a hill!
+	set_new_altitude(-1000);
 }
 
 static void do_loiter_unlimited()
@@ -341,46 +352,71 @@ static bool verify_takeoff()
 }
 
 // called at 10hz
-static bool verify_land()
+static bool verify_land_sonar()
 {
-	static int16_t 	velocity_land = -1;
-	static float 	icount = 0;
+	static float icount = 1;
 
-	// landing detector
-	if (current_loc.alt > 300){
-		velocity_land = 2000;
+	if(current_loc.alt > 300){
+		wp_control = LOITER_MODE;
 		icount = 1;
-
+		ground_detector = 0;
 	}else{
-		// a LP filter used to tell if we have landed
-		// will drive to 0 if we are on the ground - maybe, the baro is noisy
-		velocity_land = ((velocity_land * 7) + climb_rate ) / 8;
+		// begin to pull down on the throttle
+		landing_boost++;
 	}
 
-	if ((current_loc.alt - home.alt) < 200){
-		// don't bank to hold position
-		wp_control = NO_NAV_MODE;
-		// try and come down faster
-		//landing_boost++;
-		//landing_boost 	= min(landing_boost, 15);
-		float tmp = (1.75 * icount * icount) - (7.2 * icount);
-		landing_boost = tmp;
-		landing_boost = constrain(landing_boost, 1, 200);
-		icount += 0.4;
-
-		//Serial.printf("lb:%d, %1.4f, ic:%1.4f\n",landing_boost, tmp, icount);
-
-	}else{
-		landing_boost 	= 0;
-		wp_control 		= LOITER_MODE;
+	if(current_loc.alt < 200 ){
+		wp_control 	= NO_NAV_MODE;
 	}
 
-	//if(/*(current_loc.alt < 100) && */ (velocity_land < 20)){
-	if((landing_boost > 150) ||  (velocity_land < 20)){
-		icount = 1;
-		land_complete = true;
-		landing_boost = 0;
-		return true;
+	if(current_loc.alt < 150 ){
+		//rapid throttle reduction
+		int16_t lb  = (1.75 * icount * icount) - (7.2 * icount);
+		icount++;
+		lb =  constrain(lb, 0, 180);
+		landing_boost += lb;
+		//Serial.printf("%0.0f, %d, %d, %d\n", icount, current_loc.alt, landing_boost, lb);
+
+		if(current_loc.alt < 40 || abs(climb_rate) < 20) {
+			if(ground_detector++ > 20) {
+				land_complete = true;
+				ground_detector = 0;
+				icount = 1;
+				// init disarm motors
+				init_disarm_motors();
+				return true;
+			}
+		}
+	}
+	return false;
+}
+
+static bool verify_land_baro()
+{
+	if(current_loc.alt > 300){
+		wp_control = LOITER_MODE;
+		ground_detector = 0;
+	}else{
+		// begin to pull down on the throttle
+		landing_boost++;
+		landing_boost = min(landing_boost, 40);
+	}
+
+	if(current_loc.alt < 200 ){
+		wp_control 	= NO_NAV_MODE;
+	}
+
+	if(current_loc.alt < 150 ){
+		if(abs(climb_rate) < 20) {
+			landing_boost++;
+			if(ground_detector++ > 30) {
+				land_complete = true;
+				ground_detector = 0;
+				// init disarm motors
+				init_disarm_motors();
+				return true;
+			}
+		}
 	}
 	return false;
 }

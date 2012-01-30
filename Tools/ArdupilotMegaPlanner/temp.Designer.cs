@@ -45,6 +45,7 @@
             this.BUT_clearcustommaps = new ArdupilotMega.MyButton();
             this.BUT_lang_edit = new ArdupilotMega.MyButton();
             this.BUT_georefimage = new ArdupilotMega.MyButton();
+            this.BUT_follow_me = new ArdupilotMega.MyButton();
             this.SuspendLayout();
             // 
             // button1
@@ -212,11 +213,22 @@
             this.BUT_georefimage.Text = "Geo ref images";
             this.BUT_georefimage.Click += new System.EventHandler(this.BUT_georefimage_Click);
             // 
+            // BUT_follow_me
+            // 
+            this.BUT_follow_me.Location = new System.Drawing.Point(525, 164);
+            this.BUT_follow_me.Name = "BUT_follow_me";
+            this.BUT_follow_me.Size = new System.Drawing.Size(75, 23);
+            this.BUT_follow_me.TabIndex = 17;
+            this.BUT_follow_me.Text = "Follow Me";
+            this.BUT_follow_me.UseVisualStyleBackColor = true;
+            this.BUT_follow_me.Click += new System.EventHandler(this.BUT_follow_me_Click);
+            // 
             // temp
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(731, 281);
+            this.Controls.Add(this.BUT_follow_me);
             this.Controls.Add(this.BUT_georefimage);
             this.Controls.Add(this.BUT_lang_edit);
             this.Controls.Add(this.BUT_clearcustommaps);
@@ -261,6 +273,7 @@
         private MyButton BUT_clearcustommaps;
         private MyButton BUT_lang_edit;
         private MyButton BUT_georefimage;
+        private MyButton BUT_follow_me;
         //private SharpVectors.Renderers.Forms.SvgPictureBox svgPictureBox1;
 
     }

@@ -1,8 +1,8 @@
 
 #include <stdint.h>
+#include <FastSerial.h>
 #include <AP_Common.h>
 #include <AP_Math.h>		// ArduPilot Mega Vector/Matrix math Library
-#include <FastSerial.h>
 #include <I2C.h>
 #include <SPI.h>
 #include <Arduino_Mega_ISR_Registry.h>
