@@ -1686,15 +1686,15 @@ static void update_navigation()
 			// regain hold when the speed goes down to .5m/s
 			if(loiter_override){
 				// this sets the copter to not try and nav while we control it
-				wp_control = NO_NAV_MODE;
+				wp_control 	= NO_NAV_MODE;
 
 				// reset LOITER to current position
-				next_WP.lat 	= current_loc.lat;
-				next_WP.lng 	= current_loc.lng;
+				next_WP.lat = current_loc.lat;
+				next_WP.lng = current_loc.lng;
 
-				if(g_gps->ground_speed < 50){
-					loiter_override 		= false;
-					wp_control = LOITER_MODE;
+				if((g.rc_2.control_in + g.rc_1.control_in) == 0){
+					loiter_override 	= false;
+					wp_control 			= LOITER_MODE;
 				}
 			}else{
 				wp_control = LOITER_MODE;
