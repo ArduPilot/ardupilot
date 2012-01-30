@@ -413,7 +413,6 @@ public:
 	pid_optflow_roll	(k_param_pid_optflow_roll,		PSTR("OF_RLL_"),	OPTFLOW_ROLL_P,		OPTFLOW_ROLL_I,		OPTFLOW_ROLL_D,	OPTFLOW_IMAX * 100),
 	pid_optflow_pitch	(k_param_pid_optflow_pitch,		PSTR("OF_PIT_"),	OPTFLOW_PITCH_P,	OPTFLOW_PITCH_I,	OPTFLOW_PITCH_D,OPTFLOW_IMAX * 100),
 
-
 	// PI controller	group key						name				initial P			initial I			initial imax
 	//--------------------------------------------------------------------------------------------------------------------------------------------------------------------
 	pi_stabilize_roll	(k_param_pi_stabilize_roll,		PSTR("STB_RLL_"),	STABILIZE_ROLL_P,	STABILIZE_ROLL_I,	STABILIZE_ROLL_IMAX * 100),
@@ -423,7 +422,6 @@ public:
 	pi_alt_hold			(k_param_pi_alt_hold,			PSTR("THR_ALT_"),	ALT_HOLD_P,			ALT_HOLD_I,			ALT_HOLD_IMAX),
 	pi_loiter_lat		(k_param_pi_loiter_lat,			PSTR("HLD_LAT_"),	LOITER_P,			LOITER_I,			LOITER_IMAX * 100),
 	pi_loiter_lon		(k_param_pi_loiter_lon,			PSTR("HLD_LON_"),	LOITER_P,			LOITER_I,			LOITER_IMAX * 100),
-
 
 	junk(0)		// XXX just so that we can add things without worrying about the trailing comma
 	{
