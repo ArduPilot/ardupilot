@@ -523,21 +523,21 @@
 // Extra motor values that are changed from time to time by jani @ jDrones as software
 // and charachteristics changes.
 #ifdef MOTORS_JD880
-# define STABILIZE_ROLL_P 		3.6
+# define STABILIZE_ROLL_P 		3.7
 # define STABILIZE_ROLL_I 		0.0
-# define STABILIZE_ROLL_IMAX 	40.0		// degrees
-# define STABILIZE_PITCH_P		3.6
+# define STABILIZE_ROLL_IMAX 	        40.0		// degrees
+# define STABILIZE_PITCH_P		3.7
 # define STABILIZE_PITCH_I		0.0
-# define STABILIZE_PITCH_IMAX	40.0		// degrees
+# define STABILIZE_PITCH_IMAX	        40.0		// degrees
 #endif
 
 #ifdef MOTORS_JD850
-# define STABILIZE_ROLL_P 		4.0
+# define STABILIZE_ROLL_P 		4.2
 # define STABILIZE_ROLL_I 		0.0
-# define STABILIZE_ROLL_IMAX 	40.0		// degrees
-# define STABILIZE_PITCH_P		4.0
+# define STABILIZE_ROLL_IMAX 	        40.0		// degrees
+# define STABILIZE_PITCH_P		4.2
 # define STABILIZE_PITCH_I		0.0
-# define STABILIZE_PITCH_IMAX	40.0		// degrees
+# define STABILIZE_PITCH_IMAX	        40.0		// degrees
 #endif
 
 
