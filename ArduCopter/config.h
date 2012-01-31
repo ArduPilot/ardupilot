@@ -523,21 +523,21 @@
 // Extra motor values that are changed from time to time by jani @ jDrones as software
 // and charachteristics changes.
 #ifdef MOTORS_JD880
-# define STABILIZE_ROLL_P 		3.6
+# define STABILIZE_ROLL_P 		3.7
 # define STABILIZE_ROLL_I 		0.0
-# define STABILIZE_ROLL_IMAX 	40.0		// degrees
-# define STABILIZE_PITCH_P		3.6
+# define STABILIZE_ROLL_IMAX 	        40.0		// degrees
+# define STABILIZE_PITCH_P		3.7
 # define STABILIZE_PITCH_I		0.0
-# define STABILIZE_PITCH_IMAX	40.0		// degrees
+# define STABILIZE_PITCH_IMAX	        40.0		// degrees
 #endif
 
 #ifdef MOTORS_JD850
-# define STABILIZE_ROLL_P 		4.0
+# define STABILIZE_ROLL_P 		4.2
 # define STABILIZE_ROLL_I 		0.0
-# define STABILIZE_ROLL_IMAX 	40.0		// degrees
-# define STABILIZE_PITCH_P		4.0
+# define STABILIZE_ROLL_IMAX 	        40.0		// degrees
+# define STABILIZE_PITCH_P		4.2
 # define STABILIZE_PITCH_I		0.0
-# define STABILIZE_PITCH_IMAX	40.0		// degrees
+# define STABILIZE_PITCH_IMAX	        40.0		// degrees
 #endif
 
 
@@ -587,7 +587,7 @@
 # define RATE_ROLL_I        0.0
 #endif
 #ifndef RATE_ROLL_D
-# define RATE_ROLL_D        0
+# define RATE_ROLL_D        0.0
 #endif
 #ifndef RATE_ROLL_IMAX
 # define RATE_ROLL_IMAX	 	15			// degrees
@@ -597,10 +597,10 @@
 # define RATE_PITCH_P       0.14
 #endif
 #ifndef RATE_PITCH_I
-# define RATE_PITCH_I		0 // 0.18
+# define RATE_PITCH_I		0.0 // 0.18
 #endif
 #ifndef RATE_PITCH_D
-# define RATE_PITCH_D       0 // 0.002
+# define RATE_PITCH_D       0.0 // 0.002
 #endif
 #ifndef RATE_PITCH_IMAX
 # define RATE_PITCH_IMAX   	15			// degrees
@@ -624,10 +624,10 @@
 // Loiter control gains
 //
 #ifndef LOITER_P
-# define LOITER_P			.4		// was .25 in previous
+# define LOITER_P			.2		// was .25 in previous
 #endif
 #ifndef LOITER_I
-# define LOITER_I			0.2	// Wind control
+# define LOITER_I			0.0
 #endif
 #ifndef LOITER_IMAX
 # define LOITER_IMAX		30		// degrees
@@ -640,10 +640,10 @@
 # define NAV_P				2.3			// 3 was causing rapid oscillations in Loiter
 #endif
 #ifndef NAV_I
-# define NAV_I				0			//
+# define NAV_I				0.4			// Wind control
 #endif
 #ifndef NAV_D
-# define NAV_D				0.015		//
+# define NAV_D				0.00		//
 #endif
 #ifndef NAV_IMAX
 # define NAV_IMAX			30			// degrees
@@ -767,7 +767,7 @@
 #endif
 // guess!
 #ifndef LOG_OPTFLOW
-# define LOG_OPTFLOW				DISABLED
+# define LOG_OPTFLOW			DISABLED
 #endif
 
 // calculate the default log_bitmask

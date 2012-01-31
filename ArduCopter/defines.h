@@ -166,6 +166,8 @@
 #define CH6_OPTFLOW_KI 18
 #define CH6_OPTFLOW_KD 19
 
+#define CH6_NAV_I 20
+
 
 // nav byte mask
 // -------------

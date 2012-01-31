@@ -77,7 +77,7 @@ static void read_trim_switch()
 			adc.filter_result = false;
 		}
 
-		#elif CH7_OPTION == CH7_AUTO_TRIM
+	#elif CH7_OPTION == CH7_AUTO_TRIM
 		if (g.rc_7.control_in > 800){
 			auto_level_counter = 10;
 		}
