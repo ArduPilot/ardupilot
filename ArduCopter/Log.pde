@@ -535,8 +535,8 @@ static void Log_Write_Nav_Tuning()
 	DataFlash.WriteInt(nav_lat);							// 6
 	DataFlash.WriteInt(x_actual_speed);						// 7
 	DataFlash.WriteInt(y_actual_speed);					    // 8
-	DataFlash.WriteInt(g.pi_loiter_lon.get_integrator());	// 9
-	DataFlash.WriteInt(g.pi_loiter_lat.get_integrator());	// 10
+	DataFlash.WriteInt(g.pid_nav_lon.get_integrator());	// 9
+	DataFlash.WriteInt(g.pid_nav_lat.get_integrator());	// 10
 
 	/*DataFlash.WriteInt(wp_distance);						// 1
 	DataFlash.WriteInt(nav_bearing/100);					// 2
@@ -577,20 +577,17 @@ static void Log_Write_Control_Tuning()
 	DataFlash.WriteByte(HEAD_BYTE2);
 	DataFlash.WriteByte(LOG_CONTROL_TUNING_MSG);
 
-	DataFlash.WriteInt(g.rc_1.control_in);				// 0
-	DataFlash.WriteInt(g.rc_2.control_in);				// 1
-	DataFlash.WriteInt(g.rc_3.control_in);				// 2
-	DataFlash.WriteInt(g.rc_4.control_in);				// 3
-	DataFlash.WriteInt(sonar_alt);						// 4
-	DataFlash.WriteInt(baro_alt);						// 5
-	DataFlash.WriteInt(next_WP.alt);					// 6
-	DataFlash.WriteInt(nav_throttle);					// 7
-	DataFlash.WriteInt(angle_boost);					// 8
-	DataFlash.WriteInt(manual_boost);					// 9
-	DataFlash.WriteInt(climb_rate);						// 10
-	DataFlash.WriteInt(g.rc_3.servo_out);				// 11
-	DataFlash.WriteInt(g.pi_alt_hold.get_integrator());	// 12
-	DataFlash.WriteInt(g.pid_throttle.get_integrator());	// 13
+	DataFlash.WriteInt(g.rc_3.control_in);				// 1
+	DataFlash.WriteInt(sonar_alt);						// 2
+	DataFlash.WriteInt(baro_alt);						// 3
+	DataFlash.WriteInt(next_WP.alt);					// 4
+	DataFlash.WriteInt(nav_throttle);					// 5
+	DataFlash.WriteInt(angle_boost);					// 6
+	DataFlash.WriteInt(manual_boost);					// 7
+	DataFlash.WriteInt(climb_rate);						// 8
+	DataFlash.WriteInt(g.rc_3.servo_out);				// 9
+	DataFlash.WriteInt(g.pi_alt_hold.get_integrator());	// 10
+	DataFlash.WriteInt(g.pid_throttle.get_integrator());// 11
 
 	DataFlash.WriteByte(END_BYTE);
 }
@@ -602,7 +599,7 @@ static void Log_Read_Control_Tuning()
 
 	Serial.printf_P(PSTR("CTUN, "));
 
-	for(int8_t i = 0; i < 13; i++ ){
+	for(int8_t i = 0; i < 11; i++ ){
 		temp = DataFlash.ReadInt();
 		Serial.printf("%d, ", temp);
 	}
@@ -696,13 +693,12 @@ static void Log_Write_Attitude()
 	DataFlash.WriteByte(HEAD_BYTE2);
 	DataFlash.WriteByte(LOG_ATTITUDE_MSG);
 
+	DataFlash.WriteInt(g.rc_1.control_in);			// 0
 	DataFlash.WriteInt((int)dcm.roll_sensor);		// 1
-	DataFlash.WriteInt((int)dcm.pitch_sensor);		// 2
-	DataFlash.WriteInt((uint16_t)dcm.yaw_sensor);	// 3
-
-	DataFlash.WriteInt((int)g.rc_1.servo_out);		// 4
-	DataFlash.WriteInt((int)g.rc_2.servo_out);		// 5
-	DataFlash.WriteInt((int)g.rc_4.servo_out);		// 6
+	DataFlash.WriteInt(g.rc_2.control_in);			// 2
+	DataFlash.WriteInt((int)dcm.pitch_sensor);		// 3
+	DataFlash.WriteInt(g.rc_4.control_in);			// 4
+	DataFlash.WriteInt((uint16_t)dcm.yaw_sensor);	// 5
 
 	DataFlash.WriteByte(END_BYTE);
 }
@@ -712,10 +708,10 @@ static void Log_Read_Attitude()
 {
 	int16_t temp1 	= DataFlash.ReadInt();
 	int16_t temp2 	= DataFlash.ReadInt();
-	uint16_t temp3 	= DataFlash.ReadInt();
+	int16_t temp3 	= DataFlash.ReadInt();
 	int16_t temp4 	= DataFlash.ReadInt();
 	int16_t temp5 	= DataFlash.ReadInt();
-	int16_t temp6 	= DataFlash.ReadInt();
+	uint16_t temp6 	= DataFlash.ReadInt();
 
 							// 1   2   3    4   5   6
 	Serial.printf_P(PSTR("ATT, %d, %d, %u, %d, %d, %d\n"),

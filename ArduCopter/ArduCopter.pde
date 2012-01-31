@@ -30,6 +30,8 @@ Jack Dunkle			:Alpha testing
 Christof Schmid		:Alpha testing
 Oliver				:Piezo support
 Guntars				:Arming safety suggestion
+Igor van Airde 		:Control Law optimization
+Jean-Louis Naudin 	:Auto Landing
 
 And much more so PLEASE PM me on DIYDRONES to add your contribution to the List
 
@@ -1919,8 +1921,8 @@ static void tuning(){
 
 		case CH6_STABILIZE_KP:
 			g.rc_6.set_range(0,8000); 		// 0 to 8
-			g.pid_rate_roll.kP(tuning_value);
-			g.pid_rate_pitch.kP(tuning_value);
+			g.pi_stabilize_roll.kP(tuning_value);
+			g.pi_stabilize_pitch.kP(tuning_value);
 			break;
 
 		case CH6_STABILIZE_KI:
@@ -1980,9 +1982,15 @@ static void tuning(){
 			break;
 
 		case CH6_NAV_P:
-			g.rc_6.set_range(0,6000);
+			g.rc_6.set_range(0,4000);
 			g.pid_nav_lat.kP(tuning_value);
 			g.pid_nav_lon.kP(tuning_value);
+			break;
+
+		case CH6_NAV_I:
+			g.rc_6.set_range(0,500);
+			g.pid_nav_lat.kI(tuning_value);
+			g.pid_nav_lon.kI(tuning_value);
 			break;
 
 		#if FRAME_CONFIG == HELI_FRAME
