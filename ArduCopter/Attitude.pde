@@ -441,7 +441,7 @@ get_of_roll(int32_t control_roll)
 
 		// only stop roll if caller isn't modifying roll
 		if( control_roll == 0 && current_loc.alt < 1500) {
-			//new_roll = g.pid_optflow_roll.get_pid(-tot_x_cm, 1.0, 1.0);  // we could use the last update time to calculate the time change
+			new_roll = g.pid_optflow_roll.get_pid(-tot_x_cm, 1.0);  // we could use the last update time to calculate the time change
 		}else{
 		    g.pid_optflow_roll.reset_I();
 			tot_x_cm = 0;
@@ -475,7 +475,7 @@ get_of_pitch(int32_t control_pitch)
 
 		// only stop roll if caller isn't modifying pitch
 		if( control_pitch == 0 && current_loc.alt < 1500 ) {
-			//new_pitch = g.pid_optflow_pitch.get_pid(tot_y_cm, 1.0, 1.0);  // we could use the last update time to calculate the time change
+			new_pitch = g.pid_optflow_pitch.get_pid(tot_y_cm, 1.0);  // we could use the last update time to calculate the time change
 		}else{
 		    tot_y_cm = 0;
 		    g.pid_optflow_pitch.reset_I();
