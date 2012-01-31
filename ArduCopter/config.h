@@ -624,10 +624,10 @@
 // Loiter control gains
 //
 #ifndef LOITER_P
-# define LOITER_P			.4		// was .25 in previous
+# define LOITER_P			.2		// was .25 in previous
 #endif
 #ifndef LOITER_I
-# define LOITER_I			0.2	// Wind control
+# define LOITER_I			0.0
 #endif
 #ifndef LOITER_IMAX
 # define LOITER_IMAX		30		// degrees
@@ -640,10 +640,10 @@
 # define NAV_P				2.3			// 3 was causing rapid oscillations in Loiter
 #endif
 #ifndef NAV_I
-# define NAV_I				0			//
+# define NAV_I				0.4			// Wind control
 #endif
 #ifndef NAV_D
-# define NAV_D				0.015		//
+# define NAV_D				0.00		//
 #endif
 #ifndef NAV_IMAX
 # define NAV_IMAX			30			// degrees
@@ -767,7 +767,7 @@
 #endif
 // guess!
 #ifndef LOG_OPTFLOW
-# define LOG_OPTFLOW				DISABLED
+# define LOG_OPTFLOW			DISABLED
 #endif
 
 // calculate the default log_bitmask
