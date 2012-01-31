@@ -44,8 +44,8 @@ static void calc_XY_velocity(){
 	static int32_t last_longitude = 0;
 	static int32_t last_latitude  = 0;
 
-	//static int16_t x_speed_old = 0;
-	//static int16_t y_speed_old = 0;
+	static int16_t x_speed_old = 0;
+	static int16_t y_speed_old = 0;
 
 	// y_GPS_speed positve = Up
 	// x_GPS_speed positve = Right
@@ -55,8 +55,14 @@ static void calc_XY_velocity(){
 
 	// straightforward approach:
 	///*
-	x_actual_speed	= (float)(g_gps->longitude - last_longitude) * tmp;
-	y_actual_speed	= (float)(g_gps->latitude  - last_latitude)  * tmp;
+	x_actual_speed	= x_speed_old + (float)(g_gps->longitude - last_longitude) * tmp;
+	y_actual_speed	= y_speed_old + (float)(g_gps->latitude  - last_latitude)  * tmp;
+
+	x_actual_speed = x_actual_speed >> 1;
+	y_actual_speed = y_actual_speed >> 1;
+
+	x_speed_old 	= x_actual_speed;
+	y_speed_old 	= y_actual_speed;
 
 	/*
 	// Ryan Beall's forward estimator:
@@ -92,18 +98,22 @@ static void calc_location_error(struct Location *next_loc)
 	lat_error	= next_loc->lat - current_loc.lat;							// 500 - 0 = 500 Go North
 }
 
-#define NAV_ERR_MAX 800
+#define NAV_ERR_MAX 600
 static void calc_loiter(int x_error, int y_error)
 {
 	// East/West
-	x_error 				= constrain(x_error, -NAV_ERR_MAX, NAV_ERR_MAX);	//800
 	int16_t x_target_speed 	= g.pi_loiter_lon.get_p(x_error);
+	x_target_speed			= constrain(x_error, -150, 150);
+	// limit windup
+	x_error 				= constrain(x_error, -NAV_ERR_MAX, NAV_ERR_MAX);
 	int16_t x_iterm 		= g.pi_loiter_lon.get_i(x_error, dTnav);
 	x_rate_error 			= x_target_speed - x_actual_speed;
 
 	// North/South
-	y_error 				= constrain(y_error, -NAV_ERR_MAX, NAV_ERR_MAX);
 	int16_t y_target_speed 	= g.pi_loiter_lat.get_p(y_error);
+	y_target_speed			= constrain(y_error, -150, 150);
+	// limit windup
+	y_error 				= constrain(y_error, -NAV_ERR_MAX, NAV_ERR_MAX);
 	int16_t y_iterm 		= g.pi_loiter_lat.get_i(y_error, dTnav);
 	y_rate_error 			= y_target_speed - y_actual_speed;
 
