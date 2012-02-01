@@ -37,41 +37,42 @@ static void output_motors_armed()
 	g.rc_3.calc_pwm();
 	g.rc_4.calc_pwm();
 
-  if(g.frame_orientation == X_FRAME){
+	if(g.frame_orientation == X_FRAME){
 		roll_out 	 	= g.rc_1.pwm_out / 2;
 		pitch_out 	 	= (float)g.rc_2.pwm_out * .866;
 
-		//LEFT SIDE
-		motor_out[MOT_2]		= g.rc_3.radio_out + roll_out + pitch_out;	// FRONT	CW
-		motor_out[MOT_3]		= g.rc_3.radio_out + g.rc_1.pwm_out;		// MIDDLE	CCW
-		motor_out[MOT_4]        = g.rc_3.radio_out + roll_out - pitch_out;	// BACK		CW
+		//left side
+		motor_out[MOT_2]		= g.rc_3.radio_out + g.rc_1.pwm_out;		// CCW Middle
+		motor_out[MOT_3]		= g.rc_3.radio_out + roll_out + pitch_out;	// CW Front
+		motor_out[MOT_6]     = g.rc_3.radio_out + roll_out - pitch_out;	// CW Back
 
-		//RIGHT SIDE
-		motor_out[MOT_1] 	    = g.rc_3.radio_out - roll_out + pitch_out;	// FRONT	CCW
-		motor_out[MOT_6]		= g.rc_3.radio_out - g.rc_1.pwm_out;		// MIDDLE	CW
-		motor_out[MOT_5] 	    = g.rc_3.radio_out - roll_out - pitch_out;	// BACK		CCW
-  } else {
+		//right side
+		motor_out[MOT_1]		= g.rc_3.radio_out - g.rc_1.pwm_out;		// CW Middle
+		motor_out[MOT_5] 	= g.rc_3.radio_out - roll_out + pitch_out;	// CCW Front
+		motor_out[MOT_4] 	= g.rc_3.radio_out - roll_out - pitch_out;	// CCW Back
+
+	}else{
 		roll_out 	 	= (float)g.rc_1.pwm_out * .866;
 		pitch_out 	 	= g.rc_2.pwm_out / 2;
 
-		//FRONT SIDE
-		motor_out[MOT_5] 	    = g.rc_3.radio_out - roll_out + pitch_out;	// FRONT RIGHT	CCW
-		motor_out[MOT_6]		= g.rc_3.radio_out + g.rc_2.pwm_out;		// FRONT		CW
-		motor_out[MOT_1] 	    = g.rc_3.radio_out + roll_out + pitch_out;	// FRONT LEFT	CCW
+		//Front side
+		motor_out[MOT_1]		= g.rc_3.radio_out + g.rc_2.pwm_out;		// CW	 FRONT
+		motor_out[MOT_5] 	= g.rc_3.radio_out + roll_out + pitch_out;	// CCW	 FRONT LEFT
+		motor_out[MOT_4] 	= g.rc_3.radio_out - roll_out + pitch_out;	// CCW	 FRONT RIGHT
 
-		//BACK SIDE
-		motor_out[MOT_2]		= g.rc_3.radio_out + roll_out - pitch_out;	// BACK LEFT	CW
-		motor_out[MOT_3]		= g.rc_3.radio_out - g.rc_2.pwm_out;		// BACK			CCW
-		motor_out[MOT_4]		= g.rc_3.radio_out - roll_out - pitch_out;	// BACK RIGHT	CW
-  }
+		//Back side
+		motor_out[MOT_2]		= g.rc_3.radio_out - g.rc_2.pwm_out;		// CCW	BACK
+		motor_out[MOT_3]		= g.rc_3.radio_out + roll_out - pitch_out;	// CW, 	BACK LEFT
+		motor_out[MOT_6]		= g.rc_3.radio_out - roll_out - pitch_out;	// CW	BACK RIGHT
+	}
 
 	// Yaw
-	motor_out[MOT_1]		+= g.rc_4.pwm_out;	// CCW
-	motor_out[MOT_3]		+= g.rc_4.pwm_out;	// CCW
-	motor_out[MOT_5] 	    += g.rc_4.pwm_out;	// CCW
+	motor_out[MOT_2]		+= g.rc_4.pwm_out;	// CCW
+	motor_out[MOT_5]		+= g.rc_4.pwm_out;	// CCW
+	motor_out[MOT_4] 	+= g.rc_4.pwm_out;	// CCW
 
-	motor_out[MOT_2]		-= g.rc_4.pwm_out;	// CW
-	motor_out[MOT_4]		-= g.rc_4.pwm_out;	// CW
+	motor_out[MOT_3]		-= g.rc_4.pwm_out;	// CW
+	motor_out[MOT_1]		-= g.rc_4.pwm_out;	// CW
 	motor_out[MOT_6]		-= g.rc_4.pwm_out;  // CW
 
 
@@ -99,9 +100,9 @@ static void output_motors_armed()
 		motor_out[MOT_1]		= g.rc_3.radio_min;
 		motor_out[MOT_2]		= g.rc_3.radio_min;
 		motor_out[MOT_3]		= g.rc_3.radio_min;
-		motor_out[MOT_4] 	    = g.rc_3.radio_min;
-		motor_out[MOT_5] 	    = g.rc_3.radio_min;
-		motor_out[MOT_6] 	    = g.rc_3.radio_min;
+		motor_out[MOT_4] 	= g.rc_3.radio_min;
+		motor_out[MOT_5] 	= g.rc_3.radio_min;
+		motor_out[MOT_6] 	= g.rc_3.radio_min;
 	}
 	#endif
 
@@ -166,43 +167,46 @@ static void output_motor_test()
 
 
 	if(g.frame_orientation == X_FRAME){
-
+//  31
+//	24
 		if(g.rc_1.control_in > 3000){	// right
-			motor_out[MOT_6] += 100;
+			motor_out[MOT_1] += 100;
 		}
 
 		if(g.rc_1.control_in < -3000){	// left
-			motor_out[MOT_3] += 100;
+			motor_out[MOT_2] += 100;
 		}
 
 		if(g.rc_2.control_in > 3000){ 	// back
-			motor_out[MOT_5] += 100;
+			motor_out[MOT_6] += 100;
 			motor_out[MOT_4] += 100;
 		}
 
 		if(g.rc_2.control_in < -3000){	// front
-			motor_out[MOT_1] += 100;
-			motor_out[MOT_2] += 100;
+			motor_out[MOT_5] += 100;
+			motor_out[MOT_3] += 100;
 		}
 
 	}else{
-
+//  3
+// 2 1
+//	4
 		if(g.rc_1.control_in > 3000){	// right
-			motor_out[MOT_1] += 100;
+			motor_out[MOT_4] += 100;
 			motor_out[MOT_6] += 100;
 		}
 
 		if(g.rc_1.control_in < -3000){	// left
+			motor_out[MOT_5] += 100;
 			motor_out[MOT_3] += 100;
-			motor_out[MOT_4] += 100;
 		}
 
 		if(g.rc_2.control_in > 3000){ 	// back
-			motor_out[MOT_5] += 100;
+			motor_out[MOT_2] += 100;
 		}
 
 		if(g.rc_2.control_in < -3000){	// front
-			motor_out[MOT_2] += 100;
+			motor_out[MOT_1] += 100;
 		}
 
 	}
