@@ -110,20 +110,32 @@ static void output_motors_armed()
 		motor_out[MOT_3]	= g.rc_3.radio_out - g.rc_2.pwm_out + roll_out4;	// CW  BACK LEFT
 		motor_out[MOT_7]	= g.rc_3.radio_out - g.rc_2.pwm_out - roll_out4;	// CCW BACK RIGHT
 
-
-
   }
-	// Yaw
-	motor_out[MOT_1]		+= g.rc_4.pwm_out;	// CCW
-	motor_out[MOT_3]		+= g.rc_4.pwm_out;	// CCW
-	motor_out[MOT_5] 	    += g.rc_4.pwm_out;	// CCW
-	motor_out[MOT_7] 	    += g.rc_4.pwm_out;	// CCW
 
-	motor_out[MOT_2]		-= g.rc_4.pwm_out;	// CW
-	motor_out[MOT_4]		-= g.rc_4.pwm_out;	// CW
-	motor_out[MOT_6]	    -= g.rc_4.pwm_out;	// CW
-	motor_out[MOT_8]	    -= g.rc_4.pwm_out;	// CW
+  if ( g.frame_orientation == X_FRAME || g.frame_orientation == PLUS_FRAME ) {
+    // Yaw
+    motor_out[MOT_1]		+= g.rc_4.pwm_out;	// CCW
+    motor_out[MOT_3]		+= g.rc_4.pwm_out;	// CCW
+    motor_out[MOT_5] 	    += g.rc_4.pwm_out;	// CCW
+    motor_out[MOT_7] 	    += g.rc_4.pwm_out;	// CCW
 
+    motor_out[MOT_2]		-= g.rc_4.pwm_out;	// CW
+    motor_out[MOT_4]		-= g.rc_4.pwm_out;	// CW
+    motor_out[MOT_6]	    -= g.rc_4.pwm_out;	// CW
+    motor_out[MOT_8]	    -= g.rc_4.pwm_out;	// CW
+
+  } else if ( g.frame_orientation == V_FRAME ) {
+    // Yaw of each motor is diferent in V frames.
+    motor_out[MOT_1]		-= g.rc_4.pwm_out;	// CW
+    motor_out[MOT_2]		-= g.rc_4.pwm_out;	// CW
+    motor_out[MOT_3]	    -= g.rc_4.pwm_out;	// CW
+    motor_out[MOT_4]	    -= g.rc_4.pwm_out;	// CW
+
+    motor_out[MOT_5]		+= g.rc_4.pwm_out;	// CCW
+    motor_out[MOT_6]		+= g.rc_4.pwm_out;	// CCW
+    motor_out[MOT_7] 	    += g.rc_4.pwm_out;	// CCW
+    motor_out[MOT_8] 	    += g.rc_4.pwm_out;	// CCW
+  }
 
 	// TODO add stability patch
 	motor_out[MOT_1]		= min(motor_out[MOT_1], 	out_max);
