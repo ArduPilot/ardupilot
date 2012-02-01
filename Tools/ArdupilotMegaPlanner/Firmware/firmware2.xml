@@ -47,68 +47,68 @@
     <url>http://meee146-planner.googlecode.com/git/Tools/ArdupilotMegaPlanner/Firmware/AC2-Quad-1280.hex</url>
     <url2560>http://meee146-planner.googlecode.com/git/Tools/ArdupilotMegaPlanner/Firmware/AC2-Quad-2560.hex</url2560>
     <url2560-2>http://meee146-planner.googlecode.com/git/Tools/ArdupilotMegaPlanner/Firmware/AC2-Quad-2560-2.hex</url2560-2>
-    <name>ArduCopter V2.2 b4 Quad</name>
+    <name>ArduCopter V2.3 Quad</name>
     <desc>
 #define FRAME_CONFIG QUAD_FRAME
 
 </desc>
-    <format_version>114</format_version>
+    <format_version>115</format_version>
   </Firmware>
   <Firmware>
     <url>http://meee146-planner.googlecode.com/git/Tools/ArdupilotMegaPlanner/Firmware/AC2-Tri-1280.hex</url>
     <url2560>http://meee146-planner.googlecode.com/git/Tools/ArdupilotMegaPlanner/Firmware/AC2-Tri-2560.hex</url2560>
     <url2560-2>http://meee146-planner.googlecode.com/git/Tools/ArdupilotMegaPlanner/Firmware/AC2-Tri-2560-2.hex</url2560-2>
-    <name>ArduCopter V2.2 b4 Tri</name>
+    <name>ArduCopter V2.3 Tri</name>
     <desc>
 #define FRAME_CONFIG TRI_FRAME
 
 </desc>
-    <format_version>114</format_version>
+    <format_version>115</format_version>
   </Firmware>
   <Firmware>
     <url>http://meee146-planner.googlecode.com/git/Tools/ArdupilotMegaPlanner/Firmware/AC2-Hexa-1280.hex</url>
     <url2560>http://meee146-planner.googlecode.com/git/Tools/ArdupilotMegaPlanner/Firmware/AC2-Hexa-2560.hex</url2560>
     <url2560-2>http://meee146-planner.googlecode.com/git/Tools/ArdupilotMegaPlanner/Firmware/AC2-Hexa-2560-2.hex</url2560-2>
-    <name>ArduCopter V2.2 b4 Hexa X</name>
+    <name>ArduCopter V2.3 Hexa X</name>
     <desc>
 #define FRAME_CONFIG HEXA_FRAME
 
 </desc>
-    <format_version>114</format_version>
+    <format_version>115</format_version>
   </Firmware>
   <Firmware>
     <url>http://meee146-planner.googlecode.com/git/Tools/ArdupilotMegaPlanner/Firmware/AC2-Y6-1280.hex</url>
     <url2560>http://meee146-planner.googlecode.com/git/Tools/ArdupilotMegaPlanner/Firmware/AC2-Y6-2560.hex</url2560>
     <url2560-2>http://meee146-planner.googlecode.com/git/Tools/ArdupilotMegaPlanner/Firmware/AC2-Y6-2560-2.hex</url2560-2>
-    <name>ArduCopter V2.2 b4 Y6</name>
+    <name>ArduCopter V2.3 Y6</name>
     <desc>
 #define FRAME_CONFIG Y6_FRAME
 
 </desc>
-    <format_version>114</format_version>
+    <format_version>115</format_version>
   </Firmware>
   <Firmware>
     <url>http://meee146-planner.googlecode.com/git/Tools/ArdupilotMegaPlanner/Firmware/AC2-Octav-1280.hex</url>
     <url2560>http://meee146-planner.googlecode.com/git/Tools/ArdupilotMegaPlanner/Firmware/AC2-Octav-2560.hex</url2560>
     <url2560-2>http://meee146-planner.googlecode.com/git/Tools/ArdupilotMegaPlanner/Firmware/AC2-Octav-2560-2.hex</url2560-2>
-    <name>ArduCopter V2.2 b4 Octa V</name>
+    <name>ArduCopter V2.3 Octa V</name>
     <desc>
 #define FRAME_CONFIG OCTA_FRAME
 #define FRAME_ORIENTATION V_FRAME
 
 </desc>
-    <format_version>114</format_version>
+    <format_version>115</format_version>
   </Firmware>
   <Firmware>
     <url>http://meee146-planner.googlecode.com/git/Tools/ArdupilotMegaPlanner/Firmware/AC2-Octa-1280.hex</url>
     <url2560>http://meee146-planner.googlecode.com/git/Tools/ArdupilotMegaPlanner/Firmware/AC2-Octa-2560.hex</url2560>
     <url2560-2>http://meee146-planner.googlecode.com/git/Tools/ArdupilotMegaPlanner/Firmware/AC2-Octa-2560-2.hex</url2560-2>
-    <name>ArduCopter V2.2 b4 Octa X</name>
+    <name>ArduCopter V2.3 Octa X</name>
     <desc>
 #define FRAME_CONFIG OCTA_FRAME
 
 </desc>
-    <format_version>114</format_version>
+    <format_version>115</format_version>
   </Firmware>
   <Firmware>
     <url>http://meee146-planner.googlecode.com/git/Tools/ArdupilotMegaPlanner/Firmware/AC2-Heli-1280.hex</url>
@@ -162,7 +162,7 @@
     <url>http://meee146-planner.googlecode.com/git/Tools/ArdupilotMegaPlanner/Firmware/AC2-QUADHIL-1280.hex</url>
     <url2560>http://meee146-planner.googlecode.com/git/Tools/ArdupilotMegaPlanner/Firmware/AC2-QUADHIL-2560.hex</url2560>
     <url2560-2>http://meee146-planner.googlecode.com/git/Tools/ArdupilotMegaPlanner/Firmware/AC2-QUADHIL-2560-2.hex</url2560-2>
-    <name>ArduCopter V2.2 b4 Quad Hil</name>
+    <name>ArduCopter V2.3 Quad Hil</name>
     <desc>
 #define FRAME_CONFIG QUAD_FRAME
 #define FRAME_ORIENTATION PLUS_FRAME
@@ -172,7 +172,7 @@
 
 
 </desc>
-    <format_version>114</format_version>
+    <format_version>115</format_version>
   </Firmware>
   <Firmware>
     <url>http://meee146-planner.googlecode.com/git/Tools/ArdupilotMegaPlanner/Firmware/AC2-HELHIL-1280.hex</url>
