@@ -1,6 +1,6 @@
 /// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 
-#define THISFIRMWARE "ArduCopter V2.2 b6"
+#define THISFIRMWARE "ArduCopter V2.3"
 /*
 ArduCopter Version 2.2
 Authors:	Jason Short
@@ -547,7 +547,7 @@ static bool		low_batt = false;
 static int32_t 	ground_pressure;
 // The ground temperature at home location - calibrated at arming
 static int16_t 	ground_temperature;
-// The cm we are off in altitude from next_WP.alt – Positive value means we are below the WP
+// The cm we are off in altitude from next_WP.alt – Positive value means we are below the WP
 static int32_t		altitude_error;
 // The cm/s we are moving up or down - Positive = UP
 static int16_t		climb_rate;
