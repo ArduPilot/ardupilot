@@ -2,9 +2,9 @@
 
 #define THISFIRMWARE "ArduCopter V2.3"
 /*
-ArduCopter Version 2.2
+ArduCopter Version 2.3
 Authors:	Jason Short
-Based on code and ideas from the Arducopter team: Jose Julio, Randy Mackay, Jani Hirvinen
+Based on code and ideas from the Arducopter team: Randy Mackay, Pat Hickey, Jose Julio, Jani Hirvinen
 Thanks to:	Chris Anderson, Mike Smith, Jordi Munoz, Doug Weibel, James Goppert, Benjamin Pelletier
 
 This firmware is free software; you can redistribute it and/or
@@ -32,6 +32,9 @@ Oliver				:Piezo support
 Guntars				:Arming safety suggestion
 Igor van Airde 		:Control Law optimization
 Jean-Louis Naudin 	:Auto Landing
+Sandro Benigno  : Camera support
+Olivier Adler : PPM Encoder
+John Arne Birkeland: PPM Encoder
 
 And much more so PLEASE PM me on DIYDRONES to add your contribution to the List
 
