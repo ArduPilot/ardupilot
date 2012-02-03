@@ -905,8 +905,8 @@ static void fast_loop()
 
 	if(takeoff_complete == false){
 		// reset these I terms to prevent awkward tipping on takeoff
-		reset_rate_I();
-		reset_stability_I();
+		//reset_rate_I();
+		//reset_stability_I();
 	}
 
 	// custom code/exceptions for flight modes
