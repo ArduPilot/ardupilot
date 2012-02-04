@@ -627,6 +627,9 @@ check_startup_for_CLI()
 static uint32_t map_baudrate(int8_t rate, uint32_t default_baud)
 {
     switch (rate) {
+    case 1:    return 1200;
+    case 2:    return 2400;
+    case 4:    return 4800;
     case 9:    return 9600;
     case 19:   return 19200;
     case 38:   return 38400;
