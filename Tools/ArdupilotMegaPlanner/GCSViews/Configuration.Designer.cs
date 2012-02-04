@@ -191,6 +191,8 @@
             this.STB_YAW_P = new System.Windows.Forms.NumericUpDown();
             this.label35 = new System.Windows.Forms.Label();
             this.groupBox21 = new System.Windows.Forms.GroupBox();
+            this.STAB_D = new System.Windows.Forms.NumericUpDown();
+            this.lblSTAB_D = new System.Windows.Forms.Label();
             this.STB_PIT_IMAX = new System.Windows.Forms.NumericUpDown();
             this.label36 = new System.Windows.Forms.Label();
             this.STB_PIT_I = new System.Windows.Forms.NumericUpDown();
@@ -283,8 +285,6 @@
             this.BUT_load = new ArdupilotMega.MyButton();
             this.toolTip1 = new System.Windows.Forms.ToolTip(this.components);
             this.BUT_compare = new ArdupilotMega.MyButton();
-            this.STAB_D = new System.Windows.Forms.NumericUpDown();
-            this.lblSTAB_D = new System.Windows.Forms.Label();
             ((System.ComponentModel.ISupportInitialize)(this.Params)).BeginInit();
             this.ConfigTabs.SuspendLayout();
             this.TabAP.SuspendLayout();
@@ -371,6 +371,7 @@
             ((System.ComponentModel.ISupportInitialize)(this.STB_YAW_I)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.STB_YAW_P)).BeginInit();
             this.groupBox21.SuspendLayout();
+            ((System.ComponentModel.ISupportInitialize)(this.STAB_D)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.STB_PIT_IMAX)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.STB_PIT_I)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.STB_PIT_P)).BeginInit();
@@ -395,7 +396,6 @@
             ((System.ComponentModel.ISupportInitialize)(this.RATE_RLL_P)).BeginInit();
             this.TabPlanner.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.NUM_tracklength)).BeginInit();
-            ((System.ComponentModel.ISupportInitialize)(this.STAB_D)).BeginInit();
             this.SuspendLayout();
             // 
             // Params
@@ -1115,6 +1115,7 @@
             // TUNE
             // 
             this.TUNE.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
+            this.TUNE.DropDownWidth = 150;
             this.TUNE.FormattingEnabled = true;
             this.TUNE.Items.AddRange(new object[] {
             resources.GetString("TUNE.Items"),
@@ -1149,6 +1150,7 @@
             // CH7_OPT
             // 
             this.CH7_OPT.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
+            this.CH7_OPT.DropDownWidth = 150;
             this.CH7_OPT.FormattingEnabled = true;
             this.CH7_OPT.Items.AddRange(new object[] {
             resources.GetString("CH7_OPT.Items"),
@@ -1448,6 +1450,16 @@
             resources.ApplyResources(this.groupBox21, "groupBox21");
             this.groupBox21.Name = "groupBox21";
             this.groupBox21.TabStop = false;
+            // 
+            // STAB_D
+            // 
+            resources.ApplyResources(this.STAB_D, "STAB_D");
+            this.STAB_D.Name = "STAB_D";
+            // 
+            // lblSTAB_D
+            // 
+            resources.ApplyResources(this.lblSTAB_D, "lblSTAB_D");
+            this.lblSTAB_D.Name = "lblSTAB_D";
             // 
             // STB_PIT_IMAX
             // 
@@ -2102,16 +2114,6 @@
             this.BUT_compare.UseVisualStyleBackColor = true;
             this.BUT_compare.Click += new System.EventHandler(this.BUT_compare_Click);
             // 
-            // STAB_D
-            // 
-            resources.ApplyResources(this.STAB_D, "STAB_D");
-            this.STAB_D.Name = "STAB_D";
-            // 
-            // lblSTAB_D
-            // 
-            resources.ApplyResources(this.lblSTAB_D, "lblSTAB_D");
-            this.lblSTAB_D.Name = "lblSTAB_D";
-            // 
             // Configuration
             // 
             resources.ApplyResources(this, "$this");
@@ -2213,6 +2215,7 @@
             ((System.ComponentModel.ISupportInitialize)(this.STB_YAW_I)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.STB_YAW_P)).EndInit();
             this.groupBox21.ResumeLayout(false);
+            ((System.ComponentModel.ISupportInitialize)(this.STAB_D)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.STB_PIT_IMAX)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.STB_PIT_I)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.STB_PIT_P)).EndInit();
@@ -2237,7 +2240,6 @@
             ((System.ComponentModel.ISupportInitialize)(this.RATE_RLL_P)).EndInit();
             this.TabPlanner.ResumeLayout(false);
             ((System.ComponentModel.ISupportInitialize)(this.NUM_tracklength)).EndInit();
-            ((System.ComponentModel.ISupportInitialize)(this.STAB_D)).EndInit();
             this.ResumeLayout(false);
 
         }

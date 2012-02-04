@@ -220,7 +220,7 @@ namespace ArdupilotMega.Setup
                 }
             }
 
-            MessageBox.Show("Ensure all your sticks are centered, and click ok to continue");
+            MessageBox.Show("Ensure all your sticks are centered and throttle is down, and click ok to continue");
 
             MainV2.cs.UpdateCurrentSettings(currentStateBindingSource, true, MainV2.comPort);
 

@@ -1356,7 +1356,7 @@
   <data name="&gt;&gt;zg1.ZOrder" xml:space="preserve">
     <value>17</value>
   </data>
-  <metadata name="timer1.TrayLocation" type="System.Drawing.Point, System.Drawing, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a">
+  <metadata name="timer_servo_graph.TrayLocation" type="System.Drawing.Point, System.Drawing, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a">
     <value>17, 17</value>
   </metadata>
   <data name="label28.Location" type="System.Drawing.Point, System.Drawing">
@@ -2142,10 +2142,10 @@
   <data name="&gt;&gt;currentStateBindingSource.Type" xml:space="preserve">
     <value>System.Windows.Forms.BindingSource, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </data>
-  <data name="&gt;&gt;timer1.Name" xml:space="preserve">
-    <value>timer1</value>
+  <data name="&gt;&gt;timer_servo_graph.Name" xml:space="preserve">
+    <value>timer_servo_graph</value>
   </data>
-  <data name="&gt;&gt;timer1.Type" xml:space="preserve">
+  <data name="&gt;&gt;timer_servo_graph.Type" xml:space="preserve">
     <value>System.Windows.Forms.Timer, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </data>
   <data name="&gt;&gt;toolTip1.Name" xml:space="preserve">
