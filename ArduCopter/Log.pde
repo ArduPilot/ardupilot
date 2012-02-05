@@ -222,7 +222,7 @@ void print_latlon(BetterStream *s, int32_t lat_or_lon)
     s->printf("%ld.%07ld",dec_portion,frac_portion);
 }
 
-// Write an GPS packet. Total length : 30 bytes
+// Write an GPS packet. Total length : 31 bytes
 static void Log_Write_GPS()
 {
 	DataFlash.WriteByte(HEAD_BYTE1);
@@ -313,6 +313,7 @@ static void Log_Read_Raw()
 	Serial.println(" ");
 }
 
+// Write an Current data packet. Total length : 16 bytes
 static void Log_Write_Current()
 {
 	DataFlash.WriteByte(HEAD_BYTE1);
@@ -346,6 +347,7 @@ static void Log_Read_Current()
 		temp5);
 }
 
+// Write an Motors packet. Total length : 12 ~ 20 bytes
 static void Log_Write_Motors()
 {
 	DataFlash.WriteByte(HEAD_BYTE1);
@@ -404,7 +406,7 @@ static void Log_Write_Motors()
 	DataFlash.WriteByte(END_BYTE);
 }
 
-// Read a Current packet
+// Read a Motors packet.
 static void Log_Read_Motors()
 {
 	#if FRAME_CONFIG == HEXA_FRAME || FRAME_CONFIG == Y6_FRAME
@@ -472,7 +474,7 @@ static void Log_Read_Motors()
 	#endif
 }
 
-// Write an optical flow packet. Total length : 18 bytes
+// Write an optical flow packet. Total length : 30 bytes
 static void Log_Write_Optflow()
 {
 	#ifdef OPTFLOW_ENABLED
@@ -492,7 +494,7 @@ static void Log_Write_Optflow()
 	#endif
 }
 
-
+// Read an optical flow packet.
 static void Log_Read_Optflow()
 {
 	#ifdef OPTFLOW_ENABLED
@@ -519,6 +521,7 @@ static void Log_Read_Optflow()
 	#endif
 }
 
+// Write an Nav Tuning packet. Total length : 24 bytes
 static void Log_Write_Nav_Tuning()
 {
 	//Matrix3f tempmat = dcm.get_dcm_matrix();
@@ -553,7 +556,7 @@ static void Log_Write_Nav_Tuning()
 	DataFlash.WriteByte(END_BYTE);
 }
 
-
+// Read a Nav Tuning packet.
 static void Log_Read_Nav_Tuning()
 {
 	int16_t temp;
@@ -564,13 +567,13 @@ static void Log_Read_Nav_Tuning()
 		temp = DataFlash.ReadInt();
 		Serial.printf("%d, ", temp);
 	}
-
+	// read 10
 	temp = DataFlash.ReadInt();
 	Serial.printf("%d\n", temp);
 }
 
 
-// Write a control tuning packet. Total length : 22 bytes
+// Write a control tuning packet. Total length : 26 bytes
 static void Log_Write_Control_Tuning()
 {
 	DataFlash.WriteByte(HEAD_BYTE1);
@@ -599,27 +602,26 @@ static void Log_Read_Control_Tuning()
 
 	Serial.printf_P(PSTR("CTUN, "));
 
-	for(int8_t i = 0; i < 11; i++ ){
+	for(int8_t i = 1; i < 11; i++ ){
 		temp = DataFlash.ReadInt();
 		Serial.printf("%d, ", temp);
 	}
-	// read 13
+	// read 11
 	temp = DataFlash.ReadInt();
 	Serial.printf("%d\n", temp);
 }
 
-// Write a performance monitoring packet. Total length : 19 bytes
+// Write a performance monitoring packet. Total length : 9 bytes
 static void Log_Write_Performance()
 {
 	DataFlash.WriteByte(HEAD_BYTE1);
 	DataFlash.WriteByte(HEAD_BYTE2);
 	DataFlash.WriteByte(LOG_PERFORMANCE_MSG);
-
-	DataFlash.WriteByte(	dcm.gyro_sat_count);				//2
-	DataFlash.WriteByte(	imu.adc_constraints);				//3
-	DataFlash.WriteByte(	dcm.renorm_sqrt_count);				//4
-	DataFlash.WriteByte(	dcm.renorm_blowup_count);			//5
-	DataFlash.WriteByte(	gps_fix_count);						//6
+	DataFlash.WriteByte(	dcm.gyro_sat_count);				//1
+	DataFlash.WriteByte(	imu.adc_constraints);				//2
+	DataFlash.WriteByte(	dcm.renorm_sqrt_count);				//3
+	DataFlash.WriteByte(	dcm.renorm_blowup_count);			//4
+	DataFlash.WriteByte(	gps_fix_count);						//5
 	DataFlash.WriteByte(END_BYTE);
 }
 
@@ -641,7 +643,7 @@ static void Log_Read_Performance()
 		temp5);
 }
 
-// Write a command processing packet.
+// Write a command processing packet.  Total length : 21 bytes
 static void Log_Write_Cmd(byte num, struct Location *wp)
 {
 	DataFlash.WriteByte(HEAD_BYTE1);
@@ -686,19 +688,19 @@ static void Log_Read_Cmd()
                     temp8);
 }
 
-// Write an attitude packet. Total length : 10 bytes
+// Write an attitude packet. Total length : 16 bytes
 static void Log_Write_Attitude()
 {
 	DataFlash.WriteByte(HEAD_BYTE1);
 	DataFlash.WriteByte(HEAD_BYTE2);
 	DataFlash.WriteByte(LOG_ATTITUDE_MSG);
 
-	DataFlash.WriteInt(g.rc_1.control_in);			// 0
-	DataFlash.WriteInt((int)dcm.roll_sensor);		// 1
-	DataFlash.WriteInt(g.rc_2.control_in);			// 2
-	DataFlash.WriteInt((int)dcm.pitch_sensor);		// 3
-	DataFlash.WriteInt(g.rc_4.control_in);			// 4
-	DataFlash.WriteInt((uint16_t)dcm.yaw_sensor);	// 5
+	DataFlash.WriteInt(g.rc_1.control_in);			// 1
+	DataFlash.WriteInt((int)dcm.roll_sensor);		// 2
+	DataFlash.WriteInt(g.rc_2.control_in);			// 3
+	DataFlash.WriteInt((int)dcm.pitch_sensor);		// 4
+	DataFlash.WriteInt(g.rc_4.control_in);			// 5
+	DataFlash.WriteInt((uint16_t)dcm.yaw_sensor);	// 6
 
 	DataFlash.WriteByte(END_BYTE);
 }
@@ -714,7 +716,7 @@ static void Log_Read_Attitude()
 	uint16_t temp6 	= DataFlash.ReadInt();
 
 							// 1   2   3    4   5   6
-	Serial.printf_P(PSTR("ATT, %d, %d, %u, %d, %d, %d\n"),
+	Serial.printf_P(PSTR("ATT, %d, %d, %d, %d, %d, %u\n"),
 		temp1,
 		temp2,
 		temp3,
@@ -723,7 +725,7 @@ static void Log_Read_Attitude()
 		temp6);
 }
 
-// Write a mode packet. Total length : 5 bytes
+// Write a mode packet. Total length : 7 bytes
 static void Log_Write_Mode(byte mode)
 {
 	DataFlash.WriteByte(HEAD_BYTE1);
@@ -742,6 +744,7 @@ static void Log_Read_Mode()
 	Serial.printf_P(PSTR(", %d\n"),DataFlash.ReadInt());
 }
 
+// Write Startup packet. Total length : 4 bytes
 static void Log_Write_Startup()
 {
 	DataFlash.WriteByte(HEAD_BYTE1);
@@ -750,7 +753,7 @@ static void Log_Write_Startup()
 	DataFlash.WriteByte(END_BYTE);
 }
 
-// Read a mode packet
+// Read a startup packet
 static void Log_Read_Startup()
 {
 	Serial.printf_P(PSTR("START UP\n"));
