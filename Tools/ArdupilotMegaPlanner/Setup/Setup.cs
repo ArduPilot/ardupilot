@@ -800,13 +800,18 @@ namespace ArdupilotMega.Setup
         {
             if (startup || ((TextBox)sender).Enabled == false)
                 return;
-            float measuredvoltage = float.Parse(TXT_measuredvoltage.Text);
-            float voltage = float.Parse(TXT_voltage.Text);
-            float divider = float.Parse(TXT_divider.Text);
-            if (voltage == 0)
-                return;
-            float new_divider = (measuredvoltage * divider) / voltage;
-            TXT_divider.Text = new_divider.ToString();
+            try
+            {
+                float measuredvoltage = float.Parse(TXT_measuredvoltage.Text);
+                float voltage = float.Parse(TXT_voltage.Text);
+                float divider = float.Parse(TXT_divider.Text);
+                if (voltage == 0)
+                    return;
+                float new_divider = (measuredvoltage * divider) / voltage;
+                TXT_divider.Text = new_divider.ToString();
+            }
+            catch { MessageBox.Show("Invalid number entered"); return; }
+
             try
             {
                 if (MainV2.comPort.param["VOLT_DIVIDER"] == null)
