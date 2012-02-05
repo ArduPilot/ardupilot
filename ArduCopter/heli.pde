@@ -145,7 +145,7 @@ static void heli_move_swash(int roll_out, int pitch_out, int coll_out, int yaw_o
 		// rudder feed forward based on collective
 		#if HIL_MODE == HIL_MODE_DISABLED  // don't do rudder feed forward in simulator
 		if( !g.heli_ext_gyro_enabled ) {
-			yaw_offset = g.heli_coll_yaw_effect * (coll_out_scaled - g.heli_coll_mid);
+			yaw_offset = g.heli_coll_yaw_effect * abs(coll_out_scaled - g.heli_coll_mid);
 		}
 		#endif
 	}
