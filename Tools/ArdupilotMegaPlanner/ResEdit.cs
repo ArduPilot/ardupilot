@@ -196,6 +196,12 @@ namespace resedit
 
         private void button3_Click(object sender, EventArgs e)
         {
+            if (!File.Exists("translation/output.html"))
+            {
+                MessageBox.Show("No existing translation has been done");
+                return;
+            }
+
             StreamReader sr1 = new StreamReader("translation/output.html");
 
             string file = sr1.ReadToEnd();

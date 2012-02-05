@@ -279,8 +279,6 @@ namespace ArdupilotMega.GCSViews
             {
                 cell = Commands.Rows[selectedrow].Cells[Alt.Index] as DataGridViewTextBoxCell;
 
-                cell.Value = TXT_DefaultAlt.Text;
-
                 {
                     float result;
                     float.TryParse(TXT_homealt.Text, out result);
@@ -296,6 +294,8 @@ namespace ArdupilotMega.GCSViews
                         return;
                     }
                 }
+
+                cell.Value = TXT_DefaultAlt.Text;
 
                 float ans;
                 if (float.TryParse(cell.Value.ToString(), out ans))
