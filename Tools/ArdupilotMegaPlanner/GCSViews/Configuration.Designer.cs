@@ -30,8 +30,8 @@
         {
             this.components = new System.ComponentModel.Container();
             System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(Configuration));
-            System.Windows.Forms.DataGridViewCellStyle dataGridViewCellStyle3 = new System.Windows.Forms.DataGridViewCellStyle();
-            System.Windows.Forms.DataGridViewCellStyle dataGridViewCellStyle4 = new System.Windows.Forms.DataGridViewCellStyle();
+            System.Windows.Forms.DataGridViewCellStyle dataGridViewCellStyle1 = new System.Windows.Forms.DataGridViewCellStyle();
+            System.Windows.Forms.DataGridViewCellStyle dataGridViewCellStyle2 = new System.Windows.Forms.DataGridViewCellStyle();
             this.Params = new System.Windows.Forms.DataGridView();
             this.Command = new System.Windows.Forms.DataGridViewTextBoxColumn();
             this.Value = new System.Windows.Forms.DataGridViewTextBoxColumn();
@@ -141,31 +141,23 @@
             this.RLL2SRV_P = new System.Windows.Forms.NumericUpDown();
             this.label52 = new System.Windows.Forms.Label();
             this.TabAC = new System.Windows.Forms.TabPage();
+            this.myLabel2 = new ArdupilotMega.MyLabel();
+            this.TUNE = new System.Windows.Forms.ComboBox();
             this.myLabel1 = new ArdupilotMega.MyLabel();
             this.CH7_OPT = new System.Windows.Forms.ComboBox();
-            this.groupBox17 = new System.Windows.Forms.GroupBox();
-            this.ACRO_PIT_IMAX = new System.Windows.Forms.NumericUpDown();
-            this.label27 = new System.Windows.Forms.Label();
-            this.ACRO_PIT_I = new System.Windows.Forms.NumericUpDown();
-            this.label29 = new System.Windows.Forms.Label();
-            this.ACRO_PIT_P = new System.Windows.Forms.NumericUpDown();
-            this.label33 = new System.Windows.Forms.Label();
             this.groupBox5 = new System.Windows.Forms.GroupBox();
+            this.THR_RATE_D = new System.Windows.Forms.NumericUpDown();
+            this.label29 = new System.Windows.Forms.Label();
             this.label14 = new System.Windows.Forms.Label();
             this.THR_RATE_IMAX = new System.Windows.Forms.NumericUpDown();
             this.THR_RATE_I = new System.Windows.Forms.NumericUpDown();
             this.label20 = new System.Windows.Forms.Label();
             this.THR_RATE_P = new System.Windows.Forms.NumericUpDown();
             this.label25 = new System.Windows.Forms.Label();
-            this.groupBox18 = new System.Windows.Forms.GroupBox();
-            this.ACRO_RLL_IMAX = new System.Windows.Forms.NumericUpDown();
-            this.label40 = new System.Windows.Forms.Label();
-            this.ACRO_RLL_I = new System.Windows.Forms.NumericUpDown();
-            this.label44 = new System.Windows.Forms.Label();
-            this.ACRO_RLL_P = new System.Windows.Forms.NumericUpDown();
-            this.label48 = new System.Windows.Forms.Label();
             this.CHK_lockrollpitch = new System.Windows.Forms.CheckBox();
             this.groupBox4 = new System.Windows.Forms.GroupBox();
+            this.NAV_LAT_D = new System.Windows.Forms.NumericUpDown();
+            this.label27 = new System.Windows.Forms.Label();
             this.WP_SPEED_MAX = new System.Windows.Forms.NumericUpDown();
             this.label9 = new System.Windows.Forms.Label();
             this.NAV_LAT_IMAX = new System.Windows.Forms.NumericUpDown();
@@ -199,6 +191,8 @@
             this.STB_YAW_P = new System.Windows.Forms.NumericUpDown();
             this.label35 = new System.Windows.Forms.Label();
             this.groupBox21 = new System.Windows.Forms.GroupBox();
+            this.STAB_D = new System.Windows.Forms.NumericUpDown();
+            this.lblSTAB_D = new System.Windows.Forms.Label();
             this.STB_PIT_IMAX = new System.Windows.Forms.NumericUpDown();
             this.label36 = new System.Windows.Forms.Label();
             this.STB_PIT_I = new System.Windows.Forms.NumericUpDown();
@@ -213,6 +207,8 @@
             this.STB_RLL_P = new System.Windows.Forms.NumericUpDown();
             this.label46 = new System.Windows.Forms.Label();
             this.groupBox23 = new System.Windows.Forms.GroupBox();
+            this.RATE_YAW_D = new System.Windows.Forms.NumericUpDown();
+            this.label10 = new System.Windows.Forms.Label();
             this.RATE_YAW_IMAX = new System.Windows.Forms.NumericUpDown();
             this.label47 = new System.Windows.Forms.Label();
             this.RATE_YAW_I = new System.Windows.Forms.NumericUpDown();
@@ -220,6 +216,8 @@
             this.RATE_YAW_P = new System.Windows.Forms.NumericUpDown();
             this.label82 = new System.Windows.Forms.Label();
             this.groupBox24 = new System.Windows.Forms.GroupBox();
+            this.RATE_PIT_D = new System.Windows.Forms.NumericUpDown();
+            this.label11 = new System.Windows.Forms.Label();
             this.RATE_PIT_IMAX = new System.Windows.Forms.NumericUpDown();
             this.label84 = new System.Windows.Forms.Label();
             this.RATE_PIT_I = new System.Windows.Forms.NumericUpDown();
@@ -227,6 +225,8 @@
             this.RATE_PIT_P = new System.Windows.Forms.NumericUpDown();
             this.label87 = new System.Windows.Forms.Label();
             this.groupBox25 = new System.Windows.Forms.GroupBox();
+            this.RATE_RLL_D = new System.Windows.Forms.NumericUpDown();
+            this.label17 = new System.Windows.Forms.Label();
             this.RATE_RLL_IMAX = new System.Windows.Forms.NumericUpDown();
             this.label88 = new System.Windows.Forms.Label();
             this.RATE_RLL_I = new System.Windows.Forms.NumericUpDown();
@@ -285,8 +285,6 @@
             this.BUT_load = new ArdupilotMega.MyButton();
             this.toolTip1 = new System.Windows.Forms.ToolTip(this.components);
             this.BUT_compare = new ArdupilotMega.MyButton();
-            this.myLabel2 = new ArdupilotMega.MyLabel();
-            this.TUNE = new System.Windows.Forms.ComboBox();
             ((System.ComponentModel.ISupportInitialize)(this.Params)).BeginInit();
             this.ConfigTabs.SuspendLayout();
             this.TabAP.SuspendLayout();
@@ -347,19 +345,13 @@
             ((System.ComponentModel.ISupportInitialize)(this.RLL2SRV_I)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.RLL2SRV_P)).BeginInit();
             this.TabAC.SuspendLayout();
-            this.groupBox17.SuspendLayout();
-            ((System.ComponentModel.ISupportInitialize)(this.ACRO_PIT_IMAX)).BeginInit();
-            ((System.ComponentModel.ISupportInitialize)(this.ACRO_PIT_I)).BeginInit();
-            ((System.ComponentModel.ISupportInitialize)(this.ACRO_PIT_P)).BeginInit();
             this.groupBox5.SuspendLayout();
+            ((System.ComponentModel.ISupportInitialize)(this.THR_RATE_D)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.THR_RATE_IMAX)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.THR_RATE_I)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.THR_RATE_P)).BeginInit();
-            this.groupBox18.SuspendLayout();
-            ((System.ComponentModel.ISupportInitialize)(this.ACRO_RLL_IMAX)).BeginInit();
-            ((System.ComponentModel.ISupportInitialize)(this.ACRO_RLL_I)).BeginInit();
-            ((System.ComponentModel.ISupportInitialize)(this.ACRO_RLL_P)).BeginInit();
             this.groupBox4.SuspendLayout();
+            ((System.ComponentModel.ISupportInitialize)(this.NAV_LAT_D)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.WP_SPEED_MAX)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.NAV_LAT_IMAX)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.NAV_LAT_I)).BeginInit();
@@ -379,6 +371,7 @@
             ((System.ComponentModel.ISupportInitialize)(this.STB_YAW_I)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.STB_YAW_P)).BeginInit();
             this.groupBox21.SuspendLayout();
+            ((System.ComponentModel.ISupportInitialize)(this.STAB_D)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.STB_PIT_IMAX)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.STB_PIT_I)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.STB_PIT_P)).BeginInit();
@@ -387,14 +380,17 @@
             ((System.ComponentModel.ISupportInitialize)(this.STB_RLL_I)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.STB_RLL_P)).BeginInit();
             this.groupBox23.SuspendLayout();
+            ((System.ComponentModel.ISupportInitialize)(this.RATE_YAW_D)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.RATE_YAW_IMAX)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.RATE_YAW_I)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.RATE_YAW_P)).BeginInit();
             this.groupBox24.SuspendLayout();
+            ((System.ComponentModel.ISupportInitialize)(this.RATE_PIT_D)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.RATE_PIT_IMAX)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.RATE_PIT_I)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.RATE_PIT_P)).BeginInit();
             this.groupBox25.SuspendLayout();
+            ((System.ComponentModel.ISupportInitialize)(this.RATE_RLL_D)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.RATE_RLL_IMAX)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.RATE_RLL_I)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.RATE_RLL_P)).BeginInit();
@@ -407,14 +403,14 @@
             this.Params.AllowUserToAddRows = false;
             this.Params.AllowUserToDeleteRows = false;
             resources.ApplyResources(this.Params, "Params");
-            dataGridViewCellStyle3.Alignment = System.Windows.Forms.DataGridViewContentAlignment.MiddleLeft;
-            dataGridViewCellStyle3.BackColor = System.Drawing.Color.Maroon;
-            dataGridViewCellStyle3.Font = new System.Drawing.Font("Microsoft Sans Serif", 8.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            dataGridViewCellStyle3.ForeColor = System.Drawing.Color.White;
-            dataGridViewCellStyle3.SelectionBackColor = System.Drawing.SystemColors.Highlight;
-            dataGridViewCellStyle3.SelectionForeColor = System.Drawing.SystemColors.HighlightText;
-            dataGridViewCellStyle3.WrapMode = System.Windows.Forms.DataGridViewTriState.True;
-            this.Params.ColumnHeadersDefaultCellStyle = dataGridViewCellStyle3;
+            dataGridViewCellStyle1.Alignment = System.Windows.Forms.DataGridViewContentAlignment.MiddleLeft;
+            dataGridViewCellStyle1.BackColor = System.Drawing.Color.Maroon;
+            dataGridViewCellStyle1.Font = new System.Drawing.Font("Microsoft Sans Serif", 8.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            dataGridViewCellStyle1.ForeColor = System.Drawing.Color.White;
+            dataGridViewCellStyle1.SelectionBackColor = System.Drawing.SystemColors.Highlight;
+            dataGridViewCellStyle1.SelectionForeColor = System.Drawing.SystemColors.HighlightText;
+            dataGridViewCellStyle1.WrapMode = System.Windows.Forms.DataGridViewTriState.True;
+            this.Params.ColumnHeadersDefaultCellStyle = dataGridViewCellStyle1;
             this.Params.ColumnHeadersHeightSizeMode = System.Windows.Forms.DataGridViewColumnHeadersHeightSizeMode.AutoSize;
             this.Params.Columns.AddRange(new System.Windows.Forms.DataGridViewColumn[] {
             this.Command,
@@ -423,14 +419,14 @@
             this.mavScale,
             this.RawValue});
             this.Params.Name = "Params";
-            dataGridViewCellStyle4.Alignment = System.Windows.Forms.DataGridViewContentAlignment.MiddleLeft;
-            dataGridViewCellStyle4.BackColor = System.Drawing.SystemColors.ActiveCaption;
-            dataGridViewCellStyle4.Font = new System.Drawing.Font("Microsoft Sans Serif", 8.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            dataGridViewCellStyle4.ForeColor = System.Drawing.SystemColors.WindowText;
-            dataGridViewCellStyle4.SelectionBackColor = System.Drawing.SystemColors.Highlight;
-            dataGridViewCellStyle4.SelectionForeColor = System.Drawing.SystemColors.HighlightText;
-            dataGridViewCellStyle4.WrapMode = System.Windows.Forms.DataGridViewTriState.True;
-            this.Params.RowHeadersDefaultCellStyle = dataGridViewCellStyle4;
+            dataGridViewCellStyle2.Alignment = System.Windows.Forms.DataGridViewContentAlignment.MiddleLeft;
+            dataGridViewCellStyle2.BackColor = System.Drawing.SystemColors.ActiveCaption;
+            dataGridViewCellStyle2.Font = new System.Drawing.Font("Microsoft Sans Serif", 8.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            dataGridViewCellStyle2.ForeColor = System.Drawing.SystemColors.WindowText;
+            dataGridViewCellStyle2.SelectionBackColor = System.Drawing.SystemColors.Highlight;
+            dataGridViewCellStyle2.SelectionForeColor = System.Drawing.SystemColors.HighlightText;
+            dataGridViewCellStyle2.WrapMode = System.Windows.Forms.DataGridViewTriState.True;
+            this.Params.RowHeadersDefaultCellStyle = dataGridViewCellStyle2;
             this.Params.RowHeadersVisible = false;
             this.Params.CellValueChanged += new System.Windows.Forms.DataGridViewCellEventHandler(this.Params_CellValueChanged);
             // 
@@ -1095,9 +1091,7 @@
             this.TabAC.Controls.Add(this.TUNE);
             this.TabAC.Controls.Add(this.myLabel1);
             this.TabAC.Controls.Add(this.CH7_OPT);
-            this.TabAC.Controls.Add(this.groupBox17);
             this.TabAC.Controls.Add(this.groupBox5);
-            this.TabAC.Controls.Add(this.groupBox18);
             this.TabAC.Controls.Add(this.CHK_lockrollpitch);
             this.TabAC.Controls.Add(this.groupBox4);
             this.TabAC.Controls.Add(this.groupBox6);
@@ -1112,6 +1106,41 @@
             resources.ApplyResources(this.TabAC, "TabAC");
             this.TabAC.Name = "TabAC";
             // 
+            // myLabel2
+            // 
+            resources.ApplyResources(this.myLabel2, "myLabel2");
+            this.myLabel2.Name = "myLabel2";
+            this.myLabel2.resize = false;
+            // 
+            // TUNE
+            // 
+            this.TUNE.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
+            this.TUNE.DropDownWidth = 150;
+            this.TUNE.FormattingEnabled = true;
+            this.TUNE.Items.AddRange(new object[] {
+            resources.GetString("TUNE.Items"),
+            resources.GetString("TUNE.Items1"),
+            resources.GetString("TUNE.Items2"),
+            resources.GetString("TUNE.Items3"),
+            resources.GetString("TUNE.Items4"),
+            resources.GetString("TUNE.Items5"),
+            resources.GetString("TUNE.Items6"),
+            resources.GetString("TUNE.Items7"),
+            resources.GetString("TUNE.Items8"),
+            resources.GetString("TUNE.Items9"),
+            resources.GetString("TUNE.Items10"),
+            resources.GetString("TUNE.Items11"),
+            resources.GetString("TUNE.Items12"),
+            resources.GetString("TUNE.Items13"),
+            resources.GetString("TUNE.Items14"),
+            resources.GetString("TUNE.Items15"),
+            resources.GetString("TUNE.Items16"),
+            resources.GetString("TUNE.Items17"),
+            resources.GetString("TUNE.Items18"),
+            resources.GetString("TUNE.Items19")});
+            resources.ApplyResources(this.TUNE, "TUNE");
+            this.TUNE.Name = "TUNE";
+            // 
             // myLabel1
             // 
             resources.ApplyResources(this.myLabel1, "myLabel1");
@@ -1121,6 +1150,7 @@
             // CH7_OPT
             // 
             this.CH7_OPT.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
+            this.CH7_OPT.DropDownWidth = 150;
             this.CH7_OPT.FormattingEnabled = true;
             this.CH7_OPT.Items.AddRange(new object[] {
             resources.GetString("CH7_OPT.Items"),
@@ -1134,50 +1164,10 @@
             resources.ApplyResources(this.CH7_OPT, "CH7_OPT");
             this.CH7_OPT.Name = "CH7_OPT";
             // 
-            // groupBox17
-            // 
-            this.groupBox17.Controls.Add(this.ACRO_PIT_IMAX);
-            this.groupBox17.Controls.Add(this.label27);
-            this.groupBox17.Controls.Add(this.ACRO_PIT_I);
-            this.groupBox17.Controls.Add(this.label29);
-            this.groupBox17.Controls.Add(this.ACRO_PIT_P);
-            this.groupBox17.Controls.Add(this.label33);
-            resources.ApplyResources(this.groupBox17, "groupBox17");
-            this.groupBox17.Name = "groupBox17";
-            this.groupBox17.TabStop = false;
-            // 
-            // ACRO_PIT_IMAX
-            // 
-            resources.ApplyResources(this.ACRO_PIT_IMAX, "ACRO_PIT_IMAX");
-            this.ACRO_PIT_IMAX.Name = "ACRO_PIT_IMAX";
-            // 
-            // label27
-            // 
-            resources.ApplyResources(this.label27, "label27");
-            this.label27.Name = "label27";
-            // 
-            // ACRO_PIT_I
-            // 
-            resources.ApplyResources(this.ACRO_PIT_I, "ACRO_PIT_I");
-            this.ACRO_PIT_I.Name = "ACRO_PIT_I";
-            // 
-            // label29
-            // 
-            resources.ApplyResources(this.label29, "label29");
-            this.label29.Name = "label29";
-            // 
-            // ACRO_PIT_P
-            // 
-            resources.ApplyResources(this.ACRO_PIT_P, "ACRO_PIT_P");
-            this.ACRO_PIT_P.Name = "ACRO_PIT_P";
-            // 
-            // label33
-            // 
-            resources.ApplyResources(this.label33, "label33");
-            this.label33.Name = "label33";
-            // 
             // groupBox5
             // 
+            this.groupBox5.Controls.Add(this.THR_RATE_D);
+            this.groupBox5.Controls.Add(this.label29);
             this.groupBox5.Controls.Add(this.label14);
             this.groupBox5.Controls.Add(this.THR_RATE_IMAX);
             this.groupBox5.Controls.Add(this.THR_RATE_I);
@@ -1187,6 +1177,16 @@
             resources.ApplyResources(this.groupBox5, "groupBox5");
             this.groupBox5.Name = "groupBox5";
             this.groupBox5.TabStop = false;
+            // 
+            // THR_RATE_D
+            // 
+            resources.ApplyResources(this.THR_RATE_D, "THR_RATE_D");
+            this.THR_RATE_D.Name = "THR_RATE_D";
+            // 
+            // label29
+            // 
+            resources.ApplyResources(this.label29, "label29");
+            this.label29.Name = "label29";
             // 
             // label14
             // 
@@ -1218,48 +1218,6 @@
             resources.ApplyResources(this.label25, "label25");
             this.label25.Name = "label25";
             // 
-            // groupBox18
-            // 
-            this.groupBox18.Controls.Add(this.ACRO_RLL_IMAX);
-            this.groupBox18.Controls.Add(this.label40);
-            this.groupBox18.Controls.Add(this.ACRO_RLL_I);
-            this.groupBox18.Controls.Add(this.label44);
-            this.groupBox18.Controls.Add(this.ACRO_RLL_P);
-            this.groupBox18.Controls.Add(this.label48);
-            resources.ApplyResources(this.groupBox18, "groupBox18");
-            this.groupBox18.Name = "groupBox18";
-            this.groupBox18.TabStop = false;
-            // 
-            // ACRO_RLL_IMAX
-            // 
-            resources.ApplyResources(this.ACRO_RLL_IMAX, "ACRO_RLL_IMAX");
-            this.ACRO_RLL_IMAX.Name = "ACRO_RLL_IMAX";
-            // 
-            // label40
-            // 
-            resources.ApplyResources(this.label40, "label40");
-            this.label40.Name = "label40";
-            // 
-            // ACRO_RLL_I
-            // 
-            resources.ApplyResources(this.ACRO_RLL_I, "ACRO_RLL_I");
-            this.ACRO_RLL_I.Name = "ACRO_RLL_I";
-            // 
-            // label44
-            // 
-            resources.ApplyResources(this.label44, "label44");
-            this.label44.Name = "label44";
-            // 
-            // ACRO_RLL_P
-            // 
-            resources.ApplyResources(this.ACRO_RLL_P, "ACRO_RLL_P");
-            this.ACRO_RLL_P.Name = "ACRO_RLL_P";
-            // 
-            // label48
-            // 
-            resources.ApplyResources(this.label48, "label48");
-            this.label48.Name = "label48";
-            // 
             // CHK_lockrollpitch
             // 
             resources.ApplyResources(this.CHK_lockrollpitch, "CHK_lockrollpitch");
@@ -1271,6 +1229,8 @@
             // 
             // groupBox4
             // 
+            this.groupBox4.Controls.Add(this.NAV_LAT_D);
+            this.groupBox4.Controls.Add(this.label27);
             this.groupBox4.Controls.Add(this.WP_SPEED_MAX);
             this.groupBox4.Controls.Add(this.label9);
             this.groupBox4.Controls.Add(this.NAV_LAT_IMAX);
@@ -1282,6 +1242,16 @@
             resources.ApplyResources(this.groupBox4, "groupBox4");
             this.groupBox4.Name = "groupBox4";
             this.groupBox4.TabStop = false;
+            // 
+            // NAV_LAT_D
+            // 
+            resources.ApplyResources(this.NAV_LAT_D, "NAV_LAT_D");
+            this.NAV_LAT_D.Name = "NAV_LAT_D";
+            // 
+            // label27
+            // 
+            resources.ApplyResources(this.label27, "label27");
+            this.label27.Name = "label27";
             // 
             // WP_SPEED_MAX
             // 
@@ -1469,6 +1439,8 @@
             // 
             // groupBox21
             // 
+            this.groupBox21.Controls.Add(this.STAB_D);
+            this.groupBox21.Controls.Add(this.lblSTAB_D);
             this.groupBox21.Controls.Add(this.STB_PIT_IMAX);
             this.groupBox21.Controls.Add(this.label36);
             this.groupBox21.Controls.Add(this.STB_PIT_I);
@@ -1478,6 +1450,16 @@
             resources.ApplyResources(this.groupBox21, "groupBox21");
             this.groupBox21.Name = "groupBox21";
             this.groupBox21.TabStop = false;
+            // 
+            // STAB_D
+            // 
+            resources.ApplyResources(this.STAB_D, "STAB_D");
+            this.STAB_D.Name = "STAB_D";
+            // 
+            // lblSTAB_D
+            // 
+            resources.ApplyResources(this.lblSTAB_D, "lblSTAB_D");
+            this.lblSTAB_D.Name = "lblSTAB_D";
             // 
             // STB_PIT_IMAX
             // 
@@ -1553,6 +1535,8 @@
             // 
             // groupBox23
             // 
+            this.groupBox23.Controls.Add(this.RATE_YAW_D);
+            this.groupBox23.Controls.Add(this.label10);
             this.groupBox23.Controls.Add(this.RATE_YAW_IMAX);
             this.groupBox23.Controls.Add(this.label47);
             this.groupBox23.Controls.Add(this.RATE_YAW_I);
@@ -1562,6 +1546,16 @@
             resources.ApplyResources(this.groupBox23, "groupBox23");
             this.groupBox23.Name = "groupBox23";
             this.groupBox23.TabStop = false;
+            // 
+            // RATE_YAW_D
+            // 
+            resources.ApplyResources(this.RATE_YAW_D, "RATE_YAW_D");
+            this.RATE_YAW_D.Name = "RATE_YAW_D";
+            // 
+            // label10
+            // 
+            resources.ApplyResources(this.label10, "label10");
+            this.label10.Name = "label10";
             // 
             // RATE_YAW_IMAX
             // 
@@ -1595,6 +1589,8 @@
             // 
             // groupBox24
             // 
+            this.groupBox24.Controls.Add(this.RATE_PIT_D);
+            this.groupBox24.Controls.Add(this.label11);
             this.groupBox24.Controls.Add(this.RATE_PIT_IMAX);
             this.groupBox24.Controls.Add(this.label84);
             this.groupBox24.Controls.Add(this.RATE_PIT_I);
@@ -1604,6 +1600,16 @@
             resources.ApplyResources(this.groupBox24, "groupBox24");
             this.groupBox24.Name = "groupBox24";
             this.groupBox24.TabStop = false;
+            // 
+            // RATE_PIT_D
+            // 
+            resources.ApplyResources(this.RATE_PIT_D, "RATE_PIT_D");
+            this.RATE_PIT_D.Name = "RATE_PIT_D";
+            // 
+            // label11
+            // 
+            resources.ApplyResources(this.label11, "label11");
+            this.label11.Name = "label11";
             // 
             // RATE_PIT_IMAX
             // 
@@ -1637,6 +1643,8 @@
             // 
             // groupBox25
             // 
+            this.groupBox25.Controls.Add(this.RATE_RLL_D);
+            this.groupBox25.Controls.Add(this.label17);
             this.groupBox25.Controls.Add(this.RATE_RLL_IMAX);
             this.groupBox25.Controls.Add(this.label88);
             this.groupBox25.Controls.Add(this.RATE_RLL_I);
@@ -1646,6 +1654,16 @@
             resources.ApplyResources(this.groupBox25, "groupBox25");
             this.groupBox25.Name = "groupBox25";
             this.groupBox25.TabStop = false;
+            // 
+            // RATE_RLL_D
+            // 
+            resources.ApplyResources(this.RATE_RLL_D, "RATE_RLL_D");
+            this.RATE_RLL_D.Name = "RATE_RLL_D";
+            // 
+            // label17
+            // 
+            resources.ApplyResources(this.label17, "label17");
+            this.label17.Name = "label17";
             // 
             // RATE_RLL_IMAX
             // 
@@ -2096,40 +2114,6 @@
             this.BUT_compare.UseVisualStyleBackColor = true;
             this.BUT_compare.Click += new System.EventHandler(this.BUT_compare_Click);
             // 
-            // myLabel2
-            // 
-            resources.ApplyResources(this.myLabel2, "myLabel2");
-            this.myLabel2.Name = "myLabel2";
-            this.myLabel2.resize = false;
-            // 
-            // TUNE
-            // 
-            this.TUNE.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
-            this.TUNE.FormattingEnabled = true;
-            this.TUNE.Items.AddRange(new object[] {
-            resources.GetString("TUNE.Items"),
-            resources.GetString("TUNE.Items1"),
-            resources.GetString("TUNE.Items2"),
-            resources.GetString("TUNE.Items3"),
-            resources.GetString("TUNE.Items4"),
-            resources.GetString("TUNE.Items5"),
-            resources.GetString("TUNE.Items6"),
-            resources.GetString("TUNE.Items7"),
-            resources.GetString("TUNE.Items8"),
-            resources.GetString("TUNE.Items9"),
-            resources.GetString("TUNE.Items10"),
-            resources.GetString("TUNE.Items11"),
-            resources.GetString("TUNE.Items12"),
-            resources.GetString("TUNE.Items13"),
-            resources.GetString("TUNE.Items14"),
-            resources.GetString("TUNE.Items15"),
-            resources.GetString("TUNE.Items16"),
-            resources.GetString("TUNE.Items17"),
-            resources.GetString("TUNE.Items18"),
-            resources.GetString("TUNE.Items19")});
-            resources.ApplyResources(this.TUNE, "TUNE");
-            this.TUNE.Name = "TUNE";
-            // 
             // Configuration
             // 
             resources.ApplyResources(this, "$this");
@@ -2205,19 +2189,13 @@
             ((System.ComponentModel.ISupportInitialize)(this.RLL2SRV_P)).EndInit();
             this.TabAC.ResumeLayout(false);
             this.TabAC.PerformLayout();
-            this.groupBox17.ResumeLayout(false);
-            ((System.ComponentModel.ISupportInitialize)(this.ACRO_PIT_IMAX)).EndInit();
-            ((System.ComponentModel.ISupportInitialize)(this.ACRO_PIT_I)).EndInit();
-            ((System.ComponentModel.ISupportInitialize)(this.ACRO_PIT_P)).EndInit();
             this.groupBox5.ResumeLayout(false);
+            ((System.ComponentModel.ISupportInitialize)(this.THR_RATE_D)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.THR_RATE_IMAX)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.THR_RATE_I)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.THR_RATE_P)).EndInit();
-            this.groupBox18.ResumeLayout(false);
-            ((System.ComponentModel.ISupportInitialize)(this.ACRO_RLL_IMAX)).EndInit();
-            ((System.ComponentModel.ISupportInitialize)(this.ACRO_RLL_I)).EndInit();
-            ((System.ComponentModel.ISupportInitialize)(this.ACRO_RLL_P)).EndInit();
             this.groupBox4.ResumeLayout(false);
+            ((System.ComponentModel.ISupportInitialize)(this.NAV_LAT_D)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.WP_SPEED_MAX)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.NAV_LAT_IMAX)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.NAV_LAT_I)).EndInit();
@@ -2237,6 +2215,7 @@
             ((System.ComponentModel.ISupportInitialize)(this.STB_YAW_I)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.STB_YAW_P)).EndInit();
             this.groupBox21.ResumeLayout(false);
+            ((System.ComponentModel.ISupportInitialize)(this.STAB_D)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.STB_PIT_IMAX)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.STB_PIT_I)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.STB_PIT_P)).EndInit();
@@ -2245,14 +2224,17 @@
             ((System.ComponentModel.ISupportInitialize)(this.STB_RLL_I)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.STB_RLL_P)).EndInit();
             this.groupBox23.ResumeLayout(false);
+            ((System.ComponentModel.ISupportInitialize)(this.RATE_YAW_D)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.RATE_YAW_IMAX)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.RATE_YAW_I)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.RATE_YAW_P)).EndInit();
             this.groupBox24.ResumeLayout(false);
+            ((System.ComponentModel.ISupportInitialize)(this.RATE_PIT_D)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.RATE_PIT_IMAX)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.RATE_PIT_I)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.RATE_PIT_P)).EndInit();
             this.groupBox25.ResumeLayout(false);
+            ((System.ComponentModel.ISupportInitialize)(this.RATE_RLL_D)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.RATE_RLL_IMAX)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.RATE_RLL_I)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.RATE_RLL_P)).EndInit();
@@ -2501,23 +2483,21 @@
         private System.Windows.Forms.Label label109;
         private System.Windows.Forms.Label label14;
         private System.Windows.Forms.Label label26;
-        private System.Windows.Forms.GroupBox groupBox17;
-        private System.Windows.Forms.NumericUpDown ACRO_PIT_IMAX;
-        private System.Windows.Forms.Label label27;
-        private System.Windows.Forms.NumericUpDown ACRO_PIT_I;
-        private System.Windows.Forms.Label label29;
-        private System.Windows.Forms.NumericUpDown ACRO_PIT_P;
-        private System.Windows.Forms.Label label33;
-        private System.Windows.Forms.GroupBox groupBox18;
-        private System.Windows.Forms.NumericUpDown ACRO_RLL_IMAX;
-        private System.Windows.Forms.Label label40;
-        private System.Windows.Forms.NumericUpDown ACRO_RLL_I;
-        private System.Windows.Forms.Label label44;
-        private System.Windows.Forms.NumericUpDown ACRO_RLL_P;
-        private System.Windows.Forms.Label label48;
         private MyLabel myLabel1;
         private System.Windows.Forms.ComboBox CH7_OPT;
         private MyLabel myLabel2;
         private System.Windows.Forms.ComboBox TUNE;
+        private System.Windows.Forms.NumericUpDown RATE_YAW_D;
+        private System.Windows.Forms.Label label10;
+        private System.Windows.Forms.NumericUpDown RATE_PIT_D;
+        private System.Windows.Forms.Label label11;
+        private System.Windows.Forms.NumericUpDown RATE_RLL_D;
+        private System.Windows.Forms.Label label17;
+        private System.Windows.Forms.NumericUpDown NAV_LAT_D;
+        private System.Windows.Forms.Label label27;
+        private System.Windows.Forms.NumericUpDown THR_RATE_D;
+        private System.Windows.Forms.Label label29;
+        private System.Windows.Forms.NumericUpDown STAB_D;
+        private System.Windows.Forms.Label lblSTAB_D;
     }
 }

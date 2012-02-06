@@ -221,13 +221,13 @@ namespace AGaugeApp
 
 #region properties
         [System.ComponentModel.Browsable(true)]
-        public Single Value0 { get { return m_value[0]; } set { m_NeedIdx = 0; Value = value; } }
+        public Single Value0 { get { return m_value[0]; } set { m_NeedIdx = 0; Value = value; this.Invalidate(); } }
         [System.ComponentModel.Browsable(true)]
-        public Single Value1 { get { return m_value[1]; } set { m_NeedIdx = 1; Value = value; } }
+        public Single Value1 { get { return m_value[1]; } set { m_NeedIdx = 1; Value = value; this.Invalidate(); } }
         [System.ComponentModel.Browsable(true)]
-        public Single Value2 { get { return m_value[2]; } set { m_NeedIdx = 2; Value = value; } }
+        public Single Value2 { get { return m_value[2]; } set { m_NeedIdx = 2; Value = value; this.Invalidate(); } }
         [System.ComponentModel.Browsable(true)]
-        public Single Value3 { get { return m_value[3]; } set { m_NeedIdx = 3; Value = value; } }
+        public Single Value3 { get { return m_value[3]; } set { m_NeedIdx = 3; Value = value; this.Invalidate(); } }
 
         [System.ComponentModel.Browsable(true),
         System.ComponentModel.Category("AGauge"),

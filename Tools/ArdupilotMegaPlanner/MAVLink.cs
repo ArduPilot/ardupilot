@@ -2001,12 +2001,13 @@ namespace ArdupilotMega
                         else
                         {
                             MainV2.cs.datetime = DateTime.Now;
-                            temp[count] = (byte)BaseStream.ReadByte();
+                            if (BaseStream.IsOpen)
+                                temp[count] = (byte)BaseStream.ReadByte();
                         }
                     }
                     catch (Exception e) { Console.WriteLine("MAVLink readpacket read error: " + e.Message); break; }
 
-                    if (temp[0] != 254 && temp[0] != 'U' || lastbad[0] == 'I' && lastbad[1] == 'M' || lastbad[1] == 'G') // out of sync
+                    if (temp[0] != 254 && temp[0] != 'U' || lastbad[0] == 'I' && lastbad[1] == 'M' || lastbad[1] == 'G' || lastbad[1] == 'A') // out of sync "AUTO" "GUIDED" "IMU"
                     {
                         if (temp[0] >= 0x20 && temp[0] <= 127 || temp[0] == '\n' || temp[0] == '\r')
                         {
@@ -2058,7 +2059,10 @@ namespace ArdupilotMega
 
                                         //Console.WriteLine("data " + 0 + " " + length + " aval " + BaseStream.BytesToRead);
                                     }
-                                    int read = BaseStream.Read(temp, 6, length - 4);
+                                    if (BaseStream.IsOpen)
+                                    {
+                                        int read = BaseStream.Read(temp, 6, length - 4);
+                                    }
                                 }
                                 //Console.WriteLine("data " + read + " " + length + " aval " + this.BytesToRead);
                                 count = length + 2;
@@ -2113,6 +2117,10 @@ namespace ArdupilotMega
             if (temp.Length > 5 && temp[1] != MAVLINK_MESSAGE_LENGTHS[temp[5]])
             {
                 Console.WriteLine("Mavlink Bad Packet (Len Fail) len {0} pkno {1}", temp.Length, temp[5]);
+#if MAVLINK10
+                if (temp.Length == 11 && temp[0] == 'U' && temp[5] == 0)
+                    throw new Exception("Mavlink 0.9 Heartbeat, Please upgrade your AP, This planner is for Mavlink 1.0\n\n");
+#endif
                 return new byte[0];
             }
 

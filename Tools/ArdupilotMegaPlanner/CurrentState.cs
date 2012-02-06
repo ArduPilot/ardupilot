@@ -256,7 +256,7 @@ namespace ArdupilotMega
                     if (ind != -1)
                         logdata = logdata.Substring(0, ind);
 
-                    if (messages.Count > 5)
+                    while (messages.Count > 5)
                     {
                         messages.RemoveAt(0);
                     }

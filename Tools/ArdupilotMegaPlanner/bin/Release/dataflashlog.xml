@@ -13,12 +13,12 @@
       <F8>CRS</F8>
     </GPS>
     <ATT>
-      <F1>Roll</F1>
-      <F2>Pitch</F2>
-      <F3>Yaw</F3>
-      <F4>CH1 out</F4>
-      <F5>CH2 out</F5>
-      <F6>CH4 out</F6>
+      <F1>Roll IN</F1>
+      <F2>Roll</F2>
+      <F3>Pitch IN</F3>
+      <F4>Pitch</F4>
+      <F5>Yaw IN</F5>
+      <F6>Yaw</F6>
     </ATT>
     <NTUN>
       <F1>WP Dist</F1>
@@ -27,26 +27,23 @@
       <F4>Lat Err</F4>
       <F5>nav lon</F5>
       <F6>nav lat</F6>
-      <F7>nav lon I</F7>
-      <F8>nav lat I</F8>
-      <F9>Loiter Lon I</F9>
-      <F10>Loiter Lat I</F10>
+	  <F7>X Speed</F7>
+	  <F8>Y Speed</F8>
+      <F9>nav lon I</F9>
+      <F10>nav lat I</F10>
     </NTUN>
     <CTUN>
-      <F1>Roll IN</F1>
-      <F2>Pitch IN</F2>
-      <F3>Thr IN</F3>
-      <F4>Yaw IN</F4>
-      <F5>Sonar Alt</F5>
-      <F6>Baro Alt</F6>
-      <F7>Next WP Alt</F7>
-      <F8>Nav Throttle</F8>
-      <F9>Angle boost</F9>
-      <F10>Manual boost</F10>
-      <F11>Climb Rate</F11>
-      <F12>rc3 servo out</F12>
-      <F13>alt hold int</F13>
-      <F14>Thr int</F14>
+      <F1>Thr IN</F1>
+      <F2>Sonar Alt</F2>
+      <F3>Baro Alt</F3>
+      <F4>WP Alt</F4>
+      <F5>Nav Throttle</F5>
+      <F6>Angle boost</F6>
+      <F7>Manual boost</F7>
+      <F8>Climb Rate</F8>
+      <F9>rc3 servo out</F9>
+      <F10>alt hold int</F10>
+      <F11>Thr int</F11>
     </CTUN>
     <PM>
       <F1>Perf Timer</F1>
@@ -65,8 +62,8 @@
       <F6>Accel Z</F6>
     </RAW>
     <CURR>
-      <F1>Throttle in</F1>
-      <F2>Throttle intergrator</F2>
+      <F1>Thr IN</F1>
+      <F2>Thr int</F2>
       <F3>Voltage</F3>
       <F4>Current</F4>
       <F5>Current total</F5>
@@ -76,8 +73,22 @@
       <F2>Current #</F2>
       <F3>ID</F3>
       <F4>options</F4>
-      <F5></F5>
+      <F5>p1</F5>
+	  <F6>Alt</F6>
+	  <F7>Lat</F7>
+	  <F8>Long</F8>
     </CMD>
+    <OF>
+      <F1>X raw</F1>
+      <F2>Y raw</F2>
+      <F3>SurfaceQual</F3>
+      <F4>X cm</F4>
+      <F5>Y cm</F5>
+	  <F6>Lat</F6>
+	  <F7>Long</F7>
+	  <F8>Roll Cmd</F8>
+	  <F9>Pitch Cmd</F9>
+    </OF>
     <MOD>
       <F1>FlightMode</F1>
       <F2>Thr Cruise</F2>

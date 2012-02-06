@@ -279,15 +279,23 @@ namespace ArdupilotMega.GCSViews
             {
                 cell = Commands.Rows[selectedrow].Cells[Alt.Index] as DataGridViewTextBoxCell;
 
-                cell.Value = TXT_DefaultAlt.Text;
-
-                float result;
-                float.TryParse(TXT_homealt.Text, out result);
-
-                if (result == 0)
                 {
-                    MessageBox.Show("You must have a home altitude");
+                    float result;
+                    float.TryParse(TXT_homealt.Text, out result);
+
+                    if (result == 0)
+                    {
+                        MessageBox.Show("You must have a home altitude");
+                    }
+
+                    if (!float.TryParse(TXT_DefaultAlt.Text, out result))
+                    {
+                        MessageBox.Show("Your default alt is not valid");
+                        return;
+                    }
                 }
+
+                cell.Value = TXT_DefaultAlt.Text;
 
                 float ans;
                 if (float.TryParse(cell.Value.ToString(), out ans))
@@ -784,7 +792,7 @@ namespace ArdupilotMega.GCSViews
                     cmd = Commands[Command.Index, selectedrow].Value.ToString();
                 }
                 catch { cmd = option; }
-                Console.WriteLine("editformat " + option + " value " + cmd);
+                //Console.WriteLine("editformat " + option + " value " + cmd);
                 ChangeColumnHeader(cmd);
             }
             catch (Exception ex) { MessageBox.Show(ex.ToString()); }
@@ -916,7 +924,7 @@ namespace ArdupilotMega.GCSViews
                 drawnpolygons.Markers.Add(m);
                 drawnpolygons.Markers.Add(mBorders);
             }
-            catch (Exception) { }
+            catch (Exception ex) { Console.WriteLine(ex.ToString()); }
         }
 
         /// <summary>
@@ -1086,11 +1094,16 @@ namespace ArdupilotMega.GCSViews
                 else if (home.Length > 5 && usable == 0)
                 {
                     lookat = "<LookAt>     <longitude>" + TXT_homelng.Text.ToString(new System.Globalization.CultureInfo("en-US")) + "</longitude>     <latitude>" + TXT_homelat.Text.ToString(new System.Globalization.CultureInfo("en-US")) + "</latitude> <range>4000</range> </LookAt>";
-                    MainMap.HoldInvalidation = true;
-                    MainMap.ZoomAndCenterMarkers("objects");
-                    MainMap.Zoom -= 2;
+
+                    RectLatLng? rect = MainMap.GetRectOfAllMarkers("objects");
+                    if (rect.HasValue)
+                    {
+                        MainMap.Position = rect.Value.LocationMiddle;
+                    }
+
+                    MainMap.Zoom = 17;
+
                     MainMap_OnMapZoomChanged();
-                    MainMap.HoldInvalidation = false;
                 }
 
                 RegeneratePolygon();
@@ -1933,8 +1946,13 @@ namespace ArdupilotMega.GCSViews
                     {
                         if (CurentRectMarker.InnerMarker.Tag.ToString().Contains("grid"))
                         {
-                            drawnpolygon.Points[int.Parse(CurentRectMarker.InnerMarker.Tag.ToString().Replace("grid", "")) - 1] = new PointLatLng(end.Lat, end.Lng);
-                            MainMap.UpdatePolygonLocalPosition(drawnpolygon);
+                            try
+                            {
+                                drawnpolygon.Points[int.Parse(CurentRectMarker.InnerMarker.Tag.ToString().Replace("grid", "")) - 1] = new PointLatLng(end.Lat, end.Lng);
+                                MainMap.UpdatePolygonLocalPosition(drawnpolygon);
+                                MainMap.Invalidate();
+                            }
+                            catch { }
                         }
                         else
                         {
@@ -2002,6 +2020,7 @@ namespace ArdupilotMega.GCSViews
                         {
                             drawnpolygon.Points[int.Parse(CurentRectMarker.InnerMarker.Tag.ToString().Replace("grid", "")) - 1] = new PointLatLng(point.Lat, point.Lng);
                             MainMap.UpdatePolygonLocalPosition(drawnpolygon);
+                            MainMap.Invalidate();
                         }
                     }
                     catch { }
@@ -2445,6 +2464,24 @@ namespace ArdupilotMega.GCSViews
 
                 string angle = (90).ToString("0");
                 Common.InputBox("Angle", "Enter the line direction (0-180)", ref angle);
+
+                double tryme = 0;
+
+                if (!double.TryParse(angle, out tryme))
+                {
+                    MessageBox.Show("Invalid Angle");
+                    return;
+                }
+                if (!double.TryParse(alt, out tryme))
+                {
+                    MessageBox.Show("Invalid Alt");
+                    return;
+                }
+                if (!double.TryParse(distance, out tryme))
+                {
+                    MessageBox.Show("Invalid Distance");
+                    return;
+                }
 
 #if DEBUG
                 //Commands.Rows.Clear();

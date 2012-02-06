@@ -805,7 +805,14 @@ namespace ArdupilotMega.GCSViews
 
             // Add the video device
             hr = m_FilterGraph.AddSourceFilterForMoniker(capDevices[CMB_videosources.SelectedIndex].Mon, null, "Video input", out capFilter);
-            DsError.ThrowExceptionForHR(hr);
+            try
+            {
+                DsError.ThrowExceptionForHR(hr);
+            }
+            catch (Exception ex) {
+                MessageBox.Show("Can not add video source\n" + ex.ToString()); 
+                return; 
+            }
 
             // Find the stream config interface
             hr = capGraph.FindInterface(PinCategory.Capture, MediaType.Video, capFilter, typeof(IAMStreamConfig).GUID, out o);
