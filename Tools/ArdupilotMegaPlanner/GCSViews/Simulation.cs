@@ -280,7 +280,7 @@ namespace ArdupilotMega.GCSViews
 
                             _procstartinfo.UseShellExecute = true;
                             //_procstartinfo.RedirectStandardOutput = true;
-                            
+
 
                             System.Diagnostics.Process.Start(_procstartinfo);
 
@@ -307,12 +307,12 @@ namespace ArdupilotMega.GCSViews
                 };
                 t11.Start();
                 MainV2.threads.Add(t11);
-                timer1.Start();
+                timer_servo_graph.Start();
             }
             else
             {
 
-                timer1.Stop();
+                timer_servo_graph.Stop();
                 threadrun = 0;
                 if (SimulatorRECV != null)
                     SimulatorRECV.Close();
@@ -569,7 +569,8 @@ namespace ArdupilotMega.GCSViews
                             RECVprocess(udpdata, recv, comPort);
                         }
                     }
-                    catch { //OutputLog.AppendText("Xplanes Data Problem - You need DATA IN/OUT 3, 4, 17, 18, 19, 20\n" + ex.Message + "\n");
+                    catch
+                    { //OutputLog.AppendText("Xplanes Data Problem - You need DATA IN/OUT 3, 4, 17, 18, 19, 20\n" + ex.Message + "\n");
                     }
                 }
                 if (MavLink != null && MavLink.Client != null && MavLink.Client.Connected && MavLink.Available > 0)
@@ -606,7 +607,7 @@ namespace ArdupilotMega.GCSViews
 
                 if (hzcounttime.Second != DateTime.Now.Second)
                 {
-//                  Console.WriteLine("SIM hz {0}", hzcount);
+                    //                  Console.WriteLine("SIM hz {0}", hzcount);
                     hzcount = 0;
                     hzcounttime = DateTime.Now;
                 }
@@ -675,11 +676,11 @@ namespace ArdupilotMega.GCSViews
             MavLink = new UdpClient("127.0.0.1", 14550);
         }
 
-        float oldax =0, olday =0, oldaz = 0;
+        float oldax = 0, olday = 0, oldaz = 0;
         DateTime oldtime = DateTime.Now;
 #if MAVLINK10
         ArdupilotMega.MAVLink.__mavlink_gps_raw_int_t oldgps = new MAVLink.__mavlink_gps_raw_int_t();
-		#endif
+#endif
 
         ArdupilotMega.MAVLink.__mavlink_attitude_t oldatt = new ArdupilotMega.MAVLink.__mavlink_attitude_t();
 
@@ -740,7 +741,9 @@ namespace ArdupilotMega.GCSViews
                     att.pitchspeed = (DATA[17][0]);
                     att.rollspeed = (DATA[17][1]);
                     att.yawspeed = (DATA[17][2]);
-                } else {
+                }
+                else
+                {
                     att.pitch = (DATA[17][0] * deg2rad);
                     att.roll = (DATA[17][1] * deg2rad);
                     att.yaw = (DATA[17][2] * deg2rad);
@@ -799,9 +802,9 @@ namespace ArdupilotMega.GCSViews
                 double head = DATA[18][2] - 90;
 #if MAVLINK10
                 imu.time_usec = ((ulong)DateTime.Now.ToBinary());
-				#else
-				imu.usec = ((ulong)DateTime.Now.ToBinary());
-				#endif
+#else
+                imu.usec = ((ulong)DateTime.Now.ToBinary());
+#endif
                 imu.xgyro = xgyro; // roll - yes
                 imu.xmag = (short)(Math.Sin(head * deg2rad) * 1000);
                 imu.ygyro = ygyro; // pitch - yes
@@ -817,7 +820,14 @@ namespace ArdupilotMega.GCSViews
 #if MAVLINK10
                 gps.alt = (int)(DATA[20][2] * ft2m * 1000);
                 gps.fix_type = 3;
-                gps.cog = (ushort)(DATA[19][2] * 100);
+                                if (xplane9)
+                {
+                    gps.cog = ((float)DATA[19][2]);
+                }
+                else
+                {
+                    gps.cog = ((float)DATA[18][2]);
+                }
                 gps.lat = (int)(DATA[20][0] * 1.0e7);
                 gps.lon = (int)(DATA[20][1] * 1.0e7);
                 gps.time_usec = ((ulong)0);
@@ -825,7 +835,14 @@ namespace ArdupilotMega.GCSViews
 #else
                 gps.alt = ((float)(DATA[20][2] * ft2m));
                 gps.fix_type = 3;
-                gps.hdg = ((float)DATA[19][2]);
+                if (xplane9)
+                {
+                    gps.hdg = ((float)DATA[19][2]);
+                }
+                else
+                {
+                    gps.hdg = ((float)DATA[18][2]);
+                }
                 gps.lat = ((float)DATA[20][0]);
                 gps.lon = ((float)DATA[20][1]);
                 gps.usec = ((ulong)0);
@@ -860,9 +877,9 @@ namespace ArdupilotMega.GCSViews
 
 #if MAVLINK10
                 imu.time_usec = ((ulong)DateTime.Now.ToBinary());
-				#else
-				imu.usec = ((ulong)DateTime.Now.ToBinary());
-				#endif
+#else
+                imu.usec = ((ulong)DateTime.Now.ToBinary());
+#endif
 
                 imu.xacc = ((Int16)(imudata2.accelX * 9808 / 32.2));
                 imu.xgyro = ((Int16)(imudata2.rateRoll * 17.453293));
@@ -873,7 +890,7 @@ namespace ArdupilotMega.GCSViews
                 imu.zacc = ((Int16)(imudata2.accelZ * 9808 / 32.2)); // + 1000
                 imu.zgyro = ((Int16)(imudata2.rateYaw * 17.453293));
                 imu.zmag = 0;
-				
+
 #if MAVLINK10
                 gps.alt = ((int)(imudata2.altitude * ft2m * 1000));
                 gps.fix_type = 3;
@@ -927,9 +944,9 @@ namespace ArdupilotMega.GCSViews
 
 #if MAVLINK10
                 imu.time_usec = ((ulong)DateTime.Now.ToBinary());
-				#else
-				imu.usec = ((ulong)DateTime.Now.ToBinary());
-				#endif
+#else
+                imu.usec = ((ulong)DateTime.Now.ToBinary());
+#endif
                 imu.xgyro = (short)(aeroin.Model_fAngVel_Body_X * 1000); // roll - yes
                 //imu.xmag = (short)(Math.Sin(head * deg2rad) * 1000);
                 imu.ygyro = (short)(aeroin.Model_fAngVel_Body_Y * 1000); // pitch - yes
@@ -943,7 +960,7 @@ namespace ArdupilotMega.GCSViews
                 imu.yacc = (Int16)((accel3D.Y + aeroin.Model_fAccel_Body_Y) * 1000); // roll
                 imu.zacc = (Int16)((accel3D.Z + aeroin.Model_fAccel_Body_Z) * 1000);
 
-//                Console.WriteLine("x {0} y {1} z {2}", imu.xacc, imu.yacc, imu.zacc);
+                //                Console.WriteLine("x {0} y {1} z {2}", imu.xacc, imu.yacc, imu.zacc);
 
 #if MAVLINK10
                 gps.alt = ((int)(aeroin.Model_fPosZ) * 1000);
@@ -953,7 +970,7 @@ namespace ArdupilotMega.GCSViews
                 gps.lon = (int)(aeroin.Model_fLongitude * 1.0e7);
                 gps.time_usec = ((ulong)DateTime.Now.Ticks);
                 gps.vel = (ushort)(Math.Sqrt((aeroin.Model_fVelY * aeroin.Model_fVelY) + (aeroin.Model_fVelX * aeroin.Model_fVelX)) * 100);
-#else 
+#else
                 gps.alt = ((float)(aeroin.Model_fPosZ));
                 gps.fix_type = 3;
                 gps.hdg = ((float)Math.Atan2(aeroin.Model_fVelX, aeroin.Model_fVelY) * rad2deg);
@@ -988,9 +1005,9 @@ namespace ArdupilotMega.GCSViews
 
 #if MAVLINK10
                 imu.time_usec = ((ulong)DateTime.Now.ToBinary());
-				#else
-				imu.usec = ((ulong)DateTime.Now.ToBinary());
-				#endif
+#else
+                imu.usec = ((ulong)DateTime.Now.ToBinary());
+#endif
                 imu.xgyro = (short)(fdm.phidot); // roll - yes
                 //imu.xmag = (short)(Math.Sin(head * deg2rad) * 1000);
                 imu.ygyro = (short)(fdm.thetadot); // pitch - yes
@@ -1134,10 +1151,10 @@ namespace ArdupilotMega.GCSViews
                 Array.Copy(BitConverter.GetBytes((double)lastfdmdata.psi * rad2deg), 0, sitlout, a += 8, 8);
                 Array.Copy(BitConverter.GetBytes((double)lastfdmdata.vcas * ft2m), 0, sitlout, a += 8, 8);
 
-//                Console.WriteLine(lastfdmdata.theta);
+                //                Console.WriteLine(lastfdmdata.theta);
 
                 Array.Copy(BitConverter.GetBytes((int)0x4c56414e), 0, sitlout, a += 8, 4);
-                
+
                 SITLSEND.Send(sitlout, sitlout.Length);
 
                 return;
@@ -1176,27 +1193,27 @@ namespace ArdupilotMega.GCSViews
 
             comPort.sendPacket(asp);
 			
-			#else
-			
+#else
+
             if (chkSensor.Checked == false) // attitude
             {
-                comPort.sendPacket( att);
+                comPort.sendPacket(att);
 
-                comPort.sendPacket( asp);
+                comPort.sendPacket(asp);
             }
             else // raw imu
             {
                 // imudata
 
-                comPort.sendPacket( imu);
+                comPort.sendPacket(imu);
 
-			#endif
+#endif
 
-            MAVLink.__mavlink_raw_pressure_t pres = new MAVLink.__mavlink_raw_pressure_t();
-            double calc = (101325 * Math.Pow(1 - 2.25577 * Math.Pow(10, -5) * gps.alt, 5.25588)); // updated from valid gps
-            pres.press_diff1 = (short)(int)(calc - 101325); // 0 alt is 0 pa
+                MAVLink.__mavlink_raw_pressure_t pres = new MAVLink.__mavlink_raw_pressure_t();
+                double calc = (101325 * Math.Pow(1 - 2.25577 * Math.Pow(10, -5) * gps.alt, 5.25588)); // updated from valid gps
+                pres.press_diff1 = (short)(int)(calc - 101325); // 0 alt is 0 pa
 
-            comPort.sendPacket(pres);
+                comPort.sendPacket(pres);
 #if !MAVLINK10
                 comPort.sendPacket(asp);
             }
@@ -1210,7 +1227,7 @@ namespace ArdupilotMega.GCSViews
                 comPort.sendPacket(gps);
             }
 #endif
-        }        
+        }
 
         HIL.QuadCopter quad = new HIL.QuadCopter();
 
@@ -1228,7 +1245,7 @@ namespace ArdupilotMega.GCSViews
         /// <param name="pitch_out">-1 to 1</param>
         /// <param name="rudder_out">-1 to 1</param>
         /// <param name="throttle_out">0 to 1</param>
-        private void updateScreenDisplay(double lat,double lng,double alt,double roll,double pitch,double heading, double yaw,double roll_out,double pitch_out, double rudder_out, double throttle_out)
+        private void updateScreenDisplay(double lat, double lng, double alt, double roll, double pitch, double heading, double yaw, double roll_out, double pitch_out, double rudder_out, double throttle_out)
         {
             try
             {
@@ -1329,7 +1346,7 @@ namespace ArdupilotMega.GCSViews
                 }
                 catch (Exception) { Console.WriteLine("Socket Write failed, FG closed?"); }
 
-                updateScreenDisplay(lastfdmdata.latitude,lastfdmdata.longitude,lastfdmdata.altitude * .3048,lastfdmdata.phi,lastfdmdata.theta,lastfdmdata.psi,lastfdmdata.psi,m[0],m[1],m[2],m[3]);
+                updateScreenDisplay(lastfdmdata.latitude, lastfdmdata.longitude, lastfdmdata.altitude * .3048, lastfdmdata.phi, lastfdmdata.theta, lastfdmdata.psi, lastfdmdata.psi, m[0], m[1], m[2], m[3]);
 
                 return;
 
@@ -1350,10 +1367,9 @@ namespace ArdupilotMega.GCSViews
             }
             else
             {
-
                 roll_out = (float)MainV2.cs.hilch1 / rollgain;
                 pitch_out = (float)MainV2.cs.hilch2 / pitchgain;
-                throttle_out = ((float)MainV2.cs.hilch3 / 2 + 5000) / throttlegain;
+                throttle_out = ((float)MainV2.cs.hilch3) / throttlegain;
                 rudder_out = (float)MainV2.cs.hilch4 / ruddergain;
 
                 if (RAD_aerosimrc.Checked && CHK_quad.Checked)
@@ -1415,7 +1431,9 @@ namespace ArdupilotMega.GCSViews
                         if (xplane9)
                         {
                             updateScreenDisplay(DATA[20][0] * deg2rad, DATA[20][1] * deg2rad, DATA[20][2] * .3048, DATA[18][1] * deg2rad, DATA[18][0] * deg2rad, DATA[19][2] * deg2rad, DATA[18][2] * deg2rad, roll_out, pitch_out, rudder_out, throttle_out);
-                        } else {
+                        }
+                        else
+                        {
 
                             updateScreenDisplay(DATA[20][0] * deg2rad, DATA[20][1] * deg2rad, DATA[20][2] * .3048, DATA[17][1] * deg2rad, DATA[17][0] * deg2rad, DATA[18][2] * deg2rad, DATA[17][2] * deg2rad, roll_out, pitch_out, rudder_out, throttle_out);
                         }
@@ -1444,7 +1462,7 @@ namespace ArdupilotMega.GCSViews
                 Array.Copy(BitConverter.GetBytes((double)(roll_out * REV_roll)), 0, AeroSimRC, 0, 8);
                 Array.Copy(BitConverter.GetBytes((double)(pitch_out * REV_pitch * -1)), 0, AeroSimRC, 8, 8);
                 Array.Copy(BitConverter.GetBytes((double)(rudder_out * REV_rudder)), 0, AeroSimRC, 16, 8);
-                Array.Copy(BitConverter.GetBytes((double)((throttle_out *2) -1)), 0, AeroSimRC, 24, 8);
+                Array.Copy(BitConverter.GetBytes((double)((throttle_out * 2) - 1)), 0, AeroSimRC, 24, 8);
 
                 if (heli)
                 {
@@ -1487,12 +1505,12 @@ namespace ArdupilotMega.GCSViews
             if (RAD_JSBSim.Checked)
             {
                 roll_out = Constrain(roll_out * REV_roll, -1f, 1f);
-                pitch_out = Constrain(-pitch_out * REV_pitch, -1f,1f);
+                pitch_out = Constrain(-pitch_out * REV_pitch, -1f, 1f);
                 rudder_out = Constrain(rudder_out * REV_rudder, -1f, 1f);
 
                 throttle_out = Constrain(throttle_out, -0.0f, 1f);
 
-                string cmd = string.Format("set fcs/aileron-cmd-norm {0}\r\nset fcs/elevator-cmd-norm {1}\r\nset fcs/rudder-cmd-norm {2}\r\nset fcs/throttle-cmd-norm {3}\r\n",roll_out,pitch_out,rudder_out,throttle_out);
+                string cmd = string.Format("set fcs/aileron-cmd-norm {0}\r\nset fcs/elevator-cmd-norm {1}\r\nset fcs/rudder-cmd-norm {2}\r\nset fcs/throttle-cmd-norm {3}\r\n", roll_out, pitch_out, rudder_out, throttle_out);
 
                 //Console.Write(cmd);
                 byte[] data = System.Text.Encoding.ASCII.GetBytes(cmd);
@@ -1529,7 +1547,7 @@ namespace ArdupilotMega.GCSViews
 
             if (RAD_softXplanes.Checked)
             {
-            
+
 
                 // sending only 1 packet instead of many.
 
@@ -1736,9 +1754,9 @@ namespace ArdupilotMega.GCSViews
             //myPane.Chart.Fill = new Fill(Color.White, Color.LightGray, 45.0f);
 
             // Sample at 50ms intervals
-            timer1.Interval = 50;
-            timer1.Enabled = true;
-            timer1.Start();
+            timer_servo_graph.Interval = 50;
+            timer_servo_graph.Enabled = true;
+            timer_servo_graph.Start();
 
 
             // Calculate the Axis Scale Ranges
@@ -1778,14 +1796,14 @@ namespace ArdupilotMega.GCSViews
                 xScale.Max = time + xScale.MajorStep;
                 xScale.Min = xScale.Max - 30.0;
             }
-                // Make sure the Y axis is rescaled to accommodate actual data
-                try
-                {
-                    zg1.AxisChange();
-                }
-                catch { }
-                // Force a redraw
-                zg1.Invalidate();
+            // Make sure the Y axis is rescaled to accommodate actual data
+            try
+            {
+                zg1.AxisChange();
+            }
+            catch { }
+            // Force a redraw
+            zg1.Invalidate();
         }
 
         private void SaveSettings_Click(object sender, EventArgs e)
@@ -1965,9 +1983,9 @@ namespace ArdupilotMega.GCSViews
 
                 if (!MainV2.MONO)
                 {
-                    extra = " --fg-root=\"" + Path.GetDirectoryName(ofd.FileName.ToLower().Replace("bin\\win32\\","")) + "\\data\"";
+                    extra = " --fg-root=\"" + Path.GetDirectoryName(ofd.FileName.ToLower().Replace("bin\\win32\\", "")) + "\\data\"";
                 }
-                    
+
                 System.Diagnostics.Process P = new System.Diagnostics.Process();
                 P.StartInfo.FileName = ofd.FileName;
                 P.StartInfo.Arguments = extra + @" --geometry=400x300         --native-fdm=socket,out,50,127.0.0.1,49005,udp 	--generic=socket,in,50,127.0.0.1,49000,udp,MAVLink		   --roll=0       --pitch=0       --wind=0@0       --turbulence=0.0       --prop:/sim/frame-rate-throttle-hz=30       --timeofday=noon       --shading-flat       --fog-disable       --disable-specular-highlight       --disable-skyblend       --disable-random-objects       --disable-panel       --disable-horizon-effect       --disable-clouds       --disable-anti-alias-hud ";
@@ -2044,7 +2062,7 @@ namespace ArdupilotMega.GCSViews
             if (displayfull)
             {
                 //this.Width = 651;
-                timer1.Start();
+                timer_servo_graph.Start();
                 zg1.Visible = true;
 
 
@@ -2059,7 +2077,7 @@ namespace ArdupilotMega.GCSViews
                 //this.Width = 651;
                 //this.Height = 457;
 
-                timer1.Stop();
+                timer_servo_graph.Stop();
                 zg1.Visible = false;
 
                 CHKgraphpitch.Visible = false;
@@ -2069,14 +2087,5 @@ namespace ArdupilotMega.GCSViews
             }
         }
 
-        private void RAD_aerosimrc_CheckedChanged(object sender, EventArgs e)
-        {
-
-        }
-
-        private void RAD_JSBSim_CheckedChanged(object sender, EventArgs e)
-        {
-
-        }
     }
 }

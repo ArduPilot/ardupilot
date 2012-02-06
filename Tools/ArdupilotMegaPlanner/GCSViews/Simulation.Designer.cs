@@ -83,7 +83,7 @@
             this.label17 = new ArdupilotMega.MyLabel();
             this.panel5 = new System.Windows.Forms.Panel();
             this.zg1 = new ZedGraph.ZedGraphControl();
-            this.timer1 = new System.Windows.Forms.Timer(this.components);
+            this.timer_servo_graph = new System.Windows.Forms.Timer(this.components);
             this.panel6 = new System.Windows.Forms.Panel();
             this.label28 = new ArdupilotMega.MyLabel();
             this.label29 = new ArdupilotMega.MyLabel();
@@ -501,9 +501,9 @@
             this.zg1.ScrollMinY = 0D;
             this.zg1.ScrollMinY2 = 0D;
             // 
-            // timer1
+            // timer_servo_graph
             // 
-            this.timer1.Tick += new System.EventHandler(this.timer1_Tick);
+            this.timer_servo_graph.Tick += new System.EventHandler(this.timer1_Tick);
             // 
             // panel6
             // 
@@ -692,7 +692,6 @@
             this.RAD_aerosimrc.Name = "RAD_aerosimrc";
             this.toolTip1.SetToolTip(this.RAD_aerosimrc, resources.GetString("RAD_aerosimrc.ToolTip"));
             this.RAD_aerosimrc.UseVisualStyleBackColor = true;
-            this.RAD_aerosimrc.CheckedChanged += new System.EventHandler(this.RAD_aerosimrc_CheckedChanged);
             // 
             // RAD_JSBSim
             // 
@@ -700,7 +699,6 @@
             this.RAD_JSBSim.Name = "RAD_JSBSim";
             this.toolTip1.SetToolTip(this.RAD_JSBSim, resources.GetString("RAD_JSBSim.ToolTip"));
             this.RAD_JSBSim.UseVisualStyleBackColor = true;
-            this.RAD_JSBSim.CheckedChanged += new System.EventHandler(this.RAD_JSBSim_CheckedChanged);
             // 
             // CHK_xplane10
             // 
@@ -811,7 +809,7 @@
         private ArdupilotMega.MyLabel label19;
         private ArdupilotMega.MyLabel TXT_control_mode;
         private ZedGraph.ZedGraphControl zg1;
-        private System.Windows.Forms.Timer timer1;
+        private System.Windows.Forms.Timer timer_servo_graph;
         private System.Windows.Forms.Panel panel6;
         private System.Windows.Forms.TextBox TXT_ruddergain;
         private System.Windows.Forms.TextBox TXT_pitchgain;
