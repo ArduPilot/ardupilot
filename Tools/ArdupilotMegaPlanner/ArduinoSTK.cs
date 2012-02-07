@@ -12,6 +12,24 @@ namespace ArdupilotMega
     {
         public event ProgressEventHandler Progress;
 
+        public void Open()
+        {
+            // default dtr status is false
+            base.Open();
+
+            // let it settle
+            System.Threading.Thread.Sleep(10);
+
+            // pull dtr low
+            this.DtrEnable = true;
+            System.Threading.Thread.Sleep(1);
+            // free dtr
+            this.DtrEnable = false;
+            System.Threading.Thread.Sleep(1);
+            // pull dtr low
+            this.DtrEnable = true;
+        }
+
         /// <summary>
         /// Used to start initial connecting after serialport.open
         /// </summary>
