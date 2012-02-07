@@ -281,14 +281,15 @@ namespace ArdupilotMega.GCSViews
 
                 {
                     float result;
-                    float.TryParse(TXT_homealt.Text, out result);
+                    bool pass = float.TryParse(TXT_homealt.Text, out result);
 
-                    if (result == 0)
+                    if (result == 0 || pass == false)
                     {
                         MessageBox.Show("You must have a home altitude");
+                        return;
                     }
-
-                    if (!float.TryParse(TXT_DefaultAlt.Text, out result))
+                    int results1;
+                    if (!int.TryParse(TXT_DefaultAlt.Text, out results1))
                     {
                         MessageBox.Show("Your default alt is not valid");
                         return;
@@ -2060,7 +2061,11 @@ namespace ArdupilotMega.GCSViews
         {
             if (MainMap.Zoom > 0)
             {
-                trackBar1.Value = (int)(MainMap.Zoom);
+                try
+                {
+                    trackBar1.Value = (int)(MainMap.Zoom);
+                }
+                catch { }
                 //textBoxZoomCurrent.Text = MainMap.Zoom.ToString();
                 center.Position = MainMap.Position;
             }
@@ -2199,9 +2204,13 @@ namespace ArdupilotMega.GCSViews
 
         private void comboBoxMapType_SelectedValueChanged(object sender, EventArgs e)
         {
-            MainMap.MapType = (MapType)comboBoxMapType.SelectedItem;
-            FlightData.mymap.MapType = (MapType)comboBoxMapType.SelectedItem;
-            MainV2.config["MapType"] = comboBoxMapType.Text;
+            try
+            {
+                MainMap.MapType = (MapType)comboBoxMapType.SelectedItem;
+                FlightData.mymap.MapType = (MapType)comboBoxMapType.SelectedItem;
+                MainV2.config["MapType"] = comboBoxMapType.Text;
+            }
+            catch { MessageBox.Show("Map change failed. try zomming out first."); }
         }
 
         private void Commands_EditingControlShowing(object sender, DataGridViewEditingControlShowingEventArgs e)
@@ -2841,20 +2850,25 @@ namespace ArdupilotMega.GCSViews
                 }
                 else if (int.TryParse(CurentRectMarker.InnerMarker.Tag.ToString().Replace("grid", ""), out no))
                 {
-                    drawnpolygon.Points.RemoveAt(no - 1);
-                    drawnpolygons.Markers.Clear();
-
-                    int a = 1;
-                    foreach (PointLatLng pnt in drawnpolygon.Points)
+                    try
                     {
-                        addpolygonmarkergrid(a.ToString(), pnt.Lng, pnt.Lat, 0);
-                        a++;
+                        drawnpolygon.Points.RemoveAt(no - 1);
+                        drawnpolygons.Markers.Clear();
+
+                        int a = 1;
+                        foreach (PointLatLng pnt in drawnpolygon.Points)
+                        {
+                            addpolygonmarkergrid(a.ToString(), pnt.Lng, pnt.Lat, 0);
+                            a++;
+                        }
+
+                        MainMap.UpdatePolygonLocalPosition(drawnpolygon);
+
+                        MainMap.Invalidate();
                     }
-
-                    MainMap.UpdatePolygonLocalPosition(drawnpolygon);
-
-                    MainMap.Invalidate();
-
+                    catch {
+                        MessageBox.Show("Remove point Failed. Please try again.");
+                    }
                 }
             }
 
