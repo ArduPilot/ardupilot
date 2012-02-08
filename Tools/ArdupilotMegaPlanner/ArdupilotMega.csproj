@@ -84,7 +84,7 @@
     <SignManifests>false</SignManifests>
   </PropertyGroup>
   <PropertyGroup>
-    <SignAssembly>true</SignAssembly>
+    <SignAssembly>false</SignAssembly>
   </PropertyGroup>
   <PropertyGroup />
   <PropertyGroup>
@@ -437,6 +437,9 @@
     </EmbeddedResource>
     <EmbeddedResource Include="Controls\XorPlus.resx">
       <DependentUpon>XorPlus.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="MavlinkLog.zh-Hans.resx">
+      <DependentUpon>MavlinkLog.cs</DependentUpon>
     </EmbeddedResource>
     <EmbeddedResource Include="SerialInput.resx">
       <DependentUpon>SerialInput.cs</DependentUpon>
