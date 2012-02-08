@@ -363,6 +363,7 @@ static bool verify_land_sonar()
 	}else{
 		// begin to pull down on the throttle
 		landing_boost++;
+		landing_boost = min(landing_boost, 40);
 	}
 
 	if(current_loc.alt < 200 ){
@@ -371,14 +372,16 @@ static bool verify_land_sonar()
 
 	if(current_loc.alt < 150 ){
 		//rapid throttle reduction
-		int16_t lb  = (1.75 * icount * icount) - (7.2 * icount);
-		icount++;
-		lb =  constrain(lb, 0, 180);
-		landing_boost += lb;
+		//int16_t lb  = (1.75 * icount * icount) - (7.2 * icount);
+		//icount++;
+		//lb =  constrain(lb, 0, 180);
+		//landing_boost += lb;
 		//Serial.printf("%0.0f, %d, %d, %d\n", icount, current_loc.alt, landing_boost, lb);
 
+		// if we are low or don't seem to be decending much, increment ground detector
 		if(current_loc.alt < 40 || abs(climb_rate) < 20) {
-			if(ground_detector++ > 20) {
+			landing_boost++;  // reduce the throttle at twice the normal rate
+			if(ground_detector++ > 30) {
 				land_complete = true;
 				ground_detector = 0;
 				icount = 1;
