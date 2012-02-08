@@ -20,19 +20,18 @@ camera_stabilization()
 {
 	// PITCH
 	// -----
-	// allow control mixing
-	g.rc_camera_pitch.set_pwm(APM_RC.InputCh(CH_6)); // I'm using CH 6 input here.
-	g.rc_camera_pitch.servo_out = g.rc_camera_pitch.control_mix(dcm.pitch_sensor);
-
+	// Allow user to control camera pitch with channel 6 (mixed with pitch DCM)
+	if(g.radio_tuning == 0) {
+		g.rc_camera_pitch.set_pwm(APM_RC.InputCh(CH_6));
+		g.rc_camera_pitch.servo_out = g.rc_camera_pitch.control_mix(dcm.pitch_sensor);
+	}else{
+		// unless channel 6 is already being used for tuning
+	    g.rc_camera_pitch.servo_out = dcm.pitch_sensor  * -1;
+	}
 	g.rc_camera_pitch.servo_out	= (float)g.rc_camera_pitch.servo_out * g.camera_pitch_gain;
 
 	// limit
 	//g.rc_camera_pitch.servo_out = constrain(g.rc_camera_pitch.servo_out, -4500, 4500);
-
-	// dont allow control mixing
-	/*
-	g.rc_camera_pitch.servo_out = dcm.pitch_sensor  * -1;
-	*/
 
 
 	// ROLL
