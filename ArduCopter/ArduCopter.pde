@@ -1415,8 +1415,8 @@ void update_roll_pitch_mode(void)
 	switch(roll_pitch_mode){
 		case ROLL_PITCH_ACRO:
 			// ACRO does not get SIMPLE mode ability
-			g.rc_1.servo_out = get_rate_roll(g.rc_1.control_in);
-			g.rc_2.servo_out = get_rate_pitch(g.rc_2.control_in);
+			g.rc_1.servo_out = get_acro_roll(g.rc_1.control_in);
+			g.rc_2.servo_out = get_acro_pitch(g.rc_2.control_in);
 			break;
 
 		case ROLL_PITCH_STABLE:
