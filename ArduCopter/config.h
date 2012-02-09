@@ -194,7 +194,7 @@
 //
 
 #ifndef CH7_OPTION
-# define CH7_OPTION		CH7_SAVE_WP
+# define CH7_OPTION		CH7_DO_NOTHING
 #endif
 
 
