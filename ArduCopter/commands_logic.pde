@@ -381,12 +381,14 @@ static bool verify_land_sonar()
 		// if we are low or don't seem to be decending much, increment ground detector
 		if(current_loc.alt < 40 || abs(climb_rate) < 20) {
 			landing_boost++;  // reduce the throttle at twice the normal rate
-			if(ground_detector++ > 30) {
+			if(ground_detector++ >= 30) {
 				land_complete = true;
-				ground_detector = 0;
+				ground_detector = 30;
 				icount = 1;
-				// init disarm motors
-				init_disarm_motors();
+				if(g.rc_3.control_in == 0){
+					// init disarm motors
+					init_disarm_motors();
+				}
 				return true;
 			}
 		}
@@ -412,11 +414,13 @@ static bool verify_land_baro()
 	if(current_loc.alt < 150 ){
 		if(abs(climb_rate) < 20) {
 			landing_boost++;
-			if(ground_detector++ > 30) {
+			if(ground_detector++ >= 30) {
 				land_complete = true;
-				ground_detector = 0;
-				// init disarm motors
-				init_disarm_motors();
+				ground_detector = 30;
+				if(g.rc_3.control_in == 0){
+					// init disarm motors
+					init_disarm_motors();
+				}
 				return true;
 			}
 		}
