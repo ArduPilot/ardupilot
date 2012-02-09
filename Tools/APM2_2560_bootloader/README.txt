@@ -31,4 +31,8 @@ The sketch will have its own LED flashing pattern.
 
 BUGS
 
-If a USB cable is connected to power up the board, the boot loader starts the sketch instantly. This is because the USB cable detection takes a short time to stabilize, by then, the bootloader has moved on. This is not much of an issue as USB connection for the purposes of flashing the firmware causes another reset when the USB port is opened, thus the bootloader starts again anyway.
+If a USB cable is connected to power up the board, the boot loader starts the sketch instantly.
+This is because the USB cable detection takes a short time to stabilize, by then, the bootloader
+has moved on. This is not much of an issue as USB connection for the purposes of flashing the
+firmware causes another reset when the USB port is opened, thus, the bootloader starts again
+anyway.
