@@ -81,6 +81,22 @@ get_stabilize_yaw(int32_t target_angle)
 }
 
 static int
+get_acro_roll(int32_t target_rate)
+{
+	target_rate = target_rate * g.pi_stabilize_roll.kP();
+	target_rate = constrain(target_rate, -10000, 10000);
+	return get_rate_roll(target_rate);
+}
+
+static int
+get_acro_pitch(int32_t target_rate)
+{
+	target_rate = target_rate * g.pi_stabilize_pitch.kP();
+	target_rate = constrain(target_rate, -10000, 10000);
+	return get_rate_pitch(target_rate);
+}
+
+static int
 get_rate_roll(int32_t target_rate)
 {
 	static int32_t last_rate 	= 0;
