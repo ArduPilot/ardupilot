@@ -637,7 +637,7 @@
 // WP Navigation control gains
 //
 #ifndef NAV_P
-# define NAV_P				2.3			// 3 was causing rapid oscillations in Loiter
+# define NAV_P				2.8			//
 #endif
 #ifndef NAV_I
 # define NAV_I				0.4			// Wind control
