@@ -79,7 +79,7 @@ print_log_menu(void)
 	if (num_logs == 0) {
 		Serial.printf_P(PSTR("\nNo logs\n\n"));
 	}else{
-		Serial.printf_P(PSTR("\n%d logs\n"), num_logs);
+		Serial.printf_P(PSTR("\n%u logs\n"), (unsigned)num_logs);
 
 		for(int i=num_logs;i>=1;i--) {
             int last_log_start = log_start, last_log_end = log_end;
@@ -602,13 +602,13 @@ static void Log_Read_Control_Tuning()
 
 	Serial.printf_P(PSTR("CTUN, "));
 
-	for(int8_t i = 1; i < 11; i++ ){
+	for(uint8_t i = 1; i < 11; i++ ){
 		temp = DataFlash.ReadInt();
-		Serial.printf("%d, ", temp);
+		Serial.printf("%d, ", (int)temp);
 	}
 	// read 11
 	temp = DataFlash.ReadInt();
-	Serial.printf("%d\n", temp);
+	Serial.printf("%d\n", (int)temp);
 }
 
 // Write a performance monitoring packet. Total length : 9 bytes
@@ -636,11 +636,11 @@ static void Log_Read_Performance()
 
 							 //1   2   3   4   5
 	Serial.printf_P(PSTR("PM, %d, %d, %d, %d, %d\n"),
-		temp1,
-		temp2,
-		temp3,
-		temp4,
-		temp5);
+                    (int)temp1,
+                    (int)temp2,
+                    (int)temp3,
+                    (int)temp4,
+                    (int)temp5);
 }
 
 // Write a command processing packet.  Total length : 21 bytes
