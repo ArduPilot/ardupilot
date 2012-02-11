@@ -252,9 +252,9 @@ RC_Channel::norm_input()
 float
 RC_Channel::norm_output()
 {
-    uint16_t mid = (radio_max + radio_min) / 2;
-    
-	if(radio_out < radio_trim)
+    int16_t mid = (radio_max + radio_min) / 2;
+        
+	if(radio_out < mid)
 		return (float)(radio_out - mid) / (float)(mid - radio_min);
 	else
 		return (float)(radio_out - mid) / (float)(radio_max  - mid);
