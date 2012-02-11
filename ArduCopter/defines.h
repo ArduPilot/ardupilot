@@ -369,4 +369,9 @@ enum gcs_severity {
 #define LOGGING_SIMPLE    1
 #define LOGGING_VERBOSE   2
 
+// Channel Config selection
+
+#define CHANNEL_CONFIG_DEFAULT 1
+#define CHANNEL_CONFIG_CUSTOM  2
+
 #endif // _DEFINES_H
