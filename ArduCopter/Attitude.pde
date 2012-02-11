@@ -97,6 +97,14 @@ get_acro_pitch(int32_t target_rate)
 }
 
 static int
+get_acro_yaw(int32_t target_rate)
+{
+	target_rate = g.pi_stabilize_yaw.get_p(target_rate);
+	target_rate = constrain(target_rate, -15000, 15000);
+	return get_rate_yaw(target_rate);
+}
+
+static int
 get_rate_roll(int32_t target_rate)
 {
 	static int32_t last_rate 	= 0;
