@@ -213,6 +213,13 @@ static NOINLINE void send_extended_status1(mavlink_channel_t chan, uint16_t pack
         battery_current = current_amps1 * 100;
     }
 
+    if (g.battery_monitoring == 3) {
+        /*setting a out-of-range value.
+        It informs to external devices that
+        it cannot be calculated properly just by voltage*/
+        battery_remaining = 150;
+    }
+
     mavlink_msg_sys_status_send(
         chan,
         control_sensors_present,
@@ -271,6 +278,13 @@ static NOINLINE void send_extended_status1(mavlink_channel_t chan, uint16_t pack
 
         uint8_t status 		= MAV_STATE_ACTIVE;
         uint16_t battery_remaining = 1000.0 * (float)(g.pack_capacity - current_total1)/(float)g.pack_capacity;	//Mavlink scaling 100% = 1000
+
+        if (g.battery_monitoring == 3) {
+            /*setting a out-of-range value.
+            It informs to external devices that
+            it cannot be calculated properly just by voltage*/
+            battery_remaining = 1500;
+        }
 
         mavlink_msg_sys_status_send(
             chan,
