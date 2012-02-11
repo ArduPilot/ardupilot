@@ -903,12 +903,6 @@ static void fast_loop()
 	// IMU DCM Algorithm
 	read_AHRS();
 
-	if(takeoff_complete == false){
-		// reset these I terms to prevent awkward tipping on takeoff
-		//reset_rate_I();
-		//reset_stability_I();
-	}
-
 	// custom code/exceptions for flight modes
 	// ---------------------------------------
 	update_yaw_mode();
@@ -1450,6 +1444,17 @@ void update_roll_pitch_mode(void)
 			g.rc_1.servo_out = get_stabilize_roll(get_of_roll(g.rc_1.control_in));
 			g.rc_2.servo_out = get_stabilize_pitch(get_of_pitch(g.rc_2.control_in));
 			break;
+	}
+
+	if(g.rc_3.control_in == 0 && roll_pitch_mode <= ROLL_PITCH_ACRO){
+		reset_rate_I();
+		reset_stability_I();
+	}
+
+	if(takeoff_complete == false){
+		// reset these I terms to prevent awkward tipping on takeoff
+		//reset_rate_I();
+		//reset_stability_I();
 	}
 
 	// clear new radio frame info
