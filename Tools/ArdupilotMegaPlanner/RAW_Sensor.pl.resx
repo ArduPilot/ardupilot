@@ -117,49 +117,49 @@
   <resheader name="writer">
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
-  <data name="chkgy.Text" xml:space="preserve">
-    <value>Żyro Y</value>
-  </data>
-  <data name="chkgx.Text" xml:space="preserve">
-    <value>Żyro X</value>
-  </data>
-  <data name="chkgz.Text" xml:space="preserve">
-    <value>Żyro Z</value>
-  </data>
-  <data name="BUT_savecsv.Text" xml:space="preserve">
-    <value>Zapisz CSV</value>
-  </data>
-  <data name="tabOrientation.Text" xml:space="preserve">
-    <value>Parametry lotu</value>
-  </data>
-  <data name="tabRadio.Text" xml:space="preserve">
-    <value>Radio</value>
-  </data>
-  <data name="chkay.Text" xml:space="preserve">
-    <value>Przysp. Y</value>
-  </data>
-  <data name="chkaz.Text" xml:space="preserve">
-    <value>Przysp. Z</value>
-  </data>
-  <data name="chkax.Text" xml:space="preserve">
-    <value>Przysp. X</value>
-  </data>
-  <data name="label1.Text" xml:space="preserve">
-    <value>WEJ Radia</value>
-  </data>
-  <data name="label3.Text" xml:space="preserve">
-    <value>Uwaga: Występuje opóźnienie przy podglądzie przez Xbee na 50Hz</value>
-  </data>
-  <data name="label2.Text" xml:space="preserve">
-    <value>WYJ Serwa/Silnika</value>
-  </data>
-  <data name="CMB_rawupdaterate.Text" xml:space="preserve">
-    <value>Aktualizuj prędkość</value>
+  <data name="tabRawSensor.Text" xml:space="preserve">
+    <value>Surowy czujnik</value>
   </data>
   <data name="$this.Text" xml:space="preserve">
     <value>Surowy czujnik</value>
   </data>
-  <data name="tabRawSensor.Text" xml:space="preserve">
-    <value>Surowy czujnik</value>
+  <data name="CMB_rawupdaterate.Text" xml:space="preserve">
+    <value>Aktualizuj prędkość</value>
+  </data>
+  <data name="label2.Text" xml:space="preserve">
+    <value>WYJ Serwa/Silnika</value>
+  </data>
+  <data name="label3.Text" xml:space="preserve">
+    <value>Uwaga: Występuje opóźnienie przy podglądzie przez Xbee na 50Hz</value>
+  </data>
+  <data name="label1.Text" xml:space="preserve">
+    <value>WEJ Radia</value>
+  </data>
+  <data name="chkax.Text" xml:space="preserve">
+    <value>Przysp. X</value>
+  </data>
+  <data name="chkaz.Text" xml:space="preserve">
+    <value>Przysp. Z</value>
+  </data>
+  <data name="chkay.Text" xml:space="preserve">
+    <value>Przysp. Y</value>
+  </data>
+  <data name="tabRadio.Text" xml:space="preserve">
+    <value>Radio</value>
+  </data>
+  <data name="tabOrientation.Text" xml:space="preserve">
+    <value>Parametry lotu</value>
+  </data>
+  <data name="BUT_savecsv.Text" xml:space="preserve">
+    <value>Zapisz CSV</value>
+  </data>
+  <data name="chkgz.Text" xml:space="preserve">
+    <value>Żyro Z</value>
+  </data>
+  <data name="chkgx.Text" xml:space="preserve">
+    <value>Żyro X</value>
+  </data>
+  <data name="chkgy.Text" xml:space="preserve">
+    <value>Żyro Y</value>
   </data>
 </root>

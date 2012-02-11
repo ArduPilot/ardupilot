@@ -117,116 +117,44 @@
   <resheader name="writer">
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
-  <data name="TXT_pitchgain.Text" xml:space="preserve">
-    <value>10000</value>
-  </data>
-  <data name="label15.Text" xml:space="preserve">
-    <value>Przepustnica</value>
-  </data>
-  <data name="RAD_softXplanes.ToolTip" xml:space="preserve">
-    <value>Może być Plane/Quad z pluginen</value>
-  </data>
-  <data name="BUT_startxplane.Text" xml:space="preserve">
-    <value>Uruchom XPlane</value>
-  </data>
-  <data name="RAD_aerosimrc.ToolTip" xml:space="preserve">
-    <value>Może być Plane/Heli/Quads</value>
-  </data>
-  <data name="TXT_ruddergain.Text" xml:space="preserve">
-    <value>10000</value>
-  </data>
-  <data name="RAD_JSBSim.Text" xml:space="preserve">
-    <value>JSBSim</value>
-  </data>
-  <data name="RAD_softXplanes.Text" xml:space="preserve">
-    <value>X-plane</value>
-  </data>
-  <data name="TXT_throttlegain.Text" xml:space="preserve">
-    <value>10000</value>
-  </data>
-  <data name="RAD_softFlightGear.Text" xml:space="preserve">
-    <value>FlightGear</value>
-  </data>
-  <data name="OutputLog.Text" xml:space="preserve">
-    <value />
-  </data>
-  <data name="CHKgraphpitch.Text" xml:space="preserve">
-    <value>Pokaż pochylenie</value>
-  </data>
-  <data name="RAD_aerosimrc.Text" xml:space="preserve">
-    <value>AeroSimRC</value>
-  </data>
-  <data name="CHKgraphthrottle.Text" xml:space="preserve">
-    <value>Pokaż przepustnicę</value>
-  </data>
-  <data name="CHKREV_pitch.Text" xml:space="preserve">
-    <value>Odwróć pochylenie</value>
-  </data>
-  <data name="RAD_softFlightGear.ToolTip" xml:space="preserve">
-    <value>Może być Plane i Quad z modelem</value>
-  </data>
-  <data name="CHKREV_rudder.Text" xml:space="preserve">
-    <value>Odwróć ster kierunku</value>
-  </data>
-  <data name="label23.Text" xml:space="preserve">
-    <value>Wzmocnienie pochylenia</value>
-  </data>
-  <data name="label22.Text" xml:space="preserve">
-    <value>Wzmocnienie przechylenia</value>
-  </data>
-  <data name="label30.Text" xml:space="preserve">
-    <value>Odchylenie</value>
-  </data>
-  <data name="CHKgraphrudder.Text" xml:space="preserve">
-    <value>Pokaż ster kierunku</value>
-  </data>
-  <data name="CHK_quad.Text" xml:space="preserve">
-    <value>Quad</value>
-  </data>
-  <data name="chkSensor.Text" xml:space="preserve">
-    <value>Czujnik</value>
-  </data>
-  <data name="SaveSettings.Text" xml:space="preserve">
-    <value>Zapisz ustawienia</value>
-  </data>
   <data name="label12.Text" xml:space="preserve">
-    <value>Przechylenie</value>
+    <value>Przech.</value>
   </data>
   <data name="label10.Text" xml:space="preserve">
     <value>Błąd wysokości</value>
   </data>
   <data name="CHKREV_roll.Text" xml:space="preserve">
-    <value>Odwróć przechylenie</value>
+    <value>Odwr. przech.</value>
   </data>
   <data name="CHK_heli.Text" xml:space="preserve">
     <value>Heli</value>
   </data>
   <data name="label13.Text" xml:space="preserve">
-    <value>Pochylenie</value>
+    <value>Poch.</value>
   </data>
   <data name="label16.Text" xml:space="preserve">
-    <value>Wyjście Ardupilota</value>
+    <value>Wyj. ArduPilota</value>
   </data>
   <data name="label11.Text" xml:space="preserve">
-    <value>IMU samolotu</value>
+    <value>IMU sam.</value>
   </data>
   <data name="label14.Text" xml:space="preserve">
-    <value>Odchylenie</value>
+    <value>Odch.</value>
   </data>
   <data name="RAD_JSBSim.ToolTip" xml:space="preserve">
     <value>Może być Plane/Heli/Quads</value>
   </data>
   <data name="label17.Text" xml:space="preserve">
-    <value>Odświeżanie GPS</value>
+    <value>Odśw. GPS</value>
   </data>
-  <data name="BUT_startfgplane.Text" xml:space="preserve">
-    <value>Uruchom samolot FG</value>
+  <data name="label15.Text" xml:space="preserve">
+    <value>Przepustnica</value>
   </data>
   <data name="label18.Text" xml:space="preserve">
-    <value>Status Autopilota</value>
+    <value>Status AP</value>
   </data>
   <data name="label19.Text" xml:space="preserve">
-    <value>Punkt zwrotny</value>
+    <value>WP</value>
   </data>
   <data name="CHKgraphroll.Text" xml:space="preserve">
     <value>Pokaż przechylenie</value>
@@ -240,41 +168,41 @@
   <data name="BUT_startfgquad.Text" xml:space="preserve">
     <value>Uruchom Quad FG</value>
   </data>
-  <data name="label9.Text" xml:space="preserve">
-    <value>Błąd kursu</value>
+  <data name="label22.Text" xml:space="preserve">
+    <value>Wzm. przechylenia</value>
   </data>
-  <data name="label28.Text" xml:space="preserve">
-    <value>Tylko symulator</value>
+  <data name="label23.Text" xml:space="preserve">
+    <value>Wzm. pochylenia</value>
   </data>
-  <data name="CHKdisplayall.Text" xml:space="preserve">
-    <value>Pokaż wszystko</value>
+  <data name="CHK_quad.Text" xml:space="preserve">
+    <value>Quad</value>
   </data>
   <data name="label24.Text" xml:space="preserve">
-    <value>Wzmocnienie steru kierunku</value>
+    <value>Wzm. steru kierunku</value>
   </data>
   <data name="label2.Text" xml:space="preserve">
-    <value>Długość</value>
+    <value>Dług.</value>
   </data>
   <data name="label25.Text" xml:space="preserve">
-    <value>Wzmocnienie przepustnicy</value>
+    <value>Wzm. przepustnicy</value>
   </data>
   <data name="label3.Text" xml:space="preserve">
-    <value>Wysokość</value>
+    <value>Wys.</value>
   </data>
   <data name="label26.Text" xml:space="preserve">
-    <value>Te</value>
+    <value>To</value>
   </data>
   <data name="label27.Text" xml:space="preserve">
     <value>są</value>
   </data>
   <data name="label1.Text" xml:space="preserve">
-    <value>Szerokość</value>
+    <value>Szer.</value>
   </data>
-  <data name="label8.Text" xml:space="preserve">
-    <value>WPDist</value>
+  <data name="label28.Text" xml:space="preserve">
+    <value>Tylko symulator</value>
   </data>
   <data name="but_advsettings.Text" xml:space="preserve">
-    <value>Zaawansowane ustawienia IP</value>
+    <value>Zaawansowane ust. IP</value>
   </data>
   <data name="label6.Text" xml:space="preserve">
     <value>Pochylenie</value>
@@ -288,13 +216,88 @@
   <data name="label4.Text" xml:space="preserve">
     <value>Plane GPS</value>
   </data>
-  <data name="TXT_rollgain.Text" xml:space="preserve">
+  <data name="TXT_pitchgain.Text" xml:space="preserve">
     <value>10000</value>
   </data>
   <data name="label5.Text" xml:space="preserve">
     <value>Przechylenie</value>
   </data>
   <data name="ConnectComPort.Text" xml:space="preserve">
-    <value>Start/Stop połączenia symulatora</value>
+    <value>Start/Stop poł. sym.</value>
+  </data>
+  <data name="label8.Text" xml:space="preserve">
+    <value>WPDist</value>
+  </data>
+  <data name="label9.Text" xml:space="preserve">
+    <value>Błąd kursu</value>
+  </data>
+  <data name="CHKdisplayall.Text" xml:space="preserve">
+    <value>Pokaż wszystko</value>
+  </data>
+  <data name="chkSensor.Text" xml:space="preserve">
+    <value>Czujnik</value>
+  </data>
+  <data name="SaveSettings.Text" xml:space="preserve">
+    <value>Zapisz ustawienia</value>
+  </data>
+  <data name="BUT_startfgplane.Text" xml:space="preserve">
+    <value>Uruchom samolot FG</value>
+  </data>
+  <data name="CHKgraphrudder.Text" xml:space="preserve">
+    <value>Pokaż ster kierunku</value>
+  </data>
+  <data name="label30.Text" xml:space="preserve">
+    <value>Odchylenie</value>
+  </data>
+  <data name="CHKREV_rudder.Text" xml:space="preserve">
+    <value>Odw. ster kierunku</value>
+  </data>
+  <data name="TXT_rollgain.Text" xml:space="preserve">
+    <value>10000</value>
+  </data>
+  <data name="RAD_softFlightGear.ToolTip" xml:space="preserve">
+    <value>Może być Plane i Quad z modelem</value>
+  </data>
+  <data name="CHKREV_pitch.Text" xml:space="preserve">
+    <value>Odw. pochylenie</value>
+  </data>
+  <data name="CHKgraphthrottle.Text" xml:space="preserve">
+    <value>Pokaż przepustnicę</value>
+  </data>
+  <data name="CHK_xplane10.Text" xml:space="preserve">
+    <value>Xplane 10</value>
+  </data>
+  <data name="RAD_aerosimrc.Text" xml:space="preserve">
+    <value>AeroSimRC</value>
+  </data>
+  <data name="CHKgraphpitch.Text" xml:space="preserve">
+    <value>Pokaż pochylenie</value>
+  </data>
+  <data name="OutputLog.Text" xml:space="preserve">
+    <value />
+  </data>
+  <data name="RAD_softFlightGear.Text" xml:space="preserve">
+    <value>FlightGear</value>
+  </data>
+  <data name="TXT_throttlegain.Text" xml:space="preserve">
+    <value>10000</value>
+  </data>
+  <data name="RAD_softXplanes.Text" xml:space="preserve">
+    <value>X-plane</value>
+  </data>
+  <data name="RAD_JSBSim.Text" xml:space="preserve">
+    <value>JSBSim</value>
+  </data>
+  <data name="TXT_ruddergain.Text" xml:space="preserve">
+    <value>10000</value>
+  </data>
+  <data name="RAD_aerosimrc.ToolTip" xml:space="preserve">
+    <value>Może być Plane/Heli/Quads</value>
+  </data>
+  <data name="BUT_startxplane.Text" xml:space="preserve">
+    <value>Uruchom XPlane</value>
+  </data>
+  <data name="RAD_softXplanes.ToolTip" xml:space="preserve">
+    <value>Może być Plane/Quad z pluginen</value>
   </data>
 </root>

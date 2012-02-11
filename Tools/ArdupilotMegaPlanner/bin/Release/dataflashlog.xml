@@ -46,12 +46,11 @@
       <F11>Thr int</F11>
     </CTUN>
     <PM>
-      <F1>Perf Timer</F1>
-      <F2>Gyro Saturation</F2>
-      <F3>ADC Constraints</F3>
-      <F4>DCM renorms</F4>
-      <F5>DCM Blowups</F5>
-      <F6>GPS Fix Count</F6>
+      <F1>Gyro Saturation</F1>
+      <F2>ADC Constraints</F2>
+      <F3>DCM renorms</F3>
+      <F4>DCM Blowups</F4>
+      <F5>GPS Fix Count</F5>
     </PM>
     <RAW>
       <F1>Gyro X</F1>

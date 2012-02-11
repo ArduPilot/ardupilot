@@ -117,60 +117,6 @@
   <resheader name="writer">
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
-  <data name="BUT_enable.Text" xml:space="preserve">
-    <value>Włącz</value>
-  </data>
-  <data name="BUT_detch8.Text" xml:space="preserve">
-    <value>Autodetekcja</value>
-  </data>
-  <data name="BUT_detch1.Text" xml:space="preserve">
-    <value>Autodetekcja</value>
-  </data>
-  <data name="BUT_detch3.Text" xml:space="preserve">
-    <value>Autodetekcja</value>
-  </data>
-  <data name="expo_ch3.Text" xml:space="preserve">
-    <value>0</value>
-  </data>
-  <data name="label1.Text" xml:space="preserve">
-    <value>Przechylenie</value>
-  </data>
-  <data name="label3.Text" xml:space="preserve">
-    <value>Przepustnica</value>
-  </data>
-  <data name="BUT_detch4.Text" xml:space="preserve">
-    <value>Autodetekcja</value>
-  </data>
-  <data name="CHK_elevons.Text" xml:space="preserve">
-    <value>Elewony</value>
-  </data>
-  <data name="BUT_detch7.Text" xml:space="preserve">
-    <value>Autodetekcja</value>
-  </data>
-  <data name="BUT_save.Text" xml:space="preserve">
-    <value>Zapisz</value>
-  </data>
-  <data name="BUT_detch6.Text" xml:space="preserve">
-    <value>Autodetekcja</value>
-  </data>
-  <data name="expo_ch8.Text" xml:space="preserve">
-    <value>0</value>
-  </data>
-  <data name="expo_ch4.Text" xml:space="preserve">
-    <value>30</value>
-  </data>
-  <data name="label9.Text" xml:space="preserve">
-    <value>Odwrócenie</value>
-  </data>
-  <data name="BUT_detch5.Text" xml:space="preserve">
-    <value>Autodetekcja</value>
-  </data>
-  <data name="label8.Text" xml:space="preserve">
-    <value>Oś kontrolera</value>
-  </data>
-  <data name="BUT_detch2.Text" xml:space="preserve">
-    <value>Autodetekcja</value>
-  </data>
   <data name="label12.Text" xml:space="preserve">
     <value>CH 7</value>
   </data>
@@ -189,14 +135,14 @@
   <data name="label2.Text" xml:space="preserve">
     <value>Pochylenie</value>
   </data>
-  <data name="expo_ch6.Text" xml:space="preserve">
+  <data name="label3.Text" xml:space="preserve">
+    <value>Przepustnica</value>
+  </data>
+  <data name="expo_ch3.Text" xml:space="preserve">
     <value>0</value>
   </data>
-  <data name="expo_ch2.Text" xml:space="preserve">
-    <value>30</value>
-  </data>
-  <data name="label7.Text" xml:space="preserve">
-    <value>Wyjście</value>
+  <data name="label1.Text" xml:space="preserve">
+    <value>Przechylenie</value>
   </data>
   <data name="label6.Text" xml:space="preserve">
     <value>Expo</value>
@@ -204,16 +150,70 @@
   <data name="expo_ch1.Text" xml:space="preserve">
     <value>30</value>
   </data>
-  <data name="expo_ch5.Text" xml:space="preserve">
-    <value>0</value>
+  <data name="label7.Text" xml:space="preserve">
+    <value>Wyjście</value>
+  </data>
+  <data name="expo_ch2.Text" xml:space="preserve">
+    <value>30</value>
   </data>
   <data name="label4.Text" xml:space="preserve">
     <value>Ster kierunku</value>
   </data>
+  <data name="expo_ch7.Text" xml:space="preserve">
+    <value>0</value>
+  </data>
   <data name="label5.Text" xml:space="preserve">
     <value>Joystick</value>
   </data>
-  <data name="expo_ch7.Text" xml:space="preserve">
+  <data name="expo_ch5.Text" xml:space="preserve">
     <value>0</value>
+  </data>
+  <data name="label8.Text" xml:space="preserve">
+    <value>Oś kontrolera</value>
+  </data>
+  <data name="expo_ch6.Text" xml:space="preserve">
+    <value>0</value>
+  </data>
+  <data name="label9.Text" xml:space="preserve">
+    <value>Odwrócenie</value>
+  </data>
+  <data name="expo_ch4.Text" xml:space="preserve">
+    <value>30</value>
+  </data>
+  <data name="expo_ch8.Text" xml:space="preserve">
+    <value>0</value>
+  </data>
+  <data name="BUT_save.Text" xml:space="preserve">
+    <value>Zapisz</value>
+  </data>
+  <data name="BUT_detch6.Text" xml:space="preserve">
+    <value>Autodetekcja</value>
+  </data>
+  <data name="CHK_elevons.Text" xml:space="preserve">
+    <value>Elewony</value>
+  </data>
+  <data name="BUT_detch7.Text" xml:space="preserve">
+    <value>Autodetekcja</value>
+  </data>
+  <data name="BUT_detch4.Text" xml:space="preserve">
+    <value>Autodetekcja</value>
+  </data>
+  <data name="BUT_detch5.Text" xml:space="preserve">
+    <value>Autodetekcja</value>
+  </data>
+  <data name="BUT_detch2.Text" xml:space="preserve">
+    <value>Autodetekcja</value>
+  </data>
+  <data name="BUT_detch3.Text" xml:space="preserve">
+    <value>Autodetekcja</value>
+  </data>
+  <data name="BUT_detch1.Text" xml:space="preserve">
+    <value>Autodetekcja</value>
+  </data>
+  <data name="BUT_detch8.Text" xml:space="preserve">
+    <value>Autodetekcja</value>
+  </data>
+  <data name="BUT_enable.Text" xml:space="preserve">
+    <value>Włącz</value>
   </data>
 </root>

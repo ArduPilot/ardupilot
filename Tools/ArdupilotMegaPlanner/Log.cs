@@ -442,15 +442,15 @@ namespace ArdupilotMega
             foreach (Data mod in flightdata)
             {
                 xw.WriteStartElement("trkpt");
-                xw.WriteAttributeString("lat",mod.model.Location.latitude.ToString());
-                xw.WriteAttributeString("lon", mod.model.Location.longitude.ToString());
+                xw.WriteAttributeString("lat",mod.model.Location.latitude.ToString(new System.Globalization.CultureInfo("en-US")));
+                xw.WriteAttributeString("lon", mod.model.Location.longitude.ToString(new System.Globalization.CultureInfo("en-US")));
 
-                xw.WriteElementString("ele", mod.model.Location.altitude.ToString());
+                xw.WriteElementString("ele", mod.model.Location.altitude.ToString(new System.Globalization.CultureInfo("en-US")));
                 xw.WriteElementString("time", start.AddMilliseconds(mod.datetime).ToString("yyyy-MM-ddTHH:mm:sszzzzzz"));
-                xw.WriteElementString("course", (mod.model.Orientation.heading).ToString());
+                xw.WriteElementString("course", (mod.model.Orientation.heading).ToString(new System.Globalization.CultureInfo("en-US")));
 
-                xw.WriteElementString("roll", mod.model.Orientation.roll.ToString());
-                xw.WriteElementString("pitch", mod.model.Orientation.tilt.ToString());
+                xw.WriteElementString("roll", mod.model.Orientation.roll.ToString(new System.Globalization.CultureInfo("en-US")));
+                xw.WriteElementString("pitch", mod.model.Orientation.tilt.ToString(new System.Globalization.CultureInfo("en-US")));
                 //xw.WriteElementString("speed", mod.model.Orientation.);
                 //xw.WriteElementString("fix", mod.model.Location.altitude);
 

@@ -120,10 +120,10 @@
   <data name="richTextBox1.Text" xml:space="preserve">
     <value />
   </data>
-  <data name="BUT_updatecheck.Text" xml:space="preserve">
-    <value>Sprawdź aktualizacje</value>
-  </data>
   <data name="CHK_showconsole.Text" xml:space="preserve">
     <value>Pokaż okno konsoli (restart)</value>
+  </data>
+  <data name="BUT_updatecheck.Text" xml:space="preserve">
+    <value>Sprawdź aktualizacje</value>
   </data>
 </root>

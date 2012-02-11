@@ -120,11 +120,8 @@
   <data name="BUTtests.Text" xml:space="preserve">
     <value>Testy</value>
   </data>
-  <data name="BUT_logbrowse.Text" xml:space="preserve">
-    <value>Przeglądanie Loga</value>
-  </data>
-  <data name="BUTsetupshow.Text" xml:space="preserve">
-    <value>Pokaż ustawienia</value>
+  <data name="Logs.Text" xml:space="preserve">
+    <value>Odczytanie Logu</value>
   </data>
   <data name="BUTradiosetup.Text" xml:space="preserve">
     <value>Ustawienia radia</value>
@@ -132,7 +129,10 @@
   <data name="TXT_terminal.Text" xml:space="preserve">
     <value />
   </data>
-  <data name="Logs.Text" xml:space="preserve">
-    <value>Odczytanie Logu</value>
+  <data name="BUT_logbrowse.Text" xml:space="preserve">
+    <value>Przeglądanie Loga</value>
+  </data>
+  <data name="BUTsetupshow.Text" xml:space="preserve">
+    <value>Pokaż ustawienia</value>
   </data>
 </root>

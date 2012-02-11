@@ -12,22 +12,22 @@ namespace ArdupilotMega
     {
         public event ProgressEventHandler Progress;
 
-        public void Open()
+        public new void Open()
         {
             // default dtr status is false
+
+            //from http://svn.savannah.nongnu.org/viewvc/RELEASE_5_11_0/arduino.c?root=avrdude&view=markup
             base.Open();
 
-            // let it settle
-            System.Threading.Thread.Sleep(10);
+            base.DtrEnable = false;
+            base.RtsEnable = false;
 
-            // pull dtr low
-            this.DtrEnable = true;
-            System.Threading.Thread.Sleep(1);
-            // free dtr
-            this.DtrEnable = false;
-            System.Threading.Thread.Sleep(1);
-            // pull dtr low
-            this.DtrEnable = true;
+            System.Threading.Thread.Sleep(50);
+
+            base.DtrEnable = true;
+            base.RtsEnable = true;
+
+            System.Threading.Thread.Sleep(50);
         }
 
         /// <summary>
@@ -137,11 +137,11 @@ namespace ArdupilotMega
                 }
 
                 if (this.ReadByte() != 0x10)  // 0x10
-                    throw new Exception();
+                    throw new Exception("Lost Sync 0x10");
             }
             else
             {
-                throw new Exception();
+                throw new Exception("Lost Sync 0x14");
             }
             return data;
         }
@@ -322,7 +322,9 @@ namespace ArdupilotMega
 
             if (base.IsOpen)
                 base.Close();
-            //this.DtrEnable = false;
+
+            this.DtrEnable = false;
+            this.RtsEnable = false;
             return true;
         }
     }
