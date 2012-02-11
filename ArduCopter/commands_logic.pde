@@ -233,6 +233,9 @@ static void do_takeoff()
 		//Serial.printf("abs alt: %ld",temp.alt);
 	}
 
+	// prevent flips
+	reset_I_all();
+
 	// Set our waypoint
 	set_next_WP(&temp);
 }
