@@ -120,22 +120,22 @@
   <data name="BUT_loadlog.Text" xml:space="preserve">
     <value>Załaduj Log</value>
   </data>
-  <data name="Graphit.Text" xml:space="preserve">
-    <value>Przedstaw na wykresie</value>
-  </data>
   <data name="$this.Text" xml:space="preserve">
     <value>Przeglądaj Log</value>
   </data>
-  <data name="BUT_loadlog.ToolTip" xml:space="preserve">
-    <value>Załaduj inny plik Log</value>
-  </data>
-  <data name="BUT_cleargraph.Text" xml:space="preserve">
-    <value>Wyczyść wykres</value>
+  <data name="Graphit.Text" xml:space="preserve">
+    <value>Przedstaw na wykresie</value>
   </data>
   <data name="Graphit.ToolTip" xml:space="preserve">
     <value>Rysuje aktualnie podświetloną komórkę</value>
   </data>
+  <data name="BUT_loadlog.ToolTip" xml:space="preserve">
+    <value>Załaduj inny plik Log</value>
+  </data>
   <data name="BUT_cleargraph.ToolTip" xml:space="preserve">
     <value>Wyczyść wszystkie dane wykresu</value>
+  </data>
+  <data name="BUT_cleargraph.Text" xml:space="preserve">
+    <value>Wyczyść wykres</value>
   </data>
 </root>

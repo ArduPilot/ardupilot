@@ -103,7 +103,7 @@ static void calc_loiter(int x_error, int y_error)
 {
 	// East/West
 	int16_t x_target_speed 	= g.pi_loiter_lon.get_p(x_error);
-	x_target_speed			= constrain(x_error, -150, 150);
+	x_target_speed			= constrain(x_error, -250, 250);
 	// limit windup
 	x_error 				= constrain(x_error, -NAV_ERR_MAX, NAV_ERR_MAX);
 	int16_t x_iterm 		= g.pi_loiter_lon.get_i(x_error, dTnav);
@@ -111,7 +111,7 @@ static void calc_loiter(int x_error, int y_error)
 
 	// North/South
 	int16_t y_target_speed 	= g.pi_loiter_lat.get_p(y_error);
-	y_target_speed			= constrain(y_error, -150, 150);
+	y_target_speed			= constrain(y_error, -250, 250);
 	// limit windup
 	y_error 				= constrain(y_error, -NAV_ERR_MAX, NAV_ERR_MAX);
 	int16_t y_iterm 		= g.pi_loiter_lat.get_i(y_error, dTnav);
@@ -212,19 +212,19 @@ static void calc_nav_rate(int max_speed)
 static void calc_nav_lon(int rate)
 {
 	nav_lon		= g.pid_nav_lon.get_pid(rate, dTnav);
-	nav_lon		= get_corrected_angle(rate, nav_lon);
+	//nav_lon		= get_corrected_angle(rate, nav_lon);
 	nav_lon		= constrain(nav_lon, -3000, 3000);
 }
 
 static void calc_nav_lat(int rate)
 {
 	nav_lat		= g.pid_nav_lat.get_pid(rate, dTnav);
-	nav_lat		= get_corrected_angle(rate, nav_lat);
+	//nav_lat		= get_corrected_angle(rate, nav_lat);
 	nav_lat		= constrain(nav_lat, -3000, 3000);
 }
 
-static int16_t get_corrected_angle(int16_t desired_rate, int16_t rate_out)
-{
+//static int16_t get_corrected_angle(int16_t desired_rate, int16_t rate_out)
+/*{
 	int16_t tt = desired_rate;
 	// scale down the desired rate and square it
 	desired_rate = desired_rate / 20;
@@ -240,7 +240,7 @@ static int16_t get_corrected_angle(int16_t desired_rate, int16_t rate_out)
 	}
 	//Serial.printf("rate:%d, norm:%d, out:%d \n", tt, rate_out, tmp);
 	return tmp;
-}
+}*/
 
 //wp_distance,ttt, y_error, y_GPS_speed, y_actual_speed, y_target_speed, y_rate_error, nav_lat, y_iterm, t2
 

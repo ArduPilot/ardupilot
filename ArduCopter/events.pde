@@ -18,6 +18,7 @@ static void failsafe_on_event()
 				set_new_altitude(target_altitude + 1000);
 			}
 			// 2 = Stay in AUTO and ignore failsafe
+			break;
 
 		default:
 			if(home_is_set == true){

@@ -1,8 +1,8 @@
 /// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 
-#define THISFIRMWARE "ArduCopter V2.3"
+#define THISFIRMWARE "ArduCopter V2.3.1"
 /*
-ArduCopter Version 2.3
+ArduCopter Version 2.3.1
 Authors:	Jason Short
 Based on code and ideas from the Arducopter team: Randy Mackay, Pat Hickey, Jose Julio, Jani Hirvinen
 Thanks to:	Chris Anderson, Mike Smith, Jordi Munoz, Doug Weibel, James Goppert, Benjamin Pelletier
@@ -903,12 +903,6 @@ static void fast_loop()
 	// IMU DCM Algorithm
 	read_AHRS();
 
-	if(takeoff_complete == false){
-		// reset these I terms to prevent awkward tipping on takeoff
-		//reset_rate_I();
-		//reset_stability_I();
-	}
-
 	// custom code/exceptions for flight modes
 	// ---------------------------------------
 	update_yaw_mode();
@@ -1366,12 +1360,11 @@ static void update_GPS(void)
 	}
 }
 
-
 void update_yaw_mode(void)
 {
 	switch(yaw_mode){
 		case YAW_ACRO:
-			g.rc_4.servo_out = get_rate_yaw(g.rc_4.control_in);
+			g.rc_4.servo_out = get_acro_yaw(g.rc_4.control_in);
 			return;
 			break;
 
@@ -1415,8 +1408,8 @@ void update_roll_pitch_mode(void)
 	switch(roll_pitch_mode){
 		case ROLL_PITCH_ACRO:
 			// ACRO does not get SIMPLE mode ability
-			g.rc_1.servo_out = get_rate_roll(g.rc_1.control_in);
-			g.rc_2.servo_out = get_rate_pitch(g.rc_2.control_in);
+			g.rc_1.servo_out = get_acro_roll(g.rc_1.control_in);
+			g.rc_2.servo_out = get_acro_pitch(g.rc_2.control_in);
 			break;
 
 		case ROLL_PITCH_STABLE:
@@ -1451,6 +1444,17 @@ void update_roll_pitch_mode(void)
 			g.rc_1.servo_out = get_stabilize_roll(get_of_roll(g.rc_1.control_in));
 			g.rc_2.servo_out = get_stabilize_pitch(get_of_pitch(g.rc_2.control_in));
 			break;
+	}
+
+	if(g.rc_3.control_in == 0 && roll_pitch_mode <= ROLL_PITCH_ACRO){
+		reset_rate_I();
+		reset_stability_I();
+	}
+
+	if(takeoff_complete == false){
+		// reset these I terms to prevent awkward tipping on takeoff
+		//reset_rate_I();
+		//reset_stability_I();
 	}
 
 	// clear new radio frame info

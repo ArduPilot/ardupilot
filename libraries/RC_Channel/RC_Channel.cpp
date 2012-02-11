@@ -109,8 +109,7 @@ RC_Channel::set_pwm(int pwm)
 
 		//RC_CHANNEL_ANGLE, RC_CHANNEL_ANGLE_RAW
 		control_in = pwm_to_angle();
-		// deadzone moved to
-		//control_in = (abs(control_in) < _dead_zone) ? 0 : control_in;
+
 
 		if (fabs(scale_output) != 1){
 			control_in *= scale_output;
@@ -252,9 +251,9 @@ RC_Channel::norm_input()
 float
 RC_Channel::norm_output()
 {
-    uint16_t mid = (radio_max + radio_min) / 2;
-    
-	if(radio_out < radio_trim)
+    int16_t mid = (radio_max + radio_min) / 2;
+        
+	if(radio_out < mid)
 		return (float)(radio_out - mid) / (float)(mid - radio_min);
 	else
 		return (float)(radio_out - mid) / (float)(radio_max  - mid);

@@ -13,7 +13,7 @@ static void default_dead_zones()
 		g.rc_4.set_dead_zone(30);
 	#else
 	    g.rc_3.set_dead_zone(60);
-		g.rc_4.set_dead_zone(200);
+		g.rc_4.set_dead_zone(80);
 	#endif
 }
 
@@ -144,7 +144,7 @@ static void read_radio()
 		throttle_failsafe(g.rc_3.radio_in);
 	}
 }
-
+#define FS_COUNTER 3
 static void throttle_failsafe(uint16_t pwm)
 {
 	// Don't enter Failsafe if not enabled by user
@@ -157,19 +157,19 @@ static void throttle_failsafe(uint16_t pwm)
 		// we detect a failsafe from radio
 		// throttle has dropped below the mark
 		failsafeCounter++;
-		if (failsafeCounter == 9){
+		if (failsafeCounter == FS_COUNTER-1){
 			//
-		}else if(failsafeCounter == 10) {
+		}else if(failsafeCounter == FS_COUNTER) {
 			// Don't enter Failsafe if we are not armed
 			// home distance is in meters
 			// This is to prevent accidental RTL
-			if((motor_armed == true) && (home_distance > 1000) && (current_loc.alt > 400)){
+			if((motor_armed == true) && (home_distance > 1000)){
 				SendDebug("MSG FS ON ");
 				SendDebugln(pwm, DEC);
 				set_failsafe(true);
 			}
-		}else if (failsafeCounter > 10){
-			failsafeCounter = 11;
+		}else if (failsafeCounter > FS_COUNTER){
+			failsafeCounter = FS_COUNTER+1;
 		}
 
 	}else if(failsafeCounter > 0){

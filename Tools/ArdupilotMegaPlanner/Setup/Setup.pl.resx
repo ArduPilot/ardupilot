@@ -117,21 +117,6 @@
   <resheader name="writer">
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
-  <data name="CB_simple3.Text" xml:space="preserve">
-    <value>Tryb prosty</value>
-  </data>
-  <data name="label22.Text" xml:space="preserve">
-    <value>Zakres ruchu płyty sterującej</value>
-  </data>
-  <data name="label30.Text" xml:space="preserve">
-    <value>Monitor</value>
-  </data>
-  <data name="lbl_currentmode.Text" xml:space="preserve">
-    <value>Ręczne</value>
-  </data>
-  <data name="GYR_GAIN_.Text" xml:space="preserve">
-    <value>1000</value>
-  </data>
   <data name="SV3_POS_.Text" xml:space="preserve">
     <value>180</value>
   </data>
@@ -195,8 +180,8 @@
   <data name="CB_simple6.Text" xml:space="preserve">
     <value>Tryb prosty</value>
   </data>
-  <data name="PIT_MAX_.Text" xml:space="preserve">
-    <value>4500</value>
+  <data name="CB_simple3.Text" xml:space="preserve">
+    <value>Tryb prosty</value>
   </data>
   <data name="label19.Text" xml:space="preserve">
     <value>2</value>
@@ -219,11 +204,11 @@
   <data name="label21.Text" xml:space="preserve">
     <value>Góra</value>
   </data>
-  <data name="label28.Text" xml:space="preserve">
-    <value>Wypoziomuj quada żeby stawić domyśle offsety przysp.</value>
+  <data name="label22.Text" xml:space="preserve">
+    <value>Zakres ruchu płyty sterującej</value>
   </data>
-  <data name="BUT_reset.Text" xml:space="preserve">
-    <value>Reset APM do stawień domyślnych</value>
+  <data name="lbl_currentmode.Text" xml:space="preserve">
+    <value>Ręczne</value>
   </data>
   <data name="label23.Text" xml:space="preserve">
     <value>Zakres steru kierunku</value>
@@ -258,8 +243,8 @@
   <data name="label1.Text" xml:space="preserve">
     <value>Tryb lotu 1</value>
   </data>
-  <data name="CHK_enablesonar.Text" xml:space="preserve">
-    <value>Włącz sonar</value>
+  <data name="label28.Text" xml:space="preserve">
+    <value>Wypoziomuj quada żeby stawić domyśle offsety przysp.</value>
   </data>
   <data name="label6.Text" xml:space="preserve">
     <value>Tryb lotu 6</value>
@@ -270,14 +255,17 @@
   <data name="label100.Text" xml:space="preserve">
     <value>Deklinacja</value>
   </data>
-  <data name="groupBox3.Text" xml:space="preserve">
-    <value>Żyro</value>
+  <data name="CHK_enablesonar.Text" xml:space="preserve">
+    <value>Włącz sonar</value>
   </data>
   <data name="label7.Text" xml:space="preserve">
     <value>PWM 1231 - 1360</value>
   </data>
   <data name="tabRadioIn.Text" xml:space="preserve">
     <value>Wejścia radia</value>
+  </data>
+  <data name="groupBox4.Text" xml:space="preserve">
+    <value>Calibration</value>
   </data>
   <data name="HS4_MIN.Text" xml:space="preserve">
     <value>1500</value>
@@ -288,20 +276,23 @@
   <data name="label5.Text" xml:space="preserve">
     <value>Tryb lotu 5</value>
   </data>
-  <data name="tabHardware.Text" xml:space="preserve">
-    <value>Hardware</value>
+  <data name="groupBox3.Text" xml:space="preserve">
+    <value>Żyro</value>
   </data>
   <data name="label8.Text" xml:space="preserve">
     <value>PWM 1361 - 1490</value>
   </data>
-  <data name="HS4_MAX.Text" xml:space="preserve">
-    <value>1500</value>
+  <data name="tabHardware.Text" xml:space="preserve">
+    <value>Hardware</value>
   </data>
   <data name="label9.Text" xml:space="preserve">
     <value>PWM 1491 - 1620</value>
   </data>
   <data name="linkLabelmagdec.Text" xml:space="preserve">
     <value>Strona www deklinacji</value>
+  </data>
+  <data name="HS4_MAX.Text" xml:space="preserve">
+    <value>1500</value>
   </data>
   <data name="tabBattery.Text" xml:space="preserve">
     <value>Bateria</value>
@@ -311,5 +302,17 @@
   </data>
   <data name="CHK_enableairspeed.Text" xml:space="preserve">
     <value>Włącz prędkość powietrza</value>
+  </data>
+  <data name="PIT_MAX_.Text" xml:space="preserve">
+    <value>4500</value>
+  </data>
+  <data name="BUT_reset.Text" xml:space="preserve">
+    <value>Reset APM do stawień domyślnych</value>
+  </data>
+  <data name="GYR_GAIN_.Text" xml:space="preserve">
+    <value>1000</value>
+  </data>
+  <data name="label30.Text" xml:space="preserve">
+    <value>Monitor</value>
   </data>
 </root>
