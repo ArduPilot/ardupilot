@@ -1366,12 +1366,11 @@ static void update_GPS(void)
 	}
 }
 
-
 void update_yaw_mode(void)
 {
 	switch(yaw_mode){
 		case YAW_ACRO:
-			g.rc_4.servo_out = get_rate_yaw(g.rc_4.control_in);
+			g.rc_4.servo_out = get_acro_yaw(g.rc_4.control_in);
 			return;
 			break;
 
