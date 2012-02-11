@@ -7,6 +7,14 @@
 
 #include "PID.h"
 
+const AP_Param::GroupInfo PID::var_info[] PROGMEM = {
+	{ AP_PARAM_FLOAT, "P",    VAROFFSET(PID, _kp) },
+	{ AP_PARAM_FLOAT, "I",    VAROFFSET(PID, _ki) },
+	{ AP_PARAM_FLOAT, "D",    VAROFFSET(PID, _kd) },
+	{ AP_PARAM_INT16, "IMAX", VAROFFSET(PID, _imax) },
+	{ AP_PARAM_NONE, "" }
+};
+
 long
 PID::get_pid(int32_t error, uint16_t dt, float scaler)
 {
@@ -22,7 +30,7 @@ PID::get_pid(int32_t error, uint16_t dt, float scaler)
 
 		// discrete low pass filter, cuts out the
 		// high frequency noise that can drive the controller crazy
-		float RC = 1/(2*M_PI*_fCut);
+		float RC = 1/(2*M_PI*20);
 		derivative = _last_derivative +
 		        (delta_time / (RC + delta_time)) * (derivative - _last_derivative);
 
@@ -62,11 +70,15 @@ PID::reset_I()
 void
 PID::load_gains()
 {
-    _group.load();
+	_kp.load();
+	_ki.load();
+	_kd.load();
 }
 
 void
 PID::save_gains()
 {
-    _group.save();
+	_kp.save();
+	_ki.save();
+	_kd.save();
 }
