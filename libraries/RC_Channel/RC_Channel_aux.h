@@ -22,11 +22,11 @@ public:
 	/// @param key      EEPROM storage key for the channel trim parameters.
 	/// @param name     Optional name for the group.
 	///
-	RC_Channel_aux(AP_Var::Key key, const prog_char_t *name) :
-		RC_Channel(key, name),
-		function  (&_group, 4,  k_none, name ? PSTR("FUNCTION")  : 0), // suppress name if group has no name
-		angle_min (&_group, 5, -4500, name ? PSTR("ANGLE_MIN") : 0), // assume -45 degrees min deflection
-		angle_max (&_group, 6,  4500, name ? PSTR("ANGLE_MAX") : 0)  // assume  45 degrees max deflection
+	RC_Channel_aux() :
+		RC_Channel(),
+		function  (0),
+		angle_min (-4500), // assume -45 degrees min deflection
+		angle_max (4500)   // assume  45 degrees max deflection
 	{}
 
 	typedef enum
@@ -52,6 +52,7 @@ public:
 
 	void output_ch(unsigned char ch_nr);	// map a function to a servo channel and output it
 
+    static const struct AP_Param::GroupInfo var_info[];
 };
 
 void update_aux_servo_function(RC_Channel_aux* rc_5, RC_Channel_aux* rc_6, RC_Channel_aux* rc_7, RC_Channel_aux* rc_8);
