@@ -492,6 +492,13 @@ namespace ArdupilotMega
             return true;
         }
 
+        public bool setParam(string paramname, object flag)
+        {
+            int value = (int)(float)param[paramname];
+
+            return setParam(paramname,value | (int)flag);
+        }
+
         /// <summary>
         /// Set parameter on apm
         /// </summary>

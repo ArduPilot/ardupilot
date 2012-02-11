@@ -92,82 +92,82 @@
             // 
             // CMB_joysticks
             // 
-            resources.ApplyResources(this.CMB_joysticks, "CMB_joysticks");
             this.CMB_joysticks.FormattingEnabled = true;
+            resources.ApplyResources(this.CMB_joysticks, "CMB_joysticks");
             this.CMB_joysticks.Name = "CMB_joysticks";
             this.CMB_joysticks.SelectedIndexChanged += new System.EventHandler(this.CMB_joysticks_SelectedIndexChanged);
             this.CMB_joysticks.Click += new System.EventHandler(this.CMB_joysticks_Click);
             // 
             // CMB_CH1
             // 
-            resources.ApplyResources(this.CMB_CH1, "CMB_CH1");
             this.CMB_CH1.FormattingEnabled = true;
             this.CMB_CH1.Items.AddRange(new object[] {
             resources.GetString("CMB_CH1.Items"),
             resources.GetString("CMB_CH1.Items1"),
             resources.GetString("CMB_CH1.Items2"),
             resources.GetString("CMB_CH1.Items3")});
+            resources.ApplyResources(this.CMB_CH1, "CMB_CH1");
             this.CMB_CH1.Name = "CMB_CH1";
             this.CMB_CH1.SelectedIndexChanged += new System.EventHandler(this.CMB_CH1_SelectedIndexChanged);
             // 
             // CMB_CH2
             // 
-            resources.ApplyResources(this.CMB_CH2, "CMB_CH2");
             this.CMB_CH2.FormattingEnabled = true;
             this.CMB_CH2.Items.AddRange(new object[] {
             resources.GetString("CMB_CH2.Items"),
             resources.GetString("CMB_CH2.Items1"),
             resources.GetString("CMB_CH2.Items2"),
             resources.GetString("CMB_CH2.Items3")});
+            resources.ApplyResources(this.CMB_CH2, "CMB_CH2");
             this.CMB_CH2.Name = "CMB_CH2";
             this.CMB_CH2.SelectedIndexChanged += new System.EventHandler(this.CMB_CH2_SelectedIndexChanged);
             // 
             // CMB_CH3
             // 
-            resources.ApplyResources(this.CMB_CH3, "CMB_CH3");
             this.CMB_CH3.FormattingEnabled = true;
             this.CMB_CH3.Items.AddRange(new object[] {
             resources.GetString("CMB_CH3.Items"),
             resources.GetString("CMB_CH3.Items1"),
             resources.GetString("CMB_CH3.Items2"),
             resources.GetString("CMB_CH3.Items3")});
+            resources.ApplyResources(this.CMB_CH3, "CMB_CH3");
             this.CMB_CH3.Name = "CMB_CH3";
             this.CMB_CH3.SelectedIndexChanged += new System.EventHandler(this.CMB_CH3_SelectedIndexChanged);
             // 
             // CMB_CH4
             // 
-            resources.ApplyResources(this.CMB_CH4, "CMB_CH4");
             this.CMB_CH4.FormattingEnabled = true;
             this.CMB_CH4.Items.AddRange(new object[] {
             resources.GetString("CMB_CH4.Items"),
             resources.GetString("CMB_CH4.Items1"),
             resources.GetString("CMB_CH4.Items2"),
             resources.GetString("CMB_CH4.Items3")});
+            resources.ApplyResources(this.CMB_CH4, "CMB_CH4");
             this.CMB_CH4.Name = "CMB_CH4";
             this.CMB_CH4.SelectedIndexChanged += new System.EventHandler(this.CMB_CH4_SelectedIndexChanged);
             // 
             // expo_ch1
             // 
-            resources.ApplyResources(this.expo_ch1, "expo_ch1");
             this.expo_ch1.BorderStyle = System.Windows.Forms.BorderStyle.None;
+            resources.ApplyResources(this.expo_ch1, "expo_ch1");
             this.expo_ch1.Name = "expo_ch1";
             // 
             // expo_ch2
             // 
-            resources.ApplyResources(this.expo_ch2, "expo_ch2");
             this.expo_ch2.BorderStyle = System.Windows.Forms.BorderStyle.None;
+            resources.ApplyResources(this.expo_ch2, "expo_ch2");
             this.expo_ch2.Name = "expo_ch2";
             // 
             // expo_ch3
             // 
-            resources.ApplyResources(this.expo_ch3, "expo_ch3");
             this.expo_ch3.BorderStyle = System.Windows.Forms.BorderStyle.None;
+            resources.ApplyResources(this.expo_ch3, "expo_ch3");
             this.expo_ch3.Name = "expo_ch3";
             // 
             // expo_ch4
             // 
-            resources.ApplyResources(this.expo_ch4, "expo_ch4");
             this.expo_ch4.BorderStyle = System.Windows.Forms.BorderStyle.None;
+            resources.ApplyResources(this.expo_ch4, "expo_ch4");
             this.expo_ch4.Name = "expo_ch4";
             // 
             // label1
@@ -269,19 +269,19 @@
             // 
             // expo_ch5
             // 
-            resources.ApplyResources(this.expo_ch5, "expo_ch5");
             this.expo_ch5.BorderStyle = System.Windows.Forms.BorderStyle.None;
+            resources.ApplyResources(this.expo_ch5, "expo_ch5");
             this.expo_ch5.Name = "expo_ch5";
             // 
             // CMB_CH5
             // 
-            resources.ApplyResources(this.CMB_CH5, "CMB_CH5");
             this.CMB_CH5.FormattingEnabled = true;
             this.CMB_CH5.Items.AddRange(new object[] {
             resources.GetString("CMB_CH5.Items"),
             resources.GetString("CMB_CH5.Items1"),
             resources.GetString("CMB_CH5.Items2"),
             resources.GetString("CMB_CH5.Items3")});
+            resources.ApplyResources(this.CMB_CH5, "CMB_CH5");
             this.CMB_CH5.Name = "CMB_CH5";
             this.CMB_CH5.SelectedIndexChanged += new System.EventHandler(this.CMB_CH5_SelectedIndexChanged);
             // 
@@ -299,19 +299,19 @@
             // 
             // expo_ch6
             // 
-            resources.ApplyResources(this.expo_ch6, "expo_ch6");
             this.expo_ch6.BorderStyle = System.Windows.Forms.BorderStyle.None;
+            resources.ApplyResources(this.expo_ch6, "expo_ch6");
             this.expo_ch6.Name = "expo_ch6";
             // 
             // CMB_CH6
             // 
-            resources.ApplyResources(this.CMB_CH6, "CMB_CH6");
             this.CMB_CH6.FormattingEnabled = true;
             this.CMB_CH6.Items.AddRange(new object[] {
             resources.GetString("CMB_CH6.Items"),
             resources.GetString("CMB_CH6.Items1"),
             resources.GetString("CMB_CH6.Items2"),
             resources.GetString("CMB_CH6.Items3")});
+            resources.ApplyResources(this.CMB_CH6, "CMB_CH6");
             this.CMB_CH6.Name = "CMB_CH6";
             this.CMB_CH6.SelectedIndexChanged += new System.EventHandler(this.CMB_CH6_SelectedIndexChanged);
             // 
@@ -329,19 +329,19 @@
             // 
             // expo_ch7
             // 
-            resources.ApplyResources(this.expo_ch7, "expo_ch7");
             this.expo_ch7.BorderStyle = System.Windows.Forms.BorderStyle.None;
+            resources.ApplyResources(this.expo_ch7, "expo_ch7");
             this.expo_ch7.Name = "expo_ch7";
             // 
             // CMB_CH7
             // 
-            resources.ApplyResources(this.CMB_CH7, "CMB_CH7");
             this.CMB_CH7.FormattingEnabled = true;
             this.CMB_CH7.Items.AddRange(new object[] {
             resources.GetString("CMB_CH7.Items"),
             resources.GetString("CMB_CH7.Items1"),
             resources.GetString("CMB_CH7.Items2"),
             resources.GetString("CMB_CH7.Items3")});
+            resources.ApplyResources(this.CMB_CH7, "CMB_CH7");
             this.CMB_CH7.Name = "CMB_CH7";
             this.CMB_CH7.SelectedIndexChanged += new System.EventHandler(this.CMB_CH7_SelectedIndexChanged);
             // 
@@ -359,19 +359,19 @@
             // 
             // expo_ch8
             // 
-            resources.ApplyResources(this.expo_ch8, "expo_ch8");
             this.expo_ch8.BorderStyle = System.Windows.Forms.BorderStyle.None;
+            resources.ApplyResources(this.expo_ch8, "expo_ch8");
             this.expo_ch8.Name = "expo_ch8";
             // 
             // CMB_CH8
             // 
-            resources.ApplyResources(this.CMB_CH8, "CMB_CH8");
             this.CMB_CH8.FormattingEnabled = true;
             this.CMB_CH8.Items.AddRange(new object[] {
             resources.GetString("CMB_CH8.Items"),
             resources.GetString("CMB_CH8.Items1"),
             resources.GetString("CMB_CH8.Items2"),
             resources.GetString("CMB_CH8.Items3")});
+            resources.ApplyResources(this.CMB_CH8, "CMB_CH8");
             this.CMB_CH8.Name = "CMB_CH8";
             this.CMB_CH8.SelectedIndexChanged += new System.EventHandler(this.CMB_CH8_SelectedIndexChanged);
             // 
