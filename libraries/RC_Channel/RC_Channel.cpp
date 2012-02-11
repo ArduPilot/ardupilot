@@ -109,8 +109,7 @@ RC_Channel::set_pwm(int pwm)
 
 		//RC_CHANNEL_ANGLE, RC_CHANNEL_ANGLE_RAW
 		control_in = pwm_to_angle();
-		// deadzone moved to
-		//control_in = (abs(control_in) < _dead_zone) ? 0 : control_in;
+
 
 		if (fabs(scale_output) != 1){
 			control_in *= scale_output;
