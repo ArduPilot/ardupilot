@@ -13,7 +13,7 @@ static void default_dead_zones()
 		g.rc_4.set_dead_zone(30);
 	#else
 	    g.rc_3.set_dead_zone(60);
-		g.rc_4.set_dead_zone(200);
+		g.rc_4.set_dead_zone(80);
 	#endif
 }
 
