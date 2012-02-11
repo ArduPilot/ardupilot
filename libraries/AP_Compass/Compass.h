@@ -47,7 +47,7 @@ public:
 	///
 	/// @param  key         Storage key used for configuration data.
 	///
-	Compass(AP_Var::Key key);
+	Compass();
 
 	/// Initialize the compass device.
 	///
@@ -132,10 +132,11 @@ public:
 	virtual void set_declination(float radians);
 	float get_declination();
 
+    static const struct AP_Param::GroupInfo var_info[];
+
 protected:
-	AP_Var_group        _group;                 ///< storage group holding the compass' calibration data
-	AP_VarS<Matrix3f>   _orientation_matrix;
-	AP_VarS<Vector3f>   _offset;
+	AP_Matrix3f         _orientation_matrix;
+	AP_Vector3f         _offset;
 	AP_Float            _declination;
 
 	bool                _null_enable;        	///< enabled flag for offset nulling
