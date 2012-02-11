@@ -38,8 +38,7 @@ typedef struct {
 #include "c++.h" // c++ additions
 //#include "AP_Vector.h"
 //#include "AP_Loop.h"
-#include "AP_Var.h"
-
+#include "AP_Param.h"
 
 
 ////////////////////////////////////////////////////////////////////////////////
