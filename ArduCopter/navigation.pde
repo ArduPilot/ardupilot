@@ -103,7 +103,7 @@ static void calc_loiter(int x_error, int y_error)
 {
 	// East/West
 	int16_t x_target_speed 	= g.pi_loiter_lon.get_p(x_error);
-	x_target_speed			= constrain(x_error, -150, 150);
+	x_target_speed			= constrain(x_error, -250, 250);
 	// limit windup
 	x_error 				= constrain(x_error, -NAV_ERR_MAX, NAV_ERR_MAX);
 	int16_t x_iterm 		= g.pi_loiter_lon.get_i(x_error, dTnav);
@@ -111,7 +111,7 @@ static void calc_loiter(int x_error, int y_error)
 
 	// North/South
 	int16_t y_target_speed 	= g.pi_loiter_lat.get_p(y_error);
-	y_target_speed			= constrain(y_error, -150, 150);
+	y_target_speed			= constrain(y_error, -250, 250);
 	// limit windup
 	y_error 				= constrain(y_error, -NAV_ERR_MAX, NAV_ERR_MAX);
 	int16_t y_iterm 		= g.pi_loiter_lat.get_i(y_error, dTnav);
