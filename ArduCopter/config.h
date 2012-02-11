@@ -542,10 +542,10 @@
 
 
 #ifndef STABILIZE_D
-# define STABILIZE_D 		.12
+# define STABILIZE_D 		.06
 #endif
 
-// Jasons default values that are good for smaller payload motors.
+// Good for smaller payload motors.
 #ifndef STABILIZE_ROLL_P
 # define STABILIZE_ROLL_P 		4.5
 #endif
@@ -587,10 +587,10 @@
 # define RATE_ROLL_I        0.18
 #endif
 #ifndef RATE_ROLL_D
-# define RATE_ROLL_D        0.0
+# define RATE_ROLL_D        0.0025
 #endif
 #ifndef RATE_ROLL_IMAX
-# define RATE_ROLL_IMAX	 	15			// degrees
+# define RATE_ROLL_IMAX	 	5			// degrees
 #endif
 
 #ifndef RATE_PITCH_P
@@ -600,10 +600,10 @@
 # define RATE_PITCH_I		0.18
 #endif
 #ifndef RATE_PITCH_D
-# define RATE_PITCH_D       0.0 // 0.002
+# define RATE_PITCH_D       0.0025
 #endif
 #ifndef RATE_PITCH_IMAX
-# define RATE_PITCH_IMAX   	15			// degrees
+# define RATE_PITCH_IMAX   	5			// degrees
 #endif
 
 #ifndef RATE_YAW_P
