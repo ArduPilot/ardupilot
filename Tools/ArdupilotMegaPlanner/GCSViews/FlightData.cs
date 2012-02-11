@@ -660,43 +660,41 @@ namespace ArdupilotMega.GCSViews
 
         private void timer1_Tick(object sender, EventArgs e)
         {
-            // Make sure that the curvelist has at least one curve
-            if (zg1.GraphPane.CurveList.Count <= 0)
-                return;
-
-            // Get the first CurveItem in the graph
-            LineItem curve = zg1.GraphPane.CurveList[0] as LineItem;
-            if (curve == null)
-                return;
-
-            // Get the PointPairList
-            IPointListEdit list = curve.Points as IPointListEdit;
-            // If this is null, it means the reference at curve.Points does not
-            // support IPointListEdit, so we won't be able to modify it
-            if (list == null)
-                return;
-
-            // Time is measured in seconds
-            double time = (Environment.TickCount - tickStart) / 1000.0;
-
-            // Keep the X scale at a rolling 30 second interval, with one
-            // major step between the max X value and the end of the axis
-            Scale xScale = zg1.GraphPane.XAxis.Scale;
-            if (time > xScale.Max - xScale.MajorStep)
-            {
-                xScale.Max = time + xScale.MajorStep;
-                xScale.Min = xScale.Max - 10.0;
-            }
-
-            // Make sure the Y axis is rescaled to accommodate actual data
             try
             {
+                // Make sure that the curvelist has at least one curve
+                if (zg1.GraphPane.CurveList.Count <= 0)
+                    return;
+
+                // Get the first CurveItem in the graph
+                LineItem curve = zg1.GraphPane.CurveList[0] as LineItem;
+                if (curve == null)
+                    return;
+
+                // Get the PointPairList
+                IPointListEdit list = curve.Points as IPointListEdit;
+                // If this is null, it means the reference at curve.Points does not
+                // support IPointListEdit, so we won't be able to modify it
+                if (list == null)
+                    return;
+
+                // Time is measured in seconds
+                double time = (Environment.TickCount - tickStart) / 1000.0;
+
+                // Keep the X scale at a rolling 30 second interval, with one
+                // major step between the max X value and the end of the axis
+                Scale xScale = zg1.GraphPane.XAxis.Scale;
+                if (time > xScale.Max - xScale.MajorStep)
+                {
+                    xScale.Max = time + xScale.MajorStep;
+                    xScale.Min = xScale.Max - 10.0;
+                }
+
+                // Make sure the Y axis is rescaled to accommodate actual data
                 zg1.AxisChange();
-            }
-            catch { }
-            // Force a redraw
-            try
-            {
+
+                // Force a redraw
+
                 zg1.Invalidate();
             }
             catch { }

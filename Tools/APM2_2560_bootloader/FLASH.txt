@@ -1,0 +1,17 @@
+
+to build the hex:
+
+make mega2560
+
+To flash the firmware, use avrdude version 5.11 or above
+
+SERIAL_PORT=/dev/tty.usbserial
+
+# erase the chip (necessary before unlocking can happen), then unlock the boot loader area
+avrdude -e -c stk500v2 -p m2560 -P $SERIAL_PORT -U lock:w:0x3f:m
+
+# flash the hex file (whatever.hex)
+avrdude -v -c stk500v2 -p m2560 -P $SERIAL_PORT  -U flash:w:stk500boot_v2_mega2560.hex
+
+# re-lock the bootloader area of the chip
+avrdude -c stk500v2 -p m2560 -P $SERIAL_PORT -U lock:w:0x0f:m

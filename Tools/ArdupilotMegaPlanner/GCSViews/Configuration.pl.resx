@@ -117,475 +117,50 @@
   <resheader name="writer">
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
-  <data name="CHK_GDIPlus.Text" xml:space="preserve">
-    <value>GDI+ (stara metoda)</value>
-  </data>
-  <data name="BUT_videostart.Text" xml:space="preserve">
-    <value>Start</value>
-  </data>
-  <data name="BUT_rerequestparams.Text" xml:space="preserve">
-    <value>Odśwież parametry</value>
-  </data>
-  <data name="label41.Text" xml:space="preserve">
-    <value>I</value>
-  </data>
-  <data name="label40.Text" xml:space="preserve">
-    <value>IMAX</value>
-  </data>
-  <data name="label43.Text" xml:space="preserve">
-    <value>IMAX</value>
-  </data>
-  <data name="label42.Text" xml:space="preserve">
-    <value>P</value>
-  </data>
-  <data name="label45.Text" xml:space="preserve">
-    <value>I</value>
-  </data>
-  <data name="label44.Text" xml:space="preserve">
-    <value>I</value>
-  </data>
-  <data name="label47.Text" xml:space="preserve">
-    <value>IMAX</value>
-  </data>
-  <data name="label46.Text" xml:space="preserve">
-    <value>P</value>
-  </data>
-  <data name="BUT_save.ToolTip" xml:space="preserve">
-    <value>Zapisz parametry do pliku</value>
-  </data>
-  <data name="label91.Text" xml:space="preserve">
-    <value>P</value>
-  </data>
-  <data name="groupBox13.Text" xml:space="preserve">
-    <value>Nav Pitch Alt Pid</value>
-  </data>
-  <data name="label64.Text" xml:space="preserve">
-    <value>P</value>
-  </data>
-  <data name="label90.Text" xml:space="preserve">
-    <value>I</value>
-  </data>
-  <data name="BUT_compare.Text" xml:space="preserve">
-    <value>Porównaj parametry</value>
-  </data>
-  <data name="TabAPM2.Text" xml:space="preserve">
-    <value>APM 2.x</value>
-  </data>
-  <data name="RawValue.HeaderText" xml:space="preserve">
-    <value>RawValue</value>
-  </data>
-  <data name="CHK_speechmode.Text" xml:space="preserve">
-    <value>Tryb</value>
-  </data>
-  <data name="mavScale.HeaderText" xml:space="preserve">
-    <value>mavScale</value>
-  </data>
-  <data name="CHK_resetapmonconnect.Text" xml:space="preserve">
-    <value>Resetuj APM po podłączeniu USB</value>
-  </data>
-  <data name="label79.Text" xml:space="preserve">
-    <value>Entry Angle</value>
-  </data>
-  <data name="NUM_tracklength.ToolTip" xml:space="preserve">
-    <value>W zakładce Parametry Lotu</value>
-  </data>
-  <data name="label78.Text" xml:space="preserve">
-    <value>Mikser steru kierunku</value>
-  </data>
-  <data name="BUT_writePIDS.Text" xml:space="preserve">
-    <value>Zapisz parametry</value>
-  </data>
-  <data name="TabPlanner.Text" xml:space="preserve">
-    <value>Planner</value>
-  </data>
-  <data name="label73.Text" xml:space="preserve">
-    <value>INT_MAX</value>
-  </data>
-  <data name="CHK_loadwponconnect.Text" xml:space="preserve">
-    <value>Ładować punkty zwrotne przy podłączaniu?</value>
-  </data>
-  <data name="label58.Text" xml:space="preserve">
-    <value>D</value>
-  </data>
-  <data name="label108.Text" xml:space="preserve">
-    <value>Reset APM</value>
-  </data>
-  <data name="Command.HeaderText" xml:space="preserve">
-    <value>Polecenie</value>
-  </data>
-  <data name="label9.Text" xml:space="preserve">
-    <value>m/s</value>
-  </data>
-  <data name="groupBox1.Text" xml:space="preserve">
-    <value>Prędkość powietrza m/s</value>
-  </data>
-  <data name="label8.Text" xml:space="preserve">
-    <value>Rejs</value>
-  </data>
-  <data name="BUT_load.Text" xml:space="preserve">
-    <value>Ładuj</value>
-  </data>
-  <data name="groupBox3.Text" xml:space="preserve">
-    <value>Przepustnica 0-100%</value>
-  </data>
-  <data name="CHK_hudshow.Text" xml:space="preserve">
-    <value>Włącz nakładkę HUD</value>
-  </data>
-  <data name="label104.Text" xml:space="preserve">
-    <value>Tryb/Status</value>
-  </data>
-  <data name="label51.Text" xml:space="preserve">
-    <value>I</value>
-  </data>
-  <data name="groupBox2.Text" xml:space="preserve">
-    <value>Kąty nawigacji</value>
-  </data>
-  <data name="CHK_GDIPlus.ToolTip" xml:space="preserve">
-    <value>OpenGL = Wyłączone
-GDI+ = Włączone</value>
-  </data>
-  <data name="label5.Text" xml:space="preserve">
-    <value>Wartość FS</value>
-  </data>
-  <data name="groupBox5.Text" xml:space="preserve">
-    <value>Pr. zmiany ust. przepustnicy</value>
-  </data>
-  <data name="label53.Text" xml:space="preserve">
-    <value>INT_MAX</value>
-  </data>
-  <data name="label4.Text" xml:space="preserve">
-    <value>Rejs</value>
-  </data>
-  <data name="groupBox4.Text" xml:space="preserve">
-    <value>Nav WP</value>
-  </data>
-  <data name="label107.Text" xml:space="preserve">
-    <value>RC</value>
-  </data>
-  <data name="label7.Text" xml:space="preserve">
-    <value>Min</value>
-  </data>
-  <data name="label50.Text" xml:space="preserve">
-    <value>D</value>
-  </data>
-  <data name="groupBox7.Text" xml:space="preserve">
-    <value>Utrzymywanie wysokości</value>
-  </data>
-  <data name="label29.Text" xml:space="preserve">
-    <value>I</value>
-  </data>
-  <data name="label55.Text" xml:space="preserve">
-    <value>I</value>
-  </data>
-  <data name="label6.Text" xml:space="preserve">
-    <value>Max</value>
-  </data>
-  <data name="myLabel1.Text" xml:space="preserve">
-    <value>Ch7 Opt</value>
-  </data>
-  <data name="groupBox6.Text" xml:space="preserve">
-    <value>Korekcja w poprzek trasy</value>
-  </data>
-  <data name="label101.Text" xml:space="preserve">
-    <value>Prędkość telemetrii</value>
-  </data>
-  <data name="label28.Text" xml:space="preserve">
-    <value>IMAX</value>
-  </data>
-  <data name="label1.Text" xml:space="preserve">
-    <value>Współczynnik</value>
-  </data>
-  <data name="label52.Text" xml:space="preserve">
-    <value>P</value>
-  </data>
-  <data name="groupBox9.Text" xml:space="preserve">
-    <value>PID Serwa pochylania</value>
-  </data>
-  <data name="label102.Text" xml:space="preserve">
-    <value>Położenie</value>
-  </data>
-  <data name="label27.Text" xml:space="preserve">
-    <value>IMAX</value>
-  </data>
-  <data name="label57.Text" xml:space="preserve">
-    <value>INT_MAX</value>
-  </data>
-  <data name="groupBox8.Text" xml:space="preserve">
-    <value>PID Serwa przechylania</value>
-  </data>
-  <data name="label103.Text" xml:space="preserve">
-    <value>Pozycja</value>
-  </data>
-  <data name="label26.Text" xml:space="preserve">
-    <value>Format wideo</value>
-  </data>
-  <data name="label3.Text" xml:space="preserve">
-    <value>FBW min</value>
-  </data>
-  <data name="label54.Text" xml:space="preserve">
-    <value>D</value>
-  </data>
-  <data name="label25.Text" xml:space="preserve">
-    <value>P</value>
-  </data>
-  <data name="label2.Text" xml:space="preserve">
-    <value>FBW max</value>
-  </data>
-  <data name="CHK_speechcustom.Text" xml:space="preserve">
-    <value>Interwał czasu</value>
-  </data>
-  <data name="label84.Text" xml:space="preserve">
-    <value>IMAX</value>
-  </data>
-  <data name="label24.Text" xml:space="preserve">
-    <value>Punkty zwrotne</value>
-  </data>
-  <data name="label56.Text" xml:space="preserve">
-    <value>P</value>
-  </data>
-  <data name="label87.Text" xml:space="preserve">
-    <value>P</value>
-  </data>
-  <data name="label23.Text" xml:space="preserve">
-    <value>Długość trasy</value>
-  </data>
-  <data name="label86.Text" xml:space="preserve">
-    <value>I</value>
-  </data>
-  <data name="label22.Text" xml:space="preserve">
-    <value>P</value>
-  </data>
-  <data name="label81.Text" xml:space="preserve">
-    <value>Kompensacja pochylania</value>
-  </data>
-  <data name="label71.Text" xml:space="preserve">
-    <value>I</value>
-  </data>
-  <data name="CHK_lockrollpitch.Text" xml:space="preserve">
-    <value>Zablokuj wartości pochylenia i przechylenia</value>
-  </data>
-  <data name="label72.Text" xml:space="preserve">
-    <value>P</value>
-  </data>
-  <data name="label77.Text" xml:space="preserve">
-    <value>I</value>
-  </data>
-  <data name="label70.Text" xml:space="preserve">
-    <value>D</value>
-  </data>
-  <data name="label75.Text" xml:space="preserve">
-    <value>I</value>
-  </data>
-  <data name="BUT_writePIDS.ToolTip" xml:space="preserve">
-    <value>Zapisz zmienione parametry w urządzeniu</value>
-  </data>
-  <data name="BUT_save.Text" xml:space="preserve">
-    <value>Zapisz</value>
-  </data>
-  <data name="label76.Text" xml:space="preserve">
-    <value>P</value>
-  </data>
-  <data name="label74.Text" xml:space="preserve">
-    <value>D</value>
-  </data>
-  <data name="groupBox23.Text" xml:space="preserve">
-    <value>Rate Yaw</value>
-  </data>
-  <data name="groupBox22.Text" xml:space="preserve">
-    <value>Stabilizuj przechylenie</value>
-  </data>
-  <data name="groupBox21.Text" xml:space="preserve">
-    <value>Stabilizuj pochylenie</value>
-  </data>
-  <data name="groupBox20.Text" xml:space="preserve">
-    <value>Stabilizuj odchylenie</value>
-  </data>
-  <data name="CHK_mavdebug.Text" xml:space="preserve">
-    <value>Debuggowanie wiadomości Mavlink</value>
-  </data>
-  <data name="label39.Text" xml:space="preserve">
-    <value>Min. pochylenia</value>
-  </data>
-  <data name="groupBox25.Text" xml:space="preserve">
-    <value>Rate Roll</value>
-  </data>
-  <data name="BUT_Joystick.Text" xml:space="preserve">
-    <value>Ustawienia joysticka</value>
-  </data>
-  <data name="groupBox24.Text" xml:space="preserve">
-    <value>Prędkość pochylania</value>
-  </data>
-  <data name="label37.Text" xml:space="preserve">
-    <value>Max przechylenie</value>
-  </data>
-  <data name="label38.Text" xml:space="preserve">
-    <value>Max pochylenie</value>
-  </data>
-  <data name="label95.Text" xml:space="preserve">
-    <value>Mowa</value>
-  </data>
-  <data name="label35.Text" xml:space="preserve">
-    <value>P</value>
-  </data>
-  <data name="label36.Text" xml:space="preserve">
-    <value>IMAX</value>
-  </data>
-  <data name="label97.Text" xml:space="preserve">
-    <value>Jednostki odl.</value>
-  </data>
-  <data name="label33.Text" xml:space="preserve">
-    <value>P</value>
-  </data>
-  <data name="label94.Text" xml:space="preserve">
-    <value>Kolor OSD</value>
-  </data>
-  <data name="label34.Text" xml:space="preserve">
-    <value>I</value>
-  </data>
-  <data name="groupBox12.Text" xml:space="preserve">
-    <value>PID naw. predk. pochylaniem</value>
-  </data>
-  <data name="groupBox11.Text" xml:space="preserve">
-    <value>PID naw. przechylenia</value>
-  </data>
-  <data name="label31.Text" xml:space="preserve">
-    <value>P</value>
-  </data>
-  <data name="label21.Text" xml:space="preserve">
-    <value>I</value>
-  </data>
-  <data name="label96.Text" xml:space="preserve">
-    <value>Joystick</value>
-  </data>
-  <data name="label32.Text" xml:space="preserve">
-    <value>IMAX </value>
-  </data>
-  <data name="label93.Text" xml:space="preserve">
-    <value>Język interfejsu</value>
-  </data>
-  <data name="label98.Text" xml:space="preserve">
-    <value>Jednostki prędkości</value>
-  </data>
-  <data name="Value.HeaderText" xml:space="preserve">
-    <value>Wartość</value>
-  </data>
-  <data name="groupBox10.Text" xml:space="preserve">
-    <value>PID serwa odchylania</value>
-  </data>
-  <data name="label30.Text" xml:space="preserve">
-    <value>I</value>
-  </data>
-  <data name="label69.Text" xml:space="preserve">
-    <value>INT_MAX</value>
-  </data>
-  <data name="groupBox15.Text" xml:space="preserve">
-    <value>PIDy poprzeczne trasy</value>
-  </data>
-  <data name="Default.HeaderText" xml:space="preserve">
-    <value>Domyślne</value>
-  </data>
-  <data name="TabSetup.Text" xml:space="preserve">
-    <value>Ustawienia</value>
-  </data>
-  <data name="label68.Text" xml:space="preserve">
-    <value>P</value>
-  </data>
-  <data name="label92.Text" xml:space="preserve">
-    <value>Urządzenie wideo</value>
-  </data>
-  <data name="label67.Text" xml:space="preserve">
-    <value>I</value>
-  </data>
-  <data name="groupBox17.Text" xml:space="preserve">
-    <value>Pochylenie akro.</value>
-  </data>
-  <data name="groupBox14.Text" xml:space="preserve">
-    <value>PID Energia/Wysokość</value>
-  </data>
-  <data name="label99.Text" xml:space="preserve">
-    <value>UWAGA: Zakładka konfiguracji nie będzie wyświetlała tych jednostek, ponieważ są to surowe dane.
-</value>
-  </data>
-  <data name="groupBox19.Text" xml:space="preserve">
-    <value>Krążenie</value>
-  </data>
-  <data name="groupBox16.Text" xml:space="preserve">
-    <value>Inne miksery</value>
-  </data>
-  <data name="BUT_load.ToolTip" xml:space="preserve">
-    <value>Załaduj parametry z pliku</value>
-  </data>
-  <data name="label63.Text" xml:space="preserve">
-    <value>I</value>
-  </data>
-  <data name="CHK_speechwaypoint.Text" xml:space="preserve">
-    <value>Punkt zwrotny</value>
-  </data>
-  <data name="label62.Text" xml:space="preserve">
-    <value>D</value>
-  </data>
   <data name="CHK_speechaltwarning.Text" xml:space="preserve">
-    <value>Ostrzeżenie o wysokości</value>
-  </data>
-  <data name="groupBox18.Text" xml:space="preserve">
-    <value>Przechylenie akro</value>
-  </data>
-  <data name="label61.Text" xml:space="preserve">
-    <value>INT_MAX</value>
-  </data>
-  <data name="label60.Text" xml:space="preserve">
-    <value>P</value>
-  </data>
-  <data name="label49.Text" xml:space="preserve">
-    <value>INT_MAX</value>
-  </data>
-  <data name="label66.Text" xml:space="preserve">
-    <value>D</value>
-  </data>
-  <data name="label59.Text" xml:space="preserve">
-    <value>I</value>
-  </data>
-  <data name="BUT_rerequestparams.ToolTip" xml:space="preserve">
-    <value>Przeładuj parametry z urządzenia</value>
-  </data>
-  <data name="label65.Text" xml:space="preserve">
-    <value>INT_MAX</value>
-  </data>
-  <data name="CHK_enablespeech.Text" xml:space="preserve">
-    <value>Włącz mowę</value>
-  </data>
-  <data name="TabAC2.Text" xml:space="preserve">
-    <value>AC2</value>
+    <value>Ostrz. o wys.</value>
   </data>
   <data name="label12.Text" xml:space="preserve">
     <value>HUD</value>
   </data>
-  <data name="label48.Text" xml:space="preserve">
-    <value>P</value>
-  </data>
   <data name="BUT_videostop.Text" xml:space="preserve">
     <value>Stop</value>
   </data>
-  <data name="label16.Text" xml:space="preserve">
-    <value>P</value>
+  <data name="label49.Text" xml:space="preserve">
+    <value>INT_MAX</value>
+  </data>
+  <data name="label10.Text" xml:space="preserve">
+    <value>D</value>
   </data>
   <data name="CHK_speechbattery.Text" xml:space="preserve">
-    <value>Ostrzeżenie o baterii</value>
+    <value>Ostrz. o bat.</value>
   </data>
-  <data name="label15.Text" xml:space="preserve">
-    <value>I</value>
+  <data name="CHK_enablespeech.Text" xml:space="preserve">
+    <value>Włącz mowę</value>
   </data>
   <data name="label13.Text" xml:space="preserve">
     <value>IMAX</value>
   </data>
-  <data name="label18.Text" xml:space="preserve">
-    <value>Wzmocnienie</value>
+  <data name="label16.Text" xml:space="preserve">
+    <value>P</value>
+  </data>
+  <data name="label11.Text" xml:space="preserve">
+    <value>D</value>
   </data>
   <data name="label14.Text" xml:space="preserve">
     <value>IMAX</value>
   </data>
+  <data name="label17.Text" xml:space="preserve">
+    <value>D</value>
+  </data>
   <data name="label88.Text" xml:space="preserve">
     <value>IMAX</value>
+  </data>
+  <data name="label15.Text" xml:space="preserve">
+    <value>I</value>
+  </data>
+  <data name="label18.Text" xml:space="preserve">
+    <value>Wzm.</value>
   </data>
   <data name="label19.Text" xml:space="preserve">
     <value>IMAX</value>
@@ -593,13 +168,435 @@ GDI+ = Włączone</value>
   <data name="label82.Text" xml:space="preserve">
     <value>P</value>
   </data>
-  <data name="label80.Text" xml:space="preserve">
-    <value>Wzmocnienie (cm)</value>
-  </data>
   <data name="label83.Text" xml:space="preserve">
     <value>P do T</value>
   </data>
   <data name="label20.Text" xml:space="preserve">
     <value>I</value>
+  </data>
+  <data name="label80.Text" xml:space="preserve">
+    <value>Wzm. (cm)</value>
+  </data>
+  <data name="Value.HeaderText" xml:space="preserve">
+    <value>Wartość</value>
+  </data>
+  <data name="label21.Text" xml:space="preserve">
+    <value>I</value>
+  </data>
+  <data name="label81.Text" xml:space="preserve">
+    <value>Komp. poch.</value>
+  </data>
+  <data name="label22.Text" xml:space="preserve">
+    <value>P</value>
+  </data>
+  <data name="label86.Text" xml:space="preserve">
+    <value>I</value>
+  </data>
+  <data name="label23.Text" xml:space="preserve">
+    <value>Długość trasy</value>
+  </data>
+  <data name="label87.Text" xml:space="preserve">
+    <value>P</value>
+  </data>
+  <data name="label56.Text" xml:space="preserve">
+    <value>P</value>
+  </data>
+  <data name="label24.Text" xml:space="preserve">
+    <value>WP</value>
+  </data>
+  <data name="label84.Text" xml:space="preserve">
+    <value>IMAX</value>
+  </data>
+  <data name="CHK_speechcustom.Text" xml:space="preserve">
+    <value>Interwał czasu</value>
+  </data>
+  <data name="label2.Text" xml:space="preserve">
+    <value>FBW max</value>
+  </data>
+  <data name="label25.Text" xml:space="preserve">
+    <value>P</value>
+  </data>
+  <data name="myLabel2.Text" xml:space="preserve">
+    <value>Ch6 Opt</value>
+  </data>
+  <data name="label54.Text" xml:space="preserve">
+    <value>D</value>
+  </data>
+  <data name="label3.Text" xml:space="preserve">
+    <value>FBW min</value>
+  </data>
+  <data name="label26.Text" xml:space="preserve">
+    <value>Format wideo</value>
+  </data>
+  <data name="label103.Text" xml:space="preserve">
+    <value>Pozycja</value>
+  </data>
+  <data name="groupBox8.Text" xml:space="preserve">
+    <value>PID Serwa przechy/</value>
+  </data>
+  <data name="label57.Text" xml:space="preserve">
+    <value>INT_MAX</value>
+  </data>
+  <data name="label27.Text" xml:space="preserve">
+    <value>IMAX</value>
+  </data>
+  <data name="label102.Text" xml:space="preserve">
+    <value>Kąty</value>
+  </data>
+  <data name="groupBox9.Text" xml:space="preserve">
+    <value>PID Serwa poch.</value>
+  </data>
+  <data name="label52.Text" xml:space="preserve">
+    <value>P</value>
+  </data>
+  <data name="label1.Text" xml:space="preserve">
+    <value>Stosunek</value>
+  </data>
+  <data name="label28.Text" xml:space="preserve">
+    <value>IMAX</value>
+  </data>
+  <data name="label101.Text" xml:space="preserve">
+    <value>Prędk. telemetrii</value>
+  </data>
+  <data name="groupBox6.Text" xml:space="preserve">
+    <value>Korekcja w poprzek trasy</value>
+  </data>
+  <data name="myLabel1.Text" xml:space="preserve">
+    <value>Ch7 Opt</value>
+  </data>
+  <data name="label6.Text" xml:space="preserve">
+    <value>Max</value>
+  </data>
+  <data name="label55.Text" xml:space="preserve">
+    <value>I</value>
+  </data>
+  <data name="label29.Text" xml:space="preserve">
+    <value>I</value>
+  </data>
+  <data name="groupBox7.Text" xml:space="preserve">
+    <value>Utrzymywanie wys.</value>
+  </data>
+  <data name="label50.Text" xml:space="preserve">
+    <value>D</value>
+  </data>
+  <data name="label7.Text" xml:space="preserve">
+    <value>Min</value>
+  </data>
+  <data name="label107.Text" xml:space="preserve">
+    <value>RC</value>
+  </data>
+  <data name="groupBox4.Text" xml:space="preserve">
+    <value>Nav WP</value>
+  </data>
+  <data name="label4.Text" xml:space="preserve">
+    <value>Rejs</value>
+  </data>
+  <data name="label53.Text" xml:space="preserve">
+    <value>INT_MAX</value>
+  </data>
+  <data name="groupBox5.Text" xml:space="preserve">
+    <value>Pr. zmiany ust. przepustnicy</value>
+  </data>
+  <data name="label5.Text" xml:space="preserve">
+    <value>Wartość FS</value>
+  </data>
+  <data name="CHK_GDIPlus.ToolTip" xml:space="preserve">
+    <value>OpenGL = Wyłączone
+GDI+ = Włączone</value>
+  </data>
+  <data name="groupBox2.Text" xml:space="preserve">
+    <value>Kąty nawigacji</value>
+  </data>
+  <data name="label51.Text" xml:space="preserve">
+    <value>I</value>
+  </data>
+  <data name="label104.Text" xml:space="preserve">
+    <value>Tryb/Status</value>
+  </data>
+  <data name="CHK_hudshow.Text" xml:space="preserve">
+    <value>Włącz nakładkę HUD</value>
+  </data>
+  <data name="groupBox3.Text" xml:space="preserve">
+    <value>Przepustnica 0-100%</value>
+  </data>
+  <data name="BUT_load.Text" xml:space="preserve">
+    <value>Ładuj</value>
+  </data>
+  <data name="label8.Text" xml:space="preserve">
+    <value>Przelot.</value>
+  </data>
+  <data name="groupBox1.Text" xml:space="preserve">
+    <value>Prędkość powietrza m/s</value>
+  </data>
+  <data name="label9.Text" xml:space="preserve">
+    <value>m/s</value>
+  </data>
+  <data name="Command.HeaderText" xml:space="preserve">
+    <value>Polecenie</value>
+  </data>
+  <data name="label108.Text" xml:space="preserve">
+    <value>Reset APM</value>
+  </data>
+  <data name="label58.Text" xml:space="preserve">
+    <value>D</value>
+  </data>
+  <data name="CHK_loadwponconnect.Text" xml:space="preserve">
+    <value>Ładować WP przy podłączaniu?</value>
+  </data>
+  <data name="label64.Text" xml:space="preserve">
+    <value>P</value>
+  </data>
+  <data name="label65.Text" xml:space="preserve">
+    <value>INT_MAX</value>
+  </data>
+  <data name="BUT_rerequestparams.ToolTip" xml:space="preserve">
+    <value>Przeładuj parametry z urządzenia</value>
+  </data>
+  <data name="label59.Text" xml:space="preserve">
+    <value>I</value>
+  </data>
+  <data name="label66.Text" xml:space="preserve">
+    <value>D</value>
+  </data>
+  <data name="label67.Text" xml:space="preserve">
+    <value>I</value>
+  </data>
+  <data name="label60.Text" xml:space="preserve">
+    <value>P</value>
+  </data>
+  <data name="label61.Text" xml:space="preserve">
+    <value>INT_MAX</value>
+  </data>
+  <data name="label98.Text" xml:space="preserve">
+    <value>Jedn. prędk.</value>
+  </data>
+  <data name="label62.Text" xml:space="preserve">
+    <value>D</value>
+  </data>
+  <data name="CHK_speechwaypoint.Text" xml:space="preserve">
+    <value>Waypoint</value>
+  </data>
+  <data name="label63.Text" xml:space="preserve">
+    <value>I</value>
+  </data>
+  <data name="BUT_load.ToolTip" xml:space="preserve">
+    <value>Załaduj parametry z pliku</value>
+  </data>
+  <data name="groupBox16.Text" xml:space="preserve">
+    <value>Inne miksery</value>
+  </data>
+  <data name="groupBox19.Text" xml:space="preserve">
+    <value>Krążenie</value>
+  </data>
+  <data name="label99.Text" xml:space="preserve">
+    <value>UWAGA: Zakładka konf. nie wyświetli tych jednostek, ponieważ są to surowe dane.
+</value>
+  </data>
+  <data name="groupBox14.Text" xml:space="preserve">
+    <value>PID Energia/Wysokość</value>
+  </data>
+  <data name="groupBox12.Text" xml:space="preserve">
+    <value>PID ster. predk. pochylaniem</value>
+  </data>
+  <data name="label92.Text" xml:space="preserve">
+    <value>Urządzenie wideo</value>
+  </data>
+  <data name="label68.Text" xml:space="preserve">
+    <value>P</value>
+  </data>
+  <data name="TabSetup.Text" xml:space="preserve">
+    <value>Ustawienia</value>
+  </data>
+  <data name="Default.HeaderText" xml:space="preserve">
+    <value>Domyślne</value>
+  </data>
+  <data name="groupBox15.Text" xml:space="preserve">
+    <value>PIDy poprzeczne trasy</value>
+  </data>
+  <data name="label69.Text" xml:space="preserve">
+    <value>INT_MAX</value>
+  </data>
+  <data name="label30.Text" xml:space="preserve">
+    <value>I</value>
+  </data>
+  <data name="groupBox10.Text" xml:space="preserve">
+    <value>PID serwa odch.</value>
+  </data>
+  <data name="label90.Text" xml:space="preserve">
+    <value>I</value>
+  </data>
+  <data name="groupBox13.Text" xml:space="preserve">
+    <value>Nav Pitch Alt Pid</value>
+  </data>
+  <data name="label93.Text" xml:space="preserve">
+    <value>Język</value>
+  </data>
+  <data name="label32.Text" xml:space="preserve">
+    <value>IMAX </value>
+  </data>
+  <data name="label96.Text" xml:space="preserve">
+    <value>Joystick</value>
+  </data>
+  <data name="CHK_GDIPlus.Text" xml:space="preserve">
+    <value>GDI+ (stara metoda)</value>
+  </data>
+  <data name="label31.Text" xml:space="preserve">
+    <value>P</value>
+  </data>
+  <data name="groupBox11.Text" xml:space="preserve">
+    <value>PID naw. przechylenia</value>
+  </data>
+  <data name="label91.Text" xml:space="preserve">
+    <value>P</value>
+  </data>
+  <data name="label34.Text" xml:space="preserve">
+    <value>I</value>
+  </data>
+  <data name="label94.Text" xml:space="preserve">
+    <value>Kolor OSD</value>
+  </data>
+  <data name="label97.Text" xml:space="preserve">
+    <value>Jedn. odl.</value>
+  </data>
+  <data name="label36.Text" xml:space="preserve">
+    <value>IMAX</value>
+  </data>
+  <data name="label35.Text" xml:space="preserve">
+    <value>P</value>
+  </data>
+  <data name="label95.Text" xml:space="preserve">
+    <value>Mowa</value>
+  </data>
+  <data name="label38.Text" xml:space="preserve">
+    <value>Max poch.</value>
+  </data>
+  <data name="label37.Text" xml:space="preserve">
+    <value>Max przech.</value>
+  </data>
+  <data name="groupBox24.Text" xml:space="preserve">
+    <value>Prędk. poch.</value>
+  </data>
+  <data name="BUT_Joystick.Text" xml:space="preserve">
+    <value>Ust. joysticka</value>
+  </data>
+  <data name="groupBox25.Text" xml:space="preserve">
+    <value>Rate Roll</value>
+  </data>
+  <data name="label39.Text" xml:space="preserve">
+    <value>Min. poch.</value>
+  </data>
+  <data name="CHK_mavdebug.Text" xml:space="preserve">
+    <value>Debuggowanie wiadomości Mavlink</value>
+  </data>
+  <data name="groupBox20.Text" xml:space="preserve">
+    <value>Stabilizuj odchylenie</value>
+  </data>
+  <data name="groupBox21.Text" xml:space="preserve">
+    <value>Stabilizuj pochylenie</value>
+  </data>
+  <data name="groupBox22.Text" xml:space="preserve">
+    <value>Stabilizuj przechylenie</value>
+  </data>
+  <data name="groupBox23.Text" xml:space="preserve">
+    <value>Rate Yaw</value>
+  </data>
+  <data name="label74.Text" xml:space="preserve">
+    <value>D</value>
+  </data>
+  <data name="label76.Text" xml:space="preserve">
+    <value>P</value>
+  </data>
+  <data name="BUT_save.Text" xml:space="preserve">
+    <value>Zapisz</value>
+  </data>
+  <data name="BUT_writePIDS.ToolTip" xml:space="preserve">
+    <value>Zapisz zmienione parametry w urządzeniu</value>
+  </data>
+  <data name="label75.Text" xml:space="preserve">
+    <value>I</value>
+  </data>
+  <data name="label70.Text" xml:space="preserve">
+    <value>D</value>
+  </data>
+  <data name="lblSTAB_D.Text" xml:space="preserve">
+    <value>Stabilize D</value>
+  </data>
+  <data name="label77.Text" xml:space="preserve">
+    <value>I</value>
+  </data>
+  <data name="label72.Text" xml:space="preserve">
+    <value>P</value>
+  </data>
+  <data name="CHK_lockrollpitch.Text" xml:space="preserve">
+    <value>Zablokuj wartości pochylenia i przechylenia</value>
+  </data>
+  <data name="label71.Text" xml:space="preserve">
+    <value>I</value>
+  </data>
+  <data name="label73.Text" xml:space="preserve">
+    <value>INT_MAX</value>
+  </data>
+  <data name="TabPlanner.Text" xml:space="preserve">
+    <value>Planner</value>
+  </data>
+  <data name="BUT_writePIDS.Text" xml:space="preserve">
+    <value>Zapisz parametry</value>
+  </data>
+  <data name="TabAP.Text" xml:space="preserve">
+    <value>ArduPlane</value>
+  </data>
+  <data name="label78.Text" xml:space="preserve">
+    <value>Mikser steru kierunku</value>
+  </data>
+  <data name="NUM_tracklength.ToolTip" xml:space="preserve">
+    <value>W zakładce Parametry Lotu</value>
+  </data>
+  <data name="label79.Text" xml:space="preserve">
+    <value>Entry Angle</value>
+  </data>
+  <data name="CHK_resetapmonconnect.Text" xml:space="preserve">
+    <value>Resetuj APM po podłączeniu USB</value>
+  </data>
+  <data name="mavScale.HeaderText" xml:space="preserve">
+    <value>mavScale</value>
+  </data>
+  <data name="TabAC.Text" xml:space="preserve">
+    <value>ArduCopter</value>
+  </data>
+  <data name="CHK_speechmode.Text" xml:space="preserve">
+    <value>Tryb</value>
+  </data>
+  <data name="RawValue.HeaderText" xml:space="preserve">
+    <value>RawValue</value>
+  </data>
+  <data name="BUT_compare.Text" xml:space="preserve">
+    <value>Porównaj parametry</value>
+  </data>
+  <data name="BUT_save.ToolTip" xml:space="preserve">
+    <value>Zapisz parametry do pliku</value>
+  </data>
+  <data name="label46.Text" xml:space="preserve">
+    <value>P</value>
+  </data>
+  <data name="label47.Text" xml:space="preserve">
+    <value>IMAX</value>
+  </data>
+  <data name="label45.Text" xml:space="preserve">
+    <value>I</value>
+  </data>
+  <data name="label42.Text" xml:space="preserve">
+    <value>P</value>
+  </data>
+  <data name="label43.Text" xml:space="preserve">
+    <value>IMAX</value>
+  </data>
+  <data name="label41.Text" xml:space="preserve">
+    <value>I</value>
+  </data>
+  <data name="BUT_rerequestparams.Text" xml:space="preserve">
+    <value>Odśwież parametry</value>
+  </data>
+  <data name="BUT_videostart.Text" xml:space="preserve">
+    <value>Start</value>
   </data>
 </root>

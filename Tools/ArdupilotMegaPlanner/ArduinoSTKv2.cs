@@ -12,6 +12,24 @@ namespace ArdupilotMega
     {
         public event ProgressEventHandler Progress;
 
+        public new void Open()
+        {
+            // default dtr status is false
+
+            //from http://svn.savannah.nongnu.org/viewvc/RELEASE_5_11_0/arduino.c?root=avrdude&view=markup
+            base.Open();
+
+            base.DtrEnable = false;
+            base.RtsEnable = false;
+
+            System.Threading.Thread.Sleep(50);
+
+            base.DtrEnable = true;
+            base.RtsEnable = true;
+
+            System.Threading.Thread.Sleep(50);
+        }
+
         public byte[] genstkv2packet(byte[] message)
         {
             byte[] data = new byte[300];
@@ -358,7 +376,9 @@ namespace ArdupilotMega
 
             if (base.IsOpen)
                 base.Close();
-            //this.DtrEnable = false;
+
+            base.DtrEnable = false;
+            base.RtsEnable = false;
             return true;
         }
     }

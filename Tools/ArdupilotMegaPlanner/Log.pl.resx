@@ -117,20 +117,20 @@
   <resheader name="writer">
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
-  <data name="BUT_clearlogs.Text" xml:space="preserve">
-    <value>Wyczyść Logi</value>
-  </data>
   <data name="$this.Text" xml:space="preserve">
     <value>Log</value>
-  </data>
-  <data name="BUT_redokml.Text" xml:space="preserve">
-    <value>Stwórz ponownie KML</value>
   </data>
   <data name="BUT_DLall.Text" xml:space="preserve">
     <value>Odczytaj wszystkie Logi</value>
   </data>
+  <data name="BUT_redokml.Text" xml:space="preserve">
+    <value>Stwórz ponownie KML</value>
+  </data>
   <data name="BUT_DLthese.Text" xml:space="preserve">
     <value>Odczytaj wybrane Logi</value>
+  </data>
+  <data name="BUT_clearlogs.Text" xml:space="preserve">
+    <value>Wyczyść Logi</value>
   </data>
   <data name="BUT_firstperson.Text" xml:space="preserve">
     <value>KML w pierwszej osobie (FPV)</value>

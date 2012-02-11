@@ -117,16 +117,16 @@
   <resheader name="writer">
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
-  <data name="lbl_status.Text" xml:space="preserve">
-    <value>Status</value>
-  </data>
   <data name="label2.Text" xml:space="preserve">
     <value>Grafika: Max Levine</value>
   </data>
-  <data name="BUT_setup.Text" xml:space="preserve">
-    <value>Ustawienia APM (Plane i Quad)</value>
-  </data>
   <data name="label1.Text" xml:space="preserve">
     <value>Kliknij obrazy powyżej żeby zobaczyć "Wersje oprogramowania"</value>
+  </data>
+  <data name="lbl_status.Text" xml:space="preserve">
+    <value>Status</value>
+  </data>
+  <data name="BUT_setup.Text" xml:space="preserve">
+    <value>Ustawienia APM (Plane i Quad)</value>
   </data>
 </root>

@@ -43,18 +43,20 @@ static void reset_control_switch()
 	read_control_switch();
 }
 
+#define CH_7_PWM_TRIGGER 1800
+
 // read at 10 hz
 // set this to your trainer switch
 static void read_trim_switch()
 {
 	#if CH7_OPTION == CH7_FLIP
-		if (g.rc_7.control_in > 800 && g.rc_3.control_in != 0){
+		if (g.rc_7.radio_in > CH_7_PWM_TRIGGER && g.rc_3.control_in != 0){
 			do_flip = true;
 		}
 
 	#elif CH7_OPTION == CH7_SET_HOVER
 		// switch is engaged
-		if (g.rc_7.control_in > 800){
+		if (g.rc_7.radio_in > CH_7_PWM_TRIGGER){
 			trim_flag = true;
 
 		}else{ // switch is disengaged
@@ -71,14 +73,14 @@ static void read_trim_switch()
 		}
 
 	#elif CH7_OPTION == CH7_ADC_FILTER
-		if (g.rc_7.control_in > 800){
+		if (g.rc_7.radio_in > CH_7_PWM_TRIGGER){
 			adc.filter_result = true;
 		}else{
 			adc.filter_result = false;
 		}
 
 	#elif CH7_OPTION == CH7_AUTO_TRIM
-		if (g.rc_7.control_in > 800){
+		if (g.rc_7.radio_in > CH_7_PWM_TRIGGER){
 			auto_level_counter = 10;
 		}
 
@@ -87,10 +89,10 @@ static void read_trim_switch()
 	// this is the normal operation set by the mission planner
 
 	if(g.ch7_option == CH7_SIMPLE_MODE){
-		do_simple = (g.rc_7.control_in > 800);
+		do_simple = (g.rc_7.radio_in > CH_7_PWM_TRIGGER);
 
 	}else if (g.ch7_option == CH7_RTL){
-		if (trim_flag == false && g.rc_7.control_in > 800){
+		if (trim_flag == false && g.rc_7.radio_in > CH_7_PWM_TRIGGER){
 			trim_flag = true;
 			set_mode(RTL);
 		}
@@ -103,7 +105,7 @@ static void read_trim_switch()
 		}
 
 	}else if (g.ch7_option == CH7_SAVE_WP){
-		if (g.rc_7.control_in > 800){ // switch is engaged
+		if (g.rc_7.radio_in > CH_7_PWM_TRIGGER){ // switch is engaged
 			trim_flag = true;
 
 		}else{ // switch is disengaged

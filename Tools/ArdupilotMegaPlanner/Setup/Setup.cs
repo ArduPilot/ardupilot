@@ -574,14 +574,26 @@ namespace ArdupilotMega.Setup
                     MainV2.comPort.setParam("FLTMODE5", (float)(int)Enum.Parse(typeof(Common.ac2modes), CMB_fmode5.Text));
                     MainV2.comPort.setParam("FLTMODE6", (float)(int)Enum.Parse(typeof(Common.ac2modes), CMB_fmode6.Text));
 
-                    float value = (float)(CB_simple1.Checked ? 1 : 0) + (CB_simple2.Checked ? 1 << 1 : 0) + (CB_simple3.Checked ? 1 << 2 : 0)
-                        + (CB_simple4.Checked ? 1 << 3 : 0) + (CB_simple5.Checked ? 1 << 4 : 0) + (CB_simple6.Checked ? 1 << 5 : 0);
+                    float value = (float)(CB_simple1.Checked ? (int)SimpleMode.Simple1 : 0) + (CB_simple2.Checked ? (int)SimpleMode.Simple2 : 0) + (CB_simple3.Checked ? (int)SimpleMode.Simple3 : 0)
+                        + (CB_simple4.Checked ? (int)SimpleMode.Simple4 : 0) + (CB_simple5.Checked ? (int)SimpleMode.Simple5 : 0) + (CB_simple6.Checked ? (int)SimpleMode.Simple6 : 0);
                     if (MainV2.comPort.param.ContainsKey("SIMPLE"))
                         MainV2.comPort.setParam("SIMPLE", value);
                 }
             }
             catch { MessageBox.Show("Failed to set Flight modes"); }
             BUT_SaveModes.Text = "Complete";
+        }
+
+        [Flags]
+        public enum SimpleMode
+        {
+            None = 0,
+            Simple1 = 1,
+            Simple2 = 2,
+            Simple3 = 4,
+            Simple4 = 8,
+            Simple5 = 16,
+            Simple6 = 32,
         }
 
         private void TXT_declination_Validating(object sender, CancelEventArgs e)
@@ -970,6 +982,8 @@ namespace ArdupilotMega.Setup
                 MessageBox.Show("Please Connect First");
                 this.Close();
             }
+
+            tabControl1_SelectedIndexChanged(null, new EventArgs());
         }
 
         private void TXT_srvpos1_Validating(object sender, CancelEventArgs e)

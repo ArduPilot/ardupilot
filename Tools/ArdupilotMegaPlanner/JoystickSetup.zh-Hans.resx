@@ -121,14 +121,26 @@
   <data name="expo_ch1.Location" type="System.Drawing.Point, System.Drawing">
     <value>323, 66</value>
   </data>
+  <data name="expo_ch1.Size" type="System.Drawing.Size, System.Drawing">
+    <value>60, 13</value>
+  </data>
   <data name="expo_ch2.Location" type="System.Drawing.Point, System.Drawing">
     <value>323, 93</value>
+  </data>
+  <data name="expo_ch2.Size" type="System.Drawing.Size, System.Drawing">
+    <value>60, 13</value>
   </data>
   <data name="expo_ch3.Location" type="System.Drawing.Point, System.Drawing">
     <value>323, 120</value>
   </data>
+  <data name="expo_ch3.Size" type="System.Drawing.Size, System.Drawing">
+    <value>60, 13</value>
+  </data>
   <data name="expo_ch4.Location" type="System.Drawing.Point, System.Drawing">
     <value>323, 147</value>
+  </data>
+  <data name="expo_ch4.Size" type="System.Drawing.Size, System.Drawing">
+    <value>60, 13</value>
   </data>
   <data name="label1.Size" type="System.Drawing.Size, System.Drawing">
     <value>31, 13</value>
@@ -152,16 +164,16 @@
     <value>尾舵</value>
   </data>
   <data name="revCH1.Location" type="System.Drawing.Point, System.Drawing">
-    <value>429, 69</value>
+    <value>396, 69</value>
   </data>
   <data name="revCH2.Location" type="System.Drawing.Point, System.Drawing">
-    <value>429, 96</value>
+    <value>396, 96</value>
   </data>
   <data name="revCH3.Location" type="System.Drawing.Point, System.Drawing">
-    <value>429, 123</value>
+    <value>396, 123</value>
   </data>
   <data name="revCH4.Location" type="System.Drawing.Point, System.Drawing">
-    <value>429, 150</value>
+    <value>396, 150</value>
   </data>
   <data name="label5.Size" type="System.Drawing.Size, System.Drawing">
     <value>31, 13</value>
@@ -188,7 +200,7 @@
     <value>控制器轴</value>
   </data>
   <data name="label9.Location" type="System.Drawing.Point, System.Drawing">
-    <value>427, 47</value>
+    <value>389, 47</value>
   </data>
   <data name="label9.Size" type="System.Drawing.Size, System.Drawing">
     <value>31, 13</value>
@@ -196,17 +208,32 @@
   <data name="label9.Text" xml:space="preserve">
     <value>反向</value>
   </data>
+  <data name="CHK_elevons.Location" type="System.Drawing.Point, System.Drawing">
+    <value>418, 81</value>
+  </data>
+  <data name="CHK_elevons.Size" type="System.Drawing.Size, System.Drawing">
+    <value>74, 17</value>
+  </data>
+  <data name="CHK_elevons.Text" xml:space="preserve">
+    <value>升降副翼</value>
+  </data>
+  <data name="revCH5.Location" type="System.Drawing.Point, System.Drawing">
+    <value>396, 179</value>
+  </data>
   <data name="label10.Size" type="System.Drawing.Size, System.Drawing">
     <value>40, 13</value>
   </data>
   <data name="label10.Text" xml:space="preserve">
     <value>按键 1</value>
   </data>
-  <data name="CMB_butt1action.Location" type="System.Drawing.Point, System.Drawing">
-    <value>323, 192</value>
+  <data name="expo_ch5.Location" type="System.Drawing.Point, System.Drawing">
+    <value>323, 180</value>
   </data>
-  <data name="CMB_butt2action.Location" type="System.Drawing.Point, System.Drawing">
-    <value>323, 221</value>
+  <data name="expo_ch5.Size" type="System.Drawing.Size, System.Drawing">
+    <value>60, 13</value>
+  </data>
+  <data name="revCH6.Location" type="System.Drawing.Point, System.Drawing">
+    <value>396, 208</value>
   </data>
   <data name="label11.Size" type="System.Drawing.Size, System.Drawing">
     <value>40, 13</value>
@@ -214,8 +241,14 @@
   <data name="label11.Text" xml:space="preserve">
     <value>按键 2</value>
   </data>
-  <data name="CMB_butt3action.Location" type="System.Drawing.Point, System.Drawing">
-    <value>323, 250</value>
+  <data name="expo_ch6.Location" type="System.Drawing.Point, System.Drawing">
+    <value>323, 209</value>
+  </data>
+  <data name="expo_ch6.Size" type="System.Drawing.Size, System.Drawing">
+    <value>60, 13</value>
+  </data>
+  <data name="revCH7.Location" type="System.Drawing.Point, System.Drawing">
+    <value>396, 237</value>
   </data>
   <data name="label12.Size" type="System.Drawing.Size, System.Drawing">
     <value>40, 13</value>
@@ -223,14 +256,35 @@
   <data name="label12.Text" xml:space="preserve">
     <value>按键 3</value>
   </data>
-  <data name="CMB_butt4action.Location" type="System.Drawing.Point, System.Drawing">
-    <value>323, 279</value>
+  <data name="expo_ch7.Location" type="System.Drawing.Point, System.Drawing">
+    <value>323, 238</value>
+  </data>
+  <data name="expo_ch7.Size" type="System.Drawing.Size, System.Drawing">
+    <value>60, 13</value>
+  </data>
+  <data name="revCH8.Location" type="System.Drawing.Point, System.Drawing">
+    <value>396, 266</value>
   </data>
   <data name="label13.Size" type="System.Drawing.Size, System.Drawing">
     <value>40, 13</value>
   </data>
   <data name="label13.Text" xml:space="preserve">
     <value>按键 4</value>
+  </data>
+  <data name="expo_ch8.Location" type="System.Drawing.Point, System.Drawing">
+    <value>323, 267</value>
+  </data>
+  <data name="expo_ch8.Size" type="System.Drawing.Size, System.Drawing">
+    <value>60, 13</value>
+  </data>
+  <data name="BUT_detch8.Size" type="System.Drawing.Size, System.Drawing">
+    <value>61, 23</value>
+  </data>
+  <data name="BUT_detch8.Text" xml:space="preserve">
+    <value>自动检测</value>
+  </data>
+  <data name="horizontalProgressBar4.Location" type="System.Drawing.Point, System.Drawing">
+    <value>215, 262</value>
   </data>
   <data name="BUT_detch4.Location" type="System.Drawing.Point, System.Drawing">
     <value>149, 146</value>
@@ -286,41 +340,32 @@
   <data name="progressBar1.Location" type="System.Drawing.Point, System.Drawing">
     <value>215, 65</value>
   </data>
-  <data name="BUT_detbutton1.Size" type="System.Drawing.Size, System.Drawing">
+  <data name="BUT_detch5.Size" type="System.Drawing.Size, System.Drawing">
     <value>61, 23</value>
   </data>
-  <data name="BUT_detbutton1.Text" xml:space="preserve">
+  <data name="BUT_detch5.Text" xml:space="preserve">
     <value>自动检测</value>
   </data>
-  <data name="Progbutt1.Location" type="System.Drawing.Point, System.Drawing">
-    <value>215, 191</value>
+  <data name="horizontalProgressBar1.Location" type="System.Drawing.Point, System.Drawing">
+    <value>215, 175</value>
   </data>
-  <data name="Progbutt2.Location" type="System.Drawing.Point, System.Drawing">
-    <value>215, 220</value>
-  </data>
-  <data name="BUT_detbutton2.Size" type="System.Drawing.Size, System.Drawing">
+  <data name="BUT_detch6.Size" type="System.Drawing.Size, System.Drawing">
     <value>61, 23</value>
   </data>
-  <data name="BUT_detbutton2.Text" xml:space="preserve">
+  <data name="BUT_detch6.Text" xml:space="preserve">
     <value>自动检测</value>
   </data>
-  <data name="Progbutt3.Location" type="System.Drawing.Point, System.Drawing">
-    <value>215, 249</value>
+  <data name="horizontalProgressBar2.Location" type="System.Drawing.Point, System.Drawing">
+    <value>215, 204</value>
   </data>
-  <data name="BUT_detbutton3.Size" type="System.Drawing.Size, System.Drawing">
+  <data name="BUT_detch7.Size" type="System.Drawing.Size, System.Drawing">
     <value>61, 23</value>
   </data>
-  <data name="BUT_detbutton3.Text" xml:space="preserve">
+  <data name="BUT_detch7.Text" xml:space="preserve">
     <value>自动检测</value>
   </data>
-  <data name="Progbutt4.Location" type="System.Drawing.Point, System.Drawing">
-    <value>215, 278</value>
-  </data>
-  <data name="BUT_detbutton4.Size" type="System.Drawing.Size, System.Drawing">
-    <value>61, 23</value>
-  </data>
-  <data name="BUT_detbutton4.Text" xml:space="preserve">
-    <value>自动检测</value>
+  <data name="horizontalProgressBar3.Location" type="System.Drawing.Point, System.Drawing">
+    <value>215, 233</value>
   </data>
   <data name="$this.Icon" type="System.Drawing.Icon, System.Drawing" mimetype="application/x-microsoft.net.object.bytearray.base64">
     <value>

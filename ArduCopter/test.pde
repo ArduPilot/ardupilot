@@ -4,7 +4,7 @@
 
 // These are function definitions so the Menu can be constructed before the functions
 // are defined below. Order matters to the compiler.
-//static int8_t	test_radio_pwm(uint8_t argc, 	const Menu::arg *argv);
+static int8_t	test_radio_pwm(uint8_t argc, 	const Menu::arg *argv);
 static int8_t	test_radio(uint8_t argc, 		const Menu::arg *argv);
 //static int8_t	test_failsafe(uint8_t argc, 	const Menu::arg *argv);
 //static int8_t	test_stabilize(uint8_t argc, 	const Menu::arg *argv);
@@ -55,7 +55,7 @@ static int8_t	test_rawgps(uint8_t argc, 		const Menu::arg *argv);
 // User enters the string in the console to call the functions on the right.
 // See class Menu in AP_Coommon for implementation details
 const struct Menu::command test_menu_commands[] PROGMEM = {
-//	{"pwm",			test_radio_pwm},
+	{"pwm",			test_radio_pwm},
 	{"radio",		test_radio},
 //	{"failsafe",	test_failsafe},
 //	{"stabilize",	test_stabilize},
@@ -112,38 +112,43 @@ test_eedump(uint8_t argc, const Menu::arg *argv)
 	return(0);
 }
 
-/*
-//static int8_t
-//test_radio_pwm(uint8_t argc, const Menu::arg *argv)
+
+static int8_t
+test_radio_pwm(uint8_t argc, const Menu::arg *argv)
 {
-	print_hit_enter();
-	delay(1000);
+	#if defined( __AVR_ATmega1280__ )  // determines if optical flow code is included
+		print_test_disabled();
+		return (0);
+	#else
+		print_hit_enter();
+		delay(1000);
 
-	while(1){
-		delay(20);
+		while(1){
+			delay(20);
 
-		// Filters radio input - adjust filters in the radio.pde file
-		// ----------------------------------------------------------
-		read_radio();
+			// Filters radio input - adjust filters in the radio.pde file
+			// ----------------------------------------------------------
+			read_radio();
 
-		// servo Yaw
-		//APM_RC.OutputCh(CH_7, g.rc_4.radio_out);
+			// servo Yaw
+			//APM_RC.OutputCh(CH_7, g.rc_4.radio_out);
 
-		Serial.printf_P(PSTR("IN: 1: %d\t2: %d\t3: %d\t4: %d\t5: %d\t6: %d\t7: %d\t8: %d\n"),
-							g.rc_1.radio_in,
-							g.rc_2.radio_in,
-							g.rc_3.radio_in,
-							g.rc_4.radio_in,
-							g.rc_5.radio_in,
-							g.rc_6.radio_in,
-							g.rc_7.radio_in,
-							g.rc_8.radio_in);
+			Serial.printf_P(PSTR("IN: 1: %d\t2: %d\t3: %d\t4: %d\t5: %d\t6: %d\t7: %d\t8: %d\n"),
+								g.rc_1.radio_in,
+								g.rc_2.radio_in,
+								g.rc_3.radio_in,
+								g.rc_4.radio_in,
+								g.rc_5.radio_in,
+								g.rc_6.radio_in,
+								g.rc_7.radio_in,
+								g.rc_8.radio_in);
 
-		if(Serial.available() > 0){
-			return (0);
+			if(Serial.available() > 0){
+				return (0);
+			}
 		}
-	}
-}*/
+	#endif
+}
 
 /*
 //static int8_t
