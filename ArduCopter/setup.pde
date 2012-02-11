@@ -224,6 +224,10 @@ setup_radio(uint8_t argc, const Menu::arg *argv)
 static int8_t
 setup_motors(uint8_t argc, const Menu::arg *argv)
 {
+  Serial.printf_P(PSTR(
+        "Move RC joystick to extremes to "
+        "turn on individual motors.\n"
+        "Any key to exit.\n"));
 	while(1){
 		delay(20);
 		read_radio();
