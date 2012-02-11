@@ -1921,7 +1921,8 @@ static void tuning(){
 			g.rc_6.set_range(0,300); 		// 0 to 1
 			g.stablize_d.set(tuning_value);
 
-			//g.rc_6.set_range(0,60); 		// 0 to 1
+			//tuning_value = (float)g.rc_6.control_in / 100000.0;
+			//g.rc_6.set_range(0,1000); 		// 0 to 1
 			//g.pid_rate_roll.kD(tuning_value);
 			//g.pid_rate_pitch.kD(tuning_value);
 			break;
@@ -1946,7 +1947,7 @@ static void tuning(){
 			break;
 
 		case CH6_RATE_KI:
-			g.rc_6.set_range(0,300);		 // 0 to .3
+			g.rc_6.set_range(0,500);		 // 0 to .5
 			g.pid_rate_roll.kI(tuning_value);
 			g.pid_rate_pitch.kI(tuning_value);
 			break;
