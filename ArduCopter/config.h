@@ -525,19 +525,19 @@
 #ifdef MOTORS_JD880
 # define STABILIZE_ROLL_P 		3.7
 # define STABILIZE_ROLL_I 		0.0
-# define STABILIZE_ROLL_IMAX 	        40.0		// degrees
+# define STABILIZE_ROLL_IMAX	40.0		// degrees
 # define STABILIZE_PITCH_P		3.7
 # define STABILIZE_PITCH_I		0.0
-# define STABILIZE_PITCH_IMAX	        40.0		// degrees
+# define STABILIZE_PITCH_IMAX	40.0		// degrees
 #endif
 
 #ifdef MOTORS_JD850
 # define STABILIZE_ROLL_P 		4.2
 # define STABILIZE_ROLL_I 		0.0
-# define STABILIZE_ROLL_IMAX 	        40.0		// degrees
+# define STABILIZE_ROLL_IMAX 	40.0		// degrees
 # define STABILIZE_PITCH_P		4.2
 # define STABILIZE_PITCH_I		0.0
-# define STABILIZE_PITCH_IMAX	        40.0		// degrees
+# define STABILIZE_PITCH_IMAX	40.0		// degrees
 #endif
 
 
@@ -584,7 +584,7 @@
 # define RATE_ROLL_P        0.14
 #endif
 #ifndef RATE_ROLL_I
-# define RATE_ROLL_I        0.0
+# define RATE_ROLL_I        0.18
 #endif
 #ifndef RATE_ROLL_D
 # define RATE_ROLL_D        0.0
@@ -597,7 +597,7 @@
 # define RATE_PITCH_P       0.14
 #endif
 #ifndef RATE_PITCH_I
-# define RATE_PITCH_I		0.0 // 0.18
+# define RATE_PITCH_I		0.18
 #endif
 #ifndef RATE_PITCH_D
 # define RATE_PITCH_D       0.0 // 0.002
