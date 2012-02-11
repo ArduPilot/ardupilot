@@ -178,6 +178,8 @@ const uint8_t AP_Param::type_size(enum ap_var_type type)
         return 4;
     case AP_PARAM_VECTOR3F:
         return 3*4;
+    case AP_PARAM_VECTOR6F:
+        return 6*4;
     case AP_PARAM_MATRIX3F:
         return 3*3*4;
     }
