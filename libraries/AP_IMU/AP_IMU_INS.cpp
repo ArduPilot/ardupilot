@@ -21,6 +21,11 @@
 
 #include "AP_IMU_INS.h"
 
+const AP_Param::GroupInfo AP_IMU_INS::var_info[] PROGMEM = {
+	{ AP_PARAM_VECTOR3F, "",  VAROFFSET(AP_IMU_INS, _sensor_cal) },
+	{ AP_PARAM_NONE, "" }
+};
+
 void
 AP_IMU_INS::init( Start_style style,
                   void (*delay_cb)(unsigned long t),
