@@ -219,7 +219,7 @@ void print_latlon(BetterStream *s, int32_t lat_or_lon)
 {
     int32_t dec_portion = lat_or_lon / T7;
     int32_t frac_portion = labs(lat_or_lon - dec_portion*T7);
-    s->printf("%ld.%07ld",dec_portion,frac_portion);
+    s->printf("%ld.%07ld",(long)dec_portion,(long)frac_portion);
 }
 
 // Write an GPS packet. Total length : 31 bytes
