@@ -128,6 +128,9 @@ public:
     ///
     static void erase_all(void);
 
+    /// print the value of all variables
+    static void show_all(void);
+
     /// Returns the first variable
     ///
     /// @return             The first variable in _var_info, or NULL if

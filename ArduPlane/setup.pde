@@ -66,34 +66,7 @@ setup_show(uint8_t argc, const Menu::arg *argv)
 	Serial.printf_P(PSTR("Raw Values\n"));
 	print_divider();
 
-    uint16_t token;
-    AP_Param *ap;
-    enum ap_var_type type;
-
-    for (ap=AP_Param::first(&token, &type);
-         ap;
-         ap=AP_Param::next_scalar(&token, &type)) {
-        char s[AP_MAX_NAME_SIZE+1];
-        ap->copy_name(s, sizeof(s));
-        s[AP_MAX_NAME_SIZE] = 0;
-
-        switch (type) {
-        case AP_PARAM_INT8:
-            Serial.printf_P("%s: %d\n", s, (int)((AP_Int8 *)ap)->get());
-            break;
-        case AP_PARAM_INT16:
-            Serial.printf_P("%s: %d\n", s, (int)((AP_Int16 *)ap)->get());
-            break;
-        case AP_PARAM_INT32:
-            Serial.printf_P("%s: %ld\n", s, (long)((AP_Int32 *)ap)->get());
-            break;
-        case AP_PARAM_FLOAT:
-            Serial.printf_P("%s: %f\n", s, ((AP_Float *)ap)->get());
-            break;
-        default:
-            break;
-        }
-    }
+    AP_Param::show_all();
 
 	return(0);
 }
