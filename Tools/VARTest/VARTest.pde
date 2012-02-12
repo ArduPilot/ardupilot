@@ -96,7 +96,7 @@ void setup() {
 	Serial.printf_P(PSTR("RC1_MIN.copy_name()->%s %p\n"), s, &g.channel_roll.radio_min);
 
 	// full testing of all variables
-	uint32_t token;
+	uint16_t token;
 	for (AP_Param *ap = AP_Param::first(&token, &type);
 		 ap;
 		 ap=AP_Param::next(&token, &type)) {
