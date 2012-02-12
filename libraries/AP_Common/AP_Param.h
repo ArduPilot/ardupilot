@@ -33,6 +33,11 @@
 // declare a group var_info line
 #define AP_GROUPINFO(name, class, element) { AP_CLASSTYPE(class, element), name, AP_VAROFFSET(class, element) }
 
+// declare a spare (unused) group var_info line
+// use these when a parameter is removed to ensure that the index of
+// the other parameters doesn't change
+#define AP_GROUPSPARE { AP_PARAM_SPARE, "" }
+
 // declare a nested group entry in a group var_info
 #define AP_NESTEDGROUPINFO(class) { AP_PARAM_GROUP, "", 0, class::var_info }
 
