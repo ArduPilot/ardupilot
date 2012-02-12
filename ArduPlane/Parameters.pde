@@ -15,8 +15,8 @@
 
 static const AP_Param::Info var_info[] PROGMEM = {
 	GSCALAR(format_version,         "FORMAT_VERSION"),
-	GSCALAR(software_type,          "SOFTWARE_TYPE"),
-	GSCALAR(sysid_this_mav,         "SYSID_THIS_MAV"),
+	GSCALAR(software_type,          "SYSID_SW_TYPE"),
+	GSCALAR(sysid_this_mav,         "SYSID_THISMAV"),
 	GSCALAR(sysid_my_gcs,           "SYSID_MYGCS"),
 	GSCALAR(serial3_baud,           "SERIAL3_BAUD"),
 	GSCALAR(kff_pitch_compensation, "KFF_PTCHCOMP"),
