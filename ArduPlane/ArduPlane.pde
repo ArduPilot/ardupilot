@@ -150,7 +150,7 @@ static AP_Baro_BMP085          barometer(false);
 static AP_Baro_MS5611          barometer;
 #endif
 
-static AP_Compass_HMC5843      compass(Parameters::k_param_compass);
+static AP_Compass_HMC5843      compass;
 #endif
 
 // real GPS selection
@@ -184,7 +184,7 @@ AP_GPS_None     g_gps_driver(NULL);
 # else
   AP_InertialSensor_Oilpan ins( &adc );
 #endif // CONFIG_IMU_TYPE
-AP_IMU_INS imu( &ins, Parameters::k_param_IMU_calibration );
+AP_IMU_INS imu( &ins );
 AP_DCM  dcm(&imu, g_gps);
 
 #elif HIL_MODE == HIL_MODE_SENSORS
@@ -217,8 +217,8 @@ AP_TimerProcess timer_scheduler;
 // GCS selection
 ////////////////////////////////////////////////////////////////////////////////
 //
-GCS_MAVLINK	gcs0(Parameters::k_param_streamrates_port0);
-GCS_MAVLINK	gcs3(Parameters::k_param_streamrates_port3);
+GCS_MAVLINK	gcs0;
+GCS_MAVLINK	gcs3;
 
 ////////////////////////////////////////////////////////////////////////////////
 // PITOT selection
