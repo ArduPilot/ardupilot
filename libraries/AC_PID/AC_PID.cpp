@@ -6,6 +6,13 @@
 #include <math.h>
 #include "AC_PID.h"
 
+const AP_Param::GroupInfo AC_PID::var_info[] PROGMEM = {
+	AP_GROUPINFO("P",    AC_PID, _kp),
+	AP_GROUPINFO("I",    AC_PID, _ki),
+	AP_GROUPINFO("D",    AC_PID, _kd),
+	AP_GROUPINFO("IMAX", AC_PID, _imax),
+	AP_GROUPEND
+};
 
 int32_t AC_PID::get_p(int32_t error)
 {
@@ -109,11 +116,17 @@ AC_PID::reset_I()
 void
 AC_PID::load_gains()
 {
-    _group.load();
+	_kp.load();
+	_ki.load();
+	_kd.load();
+	_imax.load();
 }
 
 void
 AC_PID::save_gains()
 {
-    _group.save();
+	_kp.save();
+	_ki.save();
+	_kd.save();
+	_imax.save();
 }
