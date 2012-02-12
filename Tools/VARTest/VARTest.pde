@@ -135,6 +135,9 @@ void test_variable(AP_Param *ap, enum ap_var_type type)
 	switch (type) {
 	case AP_PARAM_INT8: {
 		AP_Int8 *v = (AP_Int8 *)ap;
+		if (sizeof(*v) != 1) {
+			Debug("incorrect size %u", (unsigned)sizeof(*v));
+		}
 		v->set(value);
 		if (!v->save()) {
 			Debug("failed set_and_save");
@@ -168,6 +171,9 @@ void test_variable(AP_Param *ap, enum ap_var_type type)
 	}
 	case AP_PARAM_INT16: {
 		AP_Int16 *v = (AP_Int16 *)ap;
+		if (sizeof(*v) != 2) {
+			Debug("incorrect size %u", (unsigned)sizeof(*v));
+		}
 		v->set(value);
 		if (!v->save()) {
 			Debug("failed set_and_save");
@@ -201,6 +207,9 @@ void test_variable(AP_Param *ap, enum ap_var_type type)
 	}
 	case AP_PARAM_INT32: {
 		AP_Int32 *v = (AP_Int32 *)ap;
+		if (sizeof(*v) != 4) {
+			Debug("incorrect size %u", (unsigned)sizeof(*v));
+		}
 		v->set(value);
 		if (!v->save()) {
 			Debug("failed set_and_save");
@@ -234,6 +243,9 @@ void test_variable(AP_Param *ap, enum ap_var_type type)
 	}
 	case AP_PARAM_FLOAT: {
 		AP_Float *v = (AP_Float *)ap;
+		if (sizeof(*v) != 4) {
+			Debug("incorrect size %u", (unsigned)sizeof(*v));
+		}
 		v->set(value);
 		if (!v->save()) {
 			Debug("failed set_and_save");
@@ -262,6 +274,27 @@ void test_variable(AP_Param *ap, enum ap_var_type type)
 		*v = value+2;
 		if (v->get() != value+2) {
 			Debug("wrong copy assignment value %u %u", (unsigned)v->get(), value+2);
+		}
+		break;
+	}
+	case AP_PARAM_VECTOR3F: {
+		AP_Vector3f *v = (AP_Vector3f *)ap;
+		if (sizeof(*v) != 12) {
+			Debug("incorrect size %u", (unsigned)sizeof(*v));
+		}
+		break;
+	}
+	case AP_PARAM_VECTOR6F: {
+		AP_Vector6f *v = (AP_Vector6f *)ap;
+		if (sizeof(*v) != 24) {
+			Debug("incorrect size %u", (unsigned)sizeof(*v));
+		}
+		break;
+	}
+	case AP_PARAM_MATRIX3F: {
+		AP_Matrix3f *v = (AP_Matrix3f *)ap;
+		if (sizeof(*v) != 36) {
+			Debug("incorrect size %u", (unsigned)sizeof(*v));
 		}
 		break;
 	}
