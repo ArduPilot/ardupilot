@@ -6,6 +6,9 @@
 // your option) any later version.
 //
 
+// total up and check overflow
+// check size of group var_info
+
 /// @file   AP_Param.cpp
 /// @brief  The AP variable store.
 
@@ -14,11 +17,11 @@
 
 #include <math.h>
 #include <string.h>
+#include <FastSerial.h>
 
-// #define ENABLE_FASTSERIAL_DEBUG
+#define ENABLE_FASTSERIAL_DEBUG
 
 #ifdef ENABLE_FASTSERIAL_DEBUG
-# include <FastSerial.h>
 # define serialDebug(fmt, args...)  if (FastSerial::getInitialized(0)) do {Serial.printf("%s:%d: " fmt "\n", __FUNCTION__, __LINE__ , ##args); delay(0); } while(0)
 #else
 # define serialDebug(fmt, args...)
@@ -26,6 +29,10 @@
 
 // Static member variables for AP_Param.
 //
+
+// max EEPROM write size. This is usually less than the physical
+// size as only part of the EEPROM is reserved for parameters
+uint16_t AP_Param::_eeprom_size;
 
 // number of rows in the _var_info[] table
 uint16_t AP_Param::_num_vars;
@@ -76,13 +83,93 @@ void AP_Param::erase_all(void)
     write_sentinal(sizeof(struct EEPROM_header));
 }
 
+// validate a group info table
+bool AP_Param::check_group_info(const struct AP_Param::GroupInfo *group_info,
+                                uint16_t *total_size,
+                                uint8_t group_shift)
+{
+    uint8_t type;
+    for (uint8_t i=0;
+         (type=pgm_read_byte(&group_info[i].type)) != AP_PARAM_NONE;
+         i++) {
+        if (type == AP_PARAM_GROUP) {
+            // a nested group
+            const struct GroupInfo *ginfo = (const struct GroupInfo *)pgm_read_pointer(&group_info[i].group_info);
+            if (group_shift + _group_level_shift >= _group_bits) {
+                // double nesting of groups is not allowed
+                return false;
+            }
+            if (ginfo == NULL ||
+                !check_group_info(ginfo, total_size, group_shift + _group_level_shift)) {
+                return false;
+            }
+            continue;
+        }
+        if (type == AP_PARAM_SPARE) {
+            // a placeholder for a removed entry
+            continue;
+        }
+        if (i >= (1<<_group_level_shift)) {
+            // passed limit on table size
+            return false;
+        }
+        uint8_t size = type_size((enum ap_var_type)type);
+        if (size == 0) {
+            // not a valid type
+            return false;
+        }
+        (*total_size) += size + sizeof(struct Param_header);
+    }
+    return true;
+}
+
+// validate the _var_info[] table
+bool AP_Param::check_var_info(void)
+{
+    uint16_t total_size = sizeof(struct EEPROM_header);
+
+    for (uint16_t i=0; i<_num_vars; i++) {
+        uint8_t type = pgm_read_byte(&_var_info[i].type);
+        if (type == AP_PARAM_GROUP) {
+            if (i == 0) {
+                // first element can't be a group, for first() call
+                return false;
+            }
+            const struct GroupInfo *group_info = (const struct GroupInfo *)pgm_read_pointer(&_var_info[i].group_info);
+            if (group_info == NULL ||
+                !check_group_info(group_info, &total_size, 0)) {
+                return false;
+            }
+        } else {
+            uint8_t size = type_size((enum ap_var_type)type);
+            if (size == 0) {
+                // not a valid type - the top level list can't contain AP_PARAM_NONE
+                return false;
+            }
+            total_size += size + sizeof(struct Param_header);
+        }
+    }
+    if (total_size > _eeprom_size) {
+        serialDebug("total_size %u exceeds _eeprom_size %u",
+                    total_size, _eeprom_size);
+        return false;
+    }
+    return true;
+}
+
+
 // setup the _var_info[] table
-bool AP_Param::setup(const AP_Param::Info *info, uint16_t num_vars)
+bool AP_Param::setup(const AP_Param::Info *info, uint16_t num_vars, uint16_t eeprom_size)
 {
     struct EEPROM_header hdr;
 
+    _eeprom_size = eeprom_size;
     _var_info = info;
     _num_vars = num_vars;
+
+    if (!check_var_info()) {
+        return false;
+    }
 
     serialDebug("setup %u vars", (unsigned)num_vars);
 
@@ -97,6 +184,48 @@ bool AP_Param::setup(const AP_Param::Info *info, uint16_t num_vars)
     }
 
     return true;
+}
+
+#define GROUP_OFFSET(base, i, shift) ((base)+(((uint16_t)i)<<(shift)))
+
+// find the info structure given a header and a group_info table
+// return the Info structure and a pointer to the variables storage
+const struct AP_Param::Info *AP_Param::find_by_header_group(struct Param_header phdr, void **ptr,
+                                                            uint8_t vindex,
+                                                            const struct GroupInfo *group_info,
+                                                            uint8_t group_base,
+                                                            uint8_t group_shift)
+{
+    uint8_t type;
+    for (uint8_t i=0;
+         (type=pgm_read_byte(&group_info[i].type)) != AP_PARAM_NONE;
+         i++) {
+        if (type == AP_PARAM_GROUP) {
+            // a nested group
+            if (group_shift + _group_level_shift >= _group_bits) {
+                // too deeply nested - this should have been caught by
+                // setup() !
+                return NULL;
+            }
+            const struct GroupInfo *ginfo = (const struct GroupInfo *)pgm_read_pointer(&group_info[i].group_info);
+            const struct AP_Param::Info *ret = find_by_header_group(phdr, ptr, vindex, ginfo,
+                                                                    GROUP_OFFSET(group_base, i, group_shift),
+                                                                    group_shift + _group_level_shift);
+            if (ret != NULL) {
+                return ret;
+            }
+            continue;
+        }
+        if (type == AP_PARAM_SPARE) {
+            continue;
+        }
+        if (GROUP_OFFSET(group_base, i, group_shift) == phdr.group_element) {
+            // found a group element
+            *ptr = (void*)(pgm_read_pointer(&_var_info[vindex].ptr) + pgm_read_word(&group_info[i].offset));
+            return &_var_info[vindex];
+        }
+    }
+    return NULL;
 }
 
 // find the info structure given a header
@@ -117,44 +246,68 @@ const struct AP_Param::Info *AP_Param::find_by_header(struct Param_header phdr, 
             return &_var_info[i];
         }
 
-        // for groups we need to check each group element
         const struct GroupInfo *group_info = (const struct GroupInfo *)pgm_read_pointer(&_var_info[i].group_info);
-        for (uint8_t j=0;
-             pgm_read_byte(&group_info[j].type) != AP_PARAM_NONE;
-             j++) {
-            if (j == phdr.group_element) {
-                // found a group element
-                *ptr = (void*)(pgm_read_pointer(&_var_info[i].ptr) + pgm_read_word(&group_info[j].offset));
-                return &_var_info[i];
+        return find_by_header_group(phdr, ptr, i, group_info, 0, 0);
+    }
+    return NULL;
+}
+
+// find the info structure for a variable in a group
+const struct AP_Param::Info *AP_Param::find_var_info_group(const struct GroupInfo *group_info,
+                                                           uint8_t vindex,
+                                                           uint8_t group_base,
+                                                           uint8_t group_shift,
+                                                           uint8_t *group_element,
+                                                           const struct GroupInfo **group_ret)
+{
+    uintptr_t base = pgm_read_pointer(&_var_info[vindex].ptr);
+    uint8_t type;
+    for (uint8_t i=0;
+         (type=pgm_read_byte(&group_info[i].type)) != AP_PARAM_NONE;
+         i++) {
+        if (type == AP_PARAM_GROUP) {
+            const struct GroupInfo *ginfo = (const struct GroupInfo *)pgm_read_pointer(&group_info[i].group_info);
+            // a nested group
+            if (group_shift + _group_level_shift >= _group_bits) {
+                // too deeply nested - this should have been caught by
+                // setup() !
+                return NULL;
             }
+            const struct AP_Param::Info *info;
+            info = find_var_info_group(ginfo, vindex,
+                                       GROUP_OFFSET(group_base, i, group_shift),
+                                       group_shift + _group_level_shift,
+                                       group_element,
+                                       group_ret);
+            if (info != NULL) {
+                return info;
+            }
+        } else if ((uintptr_t)this == base + pgm_read_pointer(&group_info[i].offset)) {
+            *group_element = GROUP_OFFSET(group_base, i, group_shift);
+            *group_ret = &group_info[i];
+            return &_var_info[vindex];
         }
     }
-    serialDebug("failed to find type=%u key=%u\n",
-                (unsigned)phdr.type,
-                (unsigned)phdr.key);
     return NULL;
 }
 
 // find the info structure for a variable
-const struct AP_Param::Info *AP_Param::find_var_info(uint8_t *group_element)
+const struct AP_Param::Info *AP_Param::find_var_info(uint8_t *group_element,
+                                                     const struct GroupInfo **group_ret)
 {
     for (uint16_t i=0; i<_num_vars; i++) {
         uint8_t type = pgm_read_byte(&_var_info[i].type);
         uintptr_t base = pgm_read_pointer(&_var_info[i].ptr);
         if (type == AP_PARAM_GROUP) {
             const struct GroupInfo *group_info = (const struct GroupInfo *)pgm_read_pointer(&_var_info[i].group_info);
-            for (uint8_t j=0;
-                 (type=pgm_read_byte(&group_info[j].type)) != AP_PARAM_NONE ;
-                 j++) {
-                if ((uintptr_t)this == base + pgm_read_pointer(&group_info[j].offset)) {
-                    if (group_element != NULL) {
-                        *group_element = j;
-                    }
-                    return &_var_info[i];
-                }
+            const struct AP_Param::Info *info;
+            info = find_var_info_group(group_info, i, 0, 0, group_element, group_ret);
+            if (info != NULL) {
+                return info;
             }
         } else if (base == (uintptr_t)this) {
             *group_element = 0;
+            *group_ret = NULL;
             return &_var_info[i];
         }
     }
@@ -166,6 +319,7 @@ const uint8_t AP_Param::type_size(enum ap_var_type type)
 {
     switch (type) {
     case AP_PARAM_NONE:
+    case AP_PARAM_SPARE:
     case AP_PARAM_GROUP:
         return 0;
     case AP_PARAM_INT8:
@@ -195,7 +349,7 @@ bool AP_Param::scan(const AP_Param::Param_header *target, uint16_t *pofs)
 {
     struct Param_header phdr;
     uint16_t ofs = sizeof(AP_Param::EEPROM_header);
-    while (ofs < k_EEPROM_size) {
+    while (ofs < _eeprom_size) {
         eeprom_read_block(&phdr, (const void *)ofs, sizeof(phdr));
         if (phdr.type == target->type &&
             phdr.key == target->key &&
@@ -208,9 +362,6 @@ bool AP_Param::scan(const AP_Param::Param_header *target, uint16_t *pofs)
             phdr.key == 0) {
             // we've reached the sentinal
             *pofs = ofs;
-            serialDebug("failed to scan type=%u key=%u\n",
-                        (unsigned)target->type,
-                        (unsigned)target->key);
             return false;
         }
         ofs += type_size((enum ap_var_type)phdr.type) + sizeof(phdr);
@@ -227,26 +378,50 @@ bool AP_Param::scan(const AP_Param::Param_header *target, uint16_t *pofs)
 void AP_Param::copy_name(char *buffer, size_t buffer_size)
 {
     uint8_t group_element;
-    const struct AP_Param::Info *info = find_var_info(&group_element);
+    const struct GroupInfo *ginfo;
+    const struct AP_Param::Info *info = find_var_info(&group_element, &ginfo);
     if (info == NULL) {
         *buffer = 0;
         serialDebug("no info found");
         return;
     }
     strncpy_P(buffer, info->name, buffer_size);
-    if (pgm_read_byte(&info->type) == AP_PARAM_GROUP) {
+    if (ginfo != NULL) {
         uint8_t len = strnlen(buffer, buffer_size);
         if (len < buffer_size) {
-            const struct GroupInfo *group_info = (const struct GroupInfo *)pgm_read_pointer(&info->group_info);
-            strncpy_P(&buffer[len], group_info->name, buffer_size-len);
+            strncpy_P(&buffer[len], ginfo->name, buffer_size-len);
         }
     }
 }
 
+// Find a variable by name in a group
+AP_Param *
+AP_Param::find_group(const char *name, uint8_t vindex, const struct GroupInfo *group_info, enum ap_var_type *ptype)
+{
+    uint8_t type;
+    for (uint8_t i=0;
+         (type=pgm_read_byte(&group_info[i].type)) != AP_PARAM_NONE;
+         i++) {
+        if (type == AP_PARAM_GROUP) {
+            const struct GroupInfo *ginfo = (const struct GroupInfo *)pgm_read_pointer(&group_info[i].group_info);
+            AP_Param *ap = find_group(name, vindex, ginfo, ptype);
+            if (ap != NULL) {
+                return ap;
+            }
+        } else if (strcasecmp_P(name, group_info[i].name) == 0) {
+            uintptr_t p = pgm_read_pointer(&_var_info[vindex].ptr);
+            *ptype = (enum ap_var_type)type;
+            return (AP_Param *)(p + pgm_read_pointer(&group_info[i].offset));
+        }
+    }
+    return NULL;
+}
+
+
 // Find a variable by name.
 //
 AP_Param *
-AP_Param::find(const char *name)
+AP_Param::find(const char *name, enum ap_var_type *ptype)
 {
     for (uint16_t i=0; i<_num_vars; i++) {
         uint8_t type = pgm_read_byte(&_var_info[i].type);
@@ -256,15 +431,9 @@ AP_Param::find(const char *name)
                 continue;
             }
             const struct GroupInfo *group_info = (const struct GroupInfo *)pgm_read_pointer(&_var_info[i].group_info);
-            for (uint8_t j=0;
-                 (type=pgm_read_byte(&group_info[j].type)) != AP_PARAM_NONE ;
-                 j++) {
-                if (strcasecmp_P(name+len, group_info[j].name) == 0) {
-                    uintptr_t p = pgm_read_pointer(&_var_info[i].ptr);
-                    return (AP_Param *)(p + pgm_read_pointer(&group_info[j].offset));
-                }
-            }
+            return find_group(name + len, i, group_info, ptype);
         } else if (strcasecmp_P(name, _var_info[i].name) == 0) {
+            *ptype = (enum ap_var_type)type;
             return (AP_Param *)pgm_read_pointer(&_var_info[i].ptr);
         }
     }
@@ -276,7 +445,8 @@ AP_Param::find(const char *name)
 bool AP_Param::save(void)
 {
     uint8_t group_element;
-    const struct AP_Param::Info *info = find_var_info(&group_element);
+    const struct GroupInfo *ginfo;
+    const struct AP_Param::Info *info = find_var_info(&group_element, &ginfo);
 
     if (info == NULL) {
         // we don't have any info on how to store it
@@ -286,9 +456,15 @@ bool AP_Param::save(void)
     struct Param_header phdr;
 
     // create the header we will use to store the variable
-    phdr.type = pgm_read_byte(&info->type);
-    phdr.key  = pgm_read_word(&info->key);
-    phdr.group_element = group_element;
+    if (ginfo != NULL) {
+        phdr.type = pgm_read_byte(&ginfo->type);
+        phdr.key  = pgm_read_word(&info->key);
+        phdr.group_element = group_element;
+    } else {
+        phdr.type = pgm_read_byte(&info->type);
+        phdr.key  = pgm_read_word(&info->key);
+        phdr.group_element = 0;
+    }
 
     // scan EEPROM to find the right location
     uint16_t ofs;
@@ -313,7 +489,8 @@ bool AP_Param::save(void)
 bool AP_Param::load(void)
 {
     uint8_t group_element;
-    const struct AP_Param::Info *info = find_var_info(&group_element);
+    const struct GroupInfo *ginfo;
+    const struct AP_Param::Info *info = find_var_info(&group_element, &ginfo);
     if (info == NULL) {
         // we don't have any info on how to load it
         return false;
@@ -322,9 +499,15 @@ bool AP_Param::load(void)
     struct Param_header phdr;
 
     // create the header we will use to match the variable
-    phdr.type = pgm_read_byte(&info->type);
-    phdr.key  = pgm_read_word(&info->key);
-    phdr.group_element = group_element;
+    if (ginfo != NULL) {
+        phdr.type = pgm_read_byte(&ginfo->type);
+        phdr.key  = pgm_read_word(&info->key);
+        phdr.group_element = group_element;
+    } else {
+        phdr.type = pgm_read_byte(&info->type);
+        phdr.key  = pgm_read_word(&info->key);
+        phdr.group_element = 0;
+    }
 
     // scan EEPROM to find the right location
     uint16_t ofs;
@@ -343,7 +526,7 @@ bool AP_Param::load_all(void)
 {
     struct Param_header phdr;
     uint16_t ofs = sizeof(AP_Param::EEPROM_header);
-    while (ofs < k_EEPROM_size) {
+    while (ofs < _eeprom_size) {
         eeprom_read_block(&phdr, (const void *)ofs, sizeof(phdr));
         if (phdr.type == AP_PARAM_NONE &&
             phdr.key == 0) {
@@ -365,4 +548,95 @@ bool AP_Param::load_all(void)
     // we didn't find the sentinal
     serialDebug("no sentinal in load_all");
     return false;
+}
+
+
+// return the first variable in _var_info
+AP_Param *AP_Param::first(uint32_t *token, enum ap_var_type *ptype)
+{
+    *token = 0;
+    if (_num_vars == 0) {
+        return NULL;
+    }
+    *ptype = (enum ap_var_type)pgm_read_byte(&_var_info[0].type);
+    return (AP_Param *)(pgm_read_pointer(&_var_info[0].ptr));
+}
+
+/// Returns the next variable in a group, recursing into groups
+/// as needed
+AP_Param *AP_Param::next_group(uint8_t vindex, const struct GroupInfo *group_info,
+                               bool *found_current,
+                               uint8_t group_base,
+                               uint8_t group_shift,
+                               uint32_t *token,
+                               enum ap_var_type *ptype)
+{
+    uint8_t type;
+    for (uint8_t i=0;
+         (type=pgm_read_byte(&group_info[i].type)) != AP_PARAM_NONE;
+         i++) {
+        if (type == AP_PARAM_GROUP) {
+            // a nested group
+            const struct GroupInfo *ginfo = (const struct GroupInfo *)pgm_read_pointer(&group_info[i].group_info);
+            AP_Param *ap;
+            ap = next_group(vindex, ginfo, found_current, GROUP_OFFSET(group_base, i, group_shift),
+                            group_shift + _group_level_shift, token, ptype);
+            if (ap != NULL) {
+                return ap;
+            }
+        } else {
+            if (*found_current) {
+                // got a new one
+                (*token) = ((uint32_t)GROUP_OFFSET(group_base, i, group_shift)<<16) | vindex;
+                *ptype = (enum ap_var_type)type;
+                return (AP_Param*)(pgm_read_pointer(&_var_info[vindex].ptr) + pgm_read_word(&group_info[i].offset));
+            }
+            if (GROUP_OFFSET(group_base, i, group_shift) == (*token)>>16) {
+                *found_current = true;
+            }
+        }
+    }
+    return NULL;
+}
+
+/// Returns the next variable in _var_info, recursing into groups
+/// as needed
+AP_Param *AP_Param::next(uint32_t *token, enum ap_var_type *ptype)
+{
+    uint16_t i = (*token)&0xFFFF;
+    bool found_current = false;
+    if (i >= _num_vars) {
+        // illegal token
+        return NULL;
+    }
+    uint8_t type = pgm_read_byte(&_var_info[i].type);
+    if (type != AP_PARAM_GROUP) {
+        i++;
+        found_current = true;
+    }
+    for (; i<_num_vars; i++) {
+        type = pgm_read_byte(&_var_info[i].type);
+        if (type == AP_PARAM_GROUP) {
+            const struct GroupInfo *group_info = (const struct GroupInfo *)pgm_read_pointer(&_var_info[i].group_info);
+            AP_Param *ap = next_group(i, group_info, &found_current, 0, 0, token, ptype);
+            if (ap != NULL) {
+                return ap;
+            }
+        } else {
+            // found the next one
+            (*token) = i;
+            *ptype = (enum ap_var_type)type;
+            return (AP_Param *)(pgm_read_pointer(&_var_info[i].ptr));
+        }
+    }
+    return NULL;
+}
+
+/// Returns the next scalar in _var_info, recursing into groups
+/// as needed
+AP_Param *AP_Param::next_scalar(uint32_t *token, enum ap_var_type *ptype)
+{
+    AP_Param *ap;
+    while ((ap = next(token, ptype)) != NULL && *ptype > AP_PARAM_FLOAT) ;
+    return ap;
 }
