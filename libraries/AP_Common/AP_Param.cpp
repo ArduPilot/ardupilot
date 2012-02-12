@@ -32,6 +32,15 @@
 #define PGM_UINT16(addr) pgm_read_word((const uint16_t *)addr)
 #define PGM_POINTER(addr) pgm_read_pointer((const void *)addr)
 
+// the 'GROUP_ID' of a element of a group is the 8 bit identifier used
+// to distinguish between this element of the group and other elements
+// of the same group. It is calculated using a bit shift per level of
+// nesting, so the first level of nesting gets 4 bits, and the next
+// level gets the next 4 bits. This limits groups to having at most 16
+// elements.
+#define GROUP_ID(grpinfo, base, i, shift) ((base)+(((uint16_t)PGM_UINT8(&grpinfo[i].idx))<<(shift)))
+
+
 // Static member variables for AP_Param.
 //
 
@@ -64,9 +73,9 @@ void AP_Param::eeprom_write_check(const void *ptr, uint16_t ofs, uint8_t size)
 void AP_Param::write_sentinal(uint16_t ofs)
 {
     struct Param_header phdr;
-    phdr.type = AP_PARAM_NONE;
-    phdr.key  = 0;
-    phdr.group_element = 0;
+    phdr.type = _sentinal_type;
+    phdr.key  = _sentinal_key;
+    phdr.group_element = _sentinal_group;
     eeprom_write_check(&phdr, ofs, sizeof(phdr));
 }
 
@@ -81,7 +90,6 @@ void AP_Param::erase_all(void)
     // write the header
     hdr.magic = k_EEPROM_magic;
     hdr.revision = k_EEPROM_revision;
-    hdr.spare = 0;
     eeprom_write_check(&hdr, 0, sizeof(hdr));
 
     // add a sentinal directly after the header
@@ -94,6 +102,7 @@ bool AP_Param::check_group_info(const struct AP_Param::GroupInfo *group_info,
                                 uint8_t group_shift)
 {
     uint8_t type;
+    int8_t max_idx = -1;
     for (uint8_t i=0;
          (type=PGM_UINT8(&group_info[i].type)) != AP_PARAM_NONE;
          i++) {
@@ -110,14 +119,16 @@ bool AP_Param::check_group_info(const struct AP_Param::GroupInfo *group_info,
             }
             continue;
         }
-        if (type == AP_PARAM_SPARE) {
-            // a placeholder for a removed entry
-            continue;
-        }
-        if (i >= (1<<_group_level_shift)) {
+        uint8_t idx = PGM_UINT8(&group_info[i].idx);
+        if (idx >= (1<<_group_level_shift)) {
             // passed limit on table size
             return false;
         }
+        if ((int8_t)idx <= max_idx) {
+            // the indexes must be in increasing order
+            return false;
+        }
+        max_idx = (int8_t)idx;
         uint8_t size = type_size((enum ap_var_type)type);
         if (size == 0) {
             // not a valid type
@@ -149,7 +160,7 @@ bool AP_Param::check_var_info(void)
             uint8_t size = type_size((enum ap_var_type)type);
             if (size == 0) {
                 // not a valid type - the top level list can't contain
-                // AP_PARAM_NONE or AP_PARAM_SPARE
+                // AP_PARAM_NONE
                 return false;
             }
             total_size += size + sizeof(struct Param_header);
@@ -192,8 +203,6 @@ bool AP_Param::setup(const AP_Param::Info *info, uint16_t num_vars, uint16_t eep
     return true;
 }
 
-#define GROUP_OFFSET(base, i, shift) ((base)+(((uint16_t)i)<<(shift)))
-
 // find the info structure given a header and a group_info table
 // return the Info structure and a pointer to the variables storage
 const struct AP_Param::Info *AP_Param::find_by_header_group(struct Param_header phdr, void **ptr,
@@ -215,17 +224,14 @@ const struct AP_Param::Info *AP_Param::find_by_header_group(struct Param_header 
             }
             const struct GroupInfo *ginfo = (const struct GroupInfo *)PGM_POINTER(&group_info[i].group_info);
             const struct AP_Param::Info *ret = find_by_header_group(phdr, ptr, vindex, ginfo,
-                                                                    GROUP_OFFSET(group_base, i, group_shift),
+                                                                    GROUP_ID(group_info, group_base, i, group_shift),
                                                                     group_shift + _group_level_shift);
             if (ret != NULL) {
                 return ret;
             }
             continue;
         }
-        if (type == AP_PARAM_SPARE) {
-            continue;
-        }
-        if (GROUP_OFFSET(group_base, i, group_shift) == phdr.group_element) {
+        if (GROUP_ID(group_info, group_base, i, group_shift) == phdr.group_element) {
             // found a group element
             *ptr = (void*)(PGM_POINTER(&_var_info[vindex].ptr) + PGM_UINT16(&group_info[i].offset));
             return &_var_info[vindex];
@@ -241,7 +247,7 @@ const struct AP_Param::Info *AP_Param::find_by_header(struct Param_header phdr, 
     // loop over all named variables
     for (uint16_t i=0; i<_num_vars; i++) {
         uint8_t type = PGM_UINT8(&_var_info[i].type);
-        uint16_t key = PGM_UINT16(&_var_info[i].key);
+        uint8_t key = PGM_UINT8(&_var_info[i].key);
         if (key != phdr.key) {
             // not the right key
             continue;
@@ -281,17 +287,15 @@ const struct AP_Param::Info *AP_Param::find_var_info_group(const struct GroupInf
             }
             const struct AP_Param::Info *info;
             info = find_var_info_group(ginfo, vindex,
-                                       GROUP_OFFSET(group_base, i, group_shift),
+                                       GROUP_ID(group_info, group_base, i, group_shift),
                                        group_shift + _group_level_shift,
                                        group_element,
                                        group_ret);
             if (info != NULL) {
                 return info;
             }
-        } else if (type == AP_PARAM_SPARE) {
-            continue;
         } else if ((uintptr_t)this == base + PGM_POINTER(&group_info[i].offset)) {
-            *group_element = GROUP_OFFSET(group_base, i, group_shift);
+            *group_element = GROUP_ID(group_info, group_base, i, group_shift);
             *group_ret = &group_info[i];
             return &_var_info[vindex];
         }
@@ -327,7 +331,6 @@ const uint8_t AP_Param::type_size(enum ap_var_type type)
 {
     switch (type) {
     case AP_PARAM_NONE:
-    case AP_PARAM_SPARE:
     case AP_PARAM_GROUP:
         return 0;
     case AP_PARAM_INT8:
@@ -366,8 +369,11 @@ bool AP_Param::scan(const AP_Param::Param_header *target, uint16_t *pofs)
             *pofs = ofs;
             return true;
         }
-        if (phdr.type == AP_PARAM_NONE &&
-            phdr.key == 0) {
+        // note that this is an ||, not an &&, as this makes us more
+        // robust to power off while adding a variable to EEPROM
+        if (phdr.type == _sentinal_type ||
+            phdr.key == _sentinal_key ||
+            phdr.group_element == _sentinal_group) {
             // we've reached the sentinal
             *pofs = ofs;
             return false;
@@ -416,8 +422,6 @@ AP_Param::find_group(const char *name, uint8_t vindex, const struct GroupInfo *g
             if (ap != NULL) {
                 return ap;
             }
-        } else if (type == AP_PARAM_SPARE) {
-            continue;
         } else if (strcasecmp_P(name, group_info[i].name) == 0) {
             uintptr_t p = PGM_POINTER(&_var_info[vindex].ptr);
             *ptype = (enum ap_var_type)type;
@@ -454,7 +458,7 @@ AP_Param::find(const char *name, enum ap_var_type *ptype)
 //
 bool AP_Param::save(void)
 {
-    uint8_t group_element;
+    uint8_t group_element = 0;
     const struct GroupInfo *ginfo;
     const struct AP_Param::Info *info = find_var_info(&group_element, &ginfo);
 
@@ -468,13 +472,11 @@ bool AP_Param::save(void)
     // create the header we will use to store the variable
     if (ginfo != NULL) {
         phdr.type = PGM_UINT8(&ginfo->type);
-        phdr.key  = PGM_UINT16(&info->key);
-        phdr.group_element = group_element;
     } else {
         phdr.type = PGM_UINT8(&info->type);
-        phdr.key  = PGM_UINT16(&info->key);
-        phdr.group_element = 0;
     }
+    phdr.key  = PGM_UINT8(&info->key);
+    phdr.group_element = group_element;
 
     // scan EEPROM to find the right location
     uint16_t ofs;
@@ -498,7 +500,7 @@ bool AP_Param::save(void)
 //
 bool AP_Param::load(void)
 {
-    uint8_t group_element;
+    uint8_t group_element = 0;
     const struct GroupInfo *ginfo;
     const struct AP_Param::Info *info = find_var_info(&group_element, &ginfo);
     if (info == NULL) {
@@ -511,13 +513,11 @@ bool AP_Param::load(void)
     // create the header we will use to match the variable
     if (ginfo != NULL) {
         phdr.type = PGM_UINT8(&ginfo->type);
-        phdr.key  = PGM_UINT16(&info->key);
-        phdr.group_element = group_element;
     } else {
         phdr.type = PGM_UINT8(&info->type);
-        phdr.key  = PGM_UINT16(&info->key);
-        phdr.group_element = 0;
     }
+    phdr.key  = PGM_UINT8(&info->key);
+    phdr.group_element = group_element;
 
     // scan EEPROM to find the right location
     uint16_t ofs;
@@ -538,8 +538,11 @@ bool AP_Param::load_all(void)
     uint16_t ofs = sizeof(AP_Param::EEPROM_header);
     while (ofs < _eeprom_size) {
         eeprom_read_block(&phdr, (void *)ofs, sizeof(phdr));
-        if (phdr.type == AP_PARAM_NONE &&
-            phdr.key == 0) {
+        // note that this is an || not an && for robustness
+        // against power off while adding a variable
+        if (phdr.type == _sentinal_type ||
+            phdr.key == _sentinal_key ||
+            phdr.group_element == _sentinal_group) {
             // we've reached the sentinal
             return true;
         }
@@ -591,23 +594,21 @@ AP_Param *AP_Param::next_group(uint8_t vindex, const struct GroupInfo *group_inf
             // a nested group
             const struct GroupInfo *ginfo = (const struct GroupInfo *)PGM_POINTER(&group_info[i].group_info);
             AP_Param *ap;
-            ap = next_group(vindex, ginfo, found_current, GROUP_OFFSET(group_base, i, group_shift),
+            ap = next_group(vindex, ginfo, found_current, GROUP_ID(group_info, group_base, i, group_shift),
                             group_shift + _group_level_shift, token, ptype);
             if (ap != NULL) {
                 return ap;
             }
-        } else if (type == AP_PARAM_SPARE) {
-            continue;
         } else {
             if (*found_current) {
                 // got a new one
-                (*token) = ((uint32_t)GROUP_OFFSET(group_base, i, group_shift)<<16) | vindex;
+                (*token) = ((uint32_t)GROUP_ID(group_info, group_base, i, group_shift)<<16) | vindex;
                 if (ptype != NULL) {
                     *ptype = (enum ap_var_type)type;
                 }
                 return (AP_Param*)(PGM_POINTER(&_var_info[vindex].ptr) + PGM_UINT16(&group_info[i].offset));
             }
-            if (GROUP_OFFSET(group_base, i, group_shift) == (uint16_t)((*token)>>16)) {
+            if (GROUP_ID(group_info, group_base, i, group_shift) == (uint16_t)((*token)>>16)) {
                 *found_current = true;
             }
         }

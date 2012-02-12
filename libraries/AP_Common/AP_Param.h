@@ -31,21 +31,15 @@
 #define AP_CLASSTYPE(class, element) (((const class *)1)->element.vtype)
 
 // declare a group var_info line
-#define AP_GROUPINFO(name, class, element) { AP_CLASSTYPE(class, element), name, AP_VAROFFSET(class, element) }
-
-// declare a spare (unused) group var_info line
-// use these when a parameter is removed to ensure that the index of
-// the other parameters doesn't change
-#define AP_GROUPSPARE { AP_PARAM_SPARE, "" }
+#define AP_GROUPINFO(name, idx, class, element) { AP_CLASSTYPE(class, element), idx, name, AP_VAROFFSET(class, element) }
 
 // declare a nested group entry in a group var_info
-#define AP_NESTEDGROUPINFO(class) { AP_PARAM_GROUP, "", 0, class::var_info }
+#define AP_NESTEDGROUPINFO(class, idx) { AP_PARAM_GROUP, idx, "", 0, class::var_info }
 
-#define AP_GROUPEND	{ AP_PARAM_NONE, "" }
+#define AP_GROUPEND	{ AP_PARAM_NONE, 0xFF, "" }
 
 enum ap_var_type {
     AP_PARAM_NONE    = 0,
-    AP_PARAM_SPARE,
     AP_PARAM_INT8,
     AP_PARAM_INT16,
     AP_PARAM_INT32,
@@ -68,6 +62,7 @@ public:
     // named and their location in memory
     struct GroupInfo {
         uint8_t type; // AP_PARAM_*
+        uint8_t idx;  // identifier within the group
         const char name[AP_MAX_NAME_SIZE];
         uintptr_t offset; // offset within the object
         const struct GroupInfo *group_info;
@@ -75,7 +70,7 @@ public:
     struct Info {
         uint8_t type; // AP_PARAM_*
         const char name[AP_MAX_NAME_SIZE];
-        uint16_t key; // k_param_*
+        uint8_t key; // k_param_*
         void *ptr;    // pointer to the variable in memory
         const struct GroupInfo *group_info;
     };
@@ -163,18 +158,20 @@ private:
         uint8_t     spare;
     };
 
-    /// This header is prepended to a variable stored in EEPROM.
+    // This header is prepended to a variable stored in EEPROM.
     struct Param_header {
-        uint16_t   key:9;
-        uint16_t   type:4;
-        uint16_t   spare:3;
-        uint8_t    group_element:8;
+        uint8_t    key;
+        uint8_t    group_element;
+        uint8_t    type;
     };
 
     // number of bits in each level of nesting of groups
     static const uint8_t _group_level_shift = 4;
     static const uint8_t _group_bits  = 8;
 
+    static const uint16_t _sentinal_key   = 0xFF;
+    static const uint8_t  _sentinal_type  = 0xFF;
+    static const uint8_t  _sentinal_group = 0xFF;
 
     static bool check_group_info(const struct GroupInfo *group_info, uint16_t *total_size, uint8_t max_bits);
     static bool check_var_info(void);
@@ -210,7 +207,7 @@ private:
 
     // values filled into the EEPROM header
     static const uint16_t   k_EEPROM_magic      = 0x5041;   ///< "AP"
-    static const uint16_t   k_EEPROM_revision   = 4;        ///< current format revision
+    static const uint16_t   k_EEPROM_revision   = 5;        ///< current format revision
 
 };
 
