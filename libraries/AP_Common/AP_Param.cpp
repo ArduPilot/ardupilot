@@ -558,7 +558,9 @@ AP_Param *AP_Param::first(uint32_t *token, enum ap_var_type *ptype)
     if (_num_vars == 0) {
         return NULL;
     }
-    *ptype = (enum ap_var_type)pgm_read_byte(&_var_info[0].type);
+    if (ptype != NULL) {
+        *ptype = (enum ap_var_type)pgm_read_byte(&_var_info[0].type);
+    }
     return (AP_Param *)(pgm_read_pointer(&_var_info[0].ptr));
 }
 
@@ -588,7 +590,9 @@ AP_Param *AP_Param::next_group(uint8_t vindex, const struct GroupInfo *group_inf
             if (*found_current) {
                 // got a new one
                 (*token) = ((uint32_t)GROUP_OFFSET(group_base, i, group_shift)<<16) | vindex;
-                *ptype = (enum ap_var_type)type;
+                if (ptype != NULL) {
+                    *ptype = (enum ap_var_type)type;
+                }
                 return (AP_Param*)(pgm_read_pointer(&_var_info[vindex].ptr) + pgm_read_word(&group_info[i].offset));
             }
             if (GROUP_OFFSET(group_base, i, group_shift) == (*token)>>16) {
@@ -625,7 +629,9 @@ AP_Param *AP_Param::next(uint32_t *token, enum ap_var_type *ptype)
         } else {
             // found the next one
             (*token) = i;
-            *ptype = (enum ap_var_type)type;
+            if (ptype != NULL) {
+                *ptype = (enum ap_var_type)type;
+            }
             return (AP_Param *)(pgm_read_pointer(&_var_info[i].ptr));
         }
     }
@@ -637,6 +643,10 @@ AP_Param *AP_Param::next(uint32_t *token, enum ap_var_type *ptype)
 AP_Param *AP_Param::next_scalar(uint32_t *token, enum ap_var_type *ptype)
 {
     AP_Param *ap;
-    while ((ap = next(token, ptype)) != NULL && *ptype > AP_PARAM_FLOAT) ;
+    enum ap_var_type type;
+    while ((ap = next(token, &type)) != NULL && type > AP_PARAM_FLOAT) ;
+    if (ap != NULL && ptype != NULL) {
+        *ptype = type;
+    }
     return ap;
 }
