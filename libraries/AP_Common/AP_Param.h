@@ -78,7 +78,7 @@ public:
     // called once at startup to setup the _var_info[] table. This
     // will also check the EEPROM header and re-initialise it if the
     // wrong version is found
-    static bool setup(const struct Info *info, uint16_t num_vars, uint16_t eeprom_size);
+    static bool setup(const struct Info *info, uint8_t num_vars, uint16_t eeprom_size);
 
     /// Copy the variable's name, prefixed by any containing group name, to a buffer.
     ///
@@ -133,15 +133,15 @@ public:
     /// @return             The first variable in _var_info, or NULL if
     ///                     there are none.
     ///
-    static AP_Param *first(uint32_t *token, enum ap_var_type *ptype);
+    static AP_Param *first(uint16_t *token, enum ap_var_type *ptype);
 
     /// Returns the next variable in _var_info, recursing into groups
     /// as needed
-    static AP_Param *next(uint32_t *token, enum ap_var_type *ptype);
+    static AP_Param *next(uint16_t *token, enum ap_var_type *ptype);
 
     /// Returns the next scalar variable in _var_info, recursing into groups
     /// as needed
-    static AP_Param *next_scalar(uint32_t *token, enum ap_var_type *ptype);
+    static AP_Param *next_scalar(uint16_t *token, enum ap_var_type *ptype);
 
     /// cast a variable to a float given its type
     float cast_to_float(enum ap_var_type type);
@@ -153,7 +153,7 @@ private:
     /// that the ROM is formatted for AP_Param.
     ///
     struct EEPROM_header {
-        uint16_t    magic;
+        uint8_t     magic[2];
         uint8_t     revision;
         uint8_t     spare;
     };
@@ -169,7 +169,7 @@ private:
     static const uint8_t _group_level_shift = 4;
     static const uint8_t _group_bits  = 8;
 
-    static const uint16_t _sentinal_key   = 0xFF;
+    static const uint8_t  _sentinal_key   = 0xFF;
     static const uint8_t  _sentinal_type  = 0xFF;
     static const uint8_t  _sentinal_group = 0xFF;
 
@@ -198,17 +198,17 @@ private:
                                 bool *found_current,
                                 uint8_t group_base,
                                 uint8_t group_shift,
-                                uint32_t *token,
+                                uint16_t *token,
                                 enum ap_var_type *ptype);
 
     static uint16_t _eeprom_size;
-    static uint16_t _num_vars;
+    static uint8_t _num_vars;
     static const struct Info *_var_info;
 
     // values filled into the EEPROM header
-    static const uint16_t   k_EEPROM_magic      = 0x5041;   ///< "AP"
-    static const uint16_t   k_EEPROM_revision   = 5;        ///< current format revision
-
+    static const uint8_t   k_EEPROM_magic0      = 0x50;
+    static const uint8_t   k_EEPROM_magic1      = 0x41;   ///< "AP"
+    static const uint8_t   k_EEPROM_revision    = 5;        ///< current format revision
 };
 
 /// Template class for scalar variables.
