@@ -4,10 +4,10 @@
 #include "RC_Channel_aux.h"
 
 const AP_Param::GroupInfo RC_Channel_aux::var_info[] PROGMEM = {
-	AP_NESTEDGROUPINFO(RC_Channel),
-	AP_GROUPINFO("FUNCTION",   RC_Channel_aux, function),
-	AP_GROUPINFO("ANGLE_MIN",  RC_Channel_aux, angle_min),
-	AP_GROUPINFO("ANGLE_MAX",  RC_Channel_aux, angle_max),
+	AP_NESTEDGROUPINFO(RC_Channel, 0),
+	AP_GROUPINFO("FUNCTION",       1, RC_Channel_aux, function),
+	AP_GROUPINFO("ANGLE_MIN",      2, RC_Channel_aux, angle_min),
+	AP_GROUPINFO("ANGLE_MAX",      3, RC_Channel_aux, angle_max),
 	AP_GROUPEND
 };
 
