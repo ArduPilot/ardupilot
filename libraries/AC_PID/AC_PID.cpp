@@ -42,6 +42,7 @@ int32_t AC_PID::get_d(int32_t input, float dt)
 		// add in derivative component
 		return _kd * _derivative;
 	}
+	return 0;
 }
 
 int32_t AC_PID::get_pi(int32_t error, float dt)
