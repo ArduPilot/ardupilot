@@ -2,10 +2,10 @@
 #include "Compass.h"
 
 const AP_Param::GroupInfo Compass::var_info[] PROGMEM = {
-	{ AP_PARAM_MATRIX3F, "",     VAROFFSET(Compass, _orientation_matrix) },
-	{ AP_PARAM_VECTOR3F, "",     VAROFFSET(Compass, _offset) },
-	{ AP_PARAM_VECTOR3F, "DEC",  VAROFFSET(Compass, _declination) },
-	{ AP_PARAM_NONE, "" }
+    AP_GROUPINFO("ORIENT", Compass, _orientation_matrix),
+    AP_GROUPINFO("OFS",    Compass, _offset),
+    AP_GROUPINFO("DEC",    Compass, _declination),
+    AP_GROUPEND
 };
 
 // Default constructor.

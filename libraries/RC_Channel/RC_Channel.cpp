@@ -25,12 +25,12 @@
 APM_RC_Class *RC_Channel::_apm_rc;
 
 const AP_Param::GroupInfo RC_Channel::var_info[] PROGMEM = {
-	{ AP_PARAM_INT16, "MIN",   VAROFFSET(RC_Channel, radio_min) },
-	{ AP_PARAM_INT16, "TRIM",  VAROFFSET(RC_Channel, radio_trim) },
-	{ AP_PARAM_INT16, "MAX",   VAROFFSET(RC_Channel, radio_max) },
-	{ AP_PARAM_INT8,  "REV",   VAROFFSET(RC_Channel, _reverse) },
-	{ AP_PARAM_INT16, "DZ",    VAROFFSET(RC_Channel, _dead_zone) },
-	{ AP_PARAM_NONE, "" }
+	AP_GROUPINFO("MIN",  RC_Channel, radio_min),
+	AP_GROUPINFO("TRIM", RC_Channel, radio_trim),
+	AP_GROUPINFO("MAX",  RC_Channel, radio_max),
+	AP_GROUPINFO("REV",  RC_Channel, _reverse),
+	AP_GROUPINFO("DZ",   RC_Channel, _dead_zone),
+	AP_GROUPEND
 };
 
 // setup the control preferences
