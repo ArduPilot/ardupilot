@@ -25,10 +25,22 @@
 // a varient of offsetof() to work around C++ restrictions.
 // this can only be used when the offset of a variable in a object
 // is constant and known at compile time
-#define VAROFFSET(type, element) (((uintptr_t)(&((const type *)1)->element))-1)
+#define AP_VAROFFSET(type, element) (((uintptr_t)(&((const type *)1)->element))-1)
+
+// find the type of a variable given the class and element
+#define AP_CLASSTYPE(class, element) (((const class *)1)->element.vtype)
+
+// declare a group var_info line
+#define AP_GROUPINFO(name, class, element) { AP_CLASSTYPE(class, element), name, AP_VAROFFSET(class, element) }
+
+// declare a nested group entry in a group var_info
+#define AP_NESTEDGROUPINFO(class) { AP_PARAM_GROUP, "", 0, class::var_info }
+
+#define AP_GROUPEND	{ AP_PARAM_NONE, "" }
 
 enum ap_var_type {
     AP_PARAM_NONE    = 0,
+    AP_PARAM_SPARE,
     AP_PARAM_INT8,
     AP_PARAM_INT16,
     AP_PARAM_INT32,
@@ -46,24 +58,6 @@ enum ap_var_type {
 class AP_Param
 {
 public:
-    /// EEPROM header
-    ///
-    /// This structure is placed at the head of the EEPROM to indicate
-    /// that the ROM is formatted for AP_Param.
-    ///
-    struct EEPROM_header {
-        uint16_t    magic;
-        uint8_t     revision;
-        uint8_t     spare;
-    };
-
-    /// This header is prepended to a variable stored in EEPROM.
-    struct Param_header {
-        uint16_t    type:4;
-        uint16_t    key:9;
-        uint16_t	group_element:3;
-    };
-
     // the Info and GroupInfo structures are passed by the main
     // program in setup() to give information on how variables are
     // named and their location in memory
@@ -71,6 +65,7 @@ public:
         uint8_t type; // AP_PARAM_*
         const char name[AP_MAX_NAME_SIZE];
         uintptr_t offset; // offset within the object
+        const struct GroupInfo *group_info;
     };
     struct Info {
         uint8_t type; // AP_PARAM_*
@@ -80,14 +75,10 @@ public:
         const struct GroupInfo *group_info;
     };
 
-    // every AP_Param type has a vtype which tells its type. This is
-    // used to make the initialisation of var_info[] less error prone
-    static const ap_var_type vtype = AP_PARAM_NONE;
-
     // called once at startup to setup the _var_info[] table. This
     // will also check the EEPROM header and re-initialise it if the
     // wrong version is found
-    static bool setup(const struct Info *info, uint16_t num_vars);
+    static bool setup(const struct Info *info, uint16_t num_vars, uint16_t eeprom_size);
 
     /// Copy the variable's name, prefixed by any containing group name, to a buffer.
     ///
@@ -109,7 +100,7 @@ public:
     /// @return                 A pointer to the variable, or NULL if
     ///                         it does not exist.
     ///
-    static AP_Param *find(const char *name);
+    static AP_Param *find(const char *name, enum ap_var_type *ptype);
 
     /// Save the current value of the variable to EEPROM.
     ///
@@ -137,23 +128,82 @@ public:
     ///
     static void erase_all(void);
 
+    /// Returns the first variable
+    ///
+    /// @return             The first variable in _var_info, or NULL if
+    ///                     there are none.
+    ///
+    static AP_Param *first(uint32_t *token, enum ap_var_type *ptype);
+
+    /// Returns the next variable in _var_info, recursing into groups
+    /// as needed
+    static AP_Param *next(uint32_t *token, enum ap_var_type *ptype);
+
+    /// Returns the next scalar variable in _var_info, recursing into groups
+    /// as needed
+    static AP_Param *next_scalar(uint32_t *token, enum ap_var_type *ptype);
 
 private:
-    const struct Info *find_var_info(uint8_t *group_element);
+    /// EEPROM header
+    ///
+    /// This structure is placed at the head of the EEPROM to indicate
+    /// that the ROM is formatted for AP_Param.
+    ///
+    struct EEPROM_header {
+        uint16_t    magic;
+        uint8_t     revision;
+        uint8_t     spare;
+    };
+
+    /// This header is prepended to a variable stored in EEPROM.
+    struct Param_header {
+        uint16_t   key:9;
+        uint16_t   type:4;
+        uint16_t   spare:3;
+        uint8_t    group_element:8;
+    };
+
+    // number of bits in each level of nesting of groups
+    static const uint8_t _group_level_shift = 4;
+    static const uint8_t _group_bits  = 8;
+
+
+    static bool check_group_info(const struct GroupInfo *group_info, uint16_t *total_size, uint8_t max_bits);
+    static bool check_var_info(void);
+    const struct Info *find_var_info_group(const struct GroupInfo *group_info,
+                                           uint8_t vindex,
+                                           uint8_t group_base,
+                                           uint8_t group_shift,
+                                           uint8_t *group_element,
+                                           const struct GroupInfo **group_ret);
+    const struct Info *find_var_info(uint8_t *group_element,
+                                     const struct GroupInfo **group_ret);
+    static const struct Info *find_by_header_group(struct Param_header phdr, void **ptr,
+                                                   uint8_t vindex,
+                                                   const struct GroupInfo *group_info,
+                                                   uint8_t group_base,
+                                                   uint8_t group_shift);
     static const struct Info *find_by_header(struct Param_header phdr, void **ptr);
+    static AP_Param *find_group(const char *name, uint8_t vindex, const struct GroupInfo *group_info, enum ap_var_type *ptype);
     static void write_sentinal(uint16_t ofs);
     bool scan(const struct Param_header *phdr, uint16_t *pofs);
     static const uint8_t type_size(enum ap_var_type type);
     static void eeprom_write_check(const void *ptr, uint16_t ofs, uint8_t size);
+    static AP_Param *next_group(uint8_t vindex, const struct GroupInfo *group_info,
+                                bool *found_current,
+                                uint8_t group_base,
+                                uint8_t group_shift,
+                                uint32_t *token,
+                                enum ap_var_type *ptype);
 
+    static uint16_t _eeprom_size;
     static uint16_t _num_vars;
     static const struct Info *_var_info;
 
-    static const uint16_t k_EEPROM_size = 4096;    ///< XXX avr-libc doesn't consistently export this
-
     // values filled into the EEPROM header
     static const uint16_t   k_EEPROM_magic      = 0x5041;   ///< "AP"
-    static const uint16_t   k_EEPROM_revision   = 3;        ///< current format revision
+    static const uint16_t   k_EEPROM_revision   = 4;        ///< current format revision
+
 };
 
 /// Template class for scalar variables.
