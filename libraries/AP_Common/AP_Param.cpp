@@ -650,3 +650,21 @@ AP_Param *AP_Param::next_scalar(uint32_t *token, enum ap_var_type *ptype)
     }
     return ap;
 }
+
+
+/// cast a variable to a float given its type
+float AP_Param::cast_to_float(enum ap_var_type type)
+{
+    switch (type) {
+    case AP_PARAM_INT8:
+        return ((AP_Int8 *)this)->cast_to_float();
+    case AP_PARAM_INT16:
+        return ((AP_Int16 *)this)->cast_to_float();
+    case AP_PARAM_INT32:
+        return ((AP_Int32 *)this)->cast_to_float();
+    case AP_PARAM_FLOAT:
+        return ((AP_Float *)this)->cast_to_float();
+    default:
+        return NAN;
+    }
+}
