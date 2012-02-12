@@ -143,6 +143,9 @@ public:
     /// as needed
     static AP_Param *next_scalar(uint32_t *token, enum ap_var_type *ptype);
 
+    /// cast a variable to a float given its type
+    float cast_to_float(enum ap_var_type type);
+
 private:
     /// EEPROM header
     ///
