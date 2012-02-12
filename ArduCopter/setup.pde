@@ -102,7 +102,7 @@ setup_show(uint8_t argc, const Menu::arg *argv)
 	report_gyro();
 #endif
 
-    uint32_t token;
+    uint16_t token;
     AP_Param *ap;
     enum ap_var_type type;
 

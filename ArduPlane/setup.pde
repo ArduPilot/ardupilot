@@ -66,7 +66,7 @@ setup_show(uint8_t argc, const Menu::arg *argv)
 	Serial.printf_P(PSTR("Raw Values\n"));
 	print_divider();
 
-    uint32_t token;
+    uint16_t token;
     AP_Param *ap;
     enum ap_var_type type;
 
