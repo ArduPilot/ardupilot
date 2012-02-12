@@ -148,7 +148,8 @@ bool AP_Param::check_var_info(void)
         } else {
             uint8_t size = type_size((enum ap_var_type)type);
             if (size == 0) {
-                // not a valid type - the top level list can't contain AP_PARAM_NONE
+                // not a valid type - the top level list can't contain
+                // AP_PARAM_NONE or AP_PARAM_SPARE
                 return false;
             }
             total_size += size + sizeof(struct Param_header);
@@ -287,6 +288,8 @@ const struct AP_Param::Info *AP_Param::find_var_info_group(const struct GroupInf
             if (info != NULL) {
                 return info;
             }
+        } else if (type == AP_PARAM_SPARE) {
+            continue;
         } else if ((uintptr_t)this == base + PGM_POINTER(&group_info[i].offset)) {
             *group_element = GROUP_OFFSET(group_base, i, group_shift);
             *group_ret = &group_info[i];
@@ -413,6 +416,8 @@ AP_Param::find_group(const char *name, uint8_t vindex, const struct GroupInfo *g
             if (ap != NULL) {
                 return ap;
             }
+        } else if (type == AP_PARAM_SPARE) {
+            continue;
         } else if (strcasecmp_P(name, group_info[i].name) == 0) {
             uintptr_t p = PGM_POINTER(&_var_info[vindex].ptr);
             *ptype = (enum ap_var_type)type;
@@ -591,6 +596,8 @@ AP_Param *AP_Param::next_group(uint8_t vindex, const struct GroupInfo *group_inf
             if (ap != NULL) {
                 return ap;
             }
+        } else if (type == AP_PARAM_SPARE) {
+            continue;
         } else {
             if (*found_current) {
                 // got a new one
