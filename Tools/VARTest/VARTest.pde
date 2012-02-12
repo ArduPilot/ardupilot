@@ -7,19 +7,48 @@
 
 #include <FastSerial.h>
 #include <AP_Common.h>
+#include <Arduino_Mega_ISR_Registry.h>
 #include <PID.h>            // PID library
 #include <APM_RC.h>         // ArduPilot Mega RC Library
 #include <RC_Channel.h>     // RC Channel Library
 #include <AP_Compass.h>     // ArduPilot Mega Magnetometer Library
+#include <SPI.h>			// Arduino SPI lib
 #include <I2C.h>
+#include <DataFlash.h>
+#include <AP_DCM.h>
+#include <AP_ADC.h>
+#include <AP_Baro.h>
+#include <AP_PeriodicProcess.h>
+#include <AP_InertialSensor.h> // Inertial Sensor (uncalibated IMU) Library
+#include <AP_IMU.h>         // ArduPilot Mega IMU Library
+#include <AP_GPS.h>
 #include <AP_Math.h>
 #include <config.h>
 #include <Parameters.h>
 
 static Parameters g;
+
+static AP_ADC_ADS7844          adc;
+static GPS         *g_gps;
+AP_GPS_Auto     g_gps_driver(&Serial1, &g_gps);
+# if CONFIG_IMU_TYPE == CONFIG_IMU_MPU6000
+  AP_InertialSensor_MPU6000 ins( CONFIG_MPU6000_CHIP_SELECT_PIN );
+# else
+  AP_InertialSensor_Oilpan ins( &adc );
+#endif // CONFIG_IMU_TYPE
+AP_IMU_INS imu( &ins );
+AP_DCM  dcm(&imu, g_gps);
+
+Arduino_Mega_ISR_Registry isr_registry;
+#ifdef DESKTOP_BUILD
+AP_Compass_HIL          compass;
+#else
 static AP_Compass_HMC5843 compass;
+#endif
+AP_Baro_BMP085_HIL      barometer;
 
 FastSerialPort0(Serial);
+FastSerialPort1(Serial1);       // GPS port
 
 #define SERIAL0_BAUD 115200
 
@@ -95,6 +124,10 @@ void test_variable(AP_Param *ap, enum ap_var_type type)
 	if (AP_Param::find(s, &type2) != ap ||
 		type2 != type) {
 		Debug("find failed");
+	}
+	if (strcmp(s, "FORMAT_VERSION") == 0) {
+		// don't wipe the version
+		return;
 	}
 	switch (type) {
 	case AP_PARAM_INT8: {

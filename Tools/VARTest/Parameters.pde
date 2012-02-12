@@ -1,8 +1,12 @@
 /// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: t -*-
 
 /*
-  Parameters.pde example for new variable scheme
-  Andrew Tridgell February 2012
+  ArduPlane parameter definitions
+
+  This firmware is free software; you can redistribute it and/or
+  modify it under the terms of the GNU Lesser General Public
+  License as published by the Free Software Foundation; either
+  version 2.1 of the License, or (at your option) any later version.
 */
 
 #define GSCALAR(v, name) { g.v.vtype, name, Parameters::k_param_ ## v, &g.v }
@@ -11,8 +15,8 @@
 
 static const AP_Param::Info var_info[] PROGMEM = {
 	GSCALAR(format_version,         "FORMAT_VERSION"),
-	GSCALAR(software_type,          "SOFTWARE_TYPE"),
-	GSCALAR(sysid_this_mav,         "SYSID_THIS_MAV"),
+	GSCALAR(software_type,          "SYSID_SW_TYPE"),
+	GSCALAR(sysid_this_mav,         "SYSID_THISMAV"),
 	GSCALAR(sysid_my_gcs,           "SYSID_MYGCS"),
 	GSCALAR(serial3_baud,           "SERIAL3_BAUD"),
 	GSCALAR(kff_pitch_compensation, "KFF_PTCHCOMP"),
@@ -117,7 +121,12 @@ static const AP_Param::Info var_info[] PROGMEM = {
 	GGROUP(pidNavPitchAltitude,     "ALT2PTCH_",  PID),
 
 	// variables not in the g class which contain EEPROM saved variables
-	GOBJECT(compass,                "COMPASS_",	Compass)
+	GOBJECT(compass,                "COMPASS_",	Compass),
+#if 0
+	// VARTest doesn't have these
+	GOBJECT(gcs0,					"SR0_",     GCS_MAVLINK),
+	GOBJECT(gcs3,					"SR3_",     GCS_MAVLINK)
+#endif
 };
 
 
@@ -137,8 +146,8 @@ static void load_parameters(void)
 	     g.format_version != Parameters::k_format_version) {
 
 		// erase all parameters
-		Serial.printf_P(PSTR("Firmware change: erasing EEPROM...\n"));
-		delay(100); // wait for serial send
+		Serial.printf_P(PSTR("Firmware change (%u -> %u): erasing EEPROM...\n"),
+						g.format_version.get(), Parameters::k_format_version);
 		AP_Param::erase_all();
 
 		// save the current format version
