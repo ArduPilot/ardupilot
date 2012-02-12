@@ -159,34 +159,8 @@ static void init_ardupilot()
 		piezo_beep();
 	#endif
 
-
-	if (!g.format_version.load() ||
-	     g.format_version != Parameters::k_format_version) {
-		//Serial.printf_P(PSTR("\n\nForcing complete parameter reset..."));
-
-		/*Serial.printf_P(PSTR("\n\nEEPROM format version  %d not compatible with this firmware (requires %d)"
-		                     "\n\nForcing complete parameter reset..."),
-		                     g.format_version.get(),
-		                     Parameters::k_format_version);
-		*/
-
-		// erase all parameters
-		Serial.printf_P(PSTR("Firmware change: erasing EEPROM...\n"));
-		delay(100); // wait for serial send
-		AP_Var::erase_all();
-
-		// save the new format version
-		g.format_version.set_and_save(Parameters::k_format_version);
-
-		// save default radio values
-		default_dead_zones();
-	}else{
-		// save default radio values
-		//default_dead_zones();
-
-	    // Load all auto-loaded EEPROM variables
-	    AP_Var::load_all();
-	}
+    // load parameters from EEPROM
+    load_parameters();
 
 	// init the GCS
     gcs0.init(&Serial);

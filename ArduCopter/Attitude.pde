@@ -115,7 +115,7 @@ get_rate_roll(int32_t target_rate)
 	target_rate 			= g.pid_rate_roll.get_pid(target_rate, G_Dt);
 
 	// Dampening
-	target_rate 			-= constrain((current_rate - last_rate) * g.stablize_d, -500, 500);
+	target_rate 			-= constrain((current_rate - last_rate) * g.stabilize_d, -500, 500);
 	last_rate 				= current_rate;
 
 	// output control:
@@ -133,7 +133,7 @@ get_rate_pitch(int32_t target_rate)
 	target_rate 			= g.pid_rate_pitch.get_pid(target_rate, G_Dt);
 
 	// Dampening
-	target_rate 			-= constrain((current_rate - last_rate) * g.stablize_d, -500, 500);
+	target_rate 			-= constrain((current_rate - last_rate) * g.stabilize_d, -500, 500);
 	last_rate 				= current_rate;
 
 	// output control:

@@ -219,7 +219,7 @@ AP_InertialSensor_MPU6000 ins( CONFIG_MPU6000_CHIP_SELECT_PIN );
 #else
 AP_InertialSensor_Oilpan ins(&adc);
 #endif
-AP_IMU_INS  imu(&ins, Parameters::k_param_IMU_calibration);
+AP_IMU_INS  imu(&ins);
 AP_DCM  dcm(&imu, g_gps);
 AP_TimerProcess timer_scheduler;
 
@@ -258,8 +258,8 @@ AP_TimerProcess timer_scheduler;
 ////////////////////////////////////////////////////////////////////////////////
 // GCS selection
 ////////////////////////////////////////////////////////////////////////////////
-GCS_MAVLINK	gcs0(Parameters::k_param_streamrates_port0);
-GCS_MAVLINK	gcs3(Parameters::k_param_streamrates_port3);
+GCS_MAVLINK	gcs0;
+GCS_MAVLINK	gcs3;
 
 ////////////////////////////////////////////////////////////////////////////////
 // SONAR selection
@@ -1919,7 +1919,7 @@ static void tuning(){
 
 		case CH6_DAMP:
 			g.rc_6.set_range(0,300); 		// 0 to 1
-			g.stablize_d.set(tuning_value);
+			g.stabilize_d.set(tuning_value);
 
 			//tuning_value = (float)g.rc_6.control_in / 100000.0;
 			//g.rc_6.set_range(0,1000); 		// 0 to 1
