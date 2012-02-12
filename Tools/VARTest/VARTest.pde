@@ -102,6 +102,9 @@ void setup() {
 		 ap=AP_Param::next(&token, &type)) {
 		test_variable(ap, type);
 	}
+
+	AP_Param::show_all();
+
 	Serial.println_P(PSTR("All done."));
 }
 

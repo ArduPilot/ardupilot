@@ -684,3 +684,37 @@ float AP_Param::cast_to_float(enum ap_var_type type)
         return NAN;
     }
 }
+
+
+// print the value of all variables
+void AP_Param::show_all(void)
+{
+    uint16_t token;
+    AP_Param *ap;
+    enum ap_var_type type;
+
+    for (ap=AP_Param::first(&token, &type);
+         ap;
+         ap=AP_Param::next_scalar(&token, &type)) {
+        char s[AP_MAX_NAME_SIZE+1];
+        ap->copy_name(s, sizeof(s));
+        s[AP_MAX_NAME_SIZE] = 0;
+
+        switch (type) {
+        case AP_PARAM_INT8:
+            Serial.printf_P(PSTR("%s: %d\n"), s, (int)((AP_Int8 *)ap)->get());
+            break;
+        case AP_PARAM_INT16:
+            Serial.printf_P(PSTR("%s: %d\n"), s, (int)((AP_Int16 *)ap)->get());
+            break;
+        case AP_PARAM_INT32:
+            Serial.printf_P(PSTR("%s: %ld\n"), s, (long)((AP_Int32 *)ap)->get());
+            break;
+        case AP_PARAM_FLOAT:
+            Serial.printf_P(PSTR("%s: %f\n"), s, ((AP_Float *)ap)->get());
+            break;
+        default:
+            break;
+        }
+    }
+}
