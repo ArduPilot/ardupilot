@@ -13,11 +13,11 @@
 /// @brief  The AP variable store.
 
 
+#include <FastSerial.h>
 #include <AP_Common.h>
 
 #include <math.h>
 #include <string.h>
-#include <FastSerial.h>
 
 // #define ENABLE_FASTSERIAL_DEBUG
 
