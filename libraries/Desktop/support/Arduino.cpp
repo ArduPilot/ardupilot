@@ -87,6 +87,16 @@ int strcmp_P(PGM_P str1, PGM_P str2)
 	return strcmp(str1, str2);
 }
 
+int strncmp_P(PGM_P str1, PGM_P str2, size_t n)
+{
+	return strncmp(str1, str2, n);
+}
+
+char *strncpy_P(char *dest, PGM_P src, size_t n)
+{
+	return strncpy(dest, src, n);
+}
+
 void *memcpy_P(void *dest, PGM_P src, size_t n)
 {
 	return memcpy(dest, src, n);
