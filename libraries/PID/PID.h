@@ -82,6 +82,13 @@ private:
 	float				_integrator;		///< integrator value
 	int32_t				_last_error;		///< last error for derivative
 	float				_last_derivative; 	///< last derivative for low-pass filter
+
+	/// Low pass filter cut frequency for derivative calculation.
+	///
+	/// 20 Hz becasue anything over that is probably noise, see
+	/// http://en.wikipedia.org/wiki/Low-pass_filter.
+	///
+	static const uint8_t _fCut = 20;
 };
 
 #endif

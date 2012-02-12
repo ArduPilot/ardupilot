@@ -30,7 +30,7 @@ PID::get_pid(int32_t error, uint16_t dt, float scaler)
 
 		// discrete low pass filter, cuts out the
 		// high frequency noise that can drive the controller crazy
-		float RC = 1/(2*M_PI*20);
+		float RC = 1/(2*M_PI*_fCut);
 		derivative = _last_derivative +
 		        (delta_time / (RC + delta_time)) * (derivative - _last_derivative);
 
