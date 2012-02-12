@@ -8,11 +8,11 @@
 #include "PID.h"
 
 const AP_Param::GroupInfo PID::var_info[] PROGMEM = {
-	{ AP_PARAM_FLOAT, "P",    VAROFFSET(PID, _kp) },
-	{ AP_PARAM_FLOAT, "I",    VAROFFSET(PID, _ki) },
-	{ AP_PARAM_FLOAT, "D",    VAROFFSET(PID, _kd) },
-	{ AP_PARAM_INT16, "IMAX", VAROFFSET(PID, _imax) },
-	{ AP_PARAM_NONE, "" }
+	AP_GROUPINFO("P",    PID, _kp),
+	AP_GROUPINFO("I",    PID, _ki),
+	AP_GROUPINFO("D",    PID, _kd),
+	AP_GROUPINFO("IMAX", PID, _imax),
+	AP_GROUPEND
 };
 
 long

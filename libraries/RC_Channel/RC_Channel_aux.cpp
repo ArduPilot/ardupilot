@@ -4,15 +4,11 @@
 #include "RC_Channel_aux.h"
 
 const AP_Param::GroupInfo RC_Channel_aux::var_info[] PROGMEM = {
-	{ AP_PARAM_INT16, "MIN",   VAROFFSET(RC_Channel_aux, radio_min) },
-	{ AP_PARAM_INT16, "TRIM",  VAROFFSET(RC_Channel_aux, radio_trim) },
-	{ AP_PARAM_INT16, "MAX",   VAROFFSET(RC_Channel_aux, radio_max) },
-	{ AP_PARAM_INT8,  "REV",   VAROFFSET(RC_Channel_aux, _reverse) },
-	{ AP_PARAM_INT16, "DZ",    VAROFFSET(RC_Channel_aux, _dead_zone) },
-	{ AP_PARAM_INT8,  "FUNCTION",  VAROFFSET(RC_Channel_aux, function) },
-	{ AP_PARAM_INT8,  "ANGLE_MIN", VAROFFSET(RC_Channel_aux, angle_min) },
-	{ AP_PARAM_INT8,  "ANGLE_MAX", VAROFFSET(RC_Channel_aux, angle_max) },
-	{ AP_PARAM_NONE, "" }
+	AP_NESTEDGROUPINFO(RC_Channel),
+	AP_GROUPINFO("FUNCTION",   RC_Channel_aux, function),
+	AP_GROUPINFO("ANGLE_MIN",  RC_Channel_aux, angle_min),
+	AP_GROUPINFO("ANGLE_MAX",  RC_Channel_aux, angle_max),
+	AP_GROUPEND
 };
 
 RC_Channel_aux* g_rc_function[RC_Channel_aux::k_nr_aux_servo_functions];	// the aux. servo ch. assigned to each function
