@@ -647,7 +647,7 @@
 # define NAV_P				3.0			//
 #endif
 #ifndef NAV_I
-# define NAV_I				0.4			// Wind control
+# define NAV_I				0.1			// Wind control
 #endif
 #ifndef NAV_D
 # define NAV_D				0.00		//
