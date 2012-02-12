@@ -18,8 +18,16 @@ class RC_Channel{
 	/// @param key      EEPROM storage key for the channel trim parameters.
 	/// @param name     Optional name for the group.
 	///
-	RC_Channel()
-	{}
+       RC_Channel() :
+        radio_min (1100),
+        radio_trim(1500),
+        radio_max (1900),
+		_high(1),
+		_filter(false),
+		_reverse(1),
+		_dead_zone(0),
+		scale_output(1.0)
+		{}
 
 	// setup min and max radio values in CLI
 	void 		update_min_max();
@@ -86,12 +94,10 @@ class RC_Channel{
 
     static const struct AP_Param::GroupInfo var_info[];
 
-	AP_Int8 	_reverse;
-	AP_Int16 	_dead_zone;
-
   private:
 	bool		_filter;
-	//int16_t 	_dead_zone; // used to keep noise down and create a dead zone.
+	AP_Int8 	_reverse;
+	AP_Int16 	_dead_zone;
 	uint8_t 	_type;
 	int16_t 	_high;
 	int16_t 	_low;
