@@ -53,8 +53,8 @@ public:
 
 		// 110: Telemetry control
 		//
-		k_param_streamrates_port0 = 110,
-		k_param_streamrates_port3,
+		k_param_gcs0 = 110, // stream rates for port0
+		k_param_gcs3,       // stream rates for port3
 		k_param_sysid_this_mav,
 		k_param_sysid_my_gcs,
         k_param_serial3_baud,

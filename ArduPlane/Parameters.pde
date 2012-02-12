@@ -121,7 +121,9 @@ static const AP_Param::Info var_info[] PROGMEM = {
 	GGROUP(pidNavPitchAltitude,     "ALT2PTCH_",  PID),
 
 	// variables not in the g class which contain EEPROM saved variables
-	GOBJECT(compass,                "COMPASS_",	Compass)
+	GOBJECT(compass,                "COMPASS_",	Compass),
+	GOBJECT(gcs0,					"SR0_",     GCS_MAVLINK),
+	GOBJECT(gcs3,					"SR3_",     GCS_MAVLINK)
 };
 
 
