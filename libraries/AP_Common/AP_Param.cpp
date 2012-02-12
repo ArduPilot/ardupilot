@@ -49,7 +49,7 @@
 uint16_t AP_Param::_eeprom_size;
 
 // number of rows in the _var_info[] table
-uint16_t AP_Param::_num_vars;
+uint8_t AP_Param::_num_vars;
 
 // storage and naming information about all types that can be saved
 const AP_Param::Info *AP_Param::_var_info;
@@ -88,8 +88,10 @@ void AP_Param::erase_all(void)
     serialDebug("erase_all");
 
     // write the header
-    hdr.magic = k_EEPROM_magic;
+    hdr.magic[0] = k_EEPROM_magic0;
+    hdr.magic[1] = k_EEPROM_magic1;
     hdr.revision = k_EEPROM_revision;
+    hdr.spare    = 0;
     eeprom_write_check(&hdr, 0, sizeof(hdr));
 
     // add a sentinal directly after the header
@@ -144,7 +146,7 @@ bool AP_Param::check_var_info(void)
 {
     uint16_t total_size = sizeof(struct EEPROM_header);
 
-    for (uint16_t i=0; i<_num_vars; i++) {
+    for (uint8_t i=0; i<_num_vars; i++) {
         uint8_t type = PGM_UINT8(&_var_info[i].type);
         if (type == AP_PARAM_GROUP) {
             if (i == 0) {
@@ -176,7 +178,7 @@ bool AP_Param::check_var_info(void)
 
 
 // setup the _var_info[] table
-bool AP_Param::setup(const AP_Param::Info *info, uint16_t num_vars, uint16_t eeprom_size)
+bool AP_Param::setup(const AP_Param::Info *info, uint8_t num_vars, uint16_t eeprom_size)
 {
     struct EEPROM_header hdr;
 
@@ -192,7 +194,8 @@ bool AP_Param::setup(const AP_Param::Info *info, uint16_t num_vars, uint16_t eep
 
     // check the header
     eeprom_read_block(&hdr, 0, sizeof(hdr));
-    if (hdr.magic != k_EEPROM_magic ||
+    if (hdr.magic[0] != k_EEPROM_magic0 ||
+        hdr.magic[1] != k_EEPROM_magic1 ||
         hdr.revision != k_EEPROM_revision) {
         // header doesn't match. We can't recover any variables. Wipe
         // the header and setup the sentinal directly after the header
@@ -245,7 +248,7 @@ const struct AP_Param::Info *AP_Param::find_by_header_group(struct Param_header 
 const struct AP_Param::Info *AP_Param::find_by_header(struct Param_header phdr, void **ptr)
 {
     // loop over all named variables
-    for (uint16_t i=0; i<_num_vars; i++) {
+    for (uint8_t i=0; i<_num_vars; i++) {
         uint8_t type = PGM_UINT8(&_var_info[i].type);
         uint8_t key = PGM_UINT8(&_var_info[i].key);
         if (key != phdr.key) {
@@ -307,7 +310,7 @@ const struct AP_Param::Info *AP_Param::find_var_info_group(const struct GroupInf
 const struct AP_Param::Info *AP_Param::find_var_info(uint8_t *group_element,
                                                      const struct GroupInfo **group_ret)
 {
-    for (uint16_t i=0; i<_num_vars; i++) {
+    for (uint8_t i=0; i<_num_vars; i++) {
         uint8_t type = PGM_UINT8(&_var_info[i].type);
         uintptr_t base = PGM_POINTER(&_var_info[i].ptr);
         if (type == AP_PARAM_GROUP) {
@@ -437,7 +440,7 @@ AP_Param::find_group(const char *name, uint8_t vindex, const struct GroupInfo *g
 AP_Param *
 AP_Param::find(const char *name, enum ap_var_type *ptype)
 {
-    for (uint16_t i=0; i<_num_vars; i++) {
+    for (uint8_t i=0; i<_num_vars; i++) {
         uint8_t type = PGM_UINT8(&_var_info[i].type);
         if (type == AP_PARAM_GROUP) {
             uint8_t len = strnlen_P(_var_info[i].name, AP_MAX_NAME_SIZE);
@@ -565,7 +568,7 @@ bool AP_Param::load_all(void)
 
 
 // return the first variable in _var_info
-AP_Param *AP_Param::first(uint32_t *token, enum ap_var_type *ptype)
+AP_Param *AP_Param::first(uint16_t *token, enum ap_var_type *ptype)
 {
     *token = 0;
     if (_num_vars == 0) {
@@ -583,7 +586,7 @@ AP_Param *AP_Param::next_group(uint8_t vindex, const struct GroupInfo *group_inf
                                bool *found_current,
                                uint8_t group_base,
                                uint8_t group_shift,
-                               uint32_t *token,
+                               uint16_t *token,
                                enum ap_var_type *ptype)
 {
     uint8_t type;
@@ -602,13 +605,13 @@ AP_Param *AP_Param::next_group(uint8_t vindex, const struct GroupInfo *group_inf
         } else {
             if (*found_current) {
                 // got a new one
-                (*token) = ((uint32_t)GROUP_ID(group_info, group_base, i, group_shift)<<16) | vindex;
+                (*token) = ((uint16_t)GROUP_ID(group_info, group_base, i, group_shift)<<8) | vindex;
                 if (ptype != NULL) {
                     *ptype = (enum ap_var_type)type;
                 }
                 return (AP_Param*)(PGM_POINTER(&_var_info[vindex].ptr) + PGM_UINT16(&group_info[i].offset));
             }
-            if (GROUP_ID(group_info, group_base, i, group_shift) == (uint16_t)((*token)>>16)) {
+            if (GROUP_ID(group_info, group_base, i, group_shift) == (uint8_t)((*token)>>8)) {
                 *found_current = true;
             }
         }
@@ -618,9 +621,9 @@ AP_Param *AP_Param::next_group(uint8_t vindex, const struct GroupInfo *group_inf
 
 /// Returns the next variable in _var_info, recursing into groups
 /// as needed
-AP_Param *AP_Param::next(uint32_t *token, enum ap_var_type *ptype)
+AP_Param *AP_Param::next(uint16_t *token, enum ap_var_type *ptype)
 {
-    uint16_t i = (*token)&0xFFFF;
+    uint8_t i = (*token)&0xFF;
     bool found_current = false;
     if (i >= _num_vars) {
         // illegal token
@@ -653,7 +656,7 @@ AP_Param *AP_Param::next(uint32_t *token, enum ap_var_type *ptype)
 
 /// Returns the next scalar in _var_info, recursing into groups
 /// as needed
-AP_Param *AP_Param::next_scalar(uint32_t *token, enum ap_var_type *ptype)
+AP_Param *AP_Param::next_scalar(uint16_t *token, enum ap_var_type *ptype)
 {
     AP_Param *ap;
     enum ap_var_type type;
