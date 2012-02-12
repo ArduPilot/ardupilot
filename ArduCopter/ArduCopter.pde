@@ -179,7 +179,7 @@ static AP_Int8                *flight_modes = &g.flight_mode1;
     AP_Baro_MS5611 barometer;
 #endif
 
-    AP_Compass_HMC5843      compass(Parameters::k_param_compass);
+    AP_Compass_HMC5843      compass;
 #endif
 
 #ifdef OPTFLOW_ENABLED
