@@ -124,7 +124,14 @@ static const AP_Param::Info var_info[] PROGMEM = {
 static void load_parameters(void)
 {
 	// setup the AP_Var subsystem for storage to EEPROM
-	AP_Param::setup(var_info, sizeof(var_info)/sizeof(var_info[0]));
+	if (!AP_Param::setup(var_info, sizeof(var_info)/sizeof(var_info[0]), WP_START_BYTE)) {
+		// this can only happen on startup, and its a definate coding
+		// error. Best not to continue so the programmer catches it
+		while (1) {
+			Serial.println_P(PSTR("ERROR: Failed to setup AP_Param"));
+			delay(1000);
+		}
+	}
 
 	if (!g.format_version.load() ||
 	     g.format_version != Parameters::k_format_version) {
