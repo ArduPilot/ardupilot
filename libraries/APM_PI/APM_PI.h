@@ -19,49 +19,18 @@ public:
 	/// @note	PI must be named to avoid either multiple parameters with the
 	///			same name, or an overly complex constructor.
 	///
-	/// @param	key 			Storage key assigned to this PI.  Should be unique.
-	/// @param	name			Name by which the PI is known, or NULL for an anonymous PI.
-	///                         The name is prefixed to the P, I, IMAX variable names when
-	///                         they are reported.
 	/// @param  initial_p       Initial value for the P term.
     /// @param  initial_i       Initial value for the I term.
     /// @param  initial_imax    Initial value for the imax term.4
 	///
-	APM_PI(AP_Var::Key key,
-	    const prog_char_t *name,
-	    const float &initial_p = 0.0,
-	    const float &initial_i = 0.0,
-	    const int16_t &initial_imax = 0.0) :
-
-		_group(key, name),
-		// group, index, initial value, name
-		_kp  (&_group, 0, initial_p, PSTR("P")),
-		_ki  (&_group, 1, initial_i, PSTR("I")),
-		_imax(&_group, 3, initial_imax, PSTR("IMAX"))
+	APM_PI(const float &initial_p = 0.0,
+		   const float &initial_i = 0.0,
+		   const int16_t &initial_imax = 0.0) :
+		_kp  (initial_p),
+		_ki  (initial_i),
+		_imax(initial_imax)
 	{
 		// no need for explicit load, assuming that the main code uses AP_Var::load_all.
-	}
-
-	/// Constructor for PI that does not save its settings.
-	///
-    /// @param  name            Name by which the PI is known, or NULL for an anonymous PI.
-    ///                         The name is prefixed to the P, I, IMAX variable names when
-    ///                         they are reported.
-    /// @param  initial_p       Initial value for the P term.
-    /// @param  initial_i       Initial value for the I term.
-    /// @param  initial_imax    Initial value for the imax term.4
-	///
-    APM_PI(const prog_char_t *name,
-        const float &initial_p = 0.0,
-        const float &initial_i = 0.0,
-        const int16_t &initial_imax = 0.0) :
-
-        _group(AP_Var::k_key_none, name),
-        // group, index, initial value, name
-        _kp  (&_group, 0, initial_p, PSTR("P")),
-        _ki  (&_group, 1, initial_i, PSTR("I")),
-        _imax(&_group, 3, initial_imax, PSTR("IMAX"))
-    {
 	}
 
 	/// Iterate the PI, return the new control value
@@ -115,10 +84,11 @@ public:
 	float	get_integrator() const	{ return _integrator; }
 	void	set_integrator(float i)	{ _integrator = i; }
 
+    static const struct AP_Param::GroupInfo var_info[];
+
 private:
-	AP_Var_group	    _group;
-	AP_Float16			_kp;
-	AP_Float16			_ki;
+	AP_Float			_kp;
+	AP_Float			_ki;
 	AP_Int16			_imax;
 
 	float				_integrator;		///< integrator value
