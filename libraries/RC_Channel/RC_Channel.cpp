@@ -25,11 +25,11 @@
 APM_RC_Class *RC_Channel::_apm_rc;
 
 const AP_Param::GroupInfo RC_Channel::var_info[] PROGMEM = {
-	AP_GROUPINFO("MIN",  RC_Channel, radio_min),
-	AP_GROUPINFO("TRIM", RC_Channel, radio_trim),
-	AP_GROUPINFO("MAX",  RC_Channel, radio_max),
-	AP_GROUPINFO("REV",  RC_Channel, _reverse),
-	AP_GROUPINFO("DZ",   RC_Channel, _dead_zone),
+	AP_GROUPINFO("MIN",  0, RC_Channel, radio_min),
+	AP_GROUPINFO("TRIM", 1, RC_Channel, radio_trim),
+	AP_GROUPINFO("MAX",  2, RC_Channel, radio_max),
+	AP_GROUPINFO("REV",  3, RC_Channel, _reverse),
+	AP_GROUPINFO("DZ",   4, RC_Channel, _dead_zone),
 	AP_GROUPEND
 };
 

@@ -2,9 +2,9 @@
 #include "Compass.h"
 
 const AP_Param::GroupInfo Compass::var_info[] PROGMEM = {
-    AP_GROUPINFO("ORIENT", Compass, _orientation_matrix),
-    AP_GROUPINFO("OFS",    Compass, _offset),
-    AP_GROUPINFO("DEC",    Compass, _declination),
+    AP_GROUPINFO("ORIENT", 0, Compass, _orientation_matrix),
+    AP_GROUPINFO("OFS",    1, Compass, _offset),
+    AP_GROUPINFO("DEC",    2, Compass, _declination),
     AP_GROUPEND
 };
 
