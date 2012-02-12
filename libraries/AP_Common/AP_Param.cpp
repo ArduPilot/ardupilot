@@ -19,7 +19,7 @@
 #include <string.h>
 #include <FastSerial.h>
 
-#define ENABLE_FASTSERIAL_DEBUG
+// #define ENABLE_FASTSERIAL_DEBUG
 
 #ifdef ENABLE_FASTSERIAL_DEBUG
 # define serialDebug(fmt, args...)  if (FastSerial::getInitialized(0)) do {Serial.printf("%s:%d: " fmt "\n", __FUNCTION__, __LINE__ , ##args); delay(0); } while(0)
