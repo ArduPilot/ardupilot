@@ -193,7 +193,7 @@ class TestResults(object):
     '''test results class'''
     def __init__(self):
         self.date = time.asctime()
-        self.githash = util.run_cmd('git rev-parse HEAD', output=True)
+        self.githash = util.run_cmd('git rev-parse HEAD', output=True).strip()
         self.tests = []
         self.files = []
 
