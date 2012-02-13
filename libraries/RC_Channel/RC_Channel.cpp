@@ -176,6 +176,7 @@ RC_Channel::load_eeprom(void)
 	radio_trim.load();
 	radio_max.load();
 	_reverse.load();
+	_dead_zone.load();
 }
 
 void
@@ -185,6 +186,7 @@ RC_Channel::save_eeprom(void)
 	radio_trim.save();
 	radio_max.save();
 	_reverse.save();
+	_dead_zone.save();
 }
 
 // ------------------------------------------
