@@ -79,7 +79,7 @@ static void failsafe_short_off_event()
 }
 
 #if BATTERY_EVENT == ENABLED
-static void low_battery_event(void)
+void low_battery_event(void)
 {
 	gcs_send_text_P(SEVERITY_HIGH,PSTR("Low Battery!"));
 	set_mode(RTL);

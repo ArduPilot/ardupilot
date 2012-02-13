@@ -2104,14 +2104,6 @@ static void gcs_update(void)
     }
 }
 
-static void gcs_send_text(gcs_severity severity, const char *str)
-{
-    gcs0.send_text(severity, str);
-    if (gcs3.initialised) {
-        gcs3.send_text(severity, str);
-    }
-}
-
 static void gcs_send_text_P(gcs_severity severity, const prog_char_t *str)
 {
     gcs0.send_text(severity, str);
