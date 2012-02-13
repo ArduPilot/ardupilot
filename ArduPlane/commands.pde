@@ -1,19 +1,7 @@
 // -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
-
-/* Functions in this file:
-	void init_commands()
-	void update_auto()
-	void reload_commands_airstart()
-	struct Location get_cmd_with_index(int i)
-	void set_cmd_with_index(struct Location temp, int i)
-	void increment_cmd_index()
-	void decrement_cmd_index()
-	long read_alt_to_hold()
-	void set_next_WP(struct Location *wp)
-	void set_guided_WP(void)
-	void init_home()
-************************************************************ 
-*/
+/*
+  logic for dealing with the current command in the mission and home location
+ */
 
 static void init_commands()
 {
@@ -123,13 +111,6 @@ static void set_cmd_with_index(struct Location temp, int i)
 
 	mem += 4;
 	eeprom_write_dword((uint32_t *)	mem, temp.lng);
-}
-
-static void increment_cmd_index()
-{
-    if (g.command_index <= g.command_total) {
-        g.command_index.set_and_save(g.command_index + 1);
-	}
 }
 
 static void decrement_cmd_index()
