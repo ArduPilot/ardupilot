@@ -55,7 +55,7 @@
 uint32_t AP_Baro_MS5611::_s_D1;
 uint32_t AP_Baro_MS5611::_s_D2;
 uint8_t  AP_Baro_MS5611::_state;
-long     AP_Baro_MS5611::_timer;
+uint32_t AP_Baro_MS5611::_timer;
 bool     AP_Baro_MS5611::_sync_access;
 bool     AP_Baro_MS5611::_updated;
 
@@ -197,25 +197,25 @@ uint8_t AP_Baro_MS5611::read()
 void AP_Baro_MS5611::_calculate()
 {
 	int32_t dT;
-	long long TEMP;  // 64 bits
-	long long OFF;
-	long long SENS;
-	long long P;
+	int64_t TEMP;  // 64 bits
+	int64_t OFF;
+	int64_t SENS;
+	int64_t P;
 
 	// Formulas from manufacturer datasheet
 	// as per data sheet some intermediate results require over 32 bits, therefore
   // we define parameters as 64 bits to prevent overflow on operations
   // sub -20c temperature compensation is not included
 	dT = D2-((long)C5*256);
-	TEMP = 2000 + ((long long)dT * C6)/8388608;
-	OFF = (long long)C2 * 65536 + ((long long)C4 * dT ) / 128; 
-	SENS = (long long)C1 * 32768 + ((long long)C3 * dT) / 256;
+	TEMP = 2000 + ((int64_t)dT * C6)/8388608;
+	OFF = (int64_t)C2 * 65536 + ((int64_t)C4 * dT ) / 128; 
+	SENS = (int64_t)C1 * 32768 + ((int64_t)C3 * dT) / 256;
 
 	if (TEMP < 2000){   // second order temperature compensation
-		long long T2 = (long long)dT*dT / 2147483648;
-		long long Aux_64 = (TEMP-2000)*(TEMP-2000);
-		long long OFF2 = 5*Aux_64/2;
-		long long SENS2 = 5*Aux_64/4;
+		int64_t T2 = (((int64_t)dT)*dT) / 2147483648UL;
+		int64_t Aux_64 = (TEMP-2000)*(TEMP-2000);
+		int64_t OFF2 = 5*Aux_64/2;
+		int64_t SENS2 = 5*Aux_64/4;
 		TEMP = TEMP - T2;
 		OFF = OFF - OFF2;
 		SENS = SENS - SENS2;
