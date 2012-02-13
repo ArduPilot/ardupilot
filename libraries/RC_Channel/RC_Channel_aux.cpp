@@ -80,8 +80,15 @@ void update_aux_servo_function(RC_Channel_aux* rc_5, RC_Channel_aux* rc_6, RC_Ch
 	aux_servo_function[CH_7] = (RC_Channel_aux::Aux_servo_function_t)rc_7->function.get();
 	aux_servo_function[CH_8] = (RC_Channel_aux::Aux_servo_function_t)rc_8->function.get();
 
+	for (uint8_t i = 0; i < NUM_CHANNELS; i++) {
+		if (aux_servo_function[i] >= RC_Channel_aux::k_nr_aux_servo_functions) {
+			// invalid setting
+			aux_servo_function[i] = RC_Channel_aux::k_none;
+		}
+	}
+
 	// Assume that no auxiliary function is used
-	for (int i = 0; i < RC_Channel_aux::k_nr_aux_servo_functions ; i++)
+	for (uint8_t i = 0; i < RC_Channel_aux::k_nr_aux_servo_functions ; i++)
 	{
 		g_rc_function[i] = NULL;
 	}
