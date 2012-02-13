@@ -695,7 +695,7 @@ void AP_Param::show_all(void)
 
     for (ap=AP_Param::first(&token, &type);
          ap;
-         ap=AP_Param::next_scalar(&token, &type)) {
+         ap=AP_Param::next(&token, &type)) {
         char s[AP_MAX_NAME_SIZE+1];
         ap->copy_name(s, sizeof(s));
         s[AP_MAX_NAME_SIZE] = 0;
@@ -713,6 +713,11 @@ void AP_Param::show_all(void)
         case AP_PARAM_FLOAT:
             Serial.printf_P(PSTR("%s: %f\n"), s, ((AP_Float *)ap)->get());
             break;
+        case AP_PARAM_VECTOR3F: {
+            Vector3f v = ((AP_Vector3f *)ap)->get();
+            Serial.printf_P(PSTR("%s: %f %f %f\n"), s, v.x, v.y, v.z);
+            break;
+        }
         default:
             break;
         }
