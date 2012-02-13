@@ -113,7 +113,7 @@ static NOINLINE void send_attitude(mavlink_channel_t chan)
         chan,
         micros(),
         dcm.roll,
-        dcm.pitch,
+        dcm.pitch - radians(g.pitch_trim*0.01),
         dcm.yaw,
         omega.x,
         omega.y,
