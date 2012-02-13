@@ -95,6 +95,16 @@ void setup() {
 	s[AP_MAX_NAME_SIZE] = 0;
 	Serial.printf_P(PSTR("RC1_MIN.copy_name()->%s %p\n"), s, &g.channel_roll.radio_min);
 
+	Vector3f ofs;
+	ofs = compass.get_offsets();
+	Serial.printf_P(PSTR("Compass: %f %f %f\n"),
+					ofs.x, ofs.y, ofs.z);
+	ofs.x += 1.1;
+	ofs.y += 1.2;
+	ofs.z += 1.3;
+	compass.set_offsets(ofs);
+	compass.save_offsets();
+
 	// full testing of all variables
 	uint16_t token;
 	for (AP_Param *ap = AP_Param::first(&token, &type);
