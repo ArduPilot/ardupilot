@@ -33,14 +33,14 @@
 class Compass
 {
 public:
-	int				product_id;     /// product id
-	int             mag_x;          ///< magnetic field strength along the X axis
-	int             mag_y;          ///< magnetic field strength along the Y axis
-	int             mag_z;          ///< magnetic field strength along the Z axis
+	int16_t			product_id;     /// product id
+	int16_t         mag_x;          ///< magnetic field strength along the X axis
+	int16_t         mag_y;          ///< magnetic field strength along the Y axis
+	int16_t         mag_z;          ///< magnetic field strength along the Z axis
 	float           heading;        ///< compass heading in radians
 	float           heading_x;      ///< compass vector X magnitude
 	float           heading_y;      ///< compass vector Y magnitude
-	unsigned long   last_update;    ///< millis() time of last update
+	uint32_t        last_update;    ///< millis() time of last update
 	bool			healthy;        ///< true if last read OK
 
 	/// Constructor
