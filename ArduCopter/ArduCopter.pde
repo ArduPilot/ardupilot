@@ -658,8 +658,8 @@ static int16_t	nav_lat;
 static int16_t	nav_lon;
 // This may go away, but for now I'm tracking the desired bank before we apply the Wind compensation I term
 // This is mainly for debugging
-static int16_t	nav_lat_p;
-static int16_t	nav_lon_p;
+//static int16_t	nav_lat_p;
+//static int16_t	nav_lon_p;
 
 // The Commanded ROll from the autopilot based on optical flow sensor.
 static int32_t	of_roll = 0;
