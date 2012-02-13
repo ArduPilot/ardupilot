@@ -1,5 +1,3 @@
-#if 0 // we can't build this and AP_Param due to AP_Common.h conflicts
-
 // -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 //
 // This is free software; you can redistribute it and/or modify it under
@@ -11,11 +9,10 @@
 /// @file   AP_Var.cpp
 /// @brief  The AP variable store.
 
-#define NO_AP_PARAM
+#define USE_AP_VAR
 
 #include <AP_Common.h>
 #include <AP_Var.h>
-
 #include <math.h>
 #include <string.h>
 
@@ -825,4 +822,3 @@ AP_Var_typesetup::AP_Var_typesetup(void)
 /// Cause the AP_Var_typesetup constructor to be run.
 ///
 static AP_Var_typesetup _typesetup __attribute__((used));
-#endif

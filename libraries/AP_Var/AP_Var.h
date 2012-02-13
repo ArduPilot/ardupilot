@@ -943,7 +943,7 @@ extern AP_Float AP_Float_zero;
 extern void     AP_Var_print(AP_Var *vp);
 
 #ifndef __AP_COMMON_MENU_H
-# error Must include menu.h
+#include "include/menu.h"
 #endif
 
 /// Menu function for setting an AP_Var.
