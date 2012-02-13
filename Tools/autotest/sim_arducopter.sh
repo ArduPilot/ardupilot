@@ -29,6 +29,7 @@ make clean $target
 tfile=$(tempfile)
 echo r > $tfile
 gnome-terminal -e "gdb -x $tfile --args /tmp/ArduCopter.build/ArduCopter.elf"
+#gnome-terminal -e "valgrind -q /tmp/ArduCopter.build/ArduCopter.elf"
 sleep 2
 rm -f $tfile
 gnome-terminal -e "../Tools/autotest/pysim/sim_multicopter.py --frame=$frame --home=-35.362938,149.165085,584,270"
