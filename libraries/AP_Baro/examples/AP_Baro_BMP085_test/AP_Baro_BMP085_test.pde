@@ -28,7 +28,7 @@ Arduino_Mega_ISR_Registry isr_registry;
 AP_TimerProcess  scheduler;
 
 void setup()
-{	
+{
 	Serial.begin(115200);
 	Serial.println("ArduPilot Mega BMP085 library test");
 	Serial.println("Initialising barometer..."); delay(100);
@@ -53,7 +53,7 @@ void loop()
 {
 	float tmp_float;
 	float Altitude;
-	
+
 	if((micros()- timer) > 50000L){
 		timer = micros();
 		APM_BMP085.read();
@@ -69,7 +69,7 @@ void loop()
 		Serial.print(" Altitude:");
 		tmp_float = (APM_BMP085.get_pressure() / 101325.0);
 		tmp_float = pow(tmp_float, 0.190295);
-		Altitude = 44330 * (1.0 - tmp_float);
+		Altitude = 44330.0 * (1.0 - tmp_float);
 		Serial.print(Altitude);
 		Serial.printf(" t=%u", (unsigned)read_time);
 		Serial.println();
