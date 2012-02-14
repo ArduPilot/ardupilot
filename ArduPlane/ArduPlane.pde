@@ -979,7 +979,7 @@ static void update_current_flight_mode(void)
 
 		switch(nav_command_ID){
 			case MAV_CMD_NAV_TAKEOFF:
-				if (hold_course > -1) {
+				if (hold_course != -1) {
 					calc_nav_roll();
 				} else {
 					nav_roll = 0;
@@ -1012,12 +1012,16 @@ static void update_current_flight_mode(void)
 					nav_pitch = landing_pitch;      // pitch held constant
 				}
 
-				if (land_complete){
+				if (land_complete) {
+                    // we are in the final stage of a landing - force
+                    // zero throttle
 					g.channel_throttle.servo_out = 0;
 				}
 				break;
 
 			default:
+                // we are doing normal AUTO flight, the special cases
+                // are for takeoff and landing
 				hold_course = -1;
 				calc_nav_roll();
 				calc_nav_pitch();
@@ -1025,11 +1029,13 @@ static void update_current_flight_mode(void)
 				break;
 		}
 	}else{
+        // hold_course is only used in takeoff and landing
+        hold_course = -1;
+
 		switch(control_mode){
 			case RTL:
 			case LOITER:
 			case GUIDED:
-				hold_course = -1;
 				crash_checker();
 				calc_nav_roll();
 				calc_nav_pitch();

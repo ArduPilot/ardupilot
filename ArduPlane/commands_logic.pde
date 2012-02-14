@@ -276,7 +276,7 @@ static void do_loiter_time()
 static bool verify_takeoff()
 {
 	if (g_gps->ground_speed > 300){
-		if(hold_course == -1){
+		if (hold_course == -1) {
 			// save our current course to take off
 			if(g.compass_enabled) {
 				hold_course = dcm.yaw_sensor;
@@ -286,7 +286,7 @@ static bool verify_takeoff()
 		}
 	}
 
-	if(hold_course > -1){
+	if (hold_course != -1) {
 		// recalc bearing error with hold_course;
 		nav_bearing = hold_course;
 		// recalc bearing error
@@ -302,9 +302,15 @@ static bool verify_takeoff()
 	}
 }
 
+// we are executing a landing
 static bool verify_land()
 {
-	// we don't verify landing - we never go to a new Nav command after Land
+	// we don't 'verify' landing in the sense that it never completes,
+	// so we don't verify command completion. Instead we use this to
+	// adjust final landing parameters
+
+    // Set land_complete if we are within 2 seconds distance or within
+    // 3 meters altitude of the landing point
 	if (((wp_distance > 0) && (wp_distance <= (2*g_gps->ground_speed/100)))
 		|| (current_loc.alt <= next_WP.alt + 300)){
 
@@ -318,7 +324,7 @@ static bool verify_land()
 		}
 	}
 
-	if(hold_course > -1){
+	if (hold_course != -1){
 		// recalc bearing error with hold_course;
 		nav_bearing = hold_course;
 		// recalc bearing error
