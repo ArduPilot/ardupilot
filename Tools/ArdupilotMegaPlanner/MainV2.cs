@@ -33,11 +33,6 @@ namespace ArdupilotMega
         const int SW_SHOWNORMAL = 1;
         const int SW_HIDE = 0;
 
-        /// <summary>
-        /// Home Location
-        /// </summary>
-        public static PointLatLngAlt HomeLocation = new PointLatLngAlt();
-
         public static MAVLink comPort = new MAVLink();
         public static string comportname = "";
         public static Hashtable config = new Hashtable();
@@ -208,13 +203,13 @@ namespace ArdupilotMega
                 try
                 {
                     if (config["TXT_homelat"] != null)
-                        HomeLocation.Lat = double.Parse(config["TXT_homelat"].ToString());
+                        cs.HomeLocation.Lat = double.Parse(config["TXT_homelat"].ToString());
 
                     if (config["TXT_homelng"] != null)
-                        HomeLocation.Lng = double.Parse(config["TXT_homelng"].ToString());
+                        cs.HomeLocation.Lng = double.Parse(config["TXT_homelng"].ToString());
 
                     if (config["TXT_homealt"] != null)
-                        HomeLocation.Alt = double.Parse(config["TXT_homealt"].ToString());
+                        cs.HomeLocation.Alt = double.Parse(config["TXT_homealt"].ToString());
                 }
                 catch { }
 
