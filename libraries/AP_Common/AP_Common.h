@@ -227,5 +227,11 @@ struct Location {
 
 //@}
 
+#ifdef DESKTOP_BUILD
+// used to report serious errors in autotest
+# define SITL_debug(fmt, args...)  fprintf(stdout, "%s:%u " fmt, __FUNCTION__, __LINE__, ##args)
+#else
+# define SITL_debug(fmt, args...)
+#endif
 
 #endif // _AP_COMMON_H
