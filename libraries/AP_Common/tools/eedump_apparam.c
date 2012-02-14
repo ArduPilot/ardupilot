@@ -120,8 +120,8 @@ main(int argc, char *argv[])
 			break;
 		}
 		size = type_size(var->type);
-		printf("%04x: type %u (%s) key %u size %d\n ",
-		       index, var->type, type_names[var->type], var->key, size);
+		printf("%04x: type %u (%s) key %u group_element %u size %d\n ",
+		       index, var->type, type_names[var->type], var->key, var->group_element, size);
 		index += sizeof(*var);
 		for (i = 0; i <= size; i++) {
 			printf(" %02x", eeprom[index + i]);
