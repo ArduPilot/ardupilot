@@ -322,12 +322,13 @@ static void NOINLINE send_location(mavlink_channel_t chan)
 
 static void NOINLINE send_nav_controller_output(mavlink_channel_t chan)
 {
+    int16_t bearing = (hold_course==-1?nav_bearing:hold_course) / 100;
     mavlink_msg_nav_controller_output_send(
         chan,
         nav_roll / 1.0e2,
         nav_pitch / 1.0e2,
-        nav_bearing / 1.0e2,
-        target_bearing / 1.0e2,
+        bearing,
+        target_bearing / 100,
         wp_distance,
         altitude_error / 1.0e2,
         airspeed_error,
