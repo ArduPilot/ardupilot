@@ -314,13 +314,19 @@ static bool verify_land()
 	if (((wp_distance > 0) && (wp_distance <= (2*g_gps->ground_speed/100)))
 		|| (current_loc.alt <= next_WP.alt + 300)){
 
-		land_complete = 1;		//Set land_complete if we are within 2 seconds distance or within 3 meters altitude
+		land_complete = 1;
 
-		if(hold_course == -1){
-			// save our current course to land
-			//hold_course = yaw_sensor;
-			// save the course line of the runway to land
-			hold_course = crosstrack_bearing;
+		if(hold_course == -1) {
+            // we have just reached the threshold of 2 seconds or 3
+			// meters to landing. We now don't want to do any radical
+			// turns, as rolling could put the wings into the runway.
+			// To prevent further turns we set hold_course to the
+			// current heading. Previously we set this to
+			// crosstrack_bearing, but the xtrack bearing can easily
+			// be quite large at this point, and that could induce a
+			// sudden large roll correction which is very nasty at
+			// this point in the landing.
+			hold_course = dcm.yaw_sensor;
 		}
 	}
 
