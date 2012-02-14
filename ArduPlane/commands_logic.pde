@@ -489,15 +489,15 @@ static void do_change_speed()
 	{
 		case 0: // Airspeed
 			if(next_nonnav_command.alt > 0)
-				g.airspeed_cruise.set_and_save(next_nonnav_command.alt * 100);
+				g.airspeed_cruise.set(next_nonnav_command.alt * 100);
 			break;
 		case 1: // Ground speed
-			g.min_gndspeed.set_and_save(next_nonnav_command.alt * 100);
+			g.min_gndspeed.set(next_nonnav_command.alt * 100);
 			break;
 	}
 
 	if(next_nonnav_command.lat > 0)
-		g.throttle_cruise.set_and_save(next_nonnav_command.lat);
+		g.throttle_cruise.set(next_nonnav_command.lat);
 }
 
 static void do_set_home()
