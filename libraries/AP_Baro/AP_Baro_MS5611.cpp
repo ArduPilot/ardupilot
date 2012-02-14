@@ -116,7 +116,7 @@ bool AP_Baro_MS5611::init( AP_PeriodicProcess *scheduler )
 	pinMode(MS5611_CS, OUTPUT);	 // Chip select Pin
 	digitalWrite(MS5611_CS, HIGH);
 	delay(1);
-	
+
 	_spi_write(CMD_MS5611_RESET);
 	delay(4);
 
@@ -136,7 +136,7 @@ bool AP_Baro_MS5611::init( AP_PeriodicProcess *scheduler )
 	_state = 1;
 	Temp=0;
 	Press=0;
-	
+
 	scheduler->register_process( AP_Baro_MS5611::_update );
 
 	healthy = true;
@@ -159,7 +159,7 @@ void AP_Baro_MS5611::_update(uint32_t tnow)
     }
 
     _timer = tnow;
-		
+
     if (_state == 1) {
 	    _s_D2 = _spi_read_adc();  				 // On state 1 we read temp
 	    _state++;
@@ -208,7 +208,7 @@ void AP_Baro_MS5611::_calculate()
   // sub -20c temperature compensation is not included
 	dT = D2-((long)C5*256);
 	TEMP = 2000 + ((int64_t)dT * C6)/8388608;
-	OFF = (int64_t)C2 * 65536 + ((int64_t)C4 * dT ) / 128; 
+	OFF = (int64_t)C2 * 65536 + ((int64_t)C4 * dT ) / 128;
 	SENS = (int64_t)C1 * 32768 + ((int64_t)C3 * dT) / 256;
 
 	if (TEMP < 2000){   // second order temperature compensation
@@ -220,7 +220,7 @@ void AP_Baro_MS5611::_calculate()
 		OFF = OFF - OFF2;
 		SENS = SENS - SENS2;
 	}
- 
+
 	P = (D1*SENS/2097152 - OFF)/32768;
 	Temp = TEMP;
 	Press = P;
@@ -245,7 +245,7 @@ float AP_Baro_MS5611::get_altitude()
 
 	tmp_float = (Press / 101325.0);
 	tmp_float = pow(tmp_float, 0.190295);
-	Altitude = 44330 * (1.0 - tmp_float);
+	Altitude = 44330.0 * (1.0 - tmp_float);
 
 	return (Altitude);
 }
