@@ -1401,6 +1401,8 @@ namespace ArdupilotMega.Setup
         {
             timer.Stop();
             timer.Dispose();
+
+            tabControl1.SelectedIndex = 0;
         }
 
         private void CHK_enableoptflow_CheckedChanged(object sender, EventArgs e)

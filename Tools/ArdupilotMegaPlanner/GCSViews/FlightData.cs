@@ -74,6 +74,9 @@ namespace ArdupilotMega.GCSViews
         public static hud.HUD myhud = null;
         public static GMapControl mymap = null;
 
+
+        PointLatLngAlt GuidedModeWP = new PointLatLngAlt();
+
         AviWriter aviwriter;
 
         public SplitContainer MainHcopy = null;
@@ -440,12 +443,17 @@ namespace ArdupilotMega.GCSViews
                                 {
                                     if (plla == null || plla.Lng == 0 || plla.Lat == 0)
                                         break;
-                                    addpolygonmarker(plla.Tag, plla.Lng, plla.Lat, (int)plla.Alt,plla.color);
+                                    addpolygonmarker(plla.Tag, plla.Lng, plla.Lat, (int)plla.Alt,plla.color,polygons);
                                 }
 
                                 RegeneratePolygon();
 
                                 waypoints = DateTime.Now;
+                            }
+
+                            if (MainV2.cs.mode.ToLower() == "guided" && GuidedModeWP != null && GuidedModeWP.Lat != 0)
+                            {
+                                addpolygonmarker("Guided Mode", GuidedModeWP.Lng, GuidedModeWP.Lat, (int)GuidedModeWP.Alt, Color.Blue, routes);
                             }
 
                             //routes.Polygons.Add(poly);    
@@ -482,8 +490,6 @@ namespace ArdupilotMega.GCSViews
                             gMapControl1.Invalidate();
 
                             Application.DoEvents();
-
-                            GC.Collect();
                         }
 
                         tracklast = DateTime.Now;
@@ -533,7 +539,7 @@ namespace ArdupilotMega.GCSViews
             });
         }
 
-        private void addpolygonmarker(string tag, double lng, double lat, int alt, Color? color)
+        private void addpolygonmarker(string tag, double lng, double lat, int alt, Color? color, GMapOverlay overlay)
         {
             try
             {
@@ -559,8 +565,8 @@ namespace ArdupilotMega.GCSViews
                         }
                 }
 
-                polygons.Markers.Add(m);
-                polygons.Markers.Add(mBorders);
+                overlay.Markers.Add(m);
+                overlay.Markers.Add(mBorders);
             }
             catch (Exception) { }
         }
@@ -860,6 +866,8 @@ namespace ArdupilotMega.GCSViews
                 MainV2.givecomport = true;
 
                 MainV2.comPort.setWP(gotohere, 0, MAVLink.MAV_FRAME.MAV_FRAME_GLOBAL_RELATIVE_ALT, (byte)2);
+
+                GuidedModeWP = new PointLatLngAlt(gotohere.lat, gotohere.lng, gotohere.alt,"Guided Mode");
 
                 MainV2.givecomport = false;
             }

@@ -41,7 +41,6 @@ namespace ArdupilotMega.GCSViews
 
         private Dictionary<string, string[]> cmdParamNames = new Dictionary<string, string[]>();
 
-
         /// <summary>
         /// Reads defines.h for all valid commands and eeprom positions
         /// </summary>
@@ -645,13 +644,13 @@ namespace ArdupilotMega.GCSViews
 
             config(false);
 
-            if (MainV2.HomeLocation.Lat != 0 && MainV2.HomeLocation.Lng != 0)
+            if (MainV2.cs.HomeLocation.Lat != 0 && MainV2.cs.HomeLocation.Lng != 0)
             {
-                TXT_homelat.Text = MainV2.HomeLocation.Lat.ToString();
+                TXT_homelat.Text = MainV2.cs.HomeLocation.Lat.ToString();
 
-                TXT_homelng.Text = MainV2.HomeLocation.Lng.ToString();
+                TXT_homelng.Text = MainV2.cs.HomeLocation.Lng.ToString();
 
-                TXT_homealt.Text = MainV2.HomeLocation.Alt.ToString();
+                TXT_homealt.Text = MainV2.cs.HomeLocation.Alt.ToString();
             }
 
 
@@ -1685,7 +1684,7 @@ namespace ArdupilotMega.GCSViews
             sethome = false;
             try
             {
-                MainV2.HomeLocation.Lat = double.Parse(TXT_homelat.Text);
+                MainV2.cs.HomeLocation.Lat = double.Parse(TXT_homelat.Text);
             }
             catch { }
             writeKML();
@@ -1697,7 +1696,7 @@ namespace ArdupilotMega.GCSViews
             sethome = false;
             try
             {
-                MainV2.HomeLocation.Lng = double.Parse(TXT_homelng.Text);
+                MainV2.cs.HomeLocation.Lng = double.Parse(TXT_homelng.Text);
             }
             catch { }
             writeKML();
@@ -1708,7 +1707,7 @@ namespace ArdupilotMega.GCSViews
             sethome = false;
             try
             {
-                MainV2.HomeLocation.Alt = double.Parse(TXT_homealt.Text);
+                MainV2.cs.HomeLocation.Alt = double.Parse(TXT_homealt.Text);
             }
             catch { }
             writeKML();
