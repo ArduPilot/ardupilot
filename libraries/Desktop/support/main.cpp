@@ -15,6 +15,13 @@ void loop(void);
 // the state of the desktop simulation
 struct desktop_info desktop_state;
 
+// catch floating point exceptions
+static void sig_fpe(int signum)
+{
+	printf("ERROR: Floating point exception\n");
+	exit(1);
+}
+
 static void usage(void)
 {
 	printf("Options:\n");
@@ -30,6 +37,8 @@ int main(int argc, char * const argv[])
 	// default state
 	desktop_state.slider = false;
 	gettimeofday(&desktop_state.sketch_start_time, NULL);
+
+	signal(SIGFPE, sig_fpe);
 
 	while ((opt = getopt(argc, argv, "swhr:H:")) != -1) {
 		switch (opt) {
