@@ -123,7 +123,7 @@ main(int argc, char *argv[])
 		printf("%04x: type %u (%s) key %u group_element %u size %d\n ",
 		       index, var->type, type_names[var->type], var->key, var->group_element, size);
 		index += sizeof(*var);
-		for (i = 0; i <= size; i++) {
+		for (i = 0; i < size; i++) {
 			printf(" %02x", eeprom[index + i]);
 		}
 		printf("\n");
