@@ -17,7 +17,7 @@ public:
 	// The increment will prevent old parameters from being used incorrectly
 	// by newer code.
 	//
-	static const uint16_t k_format_version = 115;
+	static const uint16_t k_format_version = 116;
 
 	// The parameter software_type is set up solely for ground station use
 	// and identifies the software type (eg ArduPilotMega versus ArduCopterMega)
@@ -138,13 +138,15 @@ public:
 	k_param_throttle_cruise,
 	k_param_esc_calibrate,
 	k_param_radio_tuning,
+	k_param_radio_tuning_high,
+	k_param_radio_tuning_low,
 	k_param_camera_pitch_gain,
 	k_param_camera_roll_gain,
 
     //
-    // 210: flight modes
+    // 200: flight modes
     //
-    k_param_flight_mode1,
+    k_param_flight_mode1 = 200,
     k_param_flight_mode2,
     k_param_flight_mode3,
     k_param_flight_mode4,
@@ -153,9 +155,9 @@ public:
     k_param_simple_modes,
 
 	//
-	// 220: Waypoint data
+	// 210: Waypoint data
 	//
-	k_param_waypoint_mode = 220,
+	k_param_waypoint_mode = 210,
 	k_param_command_total,
 	k_param_command_index,
 	k_param_command_nav_index,
@@ -164,10 +166,10 @@ public:
 	k_param_waypoint_speed_max,
 
 	//
-	// 235: PI/D Controllers
+	// 220: PI/D Controllers
 	//
-	k_param_stabilize_d = 234,
-	k_param_pid_rate_roll = 235,
+	k_param_stabilize_d = 220,
+	k_param_pid_rate_roll,
 	k_param_pid_rate_pitch,
 	k_param_pid_rate_yaw,
 	k_param_pi_stabilize_roll,
@@ -180,7 +182,7 @@ public:
 	k_param_pi_alt_hold,
 	k_param_pid_throttle,
 	k_param_pid_optflow_roll,
-	k_param_pid_optflow_pitch,  // 250
+	k_param_pid_optflow_pitch,
 
     // 254,255: reserved
 	};
@@ -248,6 +250,8 @@ public:
 
 	AP_Int8		esc_calibrate;
 	AP_Int8		radio_tuning;
+	AP_Int16	radio_tuning_high;
+	AP_Int16	radio_tuning_low;
 	AP_Int8		frame_orientation;
 	AP_Float	top_bottom_ratio;
 	AP_Int8		ch7_option;
@@ -354,6 +358,8 @@ public:
     log_last_filenumber     (0),
 	esc_calibrate 			(0),
 	radio_tuning 			(0),
+	radio_tuning_high 		(1000),
+	radio_tuning_low 		(0),
 	frame_orientation 		(FRAME_ORIENTATION),
 	top_bottom_ratio 		(TOP_BOTTOM_RATIO),
 	ch7_option 				(CH7_OPTION),
