@@ -64,6 +64,8 @@ static const AP_Param::Info var_info[] PROGMEM = {
 	GSCALAR(log_last_filenumber, "LOG_LASTFILE"),
 	GSCALAR(esc_calibrate, "ESC"),
 	GSCALAR(radio_tuning, "TUNE"),
+	GSCALAR(radio_tuning_low, "TUNE_LOW"),
+	GSCALAR(radio_tuning_high, "TUNE_HIGH"),
 	GSCALAR(frame_orientation, "FRAME"),
 	GSCALAR(top_bottom_ratio, "TB_RATIO"),
 	GSCALAR(ch7_option, "CH7_OPT"),
