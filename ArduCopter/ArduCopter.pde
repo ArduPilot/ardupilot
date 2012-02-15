@@ -1914,11 +1914,11 @@ adjust_altitude()
 
 static void tuning(){
 	tuning_value = (float)g.rc_6.control_in / 1000.0;
+	g.rc_6.set_range(g.radio_tuning_low,g.radio_tuning_high); 		// 0 to 1
 
 	switch(g.radio_tuning){
 
 		case CH6_DAMP:
-			g.rc_6.set_range(0,300); 		// 0 to 1
 			g.stabilize_d.set(tuning_value);
 
 			//tuning_value = (float)g.rc_6.control_in / 100000.0;
@@ -1928,105 +1928,105 @@ static void tuning(){
 			break;
 
 		case CH6_STABILIZE_KP:
-			g.rc_6.set_range(0,8000); 		// 0 to 8
+			//g.rc_6.set_range(0,8000); 		// 0 to 8
 			g.pi_stabilize_roll.kP(tuning_value);
 			g.pi_stabilize_pitch.kP(tuning_value);
 			break;
 
 		case CH6_STABILIZE_KI:
-			g.rc_6.set_range(0,300); 		// 0 to .3
-			tuning_value = (float)g.rc_6.control_in / 1000.0;
+			//g.rc_6.set_range(0,300); 		// 0 to .3
+			//tuning_value = (float)g.rc_6.control_in / 1000.0;
 			g.pi_stabilize_roll.kI(tuning_value);
 			g.pi_stabilize_pitch.kI(tuning_value);
 			break;
 
 		case CH6_RATE_KP:
-			g.rc_6.set_range(40,300);		 // 0 to .3
+			//g.rc_6.set_range(40,300);		 // 0 to .3
 			g.pid_rate_roll.kP(tuning_value);
 			g.pid_rate_pitch.kP(tuning_value);
 			break;
 
 		case CH6_RATE_KI:
-			g.rc_6.set_range(0,500);		 // 0 to .5
+			//g.rc_6.set_range(0,500);		 // 0 to .5
 			g.pid_rate_roll.kI(tuning_value);
 			g.pid_rate_pitch.kI(tuning_value);
 			break;
 
 		case CH6_YAW_KP:
-			g.rc_6.set_range(0,1000);
+			//g.rc_6.set_range(0,1000);
 			g.pi_stabilize_yaw.kP(tuning_value);
 			break;
 
 		case CH6_YAW_RATE_KP:
-			g.rc_6.set_range(0,1000);
+			//g.rc_6.set_range(0,1000);
 			g.pid_rate_yaw.kP(tuning_value);
 			break;
 
 		case CH6_THROTTLE_KP:
-			g.rc_6.set_range(0,1000);       // 0 to 1
+			//g.rc_6.set_range(0,1000);       // 0 to 1
 			g.pid_throttle.kP(tuning_value);
 			break;
 
 		case CH6_TOP_BOTTOM_RATIO:
-			g.rc_6.set_range(800,1000); 	// .8 to 1
+			//g.rc_6.set_range(800,1000); 	// .8 to 1
 			g.top_bottom_ratio = tuning_value;
 			break;
 
 		case CH6_RELAY:
-			g.rc_6.set_range(0,1000);
+			//g.rc_6.set_range(0,1000);
 		  	if (g.rc_6.control_in > 525) relay.on();
 		  	if (g.rc_6.control_in < 475) relay.off();
 			break;
 
 		case CH6_TRAVERSE_SPEED:
-			g.rc_6.set_range(0,1000);
+			//g.rc_6.set_range(0,1000);
 			g.waypoint_speed_max = g.rc_6.control_in;
 			break;
 
 		case CH6_LOITER_P:
-			g.rc_6.set_range(0,2000);
+			//g.rc_6.set_range(0,2000);
 			g.pi_loiter_lat.kP(tuning_value);
 			g.pi_loiter_lon.kP(tuning_value);
 			break;
 
 		case CH6_NAV_P:
-			g.rc_6.set_range(0,4000);
+			//g.rc_6.set_range(0,4000);
 			g.pid_nav_lat.kP(tuning_value);
 			g.pid_nav_lon.kP(tuning_value);
 			break;
 
 		case CH6_NAV_I:
-			g.rc_6.set_range(0,500);
+			//g.rc_6.set_range(0,500);
 			g.pid_nav_lat.kI(tuning_value);
 			g.pid_nav_lon.kI(tuning_value);
 			break;
 
 		#if FRAME_CONFIG == HELI_FRAME
 		case CH6_HELI_EXTERNAL_GYRO:
-			g.rc_6.set_range(1000,2000);
+			//g.rc_6.set_range(1000,2000);
 			g.heli_ext_gyro_gain = tuning_value * 1000;
 			break;
 		#endif
 
 		case CH6_THR_HOLD_KP:
-			g.rc_6.set_range(0,1000);     // 0 to 1
+			//g.rc_6.set_range(0,1000);     // 0 to 1
 			g.pi_alt_hold.kP(tuning_value);
 			break;
 
 		case CH6_OPTFLOW_KP:
-			g.rc_6.set_range(0,5000);     // 0 to 5
+			//g.rc_6.set_range(0,5000);     // 0 to 5
 			g.pid_optflow_roll.kP(tuning_value);
 			g.pid_optflow_pitch.kP(tuning_value);
 			break;
 
 		case CH6_OPTFLOW_KI:
-			g.rc_6.set_range(0,10000);     // 0 to 10
+			//g.rc_6.set_range(0,10000);     // 0 to 10
 			g.pid_optflow_roll.kI(tuning_value);
 			g.pid_optflow_pitch.kI(tuning_value);
 			break;
 
 		case CH6_OPTFLOW_KD:
-			g.rc_6.set_range(0,200);    // 0 to 0.2
+			//g.rc_6.set_range(0,200);    // 0 to 0.2
 			g.pid_optflow_roll.kD(tuning_value);
 			g.pid_optflow_pitch.kD(tuning_value);
 			break;
