@@ -652,6 +652,9 @@ static int32_t	nav_roll;
 // The Commanded pitch from the autopilot. negative Pitch means go forward.
 static int32_t	nav_pitch;
 // The desired bank towards North (Positive) or South (Negative)
+static int32_t	auto_roll;
+static int32_t	auto_pitch;
+
 // Don't be fooled by the fact that Pitch is reversed from Roll in its sign!
 static int16_t	nav_lat;
 // The desired bank towards East (Positive) or West (Negative)
@@ -1294,8 +1297,8 @@ static void update_GPS(void)
 	}else{
 		// after 12 reads we guess we may have lost GPS signal, stop navigating
 		// we have lost GPS signal for a moment. Reduce our error to avoid flyaways
-		nav_roll  >>= 1;
-		nav_pitch >>= 1;
+		auto_roll  >>= 1;
+		auto_pitch >>= 1;
 	}
 
     if (g_gps->new_data && g_gps->fix) {
@@ -1423,12 +1426,28 @@ void update_roll_pitch_mode(void)
 			g.rc_2.servo_out = get_stabilize_pitch(g.rc_2.control_in);
 			break;
 
+/*		case ROLL_PITCH_AUTO:
+			// apply SIMPLE mode transform
+			if(do_simple && new_radio_frame){
+				update_simple_mode();
+			}
+			// mix in user control with Nav control
+			control_roll 		= g.rc_1.control_mix(nav_roll);
+			control_pitch 		= g.rc_2.control_mix(nav_pitch);
+			g.rc_1.servo_out 	= get_stabilize_roll(control_roll);
+			g.rc_2.servo_out 	= get_stabilize_pitch(control_pitch);
+			break;
+			*/
+
 		case ROLL_PITCH_AUTO:
 			// apply SIMPLE mode transform
 			if(do_simple && new_radio_frame){
 				update_simple_mode();
 			}
 			// mix in user control with Nav control
+			nav_roll			+= constrain(wrap_180(auto_roll - nav_roll), -g.auto_slew_rate.get(), g.auto_slew_rate.get()); // 40 deg a second
+			nav_pitch			+= constrain(wrap_180(auto_pitch - nav_pitch), -g.auto_slew_rate.get(), g.auto_slew_rate.get()); // 40 deg a second
+
 			control_roll 		= g.rc_1.control_mix(nav_roll);
 			control_pitch 		= g.rc_2.control_mix(nav_pitch);
 			g.rc_1.servo_out 	= get_stabilize_roll(control_roll);
@@ -1665,7 +1684,10 @@ static void update_navigation()
 			if((wp_distance <= g.waypoint_radius) || check_missed_wp()){
 				// if auto_land_timer value > 0, we are set to trigger auto_land after 20 seconds
 				set_mode(LOITER);
-				auto_land_timer = millis();
+				if(g.rtl_land_enabled)
+					auto_land_timer = millis();
+				else
+					auto_land_timer = 0;
 				break;
 			}
 
