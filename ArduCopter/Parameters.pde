@@ -32,6 +32,8 @@ static const AP_Param::Info var_info[] PROGMEM = {
 	GSCALAR(optflow_enabled,	"FLOW_ENABLE"),
 	GSCALAR(low_voltage,	"LOW_VOLT"),
 	GSCALAR(super_simple,	"SUPER_SIMPLE"),
+	GSCALAR(rtl_land_enabled,	"RTL_LAND"),
+
 
 	GSCALAR(waypoint_mode,	"WP_MODE"),
 	GSCALAR(command_total,	"WP_TOTAL"),
@@ -65,6 +67,7 @@ static const AP_Param::Info var_info[] PROGMEM = {
 	GSCALAR(frame_orientation, "FRAME"),
 	GSCALAR(top_bottom_ratio, "TB_RATIO"),
 	GSCALAR(ch7_option, "CH7_OPT"),
+	GSCALAR(auto_slew_rate, "AUTO_SLEW"),
 
 	#if FRAME_CONFIG ==	HELI_FRAME
 	GSCALAR(heli_servo_1,	"HS1_"),
@@ -102,9 +105,9 @@ static const AP_Param::Info var_info[] PROGMEM = {
 
 	// variable
 	//---------
-	GSCALAR(camera_pitch_gain, "CAM_P_G"),
-	GSCALAR(camera_roll_gain, "CAM_R_G"),
-	GSCALAR(stabilize_d, "STAB_D"),
+	GSCALAR(camera_pitch_gain, 	"CAM_P_G"),
+	GSCALAR(camera_roll_gain, 	"CAM_R_G"),
+	GSCALAR(stabilize_d, 		"STAB_D"),
 
 	// PID controller
 	//---------------
@@ -112,8 +115,12 @@ static const AP_Param::Info var_info[] PROGMEM = {
 	GGROUP(pid_rate_pitch,    "RATE_PIT_", AC_PID),
 	GGROUP(pid_rate_yaw,      "RATE_YAW_", AC_PID),
 
-	GGROUP(pid_nav_lat,	  "NAV_LAT_",  AC_PID),
-	GGROUP(pid_nav_lon,	  "NAV_LON_",  AC_PID),
+
+	GGROUP(pid_loiter_rate_lat,	 "LOITER_LAT_",  AC_PID),
+	GGROUP(pid_loiter_rate_lon,	 "LOITER_LON_",  AC_PID),
+
+	GGROUP(pid_nav_lat,	  	"NAV_LAT_",  AC_PID),
+	GGROUP(pid_nav_lon,	  	"NAV_LON_",  AC_PID),
 
 	GGROUP(pid_throttle,	  "THR_RATE_", AC_PID),
 	GGROUP(pid_optflow_roll,  "OF_RLL_",   AC_PID),
@@ -125,14 +132,14 @@ static const AP_Param::Info var_info[] PROGMEM = {
 	GGROUP(pi_stabilize_pitch,	"STB_PIT_", APM_PI),
 	GGROUP(pi_stabilize_yaw,	"STB_YAW_", APM_PI),
 
-	GGROUP(pi_alt_hold,	"THR_ALT_", APM_PI),
+	GGROUP(pi_alt_hold,		"THR_ALT_", APM_PI),
 	GGROUP(pi_loiter_lat,	"HLD_LAT_", APM_PI),
 	GGROUP(pi_loiter_lon,	"HLD_LON_", APM_PI),
 
 	// variables not in the g class which contain EEPROM saved variables
 	GOBJECT(compass,        "COMPASS_", Compass),
-	GOBJECT(gcs0,		"SR0_",     GCS_MAVLINK),
-	GOBJECT(gcs3,		"SR3_",     GCS_MAVLINK)
+	GOBJECT(gcs0,			"SR0_",     GCS_MAVLINK),
+	GOBJECT(gcs3,			"SR3_",     GCS_MAVLINK)
 };
 
 
