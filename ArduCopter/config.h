@@ -510,6 +510,12 @@
 # define SUPER_SIMPLE		DISABLED
 #endif
 
+// RTL Mode
+#ifndef RTL_AUTO_LAND
+# define RTL_AUTO_LAND 		ENABLED
+#endif
+
+
 // LOITER Mode
 #ifndef OF_LOITER_YAW
 # define OF_LOITER_YAW 		YAW_HOLD
@@ -641,6 +647,22 @@
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
+// Loiter Navigation control gains
+//
+#ifndef LOITER_RATE_P
+# define LOITER_RATE_P				3.0			//
+#endif
+#ifndef LOITER_RATE_I
+# define LOITER_RATE_I				0.1			// Wind control
+#endif
+#ifndef LOITER_RATE_D
+# define LOITER_RATE_D				0.00		//
+#endif
+#ifndef LOITER_RATE_IMAX
+# define LOITER_RATE_IMAX			30			// degrees
+#endif
+
+//////////////////////////////////////////////////////////////////////////////
 // WP Navigation control gains
 //
 #ifndef NAV_P
@@ -655,6 +677,13 @@
 #ifndef NAV_IMAX
 # define NAV_IMAX			30			// degrees
 #endif
+
+#ifndef AUTO_SLEW_RATE
+# define AUTO_SLEW_RATE		30			// degrees
+#endif
+
+
+
 
 #ifndef WAYPOINT_SPEED_MAX
 # define WAYPOINT_SPEED_MAX		600			// 6m/s error = 13mph
