@@ -23,9 +23,9 @@ bool AP_Compass_HIL::read()
 //
 void AP_Compass_HIL::setHIL(float _mag_x, float _mag_y, float _mag_z)
 {
-    // TODO: map floats to raw
-    mag_x = _mag_x;
-    mag_y = _mag_y;
-    mag_z = _mag_z;
-    healthy = true;
+	Vector3f ofs = _offset.get();
+	mag_x = _mag_x + ofs.x;
+	mag_y = _mag_y + ofs.y;
+	mag_z = _mag_z + ofs.z;
+	healthy = true;
 }
