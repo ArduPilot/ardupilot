@@ -226,8 +226,8 @@ static int8_t
 setup_motors(uint8_t argc, const Menu::arg *argv)
 {
   Serial.printf_P(PSTR(
-        "Move RC joystick to extremes to "
-        "turn on individual motors.\n"
+        "Now connect the main lipo and follow the instruction on the wiki for your frame setup.\n"
+        "For security remember to disconnect the main lipo after the test, then hit any key to exit.\n"
         "Any key to exit.\n"));
 	while(1){
 		delay(20);
