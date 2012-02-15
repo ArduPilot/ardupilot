@@ -167,54 +167,54 @@ static void output_motor_test()
 	motor_out[MOT_5] = g.rc_3.radio_min;
 	motor_out[MOT_6] = g.rc_3.radio_min;
 
-  bool right = (g.rc_1.control_in > 3000);
-  bool left  = (g.rc_1.control_in < -3000);
-  bool front = (g.rc_2.control_in < -3000);
-  bool back = (g.rc_2.control_in > 3000);
+	bool right 	= (g.rc_1.control_in > 3000);
+	bool left  	= (g.rc_1.control_in < -3000);
+	bool front 	= (g.rc_2.control_in < -3000);
+	bool back 	= (g.rc_2.control_in > 3000);
 
 	if(g.frame_orientation == X_FRAME){
 
-		if ( right && !( front || back ) )
+		if(right && !(front || back))
 			motor_out[MOT_1] += 150; // Right
 
-		if ( left && !(front || back ) )
+		if(left && !(front || back))
 			motor_out[MOT_2] += 150; // Left
 
-		if ( back ) {
-      if ( left )
-			  motor_out[MOT_6] += 150;
-      if ( right )
-			  motor_out[MOT_4] += 150;
+		if(back){
+			if(left)
+				motor_out[MOT_6] += 150;
+			if(right)
+				motor_out[MOT_4] += 150;
 		}
 
-		if ( front ) {
-      if ( left )
-			  motor_out[MOT_3] += 150;
-      if ( right )
-			  motor_out[MOT_5] += 150;
+		if(front){
+			if(left)
+				motor_out[MOT_3] += 150;
+			if(right)
+				motor_out[MOT_5] += 150;
 		}
 
 	} else { /* PLUS_FRAME */
 
-    if ( front && !( left || right ) )
-      motor_out[MOT_1] += 150;
+		if(front && !(left || right))
+			motor_out[MOT_1] += 150;
 
-    if ( back && !( left || right ) )
-      motor_out[MOT_2] += 150;
+		if(back && !(left || right))
+			motor_out[MOT_2] += 150;
 
-    if ( left ) {
-      if ( front )
-        motor_out[MOT_5] += 150;
-      if ( back )
-        motor_out[MOT_3] += 150;
-    }
+		if(left){
+			if(front)
+				motor_out[MOT_5] += 150;
+			if(back)
+				motor_out[MOT_3] += 150;
+		}
 
-    if ( right ) {
-      if ( front )
-        motor_out[MOT_4] += 150;
-      if ( back )
-        motor_out[MOT_6] += 150;
-    }
+		if(right){
+			if(front)
+				motor_out[MOT_4] += 150;
+			if(back)
+				motor_out[MOT_6] += 150;
+		}
 
 	}
 
