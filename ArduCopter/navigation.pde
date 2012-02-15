@@ -117,8 +117,12 @@ static void calc_loiter(int x_error, int y_error)
 	int16_t y_iterm 		= g.pi_loiter_lat.get_i(y_error, dTnav);
 	y_rate_error 			= y_target_speed - y_actual_speed;
 
-	calc_nav_lon(x_rate_error);
-	calc_nav_lat(y_rate_error);
+	//nav_lon			= g.pid_loiter_rate_lon.get_pid(x_rate_error, dTnav);
+	//nav_lat			= g.pid_loiter_rate_lat.get_pid(y_rate_error, dTnav);
+	nav_lon				= g.pid_nav_lon.get_pid(x_rate_error, dTnav);
+	nav_lat				= g.pid_nav_lat.get_pid(y_rate_error, dTnav);
+	nav_lon				= constrain(nav_lon, -3000, 3000);
+	nav_lat				= constrain(nav_lat, -3000, 3000);
 
 	nav_lat					= nav_lat + y_iterm;
 	nav_lon					= nav_lon + x_iterm;
@@ -176,8 +180,11 @@ static void calc_nav_rate(int max_speed)
 	y_rate_error 		= constrain(y_rate_error, -1000, 1000);	// added a rate error limit to keep pitching down to a minimum
 	int16_t y_iterm 	= g.pi_loiter_lat.get_i(y_rate_error, dTnav);
 
-	calc_nav_lon(x_rate_error);
-	calc_nav_lat(y_rate_error);
+	nav_lon				= g.pid_nav_lon.get_pid(x_rate_error, dTnav);
+	nav_lat				= g.pid_nav_lat.get_pid(y_rate_error, dTnav);
+
+	nav_lon				= constrain(nav_lon, -3000, 3000);
+	nav_lat				= constrain(nav_lat, -3000, 3000);
 
 	nav_lon				= nav_lon + x_iterm;
 	nav_lat				= nav_lat + y_iterm;
@@ -209,19 +216,18 @@ static void calc_nav_rate(int max_speed)
 }
 
 
-static void calc_nav_lon(int rate)
+/*static void calc_nav_lon(int rate)
 {
 	nav_lon		= g.pid_nav_lon.get_pid(rate, dTnav);
-	//nav_lon		= get_corrected_angle(rate, nav_lon);
 	nav_lon		= constrain(nav_lon, -3000, 3000);
 }
 
 static void calc_nav_lat(int rate)
 {
 	nav_lat		= g.pid_nav_lat.get_pid(rate, dTnav);
-	//nav_lat		= get_corrected_angle(rate, nav_lat);
 	nav_lat		= constrain(nav_lat, -3000, 3000);
 }
+*/
 
 //static int16_t get_corrected_angle(int16_t desired_rate, int16_t rate_out)
 /*{
@@ -252,11 +258,11 @@ static void calc_loiter_pitch_roll()
 {
 	//Serial.printf("ys %ld, cx %1.4f, _cx %1.4f | sy %1.4f, _sy %1.4f\n", dcm.yaw_sensor, cos_yaw_x, _cos_yaw_x, sin_yaw_y, _sin_yaw_y);
 	// rotate the vector
-	nav_roll 	= (float)nav_lon * sin_yaw_y - (float)nav_lat * cos_yaw_x;
-	nav_pitch 	= (float)nav_lon * cos_yaw_x + (float)nav_lat * sin_yaw_y;
+	auto_roll 	= (float)nav_lon * sin_yaw_y - (float)nav_lat * cos_yaw_x;
+	auto_pitch 	= (float)nav_lon * cos_yaw_x + (float)nav_lat * sin_yaw_y;
 
 	// flip pitch because forward is negative
-	nav_pitch = -nav_pitch;
+	auto_pitch = -auto_pitch;
 }
 
 static int16_t calc_desired_speed(int16_t max_speed)
