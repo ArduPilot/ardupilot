@@ -1684,7 +1684,7 @@ static void update_navigation()
 			if((wp_distance <= g.waypoint_radius) || check_missed_wp()){
 				// if auto_land_timer value > 0, we are set to trigger auto_land after 20 seconds
 				set_mode(LOITER);
-				if(g.rtl_land_enabled)
+				if(g.rtl_land_enabled || failsafe)
 					auto_land_timer = millis();
 				else
 					auto_land_timer = 0;
