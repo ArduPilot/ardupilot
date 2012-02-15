@@ -106,8 +106,10 @@ public:
 	k_param_optflow_enabled,
 	k_param_low_voltage,
 	k_param_ch7_option,
+	k_param_auto_slew_rate,
 	k_param_sonar_type,
 	k_param_super_simple, //155
+	k_param_rtl_land_enabled,
 
 	//
 	// 160: Navigation parameters
@@ -177,6 +179,8 @@ public:
 	k_param_pi_stabilize_yaw,
 	k_param_pi_loiter_lat,
 	k_param_pi_loiter_lon,
+	k_param_pid_loiter_rate_lat,
+	k_param_pid_loiter_rate_lon,
 	k_param_pid_nav_lat,
 	k_param_pid_nav_lon,
 	k_param_pi_alt_hold,
@@ -209,6 +213,7 @@ public:
     AP_Int8		optflow_enabled;
 	AP_Float	low_voltage;
 	AP_Int8		super_simple;
+	AP_Int8		rtl_land_enabled;
 
 
 	// Waypoints
@@ -255,7 +260,7 @@ public:
 	AP_Int8		frame_orientation;
 	AP_Float	top_bottom_ratio;
 	AP_Int8		ch7_option;
-
+	AP_Int16	auto_slew_rate;
 
 	#if FRAME_CONFIG ==	HELI_FRAME
 	// Heli
@@ -288,9 +293,13 @@ public:
 	AP_Float	stabilize_d;
 
 	// PI/D controllers
+    AP_Float	acro_P;
+
 	AC_PID		pid_rate_roll;
 	AC_PID		pid_rate_pitch;
 	AC_PID		pid_rate_yaw;
+	AC_PID		pid_loiter_rate_lat;
+	AC_PID		pid_loiter_rate_lon;
 	AC_PID		pid_nav_lat;
 	AC_PID		pid_nav_lon;
 
@@ -328,6 +337,7 @@ public:
 	optflow_enabled			(OPTFLOW),
 	low_voltage				(LOW_VOLTAGE),
 	super_simple			(SUPER_SIMPLE),
+	rtl_land_enabled		(RTL_AUTO_LAND),
 
 	waypoint_mode			(0),
 	command_total			(0),
@@ -363,6 +373,7 @@ public:
 	frame_orientation 		(FRAME_ORIENTATION),
 	top_bottom_ratio 		(TOP_BOTTOM_RATIO),
 	ch7_option 				(CH7_OPTION),
+	auto_slew_rate			(AUTO_SLEW_RATE),
 
 	#if FRAME_CONFIG ==	HELI_FRAME
 	heli_servo_1			(k_param_heli_servo_1),
@@ -389,18 +400,21 @@ public:
 	camera_roll_gain 		(CAM_ROLL_GAIN),
 	stabilize_d 			(STABILIZE_D),
 
-	// PID controller	initial P	   	    initial I		 	initial D       initial imax
-	//--------------------------------------------------------------------------------------
-	pid_rate_roll       (RATE_ROLL_P,        RATE_ROLL_I,        RATE_ROLL_D,    RATE_ROLL_IMAX * 100),
-	pid_rate_pitch      (RATE_PITCH_P,       RATE_PITCH_I,       RATE_PITCH_D,   RATE_PITCH_IMAX * 100),
-	pid_rate_yaw        (RATE_YAW_P,         RATE_YAW_I,         RATE_YAW_D,     RATE_YAW_IMAX * 100),
+	// PID controller	initial P	   	    initial I		 	initial D       	initial imax
+	//-----------------------------------------------------------------------------------------------------
+	pid_rate_roll       (RATE_ROLL_P,       RATE_ROLL_I,        RATE_ROLL_D,    	RATE_ROLL_IMAX * 100),
+	pid_rate_pitch      (RATE_PITCH_P,      RATE_PITCH_I,       RATE_PITCH_D,   	RATE_PITCH_IMAX * 100),
+	pid_rate_yaw        (RATE_YAW_P,        RATE_YAW_I,         RATE_YAW_D,     	RATE_YAW_IMAX * 100),
 
-	pid_nav_lat			(NAV_P,				NAV_I,				NAV_D,			NAV_IMAX * 100),
-	pid_nav_lon			(NAV_P,				NAV_I,				NAV_D,			NAV_IMAX * 100),
+	pid_loiter_rate_lat	(LOITER_RATE_P,		LOITER_RATE_I,		LOITER_RATE_D,		LOITER_RATE_IMAX * 100),
+	pid_loiter_rate_lon	(LOITER_RATE_P,		LOITER_RATE_I,		LOITER_RATE_D,		LOITER_RATE_IMAX * 100),
 
-	pid_throttle		(THROTTLE_P,			THROTTLE_I,			THROTTLE_D,		THROTTLE_IMAX),
-	pid_optflow_roll	(OPTFLOW_ROLL_P,		OPTFLOW_ROLL_I,		OPTFLOW_ROLL_D,	OPTFLOW_IMAX * 100),
-	pid_optflow_pitch	(OPTFLOW_PITCH_P,	OPTFLOW_PITCH_I,	OPTFLOW_PITCH_D,OPTFLOW_IMAX * 100),
+	pid_nav_lat			(NAV_P,				NAV_I,				NAV_D,				NAV_IMAX * 100),
+	pid_nav_lon			(NAV_P,				NAV_I,				NAV_D,				NAV_IMAX * 100),
+
+	pid_throttle		(THROTTLE_P,		THROTTLE_I,			THROTTLE_D,			THROTTLE_IMAX),
+	pid_optflow_roll	(OPTFLOW_ROLL_P,	OPTFLOW_ROLL_I,		OPTFLOW_ROLL_D,		OPTFLOW_IMAX * 100),
+	pid_optflow_pitch	(OPTFLOW_PITCH_P,	OPTFLOW_PITCH_I,	OPTFLOW_PITCH_D,	OPTFLOW_IMAX * 100),
 
 	// PI controller	initial P			initial I			initial imax
 	//----------------------------------------------------------------------
