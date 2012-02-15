@@ -558,6 +558,13 @@
 # define STABILIZE_D 		.06
 #endif
 
+
+
+#ifndef ACRO_P
+# define ACRO_P 		4.5
+#endif
+
+
 // Good for smaller payload motors.
 #ifndef STABILIZE_ROLL_P
 # define STABILIZE_ROLL_P 		4.5

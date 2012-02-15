@@ -171,6 +171,7 @@ public:
 	// 220: PI/D Controllers
 	//
 	k_param_stabilize_d = 220,
+	k_param_acro_p,
 	k_param_pid_rate_roll,
 	k_param_pid_rate_pitch,
 	k_param_pid_rate_yaw,
@@ -293,7 +294,7 @@ public:
 	AP_Float	stabilize_d;
 
 	// PI/D controllers
-    AP_Float	acro_P;
+    AP_Float	acro_p;
 
 	AC_PID		pid_rate_roll;
 	AC_PID		pid_rate_pitch;
@@ -399,6 +400,7 @@ public:
 	camera_pitch_gain 		(CAM_PITCH_GAIN),
 	camera_roll_gain 		(CAM_ROLL_GAIN),
 	stabilize_d 			(STABILIZE_D),
+	acro_p					(ACRO_P),
 
 	// PID controller	initial P	   	    initial I		 	initial D       	initial imax
 	//-----------------------------------------------------------------------------------------------------
