@@ -4,16 +4,16 @@
 static void init_motors_out()
 {
 	#if INSTANT_PWM == 0
-    APM_RC.SetFastOutputChannels( _BV(MOT_1) | _BV(MOT_2) | _BV(MOT_4) );
+		APM_RC.SetFastOutputChannels(_BV(MOT_1) | _BV(MOT_2) | _BV(MOT_4));
 	#endif
 }
 
 static void motors_output_enable()
 {
-  APM_RC.enable_out(MOT_1);
-  APM_RC.enable_out(MOT_2);
-  APM_RC.enable_out(MOT_4);
-  APM_RC.enable_out(CH_TRI_YAW);
+	APM_RC.enable_out(MOT_1);
+	APM_RC.enable_out(MOT_2);
+	APM_RC.enable_out(MOT_4);
+	APM_RC.enable_out(CH_TRI_YAW);
 }
 
 
@@ -45,19 +45,19 @@ static void output_motors_armed()
 	//motor_out[MOT_4]		+= (float)(abs(g.rc_4.control_in)) * .013;
 
 	// Tridge's stability patch
-	if (motor_out[MOT_1] > out_max) {
+	if(motor_out[MOT_1] > out_max){
 		motor_out[MOT_2] -= (motor_out[MOT_1] - out_max) >> 1;
 		motor_out[MOT_4] -= (motor_out[MOT_1] - out_max) >> 1;
 		motor_out[MOT_1] = out_max;
 	}
 
-	if (motor_out[MOT_2] > out_max) {
+	if(motor_out[MOT_2] > out_max){
 		motor_out[MOT_1] -= (motor_out[MOT_2] - out_max) >> 1;
 		motor_out[MOT_4] -= (motor_out[MOT_2] - out_max) >> 1;
 		motor_out[MOT_2] = out_max;
 	}
 
-	if (motor_out[MOT_4] > out_max) {
+	if(motor_out[MOT_4] > out_max){
 		motor_out[MOT_1] -= (motor_out[MOT_4] - out_max) >> 1;
 		motor_out[MOT_2] -= (motor_out[MOT_4] - out_max) >> 1;
 		motor_out[MOT_4] = out_max;
@@ -97,7 +97,7 @@ static void output_motors_disarmed()
 	}
 
 	// fill the motor_out[] array for HIL use
-	for (unsigned char i = 0; i < 8; i++) {
+	for (unsigned char i = 0; i < 8; i++){
 		motor_out[i] = g.rc_3.radio_min;
 	}
 
@@ -113,18 +113,20 @@ static void output_motor_test()
 	motor_out[MOT_2] = g.rc_3.radio_min;
 	motor_out[MOT_4] = g.rc_3.radio_min;
 
+	 APM_RC.OutputCh(MOT_2, g.rc_2.radio_min);
+	delay(4000);
+	APM_RC.OutputCh(MOT_1, g.rc_3.radio_min + 100);
+	delay(300);
 
-	if(g.rc_1.control_in > 3000){	// right
-		motor_out[MOT_1] += 100;
-	}
+	APM_RC.OutputCh(MOT_1, g.rc_3.radio_min);
+	delay(2000);
+	APM_RC.OutputCh(MOT_4, g.rc_1.radio_min + 100);
+	delay(300);
 
-	if(g.rc_1.control_in < -3000){	// left
-		motor_out[MOT_2] += 100;
-	}
-
-	if(g.rc_2.control_in > 3000){	// back
-		motor_out[MOT_4] += 100;
-	}
+	APM_RC.OutputCh(MOT_4, g.rc_1.radio_min);
+	delay(2000);
+	APM_RC.OutputCh(MOT_2, g.rc_4.radio_min + 100);
+	delay(300);
 
 	APM_RC.OutputCh(MOT_1, motor_out[MOT_1]);
 	APM_RC.OutputCh(MOT_2, motor_out[MOT_2]);
