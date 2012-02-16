@@ -21,7 +21,7 @@
 		read() : Read sensor data and _calculate Temperature, Pressure and Altitude
 		         This function is optimized so the main host don´t need to wait
 				 You can call this function in your main loop
-				 Maximun data output frequency 100Hz
+				 Maximum data output frequency 100Hz - this allows maximum oversampling in the chip ADC
 				 It returns a 1 if there are new data.
 		get_pressure() : return pressure in mbar*100 units
 		get_temperature() : return temperature in celsius degrees*100 units
@@ -49,13 +49,13 @@
 #define CMD_MS5611_PROM_C5 0xAA
 #define CMD_MS5611_PROM_C6 0xAC
 #define CMD_MS5611_PROM_CRC 0xAE
-#define CMD_CONVERT_D1_OSR4096 0x48   // Maximun resolution
-#define CMD_CONVERT_D2_OSR4096 0x58   // Maximun resolution
+#define CMD_CONVERT_D1_OSR4096 0x48   // Maximum resolution (oversampling)
+#define CMD_CONVERT_D2_OSR4096 0x58   // Maximum resolution (oversampling)
 
 uint32_t AP_Baro_MS5611::_s_D1;
 uint32_t AP_Baro_MS5611::_s_D2;
 uint8_t  AP_Baro_MS5611::_state;
-long     AP_Baro_MS5611::_timer;
+uint32_t AP_Baro_MS5611::_timer;
 bool     AP_Baro_MS5611::_sync_access;
 bool     AP_Baro_MS5611::_updated;
 
@@ -116,11 +116,12 @@ bool AP_Baro_MS5611::init( AP_PeriodicProcess *scheduler )
 	pinMode(MS5611_CS, OUTPUT);	 // Chip select Pin
 	digitalWrite(MS5611_CS, HIGH);
 	delay(1);
-	
+
 	_spi_write(CMD_MS5611_RESET);
 	delay(4);
 
 	// We read the factory calibration
+  // The on-chip CRC is not used
 	C1 = _spi_read_16bits(CMD_MS5611_PROM_C1);
 	C2 = _spi_read_16bits(CMD_MS5611_PROM_C2);
 	C3 = _spi_read_16bits(CMD_MS5611_PROM_C3);
@@ -135,7 +136,7 @@ bool AP_Baro_MS5611::init( AP_PeriodicProcess *scheduler )
 	_state = 1;
 	Temp=0;
 	Press=0;
-	
+
 	scheduler->register_process( AP_Baro_MS5611::_update );
 
 	healthy = true;
@@ -150,12 +151,15 @@ void AP_Baro_MS5611::_update(uint32_t tnow)
 {
     if (_sync_access) return;
 
-    if (tnow - _timer < 10000) {
-	    return; // wait for more than 10ms
+    // Throttle read rate to 100hz maximum.
+    // note we use 9500us here not 10000us
+    // the read rate will end up at exactly 100hz because the Periodic Timer fires at 1khz
+    if (tnow - _timer < 9500) {
+	    return;
     }
 
     _timer = tnow;
-		
+
     if (_state == 1) {
 	    _s_D2 = _spi_read_adc();  				 // On state 1 we read temp
 	    _state++;
@@ -193,30 +197,30 @@ uint8_t AP_Baro_MS5611::read()
 void AP_Baro_MS5611::_calculate()
 {
 	int32_t dT;
-	long long TEMP;  // 64 bits
-	long long OFF;
-	long long SENS;
-	long long P;
+	int64_t TEMP;  // 64 bits
+	int64_t OFF;
+	int64_t SENS;
+	int64_t P;
 
 	// Formulas from manufacturer datasheet
-	// TODO: optimization with shift operations... (shift operations works well on 64 bits variables?)
-	// We define parameters as 64 bits to prevent overflow on operations
+	// as per data sheet some intermediate results require over 32 bits, therefore
+  // we define parameters as 64 bits to prevent overflow on operations
+  // sub -20c temperature compensation is not included
 	dT = D2-((long)C5*256);
-	TEMP = 2000 + ((long long)dT * C6)/8388608;
-	OFF = (long long)C2 * 65536 + ((long long)C4 * dT ) / 128; 
-	SENS = (long long)C1 * 32768 + ((long long)C3 * dT) / 256;
+	TEMP = 2000 + ((int64_t)dT * C6)/8388608;
+	OFF = (int64_t)C2 * 65536 + ((int64_t)C4 * dT ) / 128;
+	SENS = (int64_t)C1 * 32768 + ((int64_t)C3 * dT) / 256;
 
-	/*
 	if (TEMP < 2000){   // second order temperature compensation
-		long long T2 = (long long)dT*dT / 2147483648;
-		long long Aux_64 = (TEMP-2000)*(TEMP-2000);
-		long long OFF2 = 5*Aux_64/2;
-		long long SENS2 = 5*Aux_64/4;
+		int64_t T2 = (((int64_t)dT)*dT) / 2147483648UL;
+		int64_t Aux_64 = (TEMP-2000)*(TEMP-2000);
+		int64_t OFF2 = 5*Aux_64/2;
+		int64_t SENS2 = 5*Aux_64/4;
 		TEMP = TEMP - T2;
 		OFF = OFF - OFF2;
 		SENS = SENS - SENS2;
 	}
-	*/
+
 	P = (D1*SENS/2097152 - OFF)/32768;
 	Temp = TEMP;
 	Press = P;
@@ -241,7 +245,7 @@ float AP_Baro_MS5611::get_altitude()
 
 	tmp_float = (Press / 101325.0);
 	tmp_float = pow(tmp_float, 0.190295);
-	Altitude = 44330 * (1.0 - tmp_float);
+	Altitude = 44330.0 * (1.0 - tmp_float);
 
 	return (Altitude);
 }

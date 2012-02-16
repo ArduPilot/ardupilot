@@ -2,9 +2,12 @@
 // Unit tests for the AP_Meta_class and AP_Var classes.
 //
 
+#define USE_AP_VAR
 #include <FastSerial.h>
 #include <AP_Common.h>
 #include <AP_Test.h>
+#include <AP_Var.h>
+#include <AP_Math.h>
 #include <string.h>
 
 // we need to do this, even though normally it's a bad idea

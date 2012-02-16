@@ -65,7 +65,8 @@ setup_show(uint8_t argc, const Menu::arg *argv)
 
 	Serial.printf_P(PSTR("Raw Values\n"));
 	print_divider();
-	AP_Var_menu_show(argc, argv);
+
+    AP_Param::show_all();
 
 	return(0);
 }
@@ -85,7 +86,7 @@ setup_factory(uint8_t argc, const Menu::arg *argv)
 
 	if (('y' != c) && ('Y' != c))
 		return(-1);
-	AP_Var::erase_all();
+	AP_Param::erase_all();
 	Serial.printf_P(PSTR("\nFACTORY RESET complete - please reset APM to continue"));
 
 	//default_flight_modes();   // This will not work here.  Replacement code located in init_ardupilot()

@@ -1,15 +1,19 @@
 /// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 #include "Compass.h"
 
+const AP_Param::GroupInfo Compass::var_info[] PROGMEM = {
+    AP_GROUPINFO("ORIENT", 0, Compass, _orientation_matrix),
+    AP_GROUPINFO("OFS",    1, Compass, _offset),
+    AP_GROUPINFO("DEC",    2, Compass, _declination),
+    AP_GROUPEND
+};
+
 // Default constructor.
 // Note that the Vector/Matrix constructors already implicitly zero
 // their values.
 //
-Compass::Compass(AP_Var::Key key) :
-    _group(key, PSTR("COMPASS_")),
-    _orientation_matrix	(&_group, 0),
-    _offset				(&_group, 1),
-    _declination		(&_group, 2, 0.0, PSTR("DEC")),
+Compass::Compass(void) :
+    _declination		(0.0),
     _null_init_done(false),
     _null_enable(false),
 	product_id(AP_COMPASS_TYPE_UNKNOWN)
@@ -50,7 +54,7 @@ Compass::save_offsets()
 Vector3f &
 Compass::get_offsets()
 {
-    return _offset.get();
+    return _offset;
 }
 
 void

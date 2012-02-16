@@ -24,6 +24,15 @@
 
 APM_RC_Class *RC_Channel::_apm_rc;
 
+const AP_Param::GroupInfo RC_Channel::var_info[] PROGMEM = {
+	AP_GROUPINFO("MIN",  0, RC_Channel, radio_min),
+	AP_GROUPINFO("TRIM", 1, RC_Channel, radio_trim),
+	AP_GROUPINFO("MAX",  2, RC_Channel, radio_max),
+	AP_GROUPINFO("REV",  3, RC_Channel, _reverse),
+	AP_GROUPINFO("DZ",   4, RC_Channel, _dead_zone),
+	AP_GROUPEND
+};
+
 // setup the control preferences
 void
 RC_Channel::set_range(int low, int high)
@@ -163,13 +172,21 @@ RC_Channel::calc_pwm(void)
 void
 RC_Channel::load_eeprom(void)
 {
-    _group.load();
+	radio_min.load();
+	radio_trim.load();
+	radio_max.load();
+	_reverse.load();
+	_dead_zone.load();
 }
 
 void
 RC_Channel::save_eeprom(void)
 {
-    _group.save();
+	radio_min.save();
+	radio_trim.save();
+	radio_max.save();
+	_reverse.save();
+	_dead_zone.save();
 }
 
 // ------------------------------------------

@@ -268,6 +268,8 @@ AP_DCM::renorm(Vector3f const &a, int &problem)
 		renorm_sqrt_count++;
 	} else {
 		problem = 1;
+		SITL_debug("ERROR: DCM renormalisation error. renorm_val=%f\n",
+			   renorm_val);
 		renorm_blowup_count++;
 	}
 

@@ -17,7 +17,7 @@ public:
 	// The increment will prevent old parameters from being used incorrectly
 	// by newer code.
 	//
-	static const uint16_t k_format_version = 115;
+	static const uint16_t k_format_version = 116;
 
 	// The parameter software_type is set up solely for ground station use
 	// and identifies the software type (eg ArduPilotMega versus ArduCopterMega)
@@ -83,8 +83,8 @@ public:
 
 	// 110: Telemetry control
 	//
-	k_param_streamrates_port0 = 110,
-	k_param_streamrates_port3,
+	k_param_gcs0 = 110,
+	k_param_gcs3,
 	k_param_sysid_this_mav,
 	k_param_sysid_my_gcs,
     k_param_serial3_baud,
@@ -100,14 +100,16 @@ public:
 	k_param_pack_capacity,
 	k_param_compass_enabled,
 	k_param_compass,
-	k_param_sonar,
+	k_param_sonar_enabled,
 	k_param_frame_orientation,
 	k_param_top_bottom_ratio,
 	k_param_optflow_enabled,
 	k_param_low_voltage,
 	k_param_ch7_option,
+	k_param_auto_slew_rate,
 	k_param_sonar_type,
 	k_param_super_simple, //155
+	k_param_rtl_land_enabled,
 
 	//
 	// 160: Navigation parameters
@@ -128,8 +130,8 @@ public:
 	k_param_rc_6,
 	k_param_rc_7,
 	k_param_rc_8,
-	k_param_rc_9,
-	k_param_rc_10,
+	k_param_rc_camera_pitch,// rc_9
+	k_param_rc_camera_roll, // rc_10
 	k_param_throttle_min,
 	k_param_throttle_max,
 	k_param_throttle_fs_enabled,
@@ -138,13 +140,15 @@ public:
 	k_param_throttle_cruise,
 	k_param_esc_calibrate,
 	k_param_radio_tuning,
+	k_param_radio_tuning_high,
+	k_param_radio_tuning_low,
 	k_param_camera_pitch_gain,
 	k_param_camera_roll_gain,
 
     //
-    // 210: flight modes
+    // 200: flight modes
     //
-    k_param_flight_mode1,
+    k_param_flight_mode1 = 200,
     k_param_flight_mode2,
     k_param_flight_mode3,
     k_param_flight_mode4,
@@ -153,9 +157,9 @@ public:
     k_param_simple_modes,
 
 	//
-	// 220: Waypoint data
+	// 210: Waypoint data
 	//
-	k_param_waypoint_mode = 220,
+	k_param_waypoint_mode = 210,
 	k_param_command_total,
 	k_param_command_index,
 	k_param_command_nav_index,
@@ -164,10 +168,11 @@ public:
 	k_param_waypoint_speed_max,
 
 	//
-	// 235: PI/D Controllers
+	// 220: PI/D Controllers
 	//
-	k_param_stabilize_d = 234,
-	k_param_pid_rate_roll = 235,
+	k_param_stabilize_d = 220,
+	k_param_acro_p,
+	k_param_pid_rate_roll,
 	k_param_pid_rate_pitch,
 	k_param_pid_rate_yaw,
 	k_param_pi_stabilize_roll,
@@ -175,12 +180,14 @@ public:
 	k_param_pi_stabilize_yaw,
 	k_param_pi_loiter_lat,
 	k_param_pi_loiter_lon,
+	k_param_pid_loiter_rate_lat,
+	k_param_pid_loiter_rate_lon,
 	k_param_pid_nav_lat,
 	k_param_pid_nav_lon,
 	k_param_pi_alt_hold,
 	k_param_pid_throttle,
 	k_param_pid_optflow_roll,
-	k_param_pid_optflow_pitch,  // 250
+	k_param_pid_optflow_pitch,
 
     // 254,255: reserved
 	};
@@ -207,6 +214,7 @@ public:
     AP_Int8		optflow_enabled;
 	AP_Float	low_voltage;
 	AP_Int8		super_simple;
+	AP_Int8		rtl_land_enabled;
 
 
 	// Waypoints
@@ -248,10 +256,12 @@ public:
 
 	AP_Int8		esc_calibrate;
 	AP_Int8		radio_tuning;
+	AP_Int16	radio_tuning_high;
+	AP_Int16	radio_tuning_low;
 	AP_Int8		frame_orientation;
 	AP_Float	top_bottom_ratio;
 	AP_Int8		ch7_option;
-
+	AP_Int16	auto_slew_rate;
 
 	#if FRAME_CONFIG ==	HELI_FRAME
 	// Heli
@@ -281,12 +291,16 @@ public:
 
 	AP_Float	camera_pitch_gain;
 	AP_Float	camera_roll_gain;
-	AP_Float	stablize_d;
+	AP_Float	stabilize_d;
 
 	// PI/D controllers
+    AP_Float	acro_p;
+
 	AC_PID		pid_rate_roll;
 	AC_PID		pid_rate_pitch;
 	AC_PID		pid_rate_yaw;
+	AC_PID		pid_loiter_rate_lat;
+	AC_PID		pid_loiter_rate_lon;
 	AC_PID		pid_nav_lat;
 	AC_PID		pid_nav_lon;
 
@@ -301,129 +315,118 @@ public:
 	APM_PI		pi_stabilize_yaw;
 	APM_PI		pi_alt_hold;
 
-	uint8_t		junk;
-
 	// Note: keep initializers here in the same order as they are declared above.
 	Parameters() :
-	// variable				default						key										name
-	//-------------------------------------------------------------------------------------------------------------------
-	format_version			(k_format_version,			k_param_format_version,					PSTR("SYSID_SW_MREV")),
-	software_type			(k_software_type,			k_param_software_type,					PSTR("SYSID_SW_TYPE")),
+	// variable				default
+	//----------------------------------------
+    format_version			(k_format_version),
+	software_type			(k_software_type),
 
-	sysid_this_mav			(MAV_SYSTEM_ID,				k_param_sysid_this_mav,					PSTR("SYSID_THISMAV")),
-	sysid_my_gcs			(255,						k_param_sysid_my_gcs,					PSTR("SYSID_MYGCS")),
-    serial3_baud			(SERIAL3_BAUD/1000,         k_param_serial3_baud,					PSTR("SERIAL3_BAUD")),
+	sysid_this_mav			(MAV_SYSTEM_ID),
+	sysid_my_gcs			(255),
+    serial3_baud			(SERIAL3_BAUD/1000),
 
-	RTL_altitude			(ALT_HOLD_HOME * 100,		k_param_RTL_altitude,					PSTR("ALT_HOLD_RTL")),
-	sonar_enabled			(DISABLED,					k_param_sonar,							PSTR("SONAR_ENABLE")),
-	sonar_type				(AP_RANGEFINDER_MAXSONARXL,	k_param_sonar_type,						PSTR("SONAR_TYPE")),
-    battery_monitoring 		(DISABLED,					k_param_battery_monitoring,		        PSTR("BATT_MONITOR")),
-    volt_div_ratio			(VOLT_DIV_RATIO,			k_param_volt_div_ratio,			        PSTR("VOLT_DIVIDER")),
-    curr_amp_per_volt		(CURR_AMP_PER_VOLT,			k_param_curr_amp_per_volt,		        PSTR("AMP_PER_VOLT")),
-    input_voltage			(INPUT_VOLTAGE,				k_param_input_voltage,			        PSTR("INPUT_VOLTS")),
-	pack_capacity			(HIGH_DISCHARGE,			k_param_pack_capacity,					PSTR("BATT_CAPACITY")),
-	compass_enabled			(MAGNETOMETER,				k_param_compass_enabled,				PSTR("MAG_ENABLE")),
-	optflow_enabled			(OPTFLOW,					k_param_optflow_enabled,				PSTR("FLOW_ENABLE")),
-	low_voltage				(LOW_VOLTAGE,				k_param_low_voltage,					PSTR("LOW_VOLT")),
-	super_simple			(SUPER_SIMPLE,				k_param_super_simple,					PSTR("SUPER_SIMPLE")),
+	RTL_altitude			(ALT_HOLD_HOME * 100),
+	sonar_enabled			(DISABLED),
+	sonar_type				(AP_RANGEFINDER_MAXSONARXL),
+    battery_monitoring 		(DISABLED),
+    volt_div_ratio			(VOLT_DIV_RATIO),
+    curr_amp_per_volt		(CURR_AMP_PER_VOLT),
+    input_voltage			(INPUT_VOLTAGE),
+	pack_capacity			(HIGH_DISCHARGE),
+	compass_enabled			(MAGNETOMETER),
+	optflow_enabled			(OPTFLOW),
+	low_voltage				(LOW_VOLTAGE),
+	super_simple			(SUPER_SIMPLE),
+	rtl_land_enabled		(RTL_AUTO_LAND),
 
-	waypoint_mode			(0,							k_param_waypoint_mode,					PSTR("WP_MODE")),
-	command_total			(0,							k_param_command_total,					PSTR("WP_TOTAL")),
-	command_index			(0,							k_param_command_index,					PSTR("WP_INDEX")),
-	command_nav_index		(0,							k_param_command_nav_index,				PSTR("WP_MUST_INDEX")),
-	waypoint_radius			(WP_RADIUS_DEFAULT * 100,	k_param_waypoint_radius,				PSTR("WP_RADIUS")),
-	loiter_radius			(LOITER_RADIUS,	    		k_param_loiter_radius,					PSTR("WP_LOITER_RAD")),
-	waypoint_speed_max		(WAYPOINT_SPEED_MAX,		k_param_waypoint_speed_max,				PSTR("WP_SPEED_MAX")),
-	crosstrack_gain			(CROSSTRACK_GAIN,			k_param_crosstrack_gain,				PSTR("XTRK_GAIN_SC")),
-	auto_land_timeout		(AUTO_LAND_TIME * 1000,		k_param_auto_land_timeout,				PSTR("AUTO_LAND")),
+	waypoint_mode			(0),
+	command_total			(0),
+	command_index			(0),
+	command_nav_index		(0),
+	waypoint_radius			(WP_RADIUS_DEFAULT * 100),
+	loiter_radius			(LOITER_RADIUS),
+	waypoint_speed_max		(WAYPOINT_SPEED_MAX),
+	crosstrack_gain			(CROSSTRACK_GAIN),
+	auto_land_timeout		(AUTO_LAND_TIME * 1000),
 
-	throttle_min			(0,							k_param_throttle_min,					PSTR("THR_MIN")),
-	throttle_max			(1000, 						k_param_throttle_max,					PSTR("THR_MAX")),
-	throttle_fs_enabled		(THROTTLE_FAILSAFE,			k_param_throttle_fs_enabled,			PSTR("THR_FAILSAFE")),
-	throttle_fs_action		(THROTTLE_FAILSAFE_ACTION,	k_param_throttle_fs_action, 			PSTR("THR_FS_ACTION")),
-	throttle_fs_value 		(THROTTLE_FS_VALUE,			k_param_throttle_fs_value, 				PSTR("THR_FS_VALUE")),
-	throttle_cruise			(THROTTLE_CRUISE,			k_param_throttle_cruise,				PSTR("TRIM_THROTTLE")),
+	throttle_min			(0),
+	throttle_max			(1000),
+	throttle_fs_enabled		(THROTTLE_FAILSAFE),
+	throttle_fs_action		(THROTTLE_FAILSAFE_ACTION),
+	throttle_fs_value 		(THROTTLE_FS_VALUE),
+	throttle_cruise			(THROTTLE_CRUISE),
 
-    flight_mode1            (FLIGHT_MODE_1,             k_param_flight_mode1,					PSTR("FLTMODE1")),
-    flight_mode2            (FLIGHT_MODE_2,             k_param_flight_mode2,					PSTR("FLTMODE2")),
-    flight_mode3            (FLIGHT_MODE_3,             k_param_flight_mode3,					PSTR("FLTMODE3")),
-    flight_mode4            (FLIGHT_MODE_4,             k_param_flight_mode4,					PSTR("FLTMODE4")),
-    flight_mode5            (FLIGHT_MODE_5,             k_param_flight_mode5,					PSTR("FLTMODE5")),
-    flight_mode6            (FLIGHT_MODE_6,             k_param_flight_mode6,					PSTR("FLTMODE6")),
-    simple_modes            (0,             			k_param_simple_modes,					PSTR("SIMPLE")),
+    flight_mode1            (FLIGHT_MODE_1),
+    flight_mode2            (FLIGHT_MODE_2),
+    flight_mode3            (FLIGHT_MODE_3),
+    flight_mode4            (FLIGHT_MODE_4),
+    flight_mode5            (FLIGHT_MODE_5),
+    flight_mode6            (FLIGHT_MODE_6),
+    simple_modes            (0),
 
-	log_bitmask				(DEFAULT_LOG_BITMASK,		k_param_log_bitmask,					PSTR("LOG_BITMASK")),
-    log_last_filenumber     (0,							k_param_log_last_filenumber,    		PSTR("LOG_LASTFILE")),
-	esc_calibrate 			(0, 						k_param_esc_calibrate, 					PSTR("ESC")),
-	radio_tuning 			(0, 						k_param_radio_tuning, 					PSTR("TUNE")),
-	frame_orientation 		(FRAME_ORIENTATION, 		k_param_frame_orientation, 				PSTR("FRAME")),
-	top_bottom_ratio 		(TOP_BOTTOM_RATIO, 			k_param_top_bottom_ratio, 				PSTR("TB_RATIO")),
-	ch7_option 				(CH7_OPTION, 				k_param_ch7_option, 					PSTR("CH7_OPT")),
+	log_bitmask				(DEFAULT_LOG_BITMASK),
+    log_last_filenumber     (0),
+	esc_calibrate 			(0),
+	radio_tuning 			(0),
+	radio_tuning_high 		(1000),
+	radio_tuning_low 		(0),
+	frame_orientation 		(FRAME_ORIENTATION),
+	top_bottom_ratio 		(TOP_BOTTOM_RATIO),
+	ch7_option 				(CH7_OPTION),
+	auto_slew_rate			(AUTO_SLEW_RATE),
 
 	#if FRAME_CONFIG ==	HELI_FRAME
-	heli_servo_1			(k_param_heli_servo_1,		PSTR("HS1_")),
-	heli_servo_2			(k_param_heli_servo_2,		PSTR("HS2_")),
-	heli_servo_3			(k_param_heli_servo_3,		PSTR("HS3_")),
-	heli_servo_4			(k_param_heli_servo_4,		PSTR("HS4_")),
-	heli_servo1_pos			(-60,						k_param_heli_servo1_pos,				PSTR("SV1_POS_")),
-	heli_servo2_pos			(60,						k_param_heli_servo2_pos,				PSTR("SV2_POS_")),
-	heli_servo3_pos			(180,						k_param_heli_servo3_pos,				PSTR("SV3_POS_")),
-	heli_roll_max			(4500,						k_param_heli_roll_max,					PSTR("ROL_MAX_")),
-	heli_pitch_max			(4500,						k_param_heli_pitch_max,					PSTR("PIT_MAX_")),
-	heli_coll_min			(1250,						k_param_heli_collective_min,			PSTR("COL_MIN_")),
-	heli_coll_max			(1750,						k_param_heli_collective_max,			PSTR("COL_MAX_")),
-	heli_coll_mid			(1500,						k_param_heli_collective_mid,			PSTR("COL_MID_")),
-	heli_ext_gyro_enabled	(0,							k_param_heli_ext_gyro_enabled,			PSTR("GYR_ENABLE_")),
-	heli_ext_gyro_gain		(1350,						k_param_heli_ext_gyro_gain,				PSTR("GYR_GAIN_")),
-	heli_servo_averaging	(0,							k_param_heli_servo_averaging,			PSTR("SV_AVG")),
-	heli_servo_manual		(0,							k_param_heli_servo_manual,				PSTR("HSV_MAN")),
-	heli_phase_angle		(0,							k_param_heli_phase_angle,				PSTR("H_PHANG")),
-	heli_coll_yaw_effect	(0,							k_param_heli_coll_yaw_effect,			PSTR("H_COLYAW")),
+	heli_servo_1			(k_param_heli_servo_1),
+	heli_servo_2			(k_param_heli_servo_2),
+	heli_servo_3			(k_param_heli_servo_3),
+	heli_servo_4			(k_param_heli_servo_4),
+	heli_servo1_pos			(-60),
+	heli_servo2_pos			(60),
+	heli_servo3_pos			(180),
+	heli_roll_max			(4500),
+	heli_pitch_max			(4500),
+	heli_coll_min			(1250),
+	heli_coll_max			(1750),
+	heli_coll_mid			(1500),
+	heli_ext_gyro_enabled	(0),
+	heli_ext_gyro_gain		(1350),
+	heli_servo_averaging	(0),
+	heli_servo_manual		(0),
+	heli_phase_angle		(0),
+	heli_coll_yaw_effect	(0),
 	#endif
 
-	// RC channel			group key					name
+	camera_pitch_gain 		(CAM_PITCH_GAIN),
+	camera_roll_gain 		(CAM_ROLL_GAIN),
+	stabilize_d 			(STABILIZE_D),
+	acro_p					(ACRO_P),
+
+	// PID controller	initial P	   	    initial I		 	initial D       	initial imax
+	//-----------------------------------------------------------------------------------------------------
+	pid_rate_roll       (RATE_ROLL_P,       RATE_ROLL_I,        RATE_ROLL_D,    	RATE_ROLL_IMAX * 100),
+	pid_rate_pitch      (RATE_PITCH_P,      RATE_PITCH_I,       RATE_PITCH_D,   	RATE_PITCH_IMAX * 100),
+	pid_rate_yaw        (RATE_YAW_P,        RATE_YAW_I,         RATE_YAW_D,     	RATE_YAW_IMAX * 100),
+
+	pid_loiter_rate_lat	(LOITER_RATE_P,		LOITER_RATE_I,		LOITER_RATE_D,		LOITER_RATE_IMAX * 100),
+	pid_loiter_rate_lon	(LOITER_RATE_P,		LOITER_RATE_I,		LOITER_RATE_D,		LOITER_RATE_IMAX * 100),
+
+	pid_nav_lat			(NAV_P,				NAV_I,				NAV_D,				NAV_IMAX * 100),
+	pid_nav_lon			(NAV_P,				NAV_I,				NAV_D,				NAV_IMAX * 100),
+
+	pid_throttle		(THROTTLE_P,		THROTTLE_I,			THROTTLE_D,			THROTTLE_IMAX),
+	pid_optflow_roll	(OPTFLOW_ROLL_P,	OPTFLOW_ROLL_I,		OPTFLOW_ROLL_D,		OPTFLOW_IMAX * 100),
+	pid_optflow_pitch	(OPTFLOW_PITCH_P,	OPTFLOW_PITCH_I,	OPTFLOW_PITCH_D,	OPTFLOW_IMAX * 100),
+
+	// PI controller	initial P			initial I			initial imax
 	//----------------------------------------------------------------------
-	rc_1					(k_param_rc_1,		PSTR("RC1_")),
-	rc_2					(k_param_rc_2,		PSTR("RC2_")),
-	rc_3					(k_param_rc_3,		PSTR("RC3_")),
-	rc_4					(k_param_rc_4,		PSTR("RC4_")),
-	rc_5					(k_param_rc_5,		PSTR("RC5_")),
-	rc_6					(k_param_rc_6,		PSTR("RC6_")),
-	rc_7					(k_param_rc_7,		PSTR("RC7_")),
-	rc_8					(k_param_rc_8,		PSTR("RC8_")),
-	rc_camera_pitch			(k_param_rc_9,		PSTR("CAM_P_")),
-	rc_camera_roll			(k_param_rc_10,		PSTR("CAM_R_")),
+	pi_stabilize_roll	(STABILIZE_ROLL_P,	STABILIZE_ROLL_I,	STABILIZE_ROLL_IMAX * 100),
+	pi_stabilize_pitch	(STABILIZE_PITCH_P,	STABILIZE_PITCH_I,	STABILIZE_PITCH_IMAX * 100),
+	pi_stabilize_yaw	(STABILIZE_YAW_P,	STABILIZE_YAW_I,	STABILIZE_YAW_IMAX * 100),
 
-	// variable				default						key										name
-	//-------------------------------------------------------------------------------------------------------------------
-	camera_pitch_gain 		(CAM_PITCH_GAIN, 			k_param_camera_pitch_gain, 				PSTR("CAM_P_G")),
-	camera_roll_gain 		(CAM_ROLL_GAIN, 			k_param_camera_roll_gain,	 			PSTR("CAM_R_G")),
-	stablize_d 				(STABILIZE_D, 				k_param_stabilize_d,	 				PSTR("STAB_D")),
-
-	// PID controller	group key						name				initial P	   	    initial I		 	initial D       initial imax
-	//--------------------------------------------------------------------------------------------------------------------------------------------------------------------
-	pid_rate_roll       (k_param_pid_rate_roll,         PSTR("RATE_RLL_"),  RATE_ROLL_P,        RATE_ROLL_I,        RATE_ROLL_D,    RATE_ROLL_IMAX * 100),
-	pid_rate_pitch      (k_param_pid_rate_pitch,        PSTR("RATE_PIT_"),  RATE_PITCH_P,       RATE_PITCH_I,       RATE_PITCH_D,   RATE_PITCH_IMAX * 100),
-	pid_rate_yaw        (k_param_pid_rate_yaw,          PSTR("RATE_YAW_"),  RATE_YAW_P,         RATE_YAW_I,         RATE_YAW_D,     RATE_YAW_IMAX * 100),
-
-	pid_nav_lat			(k_param_pid_nav_lat,			PSTR("NAV_LAT_"),	NAV_P,				NAV_I,				NAV_D,			NAV_IMAX * 100),
-	pid_nav_lon			(k_param_pid_nav_lon,			PSTR("NAV_LON_"),	NAV_P,				NAV_I,				NAV_D,			NAV_IMAX * 100),
-
-	pid_throttle		(k_param_pid_throttle,			PSTR("THR_RATE_"),	THROTTLE_P,			THROTTLE_I,			THROTTLE_D,		THROTTLE_IMAX),
-	pid_optflow_roll	(k_param_pid_optflow_roll,		PSTR("OF_RLL_"),	OPTFLOW_ROLL_P,		OPTFLOW_ROLL_I,		OPTFLOW_ROLL_D,	OPTFLOW_IMAX * 100),
-	pid_optflow_pitch	(k_param_pid_optflow_pitch,		PSTR("OF_PIT_"),	OPTFLOW_PITCH_P,	OPTFLOW_PITCH_I,	OPTFLOW_PITCH_D,OPTFLOW_IMAX * 100),
-
-	// PI controller	group key						name				initial P			initial I			initial imax
-	//--------------------------------------------------------------------------------------------------------------------------------------------------------------------
-	pi_stabilize_roll	(k_param_pi_stabilize_roll,		PSTR("STB_RLL_"),	STABILIZE_ROLL_P,	STABILIZE_ROLL_I,	STABILIZE_ROLL_IMAX * 100),
-	pi_stabilize_pitch	(k_param_pi_stabilize_pitch,	PSTR("STB_PIT_"),	STABILIZE_PITCH_P,	STABILIZE_PITCH_I,	STABILIZE_PITCH_IMAX * 100),
-	pi_stabilize_yaw	(k_param_pi_stabilize_yaw,		PSTR("STB_YAW_"),	STABILIZE_YAW_P,	STABILIZE_YAW_I,	STABILIZE_YAW_IMAX * 100),
-
-	pi_alt_hold			(k_param_pi_alt_hold,			PSTR("THR_ALT_"),	ALT_HOLD_P,			ALT_HOLD_I,			ALT_HOLD_IMAX),
-	pi_loiter_lat		(k_param_pi_loiter_lat,			PSTR("HLD_LAT_"),	LOITER_P,			LOITER_I,			LOITER_IMAX * 100),
-	pi_loiter_lon		(k_param_pi_loiter_lon,			PSTR("HLD_LON_"),	LOITER_P,			LOITER_I,			LOITER_IMAX * 100),
-
-	junk(0)		// XXX just so that we can add things without worrying about the trailing comma
+	pi_alt_hold			(ALT_HOLD_P,		ALT_HOLD_I,			ALT_HOLD_IMAX),
+	pi_loiter_lat		(LOITER_P,			LOITER_I,			LOITER_IMAX * 100),
+	pi_loiter_lon		(LOITER_P,			LOITER_I,			LOITER_IMAX * 100)
 	{
 	}
 };

@@ -9,9 +9,10 @@
 /// @file   AP_Var.cpp
 /// @brief  The AP variable store.
 
+#define USE_AP_VAR
 
 #include <AP_Common.h>
-
+#include <AP_Var.h>
 #include <math.h>
 #include <string.h>
 

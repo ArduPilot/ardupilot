@@ -33,21 +33,21 @@
 class Compass
 {
 public:
-	int				product_id;     /// product id
-	int             mag_x;          ///< magnetic field strength along the X axis
-	int             mag_y;          ///< magnetic field strength along the Y axis
-	int             mag_z;          ///< magnetic field strength along the Z axis
+	int16_t			product_id;     /// product id
+	int16_t         mag_x;          ///< magnetic field strength along the X axis
+	int16_t         mag_y;          ///< magnetic field strength along the Y axis
+	int16_t         mag_z;          ///< magnetic field strength along the Z axis
 	float           heading;        ///< compass heading in radians
 	float           heading_x;      ///< compass vector X magnitude
 	float           heading_y;      ///< compass vector Y magnitude
-	unsigned long   last_update;    ///< millis() time of last update
+	uint32_t        last_update;    ///< millis() time of last update
 	bool			healthy;        ///< true if last read OK
 
 	/// Constructor
 	///
 	/// @param  key         Storage key used for configuration data.
 	///
-	Compass(AP_Var::Key key);
+	Compass();
 
 	/// Initialize the compass device.
 	///
@@ -132,10 +132,11 @@ public:
 	virtual void set_declination(float radians);
 	float get_declination();
 
+    static const struct AP_Param::GroupInfo var_info[];
+
 protected:
-	AP_Var_group        _group;                 ///< storage group holding the compass' calibration data
-	AP_VarS<Matrix3f>   _orientation_matrix;
-	AP_VarS<Vector3f>   _offset;
+	AP_Matrix3f         _orientation_matrix;
+	AP_Vector3f         _offset;
 	AP_Float            _declination;
 
 	bool                _null_enable;        	///< enabled flag for offset nulling

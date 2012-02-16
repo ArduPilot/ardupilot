@@ -14,6 +14,7 @@ static int8_t	setup_batt_monitor		(uint8_t argc, const Menu::arg *argv);
 static int8_t	setup_sonar				(uint8_t argc, const Menu::arg *argv);
 static int8_t	setup_compass			(uint8_t argc, const Menu::arg *argv);
 static int8_t	setup_tune				(uint8_t argc, const Menu::arg *argv);
+static int8_t	setup_range				(uint8_t argc, const Menu::arg *argv);
 //static int8_t	setup_mag_offset		(uint8_t argc, const Menu::arg *argv);
 static int8_t	setup_declination		(uint8_t argc, const Menu::arg *argv);
 static int8_t	setup_optflow			(uint8_t argc, const Menu::arg *argv);
@@ -39,6 +40,7 @@ const struct Menu::command setup_menu_commands[] PROGMEM = {
 	{"sonar",			setup_sonar},
 	{"compass",			setup_compass},
 	{"tune",			setup_tune},
+	{"range",			setup_range},
 //	{"offsets",			setup_mag_offset},
 	{"declination",		setup_declination},
 	{"optflow",			setup_optflow},
@@ -102,7 +104,8 @@ setup_show(uint8_t argc, const Menu::arg *argv)
 	report_gyro();
 #endif
 
-	AP_Var_menu_show(argc, argv);
+    AP_Param::show_all();
+
 	return(0);
 }
 
@@ -122,7 +125,7 @@ setup_factory(uint8_t argc, const Menu::arg *argv)
 	if (('y' != c) && ('Y' != c))
 		return(-1);
 
-	AP_Var::erase_all();
+	AP_Param::erase_all();
 	Serial.printf_P(PSTR("\nReboot APM"));
 
 	delay(1000);
@@ -224,6 +227,10 @@ setup_radio(uint8_t argc, const Menu::arg *argv)
 static int8_t
 setup_motors(uint8_t argc, const Menu::arg *argv)
 {
+  Serial.printf_P(PSTR(
+        "Now connect the main lipo and follow the instruction on the wiki for your frame setup.\n"
+        "For security remember to disconnect the main lipo after the test, then hit any key to exit.\n"
+        "Any key to exit.\n"));
 	while(1){
 		delay(20);
 		read_radio();
@@ -350,6 +357,19 @@ static int8_t
 setup_tune(uint8_t argc, const Menu::arg *argv)
 {
 	g.radio_tuning.set_and_save(argv[1].i);
+	//g.radio_tuning_high.set_and_save(1000);
+	//g.radio_tuning_low.set_and_save(0);
+	report_tuning();
+	return 0;
+}
+
+static int8_t
+setup_range(uint8_t argc, const Menu::arg *argv)
+{
+	Serial.printf_P(PSTR("\nCH 6 Ranges are divided by 1000: [low, high]\n"));
+
+	g.radio_tuning_low.set_and_save(argv[1].i);
+	g.radio_tuning_high.set_and_save(argv[2].i);
 	report_tuning();
 	return 0;
 }
@@ -1154,7 +1174,9 @@ static void report_tuning()
 	if (g.radio_tuning == 0){
 		print_enabled(g.radio_tuning.get());
 	}else{
-		Serial.printf_P(PSTR(" %d\n"),(int)g.radio_tuning.get());
+		float low  = (float)g.radio_tuning_low.get() / 1000;
+		float high = (float)g.radio_tuning_high.get() / 1000;
+		Serial.printf_P(PSTR(" %d, Low:%1.4f, High:%1.4f\n"),(int)g.radio_tuning.get(), low, high);
 	}
 	print_blanks(2);
 }

@@ -18,7 +18,7 @@ AP_TimerProcess  scheduler;
 unsigned long timer;
 
 void setup()
-{  
+{
 	Serial.begin(115200, 128, 128);
 	Serial.println("ArduPilot Mega MeasSense Barometer library test");
 
@@ -40,7 +40,7 @@ void loop()
 {
 	float tmp_float;
 	float Altitude;
-	
+
 	if((micros()- timer) > 50000L){
 		timer = micros();
 		baro.read();
@@ -56,7 +56,7 @@ void loop()
 		Serial.print(" Altitude:");
 		tmp_float = (baro.get_pressure() / 101325.0);
 		tmp_float = pow(tmp_float, 0.190295);
-		Altitude = 44330 * (1.0 - tmp_float);
+		Altitude = 44330.0 * (1.0 - tmp_float);
 		Serial.print(Altitude);
 		Serial.printf(" t=%u", (unsigned)read_time);
 		Serial.println();

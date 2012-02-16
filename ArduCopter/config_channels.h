@@ -16,31 +16,34 @@
 //////////////////////////////////////////////////////////////////////////////
 //
 
-#include "config.h"
+#include "config.h"     // Parent Config File
+#include "APM_Config.h" // User Overrides
 
 //
 //
 // Output CH mapping for ArduCopter motor channels
 //
 //
-#if CONFIG_APM_HARDWARE == APM_HARDWARE_APM2
-# define MOT_1 CH_1
-# define MOT_2 CH_2
-# define MOT_3 CH_3
-# define MOT_4 CH_4
-# define MOT_5 CH_5
-# define MOT_6 CH_6
-# define MOT_7 CH_7
-# define MOT_8 CH_8
-#elif CONFIG_APM_HARDWARE == APM_HARDWARE_APM1
-# define MOT_1 CH_1
-# define MOT_2 CH_2
-# define MOT_3 CH_3
-# define MOT_4 CH_4
-# define MOT_5 CH_7
-# define MOT_6 CH_8
-# define MOT_7 CH_10
-# define MOT_8 CH_11
+#if CONFIG_CHANNELS == CHANNEL_CONFIG_DEFAULT
+# if CONFIG_APM_HARDWARE == APM_HARDWARE_APM2
+#  define MOT_1 CH_1
+#  define MOT_2 CH_2
+#  define MOT_3 CH_3
+#  define MOT_4 CH_4
+#  define MOT_5 CH_5
+#  define MOT_6 CH_6
+#  define MOT_7 CH_7
+#  define MOT_8 CH_8
+# elif CONFIG_APM_HARDWARE == APM_HARDWARE_APM1
+#  define MOT_1 CH_1
+#  define MOT_2 CH_2
+#  define MOT_3 CH_3
+#  define MOT_4 CH_4
+#  define MOT_5 CH_7
+#  define MOT_6 CH_8
+#  define MOT_7 CH_10
+#  define MOT_8 CH_11
+# endif 
 #endif
 
 //

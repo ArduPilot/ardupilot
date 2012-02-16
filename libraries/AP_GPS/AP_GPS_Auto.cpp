@@ -97,9 +97,9 @@ GPS *
 AP_GPS_Auto::_detect(void)
 {
     unsigned long then;
-    int		fingerprint[4];
-    int		tries;
-    int     charcount;
+    uint8_t	fingerprint[4];
+    uint8_t	tries;
+    uint16_t charcount;
     GPS		*gps;
 
     //

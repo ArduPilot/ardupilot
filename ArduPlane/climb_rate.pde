@@ -1,5 +1,7 @@
 // -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 
+#if 0 // currently unused
+
 struct DataPoint {
 	unsigned long	x;
 	long			y;
@@ -17,8 +19,7 @@ long			yi;
 long			xiyi;
 unsigned long	xi2;
 
-#if 0 // currently unused
-static void add_altitude_data(unsigned long xl, long y)
+void add_altitude_data(unsigned long xl, long y)
 {
 	//Reset the regression if our X variable overflowed
 	if (xl < xoffset)

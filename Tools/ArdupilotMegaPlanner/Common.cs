@@ -299,21 +299,6 @@ namespace ArdupilotMega
             OF_LOITER = 10
         }
 
-        int fixme;
-        public enum bitmask
-        {
-            None = 0,
-            sonar_enable = 1,
-            compass_enabled = 2,
-            optflow_enabled = 4,
-            super_simple = 8,
-            waypoint_mode = 16,
-            esc_calibrate = 32,
-            heli_ext_gyro_enabled = 64,
-            heli_servo_averaging = 128,
-            heli_servo_manual = 256,
-        }
-
         public static void linearRegression()
         {
             double[] values = { 4.8, 4.8, 4.5, 3.9, 4.4, 3.6, 3.6, 2.9, 3.5, 3.0, 2.5, 2.2, 2.6, 2.1, 2.2 };

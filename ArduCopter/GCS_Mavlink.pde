@@ -416,7 +416,7 @@ static bool mavlink_try_send_message(mavlink_channel_t chan, enum ap_message id,
         CHECK_PAYLOAD_SIZE(PARAM_VALUE);
         if (chan == MAVLINK_COMM_0) {
             gcs0.queued_param_send();
-        } else {
+        } else if (gcs3.initialised) {
             gcs3.queued_param_send();
         }
         break;
@@ -523,27 +523,23 @@ void mavlink_send_text(mavlink_channel_t chan, gcs_severity severity, const char
 }
 }
 
+const AP_Param::GroupInfo GCS_MAVLINK::var_info[] PROGMEM = {
+    AP_GROUPINFO("RAW_SENS", 0, GCS_MAVLINK, streamRateRawSensors),
+	AP_GROUPINFO("EXT_STAT", 1, GCS_MAVLINK, streamRateExtendedStatus),
+    AP_GROUPINFO("RC_CHAN",  2, GCS_MAVLINK, streamRateRCChannels),
+	AP_GROUPINFO("RAW_CTRL", 3, GCS_MAVLINK, streamRateRawController),
+	AP_GROUPINFO("POSITION", 4, GCS_MAVLINK, streamRatePosition),
+	AP_GROUPINFO("EXTRA1",   5, GCS_MAVLINK, streamRateExtra1),
+	AP_GROUPINFO("EXTRA2",   6, GCS_MAVLINK, streamRateExtra2),
+	AP_GROUPINFO("EXTRA3",   7, GCS_MAVLINK, streamRateExtra3),
+    AP_GROUPEND
+};
 
-GCS_MAVLINK::GCS_MAVLINK(AP_Var::Key key) :
+
+GCS_MAVLINK::GCS_MAVLINK() :
 packet_drops(0),
-
-
-// parameters
-// note, all values not explicitly initialised here are zeroed
 waypoint_send_timeout(1000), // 1 second
-waypoint_receive_timeout(1000), // 1 second
-
-// stream rates
-_group	(key, key == Parameters::k_param_streamrates_port0 ? PSTR("SR0_"): PSTR("SR3_")),
-				// AP_VAR					//ref	 //index, default, 	name
-				streamRateRawSensors		(&_group, 0,		 0, 	PSTR("RAW_SENS")),
-				streamRateExtendedStatus	(&_group, 1,		 0, 	PSTR("EXT_STAT")),
-				streamRateRCChannels		(&_group, 2,		 0, 	PSTR("RC_CHAN")),
-				streamRateRawController		(&_group, 3,		 0, 	PSTR("RAW_CTRL")),
-				streamRatePosition			(&_group, 4,		 0, 	PSTR("POSITION")),
-				streamRateExtra1			(&_group, 5,		 0, 	PSTR("EXTRA1")),
-				streamRateExtra2			(&_group, 6,		 0, 	PSTR("EXTRA2")),
-				streamRateExtra3			(&_group, 7,		 0, 	PSTR("EXTRA3"))
+waypoint_receive_timeout(1000) // 1 second
 {
 
 }
@@ -857,12 +853,14 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
 					break;
 
 				case MAV_ACTION_STORAGE_READ:
-					AP_Var::load_all();
+                    // we load all variables at startup, and
+                    // save on each mavlink set
 					result=1;
 					break;
 
 				case MAV_ACTION_STORAGE_WRITE:
-					AP_Var::save_all();
+                    // this doesn't make any sense, as we save
+                    // all settings as they come in
 					result=1;
 					break;
 
@@ -1136,7 +1134,7 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
 
 			// Start sending parameters - next call to ::update will kick the first one out
 
-			_queued_parameter = AP_Var::first();
+			_queued_parameter = AP_Param::first(&_queued_parameter_token, &_queued_parameter_type);
 			_queued_parameter_index = 0;
 			_queued_parameter_count = _count_parameters();
 			break;
@@ -1379,8 +1377,8 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
 
 	case MAVLINK_MSG_ID_PARAM_SET: // 23
 		{
-			AP_Var				  *vp;
-			AP_Meta_class::Type_id  var_type;
+            AP_Param                  *vp;
+            enum ap_var_type        var_type;
 
 			// decode
 			mavlink_param_set_t packet;
@@ -1396,8 +1394,7 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
 			key[ONBOARD_PARAM_NAME_LENGTH] = 0;
 
 			// find the requested parameter
-			vp = AP_Var::find(key);
-
+            vp = AP_Param::find(key, &var_type);
 			if ((NULL != vp) &&							 		// exists
 					!isnan(packet.param_value) &&			   // not nan
 					!isinf(packet.param_value)) {			   // not inf
@@ -1407,38 +1404,27 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
 				// next lower integer value.
 				float rounding_addition = 0.01;
 
-				// fetch the variable type ID
-				var_type = vp->meta_type_id();
-
 				// handle variables with standard type IDs
-				if (var_type == AP_Var::k_typeid_float) {
+                if (var_type == AP_PARAM_FLOAT) {
 					((AP_Float *)vp)->set_and_save(packet.param_value);
+                } else if (var_type == AP_PARAM_INT32) {
 #if LOGGING_ENABLED == ENABLED
-					Log_Write_Data(1, (float)((AP_Float *)vp)->get());
+					Log_Write_Data(1, ((AP_Int32 *)vp)->get());
 #endif
-				} else if (var_type == AP_Var::k_typeid_float16) {
-					((AP_Float16 *)vp)->set_and_save(packet.param_value);
-#if LOGGING_ENABLED == ENABLED
-					Log_Write_Data(2, (float)((AP_Float *)vp)->get());
-#endif
-				} else if (var_type == AP_Var::k_typeid_int32) {
 					if (packet.param_value < 0) rounding_addition = -rounding_addition;
 					((AP_Int32 *)vp)->set_and_save(packet.param_value+rounding_addition);
+                } else if (var_type == AP_PARAM_INT16) {
 #if LOGGING_ENABLED == ENABLED
-					Log_Write_Data(3, (int32_t)((AP_Float *)vp)->get());
+					Log_Write_Data(3, (int32_t)((AP_Int16 *)vp)->get());
 #endif
-				} else if (var_type == AP_Var::k_typeid_int16) {
 					if (packet.param_value < 0) rounding_addition = -rounding_addition;
 					((AP_Int16 *)vp)->set_and_save(packet.param_value+rounding_addition);
+                } else if (var_type == AP_PARAM_INT8) {
 #if LOGGING_ENABLED == ENABLED
-					Log_Write_Data(4, (int32_t)((AP_Float *)vp)->get());
+					Log_Write_Data(4, (int32_t)((AP_Int8 *)vp)->get());
 #endif
-				} else if (var_type == AP_Var::k_typeid_int8) {
 					if (packet.param_value < 0) rounding_addition = -rounding_addition;
 					((AP_Int8 *)vp)->set_and_save(packet.param_value+rounding_addition);
-#if LOGGING_ENABLED == ENABLED
-					Log_Write_Data(5, (int32_t)((AP_Float *)vp)->get());
-#endif
 				} else {
 					// we don't support mavlink set on this parameter
 					break;
@@ -1451,7 +1437,7 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
 				mavlink_msg_param_value_send(
 					chan,
 					(int8_t *)key,
-					vp->cast_to_float(),
+                    vp->cast_to_float(var_type),
 					_count_parameters(),
 					-1); // XXX we don't actually know what its index is...
 
@@ -1630,42 +1616,15 @@ GCS_MAVLINK::_count_parameters()
 {
 	// if we haven't cached the parameter count yet...
 	if (0 == _parameter_count) {
-		AP_Var  *vp;
+        AP_Param  *vp;
+        uint16_t token;
 
-		vp = AP_Var::first();
+        vp = AP_Param::first(&token, NULL);
 		do {
-			// if a parameter responds to cast_to_float then we are going to be able to report it
-			if (!isnan(vp->cast_to_float())) {
 				_parameter_count++;
-			}
-		} while (NULL != (vp = vp->next()));
+        } while (NULL != (vp = AP_Param::next_scalar(&token, NULL)));
 	}
 	return _parameter_count;
-}
-
-AP_Var *
-GCS_MAVLINK::_find_parameter(uint16_t index)
-{
-	AP_Var  *vp;
-
-	vp = AP_Var::first();
-	while (NULL != vp) {
-
-		// if the parameter is reportable
-		if (!(isnan(vp->cast_to_float()))) {
-			// if we have counted down to the index we want
-			if (0 == index) {
-				// return the parameter
-				return vp;
-			}
-			// count off this parameter, as it is reportable but not
-			// the one we want
-			index--;
-		}
-		// and move to the next parameter
-		vp = vp->next();
-	}
-	return NULL;
 }
 
 /**
@@ -1678,18 +1637,16 @@ GCS_MAVLINK::queued_param_send()
     // Check to see if we are sending parameters
     if (NULL == _queued_parameter) return;
 
-    AP_Var      *vp;
+    AP_Param      *vp;
     float       value;
 
     // copy the current parameter and prepare to move to the next
     vp = _queued_parameter;
-    _queued_parameter = _queued_parameter->next();
 
     // if the parameter can be cast to float, report it here and break out of the loop
-    value = vp->cast_to_float();
-    if (!isnan(value)) {
-        char param_name[ONBOARD_PARAM_NAME_LENGTH];         /// XXX HACK
-        memset(param_name, 0, sizeof(param_name));
+    value = vp->cast_to_float(_queued_parameter_type);
+
+    char param_name[ONBOARD_PARAM_NAME_LENGTH];
         vp->copy_name(param_name, sizeof(param_name));
 
         mavlink_msg_param_value_send(
@@ -1699,9 +1656,9 @@ GCS_MAVLINK::queued_param_send()
             _queued_parameter_count,
             _queued_parameter_index);
 
+    _queued_parameter = AP_Param::next_scalar(&_queued_parameter_token, &_queued_parameter_type);
         _queued_parameter_index++;
     }
-}
 
 /**
 * @brief Send the next pending waypoint, called from deferred message

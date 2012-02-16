@@ -179,7 +179,7 @@ static AP_Int8                *flight_modes = &g.flight_mode1;
     AP_Baro_MS5611 barometer;
 #endif
 
-    AP_Compass_HMC5843      compass(Parameters::k_param_compass);
+    AP_Compass_HMC5843      compass;
 #endif
 
 #ifdef OPTFLOW_ENABLED
@@ -219,7 +219,7 @@ AP_InertialSensor_MPU6000 ins( CONFIG_MPU6000_CHIP_SELECT_PIN );
 #else
 AP_InertialSensor_Oilpan ins(&adc);
 #endif
-AP_IMU_INS  imu(&ins, Parameters::k_param_IMU_calibration);
+AP_IMU_INS  imu(&ins);
 AP_DCM  dcm(&imu, g_gps);
 AP_TimerProcess timer_scheduler;
 
@@ -258,8 +258,8 @@ AP_TimerProcess timer_scheduler;
 ////////////////////////////////////////////////////////////////////////////////
 // GCS selection
 ////////////////////////////////////////////////////////////////////////////////
-GCS_MAVLINK	gcs0(Parameters::k_param_streamrates_port0);
-GCS_MAVLINK	gcs3(Parameters::k_param_streamrates_port3);
+GCS_MAVLINK	gcs0;
+GCS_MAVLINK	gcs3;
 
 ////////////////////////////////////////////////////////////////////////////////
 // SONAR selection
@@ -652,14 +652,17 @@ static int32_t	nav_roll;
 // The Commanded pitch from the autopilot. negative Pitch means go forward.
 static int32_t	nav_pitch;
 // The desired bank towards North (Positive) or South (Negative)
+static int32_t	auto_roll;
+static int32_t	auto_pitch;
+
 // Don't be fooled by the fact that Pitch is reversed from Roll in its sign!
 static int16_t	nav_lat;
 // The desired bank towards East (Positive) or West (Negative)
 static int16_t	nav_lon;
 // This may go away, but for now I'm tracking the desired bank before we apply the Wind compensation I term
 // This is mainly for debugging
-static int16_t	nav_lat_p;
-static int16_t	nav_lon_p;
+//static int16_t	nav_lat_p;
+//static int16_t	nav_lon_p;
 
 // The Commanded ROll from the autopilot based on optical flow sensor.
 static int32_t	of_roll = 0;
@@ -1294,8 +1297,8 @@ static void update_GPS(void)
 	}else{
 		// after 12 reads we guess we may have lost GPS signal, stop navigating
 		// we have lost GPS signal for a moment. Reduce our error to avoid flyaways
-		nav_roll  >>= 1;
-		nav_pitch >>= 1;
+		auto_roll  >>= 1;
+		auto_pitch >>= 1;
 	}
 
     if (g_gps->new_data && g_gps->fix) {
@@ -1423,12 +1426,28 @@ void update_roll_pitch_mode(void)
 			g.rc_2.servo_out = get_stabilize_pitch(g.rc_2.control_in);
 			break;
 
+/*		case ROLL_PITCH_AUTO:
+			// apply SIMPLE mode transform
+			if(do_simple && new_radio_frame){
+				update_simple_mode();
+			}
+			// mix in user control with Nav control
+			control_roll 		= g.rc_1.control_mix(nav_roll);
+			control_pitch 		= g.rc_2.control_mix(nav_pitch);
+			g.rc_1.servo_out 	= get_stabilize_roll(control_roll);
+			g.rc_2.servo_out 	= get_stabilize_pitch(control_pitch);
+			break;
+			*/
+
 		case ROLL_PITCH_AUTO:
 			// apply SIMPLE mode transform
 			if(do_simple && new_radio_frame){
 				update_simple_mode();
 			}
 			// mix in user control with Nav control
+			nav_roll			+= constrain(wrap_180(auto_roll - nav_roll), -g.auto_slew_rate.get(), g.auto_slew_rate.get()); // 40 deg a second
+			nav_pitch			+= constrain(wrap_180(auto_pitch - nav_pitch), -g.auto_slew_rate.get(), g.auto_slew_rate.get()); // 40 deg a second
+
 			control_roll 		= g.rc_1.control_mix(nav_roll);
 			control_pitch 		= g.rc_2.control_mix(nav_pitch);
 			g.rc_1.servo_out 	= get_stabilize_roll(control_roll);
@@ -1665,7 +1684,10 @@ static void update_navigation()
 			if((wp_distance <= g.waypoint_radius) || check_missed_wp()){
 				// if auto_land_timer value > 0, we are set to trigger auto_land after 20 seconds
 				set_mode(LOITER);
-				auto_land_timer = millis();
+				if(g.rtl_land_enabled || failsafe)
+					auto_land_timer = millis();
+				else
+					auto_land_timer = 0;
 				break;
 			}
 
@@ -1914,118 +1936,119 @@ adjust_altitude()
 
 static void tuning(){
 	tuning_value = (float)g.rc_6.control_in / 1000.0;
+	g.rc_6.set_range(g.radio_tuning_low,g.radio_tuning_high); 		// 0 to 1
 
 	switch(g.radio_tuning){
 
 		case CH6_DAMP:
-			g.rc_6.set_range(0,300); 		// 0 to 1
-			g.stablize_d.set(tuning_value);
+			g.stabilize_d.set(tuning_value);
 
-			//g.rc_6.set_range(0,60); 		// 0 to 1
+			//tuning_value = (float)g.rc_6.control_in / 100000.0;
+			//g.rc_6.set_range(0,1000); 		// 0 to 1
 			//g.pid_rate_roll.kD(tuning_value);
 			//g.pid_rate_pitch.kD(tuning_value);
 			break;
 
 		case CH6_STABILIZE_KP:
-			g.rc_6.set_range(0,8000); 		// 0 to 8
+			//g.rc_6.set_range(0,8000); 		// 0 to 8
 			g.pi_stabilize_roll.kP(tuning_value);
 			g.pi_stabilize_pitch.kP(tuning_value);
 			break;
 
 		case CH6_STABILIZE_KI:
-			g.rc_6.set_range(0,300); 		// 0 to .3
-			tuning_value = (float)g.rc_6.control_in / 1000.0;
+			//g.rc_6.set_range(0,300); 		// 0 to .3
+			//tuning_value = (float)g.rc_6.control_in / 1000.0;
 			g.pi_stabilize_roll.kI(tuning_value);
 			g.pi_stabilize_pitch.kI(tuning_value);
 			break;
 
 		case CH6_RATE_KP:
-			g.rc_6.set_range(40,300);		 // 0 to .3
+			//g.rc_6.set_range(40,300);		 // 0 to .3
 			g.pid_rate_roll.kP(tuning_value);
 			g.pid_rate_pitch.kP(tuning_value);
 			break;
 
 		case CH6_RATE_KI:
-			g.rc_6.set_range(0,300);		 // 0 to .3
+			//g.rc_6.set_range(0,500);		 // 0 to .5
 			g.pid_rate_roll.kI(tuning_value);
 			g.pid_rate_pitch.kI(tuning_value);
 			break;
 
 		case CH6_YAW_KP:
-			g.rc_6.set_range(0,1000);
+			//g.rc_6.set_range(0,1000);
 			g.pi_stabilize_yaw.kP(tuning_value);
 			break;
 
 		case CH6_YAW_RATE_KP:
-			g.rc_6.set_range(0,1000);
+			//g.rc_6.set_range(0,1000);
 			g.pid_rate_yaw.kP(tuning_value);
 			break;
 
 		case CH6_THROTTLE_KP:
-			g.rc_6.set_range(0,1000);       // 0 to 1
+			//g.rc_6.set_range(0,1000);       // 0 to 1
 			g.pid_throttle.kP(tuning_value);
 			break;
 
 		case CH6_TOP_BOTTOM_RATIO:
-			g.rc_6.set_range(800,1000); 	// .8 to 1
+			//g.rc_6.set_range(800,1000); 	// .8 to 1
 			g.top_bottom_ratio = tuning_value;
 			break;
 
 		case CH6_RELAY:
-			g.rc_6.set_range(0,1000);
+			//g.rc_6.set_range(0,1000);
 		  	if (g.rc_6.control_in > 525) relay.on();
 		  	if (g.rc_6.control_in < 475) relay.off();
 			break;
 
 		case CH6_TRAVERSE_SPEED:
-			g.rc_6.set_range(0,1000);
+			//g.rc_6.set_range(0,1000);
 			g.waypoint_speed_max = g.rc_6.control_in;
 			break;
 
 		case CH6_LOITER_P:
-			g.rc_6.set_range(0,2000);
+			//g.rc_6.set_range(0,2000);
 			g.pi_loiter_lat.kP(tuning_value);
 			g.pi_loiter_lon.kP(tuning_value);
 			break;
 
 		case CH6_NAV_P:
-			g.rc_6.set_range(0,4000);
+			//g.rc_6.set_range(0,4000);
 			g.pid_nav_lat.kP(tuning_value);
 			g.pid_nav_lon.kP(tuning_value);
 			break;
 
 		case CH6_NAV_I:
-			g.rc_6.set_range(0,500);
+			//g.rc_6.set_range(0,500);
 			g.pid_nav_lat.kI(tuning_value);
 			g.pid_nav_lon.kI(tuning_value);
 			break;
 
 		#if FRAME_CONFIG == HELI_FRAME
 		case CH6_HELI_EXTERNAL_GYRO:
-			g.rc_6.set_range(1000,2000);
+			//g.rc_6.set_range(1000,2000);
 			g.heli_ext_gyro_gain = tuning_value * 1000;
 			break;
 		#endif
 
 		case CH6_THR_HOLD_KP:
-			g.rc_6.set_range(0,1000);     // 0 to 1
+			//g.rc_6.set_range(0,1000);     // 0 to 1
 			g.pi_alt_hold.kP(tuning_value);
 			break;
 
 		case CH6_OPTFLOW_KP:
-			g.rc_6.set_range(0,5000);     // 0 to 5
+			//g.rc_6.set_range(0,5000);     // 0 to 5
 			g.pid_optflow_roll.kP(tuning_value);
 			g.pid_optflow_pitch.kP(tuning_value);
 			break;
 
 		case CH6_OPTFLOW_KI:
-			g.rc_6.set_range(0,10000);     // 0 to 10
+			//g.rc_6.set_range(0,10000);     // 0 to 10
 			g.pid_optflow_roll.kI(tuning_value);
 			g.pid_optflow_pitch.kI(tuning_value);
 			break;
 
 		case CH6_OPTFLOW_KD:
-			g.rc_6.set_range(0,200);    // 0 to 0.2
+			//g.rc_6.set_range(0,200);    // 0 to 0.2
 			g.pid_optflow_roll.kD(tuning_value);
 			g.pid_optflow_pitch.kD(tuning_value);
 			break;

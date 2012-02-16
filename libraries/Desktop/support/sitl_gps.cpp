@@ -146,6 +146,9 @@ void sitl_update_gps(double latitude, double longitude, float altitude,
 	velned.speed_3d = velned.speed_2d;
         lon_scale = cos(ToRad(latitude));
 	velned.heading_2d = ToDeg(atan2(lon_scale*speedE, speedN)) * 100000.0;
+	if (velned.heading_2d < 0.0) {
+		velned.heading_2d += 360.0 * 100000.0;
+	}
 	velned.speed_accuracy = 2;
 	velned.heading_accuracy = 4;
 
