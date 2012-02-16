@@ -1,0 +1,432 @@
+// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
+//
+// This is free software; you can redistribute it and/or modify it under
+// the terms of the GNU Lesser General Public License as published by the
+// Free Software Foundation; either version 2.1 of the License, or (at
+// your option) any later version.
+//
+
+/// @file	AP_Param.h
+/// @brief	A system for managing and storing variables that are of
+///			general interest to the system.
+
+#ifndef AP_PARAM_H
+#define AP_PARAM_H
+#include <stddef.h>
+#include <string.h>
+#include <stdint.h>
+
+#include <avr/pgmspace.h>
+#include <avr/eeprom.h>
+#include <AP_Math.h>
+
+#define AP_MAX_NAME_SIZE 15
+
+// a varient of offsetof() to work around C++ restrictions.
+// this can only be used when the offset of a variable in a object
+// is constant and known at compile time
+#define AP_VAROFFSET(type, element) (((uintptr_t)(&((const type *)1)->element))-1)
+
+// find the type of a variable given the class and element
+#define AP_CLASSTYPE(class, element) (((const class *)1)->element.vtype)
+
+// declare a group var_info line
+#define AP_GROUPINFO(name, idx, class, element) { AP_CLASSTYPE(class, element), idx, name, AP_VAROFFSET(class, element) }
+
+// declare a nested group entry in a group var_info
+#define AP_NESTEDGROUPINFO(class, idx) { AP_PARAM_GROUP, idx, "", 0, class::var_info }
+
+#define AP_GROUPEND	{ AP_PARAM_NONE, 0xFF, "" }
+
+enum ap_var_type {
+    AP_PARAM_NONE    = 0,
+    AP_PARAM_INT8,
+    AP_PARAM_INT16,
+    AP_PARAM_INT32,
+    AP_PARAM_FLOAT,
+    AP_PARAM_VECTOR3F,
+    AP_PARAM_VECTOR6F,
+    AP_PARAM_MATRIX3F,
+    AP_PARAM_GROUP
+};
+
+/// Base class for variables.
+///
+/// Provides naming and lookup services for variables.
+///
+class AP_Param
+{
+public:
+    // the Info and GroupInfo structures are passed by the main
+    // program in setup() to give information on how variables are
+    // named and their location in memory
+    struct GroupInfo {
+        uint8_t type; // AP_PARAM_*
+        uint8_t idx;  // identifier within the group
+        const char name[AP_MAX_NAME_SIZE];
+        uintptr_t offset; // offset within the object
+        const struct GroupInfo *group_info;
+    };
+    struct Info {
+        uint8_t type; // AP_PARAM_*
+        const char name[AP_MAX_NAME_SIZE];
+        uint8_t key; // k_param_*
+        void *ptr;    // pointer to the variable in memory
+        const struct GroupInfo *group_info;
+    };
+
+    // called once at startup to setup the _var_info[] table. This
+    // will also check the EEPROM header and re-initialise it if the
+    // wrong version is found
+    static bool setup(const struct Info *info, uint8_t num_vars, uint16_t eeprom_size);
+
+    /// Copy the variable's name, prefixed by any containing group name, to a buffer.
+    ///
+    /// If the variable has no name, the buffer will contain an empty string.
+    ///
+    /// Note that if the combination of names is larger than the buffer, the
+    /// result in the buffer will be truncated.
+    ///
+    /// @param	buffer			The destination buffer
+    /// @param	bufferSize		Total size of the destination buffer.
+    ///
+    void copy_name(char *buffer, size_t bufferSize);
+
+    /// Find a variable by name.
+    ///
+    /// If the variable has no name, it cannot be found by this interface.
+    ///
+    /// @param  name            The full name of the variable to be found.
+    /// @return                 A pointer to the variable, or NULL if
+    ///                         it does not exist.
+    ///
+    static AP_Param *find(const char *name, enum ap_var_type *ptype);
+
+    /// Save the current value of the variable to EEPROM.
+    ///
+    /// @return                True if the variable was saved successfully.
+    ///
+    bool save(void);
+
+    /// Load the variable from EEPROM.
+    ///
+    /// @return                True if the variable was loaded successfully.
+    ///
+    bool load(void);
+
+    /// Load all variables from EEPROM
+    ///
+    /// This function performs a best-efforts attempt to load all
+    /// of the variables from EEPROM.  If some fail to load, their
+    /// values will remain as they are.
+    ///
+    /// @return                False if any variable failed to load
+    ///
+    static bool load_all(void);
+
+    /// Erase all variables in EEPROM.
+    ///
+    static void erase_all(void);
+
+    /// print the value of all variables
+    static void show_all(void);
+
+    /// Returns the first variable
+    ///
+    /// @return             The first variable in _var_info, or NULL if
+    ///                     there are none.
+    ///
+    static AP_Param *first(uint16_t *token, enum ap_var_type *ptype);
+
+    /// Returns the next variable in _var_info, recursing into groups
+    /// as needed
+    static AP_Param *next(uint16_t *token, enum ap_var_type *ptype);
+
+    /// Returns the next scalar variable in _var_info, recursing into groups
+    /// as needed
+    static AP_Param *next_scalar(uint16_t *token, enum ap_var_type *ptype);
+
+    /// cast a variable to a float given its type
+    float cast_to_float(enum ap_var_type type);
+
+private:
+    /// EEPROM header
+    ///
+    /// This structure is placed at the head of the EEPROM to indicate
+    /// that the ROM is formatted for AP_Param.
+    ///
+    struct EEPROM_header {
+        uint8_t     magic[2];
+        uint8_t     revision;
+        uint8_t     spare;
+    };
+
+    // This header is prepended to a variable stored in EEPROM.
+    struct Param_header {
+        uint8_t    key;
+        uint8_t    group_element;
+        uint8_t    type;
+    };
+
+    // number of bits in each level of nesting of groups
+    static const uint8_t _group_level_shift = 4;
+    static const uint8_t _group_bits  = 8;
+
+    static const uint8_t  _sentinal_key   = 0xFF;
+    static const uint8_t  _sentinal_type  = 0xFF;
+    static const uint8_t  _sentinal_group = 0xFF;
+
+    static bool check_group_info(const struct GroupInfo *group_info, uint16_t *total_size, uint8_t max_bits);
+    static bool check_var_info(void);
+    const struct Info *find_var_info_group(const struct GroupInfo *group_info,
+                                           uint8_t vindex,
+                                           uint8_t group_base,
+                                           uint8_t group_shift,
+                                           uint8_t *group_element,
+                                           const struct GroupInfo **group_ret);
+    const struct Info *find_var_info(uint8_t *group_element,
+                                     const struct GroupInfo **group_ret);
+    static const struct Info *find_by_header_group(struct Param_header phdr, void **ptr,
+                                                   uint8_t vindex,
+                                                   const struct GroupInfo *group_info,
+                                                   uint8_t group_base,
+                                                   uint8_t group_shift);
+    static const struct Info *find_by_header(struct Param_header phdr, void **ptr);
+    static AP_Param *find_group(const char *name, uint8_t vindex, const struct GroupInfo *group_info, enum ap_var_type *ptype);
+    static void write_sentinal(uint16_t ofs);
+    bool scan(const struct Param_header *phdr, uint16_t *pofs);
+    static const uint8_t type_size(enum ap_var_type type);
+    static void eeprom_write_check(const void *ptr, uint16_t ofs, uint8_t size);
+    static AP_Param *next_group(uint8_t vindex, const struct GroupInfo *group_info,
+                                bool *found_current,
+                                uint8_t group_base,
+                                uint8_t group_shift,
+                                uint16_t *token,
+                                enum ap_var_type *ptype);
+
+    static uint16_t _eeprom_size;
+    static uint8_t _num_vars;
+    static const struct Info *_var_info;
+
+    // values filled into the EEPROM header
+    static const uint8_t   k_EEPROM_magic0      = 0x50;
+    static const uint8_t   k_EEPROM_magic1      = 0x41;   ///< "AP"
+    static const uint8_t   k_EEPROM_revision    = 5;        ///< current format revision
+};
+
+/// Template class for scalar variables.
+///
+/// Objects of this type have a value, and can be treated in many ways as though they
+/// were the value.
+///
+/// @tparam T			The scalar type of the variable
+/// @tparam PT			The AP_PARAM_* type
+///
+template<typename T, ap_var_type PT>
+class AP_ParamT : public AP_Param
+{
+public:
+    /// Constructor for scalar variable.
+    ///
+    /// Initialises a stand-alone variable with optional initial value.
+    ///
+    /// @param  default_value   Value the variable should have at startup.
+    ///
+    AP_ParamT<T,PT> (const T initial_value = 0) :
+        AP_Param(),
+        _value(initial_value)
+    {
+    }
+
+    static const ap_var_type vtype = PT;
+
+    /// Value getter
+    ///
+    T get(void) const {
+        return _value;
+    }
+
+    /// Value setter
+    ///
+    void set(T v) {
+        _value = v;
+    }
+
+    /// Combined set and save
+    ///
+    bool set_and_save(T v) {
+        set(v);
+        return save();
+    }
+
+    /// Conversion to T returns a reference to the value.
+    ///
+    /// This allows the class to be used in many situations where the value would be legal.
+    ///
+    operator T &() {
+        return _value;
+    }
+
+    /// Copy assignment from self does nothing.
+    ///
+    AP_ParamT<T,PT>& operator=(AP_ParamT<T,PT>& v) {
+        return v;
+    }
+
+    /// Copy assignment from T is equivalent to ::set.
+    ///
+    AP_ParamT<T,PT>& operator=(T v) {
+        _value = v;
+        return *this;
+    }
+
+    /// AP_ParamT types can implement AP_Param::cast_to_float
+    ///
+    float cast_to_float(void) {
+        return (float)_value;
+    }
+
+protected:
+    T _value;
+};
+
+
+/// Template class for non-scalar variables.
+///
+/// Objects of this type have a value, and can be treated in many ways as though they
+/// were the value.
+///
+/// @tparam T			The scalar type of the variable
+/// @tparam PT			AP_PARAM_* type
+///
+template<typename T, ap_var_type PT>
+class AP_ParamV : public AP_Param
+{
+public:
+    static const ap_var_type vtype = PT;
+
+    /// Value getter
+    ///
+    T get(void) const {
+        return _value;
+    }
+
+    /// Value setter
+    ///
+    void set(T v) {
+        _value = v;
+    }
+
+    /// Combined set and save
+    ///
+    bool set_and_save(T v) {
+        set(v);
+        return save();
+    }
+
+    /// Conversion to T returns a reference to the value.
+    ///
+    /// This allows the class to be used in many situations where the value would be legal.
+    ///
+    operator T &() {
+        return _value;
+    }
+
+    /// Copy assignment from self does nothing.
+    ///
+    AP_ParamT<T,PT>& operator=(AP_ParamT<T,PT>& v) {
+        return v;
+    }
+
+    /// Copy assignment from T is equivalent to ::set.
+    ///
+    AP_ParamT<T,PT>& operator=(T v) {
+        _value = v;
+        return *this;
+    }
+
+protected:
+    T _value;
+};
+
+
+/// Template class for array variables.
+///
+/// Objects created using this template behave like arrays of the type T,
+/// but are stored like single variables.
+///
+/// @tparam T           The scalar type of the variable
+/// @tparam N           number of elements
+/// @tparam PT          the AP_PARAM_* type
+///
+template<typename T, uint8_t N, ap_var_type PT>
+class AP_ParamA : public AP_Param
+{
+public:
+    static const ap_var_type vtype = PT;
+
+    /// Array operator accesses members.
+    ///
+    /// @note It would be nice to range-check i here, but then what would we return?
+    ///
+    T &operator [](uint8_t i) {
+        return _value[i];
+    }
+
+    /// Value getter
+    ///
+    /// @note   Returns zero for index values out of range.
+    ///
+    T get(uint8_t i) const {
+        if (i < N) {
+            return _value[i];
+        } else {
+            return (T)0;
+        }
+    }
+
+    /// Value setter
+    ///
+    /// @note   Attempts to set an index out of range are discarded.
+    ///
+    void set(uint8_t i, T v) {
+        if (i < N) {
+            _value[i] = v;
+        }
+    }
+
+    /// Copy assignment from self does nothing.
+    ///
+    AP_ParamA<T,N,PT>& operator=(AP_ParamA<T,N,PT>& v) {
+        return v;
+    }
+
+protected:
+    T _value[N];
+};
+
+
+
+/// Convenience macro for defining instances of the AP_ParamT template.
+///
+#define AP_PARAMDEF(_t, _n, _pt)   typedef AP_ParamT<_t, _pt> AP_##_n;
+AP_PARAMDEF(float, Float, AP_PARAM_FLOAT);    // defines AP_Float
+AP_PARAMDEF(int8_t, Int8, AP_PARAM_INT8);     // defines AP_Int8
+AP_PARAMDEF(int16_t, Int16, AP_PARAM_INT16);  // defines AP_Int16
+AP_PARAMDEF(int32_t, Int32, AP_PARAM_INT32);  // defines AP_Int32
+
+#define AP_PARAMDEFV(_t, _n, _pt)   typedef AP_ParamV<_t, _pt> AP_##_n;
+AP_PARAMDEFV(Matrix3f, Matrix3f, AP_PARAM_MATRIX3F);
+AP_PARAMDEFV(Vector3f, Vector3f, AP_PARAM_VECTOR3F);
+
+#define AP_PARAMDEFA(_t, _n, _size, _pt)   typedef AP_ParamA<_t, _size, _pt> AP_##_n;
+AP_PARAMDEFA(float, Vector6f, 6, AP_PARAM_VECTOR6F);
+
+/// Rely on built in casting for other variable types
+/// to minimize template creation and save memory
+#define AP_Uint8    AP_Int8
+#define AP_Uint16   AP_Int16
+#define AP_Uint32   AP_Int32
+#define AP_Bool     AP_Int8
+
+#endif // AP_PARAM_H

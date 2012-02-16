@@ -12,27 +12,22 @@
 /// @class	RC_Channel
 /// @brief	Object managing one RC channel
 class RC_Channel{
-  protected:
-	AP_Var_group    _group;		// must be before all vars to keep ctor init order correct
-
   public:
 	/// Constructor
 	///
 	/// @param key      EEPROM storage key for the channel trim parameters.
 	/// @param name     Optional name for the group.
 	///
-	RC_Channel(AP_Var::Key key, const prog_char_t *name) :
-	    _group(key, name),
-        radio_min (&_group, 0, 1100, name ? PSTR("MIN") : 0), // suppress name if group has no name
-        radio_trim(&_group, 1, 1500, name ? PSTR("TRIM") : 0),
-        radio_max (&_group, 2, 1900, name ? PSTR("MAX") : 0),
+       RC_Channel() :
+        radio_min (1100),
+        radio_trim(1500),
+        radio_max (1900),
 		_high(1),
 		_filter(false),
-		_reverse  (&_group, 3,    1, name ? PSTR("REV") : 0),
-		_dead_zone (&_group, 4,   0, name ? PSTR("DZ") : 0),
-		//_dead_zone(0),
+		_reverse(1),
+		_dead_zone(0),
 		scale_output(1.0)
-	{}
+		{}
 
 	// setup min and max radio values in CLI
 	void 		update_min_max();
@@ -97,12 +92,12 @@ class RC_Channel{
     static void set_apm_rc(APM_RC_Class * apm_rc);
     static APM_RC_Class *_apm_rc;
 
+    static const struct AP_Param::GroupInfo var_info[];
+
   private:
 	bool		_filter;
 	AP_Int8 	_reverse;
-
 	AP_Int16 	_dead_zone;
-	//int16_t 	_dead_zone; // used to keep noise down and create a dead zone.
 	uint8_t 	_type;
 	int16_t 	_high;
 	int16_t 	_low;

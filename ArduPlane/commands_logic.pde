@@ -276,7 +276,7 @@ static void do_loiter_time()
 static bool verify_takeoff()
 {
 	if (g_gps->ground_speed > 300){
-		if(hold_course == -1){
+		if (hold_course == -1) {
 			// save our current course to take off
 			if(g.compass_enabled) {
 				hold_course = dcm.yaw_sensor;
@@ -286,7 +286,7 @@ static bool verify_takeoff()
 		}
 	}
 
-	if(hold_course > -1){
+	if (hold_course != -1) {
 		// recalc bearing error with hold_course;
 		nav_bearing = hold_course;
 		// recalc bearing error
@@ -302,23 +302,35 @@ static bool verify_takeoff()
 	}
 }
 
+// we are executing a landing
 static bool verify_land()
 {
-	// we don't verify landing - we never go to a new Nav command after Land
+	// we don't 'verify' landing in the sense that it never completes,
+	// so we don't verify command completion. Instead we use this to
+	// adjust final landing parameters
+
+    // Set land_complete if we are within 2 seconds distance or within
+    // 3 meters altitude of the landing point
 	if (((wp_distance > 0) && (wp_distance <= (2*g_gps->ground_speed/100)))
 		|| (current_loc.alt <= next_WP.alt + 300)){
 
-		land_complete = 1;		//Set land_complete if we are within 2 seconds distance or within 3 meters altitude
+		land_complete = 1;
 
-		if(hold_course == -1){
-			// save our current course to land
-			//hold_course = yaw_sensor;
-			// save the course line of the runway to land
-			hold_course = crosstrack_bearing;
+		if(hold_course == -1) {
+            // we have just reached the threshold of 2 seconds or 3
+			// meters to landing. We now don't want to do any radical
+			// turns, as rolling could put the wings into the runway.
+			// To prevent further turns we set hold_course to the
+			// current heading. Previously we set this to
+			// crosstrack_bearing, but the xtrack bearing can easily
+			// be quite large at this point, and that could induce a
+			// sudden large roll correction which is very nasty at
+			// this point in the landing.
+			hold_course = dcm.yaw_sensor;
 		}
 	}
 
-	if(hold_course > -1){
+	if (hold_course != -1){
 		// recalc bearing error with hold_course;
 		nav_bearing = hold_course;
 		// recalc bearing error
@@ -489,15 +501,15 @@ static void do_change_speed()
 	{
 		case 0: // Airspeed
 			if(next_nonnav_command.alt > 0)
-				g.airspeed_cruise.set_and_save(next_nonnav_command.alt * 100);
+				g.airspeed_cruise.set(next_nonnav_command.alt * 100);
 			break;
 		case 1: // Ground speed
-			g.min_gndspeed.set_and_save(next_nonnav_command.alt * 100);
+			g.min_gndspeed.set(next_nonnav_command.alt * 100);
 			break;
 	}
 
 	if(next_nonnav_command.lat > 0)
-		g.throttle_cruise.set_and_save(next_nonnav_command.lat);
+		g.throttle_cruise.set(next_nonnav_command.lat);
 }
 
 static void do_set_home()

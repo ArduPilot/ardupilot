@@ -26,9 +26,8 @@ public:
     /// @param  adc         Pointer to the AP_ADC instance that is connected to the gyro and accelerometer.
     /// @param  key         The AP_Var::key value we will use when loading/saving calibration data.
     ///
-	AP_IMU_INS(AP_InertialSensor *ins, AP_Var::Key key) :
-        _ins(ins),
-	    _sensor_cal(key, PSTR("IMU_SENSOR_CAL"))
+	AP_IMU_INS(AP_InertialSensor *ins) :
+        _ins(ins)
 	{}
 
 	/// Do warm or cold start.
@@ -65,10 +64,11 @@ public:
 	virtual void		ay(const float v)		{ _sensor_cal[4] = v; }
 	virtual void		az(const float v)		{ _sensor_cal[5] = v; }
 
+    static const struct AP_Param::GroupInfo var_info[];
 
 private:
     AP_InertialSensor   *_ins;          ///< INS provides an axis and unit correct sensor source.
-    AP_VarA<float,6>    _sensor_cal;    ///< Calibrated sensor offsets
+    AP_Vector6f         _sensor_cal;    ///< Calibrated sensor offsets
 
     virtual void        _init_accel(void (*delay_cb)(unsigned long t),
                                     void (*flash_leds_cb)(bool on) = NULL);  ///< no-save implementation

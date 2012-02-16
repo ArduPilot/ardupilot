@@ -14,59 +14,14 @@
 class PID {
 public:
 
-	/// Constructor for PID that saves its settings to EEPROM
-	///
-	/// @note	PIDs must be named to avoid either multiple parameters with the
-	///			same name, or an overly complex constructor.
-	///
-	/// @param	key 			Storage key assigned to this PID.  Should be unique.
-	/// @param	name			Name by which the PID is known, or NULL for an anonymous PID.
-	///                         The name is prefixed to the P, I, D, IMAX variable names when
-	///                         they are reported.
-	/// @param  initial_p       Initial value for the P term.
-    /// @param  initial_i       Initial value for the I term.
-    /// @param  initial_d       Initial value for the D term.
-    /// @param  initial_imax    Initial value for the imax term.4
-	///
-	PID(AP_Var::Key key,
-	    const prog_char_t *name,
-	    const float &initial_p = 0.0,
-	    const float &initial_i = 0.0,
-	    const float &initial_d = 0.0,
-	    const int16_t &initial_imax = 0.0) :
-
-		_group(key, name),
-		// group, index, initial value, name
-		_kp  (&_group, 0, initial_p, PSTR("P")),
-		_ki  (&_group, 1, initial_i, PSTR("I")),
-		_kd  (&_group, 2, initial_d, PSTR("D")),
-		_imax(&_group, 3, initial_imax, PSTR("IMAX"))
-	{
-		// no need for explicit load, assuming that the main code uses AP_Var::load_all.
-	}
-
-	/// Constructor for PID that does not save its settings.
-	///
-    /// @param  name            Name by which the PID is known, or NULL for an anonymous PID.
-    ///                         The name is prefixed to the P, I, D, IMAX variable names when
-    ///                         they are reported.
-    /// @param  initial_p       Initial value for the P term.
-    /// @param  initial_i       Initial value for the I term.
-    /// @param  initial_d       Initial value for the D term.
-    /// @param  initial_imax    Initial value for the imax term.4
-	///
-    PID(const prog_char_t *name,
-        const float &initial_p = 0.0,
+    PID(const float &initial_p = 0.0,
         const float &initial_i = 0.0,
         const float &initial_d = 0.0,
-        const int16_t &initial_imax = 0.0) :
-
-        _group(AP_Var::k_key_none, name),
-        // group, index, initial value, name
-        _kp  (&_group, 0, initial_p, PSTR("P")),
-        _ki  (&_group, 1, initial_i, PSTR("I")),
-        _kd  (&_group, 2, initial_d, PSTR("D")),
-        _imax(&_group, 3, initial_imax, PSTR("IMAX"))
+        const int16_t &initial_imax = 0) :
+		_kp  (initial_p),
+		_ki  (initial_i),
+		_kd  (initial_d),
+		_imax(initial_imax)
     {
 	}
 
@@ -120,11 +75,12 @@ public:
 
 	float	get_integrator() const	{ return _integrator; }
 
+    static const struct AP_Param::GroupInfo var_info[];
+
 private:
-	AP_Var_group	    _group;
-	AP_Float16			_kp;
-	AP_Float16			_ki;
-	AP_Float16			_kd;
+	AP_Float			_kp;
+	AP_Float			_ki;
+	AP_Float			_kd;
 	AP_Int16			_imax;
 
 	float				_integrator;		///< integrator value

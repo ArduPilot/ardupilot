@@ -75,7 +75,7 @@ bool AP_Compass_HMC5843::write_register(uint8_t address, byte value)
   the 5883L has a different orientation to the 5843. This allows us to
   use a single MAG_ORIENTATION for both
  */
-static void rotate_for_5883L(AP_VarS<Matrix3f> *_orientation_matrix)
+static void rotate_for_5883L(AP_Matrix3f *_orientation_matrix)
 {
 		_orientation_matrix->set_and_save(_orientation_matrix->get() * Matrix3f(ROTATION_YAW_90));
 }

@@ -51,7 +51,6 @@
 #endif
 
 #if defined( __AVR_ATmega1280__ )
-#define CLI_ENABLED DISABLED
 #define LOGGING_ENABLED DISABLED
 #endif
 

@@ -7,6 +7,14 @@
 
 #include "PID.h"
 
+const AP_Param::GroupInfo PID::var_info[] PROGMEM = {
+	AP_GROUPINFO("P",    0, PID, _kp),
+	AP_GROUPINFO("I",    1, PID, _ki),
+	AP_GROUPINFO("D",    2, PID, _kd),
+	AP_GROUPINFO("IMAX", 3, PID, _imax),
+	AP_GROUPEND
+};
+
 long
 PID::get_pid(int32_t error, uint16_t dt, float scaler)
 {
@@ -62,11 +70,17 @@ PID::reset_I()
 void
 PID::load_gains()
 {
-    _group.load();
+	_kp.load();
+	_ki.load();
+	_kd.load();
+	_imax.load();
 }
 
 void
 PID::save_gains()
 {
-    _group.save();
+	_kp.save();
+	_ki.save();
+	_kd.save();
+	_imax.save();
 }

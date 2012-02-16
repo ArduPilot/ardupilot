@@ -108,7 +108,7 @@ protected:
 class GCS_MAVLINK : public GCS_Class
 {
 public:
-	GCS_MAVLINK(AP_Var::Key key);
+	GCS_MAVLINK();
 	void    update(void);
 	void	init(FastSerial *port);
 	void	send_message(enum ap_message id);
@@ -118,13 +118,16 @@ public:
 	void    queued_param_send();
 	void    queued_waypoint_send();
 
+    static const struct AP_Param::GroupInfo var_info[];
+
 private:
 	void 	handleMessage(mavlink_message_t * msg);
 
 	/// Perform queued sending operations
 	///
-
-	AP_Var      *_queued_parameter;                 ///< next parameter to be sent in queue
+	AP_Param   *_queued_parameter;                  ///< next parameter to be sent in queue
+    enum ap_var_type _queued_parameter_type;        ///< type of the next parameter
+    uint16_t	_queued_parameter_token;            ///AP_Param token for next() call
 	uint16_t    _queued_parameter_index;            ///< next queued parameter's index
     uint16_t    _queued_parameter_count;            ///< saved count of parameters for queued send
 
@@ -139,7 +142,6 @@ private:
     uint16_t    _count_parameters();                ///< count reportable parameters
 
     uint16_t    _parameter_count;                   ///< cache of reportable parameters
-    AP_Var      *_find_parameter(uint16_t index);   ///< find a reportable parameter by index
 
 	mavlink_channel_t chan;
     uint16_t packet_drops;
@@ -163,7 +165,6 @@ private:
 	uint16_t waypoint_receive_timeout; // milliseconds
 
 	// data stream rates
-	AP_Var_group	    _group;
 	AP_Int16 streamRateRawSensors;
 	AP_Int16 streamRateExtendedStatus;
 	AP_Int16 streamRateRCChannels;

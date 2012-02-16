@@ -39,3 +39,13 @@ idiv32       37.71 usec/call
 memcpy128    56.76 usec/call
 memset128    49.71 usec/call
 delay(1)   1005.14 usec/call
+
+
+Additional notes:
+
+ eeprom_read_byte: 2 usec/call
+ eeprom_write_byte: first call costs 5 usec, each subsequent byte
+                    costs 3480 usec as it waits for the EEPROM to be
+                    ready from the previous byte
+
+ pgm_read_byte: 0.5 usec per byte

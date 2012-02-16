@@ -16,6 +16,10 @@
 #include "desktop.h"
 #include "util.h"
 
+#define MAG_OFS_X 17.0
+#define MAG_OFS_Y 125.0
+#define MAG_OFS_Z -18.0
+
 /*
   given a magnetic heading, and roll, pitch, yaw values,
   calculate consistent magnetometer components
@@ -44,7 +48,7 @@ static Vector3f heading_to_mag(float heading, float roll, float pitch, float yaw
 		cos_pitch = 1.0e-10;
 	}
 
-	v.z = -0.4;
+	v.z = -0.6*cos(roll)*cos(pitch);
 	v.y = (headY + v.z*sin_roll) / cos_roll;
 	v.x = (headX - (v.y*sin_roll*sin_pitch + v.z*cos_roll*sin_pitch)) / cos_pitch;
 	scale = magnitude / sqrt((v.x*v.x) + (v.y*v.y) + (v.z*v.z));
@@ -65,5 +69,5 @@ void sitl_update_compass(float heading, float roll, float pitch, float yaw)
 				    ToRad(roll),
 				    ToRad(pitch),
 				    ToRad(yaw));
-	compass.setHIL(m.x, m.y, m.z);
+	compass.setHIL(m.x - MAG_OFS_X, m.y - MAG_OFS_Y, m.z - MAG_OFS_Z);
 }

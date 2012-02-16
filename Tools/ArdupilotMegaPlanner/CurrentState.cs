@@ -186,6 +186,59 @@ namespace ArdupilotMega
         public ushort rcoverridech7 { get; set; }
         public ushort rcoverridech8 { get; set; }
 
+        internal PointLatLngAlt HomeLocation = new PointLatLngAlt();
+
+        public float DistToMAV
+        {
+            get
+            {    
+                // shrinking factor for longitude going to poles direction
+                double rads = Math.Abs(HomeLocation.Lat) * 0.0174532925;
+                double scaleLongDown = Math.Cos(rads);
+                double scaleLongUp = 1.0f / Math.Cos(rads);
+
+                //DST to Home
+                double dstlat = Math.Abs(HomeLocation.Lat - lat) * 111319.5;
+                double dstlon = Math.Abs(HomeLocation.Lng - lng) * 111319.5 * scaleLongDown;
+                return (float)Math.Sqrt((dstlat * dstlat) + (dstlon * dstlon));
+            }
+        }
+
+        public float ELToMAV
+        {
+            get
+            {
+                float dist = DistToMAV;
+
+                float altdiff = (float)(alt - HomeLocation.Alt);
+
+                float angle = (float)Math.Atan(altdiff / dist) * rad2deg;
+
+                return angle;
+            }
+        }
+
+        public float AZToMAV
+        {
+            get
+            {             
+                // shrinking factor for longitude going to poles direction
+                double rads = Math.Abs(HomeLocation.Lat) * 0.0174532925;
+                double scaleLongDown = Math.Cos(rads);
+                double scaleLongUp = 1.0f / Math.Cos(rads);
+
+                //DIR to Home
+                double dstlon = (HomeLocation.Lng - lng); //OffSet_X
+                double dstlat = (HomeLocation.Lat - lat) * scaleLongUp; //OffSet Y
+                double bearing = 90 + (Math.Atan2(dstlat, -dstlon) * 57.295775); //absolut home direction
+                if (bearing < 0) bearing += 360;//normalization
+                //bearing = bearing - 180;//absolut return direction
+                //if (bearing < 0) bearing += 360;//normalization
+
+                return (float)bearing;
+            }
+        }
+
         // current firmware
         public MainV2.Firmwares firmware = MainV2.Firmwares.ArduPlane;
         public float freemem { get; set; }
@@ -658,6 +711,7 @@ namespace ArdupilotMega
                     groundspeed = gps.v;
                     groundcourse = gps.hdg;
 
+
                     //MAVLink.packets[MAVLink.MAVLINK_MSG_ID_GPS_RAW] = null;
                 }				
 #endif
@@ -853,7 +907,16 @@ namespace ArdupilotMega
                     airspeed = vfr.airspeed;
 
                     alt = vfr.alt; // this might include baro
-
+                    /*
+                    if (vfr.throttle > 150 || vfr.throttle < 0)
+                    {
+                        Console.WriteLine(0);
+                    }
+                    else
+                    {
+                        Console.WriteLine(vfr.throttle);
+                    }
+                    */
                     //climbrate = vfr.climb;
 
                     if ((DateTime.Now - lastalt).TotalSeconds >= 0.1 && oldalt != alt)

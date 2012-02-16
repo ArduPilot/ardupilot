@@ -5,21 +5,21 @@
 static void init_motors_out()
 {
 	#if INSTANT_PWM == 0
-    APM_RC.SetFastOutputChannels( _BV(MOT_1) | _BV(MOT_2) | _BV(MOT_3) | _BV(MOT_4)
-                                | _BV(MOT_5) | _BV(MOT_6) | _BV(MOT_7) | _BV(MOT_8) );
+	APM_RC.SetFastOutputChannels(_BV(MOT_1) | _BV(MOT_2) | _BV(MOT_3) | _BV(MOT_4)
+								| _BV(MOT_5) | _BV(MOT_6) | _BV(MOT_7) | _BV(MOT_8));
 	#endif
 }
 
 static void motors_output_enable()
 {
-  APM_RC.enable_out(MOT_1);
-  APM_RC.enable_out(MOT_2);
-  APM_RC.enable_out(MOT_3);
-  APM_RC.enable_out(MOT_4);
-  APM_RC.enable_out(MOT_5);
-  APM_RC.enable_out(MOT_6);
-  APM_RC.enable_out(MOT_7);
-  APM_RC.enable_out(MOT_8);
+	APM_RC.enable_out(MOT_1);
+	APM_RC.enable_out(MOT_2);
+	APM_RC.enable_out(MOT_3);
+	APM_RC.enable_out(MOT_4);
+	APM_RC.enable_out(MOT_5);
+	APM_RC.enable_out(MOT_6);
+	APM_RC.enable_out(MOT_7);
+	APM_RC.enable_out(MOT_8);
 }
 
 static void output_motors_armed()
@@ -47,63 +47,62 @@ static void output_motors_armed()
 		motor_out[MOT_2]		= ((g.rc_3.radio_out * g.top_bottom_ratio) + roll_out + pitch_out);		//	APM2 OUT2	APM1 OUT2	 FRONT LEFT		CW		TOP
 		motor_out[MOT_3]		= ((g.rc_3.radio_out * g.top_bottom_ratio) + roll_out - pitch_out);		//	APM2 OUT3	APM1 OUT3	 BACK LEFT		CCW		TOP
 		motor_out[MOT_4]		= ((g.rc_3.radio_out * g.top_bottom_ratio) - roll_out - pitch_out);		//	APM2 OUT4	APM1 OUT4	 BACK RIGHT		CW		TOP
-		motor_out[MOT_5]		=  g.rc_3.radio_out + roll_out + pitch_out;								//	APM2 OUT5	APM1 OUT7	 FRONT LEFT		CCW		BOTTOM
-		motor_out[MOT_6]		=  g.rc_3.radio_out - roll_out + pitch_out;								//	APM2 OUT6	APM1 OUT8	 FRONT RIGHT	CW		BOTTOM
-		motor_out[MOT_7]		=  g.rc_3.radio_out - roll_out - pitch_out;								//	APM2 OUT7	APM1 OUT10	 BACK RIGHT		CCW		BOTTOM
-		motor_out[MOT_8]		=  g.rc_3.radio_out + roll_out - pitch_out;								//	APM2 OUT8	APM1 OUT11	 BACK LEFT		CW		BOTTOM
+		motor_out[MOT_5]		=	g.rc_3.radio_out + roll_out + pitch_out;								//	APM2 OUT5	APM1 OUT7	 FRONT LEFT		CCW		BOTTOM
+		motor_out[MOT_6]		=	g.rc_3.radio_out - roll_out + pitch_out;								//	APM2 OUT6	APM1 OUT8	 FRONT RIGHT	CW		BOTTOM
+		motor_out[MOT_7]		=	g.rc_3.radio_out - roll_out - pitch_out;								//	APM2 OUT7	APM1 OUT10	 BACK RIGHT		CCW		BOTTOM
+		motor_out[MOT_8]		=	g.rc_3.radio_out + roll_out - pitch_out;								//	APM2 OUT8	APM1 OUT11	 BACK LEFT		CW		BOTTOM
 
 	}else{
-		roll_out 	 	= g.rc_1.pwm_out;
-		pitch_out 	 	= g.rc_2.pwm_out;
+		roll_out 	 			= g.rc_1.pwm_out;
+		pitch_out 	 			= g.rc_2.pwm_out;
 
-		motor_out[MOT_1]		= (g.rc_3.radio_out * g.top_bottom_ratio) + pitch_out;	//APM2 OUT1		APM1 OUT1		FRONT	CCW		TOP
-		motor_out[MOT_2]		= (g.rc_3.radio_out * g.top_bottom_ratio) + roll_out;	//APM2 OUT2		APM1 OUT2		LEFT	CW		TOP
-		motor_out[MOT_3]		= (g.rc_3.radio_out * g.top_bottom_ratio) - pitch_out;	//APM2 OUT3		APM1 OUT3		BACK	CCW		TOP
-		motor_out[MOT_4]		= (g.rc_3.radio_out * g.top_bottom_ratio) - roll_out;	//APM2 OUT4		APM1 OUT4		RIGHT	CW		TOP
-		motor_out[MOT_5]		=  g.rc_3.radio_out + roll_out;							//APM2 OUT5		APM1 OUT7		LEFT	CCW		BOTTOM
-		motor_out[MOT_6]		=  g.rc_3.radio_out + pitch_out;						//APM2 OUT6		APM1 OUT8		FRONT	CW		BOTTOM
-		motor_out[MOT_7]		=  g.rc_3.radio_out - roll_out;							//APM2 OUT7		APM1 OUT10		RIGHT	CCW		BOTTOM
-		motor_out[MOT_8]		=  g.rc_3.radio_out - pitch_out;						//APM2 OUT8		APM1 OUT11		BACK	CW		BOTTOM
+		motor_out[MOT_1]		= (g.rc_3.radio_out * g.top_bottom_ratio) + pitch_out;	// APM2 OUT1		APM1 OUT1		FRONT	CCW		TOP
+		motor_out[MOT_2]		= (g.rc_3.radio_out * g.top_bottom_ratio) + roll_out;	// APM2 OUT2		APM1 OUT2		LEFT	CW		TOP
+		motor_out[MOT_3]		= (g.rc_3.radio_out * g.top_bottom_ratio) - pitch_out;	// APM2 OUT3		APM1 OUT3		BACK	CCW		TOP
+		motor_out[MOT_4]		= (g.rc_3.radio_out * g.top_bottom_ratio) - roll_out;	// APM2 OUT4		APM1 OUT4		RIGHT	CW		TOP
+		motor_out[MOT_5]		= g.rc_3.radio_out + roll_out;							// APM2 OUT5		APM1 OUT7		LEFT	CCW		BOTTOM
+		motor_out[MOT_6]		= g.rc_3.radio_out + pitch_out;						// APM2 OUT6		APM1 OUT8		FRONT	CW		BOTTOM
+		motor_out[MOT_7]		= g.rc_3.radio_out - roll_out;							// APM2 OUT7		APM1 OUT10		RIGHT	CCW		BOTTOM
+		motor_out[MOT_8]		= g.rc_3.radio_out - pitch_out;						// APM2 OUT8		APM1 OUT11		BACK	CW		BOTTOM
 
-	// Yaw
-	motor_out[MOT_1]		+= g.rc_4.pwm_out;	// CCW
-	motor_out[MOT_3]		+= g.rc_4.pwm_out;	// CCW
-	motor_out[MOT_5]		+= g.rc_4.pwm_out;	// CCW
-	motor_out[MOT_7]		+= g.rc_4.pwm_out;	// CCW
+		// Yaw
+		motor_out[MOT_1]		+= g.rc_4.pwm_out;	// CCW
+		motor_out[MOT_3]		+= g.rc_4.pwm_out;	// CCW
+		motor_out[MOT_5]		+= g.rc_4.pwm_out;	// CCW
+		motor_out[MOT_7]		+= g.rc_4.pwm_out;	// CCW
 
-	motor_out[MOT_2]		-= g.rc_4.pwm_out;	// CW
-	motor_out[MOT_4]		-= g.rc_4.pwm_out;	// CW
-	motor_out[MOT_6]		-= g.rc_4.pwm_out;	// CW
-	motor_out[MOT_8]		-= g.rc_4.pwm_out;	// CW
-
-		
+		motor_out[MOT_2]		-= g.rc_4.pwm_out;	// CW
+		motor_out[MOT_4]		-= g.rc_4.pwm_out;	// CW
+		motor_out[MOT_6]		-= g.rc_4.pwm_out;	// CW
+		motor_out[MOT_8]		-= g.rc_4.pwm_out;	// CW
 	}
+
 	// TODO add stability patch
-	motor_out[MOT_1]		= min(motor_out[MOT_1], 	out_max);
-	motor_out[MOT_2]		= min(motor_out[MOT_2], 	out_max);
-	motor_out[MOT_3]		= min(motor_out[MOT_3], 	out_max);
-	motor_out[MOT_4]		= min(motor_out[MOT_4], 	out_max);
-	motor_out[MOT_5]		= min(motor_out[MOT_5],  out_max);
-	motor_out[MOT_6]		= min(motor_out[MOT_6],  out_max);
-	motor_out[MOT_7]	= min(motor_out[MOT_7], out_max);
-	motor_out[MOT_8] 	= min(motor_out[MOT_8], out_max);
+	motor_out[MOT_1]		= min(motor_out[MOT_1], out_max);
+	motor_out[MOT_2]		= min(motor_out[MOT_2], out_max);
+	motor_out[MOT_3]		= min(motor_out[MOT_3], out_max);
+	motor_out[MOT_4]		= min(motor_out[MOT_4], out_max);
+	motor_out[MOT_5]		= min(motor_out[MOT_5],	out_max);
+	motor_out[MOT_6]		= min(motor_out[MOT_6],	out_max);
+	motor_out[MOT_7]		= min(motor_out[MOT_7], out_max);
+	motor_out[MOT_8] 		= min(motor_out[MOT_8], out_max);
 
 	// limit output so motors don't stop
 	motor_out[MOT_1]		= max(motor_out[MOT_1], 	out_min);
 	motor_out[MOT_2]		= max(motor_out[MOT_2], 	out_min);
 	motor_out[MOT_3]		= max(motor_out[MOT_3], 	out_min);
-	motor_out[MOT_4] 	= max(motor_out[MOT_4], 	out_min);
+	motor_out[MOT_4] 		= max(motor_out[MOT_4], 	out_min);
 	motor_out[MOT_5]		= max(motor_out[MOT_5], 	out_min);
-	motor_out[MOT_6] 	= max(motor_out[MOT_6], 	out_min);
-	motor_out[MOT_7]	= max(motor_out[MOT_7], out_min);
-	motor_out[MOT_8] 	= max(motor_out[MOT_8], out_min);
+	motor_out[MOT_6] 		= max(motor_out[MOT_6], 	out_min);
+	motor_out[MOT_7]		= max(motor_out[MOT_7], out_min);
+	motor_out[MOT_8] 		= max(motor_out[MOT_8], out_min);
 
 	#if CUT_MOTORS == ENABLED
 	// if we are not sending a throttle output, we cut the motors
 	if(g.rc_3.servo_out == 0){
-		motor_out[MOT_1]		= g.rc_3.radio_min;
-		motor_out[MOT_2]		= g.rc_3.radio_min;
-		motor_out[MOT_3]		= g.rc_3.radio_min;
+		motor_out[MOT_1]	= g.rc_3.radio_min;
+		motor_out[MOT_2]	= g.rc_3.radio_min;
+		motor_out[MOT_3]	= g.rc_3.radio_min;
 		motor_out[MOT_4] 	= g.rc_3.radio_min;
 		motor_out[MOT_5] 	= g.rc_3.radio_min;
 		motor_out[MOT_6] 	= g.rc_3.radio_min;
@@ -114,8 +113,8 @@ static void output_motors_armed()
 
 	// this filter slows the acceleration of motors vs the deceleration
 	// Idea by Denny Rowland to help with his Yaw issue
-	for(int8_t m = 0; m <= 8; m++ ) {
-    int i = ch_of_mot(m);
+	for(int8_t m = 0; m <= 8; m++){
+		int i = ch_of_mot(m);
 		if(motor_filtered[i] < motor_out[i]){
 			motor_filtered[i] = (motor_out[i] + motor_filtered[i]) / 2;
 		}else{
@@ -150,7 +149,7 @@ static void output_motors_disarmed()
 	}
 
 	// fill the motor_out[] array for HIL use
-	for (unsigned char i = 0; i < 11; i++) {
+	for (unsigned char i = 0; i < 11; i++){
 		motor_out[i] = g.rc_3.radio_min;
 	}
 
@@ -167,37 +166,62 @@ static void output_motors_disarmed()
 
 static void output_motor_test()
 {
-	APM_RC.OutputCh(MOT_6, g.rc_3.radio_min);
-	APM_RC.OutputCh(MOT_7, g.rc_3.radio_min + 100);
-	delay(1000);
-
-	APM_RC.OutputCh(MOT_7, g.rc_3.radio_min);
-	APM_RC.OutputCh(MOT_8, g.rc_3.radio_min + 100);
-	delay(1000);
-
-	APM_RC.OutputCh(MOT_8, g.rc_3.radio_min);
-	APM_RC.OutputCh(MOT_1, g.rc_3.radio_min + 100);
-	delay(1000);
-
-	APM_RC.OutputCh(MOT_1, g.rc_3.radio_min);
-	APM_RC.OutputCh(MOT_2, g.rc_3.radio_min + 100);
-	delay(1000);
-
-	APM_RC.OutputCh(MOT_2, g.rc_3.radio_min);
-	APM_RC.OutputCh(MOT_3, g.rc_3.radio_min + 100);
-	delay(1000);
-
-	APM_RC.OutputCh(MOT_3, g.rc_3.radio_min);
-	APM_RC.OutputCh(MOT_4, g.rc_3.radio_min + 100);
-	delay(1000);
-
-	APM_RC.OutputCh(MOT_4, g.rc_3.radio_min);
-	APM_RC.OutputCh(MOT_5, g.rc_3.radio_min + 100);
-	delay(1000);
+	motor_out[MOT_1] = g.rc_3.radio_min;
+	motor_out[MOT_2] = g.rc_3.radio_min;
+	motor_out[MOT_3] = g.rc_3.radio_min;
+	motor_out[MOT_4] = g.rc_3.radio_min;
+	motor_out[MOT_5] = g.rc_3.radio_min;
+	motor_out[MOT_6] = g.rc_3.radio_min;
+	motor_out[MOT_7] = g.rc_3.radio_min;
+	motor_out[MOT_8] = g.rc_3.radio_min;
 
 	APM_RC.OutputCh(MOT_5, g.rc_3.radio_min);
-	APM_RC.OutputCh(MOT_6, g.rc_3.radio_min + 100);
-	delay(1000);
-}
+	delay(5000);
+	APM_RC.OutputCh(MOT_1, g.rc_3.radio_min + 100);
+	delay(300);
 
+	APM_RC.OutputCh(MOT_1, g.rc_3.radio_min);
+	delay(3000);
+	APM_RC.OutputCh(MOT_6, g.rc_3.radio_min + 100);
+	delay(300);
+
+	APM_RC.OutputCh(MOT_6, g.rc_3.radio_min);
+	delay(3000);
+	APM_RC.OutputCh(MOT_4, g.rc_3.radio_min + 100);
+	delay(300);
+
+	APM_RC.OutputCh(MOT_4, g.rc_3.radio_min);
+	delay(3000);
+	APM_RC.OutputCh(MOT_7, g.rc_3.radio_min + 100);
+	delay(300);
+
+	APM_RC.OutputCh(MOT_7, g.rc_3.radio_min);
+	delay(3000);
+	APM_RC.OutputCh(MOT_3, g.rc_3.radio_min + 100);
+	delay(300);
+
+	APM_RC.OutputCh(MOT_3, g.rc_3.radio_min);
+	delay(3000);
+	APM_RC.OutputCh(MOT_8, g.rc_3.radio_min + 100);
+	delay(300);
+
+	APM_RC.OutputCh(MOT_8, g.rc_3.radio_min);
+	delay(3000);
+	APM_RC.OutputCh(MOT_2, g.rc_3.radio_min + 100);
+	delay(300);
+
+	APM_RC.OutputCh(MOT_2, g.rc_3.radio_min);
+	delay(3000);
+	APM_RC.OutputCh(MOT_5, g.rc_3.radio_min + 100);
+	delay(300);
+
+	APM_RC.OutputCh(MOT_1, motor_out[MOT_1]);
+	APM_RC.OutputCh(MOT_2, motor_out[MOT_2]);
+	APM_RC.OutputCh(MOT_3, motor_out[MOT_3]);
+	APM_RC.OutputCh(MOT_4, motor_out[MOT_4]);
+	APM_RC.OutputCh(MOT_5, motor_out[MOT_5]);
+	APM_RC.OutputCh(MOT_6, motor_out[MOT_6]);
+	APM_RC.OutputCh(MOT_7, motor_out[MOT_7]);
+	APM_RC.OutputCh(MOT_8, motor_out[MOT_8]);
+}
 #endif

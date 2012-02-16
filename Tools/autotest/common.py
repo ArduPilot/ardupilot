@@ -84,6 +84,7 @@ def wait_altitude(mav, alt_min, alt_max, timeout=30):
         if abs(climb_rate) > 0:
             tstart = time.time();
         if m.alt >= alt_min and m.alt <= alt_max:
+            print("Altitude OK")
             return True
     print("Failed to attain altitude range")
     return False
@@ -110,6 +111,7 @@ def wait_roll(mav, roll, accuracy, timeout=30):
         r = math.degrees(m.roll)
         print("Roll %u" % r)
         if math.fabs(r - roll) <= accuracy:
+            print("Attained roll %u" % roll)
             return True
     print("Failed to attain roll %u" % roll)
     return False
@@ -123,6 +125,7 @@ def wait_pitch(mav, pitch, accuracy, timeout=30):
         r = math.degrees(m.pitch)
         print("Pitch %u" % r)
         if math.fabs(r - pitch) <= accuracy:
+            print("Attained pitch %u" % pitch)
             return True
     print("Failed to attain pitch %u" % pitch)
     return False
@@ -136,6 +139,7 @@ def wait_heading(mav, heading, accuracy=5, timeout=30):
         m = mav.recv_match(type='VFR_HUD', blocking=True)
         print("Heading %u" % m.heading)
         if math.fabs(m.heading - heading) <= accuracy:
+            print("Attained heading %u" % heading)
             return True
     print("Failed to attain heading %u" % heading)
     return False
@@ -151,8 +155,10 @@ def wait_distance(mav, distance, accuracy=5, timeout=30):
         delta = get_distance(start, pos)
         print("Distance %.2f meters" % delta)
         if math.fabs(delta - distance) <= accuracy:
+            print("Attained distance %.2f meters OK" % delta)
             return True
-        if(delta > (distance + accuracy)):
+        if delta > (distance + accuracy):
+            print("Failed distance - overshoot delta=%f distance=%f" % (delta, distance))
             return False
     print("Failed to attain distance %u" % distance)
     return False
@@ -163,11 +169,13 @@ def wait_location(mav, loc, accuracy=5, timeout=30, target_altitude=None, height
     tstart = time.time()
     if target_altitude is None:
         target_altitude = loc.alt
+    print("Waiting for location %.4f,%.4f at altitude %.1f height_accuracy=%.1f" % (
+        loc.lat, loc.lng, target_altitude, height_accuracy))
     while time.time() < tstart + timeout:
         m = mav.recv_match(type='GPS_RAW', blocking=True)
         pos = current_location(mav)
         delta = get_distance(loc, pos)
-        print("Distance %.2f meters" % delta)
+        print("Distance %.2f meters alt %.1f" % (delta, pos.alt))
         if delta <= accuracy:
             if height_accuracy != -1 and math.fabs(pos.alt - target_altitude) > height_accuracy:
                 continue
@@ -212,9 +220,9 @@ def wait_waypoint(mav, wpnum_start, wpnum_end, allow_skip=True, max_dist=2, time
             print("Reached final waypoint %u" % seq)
             return True
         if seq > current_wp+1:
-            print("Skipped waypoint! Got wp %u expected %u" % (seq, current_wp+1))
+            print("Failed: Skipped waypoint! Got wp %u expected %u" % (seq, current_wp+1))
             return False
-    print("Timed out waiting for waypoint %u of %u" % (wpnum_end, wpnum_end))
+    print("Failed: Timed out waiting for waypoint %u of %u" % (wpnum_end, wpnum_end))
     return False
 
 def save_wp(mavproxy, mav):

@@ -26,36 +26,14 @@ public:
 	//
     static const uint16_t k_software_type = 0;		// 0 for APM trunk
 
-    //
-    // Parameter identities.
-    //
-    // The enumeration defined here is used to ensure that every parameter
-    // or parameter group has a unique ID number.  This number is used by
-    // AP_Var to store and locate parameters in EEPROM.
-    //
-    // Note that entries without a number are assigned the next number after
-    // the entry preceding them.  When adding new entries, ensure that they
-    // don't overlap.
-    //
-    // Try to group related variables together, and assign them a set
-    // range in the enumeration.  Place these groups in numerical order
-    // at the end of the enumeration.
-    //
-    // WARNING: Care should be taken when editing this enumeration as the
-    //          AP_Var load/save code depends on the values here to identify
-    //          variables saved in EEPROM.
-    //
-    //
     enum {
         // Layout version number, always key zero.
         //
         k_param_format_version = 0,
 		k_param_software_type,
 
-
         // Misc
         //
-
         k_param_auto_trim,
         k_param_switch_enable,
         k_param_log_bitmask,
@@ -75,8 +53,8 @@ public:
 
 		// 110: Telemetry control
 		//
-		k_param_streamrates_port0 = 110,
-		k_param_streamrates_port3,
+		k_param_gcs0 = 110, // stream rates for port0
+		k_param_gcs3,       // stream rates for port3
 		k_param_sysid_this_mav,
 		k_param_sysid_my_gcs,
         k_param_serial3_baud,
@@ -125,7 +103,7 @@ public:
         k_param_channel_roll = 170,
         k_param_channel_pitch,
         k_param_channel_throttle,
-        k_param_channel_yaw,
+        k_param_channel_rudder,
         k_param_rc_5,
         k_param_rc_6,
         k_param_rc_7,
@@ -182,13 +160,13 @@ public:
         // heading error from command to roll command deviation from trim
         // (bank to turn strategy)
         //
-        k_param_heading_to_roll_PID = 240,
+        k_param_pidNavRoll = 240,
 
         // Roll-to-servo PID:
         // roll error from command to roll servo deviation from trim
         // (tracks commanded bank angle)
         //
-        k_param_roll_to_servo_PID,
+        k_param_pidServoRoll,
 
         //
         // Pitch control
@@ -197,13 +175,13 @@ public:
         // pitch error from command to pitch servo deviation from trim
         // (front-side strategy)
         //
-        k_param_pitch_to_servo_PID,
+        k_param_pidServoPitch,
 
         // Airspeed-to-pitch PID:
         // airspeed error from command to pitch servo deviation from trim
         // (back-side strategy)
         //
-        k_param_airspeed_to_pitch_PID,
+        k_param_pidNavPitchAirspeed,
 
         //
         // Yaw control
@@ -212,7 +190,7 @@ public:
         // yaw rate error from command to yaw servo deviation from trim
         // (stabilizes dutch roll)
         //
-        k_param_yaw_to_servo_PID,
+        k_param_pidServoRudder,
 
         //
         // Throttle control
@@ -221,13 +199,13 @@ public:
         // total energy error from command to throttle servo deviation from trim
         // (throttle back-side strategy alternative)
         //
-        k_param_energy_to_throttle_PID,
+        k_param_pidTeThrottle,
 
         // Altitude-to-pitch PID:
         // altitude error from command to pitch servo deviation from trim
         // (throttle front-side strategy alternative)
         //
-        k_param_altitude_to_pitch_PID,
+        k_param_pidNavPitchAltitude,
 
         // 254,255: reserved
     };
@@ -363,131 +341,109 @@ public:
     PID         pidTeThrottle;
     PID         pidNavPitchAltitude;
 
-    uint8_t     junk;
-
-    // Note: keep initializers here in the same order as they are declared above.
     Parameters() :
-        // variable             default                     key                             name
-        //-------------------------------------------------------------------------------------------------------
-        format_version          (k_format_version,          k_param_format_version,         PSTR("SYSID_SW_MREV")),
-        software_type			(k_software_type,			k_param_software_type,			PSTR("SYSID_SW_TYPE")),
+        format_version          (k_format_version),
+        software_type			(k_software_type),
 
-        sysid_this_mav			(MAV_SYSTEM_ID,				k_param_sysid_this_mav,			PSTR("SYSID_THISMAV")),
-        sysid_my_gcs			(255,		                k_param_sysid_my_gcs,			PSTR("SYSID_MYGCS")),
-        serial3_baud			(SERIAL3_BAUD/1000,         k_param_serial3_baud,			PSTR("SERIAL3_BAUD")),
+        sysid_this_mav			(MAV_SYSTEM_ID),
+        sysid_my_gcs			(255),
+        serial3_baud			(SERIAL3_BAUD/1000),
 
-        kff_pitch_compensation  (PITCH_COMP,                k_param_kff_pitch_compensation, PSTR("KFF_PTCHCOMP")),
-        kff_rudder_mix          (RUDDER_MIX,                k_param_kff_rudder_mix,         PSTR("KFF_RDDRMIX")),
-        kff_pitch_to_throttle   (P_TO_T,                    k_param_kff_pitch_to_throttle,  PSTR("KFF_PTCH2THR")),
-        kff_throttle_to_pitch   (T_TO_P,                    k_param_kff_throttle_to_pitch,  PSTR("KFF_THR2PTCH")),
+        kff_pitch_compensation  (PITCH_COMP),
+        kff_rudder_mix          (RUDDER_MIX),
+        kff_pitch_to_throttle   (P_TO_T),
+        kff_throttle_to_pitch   (T_TO_P),
 
-        crosstrack_gain         (XTRACK_GAIN_SCALED,        k_param_crosstrack_gain,        PSTR("XTRK_GAIN_SC")),
-        crosstrack_entry_angle  (XTRACK_ENTRY_ANGLE_CENTIDEGREE,k_param_crosstrack_entry_angle, PSTR("XTRK_ANGLE_CD")),
+        crosstrack_gain         (XTRACK_GAIN_SCALED),
+        crosstrack_entry_angle  (XTRACK_ENTRY_ANGLE_CENTIDEGREE),
 
-        altitude_mix            (ALTITUDE_MIX,              k_param_altitude_mix,           PSTR("ALT_MIX")),
-        airspeed_ratio          (AIRSPEED_RATIO,            k_param_airspeed_ratio,         PSTR("ARSPD_RATIO")),
-        airspeed_offset			(0,				            k_param_airspeed_offset,		PSTR("ARSPD_OFFSET")),
+        altitude_mix            (ALTITUDE_MIX),
+        airspeed_ratio          (AIRSPEED_RATIO),
+        airspeed_offset			(0),
 
         /* XXX waypoint_mode missing here */
-        command_total           (0,                         k_param_command_total,         PSTR("CMD_TOTAL")),
-        command_index           (0,                         k_param_command_index,         PSTR("CMD_INDEX")),
-        waypoint_radius         (WP_RADIUS_DEFAULT,         k_param_waypoint_radius,        PSTR("WP_RADIUS")),
-        loiter_radius           (LOITER_RADIUS_DEFAULT,     k_param_loiter_radius,          PSTR("WP_LOITER_RAD")),
+        command_total           (0),
+        command_index           (0),
+        waypoint_radius         (WP_RADIUS_DEFAULT),
+        loiter_radius           (LOITER_RADIUS_DEFAULT),
 
 #if GEOFENCE_ENABLED == ENABLED
-        fence_action            (0,                         k_param_fence_action,           PSTR("FENCE_ACTION")),
-        fence_total             (0,                         k_param_fence_total,            PSTR("FENCE_TOTAL")),
-        fence_channel           (0,                         k_param_fence_channel,          PSTR("FENCE_CHANNEL")),
-        fence_minalt            (0,                         k_param_fence_minalt,           PSTR("FENCE_MINALT")),
-        fence_maxalt            (0,                         k_param_fence_maxalt,           PSTR("FENCE_MAXALT")),
+        fence_action            (0),
+        fence_total             (0),
+        fence_channel           (0),
+        fence_minalt            (0),
+        fence_maxalt            (0),
 #endif
 
-        flybywire_airspeed_min  (AIRSPEED_FBW_MIN,          k_param_flybywire_airspeed_min, PSTR("ARSPD_FBW_MIN")),
-        flybywire_airspeed_max  (AIRSPEED_FBW_MAX,          k_param_flybywire_airspeed_max, PSTR("ARSPD_FBW_MAX")),
+        flybywire_airspeed_min  (AIRSPEED_FBW_MIN),
+        flybywire_airspeed_max  (AIRSPEED_FBW_MAX),
 
-        throttle_min            (THROTTLE_MIN,              k_param_throttle_min,           PSTR("THR_MIN")),
-        throttle_max            (THROTTLE_MAX,              k_param_throttle_max,           PSTR("THR_MAX")),
-        throttle_slewrate		(THROTTLE_SLEW_LIMIT,		k_param_throttle_slewrate,		PSTR("THR_SLEWRATE")),
-        throttle_fs_enabled   	(THROTTLE_FAILSAFE,         k_param_throttle_fs_enabled,	PSTR("THR_FAILSAFE")),
-        throttle_fs_value 		(THROTTLE_FS_VALUE,         k_param_throttle_fs_value, 		PSTR("THR_FS_VALUE")),
-        throttle_cruise         (THROTTLE_CRUISE,           k_param_throttle_cruise,        PSTR("TRIM_THROTTLE")),
+        throttle_min            (THROTTLE_MIN),
+        throttle_max            (THROTTLE_MAX),
+        throttle_slewrate		(THROTTLE_SLEW_LIMIT),
+        throttle_fs_enabled   	(THROTTLE_FAILSAFE),
+        throttle_fs_value 		(THROTTLE_FS_VALUE),
+        throttle_cruise         (THROTTLE_CRUISE),
 
-        short_fs_action			(SHORT_FAILSAFE_ACTION,		k_param_short_fs_action, 	PSTR("FS_SHORT_ACTN")),
-        long_fs_action			(LONG_FAILSAFE_ACTION,		k_param_long_fs_action, 	PSTR("FS_LONG_ACTN")),
-        gcs_heartbeat_fs_enabled(GCS_HEARTBEAT_FAILSAFE,	k_param_gcs_heartbeat_fs_enabled, 	PSTR("FS_GCS_ENABL")),
+        short_fs_action			(SHORT_FAILSAFE_ACTION),
+        long_fs_action			(LONG_FAILSAFE_ACTION),
+        gcs_heartbeat_fs_enabled(GCS_HEARTBEAT_FAILSAFE),
 
-        flight_mode_channel     (FLIGHT_MODE_CHANNEL,       k_param_flight_mode_channel,    PSTR("FLTMODE_CH")),
-        flight_mode1            (FLIGHT_MODE_1,             k_param_flight_mode1,           PSTR("FLTMODE1")),
-        flight_mode2            (FLIGHT_MODE_2,             k_param_flight_mode2,           PSTR("FLTMODE2")),
-        flight_mode3            (FLIGHT_MODE_3,             k_param_flight_mode3,           PSTR("FLTMODE3")),
-        flight_mode4            (FLIGHT_MODE_4,             k_param_flight_mode4,           PSTR("FLTMODE4")),
-        flight_mode5            (FLIGHT_MODE_5,             k_param_flight_mode5,           PSTR("FLTMODE5")),
-        flight_mode6            (FLIGHT_MODE_6,             k_param_flight_mode6,           PSTR("FLTMODE6")),
+        flight_mode_channel     (FLIGHT_MODE_CHANNEL),
+        flight_mode1            (FLIGHT_MODE_1),
+        flight_mode2            (FLIGHT_MODE_2),
+        flight_mode3            (FLIGHT_MODE_3),
+        flight_mode4            (FLIGHT_MODE_4),
+        flight_mode5            (FLIGHT_MODE_5),
+        flight_mode6            (FLIGHT_MODE_6),
 
-        roll_limit              (HEAD_MAX_CENTIDEGREE,      k_param_roll_limit,             PSTR("LIM_ROLL_CD")),
-        pitch_limit_max         (PITCH_MAX_CENTIDEGREE,     k_param_pitch_limit_max,        PSTR("LIM_PITCH_MAX")),
-        pitch_limit_min         (PITCH_MIN_CENTIDEGREE,     k_param_pitch_limit_min,        PSTR("LIM_PITCH_MIN")),
+        roll_limit              (HEAD_MAX_CENTIDEGREE),
+        pitch_limit_max         (PITCH_MAX_CENTIDEGREE),
+        pitch_limit_min         (PITCH_MIN_CENTIDEGREE),
 
-        auto_trim               (AUTO_TRIM,                 k_param_auto_trim,              PSTR("TRIM_AUTO")),
-        switch_enable           (REVERSE_SWITCH,            k_param_switch_enable,          PSTR("SWITCH_ENABLE")),
-        mix_mode                (ELEVON_MIXING,             k_param_mix_mode,               PSTR("ELEVON_MIXING")),
-        reverse_elevons         (ELEVON_REVERSE,            k_param_reverse_elevons,        PSTR("ELEVON_REVERSE")),
-        reverse_ch1_elevon      (ELEVON_CH1_REVERSE,        k_param_reverse_ch1_elevon,     PSTR("ELEVON_CH1_REV")),
-        reverse_ch2_elevon      (ELEVON_CH2_REVERSE,        k_param_reverse_ch2_elevon,     PSTR("ELEVON_CH2_REV")),
-        num_resets              (0,                         k_param_num_resets,             PSTR("SYS_NUM_RESETS")),
-        log_bitmask             (DEFAULT_LOG_BITMASK,		k_param_log_bitmask,            PSTR("LOG_BITMASK")),
-        log_last_filenumber     (0,							k_param_log_last_filenumber,    PSTR("LOG_LASTFILE")),
-        reset_switch_chan		(0,							k_param_reset_switch_chan,		PSTR("RST_SWITCH_CH")),
-        airspeed_cruise         (AIRSPEED_CRUISE_CM,        k_param_airspeed_cruise,        PSTR("TRIM_ARSPD_CM")),
-        min_gndspeed            (MIN_GNDSPEED_CM,        	k_param_min_gndspeed,           PSTR("MIN_GNDSPD_CM")),
-        pitch_trim              (0,                         k_param_pitch_trim,             PSTR("TRIM_PITCH_CD")),
-        RTL_altitude            (ALT_HOLD_HOME_CM,          k_param_RTL_altitude,           PSTR("ALT_HOLD_RTL")),
-        FBWB_min_altitude       (ALT_HOLD_FBW_CM,           k_param_FBWB_min_altitude,      PSTR("ALT_HOLD_FBWCM")),
-        ground_temperature      (0,                         k_param_ground_temperature,     PSTR("GND_TEMP")),
-        ground_pressure         (0,                         k_param_ground_pressure,        PSTR("GND_ABS_PRESS")),
-        compass_enabled			(MAGNETOMETER,				k_param_compass_enabled,		PSTR("MAG_ENABLE")),
-        flap_1_percent			(FLAP_1_PERCENT,			k_param_flap_1_percent,			PSTR("FLAP_1_PERCNT")),
-        flap_1_speed			(FLAP_1_SPEED,				k_param_flap_1_speed,			PSTR("FLAP_1_SPEED")),
-        flap_2_percent			(FLAP_2_PERCENT,			k_param_flap_2_percent,			PSTR("FLAP_2_PERCNT")),
-        flap_2_speed			(FLAP_2_SPEED,				k_param_flap_2_speed,			PSTR("FLAP_2_SPEED")),
-
-
-        battery_monitoring 		(DISABLED,					k_param_battery_monitoring,		PSTR("BATT_MONITOR")),
-        volt_div_ratio			(VOLT_DIV_RATIO,			k_param_volt_div_ratio,			PSTR("VOLT_DIVIDER")),
-        curr_amp_per_volt		(CURR_AMP_PER_VOLT,			k_param_curr_amp_per_volt,		PSTR("AMP_PER_VOLT")),
-        input_voltage			(INPUT_VOLTAGE,				k_param_input_voltage,			PSTR("INPUT_VOLTS")),
-        pack_capacity	 		(HIGH_DISCHARGE,			k_param_pack_capacity,			PSTR("BATT_CAPACITY")),
-        inverted_flight_ch      (0,                         k_param_inverted_flight_ch,		PSTR("INVERTEDFLT_CH")),
-        sonar_enabled			(SONAR_ENABLED,				k_param_sonar_enabled,			PSTR("SONAR_ENABLE")),
-        airspeed_enabled		(AIRSPEED_SENSOR,			k_param_airspeed_enabled,		PSTR("ARSPD_ENABLE")),
-
-	// Note - total parameter name length must be less than 14 characters for MAVLink compatibility!
-
-        // RC channel           group key                   name
-        //----------------------------------------------------------------------
-        channel_roll            (k_param_channel_roll,      PSTR("RC1_")),
-        channel_pitch           (k_param_channel_pitch,     PSTR("RC2_")),
-        channel_throttle        (k_param_channel_throttle,  PSTR("RC3_")),
-        channel_rudder          (k_param_channel_yaw,       PSTR("RC4_")),
-        rc_5					(k_param_rc_5,				PSTR("RC5_")),
-        rc_6					(k_param_rc_6,				PSTR("RC6_")),
-        rc_7					(k_param_rc_7,				PSTR("RC7_")),
-        rc_8					(k_param_rc_8,				PSTR("RC8_")),
-
-        // PID controller   group key                       name                  initial P        initial I        initial D        initial imax
-        //---------------------------------------------------------------------------------------------------------------------------------------
-        pidNavRoll          (k_param_heading_to_roll_PID,   PSTR("HDNG2RLL_"),    NAV_ROLL_P,      NAV_ROLL_I,      NAV_ROLL_D,      NAV_ROLL_INT_MAX_CENTIDEGREE),
-        pidServoRoll        (k_param_roll_to_servo_PID,     PSTR("RLL2SRV_"),     SERVO_ROLL_P,    SERVO_ROLL_I,    SERVO_ROLL_D,    SERVO_ROLL_INT_MAX_CENTIDEGREE),
-        pidServoPitch       (k_param_pitch_to_servo_PID,    PSTR("PTCH2SRV_"),    SERVO_PITCH_P,   SERVO_PITCH_I,   SERVO_PITCH_D,   SERVO_PITCH_INT_MAX_CENTIDEGREE),
-        pidNavPitchAirspeed (k_param_airspeed_to_pitch_PID, PSTR("ARSP2PTCH_"),  NAV_PITCH_ASP_P, NAV_PITCH_ASP_I, NAV_PITCH_ASP_D, NAV_PITCH_ASP_INT_MAX_CMSEC),
-        pidServoRudder      (k_param_yaw_to_servo_PID,      PSTR("YW2SRV_"),      SERVO_YAW_P,     SERVO_YAW_I,     SERVO_YAW_D,     SERVO_YAW_INT_MAX),
-        pidTeThrottle       (k_param_energy_to_throttle_PID, PSTR("ENRGY2THR_"), THROTTLE_TE_P,   THROTTLE_TE_I,   THROTTLE_TE_D,   THROTTLE_TE_INT_MAX),
-        pidNavPitchAltitude (k_param_altitude_to_pitch_PID, PSTR("ALT2PTCH_"),    NAV_PITCH_ALT_P, NAV_PITCH_ALT_I, NAV_PITCH_ALT_D, NAV_PITCH_ALT_INT_MAX_CM),
+        auto_trim               (AUTO_TRIM),
+        switch_enable           (REVERSE_SWITCH),
+        mix_mode                (ELEVON_MIXING),
+        reverse_elevons         (ELEVON_REVERSE),
+        reverse_ch1_elevon      (ELEVON_CH1_REVERSE),
+        reverse_ch2_elevon      (ELEVON_CH2_REVERSE),
+        num_resets              (0),
+        log_bitmask             (DEFAULT_LOG_BITMASK),
+        log_last_filenumber     (0),
+        reset_switch_chan		(0),
+        airspeed_cruise         (AIRSPEED_CRUISE_CM),
+        min_gndspeed            (MIN_GNDSPEED_CM),
+        pitch_trim              (0),
+        RTL_altitude            (ALT_HOLD_HOME_CM),
+        FBWB_min_altitude       (ALT_HOLD_FBW_CM),
+        ground_temperature      (0),
+        ground_pressure         (0),
+        compass_enabled			(MAGNETOMETER),
+        flap_1_percent			(FLAP_1_PERCENT),
+        flap_1_speed			(FLAP_1_SPEED),
+        flap_2_percent			(FLAP_2_PERCENT),
+        flap_2_speed			(FLAP_2_SPEED),
 
 
-        junk(0)     // XXX just so that we can add things without worrying about the trailing comma
-    {
-    }
+        battery_monitoring 		(DISABLED),
+        volt_div_ratio			(VOLT_DIV_RATIO),
+        curr_amp_per_volt		(CURR_AMP_PER_VOLT),
+        input_voltage			(INPUT_VOLTAGE),
+        pack_capacity	 		(HIGH_DISCHARGE),
+        inverted_flight_ch      (0),
+        sonar_enabled			(SONAR_ENABLED),
+        airspeed_enabled		(AIRSPEED_SENSOR),
+
+        // PID controller    initial P        initial I        initial D        initial imax
+        //-----------------------------------------------------------------------------------
+        pidNavRoll          (NAV_ROLL_P,      NAV_ROLL_I,      NAV_ROLL_D,      NAV_ROLL_INT_MAX_CENTIDEGREE),
+        pidServoRoll        (SERVO_ROLL_P,    SERVO_ROLL_I,    SERVO_ROLL_D,    SERVO_ROLL_INT_MAX_CENTIDEGREE),
+        pidServoPitch       (SERVO_PITCH_P,   SERVO_PITCH_I,   SERVO_PITCH_D,   SERVO_PITCH_INT_MAX_CENTIDEGREE),
+        pidNavPitchAirspeed (NAV_PITCH_ASP_P, NAV_PITCH_ASP_I, NAV_PITCH_ASP_D, NAV_PITCH_ASP_INT_MAX_CMSEC),
+        pidServoRudder      (SERVO_YAW_P,     SERVO_YAW_I,     SERVO_YAW_D,     SERVO_YAW_INT_MAX),
+        pidTeThrottle       (THROTTLE_TE_P,   THROTTLE_TE_I,   THROTTLE_TE_D,   THROTTLE_TE_INT_MAX),
+        pidNavPitchAltitude (NAV_PITCH_ALT_P, NAV_PITCH_ALT_I, NAV_PITCH_ALT_D, NAV_PITCH_ALT_INT_MAX_CM)
+        {}
 };
 
 #endif // PARAMETERS_H

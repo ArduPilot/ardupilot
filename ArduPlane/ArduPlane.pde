@@ -150,7 +150,7 @@ static AP_Baro_BMP085          barometer(false);
 static AP_Baro_MS5611          barometer;
 #endif
 
-static AP_Compass_HMC5843      compass(Parameters::k_param_compass);
+static AP_Compass_HMC5843      compass;
 #endif
 
 // real GPS selection
@@ -184,7 +184,7 @@ AP_GPS_None     g_gps_driver(NULL);
 # else
   AP_InertialSensor_Oilpan ins( &adc );
 #endif // CONFIG_IMU_TYPE
-AP_IMU_INS imu( &ins, Parameters::k_param_IMU_calibration );
+AP_IMU_INS imu( &ins );
 AP_DCM  dcm(&imu, g_gps);
 
 #elif HIL_MODE == HIL_MODE_SENSORS
@@ -217,8 +217,8 @@ AP_TimerProcess timer_scheduler;
 // GCS selection
 ////////////////////////////////////////////////////////////////////////////////
 //
-GCS_MAVLINK	gcs0(Parameters::k_param_streamrates_port0);
-GCS_MAVLINK	gcs3(Parameters::k_param_streamrates_port3);
+GCS_MAVLINK	gcs0;
+GCS_MAVLINK	gcs3;
 
 ////////////////////////////////////////////////////////////////////////////////
 // PITOT selection
@@ -979,7 +979,7 @@ static void update_current_flight_mode(void)
 
 		switch(nav_command_ID){
 			case MAV_CMD_NAV_TAKEOFF:
-				if (hold_course > -1) {
+				if (hold_course != -1) {
 					calc_nav_roll();
 				} else {
 					nav_roll = 0;
@@ -1012,12 +1012,16 @@ static void update_current_flight_mode(void)
 					nav_pitch = landing_pitch;      // pitch held constant
 				}
 
-				if (land_complete){
+				if (land_complete) {
+                    // we are in the final stage of a landing - force
+                    // zero throttle
 					g.channel_throttle.servo_out = 0;
 				}
 				break;
 
 			default:
+                // we are doing normal AUTO flight, the special cases
+                // are for takeoff and landing
 				hold_course = -1;
 				calc_nav_roll();
 				calc_nav_pitch();
@@ -1025,11 +1029,13 @@ static void update_current_flight_mode(void)
 				break;
 		}
 	}else{
+        // hold_course is only used in takeoff and landing
+        hold_course = -1;
+
 		switch(control_mode){
 			case RTL:
 			case LOITER:
 			case GUIDED:
-				hold_course = -1;
 				crash_checker();
 				calc_nav_roll();
 				calc_nav_pitch();

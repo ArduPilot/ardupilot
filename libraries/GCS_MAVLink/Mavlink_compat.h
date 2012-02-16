@@ -53,15 +53,15 @@
 #define mavlink_msg_waypoint_set_current_decode mavlink_msg_mission_set_current_decode
 #define mavlink_waypoint_set_current_t mavlink_mission_set_current_t
 
-static uint8_t mav_var_type(AP_Meta_class::Type_id t)
+static uint8_t mav_var_type(enum ap_var_type t)
 {
-    if (t == AP_Var::k_typeid_int8) {
+    if (t == AP_PARAM_INT8) {
         return MAV_VAR_INT8;
     }
-    if (t == AP_Var::k_typeid_int16) {
+    if (t == AP_PARAM_INT16) {
         return MAV_VAR_INT16;
     }
-    if (t == AP_Var::k_typeid_int32) {
+    if (t == AP_PARAM_INT32) {
         return MAV_VAR_INT32;
     }
     // treat any others as float
@@ -72,7 +72,7 @@ static uint8_t mav_var_type(AP_Meta_class::Type_id t)
 
 #else // MAVLINK10
 
-static uint8_t mav_var_type(AP_Meta_class::Type_id t)
+static uint8_t mav_var_type(enum ap_var_type t)
 {
 	return 0;
 }

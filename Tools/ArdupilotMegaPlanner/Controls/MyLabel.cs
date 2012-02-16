@@ -24,7 +24,7 @@ namespace ArdupilotMega
         public MyLabel()
         {
         }
-        
+
         public override string Text
         {
             get
@@ -33,6 +33,7 @@ namespace ArdupilotMega
             }
             set
             {
+
                 if (value == null)
                     return;
 
@@ -46,8 +47,8 @@ namespace ArdupilotMega
                     noofchars = label.Length;
                     Size textSize = TextRenderer.MeasureText(value, this.Font);
                     this.Width = textSize.Width;
-                }   
-           
+                }
+
                 this.Invalidate();
             }
         }

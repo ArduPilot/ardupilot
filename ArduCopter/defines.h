@@ -345,7 +345,7 @@ enum gcs_severity {
 
 // EEPROM addresses
 #define EEPROM_MAX_ADDR		4096
-// parameters get the first 1KiB of EEPROM, remainder is for waypoints
+// parameters get the first 1024 bytes of EEPROM, remainder is for waypoints
 #define WP_START_BYTE 0x400 // where in memory home WP is stored + all other WP
 #define WP_SIZE 15
 
@@ -368,5 +368,10 @@ enum gcs_severity {
 
 #define LOGGING_SIMPLE    1
 #define LOGGING_VERBOSE   2
+
+// Channel Config selection
+
+#define CHANNEL_CONFIG_DEFAULT 1
+#define CHANNEL_CONFIG_CUSTOM  2
 
 #endif // _DEFINES_H

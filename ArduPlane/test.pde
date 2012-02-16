@@ -611,9 +611,9 @@ test_mag(uint8_t argc, const Menu::arg *argv)
                     Vector3f maggy = compass.get_offsets();
                     Serial.printf_P(PSTR("Heading: %ld, XYZ: %d, %d, %d,\tXYZoff: %6.2f, %6.2f, %6.2f\n"),
                                     (wrap_360(ToDeg(compass.heading) * 100)) /100,
-                                    compass.mag_x,
-                                    compass.mag_y,
-                                    compass.mag_z,
+                                    (int)compass.mag_x,
+                                    (int)compass.mag_y,
+                                    (int)compass.mag_z,
                                     maggy.x,
                                     maggy.y,
                                     maggy.z);
