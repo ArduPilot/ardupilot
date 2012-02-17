@@ -80,6 +80,9 @@ public:
     // wrong version is found
     static bool setup(const struct Info *info, uint8_t num_vars, uint16_t eeprom_size);
 
+    // return true if AP_Param has been initialised via setup()
+    static bool initialised(void);
+
     /// Copy the variable's name, prefixed by any containing group name, to a buffer.
     ///
     /// If the variable has no name, the buffer will contain an empty string.
