@@ -32,9 +32,9 @@ Oliver				:Piezo support
 Guntars				:Arming safety suggestion
 Igor van Airde 		:Control Law optimization
 Jean-Louis Naudin 	:Auto Landing
-Sandro Benigno  : Camera support
-Olivier Adler : PPM Encoder
-John Arne Birkeland: PPM Encoder
+Sandro Benigno  	:Camera support
+Olivier Adler 		:PPM Encoder
+John Arne Birkeland	:PPM Encoder
 
 And much more so PLEASE PM me on DIYDRONES to add your contribution to the List
 
@@ -659,11 +659,6 @@ static int32_t	auto_pitch;
 static int16_t	nav_lat;
 // The desired bank towards East (Positive) or West (Negative)
 static int16_t	nav_lon;
-// This may go away, but for now I'm tracking the desired bank before we apply the Wind compensation I term
-// This is mainly for debugging
-//static int16_t	nav_lat_p;
-//static int16_t	nav_lon_p;
-
 // The Commanded ROll from the autopilot based on optical flow sensor.
 static int32_t	of_roll = 0;
 // The Commanded pitch from the autopilot based on optical flow sensor. negative Pitch means go forward.
@@ -829,7 +824,9 @@ void loop()
 	uint32_t timer 			= micros();
 	// We want this to execute fast
 	// ----------------------------
-	if ((timer - fast_loopTimer) >= 4500) {
+	if ((timer - fast_loopTimer) >= 5000) {
+		Log_Write_Data(13, (int32_t)(timer - fast_loopTimer));
+
 		//PORTK |= B00010000;
 		G_Dt 				= (float)(timer - fast_loopTimer) / 1000000.f;		// used by PI Loops
 		fast_loopTimer 		= timer;
@@ -1426,26 +1423,13 @@ void update_roll_pitch_mode(void)
 			g.rc_2.servo_out = get_stabilize_pitch(g.rc_2.control_in);
 			break;
 
-/*		case ROLL_PITCH_AUTO:
-			// apply SIMPLE mode transform
-			if(do_simple && new_radio_frame){
-				update_simple_mode();
-			}
-			// mix in user control with Nav control
-			control_roll 		= g.rc_1.control_mix(nav_roll);
-			control_pitch 		= g.rc_2.control_mix(nav_pitch);
-			g.rc_1.servo_out 	= get_stabilize_roll(control_roll);
-			g.rc_2.servo_out 	= get_stabilize_pitch(control_pitch);
-			break;
-			*/
-
 		case ROLL_PITCH_AUTO:
 			// apply SIMPLE mode transform
 			if(do_simple && new_radio_frame){
 				update_simple_mode();
 			}
 			// mix in user control with Nav control
-			nav_roll			+= constrain(wrap_180(auto_roll - nav_roll), -g.auto_slew_rate.get(), g.auto_slew_rate.get()); // 40 deg a second
+			nav_roll			+= constrain(wrap_180(auto_roll  - nav_roll),  -g.auto_slew_rate.get(), g.auto_slew_rate.get()); // 40 deg a second
 			nav_pitch			+= constrain(wrap_180(auto_pitch - nav_pitch), -g.auto_slew_rate.get(), g.auto_slew_rate.get()); // 40 deg a second
 
 			control_roll 		= g.rc_1.control_mix(nav_roll);
