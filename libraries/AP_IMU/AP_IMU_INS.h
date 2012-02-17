@@ -64,11 +64,8 @@ public:
 	virtual void		ay(const float v)		{ _sensor_cal[4] = v; }
 	virtual void		az(const float v)		{ _sensor_cal[5] = v; }
 
-    static const struct AP_Param::GroupInfo var_info[];
-
 private:
     AP_InertialSensor   *_ins;          ///< INS provides an axis and unit correct sensor source.
-    AP_Vector6f         _sensor_cal;    ///< Calibrated sensor offsets
 
     virtual void        _init_accel(void (*delay_cb)(unsigned long t),
                                     void (*flash_leds_cb)(bool on) = NULL);  ///< no-save implementation
