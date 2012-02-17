@@ -206,6 +206,12 @@ bool AP_Param::setup(const AP_Param::Info *info, uint8_t num_vars, uint16_t eepr
     return true;
 }
 
+// check if AP_Param has been initialised
+bool AP_Param::initialised(void)
+{
+    return _var_info != NULL;
+}
+
 // find the info structure given a header and a group_info table
 // return the Info structure and a pointer to the variables storage
 const struct AP_Param::Info *AP_Param::find_by_header_group(struct Param_header phdr, void **ptr,
