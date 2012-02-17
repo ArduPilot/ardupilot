@@ -28,8 +28,9 @@ int32_t AC_PID::get_i(int32_t error, float dt)
 		} else if (_integrator > _imax) {
 			_integrator = _imax;
 		}
+		return _integrator;
 	}
-	return _integrator;
+	return 0;
 }
 
 int32_t AC_PID::get_d(int32_t input, float dt)
@@ -73,8 +74,7 @@ int32_t AC_PID::get_pid(int32_t error, float dt)
 
 	// Compute derivative component if time has elapsed
 	if ((fabs(_kd) > 0) && (dt > 0)) {
-
-		_derivative = (error - _last_input) / dt;
+		_derivative = (error - _last_error) / dt;
 
 		// discrete low pass filter, cuts out the
 		// high frequency noise that can drive the controller crazy
@@ -82,7 +82,7 @@ int32_t AC_PID::get_pid(int32_t error, float dt)
 		        (dt / ( _filter + dt)) * (_derivative - _last_derivative);
 
 		// update state
-		_last_input 		= error;
+		_last_error 		= error;
 		_last_derivative    = _derivative;
 
 		// add in derivative component
