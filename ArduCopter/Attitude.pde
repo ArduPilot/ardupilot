@@ -21,7 +21,7 @@ get_stabilize_roll(int32_t target_angle)
 	// limit the error we're feeding to the PID
 	target_angle 		= constrain(target_angle, -2500, 2500);
 
-	// conver to desired Rate:
+	// convert to desired Rate:
 	int32_t target_rate = g.pi_stabilize_roll.get_p(target_angle);
 	int16_t iterm 		= g.pi_stabilize_roll.get_i(target_angle, G_Dt);
 
@@ -115,7 +115,8 @@ get_rate_roll(int32_t target_rate)
 	target_rate 			= g.pid_rate_roll.get_pid(target_rate, G_Dt);
 
 	// Dampening
-	target_rate 			-= constrain((current_rate - last_rate) * g.stabilize_d, -500, 500);
+	int16_t d_temp			= (float)(current_rate - last_rate) * g.stabilize_d;
+	target_rate 			-= constrain(d_temp, -500, 500);
 	last_rate 				= current_rate;
 
 	// output control:
@@ -133,7 +134,8 @@ get_rate_pitch(int32_t target_rate)
 	target_rate 			= g.pid_rate_pitch.get_pid(target_rate, G_Dt);
 
 	// Dampening
-	target_rate 			-= constrain((current_rate - last_rate) * g.stabilize_d, -500, 500);
+	int16_t d_temp			= (float)(current_rate - last_rate) * g.stabilize_d;
+	target_rate 			-= constrain(d_temp, -500, 500);
 	last_rate 				= current_rate;
 
 	// output control:
