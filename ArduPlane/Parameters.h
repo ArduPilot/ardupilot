@@ -68,7 +68,7 @@ public:
         //
         // 130: Sensor parameters
         //
-        k_param_IMU_calibration = 130,
+        k_param_imu = 130,  // sensor calibration
         k_param_altitude_mix,
         k_param_airspeed_ratio,
         k_param_ground_temperature,

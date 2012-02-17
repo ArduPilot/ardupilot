@@ -92,7 +92,7 @@ public:
 	//
 	// 140: Sensor parameters
 	//
-	k_param_IMU_calibration = 140,
+	k_param_imu = 140, // sensor calibration
     k_param_battery_monitoring,
     k_param_volt_div_ratio,
     k_param_curr_amp_per_volt,
