@@ -260,21 +260,42 @@ AP_DCM::renorm(Vector3f const &a, int &problem)
 {
 	float	renorm_val;
 
-	renorm_val = a * a;
+	// numerical errors will slowly build up over time in DCM,
+	// causing inaccuracies. We can keep ahead of those errors
+	// using the renormalization technique from the DCM IMU paper
+	// (see equations 18 to 21).
 
-	if (renorm_val < 1.5625f && renorm_val > 0.64f) {			// Check if we are OK to use Taylor expansion
-		renorm_val = 0.5 * (3 - renorm_val);					// eq.21
-	} else if (renorm_val < 100.0f && renorm_val > 0.01f) {
-		renorm_val = 1.0 / sqrt(renorm_val);
-		renorm_sqrt_count++;
-	} else {
-		problem = 1;
-		SITL_debug("ERROR: DCM renormalisation error. renorm_val=%f\n",
-			   renorm_val);
-		renorm_blowup_count++;
+	// For APM we don't bother with the taylor expansion
+	// optimisation from the paper as on our 2560 CPU the cost of
+	// the sqrt() is 44 microseconds, and the small time saving of
+	// the taylor expansion is not worth the potential of
+	// additional error buildup.
+
+	// Note that we can get significant renormalisation values
+	// when we have a larger delta_t due to a glitch eleswhere in
+	// APM, such as a I2c timeout or a set of EEPROM writes. While
+	// we would like to avoid these if possible, if it does happen
+	// we don't want to compound the error by making DCM less
+	// accurate.
+
+	renorm_val = 1.0 / sqrt(a * a);
+
+	if (renorm_val > 2.0 || renorm_val < 0.5) {
+		// this is larger than it should get - log it as a warning
+		renorm_range_count++;
+		if (renorm_val > 1.0e6 || renorm_val < 1.0e-6) {
+			// we are getting values which are way out of
+			// range, we will reset the matrix and hope we
+			// can recover our attitude using drift
+			// correction before we hit the ground!
+			problem = 1;
+			SITL_debug("ERROR: DCM renormalisation error. renorm_val=%f\n",
+				   renorm_val);
+			renorm_blowup_count++;
+		}
 	}
 
-	return(a * renorm_val);
+	return (a * renorm_val);
 }
 
 /**************************************************/

@@ -68,7 +68,7 @@ public:
 	float		yaw;							// Radians
 
 	uint8_t 	gyro_sat_count;
-	uint8_t 	renorm_sqrt_count;
+	uint8_t 	renorm_range_count;
 	uint8_t 	renorm_blowup_count;
 
 	float	kp_roll_pitch() 		{ return _kp_roll_pitch; }
