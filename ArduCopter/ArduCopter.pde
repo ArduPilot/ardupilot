@@ -824,8 +824,8 @@ void loop()
 	uint32_t timer 			= micros();
 	// We want this to execute fast
 	// ----------------------------
-	if ((timer - fast_loopTimer) >= 5000) {
-		Log_Write_Data(13, (int32_t)(timer - fast_loopTimer));
+	if ((timer - fast_loopTimer) >= 4000) {
+		//Log_Write_Data(13, (int32_t)(timer - fast_loopTimer));
 
 		//PORTK |= B00010000;
 		G_Dt 				= (float)(timer - fast_loopTimer) / 1000000.f;		// used by PI Loops

@@ -144,6 +144,7 @@
 // Rate
 #define CH6_RATE_KP 4
 #define CH6_RATE_KI 5
+#define CH6_RATE_KD 21
 #define	CH6_YAW_RATE_KP 6
 // Altitude rate controller
 #define CH6_THROTTLE_KP 7
