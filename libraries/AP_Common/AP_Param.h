@@ -262,6 +262,19 @@ public:
         return save();
     }
 
+    /// Combined set and save, but only does the save if the value if
+    /// different from the current ram value, thus saving us a
+    /// scan(). This should only be used where we have not set() the
+    /// value separately, as otherwise the value in EEPROM won't be
+    /// updated correctly.
+    bool set_and_save_ifchanged(T v) {
+        if (v == _value) {
+            return true;
+        }
+        set(v);
+        return save();
+    }
+
     /// Conversion to T returns a reference to the value.
     ///
     /// This allows the class to be used in many situations where the value would be legal.
