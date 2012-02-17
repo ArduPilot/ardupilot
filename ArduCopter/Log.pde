@@ -619,7 +619,7 @@ static void Log_Write_Performance()
 	DataFlash.WriteByte(LOG_PERFORMANCE_MSG);
 	DataFlash.WriteByte(	dcm.gyro_sat_count);				//1
 	DataFlash.WriteByte(	imu.adc_constraints);				//2
-	DataFlash.WriteByte(	dcm.renorm_sqrt_count);				//3
+	DataFlash.WriteByte(	dcm.renorm_range_count);			//3
 	DataFlash.WriteByte(	dcm.renorm_blowup_count);			//4
 	DataFlash.WriteByte(	gps_fix_count);						//5
 	DataFlash.WriteByte(END_BYTE);

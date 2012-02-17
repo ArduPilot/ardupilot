@@ -241,7 +241,7 @@ static void Log_Write_Performance()
 	DataFlash.WriteInt(G_Dt_max);
 	DataFlash.WriteByte(dcm.gyro_sat_count);
 	DataFlash.WriteByte(imu.adc_constraints);
-	DataFlash.WriteByte(dcm.renorm_sqrt_count);
+	DataFlash.WriteByte(dcm.renorm_range_count);
 	DataFlash.WriteByte(dcm.renorm_blowup_count);
 	DataFlash.WriteByte(gps_fix_count);
 	DataFlash.WriteInt((int)(dcm.get_health() * 1000));
