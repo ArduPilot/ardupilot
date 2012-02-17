@@ -40,8 +40,8 @@ static void output_motors_armed()
 	g.rc_4.calc_pwm();
 
 	if(g.frame_orientation == X_FRAME){
-		roll_out		= g.rc_1.pwm_out * .707;
-		pitch_out		= g.rc_2.pwm_out * .707;
+		roll_out		= (float)g.rc_1.pwm_out * 0.707;
+		pitch_out		= (float)g.rc_2.pwm_out * 0.707;
 
 		motor_out[MOT_1]		= ((g.rc_3.radio_out * g.top_bottom_ratio) - roll_out + pitch_out);		//	APM2 OUT1	APM1 OUT1	 FRONT RIGHT	CCW		TOP
 		motor_out[MOT_2]		= ((g.rc_3.radio_out * g.top_bottom_ratio) + roll_out + pitch_out);		//	APM2 OUT2	APM1 OUT2	 FRONT LEFT		CW		TOP
