@@ -18,7 +18,6 @@
 
 #include <avr/pgmspace.h>
 #include <avr/eeprom.h>
-#include <AP_Math.h>
 
 #define AP_MAX_NAME_SIZE 15
 
@@ -431,12 +430,11 @@ AP_PARAMDEF(int8_t, Int8, AP_PARAM_INT8);     // defines AP_Int8
 AP_PARAMDEF(int16_t, Int16, AP_PARAM_INT16);  // defines AP_Int16
 AP_PARAMDEF(int32_t, Int32, AP_PARAM_INT32);  // defines AP_Int32
 
-#define AP_PARAMDEFV(_t, _n, _pt)   typedef AP_ParamV<_t, _pt> AP_##_n;
-AP_PARAMDEFV(Matrix3f, Matrix3f, AP_PARAM_MATRIX3F);
-AP_PARAMDEFV(Vector3f, Vector3f, AP_PARAM_VECTOR3F);
-
 #define AP_PARAMDEFA(_t, _n, _size, _pt)   typedef AP_ParamA<_t, _size, _pt> AP_##_n;
 AP_PARAMDEFA(float, Vector6f, 6, AP_PARAM_VECTOR6F);
+
+// this is used in AP_Math.h
+#define AP_PARAMDEFV(_t, _n, _pt)   typedef AP_ParamV<_t, _pt> AP_##_n;
 
 /// Rely on built in casting for other variable types
 /// to minimize template creation and save memory
