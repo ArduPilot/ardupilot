@@ -350,13 +350,13 @@ public:
 
     /// Copy assignment from self does nothing.
     ///
-    AP_ParamT<T,PT>& operator=(AP_ParamT<T,PT>& v) {
+    AP_ParamV<T,PT>& operator=(AP_ParamV<T,PT>& v) {
         return v;
     }
 
     /// Copy assignment from T is equivalent to ::set.
     ///
-    AP_ParamT<T,PT>& operator=(T v) {
+    AP_ParamV<T,PT>& operator=(T v) {
         _value = v;
         return *this;
     }
