@@ -6,7 +6,6 @@
 */
 
 #include <math.h>
-#include <AP_Math.h>
 #include <FastSerial.h>
 
 FastSerialPort0(Serial);
