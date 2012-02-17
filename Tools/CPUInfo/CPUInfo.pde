@@ -6,6 +6,7 @@
 */
 
 #include <math.h>
+#include <AP_Math.h>
 #include <FastSerial.h>
 
 FastSerialPort0(Serial);
@@ -93,6 +94,7 @@ static void show_timings(void)
 	TIMEIT("sin()", v_out = sin(v_f), 20);
 	TIMEIT("cos()", v_out = cos(v_f), 20);
 	TIMEIT("tan()", v_out = tan(v_f), 20);
+	TIMEIT("sqrt()",v_out = sqrt(v_f), 20);
 
 	TIMEIT("iadd8", v_out_8 += v_8, 100);
 	TIMEIT("isub8", v_out_8 -= v_8, 100);
