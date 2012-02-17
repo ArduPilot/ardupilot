@@ -33,6 +33,8 @@ namespace ArdupilotMega
             Application.SetCompatibleTextRenderingDefault(false);
             try
             {
+                System.Threading.Thread.CurrentThread.Name = "Base Thread";
+
                 Application.Run(new MainV2());             
             }
             catch (Exception ex) { Console.WriteLine(ex.ToString()); }

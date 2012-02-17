@@ -55,7 +55,7 @@
             this.zg1 = new ZedGraph.ZedGraphControl();
             this.lbl_winddir = new ArdupilotMega.MyLabel();
             this.lbl_windvel = new ArdupilotMega.MyLabel();
-            this.gMapControl1 = new GMap.NET.WindowsForms.GMapControl();
+            this.gMapControl1 = new myGMAP();
             this.panel1 = new System.Windows.Forms.Panel();
             this.TXT_lat = new ArdupilotMega.MyLabel();
             this.Zoomlevel = new System.Windows.Forms.NumericUpDown();
@@ -1320,7 +1320,7 @@
         private ArdupilotMega.MyLabel TXT_long;
         private ArdupilotMega.MyLabel TXT_alt;
         private System.Windows.Forms.CheckBox CHK_autopan;
-        private GMap.NET.WindowsForms.GMapControl gMapControl1;
+        private myGMAP gMapControl1;
         private ZedGraph.ZedGraphControl zg1;
         private System.Windows.Forms.TabControl tabControl1;
         private System.Windows.Forms.TabPage tabGauges;
