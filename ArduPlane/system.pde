@@ -509,7 +509,7 @@ static void resetPerfData(void) {
 	G_Dt_max 				= 0;
 	dcm.gyro_sat_count 		= 0;
 	imu.adc_constraints 	= 0;
-	dcm.renorm_sqrt_count 	= 0;
+	dcm.renorm_range_count 	= 0;
 	dcm.renorm_blowup_count = 0;
 	gps_fix_count 			= 0;
 	pmTest1					= 0;
