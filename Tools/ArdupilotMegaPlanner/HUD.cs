@@ -240,6 +240,8 @@ namespace hud
             started = true;
         }
 
+        bool inOnPaint = false;
+
         protected override void OnPaint(PaintEventArgs e)
         {
             //GL.Enable(EnableCap.AlphaTest)
@@ -260,6 +262,14 @@ namespace hud
                 //e.Graphics.DrawImageUnscaled(objBitmap, 0, 0);          
                 return;              
             }
+
+            if (inOnPaint)
+            {
+                Console.WriteLine("Was in onpaint Hud th:" + System.Threading.Thread.CurrentThread.Name);
+                return;
+            }
+
+            inOnPaint = true;
 
             starttime = DateTime.Now;
 
@@ -283,6 +293,8 @@ namespace hud
 
             }
             catch (Exception ex) { Console.WriteLine(ex.ToString()); }
+
+            inOnPaint = false;
 
             count++;
 
@@ -1479,7 +1491,7 @@ namespace hud
             if (e == null || P == null || pth == null || pth.PointCount == 0)
                 return;
             
-            if (!ArdupilotMega.MainV2.MONO)
+            //if (!ArdupilotMega.MainV2.MONO)
                 e.DrawPath(P, pth);
 
             //Draw the face

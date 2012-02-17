@@ -242,10 +242,13 @@
     <Compile Include="CommsTCPSerial.cs" />
     <Compile Include="CommsUdpSerial.cs" />
     <Compile Include="Controls\ImageLabel.cs">
-      <SubType>UserControl</SubType>
+      <SubType>Component</SubType>
     </Compile>
     <Compile Include="Controls\ImageLabel.Designer.cs">
       <DependentUpon>ImageLabel.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Controls\myGMAP.cs">
+      <SubType>UserControl</SubType>
     </Compile>
     <Compile Include="Controls\XorPlus.cs">
       <SubType>Form</SubType>

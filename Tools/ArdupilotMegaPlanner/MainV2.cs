@@ -233,9 +233,9 @@ namespace ArdupilotMega
                 double Framework = Convert.ToDouble(version_names[version_names.Length - 1].Remove(0, 1), CultureInfo.InvariantCulture);
                 int SP = Convert.ToInt32(installed_versions.OpenSubKey(version_names[version_names.Length - 1]).GetValue("SP", 0));
 
-                if (Framework < 4.0)
+                if (Framework < 3.5)
                 {
-                    MessageBox.Show("This program requires .NET Framework 4.0 +. You currently have " + Framework);
+                    MessageBox.Show("This program requires .NET Framework 3.5. You currently have " + Framework);
                 }
             }
 
