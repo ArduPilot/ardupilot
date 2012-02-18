@@ -1,6 +1,13 @@
 
 #include "IMU.h"
 
+// this allows the sensor calibration to be saved to EEPROM
+const AP_Param::GroupInfo IMU::var_info[] PROGMEM = {
+    AP_GROUPINFO("CAL", 0, IMU, _sensor_cal),
+    AP_GROUPEND
+};
+
+
 /* Empty implementations for the IMU functions.
  * Although these will never be used, in certain situations with
  * optimizations turned off, having empty implementations in an object

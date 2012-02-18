@@ -17,8 +17,8 @@
 		write_register() : writes a value to one of the sensor's register (will be sensor specific)
 */
 
+#include <FastSerial.h>
 #include <AP_Math.h>
-#include <AP_DCM.h>
 #include <AP_Common.h>
 
 // standard rotation matrices

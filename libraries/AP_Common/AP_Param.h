@@ -18,7 +18,6 @@
 
 #include <avr/pgmspace.h>
 #include <avr/eeprom.h>
-#include <AP_Math.h>
 
 #define AP_MAX_NAME_SIZE 15
 
@@ -79,6 +78,9 @@ public:
     // will also check the EEPROM header and re-initialise it if the
     // wrong version is found
     static bool setup(const struct Info *info, uint8_t num_vars, uint16_t eeprom_size);
+
+    // return true if AP_Param has been initialised via setup()
+    static bool initialised(void);
 
     /// Copy the variable's name, prefixed by any containing group name, to a buffer.
     ///
@@ -259,6 +261,19 @@ public:
         return save();
     }
 
+    /// Combined set and save, but only does the save if the value if
+    /// different from the current ram value, thus saving us a
+    /// scan(). This should only be used where we have not set() the
+    /// value separately, as otherwise the value in EEPROM won't be
+    /// updated correctly.
+    bool set_and_save_ifchanged(T v) {
+        if (v == _value) {
+            return true;
+        }
+        set(v);
+        return save();
+    }
+
     /// Conversion to T returns a reference to the value.
     ///
     /// This allows the class to be used in many situations where the value would be legal.
@@ -334,13 +349,13 @@ public:
 
     /// Copy assignment from self does nothing.
     ///
-    AP_ParamT<T,PT>& operator=(AP_ParamT<T,PT>& v) {
+    AP_ParamV<T,PT>& operator=(AP_ParamV<T,PT>& v) {
         return v;
     }
 
     /// Copy assignment from T is equivalent to ::set.
     ///
-    AP_ParamT<T,PT>& operator=(T v) {
+    AP_ParamV<T,PT>& operator=(T v) {
         _value = v;
         return *this;
     }
@@ -415,12 +430,11 @@ AP_PARAMDEF(int8_t, Int8, AP_PARAM_INT8);     // defines AP_Int8
 AP_PARAMDEF(int16_t, Int16, AP_PARAM_INT16);  // defines AP_Int16
 AP_PARAMDEF(int32_t, Int32, AP_PARAM_INT32);  // defines AP_Int32
 
-#define AP_PARAMDEFV(_t, _n, _pt)   typedef AP_ParamV<_t, _pt> AP_##_n;
-AP_PARAMDEFV(Matrix3f, Matrix3f, AP_PARAM_MATRIX3F);
-AP_PARAMDEFV(Vector3f, Vector3f, AP_PARAM_VECTOR3F);
-
 #define AP_PARAMDEFA(_t, _n, _size, _pt)   typedef AP_ParamA<_t, _size, _pt> AP_##_n;
 AP_PARAMDEFA(float, Vector6f, 6, AP_PARAM_VECTOR6F);
+
+// this is used in AP_Math.h
+#define AP_PARAMDEFV(_t, _n, _pt)   typedef AP_ParamV<_t, _pt> AP_##_n;
 
 /// Rely on built in casting for other variable types
 /// to minimize template creation and save memory

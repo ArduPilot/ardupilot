@@ -1,8 +1,8 @@
 /// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 
-#define THISFIRMWARE "ArduCopter V2.3.1"
+#define THISFIRMWARE "ArduCopter V2.4"
 /*
-ArduCopter Version 2.3.1
+ArduCopter Version 2.4
 Authors:	Jason Short
 Based on code and ideas from the Arducopter team: Randy Mackay, Pat Hickey, Jose Julio, Jani Hirvinen
 Thanks to:	Chris Anderson, Mike Smith, Jordi Munoz, Doug Weibel, James Goppert, Benjamin Pelletier
@@ -32,9 +32,9 @@ Oliver				:Piezo support
 Guntars				:Arming safety suggestion
 Igor van Airde 		:Control Law optimization
 Jean-Louis Naudin 	:Auto Landing
-Sandro Benigno  : Camera support
-Olivier Adler : PPM Encoder
-John Arne Birkeland: PPM Encoder
+Sandro Benigno  	:Camera support
+Olivier Adler 		:PPM Encoder
+John Arne Birkeland	:PPM Encoder
 
 And much more so PLEASE PM me on DIYDRONES to add your contribution to the List
 
@@ -659,11 +659,6 @@ static int32_t	auto_pitch;
 static int16_t	nav_lat;
 // The desired bank towards East (Positive) or West (Negative)
 static int16_t	nav_lon;
-// This may go away, but for now I'm tracking the desired bank before we apply the Wind compensation I term
-// This is mainly for debugging
-//static int16_t	nav_lat_p;
-//static int16_t	nav_lon_p;
-
 // The Commanded ROll from the autopilot based on optical flow sensor.
 static int32_t	of_roll = 0;
 // The Commanded pitch from the autopilot based on optical flow sensor. negative Pitch means go forward.
@@ -829,7 +824,9 @@ void loop()
 	uint32_t timer 			= micros();
 	// We want this to execute fast
 	// ----------------------------
-	if ((timer - fast_loopTimer) >= 4500) {
+	if ((timer - fast_loopTimer) >= 4000) {
+		//Log_Write_Data(13, (int32_t)(timer - fast_loopTimer));
+
 		//PORTK |= B00010000;
 		G_Dt 				= (float)(timer - fast_loopTimer) / 1000000.f;		// used by PI Loops
 		fast_loopTimer 		= timer;
@@ -1426,26 +1423,13 @@ void update_roll_pitch_mode(void)
 			g.rc_2.servo_out = get_stabilize_pitch(g.rc_2.control_in);
 			break;
 
-/*		case ROLL_PITCH_AUTO:
-			// apply SIMPLE mode transform
-			if(do_simple && new_radio_frame){
-				update_simple_mode();
-			}
-			// mix in user control with Nav control
-			control_roll 		= g.rc_1.control_mix(nav_roll);
-			control_pitch 		= g.rc_2.control_mix(nav_pitch);
-			g.rc_1.servo_out 	= get_stabilize_roll(control_roll);
-			g.rc_2.servo_out 	= get_stabilize_pitch(control_pitch);
-			break;
-			*/
-
 		case ROLL_PITCH_AUTO:
 			// apply SIMPLE mode transform
 			if(do_simple && new_radio_frame){
 				update_simple_mode();
 			}
 			// mix in user control with Nav control
-			nav_roll			+= constrain(wrap_180(auto_roll - nav_roll), -g.auto_slew_rate.get(), g.auto_slew_rate.get()); // 40 deg a second
+			nav_roll			+= constrain(wrap_180(auto_roll  - nav_roll),  -g.auto_slew_rate.get(), g.auto_slew_rate.get()); // 40 deg a second
 			nav_pitch			+= constrain(wrap_180(auto_pitch - nav_pitch), -g.auto_slew_rate.get(), g.auto_slew_rate.get()); // 40 deg a second
 
 			control_roll 		= g.rc_1.control_mix(nav_roll);
@@ -1942,11 +1926,12 @@ static void tuning(){
 
 		case CH6_DAMP:
 			g.stabilize_d.set(tuning_value);
+			break;
 
-			//tuning_value = (float)g.rc_6.control_in / 100000.0;
-			//g.rc_6.set_range(0,1000); 		// 0 to 1
-			//g.pid_rate_roll.kD(tuning_value);
-			//g.pid_rate_pitch.kD(tuning_value);
+		case CH6_RATE_KD:
+			tuning_value = (float)g.rc_6.control_in / 100000.0;
+			g.pid_rate_roll.kD(tuning_value);
+			g.pid_rate_pitch.kD(tuning_value);
 			break;
 
 		case CH6_STABILIZE_KP:
@@ -1956,26 +1941,21 @@ static void tuning(){
 			break;
 
 		case CH6_STABILIZE_KI:
-			//g.rc_6.set_range(0,300); 		// 0 to .3
-			//tuning_value = (float)g.rc_6.control_in / 1000.0;
 			g.pi_stabilize_roll.kI(tuning_value);
 			g.pi_stabilize_pitch.kI(tuning_value);
 			break;
 
 		case CH6_RATE_KP:
-			//g.rc_6.set_range(40,300);		 // 0 to .3
 			g.pid_rate_roll.kP(tuning_value);
 			g.pid_rate_pitch.kP(tuning_value);
 			break;
 
 		case CH6_RATE_KI:
-			//g.rc_6.set_range(0,500);		 // 0 to .5
 			g.pid_rate_roll.kI(tuning_value);
 			g.pid_rate_pitch.kI(tuning_value);
 			break;
 
 		case CH6_YAW_KP:
-			//g.rc_6.set_range(0,1000);
 			g.pi_stabilize_yaw.kP(tuning_value);
 			break;
 
@@ -1985,70 +1965,58 @@ static void tuning(){
 			break;
 
 		case CH6_THROTTLE_KP:
-			//g.rc_6.set_range(0,1000);       // 0 to 1
 			g.pid_throttle.kP(tuning_value);
 			break;
 
 		case CH6_TOP_BOTTOM_RATIO:
-			//g.rc_6.set_range(800,1000); 	// .8 to 1
 			g.top_bottom_ratio = tuning_value;
 			break;
 
 		case CH6_RELAY:
-			//g.rc_6.set_range(0,1000);
 		  	if (g.rc_6.control_in > 525) relay.on();
 		  	if (g.rc_6.control_in < 475) relay.off();
 			break;
 
 		case CH6_TRAVERSE_SPEED:
-			//g.rc_6.set_range(0,1000);
 			g.waypoint_speed_max = g.rc_6.control_in;
 			break;
 
 		case CH6_LOITER_P:
-			//g.rc_6.set_range(0,2000);
 			g.pi_loiter_lat.kP(tuning_value);
 			g.pi_loiter_lon.kP(tuning_value);
 			break;
 
 		case CH6_NAV_P:
-			//g.rc_6.set_range(0,4000);
 			g.pid_nav_lat.kP(tuning_value);
 			g.pid_nav_lon.kP(tuning_value);
 			break;
 
 		case CH6_NAV_I:
-			//g.rc_6.set_range(0,500);
 			g.pid_nav_lat.kI(tuning_value);
 			g.pid_nav_lon.kI(tuning_value);
 			break;
 
 		#if FRAME_CONFIG == HELI_FRAME
 		case CH6_HELI_EXTERNAL_GYRO:
-			//g.rc_6.set_range(1000,2000);
 			g.heli_ext_gyro_gain = tuning_value * 1000;
 			break;
 		#endif
 
 		case CH6_THR_HOLD_KP:
-			//g.rc_6.set_range(0,1000);     // 0 to 1
 			g.pi_alt_hold.kP(tuning_value);
 			break;
 
 		case CH6_OPTFLOW_KP:
-			//g.rc_6.set_range(0,5000);     // 0 to 5
 			g.pid_optflow_roll.kP(tuning_value);
 			g.pid_optflow_pitch.kP(tuning_value);
 			break;
 
 		case CH6_OPTFLOW_KI:
-			//g.rc_6.set_range(0,10000);     // 0 to 10
 			g.pid_optflow_roll.kI(tuning_value);
 			g.pid_optflow_pitch.kI(tuning_value);
 			break;
 
 		case CH6_OPTFLOW_KD:
-			//g.rc_6.set_range(0,200);    // 0 to 0.2
 			g.pid_optflow_roll.kD(tuning_value);
 			g.pid_optflow_pitch.kD(tuning_value);
 			break;

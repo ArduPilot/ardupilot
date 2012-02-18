@@ -104,7 +104,12 @@ public:
 	virtual void		ay(const float v);
 	virtual void		az(const float v);
 
+	static const struct AP_Param::GroupInfo var_info[];
+
 protected:
+
+    AP_Vector6f         _sensor_cal;    ///< Calibrated sensor offsets
+
 	/// Most recent accelerometer reading obtained by ::update
 	Vector3f		_accel;
 	Vector3f		_accel_filtered;

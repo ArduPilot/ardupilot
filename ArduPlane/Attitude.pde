@@ -314,7 +314,6 @@ static void set_servos(void)
 		if (g.mix_mode == 0) {
 			g.channel_roll.calc_pwm();
 			g.channel_pitch.calc_pwm();
-			g.channel_rudder.calc_pwm();
 			if (g_rc_function[RC_Channel_aux::k_aileron]) {
 				g_rc_function[RC_Channel_aux::k_aileron]->servo_out = g.channel_roll.servo_out;
 				g_rc_function[RC_Channel_aux::k_aileron]->calc_pwm();
@@ -329,6 +328,7 @@ static void set_servos(void)
 			g.channel_roll.radio_out =	elevon1_trim + (BOOL_TO_SIGN(g.reverse_ch1_elevon) * (ch1 * 500.0/ SERVO_MAX));
 			g.channel_pitch.radio_out =	elevon2_trim + (BOOL_TO_SIGN(g.reverse_ch2_elevon) * (ch2 * 500.0/ SERVO_MAX));
 		}
+		g.channel_rudder.calc_pwm();
 
 		#if THROTTLE_OUT == 0
 			g.channel_throttle.servo_out = 0;

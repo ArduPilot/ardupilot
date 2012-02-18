@@ -175,19 +175,19 @@ namespace ArdupilotMega.HIL
             //	The +Y axis points straight up away from the center of the earth at the reference point.
 
             // First we shall convert from this East Up South frame, to a more conventional NED (North East Down) frame.
-            x_NED = radians(x) * -1.0;
-            y_NED = radians(y) * 1.0;
-            z_NED = radians(z) * -1.0;
+            x_NED = (x) * -1.0;
+            y_NED = (y) * 1.0;
+            z_NED = (z) * -1.0;
 
             // Next calculate cos & sin of angles for use in the transformation matrix.
             // r, p & y subscripts stand for roll pitch and yaw.
 
-            Cr = Math.Cos(radians(phi));
-            Cp = Math.Cos(radians(theta));
-            Cy = Math.Cos(radians(psi));
-            Sr = Math.Sin(radians(phi));
-            Sp = Math.Sin(radians(theta));
-            Sy = Math.Sin(radians(psi));
+            Cr = Math.Cos((phi));
+            Cp = Math.Cos((theta));
+            Cy = Math.Cos((psi));
+            Sr = Math.Sin((phi));
+            Sp = Math.Sin((theta));
+            Sy = Math.Sin((psi));
 
             // Next we need to rotate our accelerations from the NED reference frame, into the body fixed reference frame
 
@@ -202,7 +202,7 @@ namespace ArdupilotMega.HIL
             y = (x_NED * ((Sr * Sp * Cy) - (Cr * Sy))) + (y_NED * ((Sr * Sp * Sy) + (Cr * Cy))) + (z_NED * Sr * Cp);
             z = (x_NED * ((Cr * Sp * Cy) + (Sr * Sy))) + (y_NED * ((Cr * Sp * Sy) - (Sr * Cy))) + (z_NED * Cr * Cp);
 
-            return new Tuple<double, double, double>(degrees(x), degrees(y), degrees(z));
+            return new Tuple<double, double, double>((x), (y), (z));
         }
 
 

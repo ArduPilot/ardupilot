@@ -157,7 +157,6 @@ static void trim_control_surfaces()
 	if(g.mix_mode == 0){
 		g.channel_roll.radio_trim = g.channel_roll.radio_in;
 		g.channel_pitch.radio_trim = g.channel_pitch.radio_in;
-		g.channel_rudder.radio_trim = g.channel_rudder.radio_in;
 		G_RC_AUX(k_aileron)->radio_trim = g_rc_function[RC_Channel_aux::k_aileron]->radio_in;			// Second aileron channel
 
 	}else{
@@ -169,6 +168,7 @@ static void trim_control_surfaces()
 		g.channel_roll.radio_trim 	= center;
 		g.channel_pitch.radio_trim 	= center;
 	}
+	g.channel_rudder.radio_trim = g.channel_rudder.radio_in;
 
 	// save to eeprom
 	g.channel_roll.save_eeprom();
@@ -190,7 +190,6 @@ static void trim_radio()
 		g.channel_roll.radio_trim 		= g.channel_roll.radio_in;
 		g.channel_pitch.radio_trim 		= g.channel_pitch.radio_in;
 		//g.channel_throttle.radio_trim 	= g.channel_throttle.radio_in;
-		g.channel_rudder.radio_trim 	= g.channel_rudder.radio_in;
 		G_RC_AUX(k_aileron)->radio_trim = g_rc_function[RC_Channel_aux::k_aileron]->radio_in;			// Second aileron channel
 
 	} else {
@@ -199,8 +198,8 @@ static void trim_radio()
 		uint16_t center = 1500;
 		g.channel_roll.radio_trim 	= center;
 		g.channel_pitch.radio_trim 	= center;
-		g.channel_rudder.radio_trim = g.channel_rudder.radio_in;
 	}
+	g.channel_rudder.radio_trim = g.channel_rudder.radio_in;
 
 	// save to eeprom
 	g.channel_roll.save_eeprom();

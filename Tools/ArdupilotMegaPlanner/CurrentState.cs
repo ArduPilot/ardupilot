@@ -309,11 +309,17 @@ namespace ArdupilotMega
                     if (ind != -1)
                         logdata = logdata.Substring(0, ind);
 
-                    while (messages.Count > 5)
+                    try
                     {
-                        messages.RemoveAt(0);
-                    }
+                        while (messages.Count > 5)
+                        {
+                            messages.RemoveAt(0);
+                        }
+
                     messages.Add(logdata + "\n");
+
+                    }
+                    catch { }
 
                     mavinterface.packets[MAVLink.MAVLINK_MSG_ID_STATUSTEXT] = null;
                 }

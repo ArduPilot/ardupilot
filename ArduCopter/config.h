@@ -555,7 +555,7 @@
 
 
 #ifndef STABILIZE_D
-# define STABILIZE_D 		.06
+# define STABILIZE_D 		.2
 #endif
 
 
@@ -567,7 +567,7 @@
 
 // Good for smaller payload motors.
 #ifndef STABILIZE_ROLL_P
-# define STABILIZE_ROLL_P 		4.5
+# define STABILIZE_ROLL_P 		4
 #endif
 #ifndef STABILIZE_ROLL_I
 # define STABILIZE_ROLL_I 		0.0
@@ -577,7 +577,7 @@
 #endif
 
 #ifndef STABILIZE_PITCH_P
-# define STABILIZE_PITCH_P		4.5
+# define STABILIZE_PITCH_P		4
 #endif
 #ifndef STABILIZE_PITCH_I
 # define STABILIZE_PITCH_I		0.0
@@ -587,7 +587,7 @@
 #endif
 
 #ifndef  STABILIZE_YAW_P
-# define STABILIZE_YAW_P		7.5		// increase for more aggressive Yaw Hold, decrease if it's bouncy
+# define STABILIZE_YAW_P		7.0		// increase for more aggressive Yaw Hold, decrease if it's bouncy
 #endif
 #ifndef  STABILIZE_YAW_I
 # define STABILIZE_YAW_I		0.01
@@ -601,26 +601,26 @@
 // Stabilize Rate Control
 //
 #ifndef RATE_ROLL_P
-# define RATE_ROLL_P        0.14
+# define RATE_ROLL_P        0.12
 #endif
 #ifndef RATE_ROLL_I
-# define RATE_ROLL_I        0.18
+# define RATE_ROLL_I        0.02
 #endif
 #ifndef RATE_ROLL_D
-# define RATE_ROLL_D        0.0025
+# define RATE_ROLL_D        0.008
 #endif
 #ifndef RATE_ROLL_IMAX
 # define RATE_ROLL_IMAX	 	5			// degrees
 #endif
 
 #ifndef RATE_PITCH_P
-# define RATE_PITCH_P       0.14
+# define RATE_PITCH_P       0.12
 #endif
 #ifndef RATE_PITCH_I
-# define RATE_PITCH_I		0.18
+# define RATE_PITCH_I		0.02
 #endif
 #ifndef RATE_PITCH_D
-# define RATE_PITCH_D       0.0025
+# define RATE_PITCH_D       0.008
 #endif
 #ifndef RATE_PITCH_IMAX
 # define RATE_PITCH_IMAX   	5			// degrees
