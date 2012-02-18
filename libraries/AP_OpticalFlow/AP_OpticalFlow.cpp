@@ -109,30 +109,3 @@ AP_OpticalFlow::update_position(float roll, float pitch, float cos_yaw_x, float 
 	_last_roll = roll;
 	_last_pitch = pitch;
 }
-
-
-/*
-{
-	// only update position if surface quality is good and angle is not over 45 degrees
-	if( surface_quality >= 10 && fabs(_dcm->roll) <= FORTYFIVE_DEGREES && fabs(_dcm->pitch) <= FORTYFIVE_DEGREES ) {
-		altitude = max(altitude, 0);
-		Vector3f omega = _dcm->get_gyro();
-
-		// calculate expected x,y diff due to roll and pitch change
-		float exp_change_x =  omega.x * radians_to_pixels;
-		float exp_change_y = -omega.y * radians_to_pixels;
-
-		// real estimated raw change from mouse
-		float change_x = dx - exp_change_x;
-		float change_y = dy - exp_change_y;
-
-		// convert raw change to horizontal movement in cm
-		float x_cm = -change_x * altitude * conv_factor;	// perhaps this altitude should actually be the distance to the ground?	i.e. if we are very rolled over it should be longer?
-		float y_cm = -change_y * altitude * conv_factor;	// for example if you are leaned over at 45 deg the ground will appear farther away and motion from opt flow sensor will be less
-
-		vlon =  (float)x_cm * sin_yaw_y - (float)y_cm * cos_yaw_x;
-		vlat =  (float)y_cm * sin_yaw_y - (float)x_cm * cos_yaw_x;
-	}
-}
-
-*/
