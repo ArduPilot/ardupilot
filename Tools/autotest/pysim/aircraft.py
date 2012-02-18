@@ -70,7 +70,7 @@ class Aircraft(object):
         from math import sin, cos, sqrt, radians
         
         # work out what the accelerometer would see
-        xAccel = sin(radians(self.pitch)) * cos(radians(self.roll))
+        xAccel = sin(radians(self.pitch))
         yAccel = -sin(radians(self.roll)) * cos(radians(self.pitch))
         zAccel = -cos(radians(self.roll)) * cos(radians(self.pitch))
         scale = 9.81 / sqrt((xAccel*xAccel)+(yAccel*yAccel)+(zAccel*zAccel))
