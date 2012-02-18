@@ -327,10 +327,22 @@ static void init_ardupilot()
 
 #if LOGGING_ENABLED == ENABLED
 	Log_Write_Startup();
-	Log_Write_Data(10, g.pi_stabilize_roll.kP());
-	Log_Write_Data(11, g.pi_stabilize_pitch.kP());
-	Log_Write_Data(12, g.pid_rate_roll.kP());
-	Log_Write_Data(13, g.pid_rate_pitch.kP());
+	Log_Write_Data(10, (float)g.pi_stabilize_roll.kP());
+	Log_Write_Data(11, (float)g.pi_stabilize_roll.kI());
+
+	Log_Write_Data(12, (float)g.pid_rate_roll.kP());
+	Log_Write_Data(13, (float)g.pid_rate_roll.kI());
+	Log_Write_Data(14, (float)g.pid_rate_roll.kD());
+	Log_Write_Data(15, (float)g.stabilize_d.get());
+
+	Log_Write_Data(16, (float)g.pi_loiter_lon.kP());
+	Log_Write_Data(17, (float)g.pi_loiter_lon.kI());
+
+	Log_Write_Data(18, (float)g.pid_nav_lon.kP());
+	Log_Write_Data(19, (float)g.pid_nav_lon.kI());
+	Log_Write_Data(20, (float)g.pid_nav_lon.kD());
+
+	Log_Write_Data(21, (int32_t)g.auto_slew_rate.get());
 #endif
 
 	SendDebug("\nReady to FLY ");

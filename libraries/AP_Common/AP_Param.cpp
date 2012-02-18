@@ -15,6 +15,7 @@
 
 #include <FastSerial.h>
 #include <AP_Common.h>
+#include <AP_Math.h>
 
 #include <math.h>
 #include <string.h>
@@ -204,6 +205,12 @@ bool AP_Param::setup(const AP_Param::Info *info, uint8_t num_vars, uint16_t eepr
     }
 
     return true;
+}
+
+// check if AP_Param has been initialised
+bool AP_Param::initialised(void)
+{
+    return _var_info != NULL;
 }
 
 // find the info structure given a header and a group_info table

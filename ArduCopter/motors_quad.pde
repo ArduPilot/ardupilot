@@ -37,8 +37,8 @@ static void output_motors_armed()
 
 
 	if(g.frame_orientation == X_FRAME){
-		roll_out 	 	= g.rc_1.pwm_out * .707;
-		pitch_out 	 	= g.rc_2.pwm_out * .707;
+		roll_out 	 	= (float)g.rc_1.pwm_out * 0.707;
+		pitch_out 	 	= (float)g.rc_2.pwm_out * 0.707;
 
 		// left
 		motor_out[MOT_3]	= g.rc_3.radio_out + roll_out + pitch_out;	// FRONT

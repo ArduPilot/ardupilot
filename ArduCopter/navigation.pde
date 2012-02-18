@@ -55,7 +55,7 @@ static void calc_XY_velocity(){
 
 	// straightforward approach:
 	///*
-	x_actual_speed	= x_speed_old + (float)(g_gps->longitude - last_longitude) * tmp;
+	x_actual_speed = x_speed_old + (float)(g_gps->longitude - last_longitude)  * scaleLongDown * tmp;
 	y_actual_speed	= y_speed_old + (float)(g_gps->latitude  - last_latitude)  * tmp;
 
 	x_actual_speed = x_actual_speed >> 1;

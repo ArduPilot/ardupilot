@@ -369,7 +369,7 @@ namespace ArdupilotMega.GCSViews
                 try
                 {
                     //Console.WriteLine(DateTime.Now.Millisecond);
-                    MainV2.cs.UpdateCurrentSettings(bindingSource1);
+                    updateBindingSource();
                     //Console.WriteLine(DateTime.Now.Millisecond + " done ");
 
                     if (tunning.AddMilliseconds(50) < DateTime.Now && CB_tuning.Checked == true)
@@ -401,6 +401,11 @@ namespace ArdupilotMega.GCSViews
                     if (tracklast.AddSeconds(1) < DateTime.Now)
                     {
                         gMapControl1.HoldInvalidation = true;
+
+                        while (gMapControl1.inOnPaint == true)
+                        {
+                            System.Threading.Thread.Sleep(1);
+                        }
 
                         if (trackPoints.Count > int.Parse(MainV2.config["NUM_tracklength"].ToString()))
                         {
@@ -498,6 +503,14 @@ namespace ArdupilotMega.GCSViews
                 catch (Exception ex) { Console.WriteLine("FD Main loop exception " + ex.ToString()); }
             }
             Console.WriteLine("FD Main loop exit");
+        }
+
+        private void updateBindingSource()
+        {
+            this.Invoke((System.Windows.Forms.MethodInvoker)delegate()
+            {
+                MainV2.cs.UpdateCurrentSettings(bindingSource1);
+            });
         }
 
         private void updateMapPosition(PointLatLng currentloc)

@@ -144,6 +144,7 @@
 // Rate
 #define CH6_RATE_KP 4
 #define CH6_RATE_KI 5
+#define CH6_RATE_KD 21
 #define	CH6_YAW_RATE_KP 6
 // Altitude rate controller
 #define CH6_THROTTLE_KP 7
@@ -345,8 +346,8 @@ enum gcs_severity {
 
 // EEPROM addresses
 #define EEPROM_MAX_ADDR		4096
-// parameters get the first 1024 bytes of EEPROM, remainder is for waypoints
-#define WP_START_BYTE 0x400 // where in memory home WP is stored + all other WP
+// parameters get the first 1280 bytes of EEPROM, remainder is for waypoints
+#define WP_START_BYTE 0x500 // where in memory home WP is stored + all other WP
 #define WP_SIZE 15
 
 #define ONBOARD_PARAM_NAME_LENGTH 15

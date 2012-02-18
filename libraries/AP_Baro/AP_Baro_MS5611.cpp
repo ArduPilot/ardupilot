@@ -212,10 +212,10 @@ void AP_Baro_MS5611::_calculate()
 	SENS = (int64_t)C1 * 32768 + ((int64_t)C3 * dT) / 256;
 
 	if (TEMP < 2000){   // second order temperature compensation
-		int64_t T2 = (((int64_t)dT)*dT) / 2147483648UL;
+		int64_t T2 = (((int64_t)dT)*dT) >> 31;
 		int64_t Aux_64 = (TEMP-2000)*(TEMP-2000);
-		int64_t OFF2 = 5*Aux_64/2;
-		int64_t SENS2 = 5*Aux_64/4;
+		int64_t OFF2 = (5*Aux_64)>>1;
+		int64_t SENS2 = (5*Aux_64)>>2;
 		TEMP = TEMP - T2;
 		OFF = OFF - OFF2;
 		SENS = SENS - SENS2;

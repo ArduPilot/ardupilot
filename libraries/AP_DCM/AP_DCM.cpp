@@ -131,8 +131,11 @@ AP_DCM::matrix_update(float _G_Dt)
 	_omega_integ_corr 	= _gyro_vector 		+ _omega_I;		// Used for _centripetal correction (theoretically better than _omega)
 	_omega 				= _omega_integ_corr + _omega_P;		// Equation 16, adding proportional and integral correction terms
 
-	if(_centripetal){
-		accel_adjust();				// Remove _centripetal acceleration.
+	if(_centripetal &&
+	   _gps != NULL &&
+	   _gps->status() == GPS::GPS_OK) {
+		// Remove _centripetal acceleration.
+		accel_adjust();
 	}
 
  #if OUTPUTMODE == 1
@@ -174,9 +177,7 @@ AP_DCM::accel_adjust(void)
 {
 	Vector3f veloc, temp;
 
-	if (_gps) {
-		veloc.x = _gps->ground_speed / 100;		// We are working with acceleration in m/s^2 units
-	}
+	veloc.x = _gps->ground_speed / 100;		// We are working with acceleration in m/s^2 units
 
 	// We are working with a modified version of equation 26 as our IMU object reports acceleration in the positive axis direction as positive
 
