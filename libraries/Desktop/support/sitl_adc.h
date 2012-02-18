@@ -8,6 +8,15 @@
 
 #include <stdlib.h>
 
+#define NOISE_BITS 4
+
+static inline float noise_generator(void)
+{
+	float noise = ((unsigned)random()) & ((1<<NOISE_BITS)-1);
+	noise -= 0.5*(1<<NOISE_BITS);
+	return noise;
+}
+
 // this implements the UDR2 register
 struct ADC_UDR2 {
 	uint16_t value, next_value;
@@ -42,8 +51,7 @@ struct ADC_UDR2 {
 		default: return *this;
 		}
 		idx = 1;
-		int noise = (((unsigned long)random()) % 3) - 1;
-		next_value = (unsigned)(next_analog + noise + 0.5);
+		next_value = (unsigned)(next_analog + noise_generator() + 0.5);
 		if (next_value >= 0x1000) {
 			next_value = 0xFFF;
 		}
