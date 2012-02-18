@@ -78,7 +78,7 @@ public:
 	k_param_heli_servo_averaging,
 	k_param_heli_servo_manual,
 	k_param_heli_phase_angle,
-	k_param_heli_coll_yaw_effect, // 97
+	k_param_heli_collective_yaw_effect, // 97
 	#endif
 
 	// 110: Telemetry control
@@ -268,13 +268,13 @@ public:
 	RC_Channel	heli_servo_1, heli_servo_2, heli_servo_3, heli_servo_4;	// servos for swash plate and tail
 	AP_Int16	heli_servo1_pos, heli_servo2_pos, heli_servo3_pos;		// servo positions (3 because we don't need pos for tail servo)
 	AP_Int16	heli_roll_max, heli_pitch_max;	// maximum allowed roll and pitch of swashplate
-	AP_Int16	heli_coll_min, heli_coll_max, heli_coll_mid;		// min and max collective.	mid = main blades at zero pitch
+	AP_Int16	heli_collective_min, heli_collective_max, heli_collective_mid;		// min and max collective.	mid = main blades at zero pitch
 	AP_Int8		heli_ext_gyro_enabled;	// 0 = no external tail gyro, 1 = external tail gyro
 	AP_Int16	heli_ext_gyro_gain;		// radio output 1000~2000 (value output on CH_7)
 	AP_Int8		heli_servo_averaging;	// 0 or 1 = no averaging (250hz) for **digital servos**, 2=average of two samples (125hz), 3=three samples (83.3hz) **analog servos**, 4=four samples (62.5hz), 5=5 samples(50hz)
 	AP_Int8		heli_servo_manual;	    // 0 = normal mode, 1 = radio inputs directly control swash.  required for swash set-up
 	AP_Int16	heli_phase_angle;		// 0 to 360 degrees.  specifies mixing between roll and pitch for helis
-	AP_Float	heli_coll_yaw_effect;	// -5.0 ~ 5.0.  Feed forward control from collective to yaw.  1.0 = move rudder right 1% for every 1% of collective above the mid point
+	AP_Float	heli_collective_yaw_effect;	// -5.0 ~ 5.0.  Feed forward control from collective to yaw.  1.0 = move rudder right 1% for every 1% of collective above the mid point
 	#endif
 
 	// RC channels
@@ -377,24 +377,20 @@ public:
 	auto_slew_rate			(AUTO_SLEW_RATE),
 
 	#if FRAME_CONFIG ==	HELI_FRAME
-	heli_servo_1			(k_param_heli_servo_1),
-	heli_servo_2			(k_param_heli_servo_2),
-	heli_servo_3			(k_param_heli_servo_3),
-	heli_servo_4			(k_param_heli_servo_4),
 	heli_servo1_pos			(-60),
 	heli_servo2_pos			(60),
 	heli_servo3_pos			(180),
 	heli_roll_max			(4500),
 	heli_pitch_max			(4500),
-	heli_coll_min			(1250),
-	heli_coll_max			(1750),
-	heli_coll_mid			(1500),
+	heli_collective_min		(1250),
+	heli_collective_max		(1750),
+	heli_collective_mid		(1500),
 	heli_ext_gyro_enabled	(0),
 	heli_ext_gyro_gain		(1350),
 	heli_servo_averaging	(0),
 	heli_servo_manual		(0),
 	heli_phase_angle		(0),
-	heli_coll_yaw_effect	(0),
+	heli_collective_yaw_effect	(0),
 	#endif
 
 	camera_pitch_gain 		(CAM_PITCH_GAIN),
