@@ -7,7 +7,7 @@
 
 static bool heli_swash_initialised = false;
 static int heli_throttle_mid = 0;  // throttle mid point in pwm form (i.e. 0 ~ 1000)
-static float heli_coll_scalar = 1;  // throttle scalar to convert pwm form (i.e. 0 ~ 1000) passed in to actual servo range (i.e 1250~1750 would be 500)
+static float heli_collective_scalar = 1;  // throttle scalar to convert pwm form (i.e. 0 ~ 1000) passed in to actual servo range (i.e 1250~1750 would be 500)
 
 // heli_servo_averaging:
 //   0 or 1 = no averaging, 250hz
@@ -39,7 +39,7 @@ static void heli_reset_swash()
 	heli_rollFactor[CH_3] = cos(radians(g.heli_servo3_pos + 90 - g.heli_phase_angle));
 
 	// set throttle scaling
-	heli_coll_scalar = ((float)(g.rc_3.radio_max - g.rc_3.radio_min))/1000.0;
+	heli_collective_scalar = ((float)(g.rc_3.radio_max - g.rc_3.radio_min))/1000.0;
 
 	// we must be in set-up mode so mark swash as uninitialised
 	heli_swash_initialised = false;
@@ -57,17 +57,17 @@ static void heli_init_swash()
 	g.heli_servo_4.set_angle(4500);
 
 	// ensure g.heli_coll values are reasonable
-	if( g.heli_coll_min >= g.heli_coll_max ) {
-	    g.heli_coll_min = 1000;
-		g.heli_coll_max = 2000;
+	if( g.heli_collective_min >= g.heli_collective_max ) {
+	    g.heli_collective_min = 1000;
+		g.heli_collective_max = 2000;
 	}
-	g.heli_coll_mid = constrain(g.heli_coll_mid, g.heli_coll_min, g.heli_coll_max);
+	g.heli_collective_mid = constrain(g.heli_collective_mid, g.heli_collective_min, g.heli_collective_max);
 
 	// calculate throttle mid point
-	heli_throttle_mid = ((float)(g.heli_coll_mid-g.heli_coll_min))/((float)(g.heli_coll_max-g.heli_coll_min))*1000.0;
+	heli_throttle_mid = ((float)(g.heli_collective_mid-g.heli_collective_min))/((float)(g.heli_collective_max-g.heli_collective_min))*1000.0;
 
 	// determine scalar throttle input
-	heli_coll_scalar = ((float)(g.heli_coll_max-g.heli_coll_min))/1000.0;
+	heli_collective_scalar = ((float)(g.heli_collective_max-g.heli_collective_min))/1000.0;
 
 	// pitch factors
 	heli_pitchFactor[CH_1] = cos(radians(g.heli_servo1_pos - g.heli_phase_angle));
@@ -128,7 +128,7 @@ static void heli_move_swash(int roll_out, int pitch_out, int coll_out, int yaw_o
 		if( heli_swash_initialised ) {
 			heli_reset_swash();
 		}
-		coll_out_scaled = coll_out * heli_coll_scalar + g.rc_3.radio_min - 1000;
+		coll_out_scaled = coll_out * heli_collective_scalar + g.rc_3.radio_min - 1000;
 	}else{  // regular flight mode
 
 		// check if we need to reinitialise the swash
@@ -140,12 +140,12 @@ static void heli_move_swash(int roll_out, int pitch_out, int coll_out, int yaw_o
 		roll_out = constrain(roll_out, (int)-g.heli_roll_max, (int)g.heli_roll_max);
 		pitch_out = constrain(pitch_out, (int)-g.heli_pitch_max, (int)g.heli_pitch_max);
 		coll_out = constrain(coll_out, 0, 1000);
-		coll_out_scaled = coll_out * heli_coll_scalar + g.heli_coll_min - 1000;
+		coll_out_scaled = coll_out * heli_collective_scalar + g.heli_collective_min - 1000;
 
 		// rudder feed forward based on collective
 		#if HIL_MODE == HIL_MODE_DISABLED  // don't do rudder feed forward in simulator
 		if( !g.heli_ext_gyro_enabled ) {
-			yaw_offset = g.heli_coll_yaw_effect * abs(coll_out_scaled - g.heli_coll_mid);
+			yaw_offset = g.heli_collective_yaw_effect * abs(coll_out_scaled - g.heli_collective_mid);
 		}
 		#endif
 	}
