@@ -51,7 +51,6 @@ static void output_motors_armed()
 		motor_out[MOT_6]		=	g.rc_3.radio_out - roll_out + pitch_out;								//	APM2 OUT6	APM1 OUT8	 FRONT RIGHT	CW		BOTTOM
 		motor_out[MOT_7]		=	g.rc_3.radio_out - roll_out - pitch_out;								//	APM2 OUT7	APM1 OUT10	 BACK RIGHT		CCW		BOTTOM
 		motor_out[MOT_8]		=	g.rc_3.radio_out + roll_out - pitch_out;								//	APM2 OUT8	APM1 OUT11	 BACK LEFT		CW		BOTTOM
-
 	}else{
 		roll_out 	 			= g.rc_1.pwm_out;
 		pitch_out 	 			= g.rc_2.pwm_out;
@@ -64,18 +63,18 @@ static void output_motors_armed()
 		motor_out[MOT_6]		= g.rc_3.radio_out + pitch_out;						// APM2 OUT6		APM1 OUT8		FRONT	CW		BOTTOM
 		motor_out[MOT_7]		= g.rc_3.radio_out - roll_out;							// APM2 OUT7		APM1 OUT10		RIGHT	CCW		BOTTOM
 		motor_out[MOT_8]		= g.rc_3.radio_out - pitch_out;						// APM2 OUT8		APM1 OUT11		BACK	CW		BOTTOM
-
-		// Yaw
-		motor_out[MOT_1]		+= g.rc_4.pwm_out;	// CCW
-		motor_out[MOT_3]		+= g.rc_4.pwm_out;	// CCW
-		motor_out[MOT_5]		+= g.rc_4.pwm_out;	// CCW
-		motor_out[MOT_7]		+= g.rc_4.pwm_out;	// CCW
-
-		motor_out[MOT_2]		-= g.rc_4.pwm_out;	// CW
-		motor_out[MOT_4]		-= g.rc_4.pwm_out;	// CW
-		motor_out[MOT_6]		-= g.rc_4.pwm_out;	// CW
-		motor_out[MOT_8]		-= g.rc_4.pwm_out;	// CW
 	}
+
+	// Yaw
+	motor_out[MOT_1]		+= g.rc_4.pwm_out;	// CCW
+	motor_out[MOT_3]		+= g.rc_4.pwm_out;	// CCW
+	motor_out[MOT_5]		+= g.rc_4.pwm_out;	// CCW
+	motor_out[MOT_7]		+= g.rc_4.pwm_out;	// CCW
+
+	motor_out[MOT_2]		-= g.rc_4.pwm_out;	// CW
+	motor_out[MOT_4]		-= g.rc_4.pwm_out;	// CW
+	motor_out[MOT_6]		-= g.rc_4.pwm_out;	// CW
+	motor_out[MOT_8]		-= g.rc_4.pwm_out;	// CW
 
 	// TODO add stability patch
 	motor_out[MOT_1]		= min(motor_out[MOT_1], out_max);
