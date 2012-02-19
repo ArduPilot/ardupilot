@@ -15,7 +15,7 @@ homeloc = None
 num_wp = 0
 
 def hover(mavproxy, mav):
-    mavproxy.send('rc 3 1385\n')
+    mavproxy.send('rc 3 1395\n')
     return True
 
 def calibrate_level(mavproxy, mav):
@@ -214,7 +214,7 @@ def fly_simple(mavproxy, mav, side=60, timeout=120):
     '''fly Simple, flying N then E'''
     mavproxy.send('switch 6\n')
     wait_mode(mav, 'STABILIZE')
-    mavproxy.send('rc 3 1395\n')
+    mavproxy.send('rc 3 1400\n')
 
     tstart = time.time()
     failed = False
