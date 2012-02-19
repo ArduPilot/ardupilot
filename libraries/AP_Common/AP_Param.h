@@ -74,6 +74,12 @@ public:
         const struct GroupInfo *group_info;
     };
 
+    // a token used for first()/next() state
+    typedef struct {
+        uint8_t key;
+        uint8_t group_element;
+    } ParamToken;
+
     // called once at startup to setup the _var_info[] table. This
     // will also check the EEPROM header and re-initialise it if the
     // wrong version is found
@@ -138,15 +144,15 @@ public:
     /// @return             The first variable in _var_info, or NULL if
     ///                     there are none.
     ///
-    static AP_Param *first(uint16_t *token, enum ap_var_type *ptype);
+    static AP_Param *first(ParamToken *token, enum ap_var_type *ptype);
 
     /// Returns the next variable in _var_info, recursing into groups
     /// as needed
-    static AP_Param *next(uint16_t *token, enum ap_var_type *ptype);
+    static AP_Param *next(ParamToken *token, enum ap_var_type *ptype);
 
     /// Returns the next scalar variable in _var_info, recursing into groups
     /// as needed
-    static AP_Param *next_scalar(uint16_t *token, enum ap_var_type *ptype);
+    static AP_Param *next_scalar(ParamToken *token, enum ap_var_type *ptype);
 
     /// cast a variable to a float given its type
     float cast_to_float(enum ap_var_type type);
@@ -203,7 +209,7 @@ private:
                                 bool *found_current,
                                 uint8_t group_base,
                                 uint8_t group_shift,
-                                uint16_t *token,
+                                ParamToken *token,
                                 enum ap_var_type *ptype);
 
     static uint16_t _eeprom_size;

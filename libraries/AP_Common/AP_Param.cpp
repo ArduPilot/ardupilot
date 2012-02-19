@@ -575,9 +575,10 @@ bool AP_Param::load_all(void)
 
 
 // return the first variable in _var_info
-AP_Param *AP_Param::first(uint16_t *token, enum ap_var_type *ptype)
+AP_Param *AP_Param::first(ParamToken *token, enum ap_var_type *ptype)
 {
-    *token = 0;
+    token->key = 0;
+    token->group_element = 0;
     if (_num_vars == 0) {
         return NULL;
     }
@@ -593,7 +594,7 @@ AP_Param *AP_Param::next_group(uint8_t vindex, const struct GroupInfo *group_inf
                                bool *found_current,
                                uint8_t group_base,
                                uint8_t group_shift,
-                               uint16_t *token,
+                               ParamToken *token,
                                enum ap_var_type *ptype)
 {
     uint8_t type;
@@ -612,13 +613,14 @@ AP_Param *AP_Param::next_group(uint8_t vindex, const struct GroupInfo *group_inf
         } else {
             if (*found_current) {
                 // got a new one
-                (*token) = ((uint16_t)GROUP_ID(group_info, group_base, i, group_shift)<<8) | vindex;
+                token->key = vindex;
+                token->group_element = GROUP_ID(group_info, group_base, i, group_shift);
                 if (ptype != NULL) {
                     *ptype = (enum ap_var_type)type;
                 }
                 return (AP_Param*)(PGM_POINTER(&_var_info[vindex].ptr) + PGM_UINT16(&group_info[i].offset));
             }
-            if (GROUP_ID(group_info, group_base, i, group_shift) == (uint8_t)((*token)>>8)) {
+            if (GROUP_ID(group_info, group_base, i, group_shift) == token->group_element) {
                 *found_current = true;
             }
         }
@@ -628,9 +630,9 @@ AP_Param *AP_Param::next_group(uint8_t vindex, const struct GroupInfo *group_inf
 
 /// Returns the next variable in _var_info, recursing into groups
 /// as needed
-AP_Param *AP_Param::next(uint16_t *token, enum ap_var_type *ptype)
+AP_Param *AP_Param::next(ParamToken *token, enum ap_var_type *ptype)
 {
-    uint8_t i = (*token)&0xFF;
+    uint8_t i = token->key;
     bool found_current = false;
     if (i >= _num_vars) {
         // illegal token
@@ -651,7 +653,8 @@ AP_Param *AP_Param::next(uint16_t *token, enum ap_var_type *ptype)
             }
         } else {
             // found the next one
-            (*token) = i;
+            token->key = i;
+            token->group_element = 0;
             if (ptype != NULL) {
                 *ptype = (enum ap_var_type)type;
             }
@@ -663,7 +666,7 @@ AP_Param *AP_Param::next(uint16_t *token, enum ap_var_type *ptype)
 
 /// Returns the next scalar in _var_info, recursing into groups
 /// as needed
-AP_Param *AP_Param::next_scalar(uint16_t *token, enum ap_var_type *ptype)
+AP_Param *AP_Param::next_scalar(ParamToken *token, enum ap_var_type *ptype)
 {
     AP_Param *ap;
     enum ap_var_type type;
@@ -696,7 +699,7 @@ float AP_Param::cast_to_float(enum ap_var_type type)
 // print the value of all variables
 void AP_Param::show_all(void)
 {
-    uint16_t token;
+    ParamToken token;
     AP_Param *ap;
     enum ap_var_type type;
 
