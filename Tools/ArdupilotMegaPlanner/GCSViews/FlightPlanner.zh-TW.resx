@@ -151,6 +151,15 @@
   <data name="Param4.HeaderText" xml:space="preserve">
     <value>參數4</value>
   </data>
+  <data name="Lat.HeaderText" xml:space="preserve">
+    <value>緯度</value>
+  </data>
+  <data name="Lon.HeaderText" xml:space="preserve">
+    <value>經度</value>
+  </data>
+  <data name="Alt.HeaderText" xml:space="preserve">
+    <value>高度</value>
+  </data>
   <data name="Delete.HeaderText" xml:space="preserve">
     <value>删除</value>
   </data>
@@ -161,13 +170,13 @@
     <value>上移</value>
   </data>
   <data name="Up.ToolTipText" xml:space="preserve">
-    <value>向上移動本行</value>
+    <value>向上移动本行</value>
   </data>
   <data name="Down.HeaderText" xml:space="preserve">
     <value>下移</value>
   </data>
   <data name="Down.ToolTipText" xml:space="preserve">
-    <value>向下移动本行</value>
+    <value>向下移動本行</value>
   </data>
   <data name="Commands.ToolTip" xml:space="preserve">
     <value />
@@ -185,7 +194,7 @@
     <value>Microsoft Sans Serif, 8.25pt</value>
   </data>
   <data name="TXT_WPRad.Location" type="System.Drawing.Point, System.Drawing">
-    <value>66, 31</value>
+    <value>24, 40</value>
   </data>
   <data name="TXT_WPRad.ToolTip" xml:space="preserve">
     <value />
@@ -194,7 +203,7 @@
     <value>Microsoft Sans Serif, 8.25pt</value>
   </data>
   <data name="TXT_DefaultAlt.Location" type="System.Drawing.Point, System.Drawing">
-    <value>278, 31</value>
+    <value>162, 40</value>
   </data>
   <data name="TXT_DefaultAlt.ToolTip" xml:space="preserve">
     <value />
@@ -227,7 +236,7 @@
     <value>Microsoft Sans Serif, 8.25pt</value>
   </data>
   <data name="TXT_loiterrad.Location" type="System.Drawing.Point, System.Drawing">
-    <value>170, 31</value>
+    <value>90, 40</value>
   </data>
   <data name="TXT_loiterrad.ToolTip" xml:space="preserve">
     <value />
@@ -239,7 +248,7 @@
     <value>55, 13</value>
   </data>
   <data name="label5.Text" xml:space="preserve">
-    <value>盤旋半径</value>
+    <value>盤旋半徑</value>
   </data>
   <data name="label5.ToolTip" xml:space="preserve">
     <value />
@@ -431,7 +440,7 @@
     <value />
   </data>
   <data name="comboBoxMapType.ToolTip" xml:space="preserve">
-    <value>更改目前地圖類型</value>
+    <value>更改當前地圖類型</value>
   </data>
   <data name="lbl_status.Font" type="System.Drawing.Font, System.Drawing">
     <value>Microsoft Sans Serif, 8.25pt</value>
@@ -449,12 +458,30 @@
     <value>1. 連接
 2. 讀取航路（如果需要）
 3. 確保起始位置和高度都已設置
-4. 在地图上點擊，增加航點</value>
+4. 在地圖上點擊，增加航點</value>
   </data>
   <data name="textBox1.ToolTip" xml:space="preserve">
     <value />
   </data>
   <data name="splitter1.ToolTip" xml:space="preserve">
+    <value />
+  </data>
+  <data name="BUT_loadkml.Text" xml:space="preserve">
+    <value>KML疊加</value>
+  </data>
+  <data name="BUT_loadkml.ToolTip" xml:space="preserve">
+    <value />
+  </data>
+  <data name="BUT_zoomto.Text" xml:space="preserve">
+    <value>縮放至</value>
+  </data>
+  <data name="BUT_zoomto.ToolTip" xml:space="preserve">
+    <value />
+  </data>
+  <data name="BUT_Camera.Text" xml:space="preserve">
+    <value>相機</value>
+  </data>
+  <data name="BUT_Camera.ToolTip" xml:space="preserve">
     <value />
   </data>
   <data name="BUT_grid.Text" xml:space="preserve">
@@ -467,7 +494,7 @@
     <value>預取</value>
   </data>
   <data name="BUT_Prefetch.ToolTip" xml:space="preserve">
-    <value>預先缓存選中區域的地圖</value>
+    <value>預先緩存選中區域的地圖</value>
   </data>
   <data name="button1.Text" xml:space="preserve">
     <value>海拔圖</value>
@@ -518,19 +545,19 @@
     <value>删除航點</value>
   </data>
   <data name="loiterForeverToolStripMenuItem.Size" type="System.Drawing.Size, System.Drawing">
-    <value>152, 22</value>
+    <value>98, 22</value>
   </data>
   <data name="loiterForeverToolStripMenuItem.Text" xml:space="preserve">
     <value>永久</value>
   </data>
   <data name="loitertimeToolStripMenuItem.Size" type="System.Drawing.Size, System.Drawing">
-    <value>152, 22</value>
+    <value>98, 22</value>
   </data>
   <data name="loitertimeToolStripMenuItem.Text" xml:space="preserve">
     <value>時間</value>
   </data>
   <data name="loitercirclesToolStripMenuItem.Size" type="System.Drawing.Size, System.Drawing">
-    <value>152, 22</value>
+    <value>98, 22</value>
   </data>
   <data name="loitercirclesToolStripMenuItem.Text" xml:space="preserve">
     <value>圈數</value>
@@ -540,12 +567,6 @@
   </data>
   <data name="loiterToolStripMenuItem.Text" xml:space="preserve">
     <value>盤旋</value>
-  </data>
-  <data name="jumpstartToolStripMenuItem.Size" type="System.Drawing.Size, System.Drawing">
-    <value>152, 22</value>
-  </data>
-  <data name="jumpwPToolStripMenuItem.Size" type="System.Drawing.Size, System.Drawing">
-    <value>152, 22</value>
   </data>
   <data name="jumpToolStripMenuItem.Size" type="System.Drawing.Size, System.Drawing">
     <value>122, 22</value>
@@ -569,19 +590,16 @@
     <value>旋轉地圖</value>
   </data>
   <data name="addPolygonPointToolStripMenuItem.Size" type="System.Drawing.Size, System.Drawing">
-    <value>152, 22</value>
+    <value>122, 22</value>
   </data>
   <data name="addPolygonPointToolStripMenuItem.Text" xml:space="preserve">
     <value>增加頂點</value>
   </data>
   <data name="clearPolygonToolStripMenuItem.Size" type="System.Drawing.Size, System.Drawing">
-    <value>152, 22</value>
+    <value>122, 22</value>
   </data>
   <data name="clearPolygonToolStripMenuItem.Text" xml:space="preserve">
     <value>清除區域</value>
-  </data>
-  <data name="gridToolStripMenuItem.Size" type="System.Drawing.Size, System.Drawing">
-    <value>122, 22</value>
   </data>
   <data name="clearMissionToolStripMenuItem.Size" type="System.Drawing.Size, System.Drawing">
     <value>122, 22</value>
@@ -750,7 +768,7 @@
     <value>31, 13</value>
   </data>
   <data name="label11.Text" xml:space="preserve">
-    <value>缩放</value>
+    <value>縮放</value>
   </data>
   <data name="label11.ToolTip" xml:space="preserve">
     <value />
@@ -763,36 +781,5 @@
   </data>
   <data name="$this.ToolTip" xml:space="preserve">
     <value />
-  </data>
-  <assembly alias="System.Windows.Forms" name="System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089" />
-  <data name="MAVCmd" type="System.Resources.ResXFileRef, System.Windows.Forms">
-    <value>..\Resources\MAVCmd.zh-Hans.txt;System.String, mscorlib, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089;utf-8</value>
-  </data>
-  <data name="Alt.HeaderText" xml:space="preserve">
-    <value>高度</value>
-  </data>
-  <data name="BUT_Camera.Text" xml:space="preserve">
-    <value>相機</value>
-  </data>
-  <data name="BUT_Camera.ToolTip" xml:space="preserve">
-    <value />
-  </data>
-  <data name="BUT_loadkml.Text" xml:space="preserve">
-    <value>KML疊加</value>
-  </data>
-  <data name="BUT_loadkml.ToolTip" xml:space="preserve">
-    <value />
-  </data>
-  <data name="BUT_zoomto.Text" xml:space="preserve">
-    <value>缩放至</value>
-  </data>
-  <data name="BUT_zoomto.ToolTip" xml:space="preserve">
-    <value />
-  </data>
-  <data name="Lat.HeaderText" xml:space="preserve">
-    <value>緯度</value>
-  </data>
-  <data name="Lon.HeaderText" xml:space="preserve">
-    <value>經度</value>
   </data>
 </root>
