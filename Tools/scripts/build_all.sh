@@ -15,7 +15,7 @@ done
 popd
 
 pushd ArduCopter
-for b in all apm2 apm2beta hil sitl; do
+for b in all apm2 apm2beta hil sitl heli; do
     pwd
     make clean
     make $b
