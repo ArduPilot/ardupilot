@@ -489,6 +489,12 @@ static float sin_pitch_y, sin_yaw_y, sin_roll_y;
 // or in SuperSimple mode when the copter leaves a 20m radius from home.
 static int32_t initial_simple_bearing;
 
+////////////////////////////////////////////////////////////////////////////////
+// ACRO Mode
+////////////////////////////////////////////////////////////////////////////////
+// Used to control Axis lock
+int32_t roll_axis;
+int32_t pitch_axis;
 
 ////////////////////////////////////////////////////////////////////////////////
 // Circle Mode / Loiter control
@@ -1407,9 +1413,27 @@ void update_roll_pitch_mode(void)
 
 	switch(roll_pitch_mode){
 		case ROLL_PITCH_ACRO:
-			// ACRO does not get SIMPLE mode ability
-			g.rc_1.servo_out = get_acro_roll(g.rc_1.control_in);
-			g.rc_2.servo_out = get_acro_pitch(g.rc_2.control_in);
+			if(g.axis_enabled){
+				roll_axis 	+= (float)g.rc_1.control_in * g.axis_lock_p;
+				pitch_axis 	+= (float)g.rc_2.control_in * g.axis_lock_p;
+
+				roll_axis = wrap_360(roll_axis);
+				pitch_axis = wrap_360(pitch_axis);
+
+				// in this mode, nav_roll and nav_pitch = the iterm
+				g.rc_1.servo_out = get_stabilize_roll(roll_axis);
+				g.rc_2.servo_out = get_stabilize_pitch(pitch_axis);
+
+				if (g.rc_3.control_in == 0){
+					roll_axis = 0;
+					pitch_axis = 0;
+				}
+
+			}else{
+				// ACRO does not get SIMPLE mode ability
+				g.rc_1.servo_out = get_acro_roll(g.rc_1.control_in);
+				g.rc_2.servo_out = get_acro_pitch(g.rc_2.control_in);
+			}
 			break;
 
 		case ROLL_PITCH_STABLE:
