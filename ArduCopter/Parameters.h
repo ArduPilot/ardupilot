@@ -110,6 +110,7 @@ public:
 	k_param_sonar_type,
 	k_param_super_simple, //155
 	k_param_rtl_land_enabled,
+	k_param_axis_enabled,
 
 	//
 	// 160: Navigation parameters
@@ -172,6 +173,7 @@ public:
 	//
 	k_param_stabilize_d = 220,
 	k_param_acro_p,
+	k_param_axis_lock_p,
 	k_param_pid_rate_roll,
 	k_param_pid_rate_pitch,
 	k_param_pid_rate_yaw,
@@ -215,6 +217,8 @@ public:
 	AP_Float	low_voltage;
 	AP_Int8		super_simple;
 	AP_Int8		rtl_land_enabled;
+	AP_Int8		axis_enabled;
+
 
 
 	// Waypoints
@@ -295,6 +299,7 @@ public:
 
 	// PI/D controllers
     AP_Float	acro_p;
+	AP_Float	axis_lock_p;
 
 	AC_PID		pid_rate_roll;
 	AC_PID		pid_rate_pitch;
@@ -339,6 +344,7 @@ public:
 	low_voltage				(LOW_VOLTAGE),
 	super_simple			(SUPER_SIMPLE),
 	rtl_land_enabled		(RTL_AUTO_LAND),
+	axis_enabled			(AXIS_LOCK_ENABLED),
 
 	waypoint_mode			(0),
 	command_total			(0),
@@ -397,6 +403,7 @@ public:
 	camera_roll_gain 		(CAM_ROLL_GAIN),
 	stabilize_d 			(STABILIZE_D),
 	acro_p					(ACRO_P),
+	axis_lock_p				(AXIS_LOCK_P),
 
 	// PID controller	initial P	   	    initial I		 	initial D       	initial imax
 	//-----------------------------------------------------------------------------------------------------
