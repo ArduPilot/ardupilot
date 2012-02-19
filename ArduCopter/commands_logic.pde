@@ -208,6 +208,10 @@ static void do_RTL(void)
 	// --------------------
 	set_next_WP(&temp);
 
+
+	// We want to come home and stop on a dime
+	slow_wp = true;
+
 	// output control mode to the ground station
 	// -----------------------------------------
 	gcs_send_message(MSG_HEARTBEAT);
