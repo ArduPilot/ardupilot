@@ -106,7 +106,7 @@ void setup() {
 	compass.save_offsets();
 
 	// full testing of all variables
-	uint16_t token;
+	AP_Param::ParamToken token;
 	for (AP_Param *ap = AP_Param::first(&token, &type);
 		 ap;
 		 ap=AP_Param::next(&token, &type)) {
