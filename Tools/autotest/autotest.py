@@ -67,6 +67,16 @@ def dump_logs(atype):
     print("Saved log for %s to %s" % (atype, logfile))
     return True
 
+
+def build_all():
+    '''run the build_all.sh script'''
+    print("Running build_all.sh")
+    if not util.run_cmd(util.reltopdir('Tools/scripts/build_all.sh')):
+        print("Failed build_all.sh")
+        return False
+    return True
+
+
 def convert_gpx():
     '''convert any mavlog files to GPX and KML'''
     import glob
@@ -108,6 +118,7 @@ steps = [
     'prerequesites',
     'build1280.ArduPlane',
     'build2560.ArduPlane',
+    'build.All',
     'build.ArduPlane',
     'defaults.ArduPlane',
     'fly.ArduPlane',
@@ -170,6 +181,9 @@ def run_step(step):
 
     if step == 'fly.ArduPlane':
         return arduplane.fly_ArduPlane(viewerip=opts.viewerip)
+
+    if step == 'build.All':
+        return build_all()
 
     if step == 'convertgpx':
         return convert_gpx()
