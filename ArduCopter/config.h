@@ -398,7 +398,7 @@
 # define MINIMUM_THROTTLE	130
 #endif
 #ifndef MAXIMUM_THROTTLE
-# define MAXIMUM_THROTTLE	1000
+# define MAXIMUM_THROTTLE	850
 #endif
 
 #ifndef AUTO_LAND_TIME
@@ -695,8 +695,6 @@
 #ifndef AUTO_SLEW_RATE
 # define AUTO_SLEW_RATE		30			// degrees
 #endif
-
-
 
 
 #ifndef WAYPOINT_SPEED_MAX
