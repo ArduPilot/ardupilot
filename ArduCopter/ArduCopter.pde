@@ -1602,9 +1602,12 @@ void update_throttle_mode(void)
 									manual_boost,
 									iterm);
 				//*/
+				// this lets us know we need to update the altitude after manual throttle control
 				reset_throttle_flag = true;
 
 			}else{
+				// we are under automatic throttle control
+				// ---------------------------------------
 				if(reset_throttle_flag)	{
 					set_new_altitude(max(current_loc.alt, 100));
 					reset_throttle_flag = false;
@@ -1920,15 +1923,16 @@ static void update_altitude()
 static void
 adjust_altitude()
 {
-	if(g.rc_3.control_in <= 180){
+	if(g.rc_3.control_in <= (MINIMUM_THROTTLE + 100)){
 		// we remove 0 to 100 PWM from hover
-		manual_boost = g.rc_3.control_in - 180;
-		manual_boost = max(-120, manual_boost);
+		manual_boost = (g.rc_3.control_in - MINIMUM_THROTTLE) -100;
+		manual_boost = max(-100, manual_boost);
 		update_throttle_cruise();
 
-	}else if  (g.rc_3.control_in >= 650){
+	}else if  (g.rc_3.control_in >= (MAXIMUM_THROTTLE - 100)){
 		// we add 0 to 100 PWM to hover
-		manual_boost = g.rc_3.control_in - 650;
+		manual_boost = g.rc_3.control_in - (MAXIMUM_THROTTLE - 100);
+		manual_boost = min(100, manual_boost);
 		update_throttle_cruise();
 	}else {
 		manual_boost = 0;
