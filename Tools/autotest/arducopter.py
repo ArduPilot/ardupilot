@@ -14,6 +14,10 @@ HOME=location(-35.362938,149.165085,584,270)
 homeloc = None
 num_wp = 0
 
+def hover(mavproxy, mav):
+    mavproxy.send('rc 3 1385\n')
+    return True
+
 def calibrate_level(mavproxy, mav):
     '''init the accelerometers'''
     print("Initialising accelerometers")
@@ -54,7 +58,7 @@ def takeoff(mavproxy, mav, alt_min = 30):
     m = mav.recv_match(type='VFR_HUD', blocking=True)
     if (m.alt < alt_min):
         wait_altitude(mav, alt_min, (alt_min + 5))
-    mavproxy.send('rc 3 1430\n')
+    hover(mavproxy, mav)
     print("TAKEOFF COMPLETE")
     return True
 
@@ -86,13 +90,13 @@ def change_alt(mavproxy, mav, alt_min):
     m = mav.recv_match(type='VFR_HUD', blocking=True)
     if(m.alt < alt_min):
         print("Rise to alt:%u from %u" % (alt_min, m.alt))
-        mavproxy.send('rc 3 1800\n')
+        mavproxy.send('rc 3 1920\n')
         wait_altitude(mav, alt_min, (alt_min + 5))
     else:
         print("Lower to alt:%u from %u" % (alt_min, m.alt))
-        mavproxy.send('rc 3 1070\n')
+        mavproxy.send('rc 3 1120\n')
         wait_altitude(mav, (alt_min -5), alt_min)
-    mavproxy.send('rc 3 1430\n')
+    hover(mavproxy, mav)
     return True
 
 
@@ -107,7 +111,7 @@ def fly_square(mavproxy, mav, side=50, timeout=120):
     save_wp(mavproxy, mav)
 
     print("turn")
-    mavproxy.send('rc 3 1430\n')
+    hover(mavproxy, mav)
     mavproxy.send('rc 4 1610\n')
     if not wait_heading(mav, 0):
         return False
@@ -156,7 +160,7 @@ def fly_RTL(mavproxy, mav, side=60):
     '''Fly, return, land'''
     mavproxy.send('switch 6\n')
     wait_mode(mav, 'STABILIZE')
-    mavproxy.send('rc 3 1430\n')
+    hover(mavproxy, mav)
     failed = False
 
     print("# Going forward %u meters" % side)
@@ -181,7 +185,7 @@ def fly_failsafe(mavproxy, mav, side=60):
     '''Fly, Failsafe, return, land'''
     mavproxy.send('switch 6\n')
     wait_mode(mav, 'STABILIZE')
-    mavproxy.send('rc 3 1430\n')
+    hover(mavproxy, mav)
     failed = False
 
     print("# Going forward %u meters" % side)
@@ -210,7 +214,7 @@ def fly_simple(mavproxy, mav, side=60, timeout=120):
     '''fly Simple, flying N then E'''
     mavproxy.send('switch 6\n')
     wait_mode(mav, 'STABILIZE')
-    mavproxy.send('rc 3 1440\n')
+    hover(mavproxy, mav)
     tstart = time.time()
     failed = False
 
@@ -236,7 +240,7 @@ def fly_simple(mavproxy, mav, side=60, timeout=120):
     mavproxy.send('rc 2 1500\n')
     #restore to default
     mavproxy.send('param set SIMPLE 0\n')
-    mavproxy.send('rc 3 1430\n')
+    hover(mavproxy, mav)
     return not failed
 
 
