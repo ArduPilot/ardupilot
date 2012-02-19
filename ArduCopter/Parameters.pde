@@ -111,6 +111,8 @@ static const AP_Param::Info var_info[] PROGMEM = {
 	GSCALAR(camera_roll_gain, 	"CAM_R_G"),
 	GSCALAR(stabilize_d, 		"STAB_D"),
 	GSCALAR(acro_p, 			"ACRO_P"),
+	GSCALAR(axis_lock_p, 		"AXIS_P"),
+	GSCALAR(axis_enabled, 		"AXIS_ENABLE"),
 
 	// PID controller
 	//---------------

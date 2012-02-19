@@ -127,7 +127,7 @@ private:
 	///
 	AP_Param   *_queued_parameter;                  ///< next parameter to be sent in queue
     enum ap_var_type _queued_parameter_type;        ///< type of the next parameter
-    uint16_t	_queued_parameter_token;            ///AP_Param token for next() call
+    AP_Param::ParamToken	_queued_parameter_token;///AP_Param token for next() call
 	uint16_t    _queued_parameter_index;            ///< next queued parameter's index
     uint16_t    _queued_parameter_count;            ///< saved count of parameters for queued send
 

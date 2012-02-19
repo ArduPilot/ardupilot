@@ -398,7 +398,7 @@
 # define MINIMUM_THROTTLE	130
 #endif
 #ifndef MAXIMUM_THROTTLE
-# define MAXIMUM_THROTTLE	1000
+# define MAXIMUM_THROTTLE	850
 #endif
 
 #ifndef AUTO_LAND_TIME
@@ -554,20 +554,23 @@
 #endif
 
 
-#ifndef STABILIZE_D
-# define STABILIZE_D 		.2
-#endif
-
-
-
 #ifndef ACRO_P
 # define ACRO_P 		4.5
 #endif
 
 
+#ifndef AXIS_LOCK_ENABLED
+# define AXIS_LOCK_ENABLED 	DISABLED
+#endif
+
+#ifndef AXIS_LOCK_P
+# define AXIS_LOCK_P 		.02
+#endif
+
+
 // Good for smaller payload motors.
 #ifndef STABILIZE_ROLL_P
-# define STABILIZE_ROLL_P 		4
+# define STABILIZE_ROLL_P 		4.5
 #endif
 #ifndef STABILIZE_ROLL_I
 # define STABILIZE_ROLL_I 		0.0
@@ -577,7 +580,7 @@
 #endif
 
 #ifndef STABILIZE_PITCH_P
-# define STABILIZE_PITCH_P		4
+# define STABILIZE_PITCH_P		4.5
 #endif
 #ifndef STABILIZE_PITCH_I
 # define STABILIZE_PITCH_I		0.0
@@ -601,26 +604,26 @@
 // Stabilize Rate Control
 //
 #ifndef RATE_ROLL_P
-# define RATE_ROLL_P        0.12
+# define RATE_ROLL_P        0.14
 #endif
 #ifndef RATE_ROLL_I
-# define RATE_ROLL_I        0.02
+# define RATE_ROLL_I        0.0
 #endif
 #ifndef RATE_ROLL_D
-# define RATE_ROLL_D        0.008
+# define RATE_ROLL_D        0.002
 #endif
 #ifndef RATE_ROLL_IMAX
 # define RATE_ROLL_IMAX	 	5			// degrees
 #endif
 
 #ifndef RATE_PITCH_P
-# define RATE_PITCH_P       0.12
+# define RATE_PITCH_P       0.14
 #endif
 #ifndef RATE_PITCH_I
-# define RATE_PITCH_I		0.02
+# define RATE_PITCH_I		0.0
 #endif
 #ifndef RATE_PITCH_D
-# define RATE_PITCH_D       0.008
+# define RATE_PITCH_D       0.002
 #endif
 #ifndef RATE_PITCH_IMAX
 # define RATE_PITCH_IMAX   	5			// degrees
@@ -633,12 +636,16 @@
 # define RATE_YAW_I    		 0.0
 #endif
 #ifndef RATE_YAW_D
-# define RATE_YAW_D    		 .002
+# define RATE_YAW_D    		 .000
 #endif
 #ifndef RATE_YAW_IMAX
 # define RATE_YAW_IMAX 		  50		// degrees
 #endif
 
+
+#ifndef STABILIZE_D
+# define STABILIZE_D 		0.05
+#endif
 
 //////////////////////////////////////////////////////////////////////////////
 // Loiter control gains
@@ -688,8 +695,6 @@
 #ifndef AUTO_SLEW_RATE
 # define AUTO_SLEW_RATE		30			// degrees
 #endif
-
-
 
 
 #ifndef WAYPOINT_SPEED_MAX

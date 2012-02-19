@@ -6,6 +6,7 @@
 set -e
 set -x
 
+echo "Testing ArduPlane build"
 pushd ArduPlane
 for b in all apm2 apm2beta hil hilsensors mavlink10 sitl; do
     pwd
@@ -14,10 +15,23 @@ for b in all apm2 apm2beta hil hilsensors mavlink10 sitl; do
 done
 popd
 
+echo "Testing ArduCopter build"
 pushd ArduCopter
-for b in all apm2 apm2beta hil sitl; do
+for b in all apm2 apm2beta hil sitl heli; do
     pwd
     make clean
     make $b
 done
 popd
+
+echo "Testing build of examples"
+
+examples="Tools/VARTest Tools/CPUInfo"
+for d in $examples; do
+    pushd $d
+    make clean
+    make
+    popd
+done
+
+exit 0
