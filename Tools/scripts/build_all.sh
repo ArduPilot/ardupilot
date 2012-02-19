@@ -33,3 +33,5 @@ for d in $examples; do
     make
     popd
 done
+
+exit 0
