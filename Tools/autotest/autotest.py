@@ -71,7 +71,7 @@ def dump_logs(atype):
 def build_all():
     '''run the build_all.sh script'''
     print("Running build_all.sh")
-    if not util.run_cmd(util.reltopdir('Tools/scripts/build_all.sh')):
+    if not util.run_cmd(util.reltopdir('Tools/scripts/build_all.sh'), dir=util.reltopdir('.')):
         print("Failed build_all.sh")
         return False
     return True
