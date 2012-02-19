@@ -193,15 +193,17 @@ def fly_failsafe(mavproxy, mav, side=60):
     print("# Enter Failsafe")
     mavproxy.send('rc 3 900\n')
     tstart = time.time()
-    while time.time() < tstart + 120:
+    while time.time() < tstart + 250:
         m = mav.recv_match(type='VFR_HUD', blocking=True)
         pos = current_location(mav)
-        #delta = get_distance(start, pos)
-        print("Alt: %u" % m.alt)
-        if(m.alt <= 1):
+        home_distance = get_distance(HOME, pos)
+        print("Alt: %u  HomeDistance: %.0f" % (m.alt, home_distance))
+        if m.alt <= 1 and home_distance < 10:
+            print("Reached failsafe home OK")
             mavproxy.send('rc 3 1100\n')
             return True
-    return True
+    print("Failed to land on failsafe RTL - timed out after 120 seconds")
+    return False
 
 
 def fly_simple(mavproxy, mav, side=60, timeout=120):
