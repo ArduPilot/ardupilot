@@ -666,9 +666,10 @@ static int16_t	nav_lat;
 // The desired bank towards East (Positive) or West (Negative)
 static int16_t	nav_lon;
 // The Commanded ROll from the autopilot based on optical flow sensor.
-static int32_t	of_roll = 0;
+static int32_t	of_roll;
 // The Commanded pitch from the autopilot based on optical flow sensor. negative Pitch means go forward.
-static int32_t	of_pitch = 0;
+static int32_t	of_pitch;
+static bool	slow_wp = false;
 
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -1655,8 +1656,8 @@ void update_throttle_mode(void)
 // called after a GPS read
 static void update_navigation()
 {
-	// wp_distance is in ACTUAL meters, not the *100 meters we get from the GPS
-	// ------------------------------------------------------------------------
+	// wp_distance is in CM
+	// --------------------
 	switch(control_mode){
 		case AUTO:
 			// note: wp_control is handled by commands_logic
@@ -1696,6 +1697,7 @@ static void update_navigation()
 			}
 
 			wp_control = WP_MODE;
+			slow_wp = true;
 
 			// calculates desired Yaw
 			#if FRAME_CONFIG ==	HELI_FRAME
@@ -2109,7 +2111,7 @@ static void update_nav_wp()
 		// calc error to target
 		calc_location_error(&next_WP);
 
-		int16_t speed = calc_desired_speed(g.waypoint_speed_max);
+		int16_t speed = calc_desired_speed(g.waypoint_speed_max, slow_wp);
 		// use error as the desired rate towards the target
 		calc_nav_rate(speed);
 		// rotate pitch and roll to the copter frame of reference
