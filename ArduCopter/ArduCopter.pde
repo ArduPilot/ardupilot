@@ -1383,6 +1383,7 @@ void update_yaw_mode(void)
 
 		case YAW_AUTO:
 			nav_yaw += constrain(wrap_180(auto_yaw - nav_yaw), -20, 20); // 40 deg a second
+			//Serial.printf("nav_yaw %d ", nav_yaw);
 			nav_yaw  = wrap_360(nav_yaw);
 			break;
 	}
@@ -1958,7 +1959,6 @@ static void tuning(){
 			break;
 
 		case CH6_STABILIZE_KP:
-			//g.rc_6.set_range(0,8000); 		// 0 to 8
 			g.pi_stabilize_roll.kP(tuning_value);
 			g.pi_stabilize_pitch.kP(tuning_value);
 			break;
@@ -1983,7 +1983,6 @@ static void tuning(){
 			break;
 
 		case CH6_YAW_RATE_KP:
-			//g.rc_6.set_range(0,1000);
 			g.pid_rate_yaw.kP(tuning_value);
 			break;
 
@@ -2144,5 +2143,6 @@ static void update_auto_yaw()
 		// Point towards next WP
 		auto_yaw = target_bearing;
 	}
+	//Serial.printf("auto_yaw %d ", auto_yaw);
 	// MAV_ROI_NONE = basic Yaw hold
 }
