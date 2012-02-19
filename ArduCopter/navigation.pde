@@ -265,7 +265,7 @@ static void calc_loiter_pitch_roll()
 	auto_pitch = -auto_pitch;
 }
 
-static int16_t calc_desired_speed(int16_t max_speed)
+static int16_t calc_desired_speed(int16_t max_speed, bool _slow)
 {
 	/*
 	|< WP Radius
@@ -277,14 +277,13 @@ static int16_t calc_desired_speed(int16_t max_speed)
 	*/
 
 	// max_speed is default 600 or 6m/s
-	// (wp_distance * .5) = 1/2 of the distance converted to speed
-	// wp_distance is always in m/s and not cm/s - I know it's stupid that way
-	// for example 4m from target = 200cm/s speed
-	// we choose the lowest speed based on disance
-	max_speed 		= min(max_speed, wp_distance);
-
-	// go at least 100cm/s
-	max_speed 		= max(max_speed, WAYPOINT_SPEED_MIN);
+	if(_slow){
+		max_speed 		= min(max_speed, wp_distance / 2);
+		max_speed 		= max(max_speed, 0);
+	}else{
+		max_speed 		= min(max_speed, wp_distance);
+		max_speed 		= max(max_speed, WAYPOINT_SPEED_MIN);	// go at least 100cm/s
+	}
 
 	// limit the ramp up of the speed
 	// waypoint_speed_gov is reset to 0 at each new WP command
