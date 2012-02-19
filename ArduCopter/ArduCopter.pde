@@ -489,6 +489,12 @@ static float sin_pitch_y, sin_yaw_y, sin_roll_y;
 // or in SuperSimple mode when the copter leaves a 20m radius from home.
 static int32_t initial_simple_bearing;
 
+////////////////////////////////////////////////////////////////////////////////
+// ACRO Mode
+////////////////////////////////////////////////////////////////////////////////
+// Used to control Axis lock
+int32_t roll_axis;
+int32_t pitch_axis;
 
 ////////////////////////////////////////////////////////////////////////////////
 // Circle Mode / Loiter control
@@ -660,9 +666,10 @@ static int16_t	nav_lat;
 // The desired bank towards East (Positive) or West (Negative)
 static int16_t	nav_lon;
 // The Commanded ROll from the autopilot based on optical flow sensor.
-static int32_t	of_roll = 0;
+static int32_t	of_roll;
 // The Commanded pitch from the autopilot based on optical flow sensor. negative Pitch means go forward.
-static int32_t	of_pitch = 0;
+static int32_t	of_pitch;
+static bool	slow_wp = false;
 
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -1333,14 +1340,7 @@ static void update_GPS(void)
 				ground_start_count = 5;
 
 			}else{
-				// block until we get a good fix
-				// -----------------------------
-				while (!g_gps->new_data || !g_gps->fix) {
-					g_gps->update();
-					// we need GCS update while waiting for GPS, to ensure
-					// we react to HIL mavlink
-					gcs_update();
-				}
+				// save home to eeprom (we must have a good fix to have reached this point)
 				init_home();
 				ground_start_count = 0;
 			}
@@ -1383,6 +1383,7 @@ void update_yaw_mode(void)
 
 		case YAW_AUTO:
 			nav_yaw += constrain(wrap_180(auto_yaw - nav_yaw), -20, 20); // 40 deg a second
+			//Serial.printf("nav_yaw %d ", nav_yaw);
 			nav_yaw  = wrap_360(nav_yaw);
 			break;
 	}
@@ -1407,9 +1408,27 @@ void update_roll_pitch_mode(void)
 
 	switch(roll_pitch_mode){
 		case ROLL_PITCH_ACRO:
-			// ACRO does not get SIMPLE mode ability
-			g.rc_1.servo_out = get_acro_roll(g.rc_1.control_in);
-			g.rc_2.servo_out = get_acro_pitch(g.rc_2.control_in);
+			if(g.axis_enabled){
+				roll_axis 	+= (float)g.rc_1.control_in * g.axis_lock_p;
+				pitch_axis 	+= (float)g.rc_2.control_in * g.axis_lock_p;
+
+				roll_axis = wrap_360(roll_axis);
+				pitch_axis = wrap_360(pitch_axis);
+
+				// in this mode, nav_roll and nav_pitch = the iterm
+				g.rc_1.servo_out = get_stabilize_roll(roll_axis);
+				g.rc_2.servo_out = get_stabilize_pitch(pitch_axis);
+
+				if (g.rc_3.control_in == 0){
+					roll_axis = 0;
+					pitch_axis = 0;
+				}
+
+			}else{
+				// ACRO does not get SIMPLE mode ability
+				g.rc_1.servo_out = get_acro_roll(g.rc_1.control_in);
+				g.rc_2.servo_out = get_acro_pitch(g.rc_2.control_in);
+			}
 			break;
 
 		case ROLL_PITCH_STABLE:
@@ -1585,9 +1604,12 @@ void update_throttle_mode(void)
 									manual_boost,
 									iterm);
 				//*/
+				// this lets us know we need to update the altitude after manual throttle control
 				reset_throttle_flag = true;
 
 			}else{
+				// we are under automatic throttle control
+				// ---------------------------------------
 				if(reset_throttle_flag)	{
 					set_new_altitude(max(current_loc.alt, 100));
 					reset_throttle_flag = false;
@@ -1635,8 +1657,8 @@ void update_throttle_mode(void)
 // called after a GPS read
 static void update_navigation()
 {
-	// wp_distance is in ACTUAL meters, not the *100 meters we get from the GPS
-	// ------------------------------------------------------------------------
+	// wp_distance is in CM
+	// --------------------
 	switch(control_mode){
 		case AUTO:
 			// note: wp_control is handled by commands_logic
@@ -1676,6 +1698,7 @@ static void update_navigation()
 			}
 
 			wp_control = WP_MODE;
+			slow_wp = true;
 
 			// calculates desired Yaw
 			#if FRAME_CONFIG ==	HELI_FRAME
@@ -1903,15 +1926,16 @@ static void update_altitude()
 static void
 adjust_altitude()
 {
-	if(g.rc_3.control_in <= 180){
+	if(g.rc_3.control_in <= (MINIMUM_THROTTLE + 100)){
 		// we remove 0 to 100 PWM from hover
-		manual_boost = g.rc_3.control_in - 180;
-		manual_boost = max(-120, manual_boost);
+		manual_boost = (g.rc_3.control_in - MINIMUM_THROTTLE) -100;
+		manual_boost = max(-100, manual_boost);
 		update_throttle_cruise();
 
-	}else if  (g.rc_3.control_in >= 650){
+	}else if  (g.rc_3.control_in >= (MAXIMUM_THROTTLE - 100)){
 		// we add 0 to 100 PWM to hover
-		manual_boost = g.rc_3.control_in - 650;
+		manual_boost = g.rc_3.control_in - (MAXIMUM_THROTTLE - 100);
+		manual_boost = min(100, manual_boost);
 		update_throttle_cruise();
 	}else {
 		manual_boost = 0;
@@ -1935,7 +1959,6 @@ static void tuning(){
 			break;
 
 		case CH6_STABILIZE_KP:
-			//g.rc_6.set_range(0,8000); 		// 0 to 8
 			g.pi_stabilize_roll.kP(tuning_value);
 			g.pi_stabilize_pitch.kP(tuning_value);
 			break;
@@ -1960,7 +1983,6 @@ static void tuning(){
 			break;
 
 		case CH6_YAW_RATE_KP:
-			//g.rc_6.set_range(0,1000);
 			g.pid_rate_yaw.kP(tuning_value);
 			break;
 
@@ -2088,7 +2110,7 @@ static void update_nav_wp()
 		// calc error to target
 		calc_location_error(&next_WP);
 
-		int16_t speed = calc_desired_speed(g.waypoint_speed_max);
+		int16_t speed = calc_desired_speed(g.waypoint_speed_max, slow_wp);
 		// use error as the desired rate towards the target
 		calc_nav_rate(speed);
 		// rotate pitch and roll to the copter frame of reference
@@ -2121,5 +2143,6 @@ static void update_auto_yaw()
 		// Point towards next WP
 		auto_yaw = target_bearing;
 	}
+	//Serial.printf("auto_yaw %d ", auto_yaw);
 	// MAV_ROI_NONE = basic Yaw hold
 }

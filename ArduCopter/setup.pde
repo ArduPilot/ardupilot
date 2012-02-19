@@ -457,7 +457,7 @@ setup_heli(uint8_t argc, const Menu::arg *argv)
 	int value = 0;
 	int temp;
 	int state = 0;   // 0 = set rev+pos, 1 = capture min/max
-	int max_roll, max_pitch, min_collective, max_collective, min_tail, max_tail;
+	int max_roll=0, max_pitch=0, min_collective=0, max_collective=0, min_tail=0, max_tail=0;
 
 	// initialise swash plate
 	heli_init_swash();

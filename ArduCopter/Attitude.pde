@@ -245,6 +245,9 @@ static void reset_nav_params(void)
 
 	// Will be set by new command, used by loiter
 	next_WP.alt				= 0;
+
+	// We want to by default pass WPs
+	slow_wp = false;
 }
 
 /*
