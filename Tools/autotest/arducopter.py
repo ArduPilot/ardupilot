@@ -90,7 +90,7 @@ def change_alt(mavproxy, mav, alt_min):
         wait_altitude(mav, alt_min, (alt_min + 5))
     else:
         print("Lower to alt:%u from %u" % (alt_min, m.alt))
-        mavproxy.send('rc 3 1100\n')
+        mavproxy.send('rc 3 1070\n')
         wait_altitude(mav, (alt_min -5), alt_min)
     mavproxy.send('rc 3 1430\n')
     return True
