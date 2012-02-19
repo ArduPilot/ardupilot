@@ -1339,14 +1339,7 @@ static void update_GPS(void)
 				ground_start_count = 5;
 
 			}else{
-				// block until we get a good fix
-				// -----------------------------
-				while (!g_gps->new_data || !g_gps->fix) {
-					g_gps->update();
-					// we need GCS update while waiting for GPS, to ensure
-					// we react to HIL mavlink
-					gcs_update();
-				}
+				// save home to eeprom (we must have a good fix to have reached this point)
 				init_home();
 				ground_start_count = 0;
 			}
