@@ -17,56 +17,97 @@ namespace ArdupilotMega
         bool mouseover = false;
         bool mousedown = false;
 
+       bool inOnPaint = false;
+
         protected override void OnPaint(PaintEventArgs pevent)
         {
             //base.OnPaint(pevent);
 
-            Graphics gr = pevent.Graphics;
+            if (inOnPaint)
+                return;
 
-            Rectangle outside = new Rectangle(0,0,this.Width,this.Height);
+            inOnPaint = true;
 
-            LinearGradientBrush linear = new LinearGradientBrush(outside,Color.FromArgb(0x94,0xc1,0x1f),Color.FromArgb(0xcd,0xe2,0x96),LinearGradientMode.Vertical);
-
-            Pen mypen = new Pen(Color.FromArgb(0x79,0x94,0x29),2);
-
-            gr.FillRectangle(linear,outside);
-
-            gr.DrawRectangle(mypen,outside);
-
-            SolidBrush mybrush = new SolidBrush(Color.FromArgb(0x40,0x57,0x04));
-
-            if (mouseover)
+            try
             {
-                SolidBrush brush = new SolidBrush(Color.FromArgb(73, 0x2b, 0x3a, 0x03));
+                Graphics gr = pevent.Graphics;
 
-                gr.FillRectangle(brush, 0, 0, this.Width, this.Height);
-            } 
-            if (mousedown)
-            {
-                SolidBrush brush = new SolidBrush(Color.FromArgb(73, 0x2b, 0x3a, 0x03));
+                //  gr.SmoothingMode = SmoothingMode.AntiAlias;
 
-                gr.FillRectangle(brush, 0, 0, this.Width, this.Height);
-            } 
+                Rectangle outside = new Rectangle(0, 0, this.Width, this.Height);
 
-            if (!this.Enabled)
-            {
-                SolidBrush brush = new SolidBrush(Color.FromArgb(150, 0x2b, 0x3a, 0x03));
+                LinearGradientBrush linear = new LinearGradientBrush(outside, Color.FromArgb(0x94, 0xc1, 0x1f), Color.FromArgb(0xcd, 0xe2, 0x96), LinearGradientMode.Vertical);
 
-                gr.FillRectangle(brush, 0, 0, this.Width, this.Height);
+                Pen mypen = new Pen(Color.FromArgb(0x79, 0x94, 0x29), 2);
+                /*
+                gr.FillRectangle(new SolidBrush(Color.FromArgb(0x26, 0x27, 0x28)), outside);
+
+                GraphicsPath outline = new GraphicsPath();
+
+                float wid = this.Height / 5f;
+                float widright = wid + 1;
+
+                // tl
+                outline.AddArc(0, 0, wid, wid, 180, 90);
+                // top line
+                outline.AddLine(wid, 0, this.Width - widright, 0);
+                // tr
+                outline.AddArc(this.Width - widright, 0, wid, wid, 270, 90);
+                // br
+                outline.AddArc(this.Width - widright, this.Height - widright, wid, wid, 0, 90);
+                // bottom line
+                outline.AddLine(wid, this.Height - 1, this.Width - widright, this.Height - 1);
+                // bl
+                outline.AddArc(0, this.Height - widright, wid, wid, 90, 90);
+
+
+                gr.FillPath(linear, outline);
+
+                gr.DrawPath(mypen, outline);
+
+                */
+
+                gr.FillRectangle(linear, outside);
+                gr.DrawRectangle(mypen, outside);
+
+
+                SolidBrush mybrush = new SolidBrush(Color.FromArgb(0x40, 0x57, 0x04));
+
+                if (mouseover)
+                {
+                    SolidBrush brush = new SolidBrush(Color.FromArgb(73, 0x2b, 0x3a, 0x03));
+
+                    gr.FillRectangle(brush, 0, 0, this.Width, this.Height);
+                }
+                if (mousedown)
+                {
+                    SolidBrush brush = new SolidBrush(Color.FromArgb(73, 0x2b, 0x3a, 0x03));
+
+                    gr.FillRectangle(brush, 0, 0, this.Width, this.Height);
+                }
+
+                if (!this.Enabled)
+                {
+                    SolidBrush brush = new SolidBrush(Color.FromArgb(150, 0x2b, 0x3a, 0x03));
+
+                    gr.FillRectangle(brush, 0, 0, this.Width, this.Height);
+                }
+
+
+                StringFormat stringFormat = new StringFormat();
+                stringFormat.Alignment = StringAlignment.Center;
+                stringFormat.LineAlignment = StringAlignment.Center;
+
+                string display = this.Text;
+                int amppos = display.IndexOf('&');
+                if (amppos != -1)
+                    display = display.Remove(amppos, 1);
+
+                gr.DrawString(display, this.Font, mybrush, outside, stringFormat);
             }
-
-
-            StringFormat stringFormat = new StringFormat();
-            stringFormat.Alignment = StringAlignment.Center;
-            stringFormat.LineAlignment = StringAlignment.Center;
-
-            string display = this.Text;
-            int amppos = display.IndexOf('&');
-            if (amppos != -1)
-                display = display.Remove(amppos,1);
-
-            gr.DrawString(display, this.Font, mybrush, outside, stringFormat);
-
+            catch { }
+            
+            inOnPaint = false;
         }
 
         protected override void OnClick(EventArgs e)

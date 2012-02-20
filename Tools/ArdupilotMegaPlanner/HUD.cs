@@ -241,6 +241,7 @@ namespace hud
         }
 
         bool inOnPaint = false;
+        string otherthread = "";
 
         protected override void OnPaint(PaintEventArgs e)
         {
@@ -265,9 +266,11 @@ namespace hud
 
             if (inOnPaint)
             {
-                Console.WriteLine("Was in onpaint Hud th:" + System.Threading.Thread.CurrentThread.Name);
+                Console.WriteLine("Was in onpaint Hud th:" + System.Threading.Thread.CurrentThread.Name + " in " + otherthread);
                 return;
             }
+
+            otherthread = System.Threading.Thread.CurrentThread.Name;
 
             inOnPaint = true;
 

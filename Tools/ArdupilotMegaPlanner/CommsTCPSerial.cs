@@ -81,11 +81,11 @@ namespace System.IO.Ports
             string host = "127.0.0.1";
             if (Windows.Forms.DialogResult.Cancel == ArdupilotMega.Common.InputBox("remote host", "Enter host name/ip (ensure remote end is already started)", ref host))
             {
-                return;
+                throw new Exception("Canceled by request");
             }
             if (Windows.Forms.DialogResult.Cancel == ArdupilotMega.Common.InputBox("remote Port", "Enter remote port", ref dest))
             {
-                return;
+                throw new Exception("Canceled by request");
             }
             Port = dest;
 
@@ -93,6 +93,8 @@ namespace System.IO.Ports
 
             client.NoDelay = true;
             client.Client.NoDelay = true;
+
+            VerifyConnected();
 
             return;
         }

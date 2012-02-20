@@ -9,7 +9,7 @@ using System.Windows.Forms;
 
 namespace ArdupilotMega
 {
-    public partial class ImageLabel : ContainerControl
+    public partial class ImageLabel : UserControl //ContainerControl
     {
         public new event EventHandler Click;
 
@@ -18,6 +18,9 @@ namespace ArdupilotMega
 
         public ImageLabel()
         {
+            text = "";
+            picture = new Bitmap(640,480);
+
             InitializeComponent();
         }
 

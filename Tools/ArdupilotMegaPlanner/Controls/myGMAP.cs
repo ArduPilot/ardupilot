@@ -7,15 +7,19 @@ namespace ArdupilotMega
 {
     class myGMAP : GMap.NET.WindowsForms.GMapControl
     {
-        public bool inOnPaint = false; 
+        public bool inOnPaint = false;
+        string otherthread = "";
 
         protected override void OnPaint(System.Windows.Forms.PaintEventArgs e)
         {
             if (inOnPaint)
             {
-                Console.WriteLine("Was in onpaint Gmap th:" + System.Threading.Thread.CurrentThread.Name);
+                Console.WriteLine("Was in onpaint Gmap th:" + System.Threading.Thread.CurrentThread.Name + " in " + otherthread);
                 return;
             }
+
+            otherthread = System.Threading.Thread.CurrentThread.Name;
+
             inOnPaint = true;
 
             try
