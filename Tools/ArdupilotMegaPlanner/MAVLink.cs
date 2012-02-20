@@ -1865,7 +1865,7 @@ namespace ArdupilotMega
             int readcount = 0;
             lastbad = new byte[2];
 
-            BaseStream.ReadTimeout = 500; // 500 ms between chars
+            BaseStream.ReadTimeout = 1200; // 1200 ms between chars - the gps detection requires this.
 
             DateTime start = DateTime.Now;
 
