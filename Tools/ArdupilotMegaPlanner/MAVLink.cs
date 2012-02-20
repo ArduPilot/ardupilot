@@ -1865,7 +1865,7 @@ namespace ArdupilotMega
             int readcount = 0;
             lastbad = new byte[2];
 
-            BaseStream.ReadTimeout = 100;
+            BaseStream.ReadTimeout = 500; // 500 ms between chars
 
             DateTime start = DateTime.Now;
 

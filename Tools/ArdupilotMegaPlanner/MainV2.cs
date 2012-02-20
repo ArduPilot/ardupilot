@@ -257,6 +257,11 @@ namespace ArdupilotMega
 
             string[] ports = SerialPort.GetPortNames();
 
+            for (int a = 0; a < ports.Length; a++)
+            {
+                ports[a] = ports[a].TrimEnd();
+            }
+
             string[] all = new string[devs.Length + ports.Length];
 
             devs.CopyTo(all, 0);
