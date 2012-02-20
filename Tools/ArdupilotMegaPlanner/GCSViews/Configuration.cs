@@ -67,25 +67,29 @@ namespace ArdupilotMega.GCSViews
             // fix for dup name
             //XTRK_ANGLE_CD1.Name = "XTRK_ANGLE_CD";
             XTRK_GAIN_SC1.Name = "XTRK_GAIN_SC";
+
+            // enable disable relevbant hardware tabs
+            if (MainV2.APMFirmware == MainV2.Firmwares.ArduPlane)
+            {
+                this.ConfigTabs.SuspendLayout();
+                ConfigTabs.SelectedIndex = 0;
+                TabAP.Enabled = true;
+                TabAC.Enabled = false;
+                this.ConfigTabs.ResumeLayout();
+            }
+            else
+            {
+                this.ConfigTabs.SuspendLayout();
+                ConfigTabs.SelectedIndex = 1;
+                TabAP.Enabled = false;
+                TabAC.Enabled = true;
+                this.ConfigTabs.ResumeLayout();
+            }
         }
 
         private void Configuration_Load(object sender, EventArgs e)
         {
             startup = true;
-
-            // enable disable relevbant hardware tabs
-            if (MainV2.APMFirmware == MainV2.Firmwares.ArduPlane)
-            {
-                ConfigTabs.SelectedIndex = 0;
-                TabAP.Enabled = true;
-                TabAC.Enabled = false;
-            }
-            else
-            {
-                ConfigTabs.SelectedIndex = 1;
-                TabAP.Enabled = false;
-                TabAC.Enabled = true;
-            }
 
             // read tooltips
             if (tooltips.Count == 0)
@@ -167,7 +171,7 @@ namespace ArdupilotMega.GCSViews
 
             // setup language selection
             CultureInfo ci = null;
-            foreach (string name in new string[] { "en-US", "zh-Hans", "zh-TW", "ru-RU", "Fr", "Pl", "it-IT" })
+            foreach (string name in new string[] { "en-US", "zh-Hans", "zh-TW", "ru-RU", "Fr", "Pl", "it-IT", "es-ES" })
             {
                 ci = MainV2.getcultureinfo(name);
                 if (ci != null)
@@ -931,9 +935,15 @@ namespace ArdupilotMega.GCSViews
             ((MyButton)sender).Enabled = false;
             try
             {
+
                 MainV2.comPort.getParamList();
+
+
+
+                
             }
             catch { MessageBox.Show("Error: getting param list"); }
+
 
             ((MyButton)sender).Enabled = true;
             startup = true;

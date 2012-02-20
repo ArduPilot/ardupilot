@@ -2703,6 +2703,9 @@
   <data name="TUNE.Items19" xml:space="preserve">
     <value>CH6_OPTFLOW_KD</value>
   </data>
+  <data name="TUNE.Items20" xml:space="preserve">
+    <value>CH6_NAV_I</value>
+  </data>
   <data name="TUNE.Location" type="System.Drawing.Point, System.Drawing">
     <value>417, 336</value>
   </data>

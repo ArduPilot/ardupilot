@@ -302,14 +302,7 @@ namespace ArdupilotMega.GCSViews
                 {
                     if (threadrun == 0) { return; }
 
-                        this.BeginInvoke((System.Windows.Forms.MethodInvoker)delegate()
-{
-    try
-    {
-        BUT_playlog.Text = "Pause";
-    }
-    catch { }
-});
+                    updatePlayPauseButton(true);
 
                     if (comPort.BaseStream.IsOpen)
                         MainV2.comPort.logreadmode = false;
@@ -355,16 +348,10 @@ namespace ArdupilotMega.GCSViews
                 }
                 else
                 {
-                    if (threadrun == 0) { return; }
-                    try
-                    {
-                        this.Invoke((System.Windows.Forms.MethodInvoker)delegate()
-    {
-        BUT_playlog.Text = "Play";
-    });
-                    }
-                    catch { }
+                    updatePlayPauseButton(false);
                 }
+
+                
 
                 try
                 {
@@ -406,7 +393,7 @@ namespace ArdupilotMega.GCSViews
                         {
                             System.Threading.Thread.Sleep(1);
                         }
-
+						
                         if (trackPoints.Count > int.Parse(MainV2.config["NUM_tracklength"].ToString()))
                         {
                             trackPoints.RemoveRange(0, trackPoints.Count - int.Parse(MainV2.config["NUM_tracklength"].ToString()));
@@ -426,10 +413,13 @@ namespace ArdupilotMega.GCSViews
                                 FlightPlanner.pointlist.AddRange(MainV2.comPort.wps);
                             }
 
-                            
 
-                            routes.Markers.Clear();
-                            routes.Routes.Clear();
+                            while (gMapControl1.inOnPaint == true)
+                            {
+                                System.Threading.Thread.Sleep(1);
+                            }
+
+                            updateClearRoutes();
 
                             route = new GMapRoute(trackPoints, "track");
                             //track.Stroke = Pens.Red;
@@ -493,8 +483,6 @@ namespace ArdupilotMega.GCSViews
                             gMapControl1.HoldInvalidation = false;
 
                             gMapControl1.Invalidate();
-
-                            Application.DoEvents();
                         }
 
                         tracklast = DateTime.Now;
@@ -505,9 +493,47 @@ namespace ArdupilotMega.GCSViews
             Console.WriteLine("FD Main loop exit");
         }
 
+
+        // to prevent cross thread calls while in a draw and exception
+        private void updateClearRoutes()
+        {
+            // not async
+            this.Invoke((System.Windows.Forms.MethodInvoker)delegate()
+           {
+               routes.Markers.Clear();
+               routes.Routes.Clear();
+           });
+        }
+
+        private void updatePlayPauseButton(bool playing)
+        {
+            if (playing)
+            {
+                this.BeginInvoke((System.Windows.Forms.MethodInvoker)delegate()
+                {
+                    try
+                    {
+                        BUT_playlog.Text = "Pause";
+                    }
+                    catch { }
+                });
+            }
+            else
+            {
+                this.BeginInvoke((System.Windows.Forms.MethodInvoker)delegate()
+                {
+                    try
+                    {
+                        BUT_playlog.Text = "Play";
+                    }
+                    catch { }
+                });
+            }
+        }
+
         private void updateBindingSource()
         {
-            this.Invoke((System.Windows.Forms.MethodInvoker)delegate()
+            this.BeginInvoke((System.Windows.Forms.MethodInvoker)delegate()
             {
                 MainV2.cs.UpdateCurrentSettings(bindingSource1);
             });

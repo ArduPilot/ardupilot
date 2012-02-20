@@ -196,6 +196,47 @@ namespace ArdupilotMega
             return "";
         }
 
+        public enum ap_var_type
+        {
+            AP_PARAM_NONE = 0,
+            AP_PARAM_INT8,
+            AP_PARAM_INT16,
+            AP_PARAM_INT32,
+            AP_PARAM_FLOAT,
+            AP_PARAM_VECTOR3F,
+            AP_PARAM_VECTOR6F,
+            AP_PARAM_MATRIX3F,
+            AP_PARAM_GROUP
+        };
+
+        static string[] type_names = new string[] {
+	"NONE", "INT8", "INT16", "INT32", "FLOAT", "VECTOR3F", "VECTOR6F","MATRIX6F", "GROUP"
+};
+
+       static byte type_size(ap_var_type type)
+{
+    switch (type) {
+    case ap_var_type.AP_PARAM_NONE:
+    case ap_var_type.AP_PARAM_GROUP:
+        return 0;
+    case ap_var_type.AP_PARAM_INT8:
+        return 1;
+    case ap_var_type.AP_PARAM_INT16:
+        return 2;
+    case ap_var_type.AP_PARAM_INT32:
+        return 4;
+    case ap_var_type.AP_PARAM_FLOAT:
+        return 4;
+    case ap_var_type.AP_PARAM_VECTOR3F:
+        return 3*4;
+    case ap_var_type.AP_PARAM_VECTOR6F:
+        return 6*4;
+    case ap_var_type.AP_PARAM_MATRIX3F:
+        return 3*3*4;
+    }
+    return 0;
+}
+
         /// <summary>
         /// return the software id from eeprom
         /// </summary>
@@ -223,7 +264,7 @@ namespace ArdupilotMega
             byte[] buffer = port.download(1024 * 4);
             port.Close();
 
-            if (buffer[0] != 'A' || buffer[1] != 'P') // this is the apvar header
+            if (buffer[0] != 'A' && buffer[0] != 'P' || buffer[1] != 'P' && buffer[1] != 'A') // this is the apvar header
             {
                 return -1;
             }
@@ -256,6 +297,46 @@ namespace ArdupilotMega
 
 
                         for (int i = 0; i <= size; i++)
+                        {
+                            Console.Write(" {0:X2}", buffer[pos]);
+                            pos++;
+                        }
+                        Console.WriteLine();
+                    }
+                }
+
+                if (buffer[0] == 'P' && buffer[1] == 'A' && buffer[2] == 5) // ap param
+                {
+                    int pos = 4;
+                    byte key = 0;
+                    while (pos < (1024 * 4))
+                    {
+                        key = buffer[pos];
+                        pos++;
+                        int group = buffer[pos];
+                        pos++;
+                        int type = buffer[pos];
+                        pos++;
+
+                        int size = type_size((ap_var_type)Enum.Parse(typeof(ap_var_type), type.ToString()));
+
+
+                        Console.Write("{0:X4}: type {1} ({2}) key {3} group {4} size {5}\n ", pos - 2, type, type_names[type], key, group, size);
+
+                        if (key == 0xff)
+                        {
+                            Console.WriteLine("end sentinal at {0}", pos - 2);
+                            break;
+                        }
+
+                        if (key == 0)
+                        {
+                            //Array.Reverse(buffer, pos, 2);
+                            return BitConverter.ToUInt16(buffer, pos);
+                        }
+
+
+                        for (int i = 0; i < size; i++)
                         {
                             Console.Write(" {0:X2}", buffer[pos]);
                             pos++;
