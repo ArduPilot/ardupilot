@@ -535,7 +535,11 @@ namespace ArdupilotMega.GCSViews
         {
             this.BeginInvoke((System.Windows.Forms.MethodInvoker)delegate()
             {
-                MainV2.cs.UpdateCurrentSettings(bindingSource1);
+                try
+                {
+                    MainV2.cs.UpdateCurrentSettings(bindingSource1);
+                }
+                catch { }
             });
         }
 
