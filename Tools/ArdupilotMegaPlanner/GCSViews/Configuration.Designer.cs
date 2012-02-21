@@ -1137,7 +1137,8 @@
             resources.GetString("TUNE.Items16"),
             resources.GetString("TUNE.Items17"),
             resources.GetString("TUNE.Items18"),
-            resources.GetString("TUNE.Items19")});
+            resources.GetString("TUNE.Items19"),
+            resources.GetString("TUNE.Items20")});
             resources.ApplyResources(this.TUNE, "TUNE");
             this.TUNE.Name = "TUNE";
             // 

@@ -6,7 +6,7 @@ using System.IO;
 
 namespace ArdupilotMega
 {
-    public delegate void ProgressEventHandler(int progress);
+    public delegate void ProgressEventHandler(int progress,string status);
 
     /// <summary>
     /// Arduino STK interface

@@ -219,7 +219,7 @@ namespace ArdupilotMega
 
 
                 if (Progress != null)
-                    Progress((int)(((float)startaddress / (float)length) * 100));
+                    Progress((int)(((float)startaddress / (float)length) * 100),"");
 
                 if (!sync())
                 {

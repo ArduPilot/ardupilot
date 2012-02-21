@@ -48,7 +48,11 @@ namespace ArdupilotMega.Setup
 
         void timer_Tick(object sender, EventArgs e)
         {
-            MainV2.cs.UpdateCurrentSettings(currentStateBindingSource);
+            try
+            {
+                MainV2.cs.UpdateCurrentSettings(currentStateBindingSource);
+            }
+            catch { }
 
             float pwm = 0;
 

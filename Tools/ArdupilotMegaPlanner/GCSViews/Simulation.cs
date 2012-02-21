@@ -11,6 +11,7 @@ using System.Xml; // config file
 using System.Runtime.InteropServices; // dll imports
 using ZedGraph; // Graphs
 using ArdupilotMega;
+using ArdupilotMega.Mavlink;
 using System.Reflection;
 
 using System.Drawing.Drawing2D;
@@ -636,7 +637,7 @@ namespace ArdupilotMega.GCSViews
 
                 if (hzcounttime.Second != DateTime.Now.Second)
                 {
-                    Console.WriteLine("SIM hz {0}", hzcount);
+                    //Console.WriteLine("SIM hz {0}", hzcount);
                     hzcount = 0;
                     hzcounttime = DateTime.Now;
                 }
@@ -873,15 +874,7 @@ namespace ArdupilotMega.GCSViews
             {
                 //FlightGear
 
-                object imudata = new fgIMUData();
-
-                MAVLink.ByteArrayToStructureEndian(data, ref imudata, 0);
-
-                imudata = (fgIMUData)(imudata);
-
-
-
-                fgIMUData imudata2 = (fgIMUData)imudata;
+                fgIMUData imudata2 = data.ByteArrayToStructureBigEndian<fgIMUData>(0);
 
                 if (imudata2.magic != 0x4c56414d)
                     return;
@@ -931,13 +924,7 @@ namespace ArdupilotMega.GCSViews
             }
             else if (receviedbytes == 658)
             {
-                aeroin = new TDataFromAeroSimRC();
-
-                object temp = aeroin;
-
-                MAVLink.ByteArrayToStructure(data, ref temp, 0);
-
-                aeroin = (TDataFromAeroSimRC)(temp);
+                aeroin = data.ByteArrayToStructure<TDataFromAeroSimRC>(0);
 
                 att.pitch = (aeroin.Model_fPitch);
                 att.roll = (aeroin.Model_fRoll * -1);
@@ -1005,13 +992,7 @@ namespace ArdupilotMega.GCSViews
             else if (receviedbytes == 408)
             {
 
-                FGNetFDM fdm = new FGNetFDM();
-
-                object temp = fdm;
-
-                MAVLink.ByteArrayToStructureEndian(data, ref temp, 0);
-
-                fdm = (FGNetFDM)(temp);
+                FGNetFDM fdm = data.ByteArrayToStructureBigEndian<FGNetFDM>(0);
 
                 lastfdmdata = fdm;
 

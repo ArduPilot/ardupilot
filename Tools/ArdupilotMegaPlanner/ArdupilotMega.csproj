@@ -22,7 +22,7 @@
     <UpdateMode>Background</UpdateMode>
     <UpdateInterval>7</UpdateInterval>
     <UpdateIntervalUnits>Days</UpdateIntervalUnits>
-    <UpdatePeriodically>false</UpdatePeriodically>
+    <UpdatePeriodically>true</UpdatePeriodically>
     <UpdateRequired>false</UpdateRequired>
     <MapFileExtensions>false</MapFileExtensions>
     <TargetCulture>en-US</TargetCulture>
@@ -51,6 +51,7 @@
     <CheckForOverflowUnderflow>false</CheckForOverflowUnderflow>
     <NoStdLib>false</NoStdLib>
     <UseVSHostingProcess>true</UseVSHostingProcess>
+    <FileAlignment>1024</FileAlignment>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|x86' ">
     <PlatformTarget>x86</PlatformTarget>
@@ -67,6 +68,7 @@
     <DebugSymbols>true</DebugSymbols>
     <NoStdLib>false</NoStdLib>
     <UseVSHostingProcess>true</UseVSHostingProcess>
+    <FileAlignment>1024</FileAlignment>
   </PropertyGroup>
   <PropertyGroup>
     <StartupObject>ArdupilotMega.Program</StartupObject>
@@ -242,7 +244,7 @@
     <Compile Include="CommsTCPSerial.cs" />
     <Compile Include="CommsUdpSerial.cs" />
     <Compile Include="Controls\ImageLabel.cs">
-      <SubType>Component</SubType>
+      <SubType>UserControl</SubType>
     </Compile>
     <Compile Include="Controls\ImageLabel.Designer.cs">
       <DependentUpon>ImageLabel.cs</DependentUpon>
@@ -250,12 +252,20 @@
     <Compile Include="Controls\myGMAP.cs">
       <SubType>UserControl</SubType>
     </Compile>
+    <Compile Include="Controls\ProgressReporter.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Controls\ProgressReporter.designer.cs">
+      <DependentUpon>ProgressReporter.cs</DependentUpon>
+    </Compile>
     <Compile Include="Controls\XorPlus.cs">
       <SubType>Form</SubType>
     </Compile>
     <Compile Include="Controls\XorPlus.Designer.cs">
       <DependentUpon>XorPlus.cs</DependentUpon>
     </Compile>
+    <Compile Include="Mavlink\MavlinkCRC.cs" />
+    <Compile Include="Mavlink\MavlinkUtil.cs" />
     <Compile Include="SerialInput.cs">
       <SubType>Form</SubType>
     </Compile>
@@ -301,7 +311,6 @@
       <DependentUpon>JoystickSetup.cs</DependentUpon>
     </Compile>
     <Compile Include="MAVLinkTypes.cs" />
-    <Compile Include="MAVLinkTypesenum.cs" />
     <Compile Include="Controls\MyButton.cs">
       <SubType>Component</SubType>
     </Compile>
@@ -312,7 +321,7 @@
     <Compile Include="Controls\MyLabel.cs">
       <SubType>Component</SubType>
     </Compile>
-    <Compile Include="MyUserControl.cs">
+    <Compile Include="Controls\MyUserControl.cs">
       <SubType>UserControl</SubType>
     </Compile>
     <Compile Include="ArduinoSTKv2.cs">
@@ -438,8 +447,53 @@
     <EmbeddedResource Include="Controls\ImageLabel.resx">
       <DependentUpon>ImageLabel.cs</DependentUpon>
     </EmbeddedResource>
+    <EmbeddedResource Include="Controls\ProgressReporter.resx">
+      <DependentUpon>ProgressReporter.cs</DependentUpon>
+    </EmbeddedResource>
     <EmbeddedResource Include="Controls\XorPlus.resx">
       <DependentUpon>XorPlus.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="GCSViews\Configuration.es-ES.resx">
+      <DependentUpon>Configuration.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="GCSViews\Firmware.es-ES.resx">
+      <DependentUpon>Firmware.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="GCSViews\FlightData.es-ES.resx">
+      <DependentUpon>FlightData.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="GCSViews\FlightPlanner.es-ES.resx">
+      <DependentUpon>FlightPlanner.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="GCSViews\Help.es-ES.resx">
+      <DependentUpon>Help.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="GCSViews\Simulation.es-ES.resx">
+      <DependentUpon>Simulation.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="GCSViews\Terminal.es-ES.resx">
+      <DependentUpon>Terminal.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="JoystickSetup.es-ES.resx">
+      <DependentUpon>JoystickSetup.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Log.es-ES.resx">
+      <DependentUpon>Log.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="LogBrowse.es-ES.resx">
+      <DependentUpon>LogBrowse.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="MavlinkLog.es-ES.resx">
+      <DependentUpon>MavlinkLog.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="RAW_Sensor.es-ES.resx">
+      <DependentUpon>RAW_Sensor.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="SerialInput.es-ES.resx">
+      <DependentUpon>SerialInput.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="SerialInput.pl.resx">
+      <DependentUpon>SerialInput.cs</DependentUpon>
     </EmbeddedResource>
     <EmbeddedResource Include="SerialInput.resx">
       <DependentUpon>SerialInput.cs</DependentUpon>
@@ -712,6 +766,9 @@
     </Compile>
     <EmbeddedResource Include="SerialOutput.resx">
       <DependentUpon>SerialOutput.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Setup\Setup.es-ES.resx">
+      <DependentUpon>Setup.cs</DependentUpon>
     </EmbeddedResource>
     <EmbeddedResource Include="Setup\Setup.fr.resx">
       <DependentUpon>Setup.cs</DependentUpon>
