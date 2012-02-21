@@ -580,7 +580,7 @@ namespace ArdupilotMega.GCSViews
             MainV2.givecomport = false;
         }
 
-        void port_Progress(int progress)
+        void port_Progress(int progress,string status)
         {
             Console.WriteLine("Progress {0} ", progress);
             this.progress.Value = progress;

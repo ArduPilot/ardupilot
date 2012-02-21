@@ -257,6 +257,11 @@ namespace ArdupilotMega
 
             string[] ports = SerialPort.GetPortNames();
 
+            for (int a = 0; a < ports.Length; a++)
+            {
+                ports[a] = ports[a].TrimEnd();
+            }
+
             string[] all = new string[devs.Length + ports.Length];
 
             devs.CopyTo(all, 0);
@@ -760,19 +765,19 @@ namespace ArdupilotMega
                             byte[] buffer = port.download(20);
                             port.Close();
 
-                            if (buffer[0] != 'A' || buffer[1] != 'P') // this is the apvar header
+                            if ((buffer[0] == 'A' || buffer[0] == 'P') && (buffer[1] == 'A' || buffer[1] == 'P')) // this is the apvar header
+                            {
+                                Console.WriteLine("Valid eeprom contents");
+                            }
+                            else
                             {
                                 MessageBox.Show("You dont appear to have uploaded a firmware yet,\n\nPlease goto the firmware page and upload one.");
                                 return;
                             }
-                            else
-                            {
-                                Console.WriteLine("Valid eeprom contents");
-                            }
                         }
                     }
                     catch { }
-                    MessageBox.Show("Can not establish a connection\n\n" + ex.ToString());
+                    //MessageBox.Show("Can not establish a connection\n\n" + ex.ToString());
                     return;
                 }
             }
@@ -1632,9 +1637,9 @@ namespace ArdupilotMega
             MainV2.instance.Invoke((MethodInvoker)delegate
             {
                 loadinglabel.Text = text;
-            });
 
-            Application.DoEvents();
+                Application.DoEvents();
+            });
         }
 
         private static void checkForUpdate()
@@ -1881,7 +1886,6 @@ namespace ArdupilotMega
 
                     while (dataStream.CanRead)
                     {
-                        Application.DoEvents();
                         try
                         {
                             if (dt.Second != DateTime.Now.Second)
