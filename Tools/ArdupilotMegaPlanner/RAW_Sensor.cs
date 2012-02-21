@@ -145,8 +145,11 @@ namespace ArdupilotMega
                 return;
 
             //Console.WriteLine(DateTime.Now.Millisecond + " timer2 serial");
-
-            MainV2.cs.UpdateCurrentSettings(currentStateBindingSource);
+            try
+            {
+                MainV2.cs.UpdateCurrentSettings(currentStateBindingSource);
+            }
+            catch { }
 
             if (sw != null && sw.BaseStream.CanWrite)
             {

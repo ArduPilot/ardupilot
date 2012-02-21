@@ -683,8 +683,8 @@ namespace ArdupilotMega
                 }
 
 
-                byte[] bytes = mavinterface.packets[MAVLink.MAVLINK_MSG_ID_GLOBAL_POSITION_INT];
-                if (bytes != null)
+                bytearray = mavinterface.packets[MAVLink.MAVLINK_MSG_ID_GLOBAL_POSITION_INT];
+                if (bytearray != null)
                 {
                     var loc = bytearray.ByteArrayToStructure<MAVLink.__mavlink_global_position_int_t>(6);
 
