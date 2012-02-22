@@ -211,6 +211,13 @@ AP_DCM::matrix_reset(void)
 	_omega_I.x = 0.0f;
 	_omega_I.y = 0.0f;
 	_omega_I.z = 0.0f;
+	_omega_P = _omega_I;
+	_omega_integ_corr = _omega_I;
+	_omega = _omega_I;
+	_error_roll_pitch = _omega_I;
+	_error_yaw = _omega_I;
+	_errorCourse = 0;
+
 	if (_compass != NULL) {
 		_compass->null_offsets_enable();	// This call is needed to restart the nulling
 		// Otherwise the reset in the DCM matrix can mess up
