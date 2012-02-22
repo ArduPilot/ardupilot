@@ -167,53 +167,71 @@ static void output_motor_test()
 	motor_out[MOT_5] = g.rc_3.radio_min;
 	motor_out[MOT_6] = g.rc_3.radio_min;
 
-	bool right 	= (g.rc_1.control_in > 3000);
-	bool left  	= (g.rc_1.control_in < -3000);
-	bool front 	= (g.rc_2.control_in < -3000);
-	bool back 	= (g.rc_2.control_in > 3000);
-
 	if(g.frame_orientation == X_FRAME){
 
-		if(right && !(front || back))
-			motor_out[MOT_1] += 150; // Right
+       APM_RC.OutputCh(MOT_3, g.rc_3.radio_min);
+       delay(4000);
+       APM_RC.OutputCh(MOT_5, g.rc_3.radio_min + 100);
+       delay(300);
 
-		if(left && !(front || back))
-			motor_out[MOT_2] += 150; // Left
+       APM_RC.OutputCh(MOT_5, g.rc_3.radio_min);
+       delay(2000);
+       APM_RC.OutputCh(MOT_1, g.rc_3.radio_min + 100);
+       delay(300);
 
-		if(back){
-			if(left)
-				motor_out[MOT_6] += 150;
-			if(right)
-				motor_out[MOT_4] += 150;
-		}
+       APM_RC.OutputCh(MOT_1, g.rc_3.radio_min);
+       delay(2000);
+       APM_RC.OutputCh(MOT_4, g.rc_3.radio_min + 100);
+       delay(300);
 
-		if(front){
-			if(left)
-				motor_out[MOT_3] += 150;
-			if(right)
-				motor_out[MOT_5] += 150;
+       APM_RC.OutputCh(MOT_4, g.rc_3.radio_min);
+       delay(2000);
+       APM_RC.OutputCh(MOT_6, g.rc_3.radio_min + 100);
+       delay(300);
+
+       APM_RC.OutputCh(MOT_6, g.rc_3.radio_min);
+       delay(2000);
+       APM_RC.OutputCh(MOT_2, g.rc_3.radio_min + 100);
+       delay(300);
+
+       APM_RC.OutputCh(MOT_2, g.rc_3.radio_min);
+       delay(2000);
+       APM_RC.OutputCh(MOT_3, g.rc_3.radio_min + 100);
+       delay(300);
+
 		}
 
 	} else { /* PLUS_FRAME */
 
-		if(front && !(left || right))
-			motor_out[MOT_1] += 150;
+       APM_RC.OutputCh(MOT_5, g.rc_3.radio_min);
+       delay(4000);
+       APM_RC.OutputCh(MOT_1, g.rc_3.radio_min + 100);
+       delay(300);
 
-		if(back && !(left || right))
-			motor_out[MOT_2] += 150;
+       APM_RC.OutputCh(MOT_1, g.rc_3.radio_min);
+       delay(2000);
+       APM_RC.OutputCh(MOT_4, g.rc_3.radio_min + 100);
+       delay(300);
 
-		if(left){
-			if(front)
-				motor_out[MOT_5] += 150;
-			if(back)
-				motor_out[MOT_3] += 150;
-		}
+       APM_RC.OutputCh(MOT_4, g.rc_3.radio_min);
+       delay(2000);
+       APM_RC.OutputCh(MOT_6, g.rc_3.radio_min + 100);
+       delay(300);
 
-		if(right){
-			if(front)
-				motor_out[MOT_4] += 150;
-			if(back)
-				motor_out[MOT_6] += 150;
+       APM_RC.OutputCh(MOT_6, g.rc_3.radio_min);
+       delay(2000);
+       APM_RC.OutputCh(MOT_2, g.rc_3.radio_min + 100);
+       delay(300);
+
+       APM_RC.OutputCh(MOT_2, g.rc_3.radio_min);
+       delay(2000);
+       APM_RC.OutputCh(MOT_3, g.rc_3.radio_min + 100);
+       delay(300);
+
+       APM_RC.OutputCh(MOT_3, g.rc_3.radio_min);
+       delay(2000);
+       APM_RC.OutputCh(MOT_5, g.rc_3.radio_min + 100);
+       delay(300);
 		}
 
 	}
