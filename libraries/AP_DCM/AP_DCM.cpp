@@ -225,6 +225,33 @@ AP_DCM::matrix_reset(void)
 	}
 }
 
+/*
+  check the DCM matrix for pathological values
+ */
+void
+AP_DCM::check_matrix(void)
+{
+	// some DCM matrix values can lead to an out of range error in
+	// the pitch calculation via asin().  These NaN values can
+	// feed back into the rest of the DCM matrix via the
+	// error_course value.
+	if (_dcm_matrix.c.x > 1.0 ||
+	    _dcm_matrix.c.x < -1.0) {
+		// We have an invalid matrix. Force a normalisation.
+		renorm_range_count++;
+		normalize();
+		if (_dcm_matrix.c.x > 1.0 ||
+		    _dcm_matrix.c.x < -1.0) {
+			// normalisation didn't fix the problem! We're
+			// in real trouble. All we can do is reset
+			SITL_debug("ERROR: DCM matrix error. _dcm_matrix.c.x=%f\n",
+				   _dcm_matrix.c.x);
+			renorm_blowup_count++;
+			matrix_reset();
+		}
+	}
+}
+
 /*************************************************
 Direction Cosine Matrix IMU: Theory
 William Premerlani and Paul Bizard
@@ -410,6 +437,8 @@ AP_DCM::drift_correction(void)
 void
 AP_DCM::euler_angles(void)
 {
+	check_matrix();
+
 	#if (OUTPUTMODE == 2)				 // Only accelerometer info (debugging purposes)
 	roll 		= atan2(_accel_vector.y, -_accel_vector.z);		// atan2(acc_y, acc_z)
 	pitch 		= asin((_accel_vector.x) / (double)9.81); // asin(acc_x)
@@ -431,6 +460,7 @@ AP_DCM::euler_angles(void)
 void
 AP_DCM::euler_rp(void)
 {
+	check_matrix();
 	pitch 			= -asin(_dcm_matrix.c.x);
 	roll 			= atan2(_dcm_matrix.c.y, _dcm_matrix.c.z);
 	roll_sensor 	= roll * DEGX100;	//degrees(roll)  * 100;
