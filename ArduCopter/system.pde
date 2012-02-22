@@ -405,10 +405,9 @@ static void set_mode(byte mode)
 			mode = STABILIZE;
 	}
 
-	old_control_mode = control_mode;
-
-	control_mode = mode;
-	control_mode = constrain(control_mode, 0, NUM_MODES - 1);
+	old_control_mode 	= control_mode;
+	control_mode 		= mode;
+	control_mode 		= constrain(control_mode, 0, NUM_MODES - 1);
 
 	// used to stop fly_aways
 	motor_auto_armed = (g.rc_3.control_in > 0);
@@ -429,7 +428,7 @@ static void set_mode(byte mode)
 	land_complete 	= false;
 
 	// debug to Serial terminal
-	Serial.println(flight_mode_strings[control_mode]);
+	//Serial.println(flight_mode_strings[control_mode]);
 
 	// report the GPS and Motor arming status
 	led_mode = NORMAL_LEDS;
