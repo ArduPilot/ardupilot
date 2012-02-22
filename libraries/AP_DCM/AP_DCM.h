@@ -101,6 +101,7 @@ private:
 	float 		read_adc(int select);
 	void 		matrix_update(float _G_Dt);
 	void 		normalize(void);
+	void		check_matrix(void);
 	Vector3f 	renorm(Vector3f const &a, int &problem);
 	void 		drift_correction(void);
 	void 		euler_angles(void);
