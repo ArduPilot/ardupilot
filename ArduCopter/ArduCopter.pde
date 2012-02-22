@@ -594,7 +594,7 @@ static byte		throttle_mode;
 // This flag is reset when we are in a manual throttle mode with 0 throttle or disarmed
 static boolean	takeoff_complete;
 // Used to record the most recent time since we enaged the throttle to take off
-static int32_t	takeoff_timer;
+static uint32_t	takeoff_timer;
 // Used to see if we have landed and if we should shut our engines - not fully implemented
 static boolean	land_complete = true;
 // used to manually override throttle in interactive Alt hold modes
