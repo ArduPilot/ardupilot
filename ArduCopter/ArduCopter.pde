@@ -480,7 +480,7 @@ static boolean 	loiter_override;
 static float cos_roll_x 	= 1;
 static float cos_pitch_x 	= 1;
 static float cos_yaw_x 		= 1;
-static float sin_pitch_y, sin_yaw_y, sin_roll_y;
+static float sin_yaw_y;
 
 ////////////////////////////////////////////////////////////////////////////////
 // SIMPLE Mode
@@ -1816,12 +1816,13 @@ static void update_trig(void){
 	yawvector.y 	= temp.b.x;	// cos
 	yawvector.normalize();
 
+	cos_pitch_x 	= safe_sqrt(1 - (temp.c.x * temp.c.x));	// level = 1
+    cos_roll_x 		= temp.c.z / cos_pitch_x;			// level = 1
 
-	sin_pitch_y 	= -temp.c.x;						// level = 0
-	cos_pitch_x 	= sqrt(1 - (temp.c.x * temp.c.x));	// level = 1
-
-	sin_roll_y 		= temp.c.y / cos_pitch_x;			// level = 0
-	cos_roll_x 		= temp.c.z / cos_pitch_x;			// level = 1
+    cos_pitch_x = constrain(cos_pitch_x, 0, 1.0);
+    // this relies on constrain() of infinity doing the right thing,
+    // which it does do in avr-libc
+    cos_roll_x  = constrain(cos_roll_x, -1.0, 1.0);
 
 	sin_yaw_y 		= yawvector.x;						// 1y = north
 	cos_yaw_x 		= yawvector.y;						// 0x = north
