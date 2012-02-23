@@ -221,6 +221,7 @@ AP_DCM::matrix_reset(bool recover_eulers)
 		float cr = cos(roll);
 		float sy = sin(yaw);
 		float cy = cos(yaw);
+		//Serial.printf("setting DCM matrix to %f %f %f\n", ToDeg(roll), ToDeg(pitch), ToDeg(yaw));
 		_dcm_matrix.a.x = cp * cy;
 		_dcm_matrix.a.y = (sr * sp * cy) - (cr * sy);
 		_dcm_matrix.a.z = (cr * sp * cy) + (sr * sy);
@@ -274,7 +275,7 @@ AP_DCM::check_matrix(void)
 		renorm_range_count++;
 		normalize();
 
-		if (isnan(_dcm_matrix.c.x) ||
+		if (_dcm_matrix.is_nan() ||
 		    fabs(_dcm_matrix.c.x) > 10) {
 			// normalisation didn't fix the problem! We're
 			// in real trouble. All we can do is reset
@@ -479,7 +480,7 @@ AP_DCM::euler_angles(void)
 
 	#if (OUTPUTMODE == 2)				 // Only accelerometer info (debugging purposes)
 	roll 		= atan2(_accel_vector.y, -_accel_vector.z);		// atan2(acc_y, acc_z)
-	pitch 		= asin((_accel_vector.x) / (double)9.81); // asin(acc_x)
+	pitch 		= safe_asin((_accel_vector.x) / (double)9.81); // asin(acc_x)
 	yaw 			= 0;
 	#else
 	pitch		= -safe_asin(_dcm_matrix.c.x);
