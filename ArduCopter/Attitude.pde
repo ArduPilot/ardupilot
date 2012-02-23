@@ -134,6 +134,7 @@ get_rate_roll(int32_t target_rate)
 	// MultiWii uses a filter of the last three to get around noise and get a stronger signal.
 	// Works well! Thanks!
 	int16_t d_temp =  (rate_d1 + rate_d2 + rate_d3) * g.stabilize_d;
+	d_temp = constrain(d_temp, -400, 400);
 	target_rate -= d_temp;
 
 	// output control:
@@ -167,6 +168,7 @@ get_rate_pitch(int32_t target_rate)
 
 	// D term
 	int16_t d_temp =  (rate_d1 + rate_d2 + rate_d3) * g.stabilize_d;
+	d_temp = constrain(d_temp, -400, 400);
 	target_rate -= d_temp;
 
 	// output control:
