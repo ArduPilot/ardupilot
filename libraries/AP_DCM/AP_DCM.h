@@ -57,7 +57,7 @@ public:
 	// Methods
 	void 		update_DCM(void);
 	void 		update_DCM_fast(void);
-	void 		matrix_reset(void);
+	void 		matrix_reset(bool recover_eulers = false);
 
 	long		roll_sensor;					// Degrees * 100
 	long		pitch_sensor;					// Degrees * 100

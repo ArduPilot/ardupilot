@@ -194,20 +194,13 @@ AP_DCM::accel_adjust(void)
   extreme errors in the matrix
  */
 void
-AP_DCM::matrix_reset(void)
+AP_DCM::matrix_reset(bool recover_eulers)
 {
 	if (_compass != NULL) {
 		_compass->null_offsets_disable();		
 	}
-	_dcm_matrix.a.x = 1.0f;
-	_dcm_matrix.a.y = 0.0f;
-	_dcm_matrix.a.z = 0.0f;
-	_dcm_matrix.b.x = 0.0f;
-	_dcm_matrix.b.y = 1.0f;
-	_dcm_matrix.b.z = 0.0f;
-	_dcm_matrix.c.x = 0.0f;
-	_dcm_matrix.c.y = 0.0f;
-	_dcm_matrix.c.z = 1.0f;
+
+	// reset the integration terms
 	_omega_I.x = 0.0f;
 	_omega_I.y = 0.0f;
 	_omega_I.z = 0.0f;
@@ -217,6 +210,39 @@ AP_DCM::matrix_reset(void)
 	_error_roll_pitch = _omega_I;
 	_error_yaw = _omega_I;
 	_errorCourse = 0;
+
+	// if the caller wants us to try to recover to the current
+	// attitude then calculate the dcm matrix from the current
+	// roll/pitch/yaw values
+	if (recover_eulers && !isnan(roll) && !isnan(pitch) && !isnan(yaw)) {
+		float cp = cos(pitch);
+		float sp = sin(pitch);
+		float sr = sin(roll);
+		float cr = cos(roll);
+		float sy = sin(yaw);
+		float cy = cos(yaw);
+		_dcm_matrix.a.x = cp * cy;
+		_dcm_matrix.a.y = (sr * sp * cy) - (cr * sy);
+		_dcm_matrix.a.z = (cr * sp * cy) + (sr * sy);
+		_dcm_matrix.b.x = cp * sy;
+		_dcm_matrix.b.y = (sr * sp * sy) + (cr * cy);
+		_dcm_matrix.b.z = (cr * sp * sy) - (sr * cy);
+		_dcm_matrix.c.x = -sp;
+		_dcm_matrix.c.y = sr * cp;
+		_dcm_matrix.c.z = cr * cp;
+	} else {
+		// otherwise make it flat
+		//Serial.printf("zeroing DCM matrix\n");
+		_dcm_matrix.a.x = 1.0f;
+		_dcm_matrix.a.y = 0.0f;
+		_dcm_matrix.a.z = 0.0f;
+		_dcm_matrix.b.x = 0.0f;
+		_dcm_matrix.b.y = 1.0f;
+		_dcm_matrix.b.z = 0.0f;
+		_dcm_matrix.c.x = 0.0f;
+		_dcm_matrix.c.y = 0.0f;
+		_dcm_matrix.c.z = 1.0f;
+	}
 
 	if (_compass != NULL) {
 		_compass->null_offsets_enable();	// This call is needed to restart the nulling
@@ -231,6 +257,13 @@ AP_DCM::matrix_reset(void)
 void
 AP_DCM::check_matrix(void)
 {
+	if (_dcm_matrix.is_nan()) {
+		//Serial.printf("ERROR: DCM matrix NAN\n");
+		SITL_debug("ERROR: DCM matrix NAN\n");
+		renorm_blowup_count++;
+		matrix_reset(true);
+		return;
+	}
 	// some DCM matrix values can lead to an out of range error in
 	// the pitch calculation via asin().  These NaN values can
 	// feed back into the rest of the DCM matrix via the
@@ -240,14 +273,17 @@ AP_DCM::check_matrix(void)
 		// We have an invalid matrix. Force a normalisation.
 		renorm_range_count++;
 		normalize();
-		if (!(_dcm_matrix.c.x < 1.0 &&
-		      _dcm_matrix.c.x > -1.0)) {
+
+		if (isnan(_dcm_matrix.c.x) ||
+		    fabs(_dcm_matrix.c.x) > 10) {
 			// normalisation didn't fix the problem! We're
 			// in real trouble. All we can do is reset
+			//Serial.printf("ERROR: DCM matrix error. _dcm_matrix.c.x=%f\n",
+			//	   _dcm_matrix.c.x);
 			SITL_debug("ERROR: DCM matrix error. _dcm_matrix.c.x=%f\n",
 				   _dcm_matrix.c.x);
 			renorm_blowup_count++;
-			matrix_reset();
+			matrix_reset(true);
 		}
 	}
 }
@@ -284,7 +320,7 @@ AP_DCM::normalize(void)
 	_dcm_matrix.c = renorm(temporary[2], problem);
 
 	if (problem == 1) {		// Our solution is blowing up and we will force back to initial condition.	Hope we are not upside down!
-		matrix_reset();
+		matrix_reset(true);
 	}
 }
 
@@ -323,6 +359,8 @@ AP_DCM::renorm(Vector3f const &a, int &problem)
 			// can recover our attitude using drift
 			// correction before we hit the ground!
 			problem = 1;
+			//Serial.printf("ERROR: DCM renormalisation error. renorm_val=%f\n",
+			//	   renorm_val);
 			SITL_debug("ERROR: DCM renormalisation error. renorm_val=%f\n",
 				   renorm_val);
 			renorm_blowup_count++;
@@ -444,14 +482,14 @@ AP_DCM::euler_angles(void)
 	pitch 		= asin((_accel_vector.x) / (double)9.81); // asin(acc_x)
 	yaw 			= 0;
 	#else
-	pitch 		= -asin(_dcm_matrix.c.x);
+	pitch		= -safe_asin(_dcm_matrix.c.x);
 	roll 		= atan2(_dcm_matrix.c.y, _dcm_matrix.c.z);
 	yaw 		= atan2(_dcm_matrix.b.x, _dcm_matrix.a.x);
 	#endif
 
 	roll_sensor 	= degrees(roll)  * 100;
 	pitch_sensor 	= degrees(pitch) * 100;
-	yaw_sensor 		= degrees(yaw)   * 100;
+	yaw_sensor 	= degrees(yaw)   * 100;
 
 	if (yaw_sensor < 0)
 		yaw_sensor += 36000;
@@ -461,7 +499,7 @@ void
 AP_DCM::euler_rp(void)
 {
 	check_matrix();
-	pitch 			= -asin(_dcm_matrix.c.x);
+	pitch 			= -safe_asin(_dcm_matrix.c.x);
 	roll 			= atan2(_dcm_matrix.c.y, _dcm_matrix.c.z);
 	roll_sensor 	= roll * DEGX100;	//degrees(roll)  * 100;
 	pitch_sensor 	= pitch * DEGX100; //degrees(pitch) * 100;
