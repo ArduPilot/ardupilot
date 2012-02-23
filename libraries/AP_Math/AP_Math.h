@@ -15,3 +15,6 @@ AP_PARAMDEFV(Vector3f, Vector3f, AP_PARAM_VECTOR3F);
 
 // a varient of asin() that always gives a valid answer.
 float safe_asin(float v);
+
+// a varient of sqrt() that always gives a valid answer.
+float safe_sqrt(float v);
