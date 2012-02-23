@@ -114,10 +114,17 @@ Compass::calculate(const Matrix3f &dcm_matrix)
 {
     float headX;
     float headY;
-    float cos_pitch = sqrt(1-(dcm_matrix.c.x*dcm_matrix.c.x));
+    float cos_pitch = safe_sqrt(1-(dcm_matrix.c.x*dcm_matrix.c.x));
 	// sin(pitch) = - dcm_matrix(3,1)
 	// cos(pitch)*sin(roll) = - dcm_matrix(3,2)
 	// cos(pitch)*cos(roll) = - dcm_matrix(3,3)
+
+    if (cos_pitch == 0.0) {
+        // we are pointing straight up or down so don't update our
+        // heading using the compass. Wait for the next iteration when
+        // we hopefully will have valid values again.
+        return;
+    }
 
     // Tilt compensated magnetic field X component:
     headX = mag_x*cos_pitch - mag_y*dcm_matrix.c.y*dcm_matrix.c.x/cos_pitch - mag_z*dcm_matrix.c.z*dcm_matrix.c.x/cos_pitch;
@@ -140,6 +147,20 @@ Compass::calculate(const Matrix3f &dcm_matrix)
     // Optimization for external DCM use. Calculate normalized components
     heading_x = cos(heading);
     heading_y = sin(heading);
+
+#if 0
+    if (isnan(heading_x) || isnan(heading_y)) {
+        Serial.printf("COMPASS: c.x %f c.y %f c.z %f cos_pitch %f mag_x %d mag_y %d mag_z %d headX %f headY %f heading %f heading_x %f heading_y %f\n",
+                      dcm_matrix.c.x,
+                      dcm_matrix.c.y,
+                      dcm_matrix.c.x,
+                      cos_pitch,
+                      (int)mag_x, (int)mag_y, (int)mag_z,
+                      headX, headY,
+                      heading,
+                      heading_x, heading_y);
+    }
+#endif
 }
 
 void
