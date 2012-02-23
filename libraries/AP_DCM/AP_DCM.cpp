@@ -235,13 +235,13 @@ AP_DCM::check_matrix(void)
 	// the pitch calculation via asin().  These NaN values can
 	// feed back into the rest of the DCM matrix via the
 	// error_course value.
-	if (_dcm_matrix.c.x > 1.0 ||
-	    _dcm_matrix.c.x < -1.0) {
+	if (!(_dcm_matrix.c.x < 1.0 &&
+	      _dcm_matrix.c.x > -1.0)) {
 		// We have an invalid matrix. Force a normalisation.
 		renorm_range_count++;
 		normalize();
-		if (_dcm_matrix.c.x > 1.0 ||
-		    _dcm_matrix.c.x < -1.0) {
+		if (!(_dcm_matrix.c.x < 1.0 &&
+		      _dcm_matrix.c.x > -1.0)) {
 			// normalisation didn't fix the problem! We're
 			// in real trouble. All we can do is reset
 			SITL_debug("ERROR: DCM matrix error. _dcm_matrix.c.x=%f\n",
@@ -314,10 +314,10 @@ AP_DCM::renorm(Vector3f const &a, int &problem)
 
 	renorm_val = 1.0 / sqrt(a * a);
 
-	if (renorm_val > 2.0 || renorm_val < 0.5) {
+	if (!(renorm_val < 2.0 && renorm_val > 0.5)) {
 		// this is larger than it should get - log it as a warning
 		renorm_range_count++;
-		if (renorm_val > 1.0e6 || renorm_val < 1.0e-6) {
+		if (!(renorm_val < 1.0e6 && renorm_val > 1.0e-6)) {
 			// we are getting values which are way out of
 			// range, we will reset the matrix and hope we
 			// can recover our attitude using drift
