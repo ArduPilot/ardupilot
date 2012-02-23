@@ -173,6 +173,10 @@ public:
 	T angle_normalized(const Vector3<T> &v1, const Vector3<T> &v2)
 	{   return (T)acosf(v1*v2);  }
 
+	// check if any elements are NAN
+	bool is_nan(void)
+		{   return isnan(x) || isnan(y) || isnan(z); }
+
 };
 
 typedef Vector3<int16_t>		Vector3i;
