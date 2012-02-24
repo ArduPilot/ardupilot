@@ -1647,7 +1647,7 @@ GCS_MAVLINK::queued_param_send()
     value = vp->cast_to_float(_queued_parameter_type);
 
     char param_name[ONBOARD_PARAM_NAME_LENGTH];
-    vp->copy_name(param_name, sizeof(param_name));
+    vp->copy_name(param_name, sizeof(param_name), true);
 
     mavlink_msg_param_value_send(
         chan,
