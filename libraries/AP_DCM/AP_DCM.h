@@ -31,8 +31,6 @@ public:
 		_dcm_matrix(1, 0, 0,
 					0, 1, 0,
 					0, 0, 1),
-		_course_over_ground_x(0),
-		_course_over_ground_y(1),
 		_health(1.),
 		_kp_roll_pitch(0.05967),
 		_ki_roll_pitch(0.00001278),
@@ -94,6 +92,7 @@ private:
 	float		_ki_roll_pitch;
 	float		_kp_yaw;
 	float		_ki_yaw;
+	bool		_have_initial_yaw;
 
 	// Methods
 	void 		read_adc_raw(void);
@@ -128,10 +127,6 @@ private:
 	Vector3f 	_omega_integ_corr;			// Partially corrected Gyro_Vector data - used for centrepetal correction
 	Vector3f 	_omega;						// Corrected Gyro_Vector data
 	Vector3f 	_error_roll_pitch;
-	Vector3f 	_error_yaw;
-	float 		_errorCourse;
-	float 		_course_over_ground_x; 		// Course overground X axis
-	float 		_course_over_ground_y; 		// Course overground Y axis
 	float		_health;
 	bool		_centripetal;
 	uint8_t		_toggle;

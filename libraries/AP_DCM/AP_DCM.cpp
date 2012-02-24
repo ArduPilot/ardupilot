@@ -208,8 +208,6 @@ AP_DCM::matrix_reset(bool recover_eulers)
 	_omega_integ_corr = _omega_I;
 	_omega = _omega_I;
 	_error_roll_pitch = _omega_I;
-	_error_yaw = _omega_I;
-	_errorCourse = 0;
 
 	// if the caller wants us to try to recover to the current
 	// attitude then calculate the dcm matrix from the current
@@ -358,9 +356,9 @@ AP_DCM::drift_correction(void)
 	float accel_magnitude;
 	float accel_weight;
 	float integrator_magnitude;
+	Vector3f error_yaw;
 	//static float scaled_omega_P[3];
 	//static float scaled_omega_I[3];
-	static bool in_motion = false;
 
 	//*****Roll and Pitch***************
 
@@ -390,7 +388,7 @@ AP_DCM::drift_correction(void)
 	//*****YAW***************
 
 	if (_compass && _compass->healthy) {
-		if (in_motion) {
+		if (_have_initial_yaw) {
 			// Equation 23, Calculating YAW error
 			// We make the gyro YAW drift correction based
 			// on compass magnetic heading
@@ -406,37 +404,42 @@ AP_DCM::drift_correction(void)
 
 			// now construct a new DCM matrix
 			rotation_matrix_from_euler(_dcm_matrix, roll, pitch, _compass->heading);
-			in_motion =  true;
+			_have_initial_yaw = true;
 		}
 	} else if (_gps && _gps->status() == GPS::GPS_OK) {
 
 		// Use GPS Ground course to correct yaw gyro drift
 		if (_gps->ground_speed >= SPEEDFILT) {
 
-			_course_over_ground_x = cos(ToRad(_gps->ground_course/100.0));
-			_course_over_ground_y = sin(ToRad(_gps->ground_course/100.0));
-			if(in_motion) {
-				error_course = (_dcm_matrix.a.x * _course_over_ground_y) - (_dcm_matrix.b.x * _course_over_ground_x);	// Equation 23, Calculating YAW error
+			if (_have_initial_yaw) {
+				float course_over_ground_x = cos(ToRad(_gps->ground_course/100.0));
+				float course_over_ground_y = sin(ToRad(_gps->ground_course/100.0));
+				// Equation 23, Calculating YAW error
+				error_course = (_dcm_matrix.a.x * course_over_ground_y) - (_dcm_matrix.b.x * course_over_ground_x);
 			} else  {
 				// when we first start moving, set the
 				// DCM matrix to the current
 				// roll/pitch values, but with yaw
 				// from the GPS
 				rotation_matrix_from_euler(_dcm_matrix, roll, pitch, ToRad(_gps->ground_course));
-				in_motion =  true;
+				_have_initial_yaw =  true;
 				error_course = 0;
 			}
 
 		} else {
+			// we are moving very slowly. Stop doing
+			// course correction with the GPS, and instead
+			// grab the next GPS course value once we
+			// start moving again.
 			error_course = 0;
-			in_motion = false;
+			_have_initial_yaw = false;
 		}
 	}
 
-	_error_yaw = _dcm_matrix.c * error_course;	// Equation 24, Applys the yaw correction to the XYZ rotation of the aircraft, depeding the position.
+	error_yaw = _dcm_matrix.c * error_course;	// Equation 24, Applys the yaw correction to the XYZ rotation of the aircraft, depeding the position.
 
-	_omega_P += _error_yaw * _kp_yaw;			// Adding yaw correction to proportional correction vector.
-	_omega_I += _error_yaw * _ki_yaw;			// adding yaw correction to integrator correction vector.
+	_omega_P += error_yaw * _kp_yaw;			// Adding yaw correction to proportional correction vector.
+	_omega_I += error_yaw * _ki_yaw;			// adding yaw correction to integrator correction vector.
 
 	//	Here we will place a limit on the integrator so that the integrator cannot ever exceed ~30 degrees/second
 	integrator_magnitude = _omega_I.length();
