@@ -83,7 +83,7 @@ namespace ArdupilotMega
 
                 threadrun = true;
 
-                System.Threading.Thread.Sleep(2000);
+                System.Threading.Thread.Sleep(4000);
 
                 try
                 {

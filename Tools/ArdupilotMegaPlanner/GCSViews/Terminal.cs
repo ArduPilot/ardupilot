@@ -146,7 +146,11 @@ namespace ArdupilotMega.GCSViews
                             }
                         }
                         // do not change this  \r is correct - no \n
+                        if (cmd == "+++")
+                            comPort.Write(Encoding.ASCII.GetBytes(cmd), 0, cmd.Length);
+                        else {
                         comPort.Write(Encoding.ASCII.GetBytes(cmd + "\r"), 0, cmd.Length + 1);
+                        }
                     }
                     catch { MessageBox.Show("Error writing to com port"); }
                 }

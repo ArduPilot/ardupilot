@@ -118,13 +118,19 @@ namespace ArdupilotMega
             g.TranslateTransform(LocalPosition.X, LocalPosition.Y);
 
             int length = 500;
-
-            g.DrawLine(new Pen(Color.Red, 2), 0.0f, 0.0f, (float)Math.Cos((heading - 90) * deg2rad) * length, (float)Math.Sin((heading - 90) * deg2rad) * length);
+// anti NaN
+            try
+            {
+                g.DrawLine(new Pen(Color.Red, 2), 0.0f, 0.0f, (float)Math.Cos((heading - 90) * deg2rad) * length, (float)Math.Sin((heading - 90) * deg2rad) * length);
+            }
+            catch { }
             g.DrawLine(new Pen(Color.Green, 2), 0.0f, 0.0f, (float)Math.Cos((nav_bearing - 90) * deg2rad) * length, (float)Math.Sin((nav_bearing - 90) * deg2rad) * length);
             g.DrawLine(new Pen(Color.Black, 2), 0.0f, 0.0f, (float)Math.Cos((cog - 90) * deg2rad) * length, (float)Math.Sin((cog - 90) * deg2rad) * length);
             g.DrawLine(new Pen(Color.Orange, 2), 0.0f, 0.0f, (float)Math.Cos((target - 90) * deg2rad) * length, (float)Math.Sin((target - 90) * deg2rad) * length);
-
+// anti NaN
+            try {
             g.RotateTransform(heading);
+            } catch{}
             g.DrawImageUnscaled(global::ArdupilotMega.Properties.Resources.planeicon, global::ArdupilotMega.Properties.Resources.planeicon.Width / -2, global::ArdupilotMega.Properties.Resources.planeicon.Height / -2);
 
             g.Transform = temp;
@@ -157,14 +163,21 @@ namespace ArdupilotMega
             g.TranslateTransform(LocalPosition.X, LocalPosition.Y);
 
             int length = 500;
-
-            g.DrawLine(new Pen(Color.Red, 2), 0.0f, 0.0f, (float)Math.Cos((heading - 90) * deg2rad) * length, (float)Math.Sin((heading - 90) * deg2rad) * length);
+// anti NaN
+            try
+            {
+                g.DrawLine(new Pen(Color.Red, 2), 0.0f, 0.0f, (float)Math.Cos((heading - 90) * deg2rad) * length, (float)Math.Sin((heading - 90) * deg2rad) * length);
+            }
+            catch { }
             //g.DrawLine(new Pen(Color.Green, 2), 0.0f, 0.0f, (float)Math.Cos((nav_bearing - 90) * deg2rad) * length, (float)Math.Sin((nav_bearing - 90) * deg2rad) * length);
             g.DrawLine(new Pen(Color.Black, 2), 0.0f, 0.0f, (float)Math.Cos((cog - 90) * deg2rad) * length, (float)Math.Sin((cog - 90) * deg2rad) * length);
             g.DrawLine(new Pen(Color.Orange, 2), 0.0f, 0.0f, (float)Math.Cos((target - 90) * deg2rad) * length, (float)Math.Sin((target - 90) * deg2rad) * length);
-
-
-            g.RotateTransform(heading);
+// anti NaN
+            try
+            {
+                g.RotateTransform(heading);
+            }
+            catch { }
             g.DrawImageUnscaled(global::ArdupilotMega.Properties.Resources.quadicon, global::ArdupilotMega.Properties.Resources.quadicon.Width / -2 + 2, global::ArdupilotMega.Properties.Resources.quadicon.Height / -2);
 
             g.Transform = temp;
@@ -490,7 +503,7 @@ namespace ArdupilotMega
                 WebResponse response = request.GetResponse();
                 // Display the status.
                 Console.WriteLine(((HttpWebResponse)response).StatusDescription);
-                if (((HttpWebResponse)response).StatusDescription != "200")
+                if (((HttpWebResponse)response).StatusCode != HttpStatusCode.OK)
                     return false;
                 // Get the stream containing content returned by the server.
                 Stream dataStream = response.GetResponseStream();
@@ -500,7 +513,7 @@ namespace ArdupilotMega
 
                 byte[] buf1 = new byte[1024];
 
-                FileStream fs = new FileStream(saveto+".new", FileMode.Create);
+                FileStream fs = new FileStream(saveto + ".new", FileMode.Create);
 
                 DateTime dt = DateTime.Now;
 

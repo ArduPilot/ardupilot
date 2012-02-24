@@ -1154,5 +1154,25 @@ namespace ArdupilotMega.GCSViews
         {
 
         }
+
+        protected override bool ProcessCmdKey(ref Message msg, Keys keyData)
+        {
+            if (keyData == Keys.F5)
+            {
+                BUT_rerequestparams_Click(BUT_rerequestparams, null);
+                return true;
+            }
+            if (keyData == (Keys.Control | Keys.S))
+            {
+                BUT_writePIDS_Click(BUT_writePIDS, null);
+                return true;
+            }
+            if (keyData == (Keys.Control | Keys.O))
+            {
+                BUT_load_Click(BUT_load, null);
+                return true;
+            }
+            return base.ProcessCmdKey(ref msg, keyData);
+        }
     }
 }

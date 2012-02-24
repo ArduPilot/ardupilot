@@ -676,6 +676,7 @@ namespace hud
 
         void doPaint(PaintEventArgs e)
         {
+            bool isNaN = false;
             try
             {
                 if (graphicsObjectGDIP == null || !opengl && (objBitmap.Width != this.Width || objBitmap.Height != this.Height))
@@ -709,9 +710,22 @@ namespace hud
                     bgon = true;
                 }
 
+
+                if (float.IsNaN(_roll) || float.IsNaN(_pitch) || float.IsNaN(_heading))
+                {
+                    isNaN = true;
+
+                    _roll = 0;
+                    _pitch = 0;
+                    _heading = 0;
+                }
+
                 graphicsObject.TranslateTransform(this.Width / 2, this.Height / 2);
 
-                graphicsObject.RotateTransform(-_roll);
+
+
+                    graphicsObject.RotateTransform(-_roll);
+
 
                 int fontsize = this.Height / 30; // = 10
                 int fontoffset = fontsize - 10;
@@ -1272,6 +1286,11 @@ namespace hud
 
                 drawstring(graphicsObject, gps, font, fontsize + 2, whiteBrush, this.Width - 10 * fontsize, this.Height - 30 - fontoffset);
 
+
+                if (isNaN)
+                    drawstring(graphicsObject, "NaN Error " + DateTime.Now, font, this.Height / 30 + 10, Brushes.Red, 50, 50);
+
+
                 if (!opengl)
                 {
                     e.Graphics.DrawImageUnscaled(objBitmap, 0, 0);
@@ -1305,7 +1324,6 @@ namespace hud
             catch (Exception ex)
             {
                 Console.WriteLine("hud error "+ex.ToString());
-                //MessageBox.Show(ex.ToString());            
             }
         }
 

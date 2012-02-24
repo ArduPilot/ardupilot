@@ -9,6 +9,8 @@ using System.Reflection;
 using System.Reflection.Emit;
 using System.IO;
 using System.Drawing;
+using System.Threading;
+using ArdupilotMega.Controls;
 using ArdupilotMega.Mavlink;
 using System.ComponentModel;
 
@@ -21,13 +23,9 @@ namespace ArdupilotMega
         private const double CONNECT_TIMEOUT_SECONDS = 30;
 
         /// <summary>
-        /// Used for progress reporting on all internal functions
-        /// </summary>
-        public event ProgressEventHandler Progress;
-        /// <summary>
         /// progress form to handle connect and param requests
         /// </summary>
-        ProgressReporter frm;
+        ProgressReporterDialogue frmProgressReporter;
 
         /// <summary>
         /// used for outbound packet sending
@@ -131,22 +129,39 @@ namespace ArdupilotMega
             if (BaseStream.IsOpen)
                 return;
 
-            //System.Windows.Forms.Form frm = Common.LoadingBox("Mavlink Connecting..", "Mavlink Connecting..");
-            //frm.TopMost = true;
+            frmProgressReporter = new ProgressReporterDialogue
+                                      {
+                                          StartPosition = System.Windows.Forms.FormStartPosition.CenterScreen,
+                                          Text = "Connecting Mavlink"
+                                      };
 
-            frm = new ProgressReporter();
-            MainV2.fixtheme(frm);
-            this.Progress += new ProgressEventHandler(MAVLink_Progress);
-            //(progress, status) => { frm.updateProgressAndStatus(progress, status); };
+            if (getparams)
+            {
+                frmProgressReporter.DoWork += FrmProgressReporterDoWorkAndParams;
+            }
+            else
+            {
+                frmProgressReporter.DoWork += FrmProgressReporterDoWorkNOParams;
+            }
+            frmProgressReporter.UpdateProgressAndStatus(-1, "Mavlink Connecting...");
+            MainV2.fixtheme(frmProgressReporter);
 
-            frm.StartPosition = System.Windows.Forms.FormStartPosition.CenterScreen;
+            frmProgressReporter.RunBackgroundOperationAsync();
+        }
 
-            frm.Show();
+        void FrmProgressReporterDoWorkAndParams(object sender, ProgressWorkerEventArgs e)
+        {
+            OpenBg(true, e);
+        }
 
-            frm.Focus();
+        void FrmProgressReporterDoWorkNOParams(object sender, ProgressWorkerEventArgs e)
+        {
+            OpenBg(false, e);
+        }
 
-            if (Progress != null)
-                Progress(-1, "Mavlink Connecting...");
+        private void OpenBg(bool getparams,  ProgressWorkerEventArgs progressWorkerEventArgs)
+        {
+            frmProgressReporter.UpdateProgressAndStatus(-1, "Mavlink Connecting...");
 
             // reset
             sysid = 0;
@@ -168,15 +183,7 @@ namespace ArdupilotMega
 
                     BaseStream.toggleDTR();
 
-                    // allow 2560 connect timeout on usb
-                    for (int a = 0; a < 1000; a++ ) {
-                        System.Threading.Thread.Sleep(1);
-                        if (!MainV2.instance.InvokeRequired)
-                        {
-                            System.Windows.Forms.Application.DoEvents();
-                        }
-                    }
-
+                    Thread.Sleep(1000);
                 }
 
                 byte[] buffer;
@@ -189,8 +196,9 @@ namespace ArdupilotMega
                 countDown.Elapsed += (sender, e) =>
                 {
                     int secondsRemaining = (deadline - e.SignalTime).Seconds;
-                    if (Progress != null)
-                        Progress(-1, string.Format("Trying to connect.\nTimeout in {0}", secondsRemaining));
+                    //if (Progress != null)
+                    //    Progress(-1, string.Format("Trying to connect.\nTimeout in {0}", secondsRemaining));
+                    frmProgressReporter.UpdateProgressAndStatus(-1, string.Format("Trying to connect.\nTimeout in {0}", secondsRemaining));
                     if (secondsRemaining > 0) countDown.Start();
                 };
                 countDown.Start();
@@ -199,31 +207,35 @@ namespace ArdupilotMega
 
                 while (true)
                 {
+                    if (progressWorkerEventArgs.CancelRequested)
+                    {
+                        progressWorkerEventArgs.CancelAcknowledged = true;
+                        countDown.Stop();
+                        if (BaseStream.IsOpen)
+                            BaseStream.Close();
+                        MainV2.givecomport = false;
+                        return;
+                    }
+
                     // incase we are in setup mode
                     BaseStream.WriteLine("planner\rgcs\r");
 
                     Console.WriteLine(DateTime.Now.Millisecond + " start ");
 
-                    /*
-                    if (Progress != null)
-                    {
-                        int secondsRemaining = (start.AddSeconds(CONNECT_TIMEOUT_SECONDS) - DateTime.Now).Seconds;
-                        Progress(-1, string.Format("Trying to connect.\nTimeout in {0}", secondsRemaining));
-                    }
-                    */
-
                     if (lastbad[0] == '!' && lastbad[1] == 'G' || lastbad[0] == 'G' && lastbad[1] == '!') // waiting for gps lock
                     {
-                        if (Progress != null)
-                            Progress(-1, "Waiting for GPS detection..");
-                        start = start.AddSeconds(5); // each round is 1.1 seconds
+                        //if (Progress != null)
+                        //    Progress(-1, "Waiting for GPS detection..");
+                        frmProgressReporter.UpdateProgressAndStatus(-1, "Waiting for GPS detection..");
+                        deadline = deadline.AddSeconds(5); // each round is 1.1 seconds
                     }
 
                     if (DateTime.Now > deadline)
                     {
-                        if (Progress != null)
-                            Progress(-1, "No Heatbeat Packets");
+                        //if (Progress != null)
+                        //    Progress(-1, "No Heatbeat Packets");
                         this.Close();
+                        progressWorkerEventArgs.ErrorMessage = "No Heatbeat Packets Received";
                         throw new Exception("No Mavlink Heartbeat Packets where read from this port - Verify Baud Rate and setup\nIt might also be waiting for GPS Lock\nAPM Planner waits for 2 valid heartbeat packets before connecting");
                     }
 
@@ -267,11 +279,12 @@ namespace ArdupilotMega
 
                 countDown.Stop();
 
-                if (Progress != null)
-                    Progress(-1, "Getting Params.. (sysid " + sysid + " compid " + compid + ") ");
+//                if (Progress != null)
+//                    Progress(-1, "Getting Params.. (sysid " + sysid + " compid " + compid + ") ");
+                frmProgressReporter.UpdateProgressAndStatus(0, "Getting Params.. (sysid " + sysid + " compid " + compid + ") ");
 
                 if (getparams)
-                    getParamList();
+                    getParamListBG();
             }
             catch (Exception e)
             {
@@ -281,26 +294,17 @@ namespace ArdupilotMega
                 }
                 catch { }
                 MainV2.givecomport = false;
-                if (Progress != null)
-                    Progress(-1, "Connect Failed\n" + e.Message);
-                throw e;
+//                if (Progress != null)
+//                    Progress(-1, "Connect Failed\n" + e.Message);
+                if (string.IsNullOrEmpty(progressWorkerEventArgs.ErrorMessage))
+                    progressWorkerEventArgs.ErrorMessage = "Connect Failed";
+                throw;
             }
-            frm.Close();
+            //frmProgressReporter.Close();
             MainV2.givecomport = false;
+            frmProgressReporter.UpdateProgressAndStatus(100, "Done.");
             Console.WriteLine("Done open " + sysid + " " + compid);
             packetslost = 0;
-        }
-
-        void MAVLink_Progress(int progress, string status)
-        {
-            if (frm != null)
-            {
-                try
-                {
-                    frm.updateProgressAndStatus(progress, status);
-                }
-                catch (Exception ex) { throw ex; }
-            }
         }
 
         byte[] getHeartBeat()
@@ -556,19 +560,48 @@ namespace ArdupilotMega
 
         }
         */
+        public void getParamList()
+        {
+            frmProgressReporter = new ProgressReporterDialogue
+            {
+                StartPosition = System.Windows.Forms.FormStartPosition.CenterScreen,
+                Text = "Getting Params"
+            };
+
+            frmProgressReporter.DoWork += FrmProgressReporterGetParams;
+            frmProgressReporter.UpdateProgressAndStatus(-1, "Getting Params...");
+            MainV2.fixtheme(frmProgressReporter);
+
+            frmProgressReporter.RunBackgroundOperationAsync();
+        }
+
+        void FrmProgressReporterGetParams(object sender, ProgressWorkerEventArgs e)
+        {
+            Hashtable old = new Hashtable(param);
+            getParamListBG();
+            if (frmProgressReporter.doWorkArgs.CancelRequested)
+            {
+                param = old;
+            }
+        }
+
         /// <summary>
         /// Get param list from apm
         /// </summary>
         /// <returns></returns>
-        public Hashtable getParamList()
+        private Hashtable getParamListBG()
         {
             MainV2.givecomport = true;
             List<int> missed = new List<int>();
 
-            // ryan - re start
-            __mavlink_param_request_read_t rereq = new __mavlink_param_request_read_t();
-            rereq.target_system = sysid;
-            rereq.target_component = compid;
+            // clear old
+            param = new Hashtable();
+
+            int retrys = 3;
+            int param_count = 0;
+            int param_total = 5;
+
+            goagain:
 
             __mavlink_param_request_list_t req = new __mavlink_param_request_list_t();
             req.target_system = sysid;
@@ -578,13 +611,18 @@ namespace ArdupilotMega
 
             DateTime start = DateTime.Now;
             DateTime restart = DateTime.Now;
-
-            int retrys = 3;
-            int nextid = 0;
-            int param_count = 0;
-            int param_total = 5;
+           
             while (param_count < param_total)
             {
+
+                if (frmProgressReporter.doWorkArgs.CancelRequested)
+                {
+                    frmProgressReporter.doWorkArgs.CancelAcknowledged = true;
+                    MainV2.givecomport = false;
+                    frmProgressReporter.doWorkArgs.ErrorMessage = "User Canceled";
+                    return param;
+                }
+
                 if (!(start.AddMilliseconds(5000) > DateTime.Now))
                 {
                     if (retrys > 0)
@@ -598,15 +636,7 @@ namespace ArdupilotMega
                     MainV2.givecomport = false;
                     throw new Exception("Timeout on read - getParamList");
                 }
-                if (!(restart.AddMilliseconds(1000) > DateTime.Now))
-                {
-                    rereq.param_id = new byte[] { 0x0, 0x0 };
-                    rereq.param_index = (short)nextid;
-                    sendPacket(rereq);
-                    restart = DateTime.Now;
-                }
 
-                System.Windows.Forms.Application.DoEvents();
                 byte[] buffer = readPacket();
                 if (buffer.Length > 5)
                 {
@@ -619,9 +649,10 @@ namespace ArdupilotMega
 
                         __mavlink_param_value_t par = buffer.ByteArrayToStructure<__mavlink_param_value_t>(6);
 
+                        // set new target
                         param_total = (par.param_count);
 
-
+                        
                         string paramID = System.Text.ASCIIEncoding.ASCII.GetString(par.param_id);
 
                         int pos = paramID.IndexOf('\0');
@@ -629,46 +660,40 @@ namespace ArdupilotMega
                         {
                             paramID = paramID.Substring(0, pos);
                         }
-                        Console.WriteLine(DateTime.Now.Millisecond + " got param " + (par.param_index) + " of " + (param_total - 1) + " name: " + paramID);
 
-                        // for out of order udp packets
-                        if (BaseStream.GetType() != typeof(UdpSerial))
-                        {
-                            if (nextid == (par.param_index))
-                            {
-                                nextid++;
-                                if (Progress != null)
-                                    Progress((par.param_index * 100) / param_total, "Got param " + paramID);
-                            }
-                            else
-                            {
-
-                                if (retrys > 0)
-                                {
-                                    generatePacket(MAVLINK_MSG_ID_PARAM_REQUEST_LIST, req);
-                                    param_count = 0;
-                                    nextid = 0;
-                                    retrys--;
-                                    continue;
-                                }
-                                Console.WriteLine("Out of order packet. Re-requesting list");
-                                missed.Add(nextid); // for later devel
-                                MainV2.givecomport = false;
-                                throw new Exception("Missed ID expecting " + nextid + " got " + (par.param_index) + "\nPlease try loading again");
-                            }
+                        // check if we already have it
+                        if (param.ContainsKey(paramID)) {
+                            continue;
                         }
+
+                        Console.WriteLine(DateTime.Now.Millisecond + " got param " + (par.param_index) + " of " + (param_total - 1) + " name: " + paramID);
 
                         modifyParamForDisplay(true, paramID, ref par.param_value);
                         param[paramID] = (par.param_value);
                         param_count++;
+
+//                        if (Progress != null)
+//                            Progress((param.Count * 100) / param_total, "Got param " + paramID);
+                        this.frmProgressReporter.UpdateProgressAndStatus((param.Count * 100) / param_total, "Got param " + paramID);
                     }
                     else
                     {
-                        //Console.WriteLine(DateTime.Now + " PC paramlist " + buffer[5] + " " + this.BytesToRead);
+                        //Console.WriteLine(DateTime.Now + " PC paramlist " + buffer[5] + " want " + MAVLINK_MSG_ID_PARAM_VALUE + " btr " + BaseStream.BytesToRead);
                     }
                     //stopwatch.Stop();
                     //Console.WriteLine("Time elapsed: {0}", stopwatch.Elapsed);
                 }
+            }
+
+            if (param.Count != param_total)
+            {
+                if (retrys > 0)
+                {
+                    this.frmProgressReporter.UpdateProgressAndStatus((param.Count * 100) / param_total, "Getting missed params");
+                    retrys--;
+                    goto goagain;
+                }
+                throw new Exception("Missing Params");
             }
             MainV2.givecomport = false;
             return param;
@@ -1923,10 +1948,10 @@ namespace ArdupilotMega
                                     throw new Exception("Timeout");
                                 }
                                 System.Threading.Thread.Sleep(1);
-                                if (!MainV2.instance.InvokeRequired)
-                                {
-                                    System.Windows.Forms.Application.DoEvents(); // when connecting this is in the main thread
-                                }
+//                                if (!MainV2.instance.InvokeRequired)
+//                                {
+//                                    System.Windows.Forms.Application.DoEvents(); // when connecting this is in the main thread
+//                                }
                                 to++;
                             }
                             if (BaseStream.IsOpen)

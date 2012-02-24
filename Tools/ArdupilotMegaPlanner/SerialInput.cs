@@ -64,7 +64,7 @@ namespace ArdupilotMega
                 {
                     alt = (100 * MainV2.cs.multiplierdist).ToString("0");
                 }
-                if (DialogResult.Cancel == Common.InputBox("Enter Alt", "Enter Alt", ref alt))
+                if (DialogResult.Cancel == Common.InputBox("Enter Alt", "Enter Alt (relative to home alt)", ref alt))
                     return;
 
                 intalt = (int)(100 * MainV2.cs.multiplierdist);

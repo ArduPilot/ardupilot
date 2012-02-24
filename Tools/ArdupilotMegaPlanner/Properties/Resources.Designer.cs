@@ -214,6 +214,20 @@ namespace ArdupilotMega.Properties {
             }
         }
         
+        public static System.Drawing.Bitmap iconWarning32 {
+            get {
+                object obj = ResourceManager.GetObject("iconWarning32", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        public static System.Drawing.Bitmap iconWarning48 {
+            get {
+                object obj = ResourceManager.GetObject("iconWarning48", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
         public static System.Drawing.Bitmap octo {
             get {
                 object obj = ResourceManager.GetObject("octo", resourceCulture);
