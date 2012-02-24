@@ -104,6 +104,10 @@ void setup() {
 	ofs.z += 1.3;
 	compass.set_offsets(ofs);
 	compass.save_offsets();
+	Serial.printf_P(PSTR("Compass: %f %f %f\n"),
+					ofs.x, ofs.y, ofs.z);
+
+	test_vector3f();
 
 	// full testing of all variables
 	AP_Param::ParamToken token;
@@ -122,15 +126,47 @@ void loop()
 {
 }
 
+// test vector3f handling
+void test_vector3f(void)
+{
+	enum ap_var_type type;
+
+	AP_Float *f;
+	AP_Vector3f *v;
+	Vector3f vec;
+
+	v = (AP_Vector3f *)AP_Param::find("COMPASS_OFS", &type);
+
+	f = (AP_Float *)AP_Param::find("COMPASS_OFS_X", &type);
+	f->set_and_save(10);
+	f = (AP_Float *)AP_Param::find("COMPASS_OFS_Y", &type);
+	f->set_and_save(11);
+	f = (AP_Float *)AP_Param::find("COMPASS_OFS_Z", &type);
+	f->set_and_save(12);
+
+	v->load();
+
+	vec = *v;
+	Serial.printf_P(PSTR("vec %f %f %f\n"),
+					vec.x, vec.y, vec.z);
+
+	if (vec.x != 10 ||
+		vec.y != 11 ||
+		vec.z != 12) {
+		Serial.printf_P(PSTR("wrong value for compass vector\n"));
+	}
+}
+
+
 // test all interfaces for a variable
 void test_variable(AP_Param *ap, enum ap_var_type type)
 {
-	static uint8_t value;
+	static int8_t value;
 	char s[AP_MAX_NAME_SIZE+1];
 
 	value++;
 
-	ap->copy_name(s, sizeof(s));
+	ap->copy_name(s, sizeof(s), type==AP_PARAM_FLOAT);
 	Serial.printf_P(PSTR("Testing variable '%s' of type %u\n"),
 					s, type);
 	enum ap_var_type type2;
@@ -156,7 +192,7 @@ void test_variable(AP_Param *ap, enum ap_var_type type)
 			Debug("failed load");
 		}
 		if (v->get() != value) {
-			Debug("wrong value %u %u", (unsigned)v->get(), value);
+			Debug("wrong value %d %d", (int)v->get(), (int)value);
 		}
 		if (!v->set_and_save(value+1)) {
 			Debug("failed set_and_save");
