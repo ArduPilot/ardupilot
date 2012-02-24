@@ -62,8 +62,13 @@ get_stabilize_yaw(int32_t target_angle)
 	// angle error
 	target_angle 		= wrap_180(target_angle - dcm.yaw_sensor);
 
+#if FRAME_CONFIG == HELI_FRAME  // cannot use rate control for helicopters
+	// limit the error we're feeding to the PID
+	target_angle 		= constrain(target_angle, -4500, 4500);
+#else
 	// limit the error we're feeding to the PID
 	target_angle 		= constrain(target_angle, -2000, 2000);
+#endif
 
 	// conver to desired Rate:
 	int32_t target_rate = g.pi_stabilize_yaw.get_p(target_angle);
