@@ -483,9 +483,7 @@ AP_DCM::euler_angles(void)
 	pitch 		= safe_asin((_accel_vector.x) / (double)9.81); // asin(acc_x)
 	yaw 			= 0;
 	#else
-	pitch		= -safe_asin(_dcm_matrix.c.x);
-	roll 		= atan2(_dcm_matrix.c.y, _dcm_matrix.c.z);
-	yaw 		= atan2(_dcm_matrix.b.x, _dcm_matrix.a.x);
+	calculate_euler_angles(_dcm_matrix, &roll, &pitch, &yaw);
 	#endif
 
 	roll_sensor 	= degrees(roll)  * 100;
@@ -500,8 +498,7 @@ void
 AP_DCM::euler_rp(void)
 {
 	check_matrix();
-	pitch 			= -safe_asin(_dcm_matrix.c.x);
-	roll 			= atan2(_dcm_matrix.c.y, _dcm_matrix.c.z);
+	calculate_euler_angles(_dcm_matrix, &roll, &pitch, NULL);
 	roll_sensor 	= roll * DEGX100;	//degrees(roll)  * 100;
 	pitch_sensor 	= pitch * DEGX100; //degrees(pitch) * 100;
 }
@@ -509,7 +506,7 @@ AP_DCM::euler_rp(void)
 void
 AP_DCM::euler_yaw(void)
 {
-	yaw 			= atan2(_dcm_matrix.b.x, _dcm_matrix.a.x);
+	calculate_euler_angles(_dcm_matrix, NULL, NULL, &yaw);
 	yaw_sensor 		= yaw * DEGX100; //degrees(yaw)   * 100;
 
 	if (yaw_sensor < 0)
