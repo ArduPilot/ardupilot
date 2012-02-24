@@ -64,15 +64,18 @@
             this.label12 = new System.Windows.Forms.Label();
             this.BUT_savesettings = new ArdupilotMega.MyButton();
             this.BUT_getcurrent = new ArdupilotMega.MyButton();
-            this.lbl_status = new ArdupilotMega.MyLabel();
+            this.lbl_status = new System.Windows.Forms.Label();
             this.BUT_upload = new ArdupilotMega.MyButton();
+            this.BUT_syncS2 = new ArdupilotMega.MyButton();
+            this.BUT_syncS3 = new ArdupilotMega.MyButton();
+            this.BUT_syncS5 = new ArdupilotMega.MyButton();
             this.SuspendLayout();
             // 
             // Progressbar
             // 
             this.Progressbar.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left) 
             | System.Windows.Forms.AnchorStyles.Right)));
-            this.Progressbar.Location = new System.Drawing.Point(12, 368);
+            this.Progressbar.Location = new System.Drawing.Point(12, 402);
             this.Progressbar.Name = "Progressbar";
             this.Progressbar.Size = new System.Drawing.Size(294, 36);
             this.Progressbar.TabIndex = 2;
@@ -90,7 +93,7 @@
             "4",
             "2",
             "1"});
-            this.S1.Location = new System.Drawing.Point(87, 103);
+            this.S1.Location = new System.Drawing.Point(87, 141);
             this.S1.Name = "S1";
             this.S1.Size = new System.Drawing.Size(80, 21);
             this.S1.TabIndex = 4;
@@ -99,7 +102,7 @@
             // label1
             // 
             this.label1.AutoSize = true;
-            this.label1.Location = new System.Drawing.Point(15, 111);
+            this.label1.Location = new System.Drawing.Point(15, 149);
             this.label1.Name = "label1";
             this.label1.Size = new System.Drawing.Size(32, 13);
             this.label1.TabIndex = 5;
@@ -107,7 +110,7 @@
             // 
             // S0
             // 
-            this.S0.Location = new System.Drawing.Point(87, 77);
+            this.S0.Location = new System.Drawing.Point(87, 115);
             this.S0.Name = "S0";
             this.S0.ReadOnly = true;
             this.S0.Size = new System.Drawing.Size(80, 20);
@@ -116,7 +119,7 @@
             // label2
             // 
             this.label2.AutoSize = true;
-            this.label2.Location = new System.Drawing.Point(15, 84);
+            this.label2.Location = new System.Drawing.Point(15, 122);
             this.label2.Name = "label2";
             this.label2.Size = new System.Drawing.Size(39, 13);
             this.label2.TabIndex = 8;
@@ -125,7 +128,7 @@
             // label3
             // 
             this.label3.AutoSize = true;
-            this.label3.Location = new System.Drawing.Point(15, 138);
+            this.label3.Location = new System.Drawing.Point(15, 176);
             this.label3.Name = "label3";
             this.label3.Size = new System.Drawing.Size(53, 13);
             this.label3.TabIndex = 10;
@@ -142,7 +145,7 @@
             "64",
             "32",
             "16"});
-            this.S2.Location = new System.Drawing.Point(87, 130);
+            this.S2.Location = new System.Drawing.Point(87, 168);
             this.S2.Name = "S2";
             this.S2.Size = new System.Drawing.Size(80, 21);
             this.S2.TabIndex = 9;
@@ -151,7 +154,7 @@
             // label4
             // 
             this.label4.AutoSize = true;
-            this.label4.Location = new System.Drawing.Point(15, 165);
+            this.label4.Location = new System.Drawing.Point(15, 203);
             this.label4.Name = "label4";
             this.label4.Size = new System.Drawing.Size(38, 13);
             this.label4.TabIndex = 12;
@@ -191,7 +194,7 @@
             "28",
             "29",
             "30"});
-            this.S3.Location = new System.Drawing.Point(87, 157);
+            this.S3.Location = new System.Drawing.Point(87, 195);
             this.S3.Name = "S3";
             this.S3.Size = new System.Drawing.Size(80, 21);
             this.S3.TabIndex = 11;
@@ -200,7 +203,7 @@
             // label5
             // 
             this.label5.AutoSize = true;
-            this.label5.Location = new System.Drawing.Point(15, 192);
+            this.label5.Location = new System.Drawing.Point(15, 230);
             this.label5.Name = "label5";
             this.label5.Size = new System.Drawing.Size(52, 13);
             this.label5.TabIndex = 14;
@@ -231,7 +234,7 @@
             "18",
             "19",
             "20"});
-            this.S4.Location = new System.Drawing.Point(87, 184);
+            this.S4.Location = new System.Drawing.Point(87, 222);
             this.S4.Name = "S4";
             this.S4.Size = new System.Drawing.Size(80, 21);
             this.S4.TabIndex = 13;
@@ -240,7 +243,7 @@
             // label6
             // 
             this.label6.AutoSize = true;
-            this.label6.Location = new System.Drawing.Point(15, 219);
+            this.label6.Location = new System.Drawing.Point(15, 257);
             this.label6.Name = "label6";
             this.label6.Size = new System.Drawing.Size(28, 13);
             this.label6.TabIndex = 16;
@@ -248,7 +251,7 @@
             // 
             // S5
             // 
-            this.S5.Location = new System.Drawing.Point(87, 211);
+            this.S5.Location = new System.Drawing.Point(87, 249);
             this.S5.Name = "S5";
             this.S5.Size = new System.Drawing.Size(80, 21);
             this.S5.TabIndex = 15;
@@ -257,7 +260,7 @@
             // label7
             // 
             this.label7.AutoSize = true;
-            this.label7.Location = new System.Drawing.Point(15, 246);
+            this.label7.Location = new System.Drawing.Point(15, 284);
             this.label7.Name = "label7";
             this.label7.Size = new System.Drawing.Size(44, 13);
             this.label7.TabIndex = 18;
@@ -265,7 +268,7 @@
             // 
             // S6
             // 
-            this.S6.Location = new System.Drawing.Point(87, 238);
+            this.S6.Location = new System.Drawing.Point(87, 276);
             this.S6.Name = "S6";
             this.S6.Size = new System.Drawing.Size(80, 21);
             this.S6.TabIndex = 17;
@@ -274,7 +277,7 @@
             // label8
             // 
             this.label8.AutoSize = true;
-            this.label8.Location = new System.Drawing.Point(15, 273);
+            this.label8.Location = new System.Drawing.Point(15, 311);
             this.label8.Name = "label8";
             this.label8.Size = new System.Drawing.Size(68, 13);
             this.label8.TabIndex = 20;
@@ -282,7 +285,7 @@
             // 
             // S7
             // 
-            this.S7.Location = new System.Drawing.Point(87, 265);
+            this.S7.Location = new System.Drawing.Point(87, 303);
             this.S7.Name = "S7";
             this.S7.Size = new System.Drawing.Size(80, 21);
             this.S7.TabIndex = 19;
@@ -290,7 +293,7 @@
             // 
             // RS7
             // 
-            this.RS7.Location = new System.Drawing.Point(201, 265);
+            this.RS7.Location = new System.Drawing.Point(201, 303);
             this.RS7.Name = "RS7";
             this.RS7.Size = new System.Drawing.Size(80, 21);
             this.RS7.TabIndex = 29;
@@ -298,7 +301,7 @@
             // 
             // RS6
             // 
-            this.RS6.Location = new System.Drawing.Point(201, 238);
+            this.RS6.Location = new System.Drawing.Point(201, 276);
             this.RS6.Name = "RS6";
             this.RS6.Size = new System.Drawing.Size(80, 21);
             this.RS6.TabIndex = 28;
@@ -306,7 +309,7 @@
             // 
             // RS5
             // 
-            this.RS5.Location = new System.Drawing.Point(201, 211);
+            this.RS5.Location = new System.Drawing.Point(201, 249);
             this.RS5.Name = "RS5";
             this.RS5.Size = new System.Drawing.Size(80, 21);
             this.RS5.TabIndex = 27;
@@ -337,7 +340,7 @@
             "18",
             "19",
             "20"});
-            this.RS4.Location = new System.Drawing.Point(201, 184);
+            this.RS4.Location = new System.Drawing.Point(201, 222);
             this.RS4.Name = "RS4";
             this.RS4.Size = new System.Drawing.Size(80, 21);
             this.RS4.TabIndex = 26;
@@ -377,7 +380,7 @@
             "28",
             "29",
             "30"});
-            this.RS3.Location = new System.Drawing.Point(201, 157);
+            this.RS3.Location = new System.Drawing.Point(201, 195);
             this.RS3.Name = "RS3";
             this.RS3.Size = new System.Drawing.Size(80, 21);
             this.RS3.TabIndex = 25;
@@ -394,7 +397,7 @@
             "64",
             "32",
             "16"});
-            this.RS2.Location = new System.Drawing.Point(201, 130);
+            this.RS2.Location = new System.Drawing.Point(201, 168);
             this.RS2.Name = "RS2";
             this.RS2.Size = new System.Drawing.Size(80, 21);
             this.RS2.TabIndex = 24;
@@ -413,7 +416,7 @@
             "4",
             "2",
             "1"});
-            this.RS1.Location = new System.Drawing.Point(201, 103);
+            this.RS1.Location = new System.Drawing.Point(201, 141);
             this.RS1.Name = "RS1";
             this.RS1.Size = new System.Drawing.Size(80, 21);
             this.RS1.TabIndex = 22;
@@ -421,7 +424,7 @@
             // 
             // RS0
             // 
-            this.RS0.Location = new System.Drawing.Point(201, 77);
+            this.RS0.Location = new System.Drawing.Point(201, 115);
             this.RS0.Name = "RS0";
             this.RS0.ReadOnly = true;
             this.RS0.Size = new System.Drawing.Size(80, 20);
@@ -464,9 +467,10 @@
             // RSSI
             // 
             this.RSSI.Location = new System.Drawing.Point(87, 51);
+            this.RSSI.Multiline = true;
             this.RSSI.Name = "RSSI";
             this.RSSI.ReadOnly = true;
-            this.RSSI.Size = new System.Drawing.Size(194, 20);
+            this.RSSI.Size = new System.Drawing.Size(194, 58);
             this.RSSI.TabIndex = 34;
             // 
             // label11
@@ -489,7 +493,7 @@
             // 
             // BUT_savesettings
             // 
-            this.BUT_savesettings.Location = new System.Drawing.Point(99, 292);
+            this.BUT_savesettings.Location = new System.Drawing.Point(99, 330);
             this.BUT_savesettings.Name = "BUT_savesettings";
             this.BUT_savesettings.Size = new System.Drawing.Size(75, 39);
             this.BUT_savesettings.TabIndex = 21;
@@ -499,7 +503,7 @@
             // 
             // BUT_getcurrent
             // 
-            this.BUT_getcurrent.Location = new System.Drawing.Point(18, 292);
+            this.BUT_getcurrent.Location = new System.Drawing.Point(18, 330);
             this.BUT_getcurrent.Name = "BUT_getcurrent";
             this.BUT_getcurrent.Size = new System.Drawing.Size(75, 39);
             this.BUT_getcurrent.TabIndex = 6;
@@ -511,16 +515,15 @@
             // 
             this.lbl_status.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left) 
             | System.Windows.Forms.AnchorStyles.Right)));
-            this.lbl_status.BackColor = System.Drawing.SystemColors.ActiveCaption;
-            this.lbl_status.Location = new System.Drawing.Point(12, 340);
+            this.lbl_status.BackColor = System.Drawing.Color.Transparent;
+            this.lbl_status.Location = new System.Drawing.Point(12, 374);
             this.lbl_status.Name = "lbl_status";
-            this.lbl_status.resize = false;
             this.lbl_status.Size = new System.Drawing.Size(294, 22);
             this.lbl_status.TabIndex = 3;
             // 
             // BUT_upload
             // 
-            this.BUT_upload.Location = new System.Drawing.Point(180, 292);
+            this.BUT_upload.Location = new System.Drawing.Point(180, 330);
             this.BUT_upload.Name = "BUT_upload";
             this.BUT_upload.Size = new System.Drawing.Size(127, 39);
             this.BUT_upload.TabIndex = 0;
@@ -528,11 +531,44 @@
             this.BUT_upload.UseVisualStyleBackColor = true;
             this.BUT_upload.Click += new System.EventHandler(this.BUT_upload_Click);
             // 
+            // BUT_syncS2
+            // 
+            this.BUT_syncS2.Location = new System.Drawing.Point(173, 168);
+            this.BUT_syncS2.Name = "BUT_syncS2";
+            this.BUT_syncS2.Size = new System.Drawing.Size(22, 23);
+            this.BUT_syncS2.TabIndex = 38;
+            this.BUT_syncS2.Text = ">";
+            this.BUT_syncS2.UseVisualStyleBackColor = true;
+            this.BUT_syncS2.Click += new System.EventHandler(this.BUT_syncS2_Click);
+            // 
+            // BUT_syncS3
+            // 
+            this.BUT_syncS3.Location = new System.Drawing.Point(173, 195);
+            this.BUT_syncS3.Name = "BUT_syncS3";
+            this.BUT_syncS3.Size = new System.Drawing.Size(22, 23);
+            this.BUT_syncS3.TabIndex = 39;
+            this.BUT_syncS3.Text = ">";
+            this.BUT_syncS3.UseVisualStyleBackColor = true;
+            this.BUT_syncS3.Click += new System.EventHandler(this.BUT_syncS3_Click);
+            // 
+            // BUT_syncS5
+            // 
+            this.BUT_syncS5.Location = new System.Drawing.Point(173, 247);
+            this.BUT_syncS5.Name = "BUT_syncS5";
+            this.BUT_syncS5.Size = new System.Drawing.Size(22, 23);
+            this.BUT_syncS5.TabIndex = 40;
+            this.BUT_syncS5.Text = ">";
+            this.BUT_syncS5.UseVisualStyleBackColor = true;
+            this.BUT_syncS5.Click += new System.EventHandler(this.BUT_syncS5_Click);
+            // 
             // _3DRradio
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(318, 416);
+            this.ClientSize = new System.Drawing.Size(318, 444);
+            this.Controls.Add(this.BUT_syncS5);
+            this.Controls.Add(this.BUT_syncS3);
+            this.Controls.Add(this.BUT_syncS2);
             this.Controls.Add(this.label12);
             this.Controls.Add(this.label11);
             this.Controls.Add(this.RSSI);
@@ -569,7 +605,9 @@
             this.Controls.Add(this.lbl_status);
             this.Controls.Add(this.Progressbar);
             this.Controls.Add(this.BUT_upload);
-            this.MinimumSize = new System.Drawing.Size(334, 454);
+            this.MaximizeBox = false;
+            this.MinimizeBox = false;
+            this.MinimumSize = new System.Drawing.Size(334, 482);
             this.Name = "_3DRradio";
             this.Text = "3DRradio";
             this.ResumeLayout(false);
@@ -581,7 +619,7 @@
 
         private MyButton BUT_upload;
         private System.Windows.Forms.ProgressBar Progressbar;
-        private MyLabel lbl_status;
+        private System.Windows.Forms.Label lbl_status;
         private System.Windows.Forms.ComboBox S1;
         private System.Windows.Forms.Label label1;
         private MyButton BUT_getcurrent;
@@ -616,5 +654,8 @@
         private System.Windows.Forms.TextBox RSSI;
         private System.Windows.Forms.Label label11;
         private System.Windows.Forms.Label label12;
+        private MyButton BUT_syncS2;
+        private MyButton BUT_syncS3;
+        private MyButton BUT_syncS5;
     }
 }

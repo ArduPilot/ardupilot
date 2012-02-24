@@ -285,6 +285,14 @@ namespace ArdupilotMega
 
                 if (getparams)
                     getParamListBG();
+
+                if (frmProgressReporter.doWorkArgs.CancelAcknowledged == true)
+                {
+                    MainV2.givecomport = false;
+                    if (BaseStream.IsOpen)
+                        BaseStream.Close();
+                    return;
+                }
             }
             catch (Exception e)
             {
@@ -592,7 +600,7 @@ namespace ArdupilotMega
         private Hashtable getParamListBG()
         {
             MainV2.givecomport = true;
-            List<int> missed = new List<int>();
+            List<int> got = new List<int>();
 
             // clear old
             param = new Hashtable();
@@ -611,8 +619,8 @@ namespace ArdupilotMega
 
             DateTime start = DateTime.Now;
             DateTime restart = DateTime.Now;
-           
-            while (param_count < param_total)
+
+            while (got.Count < param_total)
             {
 
                 if (frmProgressReporter.doWorkArgs.CancelRequested)
@@ -634,7 +642,7 @@ namespace ArdupilotMega
                         continue;
                     }
                     MainV2.givecomport = false;
-                    throw new Exception("Timeout on read - getParamList");
+                    throw new Exception("Timeout on read - getParamList " + param_count +" "+ param_total);
                 }
 
                 byte[] buffer = readPacket();
@@ -662,7 +670,9 @@ namespace ArdupilotMega
                         }
 
                         // check if we already have it
-                        if (param.ContainsKey(paramID)) {
+                        if (got.Contains(par.param_index))
+                        {
+                            //Console.WriteLine("Already got '"+paramID+"'");
                             continue;
                         }
 
@@ -671,10 +681,11 @@ namespace ArdupilotMega
                         modifyParamForDisplay(true, paramID, ref par.param_value);
                         param[paramID] = (par.param_value);
                         param_count++;
+                        got.Add(par.param_index);
 
 //                        if (Progress != null)
 //                            Progress((param.Count * 100) / param_total, "Got param " + paramID);
-                        this.frmProgressReporter.UpdateProgressAndStatus((param.Count * 100) / param_total, "Got param " + paramID);
+                        this.frmProgressReporter.UpdateProgressAndStatus((got.Count * 100) / param_total, "Got param " + paramID);
                     }
                     else
                     {
@@ -685,11 +696,11 @@ namespace ArdupilotMega
                 }
             }
 
-            if (param.Count != param_total)
+            if (got.Count != param_total)
             {
                 if (retrys > 0)
                 {
-                    this.frmProgressReporter.UpdateProgressAndStatus((param.Count * 100) / param_total, "Getting missed params");
+                    this.frmProgressReporter.UpdateProgressAndStatus((got.Count * 100) / param_total, "Getting missed params");
                     retrys--;
                     goto goagain;
                 }

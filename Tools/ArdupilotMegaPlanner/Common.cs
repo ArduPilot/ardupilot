@@ -12,6 +12,8 @@ using GMap.NET;
 using GMap.NET.WindowsForms;
 using GMap.NET.WindowsForms.Markers;
 
+using System.Security.Cryptography.X509Certificates;
+
 using System.Net;
 using System.Net.Sockets;
 using System.Xml; // config file
@@ -267,6 +269,15 @@ namespace ArdupilotMega
         }
     }
 
+    class NoCheckCertificatePolicy : ICertificatePolicy
+    {
+        public bool CheckValidationResult(ServicePoint srvPoint, X509Certificate certificate, WebRequest request, int certificateProblem)
+        {
+            return true;
+        }
+    } 
+
+
     public class Common
     {
         public enum distances
@@ -490,10 +501,15 @@ namespace ArdupilotMega
             return true;
         }		
 		#endif
+
+
         
         public static bool getFilefromNet(string url,string saveto) {
             try
             {
+                // this is for mono to a ssl server
+                ServicePointManager.CertificatePolicy = new NoCheckCertificatePolicy(); 
+
                 // Create a request using a URL that can receive a post. 
                 WebRequest request = WebRequest.Create(url);
                 request.Timeout = 5000;
@@ -535,7 +551,7 @@ namespace ArdupilotMega
 
                 return true;
             }
-            catch { return false; }
+            catch (Exception ex) { Console.WriteLine("getFilefromNet(): " + ex.ToString()); return false; }
         }
 
         public static Type getModes()

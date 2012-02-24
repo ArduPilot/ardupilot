@@ -249,10 +249,18 @@ namespace ArdupilotMega
         {
             string[] devs = new string[0];
 
+
+            Console.WriteLine("Get Comports");
+
             if (MONO)
             {
                 if (Directory.Exists("/dev/"))
+                {
+                    if (Directory.Exists("/dev/serial/by-id/"))
+                        devs = Directory.GetFiles("/dev/serial/by-id/","*usb*");
                     devs = Directory.GetFiles("/dev/", "*ACM*");
+                    devs = Directory.GetFiles("/dev/", "ttyUSB*");
+                }
             }
 
             string[] ports = SerialPort.GetPortNames();
@@ -2136,6 +2144,11 @@ namespace ArdupilotMega
                     comPort.BaseStream.BaudRate = baud;
             }
             catch (Exception) { }
+        }
+
+        private void CMB_serialport_Enter(object sender, EventArgs e)
+        {
+            CMB_serialport_Click(sender, e);
         }
     }
 }
