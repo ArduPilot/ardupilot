@@ -70,6 +70,7 @@ static struct tcp_state {
 	int listen_fd;  // socket we are listening on
 	int fd;         // data socket
 	int serial_port;
+	bool console;
 } tcp_state[FS_MAX_PORTS];
 
 
@@ -84,6 +85,17 @@ static void tcp_start_connection(unsigned int serial_port, bool wait_for_connect
 	int one=1;
 	struct sockaddr_in sockaddr;
 	int ret;
+
+	if (desktop_state.console_mode) {
+		// hack for console access
+		s->connected = true;
+		s->listen_fd = -1;
+		s->fd = 1;
+		s->serial_port = serial_port;
+		s->console = true;
+		set_nonblocking(0);
+		return;
+	}
 
 	s->serial_port = serial_port;
 
@@ -291,6 +303,10 @@ int FastSerial::read(void)
 		return -1;
 	}
 
+	if (s->console) {
+		return ::read(0, &c, 1);
+	}
+
     int n = recv(s->fd, &c, 1, MSG_DONTWAIT | MSG_NOSIGNAL);
 	if (n <= 0) {
 		// the socket has reached EOF
@@ -326,7 +342,11 @@ void FastSerial::write(uint8_t c)
 	if (!desktop_state.slider) {
 		flags |= MSG_DONTWAIT;
 	}
-	send(s->fd, &c, 1, flags);
+	if (s->console) {
+		::write(s->fd, &c, 1);
+	} else {
+		send(s->fd, &c, 1, flags);
+	}
 }
 
 // Buffer management ///////////////////////////////////////////////////////////
