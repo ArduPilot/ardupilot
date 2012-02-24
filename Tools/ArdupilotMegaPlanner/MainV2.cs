@@ -125,8 +125,8 @@ namespace ArdupilotMega
             CMB_serialport.Items.Add("UDP");
             if (CMB_serialport.Items.Count > 0)
             {
-                CMB_serialport.SelectedIndex = 0;
                 CMB_baudrate.SelectedIndex = 7;
+                CMB_serialport.SelectedIndex = 0;
             }
 
             splash.Refresh();
@@ -1941,6 +1941,13 @@ namespace ArdupilotMega
             if (keyData == (Keys.Control | Keys.G)) // test
             {
                 Form frm = new SerialOutput();
+                fixtheme(frm);
+                frm.Show();
+                return true;
+            }
+            if (keyData == (Keys.Control | Keys.A)) // test
+            {
+                Form frm = new _3DRradio();
                 fixtheme(frm);
                 frm.Show();
                 return true;

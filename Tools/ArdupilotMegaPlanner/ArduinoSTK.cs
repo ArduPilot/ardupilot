@@ -257,6 +257,7 @@ namespace ArdupilotMega
 
             return sync();
         }
+
         /// <summary>
         /// Upload data at preset address
         /// </summary>
