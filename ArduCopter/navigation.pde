@@ -101,33 +101,37 @@ static void calc_location_error(struct Location *next_loc)
 #define NAV_ERR_MAX 600
 static void calc_loiter(int x_error, int y_error)
 {
-	// East/West
-	int16_t x_target_speed 	= g.pi_loiter_lon.get_p(x_error);
-	x_target_speed			= constrain(x_error, -250, 250);
+	int16_t x_target_speed, y_target_speed;
+	int16_t x_iterm, y_iterm;
+
+	// East / West
+	x_target_speed 	= g.pi_loiter_lon.get_p(x_error);			// not contstrained yet
+	x_target_speed	= constrain(x_target_speed, -250, 250);		// limit to 2.5m/s travel speed
+	x_rate_error 	= x_target_speed - x_actual_speed;			// calc the speed error
+	nav_lon			= g.pid_loiter_rate_lon.get_pid(x_rate_error, dTnav);
+	nav_lon			= constrain(nav_lon, -3000, 3000); 			// 30°
+
+	// North / South
+	y_target_speed 	= g.pi_loiter_lat.get_p(y_error);
+	y_target_speed	= constrain(y_target_speed, -250, 250);
+	y_rate_error 	= y_target_speed - y_actual_speed;
+	nav_lat			= g.pid_loiter_rate_lat.get_pid(y_rate_error, dTnav);
+	nav_lat			= constrain(nav_lat, -3000, 3000); // 30°
+
+	// copy over I term to Nav_Rate
+	g.pid_nav_lon.set_integrator(g.pid_loiter_rate_lon.get_integrator());
+	g.pid_nav_lat.set_integrator(g.pid_loiter_rate_lat.get_integrator());
+
+	// Wind I term based on location error,
 	// limit windup
-	x_error 				= constrain(x_error, -NAV_ERR_MAX, NAV_ERR_MAX);
-	int16_t x_iterm 		= g.pi_loiter_lon.get_i(x_error, dTnav);
-	x_rate_error 			= x_target_speed - x_actual_speed;
-
-	// North/South
-	int16_t y_target_speed 	= g.pi_loiter_lat.get_p(y_error);
-	y_target_speed			= constrain(y_error, -250, 250);
-	// limit windup
-	y_error 				= constrain(y_error, -NAV_ERR_MAX, NAV_ERR_MAX);
-	int16_t y_iterm 		= g.pi_loiter_lat.get_i(y_error, dTnav);
-	y_rate_error 			= y_target_speed - y_actual_speed;
-
-	//nav_lon			= g.pid_loiter_rate_lon.get_pid(x_rate_error, dTnav);
-	//nav_lat			= g.pid_loiter_rate_lat.get_pid(y_rate_error, dTnav);
-	nav_lon				= g.pid_nav_lon.get_pid(x_rate_error, dTnav);
-	nav_lat				= g.pid_nav_lat.get_pid(y_rate_error, dTnav);
-	nav_lon				= constrain(nav_lon, -3000, 3000);
-	nav_lat				= constrain(nav_lat, -3000, 3000);
-
-	nav_lat					= nav_lat + y_iterm;
-	nav_lon					= nav_lon + x_iterm;
-
-
+	/*
+	x_error 		= constrain(x_error, -NAV_ERR_MAX, NAV_ERR_MAX);
+	y_error 		= constrain(y_error, -NAV_ERR_MAX, NAV_ERR_MAX);
+	x_iterm 		= g.pi_loiter_lon.get_i(x_error, dTnav);
+	y_iterm 		= g.pi_loiter_lat.get_i(y_error, dTnav);
+	nav_lat			= nav_lat + y_iterm;
+	nav_lon			= nav_lon + x_iterm;
+	*/
 
 	/*
 	int8_t ttt = 1.0/dTnav;
@@ -170,24 +174,31 @@ static void calc_nav_rate(int max_speed)
 	update_crosstrack();
 
 	// nav_bearing includes crosstrack
-	float temp 			= (9000l - nav_bearing) * RADX100;
+	float temp 		= (9000l - nav_bearing) * RADX100;
 
-	x_rate_error 		= (cos(temp) * max_speed) - x_actual_speed; // 413
-	x_rate_error 		= constrain(x_rate_error, -1000, 1000);
-	int16_t x_iterm 	= g.pi_loiter_lon.get_i(x_rate_error, dTnav);
+	// East / West
+	x_rate_error 	= (cos(temp) * max_speed) - x_actual_speed; // 413
+	x_rate_error 	= constrain(x_rate_error, -1000, 1000);
+	nav_lon			= g.pid_nav_lon.get_pid(x_rate_error, dTnav);
+	nav_lon			= constrain(nav_lon, -3000, 3000);
 
-	y_rate_error 		= (sin(temp) * max_speed) - y_actual_speed; // 413
-	y_rate_error 		= constrain(y_rate_error, -1000, 1000);	// added a rate error limit to keep pitching down to a minimum
-	int16_t y_iterm 	= g.pi_loiter_lat.get_i(y_rate_error, dTnav);
+	// North / South
+	y_rate_error 	= (sin(temp) * max_speed) - y_actual_speed; // 413
+	y_rate_error 	= constrain(y_rate_error, -1000, 1000);	// added a rate error limit to keep pitching down to a minimum
+	nav_lat			= g.pid_nav_lat.get_pid(y_rate_error, dTnav);
+	nav_lat			= constrain(nav_lat, -3000, 3000);
 
-	nav_lon				= g.pid_nav_lon.get_pid(x_rate_error, dTnav);
-	nav_lat				= g.pid_nav_lat.get_pid(y_rate_error, dTnav);
+	// copy over I term to Loiter_Rate
+	g.pid_loiter_rate_lon.set_integrator(g.pid_nav_lon.get_integrator());
+	g.pid_loiter_rate_lat.set_integrator(g.pid_nav_lat.get_integrator());
 
-	nav_lon				= constrain(nav_lon, -3000, 3000);
-	nav_lat				= constrain(nav_lat, -3000, 3000);
+	//int16_t x_iterm 	= g.pi_loiter_lon.get_i(x_rate_error, dTnav);
+	//int16_t y_iterm 	= g.pi_loiter_lat.get_i(y_rate_error, dTnav);
 
-	nav_lon				= nav_lon + x_iterm;
-	nav_lat				= nav_lat + y_iterm;
+	//nav_lon				= nav_lon + x_iterm;
+	//nav_lat				= nav_lat + y_iterm;
+
+
 
 	/*
 	Serial.printf("max_sp %d,\t x_sp %d, y_sp %d,\t x_re: %d, y_re: %d, \tnav_lon: %d, nav_lat: %d, Xi:%d, Yi:%d, \t XE %d \n",
