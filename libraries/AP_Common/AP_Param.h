@@ -78,6 +78,7 @@ public:
     typedef struct {
         uint8_t key;
         uint8_t group_element;
+        uint8_t idx; // offset into array types
     } ParamToken;
 
     // called once at startup to setup the _var_info[] table. This
@@ -98,7 +99,7 @@ public:
     /// @param	buffer			The destination buffer
     /// @param	bufferSize		Total size of the destination buffer.
     ///
-    void copy_name(char *buffer, size_t bufferSize);
+    void copy_name(char *buffer, size_t bufferSize, bool force_scalar=false);
 
     /// Find a variable by name.
     ///
@@ -191,15 +192,18 @@ private:
                                            uint8_t group_base,
                                            uint8_t group_shift,
                                            uint8_t *group_element,
-                                           const struct GroupInfo **group_ret);
+                                           const struct GroupInfo **group_ret,
+                                           uint8_t *idx);
     const struct Info *find_var_info(uint8_t *group_element,
-                                     const struct GroupInfo **group_ret);
+                                     const struct GroupInfo **group_ret,
+                                     uint8_t *idx);
     static const struct Info *find_by_header_group(struct Param_header phdr, void **ptr,
                                                    uint8_t vindex,
                                                    const struct GroupInfo *group_info,
                                                    uint8_t group_base,
                                                    uint8_t group_shift);
     static const struct Info *find_by_header(struct Param_header phdr, void **ptr);
+    void add_vector3f_suffix(char *buffer, size_t buffer_size, uint8_t idx);
     static AP_Param *find_group(const char *name, uint8_t vindex, const struct GroupInfo *group_info, enum ap_var_type *ptype);
     static void write_sentinal(uint16_t ofs);
     bool scan(const struct Param_header *phdr, uint16_t *pofs);
