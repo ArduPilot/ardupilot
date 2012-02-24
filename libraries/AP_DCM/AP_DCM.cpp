@@ -215,34 +215,10 @@ AP_DCM::matrix_reset(bool recover_eulers)
 	// attitude then calculate the dcm matrix from the current
 	// roll/pitch/yaw values
 	if (recover_eulers && !isnan(roll) && !isnan(pitch) && !isnan(yaw)) {
-		float cp = cos(pitch);
-		float sp = sin(pitch);
-		float sr = sin(roll);
-		float cr = cos(roll);
-		float sy = sin(yaw);
-		float cy = cos(yaw);
-		//Serial.printf("setting DCM matrix to %f %f %f\n", ToDeg(roll), ToDeg(pitch), ToDeg(yaw));
-		_dcm_matrix.a.x = cp * cy;
-		_dcm_matrix.a.y = (sr * sp * cy) - (cr * sy);
-		_dcm_matrix.a.z = (cr * sp * cy) + (sr * sy);
-		_dcm_matrix.b.x = cp * sy;
-		_dcm_matrix.b.y = (sr * sp * sy) + (cr * cy);
-		_dcm_matrix.b.z = (cr * sp * sy) - (sr * cy);
-		_dcm_matrix.c.x = -sp;
-		_dcm_matrix.c.y = sr * cp;
-		_dcm_matrix.c.z = cr * cp;
+		rotation_matrix_from_euler(_dcm_matrix, roll, pitch, yaw);
 	} else {
 		// otherwise make it flat
-		//Serial.printf("zeroing DCM matrix\n");
-		_dcm_matrix.a.x = 1.0f;
-		_dcm_matrix.a.y = 0.0f;
-		_dcm_matrix.a.z = 0.0f;
-		_dcm_matrix.b.x = 0.0f;
-		_dcm_matrix.b.y = 1.0f;
-		_dcm_matrix.b.z = 0.0f;
-		_dcm_matrix.c.x = 0.0f;
-		_dcm_matrix.c.y = 0.0f;
-		_dcm_matrix.c.z = 1.0f;
+		rotation_matrix_from_euler(_dcm_matrix, 0, 0, 0);
 	}
 
 	if (_compass != NULL) {
