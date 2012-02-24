@@ -280,13 +280,15 @@ const struct AP_Param::Info *AP_Param::find_var_info_group(const struct GroupInf
                                                            uint8_t group_base,
                                                            uint8_t group_shift,
                                                            uint8_t *group_element,
-                                                           const struct GroupInfo **group_ret)
+                                                           const struct GroupInfo **group_ret,
+                                                           uint8_t *idx)
 {
     uintptr_t base = PGM_POINTER(&_var_info[vindex].ptr);
     uint8_t type;
     for (uint8_t i=0;
          (type=PGM_UINT8(&group_info[i].type)) != AP_PARAM_NONE;
          i++) {
+        uintptr_t ofs = PGM_POINTER(&group_info[i].offset);
         if (type == AP_PARAM_GROUP) {
             const struct GroupInfo *ginfo = (const struct GroupInfo *)PGM_POINTER(&group_info[i].group_info);
             // a nested group
@@ -300,11 +302,21 @@ const struct AP_Param::Info *AP_Param::find_var_info_group(const struct GroupInf
                                        GROUP_ID(group_info, group_base, i, group_shift),
                                        group_shift + _group_level_shift,
                                        group_element,
-                                       group_ret);
+                                       group_ret,
+                                       idx);
             if (info != NULL) {
                 return info;
             }
-        } else if ((uintptr_t)this == base + PGM_POINTER(&group_info[i].offset)) {
+        } else if ((uintptr_t)this == base + ofs) {
+            *group_element = GROUP_ID(group_info, group_base, i, group_shift);
+            *group_ret = &group_info[i];
+            *idx = 0;
+            return &_var_info[vindex];
+        } else if (type == AP_PARAM_VECTOR3F &&
+                   (base+ofs+sizeof(float) == (uintptr_t)this ||
+                    base+ofs+2*sizeof(float) == (uintptr_t)this)) {
+            // we are inside a Vector3f
+            *idx = (((uintptr_t)this) - (base+ofs))/sizeof(float);
             *group_element = GROUP_ID(group_info, group_base, i, group_shift);
             *group_ret = &group_info[i];
             return &_var_info[vindex];
@@ -315,7 +327,8 @@ const struct AP_Param::Info *AP_Param::find_var_info_group(const struct GroupInf
 
 // find the info structure for a variable
 const struct AP_Param::Info *AP_Param::find_var_info(uint8_t *group_element,
-                                                     const struct GroupInfo **group_ret)
+                                                     const struct GroupInfo **group_ret,
+                                                     uint8_t *idx)
 {
     for (uint8_t i=0; i<_num_vars; i++) {
         uint8_t type = PGM_UINT8(&_var_info[i].type);
@@ -323,11 +336,20 @@ const struct AP_Param::Info *AP_Param::find_var_info(uint8_t *group_element,
         if (type == AP_PARAM_GROUP) {
             const struct GroupInfo *group_info = (const struct GroupInfo *)PGM_POINTER(&_var_info[i].group_info);
             const struct AP_Param::Info *info;
-            info = find_var_info_group(group_info, i, 0, 0, group_element, group_ret);
+            info = find_var_info_group(group_info, i, 0, 0, group_element, group_ret, idx);
             if (info != NULL) {
                 return info;
             }
         } else if (base == (uintptr_t)this) {
+            *group_element = 0;
+            *group_ret = NULL;
+            *idx = 0;
+            return &_var_info[i];
+        } else if (type == AP_PARAM_VECTOR3F &&
+                   (base+sizeof(float) == (uintptr_t)this ||
+                    base+2*sizeof(float) == (uintptr_t)this)) {
+            // we are inside a Vector3f
+            *idx = (((uintptr_t)this) - base)/sizeof(float);
             *group_element = 0;
             *group_ret = NULL;
             return &_var_info[i];
@@ -395,15 +417,34 @@ bool AP_Param::scan(const AP_Param::Param_header *target, uint16_t *pofs)
     return false;
 }
 
+// add a X,Y,Z suffix to the name of a Vector3f element
+void AP_Param::add_vector3f_suffix(char *buffer, size_t buffer_size, uint8_t idx)
+{
+    uint8_t len = strnlen(buffer, buffer_size);
+    if ((size_t)(len+3) >= buffer_size) {
+        return;
+    }
+    buffer[len] = '_';
+    if (idx == 0) {
+        buffer[len+1] = 'X';
+    } else if (idx == 1) {
+        buffer[len+1] = 'Y';
+    } else if (idx == 2) {
+        buffer[len+1] = 'Z';
+    }
+    buffer[len+2] = 0;
+}
+
 // Copy the variable's whole name to the supplied buffer.
 //
 // If the variable is a group member, prepend the group name.
 //
-void AP_Param::copy_name(char *buffer, size_t buffer_size)
+void AP_Param::copy_name(char *buffer, size_t buffer_size, bool force_scalar)
 {
     uint8_t group_element;
     const struct GroupInfo *ginfo;
-    const struct AP_Param::Info *info = find_var_info(&group_element, &ginfo);
+    uint8_t idx;
+    const struct AP_Param::Info *info = find_var_info(&group_element, &ginfo, &idx);
     if (info == NULL) {
         *buffer = 0;
         serialDebug("no info found");
@@ -415,6 +456,12 @@ void AP_Param::copy_name(char *buffer, size_t buffer_size)
         if (len < buffer_size) {
             strncpy_P(&buffer[len], ginfo->name, buffer_size-len);
         }
+        if ((force_scalar || idx != 0) && AP_PARAM_VECTOR3F == PGM_UINT8(&ginfo->type)) {
+            // the caller wants a specific element in a Vector3f
+            add_vector3f_suffix(buffer, buffer_size, idx);
+        }
+    } else if ((force_scalar || idx != 0) && AP_PARAM_VECTOR3F == PGM_UINT8(&info->type)) {
+            add_vector3f_suffix(buffer, buffer_size, idx);
     }
 }
 
@@ -436,6 +483,25 @@ AP_Param::find_group(const char *name, uint8_t vindex, const struct GroupInfo *g
             uintptr_t p = PGM_POINTER(&_var_info[vindex].ptr);
             *ptype = (enum ap_var_type)type;
             return (AP_Param *)(p + PGM_POINTER(&group_info[i].offset));
+        } else if (type == AP_PARAM_VECTOR3F) {
+            // special case for finding Vector3f elements
+            uint8_t suffix_len = strlen_P(group_info[i].name);
+            if (strncmp_P(name, group_info[i].name, suffix_len) == 0 &&
+                name[suffix_len] == '_' &&
+                name[suffix_len+1] != 0 &&
+                name[suffix_len+2] == 0) {
+                uintptr_t p = PGM_POINTER(&_var_info[vindex].ptr);
+                AP_Float *v = (AP_Float *)(p + PGM_POINTER(&group_info[i].offset));
+                *ptype = AP_PARAM_FLOAT;
+                switch (name[suffix_len+1]) {
+                case 'X':
+                    return (AP_Float *)&v[0];
+                case 'Y':
+                    return (AP_Float *)&v[1];
+                case 'Z':
+                    return (AP_Float *)&v[2];
+                }
+            }
         }
     }
     return NULL;
@@ -470,7 +536,9 @@ bool AP_Param::save(void)
 {
     uint8_t group_element = 0;
     const struct GroupInfo *ginfo;
-    const struct AP_Param::Info *info = find_var_info(&group_element, &ginfo);
+    uint8_t idx;
+    const struct AP_Param::Info *info = find_var_info(&group_element, &ginfo, &idx);
+    const AP_Param *ap;
 
     if (info == NULL) {
         // we don't have any info on how to store it
@@ -488,11 +556,20 @@ bool AP_Param::save(void)
     phdr.key  = PGM_UINT8(&info->key);
     phdr.group_element = group_element;
 
+    ap = this;
+    if (phdr.type != AP_PARAM_VECTOR3F && idx != 0) {
+        // only vector3f can have non-zero idx for now
+        return false;
+    }
+    if (idx != 0) {
+        ap = (const AP_Param *)((uintptr_t)ap) - (idx*sizeof(float));
+    }
+
     // scan EEPROM to find the right location
     uint16_t ofs;
     if (scan(&phdr, &ofs)) {
         // found an existing copy of the variable
-        eeprom_write_check(this, ofs+sizeof(phdr), type_size((enum ap_var_type)phdr.type));
+        eeprom_write_check(ap, ofs+sizeof(phdr), type_size((enum ap_var_type)phdr.type));
         return true;
     }
     if (ofs == (uint16_t)~0) {
@@ -501,7 +578,7 @@ bool AP_Param::save(void)
 
     // write a new sentinal, then the data, then the header
     write_sentinal(ofs + sizeof(phdr) + type_size((enum ap_var_type)phdr.type));
-    eeprom_write_check(this, ofs+sizeof(phdr), type_size((enum ap_var_type)phdr.type));
+    eeprom_write_check(ap, ofs+sizeof(phdr), type_size((enum ap_var_type)phdr.type));
     eeprom_write_check(&phdr, ofs, sizeof(phdr));
     return true;
 }
@@ -512,7 +589,8 @@ bool AP_Param::load(void)
 {
     uint8_t group_element = 0;
     const struct GroupInfo *ginfo;
-    const struct AP_Param::Info *info = find_var_info(&group_element, &ginfo);
+    uint8_t idx;
+    const struct AP_Param::Info *info = find_var_info(&group_element, &ginfo, &idx);
     if (info == NULL) {
         // we don't have any info on how to load it
         return false;
@@ -579,6 +657,7 @@ AP_Param *AP_Param::first(ParamToken *token, enum ap_var_type *ptype)
 {
     token->key = 0;
     token->group_element = 0;
+    token->idx = 0;
     if (_num_vars == 0) {
         return NULL;
     }
@@ -597,9 +676,9 @@ AP_Param *AP_Param::next_group(uint8_t vindex, const struct GroupInfo *group_inf
                                ParamToken *token,
                                enum ap_var_type *ptype)
 {
-    uint8_t type;
+    enum ap_var_type type;
     for (uint8_t i=0;
-         (type=PGM_UINT8(&group_info[i].type)) != AP_PARAM_NONE;
+         (type=(enum ap_var_type)PGM_UINT8(&group_info[i].type)) != AP_PARAM_NONE;
          i++) {
         if (type == AP_PARAM_GROUP) {
             // a nested group
@@ -615,13 +694,25 @@ AP_Param *AP_Param::next_group(uint8_t vindex, const struct GroupInfo *group_inf
                 // got a new one
                 token->key = vindex;
                 token->group_element = GROUP_ID(group_info, group_base, i, group_shift);
+                token->idx = 0;
                 if (ptype != NULL) {
-                    *ptype = (enum ap_var_type)type;
+                    *ptype = type;
                 }
                 return (AP_Param*)(PGM_POINTER(&_var_info[vindex].ptr) + PGM_UINT16(&group_info[i].offset));
             }
             if (GROUP_ID(group_info, group_base, i, group_shift) == token->group_element) {
                 *found_current = true;
+                if (type == AP_PARAM_VECTOR3F && token->idx < 3) {
+                    // return the next element of the vector as a
+                    // float
+                    token->idx++;
+                    if (ptype != NULL) {
+                        *ptype = AP_PARAM_FLOAT;
+                    }
+                    uintptr_t ofs = (uintptr_t)PGM_POINTER(&_var_info[vindex].ptr) + PGM_UINT16(&group_info[i].offset);
+                    ofs += sizeof(float)*(token->idx-1);
+                    return (AP_Param *)ofs;
+                }
             }
         }
     }
@@ -638,13 +729,24 @@ AP_Param *AP_Param::next(ParamToken *token, enum ap_var_type *ptype)
         // illegal token
         return NULL;
     }
-    uint8_t type = PGM_UINT8(&_var_info[i].type);
+    enum ap_var_type type = (enum ap_var_type)PGM_UINT8(&_var_info[i].type);
+
+    // allow Vector3f to be seen as 3 variables. First as a vector,
+    // then as 3 separate floats
+    if (type == AP_PARAM_VECTOR3F && token->idx < 3) {
+        token->idx++;
+        if (ptype != NULL) {
+            *ptype = AP_PARAM_FLOAT;
+        }
+        return (AP_Param *)(((token->idx-1)*sizeof(float))+(uintptr_t)PGM_POINTER(&_var_info[i].ptr));
+    }
+
     if (type != AP_PARAM_GROUP) {
         i++;
         found_current = true;
     }
     for (; i<_num_vars; i++) {
-        type = PGM_UINT8(&_var_info[i].type);
+        type = (enum ap_var_type)PGM_UINT8(&_var_info[i].type);
         if (type == AP_PARAM_GROUP) {
             const struct GroupInfo *group_info = (const struct GroupInfo *)PGM_POINTER(&_var_info[i].group_info);
             AP_Param *ap = next_group(i, group_info, &found_current, 0, 0, token, ptype);
@@ -655,8 +757,9 @@ AP_Param *AP_Param::next(ParamToken *token, enum ap_var_type *ptype)
             // found the next one
             token->key = i;
             token->group_element = 0;
+            token->idx = 0;
             if (ptype != NULL) {
-                *ptype = (enum ap_var_type)type;
+                *ptype = type;
             }
             return (AP_Param *)(PGM_POINTER(&_var_info[i].ptr));
         }
@@ -705,9 +808,9 @@ void AP_Param::show_all(void)
 
     for (ap=AP_Param::first(&token, &type);
          ap;
-         ap=AP_Param::next(&token, &type)) {
+         ap=AP_Param::next_scalar(&token, &type)) {
         char s[AP_MAX_NAME_SIZE+1];
-        ap->copy_name(s, sizeof(s));
+        ap->copy_name(s, sizeof(s), true);
         s[AP_MAX_NAME_SIZE] = 0;
 
         switch (type) {
@@ -723,11 +826,6 @@ void AP_Param::show_all(void)
         case AP_PARAM_FLOAT:
             Serial.printf_P(PSTR("%s: %f\n"), s, ((AP_Float *)ap)->get());
             break;
-        case AP_PARAM_VECTOR3F: {
-            Vector3f v = ((AP_Vector3f *)ap)->get();
-            Serial.printf_P(PSTR("%s: %f %f %f\n"), s, v.x, v.y, v.z);
-            break;
-        }
         default:
             break;
         }

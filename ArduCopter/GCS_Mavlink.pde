@@ -1647,18 +1647,18 @@ GCS_MAVLINK::queued_param_send()
     value = vp->cast_to_float(_queued_parameter_type);
 
     char param_name[ONBOARD_PARAM_NAME_LENGTH];
-        vp->copy_name(param_name, sizeof(param_name));
+    vp->copy_name(param_name, sizeof(param_name));
 
-        mavlink_msg_param_value_send(
-            chan,
-            (int8_t*)param_name,
-            value,
-            _queued_parameter_count,
-            _queued_parameter_index);
+    mavlink_msg_param_value_send(
+        chan,
+        (int8_t*)param_name,
+        value,
+        _queued_parameter_count,
+        _queued_parameter_index);
 
     _queued_parameter = AP_Param::next_scalar(&_queued_parameter_token, &_queued_parameter_type);
-        _queued_parameter_index++;
-    }
+    _queued_parameter_index++;
+}
 
 /**
 * @brief Send the next pending waypoint, called from deferred message
