@@ -361,7 +361,6 @@ AP_DCM::drift_correction(void)
 	//static float scaled_omega_P[3];
 	//static float scaled_omega_I[3];
 	static bool in_motion = false;
-	Matrix3f rot_mat;
 
 	//*****Roll and Pitch***************
 
@@ -391,10 +390,25 @@ AP_DCM::drift_correction(void)
 	//*****YAW***************
 
 	if (_compass && _compass->healthy) {
-		// We make the gyro YAW drift correction based on compass magnetic heading
-		error_course = (_dcm_matrix.a.x * _compass->heading_y) - (_dcm_matrix.b.x * _compass->heading_x);	// Equation 23, Calculating YAW error
+		if (in_motion) {
+			// Equation 23, Calculating YAW error
+			// We make the gyro YAW drift correction based
+			// on compass magnetic heading
+			error_course = (_dcm_matrix.a.x * _compass->heading_y) - (_dcm_matrix.b.x * _compass->heading_x);
+		} else {
+			// this is our first estimate of the yaw,
+			// construct a DCM matrix based on the current
+			// roll/pitch and the compass heading, but
 
-	} else if (_gps) {
+			// first ensure the compass heading has been
+			// calculated
+			_compass->calculate(_dcm_matrix);
+
+			// now construct a new DCM matrix
+			rotation_matrix_from_euler(_dcm_matrix, roll, pitch, _compass->heading);
+			in_motion =  true;
+		}
+	} else if (_gps && _gps->status() == GPS::GPS_OK) {
 
 		// Use GPS Ground course to correct yaw gyro drift
 		if (_gps->ground_speed >= SPEEDFILT) {
@@ -404,26 +418,11 @@ AP_DCM::drift_correction(void)
 			if(in_motion) {
 				error_course = (_dcm_matrix.a.x * _course_over_ground_y) - (_dcm_matrix.b.x * _course_over_ground_x);	// Equation 23, Calculating YAW error
 			} else  {
-				float cos_psi_err, sin_psi_err;
-				// This is the case for when we first start moving and reset the DCM so that yaw matches the gps ground course
-				// This is just to get a reasonable estimate faster
-				yaw = atan2(_dcm_matrix.b.x, _dcm_matrix.a.x);
-				cos_psi_err = cos(ToRad(_gps->ground_course/100.0) - yaw);
-				sin_psi_err = sin(ToRad(_gps->ground_course/100.0) - yaw);
-				// Rxx = cos psi err, Rxy = - sin psi err, Rxz = 0
-				// Ryx = sin psi err, Ryy = cos psi err,   Ryz = 0
-				// Rzx = Rzy = 0, Rzz = 1
-				rot_mat.a.x = cos_psi_err;
-				rot_mat.a.y = -sin_psi_err;
-				rot_mat.b.x = sin_psi_err;
-				rot_mat.b.y = cos_psi_err;
-				rot_mat.a.z = 0;
-				rot_mat.b.z = 0;
-				rot_mat.c.x = 0;
-				rot_mat.c.y = 0;
-				rot_mat.c.z = 1.0;
-
-				_dcm_matrix = rot_mat * _dcm_matrix;
+				// when we first start moving, set the
+				// DCM matrix to the current
+				// roll/pitch values, but with yaw
+				// from the GPS
+				rotation_matrix_from_euler(_dcm_matrix, roll, pitch, ToRad(_gps->ground_course));
 				in_motion =  true;
 				error_course = 0;
 			}
