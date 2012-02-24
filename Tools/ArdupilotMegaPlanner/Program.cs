@@ -71,7 +71,7 @@ namespace ArdupilotMega
                 MessageBox.Show("You are missing some DLL's. Please extract the zip file somewhere. OR Use the update feature from the menu");
                 return;
             }
-            DialogResult dr = MessageBox.Show("An error has occurred\nReport this Error??? "+ex.ToString(), "Send Error", MessageBoxButtons.YesNo);
+            DialogResult dr = MessageBox.Show("An error has occurred\n"+ex.ToString() + "\n\nReport this Error???", "Send Error", MessageBoxButtons.YesNo);
             if (DialogResult.Yes == dr)
             {
                 try

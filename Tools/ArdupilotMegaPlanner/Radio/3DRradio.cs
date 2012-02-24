@@ -22,6 +22,9 @@ namespace ArdupilotMega
         public _3DRradio()
         {
             InitializeComponent();
+
+            S3.DataSource = Enumerable.Range(0, 500).ToArray();
+            RS3.DataSource = S3.DataSource;
         }
 
         bool getFirmware()
@@ -50,12 +53,20 @@ namespace ArdupilotMega
 
             uploader.Uploader uploader = new uploader.Uploader();
 
-            comPort.PortName = MainV2.comPort.BaseStream.PortName;
-            comPort.BaudRate = 115200;
+            try
+            {
+                comPort.PortName = MainV2.comPort.BaseStream.PortName;
+                comPort.BaudRate = 115200;
 
-            comPort.Open();
+                comPort.Open();
+
+            }
+            catch { MessageBox.Show("Invalid ComPort or in use"); return; }
 
             bool bootloadermode = false;
+
+            uploader.ProgressEvent += new ProgressEventHandler(uploader_ProgressEvent);
+            uploader.LogEvent += new LogEventHandler(uploader_LogEvent);
 
             try
             {
@@ -66,39 +77,17 @@ namespace ArdupilotMega
                 uploader_LogEvent("In Bootloader Mode");
                 bootloadermode = true;
             }
-            catch { uploader_LogEvent("Trying Firmware Mode"); bootloadermode = false; }
-
-            uploader.ProgressEvent += new ProgressEventHandler(uploader_ProgressEvent);
-            uploader.LogEvent += new LogEventHandler(uploader_LogEvent);
-
-            if (!bootloadermode)
-            {
-                comPort.BaudRate = 57600;
-                // clear buffer
-                comPort.DiscardInBuffer();
-                // setup a known enviroment
-                comPort.Write("\r\n");
-                // wait
-                Sleep(1000);
-                // send config string
-                comPort.Write("+++");
-                // wait
-                Sleep(1100);
-                // check for config responce "OK"
-                if (comPort.ReadExisting().Contains("OK"))
-                {
-
-                }
-
-                comPort.Write("\r\nATI\r\n");
-
-                Sleep(100);
-
-                version = comPort.ReadExisting();
+            catch {
+                comPort.Close();
+                comPort.BaudRate = MainV2.comPort.BaseStream.BaudRate;
+                comPort.Open();
+                uploader_LogEvent("Trying Firmware Mode");
+                bootloadermode = false;
             }
 
 
-            if (version.Contains("on HM-TRP") || bootloadermode)
+
+            if (bootloadermode || doConnect(comPort))
             {
                 if (getFirmware())
                 {
@@ -116,20 +105,22 @@ namespace ArdupilotMega
 
                     if (!bootloadermode)
                     {
-
-                        comPort.Write("AT&UPDATE\r\n");
-                        string left = comPort.ReadExisting();
-                        Console.WriteLine(left);
-                        Sleep(700);
-                        comPort.BaudRate = 115200;
-
+                        try
+                        {
+                            comPort.Write("AT&UPDATE\r\n");
+                            string left = comPort.ReadExisting();
+                            Console.WriteLine(left);
+                            Sleep(700);
+                            comPort.BaudRate = 115200;
+                        }
+                        catch { }
                     }
 
                     try
                     {
                         uploader.upload(comPort, iHex);
                     }
-                    catch (Exception ex) { MessageBox.Show("Upload Failed " + ex.Message); goto exit; }
+                    catch (Exception ex) { MessageBox.Show("Upload Failed " + ex.Message); }
                 }
                 else
                 {
@@ -144,6 +135,7 @@ namespace ArdupilotMega
         exit:
             if (comPort.IsOpen)
                 comPort.Close();
+
         }
 
         void iHex_ProgressEvent(double completed)
@@ -198,12 +190,18 @@ namespace ArdupilotMega
         {
             SerialPort comPort = new SerialPort();
 
+            try {
+
             comPort.PortName = MainV2.comPort.BaseStream.PortName;
-            comPort.BaudRate = 57600;
+            comPort.BaudRate = MainV2.comPort.BaseStream.BaudRate;
 
             comPort.ReadTimeout = 4000;
 
             comPort.Open();
+
+
+            }
+            catch { MessageBox.Show("Invalid ComPort or in use"); return; }
 
             lbl_status.Text = "Connecting";
 
@@ -213,17 +211,15 @@ namespace ArdupilotMega
 
                 lbl_status.Text = "Doing Command ATI & RTI";
 
-                 ATI.Text = doCommand(comPort, "ATI1");
+                 ATI.Text = doCommand(comPort, "ATI1").Trim();
 
-                 RTI.Text = doCommand(comPort, "RTI1");
+                 RTI.Text = doCommand(comPort, "RTI1").Trim();
 
-                 RSSI.Text = doCommand(comPort, "ATI7");
+                 RSSI.Text = doCommand(comPort, "ATI7").Trim();
 
                 lbl_status.Text = "Doing Command ATI5";
 
                 string answer = doCommand(comPort, "ATI5");
-
-                Console.Write("Local\n" + answer);
 
                 string[] items = answer.Split('\n');
 
@@ -253,14 +249,18 @@ namespace ArdupilotMega
                 }
 
                 // remote
+                foreach (Control ctl in this.Controls)
+                {
+                    if (ctl.Name.StartsWith("RS") && ctl.Name != "RSSI")
+                        ctl.ResetText();
+                }
+
 
                 comPort.DiscardInBuffer();
 
                 lbl_status.Text = "Doing Command RTI5";
 
                 answer = doCommand(comPort, "RTI5");
-
-                Console.Write("Remote\n" + answer);
 
                 items = answer.Split('\n');
 
@@ -272,50 +272,113 @@ namespace ArdupilotMega
 
                         if (values.Length == 3)
                         {
-                            Control[] controls = this.Controls.Find("R"+values[0].Trim(), false);
+                            Control[] controls = this.Controls.Find("R" + values[0].Trim(), false);
 
                             if (controls[0].GetType() == typeof(CheckBox))
                             {
                                 ((CheckBox)controls[0]).Checked = values[2].Trim() == "1";
                             }
-                            else
+                            else if (controls[0].GetType() == typeof(TextBox))
                             {
-                                controls[0].Text = values[2].Trim();
+                                ((TextBox)controls[0]).Text = values[2].Trim();
                             }
+                            else if (controls[0].GetType() == typeof(ComboBox))
+                            {
+                                ((ComboBox)controls[0]).SelectedText = values[2].Trim();
+                            }
+                        }
+                        else
+                        {
+                            Console.WriteLine("Odd config line :" + item);
                         }
                     }
                 }
+
+                // off hook
+                doCommand(comPort, "ATO");
 
                 lbl_status.Text = "Done";
             }
             else
             {
+
+                // off hook
+                doCommand(comPort, "ATO");
+
                 lbl_status.Text = "Fail";
                 MessageBox.Show("Failed to enter command mode");
             }
 
-            comPort.WriteLine("ATZ");
-
             comPort.Close();
-
         }
 
-        string doCommand(SerialPort comPort, string cmd)
+        string Serial_ReadLine(SerialPort comPort)
         {
+            StringBuilder sb = new StringBuilder();
+            DateTime Deadline = DateTime.Now.AddMilliseconds(comPort.ReadTimeout);
+
+            while (DateTime.Now < Deadline)
+            {
+                if (comPort.BytesToRead > 0)
+                {
+                    byte data = (byte)comPort.ReadByte();
+                    sb.Append((char)data);
+                    if (data == '\n')
+                        break;
+                }
+            }
+
+            return sb.ToString();
+        }
+
+        string doCommand(SerialPort comPort, string cmd, int level = 0)
+        {
+            if (!comPort.IsOpen)
+                return "";
+
+            comPort.ReadTimeout = 1000;
+            // setup to known state
+            comPort.Write("\r\n");
+            // alow some time to gather thoughts
             Sleep(100);
+            // ignore all existing data
             comPort.DiscardInBuffer();
+            lbl_status.Text = "Doing Command "+cmd;
+            Console.WriteLine("Doing Command "+cmd);
+            // write command
             comPort.Write(cmd + "\r\n");
-            string temp = comPort.ReadLine(); // echo
+            // read echoed line or existing data
+            string temp;
+            try
+            {
+                temp = Serial_ReadLine(comPort);
+            }
+            catch { temp = comPort.ReadExisting(); }
+            Console.WriteLine("cmd "+cmd + " echo "+ temp);
+            // delay for command
             Sleep(500);
+            // get responce
             string ans = "";
             while (comPort.BytesToRead > 0)
             {
-                ans = ans + comPort.ReadLine() + "\n";
+                try
+                {
+                    ans = ans + Serial_ReadLine(comPort) +"\n";
+                }
+                catch { ans = ans + comPort.ReadExisting() + "\n"; }
                 Sleep(50);
 
                 if (ans.Length > 500)
-                    return "";
+                {
+                    break;
+                }
             }
+
+            Console.WriteLine("responce " +level+ " " + ans);
+
+            // try again
+            if (ans == "" && level == 0)
+                return doCommand(comPort, cmd, 1);
 
             return ans;
         }
@@ -323,7 +386,6 @@ namespace ArdupilotMega
         bool doConnect(SerialPort comPort)
         {
             // clear buffer
-            comPort.DiscardOutBuffer();
             comPort.DiscardInBuffer();
             // setup a known enviroment
             comPort.Write("\r\n");
@@ -334,7 +396,10 @@ namespace ArdupilotMega
             // wait
             Sleep(1100);
             // check for config responce "OK"
-            if (comPort.ReadExisting().Contains("OK"))
+            Console.WriteLine("Connect btr " + comPort.BytesToRead + " baud " + comPort.BaudRate);
+            string conn = comPort.ReadExisting();
+            Console.WriteLine("Connect first responce "+conn + " " + conn.Length);
+            if (conn.Contains("OK"))
             {
                 //return true;
             }
@@ -346,7 +411,7 @@ namespace ArdupilotMega
 
             string version = doCommand(comPort, "ATI");
 
-            Console.Write("Connect Version: "+version);
+            Console.Write("Connect Version: " + version.Trim() + "\n");
 
             if (version.Contains("on HM-TRP"))
             {
@@ -360,12 +425,17 @@ namespace ArdupilotMega
         {
             SerialPort comPort = new SerialPort();
 
+            try {
             comPort.PortName = MainV2.comPort.BaseStream.PortName;
-            comPort.BaudRate = 57600;
+            comPort.BaudRate = MainV2.comPort.BaseStream.BaudRate;
 
             comPort.ReadTimeout = 4000;
 
             comPort.Open();
+
+
+            }
+            catch { MessageBox.Show("Invalid ComPort or in use"); return; }
 
             lbl_status.Text = "Connecting";
 
@@ -375,148 +445,169 @@ namespace ArdupilotMega
 
                 lbl_status.Text = "Doing Command";
 
-                // remote
-                string answer = doCommand(comPort, "RTI5");
-
-                Console.Write("Remote\n"+answer);
-
-                string[] items = answer.Split('\n');
-
-                foreach (string item in items)
+                if (RTI.Text != "")
                 {
-                    if (item.StartsWith("S"))
+
+                    // remote
+                    string answer = doCommand(comPort, "RTI5");
+
+                    string[] items = answer.Split('\n');
+
+                    foreach (string item in items)
                     {
-                        string[] values = item.Split(':', '=');
-
-                        if (values.Length == 3)
+                        if (item.StartsWith("S"))
                         {
-                            Control[] controls = this.Controls.Find("R"+values[0].Trim(), false);
+                            string[] values = item.Split(':', '=');
 
-                            if (controls.Length > 0)
+                            if (values.Length == 3)
                             {
-                                if (controls[0].GetType() == typeof(CheckBox))
+                                Control[] controls = this.Controls.Find("R" + values[0].Trim(), false);
+
+                                if (controls.Length > 0)
                                 {
-                                    string value = ((CheckBox)controls[0]).Checked ? "1" : "0";
-
-                                    if (value != values[2].Trim())
+                                    if (controls[0].GetType() == typeof(CheckBox))
                                     {
-                                        string cmdanswer = doCommand(comPort, "RT" + values[0].Trim() + "=" + value + "\r");
+                                        string value = ((CheckBox)controls[0]).Checked ? "1" : "0";
 
-                                        if (cmdanswer.Contains("OK"))
+                                        if (value != values[2].Trim())
                                         {
+                                            string cmdanswer = doCommand(comPort, "RT" + values[0].Trim() + "=" + value + "\r");
 
-                                        }
-                                        else
-                                        {
-                                            MessageBox.Show("Set Command error");
+                                            if (cmdanswer.Contains("OK"))
+                                            {
+
+                                            }
+                                            else
+                                            {
+                                                MessageBox.Show("Set Command error");
+                                            }
                                         }
                                     }
-                                }
-                                else
-                                {
-                                    if (controls[0].Text != values[2].Trim())
+                                    else
                                     {
-                                        string cmdanswer = doCommand(comPort, "RT" + values[0].Trim() + "=" + controls[0].Text + "\r");
-
-                                        if (cmdanswer.Contains("OK"))
+                                        if (controls[0].Text != values[2].Trim() && controls[0].Text != "")
                                         {
+                                            string cmdanswer = doCommand(comPort, "RT" + values[0].Trim() + "=" + controls[0].Text + "\r");
 
-                                        }
-                                        else
-                                        {
-                                            MessageBox.Show("Set Command error");
+                                            if (cmdanswer.Contains("OK"))
+                                            {
+
+                                            }
+                                            else
+                                            {
+                                                MessageBox.Show("Set Command error");
+                                            }
                                         }
                                     }
                                 }
                             }
                         }
                     }
+
+                    // write it
+                    doCommand(comPort, "RT&W");
+
+                    // return to normal mode
+                    doCommand(comPort, "RTZ");
+
+                    Sleep(100);
                 }
-
-                // write it
-                doCommand(comPort, "RT&W");
-
-                // return to normal mode
-                comPort.WriteLine("RTZ");
-
-                comPort.Write("\r\n");
-
-                Sleep(100);
 
                 comPort.DiscardInBuffer();
-                //local
-                answer = doCommand(comPort, "ATI5");
-
-                Console.Write("Local\n" + answer);
-                
-                items = answer.Split('\n');
-
-                foreach (string item in items)
                 {
-                    if (item.StartsWith("S"))
+                    //local
+                    string answer = doCommand(comPort, "ATI5");
+
+                    string[] items = answer.Split('\n');
+
+                    foreach (string item in items)
                     {
-                        string[] values = item.Split(':', '=');
-
-                        if (values.Length == 3)
+                        if (item.StartsWith("S"))
                         {
-                            Control[] controls = this.Controls.Find(values[0].Trim(), false);
+                            string[] values = item.Split(':', '=');
 
-                            if (controls.Length > 0)
+                            if (values.Length == 3)
                             {
-                                if (controls[0].GetType() == typeof(CheckBox))
+                                Control[] controls = this.Controls.Find(values[0].Trim(), false);
+
+                                if (controls.Length > 0)
                                 {
-                                    string value = ((CheckBox)controls[0]).Checked ? "1" : "0";
-
-                                    if (value != values[2].Trim())
+                                    if (controls[0].GetType() == typeof(CheckBox))
                                     {
-                                        string cmdanswer = doCommand(comPort, "AT" + values[0].Trim() + "=" + value + "\r");
+                                        string value = ((CheckBox)controls[0]).Checked ? "1" : "0";
 
-                                        if (cmdanswer.Contains("OK"))
+                                        if (value != values[2].Trim())
                                         {
+                                            string cmdanswer = doCommand(comPort, "AT" + values[0].Trim() + "=" + value + "\r");
 
-                                        }
-                                        else
-                                        {
-                                            MessageBox.Show("Set Command error");
+                                            if (cmdanswer.Contains("OK"))
+                                            {
+
+                                            }
+                                            else
+                                            {
+                                                MessageBox.Show("Set Command error");
+                                            }
                                         }
                                     }
-                                }
-                                else
-                                {
-                                    if (controls[0].Text != values[2].Trim())
+                                    else
                                     {
-                                        string cmdanswer = doCommand(comPort, "AT" + values[0].Trim() + "=" + controls[0].Text + "\r");
-
-                                        if (cmdanswer.Contains("OK"))
+                                        if (controls[0].Text != values[2].Trim())
                                         {
+                                            string cmdanswer = doCommand(comPort, "AT" + values[0].Trim() + "=" + controls[0].Text + "\r");
 
-                                        }
-                                        else
-                                        {
-                                            MessageBox.Show("Set Command error");
+                                            if (cmdanswer.Contains("OK"))
+                                            {
+
+                                            }
+                                            else
+                                            {
+                                                MessageBox.Show("Set Command error");
+                                            }
                                         }
                                     }
                                 }
                             }
                         }
                     }
-                }
 
-                // write it
-                doCommand(comPort, "AT&W");
+                    // write it
+                    doCommand(comPort, "AT&W");
+
+
+                    // return to normal mode
+                    doCommand(comPort, "ATZ");
+                }
 
                 lbl_status.Text = "Done";
             }
             else
             {
+
+                // return to normal mode
+                doCommand(comPort, "ATZ");
+
                 lbl_status.Text = "Fail";
                 MessageBox.Show("Failed to enter command mode");
             }
 
-            // return to normal mode
-            comPort.WriteLine("ATZ");
 
             comPort.Close();
+        }
+
+        private void BUT_syncS2_Click(object sender, EventArgs e)
+        {
+            RS2.Text = S2.Text;
+        }
+
+        private void BUT_syncS3_Click(object sender, EventArgs e)
+        {
+            RS3.Text = S3.Text;
+        }
+
+        private void BUT_syncS5_Click(object sender, EventArgs e)
+        {
+            RS5.Checked = S5.Checked;
         }
     }
 }

@@ -83,11 +83,11 @@ namespace ArdupilotMega
 
                 threadrun = true;
 
-                System.Threading.Thread.Sleep(4000);
+                System.Threading.Thread.Sleep(2000);
 
                 try
                 {
-                    comPort.Write("\n\n\n\n");
+                    comPort.Write("\n\n\n\n"); // more in "connecting"
                 }
                 catch {  }
 
@@ -187,8 +187,14 @@ namespace ArdupilotMega
                     {
                         case serialstatus.Connecting:
 
-                            if (line.Contains("reset to FLY") || line.Contains("interactive setup") || line.Contains("CLI:") || line.Contains("Ardu"))
+                            if (line.Contains("ENTER") || line.Contains("GROUND START") || line.Contains("reset to FLY") || line.Contains("interactive setup") || line.Contains("CLI") || line.Contains("Ardu"))
                             {
+                                try
+                                {
+                                    comPort.Write("\n\n\n\n");
+                                }
+                                catch { }
+
                                 comPort.Write("logs\r");
                                 status = serialstatus.Done;
                             }
@@ -276,7 +282,7 @@ namespace ArdupilotMega
 
                             Console.Write(line);
 
-                            TXT_seriallog.AppendText(line);
+                            TXT_seriallog.AppendText(line.Replace((char)0x0,' '));
 
                             // auto scroll
                             if (TXT_seriallog.TextLength >= 10000)

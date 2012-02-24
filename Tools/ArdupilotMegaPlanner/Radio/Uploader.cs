@@ -417,7 +417,15 @@ namespace uploader
 		private byte recv ()
 		{
 			byte b;
-			
+
+            DateTime Deadline = DateTime.Now.AddMilliseconds(port.ReadTimeout);
+
+            while (DateTime.Now < Deadline && port.BytesToRead == 0)
+            {
+            }
+            if (port.BytesToRead == 0)
+                throw new Exception("Timeout");
+
 			b = (byte)port.ReadByte ();
 			
 			log (string.Format ("recv {0:X}\n", b), 5);
