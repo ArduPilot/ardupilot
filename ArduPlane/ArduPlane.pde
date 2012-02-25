@@ -769,8 +769,11 @@ static void medium_loop()
 
 			#if HIL_MODE != HIL_MODE_ATTITUDE
             if (g.compass_enabled && compass.read()) {
+                dcm.set_compass(&compass);
                 compass.calculate(dcm.get_dcm_matrix());  // Calculate heading
                 compass.null_offsets(dcm.get_dcm_matrix());
+            } else {
+                dcm.set_compass(NULL);
             }
 			#endif
 /*{
