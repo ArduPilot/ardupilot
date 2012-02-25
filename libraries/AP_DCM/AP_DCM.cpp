@@ -32,9 +32,13 @@
 //#define Kp_YAW 0.8		 		// Yaw Drift Correction Porportional Gain
 //#define Ki_YAW 0.00004 				// Yaw Drift CorrectionIntegrator Gain
 
-#define SPEEDFILT 300				// centimeters/second
-#define ADC_CONSTRAINT 900
+// this is the speed in cm/s above which we first get a yaw lock with
+// the GPS
+#define GPS_SPEED_MIN 300
 
+// this is the speed in cm/s at which we stop using drift correction
+// from the GPS and wait for the ground speed to get above GPS_SPEED_MIN
+#define GPS_SPEED_RESET 100
 
 void
 AP_DCM::set_compass(Compass *compass)
@@ -409,8 +413,7 @@ AP_DCM::drift_correction(void)
 	} else if (_gps && _gps->status() == GPS::GPS_OK) {
 
 		// Use GPS Ground course to correct yaw gyro drift
-		if (_gps->ground_speed >= SPEEDFILT) {
-
+		if (_gps->ground_speed >= GPS_SPEED_MIN) {
 			if (_have_initial_yaw) {
 				float course_over_ground_x = cos(ToRad(_gps->ground_course/100.0));
 				float course_over_ground_y = sin(ToRad(_gps->ground_course/100.0));
@@ -425,12 +428,17 @@ AP_DCM::drift_correction(void)
 				_have_initial_yaw =  true;
 				error_course = 0;
 			}
-
+		} else if (_gps->ground_speed >= GPS_SPEED_RESET) {
+			// we are not going fast enough to use GPS for
+			// course correction, but we won't reset
+			// _have_initial_yaw yet, instead we just let
+			// the gyro handle yaw
+			error_course = 0;
 		} else {
-			// we are moving very slowly. Stop doing
-			// course correction with the GPS, and instead
-			// grab the next GPS course value once we
-			// start moving again.
+			// we are moving very slowly. Reset
+			// _have_initial_yaw and adjust our heading
+			// rapidly next time we get a good GPS ground
+			// speed
 			error_course = 0;
 			_have_initial_yaw = false;
 		}
