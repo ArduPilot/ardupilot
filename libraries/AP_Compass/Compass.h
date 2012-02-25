@@ -124,6 +124,8 @@ public:
 	///
 	void null_offsets_disable(void);
 
+    /// return true if the compass should be used for yaw calculations
+    bool use_for_yaw(void) { return healthy && _use_for_yaw; }
 
 	/// Sets the local magnetic field declination.
 	///
@@ -138,6 +140,8 @@ protected:
 	AP_Matrix3f         _orientation_matrix;
 	AP_Vector3f         _offset;
 	AP_Float            _declination;
+    AP_Int8             _learn;                 ///<enable calibration learning
+    AP_Int8             _use_for_yaw;           ///<enable use for yaw calculation
 
 	bool                _null_enable;        	///< enabled flag for offset nulling
 	bool                _null_init_done;        ///< first-time-around flag used by offset nulling
