@@ -1515,7 +1515,7 @@ void update_simple_mode(void)
 	g.rc_2.control_in = control_pitch;
 }
 
-#define THROTTLE_FILTER_SIZE 4
+#define THROTTLE_FILTER_SIZE 2
 
 // 50 hz update rate, not 250
 // controls all throttle behavior
@@ -1652,7 +1652,10 @@ void update_throttle_mode(void)
 			}
 
 			// light filter of output
-			g.rc_3.servo_out = (g.rc_3.servo_out * (THROTTLE_FILTER_SIZE - 1) + throttle_out) / THROTTLE_FILTER_SIZE;
+			//g.rc_3.servo_out = (g.rc_3.servo_out * (THROTTLE_FILTER_SIZE - 1) + throttle_out) / THROTTLE_FILTER_SIZE;
+
+			// no filter
+			g.rc_3.servo_out = throttle_out;
 			break;
 	}
 }
@@ -1918,7 +1921,7 @@ static void update_altitude()
 	climb_rate = (climb_rate + old_climb_rate)>>1;
 
 	// manage bad data
-	climb_rate = constrain(climb_rate, -300, 300);
+	climb_rate = constrain(climb_rate, -800, 800);
 
 	// save for filtering
 	old_climb_rate = climb_rate;
