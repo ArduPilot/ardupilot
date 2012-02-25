@@ -78,7 +78,7 @@ static int32_t read_barometer(void)
 static void init_compass()
 {
 	compass.set_orientation(MAG_ORIENTATION);						// set compass's orientation on aircraft
-	if (!compass.init()) {
+	if (!compass.init() || !compass.read()) {
         // make sure we don't pass a broken compass to DCM
         Serial.println_P(PSTR("COMPASS INIT ERROR"));
         return;

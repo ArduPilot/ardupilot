@@ -175,12 +175,11 @@ static void init_ardupilot()
 
 	if (g.compass_enabled==true) {
         compass.set_orientation(MAG_ORIENTATION);							// set compass's orientation on aircraft
-		if (!compass.init()) {
+		if (!compass.init() || !compass.read()) {
             Serial.println_P(PSTR("Compass initialisation failed!"));
             g.compass_enabled = false;
         } else {
             dcm.set_compass(&compass);
-            compass.get_offsets();						// load offsets to account for airframe magnetic interference
             compass.null_offsets_enable();
         }
 	}
