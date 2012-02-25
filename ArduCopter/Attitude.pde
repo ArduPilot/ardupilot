@@ -203,7 +203,7 @@ get_nav_throttle(int32_t z_error)
 
 	// convert to desired Rate:
 	rate_error 		= g.pi_alt_hold.get_p(z_error);
-	rate_error 		= constrain(rate_error, -100, 100);
+	rate_error 		= constrain(rate_error, -150, 150);
 
 	// limit error to prevent I term wind up
 	z_error 		= constrain(z_error, -400, 400);
