@@ -18,6 +18,8 @@ Compass::Compass(void) :
     _declination		(0.0),
     _null_init_done(false),
     _null_enable(false),
+    _learn(1),
+    _use_for_yaw(1),
 	product_id(AP_COMPASS_TYPE_UNKNOWN)
 {
     // Default the orientation matrix to none - will be overridden at group load time
@@ -25,21 +27,11 @@ Compass::Compass(void) :
     _orientation_matrix.set(ROTATION_NONE);
 }
 
-//_group
-
 // Default init method, just returns success.
 //
 bool
 Compass::init()
 {
-    // enable learning by default
-    if (!_learn.load()) {
-        _learn.set(1);
-    }
-    // enable use for yaw calculation by default
-    if (!_use_for_yaw.load()) {
-        _use_for_yaw.set(1);
-    }
     return true;
 }
 
