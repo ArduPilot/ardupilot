@@ -41,8 +41,17 @@
 // elements.
 #define GROUP_ID(grpinfo, base, i, shift) ((base)+(((uint16_t)PGM_UINT8(&grpinfo[i].idx))<<(shift)))
 
+// Note about AP_Vector3f handling.
+// The code has special cases for AP_Vector3f to allow it to be viewed
+// as both a single 3 element vector and as a set of 3 AP_Float
+// variables. This is done to make it possible for MAVLink to see
+// vectors as parameters, which allows users to save their compass
+// offsets in MAVLink parameter files. The code involves quite a few
+// special cases which could be generalised to any vector/matrix type
+// if we end up needing this behaviour for other than AP_Vector3f
 
-// Static member variables for AP_Param.
+
+// static member variables for AP_Param.
 //
 
 // max EEPROM write size. This is usually less than the physical
@@ -315,7 +324,8 @@ const struct AP_Param::Info *AP_Param::find_var_info_group(const struct GroupInf
         } else if (type == AP_PARAM_VECTOR3F &&
                    (base+ofs+sizeof(float) == (uintptr_t)this ||
                     base+ofs+2*sizeof(float) == (uintptr_t)this)) {
-            // we are inside a Vector3f
+            // we are inside a Vector3f. We need to work out which
+            // element of the vector the current object refers to.
             *idx = (((uintptr_t)this) - (base+ofs))/sizeof(float);
             *group_element = GROUP_ID(group_info, group_base, i, group_shift);
             *group_ret = &group_info[i];
@@ -348,7 +358,8 @@ const struct AP_Param::Info *AP_Param::find_var_info(uint8_t *group_element,
         } else if (type == AP_PARAM_VECTOR3F &&
                    (base+sizeof(float) == (uintptr_t)this ||
                     base+2*sizeof(float) == (uintptr_t)this)) {
-            // we are inside a Vector3f
+            // we are inside a Vector3f. Work out which element we are
+            // referring to.
             *idx = (((uintptr_t)this) - base)/sizeof(float);
             *group_element = 0;
             *group_ret = NULL;
@@ -422,6 +433,7 @@ void AP_Param::add_vector3f_suffix(char *buffer, size_t buffer_size, uint8_t idx
 {
     uint8_t len = strnlen(buffer, buffer_size);
     if ((size_t)(len+3) >= buffer_size) {
+        // the suffix doesn't fit
         return;
     }
     buffer[len] = '_';
