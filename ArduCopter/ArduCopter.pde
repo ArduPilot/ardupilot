@@ -220,7 +220,8 @@ AP_InertialSensor_MPU6000 ins( CONFIG_MPU6000_CHIP_SELECT_PIN );
 AP_InertialSensor_Oilpan ins(&adc);
 #endif
 AP_IMU_INS  imu(&ins);
-AP_DCM  dcm(&imu, g_gps);
+// we don't want to use gps for yaw correction on ArduCopter
+AP_DCM  dcm(&imu, NULL);
 AP_TimerProcess timer_scheduler;
 
 #elif HIL_MODE == HIL_MODE_SENSORS
