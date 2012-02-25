@@ -5,6 +5,8 @@ const AP_Param::GroupInfo Compass::var_info[] PROGMEM = {
     AP_GROUPINFO("ORIENT", 0, Compass, _orientation_matrix),
     AP_GROUPINFO("OFS",    1, Compass, _offset),
     AP_GROUPINFO("DEC",    2, Compass, _declination),
+    AP_GROUPINFO("LEARN",  3, Compass, _learn), // true if learning calibration
+    AP_GROUPINFO("USE",    4, Compass, _use_for_yaw), // true if used for DCM yaw
     AP_GROUPEND
 };
 
@@ -30,6 +32,14 @@ Compass::Compass(void) :
 bool
 Compass::init()
 {
+    // enable learning by default
+    if (!_learn.load()) {
+        _learn.set(1);
+    }
+    // enable use for yaw calculation by default
+    if (!_use_for_yaw.load()) {
+        _use_for_yaw.set(1);
+    }
     return true;
 }
 
@@ -166,15 +176,18 @@ Compass::calculate(const Matrix3f &dcm_matrix)
 void
 Compass::null_offsets(const Matrix3f &dcm_matrix)
 {
+    if (_null_enable == false || _learn == 0) {
+        // auto-calibration is disabled
+        return;
+    }
+
     // Update our estimate of the offsets in the magnetometer
-    Vector3f    calc(0.0, 0.0, 0.0);        // XXX should be safe to remove explicit init here as the default ctor should do the right thing
+    Vector3f    calc;
     Matrix3f    dcm_new_from_last;
     float       weight;
 
     Vector3f mag_body_new = Vector3f(mag_x,mag_y,mag_z);
     
-    if(_null_enable == false) return;
-
     if(_null_init_done) {
         dcm_new_from_last = dcm_matrix.transposed() * _last_dcm_matrix;      // Note 11/20/2010: transpose() is not working, transposed() is.
 
@@ -192,7 +205,6 @@ Compass::null_offsets(const Matrix3f &dcm_matrix)
     }
     _mag_body_last = mag_body_new - calc;
     _last_dcm_matrix = dcm_matrix;
-
 }
 
 

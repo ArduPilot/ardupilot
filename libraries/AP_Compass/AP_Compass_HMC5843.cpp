@@ -138,6 +138,9 @@ AP_Compass_HMC5843::init()
   uint16_t expected_yz = 715;
   float gain_multiple = 1.0;
 
+  // call the parent class init for common code
+  Compass::init();
+
   delay(10);
 
   // determine if we are using 5843 or 5883L
