@@ -717,7 +717,7 @@
 # define ALT_HOLD_P			0.4		//
 #endif
 #ifndef ALT_HOLD_I
-# define ALT_HOLD_I			0.02
+# define ALT_HOLD_I			0.04
 #endif
 #ifndef ALT_HOLD_IMAX
 # define ALT_HOLD_IMAX		300
