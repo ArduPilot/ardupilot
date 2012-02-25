@@ -391,7 +391,7 @@ AP_DCM::drift_correction(void)
 
 	//*****YAW***************
 
-	if (_compass && _compass->healthy) {
+	if (_compass && _compass->use_for_yaw()) {
 		if (_have_initial_yaw) {
 			// Equation 23, Calculating YAW error
 			// We make the gyro YAW drift correction based
