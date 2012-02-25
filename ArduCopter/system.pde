@@ -531,6 +531,9 @@ static void set_mode(byte mode)
 	if(throttle_mode == THROTTLE_MANUAL){
 		// reset all of the throttle iterms
 		update_throttle_cruise();
+
+		// reset auto_throttle
+		nav_throttle 			= 0;
 	}else {
 		// an automatic throttle
 		init_throttle_cruise();
