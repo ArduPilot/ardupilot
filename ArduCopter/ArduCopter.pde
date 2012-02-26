@@ -78,6 +78,7 @@ http://code.google.com/p/ardupilot-mega/downloads/list
 #include <RC_Channel.h>     // RC Channel Library
 #include <AP_RangeFinder.h>	// Range finder library
 #include <AP_OpticalFlow.h> // Optical Flow library
+#include <Filter.h>			// Filter library
 #include <ModeFilter.h>		// Mode Filter from Filter library
 #include <AP_Relay.h>		// APM relay
 #include <GCS_MAVLink.h>    // MAVLink GCS definitions
