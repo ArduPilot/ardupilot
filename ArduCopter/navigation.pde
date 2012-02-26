@@ -66,7 +66,7 @@ static void calc_XY_velocity(){
 
 	/*
 	// Ryan Beall's forward estimator:
-	int16_t	x_speed_new = (float)(g_gps->longitude - last_longitude) * tmp;
+	int16_t	x_speed_new = (float)(g_gps->longitude - last_longitude) * scaleLongDown* tmp;
 	int16_t	y_speed_new = (float)(g_gps->latitude  - last_latitude)  * tmp;
 
 	x_actual_speed 	= x_speed_new + (x_speed_new - x_speed_old);
@@ -101,19 +101,20 @@ static void calc_location_error(struct Location *next_loc)
 #define NAV_ERR_MAX 600
 static void calc_loiter(int x_error, int y_error)
 {
+	#if LOITER_RATE == 1
 	int16_t x_target_speed, y_target_speed;
 	int16_t x_iterm, y_iterm;
 
 	// East / West
 	x_target_speed 	= g.pi_loiter_lon.get_p(x_error);			// not contstrained yet
-	x_target_speed	= constrain(x_target_speed, -250, 250);		// limit to 2.5m/s travel speed
+	//x_target_speed	= constrain(x_target_speed, -250, 250);		// limit to 2.5m/s travel speed
 	x_rate_error 	= x_target_speed - x_actual_speed;			// calc the speed error
 	nav_lon			= g.pid_loiter_rate_lon.get_pid(x_rate_error, dTnav);
 	nav_lon			= constrain(nav_lon, -3000, 3000); 			// 30°
 
 	// North / South
 	y_target_speed 	= g.pi_loiter_lat.get_p(y_error);
-	y_target_speed	= constrain(y_target_speed, -250, 250);
+	//y_target_speed	= constrain(y_target_speed, -250, 250);
 	y_rate_error 	= y_target_speed - y_actual_speed;
 	nav_lat			= g.pid_loiter_rate_lat.get_pid(y_rate_error, dTnav);
 	nav_lat			= constrain(nav_lat, -3000, 3000); // 30°
@@ -121,6 +122,18 @@ static void calc_loiter(int x_error, int y_error)
 	// copy over I term to Nav_Rate
 	g.pid_nav_lon.set_integrator(g.pid_loiter_rate_lon.get_integrator());
 	g.pid_nav_lat.set_integrator(g.pid_loiter_rate_lat.get_integrator());
+
+	#else
+
+	// no rate control on Loiter
+	nav_lon			= g.pid_loiter_rate_lon.get_pid(x_error, dTnav);
+	nav_lat			= g.pid_loiter_rate_lat.get_pid(y_error, dTnav);
+
+	nav_lon			= constrain(nav_lon, -3000, 3000); 			// 30°
+	nav_lat			= constrain(nav_lat, -3000, 3000); // 30°
+
+	#endif
+
 
 	// Wind I term based on location error,
 	// limit windup
