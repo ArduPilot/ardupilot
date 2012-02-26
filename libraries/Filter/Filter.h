@@ -17,13 +17,13 @@
 #include <inttypes.h>
 #include <AP_Common.h>
 
-#define FILTER_MAX_SAMPLES 6  // max number of samples that can be added to the filter
+#define FILTER_MAX_SAMPLES 10  // maximum size of the sample buffer (normally older values will be overwritten as new appear)
 
 template <class T>
 class Filter
 {
   public:
-	Filter(uint8_t filter_size);
+	Filter(uint8_t requested_size);
 	~Filter();
 
 	// apply - Add a new raw value to the filter, retrieve the filtered result
@@ -44,8 +44,8 @@ typedef Filter<int16_t> FilterInt16;
 
 // Constructor 
 template <class T>
-Filter<T>::Filter(uint8_t filter_size) :
-	filter_size(filter_size), sample_index(0)
+Filter<T>::Filter(uint8_t requested_size) :
+	filter_size(requested_size), sample_index(0)
 {
 	// check filter size
     if( Filter<T>::filter_size > FILTER_MAX_SAMPLES )
@@ -58,7 +58,7 @@ Filter<T>::Filter(uint8_t filter_size) :
 	reset();
 }
 
-// Destructor
+// Destructor - THIS SHOULD NEVER BE CALLED OR IT COULD LEAD TO MEMORY FRAGMENTATION
 template <class T>
 Filter<T>::~Filter()
 {
