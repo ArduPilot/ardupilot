@@ -147,6 +147,10 @@
     <Reference Include="KMLib">
       <HintPath>..\..\..\..\..\Desktop\DIYDrones\kml-library\KmlTestbed\bin\Release\KMLib.dll</HintPath>
     </Reference>
+    <Reference Include="log4net, Version=1.2.11.0, Culture=neutral, PublicKeyToken=669e0ddf0bb1aa2a, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>Lib\log4net.dll</HintPath>
+    </Reference>
     <Reference Include="MetaDataExtractor">
       <HintPath>..\..\..\..\..\Desktop\DIYDrones\myquad\MetaDataExtractorCSharp240d\bin\Release\MetaDataExtractor.dll</HintPath>
     </Reference>
@@ -225,6 +229,14 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Antenna\ITrackerOutput.cs" />
+    <Compile Include="Antenna\Maestro.cs" />
+    <Compile Include="Antenna\Tracker.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Antenna\Tracker.Designer.cs">
+      <DependentUpon>Tracker.cs</DependentUpon>
+    </Compile>
     <Compile Include="Controls\ProgressReporterDialogue.cs">
       <SubType>Form</SubType>
     </Compile>
@@ -445,7 +457,10 @@
       <DependentUpon>temp.cs</DependentUpon>
     </Compile>
     <Compile Include="Radio\Uploader.cs" />
-    <Compile Include="Utility.cs" />
+    <Compile Include="LangUtility.cs" />
+    <EmbeddedResource Include="Antenna\Tracker.resx">
+      <DependentUpon>Tracker.cs</DependentUpon>
+    </EmbeddedResource>
     <EmbeddedResource Include="Controls\ProgressReporterDialogue.resx">
       <DependentUpon>ProgressReporterDialogue.cs</DependentUpon>
     </EmbeddedResource>

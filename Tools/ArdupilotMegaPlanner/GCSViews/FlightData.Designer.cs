@@ -55,7 +55,7 @@
             this.zg1 = new ZedGraph.ZedGraphControl();
             this.lbl_winddir = new ArdupilotMega.MyLabel();
             this.lbl_windvel = new ArdupilotMega.MyLabel();
-            this.gMapControl1 = new myGMAP();
+            this.gMapControl1 = new ArdupilotMega.myGMAP();
             this.panel1 = new System.Windows.Forms.Panel();
             this.TXT_lat = new ArdupilotMega.MyLabel();
             this.Zoomlevel = new System.Windows.Forms.NumericUpDown();

@@ -11,7 +11,7 @@ using System.Drawing.Imaging;
 using System.Threading;
  
 using System.Drawing.Drawing2D;
-
+using log4net;
 using OpenTK;
 using OpenTK.Graphics.OpenGL;
 using OpenTK.Graphics;
@@ -24,6 +24,8 @@ namespace hud
 {
     public class HUD : GLControl
     {
+        private static readonly ILog log = LogManager.GetLogger(
+  System.Reflection.MethodBase.GetCurrentMethod().DeclaringType);
         object paintlock = new object();
         object streamlock = new object();
         MemoryStream _streamjpg = new MemoryStream();
@@ -189,10 +191,10 @@ namespace hud
                 {
 
                     GraphicsMode test = this.GraphicsMode;
-                    Console.WriteLine(test.ToString());
-                    Console.WriteLine("Vendor: " + GL.GetString(StringName.Vendor));
-                    Console.WriteLine("Version: " + GL.GetString(StringName.Version));
-                    Console.WriteLine("Device: " + GL.GetString(StringName.Renderer));
+                    log.Info(test.ToString());
+                    log.Info("Vendor: " + GL.GetString(StringName.Vendor));
+                    log.Info("Version: " + GL.GetString(StringName.Version));
+                    log.Info("Device: " + GL.GetString(StringName.Renderer));
                     //Console.WriteLine("Extensions: " + GL.GetString(StringName.Extensions));
 
                     int[] viewPort = new int[4];
@@ -212,7 +214,7 @@ namespace hud
                     GL.Enable(EnableCap.Blend);
 
                 }
-                catch (Exception ex) { Console.WriteLine("HUD opengl onload " + ex.ToString()); }
+                catch (Exception ex) { log.Info("HUD opengl onload " + ex.ToString()); }
 
                 try
                 {
@@ -266,7 +268,7 @@ namespace hud
 
             if (inOnPaint)
             {
-                Console.WriteLine("Was in onpaint Hud th:" + System.Threading.Thread.CurrentThread.Name + " in " + otherthread);
+                log.Info("Was in onpaint Hud th:" + System.Threading.Thread.CurrentThread.Name + " in " + otherthread);
                 return;
             }
 
@@ -295,7 +297,7 @@ namespace hud
                 }
 
             }
-            catch (Exception ex) { Console.WriteLine(ex.ToString()); }
+            catch (Exception ex) { log.Info(ex.ToString()); }
 
             inOnPaint = false;
 
@@ -1323,7 +1325,7 @@ namespace hud
             }
             catch (Exception ex)
             {
-                Console.WriteLine("hud error "+ex.ToString());
+                log.Info("hud error "+ex.ToString());
             }
         }
 
@@ -1531,7 +1533,7 @@ namespace hud
                     base.OnHandleCreated(e);
                 }
             }
-            catch (Exception ex) { Console.WriteLine(ex.ToString()); opengl = false; } // macs fail here
+            catch (Exception ex) { log.Info(ex.ToString()); opengl = false; } // macs fail here
         }
 
         protected override void OnHandleDestroyed(EventArgs e)
@@ -1543,7 +1545,7 @@ namespace hud
                     base.OnHandleDestroyed(e);
                 }
             }
-            catch (Exception ex) { Console.WriteLine(ex.ToString()); opengl = false; }
+            catch (Exception ex) { log.Info(ex.ToString()); opengl = false; }
         }
 
         protected override void OnResize(EventArgs e)

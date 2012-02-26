@@ -1391,7 +1391,7 @@
     <value>gMapControl1</value>
   </data>
   <data name="&gt;&gt;gMapControl1.Type" xml:space="preserve">
-    <value>GMap.NET.WindowsForms.GMapControl, GMap.NET.WindowsForms, Version=1.5.5.5, Culture=neutral, PublicKeyToken=b85b9027b614afef</value>
+    <value>ArdupilotMega.myGMAP, ArdupilotMegaPlanner, Version=1.0.0.0, Culture=neutral, PublicKeyToken=38326cb7e06851fc</value>
   </data>
   <data name="&gt;&gt;gMapControl1.Parent" xml:space="preserve">
     <value>splitContainer1.Panel2</value>

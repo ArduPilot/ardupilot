@@ -1,8 +1,10 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Reflection;
 using System.Text;
 using System.IO.Ports;
 using System.Threading;
+using log4net;
 
 // Written by Michael Oborne
 
@@ -10,6 +12,7 @@ namespace ArdupilotMega
 {
     class ArduinoSTK : SerialPort, ArduinoComms
     {
+        private static readonly ILog log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
         public event ProgressEventHandler Progress;
 
         public new void Open()
@@ -48,7 +51,7 @@ namespace ArdupilotMega
                 a++;
                 Thread.Sleep(50);
 
-                Console.WriteLine("btr {0}", this.BytesToRead);
+                log.InfoFormat("btr {0}", this.BytesToRead);
                 if (this.BytesToRead >= 2)
                 {
                     byte b1 = (byte)this.ReadByte();
@@ -96,14 +99,14 @@ namespace ArdupilotMega
                 {
                     byte b1 = (byte)this.ReadByte();
                     byte b2 = (byte)this.ReadByte();
-                    Console.WriteLine("bytes {0:X} {1:X}", b1, b2);
+                    log.DebugFormat("bytes {0:X} {1:X}", b1, b2);
 
                     if (b1 == 0x14 && b2 == 0x10)
                     {
                         return true;
                     }
                 }
-                Console.WriteLine("btr {0}", this.BytesToRead);
+                log.DebugFormat("btr {0}", this.BytesToRead);
                 Thread.Sleep(10);
                 a++;
             }
@@ -210,7 +213,7 @@ namespace ArdupilotMega
 
                 byte[] command = new byte[] { (byte)'d', (byte)(sending >> 8), (byte)(sending & 0xff), (byte)'F' };
                 this.Write(command, 0, command.Length);
-                Console.WriteLine((startfrom + (length - totalleft)) + " - " + sending);
+                log.Info((startfrom + (length - totalleft)) + " - " + sending);
                 this.Write(data, startfrom + (length - totalleft), sending);
                 command = new byte[] { (byte)' ' };
                 this.Write(command, 0, command.Length);
@@ -223,7 +226,7 @@ namespace ArdupilotMega
 
                 if (!sync())
                 {
-                    Console.WriteLine("No Sync");
+                    log.Info("No Sync");
                     return false;
                 }
             }
@@ -247,7 +250,7 @@ namespace ArdupilotMega
                 throw new Exception("Address must be an even number");
             }
 
-            Console.WriteLine("Sending address   " + ((ushort)(address / 2)));
+            log.Info("Sending address   " + ((ushort)(address / 2)));
 
             address /= 2;
             address = (ushort)address;
@@ -295,7 +298,7 @@ namespace ArdupilotMega
 
                 byte[] command = new byte[] { (byte)'d', (byte)(sending >> 8), (byte)(sending & 0xff), (byte)'E' };
                 this.Write(command, 0, command.Length);
-                Console.WriteLine((startfrom + (length - totalleft)) + " - " + sending);
+                log.Info((startfrom + (length - totalleft)) + " - " + sending);
                 this.Write(data, startfrom + (length - totalleft), sending);
                 command = new byte[] { (byte)' ' };
                 this.Write(command, 0, command.Length);
@@ -304,7 +307,7 @@ namespace ArdupilotMega
 
                 if (!sync())
                 {
-                    Console.WriteLine("No Sync");
+                    log.Info("No Sync");
                     return false;
                 }
             }

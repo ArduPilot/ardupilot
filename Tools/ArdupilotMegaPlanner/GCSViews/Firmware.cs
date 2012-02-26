@@ -1,28 +1,24 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.ComponentModel;
-using System.Data;
-using System.Drawing;
-using System.Text;
+using System.Reflection;
 using System.Windows.Forms;
-using System.Text.RegularExpressions;
 using System.IO.Ports;
 using System.IO;
-using System.Runtime.InteropServices;
 using System.Xml;
 using System.Net;
+using log4net;
 
 namespace ArdupilotMega.GCSViews
 {
     partial class Firmware : MyUserControl
     {
+        private static readonly ILog log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
 
         protected override bool ProcessCmdKey(ref Message msg, Keys keyData)
         {
             if (keyData == (Keys.Control | Keys.C))
             {
-                OpenFileDialog fd = new OpenFileDialog();
-                fd.Filter = "Firmware (*.hex)|*.hex";
+                var fd = new OpenFileDialog {Filter = "Firmware (*.hex)|*.hex"};
                 fd.ShowDialog();
                 if (File.Exists(fd.FileName))
                 {
@@ -69,7 +65,7 @@ namespace ArdupilotMega.GCSViews
 
         internal void Firmware_Load(object sender, EventArgs e)
         {
-            Console.WriteLine("FW load");
+            log.Info("FW load");
 
             string url = "";
             string url2560 = "";
@@ -141,11 +137,14 @@ namespace ArdupilotMega.GCSViews
                     }
                 }
 
-                List<string> list = new List<string>();
 
             }
-            catch (Exception ex) { MessageBox.Show("Failed to get Firmware List : " + ex.Message); }
-            Console.WriteLine("FW load done");
+            catch (Exception ex)
+            {
+                MessageBox.Show("Failed to get Firmware List : " + ex.Message);
+            }
+            log.Info("FW load done");
+
         }
 
         void updateDisplayName(software temp)
@@ -192,7 +191,7 @@ namespace ArdupilotMega.GCSViews
             }
             else
             {
-                Console.WriteLine("No Home " + temp.name + " " + temp.url);
+                log.Info("No Home " + temp.name + " " + temp.url);
             }
         }
 
@@ -354,7 +353,7 @@ namespace ArdupilotMega.GCSViews
 
 
 
-                Console.WriteLine("Detected a " + board);
+                log.Info("Detected a " + board);
 
                 string baseurl = "";
                 if (board == "2560")
@@ -375,7 +374,7 @@ namespace ArdupilotMega.GCSViews
                     return;
                 }
 
-                Console.WriteLine("Using " + baseurl);
+                log.Info("Using " + baseurl);
 
                 // Create a request using a URL that can receive a post. 
                 WebRequest request = WebRequest.Create(baseurl);
@@ -387,7 +386,7 @@ namespace ArdupilotMega.GCSViews
                 // Get the response.
                 WebResponse response = request.GetResponse();
                 // Display the status.
-                Console.WriteLine(((HttpWebResponse)response).StatusDescription);
+                log.Info(((HttpWebResponse)response).StatusDescription);
                 // Get the stream containing content returned by the server.
                 dataStream = response.GetResponseStream();
 
@@ -425,7 +424,7 @@ namespace ArdupilotMega.GCSViews
 
                 progress.Value = 100;
                 this.Refresh();
-                Console.WriteLine("Downloaded");
+                log.Info("Downloaded");
             }
             catch (Exception ex) { lbl_status.Text = "Failed download"; MessageBox.Show("Failed to download new firmware : " + ex.ToString()); return; }
 
@@ -443,9 +442,18 @@ namespace ArdupilotMega.GCSViews
                 sr = new StreamReader(filename);
                 FLASH = readIntelHEXv2(sr);
                 sr.Close();
-                Console.WriteLine("\n\nSize: {0}\n\n", FLASH.Length);
+                log.InfoFormat("\n\nSize: {0}\n\n", FLASH.Length);
             }
-            catch (Exception ex) { if (sr != null) { sr.Dispose(); } lbl_status.Text = "Failed read HEX"; MessageBox.Show("Failed to read firmware.hex : " + ex.Message); return; }
+            catch (Exception ex)
+            {
+                if (sr != null)
+                {
+                    sr.Dispose();
+                } 
+                lbl_status.Text = "Failed read HEX"; 
+                MessageBox.Show("Failed to read firmware.hex : " + ex.Message); 
+                return;
+            }
             ArduinoComms port = new ArduinoSTK();
 
             if (board == "1280")
@@ -460,8 +468,10 @@ namespace ArdupilotMega.GCSViews
             }
             else if (board == "2560" || board == "2560-2")
             {
-                port = new ArduinoSTKv2();
-                port.BaudRate = 115200;
+                port = new ArduinoSTKv2
+                           {
+                               BaudRate = 115200
+                           };
             }
             port.DataBits = 8;
             port.StopBits = StopBits.One;
@@ -478,7 +488,7 @@ namespace ArdupilotMega.GCSViews
 
                 if (port.connectAP())
                 {
-                    Console.WriteLine("starting");
+                    log.Info("starting");
                     lbl_status.Text = "Uploading " + FLASH.Length + " bytes to APM";
                     progress.Value = 0;
                     this.Refresh();
@@ -486,7 +496,7 @@ namespace ArdupilotMega.GCSViews
                     // this is enough to make ap_var reset
                     //port.upload(new byte[256], 0, 2, 0);
 
-                    port.Progress += new ProgressEventHandler(port_Progress);
+                    port.Progress += port_Progress;
 
                     if (!port.uploadflash(FLASH, 0, FLASH.Length, 0))
                     {
@@ -500,7 +510,7 @@ namespace ArdupilotMega.GCSViews
 
                     progress.Value = 100;
 
-                    Console.WriteLine("Uploaded");
+                    log.Info("Uploaded");
 
                     this.Refresh();
 
@@ -518,7 +528,7 @@ namespace ArdupilotMega.GCSViews
                         progress.Value = (int)((start / (float)FLASH.Length) * 100);
                         progress.Refresh();
                         port.setaddress(start);
-                        Console.WriteLine("Downloading " + length + " at " + start);
+                        log.Info("Downloading " + length + " at " + start);
                         port.downloadflash(length).CopyTo(flashverify, start);
                         start += length;
                     }
@@ -575,14 +585,19 @@ namespace ArdupilotMega.GCSViews
                 progress.Value = 100;
                 lbl_status.Text = "Done";
             }
-            catch (Exception ex) { lbl_status.Text = "Failed upload"; MessageBox.Show("Check port settings or Port in use? " + ex.ToString()); port.Close(); }
+            catch (Exception ex)
+            {
+                lbl_status.Text = "Failed upload"; 
+                MessageBox.Show("Check port settings or Port in use? " + ex);
+                port.Close();
+            }
             flashing = false;
             MainV2.givecomport = false;
         }
 
         void port_Progress(int progress,string status)
         {
-            Console.WriteLine("Progress {0} ", progress);
+            log.InfoFormat("Progress {0} ", progress);
             this.progress.Value = progress;
             this.progress.Refresh();
         }
@@ -607,7 +622,7 @@ namespace ArdupilotMega.GCSViews
                     int length = Convert.ToInt32(line.Substring(1, 2), 16);
                     int address = Convert.ToInt32(line.Substring(3, 4), 16);
                     int option = Convert.ToInt32(line.Substring(7, 2), 16);
-                    Console.WriteLine("len {0} add {1} opt {2}", length, address, option);
+                    log.InfoFormat("len {0} add {1} opt {2}", length, address, option);
 
                     if (option == 0)
                     {
