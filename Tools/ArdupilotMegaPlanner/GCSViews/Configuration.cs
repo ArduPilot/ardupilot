@@ -173,26 +173,20 @@ namespace ArdupilotMega.GCSViews
             CultureInfo ci = null;
             foreach (string name in new string[] { "en-US", "zh-Hans", "zh-TW", "ru-RU", "Fr", "Pl", "it-IT", "es-ES" })
             {
-                ci = MainV2.getcultureinfo(name);
+                ci = CultureInfoEx.GetCultureInfo(name);
                 if (ci != null)
                     languages.Add(ci);
             }
 
             CMB_language.DisplayMember = "DisplayName";
             CMB_language.DataSource = languages;
-            bool match = false;
-            for (int i = 0; i < languages.Count && !match; i++)
+            ci = Thread.CurrentThread.CurrentUICulture;
+            for (int i = 0; i < languages.Count; i++)
             {
-                ci = Thread.CurrentThread.CurrentUICulture;
-                while (!ci.Equals(CultureInfo.InvariantCulture))
+                if (ci.IsChildOf(languages[i]))
                 {
-                    if (ci.Equals(languages[i]))
-                    {
-                        CMB_language.SelectedIndex = i;
-                        match = true;
-                        break;
-                    }
-                    ci = ci.Parent;
+                    CMB_language.SelectedIndex = i;
+                    break;
                 }
             }
             CMB_language.SelectedIndexChanged += CMB_language_SelectedIndexChanged;
@@ -555,23 +549,23 @@ namespace ArdupilotMega.GCSViews
                 if (text.Length > 0)
                 {
                     if (text[0].GetType() == typeof(NumericUpDown))
-                        {
-                            decimal option = (decimal)(float.Parse(Params[e.ColumnIndex, e.RowIndex].Value.ToString()));
-                            ((NumericUpDown)text[0]).Value = option;
-                            ((NumericUpDown)text[0]).BackColor = Color.Green;
-                        }
+                    {
+                        decimal option = (decimal)(float.Parse(Params[e.ColumnIndex, e.RowIndex].Value.ToString()));
+                        ((NumericUpDown)text[0]).Value = option;
+                        ((NumericUpDown)text[0]).BackColor = Color.Green;
+                    }
                     else if (text[0].GetType() == typeof(ComboBox))
-                        {
-                            int option = (int)(float.Parse(Params[e.ColumnIndex, e.RowIndex].Value.ToString()));
-                            ((ComboBox)text[0]).SelectedIndex = option;
-                            ((ComboBox)text[0]).BackColor = Color.Green;
-                        }
+                    {
+                        int option = (int)(float.Parse(Params[e.ColumnIndex, e.RowIndex].Value.ToString()));
+                        ((ComboBox)text[0]).SelectedIndex = option;
+                        ((ComboBox)text[0]).BackColor = Color.Green;
+                    }
                 }
             }
             catch { ((Control)text[0]).BackColor = Color.Red; }
 
             Params.Focus();
-        }        
+        }
 
         private void BUT_load_Click(object sender, EventArgs e)
         {
@@ -599,12 +593,12 @@ namespace ArdupilotMega.GCSViews
                         continue;
 
                     if (index2 != -1)
-                        line = line.Replace(',','.');
+                        line = line.Replace(',', '.');
 
                     string name = line.Substring(0, index);
                     float value = float.Parse(line.Substring(index + 1), new System.Globalization.CultureInfo("en-US"));
 
-                    MAVLink.modifyParamForDisplay(true,name,ref value);
+                    MAVLink.modifyParamForDisplay(true, name, ref value);
 
                     // set param table as well
                     foreach (DataGridViewRow row in Params.Rows)
@@ -813,9 +807,10 @@ namespace ArdupilotMega.GCSViews
             {
                 DsError.ThrowExceptionForHR(hr);
             }
-            catch (Exception ex) {
-                MessageBox.Show("Can not add video source\n" + ex.ToString()); 
-                return; 
+            catch (Exception ex)
+            {
+                MessageBox.Show("Can not add video source\n" + ex.ToString());
+                return;
             }
 
             // Find the stream config interface
@@ -940,7 +935,7 @@ namespace ArdupilotMega.GCSViews
 
 
 
-                
+
             }
             catch { MessageBox.Show("Error: getting param list"); }
 
