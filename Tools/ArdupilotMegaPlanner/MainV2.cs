@@ -138,7 +138,7 @@ namespace ArdupilotMega
             xmlconfig(false);
 
             if (config.ContainsKey("language") && !string.IsNullOrEmpty((string)config["language"]))
-                changelanguage(getcultureinfo((string)config["language"]));
+                changelanguage(CultureInfoEx.GetCultureInfo((string)config["language"]));
 
             if (!MONO) // windows only
             {
@@ -2011,48 +2011,10 @@ namespace ArdupilotMega
                     {
                         ComponentResourceManager rm = new ComponentResourceManager(view.GetType());
                         foreach (Control ctrl in view.Controls)
-                            applyresource(rm, ctrl);
+                            rm.ApplyResource(ctrl);
                         rm.ApplyResources(view, "$this");
                     }
                 }
-            }
-        }
-
-        private void applyresource(ComponentResourceManager rm, Control ctrl)
-        {
-            rm.ApplyResources(ctrl, ctrl.Name);
-            foreach (Control subctrl in ctrl.Controls)
-                applyresource(rm, subctrl);
-
-            if (ctrl.ContextMenu != null)
-                applyresource(rm, ctrl.ContextMenu);
-
-
-            if (ctrl is DataGridView)
-            {
-                foreach (DataGridViewColumn col in (ctrl as DataGridView).Columns)
-                    rm.ApplyResources(col, col.Name);
-            }
-
-
-        }
-
-        private void applyresource(ComponentResourceManager rm, Menu menu)
-        {
-            rm.ApplyResources(menu, menu.Name);
-            foreach (MenuItem submenu in menu.MenuItems)
-                applyresource(rm, submenu);
-        }
-
-        public static CultureInfo getcultureinfo(string name)
-        {
-            try
-            {
-                return new CultureInfo(name);
-            }
-            catch (Exception)
-            {
-                return null;
             }
         }
 

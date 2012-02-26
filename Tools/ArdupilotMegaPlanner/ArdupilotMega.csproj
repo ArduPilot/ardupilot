@@ -445,6 +445,7 @@
       <DependentUpon>temp.cs</DependentUpon>
     </Compile>
     <Compile Include="Radio\Uploader.cs" />
+    <Compile Include="Utility.cs" />
     <EmbeddedResource Include="Controls\ProgressReporterDialogue.resx">
       <DependentUpon>ProgressReporterDialogue.cs</DependentUpon>
     </EmbeddedResource>
