@@ -343,6 +343,10 @@ static void init_ardupilot()
 	Log_Write_Data(20, (float)g.pid_nav_lon.kD());
 
 	Log_Write_Data(21, (int32_t)g.auto_slew_rate.get());
+
+	Log_Write_Data(22, (float)g.pid_loiter_rate_lon.kP());
+	Log_Write_Data(23, (float)g.pid_loiter_rate_lon.kI());
+	Log_Write_Data(24, (float)g.pid_loiter_rate_lon.kD());
 #endif
 
 	SendDebug("\nReady to FLY ");
