@@ -44,7 +44,8 @@ version 2.1 of the License, or (at your option) any later version.
 #include <PID.h>            // PID library
 #include <RC_Channel.h>     // RC Channel Library
 #include <AP_RangeFinder.h>	// Range finder library
-#include <ModeFilter.h>
+#include <Filter.h>			// Filter library
+#include <ModeFilter.h>		// Mode Filter from Filter library
 #include <AP_Relay.h>       // APM relay
 #include <AP_Mount.h>		// Camera/Antenna mount
 #include <GCS_MAVLink.h>    // MAVLink GCS definitions
@@ -224,7 +225,7 @@ GCS_MAVLINK	gcs3;
 // PITOT selection
 ////////////////////////////////////////////////////////////////////////////////
 //
-ModeFilter sonar_mode_filter;
+ModeFilterInt16 sonar_mode_filter(5,2);
 
 #if CONFIG_PITOT_SOURCE == PITOT_SOURCE_ADC
 AP_AnalogSource_ADC pitot_analog_source( &adc,
