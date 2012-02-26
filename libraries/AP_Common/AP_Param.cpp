@@ -533,7 +533,13 @@ AP_Param::find(const char *name, enum ap_var_type *ptype)
                 continue;
             }
             const struct GroupInfo *group_info = (const struct GroupInfo *)PGM_POINTER(&_var_info[i].group_info);
-            return find_group(name + len, i, group_info, ptype);
+            AP_Param *ap = find_group(name + len, i, group_info, ptype);
+            if (ap != NULL) {
+                return ap;
+            }
+            // we continue looking as we want to allow top level
+            // parameter to have the same prefix name as group
+            // parameters, for example CAM_P_G
         } else if (strcasecmp_P(name, _var_info[i].name) == 0) {
             *ptype = (enum ap_var_type)type;
             return (AP_Param *)PGM_POINTER(&_var_info[i].ptr);
