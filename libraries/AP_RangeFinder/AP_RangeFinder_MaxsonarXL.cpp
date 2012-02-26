@@ -35,7 +35,7 @@
 
 // Constructor //////////////////////////////////////////////////////////////
 
-AP_RangeFinder_MaxsonarXL::AP_RangeFinder_MaxsonarXL(AP_AnalogSource *source, ModeFilter *filter):
+AP_RangeFinder_MaxsonarXL::AP_RangeFinder_MaxsonarXL(AP_AnalogSource *source, FilterInt16 *filter):
 		RangeFinder(source, filter),
 		_scaler(AP_RANGEFINDER_MAXSONARXL_SCALER)
 	{
