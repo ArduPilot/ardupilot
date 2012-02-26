@@ -5,12 +5,15 @@ using System.Net;
 using System.IO;
 using System.Text;
 using System.Threading;
+using log4net;
+using log4net.Config;
 
 
 namespace ArdupilotMega
 {
     static class Program
     {
+        private static readonly ILog log = LogManager.GetLogger("Program");
 
         /// <summary>
         /// The main entry point for the application.
@@ -21,23 +24,29 @@ namespace ArdupilotMega
             //System.Threading.Thread.CurrentThread.CurrentUICulture = new System.Globalization.CultureInfo("en-US");
             //System.Threading.Thread.CurrentThread.CurrentCulture = new System.Globalization.CultureInfo("en-US");
 
-            Application.ThreadException += new System.Threading.ThreadExceptionEventHandler(Application_ThreadException);
+            Application.ThreadException += Application_ThreadException;
 
-            Application.Idle += new EventHandler(Application_Idle);
+            Application.Idle += Application_Idle;
 
             //MessageBox.Show("NOTE: This version may break advanced mission scripting");
 
             //Common.linearRegression();
 
             Application.EnableVisualStyles();
+            XmlConfigurator.Configure();
+            log.Info("******************* Logging Configured *******************");
             Application.SetCompatibleTextRenderingDefault(false);
             try
             {
-                System.Threading.Thread.CurrentThread.Name = "Base Thread";
+                Thread.CurrentThread.Name = "Base Thread";
 
                 Application.Run(new MainV2());             
             }
-            catch (Exception ex) { Console.WriteLine(ex.ToString()); }
+            catch (Exception ex)
+            {
+                log.Fatal("Fatal app exception",ex);
+                Console.WriteLine(ex.ToString());
+            }
         }
 
         static void Application_Idle(object sender, EventArgs e)
@@ -111,7 +120,10 @@ namespace ArdupilotMega
                     dataStream.Close();
                     response.Close();
                 }
-                catch { MessageBox.Show("Error sending Error report!! Youre most likerly are not on the internet"); }
+                catch
+                {
+                    MessageBox.Show("Error sending Error report!! Youre most likerly are not on the internet");
+                }
             }
         }
     }

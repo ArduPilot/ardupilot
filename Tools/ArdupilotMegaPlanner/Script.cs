@@ -30,11 +30,8 @@ namespace ArdupilotMega
             scope.SetVariable("cs", MainV2.cs);
             scope.SetVariable("Script", this);
 
-            Console.WriteLine(DateTime.Now.Millisecond);
             engine.CreateScriptSourceFromString("print 'hello world from python'").Execute(scope);
-            Console.WriteLine(DateTime.Now.Millisecond);
             engine.CreateScriptSourceFromString("print cs.roll").Execute(scope);
-            Console.WriteLine(DateTime.Now.Millisecond);
 
 
             object thisBoxed = MainV2.cs;

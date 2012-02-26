@@ -30,8 +30,8 @@
         {
             this.components = new System.ComponentModel.Container();
             System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(Configuration));
-            System.Windows.Forms.DataGridViewCellStyle dataGridViewCellStyle1 = new System.Windows.Forms.DataGridViewCellStyle();
-            System.Windows.Forms.DataGridViewCellStyle dataGridViewCellStyle2 = new System.Windows.Forms.DataGridViewCellStyle();
+            System.Windows.Forms.DataGridViewCellStyle dataGridViewCellStyle3 = new System.Windows.Forms.DataGridViewCellStyle();
+            System.Windows.Forms.DataGridViewCellStyle dataGridViewCellStyle4 = new System.Windows.Forms.DataGridViewCellStyle();
             this.Params = new System.Windows.Forms.DataGridView();
             this.Command = new System.Windows.Forms.DataGridViewTextBoxColumn();
             this.Value = new System.Windows.Forms.DataGridViewTextBoxColumn();
@@ -141,6 +141,8 @@
             this.RLL2SRV_P = new System.Windows.Forms.NumericUpDown();
             this.label52 = new System.Windows.Forms.Label();
             this.TabAC = new System.Windows.Forms.TabPage();
+            this.TUNE_LOW = new System.Windows.Forms.NumericUpDown();
+            this.TUNE_HIGH = new System.Windows.Forms.NumericUpDown();
             this.myLabel2 = new ArdupilotMega.MyLabel();
             this.TUNE = new System.Windows.Forms.ComboBox();
             this.myLabel1 = new ArdupilotMega.MyLabel();
@@ -345,6 +347,8 @@
             ((System.ComponentModel.ISupportInitialize)(this.RLL2SRV_I)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.RLL2SRV_P)).BeginInit();
             this.TabAC.SuspendLayout();
+            ((System.ComponentModel.ISupportInitialize)(this.TUNE_LOW)).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)(this.TUNE_HIGH)).BeginInit();
             this.groupBox5.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.THR_RATE_D)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.THR_RATE_IMAX)).BeginInit();
@@ -403,14 +407,14 @@
             this.Params.AllowUserToAddRows = false;
             this.Params.AllowUserToDeleteRows = false;
             resources.ApplyResources(this.Params, "Params");
-            dataGridViewCellStyle1.Alignment = System.Windows.Forms.DataGridViewContentAlignment.MiddleLeft;
-            dataGridViewCellStyle1.BackColor = System.Drawing.Color.Maroon;
-            dataGridViewCellStyle1.Font = new System.Drawing.Font("Microsoft Sans Serif", 8.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            dataGridViewCellStyle1.ForeColor = System.Drawing.Color.White;
-            dataGridViewCellStyle1.SelectionBackColor = System.Drawing.SystemColors.Highlight;
-            dataGridViewCellStyle1.SelectionForeColor = System.Drawing.SystemColors.HighlightText;
-            dataGridViewCellStyle1.WrapMode = System.Windows.Forms.DataGridViewTriState.True;
-            this.Params.ColumnHeadersDefaultCellStyle = dataGridViewCellStyle1;
+            dataGridViewCellStyle3.Alignment = System.Windows.Forms.DataGridViewContentAlignment.MiddleLeft;
+            dataGridViewCellStyle3.BackColor = System.Drawing.Color.Maroon;
+            dataGridViewCellStyle3.Font = new System.Drawing.Font("Microsoft Sans Serif", 8.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            dataGridViewCellStyle3.ForeColor = System.Drawing.Color.White;
+            dataGridViewCellStyle3.SelectionBackColor = System.Drawing.SystemColors.Highlight;
+            dataGridViewCellStyle3.SelectionForeColor = System.Drawing.SystemColors.HighlightText;
+            dataGridViewCellStyle3.WrapMode = System.Windows.Forms.DataGridViewTriState.True;
+            this.Params.ColumnHeadersDefaultCellStyle = dataGridViewCellStyle3;
             this.Params.ColumnHeadersHeightSizeMode = System.Windows.Forms.DataGridViewColumnHeadersHeightSizeMode.AutoSize;
             this.Params.Columns.AddRange(new System.Windows.Forms.DataGridViewColumn[] {
             this.Command,
@@ -419,14 +423,14 @@
             this.mavScale,
             this.RawValue});
             this.Params.Name = "Params";
-            dataGridViewCellStyle2.Alignment = System.Windows.Forms.DataGridViewContentAlignment.MiddleLeft;
-            dataGridViewCellStyle2.BackColor = System.Drawing.SystemColors.ActiveCaption;
-            dataGridViewCellStyle2.Font = new System.Drawing.Font("Microsoft Sans Serif", 8.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            dataGridViewCellStyle2.ForeColor = System.Drawing.SystemColors.WindowText;
-            dataGridViewCellStyle2.SelectionBackColor = System.Drawing.SystemColors.Highlight;
-            dataGridViewCellStyle2.SelectionForeColor = System.Drawing.SystemColors.HighlightText;
-            dataGridViewCellStyle2.WrapMode = System.Windows.Forms.DataGridViewTriState.True;
-            this.Params.RowHeadersDefaultCellStyle = dataGridViewCellStyle2;
+            dataGridViewCellStyle4.Alignment = System.Windows.Forms.DataGridViewContentAlignment.MiddleLeft;
+            dataGridViewCellStyle4.BackColor = System.Drawing.SystemColors.ActiveCaption;
+            dataGridViewCellStyle4.Font = new System.Drawing.Font("Microsoft Sans Serif", 8.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            dataGridViewCellStyle4.ForeColor = System.Drawing.SystemColors.WindowText;
+            dataGridViewCellStyle4.SelectionBackColor = System.Drawing.SystemColors.Highlight;
+            dataGridViewCellStyle4.SelectionForeColor = System.Drawing.SystemColors.HighlightText;
+            dataGridViewCellStyle4.WrapMode = System.Windows.Forms.DataGridViewTriState.True;
+            this.Params.RowHeadersDefaultCellStyle = dataGridViewCellStyle4;
             this.Params.RowHeadersVisible = false;
             this.Params.CellValueChanged += new System.Windows.Forms.DataGridViewCellEventHandler(this.Params_CellValueChanged);
             // 
@@ -1087,6 +1091,8 @@
             // 
             // TabAC
             // 
+            this.TabAC.Controls.Add(this.TUNE_LOW);
+            this.TabAC.Controls.Add(this.TUNE_HIGH);
             this.TabAC.Controls.Add(this.myLabel2);
             this.TabAC.Controls.Add(this.TUNE);
             this.TabAC.Controls.Add(this.myLabel1);
@@ -1105,6 +1111,16 @@
             this.TabAC.Controls.Add(this.groupBox25);
             resources.ApplyResources(this.TabAC, "TabAC");
             this.TabAC.Name = "TabAC";
+            // 
+            // TUNE_LOW
+            // 
+            resources.ApplyResources(this.TUNE_LOW, "TUNE_LOW");
+            this.TUNE_LOW.Name = "TUNE_LOW";
+            // 
+            // TUNE_HIGH
+            // 
+            resources.ApplyResources(this.TUNE_HIGH, "TUNE_HIGH");
+            this.TUNE_HIGH.Name = "TUNE_HIGH";
             // 
             // myLabel2
             // 
@@ -1138,7 +1154,8 @@
             resources.GetString("TUNE.Items17"),
             resources.GetString("TUNE.Items18"),
             resources.GetString("TUNE.Items19"),
-            resources.GetString("TUNE.Items20")});
+            resources.GetString("TUNE.Items20"),
+            resources.GetString("TUNE.Items21")});
             resources.ApplyResources(this.TUNE, "TUNE");
             this.TUNE.Name = "TUNE";
             // 
@@ -2190,6 +2207,8 @@
             ((System.ComponentModel.ISupportInitialize)(this.RLL2SRV_P)).EndInit();
             this.TabAC.ResumeLayout(false);
             this.TabAC.PerformLayout();
+            ((System.ComponentModel.ISupportInitialize)(this.TUNE_LOW)).EndInit();
+            ((System.ComponentModel.ISupportInitialize)(this.TUNE_HIGH)).EndInit();
             this.groupBox5.ResumeLayout(false);
             ((System.ComponentModel.ISupportInitialize)(this.THR_RATE_D)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.THR_RATE_IMAX)).EndInit();
@@ -2500,5 +2519,7 @@
         private System.Windows.Forms.Label label29;
         private System.Windows.Forms.NumericUpDown STAB_D;
         private System.Windows.Forms.Label lblSTAB_D;
+        private System.Windows.Forms.NumericUpDown TUNE_LOW;
+        private System.Windows.Forms.NumericUpDown TUNE_HIGH;
     }
 }

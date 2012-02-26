@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.Data;
 using System.Drawing;
+using System.Reflection;
 using System.Text;
 using System.Windows.Forms;
 using System.IO.Ports;
@@ -15,16 +16,17 @@ using Core.Geometry;
 using ICSharpCode.SharpZipLib.Zip;
 using ICSharpCode.SharpZipLib.Checksums;
 using ICSharpCode.SharpZipLib.Core;
+using log4net;
 
 
 namespace ArdupilotMega
 {
     public partial class Log : Form
     {
+        private static readonly ILog log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
         ICommsSerial comPort;
         int logcount = 0;
         serialstatus status = serialstatus.Connecting;
-        byte[] buffer = new byte[4000];
         StreamWriter sw;
         int currentlog = 0;
         bool threadrun = true;
@@ -72,14 +74,15 @@ namespace ArdupilotMega
                 comPort.toggleDTR();
                 //comPort.Open();
             }
-            catch (Exception)
+            catch (Exception ex)
             {
+                log.Error("Error opening comport", ex);
                 MessageBox.Show("Error opening comport");
             }
 
-            System.Threading.Thread t11 = new System.Threading.Thread(delegate()
+            var t11 = new System.Threading.Thread(delegate()
             {
-                DateTime start = DateTime.Now;
+                var start = DateTime.Now;
 
                 threadrun = true;
 
@@ -89,7 +92,9 @@ namespace ArdupilotMega
                 {
                     comPort.Write("\n\n\n\n"); // more in "connecting"
                 }
-                catch {  }
+                catch
+                {
+                }
 
                 while (threadrun)
                 {
@@ -105,11 +110,13 @@ namespace ArdupilotMega
                             comPort_DataReceived((object)null, (SerialDataReceivedEventArgs)null);
                         }
                     }
-                    catch (Exception ex) { Console.WriteLine("crash in comport reader " + ex.ToString()); } // cant exit unless told to
+                    catch (Exception ex)
+                    {
+                        log.Error("crash in comport reader " + ex);
+                    } // cant exit unless told to
                 }
-                Console.WriteLine("Comport thread close");
-            });
-            t11.Name = "comport reader";
+                log.Info("Comport thread close");
+            }) {Name = "comport reader"};
             t11.Start();
             MainV2.threads.Add(t11);
 
@@ -303,7 +310,7 @@ namespace ArdupilotMega
                     }
                 }
 
-                Console.WriteLine("exit while");
+                log.Info("exit while");
             }
             catch (Exception ex) { MessageBox.Show("Error reading data" + ex.ToString()); }
         }
@@ -532,7 +539,7 @@ namespace ArdupilotMega
 
                 Style style2 = new Style();
                 Color color = Color.FromArgb(0xff, (stylecode >> 16) & 0xff, (stylecode >> 8) & 0xff, (stylecode >> 0) & 0xff);
-                Console.WriteLine("colour " + color.ToArgb().ToString("X") + " " + color.ToKnownColor().ToString());
+                log.Info("colour " + color.ToArgb().ToString("X") + " " + color.ToKnownColor().ToString());
                 style2.Add(new LineStyle(color, 4));
 
 

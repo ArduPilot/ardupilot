@@ -75,11 +75,13 @@ namespace ArdupilotMega.GCSViews
         public static GMapControl mymap = null;
 
 
-        PointLatLngAlt GuidedModeWP = new PointLatLngAlt();
+        public static PointLatLngAlt GuidedModeWP = new PointLatLngAlt();
 
         AviWriter aviwriter;
 
         public SplitContainer MainHcopy = null;
+
+        public static FlightData instance;
 
         protected override void Dispose(bool disposing)
         {
@@ -93,6 +95,8 @@ namespace ArdupilotMega.GCSViews
         public FlightData()
         {
             InitializeComponent();
+
+            instance = this;
 
             mymap = gMapControl1;
             myhud = hud1;
@@ -1013,11 +1017,27 @@ namespace ArdupilotMega.GCSViews
             if (MainV2.comPort.logreadmode)
             {
                 MainV2.comPort.logreadmode = false;
+                ZedGraphTimer.Stop();
             }
             else
             {
                 BUT_clear_track_Click(sender, e);
                 MainV2.comPort.logreadmode = true;
+                list1.Clear();
+                list2.Clear();
+                list3.Clear();
+                list4.Clear();
+                list5.Clear();
+                list6.Clear();
+                list7.Clear();
+                list8.Clear();
+                list9.Clear();
+                list10.Clear();
+                tickStart = Environment.TickCount;
+
+                zg1.GraphPane.XAxis.Scale.Min = 0;
+                zg1.GraphPane.XAxis.Scale.Max = 1;
+                ZedGraphTimer.Start();
             }
         }
 

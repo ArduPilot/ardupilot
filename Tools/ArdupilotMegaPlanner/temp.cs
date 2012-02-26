@@ -13,11 +13,14 @@ using System.Net;
 
 using GMap.NET.WindowsForms;
 using GMap.NET.CacheProviders;
+using log4net;
 
 namespace ArdupilotMega
 {
     public partial class temp : Form
     {
+        private static readonly ILog log =
+          LogManager.GetLogger(System.Reflection.MethodBase.GetCurrentMethod().DeclaringType);
         public temp()
         {
             InitializeComponent();
@@ -159,7 +162,7 @@ namespace ArdupilotMega
                     int start = 0;
                     int end = 1024*4;
 
-                        Console.WriteLine(start + " to " + end);
+                        log.Info(start + " to " + end);
                         port.upload(EEPROM, (short)start, (short)(end - start), (short)start);
 
                         if (port.keepalive())
@@ -230,7 +233,7 @@ namespace ArdupilotMega
                     int start = 0;
                     int end = 1024*4;
 
-                        Console.WriteLine(start + " to " + end);
+                        log.Info(start + " to " + end);
                         port.upload(EEPROM, (short)start, (short)(end - start), (short)start);
 
                         if (port.keepalive())
@@ -295,11 +298,11 @@ namespace ArdupilotMega
                     int start = 0;
                     short length = 0x100;
 
-                    Console.WriteLine(start + " to " + FLASH.Length);
+                    log.Info(start + " to " + FLASH.Length);
 
                     while (start < FLASH.Length)
                     {
-                        Console.WriteLine("Doing " + length + " at " + start);
+                        log.Info("Doing " + length + " at " + start);
                         port.setaddress(start);
                         port.downloadflash(length).CopyTo(FLASH, start);
                         start += length;
@@ -335,7 +338,7 @@ namespace ArdupilotMega
 
                     sw.Close();
 
-                    Console.WriteLine("Downloaded");
+                    log.Info("Downloaded");
                 }
                 else
                 {
@@ -397,7 +400,7 @@ namespace ArdupilotMega
 
                 if (port.connectAP())
                 {
-                    Console.WriteLine("starting");
+                    log.Info("starting");
                     
                     
                     port.uploadflash(FLASH, 0, FLASH.Length, 0);
@@ -405,7 +408,7 @@ namespace ArdupilotMega
                     
                     
 
-                    Console.WriteLine("Uploaded");
+                    log.Info("Uploaded");
 
                     
                 }
@@ -442,7 +445,7 @@ namespace ArdupilotMega
                 int length = Convert.ToInt32(match.Groups[1].Value.ToString(), 16);
                 int address = Convert.ToInt32(match.Groups[2].Value.ToString(), 16);
                 int option = Convert.ToInt32(match.Groups[3].Value.ToString(), 16);
-                Console.WriteLine("len {0} add {1} opt {2}", length, address, option);
+                log.InfoFormat("len {0} add {1} opt {2}", length, address, option);
                 if (option == 0)
                 {
                     string data = match.Groups[4].Value.ToString();
@@ -484,7 +487,7 @@ namespace ArdupilotMega
                     int length = Convert.ToInt32(line.Substring(1, 2), 16);
                     int address = Convert.ToInt32(line.Substring(3, 4), 16);
                     int option = Convert.ToInt32(line.Substring(7, 2), 16);
-                    Console.WriteLine("len {0} add {1} opt {2}", length, address, option);
+                    log.InfoFormat("len {0} add {1} opt {2}", length, address, option);
 
                     if (option == 0)
                     {
@@ -535,12 +538,12 @@ namespace ArdupilotMega
             {
                 port.PortName = ArdupilotMega.MainV2.comportname;
 
-                Console.WriteLine("Open Port");
+                log.Info("Open Port");
                 port.Open();
-                Console.WriteLine("Connect AP");
+                log.Info("Connect AP");
                 if (port.connectAP())
                 {
-                    Console.WriteLine("Download AP");
+                    log.Info("Download AP");
                     byte[] EEPROM = new byte[1024*4];
 
                     for (int a = 0; a < 4 * 1024; a += 0x100)
@@ -548,7 +551,7 @@ namespace ArdupilotMega
                         port.setaddress(a);
                         port.download(0x100).CopyTo(EEPROM,a);
                     }
-                    Console.WriteLine("Verify State");
+                    log.Info("Verify State");
                     if (port.keepalive())
                     {
                         StreamWriter sw = new StreamWriter(Path.GetDirectoryName(Application.ExecutablePath) + Path.DirectorySeparatorChar + @"EEPROM.bin");
@@ -586,12 +589,12 @@ namespace ArdupilotMega
             {
                 port.PortName = ArdupilotMega.MainV2.comportname;
 
-                Console.WriteLine("Open Port");
+                log.Info("Open Port");
                 port.Open();
-                Console.WriteLine("Connect AP");
+                log.Info("Connect AP");
                 if (port.connectAP())
                 {
-                    Console.WriteLine("Download AP");
+                    log.Info("Download AP");
                     byte[] EEPROM = new byte[1024 * 4];
 
                     for (int a = 0; a < 4 * 1024; a += 0x100)
@@ -599,7 +602,7 @@ namespace ArdupilotMega
                         port.setaddress(a);
                         port.download(0x100).CopyTo(EEPROM, a);
                     }
-                    Console.WriteLine("Verify State");
+                    log.Info("Verify State");
                     if (port.keepalive())
                     {
                         StreamWriter sw = new StreamWriter(Path.GetDirectoryName(Application.ExecutablePath) + Path.DirectorySeparatorChar + @"EEPROM1280.bin");
@@ -607,7 +610,7 @@ namespace ArdupilotMega
                         bw.Write(EEPROM, 0, EEPROM.Length);
                         bw.Close();
 
-                        Console.WriteLine("Download AP");
+                        log.Info("Download AP");
                         byte[] FLASH = new byte[1024 * 128];
 
                         for (int a = 0; a < FLASH.Length; a += 0x100)
@@ -650,12 +653,12 @@ namespace ArdupilotMega
             {
                 port.PortName = ArdupilotMega.MainV2.comportname;
 
-                Console.WriteLine("Open Port");
+                log.Info("Open Port");
                 port.Open();
-                Console.WriteLine("Connect AP");
+                log.Info("Connect AP");
                 if (port.connectAP())
                 {
-                    Console.WriteLine("Download AP");
+                    log.Info("Download AP");
                     byte[] EEPROM = new byte[1024 * 4];
 
                     for (int a = 0; a < EEPROM.Length; a += 0x100)
@@ -663,7 +666,7 @@ namespace ArdupilotMega
                         port.setaddress(a);
                         port.download(0x100).CopyTo(EEPROM, a);
                     }
-                    Console.WriteLine("Verify State");
+                    log.Info("Verify State");
                     if (port.keepalive())
                     {
                         StreamWriter sw = new StreamWriter(Path.GetDirectoryName(Application.ExecutablePath) + Path.DirectorySeparatorChar + @"EEPROM2560.bin");
@@ -671,7 +674,7 @@ namespace ArdupilotMega
                         bw.Write(EEPROM, 0, EEPROM.Length);
                         bw.Close();
 
-                        Console.WriteLine("Download AP");
+                        log.Info("Download AP");
                         byte[] FLASH = new byte[1024 * 256];
 
                         for (int a = 0; a < FLASH.Length; a += 0x100)
@@ -733,7 +736,7 @@ namespace ArdupilotMega
 
                 if (port.connectAP())
                 {
-                    Console.WriteLine("starting");
+                    log.Info("starting");
 
 
                     port.uploadflash(FLASH, 0, FLASH.Length, 0);
@@ -741,7 +744,7 @@ namespace ArdupilotMega
                     port.upload(EEPROM, 0, (short)EEPROM.Length, 0);
 
 
-                    Console.WriteLine("Uploaded");
+                    log.Info("Uploaded");
 
 
                 }
@@ -800,7 +803,7 @@ namespace ArdupilotMega
 
                 foreach (string file in files)
                 {
-                    Console.WriteLine(DateTime.Now.Millisecond +  " Doing "+ file);
+                    log.Info(DateTime.Now.Millisecond +  " Doing "+ file);
                     Regex reg = new Regex(@"Z([0-9]+)\\([0-9]+)\\([0-9]+)");
 
                     Match mat = reg.Match(file);
@@ -820,7 +823,7 @@ namespace ArdupilotMega
                     Img.Save(tile,System.Drawing.Imaging.ImageFormat.Jpeg);
 
                     tile.Seek(0, SeekOrigin.Begin);
-                    Console.WriteLine(pnt.X + " " + pnt.Y);
+                    log.Info(pnt.X + " " + pnt.Y);
 
                     Application.DoEvents();
 
@@ -860,7 +863,7 @@ namespace ArdupilotMega
             GMap.NET.CacheProviders.SQLitePureImageCache.VacuumDb(MainMap.CacheLocation + @"\TileDBv3\en\Data.gmdb");
 
 
-            Console.WriteLine("Removed {0} images",removed);
+            log.InfoFormat("Removed {0} images", removed);
         }
         private void BUT_lang_edit_Click(object sender, EventArgs e)
         {
@@ -869,7 +872,7 @@ namespace ArdupilotMega
 
         private void BUT_georefimage_Click(object sender, EventArgs e)
         {
-            new georefimage().Show();
+            new Georefimage().Show();
         }
 
         private void BUT_follow_me_Click(object sender, EventArgs e)
@@ -877,6 +880,11 @@ namespace ArdupilotMega
             SerialInput si = new SerialInput();
             MainV2.fixtheme((Form)si);
             si.Show();
+        }
+
+        private void BUT_ant_track_Click(object sender, EventArgs e)
+        {
+            new Antenna.Tracker().Show();
         }
     }
 }

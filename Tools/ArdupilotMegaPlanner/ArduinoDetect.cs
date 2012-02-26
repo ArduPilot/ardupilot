@@ -1,15 +1,15 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
+using System.Reflection;
 using System.Management;
 using System.Windows.Forms;
 using System.Threading;
+using log4net;
 
 namespace ArdupilotMega
 {
     class ArduinoDetect
     {
+        private static readonly ILog log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
         /// <summary>
         /// detects STK version 1 or 2
         /// </summary>
@@ -27,7 +27,7 @@ namespace ArdupilotMega
             serialPort.BaudRate = 57600;
             serialPort.Open();
 
-            System.Threading.Thread.Sleep(100);
+            Thread.Sleep(100);
 
             int a = 0;
             while (a < 20) // 20 * 50 = 1 sec
@@ -36,7 +36,7 @@ namespace ArdupilotMega
                 serialPort.DiscardInBuffer();
                 serialPort.Write(new byte[] { (byte)'0', (byte)' ' }, 0, 2);
                 a++;
-                System.Threading.Thread.Sleep(50);
+                Thread.Sleep(50);
 
                 //Console.WriteLine("btr {0}", serialPort.BytesToRead);
                 if (serialPort.BytesToRead >= 2)
@@ -53,15 +53,15 @@ namespace ArdupilotMega
 
             serialPort.Close();
 
-            Console.WriteLine("Not a 1280");
+            log.Warn("Not a 1280");
 
-            System.Threading.Thread.Sleep(500);
+            Thread.Sleep(500);
 
             serialPort.DtrEnable = true;
             serialPort.BaudRate = 115200;
             serialPort.Open();
 
-            System.Threading.Thread.Sleep(100);
+            Thread.Sleep(100);
 
             a = 0;
             while (a < 4)
@@ -69,7 +69,7 @@ namespace ArdupilotMega
                 byte[] temp = new byte[] { 0x6, 0, 0, 0, 0 };
                 temp = ArduinoDetect.genstkv2packet(serialPort, temp);
                 a++;
-                System.Threading.Thread.Sleep(50);
+                Thread.Sleep(50);
 
                 try
                 {
@@ -81,11 +81,13 @@ namespace ArdupilotMega
 
                     }
                 }
-                catch { }
+                catch
+                {
+                }
             }
 
             serialPort.Close();
-            Console.WriteLine("Not a 2560");
+            log.Warn("Not a 2560");
             return "";
         }
 
@@ -106,7 +108,7 @@ namespace ArdupilotMega
             serialPort.BaudRate = 57600;
             serialPort.Open();
 
-            System.Threading.Thread.Sleep(100);
+            Thread.Sleep(100);
 
             int a = 0;
             while (a < 20) // 20 * 50 = 1 sec
@@ -115,7 +117,7 @@ namespace ArdupilotMega
                 serialPort.DiscardInBuffer();
                 serialPort.Write(new byte[] { (byte)'0', (byte)' ' }, 0, 2);
                 a++;
-                System.Threading.Thread.Sleep(50);
+                Thread.Sleep(50);
 
                 //Console.WriteLine("btr {0}", serialPort.BytesToRead);
                 if (serialPort.BytesToRead >= 2)
@@ -132,15 +134,15 @@ namespace ArdupilotMega
 
             serialPort.Close();
 
-            Console.WriteLine("Not a 1280");
+            log.Warn("Not a 1280");
 
-            System.Threading.Thread.Sleep(500);
+            Thread.Sleep(500);
 
             serialPort.DtrEnable = true;
             serialPort.BaudRate = 115200;
             serialPort.Open();
 
-            System.Threading.Thread.Sleep(100);
+            Thread.Sleep(100);
 
             a = 0;
             while (a < 4)
@@ -148,7 +150,7 @@ namespace ArdupilotMega
                 byte[] temp = new byte[] { 0x6, 0, 0, 0, 0 };
                 temp = ArduinoDetect.genstkv2packet(serialPort, temp);
                 a++;
-                System.Threading.Thread.Sleep(50);
+                Thread.Sleep(50);
 
                 try
                 {
@@ -192,7 +194,7 @@ namespace ArdupilotMega
             }
 
             serialPort.Close();
-            Console.WriteLine("Not a 2560");
+            log.Warn("Not a 2560");
             return "";
         }
 
@@ -281,11 +283,11 @@ namespace ArdupilotMega
                         key = buffer[pos];
                         pos++;
 
-                        Console.Write("{0:X4}: key {1} size {2}\n ", pos - 2, key, size + 1);
+                        log.InfoFormat("{0:X4}: key {1} size {2}\n ", pos - 2, key, size + 1);
 
                         if (key == 0xff)
                         {
-                            Console.WriteLine("end sentinal at {0}", pos - 2);
+                            log.InfoFormat("end sentinal at {0}", pos - 2);
                             break;
                         }
 
@@ -301,7 +303,6 @@ namespace ArdupilotMega
                             Console.Write(" {0:X2}", buffer[pos]);
                             pos++;
                         }
-                        Console.WriteLine();
                     }
                 }
 
@@ -325,7 +326,7 @@ namespace ArdupilotMega
 
                         if (key == 0xff)
                         {
-                            Console.WriteLine("end sentinal at {0}", pos - 2);
+                            log.InfoFormat("end sentinal at {0}", pos - 2);
                             break;
                         }
 
@@ -341,7 +342,6 @@ namespace ArdupilotMega
                             Console.Write(" {0:X2}", buffer[pos]);
                             pos++;
                         }
-                        Console.WriteLine();
                     }
                 }
             }

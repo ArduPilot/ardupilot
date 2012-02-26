@@ -8,7 +8,13 @@ namespace ArdupilotMega
 {
     class SerialPort : System.IO.Ports.SerialPort,ICommsSerial
     {
+        public new void Open()
+        {
+            if (base.IsOpen)
+                return;
 
+            base.Open();
+        }
 
         public void toggleDTR()
         {

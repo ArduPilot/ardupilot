@@ -18,6 +18,7 @@ using System.Resources;
 using System.Reflection;
 using System.ComponentModel;
 using System.Threading;
+using log4net;
 using SharpKml.Base;
 using SharpKml.Dom;
 
@@ -27,6 +28,7 @@ namespace ArdupilotMega.GCSViews
 {
     partial class FlightPlanner : MyUserControl
     {
+        private static readonly ILog log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
         int selectedrow = 0;
         bool quickadd = false;
         bool isonline = true;
@@ -598,7 +600,7 @@ namespace ArdupilotMega.GCSViews
 
         void Commands_DataError(object sender, DataGridViewDataErrorEventArgs e)
         {
-            Console.WriteLine(e.Exception.ToString() + " " + e.Context + " col " + e.ColumnIndex);
+            log.Info(e.Exception.ToString() + " " + e.Context + " col " + e.ColumnIndex);
             e.Cancel = false;
             e.ThrowException = false;
             //throw new NotImplementedException();
@@ -700,7 +702,7 @@ namespace ArdupilotMega.GCSViews
         {
             try
             {
-                Console.WriteLine(Element.ToString() + " " + Element.Parent);
+                log.Info(Element.ToString() + " " + Element.Parent);
             }
             catch { }
 
@@ -924,7 +926,7 @@ namespace ArdupilotMega.GCSViews
                 drawnpolygons.Markers.Add(m);
                 drawnpolygons.Markers.Add(mBorders);
             }
-            catch (Exception ex) { Console.WriteLine(ex.ToString()); }
+            catch (Exception ex) { log.Info(ex.ToString()); }
         }
 
         /// <summary>
@@ -1052,7 +1054,7 @@ namespace ArdupilotMega.GCSViews
                             System.Diagnostics.Debug.WriteLine(temp - System.Diagnostics.Stopwatch.GetTimestamp());
                         }
                     }
-                    catch (Exception e) { Console.WriteLine("writekml - bad wp data " + e.ToString()); }
+                    catch (Exception e) { log.Info("writekml - bad wp data " + e.ToString()); }
                 }
 
                 if (usable > 0)
@@ -1128,7 +1130,7 @@ namespace ArdupilotMega.GCSViews
             }
             catch (Exception ex)
             {
-                Console.WriteLine(ex.ToString());
+                log.Info(ex.ToString());
             }
 
             System.Diagnostics.Debug.WriteLine(DateTime.Now);
@@ -1213,18 +1215,18 @@ namespace ArdupilotMega.GCSViews
 
                     param = port.param;
 
-                    Console.WriteLine("Getting WP #");
+                    log.Info("Getting WP #");
                     int cmdcount = port.getWPCount();
 
                     for (ushort a = 0; a < cmdcount; a++)
                     {
-                        Console.WriteLine("Getting WP" + a);
+                        log.Info("Getting WP" + a);
                         cmds.Add(port.getWP(a));
                     }
 
                     port.setWPACK();
 
-                    Console.WriteLine("Done");
+                    log.Info("Done");
                 }
                 catch (Exception ex) { error = 1; MessageBox.Show("Error : " + ex.ToString()); }
                 try
@@ -1237,7 +1239,7 @@ namespace ArdupilotMega.GCSViews
                             {
                                 processToScreen(cmds);
                             }
-                            catch (Exception exx) { Console.WriteLine(exx.ToString()); }
+                            catch (Exception exx) { log.Info(exx.ToString()); }
                         }
 
                         MainV2.givecomport = false;
@@ -1248,7 +1250,7 @@ namespace ArdupilotMega.GCSViews
 
                     });
                 }
-                catch (Exception exx) { Console.WriteLine(exx.ToString()); }
+                catch (Exception exx) { log.Info(exx.ToString()); }
             });
             t12.IsBackground = true;
             t12.Name = "Read wps";
@@ -2523,7 +2525,7 @@ namespace ArdupilotMega.GCSViews
                 double x = bottomleft.Lat - Math.Abs(fulllatdiff);
                 double y = bottomleft.Lng - Math.Abs(fulllngdiff);
 
-                Console.WriteLine("{0} < {1} {2} < {3}", x, (topright.Lat), y, (topright.Lng));
+                log.InfoFormat("{0} < {1} {2} < {3}", x, (topright.Lat), y, (topright.Lng));
 
                 while (x < (topright.Lat + Math.Abs(fulllatdiff)) && y < (topright.Lng + Math.Abs(fulllngdiff)))
                 {

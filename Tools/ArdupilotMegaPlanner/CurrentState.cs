@@ -1,13 +1,16 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Reflection;
 using System.Text;
 using System.ComponentModel;
 using ArdupilotMega.Mavlink;
+using log4net;
 
 namespace ArdupilotMega
 {
     public class CurrentState : ICloneable
     {
+        private static readonly ILog log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
         // multipliers
         public float multiplierdist = 1;
         public float multiplierspeed = 1;
@@ -858,7 +861,7 @@ namespace ArdupilotMega
                     //Console.WriteLine(DateTime.Now.Millisecond + " done ");
                 }
             }
-            catch { Console.WriteLine("CurrentState Binding error"); }
+            catch { log.InfoFormat("CurrentState Binding error"); }
         }
 
         public object Clone()

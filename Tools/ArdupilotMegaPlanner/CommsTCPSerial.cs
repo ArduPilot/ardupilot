@@ -1,16 +1,19 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.ComponentModel;
+using System.Reflection;
 using System.Text;
 using System.IO.Ports;
 using System.Threading;
 using System.Net; // dns, ip address
 using System.Net.Sockets; // tcplistner
+using log4net;
 
 namespace System.IO.Ports
 {
     public class TcpSerial : ArdupilotMega.ICommsSerial
     {
+        private static readonly ILog log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
         TcpClient client = new TcpClient();
         IPEndPoint RemoteIpEndPoint = new IPEndPoint(IPAddress.Any, 0);
         byte[] rbuffer = new byte[0];
@@ -73,7 +76,7 @@ namespace System.IO.Ports
         {
             if (client.Client.Connected)
             {
-                Console.WriteLine("tcpserial socket already open");
+                log.Warn("tcpserial socket already open");
                 return;
             }
 
@@ -186,7 +189,7 @@ namespace System.IO.Ports
             VerifyConnected();
             int size = client.Available;
             byte[] crap = new byte[size];
-            Console.WriteLine("TcpSerial DiscardInBuffer {0}",size);
+            log.InfoFormat("TcpSerial DiscardInBuffer {0}",size);
             Read(crap, 0, size);
         }
 

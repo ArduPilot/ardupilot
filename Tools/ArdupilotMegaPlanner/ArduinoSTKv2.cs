@@ -1,8 +1,10 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Reflection;
 using System.Text;
 using System.IO.Ports;
 using System.Threading;
+using log4net;
 
 // Written by Michael Oborne
 
@@ -10,6 +12,7 @@ namespace ArdupilotMega
 {
     class ArduinoSTKv2 : SerialPort,ArduinoComms
     {
+        private static readonly ILog log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
         public event ProgressEventHandler Progress;
 
         public new void Open()
@@ -250,7 +253,7 @@ namespace ArdupilotMega
 
                 byte[] command = new byte[] { (byte)0x13, (byte)(sending >> 8), (byte)(sending & 0xff) };
 
-                Console.WriteLine((startfrom + (length - totalleft)) + " - " + sending);
+                log.InfoFormat((startfrom + (length - totalleft)) + " - " + sending);
 
                 Array.Resize<byte>(ref command, sending + 10); // sending + head
 
@@ -266,7 +269,7 @@ namespace ArdupilotMega
 
                 if (command[1] != 0)
                 {
-                    Console.WriteLine("No Sync");
+                    log.InfoFormat("No Sync");
                     return false;
                 }
             }
@@ -290,7 +293,7 @@ namespace ArdupilotMega
                 throw new Exception("Address must be an even number");
             }
                 
-            Console.WriteLine("Sending address   " + ((address / 2)));
+            log.InfoFormat("Sending address   " + ((address / 2)));
 
             int tempstart = address / 2; // words
             byte[] temp = new byte[] { 0x6, (byte)((tempstart >> 24) & 0xff), (byte)((tempstart >> 16) & 0xff), (byte)((tempstart >> 8) & 0xff), (byte)((tempstart >> 0) & 0xff) };
@@ -342,7 +345,7 @@ namespace ArdupilotMega
 
                 byte[] command = new byte[] { (byte)0x15, (byte)(sending >> 8), (byte)(sending & 0xff) };
 
-                Console.WriteLine((startfrom + (length - totalleft)) + " - " + sending);
+                log.InfoFormat((startfrom + (length - totalleft)) + " - " + sending);
 
                 Array.Resize<byte>(ref command, sending + 10); // sending + head
 
@@ -358,7 +361,7 @@ namespace ArdupilotMega
 
                 if (command[1] != 0)
                 {
-                    Console.WriteLine("No Sync");
+                    log.InfoFormat("No Sync");
                     return false;
                 }
             }

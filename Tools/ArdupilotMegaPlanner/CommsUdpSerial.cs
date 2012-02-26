@@ -1,16 +1,14 @@
-﻿using System;
-using System.Collections.Generic;
-using System.ComponentModel;
+﻿using System.Reflection;
 using System.Text;
-using System.IO.Ports;
-using System.Threading;
 using System.Net; // dns, ip address
 using System.Net.Sockets; // tcplistner
+using log4net;
 
 namespace System.IO.Ports
 {
     public class UdpSerial : ArdupilotMega.ICommsSerial
     {
+        private static readonly ILog log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
         UdpClient client = new UdpClient();
         IPEndPoint RemoteIpEndPoint = new IPEndPoint(IPAddress.Any, 0);
         byte[] rbuffer = new byte[0];
@@ -73,7 +71,7 @@ namespace System.IO.Ports
         {
             if (client.Client.Connected)
             {
-                Console.WriteLine("udpserial socket already open");
+                log.Info("udpserial socket already open");
                 return;
             }
 
@@ -97,12 +95,16 @@ namespace System.IO.Ports
             try
             {
                 client.Receive(ref RemoteIpEndPoint);
-                Console.WriteLine("NetSerial connecting to {0} : {1}", RemoteIpEndPoint.Address, RemoteIpEndPoint.Port);
+                log.InfoFormat("NetSerial connecting to {0} : {1}", RemoteIpEndPoint.Address, RemoteIpEndPoint.Port);
                 client.Connect(RemoteIpEndPoint);
             }
-            catch (Exception e) { 
-                if (client != null && client.Client.Connected) { client.Close(); }
-                Console.WriteLine(e.ToString());
+            catch (Exception e) 
+            { 
+                if (client != null && client.Client.Connected)
+                {
+                    client.Close();
+                }
+                log.Info(e.ToString());
                 System.Windows.Forms.MessageBox.Show("Please check your Firewall settings\nPlease try running this command\n1.    Run the following command in an elevated command prompt to disable Windows Firewall temporarily:\n    \nNetsh advfirewall set allprofiles state off\n    \nNote: This is just for test; please turn it back on with the command 'Netsh advfirewall set allprofiles state on'.\n");
                 throw new Exception("The socket/serialproxy is closed " + e);
             }
@@ -208,7 +210,7 @@ namespace System.IO.Ports
             VerifyConnected();
             int size = client.Available;
             byte[] crap = new byte[size];
-            Console.WriteLine("UdpSerial DiscardInBuffer {0}",size);
+            log.InfoFormat("UdpSerial DiscardInBuffer {0}",size);
             Read(crap, 0, size);
         }
 
