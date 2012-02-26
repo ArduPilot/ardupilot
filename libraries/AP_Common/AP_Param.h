@@ -434,17 +434,30 @@ protected:
 
 /// Convenience macro for defining instances of the AP_ParamT template.
 ///
-#define AP_PARAMDEF(_t, _n, _pt)   typedef AP_ParamT<_t, _pt> AP_##_n;
+// declare a scalar type
+// _t is the base type
+// _suffix is the suffix on the AP_* type name
+// _pt is the enum ap_var_type type
+#define AP_PARAMDEF(_t, _suffix, _pt)   typedef AP_ParamT<_t, _pt> AP_##_suffix;
 AP_PARAMDEF(float, Float, AP_PARAM_FLOAT);    // defines AP_Float
 AP_PARAMDEF(int8_t, Int8, AP_PARAM_INT8);     // defines AP_Int8
 AP_PARAMDEF(int16_t, Int16, AP_PARAM_INT16);  // defines AP_Int16
 AP_PARAMDEF(int32_t, Int32, AP_PARAM_INT32);  // defines AP_Int32
 
-#define AP_PARAMDEFA(_t, _n, _size, _pt)   typedef AP_ParamA<_t, _size, _pt> AP_##_n;
+// declare an array type
+// _t is the base type
+// _suffix is the suffix on the AP_* type name
+// _size is the size of the array
+// _pt is the enum ap_var_type type
+#define AP_PARAMDEFA(_t, _suffix, _size, _pt)   typedef AP_ParamA<_t, _size, _pt> AP_##_suffix;
 AP_PARAMDEFA(float, Vector6f, 6, AP_PARAM_VECTOR6F);
 
+// declare a non-scalar type
 // this is used in AP_Math.h
-#define AP_PARAMDEFV(_t, _n, _pt)   typedef AP_ParamV<_t, _pt> AP_##_n;
+// _t is the base type
+// _suffix is the suffix on the AP_* type name
+// _pt is the enum ap_var_type type
+#define AP_PARAMDEFV(_t, _suffix, _pt)   typedef AP_ParamV<_t, _pt> AP_##_suffix;
 
 /// Rely on built in casting for other variable types
 /// to minimize template creation and save memory
