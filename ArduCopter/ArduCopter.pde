@@ -78,7 +78,7 @@ http://code.google.com/p/ardupilot-mega/downloads/list
 #include <RC_Channel.h>     // RC Channel Library
 #include <AP_RangeFinder.h>	// Range finder library
 #include <AP_OpticalFlow.h> // Optical Flow library
-#include <ModeFilter.h>
+#include <ModeFilter.h>		// Mode Filter from Filter library
 #include <AP_Relay.h>		// APM relay
 #include <GCS_MAVLink.h>    // MAVLink GCS definitions
 #include <memcheck.h>
@@ -268,7 +268,7 @@ GCS_MAVLINK	gcs3;
 // SONAR selection
 ////////////////////////////////////////////////////////////////////////////////
 //
-ModeFilter sonar_mode_filter;
+ModeFilterInt16 sonar_mode_filter(5,2);
 #if CONFIG_SONAR == ENABLED
 	#if CONFIG_SONAR_SOURCE == SONAR_SOURCE_ADC
 	AP_AnalogSource_ADC sonar_analog_source( &adc, CONFIG_SONAR_SOURCE_ADC_CHANNEL, 0.25);
