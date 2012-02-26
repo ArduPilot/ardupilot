@@ -426,11 +426,11 @@ AP_DCM::drift_correction(void)
 				// DCM matrix to the current
 				// roll/pitch values, but with yaw
 				// from the GPS
-				if (!_compass) {
+				if (_compass) {
 					_compass->null_offsets_disable();
 				}
 				rotation_matrix_from_euler(_dcm_matrix, roll, pitch, ToRad(_gps->ground_course));
-				if (!_compass) {
+				if (_compass) {
 					_compass->null_offsets_enable();
 				}
 				_have_initial_yaw =  true;
