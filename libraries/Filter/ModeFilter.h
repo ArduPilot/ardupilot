@@ -76,7 +76,7 @@ T ModeFilter<T>::apply(T sample)
 //                  drops either the highest or lowest sample depending on the 'drop_high_sample' parameter
 //
 template <class T>
-void ModeFilter<T>::isort(T new_sample, bool drop_high_sample)
+void ModeFilter<T>::isort(T new_sample, bool drop_high)
 {
 	int8_t i;
 
@@ -84,10 +84,10 @@ void ModeFilter<T>::isort(T new_sample, bool drop_high_sample)
 	// the rest is the same as dropping the high sample
 	if( Filter<T>::sample_index < Filter<T>::filter_size ) {
 		Filter<T>::sample_index++;
-		drop_high_sample = true;
+		drop_high = true;
 	}
 
-	if( drop_high_sample ) {  // drop highest sample from the buffer to make room for our new sample
+	if( drop_high ) {  // drop highest sample from the buffer to make room for our new sample
 
 		// start from top. Note: sample_index always points to the next open space so we start from sample_index-1
 		i = Filter<T>::sample_index-1;
