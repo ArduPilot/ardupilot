@@ -22,7 +22,7 @@ template <class T>
 class ModeFilter : public Filter<T>
 {
   public:
-	ModeFilter(uint8_t filter_size, uint8_t return_element);
+	ModeFilter(uint8_t requested_size, uint8_t return_element);
 
 	// apply - Add a new raw value to the filter, retrieve the filtered result
 	virtual T	apply(T sample);
@@ -40,14 +40,14 @@ typedef ModeFilter<int16_t> ModeFilterInt16;
 // Constructor    //////////////////////////////////////////////////////////////
 
 template <class T>
-ModeFilter<T>::ModeFilter(uint8_t filter_size, uint8_t return_element) :
-	Filter<T>(filter_size),
+ModeFilter<T>::ModeFilter(uint8_t requested_size, uint8_t return_element) :
+	Filter<T>(requested_size),
 	_return_element(return_element),
 	drop_high_sample(true)
 {
 	// ensure we have a valid return_nth_element value.  if not, revert to median
-	if( _return_element >= filter_size )
-		_return_element = filter_size / 2;
+	if( _return_element >= Filter<T>::filter_size )
+		_return_element = Filter<T>::filter_size / 2;
 };
 
 // Public Methods //////////////////////////////////////////////////////////////

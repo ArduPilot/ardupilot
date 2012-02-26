@@ -21,7 +21,7 @@ template <class T>
 class SumFilter : public Filter<T>
 {
   public:
-	SumFilter(uint8_t filter_size) : Filter<T>(filter_size) {};
+	SumFilter(uint8_t requested_size) : Filter<T>(requested_size) {};
 
 	// apply - Add a new raw value to the filter, retrieve the filtered result
 	virtual T apply(T sample);
