@@ -664,7 +664,7 @@
 // Loiter Navigation control gains
 //
 #ifndef LOITER_RATE
-# define LOITER_RATE		0
+# define LOITER_RATE		1
 #endif
 
 #ifndef LOITER_RATE_P
