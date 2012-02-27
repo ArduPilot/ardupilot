@@ -7,18 +7,36 @@
 #define _SITL_ADC_H
 
 #include <stdlib.h>
+#include <math.h>
 
-#define NOISE_BITS 8
+static float noise_scale[8] = { 240, 400, 500, 200, 400, 400, 2000, 200 };
 
-static inline float noise_generator(void)
+// generate a random float between -1 and 1
+static double rand_float(void)
 {
-	extern bool sitl_motor_running;
-	if (!sitl_motor_running) {
+	float ret = ((unsigned)random()) % 2000000;
+	return (ret - 1.0e6) / 1.0e6;
+}
+
+static inline float noise_generator(uint8_t chan)
+{
+	extern float sitl_motor_speed[4];
+	extern long unsigned int micros(void);
+	uint8_t i;
+	float noise = 0;
+	uint8_t noise_count=0;
+	double t = micros() / 1.0e6;
+	for (i=0; i<4; i++) {
+		if (sitl_motor_speed[i] > 0.0) {
+			float n = rand_float() * noise_scale[chan];
+			noise += sin(fmod(t * sitl_motor_speed[i] * 2 * 3.14 + i, 2*3.14)) * n;
+			noise_count++;
+		}
+	}
+	if (noise_count == 0) {
 		return 0;
 	}
-	float noise = ((unsigned)random()) & ((1<<NOISE_BITS)-1);
-	noise -= 0.5*(1<<NOISE_BITS);
-	return noise;
+	return noise/noise_count;
 }
 
 // this implements the UDR2 register
@@ -42,20 +60,22 @@ struct ADC_UDR2 {
 	*/
 	ADC_UDR2& operator=(uint8_t cmd) {
 		float next_analog;
+		uint8_t chan;
 		switch (cmd) {
-		case 0x87: next_analog = channels[0]; break;
-		case 0xC7: next_analog = channels[1]; break;
-		case 0x97: next_analog = channels[2]; break;
-		case 0xD7: next_analog = channels[3]; break;
-		case 0xA7: next_analog = channels[4]; break;
-		case 0xE7: next_analog = channels[5]; break;
-		case 0xB7: next_analog = channels[6]; break;
-		case 0xF7: next_analog = channels[7]; break;
+		case 0x87: chan = 0; break;
+		case 0xC7: chan = 1; break;
+		case 0x97: chan = 2; break;
+		case 0xD7: chan = 3; break;
+		case 0xA7: chan = 4; break;
+		case 0xE7: chan = 5; break;
+		case 0xB7: chan = 6; break;
+		case 0xF7: chan = 7; break;
 		case 0:
 		default: return *this;
 		}
+		next_analog = channels[chan];
 		idx = 1;
-		next_value = (unsigned)(next_analog + noise_generator() + 0.5);
+		next_value = (unsigned)(next_analog + noise_generator(chan) + 0.5);
 		if (next_value >= 0x1000) {
 			next_value = 0xFFF;
 		}
