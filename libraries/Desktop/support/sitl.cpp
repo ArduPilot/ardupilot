@@ -157,8 +157,11 @@ static void sitl_fdm_input(void)
 
 }
 
+// used for noise generation in the ADC code
+bool sitl_motor_running = false;
+
 /*
-  send RC outputs to simulator for a quadcopter
+  send RC outputs to simulator
  */
 static void sitl_simulator_output(void)
 {
@@ -192,6 +195,10 @@ static void sitl_simulator_output(void)
 		// the registers are 2x the PWM value
 		pwm[i] = (*reg[i])/2;
 	}
+
+	// use pwm3 as a proxy for if the motor is running
+	sitl_motor_running = (pwm[2]>1200);
+
 	sendto(sitl_fd, (void*)pwm, sizeof(pwm), MSG_DONTWAIT, (const sockaddr *)&rcout_addr, sizeof(rcout_addr));
 }
 
