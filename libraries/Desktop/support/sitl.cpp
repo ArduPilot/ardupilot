@@ -158,7 +158,8 @@ static void sitl_fdm_input(void)
 }
 
 // used for noise generation in the ADC code
-bool sitl_motor_running = false;
+// motor speed in revolutions per second
+float sitl_motor_speed[4] = {0,0,0,0};
 
 /*
   send RC outputs to simulator
@@ -196,8 +197,15 @@ static void sitl_simulator_output(void)
 		pwm[i] = (*reg[i])/2;
 	}
 
-	// use pwm3 as a proxy for if the motor is running
-	sitl_motor_running = (pwm[2]>1200);
+	if (!desktop_state.quadcopter) {
+		// 400kV motor, 16V
+		sitl_motor_speed[0] = ((pwm[2]-1000)/1000.0) * 400 * 16 / 60.0;
+	} else {
+		// 850kV motor, 16V
+		for (i=0; i<4; i++) {
+			sitl_motor_speed[i] = ((pwm[i]-1000)/1000.0) * 850 * 12 / 60.0;
+		}
+	}
 
 	sendto(sitl_fd, (void*)pwm, sizeof(pwm), MSG_DONTWAIT, (const sockaddr *)&rcout_addr, sizeof(rcout_addr));
 }
