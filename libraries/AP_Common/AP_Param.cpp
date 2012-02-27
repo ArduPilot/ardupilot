@@ -631,8 +631,19 @@ bool AP_Param::load(void)
         return false;
     }
 
+    if (phdr.type != AP_PARAM_VECTOR3F && idx != 0) {
+        // only vector3f can have non-zero idx for now
+        return false;
+    }
+
+    AP_Param *ap;
+    ap = this;
+    if (idx != 0) {
+        ap = (AP_Param *)((uintptr_t)ap) - (idx*sizeof(float));
+    }
+
     // found it
-    eeprom_read_block(this, (void*)(ofs+sizeof(phdr)), type_size((enum ap_var_type)phdr.type));
+    eeprom_read_block(ap, (void*)(ofs+sizeof(phdr)), type_size((enum ap_var_type)phdr.type));
     return true;
 }
 
