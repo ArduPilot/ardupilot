@@ -8,10 +8,14 @@
 
 #include <stdlib.h>
 
-#define NOISE_BITS 4
+#define NOISE_BITS 8
 
 static inline float noise_generator(void)
 {
+	extern bool sitl_motor_running;
+	if (!sitl_motor_running) {
+		return 0;
+	}
 	float noise = ((unsigned)random()) & ((1<<NOISE_BITS)-1);
 	noise -= 0.5*(1<<NOISE_BITS);
 	return noise;
