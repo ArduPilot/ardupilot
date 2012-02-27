@@ -75,12 +75,6 @@ public:
 	Vector3f		get_accel(void) { return _accel; }
 
 
-	/// Fetch the current accelerometer values
-	///
-	/// @returns	vector of current accelerations in m/s/s
-	///
-	Vector3f		get_accel_filtered(void) { return _accel_filtered; }
-
 	/// return the number of seconds that the last update represents
 	///
 	/// @returns	number of seconds
@@ -112,7 +106,6 @@ protected:
 
 	/// Most recent accelerometer reading obtained by ::update
 	Vector3f		_accel;
-	Vector3f		_accel_filtered;
 
 	/// Most recent gyro reading obtained by ::update
 	Vector3f		_gyro;
