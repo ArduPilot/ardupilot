@@ -500,6 +500,9 @@ static int32_t initial_simple_bearing;
 // Used to control Axis lock
 int32_t roll_axis;
 int32_t pitch_axis;
+// Filters
+AverageFilterInt32_Size3 roll_rate_d_filter;	// filtered acceleration
+AverageFilterInt32_Size3 pitch_rate_d_filter;	// filtered pitch acceleration
 
 ////////////////////////////////////////////////////////////////////////////////
 // Circle Mode / Loiter control

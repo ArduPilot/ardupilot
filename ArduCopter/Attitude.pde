@@ -112,7 +112,6 @@ get_acro_yaw(int32_t target_rate)
 static int16_t
 get_rate_roll(int32_t target_rate)
 {
-	static AverageFilterInt32_Size3 rate_d_filter;	// filtered acceleration
 	static int32_t last_rate = 0;					// previous iterations rate
 	int32_t current_rate;							// this iteration's rate
 	int32_t rate_d;  								// roll's acceleration
@@ -123,7 +122,7 @@ get_rate_roll(int32_t target_rate)
 	current_rate 	= (omega.x * DEGX100);
 
 	// calculate and filter the acceleration
-	rate_d 			= rate_d_filter.apply(current_rate - last_rate);
+	rate_d 			= roll_rate_d_filter.apply(current_rate - last_rate);
 
 	// store rate for next iteration
 	last_rate 		= current_rate;
@@ -143,7 +142,6 @@ get_rate_roll(int32_t target_rate)
 static int16_t
 get_rate_pitch(int32_t target_rate)
 {
-	static AverageFilterInt32_Size3 rate_d_filter;	// filtered acceleration
 	static int32_t last_rate = 0;					// previous iterations rate
 	int32_t current_rate;							// this iteration's rate
 	int32_t rate_d;  								// roll's acceleration
@@ -154,7 +152,7 @@ get_rate_pitch(int32_t target_rate)
 	current_rate 	= (omega.y * DEGX100);
 
 	// calculate and filter the acceleration
-	rate_d 			= rate_d_filter.apply(current_rate - last_rate);
+	rate_d 			= pitch_rate_d_filter.apply(current_rate - last_rate);
 
 	// store rate for next iteration
 	last_rate 		= current_rate;
