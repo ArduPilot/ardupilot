@@ -7,9 +7,8 @@
 //
 
 /// @file	Filter.h
-/// @brief	A base class for apply various filters to values
+/// @brief	A base class from which various filters classes should inherit
 ///
-///         DO NOT CREATE AND DESTROY INSTANCES OF THIS CLASS BECAUSE THE ALLOC/MALLOC WILL LEAD TO MEMORY FRAGMENTATION
 
 #ifndef Filter_h
 #define Filter_h
@@ -17,79 +16,28 @@
 #include <inttypes.h>
 #include <AP_Common.h>
 
-#define FILTER_MAX_SAMPLES 10  // maximum size of the sample buffer (normally older values will be overwritten as new appear)
-
 template <class T>
 class Filter
 {
   public:
-	Filter(uint8_t requested_size);
-	~Filter();
+	// constructor
+	Filter() {};
 
 	// apply - Add a new raw value to the filter, retrieve the filtered result
-	virtual T apply(T sample);
+	virtual T apply(T sample) { return sample; };
 	
 	// reset - clear the filter
-	virtual void reset();
-	
-	uint8_t	filter_size;	// max number of items in filter
-	T* 		samples;		// buffer of samples
-	uint8_t	sample_index;	// pointer to the next empty slot in the buffer
+	virtual void reset() {};
 
-  private:
 };
 
 // Typedef for convenience
+typedef Filter<int8_t> FilterInt8;
+typedef Filter<uint8_t> FilterUInt8;
 typedef Filter<int16_t> FilterInt16;
-
-// Constructor 
-template <class T>
-Filter<T>::Filter(uint8_t requested_size) :
-	filter_size(requested_size), sample_index(0)
-{
-	// check filter size
-    if( Filter<T>::filter_size > FILTER_MAX_SAMPLES )
-		Filter<T>::filter_size = FILTER_MAX_SAMPLES;
-
-	// create array
-	samples = (T *)malloc(Filter<T>::filter_size * sizeof(T));
-
-	// clear array
-	reset();
-}
-
-// Destructor - THIS SHOULD NEVER BE CALLED OR IT COULD LEAD TO MEMORY FRAGMENTATION
-template <class T>
-Filter<T>::~Filter()
-{
-	// free up the samples array
-	free(samples);
-}
-		
-// reset - clear all samples
-template <class T>
-void Filter<T>::reset()
-{
-    for( int8_t i=0; i<filter_size; i++ ) {
-	    samples[i] = 0;
-	}
-	sample_index = 0;
-}
-
-// apply - take in a new raw sample, and return the filtered results
-template <class T>
-T Filter<T>::apply(T sample){
-
-	// add sample to array
-	samples[sample_index++] = sample;
-
-	// wrap index if necessary
-	if( sample_index >= filter_size )
-		sample_index = 0;
-
-	// base class doesn't know what filtering to do so we just return the raw sample
-	return sample;
-}
+typedef Filter<uint16_t> FilterUInt16;
+typedef Filter<int32_t> FilterInt32;
+typedef Filter<uint32_t> FilterUInt32;
 
 #endif
 
