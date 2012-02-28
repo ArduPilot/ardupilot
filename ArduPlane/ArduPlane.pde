@@ -225,7 +225,7 @@ GCS_MAVLINK	gcs3;
 // PITOT selection
 ////////////////////////////////////////////////////////////////////////////////
 //
-ModeFilterInt16 sonar_mode_filter(5,2);
+ModeFilterInt16_Size5 sonar_mode_filter(2);
 
 #if CONFIG_PITOT_SOURCE == PITOT_SOURCE_ADC
 AP_AnalogSource_ADC pitot_analog_source( &adc,
