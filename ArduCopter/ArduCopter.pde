@@ -371,10 +371,10 @@ static uint32_t rc_override_fs_timer = 0;
 // Heli
 ////////////////////////////////////////////////////////////////////////////////
 #if FRAME_CONFIG ==	HELI_FRAME
-static float heli_rollFactor[3], heli_pitchFactor[3];	// only required for 3 swashplate servos
-static int16_t heli_servo_min[3], heli_servo_max[3];	// same here.  for yaw servo we use heli_servo4_min/max parameter directly
-static int32_t heli_servo_out[4];						// used for servo averaging for analog servos
-static int16_t heli_servo_out_count;					// use for servo averaging
+static float heli_rollFactor[3], heli_pitchFactor[3], heli_collectiveFactor[3];	// only required for 3 swashplate servos
+static int16_t heli_servo_min[3], heli_servo_max[3];							// same here.  for yaw servo we use heli_servo4_min/max parameter directly
+static int32_t heli_servo_out[4];												// used for servo averaging for analog servos
+static int16_t heli_servo_out_count;											// use for servo averaging
 #endif
 
 ////////////////////////////////////////////////////////////////////////////////
