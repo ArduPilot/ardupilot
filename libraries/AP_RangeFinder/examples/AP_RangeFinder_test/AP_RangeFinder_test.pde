@@ -32,7 +32,7 @@ FastSerialPort0(Serial);        // FTDI/console
 
 // declare global instances
 Arduino_Mega_ISR_Registry isr_registry;
-ModeFilterInt16 mode_filter(5,2);
+ModeFilterInt16_Size5 mode_filter(2);
 #ifdef USE_ADC_ADS7844
     AP_TimerProcess  adc_scheduler;
     AP_ADC_ADS7844 adc;
