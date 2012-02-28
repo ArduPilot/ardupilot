@@ -20,6 +20,7 @@
 #include <avr/eeprom.h>
 
 #define AP_MAX_NAME_SIZE 15
+#define AP_NESTED_GROUPS_ENABLED
 
 // a varient of offsetof() to work around C++ restrictions.
 // this can only be used when the offset of a variable in a object
@@ -33,7 +34,9 @@
 #define AP_GROUPINFO(name, idx, class, element) { AP_CLASSTYPE(class, element), idx, name, AP_VAROFFSET(class, element) }
 
 // declare a nested group entry in a group var_info
+#ifdef AP_NESTED_GROUPS_ENABLED
 #define AP_NESTEDGROUPINFO(class, idx) { AP_PARAM_GROUP, idx, "", 0, class::var_info }
+#endif
 
 #define AP_GROUPEND	{ AP_PARAM_NONE, 0xFF, "" }
 
