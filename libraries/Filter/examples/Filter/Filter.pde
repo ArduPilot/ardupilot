@@ -7,27 +7,25 @@
 #include <AP_Common.h>
 #include <AP_Math.h>		// ArduPilot Mega Vector/Matrix math Library
 #include <Filter.h>			// Filter library
-#include <ModeFilter.h>		// ModeFilter library (inherits from Filter class)
-#include <SumFilter.h>
+#include <ModeFilter.h>		// ModeFilter class (inherits from Filter class)
+#include <AverageFilter.h>	// AverageFilter class (inherits from Filter class)
 
 ////////////////////////////////////////////////////////////////////////////////
 // Serial ports
 ////////////////////////////////////////////////////////////////////////////////
 FastSerialPort0(Serial);        // FTDI/console
 
-//typedef ModeFilter<int16_t> IntModeFilter;
-//typedef SumFilter<int16_t> IntSumFilter;
-
 int16_t rangevalue[] = {31000, 31000, 50, 55, 60, 55, 10, 0, 31000};
 
 // create a global instance of the class instead of local to avoid memory fragmentation
-ModeFilterInt16 mfilter(5,2);  // buffer of 5 values, result will be from buffer element 2 (ie. the 3rd element which is the middle)
-//SumFilterInt16 mfilter(5);
+ModeFilterInt16_Size5 mfilter(2);  // buffer of 5 values, result will be from buffer element 2 (ie. the 3rd element which is the middle)
+//AverageFilterInt16_Size5 mfilter;  // buffer of 5 values.  result will be average of these 5
 
-//Function to print contents of a filter
-void printFilter(Filter<int16_t>& filter)
+// Function to print contents of a filter
+// we need to ues FilterWithBuffer class because we want to access the individual elements
+void printFilter(FilterWithBufferInt16_Size5& filter)
 {
-	for(int8_t i=0; i < filter.filter_size; i++)
+	for(uint8_t i=0; i < filter.get_filter_size(); i++)
 	{
 		Serial.printf("%d ",(int)filter.samples[i]);
 	}
@@ -49,7 +47,7 @@ void setup()
 //Main loop where the action takes place
 void loop()
 {
-    int8_t i = 0;
+    uint8_t i = 0;
 	int16_t filtered_value;
 
 	while( i < 9 ) {
