@@ -118,6 +118,7 @@ bool AP_Param::check_group_info(const struct AP_Param::GroupInfo *group_info,
     for (uint8_t i=0;
          (type=PGM_UINT8(&group_info[i].type)) != AP_PARAM_NONE;
          i++) {
+#ifdef AP_NESTED_GROUPS_ENABLED
         if (type == AP_PARAM_GROUP) {
             // a nested group
             const struct GroupInfo *ginfo = (const struct GroupInfo *)PGM_POINTER(&group_info[i].group_info);
@@ -131,6 +132,7 @@ bool AP_Param::check_group_info(const struct AP_Param::GroupInfo *group_info,
             }
             continue;
         }
+#endif // AP_NESTED_GROUPS_ENABLED
         uint8_t idx = PGM_UINT8(&group_info[i].idx);
         if (idx >= (1<<_group_level_shift)) {
             // passed limit on table size
@@ -234,6 +236,7 @@ const struct AP_Param::Info *AP_Param::find_by_header_group(struct Param_header 
     for (uint8_t i=0;
          (type=PGM_UINT8(&group_info[i].type)) != AP_PARAM_NONE;
          i++) {
+#ifdef AP_NESTED_GROUPS_ENABLED
         if (type == AP_PARAM_GROUP) {
             // a nested group
             if (group_shift + _group_level_shift >= _group_bits) {
@@ -250,6 +253,7 @@ const struct AP_Param::Info *AP_Param::find_by_header_group(struct Param_header 
             }
             continue;
         }
+#endif // AP_NESTED_GROUPS_ENABLED
         if (GROUP_ID(group_info, group_base, i, group_shift) == phdr.group_element) {
             // found a group element
             *ptr = (void*)(PGM_POINTER(&_var_info[vindex].ptr) + PGM_UINT16(&group_info[i].offset));
@@ -298,6 +302,7 @@ const struct AP_Param::Info *AP_Param::find_var_info_group(const struct GroupInf
          (type=PGM_UINT8(&group_info[i].type)) != AP_PARAM_NONE;
          i++) {
         uintptr_t ofs = PGM_POINTER(&group_info[i].offset);
+#ifdef AP_NESTED_GROUPS_ENABLED
         if (type == AP_PARAM_GROUP) {
             const struct GroupInfo *ginfo = (const struct GroupInfo *)PGM_POINTER(&group_info[i].group_info);
             // a nested group
@@ -316,7 +321,9 @@ const struct AP_Param::Info *AP_Param::find_var_info_group(const struct GroupInf
             if (info != NULL) {
                 return info;
             }
-        } else if ((uintptr_t)this == base + ofs) {
+        } else // Forgive the poor formatting - if continues below.
+#endif // AP_NESTED_GROUPS_ENABLED
+        if ((uintptr_t)this == base + ofs) {
             *group_element = GROUP_ID(group_info, group_base, i, group_shift);
             *group_ret = &group_info[i];
             *idx = 0;
