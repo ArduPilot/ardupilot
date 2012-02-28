@@ -6,7 +6,9 @@
 #define ISR(vector,...) void vector(void);	\
 void vector(void)
 
-#define cli()
-#define sei()
+extern "C" {
+void cli(void);
+void sei(void);
+}
 
 #endif
