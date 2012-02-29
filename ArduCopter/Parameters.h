@@ -171,6 +171,7 @@ public:
 	//
 	// 220: PI/D Controllers
 	//
+	k_param_stabilize_d_schedule = 219,
 	k_param_stabilize_d = 220,
 	k_param_acro_p,
 	k_param_axis_lock_p,
@@ -296,6 +297,7 @@ public:
 	AP_Float	camera_pitch_gain;
 	AP_Float	camera_roll_gain;
 	AP_Float	stabilize_d;
+	AP_Float	stabilize_d_schedule;
 
 	// PI/D controllers
     AP_Float	acro_p;
@@ -402,6 +404,7 @@ public:
 	camera_pitch_gain 		(CAM_PITCH_GAIN),
 	camera_roll_gain 		(CAM_ROLL_GAIN),
 	stabilize_d 			(STABILIZE_D),
+	stabilize_d_schedule	(STABILIZE_D_SCHEDULE),
 	acro_p					(ACRO_P),
 	axis_lock_p				(AXIS_LOCK_P),
 
