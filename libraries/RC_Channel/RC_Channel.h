@@ -22,12 +22,11 @@ class RC_Channel{
         radio_min (1100),
         radio_trim(1500),
         radio_max (1900),
-		_high(1),
+		scale_output(1.0),
 		_filter(false),
 		_reverse(1),
 		_dead_zone(0),
-		scale_output(1.0)
-		{}
+		_high(1) {}
 
 	// setup min and max radio values in CLI
 	void 		update_min_max();
