@@ -442,6 +442,7 @@
     <Compile Include="Setup\Setup.Designer.cs">
       <DependentUpon>Setup.cs</DependentUpon>
     </Compile>
+    <Compile Include="Speech.cs" />
     <Compile Include="Splash.cs">
       <SubType>Form</SubType>
     </Compile>

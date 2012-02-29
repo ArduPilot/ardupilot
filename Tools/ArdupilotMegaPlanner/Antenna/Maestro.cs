@@ -65,7 +65,7 @@ namespace ArdupilotMega.Antenna
             ComPort.Write(buffer, 0, buffer.Length);
 
             // accel
-            target = 3;
+            target = 5;
             buffer = new byte[] { 0x89, PanAddress, (byte)(target & 0x7F), (byte)((target >> 7) & 0x7F) };
             ComPort.Write(buffer, 0, buffer.Length);
 
@@ -84,19 +84,31 @@ namespace ArdupilotMega.Antenna
             return input;
         }
 
+        double wrap_range(double input,double range)
+        {
+            if (input > range)
+                return input - 360;
+            if (input < -range)
+                return input + 360;
+            return input;
+        }
+
         public bool Pan(double Angle)
         { 
-            // using a byte so it will autowrap
-
             double range = Math.Abs(PanStartRange - PanEndRange);
 
-            double centerrange = (range / 2) - TrimPan;
+            // get relative center based on tracking center
+            double rangeleft = PanStartRange - TrimPan;
+            double rangeright = PanEndRange - TrimPan;
+            double centerpos = 127;
 
+            // get the output angle the tracker needs to point and constrain the output to the allowed options
             short PointAtAngle = Constrain(wrap_180(Angle - TrimPan), PanStartRange, PanEndRange);
 
-            byte target = (byte)((((PointAtAngle / range) * 2.0) * 127 + 127) * _panreverse);
+            // conver the angle into a 0-255 value
+            byte target = (byte)((((PointAtAngle / range) * 2.0) * 127 + centerpos) * _panreverse);
 
-            Console.WriteLine("P " + Angle + " " + target + " " + PointAtAngle);
+            //Console.WriteLine("P " + Angle + " " + target + " " + PointAtAngle);
 
             var buffer = new byte[] { 0xff,PanAddress,target};
             ComPort.Write(buffer, 0, buffer.Length);
@@ -108,7 +120,7 @@ namespace ArdupilotMega.Antenna
         {
             double range = Math.Abs(TiltStartRange - TiltEndRange);
 
-            short PointAtAngle = Constrain((Angle - TrimTilt), TiltStartRange - TrimTilt, TiltEndRange - TrimTilt);
+            short PointAtAngle = Constrain((Angle - TrimTilt), TiltStartRange, TiltEndRange);
 
             byte target = (byte)((((PointAtAngle / range ) * 2) * 127 + 127) * _tiltreverse);
 
