@@ -39,6 +39,11 @@ namespace ArdupilotMega.Antenna
                 return;
             }
 
+            if (tracker != null && tracker.ComPort != null && tracker.ComPort.IsOpen)
+            {
+                tracker.ComPort.Close();
+            }
+
             tracker = new ArdupilotMega.Antenna.Maestro();
 
             try
@@ -53,12 +58,12 @@ namespace ArdupilotMega.Antenna
 
             try
             {
-                tracker.PanStartRange = int.Parse(TXT_panstart.Text);
-                tracker.PanEndRange = int.Parse(TXT_panstop.Text);
+                tracker.PanStartRange = int.Parse(TXT_panrange.Text) / 2 * -1;
+                tracker.PanEndRange = int.Parse(TXT_panrange.Text) / 2;
                 tracker.TrimPan = TRK_pantrim.Value;
 
-                tracker.TiltStartRange = int.Parse(TXT_tiltstart.Text);
-                tracker.TiltEndRange = int.Parse(TXT_tiltstop.Text);
+                tracker.TiltStartRange = int.Parse(TXT_tiltrange.Text) / 2 * -1;
+                tracker.TiltEndRange = int.Parse(TXT_tiltrange.Text) / 2;
                 tracker.TrimTilt = TRK_tilttrim.Value;
 
             }
@@ -75,21 +80,7 @@ namespace ArdupilotMega.Antenna
                         IsBackground = true,
                         Name = "Antenna Tracker"
                     };
-                    t12.Start();
-
-                    /*
-                    for (int a = ting.PanStartRange; a < ting.PanEndRange; a++)
-                    {
-                        System.Threading.Thread.Sleep(100);
-                        ting.Pan(a);
-                    }
-
-                    for (int a = ting.TiltStartRange; a < ting.TiltEndRange; a++)
-                    {
-                        System.Threading.Thread.Sleep(100);
-                        ting.Tilt(a);
-                    }
-                     */
+                    t12.Start();                     
                 }
             }
         }

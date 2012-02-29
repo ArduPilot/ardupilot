@@ -308,7 +308,7 @@ namespace ArdupilotMega
 //                    Progress(-1, "Connect Failed\n" + e.Message);
                 if (string.IsNullOrEmpty(progressWorkerEventArgs.ErrorMessage))
                     progressWorkerEventArgs.ErrorMessage = "Connect Failed";
-                throw;
+                throw e;
             }
             //frmProgressReporter.Close();
             MainV2.givecomport = false;
