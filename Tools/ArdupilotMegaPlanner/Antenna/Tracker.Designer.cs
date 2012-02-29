@@ -35,17 +35,15 @@
             this.CMB_serialport = new System.Windows.Forms.ComboBox();
             this.BUT_connect = new ArdupilotMega.MyButton();
             this.TRK_pantrim = new System.Windows.Forms.TrackBar();
-            this.TXT_panstart = new System.Windows.Forms.TextBox();
-            this.TXT_panstop = new System.Windows.Forms.TextBox();
-            this.label2 = new System.Windows.Forms.Label();
+            this.TXT_panrange = new System.Windows.Forms.TextBox();
             this.label3 = new System.Windows.Forms.Label();
             this.label4 = new System.Windows.Forms.Label();
             this.label5 = new System.Windows.Forms.Label();
             this.label6 = new System.Windows.Forms.Label();
-            this.label7 = new System.Windows.Forms.Label();
-            this.TXT_tiltstop = new System.Windows.Forms.TextBox();
-            this.TXT_tiltstart = new System.Windows.Forms.TextBox();
+            this.TXT_tiltrange = new System.Windows.Forms.TextBox();
             this.TRK_tilttrim = new System.Windows.Forms.TrackBar();
+            this.label2 = new System.Windows.Forms.Label();
+            this.label7 = new System.Windows.Forms.Label();
             ((System.ComponentModel.ISupportInitialize)(this.TRK_pantrim)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.TRK_tilttrim)).BeginInit();
             this.SuspendLayout();
@@ -109,7 +107,7 @@
             // 
             // TRK_pantrim
             // 
-            this.TRK_pantrim.Location = new System.Drawing.Point(83, 65);
+            this.TRK_pantrim.Location = new System.Drawing.Point(153, 65);
             this.TRK_pantrim.Maximum = 180;
             this.TRK_pantrim.Minimum = -180;
             this.TRK_pantrim.Name = "TRK_pantrim";
@@ -117,35 +115,18 @@
             this.TRK_pantrim.TabIndex = 6;
             this.TRK_pantrim.Scroll += new System.EventHandler(this.TRK_pantrim_Scroll);
             // 
-            // TXT_panstart
+            // TXT_panrange
             // 
-            this.TXT_panstart.Location = new System.Drawing.Point(13, 65);
-            this.TXT_panstart.Name = "TXT_panstart";
-            this.TXT_panstart.Size = new System.Drawing.Size(64, 20);
-            this.TXT_panstart.TabIndex = 7;
-            this.TXT_panstart.Text = "-90";
-            // 
-            // TXT_panstop
-            // 
-            this.TXT_panstop.Location = new System.Drawing.Point(464, 65);
-            this.TXT_panstop.Name = "TXT_panstop";
-            this.TXT_panstop.Size = new System.Drawing.Size(64, 20);
-            this.TXT_panstop.TabIndex = 8;
-            this.TXT_panstop.Text = "90";
-            // 
-            // label2
-            // 
-            this.label2.AutoSize = true;
-            this.label2.Location = new System.Drawing.Point(461, 49);
-            this.label2.Name = "label2";
-            this.label2.Size = new System.Drawing.Size(32, 13);
-            this.label2.TabIndex = 9;
-            this.label2.Text = "Right";
+            this.TXT_panrange.Location = new System.Drawing.Point(83, 65);
+            this.TXT_panrange.Name = "TXT_panrange";
+            this.TXT_panrange.Size = new System.Drawing.Size(64, 20);
+            this.TXT_panrange.TabIndex = 7;
+            this.TXT_panrange.Text = "180";
             // 
             // label3
             // 
             this.label3.AutoSize = true;
-            this.label3.Location = new System.Drawing.Point(261, 49);
+            this.label3.Location = new System.Drawing.Point(331, 49);
             this.label3.Name = "label3";
             this.label3.Size = new System.Drawing.Size(38, 13);
             this.label3.TabIndex = 10;
@@ -154,58 +135,41 @@
             // label4
             // 
             this.label4.AutoSize = true;
-            this.label4.Location = new System.Drawing.Point(13, 49);
+            this.label4.Location = new System.Drawing.Point(83, 49);
             this.label4.Name = "label4";
-            this.label4.Size = new System.Drawing.Size(25, 13);
+            this.label4.Size = new System.Drawing.Size(56, 13);
             this.label4.TabIndex = 11;
-            this.label4.Text = "Left";
+            this.label4.Text = "Range -/+";
             // 
             // label5
             // 
             this.label5.AutoSize = true;
-            this.label5.Location = new System.Drawing.Point(13, 125);
+            this.label5.Location = new System.Drawing.Point(83, 125);
             this.label5.Name = "label5";
-            this.label5.Size = new System.Drawing.Size(35, 13);
+            this.label5.Size = new System.Drawing.Size(56, 13);
             this.label5.TabIndex = 17;
-            this.label5.Text = "Down";
+            this.label5.Text = "Range -/+";
             // 
             // label6
             // 
             this.label6.AutoSize = true;
-            this.label6.Location = new System.Drawing.Point(261, 125);
+            this.label6.Location = new System.Drawing.Point(331, 125);
             this.label6.Name = "label6";
             this.label6.Size = new System.Drawing.Size(38, 13);
             this.label6.TabIndex = 16;
             this.label6.Text = "Center";
             // 
-            // label7
+            // TXT_tiltrange
             // 
-            this.label7.AutoSize = true;
-            this.label7.Location = new System.Drawing.Point(461, 125);
-            this.label7.Name = "label7";
-            this.label7.Size = new System.Drawing.Size(21, 13);
-            this.label7.TabIndex = 15;
-            this.label7.Text = "Up";
-            // 
-            // TXT_tiltstop
-            // 
-            this.TXT_tiltstop.Location = new System.Drawing.Point(464, 141);
-            this.TXT_tiltstop.Name = "TXT_tiltstop";
-            this.TXT_tiltstop.Size = new System.Drawing.Size(64, 20);
-            this.TXT_tiltstop.TabIndex = 14;
-            this.TXT_tiltstop.Text = "90";
-            // 
-            // TXT_tiltstart
-            // 
-            this.TXT_tiltstart.Location = new System.Drawing.Point(13, 141);
-            this.TXT_tiltstart.Name = "TXT_tiltstart";
-            this.TXT_tiltstart.Size = new System.Drawing.Size(64, 20);
-            this.TXT_tiltstart.TabIndex = 13;
-            this.TXT_tiltstart.Text = "0";
+            this.TXT_tiltrange.Location = new System.Drawing.Point(83, 141);
+            this.TXT_tiltrange.Name = "TXT_tiltrange";
+            this.TXT_tiltrange.Size = new System.Drawing.Size(64, 20);
+            this.TXT_tiltrange.TabIndex = 13;
+            this.TXT_tiltrange.Text = "90";
             // 
             // TRK_tilttrim
             // 
-            this.TRK_tilttrim.Location = new System.Drawing.Point(83, 141);
+            this.TRK_tilttrim.Location = new System.Drawing.Point(153, 141);
             this.TRK_tilttrim.Maximum = 90;
             this.TRK_tilttrim.Minimum = -90;
             this.TRK_tilttrim.Name = "TRK_tilttrim";
@@ -214,22 +178,38 @@
             this.TRK_tilttrim.Value = 45;
             this.TRK_tilttrim.Scroll += new System.EventHandler(this.TRK_tilttrim_Scroll);
             // 
+            // label2
+            // 
+            this.label2.AutoSize = true;
+            this.label2.Location = new System.Drawing.Point(13, 68);
+            this.label2.Name = "label2";
+            this.label2.Size = new System.Drawing.Size(26, 13);
+            this.label2.TabIndex = 18;
+            this.label2.Text = "Pan";
+            // 
+            // label7
+            // 
+            this.label7.AutoSize = true;
+            this.label7.Location = new System.Drawing.Point(13, 144);
+            this.label7.Name = "label7";
+            this.label7.Size = new System.Drawing.Size(21, 13);
+            this.label7.TabIndex = 19;
+            this.label7.Text = "Tilt";
+            // 
             // Tracker
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(569, 195);
+            this.Controls.Add(this.label7);
+            this.Controls.Add(this.label2);
             this.Controls.Add(this.label5);
             this.Controls.Add(this.label6);
-            this.Controls.Add(this.label7);
-            this.Controls.Add(this.TXT_tiltstop);
-            this.Controls.Add(this.TXT_tiltstart);
+            this.Controls.Add(this.TXT_tiltrange);
             this.Controls.Add(this.TRK_tilttrim);
             this.Controls.Add(this.label4);
             this.Controls.Add(this.label3);
-            this.Controls.Add(this.label2);
-            this.Controls.Add(this.TXT_panstop);
-            this.Controls.Add(this.TXT_panstart);
+            this.Controls.Add(this.TXT_panrange);
             this.Controls.Add(this.TRK_pantrim);
             this.Controls.Add(this.CMB_baudrate);
             this.Controls.Add(this.BUT_connect);
@@ -254,16 +234,14 @@
         private MyButton BUT_connect;
         private System.Windows.Forms.ComboBox CMB_serialport;
         private System.Windows.Forms.TrackBar TRK_pantrim;
-        private System.Windows.Forms.TextBox TXT_panstart;
-        private System.Windows.Forms.TextBox TXT_panstop;
-        private System.Windows.Forms.Label label2;
+        private System.Windows.Forms.TextBox TXT_panrange;
         private System.Windows.Forms.Label label3;
         private System.Windows.Forms.Label label4;
         private System.Windows.Forms.Label label5;
         private System.Windows.Forms.Label label6;
-        private System.Windows.Forms.Label label7;
-        private System.Windows.Forms.TextBox TXT_tiltstop;
-        private System.Windows.Forms.TextBox TXT_tiltstart;
+        private System.Windows.Forms.TextBox TXT_tiltrange;
         private System.Windows.Forms.TrackBar TRK_tilttrim;
+        private System.Windows.Forms.Label label2;
+        private System.Windows.Forms.Label label7;
     }
 }
