@@ -131,7 +131,7 @@ get_rate_roll(int32_t target_rate)
 	output 			= g.pid_rate_roll.get_pid(target_rate - current_rate, G_Dt);
 
 	// Dampening output with D term
-	rate_d_dampener = rate_d * g.stabilize_d;
+	rate_d_dampener = rate_d * roll_scale_d;
 	rate_d_dampener = constrain(rate_d_dampener, -400, 400);
 	output -= rate_d_dampener;
 
@@ -161,7 +161,7 @@ get_rate_pitch(int32_t target_rate)
 	output 			= g.pid_rate_pitch.get_pid(target_rate - current_rate, G_Dt);
 
 	// Dampening output with D term
-	rate_d_dampener = rate_d * g.stabilize_d;
+	rate_d_dampener = rate_d * pitch_scale_d;
 	rate_d_dampener = constrain(rate_d_dampener, -400, 400);
 	output -= rate_d_dampener;
 
