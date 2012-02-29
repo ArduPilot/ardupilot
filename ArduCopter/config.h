@@ -644,7 +644,11 @@
 
 
 #ifndef STABILIZE_D
-# define STABILIZE_D 		0.05
+# define STABILIZE_D 		0.1
+#endif
+
+#ifndef STABILIZE_D_SCHEDULE
+# define STABILIZE_D_SCHEDULE 		0.0
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
