@@ -25,6 +25,11 @@ class AP_DCM
 public:
 	// Constructors
 	AP_DCM(IMU *imu, GPS *&gps, Compass *withCompass = NULL) :
+		_clamp(3),
+		_kp_roll_pitch(0.05967),
+		_ki_roll_pitch(0.00001278),
+		_kp_yaw(0.8), // .8
+		_ki_yaw(0.00004), // 0.00004
 		_compass(withCompass),
 		_gps(gps),
 		_imu(imu),
@@ -32,12 +37,7 @@ public:
 					0, 1, 0,
 					0, 0, 1),
 		_health(1.),
-		_kp_roll_pitch(0.05967),
-		_ki_roll_pitch(0.00001278),
-		_kp_yaw(0.8), // .8
-		_ki_yaw(0.00004), // 0.00004
-		_toggle(0),
-		_clamp(3)
+		_toggle(0)
 	{}
 
 	// Accessors
