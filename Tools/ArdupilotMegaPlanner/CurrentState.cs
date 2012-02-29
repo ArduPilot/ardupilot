@@ -197,7 +197,7 @@ namespace ArdupilotMega
         public float DistToMAV
         {
             get
-            {    
+            {
                 // shrinking factor for longitude going to poles direction
                 double rads = Math.Abs(HomeLocation.Lat) * 0.0174532925;
                 double scaleLongDown = Math.Cos(rads);
@@ -227,7 +227,7 @@ namespace ArdupilotMega
         public float AZToMAV
         {
             get
-            {             
+            {
                 // shrinking factor for longitude going to poles direction
                 double rads = Math.Abs(HomeLocation.Lat) * 0.0174532925;
                 double scaleLongDown = Math.Cos(rads);
@@ -317,11 +317,11 @@ namespace ArdupilotMega
 
                     try
                     {
-                    while (messages.Count > 5)
-                    {
-                        messages.RemoveAt(0);
-                    }
-                    messages.Add(logdata + "\n");
+                        while (messages.Count > 5)
+                        {
+                            messages.RemoveAt(0);
+                        }
+                        messages.Add(logdata + "\n");
 
                     }
                     catch { }
@@ -581,7 +581,7 @@ namespace ArdupilotMega
 
                     packetdropremote = sysstatus.packet_drop;
 
-                    if (oldmode != mode && MainV2.speechenable && MainV2.getConfig("speechmodeenabled") == "True")
+                    if (oldmode != mode && MainV2.speechenable && MainV2.talk != null && MainV2.getConfig("speechmodeenabled") == "True")
                     {
                         MainV2.talk.SpeakAsync(Common.speechConversion(MainV2.getConfig("speechmode")));
                     }
@@ -732,7 +732,7 @@ namespace ArdupilotMega
 
                     wpno = wpcur.seq;
 
-                    if (oldwp != wpno && MainV2.speechenable && MainV2.getConfig("speechwaypointenabled") == "True")
+                    if (oldwp != wpno && MainV2.speechenable && MainV2.talk != null && MainV2.getConfig("speechwaypointenabled") == "True")
                     {
                         MainV2.talk.SpeakAsync(Common.speechConversion(MainV2.getConfig("speechwaypoint")));
                     }

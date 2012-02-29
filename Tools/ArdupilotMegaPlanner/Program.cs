@@ -57,6 +57,9 @@ namespace ArdupilotMega
         static void Application_ThreadException(object sender, System.Threading.ThreadExceptionEventArgs e)
         {
             Exception ex = e.Exception;
+
+            log.Debug(ex.ToString());
+
             if (ex.Message == "The port is closed.") {
                 MessageBox.Show("Serial connection has been lost");
                 return;

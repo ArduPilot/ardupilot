@@ -379,7 +379,9 @@ namespace ArdupilotMega
             CH6_OPTFLOW_KI = 18,
             CH6_OPTFLOW_KD = 19,
 
-            CH6_NAV_I = 20
+            CH6_NAV_I = 20,
+
+            CH6_LOITER_RATE_P = 22
         }
 
 
@@ -706,7 +708,11 @@ namespace ArdupilotMega
 
             MainV2.fixtheme(form);
 
-            return form.ShowDialog();
+            DialogResult dialogResult =form.ShowDialog();
+
+            form.Dispose();
+
+            return dialogResult;
         }
 
         static void chk_CheckStateChanged(object sender, EventArgs e)
@@ -756,11 +762,17 @@ namespace ArdupilotMega
 
             MainV2.fixtheme(form);
 
-            DialogResult dialogResult = form.ShowDialog();
+            DialogResult dialogResult = DialogResult.Cancel;
+
+            dialogResult = form.ShowDialog();
+
             if (dialogResult == DialogResult.OK)
             {
                 value = textBox.Text;
             }
+
+            form.Dispose();
+            
             return dialogResult;
         }
 
