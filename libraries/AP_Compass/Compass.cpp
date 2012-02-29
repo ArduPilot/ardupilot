@@ -16,10 +16,10 @@ const AP_Param::GroupInfo Compass::var_info[] PROGMEM = {
 //
 Compass::Compass(void) :
     _declination		(0.0),
-    _null_init_done(false),
-    _null_enable(false),
     _learn(1),
     _use_for_yaw(1),
+    _null_enable(false),
+    _null_init_done(false),
 	product_id(AP_COMPASS_TYPE_UNKNOWN)
 {
     // Default the orientation matrix to none - will be overridden at group load time
