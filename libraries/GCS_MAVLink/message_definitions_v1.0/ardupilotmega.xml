@@ -225,5 +225,29 @@
 	    <field name="breach_type" type="uint8_t">last breach type (see FENCE_BREACH_* enum)</field>
 	    <field name="breach_time" type="uint32_t">time of last breach in milliseconds since boot</field>
 	  </message>
+
+	  <message name="DCM" id="163">
+	    <description>Status of DCM attitude estimator</description>
+            <field type="float" name="omegaIx">X gyro drift estimate rad/s</field>
+            <field type="float" name="omegaIy">Y gyro drift estimate rad/s</field>
+            <field type="float" name="omegaIz">Z gyro drift estimate rad/s</field>
+            <field type="float" name="accel_weight">average accel_weight</field>
+            <field type="float" name="renorm_val">average renormalisation value</field>
+            <field type="float" name="error_rp">average error_roll_pitch value</field>
+            <field type="float" name="error_yaw">average error_yaw value</field>
+	  </message>
+
+	  <message name="SIMSTATE" id="164">
+	    <description>Status of simulation environment, if used</description>
+            <field type="float" name="roll">Roll angle (rad)</field>
+            <field type="float" name="pitch">Pitch angle (rad)</field>
+            <field type="float" name="yaw">Yaw angle (rad)</field>
+            <field type="float" name="xacc">X acceleration m/s/s</field>
+            <field type="float" name="yacc">Y acceleration m/s/s</field>
+            <field type="float" name="zacc">Z acceleration m/s/s</field>
+            <field type="float" name="xgyro">Angular speed around X axis rad/s</field>
+            <field type="float" name="ygyro">Angular speed around Y axis rad/s</field>
+            <field type="float" name="zgyro">Angular speed around Z axis rad/s</field>
+	  </message>
      </messages>
 </mavlink>
