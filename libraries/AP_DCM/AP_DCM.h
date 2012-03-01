@@ -126,7 +126,6 @@ private:
 	Vector3f 	_omega_I;					// Omega Integrator correction
 	Vector3f 	_omega_integ_corr;			// Partially corrected Gyro_Vector data - used for centrepetal correction
 	Vector3f 	_omega;						// Corrected Gyro_Vector data
-	Vector3f 	_error_roll_pitch;
 	float		_health;
 	bool		_centripetal;
 	uint8_t		_toggle;
