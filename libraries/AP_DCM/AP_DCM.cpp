@@ -211,7 +211,6 @@ AP_DCM::matrix_reset(bool recover_eulers)
 	_omega_P = _omega_I;
 	_omega_integ_corr = _omega_I;
 	_omega = _omega_I;
-	_error_roll_pitch = _omega_I;
 
 	// if the caller wants us to try to recover to the current
 	// attitude then calculate the dcm matrix from the current
@@ -360,7 +359,7 @@ AP_DCM::drift_correction(void)
 	float accel_magnitude;
 	float accel_weight;
 	float integrator_magnitude;
-	Vector3f error_yaw;
+	Vector3f error;
 	//static float scaled_omega_P[3];
 	//static float scaled_omega_I[3];
 
@@ -377,16 +376,18 @@ AP_DCM::drift_correction(void)
 	_health = constrain(_health+(0.02 * (accel_weight - .5)), 0, 1);
 
 	// adjust the ground of reference
-	_error_roll_pitch =  _dcm_matrix.c % _accel_vector;			// Equation 27  *** sign changed from prev implementation???
+	error =  _dcm_matrix.c % _accel_vector;			// Equation 27  *** sign changed from prev implementation???
 
 	// error_roll_pitch are in Accel m/s^2 units
 	// Limit max error_roll_pitch to limit max omega_P and omega_I
-	_error_roll_pitch.x = constrain(_error_roll_pitch.x, -1.17f, 1.17f);
-	_error_roll_pitch.y = constrain(_error_roll_pitch.y, -1.17f, 1.17f);
-	_error_roll_pitch.z = constrain(_error_roll_pitch.z, -1.17f, 1.17f);
+	float error_norm;
+	error_norm = error.length();
+	if (error_norm > 2) {
+		error *= (2 / error_norm);
+	}
 
-	_omega_P =  _error_roll_pitch * (_kp_roll_pitch * accel_weight);
-	_omega_I += _error_roll_pitch * (_ki_roll_pitch * accel_weight);
+	_omega_P =  error * (_kp_roll_pitch * accel_weight);
+	_omega_I += error * (_ki_roll_pitch * accel_weight);
 
 
 	//*****YAW***************
@@ -452,10 +453,10 @@ AP_DCM::drift_correction(void)
 		}
 	}
 
-	error_yaw = _dcm_matrix.c * error_course;	// Equation 24, Applys the yaw correction to the XYZ rotation of the aircraft, depeding the position.
+	error = _dcm_matrix.c * error_course;	// Equation 24, Applys the yaw correction to the XYZ rotation of the aircraft, depeding the position.
 
-	_omega_P += error_yaw * _kp_yaw;			// Adding yaw correction to proportional correction vector.
-	_omega_I += error_yaw * _ki_yaw;			// adding yaw correction to integrator correction vector.
+	_omega_P += error * _kp_yaw;			// Adding yaw correction to proportional correction vector.
+	_omega_I += error * _ki_yaw;			// adding yaw correction to integrator correction vector.
 
 	//	Here we will place a limit on the integrator so that the integrator cannot ever exceed ~30 degrees/second
 	integrator_magnitude = _omega_I.length();
