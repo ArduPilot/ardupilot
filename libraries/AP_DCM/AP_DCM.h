@@ -126,11 +126,13 @@ private:
 	Matrix3f	_dcm_matrix;
 
 	Vector3f 	_accel_vector;				// Store the acceleration in a vector
+	Vector3f 	_accel_smoothed;
 	Vector3f 	_gyro_vector;				// Store the gyros turn rate in a vector
 	Vector3f	_omega_P;					// Omega Proportional correction
 	Vector3f 	_omega_I;					// Omega Integrator correction
 	Vector3f 	_omega_integ_corr;			// Partially corrected Gyro_Vector data - used for centrepetal correction
 	Vector3f 	_omega;						// Corrected Gyro_Vector data
+	Vector3f 	_omega_smoothed;
 	float		_health;
 	bool		_centripetal;
 	uint8_t		_toggle;
