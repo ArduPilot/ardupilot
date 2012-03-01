@@ -57,7 +57,7 @@ AP_DCM::update_DCM_fast(void)
 	_gyro_vector 	= _imu->get_gyro();			// Get current values for IMU sensors
 
 	accel = _imu->get_accel();
-	_accel_vector = (_accel_vector * 0.0) + (accel * 1.0);
+	_accel_vector = (_accel_vector * 0.5) + (accel * 0.5);
 
 	delta_t = _imu->get_delta_time();
 
