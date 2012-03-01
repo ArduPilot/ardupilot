@@ -719,6 +719,7 @@ AP_Param *AP_Param::next_group(uint8_t vindex, const struct GroupInfo *group_inf
     for (uint8_t i=0;
          (type=(enum ap_var_type)PGM_UINT8(&group_info[i].type)) != AP_PARAM_NONE;
          i++) {
+#ifdef AP_NESTED_GROUPS_ENABLED
         if (type == AP_PARAM_GROUP) {
             // a nested group
             const struct GroupInfo *ginfo = (const struct GroupInfo *)PGM_POINTER(&group_info[i].group_info);
@@ -728,7 +729,9 @@ AP_Param *AP_Param::next_group(uint8_t vindex, const struct GroupInfo *group_inf
             if (ap != NULL) {
                 return ap;
             }
-        } else {
+        } else
+#endif // AP_NESTED_GROUPS_ENABLED
+        {
             if (*found_current) {
                 // got a new one
                 token->key = vindex;
