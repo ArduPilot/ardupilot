@@ -178,6 +178,7 @@ namespace ArdupilotMega
 
                 lock (objlock) // so we dont have random traffic
                 {
+                    log.Info("Open port with " + BaseStream.PortName + " " + BaseStream.BaudRate);
 
                     BaseStream.Open();
 
@@ -222,7 +223,7 @@ namespace ArdupilotMega
                     // incase we are in setup mode
                     BaseStream.WriteLine("planner\rgcs\r");
 
-                    log.Info(DateTime.Now.Millisecond + " start ");
+                    log.Info(DateTime.Now.Millisecond + " Start connect loop ");
 
                     if (lastbad[0] == '!' && lastbad[1] == 'G' || lastbad[0] == 'G' && lastbad[1] == '!') // waiting for gps lock
                     {
@@ -257,7 +258,7 @@ namespace ArdupilotMega
 
                     try
                     {
-                        log.Info("MAv Data: len " + buffer.Length + " btr " + BaseStream.BytesToRead);
+                        log.Debug("MAv Data: len " + buffer.Length + " btr " + BaseStream.BytesToRead);
                     }
                     catch { }
 
@@ -325,6 +326,7 @@ namespace ArdupilotMega
                 byte[] buffer = readPacket();
                 if (buffer.Length > 5)
                 {
+                    log.Info("getHB packet received: " + buffer.Length + " btr " + BaseStream.BytesToRead + " type " + buffer[5] );
                     if (buffer[5] == MAVLINK_MSG_ID_HEARTBEAT)
                     {
                         return buffer;
@@ -2074,12 +2076,19 @@ namespace ArdupilotMega
 
             if (temp.Length > 5 && temp[1] != MAVLINK_MESSAGE_LENGTHS[temp[5]])
             {
-                log.InfoFormat("Mavlink Bad Packet (Len Fail) len {0} pkno {1}", temp.Length, temp[5]);
+                if (MAVLINK_MESSAGE_LENGTHS[temp[5]] == 0) // pass for unknown packets
+                {
+                
+                }
+                else
+                {
+                    log.InfoFormat("Mavlink Bad Packet (Len Fail) len {0} pkno {1}", temp.Length, temp[5]);
 #if MAVLINK10
                 if (temp.Length == 11 && temp[0] == 'U' && temp[5] == 0)
                     throw new Exception("Mavlink 0.9 Heartbeat, Please upgrade your AP, This planner is for Mavlink 1.0\n\n");
 #endif
-                return new byte[0];
+                    return new byte[0];
+                }
             }
 
             if (temp.Length < 5 || temp[temp.Length - 1] != (crc >> 8) || temp[temp.Length - 2] != (crc & 0xff))
