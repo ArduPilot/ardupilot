@@ -25,6 +25,7 @@
 #include <wiring.h>
 #include <AP_PeriodicProcess.h>
 #include <AP_TimerProcess.h>
+#include <GCS_MAVLink.h>
 #include "sitl_adc.h"
 #include "sitl_rc.h"
 #include "desktop.h"
@@ -301,4 +302,26 @@ void sitl_setup(void)
 	sitl_update_adc(0, 0, 0, 0, 0, 0, 0, 0, -9.8, 0);
 	sitl_update_compass(0, 0, 0, 0);
 	sitl_update_gps(0, 0, 0, 0, 0, false);
+}
+
+
+/* report SITL state via MAVLink */
+void sitl_simstate_send(uint8_t chan)
+{
+	double p, q, r;
+
+	// we want the gyro values to be directly comparable to the
+	// raw_imu message, which is in body frame
+	convert_body_frame(sim_state.rollDeg, sim_state.pitchDeg,
+			   sim_state.rollRate, sim_state.pitchRate, sim_state.yawRate,
+			   &p, &q, &r);
+
+	mavlink_msg_simstate_send((mavlink_channel_t)chan,
+				  ToRad(sim_state.rollDeg),
+				  ToRad(sim_state.pitchDeg),
+				  ToRad(sim_state.yawDeg),
+				  sim_state.xAccel,
+				  sim_state.yAccel,
+				  sim_state.zAccel,
+				  p, q, r);
 }
