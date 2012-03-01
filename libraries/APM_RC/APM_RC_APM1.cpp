@@ -250,29 +250,29 @@ void APM_RC_APM1::Force_Out6_Out7(void)
 // Output rate options:
 #define OUTPUT_SPEED_50HZ 0
 #define OUTPUT_SPEED_200HZ 1
-#define OUTPUT_SPEED_400HZ 2
+#define OUTPUT_SPEED_490HZ 2
 
 void APM_RC_APM1::SetFastOutputChannels(uint32_t chmask)
 {
     if ((chmask & ( _BV(CH_1) | _BV(CH_2) | _BV(CH_9))) != 0)
-        _set_speed_ch1_ch2_ch9(OUTPUT_SPEED_400HZ);
+        _set_speed_ch1_ch2_ch9(OUTPUT_SPEED_490HZ);
 
     if ((chmask & ( _BV(CH_3) | _BV(CH_4) | _BV(CH_10))) != 0)
-        _set_speed_ch3_ch4_ch10(OUTPUT_SPEED_400HZ);
+        _set_speed_ch3_ch4_ch10(OUTPUT_SPEED_490HZ);
 
     if ((chmask & ( _BV(CH_5) | _BV(CH_6))) != 0)
-        _set_speed_ch5_ch6(OUTPUT_SPEED_400HZ);
+        _set_speed_ch5_ch6(OUTPUT_SPEED_490HZ);
 
     if ((chmask & ( _BV(CH_7) | _BV(CH_8) | _BV(CH_11))) != 0)
-        _set_speed_ch7_ch8_ch11(OUTPUT_SPEED_400HZ);
+        _set_speed_ch7_ch8_ch11(OUTPUT_SPEED_490HZ);
 
 }
 
 void APM_RC_APM1::_set_speed_ch1_ch2_ch9(uint8_t speed)
 {
   switch(speed) {
-  case OUTPUT_SPEED_400HZ:
-    ICR1= 5000;
+  case OUTPUT_SPEED_490HZ:
+    ICR1= 4096;
     break;
   case OUTPUT_SPEED_200HZ:
     ICR1= 10000;
@@ -287,8 +287,8 @@ void APM_RC_APM1::_set_speed_ch1_ch2_ch9(uint8_t speed)
 void APM_RC_APM1::_set_speed_ch3_ch4_ch10(uint8_t speed)
 {
   switch(speed) {
-  case OUTPUT_SPEED_400HZ:
-    ICR5= 5000;
+  case OUTPUT_SPEED_490HZ:
+    ICR5= 4096;
     break;
   case OUTPUT_SPEED_200HZ:
     ICR5= 10000;
@@ -303,8 +303,8 @@ void APM_RC_APM1::_set_speed_ch3_ch4_ch10(uint8_t speed)
 void APM_RC_APM1::_set_speed_ch7_ch8_ch11(uint8_t speed)
 {
   switch(speed) {
-  case OUTPUT_SPEED_400HZ:
-    ICR3 = 5000;
+  case OUTPUT_SPEED_490HZ:
+    ICR3 = 4096;
     break;
   case OUTPUT_SPEED_200HZ:
     ICR3 = 10000;
