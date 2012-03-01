@@ -97,6 +97,7 @@ class I2C
     uint8_t read(uint8_t, uint8_t, uint8_t*);
     uint8_t read(uint8_t, uint8_t, uint8_t, uint8_t*);
     uint8_t receive();
+    uint8_t lockup_count();
 
   private:
     uint8_t start();
@@ -108,6 +109,8 @@ class I2C
     uint8_t returnStatus;
     uint8_t nack;
     uint8_t data[MAX_BUFFER_SIZE];
+    uint8_t _lockup_count;
+
     static uint8_t bytesAvailable;
     static uint8_t bufferIndex;
     static uint8_t totalBytes;
