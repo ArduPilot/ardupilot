@@ -1251,7 +1251,7 @@ namespace ArdupilotMega.GCSViews
             catch (Exception ex) { error = 1; MessageBox.Show("Error : " + ex.ToString()); }
             try
             {
-                this.BeginInvoke((System.Threading.ThreadStart)delegate()
+                this.BeginInvoke((MethodInvoker)delegate()
                 {
                     if (error == 0)
                     {
@@ -1508,7 +1508,11 @@ namespace ArdupilotMega.GCSViews
                     }
                 }
 
+                log.Info("Setting wp params");
+
                 string hold_alt = ((int)((float)param["ALT_HOLD_RTL"] * MainV2.cs.multiplierdist)).ToString();
+
+                log.Info("param ALT_HOLD_RTL " + hold_alt);
 
                 if (!hold_alt.Equals("-1"))
                 {
@@ -1516,21 +1520,32 @@ namespace ArdupilotMega.GCSViews
                 }
 
                 TXT_WPRad.Text = ((int)((float)param["WP_RADIUS"] * MainV2.cs.multiplierdist)).ToString();
+
+                log.Info("param WP_RADIUS " + TXT_WPRad.Text);
+
                 try
                 {
-                    TXT_loiterrad.Text = ((int)((float)param["LOITER_RADIUS"] * MainV2.cs.multiplierdist)).ToString();
+                    if (param["LOITER_RADIUS"] != null)
+                        TXT_loiterrad.Text = ((int)((float)param["LOITER_RADIUS"] * MainV2.cs.multiplierdist)).ToString();
+
+                    if (param["WP_LOITER_RAD"] != null)
+                        TXT_loiterrad.Text = ((int)((float)param["WP_LOITER_RAD"] * MainV2.cs.multiplierdist)).ToString();
+
+                    log.Info("param LOITER_RADIUS " + TXT_loiterrad.Text);
                 }
                 catch
                 {
-                    TXT_loiterrad.Text = ((int)((float)param["WP_LOITER_RAD"] * MainV2.cs.multiplierdist)).ToString();
+                    
                 }
                 CHK_holdalt.Checked = Convert.ToBoolean((float)param["ALT_HOLD_RTL"] > 0);
+                log.Info("param ALT_HOLD_RTL " + CHK_holdalt.Checked.ToString());
 
             }
-            catch (Exception) { } // if there is no valid home
+            catch (Exception ex) { log.Info(ex.ToString()); } // if there is no valid home
 
             if (Commands.RowCount > 0)
             {
+                log.Info("remove home from list");
                 Commands.Rows.Remove(Commands.Rows[0]); // remove home row
             }
 

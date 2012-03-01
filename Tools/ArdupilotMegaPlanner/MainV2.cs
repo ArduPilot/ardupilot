@@ -264,7 +264,7 @@ namespace ArdupilotMega
                 if (Directory.Exists("/dev/"))
                 {
                     if (Directory.Exists("/dev/serial/by-id/"))
-                        devs = Directory.GetFiles("/dev/serial/by-id/", "*usb*");
+                        devs = Directory.GetFiles("/dev/serial/by-id/", "*");
                     devs = Directory.GetFiles("/dev/", "*ACM*");
                     devs = Directory.GetFiles("/dev/", "ttyUSB*");
                 }

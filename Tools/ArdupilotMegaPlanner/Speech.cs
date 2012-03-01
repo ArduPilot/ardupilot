@@ -11,20 +11,21 @@ namespace ArdupilotMega
         SpeechSynthesizer _speechwindows;
         System.Diagnostics.Process _speechlinux;
 
+        System.Speech.Synthesis.SynthesizerState _state = SynthesizerState.Ready;
+
         bool MONO = false;
 
         public SynthesizerState State { 
             get {
                 if (MONO)
                 {
-                    return SynthesizerState.Ready;
+                    return _state;
                 }
                 else
                 {
                     return _speechwindows.State;
                 }
-            } 
-            private set { } 
+            }
         }
 
         public Speech()
@@ -34,8 +35,7 @@ namespace ArdupilotMega
 
             if (MONO)
             {
-                _speechlinux = new System.Diagnostics.Process();
-                _speechlinux.StartInfo.FileName = "festival";
+                _state = SynthesizerState.Ready;
             }
             else
             {
@@ -47,7 +47,14 @@ namespace ArdupilotMega
         {
             if (MONO)
             {
-
+                if (_speechlinux == null || _speechlinux.HasExited)
+                {
+                    _state = SynthesizerState.Speaking;
+                    _speechlinux = new System.Diagnostics.Process();
+                    _speechlinux.StartInfo.FileName = "echo " + text + " | festival --tts";
+                    _speechlinux.Start();
+                    _speechlinux.Exited += new EventHandler(_speechlinux_Exited);
+                }
             }
             else
             {
@@ -55,11 +62,17 @@ namespace ArdupilotMega
             }
         }
 
+        void _speechlinux_Exited(object sender, EventArgs e)
+        {
+            _state = SynthesizerState.Ready;
+        }
+
         public void SpeakAsyncCancelAll()
         {
             if (MONO)
             {
-
+                _speechlinux.Close();
+                _state = SynthesizerState.Ready;
             }
             else
             {

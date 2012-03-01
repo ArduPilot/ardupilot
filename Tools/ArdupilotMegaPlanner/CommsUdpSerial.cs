@@ -3,6 +3,7 @@ using System.Text;
 using System.Net; // dns, ip address
 using System.Net.Sockets; // tcplistner
 using log4net;
+using ArdupilotMega.Controls;
 
 namespace System.IO.Ports
 {
@@ -59,7 +60,7 @@ namespace System.IO.Ports
             get { return client.Available + rbuffer.Length - rbufferread; }
         }
 
-        public bool IsOpen { get { return client.Client.Connected; } }
+        public bool IsOpen { get { if (client.Client == null) return false; return client.Client.Connected; } }
 
         public bool DtrEnable
         {
@@ -75,22 +76,59 @@ namespace System.IO.Ports
                 return;
             }
 
+            ProgressReporterDialogue frmProgressReporter = new ProgressReporterDialogue
+            {
+                StartPosition = System.Windows.Forms.FormStartPosition.CenterScreen,
+                Text = "Connecting Mavlink UDP"
+            };
+
+            frmProgressReporter.DoWork += frmProgressReporter_DoWork;
+
+            frmProgressReporter.UpdateProgressAndStatus(-1, "Connecting Mavlink UDP");
+
+            ArdupilotMega.MainV2.fixtheme(frmProgressReporter);
+
+            frmProgressReporter.RunBackgroundOperationAsync();
+
+            
+        }
+
+        void frmProgressReporter_DoWork(object sender, ArdupilotMega.Controls.ProgressWorkerEventArgs e)
+        {
             string dest = Port;
+
+            if (ArdupilotMega.MainV2.config["UDP_port"] != null)
+                dest = ArdupilotMega.MainV2.config["UDP_port"].ToString();
+
             ArdupilotMega.Common.InputBox("Listern Port", "Enter Local port (ensure remote end is already sending)", ref dest);
             Port = dest;
 
+            ArdupilotMega.MainV2.config["UDP_port"] = Port;
+
             client = new UdpClient(int.Parse(Port));
 
-                         int timeout = 5;  
-            while (timeout > 0) 
-            { 
-                if (BytesToRead > 0)  
-                    break;  
-                System.Threading.Thread.Sleep(1000);  
-                timeout--;  
-            }  
-            if (BytesToRead == 0)  
-                return; 
+            while (true)
+            {
+                ((ProgressReporterDialogue)sender).UpdateProgressAndStatus(-1, "Waiting for UDP");
+                System.Threading.Thread.Sleep(500);
+
+                if (((ProgressReporterDialogue)sender).doWorkArgs.CancelRequested)
+                {
+                    ((ProgressReporterDialogue)sender).doWorkArgs.CancelAcknowledged = true;
+                    try
+                    {
+                        client.Close();
+                    }
+                    catch { }
+                    return;
+                }
+
+                if (BytesToRead > 0)
+                    break;
+            }
+
+            if (BytesToRead == 0)
+                return;
 
             try
             {
@@ -98,18 +136,16 @@ namespace System.IO.Ports
                 log.InfoFormat("NetSerial connecting to {0} : {1}", RemoteIpEndPoint.Address, RemoteIpEndPoint.Port);
                 client.Connect(RemoteIpEndPoint);
             }
-            catch (Exception e) 
-            { 
+            catch (Exception ex)
+            {
                 if (client != null && client.Client.Connected)
                 {
                     client.Close();
                 }
-                log.Info(e.ToString());
+                log.Info(ex.ToString());
                 System.Windows.Forms.MessageBox.Show("Please check your Firewall settings\nPlease try running this command\n1.    Run the following command in an elevated command prompt to disable Windows Firewall temporarily:\n    \nNetsh advfirewall set allprofiles state off\n    \nNote: This is just for test; please turn it back on with the command 'Netsh advfirewall set allprofiles state on'.\n");
                 throw new Exception("The socket/serialproxy is closed " + e);
             }
-
-            return;
         }
 
         void VerifyConnected()
@@ -251,7 +287,7 @@ namespace System.IO.Ports
 
         public void Close()
         {
-            if (client.Client.Connected)
+            if (client.Client != null && client.Client.Connected)
             {
                 client.Client.Close();
                 client.Close();

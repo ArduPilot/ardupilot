@@ -82,6 +82,13 @@ namespace System.IO.Ports
 
             string dest = Port;
             string host = "127.0.0.1";
+
+            if (ArdupilotMega.MainV2.config["TCP_port"] != null)
+                dest = ArdupilotMega.MainV2.config["TCP_port"].ToString();
+
+            if (ArdupilotMega.MainV2.config["TCP_host"] != null)
+                host = ArdupilotMega.MainV2.config["TCP_host"].ToString();
+
             if (Windows.Forms.DialogResult.Cancel == ArdupilotMega.Common.InputBox("remote host", "Enter host name/ip (ensure remote end is already started)", ref host))
             {
                 throw new Exception("Canceled by request");
@@ -91,6 +98,9 @@ namespace System.IO.Ports
                 throw new Exception("Canceled by request");
             }
             Port = dest;
+
+            ArdupilotMega.MainV2.config["TCP_port"] = Port;
+            ArdupilotMega.MainV2.config["TCP_host"] = host;
 
             client = new TcpClient(host, int.Parse(Port));
 

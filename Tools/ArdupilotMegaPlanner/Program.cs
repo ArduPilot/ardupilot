@@ -28,6 +28,10 @@ namespace ArdupilotMega
 
             Application.Idle += Application_Idle;
 
+            //MagCalib.doWork();
+
+            //return;
+
             //MessageBox.Show("NOTE: This version may break advanced mission scripting");
 
             //Common.linearRegression();

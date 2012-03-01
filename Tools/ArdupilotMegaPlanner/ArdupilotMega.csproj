@@ -243,6 +243,7 @@
     <Compile Include="Controls\ProgressReporterDialogue.designer.cs">
       <DependentUpon>ProgressReporterDialogue.cs</DependentUpon>
     </Compile>
+    <Compile Include="MagCalib.cs" />
     <Compile Include="Radio\3DRradio.cs">
       <SubType>Form</SubType>
     </Compile>
