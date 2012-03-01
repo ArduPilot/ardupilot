@@ -492,13 +492,16 @@ AP_Param::find_group(const char *name, uint8_t vindex, const struct GroupInfo *g
     for (uint8_t i=0;
          (type=PGM_UINT8(&group_info[i].type)) != AP_PARAM_NONE;
          i++) {
+#ifdef AP_NESTED_GROUPS_ENABLED
         if (type == AP_PARAM_GROUP) {
             const struct GroupInfo *ginfo = (const struct GroupInfo *)PGM_POINTER(&group_info[i].group_info);
             AP_Param *ap = find_group(name, vindex, ginfo, ptype);
             if (ap != NULL) {
                 return ap;
             }
-        } else if (strcasecmp_P(name, group_info[i].name) == 0) {
+        } else
+#endif // AP_NESTED_GROUPS_ENABLED
+        if (strcasecmp_P(name, group_info[i].name) == 0) {
             uintptr_t p = PGM_POINTER(&_var_info[vindex].ptr);
             *ptype = (enum ap_var_type)type;
             return (AP_Param *)(p + PGM_POINTER(&group_info[i].offset));
