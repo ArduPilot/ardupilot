@@ -328,6 +328,10 @@ AP_DCM::renorm(Vector3f const &a, int &problem)
 
 	renorm_val = 1.0 / sqrt(a * a);
 
+	// keep the average for reporting
+	_renorm_val_sum += renorm_val;
+	_renorm_val_count++;
+
 	if (!(renorm_val < 2.0 && renorm_val > 0.5)) {
 		// this is larger than it should get - log it as a warning
 		renorm_range_count++;
@@ -360,6 +364,8 @@ AP_DCM::drift_correction(void)
 	float accel_weight;
 	float integrator_magnitude;
 	Vector3f error;
+	float error_norm;
+
 	//static float scaled_omega_P[3];
 	//static float scaled_omega_I[3];
 
@@ -380,7 +386,6 @@ AP_DCM::drift_correction(void)
 
 	// error_roll_pitch are in Accel m/s^2 units
 	// Limit max error_roll_pitch to limit max omega_P and omega_I
-	float error_norm;
 	error_norm = error.length();
 	if (error_norm > 2) {
 		error *= (2 / error_norm);
@@ -388,6 +393,12 @@ AP_DCM::drift_correction(void)
 
 	_omega_P =  error * (_kp_roll_pitch * accel_weight);
 	_omega_I += error * (_ki_roll_pitch * accel_weight);
+
+	// these sums support the reporting of the DCM state via MAVLink
+	_accel_weight_sum += accel_weight;
+	_accel_weight_count++;
+	_error_rp_sum += error_norm;
+	_error_rp_count++;
 
 
 	//*****YAW***************
@@ -463,6 +474,10 @@ AP_DCM::drift_correction(void)
 	if (integrator_magnitude > radians(30)) {
 		_omega_I *= (radians(30) / integrator_magnitude);
 	}
+
+	_error_yaw_sum += error_course;
+	_error_yaw_count++;
+
 	//Serial.print("*");
 }
 
@@ -506,4 +521,59 @@ AP_DCM::euler_yaw(void)
 
 	if (yaw_sensor < 0)
 		yaw_sensor += 36000;
+}
+
+
+/* reporting of DCM state for MAVLink */
+
+// average accel_weight since last call
+float AP_DCM::get_accel_weight(void)
+{
+	float ret;
+	if (_accel_weight_count == 0) {
+		return 0;
+	}
+	ret = _accel_weight_sum / _accel_weight_count;
+	_accel_weight_sum = 0;
+	_accel_weight_count = 0;
+	return ret;
+}
+
+// average renorm_val since last call
+float AP_DCM::get_renorm_val(void)
+{
+	float ret;
+	if (_renorm_val_count == 0) {
+		return 0;
+	}
+	ret = _renorm_val_sum / _renorm_val_count;
+	_renorm_val_sum = 0;
+	_renorm_val_count = 0;
+	return ret;
+}
+
+// average error_roll_pitch since last call
+float AP_DCM::get_error_rp(void)
+{
+	float ret;
+	if (_error_rp_count == 0) {
+		return 0;
+	}
+	ret = _error_rp_sum / _error_rp_count;
+	_error_rp_sum = 0;
+	_error_rp_count = 0;
+	return ret;
+}
+
+// average error_yaw since last call
+float AP_DCM::get_error_yaw(void)
+{
+	float ret;
+	if (_error_yaw_count == 0) {
+		return 0;
+	}
+	ret = _error_yaw_sum / _error_yaw_count;
+	_error_yaw_sum = 0;
+	_error_yaw_count = 0;
+	return ret;
 }

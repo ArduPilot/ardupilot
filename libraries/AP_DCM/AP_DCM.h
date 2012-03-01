@@ -86,6 +86,11 @@ public:
 	static const float kDCM_kp_rp_low		= 0.01;
 	int8_t		_clamp;
 
+	// status reporting
+	float		get_accel_weight(void);
+	float		get_renorm_val(void);
+	float		get_error_rp(void);
+	float		get_error_yaw(void);
 
 private:
 	float		_kp_roll_pitch;
@@ -129,6 +134,17 @@ private:
 	float		_health;
 	bool		_centripetal;
 	uint8_t		_toggle;
+
+	// state to support status reporting
+	float		_accel_weight_sum;
+	uint16_t	_accel_weight_count;
+	float		_renorm_val_sum;
+	uint16_t	_renorm_val_count;
+	float		_error_rp_sum;
+	uint16_t	_error_rp_count;
+	float		_error_yaw_sum;
+	uint16_t	_error_yaw_count;
+
 };
 
 #endif
