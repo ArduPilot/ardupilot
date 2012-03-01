@@ -68,27 +68,16 @@ void sitl_update_adc(float roll, 	float pitch, 	float yaw,		// Relative to earth
 	static const float _sensor_signs[6] = { 1, -1, -1, 1, -1, -1 };
 	const float accel_offset = 2041;
 	const float gyro_offset = 1658;
-#define ToRad(x) (x*0.01745329252)  // *pi/180
 	const float _gyro_gain_x = ToRad(0.4);
 	const float _gyro_gain_y = ToRad(0.41);
 	const float _gyro_gain_z = ToRad(0.41);
 	const float _accel_scale = 9.80665 / 423.8;
 	double adc[7];
-	double phi, theta, phiDot, thetaDot, psiDot;
 	double p, q, r;
 
-	/* convert the angular velocities from earth frame to
-	   body frame. Thanks to James Goppert for the formula
-	*/
-	phi = ToRad(roll);
-	theta = ToRad(pitch);
-	phiDot = ToRad(rollRate);
-	thetaDot = ToRad(pitchRate);
-	psiDot = ToRad(yawRate);
-
-	p = phiDot - psiDot*sin(theta);
-	q = cos(phi)*thetaDot + sin(phi)*psiDot*cos(theta);
-	r = cos(phi)*psiDot*cos(theta) - sin(phi)*thetaDot;
+	convert_body_frame(roll, pitch,
+			   rollRate, pitchRate, yawRate,
+			   &p, &q, &r);
 
 	/* work out the ADC channel values */
 	adc[0] =  (p   / (_gyro_gain_x * _sensor_signs[0])) + gyro_offset;
