@@ -369,39 +369,52 @@ AP_DCM::drift_correction(void)
 	//float mag_heading_x;
 	//float mag_heading_y;
 	float error_course = 0;
-	float accel_magnitude;
 	float accel_weight;
 	float integrator_magnitude;
 	Vector3f error;
 	float error_norm;
+	const float gravity_squared = (9.80665*9.80665);
 
 	//static float scaled_omega_P[3];
 	//static float scaled_omega_I[3];
 
 	//*****Roll and Pitch***************
 
-	// Calculate the magnitude of the accelerometer vector
-	accel_magnitude = _accel_vector.length() / 9.80665f;
+	// calculate the z component of the accel vector assuming it
+	// has a length of 9.8. This discards the z accelerometer
+	// sensor reading completely. Logs show that the z accel is
+	// the noisest, and it seems that using just the x and y accel
+	// values gives a better attitude estimate than including the
+	// z accel
 
-	// Dynamic weighting of accelerometer info (reliability filter)
-	// Weight for accelerometer info (<0.5G = 0.0, 1G = 1.0 , >1.5G = 0.0)
-	accel_weight = constrain(1 - _clamp * fabs(1 - accel_magnitude), 0, 1);	// upped to (<0.66G = 0.0, 1G = 1.0 , >1.33G = 0.0)
+	float zsquared = gravity_squared - ((_accel_vector.x * _accel_vector.x) + (_accel_vector.y * _accel_vector.y));
+	if (zsquared < 0) {
+		accel_weight = 0;
+	} else {
+		if (_accel_vector.z > 0) {
+			_accel_vector.z = sqrt(zsquared);
+		} else {
+			_accel_vector.z = -sqrt(zsquared);
+		}
 
-	//	We monitor the amount that the accelerometer based drift correction is deweighted for performance reporting
-	_health = constrain(_health+(0.02 * (accel_weight - .5)), 0, 1);
+		// this is arbitrary, and can be removed once we get
+		// ki and kp right
+		accel_weight = 0.6;
 
-	// adjust the ground of reference
-	error =  _dcm_matrix.c % _accel_vector;			// Equation 27  *** sign changed from prev implementation???
+		_health = constrain(_health+(0.02 * (accel_weight - .5)), 0, 1);
 
-	// error_roll_pitch are in Accel m/s^2 units
-	// Limit max error_roll_pitch to limit max omega_P and omega_I
-	error_norm = error.length();
-	if (error_norm > 2) {
-		error *= (2 / error_norm);
+		error =  _dcm_matrix.c % _accel_vector;
+
+		// error_roll_pitch are in Accel m/s^2 units
+		// Limit max error_roll_pitch to limit max omega_P and omega_I
+		error_norm = error.length();
+		if (error_norm > 2) {
+			error *= (2 / error_norm);
+		}
+
+		_omega_P =  error * (_kp_roll_pitch * accel_weight);
+		_omega_I += error * (_ki_roll_pitch * accel_weight);
 	}
-
-	_omega_P =  error * (_kp_roll_pitch * accel_weight);
-	_omega_I += error * (_ki_roll_pitch * accel_weight);
 
 	// these sums support the reporting of the DCM state via MAVLink
 	_accel_weight_sum += accel_weight;
