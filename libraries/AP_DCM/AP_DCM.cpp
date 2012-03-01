@@ -51,10 +51,13 @@ void
 AP_DCM::update_DCM_fast(void)
 {
 	float delta_t;
+	Vector3f accel;
 
 	_imu->update();
 	_gyro_vector 	= _imu->get_gyro();			// Get current values for IMU sensors
-	_accel_vector 	= _imu->get_accel();			// Get current values for IMU sensors
+
+	accel = _imu->get_accel();
+	_accel_vector = (_accel_vector * 0.0) + (accel * 1.0);
 
 	delta_t = _imu->get_delta_time();
 
@@ -96,10 +99,13 @@ void
 AP_DCM::update_DCM(void)
 {
 	float delta_t;
+	Vector3f accel;
 
 	_imu->update();
 	_gyro_vector 	= _imu->get_gyro();			// Get current values for IMU sensors
-	_accel_vector 	= _imu->get_accel();			// Get current values for IMU sensors
+
+	accel = _imu->get_accel();
+	_accel_vector = (_accel_vector * 0.5) + (accel * 0.5);
 
 	delta_t = _imu->get_delta_time();
 
@@ -133,7 +139,8 @@ AP_DCM::matrix_update(float _G_Dt)
 	Matrix3f	temp_matrix;
 
 	_omega_integ_corr 	= _gyro_vector 		+ _omega_I;		// Used for _centripetal correction (theoretically better than _omega)
-	_omega 				= _omega_integ_corr + _omega_P;		// Equation 16, adding proportional and integral correction terms
+	_omega 			= _omega_integ_corr + _omega_P;		// Equation 16, adding proportional and integral correction terms
+	_omega_smoothed = (_omega_smoothed * 0.5) + (_omega_integ_corr * 0.5);
 
 	if(_centripetal &&
 	   _gps != NULL &&
@@ -179,16 +186,17 @@ AP_DCM::matrix_update(float _G_Dt)
 void
 AP_DCM::accel_adjust(void)
 {
-	Vector3f veloc, temp;
+	Vector3f temp;
+	float veloc;
 
-	veloc.x = _gps->ground_speed / 100;		// We are working with acceleration in m/s^2 units
+	veloc = _gps->ground_speed / 100;		// We are working with acceleration in m/s^2 units
 
 	// We are working with a modified version of equation 26 as our IMU object reports acceleration in the positive axis direction as positive
 
-	//_accel_vector -= _omega_integ_corr % _veloc;		// Equation 26  This line is giving the compiler a problem so we break it up below
+	// _accel_vector -= _omega_integ_corr % veloc;		// Equation 26  This line is giving the compiler a problem so we break it up below
 	temp.x = 0;
-	temp.y = _omega_integ_corr.z * veloc.x; 			// only computing the non-zero terms
-	temp.z = -1.0f * _omega_integ_corr.y * veloc.x;	// After looking at the compiler issue lets remove _veloc and simlify
+	temp.y = _omega_smoothed.z * veloc; 			// only computing the non-zero terms
+	temp.z = _omega_smoothed.y * (-veloc);	// After looking at the compiler issue lets remove _veloc and simlify
 
 	_accel_vector -= temp;
 }
@@ -210,6 +218,7 @@ AP_DCM::matrix_reset(bool recover_eulers)
 	_omega_I.z = 0.0f;
 	_omega_P = _omega_I;
 	_omega_integ_corr = _omega_I;
+	_omega_smoothed = _omega_I;
 	_omega = _omega_I;
 
 	// if the caller wants us to try to recover to the current
