@@ -39,10 +39,13 @@ class APM_RC_Class
 	virtual uint16_t InputCh(uint8_t ch) = 0;
 	virtual uint8_t GetState() = 0;
 	virtual void clearOverride(void) = 0;
-    virtual void Force_Out() = 0;
-    virtual void SetFastOutputChannels( uint32_t channelmask ) = 0;
-  virtual void enable_out(uint8_t) = 0;
-  virtual void disable_out(uint8_t) = 0;
+	virtual void Force_Out() = 0;
+	virtual void SetFastOutputChannels( uint32_t channelmask, uint16_t speed_hz = 400 ) = 0;
+	virtual void enable_out(uint8_t) = 0;
+	virtual void disable_out(uint8_t) = 0;
+
+protected:
+	uint16_t _map_speed(uint16_t speed_hz) { return 2000000UL / speed_hz; }
 
 };
 
