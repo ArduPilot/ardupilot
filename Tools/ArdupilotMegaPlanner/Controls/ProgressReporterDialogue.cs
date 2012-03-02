@@ -42,6 +42,7 @@ namespace ArdupilotMega.Controls
 
         private void RunBackgroundOperation(object o)
         {
+            Thread.CurrentThread.Name = "ProgressReporterDialogue Background thread";
             try
             {
                 if (this.DoWork != null) this.DoWork(this, doWorkArgs);

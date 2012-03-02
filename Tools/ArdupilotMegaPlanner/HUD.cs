@@ -46,6 +46,8 @@ namespace hud
 
         bool started = false;
 
+        public bool SixteenXNine = false;
+
         public HUD()
         {
             if (this.DesignMode)
@@ -1552,7 +1554,18 @@ namespace hud
         {
             if (DesignMode || !started)
                 return;
-            this.Height = (int)(this.Width / 1.333f);
+
+           
+            if (SixteenXNine)
+            {
+                this.Height = (int)(this.Width / 1.777f);
+            }
+            else
+            {
+                // 4x3
+                this.Height = (int)(this.Width / 1.333f);
+            }
+
             base.OnResize(e);
 
             graphicsObjectGDIP = Graphics.FromImage(objBitmap);

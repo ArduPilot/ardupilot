@@ -124,7 +124,7 @@ namespace ArdupilotMega.Antenna
 
             byte target = (byte)((((PointAtAngle / range ) * 2) * 127 + 127) * _tiltreverse);
 
-            Console.WriteLine("T " + Angle + " " + target + " " + PointAtAngle);
+            //Console.WriteLine("T " + Angle + " " + target + " " + PointAtAngle);
 
             var buffer = new byte[] { 0xff, TiltAddress, target };
             ComPort.Write(buffer, 0, buffer.Length);
@@ -142,7 +142,11 @@ namespace ArdupilotMega.Antenna
 
         public bool Close()
         {
-            ComPort.Close();
+            try
+            {
+                ComPort.Close();
+            }
+            catch { }
             return true;
         }
 

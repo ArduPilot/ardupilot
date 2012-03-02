@@ -51,7 +51,7 @@
     <CheckForOverflowUnderflow>false</CheckForOverflowUnderflow>
     <NoStdLib>false</NoStdLib>
     <UseVSHostingProcess>true</UseVSHostingProcess>
-    <FileAlignment>1024</FileAlignment>
+    <FileAlignment>512</FileAlignment>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|x86' ">
     <PlatformTarget>x86</PlatformTarget>
@@ -68,7 +68,7 @@
     <DebugSymbols>true</DebugSymbols>
     <NoStdLib>false</NoStdLib>
     <UseVSHostingProcess>true</UseVSHostingProcess>
-    <FileAlignment>1024</FileAlignment>
+    <FileAlignment>512</FileAlignment>
   </PropertyGroup>
   <PropertyGroup>
     <StartupObject>ArdupilotMega.Program</StartupObject>
