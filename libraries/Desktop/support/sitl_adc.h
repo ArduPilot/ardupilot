@@ -9,7 +9,7 @@
 #include <stdlib.h>
 #include <math.h>
 
-static const float vibration_level = 0.1;
+static const float vibration_level = 2.0;
 // order                              zgyro, xgyro, ygyro, temp, xacc, yacc, zacc, aspd
 static const float noise_scale[8] = {   150,   150,   150,    0, 400,  400,  400,    0 };
 static const float noise_offset[8]= {     0,     0,     0,    0,   0,    0,    0,    0 };
