@@ -145,6 +145,7 @@ public:
 	k_param_radio_tuning_low,
 	k_param_camera_pitch_gain,
 	k_param_camera_roll_gain,
+    k_param_rc_speed,
 
     //
     // 200: flight modes
@@ -293,6 +294,7 @@ public:
 	RC_Channel	rc_8;
 	RC_Channel	rc_camera_pitch;
 	RC_Channel	rc_camera_roll;
+    AP_Int16    rc_speed; // speed of fast RC Channels in Hz
 
 	AP_Float	camera_pitch_gain;
 	AP_Float	camera_roll_gain;
@@ -400,6 +402,8 @@ public:
 	heli_phase_angle		(0),
 	heli_collective_yaw_effect	(0),
 	#endif
+
+    rc_speed(RC_FAST_SPEED),
 
 	camera_pitch_gain 		(CAM_PITCH_GAIN),
 	camera_roll_gain 		(CAM_ROLL_GAIN),

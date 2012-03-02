@@ -105,6 +105,9 @@ static const AP_Param::Info var_info[] PROGMEM = {
 	GGROUP(rc_camera_pitch,	"CAM_P_", RC_Channel),
 	GGROUP(rc_camera_roll,	"CAM_R_", RC_Channel),
 
+	// speed of fast RC channels in Hz
+	GSCALAR(rc_speed, "RC_SPEED"),
+
 	// variable
 	//---------
 	GSCALAR(camera_pitch_gain, 	"CAM_P_G"),
