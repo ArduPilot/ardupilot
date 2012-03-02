@@ -218,7 +218,7 @@ static void heli_move_swash(int roll_out, int pitch_out, int coll_out, int yaw_o
 static void init_motors_out()
 {
 	#if INSTANT_PWM == 0
-    APM_RC.SetFastOutputChannels( _BV(CH_1) | _BV(CH_2) | _BV(CH_3) | _BV(CH_4) );
+    APM_RC.SetFastOutputChannels( _BV(CH_1) | _BV(CH_2) | _BV(CH_3) | _BV(CH_4), g.rc_speed );
 	#endif
 }
 
