@@ -153,6 +153,19 @@ bool AP_Param::check_group_info(const struct AP_Param::GroupInfo *group_info,
     return true;
 }
 
+// check for duplicate key values
+bool AP_Param::duplicate_key(uint8_t vindex, uint8_t key)
+{
+    for (uint8_t i=vindex+1; i<_num_vars; i++) {
+        uint8_t key2 = PGM_UINT8(&_var_info[i].key);
+        if (key2 == key) {
+            // no duplicate keys allowed
+            return true;
+        }
+    }
+    return false;
+}
+
 // validate the _var_info[] table
 bool AP_Param::check_var_info(void)
 {
@@ -160,6 +173,7 @@ bool AP_Param::check_var_info(void)
 
     for (uint8_t i=0; i<_num_vars; i++) {
         uint8_t type = PGM_UINT8(&_var_info[i].type);
+        uint8_t key = PGM_UINT8(&_var_info[i].key);
         if (type == AP_PARAM_GROUP) {
             if (i == 0) {
                 // first element can't be a group, for first() call
@@ -178,6 +192,9 @@ bool AP_Param::check_var_info(void)
                 return false;
             }
             total_size += size + sizeof(struct Param_header);
+        }
+        if (duplicate_key(i, key)) {
+            return false;
         }
     }
     if (total_size > _eeprom_size) {
