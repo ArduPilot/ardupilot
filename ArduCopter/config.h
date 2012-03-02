@@ -105,6 +105,11 @@
 # define INSTANT_PWM	DISABLED
 #endif
 
+// default RC speed in Hz if INSTANT_PWM is not used
+#ifndef RC_FAST_SPEED
+# define RC_FAST_SPEED 400
+#endif
+
 // LED and IO Pins
 //
 #if CONFIG_APM_HARDWARE == APM_HARDWARE_APM1
