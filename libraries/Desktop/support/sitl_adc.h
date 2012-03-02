@@ -9,7 +9,12 @@
 #include <stdlib.h>
 #include <math.h>
 
-static float noise_scale[8] = { 240, 400, 500, 200, 400, 400, 2000, 200 };
+static const float vibration_level = 0.1;
+// order                              zgyro, xgyro, ygyro, temp, xacc, yacc, zacc, aspd
+static const float noise_scale[8] = {   150,   150,   150,    0, 400,  400,  400,    0 };
+static const float noise_offset[8]= {     0,     0,     0,    0,   0,    0,    0,    0 };
+static const float drift_rate[8]  = {     0.7, 1.0,   0.5,    0,   0,    0,    0,    0 };
+static const float base_noise = 2;
 
 // generate a random float between -1 and 1
 static double rand_float(void)
@@ -18,25 +23,43 @@ static double rand_float(void)
 	return (ret - 1.0e6) / 1.0e6;
 }
 
+static inline float gyro_drift(uint8_t chan)
+{
+	if (drift_rate[chan] == 0) {
+		return 0;
+	}
+	extern long unsigned int micros(void);
+	double period = 10*drift_rate[chan];
+	double minutes = fmod(micros() / 60.0e6, period);
+	if (minutes < period/2) {
+		return minutes;
+	}
+	return period - minutes;
+
+}
+
 static inline float noise_generator(uint8_t chan)
 {
 	extern float sitl_motor_speed[4];
-	extern long unsigned int micros(void);
 	uint8_t i;
 	float noise = 0;
 	uint8_t noise_count=0;
-	double t = micros() / 1.0e6;
+	extern long unsigned int micros(void);
 	for (i=0; i<4; i++) {
 		if (sitl_motor_speed[i] > 0.0) {
-			float n = rand_float() * noise_scale[chan];
-			noise += sin(fmod(t * sitl_motor_speed[i] * 2 * 3.14 + i, 2*3.14)) * n;
+			float n = rand_float() * noise_scale[chan] * vibration_level;
+			//double t = micros() / 1.0e6;
+			//float freq = (rand_float() + 1.0) * sitl_motor_speed[i];
+			//noise += sin(fmod(t * freq * 2 * M_PI + i,
+			//2*M_PI)) * n;
+			noise += n + noise_offset[chan];
 			noise_count++;
 		}
 	}
 	if (noise_count == 0) {
-		return 0;
+		return rand_float() * base_noise;
 	}
-	return noise/noise_count;
+	return gyro_drift(chan) + noise/noise_count;
 }
 
 // this implements the UDR2 register
@@ -75,11 +98,10 @@ struct ADC_UDR2 {
 		}
 		next_analog = channels[chan];
 		idx = 1;
-		next_value = (unsigned)(next_analog + noise_generator(chan) + 0.5);
-		if (next_value >= 0x1000) {
-			next_value = 0xFFF;
-		}
-		next_value = (next_value << 3);
+		next_analog += noise_generator(chan) + 0.5;
+		if (next_analog > 0xFFF) next_analog = 0xFFF;
+		if (next_analog < 0) next_analog = 0;
+		next_value = ((unsigned)next_analog) << 3;
 		return *this;
 	}
 
