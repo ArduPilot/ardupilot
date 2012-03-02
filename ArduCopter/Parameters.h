@@ -17,7 +17,7 @@ public:
 	// The increment will prevent old parameters from being used incorrectly
 	// by newer code.
 	//
-	static const uint16_t k_format_version = 116;
+	static const uint16_t k_format_version = 117;
 
 	// The parameter software_type is set up solely for ground station use
 	// and identifies the software type (eg ArduPilotMega versus ArduCopterMega)
@@ -121,9 +121,9 @@ public:
 
 
 	//
-	// 180: Radio settings
+	// 170: Radio settings
 	//
-	k_param_rc_1 = 180,
+	k_param_rc_1 = 170,
 	k_param_rc_2,
 	k_param_rc_3,
 	k_param_rc_4,
