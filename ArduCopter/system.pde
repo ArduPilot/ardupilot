@@ -311,8 +311,8 @@ static void init_ardupilot()
 	#if HIL_MODE != HIL_MODE_ATTITUDE
 		dcm.kp_roll_pitch(0.130000);
 		dcm.ki_roll_pitch(0.00001278),	// 50 hz I term
-		dcm.kp_yaw(0.08);
-		dcm.ki_yaw(0.00004);
+		dcm.kp_yaw(0.12);
+		dcm.ki_yaw(0.00002);
 		dcm._clamp = 5;
 	#endif
 
