@@ -77,8 +77,9 @@ AP_IMU_INS::_init_gyro(void (*delay_cb)(unsigned long t), void (*flash_leds_cb)(
 		delay_cb(20);
 	}
 
-    // the strategy is to average 100 points, then do it again and
-    // see if the 2nd average is within a small margin of the first
+    // the strategy is to average 200 points over 1 second, then do it
+    // again and see if the 2nd average is within a small margin of
+    // the first
 
     last_average.zero();
 
