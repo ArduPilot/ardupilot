@@ -10,7 +10,6 @@
 #include <stdlib.h>
 #include <sys/types.h>
 #include <math.h>
-#include <AP_DCM.h>
 #include <AP_ADC.h>
 #include "wiring.h"
 #include "sitl_adc.h"
@@ -100,31 +99,6 @@ void sitl_update_adc(float roll, 	float pitch, 	float yaw,		// Relative to earth
 
 	/* FIX: rubbish value for temperature for now */
 	UDR2.set(3, 2000);
-
-#if 0
-	extern AP_DCM_HIL dcm;
-	dcm.setHil(ToRad(roll), ToRad(pitch), ToRad(yaw),
-		   ToRad(rollRate), ToRad(pitchRate), ToRad(yawRate));
-
-#endif
-
-	static uint32_t last_report;
-	uint32_t tnow = millis();
-	extern AP_DCM dcm;
-	Vector3f omega = dcm.get_gyro();
-	// report roll/pitch discrepancies
-	if (tnow - last_report > 5000 ||
-	    (tnow - last_report > 1000 &&
-	     (fabs(roll - dcm.roll_sensor/100.0) > 5.0 ||
-	      fabs(pitch - dcm.pitch_sensor/100.0) > 5.0))) {
-		last_report = tnow;
-		/*printf("roll=%5.1f / %5.1f  pitch=%5.1f / %5.1f  rr=%5.2f / %5.2f  pr=%5.2f / %5.2f\n",
-		       roll, dcm.roll_sensor/100.0,
-		       pitch, dcm.pitch_sensor/100.0,
-		       rollRate, ToDeg(omega.x),
-		       pitchRate, ToDeg(omega.y));
-		*/
-	}
 }
 
 
