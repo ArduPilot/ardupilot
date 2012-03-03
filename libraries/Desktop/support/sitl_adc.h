@@ -10,6 +10,7 @@
 #include <math.h>
 
 static const float vibration_level = 2.0;
+static const float drift_speed = 1.0;
 static const float drift_level = 1.0;
 // order                              zgyro, xgyro, ygyro, temp, xacc, yacc, zacc, aspd
 static const float noise_scale[8] = {   150,   150,   150,    0, 400,  400,  400,    0 };
@@ -30,12 +31,12 @@ static inline float gyro_drift(uint8_t chan)
 		return 0;
 	}
 	extern long unsigned int micros(void);
-	double period = 10*drift_rate[chan] * drift_level;
+	double period = 10*drift_rate[chan] * drift_speed;
 	double minutes = fmod(micros() / 60.0e6, period);
 	if (minutes < period/2) {
-		return minutes;
+		return minutes * drift_level;
 	}
-	return period - minutes;
+	return (period - minutes) * drift_level;
 
 }
 
