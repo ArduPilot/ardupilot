@@ -244,12 +244,20 @@ AP_Compass_HMC5843::init()
 	 return false;
   }
 
+  _initialised = true;
+
   return success;
 }
 
 // Read Sensor data
 bool AP_Compass_HMC5843::read()
 {
+   if (!_initialised) {
+	  // someone has tried to enable a compass for the first time
+	  // mid-flight .... we can't do that yet (especially as we won't
+	  // have the right orientation!)
+	  return false;
+   }
    if (!healthy) {
 	  if (millis() < _retry_time) {
 		 return false;

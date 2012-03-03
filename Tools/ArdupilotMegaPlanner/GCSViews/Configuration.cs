@@ -95,6 +95,10 @@ namespace ArdupilotMega.GCSViews
             if (tooltips.Count == 0)
                 readToolTips();
 
+            // ensure the fields are populated before setting them
+            CH7_OPT.DataSource = Enum.GetNames(typeof(Common.ac2ch7modes));
+            TUNE.DataSource = Enum.GetNames(typeof(Common.ac2ch6modes));
+
             // prefill all fields
             param = MainV2.comPort.param;
             processToScreen();
@@ -164,6 +168,7 @@ namespace ArdupilotMega.GCSViews
             // set distance/speed unit states
             CMB_distunits.DataSource = Enum.GetNames(typeof(Common.distances));
             CMB_speedunits.DataSource = Enum.GetNames(typeof(Common.speeds));
+
             if (MainV2.config["distunits"] != null)
                 CMB_distunits.Text = MainV2.config["distunits"].ToString();
             if (MainV2.config["speedunits"] != null)
@@ -173,26 +178,20 @@ namespace ArdupilotMega.GCSViews
             CultureInfo ci = null;
             foreach (string name in new string[] { "en-US", "zh-Hans", "zh-TW", "ru-RU", "Fr", "Pl", "it-IT", "es-ES" })
             {
-                ci = MainV2.getcultureinfo(name);
+                ci = CultureInfoEx.GetCultureInfo(name);
                 if (ci != null)
                     languages.Add(ci);
             }
 
             CMB_language.DisplayMember = "DisplayName";
             CMB_language.DataSource = languages;
-            bool match = false;
-            for (int i = 0; i < languages.Count && !match; i++)
+            ci = Thread.CurrentThread.CurrentUICulture;
+            for (int i = 0; i < languages.Count; i++)
             {
-                ci = Thread.CurrentThread.CurrentUICulture;
-                while (!ci.Equals(CultureInfo.InvariantCulture))
+                if (ci.IsChildOf(languages[i]))
                 {
-                    if (ci.Equals(languages[i]))
-                    {
-                        CMB_language.SelectedIndex = i;
-                        match = true;
-                        break;
-                    }
-                    ci = ci.Parent;
+                    CMB_language.SelectedIndex = i;
+                    break;
                 }
             }
             CMB_language.SelectedIndexChanged += CMB_language_SelectedIndexChanged;
@@ -237,7 +236,9 @@ namespace ArdupilotMega.GCSViews
             string data = resources.GetString("MAVParam");
 
             if (data == null)
-                return;
+            {
+                data = global::ArdupilotMega.Properties.Resources.MAVParam;
+            }
 
             string[] tips = data.Split(new char[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries);
 
@@ -555,23 +556,23 @@ namespace ArdupilotMega.GCSViews
                 if (text.Length > 0)
                 {
                     if (text[0].GetType() == typeof(NumericUpDown))
-                        {
-                            decimal option = (decimal)(float.Parse(Params[e.ColumnIndex, e.RowIndex].Value.ToString()));
-                            ((NumericUpDown)text[0]).Value = option;
-                            ((NumericUpDown)text[0]).BackColor = Color.Green;
-                        }
+                    {
+                        decimal option = (decimal)(float.Parse(Params[e.ColumnIndex, e.RowIndex].Value.ToString()));
+                        ((NumericUpDown)text[0]).Value = option;
+                        ((NumericUpDown)text[0]).BackColor = Color.Green;
+                    }
                     else if (text[0].GetType() == typeof(ComboBox))
-                        {
-                            int option = (int)(float.Parse(Params[e.ColumnIndex, e.RowIndex].Value.ToString()));
-                            ((ComboBox)text[0]).SelectedIndex = option;
-                            ((ComboBox)text[0]).BackColor = Color.Green;
-                        }
+                    {
+                        int option = (int)(float.Parse(Params[e.ColumnIndex, e.RowIndex].Value.ToString()));
+                        ((ComboBox)text[0]).SelectedIndex = option;
+                        ((ComboBox)text[0]).BackColor = Color.Green;
+                    }
                 }
             }
             catch { ((Control)text[0]).BackColor = Color.Red; }
 
             Params.Focus();
-        }        
+        }
 
         private void BUT_load_Click(object sender, EventArgs e)
         {
@@ -599,12 +600,12 @@ namespace ArdupilotMega.GCSViews
                         continue;
 
                     if (index2 != -1)
-                        line = line.Replace(',','.');
+                        line = line.Replace(',', '.');
 
                     string name = line.Substring(0, index);
                     float value = float.Parse(line.Substring(index + 1), new System.Globalization.CultureInfo("en-US"));
 
-                    MAVLink.modifyParamForDisplay(true,name,ref value);
+                    MAVLink.modifyParamForDisplay(true, name, ref value);
 
                     // set param table as well
                     foreach (DataGridViewRow row in Params.Rows)
@@ -759,6 +760,8 @@ namespace ArdupilotMega.GCSViews
 
                 MainV2.cam.Start();
 
+                MainV2.config["video_options"] = CMB_videoresolutions.SelectedIndex;
+
                 BUT_videostart.Enabled = false;
             }
             catch (Exception ex) { MessageBox.Show("Camera Fail: " + ex.Message); }
@@ -813,9 +816,10 @@ namespace ArdupilotMega.GCSViews
             {
                 DsError.ThrowExceptionForHR(hr);
             }
-            catch (Exception ex) {
-                MessageBox.Show("Can not add video source\n" + ex.ToString()); 
-                return; 
+            catch (Exception ex)
+            {
+                MessageBox.Show("Can not add video source\n" + ex.ToString());
+                return;
             }
 
             // Find the stream config interface
@@ -844,6 +848,11 @@ namespace ArdupilotMega.GCSViews
             DsUtils.FreeAMMediaType(media);
 
             CMB_videoresolutions.DataSource = modes;
+
+            if (MainV2.getConfig("video_options") != "" && CMB_videosources.Text != "")
+            {
+                CMB_videoresolutions.SelectedIndex = int.Parse(MainV2.getConfig("video_options"));
+            }
         }
 
         private void CHK_hudshow_CheckedChanged(object sender, EventArgs e)
@@ -940,7 +949,7 @@ namespace ArdupilotMega.GCSViews
 
 
 
-                
+
             }
             catch { MessageBox.Show("Error: getting param list"); }
 
@@ -1153,6 +1162,26 @@ namespace ArdupilotMega.GCSViews
         private void CHK_lockrollpitch_CheckedChanged(object sender, EventArgs e)
         {
 
+        }
+
+        protected override bool ProcessCmdKey(ref Message msg, Keys keyData)
+        {
+            if (keyData == Keys.F5)
+            {
+                BUT_rerequestparams_Click(BUT_rerequestparams, null);
+                return true;
+            }
+            if (keyData == (Keys.Control | Keys.S))
+            {
+                BUT_writePIDS_Click(BUT_writePIDS, null);
+                return true;
+            }
+            if (keyData == (Keys.Control | Keys.O))
+            {
+                BUT_load_Click(BUT_load, null);
+                return true;
+            }
+            return base.ProcessCmdKey(ref msg, keyData);
         }
     }
 }

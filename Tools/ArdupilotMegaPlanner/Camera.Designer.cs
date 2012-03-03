@@ -28,6 +28,7 @@
         /// </summary>
         private void InitializeComponent()
         {
+            System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(Camera));
             this.num_agl = new System.Windows.Forms.NumericUpDown();
             this.label2 = new System.Windows.Forms.Label();
             this.num_focallength = new System.Windows.Forms.NumericUpDown();
@@ -74,15 +75,13 @@
             0,
             0,
             0});
-            this.num_agl.Location = new System.Drawing.Point(12, 38);
+            resources.ApplyResources(this.num_agl, "num_agl");
             this.num_agl.Maximum = new decimal(new int[] {
             10000,
             0,
             0,
             0});
             this.num_agl.Name = "num_agl";
-            this.num_agl.Size = new System.Drawing.Size(64, 20);
-            this.num_agl.TabIndex = 1;
             this.num_agl.Value = new decimal(new int[] {
             200,
             0,
@@ -92,12 +91,8 @@
             // 
             // label2
             // 
-            this.label2.AutoSize = true;
-            this.label2.Location = new System.Drawing.Point(82, 40);
+            resources.ApplyResources(this.label2, "label2");
             this.label2.Name = "label2";
-            this.label2.Size = new System.Drawing.Size(72, 13);
-            this.label2.TabIndex = 4;
-            this.label2.Text = "Height m (agl)";
             // 
             // num_focallength
             // 
@@ -107,7 +102,7 @@
             0,
             0,
             65536});
-            this.num_focallength.Location = new System.Drawing.Point(12, 64);
+            resources.ApplyResources(this.num_focallength, "num_focallength");
             this.num_focallength.Maximum = new decimal(new int[] {
             180,
             0,
@@ -119,8 +114,6 @@
             0,
             0});
             this.num_focallength.Name = "num_focallength";
-            this.num_focallength.Size = new System.Drawing.Size(64, 20);
-            this.num_focallength.TabIndex = 6;
             this.num_focallength.Value = new decimal(new int[] {
             5,
             0,
@@ -130,181 +123,113 @@
             // 
             // TXT_fovH
             // 
-            this.TXT_fovH.Location = new System.Drawing.Point(361, 12);
+            resources.ApplyResources(this.TXT_fovH, "TXT_fovH");
             this.TXT_fovH.Name = "TXT_fovH";
-            this.TXT_fovH.Size = new System.Drawing.Size(100, 20);
-            this.TXT_fovH.TabIndex = 10;
             // 
             // TXT_fovV
             // 
-            this.TXT_fovV.Location = new System.Drawing.Point(361, 39);
+            resources.ApplyResources(this.TXT_fovV, "TXT_fovV");
             this.TXT_fovV.Name = "TXT_fovV";
-            this.TXT_fovV.Size = new System.Drawing.Size(100, 20);
-            this.TXT_fovV.TabIndex = 11;
             // 
             // TXT_fovAV
             // 
-            this.TXT_fovAV.Location = new System.Drawing.Point(361, 92);
+            resources.ApplyResources(this.TXT_fovAV, "TXT_fovAV");
             this.TXT_fovAV.Name = "TXT_fovAV";
-            this.TXT_fovAV.Size = new System.Drawing.Size(100, 20);
-            this.TXT_fovAV.TabIndex = 14;
             // 
             // TXT_fovAH
             // 
-            this.TXT_fovAH.Location = new System.Drawing.Point(361, 65);
+            resources.ApplyResources(this.TXT_fovAH, "TXT_fovAH");
             this.TXT_fovAH.Name = "TXT_fovAH";
-            this.TXT_fovAH.Size = new System.Drawing.Size(100, 20);
-            this.TXT_fovAH.TabIndex = 13;
             // 
             // TXT_cmpixel
             // 
-            this.TXT_cmpixel.Location = new System.Drawing.Point(361, 118);
+            resources.ApplyResources(this.TXT_cmpixel, "TXT_cmpixel");
             this.TXT_cmpixel.Name = "TXT_cmpixel";
-            this.TXT_cmpixel.Size = new System.Drawing.Size(100, 20);
-            this.TXT_cmpixel.TabIndex = 16;
             // 
             // TXT_imgwidth
             // 
-            this.TXT_imgwidth.Location = new System.Drawing.Point(12, 90);
+            resources.ApplyResources(this.TXT_imgwidth, "TXT_imgwidth");
             this.TXT_imgwidth.Name = "TXT_imgwidth";
-            this.TXT_imgwidth.Size = new System.Drawing.Size(64, 20);
-            this.TXT_imgwidth.TabIndex = 17;
-            this.TXT_imgwidth.Text = "4608";
             this.TXT_imgwidth.TextChanged += new System.EventHandler(this.TXT_imgwidth_TextChanged);
             // 
             // TXT_imgheight
             // 
-            this.TXT_imgheight.Location = new System.Drawing.Point(12, 116);
+            resources.ApplyResources(this.TXT_imgheight, "TXT_imgheight");
             this.TXT_imgheight.Name = "TXT_imgheight";
-            this.TXT_imgheight.Size = new System.Drawing.Size(64, 20);
-            this.TXT_imgheight.TabIndex = 18;
-            this.TXT_imgheight.Text = "3456";
             this.TXT_imgheight.TextChanged += new System.EventHandler(this.TXT_imgheight_TextChanged);
             // 
             // label1
             // 
-            this.label1.AutoSize = true;
-            this.label1.Location = new System.Drawing.Point(82, 71);
+            resources.ApplyResources(this.label1, "label1");
             this.label1.Name = "label1";
-            this.label1.Size = new System.Drawing.Size(69, 13);
-            this.label1.TabIndex = 19;
-            this.label1.Text = "Focal Length";
             // 
             // label6
             // 
-            this.label6.AutoSize = true;
-            this.label6.Location = new System.Drawing.Point(298, 19);
+            resources.ApplyResources(this.label6, "label6");
             this.label6.Name = "label6";
-            this.label6.Size = new System.Drawing.Size(56, 13);
-            this.label6.TabIndex = 21;
-            this.label6.Text = "FOV H (m)";
             // 
             // label7
             // 
-            this.label7.AutoSize = true;
-            this.label7.Location = new System.Drawing.Point(299, 72);
+            resources.ApplyResources(this.label7, "label7");
             this.label7.Name = "label7";
-            this.label7.Size = new System.Drawing.Size(45, 13);
-            this.label7.TabIndex = 22;
-            this.label7.Text = "Angle H";
             // 
             // label8
             // 
-            this.label8.AutoSize = true;
-            this.label8.Location = new System.Drawing.Point(300, 99);
+            resources.ApplyResources(this.label8, "label8");
             this.label8.Name = "label8";
-            this.label8.Size = new System.Drawing.Size(44, 13);
-            this.label8.TabIndex = 23;
-            this.label8.Text = "Angle V";
             // 
             // label10
             // 
-            this.label10.AutoSize = true;
-            this.label10.Location = new System.Drawing.Point(299, 46);
+            resources.ApplyResources(this.label10, "label10");
             this.label10.Name = "label10";
-            this.label10.Size = new System.Drawing.Size(55, 13);
-            this.label10.TabIndex = 25;
-            this.label10.Text = "FOV V (m)";
             // 
             // label12
             // 
-            this.label12.AutoSize = true;
-            this.label12.Location = new System.Drawing.Point(299, 125);
+            resources.ApplyResources(this.label12, "label12");
             this.label12.Name = "label12";
-            this.label12.Size = new System.Drawing.Size(50, 13);
-            this.label12.TabIndex = 27;
-            this.label12.Text = "CM/Pixel";
             // 
             // label13
             // 
-            this.label13.AutoSize = true;
-            this.label13.Location = new System.Drawing.Point(82, 93);
+            resources.ApplyResources(this.label13, "label13");
             this.label13.Name = "label13";
-            this.label13.Size = new System.Drawing.Size(60, 13);
-            this.label13.TabIndex = 28;
-            this.label13.Text = "Pixel Width";
             // 
             // label14
             // 
-            this.label14.AutoSize = true;
-            this.label14.Location = new System.Drawing.Point(82, 119);
+            resources.ApplyResources(this.label14, "label14");
             this.label14.Name = "label14";
-            this.label14.Size = new System.Drawing.Size(63, 13);
-            this.label14.TabIndex = 29;
-            this.label14.Text = "Pixel Height";
             // 
             // label3
             // 
-            this.label3.AutoSize = true;
-            this.label3.Location = new System.Drawing.Point(82, 171);
+            resources.ApplyResources(this.label3, "label3");
             this.label3.Name = "label3";
-            this.label3.Size = new System.Drawing.Size(74, 13);
-            this.label3.TabIndex = 33;
-            this.label3.Text = "Sensor Height";
             // 
             // label4
             // 
-            this.label4.AutoSize = true;
-            this.label4.Location = new System.Drawing.Point(82, 145);
+            resources.ApplyResources(this.label4, "label4");
             this.label4.Name = "label4";
-            this.label4.Size = new System.Drawing.Size(71, 13);
-            this.label4.TabIndex = 32;
-            this.label4.Text = "Sensor Width";
             // 
             // TXT_sensheight
             // 
-            this.TXT_sensheight.Location = new System.Drawing.Point(12, 168);
+            resources.ApplyResources(this.TXT_sensheight, "TXT_sensheight");
             this.TXT_sensheight.Name = "TXT_sensheight";
-            this.TXT_sensheight.Size = new System.Drawing.Size(64, 20);
-            this.TXT_sensheight.TabIndex = 31;
-            this.TXT_sensheight.Text = "4.62";
             this.TXT_sensheight.TextChanged += new System.EventHandler(this.TXT_sensheight_TextChanged);
             // 
             // TXT_senswidth
             // 
-            this.TXT_senswidth.Location = new System.Drawing.Point(12, 142);
+            resources.ApplyResources(this.TXT_senswidth, "TXT_senswidth");
             this.TXT_senswidth.Name = "TXT_senswidth";
-            this.TXT_senswidth.Size = new System.Drawing.Size(64, 20);
-            this.TXT_senswidth.TabIndex = 30;
-            this.TXT_senswidth.Text = "6.16";
             this.TXT_senswidth.TextChanged += new System.EventHandler(this.TXT_senswidth_TextChanged);
             // 
             // label5
             // 
-            this.label5.AutoSize = true;
-            this.label5.Location = new System.Drawing.Point(82, 201);
+            resources.ApplyResources(this.label5, "label5");
             this.label5.Name = "label5";
-            this.label5.Size = new System.Drawing.Size(44, 13);
-            this.label5.TabIndex = 35;
-            this.label5.Text = "Overlap";
             // 
             // num_overlap
             // 
             this.num_overlap.DecimalPlaces = 1;
-            this.num_overlap.Location = new System.Drawing.Point(12, 194);
+            resources.ApplyResources(this.num_overlap, "num_overlap");
             this.num_overlap.Name = "num_overlap";
-            this.num_overlap.Size = new System.Drawing.Size(64, 20);
-            this.num_overlap.TabIndex = 34;
             this.num_overlap.Value = new decimal(new int[] {
             60,
             0,
@@ -314,20 +239,14 @@
             // 
             // label15
             // 
-            this.label15.AutoSize = true;
-            this.label15.Location = new System.Drawing.Point(82, 227);
+            resources.ApplyResources(this.label15, "label15");
             this.label15.Name = "label15";
-            this.label15.Size = new System.Drawing.Size(42, 13);
-            this.label15.TabIndex = 37;
-            this.label15.Text = "Sidelap";
             // 
             // num_sidelap
             // 
             this.num_sidelap.DecimalPlaces = 1;
-            this.num_sidelap.Location = new System.Drawing.Point(12, 220);
+            resources.ApplyResources(this.num_sidelap, "num_sidelap");
             this.num_sidelap.Name = "num_sidelap";
-            this.num_sidelap.Size = new System.Drawing.Size(64, 20);
-            this.num_sidelap.TabIndex = 36;
             this.num_sidelap.Value = new decimal(new int[] {
             30,
             0,
@@ -337,73 +256,51 @@
             // 
             // CHK_camdirection
             // 
-            this.CHK_camdirection.AutoSize = true;
+            resources.ApplyResources(this.CHK_camdirection, "CHK_camdirection");
             this.CHK_camdirection.Checked = true;
             this.CHK_camdirection.CheckState = System.Windows.Forms.CheckState.Checked;
-            this.CHK_camdirection.Location = new System.Drawing.Point(13, 247);
             this.CHK_camdirection.Name = "CHK_camdirection";
-            this.CHK_camdirection.Size = new System.Drawing.Size(150, 17);
-            this.CHK_camdirection.TabIndex = 38;
-            this.CHK_camdirection.Text = "Camera top facing forward";
             this.CHK_camdirection.UseVisualStyleBackColor = true;
             this.CHK_camdirection.CheckedChanged += new System.EventHandler(this.CHK_camdirection_CheckedChanged);
             // 
             // label9
             // 
-            this.label9.AutoSize = true;
-            this.label9.Location = new System.Drawing.Point(261, 198);
+            resources.ApplyResources(this.label9, "label9");
             this.label9.Name = "label9";
-            this.label9.Size = new System.Drawing.Size(86, 13);
-            this.label9.TabIndex = 42;
-            this.label9.Text = "Across Flight line";
             // 
             // label11
             // 
-            this.label11.AutoSize = true;
-            this.label11.Location = new System.Drawing.Point(261, 171);
+            resources.ApplyResources(this.label11, "label11");
             this.label11.Name = "label11";
-            this.label11.Size = new System.Drawing.Size(94, 13);
-            this.label11.TabIndex = 41;
-            this.label11.Text = "Flight line distance";
             // 
             // TXT_distacflphotos
             // 
-            this.TXT_distacflphotos.Location = new System.Drawing.Point(361, 195);
+            resources.ApplyResources(this.TXT_distacflphotos, "TXT_distacflphotos");
             this.TXT_distacflphotos.Name = "TXT_distacflphotos";
-            this.TXT_distacflphotos.Size = new System.Drawing.Size(100, 20);
-            this.TXT_distacflphotos.TabIndex = 40;
             // 
             // TXT_distflphotos
             // 
-            this.TXT_distflphotos.Location = new System.Drawing.Point(361, 168);
+            resources.ApplyResources(this.TXT_distflphotos, "TXT_distflphotos");
             this.TXT_distflphotos.Name = "TXT_distflphotos";
-            this.TXT_distflphotos.Size = new System.Drawing.Size(100, 20);
-            this.TXT_distflphotos.TabIndex = 39;
             // 
             // CMB_camera
             // 
             this.CMB_camera.FormattingEnabled = true;
-            this.CMB_camera.Location = new System.Drawing.Point(13, 13);
+            resources.ApplyResources(this.CMB_camera, "CMB_camera");
             this.CMB_camera.Name = "CMB_camera";
-            this.CMB_camera.Size = new System.Drawing.Size(143, 21);
-            this.CMB_camera.TabIndex = 43;
             this.CMB_camera.SelectedIndexChanged += new System.EventHandler(this.CMB_camera_SelectedIndexChanged);
             // 
             // BUT_save
             // 
-            this.BUT_save.Location = new System.Drawing.Point(163, 10);
+            resources.ApplyResources(this.BUT_save, "BUT_save");
             this.BUT_save.Name = "BUT_save";
-            this.BUT_save.Size = new System.Drawing.Size(75, 23);
-            this.BUT_save.TabIndex = 44;
-            this.BUT_save.Text = "Save";
             this.BUT_save.UseVisualStyleBackColor = true;
             this.BUT_save.Click += new System.EventHandler(this.BUT_save_Click);
             // 
             // Camera
             // 
-            this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
+            resources.ApplyResources(this, "$this");
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(473, 275);
             this.Controls.Add(this.BUT_save);
             this.Controls.Add(this.CMB_camera);
             this.Controls.Add(this.label9);
@@ -438,7 +335,6 @@
             this.Controls.Add(this.label2);
             this.Controls.Add(this.num_agl);
             this.Name = "Camera";
-            this.Text = "Camera";
             this.Load += new System.EventHandler(this.Camera_Load);
             ((System.ComponentModel.ISupportInitialize)(this.num_agl)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.num_focallength)).EndInit();

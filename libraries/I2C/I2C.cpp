@@ -536,6 +536,12 @@ void I2C::lockUp()
 {
   TWCR = 0; //releases SDA and SCL lines to high impedance
   TWCR = _BV(TWEN) | _BV(TWIE) | _BV(TWEA); //reinitialize TWI
+  _lockup_count++;
+}
+
+uint8_t I2C::lockup_count(void)
+{
+	return _lockup_count;
 }
 
 SIGNAL(TWI_vect)

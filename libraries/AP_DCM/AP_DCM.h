@@ -25,21 +25,19 @@ class AP_DCM
 public:
 	// Constructors
 	AP_DCM(IMU *imu, GPS *&gps, Compass *withCompass = NULL) :
+		_clamp(3),
+		_kp_roll_pitch(0.05967),
+		_ki_roll_pitch(0.00001278),
+		_kp_yaw(0.8), // .8
+		_ki_yaw(0.00004), // 0.00004
 		_compass(withCompass),
 		_gps(gps),
 		_imu(imu),
 		_dcm_matrix(1, 0, 0,
 					0, 1, 0,
 					0, 0, 1),
-		_course_over_ground_x(0),
-		_course_over_ground_y(1),
 		_health(1.),
-		_kp_roll_pitch(0.05967),
-		_ki_roll_pitch(0.00001278),
-		_kp_yaw(0.8), // .8
-		_ki_yaw(0.00004), // 0.00004
-		_toggle(0),
-		_clamp(3)
+		_toggle(0)
 	{}
 
 	// Accessors
@@ -57,7 +55,7 @@ public:
 	// Methods
 	void 		update_DCM(void);
 	void 		update_DCM_fast(void);
-	void 		matrix_reset(void);
+	void 		matrix_reset(bool recover_eulers = false);
 
 	long		roll_sensor;					// Degrees * 100
 	long		pitch_sensor;					// Degrees * 100
@@ -68,7 +66,7 @@ public:
 	float		yaw;							// Radians
 
 	uint8_t 	gyro_sat_count;
-	uint8_t 	renorm_sqrt_count;
+	uint8_t 	renorm_range_count;
 	uint8_t 	renorm_blowup_count;
 
 	float	kp_roll_pitch() 		{ return _kp_roll_pitch; }
@@ -94,6 +92,7 @@ private:
 	float		_ki_roll_pitch;
 	float		_kp_yaw;
 	float		_ki_yaw;
+	bool		_have_initial_yaw;
 
 	// Methods
 	void 		read_adc_raw(void);
@@ -101,6 +100,7 @@ private:
 	float 		read_adc(int select);
 	void 		matrix_update(float _G_Dt);
 	void 		normalize(void);
+	void		check_matrix(void);
 	Vector3f 	renorm(Vector3f const &a, int &problem);
 	void 		drift_correction(void);
 	void 		euler_angles(void);
@@ -127,10 +127,6 @@ private:
 	Vector3f 	_omega_integ_corr;			// Partially corrected Gyro_Vector data - used for centrepetal correction
 	Vector3f 	_omega;						// Corrected Gyro_Vector data
 	Vector3f 	_error_roll_pitch;
-	Vector3f 	_error_yaw;
-	float 		_errorCourse;
-	float 		_course_over_ground_x; 		// Course overground X axis
-	float 		_course_over_ground_y; 		// Course overground Y axis
 	float		_health;
 	bool		_centripetal;
 	uint8_t		_toggle;

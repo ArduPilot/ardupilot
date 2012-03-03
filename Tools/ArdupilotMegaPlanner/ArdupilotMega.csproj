@@ -51,7 +51,7 @@
     <CheckForOverflowUnderflow>false</CheckForOverflowUnderflow>
     <NoStdLib>false</NoStdLib>
     <UseVSHostingProcess>true</UseVSHostingProcess>
-    <FileAlignment>1024</FileAlignment>
+    <FileAlignment>512</FileAlignment>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|x86' ">
     <PlatformTarget>x86</PlatformTarget>
@@ -68,7 +68,7 @@
     <DebugSymbols>true</DebugSymbols>
     <NoStdLib>false</NoStdLib>
     <UseVSHostingProcess>true</UseVSHostingProcess>
-    <FileAlignment>1024</FileAlignment>
+    <FileAlignment>512</FileAlignment>
   </PropertyGroup>
   <PropertyGroup>
     <StartupObject>ArdupilotMega.Program</StartupObject>
@@ -146,6 +146,10 @@
     </Reference>
     <Reference Include="KMLib">
       <HintPath>..\..\..\..\..\Desktop\DIYDrones\kml-library\KmlTestbed\bin\Release\KMLib.dll</HintPath>
+    </Reference>
+    <Reference Include="log4net, Version=1.2.11.0, Culture=neutral, PublicKeyToken=669e0ddf0bb1aa2a, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>Lib\log4net.dll</HintPath>
     </Reference>
     <Reference Include="MetaDataExtractor">
       <HintPath>..\..\..\..\..\Desktop\DIYDrones\myquad\MetaDataExtractorCSharp240d\bin\Release\MetaDataExtractor.dll</HintPath>
@@ -225,6 +229,27 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Antenna\ITrackerOutput.cs" />
+    <Compile Include="Antenna\Maestro.cs" />
+    <Compile Include="Antenna\Tracker.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Antenna\Tracker.Designer.cs">
+      <DependentUpon>Tracker.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Controls\ProgressReporterDialogue.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Controls\ProgressReporterDialogue.designer.cs">
+      <DependentUpon>ProgressReporterDialogue.cs</DependentUpon>
+    </Compile>
+    <Compile Include="MagCalib.cs" />
+    <Compile Include="Radio\3DRradio.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Radio\3DRradio.Designer.cs">
+      <DependentUpon>3DRradio.cs</DependentUpon>
+    </Compile>
     <Compile Include="Controls\AGauge.cs">
       <SubType>UserControl</SubType>
     </Compile>
@@ -252,18 +277,13 @@
     <Compile Include="Controls\myGMAP.cs">
       <SubType>UserControl</SubType>
     </Compile>
-    <Compile Include="Controls\ProgressReporter.cs">
-      <SubType>Form</SubType>
-    </Compile>
-    <Compile Include="Controls\ProgressReporter.designer.cs">
-      <DependentUpon>ProgressReporter.cs</DependentUpon>
-    </Compile>
     <Compile Include="Controls\XorPlus.cs">
       <SubType>Form</SubType>
     </Compile>
     <Compile Include="Controls\XorPlus.Designer.cs">
       <DependentUpon>XorPlus.cs</DependentUpon>
     </Compile>
+    <Compile Include="Radio\IHex.cs" />
     <Compile Include="Mavlink\MavlinkCRC.cs" />
     <Compile Include="Mavlink\MavlinkUtil.cs" />
     <Compile Include="SerialInput.cs">
@@ -423,6 +443,7 @@
     <Compile Include="Setup\Setup.Designer.cs">
       <DependentUpon>Setup.cs</DependentUpon>
     </Compile>
+    <Compile Include="Speech.cs" />
     <Compile Include="Splash.cs">
       <SubType>Form</SubType>
     </Compile>
@@ -437,6 +458,17 @@
     <Compile Include="temp.Designer.cs">
       <DependentUpon>temp.cs</DependentUpon>
     </Compile>
+    <Compile Include="Radio\Uploader.cs" />
+    <Compile Include="LangUtility.cs" />
+    <EmbeddedResource Include="Antenna\Tracker.resx">
+      <DependentUpon>Tracker.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Controls\ProgressReporterDialogue.resx">
+      <DependentUpon>ProgressReporterDialogue.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Radio\3DRradio.resx">
+      <DependentUpon>3DRradio.cs</DependentUpon>
+    </EmbeddedResource>
     <EmbeddedResource Include="Controls\AGauge.resx">
       <DependentUpon>AGauge.cs</DependentUpon>
       <SubType>Designer</SubType>
@@ -446,9 +478,6 @@
     </EmbeddedResource>
     <EmbeddedResource Include="Controls\ImageLabel.resx">
       <DependentUpon>ImageLabel.cs</DependentUpon>
-    </EmbeddedResource>
-    <EmbeddedResource Include="Controls\ProgressReporter.resx">
-      <DependentUpon>ProgressReporter.cs</DependentUpon>
     </EmbeddedResource>
     <EmbeddedResource Include="Controls\XorPlus.resx">
       <DependentUpon>XorPlus.cs</DependentUpon>
@@ -830,6 +859,7 @@
     <Content Include="mavcmd.xml">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
+    <None Include="Resources\y6.png" />
     <None Include="Resources\new frames-13.png" />
     <None Include="Resources\new frames-12.png" />
     <None Include="Resources\new frames-11.png" />

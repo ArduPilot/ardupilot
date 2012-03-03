@@ -227,71 +227,22 @@ void APM_RC_APM2::Force_Out2_Out3(void) { }
 void APM_RC_APM2::Force_Out6_Out7(void) { }
 
 /* ---------------- OUTPUT SPEED CONTROL ------------------ */
-// Output rate options:
-#define OUTPUT_SPEED_50HZ 0
-#define OUTPUT_SPEED_200HZ 1
-#define OUTPUT_SPEED_400HZ 2
 
-void APM_RC_APM2::SetFastOutputChannels(uint32_t chmask)
+void APM_RC_APM2::SetFastOutputChannels(uint32_t chmask, uint16_t speed_hz)
 {
-    if ((chmask & ( _BV(CH_1) | _BV(CH_2))) != 0)
-        _set_speed_ch1_ch2(OUTPUT_SPEED_400HZ);
+	uint16_t icr = _map_speed(speed_hz);
 
-    if ((chmask & ( _BV(CH_3) | _BV(CH_4) | _BV(CH_5))) != 0)
-        _set_speed_ch3_ch4_ch5(OUTPUT_SPEED_400HZ);
+	if ((chmask & ( _BV(CH_1) | _BV(CH_2))) != 0) {
+		ICR1 = icr;
+	}
 
-    if ((chmask & ( _BV(CH_6) | _BV(CH_7) | _BV(CH_8))) != 0)
-        _set_speed_ch6_ch7_ch8(OUTPUT_SPEED_400HZ);
-}
+	if ((chmask & ( _BV(CH_3) | _BV(CH_4) | _BV(CH_5))) != 0) {
+		ICR4 = icr;
+	}
 
-void APM_RC_APM2::_set_speed_ch1_ch2(uint8_t speed)
-{
-  switch(speed) {
-  case OUTPUT_SPEED_400HZ:
-    ICR1 = 5000;
-    break;
-  case OUTPUT_SPEED_200HZ:
-    ICR1 = 10000;
-    break;
-  case OUTPUT_SPEED_50HZ:
-  default:
-    ICR1 = 40000;
-    break;
-  }
-}
-
-void APM_RC_APM2::_set_speed_ch3_ch4_ch5(uint8_t speed)
-{
-  switch(speed) {
-  case OUTPUT_SPEED_400HZ:
-    ICR4 = 5000;
-    break;
-  case OUTPUT_SPEED_200HZ:
-    ICR4 = 10000;
-    break;
-  case OUTPUT_SPEED_50HZ:
-  default:
-    ICR4 = 40000;
-    break;
-  }
-
-}
-
-void APM_RC_APM2::_set_speed_ch6_ch7_ch8(uint8_t speed)
-{
-  switch(speed) {
-  case OUTPUT_SPEED_400HZ:
-    ICR3 = 5000;
-    break;
-  case OUTPUT_SPEED_200HZ:
-    ICR3 = 10000;
-    break;
-  case OUTPUT_SPEED_50HZ:
-  default:
-    ICR3 = 40000;
-    break;
-  }
-
+	if ((chmask & ( _BV(CH_6) | _BV(CH_7) | _BV(CH_8))) != 0) {
+		ICR3 = icr;
+	}
 }
 
 // allow HIL override of RC values

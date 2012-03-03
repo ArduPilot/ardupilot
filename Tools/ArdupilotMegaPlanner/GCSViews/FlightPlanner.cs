@@ -18,6 +18,7 @@ using System.Resources;
 using System.Reflection;
 using System.ComponentModel;
 using System.Threading;
+using log4net;
 using SharpKml.Base;
 using SharpKml.Dom;
 
@@ -27,6 +28,7 @@ namespace ArdupilotMega.GCSViews
 {
     partial class FlightPlanner : MyUserControl
     {
+        private static readonly ILog log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
         int selectedrow = 0;
         bool quickadd = false;
         bool isonline = true;
@@ -598,7 +600,7 @@ namespace ArdupilotMega.GCSViews
 
         void Commands_DataError(object sender, DataGridViewDataErrorEventArgs e)
         {
-            Console.WriteLine(e.Exception.ToString() + " " + e.Context + " col " + e.ColumnIndex);
+            log.Info(e.Exception.ToString() + " " + e.Context + " col " + e.ColumnIndex);
             e.Cancel = false;
             e.ThrowException = false;
             //throw new NotImplementedException();
@@ -700,7 +702,7 @@ namespace ArdupilotMega.GCSViews
         {
             try
             {
-                Console.WriteLine(Element.ToString() + " " + Element.Parent);
+                log.Info(Element.ToString() + " " + Element.Parent);
             }
             catch { }
 
@@ -924,7 +926,7 @@ namespace ArdupilotMega.GCSViews
                 drawnpolygons.Markers.Add(m);
                 drawnpolygons.Markers.Add(mBorders);
             }
-            catch (Exception ex) { Console.WriteLine(ex.ToString()); }
+            catch (Exception ex) { log.Info(ex.ToString()); }
         }
 
         /// <summary>
@@ -1052,7 +1054,7 @@ namespace ArdupilotMega.GCSViews
                             System.Diagnostics.Debug.WriteLine(temp - System.Diagnostics.Stopwatch.GetTimestamp());
                         }
                     }
-                    catch (Exception e) { Console.WriteLine("writekml - bad wp data " + e.ToString()); }
+                    catch (Exception e) { log.Info("writekml - bad wp data " + e.ToString()); }
                 }
 
                 if (usable > 0)
@@ -1128,7 +1130,7 @@ namespace ArdupilotMega.GCSViews
             }
             catch (Exception ex)
             {
-                Console.WriteLine(ex.ToString());
+                log.Info(ex.ToString());
             }
 
             System.Diagnostics.Debug.WriteLine(DateTime.Now);
@@ -1194,68 +1196,81 @@ namespace ArdupilotMega.GCSViews
         /// <param name="e"></param>
         internal void BUT_read_Click(object sender, EventArgs e)
         {
+            Controls.ProgressReporterDialogue frmProgressReporter = new Controls.ProgressReporterDialogue
+            {
+                StartPosition = System.Windows.Forms.FormStartPosition.CenterScreen,
+                Text = "Receiving WP's"
+            };
+
+            frmProgressReporter.DoWork += getWPs;
+            frmProgressReporter.UpdateProgressAndStatus(-1, "Receiving WP's");
+
+            MainV2.fixtheme(frmProgressReporter);
+
+            frmProgressReporter.RunBackgroundOperationAsync();
+        }
+
+        void getWPs(object sender, Controls.ProgressWorkerEventArgs e)
+        {
 
             List<Locationwp> cmds = new List<Locationwp>();
             int error = 0;
 
-            System.Threading.Thread t12 = new System.Threading.Thread(delegate()
+            try
             {
-                try
+                MAVLink port = MainV2.comPort;
+
+                if (!port.BaseStream.IsOpen)
                 {
-                    MAVLink port = MainV2.comPort;
-
-                    if (!port.BaseStream.IsOpen)
-                    {
-                        throw new Exception("Please Connect First!");
-                    }
-
-                    MainV2.givecomport = true;
-
-                    param = port.param;
-
-                    Console.WriteLine("Getting WP #");
-                    int cmdcount = port.getWPCount();
-
-                    for (ushort a = 0; a < cmdcount; a++)
-                    {
-                        Console.WriteLine("Getting WP" + a);
-                        cmds.Add(port.getWP(a));
-                    }
-
-                    port.setWPACK();
-
-                    Console.WriteLine("Done");
+                    throw new Exception("Please Connect First!");
                 }
-                catch (Exception ex) { error = 1; MessageBox.Show("Error : " + ex.ToString()); }
-                try
+
+                MainV2.givecomport = true;
+
+                param = port.param;
+
+                log.Info("Getting WP #");
+
+                ((Controls.ProgressReporterDialogue)sender).UpdateProgressAndStatus(0, "Getting WP count");
+
+                int cmdcount = port.getWPCount();
+
+                for (ushort a = 0; a < cmdcount; a++)
                 {
-                    this.BeginInvoke((System.Threading.ThreadStart)delegate()
+                    log.Info("Getting WP" + a);
+                    ((Controls.ProgressReporterDialogue)sender).UpdateProgressAndStatus(a * 100 / cmdcount, "Getting WP " + a);
+                    cmds.Add(port.getWP(a));
+                }
+
+                port.setWPACK();
+
+                ((Controls.ProgressReporterDialogue)sender).UpdateProgressAndStatus(100, "Done");
+
+                log.Info("Done");
+            }
+            catch (Exception ex) { error = 1; MessageBox.Show("Error : " + ex.ToString()); }
+            try
+            {
+                this.BeginInvoke((MethodInvoker)delegate()
+                {
+                    if (error == 0)
                     {
-                        if (error == 0)
+                        try
                         {
-                            try
-                            {
-                                processToScreen(cmds);
-                            }
-                            catch (Exception exx) { Console.WriteLine(exx.ToString()); }
+                            processToScreen(cmds);
                         }
+                        catch (Exception exx) { log.Info(exx.ToString()); }
+                    }
 
-                        MainV2.givecomport = false;
+                    MainV2.givecomport = false;
 
-                        BUT_read.Enabled = true;
+                    BUT_read.Enabled = true;
 
-                        writeKML();
+                    writeKML();
 
-                    });
-                }
-                catch (Exception exx) { Console.WriteLine(exx.ToString()); }
-            });
-            t12.IsBackground = true;
-            t12.Name = "Read wps";
-            t12.Start();
-            MainV2.threads.Add(t12);
-
-            BUT_read.Enabled = false;
+                });
+            }
+            catch (Exception exx) { log.Info(exx.ToString()); }
         }
 
         /// <summary>
@@ -1290,111 +1305,118 @@ namespace ArdupilotMega.GCSViews
                 }
             }
 
-            System.Threading.Thread t12 = new System.Threading.Thread(delegate()
+            Controls.ProgressReporterDialogue frmProgressReporter = new Controls.ProgressReporterDialogue
             {
-                try
-                {
-                    MAVLink port = MainV2.comPort;
+                StartPosition = System.Windows.Forms.FormStartPosition.CenterScreen,
+                Text = "Sending WP's"
+            };
 
-                    if (!port.BaseStream.IsOpen)
-                    {
-                        throw new Exception("Please Connect First!");
-                    }
+            frmProgressReporter.DoWork += saveWPs;
+            frmProgressReporter.UpdateProgressAndStatus(-1, "Sending WP's");
 
-                    MainV2.givecomport = true;
+            MainV2.fixtheme(frmProgressReporter);
 
-                    Locationwp home = new Locationwp();
+            frmProgressReporter.RunBackgroundOperationAsync();
 
-                    try
-                    {
-                        home.id = (byte)MAVLink.MAV_CMD.WAYPOINT;
-                        home.lat = (float.Parse(TXT_homelat.Text));
-                        home.lng = (float.Parse(TXT_homelng.Text));
-                        home.alt = (float.Parse(TXT_homealt.Text) / MainV2.cs.multiplierdist); // use saved home
-                    }
-                    catch { throw new Exception("Your home location is invalid"); }
-
-                    port.setWPTotal((ushort)(Commands.Rows.Count + 1)); // + home
-
-                    port.setWP(home, (ushort)0, MAVLink.MAV_FRAME.MAV_FRAME_GLOBAL, 0);
-
-                    MAVLink.MAV_FRAME frame = MAVLink.MAV_FRAME.MAV_FRAME_GLOBAL_RELATIVE_ALT;
-
-                    // process grid to memory eeprom
-                    for (int a = 0; a < Commands.Rows.Count - 0; a++)
-                    {
-                        Locationwp temp = new Locationwp();
-                        temp.id = (byte)(int)Enum.Parse(typeof(MAVLink.MAV_CMD), Commands.Rows[a].Cells[Command.Index].Value.ToString(), false);
-                        temp.p1 = float.Parse(Commands.Rows[a].Cells[Param1.Index].Value.ToString());
-                        if (temp.id < (byte)MAVLink.MAV_CMD.LAST || temp.id == (byte)MAVLink.MAV_CMD.DO_SET_HOME)
-                        {
-                            if (CHK_altmode.Checked)
-                            {
-                                frame = MAVLink.MAV_FRAME.MAV_FRAME_GLOBAL;
-                            }
-                            else
-                            {
-                                frame = MAVLink.MAV_FRAME.MAV_FRAME_GLOBAL_RELATIVE_ALT;
-                            }
-                        }
-
-                        temp.alt = (float)(double.Parse(Commands.Rows[a].Cells[Alt.Index].Value.ToString()) / MainV2.cs.multiplierdist);
-                        temp.lat = (float)(double.Parse(Commands.Rows[a].Cells[Lat.Index].Value.ToString()));
-                        temp.lng = (float)(double.Parse(Commands.Rows[a].Cells[Lon.Index].Value.ToString()));
-
-                        temp.p2 = (float)(double.Parse(Commands.Rows[a].Cells[Param2.Index].Value.ToString()));
-                        temp.p3 = (float)(double.Parse(Commands.Rows[a].Cells[Param3.Index].Value.ToString()));
-                        temp.p4 = (float)(double.Parse(Commands.Rows[a].Cells[Param4.Index].Value.ToString()));
-
-                        port.setWP(temp, (ushort)(a + 1), frame, 0);
-                    }
-
-                    port.setWPACK();
-
-
-                    if (CHK_holdalt.Checked)
-                    {
-                        port.setParam("ALT_HOLD_RTL", int.Parse(TXT_DefaultAlt.Text) / MainV2.cs.multiplierdist);
-                    }
-                    else
-                    {
-                        port.setParam("ALT_HOLD_RTL", -1);
-                    }
-
-                    port.setParam("WP_RADIUS", (byte)int.Parse(TXT_WPRad.Text) / MainV2.cs.multiplierdist);
-
-                    try
-                    {
-                        port.setParam("WP_LOITER_RAD", (byte)(int.Parse(TXT_loiterrad.Text) / MainV2.cs.multiplierdist));
-                    }
-                    catch
-                    {
-                        port.setParam("LOITER_RAD", (byte)int.Parse(TXT_loiterrad.Text) / MainV2.cs.multiplierdist);
-                    }
-
-                }
-                catch (Exception ex) { MessageBox.Show("Error : " + ex.ToString()); }
-
-                MainV2.givecomport = false;
-
-                try
-                {
-                    this.BeginInvoke((System.Threading.ThreadStart)delegate()
-                    {
-                        BUT_write.Enabled = true;
-                    });
-                }
-                catch { }
-
-            });
-            t12.IsBackground = true;
-            t12.Name = "Write wps";
-            t12.Start();
-            MainV2.threads.Add(t12);
 
             MainMap.Focus();
 
-            BUT_write.Enabled = false;
+        }
+
+        void saveWPs(object sender, Controls.ProgressWorkerEventArgs e)
+        {
+            try
+            {
+                MAVLink port = MainV2.comPort;
+
+                if (!port.BaseStream.IsOpen)
+                {
+                    throw new Exception("Please Connect First!");
+                }
+
+                MainV2.givecomport = true;
+
+                Locationwp home = new Locationwp();
+
+                try
+                {
+                    home.id = (byte)MAVLink.MAV_CMD.WAYPOINT;
+                    home.lat = (float.Parse(TXT_homelat.Text));
+                    home.lng = (float.Parse(TXT_homelng.Text));
+                    home.alt = (float.Parse(TXT_homealt.Text) / MainV2.cs.multiplierdist); // use saved home
+                }
+                catch { throw new Exception("Your home location is invalid"); }
+
+                ((Controls.ProgressReporterDialogue)sender).UpdateProgressAndStatus(0, "Set Total WPs ");
+
+                port.setWPTotal((ushort)(Commands.Rows.Count + 1)); // + home
+
+                ((Controls.ProgressReporterDialogue)sender).UpdateProgressAndStatus(0, "Set Home");
+
+                port.setWP(home, (ushort)0, MAVLink.MAV_FRAME.MAV_FRAME_GLOBAL, 0);
+
+                MAVLink.MAV_FRAME frame = MAVLink.MAV_FRAME.MAV_FRAME_GLOBAL_RELATIVE_ALT;
+
+                // process grid to memory eeprom
+                for (int a = 0; a < Commands.Rows.Count - 0; a++)
+                {
+                    ((Controls.ProgressReporterDialogue)sender).UpdateProgressAndStatus(a * 100 / Commands.Rows.Count, "Setting WP " + a);
+
+                    Locationwp temp = new Locationwp();
+                    temp.id = (byte)(int)Enum.Parse(typeof(MAVLink.MAV_CMD), Commands.Rows[a].Cells[Command.Index].Value.ToString(), false);
+                    temp.p1 = float.Parse(Commands.Rows[a].Cells[Param1.Index].Value.ToString());
+                    if (temp.id < (byte)MAVLink.MAV_CMD.LAST || temp.id == (byte)MAVLink.MAV_CMD.DO_SET_HOME)
+                    {
+                        if (CHK_altmode.Checked)
+                        {
+                            frame = MAVLink.MAV_FRAME.MAV_FRAME_GLOBAL;
+                        }
+                        else
+                        {
+                            frame = MAVLink.MAV_FRAME.MAV_FRAME_GLOBAL_RELATIVE_ALT;
+                        }
+                    }
+
+                    temp.alt = (float)(double.Parse(Commands.Rows[a].Cells[Alt.Index].Value.ToString()) / MainV2.cs.multiplierdist);
+                    temp.lat = (float)(double.Parse(Commands.Rows[a].Cells[Lat.Index].Value.ToString()));
+                    temp.lng = (float)(double.Parse(Commands.Rows[a].Cells[Lon.Index].Value.ToString()));
+
+                    temp.p2 = (float)(double.Parse(Commands.Rows[a].Cells[Param2.Index].Value.ToString()));
+                    temp.p3 = (float)(double.Parse(Commands.Rows[a].Cells[Param3.Index].Value.ToString()));
+                    temp.p4 = (float)(double.Parse(Commands.Rows[a].Cells[Param4.Index].Value.ToString()));
+
+                    port.setWP(temp, (ushort)(a + 1), frame, 0);
+                }
+
+                port.setWPACK();
+
+                ((Controls.ProgressReporterDialogue)sender).UpdateProgressAndStatus(95, "Setting Params");
+
+                if (CHK_holdalt.Checked)
+                {
+                    port.setParam("ALT_HOLD_RTL", int.Parse(TXT_DefaultAlt.Text) / MainV2.cs.multiplierdist);
+                }
+                else
+                {
+                    port.setParam("ALT_HOLD_RTL", -1);
+                }
+
+                port.setParam("WP_RADIUS", (byte)int.Parse(TXT_WPRad.Text) / MainV2.cs.multiplierdist);
+
+                try
+                {
+                    port.setParam("WP_LOITER_RAD", (byte)(int.Parse(TXT_loiterrad.Text) / MainV2.cs.multiplierdist));
+                }
+                catch
+                {
+                    port.setParam("LOITER_RAD", (byte)int.Parse(TXT_loiterrad.Text) / MainV2.cs.multiplierdist);
+                }
+
+                ((Controls.ProgressReporterDialogue)sender).UpdateProgressAndStatus(100, "Done.");
+            }
+            catch (Exception ex) { MainV2.givecomport = false; throw ex; }
+
+            MainV2.givecomport = false;
         }
 
         /// <summary>
@@ -1486,7 +1508,11 @@ namespace ArdupilotMega.GCSViews
                     }
                 }
 
+                log.Info("Setting wp params");
+
                 string hold_alt = ((int)((float)param["ALT_HOLD_RTL"] * MainV2.cs.multiplierdist)).ToString();
+
+                log.Info("param ALT_HOLD_RTL " + hold_alt);
 
                 if (!hold_alt.Equals("-1"))
                 {
@@ -1494,21 +1520,32 @@ namespace ArdupilotMega.GCSViews
                 }
 
                 TXT_WPRad.Text = ((int)((float)param["WP_RADIUS"] * MainV2.cs.multiplierdist)).ToString();
+
+                log.Info("param WP_RADIUS " + TXT_WPRad.Text);
+
                 try
                 {
-                    TXT_loiterrad.Text = ((int)((float)param["LOITER_RADIUS"] * MainV2.cs.multiplierdist)).ToString();
+                    if (param["LOITER_RADIUS"] != null)
+                        TXT_loiterrad.Text = ((int)((float)param["LOITER_RADIUS"] * MainV2.cs.multiplierdist)).ToString();
+
+                    if (param["WP_LOITER_RAD"] != null)
+                        TXT_loiterrad.Text = ((int)((float)param["WP_LOITER_RAD"] * MainV2.cs.multiplierdist)).ToString();
+
+                    log.Info("param LOITER_RADIUS " + TXT_loiterrad.Text);
                 }
                 catch
                 {
-                    TXT_loiterrad.Text = ((int)((float)param["WP_LOITER_RAD"] * MainV2.cs.multiplierdist)).ToString();
+                    
                 }
                 CHK_holdalt.Checked = Convert.ToBoolean((float)param["ALT_HOLD_RTL"] > 0);
+                log.Info("param ALT_HOLD_RTL " + CHK_holdalt.Checked.ToString());
 
             }
-            catch (Exception) { } // if there is no valid home
+            catch (Exception ex) { log.Info(ex.ToString()); } // if there is no valid home
 
             if (Commands.RowCount > 0)
             {
+                log.Info("remove home from list");
                 Commands.Rows.Remove(Commands.Rows[0]); // remove home row
             }
 
@@ -2523,7 +2560,7 @@ namespace ArdupilotMega.GCSViews
                 double x = bottomleft.Lat - Math.Abs(fulllatdiff);
                 double y = bottomleft.Lng - Math.Abs(fulllngdiff);
 
-                Console.WriteLine("{0} < {1} {2} < {3}", x, (topright.Lat), y, (topright.Lng));
+                log.InfoFormat("{0} < {1} {2} < {3}", x, (topright.Lat), y, (topright.Lng));
 
                 while (x < (topright.Lat + Math.Abs(fulllatdiff)) && y < (topright.Lng + Math.Abs(fulllngdiff)))
                 {

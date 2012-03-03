@@ -122,7 +122,7 @@
     <value>86, 17</value>
   </data>
   <data name="CHKREV_roll.Text" xml:space="preserve">
-    <value>横滚舵反向</value>
+    <value>侧倾舵反向</value>
   </data>
   <data name="CHKREV_roll.ToolTip" xml:space="preserve">
     <value />
@@ -278,7 +278,7 @@
     <value>31, 13</value>
   </data>
   <data name="label5.Text" xml:space="preserve">
-    <value>横滚</value>
+    <value>侧倾</value>
   </data>
   <data name="label5.ToolTip" xml:space="preserve">
     <value />
@@ -350,7 +350,7 @@
     <value>31, 13</value>
   </data>
   <data name="label12.Text" xml:space="preserve">
-    <value>横滚</value>
+    <value>侧倾</value>
   </data>
   <data name="label12.ToolTip" xml:space="preserve">
     <value />
@@ -464,7 +464,7 @@
     <value>55, 13</value>
   </data>
   <data name="label22.Text" xml:space="preserve">
-    <value>横滚增益</value>
+    <value>侧倾增益</value>
   </data>
   <data name="label22.ToolTip" xml:space="preserve">
     <value />
@@ -505,14 +505,35 @@
   <data name="CHKdisplayall.ToolTip" xml:space="preserve">
     <value />
   </data>
+  <data name="CHKgraphroll.Text" xml:space="preserve">
+    <value>显示侧倾</value>
+  </data>
   <data name="CHKgraphroll.ToolTip" xml:space="preserve">
     <value />
+  </data>
+  <data name="CHKgraphpitch.Size" type="System.Drawing.Size, System.Drawing">
+    <value>74, 17</value>
+  </data>
+  <data name="CHKgraphpitch.Text" xml:space="preserve">
+    <value>显示俯仰</value>
   </data>
   <data name="CHKgraphpitch.ToolTip" xml:space="preserve">
     <value />
   </data>
+  <data name="CHKgraphrudder.Size" type="System.Drawing.Size, System.Drawing">
+    <value>86, 17</value>
+  </data>
+  <data name="CHKgraphrudder.Text" xml:space="preserve">
+    <value>显示方向舵</value>
+  </data>
   <data name="CHKgraphrudder.ToolTip" xml:space="preserve">
     <value />
+  </data>
+  <data name="CHKgraphthrottle.Size" type="System.Drawing.Size, System.Drawing">
+    <value>74, 17</value>
+  </data>
+  <data name="CHKgraphthrottle.Text" xml:space="preserve">
+    <value>显示油门</value>
   </data>
   <data name="CHKgraphthrottle.ToolTip" xml:space="preserve">
     <value />
@@ -566,6 +587,9 @@
     <value>直升机</value>
   </data>
   <data name="CHK_heli.ToolTip" xml:space="preserve">
+    <value />
+  </data>
+  <data name="CHK_xplane10.ToolTip" xml:space="preserve">
     <value />
   </data>
   <data name="$this.ToolTip" xml:space="preserve">

@@ -11,6 +11,6 @@
     <UpdateUrlHistory />
   </PropertyGroup>
   <PropertyGroup>
-    <ReferencePath>C:\Users\hog\Desktop\DIYDrones\myquad\greatmaps_e1bb830a18a3\Demo.WindowsForms\bin\Debug\;C:\Users\hog\Desktop\DIYDrones\myquad\sharpkml\SharpKml\bin\Release\;C:\Users\hog\Desktop\DIYDrones\myquad\MetaDataExtractorCSharp240d\bin\Release\</ReferencePath>
+    <ReferencePath>C:\Users\hog\Desktop\DIYDrones\myquad\greatmaps_e1bb830a18a3\Demo.WindowsForms\bin\Debug\;C:\Users\hog\Desktop\DIYDrones\myquad\sharpkml\SharpKml\bin\Release\;C:\Users\hog\Desktop\DIYDrones\myquad\MetaDataExtractorCSharp240d\bin\Release\;C:\Users\hog\Documents\Visual Studio 2010\Projects\ArdupilotMega\ArdupilotMega\Lib\</ReferencePath>
   </PropertyGroup>
 </Project>

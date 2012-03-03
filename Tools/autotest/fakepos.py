@@ -77,7 +77,7 @@ if True:
 
 while True:
 
-    xAccel = sin(radians(pitchDeg)) * cos(radians(rollDeg))
+    xAccel = sin(radians(pitchDeg))
     yAccel = -sin(radians(rollDeg)) * cos(radians(pitchDeg))
     zAccel = -cos(radians(rollDeg)) * cos(radians(pitchDeg))
     scale = 9.81 / sqrt((xAccel*xAccel)+(yAccel*yAccel)+(zAccel*zAccel))

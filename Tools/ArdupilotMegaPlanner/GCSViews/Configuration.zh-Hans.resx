@@ -727,28 +727,31 @@
   <data name="groupBox8.ToolTip" xml:space="preserve">
     <value />
   </data>
-  <data name="TabAPM2.ToolTip" xml:space="preserve">
+  <data name="TabAP.ToolTip" xml:space="preserve">
     <value />
   </data>
-  <data name="ACRO_PIT_IMAX.ToolTip" xml:space="preserve">
+  <data name="myLabel2.Text" xml:space="preserve">
+    <value>Ch6 选项</value>
+  </data>
+  <data name="myLabel2.ToolTip" xml:space="preserve">
     <value />
   </data>
-  <data name="label27.ToolTip" xml:space="preserve">
+  <data name="TUNE.ToolTip" xml:space="preserve">
     <value />
   </data>
-  <data name="ACRO_PIT_I.ToolTip" xml:space="preserve">
+  <data name="myLabel1.Text" xml:space="preserve">
+    <value>Ch7 选项</value>
+  </data>
+  <data name="myLabel1.ToolTip" xml:space="preserve">
+    <value />
+  </data>
+  <data name="CH7_OPT.ToolTip" xml:space="preserve">
+    <value />
+  </data>
+  <data name="THR_RATE_D.ToolTip" xml:space="preserve">
     <value />
   </data>
   <data name="label29.ToolTip" xml:space="preserve">
-    <value />
-  </data>
-  <data name="ACRO_PIT_P.ToolTip" xml:space="preserve">
-    <value />
-  </data>
-  <data name="label33.ToolTip" xml:space="preserve">
-    <value />
-  </data>
-  <data name="groupBox17.ToolTip" xml:space="preserve">
     <value />
   </data>
   <data name="label14.ToolTip" xml:space="preserve">
@@ -769,28 +772,10 @@
   <data name="label25.ToolTip" xml:space="preserve">
     <value />
   </data>
+  <data name="groupBox5.Text" xml:space="preserve">
+    <value>油门比率</value>
+  </data>
   <data name="groupBox5.ToolTip" xml:space="preserve">
-    <value />
-  </data>
-  <data name="ACRO_RLL_IMAX.ToolTip" xml:space="preserve">
-    <value />
-  </data>
-  <data name="label40.ToolTip" xml:space="preserve">
-    <value />
-  </data>
-  <data name="ACRO_RLL_I.ToolTip" xml:space="preserve">
-    <value />
-  </data>
-  <data name="label44.ToolTip" xml:space="preserve">
-    <value />
-  </data>
-  <data name="ACRO_RLL_P.ToolTip" xml:space="preserve">
-    <value />
-  </data>
-  <data name="label48.ToolTip" xml:space="preserve">
-    <value />
-  </data>
-  <data name="groupBox18.ToolTip" xml:space="preserve">
     <value />
   </data>
   <data name="CHK_lockrollpitch.Size" type="System.Drawing.Size, System.Drawing">
@@ -800,6 +785,12 @@
     <value>锁定俯仰和侧倾值</value>
   </data>
   <data name="CHK_lockrollpitch.ToolTip" xml:space="preserve">
+    <value />
+  </data>
+  <data name="NAV_LAT_D.ToolTip" xml:space="preserve">
+    <value />
+  </data>
+  <data name="label27.ToolTip" xml:space="preserve">
     <value />
   </data>
   <data name="WP_SPEED_MAX.ToolTip" xml:space="preserve">
@@ -838,25 +829,7 @@
   <data name="groupBox4.ToolTip" xml:space="preserve">
     <value />
   </data>
-  <data name="XTRK_ANGLE_CD1.ToolTip" xml:space="preserve">
-    <value />
-  </data>
-  <data name="label10.ToolTip" xml:space="preserve">
-    <value />
-  </data>
-  <data name="XTRACK_IMAX.ToolTip" xml:space="preserve">
-    <value />
-  </data>
-  <data name="label11.ToolTip" xml:space="preserve">
-    <value />
-  </data>
-  <data name="XTRACK_I.ToolTip" xml:space="preserve">
-    <value />
-  </data>
-  <data name="label17.ToolTip" xml:space="preserve">
-    <value />
-  </data>
-  <data name="XTRACK_P.ToolTip" xml:space="preserve">
+  <data name="XTRK_GAIN_SC1.ToolTip" xml:space="preserve">
     <value />
   </data>
   <data name="label18.ToolTip" xml:space="preserve">
@@ -934,7 +907,16 @@
   <data name="label35.ToolTip" xml:space="preserve">
     <value />
   </data>
+  <data name="groupBox20.Text" xml:space="preserve">
+    <value>稳定偏航</value>
+  </data>
   <data name="groupBox20.ToolTip" xml:space="preserve">
+    <value />
+  </data>
+  <data name="STAB_D.ToolTip" xml:space="preserve">
+    <value />
+  </data>
+  <data name="lblSTAB_D.ToolTip" xml:space="preserve">
     <value />
   </data>
   <data name="STB_PIT_IMAX.ToolTip" xml:space="preserve">
@@ -954,6 +936,9 @@
   </data>
   <data name="label42.ToolTip" xml:space="preserve">
     <value />
+  </data>
+  <data name="groupBox21.Text" xml:space="preserve">
+    <value>稳定俯仰</value>
   </data>
   <data name="groupBox21.ToolTip" xml:space="preserve">
     <value />
@@ -976,7 +961,16 @@
   <data name="label46.ToolTip" xml:space="preserve">
     <value />
   </data>
+  <data name="groupBox22.Text" xml:space="preserve">
+    <value>稳定侧倾</value>
+  </data>
   <data name="groupBox22.ToolTip" xml:space="preserve">
+    <value />
+  </data>
+  <data name="RATE_YAW_D.ToolTip" xml:space="preserve">
+    <value />
+  </data>
+  <data name="label10.ToolTip" xml:space="preserve">
     <value />
   </data>
   <data name="RATE_YAW_IMAX.ToolTip" xml:space="preserve">
@@ -997,7 +991,16 @@
   <data name="label82.ToolTip" xml:space="preserve">
     <value />
   </data>
+  <data name="groupBox23.Text" xml:space="preserve">
+    <value>比率偏航</value>
+  </data>
   <data name="groupBox23.ToolTip" xml:space="preserve">
+    <value />
+  </data>
+  <data name="RATE_PIT_D.ToolTip" xml:space="preserve">
+    <value />
+  </data>
+  <data name="label11.ToolTip" xml:space="preserve">
     <value />
   </data>
   <data name="RATE_PIT_IMAX.ToolTip" xml:space="preserve">
@@ -1018,7 +1021,16 @@
   <data name="label87.ToolTip" xml:space="preserve">
     <value />
   </data>
+  <data name="groupBox24.Text" xml:space="preserve">
+    <value>比率俯仰</value>
+  </data>
   <data name="groupBox24.ToolTip" xml:space="preserve">
+    <value />
+  </data>
+  <data name="RATE_RLL_D.ToolTip" xml:space="preserve">
+    <value />
+  </data>
+  <data name="label17.ToolTip" xml:space="preserve">
     <value />
   </data>
   <data name="RATE_RLL_IMAX.ToolTip" xml:space="preserve">
@@ -1039,10 +1051,13 @@
   <data name="label91.ToolTip" xml:space="preserve">
     <value />
   </data>
+  <data name="groupBox25.Text" xml:space="preserve">
+    <value>比率侧倾</value>
+  </data>
   <data name="groupBox25.ToolTip" xml:space="preserve">
     <value />
   </data>
-  <data name="TabAC2.ToolTip" xml:space="preserve">
+  <data name="TabAC.ToolTip" xml:space="preserve">
     <value />
   </data>
   <data name="label26.Text" xml:space="preserve">
@@ -1356,9 +1371,5 @@
   </data>
   <data name="$this.ToolTip" xml:space="preserve">
     <value />
-  </data>
-  <assembly alias="System.Windows.Forms" name="System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089" />
-  <data name="MAVParam" type="System.Resources.ResXFileRef, System.Windows.Forms">
-    <value>..\Resources\MAVParam.zh-Hans.txt;System.String, mscorlib, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089;utf-8</value>
   </data>
 </root>
