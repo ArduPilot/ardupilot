@@ -62,6 +62,9 @@ public:
 	///
 	virtual bool	update(void);
 
+	// true if new data is available from the sensors
+	virtual bool new_data_available(void);
+
 	/// Fetch the current gyro values
 	///
 	/// @returns	vector of rotational rates in radians/sec

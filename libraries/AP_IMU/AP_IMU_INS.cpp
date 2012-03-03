@@ -235,3 +235,7 @@ AP_IMU_INS::update(void)
 	// always updated
 	return true;
 }
+
+bool AP_IMU_INS::new_data_available(void) {
+    return _ins->new_data_available();
+}

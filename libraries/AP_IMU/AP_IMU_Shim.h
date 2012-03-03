@@ -36,6 +36,8 @@ public:
 		return updated;
 	}
 	//@}
+
+	virtual bool new_data_available(void) { return true; }
 	
 	float		gx()				{ return 0; }
 	float		gy()				{ return 0; }
