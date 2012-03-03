@@ -30,6 +30,9 @@ mavlink10:
 sitl:
 	make -f ../libraries/Desktop/Makefile.desktop
 
+sitl-quaternion:
+	make -f ../libraries/Desktop/Makefile.desktop EXTRAFLAGS="-DQUATERNION_ENABLE=ENABLED"
+
 etags:
 	cd .. && etags -f ArduPlane/TAGS --langmap=C++:.pde.cpp.h $$(git ls-files ArduPlane libraries)
 
