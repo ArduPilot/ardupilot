@@ -60,16 +60,16 @@ public:
 	void update_DCM(void) { update(); }
 	void update_DCM_fast(void) { update(); }
 	Vector3f get_gyro(void) { return _gyro_smoothed; }
-	Vector3f get_integrator(void) { return Vector3f(0,0,0); }
+	Vector3f get_integrator(void) { return gyro_bias; }
 	float get_accel_weight(void) { return 0; }
 	float get_renorm_val(void) { return 0; }
-	float get_error_rp(void) { return 0; }
-	float get_error_yaw(void) { return 0; }
 	float get_health(void) { return 0; }
 	void matrix_reset(void) { }
 	uint8_t gyro_sat_count;
 	uint8_t renorm_range_count;
 	uint8_t renorm_blowup_count;
+	float get_error_rp(void);
+	float get_error_yaw(void);
 
 private:
 	void 		update_IMU(float deltat, Vector3f &gyro, Vector3f &accel);
@@ -111,6 +111,12 @@ private:
 
 	// smoothed gyro estimate
 	Vector3f _gyro_smoothed;
+
+	// estimate of error
+	float		_error_rp_sum;
+	uint16_t	_error_rp_count;
+	float		_error_yaw_sum;
+	uint16_t	_error_yaw_count;
 };
 
 #endif
