@@ -38,6 +38,9 @@ class AP_ADC_HIL : public AP_ADC
 	// Read 6 sensors at once
 	uint32_t Ch6(const uint8_t *channel_numbers, uint16_t *result);
 
+	// see if Ch6 would block
+	bool new_data_available(const uint8_t *channel_numbers);
+
 	///
 	// Set the adc raw values given the current rotations rates,
 	// temps, accels, and pressures
