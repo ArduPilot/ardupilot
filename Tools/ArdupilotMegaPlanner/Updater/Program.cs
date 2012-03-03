@@ -26,16 +26,18 @@ namespace Updater
 
             string path = Path.GetDirectoryName(Application.ExecutablePath);
 
-            UpdateFiles(path);
+            // give 4 seconds grace
+            System.Threading.Thread.Sleep(5000);
 
-            //if (!UpdateFiles(path))
+            //UpdateFiles(path);
+
+            if (!UpdateFiles(path))
             {
-                // this fails on mac
-                //Console.WriteLine("Update failed, please try it later.");
-                //Console.WriteLine("Press any key to continue.");
-                //Console.ReadKey();
+                Console.WriteLine("Update failed, please try it later.");
+                Console.WriteLine("Press any key to continue.");
+                Console.ReadKey();
             }
-            //else
+            else
             {
                 try
                 {

@@ -86,7 +86,7 @@
     <SignManifests>false</SignManifests>
   </PropertyGroup>
   <PropertyGroup>
-    <SignAssembly>true</SignAssembly>
+    <SignAssembly>false</SignAssembly>
   </PropertyGroup>
   <PropertyGroup />
   <PropertyGroup>
@@ -118,6 +118,10 @@
     <ApplicationManifest>Properties\app.manifest</ApplicationManifest>
   </PropertyGroup>
   <ItemGroup>
+    <Reference Include="alglibnet2, Version=0.0.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>Lib\alglibnet2.dll</HintPath>
+    </Reference>
     <Reference Include="BSE.Windows.Forms">
       <HintPath>..\..\..\..\..\Desktop\DIYDrones\myquad\greatmaps_e1bb830a18a3\Demo.WindowsForms\bin\Debug\BSE.Windows.Forms.dll</HintPath>
     </Reference>

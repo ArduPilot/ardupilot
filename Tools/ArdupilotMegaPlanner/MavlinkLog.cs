@@ -512,5 +512,88 @@ namespace ArdupilotMega
             }
         }
 
+        private void BUT_graphmavlog_Click(object sender, EventArgs e)
+        {
+            OpenFileDialog openFileDialog1 = new OpenFileDialog();
+            openFileDialog1.Filter = "*.tlog|*.tlog";
+            openFileDialog1.FilterIndex = 2;
+            openFileDialog1.RestoreDirectory = true;
+            openFileDialog1.Multiselect = true;
+            try
+            {
+                openFileDialog1.InitialDirectory = Path.GetDirectoryName(Application.ExecutablePath) + Path.DirectorySeparatorChar + @"logs" + Path.DirectorySeparatorChar;
+            }
+            catch { } // incase dir doesnt exist
+
+            if (openFileDialog1.ShowDialog() == DialogResult.OK)
+            {
+                foreach (string logfile in openFileDialog1.FileNames)
+                {
+
+                    MAVLink mine = new MAVLink();
+                    mine.logplaybackfile = new BinaryReader(File.Open(logfile, FileMode.Open, FileAccess.Read, FileShare.Read));
+                    mine.logreadmode = true;
+
+                    mine.packets.Initialize(); // clear
+
+                    CurrentState cs = new CurrentState();
+
+                    float oldlatlngalt = 0;
+
+                    DateTime appui = DateTime.Now;
+
+                    while (mine.logplaybackfile.BaseStream.Position < mine.logplaybackfile.BaseStream.Length)
+                    {
+                        // bar moves to 50 % in this step
+                        progressBar1.Value = (int)((float)mine.logplaybackfile.BaseStream.Position / (float)mine.logplaybackfile.BaseStream.Length * 100.0f / 2.0f);
+                        progressBar1.Invalidate();
+                        progressBar1.Refresh();
+
+                        byte[] packet = mine.readPacket();
+
+                        cs.datetime = mine.lastlogread;
+
+                        cs.UpdateCurrentSettings(null, true, mine);
+
+                        if (appui != DateTime.Now)
+                        {
+                            // cant do entire app as mixes with flightdata timer
+                            this.Refresh();
+                            appui = DateTime.Now;
+                        }
+
+                        try
+                        {
+                            if (MainV2.talk != null)
+                                MainV2.talk.SpeakAsyncCancelAll();
+                        }
+                        catch { } // ignore because of this Exception System.PlatformNotSupportedException: No voice installed on the system or none available with the current security setting.
+
+                        if ((float)(cs.lat + cs.lng) != oldlatlngalt
+                            && cs.lat != 0 && cs.lng != 0)
+                        {
+                            Console.WriteLine(cs.lat + " " + cs.lng + " " + cs.alt + "   lah " + (float)(cs.lat + cs.lng) + "!=" + oldlatlngalt);
+                            CurrentState cs2 = (CurrentState)cs.Clone();
+
+                            flightdata.Add(cs2);
+
+                            oldlatlngalt = (cs.lat + cs.lng);
+                        }
+                    }
+
+                    mine.logreadmode = false;
+                    mine.logplaybackfile.Close();
+                    mine.logplaybackfile = null;
+
+                    Application.DoEvents();
+
+                    //writeKML(logfile + ".kml");
+
+                    progressBar1.Value = 100;
+
+                }
+            }
+        }
+
     }
 }

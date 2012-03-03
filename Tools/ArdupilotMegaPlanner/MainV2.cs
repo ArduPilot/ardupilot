@@ -22,6 +22,7 @@ using System.Threading;
 using System.Net.Sockets;
 using IronPython.Hosting;
 using log4net;
+using ArdupilotMega.Controls;
 
 namespace ArdupilotMega
 {
@@ -1629,12 +1630,12 @@ namespace ArdupilotMega
         }
 
 
-        public static void updatecheck(Label loadinglabel)
+        public static void updatecheck(ProgressReporterDialogue frmProgressReporter)
         {
             var baseurl = ConfigurationManager.AppSettings["UpdateLocation"];
             try
             {
-                bool update = updatecheck(loadinglabel, baseurl, "");
+                bool update = updatecheck(frmProgressReporter, baseurl, "");
                 var process = new Process();
                 string exePath = Path.GetDirectoryName(Application.ExecutablePath);
                 if (MONO)
@@ -1659,17 +1660,20 @@ namespace ArdupilotMega
                         log.Error("Exception during update", ex);
                     }
                 }
-                if (loadinglabel != null)
-                    UpdateLabel(loadinglabel, "Starting Updater");
+                if (frmProgressReporter != null)
+                    frmProgressReporter.UpdateProgressAndStatus(-1, "Starting Updater");
                 log.Info("Starting new process: " + process.StartInfo.FileName + " with " + process.StartInfo.Arguments);
                 process.Start();
                 log.Info("Quitting existing process");
                 try
                 {
-                    Application.Exit();
+                    MainV2.instance.BeginInvoke((MethodInvoker)delegate() {
+                        Application.Exit();
+                    });
                 }
                 catch
                 {
+                    Application.Exit();
                 }
             }
             catch (Exception ex)
@@ -1719,10 +1723,25 @@ namespace ArdupilotMega
             {
                 var fi = new FileInfo(path);
 
-                log.Info(response.Headers[HttpResponseHeader.ETag]);
+                string CurrentEtag = "";
 
-                if (fi.Length != response.ContentLength) // && response.Headers[HttpResponseHeader.ETag] != "0")
+                if (File.Exists(path + ".etag"))
                 {
+                    using (Stream fs = File.OpenRead(path + ".etag"))
+                    {
+                        using (StreamReader sr = new StreamReader(fs))
+                        {
+                            CurrentEtag = sr.ReadLine();
+                            sr.Close();
+                        }
+                        fs.Close();
+                    }
+                }
+
+                if (fi.Length != response.ContentLength && response.Headers[HttpResponseHeader.ETag] != CurrentEtag)
+                {
+                    log.Debug("New file Check: " + fi.Length + " vs " + response.ContentLength + " " + response.Headers[HttpResponseHeader.ETag] + " vs " + CurrentEtag);
+
                     using (var sw = new StreamWriter(path + ".etag"))
                     {
                         sw.WriteLine(response.Headers[HttpResponseHeader.ETag]);
@@ -1757,46 +1776,28 @@ namespace ArdupilotMega
 
         public static void DoUpdate()
         {
-            var loading = new Form
+            ProgressReporterDialogue frmProgressReporter = new ProgressReporterDialogue()
             {
-
-                Width = 400,
-                Height = 150,
-                StartPosition = FormStartPosition.CenterScreen,
-                TopMost = true,
-                MinimizeBox = false,
-                MaximizeBox = false
+                Text = "Check for Updates",
+                StartPosition = System.Windows.Forms.FormStartPosition.CenterScreen
             };
-            var resources = new ComponentResourceManager(typeof(MainV2));
-            loading.Icon = ((Icon)(resources.GetObject("$this.Icon")));
 
-            var loadinglabel = new Label
-                                     {
-                                         Location = new System.Drawing.Point(50, 40),
-                                         Name = "load",
-                                         AutoSize = true,
-                                         Text = "Checking...",
-                                         Size = new System.Drawing.Size(100, 20)
-                                     };
+            MainV2.fixtheme(frmProgressReporter);
 
-            loading.Controls.Add(loadinglabel);
-            loading.Show();
+            frmProgressReporter.DoWork += new Controls.ProgressReporterDialogue.DoWorkEventHandler(frmProgressReporter_DoWork);
 
-            try
-            {
-                MainV2.updatecheck(loadinglabel);
-            }
-            catch (Exception ex)
-            {
-                log.Error("Error in updatecheck", ex);
-            }
-            //); 
-            //t12.Name = "Update check thread";
-            //t12.Start();
-            //MainV2.threads.Add(t12);
+            frmProgressReporter.UpdateProgressAndStatus(-1, "Checking for Updates");
+
+            frmProgressReporter.RunBackgroundOperationAsync();
         }
 
-        private static bool updatecheck(Label loadinglabel, string baseurl, string subdir)
+        static void frmProgressReporter_DoWork(object sender, Controls.ProgressWorkerEventArgs e)
+        {
+            ((ProgressReporterDialogue)sender).UpdateProgressAndStatus(-1, "Getting Base URL");
+            MainV2.updatecheck((ProgressReporterDialogue)sender);
+        }
+
+        private static bool updatecheck(ProgressReporterDialogue frmProgressReporter, string baseurl, string subdir)
         {
             bool update = false;
             List<string> files = new List<string>();
@@ -1845,17 +1846,23 @@ namespace ArdupilotMega
                 Directory.CreateDirectory(dir);
             foreach (string file in files)
             {
+                if (frmProgressReporter.doWorkArgs.CancelRequested)
+                {
+                    frmProgressReporter.doWorkArgs.CancelAcknowledged = true;
+                    throw new Exception("Cancel");
+                }
+
                 if (file.Equals("/"))
                 {
                     continue;
                 }
                 if (file.EndsWith("/"))
                 {
-                    update = updatecheck(loadinglabel, baseurl + file, subdir.Replace('/', Path.DirectorySeparatorChar) + file) && update;
+                    update = updatecheck(frmProgressReporter, baseurl + file, subdir.Replace('/', Path.DirectorySeparatorChar) + file) && update;
                     continue;
                 }
-                if (loadinglabel != null)
-                    UpdateLabel(loadinglabel, "Checking " + file);
+                if (frmProgressReporter != null)
+                    frmProgressReporter.UpdateProgressAndStatus(-1, "Checking " + file);
 
                 string path = Path.GetDirectoryName(Application.ExecutablePath) + Path.DirectorySeparatorChar + subdir + file;
 
@@ -1876,26 +1883,44 @@ namespace ArdupilotMega
                 //dataStream = response.GetResponseStream();
                 // Open the stream using a StreamReader for easy access.
 
-                bool getfile = false;
+                bool updateThisFile = false;
 
                 if (File.Exists(path))
                 {
                     FileInfo fi = new FileInfo(path);
 
-                    log.Info(response.Headers[HttpResponseHeader.ETag]);
+                    //log.Info(response.Headers[HttpResponseHeader.ETag]);
+                    string CurrentEtag = "";
 
-                    if (fi.Length != response.ContentLength) // && response.Headers[HttpResponseHeader.ETag] != "0")
+                    if (File.Exists(path + ".etag"))
                     {
-                        StreamWriter sw = new StreamWriter(path + ".etag");
-                        sw.WriteLine(response.Headers[HttpResponseHeader.ETag]);
-                        sw.Close();
-                        getfile = true;
+                        using (Stream fs = File.OpenRead(path + ".etag"))
+                        {
+                            using (StreamReader sr = new StreamReader(fs))
+                            {
+                                CurrentEtag = sr.ReadLine();
+                                sr.Close();
+                            }
+                            fs.Close();
+                        }
+                    }
+
+                    if (fi.Length != response.ContentLength && response.Headers[HttpResponseHeader.ETag] != CurrentEtag)
+                    {
+                        log.Debug("New file Check: " + fi.Length + " vs " + response.ContentLength + " " + response.Headers[HttpResponseHeader.ETag] + " vs " + CurrentEtag);
+
+                        using (StreamWriter sw = new StreamWriter(path + ".etag"))
+                        {
+                            sw.WriteLine(response.Headers[HttpResponseHeader.ETag]);
+                            sw.Close();
+                        }
+                        updateThisFile = true;
                         log.Info("NEW FILE " + file);
                     }
                 }
                 else
                 {
-                    getfile = true;
+                    updateThisFile = true;
                     log.Info("NEW FILE " + file);
                     // get it
                 }
@@ -1904,7 +1929,7 @@ namespace ArdupilotMega
                 //dataStream.Close();
                 response.Close();
 
-                if (getfile)
+                if (updateThisFile)
                 {
                     if (!update)
                     {
@@ -1918,16 +1943,21 @@ namespace ArdupilotMega
                             //    return;
                         }
                     }
-                    if (loadinglabel != null)
-                        UpdateLabel(loadinglabel, "Getting " + file);
+                    if (frmProgressReporter != null)
+                        frmProgressReporter.UpdateProgressAndStatus(-1, "Getting " + file);
 
                     // from head
                     long bytes = response.ContentLength;
 
                     // Create a request using a URL that can receive a post. 
-                    request = WebRequest.Create(baseurl + file);
+                    request = HttpWebRequest.Create(baseurl + file);
                     // Set the Method property of the request to POST.
                     request.Method = "GET";
+
+                    ((HttpWebRequest)request).AutomaticDecompression = DecompressionMethods.GZip | DecompressionMethods.Deflate;
+
+                    request.Headers.Add("Accept-Encoding", "gzip,deflate"); 
+
                     // Get the response.
                     response = request.GetResponse();
                     // Display the status.
@@ -1951,8 +1981,8 @@ namespace ArdupilotMega
                         {
                             if (dt.Second != DateTime.Now.Second)
                             {
-                                if (loadinglabel != null)
-                                    UpdateLabel(loadinglabel, "Getting " + file + ": " + (((double)(contlen - bytes) / (double)contlen) * 100).ToString("0.0") + "%"); //+ Math.Abs(bytes) + " bytes");
+                                if (frmProgressReporter != null)
+                                    frmProgressReporter.UpdateProgressAndStatus((int)(((double)(contlen - bytes) / (double)contlen) * 100), "Getting " + file + ": " + (((double)(contlen - bytes) / (double)contlen) * 100).ToString("0.0") + "%"); //+ Math.Abs(bytes) + " bytes");
                                 dt = DateTime.Now;
                             }
                         }
@@ -1977,11 +2007,6 @@ namespace ArdupilotMega
             //P.StartInfo.RedirectStandardOutput = true;
             return update;
 
-
-        }
-
-        private void toolStripMenuItem3_Click(object sender, EventArgs e)
-        {
 
         }
 

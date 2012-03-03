@@ -4,6 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Windows.Forms;
 using System.IO;
+using System.Collections;
 
 namespace ArdupilotMega
 {
@@ -14,34 +15,12 @@ namespace ArdupilotMega
 
         public static void doWork()
         {
-            /*
-            double[,] x = new double[,] { { -1 }, { -0.8 }, { -0.6 }, { -0.4 }, { -0.2 }, { 0 }, { 0.2 }, { 0.4 }, { 0.6 }, { 0.8 }, { 1.0 } };
-            double[] y = new double[] { 0.223130, 0.382893, 0.582748, 0.786628, 0.941765, 1.000000, 0.941765, 0.786628, 0.582748, 0.382893, 0.223130 };
-            double[] c = new double[] { 0.3 };
-            double epsf = 0;
-            double epsx = 0.000001;
-            int maxits = 0;
-            int info;
-            alglib.lsfitstate state;
-            alglib.lsfitreport rep;
-            double diffstep = 0.0001;
-
-            //
-            // Fitting without weights
-            //
-            alglib.lsfitcreatef(x, y, c, diffstep, out state);
-            alglib.lsfitsetcond(state, epsf, epsx, maxits);
-            alglib.lsfitfit(state, function_cx_1_func, null, null);
-            alglib.lsfitresults(state, out info, out c, out rep);
-            System.Console.WriteLine("{0}", info); // EXPECTED: 2
-            System.Console.WriteLine("{0}", alglib.ap.format(c, 1)); // EXPECTED: [1.5]
-            */
-
             // based of tridge's work
 
             Tuple<float, float, float> offset = new Tuple<float, float, float>(0, 0, 0);
             List<Tuple<float, float, float>> data = new List<Tuple<float, float, float>>();
 
+            Hashtable filter = new Hashtable();
 
             OpenFileDialog openFileDialog1 = new OpenFileDialog();
             openFileDialog1.Filter = "*.tlog|*.tlog";
@@ -53,6 +32,8 @@ namespace ArdupilotMega
                 openFileDialog1.InitialDirectory = Path.GetDirectoryName(Application.ExecutablePath) + Path.DirectorySeparatorChar + @"logs" + Path.DirectorySeparatorChar;
             }
             catch { } // incase dir doesnt exist
+
+            openFileDialog1.FileName = @"C:\Users\hog\Downloads\2012-02-05.log";
 
             if (openFileDialog1.ShowDialog() == DialogResult.OK)
             {
@@ -74,65 +55,97 @@ namespace ArdupilotMega
                         //progressBar1.Refresh();
                         //Application.DoEvents();
 
-                        byte[] packet = mine.readPacket();
+                        byte[] packetraw = mine.readPacket();
 
-                        var pack = mine.DebugPacket(packet);
+                        var packet = mine.DebugPacket(packetraw);
 
-                        if (pack.GetType() == typeof(MAVLink.__mavlink_sensor_offsets_t))
+                        if (packet == null)
+                            continue;
+
+                        if (packet.GetType() == typeof(MAVLink.__mavlink_sensor_offsets_t))
                         {
                             offset = new Tuple<float,float,float>(
-                                ((MAVLink.__mavlink_sensor_offsets_t)pack).mag_ofs_x,
-                                ((MAVLink.__mavlink_sensor_offsets_t)pack).mag_ofs_y,
-                                ((MAVLink.__mavlink_sensor_offsets_t)pack).mag_ofs_z);
+                                ((MAVLink.__mavlink_sensor_offsets_t)packet).mag_ofs_x,
+                                ((MAVLink.__mavlink_sensor_offsets_t)packet).mag_ofs_y,
+                                ((MAVLink.__mavlink_sensor_offsets_t)packet).mag_ofs_z);
                         }
-                        else if (pack.GetType() == typeof(MAVLink.__mavlink_raw_imu_t))
+                        else if (packet.GetType() == typeof(MAVLink.__mavlink_raw_imu_t))
                         {
+                            int div = 20;
+
+                            string item = (int)(((MAVLink.__mavlink_raw_imu_t)packet).xmag / div) + "," +
+                                (int)(((MAVLink.__mavlink_raw_imu_t)packet).ymag / div) + "," +
+                                (int)(((MAVLink.__mavlink_raw_imu_t)packet).zmag / div);
+
+                            if (filter.ContainsKey(item))
+                            {
+                                filter[item] = (int)filter[item] + 1;
+
+                                if ((int)filter[item] > 3)
+                                    continue;
+                            }
+                            else
+                            {
+                                filter[item] = 1;
+                            }
+                            
+
                             data.Add(new Tuple<float, float, float>(
-                                ((MAVLink.__mavlink_raw_imu_t)pack).xmag - offset.Item1,
-                                ((MAVLink.__mavlink_raw_imu_t)pack).ymag - offset.Item2,
-                                ((MAVLink.__mavlink_raw_imu_t)pack).zmag - offset.Item3));
+                                ((MAVLink.__mavlink_raw_imu_t)packet).xmag - offset.Item1,
+                                ((MAVLink.__mavlink_raw_imu_t)packet).ymag - offset.Item2,
+                                ((MAVLink.__mavlink_raw_imu_t)packet).zmag - offset.Item3));
                         }
 
                     }
 
-
-    
-
-
-
-                    //progressBar1.Value = 100;
+                    Console.WriteLine("Extracted " + data.Count + " data points");
+                    Console.WriteLine("Current offset: " + offset);
 
                     mine.logreadmode = false;
                     mine.logplaybackfile.Close();
                     mine.logplaybackfile = null;
 
+                    double[] x = new double[] { 0, 0, 0, 0 };
+                    double epsg = 0.0000000001;
+                    double epsf = 0;
+                    double epsx = 0;
+                    int maxits = 0;
+                    alglib.minlmstate state;
+                    alglib.minlmreport rep;
+
+                    alglib.minlmcreatev(data.Count, x, 100, out state);
+                    alglib.minlmsetcond(state, epsg, epsf, epsx, maxits);
+                    alglib.minlmoptimize(state, sphere_error, null, data);
+                    alglib.minlmresults(state, out x, out rep);
+
+                    System.Console.WriteLine("{0}", rep.terminationtype); // EXPECTED: 4
+                    System.Console.WriteLine("{0}", alglib.ap.format(x, 2)); // EXPECTED: [-3,+3]
+                    //System.Console.ReadLine();
+
+
+                  //  return;
+
+
                 }
             }
         }
 
-        public static List<double> sphere_error(double[,] p, double[] data)
+        public static void sphere_error(double[] xi, double[] fi, object obj)
         {
-            double xofs = p[0, 0];
-            double yofs = p[0, 1];
-            double zofs = p[0, 2];
-            double r = p[0, 3];
-            List<double> ret = new List<double>();
-            foreach (var d in data)
+            double xofs = xi[0];
+            double yofs = xi[1];
+            double zofs = xi[2];
+            double r = xi[3];
+            int a = 0;
+            foreach (var d in (List<Tuple<float, float, float>>)obj)
             {
-                //double x, y, z = d;
-                //double err = r - Math.Sqrt(Math.Pow((x + xofs), 2) + Math.Pow((y + yofs), 2) + Math.Pow((z + zofs), 2));
-                //ret.Add(err);
+                double x = d.Item1;
+                double y = d.Item2;
+                double z = d.Item3;
+                double err = r - Math.Sqrt(Math.Pow((x + xofs), 2) + Math.Pow((y + yofs), 2) + Math.Pow((z + zofs), 2));
+                fi[a] = err;
+                a++;
             }
-            return ret;
         }
-
-        public static void function_cx_1_func(double[] c, double[] x, ref double func, object obj)
-        {
-            // this callback calculates f(c,x)=exp(-c0*sqr(x0))
-            // where x is a position on X-axis and c is adjustable parameter
-            func = System.Math.Exp(-c[0] * x[0] * x[0]);
-        }
-
-
     }
 }
