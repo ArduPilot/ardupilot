@@ -72,6 +72,7 @@ http://code.google.com/p/ardupilot-mega/downloads/list
 #include <AP_PeriodicProcess.h>         // Parent header of Timer
                                         // (only included for makefile libpath to work)
 #include <AP_TimerProcess.h>            // TimerProcess is the scheduler for MPU6000 reads.
+#include <AP_Quaternion.h>  // Madgwick quaternion system
 #include <AP_DCM.h>         // ArduPilot Mega DCM Library
 #include <APM_PI.h>            	// PI library
 #include <AC_PID.h>            // PID library
@@ -222,10 +223,20 @@ AP_InertialSensor_MPU6000 ins( CONFIG_MPU6000_CHIP_SELECT_PIN );
 AP_InertialSensor_Oilpan ins(&adc);
 #endif
 AP_IMU_INS  imu(&ins);
+
 // we don't want to use gps for yaw correction on ArduCopter, so pass
 // a NULL GPS object pointer
 static GPS         *g_gps_null;
-AP_DCM  dcm(&imu, g_gps_null);
+
+#if QUATERNION_ENABLE == ENABLED
+  // this shouldn't be called dcm of course, but until we
+  // decide to actually use something else, I don't want the patch
+  // size to be huge
+ AP_Quaternion dcm(&imu, g_gps_null);
+#else
+ AP_DCM  dcm(&imu, g_gps_null);
+#endif
+
 AP_TimerProcess timer_scheduler;
 
 #elif HIL_MODE == HIL_MODE_SENSORS
@@ -842,6 +853,7 @@ void setup() {
 void loop()
 {
 	uint32_t timer 			= micros();
+
 	// We want this to execute fast
 	// ----------------------------
 	if ((timer - fast_loopTimer) >= 4000 && imu.new_data_available()) {
@@ -960,8 +972,13 @@ static void medium_loop()
 			#if HIL_MODE != HIL_MODE_ATTITUDE					// don't execute in HIL mode
 				if(g.compass_enabled){
 					if (compass.read()) {
-                        compass.calculate(dcm.get_dcm_matrix());  	// Calculate heading
+                        // Calculate heading
+#if QUATERNION_ENABLE == ENABLED
+                        compass.calculate(dcm.roll, dcm.pitch);
+#else
+                        compass.calculate(dcm.get_dcm_matrix());
                         compass.null_offsets(dcm.get_dcm_matrix());
+#endif
                     }
 				}
 			#endif
@@ -1844,6 +1861,7 @@ static void read_AHRS(void)
 }
 
 static void update_trig(void){
+#if QUATERNION_ENABLE == DISABLED
 	Vector2f yawvector;
 	Matrix3f temp 	= dcm.get_dcm_matrix();
 
@@ -1862,6 +1880,23 @@ static void update_trig(void){
 	sin_yaw_y 		= yawvector.x;						// 1y = north
 	cos_yaw_x 		= yawvector.y;						// 0x = north
 
+#else
+    // we need a cheaper way to calculate this ....
+	Vector2f yawvector;
+	float cp = cos(dcm.pitch);
+	float cr = cos(dcm.roll);
+	float sy = sin(dcm.yaw);
+	float cy = cos(dcm.yaw);
+
+	yawvector.x 	= cp * cy;
+	yawvector.y 	= cp * sy;
+	yawvector.normalize();
+
+	cos_pitch_x 	= cp;
+    cos_roll_x 		= cr;
+	sin_yaw_y 		= yawvector.x;
+	cos_yaw_x 		= yawvector.y;
+#endif
 	//flat:
 	// 0 ° = cos_yaw:  0.00, sin_yaw:  1.00,
 	// 90° = cos_yaw:  1.00, sin_yaw:  0.00,
