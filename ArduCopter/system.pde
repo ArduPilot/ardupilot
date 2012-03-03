@@ -659,7 +659,6 @@ void flash_leds(bool on)
  */
 uint16_t board_voltage(void)
 {
-	static uint16_t vcc = 5000;
 	const uint8_t mux = (_BV(REFS0)|_BV(MUX4)|_BV(MUX3)|_BV(MUX2)|_BV(MUX1));
 
 	if (ADMUX == mux) {
@@ -669,14 +668,17 @@ uint16_t board_voltage(void)
 			counter--;
 		if (counter == 0) {
 			// we don't actually expect this timeout to happen,
-			// but we don't want any more code that could hang
-			return vcc;
+			// but we don't want any more code that could hang. We
+			// report 0V so it is clear in the logs that we don't know
+			// the value
+			return 0;
 		}
 		uint32_t result = ADCL | ADCH<<8;
-		vcc = 1126400L / result;       // Read and back-calculate Vcc in mV
-	} else {
-		ADMUX = mux; // switch mux, settle time is needed
-	}
-	return vcc;  // in mV
+		return 1126400UL / result;       // Read and back-calculate Vcc in mV
+    }
+    // switch mux, settle time is needed. We don't want to delay
+    // waiting for the settle, so report 0 as a "don't know" value
+    ADMUX = mux;
+	return 0; // we don't know the current voltage
 }
 #endif
