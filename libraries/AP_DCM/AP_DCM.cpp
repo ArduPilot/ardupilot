@@ -367,7 +367,7 @@ AP_DCM::drift_correction(void)
 	float integrator_magnitude;
 	Vector3f accel;
 	Vector3f error;
-	float error_norm;
+	float error_norm = 0;
 	const float gravity_squared = (9.80665*9.80665);
 
 	accel = _accel_vector;
