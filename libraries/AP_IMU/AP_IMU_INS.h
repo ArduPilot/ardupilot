@@ -51,6 +51,7 @@ public:
 	virtual void		init_gyro(void (*delay_cb)(unsigned long t) = delay,
                                   void (*flash_leds_cb)(bool on) = NULL);
 	virtual bool		update(void);
+	virtual bool		new_data_available(void);
 
 	// for jason
 	virtual float		gx()				{ return _sensor_cal[0]; }

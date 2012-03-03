@@ -30,6 +30,7 @@ void IMU::init_gyro(void (*delay_cb)(unsigned long t), void (*flash_leds_cb)(boo
 { }
 
 bool IMU::update(void) { return false; }
+bool IMU::new_data_available(void) { return true; }
 
 float	IMU::gx(void) { return 0.0; }
 float	IMU::gy(void) { return 0.0; }
