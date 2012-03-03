@@ -20,6 +20,9 @@ class AP_InertialSensor
    */
   virtual bool update() = 0;
 
+  // check if the sensors have new data
+  virtual bool new_data_available(void) = 0;
+
   /* Getters for individual gyro axes.
    * Gyros have correct coordinate frame and units (degrees per second).
    */

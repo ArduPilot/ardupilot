@@ -19,6 +19,7 @@ class AP_InertialSensor_Oilpan : public AP_InertialSensor
   /* Concrete implementation of AP_InertialSensor functions: */
   void init(AP_PeriodicProcess * scheduler);
   bool update();
+  bool new_data_available();
   float gx();
   float gy();
   float gz();

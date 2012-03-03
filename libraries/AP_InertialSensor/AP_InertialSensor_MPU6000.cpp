@@ -159,6 +159,11 @@ bool AP_InertialSensor_MPU6000::update( void )
 	return true;
 }
 
+bool AP_InertialSensor_MPU6000::new_data_available( void )
+{
+    return _count != 0;
+}
+
 float AP_InertialSensor_MPU6000::gx() { return _gyro.x; }
 float AP_InertialSensor_MPU6000::gy() { return _gyro.y; }
 float AP_InertialSensor_MPU6000::gz() { return _gyro.z; }
