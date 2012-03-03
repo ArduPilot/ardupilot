@@ -939,5 +939,9 @@
 #endif
 
 
+// experimental quaternion code
+#ifndef QUATERNION_ENABLE
+# define QUATERNION_ENABLE DISABLED
+#endif
 
 #endif // __ARDUCOPTER_CONFIG_H__
