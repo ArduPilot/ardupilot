@@ -71,7 +71,10 @@ static void failsafe_short_off_event()
 
 	// re-read the switch so we can return to our preferred mode
 	// --------------------------------------------------------
-	reset_control_switch();
+    if (control_mode == CIRCLE ||
+        (g.short_fs_action == 1 && control_mode == RTL)) {
+        reset_control_switch();
+    }
 
 	// Reset control integrators
 	// ---------------------
