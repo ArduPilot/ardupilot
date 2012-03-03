@@ -56,6 +56,21 @@ public:
 	int32_t		yaw_sensor;
 
 
+	// compatibility methods with DCM
+	void update_DCM(void) { update(); }
+	void update_DCM_fast(void) { update(); }
+	Vector3f get_gyro(void) { return _gyro_smoothed; }
+	Vector3f get_integrator(void) { return Vector3f(0,0,0); }
+	float get_accel_weight(void) { return 0; }
+	float get_renorm_val(void) { return 0; }
+	float get_error_rp(void) { return 0; }
+	float get_error_yaw(void) { return 0; }
+	float get_health(void) { return 0; }
+	void matrix_reset(void) { }
+	uint8_t gyro_sat_count;
+	uint8_t renorm_range_count;
+	uint8_t renorm_blowup_count;
+
 private:
 	void 		update_IMU(float deltat, Vector3f &gyro, Vector3f &accel);
 	void 		update_MARG(float deltat, Vector3f &gyro, Vector3f &accel, Vector3f &mag);
@@ -93,6 +108,9 @@ private:
 
 	// estimate gyroscope biases error
 	Vector3f gyro_bias;
+
+	// smoothed gyro estimate
+	Vector3f _gyro_smoothed;
 };
 
 #endif
