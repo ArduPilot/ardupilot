@@ -16,8 +16,8 @@
 #include "desktop.h"
 #include "util.h"
 
-#define MAG_OFS_X 17.0
-#define MAG_OFS_Y 125.0
+#define MAG_OFS_X 5.0
+#define MAG_OFS_Y 13.0
 #define MAG_OFS_Z -18.0
 
 /*
