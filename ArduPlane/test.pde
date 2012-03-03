@@ -534,7 +534,12 @@ test_imu(uint8_t argc, const Menu::arg *argv)
 				medium_loopCounter++;
 				if(medium_loopCounter == 5){
 					if (compass.read()) {
-                        compass.calculate(dcm.get_dcm_matrix());		// Calculate heading
+                        // Calculate heading
+#if QUATERNION_ENABLE == ENABLED
+                        compass.calculate(dcm.roll, dcm.pitch);
+#else
+                        compass.calculate(dcm.get_dcm_matrix());
+#endif
                     }
                     medium_loopCounter = 0;
 				}
@@ -599,8 +604,13 @@ test_mag(uint8_t argc, const Menu::arg *argv)
             medium_loopCounter++;
             if(medium_loopCounter == 5){
                 if (compass.read()) {
-                    compass.calculate(dcm.get_dcm_matrix());		// Calculate heading
+                    // Calculate heading
+#if QUATERNION_ENABLE == ENABLED
+                    compass.calculate(dcm.roll, dcm.pitch);
+#else
+                    compass.calculate(dcm.get_dcm_matrix());
                     compass.null_offsets(dcm.get_dcm_matrix());
+#endif
                 }
                 medium_loopCounter = 0;
             }

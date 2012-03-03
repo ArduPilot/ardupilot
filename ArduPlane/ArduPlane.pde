@@ -41,6 +41,7 @@ version 2.1 of the License, or (at your option) any later version.
 #include <AP_InertialSensor.h> // Inertial Sensor (uncalibated IMU) Library
 #include <AP_IMU.h>         // ArduPilot Mega IMU Library
 #include <AP_DCM.h>         // ArduPilot Mega DCM Library
+#include <AP_Quaternion.h>  // Madgwick quaternion system
 #include <PID.h>            // PID library
 #include <RC_Channel.h>     // RC Channel Library
 #include <AP_RangeFinder.h>	// Range finder library
@@ -186,7 +187,15 @@ AP_GPS_None     g_gps_driver(NULL);
   AP_InertialSensor_Oilpan ins( &adc );
 #endif // CONFIG_IMU_TYPE
 AP_IMU_INS imu( &ins );
-AP_DCM  dcm(&imu, g_gps);
+
+#if QUATERNION_ENABLE == ENABLED
+  // this shouldn't be called dcm of course, but until we
+  // decide to actually use something else, I don't want the patch
+  // size to be huge
+  AP_Quaternion dcm(&imu, g_gps);
+#else
+ AP_DCM  dcm(&imu, g_gps);
+#endif
 
 #elif HIL_MODE == HIL_MODE_SENSORS
 // sensor emulators
@@ -709,7 +718,7 @@ static void fast_loop()
 		gcs_update();
 	#endif
 
-	dcm.update_DCM();
+    dcm.update_DCM();
 
 	// uses the yaw from the DCM to give more accurate turns
 	calc_bearing_error();
@@ -771,8 +780,13 @@ static void medium_loop()
 			#if HIL_MODE != HIL_MODE_ATTITUDE
             if (g.compass_enabled && compass.read()) {
                 dcm.set_compass(&compass);
-                compass.calculate(dcm.get_dcm_matrix());  // Calculate heading
+                // Calculate heading
+#if QUATERNION_ENABLE == ENABLED
+                compass.calculate(dcm.roll, dcm.pitch);
+#else
+                compass.calculate(dcm.get_dcm_matrix());
                 compass.null_offsets(dcm.get_dcm_matrix());
+#endif
             } else {
                 dcm.set_compass(NULL);
             }
