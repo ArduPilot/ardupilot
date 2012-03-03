@@ -20,6 +20,7 @@ class AP_InertialSensor_MPU6000 : public AP_InertialSensor
 
   /* Concrete implementation of AP_InertialSensor functions: */
   bool update();
+  bool new_data_available();
   float gx();
   float gy();
   float gz();
