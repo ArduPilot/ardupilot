@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Collections;
 using System.Linq;
 using System.Text;
+using log4net;
 using Microsoft.DirectX.DirectInput;
 using System.Reflection;
 
@@ -10,6 +11,7 @@ namespace ArdupilotMega
 {
     public class Joystick
     {
+        private static readonly ILog log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
         Device joystick;
         JoystickState state;
         public bool enabled = false;
@@ -148,12 +150,12 @@ namespace ArdupilotMega
                 {
                     //Console.WriteLine("Name: " + property.Name + ", Value: " + property.GetValue(obj, null));
 
-                    Console.WriteLine("test name {0} old {1} new {2} ", property.Name, values[property.Name], int.Parse(property.GetValue(nextstate, null).ToString()));
-                    Console.WriteLine("{0}  {1}", (int)values[property.Name], (int.Parse(property.GetValue(nextstate, null).ToString()) + threshold));
+                    log.InfoFormat("test name {0} old {1} new {2} ", property.Name, values[property.Name], int.Parse(property.GetValue(nextstate, null).ToString()));
+                    log.InfoFormat("{0}  {1}", (int)values[property.Name], (int.Parse(property.GetValue(nextstate, null).ToString()) + threshold));
                     if ((int)values[property.Name] > (int.Parse(property.GetValue(nextstate, null).ToString()) + threshold) ||
                         (int)values[property.Name] < (int.Parse(property.GetValue(nextstate, null).ToString()) - threshold))
                     {
-                        Console.WriteLine("{0}", property.Name);
+                        log.Info(property.Name);
                         joystick.Unacquire();
                         return (joystickaxis)Enum.Parse(typeof(joystickaxis), property.Name);
                     }
@@ -337,7 +339,7 @@ namespace ArdupilotMega
 
                     //Console.WriteLine("{0} {1} {2} {3}", MainV2.cs.rcoverridech1, MainV2.cs.rcoverridech2, MainV2.cs.rcoverridech3, MainV2.cs.rcoverridech4);
                 }
-                catch (Exception ex) { Console.WriteLine("Joystick thread error "+ex.ToString()); } // so we cant fall out
+                catch (Exception ex) { log.Info("Joystick thread error "+ex.ToString()); } // so we cant fall out
             }
         }
 
@@ -484,7 +486,7 @@ namespace ArdupilotMega
                 state = joystick.CurrentJoystickState;
 
                 ushort ans = pickchannel(channel, JoyChannels[channel].axis, JoyChannels[channel].reverse, JoyChannels[channel].expo);
-                Console.WriteLine("{0} = {1} = {2}",channel,ans, state.X);
+                log.DebugFormat("{0} = {1} = {2}",channel,ans, state.X);
                 return ans;
         }
 

@@ -124,6 +124,10 @@ public:
 	Matrix3<T> transpose(void)
 	{	return *this = transposed();	}
 
+	// check if any elements are NAN
+	bool is_nan(void)
+		{   return a.is_nan() || b.is_nan() || c.is_nan(); }
+
 };
 
 typedef Matrix3<int16_t>		Matrix3i;

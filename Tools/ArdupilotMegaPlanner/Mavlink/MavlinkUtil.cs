@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.InteropServices;
 using System.Text;
+using log4net;
 
 namespace ArdupilotMega.Mavlink
 {
@@ -11,6 +12,8 @@ namespace ArdupilotMega.Mavlink
     /// </summary>
     public static class MavlinkUtil
     {
+        private static readonly ILog log =
+            LogManager.GetLogger(System.Reflection.MethodBase.GetCurrentMethod().DeclaringType);
         /// <summary>
         /// Create a new mavlink packet object from a byte array as recieved over mavlink
         /// Endianess will be detetected using packet inspection
@@ -55,7 +58,7 @@ namespace ArdupilotMega.Mavlink
                 }
                 catch (Exception ex)
                 {
-                    Console.WriteLine("ByteArrayToStructure FAIL: error " + ex);
+                    log.Error("ByteArrayToStructure FAIL", ex);
                 }
 
                 obj = Marshal.PtrToStructure(i, obj.GetType());
@@ -105,7 +108,10 @@ namespace ArdupilotMega.Mavlink
                 // copy byte array to ptr
                 Marshal.Copy(temparray, startoffset, i, len);
             }
-            catch (Exception ex) { Console.WriteLine("ByteArrayToStructure FAIL: error " + ex.ToString()); }
+            catch (Exception ex)
+            {
+                log.Error("ByteArrayToStructure FAIL", ex);
+            }
 
             obj = Marshal.PtrToStructure(i, obj.GetType());
 

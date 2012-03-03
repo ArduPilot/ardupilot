@@ -11,7 +11,7 @@ using System.Drawing.Imaging;
 using System.Threading;
  
 using System.Drawing.Drawing2D;
-
+using log4net;
 using OpenTK;
 using OpenTK.Graphics.OpenGL;
 using OpenTK.Graphics;
@@ -24,6 +24,8 @@ namespace hud
 {
     public class HUD : GLControl
     {
+        private static readonly ILog log = LogManager.GetLogger(
+  System.Reflection.MethodBase.GetCurrentMethod().DeclaringType);
         object paintlock = new object();
         object streamlock = new object();
         MemoryStream _streamjpg = new MemoryStream();
@@ -43,6 +45,8 @@ namespace hud
         public bool opengl { get { return base.UseOpenGL; } set { base.UseOpenGL = value; } }
 
         bool started = false;
+
+        public bool SixteenXNine = false;
 
         public HUD()
         {
@@ -189,10 +193,10 @@ namespace hud
                 {
 
                     GraphicsMode test = this.GraphicsMode;
-                    Console.WriteLine(test.ToString());
-                    Console.WriteLine("Vendor: " + GL.GetString(StringName.Vendor));
-                    Console.WriteLine("Version: " + GL.GetString(StringName.Version));
-                    Console.WriteLine("Device: " + GL.GetString(StringName.Renderer));
+                    log.Info(test.ToString());
+                    log.Info("Vendor: " + GL.GetString(StringName.Vendor));
+                    log.Info("Version: " + GL.GetString(StringName.Version));
+                    log.Info("Device: " + GL.GetString(StringName.Renderer));
                     //Console.WriteLine("Extensions: " + GL.GetString(StringName.Extensions));
 
                     int[] viewPort = new int[4];
@@ -212,7 +216,7 @@ namespace hud
                     GL.Enable(EnableCap.Blend);
 
                 }
-                catch (Exception ex) { Console.WriteLine("HUD opengl onload " + ex.ToString()); }
+                catch (Exception ex) { log.Info("HUD opengl onload " + ex.ToString()); }
 
                 try
                 {
@@ -266,7 +270,7 @@ namespace hud
 
             if (inOnPaint)
             {
-                Console.WriteLine("Was in onpaint Hud th:" + System.Threading.Thread.CurrentThread.Name + " in " + otherthread);
+                log.Info("Was in onpaint Hud th:" + System.Threading.Thread.CurrentThread.Name + " in " + otherthread);
                 return;
             }
 
@@ -295,7 +299,7 @@ namespace hud
                 }
 
             }
-            catch (Exception ex) { Console.WriteLine(ex.ToString()); }
+            catch (Exception ex) { log.Info(ex.ToString()); }
 
             inOnPaint = false;
 
@@ -676,6 +680,7 @@ namespace hud
 
         void doPaint(PaintEventArgs e)
         {
+            bool isNaN = false;
             try
             {
                 if (graphicsObjectGDIP == null || !opengl && (objBitmap.Width != this.Width || objBitmap.Height != this.Height))
@@ -709,9 +714,22 @@ namespace hud
                     bgon = true;
                 }
 
+
+                if (float.IsNaN(_roll) || float.IsNaN(_pitch) || float.IsNaN(_heading))
+                {
+                    isNaN = true;
+
+                    _roll = 0;
+                    _pitch = 0;
+                    _heading = 0;
+                }
+
                 graphicsObject.TranslateTransform(this.Width / 2, this.Height / 2);
 
-                graphicsObject.RotateTransform(-_roll);
+
+
+                    graphicsObject.RotateTransform(-_roll);
+
 
                 int fontsize = this.Height / 30; // = 10
                 int fontoffset = fontsize - 10;
@@ -1272,6 +1290,11 @@ namespace hud
 
                 drawstring(graphicsObject, gps, font, fontsize + 2, whiteBrush, this.Width - 10 * fontsize, this.Height - 30 - fontoffset);
 
+
+                if (isNaN)
+                    drawstring(graphicsObject, "NaN Error " + DateTime.Now, font, this.Height / 30 + 10, Brushes.Red, 50, 50);
+
+
                 if (!opengl)
                 {
                     e.Graphics.DrawImageUnscaled(objBitmap, 0, 0);
@@ -1304,8 +1327,7 @@ namespace hud
             }
             catch (Exception ex)
             {
-                Console.WriteLine("hud error "+ex.ToString());
-                //MessageBox.Show(ex.ToString());            
+                log.Info("hud error "+ex.ToString());
             }
         }
 
@@ -1513,7 +1535,7 @@ namespace hud
                     base.OnHandleCreated(e);
                 }
             }
-            catch (Exception ex) { Console.WriteLine(ex.ToString()); opengl = false; } // macs fail here
+            catch (Exception ex) { log.Info(ex.ToString()); opengl = false; } // macs fail here
         }
 
         protected override void OnHandleDestroyed(EventArgs e)
@@ -1525,14 +1547,25 @@ namespace hud
                     base.OnHandleDestroyed(e);
                 }
             }
-            catch (Exception ex) { Console.WriteLine(ex.ToString()); opengl = false; }
+            catch (Exception ex) { log.Info(ex.ToString()); opengl = false; }
         }
 
         protected override void OnResize(EventArgs e)
         {
             if (DesignMode || !started)
                 return;
-            this.Height = (int)(this.Width / 1.333f);
+
+           
+            if (SixteenXNine)
+            {
+                this.Height = (int)(this.Width / 1.777f);
+            }
+            else
+            {
+                // 4x3
+                this.Height = (int)(this.Width / 1.333f);
+            }
+
             base.OnResize(e);
 
             graphicsObjectGDIP = Graphics.FromImage(objBitmap);

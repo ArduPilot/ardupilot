@@ -19,6 +19,7 @@
       <F4>Pitch</F4>
       <F5>Yaw IN</F5>
       <F6>Yaw</F6>
+      <F7>Mag Heading</F7>
     </ATT>
     <NTUN>
       <F1>WP Dist</F1>

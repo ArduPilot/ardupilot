@@ -78,10 +78,14 @@ static int32_t read_barometer(void)
 static void init_compass()
 {
 	compass.set_orientation(MAG_ORIENTATION);						// set compass's orientation on aircraft
-	dcm.set_compass(&compass);
-	compass.init();
-	compass.get_offsets();					// load offsets to account for airframe magnetic interference
-	compass.null_offsets_enable();
+	if (!compass.init() || !compass.read()) {
+        // make sure we don't pass a broken compass to DCM
+        Serial.println_P(PSTR("COMPASS INIT ERROR"));
+        return;
+    }
+    dcm.set_compass(&compass);
+    compass.get_offsets();					// load offsets to account for airframe magnetic interference
+    compass.null_offsets_enable();
 }
 
 static void init_optflow()

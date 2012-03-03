@@ -4,12 +4,20 @@
 */
 
 // includes
+#include <FastSerial.h>
+#include <AP_Common.h>
+#include <AP_Math.h>
 #include <AP_RangeFinder.h>     // Range finder library
 #include <Arduino_Mega_ISR_Registry.h>
 #include <AP_PeriodicProcess.h>
 #include <AP_ADC.h>				// ArduPilot Mega Analog to Digital Converter Library
 #include <AP_AnalogSource.h>
 #include <ModeFilter.h>			// mode filter
+
+////////////////////////////////////////////////////////////////////////////////
+// Serial ports
+////////////////////////////////////////////////////////////////////////////////
+FastSerialPort0(Serial);        // FTDI/console
 
 // comment out line below if using APM2 or analog pin instead of APM1's built in ADC
 #define USE_ADC_ADS7844  // use APM1's built in ADC and connect sonar to pitot tube
@@ -24,7 +32,7 @@
 
 // declare global instances
 Arduino_Mega_ISR_Registry isr_registry;
-ModeFilter mode_filter;
+ModeFilterInt16_Size5 mode_filter(2);
 #ifdef USE_ADC_ADS7844
     AP_TimerProcess  adc_scheduler;
     AP_ADC_ADS7844 adc;

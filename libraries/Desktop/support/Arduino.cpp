@@ -5,6 +5,7 @@
 #include "avr/pgmspace.h"
 #include <BetterStream.h>
 #include <sys/time.h>
+#include <signal.h>
 #include "desktop.h"
 
 extern "C" {
@@ -13,6 +14,24 @@ volatile uint8_t __iomem[1024];
 
 unsigned __brkval = 0x2000;
 unsigned __bss_end = 0x1000;
+
+// disable interrupts
+void cli(void)
+{
+	sigset_t set;
+        sigemptyset(&set);
+        sigaddset(&set, SIGALRM);
+        sigprocmask(SIG_BLOCK,&set,NULL);
+}
+
+// enable interrupts
+void sei(void)
+{
+	sigset_t set;
+        sigemptyset(&set);
+        sigaddset(&set, SIGALRM);
+        sigprocmask(SIG_UNBLOCK,&set,NULL);
+}
 
 void pinMode(uint8_t pin, uint8_t mode)
 {

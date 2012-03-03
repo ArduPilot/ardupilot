@@ -5,6 +5,8 @@ const AP_Param::GroupInfo Compass::var_info[] PROGMEM = {
     AP_GROUPINFO("ORIENT", 0, Compass, _orientation_matrix),
     AP_GROUPINFO("OFS",    1, Compass, _offset),
     AP_GROUPINFO("DEC",    2, Compass, _declination),
+    AP_GROUPINFO("LEARN",  3, Compass, _learn), // true if learning calibration
+    AP_GROUPINFO("USE",    4, Compass, _use_for_yaw), // true if used for DCM yaw
     AP_GROUPEND
 };
 
@@ -13,17 +15,17 @@ const AP_Param::GroupInfo Compass::var_info[] PROGMEM = {
 // their values.
 //
 Compass::Compass(void) :
+	product_id(AP_COMPASS_TYPE_UNKNOWN),
     _declination		(0.0),
-    _null_init_done(false),
+    _learn(1),
+    _use_for_yaw(1),
     _null_enable(false),
-	product_id(AP_COMPASS_TYPE_UNKNOWN)
+    _null_init_done(false)
 {
     // Default the orientation matrix to none - will be overridden at group load time
     // if an orientation has previously been saved.
     _orientation_matrix.set(ROTATION_NONE);
 }
-
-//_group
 
 // Default init method, just returns success.
 //
@@ -114,10 +116,17 @@ Compass::calculate(const Matrix3f &dcm_matrix)
 {
     float headX;
     float headY;
-    float cos_pitch = sqrt(1-(dcm_matrix.c.x*dcm_matrix.c.x));
+    float cos_pitch = safe_sqrt(1-(dcm_matrix.c.x*dcm_matrix.c.x));
 	// sin(pitch) = - dcm_matrix(3,1)
 	// cos(pitch)*sin(roll) = - dcm_matrix(3,2)
 	// cos(pitch)*cos(roll) = - dcm_matrix(3,3)
+
+    if (cos_pitch == 0.0) {
+        // we are pointing straight up or down so don't update our
+        // heading using the compass. Wait for the next iteration when
+        // we hopefully will have valid values again.
+        return;
+    }
 
     // Tilt compensated magnetic field X component:
     headX = mag_x*cos_pitch - mag_y*dcm_matrix.c.y*dcm_matrix.c.x/cos_pitch - mag_z*dcm_matrix.c.z*dcm_matrix.c.x/cos_pitch;
@@ -140,20 +149,37 @@ Compass::calculate(const Matrix3f &dcm_matrix)
     // Optimization for external DCM use. Calculate normalized components
     heading_x = cos(heading);
     heading_y = sin(heading);
+
+#if 0
+    if (isnan(heading_x) || isnan(heading_y)) {
+        Serial.printf("COMPASS: c.x %f c.y %f c.z %f cos_pitch %f mag_x %d mag_y %d mag_z %d headX %f headY %f heading %f heading_x %f heading_y %f\n",
+                      dcm_matrix.c.x,
+                      dcm_matrix.c.y,
+                      dcm_matrix.c.x,
+                      cos_pitch,
+                      (int)mag_x, (int)mag_y, (int)mag_z,
+                      headX, headY,
+                      heading,
+                      heading_x, heading_y);
+    }
+#endif
 }
 
 void
 Compass::null_offsets(const Matrix3f &dcm_matrix)
 {
+    if (_null_enable == false || _learn == 0) {
+        // auto-calibration is disabled
+        return;
+    }
+
     // Update our estimate of the offsets in the magnetometer
-    Vector3f    calc(0.0, 0.0, 0.0);        // XXX should be safe to remove explicit init here as the default ctor should do the right thing
+    Vector3f    calc;
     Matrix3f    dcm_new_from_last;
     float       weight;
 
     Vector3f mag_body_new = Vector3f(mag_x,mag_y,mag_z);
     
-    if(_null_enable == false) return;
-
     if(_null_init_done) {
         dcm_new_from_last = dcm_matrix.transposed() * _last_dcm_matrix;      // Note 11/20/2010: transpose() is not working, transposed() is.
 
@@ -171,7 +197,6 @@ Compass::null_offsets(const Matrix3f &dcm_matrix)
     }
     _mag_body_last = mag_body_new - calc;
     _last_dcm_matrix = dcm_matrix;
-
 }
 
 

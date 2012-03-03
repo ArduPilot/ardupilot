@@ -17,7 +17,7 @@ public:
 	// The increment will prevent old parameters from being used incorrectly
 	// by newer code.
 	//
-	static const uint16_t k_format_version = 116;
+	static const uint16_t k_format_version = 117;
 
 	// The parameter software_type is set up solely for ground station use
 	// and identifies the software type (eg ArduPilotMega versus ArduCopterMega)
@@ -121,9 +121,9 @@ public:
 
 
 	//
-	// 180: Radio settings
+	// 170: Radio settings
 	//
-	k_param_rc_1 = 180,
+	k_param_rc_1 = 170,
 	k_param_rc_2,
 	k_param_rc_3,
 	k_param_rc_4,
@@ -145,6 +145,7 @@ public:
 	k_param_radio_tuning_low,
 	k_param_camera_pitch_gain,
 	k_param_camera_roll_gain,
+    k_param_rc_speed,
 
     //
     // 200: flight modes
@@ -171,6 +172,7 @@ public:
 	//
 	// 220: PI/D Controllers
 	//
+	k_param_stabilize_d_schedule = 219,
 	k_param_stabilize_d = 220,
 	k_param_acro_p,
 	k_param_axis_lock_p,
@@ -292,10 +294,12 @@ public:
 	RC_Channel	rc_8;
 	RC_Channel	rc_camera_pitch;
 	RC_Channel	rc_camera_roll;
+    AP_Int16    rc_speed; // speed of fast RC Channels in Hz
 
 	AP_Float	camera_pitch_gain;
 	AP_Float	camera_roll_gain;
 	AP_Float	stabilize_d;
+	AP_Float	stabilize_d_schedule;
 
 	// PI/D controllers
     AP_Float	acro_p;
@@ -399,9 +403,12 @@ public:
 	heli_collective_yaw_effect	(0),
 	#endif
 
+    rc_speed(RC_FAST_SPEED),
+
 	camera_pitch_gain 		(CAM_PITCH_GAIN),
 	camera_roll_gain 		(CAM_ROLL_GAIN),
 	stabilize_d 			(STABILIZE_D),
+	stabilize_d_schedule	(STABILIZE_D_SCHEDULE),
 	acro_p					(ACRO_P),
 	axis_lock_p				(AXIS_LOCK_P),
 

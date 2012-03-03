@@ -3,9 +3,11 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.Data;
 using System.Drawing;
+using System.Reflection;
 using System.Text;
 using System.Windows.Forms;
 using System.IO;
+using log4net;
 using ZedGraph; // Graphs
 using System.Xml;
 
@@ -13,6 +15,7 @@ namespace ArdupilotMega
 {
     public partial class LogBrowse : Form
     {
+        private static readonly ILog log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
         int m_iColumnCount = 0;
         DataTable m_dtCSV = new DataTable();
 
@@ -180,7 +183,7 @@ namespace ArdupilotMega
                             if (inner.Name.StartsWith("F"))
                             {
                                 dataGridView1.Columns[a].HeaderText = inner.ReadString();
-                                Console.WriteLine(a + " " + dataGridView1.Columns[a].HeaderText);
+                                log.Info(a + " " + dataGridView1.Columns[a].HeaderText);
                                 a++;
                             }
 
@@ -194,7 +197,7 @@ namespace ArdupilotMega
 
                 }
             }
-            catch { Console.WriteLine("DGV logbrowse error"); }
+            catch { log.Info("DGV logbrowse error"); }
         }
 
         public void CreateChart(ZedGraphControl zgc)
@@ -308,7 +311,7 @@ namespace ArdupilotMega
                             break;
                         }
                     }
-                    catch { error++; Console.WriteLine("Bad Data : " + type + " " + col + " " + a); if (error >= 500) { MessageBox.Show("There is to much bad data - failing"); break; } }
+                    catch { error++; log.Info("Bad Data : " + type + " " + col + " " + a); if (error >= 500) { MessageBox.Show("There is to much bad data - failing"); break; } }
                 }
                 a++;
             }

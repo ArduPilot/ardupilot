@@ -343,6 +343,10 @@ static void init_ardupilot()
 	Log_Write_Data(20, (float)g.pid_nav_lon.kD());
 
 	Log_Write_Data(21, (int32_t)g.auto_slew_rate.get());
+
+	Log_Write_Data(22, (float)g.pid_loiter_rate_lon.kP());
+	Log_Write_Data(23, (float)g.pid_loiter_rate_lon.kI());
+	Log_Write_Data(24, (float)g.pid_loiter_rate_lon.kD());
 #endif
 
 	SendDebug("\nReady to FLY ");
@@ -405,10 +409,9 @@ static void set_mode(byte mode)
 			mode = STABILIZE;
 	}
 
-	old_control_mode = control_mode;
-
-	control_mode = mode;
-	control_mode = constrain(control_mode, 0, NUM_MODES - 1);
+	old_control_mode 	= control_mode;
+	control_mode 		= mode;
+	control_mode 		= constrain(control_mode, 0, NUM_MODES - 1);
 
 	// used to stop fly_aways
 	motor_auto_armed = (g.rc_3.control_in > 0);
@@ -429,7 +432,7 @@ static void set_mode(byte mode)
 	land_complete 	= false;
 
 	// debug to Serial terminal
-	Serial.println(flight_mode_strings[control_mode]);
+	//Serial.println(flight_mode_strings[control_mode]);
 
 	// report the GPS and Motor arming status
 	led_mode = NORMAL_LEDS;
@@ -532,6 +535,9 @@ static void set_mode(byte mode)
 	if(throttle_mode == THROTTLE_MANUAL){
 		// reset all of the throttle iterms
 		update_throttle_cruise();
+
+		// reset auto_throttle
+		nav_throttle 			= 0;
 	}else {
 		// an automatic throttle
 		init_throttle_cruise();
@@ -657,3 +663,36 @@ void flash_leds(bool on)
     digitalWrite(A_LED_PIN, on?LED_OFF:LED_ON);
     digitalWrite(C_LED_PIN, on?LED_ON:LED_OFF);
 }
+
+#ifndef DESKTOP_BUILD
+/*
+ * Read Vcc vs 1.1v internal reference
+ *
+ * This call takes about 150us total. ADC conversion is 13 cycles of
+ * 125khz default changes the mux if it isn't set, and return last
+ * reading (allows necessary settle time) otherwise trigger the
+ * conversion
+ */
+uint16_t board_voltage(void)
+{
+	static uint16_t vcc = 5000;
+	const uint8_t mux = (_BV(REFS0)|_BV(MUX4)|_BV(MUX3)|_BV(MUX2)|_BV(MUX1));
+
+	if (ADMUX == mux) {
+		ADCSRA |= _BV(ADSC);                // Convert
+		uint16_t counter=4000; // normally takes about 1700 loops
+		while (bit_is_set(ADCSRA, ADSC) && counter)  // Wait
+			counter--;
+		if (counter == 0) {
+			// we don't actually expect this timeout to happen,
+			// but we don't want any more code that could hang
+			return vcc;
+		}
+		uint32_t result = ADCL | ADCH<<8;
+		vcc = 1126400L / result;       // Read and back-calculate Vcc in mV
+	} else {
+		ADMUX = mux; // switch mux, settle time is needed
+	}
+	return vcc;  // in mV
+}
+#endif

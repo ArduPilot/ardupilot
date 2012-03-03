@@ -120,9 +120,53 @@ main(int argc, char *argv[])
 			break;
 		}
 		size = type_size(var->type);
-		printf("%04x: type %u (%s) key %u group_element %u size %d\n ",
+		printf("%04x: type %u (%s) key %u group_element %u size %d value ",
 		       index, var->type, type_names[var->type], var->key, var->group_element, size);
 		index += sizeof(*var);
+		switch (var->type) {
+		case AP_PARAM_INT8:
+			printf("%d\n", (int)*(int8_t *)&eeprom[index]);
+			break;
+		case AP_PARAM_INT16:
+			printf("%d\n", (int)*(int16_t *)&eeprom[index]);
+			break;
+		case AP_PARAM_INT32:
+			printf("%d\n", (int)*(int32_t *)&eeprom[index]);
+			break;
+		case AP_PARAM_FLOAT:
+			printf("%f\n", *(float *)&eeprom[index]);
+			break;
+		case AP_PARAM_VECTOR3F:
+			printf("%f %f %f\n",
+			       *(float *)&eeprom[index],
+			       *(float *)&eeprom[index+4],
+			       *(float *)&eeprom[index+8]);
+			break;
+		case AP_PARAM_VECTOR6F:
+			printf("%f %f %f %f %f %f\n",
+			       *(float *)&eeprom[index],
+			       *(float *)&eeprom[index+4],
+			       *(float *)&eeprom[index+8],
+			       *(float *)&eeprom[index+12],
+			       *(float *)&eeprom[index+16],
+			       *(float *)&eeprom[index+20]);
+			break;
+		case AP_PARAM_MATRIX3F:
+			printf("%f %f %f %f %f %f %f %f %f\n",
+			       *(float *)&eeprom[index],
+			       *(float *)&eeprom[index+4],
+			       *(float *)&eeprom[index+8],
+			       *(float *)&eeprom[index+12],
+			       *(float *)&eeprom[index+16],
+			       *(float *)&eeprom[index+20],
+			       *(float *)&eeprom[index+24],
+			       *(float *)&eeprom[index+28],
+			       *(float *)&eeprom[index+32]);
+			break;
+		default:
+			printf("NONE\n");
+			break;
+		}
 		for (i = 0; i < size; i++) {
 			printf(" %02x", eeprom[index + i]);
 		}

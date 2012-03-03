@@ -134,6 +134,7 @@
             this.CMB_serialport.Name = "CMB_serialport";
             this.CMB_serialport.Size = new System.Drawing.Size(150, 76);
             this.CMB_serialport.SelectedIndexChanged += new System.EventHandler(this.CMB_serialport_SelectedIndexChanged);
+            this.CMB_serialport.Enter += new System.EventHandler(this.CMB_serialport_Enter);
             this.CMB_serialport.Click += new System.EventHandler(this.CMB_serialport_Click);
             // 
             // MainMenu

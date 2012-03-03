@@ -1,7 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
 using System.Text;
+using log4net;
 using YLScsDrawing.Drawing3d;
 using ArdupilotMega.HIL;
 
@@ -101,6 +103,7 @@ namespace ArdupilotMega.HIL
 
     public class QuadCopter : Aircraft
     {
+        private static readonly ILog log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
         QuadCopter self;
 
         int framecount = 0;

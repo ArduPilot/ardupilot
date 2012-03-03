@@ -1,6 +1,6 @@
 /// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 
-#define THISFIRMWARE "ArduCopter V2.4"
+#define THISFIRMWARE "ArduCopter V2.4.1"
 /*
 ArduCopter Version 2.4
 Authors:	Jason Short
@@ -78,7 +78,9 @@ http://code.google.com/p/ardupilot-mega/downloads/list
 #include <RC_Channel.h>     // RC Channel Library
 #include <AP_RangeFinder.h>	// Range finder library
 #include <AP_OpticalFlow.h> // Optical Flow library
-#include <ModeFilter.h>
+#include <Filter.h>			// Filter library
+#include <ModeFilter.h>		// Mode Filter from Filter library
+#include <AverageFilter.h>	// Mode Filter from Filter library
 #include <AP_Relay.h>		// APM relay
 #include <GCS_MAVLink.h>    // MAVLink GCS definitions
 #include <memcheck.h>
@@ -220,7 +222,10 @@ AP_InertialSensor_MPU6000 ins( CONFIG_MPU6000_CHIP_SELECT_PIN );
 AP_InertialSensor_Oilpan ins(&adc);
 #endif
 AP_IMU_INS  imu(&ins);
-AP_DCM  dcm(&imu, g_gps);
+// we don't want to use gps for yaw correction on ArduCopter, so pass
+// a NULL GPS object pointer
+static GPS         *g_gps_null;
+AP_DCM  dcm(&imu, g_gps_null);
 AP_TimerProcess timer_scheduler;
 
 #elif HIL_MODE == HIL_MODE_SENSORS
@@ -265,7 +270,7 @@ GCS_MAVLINK	gcs3;
 // SONAR selection
 ////////////////////////////////////////////////////////////////////////////////
 //
-ModeFilter sonar_mode_filter;
+ModeFilterInt16_Size5 sonar_mode_filter(2);
 #if CONFIG_SONAR == ENABLED
 	#if CONFIG_SONAR_SOURCE == SONAR_SOURCE_ADC
 	AP_AnalogSource_ADC sonar_analog_source( &adc, CONFIG_SONAR_SOURCE_ADC_CHANNEL, 0.25);
@@ -366,10 +371,10 @@ static uint32_t rc_override_fs_timer = 0;
 // Heli
 ////////////////////////////////////////////////////////////////////////////////
 #if FRAME_CONFIG ==	HELI_FRAME
-static float heli_rollFactor[3], heli_pitchFactor[3];	// only required for 3 swashplate servos
-static int16_t heli_servo_min[3], heli_servo_max[3];	// same here.  for yaw servo we use heli_servo4_min/max parameter directly
-static int32_t heli_servo_out[4];						// used for servo averaging for analog servos
-static int16_t heli_servo_out_count;					// use for servo averaging
+static float heli_rollFactor[3], heli_pitchFactor[3], heli_collectiveFactor[3];	// only required for 3 swashplate servos
+static int16_t heli_servo_min[3], heli_servo_max[3];							// same here.  for yaw servo we use heli_servo4_min/max parameter directly
+static int32_t heli_servo_out[4];												// used for servo averaging for analog servos
+static int16_t heli_servo_out_count;											// use for servo averaging
 #endif
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -395,6 +400,8 @@ static boolean	motor_auto_armed;
 static Vector3f omega;
 // This is used to hold radio tuning values for in-flight CH6 tuning
 float tuning_value;
+// This will keep track of the percent of roll or pitch the user is applying
+float roll_scale_d, pitch_scale_d;
 
 ////////////////////////////////////////////////////////////////////////////////
 // LED output
@@ -480,7 +487,7 @@ static boolean 	loiter_override;
 static float cos_roll_x 	= 1;
 static float cos_pitch_x 	= 1;
 static float cos_yaw_x 		= 1;
-static float sin_pitch_y, sin_yaw_y, sin_roll_y;
+static float sin_yaw_y;
 
 ////////////////////////////////////////////////////////////////////////////////
 // SIMPLE Mode
@@ -495,6 +502,9 @@ static int32_t initial_simple_bearing;
 // Used to control Axis lock
 int32_t roll_axis;
 int32_t pitch_axis;
+// Filters
+AverageFilterInt32_Size3 roll_rate_d_filter;	// filtered acceleration
+AverageFilterInt32_Size3 pitch_rate_d_filter;	// filtered pitch acceleration
 
 ////////////////////////////////////////////////////////////////////////////////
 // Circle Mode / Loiter control
@@ -594,7 +604,7 @@ static byte		throttle_mode;
 // This flag is reset when we are in a manual throttle mode with 0 throttle or disarmed
 static boolean	takeoff_complete;
 // Used to record the most recent time since we enaged the throttle to take off
-static int32_t	takeoff_timer;
+static uint32_t	takeoff_timer;
 // Used to see if we have landed and if we should shut our engines - not fully implemented
 static boolean	land_complete = true;
 // used to manually override throttle in interactive Alt hold modes
@@ -1479,8 +1489,20 @@ void update_roll_pitch_mode(void)
 		//reset_stability_I();
 	}
 
-	// clear new radio frame info
-	new_radio_frame = false;
+	if(new_radio_frame){
+		// clear new radio frame info
+		new_radio_frame = false;
+
+		// These values can be used to scale the PID gains
+		// This allows for a simple gain scheduling implementation
+		roll_scale_d	= g.stabilize_d_schedule * (float)abs(g.rc_1.control_in);
+		roll_scale_d 	= (1 - (roll_scale_d / 4500.0));
+		roll_scale_d	= constrain(roll_scale_d, 0, 1) * g.stabilize_d;
+
+		pitch_scale_d	= g.stabilize_d_schedule * (float)abs(g.rc_2.control_in);
+		pitch_scale_d 	= (1 - (pitch_scale_d / 4500.0));
+		pitch_scale_d 	= constrain(pitch_scale_d, 0, 1) * g.stabilize_d;
+	}
 }
 
 // new radio frame is used to make sure we only call this at 50hz
@@ -1512,7 +1534,7 @@ void update_simple_mode(void)
 	g.rc_2.control_in = control_pitch;
 }
 
-#define THROTTLE_FILTER_SIZE 4
+#define THROTTLE_FILTER_SIZE 2
 
 // 50 hz update rate, not 250
 // controls all throttle behavior
@@ -1649,7 +1671,10 @@ void update_throttle_mode(void)
 			}
 
 			// light filter of output
-			g.rc_3.servo_out = (g.rc_3.servo_out * (THROTTLE_FILTER_SIZE - 1) + throttle_out) / THROTTLE_FILTER_SIZE;
+			//g.rc_3.servo_out = (g.rc_3.servo_out * (THROTTLE_FILTER_SIZE - 1) + throttle_out) / THROTTLE_FILTER_SIZE;
+
+			// no filter
+			g.rc_3.servo_out = throttle_out;
 			break;
 	}
 }
@@ -1816,12 +1841,13 @@ static void update_trig(void){
 	yawvector.y 	= temp.b.x;	// cos
 	yawvector.normalize();
 
+	cos_pitch_x 	= safe_sqrt(1 - (temp.c.x * temp.c.x));	// level = 1
+    cos_roll_x 		= temp.c.z / cos_pitch_x;			// level = 1
 
-	sin_pitch_y 	= -temp.c.x;						// level = 0
-	cos_pitch_x 	= sqrt(1 - (temp.c.x * temp.c.x));	// level = 1
-
-	sin_roll_y 		= temp.c.y / cos_pitch_x;			// level = 0
-	cos_roll_x 		= temp.c.z / cos_pitch_x;			// level = 1
+    cos_pitch_x = constrain(cos_pitch_x, 0, 1.0);
+    // this relies on constrain() of infinity doing the right thing,
+    // which it does do in avr-libc
+    cos_roll_x  = constrain(cos_roll_x, -1.0, 1.0);
 
 	sin_yaw_y 		= yawvector.x;						// 1y = north
 	cos_yaw_x 		= yawvector.y;						// 0x = north
@@ -1914,7 +1940,7 @@ static void update_altitude()
 	climb_rate = (climb_rate + old_climb_rate)>>1;
 
 	// manage bad data
-	climb_rate = constrain(climb_rate, -300, 300);
+	climb_rate = constrain(climb_rate, -800, 800);
 
 	// save for filtering
 	old_climb_rate = climb_rate;
@@ -2011,6 +2037,11 @@ static void tuning(){
 		case CH6_NAV_P:
 			g.pid_nav_lat.kP(tuning_value);
 			g.pid_nav_lon.kP(tuning_value);
+			break;
+
+		case CH6_LOITER_RATE_P:
+			g.pid_loiter_rate_lon.kP(tuning_value);
+			g.pid_loiter_rate_lat.kP(tuning_value);
 			break;
 
 		case CH6_NAV_I:

@@ -85,11 +85,10 @@
             // 
             // LBL_location
             // 
-            this.LBL_location.AutoSize = true;
             this.LBL_location.Font = new System.Drawing.Font("Microsoft Sans Serif", 14.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.LBL_location.Location = new System.Drawing.Point(9, 78);
+            this.LBL_location.Location = new System.Drawing.Point(3, 64);
             this.LBL_location.Name = "LBL_location";
-            this.LBL_location.Size = new System.Drawing.Size(50, 24);
+            this.LBL_location.Size = new System.Drawing.Size(365, 59);
             this.LBL_location.TabIndex = 4;
             this.LBL_location.Text = "0,0,0";
             // 

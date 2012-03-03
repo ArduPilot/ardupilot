@@ -24,7 +24,7 @@ namespace ArdupilotMega.GCSViews
 
         public void BUT_updatecheck_Click(object sender, EventArgs e)
         {
-            MainV2.doupdate();
+            MainV2.DoUpdate();
         }
 
         private void CHK_showconsole_CheckedChanged(object sender, EventArgs e)

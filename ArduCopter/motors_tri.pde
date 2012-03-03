@@ -4,7 +4,8 @@
 static void init_motors_out()
 {
 	#if INSTANT_PWM == 0
-		APM_RC.SetFastOutputChannels(_BV(MOT_1) | _BV(MOT_2) | _BV(MOT_4));
+    APM_RC.SetFastOutputChannels(_BV(MOT_1) | _BV(MOT_2) | _BV(MOT_4),
+                                 g.rc_speed);
 	#endif
 }
 

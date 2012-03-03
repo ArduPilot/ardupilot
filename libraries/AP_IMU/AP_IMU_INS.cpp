@@ -232,10 +232,6 @@ AP_IMU_INS::update(void)
 	_accel.y = _calibrated(4, accels[1]);
 	_accel.z = _calibrated(5, accels[2]);
 
-	_accel_filtered.x = _accel_filtered.x / 2 + _accel.x / 2;
-	_accel_filtered.y = _accel_filtered.y / 2 + _accel.y / 2;
-	_accel_filtered.z = _accel_filtered.z / 2 + _accel.z / 2;
-
 	// always updated
 	return true;
 }

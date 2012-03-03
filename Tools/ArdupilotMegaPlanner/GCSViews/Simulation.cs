@@ -9,6 +9,7 @@ using System.IO.Ports;
 using System.IO;
 using System.Xml; // config file
 using System.Runtime.InteropServices; // dll imports
+using log4net;
 using ZedGraph; // Graphs
 using ArdupilotMega;
 using ArdupilotMega.Mavlink;
@@ -21,6 +22,7 @@ namespace ArdupilotMega.GCSViews
 {
     public partial class Simulation : MyUserControl
     {
+        private static readonly ILog log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
         MAVLink comPort = MainV2.comPort;
         UdpClient XplanesSEND;
         UdpClient MavLink;
@@ -570,7 +572,6 @@ namespace ArdupilotMega.GCSViews
                 // re-request servo data
                 if (!(lastdata.AddSeconds(8) > DateTime.Now))
                 {
-                    Console.WriteLine("REQ streams - sim");
                     try
                     {
                         if (CHK_quad.Checked && !RAD_aerosimrc.Checked)// || chkSensor.Checked && RAD_JSBSim.Checked)
@@ -610,12 +611,6 @@ namespace ArdupilotMega.GCSViews
                     {
                         Byte[] receiveBytes = MavLink.Receive(ref RemoteIpEndPoint);
 
-                        Console.WriteLine("sending " + receiveBytes[5]);
-
-                        if (receiveBytes[5] == 39)
-                        {
-                            Console.WriteLine("wp no " + receiveBytes[9]); // ??
-                        }
 
                         comPort.BaseStream.Write(receiveBytes, 0, receiveBytes.Length);
                     }
@@ -633,7 +628,7 @@ namespace ArdupilotMega.GCSViews
                         processArduPilot();
                     }
                 }
-                catch (Exception ex) { Console.WriteLine("SIM Main loop exception " + ex.ToString()); }
+                catch (Exception ex) { log.Info("SIM Main loop exception " + ex.ToString()); }
 
                 if (hzcounttime.Second != DateTime.Now.Second)
                 {
@@ -689,7 +684,7 @@ namespace ArdupilotMega.GCSViews
 
                 JSBSimSEND.Client.Send(System.Text.Encoding.ASCII.GetBytes("resume\r\n"));
             }
-            catch { Console.WriteLine("JSB console fail"); }
+            catch { log.Info("JSB console fail"); }
         }
 
         private void SetupUDPXplanes()
@@ -1348,7 +1343,7 @@ namespace ArdupilotMega.GCSViews
 
                     quad.update(ref m, lastfdmdata);
                 }
-                catch (Exception e) { Console.WriteLine("Quad hill error " + e.ToString()); }
+                catch (Exception e) { log.Info("Quad hill error " + e.ToString()); }
 
                 byte[] FlightGear = new byte[8 * 11];// StructureToByteArray(fg);
 
@@ -1385,7 +1380,7 @@ namespace ArdupilotMega.GCSViews
                 {
                     XplanesSEND.Send(FlightGear, FlightGear.Length);
                 }
-                catch (Exception) { Console.WriteLine("Socket Write failed, FG closed?"); }
+                catch (Exception) { log.Info("Socket Write failed, FG closed?"); }
 
                 updateScreenDisplay(lastfdmdata.latitude, lastfdmdata.longitude, lastfdmdata.altitude * .3048, lastfdmdata.phi, lastfdmdata.theta, lastfdmdata.psi, lastfdmdata.psi, m[0], m[1], m[2], m[3]);
 
@@ -1491,7 +1486,7 @@ namespace ArdupilotMega.GCSViews
                     }
                 }
             }
-            catch (Exception e) { Console.WriteLine("Error updateing screen stuff " + e.ToString()); }
+            catch (Exception e) { log.Info("Error updateing screen stuff " + e.ToString()); }
 
             packetssent++;
 
@@ -1580,7 +1575,7 @@ namespace ArdupilotMega.GCSViews
                 {
                     XplanesSEND.Send(FlightGear, FlightGear.Length);
                 }
-                catch (Exception) { Console.WriteLine("Socket Write failed, FG closed?"); }
+                catch (Exception) { log.Info("Socket Write failed, FG closed?"); }
 
             }
 
@@ -1661,7 +1656,7 @@ namespace ArdupilotMega.GCSViews
                     XplanesSEND.Send(Xplane, Xplane.Length);
 
                 }
-                catch (Exception e) { Console.WriteLine("Xplanes udp send error " + e.Message); }
+                catch (Exception e) { log.Info("Xplanes udp send error " + e.Message); }
             }
         }
 

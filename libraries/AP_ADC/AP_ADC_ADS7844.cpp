@@ -127,8 +127,8 @@ void AP_ADC_ADS7844::read(uint32_t tnow)
 
 // Constructors ////////////////////////////////////////////////////////////////
 AP_ADC_ADS7844::AP_ADC_ADS7844() :
-			_filter_index_accel(0),
-			filter_result(false)
+			filter_result(false),
+			_filter_index_accel(0)
 {
 }
 

@@ -214,6 +214,35 @@ namespace ArdupilotMega.Properties {
             }
         }
         
+        public static System.Drawing.Bitmap iconWarning32 {
+            get {
+                object obj = ResourceManager.GetObject("iconWarning32", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        public static System.Drawing.Bitmap iconWarning48 {
+            get {
+                object obj = ResourceManager.GetObject("iconWarning48", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to == MAVLink Parameters == (this is a copy fo the wiki page FYI)
+        ///
+        ///This is a list of all the user-modifiable MAVLink parameters and what they do. You can modify them via the MAVLink parameters window in any compatible GCS, such as the Mission Planner, HK GCS or !QGroundControl.
+        ///
+        ///It includes both fixed wing (APM) and rotary wing (!ArduCopter) parameters. Some may only be relevant for one platform or another.
+        ///
+        ///|| *EEPROM variable name* || *Min* || *Max* || *Default* || *Multiplier* || *Enabled (0 = no, 1 = yes)* [rest of string was truncated]&quot;;.
+        /// </summary>
+        public static string MAVParam {
+            get {
+                return ResourceManager.GetString("MAVParam", resourceCulture);
+            }
+        }
+        
         public static System.Drawing.Bitmap octo {
             get {
                 object obj = ResourceManager.GetObject("octo", resourceCulture);

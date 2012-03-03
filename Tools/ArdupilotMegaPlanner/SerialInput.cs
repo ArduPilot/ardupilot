@@ -64,7 +64,7 @@ namespace ArdupilotMega
                 {
                     alt = (100 * MainV2.cs.multiplierdist).ToString("0");
                 }
-                if (DialogResult.Cancel == Common.InputBox("Enter Alt", "Enter Alt", ref alt))
+                if (DialogResult.Cancel == Common.InputBox("Enter Alt", "Enter Alt (relative to home alt)", ref alt))
                     return;
 
                 intalt = (int)(100 * MainV2.cs.multiplierdist);
@@ -87,54 +87,56 @@ namespace ArdupilotMega
 
         void mainloop()
         {
-
+            DateTime nextsend = DateTime.Now;
 
             threadrun = true;
-            int counter = 0;
             while (threadrun)
             {
                 try
                 {
                     string line = comPort.ReadLine();
 
-
                     //string line = string.Format("$GP{0},{1:HHmmss},{2},{3},{4},{5},{6},{7},{8},{9},{10},{11},{12},{13},", "GGA", DateTime.Now.ToUniversalTime(), Math.Abs(lat * 100), MainV2.cs.lat < 0 ? "S" : "N", Math.Abs(lng * 100), MainV2.cs.lng < 0 ? "W" : "E", MainV2.cs.gpsstatus, MainV2.cs.satcount, MainV2.cs.gpshdop, MainV2.cs.alt, "M", 0, "M", "");
                     if (line.StartsWith("$GPGGA")) // 
                     {
-                        int c1 = line.IndexOf(',',0)+ 1;
-                        int c2 = line.IndexOf(',', c1) + 1;
-                        int c3 = line.IndexOf(',', c2) + 1;
-                        int c4 = line.IndexOf(',', c3 ) + 1;
-                        int c5 = line.IndexOf(',', c4 ) + 1;
-                        int c6 = line.IndexOf(',', c5 ) + 1;
-                        int c7 = line.IndexOf(',', c6 ) + 1;
-                        int c8 = line.IndexOf(',', c7 ) + 1;
-                        int c9 = line.IndexOf(',', c8 ) + 1;
-                        int c10 = line.IndexOf(',', c9 ) + 1;
-                        int c11 = line.IndexOf(',', c10 ) + 1;
-                        int c12 = line.IndexOf(',', c11) + 1;
+                        string[] items = line.Trim().Split(',','*');
 
-                        gotolocation.Lat = double.Parse(line.Substring(c2, c3 - c2 - 1)) / 100.0;
+                        if (items[15] != GetChecksum(line.Trim()))
+                        {
+                            Console.WriteLine("Bad Nmea line " + items[15] + " vs " + GetChecksum(line.Trim()));
+                            continue;
+                        }
+
+                        if (items[6] == "0")
+                        {
+                            Console.WriteLine("No Fix");
+                            continue;
+                        }
+
+                        gotolocation.Lat = double.Parse(items[2]) / 100.0;
 
                         gotolocation.Lat = (int)gotolocation.Lat + ((gotolocation.Lat - (int)gotolocation.Lat) / 0.60);
 
-                        if (line.Substring(c3, c4 - c3 - 1) == "S")
+                        if (items[3] == "S")
                             gotolocation.Lat *= -1;
 
-                        gotolocation.Lng = double.Parse(line.Substring(c4, c5 - c4 - 1)) / 100.0;
+                        gotolocation.Lng = double.Parse(items[4]) / 100.0;
 
                         gotolocation.Lng = (int)gotolocation.Lng + ((gotolocation.Lng - (int)gotolocation.Lng) / 0.60);
 
-                        if (line.Substring(c5, c6 - c5 - 1) == "W")
+                        if (items[5] == "W")
                             gotolocation.Lng *= -1;
 
                         gotolocation.Alt = intalt; // double.Parse(line.Substring(c9, c10 - c9 - 1)) +
 
+                        gotolocation.Tag = "Sats "+ items[7] + " hdop " + items[8] ;
+
                     }
 
 
-                    if (counter % 10 == 0 && gotolocation.Lat != 0 && gotolocation.Lng != 0 && gotolocation.Alt != 0) // 200 * 10 = 2 sec /// lastgotolocation != gotolocation && 
+                    if (DateTime.Now > nextsend && gotolocation.Lat != 0 && gotolocation.Lng != 0 && gotolocation.Alt != 0) // 200 * 10 = 2 sec /// lastgotolocation != gotolocation && 
                     {
+                        nextsend = DateTime.Now.AddSeconds(2);
                         Console.WriteLine("Sending follow wp " +DateTime.Now.ToString("h:MM:ss")+" "+ gotolocation.Lat + " " + gotolocation.Lng + " " +gotolocation.Alt);
                         lastgotolocation = new PointLatLngAlt(gotolocation);
 
@@ -159,14 +161,13 @@ namespace ArdupilotMega
 
                                 MainV2.comPort.setWP(gotohere, 0, MAVLink.MAV_FRAME.MAV_FRAME_GLOBAL_RELATIVE_ALT, (byte)2);
 
+                                GCSViews.FlightData.GuidedModeWP = new PointLatLngAlt(gotohere);
+
                                 MainV2.givecomport = false;
                             }
                             catch { MainV2.givecomport = false; }
                         }
                     }
-
-                    System.Threading.Thread.Sleep(200);
-                    counter++;
                 }
                 catch { System.Threading.Thread.Sleep(2000); }
             }
@@ -176,7 +177,7 @@ namespace ArdupilotMega
         {
              this.BeginInvoke((MethodInvoker)delegate
              {
-                 LBL_location.Text = gotolocation.Lat + " " + gotolocation.Lng + " " + gotolocation.Alt;
+                 LBL_location.Text = gotolocation.Lat + " " + gotolocation.Lng + " " + gotolocation.Alt +" "+ gotolocation.Tag;
             }
         );
 
@@ -200,7 +201,7 @@ namespace ArdupilotMega
                         break;
                     case '*':
                         // Stop processing before the asterisk
-                        continue;
+                        return Checksum.ToString("X2");
                     default:
                         // Is this the first value for the checksum?
                         if (Checksum == 0)

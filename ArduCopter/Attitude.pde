@@ -1,6 +1,6 @@
 /// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 
-static int
+static int16_t
 get_stabilize_roll(int32_t target_angle)
 {
 	// angle error
@@ -29,7 +29,7 @@ get_stabilize_roll(int32_t target_angle)
 #endif
 }
 
-static int
+static int16_t
 get_stabilize_pitch(int32_t target_angle)
 {
 	// angle error
@@ -56,14 +56,19 @@ get_stabilize_pitch(int32_t target_angle)
 #endif
 }
 
-static int
+static int16_t
 get_stabilize_yaw(int32_t target_angle)
 {
 	// angle error
 	target_angle 		= wrap_180(target_angle - dcm.yaw_sensor);
 
+#if FRAME_CONFIG == HELI_FRAME  // cannot use rate control for helicopters
+	// limit the error we're feeding to the PID
+	target_angle 		= constrain(target_angle, -4500, 4500);
+#else
 	// limit the error we're feeding to the PID
 	target_angle 		= constrain(target_angle, -2000, 2000);
+#endif
 
 	// conver to desired Rate:
 	int32_t target_rate = g.pi_stabilize_yaw.get_p(target_angle);
@@ -80,7 +85,7 @@ get_stabilize_yaw(int32_t target_angle)
 #endif
 }
 
-static int
+static int16_t
 get_acro_roll(int32_t target_rate)
 {
 	target_rate = target_rate * g.acro_p;
@@ -88,7 +93,7 @@ get_acro_roll(int32_t target_rate)
 	return get_rate_roll(target_rate);
 }
 
-static int
+static int16_t
 get_acro_pitch(int32_t target_rate)
 {
 	target_rate = target_rate * g.acro_p;
@@ -96,7 +101,7 @@ get_acro_pitch(int32_t target_rate)
 	return get_rate_pitch(target_rate);
 }
 
-static int
+static int16_t
 get_acro_yaw(int32_t target_rate)
 {
 	target_rate = g.pi_stabilize_yaw.get_p(target_rate);
@@ -104,76 +109,67 @@ get_acro_yaw(int32_t target_rate)
 	return get_rate_yaw(target_rate);
 }
 
-static int
+static int16_t
 get_rate_roll(int32_t target_rate)
 {
-		   int16_t rate_d1 		= 0;
-	static int16_t rate_d2 		= 0;
-	static int16_t rate_d3 		= 0;
-	static int32_t last_rate 	= 0;
+	static int32_t last_rate = 0;					// previous iterations rate
+	int32_t current_rate;							// this iteration's rate
+	int32_t rate_d;  								// roll's acceleration
+	int32_t output;									// output from pid controller
+	int32_t rate_d_dampener;						// value to dampen output based on acceleration
 
-	int32_t current_rate 	= (omega.x * DEGX100);
+	// get current rate
+	current_rate 	= (omega.x * DEGX100);
 
-	// History of last 3 dir
-	rate_d3			= rate_d2;
-	rate_d2			= rate_d1;
-	rate_d1 		= current_rate - last_rate;
+	// calculate and filter the acceleration
+	rate_d 			= roll_rate_d_filter.apply(current_rate - last_rate);
+
+	// store rate for next iteration
 	last_rate 		= current_rate;
 
-	// rate control
-	target_rate		= target_rate - current_rate;
-	target_rate 	= g.pid_rate_roll.get_pid(target_rate, G_Dt);
+	// call pid controller
+	output 			= g.pid_rate_roll.get_pid(target_rate - current_rate, G_Dt);
 
-	// Dampening
-	//int16_t d_temp	= (float)(current_rate - last_rate) * g.stabilize_d;
-	//target_rate 		-= constrain(d_temp, -500, 500);
-	//last_rate 		= current_rate;
+	// Dampening output with D term
+	rate_d_dampener = rate_d * roll_scale_d;
+	rate_d_dampener = constrain(rate_d_dampener, -400, 400);
+	output -= rate_d_dampener;
 
-	// D term
-	// I had tried this before with little result. Recently, someone mentioned to me that
-	// MultiWii uses a filter of the last three to get around noise and get a stronger signal.
-	// Works well! Thanks!
-	int16_t d_temp =  (rate_d1 + rate_d2 + rate_d3) * g.stabilize_d;
-	target_rate -= d_temp;
-
-	// output control:
-	return constrain(target_rate, -2500, 2500);
+	// output control
+	return constrain(output, -2500, 2500);
 }
 
-static int
+static int16_t
 get_rate_pitch(int32_t target_rate)
 {
-		   int16_t rate_d1 		= 0;
-	static int16_t rate_d2 		= 0;
-	static int16_t rate_d3 		= 0;
-	static int32_t last_rate 	= 0;
+	static int32_t last_rate = 0;					// previous iterations rate
+	int32_t current_rate;							// this iteration's rate
+	int32_t rate_d;  								// roll's acceleration
+	int32_t output;									// output from pid controller
+	int32_t rate_d_dampener;						// value to dampen output based on acceleration
 
-	int32_t current_rate 	= (omega.y * DEGX100);
+	// get current rate
+	current_rate 	= (omega.y * DEGX100);
 
-	// History of last 3 dir
-	rate_d3			= rate_d2;
-	rate_d2			= rate_d1;
-	rate_d1 		= current_rate - last_rate;
+	// calculate and filter the acceleration
+	rate_d 			= pitch_rate_d_filter.apply(current_rate - last_rate);
+
+	// store rate for next iteration
 	last_rate 		= current_rate;
 
-	// rate control
-	target_rate	 	= target_rate - current_rate;
-	target_rate 	= g.pid_rate_pitch.get_pid(target_rate, G_Dt);
+	// call pid controller
+	output 			= g.pid_rate_pitch.get_pid(target_rate - current_rate, G_Dt);
 
-	// Dampening
-	//int16_t d_temp	= (float)(current_rate - last_rate) * g.stabilize_d;
-	//target_rate 		-= constrain(d_temp, -500, 500);
-	//last_rate 		= current_rate;
+	// Dampening output with D term
+	rate_d_dampener = rate_d * pitch_scale_d;
+	rate_d_dampener = constrain(rate_d_dampener, -400, 400);
+	output -= rate_d_dampener;
 
-	// D term
-	int16_t d_temp =  (rate_d1 + rate_d2 + rate_d3) * g.stabilize_d;
-	target_rate -= d_temp;
-
-	// output control:
-	return constrain(target_rate, -2500, 2500);
+	// output control
+	return constrain(output, -2500, 2500);
 }
 
-static int
+static int16_t
 get_rate_yaw(int32_t target_rate)
 {
 	// rate control
@@ -196,7 +192,7 @@ get_nav_throttle(int32_t z_error)
 
 	// convert to desired Rate:
 	rate_error 		= g.pi_alt_hold.get_p(z_error);
-	rate_error 		= constrain(rate_error, -100, 100);
+	rate_error 		= constrain(rate_error, -150, 150);
 
 	// limit error to prevent I term wind up
 	z_error 		= constrain(z_error, -400, 400);
@@ -339,7 +335,7 @@ get_nav_yaw_offset(int yaw_input, int reset)
 	}
 }
 
-static int get_angle_boost(int value)
+static int16_t get_angle_boost(int16_t value)
 {
 	float temp = cos_pitch_x * cos_roll_x;
 	temp = 1.0 - constrain(temp, .5, 1.0);
@@ -489,7 +485,7 @@ get_of_roll(int32_t control_roll)
 {
 #ifdef OPTFLOW_ENABLED
 	static float tot_x_cm = 0;  // total distance from target
-    static unsigned long last_of_roll_update = 0;
+    static uint32_t last_of_roll_update = 0;
 	int32_t new_roll = 0;
 
 	// check if new optflow data available
@@ -523,7 +519,7 @@ get_of_pitch(int32_t control_pitch)
 {
 #ifdef OPTFLOW_ENABLED
     static float tot_y_cm = 0;  // total distance from target
-    static unsigned long last_of_pitch_update = 0;
+    static uint32_t last_of_pitch_update = 0;
 	int32_t new_pitch = 0;
 
 	// check if new optflow data available

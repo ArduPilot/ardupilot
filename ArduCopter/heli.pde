@@ -141,6 +141,15 @@ static void heli_move_swash(int roll_out, int pitch_out, int coll_out, int yaw_o
 		pitch_out = constrain(pitch_out, (int)-g.heli_pitch_max, (int)g.heli_pitch_max);
 		coll_out = constrain(coll_out, 0, 1000);
 		coll_out_scaled = coll_out * heli_collective_scalar + g.heli_collective_min - 1000;
+		
+		// rescale roll_out and pitch-out into the min and max ranges to provide linear motion 
+		// across the input range instead of stopping when the input hits the constrain value
+		// these calculations are based on an assumption of the user specified roll_max and pitch_max 
+		// coming into this equation at 4500 or less, and based on the original assumption of the  
+		// total g.heli_servo_x.servo_out range being -4500 to 4500.
+		roll_out = (-g.heli_roll_max + (float)( 2 * g.heli_roll_max * (roll_out + 4500.0)/9000.0));
+		pitch_out = (-g.heli_pitch_max + (float)(2 * g.heli_pitch_max * (pitch_out + 4500.0)/9000.0));
+		
 
 		// rudder feed forward based on collective
 		#if HIL_MODE == HIL_MODE_DISABLED  // don't do rudder feed forward in simulator
@@ -209,7 +218,7 @@ static void heli_move_swash(int roll_out, int pitch_out, int coll_out, int yaw_o
 static void init_motors_out()
 {
 	#if INSTANT_PWM == 0
-    APM_RC.SetFastOutputChannels( _BV(CH_1) | _BV(CH_2) | _BV(CH_3) | _BV(CH_4) );
+    APM_RC.SetFastOutputChannels( _BV(CH_1) | _BV(CH_2) | _BV(CH_3) | _BV(CH_4), g.rc_speed );
 	#endif
 }
 
