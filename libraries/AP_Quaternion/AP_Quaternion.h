@@ -91,11 +91,11 @@ private:
 	// true if we are doing centripetal acceleration correction
 	bool		_centripetal;
 
-	// maximum gyroscope measurement error in rad/s (set to 2 degrees/second)
-	static const float gyroMeasError = 2.0 * (M_PI/180.0);
+	// maximum gyroscope measurement error in rad/s (set to 5 degrees/second)
+	static const float gyroMeasError = 5.0 * (M_PI/180.0);
 
-	// maximum gyroscope drift rate in radians/s/s (set to 0.03 degrees/s/s)
-	static const float gyroMeasDrift = 0.03 * (PI/180.0);
+	// maximum gyroscope drift rate in radians/s/s (set to 0.02 degrees/s/s)
+	static const float gyroMeasDrift = 0.02 * (PI/180.0);
 
 	float beta;
 	float zeta;
