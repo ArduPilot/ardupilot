@@ -78,6 +78,7 @@ AP_DCM::update_DCM_fast(void)
 		case 2:
 			_accel_vector = _accel_sum / _accel_sum_count;
 			_accel_sum_count = 0;
+			_accel_sum.zero();
 			drift_correction();			// Normalize the DCM matrix
 		break;
 
