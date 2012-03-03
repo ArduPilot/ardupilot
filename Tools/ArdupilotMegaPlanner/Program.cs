@@ -21,8 +21,11 @@ namespace ArdupilotMega
         [STAThread]
         static void Main()
         {
-            //System.Threading.Thread.CurrentThread.CurrentUICulture = new System.Globalization.CultureInfo("en-US");
-            //System.Threading.Thread.CurrentThread.CurrentCulture = new System.Globalization.CultureInfo("en-US");
+
+            Application.EnableVisualStyles();
+            XmlConfigurator.Configure();
+            log.Info("******************* Logging Configured *******************");
+            Application.SetCompatibleTextRenderingDefault(false);
 
             Application.ThreadException += Application_ThreadException;
 
@@ -36,10 +39,6 @@ namespace ArdupilotMega
 
             //Common.linearRegression();
 
-            Application.EnableVisualStyles();
-            XmlConfigurator.Configure();
-            log.Info("******************* Logging Configured *******************");
-            Application.SetCompatibleTextRenderingDefault(false);
             try
             {
                 Thread.CurrentThread.Name = "Base Thread";
