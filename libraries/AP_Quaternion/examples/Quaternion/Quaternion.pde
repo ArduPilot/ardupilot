@@ -111,7 +111,6 @@ void loop(void)
 	static uint16_t counter;
 	static uint32_t last_t, last_print, last_compass;
 	uint32_t now = micros();
-	float deltat;
 	static uint32_t compass_reads;
 	static uint32_t compass_time;
 
@@ -119,7 +118,6 @@ void loop(void)
 		last_t = now;
 		return;
 	}
-	deltat = (now - last_t) * 1.0e-6;
 	last_t = now;
 
 	if (now - last_compass > 100*1000UL) {
@@ -128,7 +126,7 @@ void loop(void)
 		last_compass = now;
 	}
 
-	quaternion.update(deltat);
+	quaternion.update();
 	counter++;
 
 	if (now - last_print >= 0.5e6) {

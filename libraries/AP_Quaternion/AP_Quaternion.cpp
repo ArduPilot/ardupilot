@@ -242,11 +242,14 @@ void AP_Quaternion::update_MARG(float deltat, Vector3f &gyro, Vector3f &accel, V
 
 
 // Function to compute one quaternion iteration
-void AP_Quaternion::update(float deltat)
+void AP_Quaternion::update(void)
 {
 	Vector3f gyro, accel;
+	float deltat;
 
 	_imu->update();
+
+	delta_t = _imu->get_delta_time();
 
 	// get current IMU state
 	gyro = _imu->get_gyro();
