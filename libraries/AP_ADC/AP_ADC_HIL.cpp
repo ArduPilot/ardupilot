@@ -82,3 +82,9 @@ void AP_ADC_HIL::setHIL(int16_t p, int16_t q, int16_t r, int16_t gyroTemp,
     // differential pressure
 	setPressure(diffPress);
 }
+
+// see if new data is available
+bool AP_ADC_HIL::new_data_available(const uint8_t *channel_numbers)
+{
+	return true;
+}

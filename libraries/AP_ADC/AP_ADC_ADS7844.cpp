@@ -185,6 +185,20 @@ float AP_ADC_ADS7844::Ch(uint8_t ch_num)
 	return ((float)sum)/count;
 }
 
+// see if Ch6() can return new data
+bool AP_ADC_ADS7844::new_data_available(const uint8_t *channel_numbers)
+{
+	uint8_t i;
+
+	for (i=0; i<6; i++) {
+		if (_count[channel_numbers[i]] == 0) {
+            return false;
+        }
+	}
+    return true;
+}
+
+
 // Read 6 channel values
 // this assumes that the counts for all of the 6 channels are
 // equal. This will only be true if we always consistently access a
