@@ -56,8 +56,11 @@ AP_DCM::update_DCM_fast(void)
 	_imu->update();
 	_gyro_vector 	= _imu->get_gyro();			// Get current values for IMU sensors
 
+	// add the current accel vector into our averaging filter
 	accel = _imu->get_accel();
-	_accel_vector = (_accel_vector * 0.5) + (accel * 0.5);
+	_accel_sum += accel;
+	_accel_sum_count++;
+
 
 	delta_t = _imu->get_delta_time();
 
@@ -69,16 +72,16 @@ AP_DCM::update_DCM_fast(void)
 		break;
 
 		case 1:
-			//drift_correction();			// Normalize the DCM matrix
 			euler_rp();			// Calculate pitch, roll, yaw for stabilization and navigation
 		break;
 
 		case 2:
+			_accel_vector = _accel_sum / _accel_sum_count;
+			_accel_sum_count = 0;
 			drift_correction();			// Normalize the DCM matrix
 		break;
 
 		case 3:
-			//drift_correction();			// Normalize the DCM matrix
 			euler_rp();			// Calculate pitch, roll, yaw for stabilization and navigation
 		break;
 
@@ -89,7 +92,6 @@ AP_DCM::update_DCM_fast(void)
 		default:
 			euler_rp();			// Calculate pitch, roll, yaw for stabilization and navigation
 			_toggle = 0;
-			//drift_correction();			// Normalize the DCM matrix
 		break;
 	}
 }
@@ -104,8 +106,10 @@ AP_DCM::update_DCM(void)
 	_imu->update();
 	_gyro_vector 	= _imu->get_gyro();			// Get current values for IMU sensors
 
+	// update_DCM() doesn't do averaging over the accel vectors,
+	// just a mild lowpass filter
 	accel = _imu->get_accel();
-	_accel_vector = (_accel_vector * 0.5) + (accel * 0.5);
+	_accel_vector = (accel * 0.5) + (_accel_vector * 0.5);
 
 	delta_t = _imu->get_delta_time();
 
@@ -142,13 +146,6 @@ AP_DCM::matrix_update(float _G_Dt)
 	_omega 			= _omega_integ_corr + _omega_P;		// Equation 16, adding proportional and integral correction terms
 	_omega_smoothed = (_omega_smoothed * 0.5) + (_omega_integ_corr * 0.5);
 
-	if(_centripetal &&
-	   _gps != NULL &&
-	   _gps->status() == GPS::GPS_OK) {
-		// Remove _centripetal acceleration.
-		accel_adjust();
-	}
-
  #if OUTPUTMODE == 1
  	float tmp = _G_Dt * _omega.x;
 	update_matrix.b.z = -tmp; 		// -delta Theta x
@@ -182,23 +179,22 @@ AP_DCM::matrix_update(float _G_Dt)
 }
 
 
-/**************************************************/
+// adjust an accelerometer vector for centripetal force
 void
-AP_DCM::accel_adjust(void)
+AP_DCM::accel_adjust(Vector3f &accel)
 {
-	Vector3f temp;
 	float veloc;
 
 	veloc = _gps->ground_speed / 100;		// We are working with acceleration in m/s^2 units
 
-	// We are working with a modified version of equation 26 as our IMU object reports acceleration in the positive axis direction as positive
+	// We are working with a modified version of equation 26 as
+	// our IMU object reports acceleration in the positive axis
+	// direction as positive
 
-	// _accel_vector -= _omega_integ_corr % veloc;		// Equation 26  This line is giving the compiler a problem so we break it up below
-	temp.x = 0;
-	temp.y = _omega_smoothed.z * veloc; 			// only computing the non-zero terms
-	temp.z = _omega_smoothed.y * (-veloc);	// After looking at the compiler issue lets remove _veloc and simlify
+	// Equation 26 broken up into separate pieces
 
-	_accel_vector -= temp;
+	accel.y -= _omega_smoothed.z * veloc;
+	accel.z += _omega_smoothed.y * veloc;
 }
 
 /*
@@ -365,18 +361,24 @@ AP_DCM::renorm(Vector3f const &a, int &problem)
 void
 AP_DCM::drift_correction(void)
 {
-	//Compensation the Roll, Pitch and Yaw drift.
-	//float mag_heading_x;
-	//float mag_heading_y;
 	float error_course = 0;
 	float accel_weight;
 	float integrator_magnitude;
+	Vector3f accel;
 	Vector3f error;
 	float error_norm;
 	const float gravity_squared = (9.80665*9.80665);
 
-	//static float scaled_omega_P[3];
-	//static float scaled_omega_I[3];
+	accel = _accel_vector;
+
+	// if enabled, use the GPS to correct our accelerometer vector
+	// for centripetal forces
+	if(_centripetal &&
+	   _gps != NULL &&
+	   _gps->status() == GPS::GPS_OK) {
+		accel_adjust(accel);
+	}
+
 
 	//*****Roll and Pitch***************
 
@@ -387,14 +389,14 @@ AP_DCM::drift_correction(void)
 	// values gives a better attitude estimate than including the
 	// z accel
 
-	float zsquared = gravity_squared - ((_accel_vector.x * _accel_vector.x) + (_accel_vector.y * _accel_vector.y));
+	float zsquared = gravity_squared - ((accel.x * accel.x) + (accel.y * accel.y));
 	if (zsquared < 0) {
 		accel_weight = 0;
 	} else {
-		if (_accel_vector.z > 0) {
-			_accel_vector.z = sqrt(zsquared);
+		if (accel.z > 0) {
+			accel.z = sqrt(zsquared);
 		} else {
-			_accel_vector.z = -sqrt(zsquared);
+			accel.z = -sqrt(zsquared);
 		}
 
 		// this is arbitrary, and can be removed once we get
@@ -403,7 +405,7 @@ AP_DCM::drift_correction(void)
 
 		_health = constrain(_health+(0.02 * (accel_weight - .5)), 0, 1);
 
-		error =  _dcm_matrix.c % _accel_vector;
+		error =  _dcm_matrix.c % accel;
 
 		// error_roll_pitch are in Accel m/s^2 units
 		// Limit max error_roll_pitch to limit max omega_P and omega_I
@@ -510,13 +512,7 @@ AP_DCM::euler_angles(void)
 {
 	check_matrix();
 
-	#if (OUTPUTMODE == 2)				 // Only accelerometer info (debugging purposes)
-	roll 		= atan2(_accel_vector.y, -_accel_vector.z);		// atan2(acc_y, acc_z)
-	pitch 		= safe_asin((_accel_vector.x) / (double)9.81); // asin(acc_x)
-	yaw 			= 0;
-	#else
 	calculate_euler_angles(_dcm_matrix, &roll, &pitch, &yaw);
-	#endif
 
 	roll_sensor 	= degrees(roll)  * 100;
 	pitch_sensor 	= degrees(pitch) * 100;

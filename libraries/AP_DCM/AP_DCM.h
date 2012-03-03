@@ -42,7 +42,6 @@ public:
 
 	// Accessors
 	Vector3f	get_gyro(void) {return _omega_integ_corr; }		// We return the raw gyro vector corrected for bias
-	Vector3f	get_accel(void) { return _accel_vector; }
 	Matrix3f	get_dcm_matrix(void) {return _dcm_matrix; }
 	Matrix3f	get_dcm_transposed(void) {Matrix3f temp = _dcm_matrix;  return temp.transpose();}
 	Vector3f	get_integrator(void) {return _omega_I; }		// We return the current drift correction integrator values
@@ -101,7 +100,7 @@ private:
 
 	// Methods
 	void 		read_adc_raw(void);
-	void 		accel_adjust(void);
+	void 		accel_adjust(Vector3f &accel);
 	float 		read_adc(int select);
 	void 		matrix_update(float _G_Dt);
 	void 		normalize(void);
@@ -125,8 +124,13 @@ private:
 
 	Matrix3f	_dcm_matrix;
 
-	Vector3f 	_accel_vector;				// Store the acceleration in a vector
-	Vector3f 	_accel_smoothed;
+	// sum of accel vectors between drift_correction() calls
+	// this allows the drift correction to run at a different rate
+	// to the main DCM update code
+	Vector3f 	_accel_vector;
+	Vector3f 	_accel_sum;
+	uint8_t		_accel_sum_count;
+
 	Vector3f 	_gyro_vector;				// Store the gyros turn rate in a vector
 	Vector3f	_omega_P;					// Omega Proportional correction
 	Vector3f 	_omega_I;					// Omega Integrator correction
