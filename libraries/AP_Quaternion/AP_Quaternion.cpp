@@ -199,6 +199,12 @@ void AP_Quaternion::update_MARG(float deltat, Vector3f &gyro, Vector3f &accel, V
     w_err.y = twoSEq_1 * SEqHatDot_3 + twoSEq_2 * SEqHatDot_4 - twoSEq_3 * SEqHatDot_1 - twoSEq_4 * SEqHatDot_2;
     w_err.z = twoSEq_1 * SEqHatDot_4 - twoSEq_2 * SEqHatDot_3 + twoSEq_3 * SEqHatDot_2 - twoSEq_4 * SEqHatDot_1;
 
+    // keep track of the error rates
+    _error_rp_sum += 0.5*(fabs(w_err.x) + fabs(w_err.y));
+    _error_yaw_sum += fabs(w_err.z);
+    _error_rp_count++;
+    _error_yaw_count++;
+
     // compute and remove the gyroscope baises
     gyro_bias += w_err * (deltat * zeta);
     gyro -= gyro_bias;
@@ -318,4 +324,30 @@ void AP_Quaternion::update(void)
 	if (yaw_sensor < 0) {
 		yaw_sensor += 36000;
 	}
+}
+
+// average error in roll/pitch since last call
+float AP_Quaternion::get_error_rp(void)
+{
+	float ret;
+	if (_error_rp_count == 0) {
+		return 0;
+	}
+	ret = _error_rp_sum / _error_rp_count;
+	_error_rp_sum = 0;
+	_error_rp_count = 0;
+	return ret;
+}
+
+// average error in yaw since last call
+float AP_Quaternion::get_error_yaw(void)
+{
+	float ret;
+	if (_error_yaw_count == 0) {
+		return 0;
+	}
+	ret = _error_yaw_sum / _error_yaw_count;
+	_error_yaw_sum = 0;
+	_error_yaw_count = 0;
+	return ret;
 }
