@@ -145,6 +145,10 @@ public:
 	void normalize()
 	{	*this/=length();	}
 
+	// zero the vector
+	void zero()
+	{	x = y = z = 0.0; }
+
 	// returns the normalized version of this vector
 	Vector3<T> normalized() const
 	{   return  *this/length();  }
