@@ -43,7 +43,7 @@ public:
 	void		set_compass(Compass *compass);
 
 	// Methods
-	void 		update(float deltat);
+	void 		update(void);
 
 	// Euler angles (radians)
 	float		roll;
