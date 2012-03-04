@@ -86,7 +86,7 @@ namespace System.IO.Ports
 
             frmProgressReporter.UpdateProgressAndStatus(-1, "Connecting Mavlink UDP");
 
-            ArdupilotMega.MainV2.fixtheme(frmProgressReporter);
+            ArdupilotMega.ThemeManager.ApplyThemeTo(frmProgressReporter);
 
             frmProgressReporter.RunBackgroundOperationAsync();
 

@@ -226,7 +226,7 @@ namespace ArdupilotMega.GCSViews
             else if (items.Count == 2 && false)
             {
                 XorPlus select = new XorPlus();
-                MainV2.fixtheme(select);
+                ThemeManager.ApplyThemeTo(select);
                 select.ShowDialog();
                 int a = 0;
 
@@ -685,7 +685,7 @@ namespace ArdupilotMega.GCSViews
         private void BUT_setup_Click(object sender, EventArgs e)
         {
             Form temp = new Setup.Setup();
-            MainV2.fixtheme(temp);
+            ThemeManager.ApplyThemeTo(temp);
             temp.ShowDialog();
         }
 

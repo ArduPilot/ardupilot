@@ -986,8 +986,10 @@ namespace ArdupilotMega.Setup
                 MessageBox.Show("Please Connect First");
                 this.Close();
             }
-
-            tabControl1_SelectedIndexChanged(null, new EventArgs());
+            else
+            {
+                tabControl1_SelectedIndexChanged(null, new EventArgs());
+            }
         }
 
         private void TXT_srvpos1_Validating(object sender, CancelEventArgs e)
@@ -1407,6 +1409,9 @@ namespace ArdupilotMega.Setup
             timer.Dispose();
 
             tabControl1.SelectedIndex = 0;
+
+            // mono runs validation on all controls on exit. try and skip it
+            startup = true;
         }
 
         private void CHK_enableoptflow_CheckedChanged(object sender, EventArgs e)

@@ -241,6 +241,7 @@
     <Compile Include="Antenna\Tracker.Designer.cs">
       <DependentUpon>Tracker.cs</DependentUpon>
     </Compile>
+    <Compile Include="Controls\MessageBox.cs" />
     <Compile Include="Controls\ProgressReporterDialogue.cs">
       <SubType>Form</SubType>
     </Compile>
@@ -464,6 +465,7 @@
     </Compile>
     <Compile Include="Radio\Uploader.cs" />
     <Compile Include="LangUtility.cs" />
+    <Compile Include="ThemeManager.cs" />
     <EmbeddedResource Include="Antenna\Tracker.resx">
       <DependentUpon>Tracker.cs</DependentUpon>
     </EmbeddedResource>

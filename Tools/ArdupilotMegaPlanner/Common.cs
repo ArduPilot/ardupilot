@@ -652,7 +652,7 @@ namespace ArdupilotMega
             form.MinimizeBox = false;
             form.MaximizeBox = false;
 
-            MainV2.fixtheme(form);
+            ThemeManager.ApplyThemeTo(form);
 
             form.Show();
             form.Refresh();
@@ -706,7 +706,7 @@ namespace ArdupilotMega
             form.MinimizeBox = false;
             form.MaximizeBox = false;
 
-            MainV2.fixtheme(form);
+            ThemeManager.ApplyThemeTo(form);
 
             DialogResult dialogResult =form.ShowDialog();
 
@@ -760,7 +760,7 @@ namespace ArdupilotMega
             form.AcceptButton = buttonOk;
             form.CancelButton = buttonCancel;
 
-            MainV2.fixtheme(form);
+            ThemeManager.ApplyThemeTo(form);
 
             DialogResult dialogResult = DialogResult.Cancel;
 

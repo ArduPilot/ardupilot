@@ -734,7 +734,7 @@ namespace ArdupilotMega.GCSViews
 
                     temp.Configuration = this;
 
-                    MainV2.fixtheme(temp);
+                    ThemeManager.ApplyThemeTo(temp);
 
                     temp.ShowDialog();
 
@@ -985,7 +985,7 @@ namespace ArdupilotMega.GCSViews
         private void BUT_Joystick_Click(object sender, EventArgs e)
         {
             Form joy = new JoystickSetup();
-            MainV2.fixtheme(joy);
+            ThemeManager.ApplyThemeTo(joy);
             joy.Show();
         }
 
@@ -1146,7 +1146,7 @@ namespace ArdupilotMega.GCSViews
                 sr.Close();
 
                 ParamCompare temp = new ParamCompare(this, param, param2);
-                MainV2.fixtheme(temp);
+                ThemeManager.ApplyThemeTo(temp);
                 temp.ShowDialog();
             }
         }
