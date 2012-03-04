@@ -282,6 +282,7 @@ void AP_Quaternion::update(void)
 		// compensate for centripetal acceleration
 		float veloc;
 		veloc = _gps->ground_speed / 100;
+		accel.x -= _gps->acceleration();
 		accel.y -= _gyro_smoothed.z * veloc;
 		accel.z += _gyro_smoothed.y * veloc;
 	}
