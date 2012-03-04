@@ -26,6 +26,7 @@
 #include <AP_PeriodicProcess.h>
 #include <AP_TimerProcess.h>
 #include <GCS_MAVLink.h>
+#include <avr/interrupt.h>
 #include "sitl_adc.h"
 #include "sitl_rc.h"
 #include "desktop.h"
@@ -145,6 +146,7 @@ static void sitl_fdm_input(void)
 	case 16: {
 		// a packet giving the receiver PWM inputs
 		uint8_t i;
+		cli();
 		for (i=0; i<8; i++) {
 			// setup the ICR4 register for the RC channel
 			// inputs
@@ -152,6 +154,7 @@ static void sitl_fdm_input(void)
 				ICR4.set(i, d.pwm_pkt.pwm[i]);
 			}
 		}
+		sei();
 		break;
 	}
 	}
