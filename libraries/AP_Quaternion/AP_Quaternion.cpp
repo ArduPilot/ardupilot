@@ -257,6 +257,13 @@ void AP_Quaternion::update(void)
 	_imu->update();
 
 	deltat = _imu->get_delta_time();
+	if (deltat > 1.0) {
+		// if we stop updating for 1s, we should discard this
+		// input data. This can happen if you are running the
+		// code under a debugger, and using this data point
+		// will just throw off your attitude by a huge amount
+		return;
+	}
 
 	// get current IMU state
 	gyro = _imu->get_gyro();
