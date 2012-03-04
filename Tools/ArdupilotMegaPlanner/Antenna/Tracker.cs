@@ -19,7 +19,7 @@ namespace ArdupilotMega.Antenna
         {
             InitializeComponent();
 
-            MainV2.fixtheme(this);
+            ThemeManager.ApplyThemeTo(this);
 
             CMB_serialport.DataSource = SerialPort.GetPortNames();
 

@@ -146,7 +146,7 @@ namespace ArdupilotMega
                 frmProgressReporter.DoWork += FrmProgressReporterDoWorkNOParams;
             }
             frmProgressReporter.UpdateProgressAndStatus(-1, "Mavlink Connecting...");
-            MainV2.fixtheme(frmProgressReporter);
+            ThemeManager.ApplyThemeTo(frmProgressReporter);
 
             frmProgressReporter.RunBackgroundOperationAsync();
         }
@@ -582,7 +582,7 @@ namespace ArdupilotMega
 
             frmProgressReporter.DoWork += FrmProgressReporterGetParams;
             frmProgressReporter.UpdateProgressAndStatus(-1, "Getting Params...");
-            MainV2.fixtheme(frmProgressReporter);
+            ThemeManager.ApplyThemeTo(frmProgressReporter);
 
             frmProgressReporter.RunBackgroundOperationAsync();
         }

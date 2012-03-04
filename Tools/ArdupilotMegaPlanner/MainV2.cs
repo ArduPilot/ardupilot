@@ -106,8 +106,7 @@ namespace ArdupilotMega
             var t = Type.GetType("Mono.Runtime");
             MONO = (t != null);
 
-            if (!MONO)
-                talk = new Speech();
+            talk = new Speech();
 
             //talk.SpeakAsync("Welcome to APM Planner");
 
@@ -313,174 +312,6 @@ namespace ArdupilotMega
                 CMB_serialport.Text = oldport;
         }
 
-        public static void fixtheme(Control temp)
-        {
-            fixtheme(temp, 0);
-        }
-
-        public static void fixtheme(Control temp, int level)
-        {
-            if (level == 0)
-            {
-                temp.BackColor = Color.FromArgb(0x26, 0x27, 0x28);
-                temp.ForeColor = Color.White;// Color.FromArgb(0xe6, 0xe8, 0xea);
-            }
-            //Console.WriteLine(temp.GetType());
-
-            //temp.Font = new Font("Lucida Console", 8.25f);
-
-            foreach (Control ctl in temp.Controls)
-            {
-                if (((Type)ctl.GetType()) == typeof(System.Windows.Forms.Button))
-                {
-                    ctl.ForeColor = Color.Black;
-                    System.Windows.Forms.Button but = (System.Windows.Forms.Button)ctl;
-                }
-                else if (((Type)ctl.GetType()) == typeof(TextBox))
-                {
-                    ctl.BackColor = Color.FromArgb(0x43, 0x44, 0x45);
-                    ctl.ForeColor = Color.White;// Color.FromArgb(0xe6, 0xe8, 0xea);
-                    TextBox txt = (TextBox)ctl;
-                    txt.BorderStyle = BorderStyle.None;
-                }
-                else if (((Type)ctl.GetType()) == typeof(DomainUpDown))
-                {
-                    ctl.BackColor = Color.FromArgb(0x43, 0x44, 0x45);
-                    ctl.ForeColor = Color.White;// Color.FromArgb(0xe6, 0xe8, 0xea);
-                    DomainUpDown txt = (DomainUpDown)ctl;
-                    txt.BorderStyle = BorderStyle.None;
-                }
-                else if (((Type)ctl.GetType()) == typeof(GroupBox))
-                {
-                    ctl.BackColor = Color.FromArgb(0x26, 0x27, 0x28);
-                    ctl.ForeColor = Color.White;// Color.FromArgb(0xe6, 0xe8, 0xea);
-                }
-                else if (((Type)ctl.GetType()) == typeof(ZedGraph.ZedGraphControl))
-                {
-                    ZedGraph.ZedGraphControl zg1 = (ZedGraph.ZedGraphControl)ctl;
-                    zg1.GraphPane.Chart.Fill = new ZedGraph.Fill(Color.FromArgb(0x1f, 0x1f, 0x20));
-                    zg1.GraphPane.Fill = new ZedGraph.Fill(Color.FromArgb(0x37, 0x37, 0x38));
-
-                    foreach (ZedGraph.LineItem li in zg1.GraphPane.CurveList)
-                    {
-                        li.Line.Width = 4;
-                    }
-
-                    zg1.GraphPane.Title.FontSpec.FontColor = Color.White;
-
-                    zg1.GraphPane.XAxis.MajorTic.Color = Color.White;
-                    zg1.GraphPane.XAxis.MinorTic.Color = Color.White;
-                    zg1.GraphPane.YAxis.MajorTic.Color = Color.White;
-                    zg1.GraphPane.YAxis.MinorTic.Color = Color.White;
-
-                    zg1.GraphPane.XAxis.MajorGrid.Color = Color.White;
-                    zg1.GraphPane.YAxis.MajorGrid.Color = Color.White;
-
-                    zg1.GraphPane.YAxis.Scale.FontSpec.FontColor = Color.White;
-                    zg1.GraphPane.YAxis.Title.FontSpec.FontColor = Color.White;
-
-                    zg1.GraphPane.XAxis.Scale.FontSpec.FontColor = Color.White;
-                    zg1.GraphPane.XAxis.Title.FontSpec.FontColor = Color.White;
-
-                    zg1.GraphPane.Legend.Fill = new ZedGraph.Fill(Color.FromArgb(0x85, 0x84, 0x83));
-                    zg1.GraphPane.Legend.FontSpec.FontColor = Color.White;
-                }
-                else if (((Type)ctl.GetType()) == typeof(BSE.Windows.Forms.Panel) || ((Type)ctl.GetType()) == typeof(System.Windows.Forms.SplitterPanel))
-                {
-                    ctl.BackColor = Color.FromArgb(0x26, 0x27, 0x28);
-                    ctl.ForeColor = Color.White;// Color.FromArgb(0xe6, 0xe8, 0xea);
-                }
-                else if (((Type)ctl.GetType()) == typeof(Form))
-                {
-                    ctl.BackColor = Color.FromArgb(0x26, 0x27, 0x28);
-                    ctl.ForeColor = Color.White;// Color.FromArgb(0xe6, 0xe8, 0xea);
-                }
-                else if (((Type)ctl.GetType()) == typeof(RichTextBox))
-                {
-                    ctl.BackColor = Color.FromArgb(0x43, 0x44, 0x45);
-                    ctl.ForeColor = Color.White;
-                    RichTextBox txtr = (RichTextBox)ctl;
-                    txtr.BorderStyle = BorderStyle.None;
-                }
-                else if (((Type)ctl.GetType()) == typeof(CheckedListBox))
-                {
-                    ctl.BackColor = Color.FromArgb(0x43, 0x44, 0x45);
-                    ctl.ForeColor = Color.White;
-                    CheckedListBox txtr = (CheckedListBox)ctl;
-                    txtr.BorderStyle = BorderStyle.None;
-                }
-                else if (((Type)ctl.GetType()) == typeof(TabPage))
-                {
-                    ctl.BackColor = Color.FromArgb(0x26, 0x27, 0x28);  //Color.FromArgb(0x43, 0x44, 0x45);
-                    ctl.ForeColor = Color.White;
-                    TabPage txtr = (TabPage)ctl;
-                    txtr.BorderStyle = BorderStyle.None;
-                }
-                else if (((Type)ctl.GetType()) == typeof(TabControl))
-                {
-                    ctl.BackColor = Color.FromArgb(0x26, 0x27, 0x28);  //Color.FromArgb(0x43, 0x44, 0x45);
-                    ctl.ForeColor = Color.White;
-                    TabControl txtr = (TabControl)ctl;
-
-                }
-                else if (((Type)ctl.GetType()) == typeof(DataGridView))
-                {
-                    ctl.ForeColor = Color.White;
-                    DataGridView dgv = (DataGridView)ctl;
-                    dgv.EnableHeadersVisualStyles = false;
-                    dgv.BorderStyle = BorderStyle.None;
-                    dgv.BackgroundColor = Color.FromArgb(0x26, 0x27, 0x28);
-                    DataGridViewCellStyle rs = new DataGridViewCellStyle();
-                    rs.BackColor = Color.FromArgb(0x43, 0x44, 0x45);
-                    rs.ForeColor = Color.White;
-                    dgv.RowsDefaultCellStyle = rs;
-
-                    DataGridViewCellStyle hs = new DataGridViewCellStyle(dgv.ColumnHeadersDefaultCellStyle);
-                    hs.BackColor = Color.FromArgb(0x26, 0x27, 0x28);
-                    hs.ForeColor = Color.White;
-
-                    dgv.ColumnHeadersDefaultCellStyle = hs;
-
-                    dgv.RowHeadersDefaultCellStyle = hs;
-                }
-                else if (((Type)ctl.GetType()) == typeof(ComboBox))
-                {
-                    ctl.BackColor = Color.FromArgb(0x43, 0x44, 0x45);
-                    ctl.ForeColor = Color.White;
-                    ComboBox CMB = (ComboBox)ctl;
-                    CMB.FlatStyle = FlatStyle.Flat;
-                }
-                else if (((Type)ctl.GetType()) == typeof(NumericUpDown))
-                {
-                    ctl.BackColor = Color.FromArgb(0x43, 0x44, 0x45);
-                    ctl.ForeColor = Color.White;
-                }
-                else if (((Type)ctl.GetType()) == typeof(TrackBar))
-                {
-                    ctl.BackColor = Color.FromArgb(0x26, 0x27, 0x28);
-                    ctl.ForeColor = Color.White;
-                }
-                else if (((Type)ctl.GetType()) == typeof(LinkLabel))
-                {
-                    ctl.BackColor = Color.FromArgb(0x26, 0x27, 0x28);
-                    ctl.ForeColor = Color.White;
-                    LinkLabel LNK = (LinkLabel)ctl;
-                    LNK.ActiveLinkColor = Color.White;
-                    LNK.LinkColor = Color.White;
-                    LNK.VisitedLinkColor = Color.White;
-
-                }
-                else if (((Type)ctl.GetType()) == typeof(HorizontalProgressBar2) ||
-                  ((Type)ctl.GetType()) == typeof(VerticalProgressBar2))
-                {
-                    ((HorizontalProgressBar2)ctl).BackgroundColor = Color.FromArgb(0x43, 0x44, 0x45);
-                    ((HorizontalProgressBar2)ctl).ValueColor = Color.FromArgb(148, 193, 31);
-                }
-
-                if (ctl.Controls.Count > 0)
-                    fixtheme(ctl, 1);
-            }
-        }
 
         private void MenuFlightData_Click(object sender, EventArgs e)
         {
@@ -490,7 +321,7 @@ namespace ArdupilotMega
 
             UserControl temp = FlightData;
 
-            fixtheme(temp);
+            ThemeManager.ApplyThemeTo(temp);
 
             temp.Anchor = AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right | AnchorStyles.Top;
 
@@ -516,7 +347,7 @@ namespace ArdupilotMega
 
             UserControl temp = FlightPlanner;
 
-            fixtheme(temp);
+            ThemeManager.ApplyThemeTo(temp);
 
             temp.Anchor = AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right | AnchorStyles.Top;
 
@@ -551,7 +382,7 @@ namespace ArdupilotMega
 
             UserControl temp = Configuration;
 
-            fixtheme(temp);
+            ThemeManager.ApplyThemeTo(temp);
 
             //temp.Anchor = AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right | AnchorStyles.Top;
 
@@ -578,7 +409,7 @@ namespace ArdupilotMega
 
             UserControl temp = Simulation;
 
-            fixtheme(temp);
+            ThemeManager.ApplyThemeTo(temp);
 
             temp.Anchor = AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right | AnchorStyles.Top;
 
@@ -601,7 +432,7 @@ namespace ArdupilotMega
 
             UserControl temp = Firmware;
 
-            fixtheme(temp);
+            ThemeManager.ApplyThemeTo(temp);
 
             temp.Anchor = AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right | AnchorStyles.Top;
 
@@ -641,7 +472,7 @@ namespace ArdupilotMega
 
             UserControl temp = Terminal;
 
-            fixtheme(temp);
+            ThemeManager.ApplyThemeTo(temp);
 
             temp.Anchor = AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right | AnchorStyles.Top;
 
@@ -1616,7 +1447,7 @@ namespace ArdupilotMega
 
             UserControl temp = new GCSViews.Help();
 
-            fixtheme(temp);
+            ThemeManager.ApplyThemeTo(temp);
 
             temp.Anchor = AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right | AnchorStyles.Top;
 
@@ -1782,7 +1613,7 @@ namespace ArdupilotMega
                 StartPosition = System.Windows.Forms.FormStartPosition.CenterScreen
             };
 
-            MainV2.fixtheme(frmProgressReporter);
+            ThemeManager.ApplyThemeTo(frmProgressReporter);
 
             frmProgressReporter.DoWork += new Controls.ProgressReporterDialogue.DoWorkEventHandler(frmProgressReporter_DoWork);
 
@@ -2015,7 +1846,7 @@ namespace ArdupilotMega
             if (keyData == (Keys.Control | Keys.F))
             {
                 Form frm = new temp();
-                fixtheme(frm);
+                ThemeManager.ApplyThemeTo(frm);
                 frm.Show();
                 return true;
             }
@@ -2027,14 +1858,14 @@ namespace ArdupilotMega
             if (keyData == (Keys.Control | Keys.G)) // test
             {
                 Form frm = new SerialOutput();
-                fixtheme(frm);
+                ThemeManager.ApplyThemeTo(frm);
                 frm.Show();
                 return true;
             }
             if (keyData == (Keys.Control | Keys.A)) // test
             {
                 Form frm = new _3DRradio();
-                fixtheme(frm);
+                ThemeManager.ApplyThemeTo(frm);
                 frm.Show();
                 return true;
             }

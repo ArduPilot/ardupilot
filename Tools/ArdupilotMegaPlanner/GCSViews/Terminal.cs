@@ -293,7 +293,7 @@ namespace ArdupilotMega.GCSViews
         private void Logs_Click(object sender, EventArgs e)
         {
             Form Log = new Log();
-            MainV2.fixtheme(Log);
+            ThemeManager.ApplyThemeTo(Log);
             inlogview = true;
             Log.ShowDialog();
             inlogview = false;
@@ -302,7 +302,7 @@ namespace ArdupilotMega.GCSViews
         private void BUT_logbrowse_Click(object sender, EventArgs e)
         {
             Form logbrowse = new LogBrowse();
-            MainV2.fixtheme(logbrowse);
+            ThemeManager.ApplyThemeTo(logbrowse);
             logbrowse.ShowDialog();
         }
     }

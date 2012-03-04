@@ -280,7 +280,7 @@ namespace ArdupilotMega.GCSViews
                         comPort.requestDatastream((byte)ArdupilotMega.MAVLink.MAV_DATA_STREAM.MAV_DATA_STREAM_RC_CHANNELS, MainV2.cs.raterc); // request rc info
                     }
                     catch { }
-                    lastdata = DateTime.Now; // prevent flooding
+                    lastdata = DateTime.Now.AddSeconds(12); // prevent flooding
                 }
 
                 if (!MainV2.comPort.logreadmode)
@@ -852,7 +852,7 @@ namespace ArdupilotMega.GCSViews
         private void BUT_RAWSensor_Click(object sender, EventArgs e)
         {
             Form temp = new RAW_Sensor();
-            MainV2.fixtheme(temp);
+            ThemeManager.ApplyThemeTo(temp);
             temp.Show();
         }
 
@@ -1185,14 +1185,14 @@ namespace ArdupilotMega.GCSViews
             }
 
             Form frm = new MavlinkLog();
-            MainV2.fixtheme(frm);
+            ThemeManager.ApplyThemeTo(frm);
             frm.ShowDialog();
         }
 
         private void BUT_joystick_Click(object sender, EventArgs e)
         {
             Form joy = new JoystickSetup();
-            MainV2.fixtheme(joy);
+            ThemeManager.ApplyThemeTo(joy);
             joy.Show();
         }
 
@@ -1480,7 +1480,7 @@ namespace ArdupilotMega.GCSViews
                     selectform.Width = x + 100;
                 }
             }
-            MainV2.fixtheme(selectform);
+            ThemeManager.ApplyThemeTo(selectform);
             selectform.Show();
         }
 
@@ -1555,7 +1555,7 @@ namespace ArdupilotMega.GCSViews
                     MessageBox.Show("Max 10 at a time.");
                     ((CheckBox)sender).Checked = false;
                 }
-                MainV2.fixtheme(this);
+                ThemeManager.ApplyThemeTo(this);
 
                 string selected = "";
                 try

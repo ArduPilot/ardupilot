@@ -31,6 +31,7 @@ namespace ArdupilotMega
 
             Application.Idle += Application_Idle;
 
+
             //MagCalib.doWork();
 
             //return;

@@ -1205,7 +1205,7 @@ namespace ArdupilotMega.GCSViews
             frmProgressReporter.DoWork += getWPs;
             frmProgressReporter.UpdateProgressAndStatus(-1, "Receiving WP's");
 
-            MainV2.fixtheme(frmProgressReporter);
+            ThemeManager.ApplyThemeTo(frmProgressReporter);
 
             frmProgressReporter.RunBackgroundOperationAsync();
         }
@@ -1314,7 +1314,7 @@ namespace ArdupilotMega.GCSViews
             frmProgressReporter.DoWork += saveWPs;
             frmProgressReporter.UpdateProgressAndStatus(-1, "Sending WP's");
 
-            MainV2.fixtheme(frmProgressReporter);
+            ThemeManager.ApplyThemeTo(frmProgressReporter);
 
             frmProgressReporter.RunBackgroundOperationAsync();
 
@@ -2332,7 +2332,7 @@ namespace ArdupilotMega.GCSViews
             double homealt;
             double.TryParse(TXT_homealt.Text, out homealt);
             Form temp = new ElevationProfile(pointlist, homealt);
-            MainV2.fixtheme(temp);
+            ThemeManager.ApplyThemeTo(temp);
             temp.ShowDialog();
         }
 
@@ -2952,7 +2952,7 @@ namespace ArdupilotMega.GCSViews
         private void BUT_Camera_Click(object sender, EventArgs e)
         {
             Camera form = new Camera();
-            MainV2.fixtheme(form);
+            ThemeManager.ApplyThemeTo(form);
             form.Show();
         }
 

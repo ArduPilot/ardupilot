@@ -256,7 +256,7 @@ namespace ArdupilotMega
 
                         MainV2.joystick = joy;
 
-                        MainV2.fixtheme(this);
+                        ThemeManager.ApplyThemeTo(this);
 
                         CMB_joysticks.SelectedIndex = CMB_joysticks.Items.IndexOf(joy.name);
                     }
