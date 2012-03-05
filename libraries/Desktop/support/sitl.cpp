@@ -146,7 +146,6 @@ static void sitl_fdm_input(void)
 	case 16: {
 		// a packet giving the receiver PWM inputs
 		uint8_t i;
-		cli();
 		for (i=0; i<8; i++) {
 			// setup the ICR4 register for the RC channel
 			// inputs
@@ -154,7 +153,6 @@ static void sitl_fdm_input(void)
 				ICR4.set(i, d.pwm_pkt.pwm[i]);
 			}
 		}
-		sei();
 		break;
 	}
 	}
@@ -221,6 +219,8 @@ static void timer_handler(int signum)
 {
 	static uint32_t last_update_count;
 
+	cli();
+
 	/* make sure we die if our parent dies */
 	if (kill(parent_pid, 0) != 0) {
 		exit(1);
@@ -242,10 +242,12 @@ static void timer_handler(int signum)
 
 	if (update_count == 0) {
 		sitl_update_gps(0, 0, 0, 0, 0, false);
+		sei();
 		return;
 	}
 
 	if (update_count == last_update_count) {
+		sei();
 		return;
 	}
 	last_update_count = update_count;
@@ -259,6 +261,7 @@ static void timer_handler(int signum)
 			sim_state.airspeed);
 	sitl_update_barometer(sim_state.altitude);
 	sitl_update_compass(sim_state.heading, sim_state.rollDeg, sim_state.pitchDeg, sim_state.heading);
+	sei();
 }
 
 
