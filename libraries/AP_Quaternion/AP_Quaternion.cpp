@@ -86,7 +86,7 @@ void AP_Quaternion::update_IMU(float deltat, Vector3f &gyro, Vector3f &accel)
     SEqHatDot_4 = J_14or21 * f_1 + J_11or24 * f_2;
 
     // Normalise the gradient
-    norm = 1.0/sqrt(SEqHatDot_1 * SEqHatDot_1 + SEqHatDot_2 * SEqHatDot_2 + SEqHatDot_3 * SEqHatDot_3 + SEqHatDot_4 * SEqHatDot_4);
+    norm = 1.0/safe_sqrt(SEqHatDot_1 * SEqHatDot_1 + SEqHatDot_2 * SEqHatDot_2 + SEqHatDot_3 * SEqHatDot_3 + SEqHatDot_4 * SEqHatDot_4);
     if (isinf(norm)) {
 	    // we can't do an update - discard this data point and
 	    // hope the next one is better
@@ -111,7 +111,7 @@ void AP_Quaternion::update_IMU(float deltat, Vector3f &gyro, Vector3f &accel)
     SEq_4 += (SEqDot_omega_4 - (beta * SEqHatDot_4)) * deltat;
 
     // Normalise quaternion
-    norm = 1.0/sqrt(SEq_1 * SEq_1 + SEq_2 * SEq_2 + SEq_3 * SEq_3 + SEq_4 * SEq_4);
+    norm = 1.0/safe_sqrt(SEq_1 * SEq_1 + SEq_2 * SEq_2 + SEq_3 * SEq_3 + SEq_4 * SEq_4);
     if (isinf(norm)) {
 	    // our quaternion is bad! Reset based on roll/pitch/yaw
 	    // and hope for the best ...
@@ -219,7 +219,7 @@ void AP_Quaternion::update_MARG(float deltat, Vector3f &gyro, Vector3f &accel, V
     SEqHatDot_4 = J_14or21 * f_1 + J_11or24 * f_2 - J_44 * f_4 - J_54 * f_5 + J_64 * f_6;
 
     // normalise the gradient to estimate direction of the gyroscope error
-    norm = 1.0 / sqrt(SEqHatDot_1 * SEqHatDot_1 + SEqHatDot_2 * SEqHatDot_2 + SEqHatDot_3 * SEqHatDot_3 + SEqHatDot_4 * SEqHatDot_4);
+    norm = 1.0 / safe_sqrt(SEqHatDot_1 * SEqHatDot_1 + SEqHatDot_2 * SEqHatDot_2 + SEqHatDot_3 * SEqHatDot_3 + SEqHatDot_4 * SEqHatDot_4);
     if (isinf(norm)) {
 	    // discard this data point
 	    renorm_range_count++;
@@ -268,7 +268,7 @@ void AP_Quaternion::update_MARG(float deltat, Vector3f &gyro, Vector3f &accel, V
     SEq_4 += (SEqDot_omega_4 - (beta * SEqHatDot_4)) * deltat;
 
     // normalise quaternion
-    norm = 1.0/sqrt(SEq_1 * SEq_1 + SEq_2 * SEq_2 + SEq_3 * SEq_3 + SEq_4 * SEq_4);
+    norm = 1.0/safe_sqrt(SEq_1 * SEq_1 + SEq_2 * SEq_2 + SEq_3 * SEq_3 + SEq_4 * SEq_4);
     if (isinf(norm)) {
 	    // our quaternion is bad! Reset based on roll/pitch/yaw
 	    // and hope for the best ...
@@ -307,6 +307,7 @@ void AP_Quaternion::update(void)
 
 #ifdef DESKTOP_BUILD
 	Quaternion q_saved = q;
+	Vector3f bias_saved = gyro_bias;
 #endif
 
 	_imu->update();
@@ -363,6 +364,21 @@ void AP_Quaternion::update(void)
 		update_MARG(deltat, gyro, accel, mag);
 	}
 
+
+#ifdef DESKTOP_BUILD
+	if (q.is_nan()) {
+		SITL_debug("QUAT NAN: deltat=%f roll=%f pitch=%f yaw=%f q0=[%f %f %f %f] q=[%f %f %f %f] a=[%f %f %f] g=(%f %f %f)\n",
+			   deltat, roll, pitch, yaw,
+			   q_saved.q1, q_saved.q2, q_saved.q3, q_saved.q4,
+			   q.q1, q.q2, q.q3, q.q4,
+			   accel.x, accel.y, accel.z,
+			   gyro.x, gyro.y, gyro.z);
+		q = q_saved;
+		gyro_bias = bias_saved;
+		update_IMU(deltat, gyro, accel);
+	}
+#endif
+
 	// keep the corrected gyro for reporting
 	_gyro_corrected = gyro;
 
@@ -400,23 +416,6 @@ void AP_Quaternion::update(void)
 	if (yaw_sensor < 0) {
 		yaw_sensor += 36000;
 	}
-
-#ifdef DESKTOP_BUILD
-	if (q.is_nan() ||
-	    isnan(roll) ||
-	    isnan(pitch) ||
-	    isnan(yaw) ||
-	    isnan(b_x) ||
-	    isnan(b_z) ||
-	    gyro_bias.is_nan()) {
-		SITL_debug("QUAT NAN: deltat=%f roll=%f pitch=%f yaw=%f q0=[%f %f %f %f] q=[%f %f %f %f] a=[%f %f %f] g=(%f %f %f)\n",
-			   deltat, roll, pitch, yaw,
-			   q_saved.q1, q_saved.q2, q_saved.q3, q_saved.q4,
-			   q.q1, q.q2, q.q3, q.q4,
-			   accel.x, accel.y, accel.z,
-			   gyro.x, gyro.y, gyro.z);
-	}
-#endif
 
 }
 
