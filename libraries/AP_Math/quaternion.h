@@ -17,7 +17,8 @@ class Quaternion
 public:
 	float q1, q2, q3, q4;
 
-	// constructor
+	// constructor creates a quaternion equivalent
+	// to roll=0, pitch=0, yaw=0
 	Quaternion() { q1 = 1; q2 = q3 = q4 = 0; }
 
 	// setting constructor
