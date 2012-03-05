@@ -33,13 +33,7 @@ class AP_ADC_ADS7844 : public AP_ADC
     // check if Ch6 would block
 	bool new_data_available(const uint8_t *channel_numbers);
 
-	bool	filter_result;
-
 	private:
-	uint16_t 		_filter_accel[3][ADC_ACCEL_FILTER_SIZE];
-	uint16_t 		_prev_gyro[3];
-	uint16_t 		_prev_accel[3];
-	uint8_t			_filter_index_accel;
 	static void read(uint32_t);
 
 };
