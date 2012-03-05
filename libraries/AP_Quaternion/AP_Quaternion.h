@@ -22,12 +22,6 @@ public:
 		_gps(gps),
 		_compass(compass)
 	{
-		// initial quaternion
-		SEq_1 = 1;
-		SEq_2 = 0;
-		SEq_3 = 0;
-		SEq_4 = 0;
-
 		// reference direction of flux in earth frame
 		b_x = 0;
 		b_z = -1;
@@ -97,8 +91,8 @@ private:
 	// true if we are doing centripetal acceleration correction
 	bool		_centripetal;
 
-	// maximum gyroscope measurement error in rad/s (set to 10 degrees/second)
-	static const float gyroMeasError = 10.0 * (M_PI/180.0);
+	// maximum gyroscope measurement error in rad/s (set to 20 degrees/second)
+	static const float gyroMeasError = 20.0 * (M_PI/180.0);
 
 	// maximum gyroscope drift rate in radians/s/s (set to 0.02
 	// degrees/s/s, which is 1.2 degrees/s/minute)
@@ -108,8 +102,10 @@ private:
 	float zeta;
 
 	// quaternion elements
-	float SEq_1, SEq_2, SEq_3, SEq_4;
+	Quaternion q;
 
+	// magnetic flux estimates. These are used for the automatic
+	// magnetometer calibration
 	float b_x;
 	float b_z;
 

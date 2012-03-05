@@ -31,6 +31,13 @@ AP_Quaternion::set_compass(Compass *compass)
 	_compass = compass;
 }
 
+// to keep the code as close to the original as possible, we use these
+// macros for quaternion access
+#define SEq_1 q.q1
+#define SEq_2 q.q2
+#define SEq_3 q.q3
+#define SEq_4 q.q4
+
 // Function to compute one quaternion iteration without magnetometer
 void AP_Quaternion::update_IMU(float deltat, Vector3f &gyro, Vector3f &accel)
 {
@@ -55,6 +62,11 @@ void AP_Quaternion::update_IMU(float deltat, Vector3f &gyro, Vector3f &accel)
 
     // normalise accelerometer vector
     accel.normalize();
+    if (accel.is_inf()) {
+	    // discard this data point
+	    renorm_range_count++;
+	    return;
+    }
 
     // Compute the objective function and Jacobian
     f_1 = twoSEq_2 * SEq_4 - twoSEq_1 * SEq_3 - accel.x;
@@ -75,12 +87,16 @@ void AP_Quaternion::update_IMU(float deltat, Vector3f &gyro, Vector3f &accel)
 
     // Normalise the gradient
     norm = 1.0/sqrt(SEqHatDot_1 * SEqHatDot_1 + SEqHatDot_2 * SEqHatDot_2 + SEqHatDot_3 * SEqHatDot_3 + SEqHatDot_4 * SEqHatDot_4);
-    if (!isinf(norm)) {
-	    SEqHatDot_1 *= norm;
-	    SEqHatDot_2 *= norm;
-	    SEqHatDot_3 *= norm;
-	    SEqHatDot_4 *= norm;
+    if (isinf(norm)) {
+	    // we can't do an update - discard this data point and
+	    // hope the next one is better
+	    renorm_range_count++;
+	    return;
     }
+    SEqHatDot_1 *= norm;
+    SEqHatDot_2 *= norm;
+    SEqHatDot_3 *= norm;
+    SEqHatDot_4 *= norm;
 
     // Compute the quaternion derrivative measured by gyroscopes
     SEqDot_omega_1   = -halfSEq_2 * gyro.x - halfSEq_3 * gyro.y - halfSEq_4 * gyro.z;
@@ -96,12 +112,17 @@ void AP_Quaternion::update_IMU(float deltat, Vector3f &gyro, Vector3f &accel)
 
     // Normalise quaternion
     norm = 1.0/sqrt(SEq_1 * SEq_1 + SEq_2 * SEq_2 + SEq_3 * SEq_3 + SEq_4 * SEq_4);
-    if (!isinf(norm)) {
-	    SEq_1 *= norm;
-	    SEq_2 *= norm;
-	    SEq_3 *= norm;
-	    SEq_4 *= norm;
+    if (isinf(norm)) {
+	    // our quaternion is bad! Reset based on roll/pitch/yaw
+	    // and hope for the best ...
+	    renorm_blowup_count++;
+	    quaternion_from_euler(q, roll, pitch, yaw);
+	    return;
     }
+    SEq_1 *= norm;
+    SEq_2 *= norm;
+    SEq_3 *= norm;
+    SEq_4 *= norm;
 }
 
 
@@ -124,9 +145,19 @@ void AP_Quaternion::update_MARG(float deltat, Vector3f &gyro, Vector3f &accel, V
 
     // normalise accelerometer vector
     accel.normalize();
+    if (accel.is_inf()) {
+	    // discard this data point
+	    renorm_range_count++;
+	    return;
+    }
 
     // normalise the magnetometer measurement
     mag.normalize();
+    if (mag.is_inf()) {
+	    // discard this data point
+	    renorm_range_count++;
+	    return;
+    }
 
     // auxiliary variables to avoid repeated calculations
     float halfSEq_1 = 0.5f * SEq_1;
@@ -189,6 +220,11 @@ void AP_Quaternion::update_MARG(float deltat, Vector3f &gyro, Vector3f &accel, V
 
     // normalise the gradient to estimate direction of the gyroscope error
     norm = 1.0 / sqrt(SEqHatDot_1 * SEqHatDot_1 + SEqHatDot_2 * SEqHatDot_2 + SEqHatDot_3 * SEqHatDot_3 + SEqHatDot_4 * SEqHatDot_4);
+    if (isinf(norm)) {
+	    // discard this data point
+	    renorm_range_count++;
+	    return;
+    }
     SEqHatDot_1 *= norm;
     SEqHatDot_2 *= norm;
     SEqHatDot_3 *= norm;
@@ -205,8 +241,18 @@ void AP_Quaternion::update_MARG(float deltat, Vector3f &gyro, Vector3f &accel, V
     _error_rp_count++;
     _error_yaw_count++;
 
-    // compute and remove the gyroscope baises
-    gyro_bias += w_err * (deltat * zeta);
+    // compute the gyroscope bias delta
+    Vector3f drift_delta = w_err * (deltat * zeta);
+
+    // don't allow the drift rate to be exceeded. This prevents a
+    // sudden drift change coming from a outage in the compass
+    float max_change = gyroMeasDrift * deltat;
+    drift_delta.x = constrain(drift_delta.x, -max_change, max_change);
+    drift_delta.y = constrain(drift_delta.y, -max_change, max_change);
+    drift_delta.z = constrain(drift_delta.z, -max_change, max_change);
+    gyro_bias += drift_delta;
+
+    // correct the gyro reading for drift
     gyro -= gyro_bias;
 
     // compute the quaternion rate measured by gyroscopes
@@ -223,12 +269,17 @@ void AP_Quaternion::update_MARG(float deltat, Vector3f &gyro, Vector3f &accel, V
 
     // normalise quaternion
     norm = 1.0/sqrt(SEq_1 * SEq_1 + SEq_2 * SEq_2 + SEq_3 * SEq_3 + SEq_4 * SEq_4);
-    if (!isinf(norm)) {
-	    SEq_1 *= norm;
-	    SEq_2 *= norm;
-	    SEq_3 *= norm;
-	    SEq_4 *= norm;
+    if (isinf(norm)) {
+	    // our quaternion is bad! Reset based on roll/pitch/yaw
+	    // and hope for the best ...
+	    renorm_blowup_count++;
+	    quaternion_from_euler(q, roll, pitch, yaw);
+	    return;
     }
+    SEq_1 *= norm;
+    SEq_2 *= norm;
+    SEq_3 *= norm;
+    SEq_4 *= norm;
 
     // compute flux in the earth frame
     // recompute axulirary variables
@@ -265,6 +316,13 @@ void AP_Quaternion::update(void)
 		return;
 	}
 
+	if (!_have_initial_yaw && _compass && _compass->use_for_yaw()) {
+		// setup the quaternion with initial compass yaw
+		quaternion_from_euler(q, 0, 0, _compass->heading);
+		_have_initial_yaw = true;
+		gyro_bias.zero();
+	}
+
 	// get current IMU state
 	gyro = _imu->get_gyro();
 	accel = _imu->get_accel();
@@ -293,7 +351,7 @@ void AP_Quaternion::update(void)
 		accel.z += (gyro.y - gyro_bias.y) * veloc;
 	}
 
-	if (_compass == NULL) {
+	if (_compass == NULL || !_compass->use_for_yaw()) {
 		update_IMU(deltat, gyro, accel);
 	} else {
 		// mag.z is reversed in quaternion code
