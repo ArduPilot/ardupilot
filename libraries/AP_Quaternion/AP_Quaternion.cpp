@@ -269,26 +269,29 @@ void AP_Quaternion::update(void)
 	gyro = _imu->get_gyro();
 	accel = _imu->get_accel();
 
-	// keep a smoothed gyro vector for centripetal and reporting
-	// to mainline code
-	_gyro_smoothed = (_gyro_smoothed * 0.95) + (gyro * 0.05);
-
-	// Quaternion code uses opposite x and y gyro sense
+	// Quaternion code uses opposite x and y gyro sense from the
+	// rest of APM
 	gyro.x = -gyro.x;
 	gyro.y = -gyro.y;
 
+	// Quaternion code uses opposite z accel as well
+	accel.z = -accel.z;
 
 	if (_centripetal && _gps && _gps->status() == GPS::GPS_OK) {
+		// compensate for linear acceleration, limited to 1g
+		float acceleration = _gps->acceleration();
+		acceleration = constrain(acceleration, 0, 9.8);
+		accel.x -= acceleration;
+
 		// compensate for centripetal acceleration
 		float veloc;
 		veloc = _gps->ground_speed / 100;
-		accel.x -= _gps->acceleration();
-		accel.y -= _gyro_smoothed.z * veloc;
-		accel.z += _gyro_smoothed.y * veloc;
+		// be careful of the signs in this calculation. the
+		// quaternion system uses different signs than the
+		// rest of APM
+		accel.y -= (gyro.z - gyro_bias.z) * veloc;
+		accel.z += (gyro.y - gyro_bias.y) * veloc;
 	}
-
-	// Quaternion code uses opposite z accel
-	accel.z = -accel.z;
 
 	if (_compass == NULL) {
 		update_IMU(deltat, gyro, accel);
@@ -297,6 +300,9 @@ void AP_Quaternion::update(void)
 		Vector3f mag = Vector3f(_compass->mag_x, _compass->mag_y, - _compass->mag_z);
 		update_MARG(deltat, gyro, accel, mag);
 	}
+
+	// keep the corrected gyro for reporting
+	_gyro_corrected = gyro;
 
 	// compute the Eulers
 	float test = (SEq_1*SEq_3 - SEq_4*SEq_2);
