@@ -89,7 +89,6 @@ void sitl_update_adc(float roll, 	float pitch, 	float yaw,		// Relative to earth
 	adc[5] =  (zAccel / (_accel_scale * _sensor_signs[5])) + accel_offset;
 
 	/* tell the UDR2 register emulation what values to give to the driver */
-	cli();
 	for (uint8_t i=0; i<6; i++) {
 		UDR2.set(sensor_map[i], adc[i]);
 	}
@@ -98,7 +97,6 @@ void sitl_update_adc(float roll, 	float pitch, 	float yaw,		// Relative to earth
 
 	/* FIX: rubbish value for temperature for now */
 	UDR2.set(3, 2000);
-	sei();
 
 	runInterrupt(6);
 }
