@@ -305,6 +305,10 @@ void AP_Quaternion::update(void)
 	Vector3f gyro, accel;
 	float deltat;
 
+#ifdef DESKTOP_BUILD
+	Quaternion q_saved = q;
+#endif
+
 	_imu->update();
 
 	deltat = _imu->get_delta_time();
@@ -396,6 +400,24 @@ void AP_Quaternion::update(void)
 	if (yaw_sensor < 0) {
 		yaw_sensor += 36000;
 	}
+
+#ifdef DESKTOP_BUILD
+	if (q.is_nan() ||
+	    isnan(roll) ||
+	    isnan(pitch) ||
+	    isnan(yaw) ||
+	    isnan(b_x) ||
+	    isnan(b_z) ||
+	    gyro_bias.is_nan()) {
+		SITL_debug("QUAT NAN: deltat=%f roll=%f pitch=%f yaw=%f q0=[%f %f %f %f] q=[%f %f %f %f] a=[%f %f %f] g=(%f %f %f)\n",
+			   deltat, roll, pitch, yaw,
+			   q_saved.q1, q_saved.q2, q_saved.q3, q_saved.q4,
+			   q.q1, q.q2, q.q3, q.q4,
+			   accel.x, accel.y, accel.z,
+			   gyro.x, gyro.y, gyro.z);
+	}
+#endif
+
 }
 
 // average error in roll/pitch since last call
