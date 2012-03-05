@@ -67,3 +67,33 @@ void calculate_euler_angles(Matrix3f &m, float *roll, float *pitch, float *yaw)
 		*yaw 	= atan2(m.b.x, m.a.x);
 	}
 }
+
+
+// create a quaternion from Euler angles
+void quaternion_from_euler(Quaternion &q, float roll, float pitch, float yaw)
+{
+	float cr2 = cos(roll/2);
+	float cp2 = cos(pitch/2);
+	float cy2 = cos(yaw/2);
+	// the sign reversal here is due to the different conventions
+	// in the madgwick quaternion code and the rest of APM
+	float sr2 = -sin(roll/2);
+	float sp2 = -sin(pitch/2);
+	float sy2 = sin(yaw/2);
+
+	q.q1 = cr2*cp2*cy2 + sr2*sp2*sy2;
+	q.q2 = sr2*cp2*cy2 - cr2*sp2*sy2;
+	q.q3 = cr2*sp2*cy2 + sr2*cp2*sy2;
+	q.q4 = cr2*cp2*sy2 - sr2*sp2*cy2;
+}
+
+// create eulers from a quaternion
+void euler_from_quaternion(Quaternion &q, float *roll, float *pitch, float *yaw)
+{
+	*roll = -(atan2(2.0*(q.q1*q.q2 + q.q3*q.q4),
+			1 - 2.0*(q.q2*q.q2 + q.q3*q.q3)));
+	// we let safe_asin() handle the singularities near 90/-90 in pitch
+	*pitch = -safe_asin(2.0*(q.q1*q.q3 - q.q4*q.q2));
+	*yaw = atan2(2.0*(q.q1*q.q4 + q.q2*q.q3),
+		     1 - 2.0*(q.q3*q.q3 + q.q4*q.q4));
+}
