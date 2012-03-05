@@ -125,8 +125,6 @@
 #define OF_LOITER 10			// Hold a single location using optical flow sensor
 #define NUM_MODES 11
 
-#define INITIALISING 9     // in startup routines
-
 #define SIMPLE_1 1
 #define SIMPLE_2 2
 #define SIMPLE_3 4
