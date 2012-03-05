@@ -55,7 +55,9 @@ struct sitl_fdm {
 
 static int sitl_fd;
 struct sockaddr_in rcout_addr;
+#ifndef __CYGWIN__
 static pid_t parent_pid;
+#endif
 struct ADC_UDR2 UDR2;
 struct RC_ICR4 ICR4;
 extern AP_TimerProcess timer_scheduler;
@@ -221,10 +223,12 @@ static void timer_handler(int signum)
 
 	cli();
 
+#ifndef __CYGWIN__
 	/* make sure we die if our parent dies */
 	if (kill(parent_pid, 0) != 0) {
 		exit(1);
 	}
+#endif
 
 	/* check for packet from flight sim */
 	sitl_fdm_input();
@@ -292,7 +296,9 @@ static void setup_timer(void)
  */
 void sitl_setup(void)
 {
+#ifndef __CYGWIN__
 	parent_pid = getppid();
+#endif
 
 	rcout_addr.sin_family = AF_INET;
 	rcout_addr.sin_port = htons(RCOUT_PORT);
