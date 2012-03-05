@@ -181,6 +181,10 @@ public:
 	bool is_nan(void)
 		{   return isnan(x) || isnan(y) || isnan(z); }
 
+	// check if any elements are infinity
+	bool is_inf(void)
+		{   return isinf(x) || isinf(y) || isinf(z); }
+
 };
 
 typedef Vector3<int16_t>		Vector3i;
