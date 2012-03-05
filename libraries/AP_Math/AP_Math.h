@@ -7,6 +7,7 @@
 #include "vector2.h"
 #include "vector3.h"
 #include "matrix3.h"
+#include "quaternion.h"
 #include "polygon.h"
 
 // define AP_Param types AP_Vector3f and Ap_Matrix3f
@@ -24,3 +25,9 @@ void rotation_matrix_from_euler(Matrix3f &m, float roll, float pitch, float yaw)
 
 // calculate euler angles from a rotation matrix
 void calculate_euler_angles(Matrix3f &m, float *roll, float *pitch, float *yaw);
+
+// create a quaternion from Euler angles
+void quaternion_from_euler(Quaternion &q, float roll, float pitch, float yaw);
+
+// create eulers from a quaternion
+void euler_from_quaternion(Quaternion &q, float *roll, float *pitch, float *yaw);
