@@ -24,10 +24,11 @@ float safe_asin(float v)
 // real input should have been zero
 float safe_sqrt(float v)
 {
-	if (isnan(v) || v <= 0.0) {
-		return 0.0;
+	float ret = sqrt(v);
+	if (isnan(ret)) {
+		return 0;
 	}
-	return sqrt(v);
+	return ret;
 }
 
 
