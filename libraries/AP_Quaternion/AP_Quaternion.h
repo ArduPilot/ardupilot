@@ -59,8 +59,14 @@ public:
 	// compatibility methods with DCM
 	void update_DCM(void) { update(); }
 	void update_DCM_fast(void) { update(); }
-	Vector3f get_gyro(void) { return _gyro_smoothed; }
-	Vector3f get_integrator(void) { return gyro_bias; }
+	Vector3f get_gyro(void) {
+		// notice the sign reversals here
+		return Vector3f(-_gyro_corrected.x, -_gyro_corrected.y, _gyro_corrected.z);
+	}
+	Vector3f get_integrator(void) {
+		// notice the sign reversals here
+		return Vector3f(-gyro_bias.x, -gyro_bias.y, gyro_bias.z);
+        }
 	float get_accel_weight(void) { return 0; }
 	float get_renorm_val(void) { return 0; }
 	float get_health(void) { return 0; }
@@ -91,10 +97,11 @@ private:
 	// true if we are doing centripetal acceleration correction
 	bool		_centripetal;
 
-	// maximum gyroscope measurement error in rad/s (set to 5 degrees/second)
-	static const float gyroMeasError = 5.0 * (M_PI/180.0);
+	// maximum gyroscope measurement error in rad/s (set to 10 degrees/second)
+	static const float gyroMeasError = 10.0 * (M_PI/180.0);
 
-	// maximum gyroscope drift rate in radians/s/s (set to 0.02 degrees/s/s)
+	// maximum gyroscope drift rate in radians/s/s (set to 0.02
+	// degrees/s/s, which is 1.2 degrees/s/minute)
 	static const float gyroMeasDrift = 0.02 * (PI/180.0);
 
 	float beta;
@@ -109,8 +116,8 @@ private:
 	// estimate gyroscope biases error
 	Vector3f gyro_bias;
 
-	// smoothed gyro estimate
-	Vector3f _gyro_smoothed;
+	// the current corrected gyro vector
+	Vector3f _gyro_corrected;
 
 	// estimate of error
 	float		_error_rp_sum;
