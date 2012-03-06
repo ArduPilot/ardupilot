@@ -111,5 +111,25 @@ namespace ArdupilotMega.Antenna
             if (tracker != null)
                 tracker.TrimTilt = TRK_tilttrim.Value;
         }
+
+        private void TXT_panrange_TextChanged(object sender, EventArgs e)
+        {
+            int range;
+
+            int.TryParse(TXT_panrange.Text, out range);
+
+            TRK_pantrim.Minimum = range / 2 * -1;
+            TRK_pantrim.Maximum = range / 2;
+        }
+
+        private void TXT_tiltrange_TextChanged(object sender, EventArgs e)
+        {
+            int range;
+
+            int.TryParse(TXT_tiltrange.Text, out range);
+
+            TRK_tilttrim.Minimum = range / 2 * -1;
+            TRK_tilttrim.Maximum = range / 2;
+        }
     }
 }

@@ -405,7 +405,7 @@
             this.BARthrottle.minline = 0;
             this.BARthrottle.Name = "BARthrottle";
             this.BARthrottle.Value = 1000;
-            this.BARthrottle.ValueColor = System.Drawing.Color.FromArgb(((int)(((byte)(148)))), ((int)(((byte)(193)))), ((int)(((byte)(31)))));
+            this.BARthrottle.ValueColor = System.Drawing.Color.Magenta;
             // 
             // BARyaw
             // 

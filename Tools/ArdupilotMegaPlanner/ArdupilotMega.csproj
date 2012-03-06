@@ -120,82 +120,60 @@
   <ItemGroup>
     <Reference Include="alglibnet2, Version=0.0.0.0, Culture=neutral, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
-      <HintPath>Lib\alglibnet2.dll</HintPath>
     </Reference>
     <Reference Include="BSE.Windows.Forms">
-      <HintPath>..\..\..\..\..\Desktop\DIYDrones\myquad\greatmaps_e1bb830a18a3\Demo.WindowsForms\bin\Debug\BSE.Windows.Forms.dll</HintPath>
     </Reference>
     <Reference Include="Core">
-      <HintPath>..\..\..\..\..\Desktop\DIYDrones\kml-library\KmlTestbed\bin\Release\Core.dll</HintPath>
     </Reference>
     <Reference Include="DirectShowLib-2005">
-      <HintPath>..\..\..\..\..\Desktop\DIYDrones\myquad\DirectShowLib-2005.dll</HintPath>
     </Reference>
     <Reference Include="GMap.NET.Core">
-      <HintPath>..\..\..\..\..\Desktop\DIYDrones\myquad\greatmaps_e1bb830a18a3\GMap.NET.WindowsForms\bin\Debug\GMap.NET.Core.dll</HintPath>
     </Reference>
     <Reference Include="GMap.NET.WindowsForms">
-      <HintPath>..\..\..\..\..\Desktop\DIYDrones\myquad\greatmaps_e1bb830a18a3\GMap.NET.WindowsForms\bin\Debug\GMap.NET.WindowsForms.dll</HintPath>
     </Reference>
     <Reference Include="ICSharpCode.SharpZipLib">
-      <HintPath>..\..\..\..\..\Desktop\DIYDrones\SrcSamples\bin\ICSharpCode.SharpZipLib.dll</HintPath>
     </Reference>
     <Reference Include="IronPython, Version=2.7.0.40, Culture=neutral, PublicKeyToken=7f709c5b713576e1, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\..\..\..\..\..\..\Program Files (x86)\IronPython 2.7.1\IronPython-2.6.1\IronPython.dll</HintPath>
     </Reference>
     <Reference Include="IronPython.Modules, Version=2.7.0.40, Culture=neutral, PublicKeyToken=7f709c5b713576e1, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\..\..\..\..\..\..\Program Files (x86)\IronPython 2.7.1\IronPython-2.6.1\IronPython.Modules.dll</HintPath>
     </Reference>
     <Reference Include="KMLib">
-      <HintPath>..\..\..\..\..\Desktop\DIYDrones\kml-library\KmlTestbed\bin\Release\KMLib.dll</HintPath>
     </Reference>
     <Reference Include="log4net, Version=1.2.11.0, Culture=neutral, PublicKeyToken=669e0ddf0bb1aa2a, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
-      <HintPath>Lib\log4net.dll</HintPath>
     </Reference>
     <Reference Include="MetaDataExtractor">
-      <HintPath>..\..\..\..\..\Desktop\DIYDrones\myquad\MetaDataExtractorCSharp240d\bin\Release\MetaDataExtractor.dll</HintPath>
     </Reference>
     <Reference Include="Microsoft.DirectX, Version=1.0.2902.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35">
       <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\..\..\..\..\..\..\Windows\Microsoft.NET\DirectX for Managed Code\1.0.2902.0\Microsoft.DirectX.dll</HintPath>
       <Private>False</Private>
     </Reference>
     <Reference Include="Microsoft.DirectX.DirectInput, Version=1.0.2902.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35">
       <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\..\..\..\..\..\..\Windows\Microsoft.NET\DirectX for Managed Code\1.0.2902.0\Microsoft.DirectX.DirectInput.dll</HintPath>
       <Private>False</Private>
     </Reference>
     <Reference Include="Microsoft.Dynamic">
-      <HintPath>..\..\..\..\..\..\..\Program Files (x86)\IronPython 2.7.1\IronPython-2.6.1\Microsoft.Dynamic.dll</HintPath>
     </Reference>
     <Reference Include="Microsoft.Scripting, Version=1.1.0.20, Culture=neutral, PublicKeyToken=7f709c5b713576e1, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\..\..\..\..\..\..\Program Files (x86)\IronPython 2.7.1\IronPython-2.6.1\Microsoft.Scripting.dll</HintPath>
     </Reference>
     <Reference Include="Microsoft.Scripting.Core">
-      <HintPath>..\..\..\..\..\..\..\Program Files (x86)\IronPython 2.7.1\IronPython-2.6.1\Microsoft.Scripting.Core.dll</HintPath>
     </Reference>
     <Reference Include="Microsoft.Scripting.Debugging">
-      <HintPath>..\..\..\..\..\..\..\Program Files (x86)\IronPython 2.7.1\IronPython-2.6.1\Microsoft.Scripting.Debugging.dll</HintPath>
     </Reference>
     <Reference Include="Microsoft.Scripting.ExtensionAttribute, Version=2.0.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\..\..\..\..\..\..\Program Files (x86)\IronPython 2.7.1\IronPython-2.6.1\Microsoft.Scripting.ExtensionAttribute.dll</HintPath>
     </Reference>
     <Reference Include="OpenTK, Version=1.0.0.0, Culture=neutral, PublicKeyToken=bad199fe84eb3df4, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\..\..\..\..\Desktop\DIYDrones\virtualglobebook-OpenGlobe-ddf1d7e\ThirdParty\OpenTKGL4\Binaries\OpenTK\Release\OpenTK.dll</HintPath>
     </Reference>
     <Reference Include="OpenTK.GLControl, Version=1.0.0.0, Culture=neutral, PublicKeyToken=bad199fe84eb3df4, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\..\..\..\..\Desktop\DIYDrones\opentk\trunk\Binaries\OpenTK\Release\OpenTK.GLControl.dll</HintPath>
     </Reference>
     <Reference Include="SharpKml, Version=1.1.0.0, Culture=neutral, PublicKeyToken=e608cd7d975805ad, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\..\..\..\..\Desktop\DIYDrones\myquad\sharpkml\SharpKml\bin\Release\SharpKml.dll</HintPath>
     </Reference>
     <Reference Include="System">
       <Private>False</Private>
@@ -207,7 +185,6 @@
       <Private>False</Private>
     </Reference>
     <Reference Include="System.Data.SQLite">
-      <HintPath>..\..\..\..\..\Desktop\DIYDrones\myquad\greatmaps_e1bb830a18a3\Demo.WindowsForms\bin\Debug\x86\System.Data.SQLite.DLL</HintPath>
     </Reference>
     <Reference Include="System.Drawing">
       <Private>False</Private>
@@ -229,7 +206,6 @@
     </Reference>
     <Reference Include="ZedGraph, Version=5.1.2.878, Culture=neutral, PublicKeyToken=02a83cbd123fcd60, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\..\ArdupilotSim\ArdupilotSim\bin\Release\ZedGraph.dll</HintPath>
     </Reference>
   </ItemGroup>
   <ItemGroup>
@@ -241,6 +217,7 @@
     <Compile Include="Antenna\Tracker.Designer.cs">
       <DependentUpon>Tracker.cs</DependentUpon>
     </Compile>
+    <Compile Include="CodeGen.cs" />
     <Compile Include="Controls\MessageBox.cs" />
     <Compile Include="Controls\ProgressReporterDialogue.cs">
       <SubType>Form</SubType>

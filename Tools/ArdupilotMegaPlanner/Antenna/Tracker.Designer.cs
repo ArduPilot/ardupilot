@@ -84,7 +84,7 @@
             this.CMB_baudrate.Location = new System.Drawing.Point(337, 9);
             this.CMB_baudrate.Name = "CMB_baudrate";
             this.CMB_baudrate.Size = new System.Drawing.Size(121, 21);
-            this.CMB_baudrate.TabIndex = 5;
+            this.CMB_baudrate.TabIndex = 2;
             // 
             // CMB_serialport
             // 
@@ -93,14 +93,14 @@
             this.CMB_serialport.Location = new System.Drawing.Point(210, 10);
             this.CMB_serialport.Name = "CMB_serialport";
             this.CMB_serialport.Size = new System.Drawing.Size(121, 21);
-            this.CMB_serialport.TabIndex = 3;
+            this.CMB_serialport.TabIndex = 1;
             // 
             // BUT_connect
             // 
             this.BUT_connect.Location = new System.Drawing.Point(476, 9);
             this.BUT_connect.Name = "BUT_connect";
             this.BUT_connect.Size = new System.Drawing.Size(75, 23);
-            this.BUT_connect.TabIndex = 4;
+            this.BUT_connect.TabIndex = 3;
             this.BUT_connect.Text = "Connect";
             this.BUT_connect.UseVisualStyleBackColor = true;
             this.BUT_connect.Click += new System.EventHandler(this.BUT_connect_Click);
@@ -108,11 +108,12 @@
             // TRK_pantrim
             // 
             this.TRK_pantrim.Location = new System.Drawing.Point(153, 65);
-            this.TRK_pantrim.Maximum = 180;
-            this.TRK_pantrim.Minimum = -180;
+            this.TRK_pantrim.Maximum = 90;
+            this.TRK_pantrim.Minimum = -90;
             this.TRK_pantrim.Name = "TRK_pantrim";
             this.TRK_pantrim.Size = new System.Drawing.Size(375, 45);
-            this.TRK_pantrim.TabIndex = 6;
+            this.TRK_pantrim.TabIndex = 5;
+            this.TRK_pantrim.TickFrequency = 5;
             this.TRK_pantrim.Scroll += new System.EventHandler(this.TRK_pantrim_Scroll);
             // 
             // TXT_panrange
@@ -120,17 +121,18 @@
             this.TXT_panrange.Location = new System.Drawing.Point(83, 65);
             this.TXT_panrange.Name = "TXT_panrange";
             this.TXT_panrange.Size = new System.Drawing.Size(64, 20);
-            this.TXT_panrange.TabIndex = 7;
+            this.TXT_panrange.TabIndex = 4;
             this.TXT_panrange.Text = "180";
+            this.TXT_panrange.TextChanged += new System.EventHandler(this.TXT_panrange_TextChanged);
             // 
             // label3
             // 
             this.label3.AutoSize = true;
-            this.label3.Location = new System.Drawing.Point(331, 49);
+            this.label3.Location = new System.Drawing.Point(326, 49);
             this.label3.Name = "label3";
-            this.label3.Size = new System.Drawing.Size(38, 13);
+            this.label3.Size = new System.Drawing.Size(27, 13);
             this.label3.TabIndex = 10;
-            this.label3.Text = "Center";
+            this.label3.Text = "Trim";
             // 
             // label4
             // 
@@ -153,29 +155,30 @@
             // label6
             // 
             this.label6.AutoSize = true;
-            this.label6.Location = new System.Drawing.Point(331, 125);
+            this.label6.Location = new System.Drawing.Point(326, 125);
             this.label6.Name = "label6";
-            this.label6.Size = new System.Drawing.Size(38, 13);
+            this.label6.Size = new System.Drawing.Size(27, 13);
             this.label6.TabIndex = 16;
-            this.label6.Text = "Center";
+            this.label6.Text = "Trim";
             // 
             // TXT_tiltrange
             // 
             this.TXT_tiltrange.Location = new System.Drawing.Point(83, 141);
             this.TXT_tiltrange.Name = "TXT_tiltrange";
             this.TXT_tiltrange.Size = new System.Drawing.Size(64, 20);
-            this.TXT_tiltrange.TabIndex = 13;
+            this.TXT_tiltrange.TabIndex = 6;
             this.TXT_tiltrange.Text = "90";
+            this.TXT_tiltrange.TextChanged += new System.EventHandler(this.TXT_tiltrange_TextChanged);
             // 
             // TRK_tilttrim
             // 
             this.TRK_tilttrim.Location = new System.Drawing.Point(153, 141);
-            this.TRK_tilttrim.Maximum = 90;
-            this.TRK_tilttrim.Minimum = -90;
+            this.TRK_tilttrim.Maximum = 45;
+            this.TRK_tilttrim.Minimum = -45;
             this.TRK_tilttrim.Name = "TRK_tilttrim";
             this.TRK_tilttrim.Size = new System.Drawing.Size(375, 45);
-            this.TRK_tilttrim.TabIndex = 12;
-            this.TRK_tilttrim.Value = 45;
+            this.TRK_tilttrim.TabIndex = 7;
+            this.TRK_tilttrim.TickFrequency = 5;
             this.TRK_tilttrim.Scroll += new System.EventHandler(this.TRK_tilttrim_Scroll);
             // 
             // label2

@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Collections;
 using System.ComponentModel;
 using System.Data;
 using System.Drawing;
@@ -22,13 +23,18 @@ using SharpKml.Dom.GX;
 
 using System.Reflection;
 using System.Xml;
-
+using log4net;
+using ZedGraph; // Graphs
 
 namespace ArdupilotMega
 {
     public partial class MavlinkLog : Form
     {
+        private static readonly ILog log = LogManager.GetLogger(System.Reflection.MethodBase.GetCurrentMethod().DeclaringType);
+
         List<CurrentState> flightdata = new List<CurrentState>();
+
+        List<string> selection = new List<string>();
 
         public MavlinkLog()
         {
@@ -232,7 +238,7 @@ namespace ArdupilotMega
                 }
                 catch { }
 
-                Link link = new Link();
+                SharpKml.Dom.Link link = new SharpKml.Dom.Link();
                 link.Href = new Uri("block_plane_0.dae", UriKind.Relative);
 
                 model.Link = link;
@@ -369,7 +375,7 @@ namespace ArdupilotMega
 
                     float oldlatlngalt = 0;
 
-                    DateTime appui = DateTime.Now;
+                    int appui = 0;
 
                     while (mine.logplaybackfile.BaseStream.Position < mine.logplaybackfile.BaseStream.Length)
                     {
@@ -384,11 +390,11 @@ namespace ArdupilotMega
 
                         cs.UpdateCurrentSettings(null, true, mine);
 
-                        if (appui != DateTime.Now)
+                        if (appui != DateTime.Now.Second)
                         {
                             // cant do entire app as mixes with flightdata timer
                             this.Refresh();
-                            appui = DateTime.Now;
+                            appui = DateTime.Now.Second;
                         }
 
                         try
@@ -514,11 +520,19 @@ namespace ArdupilotMega
 
         private void BUT_graphmavlog_Click(object sender, EventArgs e)
         {
+
+            //http://devreminder.wordpress.com/net/net-framework-fundamentals/c-dynamic-math-expression-evaluation/
+            //http://www.c-sharpcorner.com/UploadFile/mgold/CodeDomCalculator08082005003253AM/CodeDomCalculator.aspx
+
+//string mathExpression = "(1+1)*3";
+            //Console.WriteLine(String.Format("{0}={1}",mathExpression, Evaluate(mathExpression)));
+
+
             OpenFileDialog openFileDialog1 = new OpenFileDialog();
             openFileDialog1.Filter = "*.tlog|*.tlog";
             openFileDialog1.FilterIndex = 2;
             openFileDialog1.RestoreDirectory = true;
-            openFileDialog1.Multiselect = true;
+            openFileDialog1.Multiselect = false;
             try
             {
                 openFileDialog1.InitialDirectory = Path.GetDirectoryName(Application.ExecutablePath) + Path.DirectorySeparatorChar + @"logs" + Path.DirectorySeparatorChar;
@@ -527,73 +541,289 @@ namespace ArdupilotMega
 
             if (openFileDialog1.ShowDialog() == DialogResult.OK)
             {
-                foreach (string logfile in openFileDialog1.FileNames)
+                List<string> fields = GetLogFileValidFields(openFileDialog1.FileName);
+
+                zg1.GraphPane.CurveList.Clear();
+
+                GetLogFileData(zg1, openFileDialog1.FileName, fields);
+
+                try
                 {
+                    // fix new line types
+                    ThemeManager.ApplyThemeTo(this);
 
-                    MAVLink mine = new MAVLink();
-                    mine.logplaybackfile = new BinaryReader(File.Open(logfile, FileMode.Open, FileAccess.Read, FileShare.Read));
-                    mine.logreadmode = true;
-
-                    mine.packets.Initialize(); // clear
-
-                    CurrentState cs = new CurrentState();
-
-                    float oldlatlngalt = 0;
-
-                    DateTime appui = DateTime.Now;
-
-                    while (mine.logplaybackfile.BaseStream.Position < mine.logplaybackfile.BaseStream.Length)
-                    {
-                        // bar moves to 50 % in this step
-                        progressBar1.Value = (int)((float)mine.logplaybackfile.BaseStream.Position / (float)mine.logplaybackfile.BaseStream.Length * 100.0f / 2.0f);
-                        progressBar1.Invalidate();
-                        progressBar1.Refresh();
-
-                        byte[] packet = mine.readPacket();
-
-                        cs.datetime = mine.lastlogread;
-
-                        cs.UpdateCurrentSettings(null, true, mine);
-
-                        if (appui != DateTime.Now)
-                        {
-                            // cant do entire app as mixes with flightdata timer
-                            this.Refresh();
-                            appui = DateTime.Now;
-                        }
-
-                        try
-                        {
-                            if (MainV2.talk != null)
-                                MainV2.talk.SpeakAsyncCancelAll();
-                        }
-                        catch { } // ignore because of this Exception System.PlatformNotSupportedException: No voice installed on the system or none available with the current security setting.
-
-                        if ((float)(cs.lat + cs.lng) != oldlatlngalt
-                            && cs.lat != 0 && cs.lng != 0)
-                        {
-                            Console.WriteLine(cs.lat + " " + cs.lng + " " + cs.alt + "   lah " + (float)(cs.lat + cs.lng) + "!=" + oldlatlngalt);
-                            CurrentState cs2 = (CurrentState)cs.Clone();
-
-                            flightdata.Add(cs2);
-
-                            oldlatlngalt = (cs.lat + cs.lng);
-                        }
-                    }
-
-                    mine.logreadmode = false;
-                    mine.logplaybackfile.Close();
-                    mine.logplaybackfile = null;
-
-                    Application.DoEvents();
-
-                    //writeKML(logfile + ".kml");
-
-                    progressBar1.Value = 100;
-
+                    zg1.Invalidate();
+                    zg1.AxisChange();
                 }
+                catch { }
             }
         }
 
+        static int[] ColourValues = new int[] {  
+        0xFF0000,0x00FF00,0x0000FF,0xFFFF00,0xFF00FF,0x00FFFF,0x000000,  
+        0x800000,0x008000,0x000080,0x808000,0x800080,0x008080,0x808080,  
+        0xC00000,0x00C000,0x0000C0,0xC0C000,0xC000C0,0x00C0C0,0xC0C0C0,  
+        0x400000,0x004000,0x000040,0x404000,0x400040,0x004040,0x404040,  
+        0x200000,0x002000,0x000020,0x202000,0x200020,0x002020,0x202020,  
+        0x600000,0x006000,0x000060,0x606000,0x600060,0x006060,0x606060,  
+        0xA00000,0x00A000,0x0000A0,0xA0A000,0xA000A0,0x00A0A0,0xA0A0A0,  
+        0xE00000,0x00E000,0x0000E0,0xE0E000,0xE000E0,0x00E0E0,0xE0E0E0,  
+    }; 
+
+
+        private void GetLogFileData(ZedGraphControl zg1, string logfile, List<string> lookforfields)
+        {
+            if (zg1 == null)
+                return;
+
+            if (lookforfields != null && lookforfields.Count == 0)
+                return;
+
+            PointPairList[] lists = new PointPairList[lookforfields.Count];
+
+            Random rand = new Random();
+
+            int step = 0;
+
+            // setup display and arrays
+            for (int a = 0; a < lookforfields.Count; a++)
+            {
+                lists[a] = new PointPairList();
+
+                LineItem myCurve;
+
+                int colorvalue = ColourValues[step % ColourValues.Length];
+                step++;
+
+                myCurve = zg1.GraphPane.AddCurve(lookforfields[a].Replace("__mavlink_", ""), lists[a], Color.FromArgb(unchecked( colorvalue + (int)0xff000000)), SymbolType.None);
+            }
+
+            {
+
+                MAVLink MavlinkInterface = new MAVLink();
+                MavlinkInterface.logplaybackfile = new BinaryReader(File.Open(logfile, FileMode.Open, FileAccess.Read, FileShare.Read));
+                MavlinkInterface.logreadmode = true;
+
+                MavlinkInterface.packets.Initialize(); // clear
+
+                int appui = 0;
+
+                // to get first packet time
+                MavlinkInterface.readPacket();
+
+                DateTime startlogtime = MavlinkInterface.lastlogread;
+
+                while (MavlinkInterface.logplaybackfile.BaseStream.Position < MavlinkInterface.logplaybackfile.BaseStream.Length)
+                {
+                    progressBar1.Value = (int)((float)MavlinkInterface.logplaybackfile.BaseStream.Position / (float)MavlinkInterface.logplaybackfile.BaseStream.Length * 100.0f);
+                    progressBar1.Refresh();
+
+                    byte[] packet = MavlinkInterface.readPacket();
+
+                    object data = MavlinkInterface.DebugPacket(packet, false);
+
+                    Type test = data.GetType();
+
+                    foreach (var field in test.GetFields())
+                    {
+                        // field.Name has the field's name.
+
+                        object fieldValue = field.GetValue(data); // Get value
+
+                        if (field.FieldType.IsArray)
+                        {
+
+                        }
+                        else
+                        {
+                            string currentitem = field.Name + " " + field.DeclaringType.Name;
+                            int a = 0;
+                            foreach (var lookforfield in lookforfields)
+                            {
+
+                                if (currentitem == lookforfield)
+                                {
+                                    object value = field.GetValue(data);
+                                    // seconds scale
+                                    double time = (MavlinkInterface.lastlogread - startlogtime).TotalMilliseconds / 1000.0;
+
+                                    if (value.GetType() == typeof(Single))
+                                    {
+                                        lists[a].Add(time, (Single)field.GetValue(data));
+                                    }
+                                    else if (value.GetType() == typeof(short))
+                                    {
+                                        lists[a].Add(time, (short)field.GetValue(data));
+                                    }
+                                    else if (value.GetType() == typeof(ushort))
+                                    {
+                                        lists[a].Add(time, (ushort)field.GetValue(data));
+                                    }
+                                    else if (value.GetType() == typeof(byte))
+                                    {
+                                        lists[a].Add(time, (byte)field.GetValue(data));
+                                    }
+                                    else if (value.GetType() == typeof(Int32))
+                                    {
+                                        lists[a].Add(time, (Int32)field.GetValue(data));
+                                    }
+                                }
+                                a++;
+                            }
+                        }
+                    }
+
+                    if (appui != DateTime.Now.Second)
+                    {
+                        // cant do entire app as mixes with flightdata timer
+                        this.Refresh();
+                        appui = DateTime.Now.Second;
+                    }
+                }
+
+                MavlinkInterface.logreadmode = false;
+                MavlinkInterface.logplaybackfile.Close();
+                MavlinkInterface.logplaybackfile = null;
+
+
+                //writeKML(logfile + ".kml");
+
+                progressBar1.Value = 100;
+            }
+        }
+
+        private List<string> GetLogFileValidFields(string logfile)
+        {
+            Form selectform = SelectDataToGraphForm();
+
+            Hashtable seenIt = new Hashtable();
+            
+            {
+
+                MAVLink mine = new MAVLink();
+                mine.logplaybackfile = new BinaryReader(File.Open(logfile, FileMode.Open, FileAccess.Read, FileShare.Read));
+                mine.logreadmode = true;
+
+                mine.packets.Initialize(); // clear
+
+                while (mine.logplaybackfile.BaseStream.Position < mine.logplaybackfile.BaseStream.Length)
+                {
+                    progressBar1.Value = (int)((float)mine.logplaybackfile.BaseStream.Position / (float)mine.logplaybackfile.BaseStream.Length * 100.0f);
+                    this.Refresh();
+
+                    byte[] packet = mine.readPacket();
+
+                    object data = mine.DebugPacket(packet, false);
+
+                    Type test = data.GetType();
+
+                    foreach (var field in test.GetFields())
+                    {
+                        // field.Name has the field's name.
+
+                        object fieldValue = field.GetValue(data); // Get value
+
+                        if (field.FieldType.IsArray)
+                        {
+
+                        }
+                        else
+                        {
+                            if (!seenIt.ContainsKey(field.DeclaringType.Name + "." + field.Name))
+                            {
+                                AddDataOption(selectform, field.Name + " " + field.DeclaringType.Name);
+                                seenIt[field.DeclaringType.Name + "." + field.Name] = 1;
+                            }
+                        }
+                    }
+                }
+
+                mine.logreadmode = false;
+                mine.logplaybackfile.Close();
+                mine.logplaybackfile = null;
+
+                selectform.ShowDialog();
+
+                progressBar1.Value = 100;
+
+            }
+
+            return selection;
+        }
+
+        private void AddDataOption(Form selectform, string Name)
+        {
+
+            CheckBox chk_box = new CheckBox();
+
+            log.Info("Add Option " + Name);
+
+            chk_box.Text = Name;
+            chk_box.Name = Name;
+            chk_box.Location = new System.Drawing.Point(x, y);
+            chk_box.Size = new System.Drawing.Size(100, 20);
+            chk_box.CheckedChanged += new EventHandler(chk_box_CheckedChanged);
+
+            selectform.Controls.Add(chk_box);
+
+            Application.DoEvents();
+
+            x += 0;
+            y += 20;
+
+            if (y > selectform.Height - 50)
+            {
+                x += 100;
+                y = 10;
+
+                selectform.Width = x + 100;
+            }
+        }
+
+        void chk_box_CheckedChanged(object sender, EventArgs e)
+        {
+            if (((CheckBox)sender).Checked)
+            {
+                selection.Add(((CheckBox)sender).Name);
+            }
+            else
+            {
+                selection.Remove(((CheckBox)sender).Name);
+            }
+        }
+
+        int x = 10;
+        int y = 10;
+
+        private Form SelectDataToGraphForm()
+        {
+            Form selectform = new Form()
+            {
+                Name = "select",
+                Width = 50,
+                Height = 500,
+                Text = "Graph This"
+            };
+
+            x = 10;
+            y = 10;
+
+            {
+                CheckBox chk_box = new CheckBox();
+                chk_box.Text = "Logarithmic";
+                chk_box.Name = "Logarithmic";
+                chk_box.Location = new System.Drawing.Point(x, y);
+                chk_box.Size = new System.Drawing.Size(100, 20);
+                //chk_box.CheckedChanged += new EventHandler(chk_log_CheckedChanged);
+
+                selectform.Controls.Add(chk_box);
+            }
+
+            y += 20;
+
+            ThemeManager.ApplyThemeTo(selectform);
+
+            return selectform;
+        }
     }
 }

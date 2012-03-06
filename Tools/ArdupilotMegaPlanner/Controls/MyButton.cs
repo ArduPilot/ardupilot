@@ -19,6 +19,14 @@ namespace ArdupilotMega
 
        bool inOnPaint = false;
 
+       public Color BGGradTop = Color.FromArgb(0x94, 0xc1, 0x1f);
+
+       public Color BGGradBot = Color.FromArgb(0xcd, 0xe2, 0x96);
+
+       public new Color ForeColor = Color.FromArgb(0x40, 0x57, 0x04);
+
+       public Color Outline = Color.FromArgb(0x79, 0x94, 0x29);
+
         protected override void OnPaint(PaintEventArgs pevent)
         {
             //base.OnPaint(pevent);
@@ -36,9 +44,9 @@ namespace ArdupilotMega
 
                 Rectangle outside = new Rectangle(0, 0, this.Width, this.Height);
 
-                LinearGradientBrush linear = new LinearGradientBrush(outside, Color.FromArgb(0x94, 0xc1, 0x1f), Color.FromArgb(0xcd, 0xe2, 0x96), LinearGradientMode.Vertical);
+                LinearGradientBrush linear = new LinearGradientBrush(outside, BGGradTop, BGGradBot, LinearGradientMode.Vertical);
 
-                Pen mypen = new Pen(Color.FromArgb(0x79, 0x94, 0x29), 2);
+                Pen mypen = new Pen(Outline, 2);
                 /*
                 gr.FillRectangle(new SolidBrush(Color.FromArgb(0x26, 0x27, 0x28)), outside);
 
@@ -71,7 +79,7 @@ namespace ArdupilotMega
                 gr.DrawRectangle(mypen, outside);
 
 
-                SolidBrush mybrush = new SolidBrush(Color.FromArgb(0x40, 0x57, 0x04));
+                SolidBrush mybrush = new SolidBrush(ForeColor);
 
                 if (mouseover)
                 {
