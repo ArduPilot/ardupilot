@@ -1427,6 +1427,12 @@ namespace ArdupilotMega.GCSViews
             quickadd = true;
             Commands.Rows.Clear();
 
+            if (cmds.Count == 0)
+            {
+                quickadd = false;
+                return;
+            }
+
             int i = -1;
             foreach (Locationwp temp in cmds)
             {

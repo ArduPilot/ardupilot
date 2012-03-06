@@ -7,6 +7,7 @@ using ArdupilotMega;
 
 namespace System.Windows.Forms
 {
+#pragma warning disable 414, 3021
     public static class MessageBox
     {
         const int FORM_Y_MARGIN = 10;
@@ -94,7 +95,12 @@ namespace System.Windows.Forms
 
             AddButtonsToForm(msgBoxFrm, buttons);
 
-            ThemeManager.ApplyThemeTo(msgBoxFrm);
+            // display even if theme fails
+            try
+            {
+                ThemeManager.ApplyThemeTo(msgBoxFrm);
+            }
+            catch { }
 
             if (System.Windows.Forms.Application.OpenForms.Count > 0)
             {

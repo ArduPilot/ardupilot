@@ -439,9 +439,6 @@ namespace ArdupilotMega.GCSViews
                     }
                 }
             }
-
-
-
         }
 
         FGNetFDM lastfdmdata = new FGNetFDM();

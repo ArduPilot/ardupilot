@@ -205,8 +205,15 @@ namespace ArdupilotMega
 
                 if (config["speechenable"] != null)
                     MainV2.speechenable = bool.Parse(config["speechenable"].ToString());
-
-
+                
+                //int fixme;
+                /*
+                MainV2.cs.rateattitude = 50;
+                MainV2.cs.rateposition = 50;
+                MainV2.cs.ratestatus = 50;
+                MainV2.cs.raterc = 50;
+                MainV2.cs.ratesensors = 50;
+                */
                 try
                 {
                     if (config["TXT_homelat"] != null)
@@ -329,10 +336,6 @@ namespace ArdupilotMega
 
             temp.Dock = DockStyle.Fill;
 
-            //temp.ForeColor = Color.White;
-
-            //temp.BackColor = Color.FromArgb(0x26, 0x27, 0x28);
-
             MyView.Controls.Add(temp);
 
             if (MainV2.config["FlightSplitter"] != null)
@@ -354,10 +357,6 @@ namespace ArdupilotMega
             temp.Location = new Point(0, MainMenu.Height);
 
             temp.Dock = DockStyle.Fill;
-
-            temp.ForeColor = Color.White;
-
-            temp.BackColor = Color.FromArgb(0x26, 0x27, 0x28);
 
             MyView.Controls.Add(temp);
         }
@@ -390,10 +389,6 @@ namespace ArdupilotMega
 
             temp.Dock = DockStyle.Fill;
 
-            temp.ForeColor = Color.White;
-
-            temp.BackColor = Color.FromArgb(0x26, 0x27, 0x28);
-
             temp.Size = MyView.Size;
 
             //temp.Parent = MyView;
@@ -417,10 +412,6 @@ namespace ArdupilotMega
 
             temp.Dock = DockStyle.Fill;
 
-            temp.ForeColor = Color.White;
-
-            temp.BackColor = Color.FromArgb(0x26, 0x27, 0x28);
-
             MyView.Controls.Add(temp);
         }
 
@@ -437,10 +428,6 @@ namespace ArdupilotMega
             temp.Anchor = AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right | AnchorStyles.Top;
 
             temp.Dock = DockStyle.Fill;
-
-            temp.ForeColor = Color.White;
-
-            temp.BackColor = Color.FromArgb(0x26, 0x27, 0x28);
 
             MyView.Controls.Add(temp);
         }
@@ -479,10 +466,6 @@ namespace ArdupilotMega
             temp.Dock = DockStyle.Fill;
 
             MyView.Controls.Add(temp);
-
-            temp.ForeColor = Color.White;
-
-            temp.BackColor = Color.FromArgb(0x26, 0x27, 0x28);
 
         }
 
