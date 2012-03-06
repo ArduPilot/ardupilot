@@ -99,7 +99,7 @@ AP_IMU_INS::_init_gyro(void (*delay_cb)(unsigned long t), void (*flash_leds_cb)(
             gyro_sum += Vector3f(ins_gyro[0], ins_gyro[1], ins_gyro[2]);
             if (i % 40 == 20) {
                 FLASH_LEDS(true);
-            } else if (i % 40 == 20) {
+            } else if (i % 40 == 0) {
                 FLASH_LEDS(false);
             }
             delay_cb(5);
