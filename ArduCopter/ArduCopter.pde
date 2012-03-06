@@ -1949,20 +1949,20 @@ static void update_altitude()
 	next_WP.alt = get_new_altitude();
 }
 
+#define THROTTLE_ADJUST 250
 static void
 adjust_altitude()
 {
-	if(g.rc_3.control_in <= (MINIMUM_THROTTLE + 100)){
+	if(g.rc_3.control_in <= (MINIMUM_THROTTLE + THROTTLE_ADJUST)){
 		// we remove 0 to 100 PWM from hover
-		manual_boost = (g.rc_3.control_in - MINIMUM_THROTTLE) -100;
-		manual_boost = max(-100, manual_boost);
-		update_throttle_cruise();
+		manual_boost = (g.rc_3.control_in - MINIMUM_THROTTLE) - THROTTLE_ADJUST;
+		manual_boost = max(-THROTTLE_ADJUST, manual_boost);
 
-	}else if  (g.rc_3.control_in >= (MAXIMUM_THROTTLE - 100)){
+	}else if  (g.rc_3.control_in >= (MAXIMUM_THROTTLE - THROTTLE_ADJUST)){
 		// we add 0 to 100 PWM to hover
-		manual_boost = g.rc_3.control_in - (MAXIMUM_THROTTLE - 100);
-		manual_boost = min(100, manual_boost);
-		update_throttle_cruise();
+		manual_boost = g.rc_3.control_in - (MAXIMUM_THROTTLE - THROTTLE_ADJUST);
+		manual_boost = min(THROTTLE_ADJUST, manual_boost);
+
 	}else {
 		manual_boost = 0;
 	}
