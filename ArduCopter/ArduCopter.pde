@@ -568,7 +568,11 @@ static int32_t 	ground_pressure;
 static int16_t 	ground_temperature;
 // The cm we are off in altitude from next_WP.alt – Positive value means we are below the WP
 static int32_t		altitude_error;
-// The cm/s we are moving up or down - Positive = UP
+// The cm/s we are moving up or down based on sensor data - Positive = UP
+static int16_t		climb_rate_actual;
+// Used to dither our climb_rate over 50hz
+static int16_t		climb_rate_error;
+// The cm/s we are moving up or down based on filtered data - Positive = UP
 static int16_t		climb_rate;
 // The altitude as reported by Sonar in cm – Values are 20 to 700 generally.
 static int16_t		sonar_alt;
@@ -578,8 +582,10 @@ static int16_t		sonar_rate;
 static int32_t		baro_alt;
 // The climb_rate as reported by Baro in cm/s
 static int16_t		baro_rate;
-//
+// used to switch out of Manual Boost
 static boolean 		reset_throttle_flag;
+// used to track when to read sensors vs estimate alt
+static boolean 		alt_sensor_flag;
 
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -690,13 +696,6 @@ static int16_t	nav_throttle;						// 0-1000 for throttle control
 // This is a simple counter to track the amount of throttle used during flight
 // This could be useful later in determining and debuging current usage and predicting battery life
 static uint32_t throttle_integrator;
-// This is a future value for replacing the throttle_cruise setup procedure. It's an average of throttle control
-// that is generated when the climb rate is within a certain threshold
-//static float	throttle_avg = THROTTLE_CRUISE;
-// This is a flag used to trigger the updating of nav_throttle at 10hz
-static bool 	invalid_throttle;
-// Used to track the altitude offset for climbrate control
-//static int32_t 	target_altitude;
 
 ////////////////////////////////////////////////////////////////////////////////
 // Climb rate control
@@ -1005,8 +1004,9 @@ static void medium_loop()
 					// -----------------------------
 					update_navigation();
 
-					if (g.log_bitmask & MASK_LOG_NTUN)
+					if (g.log_bitmask & MASK_LOG_NTUN && motor_armed){
 						Log_Write_Nav_Tuning();
+					}
 				}
 			}
 			break;
@@ -1018,13 +1018,10 @@ static void medium_loop()
 
 			// Read altitude from sensors
 			// --------------------------
-			#if HIL_MODE != HIL_MODE_ATTITUDE					// don't execute in HIL mode
-			update_altitude();
-			#endif
-
-			// invalidate the throttle hold value
-			// ----------------------------------
-			invalid_throttle = true;
+			//#if HIL_MODE != HIL_MODE_ATTITUDE					// don't execute in HIL mode
+			//update_altitude();
+			//#endif
+			alt_sensor_flag = true;
 
 			break;
 
@@ -1045,16 +1042,13 @@ static void medium_loop()
                 if (g.log_bitmask & MASK_LOG_ATTITUDE_MED)
                     Log_Write_Attitude();
 
-                if (g.log_bitmask & MASK_LOG_CTUN)
-                    Log_Write_Control_Tuning();
+				if (g.log_bitmask & MASK_LOG_MOTORS)
+					Log_Write_Motors();
             }
 
-				// send all requested output streams with rates requested
-				// between 5 and 45 Hz
-				gcs_data_stream_send(5,45);
-
-			if (g.log_bitmask & MASK_LOG_MOTORS)
-				Log_Write_Motors();
+			// send all requested output streams with rates requested
+			// between 5 and 45 Hz
+			gcs_data_stream_send(5,45);
 
 			break;
 
@@ -1102,6 +1096,10 @@ static void medium_loop()
 // ---------------------------
 static void fifty_hz_loop()
 {
+	// read altitude sensors or estimate altitude
+	// ------------------------------------------
+	update_altitude_est();
+
 	// moved to slower loop
 	// --------------------
 	update_throttle_mode();
@@ -1162,6 +1160,11 @@ static void slow_loop()
 			slow_loopCounter++;
 			superslow_loopCounter++;
 
+			// update throttle hold every 20 seconds
+			if(superslow_loopCounter > 60){
+				update_throttle_cruise();
+			}
+
 			if(superslow_loopCounter > 1200){
 				#if HIL_MODE != HIL_MODE_ATTITUDE
 					if(g.rc_3.control_in == 0 && control_mode == STABILIZE && g.compass_enabled){
@@ -1219,13 +1222,14 @@ static void slow_loop()
 // 1Hz loop
 static void super_slow_loop()
 {
-	if (g.log_bitmask & MASK_LOG_CUR)
+	if (g.log_bitmask & MASK_LOG_CUR && motor_armed)
 		Log_Write_Current();
 
 	// this function disarms the copter if it has been sitting on the ground for any moment of time greater than 30s
 	// but only of the control mode is manual
 	if((control_mode <= ACRO) && (g.rc_3.control_in == 0)){
 		auto_disarming_counter++;
+
 		if(auto_disarming_counter == AUTO_ARMING_DELAY){
 			init_disarm_motors();
 		}else if (auto_disarming_counter > AUTO_ARMING_DELAY){
@@ -1234,8 +1238,10 @@ static void super_slow_loop()
 	}else{
 		auto_disarming_counter = 0;
 	}
+
     gcs_send_message(MSG_HEARTBEAT);
     gcs_data_stream_send(1,3);
+
 	// agmatthews - USERHOOKS
 	#ifdef USERHOOK_SUPERSLOWLOOP
 	   USERHOOK_SUPERSLOWLOOP
@@ -1359,12 +1365,13 @@ static void update_GPS(void)
 		current_loc.lng = g_gps->longitude;	// Lon * 10 * *7
 		current_loc.lat = g_gps->latitude;	// Lat * 10 * *7
 
-		if (g.log_bitmask & MASK_LOG_GPS){
+		if (g.log_bitmask & MASK_LOG_GPS && motor_armed){
 			Log_Write_GPS();
 		}
 
 		#if HIL_MODE == HIL_MODE_ATTITUDE					// only execute in HIL mode
-			update_altitude();
+			//update_altitude();
+			alt_sensor_flag = true;
 		#endif
 
 	}
@@ -1635,10 +1642,10 @@ void update_throttle_mode(void)
 				if(reset_throttle_flag)	{
 					set_new_altitude(max(current_loc.alt, 100));
 					reset_throttle_flag = false;
+					update_throttle_cruise();
 				}
 
-				// 10hz, 			don't run up i term
-				if(invalid_throttle && motor_auto_armed == true){
+				if(motor_auto_armed == true){
 
 					// how far off are we
 					altitude_error = get_altitude_error();
@@ -1646,8 +1653,6 @@ void update_throttle_mode(void)
 					// get the AP throttle
 					nav_throttle = get_nav_throttle(altitude_error);
 
-					// clear the new data flag
-					invalid_throttle = false;
 					/*
 					Serial.printf("tar_alt: %d, actual_alt: %d \talt_err: %d, \tnav_thr: %d, \talt Int: %d\n",
 										next_WP.alt,
@@ -1656,6 +1661,7 @@ void update_throttle_mode(void)
 										nav_throttle,
 										(int16_t)g.pi_alt_hold.get_integrator());
 					//*/
+
 				}
 
 				// hack to remove the influence of the ground effect
@@ -1864,7 +1870,6 @@ static void update_altitude()
 {
 	static int16_t 	old_sonar_alt 	= 0;
 	static int32_t 	old_baro_alt 	= 0;
-	static int16_t 	old_climb_rate 	= 0;
 
 	#if HIL_MODE == HIL_MODE_ATTITUDE
 		// we are in the SIM, fake out the baro and Sonar
@@ -1888,7 +1893,6 @@ static void update_altitude()
 
 		// Note: sonar_alt is calculated in a faster loop and filtered with a mode filter
 	#endif
-
 
 	if(g.sonar_enabled){
 		// filter out offset
@@ -1921,35 +1925,47 @@ static void update_altitude()
 			current_loc.alt = ((float)sonar_alt * (1.0 - scale)) + ((float)baro_alt * scale) + home.alt;
 
 			// solve for a blended climb_rate
-			climb_rate 		= ((float)sonar_rate * (1.0 - scale)) + (float)baro_rate * scale;
+			climb_rate_actual = ((float)sonar_rate * (1.0 - scale)) + (float)baro_rate * scale;
 
 		}else{
 			// we must be higher than sonar (>800), don't get tricked by bad sonar reads
 			current_loc.alt = baro_alt + home.alt; // home alt = 0
 			// dont blend, go straight baro
-			climb_rate 		= baro_rate;
+			climb_rate_actual 	= baro_rate;
 		}
 
 	}else{
 		// NO Sonar case
 		current_loc.alt = baro_alt + home.alt;
-		climb_rate 		= baro_rate;
+		climb_rate_actual = baro_rate;
 	}
-
-	// simple smoothing
-	climb_rate = (climb_rate + old_climb_rate)>>1;
-
-	// manage bad data
-	climb_rate = constrain(climb_rate, -800, 800);
-
-	// save for filtering
-	old_climb_rate = climb_rate;
 
 	// update the target altitude
 	next_WP.alt = get_new_altitude();
+
+	// calc error
+	climb_rate_error = (climb_rate_actual - climb_rate) / 5;
 }
 
-#define THROTTLE_ADJUST 250
+static void update_altitude_est()
+{
+	if(alt_sensor_flag){
+		update_altitude();
+		alt_sensor_flag = false;
+
+		if(g.log_bitmask & MASK_LOG_CTUN && motor_armed){
+			Log_Write_Control_Tuning();
+		}
+
+	}else{
+		// simple dithering of climb rate
+		climb_rate += climb_rate_error;
+		current_loc.alt += (climb_rate / 50);
+	}
+	//Serial.printf(" %d, %d, %d, %d\n", climb_rate_actual, climb_rate_error, climb_rate, current_loc.alt);
+}
+
+#define THROTTLE_ADJUST 200
 static void
 adjust_altitude()
 {
