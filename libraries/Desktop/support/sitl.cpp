@@ -197,8 +197,11 @@ static void sitl_simulator_output(void)
 	last_update = millis();
 
 	for (i=0; i<11; i++) {
-		// the registers are 2x the PWM value
-		pwm[i] = (*reg[i])/2;
+		if (*reg[i] == 0xFFFF) {
+			pwm[i] = 0;
+		} else {
+			pwm[i] = (*reg[i])/2;
+		}
 	}
 
 	if (!desktop_state.quadcopter) {
