@@ -781,12 +781,9 @@ static void medium_loop()
             if (g.compass_enabled && compass.read()) {
                 dcm.set_compass(&compass);
                 // Calculate heading
-#if QUATERNION_ENABLE == ENABLED
-                compass.calculate(dcm.roll, dcm.pitch);
-#else
-                compass.calculate(dcm.get_dcm_matrix());
-                compass.null_offsets(dcm.get_dcm_matrix());
-#endif
+                Matrix3f m = dcm.get_dcm_matrix();
+                compass.calculate(m);
+                compass.null_offsets(m);
             } else {
                 dcm.set_compass(NULL);
             }
