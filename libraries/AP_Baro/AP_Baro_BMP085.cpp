@@ -67,7 +67,7 @@ extern "C" {
 bool AP_Baro_BMP085::init( AP_PeriodicProcess * scheduler )
 {
 	byte buff[22];
-	
+
 	pinMode(BMP085_EOC, INPUT);	 // End Of Conversion (PC7) input
 
 	BMP085_State = 0;		 // Initial state
@@ -207,6 +207,7 @@ void AP_Baro_BMP085::Command_ReadTemp()
 void AP_Baro_BMP085::ReadTemp()
 {
 	uint8_t buf[2];
+	int32_t _temp_sensor;
 
     if (!healthy && millis() < _retry_time) {
         return;
@@ -218,32 +219,13 @@ void AP_Baro_BMP085::ReadTemp()
 		healthy = false;
 		return;
 	}
-	RawTemp = buf[0];
-	RawTemp = (RawTemp << 8) | buf[1];
+	_temp_sensor = buf[0];
+	_temp_sensor = (_temp_sensor << 8) | buf[1];
 
-	if (_offset_temp == 0){
-		_offset_temp = RawTemp;
-		RawTemp = 0;
-	} else {
-		RawTemp -= _offset_temp;
-	}
+	if (RawTemp == 0)
+		RawTemp = _temp_sensor;
 
-	// filter
-	_temp_filter[_temp_index++] = RawTemp;
-
-	if(_temp_index >= TEMP_FILTER_SIZE)
-		_temp_index = 0;
-
-	RawTemp = 0;
-	// sum our filter
-	for(uint8_t i = 0; i < TEMP_FILTER_SIZE; i++){
-		RawTemp += _temp_filter[i];
-	}
-
-	// grab result
-	RawTemp /= TEMP_FILTER_SIZE;
-	//RawTemp >>= 4;
-	RawTemp += _offset_temp;
+	RawTemp = (float)_temp_sensor * .01 + (float)RawTemp * .99;
 }
 
 // Calculate Temperature and Pressure in real units.
