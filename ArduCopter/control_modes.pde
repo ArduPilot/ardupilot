@@ -186,9 +186,6 @@ static void auto_trim()
 
 			//Serial.println("Done");
 			auto_level_counter = 0;
-
-			// set TC
-			init_throttle_cruise();
 		}
 	}
 }

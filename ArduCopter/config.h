@@ -741,7 +741,7 @@
 # define THROTTLE_P			0.45	//
 #endif
 #ifndef THROTTLE_I
-# define THROTTLE_I			0.0		//
+# define THROTTLE_I			0.0		// Don't edit
 #endif
 #ifndef THROTTLE_D
 # define THROTTLE_D			0.02	//

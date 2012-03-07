@@ -532,16 +532,8 @@ static void set_mode(byte mode)
 		motor_auto_armed = true;
 	}
 
-	if(throttle_mode == THROTTLE_MANUAL){
-		// reset all of the throttle iterms
-		update_throttle_cruise();
-
-		// reset auto_throttle
-		nav_throttle 			= 0;
-	}else {
-		// an automatic throttle
-		init_throttle_cruise();
-	}
+	// called to calculate gain for alt hold
+	update_throttle_cruise();
 
 	if(roll_pitch_mode <= ROLL_PITCH_ACRO){
 		// We are under manual attitude control
@@ -594,18 +586,10 @@ static void update_throttle_cruise()
 		g.throttle_cruise += tmp;
 		reset_throttle_I();
 	}
-}
 
-static void
-init_throttle_cruise()
-{
-#if AUTO_THROTTLE_HOLD == 0
-	// are we moving from manual throttle to auto_throttle?
-	if((old_control_mode <= STABILIZE) && (g.rc_3.control_in > MINIMUM_THROTTLE)){
-		reset_throttle_I();
-		g.throttle_cruise.set_and_save(g.rc_3.control_in);
-	}
-#endif
+	// recalc kp
+	g.pid_throttle.kP((float)g.throttle_cruise.get() / 981.0);
+	//Serial.printf("kp:%1.4f\n",kp);
 }
 
 #if CLI_SLIDER_ENABLED == ENABLED && CLI_ENABLED == ENABLED
