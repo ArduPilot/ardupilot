@@ -35,7 +35,7 @@ AP_DCM::set_compass(Compass *compass)
 
 // run a full DCM update round
 // the drift_correction_frequency is how many steps of the algorithm
-// to run before doing an accelerometer drift correction step
+// to run before doing an accelerometer and yaw drift correction step
 void
 AP_DCM::update_DCM(uint8_t drift_correction_frequency)
 {
@@ -58,9 +58,6 @@ AP_DCM::update_DCM(uint8_t drift_correction_frequency)
 
 	// Integrate the DCM matrix using gyro inputs
 	matrix_update(delta_t);
-	if (_dcm_matrix.is_nan()) {
-		SITL_debug("NaN matrix\n");
-	}
 
 	// add up the omega vector so we pass a value to the drift
 	// correction averaged over the same time period as the
@@ -73,9 +70,9 @@ AP_DCM::update_DCM(uint8_t drift_correction_frequency)
 	// see if we will perform drift correction on this call
 	_drift_correction_count++;
 
-	if (_drift_correction_count == drift_correction_frequency) {
+	if (_drift_correction_count >= drift_correction_frequency) {
 		// calculate the average accelerometer vector over
-		// this time
+		// since the last drift correction call
 		float scale = 1.0 / _drift_correction_count;
 		_accel_vector = _accel_sum * scale;
 		_accel_sum.zero();
@@ -102,17 +99,25 @@ AP_DCM::update_DCM(uint8_t drift_correction_frequency)
 void
 AP_DCM::matrix_update(float _G_Dt)
 {
-	// Used for _centripetal correction (theoretically better than _omega)
+	// _omega_integ_corr is used for _centripetal correction
+	// (theoretically better than _omega)
 	_omega_integ_corr = _gyro_vector + _omega_I;
+
 	// Equation 16, adding proportional and integral correction terms
 	_omega = _omega_integ_corr + _omega_P;
+
+	// this is an expansion of the DCM matrix multiply (equation
+	// 17), with known zero elements removed and the matrix
+	// operations inlined. This runs much faster than the original
+	// version of this code, as the compiler was doing a terrible
+	// job of realising that so many of the factors were in common
+	// or zero. It also uses much less stack, as we no longer need
+	// additional local matrices
 
 	float tmpx = _G_Dt * _omega.x;
 	float tmpy = _G_Dt * _omega.y;
 	float tmpz = _G_Dt * _omega.z;
 
-	// this is an expansion of the DCM matrix multiply, with known
-	// zero elements removed
 	_dcm_matrix.a.x += _dcm_matrix.a.y * tmpz  - _dcm_matrix.a.z * tmpy;
 	_dcm_matrix.a.y += _dcm_matrix.a.z * tmpx  - _dcm_matrix.a.x * tmpz;
 	_dcm_matrix.a.z += _dcm_matrix.a.x * tmpy  - _dcm_matrix.a.y * tmpx;
@@ -221,7 +226,8 @@ AP_DCM::check_matrix(void)
 	}
 }
 
-/**************************************************/
+// renormalise one vector component of the DCM matrix
+// this will return false if renormalization fails
 bool
 AP_DCM::renorm(Vector3f const &a, Vector3f &result)
 {
@@ -304,7 +310,11 @@ AP_DCM::normalize(void)
 }
 
 
-/**************************************************/
+// perform drift correction. This function aims to update _omega_P and
+// _omega_I with our best estimate of the short term and long term
+// gyro error. The _omega_P value is what pulls our attitude solution
+// back towards the reference vector quickly. The _omega_I term is an
+// attempt to learn the long term drift rate of the gyros.
 void
 AP_DCM::drift_correction(float deltat)
 {
@@ -333,7 +343,9 @@ AP_DCM::drift_correction(float deltat)
 	// sensor reading completely. Logs show that the z accel is
 	// the noisest, plus it has a disproportionate impact on the
 	// drift correction result because of the geometry when we are
-	// mostly flat
+	// mostly flat. Dropping it completely seems to make the DCM
+	// algorithm much more resilient to large amounts of
+	// accelerometer noise.
 	float zsquared = gravity_squared - ((accel.x * accel.x) + (accel.y * accel.y));
 	if (zsquared < 0) {
 		_omega_P.zero();
@@ -377,6 +389,10 @@ AP_DCM::drift_correction(float deltat)
 
 	// yaw drift correction
 
+	// we only do yaw drift correction when we get a new yaw
+	// reference vector. In between times we rely on the gyros for
+	// yaw. Avoiding this calculation on every call to
+	// update_DCM() saves a lot of time
 	if (_compass && _compass->use_for_yaw() &&
 	    _compass->last_update != _compass_last_update) {
 		if (_have_initial_yaw) {
@@ -445,6 +461,10 @@ AP_DCM::drift_correction(float deltat)
 		}
 	}
 
+	// see if there is any error in our heading relative to the
+	// yaw reference. This will be zero most of the time, as we
+	// only calculate it when we get new data from the yaw
+	// reference source
 	if (yaw_deltat == 0 || error_course == 0) {
 		// nothing to do
 		return;
@@ -453,27 +473,32 @@ AP_DCM::drift_correction(float deltat)
 	// Equation 24, Applys the yaw correction to the XYZ rotation of the aircraft
 	error = _dcm_matrix.c * error_course;
 
-	// Adding yaw correction to proportional correction vector.
+	// Adding yaw correction to proportional correction vector. We
+	// allow the yaw reference source to affect all 3 components
+	// of _omega_P as we need to be able to correctly hold a
+	// heading when roll and pitch are non-zero
 	_omega_P += error * _kp_yaw;
 
-	// limit maximum gyro drift
+	// limit maximum gyro drift from yaw reference
 	float drift_limit = ToRad(_gyro_drift_rate) * yaw_deltat / _ki_yaw;
 	error.z = constrain(error.z, -drift_limit, drift_limit);
 
 	// add yaw correction to integrator correction vector, but
 	// only for the z gyro. We rely on the accelerometers for x
-	// and y gyro drift correction. Using the compass for x/y drift
-	// correction is too inaccurate, and can lead to incorrect builups in
-	// the x/y drift
+	// and y gyro drift correction. Using the compass or GPS for
+	// x/y drift correction is too inaccurate, and can lead to
+	// incorrect builups in the x/y drift. We rely on the
+	// accelerometers to get the x/y components right
 	_omega_I.z += error.z * _ki_yaw;
 
+	// we keep the sum of yaw error for reporting via MAVLink.
 	_error_yaw_sum += error_course;
 	_error_yaw_count++;
-	//Serial.print("*");
 }
 
 
-/**************************************************/
+// calculate the euler angles which will be used for high level
+// navigation control
 void
 AP_DCM::euler_angles(void)
 {
