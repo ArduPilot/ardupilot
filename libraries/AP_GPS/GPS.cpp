@@ -36,9 +36,9 @@ GPS::update(void)
 
 		if (_status == GPS_OK) {
 			// update our acceleration
-			float deltat = 1.0e-3 * (_idleTimer - _last_fix_time);
+			float deltat = 1.0e-3 * (_idleTimer - last_fix_time);
 			float deltav = 1.0e-2 * ((float)ground_speed - (float)_last_ground_speed);
-			_last_fix_time = _idleTimer;
+			last_fix_time = _idleTimer;
 			_last_ground_speed = ground_speed;
 
 			if (deltat > 2.0 || deltat == 0) {
