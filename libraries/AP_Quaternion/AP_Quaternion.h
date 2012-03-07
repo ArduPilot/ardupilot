@@ -17,10 +17,9 @@ class AP_Quaternion
 {
 public:
 	// Constructor
-	AP_Quaternion(IMU *imu, GPS *&gps, Compass *compass = NULL) :
+	AP_Quaternion(IMU *imu, GPS *&gps) :
 		_imu(imu),
-		_gps(gps),
-		_compass(compass)
+		_gps(gps)
 	{
 		// reference direction of flux in earth frame
 		b_x = 0;
@@ -70,10 +69,16 @@ public:
 	uint8_t renorm_blowup_count;
 	float get_error_rp(void);
 	float get_error_yaw(void);
+	Matrix3f get_dcm_matrix(void) {
+		Matrix3f ret;
+		quaternion_to_rotation_matrix(q, ret);
+		return ret;
+	}
 
 private:
 	void 		update_IMU(float deltat, Vector3f &gyro, Vector3f &accel);
 	void 		update_MARG(float deltat, Vector3f &gyro, Vector3f &accel, Vector3f &mag);
+	void 		update_drift(float deltat, Vector3f &gyro, Vector3f &accel, Vector3f &mag);
 
 	bool		_have_initial_yaw;
 
@@ -82,6 +87,8 @@ private:
 
 	// members
 	Compass 	* _compass;
+	// time in microseconds of last compass update
+	uint32_t        _compass_last_update;
 
 	// note: we use ref-to-pointer here so that our caller can change the GPS without our noticing
 	//       IMU under us without our noticing.
@@ -91,12 +98,12 @@ private:
 	// true if we are doing centripetal acceleration correction
 	bool		_centripetal;
 
-	// maximum gyroscope measurement error in rad/s (set to 20 degrees/second)
-	static const float gyroMeasError = 20.0 * (M_PI/180.0);
+	// maximum gyroscope measurement error in rad/s (set to 40 degrees/second)
+	static const float gyroMeasError = 10.0 * (M_PI/180.0);
 
-	// maximum gyroscope drift rate in radians/s/s (set to 0.02
-	// degrees/s/s, which is 1.2 degrees/s/minute)
-	static const float gyroMeasDrift = 0.02 * (PI/180.0);
+	// maximum gyroscope drift rate in radians/s/s (set to 0.005
+	// degrees/s/s, which is 0.3 degrees/s/minute)
+	static const float gyroMeasDrift = 0.005 * (PI/180.0);
 
 	float beta;
 	float zeta;
@@ -114,6 +121,11 @@ private:
 
 	// the current corrected gyro vector
 	Vector3f _gyro_corrected;
+
+	// accel and gyro accumulators for drift correction
+	Vector3f _gyro_sum;
+	Vector3f _accel_sum;
+	uint32_t _sum_count;
 
 	// estimate of error
 	float		_error_rp_sum;
