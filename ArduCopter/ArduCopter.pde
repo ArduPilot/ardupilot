@@ -973,12 +973,9 @@ static void medium_loop()
 				if(g.compass_enabled){
 					if (compass.read()) {
                         // Calculate heading
-#if QUATERNION_ENABLE == ENABLED
-                        compass.calculate(dcm.roll, dcm.pitch);
-#else
-                        compass.calculate(dcm.get_dcm_matrix());
-                        compass.null_offsets(dcm.get_dcm_matrix());
-#endif
+                        Matrix3f m = dcm.get_dcm_matrix();
+                        compass.calculate(m);
+                        compass.null_offsets(m);
                     }
 				}
 			#endif
@@ -1856,12 +1853,11 @@ static void read_AHRS(void)
 		gcs_update();
 	#endif
 
-	dcm.update_DCM_fast();
+	dcm.update_DCM();
 	omega = imu.get_gyro();
 }
 
 static void update_trig(void){
-#if QUATERNION_ENABLE == DISABLED
 	Vector2f yawvector;
 	Matrix3f temp 	= dcm.get_dcm_matrix();
 
@@ -1880,23 +1876,6 @@ static void update_trig(void){
 	sin_yaw_y 		= yawvector.x;						// 1y = north
 	cos_yaw_x 		= yawvector.y;						// 0x = north
 
-#else
-    // we need a cheaper way to calculate this ....
-	Vector2f yawvector;
-	float cp = cos(dcm.pitch);
-	float cr = cos(dcm.roll);
-	float sy = sin(dcm.yaw);
-	float cy = cos(dcm.yaw);
-
-	yawvector.x 	= cp * cy;
-	yawvector.y 	= cp * sy;
-	yawvector.normalize();
-
-	cos_pitch_x 	= cp;
-    cos_roll_x 		= cr;
-	sin_yaw_y 		= yawvector.x;
-	cos_yaw_x 		= yawvector.y;
-#endif
 	//flat:
 	// 0 ° = cos_yaw:  0.00, sin_yaw:  1.00,
 	// 90° = cos_yaw:  1.00, sin_yaw:  0.00,
