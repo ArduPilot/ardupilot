@@ -16,7 +16,7 @@
 bool AP_Compass_HIL::read()
 {
 	// values set by setHIL function
-	last_update = millis();  // record time of update
+	last_update = micros();  // record time of update
 	return true;
 }
 
