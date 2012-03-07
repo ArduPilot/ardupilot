@@ -329,13 +329,10 @@ test_radio(uint8_t argc, const Menu::arg *argv)
 			if(g.compass_enabled){
 				medium_loopCounter++;
 				if(medium_loopCounter == 5){
+                    Matrix3f m = dcm.get_dcm_matrix();
 					compass.read();		 				// Read magnetometer
-#if QUATERNION_ENABLE == ENABLED
-					compass.calculate(dcm.roll, dcm.pitch);
-#else
-					compass.calculate(dcm.get_dcm_matrix());
-                    compass.null_offsets(dcm.get_dcm_matrix());
-#endif
+					compass.calculate(m);
+                    compass.null_offsets(m);
 					medium_loopCounter = 0;
 				}
 			}
@@ -552,12 +549,9 @@ test_imu(uint8_t argc, const Menu::arg *argv)
 
 				if(g.compass_enabled){
 					compass.read();		 				// Read magnetometer
-#if QUATERNION_ENABLE == ENABLED
-					compass.calculate(dcm.roll, dcm.pitch);
-#else
-					compass.calculate(dcm.get_dcm_matrix());
-                    compass.null_offsets(dcm.get_dcm_matrix());
-#endif
+                    Matrix3f m = dcm.get_dcm_matrix();
+					compass.calculate(m);
+                    compass.null_offsets(m);
 				}
 			}
 			fast_loopTimer = millis();
@@ -941,11 +935,7 @@ test_mag(uint8_t argc, const Menu::arg *argv)
 			while(1){
 				delay(100);
 				if (compass.read()) {
-#if QUATERNION_ENABLE == ENABLED
-					compass.calculate(dcm.roll, dcm.pitch);
-#else
 					compass.calculate(dcm.get_dcm_matrix());
-#endif
 					Vector3f maggy = compass.get_offsets();
 					Serial.printf_P(PSTR("Heading: %ld, XYZ: %d, %d, %d\n"),
 									(wrap_360(ToDeg(compass.heading) * 100)) /100,
