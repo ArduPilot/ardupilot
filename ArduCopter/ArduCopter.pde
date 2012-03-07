@@ -856,7 +856,7 @@ void loop()
 
 	// We want this to execute fast
 	// ----------------------------
-	if ((timer - fast_loopTimer) >= 4000 && imu.new_data_available()) {
+	if ((timer - fast_loopTimer) >= 10000 && imu.new_data_available()) {
 		//Log_Write_Data(13, (int32_t)(timer - fast_loopTimer));
 
 		//PORTK |= B00010000;
