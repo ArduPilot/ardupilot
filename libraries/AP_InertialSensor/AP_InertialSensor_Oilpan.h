@@ -55,8 +55,8 @@ class AP_InertialSensor_Oilpan : public AP_InertialSensor
 
   static const float _adc_constraint;
 
-  float _gyro_apply_std_offset( uint16_t adc_value );
-  float _accel_apply_std_offset( uint16_t adc_value );
+  float _gyro_apply_std_offset( float adc_value );
+  float _accel_apply_std_offset( float adc_value );
 };
 
 #endif // __AP_INERTIAL_SENSOR_OILPAN_H__
