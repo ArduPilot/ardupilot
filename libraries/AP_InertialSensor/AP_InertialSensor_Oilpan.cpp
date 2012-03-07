@@ -55,7 +55,7 @@ void AP_InertialSensor_Oilpan::init( AP_PeriodicProcess * scheduler)
 
 bool AP_InertialSensor_Oilpan::update()
 {
-  uint16_t adc_values[6];
+  float adc_values[6];
 
   _sample_time = _adc->Ch6(_sensors, adc_values);
   _temp = _adc->Ch(_gyro_temp_ch);
@@ -115,13 +115,13 @@ void AP_InertialSensor_Oilpan::reset_sample_time() { }
 
 /* ------ Private functions -------------------------------------------*/
 
-float AP_InertialSensor_Oilpan::_gyro_apply_std_offset( uint16_t adc_value )
+float AP_InertialSensor_Oilpan::_gyro_apply_std_offset( float adc_value )
 {
   /* Magic number from AP_ADC_Oilpan.h */
   return ((float) adc_value ) - 1658.0f;
 }
 
-float AP_InertialSensor_Oilpan::_accel_apply_std_offset( uint16_t adc_value )
+float AP_InertialSensor_Oilpan::_accel_apply_std_offset( float adc_value )
 {
   /* Magic number from AP_ADC_Oilpan.h */
   return ((float) adc_value ) - 2041.0f;
