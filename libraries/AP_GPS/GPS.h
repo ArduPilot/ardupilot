@@ -113,6 +113,9 @@ public:
 	// our approximate linear acceleration in m/s/s
 	float acceleration(void) { return _acceleration; }
 
+	// the time we got our last fix in system milliseconds
+	uint32_t last_fix_time;
+
 protected:
     Stream	*_port;			///< port the GPS is attached to
 
@@ -172,9 +175,6 @@ private:
 
     /// Our current status
     GPS_Status					_status;
-
-	// the time we got our last fix in system milliseconds
-	uint32_t _last_fix_time;
 
 	// previous ground speed in cm/s
     uint32_t _last_ground_speed;
