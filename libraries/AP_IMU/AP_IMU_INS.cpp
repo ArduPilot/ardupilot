@@ -58,7 +58,7 @@ AP_IMU_INS::_init_gyro(void (*delay_cb)(unsigned long t), void (*flash_leds_cb)(
 {
     Vector3f last_average, best_avg;
     float ins_gyro[3];
-    float best_diff;
+    float best_diff = 0;
 
 	// cold start
 	delay_cb(100);
