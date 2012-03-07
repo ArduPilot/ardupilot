@@ -7,6 +7,9 @@
 #define ENABLED			1
 #define DISABLED		0
 
+// this avoids a very common config error
+#define ENABLE ENABLED
+#define DISABLE DISABLED
 
 // Flight modes
 // ------------
