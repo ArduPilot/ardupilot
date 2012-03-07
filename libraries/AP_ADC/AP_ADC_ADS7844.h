@@ -28,7 +28,7 @@ class AP_ADC_ADS7844 : public AP_ADC
 	float Ch(unsigned char ch_num);
 
 	// Read 6 sensors at once
-	uint32_t Ch6(const uint8_t *channel_numbers, uint16_t *result);
+	uint32_t Ch6(const uint8_t *channel_numbers, float *result);
 
     // check if Ch6 would block
 	bool new_data_available(const uint8_t *channel_numbers);
