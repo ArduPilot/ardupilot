@@ -2,8 +2,7 @@
 #ifndef __AP_BARO_BMP085_H__
 #define __AP_BARO_BMP085_H__
 
-#define TEMP_FILTER_SIZE 4
-#define PRESS_FILTER_SIZE 8
+#define PRESS_FILTER_SIZE 2
 
 #include "AP_Baro.h"
 
@@ -41,9 +40,7 @@ class AP_Baro_BMP085 : public AP_Baro
 	int16_t ac1, ac2, ac3, b1, b2, mb, mc, md;
     uint16_t ac4, ac5, ac6;
 
-	int16_t _temp_filter[TEMP_FILTER_SIZE];
 	int32_t _press_filter[PRESS_FILTER_SIZE];
-	int32_t	_offset_temp;
 
 	uint8_t	_temp_index;
 	uint8_t	_press_index;
