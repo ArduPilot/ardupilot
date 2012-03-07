@@ -307,7 +307,9 @@ void AP_Quaternion::update_MARG(float deltat, Vector3f &gyro, Vector3f &accel, V
 }
 
 
-// Function to compute one quaternion iteration including magnetometer
+// Function to update our gyro_bias drift estimate using the accelerometer
+// and magnetometer. This is a cut-down version of update_MARG(), but
+// without the quaternion update.
 void AP_Quaternion::update_drift(float deltat, Vector3f &gyro, Vector3f &accel, Vector3f &mag)
 {
     // local system variables
@@ -458,11 +460,6 @@ void AP_Quaternion::update(void)
 	Vector3f gyro, accel;
 	float deltat;
 
-#ifdef DESKTOP_BUILD
-	Quaternion q_saved = q;
-	Vector3f bias_saved = gyro_bias;
-#endif
-
 	_imu->update();
 
 	deltat = _imu->get_delta_time();
@@ -513,11 +510,21 @@ void AP_Quaternion::update(void)
 		accel.z += (gyro.y - gyro_bias.y) * veloc;
 	}
 
-#if 1
 	_gyro_sum += gyro;
 	_accel_sum += accel;
 	_sum_count++;
 
+	/*
+	  The full Madgwick quaternion 'MARG' system assumes you get
+	  gyro, accel and magnetometer updates at the same rate. On
+	  APM we get them at very different rates, and re-calculating
+	  our drift due to the magnetometer in the fast loop is very
+	  wasteful of CPU.
+
+	  Instead, we only update the gyro_bias vector when we get a
+	  new magnetometer point, and use the much simpler
+	  update_IMU() as the main quaternion update function.
+	 */
 	if (_compass != NULL && _compass->use_for_yaw() &&
 	    _compass->last_update != _compass_last_update &&
 	    _sum_count != 0) {
@@ -533,64 +540,28 @@ void AP_Quaternion::update(void)
 		_compass_last_update = _compass->last_update;
 	}
 
-	// step the quaternion solution
+	// step the quaternion solution using just gyros and accels
 	gyro -= gyro_bias;
 	update_IMU(deltat, gyro, accel);
-#else
-	if (_compass != NULL && _compass->use_for_yaw()) {
-		// use new compass sample for drift correction
-		Vector3f mag = Vector3f(_compass->mag_x, _compass->mag_y, - _compass->mag_z);
-		update_MARG(deltat, gyro, accel, mag);
-	} else {
-		// step the quaternion without drift correction
-		gyro -= gyro_bias;
-		_gyro_sum += gyro;
-		_accel_sum += accel;
-		_sum_count++;
-		update_IMU(deltat, gyro, accel);
-	}
-#endif
 
 #ifdef DESKTOP_BUILD
 	if (q.is_nan()) {
-		SITL_debug("QUAT NAN: deltat=%f roll=%f pitch=%f yaw=%f q0=[%f %f %f %f] q=[%f %f %f %f] a=[%f %f %f] g=(%f %f %f)\n",
+		SITL_debug("QUAT NAN: deltat=%f roll=%f pitch=%f yaw=%f q=[%f %f %f %f] a=[%f %f %f] g=(%f %f %f)\n",
 			   deltat, roll, pitch, yaw,
-			   q_saved.q1, q_saved.q2, q_saved.q3, q_saved.q4,
 			   q.q1, q.q2, q.q3, q.q4,
 			   accel.x, accel.y, accel.z,
 			   gyro.x, gyro.y, gyro.z);
-		q = q_saved;
-		gyro_bias = bias_saved;
-		update_IMU(deltat, gyro, accel);
 	}
 #endif
 
 	// keep the corrected gyro for reporting
 	_gyro_corrected = gyro;
 
-	// compute the Eulers
-	float test = (SEq_1*SEq_3 - SEq_4*SEq_2);
-	const float singularity = 0.499; // 86.3 degrees?
-	if (test > singularity) {
-		// singularity at south pole
-		// this one is ok..
-		yaw = 2.0 * atan2(SEq_4, SEq_1);
-		pitch = ToRad(-90.0);
-		roll = 0.0;
-	} else if (test < -singularity) {
-		// singularity at north pole
-		// this one is invalid :( .. fix it.
-		yaw = -2.0 * atan2(SEq_4, SEq_1);
-		pitch = ToRad(90.0);
-		roll = 0.0;
-	} else {
-		roll = -(atan2(2.0*(SEq_1*SEq_2 + SEq_3*SEq_4),
-			       1 - 2.0*(SEq_2*SEq_2 + SEq_3*SEq_3)));
-		pitch = -safe_asin(2.0*test);
-		yaw = atan2(2.0*(SEq_1*SEq_4 + SEq_2*SEq_3),
-			    1 - 2.0*(SEq_3*SEq_3 + SEq_4*SEq_4));
-	}
+	// calculate our euler angles for high level control and navigation
+	euler_from_quaternion(q, &roll, &pitch, &yaw);
 
+	// the code above assumes zero magnetic declination, so offset
+	// the yaw here
 	if (_compass != NULL) {
 		yaw += _compass->get_declination();
 	}
