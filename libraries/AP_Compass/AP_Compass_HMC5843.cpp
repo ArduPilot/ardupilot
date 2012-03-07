@@ -279,7 +279,7 @@ bool AP_Compass_HMC5843::read()
    mag_y *= calibration[1];
    mag_z *= calibration[2];
 
-   last_update = millis();  // record time of update
+   last_update = micros();  // record time of update
    // rotate and offset the magnetometer values
    // XXX this could well be done in common code...
 
