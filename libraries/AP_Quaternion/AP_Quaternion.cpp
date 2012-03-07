@@ -495,14 +495,15 @@ void AP_Quaternion::update(void)
 	accel.z = -accel.z;
 
 	if (_centripetal && _gps && _gps->status() == GPS::GPS_OK) {
-		// compensate for linear acceleration, limited to 1g
+		// compensate for linear acceleration. This makes a
+		// surprisingly large difference in the pitch estimate when
+		// turning, plus on takeoff and landing
 		float acceleration = _gps->acceleration();
-		acceleration = constrain(acceleration, 0, 9.8);
 		accel.x -= acceleration;
 
 		// compensate for centripetal acceleration
 		float veloc;
-		veloc = _gps->ground_speed / 100;
+		veloc = _gps->ground_speed * 0.01;
 		// be careful of the signs in this calculation. the
 		// quaternion system uses different signs than the
 		// rest of APM
