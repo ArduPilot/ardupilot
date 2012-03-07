@@ -204,7 +204,7 @@ bool AP_ADC_ADS7844::new_data_available(const uint8_t *channel_numbers)
 // equal. This will only be true if we always consistently access a
 // sensor by either Ch6() or Ch() and never mix them. If you mix them
 // then you will get very strange results
-uint32_t AP_ADC_ADS7844::Ch6(const uint8_t *channel_numbers, uint16_t *result)
+uint32_t AP_ADC_ADS7844::Ch6(const uint8_t *channel_numbers, float *result)
 {
 	uint16_t count[6];
 	uint32_t sum[6];
@@ -230,7 +230,7 @@ uint32_t AP_ADC_ADS7844::Ch6(const uint8_t *channel_numbers, uint16_t *result)
 	// division. That costs us 36 bytes of stack, but I think its
 	// worth it.
 	for (i = 0; i < 6; i++) {
-		result[i] = (sum[i] + (count[i]/2)) / count[i];
+		result[i] = (sum[i] + count[i]) / (float)count[i];
 	}
 
 
