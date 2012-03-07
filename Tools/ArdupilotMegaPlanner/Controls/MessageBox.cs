@@ -7,7 +7,6 @@ using ArdupilotMega;
 
 namespace System.Windows.Forms
 {
-#pragma warning disable 414, 3021
     public static class MessageBox
     {
         const int FORM_Y_MARGIN = 10;
