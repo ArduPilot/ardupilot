@@ -535,11 +535,7 @@ test_imu(uint8_t argc, const Menu::arg *argv)
 				if(medium_loopCounter == 5){
 					if (compass.read()) {
                         // Calculate heading
-#if QUATERNION_ENABLE == ENABLED
-                        compass.calculate(dcm.roll, dcm.pitch);
-#else
                         compass.calculate(dcm.get_dcm_matrix());
-#endif
                     }
                     medium_loopCounter = 0;
 				}
@@ -605,12 +601,9 @@ test_mag(uint8_t argc, const Menu::arg *argv)
             if(medium_loopCounter == 5){
                 if (compass.read()) {
                     // Calculate heading
-#if QUATERNION_ENABLE == ENABLED
-                    compass.calculate(dcm.roll, dcm.pitch);
-#else
-                    compass.calculate(dcm.get_dcm_matrix());
-                    compass.null_offsets(dcm.get_dcm_matrix());
-#endif
+                    Matrix3f m = dcm.get_dcm_matrix();
+                    compass.calculate(m);
+                    compass.null_offsets(m);
                 }
                 medium_loopCounter = 0;
             }

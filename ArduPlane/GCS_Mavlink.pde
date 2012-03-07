@@ -306,7 +306,6 @@ static void NOINLINE send_meminfo(mavlink_channel_t chan)
 
 static void NOINLINE send_location(mavlink_channel_t chan)
 {
-#if QUATERNION_ENABLE == DISABLED
     Matrix3f rot = dcm.get_dcm_matrix(); // neglecting angle of attack for now
     mavlink_msg_global_position_int_send(
         chan,
@@ -319,7 +318,6 @@ static void NOINLINE send_location(mavlink_channel_t chan)
         g_gps->ground_speed * rot.b.x,  // Y speed cm/s
         g_gps->ground_speed * rot.c.x,
         g_gps->ground_course);          // course in 1/100 degree
-#endif
 }
 
 static void NOINLINE send_nav_controller_output(mavlink_channel_t chan)
