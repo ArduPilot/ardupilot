@@ -58,8 +58,29 @@ namespace ArdupilotMega.Setup
 
             if (MainV2.cs.firmware == MainV2.Firmwares.ArduPlane) // APM 
             {
-                pwm = MainV2.cs.ch8in;
-                LBL_flightmodepwm.Text = "8: " + MainV2.cs.ch8in.ToString();
+                if (MainV2.comPort.param.ContainsKey("FLTMODE_CH"))
+                {
+                    switch ((int)(float)MainV2.comPort.param["FLTMODE_CH"])
+                    {
+                        case 5:
+                            pwm = MainV2.cs.ch5in;
+                            break;
+                        case 6:
+                            pwm = MainV2.cs.ch6in;
+                            break;
+                        case 7:
+                            pwm = MainV2.cs.ch7in;
+                            break;
+                        case 8:
+                            pwm = MainV2.cs.ch8in;
+                            break;
+                        default:
+
+                            break;
+                    }
+                    
+                    LBL_flightmodepwm.Text = MainV2.comPort.param["FLTMODE_CH"].ToString() + ": " + pwm.ToString();
+                }
             }
 
             if (MainV2.cs.firmware == MainV2.Firmwares.ArduCopter2) // ac2
@@ -105,8 +126,8 @@ namespace ArdupilotMega.Setup
                 {
                     try
                     {
-                        HS3.minline = int.Parse(COL_MIN_.Text);
-                        HS3.maxline = int.Parse(COL_MAX_.Text);
+                        HS3.minline = int.Parse(COL_MIN.Text);
+                        HS3.maxline = int.Parse(COL_MAX.Text);
                         HS4.maxline = int.Parse(HS4_MIN.Text);
                         HS4.minline = int.Parse(HS4_MAX.Text);
                     }
@@ -1068,7 +1089,7 @@ namespace ArdupilotMega.Setup
 
                 MainV2.comPort.setParam("COL_MID_", MainV2.cs.ch3in);
 
-                COL_MID_.Text = MainV2.comPort.param["COL_MID_"].ToString();
+                COL_MID.Text = MainV2.comPort.param["COL_MID_"].ToString();
             }
             catch { MessageBox.Show("Set COL_MID_ failed"); }
         }
@@ -1269,26 +1290,26 @@ namespace ArdupilotMega.Setup
             {
                 if (MainV2.comPort.param["HSV_MAN"].ToString() == "1")
                 {
-                    MainV2.comPort.setParam("COL_MIN_", int.Parse(COL_MIN_.Text));
-                    MainV2.comPort.setParam("COL_MAX_", int.Parse(COL_MAX_.Text));
+                    MainV2.comPort.setParam("COL_MIN_", int.Parse(COL_MIN.Text));
+                    MainV2.comPort.setParam("COL_MAX_", int.Parse(COL_MAX.Text));
                     MainV2.comPort.setParam("HSV_MAN", 0); // randy request - last
                     BUT_swash_manual.Text = "Manual";
 
-                    COL_MAX_.Enabled = false;
-                    COL_MID_.Enabled = false;
-                    COL_MIN_.Enabled = false;
+                    COL_MAX.Enabled = false;
+                    COL_MID.Enabled = false;
+                    COL_MIN.Enabled = false;
                     BUT_0collective.Enabled = false;
                 }
                 else
                 {
-                    COL_MAX_.Text = "1500";
-                    COL_MIN_.Text = "1500";
+                    COL_MAX.Text = "1500";
+                    COL_MIN.Text = "1500";
                     MainV2.comPort.setParam("HSV_MAN", 1); // randy request
                     BUT_swash_manual.Text = "Save";
 
-                    COL_MAX_.Enabled = true;
-                    COL_MID_.Enabled = true;
-                    COL_MIN_.Enabled = true;
+                    COL_MAX.Enabled = true;
+                    COL_MID.Enabled = true;
+                    COL_MIN.Enabled = true;
                     BUT_0collective.Enabled = true;
                 }
             }
@@ -1345,10 +1366,10 @@ namespace ArdupilotMega.Setup
         {
             try
             {
-                if (int.Parse(COL_MIN_.Text) > HS3.minline)
-                    COL_MIN_.Text = HS3.minline.ToString();
-                if (int.Parse(COL_MAX_.Text) < HS3.maxline)
-                    COL_MAX_.Text = HS3.maxline.ToString();
+                if (int.Parse(COL_MIN.Text) > HS3.minline)
+                    COL_MIN.Text = HS3.minline.ToString();
+                if (int.Parse(COL_MAX.Text) < HS3.maxline)
+                    COL_MAX.Text = HS3.maxline.ToString();
             }
             catch { }
         }
@@ -1594,6 +1615,24 @@ namespace ArdupilotMega.Setup
                 TXT_measuredvoltage.Enabled = true;
                 TXT_inputvoltage.Enabled = true;
             }
+        }
+
+        private void H1_ENABLE_CheckedChanged(object sender, EventArgs e)
+        {
+            if (startup)
+                return;
+            try
+            {
+                if (MainV2.comPort.param["H1_ENABLE"] == null)
+                {
+                    MessageBox.Show("Not Available on " + MainV2.cs.firmware.ToString());
+                }
+                else
+                {
+                    MainV2.comPort.setParam("H1_ENABLE", ((RadioButton)sender).Checked == true ? 1 : 0);
+                }
+            }
+            catch { MessageBox.Show("Set H1_ENABLE Failed"); }
         }
     }
 }

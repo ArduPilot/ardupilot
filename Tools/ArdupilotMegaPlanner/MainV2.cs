@@ -1552,10 +1552,10 @@ namespace ArdupilotMega
                     }
                 }
 
-                if (fi.Length != response.ContentLength && response.Headers[HttpResponseHeader.ETag] != CurrentEtag)
-                {
-                    log.Debug("New file Check: " + fi.Length + " vs " + response.ContentLength + " " + response.Headers[HttpResponseHeader.ETag] + " vs " + CurrentEtag);
+                log.Info("New file Check: " + fi.Length + " vs " + response.ContentLength + " " + response.Headers[HttpResponseHeader.ETag] + " vs " + CurrentEtag);
 
+                if (fi.Length != response.ContentLength || response.Headers[HttpResponseHeader.ETag] != CurrentEtag)
+                {
                     using (var sw = new StreamWriter(path + ".etag"))
                     {
                         sw.WriteLine(response.Headers[HttpResponseHeader.ETag]);
@@ -1683,7 +1683,7 @@ namespace ArdupilotMega
 
                 // Create a request using a URL that can receive a post. 
                 request = WebRequest.Create(baseurl + file);
-                Console.Write(baseurl + file + " ");
+                log.Info(baseurl + file + " ");
                 // Set the Method property of the request to POST.
                 request.Method = "HEAD";
 
@@ -1719,10 +1719,10 @@ namespace ArdupilotMega
                         }
                     }
 
-                    if (fi.Length != response.ContentLength && response.Headers[HttpResponseHeader.ETag] != CurrentEtag)
-                    {
-                        log.Debug("New file Check: " + fi.Length + " vs " + response.ContentLength + " " + response.Headers[HttpResponseHeader.ETag] + " vs " + CurrentEtag);
+                    log.Debug("New file Check: " + fi.Length + " vs " + response.ContentLength + " " + response.Headers[HttpResponseHeader.ETag] + " vs " + CurrentEtag);
 
+                    if (fi.Length != response.ContentLength || response.Headers[HttpResponseHeader.ETag] != CurrentEtag)
+                    {
                         using (StreamWriter sw = new StreamWriter(path + ".etag"))
                         {
                             sw.WriteLine(response.Headers[HttpResponseHeader.ETag]);
