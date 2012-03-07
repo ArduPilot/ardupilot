@@ -135,13 +135,14 @@ void
 AP_DCM::accel_adjust(Vector3f &accel)
 {
 	float veloc;
-	// compensate for linear acceleration, limited to 1g
+	// compensate for linear acceleration. This makes a
+	// surprisingly large difference in the pitch estimate when
+	// turning, plus on takeoff and landing
 	float acceleration = _gps->acceleration();
-	acceleration = constrain(acceleration, 0, 9.8);
 	accel.x -= acceleration;
 
 	// compensate for centripetal acceleration
-	veloc = _gps->ground_speed / 100;
+	veloc = _gps->ground_speed * 0.01;
 
 	// We are working with a modified version of equation 26 as
 	// our IMU object reports acceleration in the positive axis
