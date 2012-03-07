@@ -103,7 +103,7 @@ private:
 
 	// maximum gyroscope drift rate in radians/s/s (set to 0.005
 	// degrees/s/s, which is 0.3 degrees/s/minute)
-	static const float gyroMeasDrift = 0.005 * (PI/180.0);
+	static const float gyroMeasDrift = 0.04 * (PI/180.0);
 
 	float beta;
 	float zeta;
