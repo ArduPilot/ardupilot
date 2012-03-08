@@ -33,6 +33,7 @@ class AP_InertialSensor_MPU6000 : public AP_InertialSensor
   float temperature();
   uint32_t sample_time();
   void reset_sample_time();
+  float get_gyro_drift_rate();
 
   private:
 

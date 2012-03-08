@@ -57,6 +57,11 @@ class AP_InertialSensor
    */
   virtual uint32_t sample_time() = 0;
   virtual void reset_sample_time() = 0;
+
+  // return the maximum gyro drift rate in radians/s/s. This
+  // depends on what gyro chips are being used
+  virtual float get_gyro_drift_rate(void) = 0;
+
 };
 
 #include "AP_InertialSensor_Oilpan.h"
