@@ -67,6 +67,8 @@ public:
 	// dummy save method
 	void		save(void) { }
 
+	float get_gyro_drift_rate(void) { return 0; }
+
 private:
 	/// set true when new data is delivered
 	bool		_updated;

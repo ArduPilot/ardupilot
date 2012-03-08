@@ -84,6 +84,10 @@ public:
 	///
 	float			get_delta_time(void) { return _sample_time * 1.0e-6; }
 
+	/// return the maximum gyro drift rate in radians/s/s. This
+	/// depends on what gyro chips are being used
+	virtual float	get_gyro_drift_rate(void);
+
 	/// A count of bad sensor readings
 	///
 	/// @todo This should be renamed, as there's no guarantee that sensors

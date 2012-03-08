@@ -41,3 +41,4 @@ float	IMU::az(void) { return 0.0; }
 void	IMU::ax(const float v) { }
 void	IMU::ay(const float v) { }
 void	IMU::az(const float v) { }
+float   IMU::get_gyro_drift_rate(void) { return 0; }

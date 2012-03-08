@@ -64,6 +64,7 @@ public:
 	virtual void		ax(const float v)		{ _sensor_cal[3] = v; }
 	virtual void		ay(const float v)		{ _sensor_cal[4] = v; }
 	virtual void		az(const float v)		{ _sensor_cal[5] = v; }
+    virtual float       get_gyro_drift_rate(void);
 
 private:
     AP_InertialSensor   *_ins;          ///< INS provides an axis and unit correct sensor source.
