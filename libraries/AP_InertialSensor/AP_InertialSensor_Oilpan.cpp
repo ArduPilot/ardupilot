@@ -126,3 +126,10 @@ float AP_InertialSensor_Oilpan::_accel_apply_std_offset( float adc_value )
   /* Magic number from AP_ADC_Oilpan.h */
   return ((float) adc_value ) - 2041.0f;
 }
+
+// return the oilpan gyro drift rate in radian/s/s
+float AP_InertialSensor_Oilpan::get_gyro_drift_rate(void)
+{
+    // 3.0 degrees/second/minute
+    return ToRad(3.0/60);
+}
