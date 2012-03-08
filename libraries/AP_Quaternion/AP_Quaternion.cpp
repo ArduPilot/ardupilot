@@ -314,7 +314,6 @@ void AP_Quaternion::update_drift(float deltat, Vector3f &gyro, Vector3f &accel, 
 {
     // local system variables
     float norm;                                                             //                vector norm
-    float SEqDot_omega_1, SEqDot_omega_2, SEqDot_omega_3, SEqDot_omega_4;   //                quaternion rate from gyroscopes elements
     float f_1, f_2, f_3, f_4, f_5, f_6;                                     //                objective function elements
     float J_11or24, J_12or23, J_13or22, J_14or21, J_32, J_33,               //                objective function Jacobian elements
     J_41, J_42, J_43, J_44, J_51, J_52, J_53, J_54, J_61, J_62, J_63, J_64; //
@@ -343,10 +342,6 @@ void AP_Quaternion::update_drift(float deltat, Vector3f &gyro, Vector3f &accel, 
     }
 
     // auxiliary variables to avoid repeated calculations
-    float halfSEq_1 = 0.5f * SEq_1;
-    float halfSEq_2 = 0.5f * SEq_2;
-    float halfSEq_3 = 0.5f * SEq_3;
-    float halfSEq_4 = 0.5f * SEq_4;
     float twoSEq_1 = 2.0f * SEq_1;
     float twoSEq_2 = 2.0f * SEq_2;
     float twoSEq_3 = 2.0f * SEq_3;
