@@ -56,7 +56,7 @@ public:
 		// notice the sign reversals here
 		return Vector3f(-_gyro_corrected.x, -_gyro_corrected.y, _gyro_corrected.z);
 	}
-	Vector3f get_integrator(void) {
+	Vector3f get_gyro_drift(void) {
 		// notice the sign reversals here
 		return Vector3f(-gyro_bias.x, -gyro_bias.y, gyro_bias.z);
         }
