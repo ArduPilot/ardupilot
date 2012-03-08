@@ -14,6 +14,7 @@
 #include <AP_IMU.h>
 #include <AP_GPS.h>
 #include <AP_Quaternion.h>
+#include <AP_DCM.h>
 #include <AP_Math.h>
 #include <AP_Common.h>
 #include <AP_Compass.h>
@@ -46,7 +47,8 @@ AP_Compass_HMC5843 compass;
 static GPS         *g_gps;
 
 AP_IMU_INS imu(&ins);
-AP_Quaternion  quaternion(&imu, g_gps);
+AP_Quaternion  ahrs(&imu, g_gps);
+//AP_DCM  ahrs(&imu, g_gps);
 
 AP_Baro_BMP085_HIL      barometer;
 
@@ -102,7 +104,7 @@ void setup(void)
 	if (compass.init()) {
 		Serial.printf("Enabling compass\n");
 		compass.null_offsets_enable();
-		quaternion.set_compass(&compass);
+		ahrs.set_compass(&compass);
 	}
 }
 
@@ -111,8 +113,6 @@ void loop(void)
 	static uint16_t counter;
 	static uint32_t last_t, last_print, last_compass;
 	uint32_t now = micros();
-	static uint32_t compass_reads;
-	static uint32_t compass_time;
 
 	if (last_t == 0) {
 		last_t = now;
@@ -120,28 +120,27 @@ void loop(void)
 	}
 	last_t = now;
 
-	if (now - last_compass > 100*1000UL) {
+	if (now - last_compass > 100*1000UL &&
+		compass.read()) {
 		// read compass at 10Hz
-		compass.read();
 		last_compass = now;
 	}
 
-	quaternion.update();
+	ahrs.update();
 	counter++;
 
 	if (now - last_print >= 0.5e6) {
-		Vector3f accel = imu.get_accel();
-		Vector3f gyro  = imu.get_gyro();
-		Serial.printf_P(PSTR("r:%4.1f  p:%4.1f y:%4.1f g=(%5.1f %5.1f %5.1f) a=(%5.1f %5.1f %5.1f) rate=%.1f\n"),
-				ToDeg(quaternion.roll),
-				ToDeg(quaternion.pitch),
-				ToDeg(quaternion.yaw),
-				gyro.x, gyro.y, gyro.z,
-				accel.x, accel.y, accel.z,
-				(1.0e6*counter)/(now-last_print));
+		Vector3f drift  = ahrs.get_gyro_drift();
+		Serial.printf_P(PSTR("r:%4.1f  p:%4.1f y:%4.1f drift=(%5.1f %5.1f %5.1f) hdg=%.1f rate=%.1f\n"),
+						ToDeg(ahrs.roll),
+						ToDeg(ahrs.pitch),
+						ToDeg(ahrs.yaw),
+						ToDeg(drift.x),
+						ToDeg(drift.y),
+						ToDeg(drift.z),
+						compass.use_for_yaw()?ToDeg(compass.heading):0.0,
+						(1.0e6*counter)/(now-last_print));
 		last_print = now;
 		counter = 0;
-		compass_reads=0;
-		compass_time = 0;
 	}
 }
