@@ -250,3 +250,10 @@ AP_IMU_INS::update(void)
 bool AP_IMU_INS::new_data_available(void) {
     return _ins->new_data_available();
 }
+
+/// return the maximum gyro drift rate in radians/s/s. This
+/// depends on what gyro chips are being used
+float AP_IMU_INS::get_gyro_drift_rate(void)
+{
+    return _ins->get_gyro_drift_rate();
+}
