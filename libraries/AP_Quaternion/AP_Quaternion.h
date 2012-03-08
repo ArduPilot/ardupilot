@@ -78,7 +78,7 @@ public:
 private:
 	void 		update_IMU(float deltat, Vector3f &gyro, Vector3f &accel);
 	void 		update_MARG(float deltat, Vector3f &gyro, Vector3f &accel, Vector3f &mag);
-	void 		update_drift(float deltat, Vector3f &gyro, Vector3f &accel, Vector3f &mag);
+	void 		update_drift(float deltat, Vector3f &mag);
 
 	bool		_have_initial_yaw;
 
@@ -99,11 +99,9 @@ private:
 	bool		_centripetal;
 
 	// maximum gyroscope measurement error in rad/s (set to 7 degrees/second)
-	static const float gyroMeasError = 7.0 * (M_PI/180.0);
+	static const float gyroMeasError = 20.0 * (M_PI/180.0);
 
-	// maximum gyroscope drift rate in radians/s/s (set to 0.005
-	// degrees/s/s, which is 0.3 degrees/s/minute)
-	static const float gyroMeasDrift = 0.04 * (PI/180.0);
+	float gyroMeasDrift;
 
 	float beta;
 	float zeta;

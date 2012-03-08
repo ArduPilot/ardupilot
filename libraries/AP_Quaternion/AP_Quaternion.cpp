@@ -310,11 +310,11 @@ void AP_Quaternion::update_MARG(float deltat, Vector3f &gyro, Vector3f &accel, V
 // Function to update our gyro_bias drift estimate using the accelerometer
 // and magnetometer. This is a cut-down version of update_MARG(), but
 // without the quaternion update.
-void AP_Quaternion::update_drift(float deltat, Vector3f &gyro, Vector3f &accel, Vector3f &mag)
+void AP_Quaternion::update_drift(float deltat, Vector3f &mag)
 {
     // local system variables
     float norm;                                                             //                vector norm
-    float f_1, f_2, f_3, f_4, f_5, f_6;                                     //                objective function elements
+    float f_4, f_5, f_6;                                     //                objective function elements
     float J_11or24, J_12or23, J_13or22, J_14or21, J_32, J_33,               //                objective function Jacobian elements
     J_41, J_42, J_43, J_44, J_51, J_52, J_53, J_54, J_61, J_62, J_63, J_64; //
     float SEqHatDot_1, SEqHatDot_2, SEqHatDot_3, SEqHatDot_4;               //                estimated direction of the gyroscope error
@@ -324,14 +324,6 @@ void AP_Quaternion::update_drift(float deltat, Vector3f &gyro, Vector3f &accel, 
 
     // estimated direction of the gyroscope error (radians)
     Vector3f w_err;
-
-    // normalise accelerometer vector
-    accel.normalize();
-    if (accel.is_inf()) {
-	    // discard this data point
-	    renorm_range_count++;
-	    return;
-    }
 
     // normalise the magnetometer measurement
     mag.normalize();
@@ -365,9 +357,6 @@ void AP_Quaternion::update_drift(float deltat, Vector3f &gyro, Vector3f &accel, 
     Vector3f twom = mag * 2.0;
 
     // compute the objective function and Jacobian
-    f_1 = twoSEq_2 * SEq_4 - twoSEq_1 * SEq_3 - accel.x;
-    f_2 = twoSEq_1 * SEq_2 + twoSEq_3 * SEq_4 - accel.y;
-    f_3 = 1.0f - twoSEq_2 * SEq_2 - twoSEq_3 * SEq_3 - accel.z;
     f_4 = twob_x * (0.5f - SEq_3 * SEq_3 - SEq_4 * SEq_4) + twob_z * (SEq_2SEq_4 - SEq_1SEq_3) - mag.x;
     f_5 = twob_x * (SEq_2 * SEq_3 - SEq_1 * SEq_4) + twob_z * (SEq_1 * SEq_2 + SEq_3 * SEq_4) - mag.y;
     f_6 = twob_x * (SEq_1SEq_3 + SEq_2SEq_4) + twob_z * (0.5f - SEq_2 * SEq_2 - SEq_3 * SEq_3) - mag.z;
@@ -391,10 +380,10 @@ void AP_Quaternion::update_drift(float deltat, Vector3f &gyro, Vector3f &accel, 
     J_64 = twob_xSEq_2;
 
     // compute the gradient (matrix multiplication)
-    SEqHatDot_1 = J_14or21 * f_2 - J_11or24 * f_1              - J_41 * f_4 - J_51 * f_5 + J_61 * f_6;
-    SEqHatDot_2 = J_12or23 * f_1 + J_13or22 * f_2 - J_32 * f_3 + J_42 * f_4 + J_52 * f_5 + J_62 * f_6;
-    SEqHatDot_3 = J_12or23 * f_2 - J_33 * f_3 - J_13or22 * f_1 - J_43 * f_4 + J_53 * f_5 + J_63 * f_6;
-    SEqHatDot_4 = J_14or21 * f_1 + J_11or24 * f_2              - J_44 * f_4 - J_54 * f_5 + J_64 * f_6;
+    SEqHatDot_1 = - J_41 * f_4 - J_51 * f_5 + J_61 * f_6;
+    SEqHatDot_2 = + J_42 * f_4 + J_52 * f_5 + J_62 * f_6;
+    SEqHatDot_3 = - J_43 * f_4 + J_53 * f_5 + J_63 * f_6;
+    SEqHatDot_4 = - J_44 * f_4 - J_54 * f_5 + J_64 * f_6;
 
     // normalise the gradient to estimate direction of the gyroscope error
     norm = 1.0 / safe_sqrt(SEqHatDot_1 * SEqHatDot_1 + SEqHatDot_2 * SEqHatDot_2 + SEqHatDot_3 * SEqHatDot_3 + SEqHatDot_4 * SEqHatDot_4);
@@ -429,6 +418,28 @@ void AP_Quaternion::update_drift(float deltat, Vector3f &gyro, Vector3f &accel, 
     drift_delta.y = constrain(drift_delta.y, -max_change, max_change);
     drift_delta.z = constrain(drift_delta.z, -max_change, max_change);
     gyro_bias += drift_delta;
+
+    // compute then integrate the estimated quaternion rate
+    SEq_1 -= (beta * SEqHatDot_1) * deltat;
+    SEq_2 -= (beta * SEqHatDot_2) * deltat;
+    SEq_3 -= (beta * SEqHatDot_3) * deltat;
+    SEq_4 -= (beta * SEqHatDot_4) * deltat;
+
+    // normalise quaternion
+    norm = 1.0/safe_sqrt(SEq_1 * SEq_1 + SEq_2 * SEq_2 + SEq_3 * SEq_3 + SEq_4 * SEq_4);
+    if (isinf(norm)) {
+	    // our quaternion is bad! Reset based on roll/pitch/yaw
+	    // and hope for the best ...
+	    renorm_blowup_count++;
+	    _compass->null_offsets_disable();
+	    quaternion_from_euler(q, roll, pitch, yaw);
+	    _compass->null_offsets_disable();
+	    return;
+    }
+    SEq_1 *= norm;
+    SEq_2 *= norm;
+    SEq_3 *= norm;
+    SEq_4 *= norm;
 
     // compute flux in the earth frame
     // recompute axulirary variables
@@ -506,10 +517,8 @@ void AP_Quaternion::update(void)
 		accel.z += (gyro.y - gyro_bias.y) * veloc;
 	}
 
-	_gyro_sum += gyro;
-	_accel_sum += accel;
-	_sum_count++;
-
+#define SEPARATE_DRIFT 0
+#if SEPARATE_DRIFT
 	/*
 	  The full Madgwick quaternion 'MARG' system assumes you get
 	  gyro, accel and magnetometer updates at the same rate. On
@@ -521,24 +530,28 @@ void AP_Quaternion::update(void)
 	  new magnetometer point, and use the much simpler
 	  update_IMU() as the main quaternion update function.
 	 */
+	_gyro_sum += gyro;
+	_accel_sum += accel;
+	_sum_count++;
+
 	if (_compass != NULL && _compass->use_for_yaw() &&
 	    _compass->last_update != _compass_last_update &&
 	    _sum_count != 0) {
 		// use new compass sample for drift correction
 		float mag_deltat = 1.0e-6*(_compass->last_update - _compass_last_update);
 		Vector3f mag = Vector3f(_compass->mag_x, _compass->mag_y, - _compass->mag_z);
-		Vector3f drift_accel = _accel_sum / _sum_count;
-		Vector3f drift_gyro = _gyro_sum / _sum_count;
-		_accel_sum.zero();
-		_gyro_sum.zero();
 		_sum_count = 0;
-		update_drift(mag_deltat, drift_gyro, drift_accel, mag);
+		update_drift(mag_deltat, mag);
 		_compass_last_update = _compass->last_update;
 	}
 
 	// step the quaternion solution using just gyros and accels
 	gyro -= gyro_bias;
 	update_IMU(deltat, gyro, accel);
+#else
+	Vector3f mag = Vector3f(_compass->mag_x, _compass->mag_y, - _compass->mag_z);
+	update_MARG(deltat, gyro, accel, mag);
+#endif
 
 #ifdef DESKTOP_BUILD
 	if (q.is_nan()) {
