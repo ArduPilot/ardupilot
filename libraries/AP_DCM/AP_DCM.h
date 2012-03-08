@@ -25,10 +25,8 @@ class AP_DCM
 public:
 	// Constructors
 	AP_DCM(IMU *imu, GPS *&gps) :
-		_kp_roll_pitch(18.0),
-		_ki_roll_pitch(0.0006),
-		_kp_yaw(9.0),
-		_ki_yaw(0.003),
+		_kp_roll_pitch(0.13),
+		_kp_yaw(0.8),
 		_gps(gps),
 		_imu(imu),
 		_dcm_matrix(1, 0, 0,
@@ -36,7 +34,16 @@ public:
 			    0, 0, 1),
 		_health(1.),
 		_toggle(0)
-	{}
+	{
+		// base the ki values by the sensors maximum drift
+		// rate. The APM2 has gyros which are much less drift
+		// prone than the APM1, so we should have a lower ki,
+		// which will make us less prone to increasing omegaI
+		// incorrectly due to sensor noise
+		_gyro_drift_limit = imu->get_gyro_drift_rate();
+		_ki_roll_pitch = _gyro_drift_limit * 3;
+		_ki_yaw        = _gyro_drift_limit * 4;
+	}
 
 	// Accessors
 
@@ -46,7 +53,7 @@ public:
 	Matrix3f	get_dcm_transposed(void) {Matrix3f temp = _dcm_matrix;  return temp.transpose();}
 
 	// return the current drift correction integrator value
-	Vector3f	get_integrator(void) {return _omega_I; }
+	Vector3f	get_gyro_drift(void) {return _omega_I; }
 
 	float		get_health(void) {return _health;}
 	void		set_centripetal(bool b) {_centripetal = b;}
@@ -55,7 +62,7 @@ public:
 
 	// Methods
 	void 		update_DCM(uint8_t drift_correction_frequency=1);
-	void 		update_DCM_fast(void);
+	void 		update(void) { update_DCM(); }
 	void 		matrix_reset(bool recover_eulers = false);
 
 	long		roll_sensor;					// Degrees * 100
@@ -70,18 +77,6 @@ public:
 	uint8_t 	renorm_range_count;
 	uint8_t 	renorm_blowup_count;
 
-	float	kp_roll_pitch() 		{ return _kp_roll_pitch; }
-	void	kp_roll_pitch(float v) 	{ _kp_roll_pitch = v; }
-
-	float	ki_roll_pitch() 		{ return _ki_roll_pitch; }
-	void	ki_roll_pitch(float v) 	{ _ki_roll_pitch = v; }
-
-	float	kp_yaw() 				{ return _kp_yaw; }
-	void	kp_yaw(float v) 		{ _kp_yaw = v; }
-
-	float	ki_yaw() 				{ return _ki_yaw; }
-	void	ki_yaw(float v) 		{ _ki_yaw = v; }
-
 	// status reporting
 	float		get_accel_weight(void);
 	float		get_renorm_val(void);
@@ -93,6 +88,7 @@ private:
 	float		_ki_roll_pitch;
 	float		_kp_yaw;
 	float		_ki_yaw;
+	float		_gyro_drift_limit;          // radians/s/s
 	bool		_have_initial_yaw;
 
 	// Methods
@@ -105,9 +101,6 @@ private:
 	bool	 	renorm(Vector3f const &a, Vector3f &result);
 	void 		drift_correction(float deltat);
 	void 		euler_angles(void);
-
-	// max rate of gyro drift in degrees/s/s
-	static const float _gyro_drift_rate = 0.04;
 
 	// members
 	Compass 	* _compass;
@@ -126,11 +119,12 @@ private:
 	Vector3f 	_accel_vector;
 	Vector3f 	_accel_sum;
 
-	Vector3f 	_gyro_vector;				// Store the gyros turn rate in a vector
-	Vector3f	_omega_P;					// Omega Proportional correction
-	Vector3f 	_omega_I;					// Omega Integrator correction
-	Vector3f 	_omega_integ_corr;			// Partially corrected Gyro_Vector data - used for centrepetal correction
-	Vector3f 	_omega;						// Corrected Gyro_Vector data
+	Vector3f 	_gyro_vector;		// Store the gyros turn rate in a vector
+	Vector3f	_omega_P;		// accel Omega Proportional correction
+	Vector3f	_omega_yaw_P;		// yaw Omega Proportional correction
+	Vector3f 	_omega_I;		// Omega Integrator correction
+	Vector3f 	_omega_integ_corr;	// Partially corrected Gyro_Vector data - used for centrepetal correction
+	Vector3f 	_omega;			// Corrected Gyro_Vector data
 	Vector3f 	_omega_sum;
 	Vector3f 	_omega_smoothed;
 	float		_health;
