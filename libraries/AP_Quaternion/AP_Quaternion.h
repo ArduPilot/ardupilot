@@ -25,6 +25,10 @@ public:
 		b_x = 0;
 		b_z = -1;
 
+		// limit the drift to the drift rate reported by the
+		// sensor driver
+		gyroMeasDrift = imu->get_gyro_drift_rate();
+
 		// scaled gyro drift limits
 		beta = sqrt(3.0f / 4.0f) * gyroMeasError;
 		zeta = sqrt(3.0f / 4.0f) * gyroMeasDrift;
