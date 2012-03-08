@@ -488,7 +488,7 @@ static void NOINLINE send_raw_imu3(mavlink_channel_t chan)
 
 static void NOINLINE send_dcm(mavlink_channel_t chan)
 {
-    Vector3f omega_I = dcm.get_integrator();
+    Vector3f omega_I = dcm.get_gyro_drift();
     mavlink_msg_dcm_send(
         chan,
         omega_I.x,

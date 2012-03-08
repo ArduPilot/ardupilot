@@ -245,9 +245,9 @@ static void Log_Write_Performance()
 	DataFlash.WriteByte(dcm.renorm_blowup_count);
 	DataFlash.WriteByte(gps_fix_count);
 	DataFlash.WriteInt((int)(dcm.get_health() * 1000));
-	DataFlash.WriteInt((int)(dcm.get_integrator().x * 1000));
-	DataFlash.WriteInt((int)(dcm.get_integrator().y * 1000));
-	DataFlash.WriteInt((int)(dcm.get_integrator().z * 1000));
+	DataFlash.WriteInt((int)(dcm.get_gyro_drift().x * 1000));
+	DataFlash.WriteInt((int)(dcm.get_gyro_drift().y * 1000));
+	DataFlash.WriteInt((int)(dcm.get_gyro_drift().z * 1000));
 	DataFlash.WriteInt(pmTest1);
 	DataFlash.WriteByte(END_BYTE);
 }
