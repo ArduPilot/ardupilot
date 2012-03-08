@@ -41,8 +41,8 @@ public:
 		// which will make us less prone to increasing omegaI
 		// incorrectly due to sensor noise
 		_gyro_drift_limit = imu->get_gyro_drift_rate();
-		_ki_roll_pitch = _gyro_drift_limit * 3;
-		_ki_yaw        = _gyro_drift_limit * 4;
+		_ki_roll_pitch = _gyro_drift_limit * 5;
+		_ki_yaw        = _gyro_drift_limit * 8;
 	}
 
 	// Accessors
