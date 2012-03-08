@@ -127,7 +127,7 @@ static void NOINLINE send_nav_controller_output(mavlink_channel_t chan)
 #if HIL_MODE != HIL_MODE_ATTITUDE
 static void NOINLINE send_dcm(mavlink_channel_t chan)
 {
-    Vector3f omega_I = dcm.get_integrator();
+    Vector3f omega_I = dcm.get_gyro_drift();
     mavlink_msg_dcm_send(
         chan,
         omega_I.x,
