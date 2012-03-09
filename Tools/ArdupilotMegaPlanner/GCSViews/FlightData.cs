@@ -781,7 +781,7 @@ namespace ArdupilotMega.GCSViews
                 Directory.CreateDirectory(Path.GetDirectoryName(Application.ExecutablePath) + Path.DirectorySeparatorChar + @"logs");
                 swlog = new StreamWriter(Path.GetDirectoryName(Application.ExecutablePath) + Path.DirectorySeparatorChar + @"logs" + Path.DirectorySeparatorChar + DateTime.Now.ToString("yyyy-MM-dd hh-mm") + " telem.log");
             }
-            catch { MessageBox.Show("Log creation error"); }
+            catch { CustomMessageBox.Show("Log creation error"); }
         }
 
         private void BUTactiondo_Click(object sender, EventArgs e)
@@ -795,7 +795,7 @@ namespace ArdupilotMega.GCSViews
                 comPort.doAction((MAVLink.MAV_ACTION)Enum.Parse(typeof(MAVLink.MAV_ACTION), "MAV_ACTION_" + CMB_action.Text));
 #endif
             }
-            catch { MessageBox.Show("The Command failed to execute"); }
+            catch { CustomMessageBox.Show("The Command failed to execute"); }
             ((Button)sender).Enabled = true;
         }
 
@@ -811,7 +811,7 @@ namespace ArdupilotMega.GCSViews
                 //System.Threading.Thread.Sleep(100);
                 //comPort.doAction(MAVLink.MAV_ACTION.MAV_ACTION_SET_AUTO); // set auto
             }
-            catch { MessageBox.Show("The command failed to execute"); }
+            catch { CustomMessageBox.Show("The command failed to execute"); }
             ((Button)sender).Enabled = true;
         }
 
@@ -872,7 +872,7 @@ namespace ArdupilotMega.GCSViews
         {
             if (!MainV2.comPort.BaseStream.IsOpen)
             {
-                MessageBox.Show("Please Connect First");
+                CustomMessageBox.Show("Please Connect First");
                 return;
             }
 
@@ -892,13 +892,13 @@ namespace ArdupilotMega.GCSViews
             int intalt = (int)(100 * MainV2.cs.multiplierdist);
             if (!int.TryParse(alt, out intalt))
             {
-                MessageBox.Show("Bad Alt");
+                CustomMessageBox.Show("Bad Alt");
                 return;
             }
 
             if (gotolocation.Lat == 0 || gotolocation.Lng == 0)
             {
-                MessageBox.Show("Bad Lat/Long");
+                CustomMessageBox.Show("Bad Lat/Long");
                 return;
             }
 
@@ -919,7 +919,7 @@ namespace ArdupilotMega.GCSViews
 
                 MainV2.givecomport = false;
             }
-            catch (Exception ex) { MainV2.givecomport = false; MessageBox.Show("Error sending command : " + ex.Message); }
+            catch (Exception ex) { MainV2.givecomport = false; CustomMessageBox.Show("Error sending command : " + ex.Message); }
 
         }
 
@@ -1009,7 +1009,7 @@ namespace ArdupilotMega.GCSViews
                     tracklog.Minimum = 0;
                     tracklog.Maximum = 100;
                 }
-                catch { MessageBox.Show("Error: Failed to write log file"); }
+                catch { CustomMessageBox.Show("Error: Failed to write log file"); }
             }
         }
 
@@ -1112,7 +1112,7 @@ namespace ArdupilotMega.GCSViews
                 ((Button)sender).Enabled = false;
                 comPort.setWPCurrent((ushort)CMB_setwp.SelectedIndex); // set nav to
             }
-            catch { MessageBox.Show("The command failed to execute"); }
+            catch { CustomMessageBox.Show("The command failed to execute"); }
             ((Button)sender).Enabled = true;
         }
 
@@ -1143,7 +1143,7 @@ namespace ArdupilotMega.GCSViews
                 comPort.doAction(MAVLink.MAV_ACTION.MAV_ACTION_SET_AUTO);
 #endif
             }
-            catch { MessageBox.Show("The Command failed to execute"); }
+            catch { CustomMessageBox.Show("The Command failed to execute"); }
             ((Button)sender).Enabled = true;
         }
 
@@ -1158,7 +1158,7 @@ namespace ArdupilotMega.GCSViews
                 comPort.doAction(MAVLink.MAV_ACTION.MAV_ACTION_RETURN);
 #endif
             }
-            catch { MessageBox.Show("The Command failed to execute"); }
+            catch { CustomMessageBox.Show("The Command failed to execute"); }
             ((Button)sender).Enabled = true;
         }
 
@@ -1173,7 +1173,7 @@ namespace ArdupilotMega.GCSViews
                 comPort.doAction(MAVLink.MAV_ACTION.MAV_ACTION_SET_MANUAL);
 #endif
             }
-            catch { MessageBox.Show("The Command failed to execute"); }
+            catch { CustomMessageBox.Show("The Command failed to execute"); }
             ((Button)sender).Enabled = true;
         }
 
@@ -1356,7 +1356,7 @@ namespace ArdupilotMega.GCSViews
         {
             stopRecordToolStripMenuItem_Click(sender, e);
 
-            MessageBox.Show("Output avi will be saved to the log folder");
+            CustomMessageBox.Show("Output avi will be saved to the log folder");
 
             aviwriter = new AviWriter();
             Directory.CreateDirectory(Path.GetDirectoryName(Application.ExecutablePath) + Path.DirectorySeparatorChar + @"logs");
@@ -1552,7 +1552,7 @@ namespace ArdupilotMega.GCSViews
                 }
                 else
                 {
-                    MessageBox.Show("Max 10 at a time.");
+                    CustomMessageBox.Show("Max 10 at a time.");
                     ((CheckBox)sender).Checked = false;
                 }
                 ThemeManager.ApplyThemeTo(this);
@@ -1635,7 +1635,7 @@ namespace ArdupilotMega.GCSViews
         {
             if (!MainV2.comPort.BaseStream.IsOpen)
             {
-                MessageBox.Show("Please Connect First");
+                CustomMessageBox.Show("Please Connect First");
                 return;
             }
 
@@ -1645,13 +1645,13 @@ namespace ArdupilotMega.GCSViews
             int intalt = (int)(100 * MainV2.cs.multiplierdist);
             if (!int.TryParse(alt, out intalt))
             {
-                MessageBox.Show("Bad Alt");
+                CustomMessageBox.Show("Bad Alt");
                 return;
             }
 
             if (gotolocation.Lat == 0 || gotolocation.Lng == 0)
             {
-                MessageBox.Show("Bad Lat/Long");
+                CustomMessageBox.Show("Bad Lat/Long");
                 return;
             }
 
@@ -1735,7 +1735,7 @@ print 'Roll complete'
 
 ";
 
-            MessageBox.Show("This is Very ALPHA");
+            CustomMessageBox.Show("This is Very ALPHA");
 
             Form scriptedit = new Form();
 
@@ -1757,7 +1757,7 @@ print 'Roll complete'
 
             scriptedit.ShowDialog();
 
-            if (DialogResult.Yes == MessageBox.Show("Run Script", "Run this script?", MessageBoxButtons.YesNo))
+            if (DialogResult.Yes == CustomMessageBox.Show("Run Script", "Run this script?", MessageBoxButtons.YesNo))
             {
 
                 Script scr = new Script();

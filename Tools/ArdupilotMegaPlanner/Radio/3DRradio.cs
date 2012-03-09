@@ -59,7 +59,7 @@ namespace ArdupilotMega
                 comPort.Open();
 
             }
-            catch { MessageBox.Show("Invalid ComPort or in use"); return; }
+            catch { CustomMessageBox.Show("Invalid ComPort or in use"); return; }
 
             bool bootloadermode = false;
 
@@ -99,7 +99,7 @@ namespace ArdupilotMega
                     {
                         iHex.load(firmwarefile);
                     }
-                    catch { MessageBox.Show("Bad Firmware File"); goto exit; }
+                    catch { CustomMessageBox.Show("Bad Firmware File"); goto exit; }
 
                     if (!bootloadermode)
                     {
@@ -118,16 +118,16 @@ namespace ArdupilotMega
                     {
                         uploader.upload(comPort, iHex);
                     }
-                    catch (Exception ex) { MessageBox.Show("Upload Failed " + ex.Message); }
+                    catch (Exception ex) { CustomMessageBox.Show("Upload Failed " + ex.Message); }
                 }
                 else
                 {
-                    MessageBox.Show("Failed to download new firmware");
+                    CustomMessageBox.Show("Failed to download new firmware");
                 }
             }
             else
             {
-                MessageBox.Show("Failed to identify Radio");
+                CustomMessageBox.Show("Failed to identify Radio");
             }
 
         exit:
@@ -198,7 +198,7 @@ namespace ArdupilotMega
 
 
             }
-            catch { MessageBox.Show("Invalid ComPort or in use"); return; }
+            catch { CustomMessageBox.Show("Invalid ComPort or in use"); return; }
 
             lbl_status.Text = "Connecting";
 
@@ -242,7 +242,7 @@ namespace ArdupilotMega
                                             }
                                             else
                                             {
-                                                MessageBox.Show("Set Command error");
+                                                CustomMessageBox.Show("Set Command error");
                                             }
                                         }
                                     }
@@ -258,7 +258,7 @@ namespace ArdupilotMega
                                             }
                                             else
                                             {
-                                                MessageBox.Show("Set Command error");
+                                                CustomMessageBox.Show("Set Command error");
                                             }
                                         }
                                     }
@@ -309,7 +309,7 @@ namespace ArdupilotMega
                                             }
                                             else
                                             {
-                                                MessageBox.Show("Set Command error");
+                                                CustomMessageBox.Show("Set Command error");
                                             }
                                         }
                                     }
@@ -325,7 +325,7 @@ namespace ArdupilotMega
                                             }
                                             else
                                             {
-                                                MessageBox.Show("Set Command error");
+                                                CustomMessageBox.Show("Set Command error");
                                             }
                                         }
                                     }
@@ -351,7 +351,7 @@ namespace ArdupilotMega
                 doCommand(comPort, "ATZ");
 
                 lbl_status.Text = "Fail";
-                MessageBox.Show("Failed to enter command mode");
+                CustomMessageBox.Show("Failed to enter command mode");
             }
 
 
@@ -374,7 +374,7 @@ namespace ArdupilotMega
 
 
             }
-            catch { MessageBox.Show("Invalid ComPort or in use"); return; }
+            catch { CustomMessageBox.Show("Invalid ComPort or in use"); return; }
 
             lbl_status.Text = "Connecting";
 
@@ -479,7 +479,7 @@ namespace ArdupilotMega
                 doCommand(comPort, "ATO");
 
                 lbl_status.Text = "Fail";
-                MessageBox.Show("Failed to enter command mode");
+                CustomMessageBox.Show("Failed to enter command mode");
             }
 
             comPort.Close();

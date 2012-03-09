@@ -166,6 +166,10 @@
     <Reference Include="Microsoft.Scripting.ExtensionAttribute, Version=2.0.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
     </Reference>
+    <Reference Include="netDxf, Version=0.1.2.0, Culture=neutral, PublicKeyToken=1c75adeaa4c98f42, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>Lib\netDxf.dll</HintPath>
+    </Reference>
     <Reference Include="OpenTK, Version=1.0.0.0, Culture=neutral, PublicKeyToken=bad199fe84eb3df4, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
     </Reference>
@@ -218,7 +222,7 @@
       <DependentUpon>Tracker.cs</DependentUpon>
     </Compile>
     <Compile Include="CodeGen.cs" />
-    <Compile Include="Controls\MessageBox.cs" />
+    <Compile Include="Controls\CustomMessageBox.cs" />
     <Compile Include="Controls\ProgressReporterDialogue.cs">
       <SubType>Form</SubType>
     </Compile>
@@ -442,6 +446,7 @@
     </Compile>
     <Compile Include="Radio\Uploader.cs" />
     <Compile Include="LangUtility.cs" />
+    <Compile Include="test.cs" />
     <Compile Include="ThemeManager.cs" />
     <EmbeddedResource Include="Antenna\Tracker.resx">
       <DependentUpon>Tracker.cs</DependentUpon>

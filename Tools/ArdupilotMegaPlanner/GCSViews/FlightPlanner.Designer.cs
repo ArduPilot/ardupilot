@@ -339,7 +339,6 @@
             // 
             // BUT_write
             // 
-            this.BUT_write.ForeColor = System.Drawing.SystemColors.ControlText;
             resources.ApplyResources(this.BUT_write, "BUT_write");
             this.BUT_write.Name = "BUT_write";
             this.BUT_write.UseVisualStyleBackColor = true;
@@ -347,7 +346,6 @@
             // 
             // BUT_read
             // 
-            this.BUT_read.ForeColor = System.Drawing.SystemColors.ControlText;
             resources.ApplyResources(this.BUT_read, "BUT_read");
             this.BUT_read.Name = "BUT_read";
             this.BUT_read.UseVisualStyleBackColor = true;
@@ -355,7 +353,6 @@
             // 
             // SaveFile
             // 
-            this.SaveFile.ForeColor = System.Drawing.SystemColors.ControlText;
             resources.ApplyResources(this.SaveFile, "SaveFile");
             this.SaveFile.Name = "SaveFile";
             this.SaveFile.UseVisualStyleBackColor = true;
@@ -363,7 +360,6 @@
             // 
             // BUT_loadwpfile
             // 
-            this.BUT_loadwpfile.ForeColor = System.Drawing.SystemColors.ControlText;
             resources.ApplyResources(this.BUT_loadwpfile, "BUT_loadwpfile");
             this.BUT_loadwpfile.Name = "BUT_loadwpfile";
             this.BUT_loadwpfile.UseVisualStyleBackColor = true;
@@ -608,7 +604,6 @@
             // 
             // button1
             // 
-            this.button1.ForeColor = System.Drawing.SystemColors.ControlText;
             resources.ApplyResources(this.button1, "button1");
             this.button1.Name = "button1";
             this.toolTip1.SetToolTip(this.button1, resources.GetString("button1.ToolTip"));
@@ -617,7 +612,6 @@
             // 
             // BUT_Add
             // 
-            this.BUT_Add.ForeColor = System.Drawing.SystemColors.ControlText;
             resources.ApplyResources(this.BUT_Add, "BUT_Add");
             this.BUT_Add.Name = "BUT_Add";
             this.toolTip1.SetToolTip(this.BUT_Add, resources.GetString("BUT_Add.ToolTip"));

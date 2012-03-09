@@ -152,7 +152,7 @@ namespace ArdupilotMega.GCSViews
                         comPort.Write(Encoding.ASCII.GetBytes(cmd + "\r"), 0, cmd.Length + 1);
                         }
                     }
-                    catch { MessageBox.Show("Error writing to com port"); }
+                    catch { CustomMessageBox.Show("Error writing to com port"); }
                 }
             }
             /*

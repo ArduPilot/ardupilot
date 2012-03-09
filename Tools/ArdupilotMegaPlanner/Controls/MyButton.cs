@@ -23,7 +23,8 @@ namespace ArdupilotMega
 
        public Color BGGradBot = Color.FromArgb(0xcd, 0xe2, 0x96);
 
-       public new Color ForeColor = Color.FromArgb(0x40, 0x57, 0x04);
+        // i want to ignore forecolor
+       public Color TextColor = Color.FromArgb(0x40, 0x57, 0x04);
 
        public Color Outline = Color.FromArgb(0x79, 0x94, 0x29);
 
@@ -79,7 +80,7 @@ namespace ArdupilotMega
                 gr.DrawRectangle(mypen, outside);
 
 
-                SolidBrush mybrush = new SolidBrush(ForeColor);
+                SolidBrush mybrush = new SolidBrush(TextColor);
 
                 if (mouseover)
                 {

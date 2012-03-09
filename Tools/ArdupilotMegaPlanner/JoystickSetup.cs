@@ -34,7 +34,7 @@ namespace ArdupilotMega
                     CMB_joysticks.Items.Add(device.ProductName);
                 }
             }
-            catch { MessageBox.Show("Error geting joystick list: do you have the directx redist installed?"); this.Close(); return; }
+            catch { CustomMessageBox.Show("Error geting joystick list: do you have the directx redist installed?"); this.Close(); return; }
 
             if (CMB_joysticks.Items.Count > 0)
                 CMB_joysticks.SelectedIndex = 0;
@@ -134,7 +134,7 @@ namespace ArdupilotMega
                     {
                         joy.setButton(f, int.Parse(this.Controls.Find("cmbbutton" + name, false)[0].Text), this.Controls.Find("cmbaction" + name, false)[0].Text);
                     }
-                    catch { MessageBox.Show("Set Button "+ name + " Failed"); }
+                    catch { CustomMessageBox.Show("Set Button "+ name + " Failed"); }
                 }
 
                 joy.start(CMB_joysticks.Text);

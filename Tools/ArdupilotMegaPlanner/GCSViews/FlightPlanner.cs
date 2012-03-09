@@ -98,13 +98,13 @@ namespace ArdupilotMega.GCSViews
 
                // if (!hashdefines.ContainsKey("WP_START_BYTE"))
                 {
-                    MessageBox.Show("Your Ardupilot Mega project defines.h is Invalid");
+                    CustomMessageBox.Show("Your Ardupilot Mega project defines.h is Invalid");
                     //return false;
                 }
             }
             catch (Exception)
             {
-                MessageBox.Show("Can't open file!");
+                CustomMessageBox.Show("Can't open file!");
                 return false;
             }
             return true;
@@ -180,7 +180,7 @@ namespace ArdupilotMega.GCSViews
                         }
                         if (wp_count == byte.MaxValue)
                         {
-                            MessageBox.Show("To many Waypoints!!!");
+                            CustomMessageBox.Show("To many Waypoints!!!");
                             break;
                         }
                     }
@@ -200,7 +200,7 @@ namespace ArdupilotMega.GCSViews
             }
             catch (Exception ex)
             {
-                MessageBox.Show("Can't open file! " + ex.ToString());
+                CustomMessageBox.Show("Can't open file! " + ex.ToString());
                 return false;
             }
             return true;
@@ -260,7 +260,7 @@ namespace ArdupilotMega.GCSViews
         {
             if (selectedrow > Commands.RowCount)
             {
-                MessageBox.Show("Invalid coord, How did you do this?");
+                CustomMessageBox.Show("Invalid coord, How did you do this?");
                 return;
             }
             DataGridViewTextBoxCell cell;
@@ -286,13 +286,13 @@ namespace ArdupilotMega.GCSViews
 
                     if (result == 0 || pass == false)
                     {
-                        MessageBox.Show("You must have a home altitude");
+                        CustomMessageBox.Show("You must have a home altitude");
                         return;
                     }
                     int results1;
                     if (!int.TryParse(TXT_DefaultAlt.Text, out results1))
                     {
-                        MessageBox.Show("Your default alt is not valid");
+                        CustomMessageBox.Show("Your default alt is not valid");
                         return;
                     }
                 }
@@ -332,7 +332,7 @@ namespace ArdupilotMega.GCSViews
 
                             if (float.Parse(TXT_homealt.Text) + int.Parse(TXT_DefaultAlt.Text) < alt) // calced height is less that GE ground height
                             {
-                                MessageBox.Show("Altitude appears to be low!! (you will fly into a hill)\nGoogle Ground height: " + alt + " Meters\nYour height: " + ((float.Parse(TXT_homealt.Text) + int.Parse(TXT_DefaultAlt.Text))) + " Meters");
+                                CustomMessageBox.Show("Altitude appears to be low!! (you will fly into a hill)\nGoogle Ground height: " + alt + " Meters\nYour height: " + ((float.Parse(TXT_homealt.Text) + int.Parse(TXT_DefaultAlt.Text))) + " Meters");
                                 cell.Style.BackColor = Color.Red;
                             }
                             else
@@ -346,7 +346,7 @@ namespace ArdupilotMega.GCSViews
                 }
                 else
                 {
-                    MessageBox.Show("Invalid Home or wp Alt");
+                    CustomMessageBox.Show("Invalid Home or wp Alt");
                     cell.Style.BackColor = Color.Red;
                 }
 
@@ -772,7 +772,7 @@ namespace ArdupilotMega.GCSViews
                     for (int i = 1; i <= 7; i++)
                         Commands.Columns[i].HeaderText = "setme";
             }
-            catch (Exception ex) { MessageBox.Show(ex.ToString()); }
+            catch (Exception ex) { CustomMessageBox.Show(ex.ToString()); }
         }
 
         /// <summary>
@@ -797,7 +797,7 @@ namespace ArdupilotMega.GCSViews
                 //Console.WriteLine("editformat " + option + " value " + cmd);
                 ChangeColumnHeader(cmd);
             }
-            catch (Exception ex) { MessageBox.Show(ex.ToString()); }
+            catch (Exception ex) { CustomMessageBox.Show(ex.ToString()); }
         }
 
         private void Commands_RowsAdded(object sender, DataGridViewRowsAddedEventArgs e)
@@ -1179,7 +1179,7 @@ namespace ArdupilotMega.GCSViews
                     }
                     sw.Close();
                 }
-                catch (Exception) { MessageBox.Show("Error writing file"); }
+                catch (Exception) { CustomMessageBox.Show("Error writing file"); }
             }
         }
 
@@ -1248,7 +1248,7 @@ namespace ArdupilotMega.GCSViews
 
                 log.Info("Done");
             }
-            catch (Exception ex) { error = 1; MessageBox.Show("Error : " + ex.ToString()); }
+            catch (Exception ex) { error = 1; CustomMessageBox.Show("Error : " + ex.ToString()); }
             try
             {
                 this.BeginInvoke((MethodInvoker)delegate()
@@ -1282,7 +1282,7 @@ namespace ArdupilotMega.GCSViews
         {
             if (CHK_altmode.Checked)
             {
-                if (DialogResult.No == MessageBox.Show("Absolute Alt is ticked are you sure?", "Alt Mode", MessageBoxButtons.YesNo))
+                if (DialogResult.No == CustomMessageBox.Show("Absolute Alt is ticked are you sure?", "Alt Mode", MessageBoxButtons.YesNo))
                 {
                     CHK_altmode.Checked = false;
                 }
@@ -1298,7 +1298,7 @@ namespace ArdupilotMega.GCSViews
                     {
                         if (!double.TryParse(Commands[b, a].Value.ToString(), out answer))
                         {
-                            MessageBox.Show("There are errors in your mission");
+                            CustomMessageBox.Show("There are errors in your mission");
                             return;
                         }
                     }
@@ -1501,7 +1501,7 @@ namespace ArdupilotMega.GCSViews
                 {
                     if (cellhome.Value.ToString() != TXT_homelat.Text && cellhome.Value.ToString() != "0")
                     {
-                        DialogResult dr = MessageBox.Show("Reset Home to loaded coords", "Reset Home Coords", MessageBoxButtons.YesNo);
+                        DialogResult dr = CustomMessageBox.Show("Reset Home to loaded coords", "Reset Home Coords", MessageBoxButtons.YesNo);
 
                         if (dr == DialogResult.Yes)
                         {
@@ -1633,7 +1633,7 @@ namespace ArdupilotMega.GCSViews
             }
             if (isNumber > 127)
             {
-                MessageBox.Show("The value can only be between 0 and 127");
+                CustomMessageBox.Show("The value can only be between 0 and 127");
                 TXT_WPRad.Text = "127";
             }
             writeKML();
@@ -1656,7 +1656,7 @@ namespace ArdupilotMega.GCSViews
             }
             if (isNumber > 127)
             {
-                MessageBox.Show("The value can only be between 0 and 127");
+                CustomMessageBox.Show("The value can only be between 0 and 127");
                 TXT_loiterrad.Text = "127";
             }
         }
@@ -1712,7 +1712,7 @@ namespace ArdupilotMega.GCSViews
                     writeKML();
                 }
             }
-            catch (Exception) { MessageBox.Show("Row error"); }
+            catch (Exception) { CustomMessageBox.Show("Row error"); }
         }
 
         private void Commands_DefaultValuesNeeded(object sender, DataGridViewRowEventArgs e)
@@ -1792,7 +1792,7 @@ namespace ArdupilotMega.GCSViews
                 string header = sr.ReadLine();
                 if (header == null || !header.Contains("QGC WPL 110"))
                 {
-                    MessageBox.Show("Invalid Waypoint file");
+                    CustomMessageBox.Show("Invalid Waypoint file");
                     return;
                 }
                 while (!error && !sr.EndOfStream)
@@ -1839,11 +1839,11 @@ namespace ArdupilotMega.GCSViews
                         wp_count++;
 
                     }
-                    catch { MessageBox.Show("Line invalid\n" + line); }
+                    catch { CustomMessageBox.Show("Line invalid\n" + line); }
 
                     if (wp_count == byte.MaxValue)
                     {
-                        MessageBox.Show("To many Waypoints!!!");
+                        CustomMessageBox.Show("To many Waypoints!!!");
                         break;
                     }
 
@@ -1859,7 +1859,7 @@ namespace ArdupilotMega.GCSViews
             }
             catch (Exception ex)
             {
-                MessageBox.Show("Can't open file! " + ex.ToString());
+                CustomMessageBox.Show("Can't open file! " + ex.ToString());
             }
         }
 
@@ -2252,7 +2252,7 @@ namespace ArdupilotMega.GCSViews
                 FlightData.mymap.MapType = (MapType)comboBoxMapType.SelectedItem;
                 MainV2.config["MapType"] = comboBoxMapType.Text;
             }
-            catch { MessageBox.Show("Map change failed. try zomming out first."); }
+            catch { CustomMessageBox.Show("Map change failed. try zomming out first."); }
         }
 
         private void Commands_EditingControlShowing(object sender, DataGridViewEditingControlShowingEventArgs e)
@@ -2324,7 +2324,7 @@ namespace ArdupilotMega.GCSViews
         private void TXT_homelat_Enter(object sender, EventArgs e)
         {
             sethome = true;
-            MessageBox.Show("Click on the Map to set Home ");
+            CustomMessageBox.Show("Click on the Map to set Home ");
         }
 
         private void Planner_Resize(object sender, EventArgs e)
@@ -2345,7 +2345,7 @@ namespace ArdupilotMega.GCSViews
         private void CHK_altmode_CheckedChanged(object sender, EventArgs e)
         {
             if (Commands.RowCount > 0 && !quickadd)
-                MessageBox.Show("You will need to change your altitudes");
+                CustomMessageBox.Show("You will need to change your altitudes");
         }
 
         protected override void OnPaint(PaintEventArgs pe)
@@ -2391,7 +2391,7 @@ namespace ArdupilotMega.GCSViews
             RectLatLng area = MainMap.SelectedArea;
             if (area.IsEmpty)
             {
-                DialogResult res = MessageBox.Show("No ripp area defined, ripp displayed on screen?", "Rip", MessageBoxButtons.YesNo);
+                DialogResult res = CustomMessageBox.Show("No ripp area defined, ripp displayed on screen?", "Rip", MessageBoxButtons.YesNo);
                 if (res == DialogResult.Yes)
                 {
                     area = MainMap.CurrentViewArea;
@@ -2400,7 +2400,7 @@ namespace ArdupilotMega.GCSViews
 
             if (!area.IsEmpty)
             {
-                DialogResult res = MessageBox.Show("Ready ripp at Zoom = " + (int)MainMap.Zoom + " ?", "GMap.NET", MessageBoxButtons.YesNo);
+                DialogResult res = CustomMessageBox.Show("Ready ripp at Zoom = " + (int)MainMap.Zoom + " ?", "GMap.NET", MessageBoxButtons.YesNo);
 
                 for (int i = 1; i <= MainMap.MaxZoom; i++)
                 {
@@ -2422,7 +2422,7 @@ namespace ArdupilotMega.GCSViews
             }
             else
             {
-                MessageBox.Show("Select map area holding ALT", "GMap.NET", MessageBoxButtons.OK, MessageBoxIcon.Exclamation);
+                CustomMessageBox.Show("Select map area holding ALT", "GMap.NET", MessageBoxButtons.OK, MessageBoxIcon.Exclamation);
             }
         }
 
@@ -2485,7 +2485,7 @@ namespace ArdupilotMega.GCSViews
 
             if (drawnpolygon == null || drawnpolygon.Points.Count == 0)
             {
-                MessageBox.Show("Right click the map to draw a polygon", "Area", MessageBoxButtons.OK, MessageBoxIcon.Exclamation);
+                CustomMessageBox.Show("Right click the map to draw a polygon", "Area", MessageBoxButtons.OK, MessageBoxIcon.Exclamation);
                 return;
             }
             GMapPolygon area = drawnpolygon;
@@ -2520,17 +2520,17 @@ namespace ArdupilotMega.GCSViews
 
                 if (!double.TryParse(angle, out tryme))
                 {
-                    MessageBox.Show("Invalid Angle");
+                    CustomMessageBox.Show("Invalid Angle");
                     return;
                 }
                 if (!double.TryParse(alt, out tryme))
                 {
-                    MessageBox.Show("Invalid Alt");
+                    CustomMessageBox.Show("Invalid Alt");
                     return;
                 }
                 if (!double.TryParse(distance, out tryme))
                 {
-                    MessageBox.Show("Invalid Distance");
+                    CustomMessageBox.Show("Invalid Distance");
                     return;
                 }
 
@@ -2691,7 +2691,7 @@ namespace ArdupilotMega.GCSViews
 
                     if (Commands.RowCount > 150)
                     {
-                        MessageBox.Show("Stopping at 150 WP's");
+                        CustomMessageBox.Show("Stopping at 150 WP's");
                         break;
                     }
                 }
@@ -2713,7 +2713,7 @@ namespace ArdupilotMega.GCSViews
             }
             else
             {
-                MessageBox.Show("If you're at the field, connect to your APM and wait for GPS lock. Then click 'Home Location' link to set home to your location");
+                CustomMessageBox.Show("If you're at the field, connect to your APM and wait for GPS lock. Then click 'Home Location' link to set home to your location");
             }
         }
 
@@ -2771,7 +2771,7 @@ namespace ArdupilotMega.GCSViews
 
                 polygons.Markers.Add(new GMapMarkerGoogleRed(start));
                 MainMap.Invalidate();
-                MessageBox.Show("Distance: " + FormatDistance(MainMap.Manager.GetDistance(startmeasure, start), true) + " AZ: " + (MainMap.Manager.GetBearing(startmeasure, start).ToString("0")));
+                CustomMessageBox.Show("Distance: " + FormatDistance(MainMap.Manager.GetDistance(startmeasure, start), true) + " AZ: " + (MainMap.Manager.GetBearing(startmeasure, start).ToString("0")));
                 polygons.Polygons.Remove(line);
                 polygons.Markers.Clear();
                 startmeasure = new PointLatLng();
@@ -2794,7 +2794,7 @@ namespace ArdupilotMega.GCSViews
         {
             if (polygongridmode == false)
             {
-                MessageBox.Show("You will remain in polygon mode until you clear the polygon or create a grid/upload a fence");
+                CustomMessageBox.Show("You will remain in polygon mode until you clear the polygon or create a grid/upload a fence");
             }
 
             polygongridmode = true;
@@ -2909,7 +2909,7 @@ namespace ArdupilotMega.GCSViews
                         MainMap.Invalidate();
                     }
                     catch {
-                        MessageBox.Show("Remove point Failed. Please try again.");
+                        CustomMessageBox.Show("Remove point Failed. Please try again.");
                     }
                 }
             }
@@ -2981,7 +2981,7 @@ namespace ArdupilotMega.GCSViews
                 GeoCoderStatusCode status = MainMap.SetCurrentPositionByKeywords(place);
                 if (status != GeoCoderStatusCode.G_GEO_SUCCESS)
                 {
-                    MessageBox.Show("Google Maps Geocoder can't find: '" + place + "', reason: " + status.ToString(), "GMap.NET", MessageBoxButtons.OK, MessageBoxIcon.Exclamation);
+                    CustomMessageBox.Show("Google Maps Geocoder can't find: '" + place + "', reason: " + status.ToString(), "GMap.NET", MessageBoxButtons.OK, MessageBoxIcon.Exclamation);
                 }
                 else
                 {
@@ -3017,7 +3017,7 @@ namespace ArdupilotMega.GCSViews
                     parser.ElementAdded += parser_ElementAdded;
                     parser.ParseString(kml, true);
 
-                    if (DialogResult.Yes == MessageBox.Show("Do you want to load this into the flight data screen?", "Load data", MessageBoxButtons.YesNo))
+                    if (DialogResult.Yes == CustomMessageBox.Show("Do you want to load this into the flight data screen?", "Load data", MessageBoxButtons.YesNo))
                     {
                         foreach (var temp in kmlpolygons.Polygons)
                         {
@@ -3030,7 +3030,7 @@ namespace ArdupilotMega.GCSViews
                     }
 
                 }
-                catch (Exception ex) { MessageBox.Show("Bad KML File :" + ex.ToString()); }
+                catch (Exception ex) { CustomMessageBox.Show("Bad KML File :" + ex.ToString()); }
             }
 
         }
@@ -3064,25 +3064,25 @@ namespace ArdupilotMega.GCSViews
             //FENCE_TOTAL
             if (MainV2.comPort.param["FENCE_ACTION"] == null)
             {
-                MessageBox.Show("Not Supported");
+                CustomMessageBox.Show("Not Supported");
                 return;
             }
 
             if (drawnpolygon == null)
             {
-                MessageBox.Show("No polygon to upload");
+                CustomMessageBox.Show("No polygon to upload");
                 return;
             }
 
             if (geofence.Markers.Count == 0)
             {
-                MessageBox.Show("No return location set");
+                CustomMessageBox.Show("No return location set");
                 return;
             }
 
             if (drawnpolygon.Points.Count == 0)
             {
-                MessageBox.Show("No polygon drawn");
+                CustomMessageBox.Show("No polygon drawn");
                 return;
             }
 
@@ -3093,7 +3093,7 @@ namespace ArdupilotMega.GCSViews
             // check it
             if (!pnpoly(plll.ToArray(), geofence.Markers[0].Position.Lat, geofence.Markers[0].Position.Lng))
             {
-                MessageBox.Show("Your return location is outside the polygon");
+                CustomMessageBox.Show("Your return location is outside the polygon");
                 return;
             }
 
@@ -3108,13 +3108,13 @@ namespace ArdupilotMega.GCSViews
 
             if (!int.TryParse(minalts, out minalt))
             {
-                MessageBox.Show("Bad Min Alt");
+                CustomMessageBox.Show("Bad Min Alt");
                 return;
             }
 
             if (!int.TryParse(maxalts, out maxalt))
             {
-                MessageBox.Show("Bad Max Alt");
+                CustomMessageBox.Show("Bad Max Alt");
                 return;
             }
 
@@ -3125,7 +3125,7 @@ namespace ArdupilotMega.GCSViews
             }
             catch
             {
-                MessageBox.Show("Failed to set min/max fence alt");
+                CustomMessageBox.Show("Failed to set min/max fence alt");
                 return;
             }
 
@@ -3136,7 +3136,7 @@ namespace ArdupilotMega.GCSViews
             }
             catch
             {
-                MessageBox.Show("Failed to set FENCE_ACTION");
+                CustomMessageBox.Show("Failed to set FENCE_ACTION");
                 return;
             }
 
@@ -3192,13 +3192,13 @@ namespace ArdupilotMega.GCSViews
 
             if (MainV2.comPort.param["FENCE_ACTION"] == null || MainV2.comPort.param["FENCE_TOTAL"] == null)
             {
-                MessageBox.Show("Not Supported");
+                CustomMessageBox.Show("Not Supported");
                 return;
             }
 
             if (int.Parse(MainV2.comPort.param["FENCE_TOTAL"].ToString()) <= 1)
             {
-                MessageBox.Show("Nothing to download");
+                CustomMessageBox.Show("Nothing to download");
                 return;
             }
 
@@ -3320,7 +3320,7 @@ namespace ArdupilotMega.GCSViews
         {
             if (geofence.Markers.Count == 0)
             {
-                MessageBox.Show("Please set a return location");
+                CustomMessageBox.Show("Please set a return location");
                 return;
             }
 
@@ -3362,7 +3362,7 @@ namespace ArdupilotMega.GCSViews
 
                     sw.Close();
                 }
-                catch { MessageBox.Show("Failed to write fence file"); }
+                catch { CustomMessageBox.Show("Failed to write fence file"); }
             }
         }
 

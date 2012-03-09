@@ -590,7 +590,7 @@ namespace ArdupilotMega.GCSViews
                     string line = sr.ReadLine();
 
                     if (line.Contains("NOTE:"))
-                        MessageBox.Show(line, "Saved Note");
+                        CustomMessageBox.Show(line, "Saved Note");
 
                     int index = line.IndexOf(',');
 
@@ -711,7 +711,7 @@ namespace ArdupilotMega.GCSViews
                     catch { }
 
                 }
-                catch { MessageBox.Show("Set " + value + " Failed"); }
+                catch { CustomMessageBox.Show("Set " + value + " Failed"); }
             }
         }
 
@@ -724,7 +724,7 @@ namespace ArdupilotMega.GCSViews
             {
                 if (!MainV2.comPort.BaseStream.IsOpen)
                 {
-                    MessageBox.Show("Please Connect First");
+                    CustomMessageBox.Show("Please Connect First");
                     ConfigTabs.SelectedIndex = 0;
                 }
                 else
@@ -764,7 +764,7 @@ namespace ArdupilotMega.GCSViews
 
                 BUT_videostart.Enabled = false;
             }
-            catch (Exception ex) { MessageBox.Show("Camera Fail: " + ex.Message); }
+            catch (Exception ex) { CustomMessageBox.Show("Camera Fail: " + ex.Message); }
 
         }
 
@@ -818,7 +818,7 @@ namespace ArdupilotMega.GCSViews
             }
             catch (Exception ex)
             {
-                MessageBox.Show("Can not add video source\n" + ex.ToString());
+                CustomMessageBox.Show("Can not add video source\n" + ex.ToString());
                 return;
             }
 
@@ -951,7 +951,7 @@ namespace ArdupilotMega.GCSViews
 
 
             }
-            catch { MessageBox.Show("Error: getting param list"); }
+            catch { CustomMessageBox.Show("Error: getting param list"); }
 
 
             ((MyButton)sender).Enabled = true;
@@ -1122,7 +1122,7 @@ namespace ArdupilotMega.GCSViews
                     string line = sr.ReadLine();
 
                     if (line.Contains("NOTE:"))
-                        MessageBox.Show(line, "Saved Note");
+                        CustomMessageBox.Show(line, "Saved Note");
 
                     int index = line.IndexOf(',');
 
@@ -1155,7 +1155,7 @@ namespace ArdupilotMega.GCSViews
         {
             if (startup)
                 return;
-            MessageBox.Show("You need to restart the planner for this to take effect");
+            CustomMessageBox.Show("You need to restart the planner for this to take effect");
             MainV2.config["CHK_GDIPlus"] = CHK_GDIPlus.Checked.ToString();
         }
 
