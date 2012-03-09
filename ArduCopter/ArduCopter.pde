@@ -502,9 +502,13 @@ static int32_t initial_simple_bearing;
 // Used to control Axis lock
 int32_t roll_axis;
 int32_t pitch_axis;
+
 // Filters
 AverageFilterInt32_Size3 roll_rate_d_filter;	// filtered acceleration
 AverageFilterInt32_Size3 pitch_rate_d_filter;	// filtered pitch acceleration
+
+// Barometer filter
+AverageFilterInt32_Size5 baro_filter;	// filtered pitch acceleration
 
 ////////////////////////////////////////////////////////////////////////////////
 // Circle Mode / Loiter control
@@ -1070,8 +1074,8 @@ static void medium_loop()
 			// -----------------------
 			arm_motors();
 
-			// Do an extra baro read
-			// ---------------------
+			// Do an extra baro read for Temp sensing
+			// ---------------------------------------
 			#if HIL_MODE != HIL_MODE_ATTITUDE
 			barometer.read();
 			#endif
@@ -1884,7 +1888,8 @@ static void update_altitude()
 		// This is real life
 
 		// read in Actual Baro Altitude
-		baro_alt 			= (baro_alt + read_barometer()) >> 1;
+		baro_alt 			= read_barometer();
+		//Serial.printf("baro_alt: %d \n", baro_alt);
 
 		// calc the vertical accel rate
 		int temp			= (baro_alt - old_baro_alt) * 10;
