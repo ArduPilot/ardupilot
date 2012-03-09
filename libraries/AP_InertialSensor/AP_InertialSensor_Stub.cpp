@@ -26,3 +26,4 @@ void AP_InertialSensor_Stub::get_sensors( float * sensors ) {}
 float AP_InertialSensor_Stub::temperature() { return 0.0; }
 uint32_t AP_InertialSensor_Stub::sample_time() { return 0; }
 void AP_InertialSensor_Stub::reset_sample_time() {}
+float AP_InertialSensor_Stub::get_gyro_drift_rate(void) { return 0.0; }
