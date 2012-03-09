@@ -9,8 +9,8 @@
 #include <stdlib.h>
 #include <math.h>
 
-static const float vibration_level = 0.5;
-static const float drift_speed = 0.5; // degrees/second/minute
+static const float vibration_level = 0.2;
+static const float drift_speed = 0.2; // degrees/second/minute
 static const float drift_time  = 5; // time to reverse drift direction (minutes)
 // order                              zgyro, xgyro, ygyro, temp, xacc, yacc, zacc, aspd
 static const float noise_scale[8] = {   150,   150,   150,    0, 400,  400,  400,    0 };
