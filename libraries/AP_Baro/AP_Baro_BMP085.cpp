@@ -94,6 +94,9 @@ bool AP_Baro_BMP085::init( AP_PeriodicProcess * scheduler )
 	Command_ReadTemp();
 	BMP085_State = 1;
 
+	// init raw temo
+	RawTemp = 0;
+
 	healthy = true;
 	return true;
 }
@@ -170,29 +173,29 @@ void AP_Baro_BMP085::ReadPress()
 
 	RawPress = (((uint32_t)buf[0] << 16) | ((uint32_t)buf[1] << 8) | ((uint32_t)buf[2])) >> (8 - OVERSAMPLING);
 
-	if (_offset_press == 0){
-		_offset_press = RawPress;
-		RawPress = 0;
-	} else{
-		RawPress -= _offset_press;
-	}
+	//if (_offset_press == 0){
+	//	_offset_press = RawPress;
+	//	RawPress = 0;
+	//} else{
+	//	RawPress -= _offset_press;
+	//}
 
 	// filter
-	_press_filter[_press_index++] = RawPress;
+	//_press_filter[_press_index++] = RawPress;
 
-	if(_press_index >= PRESS_FILTER_SIZE)
-		_press_index = 0;
+	//if(_press_index >= PRESS_FILTER_SIZE)
+	//	_press_index = 0;
 
-	RawPress = 0;
+	//RawPress = 0;
 
 	// sum our filter
-	for (uint8_t i = 0; i < PRESS_FILTER_SIZE; i++){
-		RawPress += _press_filter[i];
-	}
+	//for (uint8_t i = 0; i < PRESS_FILTER_SIZE; i++){
+	//	RawPress += _press_filter[i];
+	//}
 
 	// grab result
-	RawPress /= PRESS_FILTER_SIZE;
-	RawPress += _offset_press;
+	//RawPress /= PRESS_FILTER_SIZE;
+	//RawPress += _offset_press;
 }
 
 // Send Command to Read Temperature
@@ -222,10 +225,11 @@ void AP_Baro_BMP085::ReadTemp()
 	_temp_sensor = buf[0];
 	_temp_sensor = (_temp_sensor << 8) | buf[1];
 
-	if (RawTemp == 0)
+	if (RawTemp == 0){
 		RawTemp = _temp_sensor;
-
-	RawTemp = (float)_temp_sensor * .01 + (float)RawTemp * .99;
+	}else{
+		RawTemp = (float)_temp_sensor * .01 + (float)RawTemp * .99;
+	}
 }
 
 // Calculate Temperature and Pressure in real units.
