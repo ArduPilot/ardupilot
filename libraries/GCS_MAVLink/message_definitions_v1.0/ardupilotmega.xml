@@ -164,7 +164,7 @@
 	    <field name="focus_lock" type="uint8_t">0: unlock focus or keep unlocked, 1: lock focus or keep locked, 3: re-lock focus</field>
 	    <field name="shot" type="uint8_t">0: ignore, 1: shot or start filming</field>
 	    <field name="command_id" type="uint8_t">Command Identity (incremental loop: 0 to 255)//A command sent multiple times will be executed or pooled just once</field>
-	    <field name="extra_param" type="uint8">Extra parameters enumeration (0 means ignore)</field>
+	    <field name="extra_param" type="uint8_t">Extra parameters enumeration (0 means ignore)</field>
 	    <field name="extra_value" type="float">Correspondent value to given extra_param</field>
 	  </message>
 
@@ -248,6 +248,12 @@
             <field type="float" name="xgyro">Angular speed around X axis rad/s</field>
             <field type="float" name="ygyro">Angular speed around Y axis rad/s</field>
             <field type="float" name="zgyro">Angular speed around Z axis rad/s</field>
+	  </message>
+
+	  <message name="HWSTATUS" id="165">
+	    <description>Status of key hardware</description>
+            <field type="uint16_t" name="Vcc">board voltage (mV)</field>
+            <field type="uint8_t"  name="I2Cerr">I2C error count</field>
 	  </message>
      </messages>
 </mavlink>
