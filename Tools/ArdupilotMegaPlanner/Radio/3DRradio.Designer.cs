@@ -29,6 +29,7 @@
         private void InitializeComponent()
         {
             this.components = new System.ComponentModel.Container();
+            System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(_3DRradio));
             this.Progressbar = new System.Windows.Forms.ProgressBar();
             this.S1 = new System.Windows.Forms.ComboBox();
             this.label1 = new System.Windows.Forms.Label();
@@ -97,7 +98,7 @@
             this.S1.Name = "S1";
             this.S1.Size = new System.Drawing.Size(80, 21);
             this.S1.TabIndex = 4;
-            this.toolTip1.SetToolTip(this.S1, "Serial Baud Rate 57 = 57600");
+            this.toolTip1.SetToolTip(this.S1, "Serial baud rate in rounded kbps. So 57 means 57600. \r\n");
             // 
             // label1
             // 
@@ -149,7 +150,9 @@
             this.S2.Name = "S2";
             this.S2.Size = new System.Drawing.Size(80, 21);
             this.S2.TabIndex = 9;
-            this.toolTip1.SetToolTip(this.S2, "the inter-radio data rate in rounded kbps. So 128 means");
+            this.toolTip1.SetToolTip(this.S2, "AIR_SPEED is the inter-radio data rate in rounded kbps. So 128 means 128kbps. Max" +
+        " is 192, min is 2. I would not recommend values below 16 as the frequency hoppin" +
+        "g and tdm sync times get too long. ");
             // 
             // label4
             // 
@@ -198,7 +201,7 @@
             this.S3.Name = "S3";
             this.S3.Size = new System.Drawing.Size(80, 21);
             this.S3.TabIndex = 11;
-            this.toolTip1.SetToolTip(this.S3, "a 16 bit \'network ID\'. This is used to seed the frequency");
+            this.toolTip1.SetToolTip(this.S3, resources.GetString("S3.ToolTip"));
             // 
             // label5
             // 
@@ -238,7 +241,8 @@
             this.S4.Name = "S4";
             this.S4.Size = new System.Drawing.Size(80, 21);
             this.S4.TabIndex = 13;
-            this.toolTip1.SetToolTip(this.S4, "the transmit power in dBm. 20dBm is 100mW. It is useful to");
+            this.toolTip1.SetToolTip(this.S4, "TXPOWER is the transmit power in dBm. 20dBm is 100mW. It is useful to set this to" +
+        " lower levels for short range testing.\r\n");
             // 
             // label6
             // 
@@ -255,7 +259,7 @@
             this.S5.Name = "S5";
             this.S5.Size = new System.Drawing.Size(80, 21);
             this.S5.TabIndex = 15;
-            this.toolTip1.SetToolTip(this.S5, "to enable/disable the golay error correcting code. It defaults");
+            this.toolTip1.SetToolTip(this.S5, resources.GetString("S5.ToolTip"));
             // 
             // label7
             // 
@@ -272,7 +276,7 @@
             this.S6.Name = "S6";
             this.S6.Size = new System.Drawing.Size(80, 21);
             this.S6.TabIndex = 17;
-            this.toolTip1.SetToolTip(this.S6, "enables/disables MAVLink packet framing. This tries to align");
+            this.toolTip1.SetToolTip(this.S6, resources.GetString("S6.ToolTip"));
             // 
             // label8
             // 
@@ -289,7 +293,7 @@
             this.S7.Name = "S7";
             this.S7.Size = new System.Drawing.Size(80, 21);
             this.S7.TabIndex = 19;
-            this.toolTip1.SetToolTip(this.S7, "enables/disables \"opportunistic resend\". When enabled the");
+            this.toolTip1.SetToolTip(this.S7, resources.GetString("S7.ToolTip"));
             // 
             // RS7
             // 
@@ -297,7 +301,7 @@
             this.RS7.Name = "RS7";
             this.RS7.Size = new System.Drawing.Size(80, 21);
             this.RS7.TabIndex = 29;
-            this.toolTip1.SetToolTip(this.RS7, "enables/disables \"opportunistic resend\". When enabled the");
+            this.toolTip1.SetToolTip(this.RS7, resources.GetString("RS7.ToolTip"));
             // 
             // RS6
             // 
@@ -305,7 +309,7 @@
             this.RS6.Name = "RS6";
             this.RS6.Size = new System.Drawing.Size(80, 21);
             this.RS6.TabIndex = 28;
-            this.toolTip1.SetToolTip(this.RS6, "enables/disables MAVLink packet framing. This tries to align");
+            this.toolTip1.SetToolTip(this.RS6, resources.GetString("RS6.ToolTip"));
             // 
             // RS5
             // 
@@ -313,7 +317,7 @@
             this.RS5.Name = "RS5";
             this.RS5.Size = new System.Drawing.Size(80, 21);
             this.RS5.TabIndex = 27;
-            this.toolTip1.SetToolTip(this.RS5, "to enable/disable the golay error correcting code. It defaults");
+            this.toolTip1.SetToolTip(this.RS5, resources.GetString("RS5.ToolTip"));
             // 
             // RS4
             // 
@@ -344,7 +348,8 @@
             this.RS4.Name = "RS4";
             this.RS4.Size = new System.Drawing.Size(80, 21);
             this.RS4.TabIndex = 26;
-            this.toolTip1.SetToolTip(this.RS4, "the transmit power in dBm. 20dBm is 100mW. It is useful to");
+            this.toolTip1.SetToolTip(this.RS4, "TXPOWER is the transmit power in dBm. 20dBm is 100mW. It is useful to set this to" +
+        " lower levels for short range testing.\r\n");
             // 
             // RS3
             // 
@@ -384,7 +389,7 @@
             this.RS3.Name = "RS3";
             this.RS3.Size = new System.Drawing.Size(80, 21);
             this.RS3.TabIndex = 25;
-            this.toolTip1.SetToolTip(this.RS3, "a 16 bit \'network ID\'. This is used to seed the frequency");
+            this.toolTip1.SetToolTip(this.RS3, resources.GetString("RS3.ToolTip"));
             // 
             // RS2
             // 
@@ -401,7 +406,9 @@
             this.RS2.Name = "RS2";
             this.RS2.Size = new System.Drawing.Size(80, 21);
             this.RS2.TabIndex = 24;
-            this.toolTip1.SetToolTip(this.RS2, "the inter-radio data rate in rounded kbps. So 128 means");
+            this.toolTip1.SetToolTip(this.RS2, "AIR_SPEED is the inter-radio data rate in rounded kbps. So 128 means 128kbps. Max" +
+        " is 192, min is 2. I would not recommend values below 16 as the frequency hoppin" +
+        "g and tdm sync times get too long. ");
             // 
             // RS1
             // 
@@ -420,7 +427,7 @@
             this.RS1.Name = "RS1";
             this.RS1.Size = new System.Drawing.Size(80, 21);
             this.RS1.TabIndex = 22;
-            this.toolTip1.SetToolTip(this.RS1, "Serial Baud Rate 57 = 57600");
+            this.toolTip1.SetToolTip(this.RS1, "Serial baud rate in rounded kbps. So 57 means 57600. \r\n");
             // 
             // RS0
             // 
@@ -472,6 +479,7 @@
             this.RSSI.ReadOnly = true;
             this.RSSI.Size = new System.Drawing.Size(194, 58);
             this.RSSI.TabIndex = 34;
+            this.toolTip1.SetToolTip(this.RSSI, resources.GetString("RSSI.ToolTip"));
             // 
             // label11
             // 
@@ -605,6 +613,7 @@
             this.Controls.Add(this.lbl_status);
             this.Controls.Add(this.Progressbar);
             this.Controls.Add(this.BUT_upload);
+            this.Icon = ((System.Drawing.Icon)(resources.GetObject("$this.Icon")));
             this.MaximizeBox = false;
             this.MinimizeBox = false;
             this.MinimumSize = new System.Drawing.Size(334, 482);

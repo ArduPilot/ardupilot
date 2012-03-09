@@ -274,7 +274,7 @@ namespace ArdupilotMega.GCSViews
 
                 if (MainV2.comPort.BaseStream.IsOpen == false)
                 {
-                    MessageBox.Show("Please connect first");
+                    CustomMessageBox.Show("Please connect first");
                     return;
                 }
 

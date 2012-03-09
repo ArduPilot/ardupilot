@@ -54,7 +54,7 @@ namespace ArdupilotMega.Antenna
                     BaudRate = int.Parse(CMB_baudrate.Text)
                 };
             }
-            catch (Exception ex) { MessageBox.Show("Bad Port settings " + ex.Message); return; }
+            catch (Exception ex) { CustomMessageBox.Show("Bad Port settings " + ex.Message); return; }
 
             try
             {
@@ -67,7 +67,7 @@ namespace ArdupilotMega.Antenna
                 tracker.TrimTilt = TRK_tilttrim.Value;
 
             }
-            catch (Exception ex) { MessageBox.Show("Bad User input " + ex.Message); return; }
+            catch (Exception ex) { CustomMessageBox.Show("Bad User input " + ex.Message); return; }
 
             if (tracker.Init())
             {

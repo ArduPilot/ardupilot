@@ -135,7 +135,7 @@ namespace ArdupilotMega
 
                     ArduinoComms port = new ArduinoSTK();
 
-                    if (DialogResult.Yes == MessageBox.Show("is this a 1280?", "", MessageBoxButtons.YesNo))
+                    if (DialogResult.Yes == CustomMessageBox.Show("is this a 1280?", "", MessageBoxButtons.YesNo))
                     {
                         port = new ArduinoSTK();
                         port.BaudRate = 57600;
@@ -176,23 +176,23 @@ namespace ArdupilotMega
                             }
                             else
                             {
-                                MessageBox.Show("Communication Error - WPs wrote but no config");
+                                CustomMessageBox.Show("Communication Error - WPs wrote but no config");
                             }
                         }
                         else
                         {
-                            MessageBox.Show("Communication Error - Bad data");
+                            CustomMessageBox.Show("Communication Error - Bad data");
                         }
                 }
                 else
                 {
-                    MessageBox.Show("Communication Error - no connection");
+                    CustomMessageBox.Show("Communication Error - no connection");
                 }
                 port.Close();
             }
-            catch (Exception ex) { MessageBox.Show("Port in use? " + ex.ToString()); port.Close(); }
+            catch (Exception ex) { CustomMessageBox.Show("Port in use? " + ex.ToString()); port.Close(); }
                 }
-                catch (Exception) { MessageBox.Show("Error reading file"); }
+                catch (Exception) { CustomMessageBox.Show("Error reading file"); }
             }
         }
 
@@ -207,7 +207,7 @@ namespace ArdupilotMega
 
             ArduinoComms port = new ArduinoSTK();
 
-            if (DialogResult.Yes == MessageBox.Show("is this a 1280?", "", MessageBoxButtons.YesNo))
+            if (DialogResult.Yes == CustomMessageBox.Show("is this a 1280?", "", MessageBoxButtons.YesNo))
             {
                 port = new ArduinoSTK();
                 port.BaudRate = 57600;
@@ -247,21 +247,21 @@ namespace ArdupilotMega
                             }
                             else
                             {
-                                MessageBox.Show("Communication Error - WPs wrote but no config");
+                                CustomMessageBox.Show("Communication Error - WPs wrote but no config");
                             }
                         }
                         else
                         {
-                            MessageBox.Show("Communication Error - Bad data");
+                            CustomMessageBox.Show("Communication Error - Bad data");
                         }
                 }
                 else
                 {
-                    MessageBox.Show("Communication Error - no connection");
+                    CustomMessageBox.Show("Communication Error - no connection");
                 }
                 port.Close();
             }
-            catch (Exception ex) { MessageBox.Show("Port in use? " + ex.ToString()); port.Close(); }
+            catch (Exception ex) { CustomMessageBox.Show("Port in use? " + ex.ToString()); port.Close(); }
         }
 
         private void BUT_flashdl_Click(object sender, EventArgs e)
@@ -270,7 +270,7 @@ namespace ArdupilotMega
 
             ArduinoComms port = new ArduinoSTK();
 
-            if (DialogResult.Yes == MessageBox.Show("is this a 1280?", "", MessageBoxButtons.YesNo))
+            if (DialogResult.Yes == CustomMessageBox.Show("is this a 1280?", "", MessageBoxButtons.YesNo))
             {
                 port = new ArduinoSTK();
                 port.BaudRate = 57600;
@@ -342,11 +342,11 @@ namespace ArdupilotMega
                 }
                 else
                 {
-                    MessageBox.Show("Communication Error - no connection");
+                    CustomMessageBox.Show("Communication Error - no connection");
                 }
                 port.Close();
             }
-            catch (Exception ex) { MessageBox.Show("Port in use? " + ex.ToString()); port.Close(); }
+            catch (Exception ex) { CustomMessageBox.Show("Port in use? " + ex.ToString()); port.Close(); }
         }
 
         public int swapend(int value)
@@ -371,10 +371,10 @@ namespace ArdupilotMega
                 sr.Close();
 
             }
-            catch (Exception ex) { MessageBox.Show("Failed to read firmware.hex : " + ex.Message); }
+            catch (Exception ex) { CustomMessageBox.Show("Failed to read firmware.hex : " + ex.Message); }
             ArduinoComms port = new ArduinoSTK();
 
-            if (DialogResult.Yes == MessageBox.Show("is this a 1280?", "", MessageBoxButtons.YesNo))
+            if (DialogResult.Yes == CustomMessageBox.Show("is this a 1280?", "", MessageBoxButtons.YesNo))
             {
                 port = new ArduinoSTK();
                 port.BaudRate = 57600;
@@ -415,14 +415,14 @@ namespace ArdupilotMega
                 else
                 {
                     
-                    MessageBox.Show("Communication Error - no connection");
+                    CustomMessageBox.Show("Communication Error - no connection");
                 }
                 port.Close();
 
 
 
             }
-            catch (Exception ex) {  MessageBox.Show("Check port settings or Port in use? " + ex.ToString()); port.Close(); }
+            catch (Exception ex) {  CustomMessageBox.Show("Check port settings or Port in use? " + ex.ToString()); port.Close(); }
 
         }
 
@@ -519,7 +519,7 @@ namespace ArdupilotMega
         {
             ArduinoComms port = new ArduinoSTK();
 
-            if (DialogResult.Yes == MessageBox.Show("is this a 1280?", "", MessageBoxButtons.YesNo))
+            if (DialogResult.Yes == CustomMessageBox.Show("is this a 1280?", "", MessageBoxButtons.YesNo))
             {
                 port = new ArduinoSTK();
                 port.BaudRate = 57600;
@@ -563,16 +563,16 @@ namespace ArdupilotMega
                     }
                     else
                     {
-                        MessageBox.Show("Communication Error - Bad data");
+                        CustomMessageBox.Show("Communication Error - Bad data");
                     }
                 }
                 else
                 {
-                    MessageBox.Show("Communication Error - no connection");
+                    CustomMessageBox.Show("Communication Error - no connection");
                 }
                 port.Close();
             }
-            catch (Exception ex) { MessageBox.Show("Port Error? " + ex.ToString()); if (port != null && port.IsOpen) { port.Close(); } }
+            catch (Exception ex) { CustomMessageBox.Show("Port Error? " + ex.ToString()); if (port != null && port.IsOpen) { port.Close(); } }
 
         }
 
@@ -627,16 +627,16 @@ namespace ArdupilotMega
                     }
                     else
                     {
-                        MessageBox.Show("Communication Error - Bad data");
+                        CustomMessageBox.Show("Communication Error - Bad data");
                     }
                 }
                 else
                 {
-                    MessageBox.Show("Communication Error - no connection");
+                    CustomMessageBox.Show("Communication Error - no connection");
                 }
                 port.Close();
             }
-            catch (Exception ex) { MessageBox.Show("Port Error? " + ex.ToString()); if (port != null && port.IsOpen) { port.Close(); } }
+            catch (Exception ex) { CustomMessageBox.Show("Port Error? " + ex.ToString()); if (port != null && port.IsOpen) { port.Close(); } }
             
         }
 
@@ -691,16 +691,16 @@ namespace ArdupilotMega
                     }
                     else
                     {
-                        MessageBox.Show("Communication Error - Bad data");
+                        CustomMessageBox.Show("Communication Error - Bad data");
                     }
                 }
                 else
                 {
-                    MessageBox.Show("Communication Error - no connection");
+                    CustomMessageBox.Show("Communication Error - no connection");
                 }
                 port.Close();
             }
-            catch (Exception ex) { MessageBox.Show("Port Error? " + ex.ToString()); if (port != null && port.IsOpen) { port.Close(); } }
+            catch (Exception ex) { CustomMessageBox.Show("Port Error? " + ex.ToString()); if (port != null && port.IsOpen) { port.Close(); } }
         }
 
         private void BUT_copyto1280_Click(object sender, EventArgs e)
@@ -751,14 +751,14 @@ namespace ArdupilotMega
                 else
                 {
 
-                    MessageBox.Show("Communication Error - no connection");
+                    CustomMessageBox.Show("Communication Error - no connection");
                 }
                 port.Close();
 
 
 
             }
-            catch (Exception ex) { MessageBox.Show("Check port settings or Port in use? " + ex.ToString()); port.Close(); }
+            catch (Exception ex) { CustomMessageBox.Show("Check port settings or Port in use? " + ex.ToString()); port.Close(); }
         }
 
         private void button2_Click(object sender, EventArgs e)
@@ -771,7 +771,7 @@ namespace ArdupilotMega
                     sr.Close();
 
                 }
-                catch (Exception ex) { MessageBox.Show("Failed to read firmware.hex : " + ex.Message); }
+                catch (Exception ex) { CustomMessageBox.Show("Failed to read firmware.hex : " + ex.Message); }
 
                 StreamWriter sw = new StreamWriter(Path.GetDirectoryName(Application.ExecutablePath) + Path.DirectorySeparatorChar + @"firmware.bin");
                 BinaryWriter bw = new BinaryWriter(sw.BaseStream);
@@ -858,7 +858,7 @@ namespace ArdupilotMega
 
             int removed =  ((GMap.NET.CacheProviders.SQLitePureImageCache)MainMap.Manager.ImageCacheLocal).DeleteOlderThan(DateTime.Now, GMap.NET.MapType.Custom);
 
-            MessageBox.Show("Removed "+removed + " images\nshrinking file next");
+            CustomMessageBox.Show("Removed "+removed + " images\nshrinking file next");
 
             GMap.NET.CacheProviders.SQLitePureImageCache.VacuumDb(MainMap.CacheLocation + @"\TileDBv3\en\Data.gmdb");
 

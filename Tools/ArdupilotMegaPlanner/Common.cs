@@ -525,7 +525,7 @@ namespace ArdupilotMega
                             mode.mode = (byte)MAVLink.MAV_MODE.MAV_MODE_TEST2;
                             break;
                         default:
-                            MessageBox.Show("No Mode Changed " + (int)Enum.Parse(Common.getModes(), modein));
+                            CustomMessageBox.Show("No Mode Changed " + (int)Enum.Parse(Common.getModes(), modein));
                             return false;
                     }
                 }
@@ -553,12 +553,12 @@ namespace ArdupilotMega
                             mode.mode = (byte)MAVLink.MAV_MODE.MAV_MODE_AUTO;
                             break;
                         default:
-                            MessageBox.Show("No Mode Changed " + (int)Enum.Parse(Common.getModes(), modein));
+                            CustomMessageBox.Show("No Mode Changed " + (int)Enum.Parse(Common.getModes(), modein));
                             return false;
                     }
                 }
             }
-            catch { System.Windows.Forms.MessageBox.Show("Failed to find Mode"); return false; }
+            catch { System.Windows.Forms.CustomMessageBox.Show("Failed to find Mode"); return false; }
 
             return true;
         }		
@@ -574,7 +574,7 @@ namespace ArdupilotMega
 
                 // Create a request using a URL that can receive a post. 
                 WebRequest request = WebRequest.Create(url);
-                request.Timeout = 5000;
+                request.Timeout = 10000;
                 // Set the Method property of the request to POST.
                 request.Method = "GET";
                 // Get the response.

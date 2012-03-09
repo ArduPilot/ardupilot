@@ -82,7 +82,7 @@ namespace ArdupilotMega
             }
             catch (Exception e)
             {
-                System.Windows.Forms.MessageBox.Show("Error running script " + e.Message);
+                System.Windows.Forms.CustomMessageBox.Show("Error running script " + e.Message);
             }
         }
 

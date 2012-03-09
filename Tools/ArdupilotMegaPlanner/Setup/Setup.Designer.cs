@@ -123,6 +123,9 @@
             this.pictureBoxQuad = new System.Windows.Forms.PictureBox();
             this.BUT_levelac2 = new ArdupilotMega.MyButton();
             this.tabHeli = new System.Windows.Forms.TabPage();
+            this.groupBox5 = new System.Windows.Forms.GroupBox();
+            this.H1_ENABLE = new System.Windows.Forms.RadioButton();
+            this.CCPM = new System.Windows.Forms.RadioButton();
             this.BUT_HS4save = new ArdupilotMega.MyButton();
             this.BUT_swash_manual = new ArdupilotMega.MyButton();
             this.groupBox3 = new System.Windows.Forms.GroupBox();
@@ -176,9 +179,7 @@
             this.tabReset = new System.Windows.Forms.TabPage();
             this.BUT_reset = new ArdupilotMega.MyButton();
             this.toolTip1 = new System.Windows.Forms.ToolTip(this.components);
-            this.CCPM = new System.Windows.Forms.RadioButton();
-            this.groupBox5 = new System.Windows.Forms.GroupBox();
-            this.H1_ENABLE = new System.Windows.Forms.RadioButton();
+            this.BUT_MagCalibration = new ArdupilotMega.MyButton();
             this.tabControl1.SuspendLayout();
             this.tabRadioIn.SuspendLayout();
             this.groupBoxElevons.SuspendLayout();
@@ -196,6 +197,7 @@
             ((System.ComponentModel.ISupportInitialize)(this.pictureBoxQuadX)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.pictureBoxQuad)).BeginInit();
             this.tabHeli.SuspendLayout();
+            this.groupBox5.SuspendLayout();
             this.groupBox3.SuspendLayout();
             this.groupBox2.SuspendLayout();
             this.groupBox1.SuspendLayout();
@@ -204,7 +206,6 @@
             ((System.ComponentModel.ISupportInitialize)(this.HS2_TRIM)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.HS1_TRIM)).BeginInit();
             this.tabReset.SuspendLayout();
-            this.groupBox5.SuspendLayout();
             this.SuspendLayout();
             // 
             // tabControl1
@@ -656,7 +657,8 @@
             // 
             // tabHardware
             // 
-            this.tabHardware.BackColor = System.Drawing.Color.DarkRed;
+            this.tabHardware.BackColor = System.Drawing.SystemColors.Control;
+            this.tabHardware.Controls.Add(this.BUT_MagCalibration);
             this.tabHardware.Controls.Add(this.label27);
             this.tabHardware.Controls.Add(this.CMB_sonartype);
             this.tabHardware.Controls.Add(this.CHK_enableoptflow);
@@ -1017,6 +1019,29 @@
             this.tabHeli.Name = "tabHeli";
             this.tabHeli.UseVisualStyleBackColor = true;
             this.tabHeli.Click += new System.EventHandler(this.tabHeli_Click);
+            // 
+            // groupBox5
+            // 
+            this.groupBox5.Controls.Add(this.H1_ENABLE);
+            this.groupBox5.Controls.Add(this.CCPM);
+            resources.ApplyResources(this.groupBox5, "groupBox5");
+            this.groupBox5.Name = "groupBox5";
+            this.groupBox5.TabStop = false;
+            // 
+            // H1_ENABLE
+            // 
+            resources.ApplyResources(this.H1_ENABLE, "H1_ENABLE");
+            this.H1_ENABLE.Name = "H1_ENABLE";
+            this.H1_ENABLE.TabStop = true;
+            this.H1_ENABLE.UseVisualStyleBackColor = true;
+            this.H1_ENABLE.CheckedChanged += new System.EventHandler(this.H1_ENABLE_CheckedChanged);
+            // 
+            // CCPM
+            // 
+            resources.ApplyResources(this.CCPM, "CCPM");
+            this.CCPM.Name = "CCPM";
+            this.CCPM.TabStop = true;
+            this.CCPM.UseVisualStyleBackColor = true;
             // 
             // BUT_HS4save
             // 
@@ -1559,28 +1584,12 @@
             this.BUT_reset.UseVisualStyleBackColor = true;
             this.BUT_reset.Click += new System.EventHandler(this.BUT_reset_Click);
             // 
-            // CCPM
+            // BUT_MagCalibration
             // 
-            resources.ApplyResources(this.CCPM, "CCPM");
-            this.CCPM.Name = "CCPM";
-            this.CCPM.TabStop = true;
-            this.CCPM.UseVisualStyleBackColor = true;
-            // 
-            // groupBox5
-            // 
-            this.groupBox5.Controls.Add(this.H1_ENABLE);
-            this.groupBox5.Controls.Add(this.CCPM);
-            resources.ApplyResources(this.groupBox5, "groupBox5");
-            this.groupBox5.Name = "groupBox5";
-            this.groupBox5.TabStop = false;
-            // 
-            // H1_ENABLE
-            // 
-            resources.ApplyResources(this.H1_ENABLE, "H1_ENABLE");
-            this.H1_ENABLE.Name = "H1_ENABLE";
-            this.H1_ENABLE.TabStop = true;
-            this.H1_ENABLE.UseVisualStyleBackColor = true;
-            this.H1_ENABLE.CheckedChanged += new System.EventHandler(this.H1_ENABLE_CheckedChanged);
+            resources.ApplyResources(this.BUT_MagCalibration, "BUT_MagCalibration");
+            this.BUT_MagCalibration.Name = "BUT_MagCalibration";
+            this.BUT_MagCalibration.UseVisualStyleBackColor = true;
+            this.BUT_MagCalibration.Click += new System.EventHandler(this.BUT_MagCalibration_Click);
             // 
             // Setup
             // 
@@ -1616,6 +1625,8 @@
             ((System.ComponentModel.ISupportInitialize)(this.pictureBoxQuad)).EndInit();
             this.tabHeli.ResumeLayout(false);
             this.tabHeli.PerformLayout();
+            this.groupBox5.ResumeLayout(false);
+            this.groupBox5.PerformLayout();
             this.groupBox3.ResumeLayout(false);
             this.groupBox3.PerformLayout();
             this.groupBox2.ResumeLayout(false);
@@ -1627,8 +1638,6 @@
             ((System.ComponentModel.ISupportInitialize)(this.HS2_TRIM)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.HS1_TRIM)).EndInit();
             this.tabReset.ResumeLayout(false);
-            this.groupBox5.ResumeLayout(false);
-            this.groupBox5.PerformLayout();
             this.ResumeLayout(false);
 
         }
@@ -1784,6 +1793,7 @@
         private System.Windows.Forms.GroupBox groupBox5;
         private System.Windows.Forms.RadioButton H1_ENABLE;
         private System.Windows.Forms.RadioButton CCPM;
+        private MyButton BUT_MagCalibration;
 
     }
 }

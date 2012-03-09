@@ -472,13 +472,6 @@ namespace ArdupilotMega
             return true;
         }
 
-        public bool setParam(string paramname, object flag)
-        {
-            int value = (int)(float)param[paramname];
-
-            return setParam(paramname, value | (int)flag);
-        }
-
         /// <summary>
         /// Set parameter on apm
         /// </summary>
@@ -1917,7 +1910,7 @@ namespace ArdupilotMega
                     MainV2.comPort.generatePacket((byte)MAVLink.MAVLINK_MSG_ID_SET_MODE, mode);
                 }
             }
-            catch { System.Windows.Forms.MessageBox.Show("Failed to change Modes"); }
+            catch { System.Windows.Forms.CustomMessageBox.Show("Failed to change Modes"); }
 
 #endif
         }

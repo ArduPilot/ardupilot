@@ -184,21 +184,21 @@ namespace resedit
                 {
                     sw.Write("<tr><td>" + row.Cells[colFile.Index].Value.ToString() + "</td><td>" + row.Cells[colInternal.Index].Value.ToString() + "</td><td>" + row.Cells[colOtherLang.Index].Value.ToString() + "</td></tr>");
                 }
-                catch (Exception ex) { try { MessageBox.Show("Failed to save " + row.Cells[colOtherLang.Index].Value.ToString() + " " + ex.ToString()); } catch { } }
+                catch (Exception ex) { try { CustomMessageBox.Show("Failed to save " + row.Cells[colOtherLang.Index].Value.ToString() + " " + ex.ToString()); } catch { } }
             }
             if (writer != null)
                 writer.Close();
             sw.Write("</table></html>");
             sw.Close();
 
-            MessageBox.Show("Saved");
+            CustomMessageBox.Show("Saved");
         }
 
         private void button3_Click(object sender, EventArgs e)
         {
             if (!File.Exists("translation/output.html"))
             {
-                MessageBox.Show("No existing translation has been done");
+                CustomMessageBox.Show("No existing translation has been done");
                 return;
             }
 
@@ -230,7 +230,7 @@ namespace resedit
 
             sr1.Close();
 
-            MessageBox.Show("Modified "+a+" entries");
+            CustomMessageBox.Show("Modified "+a+" entries");
         }
 
         private void comboBox1_SelectedIndexChanged(object sender, EventArgs e)
@@ -292,7 +292,7 @@ namespace resedit
                 catch { }
             }
 
-            MessageBox.Show("Loaded Existing");
+            CustomMessageBox.Show("Loaded Existing");
         }
     }
 }

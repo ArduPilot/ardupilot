@@ -45,13 +45,13 @@ namespace ArdupilotMega
                 {
                     comPort.PortName = CMB_serialport.Text;
                 }
-                catch { MessageBox.Show("Invalid PortName"); return; }
+                catch { CustomMessageBox.Show("Invalid PortName"); return; }
                 try {
                 comPort.BaudRate = int.Parse(CMB_baudrate.Text);
-                } catch {MessageBox.Show("Invalid BaudRate"); return;}
+                } catch {CustomMessageBox.Show("Invalid BaudRate"); return;}
                 try {
                 comPort.Open();
-                } catch {MessageBox.Show("Error Connecting\nif using com0com please rename the ports to COM??"); return;}
+                } catch {CustomMessageBox.Show("Error Connecting\nif using com0com please rename the ports to COM??"); return;}
 
 
                 string alt = "100";
@@ -70,7 +70,7 @@ namespace ArdupilotMega
                 intalt = (int)(100 * MainV2.cs.multiplierdist);
                 if (!int.TryParse(alt, out intalt))
                 {
-                    MessageBox.Show("Bad Alt");
+                    CustomMessageBox.Show("Bad Alt");
                     return;
                 }
 

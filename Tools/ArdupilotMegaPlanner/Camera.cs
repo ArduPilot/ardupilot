@@ -182,7 +182,7 @@ namespace ArdupilotMega
                     xmlwriter.Close();
 
                 }
-                catch (Exception ex) { MessageBox.Show(ex.ToString()); }
+                catch (Exception ex) { CustomMessageBox.Show(ex.ToString()); }
             }
             else
             {
@@ -279,7 +279,7 @@ namespace ArdupilotMega
                 camera.sensorheight = float.Parse(TXT_sensheight.Text);
                 camera.sensorwidth = float.Parse(TXT_senswidth.Text);
             }
-            catch { MessageBox.Show("One of your entries is not a valid number"); return; }
+            catch { CustomMessageBox.Show("One of your entries is not a valid number"); return; }
 
             cameras[CMB_camera.Text] = camera;
 

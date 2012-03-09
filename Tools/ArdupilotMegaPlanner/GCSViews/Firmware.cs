@@ -141,7 +141,7 @@ namespace ArdupilotMega.GCSViews
             }
             catch (Exception ex)
             {
-                MessageBox.Show("Failed to get Firmware List : " + ex.Message);
+                CustomMessageBox.Show("Failed to get Firmware List : " + ex.Message);
             }
             log.Info("FW load done");
 
@@ -211,12 +211,12 @@ namespace ArdupilotMega.GCSViews
             // none found
             if (items.Count == 0)
             {
-                MessageBox.Show("The requested firmware was not found.");
+                CustomMessageBox.Show("The requested firmware was not found.");
                 return;
             }
             else if (items.Count == 1) // 1 found so accept it
             {
-                DialogResult dr = MessageBox.Show("Are you sure you want to upload " + items[0].name + "?", "Continue", MessageBoxButtons.YesNo);
+                DialogResult dr = CustomMessageBox.Show("Are you sure you want to upload " + items[0].name + "?", "Continue", MessageBoxButtons.YesNo);
                 if (dr == System.Windows.Forms.DialogResult.Yes)
                 {
                     update(items[0]);
@@ -239,7 +239,7 @@ namespace ArdupilotMega.GCSViews
                 {
                     if (select.frame == "+" && temp.name.Contains("Plus"))
                     {
-                        DialogResult dr = MessageBox.Show("Are you sure you want to upload " + items[a].name + "?", "Continue", MessageBoxButtons.YesNo);
+                        DialogResult dr = CustomMessageBox.Show("Are you sure you want to upload " + items[a].name + "?", "Continue", MessageBoxButtons.YesNo);
                         if (dr == System.Windows.Forms.DialogResult.Yes)
                         {
                             update(items[a]);
@@ -248,7 +248,7 @@ namespace ArdupilotMega.GCSViews
                     }
                     else if (select.frame == "X" && temp.name.Contains("X"))
                     {
-                        DialogResult dr = MessageBox.Show("Are you sure you want to upload " + items[a].name + "?", "Continue", MessageBoxButtons.YesNo);
+                        DialogResult dr = CustomMessageBox.Show("Are you sure you want to upload " + items[a].name + "?", "Continue", MessageBoxButtons.YesNo);
                         if (dr == System.Windows.Forms.DialogResult.Yes)
                         {
                             update(items[a]);
@@ -261,7 +261,7 @@ namespace ArdupilotMega.GCSViews
             }
             else
             {
-                MessageBox.Show("Something has gone wrong, to many firmware choices");
+                CustomMessageBox.Show("Something has gone wrong, to many firmware choices");
                 return;
             }
         }
@@ -318,7 +318,7 @@ namespace ArdupilotMega.GCSViews
             {
                 if (softwares.Count == 0)
                 {
-                    MessageBox.Show("No valid options");
+                    CustomMessageBox.Show("No valid options");
                     return;
                 }
 
@@ -330,7 +330,7 @@ namespace ArdupilotMega.GCSViews
 
                 if (board == "")
                 {
-                    MessageBox.Show("Cant detect your APM version. Please check your cabling");
+                    CustomMessageBox.Show("Cant detect your APM version. Please check your cabling");
                     return;
                 }
 
@@ -344,9 +344,9 @@ namespace ArdupilotMega.GCSViews
 
                 if (apmformat_version != -1 && apmformat_version != temp.k_format_version)
                 {
-                    if (DialogResult.No == MessageBox.Show("Epprom changed, all your setting will be lost during the update,\nDo you wish to continue?", "Epprom format changed (" + apmformat_version + " vs " + temp.k_format_version + ")", MessageBoxButtons.YesNo))
+                    if (DialogResult.No == CustomMessageBox.Show("Epprom changed, all your setting will be lost during the update,\nDo you wish to continue?", "Epprom format changed (" + apmformat_version + " vs " + temp.k_format_version + ")", MessageBoxButtons.YesNo))
                     {
-                        MessageBox.Show("Please connect and backup your config in the configuration tab.");
+                        CustomMessageBox.Show("Please connect and backup your config in the configuration tab.");
                         return;
                     }
                 }
@@ -370,7 +370,7 @@ namespace ArdupilotMega.GCSViews
                 }
                 else
                 {
-                    MessageBox.Show("Invalid Board Type");
+                    CustomMessageBox.Show("Invalid Board Type");
                     return;
                 }
 
@@ -426,7 +426,7 @@ namespace ArdupilotMega.GCSViews
                 this.Refresh();
                 log.Info("Downloaded");
             }
-            catch (Exception ex) { lbl_status.Text = "Failed download"; MessageBox.Show("Failed to download new firmware : " + ex.ToString()); return; }
+            catch (Exception ex) { lbl_status.Text = "Failed download"; CustomMessageBox.Show("Failed to download new firmware : " + ex.ToString()); return; }
 
             UploadFlash(Path.GetDirectoryName(Application.ExecutablePath) + Path.DirectorySeparatorChar + @"firmware.hex", board);
         }
@@ -451,7 +451,7 @@ namespace ArdupilotMega.GCSViews
                     sr.Dispose();
                 } 
                 lbl_status.Text = "Failed read HEX"; 
-                MessageBox.Show("Failed to read firmware.hex : " + ex.Message); 
+                CustomMessageBox.Show("Failed to read firmware.hex : " + ex.Message); 
                 return;
             }
             ArduinoComms port = new ArduinoSTK();
@@ -460,7 +460,7 @@ namespace ArdupilotMega.GCSViews
             {
                 if (FLASH.Length > 126976)
                 {
-                    MessageBox.Show("Firmware is to big for a 1280, Please upgrade!!");
+                    CustomMessageBox.Show("Firmware is to big for a 1280, Please upgrade!!");
                     return;
                 }
                 //port = new ArduinoSTK();
@@ -539,7 +539,7 @@ namespace ArdupilotMega.GCSViews
                     {
                         if (FLASH[s] != flashverify[s])
                         {
-                            MessageBox.Show("Upload succeeded, but verify failed: exp " + FLASH[s].ToString("X") + " got " + flashverify[s].ToString("X") + " at " + s);
+                            CustomMessageBox.Show("Upload succeeded, but verify failed: exp " + FLASH[s].ToString("X") + " got " + flashverify[s].ToString("X") + " at " + s);
                             break;
                         }
                     }
@@ -549,7 +549,7 @@ namespace ArdupilotMega.GCSViews
                 else
                 {
                     lbl_status.Text = "Failed upload";
-                    MessageBox.Show("Communication Error - no connection");
+                    CustomMessageBox.Show("Communication Error - no connection");
                 }
                 port.Close();
 
@@ -588,7 +588,7 @@ namespace ArdupilotMega.GCSViews
             catch (Exception ex)
             {
                 lbl_status.Text = "Failed upload"; 
-                MessageBox.Show("Check port settings or Port in use? " + ex);
+                CustomMessageBox.Show("Check port settings or Port in use? " + ex);
                 port.Close();
             }
             flashing = false;
@@ -655,7 +655,7 @@ namespace ArdupilotMega.GCSViews
 
                     if (checksumact != checksum)
                     {
-                        MessageBox.Show("The hex file loaded is invalid, please try again.");
+                        CustomMessageBox.Show("The hex file loaded is invalid, please try again.");
                         throw new Exception("Checksum Failed - Invalid Hex");
                     }
                 }
@@ -664,7 +664,7 @@ namespace ArdupilotMega.GCSViews
 
             if (!hitend)
             {
-                MessageBox.Show("The hex file did no contain an end flag. aborting");
+                CustomMessageBox.Show("The hex file did no contain an end flag. aborting");
                 throw new Exception("No end flag in file");
             }
 
@@ -678,7 +678,7 @@ namespace ArdupilotMega.GCSViews
             if (flashing == true)
             {
                 e.Cancel = true;
-                MessageBox.Show("Cant exit while updating");
+                CustomMessageBox.Show("Cant exit while updating");
             }
         }
 
