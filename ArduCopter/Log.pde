@@ -701,7 +701,7 @@ static void Log_Write_Attitude()
 	DataFlash.WriteInt((int)dcm.pitch_sensor);		// 4
 	DataFlash.WriteInt(g.rc_4.control_in);			// 5
 	DataFlash.WriteInt((uint16_t)dcm.yaw_sensor);	// 6
-	DataFlash.WriteInt((uint16_t)compass.heading);	// 6
+	DataFlash.WriteInt((uint16_t)(ToDeg(compass.heading)*100));	// 7
 
 	DataFlash.WriteByte(END_BYTE);
 }
@@ -720,13 +720,13 @@ static void Log_Read_Attitude()
 
 							// 1   2   3    4   5   6  7
 	Serial.printf_P(PSTR("ATT, %d, %d, %d, %d, %d, %u, %u\n"),
-		temp1,
-		temp2,
-		temp3,
-		temp4,
-		temp5,
-		temp6,
-		temp7);
+		(int)temp1,
+		(int)temp2,
+		(int)temp3,
+		(int)temp4,
+		(int)temp5,
+		(unsigned int)temp6,
+		(unsigned int)temp7);
 }
 
 // Write a mode packet. Total length : 7 bytes
