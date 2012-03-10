@@ -66,9 +66,6 @@ static void check_result(float roll, float pitch, float yaw,
             Serial.printf("incorrect eulers roll=%f/%f pitch=%f/%f yaw=%f/%f\n",
                           ToDeg(roll), ToDeg(roll2), ToDeg(pitch), ToDeg(pitch2), ToDeg(yaw), ToDeg(yaw2));
         }
-    } else {
-        Serial.printf("correct eulers roll=%f/%f pitch=%f/%f yaw=%f/%f\n",
-                      ToDeg(roll), ToDeg(roll2), ToDeg(pitch), ToDeg(pitch2), ToDeg(yaw), ToDeg(yaw2));
     }
 }
 
@@ -77,8 +74,8 @@ static void test_euler(float roll, float pitch, float yaw)
     Matrix3f m;
     float roll2, pitch2, yaw2;
 
-    rotation_matrix_from_euler(m, roll, pitch, yaw);
-    calculate_euler_angles(m, &roll2, &pitch2, &yaw2);
+    m.from_euler(roll, pitch, yaw);
+    m.to_euler(&roll2, &pitch2, &yaw2);
     check_result(roll, pitch, yaw, roll2, pitch2, yaw2);
 }
 
@@ -107,8 +104,8 @@ static void test_quaternion(float roll, float pitch, float yaw)
     Quaternion q;
     float roll2, pitch2, yaw2;
 
-    quaternion_from_euler(q, roll, pitch, yaw);
-    euler_from_quaternion(q, &roll2, &pitch2, &yaw2);
+    q.from_euler(roll, pitch, yaw);
+    q.to_euler(&roll2, &pitch2, &yaw2);
     check_result(roll, pitch, yaw, roll2, pitch2, yaw2);
 }
 
@@ -152,17 +149,19 @@ static void test_conversion(float roll, float pitch, float yaw)
     Matrix3f m, m2;
 
     float roll2, pitch2, yaw2;
+    float roll3, pitch3, yaw3;
 
-    quaternion_from_euler(q, roll, pitch, yaw);
-    quaternion_to_rotation_matrix(q, m);
-    rotation_matrix_from_euler(m2, roll, pitch, yaw);
-
-    calculate_euler_angles(m, &roll2, &pitch2, &yaw2);
+    q.from_euler(roll, pitch, yaw);
+    q.rotation_matrix(m);
+    m.to_euler(&roll2, &pitch2, &yaw2);
+    m2.from_euler(roll, pitch, yaw);
+    m2.to_euler(&roll3, &pitch3, &yaw3);
     if (m.is_nan()) {
         Serial.printf("NAN matrix roll=%f pitch=%f yaw=%f\n",
                       roll, pitch, yaw);
     }
     check_result(roll, pitch, yaw, roll2, pitch2, yaw2);
+    check_result(roll, pitch, yaw, roll3, pitch3, yaw3);
 }
 
 void test_conversions(void)
@@ -194,9 +193,9 @@ void test_frame_transforms(void)
 
     Serial.println("frame transform tests\n");
 
-    quaternion_from_euler(q, ToRad(90), 0, 0);
+    q.from_euler(ToRad(90), 0, 0);
     v2 = v = Vector3f(0, 0, 1);
-    quaternion_earth_to_body(q, v2);
+    q.earth_to_body(v2);
     printf("%f %f %f\n", v2.x, v2.y, v2.z);
 }
 
