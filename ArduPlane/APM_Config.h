@@ -39,3 +39,6 @@
 #define AIRSPEED_CRUISE     25
 #define THROTTLE_FAILSAFE   ENABLED
 */
+
+// Enabling this will use the GPS lat/long coordinate to get the compass declination
+//#define AUTOMATIC_DECLINATION ENABLED
