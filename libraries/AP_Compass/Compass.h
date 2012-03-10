@@ -5,6 +5,7 @@
 #include <inttypes.h>
 #include "../AP_Common/AP_Common.h"
 #include "../AP_Math/AP_Math.h"
+#include "../AP_Declination/AP_Declination.h" // ArduPilot Mega Declination Helper Library
 
 // compass product id
 #define AP_COMPASS_TYPE_UNKNOWN  0x00
@@ -79,6 +80,14 @@ public:
 	/// @returns                    The current compass offsets.
 	///
 	virtual Vector3f &get_offsets();
+
+	/// Sets the initial location used to get declination - Returns true if declination set
+	///
+	/// @param  latitude             GPS Latitude.
+	/// @param  longitude            GPS Longitude.
+	/// @param  force				 Force the compass declination update.
+	///
+	bool set_initial_location(long latitude, long longitude, bool force);
 
 	/// Program new offset values.
 	///
