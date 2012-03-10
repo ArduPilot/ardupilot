@@ -119,7 +119,7 @@ public:
     static const struct AP_Param::GroupInfo var_info[];
 
 protected:
-    AP_Int8				_orientation;
+    enum Rotation		_orientation;
 	AP_Vector3f         _offset;
 	AP_Float            _declination;
     AP_Int8             _learn;                 ///<enable calibration learning
