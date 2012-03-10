@@ -727,7 +727,7 @@
 #endif
 
 #ifndef ALT_HOLD_P
-# define ALT_HOLD_P			0.2		//
+# define ALT_HOLD_P			0.5		//
 #endif
 #ifndef ALT_HOLD_I
 # define ALT_HOLD_I			0.015
