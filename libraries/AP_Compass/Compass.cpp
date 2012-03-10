@@ -57,6 +57,25 @@ Compass::get_offsets()
     return _offset;
 }
 
+bool
+Compass::set_initial_location(long latitude, long longitude, bool force)
+{
+	// If the user has choosen to use auto-declination regardless of the planner value
+	// OR
+	// If the declination failed to load from the EEPROM (ie. not set by user)
+	if(force || !_declination.load())
+	{
+		// Set the declination based on the lat/lng from GPS
+		_declination.set(radians(AP_Declination::get_declination((float)latitude / 10000000, (float)longitude / 10000000)));
+
+		// Reset null offsets
+		null_offsets_disable();
+		null_offsets_enable();
+		return true;
+	}
+	return false;
+}
+
 void
 Compass::set_declination(float radians)
 {
