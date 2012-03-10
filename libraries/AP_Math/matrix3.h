@@ -131,6 +131,11 @@ public:
 	// fill in the matrix with a standard rotation
 	void rotation(enum Rotation rotation);
 
+    // create a rotation matrix from Euler angles
+	void from_euler(float roll, float pitch, float yaw);
+
+    // create eulers from a rotation matrix
+	void to_euler(float *roll, float *pitch, float *yaw);
 };
 
 typedef Matrix3<int16_t>		Matrix3i;
