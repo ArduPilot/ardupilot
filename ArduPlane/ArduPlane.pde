@@ -36,6 +36,7 @@ version 2.1 of the License, or (at your option) any later version.
 #include <AP_AnalogSource.h>// ArduPilot Mega polymorphic analog getter
 #include <AP_PeriodicProcess.h> // ArduPilot Mega TimerProcess
 #include <AP_Baro.h>        // ArduPilot barometer library
+#include <AP_Declination.h> // ArduPilot Mega Declination Helper Library
 #include <AP_Compass.h>     // ArduPilot Mega Magnetometer Library
 #include <AP_Math.h>        // ArduPilot Mega Vector/Matrix math Library
 #include <AP_InertialSensor.h> // Inertial Sensor (uncalibated IMU) Library
@@ -972,6 +973,17 @@ static void update_GPS(void)
 					init_home();
 				} else if (ENABLE_AIR_START == 0) {
 					init_home();
+				}
+
+				// If we have a compass installed
+				if(g.compass_enabled)
+				{
+					// Set compass declination automatically
+					if(compass.set_initial_location(g_gps->latitude, g_gps->longitude, AUTOMATIC_DECLINATION == ENABLED))
+					{
+						// Report if an update was made
+						report_compass();
+					}
 				}
 
 				ground_start_count = 0;

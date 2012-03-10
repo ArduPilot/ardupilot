@@ -35,6 +35,7 @@ Jean-Louis Naudin 	:Auto Landing
 Sandro Benigno  	:Camera support
 Olivier Adler 		:PPM Encoder
 John Arne Birkeland	:PPM Encoder
+Adam M Rivera		:Auto Compass Declination
 
 And much more so PLEASE PM me on DIYDRONES to add your contribution to the List
 
@@ -65,6 +66,7 @@ http://code.google.com/p/ardupilot-mega/downloads/list
 #include <AP_ADC.h>         // ArduPilot Mega Analog to Digital Converter Library
 #include <AP_AnalogSource.h>
 #include <AP_Baro.h>
+#include <AP_Declination.h> // ArduPilot Mega Declination Helper Library
 #include <AP_Compass.h>     // ArduPilot Mega Magnetometer Library
 #include <AP_Math.h>        // ArduPilot Mega Vector/Matrix math Library
 #include <AP_InertialSensor.h> // ArduPilot Mega Inertial Sensor (accel & gyro) Library
@@ -238,7 +240,6 @@ static GPS         *g_gps_null;
 #endif
 
 AP_TimerProcess timer_scheduler;
-
 #elif HIL_MODE == HIL_MODE_SENSORS
 	// sensor emulators
 	AP_ADC_HIL              adc;
@@ -1374,6 +1375,17 @@ static void update_GPS(void)
 				ground_start_count = 5;
 
 			}else{
+				// If we have a compass installed
+				if(g.compass_enabled)
+				{
+					// Set compass declination automatically
+					if(compass.set_initial_location(g_gps->latitude, g_gps->longitude, AUTOMATIC_DECLINATION == ENABLED))
+					{
+						// Report if an update was made
+						report_compass();
+					}
+				}
+
 				// save home to eeprom (we must have a good fix to have reached this point)
 				init_home();
 				ground_start_count = 0;
@@ -1391,7 +1403,6 @@ static void update_GPS(void)
 			//update_altitude();
 			alt_sensor_flag = true;
 		#endif
-
 	}
 }
 
