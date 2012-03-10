@@ -1984,7 +1984,7 @@ static void update_altitude_est()
 	//Serial.printf(" %d, %d, %d, %d\n", climb_rate_actual, climb_rate_error, climb_rate, current_loc.alt);
 }
 
-#define THROTTLE_ADJUST 200
+#define THROTTLE_ADJUST 225
 static void
 adjust_altitude()
 {
