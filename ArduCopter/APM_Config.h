@@ -90,3 +90,5 @@
 // #define MOT_7 CH_7
 // #define MOT_8 CH_8
 
+// Enabling this will use the GPS lat/long coordinate to get the compass declination
+//#define AUTOMATIC_DECLINATION ENABLED
