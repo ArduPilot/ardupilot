@@ -170,6 +170,7 @@
 
 #define CH6_NAV_I 20
 #define CH6_LOITER_RATE_P 22
+#define CH6_LOITER_RATE_D 23
 
 
 // nav byte mask
