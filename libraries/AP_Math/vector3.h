@@ -185,6 +185,9 @@ public:
 	bool is_inf(void)
 		{   return isinf(x) || isinf(y) || isinf(z); }
 
+	// rotate by a standard rotation
+	void rotate(enum Rotation rotation);
+
 };
 
 typedef Vector3<int16_t>		Vector3i;
