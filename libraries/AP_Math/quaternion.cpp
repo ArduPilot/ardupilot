@@ -76,10 +76,16 @@ void Quaternion::from_euler(float roll, float pitch, float yaw)
 // create eulers from a quaternion
 void Quaternion::to_euler(float *roll, float *pitch, float *yaw)
 {
-    *roll = -(atan2(2.0*(q1*q2 + q3*q4),
-                    1 - 2.0*(q2*q2 + q3*q3)));
-    // we let safe_asin() handle the singularities near 90/-90 in pitch
-    *pitch = -safe_asin(2.0*(q1*q3 - q4*q2));
-    *yaw = atan2(2.0*(q1*q4 + q2*q3),
-                 1 - 2.0*(q3*q3 + q4*q4));
+    if (roll) {
+        *roll = -(atan2(2.0*(q1*q2 + q3*q4),
+                        1 - 2.0*(q2*q2 + q3*q3)));
+    }
+    if (pitch) {
+        // we let safe_asin() handle the singularities near 90/-90 in pitch
+        *pitch = -safe_asin(2.0*(q1*q3 - q4*q2));
+    }
+    if (yaw) {
+        *yaw = atan2(2.0*(q1*q4 + q2*q3),
+                     1 - 2.0*(q3*q3 + q4*q4));
+    }
 }
