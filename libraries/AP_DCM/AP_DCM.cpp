@@ -176,10 +176,10 @@ AP_DCM::matrix_reset(bool recover_eulers)
 	// attitude then calculate the dcm matrix from the current
 	// roll/pitch/yaw values
 	if (recover_eulers && !isnan(roll) && !isnan(pitch) && !isnan(yaw)) {
-		rotation_matrix_from_euler(_dcm_matrix, roll, pitch, yaw);
+		_dcm_matrix.from_euler(roll, pitch, yaw);
 	} else {
 		// otherwise make it flat
-		rotation_matrix_from_euler(_dcm_matrix, 0, 0, 0);
+		_dcm_matrix.from_euler(0, 0, 0);
 	}
 
 	if (_compass != NULL) {
@@ -426,7 +426,7 @@ AP_DCM::drift_correction(float deltat)
 
 				// now construct a new DCM matrix
 				_compass->null_offsets_disable();
-				rotation_matrix_from_euler(_dcm_matrix, roll, pitch, _compass->heading);
+				_dcm_matrix.from_euler(roll, pitch, _compass->heading);
 				_compass->null_offsets_enable();
 				_have_initial_yaw = true;
 				_compass_last_update = _compass->last_update;
@@ -452,7 +452,7 @@ AP_DCM::drift_correction(float deltat)
 					if (_compass) {
 						_compass->null_offsets_disable();
 					}
-					rotation_matrix_from_euler(_dcm_matrix, roll, pitch, ToRad(_gps->ground_course));
+					_dcm_matrix.from_euler(roll, pitch, ToRad(_gps->ground_course));
 					if (_compass) {
 						_compass->null_offsets_enable();
 					}
@@ -532,7 +532,7 @@ AP_DCM::drift_correction(float deltat)
 void
 AP_DCM::euler_angles(void)
 {
-	calculate_euler_angles(_dcm_matrix, &roll, &pitch, &yaw);
+	_dcm_matrix.to_euler(&roll, &pitch, &yaw);
 
 	roll_sensor 	= degrees(roll)  * 100;
 	pitch_sensor 	= degrees(pitch) * 100;
