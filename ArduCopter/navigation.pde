@@ -424,6 +424,8 @@ static int32_t get_new_altitude()
 	}
 
 	int32_t diff 	= abs(next_WP.alt - target_altitude);
+	// scale is how we generate a desired rate from the elapsed time
+	// a smaller scale means faster rates
 	int8_t			_scale 	= 4;
 
 	if (next_WP.alt < target_altitude){
