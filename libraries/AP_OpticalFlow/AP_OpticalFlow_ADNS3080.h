@@ -104,7 +104,7 @@ class AP_OpticalFlow_ADNS3080 : public AP_OpticalFlow
 	bool _overflow;  // true if the x or y data buffers overflowed
 
   public:
-  	AP_OpticalFlow_ADNS3080(int cs_pin = ADNS3080_CHIP_SELECT, int reset_pin = ADNS3080_RESET);
+	AP_OpticalFlow_ADNS3080(int cs_pin = ADNS3080_CHIP_SELECT, int reset_pin = ADNS3080_RESET);
 	bool init(bool initCommAPI = true); // parameter controls whether I2C/SPI interface is initialised (set to false if other devices are on the I2C/SPI bus and have already initialised the interface)
 	byte read_register(byte address);
 	void write_register(byte address, byte value);
@@ -115,7 +115,7 @@ class AP_OpticalFlow_ADNS3080 : public AP_OpticalFlow
 	bool motion() { if( _motion ) { _motion = false; return true; }else{ return false; } }			// return true if there has been motion since the last time this was called
 
 	void disable_serial_pullup();
-	
+
 	bool get_led_always_on();                    // returns true if LED is always on, false if only on when required
 	void set_led_always_on( bool alwaysOn );     // set parameter to true if you want LED always on, otherwise false for only when required
 
