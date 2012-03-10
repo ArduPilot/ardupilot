@@ -447,7 +447,7 @@ static void set_mode(byte mode)
 			roll_pitch_mode = ALT_HOLD_RP;
 			throttle_mode 	= ALT_HOLD_THR;
 
-			set_next_WP(&current_loc);
+			force_new_altitude(max(current_loc.alt, 100));
 			break;
 
 		case AUTO:
