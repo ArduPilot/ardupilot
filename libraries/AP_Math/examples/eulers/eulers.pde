@@ -57,7 +57,9 @@ static void check_result(float roll, float pitch, float yaw,
     if (rad_diff(roll2,roll) > 0.01 ||
         rad_diff(pitch2, pitch) > 0.01 ||
         rad_diff(yaw2, yaw) > 0.01) {
-        if (ToDeg(rad_diff(pitch, PI/2)) < 1 ||
+        if (pitch >= PI/2 ||
+            pitch <= -PI/2 ||
+            ToDeg(rad_diff(pitch, PI/2)) < 1 ||
             ToDeg(rad_diff(pitch, -PI/2)) < 1) {
             // we expect breakdown at these poles
             Serial.printf("breakdown eulers roll=%f/%f pitch=%f/%f yaw=%f/%f\n",
@@ -152,14 +154,19 @@ static void test_conversion(float roll, float pitch, float yaw)
     float roll3, pitch3, yaw3;
 
     q.from_euler(roll, pitch, yaw);
+    q.to_euler(&roll2, &pitch2, &yaw2);
+    check_result(roll, pitch, yaw, roll2, pitch2, yaw2);
+
     q.rotation_matrix(m);
     m.to_euler(&roll2, &pitch2, &yaw2);
+
     m2.from_euler(roll, pitch, yaw);
     m2.to_euler(&roll3, &pitch3, &yaw3);
     if (m.is_nan()) {
         Serial.printf("NAN matrix roll=%f pitch=%f yaw=%f\n",
                       roll, pitch, yaw);
     }
+
     check_result(roll, pitch, yaw, roll2, pitch2, yaw2);
     check_result(roll, pitch, yaw, roll3, pitch3, yaw3);
 }
@@ -206,6 +213,9 @@ void setup(void)
 {
     Serial.begin(115200);
     Serial.println("euler unit tests\n");
+
+    test_conversion(0, PI, 0);
+
     test_frame_transforms();
     test_conversions();
     test_quaternion_eulers();
