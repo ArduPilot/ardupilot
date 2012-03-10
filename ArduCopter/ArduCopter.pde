@@ -1658,7 +1658,7 @@ void update_throttle_mode(void)
 				// we are under automatic throttle control
 				// ---------------------------------------
 				if(reset_throttle_flag)	{
-					set_new_altitude(max(current_loc.alt, 100));
+					force_new_altitude(max(current_loc.alt, 100));
 					reset_throttle_flag = false;
 					update_throttle_cruise();
 				}
