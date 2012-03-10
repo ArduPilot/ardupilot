@@ -75,7 +75,7 @@ public:
 	float get_error_yaw(void);
 	Matrix3f get_dcm_matrix(void) {
 		Matrix3f ret;
-		quaternion_to_rotation_matrix(q, ret);
+		q.rotation_matrix(ret);
 		return ret;
 	}
 
