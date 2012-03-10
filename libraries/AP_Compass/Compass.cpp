@@ -7,7 +7,6 @@ const AP_Param::GroupInfo Compass::var_info[] PROGMEM = {
     AP_GROUPINFO("DEC",    2, Compass, _declination),
     AP_GROUPINFO("LEARN",  3, Compass, _learn), // true if learning calibration
     AP_GROUPINFO("USE",    4, Compass, _use_for_yaw), // true if used for DCM yaw
-    AP_GROUPINFO("ORIENT", 5, Compass, _orientation),
     AP_GROUPEND
 };
 
@@ -21,9 +20,9 @@ Compass::Compass(void) :
     _learn(1),
     _use_for_yaw(1),
     _null_enable(false),
-    _null_init_done(false)
+    _null_init_done(false),
+    _orientation(ROTATION_NONE)
 {
-    _orientation.set(ROTATION_NONE);
 }
 
 // Default init method, just returns success.
@@ -37,7 +36,7 @@ Compass::init()
 void
 Compass::set_orientation(enum Rotation rotation)
 {
-    _orientation.set_and_save(rotation);
+    _orientation = rotation;
 }
 
 void

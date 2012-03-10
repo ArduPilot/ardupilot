@@ -264,7 +264,7 @@ bool AP_Compass_HMC5843::read()
 
    // rotate to the desired orientation
    Vector3f rot_mag = Vector3f(mag_x,mag_y,mag_z);
-   rot_mag.rotate((enum Rotation)_orientation.get());
+   rot_mag.rotate(_orientation);
    if (product_id == AP_COMPASS_TYPE_HMC5883L) {
 	  rot_mag.rotate(ROTATION_YAW_90);
    }
@@ -282,5 +282,5 @@ bool AP_Compass_HMC5843::read()
 void
 AP_Compass_HMC5843::set_orientation(enum Rotation rotation)
 {
-   _orientation.set_and_save(rotation);
+   _orientation = rotation;
 }
