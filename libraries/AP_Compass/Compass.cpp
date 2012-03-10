@@ -2,11 +2,12 @@
 #include "Compass.h"
 
 const AP_Param::GroupInfo Compass::var_info[] PROGMEM = {
-    AP_GROUPINFO("ORIENT", 0, Compass, _orientation_matrix),
+    // index 0 was used for the old orientation matrix
     AP_GROUPINFO("OFS",    1, Compass, _offset),
     AP_GROUPINFO("DEC",    2, Compass, _declination),
     AP_GROUPINFO("LEARN",  3, Compass, _learn), // true if learning calibration
     AP_GROUPINFO("USE",    4, Compass, _use_for_yaw), // true if used for DCM yaw
+    AP_GROUPINFO("ORIENT", 5, Compass, _orientation),
     AP_GROUPEND
 };
 
@@ -22,9 +23,7 @@ Compass::Compass(void) :
     _null_enable(false),
     _null_init_done(false)
 {
-    // Default the orientation matrix to none - will be overridden at group load time
-    // if an orientation has previously been saved.
-    _orientation_matrix.set(ROTATION_NONE);
+    _orientation.set(ROTATION_NONE);
 }
 
 // Default init method, just returns success.
@@ -36,9 +35,9 @@ Compass::init()
 }
 
 void
-Compass::set_orientation(const Matrix3f &rotation_matrix)
+Compass::set_orientation(enum Rotation rotation)
 {
-    _orientation_matrix.set_and_save(rotation_matrix);
+    _orientation.set_and_save(rotation);
 }
 
 void

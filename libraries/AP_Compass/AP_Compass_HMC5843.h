@@ -60,7 +60,7 @@ class AP_Compass_HMC5843 : public Compass
 	AP_Compass_HMC5843() : Compass() {}
 	virtual bool init(void);
 	virtual bool read(void);
-	virtual void set_orientation(const Matrix3f &rotation_matrix);
+	virtual void set_orientation(enum Rotation rotation);
 
 };
 #endif
