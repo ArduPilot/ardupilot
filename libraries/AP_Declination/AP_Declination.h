@@ -6,6 +6,7 @@
 // Just incase it wasn't included elsewhere
 #include <avr/pgmspace.h>
 #include <math.h>
+#include "../AP_Common/AP_Common.h"
 
 /*
  *	Adam M Rivera
