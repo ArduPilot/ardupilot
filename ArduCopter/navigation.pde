@@ -103,7 +103,7 @@ static void calc_loiter(int x_error, int y_error)
 {
 	#if LOITER_RATE == 1
 	int16_t x_target_speed, y_target_speed;
-	int16_t x_iterm, y_iterm;
+	//int16_t x_iterm, y_iterm;
 
 	// East / West
 	x_target_speed 	= g.pi_loiter_lon.get_p(x_error);			// not contstrained yet
