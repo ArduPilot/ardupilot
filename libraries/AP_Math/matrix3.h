@@ -128,6 +128,9 @@ public:
 	bool is_nan(void)
 		{   return a.is_nan() || b.is_nan() || c.is_nan(); }
 
+	// fill in the matrix with a standard rotation
+	void rotation(enum Rotation rotation);
+
 };
 
 typedef Matrix3<int16_t>		Matrix3i;

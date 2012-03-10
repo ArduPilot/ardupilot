@@ -1,9 +1,13 @@
 // -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: t -*-
 
+#ifndef AP_MATH_H
+#define AP_MATH_H
+
 // Assorted useful math operations for ArduPilot(Mega)
 
 #include <AP_Common.h>
 #include <stdint.h>
+#include "rotations.h"
 #include "vector2.h"
 #include "vector3.h"
 #include "matrix3.h"
@@ -38,3 +42,5 @@ void quaternion_to_rotation_matrix(const Quaternion &q, Matrix3f &m);
 // convert a vector in earth frame to a vector in body frame,
 // assuming body current rotation is given by a quaternion
 void quaternion_earth_to_body(const Quaternion &q, Vector3f &v);
+
+#endif
