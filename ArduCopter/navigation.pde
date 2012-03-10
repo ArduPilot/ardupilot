@@ -429,9 +429,9 @@ static int32_t get_new_altitude()
 	if (next_WP.alt < target_altitude){
 		// we are below the target alt
 		if(diff < 200){
-			_scale = 5;
-		} else {
 			_scale = 4;
+		} else {
+			_scale = 3;
 		}
 	}else {
 		// we are above the target, going down
