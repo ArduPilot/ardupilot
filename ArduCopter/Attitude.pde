@@ -204,8 +204,8 @@ get_nav_throttle(int32_t z_error)
 	rate_error 		= rate_error - climb_rate;
 
 	// hack to see if we can smooth out oscillations
-	if(rate_error < 0)
-		rate_error = rate_error >> 1;
+	//if(rate_error < 0)
+	//	rate_error = rate_error >> 1;
 
 	// limit the rate
 	output =  constrain(g.pid_throttle.get_pid(rate_error, .02), -80, 120);
