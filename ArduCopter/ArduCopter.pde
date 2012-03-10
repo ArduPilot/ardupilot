@@ -2079,6 +2079,11 @@ static void tuning(){
 			g.pid_loiter_rate_lat.kP(tuning_value);
 			break;
 
+		case CH6_LOITER_RATE_D:
+			g.pid_loiter_rate_lon.kD(tuning_value);
+			g.pid_loiter_rate_lat.kD(tuning_value);
+			break;
+
 		case CH6_NAV_I:
 			g.pid_nav_lat.kI(tuning_value);
 			g.pid_nav_lon.kI(tuning_value);
