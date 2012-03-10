@@ -33,5 +33,16 @@ public:
 	bool is_nan(void)
 	{   return isnan(q1) || isnan(q2) || isnan(q3) || isnan(q4); }
 
+	// return the rotation matrix equivalent for this quaternion
+	void rotation_matrix(Matrix3f &m);
+
+	// convert a vector from earth to body frame
+	void earth_to_body(Vector3f &v);
+
+    // create a quaternion from Euler angles
+	void from_euler(float roll, float pitch, float yaw);
+
+    // create eulers from a quaternion
+	void to_euler(float *roll, float *pitch, float *yaw);
 };
 #endif // QUATERNION_H

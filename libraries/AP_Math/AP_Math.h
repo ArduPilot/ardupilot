@@ -30,17 +30,4 @@ void rotation_matrix_from_euler(Matrix3f &m, float roll, float pitch, float yaw)
 // calculate euler angles from a rotation matrix
 void calculate_euler_angles(const Matrix3f &m, float *roll, float *pitch, float *yaw);
 
-// create a quaternion from Euler angles
-void quaternion_from_euler(Quaternion &q, float roll, float pitch, float yaw);
-
-// create eulers from a quaternion
-void euler_from_quaternion(const Quaternion &q, float *roll, float *pitch, float *yaw);
-
-// convert a quaternion to a rotation matrix
-void quaternion_to_rotation_matrix(const Quaternion &q, Matrix3f &m);
-
-// convert a vector in earth frame to a vector in body frame,
-// assuming body current rotation is given by a quaternion
-void quaternion_earth_to_body(const Quaternion &q, Vector3f &v);
-
 #endif
