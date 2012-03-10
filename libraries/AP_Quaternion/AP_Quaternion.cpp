@@ -119,7 +119,7 @@ void AP_Quaternion::update_IMU(float deltat, Vector3f &gyro, Vector3f &accel)
 	    if (_compass) {
 		    _compass->null_offsets_disable();
 	    }
-	    quaternion_from_euler(q, roll, pitch, yaw);
+	    q.from_euler(roll, pitch, yaw);
 	    if (_compass) {
 		    _compass->null_offsets_enable();
 	    }
@@ -280,7 +280,7 @@ void AP_Quaternion::update_MARG(float deltat, Vector3f &gyro, Vector3f &accel, V
 	    // and hope for the best ...
 	    renorm_blowup_count++;
 	    _compass->null_offsets_disable();
-	    quaternion_from_euler(q, roll, pitch, yaw);
+	    q.from_euler(roll, pitch, yaw);
 	    _compass->null_offsets_disable();
 	    return;
     }
@@ -432,7 +432,7 @@ void AP_Quaternion::update_drift(float deltat, Vector3f &mag)
 	    // and hope for the best ...
 	    renorm_blowup_count++;
 	    _compass->null_offsets_disable();
-	    quaternion_from_euler(q, roll, pitch, yaw);
+	    q.from_euler(roll, pitch, yaw);
 	    _compass->null_offsets_disable();
 	    return;
     }
@@ -481,7 +481,7 @@ void AP_Quaternion::update(void)
 	    _compass->use_for_yaw()) {
 		// setup the quaternion with initial compass yaw
 		_compass->null_offsets_disable();
-		quaternion_from_euler(q, 0, 0, _compass->heading);
+		q.from_euler(0, 0, _compass->heading);
 		_have_initial_yaw = true;
 		_compass_last_update = _compass->last_update;
 		gyro_bias.zero();
@@ -567,7 +567,7 @@ void AP_Quaternion::update(void)
 	_gyro_corrected = gyro;
 
 	// calculate our euler angles for high level control and navigation
-	euler_from_quaternion(q, &roll, &pitch, &yaw);
+	q.to_euler(&roll, &pitch, &yaw);
 
 	// the code above assumes zero magnetic declination, so offset
 	// the yaw here
