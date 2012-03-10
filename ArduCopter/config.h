@@ -677,7 +677,7 @@
 #endif
 
 #ifndef LOITER_RATE_P
-# define LOITER_RATE_P		3.0			//
+# define LOITER_RATE_P		2.6			//
 #endif
 #ifndef LOITER_RATE_I
 # define LOITER_RATE_I		0.25		// Wind control
