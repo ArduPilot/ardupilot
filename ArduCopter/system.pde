@@ -579,7 +579,7 @@ static void update_throttle_cruise()
 	}
 
 	// recalc kp
-	g.pid_throttle.kP((float)g.throttle_cruise.get() / 981.0);
+	//g.pid_throttle.kP((float)g.throttle_cruise.get() / 981.0);
 	//Serial.printf("kp:%1.4f\n",kp);
 }
 
