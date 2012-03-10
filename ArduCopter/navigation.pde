@@ -347,16 +347,21 @@ static void clear_new_altitude()
 	alt_change_flag = REACHED_ALT;
 }
 
+static void force_new_altitude(int32_t _new_alt)
+{
+	next_WP.alt 	= _new_alt;
+	target_altitude = _new_alt;
+	alt_change_flag = REACHED_ALT;
+}
+
 static void set_new_altitude(int32_t _new_alt)
 {
 	if(_new_alt == current_loc.alt){
-		next_WP.alt 	= _new_alt;
-		target_altitude = _new_alt;
-		alt_change_flag = REACHED_ALT;
+		force_new_altitude(_new_alt);
 		return;
 	}
 
-	// just to be clear
+	// We start at the current location altitude and gradually change alt
 	next_WP.alt = current_loc.alt;
 
 	// for calculating the delta time
