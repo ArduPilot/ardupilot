@@ -94,5 +94,46 @@ void Matrix3<T>::rotation(enum Rotation r)
     }
 }
 
+// create a rotation matrix given some euler angles
+// this is based on http://gentlenav.googlecode.com/files/EulerAngles.pdf
+template <typename T>
+void Matrix3<T>::from_euler(float roll, float pitch, float yaw)
+{
+	float cp = cos(pitch);
+	float sp = sin(pitch);
+	float sr = sin(roll);
+	float cr = cos(roll);
+	float sy = sin(yaw);
+	float cy = cos(yaw);
+
+	a.x = cp * cy;
+	a.y = (sr * sp * cy) - (cr * sy);
+	a.z = (cr * sp * cy) + (sr * sy);
+	b.x = cp * sy;
+	b.y = (sr * sp * sy) + (cr * cy);
+	b.z = (cr * sp * sy) - (sr * cy);
+	c.x = -sp;
+	c.y = sr * cp;
+	c.z = cr * cp;
+}
+
+// calculate euler angles from a rotation matrix
+// this is based on http://gentlenav.googlecode.com/files/EulerAngles.pdf
+template <typename T>
+void Matrix3<T>::to_euler(float *roll, float *pitch, float *yaw)
+{
+	if (pitch != NULL) {
+		*pitch = -safe_asin(c.x);
+	}
+	if (roll != NULL) {
+		*roll = atan2(c.y, c.z);
+	}
+	if (yaw != NULL) {
+		*yaw = atan2(b.x, a.x);
+	}
+}
+
 // only define for float
 template void Matrix3<float>::rotation(enum Rotation);
+template void Matrix3<float>::from_euler(float roll, float pitch, float yaw);
+template void Matrix3<float>::to_euler(float *roll, float *pitch, float *yaw);
