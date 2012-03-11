@@ -519,7 +519,7 @@
 
 
 
-/*  The following parmaeters have no corresponding control implementation
+/*  The following parameters have no corresponding control implementation
 #ifndef THROTTLE_ALT_P
 # define THROTTLE_ALT_P         0.32
 #endif
