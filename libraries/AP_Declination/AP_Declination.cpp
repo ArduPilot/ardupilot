@@ -57,7 +57,7 @@ AP_Declination::get_declination(float lat, float lon)
 	uint8_t latmin_index,lonmin_index;
 	float decmin, decmax;
 
-	// Validate input values
+	// Constrain to valid inputs
 	lat = constrain(lat, -90, 90);
 	lon = constrain(lon, -180, 180);
 
