@@ -239,15 +239,15 @@ static void Log_Write_Performance()
 	DataFlash.WriteLong(millis()- perf_mon_timer);
 	DataFlash.WriteInt((int16_t)mainLoop_count);
 	DataFlash.WriteInt(G_Dt_max);
-	DataFlash.WriteByte(dcm.gyro_sat_count);
+	DataFlash.WriteByte(0);
 	DataFlash.WriteByte(imu.adc_constraints);
-	DataFlash.WriteByte(dcm.renorm_range_count);
-	DataFlash.WriteByte(dcm.renorm_blowup_count);
+	DataFlash.WriteByte(ahrs.renorm_range_count);
+	DataFlash.WriteByte(ahrs.renorm_blowup_count);
 	DataFlash.WriteByte(gps_fix_count);
-	DataFlash.WriteInt((int)(dcm.get_health() * 1000));
-	DataFlash.WriteInt((int)(dcm.get_gyro_drift().x * 1000));
-	DataFlash.WriteInt((int)(dcm.get_gyro_drift().y * 1000));
-	DataFlash.WriteInt((int)(dcm.get_gyro_drift().z * 1000));
+	DataFlash.WriteInt(1); // AHRS health
+	DataFlash.WriteInt((int)(ahrs.get_gyro_drift().x * 1000));
+	DataFlash.WriteInt((int)(ahrs.get_gyro_drift().y * 1000));
+	DataFlash.WriteInt((int)(ahrs.get_gyro_drift().z * 1000));
 	DataFlash.WriteInt(pmTest1);
 	DataFlash.WriteByte(END_BYTE);
 }
@@ -300,10 +300,10 @@ static void Log_Write_Control_Tuning()
 	DataFlash.WriteByte(LOG_CONTROL_TUNING_MSG);
 	DataFlash.WriteInt((int)(g.channel_roll.servo_out));
 	DataFlash.WriteInt((int)nav_roll);
-	DataFlash.WriteInt((int)dcm.roll_sensor);
+	DataFlash.WriteInt((int)ahrs.roll_sensor);
 	DataFlash.WriteInt((int)(g.channel_pitch.servo_out));
 	DataFlash.WriteInt((int)nav_pitch);
-	DataFlash.WriteInt((int)dcm.pitch_sensor);
+	DataFlash.WriteInt((int)ahrs.pitch_sensor);
 	DataFlash.WriteInt((int)(g.channel_throttle.servo_out));
 	DataFlash.WriteInt((int)(g.channel_rudder.servo_out));
 	DataFlash.WriteInt((int)(accel.y * 10000));
@@ -317,7 +317,7 @@ static void Log_Write_Nav_Tuning()
 	DataFlash.WriteByte(HEAD_BYTE1);
 	DataFlash.WriteByte(HEAD_BYTE2);
 	DataFlash.WriteByte(LOG_NAV_TUNING_MSG);
-	DataFlash.WriteInt((uint16_t)dcm.yaw_sensor);
+	DataFlash.WriteInt((uint16_t)ahrs.yaw_sensor);
 	DataFlash.WriteInt((int)wp_distance);
 	DataFlash.WriteInt((uint16_t)target_bearing);
 	DataFlash.WriteInt((uint16_t)nav_bearing);
