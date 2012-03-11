@@ -514,7 +514,7 @@ test_imu(uint8_t argc, const Menu::arg *argv)
 {
 	//Serial.printf_P(PSTR("Calibrating."));
 	imu.init(IMU::COLD_START, delay, flash_leds, &timer_scheduler);
-    dcm.matrix_reset();
+    ahrs.reset();
 
 	print_hit_enter();
 	delay(1000);
@@ -528,14 +528,14 @@ test_imu(uint8_t argc, const Menu::arg *argv)
 
 			// IMU
 			// ---
-			dcm.update_DCM();
+			ahrs.update();
 
 			if(g.compass_enabled) {
 				medium_loopCounter++;
 				if(medium_loopCounter == 5){
 					if (compass.read()) {
                         // Calculate heading
-                        compass.calculate(dcm.get_dcm_matrix());
+                        compass.calculate(ahrs.get_dcm_matrix());
                     }
                     medium_loopCounter = 0;
 				}
@@ -546,9 +546,9 @@ test_imu(uint8_t argc, const Menu::arg *argv)
             Vector3f gyros 	= imu.get_gyro();
             Vector3f accels = imu.get_accel();
 			Serial.printf_P(PSTR("r:%4d  p:%4d  y:%3d  g=(%5.1f %5.1f %5.1f)  a=(%5.1f %5.1f %5.1f)\n"),
-                            (int)dcm.roll_sensor / 100,
-                            (int)dcm.pitch_sensor / 100,
-                            (uint16_t)dcm.yaw_sensor / 100,
+                            (int)ahrs.roll_sensor / 100,
+                            (int)ahrs.pitch_sensor / 100,
+                            (uint16_t)ahrs.yaw_sensor / 100,
                             gyros.x, gyros.y, gyros.z,
                             accels.x, accels.y, accels.z);
 		}
@@ -574,12 +574,12 @@ test_mag(uint8_t argc, const Menu::arg *argv)
         return 0;
     }
     compass.null_offsets_enable();
-    dcm.set_compass(&compass);
+    ahrs.set_compass(&compass);
     report_compass();
 
-    // we need the DCM initialised for this test
+    // we need the AHRS initialised for this test
 	imu.init(IMU::COLD_START, delay, flash_leds, &timer_scheduler);
-    dcm.matrix_reset();
+    ahrs.reset();
 
 	int counter = 0;
 		//Serial.printf_P(PSTR("MAG_ORIENTATION: %d\n"), MAG_ORIENTATION);
@@ -595,13 +595,13 @@ test_mag(uint8_t argc, const Menu::arg *argv)
 
 			// IMU
 			// ---
-			dcm.update_DCM();
+			ahrs.update();
 
             medium_loopCounter++;
             if(medium_loopCounter == 5){
                 if (compass.read()) {
                     // Calculate heading
-                    Matrix3f m = dcm.get_dcm_matrix();
+                    Matrix3f m = ahrs.get_dcm_matrix();
                     compass.calculate(m);
                     compass.null_offsets(m);
                 }

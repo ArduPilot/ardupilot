@@ -183,7 +183,7 @@ static void init_ardupilot()
             Serial.println_P(PSTR("Compass initialisation failed!"));
             g.compass_enabled = false;
         } else {
-            dcm.set_compass(&compass);
+            ahrs.set_compass(&compass);
             compass.null_offsets_enable();
         }
 	}
@@ -263,7 +263,7 @@ static void init_ardupilot()
 		//read_EEPROM_airstart_critical();
 #if HIL_MODE != HIL_MODE_ATTITUDE
 		imu.init(IMU::WARM_START, mavlink_delay, flash_leds, &timer_scheduler);
-		dcm.set_centripetal(1);
+		ahrs.set_centripetal(1);
 #endif
 
 		// This delay is important for the APM_RC library to work.
@@ -455,8 +455,8 @@ static void startup_IMU_ground(void)
 
 	imu.init(IMU::COLD_START, mavlink_delay, flash_leds, &timer_scheduler);
 	imu.init_accel(mavlink_delay, flash_leds);
-	dcm.set_centripetal(1);
-    dcm.matrix_reset();
+	ahrs.set_centripetal(1);
+    ahrs.reset();
 
 	// read Baro pressure at ground
 	//-----------------------------
@@ -510,10 +510,9 @@ static void update_GPS_light(void)
 static void resetPerfData(void) {
 	mainLoop_count 			= 0;
 	G_Dt_max 				= 0;
-	dcm.gyro_sat_count 		= 0;
 	imu.adc_constraints 	= 0;
-	dcm.renorm_range_count 	= 0;
-	dcm.renorm_blowup_count = 0;
+	ahrs.renorm_range_count 	= 0;
+	ahrs.renorm_blowup_count = 0;
 	gps_fix_count 			= 0;
 	pmTest1					= 0;
 	perf_mon_timer 			= millis();

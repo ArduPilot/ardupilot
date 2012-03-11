@@ -108,13 +108,13 @@ static NOINLINE void send_heartbeat(mavlink_channel_t chan)
 
 static NOINLINE void send_attitude(mavlink_channel_t chan)
 {
-    Vector3f omega = dcm.get_gyro();
+    Vector3f omega = ahrs.get_gyro();
     mavlink_msg_attitude_send(
         chan,
         micros(),
-        dcm.roll,
-        dcm.pitch - radians(g.pitch_trim*0.01),
-        dcm.yaw,
+        ahrs.roll,
+        ahrs.pitch - radians(g.pitch_trim*0.01),
+        ahrs.yaw,
         omega.x,
         omega.y,
         omega.z);
@@ -306,7 +306,7 @@ static void NOINLINE send_meminfo(mavlink_channel_t chan)
 
 static void NOINLINE send_location(mavlink_channel_t chan)
 {
-    Matrix3f rot = dcm.get_dcm_matrix(); // neglecting angle of attack for now
+    Matrix3f rot = ahrs.get_dcm_matrix(); // neglecting angle of attack for now
     mavlink_msg_global_position_int_send(
         chan,
         millis(),
@@ -434,7 +434,7 @@ static void NOINLINE send_vfr_hud(mavlink_channel_t chan)
         chan,
         (float)airspeed / 100.0,
         (float)g_gps->ground_speed / 100.0,
-        (dcm.yaw_sensor / 100) % 360,
+        (ahrs.yaw_sensor / 100) % 360,
         (uint16_t)(100 * (g.channel_throttle.norm_output() / 2.0 + 0.5)), // scale -1,1 to 0-100
         current_loc.alt / 100.0,
         0);
@@ -486,18 +486,18 @@ static void NOINLINE send_raw_imu3(mavlink_channel_t chan)
                                     imu.ax(), imu.ay(), imu.az());
 }
 
-static void NOINLINE send_dcm(mavlink_channel_t chan)
+static void NOINLINE send_ahrs(mavlink_channel_t chan)
 {
-    Vector3f omega_I = dcm.get_gyro_drift();
-    mavlink_msg_dcm_send(
+    Vector3f omega_I = ahrs.get_gyro_drift();
+    mavlink_msg_ahrs_send(
         chan,
         omega_I.x,
         omega_I.y,
         omega_I.z,
-        dcm.get_accel_weight(),
-        dcm.get_renorm_val(),
-        dcm.get_error_rp(),
-        dcm.get_error_yaw());
+        0,
+        0,
+        ahrs.get_error_rp(),
+        ahrs.get_error_yaw());
 }
 
 #endif // HIL_MODE != HIL_MODE_ATTITUDE
@@ -679,16 +679,16 @@ static bool mavlink_try_send_message(mavlink_channel_t chan, enum ap_message id,
         break;
 #endif
 
-    case MSG_DCM:
+    case MSG_AHRS:
 #if HIL_MODE != HIL_MODE_ATTITUDE
-        CHECK_PAYLOAD_SIZE(DCM);
-        send_dcm(chan);
+        CHECK_PAYLOAD_SIZE(AHRS);
+        send_ahrs(chan);
 #endif
         break;
 
     case MSG_SIMSTATE:
 #ifdef DESKTOP_BUILD
-        CHECK_PAYLOAD_SIZE(DCM);
+        CHECK_PAYLOAD_SIZE(SIMSTATE);
         send_simstate(chan);
 #endif
         break;
@@ -932,7 +932,7 @@ GCS_MAVLINK::data_stream_send(uint16_t freqMin, uint16_t freqMax)
 		}
 
 		if (freqLoopMatch(streamRateExtra3, freqMin, freqMax)){
-			send_message(MSG_DCM);
+			send_message(MSG_AHRS);
 			send_message(MSG_HWSTATUS);
 		}
 	}
@@ -1928,8 +1928,8 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
 			
 			#else
 
-			// set dcm hil sensor
-            dcm.setHil(packet.roll,packet.pitch,packet.yaw,packet.rollspeed,
+			// set AHRS hil sensor
+            ahrs.setHil(packet.roll,packet.pitch,packet.yaw,packet.rollspeed,
             packet.pitchspeed,packet.yawspeed);
 
 			#endif
@@ -1945,8 +1945,8 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
             mavlink_attitude_t packet;
             mavlink_msg_attitude_decode(msg, &packet);
 
-            // set dcm hil sensor
-            dcm.setHil(packet.roll,packet.pitch,packet.yaw,packet.rollspeed,
+            // set AHRS hil sensor
+            ahrs.setHil(packet.roll,packet.pitch,packet.yaw,packet.rollspeed,
             packet.pitchspeed,packet.yawspeed);
             break;
         }

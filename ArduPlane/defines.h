@@ -123,7 +123,7 @@ enum ap_message {
     MSG_NEXT_PARAM,
     MSG_STATUSTEXT,
     MSG_FENCE_STATUS,
-    MSG_DCM,
+    MSG_AHRS,
     MSG_SIMSTATE,
     MSG_HWSTATUS,
     MSG_RETRY_DEFERRED // this must be last

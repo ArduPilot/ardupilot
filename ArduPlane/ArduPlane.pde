@@ -40,8 +40,7 @@ version 2.1 of the License, or (at your option) any later version.
 #include <AP_Math.h>        // ArduPilot Mega Vector/Matrix math Library
 #include <AP_InertialSensor.h> // Inertial Sensor (uncalibated IMU) Library
 #include <AP_IMU.h>         // ArduPilot Mega IMU Library
-#include <AP_DCM.h>         // ArduPilot Mega DCM Library
-#include <AP_Quaternion.h>  // Madgwick quaternion system
+#include <AP_AHRS.h>         // ArduPilot Mega DCM Library
 #include <PID.h>            // PID library
 #include <RC_Channel.h>     // RC Channel Library
 #include <AP_RangeFinder.h>	// Range finder library
@@ -194,12 +193,9 @@ AP_GPS_None     g_gps_driver(NULL);
 AP_IMU_INS imu( &ins );
 
 #if QUATERNION_ENABLE == ENABLED
-  // this shouldn't be called dcm of course, but until we
-  // decide to actually use something else, I don't want the patch
-  // size to be huge
-  AP_Quaternion dcm(&imu, g_gps);
+  AP_AHRS_Quaternion ahrs(&imu, g_gps);
 #else
- AP_DCM  dcm(&imu, g_gps);
+  AP_AHRS_DCM  ahrs(&imu, g_gps);
 #endif
 
 #elif HIL_MODE == HIL_MODE_SENSORS
@@ -210,14 +206,14 @@ AP_Compass_HIL          compass;
 AP_GPS_HIL              g_gps_driver(NULL);
 AP_InertialSensor_Oilpan ins( &adc );
 AP_IMU_Shim imu;
-AP_DCM  dcm(&imu, g_gps);
+AP_AHRS_DCM  ahrs(&imu, g_gps);
 
 #elif HIL_MODE == HIL_MODE_ATTITUDE
 AP_ADC_HIL              adc;
-AP_DCM_HIL              dcm;
+AP_IMU_Shim             imu; // never used
+AP_AHRS_HIL             ahrs(&imu, g_gps);
 AP_GPS_HIL              g_gps_driver(NULL);
 AP_Compass_HIL          compass; // never used
-AP_IMU_Shim             imu; // never used
 AP_Baro_BMP085_HIL      barometer;
 
 #else
@@ -261,7 +257,7 @@ AP_Relay relay;
 // Camera/Antenna mount tracking and stabilisation stuff
 // --------------------------------------
 #if MOUNT == ENABLED
-AP_Mount camera_mount(g_gps, &dcm);
+AP_Mount camera_mount(g_gps, &ahrs);
 #endif
 
 
@@ -719,18 +715,18 @@ static void fast_loop()
 	}
 
 	#if HIL_MODE == HIL_MODE_SENSORS
-		// update hil before dcm update
+		// update hil before AHRS update
 		gcs_update();
 	#endif
 
-    dcm.update_DCM();
+    ahrs.update();
 
 	// uses the yaw from the DCM to give more accurate turns
 	calc_bearing_error();
 
 	# if HIL_MODE == HIL_MODE_DISABLED
 		if (g.log_bitmask & MASK_LOG_ATTITUDE_FAST)
-			Log_Write_Attitude((int)dcm.roll_sensor, (int)dcm.pitch_sensor, (uint16_t)dcm.yaw_sensor);
+			Log_Write_Attitude((int)ahrs.roll_sensor, (int)ahrs.pitch_sensor, (uint16_t)ahrs.yaw_sensor);
 
 		if (g.log_bitmask & MASK_LOG_RAW)
 			Log_Write_Raw();
@@ -784,19 +780,19 @@ static void medium_loop()
 
 			#if HIL_MODE != HIL_MODE_ATTITUDE
             if (g.compass_enabled && compass.read()) {
-                dcm.set_compass(&compass);
+                ahrs.set_compass(&compass);
                 // Calculate heading
-                Matrix3f m = dcm.get_dcm_matrix();
+                Matrix3f m = ahrs.get_dcm_matrix();
                 compass.calculate(m);
                 compass.null_offsets(m);
             } else {
-                dcm.set_compass(NULL);
+                ahrs.set_compass(NULL);
             }
 			#endif
 /*{
-Serial.print(dcm.roll_sensor, DEC);	Serial.printf_P(PSTR("\t"));
-Serial.print(dcm.pitch_sensor, DEC);	Serial.printf_P(PSTR("\t"));
-Serial.print(dcm.yaw_sensor, DEC);	Serial.printf_P(PSTR("\t"));
+Serial.print(ahrs.roll_sensor, DEC);	Serial.printf_P(PSTR("\t"));
+Serial.print(ahrs.pitch_sensor, DEC);	Serial.printf_P(PSTR("\t"));
+Serial.print(ahrs.yaw_sensor, DEC);	Serial.printf_P(PSTR("\t"));
 Vector3f tempaccel = imu.get_accel();
 Serial.print(tempaccel.x, DEC);	Serial.printf_P(PSTR("\t"));
 Serial.print(tempaccel.y, DEC);	Serial.printf_P(PSTR("\t"));
@@ -850,7 +846,7 @@ Serial.println(tempaccel.z, DEC);
 
 			#if HIL_MODE != HIL_MODE_ATTITUDE
 				if ((g.log_bitmask & MASK_LOG_ATTITUDE_MED) && !(g.log_bitmask & MASK_LOG_ATTITUDE_FAST))
-					Log_Write_Attitude((int)dcm.roll_sensor, (int)dcm.pitch_sensor, (uint16_t)dcm.yaw_sensor);
+					Log_Write_Attitude((int)ahrs.roll_sensor, (int)ahrs.pitch_sensor, (uint16_t)ahrs.yaw_sensor);
 
 				if (g.log_bitmask & MASK_LOG_CTUN)
 					Log_Write_Control_Tuning();
