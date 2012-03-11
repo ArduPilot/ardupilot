@@ -565,7 +565,7 @@ static void set_failsafe(boolean mode)
 static void
 init_simple_bearing()
 {
-	initial_simple_bearing = dcm.yaw_sensor;
+	initial_simple_bearing = ahrs.yaw_sensor;
 }
 
 static void update_throttle_cruise()
