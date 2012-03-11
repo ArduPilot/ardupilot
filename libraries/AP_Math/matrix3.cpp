@@ -44,6 +44,7 @@ void Matrix3<T>::rotation(enum Rotation r)
 {
     switch (r) {
     case ROTATION_NONE:
+    case ROTATION_MAX:
 	    *this = MATRIX_ROTATION_NONE;
 	    break;
     case ROTATION_YAW_45:

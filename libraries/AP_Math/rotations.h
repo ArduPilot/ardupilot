@@ -17,6 +17,12 @@
  * with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+
+// these rotations form a full set - every rotation in the following
+// list when combined with another in the list forms an entry which is
+// also in the list. This is an important property. Please run the
+// rotations test suite if you add to the list.
+
 // these rotation values are stored to EEPROM, so be careful not to
 // change the numbering of any existing entry when adding a new entry.
 enum Rotation {
@@ -35,5 +41,6 @@ enum Rotation {
 	ROTATION_PITCH_180,
 	ROTATION_ROLL_180_YAW_225,
 	ROTATION_ROLL_180_YAW_270,
-	ROTATION_ROLL_180_YAW_315
+	ROTATION_ROLL_180_YAW_315,
+    ROTATION_MAX
 };
