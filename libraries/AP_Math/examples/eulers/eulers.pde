@@ -17,6 +17,8 @@ FastSerialPort(Serial, 0);
 #include <Arduino_Mega_ISR_Registry.h>
 #include <AP_PeriodicProcess.h>
 #include <AP_ADC.h>
+#include <SPI.h>
+#include <I2C.h>
 #include <AP_Baro.h>
 #include <AP_Compass.h>
 #include <AP_GPS.h>
