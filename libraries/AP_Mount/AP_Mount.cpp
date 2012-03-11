@@ -4,28 +4,13 @@
 
 extern RC_Channel_aux* g_rc_function[RC_Channel_aux::k_nr_aux_servo_functions];	// the aux. servo ch. assigned to each function
 
-AP_Mount::AP_Mount(GPS *gps, AP_DCM *dcm)
+AP_Mount::AP_Mount(GPS *gps, AP_AHRS *ahrs)
 {
-	_dcm=dcm;
-	_dcm_hil=NULL;
+	_ahrs=ahrs;
 	_gps=gps;
 	//set_mode(MAV_MOUNT_MODE_RETRACT);
 	//set_mode(MAV_MOUNT_MODE_RC_TARGETING); // FIXME: This is just to test without mavlink
 	set_mode(MAV_MOUNT_MODE_GPS_POINT); // FIXME: this is to test ONLY targeting
-
-	_retract_angles.x=0;
-	_retract_angles.y=0;
-	_retract_angles.z=0;
-}
-
-AP_Mount::AP_Mount(GPS *gps, AP_DCM_HIL *dcm)
-{
-	_dcm=NULL;
-	_dcm_hil=dcm;
-	_gps=gps;
-	//set_mode(MAV_MOUNT_MODE_RETRACT);
-	//set_mode(MAV_MOUNT_MODE_RC_TARGETING); // FIXME: This is just to test without mavlink
-	set_mode(MAV_MOUNT_MODE_MAVLINK_TARGETING); // FIXME: this is to test ONLY targeting
 
 	_retract_angles.x=0;
 	_retract_angles.y=0;
@@ -88,7 +73,8 @@ void AP_Mount::update_mount_position()
 		aux_vec.x = _mavlink_angles.x;
 		aux_vec.y = _mavlink_angles.y;
 		aux_vec.z = _mavlink_angles.z;
-		m = _dcm?_dcm->get_dcm_transposed():_dcm_hil->get_dcm_transposed();
+		m = _ahrs->get_dcm_matrix();
+		m.transpose();
 		//rotate vector
 		targ = m*aux_vec;
 		// TODO The next three lines are probably not correct yet
@@ -101,17 +87,11 @@ void AP_Mount::update_mount_position()
 	case MAV_MOUNT_MODE_RC_TARGETING:  // radio manual control
 	{
 		// TODO It does work, but maybe is a good idea to replace this simplified implementation with a proper one
-		if (_dcm)
+		if (_ahrs)
 		{
-			roll_angle  = -_dcm->roll_sensor;
-			pitch_angle = -_dcm->pitch_sensor;
-			yaw_angle   = -_dcm->yaw_sensor;
-		}
-		if (_dcm_hil)
-		{
-			roll_angle  = -_dcm_hil->roll_sensor;
-			pitch_angle = -_dcm_hil->pitch_sensor;
-			yaw_angle   = -_dcm_hil->yaw_sensor;
+			roll_angle  = -_ahrs->roll_sensor;
+			pitch_angle = -_ahrs->pitch_sensor;
+			yaw_angle   = -_ahrs->yaw_sensor;
 		}
 		if (g_rc_function[RC_Channel_aux::k_mount_roll])
 			roll_angle  = rc_map(g_rc_function[RC_Channel_aux::k_mount_roll]);
@@ -128,7 +108,8 @@ void AP_Mount::update_mount_position()
 		{
 			calc_GPS_target_vector(&_target_GPS_location);
 		}
-		m = (_dcm)?_dcm->get_dcm_transposed():_dcm_hil->get_dcm_transposed();
+		m = _ahrs->get_dcm_matrix();
+		m.transpose();
 		targ = m*_GPS_vector;
 		/* disable stabilization for now, this will help debug */
 		_stab_roll = 0;_stab_pitch=0;_stab_yaw=0;
