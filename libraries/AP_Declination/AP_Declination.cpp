@@ -76,10 +76,10 @@ AP_Declination::get_declination(float lat, float lon)
 	latmin_index= (90+latmin)/5;
 	lonmin_index= (180+lonmin)/5;
 
-	decSW = (int16_t)pgm_read_byte_far(&dec_tbl[latmin_index][lonmin_index]);
-	decSE = (int16_t)pgm_read_byte_far(&dec_tbl[latmin_index][lonmin_index+1]);
-	decNE = (int16_t)pgm_read_byte_far(&dec_tbl[latmin_index+1][lonmin_index+1]);
-	decNW = (int16_t)pgm_read_byte_far(&dec_tbl[latmin_index+1][lonmin_index]);
+	decSW = (int16_t)pgm_read_word_far(&dec_tbl[latmin_index][lonmin_index]);
+	decSE = (int16_t)pgm_read_word_far(&dec_tbl[latmin_index][lonmin_index+1]);
+	decNE = (int16_t)pgm_read_word_far(&dec_tbl[latmin_index+1][lonmin_index+1]);
+	decNW = (int16_t)pgm_read_word_far(&dec_tbl[latmin_index+1][lonmin_index]);
 
 	/* approximate declination within the grid using bilinear interpolation */
 	decmin = (lon - lonmin) / 5 * (decSE - decSW) + decSW;
