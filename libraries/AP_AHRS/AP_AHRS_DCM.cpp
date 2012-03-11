@@ -161,7 +161,7 @@ void
 AP_DCM::matrix_reset(bool recover_eulers)
 {
 	if (_compass != NULL) {
-		_compass->null_offsets_disable();		
+		_compass->null_offsets_disable();
 	}
 
 	// reset the integration terms
