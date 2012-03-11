@@ -27,8 +27,6 @@ public:
 
 	/// Constructor
 	///
-	/// @param  key         Storage key used for configuration data.
-	///
 	Compass();
 
 	/// Initialize the compass device.
