@@ -226,7 +226,7 @@
 	    <field name="breach_time" type="uint32_t">time of last breach in milliseconds since boot</field>
 	  </message>
 
-	  <message name="DCM" id="163">
+	  <message name="AHRS" id="163">
 	    <description>Status of DCM attitude estimator</description>
             <field type="float" name="omegaIx">X gyro drift estimate rad/s</field>
             <field type="float" name="omegaIy">Y gyro drift estimate rad/s</field>
