@@ -66,7 +66,6 @@ http://code.google.com/p/ardupilot-mega/downloads/list
 #include <AP_ADC.h>         // ArduPilot Mega Analog to Digital Converter Library
 #include <AP_AnalogSource.h>
 #include <AP_Baro.h>
-#include <AP_Declination.h> // ArduPilot Mega Declination Helper Library
 #include <AP_Compass.h>     // ArduPilot Mega Magnetometer Library
 #include <AP_Math.h>        // ArduPilot Mega Vector/Matrix math Library
 #include <AP_InertialSensor.h> // ArduPilot Mega Inertial Sensor (accel & gyro) Library
@@ -96,6 +95,11 @@ http://code.google.com/p/ardupilot-mega/downloads/list
 // Local modules
 #include "Parameters.h"
 #include "GCS.h"
+
+#if AUTOMATIC_DECLINATION == ENABLED
+// this is in an #if to avoid the static data
+#include <AP_Declination.h> // ArduPilot Mega Declination Helper Library
+#endif
 
 ////////////////////////////////////////////////////////////////////////////////
 // Serial ports
@@ -1375,17 +1379,12 @@ static void update_GPS(void)
 				ground_start_count = 5;
 
 			}else{
-				// If we have a compass installed
-				if(g.compass_enabled)
-				{
+#if AUTOMATIC_DECLINATION == ENABLED
+				if(g.compass_enabled) {
 					// Set compass declination automatically
-					if(compass.set_initial_location(g_gps->latitude, g_gps->longitude, AUTOMATIC_DECLINATION == ENABLED))
-					{
-						// Report if an update was made
-						report_compass();
-					}
+					compass.set_initial_location(g_gps->latitude, g_gps->longitude, false);
 				}
-
+#endif
 				// save home to eeprom (we must have a good fix to have reached this point)
 				init_home();
 				ground_start_count = 0;
