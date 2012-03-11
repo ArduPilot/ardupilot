@@ -3,11 +3,6 @@
 #ifndef AP_Declination_h
 #define AP_Declination_h
 
-// Just incase it wasn't included elsewhere
-#include <avr/pgmspace.h>
-#include <math.h>
-#include "../AP_Common/AP_Common.h"
-
 /*
  *	Adam M Rivera
  *	With direction from: Andrew Tridgell, Jason Short, Justin Beech
@@ -23,4 +18,4 @@ public:
 	static float get_declination(float lat, float lon);
 };
 
-#endif
+#endif // AP_Declination_h

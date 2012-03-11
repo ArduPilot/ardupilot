@@ -1,6 +1,4 @@
 /// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
-#include "AP_Declination.h"
-
 /*
  *	Adam M Rivera
  *	With direction from: Andrew Tridgell, Jason Short, Justin Beech
@@ -9,7 +7,18 @@
  *	Scott Ferguson
  *	scottfromscott@gmail.com
  *
+
+ This library is free software; you can redistribute it and/or
+ modify it under the terms of the GNU Lesser General Public License
+ as published by the Free Software Foundation; either version 2.1
+ of the License, or (at your option) any later version.
 */
+
+#include <FastSerial.h>
+#include <AP_Common.h>
+#include <AP_Declination.h>
+#include <avr/pgmspace.h>
+#include <math.h>
 
 static const int8_t dec_tbl[37][73] PROGMEM = \
 {{150,145,140,135,130,125,120,115,110,105,100,95,90,85,80,75,70,65,60,55,50,45,40,35,30,25,20,15,10,5,0,-4,-9,-14,-19,-24,-29,-34,-39,-44,-49,-54,-59,-64,-69,-74,-79,-84,-89,-94,-99,104,109,114,119,124,129,134,139,144,149,154,159,164,169,174,179,175,170,165,160,155,150}, \
