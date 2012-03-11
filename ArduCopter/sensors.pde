@@ -93,7 +93,7 @@ static void init_compass()
         Serial.println_P(PSTR("COMPASS INIT ERROR"));
         return;
     }
-    dcm.set_compass(&compass);
+    ahrs.set_compass(&compass);
     compass.null_offsets_enable();
 }
 
