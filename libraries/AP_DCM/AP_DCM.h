@@ -26,7 +26,7 @@ public:
 	// Constructors
 	AP_DCM(IMU *imu, GPS *&gps) :
 		_kp_roll_pitch(0.13),
-		_kp_yaw(0.8),
+		_kp_yaw(0.4),
 		_gps(gps),
 		_imu(imu),
 		_dcm_matrix(1, 0, 0,
