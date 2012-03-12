@@ -341,6 +341,9 @@ static const char* flight_mode_strings[] = {
 static int16_t x_actual_speed;
 static int16_t y_actual_speed;
 
+static int16_t x_rate_d;
+static int16_t y_rate_d;
+
 // The difference between the desired rate of travel and the actual rate of travel
 // updated after GPS read - 5-10hz
 static int16_t x_rate_error;
@@ -522,6 +525,9 @@ int32_t pitch_axis;
 // Filters
 AverageFilterInt32_Size3 roll_rate_d_filter;	// filtered acceleration
 AverageFilterInt32_Size3 pitch_rate_d_filter;	// filtered pitch acceleration
+
+AverageFilterInt16_Size3 lat_rate_d_filter;		// for filtering D term
+AverageFilterInt16_Size3 lon_rate_d_filter;		// for filtering D term
 
 // Barometer filter
 AverageFilterInt32_Size5 baro_filter;	// filtered pitch acceleration
