@@ -157,7 +157,7 @@ namespace WebCamService
                 Start();
 
                 // Start waiting
-                if ( ! m_PictureReady.WaitOne(2000, false) )
+                if ( ! m_PictureReady.WaitOne(5000, false) )
                 {
                     throw new Exception("Timeout waiting to get picture");
                 }

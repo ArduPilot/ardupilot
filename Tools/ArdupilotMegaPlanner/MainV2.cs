@@ -261,36 +261,54 @@ namespace ArdupilotMega
 
         private string[] GetPortNames()
         {
-            string[] devs = new string[0];
+            string[] monoDevs = new string[0];
 
-
-            log.Debug("Geting Comports");
+            log.Debug("Getting Comports");
 
             if (MONO)
             {
                 if (Directory.Exists("/dev/"))
                 {
                     if (Directory.Exists("/dev/serial/by-id/"))
-                        devs = Directory.GetFiles("/dev/serial/by-id/", "*");
-                    devs = Directory.GetFiles("/dev/", "*ACM*");
-                    devs = Directory.GetFiles("/dev/", "ttyUSB*");
+                        monoDevs = Directory.GetFiles("/dev/serial/by-id/", "*");
+                    monoDevs = Directory.GetFiles("/dev/", "*ACM*");
+                    monoDevs = Directory.GetFiles("/dev/", "ttyUSB*");
                 }
             }
 
-            string[] ports = SerialPort.GetPortNames();
+            string[] ports = SerialPort.GetPortNames()
+                .Select(p=>p.TrimEnd())
+                .Select(FixBlueToothPortNameBug)
+                .ToArray();
 
-            for (int a = 0; a < ports.Length; a++)
-            {
-                ports[a] = ports[a].TrimEnd();
-            }
+            string[] allPorts = new string[monoDevs.Length + ports.Length];
 
-            string[] all = new string[devs.Length + ports.Length];
+            monoDevs.CopyTo(allPorts, 0);
+            ports.CopyTo(allPorts, monoDevs.Length);
 
-            devs.CopyTo(all, 0);
-            ports.CopyTo(all, devs.Length);
-
-            return all;
+            return allPorts;
         }
+
+         // .NET bug: sometimes bluetooth ports are enumerated with bogus characters 
+         // eg 'COM10' becomes 'COM10c' - one workaround is to remove the non numeric  
+         // char. Annoyingly, sometimes a numeric char is added, which means this 
+         // does not work in all cases. 
+         // See http://connect.microsoft.com/VisualStudio/feedback/details/236183/system-io-ports-serialport-getportnames-error-with-bluetooth 
+         private string FixBlueToothPortNameBug(string portName) 
+         { 
+             if (!portName.StartsWith("COM")) 
+                 return portName; 
+             var newPortName = "COM";                                // Start over with "COM" 
+             foreach (var portChar in portName.Substring(3).ToCharArray())  //  Remove "COM", put the rest in a character array 
+             { 
+                 if (char.IsDigit(portChar)) 
+                     newPortName += portChar.ToString(); // Good character, append to portName 
+                 else 
+                     log.WarnFormat("Bad (Non Numeric) character in port name '{0}' - removing", portName); 
+             } 
+ 
+             return newPortName; 
+         } 
 
         internal void ScreenShot()
         {
@@ -526,10 +544,11 @@ namespace ArdupilotMega
                 comPort.BaseStream.StopBits = (StopBits)Enum.Parse(typeof(StopBits), "1");
                 comPort.BaseStream.Parity = (Parity)Enum.Parse(typeof(Parity), "None");
 
-                comPort.BaseStream.DtrEnable = false;
-
                 if (config["CHK_resetapmonconnect"] == null || bool.Parse(config["CHK_resetapmonconnect"].ToString()) == true)
                     comPort.BaseStream.toggleDTR();
+
+                comPort.BaseStream.DtrEnable = false;
+                comPort.BaseStream.RtsEnable = false;
 
                 try
                 {
