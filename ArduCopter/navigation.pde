@@ -136,7 +136,7 @@ static void calc_loiter(int x_error, int y_error)
 	//x_target_speed	= constrain(x_target_speed, -250, 250);		// limit to 2.5m/s travel speed
 	x_rate_error 	= x_target_speed - x_actual_speed;			// calc the speed error
 	nav_lon			= g.pid_loiter_rate_lon.get_pi(x_rate_error, dTnav);
-	nav_lon			-= x_rate_d * (g.pid_loiter_rate_lon.kD() / dTnav);
+	nav_lon			+= x_rate_d * (g.pid_loiter_rate_lon.kD() / dTnav);
 	nav_lon			= constrain(nav_lon, -3000, 3000); 			// 30°
 
 	// North / South
@@ -144,7 +144,7 @@ static void calc_loiter(int x_error, int y_error)
 	//y_target_speed	= constrain(y_target_speed, -250, 250);
 	y_rate_error 	= y_target_speed - y_actual_speed;
 	nav_lat			= g.pid_loiter_rate_lat.get_pi(y_rate_error, dTnav);
-	nav_lat			-= y_rate_d * (g.pid_loiter_rate_lat.kD() / dTnav);
+	nav_lat			+= y_rate_d * (g.pid_loiter_rate_lat.kD() / dTnav);
 	nav_lat			= constrain(nav_lat, -3000, 3000); // 30°
 
 	// copy over I term to Nav_Rate
