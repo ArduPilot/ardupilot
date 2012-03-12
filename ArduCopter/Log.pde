@@ -701,7 +701,7 @@ static void Log_Write_Attitude()
 	DataFlash.WriteInt((int)dcm.pitch_sensor);		// 4
 	DataFlash.WriteInt(g.rc_4.control_in);			// 5
 	DataFlash.WriteInt((uint16_t)dcm.yaw_sensor);	// 6
-	DataFlash.WriteInt((uint16_t)(ToDeg(compass.heading)*100));	// 7
+	DataFlash.WriteInt((uint16_t)(wrap_360(ToDeg(compass.heading)*100)));	// 7
 
 	DataFlash.WriteByte(END_BYTE);
 }
