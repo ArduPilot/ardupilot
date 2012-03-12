@@ -321,22 +321,16 @@ void AP_AHRS_Quaternion::update(void)
 
 	// get current IMU state
 	gyro = _imu->get_gyro();
-	accel = _imu->get_accel();
 
-	// Quaternion code uses opposite x and y gyro sense from the
-	// rest of APM
-	gyro.x = -gyro.x;
-	gyro.y = -gyro.y;
-
-	// Quaternion code uses opposite z accel as well
-	accel.z = -accel.z;
+	// the quaternion system uses opposite sign for accel
+	accel = - _imu->get_accel();
 
 	if (_centripetal && _gps && _gps->status() == GPS::GPS_OK) {
 		// compensate for linear acceleration. This makes a
 		// surprisingly large difference in the pitch estimate when
 		// turning, plus on takeoff and landing
 		float acceleration = _gps->acceleration();
-		accel.x -= acceleration;
+		accel.x += acceleration;
 
 		// compensate for centripetal acceleration
 		float veloc;
@@ -344,12 +338,12 @@ void AP_AHRS_Quaternion::update(void)
 		// be careful of the signs in this calculation. the
 		// quaternion system uses different signs than the
 		// rest of APM
-		accel.y -= (gyro.z - gyro_bias.z) * veloc;
-		accel.z += (gyro.y - gyro_bias.y) * veloc;
+		accel.y += (gyro.z - gyro_bias.z) * veloc;
+		accel.z -= (gyro.y - gyro_bias.y) * veloc;
 	}
 
 	if (_compass != NULL && _compass->use_for_yaw()) {
-		Vector3f mag = Vector3f(_compass->mag_x, _compass->mag_y, - _compass->mag_z);
+		Vector3f mag = Vector3f(_compass->mag_x, _compass->mag_y, _compass->mag_z);
 		update_MARG(deltat, gyro, accel, mag);
 	} else {
 		// step the quaternion solution using just gyros and accels
