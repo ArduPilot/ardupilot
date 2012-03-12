@@ -107,7 +107,7 @@
 
 // default RC speed in Hz if INSTANT_PWM is not used
 #ifndef RC_FAST_SPEED
-# define RC_FAST_SPEED 400
+# define RC_FAST_SPEED 490
 #endif
 
 // LED and IO Pins
@@ -700,7 +700,7 @@
 # define NAV_P				3.0			//
 #endif
 #ifndef NAV_I
-# define NAV_I				0.25		// Wind control
+# define NAV_I				0.20		// Wind control
 #endif
 #ifndef NAV_D
 # define NAV_D				0.00		//
