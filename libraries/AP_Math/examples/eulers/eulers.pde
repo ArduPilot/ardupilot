@@ -27,6 +27,10 @@ AP_Baro_BMP085_HIL      barometer;
 AP_Compass_HIL     compass;
 #endif
 
+#if 0
+#include <AP_Declination.h>
+#endif
+
 static float rad_diff(float rad1, float rad2)
 {
     float diff = rad1 - rad2;
