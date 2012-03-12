@@ -34,12 +34,12 @@ void Quaternion::rotation_matrix(Matrix3f &m)
 
     m.a.x = 1-2*(q3q3 + q4q4);
     m.a.y =   2*(q2q3 - q1q4);
-    m.a.z = - 2*(q2q4 + q1q3);
+    m.a.z =   2*(q2q4 + q1q3);
     m.b.x =   2*(q2q3 + q1q4);
     m.b.y = 1-2*(q2q2 + q4q4);
-    m.b.z =  -2*(q3q4 - q1q2);
-    m.c.x =  -2*(q2q4 - q1q3);
-    m.c.y =  -2*(q3q4 + q1q2);
+    m.b.z =   2*(q3q4 - q1q2);
+    m.c.x =   2*(q2q4 - q1q3);
+    m.c.y =   2*(q3q4 + q1q2);
     m.c.z = 1-2*(q2q2 + q3q3);
 }
 
@@ -61,10 +61,8 @@ void Quaternion::from_euler(float roll, float pitch, float yaw)
     float cr2 = cos(roll*0.5);
     float cp2 = cos(pitch*0.5);
     float cy2 = cos(yaw*0.5);
-    // the sign reversal here is due to the different conventions
-    // in the madgwick quaternion code and the rest of APM
-    float sr2 = -sin(roll*0.5);
-    float sp2 = -sin(pitch*0.5);
+    float sr2 = sin(roll*0.5);
+    float sp2 = sin(pitch*0.5);
     float sy2 = sin(yaw*0.5);
 
     q1 = cr2*cp2*cy2 + sr2*sp2*sy2;
@@ -77,12 +75,12 @@ void Quaternion::from_euler(float roll, float pitch, float yaw)
 void Quaternion::to_euler(float *roll, float *pitch, float *yaw)
 {
     if (roll) {
-        *roll = -(atan2(2.0*(q1*q2 + q3*q4),
-                        1 - 2.0*(q2*q2 + q3*q3)));
+        *roll = (atan2(2.0*(q1*q2 + q3*q4),
+                       1 - 2.0*(q2*q2 + q3*q3)));
     }
     if (pitch) {
         // we let safe_asin() handle the singularities near 90/-90 in pitch
-        *pitch = -safe_asin(2.0*(q1*q3 - q4*q2));
+        *pitch = safe_asin(2.0*(q1*q3 - q4*q2));
     }
     if (yaw) {
         *yaw = atan2(2.0*(q1*q4 + q2*q3),
