@@ -2202,8 +2202,8 @@ static void update_nav_wp()
 		// or change Loiter position
 
 		// We bring copy over our Iterms for wind control, but we don't navigate
-		nav_lon	= g.pi_loiter_lon.get_integrator();
-		nav_lat = g.pi_loiter_lat.get_integrator();
+		nav_lon	= g.pid_loiter_rate_lon.get_integrator();
+		nav_lat = g.pid_loiter_rate_lon.get_integrator();
 
 		// rotate pitch and roll to the copter frame of reference
 		calc_loiter_pitch_roll();
