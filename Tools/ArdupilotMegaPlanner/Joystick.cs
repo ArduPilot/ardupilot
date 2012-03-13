@@ -117,7 +117,7 @@ namespace ArdupilotMega
 
             joystick.Acquire();
 
-            System.Windows.Forms.MessageBox.Show("Please ensure you have calibrated your joystick in Windows first");
+            System.Windows.Forms.CustomMessageBox.Show("Please ensure you have calibrated your joystick in Windows first");
 
             joystick.Poll();
 
@@ -133,7 +133,7 @@ namespace ArdupilotMega
             values["Slider1"] = obj.GetSlider()[0];
             values["Slider2"] = obj.GetSlider()[1];
 
-            System.Windows.Forms.MessageBox.Show("Please move the joystick axis you want assigned to this function after clicking ok");
+            System.Windows.Forms.CustomMessageBox.Show("Please move the joystick axis you want assigned to this function after clicking ok");
 
             DateTime start = DateTime.Now;
 
@@ -178,7 +178,7 @@ namespace ArdupilotMega
                 }
             }
 
-            System.Windows.Forms.MessageBox.Show("No valid option was detected");
+            System.Windows.Forms.CustomMessageBox.Show("No valid option was detected");
             
             return joystickaxis.None;
         }
@@ -210,7 +210,7 @@ namespace ArdupilotMega
 
             joystick.Poll();
 
-            System.Windows.Forms.MessageBox.Show("Please press the joystick button you want assigned to this function after clicking ok");
+            System.Windows.Forms.CustomMessageBox.Show("Please press the joystick button you want assigned to this function after clicking ok");
 
             DateTime start = DateTime.Now;
 
@@ -228,7 +228,7 @@ namespace ArdupilotMega
                 }
             }
 
-            System.Windows.Forms.MessageBox.Show("No valid option was detected");
+            System.Windows.Forms.CustomMessageBox.Show("No valid option was detected");
 
             return -1;
         }
@@ -332,7 +332,7 @@ namespace ArdupilotMega
                                     MainV2.comPort.setMode(mode); 
 
                                 }
-                                catch { System.Windows.Forms.MessageBox.Show("Failed to change Modes"); }
+                                catch { System.Windows.Forms.CustomMessageBox.Show("Failed to change Modes"); }
                             });
                         }
                     }

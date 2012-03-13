@@ -28,14 +28,12 @@ class AP_ADC_ADS7844 : public AP_ADC
 	float Ch(unsigned char ch_num);
 
 	// Read 6 sensors at once
-	uint32_t Ch6(const uint8_t *channel_numbers, uint16_t *result);
-	bool	filter_result;
+	uint32_t Ch6(const uint8_t *channel_numbers, float *result);
+
+    // check if Ch6 would block
+	bool new_data_available(const uint8_t *channel_numbers);
 
 	private:
-	uint16_t 		_filter_accel[3][ADC_ACCEL_FILTER_SIZE];
-	uint16_t 		_prev_gyro[3];
-	uint16_t 		_prev_accel[3];
-	uint8_t			_filter_index_accel;
 	static void read(uint32_t);
 
 };

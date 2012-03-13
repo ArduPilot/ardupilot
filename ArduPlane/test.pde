@@ -534,7 +534,8 @@ test_imu(uint8_t argc, const Menu::arg *argv)
 				medium_loopCounter++;
 				if(medium_loopCounter == 5){
 					if (compass.read()) {
-                        compass.calculate(dcm.get_dcm_matrix());		// Calculate heading
+                        // Calculate heading
+                        compass.calculate(dcm.get_dcm_matrix());
                     }
                     medium_loopCounter = 0;
 				}
@@ -599,8 +600,10 @@ test_mag(uint8_t argc, const Menu::arg *argv)
             medium_loopCounter++;
             if(medium_loopCounter == 5){
                 if (compass.read()) {
-                    compass.calculate(dcm.get_dcm_matrix());		// Calculate heading
-                    compass.null_offsets(dcm.get_dcm_matrix());
+                    // Calculate heading
+                    Matrix3f m = dcm.get_dcm_matrix();
+                    compass.calculate(m);
+                    compass.null_offsets(m);
                 }
                 medium_loopCounter = 0;
             }

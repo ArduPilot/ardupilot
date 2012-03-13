@@ -2,7 +2,7 @@
 
 AUTOTESTDIR=$(dirname $0)
 
-fgfs \
+nice fgfs \
     --native-fdm=socket,in,10,,5503,udp \
     --fdm=external \
     --aircraft=Rascal110-JSBSim \

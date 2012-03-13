@@ -18,16 +18,16 @@ AP_OpticalFlow* AP_OpticalFlow::_sensor = NULL;  // pointer to the last instanti
 bool
 AP_OpticalFlow::init(bool initCommAPI)
 {
-	_orientation_matrix = Matrix3f(1, 0, 0, 0, 1, 0, 0, 0, 1);
-    update_conversion_factors();
-    return true;  // just return true by default
+	_orientation = ROTATION_NONE;
+	update_conversion_factors();
+	return true;  // just return true by default
 }
 
 // set_orientation - Rotation vector to transform sensor readings to the body frame.
 void
-AP_OpticalFlow::set_orientation(const Matrix3f &rotation_matrix)
+AP_OpticalFlow::set_orientation(enum Rotation rotation)
 {
-    _orientation_matrix = rotation_matrix;
+    _orientation = rotation;
 }
 
 // read value from the sensor.  Should be overridden by derived class
@@ -54,10 +54,12 @@ AP_OpticalFlow::write_register(byte address, byte value)
 void
 AP_OpticalFlow::apply_orientation_matrix()
 {
-    Vector3f rot_vector;
+	Vector3f rot_vector;
+	rot_vector(raw_dx, raw_dy, 0);
 
 	// next rotate dx and dy
-	rot_vector = _orientation_matrix * Vector3f(raw_dx, raw_dy, 0);
+	rot_vector.rotate(_orientation);
+
 	dx = rot_vector.x;
 	dy = rot_vector.y;
 

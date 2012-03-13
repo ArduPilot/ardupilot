@@ -33,6 +33,24 @@ GPS::update(void)
 
         // reset the idle timer
         _idleTimer = millis();
+
+		if (_status == GPS_OK) {
+			// update our acceleration
+			float deltat = 1.0e-3 * (_idleTimer - last_fix_time);
+			float deltav = 1.0e-2 * ((float)ground_speed - (float)_last_ground_speed);
+			last_fix_time = _idleTimer;
+			_last_ground_speed = ground_speed;
+
+			if (deltat > 2.0 || deltat == 0) {
+				// we didn't get a fix for 2 seconds - set
+				// acceleration to zero, as the estimate will be too
+				// far out
+				_acceleration = 0;
+			} else {
+				// calculate a mildly smoothed acceleration value
+				_acceleration = (0.7 * _acceleration) + (0.3 * (deltav/deltat));
+			}
+		}
     }
 }
 

@@ -71,16 +71,6 @@ bool AP_Compass_HMC5843::write_register(uint8_t address, byte value)
    return true;
 }
 
-/*
-  the 5883L has a different orientation to the 5843. This allows us to
-  use a single MAG_ORIENTATION for both
- */
-static void rotate_for_5883L(AP_Matrix3f *_orientation_matrix)
-{
-		_orientation_matrix->set_and_save(_orientation_matrix->get() * Matrix3f(ROTATION_YAW_90));
-}
-
-
 // Read Sensor data
 bool AP_Compass_HMC5843::read_raw()
 {
@@ -148,20 +138,11 @@ AP_Compass_HMC5843::init()
   }
   if ( _base_config == (SampleAveraging_8<<5 | DataOutputRate_75HZ<<2 | NormalOperation)) {
 	 // a 5883L supports the sample averaging config
-	 int old_product_id = product_id;
-
 	 product_id = AP_COMPASS_TYPE_HMC5883L;
 	 calibration_gain = 0x60;
 	 expected_x = 766;
 	 expected_yz  = 713;
 	 gain_multiple = 660.0 / 1090; // adjustment for runtime vs calibration gain
-
-	 if (old_product_id != product_id) {
-		/* now we know the compass type we need to rotate the
-		 * orientation matrix that we were given
-		 */
-		rotate_for_5883L(&_orientation_matrix);
-	 }
   } else if (_base_config == (NormalOperation | DataOutputRate_75HZ<<2)) {
       product_id = AP_COMPASS_TYPE_HMC5843;
   } else {
@@ -279,12 +260,16 @@ bool AP_Compass_HMC5843::read()
    mag_y *= calibration[1];
    mag_z *= calibration[2];
 
-   last_update = millis();  // record time of update
-   // rotate and offset the magnetometer values
-   // XXX this could well be done in common code...
+   last_update = micros();  // record time of update
 
-   Vector3f rot_mag = _orientation_matrix.get() * Vector3f(mag_x,mag_y,mag_z);
-   rot_mag = rot_mag + _offset.get();
+   // rotate to the desired orientation
+   Vector3f rot_mag = Vector3f(mag_x,mag_y,mag_z);
+   if (product_id == AP_COMPASS_TYPE_HMC5883L) {
+	  rot_mag.rotate(ROTATION_YAW_90);
+   }
+   rot_mag.rotate(_orientation);
+
+   rot_mag += _offset.get();
    mag_x = rot_mag.x;
    mag_y = rot_mag.y;
    mag_z = rot_mag.z;
@@ -295,10 +280,7 @@ bool AP_Compass_HMC5843::read()
 
 // set orientation
 void
-AP_Compass_HMC5843::set_orientation(const Matrix3f &rotation_matrix)
+AP_Compass_HMC5843::set_orientation(enum Rotation rotation)
 {
-   _orientation_matrix.set_and_save(rotation_matrix);
-    if (product_id == AP_COMPASS_TYPE_HMC5883L) {
-		rotate_for_5883L(&_orientation_matrix);
-	}
+   _orientation = rotation;
 }

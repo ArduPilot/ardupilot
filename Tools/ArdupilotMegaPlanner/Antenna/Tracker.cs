@@ -19,7 +19,7 @@ namespace ArdupilotMega.Antenna
         {
             InitializeComponent();
 
-            MainV2.fixtheme(this);
+            ThemeManager.ApplyThemeTo(this);
 
             CMB_serialport.DataSource = SerialPort.GetPortNames();
 
@@ -54,7 +54,7 @@ namespace ArdupilotMega.Antenna
                     BaudRate = int.Parse(CMB_baudrate.Text)
                 };
             }
-            catch (Exception ex) { MessageBox.Show("Bad Port settings " + ex.Message); return; }
+            catch (Exception ex) { CustomMessageBox.Show("Bad Port settings " + ex.Message); return; }
 
             try
             {
@@ -67,7 +67,7 @@ namespace ArdupilotMega.Antenna
                 tracker.TrimTilt = TRK_tilttrim.Value;
 
             }
-            catch (Exception ex) { MessageBox.Show("Bad User input " + ex.Message); return; }
+            catch (Exception ex) { CustomMessageBox.Show("Bad User input " + ex.Message); return; }
 
             if (tracker.Init())
             {
@@ -110,6 +110,26 @@ namespace ArdupilotMega.Antenna
         {
             if (tracker != null)
                 tracker.TrimTilt = TRK_tilttrim.Value;
+        }
+
+        private void TXT_panrange_TextChanged(object sender, EventArgs e)
+        {
+            int range;
+
+            int.TryParse(TXT_panrange.Text, out range);
+
+            TRK_pantrim.Minimum = range / 2 * -1;
+            TRK_pantrim.Maximum = range / 2;
+        }
+
+        private void TXT_tiltrange_TextChanged(object sender, EventArgs e)
+        {
+            int range;
+
+            int.TryParse(TXT_tiltrange.Text, out range);
+
+            TRK_tilttrim.Minimum = range / 2 * -1;
+            TRK_tilttrim.Maximum = range / 2;
         }
     }
 }

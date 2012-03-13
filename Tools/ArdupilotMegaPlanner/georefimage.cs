@@ -281,7 +281,7 @@ namespace ArdupilotMega
             sw2.Close();
             sw.Close();
 
-            MessageBox.Show("Done " + matchs + " matchs");
+            CustomMessageBox.Show("Done " + matchs + " matchs");
         }
 
         private void InitializeComponent()

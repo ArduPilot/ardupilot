@@ -108,7 +108,13 @@ public:
     /// 1200ms allows a small amount of slack over the worst-case 1Hz update
     /// rate.
     ///
-    unsigned long	idleTimeout;
+    uint32_t	idleTimeout;
+
+	// our approximate linear acceleration in m/s/s
+	float acceleration(void) { return _acceleration; }
+
+	// the time we got our last fix in system milliseconds
+	uint32_t last_fix_time;
 
 protected:
     Stream	*_port;			///< port the GPS is attached to
@@ -165,11 +171,16 @@ private:
 
     /// Last time that the GPS driver got a good packet from the GPS
     ///
-    unsigned long 				_idleTimer;
+    uint32_t 				_idleTimer;
 
     /// Our current status
     GPS_Status					_status;
 
+	// previous ground speed in cm/s
+    uint32_t _last_ground_speed;
+
+	// smoothed estimate of our acceleration
+	float _acceleration;
 };
 
 inline long

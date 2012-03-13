@@ -36,13 +36,13 @@ namespace ArdupilotMega.Antenna
 
             if ((PanStartRange - PanEndRange) == 0)
             {
-                System.Windows.Forms.MessageBox.Show("Invalid Pan Range", "Error");
+                System.Windows.Forms.CustomMessageBox.Show("Invalid Pan Range", "Error");
                 return false;
             }
 
             if ((TiltStartRange - TiltEndRange) == 0)
             {
-                System.Windows.Forms.MessageBox.Show("Invalid Tilt Range", "Error");
+                System.Windows.Forms.CustomMessageBox.Show("Invalid Tilt Range", "Error");
                 return false;
             }
 
@@ -50,7 +50,7 @@ namespace ArdupilotMega.Antenna
             {
                 ComPort.Open();
             }
-            catch (Exception ex) { System.Windows.Forms.MessageBox.Show("Connect failed " + ex.Message,"Error"); return false; }
+            catch (Exception ex) { System.Windows.Forms.CustomMessageBox.Show("Connect failed " + ex.Message,"Error"); return false; }
 
             return true;
         }

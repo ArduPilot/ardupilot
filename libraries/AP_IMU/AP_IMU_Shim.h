@@ -36,6 +36,8 @@ public:
 		return updated;
 	}
 	//@}
+
+	virtual bool new_data_available(void) { return true; }
 	
 	float		gx()				{ return 0; }
 	float		gy()				{ return 0; }
@@ -64,6 +66,8 @@ public:
 
 	// dummy save method
 	void		save(void) { }
+
+	float get_gyro_drift_rate(void) { return 0; }
 
 private:
 	/// set true when new data is delivered

@@ -20,6 +20,9 @@ class AP_InertialSensor
    */
   virtual bool update() = 0;
 
+  // check if the sensors have new data
+  virtual bool new_data_available(void) = 0;
+
   /* Getters for individual gyro axes.
    * Gyros have correct coordinate frame and units (degrees per second).
    */
@@ -54,6 +57,11 @@ class AP_InertialSensor
    */
   virtual uint32_t sample_time() = 0;
   virtual void reset_sample_time() = 0;
+
+  // return the maximum gyro drift rate in radians/s/s. This
+  // depends on what gyro chips are being used
+  virtual float get_gyro_drift_rate(void) = 0;
+
 };
 
 #include "AP_InertialSensor_Oilpan.h"

@@ -20,6 +20,7 @@ class AP_InertialSensor_MPU6000 : public AP_InertialSensor
 
   /* Concrete implementation of AP_InertialSensor functions: */
   bool update();
+  bool new_data_available();
   float gx();
   float gy();
   float gz();
@@ -32,6 +33,7 @@ class AP_InertialSensor_MPU6000 : public AP_InertialSensor
   float temperature();
   uint32_t sample_time();
   void reset_sample_time();
+  float get_gyro_drift_rate();
 
   private:
 

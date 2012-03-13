@@ -32,6 +32,8 @@
             this.BUT_redokml = new ArdupilotMega.MyButton();
             this.progressBar1 = new System.Windows.Forms.ProgressBar();
             this.BUT_humanreadable = new ArdupilotMega.MyButton();
+            this.BUT_graphmavlog = new ArdupilotMega.MyButton();
+            this.zg1 = new ZedGraph.ZedGraphControl();
             this.SuspendLayout();
             // 
             // BUT_redokml
@@ -53,10 +55,31 @@
             this.BUT_humanreadable.UseVisualStyleBackColor = true;
             this.BUT_humanreadable.Click += new System.EventHandler(this.BUT_humanreadable_Click);
             // 
+            // BUT_graphmavlog
+            // 
+            resources.ApplyResources(this.BUT_graphmavlog, "BUT_graphmavlog");
+            this.BUT_graphmavlog.Name = "BUT_graphmavlog";
+            this.BUT_graphmavlog.UseVisualStyleBackColor = true;
+            this.BUT_graphmavlog.Click += new System.EventHandler(this.BUT_graphmavlog_Click);
+            // 
+            // zg1
+            // 
+            resources.ApplyResources(this.zg1, "zg1");
+            this.zg1.Name = "zg1";
+            this.zg1.ScrollGrace = 0D;
+            this.zg1.ScrollMaxX = 0D;
+            this.zg1.ScrollMaxY = 0D;
+            this.zg1.ScrollMaxY2 = 0D;
+            this.zg1.ScrollMinX = 0D;
+            this.zg1.ScrollMinY = 0D;
+            this.zg1.ScrollMinY2 = 0D;
+            // 
             // MavlinkLog
             // 
             resources.ApplyResources(this, "$this");
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
+            this.Controls.Add(this.zg1);
+            this.Controls.Add(this.BUT_graphmavlog);
             this.Controls.Add(this.BUT_humanreadable);
             this.Controls.Add(this.progressBar1);
             this.Controls.Add(this.BUT_redokml);
@@ -71,5 +94,7 @@
         private MyButton BUT_redokml;
         private System.Windows.Forms.ProgressBar progressBar1;
         private MyButton BUT_humanreadable;
+        private MyButton BUT_graphmavlog;
+        private ZedGraph.ZedGraphControl zg1;
     }
 }

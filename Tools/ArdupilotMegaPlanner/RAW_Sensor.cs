@@ -190,47 +190,6 @@ namespace ArdupilotMega
             else { list6.Clear(); }
         }
 
-        public static string CustomMessageBox(string title, string promptText, string buttontext1, string buttontext2)
-        {
-            Form form = new Form();
-            System.Windows.Forms.Label label = new System.Windows.Forms.Label();
-            Button button1 = new Button();
-            Button button2 = new Button();
-
-            form.Text = title;
-            label.Text = promptText;
-
-            button1.Text = buttontext1;
-            button2.Text = buttontext2;
-            button1.DialogResult = DialogResult.OK;
-            button2.DialogResult = DialogResult.Cancel;
-
-            label.SetBounds(9, 10, 372, 13);
-            button1.SetBounds(228, 72, 75, 23);
-            button2.SetBounds(309, 72, 75, 23);
-
-            label.AutoSize = true;
-            button1.Anchor = AnchorStyles.Bottom | AnchorStyles.Right;
-            button2.Anchor = AnchorStyles.Bottom | AnchorStyles.Right;
-
-            form.ClientSize = new Size(396, 107);
-            form.Controls.AddRange(new Control[] { label, button1, button2 });
-            form.ClientSize = new Size(Math.Max(300, label.Right + 10), form.ClientSize.Height);
-            form.FormBorderStyle = FormBorderStyle.FixedDialog;
-            form.StartPosition = FormStartPosition.CenterScreen;
-            form.MinimizeBox = false;
-            form.MaximizeBox = false;
-            form.AcceptButton = button1;
-            form.CancelButton = button2;
-
-            DialogResult dialogResult = form.ShowDialog();
-            if (dialogResult == DialogResult.OK)
-            {
-                return buttontext1;
-            }
-            return buttontext2;
-        }
-
         private void ACM_Setup_Load(object sender, EventArgs e)
         {
 
@@ -274,7 +233,7 @@ namespace ArdupilotMega
 
                         if (!comPort.BaseStream.IsOpen && !MainV2.comPort.logreadmode)
                         {
-                            MessageBox.Show("Please connect first");
+                            CustomMessageBox.Show("Please connect first");
                             this.Close();
                         }
 
@@ -292,7 +251,7 @@ namespace ArdupilotMega
                     }
                     catch
                     {
-                        MessageBox.Show("Comport open failed");
+                        CustomMessageBox.Show("Comport open failed");
                         return;
                     }
                 timer1.Start();

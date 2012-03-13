@@ -11,7 +11,7 @@ $dir2 = "C:/Users/hog/Desktop/DIYDrones/ardupilot-mega/libraries/GCS_MAVLink/inc
 
 $fname = "MAVLinkTypes.cs";
 
-&doit();
+#&doit();
 
 <STDIN>;
 

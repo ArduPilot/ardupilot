@@ -72,13 +72,6 @@ static void read_trim_switch()
 			}
 		}
 
-	#elif CH7_OPTION == CH7_ADC_FILTER
-		if (g.rc_7.radio_in > CH_7_PWM_TRIGGER){
-			adc.filter_result = true;
-		}else{
-			adc.filter_result = false;
-		}
-
 	#elif CH7_OPTION == CH7_AUTO_TRIM
 		if (g.rc_7.radio_in > CH_7_PWM_TRIGGER){
 			auto_level_counter = 10;
@@ -186,9 +179,6 @@ static void auto_trim()
 
 			//Serial.println("Done");
 			auto_level_counter = 0;
-
-			// set TC
-			init_throttle_cruise();
 		}
 	}
 }

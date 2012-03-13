@@ -54,7 +54,7 @@ float AP_ADC_HIL::Ch(unsigned char ch_num)
 }
 
 // Read 6 channel values
-uint32_t AP_ADC_HIL::Ch6(const uint8_t *channel_numbers, uint16_t *result)
+uint32_t AP_ADC_HIL::Ch6(const uint8_t *channel_numbers, float *result)
 {
 	for (uint8_t i=0; i<6; i++) {
 		result[i] = Ch(channel_numbers[i]);
@@ -81,4 +81,10 @@ void AP_ADC_HIL::setHIL(int16_t p, int16_t q, int16_t r, int16_t gyroTemp,
 
     // differential pressure
 	setPressure(diffPress);
+}
+
+// see if new data is available
+bool AP_ADC_HIL::new_data_available(const uint8_t *channel_numbers)
+{
+	return true;
 }

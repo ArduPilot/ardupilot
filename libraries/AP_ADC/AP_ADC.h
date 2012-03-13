@@ -38,7 +38,10 @@ class AP_ADC
 	   The function returns the amount of time (in microseconds)
 	   since the last call to Ch6().
 	*/
-	virtual uint32_t Ch6(const uint8_t *channel_numbers, uint16_t *result) = 0;
+	virtual uint32_t Ch6(const uint8_t *channel_numbers, float *result) = 0;
+
+	// check if Ch6() can return new data
+	virtual bool new_data_available(const uint8_t *channel_numbers) = 0;
 
   private:
 };

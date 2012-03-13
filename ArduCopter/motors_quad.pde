@@ -100,21 +100,11 @@ static void output_motors_armed()
 	}
 	#endif
 
-	// this filter slows the acceleration of motors vs the deceleration
-	// Idea by Denny Rowland to help with his Yaw issue
-	for(int8_t i = MOT_1; i <= MOT_4; i++){
-		if(motor_filtered[i] < motor_out[i]){
-			motor_filtered[i] = (motor_out[i] + motor_filtered[i]) / 2;
-		}else{
-			// don't filter
-			motor_filtered[i] = motor_out[i];
-		}
-	}
+	APM_RC.OutputCh(MOT_1, motor_out[MOT_1]);
+	APM_RC.OutputCh(MOT_2, motor_out[MOT_2]);
+	APM_RC.OutputCh(MOT_3, motor_out[MOT_3]);
+	APM_RC.OutputCh(MOT_4, motor_out[MOT_4]);
 
-	APM_RC.OutputCh(MOT_1, motor_filtered[MOT_1]);
-	APM_RC.OutputCh(MOT_2, motor_filtered[MOT_2]);
-	APM_RC.OutputCh(MOT_3, motor_filtered[MOT_3]);
-	APM_RC.OutputCh(MOT_4, motor_filtered[MOT_4]);
 
 	#if INSTANT_PWM == 1
 	// InstantPWM

@@ -30,4 +30,6 @@ void sitl_update_adc(float roll, float pitch, float yaw,
 void sitl_setup_adc(void);
 void sitl_update_barometer(float altitude);
 
+void sitl_simstate_send(uint8_t chan);
+
 #endif

@@ -51,6 +51,7 @@ public:
 	virtual void		init_gyro(void (*delay_cb)(unsigned long t) = delay,
                                   void (*flash_leds_cb)(bool on) = NULL);
 	virtual bool		update(void);
+	virtual bool		new_data_available(void);
 
 	// for jason
 	virtual float		gx()				{ return _sensor_cal[0]; }
@@ -63,6 +64,7 @@ public:
 	virtual void		ax(const float v)		{ _sensor_cal[3] = v; }
 	virtual void		ay(const float v)		{ _sensor_cal[4] = v; }
 	virtual void		az(const float v)		{ _sensor_cal[5] = v; }
+    virtual float       get_gyro_drift_rate(void);
 
 private:
     AP_InertialSensor   *_ins;          ///< INS provides an axis and unit correct sensor source.
@@ -74,10 +76,8 @@ private:
 
     float _calibrated(uint8_t channel, float ins_value);
 
-	// Gyro and Accelerometer calibration criterial
+	// Gyro and Accelerometer calibration criteria
 	//
-	static const float		_gyro_total_cal_change = 4.0;		// Experimentally derived - allows for some minor motion
-	static const float		_gyro_max_cal_offset = 320.0;
 	static const float		_accel_total_cal_change = 4.0;
 	static const float		_accel_max_cal_offset = 250.0;
 

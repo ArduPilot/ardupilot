@@ -190,6 +190,7 @@ namespace ArdupilotMega
 
                             requestThread = new Thread(requestRunner);
                             requestThread.IsBackground = true;
+                            requestThread.Name = "SRTM request runner";
                             requestThread.Start();
                         }
                         else
