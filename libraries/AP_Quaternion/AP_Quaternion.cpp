@@ -3,7 +3,8 @@
 
 	See http://www.x-io.co.uk/res/doc/madgwick_internal_report.pdf
 
-	adapted to APM by Andrew Tridgell
+	adapted to APM by Andrew Tridgell based on initial idea,
+	discussions and prototype from Justin Beech.
 
 	This library is free software; you can redistribute it and/or
 	modify it under the terms of the GNU Lesser General Public
