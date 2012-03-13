@@ -526,8 +526,8 @@ int32_t pitch_axis;
 AverageFilterInt32_Size3 roll_rate_d_filter;	// filtered acceleration
 AverageFilterInt32_Size3 pitch_rate_d_filter;	// filtered pitch acceleration
 
-AverageFilterInt16_Size3 lat_rate_d_filter;		// for filtering D term
-AverageFilterInt16_Size3 lon_rate_d_filter;		// for filtering D term
+AverageFilterInt16_Size5 lat_rate_d_filter;		// for filtering D term
+AverageFilterInt16_Size5 lon_rate_d_filter;		// for filtering D term
 
 // Barometer filter
 AverageFilterInt32_Size5 baro_filter;	// filtered pitch acceleration
