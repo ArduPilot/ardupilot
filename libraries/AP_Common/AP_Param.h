@@ -22,7 +22,7 @@
 #define AP_MAX_NAME_SIZE 15
 #define AP_NESTED_GROUPS_ENABLED
 
-// a varient of offsetof() to work around C++ restrictions.
+// a variant of offsetof() to work around C++ restrictions.
 // this can only be used when the offset of a variable in a object
 // is constant and known at compile time
 #define AP_VAROFFSET(type, element) (((uintptr_t)(&((const type *)1)->element))-1)

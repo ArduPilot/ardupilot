@@ -28,7 +28,7 @@ namespace ArdupilotMega
 
             if (planlocs.Count <= 1)
             {
-                MessageBox.Show("Please plan something first");
+                CustomMessageBox.Show("Please plan something first");
                 return;
             }
 
@@ -113,7 +113,7 @@ namespace ArdupilotMega
 
             if (list.Count <= 2 || coords.Length > (2048 - 256) || distance > 50000)
             {
-                MessageBox.Show("To many/few WP's or to Big a Distance " + (distance/1000) + "km");
+                CustomMessageBox.Show("To many/few WP's or to Big a Distance " + (distance/1000) + "km");
                 return answer;
             }
 
@@ -145,7 +145,7 @@ namespace ArdupilotMega
                     }
                 }
             }
-            catch { MessageBox.Show("Error getting GE data"); }
+            catch { CustomMessageBox.Show("Error getting GE data"); }
 
             return answer;
         }

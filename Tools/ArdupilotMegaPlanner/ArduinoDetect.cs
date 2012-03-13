@@ -178,7 +178,7 @@ namespace ArdupilotMega
                         }
                         else
                         {
-                            if (DialogResult.Yes == MessageBox.Show("Is this a APM 2?", "APM 2", MessageBoxButtons.YesNo))
+                            if (DialogResult.Yes == CustomMessageBox.Show("Is this a APM 2?", "APM 2", MessageBoxButtons.YesNo))
                             {
                                 return "2560-2";
                             }

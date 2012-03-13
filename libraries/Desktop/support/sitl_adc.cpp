@@ -10,8 +10,8 @@
 #include <stdlib.h>
 #include <sys/types.h>
 #include <math.h>
-#include <AP_DCM.h>
 #include <AP_ADC.h>
+#include <avr/interrupt.h>
 #include "wiring.h"
 #include "sitl_adc.h"
 #include "desktop.h"
@@ -68,27 +68,16 @@ void sitl_update_adc(float roll, 	float pitch, 	float yaw,		// Relative to earth
 	static const float _sensor_signs[6] = { 1, -1, -1, 1, -1, -1 };
 	const float accel_offset = 2041;
 	const float gyro_offset = 1658;
-#define ToRad(x) (x*0.01745329252)  // *pi/180
 	const float _gyro_gain_x = ToRad(0.4);
 	const float _gyro_gain_y = ToRad(0.41);
 	const float _gyro_gain_z = ToRad(0.41);
 	const float _accel_scale = 9.80665 / 423.8;
 	double adc[7];
-	double phi, theta, phiDot, thetaDot, psiDot;
 	double p, q, r;
 
-	/* convert the angular velocities from earth frame to
-	   body frame. Thanks to James Goppert for the formula
-	*/
-	phi = ToRad(roll);
-	theta = ToRad(pitch);
-	phiDot = ToRad(rollRate);
-	thetaDot = ToRad(pitchRate);
-	psiDot = ToRad(yawRate);
-
-	p = phiDot - psiDot*sin(theta);
-	q = cos(phi)*thetaDot + sin(phi)*psiDot*cos(theta);
-	r = cos(phi)*psiDot*cos(theta) - sin(phi)*thetaDot;
+	convert_body_frame(roll, pitch,
+			   rollRate, pitchRate, yawRate,
+			   &p, &q, &r);
 
 	/* work out the ADC channel values */
 	adc[0] =  (p   / (_gyro_gain_x * _sensor_signs[0])) + gyro_offset;
@@ -103,39 +92,13 @@ void sitl_update_adc(float roll, 	float pitch, 	float yaw,		// Relative to earth
 	for (uint8_t i=0; i<6; i++) {
 		UDR2.set(sensor_map[i], adc[i]);
 	}
-
-	runInterrupt(6);
-
 	// set the airspeed sensor input
 	UDR2.set(7, airspeed_sensor(airspeed));
 
 	/* FIX: rubbish value for temperature for now */
 	UDR2.set(3, 2000);
 
-#if 0
-	extern AP_DCM_HIL dcm;
-	dcm.setHil(ToRad(roll), ToRad(pitch), ToRad(yaw),
-		   ToRad(rollRate), ToRad(pitchRate), ToRad(yawRate));
-
-#endif
-
-	static uint32_t last_report;
-	uint32_t tnow = millis();
-	extern AP_DCM dcm;
-	Vector3f omega = dcm.get_gyro();
-	// report roll/pitch discrepancies
-	if (tnow - last_report > 5000 ||
-	    (tnow - last_report > 1000 &&
-	     (fabs(roll - dcm.roll_sensor/100.0) > 5.0 ||
-	      fabs(pitch - dcm.pitch_sensor/100.0) > 5.0))) {
-		last_report = tnow;
-		/*printf("roll=%5.1f / %5.1f  pitch=%5.1f / %5.1f  rr=%5.2f / %5.2f  pr=%5.2f / %5.2f\n",
-		       roll, dcm.roll_sensor/100.0,
-		       pitch, dcm.pitch_sensor/100.0,
-		       rollRate, ToDeg(omega.x),
-		       pitchRate, ToDeg(omega.y));
-		*/
-	}
+	runInterrupt(6);
 }
 
 

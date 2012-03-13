@@ -41,6 +41,7 @@ version 2.1 of the License, or (at your option) any later version.
 #include <AP_InertialSensor.h> // Inertial Sensor (uncalibated IMU) Library
 #include <AP_IMU.h>         // ArduPilot Mega IMU Library
 #include <AP_DCM.h>         // ArduPilot Mega DCM Library
+#include <AP_Quaternion.h>  // Madgwick quaternion system
 #include <PID.h>            // PID library
 #include <RC_Channel.h>     // RC Channel Library
 #include <AP_RangeFinder.h>	// Range finder library
@@ -58,6 +59,11 @@ version 2.1 of the License, or (at your option) any later version.
 #include "defines.h"
 #include "Parameters.h"
 #include "GCS.h"
+
+#if AUTOMATIC_DECLINATION == ENABLED
+// this is in an #if to avoid the static data
+#include <AP_Declination.h> // ArduPilot Mega Declination Helper Library
+#endif
 
 ////////////////////////////////////////////////////////////////////////////////
 // Serial ports
@@ -186,7 +192,15 @@ AP_GPS_None     g_gps_driver(NULL);
   AP_InertialSensor_Oilpan ins( &adc );
 #endif // CONFIG_IMU_TYPE
 AP_IMU_INS imu( &ins );
-AP_DCM  dcm(&imu, g_gps);
+
+#if QUATERNION_ENABLE == ENABLED
+  // this shouldn't be called dcm of course, but until we
+  // decide to actually use something else, I don't want the patch
+  // size to be huge
+  AP_Quaternion dcm(&imu, g_gps);
+#else
+ AP_DCM  dcm(&imu, g_gps);
+#endif
 
 #elif HIL_MODE == HIL_MODE_SENSORS
 // sensor emulators
@@ -709,7 +723,7 @@ static void fast_loop()
 		gcs_update();
 	#endif
 
-	dcm.update_DCM();
+    dcm.update_DCM();
 
 	// uses the yaw from the DCM to give more accurate turns
 	calc_bearing_error();
@@ -771,8 +785,10 @@ static void medium_loop()
 			#if HIL_MODE != HIL_MODE_ATTITUDE
             if (g.compass_enabled && compass.read()) {
                 dcm.set_compass(&compass);
-                compass.calculate(dcm.get_dcm_matrix());  // Calculate heading
-                compass.null_offsets(dcm.get_dcm_matrix());
+                // Calculate heading
+                Matrix3f m = dcm.get_dcm_matrix();
+                compass.calculate(m);
+                compass.null_offsets(m);
             } else {
                 dcm.set_compass(NULL);
             }
@@ -963,6 +979,12 @@ static void update_GPS(void)
 					init_home();
 				}
 
+#if AUTOMATIC_DECLINATION == ENABLED
+				if (g.compass_enabled) {
+					// Set compass declination automatically
+					compass.set_initial_location(g_gps->latitude, g_gps->longitude, false);
+				}
+#endif
 				ground_start_count = 0;
 			}
 		}

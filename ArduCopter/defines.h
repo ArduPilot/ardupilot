@@ -7,6 +7,9 @@
 #define ENABLED			1
 #define DISABLED		0
 
+// this avoids a very common config error
+#define ENABLE ENABLED
+#define DISABLE DISABLED
 
 // Flight modes
 // ------------
@@ -125,8 +128,6 @@
 #define OF_LOITER 10			// Hold a single location using optical flow sensor
 #define NUM_MODES 11
 
-#define INITIALISING 9     // in startup routines
-
 #define SIMPLE_1 1
 #define SIMPLE_2 2
 #define SIMPLE_3 4
@@ -169,6 +170,7 @@
 
 #define CH6_NAV_I 20
 #define CH6_LOITER_RATE_P 22
+#define CH6_LOITER_RATE_D 23
 
 
 // nav byte mask
@@ -234,6 +236,9 @@ enum ap_message {
     MSG_NEXT_WAYPOINT,
     MSG_NEXT_PARAM,
     MSG_STATUSTEXT,
+    MSG_DCM,
+    MSG_SIMSTATE,
+    MSG_HWSTATUS,
     MSG_RETRY_DEFERRED // this must be last
 };
 

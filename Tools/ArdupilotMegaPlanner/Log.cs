@@ -77,7 +77,7 @@ namespace ArdupilotMega
             catch (Exception ex)
             {
                 log.Error("Error opening comport", ex);
-                MessageBox.Show("Error opening comport");
+                CustomMessageBox.Show("Error opening comport");
             }
 
             var t11 = new System.Threading.Thread(delegate()
@@ -312,7 +312,7 @@ namespace ArdupilotMega
 
                 log.Info("exit while");
             }
-            catch (Exception ex) { MessageBox.Show("Error reading data" + ex.ToString()); }
+            catch (Exception ex) { CustomMessageBox.Show("Error reading data" + ex.ToString()); }
         }
 
         string lastline = "";
@@ -899,7 +899,7 @@ namespace ArdupilotMega
 
                         tr.Close();
                     }
-                    catch (Exception ex) { MessageBox.Show("Error processing log. Is it still downloading? " + ex.Message); continue; }
+                    catch (Exception ex) { CustomMessageBox.Show("Error processing log. Is it still downloading? " + ex.Message); continue; }
 
                     writeKMLFirstPerson(logfile + ".kml");
 

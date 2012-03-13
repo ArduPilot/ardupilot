@@ -9,11 +9,13 @@
 #include <stdlib.h>
 #include <math.h>
 
-static const float vibration_level = 0.1;
+static const float vibration_level = 0.2;
+static const float drift_speed = 0.2; // degrees/second/minute
+static const float drift_time  = 5; // time to reverse drift direction (minutes)
 // order                              zgyro, xgyro, ygyro, temp, xacc, yacc, zacc, aspd
 static const float noise_scale[8] = {   150,   150,   150,    0, 400,  400,  400,    0 };
 static const float noise_offset[8]= {     0,     0,     0,    0,   0,    0,    0,    0 };
-static const float drift_rate[8]  = {     0.7, 1.0,   0.5,    0,   0,    0,    0,    0 };
+static const float drift_rate[8]  = {     1.0, 1.0,   1.0,    0,   0,    0,    0,    0 };
 static const float base_noise = 2;
 
 // generate a random float between -1 and 1
@@ -25,16 +27,16 @@ static double rand_float(void)
 
 static inline float gyro_drift(uint8_t chan)
 {
-	if (drift_rate[chan] == 0) {
+	if (drift_rate[chan] * drift_speed == 0.0) {
 		return 0;
 	}
 	extern long unsigned int micros(void);
-	double period = 10*drift_rate[chan];
+	double period  = drift_rate[chan] * drift_time * 2;
 	double minutes = fmod(micros() / 60.0e6, period);
 	if (minutes < period/2) {
-		return minutes;
+		return minutes * drift_speed / 0.4;
 	}
-	return period - minutes;
+	return (period - minutes) * drift_speed / 0.4;
 
 }
 
@@ -57,7 +59,7 @@ static inline float noise_generator(uint8_t chan)
 		}
 	}
 	if (noise_count == 0) {
-		return rand_float() * base_noise;
+		return gyro_drift(chan) + rand_float() * base_noise * vibration_level;
 	}
 	return gyro_drift(chan) + noise/noise_count;
 }

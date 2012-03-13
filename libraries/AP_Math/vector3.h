@@ -145,6 +145,10 @@ public:
 	void normalize()
 	{	*this/=length();	}
 
+	// zero the vector
+	void zero()
+	{	x = y = z = 0.0; }
+
 	// returns the normalized version of this vector
 	Vector3<T> normalized() const
 	{   return  *this/length();  }
@@ -176,6 +180,13 @@ public:
 	// check if any elements are NAN
 	bool is_nan(void)
 		{   return isnan(x) || isnan(y) || isnan(z); }
+
+	// check if any elements are infinity
+	bool is_inf(void)
+		{   return isinf(x) || isinf(y) || isinf(z); }
+
+	// rotate by a standard rotation
+	void rotate(enum Rotation rotation);
 
 };
 

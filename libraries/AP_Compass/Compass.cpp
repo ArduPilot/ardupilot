@@ -2,7 +2,7 @@
 #include "Compass.h"
 
 const AP_Param::GroupInfo Compass::var_info[] PROGMEM = {
-    AP_GROUPINFO("ORIENT", 0, Compass, _orientation_matrix),
+    // index 0 was used for the old orientation matrix
     AP_GROUPINFO("OFS",    1, Compass, _offset),
     AP_GROUPINFO("DEC",    2, Compass, _declination),
     AP_GROUPINFO("LEARN",  3, Compass, _learn), // true if learning calibration
@@ -20,11 +20,9 @@ Compass::Compass(void) :
     _learn(1),
     _use_for_yaw(1),
     _null_enable(false),
-    _null_init_done(false)
+    _null_init_done(false),
+    _orientation(ROTATION_NONE)
 {
-    // Default the orientation matrix to none - will be overridden at group load time
-    // if an orientation has previously been saved.
-    _orientation_matrix.set(ROTATION_NONE);
 }
 
 // Default init method, just returns success.
@@ -36,9 +34,9 @@ Compass::init()
 }
 
 void
-Compass::set_orientation(const Matrix3f &rotation_matrix)
+Compass::set_orientation(enum Rotation rotation)
 {
-    _orientation_matrix.set_and_save(rotation_matrix);
+    _orientation = rotation;
 }
 
 void
@@ -57,6 +55,25 @@ Vector3f &
 Compass::get_offsets()
 {
     return _offset;
+}
+
+bool
+Compass::set_initial_location(long latitude, long longitude, bool force)
+{
+	// If the user has choosen to use auto-declination regardless of the planner value
+	// OR
+	// If the declination failed to load from the EEPROM (ie. not set by user)
+	if(force || !_declination.load())
+	{
+		// Set the declination based on the lat/lng from GPS
+		_declination.set(radians(AP_Declination::get_declination((float)latitude / 10000000, (float)longitude / 10000000)));
+
+		// Reset null offsets
+		null_offsets_disable();
+		null_offsets_enable();
+		return true;
+	}
+	return false;
 }
 
 void

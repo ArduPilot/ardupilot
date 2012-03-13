@@ -164,7 +164,7 @@
 	    <field name="focus_lock" type="uint8_t">0: unlock focus or keep unlocked, 1: lock focus or keep locked, 3: re-lock focus</field>
 	    <field name="shot" type="uint8_t">0: ignore, 1: shot or start filming</field>
 	    <field name="command_id" type="uint8_t">Command Identity (incremental loop: 0 to 255)//A command sent multiple times will be executed or pooled just once</field>
-	    <field name="extra_param" type="uint8">Extra parameters enumeration (0 means ignore)</field>
+	    <field name="extra_param" type="uint8_t">Extra parameters enumeration (0 means ignore)</field>
 	    <field name="extra_value" type="float">Correspondent value to given extra_param</field>
 	  </message>
 
@@ -224,6 +224,36 @@
 	    <field name="breach_count" type="uint16_t">number of fence breaches</field>
 	    <field name="breach_type" type="uint8_t">last breach type (see FENCE_BREACH_* enum)</field>
 	    <field name="breach_time" type="uint32_t">time of last breach in milliseconds since boot</field>
+	  </message>
+
+	  <message name="DCM" id="163">
+	    <description>Status of DCM attitude estimator</description>
+            <field type="float" name="omegaIx">X gyro drift estimate rad/s</field>
+            <field type="float" name="omegaIy">Y gyro drift estimate rad/s</field>
+            <field type="float" name="omegaIz">Z gyro drift estimate rad/s</field>
+            <field type="float" name="accel_weight">average accel_weight</field>
+            <field type="float" name="renorm_val">average renormalisation value</field>
+            <field type="float" name="error_rp">average error_roll_pitch value</field>
+            <field type="float" name="error_yaw">average error_yaw value</field>
+	  </message>
+
+	  <message name="SIMSTATE" id="164">
+	    <description>Status of simulation environment, if used</description>
+            <field type="float" name="roll">Roll angle (rad)</field>
+            <field type="float" name="pitch">Pitch angle (rad)</field>
+            <field type="float" name="yaw">Yaw angle (rad)</field>
+            <field type="float" name="xacc">X acceleration m/s/s</field>
+            <field type="float" name="yacc">Y acceleration m/s/s</field>
+            <field type="float" name="zacc">Z acceleration m/s/s</field>
+            <field type="float" name="xgyro">Angular speed around X axis rad/s</field>
+            <field type="float" name="ygyro">Angular speed around Y axis rad/s</field>
+            <field type="float" name="zgyro">Angular speed around Z axis rad/s</field>
+	  </message>
+
+	  <message name="HWSTATUS" id="165">
+	    <description>Status of key hardware</description>
+            <field type="uint16_t" name="Vcc">board voltage (mV)</field>
+            <field type="uint8_t"  name="I2Cerr">I2C error count</field>
 	  </message>
      </messages>
 </mavlink>

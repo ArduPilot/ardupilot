@@ -485,7 +485,41 @@ static void NOINLINE send_raw_imu3(mavlink_channel_t chan)
                                     imu.gx(), imu.gy(), imu.gz(),
                                     imu.ax(), imu.ay(), imu.az());
 }
+
+static void NOINLINE send_dcm(mavlink_channel_t chan)
+{
+    Vector3f omega_I = dcm.get_gyro_drift();
+    mavlink_msg_dcm_send(
+        chan,
+        omega_I.x,
+        omega_I.y,
+        omega_I.z,
+        dcm.get_accel_weight(),
+        dcm.get_renorm_val(),
+        dcm.get_error_rp(),
+        dcm.get_error_yaw());
+}
+
 #endif // HIL_MODE != HIL_MODE_ATTITUDE
+
+#ifdef DESKTOP_BUILD
+// report simulator state
+static void NOINLINE send_simstate(mavlink_channel_t chan)
+{
+    extern void sitl_simstate_send(uint8_t chan);
+    sitl_simstate_send((uint8_t)chan);
+}
+#endif
+
+#ifndef DESKTOP_BUILD
+static void NOINLINE send_hwstatus(mavlink_channel_t chan)
+{
+    mavlink_msg_hwstatus_send(
+        chan,
+        board_voltage(),
+        I2c.lockup_count());
+}
+#endif
 
 static void NOINLINE send_gps_status(mavlink_channel_t chan)
 {
@@ -644,6 +678,27 @@ static bool mavlink_try_send_message(mavlink_channel_t chan, enum ap_message id,
         send_fence_status(chan);
         break;
 #endif
+
+    case MSG_DCM:
+#if HIL_MODE != HIL_MODE_ATTITUDE
+        CHECK_PAYLOAD_SIZE(DCM);
+        send_dcm(chan);
+#endif
+        break;
+
+    case MSG_SIMSTATE:
+#ifdef DESKTOP_BUILD
+        CHECK_PAYLOAD_SIZE(DCM);
+        send_simstate(chan);
+#endif
+        break;
+
+    case MSG_HWSTATUS:
+#ifndef DESKTOP_BUILD
+        CHECK_PAYLOAD_SIZE(HWSTATUS);
+        send_hwstatus(chan);
+#endif
+        break;
 
     case MSG_RETRY_DEFERRED:
         break; // just here to prevent a warning
@@ -869,6 +924,7 @@ GCS_MAVLINK::data_stream_send(uint16_t freqMin, uint16_t freqMax)
 
 		if (freqLoopMatch(streamRateExtra1, freqMin, freqMax)){	 // Use Extra 1 for AHRS info
 			send_message(MSG_ATTITUDE);
+			send_message(MSG_SIMSTATE);
 		}
 
 		if (freqLoopMatch(streamRateExtra2, freqMin, freqMax)){		// Use Extra 2 for additional HIL info
@@ -876,7 +932,8 @@ GCS_MAVLINK::data_stream_send(uint16_t freqMin, uint16_t freqMax)
 		}
 
 		if (freqLoopMatch(streamRateExtra3, freqMin, freqMax)){
-			// Available datastream
+			send_message(MSG_DCM);
+			send_message(MSG_HWSTATUS);
 		}
 	}
 }

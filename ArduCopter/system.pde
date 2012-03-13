@@ -218,7 +218,6 @@ static void init_ardupilot()
 #if HIL_MODE != HIL_MODE_ATTITUDE
 #if CONFIG_ADC == ENABLED
 		// begin filtering the ADC Gyros
-		adc.filter_result = true;
         adc.Init(&timer_scheduler);       // APM ADC library initialization
 #endif // CONFIG_ADC
 
@@ -307,14 +306,6 @@ static void init_ardupilot()
 	// set the correct flight mode
 	// ---------------------------
 	reset_control_switch();
-
-	#if HIL_MODE != HIL_MODE_ATTITUDE
-		dcm.kp_roll_pitch(0.130000);
-		dcm.ki_roll_pitch(0.00001278),	// 50 hz I term
-		dcm.kp_yaw(0.08);
-		dcm.ki_yaw(0.00004);
-		dcm._clamp = 5;
-	#endif
 
 	// init the Z damopener
 	// --------------------
@@ -456,7 +447,7 @@ static void set_mode(byte mode)
 			roll_pitch_mode = ALT_HOLD_RP;
 			throttle_mode 	= ALT_HOLD_THR;
 
-			set_next_WP(&current_loc);
+			force_new_altitude(max(current_loc.alt, 100));
 			break;
 
 		case AUTO:
@@ -532,16 +523,8 @@ static void set_mode(byte mode)
 		motor_auto_armed = true;
 	}
 
-	if(throttle_mode == THROTTLE_MANUAL){
-		// reset all of the throttle iterms
-		update_throttle_cruise();
-
-		// reset auto_throttle
-		nav_throttle 			= 0;
-	}else {
-		// an automatic throttle
-		init_throttle_cruise();
-	}
+	// called to calculate gain for alt hold
+	update_throttle_cruise();
 
 	if(roll_pitch_mode <= ROLL_PITCH_ACRO){
 		// We are under manual attitude control
@@ -594,18 +577,10 @@ static void update_throttle_cruise()
 		g.throttle_cruise += tmp;
 		reset_throttle_I();
 	}
-}
 
-static void
-init_throttle_cruise()
-{
-#if AUTO_THROTTLE_HOLD == 0
-	// are we moving from manual throttle to auto_throttle?
-	if((old_control_mode <= STABILIZE) && (g.rc_3.control_in > MINIMUM_THROTTLE)){
-		reset_throttle_I();
-		g.throttle_cruise.set_and_save(g.rc_3.control_in);
-	}
-#endif
+	// recalc kp
+	//g.pid_throttle.kP((float)g.throttle_cruise.get() / 981.0);
+	//Serial.printf("kp:%1.4f\n",kp);
 }
 
 #if CLI_SLIDER_ENABLED == ENABLED && CLI_ENABLED == ENABLED
@@ -675,7 +650,6 @@ void flash_leds(bool on)
  */
 uint16_t board_voltage(void)
 {
-	static uint16_t vcc = 5000;
 	const uint8_t mux = (_BV(REFS0)|_BV(MUX4)|_BV(MUX3)|_BV(MUX2)|_BV(MUX1));
 
 	if (ADMUX == mux) {
@@ -685,14 +659,17 @@ uint16_t board_voltage(void)
 			counter--;
 		if (counter == 0) {
 			// we don't actually expect this timeout to happen,
-			// but we don't want any more code that could hang
-			return vcc;
+			// but we don't want any more code that could hang. We
+			// report 0V so it is clear in the logs that we don't know
+			// the value
+			return 0;
 		}
 		uint32_t result = ADCL | ADCH<<8;
-		vcc = 1126400L / result;       // Read and back-calculate Vcc in mV
-	} else {
-		ADMUX = mux; // switch mux, settle time is needed
-	}
-	return vcc;  // in mV
+		return 1126400UL / result;       // Read and back-calculate Vcc in mV
+    }
+    // switch mux, settle time is needed. We don't want to delay
+    // waiting for the settle, so report 0 as a "don't know" value
+    ADMUX = mux;
+	return 0; // we don't know the current voltage
 }
 #endif

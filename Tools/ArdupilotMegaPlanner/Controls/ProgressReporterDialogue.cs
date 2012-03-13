@@ -42,7 +42,16 @@ namespace ArdupilotMega.Controls
 
         private void RunBackgroundOperation(object o)
         {
-            Thread.CurrentThread.Name = "ProgressReporterDialogue Background thread";
+            try
+            {
+                Thread.CurrentThread.Name = "ProgressReporterDialogue Background thread";
+            }
+            catch { } // ok on windows - fails on mono
+
+            // mono fix - ensure the dialog is running
+            while (this.IsHandleCreated == false)
+                System.Threading.Thread.Sleep(5);
+
             try
             {
                 if (this.DoWork != null) this.DoWork(this, doWorkArgs);
@@ -55,6 +64,7 @@ namespace ArdupilotMega.Controls
                 ShowDoneWithError(e, doWorkArgs.ErrorMessage);
                 return;
             }
+
 
             if (doWorkArgs.CancelRequested && doWorkArgs.CancelAcknowledged)
             {
@@ -201,7 +211,7 @@ namespace ArdupilotMega.Controls
                           + Environment.NewLine + Environment.NewLine
                           + this.workerException.StackTrace;
 
-            MessageBox.Show(message,"Exception Details",MessageBoxButtons.OK,MessageBoxIcon.Information);
+            CustomMessageBox.Show(message,"Exception Details",MessageBoxButtons.OK,MessageBoxIcon.Information);
         }
 
     }

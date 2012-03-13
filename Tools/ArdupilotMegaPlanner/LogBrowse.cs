@@ -52,7 +52,7 @@ namespace ArdupilotMega
                     dataGridView1.DataSource = m_dtCSV;
 
                 }
-                catch (Exception ex) { MessageBox.Show("Failed to read File: " + ex.ToString()); }
+                catch (Exception ex) { CustomMessageBox.Show("Failed to read File: " + ex.ToString()); }
 
                 foreach (DataGridViewColumn column in dataGridView1.Columns)
                 {
@@ -256,7 +256,7 @@ namespace ArdupilotMega
         {
             if (dataGridView1.RowCount == 0 || dataGridView1.ColumnCount == 0)
             {
-                MessageBox.Show("Please load a valid file");
+                CustomMessageBox.Show("Please load a valid file");
                 return;
             }
 
@@ -267,7 +267,7 @@ namespace ArdupilotMega
 
             if (col == 0)
             {
-                MessageBox.Show("Please pick another column, Highlight the cell you wish to graph");
+                CustomMessageBox.Show("Please pick another column, Highlight the cell you wish to graph");
                 return;
             }
 
@@ -307,11 +307,11 @@ namespace ArdupilotMega
                         }
                         else
                         {
-                            MessageBox.Show("Max of 5");
+                            CustomMessageBox.Show("Max of 5");
                             break;
                         }
                     }
-                    catch { error++; log.Info("Bad Data : " + type + " " + col + " " + a); if (error >= 500) { MessageBox.Show("There is to much bad data - failing"); break; } }
+                    catch { error++; log.Info("Bad Data : " + type + " " + col + " " + a); if (error >= 500) { CustomMessageBox.Show("There is to much bad data - failing"); break; } }
                 }
                 a++;
             }

@@ -7,6 +7,7 @@ void AP_InertialSensor_Stub::init( AP_PeriodicProcess * scheduler ) {}
 /*================ AP_INERTIALSENSOR PUBLIC INTERFACE ==================== */
 
 bool AP_InertialSensor_Stub::update( void ) { return true; }
+bool AP_InertialSensor_Stub::new_data_available( void ) { return true; }
 
 
 float AP_InertialSensor_Stub::gx() { return 0.0f; }
@@ -25,3 +26,4 @@ void AP_InertialSensor_Stub::get_sensors( float * sensors ) {}
 float AP_InertialSensor_Stub::temperature() { return 0.0; }
 uint32_t AP_InertialSensor_Stub::sample_time() { return 0; }
 void AP_InertialSensor_Stub::reset_sample_time() {}
+float AP_InertialSensor_Stub::get_gyro_drift_rate(void) { return 0.0; }

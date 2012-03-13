@@ -59,7 +59,10 @@ long unsigned int micros(void)
 
 void delayMicroseconds(unsigned usec)
 {
-	usleep(usec);
+	uint32_t start = micros();
+	while (micros() - start < usec) {
+		usleep(usec - (micros() - start));
+	}
 }
 
 void delay(long unsigned msec)

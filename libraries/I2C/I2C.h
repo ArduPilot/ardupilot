@@ -2,17 +2,17 @@
   I2C.h - I2C library
   Copyright (c) 2011 Wayne Truchsess.  All right reserved.
   Rev 2.0 - September 19th, 2011
-          - Added support for timeout function to prevent 
+          - Added support for timeout function to prevent
             and recover from bus lockup (thanks to PaulS
             and CrossRoads on the Arduino forum)
           - Changed return type for stop() from void to
-            uint8_t to handle timeOut function 
+            uint8_t to handle timeOut function
   Rev 1.0 - August 8th, 2011
-  
-  This is a modified version of the Arduino Wire/TWI 
+
+  This is a modified version of the Arduino Wire/TWI
   library.  Functions were rewritten to provide more functionality
   and also the use of Repeated Start.  Some I2C devices will not
-  function correctly without the use of a Repeated Start.  The 
+  function correctly without the use of a Repeated Start.  The
   initial version of this library only supports the Master.
 
 
@@ -71,10 +71,10 @@ class I2C
     void begin();
     void end();
     void timeOut(uint16_t);
-    void setSpeed(boolean); 
+    void setSpeed(boolean);
     void pullup(boolean);
-    ///////carry over from Wire library//////// 
-    uint8_t returnStatusWire; 
+    ///////carry over from Wire library////////
+    uint8_t returnStatusWire;
     uint8_t beginTransmission(uint8_t);
     uint8_t beginTransmission(int);
     uint8_t send(uint8_t);
@@ -85,7 +85,7 @@ class I2C
     uint8_t available();
     ///////////////////////////////////////////
     uint8_t write(uint8_t, uint8_t);
-    uint8_t write(int, int); 
+    uint8_t write(int, int);
     uint8_t write(uint8_t, uint8_t, uint8_t);
     uint8_t write(int, int, int);
     uint8_t write(uint8_t, uint8_t, char*);

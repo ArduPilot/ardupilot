@@ -186,31 +186,35 @@ get_rate_yaw(int32_t target_rate)
 static int16_t
 get_nav_throttle(int32_t z_error)
 {
-	static int16_t old_output = 0;
+	//static int16_t old_output = 0;
 	int16_t rate_error = 0;
 	int16_t output = 0;
 
 	// convert to desired Rate:
 	rate_error 		= g.pi_alt_hold.get_p(z_error);
-	rate_error 		= constrain(rate_error, -150, 150);
+	rate_error 		= constrain(rate_error, -250, 250);
 
 	// limit error to prevent I term wind up
 	z_error 		= constrain(z_error, -400, 400);
 
 	// compensates throttle setpoint error for hovering
-	int16_t iterm = g.pi_alt_hold.get_i(z_error, .1);
+	int16_t iterm = g.pi_alt_hold.get_i(z_error, .02);
 
 	// calculate rate error
 	rate_error 		= rate_error - climb_rate;
 
+	// hack to see if we can smooth out oscillations
+	//if(rate_error < 0)
+	//	rate_error = rate_error >> 1;
+
 	// limit the rate
-	output =  constrain(g.pid_throttle.get_pid(rate_error, .1), -160, 180);
+	output =  constrain(g.pid_throttle.get_pid(rate_error, .02), -80, 120);
 
 	// light filter of output
-	output = (old_output + output) / 2;
+	//output = (old_output + output) / 2;
 
 	// save our output
-	old_output  = output;
+	//old_output  = output;
 
 	// output control:
 	return output + iterm;
@@ -219,8 +223,6 @@ get_nav_throttle(int32_t z_error)
 // Keeps old data out of our calculation / logs
 static void reset_nav_params(void)
 {
-	// forces us to update nav throttle
-	invalid_throttle 		= true;
 	nav_throttle 			= 0;
 
 	// always start Circle mode at same angle

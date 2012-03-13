@@ -227,7 +227,7 @@ namespace WebCamService
                     camimage(image);
                 }
             }
-            catch { Console.WriteLine("Grab bmp failed"); timer1.Enabled = false; this.CloseInterfaces(); System.Windows.Forms.MessageBox.Show("Problem with capture device, grabbing frame took longer than 5 sec"); }
+            catch { Console.WriteLine("Grab bmp failed"); timer1.Enabled = false; this.CloseInterfaces(); System.Windows.Forms.CustomMessageBox.Show("Problem with capture device, grabbing frame took longer than 5 sec"); }
         }
 
         /// <summary> build the capture graph for grabber. </summary>

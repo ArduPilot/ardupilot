@@ -146,7 +146,7 @@ namespace ArdupilotMega
                 frmProgressReporter.DoWork += FrmProgressReporterDoWorkNOParams;
             }
             frmProgressReporter.UpdateProgressAndStatus(-1, "Mavlink Connecting...");
-            MainV2.fixtheme(frmProgressReporter);
+            ThemeManager.ApplyThemeTo(frmProgressReporter);
 
             frmProgressReporter.RunBackgroundOperationAsync();
         }
@@ -184,7 +184,8 @@ namespace ArdupilotMega
 
                     BaseStream.DiscardInBuffer();
 
-                    BaseStream.toggleDTR();
+                    // removed because of apc220 units
+                    //BaseStream.toggleDTR();
 
                     Thread.Sleep(1000);
                 }
@@ -472,13 +473,6 @@ namespace ArdupilotMega
             return true;
         }
 
-        public bool setParam(string paramname, object flag)
-        {
-            int value = (int)(float)param[paramname];
-
-            return setParam(paramname, value | (int)flag);
-        }
-
         /// <summary>
         /// Set parameter on apm
         /// </summary>
@@ -582,7 +576,7 @@ namespace ArdupilotMega
 
             frmProgressReporter.DoWork += FrmProgressReporterGetParams;
             frmProgressReporter.UpdateProgressAndStatus(-1, "Getting Params...");
-            MainV2.fixtheme(frmProgressReporter);
+            ThemeManager.ApplyThemeTo(frmProgressReporter);
 
             frmProgressReporter.RunBackgroundOperationAsync();
         }
@@ -732,6 +726,17 @@ namespace ArdupilotMega
                 else
                 {
                     value *= 100.0f;
+                }
+            }
+            else if (paramname.ToUpper().StartsWith("TUNE_"))
+            {
+                if (fromapm)
+                {
+                    value /= 1000.0f;
+                }
+                else
+                {
+                    value *= 1000.0f;
                 }
             }
         }
@@ -1440,7 +1445,18 @@ namespace ArdupilotMega
         public object DebugPacket(byte[] datin)
         {
             string text = "";
-            return DebugPacket(datin, ref text);
+            return DebugPacket(datin, ref text,true);
+        }
+
+        public object DebugPacket(byte[] datin, bool PrintToConsole)
+        {
+            string text = "";
+            return DebugPacket(datin, ref text, PrintToConsole);
+        }
+
+        public object DebugPacket(byte[] datin, ref string text)
+        {
+            return DebugPacket(datin, ref text, true);
         }
 
         /// <summary>
@@ -1448,7 +1464,7 @@ namespace ArdupilotMega
         /// </summary>
         /// <param name="datin">packet byte array</param>
         /// <returns>struct of data</returns>
-        public object DebugPacket(byte[] datin, ref string text)
+        public object DebugPacket(byte[] datin, ref string text, bool PrintToConsole)
         {
             string textoutput;
             try
@@ -1470,34 +1486,46 @@ namespace ArdupilotMega
 
                     Type test = data.GetType();
 
-                    textoutput = textoutput + test.Name + " ";
-
-                    foreach (var field in test.GetFields())
+                    if (PrintToConsole)
                     {
-                        // field.Name has the field's name.
 
-                        object fieldValue = field.GetValue(data); // Get value
+                        textoutput = textoutput + test.Name + " ";
 
-                        if (field.FieldType.IsArray)
+                        foreach (var field in test.GetFields())
                         {
-                            textoutput = textoutput + field.Name + "=";
-                            byte[] crap = (byte[])fieldValue;
-                            foreach (byte fiel in crap)
+                            // field.Name has the field's name.
+
+                            object fieldValue = field.GetValue(data); // Get value
+
+                            if (field.FieldType.IsArray)
                             {
-                                textoutput = textoutput + fiel + ",";
+                                textoutput = textoutput + field.Name + "=";
+                                byte[] crap = (byte[])fieldValue;
+                                foreach (byte fiel in crap)
+                                {
+                                    if (fiel == 0)
+                                    {
+                                        break;
+                                    }
+                                    else
+                                    {
+                                        textoutput = textoutput + (char)fiel;
+                                    }
+                                }
+                                textoutput = textoutput + " ";
                             }
-                            textoutput = textoutput + " ";
+                            else
+                            {
+                                textoutput = textoutput + field.Name + "=" + fieldValue.ToString() + " ";
+                            }
                         }
-                        else
-                        {
-                            textoutput = textoutput + field.Name + "=" + fieldValue.ToString() + " ";
-                        }
-                    }
-                    textoutput = textoutput + " Len:" + datin.Length + "\r\n";
-                    Console.Write(textoutput);
+                        textoutput = textoutput + " Len:" + datin.Length + "\r\n";
+                        if (PrintToConsole)
+                            Console.Write(textoutput);
 
-                    if (text != null)
-                        text = textoutput;
+                        if (text != null)
+                            text = textoutput;
+                    }
 
                     return data;
                 }
@@ -1883,7 +1911,7 @@ namespace ArdupilotMega
                     MainV2.comPort.generatePacket((byte)MAVLink.MAVLINK_MSG_ID_SET_MODE, mode);
                 }
             }
-            catch { System.Windows.Forms.MessageBox.Show("Failed to change Modes"); }
+            catch { System.Windows.Forms.CustomMessageBox.Show("Failed to change Modes"); }
 
 #endif
         }

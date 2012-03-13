@@ -21,25 +21,28 @@ namespace ArdupilotMega
         [STAThread]
         static void Main()
         {
-            //System.Threading.Thread.CurrentThread.CurrentUICulture = new System.Globalization.CultureInfo("en-US");
-            //System.Threading.Thread.CurrentThread.CurrentCulture = new System.Globalization.CultureInfo("en-US");
-
-            Application.ThreadException += Application_ThreadException;
-
-            Application.Idle += Application_Idle;
-
-            //MagCalib.doWork();
-
-            //return;
-
-            //MessageBox.Show("NOTE: This version may break advanced mission scripting");
-
-            //Common.linearRegression();
 
             Application.EnableVisualStyles();
             XmlConfigurator.Configure();
             log.Info("******************* Logging Configured *******************");
             Application.SetCompatibleTextRenderingDefault(false);
+
+            Application.ThreadException += Application_ThreadException;
+
+            Application.Idle += Application_Idle;
+
+            //CodeGen.runCode("Sin(0.55)");
+
+            int wt = 0, ct = 0;
+            ThreadPool.GetMaxThreads(out wt, out ct);
+            log.Info("Max Threads: " + wt);
+
+            //MagCalib.ProcessLog();
+
+            //MessageBox.Show("NOTE: This version may break advanced mission scripting");
+
+            //Common.linearRegression();
+
             try
             {
                 Thread.CurrentThread.Name = "Base Thread";
@@ -65,17 +68,17 @@ namespace ArdupilotMega
             log.Debug(ex.ToString());
 
             if (ex.Message == "The port is closed.") {
-                MessageBox.Show("Serial connection has been lost");
+                CustomMessageBox.Show("Serial connection has been lost");
                 return;
             }
             if (ex.Message == "A device attached to the system is not functioning.")
             {
-                MessageBox.Show("Serial connection has been lost");
+                CustomMessageBox.Show("Serial connection has been lost");
                 return;
             }
             if (e.Exception.GetType() == typeof(MissingMethodException))
             {
-                MessageBox.Show("Please Update - Some older library dlls are causing problems\n" + e.Exception.Message);
+                CustomMessageBox.Show("Please Update - Some older library dlls are causing problems\n" + e.Exception.Message);
                 return;
             }
             if (e.Exception.GetType() == typeof(ObjectDisposedException) || e.Exception.GetType() == typeof(InvalidOperationException)) // something is trying to update while the form, is closing.
@@ -84,10 +87,10 @@ namespace ArdupilotMega
             }
             if (e.Exception.GetType() == typeof(FileNotFoundException) || e.Exception.GetType() == typeof(BadImageFormatException)) // i get alot of error from people who click the exe from inside a zip file.
             {
-                MessageBox.Show("You are missing some DLL's. Please extract the zip file somewhere. OR Use the update feature from the menu");
+                CustomMessageBox.Show("You are missing some DLL's. Please extract the zip file somewhere. OR Use the update feature from the menu");
                 return;
             }
-            DialogResult dr = MessageBox.Show("An error has occurred\n"+ex.ToString() + "\n\nReport this Error???", "Send Error", MessageBoxButtons.YesNo);
+            DialogResult dr = CustomMessageBox.Show("An error has occurred\n"+ex.ToString() + "\n\nReport this Error???", "Send Error", MessageBoxButtons.YesNo);
             if (DialogResult.Yes == dr)
             {
                 try
@@ -129,7 +132,7 @@ namespace ArdupilotMega
                 }
                 catch
                 {
-                    MessageBox.Show("Error sending Error report!! Youre most likerly are not on the internet");
+                    CustomMessageBox.Show("Error sending Error report!! Youre most likerly are not on the internet");
                 }
             }
         }

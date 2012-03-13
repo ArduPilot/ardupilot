@@ -5,11 +5,11 @@ using System.Runtime.InteropServices;
 
 namespace ArdupilotMega
 {
-#if !MAVLINK10
+    #if !MAVLINK10
     partial class MAVLink
     {
-		public byte[] MAVLINK_MESSAGE_LENGTHS = new byte[] {3, 4, 8, 14, 8, 28, 3, 32, 0, 2, 3, 2, 2, 0, 0, 0, 0, 0, 0, 0, 19, 2, 23, 21, 0, 37, 26, 101, 26, 16, 32, 32, 37, 32, 11, 17, 17, 16, 18, 36, 4, 4, 2, 2, 4, 2, 2, 3, 14, 12, 18, 16, 8, 27, 25, 18, 18, 24, 24, 0, 0, 0, 26, 16, 36, 5, 6, 56, 26, 21, 18, 0, 0, 18, 20, 20, 8, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 18, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 36, 0, 0, 0, 0, 0, 0, 0, 0, 0, 42, 8, 4, 12, 15, 13, 6, 15, 14, 0, 12, 3, 8, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 30, 14, 14, 51, 5};
-		public byte[] MAVLINK_MESSAGE_CRCS = new byte[] {72, 39, 190, 92, 191, 217, 104, 119, 0, 219, 60, 186, 10, 0, 0, 0, 0, 0, 0, 0, 89, 159, 162, 121, 0, 149, 222, 110, 179, 136, 66, 126, 185, 147, 112, 252, 162, 215, 229, 128, 9, 106, 101, 213, 4, 229, 21, 214, 215, 14, 206, 50, 157, 126, 108, 213, 95, 5, 127, 0, 0, 0, 57, 126, 130, 119, 193, 191, 236, 158, 143, 0, 0, 104, 123, 131, 8, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 174, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 155, 0, 0, 0, 0, 0, 0, 0, 0, 0, 143, 29, 208, 188, 118, 242, 19, 97, 233, 0, 18, 68, 136, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 178, 224, 60, 106, 7};
+		public byte[] MAVLINK_MESSAGE_LENGTHS = new byte[] {3, 4, 8, 14, 8, 28, 3, 32, 0, 2, 3, 2, 2, 0, 0, 0, 0, 0, 0, 0, 19, 2, 23, 21, 0, 37, 26, 101, 26, 16, 32, 32, 37, 32, 11, 17, 17, 16, 18, 36, 4, 4, 2, 2, 4, 2, 2, 3, 14, 12, 18, 16, 8, 27, 25, 18, 18, 24, 24, 0, 0, 0, 26, 16, 36, 5, 6, 56, 26, 21, 18, 0, 0, 18, 20, 20, 8, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 18, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 36, 0, 0, 0, 0, 0, 0, 0, 0, 0, 42, 8, 4, 12, 15, 13, 6, 15, 14, 0, 12, 3, 8, 28, 36, 3, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 30, 14, 14, 51, 5};
+		public byte[] MAVLINK_MESSAGE_CRCS = new byte[] {72, 39, 190, 92, 191, 217, 104, 119, 0, 219, 60, 186, 10, 0, 0, 0, 0, 0, 0, 0, 89, 159, 162, 121, 0, 149, 222, 110, 179, 136, 66, 126, 185, 147, 112, 252, 162, 215, 229, 128, 9, 106, 101, 213, 4, 229, 21, 214, 215, 14, 206, 50, 157, 126, 108, 213, 95, 5, 127, 0, 0, 0, 57, 126, 130, 119, 193, 191, 236, 158, 143, 0, 0, 104, 123, 131, 8, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 174, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 155, 0, 0, 0, 0, 0, 0, 0, 0, 0, 143, 29, 208, 188, 118, 242, 19, 97, 233, 0, 18, 68, 136, 205, 42, 21, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 178, 224, 60, 106, 7};
 		public 		enum MAV_MOUNT_MODE
 		{
 			MAV_MOUNT_MODE_RETRACT=0, /* Load and keep safe position (Roll,Pitch,Yaw) from EEPROM and stop stabilization | */
@@ -78,6 +78,20 @@ namespace ArdupilotMega
 		};
 
 		public const byte MAVLINK_MSG_ID_AP_ADC_LEN = 12;
+		public const byte MAVLINK_MSG_ID_DCM = 163;
+		[StructLayout(LayoutKind.Sequential,Pack=1)]
+		public struct __mavlink_dcm_t
+		{
+		public float omegaIx; /// X gyro drift estimate rad/s
+		public float omegaIy; /// Y gyro drift estimate rad/s
+		public float omegaIz; /// Z gyro drift estimate rad/s
+		public float accel_weight; /// average accel_weight
+		public float renorm_val; /// average renormalisation value
+		public float error_rp; /// average error_roll_pitch value
+		public float error_yaw; /// average error_yaw value
+		};
+
+		public const byte MAVLINK_MSG_ID_DCM_LEN = 28;
 		public const byte MAVLINK_MSG_ID_DIGICAM_CONFIGURE = 154;
 		[StructLayout(LayoutKind.Sequential,Pack=1)]
 		public struct __mavlink_digicam_configure_t
@@ -166,6 +180,15 @@ namespace ArdupilotMega
 		};
 
 		public const byte MAVLINK_MSG_ID_FENCE_STATUS_LEN = 8;
+		public const byte MAVLINK_MSG_ID_HWSTATUS = 165;
+		[StructLayout(LayoutKind.Sequential,Pack=1)]
+		public struct __mavlink_hwstatus_t
+		{
+		 public ushort Vcc; /// board voltage (mV)
+		 public byte I2Cerr; /// I2C error count
+		};
+
+		public const byte MAVLINK_MSG_ID_HWSTATUS_LEN = 3;
 		public const byte MAVLINK_MSG_ID_MEMINFO = 152;
 		[StructLayout(LayoutKind.Sequential,Pack=1)]
 		public struct __mavlink_meminfo_t
@@ -244,6 +267,22 @@ namespace ArdupilotMega
 		};
 
 		public const byte MAVLINK_MSG_ID_SET_MAG_OFFSETS_LEN = 8;
+		public const byte MAVLINK_MSG_ID_SIMSTATE = 164;
+		[StructLayout(LayoutKind.Sequential,Pack=1)]
+		public struct __mavlink_simstate_t
+		{
+		public float roll; /// Roll angle (rad)
+		public float pitch; /// Pitch angle (rad)
+		public float yaw; /// Yaw angle (rad)
+		public float xacc; /// X acceleration m/s/s
+		public float yacc; /// Y acceleration m/s/s
+		public float zacc; /// Z acceleration m/s/s
+		public float xgyro; /// Angular speed around X axis rad/s
+		public float ygyro; /// Angular speed around Y axis rad/s
+		public float zgyro; /// Angular speed around Z axis rad/s
+		};
+
+		public const byte MAVLINK_MSG_ID_SIMSTATE_LEN = 36;
 		public 		enum MAV_DATA_STREAM
 		{
 			MAV_DATA_STREAM_ALL=0, /* Enable all data streams | */
@@ -1305,9 +1344,9 @@ namespace ArdupilotMega
 		    MAV_FRAME_LOCAL_ENU = 4
 		};
 
-Type[] mavstructs = new Type[] {typeof( __mavlink_heartbeat_t) ,typeof( __mavlink_boot_t) ,null ,typeof( __mavlink_ping_t) ,null ,typeof( __mavlink_change_operator_control_t) ,typeof( __mavlink_change_operator_control_ack_t) ,typeof( __mavlink_auth_key_t) ,null ,typeof( __mavlink_action_ack_t) ,typeof( __mavlink_action_t) ,typeof( __mavlink_set_mode_t) ,typeof( __mavlink_set_nav_mode_t) ,null ,null ,null ,null ,null ,null ,null ,typeof( __mavlink_param_request_read_t) ,typeof( __mavlink_param_request_list_t) ,typeof( __mavlink_param_value_t) ,typeof( __mavlink_param_set_t) ,null ,typeof( __mavlink_gps_raw_int_t) ,typeof( __mavlink_scaled_imu_t) ,typeof( __mavlink_gps_status_t) ,typeof( __mavlink_raw_imu_t) ,typeof( __mavlink_raw_pressure_t) ,typeof( __mavlink_attitude_t) ,typeof( __mavlink_local_position_t) ,typeof( __mavlink_gps_raw_t) ,typeof( __mavlink_global_position_t) ,typeof( __mavlink_sys_status_t) ,typeof( __mavlink_rc_channels_raw_t) ,typeof( __mavlink_rc_channels_scaled_t) ,typeof( __mavlink_servo_output_raw_t) ,typeof( __mavlink_scaled_pressure_t) ,typeof( __mavlink_waypoint_t) ,typeof( __mavlink_waypoint_request_t) ,typeof( __mavlink_waypoint_set_current_t) ,typeof( __mavlink_waypoint_current_t) ,typeof( __mavlink_waypoint_request_list_t) ,typeof( __mavlink_waypoint_count_t) ,typeof( __mavlink_waypoint_clear_all_t) ,typeof( __mavlink_waypoint_reached_t) ,typeof( __mavlink_waypoint_ack_t) ,typeof( __mavlink_gps_set_global_origin_t) ,typeof( __mavlink_gps_local_origin_set_t) ,typeof( __mavlink_local_position_setpoint_set_t) ,typeof( __mavlink_local_position_setpoint_t) ,typeof( __mavlink_control_status_t) ,typeof( __mavlink_safety_set_allowed_area_t) ,typeof( __mavlink_safety_allowed_area_t) ,typeof( __mavlink_set_roll_pitch_yaw_thrust_t) ,typeof( __mavlink_set_roll_pitch_yaw_speed_thrust_t) ,typeof( __mavlink_roll_pitch_yaw_thrust_setpoint_t) ,typeof( __mavlink_roll_pitch_yaw_speed_thrust_setpoint_t) ,null ,null ,null ,typeof( __mavlink_nav_controller_output_t) ,typeof( __mavlink_position_target_t) ,typeof( __mavlink_state_correction_t) ,typeof( __mavlink_set_altitude_t) ,typeof( __mavlink_request_data_stream_t) ,typeof( __mavlink_hil_state_t) ,typeof( __mavlink_hil_controls_t) ,typeof( __mavlink_manual_control_t) ,typeof( __mavlink_rc_channels_override_t) ,null ,null ,typeof( __mavlink_global_position_int_t) ,typeof( __mavlink_vfr_hud_t) ,typeof( __mavlink_command_t) ,typeof( __mavlink_command_ack_t) ,null ,null ,null ,null ,null ,null ,null ,null ,null ,null ,null ,null ,null ,null ,null ,null ,null ,null ,null ,null ,null ,null ,null ,typeof( __mavlink_optical_flow_t) ,null ,null ,null ,null ,null ,null ,null ,null ,null ,null ,null ,null ,null ,null ,null ,null ,null ,null ,null ,null ,null ,null ,null ,null ,null ,null ,null ,null ,null ,null ,null ,null ,null ,null ,null ,null ,null ,null ,null ,typeof( __mavlink_object_detection_event_t) ,null ,null ,null ,null ,null ,null ,null ,null ,null ,typeof( __mavlink_sensor_offsets_t) ,typeof( __mavlink_set_mag_offsets_t) ,typeof( __mavlink_meminfo_t) ,typeof( __mavlink_ap_adc_t) ,typeof( __mavlink_digicam_configure_t) ,typeof( __mavlink_digicam_control_t) ,typeof( __mavlink_mount_configure_t) ,typeof( __mavlink_mount_control_t) ,typeof( __mavlink_mount_status_t) ,null ,typeof( __mavlink_fence_point_t) ,typeof( __mavlink_fence_fetch_point_t) ,typeof( __mavlink_fence_status_t) ,null ,null ,null ,null ,null ,null ,null ,null ,null ,null ,null ,null ,null ,null ,null ,null ,null ,null ,null ,null ,null ,null ,null ,null ,null ,null ,null ,null ,null ,null ,null ,null ,null ,null ,null ,null ,null ,null ,null ,null ,null ,null ,null ,null ,null ,null ,null ,null ,null ,null ,null ,null ,null ,null ,null ,null ,null ,null ,null ,null ,null ,null ,null ,null ,null ,null ,null ,null ,null ,null ,null ,null ,null ,null ,null ,null ,null ,null ,null ,null ,null ,null ,null ,null ,null ,null ,null ,null ,typeof( __mavlink_debug_vect_t) ,typeof( __mavlink_named_value_float_t) ,typeof( __mavlink_named_value_int_t) ,typeof( __mavlink_statustext_t) ,typeof( __mavlink_debug_t) ,null ,};
+Type[] mavstructs = new Type[] {typeof( __mavlink_heartbeat_t) ,typeof( __mavlink_boot_t) ,null ,typeof( __mavlink_ping_t) ,null ,typeof( __mavlink_change_operator_control_t) ,typeof( __mavlink_change_operator_control_ack_t) ,typeof( __mavlink_auth_key_t) ,null ,typeof( __mavlink_action_ack_t) ,typeof( __mavlink_action_t) ,typeof( __mavlink_set_mode_t) ,typeof( __mavlink_set_nav_mode_t) ,null ,null ,null ,null ,null ,null ,null ,typeof( __mavlink_param_request_read_t) ,typeof( __mavlink_param_request_list_t) ,typeof( __mavlink_param_value_t) ,typeof( __mavlink_param_set_t) ,null ,typeof( __mavlink_gps_raw_int_t) ,typeof( __mavlink_scaled_imu_t) ,typeof( __mavlink_gps_status_t) ,typeof( __mavlink_raw_imu_t) ,typeof( __mavlink_raw_pressure_t) ,typeof( __mavlink_attitude_t) ,typeof( __mavlink_local_position_t) ,typeof( __mavlink_gps_raw_t) ,typeof( __mavlink_global_position_t) ,typeof( __mavlink_sys_status_t) ,typeof( __mavlink_rc_channels_raw_t) ,typeof( __mavlink_rc_channels_scaled_t) ,typeof( __mavlink_servo_output_raw_t) ,typeof( __mavlink_scaled_pressure_t) ,typeof( __mavlink_waypoint_t) ,typeof( __mavlink_waypoint_request_t) ,typeof( __mavlink_waypoint_set_current_t) ,typeof( __mavlink_waypoint_current_t) ,typeof( __mavlink_waypoint_request_list_t) ,typeof( __mavlink_waypoint_count_t) ,typeof( __mavlink_waypoint_clear_all_t) ,typeof( __mavlink_waypoint_reached_t) ,typeof( __mavlink_waypoint_ack_t) ,typeof( __mavlink_gps_set_global_origin_t) ,typeof( __mavlink_gps_local_origin_set_t) ,typeof( __mavlink_local_position_setpoint_set_t) ,typeof( __mavlink_local_position_setpoint_t) ,typeof( __mavlink_control_status_t) ,typeof( __mavlink_safety_set_allowed_area_t) ,typeof( __mavlink_safety_allowed_area_t) ,typeof( __mavlink_set_roll_pitch_yaw_thrust_t) ,typeof( __mavlink_set_roll_pitch_yaw_speed_thrust_t) ,typeof( __mavlink_roll_pitch_yaw_thrust_setpoint_t) ,typeof( __mavlink_roll_pitch_yaw_speed_thrust_setpoint_t) ,null ,null ,null ,typeof( __mavlink_nav_controller_output_t) ,typeof( __mavlink_position_target_t) ,typeof( __mavlink_state_correction_t) ,typeof( __mavlink_set_altitude_t) ,typeof( __mavlink_request_data_stream_t) ,typeof( __mavlink_hil_state_t) ,typeof( __mavlink_hil_controls_t) ,typeof( __mavlink_manual_control_t) ,typeof( __mavlink_rc_channels_override_t) ,null ,null ,typeof( __mavlink_global_position_int_t) ,typeof( __mavlink_vfr_hud_t) ,typeof( __mavlink_command_t) ,typeof( __mavlink_command_ack_t) ,null ,null ,null ,null ,null ,null ,null ,null ,null ,null ,null ,null ,null ,null ,null ,null ,null ,null ,null ,null ,null ,null ,null ,typeof( __mavlink_optical_flow_t) ,null ,null ,null ,null ,null ,null ,null ,null ,null ,null ,null ,null ,null ,null ,null ,null ,null ,null ,null ,null ,null ,null ,null ,null ,null ,null ,null ,null ,null ,null ,null ,null ,null ,null ,null ,null ,null ,null ,null ,typeof( __mavlink_object_detection_event_t) ,null ,null ,null ,null ,null ,null ,null ,null ,null ,typeof( __mavlink_sensor_offsets_t) ,typeof( __mavlink_set_mag_offsets_t) ,typeof( __mavlink_meminfo_t) ,typeof( __mavlink_ap_adc_t) ,typeof( __mavlink_digicam_configure_t) ,typeof( __mavlink_digicam_control_t) ,typeof( __mavlink_mount_configure_t) ,typeof( __mavlink_mount_control_t) ,typeof( __mavlink_mount_status_t) ,null ,typeof( __mavlink_fence_point_t) ,typeof( __mavlink_fence_fetch_point_t) ,typeof( __mavlink_fence_status_t) ,typeof( __mavlink_dcm_t) ,typeof( __mavlink_simstate_t) ,typeof( __mavlink_hwstatus_t) ,null ,null ,null ,null ,null ,null ,null ,null ,null ,null ,null ,null ,null ,null ,null ,null ,null ,null ,null ,null ,null ,null ,null ,null ,null ,null ,null ,null ,null ,null ,null ,null ,null ,null ,null ,null ,null ,null ,null ,null ,null ,null ,null ,null ,null ,null ,null ,null ,null ,null ,null ,null ,null ,null ,null ,null ,null ,null ,null ,null ,null ,null ,null ,null ,null ,null ,null ,null ,null ,null ,null ,null ,null ,null ,null ,null ,null ,null ,null ,null ,null ,null ,null ,null ,null ,typeof( __mavlink_debug_vect_t) ,typeof( __mavlink_named_value_float_t) ,typeof( __mavlink_named_value_int_t) ,typeof( __mavlink_statustext_t) ,typeof( __mavlink_debug_t) ,null ,};
 
 	}
-	#endif
+#endif
 }
 

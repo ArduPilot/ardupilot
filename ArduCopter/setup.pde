@@ -1162,6 +1162,9 @@ static void report_gps()
 static void report_version()
 {
 	Serial.printf_P(PSTR("FW Ver: %d\n"),(int)g.format_version.get());
+#if QUATERNION_ENABLE == ENABLED
+    Serial.printf_P(PSTR("Quaternion test\n"));
+#endif
 	print_divider();
 	print_blanks(2);
 }

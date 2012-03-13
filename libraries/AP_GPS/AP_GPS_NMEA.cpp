@@ -184,10 +184,10 @@ int AP_GPS_NMEA::_from_hex(char a)
         return a - '0';
 }
 
-unsigned long AP_GPS_NMEA::_parse_decimal()
+uint32_t AP_GPS_NMEA::_parse_decimal()
 {
     char *p = _term;
-    unsigned long ret = 100UL * atol(p);
+    uint32_t ret = 100UL * atol(p);
     while (isdigit(*p))
         ++p;
     if (*p == '.') {
@@ -200,7 +200,7 @@ unsigned long AP_GPS_NMEA::_parse_decimal()
     return ret;
 }
 
-unsigned long AP_GPS_NMEA::_parse_degrees()
+uint32_t AP_GPS_NMEA::_parse_degrees()
 {
     char *p, *q;
     uint8_t deg = 0, min = 0;

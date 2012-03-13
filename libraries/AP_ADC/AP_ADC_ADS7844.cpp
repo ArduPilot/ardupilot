@@ -126,9 +126,7 @@ void AP_ADC_ADS7844::read(uint32_t tnow)
 
 
 // Constructors ////////////////////////////////////////////////////////////////
-AP_ADC_ADS7844::AP_ADC_ADS7844() :
-			filter_result(false),
-			_filter_index_accel(0)
+AP_ADC_ADS7844::AP_ADC_ADS7844()
 {
 }
 
@@ -185,12 +183,26 @@ float AP_ADC_ADS7844::Ch(uint8_t ch_num)
 	return ((float)sum)/count;
 }
 
+// see if Ch6() can return new data
+bool AP_ADC_ADS7844::new_data_available(const uint8_t *channel_numbers)
+{
+	uint8_t i;
+
+	for (i=0; i<6; i++) {
+		if (_count[channel_numbers[i]] == 0) {
+            return false;
+        }
+	}
+    return true;
+}
+
+
 // Read 6 channel values
 // this assumes that the counts for all of the 6 channels are
 // equal. This will only be true if we always consistently access a
 // sensor by either Ch6() or Ch() and never mix them. If you mix them
 // then you will get very strange results
-uint32_t AP_ADC_ADS7844::Ch6(const uint8_t *channel_numbers, uint16_t *result)
+uint32_t AP_ADC_ADS7844::Ch6(const uint8_t *channel_numbers, float *result)
 {
 	uint16_t count[6];
 	uint32_t sum[6];
@@ -216,40 +228,8 @@ uint32_t AP_ADC_ADS7844::Ch6(const uint8_t *channel_numbers, uint16_t *result)
 	// division. That costs us 36 bytes of stack, but I think its
 	// worth it.
 	for (i = 0; i < 6; i++) {
-		result[i] = (sum[i] + (count[i]/2)) / count[i];
+		result[i] = (sum[i] + count[i]) / (float)count[i];
 	}
-
-
-	if(filter_result){
-		uint32_t _sum_accel;
-
-		// Accel filter
-		for (i = 0; i < 3; i++) {
-			// move most recent result into filter
-			_filter_accel[i][_filter_index_accel] = result[i+3];
-
-			// clear the sum
-			_sum_accel = 0;
-
-			// sum the filter
-			for (uint8_t n = 0; n < ADC_ACCEL_FILTER_SIZE; n++) {
-				_sum_accel += _filter_accel[i][n];
-			}
-
-			// filter does a moving average on last 8 reads, sums half with half of last filtered value
-			// save old result
-			_prev_accel[i] = result[i+3] = (_sum_accel >> 4) + (_prev_accel[i] >> 1);   // divide by 16, divide by 2
-
-		}
-
-		// increment filter index
-		_filter_index_accel++;
-
-		// loop our filter
-		if(_filter_index_accel == ADC_ACCEL_FILTER_SIZE)
-			_filter_index_accel = 0;
-	}
-
 
 	// return number of microseconds since last call
 	uint32_t us = micros();

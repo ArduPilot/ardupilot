@@ -214,7 +214,7 @@ AP_OpticalFlow_ADNS3080::update()
 	last_update = millis();
 
 	apply_orientation_matrix();
-	
+
 	return true;
 }
 
