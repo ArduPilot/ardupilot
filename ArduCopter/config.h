@@ -677,13 +677,13 @@
 // Loiter Navigation control gains
 //
 #ifndef LOITER_RATE_P
-# define LOITER_RATE_P		2.0			//
+# define LOITER_RATE_P		3.0			//
 #endif
 #ifndef LOITER_RATE_I
-# define LOITER_RATE_I		0.10		// Wind control
+# define LOITER_RATE_I		0.20		// Wind control
 #endif
 #ifndef LOITER_RATE_D
-# define LOITER_RATE_D		0.0			// try 2 or 3 for LOITER_RATE 1
+# define LOITER_RATE_D		0			// try 2 or 3 for LOITER_RATE 1
 #endif
 #ifndef LOITER_RATE_IMAX
 # define LOITER_RATE_IMAX	30			// degrees
