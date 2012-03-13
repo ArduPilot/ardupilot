@@ -105,21 +105,37 @@ static void calc_location_error(struct Location *next_loc)
 
 	int16_t tmp;
 
-	tmp			= (long_error - last_lon_error);
-	if(abs(abs(tmp) -last_lon_d) > 15)	tmp = x_rate_d;
+	// -------------------------------------
+	tmp	= (long_error - last_lon_error);
+	if(abs(abs(tmp) -last_lon_d) > 20){
+		tmp = x_rate_d;
+	}
+	if(long_error > 0){
+		if(tmp < 0) tmp = 0;
+	}else{
+		if(tmp > 0) tmp = 0;
+	}
 	x_rate_d	= lon_rate_d_filter.apply(tmp);
+	x_rate_d	= constrain(x_rate_d, -800, 800);
 	last_lon_d 	= abs(tmp);
 
-	tmp			= (lat_error - last_lat_error);
-	if(abs(abs(tmp) -last_lat_d) > 15)	tmp = y_rate_d;
-	//if(abs(tmp) > 80)	tmp	= y_rate_d;
+	// -------------------------------------
+	tmp	= (lat_error - last_lat_error);
+	if(abs(abs(tmp) -last_lat_d) > 20)
+		tmp = y_rate_d;
+	if(lat_error > 0){
+		if(tmp < 0) tmp = 0;
+	}else{
+		if(tmp > 0) tmp = 0;
+	}
 	y_rate_d	= lat_rate_d_filter.apply(tmp);
+	y_rate_d	= constrain(y_rate_d, -800, 800);
 	last_lat_d 	= abs(tmp);
 
-	int16_t t22 = x_rate_d * (g.pid_loiter_rate_lon.kD() / dTnav);
-	int16_t raww = (long_error - last_lon_error);
-
-	//Serial.printf("XX, %d, %d, %d\n", raww, x_rate_d, t22);
+	// debug
+	//int16_t t22 = x_rate_d * (g.pid_loiter_rate_lon.kD() / dTnav);
+	//if(control_mode	== LOITER)
+	//	Serial.printf("XX, %d, %d, %d \n", long_error, t22, (int16_t)g.pid_loiter_rate_lon.get_integrator());
 
 	last_lon_error 	= long_error;
 	last_lat_error 	= lat_error;
