@@ -77,6 +77,8 @@ namespace ArdupilotMega
         public float my { get; set; }
         public float mz { get; set; }
 
+        public float magfield { get { return (float)Math.Sqrt(Math.Pow(mx, 2) + Math.Pow(my, 2) + Math.Pow(mz, 2)); } }
+
         // calced turn rate
         public float turnrate { get { if (groundspeed <= 1) return 0; return (roll * 9.8f) / groundspeed; } }
 
