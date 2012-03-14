@@ -38,10 +38,13 @@ namespace ArdupilotMega
 
             if (openFileDialog1.ShowDialog() == DialogResult.OK)
             {
+                try
+                {
+                    double[] ans = getOffsets(openFileDialog1.FileName);
 
-                double[] ans = getOffsets(openFileDialog1.FileName);
-
-                SaveOffsets(ans);
+                    SaveOffsets(ans);
+                }
+                catch (Exception ex) { log.Debug(ex.ToString()); }
             }
         }
 
@@ -152,6 +155,12 @@ namespace ArdupilotMega
                 mine.logreadmode = false;
                 mine.logplaybackfile.Close();
                 mine.logplaybackfile = null;
+
+                if (data.Count < 10)
+                {
+                    CustomMessageBox.Show("Log does not contain enough data");
+                    throw new Exception("Not Enough Data");
+                }
 
                 double[] x = LeastSq(data);
 

@@ -327,7 +327,7 @@ namespace ArdupilotMega
                 byte[] buffer = readPacket();
                 if (buffer.Length > 5)
                 {
-                    log.Info("getHB packet received: " + buffer.Length + " btr " + BaseStream.BytesToRead + " type " + buffer[5] );
+                    //log.Info("getHB packet received: " + buffer.Length + " btr " + BaseStream.BytesToRead + " type " + buffer[5] );
                     if (buffer[5] == MAVLINK_MSG_ID_HEARTBEAT)
                     {
                         return buffer;
@@ -618,7 +618,7 @@ namespace ArdupilotMega
             DateTime start = DateTime.Now;
             DateTime restart = DateTime.Now;
 
-            while (got.Count < param_total)
+            do
             {
 
                 if (frmProgressReporter.doWorkArgs.CancelRequested)
@@ -629,7 +629,8 @@ namespace ArdupilotMega
                     return param;
                 }
 
-                if (!(start.AddMilliseconds(5000) > DateTime.Now))
+                // 2 seconds between valid packets
+                if (!(start.AddMilliseconds(2000) > DateTime.Now))
                 {
                     if (retrys > 0)
                     {
@@ -640,7 +641,7 @@ namespace ArdupilotMega
                         continue;
                     }
                     MainV2.givecomport = false;
-                    throw new Exception("Timeout on read - getParamList " + param_count +" "+ param_total);
+                    throw new Exception("Timeout on read - getParamList " + param_count + " " + param_total);
                 }
 
                 byte[] buffer = readPacket();
@@ -656,9 +657,9 @@ namespace ArdupilotMega
                         __mavlink_param_value_t par = buffer.ByteArrayToStructure<__mavlink_param_value_t>(6);
 
                         // set new target
-                        param_total = (par.param_count);
+                        param_total = (par.param_count - 1);
 
-                        
+
                         string paramID = System.Text.ASCIIEncoding.ASCII.GetString(par.param_id);
 
                         int pos = paramID.IndexOf('\0');
@@ -681,9 +682,13 @@ namespace ArdupilotMega
                         param_count++;
                         got.Add(par.param_index);
 
-//                        if (Progress != null)
-//                            Progress((param.Count * 100) / param_total, "Got param " + paramID);
+                        //                        if (Progress != null)
+                        //                            Progress((param.Count * 100) / param_total, "Got param " + paramID);
                         this.frmProgressReporter.UpdateProgressAndStatus((got.Count * 100) / param_total, "Got param " + paramID);
+
+                        // we have them all - lets escape eq total = 176 index = 0-175
+                        if (par.param_index == (param_total - 1))
+                            break;
                     }
                     else
                     {
@@ -692,7 +697,7 @@ namespace ArdupilotMega
                     //stopwatch.Stop();
                     //Console.WriteLine("Time elapsed: {0}", stopwatch.Elapsed);
                 }
-            }
+            } while (got.Count < param_total);
 
             if (got.Count != param_total)
             {
