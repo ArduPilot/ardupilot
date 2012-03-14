@@ -1924,6 +1924,7 @@ static void update_altitude()
 		// calc the vertical accel rate
 		int temp			= (baro_alt - old_baro_alt) * 10;
 		baro_rate 			= (temp + baro_rate) >> 1;
+		baro_rate			= constrain(baro_rate, -300, 300);
 		old_baro_alt		= baro_alt;
 
 		// Note: sonar_alt is calculated in a faster loop and filtered with a mode filter
@@ -1942,6 +1943,7 @@ static void update_altitude()
 			// calc the vertical accel rate
 			// positive = going up.
 			sonar_rate 		= (sonar_alt - old_sonar_alt) * 10;
+			sonar_rate		= constrain(sonar_rate, -150, 150);
 			old_sonar_alt 	= sonar_alt;
 		#endif
 
