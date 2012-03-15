@@ -231,6 +231,17 @@ static void timer_handler(int signum)
 	if (kill(parent_pid, 0) != 0) {
 		exit(1);
 	}
+#else
+    
+    static uint16_t count = 0;
+    static uint32_t last_report;
+        
+    	count++;
+		if (millis() - last_report > 1000) {
+			printf("TH %u cps\n", count);
+			count = 0;
+			last_report = millis();
+		}
 #endif
 
 	/* check for packet from flight sim */
