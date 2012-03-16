@@ -1161,10 +1161,10 @@ static void fifty_hz_loop()
 	camera_stabilization();
 
 	# if HIL_MODE == HIL_MODE_DISABLED
-		if (g.log_bitmask & MASK_LOG_ATTITUDE_FAST)
+		if (g.log_bitmask & MASK_LOG_ATTITUDE_FAST && motor_armed)
 			Log_Write_Attitude();
 
-		if (g.log_bitmask & MASK_LOG_RAW)
+		if (g.log_bitmask & MASK_LOG_RAW && motor_armed)
 			Log_Write_Raw();
 	#endif
 
@@ -1699,8 +1699,8 @@ void update_throttle_mode(void)
 				}
 
 				// hack to remove the influence of the ground effect
-				if(current_loc.alt < 200 && landing_boost != 0) {
-				  nav_throttle = min(nav_throttle, 0);
+				if(g.sonar_enabled && current_loc.alt < 100 && landing_boost != 0) {
+					nav_throttle = min(nav_throttle, 0);
 				}
 
 				#if FRAME_CONFIG == HELI_FRAME
