@@ -55,11 +55,15 @@ static void calc_XY_velocity(){
 
 	// straightforward approach:
 	///*
-	x_actual_speed 	= x_speed_old + (float)(g_gps->longitude - last_longitude)  * scaleLongDown * tmp;
-	y_actual_speed	= y_speed_old + (float)(g_gps->latitude  - last_latitude)  * tmp;
 
-	x_actual_speed	= x_actual_speed >> 1;
-	y_actual_speed	= y_actual_speed >> 1;
+	x_actual_speed 	= (float)(g_gps->longitude - last_longitude)  * scaleLongDown * tmp;
+	y_actual_speed	= (float)(g_gps->latitude  - last_latitude)  * tmp;
+
+	x_actual_speed	= (x_actual_speed + x_speed_old * 3) / 4;
+	y_actual_speed	= (y_actual_speed + y_speed_old * 3) / 4;
+
+	//x_actual_speed	= x_actual_speed >> 1;
+	//y_actual_speed	= y_actual_speed >> 1;
 
 	x_speed_old 	= x_actual_speed;
 	y_speed_old 	= y_actual_speed;
@@ -149,7 +153,6 @@ static void calc_loiter(int x_error, int y_error)
 
 	// East / West
 	x_target_speed 	= g.pi_loiter_lon.get_p(x_error);			// not contstrained yet
-	//x_target_speed	= constrain(x_target_speed, -250, 250);		// limit to 2.5m/s travel speed
 	x_rate_error 	= x_target_speed - x_actual_speed;			// calc the speed error
 	nav_lon			= g.pid_loiter_rate_lon.get_pid(x_rate_error, dTnav);
 	//nav_lon			+= x_rate_d * (g.pid_loiter_rate_lon.kD() / dTnav);
@@ -157,7 +160,6 @@ static void calc_loiter(int x_error, int y_error)
 
 	// North / South
 	y_target_speed 	= g.pi_loiter_lat.get_p(y_error);
-	//y_target_speed	= constrain(y_target_speed, -250, 250);
 	y_rate_error 	= y_target_speed - y_actual_speed;
 	nav_lat			= g.pid_loiter_rate_lat.get_pid(y_rate_error, dTnav);
 	//nav_lat			+= y_rate_d * (g.pid_loiter_rate_lat.kD() / dTnav);
@@ -167,6 +169,7 @@ static void calc_loiter(int x_error, int y_error)
 	g.pid_nav_lon.set_integrator(g.pid_loiter_rate_lon.get_integrator());
 	g.pid_nav_lat.set_integrator(g.pid_loiter_rate_lat.get_integrator());
 
+	//Serial.printf("XX, %d, %d, %d\n", long_error, x_actual_speed, (int16_t)g.pid_loiter_rate_lon.get_integrator());
 
 	// Wind I term based on location error,
 	// limit windup
