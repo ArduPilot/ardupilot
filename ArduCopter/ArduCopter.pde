@@ -1955,9 +1955,8 @@ static void update_altitude()
 				sonar_alt = (float)sonar_alt * temp;
 			#endif
 
-			scale = (sonar_alt - 400) / 200;
-			scale = constrain(scale, 0, 1);
-
+			scale = (float)(sonar_alt - 400) / 200.0;
+			scale = constrain(scale, 0.0, 1.0);
 			// solve for a blended altitude
 			current_loc.alt = ((float)sonar_alt * (1.0 - scale)) + ((float)baro_alt * scale) + home.alt;
 
