@@ -109,12 +109,12 @@ static void calc_location_error(struct Location *next_loc)
 	tmp	= (long_error - last_lon_error);
 	if(abs(abs(tmp) -last_lon_d) > 20){
 		tmp = x_rate_d;
-	}
+	}/*
 	if(long_error > 0){
 		if(tmp < 0) tmp = 0;
 	}else{
 		if(tmp > 0) tmp = 0;
-	}
+	}*/
 	x_rate_d	= lon_rate_d_filter.apply(tmp);
 	x_rate_d	= constrain(x_rate_d, -800, 800);
 	last_lon_d 	= abs(tmp);
@@ -123,11 +123,11 @@ static void calc_location_error(struct Location *next_loc)
 	tmp	= (lat_error - last_lat_error);
 	if(abs(abs(tmp) -last_lat_d) > 20)
 		tmp = y_rate_d;
-	if(lat_error > 0){
+	/*if(lat_error > 0){
 		if(tmp < 0) tmp = 0;
 	}else{
 		if(tmp > 0) tmp = 0;
-	}
+	}*/
 	y_rate_d	= lat_rate_d_filter.apply(tmp);
 	y_rate_d	= constrain(y_rate_d, -800, 800);
 	last_lat_d 	= abs(tmp);
@@ -151,16 +151,16 @@ static void calc_loiter(int x_error, int y_error)
 	x_target_speed 	= g.pi_loiter_lon.get_p(x_error);			// not contstrained yet
 	//x_target_speed	= constrain(x_target_speed, -250, 250);		// limit to 2.5m/s travel speed
 	x_rate_error 	= x_target_speed - x_actual_speed;			// calc the speed error
-	nav_lon			= g.pid_loiter_rate_lon.get_pi(x_rate_error, dTnav);
-	nav_lon			+= x_rate_d * (g.pid_loiter_rate_lon.kD() / dTnav);
+	nav_lon			= g.pid_loiter_rate_lon.get_pid(x_rate_error, dTnav);
+	//nav_lon			+= x_rate_d * (g.pid_loiter_rate_lon.kD() / dTnav);
 	nav_lon			= constrain(nav_lon, -3000, 3000); 			// 30°
 
 	// North / South
 	y_target_speed 	= g.pi_loiter_lat.get_p(y_error);
 	//y_target_speed	= constrain(y_target_speed, -250, 250);
 	y_rate_error 	= y_target_speed - y_actual_speed;
-	nav_lat			= g.pid_loiter_rate_lat.get_pi(y_rate_error, dTnav);
-	nav_lat			+= y_rate_d * (g.pid_loiter_rate_lat.kD() / dTnav);
+	nav_lat			= g.pid_loiter_rate_lat.get_pid(y_rate_error, dTnav);
+	//nav_lat			+= y_rate_d * (g.pid_loiter_rate_lat.kD() / dTnav);
 	nav_lat			= constrain(nav_lat, -3000, 3000); // 30°
 
 	// copy over I term to Nav_Rate
