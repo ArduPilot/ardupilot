@@ -165,7 +165,7 @@ AP_Declination::get_lookup_value(uint8_t x, uint8_t y)
 		uint8_t sign = (uint8_t)pgm_read_byte_far(&exception_signs[x][y/8]);
 
 		// Check the sign bit for this index
-		if(sign & (1 << y%8))
+		if(sign & (0x80 >> y%8))
 			val = -val;
 
 		return val;
