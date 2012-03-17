@@ -664,7 +664,7 @@
 // Loiter control gains
 //
 #ifndef LOITER_P
-# define LOITER_P			.7
+# define LOITER_P			.35
 #endif
 #ifndef LOITER_I
 # define LOITER_I			0.0
@@ -680,7 +680,7 @@
 # define LOITER_RATE_P		2.0			//
 #endif
 #ifndef LOITER_RATE_I
-# define LOITER_RATE_I		0.30		// Wind control
+# define LOITER_RATE_I		0.2		// Wind control
 #endif
 #ifndef LOITER_RATE_D
 # define LOITER_RATE_D		0			// try 2 or 3 for LOITER_RATE 1
