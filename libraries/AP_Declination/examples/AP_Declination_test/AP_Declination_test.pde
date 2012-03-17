@@ -55,19 +55,19 @@ void setup(void)
 
 	Serial.begin(115200);
 
-	for(int i = -90; i <= 90; i++)
+	for(int i = -90; i <= 90; i+=10)
 	{
-		for(int j = -180; j <= 180; j++)
+		for(int j = -180; j <= 180; j+=10)
 		{
 			declination = AP_Declination::get_declination(i, j);
 			declination_test = get_declination(i, j);
 			if(declination == declination_test)
 			{
-				Serial.printf("Pass: %i, %i", i, j);
+				Serial.printf("Pass: %i, %i : %f, %f\n", i, j, declination, declination_test);
 			}
 			else
 			{
-				Serial.printf("Fail: %i, %i", i, j);
+				Serial.printf("Fail: %i, %i : %f, %f\n", i, j, declination, declination_test);
 			}
 		}
 	}
