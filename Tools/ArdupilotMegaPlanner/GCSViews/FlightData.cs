@@ -230,6 +230,9 @@ namespace ArdupilotMega.GCSViews
             Zoomlevel.Minimum = gMapControl1.MinZoom;
             Zoomlevel.Maximum = gMapControl1.MaxZoom + 1;
             Zoomlevel.Value = Convert.ToDecimal(gMapControl1.Zoom);
+
+            if (MainV2.config["CHK_autopan"] != null)
+                CHK_autopan.Checked = bool.Parse(MainV2.config["CHK_autopan"].ToString());
         }
 
         private void mainloop()
@@ -1764,6 +1767,11 @@ print 'Roll complete'
 
                 scr.runScript(tb.Text);
             }
+        }
+
+        private void CHK_autopan_CheckedChanged(object sender, EventArgs e)
+        {
+            MainV2.config["CHK_autopan"] = CHK_autopan.Checked.ToString();
         }
     }
 }

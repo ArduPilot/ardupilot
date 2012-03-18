@@ -187,12 +187,14 @@ namespace ArdupilotMega
                     this.Location = startpos;
                 }
 
+                if (config["MainMaximised"] != null)
+                    this.WindowState = (FormWindowState)Enum.Parse(typeof(FormWindowState), config["MainMaximised"].ToString());
+
                 if (config["MainHeight"] != null)
                     this.Height = int.Parse(config["MainHeight"].ToString());
                 if (config["MainWidth"] != null)
                     this.Width = int.Parse(config["MainWidth"].ToString());
-                if (config["MainMaximised"] != null)
-                    this.WindowState = (FormWindowState)Enum.Parse(typeof(FormWindowState), config["MainMaximised"].ToString());
+
 
                 if (config["CMB_rateattitude"] != null)
                     MainV2.cs.rateattitude = byte.Parse(config["CMB_rateattitude"].ToString());
@@ -202,10 +204,12 @@ namespace ArdupilotMega
                     MainV2.cs.ratestatus = byte.Parse(config["CMB_ratestatus"].ToString());
                 if (config["CMB_rateattitude"] != null)
                     MainV2.cs.raterc = byte.Parse(config["CMB_raterc"].ToString());
+                if (config["CMB_ratesensors"] != null)
+                    MainV2.cs.raterc = byte.Parse(config["CMB_ratesensors"].ToString());
 
                 if (config["speechenable"] != null)
                     MainV2.speechenable = bool.Parse(config["speechenable"].ToString());
-                
+
                 //int fixme;
                 /*
                 MainV2.cs.rateattitude = 50;
@@ -277,7 +281,7 @@ namespace ArdupilotMega
             }
 
             string[] ports = SerialPort.GetPortNames()
-                .Select(p=>p.TrimEnd())
+                .Select(p => p.TrimEnd())
                 .Select(FixBlueToothPortNameBug)
                 .ToArray();
 
@@ -289,26 +293,26 @@ namespace ArdupilotMega
             return allPorts;
         }
 
-         // .NET bug: sometimes bluetooth ports are enumerated with bogus characters 
-         // eg 'COM10' becomes 'COM10c' - one workaround is to remove the non numeric  
-         // char. Annoyingly, sometimes a numeric char is added, which means this 
-         // does not work in all cases. 
-         // See http://connect.microsoft.com/VisualStudio/feedback/details/236183/system-io-ports-serialport-getportnames-error-with-bluetooth 
-         private string FixBlueToothPortNameBug(string portName) 
-         { 
-             if (!portName.StartsWith("COM")) 
-                 return portName; 
-             var newPortName = "COM";                                // Start over with "COM" 
-             foreach (var portChar in portName.Substring(3).ToCharArray())  //  Remove "COM", put the rest in a character array 
-             { 
-                 if (char.IsDigit(portChar)) 
-                     newPortName += portChar.ToString(); // Good character, append to portName 
-                 else 
-                     log.WarnFormat("Bad (Non Numeric) character in port name '{0}' - removing", portName); 
-             } 
- 
-             return newPortName; 
-         } 
+        // .NET bug: sometimes bluetooth ports are enumerated with bogus characters 
+        // eg 'COM10' becomes 'COM10c' - one workaround is to remove the non numeric  
+        // char. Annoyingly, sometimes a numeric char is added, which means this 
+        // does not work in all cases. 
+        // See http://connect.microsoft.com/VisualStudio/feedback/details/236183/system-io-ports-serialport-getportnames-error-with-bluetooth 
+        private string FixBlueToothPortNameBug(string portName)
+        {
+            if (!portName.StartsWith("COM"))
+                return portName;
+            var newPortName = "COM";                                // Start over with "COM" 
+            foreach (var portChar in portName.Substring(3).ToCharArray())  //  Remove "COM", put the rest in a character array 
+            {
+                if (char.IsDigit(portChar))
+                    newPortName += portChar.ToString(); // Good character, append to portName 
+                else
+                    log.WarnFormat("Bad (Non Numeric) character in port name '{0}' - removing", portName);
+            }
+
+            return newPortName;
+        }
 
         internal void ScreenShot()
         {
@@ -548,7 +552,6 @@ namespace ArdupilotMega
                     comPort.BaseStream.toggleDTR();
 
                 comPort.BaseStream.DtrEnable = false;
-                comPort.BaseStream.RtsEnable = false;
 
                 try
                 {
@@ -557,7 +560,7 @@ namespace ArdupilotMega
                     try
                     {
                         Directory.CreateDirectory(Path.GetDirectoryName(Application.ExecutablePath) + Path.DirectorySeparatorChar + @"logs");
-                        comPort.logfile = new BinaryWriter(File.Open(Path.GetDirectoryName(Application.ExecutablePath) + Path.DirectorySeparatorChar + @"logs" + Path.DirectorySeparatorChar + DateTime.Now.ToString("yyyy-MM-dd hh-mm-ss") + ".tlog", FileMode.CreateNew,FileAccess.ReadWrite,FileShare.Read));
+                        comPort.logfile = new BinaryWriter(File.Open(Path.GetDirectoryName(Application.ExecutablePath) + Path.DirectorySeparatorChar + @"logs" + Path.DirectorySeparatorChar + DateTime.Now.ToString("yyyy-MM-dd hh-mm-ss") + ".tlog", FileMode.CreateNew, FileAccess.ReadWrite, FileShare.Read));
                     }
                     catch { CustomMessageBox.Show("Failed to create log - wont log this session"); } // soft fail
 
@@ -1503,7 +1506,8 @@ namespace ArdupilotMega
                 log.Info("Quitting existing process");
                 try
                 {
-                    MainV2.instance.BeginInvoke((MethodInvoker)delegate() {
+                    MainV2.instance.BeginInvoke((MethodInvoker)delegate()
+                    {
                         Application.Exit();
                     });
                 }
@@ -1786,7 +1790,7 @@ namespace ArdupilotMega
 
                     ((HttpWebRequest)request).AutomaticDecompression = DecompressionMethods.GZip | DecompressionMethods.Deflate;
 
-                    request.Headers.Add("Accept-Encoding", "gzip,deflate"); 
+                    request.Headers.Add("Accept-Encoding", "gzip,deflate");
 
                     // Get the response.
                     response = request.GetResponse();
