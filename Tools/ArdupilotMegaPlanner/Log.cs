@@ -118,7 +118,6 @@ namespace ArdupilotMega
                 log.Info("Comport thread close");
             }) {Name = "comport reader"};
             t11.Start();
-            MainV2.threads.Add(t11);
 
             // doesnt seem to work on mac
             //comPort.DataReceived += new SerialDataReceivedEventHandler(comPort_DataReceived);
@@ -728,7 +727,6 @@ namespace ArdupilotMega
                 System.Threading.Thread t11 = new System.Threading.Thread(delegate() { downloadthread(1, logcount); });
                 t11.Name = "Log Download All thread";
                 t11.Start();
-                MainV2.threads.Add(t11);
             }
         }
 
@@ -779,7 +777,6 @@ namespace ArdupilotMega
                 System.Threading.Thread t11 = new System.Threading.Thread(delegate() { downloadsinglethread(); });
                 t11.Name = "Log download single thread";
                 t11.Start();
-                MainV2.threads.Add(t11);
             }
         }
 

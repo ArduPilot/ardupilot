@@ -403,8 +403,8 @@ namespace ArdupilotMega
 
                         try
                         {
-                            if (MainV2.talk != null)
-                                MainV2.talk.SpeakAsyncCancelAll();
+                            if (MainV2.speechEngine != null)
+                                MainV2.speechEngine.SpeakAsyncCancelAll();
                         }
                         catch { } // ignore because of this Exception System.PlatformNotSupportedException: No voice installed on the system or none available with the current security setting.
 
