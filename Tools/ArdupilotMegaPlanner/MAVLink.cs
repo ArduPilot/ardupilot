@@ -190,8 +190,8 @@ namespace ArdupilotMega
                     Thread.Sleep(1000);
                 }
 
-                byte[] buffer;
-                byte[] buffer1;
+                byte[] buffer = new byte[0];
+                byte[] buffer1 = new byte[0];
 
                 DateTime start = DateTime.Now;
                 DateTime deadline = start.AddSeconds(CONNECT_TIMEOUT_SECONDS);
@@ -248,14 +248,18 @@ namespace ArdupilotMega
                     // incase we are in setup mode
                     BaseStream.WriteLine("planner\rgcs\r");
 
-                    buffer = getHeartBeat();
+                    // can see 2 heartbeat packets at any time, and will connect - was one after the other
+
+                    if (buffer.Length == 0)
+                        buffer = getHeartBeat();
 
                     // incase we are in setup mode
                     BaseStream.WriteLine("planner\rgcs\r");
 
                     System.Threading.Thread.Sleep(1);
 
-                    buffer1 = getHeartBeat();
+                    if (buffer1.Length == 0)
+                        buffer1 = getHeartBeat();
 
                     try
                     {
@@ -317,6 +321,7 @@ namespace ArdupilotMega
             frmProgressReporter.UpdateProgressAndStatus(100, "Done.");
             log.Info("Done open " + sysid + " " + compid);
             packetslost = 0;
+            synclost = 0;
         }
 
         byte[] getHeartBeat()
@@ -340,19 +345,19 @@ namespace ArdupilotMega
 
         public void sendPacket(object indata)
         {
-            bool run = false;
+            bool validPacket = false;
             byte a = 0;
             foreach (Type ty in mavstructs)
             {
                 if (ty == indata.GetType())
                 {
-                    run = true;
+                    validPacket = true;
                     generatePacket(a, indata);
                     return;
                 }
                 a++;
             }
-            if (!run)
+            if (!validPacket)
             {
                 log.Info("Mavlink : NOT VALID PACKET sendPacket() " + indata.GetType().ToString());
             }
@@ -603,7 +608,7 @@ namespace ArdupilotMega
             // clear old
             param = new Hashtable();
 
-            int retrys = 3;
+            int retrys = 6;
             int param_count = 0;
             int param_total = 5;
 
@@ -629,8 +634,8 @@ namespace ArdupilotMega
                     return param;
                 }
 
-                // 2 seconds between valid packets
-                if (!(start.AddMilliseconds(2000) > DateTime.Now))
+                // 4 seconds between valid packets
+                if (!(start.AddMilliseconds(4000) > DateTime.Now))
                 {
                     if (retrys > 0)
                     {
@@ -641,7 +646,7 @@ namespace ArdupilotMega
                         continue;
                     }
                     MainV2.givecomport = false;
-                    throw new Exception("Timeout on read - getParamList " + param_count + " " + param_total);
+                    throw new Exception("Timeout on read - getParamList " + got.Count + " " + param_total + "\n\nYour serial link isn't fast enough\n");
                 }
 
                 byte[] buffer = readPacket();
@@ -671,11 +676,12 @@ namespace ArdupilotMega
                         // check if we already have it
                         if (got.Contains(par.param_index))
                         {
-                            //Console.WriteLine("Already got '"+paramID+"'");
+                            log.Info("Already got "+(par.param_index)  + " '" + paramID + "'");
+                            this.frmProgressReporter.UpdateProgressAndStatus((got.Count * 100) / param_total, "Already Got param " + paramID);
                             continue;
                         }
 
-                        log.Info(DateTime.Now.Millisecond + " got param " + (par.param_index) + " of " + (param_total - 1) + " name: " + paramID);
+                        log.Info(DateTime.Now.Millisecond + " got param " + (par.param_index) + " of " + (par.param_count - 2) + " name: " + paramID);
 
                         modifyParamForDisplay(true, paramID, ref par.param_value);
                         param[paramID] = (par.param_value);
@@ -2084,7 +2090,7 @@ namespace ArdupilotMega
 
             if (bpstime.Second != DateTime.Now.Second && !logreadmode)
             {
-                //                Console.Write("bps {0} loss {1} left {2} mem {3}      \n", bps1, synclost, BaseStream.BytesToRead, System.GC.GetTotalMemory(false));
+                               Console.Write("bps {0} loss {1} left {2} mem {3}      \n", bps1, synclost, BaseStream.BytesToRead, System.GC.GetTotalMemory(false));
                 bps2 = bps1; // prev sec
                 bps1 = 0; // current sec
                 bpstime = DateTime.Now;

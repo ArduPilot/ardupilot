@@ -145,6 +145,7 @@ namespace ArdupilotMega.GCSViews
             CMB_rateposition.Text = MainV2.cs.rateposition.ToString();
             CMB_raterc.Text = MainV2.cs.raterc.ToString();
             CMB_ratestatus.Text = MainV2.cs.ratestatus.ToString();
+            CMB_ratesensors.Text = MainV2.cs.ratesensors.ToString();
 
 
             if (MainV2.config["CHK_GDIPlus"] != null)
@@ -1182,6 +1183,12 @@ namespace ArdupilotMega.GCSViews
                 return true;
             }
             return base.ProcessCmdKey(ref msg, keyData);
+        }
+
+        private void CMB_ratesensors_SelectedIndexChanged(object sender, EventArgs e)
+        {
+            MainV2.config[((ComboBox)sender).Name] = ((ComboBox)sender).Text;
+            MainV2.cs.ratesensors = byte.Parse(((ComboBox)sender).Text);
         }
     }
 }
