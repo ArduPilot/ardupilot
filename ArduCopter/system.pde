@@ -532,8 +532,6 @@ static void set_mode(byte mode)
 		reset_nav_params();
 		// remove the wind compenstaion
 		reset_wind_I();
-		// Clears the WP navigation speed compensation
-		reset_nav_I();
 		// Clears the alt hold compensation
 		reset_throttle_I();
 	}
