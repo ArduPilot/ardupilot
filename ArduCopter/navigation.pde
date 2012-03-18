@@ -50,6 +50,12 @@ static void calc_XY_velocity(){
 	// y_GPS_speed positve = Up
 	// x_GPS_speed positve = Right
 
+	// initialise last_longitude and last_latitude
+	if( last_longitude == 0 && last_latitude == 0 ) {
+		last_longitude = g_gps->longitude;
+		last_latitude = g_gps->latitude;
+	}
+
 	// this speed is ~ in cm because we are using 10^7 numbers from GPS
 	float tmp = 1.0/dTnav;
 
