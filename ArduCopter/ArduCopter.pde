@@ -1781,12 +1781,10 @@ static void update_navigation()
 			// go of the sticks
 
 			if((abs(g.rc_2.control_in) + abs(g.rc_1.control_in)) > 500){
-				// flag will reset when speed drops below .5 m/s
 				loiter_override 	= true;
 			}
 
 			// Allow the user to take control temporarily,
-			// regain hold when the speed goes down to .5m/s
 			if(loiter_override){
 				// this sets the copter to not try and nav while we control it
 				wp_control 	= NO_NAV_MODE;
@@ -1795,7 +1793,7 @@ static void update_navigation()
 				next_WP.lat = current_loc.lat;
 				next_WP.lng = current_loc.lng;
 
-				if((g.rc_2.control_in + g.rc_1.control_in) == 0){
+				if( g.rc_2.control_in == 0 && g.rc_1.control_in == 0 ){
 					loiter_override 	= false;
 					wp_control 			= LOITER_MODE;
 				}
