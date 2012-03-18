@@ -899,10 +899,6 @@
 # define USE_CURRENT_ALT FALSE
 #endif
 
-
-#ifndef AUTO_RESET_LOITER
-# define AUTO_RESET_LOITER	1	// enables Loiter to reset it's current location based on stick input.
-#endif
 #ifndef CUT_MOTORS
 # define CUT_MOTORS		1		// do we cut the motors with no throttle?
 #endif
