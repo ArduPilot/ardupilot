@@ -863,10 +863,10 @@ namespace ArdupilotMega.GCSViews
 
         private void CHK_enablespeech_CheckedChanged(object sender, EventArgs e)
         {
-            MainV2.speechenable = CHK_enablespeech.Checked;
+            MainV2.speechEnable = CHK_enablespeech.Checked;
             MainV2.config["speechenable"] = CHK_enablespeech.Checked;
-            if (MainV2.talk != null)
-                MainV2.talk.SpeakAsyncCancelAll();
+            if (MainV2.speechEngine != null)
+                MainV2.speechEngine.SpeakAsyncCancelAll();
         }
         private void CMB_language_SelectedIndexChanged(object sender, EventArgs e)
         {

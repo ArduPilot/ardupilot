@@ -336,7 +336,6 @@ namespace ArdupilotMega.GCSViews
                     IsBackground = true
                 };
                 t11.Start();
-                MainV2.threads.Add(t11);
                 timer_servo_graph.Start();
             }
             else

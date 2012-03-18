@@ -39,14 +39,14 @@ namespace ArdupilotMega
         const int SW_HIDE = 0;
 
         public static MAVLink comPort = new MAVLink();
-        public static string comportname = "";
+        public static string comPortName = "";
         public static Hashtable config = new Hashtable();
-        public static bool givecomport = false;
+        public static bool giveComport = false;
         public static Firmwares APMFirmware = Firmwares.ArduPlane;
         public static bool MONO = false;
 
-        public static bool speechenable = false;
-        public static Speech talk = null;
+        public static bool speechEnable = false;
+        public static Speech speechEngine = null;
 
         public static Joystick joystick = null;
         DateTime lastjoystick = DateTime.Now;
@@ -55,21 +55,13 @@ namespace ArdupilotMega
 
         public static CurrentState cs = new CurrentState();
 
-        bool serialthread = false;
+        bool serialThread = false;
 
         TcpListener listener;
 
-        DateTime heatbeatsend = DateTime.Now;
+        DateTime heatbeatSend = DateTime.Now;
 
-        public static List<System.Threading.Thread> threads = new List<System.Threading.Thread>();
         public static MainV2 instance = null;
-
-        /*
-         * "PITCH_KP",
-"PITCH_KI",
-"PITCH_LIM",
-
-         */
 
         public enum Firmwares
         {
@@ -106,9 +98,7 @@ namespace ArdupilotMega
             var t = Type.GetType("Mono.Runtime");
             MONO = (t != null);
 
-            talk = new Speech();
-
-            //talk.SpeakAsync("Welcome to APM Planner");
+            speechEngine = new Speech();
 
             MyRenderer.currentpressed = MenuFlightData;
 
@@ -208,7 +198,7 @@ namespace ArdupilotMega
                     MainV2.cs.raterc = byte.Parse(config["CMB_ratesensors"].ToString());
 
                 if (config["speechenable"] != null)
-                    MainV2.speechenable = bool.Parse(config["speechenable"].ToString());
+                    MainV2.speechEnable = bool.Parse(config["speechenable"].ToString());
 
                 //int fixme;
                 /*
@@ -461,7 +451,7 @@ namespace ArdupilotMega
                 MenuConnect_Click(sender, e);
             }
 
-            givecomport = true;
+            giveComport = true;
 
             MyView.Controls.Clear();
 
@@ -493,7 +483,7 @@ namespace ArdupilotMega
 
         private void MenuConnect_Click(object sender, EventArgs e)
         {
-            givecomport = false;
+            giveComport = false;
 
             if (comPort.BaseStream.IsOpen && cs.groundspeed > 4)
             {
@@ -509,8 +499,8 @@ namespace ArdupilotMega
                 {
                     try
                     {
-                        if (talk != null) // cancel all pending speech
-                            talk.SpeakAsyncCancelAll();
+                        if (speechEngine != null) // cancel all pending speech
+                            speechEngine.SpeakAsyncCancelAll();
                     }
                     catch { }
 
@@ -547,9 +537,6 @@ namespace ArdupilotMega
                 comPort.BaseStream.DataBits = 8;
                 comPort.BaseStream.StopBits = (StopBits)Enum.Parse(typeof(StopBits), "1");
                 comPort.BaseStream.Parity = (Parity)Enum.Parse(typeof(Parity), "None");
-
-                if (config["CHK_resetapmonconnect"] == null || bool.Parse(config["CHK_resetapmonconnect"].ToString()) == true)
-                    comPort.BaseStream.toggleDTR();
 
                 comPort.BaseStream.DtrEnable = false;
 
@@ -642,13 +629,13 @@ namespace ArdupilotMega
 
         private void CMB_serialport_SelectedIndexChanged(object sender, EventArgs e)
         {
-            comportname = CMB_serialport.Text;
-            if (comportname == "UDP" || comportname == "TCP")
+            comPortName = CMB_serialport.Text;
+            if (comPortName == "UDP" || comPortName == "TCP")
             {
                 CMB_baudrate.Enabled = false;
-                if (comportname == "TCP")
+                if (comPortName == "TCP")
                     MainV2.comPort.BaseStream = new TcpSerial();
-                if (comportname == "UDP")
+                if (comPortName == "UDP")
                     MainV2.comPort.BaseStream = new UdpSerial();
             }
             else
@@ -682,7 +669,7 @@ namespace ArdupilotMega
             GCSViews.FlightData.threadrun = 0;
             GCSViews.Simulation.threadrun = 0;
 
-            serialthread = false;
+            serialThread = false;
 
             try
             {
@@ -725,7 +712,7 @@ namespace ArdupilotMega
 
                     xmlwriter.WriteStartElement("Config");
 
-                    xmlwriter.WriteElementString("comport", comportname);
+                    xmlwriter.WriteElementString("comport", comPortName);
 
                     xmlwriter.WriteElementString("baudrate", CMB_baudrate.Text);
 
@@ -779,7 +766,7 @@ namespace ArdupilotMega
                                             CMB_serialport.Text = temp; // allows ports that dont exist - yet
                                         }
                                         comPort.BaseStream.PortName = temp;
-                                        comportname = temp;
+                                        comPortName = temp;
                                         break;
                                     case "baudrate":
                                         string temp2 = xmlreader.ReadString();
@@ -876,64 +863,68 @@ namespace ArdupilotMega
             }
         }
 
+        private void updateConnectIcon()
+        {
+            DateTime menuupdate = DateTime.Now;
 
+            if ((DateTime.Now - menuupdate).Milliseconds > 500)
+            {
+                //                        Console.WriteLine(DateTime.Now.Millisecond);
+                if (comPort.BaseStream.IsOpen)
+                {
+                    if ((string)this.MenuConnect.BackgroundImage.Tag != "Disconnect")
+                    {
+                        this.Invoke((MethodInvoker)delegate
+                        {
+                            this.MenuConnect.BackgroundImage = global::ArdupilotMega.Properties.Resources.disconnect;
+                            this.MenuConnect.BackgroundImage.Tag = "Disconnect";
+                            CMB_baudrate.Enabled = false;
+                            CMB_serialport.Enabled = false;
+                        });
+                    }
+                }
+                else
+                {
+                    if ((string)this.MenuConnect.BackgroundImage.Tag != "Connect")
+                    {
+                        this.Invoke((MethodInvoker)delegate
+                        {
+                            this.MenuConnect.BackgroundImage = global::ArdupilotMega.Properties.Resources.connect;
+                            this.MenuConnect.BackgroundImage.Tag = "Connect";
+                            CMB_baudrate.Enabled = true;
+                            CMB_serialport.Enabled = true;
+                        });
+                    }
+                }
+                menuupdate = DateTime.Now;
+            }
+        }
 
 
         private void SerialReader()
         {
-            if (serialthread == true)
+            if (serialThread == true)
                 return;
-            serialthread = true;
+            serialThread = true;
 
             int minbytes = 10;
 
             if (MONO)
                 minbytes = 0;
 
-            DateTime menuupdate = DateTime.Now;
-
             DateTime speechcustomtime = DateTime.Now;
 
             DateTime linkqualitytime = DateTime.Now;
 
-            while (serialthread)
+            while (serialThread)
             {
                 try
                 {
                     System.Threading.Thread.Sleep(5);
-                    if ((DateTime.Now - menuupdate).Milliseconds > 500)
-                    {
-                        //                        Console.WriteLine(DateTime.Now.Millisecond);
-                        if (comPort.BaseStream.IsOpen)
-                        {
-                            if ((string)this.MenuConnect.BackgroundImage.Tag != "Disconnect")
-                            {
-                                this.Invoke((MethodInvoker)delegate
-                                {
-                                    this.MenuConnect.BackgroundImage = global::ArdupilotMega.Properties.Resources.disconnect;
-                                    this.MenuConnect.BackgroundImage.Tag = "Disconnect";
-                                    CMB_baudrate.Enabled = false;
-                                    CMB_serialport.Enabled = false;
-                                });
-                            }
-                        }
-                        else
-                        {
-                            if ((string)this.MenuConnect.BackgroundImage.Tag != "Connect")
-                            {
-                                this.Invoke((MethodInvoker)delegate
-                                {
-                                    this.MenuConnect.BackgroundImage = global::ArdupilotMega.Properties.Resources.connect;
-                                    this.MenuConnect.BackgroundImage.Tag = "Connect";
-                                    CMB_baudrate.Enabled = true;
-                                    CMB_serialport.Enabled = true;
-                                });
-                            }
-                        }
-                        menuupdate = DateTime.Now;
-                    }
+                    
+                    updateConnectIcon();
 
-                    if (speechenable && talk != null && (DateTime.Now - speechcustomtime).TotalSeconds > 30 && MainV2.cs.lat != 0 && (MainV2.comPort.logreadmode || comPort.BaseStream.IsOpen))
+                    if (speechEnable && speechEngine != null && (DateTime.Now - speechcustomtime).TotalSeconds > 30 && MainV2.cs.lat != 0 && (MainV2.comPort.logreadmode || comPort.BaseStream.IsOpen))
                     {
                         //speechbatteryvolt
                         float warnvolt = 0;
@@ -941,12 +932,12 @@ namespace ArdupilotMega
 
                         if (MainV2.getConfig("speechbatteryenabled") == "True" && MainV2.cs.battery_voltage <= warnvolt)
                         {
-                            MainV2.talk.SpeakAsync(Common.speechConversion(MainV2.getConfig("speechbattery")));
+                            MainV2.speechEngine.SpeakAsync(Common.speechConversion(MainV2.getConfig("speechbattery")));
                         }
 
                         if (MainV2.getConfig("speechcustomenabled") == "True")
                         {
-                            MainV2.talk.SpeakAsync(Common.speechConversion(MainV2.getConfig("speechcustom")));
+                            MainV2.speechEngine.SpeakAsync(Common.speechConversion(MainV2.getConfig("speechcustom")));
                         }
 
                         speechcustomtime = DateTime.Now;
@@ -970,7 +961,7 @@ namespace ArdupilotMega
                         GC.Collect();
                     }
 
-                    if (speechenable && talk != null && (MainV2.comPort.logreadmode || comPort.BaseStream.IsOpen))
+                    if (speechEnable && speechEngine != null && (MainV2.comPort.logreadmode || comPort.BaseStream.IsOpen))
                     {
                         float warnalt = float.MaxValue;
                         float.TryParse(MainV2.getConfig("speechaltheight"), out warnalt);
@@ -978,20 +969,20 @@ namespace ArdupilotMega
                         {
                             if (MainV2.getConfig("speechaltenabled") == "True" && (MainV2.cs.alt - (int)double.Parse(MainV2.getConfig("TXT_homealt"))) <= warnalt)
                             {
-                                if (MainV2.talk.State == SynthesizerState.Ready)
-                                    MainV2.talk.SpeakAsync(Common.speechConversion(MainV2.getConfig("speechalt")));
+                                if (MainV2.speechEngine.State == SynthesizerState.Ready)
+                                    MainV2.speechEngine.SpeakAsync(Common.speechConversion(MainV2.getConfig("speechalt")));
                             }
                         }
                         catch { } // silent fail
                     }
 
-                    if (!comPort.BaseStream.IsOpen || givecomport == true)
+                    if (!comPort.BaseStream.IsOpen || giveComport == true)
                     {
                         System.Threading.Thread.Sleep(100);
                         continue;
                     }
 
-                    if (heatbeatsend.Second != DateTime.Now.Second)
+                    if (heatbeatSend.Second != DateTime.Now.Second)
                     {
                         //                        Console.WriteLine("remote lost {0}", cs.packetdropremote);
 
@@ -1008,22 +999,22 @@ namespace ArdupilotMega
 #endif
 
                         comPort.sendPacket(htb);
-                        heatbeatsend = DateTime.Now;
+                        heatbeatSend = DateTime.Now;
                     }
 
                     // data loss warning
                     if ((DateTime.Now - comPort.lastvalidpacket).TotalSeconds > 10)
                     {
-                        if (speechenable && talk != null)
+                        if (speechEnable && speechEngine != null)
                         {
-                            if (MainV2.talk.State == SynthesizerState.Ready)
-                                MainV2.talk.SpeakAsync("WARNING No Data for " + (int)(DateTime.Now - comPort.lastvalidpacket).TotalSeconds + " Seconds");
+                            if (MainV2.speechEngine.State == SynthesizerState.Ready)
+                                MainV2.speechEngine.SpeakAsync("WARNING No Data for " + (int)(DateTime.Now - comPort.lastvalidpacket).TotalSeconds + " Seconds");
                         }
                     }
 
-                    //Console.WriteLine(comPort.BaseStream.BytesToRead);
+                    //Console.WriteLine(DateTime.Now.Millisecond + " " + comPort.BaseStream.BytesToRead);
 
-                    while (comPort.BaseStream.BytesToRead > minbytes && givecomport == false)
+                    while (comPort.BaseStream.BytesToRead > minbytes && giveComport == false)
                         comPort.readPacket();
                 }
                 catch (Exception e)
@@ -1085,12 +1076,7 @@ namespace ArdupilotMega
 
         private void MainV2_Load(object sender, EventArgs e)
         {
-            // generate requestall for jani and sandro
-            comPort.sysid = 7;
-            comPort.compid = 1;
-            //comPort.requestDatastream((byte)MAVLink.MAV_DATA_STREAM.MAV_DATA_STREAM_ALL,3);
-            //
-
+            // init button depressed
             MenuFlightData_Click(sender, e);
 
             // for long running tasks using own threads.
@@ -1099,13 +1085,11 @@ namespace ArdupilotMega
             try
             {
                 listener = new TcpListener(IPAddress.Any, 56781);
-                var t13 = new Thread(listernforclients)
+                new Thread(listernforclients)
                 {
-                    Name = "motion jpg stream",
+                    Name = "motion jpg stream-network kml",
                     IsBackground = true
-                };
-                // wait for tcp connections               
-                t13.Start();
+                }.Start();
             }
             catch (Exception ex)
             {
@@ -1113,20 +1097,18 @@ namespace ArdupilotMega
                 CustomMessageBox.Show(ex.ToString());
             }
 
-            var t12 = new Thread(new ThreadStart(joysticksend))
+            new Thread(new ThreadStart(joysticksend))
             {
                 IsBackground = true,
                 Priority = ThreadPriority.AboveNormal,
                 Name = "Main joystick sender"
-            };
-            t12.Start();
+            }.Start();
 
-            var t11 = new Thread(SerialReader)
+            new Thread(SerialReader)
             {
                 IsBackground = true,
                 Name = "Main Serial reader"
-            };
-            t11.Start();
+            }.Start();
 
             if (Debugger.IsAttached)
             {
@@ -1469,12 +1451,12 @@ namespace ArdupilotMega
         }
 
 
-        public static void updatecheck(ProgressReporterDialogue frmProgressReporter)
+        public static void updateCheckMain(ProgressReporterDialogue frmProgressReporter)
         {
             var baseurl = ConfigurationManager.AppSettings["UpdateLocation"];
             try
             {
-                bool update = updatecheck(frmProgressReporter, baseurl, "");
+                bool update = updateCheck(frmProgressReporter, baseurl, "");
                 var process = new Process();
                 string exePath = Path.GetDirectoryName(Application.ExecutablePath);
                 if (MONO)
@@ -1618,20 +1600,20 @@ namespace ArdupilotMega
 
             ThemeManager.ApplyThemeTo(frmProgressReporter);
 
-            frmProgressReporter.DoWork += new Controls.ProgressReporterDialogue.DoWorkEventHandler(frmProgressReporter_DoWork);
+            frmProgressReporter.DoWork += new Controls.ProgressReporterDialogue.DoWorkEventHandler(DoUpdateWorker_DoWork);
 
             frmProgressReporter.UpdateProgressAndStatus(-1, "Checking for Updates");
 
             frmProgressReporter.RunBackgroundOperationAsync();
         }
 
-        static void frmProgressReporter_DoWork(object sender, Controls.ProgressWorkerEventArgs e)
+        static void DoUpdateWorker_DoWork(object sender, Controls.ProgressWorkerEventArgs e)
         {
             ((ProgressReporterDialogue)sender).UpdateProgressAndStatus(-1, "Getting Base URL");
-            MainV2.updatecheck((ProgressReporterDialogue)sender);
+            MainV2.updateCheckMain((ProgressReporterDialogue)sender);
         }
 
-        private static bool updatecheck(ProgressReporterDialogue frmProgressReporter, string baseurl, string subdir)
+        private static bool updateCheck(ProgressReporterDialogue frmProgressReporter, string baseurl, string subdir)
         {
             bool update = false;
             List<string> files = new List<string>();
@@ -1692,7 +1674,7 @@ namespace ArdupilotMega
                 }
                 if (file.EndsWith("/"))
                 {
-                    update = updatecheck(frmProgressReporter, baseurl + file, subdir.Replace('/', Path.DirectorySeparatorChar) + file) && update;
+                    update = updateCheck(frmProgressReporter, baseurl + file, subdir.Replace('/', Path.DirectorySeparatorChar) + file) && update;
                     continue;
                 }
                 if (frmProgressReporter != null)

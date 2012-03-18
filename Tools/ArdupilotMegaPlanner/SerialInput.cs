@@ -153,19 +153,19 @@ namespace ArdupilotMega
                         }
                         catch { }
 
-                        if (MainV2.comPort.BaseStream.IsOpen && MainV2.givecomport == false)
+                        if (MainV2.comPort.BaseStream.IsOpen && MainV2.giveComport == false)
                         {
                             try
                             {
-                                MainV2.givecomport = true;
+                                MainV2.giveComport = true;
 
                                 MainV2.comPort.setWP(gotohere, 0, MAVLink.MAV_FRAME.MAV_FRAME_GLOBAL_RELATIVE_ALT, (byte)2);
 
                                 GCSViews.FlightData.GuidedModeWP = new PointLatLngAlt(gotohere);
 
-                                MainV2.givecomport = false;
+                                MainV2.giveComport = false;
                             }
-                            catch { MainV2.givecomport = false; }
+                            catch { MainV2.giveComport = false; }
                         }
                     }
                 }

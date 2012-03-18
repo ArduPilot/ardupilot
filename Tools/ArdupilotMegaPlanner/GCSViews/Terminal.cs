@@ -171,14 +171,14 @@ namespace ArdupilotMega.GCSViews
         {
             try
             {
-                MainV2.givecomport = true;
+                MainV2.giveComport = true;
 
                 if (comPort.IsOpen)
                     comPort.Close();
 
                 comPort.ReadBufferSize = 1024 * 1024;
 
-                comPort.PortName = MainV2.comportname;
+                comPort.PortName = MainV2.comPortName;
 
                 comPort.Open();
 
@@ -232,7 +232,6 @@ namespace ArdupilotMega.GCSViews
                 t11.IsBackground = true;
                 t11.Name = "Terminal serial thread";
                 t11.Start();
-                MainV2.threads.Add(t11);
 
                 // doesnt seem to work on mac
                 //comPort.DataReceived += new SerialDataReceivedEventHandler(comPort_DataReceived);

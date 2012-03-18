@@ -1012,7 +1012,6 @@ namespace ArdupilotMega.GCSViews
                 t1.Name = "Row number updater";
                 t1.IsBackground = true;
                 t1.Start();
-                MainV2.threads.Add(t1);
 
                 long temp = System.Diagnostics.Stopwatch.GetTimestamp();
 
@@ -1225,7 +1224,7 @@ namespace ArdupilotMega.GCSViews
                     throw new Exception("Please Connect First!");
                 }
 
-                MainV2.givecomport = true;
+                MainV2.giveComport = true;
 
                 param = port.param;
 
@@ -1262,7 +1261,7 @@ namespace ArdupilotMega.GCSViews
                         catch (Exception exx) { log.Info(exx.ToString()); }
                     }
 
-                    MainV2.givecomport = false;
+                    MainV2.giveComport = false;
 
                     BUT_read.Enabled = true;
 
@@ -1334,7 +1333,7 @@ namespace ArdupilotMega.GCSViews
                     throw new Exception("Please Connect First!");
                 }
 
-                MainV2.givecomport = true;
+                MainV2.giveComport = true;
 
                 Locationwp home = new Locationwp();
 
@@ -1414,9 +1413,9 @@ namespace ArdupilotMega.GCSViews
 
                 ((Controls.ProgressReporterDialogue)sender).UpdateProgressAndStatus(100, "Done.");
             }
-            catch (Exception ex) { MainV2.givecomport = false; throw ex; }
+            catch (Exception ex) { MainV2.giveComport = false; throw ex; }
 
-            MainV2.givecomport = false;
+            MainV2.giveComport = false;
         }
 
         /// <summary>

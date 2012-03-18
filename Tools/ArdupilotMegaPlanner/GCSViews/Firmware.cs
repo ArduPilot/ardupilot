@@ -22,7 +22,7 @@ namespace ArdupilotMega.GCSViews
                 fd.ShowDialog();
                 if (File.Exists(fd.FileName))
                 {
-                    UploadFlash(fd.FileName, ArduinoDetect.DetectBoard(MainV2.comportname));
+                    UploadFlash(fd.FileName, ArduinoDetect.DetectBoard(MainV2.comPortName));
                 }
                 return true;
             }
@@ -312,7 +312,7 @@ namespace ArdupilotMega.GCSViews
             MainV2.comPort.BaseStream.DtrEnable = false;
             MainV2.comPort.Close();
             System.Threading.Thread.Sleep(100);
-            MainV2.givecomport = true;
+            MainV2.giveComport = true;
 
             try
             {
@@ -326,7 +326,7 @@ namespace ArdupilotMega.GCSViews
 
                 this.Refresh();
 
-                board = ArduinoDetect.DetectBoard(MainV2.comportname);
+                board = ArduinoDetect.DetectBoard(MainV2.comPortName);
 
                 if (board == "")
                 {
@@ -338,7 +338,7 @@ namespace ArdupilotMega.GCSViews
 
                 try
                 {
-                    apmformat_version = ArduinoDetect.decodeApVar(MainV2.comportname, board);
+                    apmformat_version = ArduinoDetect.decodeApVar(MainV2.comPortName, board);
                 }
                 catch { }
 
@@ -480,7 +480,7 @@ namespace ArdupilotMega.GCSViews
 
             try
             {
-                port.PortName = MainV2.comportname;
+                port.PortName = MainV2.comPortName;
 
                 port.Open();
 
@@ -592,7 +592,7 @@ namespace ArdupilotMega.GCSViews
                 port.Close();
             }
             flashing = false;
-            MainV2.givecomport = false;
+            MainV2.giveComport = false;
         }
 
         void port_Progress(int progress,string status)
