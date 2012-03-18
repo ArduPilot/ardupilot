@@ -255,7 +255,6 @@ static void reset_I_all(void)
 {
 	reset_rate_I();
 	reset_stability_I();
-	reset_nav_I();
 	reset_wind_I();
 	reset_throttle_I();
 	reset_optflow_I();
@@ -282,13 +281,14 @@ static void reset_optflow_I(void)
 static void reset_wind_I(void)
 {
 	// Wind Compensation
+	// this i is not currently being used, but we reset it anyway
+	// because someone may modify it and not realize it, causing a bug
 	g.pi_loiter_lat.reset_I();
 	g.pi_loiter_lon.reset_I();
-}
 
-static void reset_nav_I(void)
-{
-	// Rate control for WP navigation
+	g.pid_loiter_rate_lat.reset_I();
+	g.pid_loiter_rate_lon.reset_I();
+
 	g.pid_nav_lat.reset_I();
 	g.pid_nav_lon.reset_I();
 }
