@@ -172,8 +172,6 @@ void AP_Baro_BMP085::ReadPress()
 	}
 
 	RawPress = (((uint32_t)buf[0] << 16) | ((uint32_t)buf[1] << 8) | ((uint32_t)buf[2])) >> (8 - OVERSAMPLING);
-
-	RawPress = _press_filter.apply(RawPress);
 }
 
 // Send Command to Read Temperature

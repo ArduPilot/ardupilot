@@ -26,7 +26,6 @@ class AP_Baro_BMP085 : public AP_Baro
 
   private:
 	int32_t RawPress;
-	int32_t _offset_press;
 	int32_t RawTemp;
 	int16_t Temp;
 	uint32_t Press;
@@ -39,7 +38,6 @@ class AP_Baro_BMP085 : public AP_Baro
 	int16_t ac1, ac2, ac3, b1, b2, mb, mc, md;
     uint16_t ac4, ac5, ac6;
 
-	AverageFilterInt32_Size2 _press_filter;
 	AverageFilterInt16_Size4 _temp_filter;
 
     uint32_t _retry_time;
