@@ -1791,13 +1791,19 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
                     ((AP_Float *)vp)->set_and_save(packet.param_value);
                 } else if (var_type == AP_PARAM_INT32) {
                     if (packet.param_value < 0) rounding_addition = -rounding_addition;
-                    ((AP_Int32 *)vp)->set_and_save(packet.param_value+rounding_addition);
+                    float v = packet.param_value+rounding_addition;
+                    v = constrain(v, -2147483648, 2147483647);
+					((AP_Int32 *)vp)->set_and_save(v);
                 } else if (var_type == AP_PARAM_INT16) {
                     if (packet.param_value < 0) rounding_addition = -rounding_addition;
-                    ((AP_Int16 *)vp)->set_and_save(packet.param_value+rounding_addition);
+                    float v = packet.param_value+rounding_addition;
+                    v = constrain(v, -32768, 32767);
+					((AP_Int16 *)vp)->set_and_save(v);
                 } else if (var_type == AP_PARAM_INT8) {
                     if (packet.param_value < 0) rounding_addition = -rounding_addition;
-                    ((AP_Int8 *)vp)->set_and_save(packet.param_value+rounding_addition);
+                    float v = packet.param_value+rounding_addition;
+                    v = constrain(v, -128, 127);
+					((AP_Int8 *)vp)->set_and_save(v);
                 } else {
                     // we don't support mavlink set on this parameter
                     break;
