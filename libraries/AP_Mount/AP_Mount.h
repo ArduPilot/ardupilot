@@ -24,7 +24,7 @@
 #include <AP_Math.h>
 #include <AP_Common.h>
 #include <AP_GPS.h>
-#include <AP_DCM.h>
+#include <AP_AHRS.h>
 #include <GCS_MAVLink.h>
 #include <../RC_Channel/RC_Channel_aux.h>
 
@@ -32,8 +32,7 @@ class AP_Mount
 {
 public:
 	//Constructors
-	AP_Mount(GPS *gps, AP_DCM *dcm);
-	AP_Mount(GPS *gps, AP_DCM_HIL *dcm); // constructor for HIL usage
+	AP_Mount(GPS *gps, AP_AHRS *ahrs);
 
 	//enums
 	enum MountType{
@@ -72,8 +71,7 @@ private:
 	long rc_map(RC_Channel_aux* rc_ch);
 
 	//members
-	AP_DCM		*_dcm;
-	AP_DCM_HIL  *_dcm_hil;
+	AP_AHRS		*_ahrs;
 	GPS 		*_gps;
 
 	int roll_angle;		///< degrees*100

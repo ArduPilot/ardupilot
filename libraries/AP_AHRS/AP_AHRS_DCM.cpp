@@ -1,22 +1,19 @@
 /*
-	APM_DCM.cpp - DCM AHRS Library, fixed wing version, for Ardupilot Mega
-		Code by Doug Weibel, Jordi Muñoz and Jose Julio. DIYDrones.com
+	APM_AHRS_DCM.cpp
 
-	This library works with the ArduPilot Mega and "Oilpan"
+	AHRS system using DCM matrices
+
+	Based on DCM code by Doug Weibel, Jordi Muñoz and Jose Julio. DIYDrones.com
+
+	Adapted for the general ArduPilot AHRS interface by Andrew Tridgell
 
 	This library is free software; you can redistribute it and/or
-    modify it under the terms of the GNU Lesser General Public
-    License as published by the Free Software Foundation; either
-    version 2.1 of the License, or (at your option) any later version.
-
-        Methods:
-				update_DCM()	: Updates the AHRS by integrating the rotation matrix over time using the IMU object data
-				get_gyro()			: Returns gyro vector corrected for bias
-				get_accel()		: Returns accelerometer vector
-				get_dcm_matrix()	: Returns dcm matrix
-
+	modify it under the terms of the GNU Lesser General Public License
+	as published by the Free Software Foundation; either version 2.1
+	of the License, or (at your option) any later version.
 */
-#include <AP_DCM.h>
+#include <FastSerial.h>
+#include <AP_AHRS.h>
 
 // this is the speed in cm/s above which we first get a yaw lock with
 // the GPS
@@ -26,21 +23,11 @@
 // from the GPS and wait for the ground speed to get above GPS_SPEED_MIN
 #define GPS_SPEED_RESET 100
 
-void
-AP_DCM::set_compass(Compass *compass)
-{
-	_compass = compass;
-}
-
-
 // run a full DCM update round
-// the drift_correction_frequency is how many steps of the algorithm
-// to run before doing an accelerometer and yaw drift correction step
 void
-AP_DCM::update_DCM(uint8_t drift_correction_frequency)
+AP_AHRS_DCM::update(void)
 {
 	float delta_t;
-	Vector3f accel;
 
 	// tell the IMU to grab some data
 	_imu->update();
@@ -50,43 +37,16 @@ AP_DCM::update_DCM(uint8_t drift_correction_frequency)
 
 	// Get current values for gyros
 	_gyro_vector  = _imu->get_gyro();
-
-	// accumulate some more accelerometer data
-	accel = _imu->get_accel();
-	_accel_sum += accel;
-	_drift_correction_time += delta_t;
+	_accel_vector = _imu->get_accel();
 
 	// Integrate the DCM matrix using gyro inputs
 	matrix_update(delta_t);
 
-	// add up the omega vector so we pass a value to the drift
-	// correction averaged over the same time period as the
-	// accelerometers
-	_omega_sum += _omega_integ_corr;
-
 	// Normalize the DCM matrix
 	normalize();
 
-	// see if we will perform drift correction on this call
-	_drift_correction_count++;
-
-	if (_drift_correction_count >= drift_correction_frequency) {
-		// calculate the average accelerometer vector over
-		// since the last drift correction call
-		float scale = 1.0 / _drift_correction_count;
-		_accel_vector = _accel_sum * scale;
-		_accel_sum.zero();
-
-		// calculate the average omega value over this time
-		_omega_smoothed = _omega_sum * scale;
-		_omega_sum.zero();
-
-		// Perform drift correction
-		drift_correction(_drift_correction_time);
-
-		_drift_correction_time = 0;
-		_drift_correction_count = 0;
-	}
+	// Perform drift correction
+	drift_correction(delta_t);
 
 	// paranoid check for bad values in the DCM matrix
 	check_matrix();
@@ -97,7 +57,7 @@ AP_DCM::update_DCM(uint8_t drift_correction_frequency)
 
 // update the DCM matrix using only the gyros
 void
-AP_DCM::matrix_update(float _G_Dt)
+AP_AHRS_DCM::matrix_update(float _G_Dt)
 {
 	// _omega_integ_corr is used for _centripetal correction
 	// (theoretically better than _omega)
@@ -106,33 +66,22 @@ AP_DCM::matrix_update(float _G_Dt)
 	// Equation 16, adding proportional and integral correction terms
 	_omega = _omega_integ_corr + _omega_P + _omega_yaw_P;
 
-	// this is an expansion of the DCM matrix multiply (equation
+	// this is a replacement of the DCM matrix multiply (equation
 	// 17), with known zero elements removed and the matrix
 	// operations inlined. This runs much faster than the original
 	// version of this code, as the compiler was doing a terrible
 	// job of realising that so many of the factors were in common
 	// or zero. It also uses much less stack, as we no longer need
-	// additional local matrices
+	// two additional local matrices
 
-	float tmpx = _G_Dt * _omega.x;
-	float tmpy = _G_Dt * _omega.y;
-	float tmpz = _G_Dt * _omega.z;
-
-	_dcm_matrix.a.x += _dcm_matrix.a.y * tmpz  - _dcm_matrix.a.z * tmpy;
-	_dcm_matrix.a.y += _dcm_matrix.a.z * tmpx  - _dcm_matrix.a.x * tmpz;
-	_dcm_matrix.a.z += _dcm_matrix.a.x * tmpy  - _dcm_matrix.a.y * tmpx;
-	_dcm_matrix.b.x += _dcm_matrix.b.y * tmpz  - _dcm_matrix.b.z * tmpy;
-	_dcm_matrix.b.y += _dcm_matrix.b.z * tmpx  - _dcm_matrix.b.x * tmpz;
-	_dcm_matrix.b.z += _dcm_matrix.b.x * tmpy  - _dcm_matrix.b.y * tmpx;
-	_dcm_matrix.c.x += _dcm_matrix.c.y * tmpz  - _dcm_matrix.c.z * tmpy;
-	_dcm_matrix.c.y += _dcm_matrix.c.z * tmpx  - _dcm_matrix.c.x * tmpz;
-	_dcm_matrix.c.z += _dcm_matrix.c.x * tmpy  - _dcm_matrix.c.y * tmpx;
+	Vector3f r = _omega * _G_Dt;
+	_dcm_matrix.rotate(r);
 }
 
 
 // adjust an accelerometer vector for known acceleration forces
 void
-AP_DCM::accel_adjust(Vector3f &accel)
+AP_AHRS_DCM::accel_adjust(Vector3f &accel)
 {
 	float veloc;
 	// compensate for linear acceleration. This makes a
@@ -149,8 +98,8 @@ AP_DCM::accel_adjust(Vector3f &accel)
 	// direction as positive
 
 	// Equation 26 broken up into separate pieces
-	accel.y -= _omega_smoothed.z * veloc;
-	accel.z += _omega_smoothed.y * veloc;
+	accel.y -= _omega_integ_corr.z * veloc;
+	accel.z += _omega_integ_corr.y * veloc;
 }
 
 /*
@@ -158,10 +107,10 @@ AP_DCM::accel_adjust(Vector3f &accel)
   extreme errors in the matrix
  */
 void
-AP_DCM::matrix_reset(bool recover_eulers)
+AP_AHRS_DCM::reset(bool recover_eulers)
 {
 	if (_compass != NULL) {
-		_compass->null_offsets_disable();		
+		_compass->null_offsets_disable();
 	}
 
 	// reset the integration terms
@@ -169,7 +118,6 @@ AP_DCM::matrix_reset(bool recover_eulers)
 	_omega_P.zero();
 	_omega_yaw_P.zero();
 	_omega_integ_corr.zero();
-	_omega_smoothed.zero();
 	_omega.zero();
 
 	// if the caller wants us to try to recover to the current
@@ -193,13 +141,13 @@ AP_DCM::matrix_reset(bool recover_eulers)
   check the DCM matrix for pathological values
  */
 void
-AP_DCM::check_matrix(void)
+AP_AHRS_DCM::check_matrix(void)
 {
 	if (_dcm_matrix.is_nan()) {
 		//Serial.printf("ERROR: DCM matrix NAN\n");
 		SITL_debug("ERROR: DCM matrix NAN\n");
 		renorm_blowup_count++;
-		matrix_reset(true);
+		reset(true);
 		return;
 	}
 	// some DCM matrix values can lead to an out of range error in
@@ -221,7 +169,7 @@ AP_DCM::check_matrix(void)
 			SITL_debug("ERROR: DCM matrix error. _dcm_matrix.c.x=%f\n",
 				   _dcm_matrix.c.x);
 			renorm_blowup_count++;
-			matrix_reset(true);
+			reset(true);
 		}
 	}
 }
@@ -229,7 +177,7 @@ AP_DCM::check_matrix(void)
 // renormalise one vector component of the DCM matrix
 // this will return false if renormalization fails
 bool
-AP_DCM::renorm(Vector3f const &a, Vector3f &result)
+AP_AHRS_DCM::renorm(Vector3f const &a, Vector3f &result)
 {
 	float	renorm_val;
 
@@ -289,7 +237,7 @@ simple matter to stay ahead of it.
 We call the process of enforcing the orthogonality conditions ÒrenormalizationÓ.
 */
 void
-AP_DCM::normalize(void)
+AP_AHRS_DCM::normalize(void)
 {
 	float error;
 	Vector3f t0, t1, t2;
@@ -305,7 +253,7 @@ AP_DCM::normalize(void)
 	    !renorm(t2, _dcm_matrix.c)) {
 		// Our solution is blowing up and we will force back
 		// to last euler angles
-		matrix_reset(true);
+		reset(true);
 	}
 }
 
@@ -319,7 +267,7 @@ AP_DCM::normalize(void)
 // This function also updates _omega_yaw_P with a yaw correction term
 // from our yaw reference vector
 void
-AP_DCM::drift_correction(float deltat)
+AP_AHRS_DCM::drift_correction(float deltat)
 {
 	float error_course = 0;
 	Vector3f accel;
@@ -530,7 +478,7 @@ AP_DCM::drift_correction(float deltat)
 // calculate the euler angles which will be used for high level
 // navigation control
 void
-AP_DCM::euler_angles(void)
+AP_AHRS_DCM::euler_angles(void)
 {
 	_dcm_matrix.to_euler(&roll, &pitch, &yaw);
 
@@ -544,27 +492,8 @@ AP_DCM::euler_angles(void)
 
 /* reporting of DCM state for MAVLink */
 
-// average accel_weight since last call
-float AP_DCM::get_accel_weight(void)
-{
-	return 1.0;
-}
-
-// average renorm_val since last call
-float AP_DCM::get_renorm_val(void)
-{
-	float ret;
-	if (_renorm_val_count == 0) {
-		return 0;
-	}
-	ret = _renorm_val_sum / _renorm_val_count;
-	_renorm_val_sum = 0;
-	_renorm_val_count = 0;
-	return ret;
-}
-
 // average error_roll_pitch since last call
-float AP_DCM::get_error_rp(void)
+float AP_AHRS_DCM::get_error_rp(void)
 {
 	float ret;
 	if (_error_rp_count == 0) {
@@ -577,7 +506,7 @@ float AP_DCM::get_error_rp(void)
 }
 
 // average error_yaw since last call
-float AP_DCM::get_error_yaw(void)
+float AP_AHRS_DCM::get_error_yaw(void)
 {
 	float ret;
 	if (_error_yaw_count == 0) {

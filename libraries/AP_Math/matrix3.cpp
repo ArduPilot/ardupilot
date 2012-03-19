@@ -44,6 +44,7 @@ void Matrix3<T>::rotation(enum Rotation r)
 {
     switch (r) {
     case ROTATION_NONE:
+    case ROTATION_MAX:
 	    *this = MATRIX_ROTATION_NONE;
 	    break;
     case ROTATION_YAW_45:
@@ -133,7 +134,27 @@ void Matrix3<T>::to_euler(float *roll, float *pitch, float *yaw)
 	}
 }
 
+// apply an additional rotation from a body frame gyro vector
+// to a rotation matrix.
+template <typename T>
+void Matrix3<T>::rotate(const Vector3<T> &g)
+{
+	Matrix3f temp_matrix;
+	temp_matrix.a.x = a.y * g.z - a.z * g.y;
+	temp_matrix.a.y = a.z * g.x - a.x * g.z;
+	temp_matrix.a.z = a.x * g.y - a.y * g.x;
+	temp_matrix.b.x = b.y * g.z - b.z * g.y;
+	temp_matrix.b.y = b.z * g.x - b.x * g.z;
+	temp_matrix.b.z = b.x * g.y - b.y * g.x;
+	temp_matrix.c.x = c.y * g.z - c.z * g.y;
+	temp_matrix.c.y = c.z * g.x - c.x * g.z;
+	temp_matrix.c.z = c.x * g.y - c.y * g.x;
+
+	(*this) += temp_matrix;
+}
+
 // only define for float
 template void Matrix3<float>::rotation(enum Rotation);
+template void Matrix3<float>::rotate(const Vector3<float> &g);
 template void Matrix3<float>::from_euler(float roll, float pitch, float yaw);
 template void Matrix3<float>::to_euler(float *roll, float *pitch, float *yaw);

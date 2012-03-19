@@ -124,6 +124,21 @@ public:
 	Matrix3<T> transpose(void)
 	{	return *this = transposed();	}
 
+	// zero the matrix
+	void zero(void) {
+		a.x = a.y = a.z = 0;
+		b.x = b.y = b.z = 0;
+		c.x = c.y = c.z = 0;
+	}
+
+	// setup the identity matrix
+	void identity(void) {
+		a.x = b.y = c.z = 1;
+		a.y = a.z = 0;
+		b.x = b.z = 0;
+		c.x = c.y = 0;
+	}
+
 	// check if any elements are NAN
 	bool is_nan(void)
 		{   return a.is_nan() || b.is_nan() || c.is_nan(); }
@@ -136,6 +151,10 @@ public:
 
     // create eulers from a rotation matrix
 	void to_euler(float *roll, float *pitch, float *yaw);
+
+    // apply an additional rotation from a body frame gyro vector
+    // to a rotation matrix.
+	void rotate(const Vector3<T> &g);
 };
 
 typedef Matrix3<int16_t>		Matrix3i;

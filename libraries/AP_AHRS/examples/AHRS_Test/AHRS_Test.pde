@@ -1,7 +1,7 @@
 // -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: t -*-
 
 //
-// Simple test for the AP_Quaternion library
+// Simple test for the AP_AHRS interface
 //
 
 #include <FastSerial.h>
@@ -13,8 +13,7 @@
 #include <AP_ADC.h>
 #include <AP_IMU.h>
 #include <AP_GPS.h>
-#include <AP_Quaternion.h>
-#include <AP_DCM.h>
+#include <AP_AHRS.h>
 #include <AP_Math.h>
 #include <AP_Common.h>
 #include <AP_Compass.h>
@@ -24,7 +23,7 @@
 #include <GCS_MAVLink.h>
 
 // uncomment this for a APM2 board
-//#define APM2_HARDWARE
+#define APM2_HARDWARE
 
 FastSerialPort(Serial, 0);
 
@@ -42,13 +41,15 @@ AP_Compass_HMC5843 compass;
 # else
   AP_ADC_ADS7844          adc;
   AP_InertialSensor_Oilpan ins( &adc );
-#endif // CONFIG_IMU_TYPE
+#endif
 
 static GPS         *g_gps;
 
 AP_IMU_INS imu(&ins);
-AP_Quaternion  ahrs(&imu, g_gps);
-//AP_DCM  ahrs(&imu, g_gps);
+
+// choose which AHRS system to use
+//AP_AHRS_DCM  ahrs(&imu, g_gps);
+AP_AHRS_Quaternion  ahrs(&imu, g_gps);
 
 AP_Baro_BMP085_HIL      barometer;
 
@@ -122,6 +123,7 @@ void loop(void)
 
 	if (now - last_compass > 100*1000UL &&
 		compass.read()) {
+		compass.calculate(ahrs.get_dcm_matrix());
 		// read compass at 10Hz
 		last_compass = now;
 	}

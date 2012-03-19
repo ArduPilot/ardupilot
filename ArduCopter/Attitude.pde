@@ -4,7 +4,7 @@ static int16_t
 get_stabilize_roll(int32_t target_angle)
 {
 	// angle error
-	target_angle 		= wrap_180(target_angle - dcm.roll_sensor);
+	target_angle 		= wrap_180(target_angle - ahrs.roll_sensor);
 
 #if FRAME_CONFIG == HELI_FRAME
 
@@ -33,7 +33,7 @@ static int16_t
 get_stabilize_pitch(int32_t target_angle)
 {
 	// angle error
-	target_angle 		= wrap_180(target_angle - dcm.pitch_sensor);
+	target_angle 		= wrap_180(target_angle - ahrs.pitch_sensor);
 
 #if FRAME_CONFIG == HELI_FRAME
 	// limit the error we're feeding to the PID
@@ -60,7 +60,7 @@ static int16_t
 get_stabilize_yaw(int32_t target_angle)
 {
 	// angle error
-	target_angle 		= wrap_180(target_angle - dcm.yaw_sensor);
+	target_angle 		= wrap_180(target_angle - ahrs.yaw_sensor);
 
 #if FRAME_CONFIG == HELI_FRAME  // cannot use rate control for helicopters
 	// limit the error we're feeding to the PID
@@ -255,7 +255,6 @@ static void reset_I_all(void)
 {
 	reset_rate_I();
 	reset_stability_I();
-	reset_nav_I();
 	reset_wind_I();
 	reset_throttle_I();
 	reset_optflow_I();
@@ -282,13 +281,14 @@ static void reset_optflow_I(void)
 static void reset_wind_I(void)
 {
 	// Wind Compensation
+	// this i is not currently being used, but we reset it anyway
+	// because someone may modify it and not realize it, causing a bug
 	g.pi_loiter_lat.reset_I();
 	g.pi_loiter_lon.reset_I();
-}
 
-static void reset_nav_I(void)
-{
-	// Rate control for WP navigation
+	g.pid_loiter_rate_lat.reset_I();
+	g.pid_loiter_rate_lon.reset_I();
+
 	g.pid_nav_lat.reset_I();
 	g.pid_nav_lon.reset_I();
 }
@@ -320,13 +320,13 @@ get_nav_yaw_offset(int yaw_input, int reset)
 
 	if(reset == 0){
 		// we are on the ground
-		return dcm.yaw_sensor;
+		return ahrs.yaw_sensor;
 
 	}else{
 		// re-define nav_yaw if we have stick input
 		if(yaw_input != 0){
 			// set nav_yaw + or - the current location
-			_yaw = yaw_input + dcm.yaw_sensor;
+			_yaw = yaw_input + ahrs.yaw_sensor;
 			// we need to wrap our value so we can be 0 to 360 (*100)
 			return wrap_360(_yaw);
 
@@ -364,7 +364,7 @@ static int get_z_damping()
 
 float get_world_Z_accel()
 {
-	accels_rot = dcm.get_dcm_matrix() * imu.get_accel();
+	accels_rot = ahrs.get_dcm_matrix() * imu.get_accel();
 	//Serial.printf("z %1.4f\n", accels_rot.z);
 	return accels_rot.z;
 }
@@ -412,7 +412,7 @@ static float fullDampP = 0.100;
 
 float get_world_Z_accel()
 {
-	accels_rot = dcm.get_dcm_matrix() * imu.get_accel();
+	accels_rot = ahrs.get_dcm_matrix() * imu.get_accel();
 	return accels_rot.z;
 }
 

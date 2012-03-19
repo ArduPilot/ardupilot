@@ -15,7 +15,7 @@
 #include <SPI.h>			// Arduino SPI lib
 #include <I2C.h>
 #include <DataFlash.h>
-#include <AP_DCM.h>
+#include <AP_AHRS.h>
 #include <AP_ADC.h>
 #include <AP_Baro.h>
 #include <Filter.h>
@@ -25,6 +25,7 @@
 #include <AP_IMU.h>         // ArduPilot Mega IMU Library
 #include <AP_GPS.h>
 #include <AP_Math.h>
+#include <GCS_MAVLink.h>
 #include <config.h>
 #include <Parameters.h>
 
@@ -43,7 +44,7 @@ AP_GPS_Auto     g_gps_driver(&Serial1, &g_gps);
   AP_InertialSensor_Oilpan ins( &adc );
 #endif // CONFIG_IMU_TYPE
 AP_IMU_INS imu( &ins );
-AP_DCM  dcm(&imu, g_gps);
+AP_AHRS_DCM  ahrs(&imu, g_gps);
 
 Arduino_Mega_ISR_Registry isr_registry;
 #ifdef DESKTOP_BUILD

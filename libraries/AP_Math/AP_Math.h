@@ -24,4 +24,9 @@ float safe_asin(float v);
 // a varient of sqrt() that always gives a valid answer.
 float safe_sqrt(float v);
 
+// find a rotation that is the combination of two other
+// rotations. This is used to allow us to add an overall board
+// rotation to an existing rotation of a sensor such as the compass
+enum Rotation rotation_combination(enum Rotation r1, enum Rotation r2, bool *found = NULL);
+
 #endif

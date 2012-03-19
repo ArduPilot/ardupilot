@@ -29,6 +29,7 @@ void Vector3<T>::rotate(enum Rotation rotation)
     T tmp;
     switch (rotation) {
     case ROTATION_NONE:
+    case ROTATION_MAX:
         return;
     case ROTATION_YAW_45: {
         tmp = HALF_SQRT_2*(x - y);

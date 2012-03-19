@@ -279,7 +279,7 @@ static bool verify_takeoff()
 		if (hold_course == -1) {
 			// save our current course to take off
 			if(g.compass_enabled) {
-				hold_course = dcm.yaw_sensor;
+				hold_course = ahrs.yaw_sensor;
 			} else {
 				hold_course = g_gps->ground_course;
 			}
@@ -326,7 +326,7 @@ static bool verify_land()
 			// be quite large at this point, and that could induce a
 			// sudden large roll correction which is very nasty at
 			// this point in the landing.
-			hold_course = dcm.yaw_sensor;
+			hold_course = ahrs.yaw_sensor;
 		}
 	}
 
