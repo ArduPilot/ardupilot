@@ -366,7 +366,11 @@ namespace ArdupilotMega
                 {
 
                     MAVLink mine = new MAVLink();
-                    mine.logplaybackfile = new BinaryReader(File.Open(logfile, FileMode.Open, FileAccess.Read, FileShare.Read));
+                    try
+                    {
+                        mine.logplaybackfile = new BinaryReader(File.Open(logfile, FileMode.Open, FileAccess.Read, FileShare.Read));
+                    }
+                    catch (Exception ex) { log.Debug(ex.ToString()); CustomMessageBox.Show("Log Can not be opened. Are you still connected?"); return; }
                     mine.logreadmode = true;
 
                     mine.packets.Initialize(); // clear
@@ -399,8 +403,8 @@ namespace ArdupilotMega
 
                         try
                         {
-                            if (MainV2.talk != null)
-                                MainV2.talk.SpeakAsyncCancelAll();
+                            if (MainV2.speechEngine != null)
+                                MainV2.speechEngine.SpeakAsyncCancelAll();
                         }
                         catch { } // ignore because of this Exception System.PlatformNotSupportedException: No voice installed on the system or none available with the current security setting.
 

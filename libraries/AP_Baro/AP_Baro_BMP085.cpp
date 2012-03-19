@@ -172,30 +172,6 @@ void AP_Baro_BMP085::ReadPress()
 	}
 
 	RawPress = (((uint32_t)buf[0] << 16) | ((uint32_t)buf[1] << 8) | ((uint32_t)buf[2])) >> (8 - OVERSAMPLING);
-
-	//if (_offset_press == 0){
-	//	_offset_press = RawPress;
-	//	RawPress = 0;
-	//} else{
-	//	RawPress -= _offset_press;
-	//}
-
-	// filter
-	//_press_filter[_press_index++] = RawPress;
-
-	//if(_press_index >= PRESS_FILTER_SIZE)
-	//	_press_index = 0;
-
-	//RawPress = 0;
-
-	// sum our filter
-	//for (uint8_t i = 0; i < PRESS_FILTER_SIZE; i++){
-	//	RawPress += _press_filter[i];
-	//}
-
-	// grab result
-	//RawPress /= PRESS_FILTER_SIZE;
-	//RawPress += _offset_press;
 }
 
 // Send Command to Read Temperature
@@ -225,25 +201,21 @@ void AP_Baro_BMP085::ReadTemp()
 	_temp_sensor = buf[0];
 	_temp_sensor = (_temp_sensor << 8) | buf[1];
 
-	if (RawTemp == 0){
-		RawTemp = _temp_sensor;
-	}else{
-		RawTemp = (float)_temp_sensor * .01 + (float)RawTemp * .99;
-	}
+	RawTemp = _temp_filter.apply(_temp_sensor);
 }
 
 // Calculate Temperature and Pressure in real units.
 void AP_Baro_BMP085::Calculate()
 {
-	long x1, x2, x3, b3, b5, b6, p;
-	unsigned long b4, b7;
+	int32_t x1, x2, x3, b3, b5, b6, p;
+	uint32_t b4, b7;
 	int32_t tmp;
 
 	// See Datasheet page 13 for this formulas
 	// Based also on Jee Labs BMP085 example code. Thanks for share.
 	// Temperature calculations
-	x1 = ((long)RawTemp - ac6) * ac5 >> 15;
-	x2 = ((long) mc << 11) / (x1 + md);
+	x1 = ((int32_t)RawTemp - ac6) * ac5 >> 15;
+	x2 = ((int32_t) mc << 11) / (x1 + md);
 	b5 = x1 + x2;
 	Temp = (b5 + 8) >> 4;
 

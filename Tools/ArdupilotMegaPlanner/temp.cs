@@ -151,7 +151,7 @@ namespace ArdupilotMega
             port.Parity = Parity.None;
             port.DtrEnable = true;
 
-            port.PortName = ArdupilotMega.MainV2.comportname;
+            port.PortName = ArdupilotMega.MainV2.comPortName;
             try
             {
                 port.Open();
@@ -222,7 +222,7 @@ namespace ArdupilotMega
             port.Parity = Parity.None;
             port.DtrEnable = true;
 
-            port.PortName = ArdupilotMega.MainV2.comportname;
+            port.PortName = ArdupilotMega.MainV2.comPortName;
             try
             {
                 port.Open();
@@ -285,7 +285,7 @@ namespace ArdupilotMega
             port.Parity = Parity.None;
             port.DtrEnable = true;
 
-            port.PortName = ArdupilotMega.MainV2.comportname;
+            port.PortName = ArdupilotMega.MainV2.comPortName;
             try
             {
                 port.Open();
@@ -392,7 +392,7 @@ namespace ArdupilotMega
 
             try
             {
-                port.PortName = ArdupilotMega.MainV2.comportname;
+                port.PortName = ArdupilotMega.MainV2.comPortName;
 
                 port.Open();
 
@@ -536,7 +536,7 @@ namespace ArdupilotMega
 
             try
             {
-                port.PortName = ArdupilotMega.MainV2.comportname;
+                port.PortName = ArdupilotMega.MainV2.comPortName;
 
                 log.Info("Open Port");
                 port.Open();
@@ -587,7 +587,7 @@ namespace ArdupilotMega
 
             try
             {
-                port.PortName = ArdupilotMega.MainV2.comportname;
+                port.PortName = ArdupilotMega.MainV2.comPortName;
 
                 log.Info("Open Port");
                 port.Open();
@@ -651,7 +651,7 @@ namespace ArdupilotMega
 
             try
             {
-                port.PortName = ArdupilotMega.MainV2.comportname;
+                port.PortName = ArdupilotMega.MainV2.comPortName;
 
                 log.Info("Open Port");
                 port.Open();
@@ -728,7 +728,7 @@ namespace ArdupilotMega
 
             try
             {
-                port.PortName = ArdupilotMega.MainV2.comportname;
+                port.PortName = ArdupilotMega.MainV2.comPortName;
 
                 port.Open();
 

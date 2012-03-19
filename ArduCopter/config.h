@@ -664,7 +664,7 @@
 // Loiter control gains
 //
 #ifndef LOITER_P
-# define LOITER_P			.4
+# define LOITER_P			.35
 #endif
 #ifndef LOITER_I
 # define LOITER_I			0.0
@@ -680,10 +680,10 @@
 # define LOITER_RATE_P		2.0			//
 #endif
 #ifndef LOITER_RATE_I
-# define LOITER_RATE_I		0.10		// Wind control
+# define LOITER_RATE_I		0.2		// Wind control
 #endif
 #ifndef LOITER_RATE_D
-# define LOITER_RATE_D		0.0			// try 2 or 3 for LOITER_RATE 1
+# define LOITER_RATE_D		0			// try 2 or 3 for LOITER_RATE 1
 #endif
 #ifndef LOITER_RATE_IMAX
 # define LOITER_RATE_IMAX	30			// degrees
@@ -899,10 +899,6 @@
 # define USE_CURRENT_ALT FALSE
 #endif
 
-
-#ifndef AUTO_RESET_LOITER
-# define AUTO_RESET_LOITER	1	// enables Loiter to reset it's current location based on stick input.
-#endif
 #ifndef CUT_MOTORS
 # define CUT_MOTORS		1		// do we cut the motors with no throttle?
 #endif

@@ -50,16 +50,26 @@ static void calc_XY_velocity(){
 	// y_GPS_speed positve = Up
 	// x_GPS_speed positve = Right
 
+	// initialise last_longitude and last_latitude
+	if( last_longitude == 0 && last_latitude == 0 ) {
+		last_longitude = g_gps->longitude;
+		last_latitude = g_gps->latitude;
+	}
+
 	// this speed is ~ in cm because we are using 10^7 numbers from GPS
 	float tmp = 1.0/dTnav;
 
 	// straightforward approach:
 	///*
-	x_actual_speed 	= x_speed_old + (float)(g_gps->longitude - last_longitude)  * scaleLongDown * tmp;
-	y_actual_speed	= y_speed_old + (float)(g_gps->latitude  - last_latitude)  * tmp;
 
-	x_actual_speed	= x_actual_speed >> 1;
-	y_actual_speed	= y_actual_speed >> 1;
+	x_actual_speed 	= (float)(g_gps->longitude - last_longitude)  * scaleLongDown * tmp;
+	y_actual_speed	= (float)(g_gps->latitude  - last_latitude)  * tmp;
+
+	x_actual_speed	= (x_actual_speed + x_speed_old * 3) / 4;
+	y_actual_speed	= (y_actual_speed + y_speed_old * 3) / 4;
+
+	//x_actual_speed	= x_actual_speed >> 1;
+	//y_actual_speed	= y_actual_speed >> 1;
 
 	x_speed_old 	= x_actual_speed;
 	y_speed_old 	= y_actual_speed;
@@ -105,21 +115,37 @@ static void calc_location_error(struct Location *next_loc)
 
 	int16_t tmp;
 
-	tmp			= (long_error - last_lon_error);
-	if(abs(abs(tmp) -last_lon_d) > 15)	tmp = x_rate_d;
+	// -------------------------------------
+	tmp	= (long_error - last_lon_error);
+	if(abs(abs(tmp) -last_lon_d) > 20){
+		tmp = x_rate_d;
+	}/*
+	if(long_error > 0){
+		if(tmp < 0) tmp = 0;
+	}else{
+		if(tmp > 0) tmp = 0;
+	}*/
 	x_rate_d	= lon_rate_d_filter.apply(tmp);
+	x_rate_d	= constrain(x_rate_d, -800, 800);
 	last_lon_d 	= abs(tmp);
 
-	tmp			= (lat_error - last_lat_error);
-	if(abs(abs(tmp) -last_lat_d) > 15)	tmp = y_rate_d;
-	//if(abs(tmp) > 80)	tmp	= y_rate_d;
+	// -------------------------------------
+	tmp	= (lat_error - last_lat_error);
+	if(abs(abs(tmp) -last_lat_d) > 20)
+		tmp = y_rate_d;
+	/*if(lat_error > 0){
+		if(tmp < 0) tmp = 0;
+	}else{
+		if(tmp > 0) tmp = 0;
+	}*/
 	y_rate_d	= lat_rate_d_filter.apply(tmp);
+	y_rate_d	= constrain(y_rate_d, -800, 800);
 	last_lat_d 	= abs(tmp);
 
-	int16_t t22 = x_rate_d * (g.pid_loiter_rate_lon.kD() / dTnav);
-	int16_t raww = (long_error - last_lon_error);
-
-	//Serial.printf("XX, %d, %d, %d\n", raww, x_rate_d, t22);
+	// debug
+	//int16_t t22 = x_rate_d * (g.pid_loiter_rate_lon.kD() / dTnav);
+	//if(control_mode	== LOITER)
+	//	Serial.printf("XX, %d, %d, %d \n", long_error, t22, (int16_t)g.pid_loiter_rate_lon.get_integrator());
 
 	last_lon_error 	= long_error;
 	last_lat_error 	= lat_error;
@@ -133,24 +159,23 @@ static void calc_loiter(int x_error, int y_error)
 
 	// East / West
 	x_target_speed 	= g.pi_loiter_lon.get_p(x_error);			// not contstrained yet
-	//x_target_speed	= constrain(x_target_speed, -250, 250);		// limit to 2.5m/s travel speed
 	x_rate_error 	= x_target_speed - x_actual_speed;			// calc the speed error
-	nav_lon			= g.pid_loiter_rate_lon.get_pi(x_rate_error, dTnav);
-	nav_lon			+= x_rate_d * (g.pid_loiter_rate_lon.kD() / dTnav);
+	nav_lon			= g.pid_loiter_rate_lon.get_pid(x_rate_error, dTnav);
+	//nav_lon			+= x_rate_d * (g.pid_loiter_rate_lon.kD() / dTnav);
 	nav_lon			= constrain(nav_lon, -3000, 3000); 			// 30°
 
 	// North / South
 	y_target_speed 	= g.pi_loiter_lat.get_p(y_error);
-	//y_target_speed	= constrain(y_target_speed, -250, 250);
 	y_rate_error 	= y_target_speed - y_actual_speed;
-	nav_lat			= g.pid_loiter_rate_lat.get_pi(y_rate_error, dTnav);
-	nav_lat			+= y_rate_d * (g.pid_loiter_rate_lat.kD() / dTnav);
+	nav_lat			= g.pid_loiter_rate_lat.get_pid(y_rate_error, dTnav);
+	//nav_lat			+= y_rate_d * (g.pid_loiter_rate_lat.kD() / dTnav);
 	nav_lat			= constrain(nav_lat, -3000, 3000); // 30°
 
 	// copy over I term to Nav_Rate
 	g.pid_nav_lon.set_integrator(g.pid_loiter_rate_lon.get_integrator());
 	g.pid_nav_lat.set_integrator(g.pid_loiter_rate_lat.get_integrator());
 
+	//Serial.printf("XX, %d, %d, %d\n", long_error, x_actual_speed, (int16_t)g.pid_loiter_rate_lon.get_integrator());
 
 	// Wind I term based on location error,
 	// limit windup

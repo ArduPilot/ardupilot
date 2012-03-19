@@ -18,6 +18,8 @@
 #include <AP_DCM.h>
 #include <AP_ADC.h>
 #include <AP_Baro.h>
+#include <Filter.h>
+#include <GCS_MAVLink.h>
 #include <AP_PeriodicProcess.h>
 #include <AP_InertialSensor.h> // Inertial Sensor (uncalibated IMU) Library
 #include <AP_IMU.h>         // ArduPilot Mega IMU Library
@@ -25,6 +27,10 @@
 #include <AP_Math.h>
 #include <config.h>
 #include <Parameters.h>
+
+#if 0
+#include <AP_Declination.h>
+#endif
 
 static Parameters g;
 

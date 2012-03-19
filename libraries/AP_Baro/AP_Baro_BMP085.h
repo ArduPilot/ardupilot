@@ -5,14 +5,13 @@
 #define PRESS_FILTER_SIZE 2
 
 #include "AP_Baro.h"
+#include <AverageFilter.h>
 
 class AP_Baro_BMP085 : public AP_Baro
 {
   public:
 	AP_Baro_BMP085(bool apm2_hardware):
-			_apm2_hardware(apm2_hardware),
-			_temp_index(0),
-			_press_index(0){};  // Constructor
+			_apm2_hardware(apm2_hardware) {};  // Constructor
 
 
     /* AP_Baro public interface: */
@@ -27,7 +26,6 @@ class AP_Baro_BMP085 : public AP_Baro
 
   private:
 	int32_t RawPress;
-	int32_t _offset_press;
 	int32_t RawTemp;
 	int16_t Temp;
 	uint32_t Press;
@@ -40,10 +38,8 @@ class AP_Baro_BMP085 : public AP_Baro
 	int16_t ac1, ac2, ac3, b1, b2, mb, mc, md;
     uint16_t ac4, ac5, ac6;
 
-	int32_t _press_filter[PRESS_FILTER_SIZE];
+	AverageFilterInt16_Size4 _temp_filter;
 
-	uint8_t	_temp_index;
-	uint8_t	_press_index;
     uint32_t _retry_time;
 
 	void Command_ReadPress();

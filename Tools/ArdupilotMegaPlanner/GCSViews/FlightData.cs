@@ -230,6 +230,9 @@ namespace ArdupilotMega.GCSViews
             Zoomlevel.Minimum = gMapControl1.MinZoom;
             Zoomlevel.Maximum = gMapControl1.MaxZoom + 1;
             Zoomlevel.Value = Convert.ToDecimal(gMapControl1.Zoom);
+
+            if (MainV2.config["CHK_autopan"] != null)
+                CHK_autopan.Checked = bool.Parse(MainV2.config["CHK_autopan"].ToString());
         }
 
         private void mainloop()
@@ -255,7 +258,7 @@ namespace ArdupilotMega.GCSViews
             {
                 if (threadrun == 0) { return; }
 
-                if (MainV2.givecomport == true)
+                if (MainV2.giveComport == true)
                 {
                     System.Threading.Thread.Sleep(20);
                     continue;
@@ -353,6 +356,9 @@ namespace ArdupilotMega.GCSViews
                 }
                 else
                 {
+                    // ensure we know to stop
+                    if (MainV2.comPort.logreadmode)
+                        MainV2.comPort.logreadmode = false;
                     updatePlayPauseButton(false);
                 }
 
@@ -911,15 +917,15 @@ namespace ArdupilotMega.GCSViews
 
             try
             {
-                MainV2.givecomport = true;
+                MainV2.giveComport = true;
 
                 MainV2.comPort.setWP(gotohere, 0, MAVLink.MAV_FRAME.MAV_FRAME_GLOBAL_RELATIVE_ALT, (byte)2);
 
                 GuidedModeWP = new PointLatLngAlt(gotohere.lat, gotohere.lng, gotohere.alt,"Guided Mode");
 
-                MainV2.givecomport = false;
+                MainV2.giveComport = false;
             }
-            catch (Exception ex) { MainV2.givecomport = false; CustomMessageBox.Show("Error sending command : " + ex.Message); }
+            catch (Exception ex) { MainV2.giveComport = false; CustomMessageBox.Show("Error sending command : " + ex.Message); }
 
         }
 
@@ -1764,6 +1770,11 @@ print 'Roll complete'
 
                 scr.runScript(tb.Text);
             }
+        }
+
+        private void CHK_autopan_CheckedChanged(object sender, EventArgs e)
+        {
+            MainV2.config["CHK_autopan"] = CHK_autopan.Checked.ToString();
         }
     }
 }

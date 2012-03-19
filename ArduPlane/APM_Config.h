@@ -1,21 +1,20 @@
 // -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 
-// This file is just a placeholder for your configuration file.  If you wish to change any of the setup parameters from
-// their default values, place the appropriate #define statements here.
+// This file is just a placeholder for your configuration file.  If
+// you wish to change any of the setup parameters from their default
+// values, place the appropriate #define statements here.
 
-// For example if you wanted the Port 3 baud rate to be 38400 you would add a statement like the one below (uncommented)
-//#define SERIAL3_BAUD        38400
+
+// the following 2 defines control which APM board you have. The
+// 'BETA' board is only if you are developer who received a
+// pre-release APM2 board with the older barometer on it.
 
 // # define CONFIG_APM_HARDWARE APM_HARDWARE_APM2
 // # define APM2_BETA_HARDWARE
 
 
-// You may also put an include statement here to point at another configuration file.  This is convenient if you maintain
-// different configuration files for different aircraft or HIL simulation.  See the examples below
-//#include "APM_Config_mavlink_hil.h"
-//#include "Skywalker.h"
-
-// The following are the recommended settings for Xplane simulation. Remove the leading "/* and trailing "*/" to enable:
+// The following are the recommended settings for Xplane
+// simulation. Remove the leading "/* and trailing "*/" to enable:
 
 /*
 #define HIL_MODE            HIL_MODE_ATTITUDE
@@ -27,18 +26,7 @@
 // Mavlink supports
 // 1. HIL_MODE_ATTITUDE : simulated position, airspeed, and attitude
 // 2. HIL_MODE_SENSORS: full sensor simulation
-#define HIL_MODE            HIL_MODE_ATTITUDE
+//#define HIL_MODE            HIL_MODE_ATTITUDE
 
-// Sensors
-// All sensors are supported in all modes.
-// The magnetometer is not used in 
-// HIL_MODE_ATTITUDE but you may leave it
-// enabled if you wish.
-#define AIRSPEED_SENSOR     ENABLED
-#define MAGNETOMETER        ENABLED
-#define AIRSPEED_CRUISE     25
-#define THROTTLE_FAILSAFE   ENABLED
 */
 
-// Enabling this will use the GPS lat/long coordinate to get the compass declination
-//#define AUTOMATIC_DECLINATION ENABLED

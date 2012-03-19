@@ -77,6 +77,8 @@ namespace ArdupilotMega
         public float my { get; set; }
         public float mz { get; set; }
 
+        public float magfield { get { return (float)Math.Sqrt(Math.Pow(mx, 2) + Math.Pow(my, 2) + Math.Pow(mz, 2)); } }
+
         // calced turn rate
         public float turnrate { get { if (groundspeed <= 1) return 0; return (roll * 9.8f) / groundspeed; } }
 
@@ -269,9 +271,9 @@ namespace ArdupilotMega
         {
             mode = "";
             messages = new List<string>();
-            rateattitude = 10;
+            rateattitude = 3;
             rateposition = 3;
-            ratestatus = 1;
+            ratestatus = 3;
             ratesensors = 3;
             raterc = 3;
             datetime = DateTime.MinValue;
@@ -581,9 +583,9 @@ namespace ArdupilotMega
 
                     packetdropremote = sysstatus.packet_drop;
 
-                    if (oldmode != mode && MainV2.speechenable && MainV2.talk != null && MainV2.getConfig("speechmodeenabled") == "True")
+                    if (oldmode != mode && MainV2.speechEnable && MainV2.speechEngine != null && MainV2.getConfig("speechmodeenabled") == "True")
                     {
-                        MainV2.talk.SpeakAsync(Common.speechConversion(MainV2.getConfig("speechmode")));
+                        MainV2.speechEngine.SpeakAsync(Common.speechConversion(MainV2.getConfig("speechmode")));
                     }
 
                     //MAVLink.packets[ArdupilotMega.MAVLink.MAVLINK_MSG_ID_SYS_STATUS] = null;
@@ -732,9 +734,9 @@ namespace ArdupilotMega
 
                     wpno = wpcur.seq;
 
-                    if (oldwp != wpno && MainV2.speechenable && MainV2.talk != null && MainV2.getConfig("speechwaypointenabled") == "True")
+                    if (oldwp != wpno && MainV2.speechEnable && MainV2.speechEngine != null && MainV2.getConfig("speechwaypointenabled") == "True")
                     {
-                        MainV2.talk.SpeakAsync(Common.speechConversion(MainV2.getConfig("speechwaypoint")));
+                        MainV2.speechEngine.SpeakAsync(Common.speechConversion(MainV2.getConfig("speechwaypoint")));
                     }
 
                     //MAVLink.packets[ArdupilotMega.MAVLink.MAVLINK_MSG_ID_WAYPOINT_CURRENT] = null;
