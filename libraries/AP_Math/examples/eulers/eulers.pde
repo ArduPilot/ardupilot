@@ -17,12 +17,18 @@ FastSerialPort(Serial, 0);
 #include <Arduino_Mega_ISR_Registry.h>
 #include <AP_PeriodicProcess.h>
 #include <AP_ADC.h>
+#include <SPI.h>
+#include <I2C.h>
 #include <AP_Baro.h>
 #include <AP_Compass.h>
 #include <AP_GPS.h>
 Arduino_Mega_ISR_Registry isr_registry;
 AP_Baro_BMP085_HIL      barometer;
 AP_Compass_HIL     compass;
+#endif
+
+#if 0
+#include <AP_Declination.h>
 #endif
 
 static float rad_diff(float rad1, float rad2)
@@ -206,6 +212,52 @@ void test_frame_transforms(void)
     printf("%f %f %f\n", v2.x, v2.y, v2.z);
 }
 
+// generate a random float between -1 and 1
+static float rand_num(void)
+{
+	float ret = ((unsigned)random()) % 2000000;
+	return (ret - 1.0e6) / 1.0e6;
+}
+
+void test_matrix_rotate(void)
+{
+    Matrix3f m1, m2, diff;
+    Vector3f r;
+
+    m1.identity();
+    m2.identity();
+    r.x = rand_num();
+    r.y = rand_num();
+    r.z = rand_num();
+
+    for (uint16_t i = 0; i<1000; i++) {
+        // old method
+        Matrix3f temp_matrix;
+        temp_matrix.a.x = 0;
+        temp_matrix.a.y = -r.z;
+        temp_matrix.a.z =  r.y;
+        temp_matrix.b.x =  r.z;
+        temp_matrix.b.y = 0;
+        temp_matrix.b.z = -r.x;
+        temp_matrix.c.x = -r.y;
+        temp_matrix.c.y =  r.x;
+        temp_matrix.c.z = 0;
+        temp_matrix = m1 * temp_matrix;
+        m1 += temp_matrix;
+
+        // new method
+        m2.rotate(r);
+
+        // check they behave in the same way
+        diff = m1 - m2;
+        float err = diff.a.length() + diff.b.length() + diff.c.length();
+
+        if (err > 0) {
+            Serial.printf("ERROR: i=%u err=%f\n", (unsigned)i, err);
+        }
+    }
+}
+
 /*
   euler angle tests
  */
@@ -220,6 +272,7 @@ void setup(void)
     test_conversions();
     test_quaternion_eulers();
     test_matrix_eulers();
+    test_matrix_rotate();
 }
 
 void

@@ -115,7 +115,7 @@ static void calc_bearing_error()
           correction using the GPS typically takes 10 seconds or so
           for a 180 degree correction.
          */
-		bearing_error = nav_bearing - dcm.yaw_sensor;
+		bearing_error = nav_bearing - ahrs.yaw_sensor;
 	} else {
 
 		// TODO: we need to use the Yaw gyro for in between GPS reads,

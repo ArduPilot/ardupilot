@@ -25,6 +25,11 @@ AP_Baro_BMP085_HIL      barometer;
 AP_Compass_HIL     compass;
 #endif
 
+#if AUTOMATIC_DECLINATION == ENABLED
+// this is in an #if to avoid the static data
+#include <AP_Declination.h> // ArduPilot Mega Declination Helper Library
+#endif
+
 
 // standard rotation matrices (these are the originals from the old code)
 #define MATRIX_ROTATION_NONE               Matrix3f(1, 0, 0, 0, 1, 0, 0 ,0, 1)
@@ -162,6 +167,28 @@ static void test_vectors(void)
 }
 
 
+// test combinations of rotations
+static void test_combinations(void)
+{
+    enum Rotation r1, r2, r3;
+    bool found;
+
+	for (r1=ROTATION_NONE; r1<ROTATION_MAX;
+	     r1 = (enum Rotation)((uint8_t)r1+1)) {
+        for (r2=ROTATION_NONE; r2<ROTATION_MAX;
+             r2 = (enum Rotation)((uint8_t)r2+1)) {
+            r3 = rotation_combination(r1, r2, &found);
+            if (found) {
+                Serial.printf("rotation: %u + %u -> %u\n",
+                              (unsigned)r1, (unsigned)r2, (unsigned)r3);
+            } else {
+                Serial.printf("ERROR rotation: no combination for %u + %u\n",
+                              (unsigned)r1, (unsigned)r2);
+            }
+        }
+    }
+}
+
 /*
   rotation tests
  */
@@ -171,6 +198,7 @@ void setup(void)
     Serial.println("rotation unit tests\n");
     test_matrices();
     test_vectors();
+    test_combinations();
     Serial.println("rotation unit tests done\n");
 }
 
