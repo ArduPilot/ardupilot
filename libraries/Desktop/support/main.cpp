@@ -83,6 +83,12 @@ int main(int argc, char * const argv[])
 		struct timeval tv;
 		fd_set fds;
 		int fd_high = 0;
+        
+#ifdef __CYGWIN__
+        // under windows if this loop is using alot of cpu,
+        // the alarm gets called at a slower rate.
+        sleep(5);
+#endif
 
 		FD_ZERO(&fds);
 		loop();

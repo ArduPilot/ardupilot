@@ -145,6 +145,7 @@ namespace ArdupilotMega.GCSViews
             CMB_rateposition.Text = MainV2.cs.rateposition.ToString();
             CMB_raterc.Text = MainV2.cs.raterc.ToString();
             CMB_ratestatus.Text = MainV2.cs.ratestatus.ToString();
+            CMB_ratesensors.Text = MainV2.cs.ratesensors.ToString();
 
 
             if (MainV2.config["CHK_GDIPlus"] != null)
@@ -862,10 +863,10 @@ namespace ArdupilotMega.GCSViews
 
         private void CHK_enablespeech_CheckedChanged(object sender, EventArgs e)
         {
-            MainV2.speechenable = CHK_enablespeech.Checked;
+            MainV2.speechEnable = CHK_enablespeech.Checked;
             MainV2.config["speechenable"] = CHK_enablespeech.Checked;
-            if (MainV2.talk != null)
-                MainV2.talk.SpeakAsyncCancelAll();
+            if (MainV2.speechEngine != null)
+                MainV2.speechEngine.SpeakAsyncCancelAll();
         }
         private void CMB_language_SelectedIndexChanged(object sender, EventArgs e)
         {
@@ -1182,6 +1183,12 @@ namespace ArdupilotMega.GCSViews
                 return true;
             }
             return base.ProcessCmdKey(ref msg, keyData);
+        }
+
+        private void CMB_ratesensors_SelectedIndexChanged(object sender, EventArgs e)
+        {
+            MainV2.config[((ComboBox)sender).Name] = ((ComboBox)sender).Text;
+            MainV2.cs.ratesensors = byte.Parse(((ComboBox)sender).Text);
         }
     }
 }

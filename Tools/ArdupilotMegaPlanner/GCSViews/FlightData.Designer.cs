@@ -1208,6 +1208,7 @@
             this.CHK_autopan.Name = "CHK_autopan";
             this.toolTip1.SetToolTip(this.CHK_autopan, resources.GetString("CHK_autopan.ToolTip"));
             this.CHK_autopan.UseVisualStyleBackColor = true;
+            this.CHK_autopan.CheckedChanged += new System.EventHandler(this.CHK_autopan_CheckedChanged);
             // 
             // CB_tuning
             // 

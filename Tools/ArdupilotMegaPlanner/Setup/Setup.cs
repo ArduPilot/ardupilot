@@ -510,7 +510,7 @@ namespace ArdupilotMega.Setup
 
             if (tabControl1.SelectedTab == tabHeli)
             {
-                if (MainV2.comPort.param["GYR_ENABLE_"] == null)
+                if (MainV2.comPort.param["GYR_ENABLE"] == null)
                 {
                     tabHeli.Enabled = false;
                     return;
@@ -518,6 +518,12 @@ namespace ArdupilotMega.Setup
                 startup = true;
                 try
                 {
+                    if (MainV2.comPort.param.ContainsKey("H1_ENABLE"))
+                    {
+                        CCPM.Checked = MainV2.comPort.param["H1_ENABLE"].ToString() == "0" ? true : false;
+                        H1_ENABLE.Checked = !CCPM.Checked;
+                    }
+
                     foreach (string value in MainV2.comPort.param.Keys)
                     {
                         if (value == "")
@@ -915,7 +921,7 @@ namespace ArdupilotMega.Setup
             }
             catch { CustomMessageBox.Show("Set SYSID_SW_MREV Failed"); return; }
 
-            MainV2.givecomport = true;
+            MainV2.giveComport = true;
 
             ICommsSerial comPortT = MainV2.comPort.BaseStream;
 
@@ -931,7 +937,7 @@ namespace ArdupilotMega.Setup
                 comPortT.DtrEnable = true;
                 comPortT.Open();
             }
-            catch (Exception ex) { MainV2.givecomport = false; CustomMessageBox.Show("Invalid Comport Settings : " + ex.Message); return; }
+            catch (Exception ex) { MainV2.giveComport = false; CustomMessageBox.Show("Invalid Comport Settings : " + ex.Message); return; }
 
             BUT_reset.Text = "Rebooting (17 sec)";
             BUT_reset.Refresh();
@@ -951,7 +957,7 @@ namespace ArdupilotMega.Setup
 
             comPortT.Close();
 
-            MainV2.givecomport = false;
+            MainV2.giveComport = false;
             try
             {
                 MainV2.comPort.Open(true);
@@ -1087,9 +1093,9 @@ namespace ArdupilotMega.Setup
             try
             {
 
-                MainV2.comPort.setParam("COL_MID_", MainV2.cs.ch3in);
+                MainV2.comPort.setParam("COL_MID", MainV2.cs.ch3in);
 
-                COL_MID.Text = MainV2.comPort.param["COL_MID_"].ToString();
+                COL_MID.Text = MainV2.comPort.param["COL_MID"].ToString();
             }
             catch { CustomMessageBox.Show("Set COL_MID_ failed"); }
         }
@@ -1290,8 +1296,8 @@ namespace ArdupilotMega.Setup
             {
                 if (MainV2.comPort.param["HSV_MAN"].ToString() == "1")
                 {
-                    MainV2.comPort.setParam("COL_MIN_", int.Parse(COL_MIN.Text));
-                    MainV2.comPort.setParam("COL_MAX_", int.Parse(COL_MAX.Text));
+                    MainV2.comPort.setParam("COL_MIN", int.Parse(COL_MIN.Text));
+                    MainV2.comPort.setParam("COL_MAX", int.Parse(COL_MAX.Text));
                     MainV2.comPort.setParam("HSV_MAN", 0); // randy request - last
                     BUT_swash_manual.Text = "Manual";
 

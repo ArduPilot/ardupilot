@@ -1,11 +1,11 @@
 /// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 
-#define THISFIRMWARE "ArduCopter V2.4.2"
+#define THISFIRMWARE "ArduCopter V2.5"
 /*
-ArduCopter Version 2.4
-Authors:	Jason Short
-Based on code and ideas from the Arducopter team: Randy Mackay, Pat Hickey, Jose Julio, Jani Hirvinen
-Thanks to:	Chris Anderson, Mike Smith, Jordi Munoz, Doug Weibel, James Goppert, Benjamin Pelletier
+ArduCopter Version 2.5
+Lead author:	Jason Short
+Based on code and ideas from the Arducopter team: Randy Mackay, Pat Hickey, Jose Julio, Jani Hirvinen, Andrew Tridgell, Justin Beech, Adam Rivera, Jean-Louis Naudin, Roberto Navoni
+Thanks to:	Chris Anderson, Mike Smith, Jordi Munoz, Doug Weibel, James Goppert, Benjamin Pelletier, Robert Lefebvre, Marco Robustini
 
 This firmware is free software; you can redistribute it and/or
 modify it under the terms of the GNU Lesser General Public
@@ -526,8 +526,8 @@ int32_t pitch_axis;
 AverageFilterInt32_Size3 roll_rate_d_filter;	// filtered acceleration
 AverageFilterInt32_Size3 pitch_rate_d_filter;	// filtered pitch acceleration
 
-AverageFilterInt16_Size3 lat_rate_d_filter;		// for filtering D term
-AverageFilterInt16_Size3 lon_rate_d_filter;		// for filtering D term
+AverageFilterInt16_Size2 lat_rate_d_filter;		// for filtering D term
+AverageFilterInt16_Size2 lon_rate_d_filter;		// for filtering D term
 
 // Barometer filter
 AverageFilterInt32_Size5 baro_filter;	// filtered pitch acceleration
@@ -1161,10 +1161,10 @@ static void fifty_hz_loop()
 	camera_stabilization();
 
 	# if HIL_MODE == HIL_MODE_DISABLED
-		if (g.log_bitmask & MASK_LOG_ATTITUDE_FAST)
+		if (g.log_bitmask & MASK_LOG_ATTITUDE_FAST && motor_armed)
 			Log_Write_Attitude();
 
-		if (g.log_bitmask & MASK_LOG_RAW)
+		if (g.log_bitmask & MASK_LOG_RAW && motor_armed)
 			Log_Write_Raw();
 	#endif
 
@@ -1699,8 +1699,8 @@ void update_throttle_mode(void)
 				}
 
 				// hack to remove the influence of the ground effect
-				if(current_loc.alt < 200 && landing_boost != 0) {
-				  nav_throttle = min(nav_throttle, 0);
+				if(g.sonar_enabled && current_loc.alt < 100 && landing_boost != 0) {
+					nav_throttle = min(nav_throttle, 0);
 				}
 
 				#if FRAME_CONFIG == HELI_FRAME
@@ -1781,12 +1781,10 @@ static void update_navigation()
 			// go of the sticks
 
 			if((abs(g.rc_2.control_in) + abs(g.rc_1.control_in)) > 500){
-				// flag will reset when speed drops below .5 m/s
 				loiter_override 	= true;
 			}
 
 			// Allow the user to take control temporarily,
-			// regain hold when the speed goes down to .5m/s
 			if(loiter_override){
 				// this sets the copter to not try and nav while we control it
 				wp_control 	= NO_NAV_MODE;
@@ -1795,7 +1793,7 @@ static void update_navigation()
 				next_WP.lat = current_loc.lat;
 				next_WP.lng = current_loc.lng;
 
-				if((g.rc_2.control_in + g.rc_1.control_in) == 0){
+				if( g.rc_2.control_in == 0 && g.rc_1.control_in == 0 ){
 					loiter_override 	= false;
 					wp_control 			= LOITER_MODE;
 				}
@@ -1924,6 +1922,7 @@ static void update_altitude()
 		// calc the vertical accel rate
 		int temp			= (baro_alt - old_baro_alt) * 10;
 		baro_rate 			= (temp + baro_rate) >> 1;
+		baro_rate			= constrain(baro_rate, -300, 300);
 		old_baro_alt		= baro_alt;
 
 		// Note: sonar_alt is calculated in a faster loop and filtered with a mode filter
@@ -1942,6 +1941,7 @@ static void update_altitude()
 			// calc the vertical accel rate
 			// positive = going up.
 			sonar_rate 		= (sonar_alt - old_sonar_alt) * 10;
+			sonar_rate		= constrain(sonar_rate, -150, 150);
 			old_sonar_alt 	= sonar_alt;
 		#endif
 
@@ -1953,9 +1953,8 @@ static void update_altitude()
 				sonar_alt = (float)sonar_alt * temp;
 			#endif
 
-			scale = (sonar_alt - 400) / 200;
-			scale = constrain(scale, 0, 1);
-
+			scale = (float)(sonar_alt - 400) / 200.0;
+			scale = constrain(scale, 0.0, 1.0);
 			// solve for a blended altitude
 			current_loc.alt = ((float)sonar_alt * (1.0 - scale)) + ((float)baro_alt * scale) + home.alt;
 

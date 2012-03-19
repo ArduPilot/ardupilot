@@ -287,6 +287,8 @@
             this.BUT_load = new ArdupilotMega.MyButton();
             this.toolTip1 = new System.Windows.Forms.ToolTip(this.components);
             this.BUT_compare = new ArdupilotMega.MyButton();
+            this.label33 = new System.Windows.Forms.Label();
+            this.CMB_ratesensors = new System.Windows.Forms.ComboBox();
             ((System.ComponentModel.ISupportInitialize)(this.Params)).BeginInit();
             this.ConfigTabs.SuspendLayout();
             this.TabAP.SuspendLayout();
@@ -1715,6 +1717,8 @@
             // 
             // TabPlanner
             // 
+            this.TabPlanner.Controls.Add(this.label33);
+            this.TabPlanner.Controls.Add(this.CMB_ratesensors);
             this.TabPlanner.Controls.Add(this.label26);
             this.TabPlanner.Controls.Add(this.CMB_videoresolutions);
             this.TabPlanner.Controls.Add(this.label12);
@@ -2132,6 +2136,25 @@
             this.BUT_compare.UseVisualStyleBackColor = true;
             this.BUT_compare.Click += new System.EventHandler(this.BUT_compare_Click);
             // 
+            // label33
+            // 
+            resources.ApplyResources(this.label33, "label33");
+            this.label33.Name = "label33";
+            // 
+            // CMB_ratesensors
+            // 
+            this.CMB_ratesensors.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
+            this.CMB_ratesensors.FormattingEnabled = true;
+            this.CMB_ratesensors.Items.AddRange(new object[] {
+            resources.GetString("CMB_ratesensors.Items"),
+            resources.GetString("CMB_ratesensors.Items1"),
+            resources.GetString("CMB_ratesensors.Items2"),
+            resources.GetString("CMB_ratesensors.Items3"),
+            resources.GetString("CMB_ratesensors.Items4")});
+            resources.ApplyResources(this.CMB_ratesensors, "CMB_ratesensors");
+            this.CMB_ratesensors.Name = "CMB_ratesensors";
+            this.CMB_ratesensors.SelectedIndexChanged += new System.EventHandler(this.CMB_ratesensors_SelectedIndexChanged);
+            // 
             // Configuration
             // 
             resources.ApplyResources(this, "$this");
@@ -2521,5 +2544,7 @@
         private System.Windows.Forms.Label lblSTAB_D;
         private System.Windows.Forms.NumericUpDown TUNE_LOW;
         private System.Windows.Forms.NumericUpDown TUNE_HIGH;
+        private System.Windows.Forms.Label label33;
+        private System.Windows.Forms.ComboBox CMB_ratesensors;
     }
 }
