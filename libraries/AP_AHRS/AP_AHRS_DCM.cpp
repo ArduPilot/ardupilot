@@ -66,27 +66,16 @@ AP_AHRS_DCM::matrix_update(float _G_Dt)
 	// Equation 16, adding proportional and integral correction terms
 	_omega = _omega_integ_corr + _omega_P + _omega_yaw_P;
 
-	// this is an expansion of the DCM matrix multiply (equation
+	// this is a replacement of the DCM matrix multiply (equation
 	// 17), with known zero elements removed and the matrix
 	// operations inlined. This runs much faster than the original
 	// version of this code, as the compiler was doing a terrible
 	// job of realising that so many of the factors were in common
 	// or zero. It also uses much less stack, as we no longer need
-	// additional local matrices
+	// two additional local matrices
 
-	float tmpx = _G_Dt * _omega.x;
-	float tmpy = _G_Dt * _omega.y;
-	float tmpz = _G_Dt * _omega.z;
-
-	_dcm_matrix.a.x += _dcm_matrix.a.y * tmpz  - _dcm_matrix.a.z * tmpy;
-	_dcm_matrix.a.y += _dcm_matrix.a.z * tmpx  - _dcm_matrix.a.x * tmpz;
-	_dcm_matrix.a.z += _dcm_matrix.a.x * tmpy  - _dcm_matrix.a.y * tmpx;
-	_dcm_matrix.b.x += _dcm_matrix.b.y * tmpz  - _dcm_matrix.b.z * tmpy;
-	_dcm_matrix.b.y += _dcm_matrix.b.z * tmpx  - _dcm_matrix.b.x * tmpz;
-	_dcm_matrix.b.z += _dcm_matrix.b.x * tmpy  - _dcm_matrix.b.y * tmpx;
-	_dcm_matrix.c.x += _dcm_matrix.c.y * tmpz  - _dcm_matrix.c.z * tmpy;
-	_dcm_matrix.c.y += _dcm_matrix.c.z * tmpx  - _dcm_matrix.c.x * tmpz;
-	_dcm_matrix.c.z += _dcm_matrix.c.x * tmpy  - _dcm_matrix.c.y * tmpx;
+	Vector3f r = _omega * _G_Dt;
+	_dcm_matrix.rotate(r);
 }
 
 
