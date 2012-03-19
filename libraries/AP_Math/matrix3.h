@@ -151,6 +151,10 @@ public:
 
     // create eulers from a rotation matrix
 	void to_euler(float *roll, float *pitch, float *yaw);
+
+    // apply an additional rotation from a body frame gyro vector
+    // to a rotation matrix.
+	void rotate(const Vector3<T> &g);
 };
 
 typedef Matrix3<int16_t>		Matrix3i;
