@@ -32,7 +32,7 @@ static bool check_missed_wp()
 	int32_t temp;
 	temp = target_bearing - original_target_bearing;
 	temp = wrap_180(temp);
-	return (abs(temp) > 10000);	//we pased the waypoint by 10 °
+	return (abs(temp) > 10000);	// we passed the waypoint by 100 degrees
 }
 
 // ------------------------------
