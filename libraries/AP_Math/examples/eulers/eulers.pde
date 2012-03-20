@@ -22,6 +22,7 @@ FastSerialPort(Serial, 0);
 #include <AP_Baro.h>
 #include <AP_Compass.h>
 #include <AP_GPS.h>
+#include <Filter.h>
 Arduino_Mega_ISR_Registry isr_registry;
 AP_Baro_BMP085_HIL      barometer;
 AP_Compass_HIL     compass;
