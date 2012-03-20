@@ -33,7 +33,7 @@ public:
 		_kp  (initial_p),
 		_ki  (initial_i),
 		_kd  (initial_d),
-		_imax(initial_imax)
+		_imax(abs(initial_imax))
 	{
 		// no need for explicit load, assuming that the main code uses AP_Param::load_all.
 	}
@@ -78,7 +78,7 @@ public:
 	                 const float i,
 	                 const float d,
 	                 const int16_t imaxval) {
-		_kp = p; _ki = i; _kd = d; _imax = imaxval;
+		_kp = p; _ki = i; _kd = d; _imax = abs(imaxval);
 	}
 
 	float	kP() const				{ return _kp.get(); }
