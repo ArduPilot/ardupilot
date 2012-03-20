@@ -5,7 +5,7 @@
 //****************************************************************
 static byte navigate()
 {
-	// waypoint distance from plane in meters
+	// waypoint distance from plane in cm
 	// ---------------------------------------
 	wp_distance 	= get_distance(&current_loc, &next_WP);
 	home_distance 	= get_distance(&current_loc, &home);
@@ -529,7 +529,7 @@ static int32_t wrap_180(int32_t error)
 }
 */
 
-// distance is returned in meters
+// distance is returned in cm
 static int32_t get_distance(struct Location *loc1, struct Location *loc2)
 {
 	float dlat 		= (float)(loc2->lat - loc1->lat);
