@@ -723,7 +723,7 @@
 // Throttle control gains
 //
 #ifndef THROTTLE_CRUISE
-# define THROTTLE_CRUISE	350		//
+# define THROTTLE_CRUISE	450		//
 #endif
 
 #ifndef ALT_HOLD_P

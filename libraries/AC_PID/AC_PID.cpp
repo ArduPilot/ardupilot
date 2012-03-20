@@ -120,6 +120,7 @@ AC_PID::load_gains()
 	_ki.load();
 	_kd.load();
 	_imax.load();
+	_imax = abs(_imax);
 }
 
 void
