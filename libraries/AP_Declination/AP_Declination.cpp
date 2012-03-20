@@ -171,16 +171,15 @@ AP_Declination::get_lookup_value(uint8_t x, uint8_t y)
 		return val;
 	}
 
-
-	// If we are looking for the first value we can just use the
-	// row_start value from declination_keys
-	if(y == 0) return declination_keys.row_start[x];
-
 	// Because the values were removed from the start of the
 	// original array (0-6) to the exception array, all the indicies
 	// in this main lookup need to be shifted left 7
 	// EX: User enters 7 -> 7 is the first row in this array so it needs to be zero
 	if(x >= 7) x -= 7;
+
+	// If we are looking for the first value we can just use the
+	// row_start value from declination_keys
+	if(y == 0) return declination_keys.row_start[x];
 
 	// Init vars
 	row_value stval;
