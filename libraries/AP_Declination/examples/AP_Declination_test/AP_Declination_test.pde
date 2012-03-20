@@ -52,25 +52,30 @@ static const int16_t dec_tbl[37][73] = \
 void setup(void)
 {
 	float declination, declination_test;
+	uint16_t pass = 0, fail = 0;
 
 	Serial.begin(115200);
 
-	for(int i = -90; i <= 90; i+=10)
+	for(int i = -90; i <= 90; i+=5)
 	{
-		for(int j = -180; j <= 180; j+=10)
+		for(int j = -180; j <= 180; j+=5)
 		{
 			declination = AP_Declination::get_declination(i, j);
 			declination_test = get_declination(i, j);
 			if(declination == declination_test)
 			{
-				Serial.printf("Pass: %i, %i : %f, %f\n", i, j, declination, declination_test);
+				//Serial.printf("Pass: %i, %i : %f, %f\n", i, j, declination, declination_test);
+				pass++;
 			}
 			else
 			{
-				Serial.printf("Fail: %i, %i : %f, %f\n", i, j, declination, declination_test);
+				Serial.printf("FAIL: %i, %i : %f, %f\n", i, j, declination, declination_test);
+				fail++;
 			}
 		}
 	}
+	Serial.printf("Total Pass: %i\n", pass);
+	Serial.printf("Total Fail: %i\n", fail);
 }
 
 void loop(void)
