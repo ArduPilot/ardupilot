@@ -153,8 +153,37 @@ void Matrix3<T>::rotate(const Vector3<T> &g)
 	(*this) += temp_matrix;
 }
 
+
+// multiplication by a vector
+template <typename T>
+Vector3<T> Matrix3<T>::operator *(const Vector3<T> &v) const
+{
+    return Vector3<T>(a.x * v.x + a.y * v.y + a.z * v.z,
+                      b.x * v.x + b.y * v.y + b.z * v.z,
+                      c.x * v.x + c.y * v.y + c.z * v.z);
+}
+
+// multiplication by another Matrix3<T>
+template <typename T>
+Matrix3<T> Matrix3<T>::operator *(const Matrix3<T> &m) const
+{
+    Matrix3<T> temp (Vector3<T>(a.x * m.a.x + a.y * m.b.x + a.z * m.c.x,
+                                a.x * m.a.y + a.y * m.b.y + a.z * m.c.y,
+                                a.x * m.a.z + a.y * m.b.z + a.z * m.c.z),
+                     Vector3<T>(b.x * m.a.x + b.y * m.b.x + b.z * m.c.x,
+                                b.x * m.a.y + b.y * m.b.y + b.z * m.c.y,
+                                b.x * m.a.z + b.y * m.b.z + b.z * m.c.z),
+                     Vector3<T>(c.x * m.a.x + c.y * m.b.x + c.z * m.c.x,
+                                c.x * m.a.y + c.y * m.b.y + c.z * m.c.y,
+                                c.x * m.a.z + c.y * m.b.z + c.z * m.c.z));
+    return temp;
+}
+
+
 // only define for float
 template void Matrix3<float>::rotation(enum Rotation);
 template void Matrix3<float>::rotate(const Vector3<float> &g);
 template void Matrix3<float>::from_euler(float roll, float pitch, float yaw);
 template void Matrix3<float>::to_euler(float *roll, float *pitch, float *yaw);
+template Vector3<float> Matrix3<float>::operator *(const Vector3<float> &v) const;
+template Matrix3<float> Matrix3<float>::operator *(const Matrix3<float> &m) const;
