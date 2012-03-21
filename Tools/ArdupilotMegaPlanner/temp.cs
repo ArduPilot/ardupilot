@@ -886,5 +886,10 @@ namespace ArdupilotMega
         {
             new Antenna.Tracker().Show();
         }
+
+        private void BUT_magcalib_Click(object sender, EventArgs e)
+        {
+            MagCalib.ProcessLog();
+        }
     }
 }

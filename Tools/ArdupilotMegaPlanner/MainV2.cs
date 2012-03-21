@@ -547,7 +547,7 @@ namespace ArdupilotMega
                     try
                     {
                         Directory.CreateDirectory(Path.GetDirectoryName(Application.ExecutablePath) + Path.DirectorySeparatorChar + @"logs");
-                        comPort.logfile = new BinaryWriter(File.Open(Path.GetDirectoryName(Application.ExecutablePath) + Path.DirectorySeparatorChar + @"logs" + Path.DirectorySeparatorChar + DateTime.Now.ToString("yyyy-MM-dd hh-mm-ss") + ".tlog", FileMode.CreateNew, FileAccess.ReadWrite, FileShare.Read));
+                        comPort.logfile = new BinaryWriter(File.Open(Path.GetDirectoryName(Application.ExecutablePath) + Path.DirectorySeparatorChar + @"logs" + Path.DirectorySeparatorChar + DateTime.Now.ToString("yyyy-MM-dd HH-mm-ss") + ".tlog", FileMode.CreateNew, FileAccess.ReadWrite, FileShare.Read));
                     }
                     catch { CustomMessageBox.Show("Failed to create log - wont log this session"); } // soft fail
 
@@ -863,11 +863,13 @@ namespace ArdupilotMega
             }
         }
 
+        DateTime connectButtonUpdate = DateTime.Now;
+
         private void updateConnectIcon()
         {
-            DateTime menuupdate = DateTime.Now;
+            
 
-            if ((DateTime.Now - menuupdate).Milliseconds > 500)
+            if ((DateTime.Now - connectButtonUpdate).Milliseconds > 500)
             {
                 //                        Console.WriteLine(DateTime.Now.Millisecond);
                 if (comPort.BaseStream.IsOpen)
@@ -896,7 +898,7 @@ namespace ArdupilotMega
                         });
                     }
                 }
-                menuupdate = DateTime.Now;
+                connectButtonUpdate = DateTime.Now;
             }
         }
 

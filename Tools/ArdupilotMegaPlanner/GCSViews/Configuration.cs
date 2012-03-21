@@ -363,7 +363,9 @@ namespace ArdupilotMega.GCSViews
                             thisctl.Minimum = -9000;
                             thisctl.Value = (decimal)(float)param[value];
                             thisctl.Increment = (decimal)0.001;
-                            if (thisctl.Name.EndsWith("_P") || thisctl.Name.EndsWith("_I") || thisctl.Name.EndsWith("_D") || thisctl.Value == 0 || thisctl.Value.ToString("0.###", new System.Globalization.CultureInfo("en-US")).Contains("."))
+                            if (thisctl.Name.EndsWith("_P") || thisctl.Name.EndsWith("_I") || thisctl.Name.EndsWith("_D")
+                                || thisctl.Name.EndsWith("_LOW") || thisctl.Name.EndsWith("_HIGH") || thisctl.Value == 0
+                                || thisctl.Value.ToString("0.###", new System.Globalization.CultureInfo("en-US")).Contains("."))
                             {
                                 thisctl.DecimalPlaces = 3;
                             }
@@ -371,6 +373,12 @@ namespace ArdupilotMega.GCSViews
                             {
                                 thisctl.Increment = (decimal)1;
                                 thisctl.DecimalPlaces = 1;
+                            }
+
+                            if (thisctl.Name.EndsWith("_IMAX"))
+                            {
+                                thisctl.Maximum = 180;
+                                thisctl.Minimum = -180;
                             }
 
                             thisctl.Enabled = true;
@@ -403,7 +411,7 @@ namespace ArdupilotMega.GCSViews
                 }
                 if (text.Length == 0)
                 {
-                    Console.WriteLine(name + " not found");
+                    //Console.WriteLine(name + " not found");
                 }
 
             }

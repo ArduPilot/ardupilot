@@ -47,6 +47,7 @@
             this.BUT_georefimage = new ArdupilotMega.MyButton();
             this.BUT_follow_me = new ArdupilotMega.MyButton();
             this.BUT_ant_track = new ArdupilotMega.MyButton();
+            this.BUT_magcalib = new ArdupilotMega.MyButton();
             this.SuspendLayout();
             // 
             // button1
@@ -234,11 +235,21 @@
             this.BUT_ant_track.UseVisualStyleBackColor = true;
             this.BUT_ant_track.Click += new System.EventHandler(this.BUT_ant_track_Click);
             // 
+            // BUT_magcalib
+            // 
+            this.BUT_magcalib.Location = new System.Drawing.Point(161, 164);
+            this.BUT_magcalib.Name = "BUT_magcalib";
+            this.BUT_magcalib.Size = new System.Drawing.Size(96, 23);
+            this.BUT_magcalib.TabIndex = 19;
+            this.BUT_magcalib.Text = "Mag Calib";
+            this.BUT_magcalib.Click += new System.EventHandler(this.BUT_magcalib_Click);
+            // 
             // temp
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(731, 281);
+            this.Controls.Add(this.BUT_magcalib);
             this.Controls.Add(this.BUT_ant_track);
             this.Controls.Add(this.BUT_follow_me);
             this.Controls.Add(this.BUT_georefimage);
@@ -287,6 +298,7 @@
         private MyButton BUT_georefimage;
         private MyButton BUT_follow_me;
         private MyButton BUT_ant_track;
+        private MyButton BUT_magcalib;
         //private SharpVectors.Renderers.Forms.SvgPictureBox svgPictureBox1;
 
     }

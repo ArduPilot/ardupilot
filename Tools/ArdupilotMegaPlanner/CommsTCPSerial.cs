@@ -19,6 +19,8 @@ namespace System.IO.Ports
         byte[] rbuffer = new byte[0];
         int rbufferread = 0;
 
+        int retrys = 3;
+
         public int WriteBufferSize { get; set; }
         public int WriteTimeout { get; set; }
         public int ReceivedBytesThreshold { get; set; }
@@ -121,6 +123,14 @@ namespace System.IO.Ports
                     client.Close();
                 }
                 catch { }
+
+                // this should only happen if we have established a connection in the first place
+                if (client != null && retrys > 0)
+                {
+                    client.Connect(ArdupilotMega.MainV2.config["TCP_host"].ToString(), int.Parse(ArdupilotMega.MainV2.config["TCP_port"].ToString()));
+                    retrys--;
+                }
+
                 throw new Exception("The socket/serialproxy is closed");
             }
         }
