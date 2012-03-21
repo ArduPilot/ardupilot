@@ -74,6 +74,8 @@ namespace ArdupilotMega.GCSViews
         public static hud.HUD myhud = null;
         public static GMapControl mymap = null;
 
+        bool playingLog = false;
+
 
         public static PointLatLngAlt GuidedModeWP = new PointLatLngAlt();
 
@@ -360,6 +362,11 @@ namespace ArdupilotMega.GCSViews
                     if (MainV2.comPort.logreadmode)
                         MainV2.comPort.logreadmode = false;
                     updatePlayPauseButton(false);
+
+                    if (!playingLog && MainV2.comPort.logplaybackfile != null)
+                    {
+                        continue;
+                    }
                 }
 
                 
@@ -1025,10 +1032,11 @@ namespace ArdupilotMega.GCSViews
             {
                 MainV2.comPort.logreadmode = false;
                 ZedGraphTimer.Stop();
+                playingLog = false;
             }
             else
             {
-                BUT_clear_track_Click(sender, e);
+               // BUT_clear_track_Click(sender, e);
                 MainV2.comPort.logreadmode = true;
                 list1.Clear();
                 list2.Clear();
@@ -1045,6 +1053,7 @@ namespace ArdupilotMega.GCSViews
                 zg1.GraphPane.XAxis.Scale.Min = 0;
                 zg1.GraphPane.XAxis.Scale.Max = 1;
                 ZedGraphTimer.Start();
+                playingLog = true;
             }
         }
 
