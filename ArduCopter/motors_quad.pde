@@ -178,24 +178,24 @@ static void output_motor_test()
 
 	}else{
 
-		 APM_RC.OutputCh(MOT_3, g.rc_2.radio_min);
+		 APM_RC.OutputCh(MOT_2, g.rc_2.radio_min);
 		 delay(4000);
-		 APM_RC.OutputCh(MOT_1, g.rc_3.radio_min + 100);
+		 APM_RC.OutputCh(MOT_3, g.rc_3.radio_min + 100);
 		 delay(300);
 
-		 APM_RC.OutputCh(MOT_1, g.rc_3.radio_min);
+		 APM_RC.OutputCh(MOT_3, g.rc_3.radio_min);
 		 delay(2000);
-		 APM_RC.OutputCh(MOT_2, g.rc_1.radio_min + 100);
+		 APM_RC.OutputCh(MOT_1, g.rc_1.radio_min + 100);
 		 delay(300);
 
-		 APM_RC.OutputCh(MOT_2, g.rc_1.radio_min);
+		 APM_RC.OutputCh(MOT_1, g.rc_1.radio_min);
 		 delay(2000);
 		 APM_RC.OutputCh(MOT_4, g.rc_4.radio_min + 100);
 		 delay(300);
 
 		 APM_RC.OutputCh(MOT_4, g.rc_4.radio_min);
 		 delay(2000);
-		 APM_RC.OutputCh(MOT_3, g.rc_2.radio_min + 100);
+		 APM_RC.OutputCh(MOT_2, g.rc_2.radio_min + 100);
 		 delay(300);
 
 	}
