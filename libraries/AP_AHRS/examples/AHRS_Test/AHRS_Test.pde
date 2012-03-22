@@ -21,6 +21,7 @@
 #include <DataFlash.h>
 #include <APM_RC.h>
 #include <GCS_MAVLink.h>
+#include <Filter.h>
 
 // uncomment this for a APM2 board
 #define APM2_HARDWARE
