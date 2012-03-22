@@ -785,7 +785,7 @@ namespace ArdupilotMega
             System.Threading.Thread.Sleep(500);
             comPort.Write("erase\r");
             System.Threading.Thread.Sleep(100);
-            TXT_seriallog.AppendText("!!Allow 30 seconds for erase\n");
+            TXT_seriallog.AppendText("!!Allow 30-90 seconds for erase\n");
             status = serialstatus.Done;
             CHK_logs.Items.Clear();
         }

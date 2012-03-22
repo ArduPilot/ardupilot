@@ -380,8 +380,8 @@ namespace ArdupilotMega
             CH6_OPTFLOW_KD = 19,
 
             CH6_NAV_I = 20,
-
-            CH6_LOITER_RATE_P = 22
+            CH6_LOITER_RATE_P = 22,
+            CH6_LOITER_RATE_D = 23
         }
 
 

@@ -30,8 +30,8 @@
         {
             this.components = new System.ComponentModel.Container();
             System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(Configuration));
-            System.Windows.Forms.DataGridViewCellStyle dataGridViewCellStyle3 = new System.Windows.Forms.DataGridViewCellStyle();
-            System.Windows.Forms.DataGridViewCellStyle dataGridViewCellStyle4 = new System.Windows.Forms.DataGridViewCellStyle();
+            System.Windows.Forms.DataGridViewCellStyle dataGridViewCellStyle1 = new System.Windows.Forms.DataGridViewCellStyle();
+            System.Windows.Forms.DataGridViewCellStyle dataGridViewCellStyle2 = new System.Windows.Forms.DataGridViewCellStyle();
             this.Params = new System.Windows.Forms.DataGridView();
             this.Command = new System.Windows.Forms.DataGridViewTextBoxColumn();
             this.Value = new System.Windows.Forms.DataGridViewTextBoxColumn();
@@ -236,6 +236,8 @@
             this.RATE_RLL_P = new System.Windows.Forms.NumericUpDown();
             this.label91 = new System.Windows.Forms.Label();
             this.TabPlanner = new System.Windows.Forms.TabPage();
+            this.label33 = new System.Windows.Forms.Label();
+            this.CMB_ratesensors = new System.Windows.Forms.ComboBox();
             this.label26 = new System.Windows.Forms.Label();
             this.CMB_videoresolutions = new System.Windows.Forms.ComboBox();
             this.label12 = new System.Windows.Forms.Label();
@@ -287,8 +289,8 @@
             this.BUT_load = new ArdupilotMega.MyButton();
             this.toolTip1 = new System.Windows.Forms.ToolTip(this.components);
             this.BUT_compare = new ArdupilotMega.MyButton();
-            this.label33 = new System.Windows.Forms.Label();
-            this.CMB_ratesensors = new System.Windows.Forms.ComboBox();
+            this.myLabel3 = new ArdupilotMega.MyLabel();
+            this.myLabel4 = new ArdupilotMega.MyLabel();
             ((System.ComponentModel.ISupportInitialize)(this.Params)).BeginInit();
             this.ConfigTabs.SuspendLayout();
             this.TabAP.SuspendLayout();
@@ -409,14 +411,14 @@
             this.Params.AllowUserToAddRows = false;
             this.Params.AllowUserToDeleteRows = false;
             resources.ApplyResources(this.Params, "Params");
-            dataGridViewCellStyle3.Alignment = System.Windows.Forms.DataGridViewContentAlignment.MiddleLeft;
-            dataGridViewCellStyle3.BackColor = System.Drawing.Color.Maroon;
-            dataGridViewCellStyle3.Font = new System.Drawing.Font("Microsoft Sans Serif", 8.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            dataGridViewCellStyle3.ForeColor = System.Drawing.Color.White;
-            dataGridViewCellStyle3.SelectionBackColor = System.Drawing.SystemColors.Highlight;
-            dataGridViewCellStyle3.SelectionForeColor = System.Drawing.SystemColors.HighlightText;
-            dataGridViewCellStyle3.WrapMode = System.Windows.Forms.DataGridViewTriState.True;
-            this.Params.ColumnHeadersDefaultCellStyle = dataGridViewCellStyle3;
+            dataGridViewCellStyle1.Alignment = System.Windows.Forms.DataGridViewContentAlignment.MiddleLeft;
+            dataGridViewCellStyle1.BackColor = System.Drawing.Color.Maroon;
+            dataGridViewCellStyle1.Font = new System.Drawing.Font("Microsoft Sans Serif", 8.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            dataGridViewCellStyle1.ForeColor = System.Drawing.Color.White;
+            dataGridViewCellStyle1.SelectionBackColor = System.Drawing.SystemColors.Highlight;
+            dataGridViewCellStyle1.SelectionForeColor = System.Drawing.SystemColors.HighlightText;
+            dataGridViewCellStyle1.WrapMode = System.Windows.Forms.DataGridViewTriState.True;
+            this.Params.ColumnHeadersDefaultCellStyle = dataGridViewCellStyle1;
             this.Params.ColumnHeadersHeightSizeMode = System.Windows.Forms.DataGridViewColumnHeadersHeightSizeMode.AutoSize;
             this.Params.Columns.AddRange(new System.Windows.Forms.DataGridViewColumn[] {
             this.Command,
@@ -425,14 +427,14 @@
             this.mavScale,
             this.RawValue});
             this.Params.Name = "Params";
-            dataGridViewCellStyle4.Alignment = System.Windows.Forms.DataGridViewContentAlignment.MiddleLeft;
-            dataGridViewCellStyle4.BackColor = System.Drawing.SystemColors.ActiveCaption;
-            dataGridViewCellStyle4.Font = new System.Drawing.Font("Microsoft Sans Serif", 8.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            dataGridViewCellStyle4.ForeColor = System.Drawing.SystemColors.WindowText;
-            dataGridViewCellStyle4.SelectionBackColor = System.Drawing.SystemColors.Highlight;
-            dataGridViewCellStyle4.SelectionForeColor = System.Drawing.SystemColors.HighlightText;
-            dataGridViewCellStyle4.WrapMode = System.Windows.Forms.DataGridViewTriState.True;
-            this.Params.RowHeadersDefaultCellStyle = dataGridViewCellStyle4;
+            dataGridViewCellStyle2.Alignment = System.Windows.Forms.DataGridViewContentAlignment.MiddleLeft;
+            dataGridViewCellStyle2.BackColor = System.Drawing.SystemColors.ActiveCaption;
+            dataGridViewCellStyle2.Font = new System.Drawing.Font("Microsoft Sans Serif", 8.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            dataGridViewCellStyle2.ForeColor = System.Drawing.SystemColors.WindowText;
+            dataGridViewCellStyle2.SelectionBackColor = System.Drawing.SystemColors.Highlight;
+            dataGridViewCellStyle2.SelectionForeColor = System.Drawing.SystemColors.HighlightText;
+            dataGridViewCellStyle2.WrapMode = System.Windows.Forms.DataGridViewTriState.True;
+            this.Params.RowHeadersDefaultCellStyle = dataGridViewCellStyle2;
             this.Params.RowHeadersVisible = false;
             this.Params.CellValueChanged += new System.Windows.Forms.DataGridViewCellEventHandler(this.Params_CellValueChanged);
             // 
@@ -1093,6 +1095,8 @@
             // 
             // TabAC
             // 
+            this.TabAC.Controls.Add(this.myLabel4);
+            this.TabAC.Controls.Add(this.myLabel3);
             this.TabAC.Controls.Add(this.TUNE_LOW);
             this.TabAC.Controls.Add(this.TUNE_HIGH);
             this.TabAC.Controls.Add(this.myLabel2);
@@ -1765,6 +1769,25 @@
             resources.ApplyResources(this.TabPlanner, "TabPlanner");
             this.TabPlanner.Name = "TabPlanner";
             // 
+            // label33
+            // 
+            resources.ApplyResources(this.label33, "label33");
+            this.label33.Name = "label33";
+            // 
+            // CMB_ratesensors
+            // 
+            this.CMB_ratesensors.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
+            this.CMB_ratesensors.FormattingEnabled = true;
+            this.CMB_ratesensors.Items.AddRange(new object[] {
+            resources.GetString("CMB_ratesensors.Items"),
+            resources.GetString("CMB_ratesensors.Items1"),
+            resources.GetString("CMB_ratesensors.Items2"),
+            resources.GetString("CMB_ratesensors.Items3"),
+            resources.GetString("CMB_ratesensors.Items4")});
+            resources.ApplyResources(this.CMB_ratesensors, "CMB_ratesensors");
+            this.CMB_ratesensors.Name = "CMB_ratesensors";
+            this.CMB_ratesensors.SelectedIndexChanged += new System.EventHandler(this.CMB_ratesensors_SelectedIndexChanged);
+            // 
             // label26
             // 
             resources.ApplyResources(this.label26, "label26");
@@ -2136,24 +2159,17 @@
             this.BUT_compare.UseVisualStyleBackColor = true;
             this.BUT_compare.Click += new System.EventHandler(this.BUT_compare_Click);
             // 
-            // label33
+            // myLabel3
             // 
-            resources.ApplyResources(this.label33, "label33");
-            this.label33.Name = "label33";
+            resources.ApplyResources(this.myLabel3, "myLabel3");
+            this.myLabel3.Name = "myLabel3";
+            this.myLabel3.resize = false;
             // 
-            // CMB_ratesensors
+            // myLabel4
             // 
-            this.CMB_ratesensors.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
-            this.CMB_ratesensors.FormattingEnabled = true;
-            this.CMB_ratesensors.Items.AddRange(new object[] {
-            resources.GetString("CMB_ratesensors.Items"),
-            resources.GetString("CMB_ratesensors.Items1"),
-            resources.GetString("CMB_ratesensors.Items2"),
-            resources.GetString("CMB_ratesensors.Items3"),
-            resources.GetString("CMB_ratesensors.Items4")});
-            resources.ApplyResources(this.CMB_ratesensors, "CMB_ratesensors");
-            this.CMB_ratesensors.Name = "CMB_ratesensors";
-            this.CMB_ratesensors.SelectedIndexChanged += new System.EventHandler(this.CMB_ratesensors_SelectedIndexChanged);
+            resources.ApplyResources(this.myLabel4, "myLabel4");
+            this.myLabel4.Name = "myLabel4";
+            this.myLabel4.resize = false;
             // 
             // Configuration
             // 
@@ -2546,5 +2562,7 @@
         private System.Windows.Forms.NumericUpDown TUNE_HIGH;
         private System.Windows.Forms.Label label33;
         private System.Windows.Forms.ComboBox CMB_ratesensors;
+        private MyLabel myLabel4;
+        private MyLabel myLabel3;
     }
 }
