@@ -1,7 +1,9 @@
 #!/usr/bin/env python
 
 from aircraft import Aircraft
-import euclid, util, time, math
+import util, time, math
+from math import degrees, radians
+from rotmat import Vector3, Matrix3
 
 class Motor(object):
     def __init__(self, angle, clockwise, servo):
@@ -83,7 +85,7 @@ class MultiCopter(Aircraft):
         self.mass = mass # Kg
         self.hover_throttle = hover_throttle
         self.terminal_velocity = terminal_velocity
-        self.terminal_rotation_rate = 4*360.0
+        self.terminal_rotation_rate = 4*radians(360.0)
         self.frame_height = frame_height
 
         # scaling from total motor power to Newtons. Allows the copter
@@ -96,6 +98,7 @@ class MultiCopter(Aircraft):
         for i in range(0, len(self.motors)):
             servo = servos[self.motors[i].servo-1]
             if servo <= 0.0:
+
                 self.motor_speed[i] = 0
             else:
                 self.motor_speed[i] = servo
@@ -107,78 +110,58 @@ class MultiCopter(Aircraft):
         delta_time = t - self.last_time
         self.last_time = t
 
-        # rotational acceleration, in degrees/s/s, in body frame
-        roll_accel = 0.0
-        pitch_accel = 0.0
-        yaw_accel = 0.0
+        # rotational acceleration, in rad/s/s, in body frame
+        rot_accel = Vector3(0,0,0)
         thrust = 0.0
         for i in range(len(self.motors)):
-            roll_accel  += -5000.0 * math.sin(math.radians(self.motors[i].angle)) * m[i]
-            pitch_accel += 5000.0 * math.cos(math.radians(self.motors[i].angle)) * m[i]
+            rot_accel.x  += -radians(5000.0) * math.sin(radians(self.motors[i].angle)) * m[i]
+            rot_accel.y  +=  radians(5000.0) * math.cos(radians(self.motors[i].angle)) * m[i]
             if self.motors[i].clockwise:
-                yaw_accel -= m[i] * 400.0
+                rot_accel.z -= m[i] * radians(400.0)
             else:
-                yaw_accel += m[i] * 400.0
+                rot_accel.z += m[i] * radians(400.0)
             thrust += m[i] * self.thrust_scale # newtons
 
-        # rotational resistance
-        roll_accel  -= (self.pDeg / self.terminal_rotation_rate) * 5000.0
-        pitch_accel -= (self.qDeg / self.terminal_rotation_rate) * 5000.0
-        yaw_accel   -= (self.rDeg / self.terminal_rotation_rate) * 400.0
+        # rotational air resistance
+        rot_accel.x -= self.gyro.x * radians(5000.0) / self.terminal_rotation_rate
+        rot_accel.y -= self.gyro.y * radians(5000.0) / self.terminal_rotation_rate
+        rot_accel.z -= self.gyro.z * radians(400.0)  / self.terminal_rotation_rate
 
         # update rotational rates in body frame
-        self.pDeg  += roll_accel * delta_time
-        self.qDeg  += pitch_accel * delta_time
-        self.rDeg  += yaw_accel * delta_time
+        self.gyro += rot_accel * delta_time
 
-        # calculate rates in earth frame
-        (self.roll_rate,
-         self.pitch_rate,
-         self.yaw_rate) =  util.BodyRatesToEarthRates(self.roll, self.pitch, self.yaw,
-                                                      self.pDeg, self.qDeg, self.rDeg)
-
-        # update rotation
-        self.roll   += self.roll_rate  * delta_time
-        self.pitch  += self.pitch_rate * delta_time
-        self.yaw    += self.yaw_rate   * delta_time
+        # update attitude
+        self.dcm.rotate(self.gyro * delta_time)
 
         # air resistance
         air_resistance = - self.velocity * (self.gravity/self.terminal_velocity)
 
-        # normalise rotations
-        self.normalise()
-
-        accel = thrust / self.mass
-
-        accel3D = util.RPY_to_XYZ(self.roll, self.pitch, self.yaw, accel)
-        accel3D += euclid.Vector3(0, 0, -self.gravity)
-        accel3D += air_resistance
-
+        accel_body = Vector3(0, 0, -thrust / self.mass)
+        accel_earth = self.dcm * accel_body
+        accel_earth += Vector3(0, 0, self.gravity)
+        accel_earth += air_resistance
         # add in some wind
-        accel3D += self.wind.accel(self.velocity)
+        accel_earth += self.wind.accel(self.velocity)
 
         # new velocity vector
-        self.velocity += accel3D * delta_time
-        self.accel     = accel3D
+        self.velocity += accel_earth * delta_time
 
         # new position vector
         old_position = self.position.copy()
         self.position += self.velocity * delta_time
 
         # constrain height to the ground
-        if self.position.z + self.home_altitude < self.ground_level + self.frame_height:
-            if old_position.z + self.home_altitude > self.ground_level + self.frame_height:
-                print("Hit ground at %f m/s" % (-self.velocity.z))
-            self.velocity = euclid.Vector3(0, 0, 0)
-            self.roll_rate = 0
-            self.pitch_rate = 0
-            self.yaw_rate = 0
-            self.roll = 0
-            self.pitch = 0
-            self.accel = euclid.Vector3(0, 0, 0)
-            self.position = euclid.Vector3(self.position.x, self.position.y,
-                                           self.ground_level + self.frame_height - self.home_altitude)
+        if (-self.position.z) + self.home_altitude < self.ground_level + self.frame_height:
+            if (-old_position.z) + self.home_altitude > self.ground_level + self.frame_height:
+                print("Hit ground at %f m/s" % (self.velocity.z))
+
+            self.velocity = Vector3(0, 0, 0)
+            # zero roll/pitch, but keep yaw
+            (r, p, y) = self.dcm.to_euler()
+            self.dcm.from_euler(0, 0, y)
+
+            self.position = Vector3(self.position.x, self.position.y,
+                                    -(self.ground_level + self.frame_height - self.home_altitude))
 
         # update lat/lon/altitude
-        self.update_position()
-
+        self.update_position(delta_time)
