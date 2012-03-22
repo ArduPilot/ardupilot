@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 from multicopter import MultiCopter
-import euclid, util, time, os, sys, math
+import util, time, os, sys, math
 import socket, struct
 import select, fgFDM, errno
 
@@ -16,16 +16,20 @@ import mavlink
 def sim_send(m, a):
     '''send flight information to mavproxy and flightgear'''
     global fdm
+    from math import degrees
+
+    earth_rates = util.BodyRatesToEarthRates(a.dcm, a.gyro)
+    (roll, pitch, yaw) = a.dcm.to_euler()
 
     fdm.set('latitude', a.latitude, units='degrees')
     fdm.set('longitude', a.longitude, units='degrees')
     fdm.set('altitude', a.altitude, units='meters')
-    fdm.set('phi', a.roll, units='degrees')
-    fdm.set('theta', a.pitch, units='degrees')
-    fdm.set('psi', a.yaw, units='degrees')
-    fdm.set('phidot', a.roll_rate, units='dps')
-    fdm.set('thetadot', a.pitch_rate, units='dps')
-    fdm.set('psidot', a.yaw_rate, units='dps')
+    fdm.set('phi', roll, units='radians')
+    fdm.set('theta', pitch, units='radians')
+    fdm.set('psi', yaw, units='radians')
+    fdm.set('phidot', earth_rates.x, units='rps')
+    fdm.set('thetadot', earth_rates.y, units='rps')
+    fdm.set('psidot', earth_rates.z, units='rps')
     fdm.set('vcas', math.sqrt(a.velocity.x*a.velocity.x + a.velocity.y*a.velocity.y), units='mps')
     fdm.set('v_north', a.velocity.x, units='mps')
     fdm.set('v_east', a.velocity.y, units='mps')
@@ -40,11 +44,11 @@ def sim_send(m, a):
             raise
 
     buf = struct.pack('<16dI',
-                      a.latitude, a.longitude, a.altitude, a.yaw,
+                      a.latitude, a.longitude, a.altitude, degrees(yaw),
                       a.velocity.x, a.velocity.y,
-                      a.accelerometer.x, a.accelerometer.y, a.accelerometer.z,
-                      a.roll_rate, a.pitch_rate, a.yaw_rate,
-                      a.roll, a.pitch, a.yaw,
+                      -a.accelerometer.x, -a.accelerometer.y, -a.accelerometer.z,
+                      degrees(earth_rates.x), degrees(earth_rates.y), degrees(earth_rates.z),
+                      degrees(roll), degrees(pitch), degrees(yaw),
                       math.sqrt(a.velocity.x*a.velocity.x + a.velocity.y*a.velocity.y),
                       0x4c56414e)
     try:

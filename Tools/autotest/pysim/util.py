@@ -1,89 +1,7 @@
-import euclid, math
+import math
 import os, pexpect, sys, time, random
+from rotmat import Vector3, Matrix3
 from subprocess import call, check_call,Popen, PIPE
-
-def RPY_to_XYZ(roll, pitch, yaw, length):
-    '''convert roll, pitch and yaw in degrees to
-       Vector3 in X, Y and Z
-
-       inputs:
-
-       roll, pitch and yaw are in degrees
-       yaw == 0 when pointing North
-       roll == zero when horizontal. +ve roll means tilting to the right
-       pitch == zero when horizontal, +ve pitch means nose is pointing upwards
-       length is in an arbitrary linear unit.
-       When RPY is (0, 0, 0) then length represents distance upwards
-
-       outputs:
-       Vector3:
-       X is in units along latitude. +ve X means going North
-       Y is in units along longitude +ve Y means going East
-       Z is altitude in units (+ve is up)
-
-       test suite:
-
-       >>> RPY_to_XYZ(0, 0, 0, 1)
-       Vector3(0.00, 0.00, 1.00)
-
-       >>> RPY_to_XYZ(0, 0, 0, 2)
-       Vector3(0.00, 0.00, 2.00)
-
-       >>> RPY_to_XYZ(90, 0, 0, 1)
-       Vector3(0.00, 1.00, 0.00)
-
-       >>> RPY_to_XYZ(-90, 0, 0, 1)
-       Vector3(0.00, -1.00, 0.00)
-
-       >>> RPY_to_XYZ(0, 90, 0, 1)
-       Vector3(-1.00, 0.00, 0.00)
-
-       >>> RPY_to_XYZ(0, -90, 0, 1)
-       Vector3(1.00, 0.00, 0.00)
-
-       >>> RPY_to_XYZ(90, 0, 180, 1)
-       Vector3(-0.00, -1.00, 0.00)
-
-       >>> RPY_to_XYZ(-90, 0, 180, 1)
-       Vector3(0.00, 1.00, 0.00)
-
-       >>> RPY_to_XYZ(0, 90, 180, 1)
-       Vector3(1.00, -0.00, 0.00)
-
-       >>> RPY_to_XYZ(0, -90, 180, 1)
-       Vector3(-1.00, 0.00, 0.00)
-
-       >>> RPY_to_XYZ(90, 0, 90, 1)
-       Vector3(-1.00, 0.00, 0.00)
-
-       >>> RPY_to_XYZ(-90, 0, 90, 1)
-       Vector3(1.00, -0.00, 0.00)
-
-       >>> RPY_to_XYZ(90, 0, 270, 1)
-       Vector3(1.00, -0.00, 0.00)
-
-       >>> RPY_to_XYZ(-90, 0, 270, 1)
-       Vector3(-1.00, 0.00, 0.00)
-
-       >>> RPY_to_XYZ(0, 90, 90, 1)
-       Vector3(-0.00, -1.00, 0.00)
-
-       >>> RPY_to_XYZ(0, -90, 90, 1)
-       Vector3(0.00, 1.00, 0.00)
-
-       >>> RPY_to_XYZ(0, 90, 270, 1)
-       Vector3(0.00, 1.00, 0.00)
-
-       >>> RPY_to_XYZ(0, -90, 270, 1)
-       Vector3(-0.00, -1.00, 0.00)
-
-       '''
-
-    v = euclid.Vector3(0, 0, length)
-    v = euclid.Quaternion.new_rotate_euler(-math.radians(pitch), 0,  -math.radians(roll)) * v
-    v = euclid.Quaternion.new_rotate_euler(0, math.radians(yaw), 0) * v
-    return v
-
 
 def m2ft(x):
     '''meters to feet'''
@@ -289,53 +207,48 @@ def check_parent(parent_pid=os.getppid()):
         sys.exit(1)
 
 
-def EarthRatesToBodyRates(roll, pitch, yaw,
-                          rollRate, pitchRate, yawRate):
+def EarthRatesToBodyRates(dcm, earth_rates):
     '''convert the angular velocities from earth frame to
     body frame. Thanks to James Goppert for the formula
 
-    all inputs and outputs are in degrees
+    all inputs and outputs are in radians
 
-    returns a tuple, (p,q,r)
+    returns a gyro vector in body frame, in rad/s
     '''
-    from math import radians, degrees, sin, cos, tan
+    from math import sin, cos
 
-    phi      = radians(roll)
-    theta    = radians(pitch)
-    phiDot   = radians(rollRate)
-    thetaDot = radians(pitchRate)
-    psiDot   = radians(yawRate)
+    (phi, theta, psi) = dcm.to_euler()
+    phiDot   = earth_rates.x
+    thetaDot = earth_rates.y
+    psiDot   = earth_rates.z
 
     p = phiDot - psiDot*sin(theta)
     q = cos(phi)*thetaDot + sin(phi)*psiDot*cos(theta)
     r = cos(phi)*psiDot*cos(theta) - sin(phi)*thetaDot
+    return Vector3(p, q, r)
 
-    return (degrees(p), degrees(q), degrees(r))
-
-def BodyRatesToEarthRates(roll, pitch, yaw, pDeg, qDeg, rDeg):
+def BodyRatesToEarthRates(dcm, gyro):
     '''convert the angular velocities from body frame to
     earth frame.
 
-    all inputs and outputs are in degrees
+    all inputs and outputs are in radians/s
 
-    returns a tuple, (rollRate,pitchRate,yawRate)
+    returns a earth rate vector
     '''
-    from math import radians, degrees, sin, cos, tan, fabs
+    from math import sin, cos, tan, fabs
 
-    p      = radians(pDeg)
-    q      = radians(qDeg)
-    r      = radians(rDeg)
+    p      = gyro.x
+    q      = gyro.y
+    r      = gyro.z
 
-    phi      = radians(roll)
-    theta    = radians(pitch)
+    (phi, theta, psi) = dcm.to_euler()
 
     phiDot   = p + tan(theta)*(q*sin(phi) + r*cos(phi))
     thetaDot = q*cos(phi) - r*sin(phi)
     if fabs(cos(theta)) < 1.0e-20:
         theta += 1.0e-10
     psiDot   = (q*sin(phi) + r*cos(phi))/cos(theta)
-
-    return (degrees(phiDot), degrees(thetaDot), degrees(psiDot))
+    return Vector3(phiDot, thetaDot, psiDot)
 
 
 class Wind(object):
@@ -382,12 +295,15 @@ class Wind(object):
         '''return current wind acceleration in ground frame.  The
            velocity is a Vector3 of the current velocity of the aircraft
            in earth frame, m/s'''
+        from math import radians
 
         (speed, direction) = self.current(deltat=deltat)
 
         # wind vector
-        v = euclid.Vector3(speed, 0, 0)
-        wind = euclid.Quaternion.new_rotate_euler(0, math.radians(direction), 0) * v
+        v = Vector3(speed, 0, 0)
+        m = Matrix3()
+        m.from_euler(0, 0, radians(direction))
+        wind = m.transposed() * v
 
         # relative wind vector
         relwind = wind - velocity

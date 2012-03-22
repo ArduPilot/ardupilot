@@ -1,12 +1,12 @@
 #!/usr/bin/env python
 # simple test of wind generation code
 
-import util, euclid, time, random
+import util, time, random
 
 wind = util.Wind('3,90,0.1')
 
 t0 = time.time()
-velocity = euclid.Vector3(0,0,0)
+velocity = Vector3(0,0,0)
 
 t = 0
 deltat = 0.01
