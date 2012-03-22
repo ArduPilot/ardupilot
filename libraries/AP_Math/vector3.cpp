@@ -109,7 +109,26 @@ void Vector3<T>::rotate(enum Rotation rotation)
     }
 }
 
+template <typename T>
+Vector3<T> Vector3<T>::operator %(const Vector3<T> &v) const
+{
+    Vector3<T> temp(y*v.z - z*v.y, z*v.x - x*v.z, x*v.y - y*v.x);
+    return temp;
+}
+
+// dot product
+template <typename T>
+T Vector3<T>::operator *(const Vector3<T> &v) const
+{ return x*v.x + y*v.y + z*v.z;	}
+
+template <typename T>
+float Vector3<T>::length(void) const
+{
+    return (T)sqrt(*this * *this);
+}
+
 // only define for signed numbers
 template void Vector3<float>::rotate(enum Rotation);
-template void Vector3<int16_t>::rotate(enum Rotation);
-template void Vector3<int32_t>::rotate(enum Rotation);
+template float Vector3<float>::length(void) const;
+template Vector3<float> Vector3<float>::operator %(const Vector3<float> &v) const;
+template float Vector3<float>::operator *(const Vector3<float> &v) const;
