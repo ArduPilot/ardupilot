@@ -102,21 +102,13 @@ public:
 	{	return *this = *this * m;	}
 
 	// transpose the matrix
-	Matrix3<T> transposed(void) const
-	{
-		return Matrix3<T>(Vector3<T>(a.x, b.x, c.x),
-						  Vector3<T>(a.y, b.y, c.y),
-						  Vector3<T>(a.z, b.z, c.z));
-	}
+	Matrix3<T> transposed(void) const;
+
 	Matrix3<T> transpose(void)
 	{	return *this = transposed();	}
 
 	// zero the matrix
-	void zero(void) {
-		a.x = a.y = a.z = 0;
-		b.x = b.y = b.z = 0;
-		c.x = c.y = c.z = 0;
-	}
+	void zero(void);
 
 	// setup the identity matrix
 	void identity(void) {

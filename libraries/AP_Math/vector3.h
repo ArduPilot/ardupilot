@@ -123,23 +123,17 @@ public:
 	}
 
 	// dot product
-	T operator *(const Vector3<T> &v) const
-	{	return x*v.x + y*v.y + z*v.z;	}
+	T operator *(const Vector3<T> &v) const;
 
 	// cross product
-	Vector3<T> operator %(const Vector3<T> &v) const
-	{
-		Vector3<T> temp(y*v.z - z*v.y, z*v.x - x*v.z, x*v.y - y*v.x);
-		return temp;
-	}
+	Vector3<T> operator %(const Vector3<T> &v) const;
 
 	// gets the length of this vector squared
 	T length_squared() const
 	{	return (T)(*this * *this);   }
 
 	// gets the length of this vector
-	float length() const
-	{	return (T)sqrt(*this * *this);   }
+	float length(void) const;
 
 	// normalizes this vector
 	void normalize()

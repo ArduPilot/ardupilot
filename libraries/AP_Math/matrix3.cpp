@@ -188,12 +188,30 @@ Matrix3<T> Matrix3<T>::operator *(const Matrix3<T> &m) const
     return temp;
 }
 
+template <typename T>
+Matrix3<T> Matrix3<T>::transposed(void) const
+{
+    return Matrix3<T>(Vector3<T>(a.x, b.x, c.x),
+                      Vector3<T>(a.y, b.y, c.y),
+                      Vector3<T>(a.z, b.z, c.z));
+}
+
+template <typename T>
+void Matrix3<T>::zero(void)
+{
+    a.x = a.y = a.z = 0;
+    b.x = b.y = b.z = 0;
+    c.x = c.y = c.z = 0;
+}
+
 
 // only define for float
 template void Matrix3<float>::rotation(enum Rotation);
+template void Matrix3<float>::zero(void);
 template void Matrix3<float>::rotate(const Vector3<float> &g);
 template void Matrix3<float>::from_euler(float roll, float pitch, float yaw);
 template void Matrix3<float>::to_euler(float *roll, float *pitch, float *yaw);
 template Vector3<float> Matrix3<float>::operator *(const Vector3<float> &v) const;
 template Vector3<float> Matrix3<float>::mul_transpose(const Vector3<float> &v) const;
 template Matrix3<float> Matrix3<float>::operator *(const Matrix3<float> &m) const;
+template Matrix3<float> Matrix3<float>::transposed(void) const;
