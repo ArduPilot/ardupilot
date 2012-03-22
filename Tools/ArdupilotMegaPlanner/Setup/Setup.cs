@@ -453,15 +453,17 @@ namespace ArdupilotMega.Setup
                         CMB_batmontype.SelectedIndex = getIndex(CMB_batmontype,(int)float.Parse(MainV2.comPort.param["BATT_MONITOR"].ToString()));
                     }
 
-                    if (TXT_ampspervolt.Text == "13.6612")
+                    // ignore language re . vs ,
+
+                    if (TXT_ampspervolt.Text == (13.6612).ToString())
                     {
                         CMB_batmonsensortype.SelectedIndex = 1;
                     }
-                    else if (TXT_ampspervolt.Text == "27.3224")
+                    else if (TXT_ampspervolt.Text == (27.3224).ToString())
                     {
                         CMB_batmonsensortype.SelectedIndex = 2;
                     }
-                    else if (TXT_ampspervolt.Text == "54.64481")
+                    else if (TXT_ampspervolt.Text == (54.64481).ToString())
                     {
                         CMB_batmonsensortype.SelectedIndex = 3;
                     }
@@ -1681,6 +1683,12 @@ namespace ArdupilotMega.Setup
                 }
 
                 MainV2.cs.ratesensors = backupratesens;
+
+                if (data.Count < 10)
+                {
+                    CustomMessageBox.Show("Log does not contain enough data");
+                    return;
+                }
 
                 double[] ans =  MagCalib.LeastSq(data);
 

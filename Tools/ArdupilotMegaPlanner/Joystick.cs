@@ -320,6 +320,15 @@ namespace ArdupilotMega
                     if (getJoystickAxis(4) != Joystick.joystickaxis.None)
                         MainV2.cs.rcoverridech4 = pickchannel(4, JoyChannels[4].axis, JoyChannels[4].reverse, JoyChannels[4].expo);//(ushort)(((int)state.X / 65.535) + 1000);
 
+                    if (getJoystickAxis(5) != Joystick.joystickaxis.None)
+                        MainV2.cs.rcoverridech5 = pickchannel(5, JoyChannels[5].axis, JoyChannels[5].reverse, JoyChannels[5].expo);
+                    if (getJoystickAxis(6) != Joystick.joystickaxis.None)
+                        MainV2.cs.rcoverridech6 = pickchannel(6, JoyChannels[6].axis, JoyChannels[6].reverse, JoyChannels[6].expo);
+                    if (getJoystickAxis(7) != Joystick.joystickaxis.None)
+                        MainV2.cs.rcoverridech7 = pickchannel(7, JoyChannels[7].axis, JoyChannels[7].reverse, JoyChannels[7].expo);
+                    if (getJoystickAxis(8) != Joystick.joystickaxis.None)
+                        MainV2.cs.rcoverridech8 = pickchannel(8, JoyChannels[8].axis, JoyChannels[8].reverse, JoyChannels[8].expo);
+
                     foreach (JoyButton but in JoyButtons)
                     {
                         if (but.buttonno != -1 && getButtonState(but.buttonno))

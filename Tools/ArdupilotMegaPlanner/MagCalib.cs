@@ -227,7 +227,7 @@ namespace ArdupilotMega
         /// <param name="ofs">offsets</param>
         public static void SaveOffsets(double[] ofs)
         {
-            if (MainV2.comPort.param.ContainsKey("COMPASS_OFS_X"))
+            if (MainV2.comPort.param.ContainsKey("COMPASS_OFS_X") && MainV2.comPort.BaseStream.IsOpen)
             {
                 try
                 {

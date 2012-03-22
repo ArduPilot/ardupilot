@@ -278,7 +278,7 @@ static void timer_handler(int signum)
 			sim_state.xAccel, sim_state.yAccel, sim_state.zAccel,
 			sim_state.airspeed);
 	sitl_update_barometer(sim_state.altitude);
-	sitl_update_compass(sim_state.heading, sim_state.rollDeg, sim_state.pitchDeg, sim_state.heading);
+	sitl_update_compass(sim_state.rollDeg, sim_state.pitchDeg, sim_state.heading);
 	sei();
 }
 
@@ -326,7 +326,7 @@ void sitl_setup(void)
 	// setup some initial values
 	sitl_update_barometer(desktop_state.initial_height);
 	sitl_update_adc(0, 0, 0, 0, 0, 0, 0, 0, -9.8, 0);
-	sitl_update_compass(0, 0, 0, 0);
+	sitl_update_compass(0, 0, 0);
 	sitl_update_gps(0, 0, 0, 0, 0, false);
 }
 
