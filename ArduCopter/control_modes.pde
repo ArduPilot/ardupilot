@@ -72,11 +72,6 @@ static void read_trim_switch()
 			}
 		}
 
-	#elif CH7_OPTION == CH7_AUTO_TRIM
-		if (g.rc_7.radio_in > CH_7_PWM_TRIGGER){
-			auto_level_counter = 10;
-		}
-
 	#else
 
 	// this is the normal operation set by the mission planner
@@ -152,6 +147,10 @@ static void read_trim_switch()
 				// 3 = command total
 			}
 		}
+	}else if (g.ch7_option == CH7_AUTO_TRIM){
+		if (g.rc_7.radio_in > CH_7_PWM_TRIGGER){
+			auto_level_counter = 10;
+		}
 	}
 	#endif
 
@@ -212,7 +211,7 @@ static void trim_accel()
 	trim_roll 	= constrain(trim_roll, -1.5, 1.5);
 	trim_pitch 	= constrain(trim_pitch, -1.5, 1.5);
 
-	if(g.rc_1.control_in > 200){ // Roll RIght
+	if(g.rc_1.control_in > 200){ // Roll Right
 		imu.ay(imu.ay() - trim_roll);
 	}else if (g.rc_1.control_in < -200){
 		imu.ay(imu.ay() - trim_roll);
