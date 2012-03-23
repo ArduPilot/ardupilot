@@ -251,7 +251,7 @@ static GPS         *g_gps_null;
 #if QUATERNION_ENABLE == ENABLED
  AP_AHRS_Quaternion ahrs(&imu, g_gps_null);
 #else
- AP_AHRS_DCM ahrs(&imu, g_gps_null);
+ AP_AHRS_DCM ahrs(&imu, g_gps);
 #endif
 
 AP_TimerProcess timer_scheduler;
