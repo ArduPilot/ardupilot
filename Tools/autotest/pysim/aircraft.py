@@ -49,5 +49,9 @@ class Aircraft(object):
 
         velocity_body = self.dcm.transposed() * self.velocity
 
-        # work out what the accelerometer would see
-        self.accelerometer = self.accel_body
+        # force the acceleration to mostly be from gravity. We should be using 100% accel_body,
+        # but right now that flies very badly as the AHRS system can't do centripetal correction
+        # for multicopters. This is a compromise until we get that sorted out
+        accel_true = self.accel_body
+        accel_fake = self.dcm.transposed() * Vector3(0, 0, -self.gravity)
+        self.accelerometer = (accel_true * 0.5) + (accel_fake * 0.5)
