@@ -5,7 +5,7 @@ using System.Text;
 
 namespace ArdupilotMega.Antenna
 {
-    class Maestro : ITrackerOutput
+    class ArduTracker : ITrackerOutput
     {
         public SerialPort ComPort { get; set; }
         /// <summary>
@@ -24,14 +24,14 @@ namespace ArdupilotMega.Antenna
         public int PanPWMRange { get; set; }
         public int TiltPWMRange { get; set; }
 
-        public bool PanReverse { get { return _panreverse == -1; } set { _panreverse = value == true ? -1 : 1 ;  } }
-        public bool TiltReverse { get { return _tiltreverse == -1; } set { _tiltreverse = value == true ? -1 : 1; } }
+        public bool PanReverse { get { return _panreverse == 1; } set { _panreverse = value == true ? -1 : 1; } }
+        public bool TiltReverse { get { return _tiltreverse == 1; } set { _tiltreverse = value == true ? -1 : 1; } }
 
         int _panreverse = 1;
         int _tiltreverse = 1;
 
-        byte PanAddress = 0;
-        byte TiltAddress = 1;
+        int currentpan = 1500;
+        int currenttilt = 1500;
 
         public bool Init()
         {
@@ -52,27 +52,13 @@ namespace ArdupilotMega.Antenna
             {
                 ComPort.Open();
             }
-            catch (Exception ex) { System.Windows.Forms.CustomMessageBox.Show("Connect failed " + ex.Message,"Error"); return false; }
+            catch (Exception ex) { System.Windows.Forms.CustomMessageBox.Show("Connect failed " + ex.Message, "Error"); return false; }
 
             return true;
         }
-        public bool Setup() 
+        public bool Setup()
         {
-            int target = 100;
-            // speed
-            var buffer = new byte[] { 0x87, PanAddress, (byte)(target & 0x7F), (byte)((target >> 7) & 0x7F) };
-            ComPort.Write(buffer, 0, buffer.Length);
-
-            buffer = new byte[] { 0x87, TiltAddress, (byte)(target & 0x7F), (byte)((target >> 7) & 0x7F) };
-            ComPort.Write(buffer, 0, buffer.Length);
-
-            // accel
-            target = 5;
-            buffer = new byte[] { 0x89, PanAddress, (byte)(target & 0x7F), (byte)((target >> 7) & 0x7F) };
-            ComPort.Write(buffer, 0, buffer.Length);
-
-            buffer = new byte[] { 0x89, TiltAddress, (byte)(target & 0x7F), (byte)((target >> 7) & 0x7F) };
-            ComPort.Write(buffer, 0, buffer.Length);
+           
 
             return true;
         }
@@ -86,7 +72,7 @@ namespace ArdupilotMega.Antenna
             return input;
         }
 
-        double wrap_range(double input,double range)
+        double wrap_range(double input, double range)
         {
             if (input > range)
                 return input - 360;
@@ -96,26 +82,25 @@ namespace ArdupilotMega.Antenna
         }
 
         public bool Pan(double Angle)
-        { 
+        {
             double range = Math.Abs(PanStartRange - PanEndRange);
 
             // get relative center based on tracking center
             double rangeleft = PanStartRange - TrimPan;
             double rangeright = PanEndRange - TrimPan;
-            double centerpos = 127;
+            double centerpos = 1500;
 
             // get the output angle the tracker needs to point and constrain the output to the allowed options
             short PointAtAngle = Constrain(wrap_180(Angle - TrimPan), PanStartRange, PanEndRange);
 
-            // conver the angle into a 0-255 value
-            byte target = (byte)((((PointAtAngle / range) * 2.0) * 127 + centerpos) * _panreverse);
+            // conver the angle into a 0-pwmrange value
+            int target = (int)((((PointAtAngle / range) * 2.0) * (PanPWMRange / 2) * _panreverse + centerpos));
 
-            //Console.WriteLine("P " + Angle + " " + target + " " + PointAtAngle);
+           // Console.WriteLine("P " + Angle + " " + target + " " + PointAtAngle);
 
-            var buffer = new byte[] { 0xff,PanAddress,target};
-            ComPort.Write(buffer, 0, buffer.Length);
+            currentpan = target;
 
-            return true; 
+            return false;
         }
 
         public bool Tilt(double Angle)
@@ -124,20 +109,25 @@ namespace ArdupilotMega.Antenna
 
             short PointAtAngle = Constrain((Angle - TrimTilt), TiltStartRange, TiltEndRange);
 
-            byte target = (byte)((((PointAtAngle / range ) * 2) * 127 + 127) * _tiltreverse);
+            int target = (int)((((PointAtAngle / range) * 2.0) * (TiltPWMRange / 2) * _tiltreverse + 1500));
 
-            //Console.WriteLine("T " + Angle + " " + target + " " + PointAtAngle);
+           // Console.WriteLine("T " + Angle + " " + target + " " + PointAtAngle);
 
-            var buffer = new byte[] { 0xff, TiltAddress, target };
-            ComPort.Write(buffer, 0, buffer.Length);
+            currenttilt = target;
 
-            return true; 
+            return false;
         }
 
         public bool PanAndTilt(double pan, double tilt)
         {
-            if (Tilt(tilt) && Pan(pan))
-                return true;
+            Tilt(tilt);
+            Pan(pan);
+
+            string command = string.Format("!!!PAN:{0:0000},TLT:{1:0000}\n", currentpan, currenttilt);
+
+            Console.Write(command);
+
+            ComPort.Write(command);
 
             return false;
         }
@@ -160,5 +150,6 @@ namespace ArdupilotMega.Antenna
                 return (short)max;
             return (short)input;
         }
+
     }
 }
