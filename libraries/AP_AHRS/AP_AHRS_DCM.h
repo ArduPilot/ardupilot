@@ -16,15 +16,13 @@ public:
 	// Constructors
 	AP_AHRS_DCM(IMU *imu, GPS *&gps) : AP_AHRS(imu, gps)
 	{
-		_kp_roll_pitch = 0.13;
 		_kp_yaw.set(0.2);
-		_dcm_matrix(Vector3f(1, 0, 0),
-			    Vector3f(0, 1, 0),
-			    Vector3f(0, 0, 1));
+		_kp_roll_pitch = 0.06;
+		_dcm_matrix.identity();
 
 		// base the ki values on the sensors drift rate
-		_ki_roll_pitch = _gyro_drift_limit * 5;
-		_ki_yaw        = _gyro_drift_limit * 8;
+		_ki_roll_pitch = _gyro_drift_limit * 4;
+		_ki_yaw        = _gyro_drift_limit * 6;
 	}
 
 	// return the smoothed gyro vector corrected for drift
@@ -52,12 +50,13 @@ private:
 	bool		_have_initial_yaw;
 
 	// Methods
-	void 		accel_adjust(Vector3f &accel);
 	void 		matrix_update(float _G_Dt);
 	void 		normalize(void);
 	void		check_matrix(void);
 	bool	 	renorm(Vector3f const &a, Vector3f &result);
 	void 		drift_correction(float deltat);
+	void 		drift_correction_old(float deltat);
+	void 		drift_correction_yaw(float deltat);
 	void 		euler_angles(void);
 
 	// primary representation of attitude
@@ -86,6 +85,11 @@ private:
 
 	// time in millis when we last got a GPS heading
 	uint32_t	_gps_last_update;
+
+	Vector3f	_ra_sum;
+	Vector3f	_gps_last_velocity;
+	float		_ra_deltat;
+	uint32_t	_ra_sum_start;
 };
 
 #endif // AP_AHRS_DCM_H

@@ -38,8 +38,7 @@ public:
 	}
 
 	// Accessors
-	void		set_centripetal(bool b) { _centripetal = b; }
-	bool		get_centripetal(void) { return _centripetal; }
+	void		set_fly_forward(bool b) { _fly_forward = b; }
 	void		set_compass(Compass *compass) { _compass = compass; }
 
 	// Methods
@@ -96,8 +95,9 @@ protected:
 	IMU 		*_imu;
 	GPS 		*&_gps;
 
-	// true if we are doing centripetal acceleration correction
-	bool		_centripetal;
+	// true if we can assume the aircraft will be flying forward
+	// on its X axis
+	bool		_fly_forward;
 
 	// the limit of the gyro drift claimed by the sensors, in
 	// radians/s/s
