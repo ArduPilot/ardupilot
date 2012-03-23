@@ -143,6 +143,15 @@ class MultiCopter(Aircraft):
         # add in some wind
         accel_earth += self.wind.accel(self.velocity)
 
+        # if we're on the ground, then our vertical acceleration is limited
+        # to zero. This effectively adds the force of the ground on the aircraft
+        if self.on_ground() and accel_earth.z > 0:
+            accel_earth.z = 0
+
+        # work out acceleration as seen by the accelerometers. It sees the kinematic
+        # acceleration (ie. real movement), plus gravity
+        self.accel_body = self.dcm.transposed() * (accel_earth + Vector3(0, 0, -self.gravity))
+
         # new velocity vector
         self.velocity += accel_earth * delta_time
 
@@ -151,8 +160,8 @@ class MultiCopter(Aircraft):
         self.position += self.velocity * delta_time
 
         # constrain height to the ground
-        if (-self.position.z) + self.home_altitude < self.ground_level + self.frame_height:
-            if (-old_position.z) + self.home_altitude > self.ground_level + self.frame_height:
+        if self.on_ground():
+            if not self.on_ground(old_position):
                 print("Hit ground at %f m/s" % (self.velocity.z))
 
             self.velocity = Vector3(0, 0, 0)
