@@ -184,9 +184,6 @@ namespace ArdupilotMega
 
                     BaseStream.DiscardInBuffer();
 
-                    // removed because of apc220 units
-                    //BaseStream.toggleDTR();
-
                     Thread.Sleep(1000);
                 }
 

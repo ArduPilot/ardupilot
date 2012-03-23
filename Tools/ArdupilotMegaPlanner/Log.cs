@@ -233,7 +233,7 @@ namespace ArdupilotMega
                         case serialstatus.Createfile:
                             receivedbytes = 0;
                             Directory.CreateDirectory(Path.GetDirectoryName(Application.ExecutablePath) + Path.DirectorySeparatorChar + @"logs");
-                            logfile = Path.GetDirectoryName(Application.ExecutablePath) + Path.DirectorySeparatorChar + @"logs" + Path.DirectorySeparatorChar + DateTime.Now.ToString("yyyy-MM-dd hh-mm") + " " + currentlog + ".log";
+                            logfile = Path.GetDirectoryName(Application.ExecutablePath) + Path.DirectorySeparatorChar + @"logs" + Path.DirectorySeparatorChar + DateTime.Now.ToString("yyyy-MM-dd HH-mm") + " " + currentlog + ".log";
                             sw = new StreamWriter(logfile);
                             status = serialstatus.Waiting;
                             lock (thisLock)

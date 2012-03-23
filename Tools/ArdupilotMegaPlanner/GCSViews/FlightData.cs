@@ -792,7 +792,7 @@ namespace ArdupilotMega.GCSViews
             try
             {
                 Directory.CreateDirectory(Path.GetDirectoryName(Application.ExecutablePath) + Path.DirectorySeparatorChar + @"logs");
-                swlog = new StreamWriter(Path.GetDirectoryName(Application.ExecutablePath) + Path.DirectorySeparatorChar + @"logs" + Path.DirectorySeparatorChar + DateTime.Now.ToString("yyyy-MM-dd hh-mm") + " telem.log");
+                swlog = new StreamWriter(Path.GetDirectoryName(Application.ExecutablePath) + Path.DirectorySeparatorChar + @"logs" + Path.DirectorySeparatorChar + DateTime.Now.ToString("yyyy-MM-dd HH-mm") + " telem.log");
             }
             catch { CustomMessageBox.Show("Log creation error"); }
         }
@@ -1375,7 +1375,7 @@ namespace ArdupilotMega.GCSViews
 
             aviwriter = new AviWriter();
             Directory.CreateDirectory(Path.GetDirectoryName(Application.ExecutablePath) + Path.DirectorySeparatorChar + @"logs");
-            aviwriter.avi_start(Path.GetDirectoryName(Application.ExecutablePath) + Path.DirectorySeparatorChar + @"logs" + Path.DirectorySeparatorChar + DateTime.Now.ToString("yyyy-MM-dd hh-mm-ss") + ".avi");
+            aviwriter.avi_start(Path.GetDirectoryName(Application.ExecutablePath) + Path.DirectorySeparatorChar + @"logs" + Path.DirectorySeparatorChar + DateTime.Now.ToString("yyyy-MM-dd HH-mm-ss") + ".avi");
 
             recordHudToAVIToolStripMenuItem.Text = "Recording";
         }

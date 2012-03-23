@@ -117,7 +117,7 @@ namespace ArdupilotMega
 
             comPort.BaseStream.BaudRate = 115200;
 
-            CMB_serialport.Items.AddRange(GetPortNames());
+            CMB_serialport.Items.AddRange(SerialPort.GetPortNames());
             CMB_serialport.Items.Add("TCP");
             CMB_serialport.Items.Add("UDP");
             if (CMB_serialport.Items.Count > 0)
@@ -253,57 +253,6 @@ namespace ArdupilotMega
             splash.Close();
         }
 
-        private string[] GetPortNames()
-        {
-            string[] monoDevs = new string[0];
-
-            log.Debug("Getting Comports");
-
-            if (MONO)
-            {
-                if (Directory.Exists("/dev/"))
-                {
-                    if (Directory.Exists("/dev/serial/by-id/"))
-                        monoDevs = Directory.GetFiles("/dev/serial/by-id/", "*");
-                    monoDevs = Directory.GetFiles("/dev/", "*ACM*");
-                    monoDevs = Directory.GetFiles("/dev/", "ttyUSB*");
-                }
-            }
-
-            string[] ports = SerialPort.GetPortNames()
-                .Select(p => p.TrimEnd())
-                .Select(FixBlueToothPortNameBug)
-                .ToArray();
-
-            string[] allPorts = new string[monoDevs.Length + ports.Length];
-
-            monoDevs.CopyTo(allPorts, 0);
-            ports.CopyTo(allPorts, monoDevs.Length);
-
-            return allPorts;
-        }
-
-        // .NET bug: sometimes bluetooth ports are enumerated with bogus characters 
-        // eg 'COM10' becomes 'COM10c' - one workaround is to remove the non numeric  
-        // char. Annoyingly, sometimes a numeric char is added, which means this 
-        // does not work in all cases. 
-        // See http://connect.microsoft.com/VisualStudio/feedback/details/236183/system-io-ports-serialport-getportnames-error-with-bluetooth 
-        private string FixBlueToothPortNameBug(string portName)
-        {
-            if (!portName.StartsWith("COM"))
-                return portName;
-            var newPortName = "COM";                                // Start over with "COM" 
-            foreach (var portChar in portName.Substring(3).ToCharArray())  //  Remove "COM", put the rest in a character array 
-            {
-                if (char.IsDigit(portChar))
-                    newPortName += portChar.ToString(); // Good character, append to portName 
-                else
-                    log.WarnFormat("Bad (Non Numeric) character in port name '{0}' - removing", portName);
-            }
-
-            return newPortName;
-        }
-
         internal void ScreenShot()
         {
             Rectangle bounds = Screen.GetBounds(Point.Empty);
@@ -313,7 +262,7 @@ namespace ArdupilotMega
                 {
                     g.CopyFromScreen(Point.Empty, Point.Empty, bounds.Size);
                 }
-                string name = "ss" + DateTime.Now.ToString("hhmmss") + ".jpg";
+                string name = "ss" + DateTime.Now.ToString("HHmmss") + ".jpg";
                 bitmap.Save(Path.GetDirectoryName(Application.ExecutablePath) + Path.DirectorySeparatorChar + name, System.Drawing.Imaging.ImageFormat.Jpeg);
                 CustomMessageBox.Show("Screenshot saved to " + name);
             }
@@ -324,7 +273,7 @@ namespace ArdupilotMega
         {
             string oldport = CMB_serialport.Text;
             CMB_serialport.Items.Clear();
-            CMB_serialport.Items.AddRange(GetPortNames());
+            CMB_serialport.Items.AddRange(SerialPort.GetPortNames());
             CMB_serialport.Items.Add("TCP");
             CMB_serialport.Items.Add("UDP");
             if (CMB_serialport.Items.Contains(oldport))
@@ -538,10 +487,19 @@ namespace ArdupilotMega
                 comPort.BaseStream.StopBits = (StopBits)Enum.Parse(typeof(StopBits), "1");
                 comPort.BaseStream.Parity = (Parity)Enum.Parse(typeof(Parity), "None");
 
-                comPort.BaseStream.DtrEnable = false;
-
                 try
                 {
+                    comPort.BaseStream.PortName = CMB_serialport.Text;
+
+                    // false here
+                    comPort.BaseStream.DtrEnable = false;
+                    comPort.BaseStream.RtsEnable = false;
+
+                    if (config["CHK_resetapmonconnect"] == null || bool.Parse(config["CHK_resetapmonconnect"].ToString()) == true)
+                        comPort.BaseStream.toggleDTR();
+
+                    // if reset on connect is on dtr will be true here
+
                     if (comPort.logfile != null)
                         comPort.logfile.Close();
                     try
@@ -551,7 +509,6 @@ namespace ArdupilotMega
                     }
                     catch { CustomMessageBox.Show("Failed to create log - wont log this session"); } // soft fail
 
-                    comPort.BaseStream.PortName = CMB_serialport.Text;
                     comPort.Open(true);
 
                     if (comPort.param["SYSID_SW_TYPE"] != null)

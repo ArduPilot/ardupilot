@@ -213,6 +213,7 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Antenna\ArduTracker.cs" />
     <Compile Include="Antenna\ITrackerOutput.cs" />
     <Compile Include="Antenna\Maestro.cs" />
     <Compile Include="Antenna\Tracker.cs">
@@ -230,6 +231,7 @@
       <DependentUpon>ProgressReporterDialogue.cs</DependentUpon>
     </Compile>
     <Compile Include="MagCalib.cs" />
+    <Compile Include="PIDTunning.cs" />
     <Compile Include="Radio\3DRradio.cs">
       <SubType>Form</SubType>
     </Compile>
@@ -446,7 +448,6 @@
     </Compile>
     <Compile Include="Radio\Uploader.cs" />
     <Compile Include="LangUtility.cs" />
-    <Compile Include="test.cs" />
     <Compile Include="ThemeManager.cs" />
     <EmbeddedResource Include="Antenna\Tracker.resx">
       <DependentUpon>Tracker.cs</DependentUpon>
