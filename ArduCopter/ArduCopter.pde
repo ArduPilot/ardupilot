@@ -1580,7 +1580,7 @@ void update_throttle_mode(void)
 	int16_t throttle_out;
 
 	#if AUTO_THROTTLE_HOLD != 0
-	static float throttle_avg = THROTTLE_CRUISE;
+	static float throttle_avg = 0;  // this is initialised to g.throttle_cruise later
 	#endif
 
 	switch(throttle_mode){
@@ -1598,6 +1598,10 @@ void update_throttle_mode(void)
 				#endif
 
 				#if AUTO_THROTTLE_HOLD != 0
+				// ensure throttle_avg has been initialised
+				if( throttle_avg == 0 ) {
+				    throttle_avg = g.throttle_cruise;
+				}
 				// calc average throttle
 				if ((g.rc_3.control_in > MINIMUM_THROTTLE) && abs(climb_rate) < 60){
 					throttle_avg = throttle_avg * .98 + (float)g.rc_3.control_in * .02;
