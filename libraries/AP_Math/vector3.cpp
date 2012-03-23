@@ -109,6 +109,7 @@ void Vector3<T>::rotate(enum Rotation rotation)
     }
 }
 
+// vector cross product
 template <typename T>
 Vector3<T> Vector3<T>::operator %(const Vector3<T> &v) const
 {
