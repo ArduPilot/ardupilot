@@ -92,6 +92,9 @@ public:
 	// multiplication by a vector
 	Vector3<T> operator *(const Vector3<T> &v) const;
 
+	// multiplication of transpose by a vector
+	Vector3<T> mul_transpose(const Vector3<T> &v) const;
+
 	// multiplication by another Matrix3<T>
 	Matrix3<T> operator *(const Matrix3<T> &m) const;
 
