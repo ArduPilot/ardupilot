@@ -59,30 +59,47 @@ get_stabilize_pitch(int32_t target_angle)
 static int16_t
 get_stabilize_yaw(int32_t target_angle)
 {
-	// angle error
-	target_angle 		= wrap_180(target_angle - ahrs.yaw_sensor);
+	static int8_t log_counter = 0;
+	int32_t target_rate,i_term;
+	int32_t angle_error;
+	int32_t output;
 
-#if FRAME_CONFIG == HELI_FRAME  // cannot use rate control for helicopters
+	// angle error
+	angle_error	 	= wrap_180(target_angle - ahrs.yaw_sensor);
+
 	// limit the error we're feeding to the PID
-	target_angle 		= constrain(target_angle, -4500, 4500);
+#if FRAME_CONFIG == HELI_FRAME
+	angle_error 		= constrain(angle_error, -4500, 4500);
 #else
-	// limit the error we're feeding to the PID
-	target_angle 		= constrain(target_angle, -2000, 2000);
+	angle_error 		= constrain(angle_error, -2000, 2000);
 #endif
 
-	// conver to desired Rate:
-	int32_t target_rate = g.pi_stabilize_yaw.get_p(target_angle);
-	int16_t iterm 		= g.pi_stabilize_yaw.get_i(target_angle, G_Dt);
+	// convert angle error to desired Rate:
+	target_rate = g.pi_stabilize_yaw.get_p(angle_error);
+	i_term = g.pi_stabilize_yaw.get_i(angle_error, G_Dt);
 
-#if FRAME_CONFIG == HELI_FRAME  // cannot use rate control for helicopters
+	// do not use rate controllers for helicotpers with external gyros
+#if FRAME_CONFIG == HELI_FRAME
 	if(!g.heli_ext_gyro_enabled){
-		return get_rate_yaw(target_rate) + iterm;
+		output = get_rate_yaw(target_rate) + iterm;
 	}else{
-		return constrain((target_rate + iterm), -4500, 4500);
+		output = constrain((target_rate + i_term), -4500, 4500);
 	}
 #else
-	return get_rate_yaw(target_rate) + iterm;
+	output = get_rate_yaw(target_rate) + i_term;
 #endif
+
+	// log output if PID logging is on and we are tuning the yaw
+	if( g.log_bitmask & MASK_LOG_PID && (g.radio_tuning == CH6_YAW_KP || g.radio_tuning == CH6_YAW_RATE_KP) ) {
+		log_counter++;
+		if( log_counter >= 10 ) {	// (update rate / desired output rate) = (100hz / 10hz) = 10
+			log_counter = 0;
+			Log_Write_PID(CH6_YAW_KP, angle_error, target_rate, i_term, 0, output, g.pi_stabilize_yaw.kP());
+		}
+	}
+
+	// ensure output does not go beyond barries of what an int16_t can hold
+	return constrain(output,-32000,32000);
 }
 
 static int16_t
@@ -172,15 +189,38 @@ get_rate_pitch(int32_t target_rate)
 static int16_t
 get_rate_yaw(int32_t target_rate)
 {
+	static int8_t log_counter = 0;
+	int32_t p,i,d;
+	int32_t rate_error;
+	int32_t output;
+
 	// rate control
-	target_rate	 	= target_rate - (omega.z * DEGX100);
-	target_rate 	= g.pid_rate_yaw.get_pid(target_rate, G_Dt);
+	rate_error	 	= target_rate - (omega.z * DEGX100);
+
+	// separately calculate p, i, d values for logging
+	p = g.pid_rate_yaw.get_p(rate_error);
+	i = g.pid_rate_yaw.get_i(rate_error, G_Dt);
+	d = g.pid_rate_yaw.get_d(rate_error, G_Dt);
+
+	output 	= p+i+d;
 
 	// output control:
 	int16_t yaw_limit = 1400 + abs(g.rc_4.control_in);
 
-	// smoother Yaw control:
-	return constrain(target_rate, -yaw_limit, yaw_limit);
+	// constrain output
+	output = constrain(output, -yaw_limit, yaw_limit);
+
+	// log output if PID loggins is on and we are tuning the yaw
+	if( g.log_bitmask & MASK_LOG_PID && (g.radio_tuning == CH6_YAW_KP || g.radio_tuning == CH6_YAW_RATE_KP) ) {
+		log_counter++;
+		if( log_counter >= 10 ) {	// (update rate / desired output rate) = (100hz / 10hz) = 10
+			log_counter = 0;
+			Log_Write_PID(CH6_YAW_RATE_KP, rate_error, p, i, d, output, g.pid_rate_yaw.kP());
+		}
+	}
+
+	// constrain output
+	return output;
 }
 
 static int16_t
