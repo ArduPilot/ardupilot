@@ -265,6 +265,7 @@ enum gcs_severity {
 #define LOG_MOTORS_MSG 			0x0B
 #define LOG_OPTFLOW_MSG 		0x0C
 #define LOG_DATA_MSG 			0x0D
+#define LOG_PID_MSG 			0x0E
 #define LOG_INDEX_MSG			0xF0
 #define MAX_NUM_LOGS			50
 
@@ -280,6 +281,7 @@ enum gcs_severity {
 #define MASK_LOG_CUR			(1<<9)
 #define MASK_LOG_MOTORS			(1<<10)
 #define MASK_LOG_OPTFLOW		(1<<11)
+#define MASK_LOG_PID			(1<<12)
 
 // Waypoint Modes
 // ----------------
