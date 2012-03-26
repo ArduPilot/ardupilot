@@ -456,6 +456,9 @@ namespace ArdupilotMega
                     if (comPort.logfile != null)
                         comPort.logfile.Close();
 
+                    if (comPort.rawlogfile != null)
+                        comPort.rawlogfile.Close();
+
                     comPort.BaseStream.DtrEnable = false;
                     comPort.Close();
                 }
@@ -502,10 +505,15 @@ namespace ArdupilotMega
 
                     if (comPort.logfile != null)
                         comPort.logfile.Close();
+
+                    if (comPort.rawlogfile != null)
+                        comPort.rawlogfile.Close();
                     try
                     {
                         Directory.CreateDirectory(Path.GetDirectoryName(Application.ExecutablePath) + Path.DirectorySeparatorChar + @"logs");
                         comPort.logfile = new BinaryWriter(File.Open(Path.GetDirectoryName(Application.ExecutablePath) + Path.DirectorySeparatorChar + @"logs" + Path.DirectorySeparatorChar + DateTime.Now.ToString("yyyy-MM-dd HH-mm-ss") + ".tlog", FileMode.CreateNew, FileAccess.ReadWrite, FileShare.Read));
+
+                        comPort.rawlogfile = new BinaryWriter(File.Open(Path.GetDirectoryName(Application.ExecutablePath) + Path.DirectorySeparatorChar + @"logs" + Path.DirectorySeparatorChar + DateTime.Now.ToString("yyyy-MM-dd HH-mm-ss") + ".rlog", FileMode.CreateNew, FileAccess.ReadWrite, FileShare.Read));
                     }
                     catch { CustomMessageBox.Show("Failed to create log - wont log this session"); } // soft fail
 
@@ -1885,6 +1893,9 @@ namespace ArdupilotMega
                 comPort.logreadmode = false;
                 if (comPort.logfile != null)
                     comPort.logfile.Close();
+
+                if (comPort.rawlogfile != null)
+                    comPort.rawlogfile.Close();
             }
             catch { }
 

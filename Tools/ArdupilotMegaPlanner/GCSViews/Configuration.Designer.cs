@@ -141,6 +141,8 @@
             this.RLL2SRV_P = new System.Windows.Forms.NumericUpDown();
             this.label52 = new System.Windows.Forms.Label();
             this.TabAC = new System.Windows.Forms.TabPage();
+            this.myLabel4 = new ArdupilotMega.MyLabel();
+            this.myLabel3 = new ArdupilotMega.MyLabel();
             this.TUNE_LOW = new System.Windows.Forms.NumericUpDown();
             this.TUNE_HIGH = new System.Windows.Forms.NumericUpDown();
             this.myLabel2 = new ArdupilotMega.MyLabel();
@@ -289,8 +291,6 @@
             this.BUT_load = new ArdupilotMega.MyButton();
             this.toolTip1 = new System.Windows.Forms.ToolTip(this.components);
             this.BUT_compare = new ArdupilotMega.MyButton();
-            this.myLabel3 = new ArdupilotMega.MyLabel();
-            this.myLabel4 = new ArdupilotMega.MyLabel();
             ((System.ComponentModel.ISupportInitialize)(this.Params)).BeginInit();
             this.ConfigTabs.SuspendLayout();
             this.TabAP.SuspendLayout();
@@ -437,6 +437,8 @@
             this.Params.RowHeadersDefaultCellStyle = dataGridViewCellStyle2;
             this.Params.RowHeadersVisible = false;
             this.Params.CellValueChanged += new System.Windows.Forms.DataGridViewCellEventHandler(this.Params_CellValueChanged);
+            this.Params.KeyDown += new System.Windows.Forms.KeyEventHandler(this.Params_KeyDown);
+            this.Params.KeyPress += new System.Windows.Forms.KeyPressEventHandler(this.Params_KeyPress);
             // 
             // Command
             // 
@@ -1117,6 +1119,18 @@
             this.TabAC.Controls.Add(this.groupBox25);
             resources.ApplyResources(this.TabAC, "TabAC");
             this.TabAC.Name = "TabAC";
+            // 
+            // myLabel4
+            // 
+            resources.ApplyResources(this.myLabel4, "myLabel4");
+            this.myLabel4.Name = "myLabel4";
+            this.myLabel4.resize = false;
+            // 
+            // myLabel3
+            // 
+            resources.ApplyResources(this.myLabel3, "myLabel3");
+            this.myLabel3.Name = "myLabel3";
+            this.myLabel3.resize = false;
             // 
             // TUNE_LOW
             // 
@@ -2158,18 +2172,6 @@
             this.BUT_compare.Name = "BUT_compare";
             this.BUT_compare.UseVisualStyleBackColor = true;
             this.BUT_compare.Click += new System.EventHandler(this.BUT_compare_Click);
-            // 
-            // myLabel3
-            // 
-            resources.ApplyResources(this.myLabel3, "myLabel3");
-            this.myLabel3.Name = "myLabel3";
-            this.myLabel3.resize = false;
-            // 
-            // myLabel4
-            // 
-            resources.ApplyResources(this.myLabel4, "myLabel4");
-            this.myLabel4.Name = "myLabel4";
-            this.myLabel4.resize = false;
             // 
             // Configuration
             // 

@@ -123,12 +123,17 @@ namespace ArdupilotMega
                     zg1.GraphPane.XAxis.MinorTic.Color = Color.White;
                     zg1.GraphPane.YAxis.MajorTic.Color = Color.White;
                     zg1.GraphPane.YAxis.MinorTic.Color = Color.White;
+                    zg1.GraphPane.Y2Axis.MajorTic.Color = Color.White;
+                    zg1.GraphPane.Y2Axis.MinorTic.Color = Color.White;
 
                     zg1.GraphPane.XAxis.MajorGrid.Color = Color.White;
                     zg1.GraphPane.YAxis.MajorGrid.Color = Color.White;
+                    zg1.GraphPane.Y2Axis.MajorGrid.Color = Color.White;
 
                     zg1.GraphPane.YAxis.Scale.FontSpec.FontColor = Color.White;
                     zg1.GraphPane.YAxis.Title.FontSpec.FontColor = Color.White;
+                    zg1.GraphPane.Y2Axis.Title.FontSpec.FontColor = Color.White;
+                    zg1.GraphPane.Y2Axis.Scale.FontSpec.FontColor = Color.White;
 
                     zg1.GraphPane.XAxis.Scale.FontSpec.FontColor = Color.White;
                     zg1.GraphPane.XAxis.Title.FontSpec.FontColor = Color.White;

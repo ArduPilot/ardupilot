@@ -110,8 +110,8 @@
             // TRK_pantrim
             // 
             this.TRK_pantrim.Location = new System.Drawing.Point(153, 81);
-            this.TRK_pantrim.Maximum = 90;
-            this.TRK_pantrim.Minimum = -90;
+            this.TRK_pantrim.Maximum = 360;
+            this.TRK_pantrim.Minimum = -360;
             this.TRK_pantrim.Name = "TRK_pantrim";
             this.TRK_pantrim.Size = new System.Drawing.Size(375, 45);
             this.TRK_pantrim.TabIndex = 5;
@@ -124,7 +124,7 @@
             this.TXT_panrange.Name = "TXT_panrange";
             this.TXT_panrange.Size = new System.Drawing.Size(64, 20);
             this.TXT_panrange.TabIndex = 4;
-            this.TXT_panrange.Text = "180";
+            this.TXT_panrange.Text = "360";
             this.TXT_panrange.TextChanged += new System.EventHandler(this.TXT_panrange_TextChanged);
             // 
             // label3
@@ -175,8 +175,8 @@
             // TRK_tilttrim
             // 
             this.TRK_tilttrim.Location = new System.Drawing.Point(153, 157);
-            this.TRK_tilttrim.Maximum = 45;
-            this.TRK_tilttrim.Minimum = -45;
+            this.TRK_tilttrim.Maximum = 180;
+            this.TRK_tilttrim.Minimum = -180;
             this.TRK_tilttrim.Name = "TRK_tilttrim";
             this.TRK_tilttrim.Size = new System.Drawing.Size(375, 45);
             this.TRK_tilttrim.TabIndex = 7;
