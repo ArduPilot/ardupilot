@@ -36,9 +36,15 @@ namespace ArdupilotMega
 
         List<string> selection = new List<string>();
 
+        Hashtable data = new Hashtable();
+
         public MavlinkLog()
         {
             InitializeComponent();
+
+            zg1.GraphPane.YAxis.Title.IsVisible = false;
+            zg1.GraphPane.Title.IsVisible = true;
+            zg1.GraphPane.Title.Text = "Mavlink Log Graph";
         }
 
         private void writeKML(string filename)
@@ -549,7 +555,7 @@ namespace ArdupilotMega
 
                 zg1.GraphPane.CurveList.Clear();
 
-                GetLogFileData(zg1, openFileDialog1.FileName, fields);
+                //GetLogFileData(zg1, openFileDialog1.FileName, fields);
 
                 try
                 {
@@ -587,19 +593,10 @@ namespace ArdupilotMega
 
             Random rand = new Random();
 
-            int step = 0;
-
-            // setup display and arrays
+             // setup arrays
             for (int a = 0; a < lookforfields.Count; a++)
             {
                 lists[a] = new PointPairList();
-
-                LineItem myCurve;
-
-                int colorvalue = ColourValues[step % ColourValues.Length];
-                step++;
-
-                myCurve = zg1.GraphPane.AddCurve(lookforfields[a].Replace("__mavlink_", ""), lists[a], Color.FromArgb(unchecked( colorvalue + (int)0xff000000)), SymbolType.None);
             }
 
             {
@@ -694,6 +691,35 @@ namespace ArdupilotMega
 
                 progressBar1.Value = 100;
             }
+
+            int step = 0;
+
+            zg1.GraphPane.AddY2Axis("PWM");
+            zg1.GraphPane.AddY2Axis("Angle");
+
+            //zg1.GraphPane.XAxis.Title.Text = "Seconds";
+
+            // setup display and arrays
+            for (int a = 0; a < lookforfields.Count; a++)
+            {
+                LineItem myCurve;
+
+                int colorvalue = ColourValues[step % ColourValues.Length];
+                step++;
+
+                myCurve = zg1.GraphPane.AddCurve(lookforfields[a].Replace("__mavlink_", ""), lists[a], Color.FromArgb(unchecked(colorvalue + (int)0xff000000)), SymbolType.None);
+
+                double xMin, xMax, yMin, yMax;
+
+                myCurve.GetRange(out xMin, out xMax, out yMin, out  yMax, true, false, zg1.GraphPane);
+
+                if (yMin > 900 && yMax < 2100)
+                {
+                    myCurve.IsY2Axis = true;
+                    myCurve.YAxisIndex = 0;
+                    zg1.GraphPane.Y2Axis.IsVisible = true;
+                }
+            }
         }
 
         private List<string> GetLogFileValidFields(string logfile)
@@ -701,23 +727,36 @@ namespace ArdupilotMega
             Form selectform = SelectDataToGraphForm();
 
             Hashtable seenIt = new Hashtable();
+
+            selection = new List<string>();
+
+            List<string> options = new List<string>();
+
+            this.data.Clear();
+
+            colorStep = 0;
             
             {
 
-                MAVLink mine = new MAVLink();
-                mine.logplaybackfile = new BinaryReader(File.Open(logfile, FileMode.Open, FileAccess.Read, FileShare.Read));
-                mine.logreadmode = true;
+                MAVLink MavlinkInterface = new MAVLink();
+                MavlinkInterface.logplaybackfile = new BinaryReader(File.Open(logfile, FileMode.Open, FileAccess.Read, FileShare.Read));
+                MavlinkInterface.logreadmode = true;
 
-                mine.packets.Initialize(); // clear
+                MavlinkInterface.packets.Initialize(); // clear
 
-                while (mine.logplaybackfile.BaseStream.Position < mine.logplaybackfile.BaseStream.Length)
+                // to get first packet time
+                MavlinkInterface.readPacket();
+
+                DateTime startlogtime = MavlinkInterface.lastlogread;
+
+                while (MavlinkInterface.logplaybackfile.BaseStream.Position < MavlinkInterface.logplaybackfile.BaseStream.Length)
                 {
-                    progressBar1.Value = (int)((float)mine.logplaybackfile.BaseStream.Position / (float)mine.logplaybackfile.BaseStream.Length * 100.0f);
-                    this.Refresh();
+                    progressBar1.Value = (int)((float)MavlinkInterface.logplaybackfile.BaseStream.Position / (float)MavlinkInterface.logplaybackfile.BaseStream.Length * 100.0f);
+                    progressBar1.Refresh();
 
-                    byte[] packet = mine.readPacket();
+                    byte[] packet = MavlinkInterface.readPacket();
 
-                    object data = mine.DebugPacket(packet, false);
+                    object data = MavlinkInterface.DebugPacket(packet, false);
 
                     Type test = data.GetType();
 
@@ -735,18 +774,59 @@ namespace ArdupilotMega
                         {
                             if (!seenIt.ContainsKey(field.DeclaringType.Name + "." + field.Name))
                             {
-                                AddDataOption(selectform, field.Name + " " + field.DeclaringType.Name);
                                 seenIt[field.DeclaringType.Name + "." + field.Name] = 1;
+                                //AddDataOption(selectform, field.Name + " " + field.DeclaringType.Name);
+                                options.Add(field.DeclaringType.Name + "." + field.Name);
+                            }
+
+                            if (!this.data.ContainsKey(field.Name + " " + field.DeclaringType.Name))
+                                this.data[field.Name + " " + field.DeclaringType.Name] = new PointPairList();
+
+                            PointPairList list = ((PointPairList)this.data[field.Name + " " + field.DeclaringType.Name]);
+
+                            object value = fieldValue;
+                            // seconds scale
+                            double time = (MavlinkInterface.lastlogread - startlogtime).TotalMilliseconds / 1000.0;
+
+                            if (value.GetType() == typeof(Single))
+                            {
+                                list.Add(time, (Single)field.GetValue(data));
+                            }
+                            else if (value.GetType() == typeof(short))
+                            {
+                                list.Add(time, (short)field.GetValue(data));
+                            }
+                            else if (value.GetType() == typeof(ushort))
+                            {
+                                list.Add(time, (ushort)field.GetValue(data));
+                            }
+                            else if (value.GetType() == typeof(byte))
+                            {
+                                list.Add(time, (byte)field.GetValue(data));
+                            }
+                            else if (value.GetType() == typeof(Int32))
+                            {
+                                list.Add(time, (Int32)field.GetValue(data));
                             }
                         }
                     }
                 }
 
-                mine.logreadmode = false;
-                mine.logplaybackfile.Close();
-                mine.logplaybackfile = null;
+                MavlinkInterface.logreadmode = false;
+                MavlinkInterface.logplaybackfile.Close();
+                MavlinkInterface.logplaybackfile = null;
 
-                selectform.ShowDialog();
+                // custom sort based on packet name
+                //options.Sort(delegate(string c1, string c2) { return String.Compare(c1.Substring(0,c1.IndexOf('.')),c2.Substring(0,c2.IndexOf('.')));});
+
+                // this needs sorting
+                foreach (string item in options)
+                {
+                    var items = item.Split('.');
+                    AddDataOption(selectform, items[1] + " " + items[0]);
+                }
+
+                selectform.Show();
 
                 progressBar1.Value = 100;
 
@@ -784,16 +864,69 @@ namespace ArdupilotMega
             }
         }
 
+        int colorStep = 0;
+
         void chk_box_CheckedChanged(object sender, EventArgs e)
         {
             if (((CheckBox)sender).Checked)
             {
                 selection.Add(((CheckBox)sender).Name);
+
+                LineItem myCurve;
+
+                int colorvalue = ColourValues[colorStep % ColourValues.Length];
+                colorStep++;
+
+                myCurve = zg1.GraphPane.AddCurve(((CheckBox)sender).Name.Replace("__mavlink_", ""), (PointPairList)data[((CheckBox)sender).Name], Color.FromArgb(unchecked(colorvalue + (int)0xff000000)), SymbolType.None);
+
+                myCurve.Tag = ((CheckBox)sender).Name;
+
+                if (myCurve.Tag.ToString() == "roll __mavlink_attitude_t" ||
+                    myCurve.Tag.ToString() == "pitch __mavlink_attitude_t" ||
+                    myCurve.Tag.ToString() == "yaw __mavlink_attitude_t")
+                {
+                    PointPairList ppl = new PointPairList((PointPairList)data[((CheckBox)sender).Name]);
+                    for (int a = 0; a < ppl.Count; a++)
+                    {
+                        ppl[a].Y = ppl[a].Y * (180.0 / Math.PI);
+                    }
+
+                    myCurve.Points = ppl;
+                }
+
+                double xMin, xMax, yMin, yMax;
+
+                myCurve.GetRange(out xMin, out xMax, out yMin, out  yMax, true, false, zg1.GraphPane);
+
+                if (yMin > 900 && yMax < 2100 && yMin < 2100)
+                {
+                    myCurve.IsY2Axis = true;
+                    myCurve.YAxisIndex = 0;
+                    zg1.GraphPane.Y2Axis.IsVisible = true;
+                }
             }
             else
             {
                 selection.Remove(((CheckBox)sender).Name);
+                foreach (var item in zg1.GraphPane.CurveList)
+                {
+                    if (item.Tag == ((CheckBox)sender).Name)
+                    {
+                        zg1.GraphPane.CurveList.Remove(item);
+                        break;
+                    }
+                }
             }
+
+            try
+            {
+                // fix new line types
+                ThemeManager.ApplyThemeTo(this);
+
+                zg1.Invalidate();
+                zg1.AxisChange();
+            }
+            catch { }
         }
 
         int x = 10;
@@ -806,7 +939,8 @@ namespace ArdupilotMega
                 Name = "select",
                 Width = 50,
                 Height = 500,
-                Text = "Graph This"
+                Text = "Graph This",
+                TopLevel = true
             };
 
             x = 10;

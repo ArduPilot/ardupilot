@@ -26,7 +26,7 @@ namespace ArdupilotMega
         private TextBox TXT_outputlog;
         private MyButton BUT_estoffset;
 
-        int latpos = 5, lngpos = 4, altpos = 7;
+        int latpos = 4, lngpos = 5, altpos = 7;
 
         internal Georefimage() {
             InitializeComponent();
@@ -247,16 +247,24 @@ namespace ArdupilotMega
 
                             matchs++;
 
+                             SharpKml.Dom.Timestamp tstamp = new SharpKml.Dom.Timestamp();
+
+                             tstamp.When = dt;
+
                             kml.AddFeature(
                                 new Placemark()
                                 {
+                                    Time = tstamp             ,
                                     Name = Path.GetFileNameWithoutExtension(file),
                                     Geometry = new SharpKml.Dom.Point()
                                     {
                                         Coordinate = new Vector(double.Parse(arr[lngpos]), double.Parse(arr[latpos]), double.Parse(arr[altpos]))
                                     }
+
                                 }
                             );
+
+
 
                             sw2.WriteLine(Path.GetFileNameWithoutExtension(file) + " " + arr[lngpos] + " " + arr[latpos] + " " + arr[altpos]);
                             sw.WriteLine(Path.GetFileNameWithoutExtension(file) + "\t" + crap.ToString("yyyy:MM:dd HH:mm:ss") + "\t" + arr[lngpos] + "\t" + arr[latpos] + "\t" + arr[altpos]);
@@ -345,7 +353,7 @@ namespace ArdupilotMega
             this.TXT_offsetseconds.Name = "TXT_offsetseconds";
             this.TXT_offsetseconds.Size = new System.Drawing.Size(100, 20);
             this.TXT_offsetseconds.TabIndex = 4;
-            this.TXT_offsetseconds.Text = "0";
+            this.TXT_offsetseconds.Text = "-86158";
             // 
             // BUT_doit
             // 
@@ -389,7 +397,7 @@ namespace ArdupilotMega
             this.BUT_estoffset.UseVisualStyleBackColor = true;
             this.BUT_estoffset.Click += new System.EventHandler(this.BUT_estoffset_Click);
             // 
-            // georefimage
+            // Georefimage
             // 
             this.ClientSize = new System.Drawing.Size(453, 299);
             this.Controls.Add(this.BUT_estoffset);
