@@ -253,7 +253,7 @@ static void init_ardupilot()
 		//read_EEPROM_airstart_critical();
 #if HIL_MODE != HIL_MODE_ATTITUDE
 		imu.init(IMU::WARM_START, mavlink_delay, flash_leds, &timer_scheduler);
-		ahrs.set_centripetal(1);
+		ahrs.set_fly_forward(true);
 #endif
 
 		// This delay is important for the APM_RC library to work.
@@ -458,7 +458,7 @@ static void startup_IMU_ground(bool force_accel_level)
         // it once via the ground station
         imu.init_accel(mavlink_delay, flash_leds);
     }
-	ahrs.set_centripetal(1);
+	ahrs.set_fly_forward(true);
     ahrs.reset();
 
 	// read Baro pressure at ground
