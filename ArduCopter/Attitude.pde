@@ -89,6 +89,7 @@ get_stabilize_yaw(int32_t target_angle)
 	output = get_rate_yaw(target_rate) + i_term;
 #endif
 
+#if LOGGING_ENABLED == ENABLED
 	// log output if PID logging is on and we are tuning the yaw
 	if( g.log_bitmask & MASK_LOG_PID && (g.radio_tuning == CH6_YAW_KP || g.radio_tuning == CH6_YAW_RATE_KP) ) {
 		log_counter++;
@@ -97,6 +98,7 @@ get_stabilize_yaw(int32_t target_angle)
 			Log_Write_PID(CH6_YAW_KP, angle_error, target_rate, i_term, 0, output, g.pi_stabilize_yaw.kP());
 		}
 	}
+#endif
 
 	// ensure output does not go beyond barries of what an int16_t can hold
 	return constrain(output,-32000,32000);
@@ -210,6 +212,7 @@ get_rate_yaw(int32_t target_rate)
 	// constrain output
 	output = constrain(output, -yaw_limit, yaw_limit);
 
+#if LOGGING_ENABLED == ENABLED
 	// log output if PID loggins is on and we are tuning the yaw
 	if( g.log_bitmask & MASK_LOG_PID && (g.radio_tuning == CH6_YAW_KP || g.radio_tuning == CH6_YAW_RATE_KP) ) {
 		log_counter++;
@@ -218,6 +221,7 @@ get_rate_yaw(int32_t target_rate)
 			Log_Write_PID(CH6_YAW_RATE_KP, rate_error, p, i, d, output, g.pid_rate_yaw.kP());
 		}
 	}
+#endif
 
 	// constrain output
 	return output;
