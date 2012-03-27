@@ -97,11 +97,9 @@ public:
 	///
 	void set_offsets(int x, int y, int z) { set_offsets(Vector3f(x, y, z)); }
 
-	/// Perform automatic offset updates using the results of the DCM matrix.
+	/// Perform automatic offset updates
 	///
-	/// @param  dcm_matrix          The DCM result matrix.
-	///
-	void null_offsets(const Matrix3f &dcm_matrix);
+	void null_offsets(void);
 
 
 	/// Enable/Start automatic offset updates 
@@ -134,7 +132,6 @@ protected:
 
 	bool                _null_enable;        	///< enabled flag for offset nulling
 	bool                _null_init_done;        ///< first-time-around flag used by offset nulling
-	Matrix3f            _last_dcm_matrix;       ///< previous DCM matrix used by offset nulling
-	Vector3f            _mag_body_last;         ///< ?? used by offset nulling
+	Vector3f            _mag_body_last;         ///< used by offset correction
 };
 #endif

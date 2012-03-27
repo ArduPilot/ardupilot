@@ -182,38 +182,62 @@ Compass::calculate(const Matrix3f &dcm_matrix)
 #endif
 }
 
+
+/*
+  this offset nulling algorithm is based on a paper from
+   Bill Premerlani
+
+  http://gentlenav.googlecode.com/files/MagnetometerOffsetNullingRevisited.pdf
+ */
 void
-Compass::null_offsets(const Matrix3f &dcm_matrix)
+Compass::null_offsets(void)
 {
     if (_null_enable == false || _learn == 0) {
         // auto-calibration is disabled
         return;
     }
 
-    // Update our estimate of the offsets in the magnetometer
-    Vector3f    calc;
-    Matrix3f    dcm_new_from_last;
-    float       weight;
-
     Vector3f mag_body_new = Vector3f(mag_x,mag_y,mag_z);
-    
-    if(_null_init_done) {
-        dcm_new_from_last = dcm_matrix.transposed() * _last_dcm_matrix;      // Note 11/20/2010: transpose() is not working, transposed() is.
 
-        weight = 3.0 - fabs(dcm_new_from_last.a.x) - fabs(dcm_new_from_last.b.y) - fabs(dcm_new_from_last.c.z);
-        if (weight > .001) {
-            calc = mag_body_new + _mag_body_last;                // Eq 11 from Bill P's paper
-            calc -= dcm_new_from_last * _mag_body_last;
-            calc -= dcm_new_from_last.transposed() * mag_body_new;
-            if(weight > 0.5) weight = 0.5;
-            calc = calc * (weight);
-            _offset.set(_offset.get() - calc);
-        }
-    } else {
+    // this gain is set so we converge on the offsets in about 5
+    // minutes with a 10Hz compass
+    const float gain = 0.5;
+    const float max_change = 2.0;
+
+    if (!_null_init_done) {
+        // first time through
         _null_init_done = true;
+        _mag_body_last = mag_body_new;
+        return;
     }
-    _mag_body_last = mag_body_new - calc;
-    _last_dcm_matrix = dcm_matrix;
+
+    Vector3f delta, diff;
+    float diff_length, delta_length;
+
+    diff = mag_body_new - _mag_body_last;
+    diff_length = diff.length();
+    if (diff_length == 0.0) {
+        // the mag vector hasn't changed - we don't get any
+        // information from this
+        return;
+    }
+
+    // equation 6 of Bills paper
+    delta = diff * (mag_body_new.length() - _mag_body_last.length()) / diff_length;
+
+    // limit the change from any one reading. This is to prevent
+    // single crazy readings from throwing off the offsets for a long
+    // time
+    delta_length = delta.length();
+    if (delta_length > max_change) {
+        delta *= max_change / delta_length;
+    }
+
+    // set the new offsets
+    _offset.set(_offset.get() - (delta * gain));
+
+    // remember the last mag vector
+    _mag_body_last = mag_body_new;
 }
 
 
