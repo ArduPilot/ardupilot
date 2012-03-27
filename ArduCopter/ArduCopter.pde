@@ -982,7 +982,7 @@ static void medium_loop()
                         // Calculate heading
                         Matrix3f m = ahrs.get_dcm_matrix();
                         compass.calculate(m);
-                        compass.null_offsets(m);
+                        compass.null_offsets();
                     }
 				}
 			#endif
