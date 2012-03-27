@@ -1471,7 +1471,7 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
 #endif
 					if (packet.param_value < 0) rounding_addition = -rounding_addition;
                     float v = packet.param_value+rounding_addition;
-                    v = constrain(v, -2147483648, 2147483647);
+                    v = constrain(v, -2147483648.0, 2147483647.0);
 					((AP_Int32 *)vp)->set_and_save(v);
                 } else if (var_type == AP_PARAM_INT16) {
 #if LOGGING_ENABLED == ENABLED
