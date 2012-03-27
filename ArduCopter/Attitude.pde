@@ -81,7 +81,7 @@ get_stabilize_yaw(int32_t target_angle)
 	// do not use rate controllers for helicotpers with external gyros
 #if FRAME_CONFIG == HELI_FRAME
 	if(!g.heli_ext_gyro_enabled){
-		output = get_rate_yaw(target_rate) + iterm;
+		output = get_rate_yaw(target_rate) + i_term;
 	}else{
 		output = constrain((target_rate + i_term), -4500, 4500);
 	}
