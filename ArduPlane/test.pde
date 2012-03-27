@@ -603,7 +603,7 @@ test_mag(uint8_t argc, const Menu::arg *argv)
                     // Calculate heading
                     Matrix3f m = ahrs.get_dcm_matrix();
                     compass.calculate(m);
-                    compass.null_offsets(m);
+                    compass.null_offsets();
                 }
                 medium_loopCounter = 0;
             }
