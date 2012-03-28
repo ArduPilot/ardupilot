@@ -334,7 +334,6 @@ namespace ArdupilotMega
             zipStream.IsStreamOwner = true;	// Makes the Close also Close the underlying stream
             zipStream.Close();
 
-            flightdata.Clear();
         }
 
         static void AddNamespace(Element element, string prefix, string uri)
@@ -383,7 +382,7 @@ namespace ArdupilotMega
 
                     CurrentState cs = new CurrentState();
 
-                    float oldlatlngalt = 0;
+                    float oldlatlngsum = 0;
 
                     int appui = 0;
 
@@ -414,15 +413,15 @@ namespace ArdupilotMega
                         }
                         catch { } // ignore because of this Exception System.PlatformNotSupportedException: No voice installed on the system or none available with the current security setting.
 
-                        if ((float)(cs.lat + cs.lng) != oldlatlngalt
+                        if ((float)(cs.lat + cs.lng) != oldlatlngsum
                             && cs.lat != 0 && cs.lng != 0)
                         {
-                            Console.WriteLine(cs.lat + " " + cs.lng + " " + cs.alt + "   lah " + (float)(cs.lat + cs.lng) + "!=" + oldlatlngalt);
+                            Console.WriteLine(cs.lat + " " + cs.lng + " " + cs.alt + "   lah " + (float)(cs.lat + cs.lng) + "!=" + oldlatlngsum);
                             CurrentState cs2 = (CurrentState)cs.Clone();
 
                             flightdata.Add(cs2);
 
-                            oldlatlngalt = (cs.lat + cs.lng);
+                            oldlatlngsum = (cs.lat + cs.lng);
                         }
                     }
 
@@ -432,12 +431,50 @@ namespace ArdupilotMega
 
                     Application.DoEvents();
 
+                    writeGPX(logfile);
                     writeKML(logfile + ".kml");
+
+                    flightdata.Clear();
 
                     progressBar1.Value = 100;
 
                 }
             }
+        }
+
+        private void writeGPX(string filename)
+        {
+            System.Xml.XmlTextWriter xw = new System.Xml.XmlTextWriter(Path.GetDirectoryName(filename) + Path.DirectorySeparatorChar + Path.GetFileNameWithoutExtension(filename) + ".gpx", Encoding.ASCII);
+
+            xw.WriteStartElement("gpx");
+
+            xw.WriteStartElement("trk");
+
+            xw.WriteStartElement("trkseg");
+
+            foreach (CurrentState cs in flightdata)
+            {
+                xw.WriteStartElement("trkpt");
+                xw.WriteAttributeString("lat", cs.lat.ToString(new System.Globalization.CultureInfo("en-US")));
+                xw.WriteAttributeString("lon", cs.lng.ToString(new System.Globalization.CultureInfo("en-US")));
+
+                xw.WriteElementString("ele", cs.alt.ToString(new System.Globalization.CultureInfo("en-US")));
+                xw.WriteElementString("time", cs.datetime.ToString("yyyy-MM-ddTHH:mm:sszzzzzz"));
+                xw.WriteElementString("course", (cs.yaw).ToString(new System.Globalization.CultureInfo("en-US")));
+
+                xw.WriteElementString("roll", cs.roll.ToString(new System.Globalization.CultureInfo("en-US")));
+                xw.WriteElementString("pitch", cs.pitch.ToString(new System.Globalization.CultureInfo("en-US")));
+                //xw.WriteElementString("speed", mod.model.Orientation.);
+                //xw.WriteElementString("fix", cs.altitude);
+
+                xw.WriteEndElement();
+            }
+
+            xw.WriteEndElement();
+            xw.WriteEndElement();
+            xw.WriteEndElement();
+
+            xw.Close();
         }
 
         public static Color HexStringToColor(string hexColor)

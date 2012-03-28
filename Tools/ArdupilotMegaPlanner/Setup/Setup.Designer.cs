@@ -82,6 +82,7 @@
             this.CMB_fmode1 = new System.Windows.Forms.ComboBox();
             this.BUT_SaveModes = new ArdupilotMega.MyButton();
             this.tabHardware = new System.Windows.Forms.TabPage();
+            this.BUT_MagCalibration = new ArdupilotMega.MyButton();
             this.label27 = new System.Windows.Forms.Label();
             this.CMB_sonartype = new System.Windows.Forms.ComboBox();
             this.CHK_enableoptflow = new System.Windows.Forms.CheckBox();
@@ -179,7 +180,6 @@
             this.tabReset = new System.Windows.Forms.TabPage();
             this.BUT_reset = new ArdupilotMega.MyButton();
             this.toolTip1 = new System.Windows.Forms.ToolTip(this.components);
-            this.BUT_MagCalibration = new ArdupilotMega.MyButton();
             this.tabControl1.SuspendLayout();
             this.tabRadioIn.SuspendLayout();
             this.groupBoxElevons.SuspendLayout();
@@ -657,7 +657,7 @@
             // 
             // tabHardware
             // 
-            this.tabHardware.BackColor = System.Drawing.SystemColors.Control;
+            this.tabHardware.BackColor = System.Drawing.Color.Transparent;
             this.tabHardware.Controls.Add(this.BUT_MagCalibration);
             this.tabHardware.Controls.Add(this.label27);
             this.tabHardware.Controls.Add(this.CMB_sonartype);
@@ -674,6 +674,13 @@
             this.tabHardware.Controls.Add(this.pictureBox1);
             resources.ApplyResources(this.tabHardware, "tabHardware");
             this.tabHardware.Name = "tabHardware";
+            // 
+            // BUT_MagCalibration
+            // 
+            resources.ApplyResources(this.BUT_MagCalibration, "BUT_MagCalibration");
+            this.BUT_MagCalibration.Name = "BUT_MagCalibration";
+            this.BUT_MagCalibration.UseVisualStyleBackColor = true;
+            this.BUT_MagCalibration.Click += new System.EventHandler(this.BUT_MagCalibration_Click);
             // 
             // label27
             // 
@@ -1583,13 +1590,6 @@
             this.BUT_reset.Tag = "";
             this.BUT_reset.UseVisualStyleBackColor = true;
             this.BUT_reset.Click += new System.EventHandler(this.BUT_reset_Click);
-            // 
-            // BUT_MagCalibration
-            // 
-            resources.ApplyResources(this.BUT_MagCalibration, "BUT_MagCalibration");
-            this.BUT_MagCalibration.Name = "BUT_MagCalibration";
-            this.BUT_MagCalibration.UseVisualStyleBackColor = true;
-            this.BUT_MagCalibration.Click += new System.EventHandler(this.BUT_MagCalibration_Click);
             // 
             // Setup
             // 

@@ -66,6 +66,8 @@ namespace System.IO.Ports
             get { return client.Available + rbuffer.Length - rbufferread; }
         }
 
+        public int BytesToWrite { get { return 0; } }
+
         public bool IsOpen { get { try { return client.Client.Connected; } catch { return false; } } }
 
         public bool DtrEnable

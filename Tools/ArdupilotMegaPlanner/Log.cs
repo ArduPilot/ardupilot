@@ -454,7 +454,7 @@ namespace ArdupilotMega
             foreach (Data mod in flightdata)
             {
                 xw.WriteStartElement("trkpt");
-                xw.WriteAttributeString("lat",mod.model.Location.latitude.ToString(new System.Globalization.CultureInfo("en-US")));
+                xw.WriteAttributeString("lat", mod.model.Location.latitude.ToString(new System.Globalization.CultureInfo("en-US")));
                 xw.WriteAttributeString("lon", mod.model.Location.longitude.ToString(new System.Globalization.CultureInfo("en-US")));
 
                 xw.WriteElementString("ele", mod.model.Location.altitude.ToString(new System.Globalization.CultureInfo("en-US")));

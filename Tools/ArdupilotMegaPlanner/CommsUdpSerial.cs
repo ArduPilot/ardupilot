@@ -60,6 +60,8 @@ namespace System.IO.Ports
             get { return client.Available + rbuffer.Length - rbufferread; }
         }
 
+        public int BytesToWrite { get {return 0;} }
+
         public bool IsOpen { get { if (client.Client == null) return false; return client.Client.Connected; } }
 
         public bool DtrEnable
