@@ -8,6 +8,7 @@
 
 #include <stdlib.h>
 #include <math.h>
+#include "util.h"
 
 static const float vibration_level = 0.2;
 static const float drift_speed = 0.2; // degrees/second/minute
@@ -17,13 +18,6 @@ static const float noise_scale[8] = {   150,   150,   150,    0, 400,  400,  400
 static const float noise_offset[8]= {     0,     0,     0,    0,   0,    0,    0,    0 };
 static const float drift_rate[8]  = {     1.0, 1.0,   1.0,    0,   0,    0,    0,    0 };
 static const float base_noise = 2;
-
-// generate a random float between -1 and 1
-static double rand_float(void)
-{
-	float ret = ((unsigned)random()) % 2000000;
-	return (ret - 1.0e6) / 1.0e6;
-}
 
 static inline float gyro_drift(uint8_t chan)
 {

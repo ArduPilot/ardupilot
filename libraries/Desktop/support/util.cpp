@@ -13,6 +13,7 @@
 #include <math.h>
 #include <stdint.h>
 #include <fcntl.h>
+#include <AP_Math.h>
 #include "desktop.h"
 #include "util.h"
 
@@ -57,4 +58,16 @@ void convert_body_frame(double rollDeg, double pitchDeg,
 	*p = phiDot - psiDot*sin(theta);
 	*q = cos(phi)*thetaDot + sin(phi)*psiDot*cos(theta);
 	*r = cos(phi)*psiDot*cos(theta) - sin(phi)*thetaDot;
+}
+
+// generate a random Vector3f of size 1
+Vector3f rand_vec3f(void)
+{
+	Vector3f v = Vector3f(rand_float(),
+			      rand_float(),
+			      rand_float());
+	if (v.length() != 0.0) {
+		v.normalize();
+	}
+	return v;
 }
