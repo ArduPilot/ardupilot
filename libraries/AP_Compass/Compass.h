@@ -23,7 +23,7 @@ public:
 	float           heading;        ///< compass heading in radians
 	float           heading_x;      ///< compass vector X magnitude
 	float           heading_y;      ///< compass vector Y magnitude
-	uint32_t        last_update;    ///< millis() time of last update
+	uint32_t        last_update;    ///< micros() time of last update
 	bool			healthy;        ///< true if last read OK
 
 	/// Constructor
