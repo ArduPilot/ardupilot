@@ -383,30 +383,34 @@ void AP_AHRS_Quaternion::update(void)
 
 }
 
-// average error in roll/pitch since last call
+/* reporting of Quaternion state for MAVLink */
+
+// average error_roll_pitch since last call
 float AP_AHRS_Quaternion::get_error_rp(void)
 {
-	float ret;
 	if (_error_rp_count == 0) {
-		return 0;
+		// this happens when telemetry is setup on two
+		// serial ports
+		return _error_rp_last;
 	}
-	ret = _error_rp_sum / _error_rp_count;
+	_error_rp_last = _error_rp_sum / _error_rp_count;
 	_error_rp_sum = 0;
 	_error_rp_count = 0;
-	return ret;
+	return _error_rp_last;
 }
 
-// average error in yaw since last call
+// average error_yaw since last call
 float AP_AHRS_Quaternion::get_error_yaw(void)
 {
-	float ret;
 	if (_error_yaw_count == 0) {
-		return 0;
+		// this happens when telemetry is setup on two
+		// serial ports
+		return _error_yaw_last;
 	}
-	ret = _error_yaw_sum / _error_yaw_count;
+	_error_yaw_last = _error_yaw_sum / _error_yaw_count;
 	_error_yaw_sum = 0;
 	_error_yaw_count = 0;
-	return ret;
+	return _error_yaw_last;
 }
 
 // reset attitude system
