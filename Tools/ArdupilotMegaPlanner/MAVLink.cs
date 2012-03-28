@@ -1954,6 +1954,18 @@ namespace ArdupilotMega
 
             DateTime start = DateTime.Now;
 
+            try
+            {
+                // test fabs idea - http://diydrones.com/profiles/blogs/flying-with-joystick?commentId=705844%3AComment%3A818712&xg_source=msg_com_blogpost
+                if (BaseStream.IsOpen && BaseStream.BytesToWrite > 0)
+                {
+                    // slow down execution.
+                    Thread.Sleep(1);
+                    return new byte[0];
+                }
+            }
+            catch (Exception ex) { log.Info(ex.ToString()); }
+
             lock (readlock)
             {
 

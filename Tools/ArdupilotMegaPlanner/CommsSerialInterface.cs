@@ -34,7 +34,7 @@ namespace ArdupilotMega
          int BaudRate { get; set; }
          //bool BreakState { get; set; }
          int BytesToRead { get; }
-         //int BytesToWrite { get; }
+         int BytesToWrite { get; }
          //bool CDHolding { get; }
          //bool CtsHolding { get; }
          int DataBits { get; set; }
