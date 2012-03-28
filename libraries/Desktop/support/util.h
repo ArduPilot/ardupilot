@@ -12,3 +12,10 @@ void runInterrupt(uint8_t inum);
 void convert_body_frame(double rollDeg, double pitchDeg,
 			double rollRate, double pitchRate, double yawRate,
 			double *p, double *q, double *r);
+
+// generate a random float between -1 and 1
+#define rand_float() (((((unsigned)random()) % 2000000) - 1.0e6) / 1.0e6)
+
+#ifdef VECTOR3_H
+Vector3f rand_vec3f(void);
+#endif
