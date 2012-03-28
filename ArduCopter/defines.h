@@ -141,21 +141,27 @@
 // Attitude
 #define CH6_STABILIZE_KP 1
 #define CH6_STABILIZE_KI 2
-#define	CH6_YAW_KP 3
+#define CH6_YAW_KP 3
+#define CH6_YAW_KI 24
 // Rate
+#define CH6_ACRO_KP 25
 #define CH6_RATE_KP 4
 #define CH6_RATE_KI 5
 #define CH6_RATE_KD 21
-#define	CH6_YAW_RATE_KP 6
+#define CH6_YAW_RATE_KP 6
+#define CH6_YAW_RATE_KD 26
 // Altitude rate controller
 #define CH6_THROTTLE_KP 7
 // Extras
 #define CH6_TOP_BOTTOM_RATIO 8
 #define CH6_RELAY 9
-#define CH6_TRAVERSE_SPEED 10
+// Navigation
+#define CH6_TRAVERSE_SPEED 10	// maximum speed to next way point
+#define CH6_NAV_KP 11
+#define CH6_LOITER_KP 12
+#define CH6_LOITER_KI 27
 
-#define CH6_NAV_P 11
-#define CH6_LOITER_P 12
+// Trad Heli specific
 #define CH6_HELI_EXTERNAL_GYRO 13
 
 // altitude controller
@@ -169,8 +175,9 @@
 #define CH6_OPTFLOW_KD 19
 
 #define CH6_NAV_I 20
-#define CH6_LOITER_RATE_P 22
-#define CH6_LOITER_RATE_D 23
+#define CH6_LOITER_RATE_KP 22
+#define CH6_LOITER_RATE_KI 28
+#define CH6_LOITER_RATE_KD 23
 
 
 // nav byte mask

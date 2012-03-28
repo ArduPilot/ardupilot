@@ -2044,6 +2044,10 @@ static void tuning(){
 			g.pi_stabilize_pitch.kI(tuning_value);
 			break;
 
+		case CH6_ACRO_KP:
+			g.acro_p = tuning_value;
+			break;
+
 		case CH6_RATE_KP:
 			g.pid_rate_roll.kP(tuning_value);
 			g.pid_rate_pitch.kP(tuning_value);
@@ -2058,8 +2062,16 @@ static void tuning(){
 			g.pi_stabilize_yaw.kP(tuning_value);
 			break;
 
+		case CH6_YAW_KI:
+			g.pi_stabilize_yaw.kI(tuning_value);
+			break;
+
 		case CH6_YAW_RATE_KP:
 			g.pid_rate_yaw.kP(tuning_value);
+			break;
+
+		case CH6_YAW_RATE_KD:
+			g.pid_rate_yaw.kD(tuning_value);
 			break;
 
 		case CH6_THROTTLE_KP:
@@ -2079,22 +2091,32 @@ static void tuning(){
 			g.waypoint_speed_max = g.rc_6.control_in;
 			break;
 
-		case CH6_LOITER_P:
+		case CH6_LOITER_KP:
 			g.pi_loiter_lat.kP(tuning_value);
 			g.pi_loiter_lon.kP(tuning_value);
 			break;
 
-		case CH6_NAV_P:
+		case CH6_LOITER_KI:
+			g.pi_loiter_lat.kI(tuning_value);
+			g.pi_loiter_lon.kI(tuning_value);
+			break;
+
+		case CH6_NAV_KP:
 			g.pid_nav_lat.kP(tuning_value);
 			g.pid_nav_lon.kP(tuning_value);
 			break;
 
-		case CH6_LOITER_RATE_P:
+		case CH6_LOITER_RATE_KP:
 			g.pid_loiter_rate_lon.kP(tuning_value);
 			g.pid_loiter_rate_lat.kP(tuning_value);
 			break;
 
-		case CH6_LOITER_RATE_D:
+		case CH6_LOITER_RATE_KI:
+			g.pid_loiter_rate_lon.kI(tuning_value);
+			g.pid_loiter_rate_lat.kI(tuning_value);
+			break;
+
+		case CH6_LOITER_RATE_KD:
 			g.pid_loiter_rate_lon.kD(tuning_value);
 			g.pid_loiter_rate_lat.kD(tuning_value);
 			break;
