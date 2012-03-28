@@ -55,6 +55,19 @@ typedef FilterWithBuffer<uint16_t,5> FilterWithBufferUInt16_Size5;
 typedef FilterWithBuffer<uint16_t,6> FilterWithBufferUInt16_Size6;
 typedef FilterWithBuffer<uint16_t,7> FilterWithBufferUInt16_Size7;
 
+typedef FilterWithBuffer<int32_t,2> FilterWithBufferInt32_Size2;
+typedef FilterWithBuffer<int32_t,3> FilterWithBufferInt32_Size3;
+typedef FilterWithBuffer<int32_t,4> FilterWithBufferInt32_Size4;
+typedef FilterWithBuffer<int32_t,5> FilterWithBufferInt32_Size5;
+typedef FilterWithBuffer<int32_t,6> FilterWithBufferInt32_Size6;
+typedef FilterWithBuffer<int32_t,7> FilterWithBufferInt32_Size7;
+typedef FilterWithBuffer<uint32_t,2> FilterWithBufferUInt32_Size2;
+typedef FilterWithBuffer<uint32_t,3> FilterWithBufferUInt32_Size3;
+typedef FilterWithBuffer<uint32_t,4> FilterWithBufferUInt32_Size4;
+typedef FilterWithBuffer<uint32_t,5> FilterWithBufferUInt32_Size5;
+typedef FilterWithBuffer<uint32_t,6> FilterWithBufferUInt32_Size6;
+typedef FilterWithBuffer<uint32_t,7> FilterWithBufferUInt32_Size7;
+
 // Constructor
 template <class T, uint8_t FILTER_SIZE>
 FilterWithBuffer<T,FILTER_SIZE>::FilterWithBuffer() :
