@@ -132,6 +132,10 @@ protected:
 
 	bool                _null_enable;        	///< enabled flag for offset nulling
 	bool                _null_init_done;        ///< first-time-around flag used by offset nulling
-	Vector3f            _mag_body_last;         ///< used by offset correction
+
+    ///< used by offset correction
+    static const uint8_t _mag_history_size = 20;
+    uint8_t				_mag_history_index;
+	Vector3i            _mag_history[_mag_history_size];
 };
 #endif
