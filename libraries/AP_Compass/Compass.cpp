@@ -250,7 +250,12 @@ Compass::null_offsets(void)
     length = diff.length();
     if (length < min_diff) {
         // the mag vector hasn't changed enough - we don't get
-        // enough information from this vector to use it
+        // enough information from this vector to use it.
+        // Note that we don't put the current vector into the mag
+        // history here. We want to wait for a larger rotation to
+        // build up before calculating an offset change, as accuracy
+        // of the offset change is highly dependent on the size of the
+        // rotation.
         _mag_history_index = (_mag_history_index + 1) % _mag_history_size;
         return;
     }
