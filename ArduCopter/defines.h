@@ -141,6 +141,7 @@
 // Attitude
 #define CH6_STABILIZE_KP 1
 #define CH6_STABILIZE_KI 2
+#define CH6_STABILIZE_KD 29
 #define CH6_YAW_KP 3
 #define CH6_YAW_KI 24
 // Rate

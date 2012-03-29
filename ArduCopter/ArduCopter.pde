@@ -2044,6 +2044,10 @@ static void tuning(){
 			g.pi_stabilize_pitch.kI(tuning_value);
 			break;
 
+		case CH6_STABILIZE_KD:
+			g.stabilize_d = tuning_value;
+			break;
+
 		case CH6_ACRO_KP:
 			g.acro_p = tuning_value;
 			break;
