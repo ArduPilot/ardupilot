@@ -95,10 +95,7 @@ http://code.google.com/p/ardupilot-mega/downloads/list
 #include "Parameters.h"
 #include "GCS.h"
 
-#if AUTOMATIC_DECLINATION == ENABLED
-// this is in an #if to avoid the static data
 #include <AP_Declination.h> // ArduPilot Mega Declination Helper Library
-#endif
 
 ////////////////////////////////////////////////////////////////////////////////
 // Serial ports
@@ -1381,12 +1378,10 @@ static void update_GPS(void)
 				ground_start_count = 5;
 
 			}else{
-#if AUTOMATIC_DECLINATION == ENABLED
 				if(g.compass_enabled) {
 					// Set compass declination automatically
-					compass.set_initial_location(g_gps->latitude, g_gps->longitude, false);
+					compass.set_initial_location(g_gps->latitude, g_gps->longitude, (FORCE_AUTOMATIC_DECLINATION_UPDATE == ENABLED));
 				}
-#endif
 				// save home to eeprom (we must have a good fix to have reached this point)
 				init_home();
 				ground_start_count = 0;
