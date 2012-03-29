@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Drawing;
 using System.Windows.Forms;
+using ArdupilotMega.Controls.BackstageView;
 using log4net;
 
 namespace ArdupilotMega
@@ -224,6 +225,18 @@ namespace ArdupilotMega
                     LNK.LinkColor = TextColor;
                     LNK.VisitedLinkColor = TextColor;
 
+                }
+                else if (ctl.GetType() == typeof(BackstageView))
+                {
+                    var bsv = ctl as BackstageView;
+
+                    bsv.BackColor = BGColor;
+                    bsv.ButtonsAreaBgColor = ControlBGColor;
+                    bsv.HighlightColor2 = Color.FromArgb(0x94, 0xc1, 0x1f);
+                    bsv.HighlightColor1 = Color.FromArgb(0x40, 0x57, 0x04);
+                    bsv.SelectedTextColor = Color.White;
+                    bsv.UnSelectedTextColor = Color.Gray;
+                    bsv.ButtonsAreaPencilColor = Color.DarkGray;
                 }
                 else if (ctl.GetType() == typeof(HorizontalProgressBar2) || ctl.GetType() == typeof(VerticalProgressBar2))
                 {

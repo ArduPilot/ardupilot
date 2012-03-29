@@ -1162,6 +1162,8 @@ namespace ArdupilotMega
             req.start_stop = 1; // start
             req.req_stream_id = id; // id
 
+            // send each one twice.
+            generatePacket(MAVLINK_MSG_ID_REQUEST_DATA_STREAM, req);
             generatePacket(MAVLINK_MSG_ID_REQUEST_DATA_STREAM, req);
         }
 

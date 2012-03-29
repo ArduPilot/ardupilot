@@ -100,7 +100,7 @@ namespace ArdupilotMega.Setup
 
             fmodelist[no].BackColor = Color.Green;
 
-            if (tabControl1.SelectedTab == tabHeli)
+            if (Tabs.SelectedTab == tabHeli)
             {
                 if (MainV2.comPort.param["HSV_MAN"] == null || MainV2.comPort.param["HSV_MAN"].ToString() == "0")
                     return;
@@ -312,7 +312,7 @@ namespace ArdupilotMega.Setup
             int monosux = 0;
             monosux *= 5;
 
-            if (tabControl1.SelectedTab == tabRadioIn)
+            if (Tabs.SelectedTab == tabRadioIn)
             {
                 startup = true;
 
@@ -340,7 +340,7 @@ namespace ArdupilotMega.Setup
                 startup = false;
             }
 
-            if (tabControl1.SelectedTab == tabModes)
+            if (Tabs.SelectedTab == tabModes)
             {
                 if (MainV2.cs.firmware == MainV2.Firmwares.ArduPlane) // APM
                 {
@@ -416,7 +416,7 @@ namespace ArdupilotMega.Setup
                 }
             }
 
-            if (tabControl1.SelectedTab == tabHardware)
+            if (Tabs.SelectedTab == tabHardware)
             {
                 startup = true;
 
@@ -442,7 +442,7 @@ namespace ArdupilotMega.Setup
                 startup = false;
             }
 
-            if (tabControl1.SelectedTab == tabBattery)
+            if (Tabs.SelectedTab == tabBattery)
             {
                 startup = true;
                 bool not_supported = false;
@@ -501,7 +501,7 @@ namespace ArdupilotMega.Setup
                 startup = false;
             }
 
-            if (tabControl1.SelectedTab == tabArducopter)
+            if (Tabs.SelectedTab == tabArducopter)
             {
                 if (MainV2.cs.firmware == MainV2.Firmwares.ArduPlane)
                 {
@@ -510,7 +510,7 @@ namespace ArdupilotMega.Setup
                 }
             }
 
-            if (tabControl1.SelectedTab == tabHeli)
+            if (Tabs.SelectedTab == tabHeli)
             {
                 if (MainV2.comPort.param["GYR_ENABLE"] == null)
                 {
@@ -1437,7 +1437,7 @@ namespace ArdupilotMega.Setup
             timer.Stop();
             timer.Dispose();
 
-            tabControl1.SelectedIndex = 0;
+            Tabs.SelectedIndex = 0;
 
             // mono runs validation on all controls on exit. try and skip it
             startup = true;
@@ -1697,7 +1697,34 @@ namespace ArdupilotMega.Setup
             }
             else
             {
-                MagCalib.ProcessLog();
+                string minthro = "30";
+                Common.InputBox("Min Throttle", "Use only data above this throttle percent.", ref minthro);
+
+                int ans = 0;
+                int.TryParse(minthro, out ans);
+
+                MagCalib.ProcessLog(ans);
+            }
+        }
+
+        private void BUT_levelplane_Click(object sender, EventArgs e)
+        {
+            try
+            {
+                MainV2.comPort.setParam("MANUAL_LEVEL",1);
+
+#if MAVLINK10
+                int fixme; // needs to be accel only
+                MainV2.comPort.doCommand(MAVLink.MAV_CMD.PREFLIGHT_CALIBRATION,1,1,1,1,1,1,1);
+#else
+                MainV2.comPort.doAction(MAVLink.MAV_ACTION.MAV_ACTION_CALIBRATE_ACC);
+#endif
+
+                BUT_levelac2.Text = "Complete";
+            }
+            catch
+            {
+                CustomMessageBox.Show("Failed to level : AP 2.32+ is required");
             }
         }
     }

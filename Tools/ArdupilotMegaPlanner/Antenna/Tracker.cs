@@ -120,8 +120,8 @@ namespace ArdupilotMega.Antenna
 
             try
             {
-                tracker.PanStartRange = int.Parse(TXT_panrange.Text) / 1 * -1;
-                tracker.PanEndRange = int.Parse(TXT_panrange.Text) / 1;
+                tracker.PanStartRange = int.Parse(TXT_panrange.Text) / 2 * -1;
+                tracker.PanEndRange = int.Parse(TXT_panrange.Text) / 2;
                 tracker.TrimPan = TRK_pantrim.Value;
 
                 tracker.TiltStartRange = int.Parse(TXT_tiltrange.Text) / 2 * -1;
