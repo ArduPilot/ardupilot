@@ -55,10 +55,11 @@ void setup(void)
 	uint16_t pass = 0, fail = 0;
 
 	Serial.begin(115200);
+	Serial.print("Beginning Test. Please wait...\n");
 
-	for(int i = -90; i <= 90; i+=5)
+	for(int16_t i = -90; i <= 90; i+=5)
 	{
-		for(int j = -180; j <= 180; j+=5)
+		for(int16_t j = -180; j <= 180; j+=5)
 		{
 			declination = AP_Declination::get_declination(i, j);
 			declination_test = get_declination(i, j);
@@ -74,6 +75,7 @@ void setup(void)
 			}
 		}
 	}
+	Serial.print("Ending Test.\n\n");
 	Serial.printf("Total Pass: %i\n", pass);
 	Serial.printf("Total Fail: %i\n", fail);
 }
