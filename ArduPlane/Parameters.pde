@@ -23,6 +23,7 @@ static const AP_Param::Info var_info[] PROGMEM = {
 	GSCALAR(kff_rudder_mix,         "KFF_RDDRMIX"),
 	GSCALAR(kff_pitch_to_throttle,  "KFF_PTCH2THR"),
 	GSCALAR(kff_throttle_to_pitch,  "KFF_THR2PTCH"),
+	GSCALAR(manual_level,           "MANUAL_LEVEL"),
 
 	GSCALAR(crosstrack_gain,        "XTRK_GAIN_SC"),
 	GSCALAR(crosstrack_entry_angle, "XTRK_ANGLE_CD"),

@@ -1083,7 +1083,7 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
                 if (packet.param1 == 1 ||
                     packet.param2 == 1 ||
                     packet.param3 == 1) {
-                    startup_IMU_ground();
+                    startup_IMU_ground(true);
                 }
                 if (packet.param4 == 1) {
                     trim_radio();
@@ -1188,7 +1188,7 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
                 case MAV_ACTION_CALIBRATE_ACC:
                 case MAV_ACTION_CALIBRATE_PRESSURE:
                 case MAV_ACTION_REBOOT:  // this is a rough interpretation
-                    startup_IMU_ground();
+                    startup_IMU_ground(true);
                     result=1;
                     break;
 
