@@ -318,7 +318,7 @@ static void startup_ground(void)
 	//IMU ground start
 	//------------------------
     //
-	startup_IMU_ground();
+	startup_IMU_ground(false);
 
 	// read the radio to set trims
 	// ---------------------------
@@ -441,7 +441,7 @@ static void check_short_failsafe()
 }
 
 
-static void startup_IMU_ground(void)
+static void startup_IMU_ground(bool force_accel_level)
 {
 #if HIL_MODE != HIL_MODE_ATTITUDE
     gcs_send_text_P(SEVERITY_MEDIUM, PSTR("Warming up ADC..."));
@@ -454,7 +454,12 @@ static void startup_IMU_ground(void)
 	mavlink_delay(1000);
 
 	imu.init(IMU::COLD_START, mavlink_delay, flash_leds, &timer_scheduler);
-	imu.init_accel(mavlink_delay, flash_leds);
+    if (force_accel_level || g.manual_level == 0) {
+        // when MANUAL_LEVEL is set to 1 we don't do accelerometer
+        // levelling on each boot, and instead rely on the user to do
+        // it once via the ground station
+        imu.init_accel(mavlink_delay, flash_leds);
+    }
 	ahrs.set_centripetal(1);
     ahrs.reset();
 

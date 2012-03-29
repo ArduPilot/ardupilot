@@ -49,6 +49,7 @@ public:
         k_param_num_resets,
         k_param_log_last_filenumber,		// *** Deprecated - remove with next eeprom number change
         k_param_reset_switch_chan,
+        k_param_manual_level,
 
 
 		// 110: Telemetry control
@@ -300,6 +301,7 @@ public:
     AP_Int16    log_bitmask;
     AP_Int16	log_last_filenumber;		// *** Deprecated - remove with next eeprom number change
     AP_Int8		reset_switch_chan;
+    AP_Int8		manual_level;
     AP_Int16    airspeed_cruise;
     AP_Int16    min_gndspeed;
     AP_Int16    pitch_trim;
