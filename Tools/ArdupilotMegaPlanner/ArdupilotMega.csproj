@@ -223,12 +223,90 @@
       <DependentUpon>Tracker.cs</DependentUpon>
     </Compile>
     <Compile Include="CodeGen.cs" />
+    <Compile Include="Controls\BackstageView\BackstageView.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="Controls\BackstageView\BackstageView.designer.cs">
+      <DependentUpon>BackstageView.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Controls\BackstageView\BackstageViewButton.cs">
+      <SubType>Component</SubType>
+    </Compile>
+    <Compile Include="Controls\BackstageView\BackStageViewMenuPanel.cs">
+      <SubType>Component</SubType>
+    </Compile>
     <Compile Include="Controls\CustomMessageBox.cs" />
     <Compile Include="Controls\ProgressReporterDialogue.cs">
       <SubType>Form</SubType>
     </Compile>
     <Compile Include="Controls\ProgressReporterDialogue.designer.cs">
       <DependentUpon>ProgressReporterDialogue.cs</DependentUpon>
+    </Compile>
+    <Compile Include="GCSViews\ConfigurationView\ConfigAccelerometerCalibration.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="GCSViews\ConfigurationView\ConfigAccelerometerCalibration.Designer.cs">
+      <DependentUpon>ConfigAccelerometerCalibration.cs</DependentUpon>
+    </Compile>
+    <Compile Include="GCSViews\ConfigurationView\ConfigArducopter.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="GCSViews\ConfigurationView\ConfigArducopter.Designer.cs">
+      <DependentUpon>ConfigArducopter.cs</DependentUpon>
+    </Compile>
+    <Compile Include="GCSViews\ConfigurationView\ConfigArduplane.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="GCSViews\ConfigurationView\ConfigArduplane.Designer.cs">
+      <DependentUpon>ConfigArduplane.cs</DependentUpon>
+    </Compile>
+    <Compile Include="GCSViews\ConfigurationView\ConfigBatteryMonitoring.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="GCSViews\ConfigurationView\ConfigBatteryMonitoring.Designer.cs">
+      <DependentUpon>ConfigBatteryMonitoring.cs</DependentUpon>
+    </Compile>
+    <Compile Include="GCSViews\ConfigurationView\ConfigFlightModes.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="GCSViews\ConfigurationView\ConfigFlightModes.Designer.cs">
+      <DependentUpon>ConfigFlightModes.cs</DependentUpon>
+    </Compile>
+    <Compile Include="GCSViews\ConfigurationView\ConfigHardwareOptions.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="GCSViews\ConfigurationView\ConfigHardwareOptions.Designer.cs">
+      <DependentUpon>ConfigHardwareOptions.cs</DependentUpon>
+    </Compile>
+    <Compile Include="GCSViews\ConfigurationView\ConfigPlanner.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="GCSViews\ConfigurationView\ConfigPlanner.Designer.cs">
+      <DependentUpon>ConfigPlanner.cs</DependentUpon>
+    </Compile>
+    <Compile Include="GCSViews\ConfigurationView\ConfigRadioInput.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="GCSViews\ConfigurationView\ConfigRadioInput.Designer.cs">
+      <DependentUpon>ConfigRadioInput.cs</DependentUpon>
+    </Compile>
+    <Compile Include="GCSViews\ConfigurationView\ConfigTradHeli.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="GCSViews\ConfigurationView\ConfigTradHeli.Designer.cs">
+      <DependentUpon>ConfigTradHeli.cs</DependentUpon>
+    </Compile>
+    <Compile Include="GCSViews\ConfigurationView\Configuration.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="GCSViews\ConfigurationView\Configuration.Designer.cs">
+      <DependentUpon>Configuration.cs</DependentUpon>
+    </Compile>
+    <Compile Include="GCSViews\ConfigurationView\ConfigRawParams.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="GCSViews\ConfigurationView\ConfigRawParams.Designer.cs">
+      <DependentUpon>ConfigRawParams.cs</DependentUpon>
     </Compile>
     <Compile Include="MagCalib.cs" />
     <Compile Include="PIDTunning.cs" />
@@ -452,8 +530,44 @@
     <EmbeddedResource Include="Antenna\Tracker.resx">
       <DependentUpon>Tracker.cs</DependentUpon>
     </EmbeddedResource>
+    <EmbeddedResource Include="Controls\BackstageView\BackstageView.resx">
+      <DependentUpon>BackstageView.cs</DependentUpon>
+    </EmbeddedResource>
     <EmbeddedResource Include="Controls\ProgressReporterDialogue.resx">
       <DependentUpon>ProgressReporterDialogue.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="GCSViews\ConfigurationView\ConfigAccelerometerCalibration.resx">
+      <DependentUpon>ConfigAccelerometerCalibration.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="GCSViews\ConfigurationView\ConfigArducopter.resx">
+      <DependentUpon>ConfigArducopter.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="GCSViews\ConfigurationView\ConfigArduplane.resx">
+      <DependentUpon>ConfigArduplane.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="GCSViews\ConfigurationView\ConfigBatteryMonitoring.resx">
+      <DependentUpon>ConfigBatteryMonitoring.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="GCSViews\ConfigurationView\ConfigFlightModes.resx">
+      <DependentUpon>ConfigFlightModes.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="GCSViews\ConfigurationView\ConfigHardwareOptions.resx">
+      <DependentUpon>ConfigHardwareOptions.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="GCSViews\ConfigurationView\ConfigPlanner.resx">
+      <DependentUpon>ConfigPlanner.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="GCSViews\ConfigurationView\ConfigRadioInput.resx">
+      <DependentUpon>ConfigRadioInput.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="GCSViews\ConfigurationView\ConfigRawParams.resx">
+      <DependentUpon>ConfigRawParams.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="GCSViews\ConfigurationView\ConfigTradHeli.resx">
+      <DependentUpon>ConfigTradHeli.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="GCSViews\ConfigurationView\Configuration.resx">
+      <DependentUpon>Configuration.cs</DependentUpon>
     </EmbeddedResource>
     <EmbeddedResource Include="Radio\3DRradio.resx">
       <DependentUpon>3DRradio.cs</DependentUpon>

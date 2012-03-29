@@ -72,6 +72,7 @@ namespace ArdupilotMega
         GCSViews.FlightData FlightData;
         GCSViews.FlightPlanner FlightPlanner;
         GCSViews.Configuration Configuration;
+        //GCSViews.ConfigurationView.Configuration Configuration;
         GCSViews.Simulation Simulation;
         GCSViews.Firmware Firmware;
         GCSViews.Terminal Terminal;
@@ -188,14 +189,14 @@ namespace ArdupilotMega
 
                 if (config["CMB_rateattitude"] != null)
                     MainV2.cs.rateattitude = byte.Parse(config["CMB_rateattitude"].ToString());
-                if (config["CMB_rateattitude"] != null)
+                if (config["rateposition"] != null)
                     MainV2.cs.rateposition = byte.Parse(config["CMB_rateposition"].ToString());
-                if (config["CMB_rateattitude"] != null)
+                if (config["CMB_ratestatus"] != null)
                     MainV2.cs.ratestatus = byte.Parse(config["CMB_ratestatus"].ToString());
-                if (config["CMB_rateattitude"] != null)
+                if (config["CMB_raterc"] != null)
                     MainV2.cs.raterc = byte.Parse(config["CMB_raterc"].ToString());
                 if (config["CMB_ratesensors"] != null)
-                    MainV2.cs.raterc = byte.Parse(config["CMB_ratesensors"].ToString());
+                    MainV2.cs.ratesensors = byte.Parse(config["CMB_ratesensors"].ToString());
 
                 if (config["speechenable"] != null)
                     MainV2.speechEnable = bool.Parse(config["speechenable"].ToString());
@@ -339,6 +340,7 @@ namespace ArdupilotMega
             }
 
             Configuration = new GCSViews.Configuration();
+            //Configuration = new GCSViews.ConfigurationView.Configuration();
 
             UserControl temp = Configuration;
 

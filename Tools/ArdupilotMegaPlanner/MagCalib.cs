@@ -21,7 +21,7 @@ namespace ArdupilotMega
         /// <summary>
         /// Self contained process tlog and save/display offsets
         /// </summary>
-        public static void ProcessLog()
+        public static void ProcessLog(int throttleThreshold = 0)
         {
             OpenFileDialog openFileDialog1 = new OpenFileDialog();
             openFileDialog1.Filter = "*.tlog|*.tlog";
@@ -40,7 +40,7 @@ namespace ArdupilotMega
             {
                 try
                 {
-                    double[] ans = getOffsets(openFileDialog1.FileName);
+                    double[] ans = getOffsets(openFileDialog1.FileName, throttleThreshold);
 
                     SaveOffsets(ans);
                 }
@@ -53,9 +53,9 @@ namespace ArdupilotMega
         /// </summary>
         /// <param name="fn">Filename</param>
         /// <returns>Offsets</returns>
-        public static double[] getOffsets(string fn)
+        public static double[] getOffsets(string fn, int throttleThreshold = 0)
         {
-            // based of tridge's work
+            // based off tridge's work
             string logfile = fn;
 
             // old method
@@ -76,6 +76,9 @@ namespace ArdupilotMega
 
             Hashtable filter = new Hashtable();
 
+            // track data to use
+            bool useData = false;
+
             log.Info("Start log: " + DateTime.Now);
 
                 MAVLink mine = new MAVLink();
@@ -95,6 +98,19 @@ namespace ArdupilotMega
                     if (packet == null)
                         continue;
 
+                    if (packet.GetType() == typeof(MAVLink.__mavlink_vfr_hud_t))
+                    {
+                        if (((MAVLink.__mavlink_vfr_hud_t)packet).throttle >= throttleThreshold)
+                        {
+                            useData = true;
+                        }
+                        else
+                        {
+                            useData = false;
+                        }
+
+                    }
+
                     if (packet.GetType() == typeof(MAVLink.__mavlink_sensor_offsets_t))
                     {
                         offset = new Tuple<float, float, float>(
@@ -102,7 +118,7 @@ namespace ArdupilotMega
                             ((MAVLink.__mavlink_sensor_offsets_t)packet).mag_ofs_y,
                             ((MAVLink.__mavlink_sensor_offsets_t)packet).mag_ofs_z);
                     }
-                    else if (packet.GetType() == typeof(MAVLink.__mavlink_raw_imu_t))
+                    else if (packet.GetType() == typeof(MAVLink.__mavlink_raw_imu_t) && useData)
                     {
                         int div = 20;
 

@@ -853,6 +853,14 @@ namespace ArdupilotMega
                 MavlinkInterface.logplaybackfile.Close();
                 MavlinkInterface.logplaybackfile = null;
 
+                try
+                {
+
+                    addMagField(ref options);
+
+                }
+                catch (Exception ex) { log.Info(ex.ToString()); }
+
                 // custom sort based on packet name
                 //options.Sort(delegate(string c1, string c2) { return String.Compare(c1.Substring(0,c1.IndexOf('.')),c2.Substring(0,c2.IndexOf('.')));});
 
@@ -870,6 +878,33 @@ namespace ArdupilotMega
             }
 
             return selection;
+        }
+
+        void addMagField(ref List<string> options)
+        {
+            string field = "mag_field Custom";
+
+            options.Add("Custom.mag_field");
+
+            this.data[field] = new PointPairList();
+
+            PointPairList list = ((PointPairList)this.data[field]);
+
+            PointPairList listx = ((PointPairList)this.data["xmag __mavlink_raw_imu_t"]);
+            PointPairList listy = ((PointPairList)this.data["ymag __mavlink_raw_imu_t"]);
+            PointPairList listz = ((PointPairList)this.data["zmag __mavlink_raw_imu_t"]);
+
+            //(float)Math.Sqrt(Math.Pow(mx, 2) + Math.Pow(my, 2) + Math.Pow(mz, 2));
+
+            for (int a = 0; a < listx.Count; a++)
+            {
+                
+                double ans = Math.Sqrt(Math.Pow(listx[a].Y, 2) + Math.Pow(listy[a].Y, 2) + Math.Pow(listz[a].Y, 2));
+
+                //Console.WriteLine("{0} {1} {2} {3}", ans, listx[a].Y, listy[a].Y, listz[a].Y);
+
+                list.Add(listx[a].X, ans);
+            }
         }
 
         private void AddDataOption(Form selectform, string Name)
@@ -947,7 +982,7 @@ namespace ArdupilotMega
                 selection.Remove(((CheckBox)sender).Name);
                 foreach (var item in zg1.GraphPane.CurveList)
                 {
-                    if (item.Tag == ((CheckBox)sender).Name)
+                    if (item.Tag.ToString() == ((CheckBox)sender).Name)
                     {
                         zg1.GraphPane.CurveList.Remove(item);
                         break;
