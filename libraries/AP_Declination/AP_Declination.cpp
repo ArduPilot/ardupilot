@@ -64,7 +64,7 @@ static const uint8_t exception_signs[10][10] PROGMEM = \
 {0,0,31,255,254,0,0,0,0,0} \
 };
 
-// 76 bytes - Instance of the struct defined above
+// 76 bytes
 // I decided NOT to store this in PROGMEM because it is small and the expense of pulling
 // the value out of the PROGMEM is too high
 static const uint8_t declination_keys[2][37] = \
@@ -75,7 +75,7 @@ static const uint8_t declination_keys[2][37] = \
 {39,38,33,35,37,35,37,36,39,34,41,42,42,28,39,39,42,51,49,38,36,34,44,50,49,48,55} \
 };
 
-// 1075 total values @ 1 bytes each = 1075 bytes
+// 1056 total values @ 1 byte each = 1056 bytes
 static const row_value declination_values[] PROGMEM = \
 { \
 {0,0,4},{1,1,0},{0,0,2},{1,1,0},{0,0,2},{1,1,3},{2,1,1},{3,1,3},{4,1,1},{3,1,1},{2,1,1},{3,1,0},{2,1,0},{1,1,0},{2,1,1},{1,1,0},{2,1,0},{3,1,4},{4,1,1},{3,1,0},{4,1,0},{3,1,2},{2,1,2},{1,1,1},{0,0,0},{1,0,1},{3,0,0},{4,0,0},{6,0,0},{8,0,0},{11,0,0},{13,0,1},{10,0,0},{9,0,0},{7,0,0},{5,0,0},{4,0,0},{2,0,0},{1,0,2}, \
