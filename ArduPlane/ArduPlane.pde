@@ -59,10 +59,7 @@ version 2.1 of the License, or (at your option) any later version.
 #include "Parameters.h"
 #include "GCS.h"
 
-#if AUTOMATIC_DECLINATION == ENABLED
-// this is in an #if to avoid the static data
 #include <AP_Declination.h> // ArduPilot Mega Declination Helper Library
-#endif
 
 ////////////////////////////////////////////////////////////////////////////////
 // Serial ports
@@ -975,12 +972,10 @@ static void update_GPS(void)
 					init_home();
 				}
 
-#if AUTOMATIC_DECLINATION == ENABLED
 				if (g.compass_enabled) {
 					// Set compass declination automatically
-					compass.set_initial_location(g_gps->latitude, g_gps->longitude, false);
+					compass.set_initial_location(g_gps->latitude, g_gps->longitude);
 				}
-#endif
 				ground_start_count = 0;
 			}
 		}

@@ -418,10 +418,6 @@
 # define GROUND_START_DELAY		0
 #endif
 
-#ifndef AUTOMATIC_DECLINATION
-	#define AUTOMATIC_DECLINATION ENABLED
-#endif
-
 //////////////////////////////////////////////////////////////////////////////
 // ENABLE_AIR_START
 //
