@@ -340,6 +340,14 @@ static void startup_ground(void)
 	// -----------------------
 	demo_servos(3);
 
+    // we don't want writes to the serial port to cause us to pause
+    // mid-flight, so set the serial ports non-blocking once we are
+    // ready to fly
+    Serial.set_blocking_writes(false);
+    if (gcs3.initialised) {
+        Serial3.set_blocking_writes(false);
+    }
+
 	gcs_send_text_P(SEVERITY_LOW,PSTR("\n\n Ready to FLY."));
 }
 
