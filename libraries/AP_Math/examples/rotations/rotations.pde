@@ -25,10 +25,7 @@ AP_Baro_BMP085_HIL      barometer;
 AP_Compass_HIL     compass;
 #endif
 
-#if AUTOMATIC_DECLINATION == ENABLED
-// this is in an #if to avoid the static data
 #include <AP_Declination.h> // ArduPilot Mega Declination Helper Library
-#endif
 
 
 // standard rotation matrices (these are the originals from the old code)

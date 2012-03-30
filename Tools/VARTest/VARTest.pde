@@ -28,10 +28,7 @@
 #include <GCS_MAVLink.h>
 #include <config.h>
 #include <Parameters.h>
-
-#if 0
 #include <AP_Declination.h>
-#endif
 
 static Parameters g;
 
