@@ -419,7 +419,7 @@
 #endif
 
 #ifndef AUTOMATIC_DECLINATION
-	#define AUTOMATIC_DECLINATION DISABLED
+	#define AUTOMATIC_DECLINATION ENABLED
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
