@@ -43,6 +43,7 @@ public:
 	void		init(FastSerial *port) {
         _port = port;
         initialised = true;
+        last_gps_satellites = 255;
     }
 
 	/// Update GCS state.
@@ -88,6 +89,9 @@ public:
 
     // set to true if this GCS link is active
     bool initialised;
+
+    // used to prevent wasting bandwidth with GPS_STATUS messages
+    uint8_t last_gps_satellites;
 
 protected:
 	/// The stream we are communicating over
