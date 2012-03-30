@@ -7,6 +7,7 @@ const AP_Param::GroupInfo Compass::var_info[] PROGMEM = {
     AP_GROUPINFO("DEC",    2, Compass, _declination),
     AP_GROUPINFO("LEARN",  3, Compass, _learn), // true if learning calibration
     AP_GROUPINFO("USE",    4, Compass, _use_for_yaw), // true if used for DCM yaw
+    AP_GROUPINFO("AUTODEC",5, Compass, _auto_declination),
     AP_GROUPEND
 };
 
@@ -21,6 +22,7 @@ Compass::Compass(void) :
     _use_for_yaw(1),
     _null_enable(false),
     _null_init_done(false),
+    _auto_declination(1),
     _orientation(ROTATION_NONE)
 {
 }
@@ -57,23 +59,17 @@ Compass::get_offsets()
     return _offset;
 }
 
-bool
-Compass::set_initial_location(long latitude, long longitude, bool force)
+void
+Compass::set_initial_location(long latitude, long longitude)
 {
-	// If the user has choosen to use auto-declination regardless of the planner value
-	// OR
-	// If the declination failed to load from the EEPROM (ie. not set by user)
-	if(force || !_declination.load())
-	{
+    // if automatic declination is configured, then compute
+    // the declination based on the initial GPS fix
+	if (_auto_declination) {
 		// Set the declination based on the lat/lng from GPS
-		_declination.set(radians(AP_Declination::get_declination((float)latitude / 10000000, (float)longitude / 10000000)));
-
-		// Reset null offsets
 		null_offsets_disable();
+		_declination.set(radians(AP_Declination::get_declination((float)latitude / 10000000, (float)longitude / 10000000)));
 		null_offsets_enable();
-		return true;
 	}
-	return false;
 }
 
 void

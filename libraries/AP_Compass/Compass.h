@@ -81,13 +81,12 @@ public:
 	///
 	virtual Vector3f &get_offsets();
 
-	/// Sets the initial location used to get declination - Returns true if declination set
+	/// Sets the initial location used to get declination
 	///
 	/// @param  latitude             GPS Latitude.
 	/// @param  longitude            GPS Longitude.
-	/// @param  force				 Force the compass declination update.
 	///
-	bool set_initial_location(long latitude, long longitude, bool force);
+	void set_initial_location(long latitude, long longitude);
 
 	/// Program new offset values.
 	///
@@ -129,6 +128,7 @@ protected:
 	AP_Float            _declination;
     AP_Int8             _learn;                 ///<enable calibration learning
     AP_Int8             _use_for_yaw;           ///<enable use for yaw calculation
+    AP_Int8             _auto_declination;      ///<enable automatic declination code
 
 	bool                _null_enable;        	///< enabled flag for offset nulling
 	bool                _null_init_done;        ///< first-time-around flag used by offset nulling
