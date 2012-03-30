@@ -1378,9 +1378,9 @@ static void update_GPS(void)
 				ground_start_count = 5;
 
 			}else{
-				if(g.compass_enabled) {
+				if (g.compass_enabled) {
 					// Set compass declination automatically
-					compass.set_initial_location(g_gps->latitude, g_gps->longitude, (FORCE_AUTOMATIC_DECLINATION_UPDATE == ENABLED));
+					compass.set_initial_location(g_gps->latitude, g_gps->longitude);
 				}
 				// save home to eeprom (we must have a good fix to have reached this point)
 				init_home();
