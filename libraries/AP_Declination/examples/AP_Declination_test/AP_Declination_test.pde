@@ -6,6 +6,8 @@
 #include <AP_Math.h>
 #include <AP_Declination.h>
 #include <Filter.h>
+#include <I2C.h>
+#include <SPI.h>
 
 #ifdef DESKTOP_BUILD
 // all of this is needed to build with SITL
@@ -66,42 +68,7 @@ static const int16_t dec_tbl[37][73] = \
 {168,173,178,176,171,166,161,156,151,146,141,136,131,126,121,116,111,106,101,-96,-91,-86,-81,-76,-71,-66,-61,-56,-51,-46,-41,-36,-31,-26,-21,-16,-11,-6 ,-1 ,3  ,8  ,13 ,18 ,23 ,28 ,33 ,38 ,43 ,48 ,53 ,58 ,63 ,68 ,73 ,78 ,83 ,88 ,93 ,98 ,103,108,113,118,123,128,133,138,143,148,153,158,163,168}, \
 };
 
-void setup(void)
-{
-	float declination, declination_test;
-	uint16_t pass = 0, fail = 0;
-
-	Serial.begin(115200);
-	Serial.print("Beginning Test. Please wait...\n");
-
-	for(int16_t i = -90; i <= 90; i+=5)
-	{
-		for(int16_t j = -180; j <= 180; j+=5)
-		{
-			declination = AP_Declination::get_declination(i, j);
-			declination_test = get_declination(i, j);
-			if(declination == declination_test)
-			{
-				//Serial.printf("Pass: %i, %i : %f, %f\n", i, j, declination, declination_test);
-				pass++;
-			}
-			else
-			{
-				Serial.printf("FAIL: %i, %i : %f, %f\n", i, j, declination, declination_test);
-				fail++;
-			}
-		}
-	}
-	Serial.print("Ending Test.\n\n");
-	Serial.printf("Total Pass: %i\n", pass);
-	Serial.printf("Total Fail: %i\n", fail);
-}
-
-void loop(void)
-{
-}
-
-float get_declination(float lat, float lon)
+static float get_declination(float lat, float lon)
 {
 	int16_t decSW, decSE, decNW, decNE, lonmin, latmin;
 	float decmin, decmax;
@@ -126,3 +93,44 @@ float get_declination(float lat, float lon)
 	decmax = (lon - lonmin) / 5 * (decNE - decNW) + decNW;
 	return   (lat - latmin) / 5 * (decmax - decmin) + decmin;
 }
+
+void setup(void)
+{
+	float declination, declination_test;
+	uint16_t pass = 0, fail = 0;
+    uint32_t total_time=0;
+
+	Serial.begin(115200);
+	Serial.print("Beginning Test. Please wait...\n");
+
+	for(int16_t i = -90; i <= 90; i+=5)
+	{
+		for(int16_t j = -180; j <= 180; j+=5)
+		{
+            uint32_t t1 = micros();
+			declination = AP_Declination::get_declination(i, j);
+            total_time += micros() - t1;
+			declination_test = get_declination(i, j);
+			if(declination == declination_test)
+			{
+				//Serial.printf("Pass: %i, %i : %f, %f\n", i, j, declination, declination_test);
+				pass++;
+			}
+			else
+			{
+				Serial.printf("FAIL: %i, %i : %f, %f\n", i, j, declination, declination_test);
+				fail++;
+			}
+		}
+	}
+	Serial.print("Ending Test.\n\n");
+	Serial.printf("Total Pass: %i\n", pass);
+	Serial.printf("Total Fail: %i\n", fail);
+    Serial.printf("Average time per call: %.1f usec\n",
+                  total_time/(float)(pass+fail));
+}
+
+void loop(void)
+{
+}
+
