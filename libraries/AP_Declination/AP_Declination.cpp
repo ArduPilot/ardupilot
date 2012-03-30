@@ -7,11 +7,11 @@
  *	Scott Ferguson
  *	scottfromscott@gmail.com
  *
-
- This library is free software; you can redistribute it and/or
- modify it under the terms of the GNU Lesser General Public License
- as published by the Free Software Foundation; either version 2.1
- of the License, or (at your option) any later version.
+ *
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public License
+ * as published by the Free Software Foundation; either version 2.1
+ * of the License, or (at your option) any later version.
 */
 
 #include <FastSerial.h>
@@ -65,9 +65,7 @@ static const uint8_t exception_signs[10][10] PROGMEM = \
 };
 
 // 76 bytes
-// I decided NOT to store this in PROGMEM because it is small and the expense of pulling
-// the value out of the PROGMEM is too high
-static const uint8_t declination_keys[2][37] = \
+static const uint8_t declination_keys[2][37] PROGMEM = \
 { \
 // Row start values
 {36,30,25,21,18,16,14,12,11,10,9,9,9,8,8,8,7,6,6,5,4,4,4,3,4,4,4}, \
@@ -106,6 +104,8 @@ static const row_value declination_values[] PROGMEM = \
 {0,0,0},{3,0,2},{2,0,0},{3,0,0},{2,0,2},{1,0,0},{0,0,1},{2,1,0},{3,1,0},{5,1,0},{8,1,0},{9,1,0},{10,1,1},{7,1,0},{5,1,0},{3,1,0},{1,1,0},{0,0,0},{1,0,1},{2,0,0},{3,0,0},{2,0,0},{3,0,3},{4,0,0},{3,0,7},{2,0,0},{3,0,0},{2,0,0},{3,0,0},{2,0,0},{1,0,0},{2,0,0},{0,0,2},{2,1,0},{3,1,0},{4,1,0},{5,1,0},{7,1,0},{5,1,0},{6,1,0},{4,1,1},{2,1,0},{0,0,1},{1,0,1},{2,0,1},{3,0,2},{2,0,0},{3,0,0}, \
 {0,0,0},{3,0,5},{2,0,1},{1,0,0},{0,0,0},{1,1,0},{2,1,0},{5,1,0},{8,1,0},{12,1,0},{14,1,0},{13,1,0},{9,1,0},{6,1,0},{3,1,0},{1,1,0},{0,0,0},{2,0,0},{1,0,0},{3,0,0},{2,0,0},{3,0,0},{4,0,0},{3,0,1},{4,0,0},{3,0,0},{4,0,1},{3,0,0},{4,0,0},{3,0,2},{4,0,0},{3,0,1},{4,0,0},{3,0,0},{2,0,0},{3,0,0},{2,0,2},{0,0,1},{1,1,0},{2,1,0},{4,1,0},{5,1,0},{7,1,0},{8,1,0},{6,1,1},{5,1,0},{3,1,0},{1,1,1},{1,0,1},{2,0,0},{3,0,0},{2,0,0},{3,0,1},{2,0,0},{3,0,0}, \
 };
+
+#define PGM_UINT8(p) (uint8_t)pgm_read_byte_far(p)
 
 float
 AP_Declination::get_declination(float lat, float lon)
@@ -149,10 +149,10 @@ AP_Declination::get_lookup_value(uint8_t x, uint8_t y)
 		if(x >= 34) x -= 27;
 
 		// Read the unsigned value from the array
-		val = (uint8_t)pgm_read_byte_far(&exceptions[x][y]);
+		val = PGM_UINT8(&exceptions[x][y]);
 
 		// Read the 8 bit compressed sign values
-		uint8_t sign = (uint8_t)pgm_read_byte_far(&exception_signs[x][y/8]);
+		uint8_t sign = PGM_UINT8(&exception_signs[x][y/8]);
 
 		// Check the sign bit for this index
 		if(sign & (0x80 >> y%8))
@@ -169,7 +169,7 @@ AP_Declination::get_lookup_value(uint8_t x, uint8_t y)
 
 	// If we are looking for the first value we can just use the
 	// row start value from declination_keys
-	if(y == 0) return declination_keys[0][x];
+	if(y == 0) return PGM_UINT8(&declination_keys[0][x]);
 
 	// Init vars
 	row_value stval;
@@ -182,16 +182,16 @@ AP_Declination::get_lookup_value(uint8_t x, uint8_t y)
 	uint16_t start_index = 0, i;
 
 	// Init value to row start
-	val = declination_keys[0][x];
+	val = PGM_UINT8(&declination_keys[0][x]);
 
 	// Find the first element in the 1D array
 	// that corresponds with the target row
 	for(i = 0; i < x; i++){
-		start_index += declination_keys[1][i];
+		start_index += PGM_UINT8(&declination_keys[1][i]);
 	}
 
 	// Traverse the row until we find our value
-	for(i = start_index; i < (start_index + declination_keys[1][x]) && current_virtual_index <= y; i++){
+	for(i = start_index; i < (start_index + PGM_UINT8(&declination_keys[1][x])) && current_virtual_index <= y; i++){
 
 		// Pull out the row_value struct
 		memcpy_P((void*) &stval, (const prog_char *)&declination_values[i], sizeof(struct row_value));
