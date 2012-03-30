@@ -5,6 +5,23 @@
 #include <AP_Common.h>
 #include <AP_Math.h>
 #include <AP_Declination.h>
+#include <Filter.h>
+
+#ifdef DESKTOP_BUILD
+// all of this is needed to build with SITL
+#include <DataFlash.h>
+#include <APM_RC.h>
+#include <GCS_MAVLink.h>
+#include <Arduino_Mega_ISR_Registry.h>
+#include <AP_PeriodicProcess.h>
+#include <AP_ADC.h>
+#include <AP_Baro.h>
+#include <AP_Compass.h>
+#include <AP_GPS.h>
+Arduino_Mega_ISR_Registry isr_registry;
+AP_Baro_BMP085_HIL      barometer;
+AP_Compass_HIL     compass;
+#endif
 
 FastSerialPort(Serial, 0);
 
