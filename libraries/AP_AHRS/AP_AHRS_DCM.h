@@ -16,13 +16,11 @@ public:
 	// Constructors
 	AP_AHRS_DCM(IMU *imu, GPS *&gps) : AP_AHRS(imu, gps)
 	{
-		_kp_yaw.set(0.2);
-		_kp_roll_pitch = 0.06;
+		_kp = 9;
 		_dcm_matrix.identity();
 
 		// base the ki values on the sensors drift rate
-		_ki_roll_pitch = _gyro_drift_limit * 4;
-		_ki_yaw        = _gyro_drift_limit * 6;
+		_ki = _gyro_drift_limit * 110;
 	}
 
 	// return the smoothed gyro vector corrected for drift
@@ -44,9 +42,8 @@ public:
 	AP_Float	_kp_yaw;
 
 private:
-	float		_kp_roll_pitch;
-	float		_ki_roll_pitch;
-	float		_ki_yaw;
+	float		_kp;
+	float		_ki;
 	bool		_have_initial_yaw;
 
 	// Methods
@@ -56,6 +53,7 @@ private:
 	bool	 	renorm(Vector3f const &a, Vector3f &result);
 	void 		drift_correction(float deltat);
 	void 		drift_correction_old(float deltat);
+	void 		drift_correction_compass(float deltat);
 	void 		drift_correction_yaw(float deltat);
 	void 		euler_angles(void);
 
@@ -66,7 +64,6 @@ private:
 	Vector3f 	_accel_vector;		// current accel vector
 
 	Vector3f	_omega_P;		// accel Omega Proportional correction
-	Vector3f	_omega_yaw_P;		// yaw Omega Proportional correction
 	Vector3f 	_omega_I;		// Omega Integrator correction
 	Vector3f 	_omega_I_sum;		// summation vector for omegaI
 	float		_omega_I_sum_time;
@@ -86,10 +83,17 @@ private:
 	// time in millis when we last got a GPS heading
 	uint32_t	_gps_last_update;
 
+	// state of accel drift correction
 	Vector3f	_ra_sum;
 	Vector3f	_gps_last_velocity;
 	float		_ra_deltat;
 	uint32_t	_ra_sum_start;
+
+	// estimate of the magnetic field strength
+	float		_field_strength;
+
+	// current drift error in earth frame
+	Vector3f	_drift_error_earth;
 };
 
 #endif // AP_AHRS_DCM_H
