@@ -2024,7 +2024,6 @@ static void tuning(){
 			break;
 
 		case CH6_RATE_KD:
-			tuning_value = (float)g.rc_6.control_in / 100000.0;
 			g.pid_rate_roll.kD(tuning_value);
 			g.pid_rate_pitch.kD(tuning_value);
 			break;
@@ -2127,7 +2126,7 @@ static void tuning(){
 
 		#if FRAME_CONFIG == HELI_FRAME
 		case CH6_HELI_EXTERNAL_GYRO:
-			g.heli_ext_gyro_gain = tuning_value * 1000;
+			g.heli_ext_gyro_gain = tuning_value;
 			break;
 		#endif
 
