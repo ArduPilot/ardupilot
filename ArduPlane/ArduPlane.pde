@@ -749,11 +749,8 @@ static void fast_loop()
 	// ------------------------------
 	set_servos();
 
-
-	// XXX is it appropriate to be doing the comms below on the fast loop?
-
     gcs_update();
-    gcs_data_stream_send(45,1000);
+    gcs_data_stream_send();
 }
 
 static void medium_loop()
@@ -854,10 +851,6 @@ Serial.println(tempaccel.z, DEC);
 
 			if (g.log_bitmask & MASK_LOG_GPS)
 				Log_Write_GPS(g_gps->time, current_loc.lat, current_loc.lng, g_gps->altitude, current_loc.alt, (long) g_gps->ground_speed, g_gps->ground_course, g_gps->fix, g_gps->num_sats);
-
-            // send all requested output streams with rates requested
-            // between 5 and 45 Hz
-            gcs_data_stream_send(5,45);
 			break;
 
 		// This case controls the slow loop
@@ -919,7 +912,6 @@ static void slow_loop()
 			update_events();
 
             mavlink_system.sysid = g.sysid_this_mav;		// This is just an ugly hack to keep mavlink_system.sysid sync'd with our parameter
-            gcs_data_stream_send(3,5);
 
 #if USB_MUX_PIN > 0
             check_usb_mux();
@@ -936,7 +928,6 @@ static void one_second_loop()
 
 	// send a heartbeat
 	gcs_send_message(MSG_HEARTBEAT);
-    gcs_data_stream_send(1,3);
 }
 
 static void update_GPS(void)

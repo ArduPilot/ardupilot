@@ -886,64 +886,89 @@ GCS_MAVLINK::update(void)
     }
 }
 
-void
-GCS_MAVLINK::data_stream_send(uint16_t freqMin, uint16_t freqMax)
+// see if we should send a stream now. Called at 50Hz
+bool GCS_MAVLINK::stream_trigger(enum streams stream_num)
 {
-	if (waypoint_sending == false && waypoint_receiving == false && _queued_parameter == NULL) {
+    AP_Int16 *stream_rates = &streamRateRawSensors;
+    uint8_t rate = (uint8_t)stream_rates[stream_num].get();
 
-		if (freqLoopMatch(streamRateRawSensors, freqMin, freqMax)){
-			send_message(MSG_RAW_IMU1);
-			send_message(MSG_RAW_IMU2);
-			send_message(MSG_RAW_IMU3);
-		}
+    if (rate == 0) {
+        return false;
+    }
 
-		if (freqLoopMatch(streamRateExtendedStatus, freqMin, freqMax)) {
-			send_message(MSG_EXTENDED_STATUS1);
-			send_message(MSG_EXTENDED_STATUS2);
-			send_message(MSG_CURRENT_WAYPOINT);
-			send_message(MSG_GPS_RAW);            // TODO - remove this message after location message is working
-			send_message(MSG_NAV_CONTROLLER_OUTPUT);
-			send_message(MSG_FENCE_STATUS);
+    if (stream_ticks[stream_num] == 0) {
+        // we're triggering now, setup the next trigger point
+        if (rate > 50) {
+            rate = 50;
+        }
+        stream_ticks[stream_num] = 50 / rate;
+        return true;
+    }
 
-            if (last_gps_satellites != g_gps->num_sats) {
-                // this message is mostly a huge waste of bandwidth,
-                // except it is the only message that gives the number
-                // of visible satellites. So only send it when that
-                // changes.
-                send_message(MSG_GPS_STATUS);
-                last_gps_satellites = g_gps->num_sats;
-            }
-		}
+    // count down at 50Hz
+    stream_ticks[stream_num]--;
+    return false;
+}
 
-		if (freqLoopMatch(streamRatePosition, freqMin, freqMax)) {
-			// sent with GPS read
-			send_message(MSG_LOCATION);
-		}
+void
+GCS_MAVLINK::data_stream_send(void)
+{
+	if (waypoint_sending || waypoint_receiving || _queued_parameter != NULL) {
+        // don't send the streams when transferring bulk data
+        return;
+    }
 
-		if (freqLoopMatch(streamRateRawController, freqMin, freqMax)) {
-			// This is used for HIL.  Do not change without discussing with HIL maintainers
-			send_message(MSG_SERVO_OUT);
-		}
+    if (stream_trigger(STREAM_RAW_SENSORS)) {
+        send_message(MSG_RAW_IMU1);
+        send_message(MSG_RAW_IMU2);
+        send_message(MSG_RAW_IMU3);
+    }
 
-		if (freqLoopMatch(streamRateRCChannels, freqMin, freqMax)) {
-			send_message(MSG_RADIO_OUT);
-			send_message(MSG_RADIO_IN);
-		}
+    if (stream_trigger(STREAM_EXTENDED_STATUS)) {
+        send_message(MSG_EXTENDED_STATUS1);
+        send_message(MSG_EXTENDED_STATUS2);
+        send_message(MSG_CURRENT_WAYPOINT);
+        send_message(MSG_GPS_RAW);            // TODO - remove this message after location message is working
+        send_message(MSG_NAV_CONTROLLER_OUTPUT);
+        send_message(MSG_FENCE_STATUS);
 
-		if (freqLoopMatch(streamRateExtra1, freqMin, freqMax)){	 // Use Extra 1 for AHRS info
-			send_message(MSG_ATTITUDE);
-			send_message(MSG_SIMSTATE);
-		}
+        if (last_gps_satellites != g_gps->num_sats) {
+            // this message is mostly a huge waste of bandwidth,
+            // except it is the only message that gives the number
+            // of visible satellites. So only send it when that
+            // changes.
+            send_message(MSG_GPS_STATUS);
+            last_gps_satellites = g_gps->num_sats;
+        }
+    }
 
-		if (freqLoopMatch(streamRateExtra2, freqMin, freqMax)){		// Use Extra 2 for additional HIL info
-			send_message(MSG_VFR_HUD);
-		}
+    if (stream_trigger(STREAM_POSITION)) {
+        // sent with GPS read
+        send_message(MSG_LOCATION);
+    }
 
-		if (freqLoopMatch(streamRateExtra3, freqMin, freqMax)){
-			send_message(MSG_AHRS);
-			send_message(MSG_HWSTATUS);
-		}
-	}
+    if (stream_trigger(STREAM_RAW_CONTROLLER)) {
+        send_message(MSG_SERVO_OUT);
+    }
+
+    if (stream_trigger(STREAM_RC_CHANNELS)) {
+        send_message(MSG_RADIO_OUT);
+        send_message(MSG_RADIO_IN);
+    }
+
+    if (stream_trigger(STREAM_EXTRA1)) {
+        send_message(MSG_ATTITUDE);
+        send_message(MSG_SIMSTATE);
+    }
+
+    if (stream_trigger(STREAM_EXTRA2)) {
+        send_message(MSG_VFR_HUD);
+    }
+
+    if (stream_trigger(STREAM_EXTRA3)) {
+        send_message(MSG_AHRS);
+        send_message(MSG_HWSTATUS);
+    }
 }
 
 
@@ -2157,11 +2182,11 @@ static void gcs_send_message(enum ap_message id)
 /*
   send data streams in the given rate range on both links
  */
-static void gcs_data_stream_send(uint16_t freqMin, uint16_t freqMax)
+static void gcs_data_stream_send(void)
 {
-    gcs0.data_stream_send(freqMin, freqMax);
+    gcs0.data_stream_send();
     if (gcs3.initialised) {
-        gcs3.data_stream_send(freqMin, freqMax);
+        gcs3.data_stream_send();
     }
 }
 
