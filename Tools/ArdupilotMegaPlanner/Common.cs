@@ -381,7 +381,12 @@ namespace ArdupilotMega
 
             CH6_NAV_I = 20,
             CH6_LOITER_RATE_P = 22,
-            CH6_LOITER_RATE_D = 23
+            CH6_LOITER_RATE_D = 23,
+            CH6_YAW_KI = 24,
+            CH6_ACRO_KP = 25,
+            CH6_YAW_RATE_KD = 26,
+            CH6_LOITER_KI = 27,
+            CH6_LOITER_RATE_KI = 28
         }
 
 

@@ -21,6 +21,8 @@ namespace ArdupilotMega.Antenna
         public int TiltStartRange { get; set; }
         public int PanEndRange { get; set; }
         public int TiltEndRange { get; set; }
+        public int PanPWMRange { get; set; }
+        public int TiltPWMRange { get; set; }
 
         public bool PanReverse { get { return _panreverse == -1; } set { _panreverse = value == true ? -1 : 1 ;  } }
         public bool TiltReverse { get { return _tiltreverse == -1; } set { _tiltreverse = value == true ? -1 : 1; } }
@@ -94,7 +96,7 @@ namespace ArdupilotMega.Antenna
         }
 
         public bool Pan(double Angle)
-        { 
+        {
             double range = Math.Abs(PanStartRange - PanEndRange);
 
             // get relative center based on tracking center
@@ -108,7 +110,7 @@ namespace ArdupilotMega.Antenna
             // conver the angle into a 0-255 value
             byte target = (byte)((((PointAtAngle / range) * 2.0) * 127 + centerpos) * _panreverse);
 
-            //Console.WriteLine("P " + Angle + " " + target + " " + PointAtAngle);
+            Console.WriteLine("P " + Angle + " " + target + " " + PointAtAngle);
 
             var buffer = new byte[] { 0xff,PanAddress,target};
             ComPort.Write(buffer, 0, buffer.Length);

@@ -87,8 +87,10 @@ private:
 	// estimate of error
 	float		_error_rp_sum;
 	uint16_t	_error_rp_count;
+	float		_error_rp_last;
 	float		_error_yaw_sum;
 	uint16_t	_error_yaw_count;
+	float		_error_yaw_last;
 };
 
 #endif

@@ -79,22 +79,11 @@ static void init_ardupilot()
 	// Console serial port
 	//
 	// The console port buffers are defined to be sufficiently large to support
-	// the console's use as a logging device, optionally as the GPS port when
-	// GPS_PROTOCOL_IMU is selected, and as the telemetry port.
+	// the MAVLink protocol efficiently
 	//
-	// XXX This could be optimised to reduce the buffer sizes in the cases
-	// where they are not otherwise required.
-	//
-	Serial.begin(SERIAL0_BAUD, 128, 128);
+	Serial.begin(SERIAL0_BAUD, 128, 256);
 
 	// GPS serial port.
-	//
-	// XXX currently the EM406 (SiRF receiver) is nominally configured
-	// at 57600, however it's not been supported to date.  We should
-	// probably standardise on 38400.
-	//
-	// XXX the 128 byte receive buffer may be too small for NMEA, depending
-	// on the message set configured.
 	//
     // standard gps running
     Serial1.begin(38400, 128, 16);
@@ -145,11 +134,11 @@ static void init_ardupilot()
     if (!usb_connected) {
         // we are not connected via USB, re-init UART0 with right
         // baud rate
-        Serial.begin(map_baudrate(g.serial3_baud, SERIAL3_BAUD), 128, 128);
+        Serial.begin(map_baudrate(g.serial3_baud, SERIAL3_BAUD));
     }
 #else
     // we have a 2nd serial port for telemetry
-    Serial3.begin(map_baudrate(g.serial3_baud, SERIAL3_BAUD), 128, 128);
+    Serial3.begin(map_baudrate(g.serial3_baud, SERIAL3_BAUD), 128, 256);
 	gcs3.init(&Serial3);
 #endif
 
@@ -318,7 +307,7 @@ static void startup_ground(void)
 	//IMU ground start
 	//------------------------
     //
-	startup_IMU_ground();
+	startup_IMU_ground(false);
 
 	// read the radio to set trims
 	// ---------------------------
@@ -350,6 +339,14 @@ static void startup_ground(void)
 	// Makes the servos wiggle - 3 times signals ready to fly
 	// -----------------------
 	demo_servos(3);
+
+    // we don't want writes to the serial port to cause us to pause
+    // mid-flight, so set the serial ports non-blocking once we are
+    // ready to fly
+    Serial.set_blocking_writes(false);
+    if (gcs3.initialised) {
+        Serial3.set_blocking_writes(false);
+    }
 
 	gcs_send_text_P(SEVERITY_LOW,PSTR("\n\n Ready to FLY."));
 }
@@ -441,7 +438,7 @@ static void check_short_failsafe()
 }
 
 
-static void startup_IMU_ground(void)
+static void startup_IMU_ground(bool force_accel_level)
 {
 #if HIL_MODE != HIL_MODE_ATTITUDE
     gcs_send_text_P(SEVERITY_MEDIUM, PSTR("Warming up ADC..."));
@@ -454,7 +451,12 @@ static void startup_IMU_ground(void)
 	mavlink_delay(1000);
 
 	imu.init(IMU::COLD_START, mavlink_delay, flash_leds, &timer_scheduler);
-	imu.init_accel(mavlink_delay, flash_leds);
+    if (force_accel_level || g.manual_level == 0) {
+        // when MANUAL_LEVEL is set to 1 we don't do accelerometer
+        // levelling on each boot, and instead rely on the user to do
+        // it once via the ground station
+        imu.init_accel(mavlink_delay, flash_leds);
+    }
 	ahrs.set_centripetal(1);
     ahrs.reset();
 
@@ -551,9 +553,9 @@ static void check_usb_mux(void)
     // the user has switched to/from the telemetry port
     usb_connected = usb_check;
     if (usb_connected) {
-        Serial.begin(SERIAL0_BAUD, 128, 128);
+        Serial.begin(SERIAL0_BAUD);
     } else {
-        Serial.begin(map_baudrate(g.serial3_baud, SERIAL3_BAUD), 128, 128);
+        Serial.begin(map_baudrate(g.serial3_baud, SERIAL3_BAUD));
     }
 }
 #endif

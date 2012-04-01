@@ -697,11 +697,18 @@ GCS_MAVLINK::data_stream_send(uint16_t freqMin, uint16_t freqMax)
 		if (freqLoopMatch(streamRateExtendedStatus, freqMin, freqMax)) {
 			send_message(MSG_EXTENDED_STATUS1);
 			send_message(MSG_EXTENDED_STATUS2);
-			send_message(MSG_GPS_STATUS);
 			send_message(MSG_CURRENT_WAYPOINT);
 			send_message(MSG_GPS_RAW);			// TODO - remove this message after location message is working
 			send_message(MSG_NAV_CONTROLLER_OUTPUT);
-			//Serial.printf("mav2 %d\n", (int)streamRateExtendedStatus.get());
+
+            if (last_gps_satellites != g_gps->num_sats) {
+                // this message is mostly a huge waste of bandwidth,
+                // except it is the only message that gives the number
+                // of visible satellites. So only send it when that
+                // changes.
+                send_message(MSG_GPS_STATUS);
+                last_gps_satellites = g_gps->num_sats;
+            }
 		}
 
 		if (freqLoopMatch(streamRatePosition, freqMin, freqMax)) {
@@ -1471,7 +1478,7 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
 #endif
 					if (packet.param_value < 0) rounding_addition = -rounding_addition;
                     float v = packet.param_value+rounding_addition;
-                    v = constrain(v, -2147483648, 2147483647);
+                    v = constrain(v, -2147483648.0, 2147483647.0);
 					((AP_Int32 *)vp)->set_and_save(v);
                 } else if (var_type == AP_PARAM_INT16) {
 #if LOGGING_ENABLED == ENABLED

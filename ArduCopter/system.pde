@@ -76,24 +76,11 @@ static void init_ardupilot()
 	// Console serial port
 	//
 	// The console port buffers are defined to be sufficiently large to support
-	// the console's use as a logging device, optionally as the GPS port when
-	// GPS_PROTOCOL_IMU is selected, and as the telemetry port.
-	//
-	// XXX This could be optimised to reduce the buffer sizes in the cases
-	// where they are not otherwise required.
-	//
-	Serial.begin(SERIAL0_BAUD, 128, 128);
+    // the MAVLink protocol efficiently
+    //
+	Serial.begin(SERIAL0_BAUD, 128, 256);
 
 	// GPS serial port.
-	//
-	// Not used if the IMU/X-Plane GPS is in use.
-	//
-	// XXX currently the EM406 (SiRF receiver) is nominally configured
-	// at 57600, however it's not been supported to date.  We should
-	// probably standardise on 38400.
-	//
-	// XXX the 128 byte receive buffer may be too small for NMEA, depending
-	// on the message set configured.
 	//
 	#if GPS_PROTOCOL != GPS_PROTOCOL_IMU
 	Serial1.begin(38400, 128, 16);
@@ -169,11 +156,11 @@ static void init_ardupilot()
     if (!usb_connected) {
         // we are not connected via USB, re-init UART0 with right
         // baud rate
-        Serial.begin(map_baudrate(g.serial3_baud, SERIAL3_BAUD), 128, 128);
+        Serial.begin(map_baudrate(g.serial3_baud, SERIAL3_BAUD));
     }
 #else
     // we have a 2nd serial port for telemetry
-    Serial3.begin(map_baudrate(g.serial3_baud, SERIAL3_BAUD), 128, 128);
+    Serial3.begin(map_baudrate(g.serial3_baud, SERIAL3_BAUD), 128, 256);
 	gcs3.init(&Serial3);
 #endif
 
@@ -620,9 +607,9 @@ static void check_usb_mux(void)
     // the user has switched to/from the telemetry port
     usb_connected = usb_check;
     if (usb_connected) {
-        Serial.begin(SERIAL0_BAUD, 128, 128);
+        Serial.begin(SERIAL0_BAUD);
     } else {
-        Serial.begin(map_baudrate(g.serial3_baud, SERIAL3_BAUD), 128, 128);
+        Serial.begin(map_baudrate(g.serial3_baud, SERIAL3_BAUD));
     }
 }
 #endif

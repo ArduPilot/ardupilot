@@ -26,7 +26,7 @@ namespace ArdupilotMega
         private TextBox TXT_outputlog;
         private MyButton BUT_estoffset;
 
-        int latpos = 5, lngpos = 4, altpos = 7;
+        int latpos = 4, lngpos = 5, altpos = 7;
 
         internal Georefimage() {
             InitializeComponent();
@@ -117,8 +117,8 @@ namespace ArdupilotMega
                     //		line	"GPS: 82686250, 1, 8, -34.1406480, 118.5441900, 0.0000, 309.1900, 315.9500, 0.0000, 279.1200"	string
 
 
-                    string[] vals = new string[] { "GPS", (new DateTime(cs.datetime.Year,cs.datetime.Month,cs.datetime.Day,0,0,0) - cs.datetime).TotalMilliseconds.ToString(), "1",
-                    "8",cs.lat.ToString(),cs.lng.ToString(),"0.0",cs.alt.ToString(),cs.alt.ToString(),"0.0",cs.groundcourse.ToString()};
+                    string[] vals = new string[] { "GPS", (cs.datetime - new DateTime(cs.datetime.Year,cs.datetime.Month,cs.datetime.Day,0,0,0,DateTimeKind.Local)).TotalMilliseconds.ToString(), "1",
+                    cs.satcount.ToString(),cs.lat.ToString(),cs.lng.ToString(),"0.0",cs.alt.ToString(),cs.alt.ToString(),"0.0",cs.groundcourse.ToString()};
 
                     if (oldvalues.Length > 2 && oldvalues[latpos] == vals[latpos]
                         && oldvalues[lngpos] == vals[lngpos]
@@ -182,6 +182,8 @@ namespace ArdupilotMega
 
             Document kml = new Document();
 
+            StreamWriter sw4 = new StreamWriter(dirWithImages + Path.DirectorySeparatorChar + "loglocation.csv");
+
             StreamWriter sw3 = new StreamWriter(dirWithImages + Path.DirectorySeparatorChar + "location.kml");
 
             StreamWriter sw2 = new StreamWriter(dirWithImages + Path.DirectorySeparatorChar + "location.txt");
@@ -239,24 +241,34 @@ namespace ArdupilotMega
                             first++;
                         }
 
-                        //Console.Write("ph " + dt + " log " + crap + "         \r");
+                        Console.Write("ph " + dt + " log " + crap + "         \r");
 
-                        if (dt.Equals(crap))
+                        sw4.WriteLine("ph " + file + " " + dt + " log " + crap);
+
+                        if (dt.ToString("yyyy-MM-ddTHH:mm:ss") == crap.ToString("yyyy-MM-ddTHH:mm:ss"))
                         {
                             TXT_outputlog.AppendText("MATCH Photo " + Path.GetFileNameWithoutExtension(file) + " " + dt + "\r\n");
 
                             matchs++;
 
+                             SharpKml.Dom.Timestamp tstamp = new SharpKml.Dom.Timestamp();
+
+                             tstamp.When = dt;
+
                             kml.AddFeature(
                                 new Placemark()
                                 {
+                                    Time = tstamp             ,
                                     Name = Path.GetFileNameWithoutExtension(file),
                                     Geometry = new SharpKml.Dom.Point()
                                     {
-                                        Coordinate = new Vector(double.Parse(arr[lngpos]), double.Parse(arr[latpos]), double.Parse(arr[altpos]))
+                                        Coordinate = new Vector(double.Parse(arr[latpos]), double.Parse(arr[lngpos]), double.Parse(arr[altpos]))
                                     }
+
                                 }
                             );
+
+
 
                             sw2.WriteLine(Path.GetFileNameWithoutExtension(file) + " " + arr[lngpos] + " " + arr[latpos] + " " + arr[altpos]);
                             sw.WriteLine(Path.GetFileNameWithoutExtension(file) + "\t" + crap.ToString("yyyy:MM:dd HH:mm:ss") + "\t" + arr[lngpos] + "\t" + arr[latpos] + "\t" + arr[altpos]);
@@ -277,6 +289,7 @@ namespace ArdupilotMega
             sw3.Write(serializer.Xml);
             sw3.Close();
 
+            sw4.Close();
 
             sw2.Close();
             sw.Close();
@@ -345,7 +358,7 @@ namespace ArdupilotMega
             this.TXT_offsetseconds.Name = "TXT_offsetseconds";
             this.TXT_offsetseconds.Size = new System.Drawing.Size(100, 20);
             this.TXT_offsetseconds.TabIndex = 4;
-            this.TXT_offsetseconds.Text = "0";
+            this.TXT_offsetseconds.Text = "-86158";
             // 
             // BUT_doit
             // 
@@ -389,7 +402,7 @@ namespace ArdupilotMega
             this.BUT_estoffset.UseVisualStyleBackColor = true;
             this.BUT_estoffset.Click += new System.EventHandler(this.BUT_estoffset_Click);
             // 
-            // georefimage
+            // Georefimage
             // 
             this.ClientSize = new System.Drawing.Size(453, 299);
             this.Controls.Add(this.BUT_estoffset);

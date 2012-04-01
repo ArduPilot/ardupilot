@@ -1190,13 +1190,45 @@ namespace ArdupilotMega.GCSViews
                 BUT_load_Click(BUT_load, null);
                 return true;
             }
+            if (Params.Focused)
+            {
+                if (keyData >= Keys.A && keyData <= Keys.Z)
+                {
+                    int row = FindRowIndex(0, keyData.ToString());
+                    Params.FirstDisplayedScrollingRowIndex = row;
+                    Params.ClearSelection();
+                    Params[1, row].Selected = true;
+                }
+            }
             return base.ProcessCmdKey(ref msg, keyData);
+        }
+
+        int FindRowIndex(int col, string startswith)
+        {
+            foreach (DataGridViewRow row in Params.Rows)
+            {
+                if (row.Cells[col].Value.ToString().StartsWith(startswith))
+                {
+                    return row.Index;
+                }
+            }
+            return 0;
         }
 
         private void CMB_ratesensors_SelectedIndexChanged(object sender, EventArgs e)
         {
             MainV2.config[((ComboBox)sender).Name] = ((ComboBox)sender).Text;
             MainV2.cs.ratesensors = byte.Parse(((ComboBox)sender).Text);
+        }
+
+        private void Params_KeyDown(object sender, KeyEventArgs e)
+        {
+
+        }
+
+        private void Params_KeyPress(object sender, KeyPressEventArgs e)
+        {
+            
         }
     }
 }

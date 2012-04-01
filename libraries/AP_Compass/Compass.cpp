@@ -7,6 +7,7 @@ const AP_Param::GroupInfo Compass::var_info[] PROGMEM = {
     AP_GROUPINFO("DEC",    2, Compass, _declination),
     AP_GROUPINFO("LEARN",  3, Compass, _learn), // true if learning calibration
     AP_GROUPINFO("USE",    4, Compass, _use_for_yaw), // true if used for DCM yaw
+    AP_GROUPINFO("AUTODEC",5, Compass, _auto_declination),
     AP_GROUPEND
 };
 
@@ -21,6 +22,7 @@ Compass::Compass(void) :
     _use_for_yaw(1),
     _null_enable(false),
     _null_init_done(false),
+    _auto_declination(1),
     _orientation(ROTATION_NONE)
 {
 }
@@ -57,23 +59,17 @@ Compass::get_offsets()
     return _offset;
 }
 
-bool
-Compass::set_initial_location(long latitude, long longitude, bool force)
+void
+Compass::set_initial_location(long latitude, long longitude)
 {
-	// If the user has choosen to use auto-declination regardless of the planner value
-	// OR
-	// If the declination failed to load from the EEPROM (ie. not set by user)
-	if(force || !_declination.load())
-	{
+    // if automatic declination is configured, then compute
+    // the declination based on the initial GPS fix
+	if (_auto_declination) {
 		// Set the declination based on the lat/lng from GPS
-		_declination.set(radians(AP_Declination::get_declination((float)latitude / 10000000, (float)longitude / 10000000)));
-
-		// Reset null offsets
 		null_offsets_disable();
+		_declination.set(radians(AP_Declination::get_declination((float)latitude / 10000000, (float)longitude / 10000000)));
 		null_offsets_enable();
-		return true;
 	}
-	return false;
 }
 
 void
@@ -182,38 +178,101 @@ Compass::calculate(const Matrix3f &dcm_matrix)
 #endif
 }
 
+
+/*
+  this offset nulling algorithm is inspired by this paper from Bill Premerlani
+
+  http://gentlenav.googlecode.com/files/MagnetometerOffsetNullingRevisited.pdf
+
+  The base algorithm works well, but is quite sensitive to
+  noise. After long discussions with Bill, the following changes were
+  made:
+
+    1) we keep a history buffer that effectively divides the mag
+       vectors into a set of N streams. The algorithm is run on the
+       streams separately
+
+    2) within each stream we only calculate a change when the mag
+       vector has changed by a significant amount.
+
+  This gives us the property that we learn quickly if there is no
+  noise, but still learn correctly (and slowly) in the face of lots of
+  noise.
+ */
 void
-Compass::null_offsets(const Matrix3f &dcm_matrix)
+Compass::null_offsets(void)
 {
     if (_null_enable == false || _learn == 0) {
         // auto-calibration is disabled
         return;
     }
 
-    // Update our estimate of the offsets in the magnetometer
-    Vector3f    calc;
-    Matrix3f    dcm_new_from_last;
-    float       weight;
+    // this gain is set so we converge on the offsets in about 5
+    // minutes with a 10Hz compass
+    const float gain = 0.01;
+    const float max_change = 10.0;
+    const float min_diff = 50.0;
+    Vector3f ofs;
 
-    Vector3f mag_body_new = Vector3f(mag_x,mag_y,mag_z);
-    
-    if(_null_init_done) {
-        dcm_new_from_last = dcm_matrix.transposed() * _last_dcm_matrix;      // Note 11/20/2010: transpose() is not working, transposed() is.
+    ofs = _offset.get();
 
-        weight = 3.0 - fabs(dcm_new_from_last.a.x) - fabs(dcm_new_from_last.b.y) - fabs(dcm_new_from_last.c.z);
-        if (weight > .001) {
-            calc = mag_body_new + _mag_body_last;                // Eq 11 from Bill P's paper
-            calc -= dcm_new_from_last * _mag_body_last;
-            calc -= dcm_new_from_last.transposed() * mag_body_new;
-            if(weight > 0.5) weight = 0.5;
-            calc = calc * (weight);
-            _offset.set(_offset.get() - calc);
-        }
-    } else {
+    if (!_null_init_done) {
+        // first time through
         _null_init_done = true;
+        for (uint8_t i=0; i<_mag_history_size; i++) {
+            // fill the history buffer with the current mag vector,
+            // with the offset removed
+            _mag_history[i] = Vector3i((mag_x+0.5) - ofs.x, (mag_y+0.5) - ofs.y, (mag_z+0.5) - ofs.z);
+        }
+        _mag_history_index = 0;
+        return;
     }
-    _mag_body_last = mag_body_new - calc;
-    _last_dcm_matrix = dcm_matrix;
+
+    Vector3f b1, b2, diff;
+    float length;
+
+    // get a past element
+    b1 = Vector3f(_mag_history[_mag_history_index].x,
+                  _mag_history[_mag_history_index].y,
+                  _mag_history[_mag_history_index].z);
+    // the history buffer doesn't have the offsets
+    b1 += ofs;
+
+    // get the current vector
+    b2 = Vector3f(mag_x, mag_y, mag_z);
+
+    // calculate the delta for this sample
+    diff = b2 - b1;
+    length = diff.length();
+    if (length < min_diff) {
+        // the mag vector hasn't changed enough - we don't get
+        // enough information from this vector to use it.
+        // Note that we don't put the current vector into the mag
+        // history here. We want to wait for a larger rotation to
+        // build up before calculating an offset change, as accuracy
+        // of the offset change is highly dependent on the size of the
+        // rotation.
+        _mag_history_index = (_mag_history_index + 1) % _mag_history_size;
+        return;
+    }
+
+    // put the vector in the history
+    _mag_history[_mag_history_index] = Vector3i((mag_x+0.5) - ofs.x, (mag_y+0.5) - ofs.y, (mag_z+0.5) - ofs.z);
+    _mag_history_index = (_mag_history_index + 1) % _mag_history_size;
+
+    // equation 6 of Bills paper
+    diff = diff * (gain * (b2.length() - b1.length()) / length);
+
+    // limit the change from any one reading. This is to prevent
+    // single crazy readings from throwing off the offsets for a long
+    // time
+    length = diff.length();
+    if (length > max_change) {
+        diff *= max_change / length;
+    }
+
+    // set the new offsets
+    _offset.set(_offset.get() - diff);
 }
 
 

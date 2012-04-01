@@ -425,11 +425,6 @@
 # define GROUND_START_DELAY		3
 #endif
 
-#ifndef AUTOMATIC_DECLINATION
-	#define AUTOMATIC_DECLINATION DISABLED
-#endif
-
-
 //////////////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////////////
 // FLIGHT AND NAVIGATION CONTROL
@@ -722,6 +717,10 @@
 //////////////////////////////////////////////////////////////////////////////
 // Throttle control gains
 //
+#ifndef AUTO_THROTTLE_HOLD
+# define AUTO_THROTTLE_HOLD 1
+#endif
+
 #ifndef THROTTLE_CRUISE
 # define THROTTLE_CRUISE	450		//
 #endif
@@ -826,27 +825,31 @@
 #ifndef LOG_MOTORS
 # define LOG_MOTORS				DISABLED
 #endif
-// guess!
+// optical flow
 #ifndef LOG_OPTFLOW
 # define LOG_OPTFLOW			DISABLED
+#endif
+#ifndef LOG_PID
+# define LOG_PID				DISABLED
 #endif
 
 // calculate the default log_bitmask
 #define LOGBIT(_s)     (LOG_##_s ? MASK_LOG_##_s : 0)
 
 #define DEFAULT_LOG_BITMASK \
-               LOGBIT(ATTITUDE_FAST)	| \
-               LOGBIT(ATTITUDE_MED)		| \
-               LOGBIT(GPS)				| \
-               LOGBIT(PM)               | \
-               LOGBIT(CTUN)				| \
-               LOGBIT(NTUN)				| \
-               LOGBIT(MODE)             | \
-               LOGBIT(RAW)              | \
-               LOGBIT(CMD)              | \
-               LOGBIT(CUR)				| \
-               LOGBIT(MOTORS)			| \
-               LOGBIT(OPTFLOW)
+			LOGBIT(ATTITUDE_FAST)	| \
+			LOGBIT(ATTITUDE_MED)	| \
+			LOGBIT(GPS)				| \
+			LOGBIT(PM)				| \
+			LOGBIT(CTUN)			| \
+			LOGBIT(NTUN)			| \
+			LOGBIT(MODE)			| \
+			LOGBIT(RAW)				| \
+			LOGBIT(CMD)				| \
+			LOGBIT(CUR)				| \
+			LOGBIT(MOTORS)			| \
+			LOGBIT(OPTFLOW)			| \
+			LOGBIT(PID)
 
 // if we are using fast, Disable Medium
 //#if LOG_ATTITUDE_FAST == ENABLED

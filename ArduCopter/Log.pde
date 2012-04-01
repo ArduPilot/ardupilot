@@ -72,6 +72,7 @@ print_log_menu(void)
 		if (g.log_bitmask & MASK_LOG_CUR)			Serial.printf_P(PSTR(" CURRENT"));
 		if (g.log_bitmask & MASK_LOG_MOTORS)		Serial.printf_P(PSTR(" MOTORS"));
 		if (g.log_bitmask & MASK_LOG_OPTFLOW)		Serial.printf_P(PSTR(" OPTFLOW"));
+		if (g.log_bitmask & MASK_LOG_PID)			Serial.printf_P(PSTR(" PID"));
 	}
 
 	Serial.println();
@@ -193,6 +194,7 @@ select_logs(uint8_t argc, const Menu::arg *argv)
 		TARG(CUR);
 		TARG(MOTORS);
 		TARG(OPTFLOW);
+		TARG(PID);
 		#undef TARG
 	}
 
@@ -783,6 +785,46 @@ static void Log_Read_Data()
 	Serial.printf_P(PSTR("DATA: %d, %ld\n"), temp1, temp2);
 }
 
+// Write an PID packet. Total length : 28 bytes
+static void Log_Write_PID(int8_t pid_id, int32_t error, int32_t p, int32_t i, int32_t d, int32_t output, float gain)
+{
+	DataFlash.WriteByte(HEAD_BYTE1);
+	DataFlash.WriteByte(HEAD_BYTE2);
+	DataFlash.WriteByte(LOG_PID_MSG);
+
+	DataFlash.WriteByte(pid_id);			// 1
+	DataFlash.WriteLong(error);				// 2
+	DataFlash.WriteLong(p);					// 3
+	DataFlash.WriteLong(i);					// 4
+	DataFlash.WriteLong(d);					// 5
+	DataFlash.WriteLong(output);			// 6
+	DataFlash.WriteLong(gain * 1000);		// 7
+
+	DataFlash.WriteByte(END_BYTE);
+}
+
+// Read a PID packet
+static void Log_Read_PID()
+{
+	int8_t temp1 	= DataFlash.ReadByte();		// pid id
+	int32_t temp2 	= DataFlash.ReadLong();		// error
+	int32_t temp3 	= DataFlash.ReadLong();		// p
+	int32_t temp4 	= DataFlash.ReadLong();		// i
+	int32_t temp5 	= DataFlash.ReadLong();		// d
+	int32_t temp6 	= DataFlash.ReadLong();		// output
+	float temp7 	= DataFlash.ReadLong() / 1000.f;		// gain
+
+						   //  1    2    3    4    5    6      7
+	Serial.printf_P(PSTR("PID-%d, %ld, %ld, %ld, %ld, %ld, %4.4f\n"),
+                    (int)temp1,		// pid id
+                    (long)temp2,	// error
+                    (long)temp3,	// p
+                    (long)temp4,	// i
+                    (long)temp5,	// d
+                    (long)temp6,	// output
+                    temp7);			// gain
+}
+
 // Read the DataFlash log memory
 static void Log_Read(int start_page, int end_page)
 {
@@ -791,6 +833,7 @@ static void Log_Read(int start_page, int end_page)
 	#ifdef AIRFRAME_NAME
 		Serial.printf_P(PSTR((AIRFRAME_NAME)
 	#endif
+
 	Serial.printf_P(PSTR("\n" THISFIRMWARE
 						 "\nFree RAM: %u\n"),
                     memcheck_available_memory());
@@ -890,6 +933,10 @@ static int Log_Read_Process(int start_page, int end_page)
 					case LOG_DATA_MSG:
 						Log_Read_Data();
 						break;
+
+					case LOG_PID_MSG:
+						Log_Read_PID();
+						break;
 				}
 				break;
 			case 3:
@@ -925,6 +972,7 @@ static void Log_Write_Nav_Tuning() {}
 static void Log_Write_Control_Tuning() {}
 static void Log_Write_Motors() {}
 static void Log_Write_Performance() {}
+static void Log_Write_PID() {}
 static int8_t process_logs(uint8_t argc, const Menu::arg *argv) { return 0; }
 
 #endif // LOGGING_DISABLED

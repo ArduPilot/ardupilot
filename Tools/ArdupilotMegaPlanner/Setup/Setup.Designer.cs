@@ -30,7 +30,7 @@
         {
             this.components = new System.ComponentModel.Container();
             System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(Setup));
-            this.tabControl1 = new System.Windows.Forms.TabControl();
+            this.Tabs = new System.Windows.Forms.TabControl();
             this.tabRadioIn = new System.Windows.Forms.TabPage();
             this.groupBoxElevons = new System.Windows.Forms.GroupBox();
             this.CHK_mixmode = new System.Windows.Forms.CheckBox();
@@ -82,6 +82,7 @@
             this.CMB_fmode1 = new System.Windows.Forms.ComboBox();
             this.BUT_SaveModes = new ArdupilotMega.MyButton();
             this.tabHardware = new System.Windows.Forms.TabPage();
+            this.BUT_MagCalibration = new ArdupilotMega.MyButton();
             this.label27 = new System.Windows.Forms.Label();
             this.CMB_sonartype = new System.Windows.Forms.ComboBox();
             this.CHK_enableoptflow = new System.Windows.Forms.CheckBox();
@@ -115,6 +116,9 @@
             this.TXT_battcapacity = new System.Windows.Forms.TextBox();
             this.CMB_batmontype = new System.Windows.Forms.ComboBox();
             this.pictureBox5 = new System.Windows.Forms.PictureBox();
+            this.tabArduplane = new System.Windows.Forms.TabPage();
+            this.label48 = new System.Windows.Forms.Label();
+            this.BUT_levelplane = new ArdupilotMega.MyButton();
             this.tabArducopter = new System.Windows.Forms.TabPage();
             this.label28 = new System.Windows.Forms.Label();
             this.label16 = new System.Windows.Forms.Label();
@@ -179,8 +183,7 @@
             this.tabReset = new System.Windows.Forms.TabPage();
             this.BUT_reset = new ArdupilotMega.MyButton();
             this.toolTip1 = new System.Windows.Forms.ToolTip(this.components);
-            this.BUT_MagCalibration = new ArdupilotMega.MyButton();
-            this.tabControl1.SuspendLayout();
+            this.Tabs.SuspendLayout();
             this.tabRadioIn.SuspendLayout();
             this.groupBoxElevons.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.currentStateBindingSource)).BeginInit();
@@ -193,6 +196,7 @@
             this.tabBattery.SuspendLayout();
             this.groupBox4.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.pictureBox5)).BeginInit();
+            this.tabArduplane.SuspendLayout();
             this.tabArducopter.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.pictureBoxQuadX)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.pictureBoxQuad)).BeginInit();
@@ -208,18 +212,19 @@
             this.tabReset.SuspendLayout();
             this.SuspendLayout();
             // 
-            // tabControl1
+            // Tabs
             // 
-            this.tabControl1.Controls.Add(this.tabRadioIn);
-            this.tabControl1.Controls.Add(this.tabModes);
-            this.tabControl1.Controls.Add(this.tabHardware);
-            this.tabControl1.Controls.Add(this.tabBattery);
-            this.tabControl1.Controls.Add(this.tabArducopter);
-            this.tabControl1.Controls.Add(this.tabHeli);
-            resources.ApplyResources(this.tabControl1, "tabControl1");
-            this.tabControl1.Name = "tabControl1";
-            this.tabControl1.SelectedIndex = 0;
-            this.tabControl1.SelectedIndexChanged += new System.EventHandler(this.tabControl1_SelectedIndexChanged);
+            this.Tabs.Controls.Add(this.tabRadioIn);
+            this.Tabs.Controls.Add(this.tabModes);
+            this.Tabs.Controls.Add(this.tabHardware);
+            this.Tabs.Controls.Add(this.tabBattery);
+            this.Tabs.Controls.Add(this.tabArduplane);
+            this.Tabs.Controls.Add(this.tabArducopter);
+            this.Tabs.Controls.Add(this.tabHeli);
+            resources.ApplyResources(this.Tabs, "Tabs");
+            this.Tabs.Name = "Tabs";
+            this.Tabs.SelectedIndex = 0;
+            this.Tabs.SelectedIndexChanged += new System.EventHandler(this.tabControl1_SelectedIndexChanged);
             // 
             // tabRadioIn
             // 
@@ -657,7 +662,7 @@
             // 
             // tabHardware
             // 
-            this.tabHardware.BackColor = System.Drawing.SystemColors.Control;
+            this.tabHardware.BackColor = System.Drawing.Color.Transparent;
             this.tabHardware.Controls.Add(this.BUT_MagCalibration);
             this.tabHardware.Controls.Add(this.label27);
             this.tabHardware.Controls.Add(this.CMB_sonartype);
@@ -674,6 +679,13 @@
             this.tabHardware.Controls.Add(this.pictureBox1);
             resources.ApplyResources(this.tabHardware, "tabHardware");
             this.tabHardware.Name = "tabHardware";
+            // 
+            // BUT_MagCalibration
+            // 
+            resources.ApplyResources(this.BUT_MagCalibration, "BUT_MagCalibration");
+            this.BUT_MagCalibration.Name = "BUT_MagCalibration";
+            this.BUT_MagCalibration.UseVisualStyleBackColor = true;
+            this.BUT_MagCalibration.Click += new System.EventHandler(this.BUT_MagCalibration_Click);
             // 
             // label27
             // 
@@ -923,6 +935,26 @@
             this.pictureBox5.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
             this.pictureBox5.Name = "pictureBox5";
             this.pictureBox5.TabStop = false;
+            // 
+            // tabArduplane
+            // 
+            this.tabArduplane.Controls.Add(this.label48);
+            this.tabArduplane.Controls.Add(this.BUT_levelplane);
+            resources.ApplyResources(this.tabArduplane, "tabArduplane");
+            this.tabArduplane.Name = "tabArduplane";
+            this.tabArduplane.UseVisualStyleBackColor = true;
+            // 
+            // label48
+            // 
+            resources.ApplyResources(this.label48, "label48");
+            this.label48.Name = "label48";
+            // 
+            // BUT_levelplane
+            // 
+            resources.ApplyResources(this.BUT_levelplane, "BUT_levelplane");
+            this.BUT_levelplane.Name = "BUT_levelplane";
+            this.BUT_levelplane.UseVisualStyleBackColor = true;
+            this.BUT_levelplane.Click += new System.EventHandler(this.BUT_levelplane_Click);
             // 
             // tabArducopter
             // 
@@ -1584,23 +1616,16 @@
             this.BUT_reset.UseVisualStyleBackColor = true;
             this.BUT_reset.Click += new System.EventHandler(this.BUT_reset_Click);
             // 
-            // BUT_MagCalibration
-            // 
-            resources.ApplyResources(this.BUT_MagCalibration, "BUT_MagCalibration");
-            this.BUT_MagCalibration.Name = "BUT_MagCalibration";
-            this.BUT_MagCalibration.UseVisualStyleBackColor = true;
-            this.BUT_MagCalibration.Click += new System.EventHandler(this.BUT_MagCalibration_Click);
-            // 
             // Setup
             // 
             resources.ApplyResources(this, "$this");
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.Controls.Add(this.tabControl1);
+            this.Controls.Add(this.Tabs);
             this.FormBorderStyle = System.Windows.Forms.FormBorderStyle.SizableToolWindow;
             this.Name = "Setup";
             this.FormClosing += new System.Windows.Forms.FormClosingEventHandler(this.Setup_FormClosing);
             this.Load += new System.EventHandler(this.Setup_Load);
-            this.tabControl1.ResumeLayout(false);
+            this.Tabs.ResumeLayout(false);
             this.tabRadioIn.ResumeLayout(false);
             this.tabRadioIn.PerformLayout();
             this.groupBoxElevons.ResumeLayout(false);
@@ -1619,6 +1644,8 @@
             this.groupBox4.ResumeLayout(false);
             this.groupBox4.PerformLayout();
             ((System.ComponentModel.ISupportInitialize)(this.pictureBox5)).EndInit();
+            this.tabArduplane.ResumeLayout(false);
+            this.tabArduplane.PerformLayout();
             this.tabArducopter.ResumeLayout(false);
             this.tabArducopter.PerformLayout();
             ((System.ComponentModel.ISupportInitialize)(this.pictureBoxQuadX)).EndInit();
@@ -1644,7 +1671,7 @@
 
         #endregion
 
-        private System.Windows.Forms.TabControl tabControl1;
+        private System.Windows.Forms.TabControl Tabs;
         private System.Windows.Forms.TabPage tabRadioIn;
         private HorizontalProgressBar2 BAR8;
         private HorizontalProgressBar2 BAR7;
@@ -1794,6 +1821,9 @@
         private System.Windows.Forms.RadioButton H1_ENABLE;
         private System.Windows.Forms.RadioButton CCPM;
         private MyButton BUT_MagCalibration;
+        private System.Windows.Forms.TabPage tabArduplane;
+        private System.Windows.Forms.Label label48;
+        private MyButton BUT_levelplane;
 
     }
 }

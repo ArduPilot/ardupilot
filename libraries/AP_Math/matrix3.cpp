@@ -163,6 +163,15 @@ Vector3<T> Matrix3<T>::operator *(const Vector3<T> &v) const
                       c.x * v.x + c.y * v.y + c.z * v.z);
 }
 
+// multiplication of transpose by a vector
+template <typename T>
+Vector3<T> Matrix3<T>::mul_transpose(const Vector3<T> &v) const
+{
+    return Vector3<T>(a.x * v.x + b.x * v.y + c.x * v.z,
+                      a.y * v.x + b.y * v.y + c.y * v.z,
+                      a.z * v.x + b.z * v.y + c.z * v.z);
+}
+
 // multiplication by another Matrix3<T>
 template <typename T>
 Matrix3<T> Matrix3<T>::operator *(const Matrix3<T> &m) const
@@ -186,4 +195,5 @@ template void Matrix3<float>::rotate(const Vector3<float> &g);
 template void Matrix3<float>::from_euler(float roll, float pitch, float yaw);
 template void Matrix3<float>::to_euler(float *roll, float *pitch, float *yaw);
 template Vector3<float> Matrix3<float>::operator *(const Vector3<float> &v) const;
+template Vector3<float> Matrix3<float>::mul_transpose(const Vector3<float> &v) const;
 template Matrix3<float> Matrix3<float>::operator *(const Matrix3<float> &m) const;

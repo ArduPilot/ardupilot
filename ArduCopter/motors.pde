@@ -75,6 +75,14 @@ static void init_arm_motors()
 	gcs_send_text_P(SEVERITY_HIGH, PSTR("ARMING MOTORS"));
 	#endif
 
+    // we don't want writes to the serial port to cause us to pause
+    // mid-flight, so set the serial ports non-blocking once we arm
+    // the motors
+    Serial.set_blocking_writes(false);
+    if (gcs3.initialised) {
+        Serial3.set_blocking_writes(false);
+    }
+
 	motor_armed 	= true;
 
 	#if PIEZO_ARMING == 1

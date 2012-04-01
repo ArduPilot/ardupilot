@@ -332,7 +332,7 @@ test_radio(uint8_t argc, const Menu::arg *argv)
                     Matrix3f m = dcm.get_dcm_matrix();
 					compass.read();		 				// Read magnetometer
 					compass.calculate(m);
-                    compass.null_offsets(m);
+                    compass.null_offsets();
 					medium_loopCounter = 0;
 				}
 			}
@@ -551,7 +551,7 @@ test_imu(uint8_t argc, const Menu::arg *argv)
 					compass.read();		 				// Read magnetometer
                     Matrix3f m = dcm.get_dcm_matrix();
 					compass.calculate(m);
-                    compass.null_offsets(m);
+                    compass.null_offsets();
 				}
 			}
 			fast_loopTimer = millis();

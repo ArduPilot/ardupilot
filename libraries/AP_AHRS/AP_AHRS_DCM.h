@@ -75,8 +75,10 @@ private:
 	uint16_t	_renorm_val_count;
 	float		_error_rp_sum;
 	uint16_t	_error_rp_count;
+	float		_error_rp_last;
 	float		_error_yaw_sum;
 	uint16_t	_error_yaw_count;
+	float		_error_yaw_last;
 
 	// time in millis when we last got a GPS heading
 	uint32_t	_gps_last_update;

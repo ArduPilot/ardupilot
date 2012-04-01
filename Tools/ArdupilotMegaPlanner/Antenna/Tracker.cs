@@ -15,6 +15,12 @@ namespace ArdupilotMega.Antenna
         static bool threadrun = false;
         static ITrackerOutput tracker;
 
+        enum interfaces
+        {
+            Maestro,
+            ArduTracker
+        }
+
         public Tracker()
         {
             InitializeComponent();
@@ -27,10 +33,63 @@ namespace ArdupilotMega.Antenna
             {
                 BUT_connect.Text = "Disconnect";
             }
+
+            foreach (string value in MainV2.config.Keys)
+            {
+                if (value.StartsWith("Tracker_"))
+                {
+                    var ctls = Controls.Find(value.Replace("Tracker_",""),true);
+
+                    foreach (Control ctl in ctls)
+                    {
+                        if (typeof(TextBox) == ctl.GetType() ||
+                            typeof(ComboBox) == ctl.GetType())
+                        {
+                            ctl.Text = MainV2.config[value].ToString();
+                        }
+                        else if (typeof(TrackBar) == ctl.GetType())
+                        {
+                            ((TrackBar)ctl).Value = int.Parse(MainV2.config[value].ToString());
+                        }
+                        else if (typeof(CheckBox) == ctl.GetType())
+                        {
+                            ((CheckBox)ctl).Checked = bool.Parse(MainV2.config[value].ToString());
+                        }
+                    }
+                }
+            }
+
+            // update other fields from load params
+            TXT_panrange_TextChanged(null, null);
+            TXT_tiltrange_TextChanged(null, null);
+            TRK_pantrim_Scroll(null, null);
+            TRK_tilttrim_Scroll(null, null);
+        }
+
+        void saveconfig()
+        {
+            foreach (Control ctl in Controls)
+            {
+                if (typeof(TextBox) == ctl.GetType() ||
+                    typeof(ComboBox) == ctl.GetType())
+                {
+                    MainV2.config["Tracker_" + ctl.Name] = ctl.Text;
+                }
+                if (typeof(TrackBar) == ctl.GetType())
+                {
+                    MainV2.config["Tracker_" + ctl.Name] = ((TrackBar)ctl).Value;
+                }
+                if (typeof(CheckBox) == ctl.GetType())
+                {
+                    MainV2.config["Tracker_" + ctl.Name] = ((CheckBox)ctl).Checked;
+                }
+            }
         }
 
         private void BUT_connect_Click(object sender, EventArgs e)
         {
+            saveconfig();
+
             if (threadrun)
             {
                 threadrun = false;
@@ -44,7 +103,10 @@ namespace ArdupilotMega.Antenna
                 tracker.ComPort.Close();
             }
 
-            tracker = new ArdupilotMega.Antenna.Maestro();
+            if (CMB_interface.Text == "Maestro")
+                tracker = new ArdupilotMega.Antenna.Maestro();
+            if (CMB_interface.Text == "ArduTracker")
+                tracker = new ArdupilotMega.Antenna.ArduTracker();
 
             try
             {
@@ -66,6 +128,12 @@ namespace ArdupilotMega.Antenna
                 tracker.TiltEndRange = int.Parse(TXT_tiltrange.Text) / 2;
                 tracker.TrimTilt = TRK_tilttrim.Value;
 
+                tracker.PanReverse = CHK_revpan.Checked;
+                tracker.TiltReverse = CHK_revtilt.Checked;
+
+                tracker.PanPWMRange = int.Parse(TXT_pwmrangepan.Text);
+                tracker.TiltPWMRange = int.Parse(TXT_pwmrangetilt.Text);
+
             }
             catch (Exception ex) { CustomMessageBox.Show("Bad User input " + ex.Message); return; }
 
@@ -83,6 +151,8 @@ namespace ArdupilotMega.Antenna
                     t12.Start();                     
                 }
             }
+
+            BUT_connect.Text = "Disconnect";
         }
 
         void mainloop()
@@ -104,12 +174,14 @@ namespace ArdupilotMega.Antenna
         {
             if (tracker != null)
                 tracker.TrimPan = TRK_pantrim.Value;
+            LBL_pantrim.Text = TRK_pantrim.Value.ToString();
         }
 
         private void TRK_tilttrim_Scroll(object sender, EventArgs e)
         {
             if (tracker != null)
                 tracker.TrimTilt = TRK_tilttrim.Value;
+            LBL_tilttrim.Text = TRK_tilttrim.Value.ToString();
         }
 
         private void TXT_panrange_TextChanged(object sender, EventArgs e)
@@ -118,8 +190,8 @@ namespace ArdupilotMega.Antenna
 
             int.TryParse(TXT_panrange.Text, out range);
 
-            TRK_pantrim.Minimum = range / 2 * -1;
-            TRK_pantrim.Maximum = range / 2;
+            TRK_pantrim.Minimum = range / 1 * -1;
+            TRK_pantrim.Maximum = range / 1;
         }
 
         private void TXT_tiltrange_TextChanged(object sender, EventArgs e)
@@ -128,8 +200,23 @@ namespace ArdupilotMega.Antenna
 
             int.TryParse(TXT_tiltrange.Text, out range);
 
-            TRK_tilttrim.Minimum = range / 2 * -1;
-            TRK_tilttrim.Maximum = range / 2;
+            TRK_tilttrim.Minimum = range / 1 * -1;
+            TRK_tilttrim.Maximum = range / 1;
+        }
+
+        private void CHK_revpan_CheckedChanged(object sender, EventArgs e)
+        {
+
+        }
+
+        private void CHK_revtilt_CheckedChanged(object sender, EventArgs e)
+        {
+
+        }
+
+        private void Tracker_FormClosing(object sender, FormClosingEventArgs e)
+        {
+            saveconfig();
         }
     }
 }

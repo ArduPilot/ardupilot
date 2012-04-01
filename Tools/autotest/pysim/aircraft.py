@@ -21,13 +21,19 @@ class Aircraft(object):
 
         self.velocity = Vector3(0, 0, 0) # m/s, North, East, Down
         self.position = Vector3(0, 0, 0) # m North, East, Down
-        self.last_velocity = self.velocity.copy()
         self.mass = 0.0
         self.update_frequency = 50 # in Hz
         self.gravity = 9.8 # m/s/s
-        self.accelerometer = Vector3(0, 0, self.gravity)
+        self.accelerometer = Vector3(0, 0, -self.gravity)
 
         self.wind = util.Wind('0,0,0')
+
+    def on_ground(self, position=None):
+        '''return true if we are on the ground'''
+        if position is None:
+            position = self.position
+        return (-position.z) + self.home_altitude <= self.ground_level + self.frame_height
+
 
     def update_position(self, delta_time):
         '''update lat/lon/alt from position'''
@@ -41,8 +47,11 @@ class Aircraft(object):
 
         self.altitude  = self.home_altitude - self.position.z
 
-        # work out what the accelerometer would see
-        self.accelerometer = ((self.velocity - self.last_velocity)/delta_time) + Vector3(0,0,self.gravity)
-#        self.accelerometer = Vector3(0,0,-self.gravity)
-        self.accelerometer = self.dcm.transposed() * self.accelerometer
-        self.last_velocity = self.velocity.copy()
+        velocity_body = self.dcm.transposed() * self.velocity
+
+        # force the acceleration to mostly be from gravity. We should be using 100% accel_body,
+        # but right now that flies very badly as the AHRS system can't do centripetal correction
+        # for multicopters. This is a compromise until we get that sorted out
+        accel_true = self.accel_body
+        accel_fake = self.dcm.transposed() * Vector3(0, 0, -self.gravity)
+        self.accelerometer = (accel_true * 0.5) + (accel_fake * 0.5)

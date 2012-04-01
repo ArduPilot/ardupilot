@@ -30,6 +30,8 @@
 // using an APM1 with 5883L compass
 #define MAG_FIELD_STRENGTH 818
 
+#define MAG_NOISE 5
+
 /*
   given a magnetic heading, and roll, pitch, yaw values,
   calculate consistent magnetometer components
@@ -53,7 +55,7 @@ static Vector3f heading_to_mag(float roll, float pitch, float yaw)
 	// convert the earth frame magnetic vector to body frame, and
 	// apply the offsets
 	m = R.transposed() * Bearth - Vector3f(MAG_OFS_X, MAG_OFS_Y, MAG_OFS_Z);
-	return m;
+	return m + (rand_vec3f() * MAG_NOISE);
 }
 
 
