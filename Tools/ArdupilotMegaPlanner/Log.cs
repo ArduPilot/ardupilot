@@ -233,7 +233,7 @@ namespace ArdupilotMega
                         case serialstatus.Createfile:
                             receivedbytes = 0;
                             Directory.CreateDirectory(Path.GetDirectoryName(Application.ExecutablePath) + Path.DirectorySeparatorChar + @"logs");
-                            logfile = Path.GetDirectoryName(Application.ExecutablePath) + Path.DirectorySeparatorChar + @"logs" + Path.DirectorySeparatorChar + DateTime.Now.ToString("yyyy-MM-dd hh-mm") + " " + currentlog + ".log";
+                            logfile = Path.GetDirectoryName(Application.ExecutablePath) + Path.DirectorySeparatorChar + @"logs" + Path.DirectorySeparatorChar + DateTime.Now.ToString("yyyy-MM-dd HH-mm") + " " + currentlog + ".log";
                             sw = new StreamWriter(logfile);
                             status = serialstatus.Waiting;
                             lock (thisLock)
@@ -454,7 +454,7 @@ namespace ArdupilotMega
             foreach (Data mod in flightdata)
             {
                 xw.WriteStartElement("trkpt");
-                xw.WriteAttributeString("lat",mod.model.Location.latitude.ToString(new System.Globalization.CultureInfo("en-US")));
+                xw.WriteAttributeString("lat", mod.model.Location.latitude.ToString(new System.Globalization.CultureInfo("en-US")));
                 xw.WriteAttributeString("lon", mod.model.Location.longitude.ToString(new System.Globalization.CultureInfo("en-US")));
 
                 xw.WriteElementString("ele", mod.model.Location.altitude.ToString(new System.Globalization.CultureInfo("en-US")));

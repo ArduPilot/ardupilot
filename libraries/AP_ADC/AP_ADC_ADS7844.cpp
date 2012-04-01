@@ -228,7 +228,7 @@ uint32_t AP_ADC_ADS7844::Ch6(const uint8_t *channel_numbers, float *result)
 	// division. That costs us 36 bytes of stack, but I think its
 	// worth it.
 	for (i = 0; i < 6; i++) {
-		result[i] = (sum[i] + count[i]) / (float)count[i];
+		result[i] = sum[i] / (float)count[i];
 	}
 
 	// return number of microseconds since last call

@@ -201,9 +201,11 @@ namespace ArdupilotMega.GCSViews
                         }
                         catch { return; }
                     }
-
+                    try
+                    {
                         comPort.Write("\n\n\n");
-
+                    }
+                    catch { return; }
                     while (threadrun)
                     {
                         try

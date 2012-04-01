@@ -8,8 +8,6 @@
 
 /// @file	AverageFilter.h
 /// @brief	A class to provide the average of a number of samples
-///
-///         DO NOT CREATE AND DESTROY INSTANCES OF THIS CLASS BECAUSE THE ALLOC/MALLOC WILL LEAD TO MEMORY FRAGMENTATION
 
 #ifndef AverageFilter_h
 #define AverageFilter_h
@@ -20,6 +18,7 @@
 
 // 1st parameter <T> is the type of data being filtered.  
 // 2nd parameter <U> is a larger data type used during summation to prevent overflows
+// 3rd parameter <FILTER_SIZE> is the number of elements in the filter
 template <class T, class U, uint8_t FILTER_SIZE>
 class AverageFilter : public FilterWithBuffer<T,FILTER_SIZE>
 {

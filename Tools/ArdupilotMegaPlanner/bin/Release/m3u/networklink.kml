@@ -11,8 +11,8 @@
 		<Link>
 			<href>http://127.0.0.1:56781/network.kml</href>
 			<refreshMode>onInterval</refreshMode>
-			<refreshInterval>1</refreshInterval>
-			<viewRefreshTime>1</viewRefreshTime>
+			<refreshInterval>0.3</refreshInterval>
+			<viewRefreshTime>0.3</viewRefreshTime>
 		</Link>
 	</NetworkLink>
 </Folder>

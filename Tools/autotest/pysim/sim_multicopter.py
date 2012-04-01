@@ -46,7 +46,7 @@ def sim_send(m, a):
     buf = struct.pack('<16dI',
                       a.latitude, a.longitude, a.altitude, degrees(yaw),
                       a.velocity.x, a.velocity.y,
-                      -a.accelerometer.x, -a.accelerometer.y, -a.accelerometer.z,
+                      a.accelerometer.x, a.accelerometer.y, a.accelerometer.z,
                       degrees(earth_rates.x), degrees(earth_rates.y), degrees(earth_rates.z),
                       degrees(roll), degrees(pitch), degrees(yaw),
                       math.sqrt(a.velocity.x*a.velocity.x + a.velocity.y*a.velocity.y),

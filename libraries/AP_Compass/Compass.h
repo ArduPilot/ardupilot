@@ -23,7 +23,7 @@ public:
 	float           heading;        ///< compass heading in radians
 	float           heading_x;      ///< compass vector X magnitude
 	float           heading_y;      ///< compass vector Y magnitude
-	uint32_t        last_update;    ///< millis() time of last update
+	uint32_t        last_update;    ///< micros() time of last update
 	bool			healthy;        ///< true if last read OK
 
 	/// Constructor
@@ -81,13 +81,12 @@ public:
 	///
 	virtual Vector3f &get_offsets();
 
-	/// Sets the initial location used to get declination - Returns true if declination set
+	/// Sets the initial location used to get declination
 	///
 	/// @param  latitude             GPS Latitude.
 	/// @param  longitude            GPS Longitude.
-	/// @param  force				 Force the compass declination update.
 	///
-	bool set_initial_location(long latitude, long longitude, bool force);
+	void set_initial_location(long latitude, long longitude);
 
 	/// Program new offset values.
 	///
@@ -97,11 +96,9 @@ public:
 	///
 	void set_offsets(int x, int y, int z) { set_offsets(Vector3f(x, y, z)); }
 
-	/// Perform automatic offset updates using the results of the DCM matrix.
+	/// Perform automatic offset updates
 	///
-	/// @param  dcm_matrix          The DCM result matrix.
-	///
-	void null_offsets(const Matrix3f &dcm_matrix);
+	void null_offsets(void);
 
 
 	/// Enable/Start automatic offset updates 
@@ -131,10 +128,14 @@ protected:
 	AP_Float            _declination;
     AP_Int8             _learn;                 ///<enable calibration learning
     AP_Int8             _use_for_yaw;           ///<enable use for yaw calculation
+    AP_Int8             _auto_declination;      ///<enable automatic declination code
 
 	bool                _null_enable;        	///< enabled flag for offset nulling
 	bool                _null_init_done;        ///< first-time-around flag used by offset nulling
-	Matrix3f            _last_dcm_matrix;       ///< previous DCM matrix used by offset nulling
-	Vector3f            _mag_body_last;         ///< ?? used by offset nulling
+
+    ///< used by offset correction
+    static const uint8_t _mag_history_size = 20;
+    uint8_t				_mag_history_index;
+	Vector3i            _mag_history[_mag_history_size];
 };
 #endif

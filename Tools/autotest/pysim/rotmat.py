@@ -29,19 +29,19 @@ class Vector3:
     '''a vector'''
     def __init__(self, x=None, y=None, z=None):
         if x != None and y != None and z != None:
-            self.x = x
-            self.y = y
-            self.z = z
+            self.x = float(x)
+            self.y = float(y)
+            self.z = float(z)
         elif x != None and len(x) == 3:
-            self.x = x[0]
-            self.y = x[1]
-            self.z = x[2]
+            self.x = float(x[0])
+            self.y = float(x[1])
+            self.z = float(x[2])
         elif x != None:
             raise ValueError('bad initialiser')
         else:
-            self.x = 0
-            self.y = 0
-            self.z = 0
+            self.x = float(0)
+            self.y = float(0)
+            self.z = float(0)
 
     def __repr__(self):
         return 'Vector3(%.2f, %.2f, %.2f)' % (self.x,

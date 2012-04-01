@@ -1,6 +1,6 @@
 /// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 
-#define THISFIRMWARE "ArduCopter V2.5.1"
+#define THISFIRMWARE "ArduCopter V2.5.3"
 /*
 ArduCopter Version 2.5
 Lead author:	Jason Short
@@ -95,10 +95,7 @@ http://code.google.com/p/ardupilot-mega/downloads/list
 #include "Parameters.h"
 #include "GCS.h"
 
-#if AUTOMATIC_DECLINATION == ENABLED
-// this is in an #if to avoid the static data
 #include <AP_Declination.h> // ArduPilot Mega Declination Helper Library
-#endif
 
 ////////////////////////////////////////////////////////////////////////////////
 // Serial ports
@@ -982,7 +979,7 @@ static void medium_loop()
                         // Calculate heading
                         Matrix3f m = ahrs.get_dcm_matrix();
                         compass.calculate(m);
-                        compass.null_offsets(m);
+                        compass.null_offsets();
                     }
 				}
 			#endif
@@ -1381,12 +1378,10 @@ static void update_GPS(void)
 				ground_start_count = 5;
 
 			}else{
-#if AUTOMATIC_DECLINATION == ENABLED
-				if(g.compass_enabled) {
+				if (g.compass_enabled) {
 					// Set compass declination automatically
-					compass.set_initial_location(g_gps->latitude, g_gps->longitude, false);
+					compass.set_initial_location(g_gps->latitude, g_gps->longitude);
 				}
-#endif
 				// save home to eeprom (we must have a good fix to have reached this point)
 				init_home();
 				ground_start_count = 0;
@@ -1580,7 +1575,7 @@ void update_throttle_mode(void)
 	int16_t throttle_out;
 
 	#if AUTO_THROTTLE_HOLD != 0
-	static float throttle_avg = THROTTLE_CRUISE;
+	static float throttle_avg = 0;  // this is initialised to g.throttle_cruise later
 	#endif
 
 	switch(throttle_mode){
@@ -1598,6 +1593,10 @@ void update_throttle_mode(void)
 				#endif
 
 				#if AUTO_THROTTLE_HOLD != 0
+				// ensure throttle_avg has been initialised
+				if( throttle_avg == 0 ) {
+				    throttle_avg = g.throttle_cruise;
+				}
 				// calc average throttle
 				if ((g.rc_3.control_in > MINIMUM_THROTTLE) && abs(climb_rate) < 60){
 					throttle_avg = throttle_avg * .98 + (float)g.rc_3.control_in * .02;
@@ -2025,7 +2024,6 @@ static void tuning(){
 			break;
 
 		case CH6_RATE_KD:
-			tuning_value = (float)g.rc_6.control_in / 100000.0;
 			g.pid_rate_roll.kD(tuning_value);
 			g.pid_rate_pitch.kD(tuning_value);
 			break;
@@ -2038,6 +2036,14 @@ static void tuning(){
 		case CH6_STABILIZE_KI:
 			g.pi_stabilize_roll.kI(tuning_value);
 			g.pi_stabilize_pitch.kI(tuning_value);
+			break;
+
+		case CH6_STABILIZE_KD:
+			g.stabilize_d = tuning_value;
+			break;
+
+		case CH6_ACRO_KP:
+			g.acro_p = tuning_value;
 			break;
 
 		case CH6_RATE_KP:
@@ -2054,8 +2060,16 @@ static void tuning(){
 			g.pi_stabilize_yaw.kP(tuning_value);
 			break;
 
+		case CH6_YAW_KI:
+			g.pi_stabilize_yaw.kI(tuning_value);
+			break;
+
 		case CH6_YAW_RATE_KP:
 			g.pid_rate_yaw.kP(tuning_value);
+			break;
+
+		case CH6_YAW_RATE_KD:
+			g.pid_rate_yaw.kD(tuning_value);
 			break;
 
 		case CH6_THROTTLE_KP:
@@ -2075,22 +2089,32 @@ static void tuning(){
 			g.waypoint_speed_max = g.rc_6.control_in;
 			break;
 
-		case CH6_LOITER_P:
+		case CH6_LOITER_KP:
 			g.pi_loiter_lat.kP(tuning_value);
 			g.pi_loiter_lon.kP(tuning_value);
 			break;
 
-		case CH6_NAV_P:
+		case CH6_LOITER_KI:
+			g.pi_loiter_lat.kI(tuning_value);
+			g.pi_loiter_lon.kI(tuning_value);
+			break;
+
+		case CH6_NAV_KP:
 			g.pid_nav_lat.kP(tuning_value);
 			g.pid_nav_lon.kP(tuning_value);
 			break;
 
-		case CH6_LOITER_RATE_P:
+		case CH6_LOITER_RATE_KP:
 			g.pid_loiter_rate_lon.kP(tuning_value);
 			g.pid_loiter_rate_lat.kP(tuning_value);
 			break;
 
-		case CH6_LOITER_RATE_D:
+		case CH6_LOITER_RATE_KI:
+			g.pid_loiter_rate_lon.kI(tuning_value);
+			g.pid_loiter_rate_lat.kI(tuning_value);
+			break;
+
+		case CH6_LOITER_RATE_KD:
 			g.pid_loiter_rate_lon.kD(tuning_value);
 			g.pid_loiter_rate_lat.kD(tuning_value);
 			break;
@@ -2102,7 +2126,7 @@ static void tuning(){
 
 		#if FRAME_CONFIG == HELI_FRAME
 		case CH6_HELI_EXTERNAL_GYRO:
-			g.heli_ext_gyro_gain = tuning_value * 1000;
+			g.heli_ext_gyro_gain = tuning_value;
 			break;
 		#endif
 

@@ -900,11 +900,19 @@ GCS_MAVLINK::data_stream_send(uint16_t freqMin, uint16_t freqMax)
 		if (freqLoopMatch(streamRateExtendedStatus, freqMin, freqMax)) {
 			send_message(MSG_EXTENDED_STATUS1);
 			send_message(MSG_EXTENDED_STATUS2);
-			send_message(MSG_GPS_STATUS);
 			send_message(MSG_CURRENT_WAYPOINT);
 			send_message(MSG_GPS_RAW);            // TODO - remove this message after location message is working
 			send_message(MSG_NAV_CONTROLLER_OUTPUT);
 			send_message(MSG_FENCE_STATUS);
+
+            if (last_gps_satellites != g_gps->num_sats) {
+                // this message is mostly a huge waste of bandwidth,
+                // except it is the only message that gives the number
+                // of visible satellites. So only send it when that
+                // changes.
+                send_message(MSG_GPS_STATUS);
+                last_gps_satellites = g_gps->num_sats;
+            }
 		}
 
 		if (freqLoopMatch(streamRatePosition, freqMin, freqMax)) {
@@ -1083,7 +1091,7 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
                 if (packet.param1 == 1 ||
                     packet.param2 == 1 ||
                     packet.param3 == 1) {
-                    startup_IMU_ground();
+                    startup_IMU_ground(true);
                 }
                 if (packet.param4 == 1) {
                     trim_radio();
@@ -1188,7 +1196,7 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
                 case MAV_ACTION_CALIBRATE_ACC:
                 case MAV_ACTION_CALIBRATE_PRESSURE:
                 case MAV_ACTION_REBOOT:  // this is a rough interpretation
-                    startup_IMU_ground();
+                    startup_IMU_ground(true);
                     result=1;
                     break;
 
@@ -1792,7 +1800,7 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
                 } else if (var_type == AP_PARAM_INT32) {
                     if (packet.param_value < 0) rounding_addition = -rounding_addition;
                     float v = packet.param_value+rounding_addition;
-                    v = constrain(v, -2147483648, 2147483647);
+                    v = constrain(v, -2147483648.0, 2147483647.0);
 					((AP_Int32 *)vp)->set_and_save(v);
                 } else if (var_type == AP_PARAM_INT16) {
                     if (packet.param_value < 0) rounding_addition = -rounding_addition;

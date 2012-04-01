@@ -101,6 +101,7 @@ namespace ArdupilotMega
         public DateTime lastlogread = DateTime.MinValue;
         public BinaryReader logplaybackfile = null;
         public BinaryWriter logfile = null;
+        public BinaryWriter rawlogfile = null;
 
         int bps1 = 0;
         int bps2 = 0;
@@ -183,9 +184,6 @@ namespace ArdupilotMega
                     BaseStream.Open();
 
                     BaseStream.DiscardInBuffer();
-
-                    // removed because of apc220 units
-                    //BaseStream.toggleDTR();
 
                     Thread.Sleep(1000);
                 }
@@ -1164,6 +1162,8 @@ namespace ArdupilotMega
             req.start_stop = 1; // start
             req.req_stream_id = id; // id
 
+            // send each one twice.
+            generatePacket(MAVLINK_MSG_ID_REQUEST_DATA_STREAM, req);
             generatePacket(MAVLINK_MSG_ID_REQUEST_DATA_STREAM, req);
         }
 
@@ -1956,6 +1956,18 @@ namespace ArdupilotMega
 
             DateTime start = DateTime.Now;
 
+            try
+            {
+                // test fabs idea - http://diydrones.com/profiles/blogs/flying-with-joystick?commentId=705844%3AComment%3A818712&xg_source=msg_com_blogpost
+                if (BaseStream.IsOpen && BaseStream.BytesToWrite > 0)
+                {
+                    // slow down execution.
+                    Thread.Sleep(1);
+                    return new byte[0];
+                }
+            }
+            catch (Exception ex) { log.Info(ex.ToString()); }
+
             lock (readlock)
             {
 
@@ -2012,7 +2024,11 @@ namespace ArdupilotMega
                                 System.Threading.Thread.Sleep(1);
                             }
                             if (BaseStream.IsOpen)
+                            {
                                 temp[count] = (byte)BaseStream.ReadByte();
+                                if (rawlogfile != null)
+                                    rawlogfile.Write(temp[count]);
+                            }
                         }
                     }
                     catch (Exception e) { log.Info("MAVLink readpacket read error: " + e.Message); break; }
@@ -2069,6 +2085,11 @@ namespace ArdupilotMega
                                     if (BaseStream.IsOpen)
                                     {
                                         int read = BaseStream.Read(temp, 6, length - 4);
+                                        if (rawlogfile != null)
+                                        {
+                                            rawlogfile.Write(temp, 0, read);
+                                            rawlogfile.BaseStream.Flush();
+                                        }
                                     }
                                 }
                                 //Console.WriteLine("data " + read + " " + length + " aval " + this.BytesToRead);

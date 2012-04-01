@@ -75,7 +75,7 @@ AP_OpticalFlow_ADNS3080::init(bool initCommAPI)
 	}
 
 	// check the sensor is functioning
-	if( retry < 3 ) {
+	while( retry < 3 ) {
 	    if( read_register(ADNS3080_PRODUCT_ID) == 0x17 )
 	        return true;
 	    retry++;

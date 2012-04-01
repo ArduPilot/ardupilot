@@ -123,7 +123,7 @@
   </data>
   <assembly alias="System.Drawing" name="System.Drawing, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a" />
   <data name="BUT_redokml.Location" type="System.Drawing.Point, System.Drawing">
-    <value>45, 12</value>
+    <value>143, 12</value>
   </data>
   <data name="BUT_redokml.Size" type="System.Drawing.Size, System.Drawing">
     <value>116, 23</value>
@@ -133,7 +133,7 @@
     <value>8</value>
   </data>
   <data name="BUT_redokml.Text" xml:space="preserve">
-    <value>Create KML</value>
+    <value>Create KML + GPX</value>
   </data>
   <data name="&gt;&gt;BUT_redokml.Name" xml:space="preserve">
     <value>BUT_redokml</value>
@@ -154,7 +154,7 @@
     <value>10, 42</value>
   </data>
   <data name="progressBar1.Size" type="System.Drawing.Size, System.Drawing">
-    <value>432, 26</value>
+    <value>622, 26</value>
   </data>
   <data name="progressBar1.TabIndex" type="System.Int32, mscorlib">
     <value>9</value>
@@ -178,7 +178,7 @@
     <value>NoControl</value>
   </data>
   <data name="BUT_humanreadable.Location" type="System.Drawing.Point, System.Drawing">
-    <value>167, 12</value>
+    <value>265, 12</value>
   </data>
   <data name="BUT_humanreadable.Size" type="System.Drawing.Size, System.Drawing">
     <value>116, 23</value>
@@ -208,7 +208,7 @@
     <value>NoControl</value>
   </data>
   <data name="BUT_graphmavlog.Location" type="System.Drawing.Point, System.Drawing">
-    <value>289, 12</value>
+    <value>387, 12</value>
   </data>
   <data name="BUT_graphmavlog.Size" type="System.Drawing.Size, System.Drawing">
     <value>116, 23</value>
@@ -238,7 +238,7 @@
     <value>10, 74</value>
   </data>
   <data name="zg1.Size" type="System.Drawing.Size, System.Drawing">
-    <value>434, 293</value>
+    <value>624, 293</value>
   </data>
   <data name="zg1.TabIndex" type="System.Int32, mscorlib">
     <value>12</value>
@@ -262,7 +262,7 @@
     <value>6, 13</value>
   </data>
   <data name="$this.ClientSize" type="System.Drawing.Size, System.Drawing">
-    <value>456, 379</value>
+    <value>646, 379</value>
   </data>
   <data name="$this.Icon" type="System.Drawing.Icon, System.Drawing" mimetype="application/x-microsoft.net.object.bytearray.base64">
     <value>

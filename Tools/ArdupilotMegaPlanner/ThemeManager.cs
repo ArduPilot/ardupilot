@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Drawing;
 using System.Windows.Forms;
+using ArdupilotMega.Controls.BackstageView;
 using log4net;
 
 namespace ArdupilotMega
@@ -123,12 +124,17 @@ namespace ArdupilotMega
                     zg1.GraphPane.XAxis.MinorTic.Color = Color.White;
                     zg1.GraphPane.YAxis.MajorTic.Color = Color.White;
                     zg1.GraphPane.YAxis.MinorTic.Color = Color.White;
+                    zg1.GraphPane.Y2Axis.MajorTic.Color = Color.White;
+                    zg1.GraphPane.Y2Axis.MinorTic.Color = Color.White;
 
                     zg1.GraphPane.XAxis.MajorGrid.Color = Color.White;
                     zg1.GraphPane.YAxis.MajorGrid.Color = Color.White;
+                    zg1.GraphPane.Y2Axis.MajorGrid.Color = Color.White;
 
                     zg1.GraphPane.YAxis.Scale.FontSpec.FontColor = Color.White;
                     zg1.GraphPane.YAxis.Title.FontSpec.FontColor = Color.White;
+                    zg1.GraphPane.Y2Axis.Title.FontSpec.FontColor = Color.White;
+                    zg1.GraphPane.Y2Axis.Scale.FontSpec.FontColor = Color.White;
 
                     zg1.GraphPane.XAxis.Scale.FontSpec.FontColor = Color.White;
                     zg1.GraphPane.XAxis.Title.FontSpec.FontColor = Color.White;
@@ -219,6 +225,18 @@ namespace ArdupilotMega
                     LNK.LinkColor = TextColor;
                     LNK.VisitedLinkColor = TextColor;
 
+                }
+                else if (ctl.GetType() == typeof(BackstageView))
+                {
+                    var bsv = ctl as BackstageView;
+
+                    bsv.BackColor = BGColor;
+                    bsv.ButtonsAreaBgColor = ControlBGColor;
+                    bsv.HighlightColor2 = Color.FromArgb(0x94, 0xc1, 0x1f);
+                    bsv.HighlightColor1 = Color.FromArgb(0x40, 0x57, 0x04);
+                    bsv.SelectedTextColor = Color.White;
+                    bsv.UnSelectedTextColor = Color.Gray;
+                    bsv.ButtonsAreaPencilColor = Color.DarkGray;
                 }
                 else if (ctl.GetType() == typeof(HorizontalProgressBar2) || ctl.GetType() == typeof(VerticalProgressBar2))
                 {

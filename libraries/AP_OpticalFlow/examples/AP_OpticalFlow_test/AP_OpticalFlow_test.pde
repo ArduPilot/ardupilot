@@ -7,7 +7,6 @@
 #include <AP_Common.h>
 #include <AP_Math.h>		// ArduPilot Mega Vector/Matrix math Library
 #include <SPI.h>      		// Arduino SPI library
-#include <AP_DCM.h>			// ArduCopter DCM Library
 #include "AP_OpticalFlow.h" // ArduCopter OpticalFlow Library
 
 ////////////////////////////////////////////////////////////////////////////////

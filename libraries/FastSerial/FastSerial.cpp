@@ -212,6 +212,13 @@ size_t FastSerial::write(uint8_t c)
 
 	// wait for room in the tx buffer
 	i = (_txBuffer->head + 1) & _txBuffer->mask;
+
+	// if the port is set into non-blocking mode, then drop the byte
+	// if there isn't enough room for it in the transmit buffer
+	if (_nonblocking_writes && i == _txBuffer->tail) {
+		return 0;
+	}
+
 	while (i == _txBuffer->tail)
 		;
 
