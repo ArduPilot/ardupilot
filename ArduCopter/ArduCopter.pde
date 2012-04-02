@@ -1067,11 +1067,6 @@ static void medium_loop()
 				if (g.log_bitmask & MASK_LOG_MOTORS)
 					Log_Write_Motors();
             }
-
-			// send all requested output streams with rates requested
-			// between 5 and 45 Hz
-			gcs_data_stream_send(5,45);
-
 			break;
 
 		// This case controls the slow loop
@@ -1163,7 +1158,7 @@ static void fifty_hz_loop()
 
 	// kick the GCS to process uplink data
 	gcs_update();
-    gcs_data_stream_send(45,1000);
+    gcs_data_stream_send();
 
 	#if FRAME_CONFIG == TRI_FRAME
 		// servo Yaw
@@ -1218,10 +1213,6 @@ static void slow_loop()
 			// blink if we are armed
 			update_lights();
 
-            // send all requested output streams with rates requested
-            // between 3 and 5 Hz
-            gcs_data_stream_send(3,5);
-
 			if(g.radio_tuning > 0)
 				tuning();
 
@@ -1262,7 +1253,6 @@ static void super_slow_loop()
 	}
 
     gcs_send_message(MSG_HEARTBEAT);
-    gcs_data_stream_send(1,3);
 
 	// agmatthews - USERHOOKS
 	#ifdef USERHOOK_SUPERSLOWLOOP

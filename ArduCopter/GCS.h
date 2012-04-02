@@ -76,16 +76,8 @@ public:
 	///
 	void		send_text(gcs_severity severity, const prog_char_t *str) {}
 
-    // test if frequency within range requested for loop
-    // used by data_stream_send
-    static bool freqLoopMatch(uint16_t freq, uint16_t freqMin, uint16_t freqMax)
-    {
-        if (freq != 0 && freq >= freqMin && freq < freqMax) return true;
-        else return false;
-    }
-
     // send streams which match frequency range
-    void data_stream_send(uint16_t freqMin, uint16_t freqMax);
+    void data_stream_send(void);
 
     // set to true if this GCS link is active
     bool initialised;
@@ -118,11 +110,28 @@ public:
 	void	send_message(enum ap_message id);
 	void	send_text(gcs_severity severity, const char *str);
 	void	send_text(gcs_severity severity, const prog_char_t *str);
-    void    data_stream_send(uint16_t freqMin, uint16_t freqMax);
+    void    data_stream_send(void);
 	void    queued_param_send();
 	void    queued_waypoint_send();
 
     static const struct AP_Param::GroupInfo var_info[];
+
+    // NOTE! The streams enum below and the
+    // set of AP_Int16 stream rates _must_ be
+    // kept in the same order
+    enum streams {STREAM_RAW_SENSORS,
+                  STREAM_EXTENDED_STATUS,
+                  STREAM_RC_CHANNELS,
+                  STREAM_RAW_CONTROLLER,
+                  STREAM_POSITION,
+                  STREAM_EXTRA1,
+                  STREAM_EXTRA2,
+                  STREAM_EXTRA3,
+                  STREAM_PARAMS,
+                  NUM_STREAMS};
+
+    // see if we should send a stream now. Called at 50Hz
+    bool stream_trigger(enum streams stream_num);
 
 private:
 	void 	handleMessage(mavlink_message_t * msg);
@@ -168,7 +177,8 @@ private:
 	uint16_t waypoint_send_timeout; // milliseconds
 	uint16_t waypoint_receive_timeout; // milliseconds
 
-	// data stream rates
+	// data stream rates. The code assumes that
+    // streamRateRawSensors is the first
 	AP_Int16 streamRateRawSensors;
 	AP_Int16 streamRateExtendedStatus;
 	AP_Int16 streamRateRCChannels;
@@ -177,6 +187,13 @@ private:
 	AP_Int16 streamRateExtra1;
 	AP_Int16 streamRateExtra2;
 	AP_Int16 streamRateExtra3;
+	AP_Int16 streamRateParams;
+
+    // number of 50Hz ticks until we next send this stream
+    uint8_t stream_ticks[NUM_STREAMS];
+
+    // number of extra ticks to add to slow things down for the radio
+    uint8_t stream_slowdown;
 };
 
 #endif // __GCS_H
