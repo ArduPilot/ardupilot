@@ -38,13 +38,9 @@ planner_gcs(uint8_t argc, const Menu::arg *argv)
 
             read_radio();
 
-            gcs_data_stream_send(45, 1000);
-
-            if ((loopcount % 5) == 0) // 10 hz
-                gcs_data_stream_send(5, 45);
+            gcs_data_stream_send();
 
             if ((loopcount % 16) == 0) { // 3 hz
-                gcs_data_stream_send(1, 5);
                 gcs_send_message(MSG_HEARTBEAT);
             }
 
