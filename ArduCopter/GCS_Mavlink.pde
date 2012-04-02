@@ -589,6 +589,7 @@ const AP_Param::GroupInfo GCS_MAVLINK::var_info[] PROGMEM = {
 	AP_GROUPINFO("EXTRA1",   5, GCS_MAVLINK, streamRateExtra1),
 	AP_GROUPINFO("EXTRA2",   6, GCS_MAVLINK, streamRateExtra2),
 	AP_GROUPINFO("EXTRA3",   7, GCS_MAVLINK, streamRateExtra3),
+	AP_GROUPINFO("PARAMS",   8, GCS_MAVLINK, streamRateParams),
     AP_GROUPEND
 };
 
@@ -653,11 +654,6 @@ GCS_MAVLINK::update(void)
 	// Update packet drops counter
 	packet_drops += status.packet_rx_drop_count;
 
-    // send out queued params/ waypoints
-    if (NULL != _queued_parameter) {
-        send_message(MSG_NEXT_PARAM);
-    }
-
     if (!waypoint_receiving && !waypoint_sending) {
         return;
     }
@@ -665,8 +661,8 @@ GCS_MAVLINK::update(void)
     uint32_t tnow = millis();
 
     if (waypoint_receiving &&
-        waypoint_request_i < (unsigned)g.command_total &&
-        tnow > waypoint_timelast_request + 500) {
+        waypoint_request_i <= (unsigned)g.command_total &&
+        tnow > waypoint_timelast_request + 500 + (stream_slowdown*20)) {
         waypoint_timelast_request = tnow;
         send_message(MSG_NEXT_WAYPOINT);
     }
@@ -682,19 +678,57 @@ GCS_MAVLINK::update(void)
     }
 }
 
-void
-GCS_MAVLINK::data_stream_send(uint16_t freqMin, uint16_t freqMax)
+// see if we should send a stream now. Called at 50Hz
+bool GCS_MAVLINK::stream_trigger(enum streams stream_num)
 {
-	if (waypoint_sending == false && waypoint_receiving == false && _queued_parameter == NULL) {
+    AP_Int16 *stream_rates = &streamRateRawSensors;
+    uint8_t rate = (uint8_t)stream_rates[stream_num].get();
 
-		if (freqLoopMatch(streamRateRawSensors, freqMin, freqMax)){
+    if (rate == 0) {
+        return false;
+    }
+
+    if (stream_ticks[stream_num] == 0) {
+        // we're triggering now, setup the next trigger point
+        if (rate > 50) {
+            rate = 50;
+        }
+        stream_ticks[stream_num] = (50 / rate) + stream_slowdown;
+        return true;
+    }
+
+    // count down at 50Hz
+    stream_ticks[stream_num]--;
+    return false;
+}
+
+void
+GCS_MAVLINK::data_stream_send(void)
+{
+    if (waypoint_receiving || waypoint_sending) {
+        // don't interfere with mission transfer
+        return;
+    }
+
+    if (_queued_parameter != NULL) {
+        if (streamRateParams.get() <= 0) {
+            streamRateParams.set(50);
+        }
+        if (stream_trigger(STREAM_PARAMS)) {
+            send_message(MSG_NEXT_PARAM);
+        }
+        // don't send anything else at the same time as parameters
+        return;
+    }
+
+    if (stream_trigger(STREAM_RAW_SENSORS)) {
 			send_message(MSG_RAW_IMU1);
 			send_message(MSG_RAW_IMU2);
 			send_message(MSG_RAW_IMU3);
 			//Serial.printf("mav1 %d\n", (int)streamRateRawSensors.get());
 		}
 
-		if (freqLoopMatch(streamRateExtendedStatus, freqMin, freqMax)) {
+    if (stream_trigger(STREAM_EXTENDED_STATUS)) {
 			send_message(MSG_EXTENDED_STATUS1);
 			send_message(MSG_EXTENDED_STATUS2);
 			send_message(MSG_CURRENT_WAYPOINT);
@@ -711,7 +745,7 @@ GCS_MAVLINK::data_stream_send(uint16_t freqMin, uint16_t freqMax)
             }
 		}
 
-		if (freqLoopMatch(streamRatePosition, freqMin, freqMax)) {
+    if (stream_trigger(STREAM_POSITION)) {
 			// sent with GPS read
 #if HIL_MODE == HIL_MODE_ATTITUDE
 			send_message(MSG_LOCATION);
@@ -719,35 +753,35 @@ GCS_MAVLINK::data_stream_send(uint16_t freqMin, uint16_t freqMax)
 			//Serial.printf("mav3 %d\n", (int)streamRatePosition.get());
 		}
 
-		if (freqLoopMatch(streamRateRawController, freqMin, freqMax)) {
-			// This is used for HIL.  Do not change without discussing with HIL maintainers
+    if (stream_trigger(STREAM_RAW_CONTROLLER)) {
 			send_message(MSG_SERVO_OUT);
 			//Serial.printf("mav4 %d\n", (int)streamRateRawController.get());
 		}
 
-		if (freqLoopMatch(streamRateRCChannels, freqMin, freqMax)) {
+    if (stream_trigger(STREAM_RC_CHANNELS)) {
 			send_message(MSG_RADIO_OUT);
 			send_message(MSG_RADIO_IN);
 			//Serial.printf("mav5 %d\n", (int)streamRateRCChannels.get());
 		}
 
-		if (freqLoopMatch(streamRateExtra1, freqMin, freqMax)){	 // Use Extra 1 for AHRS info
+    if (stream_trigger(STREAM_EXTRA1)) {
 			send_message(MSG_ATTITUDE);
 			send_message(MSG_SIMSTATE);
 			//Serial.printf("mav6 %d\n", (int)streamRateExtra1.get());
 		}
 
-		if (freqLoopMatch(streamRateExtra2, freqMin, freqMax)){		// Use Extra 2 for additional HIL info
+    if (stream_trigger(STREAM_EXTRA2)) {
 			send_message(MSG_VFR_HUD);
 			//Serial.printf("mav7 %d\n", (int)streamRateExtra2.get());
 		}
 
-		if (freqLoopMatch(streamRateExtra3, freqMin, freqMax)){
+    if (stream_trigger(STREAM_EXTRA3)) {
 			send_message(MSG_AHRS);
 			send_message(MSG_HWSTATUS);
 		}
 	}
-}
+
+
 
 void
 GCS_MAVLINK::send_message(enum ap_message id)
@@ -1679,6 +1713,30 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
             break;
         }
 #endif // HIL_MODE
+
+    case MAVLINK_MSG_ID_RADIO:
+        {
+            mavlink_radio_t packet;
+            mavlink_msg_radio_decode(msg, &packet);
+            // use the state of the transmit buffer in the radio to
+            // control the stream rate, giving us adaptive software
+            // flow control
+            if (packet.txbuf < 20 && stream_slowdown < 100) {
+                // we are very low on space - slow down a lot
+                stream_slowdown += 3;
+            } else if (packet.txbuf < 50 && stream_slowdown < 100) {
+                // we are a bit low on space, slow down slightly
+                stream_slowdown += 1;
+            } else if (packet.txbuf > 95 && stream_slowdown > 10) {
+                // the buffer has plenty of space, speed up a lot
+                stream_slowdown -= 2;
+            } else if (packet.txbuf > 90 && stream_slowdown != 0) {
+                // the buffer has enough space, speed up a bit
+                stream_slowdown--;
+            }
+            break;
+        }
+
 	} // end switch
 } // end handle mavlink
 
@@ -1803,12 +1861,12 @@ static void gcs_send_message(enum ap_message id)
 /*
   send data streams in the given rate range on both links
  */
-static void gcs_data_stream_send(uint16_t freqMin, uint16_t freqMax)
+static void gcs_data_stream_send(void)
 {
-    gcs0.data_stream_send(freqMin, freqMax);
+    gcs0.data_stream_send();
     if (gcs3.initialised) {
-    gcs3.data_stream_send(freqMin, freqMax);
-}
+        gcs3.data_stream_send();
+    }
 }
 
 /*
