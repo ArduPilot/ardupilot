@@ -794,6 +794,7 @@ const AP_Param::GroupInfo GCS_MAVLINK::var_info[] PROGMEM = {
 	AP_GROUPINFO("EXTRA1",   5, GCS_MAVLINK, streamRateExtra1),
 	AP_GROUPINFO("EXTRA2",   6, GCS_MAVLINK, streamRateExtra2),
 	AP_GROUPINFO("EXTRA3",   7, GCS_MAVLINK, streamRateExtra3),
+	AP_GROUPINFO("PARAMS",   8, GCS_MAVLINK, streamRateParams),
     AP_GROUPEND
 };
 
@@ -857,11 +858,6 @@ GCS_MAVLINK::update(void)
     // Update packet drops counter
     packet_drops += status.packet_rx_drop_count;
 
-    // send out queued params/ waypoints
-    if (NULL != _queued_parameter) {
-        send_message(MSG_NEXT_PARAM);
-    }
-
     if (!waypoint_receiving && !waypoint_sending) {
         return;
     }
@@ -870,7 +866,7 @@ GCS_MAVLINK::update(void)
 
     if (waypoint_receiving &&
         waypoint_request_i <= (unsigned)g.command_total &&
-        tnow > waypoint_timelast_request + 500) {
+        tnow > waypoint_timelast_request + 500 + (stream_slowdown*20)) {
         waypoint_timelast_request = tnow;
         send_message(MSG_NEXT_WAYPOINT);
     }
@@ -901,7 +897,7 @@ bool GCS_MAVLINK::stream_trigger(enum streams stream_num)
         if (rate > 50) {
             rate = 50;
         }
-        stream_ticks[stream_num] = 50 / rate;
+        stream_ticks[stream_num] = (50 / rate) + stream_slowdown;
         return true;
     }
 
@@ -913,8 +909,19 @@ bool GCS_MAVLINK::stream_trigger(enum streams stream_num)
 void
 GCS_MAVLINK::data_stream_send(void)
 {
-	if (waypoint_sending || waypoint_receiving || _queued_parameter != NULL) {
-        // don't send the streams when transferring bulk data
+    if (waypoint_receiving || waypoint_sending) {
+        // don't interfere with mission transfer
+        return;
+    }
+
+    if (_queued_parameter != NULL) {
+        if (streamRateParams.get() <= 0) {
+            streamRateParams.set(50);
+        }
+        if (stream_trigger(STREAM_PARAMS)) {
+            send_message(MSG_NEXT_PARAM);
+        }
+        // don't send anything else at the same time as parameters
         return;
     }
 
@@ -2057,6 +2064,30 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
 			break;
 		}
 #endif // MOUNT == ENABLED
+
+    case MAVLINK_MSG_ID_RADIO:
+        {
+            mavlink_radio_t packet;
+            mavlink_msg_radio_decode(msg, &packet);
+            // use the state of the transmit buffer in the radio to
+            // control the stream rate, giving us adaptive software
+            // flow control
+            if (packet.txbuf < 20 && stream_slowdown < 100) {
+                // we are very low on space - slow down a lot
+                stream_slowdown += 3;
+            } else if (packet.txbuf < 50 && stream_slowdown < 100) {
+                // we are a bit low on space, slow down slightly
+                stream_slowdown += 1;
+            } else if (packet.txbuf > 95 && stream_slowdown > 10) {
+                // the buffer has plenty of space, speed up a lot
+                stream_slowdown -= 2;
+            } else if (packet.txbuf > 90 && stream_slowdown != 0) {
+                // the buffer has enough space, speed up a bit
+                stream_slowdown--;
+            }
+            break;
+        }
+
     } // end switch
 } // end handle mavlink
 
