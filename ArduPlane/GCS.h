@@ -127,6 +127,7 @@ public:
                   STREAM_EXTRA1,
                   STREAM_EXTRA2,
                   STREAM_EXTRA3,
+                  STREAM_PARAMS,
                   NUM_STREAMS};
 
     // see if we should send a stream now. Called at 50Hz
@@ -186,9 +187,13 @@ private:
 	AP_Int16 streamRateExtra1;
 	AP_Int16 streamRateExtra2;
 	AP_Int16 streamRateExtra3;
+	AP_Int16 streamRateParams;
 
     // number of 50Hz ticks until we next send this stream
     uint8_t stream_ticks[NUM_STREAMS];
+
+    // number of extra ticks to add to slow things down for the radio
+    uint8_t stream_slowdown;
 };
 
 #endif // __GCS_H
