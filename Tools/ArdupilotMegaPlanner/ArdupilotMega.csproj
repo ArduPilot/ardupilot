@@ -80,7 +80,7 @@
     <ManifestKeyFile>ArdupilotMega_TemporaryKey.pfx</ManifestKeyFile>
   </PropertyGroup>
   <PropertyGroup>
-    <GenerateManifests>true</GenerateManifests>
+    <GenerateManifests>false</GenerateManifests>
   </PropertyGroup>
   <PropertyGroup>
     <SignManifests>false</SignManifests>
@@ -297,7 +297,7 @@
       <DependentUpon>ConfigTradHeli.cs</DependentUpon>
     </Compile>
     <Compile Include="GCSViews\ConfigurationView\Configuration.cs">
-      <SubType>UserControl</SubType>
+      <SubType>Form</SubType>
     </Compile>
     <Compile Include="GCSViews\ConfigurationView\Configuration.Designer.cs">
       <DependentUpon>Configuration.cs</DependentUpon>
@@ -939,6 +939,8 @@
     </None>
     <None Include="MAC\Info.plist" />
     <None Include="MAC\run.sh" />
+    <None Include="Msi\installer.bat" />
+    <None Include="Msi\installer.wxs" />
     <None Include="mykey.snk" />
     <None Include="Properties\app.manifest" />
     <None Include="Properties\DataSources\CurrentState.datasource" />
@@ -952,6 +954,9 @@
   </ItemGroup>
   <ItemGroup>
     <Content Include="apm2.ico" />
+    <Content Include="Driver\Arduino MEGA 2560.inf">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
     <Content Include="hud.html">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
       <SubType>Designer</SubType>
@@ -1049,7 +1054,8 @@
   <ItemGroup />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <PropertyGroup>
-    <PostBuildEvent>rem macos.bat</PostBuildEvent>
+    <PostBuildEvent>
+    </PostBuildEvent>
   </PropertyGroup>
   <PropertyGroup>
     <PreBuildEvent>

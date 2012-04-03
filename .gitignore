@@ -17,6 +17,8 @@ build
 /Tools/ArdupilotMegaPlanner/obj
 /Tools/ArdupilotMegaPlanner/resedit/bin
 /Tools/ArdupilotMegaPlanner/resedit/obj
+/Tools/ArdupilotMegaPlanner/wix/bin
+/Tools/ArdupilotMegaPlanner/wix/obj
 tags
 *.o
 .*.swp
@@ -24,3 +26,5 @@ tags
 mav.log
 mav.log.raw
 status.txt
+
+/Tools/ArdupilotMegaPlanner/Msi/upload.bat

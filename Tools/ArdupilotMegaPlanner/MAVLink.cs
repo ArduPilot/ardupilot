@@ -2031,8 +2031,9 @@ namespace ArdupilotMega
                             }
                         }
                     }
-                    catch (Exception e) { log.Info("MAVLink readpacket read error: " + e.Message); break; }
+                    catch (Exception e) { log.Info("MAVLink readpacket read error: " + e.ToString()); break; }
 
+                    // check if looks like a mavlink packet and check for exclusions and write to console
                     if (temp[0] != 254 && temp[0] != 'U' || lastbad[0] == 'I' && lastbad[1] == 'M' || lastbad[1] == 'G' || lastbad[1] == 'A') // out of sync "AUTO" "GUIDED" "IMU"
                     {
                         if (temp[0] >= 0x20 && temp[0] <= 127 || temp[0] == '\n' || temp[0] == '\r')
@@ -2049,6 +2050,7 @@ namespace ArdupilotMega
                     // reset count on valid packet
                     readcount = 0;
 
+
                     if (temp[0] == 'U' || temp[0] == 254)
                     {
                         length = temp[1] + 6 + 2 - 2; // data + header + checksum - U - length
@@ -2058,8 +2060,13 @@ namespace ArdupilotMega
                             {
                                 if (sysid != temp[3] || compid != temp[4])
                                 {
-                                    log.InfoFormat("Mavlink Bad Packet (not addressed to this MAV) got {0} {1} vs {2} {3}", temp[3], temp[4], sysid, compid);
-                                    return new byte[0];
+                                    if (temp[3] == '3' && temp[4] == 'D')
+                                    {
+                                        // this is a 3dr radio rssi packet
+                                    } else {
+                                        log.InfoFormat("Mavlink Bad Packet (not addressed to this MAV) got {0} {1} vs {2} {3}", temp[3], temp[4], sysid, compid);
+                                        return new byte[0];
+                                    }
                                 }
                             }
 
@@ -2111,11 +2118,11 @@ namespace ArdupilotMega
             if (packetlosttimer.AddSeconds(10) < DateTime.Now)
             {
                 packetlosttimer = DateTime.Now;
-                packetslost = (int)(packetslost * 0.8f);
-                packetsnotlost = (int)(packetsnotlost * 0.8f);
+                packetslost = (packetslost * 0.8f);
+                packetsnotlost = (packetsnotlost * 0.8f);
             }
 
-            MainV2.cs.linkqualitygcs = (ushort)((packetsnotlost / (packetsnotlost + packetslost)) * 100);
+            MainV2.cs.linkqualitygcs = (ushort)((packetsnotlost / (packetsnotlost + packetslost)) * 100.0);
 
             if (bpstime.Second != DateTime.Now.Second && !logreadmode)
             {
@@ -2161,7 +2168,7 @@ namespace ArdupilotMega
 
             if (temp.Length < 5 || temp[temp.Length - 1] != (crc >> 8) || temp[temp.Length - 2] != (crc & 0xff))
             {
-                int packetno = 0;
+                int packetno = -1;
                 if (temp.Length > 5)
                 {
                     packetno = temp[5];

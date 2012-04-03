@@ -1,0 +1,198 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Wix xmlns="http://schemas.microsoft.com/wix/2006/wi" xmlns:netfx="http://schemas.microsoft.com/wix/NetFxExtension" xmlns:difx="http://schemas.microsoft.com/wix/DifxAppExtension">
+
+
+    <Product Id="{625389D7-EB3C-4d77-A5F6-A285CF99437D}" Name="APM Planner" Language="1033" Version="1.1.60" Manufacturer="Michael Oborne" UpgradeCode="{625389D7-EB3C-4d77-A5F6-A285CF99437D}">
+        <Package Description="APM Planner Installer" Comments="Apm Planner Installer" Manufacturer="Michael Oborne" InstallerVersion="200" Compressed="yes" />
+
+<MajorUpgrade DowngradeErrorMessage="A later version of [ProductName] is already installed. Setup will now exit."/>
+
+
+        <PropertyRef Id="NETFRAMEWORK35" />
+
+        <Condition Message="This application requires .NET Framework 3.5. Please install the .NET Framework then run this installer again."><![CDATA[Installed OR NETFRAMEWORK35]]></Condition>
+
+        <Media Id="1" Cabinet="product.cab" EmbedCab="yes" />
+
+        <Directory Id="TARGETDIR" Name="SourceDir">
+            <Directory Id="ProgramFilesFolder" Name="PFiles">
+                
+<Directory Id="APMPlanner" Name="APM Planner">
+<Component Id="InstallDirPermissions" Guid="{525389D7-EB3C-4d77-A5F6-A285CF99437D}" KeyPath="yes"> 
+                        <CreateFolder> 
+                            <Permission User="Everyone" GenericAll="yes" /> 
+                        </CreateFolder>
+                    </Component>
+<Component Id="_comp0" Guid="ac593651-82f6-4297-bb94-f8a233d91b6f">
+<File Id="_1" Source="..\bin\release\AeroSimRCAPMHil.zip" />
+<File Id="_2" Source="..\bin\release\alglibnet2.dll" />
+<File Id="_3" Source="..\bin\release\arducopter-xplane.zip" />
+<File Id="_4" Source="..\bin\release\ArdupilotMegaPlanner.exe" />
+<File Id="_5" Source="..\bin\release\ArdupilotMegaPlanner.exe.config" />
+<File Id="_6" Source="..\bin\release\ArdupilotMegaPlanner.pdb" />
+<File Id="_7" Source="..\bin\release\block_plane_0.dae" />
+<File Id="_8" Source="..\bin\release\BSE.Windows.Forms.dll" />
+<File Id="_9" Source="..\bin\release\Core.dll" />
+<File Id="_10" Source="..\bin\release\dataflashlog.xml" />
+<File Id="_11" Source="..\bin\release\DirectShowLib-2005.dll" />
+<File Id="_12" Source="..\bin\release\GMap.NET.Core.dll" />
+<File Id="_13" Source="..\bin\release\GMap.NET.WindowsForms.dll" />
+<File Id="_14" Source="..\bin\release\hud.html" />
+<File Id="_15" Source="..\bin\release\ICSharpCode.SharpZipLib.dll" />
+<File Id="_16" Source="..\bin\release\Ionic.Zip.Reduced.dll" />
+<File Id="_17" Source="..\bin\release\IronPython.dll" />
+<File Id="_18" Source="..\bin\release\IronPython.Modules.dll" />
+<File Id="_19" Source="..\bin\release\JSBSim.exe" />
+<File Id="_20" Source="..\bin\release\KMLib.dll" />
+<File Id="_21" Source="..\bin\release\log4net.dll" />
+<File Id="_22" Source="..\bin\release\mavcmd.xml" />
+<File Id="_23" Source="..\bin\release\MAVLink.xml" />
+<File Id="_24" Source="..\bin\release\MetaDataExtractor.dll" />
+<File Id="_25" Source="..\bin\release\Microsoft.Dynamic.dll" />
+<File Id="_26" Source="..\bin\release\Microsoft.Scripting.Core.dll" />
+<File Id="_27" Source="..\bin\release\Microsoft.Scripting.Debugging.dll" />
+<File Id="_28" Source="..\bin\release\Microsoft.Scripting.dll" />
+<File Id="_29" Source="..\bin\release\Microsoft.Scripting.ExtensionAttribute.dll" />
+<File Id="_30" Source="..\bin\release\netDxf.dll" />
+<File Id="_31" Source="..\bin\release\OpenTK.dll" />
+<File Id="_32" Source="..\bin\release\OpenTK.GLControl.dll" />
+<File Id="_33" Source="..\bin\release\quadhil.xml" />
+<File Id="_34" Source="..\bin\release\SharpKml.dll" />
+<File Id="_35" Source="..\bin\release\System.Data.SQLite.dll" />
+<File Id="_36" Source="..\bin\release\System.Speech.dll" />
+<File Id="_37" Source="..\bin\release\Updater.exe" />
+<File Id="_38" Source="..\bin\release\Updater.exe.config" />
+<File Id="_39" Source="..\bin\release\Updater.pdb" />
+<File Id="_40" Source="..\bin\release\ZedGraph.dll" />
+</Component>
+<Directory Id="Driver" Name="Driver">
+<Component Id="_comp40" Guid="2fdf06ca-6e78-41c1-a558-0b0970ef8cdd">
+<File Id="_41" Source="..\bin\release\Driver\Arduino MEGA 2560.inf" />
+</Component>
+</Directory>
+<Directory Id="es_ES" Name="es-ES">
+<Component Id="_comp41" Guid="7c2d0e6e-be62-414e-87d3-15c3408a6689">
+<File Id="_42" Source="..\bin\release\es-ES\ArdupilotMegaPlanner.resources.dll" />
+</Component>
+</Directory>
+<Directory Id="fr" Name="fr">
+<Component Id="_comp42" Guid="a96af704-563a-4606-902c-f5ada5f0e2e4">
+<File Id="_43" Source="..\bin\release\fr\ArdupilotMegaPlanner.resources.dll" />
+</Component>
+</Directory>
+<Directory Id="it_IT" Name="it-IT">
+<Component Id="_comp43" Guid="f25da795-c709-42ed-b395-68b30354db54">
+<File Id="_44" Source="..\bin\release\it-IT\ArdupilotMegaPlanner.resources.dll" />
+</Component>
+</Directory>
+<Directory Id="m3u" Name="m3u">
+<Component Id="_comp44" Guid="201b2c11-e385-4176-ba7f-cff62934e41f">
+<File Id="_45" Source="..\bin\release\m3u\both.m3u" />
+<File Id="_46" Source="..\bin\release\m3u\hud.m3u" />
+<File Id="_47" Source="..\bin\release\m3u\map.m3u" />
+<File Id="_48" Source="..\bin\release\m3u\networklink.kml" />
+</Component>
+</Directory>
+<Directory Id="pl" Name="pl">
+<Component Id="_comp48" Guid="91e14b63-64b9-43d5-9f3c-dc3eccac202f">
+<File Id="_49" Source="..\bin\release\pl\ArdupilotMegaPlanner.resources.dll" />
+</Component>
+</Directory>
+<Directory Id="Resources" Name="Resources">
+<Component Id="_comp49" Guid="16f71db5-f216-4ce9-8379-1c5d8e9cfc1a">
+<File Id="_50" Source="..\bin\release\Resources\MAVCmd.txt" />
+<File Id="_51" Source="..\bin\release\Resources\Welcome_to_Michael_Oborne.rtf" />
+</Component>
+</Directory>
+<Directory Id="ru_RU" Name="ru-RU">
+<Component Id="_comp51" Guid="41050916-508f-4f5e-b547-5374fe279b0f">
+<File Id="_52" Source="..\bin\release\ru-RU\ArdupilotMegaPlanner.resources.dll" />
+</Component>
+</Directory>
+<Directory Id="zh_Hans" Name="zh-Hans">
+<Component Id="_comp52" Guid="bbcbc38d-f1d3-4686-895d-9db643ac93aa">
+<File Id="_53" Source="..\bin\release\zh-Hans\ArdupilotMegaPlanner.resources.dll" />
+</Component>
+</Directory>
+<Directory Id="zh_TW" Name="zh-TW">
+<Component Id="_comp53" Guid="1abb66a4-ec2e-46a5-8ec7-df5ead6615ac">
+<File Id="_54" Source="..\bin\release\zh-TW\ArdupilotMegaPlanner.resources.dll" />
+</Component>
+</Directory>
+
+                    
+                    <Directory Id="drivers" Name="Drivers">
+                        <Component Id="MyDriver" Guid="{6AC8226E-A005-437e-A3CD-0FC32D9A346F}">
+                            <File Id="apm2inf"  Source="..\Driver\Arduino MEGA 2560.inf" />
+                            <difx:Driver AddRemovePrograms='no' Legacy="yes" PlugAndPlayPrompt="no" />
+                        </Component>
+                    </Directory>
+                </Directory>
+            </Directory>
+
+            <Directory Id="ProgramMenuFolder">
+                <Directory Id="ApplicationProgramsFolder" Name="APM Planner" />
+            </Directory>
+
+        </Directory>
+
+        <DirectoryRef Id="ApplicationProgramsFolder">
+            <Component Id="ApplicationShortcut" Guid="{8BC628BA-08A0-43d6-88C8-D4C007AC4607}">
+                <Shortcut Id="ApplicationStartMenuShortcut" Name="APM Planner" Description="Ardupilot Mega Planner" Target="[APMPlanner]ArdupilotMegaPlanner.exe" WorkingDirectory="APMPlanner" />
+                <RemoveFolder Id="ApplicationProgramsFolder" On="uninstall" />
+
+                <Shortcut Id="UninstallProduct" Name="Uninstall APM Planner" Description="Uninstalls My Application" Target="[System64Folder]msiexec.exe" Arguments="/x [ProductCode]" />
+
+
+
+                <RegistryValue Root="HKCU" Key="Software\MichaelOborne\APMPlanner" Name="installed" Type="integer" Value="1" KeyPath="yes" />
+
+
+
+
+            </Component>
+        </DirectoryRef>
+
+
+        <Feature Id="MyFeature" Title="My 1st Feature" Level="1">
+            <ComponentRef Id="InstallDirPermissions" />
+
+<ComponentRef Id="_comp0" />
+<ComponentRef Id="_comp40" />
+<ComponentRef Id="_comp41" />
+<ComponentRef Id="_comp42" />
+<ComponentRef Id="_comp43" />
+<ComponentRef Id="_comp44" />
+<ComponentRef Id="_comp48" />
+<ComponentRef Id="_comp49" />
+<ComponentRef Id="_comp51" />
+<ComponentRef Id="_comp52" />
+<ComponentRef Id="_comp53" />
+
+            
+            <ComponentRef Id="ApplicationShortcut" />
+            <ComponentRef Id="MyDriver" />
+        </Feature>
+
+        
+            <!-- Step 2: Add UI to your installer / Step 4: Trigger the custom action -->
+    <Property Id="WIXUI_INSTALLDIR" Value="APMPlanner" />
+
+    <UI>
+        <UIRef Id="WixUI_InstallDir" />
+        <Publish Dialog="ExitDialog" 
+            Control="Finish" 
+            Event="DoAction" 
+            Value="LaunchApplication">WIXUI_EXITDIALOGOPTIONALCHECKBOX = 1 and NOT Installed</Publish>
+    </UI>
+    <Property Id="WIXUI_EXITDIALOGOPTIONALCHECKBOXTEXT" Value="Launch APM Planner" />
+
+    <!-- Step 3: Include the custom action -->
+    <Property Id="WixShellExecTarget" Value="[#_4]" />
+    <CustomAction Id="LaunchApplication" 
+        BinaryKey="WixCA" 
+        DllEntry="WixShellExec"
+        Impersonate="yes" />
+    </Product>
+    
+</Wix>

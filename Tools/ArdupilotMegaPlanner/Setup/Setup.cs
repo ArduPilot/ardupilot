@@ -1719,8 +1719,7 @@ namespace ArdupilotMega.Setup
 #else
                 MainV2.comPort.doAction(MAVLink.MAV_ACTION.MAV_ACTION_CALIBRATE_ACC);
 #endif
-
-                BUT_levelac2.Text = "Complete";
+                BUT_levelplane.Text = "Complete";
             }
             catch
             {

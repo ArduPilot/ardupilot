@@ -593,29 +593,11 @@ namespace ArdupilotMega.GCSViews
             DialogResult dr = ofd.ShowDialog();
             if (dr == DialogResult.OK)
             {
-                StreamReader sr = new StreamReader(ofd.OpenFile());
-                while (!sr.EndOfStream)
+                Hashtable param2 = loadParamFile(ofd.FileName);
+
+                foreach (string name in param2.Keys)
                 {
-                    string line = sr.ReadLine();
-
-                    if (line.Contains("NOTE:"))
-                        CustomMessageBox.Show(line, "Saved Note");
-
-                    int index = line.IndexOf(',');
-
-                    int index2 = line.IndexOf(',', index + 1);
-
-                    if (index == -1)
-                        continue;
-
-                    if (index2 != -1)
-                        line = line.Replace(',', '.');
-
-                    string name = line.Substring(0, index);
-                    float value = float.Parse(line.Substring(index + 1), new System.Globalization.CultureInfo("en-US"));
-
-                    MAVLink.modifyParamForDisplay(true, name, ref value);
-
+                    string value = param2[name].ToString();
                     // set param table as well
                     foreach (DataGridViewRow row in Params.Rows)
                     {
@@ -647,7 +629,6 @@ namespace ArdupilotMega.GCSViews
                         }
                     }
                 }
-                sr.Close();
             }
         }
 
@@ -1125,39 +1106,65 @@ namespace ArdupilotMega.GCSViews
             DialogResult dr = ofd.ShowDialog();
             if (dr == DialogResult.OK)
             {
-                StreamReader sr = new StreamReader(ofd.OpenFile());
-                while (!sr.EndOfStream)
-                {
-                    string line = sr.ReadLine();
-
-                    if (line.Contains("NOTE:"))
-                        CustomMessageBox.Show(line, "Saved Note");
-
-                    int index = line.IndexOf(',');
-
-                    if (index == -1)
-                        continue;
-
-                    string name = line.Substring(0, index);
-                    float value = float.Parse(line.Substring(index + 1), new System.Globalization.CultureInfo("en-US"));
-
-                    MAVLink.modifyParamForDisplay(true, name, ref value);
-
-                    if (name == "SYSID_SW_MREV")
-                        continue;
-                    if (name == "WP_TOTAL")
-                        continue;
-                    if (name == "CMD_TOTAL")
-                        continue;
-
-                    param2[name] = value;
-                }
-                sr.Close();
+                param2 = loadParamFile(ofd.FileName);
 
                 ParamCompare temp = new ParamCompare(this, param, param2);
                 ThemeManager.ApplyThemeTo(temp);
                 temp.ShowDialog();
             }
+        }
+
+        Hashtable loadParamFile(string Filename)
+        {
+            Hashtable param = new Hashtable();
+
+            StreamReader sr = new StreamReader(Filename);
+            while (!sr.EndOfStream)
+            {
+                string line = sr.ReadLine();
+
+                if (line.Contains("NOTE:"))
+                    CustomMessageBox.Show(line, "Saved Note");
+
+                if (line.StartsWith("#"))
+                    continue;
+
+                string[] items = line.Split(new char[] {' ', ',', '\t' },StringSplitOptions.RemoveEmptyEntries);
+
+                if (items.Length != 2)
+                    continue;
+
+                string name = items[0];
+                float value = float.Parse(items[1], new System.Globalization.CultureInfo("en-US"));
+
+                MAVLink.modifyParamForDisplay(true, name, ref value);
+
+                if (name == "SYSID_SW_MREV")
+                    continue;
+                if (name == "WP_TOTAL")
+                    continue;
+                if (name == "CMD_TOTAL")
+                    continue;
+                if (name == "FENCE_TOTAL")
+                    continue;
+                if (name == "SYS_NUM_RESETS")
+                    continue;
+                if (name == "ARSPD_OFFSET")
+                    continue;
+                if (name == "GND_ABS_PRESS")
+                    continue;
+                if (name == "GND_TEMP")
+                    continue;
+                if (name == "CMD_INDEX")
+                    continue;
+                if (name == "LOG_LASTFILE")
+                    continue;
+
+                param[name] = value;
+            }
+            sr.Close();
+
+            return param;
         }
 
         private void CHK_GDIPlus_CheckedChanged(object sender, EventArgs e)

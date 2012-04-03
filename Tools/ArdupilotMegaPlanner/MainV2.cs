@@ -23,6 +23,7 @@ using System.Net.Sockets;
 using IronPython.Hosting;
 using log4net;
 using ArdupilotMega.Controls;
+using System.Security.Cryptography;
 
 namespace ArdupilotMega
 {
@@ -1694,7 +1695,7 @@ namespace ArdupilotMega
 
                     if (fi.Length != response.ContentLength || response.Headers[HttpResponseHeader.ETag] != CurrentEtag)
                     {
-                        using (StreamWriter sw = new StreamWriter(path + ".etag"))
+                        using (StreamWriter sw = new StreamWriter(path + ".etag.new"))
                         {
                             sw.WriteLine(response.Headers[HttpResponseHeader.ETag]);
                             sw.Close();
@@ -1795,6 +1796,42 @@ namespace ArdupilotMega
 
         }
 
+
+
+        private string GetFileETag(string fileName, DateTime modifyDate)
+        {
+
+            string FileString;
+
+            System.Text.Encoder StringEncoder;
+
+            byte[] StringBytes;
+
+            MD5CryptoServiceProvider MD5Enc;
+
+            //use file name and modify date as the unique identifier
+
+            FileString = fileName + modifyDate.ToString("d", CultureInfo.InvariantCulture);
+
+            //get string bytes
+
+            StringEncoder = Encoding.UTF8.GetEncoder();
+
+            StringBytes = new byte[StringEncoder.GetByteCount(FileString.ToCharArray(), 0, FileString.Length, true)];
+
+            StringEncoder.GetBytes(FileString.ToCharArray(), 0, FileString.Length, StringBytes, 0, true);
+
+            //hash string using MD5 and return the hex-encoded hash
+
+            MD5Enc = new MD5CryptoServiceProvider();
+
+            byte[] hash = MD5Enc.ComputeHash((Stream)File.OpenRead(fileName));
+
+            return "\"" + BitConverter.ToString(hash).Replace("-", string.Empty) + "\"";
+
+        }
+
+
         protected override bool ProcessCmdKey(ref Message msg, Keys keyData)
         {
             if (keyData == (Keys.Control | Keys.F))
@@ -1819,6 +1856,13 @@ namespace ArdupilotMega
             if (keyData == (Keys.Control | Keys.A)) // test
             {
                 Form frm = new _3DRradio();
+                ThemeManager.ApplyThemeTo(frm);
+                frm.Show();
+                return true;
+            }
+            if (keyData == (Keys.Control | Keys.W)) // test
+            {
+                Form frm = new GCSViews.ConfigurationView.Configuration();
                 ThemeManager.ApplyThemeTo(frm);
                 frm.Show();
                 return true;

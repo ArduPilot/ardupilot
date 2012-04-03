@@ -49,6 +49,10 @@ namespace ArdupilotMega.GCSViews
         int simPort = 49000;
         int recvPort = 49005;
 
+        // gps buffer
+        int gpsbufferindex = 0;
+        ArdupilotMega.MAVLink.__mavlink_gps_raw_t[] gpsbuffer = new MAVLink.__mavlink_gps_raw_t[2];
+
         // set defaults
         int rollgain = 10000;
         int pitchgain = 10000;
@@ -1256,7 +1260,13 @@ namespace ArdupilotMega.GCSViews
             {
                 lastgpsupdate = DateTime.Now;
 
-                comPort.sendPacket(gps);
+                // save current fix = 3
+                gpsbuffer[gpsbufferindex % gpsbuffer.Length] = gps;
+
+                // return buffer index + 5 = (3 + 5) = 8 % 6 = 2
+                comPort.sendPacket(gpsbuffer[(gpsbufferindex + (gpsbuffer.Length - 1)) % gpsbuffer.Length]);
+
+                gpsbufferindex++;
             }
 #endif
         }
