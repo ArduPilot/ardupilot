@@ -69,7 +69,7 @@ def fly_left_circuit(mavproxy, mav):
             return False
         mavproxy.send('rc 1 1500\n')
         print("Starting leg %u" % i)
-        if not wait_distance(mav, 100):
+        if not wait_distance(mav, 100, accuracy=20):
             return False
     print("Circuit complete")
     return True
