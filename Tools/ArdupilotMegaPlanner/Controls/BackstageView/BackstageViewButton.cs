@@ -22,10 +22,18 @@ namespace ArdupilotMega.Controls.BackstageView
 
         public BackstageViewButton()
         {
+            this.SuspendLayout();
+
             SetStyle(ControlStyles.SupportsTransparentBackColor, true);
             SetStyle(ControlStyles.Opaque, true);
             SetStyle(ControlStyles.ResizeRedraw, true);
             this.BackColor = Color.Transparent;
+
+            this.Width = 100;
+            this.Height = 30;
+
+            
+            this.ResumeLayout(false);
         }
 
         /// <summary>
@@ -58,6 +66,15 @@ namespace ArdupilotMega.Controls.BackstageView
             this.Parent.Invalidate(rectangleToClient);
         }
 
+        protected override void OnPaintBackground(PaintEventArgs pevent)
+        {
+            base.OnPaintBackground(pevent);
+        }
+
+        protected override void OnResize(EventArgs e)
+        {
+            base.OnResize(e);
+        }
 
         protected override void OnPaint(PaintEventArgs pevent)
         {

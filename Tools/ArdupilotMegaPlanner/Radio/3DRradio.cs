@@ -75,7 +75,8 @@ namespace ArdupilotMega
                 uploader_LogEvent("In Bootloader Mode");
                 bootloadermode = true;
             }
-            catch {
+            catch
+            {
                 comPort.Close();
                 comPort.BaudRate = MainV2.comPort.BaseStream.BaudRate;
                 comPort.Open();
@@ -188,13 +189,14 @@ namespace ArdupilotMega
         {
             ArdupilotMega.ICommsSerial comPort = new SerialPort();
 
-            try {
-            comPort.PortName = MainV2.comPort.BaseStream.PortName;
-            comPort.BaudRate = MainV2.comPort.BaseStream.BaudRate;
+            try
+            {
+                comPort.PortName = MainV2.comPort.BaseStream.PortName;
+                comPort.BaudRate = MainV2.comPort.BaseStream.BaudRate;
 
-            comPort.ReadTimeout = 4000;
+                comPort.ReadTimeout = 4000;
 
-            comPort.Open();
+                comPort.Open();
 
 
             }
@@ -547,7 +549,7 @@ namespace ArdupilotMega
                 }
             }
 
-            Console.WriteLine("responce " + level + " " + ans.Replace('\0',' '));
+            Console.WriteLine("responce " + level + " " + ans.Replace('\0', ' '));
 
             // try again
             if (ans == "" && level == 0)
@@ -571,7 +573,7 @@ namespace ArdupilotMega
             // check for config responce "OK"
             Console.WriteLine("Connect btr " + comPort.BytesToRead + " baud " + comPort.BaudRate);
             string conn = comPort.ReadExisting();
-            Console.WriteLine("Connect first responce " + conn.Replace('\0',' ') + " " + conn.Length);
+            Console.WriteLine("Connect first responce " + conn.Replace('\0', ' ') + " " + conn.Length);
             if (conn.Contains("OK"))
             {
                 //return true;

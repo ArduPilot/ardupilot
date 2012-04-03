@@ -386,7 +386,8 @@ namespace ArdupilotMega
             CH6_ACRO_KP = 25,
             CH6_YAW_RATE_KD = 26,
             CH6_LOITER_KI = 27,
-            CH6_LOITER_RATE_KI = 28
+            CH6_LOITER_RATE_KI = 28,
+            CH6_STABILIZE_KD = 29
         }
 
 

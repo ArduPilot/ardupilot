@@ -1,3 +1,4 @@
 *.pdb
 *.etag
 *.new
+*.log
