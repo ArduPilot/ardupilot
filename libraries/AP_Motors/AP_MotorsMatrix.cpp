@@ -101,7 +101,7 @@ void AP_MotorsMatrix::output_min()
 	int8_t i;
 
 	// fill the motor_out[] array for HIL use and send minimum value to each motor
-	for( int8_t i=0; i<AP_MOTORS_MAX_NUM_MOTORS; i++ ) {
+	for( i=0; i<AP_MOTORS_MAX_NUM_MOTORS; i++ ) {
 		if( motor_enabled[i] ) {
 			motor_out[i] = _rc_throttle->radio_min;
 			_rc->OutputCh(_motor_to_channel_map[i], motor_out[i]);

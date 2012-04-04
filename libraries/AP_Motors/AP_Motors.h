@@ -79,7 +79,7 @@ public:
 
 	// arm, disarm or check status status of motors
 	virtual bool armed() { return _armed; };
-	virtual void armed(bool armed) { _armed = armed; };
+	virtual void armed(bool arm) { _armed = arm; };
 
 	// check or set status of auto_armed - controls whether autopilot can take control of throttle
 	// Note: this should probably be moved out of this class as it has little to do with the motors
