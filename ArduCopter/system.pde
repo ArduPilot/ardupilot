@@ -190,8 +190,8 @@ static void init_ardupilot()
 	#endif
 
     #if FRAME_CONFIG ==	HELI_FRAME
-		g.heli_servo_manual = false;
-		heli_init_swash();  // heli initialisation
+		motors.servo_manual = false;
+		motors.init_swash();  // heli initialisation
 	#endif
 
     RC_Channel::set_apm_rc(&APM_RC);
@@ -392,7 +392,7 @@ static void set_mode(byte mode)
 	control_mode 		= constrain(control_mode, 0, NUM_MODES - 1);
 
 	// used to stop fly_aways
-	motor_auto_armed = (g.rc_3.control_in > 0);
+	motors.auto_armed(g.rc_3.control_in > 0);
 
 	// clearing value used in interactive alt hold
 	manual_boost = 0;
@@ -507,7 +507,7 @@ static void set_mode(byte mode)
 		throttle_mode = THROTTLE_AUTO;
 		// does not wait for us to be in high throttle, since the
 		// Receiver will be outputting low throttle
-		motor_auto_armed = true;
+		motors.auto_armed(true);
 	}
 
 	// called to calculate gain for alt hold
