@@ -84,7 +84,7 @@ public:
 	// check or set status of auto_armed - controls whether autopilot can take control of throttle
 	// Note: this should probably be moved out of this class as it has little to do with the motors
 	virtual bool auto_armed() { return _auto_armed; };
-	virtual void auto_armed(bool armed) { _auto_armed = armed; };
+	virtual void auto_armed(bool arm) { _auto_armed = arm; };
 
 	// set_min_throttle - sets the minimum throttle that will be sent to the engines when they're not off (i.e. to prevents issues with some motors spinning and some not at very low throttle)
 	virtual void set_min_throttle(uint16_t min_throttle) { _min_throttle = min_throttle; };
