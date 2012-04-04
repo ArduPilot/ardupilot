@@ -80,7 +80,7 @@ get_stabilize_yaw(int32_t target_angle)
 
 	// do not use rate controllers for helicotpers with external gyros
 #if FRAME_CONFIG == HELI_FRAME
-	if(!g.heli_ext_gyro_enabled){
+	if(!motors.ext_gyro_enabled){
 		output = get_rate_yaw(target_rate) + i_term;
 	}else{
 		output = constrain((target_rate + i_term), -4500, 4500);
@@ -389,6 +389,20 @@ static int16_t get_angle_boost(int16_t value)
 	return constrain(output, 0, 200);
 //	return (int)(temp * value);
 }
+
+#if FRAME_CONFIG == HELI_FRAME
+// heli_angle_boost - adds a boost depending on roll/pitch values
+// equivalent of quad's angle_boost function
+// throttle value should be 0 ~ 1000
+static int16_t heli_get_angle_boost(int16_t throttle)
+{
+    float angle_boost_factor = cos_pitch_x * cos_roll_x;
+	angle_boost_factor = 1.0 - constrain(angle_boost_factor, .5, 1.0);
+	int throttle_above_mid = max(throttle - motors.throttle_mid,0);
+	return throttle + throttle_above_mid*angle_boost_factor;
+
+}
+#endif // HELI_FRAME
 
 #define NUM_G_SAMPLES 40
 
