@@ -316,8 +316,8 @@ test_radio(uint8_t argc, const Menu::arg *argv)
 	Serial.printf_P(PSTR("g.pi_stabilize_roll.kP: %4.4f\n"), g.pi_stabilize_roll.kP());
 	Serial.printf_P(PSTR("max_stabilize_dampener:%d\n\n "), max_stabilize_dampener);
 
-	motor_auto_armed 	= false;
-	motor_armed 		= true;
+	motors.auto_armed(false);
+	motors.armed(true);
 
 	while(1){
 		// 50 hz
@@ -766,11 +766,22 @@ test_tuning(uint8_t argc, const Menu::arg *argv)
 static int8_t
 test_battery(uint8_t argc, const Menu::arg *argv)
 {
-	#if defined( __AVR_ATmega1280__ )  // determines if optical flow code is included
+	#if defined( __AVR_ATmega1280__ )  // disable this test if we are using 1280
 		print_test_disabled();
 		return (0);
 	#else
+		Serial.printf_P(PSTR("\nCareful! Motors will spin! Press Enter to start.\n"));
+		Serial.flush();
+		while(!Serial.available()){
+			delay(100);
+		}
+		Serial.flush();
 		print_hit_enter();
+
+		// allow motors to spin
+		motors.enable();
+		motors.armed(true);
+
 		while(1){
 			delay(100);
 			read_radio();
@@ -786,15 +797,14 @@ test_battery(uint8_t argc, const Menu::arg *argv)
 									current_amps1,
 									current_total1);
 			}
-			APM_RC.OutputCh(MOT_1, g.rc_3.radio_in);
-			APM_RC.OutputCh(MOT_2, g.rc_3.radio_in);
-			APM_RC.OutputCh(MOT_3, g.rc_3.radio_in);
-			APM_RC.OutputCh(MOT_4, g.rc_3.radio_in);
+			motors.throttle_pass_through();
 
 			if(Serial.available() > 0){
+				motors.armed(false);
 				return (0);
 			}
 		}
+		motors.armed(false);
 		return (0);
 	#endif
 }
