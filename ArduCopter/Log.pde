@@ -357,52 +357,52 @@ static void Log_Write_Motors()
 	DataFlash.WriteByte(LOG_MOTORS_MSG);
 
 	#if FRAME_CONFIG ==	TRI_FRAME
-	DataFlash.WriteInt(motor_out[CH_1]);//1
-	DataFlash.WriteInt(motor_out[CH_2]);//2
-	DataFlash.WriteInt(motor_out[CH_4]);//3
+	DataFlash.WriteInt(motors.motor_out[AP_MOTORS_MOT_1]);//1
+	DataFlash.WriteInt(motors.motor_out[AP_MOTORS_MOT_2]);//2
+	DataFlash.WriteInt(motors.motor_out[AP_MOTORS_MOT_4]);//3
 	DataFlash.WriteInt(g.rc_4.radio_out);//4
 
 	#elif FRAME_CONFIG == HEXA_FRAME
-	DataFlash.WriteInt(motor_out[CH_1]);//1
-	DataFlash.WriteInt(motor_out[CH_2]);//2
-	DataFlash.WriteInt(motor_out[CH_3]);//3
-	DataFlash.WriteInt(motor_out[CH_4]);//4
-	DataFlash.WriteInt(motor_out[CH_7]);//5
-	DataFlash.WriteInt(motor_out[CH_8]);//6
+	DataFlash.WriteInt(motors.motor_out[AP_MOTORS_MOT_1]);//1
+	DataFlash.WriteInt(motors.motor_out[AP_MOTORS_MOT_2]);//2
+	DataFlash.WriteInt(motors.motor_out[AP_MOTORS_MOT_3]);//3
+	DataFlash.WriteInt(motors.motor_out[AP_MOTORS_MOT_4]);//4
+	DataFlash.WriteInt(motors.motor_out[AP_MOTORS_MOT_5]);//5
+	DataFlash.WriteInt(motors.motor_out[AP_MOTORS_MOT_6]);//6
 
 	#elif FRAME_CONFIG == Y6_FRAME
 	//left
-	DataFlash.WriteInt(motor_out[CH_2]);//1
-	DataFlash.WriteInt(motor_out[CH_3]);//2
+	DataFlash.WriteInt(motors.motor_out[AP_MOTORS_MOT_2]);//1
+	DataFlash.WriteInt(motors.motor_out[AP_MOTORS_MOT_3]);//2
 	//right
-	DataFlash.WriteInt(motor_out[CH_7]);//3
-	DataFlash.WriteInt(motor_out[CH_1]);//4
+	DataFlash.WriteInt(motors.motor_out[AP_MOTORS_MOT_5]);//3
+	DataFlash.WriteInt(motors.motor_out[AP_MOTORS_MOT_1]);//4
 	//back
-	DataFlash.WriteInt(motor_out[CH_8]);//5
-	DataFlash.WriteInt(motor_out[CH_4]);//6
+	DataFlash.WriteInt(motors.motor_out[AP_MOTORS_MOT_6]);//5
+	DataFlash.WriteInt(motors.motor_out[AP_MOTORS_MOT_4]);//6
 
 	#elif FRAME_CONFIG == OCTA_FRAME || FRAME_CONFIG == OCTA_QUAD_FRAME
-	DataFlash.WriteInt(motor_out[CH_1]);//1
-	DataFlash.WriteInt(motor_out[CH_2]);//2
-	DataFlash.WriteInt(motor_out[CH_3]);//3
-	DataFlash.WriteInt(motor_out[CH_4]);//4
-	DataFlash.WriteInt(motor_out[CH_7]);//5
-	DataFlash.WriteInt(motor_out[CH_8]); //6
-	DataFlash.WriteInt(motor_out[CH_10]);//7
-	DataFlash.WriteInt(motor_out[CH_11]);//8
+	DataFlash.WriteInt(motors.motor_out[AP_MOTORS_MOT_1]);//1
+	DataFlash.WriteInt(motors.motor_out[AP_MOTORS_MOT_2]);//2
+	DataFlash.WriteInt(motors.motor_out[AP_MOTORS_MOT_3]);//3
+	DataFlash.WriteInt(motors.motor_out[AP_MOTORS_MOT_4]);//4
+	DataFlash.WriteInt(motors.motor_out[AP_MOTORS_MOT_5]);//5
+	DataFlash.WriteInt(motors.motor_out[AP_MOTORS_MOT_6]); //6
+	DataFlash.WriteInt(motors.motor_out[AP_MOTORS_MOT_7]);//7
+	DataFlash.WriteInt(motors.motor_out[AP_MOTORS_MOT_8]);//8
 
 	#elif FRAME_CONFIG == HELI_FRAME
-	DataFlash.WriteInt(heli_servo_out[0]);//1
-	DataFlash.WriteInt(heli_servo_out[1]);//2
-	DataFlash.WriteInt(heli_servo_out[2]);//3
-	DataFlash.WriteInt(heli_servo_out[3]);//4
-	DataFlash.WriteInt(g.heli_ext_gyro_gain);//5
+	DataFlash.WriteInt(motors.motor_out[AP_MOTORS_MOT_1]);//1
+	DataFlash.WriteInt(motors.motor_out[AP_MOTORS_MOT_2]);//2
+	DataFlash.WriteInt(motors.motor_out[AP_MOTORS_MOT_3]);//3
+	DataFlash.WriteInt(motors.motor_out[AP_MOTORS_MOT_4]);//4
+	DataFlash.WriteInt(motors.ext_gyro_gain);//5
 
 	#else // quads
-	DataFlash.WriteInt(motor_out[CH_1]);//1
-	DataFlash.WriteInt(motor_out[CH_2]);//2
-	DataFlash.WriteInt(motor_out[CH_3]);//3
-	DataFlash.WriteInt(motor_out[CH_4]);//4
+	DataFlash.WriteInt(motors.motor_out[AP_MOTORS_MOT_1]);//1
+	DataFlash.WriteInt(motors.motor_out[AP_MOTORS_MOT_2]);//2
+	DataFlash.WriteInt(motors.motor_out[AP_MOTORS_MOT_3]);//3
+	DataFlash.WriteInt(motors.motor_out[AP_MOTORS_MOT_4]);//4
 	#endif
 
 	DataFlash.WriteByte(END_BYTE);
