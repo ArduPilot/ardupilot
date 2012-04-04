@@ -46,7 +46,7 @@ static void update_GPS_light(void)
 
 static void update_motor_light(void)
 {
-	if(motor_armed == false){
+	if(motors.armed() == false){
 		motor_light = !motor_light;
 
 		// blink
@@ -100,7 +100,7 @@ static void clear_leds()
 #if MOTOR_LEDS == 1
 static void update_motor_leds(void)
 {
-	if (motor_armed == true){
+	if (motors.armed()){
 		if (low_batt == true){
 	    	// blink rear
 			static bool blink = false;
