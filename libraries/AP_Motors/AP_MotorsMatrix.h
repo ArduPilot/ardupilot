@@ -66,8 +66,6 @@ public:
 	virtual void setup_motors() { remove_all_motors(); };
 
 	// matrix
-	AP_Int16	angle[AP_MOTORS_MAX_NUM_MOTORS];			// angle in degrees from the front of the copter
-	AP_Int8		direction[AP_MOTORS_MAX_NUM_MOTORS];		// direction of rotation of the motor (-1 = clockwise, +1 = counter clockwise)
 	AP_Int8		opposite_motor[AP_MOTORS_MAX_NUM_MOTORS];	// motor number of the opposite motor
 	AP_Int8		test_order[AP_MOTORS_MAX_NUM_MOTORS];		// order of the motors in the test sequence
 
