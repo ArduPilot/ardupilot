@@ -234,7 +234,7 @@ setup_motors(uint8_t argc, const Menu::arg *argv)
 	while(1){
 		delay(20);
 		read_radio();
-		output_motor_test();
+		motors.output_test();
 		if(Serial.available() > 0){
 			g.esc_calibrate.set_and_save(0);
 			return(0);
@@ -460,10 +460,10 @@ setup_heli(uint8_t argc, const Menu::arg *argv)
 	int max_roll=0, max_pitch=0, min_collective=0, max_collective=0, min_tail=0, max_tail=0;
 
 	// initialise swash plate
-	heli_init_swash();
+	motors.init_swash();
 
 	// source swash plate movements directly from radio
-	g.heli_servo_manual = true;
+	motors.servo_manual = true;
 
 	// display initial settings
 	report_heli();
@@ -489,7 +489,7 @@ setup_heli(uint8_t argc, const Menu::arg *argv)
 	    read_radio();
 
 		// allow swash plate to move
-		output_motors_armed();
+		motors.output_armed();
 
 		// record min/max
 		if( state == 1 ) {
@@ -529,8 +529,8 @@ setup_heli(uint8_t argc, const Menu::arg *argv)
 				case 'c':
 				case 'C':
 				    if( g.rc_3.radio_out >= 900 && g.rc_3.radio_out <= 2100 ) {
-						g.heli_collective_mid = g.rc_3.radio_out;
-						Serial.printf_P(PSTR("Collective when blade pitch at zero: %d\n"),(int)g.heli_collective_mid);
+						motors.collective_mid = g.rc_3.radio_out;
+						Serial.printf_P(PSTR("Collective when blade pitch at zero: %d\n"),(int)motors.collective_mid);
 					}
 					break;
 				case 'd':
@@ -545,11 +545,11 @@ setup_heli(uint8_t argc, const Menu::arg *argv)
 						Serial.printf_P(PSTR("Move coll, roll, pitch and tail to extremes, press 'm' when done\n"));
 
 						// reset servo ranges
-						g.heli_roll_max = g.heli_pitch_max = 4500;
-						g.heli_collective_min = 1000;
-						g.heli_collective_max = 2000;
-						g.heli_servo_4.radio_min = 1000;
-						g.heli_servo_4.radio_max = 2000;
+						motors.roll_max = motors.pitch_max = 4500;
+						motors.collective_min = 1000;
+						motors.collective_max = 2000;
+						motors._servo_4->radio_min = 1000;
+						motors._servo_4->radio_max = 2000;
 
 						// set sensible values in temp variables
 						max_roll = abs(g.rc_1.control_in);
@@ -563,15 +563,15 @@ setup_heli(uint8_t argc, const Menu::arg *argv)
 						if( max_roll <= 1000 || max_pitch <= 1000 || (max_collective - min_collective < 200) || (max_tail - min_tail < 200) || min_tail < 1000 || max_tail > 2000 )
 						    Serial.printf_P(PSTR("Invalid min/max captured roll:%d,  pitch:%d,  collective min: %d max: %d,  tail min:%d max:%d\n"),max_roll,max_pitch,min_collective,max_collective,min_tail,max_tail);
 						else{
-						    g.heli_roll_max = max_roll;
-							g.heli_pitch_max = max_pitch;
-							g.heli_collective_min = min_collective;
-							g.heli_collective_max = max_collective;
-							g.heli_servo_4.radio_min = min_tail;
-							g.heli_servo_4.radio_max = max_tail;
+						    motors.roll_max = max_roll;
+							motors.pitch_max = max_pitch;
+							motors.collective_min = min_collective;
+							motors.collective_max = max_collective;
+							motors._servo_4->radio_min = min_tail;
+							motors._servo_4->radio_max = max_tail;
 
 							// reinitialise swash
-							heli_init_swash();
+							motors.init_swash();
 
 							// display settings
 							report_heli();
@@ -583,12 +583,12 @@ setup_heli(uint8_t argc, const Menu::arg *argv)
 					temp = read_num_from_serial();
 					if( temp >= -360 && temp <= 360 ) {
 						if( active_servo == CH_1 )
-							g.heli_servo1_pos = temp;
+							motors.servo1_pos = temp;
 						if( active_servo == CH_2 )
-							g.heli_servo2_pos = temp;
+							motors.servo2_pos = temp;
 						if( active_servo == CH_3 )
-							g.heli_servo3_pos = temp;
-						heli_init_swash();
+							motors.servo3_pos = temp;
+						motors.init_swash();
 						Serial.printf_P(PSTR("Servo %d\t\tpos:%d\n"),active_servo+1, temp);
 					}
 					break;
@@ -603,7 +603,7 @@ setup_heli(uint8_t argc, const Menu::arg *argv)
 					    temp -= 1500;
 					if( temp > -500 && temp < 500 ) {
 					    heli_get_servo(active_servo)->radio_trim = 1500 + temp;
-						heli_init_swash();
+						motors.init_swash();
 						Serial.printf_P(PSTR("Servo %d\t\ttrim:%d\n"),active_servo+1, 1500 + temp);
 					}
 					break;
@@ -618,12 +618,14 @@ setup_heli(uint8_t argc, const Menu::arg *argv)
 					if( Serial.available() ) {
 					    value = Serial.read();
 						if( value == 'a' || value == 'A' ) {
-							g.heli_servo_averaging = HELI_SERVO_AVERAGING_ANALOG;
-							Serial.printf_P(PSTR("Analog Servo %dhz\n"),250 / HELI_SERVO_AVERAGING_ANALOG);
+							g.rc_speed.set_and_save(AP_MOTORS_HELI_SPEED_ANALOG_SERVOS);
+							//motors._speed_hz = AP_MOTORS_HELI_SPEED_ANALOG_SERVOS;  // need to force this update to take effect immediately
+							Serial.printf_P(PSTR("Analog Servo %dhz\n"),(int)g.rc_speed);
 						}
 						if( value == 'd' || value == 'D' ) {
-							g.heli_servo_averaging = HELI_SERVO_AVERAGING_DIGITAL;
-							Serial.printf_P(PSTR("Digital Servo 250hz\n"));
+							g.rc_speed.set_and_save(AP_MOTORS_HELI_SPEED_ANALOG_SERVOS);
+							//motors._speed_hz = AP_MOTORS_HELI_SPEED_ANALOG_SERVOS;  // need to force this update to take effect immediately
+							Serial.printf_P(PSTR("Digital Servo %dhz\n"),(int)g.rc_speed);
 						}
 					}
 					break;
@@ -641,22 +643,21 @@ setup_heli(uint8_t argc, const Menu::arg *argv)
 	report_heli();
 
 	// save to eeprom
-	g.heli_servo_1.save_eeprom();
-	g.heli_servo_2.save_eeprom();
-	g.heli_servo_3.save_eeprom();
-	g.heli_servo_4.save_eeprom();
-	g.heli_servo1_pos.save();
-	g.heli_servo2_pos.save();
-	g.heli_servo3_pos.save();
-	g.heli_roll_max.save();
-	g.heli_pitch_max.save();
-	g.heli_collective_min.save();
-	g.heli_collective_max.save();
-	g.heli_collective_mid.save();
-	g.heli_servo_averaging.save();
+	motors._servo_1->save_eeprom();
+	motors._servo_2->save_eeprom();
+	motors._servo_3->save_eeprom();
+	motors._servo_4->save_eeprom();
+	motors.servo1_pos.save();
+	motors.servo2_pos.save();
+	motors.servo3_pos.save();
+	motors.roll_max.save();
+	motors.pitch_max.save();
+	motors.collective_min.save();
+	motors.collective_max.save();
+	motors.collective_mid.save();
 
 	// return swash plate movements to attitude controller
-	g.heli_servo_manual = false;
+	motors.servo_manual = false;
 
 	return(0);
 }
@@ -666,22 +667,22 @@ static int8_t
 setup_gyro(uint8_t argc, const Menu::arg *argv)
 {
 	if (!strcmp_P(argv[1].str, PSTR("on"))) {
-		g.heli_ext_gyro_enabled.set_and_save(true);
+		motors.ext_gyro_enabled.set_and_save(true);
 
 		// optionally capture the gain
 		if( argc >= 2 && argv[2].i >= 1000 && argv[2].i <= 2000 ) {
-		    g.heli_ext_gyro_gain = argv[2].i;
-			g.heli_ext_gyro_gain.save();
+		    motors.ext_gyro_gain = argv[2].i;
+			motors.ext_gyro_gain.save();
 		}
 
 	} else if (!strcmp_P(argv[1].str, PSTR("off"))) {
-		g.heli_ext_gyro_enabled.set_and_save(false);
+		motors.ext_gyro_enabled.set_and_save(false);
 
     // capture gain if user simply provides a number
 	} else if( argv[1].i >= 1000 && argv[1].i <= 2000 ) {
-	    g.heli_ext_gyro_enabled.set_and_save(true);
-		g.heli_ext_gyro_gain = argv[1].i;
-		g.heli_ext_gyro_gain.save();
+	    motors.ext_gyro_enabled.set_and_save(true);
+		motors.ext_gyro_gain = argv[1].i;
+		motors.ext_gyro_gain.save();
 
 	}else{
 		Serial.printf_P(PSTR("\nOp:[on, off] gain\n"));
@@ -928,29 +929,22 @@ void report_optflow()
 #if FRAME_CONFIG == HELI_FRAME
 static void report_heli()
 {
-    int servo_rate;
-
 	Serial.printf_P(PSTR("Heli\n"));
 	print_divider();
 
 	// main servo settings
 	Serial.printf_P(PSTR("Servo \tpos \tmin \tmax \trev\n"));
-	Serial.printf_P(PSTR("1:\t%d \t%d \t%d \t%d\n"),(int)g.heli_servo1_pos, (int)g.heli_servo_1.radio_min, (int)g.heli_servo_1.radio_max, (int)g.heli_servo_1.get_reverse());
-	Serial.printf_P(PSTR("2:\t%d \t%d \t%d \t%d\n"),(int)g.heli_servo2_pos, (int)g.heli_servo_2.radio_min, (int)g.heli_servo_2.radio_max, (int)g.heli_servo_2.get_reverse());
-	Serial.printf_P(PSTR("3:\t%d \t%d \t%d \t%d\n"),(int)g.heli_servo3_pos, (int)g.heli_servo_3.radio_min, (int)g.heli_servo_3.radio_max, (int)g.heli_servo_3.get_reverse());
-	Serial.printf_P(PSTR("tail:\t\t%d \t%d \t%d\n"), (int)g.heli_servo_4.radio_min, (int)g.heli_servo_4.radio_max, (int)g.heli_servo_4.get_reverse());
+	Serial.printf_P(PSTR("1:\t%d \t%d \t%d \t%d\n"),(int)motors.servo1_pos, (int)motors._servo_1->radio_min, (int)motors._servo_1->radio_max, (int)motors._servo_1->get_reverse());
+	Serial.printf_P(PSTR("2:\t%d \t%d \t%d \t%d\n"),(int)motors.servo2_pos, (int)motors._servo_2->radio_min, (int)motors._servo_2->radio_max, (int)motors._servo_2->get_reverse());
+	Serial.printf_P(PSTR("3:\t%d \t%d \t%d \t%d\n"),(int)motors.servo3_pos, (int)motors._servo_3->radio_min, (int)motors._servo_3->radio_max, (int)motors._servo_3->get_reverse());
+	Serial.printf_P(PSTR("tail:\t\t%d \t%d \t%d\n"), (int)motors._servo_4->radio_min, (int)motors._servo_4->radio_max, (int)motors._servo_4->get_reverse());
 
-	Serial.printf_P(PSTR("roll max: \t%d\n"), (int)g.heli_roll_max);
-	Serial.printf_P(PSTR("pitch max: \t%d\n"), (int)g.heli_pitch_max);
-	Serial.printf_P(PSTR("coll min:\t%d\t mid:%d\t max:%d\n"),(int)g.heli_collective_min, (int)g.heli_collective_mid, (int)g.heli_collective_max);
+	Serial.printf_P(PSTR("roll max: \t%d\n"), (int)motors.roll_max);
+	Serial.printf_P(PSTR("pitch max: \t%d\n"), (int)motors.pitch_max);
+	Serial.printf_P(PSTR("coll min:\t%d\t mid:%d\t max:%d\n"),(int)motors.collective_min, (int)motors.collective_mid, (int)motors.collective_max);
 
 	// calculate and print servo rate
-	if( g.heli_servo_averaging <= 1 ) {
-	    servo_rate = 250;
-	} else {
-	    servo_rate = 250 / g.heli_servo_averaging;
-	}
-	Serial.printf_P(PSTR("servo rate:\t%d hz\n"),servo_rate);
+	Serial.printf_P(PSTR("servo rate:\t%d hz\n"),(int)g.rc_speed);
 
 	print_blanks(2);
 }
@@ -961,9 +955,9 @@ static void report_gyro()
 	Serial.printf_P(PSTR("Gyro:\n"));
 	print_divider();
 
-	print_enabled( g.heli_ext_gyro_enabled );
-	if( g.heli_ext_gyro_enabled )
-	    Serial.printf_P(PSTR("gain: %d"),(int)g.heli_ext_gyro_gain);
+	print_enabled( motors.ext_gyro_enabled );
+	if( motors.ext_gyro_enabled )
+	    Serial.printf_P(PSTR("gain: %d"),(int)motors.ext_gyro_gain);
 
 	print_blanks(2);
 }
@@ -1052,13 +1046,13 @@ print_gyro_offsets(void)
 static RC_Channel *
 heli_get_servo(int servo_num){
 	if( servo_num == CH_1 )
-	    return &g.heli_servo_1;
+	    return motors._servo_1;
 	if( servo_num == CH_2 )
-	    return &g.heli_servo_2;
+	    return motors._servo_2;
 	if( servo_num == CH_3 )
-	    return &g.heli_servo_3;
+	    return motors._servo_3;
 	if( servo_num == CH_4 )
-	    return &g.heli_servo_4;
+	    return motors._servo_4;
 	return NULL;
 }
 
@@ -1116,23 +1110,13 @@ static void print_enabled(boolean b)
 static void
 init_esc()
 {
-	motors_output_enable();
+	motors.enable();
+	motors.armed(true);
 	while(1){
 		read_radio();
 		delay(100);
 		dancing_light();
-		APM_RC.OutputCh(MOT_1, g.rc_3.radio_in);
-		APM_RC.OutputCh(MOT_2, g.rc_3.radio_in);
-		APM_RC.OutputCh(MOT_3, g.rc_3.radio_in);
-		APM_RC.OutputCh(MOT_4, g.rc_3.radio_in);
-		APM_RC.OutputCh(MOT_5, g.rc_3.radio_in);
-		APM_RC.OutputCh(MOT_6, g.rc_3.radio_in);
-
-		#if FRAME_CONFIG ==	OCTA_FRAME
-		APM_RC.OutputCh(MOT_7,   g.rc_3.radio_in);
-		APM_RC.OutputCh(MOT_8,   g.rc_3.radio_in);
-		#endif
-
+		motors.throttle_pass_through();
 	}
 }
 
