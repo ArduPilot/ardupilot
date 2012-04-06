@@ -58,6 +58,8 @@ namespace ArdupilotMega
 
         bool serialThread = false;
 
+        static internal BindingSource bs;
+
         TcpListener listener;
 
         DateTime heatbeatSend = DateTime.Now;
@@ -186,7 +188,6 @@ namespace ArdupilotMega
                     this.Height = int.Parse(config["MainHeight"].ToString());
                 if (config["MainWidth"] != null)
                     this.Width = int.Parse(config["MainWidth"].ToString());
-
 
                 if (config["CMB_rateattitude"] != null)
                     MainV2.cs.rateattitude = byte.Parse(config["CMB_rateattitude"].ToString());
@@ -794,7 +795,7 @@ namespace ArdupilotMega
 
                         if (joystick != null && joystick.enabled)
                         {
-                            MAVLink.__mavlink_rc_channels_override_t rc = new MAVLink.__mavlink_rc_channels_override_t();
+                            MAVLink.mavlink_rc_channels_override_t rc = new MAVLink.mavlink_rc_channels_override_t();
 
                             rc.target_component = comPort.compid;
                             rc.target_system = comPort.sysid;
@@ -956,7 +957,7 @@ namespace ArdupilotMega
                     {
                         //                        Console.WriteLine("remote lost {0}", cs.packetdropremote);
 
-                        MAVLink.__mavlink_heartbeat_t htb = new MAVLink.__mavlink_heartbeat_t();
+                        MAVLink.mavlink_heartbeat_t htb = new MAVLink.mavlink_heartbeat_t();
 
 #if MAVLINK10
                         htb.type = (byte)MAVLink.MAV_TYPE.MAV_TYPE_GCS;
@@ -1862,7 +1863,7 @@ namespace ArdupilotMega
             }
             if (keyData == (Keys.Control | Keys.W)) // test
             {
-                Form frm = new GCSViews.ConfigurationView.Configuration();
+                Form frm = new GCSViews.ConfigurationView.Setup();
                 ThemeManager.ApplyThemeTo(frm);
                 frm.Show();
                 return true;
@@ -1942,6 +1943,9 @@ namespace ArdupilotMega
 
                 if (comPort.rawlogfile != null)
                     comPort.rawlogfile.Close();
+
+                comPort.logfile = null;
+                comPort.rawlogfile = null;
             }
             catch { }
 

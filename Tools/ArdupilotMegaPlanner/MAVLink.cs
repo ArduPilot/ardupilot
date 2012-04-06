@@ -269,7 +269,7 @@ namespace ArdupilotMega
 
                     if (buffer.Length > 5 && buffer1.Length > 5 && buffer[3] == buffer1[3] && buffer[4] == buffer1[4])
                     {
-                        __mavlink_heartbeat_t hb = buffer.ByteArrayToStructure<__mavlink_heartbeat_t>(6);
+                        mavlink_heartbeat_t hb = buffer.ByteArrayToStructure<mavlink_heartbeat_t>(6);
 
                         mavlinkversion = hb.mavlink_version;
                         aptype = hb.type;
@@ -345,7 +345,7 @@ namespace ArdupilotMega
         {
             bool validPacket = false;
             byte a = 0;
-            foreach (Type ty in mavstructs)
+            foreach (Type ty in MAVLINK_MESSAGE_INFO)
             {
                 if (ty == indata.GetType())
                 {
@@ -432,7 +432,7 @@ namespace ArdupilotMega
 
             try
             {
-                if (logfile != null)
+                if (logfile != null && logfile.BaseStream.CanWrite)
                 {
                     lock (logwritelock)
                     {
@@ -491,7 +491,7 @@ namespace ArdupilotMega
 
             MainV2.giveComport = true;
 
-            __mavlink_param_set_t req = new __mavlink_param_set_t();
+            mavlink_param_set_t req = new mavlink_param_set_t();
             req.target_system = sysid;
             req.target_component = compid;
 
@@ -534,7 +534,7 @@ namespace ArdupilotMega
                 {
                     if (buffer[5] == MAVLINK_MSG_ID_PARAM_VALUE)
                     {
-                        __mavlink_param_value_t par = buffer.ByteArrayToStructure<__mavlink_param_value_t>(6);
+                        mavlink_param_value_t par = buffer.ByteArrayToStructure<mavlink_param_value_t>(6);
 
                         string st = System.Text.ASCIIEncoding.ASCII.GetString(par.param_id);
 
@@ -612,7 +612,7 @@ namespace ArdupilotMega
 
             goagain:
 
-            __mavlink_param_request_list_t req = new __mavlink_param_request_list_t();
+            mavlink_param_request_list_t req = new mavlink_param_request_list_t();
             req.target_system = sysid;
             req.target_component = compid;
 
@@ -657,7 +657,7 @@ namespace ArdupilotMega
                         restart = DateTime.Now;
                         start = DateTime.Now;
 
-                        __mavlink_param_value_t par = buffer.ByteArrayToStructure<__mavlink_param_value_t>(6);
+                        mavlink_param_value_t par = buffer.ByteArrayToStructure<mavlink_param_value_t>(6);
 
                         // set new target
                         param_total = (par.param_count - 1);
@@ -755,7 +755,7 @@ namespace ArdupilotMega
         /// </summary>
         public void stopall(bool forget)
         {
-            __mavlink_request_data_stream_t req = new __mavlink_request_data_stream_t();
+            mavlink_request_data_stream_t req = new mavlink_request_data_stream_t();
             req.target_system = sysid;
             req.target_component = compid;
 
@@ -780,14 +780,14 @@ namespace ArdupilotMega
         public void setWPACK()
         {
 #if MAVLINK10
-            MAVLink.__mavlink_mission_ack_t req = new MAVLink.__mavlink_mission_ack_t();
+            MAVLink.mavlink_mission_ack_t req = new MAVLink.mavlink_mission_ack_t();
             req.target_system = sysid;
             req.target_component = compid;
             req.type = 0;
 
             generatePacket(MAVLINK_MSG_ID_MISSION_ACK, req);
 #else
-            MAVLink.__mavlink_waypoint_ack_t req = new MAVLink.__mavlink_waypoint_ack_t();
+            MAVLink.mavlink_waypoint_ack_t req = new MAVLink.mavlink_waypoint_ack_t();
             req.target_system = sysid;
             req.target_component = compid;
             req.type = 0;
@@ -802,7 +802,7 @@ namespace ArdupilotMega
             MainV2.givecomport = true;
             byte[] buffer;
 
-            __mavlink_mission_set_current_t req = new __mavlink_mission_set_current_t();
+            mavlink_mission_set_current_t req = new mavlink_mission_set_current_t();
 
             req.target_system = sysid;
             req.target_component = compid;
@@ -847,7 +847,7 @@ namespace ArdupilotMega
             MainV2.givecomport = true;
             byte[] buffer;
 
-            __mavlink_command_long_t req = new __mavlink_command_long_t();
+            mavlink_command_long_t req = new mavlink_command_long_t();
 
             req.target_system = sysid;
             req.target_component = compid;
@@ -899,7 +899,7 @@ namespace ArdupilotMega
                     {
 
 
-                        var ack = buffer.ByteArrayToStructure<__mavlink_command_ack_t>(6);
+                        var ack = buffer.ByteArrayToStructure<mavlink_command_ack_t>(6);
 
 
                         if (ack.result == (byte)MAV_RESULT.MAV_RESULT_ACCEPTED)
@@ -919,7 +919,7 @@ namespace ArdupilotMega
             MainV2.giveComport = true;
             byte[] buffer;
 
-            __mavlink_waypoint_set_current_t req = new __mavlink_waypoint_set_current_t();
+            mavlink_waypoint_set_current_t req = new mavlink_waypoint_set_current_t();
 
             req.target_system = sysid;
             req.target_component = compid;
@@ -963,7 +963,7 @@ namespace ArdupilotMega
             MainV2.giveComport = true;
             byte[] buffer;
 
-            __mavlink_action_t req = new __mavlink_action_t();
+            mavlink_action_t req = new mavlink_action_t();
 
             req.target = sysid;
             req.target_component = compid;
@@ -1063,9 +1063,9 @@ namespace ArdupilotMega
                     }
                     break;
                 case (byte)MAVLink.MAV_DATA_STREAM.MAV_DATA_STREAM_EXTRA3:
-                    if (packetspersecondbuild[MAVLINK_MSG_ID_DCM] < DateTime.Now.AddSeconds(-2))
+                    if (packetspersecondbuild[MAVLINK_MSG_ID_AHRS] < DateTime.Now.AddSeconds(-2))
                         break;
-                    pps = packetspersecond[MAVLINK_MSG_ID_DCM];
+                    pps = packetspersecond[MAVLINK_MSG_ID_AHRS];
                     if (hzratecheck(pps, hzrate))
                     {
                         return;
@@ -1154,7 +1154,7 @@ namespace ArdupilotMega
 
         void getDatastream(byte id, byte hzrate)
         {
-            __mavlink_request_data_stream_t req = new __mavlink_request_data_stream_t();
+            mavlink_request_data_stream_t req = new mavlink_request_data_stream_t();
             req.target_system = sysid;
             req.target_component = compid;
 
@@ -1176,7 +1176,7 @@ namespace ArdupilotMega
             MainV2.giveComport = true;
             byte[] buffer;
 #if MAVLINK10
-            __mavlink_mission_request_list_t req = new __mavlink_mission_request_list_t();
+            mavlink_mission_request_list_t req = new mavlink_mission_request_list_t();
 
             req.target_system = sysid;
             req.target_component = compid;
@@ -1212,7 +1212,7 @@ namespace ArdupilotMega
 
 
 
-                        var count = buffer.ByteArrayToStructure<__mavlink_mission_count_t>(6);
+                        var count = buffer.ByteArrayToStructure<mavlink_mission_count_t>(6);
 
 
                         log.Info("wpcount: " + count.count);
@@ -1227,7 +1227,7 @@ namespace ArdupilotMega
             }
 #else
 
-            __mavlink_waypoint_request_list_t req = new __mavlink_waypoint_request_list_t();
+            mavlink_waypoint_request_list_t req = new mavlink_waypoint_request_list_t();
 
             req.target_system = sysid;
             req.target_component = compid;
@@ -1284,7 +1284,7 @@ namespace ArdupilotMega
             MainV2.giveComport = true;
             Locationwp loc = new Locationwp();
 #if MAVLINK10
-            __mavlink_mission_request_t req = new __mavlink_mission_request_t();
+            mavlink_mission_request_t req = new mavlink_mission_request_t();
 
             req.target_system = sysid;
             req.target_component = compid;
@@ -1326,12 +1326,12 @@ namespace ArdupilotMega
 
                         //Array.Copy(buffer, 6, buffer, 0, buffer.Length - 6);
 
-                        var wp = buffer.ByteArrayToStructure<__mavlink_mission_item_t>(6);
+                        var wp = buffer.ByteArrayToStructure<mavlink_mission_item_t>(6);
 
 
 #else
 
-            __mavlink_waypoint_request_t req = new __mavlink_waypoint_request_t();
+            mavlink_waypoint_request_t req = new mavlink_waypoint_request_t();
 
             req.target_system = sysid;
             req.target_component = compid;
@@ -1369,7 +1369,7 @@ namespace ArdupilotMega
                     if (buffer[5] == MAVLINK_MSG_ID_WAYPOINT)
                     {
                         //Console.WriteLine("getwp ans " + DateTime.Now.Millisecond);
-                        __mavlink_waypoint_t wp = buffer.ByteArrayToStructure<__mavlink_waypoint_t>(6);
+                        mavlink_waypoint_t wp = buffer.ByteArrayToStructure<mavlink_waypoint_t>(6);
 
 #endif
 
@@ -1499,7 +1499,7 @@ namespace ArdupilotMega
 
                     textoutput = string.Format("{0:X} {1:X} {2:X} {3:X} {4:X} {5:X} ", header, length, seq, sysid, compid, messid);
 
-                    object data = Activator.CreateInstance(mavstructs[messid]);
+                    object data = Activator.CreateInstance(MAVLINK_MESSAGE_INFO[messid]);
 
                     MavlinkUtil.ByteArrayToStructure(datin, ref data, 6);
 
@@ -1562,7 +1562,7 @@ namespace ArdupilotMega
         {
 #if MAVLINK10		
             MainV2.givecomport = true;
-            __mavlink_mission_count_t req = new __mavlink_mission_count_t();
+            mavlink_mission_count_t req = new mavlink_mission_count_t();
 
             req.target_system = sysid;
             req.target_component = compid; // MAVLINK_MSG_ID_MISSION_COUNT
@@ -1597,7 +1597,7 @@ namespace ArdupilotMega
 
 
 
-                        var request = buffer.ByteArrayToStructure<__mavlink_mission_request_t>(6);
+                        var request = buffer.ByteArrayToStructure<mavlink_mission_request_t>(6);
 
                         if (request.seq == 0)
                         {
@@ -1617,7 +1617,7 @@ namespace ArdupilotMega
             }
 #else
             MainV2.giveComport = true;
-            __mavlink_waypoint_count_t req = new __mavlink_waypoint_count_t();
+            mavlink_waypoint_count_t req = new mavlink_waypoint_count_t();
 
             req.target_system = sysid;
             req.target_component = compid; // MAVLINK_MSG_ID_WAYPOINT_COUNT
@@ -1649,7 +1649,7 @@ namespace ArdupilotMega
                 {
                     if (buffer[5] == MAVLINK_MSG_ID_WAYPOINT_REQUEST)
                     {
-                        __mavlink_waypoint_request_t request = buffer.ByteArrayToStructure<__mavlink_waypoint_request_t>(6);
+                        mavlink_waypoint_request_t request = buffer.ByteArrayToStructure<mavlink_waypoint_request_t>(6);
 
                         if (request.seq == 0)
                         {
@@ -1682,9 +1682,9 @@ namespace ArdupilotMega
         {
             MainV2.giveComport = true;
 #if MAVLINK10
-            __mavlink_mission_item_t req = new __mavlink_mission_item_t();
+            mavlink_mission_item_t req = new mavlink_mission_item_t();
 #else
-            __mavlink_waypoint_t req = new __mavlink_waypoint_t();
+            mavlink_waypoint_t req = new mavlink_waypoint_t();
 #endif
 
             req.target_system = sysid;
@@ -1797,7 +1797,7 @@ namespace ArdupilotMega
                     {
 
 
-                        var ans = buffer.ByteArrayToStructure<__mavlink_mission_ack_t>(6);
+                        var ans = buffer.ByteArrayToStructure<mavlink_mission_ack_t>(6);
 
 
                         log.Info("set wp " + index + " ACK 47 : " + buffer[5] + " ans " + Enum.Parse(typeof(MAV_MISSION_RESULT), ans.type.ToString()));
@@ -1805,7 +1805,7 @@ namespace ArdupilotMega
                     }
                     else if (buffer[5] == MAVLINK_MSG_ID_MISSION_REQUEST)
                     {
-                        var ans = buffer.ByteArrayToStructure<__mavlink_mission_request_t>(6);
+                        var ans = buffer.ByteArrayToStructure<mavlink_mission_request_t>(6);
 
 
 
@@ -1828,13 +1828,13 @@ namespace ArdupilotMega
                     }
 #else
                     if (buffer[5] == MAVLINK_MSG_ID_WAYPOINT_ACK)
-                    { //__mavlink_waypoint_request_t
+                    { //mavlink_waypoint_request_t
                         log.Info("set wp " + index + " ACK 47 : " + buffer[5]);
                         break;
                     }
                     else if (buffer[5] == MAVLINK_MSG_ID_WAYPOINT_REQUEST)
                     {
-                        __mavlink_waypoint_request_t ans = buffer.ByteArrayToStructure<__mavlink_waypoint_request_t>(6);
+                        mavlink_waypoint_request_t ans = buffer.ByteArrayToStructure<mavlink_waypoint_request_t>(6);
 
                         if (ans.seq == (index + 1))
                         {
@@ -1859,7 +1859,7 @@ namespace ArdupilotMega
 
         public void setMountConfigure(MAV_MOUNT_MODE mountmode, bool stabroll, bool stabpitch, bool stabyaw)
         {
-            __mavlink_mount_configure_t req = new __mavlink_mount_configure_t();
+            mavlink_mount_configure_t req = new mavlink_mount_configure_t();
 
             req.target_system = sysid;
             req.target_component = compid;
@@ -1875,7 +1875,7 @@ namespace ArdupilotMega
 
         public void setMountControl(double pa, double pb, double pc, bool islatlng)
         {
-            __mavlink_mount_control_t req = new __mavlink_mount_control_t();
+            mavlink_mount_control_t req = new mavlink_mount_control_t();
 
             req.target_system = sysid;
             req.target_component = compid;
@@ -1902,7 +1902,7 @@ namespace ArdupilotMega
 #if MAVLINK10
             try
             {
-                MAVLink.__mavlink_set_mode_t mode = new MAVLink.__mavlink_set_mode_t();
+                MAVLink.mavlink_set_mode_t mode = new MAVLink.mavlink_set_mode_t();
 
                 if (Common.translateMode(modein, ref mode))
                 {
@@ -1915,9 +1915,9 @@ namespace ArdupilotMega
 #else
             try
             {
-                MAVLink.__mavlink_set_nav_mode_t navmode = new MAVLink.__mavlink_set_nav_mode_t();
+                MAVLink.mavlink_set_nav_mode_t navmode = new MAVLink.mavlink_set_nav_mode_t();
 
-                MAVLink.__mavlink_set_mode_t mode = new MAVLink.__mavlink_set_mode_t();
+                MAVLink.mavlink_set_mode_t mode = new MAVLink.mavlink_set_mode_t();
 
                 if (Common.translateMode(modein, ref navmode, ref mode))
                 {
@@ -2026,7 +2026,7 @@ namespace ArdupilotMega
                             if (BaseStream.IsOpen)
                             {
                                 temp[count] = (byte)BaseStream.ReadByte();
-                                if (rawlogfile != null)
+                                if (rawlogfile != null && rawlogfile.BaseStream.CanWrite)
                                     rawlogfile.Write(temp[count]);
                             }
                         }
@@ -2092,7 +2092,7 @@ namespace ArdupilotMega
                                     if (BaseStream.IsOpen)
                                     {
                                         int read = BaseStream.Read(temp, 6, length - 4);
-                                        if (rawlogfile != null)
+                                        if (rawlogfile != null && rawlogfile.BaseStream.CanWrite)
                                         {
                                             rawlogfile.Write(temp, 0, read);
                                             rawlogfile.BaseStream.Flush();
@@ -2243,7 +2243,7 @@ namespace ArdupilotMega
 
                     try
                     {
-                        if (logfile != null)
+                        if (logfile != null && logfile.BaseStream.CanWrite)
                         {
                             lock (logwritelock)
                             {
@@ -2282,7 +2282,7 @@ namespace ArdupilotMega
 
                     if (buffer[5] == MAVLink.MAVLINK_MSG_ID_MISSION_ITEM)
                     {
-                        __mavlink_mission_item_t wp = buffer.ByteArrayToStructure<__mavlink_mission_item_t>(6);
+                        mavlink_mission_item_t wp = buffer.ByteArrayToStructure<mavlink_mission_item_t>(6);
 #else
 
             if (buffer[5] == MAVLINK_MSG_ID_WAYPOINT_COUNT)
@@ -2293,7 +2293,7 @@ namespace ArdupilotMega
 
             if (buffer[5] == MAVLink.MAVLINK_MSG_ID_WAYPOINT)
             {
-                __mavlink_waypoint_t wp = buffer.ByteArrayToStructure<__mavlink_waypoint_t>(6);
+                mavlink_waypoint_t wp = buffer.ByteArrayToStructure<mavlink_waypoint_t>(6);
 
 #endif
                 wps[wp.seq] = new PointLatLngAlt(wp.x, wp.y, wp.z, wp.seq.ToString());
@@ -2307,7 +2307,7 @@ namespace ArdupilotMega
             MainV2.giveComport = true;
 
             PointLatLngAlt plla = new PointLatLngAlt();
-            __mavlink_fence_fetch_point_t req = new __mavlink_fence_fetch_point_t();
+            mavlink_fence_fetch_point_t req = new mavlink_fence_fetch_point_t();
 
             req.idx = (byte)no;
             req.target_component = compid;
@@ -2342,7 +2342,7 @@ namespace ArdupilotMega
                     {
                         MainV2.giveComport = false;
 
-                        __mavlink_fence_point_t fp = buffer.ByteArrayToStructure<__mavlink_fence_point_t>(6);
+                        mavlink_fence_point_t fp = buffer.ByteArrayToStructure<mavlink_fence_point_t>(6);
 
                         plla.Lat = fp.lat;
                         plla.Lng = fp.lng;
@@ -2358,7 +2358,7 @@ namespace ArdupilotMega
 
         public bool setFencePoint(byte index, PointLatLngAlt plla, byte fencepointcount)
         {
-            __mavlink_fence_point_t fp = new __mavlink_fence_point_t();
+            mavlink_fence_point_t fp = new mavlink_fence_point_t();
 
             fp.idx = index;
             fp.count = fencepointcount;

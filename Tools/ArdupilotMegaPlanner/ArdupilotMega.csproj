@@ -308,6 +308,12 @@
     <Compile Include="GCSViews\ConfigurationView\ConfigRawParams.Designer.cs">
       <DependentUpon>ConfigRawParams.cs</DependentUpon>
     </Compile>
+    <Compile Include="GCSViews\ConfigurationView\Setup.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="GCSViews\ConfigurationView\Setup.Designer.cs">
+      <DependentUpon>Setup.cs</DependentUpon>
+    </Compile>
     <Compile Include="MagCalib.cs" />
     <Compile Include="PIDTunning.cs" />
     <Compile Include="Radio\3DRradio.cs">
@@ -568,6 +574,9 @@
     </EmbeddedResource>
     <EmbeddedResource Include="GCSViews\ConfigurationView\Configuration.resx">
       <DependentUpon>Configuration.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="GCSViews\ConfigurationView\Setup.resx">
+      <DependentUpon>Setup.cs</DependentUpon>
     </EmbeddedResource>
     <EmbeddedResource Include="Radio\3DRradio.resx">
       <DependentUpon>3DRradio.cs</DependentUpon>

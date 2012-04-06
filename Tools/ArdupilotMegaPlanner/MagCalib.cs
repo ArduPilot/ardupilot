@@ -98,9 +98,9 @@ namespace ArdupilotMega
                     if (packet == null)
                         continue;
 
-                    if (packet.GetType() == typeof(MAVLink.__mavlink_vfr_hud_t))
+                    if (packet.GetType() == typeof(MAVLink.mavlink_vfr_hud_t))
                     {
-                        if (((MAVLink.__mavlink_vfr_hud_t)packet).throttle >= throttleThreshold)
+                        if (((MAVLink.mavlink_vfr_hud_t)packet).throttle >= throttleThreshold)
                         {
                             useData = true;
                         }
@@ -111,35 +111,35 @@ namespace ArdupilotMega
 
                     }
 
-                    if (packet.GetType() == typeof(MAVLink.__mavlink_sensor_offsets_t))
+                    if (packet.GetType() == typeof(MAVLink.mavlink_sensor_offsets_t))
                     {
                         offset = new Tuple<float, float, float>(
-                            ((MAVLink.__mavlink_sensor_offsets_t)packet).mag_ofs_x,
-                            ((MAVLink.__mavlink_sensor_offsets_t)packet).mag_ofs_y,
-                            ((MAVLink.__mavlink_sensor_offsets_t)packet).mag_ofs_z);
+                            ((MAVLink.mavlink_sensor_offsets_t)packet).mag_ofs_x,
+                            ((MAVLink.mavlink_sensor_offsets_t)packet).mag_ofs_y,
+                            ((MAVLink.mavlink_sensor_offsets_t)packet).mag_ofs_z);
                     }
-                    else if (packet.GetType() == typeof(MAVLink.__mavlink_raw_imu_t) && useData)
+                    else if (packet.GetType() == typeof(MAVLink.mavlink_raw_imu_t) && useData)
                     {
                         int div = 20;
 
                         // fox dxf
                         vertex = new Polyline3dVertex(new Vector3f(
-                            ((MAVLink.__mavlink_raw_imu_t)packet).xmag - offset.Item1,
-                            ((MAVLink.__mavlink_raw_imu_t)packet).ymag - offset.Item2,
-                            ((MAVLink.__mavlink_raw_imu_t)packet).zmag - offset.Item3)
+                            ((MAVLink.mavlink_raw_imu_t)packet).xmag - offset.Item1,
+                            ((MAVLink.mavlink_raw_imu_t)packet).ymag - offset.Item2,
+                            ((MAVLink.mavlink_raw_imu_t)packet).zmag - offset.Item3)
                             );
                         vertexes.Add(vertex);
 
 
                         // for old method
-                        setMinorMax(((MAVLink.__mavlink_raw_imu_t)packet).xmag - offset.Item1, ref minx, ref maxx);
-                        setMinorMax(((MAVLink.__mavlink_raw_imu_t)packet).ymag - offset.Item2, ref miny, ref maxy);
-                        setMinorMax(((MAVLink.__mavlink_raw_imu_t)packet).zmag - offset.Item3, ref minz, ref maxz);
+                        setMinorMax(((MAVLink.mavlink_raw_imu_t)packet).xmag - offset.Item1, ref minx, ref maxx);
+                        setMinorMax(((MAVLink.mavlink_raw_imu_t)packet).ymag - offset.Item2, ref miny, ref maxy);
+                        setMinorMax(((MAVLink.mavlink_raw_imu_t)packet).zmag - offset.Item3, ref minz, ref maxz);
 
                         // for new lease sq
-                        string item = (int)(((MAVLink.__mavlink_raw_imu_t)packet).xmag / div) + "," +
-                            (int)(((MAVLink.__mavlink_raw_imu_t)packet).ymag / div) + "," +
-                            (int)(((MAVLink.__mavlink_raw_imu_t)packet).zmag / div);
+                        string item = (int)(((MAVLink.mavlink_raw_imu_t)packet).xmag / div) + "," +
+                            (int)(((MAVLink.mavlink_raw_imu_t)packet).ymag / div) + "," +
+                            (int)(((MAVLink.mavlink_raw_imu_t)packet).zmag / div);
 
                         if (filter.ContainsKey(item))
                         {
@@ -155,9 +155,9 @@ namespace ArdupilotMega
 
 
                         data.Add(new Tuple<float, float, float>(
-                            ((MAVLink.__mavlink_raw_imu_t)packet).xmag - offset.Item1,
-                            ((MAVLink.__mavlink_raw_imu_t)packet).ymag - offset.Item2,
-                            ((MAVLink.__mavlink_raw_imu_t)packet).zmag - offset.Item3));
+                            ((MAVLink.mavlink_raw_imu_t)packet).xmag - offset.Item1,
+                            ((MAVLink.mavlink_raw_imu_t)packet).ymag - offset.Item2,
+                            ((MAVLink.mavlink_raw_imu_t)packet).zmag - offset.Item3));
 
                     }
 

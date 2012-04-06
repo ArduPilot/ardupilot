@@ -29,9 +29,10 @@ namespace ArdupilotMega
 
         bool getFirmware()
         {
-            //https://raw.github.com/tridge/SiK/master/Firmware/dst/radio.hm_trp.hex
+            // was https://raw.github.com/tridge/SiK/master/Firmware/dst/radio.hm_trp.hex
+            // now http://www.samba.org/tridge/UAV/3DR/radio.hm_trp.hex
 
-            return Common.getFilefromNet("https://raw.github.com/tridge/SiK/master/Firmware/dst/radio.hm_trp.hex", firmwarefile);
+            return Common.getFilefromNet("http://www.samba.org/tridge/UAV/3DR/radio.hm_trp.hex", firmwarefile);
         }
 
         void Sleep(int mstimeout)
@@ -449,6 +450,9 @@ namespace ArdupilotMega
                         {
                             Control[] controls = this.Controls.Find("R" + values[0].Trim(), false);
 
+                            if (controls.Length == 0)
+                                continue;
+
                             if (controls[0].GetType() == typeof(CheckBox))
                             {
                                 ((CheckBox)controls[0]).Checked = values[2].Trim() == "1";
@@ -485,6 +489,8 @@ namespace ArdupilotMega
             }
 
             comPort.Close();
+
+            BUT_savesettings.Enabled = true;
         }
 
         string Serial_ReadLine(ArdupilotMega.ICommsSerial comPort)

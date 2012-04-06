@@ -21,6 +21,17 @@ namespace ArdupilotMega.Controls.BackstageView
         private BackstageViewPage _activePage;
         private const int ButtonSpacing = 30;
         private const int ButtonHeight = 30;
+        public BackstageViewPage SelectedPage { get { return _activePage; } }
+
+        ~BackstageView()
+        {
+            foreach (BackstageViewPage ctl in _pages)
+            {
+                if (ctl.Page != null)
+                    ctl.Page.Dispose();
+            }
+            this.Dispose();
+        }
 
         public BackstageView()
         {
@@ -160,7 +171,6 @@ namespace ArdupilotMega.Controls.BackstageView
                 _activePage = page;
 
             ActivatePage(page);
-            // Todo: set the link button to be selected looking 
         }
 
         private void CreateLinkButton(BackstageViewPage page)

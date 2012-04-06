@@ -120,9 +120,6 @@
   <metadata name="toolTip1.TrayLocation" type="System.Drawing.Point, System.Drawing, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a">
     <value>17, 17</value>
   </metadata>
-  <metadata name="toolTip1.TrayLocation" type="System.Drawing.Point, System.Drawing, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a">
-    <value>17, 17</value>
-  </metadata>
   <data name="S3.ToolTip" xml:space="preserve">
     <value>NETID is a 16 bit 'network ID'. This is used to seed the frequency hopping sequence and to identify packets as coming from the right radio. Make sure you use a different NETID from anyone else running the same sort of radio in the area. </value>
   </data>

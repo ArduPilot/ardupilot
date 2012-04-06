@@ -4,11 +4,55 @@ using System.Text;
 using System.IO;
 using System.Windows.Forms;
 using System.Diagnostics;
+using System.Runtime.InteropServices;
 
 namespace wix
 {
     class Program
     {
+        /// <summary>
+        /// The operation completed successfully.
+        /// </summary>
+        public const int ERROR_SUCCESS = 0;
+        /// <summary>
+        /// Incorrect function.
+        /// </summary>
+        public const int ERROR_INVALID_FUNCTION = 1;
+        /// <summary>
+        /// The system cannot find the file specified.
+        /// </summary>
+        public const int ERROR_FILE_NOT_FOUND = 2;
+        /// <summary>
+        /// The system cannot find the path specified.
+        /// </summary>
+        public const int ERROR_PATH_NOT_FOUND = 3;
+        /// <summary>
+        /// The system cannot open the file.
+        /// </summary>
+        public const int ERROR_TOO_MANY_OPEN_FILES = 4;
+        /// <summary>
+        /// Access is denied.
+        /// </summary>
+        public const int ERROR_ACCESS_DENIED = 5;
+
+        const Int32 DRIVER_PACKAGE_REPAIR = 0x00000001;
+        const Int32 DRIVER_PACKAGE_SILENT = 0x00000002;
+        const Int32 DRIVER_PACKAGE_FORCE = 0x00000004;
+        const Int32 DRIVER_PACKAGE_ONLY_IF_DEVICE_PRESENT = 0x00000008;
+        const Int32 DRIVER_PACKAGE_LEGACY_MODE = 0x00000010;
+        const Int32 DRIVER_PACKAGE_DELETE_FILES = 0x00000020;
+
+        [DllImport("DIFXApi.dll", CharSet = CharSet.Unicode)]
+        public static extern Int32 DriverPackagePreinstall(string DriverPackageInfPath, Int32 Flags);
+
+        static void driverinstall()
+        {
+            int result = DriverPackagePreinstall(@"..\Driver\Arduino MEGA 2560.inf", 0);
+            if (result != 0)
+                MessageBox.Show("Driver installation failed. " + result);
+
+        }
+
         static int no = 0;
 
         static StreamWriter sw;
@@ -22,6 +66,12 @@ namespace wix
             if (args.Length == 0)
             {
                 Console.WriteLine("Bad Directory");
+                return;
+            }
+
+            if (args[0] == "driver")
+            {
+                driverinstall();
                 return;
             }
 
@@ -190,12 +240,13 @@ data = @"
             string[] dirs = Directory.GetDirectories(path);
 
             if (level != 0)
-                sw.WriteLine("<Directory Id=\"" + Path.GetFileName(path).Replace('-', '_') + "\" Name=\"" + Path.GetFileName(path) + "\">");
+                sw.WriteLine("<Directory Id=\"" + Path.GetFileName(path).Replace('-', '_') + no + "\" Name=\"" + Path.GetFileName(path) + "\">");
 
             string[] files = Directory.GetFiles(path);
 
-            sw.WriteLine("<Component Id=\"_comp"+no+"\" Guid=\""+ System.Guid.NewGuid().ToString() +"\">");
+            no++;
 
+            sw.WriteLine("<Component Id=\"_comp"+no+"\" Guid=\""+ System.Guid.NewGuid().ToString() +"\">");
             components.Add("_comp"+no);
 
             foreach (string filepath in files)

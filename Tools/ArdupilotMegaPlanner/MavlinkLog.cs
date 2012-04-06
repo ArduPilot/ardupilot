@@ -744,7 +744,7 @@ namespace ArdupilotMega
                 int colorvalue = ColourValues[step % ColourValues.Length];
                 step++;
 
-                myCurve = zg1.GraphPane.AddCurve(lookforfields[a].Replace("__mavlink_", ""), lists[a], Color.FromArgb(unchecked(colorvalue + (int)0xff000000)), SymbolType.None);
+                myCurve = zg1.GraphPane.AddCurve(lookforfields[a].Replace("mavlink_", ""), lists[a], Color.FromArgb(unchecked(colorvalue + (int)0xff000000)), SymbolType.None);
 
                 double xMin, xMax, yMin, yMax;
 
@@ -794,6 +794,12 @@ namespace ArdupilotMega
                     byte[] packet = MavlinkInterface.readPacket();
 
                     object data = MavlinkInterface.DebugPacket(packet, false);
+
+                    if (data == null)
+                    {
+                        log.Info("No info on packet");
+                        continue;
+                    }
 
                     Type test = data.GetType();
 
@@ -890,9 +896,9 @@ namespace ArdupilotMega
 
             PointPairList list = ((PointPairList)this.data[field]);
 
-            PointPairList listx = ((PointPairList)this.data["xmag __mavlink_raw_imu_t"]);
-            PointPairList listy = ((PointPairList)this.data["ymag __mavlink_raw_imu_t"]);
-            PointPairList listz = ((PointPairList)this.data["zmag __mavlink_raw_imu_t"]);
+            PointPairList listx = ((PointPairList)this.data["xmag mavlink_raw_imu_t"]);
+            PointPairList listy = ((PointPairList)this.data["ymag mavlink_raw_imu_t"]);
+            PointPairList listz = ((PointPairList)this.data["zmag mavlink_raw_imu_t"]);
 
             //(float)Math.Sqrt(Math.Pow(mx, 2) + Math.Pow(my, 2) + Math.Pow(mz, 2));
 
@@ -949,13 +955,13 @@ namespace ArdupilotMega
                 int colorvalue = ColourValues[colorStep % ColourValues.Length];
                 colorStep++;
 
-                myCurve = zg1.GraphPane.AddCurve(((CheckBox)sender).Name.Replace("__mavlink_", ""), (PointPairList)data[((CheckBox)sender).Name], Color.FromArgb(unchecked(colorvalue + (int)0xff000000)), SymbolType.None);
+                myCurve = zg1.GraphPane.AddCurve(((CheckBox)sender).Name.Replace("mavlink_", ""), (PointPairList)data[((CheckBox)sender).Name], Color.FromArgb(unchecked(colorvalue + (int)0xff000000)), SymbolType.None);
 
                 myCurve.Tag = ((CheckBox)sender).Name;
 
-                if (myCurve.Tag.ToString() == "roll __mavlink_attitude_t" ||
-                    myCurve.Tag.ToString() == "pitch __mavlink_attitude_t" ||
-                    myCurve.Tag.ToString() == "yaw __mavlink_attitude_t")
+                if (myCurve.Tag.ToString() == "roll mavlink_attitude_t" ||
+                    myCurve.Tag.ToString() == "pitch mavlink_attitude_t" ||
+                    myCurve.Tag.ToString() == "yaw mavlink_attitude_t")
                 {
                     PointPairList ppl = new PointPairList((PointPairList)data[((CheckBox)sender).Name]);
                     for (int a = 0; a < ppl.Count; a++)
