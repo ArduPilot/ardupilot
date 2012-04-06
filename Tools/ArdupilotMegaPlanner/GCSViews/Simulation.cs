@@ -51,7 +51,11 @@ namespace ArdupilotMega.GCSViews
 
         // gps buffer
         int gpsbufferindex = 0;
+#if !MAVLINK10
         ArdupilotMega.MAVLink.mavlink_gps_raw_t[] gpsbuffer = new MAVLink.mavlink_gps_raw_t[5];
+#else
+        ArdupilotMega.MAVLink.mavlink_gps_raw_int_t[] gpsbuffer = new MAVLink.mavlink_gps_raw_int_t[5];
+#endif
 
         // set defaults
         int rollgain = 10000;
@@ -374,7 +378,6 @@ namespace ArdupilotMega.GCSViews
         /// <param name="write">true/false</param>
         private void xmlconfig(bool write)
         {
-            int fixme; // add profiles?
             if (write)
             {
                 ArdupilotMega.MainV2.config["REV_roll"] = CHKREV_roll.Checked.ToString();
@@ -576,11 +579,11 @@ namespace ArdupilotMega.GCSViews
                     {
                         if (CHK_quad.Checked && !RAD_aerosimrc.Checked)// || chkSensor.Checked && RAD_JSBSim.Checked)
                         {
-                            comPort.requestDatastream((byte)ArdupilotMega.MAVLink.MAV_DATA_STREAM.MAV_DATA_STREAM_RAW_CONTROLLER, 0); // request servoout
+                            comPort.requestDatastream((byte)ArdupilotMega.MAVLink.MAV_DATA_STREAM.RAW_CONTROLLER, 0); // request servoout
                         }
                         else
                         {
-                            comPort.requestDatastream((byte)ArdupilotMega.MAVLink.MAV_DATA_STREAM.MAV_DATA_STREAM_RAW_CONTROLLER, 50); // request servoout
+                            comPort.requestDatastream((byte)ArdupilotMega.MAVLink.MAV_DATA_STREAM.RAW_CONTROLLER, 50); // request servoout
                         }
                     }
                     catch { }
@@ -834,11 +837,11 @@ namespace ArdupilotMega.GCSViews
                 gps.fix_type = 3;
                                 if (xplane9)
                 {
-                    gps.cog = ((float)DATA[19][2]);
+                    gps.cog = (ushort)((float)DATA[19][2]);
                 }
                 else
                 {
-                    gps.cog = ((float)DATA[18][2]);
+                    gps.cog = (ushort)((float)DATA[18][2]);
                 }
                 gps.lat = (int)(DATA[20][0] * 1.0e7);
                 gps.lon = (int)(DATA[20][1] * 1.0e7);
@@ -1167,7 +1170,11 @@ namespace ArdupilotMega.GCSViews
                 sitlout.alt = gps.alt;
                 sitlout.lat = gps.lat;
                 sitlout.lon = gps.lon;
+#if !MAVLINK10
                 sitlout.heading = gps.hdg;
+#else
+                sitlout.heading = gps.cog;
+#endif
 
                 sitlout.v_north =  DATA[21][4];
                 sitlout.v_east = DATA[21][5];

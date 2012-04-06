@@ -159,7 +159,7 @@ namespace ArdupilotMega
                             {
                                 MainV2.giveComport = true;
 
-                                MainV2.comPort.setWP(gotohere, 0, MAVLink.MAV_FRAME.MAV_FRAME_GLOBAL_RELATIVE_ALT, (byte)2);
+                                MainV2.comPort.setWP(gotohere, 0, MAVLink.MAV_FRAME.GLOBAL_RELATIVE_ALT, (byte)2);
 
                                 GCSViews.FlightData.GuidedModeWP = new PointLatLngAlt(gotohere);
 

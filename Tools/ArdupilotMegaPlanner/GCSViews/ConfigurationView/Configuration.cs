@@ -23,9 +23,14 @@ namespace ArdupilotMega.GCSViews.ConfigurationView
             this.backstageView.AddPage(new BackstageView.BackstageViewPage(new ConfigAccelerometerCalibration(), "Level Calibration"));
             this.backstageView.AddPage(new BackstageView.BackstageViewPage(new ConfigArducopter(), "Arducopter Setup"));
             this.backstageView.AddPage(new BackstageView.BackstageViewPage(new ConfigArduplane(), "Arduplane Setup"));
-            this.backstageView.AddPage(new BackstageView.BackstageViewPage(new ConfigArduplane(), "Heli Setup"));
+            this.backstageView.AddPage(new BackstageView.BackstageViewPage(new ConfigTradHeli(), "Heli Setup"));
             this.backstageView.AddPage(new BackstageView.BackstageViewPage(new ConfigRawParams(), "Raw params (Advanced)"));
             this.backstageView.AddPage(new BackstageView.BackstageViewPage(new ConfigPlanner(), "Planner"));
+        }
+
+        private void Configuration_FormClosing(object sender, FormClosingEventArgs e)
+        {
+            backstageView.Close();
         }
     }
 }

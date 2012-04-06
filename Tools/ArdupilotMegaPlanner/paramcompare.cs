@@ -11,16 +11,16 @@ namespace ArdupilotMega
 {
     public partial class ParamCompare : Form
     {
-        GCSViews.Configuration config;
+        DataGridView dgv;
         Hashtable param = new Hashtable();
         Hashtable param2 = new Hashtable();
 
-        public ParamCompare(GCSViews.Configuration config, Hashtable param, Hashtable param2)
+        public ParamCompare(DataGridView dgv, Hashtable param, Hashtable param2)
         {
             InitializeComponent();
             this.param = param;
             this.param2 = param2;
-            this.config = config;
+            this.dgv = dgv;
 
             processToScreen();
         }
@@ -61,7 +61,14 @@ namespace ArdupilotMega
             {
                 if ((bool)row.Cells[Use.Index].Value == true)
                 {
-                    config.EEPROM_View_float_TextChanged(new Control() { Name = row.Cells[Command.Index].Value.ToString(), Text = row.Cells[newvalue.Index].Value.ToString() }, null);
+                    foreach (DataGridViewRow dgvr in dgv.Rows)
+                    {
+                        if (dgvr.Cells[0].Value.ToString() == row.Cells[Command.Index].Value.ToString())
+                        {
+                            dgvr.Cells[1].Value = row.Cells[newvalue.Index].Value.ToString();
+                            break;
+                        }
+                    }
                 }
             }
             this.Close();

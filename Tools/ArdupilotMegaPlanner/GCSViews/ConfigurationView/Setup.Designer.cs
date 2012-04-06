@@ -29,19 +29,8 @@
         private void InitializeComponent()
         {
             System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(Setup));
-            this.lbl_pleaseconnect = new System.Windows.Forms.Label();
             this.backstageView = new ArdupilotMega.Controls.BackstageView.BackstageView();
             this.SuspendLayout();
-            // 
-            // lbl_pleaseconnect
-            // 
-            this.lbl_pleaseconnect.AutoSize = true;
-            this.lbl_pleaseconnect.Location = new System.Drawing.Point(297, 284);
-            this.lbl_pleaseconnect.Name = "lbl_pleaseconnect";
-            this.lbl_pleaseconnect.Size = new System.Drawing.Size(104, 13);
-            this.lbl_pleaseconnect.TabIndex = 1;
-            this.lbl_pleaseconnect.Text = "Please Connect First";
-            this.lbl_pleaseconnect.Visible = false;
             // 
             // backstageView
             // 
@@ -55,7 +44,6 @@
             // Setup
             // 
             this.ClientSize = new System.Drawing.Size(823, 468);
-            this.Controls.Add(this.lbl_pleaseconnect);
             this.Controls.Add(this.backstageView);
             this.Icon = ((System.Drawing.Icon)(resources.GetObject("$this.Icon")));
             this.MinimumSize = new System.Drawing.Size(839, 506);
@@ -71,6 +59,5 @@
         #endregion
 
         private Controls.BackstageView.BackstageView backstageView;
-        private System.Windows.Forms.Label lbl_pleaseconnect;
     }
 }

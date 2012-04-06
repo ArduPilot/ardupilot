@@ -993,8 +993,8 @@ namespace ArdupilotMega
                         MAVLink.mavlink_heartbeat_t htb = new MAVLink.mavlink_heartbeat_t();
 
 #if MAVLINK10
-                        htb.type = (byte)MAVLink.MAV_TYPE.MAV_TYPE_GCS;
-                        htb.autopilot = (byte)MAVLink.MAV_AUTOPILOT.MAV_AUTOPILOT_ARDUPILOTMEGA;
+                        htb.type = (byte)MAVLink.MAV_TYPE.GCS;
+                        htb.autopilot = (byte)MAVLink.MAV_AUTOPILOT.ARDUPILOTMEGA;
                         htb.mavlink_version = 3;
 #else
                         htb.type = (byte)MAVLink.MAV_TYPE.MAV_GENERIC;
@@ -1896,7 +1896,7 @@ namespace ArdupilotMega
             }
             if (keyData == (Keys.Control | Keys.W)) // test
             {
-                Form frm = new GCSViews.ConfigurationView.Setup();
+                Form frm = new GCSViews.ConfigurationView.Configuration();
                 ThemeManager.ApplyThemeTo(frm);
                 frm.Show();
                 return true;

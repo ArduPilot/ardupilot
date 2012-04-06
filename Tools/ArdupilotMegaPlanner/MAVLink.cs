@@ -799,7 +799,7 @@ namespace ArdupilotMega
         public bool setWPCurrent(ushort index)
         {
 #if MAVLINK10
-            MainV2.givecomport = true;
+            MainV2.giveComport = true;
             byte[] buffer;
 
             mavlink_mission_set_current_t req = new mavlink_mission_set_current_t();
@@ -825,7 +825,7 @@ namespace ArdupilotMega
                         retrys--;
                         continue;
                     }
-                    MainV2.givecomport = false;
+                    MainV2.giveComport = false;
                     throw new Exception("Timeout on read - setWPCurrent");
                 }
 
@@ -834,7 +834,7 @@ namespace ArdupilotMega
                 {
                     if (buffer[5] == MAVLINK_MSG_ID_MISSION_CURRENT)
                     {
-                        MainV2.givecomport = false;
+                        MainV2.giveComport = false;
                         return true;
                     }
                 }
@@ -844,7 +844,7 @@ namespace ArdupilotMega
         public bool doCommand(MAV_CMD actionid, float p1, float p2, float p3, float p4, float p5, float p6, float p7)
         {
 
-            MainV2.givecomport = true;
+            MainV2.giveComport = true;
             byte[] buffer;
 
             mavlink_command_long_t req = new mavlink_command_long_t();
@@ -888,7 +888,7 @@ namespace ArdupilotMega
                         retrys--;
                         continue;
                     }
-                    MainV2.givecomport = false;
+                    MainV2.giveComport = false;
                     throw new Exception("Timeout on read - doAction");
                 }
 
@@ -902,14 +902,14 @@ namespace ArdupilotMega
                         var ack = buffer.ByteArrayToStructure<mavlink_command_ack_t>(6);
 
 
-                        if (ack.result == (byte)MAV_RESULT.MAV_RESULT_ACCEPTED)
+                        if (ack.result == (byte)MAV_RESULT.ACCEPTED)
                         {
-                            MainV2.givecomport = false;
+                            MainV2.giveComport = false;
                             return true;
                         }
                         else
                         {
-                            MainV2.givecomport = false;
+                            MainV2.giveComport = false;
                             return false;
                         }
                     }
@@ -1032,10 +1032,10 @@ namespace ArdupilotMega
 
             switch (id)
             {
-                case (byte)MAVLink.MAV_DATA_STREAM.MAV_DATA_STREAM_ALL:
+                case (byte)MAVLink.MAV_DATA_STREAM.ALL:
 
                     break;
-                case (byte)MAVLink.MAV_DATA_STREAM.MAV_DATA_STREAM_EXTENDED_STATUS:
+                case (byte)MAVLink.MAV_DATA_STREAM.EXTENDED_STATUS:
                     if (packetspersecondbuild[MAVLINK_MSG_ID_SYS_STATUS] < DateTime.Now.AddSeconds(-2))
                         break;
                     pps = packetspersecond[MAVLINK_MSG_ID_SYS_STATUS];
@@ -1044,7 +1044,7 @@ namespace ArdupilotMega
                         return;
                     }
                     break;
-                case (byte)MAVLink.MAV_DATA_STREAM.MAV_DATA_STREAM_EXTRA1:
+                case (byte)MAVLink.MAV_DATA_STREAM.EXTRA1:
                     if (packetspersecondbuild[MAVLINK_MSG_ID_ATTITUDE] < DateTime.Now.AddSeconds(-2))
                         break;
                     pps = packetspersecond[MAVLINK_MSG_ID_ATTITUDE];
@@ -1053,7 +1053,7 @@ namespace ArdupilotMega
                         return;
                     }
                     break;
-                case (byte)MAVLink.MAV_DATA_STREAM.MAV_DATA_STREAM_EXTRA2:
+                case (byte)MAVLink.MAV_DATA_STREAM.EXTRA2:
                     if (packetspersecondbuild[MAVLINK_MSG_ID_VFR_HUD] < DateTime.Now.AddSeconds(-2))
                         break;
                     pps = packetspersecond[MAVLINK_MSG_ID_VFR_HUD];
@@ -1062,7 +1062,7 @@ namespace ArdupilotMega
                         return;
                     }
                     break;
-                case (byte)MAVLink.MAV_DATA_STREAM.MAV_DATA_STREAM_EXTRA3:
+                case (byte)MAVLink.MAV_DATA_STREAM.EXTRA3:
                     if (packetspersecondbuild[MAVLINK_MSG_ID_AHRS] < DateTime.Now.AddSeconds(-2))
                         break;
                     pps = packetspersecond[MAVLINK_MSG_ID_AHRS];
@@ -1071,7 +1071,7 @@ namespace ArdupilotMega
                         return;
                     }
                     break;
-                case (byte)MAVLink.MAV_DATA_STREAM.MAV_DATA_STREAM_POSITION:
+                case (byte)MAVLink.MAV_DATA_STREAM.POSITION:
                     // ac2 does not send rate position
                     if (MainV2.cs.firmware == MainV2.Firmwares.ArduCopter2)
                         return;
@@ -1083,7 +1083,7 @@ namespace ArdupilotMega
                         return;
                     }
                     break;
-                case (byte)MAVLink.MAV_DATA_STREAM.MAV_DATA_STREAM_RAW_CONTROLLER:
+                case (byte)MAVLink.MAV_DATA_STREAM.RAW_CONTROLLER:
                     if (packetspersecondbuild[MAVLINK_MSG_ID_RC_CHANNELS_SCALED] < DateTime.Now.AddSeconds(-2))
                         break;
                     pps = packetspersecond[MAVLINK_MSG_ID_RC_CHANNELS_SCALED];
@@ -1092,7 +1092,7 @@ namespace ArdupilotMega
                         return;
                     }
                     break;
-                case (byte)MAVLink.MAV_DATA_STREAM.MAV_DATA_STREAM_RAW_SENSORS:
+                case (byte)MAVLink.MAV_DATA_STREAM.RAW_SENSORS:
                     if (packetspersecondbuild[MAVLINK_MSG_ID_RAW_IMU] < DateTime.Now.AddSeconds(-2))
                         break;
                     pps = packetspersecond[MAVLINK_MSG_ID_RAW_IMU];
@@ -1101,7 +1101,7 @@ namespace ArdupilotMega
                         return;
                     }
                     break;
-                case (byte)MAVLink.MAV_DATA_STREAM.MAV_DATA_STREAM_RC_CHANNELS:
+                case (byte)MAVLink.MAV_DATA_STREAM.RC_CHANNELS:
                     if (packetspersecondbuild[MAVLINK_MSG_ID_RC_CHANNELS_RAW] < DateTime.Now.AddSeconds(-2))
                         break;
                     pps = packetspersecond[MAVLINK_MSG_ID_RC_CHANNELS_RAW];
@@ -1193,13 +1193,13 @@ namespace ArdupilotMega
                 {
                     if (retrys > 0)
                     {
-                        log.Info("getWPCount Retry " + retrys + " - giv com " + MainV2.givecomport);
+                        log.Info("getWPCount Retry " + retrys + " - giv com " + MainV2.giveComport);
                         generatePacket(MAVLINK_MSG_ID_MISSION_REQUEST_LIST, req);
                         start = DateTime.Now;
                         retrys--;
                         continue;
                     }
-                    MainV2.givecomport = false;
+                    MainV2.giveComport = false;
                     //return (byte)int.Parse(param["WP_TOTAL"].ToString());
                     throw new Exception("Timeout on read - getWPCount");
                 }
@@ -1216,7 +1216,7 @@ namespace ArdupilotMega
 
 
                         log.Info("wpcount: " + count.count);
-                        MainV2.givecomport = false;
+                        MainV2.giveComport = false;
                         return (byte)count.count; // should be ushort, but apm has limited wp count < byte
                     }
                     else
@@ -1311,7 +1311,7 @@ namespace ArdupilotMega
                         retrys--;
                         continue;
                     }
-                    MainV2.givecomport = false;
+                    MainV2.giveComport = false;
                     throw new Exception("Timeout on read - getWP");
                 }
                 //Console.WriteLine("getwp read " + DateTime.Now.Millisecond);
@@ -1561,7 +1561,7 @@ namespace ArdupilotMega
         public void setWPTotal(ushort wp_total)
         {
 #if MAVLINK10		
-            MainV2.givecomport = true;
+            MainV2.giveComport = true;
             mavlink_mission_count_t req = new mavlink_mission_count_t();
 
             req.target_system = sysid;
@@ -1586,7 +1586,7 @@ namespace ArdupilotMega
                         retrys--;
                         continue;
                     }
-                    MainV2.givecomport = false;
+                    MainV2.giveComport = false;
                     throw new Exception("Timeout on read - setWPTotal");
                 }
                 byte[] buffer = readPacket();
@@ -1605,7 +1605,7 @@ namespace ArdupilotMega
                                 param["WP_TOTAL"] = (float)wp_total - 1;
                             if (param["CMD_TOTAL"] != null)
                                 param["CMD_TOTAL"] = (float)wp_total - 1;
-                            MainV2.givecomport = false;
+                            MainV2.giveComport = false;
                             return;
                         }
                     }
@@ -1813,12 +1813,12 @@ namespace ArdupilotMega
                         if (ans.seq == (index + 1))
                         {
                             log.Info("set wp doing " + index + " req " + ans.seq + " REQ 40 : " + buffer[5]);
-                            MainV2.givecomport = false;
+                            MainV2.giveComport = false;
                             break;
                         }
                         else
                         {
-                            log.Info("set wp fail doing " + index + " req " + ans.seq + " ACK 47 or REQ 40 : " + buffer[5] + " seq {0} ts {1} tc {2}", req.seq, req.target_system, req.target_component);
+                            log.InfoFormat("set wp fail doing " + index + " req " + ans.seq + " ACK 47 or REQ 40 : " + buffer[5] + " seq {0} ts {1} tc {2}", req.seq, req.target_system, req.target_component);
                             //break;
                         }
                     }

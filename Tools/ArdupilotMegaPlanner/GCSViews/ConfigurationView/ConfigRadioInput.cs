@@ -115,7 +115,7 @@ namespace ArdupilotMega.GCSViews.ConfigurationView
             try
             {
 
-                MainV2.comPort.requestDatastream((byte)ArdupilotMega.MAVLink.MAV_DATA_STREAM.MAV_DATA_STREAM_RC_CHANNELS, 10);
+                MainV2.comPort.requestDatastream((byte)ArdupilotMega.MAVLink.MAV_DATA_STREAM.RC_CHANNELS, 10);
 
             }
             catch { }
@@ -229,7 +229,7 @@ namespace ArdupilotMega.GCSViews.ConfigurationView
             try
             {
 
-                MainV2.comPort.requestDatastream((byte)ArdupilotMega.MAVLink.MAV_DATA_STREAM.MAV_DATA_STREAM_RC_CHANNELS, oldrc);
+                MainV2.comPort.requestDatastream((byte)ArdupilotMega.MAVLink.MAV_DATA_STREAM.RC_CHANNELS, oldrc);
 
             }
             catch { }

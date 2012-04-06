@@ -45,7 +45,7 @@
     <DefineConstants>TRACE;DEBUG;MAVLINK10cra</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
-    <AllowUnsafeBlocks>false</AllowUnsafeBlocks>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <DocumentationFile>
     </DocumentationFile>
     <CheckForOverflowUnderflow>false</CheckForOverflowUnderflow>
@@ -61,7 +61,7 @@
     <DefineConstants>TRACE;DEBUG;MAVLINK10cra</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
-    <AllowUnsafeBlocks>false</AllowUnsafeBlocks>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <DocumentationFile>
     </DocumentationFile>
     <CheckForOverflowUnderflow>false</CheckForOverflowUnderflow>
@@ -318,6 +318,7 @@
       <DependentUpon>Setup.cs</DependentUpon>
     </Compile>
     <Compile Include="MagCalib.cs" />
+    <Compile Include="Mavlink\MavlinkOther.cs" />
     <Compile Include="PIDTunning.cs" />
     <Compile Include="Radio\3DRradio.cs">
       <SubType>UserControl</SubType>

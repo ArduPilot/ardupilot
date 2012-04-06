@@ -276,14 +276,14 @@ namespace ArdupilotMega.GCSViews
                     {
                         //System.Threading.Thread.Sleep(1000);
 
-                        //comPort.requestDatastream((byte)ArdupilotMega.MAVLink.MAV_DATA_STREAM.MAV_DATA_STREAM_RAW_CONTROLLER, 0); // request servoout
-                        comPort.requestDatastream((byte)ArdupilotMega.MAVLink.MAV_DATA_STREAM.MAV_DATA_STREAM_EXTENDED_STATUS, MainV2.cs.ratestatus); // mode
-                        comPort.requestDatastream((byte)ArdupilotMega.MAVLink.MAV_DATA_STREAM.MAV_DATA_STREAM_POSITION, MainV2.cs.rateposition); // request gps
-                        comPort.requestDatastream((byte)ArdupilotMega.MAVLink.MAV_DATA_STREAM.MAV_DATA_STREAM_EXTRA1, MainV2.cs.rateattitude); // request attitude
-                        comPort.requestDatastream((byte)ArdupilotMega.MAVLink.MAV_DATA_STREAM.MAV_DATA_STREAM_EXTRA2, MainV2.cs.rateattitude); // request vfr
-                        comPort.requestDatastream((byte)ArdupilotMega.MAVLink.MAV_DATA_STREAM.MAV_DATA_STREAM_EXTRA3, MainV2.cs.ratesensors); // request extra stuff - tridge
-                        comPort.requestDatastream((byte)ArdupilotMega.MAVLink.MAV_DATA_STREAM.MAV_DATA_STREAM_RAW_SENSORS, MainV2.cs.ratesensors); // request raw sensor
-                        comPort.requestDatastream((byte)ArdupilotMega.MAVLink.MAV_DATA_STREAM.MAV_DATA_STREAM_RC_CHANNELS, MainV2.cs.raterc); // request rc info
+                        //comPort.requestDatastream((byte)ArdupilotMega.MAVLink.MAV_DATA_STREAM.RAW_CONTROLLER, 0); // request servoout
+                        comPort.requestDatastream((byte)ArdupilotMega.MAVLink.MAV_DATA_STREAM.EXTENDED_STATUS, MainV2.cs.ratestatus); // mode
+                        comPort.requestDatastream((byte)ArdupilotMega.MAVLink.MAV_DATA_STREAM.POSITION, MainV2.cs.rateposition); // request gps
+                        comPort.requestDatastream((byte)ArdupilotMega.MAVLink.MAV_DATA_STREAM.EXTRA1, MainV2.cs.rateattitude); // request attitude
+                        comPort.requestDatastream((byte)ArdupilotMega.MAVLink.MAV_DATA_STREAM.EXTRA2, MainV2.cs.rateattitude); // request vfr
+                        comPort.requestDatastream((byte)ArdupilotMega.MAVLink.MAV_DATA_STREAM.EXTRA3, MainV2.cs.ratesensors); // request extra stuff - tridge
+                        comPort.requestDatastream((byte)ArdupilotMega.MAVLink.MAV_DATA_STREAM.RAW_SENSORS, MainV2.cs.ratesensors); // request raw sensor
+                        comPort.requestDatastream((byte)ArdupilotMega.MAVLink.MAV_DATA_STREAM.RC_CHANNELS, MainV2.cs.raterc); // request rc info
                     }
                     catch { }
                     lastdata = DateTime.Now.AddSeconds(12); // prevent flooding
@@ -927,7 +927,7 @@ namespace ArdupilotMega.GCSViews
             {
                 MainV2.giveComport = true;
 
-                MainV2.comPort.setWP(gotohere, 0, MAVLink.MAV_FRAME.MAV_FRAME_GLOBAL_RELATIVE_ALT, (byte)2);
+                MainV2.comPort.setWP(gotohere, 0, MAVLink.MAV_FRAME.GLOBAL_RELATIVE_ALT, (byte)2);
 
                 GuidedModeWP = new PointLatLngAlt(gotohere.lat, gotohere.lng, gotohere.alt,"Guided Mode");
 

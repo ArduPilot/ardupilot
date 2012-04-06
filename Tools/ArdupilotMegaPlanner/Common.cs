@@ -448,7 +448,7 @@ namespace ArdupilotMega
                         case (int)Common.apmmodes.LOITER:
                         case (int)Common.apmmodes.FLY_BY_WIRE_A:
                         case (int)Common.apmmodes.FLY_BY_WIRE_B:
-                            mode.base_mode = (byte)MAVLink.MAV_MODE_FLAG.MAV_MODE_FLAG_CUSTOM_MODE_ENABLED;
+                            mode.base_mode = (byte)MAVLink.MAV_MODE_FLAG.CUSTOM_MODE_ENABLED;
                             mode.custom_mode = (uint)(int)Enum.Parse(Common.getModes(), modein);
                             break;
                         default:
@@ -468,7 +468,7 @@ namespace ArdupilotMega
                         case (int)Common.ac2modes.ALT_HOLD:
                         case (int)Common.ac2modes.CIRCLE:
                         case (int)Common.ac2modes.POSITION:
-                            mode.base_mode = (byte)MAVLink.MAV_MODE_FLAG.MAV_MODE_FLAG_CUSTOM_MODE_ENABLED;
+                            mode.base_mode = (byte)MAVLink.MAV_MODE_FLAG.CUSTOM_MODE_ENABLED;
                             mode.custom_mode = (uint)(int)Enum.Parse(Common.getModes(), modein);
                             break;
                         default:
@@ -576,7 +576,10 @@ namespace ArdupilotMega
             try
             {
                 // this is for mono to a ssl server
-                ServicePointManager.CertificatePolicy = new NoCheckCertificatePolicy(); 
+                //ServicePointManager.CertificatePolicy = new NoCheckCertificatePolicy(); 
+
+                ServicePointManager.ServerCertificateValidationCallback =
+    new System.Net.Security.RemoteCertificateValidationCallback((sender, certificate, chain, policyErrors) => { return true; });
 
                 // Create a request using a URL that can receive a post. 
                 WebRequest request = WebRequest.Create(url);

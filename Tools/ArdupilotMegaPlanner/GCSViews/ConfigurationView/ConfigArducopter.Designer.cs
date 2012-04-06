@@ -28,6 +28,7 @@
         /// </summary>
         private void InitializeComponent()
         {
+            this.components = new System.ComponentModel.Container();
             this.myLabel3 = new ArdupilotMega.MyLabel();
             this.TUNE_LOW = new System.Windows.Forms.NumericUpDown();
             this.TUNE_HIGH = new System.Windows.Forms.NumericUpDown();
@@ -123,6 +124,7 @@
             this.label90 = new System.Windows.Forms.Label();
             this.RATE_RLL_P = new System.Windows.Forms.NumericUpDown();
             this.label91 = new System.Windows.Forms.Label();
+            this.toolTip1 = new System.Windows.Forms.ToolTip(this.components);
             ((System.ComponentModel.ISupportInitialize)(this.TUNE_LOW)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.TUNE_HIGH)).BeginInit();
             this.groupBox5.SuspendLayout();
@@ -1090,6 +1092,7 @@
             this.Controls.Add(this.groupBox25);
             this.Name = "ConfigArducopter";
             this.Size = new System.Drawing.Size(728, 393);
+            this.Load += new System.EventHandler(this.ConfigArducopter_Load);
             ((System.ComponentModel.ISupportInitialize)(this.TUNE_LOW)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.TUNE_HIGH)).EndInit();
             this.groupBox5.ResumeLayout(false);
@@ -1243,5 +1246,6 @@
         private System.Windows.Forms.Label label90;
         private System.Windows.Forms.NumericUpDown RATE_RLL_P;
         private System.Windows.Forms.Label label91;
+        private System.Windows.Forms.ToolTip toolTip1;
     }
 }

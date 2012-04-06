@@ -1164,7 +1164,7 @@ namespace ArdupilotMega.GCSViews
 
                         sw.Write((a + 1)); // seq
                         sw.Write("\t" + 0); // current
-                        sw.Write("\t" + (CHK_altmode.Checked == true ? (byte)MAVLink.MAV_FRAME.MAV_FRAME_GLOBAL : (byte)MAVLink.MAV_FRAME.MAV_FRAME_GLOBAL_RELATIVE_ALT)); //frame 
+                        sw.Write("\t" + (CHK_altmode.Checked == true ? (byte)MAVLink.MAV_FRAME.GLOBAL : (byte)MAVLink.MAV_FRAME.GLOBAL_RELATIVE_ALT)); //frame 
                         sw.Write("\t" + mode);
                         sw.Write("\t" + double.Parse(Commands.Rows[a].Cells[Param1.Index].Value.ToString()).ToString("0.000000", new System.Globalization.CultureInfo("en-US")));
                         sw.Write("\t" + double.Parse(Commands.Rows[a].Cells[Param2.Index].Value.ToString()).ToString("0.000000", new System.Globalization.CultureInfo("en-US")));
@@ -1352,9 +1352,9 @@ namespace ArdupilotMega.GCSViews
 
                 ((Controls.ProgressReporterDialogue)sender).UpdateProgressAndStatus(0, "Set Home");
 
-                port.setWP(home, (ushort)0, MAVLink.MAV_FRAME.MAV_FRAME_GLOBAL, 0);
+                port.setWP(home, (ushort)0, MAVLink.MAV_FRAME.GLOBAL, 0);
 
-                MAVLink.MAV_FRAME frame = MAVLink.MAV_FRAME.MAV_FRAME_GLOBAL_RELATIVE_ALT;
+                MAVLink.MAV_FRAME frame = MAVLink.MAV_FRAME.GLOBAL_RELATIVE_ALT;
 
                 // process grid to memory eeprom
                 for (int a = 0; a < Commands.Rows.Count - 0; a++)
@@ -1368,11 +1368,11 @@ namespace ArdupilotMega.GCSViews
                     {
                         if (CHK_altmode.Checked)
                         {
-                            frame = MAVLink.MAV_FRAME.MAV_FRAME_GLOBAL;
+                            frame = MAVLink.MAV_FRAME.GLOBAL;
                         }
                         else
                         {
-                            frame = MAVLink.MAV_FRAME.MAV_FRAME_GLOBAL_RELATIVE_ALT;
+                            frame = MAVLink.MAV_FRAME.GLOBAL_RELATIVE_ALT;
                         }
                     }
 

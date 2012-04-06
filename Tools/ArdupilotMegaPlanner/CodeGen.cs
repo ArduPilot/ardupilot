@@ -49,13 +49,12 @@ namespace ArdupilotMega
             return answer;
         }
 
-        static ICodeCompiler CreateCompiler()
+        static CodeDomProvider CreateCompiler()
         {
             //Create an instance of the C# compiler   
-            CodeDomProvider codeProvider = null;
-            codeProvider = new CSharpCodeProvider();
-            ICodeCompiler compiler = codeProvider.CreateCompiler();
-            return compiler;
+            CodeDomProvider codeProvider = CodeDomProvider.CreateProvider("CSharp");
+            //ICodeCompiler compiler = codeProvider.CreateCompiler();
+            return codeProvider;
         }
 
         /// <summary>
@@ -88,7 +87,7 @@ namespace ArdupilotMega
         /// <param name="parms"></param>
         /// <param name="source"></param>
         /// <returns></returns>
-        static private CompilerResults CompileCode(ICodeCompiler compiler, CompilerParameters parms, string source)
+        static private CompilerResults CompileCode(CodeDomProvider compiler, CompilerParameters parms, string source)
         {
             //actually compile the code
             CompilerResults results = compiler.CompileAssemblyFromSource(
@@ -144,7 +143,7 @@ namespace ArdupilotMega
         static private CompilerResults CompileAssembly()
         {
             // create a compiler
-            ICodeCompiler compiler = CreateCompiler();
+            CodeDomProvider compiler = CreateCompiler();
             // get all the compiler parameters
             CompilerParameters parms = CreateCompilerParameters();
             // compile the code into an assembly
