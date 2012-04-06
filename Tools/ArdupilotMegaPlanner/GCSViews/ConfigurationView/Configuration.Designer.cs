@@ -47,6 +47,7 @@
             this.Controls.Add(this.backstageView);
             this.Icon = ((System.Drawing.Icon)(resources.GetObject("$this.Icon")));
             this.Name = "Configuration";
+            this.FormClosing += new System.Windows.Forms.FormClosingEventHandler(this.Configuration_FormClosing);
             this.ResumeLayout(false);
             this.PerformLayout();
 

@@ -21,8 +21,20 @@ namespace ArdupilotMega.GCSViews.ConfigurationView
         // Changes made to the params between writing to the copter
         readonly Hashtable _changes = new Hashtable();
 
+        static Hashtable tooltips = new Hashtable();
+
         // ?
         internal bool startup = true;
+
+        public struct paramsettings // hk's
+        {
+            public string name;
+            public float minvalue;
+            public float maxvalue;
+            public float normalvalue;
+            public float scale;
+            public string desc;
+        }
 
 
         public ConfigRawParams()
@@ -234,11 +246,10 @@ namespace ArdupilotMega.GCSViews.ConfigurationView
             {
                 param2 = loadParamFile(ofd.FileName);
 
-                int fixme;
-                //var paramCompareForm = new ParamCompare((Form)this, MainV2.comPort.param, param2);
+                Form paramCompareForm = new ParamCompare(Params, MainV2.comPort.param, param2);
                 
-                //ThemeManager.ApplyThemeTo(paramCompareForm);
-                //paramCompareForm.ShowDialog();
+                ThemeManager.ApplyThemeTo(paramCompareForm);
+                paramCompareForm.ShowDialog();
             }
         }
 
@@ -264,25 +275,155 @@ namespace ArdupilotMega.GCSViews.ConfigurationView
             ((Control)sender).Enabled = true;
             
             startup = true;
+
+            processToScreen();
+
+            startup = false;
             
             // Todo: this populates or the combos etc and what not. This shoudl prob be a bsv button
             
         }
 
+        void Params_CellValueChanged(object sender, DataGridViewCellEventArgs e)
+        {
+            if (e.RowIndex == -1 || e.ColumnIndex == -1 || startup == true || e.ColumnIndex != 1)
+                return;
+            try
+            {
+                if (Params[Command.Index, e.RowIndex].Value.ToString().EndsWith("_REV") && (Params[Command.Index, e.RowIndex].Value.ToString().StartsWith("RC") || Params[Command.Index, e.RowIndex].Value.ToString().StartsWith("HS")))
+                {
+                    if (Params[e.ColumnIndex, e.RowIndex].Value.ToString() == "0")
+                        Params[e.ColumnIndex, e.RowIndex].Value = "-1";
+                }
+
+                Params[e.ColumnIndex, e.RowIndex].Style.BackColor = Color.Green;
+                _changes[Params[0, e.RowIndex].Value] = float.Parse(Params[e.ColumnIndex, e.RowIndex].Value.ToString());
+            }
+            catch (Exception)
+            {
+                Params[e.ColumnIndex, e.RowIndex].Style.BackColor = Color.Red;
+            }
+
+        
+            Params.Focus();
+        }
+
+        void readToolTips()
+        {
+            System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(Configuration));
+
+            string data = resources.GetString("MAVParam");
+
+            if (data == null)
+            {
+                data = global::ArdupilotMega.Properties.Resources.MAVParam;
+            }
+
+            string[] tips = data.Split(new char[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries);
+
+            foreach (var tip in tips)
+            {
+                if (!tip.StartsWith("||"))
+                    continue;
+
+                string[] cols = tip.Split(new string[] { "||" }, 9, StringSplitOptions.None);
+
+                if (cols.Length >= 8)
+                {
+                    paramsettings param = new paramsettings();
+                    try
+                    {
+                        param.name = cols[1];
+                        param.desc = AddNewLinesForTooltip(cols[7]);
+                        param.scale = float.Parse(cols[5]);
+                        param.minvalue = float.Parse(cols[2]);
+                        param.maxvalue = float.Parse(cols[3]);
+                        param.normalvalue = float.Parse(cols[4]);
+                    }
+                    catch { }
+                    tooltips[cols[1]] = param;
+                }
+
+            }
+        }
+
+        // from http://stackoverflow.com/questions/2512781/winforms-big-paragraph-tooltip/2512895#2512895
+        private const int maximumSingleLineTooltipLength = 50;
+
+        private static string AddNewLinesForTooltip(string text)
+        {
+            if (text.Length < maximumSingleLineTooltipLength)
+                return text;
+            int lineLength = (int)Math.Sqrt((double)text.Length) * 2;
+            StringBuilder sb = new StringBuilder();
+            int currentLinePosition = 0;
+            for (int textIndex = 0; textIndex < text.Length; textIndex++)
+            {
+                // If we have reached the target line length and the next      
+                // character is whitespace then begin a new line.   
+                if (currentLinePosition >= lineLength &&
+                    char.IsWhiteSpace(text[textIndex]))
+                {
+                    sb.Append(Environment.NewLine);
+                    currentLinePosition = 0;
+                }
+                // If we have just started a new line, skip all the whitespace.    
+                if (currentLinePosition == 0)
+                    while (textIndex < text.Length && char.IsWhiteSpace(text[textIndex]))
+                        textIndex++;
+                // Append the next character.     
+                if (textIndex < text.Length) sb.Append(text[textIndex]);
+                currentLinePosition++;
+            }
+            return sb.ToString();
+        }
+
+        internal void processToScreen()
+        {
+            toolTip1.RemoveAll();
+            Params.Rows.Clear();
+
+            // process hashdefines and update display
+            foreach (string value in MainV2.comPort.param.Keys)
+            {
+                if (value == null || value == "")
+                    continue;
+
+                //System.Diagnostics.Debug.WriteLine("Doing: " + value);
+
+                Params.Rows.Add();
+                Params.Rows[Params.RowCount - 1].Cells[Command.Index].Value = value;
+                Params.Rows[Params.RowCount - 1].Cells[Value.Index].Value = ((float)MainV2.comPort.param[value]).ToString("0.###");
+                try
+                {
+                    if (tooltips[value] != null)
+                    {
+                        Params.Rows[Params.RowCount - 1].Cells[Command.Index].ToolTipText = ((paramsettings)tooltips[value]).desc;
+                        //Params.Rows[Params.RowCount - 1].Cells[RawValue.Index].ToolTipText = ((paramsettings)tooltips[value]).desc;
+                        Params.Rows[Params.RowCount - 1].Cells[Value.Index].ToolTipText = ((paramsettings)tooltips[value]).desc;
+
+                        //Params.Rows[Params.RowCount - 1].Cells[Default.Index].Value = ((paramsettings)tooltips[value]).normalvalue;
+                        //Params.Rows[Params.RowCount - 1].Cells[mavScale.Index].Value = ((paramsettings)tooltips[value]).scale;
+                        //Params.Rows[Params.RowCount - 1].Cells[Value.Index].Value = float.Parse(Params.Rows[Params.RowCount - 1].Cells[RawValue.Index].Value.ToString()) / float.Parse(Params.Rows[Params.RowCount - 1].Cells[mavScale.Index].Value.ToString());
+                    }
+                }
+                catch { }
+
+            }
+            Params.Sort(Params.Columns[0], ListSortDirection.Ascending);
+        }
+
         private void ConfigRawParams_Load(object sender, EventArgs e)
         {
+            // read tooltips
+            if (tooltips.Count == 0)
+                readToolTips();
 
+            startup = true;
+
+            processToScreen();
+
+            startup = false;
         }
-
-        private void ConfigRawParams_ControlRemoved(object sender, ControlEventArgs e)
-        {
-
-        }
-
-        private void ConfigRawParams_ControlAdded(object sender, ControlEventArgs e)
-        {
-
-        }
-
     }
 }

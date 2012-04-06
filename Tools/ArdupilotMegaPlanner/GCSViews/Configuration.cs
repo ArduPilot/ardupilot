@@ -579,7 +579,6 @@ namespace ArdupilotMega.GCSViews
                 }
             }
             catch { ((Control)text[0]).BackColor = Color.Red; }
-
             Params.Focus();
         }
 
@@ -712,13 +711,6 @@ namespace ArdupilotMega.GCSViews
         {
             if (ConfigTabs.SelectedTab == TabSetup)
             {
-                if (!MainV2.comPort.BaseStream.IsOpen)
-                {
-                    CustomMessageBox.Show("Please Connect First");
-                    ConfigTabs.SelectedIndex = 0;
-                }
-                else
-                {
 
                     GCSViews.ConfigurationView.Setup temp = new GCSViews.ConfigurationView.Setup();
 
@@ -729,7 +721,6 @@ namespace ArdupilotMega.GCSViews
                     startup = true;
                     processToScreen();
                     startup = false;
-                }
             }
         }
 
@@ -1106,7 +1097,7 @@ namespace ArdupilotMega.GCSViews
             {
                 param2 = loadParamFile(ofd.FileName);
 
-                ParamCompare temp = new ParamCompare(this, param, param2);
+                ParamCompare temp = new ParamCompare(Params, param, param2);
                 ThemeManager.ApplyThemeTo(temp);
                 temp.ShowDialog();
             }

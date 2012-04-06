@@ -28,6 +28,7 @@
         /// </summary>
         private void InitializeComponent()
         {
+            this.components = new System.ComponentModel.Container();
             System.Windows.Forms.DataGridViewCellStyle dataGridViewCellStyle1 = new System.Windows.Forms.DataGridViewCellStyle();
             System.Windows.Forms.DataGridViewCellStyle dataGridViewCellStyle2 = new System.Windows.Forms.DataGridViewCellStyle();
             this.BUT_compare = new ArdupilotMega.MyButton();
@@ -41,11 +42,13 @@
             this.Default = new System.Windows.Forms.DataGridViewTextBoxColumn();
             this.mavScale = new System.Windows.Forms.DataGridViewTextBoxColumn();
             this.RawValue = new System.Windows.Forms.DataGridViewTextBoxColumn();
+            this.toolTip1 = new System.Windows.Forms.ToolTip(this.components);
             ((System.ComponentModel.ISupportInitialize)(this.Params)).BeginInit();
             this.SuspendLayout();
             // 
             // BUT_compare
             // 
+            this.BUT_compare.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
             this.BUT_compare.ImeMode = System.Windows.Forms.ImeMode.NoControl;
             this.BUT_compare.Location = new System.Drawing.Point(341, 119);
             this.BUT_compare.Name = "BUT_compare";
@@ -57,6 +60,7 @@
             // 
             // BUT_rerequestparams
             // 
+            this.BUT_rerequestparams.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
             this.BUT_rerequestparams.ImeMode = System.Windows.Forms.ImeMode.NoControl;
             this.BUT_rerequestparams.Location = new System.Drawing.Point(341, 94);
             this.BUT_rerequestparams.Name = "BUT_rerequestparams";
@@ -68,6 +72,7 @@
             // 
             // BUT_writePIDS
             // 
+            this.BUT_writePIDS.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
             this.BUT_writePIDS.ImeMode = System.Windows.Forms.ImeMode.NoControl;
             this.BUT_writePIDS.Location = new System.Drawing.Point(341, 69);
             this.BUT_writePIDS.Name = "BUT_writePIDS";
@@ -79,6 +84,7 @@
             // 
             // BUT_save
             // 
+            this.BUT_save.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
             this.BUT_save.ImeMode = System.Windows.Forms.ImeMode.NoControl;
             this.BUT_save.Location = new System.Drawing.Point(341, 35);
             this.BUT_save.Margin = new System.Windows.Forms.Padding(0);
@@ -91,6 +97,7 @@
             // 
             // BUT_load
             // 
+            this.BUT_load.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
             this.BUT_load.ImeMode = System.Windows.Forms.ImeMode.NoControl;
             this.BUT_load.Location = new System.Drawing.Point(341, 7);
             this.BUT_load.Margin = new System.Windows.Forms.Padding(0);
@@ -105,8 +112,9 @@
             // 
             this.Params.AllowUserToAddRows = false;
             this.Params.AllowUserToDeleteRows = false;
-            this.Params.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
-            | System.Windows.Forms.AnchorStyles.Left)));
+            this.Params.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
+            | System.Windows.Forms.AnchorStyles.Left) 
+            | System.Windows.Forms.AnchorStyles.Right)));
             dataGridViewCellStyle1.Alignment = System.Windows.Forms.DataGridViewContentAlignment.MiddleLeft;
             dataGridViewCellStyle1.BackColor = System.Drawing.Color.Maroon;
             dataGridViewCellStyle1.Font = new System.Drawing.Font("Microsoft Sans Serif", 8.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
@@ -136,6 +144,7 @@
             this.Params.RowHeadersWidth = 150;
             this.Params.Size = new System.Drawing.Size(321, 302);
             this.Params.TabIndex = 68;
+            this.Params.CellValueChanged += new System.Windows.Forms.DataGridViewCellEventHandler(this.Params_CellValueChanged);
             // 
             // Command
             // 
@@ -181,8 +190,6 @@
             this.Name = "ConfigRawParams";
             this.Size = new System.Drawing.Size(460, 305);
             this.Load += new System.EventHandler(this.ConfigRawParams_Load);
-            this.ControlAdded += new System.Windows.Forms.ControlEventHandler(this.ConfigRawParams_ControlAdded);
-            this.ControlRemoved += new System.Windows.Forms.ControlEventHandler(this.ConfigRawParams_ControlRemoved);
             ((System.ComponentModel.ISupportInitialize)(this.Params)).EndInit();
             this.ResumeLayout(false);
 
@@ -201,5 +208,6 @@
         private System.Windows.Forms.DataGridViewTextBoxColumn Default;
         private System.Windows.Forms.DataGridViewTextBoxColumn mavScale;
         private System.Windows.Forms.DataGridViewTextBoxColumn RawValue;
+        private System.Windows.Forms.ToolTip toolTip1;
     }
 }

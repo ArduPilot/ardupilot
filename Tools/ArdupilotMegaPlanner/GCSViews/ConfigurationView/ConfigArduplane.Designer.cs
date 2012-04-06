@@ -28,6 +28,7 @@
         /// </summary>
         private void InitializeComponent()
         {
+            this.components = new System.ComponentModel.Container();
             this.groupBox3 = new System.Windows.Forms.GroupBox();
             this.THR_FS_VALUE = new System.Windows.Forms.NumericUpDown();
             this.label5 = new System.Windows.Forms.Label();
@@ -128,6 +129,7 @@
             this.label51 = new System.Windows.Forms.Label();
             this.RLL2SRV_P = new System.Windows.Forms.NumericUpDown();
             this.label52 = new System.Windows.Forms.Label();
+            this.toolTip1 = new System.Windows.Forms.ToolTip(this.components);
             this.groupBox3.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.THR_FS_VALUE)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.THR_MAX)).BeginInit();
@@ -1104,6 +1106,7 @@
             this.Controls.Add(this.groupBox8);
             this.Name = "ConfigArduplane";
             this.Size = new System.Drawing.Size(621, 456);
+            this.Load += new System.EventHandler(this.ConfigArduplane_Load);
             this.groupBox3.ResumeLayout(false);
             ((System.ComponentModel.ISupportInitialize)(this.THR_FS_VALUE)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.THR_MAX)).EndInit();
@@ -1266,5 +1269,6 @@
         private System.Windows.Forms.Label label51;
         private System.Windows.Forms.NumericUpDown RLL2SRV_P;
         private System.Windows.Forms.Label label52;
+        private System.Windows.Forms.ToolTip toolTip1;
     }
 }
