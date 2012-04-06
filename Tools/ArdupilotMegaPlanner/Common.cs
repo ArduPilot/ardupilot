@@ -429,9 +429,9 @@ namespace ArdupilotMega
        
 		#if MAVLINK10
 		
-        public static bool translateMode(string modein, ref MAVLink.__mavlink_set_mode_t mode)
+        public static bool translateMode(string modein, ref MAVLink.mavlink_set_mode_t mode)
         {
-            //MAVLink.__mavlink_set_mode_t mode = new MAVLink.__mavlink_set_mode_t();
+            //MAVLink.mavlink_set_mode_t mode = new MAVLink.mavlink_set_mode_t();
             mode.target_system = MainV2.comPort.sysid;
 
             try
@@ -483,14 +483,14 @@ namespace ArdupilotMega
         }
 		
 		#else
-        public static bool translateMode(string modein, ref  MAVLink.__mavlink_set_nav_mode_t navmode, ref MAVLink.__mavlink_set_mode_t mode)
+        public static bool translateMode(string modein, ref  MAVLink.mavlink_set_nav_mode_t navmode, ref MAVLink.mavlink_set_mode_t mode)
         {
 
-            //MAVLink.__mavlink_set_nav_mode_t navmode = new MAVLink.__mavlink_set_nav_mode_t();
+            //MAVLink.mavlink_set_nav_mode_t navmode = new MAVLink.mavlink_set_nav_mode_t();
             navmode.target = MainV2.comPort.sysid;
             navmode.nav_mode = 255;
 
-            //MAVLink.__mavlink_set_mode_t mode = new MAVLink.__mavlink_set_mode_t();
+            //MAVLink.mavlink_set_mode_t mode = new MAVLink.mavlink_set_mode_t();
             mode.target = MainV2.comPort.sysid;
 
             try

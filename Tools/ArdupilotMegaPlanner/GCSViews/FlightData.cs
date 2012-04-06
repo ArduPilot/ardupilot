@@ -219,6 +219,7 @@ namespace ArdupilotMega.GCSViews
 
         private void FlightData_Load(object sender, EventArgs e)
         {
+            MainV2.bs = bindingSource1;
 
             System.Threading.Thread t11 = new System.Threading.Thread(new System.Threading.ThreadStart(mainloop))
             {
@@ -1670,7 +1671,7 @@ namespace ArdupilotMega.GCSViews
                 return;
             }
 
-            MainV2.comPort.setMountConfigure(MAVLink.MAV_MOUNT_MODE.MAV_MOUNT_MODE_GPS_POINT, true, true, true);
+            MainV2.comPort.setMountConfigure(MAVLink.MAV_MOUNT_MODE.GPS_POINT, true, true, true);
             MainV2.comPort.setMountControl(gotolocation.Lat, gotolocation.Lng, (int)(intalt / MainV2.cs.multiplierdist), true);
 
         }

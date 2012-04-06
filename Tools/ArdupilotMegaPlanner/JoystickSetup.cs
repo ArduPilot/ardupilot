@@ -148,7 +148,7 @@ namespace ArdupilotMega
             }
             else
             {
-                MAVLink.__mavlink_rc_channels_override_t rc = new MAVLink.__mavlink_rc_channels_override_t();
+                MAVLink.mavlink_rc_channels_override_t rc = new MAVLink.mavlink_rc_channels_override_t();
 
                 rc.target_component = MainV2.comPort.compid;
                 rc.target_system = MainV2.comPort.sysid;
