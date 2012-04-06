@@ -6,10 +6,11 @@ using System.Data;
 using System.Linq;
 using System.Text;
 using System.Windows.Forms;
+using ArdupilotMega.Controls.BackstageView;
 
 namespace ArdupilotMega.GCSViews.ConfigurationView
 {
-    public partial class ConfigFlightModes : UserControl
+    public partial class ConfigFlightModes : BackStageViewContentPanel
     {
         Timer timer = new Timer();
 
@@ -138,6 +139,16 @@ namespace ArdupilotMega.GCSViews.ConfigurationView
 
         private void ConfigFlightModes_Load(object sender, EventArgs e)
         {
+            if (!MainV2.comPort.BaseStream.IsOpen)
+            {
+                this.Enabled = false;
+                return;
+            }
+            else
+            {
+                this.Enabled = true;
+            }
+
             if (MainV2.cs.firmware == MainV2.Firmwares.ArduPlane) // APM
             {
                 CB_simple1.Visible = false;

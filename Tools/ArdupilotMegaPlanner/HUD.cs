@@ -258,7 +258,6 @@ namespace hud
             {
                 e.Graphics.Clear(this.BackColor);
                 e.Graphics.Flush();
-                //return;
             }
 
             if ((DateTime.Now - starttime).TotalMilliseconds < 30 && (_bgimage == null))

@@ -252,6 +252,14 @@ namespace ArdupilotMega
         public float brklevel { get; set; }
         public int armed { get; set; }
 
+        // 3dr radio
+        public float rssi { get; set; }
+        public float remrssi { get; set; }
+        public byte txbuffer { get; set; }
+        public ushort rxerrors { get; set; }
+        public ushort serrors { get; set; }
+        public ushort fixedp { get; set; }
+
         // stats
         public ushort packetdropremote { get; set; }
         public ushort linkqualitygcs { get; set; }
@@ -687,6 +695,17 @@ namespace ArdupilotMega
                     satcount = gps.satellites_visible;
                 }
 
+                bytearray = mavinterface.packets[MAVLink.MAVLINK_MSG_ID_RADIO];
+                if (bytearray != null)
+                {
+                    var radio = bytearray.ByteArrayToStructure<MAVLink.mavlink_radio_t>(6);
+                    rssi = radio.rssi;
+                    remrssi = radio.remrssi;
+                    txbuffer = radio.txbuf;
+                    rxerrors = radio.rxerrors;
+                    serrors = radio.serrors;
+                    fixedp = radio.fixedp;
+                }
 
                 bytearray = mavinterface.packets[MAVLink.MAVLINK_MSG_ID_GLOBAL_POSITION_INT];
                 if (bytearray != null)

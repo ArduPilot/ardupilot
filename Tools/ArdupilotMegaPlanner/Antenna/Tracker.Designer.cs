@@ -28,7 +28,6 @@
         /// </summary>
         private void InitializeComponent()
         {
-            System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(Tracker));
             this.CMB_interface = new System.Windows.Forms.ComboBox();
             this.label1 = new System.Windows.Forms.Label();
             this.CMB_baudrate = new System.Windows.Forms.ComboBox();
@@ -317,7 +316,6 @@
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(587, 212);
             this.Controls.Add(this.LBL_tilttrim);
             this.Controls.Add(this.LBL_pantrim);
             this.Controls.Add(this.label12);
@@ -344,9 +342,8 @@
             this.Controls.Add(this.CMB_serialport);
             this.Controls.Add(this.label1);
             this.Controls.Add(this.CMB_interface);
-            this.Icon = ((System.Drawing.Icon)(resources.GetObject("$this.Icon")));
             this.Name = "Tracker";
-            this.Text = "Tracker";
+            this.Size = new System.Drawing.Size(587, 212);
             this.FormClosing += new System.Windows.Forms.FormClosingEventHandler(this.Tracker_FormClosing);
             ((System.ComponentModel.ISupportInitialize)(this.TRK_pantrim)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.TRK_tilttrim)).EndInit();

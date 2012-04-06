@@ -6,10 +6,11 @@ using System.Data;
 using System.Linq;
 using System.Text;
 using System.Windows.Forms;
+using ArdupilotMega.Controls.BackstageView;
 
 namespace ArdupilotMega.GCSViews.ConfigurationView
 {
-    public partial class ConfigArducopter : UserControl
+    public partial class ConfigArducopter : BackStageViewContentPanel
     {
         public ConfigArducopter()
         {

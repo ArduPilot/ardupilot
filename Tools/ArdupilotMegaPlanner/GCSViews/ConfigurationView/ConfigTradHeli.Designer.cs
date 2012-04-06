@@ -28,6 +28,8 @@
         /// </summary>
         private void InitializeComponent()
         {
+            this.components = new System.ComponentModel.Container();
+            System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(ConfigTradHeli));
             this.groupBox5 = new System.Windows.Forms.GroupBox();
             this.H1_ENABLE = new System.Windows.Forms.RadioButton();
             this.CCPM = new System.Windows.Forms.RadioButton();
@@ -74,8 +76,14 @@
             this.HS1_REV = new System.Windows.Forms.CheckBox();
             this.label17 = new System.Windows.Forms.Label();
             this.HS4 = new ArdupilotMega.HorizontalProgressBar2();
+            this.currentStateBindingSource = new System.Windows.Forms.BindingSource(this.components);
             this.HS3 = new ArdupilotMega.VerticalProgressBar2();
             this.Gservoloc = new AGaugeApp.AGauge();
+            this.label44 = new System.Windows.Forms.Label();
+            this.label43 = new System.Windows.Forms.Label();
+            this.label42 = new System.Windows.Forms.Label();
+            this.HS4_TRIM = new System.Windows.Forms.NumericUpDown();
+            this.HS4_REV = new System.Windows.Forms.CheckBox();
             this.groupBox5.SuspendLayout();
             this.groupBox3.SuspendLayout();
             this.groupBox1.SuspendLayout();
@@ -83,62 +91,44 @@
             ((System.ComponentModel.ISupportInitialize)(this.HS3_TRIM)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.HS2_TRIM)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.HS1_TRIM)).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)(this.currentStateBindingSource)).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)(this.HS4_TRIM)).BeginInit();
             this.SuspendLayout();
             // 
             // groupBox5
             // 
             this.groupBox5.Controls.Add(this.H1_ENABLE);
             this.groupBox5.Controls.Add(this.CCPM);
-            this.groupBox5.Location = new System.Drawing.Point(257, 11);
+            resources.ApplyResources(this.groupBox5, "groupBox5");
             this.groupBox5.Name = "groupBox5";
-            this.groupBox5.Size = new System.Drawing.Size(120, 43);
-            this.groupBox5.TabIndex = 169;
             this.groupBox5.TabStop = false;
-            this.groupBox5.Text = "Swash Type";
             // 
             // H1_ENABLE
             // 
-            this.H1_ENABLE.AutoSize = true;
-            this.H1_ENABLE.ImeMode = System.Windows.Forms.ImeMode.NoControl;
-            this.H1_ENABLE.Location = new System.Drawing.Point(67, 19);
+            resources.ApplyResources(this.H1_ENABLE, "H1_ENABLE");
             this.H1_ENABLE.Name = "H1_ENABLE";
-            this.H1_ENABLE.Size = new System.Drawing.Size(39, 17);
-            this.H1_ENABLE.TabIndex = 137;
             this.H1_ENABLE.TabStop = true;
-            this.H1_ENABLE.Text = "H1";
             this.H1_ENABLE.UseVisualStyleBackColor = true;
+            this.H1_ENABLE.CheckedChanged += new System.EventHandler(this.H1_ENABLE_CheckedChanged);
             // 
             // CCPM
             // 
-            this.CCPM.AutoSize = true;
-            this.CCPM.ImeMode = System.Windows.Forms.ImeMode.NoControl;
-            this.CCPM.Location = new System.Drawing.Point(6, 19);
+            resources.ApplyResources(this.CCPM, "CCPM");
             this.CCPM.Name = "CCPM";
-            this.CCPM.Size = new System.Drawing.Size(55, 17);
-            this.CCPM.TabIndex = 136;
             this.CCPM.TabStop = true;
-            this.CCPM.Text = "CCPM";
             this.CCPM.UseVisualStyleBackColor = true;
             // 
             // BUT_swash_manual
             // 
-            this.BUT_swash_manual.ImeMode = System.Windows.Forms.ImeMode.NoControl;
-            this.BUT_swash_manual.Location = new System.Drawing.Point(302, 83);
+            resources.ApplyResources(this.BUT_swash_manual, "BUT_swash_manual");
             this.BUT_swash_manual.Name = "BUT_swash_manual";
-            this.BUT_swash_manual.Size = new System.Drawing.Size(69, 23);
-            this.BUT_swash_manual.TabIndex = 138;
-            this.BUT_swash_manual.Text = "Manual";
             this.BUT_swash_manual.UseVisualStyleBackColor = true;
+            this.BUT_swash_manual.Click += new System.EventHandler(this.BUT_swash_manual_Click);
             // 
             // label41
             // 
-            this.label41.AutoSize = true;
-            this.label41.ImeMode = System.Windows.Forms.ImeMode.NoControl;
-            this.label41.Location = new System.Drawing.Point(19, 157);
+            resources.ApplyResources(this.label41, "label41");
             this.label41.Name = "label41";
-            this.label41.Size = new System.Drawing.Size(40, 13);
-            this.label41.TabIndex = 122;
-            this.label41.Text = "Bottom";
             // 
             // groupBox3
             // 
@@ -146,79 +136,49 @@
             this.groupBox3.Controls.Add(this.label45);
             this.groupBox3.Controls.Add(this.GYR_ENABLE);
             this.groupBox3.Controls.Add(this.GYR_GAIN);
-            this.groupBox3.Location = new System.Drawing.Point(437, 314);
+            resources.ApplyResources(this.groupBox3, "groupBox3");
             this.groupBox3.Name = "groupBox3";
-            this.groupBox3.Size = new System.Drawing.Size(101, 63);
-            this.groupBox3.TabIndex = 168;
             this.groupBox3.TabStop = false;
-            this.groupBox3.Text = "Gyro";
             // 
             // label46
             // 
-            this.label46.AutoSize = true;
-            this.label46.ImeMode = System.Windows.Forms.ImeMode.NoControl;
-            this.label46.Location = new System.Drawing.Point(6, 38);
+            resources.ApplyResources(this.label46, "label46");
             this.label46.Name = "label46";
-            this.label46.Size = new System.Drawing.Size(29, 13);
-            this.label46.TabIndex = 137;
-            this.label46.Text = "Gain";
             // 
             // label45
             // 
-            this.label45.AutoSize = true;
-            this.label45.ImeMode = System.Windows.Forms.ImeMode.NoControl;
-            this.label45.Location = new System.Drawing.Point(6, 19);
+            resources.ApplyResources(this.label45, "label45");
             this.label45.Name = "label45";
-            this.label45.Size = new System.Drawing.Size(40, 13);
-            this.label45.TabIndex = 136;
-            this.label45.Text = "Enable";
             // 
             // GYR_ENABLE
             // 
-            this.GYR_ENABLE.AutoSize = true;
-            this.GYR_ENABLE.ImeMode = System.Windows.Forms.ImeMode.NoControl;
-            this.GYR_ENABLE.Location = new System.Drawing.Point(57, 19);
+            resources.ApplyResources(this.GYR_ENABLE, "GYR_ENABLE");
             this.GYR_ENABLE.Name = "GYR_ENABLE";
-            this.GYR_ENABLE.Size = new System.Drawing.Size(15, 14);
-            this.GYR_ENABLE.TabIndex = 118;
             this.GYR_ENABLE.UseVisualStyleBackColor = true;
+            this.GYR_ENABLE.CheckedChanged += new System.EventHandler(this.GYR_ENABLE__CheckedChanged);
             // 
             // GYR_GAIN
             // 
-            this.GYR_GAIN.Location = new System.Drawing.Point(41, 35);
+            resources.ApplyResources(this.GYR_GAIN, "GYR_GAIN");
             this.GYR_GAIN.Name = "GYR_GAIN";
-            this.GYR_GAIN.Size = new System.Drawing.Size(47, 20);
-            this.GYR_GAIN.TabIndex = 119;
-            this.GYR_GAIN.Text = "1000";
+            this.GYR_GAIN.Validating += new System.ComponentModel.CancelEventHandler(this.GYR_GAIN__Validating);
             // 
             // BUT_HS4save
             // 
-            this.BUT_HS4save.ImeMode = System.Windows.Forms.ImeMode.NoControl;
-            this.BUT_HS4save.Location = new System.Drawing.Point(483, 174);
+            resources.ApplyResources(this.BUT_HS4save, "BUT_HS4save");
             this.BUT_HS4save.Name = "BUT_HS4save";
-            this.BUT_HS4save.Size = new System.Drawing.Size(69, 23);
-            this.BUT_HS4save.TabIndex = 167;
-            this.BUT_HS4save.Text = "Manual";
             this.BUT_HS4save.UseVisualStyleBackColor = true;
+            this.BUT_HS4save.Click += new System.EventHandler(this.BUT_HS4save_Click);
             // 
             // label21
             // 
-            this.label21.AutoSize = true;
-            this.label21.ImeMode = System.Windows.Forms.ImeMode.NoControl;
-            this.label21.Location = new System.Drawing.Point(24, 28);
+            resources.ApplyResources(this.label21, "label21");
             this.label21.Name = "label21";
-            this.label21.Size = new System.Drawing.Size(26, 13);
-            this.label21.TabIndex = 120;
-            this.label21.Text = "Top";
             // 
             // COL_MIN
             // 
-            this.COL_MIN.Enabled = false;
-            this.COL_MIN.Location = new System.Drawing.Point(18, 173);
+            resources.ApplyResources(this.COL_MIN, "COL_MIN");
             this.COL_MIN.Name = "COL_MIN";
-            this.COL_MIN.Size = new System.Drawing.Size(43, 20);
-            this.COL_MIN.TabIndex = 119;
-            this.COL_MIN.Text = "1500";
             // 
             // groupBox1
             // 
@@ -228,40 +188,30 @@
             this.groupBox1.Controls.Add(this.COL_MID);
             this.groupBox1.Controls.Add(this.COL_MAX);
             this.groupBox1.Controls.Add(this.BUT_0collective);
-            this.groupBox1.Location = new System.Drawing.Point(297, 95);
+            resources.ApplyResources(this.groupBox1, "groupBox1");
             this.groupBox1.Name = "groupBox1";
-            this.groupBox1.Size = new System.Drawing.Size(80, 209);
-            this.groupBox1.TabIndex = 165;
             this.groupBox1.TabStop = false;
             // 
             // COL_MID
             // 
-            this.COL_MID.Enabled = false;
-            this.COL_MID.Location = new System.Drawing.Point(17, 117);
+            resources.ApplyResources(this.COL_MID, "COL_MID");
             this.COL_MID.Name = "COL_MID";
-            this.COL_MID.Size = new System.Drawing.Size(44, 20);
-            this.COL_MID.TabIndex = 117;
-            this.COL_MID.Text = "1500";
+            this.COL_MID.Validating += new System.ComponentModel.CancelEventHandler(this.PWM_Validating);
             // 
             // COL_MAX
             // 
-            this.COL_MAX.Enabled = false;
-            this.COL_MAX.Location = new System.Drawing.Point(18, 45);
+            resources.ApplyResources(this.COL_MAX, "COL_MAX");
             this.COL_MAX.Name = "COL_MAX";
-            this.COL_MAX.Size = new System.Drawing.Size(43, 20);
-            this.COL_MAX.TabIndex = 115;
-            this.COL_MAX.Text = "1500";
+            this.COL_MAX.Enter += new System.EventHandler(this.COL_MAX__Enter);
+            this.COL_MAX.Leave += new System.EventHandler(this.COL_MAX__Leave);
+            this.COL_MAX.Validating += new System.ComponentModel.CancelEventHandler(this.PWM_Validating);
             // 
             // BUT_0collective
             // 
-            this.BUT_0collective.Enabled = false;
-            this.BUT_0collective.ImeMode = System.Windows.Forms.ImeMode.NoControl;
-            this.BUT_0collective.Location = new System.Drawing.Point(11, 89);
+            resources.ApplyResources(this.BUT_0collective, "BUT_0collective");
             this.BUT_0collective.Name = "BUT_0collective";
-            this.BUT_0collective.Size = new System.Drawing.Size(58, 23);
-            this.BUT_0collective.TabIndex = 110;
-            this.BUT_0collective.Text = "Zero";
             this.BUT_0collective.UseVisualStyleBackColor = true;
+            this.BUT_0collective.Click += new System.EventHandler(this.BUT_0collective_Click);
             // 
             // groupBox2
             // 
@@ -269,53 +219,36 @@
             this.groupBox2.Controls.Add(this.HS4_MIN);
             this.groupBox2.Controls.Add(this.HS4_MAX);
             this.groupBox2.Controls.Add(this.label40);
-            this.groupBox2.Location = new System.Drawing.Point(437, 186);
+            resources.ApplyResources(this.groupBox2, "groupBox2");
             this.groupBox2.Name = "groupBox2";
-            this.groupBox2.Size = new System.Drawing.Size(169, 78);
-            this.groupBox2.TabIndex = 166;
             this.groupBox2.TabStop = false;
             // 
             // label24
             // 
-            this.label24.AutoSize = true;
-            this.label24.ImeMode = System.Windows.Forms.ImeMode.NoControl;
-            this.label24.Location = new System.Drawing.Point(112, 23);
+            resources.ApplyResources(this.label24, "label24");
             this.label24.Name = "label24";
-            this.label24.Size = new System.Drawing.Size(27, 13);
-            this.label24.TabIndex = 135;
-            this.label24.Text = "Max";
             // 
             // HS4_MIN
             // 
-            this.HS4_MIN.Enabled = false;
-            this.HS4_MIN.Location = new System.Drawing.Point(21, 40);
+            resources.ApplyResources(this.HS4_MIN, "HS4_MIN");
             this.HS4_MIN.Name = "HS4_MIN";
-            this.HS4_MIN.Size = new System.Drawing.Size(43, 20);
-            this.HS4_MIN.TabIndex = 132;
-            this.HS4_MIN.Text = "1500";
             // 
             // HS4_MAX
             // 
-            this.HS4_MAX.Enabled = false;
-            this.HS4_MAX.Location = new System.Drawing.Point(106, 40);
+            resources.ApplyResources(this.HS4_MAX, "HS4_MAX");
             this.HS4_MAX.Name = "HS4_MAX";
-            this.HS4_MAX.Size = new System.Drawing.Size(43, 20);
-            this.HS4_MAX.TabIndex = 133;
-            this.HS4_MAX.Text = "1500";
+            this.HS4_MAX.Enter += new System.EventHandler(this.HS4_MAX_Enter);
+            this.HS4_MAX.Leave += new System.EventHandler(this.HS4_MAX_Leave);
+            this.HS4_MAX.Validating += new System.ComponentModel.CancelEventHandler(this.PWM_Validating);
             // 
             // label40
             // 
-            this.label40.AutoSize = true;
-            this.label40.ImeMode = System.Windows.Forms.ImeMode.NoControl;
-            this.label40.Location = new System.Drawing.Point(27, 23);
+            resources.ApplyResources(this.label40, "label40");
             this.label40.Name = "label40";
-            this.label40.Size = new System.Drawing.Size(24, 13);
-            this.label40.TabIndex = 134;
-            this.label40.Text = "Min";
             // 
             // HS3_TRIM
             // 
-            this.HS3_TRIM.Location = new System.Drawing.Point(126, 314);
+            resources.ApplyResources(this.HS3_TRIM, "HS3_TRIM");
             this.HS3_TRIM.Maximum = new decimal(new int[] {
             2000,
             0,
@@ -327,17 +260,16 @@
             0,
             0});
             this.HS3_TRIM.Name = "HS3_TRIM";
-            this.HS3_TRIM.Size = new System.Drawing.Size(44, 20);
-            this.HS3_TRIM.TabIndex = 164;
             this.HS3_TRIM.Value = new decimal(new int[] {
             1500,
             0,
             0,
             0});
+            this.HS3_TRIM.ValueChanged += new System.EventHandler(this.HS3_TRIM_ValueChanged);
             // 
             // HS2_TRIM
             // 
-            this.HS2_TRIM.Location = new System.Drawing.Point(126, 288);
+            resources.ApplyResources(this.HS2_TRIM, "HS2_TRIM");
             this.HS2_TRIM.Maximum = new decimal(new int[] {
             2000,
             0,
@@ -349,17 +281,16 @@
             0,
             0});
             this.HS2_TRIM.Name = "HS2_TRIM";
-            this.HS2_TRIM.Size = new System.Drawing.Size(44, 20);
-            this.HS2_TRIM.TabIndex = 163;
             this.HS2_TRIM.Value = new decimal(new int[] {
             1500,
             0,
             0,
             0});
+            this.HS2_TRIM.ValueChanged += new System.EventHandler(this.HS2_TRIM_ValueChanged);
             // 
             // HS1_TRIM
             // 
-            this.HS1_TRIM.Location = new System.Drawing.Point(126, 262);
+            resources.ApplyResources(this.HS1_TRIM, "HS1_TRIM");
             this.HS1_TRIM.Maximum = new decimal(new int[] {
             2000,
             0,
@@ -371,241 +302,165 @@
             0,
             0});
             this.HS1_TRIM.Name = "HS1_TRIM";
-            this.HS1_TRIM.Size = new System.Drawing.Size(44, 20);
-            this.HS1_TRIM.TabIndex = 162;
             this.HS1_TRIM.Value = new decimal(new int[] {
             1500,
             0,
             0,
             0});
+            this.HS1_TRIM.ValueChanged += new System.EventHandler(this.HS1_TRIM_ValueChanged);
             // 
             // label39
             // 
-            this.label39.AutoSize = true;
-            this.label39.ImeMode = System.Windows.Forms.ImeMode.NoControl;
-            this.label39.Location = new System.Drawing.Point(131, 249);
+            resources.ApplyResources(this.label39, "label39");
             this.label39.Name = "label39";
-            this.label39.Size = new System.Drawing.Size(27, 13);
-            this.label39.TabIndex = 161;
-            this.label39.Text = "Trim";
             // 
             // label38
             // 
-            this.label38.AutoSize = true;
-            this.label38.ImeMode = System.Windows.Forms.ImeMode.NoControl;
-            this.label38.Location = new System.Drawing.Point(102, 249);
+            resources.ApplyResources(this.label38, "label38");
             this.label38.Name = "label38";
-            this.label38.Size = new System.Drawing.Size(27, 13);
-            this.label38.TabIndex = 160;
-            this.label38.Text = "Rev";
             // 
             // label37
             // 
-            this.label37.AutoSize = true;
-            this.label37.ImeMode = System.Windows.Forms.ImeMode.NoControl;
-            this.label37.Location = new System.Drawing.Point(54, 249);
+            resources.ApplyResources(this.label37, "label37");
             this.label37.Name = "label37";
-            this.label37.Size = new System.Drawing.Size(44, 13);
-            this.label37.TabIndex = 159;
-            this.label37.Text = "Position";
             // 
             // label36
             // 
-            this.label36.AutoSize = true;
-            this.label36.ImeMode = System.Windows.Forms.ImeMode.NoControl;
-            this.label36.Location = new System.Drawing.Point(17, 249);
+            resources.ApplyResources(this.label36, "label36");
             this.label36.Name = "label36";
-            this.label36.Size = new System.Drawing.Size(35, 13);
-            this.label36.TabIndex = 158;
-            this.label36.Text = "Servo";
             // 
             // label26
             // 
-            this.label26.AutoSize = true;
-            this.label26.ImeMode = System.Windows.Forms.ImeMode.NoControl;
-            this.label26.Location = new System.Drawing.Point(260, 365);
+            resources.ApplyResources(this.label26, "label26");
             this.label26.Name = "label26";
-            this.label26.Size = new System.Drawing.Size(54, 13);
-            this.label26.TabIndex = 157;
-            this.label26.Text = "Pitch Max";
             // 
             // PIT_MAX
             // 
-            this.PIT_MAX.Location = new System.Drawing.Point(314, 362);
+            resources.ApplyResources(this.PIT_MAX, "PIT_MAX");
             this.PIT_MAX.Name = "PIT_MAX";
-            this.PIT_MAX.Size = new System.Drawing.Size(47, 20);
-            this.PIT_MAX.TabIndex = 156;
-            this.PIT_MAX.Text = "4500";
+            this.PIT_MAX.Validating += new System.ComponentModel.CancelEventHandler(this.PIT_MAX__Validating);
             // 
             // label25
             // 
-            this.label25.AutoSize = true;
-            this.label25.ImeMode = System.Windows.Forms.ImeMode.NoControl;
-            this.label25.Location = new System.Drawing.Point(260, 341);
+            resources.ApplyResources(this.label25, "label25");
             this.label25.Name = "label25";
-            this.label25.Size = new System.Drawing.Size(48, 13);
-            this.label25.TabIndex = 155;
-            this.label25.Text = "Roll Max";
             // 
             // ROL_MAX
             // 
-            this.ROL_MAX.Location = new System.Drawing.Point(314, 336);
+            resources.ApplyResources(this.ROL_MAX, "ROL_MAX");
             this.ROL_MAX.Name = "ROL_MAX";
-            this.ROL_MAX.Size = new System.Drawing.Size(47, 20);
-            this.ROL_MAX.TabIndex = 154;
-            this.ROL_MAX.Text = "4500";
+            this.ROL_MAX.Validating += new System.ComponentModel.CancelEventHandler(this.ROL_MAX__Validating);
             // 
             // label23
             // 
-            this.label23.AutoSize = true;
-            this.label23.ImeMode = System.Windows.Forms.ImeMode.NoControl;
-            this.label23.Location = new System.Drawing.Point(480, 66);
+            resources.ApplyResources(this.label23, "label23");
             this.label23.Name = "label23";
-            this.label23.Size = new System.Drawing.Size(75, 13);
-            this.label23.TabIndex = 153;
-            this.label23.Text = "Rudder Travel";
             // 
             // label22
             // 
-            this.label22.AutoSize = true;
-            this.label22.ImeMode = System.Windows.Forms.ImeMode.NoControl;
-            this.label22.Location = new System.Drawing.Point(236, 66);
+            resources.ApplyResources(this.label22, "label22");
             this.label22.Name = "label22";
-            this.label22.Size = new System.Drawing.Size(72, 13);
-            this.label22.TabIndex = 150;
-            this.label22.Text = "Swash Travel";
             // 
             // label20
             // 
-            this.label20.AutoSize = true;
-            this.label20.ImeMode = System.Windows.Forms.ImeMode.NoControl;
-            this.label20.Location = new System.Drawing.Point(27, 317);
+            resources.ApplyResources(this.label20, "label20");
             this.label20.Name = "label20";
-            this.label20.Size = new System.Drawing.Size(13, 13);
-            this.label20.TabIndex = 149;
-            this.label20.Text = "3";
             // 
             // label19
             // 
-            this.label19.AutoSize = true;
-            this.label19.ImeMode = System.Windows.Forms.ImeMode.NoControl;
-            this.label19.Location = new System.Drawing.Point(27, 291);
+            resources.ApplyResources(this.label19, "label19");
             this.label19.Name = "label19";
-            this.label19.Size = new System.Drawing.Size(13, 13);
-            this.label19.TabIndex = 148;
-            this.label19.Text = "2";
             // 
             // label18
             // 
-            this.label18.AutoSize = true;
-            this.label18.ImeMode = System.Windows.Forms.ImeMode.NoControl;
-            this.label18.Location = new System.Drawing.Point(27, 265);
+            resources.ApplyResources(this.label18, "label18");
             this.label18.Name = "label18";
-            this.label18.Size = new System.Drawing.Size(13, 13);
-            this.label18.TabIndex = 147;
-            this.label18.Text = "1";
             // 
             // SV3_POS
             // 
-            this.SV3_POS.Location = new System.Drawing.Point(57, 314);
+            resources.ApplyResources(this.SV3_POS, "SV3_POS");
             this.SV3_POS.Name = "SV3_POS";
-            this.SV3_POS.Size = new System.Drawing.Size(39, 20);
-            this.SV3_POS.TabIndex = 146;
-            this.SV3_POS.Text = "180";
+            this.SV3_POS.Validating += new System.ComponentModel.CancelEventHandler(this.TXT_srvpos3_Validating);
             // 
             // SV2_POS
             // 
-            this.SV2_POS.Location = new System.Drawing.Point(57, 288);
+            resources.ApplyResources(this.SV2_POS, "SV2_POS");
             this.SV2_POS.Name = "SV2_POS";
-            this.SV2_POS.Size = new System.Drawing.Size(39, 20);
-            this.SV2_POS.TabIndex = 145;
-            this.SV2_POS.Text = "60";
+            this.SV2_POS.Validating += new System.ComponentModel.CancelEventHandler(this.TXT_srvpos2_Validating);
             // 
             // SV1_POS
             // 
-            this.SV1_POS.Location = new System.Drawing.Point(57, 262);
+            resources.ApplyResources(this.SV1_POS, "SV1_POS");
             this.SV1_POS.Name = "SV1_POS";
-            this.SV1_POS.Size = new System.Drawing.Size(39, 20);
-            this.SV1_POS.TabIndex = 144;
-            this.SV1_POS.Text = "-60";
+            this.SV1_POS.Validating += new System.ComponentModel.CancelEventHandler(this.TXT_srvpos1_Validating);
             // 
             // HS3_REV
             // 
-            this.HS3_REV.AutoSize = true;
-            this.HS3_REV.ImeMode = System.Windows.Forms.ImeMode.NoControl;
-            this.HS3_REV.Location = new System.Drawing.Point(105, 317);
+            resources.ApplyResources(this.HS3_REV, "HS3_REV");
             this.HS3_REV.Name = "HS3_REV";
-            this.HS3_REV.Size = new System.Drawing.Size(15, 14);
-            this.HS3_REV.TabIndex = 143;
             this.HS3_REV.UseVisualStyleBackColor = true;
+            this.HS3_REV.CheckedChanged += new System.EventHandler(this.HS3_REV_CheckedChanged);
             // 
             // HS2_REV
             // 
-            this.HS2_REV.AutoSize = true;
-            this.HS2_REV.ImeMode = System.Windows.Forms.ImeMode.NoControl;
-            this.HS2_REV.Location = new System.Drawing.Point(105, 291);
+            resources.ApplyResources(this.HS2_REV, "HS2_REV");
             this.HS2_REV.Name = "HS2_REV";
-            this.HS2_REV.Size = new System.Drawing.Size(15, 14);
-            this.HS2_REV.TabIndex = 142;
             this.HS2_REV.UseVisualStyleBackColor = true;
+            this.HS2_REV.CheckedChanged += new System.EventHandler(this.HS2_REV_CheckedChanged);
             // 
             // HS1_REV
             // 
-            this.HS1_REV.AutoSize = true;
-            this.HS1_REV.ImeMode = System.Windows.Forms.ImeMode.NoControl;
-            this.HS1_REV.Location = new System.Drawing.Point(105, 268);
+            resources.ApplyResources(this.HS1_REV, "HS1_REV");
             this.HS1_REV.Name = "HS1_REV";
-            this.HS1_REV.Size = new System.Drawing.Size(15, 14);
-            this.HS1_REV.TabIndex = 141;
             this.HS1_REV.UseVisualStyleBackColor = true;
+            this.HS1_REV.CheckedChanged += new System.EventHandler(this.HS1_REV_CheckedChanged);
             // 
             // label17
             // 
-            this.label17.AutoSize = true;
-            this.label17.ImeMode = System.Windows.Forms.ImeMode.NoControl;
-            this.label17.Location = new System.Drawing.Point(42, 66);
+            resources.ApplyResources(this.label17, "label17");
             this.label17.Name = "label17";
-            this.label17.Size = new System.Drawing.Size(109, 13);
-            this.label17.TabIndex = 140;
-            this.label17.Text = "Swash-Servo position";
             // 
             // HS4
             // 
             this.HS4.BackgroundColor = System.Drawing.Color.FromArgb(((int)(((byte)(67)))), ((int)(((byte)(68)))), ((int)(((byte)(69)))));
             this.HS4.BorderColor = System.Drawing.SystemColors.ActiveBorder;
+            this.HS4.DataBindings.Add(new System.Windows.Forms.Binding("Value", this.currentStateBindingSource, "ch4in", true));
             this.HS4.Label = "Rudder";
-            this.HS4.Location = new System.Drawing.Point(396, 93);
+            resources.ApplyResources(this.HS4, "HS4");
             this.HS4.Maximum = 2200;
             this.HS4.maxline = 0;
             this.HS4.Minimum = 800;
             this.HS4.minline = 0;
             this.HS4.Name = "HS4";
-            this.HS4.Size = new System.Drawing.Size(242, 42);
-            this.HS4.TabIndex = 152;
             this.HS4.Value = 1500;
             this.HS4.ValueColor = System.Drawing.Color.FromArgb(((int)(((byte)(148)))), ((int)(((byte)(193)))), ((int)(((byte)(31)))));
+            this.HS4.Paint += new System.Windows.Forms.PaintEventHandler(this.HS4_Paint);
+            // 
+            // currentStateBindingSource
+            // 
+            this.currentStateBindingSource.DataSource = typeof(ArdupilotMega.CurrentState);
             // 
             // HS3
             // 
             this.HS3.BackgroundColor = System.Drawing.Color.FromArgb(((int)(((byte)(67)))), ((int)(((byte)(68)))), ((int)(((byte)(69)))));
             this.HS3.BorderColor = System.Drawing.SystemColors.ActiveBorder;
+            this.HS3.DataBindings.Add(new System.Windows.Forms.Binding("Value", this.currentStateBindingSource, "ch3in", true));
             this.HS3.Label = "Collective";
-            this.HS3.Location = new System.Drawing.Point(239, 95);
+            resources.ApplyResources(this.HS3, "HS3");
             this.HS3.Maximum = 2200;
             this.HS3.maxline = 0;
             this.HS3.Minimum = 800;
             this.HS3.minline = 0;
             this.HS3.Name = "HS3";
-            this.HS3.Size = new System.Drawing.Size(42, 213);
-            this.HS3.TabIndex = 151;
             this.HS3.Value = 1500;
             this.HS3.ValueColor = System.Drawing.Color.FromArgb(((int)(((byte)(148)))), ((int)(((byte)(193)))), ((int)(((byte)(31)))));
+            this.HS3.Paint += new System.Windows.Forms.PaintEventHandler(this.HS3_Paint);
             // 
             // Gservoloc
             // 
             this.Gservoloc.BackColor = System.Drawing.Color.Transparent;
             this.Gservoloc.BackgroundImage = global::ArdupilotMega.Properties.Resources.Gaugebg;
-            this.Gservoloc.BackgroundImageLayout = System.Windows.Forms.ImageLayout.Zoom;
+            resources.ApplyResources(this.Gservoloc, "Gservoloc");
             this.Gservoloc.BaseArcColor = System.Drawing.Color.Transparent;
             this.Gservoloc.BaseArcRadius = 60;
             this.Gservoloc.BaseArcStart = 90;
@@ -635,9 +490,6 @@
         ""};
             this.Gservoloc.CapText = "Position";
             this.Gservoloc.Center = new System.Drawing.Point(75, 75);
-            this.Gservoloc.Font = new System.Drawing.Font("Microsoft Sans Serif", 9F);
-            this.Gservoloc.Location = new System.Drawing.Point(20, 93);
-            this.Gservoloc.Margin = new System.Windows.Forms.Padding(0);
             this.Gservoloc.MaxValue = 180F;
             this.Gservoloc.MinValue = -180F;
             this.Gservoloc.Name = "Gservoloc";
@@ -741,18 +593,64 @@
             this.Gservoloc.ScaleNumbersRotation = 45;
             this.Gservoloc.ScaleNumbersStartScaleLine = 2;
             this.Gservoloc.ScaleNumbersStepScaleLines = 1;
-            this.Gservoloc.Size = new System.Drawing.Size(150, 150);
-            this.Gservoloc.TabIndex = 139;
             this.Gservoloc.Value = 0F;
             this.Gservoloc.Value0 = -60F;
             this.Gservoloc.Value1 = 60F;
             this.Gservoloc.Value2 = 180F;
             this.Gservoloc.Value3 = 0F;
             // 
+            // label44
+            // 
+            resources.ApplyResources(this.label44, "label44");
+            this.label44.Name = "label44";
+            // 
+            // label43
+            // 
+            resources.ApplyResources(this.label43, "label43");
+            this.label43.Name = "label43";
+            // 
+            // label42
+            // 
+            resources.ApplyResources(this.label42, "label42");
+            this.label42.Name = "label42";
+            // 
+            // HS4_TRIM
+            // 
+            resources.ApplyResources(this.HS4_TRIM, "HS4_TRIM");
+            this.HS4_TRIM.Maximum = new decimal(new int[] {
+            2000,
+            0,
+            0,
+            0});
+            this.HS4_TRIM.Minimum = new decimal(new int[] {
+            1000,
+            0,
+            0,
+            0});
+            this.HS4_TRIM.Name = "HS4_TRIM";
+            this.HS4_TRIM.Value = new decimal(new int[] {
+            1500,
+            0,
+            0,
+            0});
+            this.HS4_TRIM.ValueChanged += new System.EventHandler(this.HS4_TRIM_ValueChanged);
+            // 
+            // HS4_REV
+            // 
+            resources.ApplyResources(this.HS4_REV, "HS4_REV");
+            this.HS4_REV.Name = "HS4_REV";
+            this.HS4_REV.UseVisualStyleBackColor = true;
+            this.HS4_REV.CheckedChanged += new System.EventHandler(this.HS4_REV_CheckedChanged);
+            // 
             // ConfigTradHeli
             // 
-            this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
+            resources.ApplyResources(this, "$this");
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
+            this.Controls.Add(this.label44);
+            this.Controls.Add(this.label43);
+            this.Controls.Add(this.label42);
+            this.Controls.Add(this.HS4_TRIM);
+            this.Controls.Add(this.HS4_REV);
             this.Controls.Add(this.groupBox5);
             this.Controls.Add(this.BUT_swash_manual);
             this.Controls.Add(this.groupBox3);
@@ -786,7 +684,7 @@
             this.Controls.Add(this.HS3);
             this.Controls.Add(this.Gservoloc);
             this.Name = "ConfigTradHeli";
-            this.Size = new System.Drawing.Size(654, 397);
+            this.Load += new System.EventHandler(this.ConfigTradHeli_Load);
             this.groupBox5.ResumeLayout(false);
             this.groupBox5.PerformLayout();
             this.groupBox3.ResumeLayout(false);
@@ -798,6 +696,8 @@
             ((System.ComponentModel.ISupportInitialize)(this.HS3_TRIM)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.HS2_TRIM)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.HS1_TRIM)).EndInit();
+            ((System.ComponentModel.ISupportInitialize)(this.currentStateBindingSource)).EndInit();
+            ((System.ComponentModel.ISupportInitialize)(this.HS4_TRIM)).EndInit();
             this.ResumeLayout(false);
             this.PerformLayout();
 
@@ -853,5 +753,11 @@
         private HorizontalProgressBar2 HS4;
         private VerticalProgressBar2 HS3;
         private AGaugeApp.AGauge Gservoloc;
+        private System.Windows.Forms.BindingSource currentStateBindingSource;
+        private System.Windows.Forms.Label label44;
+        private System.Windows.Forms.Label label43;
+        private System.Windows.Forms.Label label42;
+        private System.Windows.Forms.NumericUpDown HS4_TRIM;
+        private System.Windows.Forms.CheckBox HS4_REV;
     }
 }

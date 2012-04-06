@@ -6,10 +6,11 @@ using System.Drawing;
 using System.Linq;
 using System.Text;
 using System.Windows.Forms;
+using ArdupilotMega.Controls.BackstageView;
 
 namespace ArdupilotMega.Antenna
 {
-    public partial class Tracker : Form
+    public partial class Tracker : BackStageViewContentPanel
     {
         System.Threading.Thread t12;
         static bool threadrun = false;

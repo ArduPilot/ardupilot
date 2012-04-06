@@ -9,10 +9,11 @@ using System.Linq;
 using System.Text;
 using System.Windows.Forms;
 using log4net;
+using ArdupilotMega.Controls.BackstageView;
 
 namespace ArdupilotMega.GCSViews.ConfigurationView
 {
-    public partial class ConfigRawParams : UserControl
+    public partial class ConfigRawParams : BackStageViewContentPanel
     {
         private static readonly ILog log =
           LogManager.GetLogger(System.Reflection.MethodBase.GetCurrentMethod().DeclaringType);

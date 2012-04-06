@@ -785,6 +785,12 @@ namespace ArdupilotMega
 
         private void joysticksend()
         {
+
+            float rate = 50;
+            int count = 0;
+
+            DateTime lastratechange = DateTime.Now;
+
             while (true)
             {
                 try
@@ -817,16 +823,43 @@ namespace ArdupilotMega
                             if (joystick.getJoystickAxis(8) != Joystick.joystickaxis.None)
                                 rc.chan8_raw = cs.rcoverridech8;
 
-                            if (lastjoystick.AddMilliseconds(50) < DateTime.Now)
+                            if (lastjoystick.AddMilliseconds(rate) < DateTime.Now)
                             {
-                                //                                Console.WriteLine(DateTime.Now.Millisecond + " {0} {1} {2} {3} ", rc.chan1_raw, rc.chan2_raw, rc.chan3_raw, rc.chan4_raw);
+                                /*
+                                if (cs.rssi > 0 && cs.remrssi > 0)
+                                {
+                                    if (lastratechange.Second != DateTime.Now.Second)
+                                    {
+                                        if (cs.txbuffer > 90)
+                                        {
+                                            if (rate < 20)
+                                                rate = 21;
+                                            rate--;
+
+                                            if (cs.linkqualitygcs < 70)
+                                                rate = 50;
+                                        }
+                                        else
+                                        {
+                                            if (rate > 100)
+                                                rate = 100;
+                                            rate++;
+                                        }
+
+                                        lastratechange = DateTime.Now;
+                                    }
+                                 
+                                }
+                                 */
+//                                Console.WriteLine(DateTime.Now.Millisecond + " {0} {1} {2} {3} {4}", rc.chan1_raw, rc.chan2_raw, rc.chan3_raw, rc.chan4_raw,rate);
                                 comPort.sendPacket(rc);
+                                count++;
                                 lastjoystick = DateTime.Now;
                             }
 
                         }
                     }
-                    System.Threading.Thread.Sleep(50);
+                    System.Threading.Thread.Sleep(20);
                 }
                 catch { } // cant fall out
             }
@@ -1856,7 +1889,7 @@ namespace ArdupilotMega
             }
             if (keyData == (Keys.Control | Keys.A)) // test
             {
-                Form frm = new _3DRradio();
+                Control frm = new _3DRradio();
                 ThemeManager.ApplyThemeTo(frm);
                 frm.Show();
                 return true;
