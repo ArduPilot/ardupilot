@@ -28,6 +28,7 @@
         /// </summary>
         private void InitializeComponent()
         {
+            System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(ConfigAccelerometerCalibration));
             this.label28 = new System.Windows.Forms.Label();
             this.label16 = new System.Windows.Forms.Label();
             this.label15 = new System.Windows.Forms.Label();
@@ -40,44 +41,25 @@
             // 
             // label28
             // 
-            this.label28.AutoSize = true;
-            this.label28.ImeMode = System.Windows.Forms.ImeMode.NoControl;
-            this.label28.Location = new System.Drawing.Point(124, 13);
+            resources.ApplyResources(this.label28, "label28");
             this.label28.Name = "label28";
-            this.label28.Size = new System.Drawing.Size(210, 13);
-            this.label28.TabIndex = 15;
-            this.label28.Text = "Level your quad to set default accel offsets";
             // 
             // label16
             // 
-            this.label16.AutoSize = true;
-            this.label16.ImeMode = System.Windows.Forms.ImeMode.NoControl;
-            this.label16.Location = new System.Drawing.Point(124, 308);
+            resources.ApplyResources(this.label16, "label16");
             this.label16.Name = "label16";
-            this.label16.Size = new System.Drawing.Size(192, 26);
-            this.label16.TabIndex = 13;
-            this.label16.Text = "NOTE: images are for presentation only\r\nwill work with hexa\'s etc";
             // 
             // label15
             // 
-            this.label15.AutoSize = true;
-            this.label15.ImeMode = System.Windows.Forms.ImeMode.NoControl;
-            this.label15.Location = new System.Drawing.Point(167, 99);
+            resources.ApplyResources(this.label15, "label15");
             this.label15.Name = "label15";
-            this.label15.Size = new System.Drawing.Size(102, 13);
-            this.label15.TabIndex = 12;
-            this.label15.Text = "Frame Setup (+ or x)";
             // 
             // pictureBoxQuadX
             // 
             this.pictureBoxQuadX.Cursor = System.Windows.Forms.Cursors.Hand;
             this.pictureBoxQuadX.Image = global::ArdupilotMega.Properties.Resources.quadx;
-            this.pictureBoxQuadX.ImeMode = System.Windows.Forms.ImeMode.NoControl;
-            this.pictureBoxQuadX.Location = new System.Drawing.Point(226, 115);
+            resources.ApplyResources(this.pictureBoxQuadX, "pictureBoxQuadX");
             this.pictureBoxQuadX.Name = "pictureBoxQuadX";
-            this.pictureBoxQuadX.Size = new System.Drawing.Size(190, 190);
-            this.pictureBoxQuadX.SizeMode = System.Windows.Forms.PictureBoxSizeMode.Zoom;
-            this.pictureBoxQuadX.TabIndex = 11;
             this.pictureBoxQuadX.TabStop = false;
             this.pictureBoxQuadX.Click += new System.EventHandler(this.pictureBoxQuadX_Click);
             // 
@@ -85,27 +67,21 @@
             // 
             this.pictureBoxQuad.Cursor = System.Windows.Forms.Cursors.Hand;
             this.pictureBoxQuad.Image = global::ArdupilotMega.Properties.Resources.quad;
-            this.pictureBoxQuad.ImeMode = System.Windows.Forms.ImeMode.NoControl;
-            this.pictureBoxQuad.Location = new System.Drawing.Point(19, 115);
+            resources.ApplyResources(this.pictureBoxQuad, "pictureBoxQuad");
             this.pictureBoxQuad.Name = "pictureBoxQuad";
-            this.pictureBoxQuad.Size = new System.Drawing.Size(190, 190);
-            this.pictureBoxQuad.SizeMode = System.Windows.Forms.PictureBoxSizeMode.Zoom;
-            this.pictureBoxQuad.TabIndex = 10;
             this.pictureBoxQuad.TabStop = false;
+            this.pictureBoxQuad.Click += new System.EventHandler(this.pictureBoxQuad_Click);
             // 
             // BUT_levelac2
             // 
-            this.BUT_levelac2.ImeMode = System.Windows.Forms.ImeMode.NoControl;
-            this.BUT_levelac2.Location = new System.Drawing.Point(181, 42);
+            resources.ApplyResources(this.BUT_levelac2, "BUT_levelac2");
             this.BUT_levelac2.Name = "BUT_levelac2";
-            this.BUT_levelac2.Size = new System.Drawing.Size(75, 23);
-            this.BUT_levelac2.TabIndex = 14;
-            this.BUT_levelac2.Text = "Level";
             this.BUT_levelac2.UseVisualStyleBackColor = true;
+            this.BUT_levelac2.Click += new System.EventHandler(this.BUT_levelac2_Click);
             // 
             // ConfigAccelerometerCalibration
             // 
-            this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
+            resources.ApplyResources(this, "$this");
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.Controls.Add(this.label28);
             this.Controls.Add(this.label16);
@@ -114,7 +90,7 @@
             this.Controls.Add(this.pictureBoxQuad);
             this.Controls.Add(this.BUT_levelac2);
             this.Name = "ConfigAccelerometerCalibration";
-            this.Size = new System.Drawing.Size(439, 356);
+            this.Load += new System.EventHandler(this.ConfigAccelerometerCalibration_Load);
             ((System.ComponentModel.ISupportInitialize)(this.pictureBoxQuadX)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.pictureBoxQuad)).EndInit();
             this.ResumeLayout(false);

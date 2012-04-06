@@ -8,10 +8,11 @@ using System.Text;
 using System.Windows.Forms;
 using System.Net;
 using System.IO;
+using ArdupilotMega.Controls.BackstageView;
 
 namespace ArdupilotMega
 {
-    public partial class _3DRradio : Form
+    public partial class _3DRradio : BackStageViewContentPanel
     {
         public delegate void LogEventHandler(string message, int level = 0);
 

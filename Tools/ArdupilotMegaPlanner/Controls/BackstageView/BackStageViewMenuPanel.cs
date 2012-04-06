@@ -9,7 +9,7 @@ namespace ArdupilotMega.Controls.BackstageView
         internal Color GradColor = Color.White;
         internal Color PencilBorderColor = Color.White;
 
-        private const int GradientWidth = 6;
+        private const int GradientWidth = 20;
 
         public BackStageViewMenuPanel()
         {
@@ -28,6 +28,17 @@ namespace ArdupilotMega.Controls.BackstageView
             }
 
             pevent.Graphics.DrawLine(new Pen(PencilBorderColor), Width-1,0,Width-1,Height);
+        }
+
+        protected override void OnResize(System.EventArgs eventargs)
+        {
+            base.OnResize(eventargs);
+            this.Invalidate();
+        }
+
+        public void PaintBackground(PaintEventArgs pevent)
+        {
+            OnPaintBackground(pevent);
         }
     }
 }

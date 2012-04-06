@@ -6,10 +6,11 @@ using System.Data;
 using System.Linq;
 using System.Text;
 using System.Windows.Forms;
+using ArdupilotMega.Controls.BackstageView;
 
 namespace ArdupilotMega.GCSViews.ConfigurationView
 {
-    public partial class ConfigRadioInput : UserControl
+    public partial class ConfigRadioInput : BackStageViewContentPanel
     {
         bool startup = false;
         bool run = false;
@@ -52,6 +53,16 @@ namespace ArdupilotMega.GCSViews.ConfigurationView
 
         private void ConfigRadioInput_Load(object sender, EventArgs e)
         {
+            if (!MainV2.comPort.BaseStream.IsOpen)
+            {
+                this.Enabled = false;
+                return;
+            }
+            else
+            {
+                this.Enabled = true;
+            }
+
             startup = true;
 
             if (MainV2.cs.firmware == MainV2.Firmwares.ArduCopter2)

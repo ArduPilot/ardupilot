@@ -9,10 +9,11 @@ using System.Runtime.InteropServices;
 using System.Text;
 using System.Windows.Forms;
 using DirectShowLib;
+using ArdupilotMega.Controls.BackstageView;
 
 namespace ArdupilotMega.GCSViews.ConfigurationView
 {
-    public partial class ConfigPlanner : UserControl
+    public partial class ConfigPlanner : BackStageViewContentPanel
     {
         // AR todo: replicate this functionality
         private bool startup = false;

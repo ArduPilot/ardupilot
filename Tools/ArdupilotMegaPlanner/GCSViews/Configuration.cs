@@ -720,9 +720,7 @@ namespace ArdupilotMega.GCSViews
                 else
                 {
 
-                    Setup.Setup temp = new Setup.Setup();
-
-                    temp.Configuration = this;
+                    GCSViews.ConfigurationView.Setup temp = new GCSViews.ConfigurationView.Setup();
 
                     ThemeManager.ApplyThemeTo(temp);
 

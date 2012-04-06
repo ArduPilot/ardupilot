@@ -684,7 +684,7 @@ namespace ArdupilotMega.GCSViews
 
         private void BUT_setup_Click(object sender, EventArgs e)
         {
-            Form temp = new Setup.Setup();
+            Form temp = new GCSViews.ConfigurationView.Setup();
             ThemeManager.ApplyThemeTo(temp);
             temp.ShowDialog();
         }

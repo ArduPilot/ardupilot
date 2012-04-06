@@ -21,17 +21,9 @@ namespace ArdupilotMega.Controls.BackstageView
         private BackstageViewPage _activePage;
         private const int ButtonSpacing = 30;
         private const int ButtonHeight = 30;
-        public BackstageViewPage SelectedPage { get { return _activePage; } }
 
-        ~BackstageView()
-        {
-            foreach (BackstageViewPage ctl in _pages)
-            {
-                if (ctl.Page != null)
-                    ctl.Page.Dispose();
-            }
-            this.Dispose();
-        }
+        public BackstageViewPage SelectedPage { get { return _activePage; } }
+        public List<BackstageViewPage> Pages { get { return _pages; } }
 
         public BackstageView()
         {
@@ -202,7 +194,7 @@ namespace ArdupilotMega.Controls.BackstageView
             this.ActivatePage(associatedPage);
         }
 
-        private void ActivatePage(BackstageViewPage associatedPage)
+        public void ActivatePage(BackstageViewPage associatedPage)
         {
             // deactivate the old page
             _activePage.Page.Visible = false;
@@ -214,18 +206,27 @@ namespace ArdupilotMega.Controls.BackstageView
             newButton.IsSelected = true;
 
             _activePage = associatedPage;
+
+            _activePage.Page.OnLoad(new EventArgs());
         }
 
+        public void Close()
+        {
+            foreach (BackstageViewPage page in _pages)
+            {
+                page.Page.Close();
+            }
+        }
 
         public class BackstageViewPage
-        {
-            public BackstageViewPage(Control page, string linkText)
+        {            
+            public BackstageViewPage(BackStageViewContentPanel page, string linkText)
             {
                 Page = page;
                 LinkText = linkText;
             }
 
-            public Control Page { get; private set; }
+            public BackStageViewContentPanel Page { get; private set; }
             public string LinkText { get; set; }
         }
     }

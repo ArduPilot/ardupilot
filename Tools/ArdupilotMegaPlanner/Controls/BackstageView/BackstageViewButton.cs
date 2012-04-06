@@ -24,12 +24,9 @@ namespace ArdupilotMega.Controls.BackstageView
         {
             this.SuspendLayout();
 
-            SetStyle(ControlStyles.SupportsTransparentBackColor, true);
-            SetStyle(ControlStyles.Opaque, true);
             SetStyle(ControlStyles.ResizeRedraw, true);
-            this.BackColor = Color.Transparent;
 
-            this.Width = 100;
+            this.Width = 150;
             this.Height = 30;
 
             
@@ -47,23 +44,10 @@ namespace ArdupilotMega.Controls.BackstageView
                 if (_isSelected != value)
                 {
                     _isSelected = value;
-                    //this.Parent.Refresh(); // <-- brutal, but works
-
-                   
-                    InvalidateParentForBackground();
 
                     this.Invalidate();
                 }
             }
-        }
-
-        // Must be a better way to redraw parent control in the area of
-        // the button 
-        private void InvalidateParentForBackground()
-        {
-            var screenrect = this.RectangleToScreen(this.ClientRectangle);
-            var rectangleToClient = this.Parent.RectangleToClient(screenrect);
-            this.Parent.Invalidate(rectangleToClient);
         }
 
         protected override void OnPaintBackground(PaintEventArgs pevent)
@@ -78,6 +62,8 @@ namespace ArdupilotMega.Controls.BackstageView
 
         protected override void OnPaint(PaintEventArgs pevent)
         {
+           ((BackStageViewMenuPanel)this.Parent).PaintBackground(pevent);
+
            Graphics g = pevent.Graphics;
          
 
@@ -139,7 +125,6 @@ namespace ArdupilotMega.Controls.BackstageView
         {
             _isMouseOver = true;
             base.OnMouseEnter(e);
-            InvalidateParentForBackground();
             this.Invalidate();
         }
 
@@ -147,12 +132,11 @@ namespace ArdupilotMega.Controls.BackstageView
         {
             _isMouseOver = false;
             base.OnMouseLeave(e);
-            InvalidateParentForBackground();
             this.Invalidate();
 
         }
-
-        // This IS necessary for transparency 
+        /*
+        // This IS necessary for transparency - windows only..... remove it
         protected override CreateParams CreateParams
         {
             get
@@ -163,5 +147,6 @@ namespace ArdupilotMega.Controls.BackstageView
                 return cp;
             }
         }
+         */
     }
 }

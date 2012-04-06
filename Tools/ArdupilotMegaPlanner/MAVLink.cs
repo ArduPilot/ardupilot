@@ -2179,28 +2179,35 @@ namespace ArdupilotMega
 
             try
             {
-
                 if ((temp[0] == 'U' || temp[0] == 254) && temp.Length >= temp[1])
                 {
-                    if (temp[2] != ((recvpacketcount + 1) % 0x100))
+                    if (temp[3] == '3' && temp[4] == 'D')
                     {
-                        synclost++; // actualy sync loss's
 
-                        if (temp[2] < ((recvpacketcount + 1) % 0x100))
-                        {
-                            packetslost += 0x100 - recvpacketcount + temp[2];
-                        }
-                        else
-                        {
-                            packetslost += temp[2] - recvpacketcount;
-                        }
-
-                        log.InfoFormat("lost {0} pkts {1}", temp[2], (int)packetslost);
                     }
+                    else
+                    {
+                        if (temp[2] != ((recvpacketcount + 1) % 0x100))
+                        {
+                            synclost++; // actualy sync loss's
 
-                    packetsnotlost++;
+                            if (temp[2] < ((recvpacketcount + 1) % 0x100))
+                            {
+                                packetslost += 0x100 - recvpacketcount + temp[2];
+                            }
+                            else
+                            {
+                                packetslost += temp[2] - recvpacketcount;
+                            }
 
-                    recvpacketcount = temp[2];
+                            log.InfoFormat("lost {0} pkts {1}", temp[2], (int)packetslost);
+                        }
+
+                        packetsnotlost++;
+
+                        recvpacketcount = temp[2];
+
+                    }
 
                     //MAVLINK_MSG_ID_GPS_STATUS
                     //if (temp[5] == MAVLINK_MSG_ID_GPS_STATUS)
