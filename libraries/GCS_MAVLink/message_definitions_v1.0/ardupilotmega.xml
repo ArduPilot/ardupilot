@@ -261,8 +261,9 @@
             <field type="uint8_t" name="rssi">local signal strength</field>
             <field type="uint8_t" name="remrssi">remote signal strength</field>
 	    <field type="uint8_t" name="txbuf">how full the tx buffer is as a percentage</field>
+            <field type="uint8_t" name="noise">background noise level</field>
+            <field type="uint8_t" name="remnoise">remote background noise level</field>
 	    <field type="uint16_t" name="rxerrors">receive errors</field>
-	    <field type="uint16_t" name="serrors">serial errors</field>
 	    <field type="uint16_t" name="fixed">count of error corrected packets</field>
 	  </message>
      </messages>
