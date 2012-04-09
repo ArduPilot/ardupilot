@@ -1524,6 +1524,8 @@ namespace ArdupilotMega
             var baseurl = ConfigurationManager.AppSettings["UpdateLocation"];
             string path = Path.GetFileName(Application.ExecutablePath);
 
+            path = "version.txt";
+
             // Create a request using a URL that can receive a post. 
             string requestUriString = baseurl + path;
             log.Debug("Checking for update at: " + requestUriString);
@@ -1531,7 +1533,7 @@ namespace ArdupilotMega
             webRequest.Timeout = 5000;
 
             // Set the Method property of the request to POST.
-            webRequest.Method = "HEAD";
+            webRequest.Method = "GET";
 
             ((HttpWebRequest)webRequest).IfModifiedSince = File.GetLastWriteTimeUtc(path);
 
@@ -1549,24 +1551,34 @@ namespace ArdupilotMega
             {
                 var fi = new FileInfo(path);
 
-                string CurrentEtag = "";
+                string LocalVersion = "";
+                string WebVersion = "";
 
-                if (File.Exists(path + ".etag"))
+                if (File.Exists(path))
                 {
-                    using (Stream fs = File.OpenRead(path + ".etag"))
+                    using (Stream fs = File.OpenRead(path))
                     {
                         using (StreamReader sr = new StreamReader(fs))
                         {
-                            CurrentEtag = sr.ReadLine();
+                            LocalVersion = sr.ReadLine();
                             sr.Close();
                         }
                         fs.Close();
                     }
                 }
 
-                log.Info("New file Check: " + fi.Length + " vs " + response.ContentLength + " " + response.Headers[HttpResponseHeader.ETag] + " vs " + CurrentEtag);
+                using (StreamReader sr = new StreamReader(response.GetResponseStream()))
+                {
+                    WebVersion = sr.ReadLine();
 
-                if (fi.Length != response.ContentLength || response.Headers[HttpResponseHeader.ETag] != CurrentEtag)
+                    sr.Close();
+                }
+
+
+
+                log.Info("New file Check: local " + LocalVersion + " vs Remote " + WebVersion);
+
+                if (LocalVersion != WebVersion)
                 {
                     shouldGetFile = true;
                 }
@@ -1889,9 +1901,13 @@ namespace ArdupilotMega
             }
             if (keyData == (Keys.Control | Keys.A)) // test
             {
+                Form temp = new Form();
                 Control frm = new _3DRradio();
-                ThemeManager.ApplyThemeTo(frm);
-                frm.Show();
+                temp.Controls.Add(frm);
+                temp.Size = frm.Size;
+                frm.Dock = DockStyle.Fill;
+                ThemeManager.ApplyThemeTo(temp);
+                temp.Show();
                 return true;
             }
             if (keyData == (Keys.Control | Keys.W)) // test

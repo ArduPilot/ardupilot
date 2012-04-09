@@ -116,7 +116,7 @@ namespace wix
         {
             string newid = System.Guid.NewGuid().ToString();
 
-            newid = "{625389D7-EB3C-4d77-A5F6-A285CF99437D}";
+            newid = "*";
 
             StreamReader sr = new StreamReader(File.OpenRead("../Properties/AssemblyInfo.cs"));
 
@@ -138,10 +138,18 @@ namespace wix
 
 
     <Product Id=""" + newid + @""" Name=""APM Planner"" Language=""1033"" Version="""+version+@""" Manufacturer=""Michael Oborne"" UpgradeCode=""{625389D7-EB3C-4d77-A5F6-A285CF99437D}"">
+
         <Package Description=""APM Planner Installer"" Comments=""Apm Planner Installer"" Manufacturer=""Michael Oborne"" InstallerVersion=""200"" Compressed=""yes"" />
 
-<MajorUpgrade DowngradeErrorMessage=""A later version of [ProductName] is already installed. Setup will now exit.""/>
 
+<Upgrade Id=""{625389D7-EB3C-4d77-A5F6-A285CF99437D}"">
+    <UpgradeVersion OnlyDetect=""yes"" Minimum=""" + version + @""" Property=""NEWERVERSIONDETECTED"" IncludeMinimum=""no"" />
+    <UpgradeVersion OnlyDetect=""no"" Maximum=""" + version + @""" Property=""OLDERVERSIONBEINGUPGRADED"" IncludeMaximum=""no"" />
+</Upgrade>
+
+<InstallExecuteSequence>
+    <RemoveExistingProducts After=""InstallInitialize"" />
+</InstallExecuteSequence>
 
         <PropertyRef Id=""NETFRAMEWORK35"" />
 
@@ -251,7 +259,7 @@ data = @"
 
             foreach (string filepath in files)
             {
-                if (filepath.EndsWith("config.xml") || filepath.Contains("ArdupilotPlanner.log"))
+                if (filepath.ToLower().EndsWith("release\\config.xml") || filepath.ToLower().Contains("ardupilotplanner.log") || filepath.ToLower().Contains("dataflash.bin") || filepath.ToLower().Contains(".etag"))
                     continue;
                 no++;
                 sw.WriteLine("<File Id=\"_" + no + "\" Source=\"" + filepath + "\" />");

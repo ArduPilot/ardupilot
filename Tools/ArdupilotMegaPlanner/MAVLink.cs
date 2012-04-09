@@ -2094,7 +2094,8 @@ namespace ArdupilotMega
                                         int read = BaseStream.Read(temp, 6, length - 4);
                                         if (rawlogfile != null && rawlogfile.BaseStream.CanWrite)
                                         {
-                                            rawlogfile.Write(temp, 0, read);
+                                            // write only what we read, temp is the whole packet, so 6-end
+                                            rawlogfile.Write(temp, 6, read);
                                             rawlogfile.BaseStream.Flush();
                                         }
                                     }
@@ -2258,6 +2259,7 @@ namespace ArdupilotMega
                                 Array.Reverse(datearray);
                                 logfile.Write(datearray, 0, datearray.Length);
                                 logfile.Write(temp, 0, temp.Length);
+                                logfile.Flush();
                             }
                         }
 
