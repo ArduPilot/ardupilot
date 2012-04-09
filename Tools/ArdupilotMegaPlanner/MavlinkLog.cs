@@ -38,6 +38,8 @@ namespace ArdupilotMega
 
         Hashtable data = new Hashtable();
 
+        PointLatLngAlt homepos = new PointLatLngAlt();
+
         public MavlinkLog()
         {
             InitializeComponent();
@@ -576,15 +578,16 @@ namespace ArdupilotMega
 
 
             OpenFileDialog openFileDialog1 = new OpenFileDialog();
+            try
+            {
+              //  openFileDialog1.InitialDirectory = Path.GetDirectoryName(Application.ExecutablePath) + Path.DirectorySeparatorChar + @"logs" + Path.DirectorySeparatorChar;
+            }
+            catch { } // incase dir doesnt exist
             openFileDialog1.Filter = "*.tlog|*.tlog";
             openFileDialog1.FilterIndex = 2;
             openFileDialog1.RestoreDirectory = true;
             openFileDialog1.Multiselect = false;
-            try
-            {
-                openFileDialog1.InitialDirectory = Path.GetDirectoryName(Application.ExecutablePath) + Path.DirectorySeparatorChar + @"logs" + Path.DirectorySeparatorChar;
-            }
-            catch { } // incase dir doesnt exist
+
 
             if (openFileDialog1.ShowDialog() == DialogResult.OK)
             {
@@ -781,6 +784,8 @@ namespace ArdupilotMega
 
                 MavlinkInterface.packets.Initialize(); // clear
 
+                CurrentState cs = new CurrentState();
+
                 // to get first packet time
                 MavlinkInterface.readPacket();
 
@@ -792,6 +797,10 @@ namespace ArdupilotMega
                     progressBar1.Refresh();
 
                     byte[] packet = MavlinkInterface.readPacket();
+
+                    cs.datetime = MavlinkInterface.lastlogread;
+
+                    cs.UpdateCurrentSettings(null, true, MavlinkInterface);
 
                     object data = MavlinkInterface.DebugPacket(packet, false);
 
@@ -864,6 +873,8 @@ namespace ArdupilotMega
 
                     addMagField(ref options);
 
+                    addDistHome(ref options);
+
                 }
                 catch (Exception ex) { log.Info(ex.ToString()); }
 
@@ -871,10 +882,14 @@ namespace ArdupilotMega
                 //options.Sort(delegate(string c1, string c2) { return String.Compare(c1.Substring(0,c1.IndexOf('.')),c2.Substring(0,c2.IndexOf('.')));});
 
                 // this needs sorting
+                string lastitem = "";
                 foreach (string item in options)
                 {
                     var items = item.Split('.');
+                    if (items[0] != lastitem)
+                        AddHeader(selectform, items[0].Replace("mavlink_","").Replace("_t","").ToUpper());
                     AddDataOption(selectform, items[1] + " " + items[0]);
+                    lastitem = items[0];
                 }
 
                 selectform.Show();
@@ -884,6 +899,29 @@ namespace ArdupilotMega
             }
 
             return selection;
+        }
+
+        void dospecial(string PacketName)
+        {
+            string test = @"0; float test = (float)Sin(55) + 10; 
+test += (float)sin(45);
+return test;
+";
+
+            object answer = CodeGen.runCode(test);
+
+            Console.WriteLine(answer);
+        }
+
+        PointPairList GetValuesForField(string name)
+        {
+            // eg RAW_IMU.xmag to "xmag mavlink_raw_imu_t"
+
+            string[] items = name.ToLower().Split(new char[] {'.',' '});
+
+            PointPairList list = ((PointPairList)this.data[items[1] + " mavlink_" + items[0] + "_t"]);
+
+            return list;
         }
 
         void addMagField(ref List<string> options)
@@ -913,6 +951,72 @@ namespace ArdupilotMega
             }
         }
 
+        void addDistHome(ref List<string> options)
+        {
+            string field = "dist_home Custom";
+
+            options.Add("Custom.dist_home");
+
+            this.data[field] = new PointPairList();
+
+            PointLatLngAlt home = new PointLatLngAlt();
+
+            PointPairList list = ((PointPairList)this.data[field]);
+
+            PointPairList listfix = ((PointPairList)this.data["fix_type mavlink_gps_raw_t"]);
+            PointPairList listx = ((PointPairList)this.data["lat mavlink_gps_raw_t"]);
+            PointPairList listy = ((PointPairList)this.data["lon mavlink_gps_raw_t"]);
+            PointPairList listz = ((PointPairList)this.data["alt mavlink_gps_raw_t"]);
+
+            for (int a = 0; a < listfix.Count; a++)
+            {
+                if (listfix[a].Y == 2)
+                {
+                    home = new PointLatLngAlt(listx[a].Y, listy[a].Y, listz[a].Y,"Home");
+                    break;
+                }
+            }
+
+            //(float)Math.Sqrt(Math.Pow(mx, 2) + Math.Pow(my, 2) + Math.Pow(mz, 2));
+
+            for (int a = 0; a < listx.Count; a++)
+            {
+
+                double ans = home.GetDistance(new PointLatLngAlt(listx[a].Y, listy[a].Y, listz[a].Y, "Point"));
+
+                //Console.WriteLine("{0} {1} {2} {3}", ans, listx[a].Y, listy[a].Y, listz[a].Y);
+
+                list.Add(listx[a].X, ans);
+            }
+        }
+
+        private void AddHeader(Form selectform, string Name)
+        {
+            System.Windows.Forms.Label lbl_head = new System.Windows.Forms.Label();
+
+            log.Info("Add Header " + Name);
+
+            lbl_head.Text = Name;
+            lbl_head.Name = Name;
+            lbl_head.Location = new System.Drawing.Point(x, y);
+            lbl_head.Size = new System.Drawing.Size(100, 20);
+
+            selectform.Controls.Add(lbl_head);
+
+            Application.DoEvents();
+
+            x += 0;
+            y += 20;
+
+            if (y > selectform.Height - 60)
+            {
+                x += 100;
+                y = 10;
+
+                selectform.Width = x + 100;
+            }
+        }
+
         private void AddDataOption(Form selectform, string Name)
         {
 
@@ -925,6 +1029,7 @@ namespace ArdupilotMega
             chk_box.Location = new System.Drawing.Point(x, y);
             chk_box.Size = new System.Drawing.Size(100, 20);
             chk_box.CheckedChanged += new EventHandler(chk_box_CheckedChanged);
+            chk_box.MouseUp += new MouseEventHandler(chk_box_MouseUp);
 
             selectform.Controls.Add(chk_box);
 
@@ -933,7 +1038,7 @@ namespace ArdupilotMega
             x += 0;
             y += 20;
 
-            if (y > selectform.Height - 50)
+            if (y > selectform.Height - 60)
             {
                 x += 100;
                 y = 10;
@@ -942,7 +1047,26 @@ namespace ArdupilotMega
             }
         }
 
+        void chk_box_MouseUp(object sender, MouseEventArgs e)
+        {
+            if (e.Button == System.Windows.Forms.MouseButtons.Right)
+            {
+                // dont action a already draw item
+                if (!((CheckBox)sender).Checked)
+                {
+                    rightclick = true;
+                    ((CheckBox)sender).Checked = true;
+                }
+                else
+                {
+                    ((CheckBox)sender).Checked = false;
+                }
+                rightclick = false;
+            }
+        }
+
         int colorStep = 0;
+        bool rightclick = false;
 
         void chk_box_CheckedChanged(object sender, EventArgs e)
         {
@@ -976,11 +1100,13 @@ namespace ArdupilotMega
 
                 myCurve.GetRange(out xMin, out xMax, out yMin, out  yMax, true, false, zg1.GraphPane);
 
-                if (yMin > 900 && yMax < 2100 && yMin < 2100)
+                if (rightclick || (yMin > 850 && yMax < 2100 && yMin < 2100))
                 {
                     myCurve.IsY2Axis = true;
                     myCurve.YAxisIndex = 0;
                     zg1.GraphPane.Y2Axis.IsVisible = true;
+
+                    myCurve.Label.Text = myCurve.Label.Text + "-R";
                 }
             }
             else
@@ -1000,6 +1126,8 @@ namespace ArdupilotMega
             {
                 // fix new line types
                 ThemeManager.ApplyThemeTo(this);
+
+                zg1.GraphPane.XAxis.AxisGap = 0;
 
                 zg1.Invalidate();
                 zg1.AxisChange();
@@ -1024,18 +1152,10 @@ namespace ArdupilotMega
             x = 10;
             y = 10;
 
-            {
-                CheckBox chk_box = new CheckBox();
-                chk_box.Text = "Logarithmic";
-                chk_box.Name = "Logarithmic";
-                chk_box.Location = new System.Drawing.Point(x, y);
-                chk_box.Size = new System.Drawing.Size(100, 20);
-                //chk_box.CheckedChanged += new EventHandler(chk_log_CheckedChanged);
-
-                selectform.Controls.Add(chk_box);
-            }
-
-            y += 20;
+            AddHeader(selectform, "Left Click");
+            AddHeader(selectform, "Left Axis");
+            AddHeader(selectform, "Right Click");
+            AddHeader(selectform, "Right Axis");
 
             ThemeManager.ApplyThemeTo(selectform);
 

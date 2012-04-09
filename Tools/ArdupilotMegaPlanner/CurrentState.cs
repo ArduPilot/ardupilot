@@ -256,8 +256,9 @@ namespace ArdupilotMega
         public float rssi { get; set; }
         public float remrssi { get; set; }
         public byte txbuffer { get; set; }
+        public float noise { get; set; }
+        public float remnoise { get; set; }
         public ushort rxerrors { get; set; }
-        public ushort serrors { get; set; }
         public ushort fixedp { get; set; }
 
         // stats
@@ -703,7 +704,8 @@ namespace ArdupilotMega
                     remrssi = radio.remrssi;
                     txbuffer = radio.txbuf;
                     rxerrors = radio.rxerrors;
-                    serrors = radio.serrors;
+                    noise  = radio.noise;
+                    remnoise = radio.remnoise;
                     fixedp = radio.fixedp;
                 }
 
