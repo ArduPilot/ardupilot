@@ -392,13 +392,14 @@ public:
 
 	// PI controller	initial P			initial I			initial imax
 	//----------------------------------------------------------------------
+	pi_loiter_lat		(LOITER_P,			LOITER_I,			LOITER_IMAX * 100),
+	pi_loiter_lon		(LOITER_P,			LOITER_I,			LOITER_IMAX * 100),
+
 	pi_stabilize_roll	(STABILIZE_ROLL_P,	STABILIZE_ROLL_I,	STABILIZE_ROLL_IMAX * 100),
 	pi_stabilize_pitch	(STABILIZE_PITCH_P,	STABILIZE_PITCH_I,	STABILIZE_PITCH_IMAX * 100),
 	pi_stabilize_yaw	(STABILIZE_YAW_P,	STABILIZE_YAW_I,	STABILIZE_YAW_IMAX * 100),
 
-	pi_alt_hold			(ALT_HOLD_P,		ALT_HOLD_I,			ALT_HOLD_IMAX),
-	pi_loiter_lat		(LOITER_P,			LOITER_I,			LOITER_IMAX * 100),
-	pi_loiter_lon		(LOITER_P,			LOITER_I,			LOITER_IMAX * 100)
+	pi_alt_hold			(ALT_HOLD_P,		ALT_HOLD_I,			ALT_HOLD_IMAX)
 	{
 	}
 };
