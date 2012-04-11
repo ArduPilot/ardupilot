@@ -8,7 +8,8 @@ To install the libraries:
 
 Building using make 
 -----------------------------------------------
- - go to directory of sketch and type make.
+ - go to directory of sketch and type "make".
+ --type "make upload" to upload according to the parameters in config.mk .
 
 Building using cmake
 -----------------------------------------------
