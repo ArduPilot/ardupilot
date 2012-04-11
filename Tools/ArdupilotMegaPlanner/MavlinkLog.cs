@@ -26,6 +26,8 @@ using System.Xml;
 using log4net;
 using ZedGraph; // Graphs
 
+using System.CodeDom.Compiler;
+
 namespace ArdupilotMega
 {
     public partial class MavlinkLog : Form
@@ -35,8 +37,10 @@ namespace ArdupilotMega
         List<CurrentState> flightdata = new List<CurrentState>();
 
         List<string> selection = new List<string>();
+        List<string> options = new List<string>();
 
-        Hashtable data = new Hashtable();
+        Hashtable datappl = new Hashtable();
+        Hashtable packetdata = new Hashtable();
 
         PointLatLngAlt homepos = new PointLatLngAlt();
 
@@ -620,148 +624,6 @@ namespace ArdupilotMega
         0xE00000,0x00E000,0x0000E0,0xE0E000,0xE000E0,0x00E0E0,0xE0E0E0,  
     }; 
 
-
-        private void GetLogFileData(ZedGraphControl zg1, string logfile, List<string> lookforfields)
-        {
-            if (zg1 == null)
-                return;
-
-            if (lookforfields != null && lookforfields.Count == 0)
-                return;
-
-            PointPairList[] lists = new PointPairList[lookforfields.Count];
-
-            Random rand = new Random();
-
-             // setup arrays
-            for (int a = 0; a < lookforfields.Count; a++)
-            {
-                lists[a] = new PointPairList();
-            }
-
-            {
-
-                MAVLink MavlinkInterface = new MAVLink();
-                MavlinkInterface.logplaybackfile = new BinaryReader(File.Open(logfile, FileMode.Open, FileAccess.Read, FileShare.Read));
-                MavlinkInterface.logreadmode = true;
-
-                MavlinkInterface.packets.Initialize(); // clear
-
-                int appui = 0;
-
-                // to get first packet time
-                MavlinkInterface.readPacket();
-
-                DateTime startlogtime = MavlinkInterface.lastlogread;
-
-                while (MavlinkInterface.logplaybackfile.BaseStream.Position < MavlinkInterface.logplaybackfile.BaseStream.Length)
-                {
-                    progressBar1.Value = (int)((float)MavlinkInterface.logplaybackfile.BaseStream.Position / (float)MavlinkInterface.logplaybackfile.BaseStream.Length * 100.0f);
-                    progressBar1.Refresh();
-
-                    byte[] packet = MavlinkInterface.readPacket();
-
-                    object data = MavlinkInterface.DebugPacket(packet, false);
-
-                    Type test = data.GetType();
-
-                    foreach (var field in test.GetFields())
-                    {
-                        // field.Name has the field's name.
-
-                        object fieldValue = field.GetValue(data); // Get value
-
-                        if (field.FieldType.IsArray)
-                        {
-
-                        }
-                        else
-                        {
-                            string currentitem = field.Name + " " + field.DeclaringType.Name;
-                            int a = 0;
-                            foreach (var lookforfield in lookforfields)
-                            {
-
-                                if (currentitem == lookforfield)
-                                {
-                                    object value = field.GetValue(data);
-                                    // seconds scale
-                                    double time = (MavlinkInterface.lastlogread - startlogtime).TotalMilliseconds / 1000.0;
-
-                                    if (value.GetType() == typeof(Single))
-                                    {
-                                        lists[a].Add(time, (Single)field.GetValue(data));
-                                    }
-                                    else if (value.GetType() == typeof(short))
-                                    {
-                                        lists[a].Add(time, (short)field.GetValue(data));
-                                    }
-                                    else if (value.GetType() == typeof(ushort))
-                                    {
-                                        lists[a].Add(time, (ushort)field.GetValue(data));
-                                    }
-                                    else if (value.GetType() == typeof(byte))
-                                    {
-                                        lists[a].Add(time, (byte)field.GetValue(data));
-                                    }
-                                    else if (value.GetType() == typeof(Int32))
-                                    {
-                                        lists[a].Add(time, (Int32)field.GetValue(data));
-                                    }
-                                }
-                                a++;
-                            }
-                        }
-                    }
-
-                    if (appui != DateTime.Now.Second)
-                    {
-                        // cant do entire app as mixes with flightdata timer
-                        this.Refresh();
-                        appui = DateTime.Now.Second;
-                    }
-                }
-
-                MavlinkInterface.logreadmode = false;
-                MavlinkInterface.logplaybackfile.Close();
-                MavlinkInterface.logplaybackfile = null;
-
-
-                //writeKML(logfile + ".kml");
-
-                progressBar1.Value = 100;
-            }
-
-            int step = 0;
-
-            zg1.GraphPane.AddY2Axis("PWM");
-            zg1.GraphPane.AddY2Axis("Angle");
-
-            //zg1.GraphPane.XAxis.Title.Text = "Seconds";
-
-            // setup display and arrays
-            for (int a = 0; a < lookforfields.Count; a++)
-            {
-                LineItem myCurve;
-
-                int colorvalue = ColourValues[step % ColourValues.Length];
-                step++;
-
-                myCurve = zg1.GraphPane.AddCurve(lookforfields[a].Replace("mavlink_", ""), lists[a], Color.FromArgb(unchecked(colorvalue + (int)0xff000000)), SymbolType.None);
-
-                double xMin, xMax, yMin, yMax;
-
-                myCurve.GetRange(out xMin, out xMax, out yMin, out  yMax, true, false, zg1.GraphPane);
-
-                if (yMin > 900 && yMax < 2100)
-                {
-                    myCurve.IsY2Axis = true;
-                    myCurve.YAxisIndex = 0;
-                    zg1.GraphPane.Y2Axis.IsVisible = true;
-                }
-            }
-        }
-
         private List<string> GetLogFileValidFields(string logfile)
         {
             Form selectform = SelectDataToGraphForm();
@@ -770,9 +632,10 @@ namespace ArdupilotMega
 
             selection = new List<string>();
 
-            List<string> options = new List<string>();
+            options = new List<string>();
 
-            this.data.Clear();
+            this.datappl.Clear();
+            this.packetdata.Clear();
 
             colorStep = 0;
             
@@ -812,6 +675,22 @@ namespace ArdupilotMega
 
                     Type test = data.GetType();
 
+                    
+                    if (true) {
+                        string packetname = test.Name.Replace("mavlink_", "").Replace("_t", "").ToUpper();
+
+                        if (!packetdata.ContainsKey(packetname))
+                        {
+                            packetdata[packetname] = new Dictionary<double,object>();
+                        }
+
+                        Dictionary<double, object> temp = (Dictionary<double, object>)packetdata[packetname];
+
+                        double time = (MavlinkInterface.lastlogread - startlogtime).TotalMilliseconds / 1000.0;
+
+                        temp[time] = data;
+                    }
+
                     foreach (var field in test.GetFields())
                     {
                         // field.Name has the field's name.
@@ -831,10 +710,10 @@ namespace ArdupilotMega
                                 options.Add(field.DeclaringType.Name + "." + field.Name);
                             }
 
-                            if (!this.data.ContainsKey(field.Name + " " + field.DeclaringType.Name))
-                                this.data[field.Name + " " + field.DeclaringType.Name] = new PointPairList();
+                            if (!this.datappl.ContainsKey(field.Name + " " + field.DeclaringType.Name))
+                                this.datappl[field.Name + " " + field.DeclaringType.Name] = new PointPairList();
 
-                            PointPairList list = ((PointPairList)this.data[field.Name + " " + field.DeclaringType.Name]);
+                            PointPairList list = ((PointPairList)this.datappl[field.Name + " " + field.DeclaringType.Name]);
 
                             object value = fieldValue;
                             // seconds scale
@@ -860,6 +739,14 @@ namespace ArdupilotMega
                             {
                                 list.Add(time, (Int32)field.GetValue(data));
                             }
+                            else if (value.GetType() == typeof(ulong))
+                            {
+                                list.Add(time, (ulong)field.GetValue(data));
+                            }
+                            else
+                            {
+
+                            }
                         }
                     }
                 }
@@ -871,9 +758,12 @@ namespace ArdupilotMega
                 try
                 {
 
-                    addMagField(ref options);
+                    dospecial("GPS_RAW");
 
-                    addDistHome(ref options);
+
+                    addMagField();
+
+                    addDistHome();
 
                 }
                 catch (Exception ex) { log.Info(ex.ToString()); }
@@ -901,16 +791,117 @@ namespace ArdupilotMega
             return selection;
         }
 
+        public static T Cast<T>(object o)
+        {
+            return (T)o;
+        }
+
         void dospecial(string PacketName)
         {
-            string test = @"0; float test = (float)Sin(55) + 10; 
-test += (float)sin(45);
-return test;
+            Dictionary<double, object> temp = null;
+
+            try
+            {
+                temp = (Dictionary<double, object>)packetdata[PacketName];
+            }
+            catch
+            {
+                CustomMessageBox.Show("Bad PacketName");
+                return;
+            }
+
+            string code = @"
+
+        public double stage(object inp) {
+            return getAltAboveHome((MAVLink.mavlink_gps_raw_t) inp);
+        }
+
+        public double getAltAboveHome(MAVLink.mavlink_gps_raw_t gps)
+        {
+            if (customforusenumber == -1 && gps.fix_type != 2)
+                customforusenumber = gps.alt;
+
+            return gps.alt - customforusenumber;
+        }
 ";
 
-            object answer = CodeGen.runCode(test);
+            // build the class using codedom
+            CodeGen.BuildClass(code);
+
+            // compile the class into an in-memory assembly.
+            // if it doesn't compile, show errors in the window
+            CompilerResults results = CodeGen.CompileAssembly();
+
+            if (results != null && results.CompiledAssembly != null)
+            {
+                string field = "Custom Custom"; // reverse bellow
+
+                options.Add("Custom.Custom");
+
+                this.datappl[field] = new PointPairList();
+
+
+
+                MethodInfo mi = RunCode(results);
+
+
+                // from here
+                PointPairList result = (PointPairList)this.datappl[field];
+
+                object assemblyInstance = results.CompiledAssembly.CreateInstance("ExpressionEvaluator.Calculator");
+
+                foreach (double time in temp.Keys)
+                {
+                    result.Add(time, (double)mi.Invoke(assemblyInstance, new object[] { temp[time] }));
+                }
+            }
+            else
+            {
+                CustomMessageBox.Show("Compile Failed");
+                return;
+            }
+
+            object answer = CodeGen.runCode(code);
 
             Console.WriteLine(answer);
+        }
+
+        public MethodInfo RunCode(CompilerResults results)
+        {
+            Assembly executingAssembly = results.CompiledAssembly;
+            try
+            {
+                //cant call the entry method if the assembly is null
+                if (executingAssembly != null)
+                {
+                    object assemblyInstance = executingAssembly.CreateInstance("ExpressionEvaluator.Calculator");
+                    //Use reflection to call the static Main function
+
+                    Module[] modules = executingAssembly.GetModules(false);
+                    Type[] types = modules[0].GetTypes();
+
+                    //loop through each class that was defined and look for the first occurrance of the entry point method
+                    foreach (Type type in types)
+                    {
+                        MethodInfo[] mis = type.GetMethods();
+                        foreach (MethodInfo mi in mis)
+                        {
+                            if (mi.Name == "stage")
+                            {
+                                return mi;
+                                //object result = mi.Invoke(assemblyInstance, null);
+                                //return result.ToString();
+                            }
+                        }
+                    }
+
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine("Error:  An exception occurred while executing the script", ex);
+            }
+            return null;
         }
 
         PointPairList GetValuesForField(string name)
@@ -919,24 +910,24 @@ return test;
 
             string[] items = name.ToLower().Split(new char[] {'.',' '});
 
-            PointPairList list = ((PointPairList)this.data[items[1] + " mavlink_" + items[0] + "_t"]);
+            PointPairList list = ((PointPairList)this.datappl[items[1] + " mavlink_" + items[0] + "_t"]);
 
             return list;
         }
 
-        void addMagField(ref List<string> options)
+        void addMagField()
         {
             string field = "mag_field Custom";
 
             options.Add("Custom.mag_field");
 
-            this.data[field] = new PointPairList();
+            this.datappl[field] = new PointPairList();
 
-            PointPairList list = ((PointPairList)this.data[field]);
+            PointPairList list = ((PointPairList)this.datappl[field]);
 
-            PointPairList listx = ((PointPairList)this.data["xmag mavlink_raw_imu_t"]);
-            PointPairList listy = ((PointPairList)this.data["ymag mavlink_raw_imu_t"]);
-            PointPairList listz = ((PointPairList)this.data["zmag mavlink_raw_imu_t"]);
+            PointPairList listx = ((PointPairList)this.datappl["xmag mavlink_raw_imu_t"]);
+            PointPairList listy = ((PointPairList)this.datappl["ymag mavlink_raw_imu_t"]);
+            PointPairList listz = ((PointPairList)this.datappl["zmag mavlink_raw_imu_t"]);
 
             //(float)Math.Sqrt(Math.Pow(mx, 2) + Math.Pow(my, 2) + Math.Pow(mz, 2));
 
@@ -951,22 +942,22 @@ return test;
             }
         }
 
-        void addDistHome(ref List<string> options)
+        void addDistHome()
         {
             string field = "dist_home Custom";
 
             options.Add("Custom.dist_home");
 
-            this.data[field] = new PointPairList();
+            this.datappl[field] = new PointPairList();
 
             PointLatLngAlt home = new PointLatLngAlt();
 
-            PointPairList list = ((PointPairList)this.data[field]);
+            PointPairList list = ((PointPairList)this.datappl[field]);
 
-            PointPairList listfix = ((PointPairList)this.data["fix_type mavlink_gps_raw_t"]);
-            PointPairList listx = ((PointPairList)this.data["lat mavlink_gps_raw_t"]);
-            PointPairList listy = ((PointPairList)this.data["lon mavlink_gps_raw_t"]);
-            PointPairList listz = ((PointPairList)this.data["alt mavlink_gps_raw_t"]);
+            PointPairList listfix = ((PointPairList)this.datappl["fix_type mavlink_gps_raw_t"]);
+            PointPairList listx = ((PointPairList)this.datappl["lat mavlink_gps_raw_t"]);
+            PointPairList listy = ((PointPairList)this.datappl["lon mavlink_gps_raw_t"]);
+            PointPairList listz = ((PointPairList)this.datappl["alt mavlink_gps_raw_t"]);
 
             for (int a = 0; a < listfix.Count; a++)
             {
@@ -1079,7 +1070,7 @@ return test;
                 int colorvalue = ColourValues[colorStep % ColourValues.Length];
                 colorStep++;
 
-                myCurve = zg1.GraphPane.AddCurve(((CheckBox)sender).Name.Replace("mavlink_", ""), (PointPairList)data[((CheckBox)sender).Name], Color.FromArgb(unchecked(colorvalue + (int)0xff000000)), SymbolType.None);
+                myCurve = zg1.GraphPane.AddCurve(((CheckBox)sender).Name.Replace("mavlink_", ""), (PointPairList)datappl[((CheckBox)sender).Name], Color.FromArgb(unchecked(colorvalue + (int)0xff000000)), SymbolType.None);
 
                 myCurve.Tag = ((CheckBox)sender).Name;
 
@@ -1087,7 +1078,7 @@ return test;
                     myCurve.Tag.ToString() == "pitch mavlink_attitude_t" ||
                     myCurve.Tag.ToString() == "yaw mavlink_attitude_t")
                 {
-                    PointPairList ppl = new PointPairList((PointPairList)data[((CheckBox)sender).Name]);
+                    PointPairList ppl = new PointPairList((PointPairList)datappl[((CheckBox)sender).Name]);
                     for (int a = 0; a < ppl.Count; a++)
                     {
                         ppl[a].Y = ppl[a].Y * (180.0 / Math.PI);

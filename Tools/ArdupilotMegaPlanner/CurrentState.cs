@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Reflection;
 using System.Text;
 using System.ComponentModel;
-using ArdupilotMega.Mavlink;
 using log4net;
 
 namespace ArdupilotMega

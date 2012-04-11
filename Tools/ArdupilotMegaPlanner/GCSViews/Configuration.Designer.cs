@@ -30,8 +30,8 @@
         {
             this.components = new System.ComponentModel.Container();
             System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(Configuration));
-            System.Windows.Forms.DataGridViewCellStyle dataGridViewCellStyle1 = new System.Windows.Forms.DataGridViewCellStyle();
-            System.Windows.Forms.DataGridViewCellStyle dataGridViewCellStyle2 = new System.Windows.Forms.DataGridViewCellStyle();
+            System.Windows.Forms.DataGridViewCellStyle dataGridViewCellStyle3 = new System.Windows.Forms.DataGridViewCellStyle();
+            System.Windows.Forms.DataGridViewCellStyle dataGridViewCellStyle4 = new System.Windows.Forms.DataGridViewCellStyle();
             this.Params = new System.Windows.Forms.DataGridView();
             this.Command = new System.Windows.Forms.DataGridViewTextBoxColumn();
             this.Value = new System.Windows.Forms.DataGridViewTextBoxColumn();
@@ -181,10 +181,6 @@
             this.THR_ALT_P = new System.Windows.Forms.NumericUpDown();
             this.label22 = new System.Windows.Forms.Label();
             this.groupBox19 = new System.Windows.Forms.GroupBox();
-            this.HLD_LAT_IMAX = new System.Windows.Forms.NumericUpDown();
-            this.label28 = new System.Windows.Forms.Label();
-            this.HLD_LAT_I = new System.Windows.Forms.NumericUpDown();
-            this.label30 = new System.Windows.Forms.Label();
             this.HLD_LAT_P = new System.Windows.Forms.NumericUpDown();
             this.label31 = new System.Windows.Forms.Label();
             this.groupBox20 = new System.Windows.Forms.GroupBox();
@@ -291,6 +287,13 @@
             this.BUT_load = new ArdupilotMega.MyButton();
             this.toolTip1 = new System.Windows.Forms.ToolTip(this.components);
             this.BUT_compare = new ArdupilotMega.MyButton();
+            this.groupBox17 = new System.Windows.Forms.GroupBox();
+            this.LOITER_LAT_D = new System.Windows.Forms.NumericUpDown();
+            this.label28 = new System.Windows.Forms.Label();
+            this.LOITER_LAT_I = new System.Windows.Forms.NumericUpDown();
+            this.label30 = new System.Windows.Forms.Label();
+            this.LOITER_LAT_P = new System.Windows.Forms.NumericUpDown();
+            this.label40 = new System.Windows.Forms.Label();
             ((System.ComponentModel.ISupportInitialize)(this.Params)).BeginInit();
             this.ConfigTabs.SuspendLayout();
             this.TabAP.SuspendLayout();
@@ -371,8 +374,6 @@
             ((System.ComponentModel.ISupportInitialize)(this.THR_ALT_I)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.THR_ALT_P)).BeginInit();
             this.groupBox19.SuspendLayout();
-            ((System.ComponentModel.ISupportInitialize)(this.HLD_LAT_IMAX)).BeginInit();
-            ((System.ComponentModel.ISupportInitialize)(this.HLD_LAT_I)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.HLD_LAT_P)).BeginInit();
             this.groupBox20.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.STB_YAW_IMAX)).BeginInit();
@@ -404,6 +405,10 @@
             ((System.ComponentModel.ISupportInitialize)(this.RATE_RLL_P)).BeginInit();
             this.TabPlanner.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.NUM_tracklength)).BeginInit();
+            this.groupBox17.SuspendLayout();
+            ((System.ComponentModel.ISupportInitialize)(this.LOITER_LAT_D)).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)(this.LOITER_LAT_I)).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)(this.LOITER_LAT_P)).BeginInit();
             this.SuspendLayout();
             // 
             // Params
@@ -411,14 +416,14 @@
             this.Params.AllowUserToAddRows = false;
             this.Params.AllowUserToDeleteRows = false;
             resources.ApplyResources(this.Params, "Params");
-            dataGridViewCellStyle1.Alignment = System.Windows.Forms.DataGridViewContentAlignment.MiddleLeft;
-            dataGridViewCellStyle1.BackColor = System.Drawing.Color.Maroon;
-            dataGridViewCellStyle1.Font = new System.Drawing.Font("Microsoft Sans Serif", 8.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            dataGridViewCellStyle1.ForeColor = System.Drawing.Color.White;
-            dataGridViewCellStyle1.SelectionBackColor = System.Drawing.SystemColors.Highlight;
-            dataGridViewCellStyle1.SelectionForeColor = System.Drawing.SystemColors.HighlightText;
-            dataGridViewCellStyle1.WrapMode = System.Windows.Forms.DataGridViewTriState.True;
-            this.Params.ColumnHeadersDefaultCellStyle = dataGridViewCellStyle1;
+            dataGridViewCellStyle3.Alignment = System.Windows.Forms.DataGridViewContentAlignment.MiddleLeft;
+            dataGridViewCellStyle3.BackColor = System.Drawing.Color.Maroon;
+            dataGridViewCellStyle3.Font = new System.Drawing.Font("Microsoft Sans Serif", 8.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            dataGridViewCellStyle3.ForeColor = System.Drawing.Color.White;
+            dataGridViewCellStyle3.SelectionBackColor = System.Drawing.SystemColors.Highlight;
+            dataGridViewCellStyle3.SelectionForeColor = System.Drawing.SystemColors.HighlightText;
+            dataGridViewCellStyle3.WrapMode = System.Windows.Forms.DataGridViewTriState.True;
+            this.Params.ColumnHeadersDefaultCellStyle = dataGridViewCellStyle3;
             this.Params.ColumnHeadersHeightSizeMode = System.Windows.Forms.DataGridViewColumnHeadersHeightSizeMode.AutoSize;
             this.Params.Columns.AddRange(new System.Windows.Forms.DataGridViewColumn[] {
             this.Command,
@@ -427,14 +432,14 @@
             this.mavScale,
             this.RawValue});
             this.Params.Name = "Params";
-            dataGridViewCellStyle2.Alignment = System.Windows.Forms.DataGridViewContentAlignment.MiddleLeft;
-            dataGridViewCellStyle2.BackColor = System.Drawing.SystemColors.ActiveCaption;
-            dataGridViewCellStyle2.Font = new System.Drawing.Font("Microsoft Sans Serif", 8.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            dataGridViewCellStyle2.ForeColor = System.Drawing.SystemColors.WindowText;
-            dataGridViewCellStyle2.SelectionBackColor = System.Drawing.SystemColors.Highlight;
-            dataGridViewCellStyle2.SelectionForeColor = System.Drawing.SystemColors.HighlightText;
-            dataGridViewCellStyle2.WrapMode = System.Windows.Forms.DataGridViewTriState.True;
-            this.Params.RowHeadersDefaultCellStyle = dataGridViewCellStyle2;
+            dataGridViewCellStyle4.Alignment = System.Windows.Forms.DataGridViewContentAlignment.MiddleLeft;
+            dataGridViewCellStyle4.BackColor = System.Drawing.SystemColors.ActiveCaption;
+            dataGridViewCellStyle4.Font = new System.Drawing.Font("Microsoft Sans Serif", 8.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            dataGridViewCellStyle4.ForeColor = System.Drawing.SystemColors.WindowText;
+            dataGridViewCellStyle4.SelectionBackColor = System.Drawing.SystemColors.Highlight;
+            dataGridViewCellStyle4.SelectionForeColor = System.Drawing.SystemColors.HighlightText;
+            dataGridViewCellStyle4.WrapMode = System.Windows.Forms.DataGridViewTriState.True;
+            this.Params.RowHeadersDefaultCellStyle = dataGridViewCellStyle4;
             this.Params.RowHeadersVisible = false;
             this.Params.CellValueChanged += new System.Windows.Forms.DataGridViewCellEventHandler(this.Params_CellValueChanged);
             this.Params.KeyDown += new System.Windows.Forms.KeyEventHandler(this.Params_KeyDown);
@@ -1097,14 +1102,7 @@
             // 
             // TabAC
             // 
-            this.TabAC.Controls.Add(this.myLabel4);
-            this.TabAC.Controls.Add(this.myLabel3);
-            this.TabAC.Controls.Add(this.TUNE_LOW);
-            this.TabAC.Controls.Add(this.TUNE_HIGH);
-            this.TabAC.Controls.Add(this.myLabel2);
-            this.TabAC.Controls.Add(this.TUNE);
-            this.TabAC.Controls.Add(this.myLabel1);
-            this.TabAC.Controls.Add(this.CH7_OPT);
+            this.TabAC.Controls.Add(this.groupBox17);
             this.TabAC.Controls.Add(this.groupBox5);
             this.TabAC.Controls.Add(this.CHK_lockrollpitch);
             this.TabAC.Controls.Add(this.groupBox4);
@@ -1393,35 +1391,17 @@
             // 
             // groupBox19
             // 
-            this.groupBox19.Controls.Add(this.HLD_LAT_IMAX);
+            this.groupBox19.Controls.Add(this.LOITER_LAT_D);
             this.groupBox19.Controls.Add(this.label28);
-            this.groupBox19.Controls.Add(this.HLD_LAT_I);
+            this.groupBox19.Controls.Add(this.LOITER_LAT_I);
             this.groupBox19.Controls.Add(this.label30);
+            this.groupBox19.Controls.Add(this.LOITER_LAT_P);
+            this.groupBox19.Controls.Add(this.label40);
             this.groupBox19.Controls.Add(this.HLD_LAT_P);
             this.groupBox19.Controls.Add(this.label31);
             resources.ApplyResources(this.groupBox19, "groupBox19");
             this.groupBox19.Name = "groupBox19";
             this.groupBox19.TabStop = false;
-            // 
-            // HLD_LAT_IMAX
-            // 
-            resources.ApplyResources(this.HLD_LAT_IMAX, "HLD_LAT_IMAX");
-            this.HLD_LAT_IMAX.Name = "HLD_LAT_IMAX";
-            // 
-            // label28
-            // 
-            resources.ApplyResources(this.label28, "label28");
-            this.label28.Name = "label28";
-            // 
-            // HLD_LAT_I
-            // 
-            resources.ApplyResources(this.HLD_LAT_I, "HLD_LAT_I");
-            this.HLD_LAT_I.Name = "HLD_LAT_I";
-            // 
-            // label30
-            // 
-            resources.ApplyResources(this.label30, "label30");
-            this.label30.Name = "label30";
             // 
             // HLD_LAT_P
             // 
@@ -2173,6 +2153,50 @@
             this.BUT_compare.UseVisualStyleBackColor = true;
             this.BUT_compare.Click += new System.EventHandler(this.BUT_compare_Click);
             // 
+            // groupBox17
+            // 
+            this.groupBox17.Controls.Add(this.myLabel2);
+            this.groupBox17.Controls.Add(this.myLabel4);
+            this.groupBox17.Controls.Add(this.CH7_OPT);
+            this.groupBox17.Controls.Add(this.myLabel3);
+            this.groupBox17.Controls.Add(this.myLabel1);
+            this.groupBox17.Controls.Add(this.TUNE_LOW);
+            this.groupBox17.Controls.Add(this.TUNE);
+            this.groupBox17.Controls.Add(this.TUNE_HIGH);
+            resources.ApplyResources(this.groupBox17, "groupBox17");
+            this.groupBox17.Name = "groupBox17";
+            this.groupBox17.TabStop = false;
+            // 
+            // LOITER_LAT_D
+            // 
+            resources.ApplyResources(this.LOITER_LAT_D, "LOITER_LAT_D");
+            this.LOITER_LAT_D.Name = "LOITER_LAT_D";
+            // 
+            // label28
+            // 
+            resources.ApplyResources(this.label28, "label28");
+            this.label28.Name = "label28";
+            // 
+            // LOITER_LAT_I
+            // 
+            resources.ApplyResources(this.LOITER_LAT_I, "LOITER_LAT_I");
+            this.LOITER_LAT_I.Name = "LOITER_LAT_I";
+            // 
+            // label30
+            // 
+            resources.ApplyResources(this.label30, "label30");
+            this.label30.Name = "label30";
+            // 
+            // LOITER_LAT_P
+            // 
+            resources.ApplyResources(this.LOITER_LAT_P, "LOITER_LAT_P");
+            this.LOITER_LAT_P.Name = "LOITER_LAT_P";
+            // 
+            // label40
+            // 
+            resources.ApplyResources(this.label40, "label40");
+            this.label40.Name = "label40";
+            // 
             // Configuration
             // 
             resources.ApplyResources(this, "$this");
@@ -2268,8 +2292,6 @@
             ((System.ComponentModel.ISupportInitialize)(this.THR_ALT_I)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.THR_ALT_P)).EndInit();
             this.groupBox19.ResumeLayout(false);
-            ((System.ComponentModel.ISupportInitialize)(this.HLD_LAT_IMAX)).EndInit();
-            ((System.ComponentModel.ISupportInitialize)(this.HLD_LAT_I)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.HLD_LAT_P)).EndInit();
             this.groupBox20.ResumeLayout(false);
             ((System.ComponentModel.ISupportInitialize)(this.STB_YAW_IMAX)).EndInit();
@@ -2301,6 +2323,10 @@
             ((System.ComponentModel.ISupportInitialize)(this.RATE_RLL_P)).EndInit();
             this.TabPlanner.ResumeLayout(false);
             ((System.ComponentModel.ISupportInitialize)(this.NUM_tracklength)).EndInit();
+            this.groupBox17.ResumeLayout(false);
+            ((System.ComponentModel.ISupportInitialize)(this.LOITER_LAT_D)).EndInit();
+            ((System.ComponentModel.ISupportInitialize)(this.LOITER_LAT_I)).EndInit();
+            ((System.ComponentModel.ISupportInitialize)(this.LOITER_LAT_P)).EndInit();
             this.ResumeLayout(false);
 
         }
@@ -2432,10 +2458,6 @@
         private System.Windows.Forms.NumericUpDown THR_ALT_P;
         private System.Windows.Forms.Label label22;
         private System.Windows.Forms.GroupBox groupBox19;
-        private System.Windows.Forms.NumericUpDown HLD_LAT_IMAX;
-        private System.Windows.Forms.Label label28;
-        private System.Windows.Forms.NumericUpDown HLD_LAT_I;
-        private System.Windows.Forms.Label label30;
         private System.Windows.Forms.NumericUpDown HLD_LAT_P;
         private System.Windows.Forms.Label label31;
         private System.Windows.Forms.GroupBox groupBox20;
@@ -2566,5 +2588,12 @@
         private System.Windows.Forms.ComboBox CMB_ratesensors;
         private MyLabel myLabel4;
         private MyLabel myLabel3;
+        private System.Windows.Forms.GroupBox groupBox17;
+        private System.Windows.Forms.NumericUpDown LOITER_LAT_D;
+        private System.Windows.Forms.Label label28;
+        private System.Windows.Forms.NumericUpDown LOITER_LAT_I;
+        private System.Windows.Forms.Label label30;
+        private System.Windows.Forms.NumericUpDown LOITER_LAT_P;
+        private System.Windows.Forms.Label label40;
     }
 }

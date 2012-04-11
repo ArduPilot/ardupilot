@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Drawing;
 using System.Windows.Forms;
-using ArdupilotMega.Controls;
+//using ArdupilotMega.Controls;
 using System.Text;
 using ArdupilotMega;
 
@@ -139,6 +139,11 @@ namespace System.Windows.Forms
                     char.IsWhiteSpace(text[textIndex]))
                 {
                     sb.Append(Environment.NewLine);
+                    currentLinePosition = 0;
+                }
+                // reset line lnegth counter on existing new line
+                if (text[textIndex] == Environment.NewLine[Environment.NewLine.Length -1])
+                {
                     currentLinePosition = 0;
                 }
                 // If we have just started a new line, skip all the whitespace.    

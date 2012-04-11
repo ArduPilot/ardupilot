@@ -49,7 +49,7 @@ namespace ArdupilotMega
             return answer;
         }
 
-        static CodeDomProvider CreateCompiler()
+        public static CodeDomProvider CreateCompiler()
         {
             //Create an instance of the C# compiler   
             CodeDomProvider codeProvider = CodeDomProvider.CreateProvider("CSharp");
@@ -61,7 +61,7 @@ namespace ArdupilotMega
         /// Creawte parameters for compiling
         /// </summary>
         /// <returns></returns>
-        static CompilerParameters CreateCompilerParameters()
+        public static CompilerParameters CreateCompilerParameters()
         {
             //add compiler parameters and assembly references
             CompilerParameters compilerParams = new CompilerParameters();
@@ -71,7 +71,9 @@ namespace ArdupilotMega
             compilerParams.IncludeDebugInformation = false;
             compilerParams.ReferencedAssemblies.Add("mscorlib.dll");
             compilerParams.ReferencedAssemblies.Add("System.dll");
-            compilerParams.ReferencedAssemblies.Add("System.Windows.Forms.dll");
+            compilerParams.ReferencedAssemblies.Add(Application.ExecutablePath);
+
+            compilerParams.ReferencedAssemblies.Add("");
 
             //add any aditional references needed
             //            foreach (string refAssembly in code.References)
@@ -87,7 +89,7 @@ namespace ArdupilotMega
         /// <param name="parms"></param>
         /// <param name="source"></param>
         /// <returns></returns>
-        static private CompilerResults CompileCode(CodeDomProvider compiler, CompilerParameters parms, string source)
+        public static CompilerResults CompileCode(CodeDomProvider compiler, CompilerParameters parms, string source)
         {
             //actually compile the code
             CompilerResults results = compiler.CompileAssemblyFromSource(
@@ -109,7 +111,7 @@ namespace ArdupilotMega
         /// </summary>
         /// <param name="eval">evaluation expression</param>
         /// <returns></returns>
-        static string RefineEvaluationString(string eval)
+        public static string RefineEvaluationString(string eval)
         {
             // look for regular expressions with only letters
             Regex regularExpression = new Regex("[a-zA-Z_]+");
@@ -140,7 +142,7 @@ namespace ArdupilotMega
         /// Compiles the c# into an assembly if there are no syntax errors
         /// </summary>
         /// <returns></returns>
-        static private CompilerResults CompileAssembly()
+        public static CompilerResults CompileAssembly()
         {
             // create a compiler
             CodeDomProvider compiler = CreateCompiler();
@@ -155,7 +157,7 @@ namespace ArdupilotMega
         static ArrayList _mathMembers = new ArrayList();
         static Hashtable _mathMembersMap = new Hashtable();
 
-        static void GetMathMemberNames()
+        public static void GetMathMemberNames()
         {
             // get a reflected assembly of the System assembly
             Assembly systemAssembly = Assembly.GetAssembly(typeof(System.Math));
@@ -200,7 +202,7 @@ namespace ArdupilotMega
         /// Runs the Calculate method in our on-the-fly assembly
         /// </summary>
         /// <param name="results"></param>
-        static private string RunCode(CompilerResults results)
+        public static string RunCode(CompilerResults results)
         {
             Assembly executingAssembly = results.CompiledAssembly;
             try
@@ -238,13 +240,13 @@ namespace ArdupilotMega
         }
 
 
-        static CodeMemberField FieldVariable(string fieldName, string typeName, MemberAttributes accessLevel)
+        public static CodeMemberField FieldVariable(string fieldName, string typeName, MemberAttributes accessLevel)
         {
             CodeMemberField field = new CodeMemberField(typeName, fieldName);
             field.Attributes = accessLevel;
             return field;
         }
-        static CodeMemberField FieldVariable(string fieldName, Type type, MemberAttributes accessLevel)
+        public static CodeMemberField FieldVariable(string fieldName, Type type, MemberAttributes accessLevel)
         {
             CodeMemberField field = new CodeMemberField(type, fieldName);
             field.Attributes = accessLevel;
@@ -258,7 +260,7 @@ namespace ArdupilotMega
         /// <param name="internalName"></param>
         /// <param name="type"></param>
         /// <returns></returns>
-        static CodeMemberProperty MakeProperty(string propertyName, string internalName, Type type)
+        public static CodeMemberProperty MakeProperty(string propertyName, string internalName, Type type)
         {
             CodeMemberProperty myProperty = new CodeMemberProperty();
             myProperty.Name = propertyName;
@@ -285,7 +287,7 @@ namespace ArdupilotMega
         /// <summary>
         /// Main driving routine for building a class
         /// </summary>
-        static void BuildClass(string expression)
+        public static void BuildClass(string expression)
         {
             // need a string to put the code into
             _source = new StringBuilder();
@@ -300,6 +302,8 @@ namespace ArdupilotMega
             myNamespace.Imports.Add(new CodeNamespaceImport("System"));
             myNamespace.Imports.Add(new CodeNamespaceImport("System.Windows.Forms"));
 
+            myNamespace.Imports.Add(new CodeNamespaceImport("ArdupilotMega"));
+
             //Build the class declaration and member variables			
             CodeTypeDeclaration classDeclaration = new CodeTypeDeclaration();
             classDeclaration.IsClass = true;
@@ -312,12 +316,16 @@ namespace ArdupilotMega
             defaultConstructor.Attributes = MemberAttributes.Public;
             defaultConstructor.Comments.Add(new CodeCommentStatement("Default Constructor for class", true));
             defaultConstructor.Statements.Add(new CodeSnippetStatement("//TODO: implement default constructor"));
+
             classDeclaration.Members.Add(defaultConstructor);
+
+
 
             //property
             classDeclaration.Members.Add(MakeProperty("Answer", "answer", typeof(object)));
 
             //Our Calculate Method
+            /*
             CodeMemberMethod myMethod = new CodeMemberMethod();
             myMethod.Name = "Calculate";
             myMethod.ReturnType = new CodeTypeReference(typeof(object));
@@ -328,11 +336,24 @@ namespace ArdupilotMega
             myMethod.Statements.Add(
                            new CodeMethodReturnStatement(new CodeFieldReferenceExpression(new CodeThisReferenceExpression(), "Answer")));
             classDeclaration.Members.Add(myMethod);
+             */
+
+            classDeclaration.Members.Add(FieldVariable("customforusenumber", typeof(double), MemberAttributes.Public));
+            classDeclaration.Members.Add(FieldVariable("customforuseobject", typeof(object), MemberAttributes.Public));
+
+            CodeSnippetTypeMember myMethod = new CodeSnippetTypeMember();
+
+            myMethod.Text = expression;
+
+            classDeclaration.Members.Add(myMethod);
+
             //write code
             myNamespace.Types.Add(classDeclaration);
             generator.GenerateCodeFromNamespace(myNamespace, sw, codeOpts);
             sw.Flush();
             sw.Close();
+
+            Console.Write(sw.ToString());
         }
     }
 }

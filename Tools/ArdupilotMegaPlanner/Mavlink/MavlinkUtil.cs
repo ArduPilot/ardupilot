@@ -5,7 +5,7 @@ using System.Runtime.InteropServices;
 using System.Text;
 using log4net;
 
-namespace ArdupilotMega.Mavlink
+namespace ArdupilotMega
 {
     /// <summary>
     /// Static methods and helpers for creation and manipulation of Mavlink packets
