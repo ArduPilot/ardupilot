@@ -16,9 +16,9 @@ namespace ArdupilotMega
 {
     static class CodeGen
     {
-        public static string runCode(string code)
+        public static object runCode(string code)
         {
-            string answer = "";
+            object answer = null;
 
             GetMathMemberNames();
 
@@ -49,13 +49,12 @@ namespace ArdupilotMega
             return answer;
         }
 
-        static ICodeCompiler CreateCompiler()
+        static CodeDomProvider CreateCompiler()
         {
             //Create an instance of the C# compiler   
-            CodeDomProvider codeProvider = null;
-            codeProvider = new CSharpCodeProvider();
-            ICodeCompiler compiler = codeProvider.CreateCompiler();
-            return compiler;
+            CodeDomProvider codeProvider = CodeDomProvider.CreateProvider("CSharp");
+            //ICodeCompiler compiler = codeProvider.CreateCompiler();
+            return codeProvider;
         }
 
         /// <summary>
@@ -88,7 +87,7 @@ namespace ArdupilotMega
         /// <param name="parms"></param>
         /// <param name="source"></param>
         /// <returns></returns>
-        static private CompilerResults CompileCode(ICodeCompiler compiler, CompilerParameters parms, string source)
+        static private CompilerResults CompileCode(CodeDomProvider compiler, CompilerParameters parms, string source)
         {
             //actually compile the code
             CompilerResults results = compiler.CompileAssemblyFromSource(
@@ -144,7 +143,7 @@ namespace ArdupilotMega
         static private CompilerResults CompileAssembly()
         {
             // create a compiler
-            ICodeCompiler compiler = CreateCompiler();
+            CodeDomProvider compiler = CreateCompiler();
             // get all the compiler parameters
             CompilerParameters parms = CreateCompilerParameters();
             // compile the code into an assembly
@@ -306,7 +305,7 @@ namespace ArdupilotMega
             classDeclaration.IsClass = true;
             classDeclaration.Name = "Calculator";
             classDeclaration.Attributes = MemberAttributes.Public;
-            classDeclaration.Members.Add(FieldVariable("answer", typeof(string), MemberAttributes.Private));
+            classDeclaration.Members.Add(FieldVariable("answer", typeof(object), MemberAttributes.Private));
 
             //default constructor
             CodeConstructor defaultConstructor = new CodeConstructor();
@@ -316,16 +315,16 @@ namespace ArdupilotMega
             classDeclaration.Members.Add(defaultConstructor);
 
             //property
-            classDeclaration.Members.Add(MakeProperty("Answer", "answer", typeof(string)));
+            classDeclaration.Members.Add(MakeProperty("Answer", "answer", typeof(object)));
 
             //Our Calculate Method
             CodeMemberMethod myMethod = new CodeMemberMethod();
             myMethod.Name = "Calculate";
-            myMethod.ReturnType = new CodeTypeReference(typeof(string));
+            myMethod.ReturnType = new CodeTypeReference(typeof(object));
             myMethod.Comments.Add(new CodeCommentStatement("Calculate an expression", true));
             myMethod.Attributes = MemberAttributes.Public;
             myMethod.Statements.Add(new CodeAssignStatement(new CodeSnippetExpression("Object obj"), new CodeSnippetExpression(expression)));
-            myMethod.Statements.Add(new CodeAssignStatement(new CodeSnippetExpression("Answer"), new CodeSnippetExpression("obj.ToString()")));
+            //myMethod.Statements.Add(new CodeAssignStatement(new CodeSnippetExpression("Answer"), new CodeSnippetExpression("obj.ToString()")));
             myMethod.Statements.Add(
                            new CodeMethodReturnStatement(new CodeFieldReferenceExpression(new CodeThisReferenceExpression(), "Answer")));
             classDeclaration.Members.Add(myMethod);

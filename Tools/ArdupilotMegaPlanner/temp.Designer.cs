@@ -198,7 +198,7 @@
             // 
             // BUT_lang_edit
             // 
-            this.BUT_lang_edit.Location = new System.Drawing.Point(365, 164);
+            this.BUT_lang_edit.Location = new System.Drawing.Point(323, 164);
             this.BUT_lang_edit.Name = "BUT_lang_edit";
             this.BUT_lang_edit.Size = new System.Drawing.Size(75, 23);
             this.BUT_lang_edit.TabIndex = 16;
@@ -208,7 +208,7 @@
             // 
             // BUT_georefimage
             // 
-            this.BUT_georefimage.Location = new System.Drawing.Point(263, 164);
+            this.BUT_georefimage.Location = new System.Drawing.Point(221, 164);
             this.BUT_georefimage.Name = "BUT_georefimage";
             this.BUT_georefimage.Size = new System.Drawing.Size(96, 23);
             this.BUT_georefimage.TabIndex = 0;
@@ -217,7 +217,7 @@
             // 
             // BUT_follow_me
             // 
-            this.BUT_follow_me.Location = new System.Drawing.Point(527, 164);
+            this.BUT_follow_me.Location = new System.Drawing.Point(485, 164);
             this.BUT_follow_me.Name = "BUT_follow_me";
             this.BUT_follow_me.Size = new System.Drawing.Size(75, 23);
             this.BUT_follow_me.TabIndex = 17;
@@ -227,7 +227,7 @@
             // 
             // BUT_ant_track
             // 
-            this.BUT_ant_track.Location = new System.Drawing.Point(446, 164);
+            this.BUT_ant_track.Location = new System.Drawing.Point(404, 164);
             this.BUT_ant_track.Name = "BUT_ant_track";
             this.BUT_ant_track.Size = new System.Drawing.Size(75, 23);
             this.BUT_ant_track.TabIndex = 18;
@@ -237,7 +237,7 @@
             // 
             // BUT_magcalib
             // 
-            this.BUT_magcalib.Location = new System.Drawing.Point(161, 164);
+            this.BUT_magcalib.Location = new System.Drawing.Point(119, 164);
             this.BUT_magcalib.Name = "BUT_magcalib";
             this.BUT_magcalib.Size = new System.Drawing.Size(96, 23);
             this.BUT_magcalib.TabIndex = 19;

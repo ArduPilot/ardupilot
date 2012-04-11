@@ -74,7 +74,7 @@ static NOINLINE void send_extended_status1(mavlink_channel_t chan, uint16_t pack
 
     uint8_t status 		= MAV_STATE_ACTIVE;
 
-    if (!motor_armed) {
+    if (!motors.armed()) {
         status 		= MAV_STATE_STANDBY;
     }
 
@@ -197,7 +197,7 @@ static void NOINLINE send_servo_out(mavlink_channel_t chan)
     #else
 		#if X_PLANE == ENABLED
 			 /* update by JLN for X-Plane HIL */
-			if(motor_armed  == true && motor_auto_armed == true){
+			if(motors.armed() && motors.auto_armed()){
 				mavlink_msg_rc_channels_scaled_send(
 					chan,
 					g.rc_1.servo_out,
@@ -259,14 +259,14 @@ static void NOINLINE send_radio_out(mavlink_channel_t chan)
 {
     mavlink_msg_servo_output_raw_send(
         chan,
-        motor_out[0],
-        motor_out[1],
-        motor_out[2],
-        motor_out[3],
-        motor_out[4],
-        motor_out[5],
-        motor_out[6],
-        motor_out[7]);
+        motors.motor_out[AP_MOTORS_MOT_1],
+        motors.motor_out[AP_MOTORS_MOT_2],
+        motors.motor_out[AP_MOTORS_MOT_3],
+        motors.motor_out[AP_MOTORS_MOT_4],
+        motors.motor_out[AP_MOTORS_MOT_5],
+        motors.motor_out[AP_MOTORS_MOT_6],
+        motors.motor_out[AP_MOTORS_MOT_7],
+        motors.motor_out[AP_MOTORS_MOT_8]);
 }
 
 static void NOINLINE send_vfr_hud(mavlink_channel_t chan)

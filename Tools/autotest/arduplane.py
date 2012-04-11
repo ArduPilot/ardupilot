@@ -69,7 +69,7 @@ def fly_left_circuit(mavproxy, mav):
             return False
         mavproxy.send('rc 1 1500\n')
         print("Starting leg %u" % i)
-        if not wait_distance(mav, 100):
+        if not wait_distance(mav, 100, accuracy=20):
             return False
     print("Circuit complete")
     return True
@@ -289,7 +289,6 @@ def fly_ArduPlane(viewerip=None):
     try:
         mav.wait_heartbeat()
         setup_rc(mavproxy)
-        mavproxy.expect('APM: init home')
         mav.recv_match(type='GPS_RAW', condition='MAV.flightmode!="INITIALISING" and GPS_RAW.fix_type==2 and GPS_RAW.lat != 0 and GPS_RAW.alt != 0 and VFR_HUD.alt > 10',
                        blocking=True)
         homeloc = current_location(mav)

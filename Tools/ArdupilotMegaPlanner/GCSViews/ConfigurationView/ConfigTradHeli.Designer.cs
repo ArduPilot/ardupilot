@@ -1,0 +1,763 @@
+﻿namespace ArdupilotMega.GCSViews.ConfigurationView
+{
+    partial class ConfigTradHeli
+    {
+        /// <summary> 
+        /// Required designer variable.
+        /// </summary>
+        private System.ComponentModel.IContainer components = null;
+
+        /// <summary> 
+        /// Clean up any resources being used.
+        /// </summary>
+        /// <param name="disposing">true if managed resources should be disposed; otherwise, false.</param>
+        protected override void Dispose(bool disposing)
+        {
+            if (disposing && (components != null))
+            {
+                components.Dispose();
+            }
+            base.Dispose(disposing);
+        }
+
+        #region Component Designer generated code
+
+        /// <summary> 
+        /// Required method for Designer support - do not modify 
+        /// the contents of this method with the code editor.
+        /// </summary>
+        private void InitializeComponent()
+        {
+            this.components = new System.ComponentModel.Container();
+            System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(ConfigTradHeli));
+            this.groupBox5 = new System.Windows.Forms.GroupBox();
+            this.H1_ENABLE = new System.Windows.Forms.RadioButton();
+            this.CCPM = new System.Windows.Forms.RadioButton();
+            this.BUT_swash_manual = new ArdupilotMega.MyButton();
+            this.label41 = new System.Windows.Forms.Label();
+            this.groupBox3 = new System.Windows.Forms.GroupBox();
+            this.label46 = new System.Windows.Forms.Label();
+            this.label45 = new System.Windows.Forms.Label();
+            this.GYR_ENABLE = new System.Windows.Forms.CheckBox();
+            this.GYR_GAIN = new System.Windows.Forms.TextBox();
+            this.BUT_HS4save = new ArdupilotMega.MyButton();
+            this.label21 = new System.Windows.Forms.Label();
+            this.COL_MIN = new System.Windows.Forms.TextBox();
+            this.groupBox1 = new System.Windows.Forms.GroupBox();
+            this.COL_MID = new System.Windows.Forms.TextBox();
+            this.COL_MAX = new System.Windows.Forms.TextBox();
+            this.BUT_0collective = new ArdupilotMega.MyButton();
+            this.groupBox2 = new System.Windows.Forms.GroupBox();
+            this.label24 = new System.Windows.Forms.Label();
+            this.HS4_MIN = new System.Windows.Forms.TextBox();
+            this.HS4_MAX = new System.Windows.Forms.TextBox();
+            this.label40 = new System.Windows.Forms.Label();
+            this.HS3_TRIM = new System.Windows.Forms.NumericUpDown();
+            this.HS2_TRIM = new System.Windows.Forms.NumericUpDown();
+            this.HS1_TRIM = new System.Windows.Forms.NumericUpDown();
+            this.label39 = new System.Windows.Forms.Label();
+            this.label38 = new System.Windows.Forms.Label();
+            this.label37 = new System.Windows.Forms.Label();
+            this.label36 = new System.Windows.Forms.Label();
+            this.label26 = new System.Windows.Forms.Label();
+            this.PIT_MAX = new System.Windows.Forms.TextBox();
+            this.label25 = new System.Windows.Forms.Label();
+            this.ROL_MAX = new System.Windows.Forms.TextBox();
+            this.label23 = new System.Windows.Forms.Label();
+            this.label22 = new System.Windows.Forms.Label();
+            this.label20 = new System.Windows.Forms.Label();
+            this.label19 = new System.Windows.Forms.Label();
+            this.label18 = new System.Windows.Forms.Label();
+            this.SV3_POS = new System.Windows.Forms.TextBox();
+            this.SV2_POS = new System.Windows.Forms.TextBox();
+            this.SV1_POS = new System.Windows.Forms.TextBox();
+            this.HS3_REV = new System.Windows.Forms.CheckBox();
+            this.HS2_REV = new System.Windows.Forms.CheckBox();
+            this.HS1_REV = new System.Windows.Forms.CheckBox();
+            this.label17 = new System.Windows.Forms.Label();
+            this.HS4 = new ArdupilotMega.HorizontalProgressBar2();
+            this.currentStateBindingSource = new System.Windows.Forms.BindingSource(this.components);
+            this.HS3 = new ArdupilotMega.VerticalProgressBar2();
+            this.Gservoloc = new AGaugeApp.AGauge();
+            this.label44 = new System.Windows.Forms.Label();
+            this.label43 = new System.Windows.Forms.Label();
+            this.label42 = new System.Windows.Forms.Label();
+            this.HS4_TRIM = new System.Windows.Forms.NumericUpDown();
+            this.HS4_REV = new System.Windows.Forms.CheckBox();
+            this.groupBox5.SuspendLayout();
+            this.groupBox3.SuspendLayout();
+            this.groupBox1.SuspendLayout();
+            this.groupBox2.SuspendLayout();
+            ((System.ComponentModel.ISupportInitialize)(this.HS3_TRIM)).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)(this.HS2_TRIM)).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)(this.HS1_TRIM)).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)(this.currentStateBindingSource)).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)(this.HS4_TRIM)).BeginInit();
+            this.SuspendLayout();
+            // 
+            // groupBox5
+            // 
+            this.groupBox5.Controls.Add(this.H1_ENABLE);
+            this.groupBox5.Controls.Add(this.CCPM);
+            resources.ApplyResources(this.groupBox5, "groupBox5");
+            this.groupBox5.Name = "groupBox5";
+            this.groupBox5.TabStop = false;
+            // 
+            // H1_ENABLE
+            // 
+            resources.ApplyResources(this.H1_ENABLE, "H1_ENABLE");
+            this.H1_ENABLE.Name = "H1_ENABLE";
+            this.H1_ENABLE.TabStop = true;
+            this.H1_ENABLE.UseVisualStyleBackColor = true;
+            this.H1_ENABLE.CheckedChanged += new System.EventHandler(this.H1_ENABLE_CheckedChanged);
+            // 
+            // CCPM
+            // 
+            resources.ApplyResources(this.CCPM, "CCPM");
+            this.CCPM.Name = "CCPM";
+            this.CCPM.TabStop = true;
+            this.CCPM.UseVisualStyleBackColor = true;
+            // 
+            // BUT_swash_manual
+            // 
+            resources.ApplyResources(this.BUT_swash_manual, "BUT_swash_manual");
+            this.BUT_swash_manual.Name = "BUT_swash_manual";
+            this.BUT_swash_manual.UseVisualStyleBackColor = true;
+            this.BUT_swash_manual.Click += new System.EventHandler(this.BUT_swash_manual_Click);
+            // 
+            // label41
+            // 
+            resources.ApplyResources(this.label41, "label41");
+            this.label41.Name = "label41";
+            // 
+            // groupBox3
+            // 
+            this.groupBox3.Controls.Add(this.label46);
+            this.groupBox3.Controls.Add(this.label45);
+            this.groupBox3.Controls.Add(this.GYR_ENABLE);
+            this.groupBox3.Controls.Add(this.GYR_GAIN);
+            resources.ApplyResources(this.groupBox3, "groupBox3");
+            this.groupBox3.Name = "groupBox3";
+            this.groupBox3.TabStop = false;
+            // 
+            // label46
+            // 
+            resources.ApplyResources(this.label46, "label46");
+            this.label46.Name = "label46";
+            // 
+            // label45
+            // 
+            resources.ApplyResources(this.label45, "label45");
+            this.label45.Name = "label45";
+            // 
+            // GYR_ENABLE
+            // 
+            resources.ApplyResources(this.GYR_ENABLE, "GYR_ENABLE");
+            this.GYR_ENABLE.Name = "GYR_ENABLE";
+            this.GYR_ENABLE.UseVisualStyleBackColor = true;
+            this.GYR_ENABLE.CheckedChanged += new System.EventHandler(this.GYR_ENABLE__CheckedChanged);
+            // 
+            // GYR_GAIN
+            // 
+            resources.ApplyResources(this.GYR_GAIN, "GYR_GAIN");
+            this.GYR_GAIN.Name = "GYR_GAIN";
+            this.GYR_GAIN.Validating += new System.ComponentModel.CancelEventHandler(this.GYR_GAIN__Validating);
+            // 
+            // BUT_HS4save
+            // 
+            resources.ApplyResources(this.BUT_HS4save, "BUT_HS4save");
+            this.BUT_HS4save.Name = "BUT_HS4save";
+            this.BUT_HS4save.UseVisualStyleBackColor = true;
+            this.BUT_HS4save.Click += new System.EventHandler(this.BUT_HS4save_Click);
+            // 
+            // label21
+            // 
+            resources.ApplyResources(this.label21, "label21");
+            this.label21.Name = "label21";
+            // 
+            // COL_MIN
+            // 
+            resources.ApplyResources(this.COL_MIN, "COL_MIN");
+            this.COL_MIN.Name = "COL_MIN";
+            // 
+            // groupBox1
+            // 
+            this.groupBox1.Controls.Add(this.label41);
+            this.groupBox1.Controls.Add(this.label21);
+            this.groupBox1.Controls.Add(this.COL_MIN);
+            this.groupBox1.Controls.Add(this.COL_MID);
+            this.groupBox1.Controls.Add(this.COL_MAX);
+            this.groupBox1.Controls.Add(this.BUT_0collective);
+            resources.ApplyResources(this.groupBox1, "groupBox1");
+            this.groupBox1.Name = "groupBox1";
+            this.groupBox1.TabStop = false;
+            // 
+            // COL_MID
+            // 
+            resources.ApplyResources(this.COL_MID, "COL_MID");
+            this.COL_MID.Name = "COL_MID";
+            this.COL_MID.Validating += new System.ComponentModel.CancelEventHandler(this.PWM_Validating);
+            // 
+            // COL_MAX
+            // 
+            resources.ApplyResources(this.COL_MAX, "COL_MAX");
+            this.COL_MAX.Name = "COL_MAX";
+            this.COL_MAX.Enter += new System.EventHandler(this.COL_MAX__Enter);
+            this.COL_MAX.Leave += new System.EventHandler(this.COL_MAX__Leave);
+            this.COL_MAX.Validating += new System.ComponentModel.CancelEventHandler(this.PWM_Validating);
+            // 
+            // BUT_0collective
+            // 
+            resources.ApplyResources(this.BUT_0collective, "BUT_0collective");
+            this.BUT_0collective.Name = "BUT_0collective";
+            this.BUT_0collective.UseVisualStyleBackColor = true;
+            this.BUT_0collective.Click += new System.EventHandler(this.BUT_0collective_Click);
+            // 
+            // groupBox2
+            // 
+            this.groupBox2.Controls.Add(this.label24);
+            this.groupBox2.Controls.Add(this.HS4_MIN);
+            this.groupBox2.Controls.Add(this.HS4_MAX);
+            this.groupBox2.Controls.Add(this.label40);
+            resources.ApplyResources(this.groupBox2, "groupBox2");
+            this.groupBox2.Name = "groupBox2";
+            this.groupBox2.TabStop = false;
+            // 
+            // label24
+            // 
+            resources.ApplyResources(this.label24, "label24");
+            this.label24.Name = "label24";
+            // 
+            // HS4_MIN
+            // 
+            resources.ApplyResources(this.HS4_MIN, "HS4_MIN");
+            this.HS4_MIN.Name = "HS4_MIN";
+            // 
+            // HS4_MAX
+            // 
+            resources.ApplyResources(this.HS4_MAX, "HS4_MAX");
+            this.HS4_MAX.Name = "HS4_MAX";
+            this.HS4_MAX.Enter += new System.EventHandler(this.HS4_MAX_Enter);
+            this.HS4_MAX.Leave += new System.EventHandler(this.HS4_MAX_Leave);
+            this.HS4_MAX.Validating += new System.ComponentModel.CancelEventHandler(this.PWM_Validating);
+            // 
+            // label40
+            // 
+            resources.ApplyResources(this.label40, "label40");
+            this.label40.Name = "label40";
+            // 
+            // HS3_TRIM
+            // 
+            resources.ApplyResources(this.HS3_TRIM, "HS3_TRIM");
+            this.HS3_TRIM.Maximum = new decimal(new int[] {
+            2000,
+            0,
+            0,
+            0});
+            this.HS3_TRIM.Minimum = new decimal(new int[] {
+            1000,
+            0,
+            0,
+            0});
+            this.HS3_TRIM.Name = "HS3_TRIM";
+            this.HS3_TRIM.Value = new decimal(new int[] {
+            1500,
+            0,
+            0,
+            0});
+            this.HS3_TRIM.ValueChanged += new System.EventHandler(this.HS3_TRIM_ValueChanged);
+            // 
+            // HS2_TRIM
+            // 
+            resources.ApplyResources(this.HS2_TRIM, "HS2_TRIM");
+            this.HS2_TRIM.Maximum = new decimal(new int[] {
+            2000,
+            0,
+            0,
+            0});
+            this.HS2_TRIM.Minimum = new decimal(new int[] {
+            1000,
+            0,
+            0,
+            0});
+            this.HS2_TRIM.Name = "HS2_TRIM";
+            this.HS2_TRIM.Value = new decimal(new int[] {
+            1500,
+            0,
+            0,
+            0});
+            this.HS2_TRIM.ValueChanged += new System.EventHandler(this.HS2_TRIM_ValueChanged);
+            // 
+            // HS1_TRIM
+            // 
+            resources.ApplyResources(this.HS1_TRIM, "HS1_TRIM");
+            this.HS1_TRIM.Maximum = new decimal(new int[] {
+            2000,
+            0,
+            0,
+            0});
+            this.HS1_TRIM.Minimum = new decimal(new int[] {
+            1000,
+            0,
+            0,
+            0});
+            this.HS1_TRIM.Name = "HS1_TRIM";
+            this.HS1_TRIM.Value = new decimal(new int[] {
+            1500,
+            0,
+            0,
+            0});
+            this.HS1_TRIM.ValueChanged += new System.EventHandler(this.HS1_TRIM_ValueChanged);
+            // 
+            // label39
+            // 
+            resources.ApplyResources(this.label39, "label39");
+            this.label39.Name = "label39";
+            // 
+            // label38
+            // 
+            resources.ApplyResources(this.label38, "label38");
+            this.label38.Name = "label38";
+            // 
+            // label37
+            // 
+            resources.ApplyResources(this.label37, "label37");
+            this.label37.Name = "label37";
+            // 
+            // label36
+            // 
+            resources.ApplyResources(this.label36, "label36");
+            this.label36.Name = "label36";
+            // 
+            // label26
+            // 
+            resources.ApplyResources(this.label26, "label26");
+            this.label26.Name = "label26";
+            // 
+            // PIT_MAX
+            // 
+            resources.ApplyResources(this.PIT_MAX, "PIT_MAX");
+            this.PIT_MAX.Name = "PIT_MAX";
+            this.PIT_MAX.Validating += new System.ComponentModel.CancelEventHandler(this.PIT_MAX__Validating);
+            // 
+            // label25
+            // 
+            resources.ApplyResources(this.label25, "label25");
+            this.label25.Name = "label25";
+            // 
+            // ROL_MAX
+            // 
+            resources.ApplyResources(this.ROL_MAX, "ROL_MAX");
+            this.ROL_MAX.Name = "ROL_MAX";
+            this.ROL_MAX.Validating += new System.ComponentModel.CancelEventHandler(this.ROL_MAX__Validating);
+            // 
+            // label23
+            // 
+            resources.ApplyResources(this.label23, "label23");
+            this.label23.Name = "label23";
+            // 
+            // label22
+            // 
+            resources.ApplyResources(this.label22, "label22");
+            this.label22.Name = "label22";
+            // 
+            // label20
+            // 
+            resources.ApplyResources(this.label20, "label20");
+            this.label20.Name = "label20";
+            // 
+            // label19
+            // 
+            resources.ApplyResources(this.label19, "label19");
+            this.label19.Name = "label19";
+            // 
+            // label18
+            // 
+            resources.ApplyResources(this.label18, "label18");
+            this.label18.Name = "label18";
+            // 
+            // SV3_POS
+            // 
+            resources.ApplyResources(this.SV3_POS, "SV3_POS");
+            this.SV3_POS.Name = "SV3_POS";
+            this.SV3_POS.Validating += new System.ComponentModel.CancelEventHandler(this.TXT_srvpos3_Validating);
+            // 
+            // SV2_POS
+            // 
+            resources.ApplyResources(this.SV2_POS, "SV2_POS");
+            this.SV2_POS.Name = "SV2_POS";
+            this.SV2_POS.Validating += new System.ComponentModel.CancelEventHandler(this.TXT_srvpos2_Validating);
+            // 
+            // SV1_POS
+            // 
+            resources.ApplyResources(this.SV1_POS, "SV1_POS");
+            this.SV1_POS.Name = "SV1_POS";
+            this.SV1_POS.Validating += new System.ComponentModel.CancelEventHandler(this.TXT_srvpos1_Validating);
+            // 
+            // HS3_REV
+            // 
+            resources.ApplyResources(this.HS3_REV, "HS3_REV");
+            this.HS3_REV.Name = "HS3_REV";
+            this.HS3_REV.UseVisualStyleBackColor = true;
+            this.HS3_REV.CheckedChanged += new System.EventHandler(this.HS3_REV_CheckedChanged);
+            // 
+            // HS2_REV
+            // 
+            resources.ApplyResources(this.HS2_REV, "HS2_REV");
+            this.HS2_REV.Name = "HS2_REV";
+            this.HS2_REV.UseVisualStyleBackColor = true;
+            this.HS2_REV.CheckedChanged += new System.EventHandler(this.HS2_REV_CheckedChanged);
+            // 
+            // HS1_REV
+            // 
+            resources.ApplyResources(this.HS1_REV, "HS1_REV");
+            this.HS1_REV.Name = "HS1_REV";
+            this.HS1_REV.UseVisualStyleBackColor = true;
+            this.HS1_REV.CheckedChanged += new System.EventHandler(this.HS1_REV_CheckedChanged);
+            // 
+            // label17
+            // 
+            resources.ApplyResources(this.label17, "label17");
+            this.label17.Name = "label17";
+            // 
+            // HS4
+            // 
+            this.HS4.BackgroundColor = System.Drawing.Color.FromArgb(((int)(((byte)(67)))), ((int)(((byte)(68)))), ((int)(((byte)(69)))));
+            this.HS4.BorderColor = System.Drawing.SystemColors.ActiveBorder;
+            this.HS4.DataBindings.Add(new System.Windows.Forms.Binding("Value", this.currentStateBindingSource, "ch4in", true));
+            this.HS4.Label = "Rudder";
+            resources.ApplyResources(this.HS4, "HS4");
+            this.HS4.Maximum = 2200;
+            this.HS4.maxline = 0;
+            this.HS4.Minimum = 800;
+            this.HS4.minline = 0;
+            this.HS4.Name = "HS4";
+            this.HS4.Value = 1500;
+            this.HS4.ValueColor = System.Drawing.Color.FromArgb(((int)(((byte)(148)))), ((int)(((byte)(193)))), ((int)(((byte)(31)))));
+            this.HS4.Paint += new System.Windows.Forms.PaintEventHandler(this.HS4_Paint);
+            // 
+            // currentStateBindingSource
+            // 
+            this.currentStateBindingSource.DataSource = typeof(ArdupilotMega.CurrentState);
+            // 
+            // HS3
+            // 
+            this.HS3.BackgroundColor = System.Drawing.Color.FromArgb(((int)(((byte)(67)))), ((int)(((byte)(68)))), ((int)(((byte)(69)))));
+            this.HS3.BorderColor = System.Drawing.SystemColors.ActiveBorder;
+            this.HS3.DataBindings.Add(new System.Windows.Forms.Binding("Value", this.currentStateBindingSource, "ch3in", true));
+            this.HS3.Label = "Collective";
+            resources.ApplyResources(this.HS3, "HS3");
+            this.HS3.Maximum = 2200;
+            this.HS3.maxline = 0;
+            this.HS3.Minimum = 800;
+            this.HS3.minline = 0;
+            this.HS3.Name = "HS3";
+            this.HS3.Value = 1500;
+            this.HS3.ValueColor = System.Drawing.Color.FromArgb(((int)(((byte)(148)))), ((int)(((byte)(193)))), ((int)(((byte)(31)))));
+            this.HS3.Paint += new System.Windows.Forms.PaintEventHandler(this.HS3_Paint);
+            // 
+            // Gservoloc
+            // 
+            this.Gservoloc.BackColor = System.Drawing.Color.Transparent;
+            this.Gservoloc.BackgroundImage = global::ArdupilotMega.Properties.Resources.Gaugebg;
+            resources.ApplyResources(this.Gservoloc, "Gservoloc");
+            this.Gservoloc.BaseArcColor = System.Drawing.Color.Transparent;
+            this.Gservoloc.BaseArcRadius = 60;
+            this.Gservoloc.BaseArcStart = 90;
+            this.Gservoloc.BaseArcSweep = 360;
+            this.Gservoloc.BaseArcWidth = 2;
+            this.Gservoloc.basesize = new System.Drawing.Size(150, 150);
+            this.Gservoloc.Cap_Idx = ((byte)(0));
+            this.Gservoloc.CapColor = System.Drawing.Color.White;
+            this.Gservoloc.CapColors = new System.Drawing.Color[] {
+        System.Drawing.Color.White,
+        System.Drawing.Color.Black,
+        System.Drawing.Color.Black,
+        System.Drawing.Color.Black,
+        System.Drawing.Color.Black};
+            this.Gservoloc.CapPosition = new System.Drawing.Point(55, 85);
+            this.Gservoloc.CapsPosition = new System.Drawing.Point[] {
+        new System.Drawing.Point(55, 85),
+        new System.Drawing.Point(40, 67),
+        new System.Drawing.Point(10, 10),
+        new System.Drawing.Point(10, 10),
+        new System.Drawing.Point(10, 10)};
+            this.Gservoloc.CapsText = new string[] {
+        "Position",
+        "",
+        "",
+        "",
+        ""};
+            this.Gservoloc.CapText = "Position";
+            this.Gservoloc.Center = new System.Drawing.Point(75, 75);
+            this.Gservoloc.MaxValue = 180F;
+            this.Gservoloc.MinValue = -180F;
+            this.Gservoloc.Name = "Gservoloc";
+            this.Gservoloc.Need_Idx = ((byte)(3));
+            this.Gservoloc.NeedleColor1 = AGaugeApp.AGauge.NeedleColorEnum.Gray;
+            this.Gservoloc.NeedleColor2 = System.Drawing.Color.White;
+            this.Gservoloc.NeedleEnabled = false;
+            this.Gservoloc.NeedleRadius = 80;
+            this.Gservoloc.NeedlesColor1 = new AGaugeApp.AGauge.NeedleColorEnum[] {
+        AGaugeApp.AGauge.NeedleColorEnum.Gray,
+        AGaugeApp.AGauge.NeedleColorEnum.Red,
+        AGaugeApp.AGauge.NeedleColorEnum.Green,
+        AGaugeApp.AGauge.NeedleColorEnum.Gray};
+            this.Gservoloc.NeedlesColor2 = new System.Drawing.Color[] {
+        System.Drawing.Color.White,
+        System.Drawing.Color.White,
+        System.Drawing.Color.White,
+        System.Drawing.Color.White};
+            this.Gservoloc.NeedlesEnabled = new bool[] {
+        true,
+        true,
+        true,
+        false};
+            this.Gservoloc.NeedlesRadius = new int[] {
+        60,
+        60,
+        60,
+        80};
+            this.Gservoloc.NeedlesType = new int[] {
+        0,
+        0,
+        0,
+        0};
+            this.Gservoloc.NeedlesWidth = new int[] {
+        2,
+        2,
+        2,
+        2};
+            this.Gservoloc.NeedleType = 0;
+            this.Gservoloc.NeedleWidth = 2;
+            this.Gservoloc.Range_Idx = ((byte)(0));
+            this.Gservoloc.RangeColor = System.Drawing.Color.LightGreen;
+            this.Gservoloc.RangeEnabled = false;
+            this.Gservoloc.RangeEndValue = 360F;
+            this.Gservoloc.RangeInnerRadius = 1;
+            this.Gservoloc.RangeOuterRadius = 60;
+            this.Gservoloc.RangesColor = new System.Drawing.Color[] {
+        System.Drawing.Color.LightGreen,
+        System.Drawing.Color.Red,
+        System.Drawing.Color.Orange,
+        System.Drawing.SystemColors.Control,
+        System.Drawing.SystemColors.Control};
+            this.Gservoloc.RangesEnabled = new bool[] {
+        false,
+        false,
+        false,
+        false,
+        false};
+            this.Gservoloc.RangesEndValue = new float[] {
+        360F,
+        200F,
+        150F,
+        0F,
+        0F};
+            this.Gservoloc.RangesInnerRadius = new int[] {
+        1,
+        1,
+        1,
+        70,
+        70};
+            this.Gservoloc.RangesOuterRadius = new int[] {
+        60,
+        60,
+        60,
+        80,
+        80};
+            this.Gservoloc.RangesStartValue = new float[] {
+        0F,
+        150F,
+        75F,
+        0F,
+        0F};
+            this.Gservoloc.RangeStartValue = 0F;
+            this.Gservoloc.ScaleLinesInterColor = System.Drawing.Color.White;
+            this.Gservoloc.ScaleLinesInterInnerRadius = 52;
+            this.Gservoloc.ScaleLinesInterOuterRadius = 60;
+            this.Gservoloc.ScaleLinesInterWidth = 1;
+            this.Gservoloc.ScaleLinesMajorColor = System.Drawing.Color.White;
+            this.Gservoloc.ScaleLinesMajorInnerRadius = 50;
+            this.Gservoloc.ScaleLinesMajorOuterRadius = 60;
+            this.Gservoloc.ScaleLinesMajorStepValue = 30F;
+            this.Gservoloc.ScaleLinesMajorWidth = 2;
+            this.Gservoloc.ScaleLinesMinorColor = System.Drawing.Color.White;
+            this.Gservoloc.ScaleLinesMinorInnerRadius = 55;
+            this.Gservoloc.ScaleLinesMinorNumOf = 2;
+            this.Gservoloc.ScaleLinesMinorOuterRadius = 60;
+            this.Gservoloc.ScaleLinesMinorWidth = 1;
+            this.Gservoloc.ScaleNumbersColor = System.Drawing.Color.White;
+            this.Gservoloc.ScaleNumbersFormat = null;
+            this.Gservoloc.ScaleNumbersRadius = 44;
+            this.Gservoloc.ScaleNumbersRotation = 45;
+            this.Gservoloc.ScaleNumbersStartScaleLine = 2;
+            this.Gservoloc.ScaleNumbersStepScaleLines = 1;
+            this.Gservoloc.Value = 0F;
+            this.Gservoloc.Value0 = -60F;
+            this.Gservoloc.Value1 = 60F;
+            this.Gservoloc.Value2 = 180F;
+            this.Gservoloc.Value3 = 0F;
+            // 
+            // label44
+            // 
+            resources.ApplyResources(this.label44, "label44");
+            this.label44.Name = "label44";
+            // 
+            // label43
+            // 
+            resources.ApplyResources(this.label43, "label43");
+            this.label43.Name = "label43";
+            // 
+            // label42
+            // 
+            resources.ApplyResources(this.label42, "label42");
+            this.label42.Name = "label42";
+            // 
+            // HS4_TRIM
+            // 
+            resources.ApplyResources(this.HS4_TRIM, "HS4_TRIM");
+            this.HS4_TRIM.Maximum = new decimal(new int[] {
+            2000,
+            0,
+            0,
+            0});
+            this.HS4_TRIM.Minimum = new decimal(new int[] {
+            1000,
+            0,
+            0,
+            0});
+            this.HS4_TRIM.Name = "HS4_TRIM";
+            this.HS4_TRIM.Value = new decimal(new int[] {
+            1500,
+            0,
+            0,
+            0});
+            this.HS4_TRIM.ValueChanged += new System.EventHandler(this.HS4_TRIM_ValueChanged);
+            // 
+            // HS4_REV
+            // 
+            resources.ApplyResources(this.HS4_REV, "HS4_REV");
+            this.HS4_REV.Name = "HS4_REV";
+            this.HS4_REV.UseVisualStyleBackColor = true;
+            this.HS4_REV.CheckedChanged += new System.EventHandler(this.HS4_REV_CheckedChanged);
+            // 
+            // ConfigTradHeli
+            // 
+            resources.ApplyResources(this, "$this");
+            this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
+            this.Controls.Add(this.label44);
+            this.Controls.Add(this.label43);
+            this.Controls.Add(this.label42);
+            this.Controls.Add(this.HS4_TRIM);
+            this.Controls.Add(this.HS4_REV);
+            this.Controls.Add(this.groupBox5);
+            this.Controls.Add(this.BUT_swash_manual);
+            this.Controls.Add(this.groupBox3);
+            this.Controls.Add(this.BUT_HS4save);
+            this.Controls.Add(this.groupBox1);
+            this.Controls.Add(this.groupBox2);
+            this.Controls.Add(this.HS3_TRIM);
+            this.Controls.Add(this.HS2_TRIM);
+            this.Controls.Add(this.HS1_TRIM);
+            this.Controls.Add(this.label39);
+            this.Controls.Add(this.label38);
+            this.Controls.Add(this.label37);
+            this.Controls.Add(this.label36);
+            this.Controls.Add(this.label26);
+            this.Controls.Add(this.PIT_MAX);
+            this.Controls.Add(this.label25);
+            this.Controls.Add(this.ROL_MAX);
+            this.Controls.Add(this.label23);
+            this.Controls.Add(this.label22);
+            this.Controls.Add(this.label20);
+            this.Controls.Add(this.label19);
+            this.Controls.Add(this.label18);
+            this.Controls.Add(this.SV3_POS);
+            this.Controls.Add(this.SV2_POS);
+            this.Controls.Add(this.SV1_POS);
+            this.Controls.Add(this.HS3_REV);
+            this.Controls.Add(this.HS2_REV);
+            this.Controls.Add(this.HS1_REV);
+            this.Controls.Add(this.label17);
+            this.Controls.Add(this.HS4);
+            this.Controls.Add(this.HS3);
+            this.Controls.Add(this.Gservoloc);
+            this.Name = "ConfigTradHeli";
+            this.Load += new System.EventHandler(this.ConfigTradHeli_Load);
+            this.groupBox5.ResumeLayout(false);
+            this.groupBox5.PerformLayout();
+            this.groupBox3.ResumeLayout(false);
+            this.groupBox3.PerformLayout();
+            this.groupBox1.ResumeLayout(false);
+            this.groupBox1.PerformLayout();
+            this.groupBox2.ResumeLayout(false);
+            this.groupBox2.PerformLayout();
+            ((System.ComponentModel.ISupportInitialize)(this.HS3_TRIM)).EndInit();
+            ((System.ComponentModel.ISupportInitialize)(this.HS2_TRIM)).EndInit();
+            ((System.ComponentModel.ISupportInitialize)(this.HS1_TRIM)).EndInit();
+            ((System.ComponentModel.ISupportInitialize)(this.currentStateBindingSource)).EndInit();
+            ((System.ComponentModel.ISupportInitialize)(this.HS4_TRIM)).EndInit();
+            this.ResumeLayout(false);
+            this.PerformLayout();
+
+        }
+
+        #endregion
+
+        private System.Windows.Forms.GroupBox groupBox5;
+        private System.Windows.Forms.RadioButton H1_ENABLE;
+        private System.Windows.Forms.RadioButton CCPM;
+        private MyButton BUT_swash_manual;
+        private System.Windows.Forms.Label label41;
+        private System.Windows.Forms.GroupBox groupBox3;
+        private System.Windows.Forms.Label label46;
+        private System.Windows.Forms.Label label45;
+        private System.Windows.Forms.CheckBox GYR_ENABLE;
+        private System.Windows.Forms.TextBox GYR_GAIN;
+        private MyButton BUT_HS4save;
+        private System.Windows.Forms.Label label21;
+        private System.Windows.Forms.TextBox COL_MIN;
+        private System.Windows.Forms.GroupBox groupBox1;
+        private System.Windows.Forms.TextBox COL_MID;
+        private System.Windows.Forms.TextBox COL_MAX;
+        private MyButton BUT_0collective;
+        private System.Windows.Forms.GroupBox groupBox2;
+        private System.Windows.Forms.Label label24;
+        private System.Windows.Forms.TextBox HS4_MIN;
+        private System.Windows.Forms.TextBox HS4_MAX;
+        private System.Windows.Forms.Label label40;
+        private System.Windows.Forms.NumericUpDown HS3_TRIM;
+        private System.Windows.Forms.NumericUpDown HS2_TRIM;
+        private System.Windows.Forms.NumericUpDown HS1_TRIM;
+        private System.Windows.Forms.Label label39;
+        private System.Windows.Forms.Label label38;
+        private System.Windows.Forms.Label label37;
+        private System.Windows.Forms.Label label36;
+        private System.Windows.Forms.Label label26;
+        private System.Windows.Forms.TextBox PIT_MAX;
+        private System.Windows.Forms.Label label25;
+        private System.Windows.Forms.TextBox ROL_MAX;
+        private System.Windows.Forms.Label label23;
+        private System.Windows.Forms.Label label22;
+        private System.Windows.Forms.Label label20;
+        private System.Windows.Forms.Label label19;
+        private System.Windows.Forms.Label label18;
+        private System.Windows.Forms.TextBox SV3_POS;
+        private System.Windows.Forms.TextBox SV2_POS;
+        private System.Windows.Forms.TextBox SV1_POS;
+        private System.Windows.Forms.CheckBox HS3_REV;
+        private System.Windows.Forms.CheckBox HS2_REV;
+        private System.Windows.Forms.CheckBox HS1_REV;
+        private System.Windows.Forms.Label label17;
+        private HorizontalProgressBar2 HS4;
+        private VerticalProgressBar2 HS3;
+        private AGaugeApp.AGauge Gservoloc;
+        private System.Windows.Forms.BindingSource currentStateBindingSource;
+        private System.Windows.Forms.Label label44;
+        private System.Windows.Forms.Label label43;
+        private System.Windows.Forms.Label label42;
+        private System.Windows.Forms.NumericUpDown HS4_TRIM;
+        private System.Windows.Forms.CheckBox HS4_REV;
+    }
+}

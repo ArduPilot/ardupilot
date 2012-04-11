@@ -91,8 +91,8 @@ protected:
 
 	// note: we use ref-to-pointer here so that our caller can change the GPS without our noticing
 	//       IMU under us without our noticing.
-	GPS 		*&_gps;
 	IMU 		*_imu;
+	GPS 		*&_gps;
 
 	// true if we are doing centripetal acceleration correction
 	bool		_centripetal;

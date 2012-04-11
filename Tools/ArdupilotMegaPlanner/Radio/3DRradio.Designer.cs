@@ -55,12 +55,12 @@
             this.RS3 = new System.Windows.Forms.ComboBox();
             this.RS2 = new System.Windows.Forms.ComboBox();
             this.RS1 = new System.Windows.Forms.ComboBox();
+            this.RSSI = new System.Windows.Forms.TextBox();
             this.RS0 = new System.Windows.Forms.TextBox();
             this.label9 = new System.Windows.Forms.Label();
             this.label10 = new System.Windows.Forms.Label();
             this.RTI = new System.Windows.Forms.TextBox();
             this.ATI = new System.Windows.Forms.TextBox();
-            this.RSSI = new System.Windows.Forms.TextBox();
             this.label11 = new System.Windows.Forms.Label();
             this.label12 = new System.Windows.Forms.Label();
             this.BUT_savesettings = new ArdupilotMega.MyButton();
@@ -74,8 +74,7 @@
             // 
             // Progressbar
             // 
-            this.Progressbar.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left) 
-            | System.Windows.Forms.AnchorStyles.Right)));
+            this.Progressbar.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left)));
             this.Progressbar.Location = new System.Drawing.Point(12, 402);
             this.Progressbar.Name = "Progressbar";
             this.Progressbar.Size = new System.Drawing.Size(294, 36);
@@ -139,13 +138,16 @@
             // 
             this.S2.FormattingEnabled = true;
             this.S2.Items.AddRange(new object[] {
+            "250",
             "192",
-            "160",
             "128",
             "96",
             "64",
             "32",
-            "16"});
+            "16",
+            "8",
+            "4",
+            "2"});
             this.S2.Location = new System.Drawing.Point(87, 168);
             this.S2.Name = "S2";
             this.S2.Size = new System.Drawing.Size(80, 21);
@@ -283,9 +285,9 @@
             this.label8.AutoSize = true;
             this.label8.Location = new System.Drawing.Point(15, 311);
             this.label8.Name = "label8";
-            this.label8.Size = new System.Drawing.Size(68, 13);
+            this.label8.Size = new System.Drawing.Size(61, 13);
             this.label8.TabIndex = 20;
-            this.label8.Text = "Op Pre Send";
+            this.label8.Text = "Op Resend";
             // 
             // S7
             // 
@@ -395,13 +397,16 @@
             // 
             this.RS2.FormattingEnabled = true;
             this.RS2.Items.AddRange(new object[] {
+            "250",
             "192",
-            "160",
             "128",
             "96",
             "64",
             "32",
-            "16"});
+            "16",
+            "8",
+            "4",
+            "2"});
             this.RS2.Location = new System.Drawing.Point(201, 168);
             this.RS2.Name = "RS2";
             this.RS2.Size = new System.Drawing.Size(80, 21);
@@ -428,6 +433,16 @@
             this.RS1.Size = new System.Drawing.Size(80, 21);
             this.RS1.TabIndex = 22;
             this.toolTip1.SetToolTip(this.RS1, "Serial baud rate in rounded kbps. So 57 means 57600. \r\n");
+            // 
+            // RSSI
+            // 
+            this.RSSI.Location = new System.Drawing.Point(87, 51);
+            this.RSSI.Multiline = true;
+            this.RSSI.Name = "RSSI";
+            this.RSSI.ReadOnly = true;
+            this.RSSI.Size = new System.Drawing.Size(194, 58);
+            this.RSSI.TabIndex = 34;
+            this.toolTip1.SetToolTip(this.RSSI, resources.GetString("RSSI.ToolTip"));
             // 
             // RS0
             // 
@@ -471,16 +486,6 @@
             this.ATI.Size = new System.Drawing.Size(80, 20);
             this.ATI.TabIndex = 32;
             // 
-            // RSSI
-            // 
-            this.RSSI.Location = new System.Drawing.Point(87, 51);
-            this.RSSI.Multiline = true;
-            this.RSSI.Name = "RSSI";
-            this.RSSI.ReadOnly = true;
-            this.RSSI.Size = new System.Drawing.Size(194, 58);
-            this.RSSI.TabIndex = 34;
-            this.toolTip1.SetToolTip(this.RSSI, resources.GetString("RSSI.ToolTip"));
-            // 
             // label11
             // 
             this.label11.AutoSize = true;
@@ -501,6 +506,7 @@
             // 
             // BUT_savesettings
             // 
+            this.BUT_savesettings.Enabled = false;
             this.BUT_savesettings.Location = new System.Drawing.Point(99, 330);
             this.BUT_savesettings.Name = "BUT_savesettings";
             this.BUT_savesettings.Size = new System.Drawing.Size(75, 39);
@@ -521,8 +527,7 @@
             // 
             // lbl_status
             // 
-            this.lbl_status.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left) 
-            | System.Windows.Forms.AnchorStyles.Right)));
+            this.lbl_status.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left)));
             this.lbl_status.BackColor = System.Drawing.Color.Transparent;
             this.lbl_status.Location = new System.Drawing.Point(12, 374);
             this.lbl_status.Name = "lbl_status";
@@ -573,7 +578,6 @@
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(318, 444);
             this.Controls.Add(this.BUT_syncS5);
             this.Controls.Add(this.BUT_syncS3);
             this.Controls.Add(this.BUT_syncS2);
@@ -613,12 +617,9 @@
             this.Controls.Add(this.lbl_status);
             this.Controls.Add(this.Progressbar);
             this.Controls.Add(this.BUT_upload);
-            this.Icon = ((System.Drawing.Icon)(resources.GetObject("$this.Icon")));
-            this.MaximizeBox = false;
-            this.MinimizeBox = false;
             this.MinimumSize = new System.Drawing.Size(334, 482);
             this.Name = "_3DRradio";
-            this.Text = "3DRradio";
+            this.Size = new System.Drawing.Size(334, 482);
             this.ResumeLayout(false);
             this.PerformLayout();
 

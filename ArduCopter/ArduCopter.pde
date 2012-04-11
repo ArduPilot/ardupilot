@@ -77,6 +77,15 @@ http://code.google.com/p/ardupilot-mega/downloads/list
 #include <APM_PI.h>            	// PI library
 #include <AC_PID.h>            // PID library
 #include <RC_Channel.h>     // RC Channel Library
+#include <AP_Motors.h>		// AP Motors library
+#include <AP_MotorsQuad.h>	// AP Motors library for Quad
+#include <AP_MotorsTri.h>	// AP Motors library for Tri
+#include <AP_MotorsHexa.h>	// AP Motors library for Hexa
+#include <AP_MotorsY6.h>	// AP Motors library for Y6
+#include <AP_MotorsOcta.h>	// AP Motors library for Octa
+#include <AP_MotorsOctaQuad.h>	// AP Motors library for OctaQuad
+#include <AP_MotorsHeli.h>	// AP Motors library for Heli
+#include <AP_MotorsMatrix.h>	// AP Motors library for Heli
 #include <AP_RangeFinder.h>	// Range finder library
 #include <AP_OpticalFlow.h> // Optical Flow library
 #include <Filter.h>			// Filter library
@@ -362,11 +371,46 @@ static byte 	old_control_mode = STABILIZE;
 // Motor Output
 ////////////////////////////////////////////////////////////////////////////////
 // This is the array of PWM values being sent to the motors
-static int16_t  motor_out[11];
+//static int16_t  motor_out[11];
 // This is the array of PWM values being sent to the motors that has been lightly filtered with a simple LPF
 // This was added to try and deal with biger motors
-static int16_t  motor_filtered[11];
+//static int16_t  motor_filtered[11];
 
+#if FRAME_CONFIG ==	QUAD_FRAME
+	#define MOTOR_CLASS AP_MotorsQuad
+#endif
+#if FRAME_CONFIG ==	TRI_FRAME
+	#define MOTOR_CLASS AP_MotorsTri
+#endif
+#if FRAME_CONFIG ==	HEXA_FRAME
+	#define MOTOR_CLASS AP_MotorsHexa
+#endif
+#if FRAME_CONFIG ==	Y6_FRAME
+	#define MOTOR_CLASS AP_MotorsY6
+#endif
+#if FRAME_CONFIG ==	OCTA_FRAME
+	#define MOTOR_CLASS AP_MotorsOcta
+#endif
+#if FRAME_CONFIG ==	OCTA_QUAD_FRAME
+	#define MOTOR_CLASS AP_MotorsOctaQuad
+#endif
+#if FRAME_CONFIG ==	HELI_FRAME
+	#define MOTOR_CLASS AP_MotorsHeli
+#endif
+
+#if FRAME_CONFIG ==	HELI_FRAME  // helicopter constructor requires more arguments
+	#if INSTANT_PWM == 1
+		MOTOR_CLASS	motors(CONFIG_APM_HARDWARE, &APM_RC, &g.rc_1, &g.rc_2, &g.rc_3, &g.rc_4, &g.heli_servo_1, &g.heli_servo_2, &g.heli_servo_3, &g.heli_servo_4, AP_MOTORS_SPEED_INSTANT_PWM);   // this hardware definition is slightly bad because it assumes APM_HARDWARE_APM2 == AP_MOTORS_APM2
+	#else
+		MOTOR_CLASS	motors(CONFIG_APM_HARDWARE, &APM_RC, &g.rc_1, &g.rc_2, &g.rc_3, &g.rc_4, &g.heli_servo_1, &g.heli_servo_2, &g.heli_servo_3, &g.heli_servo_4);
+	#endif
+#else
+	#if INSTANT_PWM == 1
+		MOTOR_CLASS	motors(CONFIG_APM_HARDWARE, &APM_RC, &g.rc_1, &g.rc_2, &g.rc_3, &g.rc_4, AP_MOTORS_SPEED_INSTANT_PWM);   // this hardware definition is slightly bad because it assumes APM_HARDWARE_APM2 == AP_MOTORS_APM2
+	#else
+		MOTOR_CLASS	motors(CONFIG_APM_HARDWARE, &APM_RC, &g.rc_1, &g.rc_2, &g.rc_3, &g.rc_4);
+	#endif
+#endif
 
 ////////////////////////////////////////////////////////////////////////////////
 // Mavlink/HIL control
@@ -380,29 +424,11 @@ static bool rc_override_active = false;
 static uint32_t rc_override_fs_timer = 0;
 
 ////////////////////////////////////////////////////////////////////////////////
-// Heli
-////////////////////////////////////////////////////////////////////////////////
-#if FRAME_CONFIG ==	HELI_FRAME
-static float heli_rollFactor[3], heli_pitchFactor[3], heli_collectiveFactor[3];	// only required for 3 swashplate servos
-static int16_t heli_servo_min[3], heli_servo_max[3];							// same here.  for yaw servo we use heli_servo4_min/max parameter directly
-static int32_t heli_servo_out[4];												// used for servo averaging for analog servos
-static int16_t heli_servo_out_count;											// use for servo averaging
-#endif
-
-////////////////////////////////////////////////////////////////////////////////
 // Failsafe
 ////////////////////////////////////////////////////////////////////////////////
 // A status flag for the failsafe state
 // did our throttle dip below the failsafe value?
 static boolean 	failsafe;
-// A status flag for arming the motors. This is the arming that is performed when the
-// Yaw control is held right or left while throttle is low.
-static boolean	motor_armed;
-// A status flag for whether or not we should allow AP to take over copter
-// This is tied to the throttle. If the throttle = 0 or low/nuetral, then we do not allow
-// the APM to take control of the copter.
-static boolean	motor_auto_armed;
-
 
 ////////////////////////////////////////////////////////////////////////////////
 // PIDs
@@ -948,9 +974,6 @@ static void fast_loop()
 	// ------------------------------
 	set_servos_4();
 
-	//if(motor_armed)
-		//Log_Write_Attitude();
-
 	// agmatthews - USERHOOKS
 	#ifdef USERHOOK_FASTLOOP
 	   USERHOOK_FASTLOOP
@@ -1026,7 +1049,7 @@ static void medium_loop()
 					// -----------------------------
 					update_navigation();
 
-					if (g.log_bitmask & MASK_LOG_NTUN && motor_armed){
+					if (g.log_bitmask & MASK_LOG_NTUN && motors.armed()){
 						Log_Write_Nav_Tuning();
 					}
 				}
@@ -1060,7 +1083,7 @@ static void medium_loop()
 				}
 			}
 
-            if(motor_armed){
+            if(motors.armed()){
                 if (g.log_bitmask & MASK_LOG_ATTITUDE_MED)
                     Log_Write_Attitude();
 
@@ -1149,22 +1172,16 @@ static void fifty_hz_loop()
 	camera_stabilization();
 
 	# if HIL_MODE == HIL_MODE_DISABLED
-		if (g.log_bitmask & MASK_LOG_ATTITUDE_FAST && motor_armed)
+		if (g.log_bitmask & MASK_LOG_ATTITUDE_FAST && motors.armed())
 			Log_Write_Attitude();
 
-		if (g.log_bitmask & MASK_LOG_RAW && motor_armed)
+		if (g.log_bitmask & MASK_LOG_RAW && motors.armed())
 			Log_Write_Raw();
 	#endif
 
 	// kick the GCS to process uplink data
 	gcs_update();
     gcs_data_stream_send();
-
-	#if FRAME_CONFIG == TRI_FRAME
-		// servo Yaw
-		g.rc_4.calc_pwm();
-		APM_RC.OutputCh(CH_TRI_YAW, g.rc_4.radio_out);
-	#endif
 }
 
 
@@ -1190,6 +1207,12 @@ static void slow_loop()
 					}
 				#endif
             }
+
+			// check the user hasn't updated the frame orientation
+			if( !motors.armed() ) {
+				motors.set_frame_orientation(g.frame_orientation);
+			}
+
 			break;
 
 		case 1:
@@ -1235,7 +1258,7 @@ static void slow_loop()
 // 1Hz loop
 static void super_slow_loop()
 {
-	if (g.log_bitmask & MASK_LOG_CUR && motor_armed)
+	if (g.log_bitmask & MASK_LOG_CUR && motors.armed())
 		Log_Write_Current();
 
 	// this function disarms the copter if it has been sitting on the ground for any moment of time greater than 30s
@@ -1381,7 +1404,7 @@ static void update_GPS(void)
 		current_loc.lng = g_gps->longitude;	// Lon * 10 * *7
 		current_loc.lat = g_gps->latitude;	// Lat * 10 * *7
 
-		if (g.log_bitmask & MASK_LOG_GPS && motor_armed){
+		if (g.log_bitmask & MASK_LOG_GPS && motors.armed()){
 			Log_Write_GPS();
 		}
 
@@ -1664,7 +1687,8 @@ void update_throttle_mode(void)
 					update_throttle_cruise();
 				}
 
-				if(motor_auto_armed == true){
+				// 10hz, 			don't run up i term
+				if( motors.auto_armed() == true ){
 
 					// how far off are we
 					altitude_error = get_altitude_error();
@@ -1972,7 +1996,7 @@ static void update_altitude_est()
 		update_altitude();
 		alt_sensor_flag = false;
 
-		if(g.log_bitmask & MASK_LOG_CTUN && motor_armed){
+		if(g.log_bitmask & MASK_LOG_CTUN && motors.armed()){
 			Log_Write_Control_Tuning();
 		}
 
@@ -2067,7 +2091,7 @@ static void tuning(){
 			break;
 
 		case CH6_TOP_BOTTOM_RATIO:
-			g.top_bottom_ratio = tuning_value;
+			motors.top_bottom_ratio = tuning_value;
 			break;
 
 		case CH6_RELAY:
@@ -2116,7 +2140,7 @@ static void tuning(){
 
 		#if FRAME_CONFIG == HELI_FRAME
 		case CH6_HELI_EXTERNAL_GYRO:
-			g.heli_ext_gyro_gain = tuning_value;
+			motors.ext_gyro_gain = tuning_value;
 			break;
 		#endif
 

@@ -836,7 +836,8 @@ static void mavlink_test_radio(uint8_t system_id, uint8_t component_id, mavlink_
 		5,
 	72,
 	139,
-	17391,
+	206,
+	17,
 	17495,
 	17599,
 	};
@@ -845,8 +846,9 @@ static void mavlink_test_radio(uint8_t system_id, uint8_t component_id, mavlink_
 		packet1.rssi = packet_in.rssi;
 		packet1.remrssi = packet_in.remrssi;
 		packet1.txbuf = packet_in.txbuf;
+		packet1.noise = packet_in.noise;
+		packet1.remnoise = packet_in.remnoise;
 		packet1.rxerrors = packet_in.rxerrors;
-		packet1.serrors = packet_in.serrors;
 		packet1.fixed = packet_in.fixed;
 
 
@@ -857,12 +859,12 @@ static void mavlink_test_radio(uint8_t system_id, uint8_t component_id, mavlink_
         MAVLINK_ASSERT(memcmp(&packet1, &packet2, sizeof(packet1)) == 0);
 
         memset(&packet2, 0, sizeof(packet2));
-	mavlink_msg_radio_pack(system_id, component_id, &msg , packet1.rssi , packet1.remrssi , packet1.txbuf , packet1.rxerrors , packet1.serrors , packet1.fixed );
+	mavlink_msg_radio_pack(system_id, component_id, &msg , packet1.rssi , packet1.remrssi , packet1.txbuf , packet1.noise , packet1.remnoise , packet1.rxerrors , packet1.fixed );
 	mavlink_msg_radio_decode(&msg, &packet2);
         MAVLINK_ASSERT(memcmp(&packet1, &packet2, sizeof(packet1)) == 0);
 
         memset(&packet2, 0, sizeof(packet2));
-	mavlink_msg_radio_pack_chan(system_id, component_id, MAVLINK_COMM_0, &msg , packet1.rssi , packet1.remrssi , packet1.txbuf , packet1.rxerrors , packet1.serrors , packet1.fixed );
+	mavlink_msg_radio_pack_chan(system_id, component_id, MAVLINK_COMM_0, &msg , packet1.rssi , packet1.remrssi , packet1.txbuf , packet1.noise , packet1.remnoise , packet1.rxerrors , packet1.fixed );
 	mavlink_msg_radio_decode(&msg, &packet2);
         MAVLINK_ASSERT(memcmp(&packet1, &packet2, sizeof(packet1)) == 0);
 
@@ -875,7 +877,7 @@ static void mavlink_test_radio(uint8_t system_id, uint8_t component_id, mavlink_
         MAVLINK_ASSERT(memcmp(&packet1, &packet2, sizeof(packet1)) == 0);
 
         memset(&packet2, 0, sizeof(packet2));
-	mavlink_msg_radio_send(MAVLINK_COMM_1 , packet1.rssi , packet1.remrssi , packet1.txbuf , packet1.rxerrors , packet1.serrors , packet1.fixed );
+	mavlink_msg_radio_send(MAVLINK_COMM_1 , packet1.rssi , packet1.remrssi , packet1.txbuf , packet1.noise , packet1.remnoise , packet1.rxerrors , packet1.fixed );
 	mavlink_msg_radio_decode(last_msg, &packet2);
         MAVLINK_ASSERT(memcmp(&packet1, &packet2, sizeof(packet1)) == 0);
 }

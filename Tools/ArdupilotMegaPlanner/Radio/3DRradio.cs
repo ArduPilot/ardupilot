@@ -8,10 +8,11 @@ using System.Text;
 using System.Windows.Forms;
 using System.Net;
 using System.IO;
+using ArdupilotMega.Controls.BackstageView;
 
 namespace ArdupilotMega
 {
-    public partial class _3DRradio : Form
+    public partial class _3DRradio : BackStageViewContentPanel
     {
         public delegate void LogEventHandler(string message, int level = 0);
 
@@ -29,9 +30,10 @@ namespace ArdupilotMega
 
         bool getFirmware()
         {
-            //https://raw.github.com/tridge/SiK/master/Firmware/dst/radio.hm_trp.hex
+            // was https://raw.github.com/tridge/SiK/master/Firmware/dst/radio.hm_trp.hex
+            // now http://www.samba.org/tridge/UAV/3DR/radio.hm_trp.hex
 
-            return Common.getFilefromNet("https://raw.github.com/tridge/SiK/master/Firmware/dst/radio.hm_trp.hex", firmwarefile);
+            return Common.getFilefromNet("http://www.samba.org/tridge/UAV/3DR/radio.hm_trp.hex", firmwarefile);
         }
 
         void Sleep(int mstimeout)
@@ -75,7 +77,8 @@ namespace ArdupilotMega
                 uploader_LogEvent("In Bootloader Mode");
                 bootloadermode = true;
             }
-            catch {
+            catch
+            {
                 comPort.Close();
                 comPort.BaudRate = MainV2.comPort.BaseStream.BaudRate;
                 comPort.Open();
@@ -188,13 +191,14 @@ namespace ArdupilotMega
         {
             ArdupilotMega.ICommsSerial comPort = new SerialPort();
 
-            try {
-            comPort.PortName = MainV2.comPort.BaseStream.PortName;
-            comPort.BaudRate = MainV2.comPort.BaseStream.BaudRate;
+            try
+            {
+                comPort.PortName = MainV2.comPort.BaseStream.PortName;
+                comPort.BaudRate = MainV2.comPort.BaseStream.BaudRate;
 
-            comPort.ReadTimeout = 4000;
+                comPort.ReadTimeout = 4000;
 
-            comPort.Open();
+                comPort.Open();
 
 
             }
@@ -447,6 +451,9 @@ namespace ArdupilotMega
                         {
                             Control[] controls = this.Controls.Find("R" + values[0].Trim(), false);
 
+                            if (controls.Length == 0)
+                                continue;
+
                             if (controls[0].GetType() == typeof(CheckBox))
                             {
                                 ((CheckBox)controls[0]).Checked = values[2].Trim() == "1";
@@ -483,6 +490,8 @@ namespace ArdupilotMega
             }
 
             comPort.Close();
+
+            BUT_savesettings.Enabled = true;
         }
 
         string Serial_ReadLine(ArdupilotMega.ICommsSerial comPort)
@@ -547,7 +556,7 @@ namespace ArdupilotMega
                 }
             }
 
-            Console.WriteLine("responce " + level + " " + ans.Replace('\0',' '));
+            Console.WriteLine("responce " + level + " " + ans.Replace('\0', ' '));
 
             // try again
             if (ans == "" && level == 0)
@@ -571,7 +580,7 @@ namespace ArdupilotMega
             // check for config responce "OK"
             Console.WriteLine("Connect btr " + comPort.BytesToRead + " baud " + comPort.BaudRate);
             string conn = comPort.ReadExisting();
-            Console.WriteLine("Connect first responce " + conn.Replace('\0',' ') + " " + conn.Length);
+            Console.WriteLine("Connect first responce " + conn.Replace('\0', ' ') + " " + conn.Length);
             if (conn.Contains("OK"))
             {
                 //return true;

@@ -17,13 +17,13 @@ const AP_Param::GroupInfo Compass::var_info[] PROGMEM = {
 //
 Compass::Compass(void) :
 	product_id(AP_COMPASS_TYPE_UNKNOWN),
+    _orientation(ROTATION_NONE),
     _declination		(0.0),
     _learn(1),
     _use_for_yaw(1),
-    _null_enable(false),
-    _null_init_done(false),
     _auto_declination(1),
-    _orientation(ROTATION_NONE)
+    _null_enable(false),
+    _null_init_done(false)
 {
 }
 

@@ -14,7 +14,7 @@ namespace ArdupilotMega
         static Microsoft.Scripting.Hosting.ScriptScope scope;
 
         // keeps history
-        MAVLink.__mavlink_rc_channels_override_t rc = new MAVLink.__mavlink_rc_channels_override_t();
+        MAVLink.mavlink_rc_channels_override_t rc = new MAVLink.mavlink_rc_channels_override_t();
 
         public Script()
         {
