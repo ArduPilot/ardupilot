@@ -4,6 +4,7 @@ using System.Management;
 using System.Windows.Forms;
 using System.Threading;
 using log4net;
+using System.Globalization;
 
 namespace ArdupilotMega
 {

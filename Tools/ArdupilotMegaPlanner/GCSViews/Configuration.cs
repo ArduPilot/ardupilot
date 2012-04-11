@@ -512,6 +512,19 @@ namespace ArdupilotMega.GCSViews
                         }
                     }
                 }
+                // keep nav_lat and nav_lon paired
+                if (name.Contains("LOITER_LAT_"))
+                {
+                    string newname = name.Replace("LOITER_LAT_", "LOITER_LON_");
+                    foreach (DataGridViewRow row in Params.Rows)
+                    {
+                        if (row.Cells[0].Value.ToString() == newname)
+                        {
+                            row.Cells[1].Value = float.Parse(((Control)sender).Text);
+                            break;
+                        }
+                    }
+                }
             }
             catch { }
 

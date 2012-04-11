@@ -2,9 +2,6 @@
 Microsoft Visual Studio Solution File, Format Version 11.00
 # Visual C# Express 2010
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ArdupilotMega", "ArdupilotMega.csproj", "{A2E22272-95FE-47B6-B050-9AE7E2055BF5}"
-	ProjectSection(ProjectDependencies) = postProject
-		{76374F95-C343-4ACC-B86F-7ECFDD668F46} = {76374F95-C343-4ACC-B86F-7ECFDD668F46}
-	EndProjectSection
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Updater", "Updater\Updater.csproj", "{E64A1A41-A5B0-458E-8284-BB63705354DA}"
 EndProject

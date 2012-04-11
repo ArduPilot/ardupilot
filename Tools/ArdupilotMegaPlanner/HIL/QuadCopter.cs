@@ -207,7 +207,7 @@ namespace ArdupilotMega.HIL
                 delta_time = new TimeSpan(0, 0, 0, 0, 20);
             }
 
-             // rotational acceleration, in degrees/s/s, in body frame
+            // rotational acceleration, in degrees/s/s, in body frame
             double roll_accel = 0.0;
             double pitch_accel = 0.0;
             double yaw_accel = 0.0;
@@ -228,7 +228,7 @@ namespace ArdupilotMega.HIL
                 thrust += m[i] * self.thrust_scale; // newtons
             }
 
-        // rotational resistance
+            // rotational resistance
             roll_accel -= (self.pDeg / self.terminal_rotation_rate) * 5000.0;
             pitch_accel -= (self.qDeg / self.terminal_rotation_rate) * 5000.0;
             yaw_accel -= (self.rDeg / self.terminal_rotation_rate) * 400.0;
@@ -236,23 +236,23 @@ namespace ArdupilotMega.HIL
             //Console.WriteLine("roll {0} {1} {2}", roll_accel, roll_rate, roll);
 
             //# update rotational rates in body frame
-        self.pDeg  += roll_accel * delta_time.TotalSeconds;
-        self.qDeg  += pitch_accel * delta_time.TotalSeconds;
-        self.rDeg += yaw_accel * delta_time.TotalSeconds;
+            self.pDeg += roll_accel * delta_time.TotalSeconds;
+            self.qDeg += pitch_accel * delta_time.TotalSeconds;
+            self.rDeg += yaw_accel * delta_time.TotalSeconds;
 
             // Console.WriteLine("roll {0} {1} {2}", roll_accel, roll_rate, roll);
 
-                    // calculate rates in earth frame
-            
-             var answer =  BodyRatesToEarthRates(self.roll, self.pitch, self.yaw,
-                                                      self.pDeg, self.qDeg, self.rDeg);
-                    self.roll_rate = answer.Item1;
-         self.pitch_rate = answer.Item2;
-         self.yaw_rate = answer.Item3;
-            
-         //self.roll_rate = pDeg;
-         //self.pitch_rate = qDeg;
-         //self.yaw_rate = rDeg;
+            // calculate rates in earth frame
+
+            var answer = BodyRatesToEarthRates(self.roll, self.pitch, self.yaw,
+                                                     self.pDeg, self.qDeg, self.rDeg);
+            self.roll_rate = answer.Item1;
+            self.pitch_rate = answer.Item2;
+            self.yaw_rate = answer.Item3;
+
+            //self.roll_rate = pDeg;
+            //self.pitch_rate = qDeg;
+            //self.yaw_rate = rDeg;
 
             //# update rotation
             roll += roll_rate * delta_time.TotalSeconds;
@@ -342,9 +342,9 @@ namespace ArdupilotMega.HIL
             att.roll = (float)roll * deg2rad;
             att.pitch = (float)pitch * deg2rad;
             att.yaw = (float)yaw * deg2rad;
-            att.rollspeed = (float)roll_rate *deg2rad;
-            att.pitchspeed = (float)pitch_rate *deg2rad;
-            att.yawspeed = (float)yaw_rate *deg2rad;
+            att.rollspeed = (float)roll_rate * deg2rad;
+            att.pitchspeed = (float)pitch_rate * deg2rad;
+            att.yawspeed = (float)yaw_rate * deg2rad;
 
 #if MAVLINK10
 

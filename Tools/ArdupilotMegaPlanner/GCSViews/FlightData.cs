@@ -1002,6 +1002,16 @@ namespace ArdupilotMega.GCSViews
 
         private void BUT_loadtelem_Click(object sender, EventArgs e)
         {
+            if (MainV2.comPort.logplaybackfile != null)
+            {
+                try
+                {
+                    MainV2.comPort.logplaybackfile.Close();
+                    MainV2.comPort.logplaybackfile = null;
+                }
+                catch { }
+            }
+
             OpenFileDialog fd = new OpenFileDialog();
             fd.AddExtension = true;
             fd.Filter = "Ardupilot Telemtry log (*.tlog)|*.tlog|Mavlink Log (*.mavlog)|*.mavlog";

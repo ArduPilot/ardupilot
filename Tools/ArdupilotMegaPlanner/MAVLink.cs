@@ -11,7 +11,6 @@ using System.IO;
 using System.Drawing;
 using System.Threading;
 using ArdupilotMega.Controls;
-using ArdupilotMega.Mavlink;
 using System.ComponentModel;
 using log4net;
 
@@ -1923,9 +1922,9 @@ namespace ArdupilotMega
                 {
                     MainV2.comPort.generatePacket((byte)MAVLink.MAVLINK_MSG_ID_SET_NAV_MODE, navmode);
                     System.Threading.Thread.Sleep(10);
-                    MainV2.comPort.generatePacket((byte)MAVLink.MAVLINK_MSG_ID_SET_NAV_MODE, navmode);
-                    System.Threading.Thread.Sleep(10);
                     MainV2.comPort.generatePacket((byte)MAVLink.MAVLINK_MSG_ID_SET_MODE, mode);
+                    System.Threading.Thread.Sleep(10);
+                    MainV2.comPort.generatePacket((byte)MAVLink.MAVLINK_MSG_ID_SET_NAV_MODE, navmode);
                     System.Threading.Thread.Sleep(10);
                     MainV2.comPort.generatePacket((byte)MAVLink.MAVLINK_MSG_ID_SET_MODE, mode);
                 }

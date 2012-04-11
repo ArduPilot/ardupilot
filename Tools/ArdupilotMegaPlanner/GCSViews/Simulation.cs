@@ -12,7 +12,6 @@ using System.Runtime.InteropServices; // dll imports
 using log4net;
 using ZedGraph; // Graphs
 using ArdupilotMega;
-using ArdupilotMega.Mavlink;
 using System.Reflection;
 
 using System.Drawing.Drawing2D;

@@ -53,6 +53,8 @@ namespace ArdupilotMega
             {
                 log.Fatal("Fatal app exception",ex);
                 Console.WriteLine(ex.ToString());
+
+                Console.ReadLine();
             }
         }
 
