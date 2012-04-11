@@ -101,7 +101,7 @@ void AP_MotorsMatrix::output_min()
 	int8_t i;
 
 	// fill the motor_out[] array for HIL use and send minimum value to each motor
-	for( int8_t i=0; i<AP_MOTORS_MAX_NUM_MOTORS; i++ ) {
+	for( i=0; i<AP_MOTORS_MAX_NUM_MOTORS; i++ ) {
 		if( motor_enabled[i] ) {
 			motor_out[i] = _rc_throttle->radio_min;
 			_rc->OutputCh(_motor_to_channel_map[i], motor_out[i]);
@@ -146,14 +146,14 @@ void AP_MotorsMatrix::output_armed()
 							_rc_pitch->pwm_out * _pitch_factor[i] +
 							_rc_yaw->pwm_out*_yaw_factor[i];
 		}
-		// ensure motor is not below the minimum
-		motor_out[AP_MOTORS_MOT_1]	= max(motor_out[AP_MOTORS_MOT_1], 	out_min);
 	}
 
 	// stability patch
 	for( i=0; i<AP_MOTORS_MAX_NUM_MOTORS; i++ ) {
-		if( motor_enabled[i] && opposite_motor[i] != AP_MOTORS_MATRIX_MOTOR_UNDEFINED && motor_out[i] > out_max ) {
-			motor_out[opposite_motor[i]] -= motor_out[i] - out_max;
+		if( motor_enabled[i] && motor_out[i] > out_max ) {
+			if( opposite_motor[i] != AP_MOTORS_MATRIX_MOTOR_UNDEFINED ) {
+				motor_out[opposite_motor[i]] -= motor_out[i] - out_max;
+			}
 			motor_out[i] = out_max;
 		}
 	}

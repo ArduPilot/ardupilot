@@ -47,7 +47,15 @@ static void init_rc_in()
 static void init_rc_out()
 {
 	APM_RC.Init( &isr_registry );		// APM Radio initialization
-	init_motors_out();
+	#if INSTANT_PWM == 1
+	motors.set_update_rate(AP_MOTORS_SPEED_INSTANT_PWM);
+	#else
+	motors.set_update_rate(g.rc_speed);
+	#endif
+	motors.set_frame_orientation(g.frame_orientation);
+	motors.Init();						// motor initialisation
+	motors.set_min_throttle(MINIMUM_THROTTLE);
+	motors.set_max_throttle(MAXIMUM_THROTTLE);
 
 	// this is the camera pitch5 and roll6
 	APM_RC.OutputCh(CH_CAM_PITCH, 1500);
@@ -69,7 +77,7 @@ static void init_rc_out()
 			// we will enter esc_calibrate mode on next reboot
 			g.esc_calibrate.set_and_save(1);
 			// send miinimum throttle out to ESC
-			output_min();
+			motors.output_min();
 			// block until we restart
 			while(1){
 				//Serial.println("esc");
@@ -95,28 +103,8 @@ static void init_rc_out()
 
 void output_min()
 {
-	motors_output_enable();
-	#if FRAME_CONFIG == HELI_FRAME
-        heli_move_servos_to_mid();
-	#else
-	    APM_RC.OutputCh(MOT_1, 	g.rc_3.radio_min);					// Initialization of servo outputs
-	    APM_RC.OutputCh(MOT_2, 	g.rc_3.radio_min);
-	    APM_RC.OutputCh(MOT_3, 	g.rc_3.radio_min);
-	    APM_RC.OutputCh(MOT_4, 	g.rc_3.radio_min);
-	#endif
-
-	APM_RC.OutputCh(MOT_5,   g.rc_3.radio_min);
-	APM_RC.OutputCh(MOT_6,   g.rc_3.radio_min);
-
-	#if FRAME_CONFIG == TRI_FRAME
-	APM_RC.OutputCh(CH_TRI_YAW,   g.rc_4.radio_trim); // Yaw servo middle position
-	#endif
-
-	#if FRAME_CONFIG ==	OCTA_FRAME
-	APM_RC.OutputCh(MOT_7,   g.rc_3.radio_min);
-	APM_RC.OutputCh(MOT_8,   g.rc_3.radio_min);
-	#endif
-
+	motors.enable();
+	motors.output_min();
 }
 static void read_radio()
 {
@@ -158,7 +146,7 @@ static void throttle_failsafe(uint16_t pwm)
 			// Don't enter Failsafe if we are not armed
 			// home distance is in meters
 			// This is to prevent accidental RTL
-			if((motor_armed == true) && (home_distance > 1000)){
+			if(motors.armed() && (home_distance > 1000)){
 				SendDebug("MSG FS ON ");
 				SendDebugln(pwm, DEC);
 				set_failsafe(true);

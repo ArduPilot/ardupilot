@@ -23,6 +23,7 @@ using System.Net.Sockets;
 using IronPython.Hosting;
 using log4net;
 using ArdupilotMega.Controls;
+using System.Security.Cryptography;
 
 namespace ArdupilotMega
 {
@@ -56,6 +57,8 @@ namespace ArdupilotMega
         public static CurrentState cs = new CurrentState();
 
         bool serialThread = false;
+
+        static internal BindingSource bs;
 
         TcpListener listener;
 
@@ -185,7 +188,6 @@ namespace ArdupilotMega
                     this.Height = int.Parse(config["MainHeight"].ToString());
                 if (config["MainWidth"] != null)
                     this.Width = int.Parse(config["MainWidth"].ToString());
-
 
                 if (config["CMB_rateattitude"] != null)
                     MainV2.cs.rateattitude = byte.Parse(config["CMB_rateattitude"].ToString());
@@ -783,6 +785,12 @@ namespace ArdupilotMega
 
         private void joysticksend()
         {
+
+            float rate = 50;
+            int count = 0;
+
+            DateTime lastratechange = DateTime.Now;
+
             while (true)
             {
                 try
@@ -793,7 +801,7 @@ namespace ArdupilotMega
 
                         if (joystick != null && joystick.enabled)
                         {
-                            MAVLink.__mavlink_rc_channels_override_t rc = new MAVLink.__mavlink_rc_channels_override_t();
+                            MAVLink.mavlink_rc_channels_override_t rc = new MAVLink.mavlink_rc_channels_override_t();
 
                             rc.target_component = comPort.compid;
                             rc.target_system = comPort.sysid;
@@ -815,16 +823,43 @@ namespace ArdupilotMega
                             if (joystick.getJoystickAxis(8) != Joystick.joystickaxis.None)
                                 rc.chan8_raw = cs.rcoverridech8;
 
-                            if (lastjoystick.AddMilliseconds(50) < DateTime.Now)
+                            if (lastjoystick.AddMilliseconds(rate) < DateTime.Now)
                             {
-                                //                                Console.WriteLine(DateTime.Now.Millisecond + " {0} {1} {2} {3} ", rc.chan1_raw, rc.chan2_raw, rc.chan3_raw, rc.chan4_raw);
+                                /*
+                                if (cs.rssi > 0 && cs.remrssi > 0)
+                                {
+                                    if (lastratechange.Second != DateTime.Now.Second)
+                                    {
+                                        if (cs.txbuffer > 90)
+                                        {
+                                            if (rate < 20)
+                                                rate = 21;
+                                            rate--;
+
+                                            if (cs.linkqualitygcs < 70)
+                                                rate = 50;
+                                        }
+                                        else
+                                        {
+                                            if (rate > 100)
+                                                rate = 100;
+                                            rate++;
+                                        }
+
+                                        lastratechange = DateTime.Now;
+                                    }
+                                 
+                                }
+                                 */
+//                                Console.WriteLine(DateTime.Now.Millisecond + " {0} {1} {2} {3} {4}", rc.chan1_raw, rc.chan2_raw, rc.chan3_raw, rc.chan4_raw,rate);
                                 comPort.sendPacket(rc);
+                                count++;
                                 lastjoystick = DateTime.Now;
                             }
 
                         }
                     }
-                    System.Threading.Thread.Sleep(50);
+                    System.Threading.Thread.Sleep(20);
                 }
                 catch { } // cant fall out
             }
@@ -955,11 +990,11 @@ namespace ArdupilotMega
                     {
                         //                        Console.WriteLine("remote lost {0}", cs.packetdropremote);
 
-                        MAVLink.__mavlink_heartbeat_t htb = new MAVLink.__mavlink_heartbeat_t();
+                        MAVLink.mavlink_heartbeat_t htb = new MAVLink.mavlink_heartbeat_t();
 
 #if MAVLINK10
-                        htb.type = (byte)MAVLink.MAV_TYPE.MAV_TYPE_GCS;
-                        htb.autopilot = (byte)MAVLink.MAV_AUTOPILOT.MAV_AUTOPILOT_ARDUPILOTMEGA;
+                        htb.type = (byte)MAVLink.MAV_TYPE.GCS;
+                        htb.autopilot = (byte)MAVLink.MAV_AUTOPILOT.ARDUPILOTMEGA;
                         htb.mavlink_version = 3;
 #else
                         htb.type = (byte)MAVLink.MAV_TYPE.MAV_GENERIC;
@@ -1489,6 +1524,8 @@ namespace ArdupilotMega
             var baseurl = ConfigurationManager.AppSettings["UpdateLocation"];
             string path = Path.GetFileName(Application.ExecutablePath);
 
+            path = "version.txt";
+
             // Create a request using a URL that can receive a post. 
             string requestUriString = baseurl + path;
             log.Debug("Checking for update at: " + requestUriString);
@@ -1496,7 +1533,7 @@ namespace ArdupilotMega
             webRequest.Timeout = 5000;
 
             // Set the Method property of the request to POST.
-            webRequest.Method = "HEAD";
+            webRequest.Method = "GET";
 
             ((HttpWebRequest)webRequest).IfModifiedSince = File.GetLastWriteTimeUtc(path);
 
@@ -1514,24 +1551,34 @@ namespace ArdupilotMega
             {
                 var fi = new FileInfo(path);
 
-                string CurrentEtag = "";
+                string LocalVersion = "";
+                string WebVersion = "";
 
-                if (File.Exists(path + ".etag"))
+                if (File.Exists(path))
                 {
-                    using (Stream fs = File.OpenRead(path + ".etag"))
+                    using (Stream fs = File.OpenRead(path))
                     {
                         using (StreamReader sr = new StreamReader(fs))
                         {
-                            CurrentEtag = sr.ReadLine();
+                            LocalVersion = sr.ReadLine();
                             sr.Close();
                         }
                         fs.Close();
                     }
                 }
 
-                log.Info("New file Check: " + fi.Length + " vs " + response.ContentLength + " " + response.Headers[HttpResponseHeader.ETag] + " vs " + CurrentEtag);
+                using (StreamReader sr = new StreamReader(response.GetResponseStream()))
+                {
+                    WebVersion = sr.ReadLine();
 
-                if (fi.Length != response.ContentLength || response.Headers[HttpResponseHeader.ETag] != CurrentEtag)
+                    sr.Close();
+                }
+
+
+
+                log.Info("New file Check: local " + LocalVersion + " vs Remote " + WebVersion);
+
+                if (LocalVersion != WebVersion)
                 {
                     shouldGetFile = true;
                 }
@@ -1694,7 +1741,7 @@ namespace ArdupilotMega
 
                     if (fi.Length != response.ContentLength || response.Headers[HttpResponseHeader.ETag] != CurrentEtag)
                     {
-                        using (StreamWriter sw = new StreamWriter(path + ".etag"))
+                        using (StreamWriter sw = new StreamWriter(path + ".etag.new"))
                         {
                             sw.WriteLine(response.Headers[HttpResponseHeader.ETag]);
                             sw.Close();
@@ -1795,6 +1842,42 @@ namespace ArdupilotMega
 
         }
 
+
+
+        private string GetFileETag(string fileName, DateTime modifyDate)
+        {
+
+            string FileString;
+
+            System.Text.Encoder StringEncoder;
+
+            byte[] StringBytes;
+
+            MD5CryptoServiceProvider MD5Enc;
+
+            //use file name and modify date as the unique identifier
+
+            FileString = fileName + modifyDate.ToString("d", CultureInfo.InvariantCulture);
+
+            //get string bytes
+
+            StringEncoder = Encoding.UTF8.GetEncoder();
+
+            StringBytes = new byte[StringEncoder.GetByteCount(FileString.ToCharArray(), 0, FileString.Length, true)];
+
+            StringEncoder.GetBytes(FileString.ToCharArray(), 0, FileString.Length, StringBytes, 0, true);
+
+            //hash string using MD5 and return the hex-encoded hash
+
+            MD5Enc = new MD5CryptoServiceProvider();
+
+            byte[] hash = MD5Enc.ComputeHash((Stream)File.OpenRead(fileName));
+
+            return "\"" + BitConverter.ToString(hash).Replace("-", string.Empty) + "\"";
+
+        }
+
+
         protected override bool ProcessCmdKey(ref Message msg, Keys keyData)
         {
             if (keyData == (Keys.Control | Keys.F))
@@ -1818,7 +1901,18 @@ namespace ArdupilotMega
             }
             if (keyData == (Keys.Control | Keys.A)) // test
             {
-                Form frm = new _3DRradio();
+                Form temp = new Form();
+                Control frm = new _3DRradio();
+                temp.Controls.Add(frm);
+                temp.Size = frm.Size;
+                frm.Dock = DockStyle.Fill;
+                ThemeManager.ApplyThemeTo(temp);
+                temp.Show();
+                return true;
+            }
+            if (keyData == (Keys.Control | Keys.W)) // test
+            {
+                Form frm = new GCSViews.ConfigurationView.Configuration();
                 ThemeManager.ApplyThemeTo(frm);
                 frm.Show();
                 return true;
@@ -1898,6 +1992,9 @@ namespace ArdupilotMega
 
                 if (comPort.rawlogfile != null)
                     comPort.rawlogfile.Close();
+
+                comPort.logfile = null;
+                comPort.rawlogfile = null;
             }
             catch { }
 

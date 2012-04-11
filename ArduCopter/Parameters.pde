@@ -67,7 +67,6 @@ static const AP_Param::Info var_info[] PROGMEM = {
 	GSCALAR(radio_tuning_low, "TUNE_LOW"),
 	GSCALAR(radio_tuning_high, "TUNE_HIGH"),
 	GSCALAR(frame_orientation, "FRAME"),
-	GSCALAR(top_bottom_ratio, "TB_RATIO"),
 	GSCALAR(ch7_option, "CH7_OPT"),
 	GSCALAR(auto_slew_rate, "AUTO_SLEW"),
 
@@ -76,21 +75,6 @@ static const AP_Param::Info var_info[] PROGMEM = {
 	GGROUP(heli_servo_2,	"HS2_", RC_Channel),
 	GGROUP(heli_servo_3,	"HS3_", RC_Channel),
 	GGROUP(heli_servo_4,	"HS4_", RC_Channel),
-	GSCALAR(heli_servo1_pos,	"SV1_POS"),
-	GSCALAR(heli_servo2_pos,	"SV2_POS"),
-	GSCALAR(heli_servo3_pos,	"SV3_POS"),
-	GSCALAR(heli_roll_max,	"ROL_MAX"),
-	GSCALAR(heli_pitch_max,	"PIT_MAX"),
-	GSCALAR(heli_collective_min,	"COL_MIN"),
-	GSCALAR(heli_collective_max,	"COL_MAX"),
-	GSCALAR(heli_collective_mid,	"COL_MID"),
-	GSCALAR(heli_ext_gyro_enabled,	"GYR_ENABLE"),
-	GSCALAR(heli_h1_swash_enabled,	"H1_ENABLE"),
-	GSCALAR(heli_ext_gyro_gain,	"GYR_GAIN"),
-	GSCALAR(heli_servo_averaging,	"SV_AVG"),
-	GSCALAR(heli_servo_manual,	"HSV_MAN"),
-	GSCALAR(heli_phase_angle,	"H_PHANG"),
-	GSCALAR(heli_collective_yaw_effect,	"H_COLYAW"),
 	#endif
 
 	// RC channel
@@ -151,6 +135,12 @@ static const AP_Param::Info var_info[] PROGMEM = {
 	GOBJECT(gcs0,			"SR0_",     GCS_MAVLINK),
 	GOBJECT(gcs3,			"SR3_",     GCS_MAVLINK),
 	GOBJECT(imu,			"IMU_",     IMU)
+
+	#if FRAME_CONFIG ==	HELI_FRAME
+	,GOBJECT(motors,	"H_",		AP_MotorsHeli)
+	#else
+	,GOBJECT(motors,	"MOT_",		AP_Motors)
+	#endif
 };
 
 

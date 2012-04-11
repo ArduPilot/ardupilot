@@ -330,14 +330,14 @@ namespace ArdupilotMega.HIL
 
             // send to apm
 #if MAVLINK10
-            ArdupilotMega.MAVLink.__mavlink_gps_raw_int_t gps = new ArdupilotMega.MAVLink.__mavlink_gps_raw_int_t();
+            ArdupilotMega.MAVLink.mavlink_gps_raw_int_t gps = new ArdupilotMega.MAVLink.mavlink_gps_raw_int_t();
 #else
-            ArdupilotMega.MAVLink.__mavlink_gps_raw_t gps = new ArdupilotMega.MAVLink.__mavlink_gps_raw_t();
+            ArdupilotMega.MAVLink.mavlink_gps_raw_t gps = new ArdupilotMega.MAVLink.mavlink_gps_raw_t();
 #endif
 
-            ArdupilotMega.MAVLink.__mavlink_attitude_t att = new ArdupilotMega.MAVLink.__mavlink_attitude_t();
+            ArdupilotMega.MAVLink.mavlink_attitude_t att = new ArdupilotMega.MAVLink.mavlink_attitude_t();
 
-            ArdupilotMega.MAVLink.__mavlink_vfr_hud_t asp = new ArdupilotMega.MAVLink.__mavlink_vfr_hud_t();
+            ArdupilotMega.MAVLink.mavlink_vfr_hud_t asp = new ArdupilotMega.MAVLink.mavlink_vfr_hud_t();
 
             att.roll = (float)roll * deg2rad;
             att.pitch = (float)pitch * deg2rad;
@@ -380,7 +380,7 @@ namespace ArdupilotMega.HIL
 
             MainV2.comPort.sendPacket(att);
 
-            MAVLink.__mavlink_raw_pressure_t pres = new MAVLink.__mavlink_raw_pressure_t();
+            MAVLink.mavlink_raw_pressure_t pres = new MAVLink.mavlink_raw_pressure_t();
             double calc = (101325 * Math.Pow(1 - 2.25577 * Math.Pow(10, -5) * gps.alt, 5.25588));
             pres.press_diff1 = (short)(int)(calc); // 0 alt is 0 pa
 

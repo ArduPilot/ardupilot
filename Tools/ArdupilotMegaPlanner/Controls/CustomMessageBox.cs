@@ -121,11 +121,6 @@ namespace System.Windows.Forms
             return answer;
         }
 
-        static void msgBoxFrm_FormClosing(object sender, FormClosingEventArgs e)
-        {
-            throw new NotImplementedException();
-        }
-
         // from http://stackoverflow.com/questions/2512781/winforms-big-paragraph-tooltip/2512895#2512895
         private static int maximumSingleLineTooltipLength = 85;
 

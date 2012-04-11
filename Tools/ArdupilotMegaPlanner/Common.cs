@@ -386,7 +386,8 @@ namespace ArdupilotMega
             CH6_ACRO_KP = 25,
             CH6_YAW_RATE_KD = 26,
             CH6_LOITER_KI = 27,
-            CH6_LOITER_RATE_KI = 28
+            CH6_LOITER_RATE_KI = 28,
+            CH6_STABILIZE_KD = 29
         }
 
 
@@ -428,9 +429,9 @@ namespace ArdupilotMega
        
 		#if MAVLINK10
 		
-        public static bool translateMode(string modein, ref MAVLink.__mavlink_set_mode_t mode)
+        public static bool translateMode(string modein, ref MAVLink.mavlink_set_mode_t mode)
         {
-            //MAVLink.__mavlink_set_mode_t mode = new MAVLink.__mavlink_set_mode_t();
+            //MAVLink.mavlink_set_mode_t mode = new MAVLink.mavlink_set_mode_t();
             mode.target_system = MainV2.comPort.sysid;
 
             try
@@ -447,7 +448,7 @@ namespace ArdupilotMega
                         case (int)Common.apmmodes.LOITER:
                         case (int)Common.apmmodes.FLY_BY_WIRE_A:
                         case (int)Common.apmmodes.FLY_BY_WIRE_B:
-                            mode.base_mode = (byte)MAVLink.MAV_MODE_FLAG.MAV_MODE_FLAG_CUSTOM_MODE_ENABLED;
+                            mode.base_mode = (byte)MAVLink.MAV_MODE_FLAG.CUSTOM_MODE_ENABLED;
                             mode.custom_mode = (uint)(int)Enum.Parse(Common.getModes(), modein);
                             break;
                         default:
@@ -467,7 +468,7 @@ namespace ArdupilotMega
                         case (int)Common.ac2modes.ALT_HOLD:
                         case (int)Common.ac2modes.CIRCLE:
                         case (int)Common.ac2modes.POSITION:
-                            mode.base_mode = (byte)MAVLink.MAV_MODE_FLAG.MAV_MODE_FLAG_CUSTOM_MODE_ENABLED;
+                            mode.base_mode = (byte)MAVLink.MAV_MODE_FLAG.CUSTOM_MODE_ENABLED;
                             mode.custom_mode = (uint)(int)Enum.Parse(Common.getModes(), modein);
                             break;
                         default:
@@ -482,14 +483,14 @@ namespace ArdupilotMega
         }
 		
 		#else
-        public static bool translateMode(string modein, ref  MAVLink.__mavlink_set_nav_mode_t navmode, ref MAVLink.__mavlink_set_mode_t mode)
+        public static bool translateMode(string modein, ref  MAVLink.mavlink_set_nav_mode_t navmode, ref MAVLink.mavlink_set_mode_t mode)
         {
 
-            //MAVLink.__mavlink_set_nav_mode_t navmode = new MAVLink.__mavlink_set_nav_mode_t();
+            //MAVLink.mavlink_set_nav_mode_t navmode = new MAVLink.mavlink_set_nav_mode_t();
             navmode.target = MainV2.comPort.sysid;
             navmode.nav_mode = 255;
 
-            //MAVLink.__mavlink_set_mode_t mode = new MAVLink.__mavlink_set_mode_t();
+            //MAVLink.mavlink_set_mode_t mode = new MAVLink.mavlink_set_mode_t();
             mode.target = MainV2.comPort.sysid;
 
             try
@@ -575,7 +576,10 @@ namespace ArdupilotMega
             try
             {
                 // this is for mono to a ssl server
-                ServicePointManager.CertificatePolicy = new NoCheckCertificatePolicy(); 
+                //ServicePointManager.CertificatePolicy = new NoCheckCertificatePolicy(); 
+
+                ServicePointManager.ServerCertificateValidationCallback =
+    new System.Net.Security.RemoteCertificateValidationCallback((sender, certificate, chain, policyErrors) => { return true; });
 
                 // Create a request using a URL that can receive a post. 
                 WebRequest request = WebRequest.Create(url);

@@ -910,16 +910,16 @@
     <value>NoControl</value>
   </data>
   <data name="BUT_log2kml.Location" type="System.Drawing.Point, System.Drawing">
-    <value>51, 32</value>
+    <value>29, 32</value>
   </data>
   <data name="BUT_log2kml.Size" type="System.Drawing.Size, System.Drawing">
-    <value>80, 23</value>
+    <value>127, 23</value>
   </data>
   <data name="BUT_log2kml.TabIndex" type="System.Int32, mscorlib">
     <value>76</value>
   </data>
   <data name="BUT_log2kml.Text" xml:space="preserve">
-    <value>Log &gt; KML</value>
+    <value>Tlog &gt; Kml or Graph</value>
   </data>
   <data name="&gt;&gt;BUT_log2kml.Name" xml:space="preserve">
     <value>BUT_log2kml</value>

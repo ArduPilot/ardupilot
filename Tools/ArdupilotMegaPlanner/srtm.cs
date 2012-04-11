@@ -24,6 +24,9 @@ namespace ArdupilotMega
 
         public static int getAltitude(double lat, double lng, double zoom)
         {
+            if (!Directory.Exists(datadirectory))
+                Directory.CreateDirectory(datadirectory);
+
             short alt = 0;
 
             lat += 0.00083333333333333;

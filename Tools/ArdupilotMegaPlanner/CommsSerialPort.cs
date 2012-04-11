@@ -40,14 +40,14 @@ namespace ArdupilotMega
 
         public new static string[] GetPortNames()
         {
-            string[] monoDevs = new string[0];
+            List<string> allPorts = new List<string>();
 
             if (Directory.Exists("/dev/"))
             {
                 if (Directory.Exists("/dev/serial/by-id/"))
-                    monoDevs = Directory.GetFiles("/dev/serial/by-id/", "*");
-                monoDevs = Directory.GetFiles("/dev/", "*ACM*");
-                monoDevs = Directory.GetFiles("/dev/", "ttyUSB*");
+                    allPorts.AddRange(Directory.GetFiles("/dev/serial/by-id/", "*"));
+                allPorts.AddRange(Directory.GetFiles("/dev/", "ttyACM*"));
+                allPorts.AddRange(Directory.GetFiles("/dev/", "ttyUSB*"));
             }
 
             string[] ports = System.IO.Ports.SerialPort.GetPortNames()
@@ -55,12 +55,9 @@ namespace ArdupilotMega
             .Select(FixBlueToothPortNameBug)
             .ToArray();
 
-            string[] allPorts = new string[monoDevs.Length + ports.Length];
+            allPorts.AddRange(ports);
 
-            monoDevs.CopyTo(allPorts, 0);
-            ports.CopyTo(allPorts, monoDevs.Length);
-
-            return allPorts;
+            return allPorts.ToArray();
         }
 
 

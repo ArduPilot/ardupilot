@@ -15,10 +15,16 @@ using GMap.NET.WindowsForms;
 using GMap.NET.CacheProviders;
 using log4net;
 
+using System.Security.Permissions;
+
 namespace ArdupilotMega
 {
     public partial class temp : Form
     {
+        [DllImport("DIFXApi.dll", CharSet = CharSet.Unicode)]
+        public static extern Int32 DriverPackagePreinstall(string DriverPackageInfPath, Int32 Flags);
+
+
         private static readonly ILog log =
           LogManager.GetLogger(System.Reflection.MethodBase.GetCurrentMethod().DeclaringType);
         public temp()
@@ -890,6 +896,14 @@ namespace ArdupilotMega
         private void BUT_magcalib_Click(object sender, EventArgs e)
         {
             MagCalib.ProcessLog();
+        }
+
+        void driverinstall()
+        {
+            int result = DriverPackagePreinstall(@"\Driver\XYZ.inf", 0);
+            if (result != 0)
+                MessageBox.Show("Driver installation failed.");
+
         }
     }
 }

@@ -95,7 +95,7 @@ public:
 	virtual void init_swash();
 
 	// heli_move_swash - moves swash plate to attitude of parameters passed in
-	virtual void move_swash(int roll_out, int pitch_out, int coll_out, int yaw_out);
+	virtual void move_swash(int16_t roll_out, int16_t pitch_out, int16_t coll_out, int16_t yaw_out);
 
 	// var_info for holding Parameter information
 	static const struct AP_Param::GroupInfo var_info[];

@@ -49,6 +49,14 @@ namespace ArdupilotMega.GCSViews
         int simPort = 49000;
         int recvPort = 49005;
 
+        // gps buffer
+        int gpsbufferindex = 0;
+#if !MAVLINK10
+        ArdupilotMega.MAVLink.mavlink_gps_raw_t[] gpsbuffer = new MAVLink.mavlink_gps_raw_t[5];
+#else
+        ArdupilotMega.MAVLink.mavlink_gps_raw_int_t[] gpsbuffer = new MAVLink.mavlink_gps_raw_int_t[5];
+#endif
+
         // set defaults
         int rollgain = 10000;
         int pitchgain = 10000;
@@ -370,7 +378,6 @@ namespace ArdupilotMega.GCSViews
         /// <param name="write">true/false</param>
         private void xmlconfig(bool write)
         {
-            int fixme; // add profiles?
             if (write)
             {
                 ArdupilotMega.MainV2.config["REV_roll"] = CHKREV_roll.Checked.ToString();
@@ -572,11 +579,11 @@ namespace ArdupilotMega.GCSViews
                     {
                         if (CHK_quad.Checked && !RAD_aerosimrc.Checked)// || chkSensor.Checked && RAD_JSBSim.Checked)
                         {
-                            comPort.requestDatastream((byte)ArdupilotMega.MAVLink.MAV_DATA_STREAM.MAV_DATA_STREAM_RAW_CONTROLLER, 0); // request servoout
+                            comPort.requestDatastream((byte)ArdupilotMega.MAVLink.MAV_DATA_STREAM.RAW_CONTROLLER, 0); // request servoout
                         }
                         else
                         {
-                            comPort.requestDatastream((byte)ArdupilotMega.MAVLink.MAV_DATA_STREAM.MAV_DATA_STREAM_RAW_CONTROLLER, 50); // request servoout
+                            comPort.requestDatastream((byte)ArdupilotMega.MAVLink.MAV_DATA_STREAM.RAW_CONTROLLER, 50); // request servoout
                         }
                     }
                     catch { }
@@ -700,10 +707,10 @@ namespace ArdupilotMega.GCSViews
         float oldax = 0, olday = 0, oldaz = 0;
         DateTime oldtime = DateTime.Now;
 #if MAVLINK10
-        ArdupilotMega.MAVLink.__mavlink_gps_raw_int_t oldgps = new MAVLink.__mavlink_gps_raw_int_t();
+        ArdupilotMega.MAVLink.mavlink_gps_raw_int_t oldgps = new MAVLink.mavlink_gps_raw_int_t();
 #endif
 
-        ArdupilotMega.MAVLink.__mavlink_attitude_t oldatt = new ArdupilotMega.MAVLink.__mavlink_attitude_t();
+        ArdupilotMega.MAVLink.mavlink_attitude_t oldatt = new ArdupilotMega.MAVLink.mavlink_attitude_t();
 
         /// <summary>
         /// Recevied UDP packet, process and send required data to serial port.
@@ -714,18 +721,18 @@ namespace ArdupilotMega.GCSViews
         private void RECVprocess(byte[] data, int receviedbytes, ArdupilotMega.MAVLink comPort)
         {
 #if MAVLINK10
-            ArdupilotMega.MAVLink.__mavlink_hil_state_t hilstate = new ArdupilotMega.MAVLink.__mavlink_hil_state_t();
+            ArdupilotMega.MAVLink.mavlink_hil_state_t hilstate = new ArdupilotMega.MAVLink.mavlink_hil_state_t();
 
-            ArdupilotMega.MAVLink.__mavlink_gps_raw_int_t gps = new ArdupilotMega.MAVLink.__mavlink_gps_raw_int_t();
+            ArdupilotMega.MAVLink.mavlink_gps_raw_int_t gps = new ArdupilotMega.MAVLink.mavlink_gps_raw_int_t();
 #else
-            ArdupilotMega.MAVLink.__mavlink_gps_raw_t gps = new ArdupilotMega.MAVLink.__mavlink_gps_raw_t();
+            ArdupilotMega.MAVLink.mavlink_gps_raw_t gps = new ArdupilotMega.MAVLink.mavlink_gps_raw_t();
 #endif
-            ArdupilotMega.MAVLink.__mavlink_raw_imu_t imu = new ArdupilotMega.MAVLink.__mavlink_raw_imu_t();
+            ArdupilotMega.MAVLink.mavlink_raw_imu_t imu = new ArdupilotMega.MAVLink.mavlink_raw_imu_t();
 
 
-            ArdupilotMega.MAVLink.__mavlink_attitude_t att = new ArdupilotMega.MAVLink.__mavlink_attitude_t();
+            ArdupilotMega.MAVLink.mavlink_attitude_t att = new ArdupilotMega.MAVLink.mavlink_attitude_t();
 
-            ArdupilotMega.MAVLink.__mavlink_vfr_hud_t asp = new ArdupilotMega.MAVLink.__mavlink_vfr_hud_t();
+            ArdupilotMega.MAVLink.mavlink_vfr_hud_t asp = new ArdupilotMega.MAVLink.mavlink_vfr_hud_t();
 
             if (data[0] == 'D' && data[1] == 'A')
             {
@@ -830,11 +837,11 @@ namespace ArdupilotMega.GCSViews
                 gps.fix_type = 3;
                                 if (xplane9)
                 {
-                    gps.cog = ((float)DATA[19][2]);
+                    gps.cog = (ushort)((float)DATA[19][2]);
                 }
                 else
                 {
-                    gps.cog = ((float)DATA[18][2]);
+                    gps.cog = (ushort)((float)DATA[18][2]);
                 }
                 gps.lat = (int)(DATA[20][0] * 1.0e7);
                 gps.lon = (int)(DATA[20][1] * 1.0e7);
@@ -1163,7 +1170,11 @@ namespace ArdupilotMega.GCSViews
                 sitlout.alt = gps.alt;
                 sitlout.lat = gps.lat;
                 sitlout.lon = gps.lon;
+#if !MAVLINK10
                 sitlout.heading = gps.hdg;
+#else
+                sitlout.heading = gps.cog;
+#endif
 
                 sitlout.v_north =  DATA[21][4];
                 sitlout.v_east = DATA[21][5];
@@ -1241,7 +1252,7 @@ namespace ArdupilotMega.GCSViews
 
 #endif
 
-                MAVLink.__mavlink_raw_pressure_t pres = new MAVLink.__mavlink_raw_pressure_t();
+                MAVLink.mavlink_raw_pressure_t pres = new MAVLink.mavlink_raw_pressure_t();
                 double calc = (101325 * Math.Pow(1 - 2.25577 * Math.Pow(10, -5) * gps.alt, 5.25588)); // updated from valid gps
                 pres.press_diff1 = (short)(int)(calc - 101325); // 0 alt is 0 pa
 
@@ -1256,7 +1267,15 @@ namespace ArdupilotMega.GCSViews
             {
                 lastgpsupdate = DateTime.Now;
 
-                comPort.sendPacket(gps);
+                // save current fix = 3
+                gpsbuffer[gpsbufferindex % gpsbuffer.Length] = gps;
+
+//                Console.WriteLine((gpsbufferindex % gpsbuffer.Length) + " " + ((gpsbufferindex + (gpsbuffer.Length - 1)) % gpsbuffer.Length));
+
+                // return buffer index + 5 = (3 + 5) = 8 % 6 = 2
+                comPort.sendPacket(gpsbuffer[(gpsbufferindex + (gpsbuffer.Length - 1)) % gpsbuffer.Length]);
+
+                gpsbufferindex++;
             }
 #endif
         }
