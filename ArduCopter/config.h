@@ -140,6 +140,10 @@
 # define CURRENT_PIN_1      2
 #endif
 
+#ifndef COPTER_LEDS
+#define COPTER_LEDS ENABLED
+#endif
+
 //////////////////////////////////////////////////////////////////////////////
 // Pushbutton & Relay
 //
@@ -905,11 +909,6 @@
 #ifndef CUT_MOTORS
 # define CUT_MOTORS		1		// do we cut the motors with no throttle?
 #endif
-
-#ifndef MOTOR_LEDS
-# define MOTOR_LEDS		1		// 0 = off, 1 = on
-#endif
-
 
 //////////////////////////////////////////////////////////////////////////////
 // RC override
