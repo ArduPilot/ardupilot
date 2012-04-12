@@ -130,16 +130,17 @@ static void init_ardupilot()
 #if CONFIG_RELAY == ENABLED
 	DDRL |= B00000100;						// Set Port L, pin 2 to output for the relay
 #endif
-	// XXX set Analog out 14 to output
-	//  	   76543210
-	//DDRK |= B01010000;
 
-	#if MOTOR_LEDS == 1
-		pinMode(FR_LED, OUTPUT);			// GPS status LED
-		pinMode(RE_LED, OUTPUT);			// GPS status LED
-		pinMode(RI_LED, OUTPUT);			// GPS status LED
-		pinMode(LE_LED, OUTPUT);			// GPS status LED
-	#endif
+#if COPTER_LEDS == ENABLED
+	pinMode(COPTER_LED_1, OUTPUT);		//Motor LED
+	pinMode(COPTER_LED_2, OUTPUT);		//Motor LED
+	pinMode(COPTER_LED_3, OUTPUT);		//Motor LED
+	pinMode(COPTER_LED_4, OUTPUT);		//Motor LED
+	pinMode(COPTER_LED_5, OUTPUT);		//Motor or Aux LED
+	pinMode(COPTER_LED_6, OUTPUT);		//Motor or Aux LED
+	pinMode(COPTER_LED_7, OUTPUT);		//Motor or GPS LED
+	pinMode(COPTER_LED_8, OUTPUT);		//Motor or GPS LED
+#endif
 
 	#if PIEZO == 1
 		pinMode(PIEZO_PIN,OUTPUT);
