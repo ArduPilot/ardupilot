@@ -293,6 +293,14 @@
       <F5>Output</F5>
       <F6>Gain</F6>
     </PID-122>
+    <PID-104>
+      <F1>Err</F1>
+      <F2>P</F2>
+      <F3>I</F3>
+      <F4>D</F4>
+      <F5>Output</F5>
+      <F6>Gain</F6>
+    </PID-104>
   </AC2>
   <!-- -->
   <APM>

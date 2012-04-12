@@ -1071,6 +1071,7 @@
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
+            this.AutoScroll = true;
             this.Controls.Add(this.myLabel3);
             this.Controls.Add(this.TUNE_LOW);
             this.Controls.Add(this.TUNE_HIGH);
@@ -1091,7 +1092,7 @@
             this.Controls.Add(this.groupBox24);
             this.Controls.Add(this.groupBox25);
             this.Name = "ConfigArducopter";
-            this.Size = new System.Drawing.Size(728, 393);
+            this.Size = new System.Drawing.Size(728, 529);
             this.Load += new System.EventHandler(this.ConfigArducopter_Load);
             ((System.ComponentModel.ISupportInitialize)(this.TUNE_LOW)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.TUNE_HIGH)).EndInit();

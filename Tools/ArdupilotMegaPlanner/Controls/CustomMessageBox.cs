@@ -144,7 +144,7 @@ namespace System.Windows.Forms
                 // reset line lnegth counter on existing new line
                 if (text[textIndex] == Environment.NewLine[Environment.NewLine.Length -1])
                 {
-                    currentLinePosition = 0;
+                    currentLinePosition = 1;
                 }
                 // If we have just started a new line, skip all the whitespace.    
                 if (currentLinePosition == 0)
