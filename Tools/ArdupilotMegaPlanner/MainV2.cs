@@ -1912,9 +1912,13 @@ namespace ArdupilotMega
             }
             if (keyData == (Keys.Control | Keys.W)) // test
             {
-                Form frm = new GCSViews.ConfigurationView.Configuration();
-                ThemeManager.ApplyThemeTo(frm);
-                frm.Show();
+
+                Controls.ConfigPanel cfg = new Controls.ConfigPanel();
+
+                cfg.LoadXML("ArduCopterConfig.xml");
+
+                cfg.ShowDialog();
+
                 return true;
             }
             if (keyData == (Keys.Control | Keys.T)) // for override connect

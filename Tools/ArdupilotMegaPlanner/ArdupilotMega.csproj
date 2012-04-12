@@ -238,7 +238,16 @@
     <Compile Include="Controls\BackstageView\BackStageViewMenuPanel.cs">
       <SubType>Component</SubType>
     </Compile>
+    <Compile Include="Controls\ConfigPanel.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Controls\ConfigPanel.Designer.cs">
+      <DependentUpon>ConfigPanel.cs</DependentUpon>
+    </Compile>
     <Compile Include="Controls\CustomMessageBox.cs" />
+    <Compile Include="Controls\LineSeparator.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
     <Compile Include="Controls\ProgressReporterDialogue.cs">
       <SubType>Form</SubType>
     </Compile>
@@ -536,6 +545,9 @@
     </EmbeddedResource>
     <EmbeddedResource Include="Controls\BackstageView\BackstageView.resx">
       <DependentUpon>BackstageView.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Controls\ConfigPanel.resx">
+      <DependentUpon>ConfigPanel.cs</DependentUpon>
     </EmbeddedResource>
     <EmbeddedResource Include="Controls\ProgressReporterDialogue.resx">
       <DependentUpon>ProgressReporterDialogue.cs</DependentUpon>
@@ -1047,6 +1059,9 @@
   </ItemGroup>
   <ItemGroup>
     <Content Include="apm2.ico" />
+    <Content Include="ArduCopterConfig.xml">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
     <Content Include="Driver\Arduino MEGA 2560.inf">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
