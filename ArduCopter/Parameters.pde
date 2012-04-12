@@ -102,6 +102,7 @@ static const AP_Param::Info var_info[] PROGMEM = {
 	GSCALAR(acro_p, 			"ACRO_P"),
 	GSCALAR(axis_lock_p, 		"AXIS_P"),
 	GSCALAR(axis_enabled, 		"AXIS_ENABLE"),
+	GSCALAR(copter_leds_mode,	"LED_MODE"),
 
 	// PID controller
 	//---------------
