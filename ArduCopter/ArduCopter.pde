@@ -454,6 +454,10 @@ static boolean GPS_light;
 // This is current status for the LED lights state machine
 // setting this value changes the output of the LEDs
 static byte	led_mode = NORMAL_LEDS;
+// Blinking indicates GPS status
+static byte copter_leds_GPS_blink = 0;
+// Blinking indicates battery status
+static byte copter_leds_motor_blink = 0;
 
 ////////////////////////////////////////////////////////////////////////////////
 // GPS variables
@@ -1121,6 +1125,10 @@ static void medium_loop()
 			   USERHOOK_MEDIUMLOOP
 			#endif
 
+			#if COPTER_LEDS == ENABLED
+				update_copter_leds();
+			#endif
+
 			slow_loop();
 			break;
 
@@ -1238,10 +1246,6 @@ static void slow_loop()
 
 			if(g.radio_tuning > 0)
 				tuning();
-
-			#if MOTOR_LEDS == 1
-				update_motor_leds();
-			#endif
 
 			#if USB_MUX_PIN > 0
             check_usb_mux();
