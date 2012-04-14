@@ -319,7 +319,7 @@ namespace ArdupilotMega.GCSViews.ConfigurationView
 
         private void ROL_MAX__Validating(object sender, CancelEventArgs e)
         {
-            if (startup || this.Disposing)
+            if (startup || this.Disposing || !this.Enabled)
                 return;
             int test = 0;
             if (!int.TryParse(((TextBox)sender).Text, out test))
@@ -332,7 +332,7 @@ namespace ArdupilotMega.GCSViews.ConfigurationView
 
         private void PIT_MAX__Validating(object sender, CancelEventArgs e)
         {
-            if (startup || this.Disposing)
+            if (startup || this.Disposing || !this.Enabled)
                 return;
             int test = 0;
             if (!int.TryParse(((TextBox)sender).Text, out test))
@@ -345,7 +345,7 @@ namespace ArdupilotMega.GCSViews.ConfigurationView
 
         private void GYR_GAIN__Validating(object sender, CancelEventArgs e)
         {
-            if (startup || this.Disposing || ((TextBox)sender).Enabled == false)
+            if (startup || this.Disposing || !this.Enabled)
                 return;
             int test = 0;
             if (!int.TryParse(((TextBox)sender).Text, out test))
@@ -484,6 +484,11 @@ namespace ArdupilotMega.GCSViews.ConfigurationView
                 }
                 catch { }
             }
+        }
+
+        private void ConfigTradHeli_FormClosing(object sender, FormClosingEventArgs e)
+        {
+            startup = true;
         }
     }
 }

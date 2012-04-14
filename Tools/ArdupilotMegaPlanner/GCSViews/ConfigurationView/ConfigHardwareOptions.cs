@@ -24,66 +24,52 @@ namespace ArdupilotMega.GCSViews.ConfigurationView
 
         private void BUT_MagCalibration_Click(object sender, EventArgs e)
         {
-            if (DialogResult.Yes == CustomMessageBox.Show("Use live data, or a log\n\nYes for Live data", "Mag Calibration", MessageBoxButtons.YesNo))
+            List<Tuple<float, float, float>> data = new List<Tuple<float, float, float>>();
+
+            byte backupratesens = MainV2.cs.ratesensors;
+
+            MainV2.cs.ratesensors = 10;
+
+            MainV2.comPort.requestDatastream((byte)MAVLink.MAV_DATA_STREAM.RAW_SENSORS, MainV2.cs.ratesensors); // mag captures at 10 hz
+
+            CustomMessageBox.Show("Data will be collected for 30 seconds, Please click ok and move the apm around all axises");
+
+            DateTime deadline = DateTime.Now.AddSeconds(30);
+
+            float oldmx = 0;
+            float oldmy = 0;
+            float oldmz = 0;
+
+            while (deadline > DateTime.Now)
             {
-                List<Tuple<float, float, float>> data = new List<Tuple<float, float, float>>();
+                Application.DoEvents();
 
-                byte backupratesens = MainV2.cs.ratesensors;
-
-                MainV2.cs.ratesensors = 10;
-
-                MainV2.comPort.requestDatastream((byte)MAVLink.MAV_DATA_STREAM.RAW_SENSORS, MainV2.cs.ratesensors); // mag captures at 10 hz
-
-                CustomMessageBox.Show("Data will be collected for 30 seconds, Please click ok and move the apm around all axises");
-
-                DateTime deadline = DateTime.Now.AddSeconds(30);
-
-                float oldmx = 0;
-                float oldmy = 0;
-                float oldmz = 0;
-
-                while (deadline > DateTime.Now)
+                if (oldmx != MainV2.cs.mx &&
+                    oldmy != MainV2.cs.my &&
+                    oldmz != MainV2.cs.mz)
                 {
-                    Application.DoEvents();
+                    data.Add(new Tuple<float, float, float>(
+                        MainV2.cs.mx - (float)MainV2.cs.mag_ofs_x,
+                        MainV2.cs.my - (float)MainV2.cs.mag_ofs_y,
+                        MainV2.cs.mz - (float)MainV2.cs.mag_ofs_z));
 
-                    if (oldmx != MainV2.cs.mx &&
-                        oldmy != MainV2.cs.my &&
-                        oldmz != MainV2.cs.mz)
-                    {
-                        data.Add(new Tuple<float, float, float>(
-                            MainV2.cs.mx - (float)MainV2.cs.mag_ofs_x,
-                            MainV2.cs.my - (float)MainV2.cs.mag_ofs_y,
-                            MainV2.cs.mz - (float)MainV2.cs.mag_ofs_z));
-
-                        oldmx = MainV2.cs.mx;
-                        oldmy = MainV2.cs.my;
-                        oldmz = MainV2.cs.mz;
-                    }
+                    oldmx = MainV2.cs.mx;
+                    oldmy = MainV2.cs.my;
+                    oldmz = MainV2.cs.mz;
                 }
-
-                MainV2.cs.ratesensors = backupratesens;
-
-                if (data.Count < 10)
-                {
-                    CustomMessageBox.Show("Log does not contain enough data");
-                    return;
-                }
-
-                double[] ans = MagCalib.LeastSq(data);
-
-                MagCalib.SaveOffsets(ans);
-
             }
-            else
+
+            MainV2.cs.ratesensors = backupratesens;
+
+            if (data.Count < 10)
             {
-                string minthro = "30";
-                Common.InputBox("Min Throttle", "Use only data above this throttle percent.", ref minthro);
-
-                int ans = 0;
-                int.TryParse(minthro, out ans);
-
-                MagCalib.ProcessLog(ans);
+                CustomMessageBox.Show("Log does not contain enough data");
+                return;
             }
+
+            double[] ans = MagCalib.LeastSq(data);
+
+            MagCalib.SaveOffsets(ans);
         }
 
         private void linkLabel1_LinkClicked(object sender, LinkLabelLinkClickedEventArgs e)
@@ -266,6 +252,17 @@ namespace ArdupilotMega.GCSViews.ConfigurationView
 
 
             startup = false;
+        }
+
+        private void BUT_MagCalibrationLog_Click(object sender, EventArgs e)
+        {
+            string minthro = "30";
+            Common.InputBox("Min Throttle", "Use only data above this throttle percent.", ref minthro);
+
+            int ans = 0;
+            int.TryParse(minthro, out ans);
+
+            MagCalib.ProcessLog(ans);
         }
     }
 }

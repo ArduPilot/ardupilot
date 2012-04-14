@@ -118,34 +118,34 @@
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
   <assembly alias="System.Windows.Forms" name="System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089" />
-  <data name="BUT_MagCalibration.ImeMode" type="System.Windows.Forms.ImeMode, System.Windows.Forms">
+  <data name="BUT_MagCalibrationLive.ImeMode" type="System.Windows.Forms.ImeMode, System.Windows.Forms">
     <value>NoControl</value>
   </data>
   <assembly alias="System.Drawing" name="System.Drawing, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a" />
-  <data name="BUT_MagCalibration.Location" type="System.Drawing.Point, System.Drawing">
-    <value>340, 13</value>
+  <data name="BUT_MagCalibrationLive.Location" type="System.Drawing.Point, System.Drawing">
+    <value>318, 13</value>
   </data>
-  <data name="BUT_MagCalibration.Size" type="System.Drawing.Size, System.Drawing">
-    <value>75, 23</value>
+  <data name="BUT_MagCalibrationLive.Size" type="System.Drawing.Size, System.Drawing">
+    <value>60, 23</value>
   </data>
   <assembly alias="mscorlib" name="mscorlib, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089" />
-  <data name="BUT_MagCalibration.TabIndex" type="System.Int32, mscorlib">
+  <data name="BUT_MagCalibrationLive.TabIndex" type="System.Int32, mscorlib">
     <value>47</value>
   </data>
-  <data name="BUT_MagCalibration.Text" xml:space="preserve">
-    <value>Calibration</value>
+  <data name="BUT_MagCalibrationLive.Text" xml:space="preserve">
+    <value>Live Calibration</value>
   </data>
-  <data name="&gt;&gt;BUT_MagCalibration.Name" xml:space="preserve">
-    <value>BUT_MagCalibration</value>
+  <data name="&gt;&gt;BUT_MagCalibrationLive.Name" xml:space="preserve">
+    <value>BUT_MagCalibrationLive</value>
   </data>
-  <data name="&gt;&gt;BUT_MagCalibration.Type" xml:space="preserve">
-    <value>ArdupilotMega.MyButton, ArdupilotMegaPlanner, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null</value>
+  <data name="&gt;&gt;BUT_MagCalibrationLive.Type" xml:space="preserve">
+    <value>ArdupilotMega.MyButton, ArdupilotMegaPlanner, Version=1.1.4487.21319, Culture=neutral, PublicKeyToken=null</value>
   </data>
-  <data name="&gt;&gt;BUT_MagCalibration.Parent" xml:space="preserve">
+  <data name="&gt;&gt;BUT_MagCalibrationLive.Parent" xml:space="preserve">
     <value>$this</value>
   </data>
-  <data name="&gt;&gt;BUT_MagCalibration.ZOrder" xml:space="preserve">
-    <value>0</value>
+  <data name="&gt;&gt;BUT_MagCalibrationLive.ZOrder" xml:space="preserve">
+    <value>1</value>
   </data>
   <data name="label27.ImeMode" type="System.Windows.Forms.ImeMode, System.Windows.Forms">
     <value>NoControl</value>
@@ -172,7 +172,7 @@
     <value>$this</value>
   </data>
   <data name="&gt;&gt;label27.ZOrder" xml:space="preserve">
-    <value>1</value>
+    <value>2</value>
   </data>
   <data name="CMB_sonartype.Items" xml:space="preserve">
     <value>XL-EZ0</value>
@@ -202,7 +202,7 @@
     <value>$this</value>
   </data>
   <data name="&gt;&gt;CMB_sonartype.ZOrder" xml:space="preserve">
-    <value>2</value>
+    <value>3</value>
   </data>
   <data name="CHK_enableoptflow.ImeMode" type="System.Windows.Forms.ImeMode, System.Windows.Forms">
     <value>NoControl</value>
@@ -229,7 +229,7 @@
     <value>$this</value>
   </data>
   <data name="&gt;&gt;CHK_enableoptflow.ZOrder" xml:space="preserve">
-    <value>3</value>
+    <value>4</value>
   </data>
   <data name="pictureBox2.BackgroundImageLayout" type="System.Windows.Forms.ImageLayout, System.Windows.Forms">
     <value>Zoom</value>
@@ -256,7 +256,7 @@
     <value>$this</value>
   </data>
   <data name="&gt;&gt;pictureBox2.ZOrder" xml:space="preserve">
-    <value>4</value>
+    <value>5</value>
   </data>
   <data name="linkLabelmagdec.AutoSize" type="System.Boolean, mscorlib">
     <value>True</value>
@@ -286,7 +286,7 @@
     <value>$this</value>
   </data>
   <data name="&gt;&gt;linkLabelmagdec.ZOrder" xml:space="preserve">
-    <value>5</value>
+    <value>6</value>
   </data>
   <data name="label100.ImeMode" type="System.Windows.Forms.ImeMode, System.Windows.Forms">
     <value>NoControl</value>
@@ -313,7 +313,7 @@
     <value>$this</value>
   </data>
   <data name="&gt;&gt;label100.ZOrder" xml:space="preserve">
-    <value>6</value>
+    <value>7</value>
   </data>
   <data name="TXT_declination.Location" type="System.Drawing.Point, System.Drawing">
     <value>318, 45</value>
@@ -334,7 +334,7 @@
     <value>$this</value>
   </data>
   <data name="&gt;&gt;TXT_declination.ZOrder" xml:space="preserve">
-    <value>7</value>
+    <value>8</value>
   </data>
   <data name="CHK_enableairspeed.ImeMode" type="System.Windows.Forms.ImeMode, System.Windows.Forms">
     <value>NoControl</value>
@@ -361,7 +361,7 @@
     <value>$this</value>
   </data>
   <data name="&gt;&gt;CHK_enableairspeed.ZOrder" xml:space="preserve">
-    <value>8</value>
+    <value>9</value>
   </data>
   <data name="CHK_enablesonar.ImeMode" type="System.Windows.Forms.ImeMode, System.Windows.Forms">
     <value>NoControl</value>
@@ -388,7 +388,7 @@
     <value>$this</value>
   </data>
   <data name="&gt;&gt;CHK_enablesonar.ZOrder" xml:space="preserve">
-    <value>9</value>
+    <value>10</value>
   </data>
   <data name="CHK_enablecompass.ImeMode" type="System.Windows.Forms.ImeMode, System.Windows.Forms">
     <value>NoControl</value>
@@ -415,7 +415,7 @@
     <value>$this</value>
   </data>
   <data name="&gt;&gt;CHK_enablecompass.ZOrder" xml:space="preserve">
-    <value>10</value>
+    <value>11</value>
   </data>
   <data name="pictureBox4.BackgroundImageLayout" type="System.Windows.Forms.ImageLayout, System.Windows.Forms">
     <value>Zoom</value>
@@ -442,7 +442,7 @@
     <value>$this</value>
   </data>
   <data name="&gt;&gt;pictureBox4.ZOrder" xml:space="preserve">
-    <value>11</value>
+    <value>12</value>
   </data>
   <data name="pictureBox3.BackgroundImageLayout" type="System.Windows.Forms.ImageLayout, System.Windows.Forms">
     <value>Zoom</value>
@@ -469,7 +469,7 @@
     <value>$this</value>
   </data>
   <data name="&gt;&gt;pictureBox3.ZOrder" xml:space="preserve">
-    <value>12</value>
+    <value>13</value>
   </data>
   <data name="pictureBox1.BackgroundImageLayout" type="System.Windows.Forms.ImageLayout, System.Windows.Forms">
     <value>Zoom</value>
@@ -502,7 +502,34 @@
     <value>$this</value>
   </data>
   <data name="&gt;&gt;pictureBox1.ZOrder" xml:space="preserve">
-    <value>13</value>
+    <value>14</value>
+  </data>
+  <data name="BUT_MagCalibrationLog.ImeMode" type="System.Windows.Forms.ImeMode, System.Windows.Forms">
+    <value>NoControl</value>
+  </data>
+  <data name="BUT_MagCalibrationLog.Location" type="System.Drawing.Point, System.Drawing">
+    <value>379, 13</value>
+  </data>
+  <data name="BUT_MagCalibrationLog.Size" type="System.Drawing.Size, System.Drawing">
+    <value>60, 23</value>
+  </data>
+  <data name="BUT_MagCalibrationLog.TabIndex" type="System.Int32, mscorlib">
+    <value>48</value>
+  </data>
+  <data name="BUT_MagCalibrationLog.Text" xml:space="preserve">
+    <value>Log Calibration</value>
+  </data>
+  <data name="&gt;&gt;BUT_MagCalibrationLog.Name" xml:space="preserve">
+    <value>BUT_MagCalibrationLog</value>
+  </data>
+  <data name="&gt;&gt;BUT_MagCalibrationLog.Type" xml:space="preserve">
+    <value>ArdupilotMega.MyButton, ArdupilotMegaPlanner, Version=1.1.4487.21319, Culture=neutral, PublicKeyToken=null</value>
+  </data>
+  <data name="&gt;&gt;BUT_MagCalibrationLog.Parent" xml:space="preserve">
+    <value>$this</value>
+  </data>
+  <data name="&gt;&gt;BUT_MagCalibrationLog.ZOrder" xml:space="preserve">
+    <value>0</value>
   </data>
   <metadata name="$this.Localizable" type="System.Boolean, mscorlib, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089">
     <value>True</value>
@@ -517,6 +544,6 @@
     <value>ConfigHardwareOptions</value>
   </data>
   <data name="&gt;&gt;$this.Type" xml:space="preserve">
-    <value>System.Windows.Forms.UserControl, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+    <value>ArdupilotMega.Controls.BackstageView.BackStageViewContentPanel, ArdupilotMegaPlanner, Version=1.1.4487.21319, Culture=neutral, PublicKeyToken=null</value>
   </data>
 </root>

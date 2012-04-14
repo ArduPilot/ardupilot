@@ -48,15 +48,14 @@
             // 
             // TXT_version
             // 
-            this.TXT_version.AutoSize = true;
             this.TXT_version.BackColor = System.Drawing.Color.Transparent;
             this.TXT_version.Font = new System.Drawing.Font("Century Gothic", 9F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.TXT_version.Location = new System.Drawing.Point(419, 107);
+            this.TXT_version.Location = new System.Drawing.Point(403, 107);
             this.TXT_version.Name = "TXT_version";
-            this.TXT_version.Size = new System.Drawing.Size(57, 16);
+            this.TXT_version.Size = new System.Drawing.Size(155, 25);
             this.TXT_version.TabIndex = 1;
             this.TXT_version.Text = "Version: ";
-            this.TXT_version.TextAlign = System.Drawing.ContentAlignment.TopRight;
+            this.TXT_version.TextAlign = System.Drawing.ContentAlignment.MiddleRight;
             // 
             // Splash
             // 

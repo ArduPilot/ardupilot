@@ -239,7 +239,11 @@ namespace ArdupilotMega.GCSViews
             public float Model_fVel_Body_X; public float Model_fVel_Body_Y; public float Model_fVel_Body_Z;    // m/s    Model velocity in body coordinates
             public float Model_fAngVel_Body_X; public float Model_fAngVel_Body_Y; public float Model_fAngVel_Body_Z; // rad/s  Model angular velocity in body coordinates
             public float Model_fAccel_Body_X; public float Model_fAccel_Body_Y; public float Model_fAccel_Body_Z;  // m/s/s  Model acceleration in body coordinates
-        };
+
+            // Size in bytes of the allocated OSD buffer (size is defined in plugin.txt in .OSD_BUFFER_SIZE)
+            // The buffer size is 4 x .OSD_VIDEO_BUFFER_SIZE (e.g. 4x512x512 = 1048576 bytes), so you should not write outside that memory.
+            public uint OSD_nSizeOfVideoBuffer;
+        }
 
 
         ~Simulation()
@@ -919,7 +923,7 @@ namespace ArdupilotMega.GCSViews
                 //stream.Write(data, 0, receviedbytes);
                 //stream.Close();
             }
-            else if (receviedbytes == 658)
+            else if (receviedbytes == 662 || receviedbytes == 658) // 658 = 3.83   662 = 3.91
             {
                 aeroin = data.ByteArrayToStructure<TDataFromAeroSimRC>(0);
 

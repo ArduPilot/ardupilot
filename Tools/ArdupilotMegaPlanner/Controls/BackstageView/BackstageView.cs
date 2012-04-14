@@ -37,6 +37,11 @@ namespace ArdupilotMega.Controls.BackstageView
             pnlMenu.GradColor = this.BackColor;
         }
 
+        protected override void OnPaint(PaintEventArgs e)
+        {
+            base.OnPaint(e);
+        }
+
 
         public override Color BackColor
         {

@@ -29,7 +29,7 @@
         private void InitializeComponent()
         {
             System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(ConfigHardwareOptions));
-            this.BUT_MagCalibration = new ArdupilotMega.MyButton();
+            this.BUT_MagCalibrationLive = new ArdupilotMega.MyButton();
             this.label27 = new System.Windows.Forms.Label();
             this.CMB_sonartype = new System.Windows.Forms.ComboBox();
             this.CHK_enableoptflow = new System.Windows.Forms.CheckBox();
@@ -43,18 +43,19 @@
             this.pictureBox4 = new System.Windows.Forms.PictureBox();
             this.pictureBox3 = new System.Windows.Forms.PictureBox();
             this.pictureBox1 = new System.Windows.Forms.PictureBox();
+            this.BUT_MagCalibrationLog = new ArdupilotMega.MyButton();
             ((System.ComponentModel.ISupportInitialize)(this.pictureBox2)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.pictureBox4)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.pictureBox3)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.pictureBox1)).BeginInit();
             this.SuspendLayout();
             // 
-            // BUT_MagCalibration
+            // BUT_MagCalibrationLive
             // 
-            resources.ApplyResources(this.BUT_MagCalibration, "BUT_MagCalibration");
-            this.BUT_MagCalibration.Name = "BUT_MagCalibration";
-            this.BUT_MagCalibration.UseVisualStyleBackColor = true;
-            this.BUT_MagCalibration.Click += new System.EventHandler(this.BUT_MagCalibration_Click);
+            resources.ApplyResources(this.BUT_MagCalibrationLive, "BUT_MagCalibrationLive");
+            this.BUT_MagCalibrationLive.Name = "BUT_MagCalibrationLive";
+            this.BUT_MagCalibrationLive.UseVisualStyleBackColor = true;
+            this.BUT_MagCalibrationLive.Click += new System.EventHandler(this.BUT_MagCalibration_Click);
             // 
             // label27
             // 
@@ -153,11 +154,19 @@
             this.pictureBox1.Name = "pictureBox1";
             this.pictureBox1.TabStop = false;
             // 
+            // BUT_MagCalibrationLog
+            // 
+            resources.ApplyResources(this.BUT_MagCalibrationLog, "BUT_MagCalibrationLog");
+            this.BUT_MagCalibrationLog.Name = "BUT_MagCalibrationLog";
+            this.BUT_MagCalibrationLog.UseVisualStyleBackColor = true;
+            this.BUT_MagCalibrationLog.Click += new System.EventHandler(this.BUT_MagCalibrationLog_Click);
+            // 
             // ConfigHardwareOptions
             // 
             resources.ApplyResources(this, "$this");
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.Controls.Add(this.BUT_MagCalibration);
+            this.Controls.Add(this.BUT_MagCalibrationLog);
+            this.Controls.Add(this.BUT_MagCalibrationLive);
             this.Controls.Add(this.label27);
             this.Controls.Add(this.CMB_sonartype);
             this.Controls.Add(this.CHK_enableoptflow);
@@ -184,7 +193,7 @@
 
         #endregion
 
-        private MyButton BUT_MagCalibration;
+        private MyButton BUT_MagCalibrationLive;
         private System.Windows.Forms.Label label27;
         private System.Windows.Forms.ComboBox CMB_sonartype;
         private System.Windows.Forms.CheckBox CHK_enableoptflow;
@@ -198,5 +207,6 @@
         private System.Windows.Forms.PictureBox pictureBox4;
         private System.Windows.Forms.PictureBox pictureBox3;
         private System.Windows.Forms.PictureBox pictureBox1;
+        private MyButton BUT_MagCalibrationLog;
     }
 }
