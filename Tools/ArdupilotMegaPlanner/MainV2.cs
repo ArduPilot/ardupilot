@@ -66,6 +66,8 @@ namespace ArdupilotMega
 
         public static MainV2 instance = null;
 
+        public string georefkml = "";
+
         public enum Firmwares
         {
             ArduPlane,
@@ -1254,6 +1256,18 @@ namespace ArdupilotMega
                                 //break;
                             }
                         }
+                    }
+                    else if (url.Contains("georefnetwork.kml"))
+                    {
+                        string header = "HTTP/1.1 200 OK\r\nContent-Type: application/vnd.google-earth.kml+xml\n\n";
+                        byte[] temp = encoding.GetBytes(header);
+                        stream.Write(temp, 0, temp.Length);
+
+                        byte[] buffer = Encoding.ASCII.GetBytes(georefkml);
+
+                        stream.Write(buffer, 0, buffer.Length);
+
+                        stream.Close();
                     }
                     else if (url.Contains("network.kml"))
                     {

@@ -1039,6 +1039,9 @@
     <None Include="arducopter-xplane.zip">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
+    <None Include="m3u\GeoRefnetworklink.kml">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
     <None Include="m3u\networklink.kml">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>

@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Collections;
 using System.Reflection;
 using System.IO;
 using System.Windows.Forms;
@@ -32,9 +33,16 @@ namespace ArdupilotMega
             InitializeComponent();
         }
 
+        Hashtable filedatecahce = new Hashtable();
+
         DateTime getPhotoTime(string fn)
         {
             DateTime dtaken = DateTime.MinValue;
+
+            if (filedatecahce.ContainsKey(fn))
+            {
+                return (DateTime)filedatecahce[fn];
+            }
 
             try
             {
@@ -59,6 +67,9 @@ namespace ArdupilotMega
                     {
                         dtaken = lcDirectory.GetDate(0x9003);
                         log.InfoFormat("does " + lcDirectory.GetTagName(0x9003) + " " + dtaken);
+
+                        filedatecahce[fn] = dtaken;
+
                         break;
                     }
 
@@ -190,6 +201,8 @@ namespace ArdupilotMega
 
             StreamWriter sw = new StreamWriter(dirWithImages + Path.DirectorySeparatorChar + "location.tel");
             sw.WriteLine("version=1");
+
+            sw.WriteLine("#seconds offset - " + TXT_offsetseconds.Text);
             sw.WriteLine("#longitude and latitude - in degrees");
             sw.WriteLine("#name	utc	longitude	latitude	height");
 
@@ -241,7 +254,7 @@ namespace ArdupilotMega
                             first++;
                         }
 
-                        Console.Write("ph " + dt + " log " + crap + "         \r");
+                        //Console.Write("ph " + dt + " log " + crap + "         \r");
 
                         sw4.WriteLine("ph " + file + " " + dt + " log " + crap);
 
@@ -255,18 +268,25 @@ namespace ArdupilotMega
 
                              tstamp.When = dt;
 
-                            kml.AddFeature(
-                                new Placemark()
-                                {
-                                    Time = tstamp             ,
-                                    Name = Path.GetFileNameWithoutExtension(file),
-                                    Geometry = new SharpKml.Dom.Point()
-                                    {
-                                        Coordinate = new Vector(double.Parse(arr[latpos]), double.Parse(arr[lngpos]), double.Parse(arr[altpos]))
-                                    }
-
-                                }
-                            );
+                             kml.AddFeature(
+                                 new Placemark()
+                                 {
+                                     Time = tstamp,
+                                     Name = Path.GetFileNameWithoutExtension(file),
+                                     Geometry = new SharpKml.Dom.Point()
+                                     {
+                                         Coordinate = new Vector(double.Parse(arr[latpos]), double.Parse(arr[lngpos]), double.Parse(arr[altpos]))
+                                     },
+                                     Description = new Description()
+                                     {
+                                         Text = "<table><tr><td><img src=\"" + Path.GetFileName(file).ToLower() + "\" width=500 /></td></tr></table>"
+                                     },
+                                     StyleSelector = new Style()
+                                     {
+                                         Balloon = new BalloonStyle() { Text = "$[name]<br>$[description]" }
+                                     }
+                                 }
+                             );
 
 
 
@@ -289,12 +309,14 @@ namespace ArdupilotMega
             sw3.Write(serializer.Xml);
             sw3.Close();
 
+            MainV2.instance.georefkml = serializer.Xml;
+
             sw4.Close();
 
             sw2.Close();
             sw.Close();
 
-            CustomMessageBox.Show("Done " + matchs + " matchs");
+            TXT_outputlog.AppendText("Done " + matchs + " matchs");
         }
 
         private void InitializeComponent()
