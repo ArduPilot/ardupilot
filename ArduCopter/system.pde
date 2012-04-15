@@ -484,6 +484,13 @@ static void set_mode(byte mode)
 			do_land();
 			break;
 
+		case APPROACH:
+			yaw_mode 		= LOITER_YAW;
+			roll_pitch_mode = LOITER_RP;
+			throttle_mode 	= THROTTLE_AUTO;
+			do_approach();
+			break;
+
 		case RTL:
 			yaw_mode 		= RTL_YAW;
 			roll_pitch_mode = RTL_RP;
