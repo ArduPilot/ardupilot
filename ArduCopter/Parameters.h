@@ -100,8 +100,9 @@ public:
 	k_param_sonar_type,
 	k_param_super_simple,
 	k_param_rtl_land_enabled,
+	k_param_rtl_approach_alt,
 	k_param_axis_enabled,
-	k_param_copter_leds_mode, //158
+	k_param_copter_leds_mode, //159
 
 	//
 	// 160: Navigation parameters
@@ -210,6 +211,7 @@ public:
 	AP_Float	low_voltage;
 	AP_Int8		super_simple;
 	AP_Int8		rtl_land_enabled;
+	AP_Uint8	rtl_approach_alt;
 	AP_Int8		axis_enabled;
 	AP_Int8		copter_leds_mode;	// Operating mode of LED lighting system
 
@@ -330,6 +332,7 @@ public:
 	low_voltage				(LOW_VOLTAGE),
 	super_simple			(SUPER_SIMPLE),
 	rtl_land_enabled		(RTL_AUTO_LAND),
+	rtl_approach_alt		(0),
 	axis_enabled			(AXIS_LOCK_ENABLED),
 	copter_leds_mode		(0),
 

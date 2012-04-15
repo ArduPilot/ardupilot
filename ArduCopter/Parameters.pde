@@ -33,6 +33,7 @@ static const AP_Param::Info var_info[] PROGMEM = {
 	GSCALAR(low_voltage,	"LOW_VOLT"),
 	GSCALAR(super_simple,	"SUPER_SIMPLE"),
 	GSCALAR(rtl_land_enabled,	"RTL_LAND"),
+	GSCALAR(rtl_approach_alt,	"APPROACH_ALT"),
 
 
 	GSCALAR(waypoint_mode,	"WP_MODE"),
