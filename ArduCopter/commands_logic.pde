@@ -294,23 +294,28 @@ static void do_land()
 
 static void do_approach()
 {
-	wp_control = LOITER_MODE;
+	// Make sure we are not using this to land
+	if(g.rtl_approach_alt > 5){
+		wp_control = LOITER_MODE;
 
-	// just to make sure
-	land_complete		= false;
+		// just to make sure
+		land_complete		= false;
 
-	// landing boost lowers the main throttle to mimmick
-	// the effect of a user's hand
-	landing_boost 		= 0;
+		// landing boost lowers the main throttle to mimmick
+		// the effect of a user's hand
+		landing_boost 		= 0;
 
-	// A counter that goes up if our climb rate stalls out.
-	ground_detector 	= 0;
+		// A counter that goes up if our climb rate stalls out.
+		ground_detector 	= 0;
 
-	// hold at our current location
-	set_next_WP(&current_loc);
+		// hold at our current location
+		set_next_WP(&current_loc);
 
-	// Set target alt based on user setting
-	set_new_altitude(g.rtl_approach_alt * 100);
+		// Set target alt based on user setting
+		set_new_altitude(g.rtl_approach_alt * 100);
+	} else {
+		set_mode(LOITER);
+	}
 }
 
 static void do_loiter_unlimited()
