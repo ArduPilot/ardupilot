@@ -28,6 +28,11 @@ namespace ArdupilotMega.GCSViews.ConfigurationView
             this.backstageView.AddPage(new BackstageView.BackstageViewPage(new ArdupilotMega.Antenna.Tracker(), "Antenna Tracker"));
 
             this.backstageView.ActivatePage(backstageView.Pages[0]);
+
+            if (!MainV2.comPort.BaseStream.IsOpen)
+            {
+                CustomMessageBox.Show("Please connect (click Connect Button) before using setup!!");
+            }
         }
 
         private void Setup_Load(object sender, EventArgs e)
