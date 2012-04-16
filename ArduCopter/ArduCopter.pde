@@ -1814,7 +1814,7 @@ static void update_navigation()
 				wp_control = LOITER_MODE;
 			}
 
-			if(g.rtl_approach_alt > 5){
+			if(g.rtl_approach_alt >= 5){
 				set_mode(APPROACH);
 			}
 			// Kick us out of loiter and begin landing if the auto_land_timer is set
