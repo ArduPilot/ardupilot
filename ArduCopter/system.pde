@@ -160,6 +160,14 @@ static void init_ardupilot()
         Serial.begin(map_baudrate(g.serial3_baud, SERIAL3_BAUD));
     }
 #else
+
+    // if not on USB, init the modem
+    SendDebug("\nModem intialization: ");
+    if (modem.init_modem())
+    	SendDebug("success.\n");
+    else
+    	SendDebug("failed.\n");
+
     // we have a 2nd serial port for telemetry
     Serial3.begin(map_baudrate(g.serial3_baud, SERIAL3_BAUD), 128, 256);
 	gcs3.init(&Serial3);

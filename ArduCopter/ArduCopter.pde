@@ -106,6 +106,8 @@ http://code.google.com/p/ardupilot-mega/downloads/list
 
 #include <AP_Declination.h> // ArduPilot Mega Declination Helper Library
 
+#include <Cellular_Modem.h> // Cellular Modem test library
+
 ////////////////////////////////////////////////////////////////////////////////
 // Serial ports
 ////////////////////////////////////////////////////////////////////////////////
@@ -117,6 +119,9 @@ http://code.google.com/p/ardupilot-mega/downloads/list
 FastSerialPort0(Serial);        // FTDI/console
 FastSerialPort1(Serial1);       // GPS port
 FastSerialPort3(Serial3);       // Telemetry port
+
+// test modem library
+Cellular_Modem modem(&Serial3);
 
 Arduino_Mega_ISR_Registry isr_registry;
 
