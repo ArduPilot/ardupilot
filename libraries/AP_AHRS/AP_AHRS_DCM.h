@@ -69,6 +69,8 @@ private:
 	Vector3f	_omega_P;		// accel Omega Proportional correction
 	Vector3f	_omega_yaw_P;		// yaw Omega Proportional correction
 	Vector3f 	_omega_I;		// Omega Integrator correction
+	Vector3f 	_omega_I_sum;		// summation vector for omegaI
+	float		_omega_I_sum_time;
 	Vector3f 	_omega_integ_corr;	// Partially corrected Gyro_Vector data - used for centrepetal correction
 	Vector3f 	_omega;			// Corrected Gyro_Vector data
 
