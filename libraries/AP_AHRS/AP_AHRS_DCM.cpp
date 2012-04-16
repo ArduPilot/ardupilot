@@ -23,6 +23,12 @@
 // from the GPS and wait for the ground speed to get above GPS_SPEED_MIN
 #define GPS_SPEED_RESET 100
 
+// table of user settable parameters
+const AP_Param::GroupInfo AP_AHRS::var_info[] PROGMEM = {
+    AP_GROUPINFO("YAW_P", 0, AP_AHRS_DCM, _kp_yaw),
+    AP_GROUPEND
+};
+
 // run a full DCM update round
 void
 AP_AHRS_DCM::update(void)
@@ -453,7 +459,7 @@ AP_AHRS_DCM::drift_correction(float deltat)
 	// allow the yaw reference source to affect all 3 components
 	// of _omega_yaw_P as we need to be able to correctly hold a
 	// heading when roll and pitch are non-zero
-	_omega_yaw_P = error * _kp_yaw;
+	_omega_yaw_P = error * _kp_yaw.get();
 
 	// add yaw correction to integrator correction vector, but
 	// only for the z gyro. We rely on the accelerometers for x
