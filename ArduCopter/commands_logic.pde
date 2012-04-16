@@ -294,8 +294,9 @@ static void do_land()
 
 static void do_approach()
 {
-	// Make sure we are not using this to land
-	if(g.rtl_approach_alt >= 5){
+	uint16_t target_alt = (uint16_t)(constrain((float)g.rtl_approach_alt, 1, 10) * 100);
+	// Make sure we are not using this to land and that we are currently above the target approach alt
+	if(g.rtl_approach_alt >= 1 && current_loc.alt > target_alt){
 		wp_control = LOITER_MODE;
 
 		// just to make sure
@@ -312,7 +313,7 @@ static void do_approach()
 		set_next_WP(&current_loc);
 
 		// Set target alt based on user setting
-		set_new_altitude(g.rtl_approach_alt * 100);
+		set_new_altitude(target_alt);
 	} else {
 		set_mode(LOITER);
 	}
