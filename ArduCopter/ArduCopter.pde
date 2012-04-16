@@ -852,8 +852,8 @@ static uint32_t         nav_loopTimer;
 static float 			dTnav;
 // Counters for branching from 4 minute control loop used to save Compass offsets
 static int16_t			superslow_loopCounter;
-// RTL Autoland Timer
-static uint32_t 		auto_land_timer;
+// Loiter timer - Records how long we have been in loiter
+static uint32_t 		loiter_timer;
 // disarms the copter while in Acro or Stabilize mode after 30 seconds of no flight
 static uint8_t 			auto_disarming_counter;
 
@@ -1766,12 +1766,12 @@ static void update_navigation()
 		case RTL:
 			// We have reached Home
 			if((wp_distance <= g.waypoint_radius) || check_missed_wp()){
-				// if auto_land_timer value > 0, we are set to trigger auto_land after 20 seconds
+				// if loiter_timer value > 0, we are set to trigger auto_land or approach after 20 seconds
 				set_mode(LOITER);
-				if(g.rtl_land_enabled || failsafe)
-					auto_land_timer = millis();
+				if(g.rtl_approach_alt >= 1 || g.rtl_land_enabled || failsafe)
+					loiter_timer = millis();
 				else
-					auto_land_timer = 0;
+					loiter_timer = 0;
 				break;
 			}
 
@@ -1814,13 +1814,16 @@ static void update_navigation()
 				wp_control = LOITER_MODE;
 			}
 
-			if(g.rtl_approach_alt >= 5){
+			// If we have a safe approach alt set and we have been loitering for 20 seconds, begin approach
+			if(g.rtl_approach_alt >= 1 && (millis() - loiter_timer) > 20000){
+				// just to make sure we clear the timer
+				loiter_timer = 0;
 				set_mode(APPROACH);
 			}
-			// Kick us out of loiter and begin landing if the auto_land_timer is set
-			else if(auto_land_timer != 0 && (millis() - auto_land_timer) > (uint32_t)g.auto_land_timeout.get()){
+			// Kick us out of loiter and begin landing if the loiter_timer is set
+			else if(loiter_timer != 0 && (millis() - loiter_timer) > (uint32_t)g.auto_land_timeout.get()){
 				// just to make sure we clear the timer
-				auto_land_timer = 0;
+				loiter_timer = 0;
 				set_mode(LAND);
 			}
 
