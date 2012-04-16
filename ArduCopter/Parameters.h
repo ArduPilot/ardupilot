@@ -102,6 +102,7 @@ public:
 	k_param_rtl_land_enabled,
 	k_param_axis_enabled,
 	k_param_copter_leds_mode, //158
+    k_param_ahrs,  // AHRS group
 
 	//
 	// 160: Navigation parameters
