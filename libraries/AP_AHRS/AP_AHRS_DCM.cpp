@@ -328,16 +328,8 @@ AP_AHRS_DCM::drift_correction(float deltat)
 	// the _omega_I is the long term accumulated gyro
 	// error. This determines how much gyro drift we can
 	// handle.
-	Vector3f omega_I_delta = error * (_ki_roll_pitch * deltat);
-
-	// limit the slope of omega_I on each axis to
-	// the maximum drift rate
-	float drift_limit = _gyro_drift_limit * deltat;
-	omega_I_delta.x = constrain(omega_I_delta.x, -drift_limit, drift_limit);
-	omega_I_delta.y = constrain(omega_I_delta.y, -drift_limit, drift_limit);
-	omega_I_delta.z = constrain(omega_I_delta.z, -drift_limit, drift_limit);
-
-	_omega_I += omega_I_delta;
+	_omega_I_sum += error * (_ki_roll_pitch * deltat);
+	_omega_I_sum_time += deltat;
 
 	// these sums support the reporting of the DCM state via MAVLink
 	_error_rp_sum += error_norm;
@@ -458,17 +450,33 @@ AP_AHRS_DCM::drift_correction(float deltat)
 	// x/y drift correction is too inaccurate, and can lead to
 	// incorrect builups in the x/y drift. We rely on the
 	// accelerometers to get the x/y components right
-	float omega_Iz_delta = error.z * (_ki_yaw * yaw_deltat);
-
-	// limit the slope of omega_I.z to the maximum gyro drift rate
-	drift_limit = _gyro_drift_limit * yaw_deltat;
-	omega_Iz_delta = constrain(omega_Iz_delta, -drift_limit, drift_limit);
-
-	_omega_I.z += omega_Iz_delta;
+	_omega_I_sum.z += error.z * (_ki_yaw * yaw_deltat);
 
 	// we keep the sum of yaw error for reporting via MAVLink.
 	_error_yaw_sum += error_course;
 	_error_yaw_count++;
+
+	if (_omega_I_sum_time > 10) {
+		// every 10 seconds we apply the accumulated
+		// _omega_I_sum changes to _omega_I. We do this to
+		// prevent short term feedback between the P and I
+		// terms of the controller. The _omega_I vector is
+		// supposed to refect long term gyro drift, but with
+		// high noise it can start to build up due to short
+		// term interactions. By summing it over 10 seconds we
+		// prevent the short term interactions and can apply
+		// the slope limit more accurately
+		float drift_limit = _gyro_drift_limit * _omega_I_sum_time;
+		_omega_I_sum.x = constrain(_omega_I_sum.x, -drift_limit, drift_limit);
+		_omega_I_sum.y = constrain(_omega_I_sum.y, -drift_limit, drift_limit);
+		_omega_I_sum.z = constrain(_omega_I_sum.z, -drift_limit, drift_limit);
+
+		_omega_I += _omega_I_sum;
+
+		// zero the sum
+		_omega_I_sum.zero();
+		_omega_I_sum_time = 0;
+	}
 }
 
 
