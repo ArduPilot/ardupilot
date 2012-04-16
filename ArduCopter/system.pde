@@ -405,7 +405,7 @@ static void set_mode(byte mode)
 	slow_wp = false;
 
 	// do not auto_land if we are leaving RTL
-	auto_land_timer = 0;
+	loiter_timer = 0;
 
 	// if we change modes, we must clear landed flag
 	land_complete 	= false;
