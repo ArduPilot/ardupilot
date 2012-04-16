@@ -32,6 +32,9 @@ public:
 	float get_error_rp(void) { return 0; }
 	float get_error_yaw(void) { return 0; }
 
+	// settable parameters
+	AP_Float	_kp_yaw;
+
 private:
 	Vector3f 	_omega;
 };

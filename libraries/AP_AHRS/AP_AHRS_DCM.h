@@ -17,7 +17,7 @@ public:
 	AP_AHRS_DCM(IMU *imu, GPS *&gps) : AP_AHRS(imu, gps)
 	{
 		_kp_roll_pitch = 0.13;
-		_kp_yaw        = 0.4;
+		_kp_yaw.set(0.4);
 		_dcm_matrix(Vector3f(1, 0, 0),
 			    Vector3f(0, 1, 0),
 			    Vector3f(0, 0, 1));
@@ -42,10 +42,12 @@ public:
 	float		get_error_rp(void);
 	float		get_error_yaw(void);
 
+	// settable parameters
+	AP_Float	_kp_yaw;
+
 private:
 	float		_kp_roll_pitch;
 	float		_ki_roll_pitch;
-	float		_kp_yaw;
 	float		_ki_yaw;
 	bool		_have_initial_yaw;
 

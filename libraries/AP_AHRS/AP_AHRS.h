@@ -82,6 +82,8 @@ public:
 	// attitude
 	virtual Matrix3f get_dcm_matrix(void) = 0;
 
+	static const struct AP_Param::GroupInfo var_info[];
+
 protected:
 	// pointer to compass object, if enabled
 	Compass 	* _compass;

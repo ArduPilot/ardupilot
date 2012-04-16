@@ -2177,6 +2177,10 @@ static void tuning(){
 			g.pid_optflow_roll.kD(tuning_value);
 			g.pid_optflow_pitch.kD(tuning_value);
 			break;
+
+		case CH6_AHRS_YAW_KP:
+			ahrs._kp_yaw.set(tuning_value);
+			break;
 	}
 }
 
