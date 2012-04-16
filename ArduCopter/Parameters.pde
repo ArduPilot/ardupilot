@@ -136,12 +136,13 @@ static const AP_Param::Info var_info[] PROGMEM = {
 	GOBJECT(compass,        "COMPASS_", Compass),
 	GOBJECT(gcs0,			"SR0_",     GCS_MAVLINK),
 	GOBJECT(gcs3,			"SR3_",     GCS_MAVLINK),
-	GOBJECT(imu,			"IMU_",     IMU)
+	GOBJECT(imu,			"IMU_",     IMU),
+	GOBJECT(ahrs,			"AHRS_",    AP_AHRS),
 
 	#if FRAME_CONFIG ==	HELI_FRAME
-	,GOBJECT(motors,	"H_",		AP_MotorsHeli)
+	GOBJECT(motors,	"H_",		AP_MotorsHeli),
 	#else
-	,GOBJECT(motors,	"MOT_",		AP_Motors)
+	GOBJECT(motors,	"MOT_",		AP_Motors),
 	#endif
 };
 

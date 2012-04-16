@@ -100,9 +100,9 @@ public:
 	k_param_sonar_type,
 	k_param_super_simple,
 	k_param_rtl_land_enabled,
-	k_param_rtl_approach_alt,
 	k_param_axis_enabled,
-	k_param_copter_leds_mode, //159
+	k_param_copter_leds_mode, //158
+    k_param_ahrs,  // AHRS group
 
 	//
 	// 160: Navigation parameters
@@ -110,6 +110,7 @@ public:
 	k_param_RTL_altitude = 160,
 	k_param_crosstrack_gain,
 	k_param_auto_land_timeout,
+	k_param_rtl_approach_alt,
 
 
 	//
