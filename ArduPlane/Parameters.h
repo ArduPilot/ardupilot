@@ -84,6 +84,7 @@ public:
         k_param_airspeed_offset,
 		k_param_sonar_enabled,
 		k_param_airspeed_enabled,
+        k_param_ahrs,  // AHRS group
 
         //
         // 150: Navigation parameters
