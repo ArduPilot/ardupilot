@@ -1814,8 +1814,8 @@ static void update_navigation()
 				wp_control = LOITER_MODE;
 			}
 
-			// If we have a safe approach alt set and we have been loitering for 20 seconds, begin approach
-			if(g.rtl_approach_alt >= 1 && (millis() - loiter_timer) > 20000){
+			// If we have a safe approach alt set and we have been loitering for 20 seconds(default), begin approach
+			if(g.rtl_approach_alt >= 1 && (millis() - loiter_timer) > (RTL_APPROACH_DELAY * 1000)){
 				// just to make sure we clear the timer
 				loiter_timer = 0;
 				set_mode(APPROACH);
