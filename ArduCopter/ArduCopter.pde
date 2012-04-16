@@ -1814,17 +1814,19 @@ static void update_navigation()
 				wp_control = LOITER_MODE;
 			}
 
-			// If we have a safe approach alt set and we have been loitering for 20 seconds(default), begin approach
-			if(g.rtl_approach_alt >= 1 && (millis() - loiter_timer) > (RTL_APPROACH_DELAY * 1000)){
-				// just to make sure we clear the timer
-				loiter_timer = 0;
-				set_mode(APPROACH);
-			}
-			// Kick us out of loiter and begin landing if the loiter_timer is set
-			else if(loiter_timer != 0 && (millis() - loiter_timer) > (uint32_t)g.auto_land_timeout.get()){
-				// just to make sure we clear the timer
-				loiter_timer = 0;
-				set_mode(LAND);
+			if(loiter_timer != 0){
+				// If we have a safe approach alt set and we have been loitering for 20 seconds(default), begin approach
+				if(g.rtl_approach_alt >= 1 && (millis() - loiter_timer) > (RTL_APPROACH_DELAY * 1000)){
+					// just to make sure we clear the timer
+					loiter_timer = 0;
+					set_mode(APPROACH);
+				}
+				// Kick us out of loiter and begin landing if the loiter_timer is set
+				else if((millis() - loiter_timer) > (uint32_t)g.auto_land_timeout.get()){
+					// just to make sure we clear the timer
+					loiter_timer = 0;
+					set_mode(LAND);
+				}
 			}
 
 			// calculates the desired Roll and Pitch
