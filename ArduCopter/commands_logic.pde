@@ -294,7 +294,12 @@ static void do_land()
 
 static void do_approach()
 {
-	uint16_t target_alt = (uint16_t)(constrain((float)g.rtl_approach_alt, 1, 10) * 100);
+	// Set a contrained value to EEPROM
+	g.rtl_approach_alt.set(constrain((float)g.rtl_approach_alt, 1.0, 10.0));
+	
+	// Get the target_alt in cm
+	uint16_t target_alt = (uint16_t)(g.rtl_approach_alt * 100);
+
 	// Make sure we are not using this to land and that we are currently above the target approach alt
 	if(g.rtl_approach_alt >= 1 && current_loc.alt > target_alt){
 		wp_control = LOITER_MODE;
