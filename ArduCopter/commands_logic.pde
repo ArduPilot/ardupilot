@@ -295,7 +295,7 @@ static void do_land()
 static void do_approach()
 {
 	// Make sure we are not using this to land
-	if(g.rtl_approach_alt > 5){
+	if(g.rtl_approach_alt >= 5){
 		wp_control = LOITER_MODE;
 
 		// just to make sure
