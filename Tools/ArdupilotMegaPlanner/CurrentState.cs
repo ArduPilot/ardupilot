@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Reflection;
 using System.Text;
 using System.ComponentModel;
+using ArdupilotMega.Utilities;
 using log4net;
 
 namespace ArdupilotMega
@@ -503,34 +504,37 @@ namespace ArdupilotMega
                             }
                             break;
                         case (byte)(100 + Common.ac2modes.STABILIZE):
-                            mode = "Stabilize";
+                            mode = EnumTranslator.GetDisplayText(Common.ac2modes.STABILIZE);
                             break;
                         case (byte)(100 + Common.ac2modes.ACRO):
-                            mode = "Acro";
+                            mode = EnumTranslator.GetDisplayText(Common.ac2modes.ACRO);
                             break;
                         case (byte)(100 + Common.ac2modes.ALT_HOLD):
-                            mode = "Alt Hold";
+                            mode = EnumTranslator.GetDisplayText(Common.ac2modes.ALT_HOLD);
                             break;
                         case (byte)(100 + Common.ac2modes.AUTO):
-                            mode = "Auto";
+                            mode = EnumTranslator.GetDisplayText(Common.ac2modes.AUTO);
                             break;
                         case (byte)(100 + Common.ac2modes.GUIDED):
-                            mode = "Guided";
+                            mode = EnumTranslator.GetDisplayText(Common.ac2modes.GUIDED);
                             break;
                         case (byte)(100 + Common.ac2modes.LOITER):
-                            mode = "Loiter";
+                            mode = EnumTranslator.GetDisplayText(Common.ac2modes.LOITER);
                             break;
                         case (byte)(100 + Common.ac2modes.RTL):
-                            mode = "RTL";
+                            mode = EnumTranslator.GetDisplayText(Common.ac2modes.RTL);
                             break;
                         case (byte)(100 + Common.ac2modes.CIRCLE):
-                            mode = "Circle";
+                            mode = EnumTranslator.GetDisplayText(Common.ac2modes.CIRCLE);
                             break;
                         case (byte)(100 + Common.ac2modes.LAND):
-                            mode = "Land";
+                            mode = EnumTranslator.GetDisplayText(Common.ac2modes.LAND);
+                            break;
+                        case (byte)(100 + Common.ac2modes.APPROACH):
+                            mode = EnumTranslator.GetDisplayText(Common.ac2modes.APPROACH);
                             break;
                         case (byte)(100 + Common.ac2modes.POSITION):
-                            mode = "Position";
+                            mode = EnumTranslator.GetDisplayText(Common.ac2modes.POSITION);
                             break;
                         case (byte)ArdupilotMega.MAVLink.MAV_MODE.MAV_MODE_MANUAL:
                             mode = "Manual";

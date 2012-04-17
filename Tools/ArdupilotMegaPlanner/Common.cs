@@ -8,6 +8,7 @@ using System.Windows.Forms;
 using AGaugeApp;
 using System.IO.Ports;
 using System.Threading;
+using ArdupilotMega.Attributes;
 using GMap.NET;
 using GMap.NET.WindowsForms;
 using GMap.NET.WindowsForms.Markers;
@@ -319,28 +320,48 @@ namespace ArdupilotMega
 
         public enum ac2modes
         {
+            [DisplayText("Stabilize")]
             STABILIZE = 0,			// hold level position
+            [DisplayText("Acro")]
             ACRO = 1,			// rate control
+            [DisplayText("Altitude Hold")]
             ALT_HOLD = 2,		// AUTO control
+            [DisplayText("Auto")]
             AUTO = 3,			// AUTO control
+            [DisplayText("Guided")]
             GUIDED = 4,		// AUTO control
+            [DisplayText("Loiter")]
             LOITER = 5,		// Hold a single location
+            [DisplayText("Return to Launch")]
             RTL = 6,				// AUTO control
+            [DisplayText("Circle")]
             CIRCLE = 7,
+            [DisplayText("Position Hold")]
             POSITION = 8,
+            [DisplayText("Land")]
             LAND = 9,				// AUTO control
-            OF_LOITER = 10
+            [Private(true)]
+            APPROACH = 10,
+            OF_LOITER = 11
         }
 
         public enum ac2ch7modes
         {
+            [DisplayText("Do Nothing")]
             CH7_DO_NOTHING = 0,
+            [DisplayText("Set Hover")]
             CH7_SET_HOVER = 1,
+            [DisplayText("Flip")]
             CH7_FLIP = 2,
+            [DisplayText("Simple Mode")]
             CH7_SIMPLE_MODE = 3,
+            [DisplayText("Return to Launch")]
             CH7_RTL = 4,
+            [DisplayText("Automatic Trim")]
             CH7_AUTO_TRIM = 5,
+            [DisplayText("ADC Filter")]
             CH7_ADC_FILTER = 6,
+            [DisplayText("Save Waypoint")]
             CH7_SAVE_WP = 7
         }
 
