@@ -15,9 +15,8 @@ option(BUILD_2560 "Build 2560 firmware?" ON)
 option(BUILD_1280 "Build 1280 firmware?" OFF)
 
 if (NOT DEFINED PORT)
-	message(WARNING "please define the upload port (for example: cmake
-	-DPORT=/dev/ttyUSB0, assuming /dev/ttyUSB0")
-	set(PORT "/dev/ttyUSB0")
+	message(WARNING "please define the upload port (for example: cmake -DPORT=/dev/ttyACM0, assuming /dev/ttyACM0")
+	set(PORT "/dev/ttyACM0")
 endif()
 
 # macro path
