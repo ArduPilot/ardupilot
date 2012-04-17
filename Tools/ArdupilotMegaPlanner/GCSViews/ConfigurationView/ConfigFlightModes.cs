@@ -7,6 +7,7 @@ using System.Linq;
 using System.Text;
 using System.Windows.Forms;
 using ArdupilotMega.Controls.BackstageView;
+using ArdupilotMega.Utilities;
 
 namespace ArdupilotMega.GCSViews.ConfigurationView
 {
@@ -165,12 +166,31 @@ namespace ArdupilotMega.GCSViews.ConfigurationView
                 CMB_fmode5.Items.Clear();
                 CMB_fmode6.Items.Clear();
 
-                CMB_fmode1.Items.AddRange(Enum.GetNames(typeof(Common.apmmodes)));
-                CMB_fmode2.Items.AddRange(Enum.GetNames(typeof(Common.apmmodes)));
-                CMB_fmode3.Items.AddRange(Enum.GetNames(typeof(Common.apmmodes)));
-                CMB_fmode4.Items.AddRange(Enum.GetNames(typeof(Common.apmmodes)));
-                CMB_fmode5.Items.AddRange(Enum.GetNames(typeof(Common.apmmodes)));
-                CMB_fmode6.Items.AddRange(Enum.GetNames(typeof(Common.apmmodes)));
+                var flightModes = EnumTranslator.Translate<Common.apmmodes>();
+
+                CMB_fmode1.DataSource = flightModes;
+                CMB_fmode1.ValueMember = "Value";
+                CMB_fmode1.DisplayMember = "Value";
+
+                CMB_fmode2.DataSource = flightModes;
+                CMB_fmode2.ValueMember = "Value";
+                CMB_fmode2.DisplayMember = "Value";
+
+                CMB_fmode3.DataSource = flightModes;
+                CMB_fmode3.ValueMember = "Value";
+                CMB_fmode3.DisplayMember = "Value";
+
+                CMB_fmode4.DataSource = flightModes;
+                CMB_fmode4.ValueMember = "Value";
+                CMB_fmode4.DisplayMember = "Value";
+
+                CMB_fmode5.DataSource = flightModes;
+                CMB_fmode5.ValueMember = "Value";
+                CMB_fmode5.DisplayMember = "Value";
+
+                CMB_fmode6.DataSource = flightModes;
+                CMB_fmode6.ValueMember = "Value";
+                CMB_fmode6.DisplayMember = "Value";
 
                 try
                 {
@@ -193,12 +213,31 @@ namespace ArdupilotMega.GCSViews.ConfigurationView
                 CMB_fmode5.Items.Clear();
                 CMB_fmode6.Items.Clear();
 
-                CMB_fmode1.Items.AddRange(Enum.GetNames(typeof(Common.ac2modes)));
-                CMB_fmode2.Items.AddRange(Enum.GetNames(typeof(Common.ac2modes)));
-                CMB_fmode3.Items.AddRange(Enum.GetNames(typeof(Common.ac2modes)));
-                CMB_fmode4.Items.AddRange(Enum.GetNames(typeof(Common.ac2modes)));
-                CMB_fmode5.Items.AddRange(Enum.GetNames(typeof(Common.ac2modes)));
-                CMB_fmode6.Items.AddRange(Enum.GetNames(typeof(Common.ac2modes)));
+                var flightModes = EnumTranslator.Translate<Common.apmmodes>();
+
+                CMB_fmode1.DataSource = flightModes;
+                CMB_fmode1.ValueMember = "Value";
+                CMB_fmode1.DisplayMember = "Value";
+
+                CMB_fmode2.DataSource = flightModes;
+                CMB_fmode2.ValueMember = "Value";
+                CMB_fmode2.DisplayMember = "Value";
+
+                CMB_fmode3.DataSource = flightModes;
+                CMB_fmode3.ValueMember = "Value";
+                CMB_fmode3.DisplayMember = "Value";
+
+                CMB_fmode4.DataSource = flightModes;
+                CMB_fmode4.ValueMember = "Value";
+                CMB_fmode4.DisplayMember = "Value";
+
+                CMB_fmode5.DataSource = flightModes;
+                CMB_fmode5.ValueMember = "Value";
+                CMB_fmode5.DisplayMember = "Value";
+
+                CMB_fmode6.DataSource = flightModes;
+                CMB_fmode6.ValueMember = "Value";
+                CMB_fmode6.DisplayMember = "Value";
 
                 try
                 {

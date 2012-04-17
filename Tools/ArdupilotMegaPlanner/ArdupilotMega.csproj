@@ -222,6 +222,8 @@
     <Compile Include="Antenna\Tracker.Designer.cs">
       <DependentUpon>Tracker.cs</DependentUpon>
     </Compile>
+    <Compile Include="Attributes\DisplayTextAttribute.cs" />
+    <Compile Include="Attributes\PrivateAttribute.cs" />
     <Compile Include="CodeGen.cs" />
     <Compile Include="Controls\BackstageView\BackstageView.cs">
       <SubType>UserControl</SubType>
@@ -540,6 +542,7 @@
     <Compile Include="Radio\Uploader.cs" />
     <Compile Include="LangUtility.cs" />
     <Compile Include="ThemeManager.cs" />
+    <Compile Include="Utilities\EnumTranslator.cs" />
     <EmbeddedResource Include="Antenna\Tracker.resx">
       <DependentUpon>Tracker.cs</DependentUpon>
     </EmbeddedResource>
