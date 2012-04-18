@@ -9,6 +9,8 @@ using com.drew.metadata;
 using log4net;
 using SharpKml.Base;
 using SharpKml.Dom;
+using System.Drawing;
+using System.Drawing.Imaging;
 
 namespace ArdupilotMega
 {
@@ -28,12 +30,14 @@ namespace ArdupilotMega
         private MyButton BUT_estoffset;
 
         int latpos = 4, lngpos = 5, altpos = 7;
+        private MyButton BUT_Geotagimages;
 
         internal Georefimage() {
             InitializeComponent();
         }
 
         Hashtable filedatecahce = new Hashtable();
+        Hashtable photocoords = new Hashtable();
 
         DateTime getPhotoTime(string fn)
         {
@@ -183,6 +187,8 @@ namespace ArdupilotMega
 
             DateTime startTime = DateTime.MinValue;
 
+            photocoords = new Hashtable();
+
             //logFile = @"C:\Users\hog\Pictures\farm 1-10-2011\100SSCAM\2011-10-01 11-48 1.log";
 
             List<string[]> list = readLog(logFile);
@@ -211,7 +217,7 @@ namespace ArdupilotMega
 
             foreach (string file in files)
             {
-                if (file.ToLower().EndsWith(".jpg"))
+                if (file.ToLower().EndsWith(".jpg") && !file.ToLower().Contains("_geotag"))
                 {
                     DateTime dt = getPhotoTime(file);
 
@@ -234,6 +240,7 @@ namespace ArdupilotMega
                     }
 
                     TXT_outputlog.AppendText("Photo  " + Path.GetFileNameWithoutExtension(file) + " time  " + dt + "\r\n");
+                    Application.DoEvents();
 
                     foreach (string[] arr in list)
                     {
@@ -288,6 +295,7 @@ namespace ArdupilotMega
                                  }
                              );
 
+                             photocoords[file] = new double[] { double.Parse(arr[latpos]), double.Parse(arr[lngpos]), double.Parse(arr[altpos]) };
 
 
                             sw2.WriteLine(Path.GetFileNameWithoutExtension(file) + " " + arr[lngpos] + " " + arr[latpos] + " " + arr[altpos]);
@@ -332,6 +340,7 @@ namespace ArdupilotMega
             this.TXT_outputlog = new System.Windows.Forms.TextBox();
             this.label1 = new System.Windows.Forms.Label();
             this.BUT_estoffset = new ArdupilotMega.MyButton();
+            this.BUT_Geotagimages = new ArdupilotMega.MyButton();
             this.SuspendLayout();
             // 
             // openFileDialog1
@@ -424,9 +433,21 @@ namespace ArdupilotMega
             this.BUT_estoffset.UseVisualStyleBackColor = true;
             this.BUT_estoffset.Click += new System.EventHandler(this.BUT_estoffset_Click);
             // 
+            // BUT_Geotagimages
+            // 
+            this.BUT_Geotagimages.Enabled = false;
+            this.BUT_Geotagimages.Location = new System.Drawing.Point(366, 115);
+            this.BUT_Geotagimages.Name = "BUT_Geotagimages";
+            this.BUT_Geotagimages.Size = new System.Drawing.Size(75, 23);
+            this.BUT_Geotagimages.TabIndex = 9;
+            this.BUT_Geotagimages.Text = "GeoTag Images";
+            this.BUT_Geotagimages.UseVisualStyleBackColor = true;
+            this.BUT_Geotagimages.Click += new System.EventHandler(this.BUT_Geotagimages_Click);
+            // 
             // Georefimage
             // 
             this.ClientSize = new System.Drawing.Size(453, 299);
+            this.Controls.Add(this.BUT_Geotagimages);
             this.Controls.Add(this.BUT_estoffset);
             this.Controls.Add(this.label1);
             this.Controls.Add(this.TXT_outputlog);
@@ -480,11 +501,151 @@ namespace ArdupilotMega
             }
             catch { }
             BUT_doit.Enabled = true;
+            BUT_Geotagimages.Enabled = true;
         }
 
         private void BUT_estoffset_Click(object sender, EventArgs e)
         {
             dowork(TXT_logfile.Text, TXT_jpgdir.Text, 0, true);
+        }
+
+        private void BUT_Geotagimages_Click(object sender, EventArgs e)
+        {
+
+            foreach (string file in photocoords.Keys)
+            {
+                WriteCoordinatesToImage(file, ((double[])photocoords[file])[0], ((double[])photocoords[file])[1], ((double[])photocoords[file])[2]);
+            }
+
+        }
+
+        byte[] coordtobytearray(double coordin)
+        {
+            double coord = Math.Abs(coordin);
+
+            byte[] output = new byte[sizeof(double) * 3];
+
+            int d = (int)coord;
+            int m = (int)((coord - d) * 60);
+            double s = ((((coord - d) * 60) - m) * 60);
+            /*
+21 00 00 00 01 00 00 00--> 33/1
+18 00 00 00 01 00 00 00--> 24/1
+06 02 00 00 0A 00 00 00--> 518/10
+*/
+
+            Array.Copy(BitConverter.GetBytes((uint)d), 0, output, 0, sizeof(uint));
+            Array.Copy(BitConverter.GetBytes((uint)1), 0, output, 4, sizeof(uint));
+            Array.Copy(BitConverter.GetBytes((uint)m), 0, output, 8, sizeof(uint));
+            Array.Copy(BitConverter.GetBytes((uint)1), 0, output, 12, sizeof(uint));
+            Array.Copy(BitConverter.GetBytes((uint)(s * 10)), 0, output, 16, sizeof(uint));
+            Array.Copy(BitConverter.GetBytes((uint)10), 0, output, 20, sizeof(uint));
+
+            return output;
+        }
+
+        void WriteCoordinatesToImage(string Filename, double dLat, double dLong, double alt)
+        {
+            using (MemoryStream ms = new MemoryStream(File.ReadAllBytes(Filename)))
+            {
+                TXT_outputlog.AppendText("GeoTagging "+Filename + "\n");
+                Application.DoEvents();
+
+                using (Image Pic = Image.FromStream(ms))
+                {
+                    PropertyItem[] pi = Pic.PropertyItems;
+
+                    pi[0].Id = 0x0004;
+                    pi[0].Type = 5;
+                    pi[0].Len = sizeof(ulong) * 3;
+                    pi[0].Value = coordtobytearray(dLong);
+                    Pic.SetPropertyItem(pi[0]);
+
+                    pi[0].Id = 0x0002;
+                    pi[0].Type = 5;
+                    pi[0].Len = sizeof(ulong) * 3;
+                    pi[0].Value = coordtobytearray(dLat);
+                    Pic.SetPropertyItem(pi[0]);
+
+                    pi[0].Id = 0x0006;
+                    pi[0].Type = 5;
+                    pi[0].Len = 8;
+                    pi[0].Value = new Rational(alt).GetBytes();
+                    Pic.SetPropertyItem(pi[0]);
+
+                    pi[0].Id = 1;
+                    pi[0].Len = 2;
+                    pi[0].Type = 2;
+                    if (dLat < 0)
+                    {
+                        pi[0].Value = new byte[] { (byte)'S', 0 };
+                    }
+                    else
+                    {
+                        pi[0].Value = new byte[] { (byte)'N', 0 };
+                    }
+                    Pic.SetPropertyItem(pi[0]);
+
+                    pi[0].Id = 3;
+                    pi[0].Len = 2;
+                    pi[0].Type = 2;
+                    if (dLong < 0)
+                    {
+                        pi[0].Value = new byte[] { (byte)'W', 0 };
+                    }
+                    else
+                    {
+                        pi[0].Value = new byte[] { (byte)'E', 0 };
+                    }
+                    Pic.SetPropertyItem(pi[0]);
+
+
+
+                    string outputfilename = Path.GetDirectoryName(Filename) + Path.DirectorySeparatorChar + Path.GetFileNameWithoutExtension(Filename) + "_geotag" + Path.GetExtension(Filename);
+
+                    File.Delete(outputfilename);
+
+                    Pic.Save(outputfilename);
+                }
+            }
+        }
+ 
+    }
+
+    public class Rational
+    {
+        uint dem = 0;
+        uint num = 0;
+
+        public Rational(double input)
+        {
+            Value = input;
+        }
+
+        public byte[] GetBytes()
+        {
+            byte[] answer = new byte[8];
+
+            Array.Copy(BitConverter.GetBytes((uint)num), 0, answer, 0, sizeof(uint));
+            Array.Copy(BitConverter.GetBytes((uint)dem), 0, answer, 4, sizeof(uint));
+
+            return answer;
+        }
+
+        public double Value { 
+            get { 
+                return num / dem;
+            } 
+            set {
+                if ((value % 1.0) != 0)
+                {
+                    dem = 100; num = (uint)(value * dem);
+                }
+                else
+                {
+                    dem = 1; num = (uint)(value);
+                }
+            } 
         }
     }
 }
