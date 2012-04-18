@@ -64,12 +64,12 @@
             // 
             // CMB_sonartype
             // 
+            resources.ApplyResources(this.CMB_sonartype, "CMB_sonartype");
             this.CMB_sonartype.FormattingEnabled = true;
             this.CMB_sonartype.Items.AddRange(new object[] {
             resources.GetString("CMB_sonartype.Items"),
             resources.GetString("CMB_sonartype.Items1"),
             resources.GetString("CMB_sonartype.Items2")});
-            resources.ApplyResources(this.CMB_sonartype, "CMB_sonartype");
             this.CMB_sonartype.Name = "CMB_sonartype";
             this.CMB_sonartype.SelectedIndexChanged += new System.EventHandler(this.CMB_sonartype_SelectedIndexChanged);
             // 
@@ -82,9 +82,9 @@
             // 
             // pictureBox2
             // 
+            resources.ApplyResources(this.pictureBox2, "pictureBox2");
             this.pictureBox2.BackColor = System.Drawing.Color.White;
             this.pictureBox2.BackgroundImage = global::ArdupilotMega.Properties.Resources.opticalflow;
-            resources.ApplyResources(this.pictureBox2, "pictureBox2");
             this.pictureBox2.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
             this.pictureBox2.Name = "pictureBox2";
             this.pictureBox2.TabStop = false;
@@ -130,26 +130,26 @@
             // 
             // pictureBox4
             // 
+            resources.ApplyResources(this.pictureBox4, "pictureBox4");
             this.pictureBox4.BackColor = System.Drawing.Color.White;
             this.pictureBox4.BackgroundImage = global::ArdupilotMega.Properties.Resources.airspeed;
-            resources.ApplyResources(this.pictureBox4, "pictureBox4");
             this.pictureBox4.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
             this.pictureBox4.Name = "pictureBox4";
             this.pictureBox4.TabStop = false;
             // 
             // pictureBox3
             // 
+            resources.ApplyResources(this.pictureBox3, "pictureBox3");
             this.pictureBox3.BackColor = System.Drawing.Color.White;
             this.pictureBox3.BackgroundImage = global::ArdupilotMega.Properties.Resources.sonar;
-            resources.ApplyResources(this.pictureBox3, "pictureBox3");
             this.pictureBox3.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
             this.pictureBox3.Name = "pictureBox3";
             this.pictureBox3.TabStop = false;
             // 
             // pictureBox1
             // 
-            this.pictureBox1.BackgroundImage = global::ArdupilotMega.Properties.Resources.compass;
             resources.ApplyResources(this.pictureBox1, "pictureBox1");
+            this.pictureBox1.BackgroundImage = global::ArdupilotMega.Properties.Resources.compass;
             this.pictureBox1.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
             this.pictureBox1.Name = "pictureBox1";
             this.pictureBox1.TabStop = false;

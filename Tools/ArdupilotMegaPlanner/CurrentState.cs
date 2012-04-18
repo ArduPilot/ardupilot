@@ -80,6 +80,8 @@ namespace ArdupilotMega
 
         // calced turn rate
         public float turnrate { get { if (groundspeed <= 1) return 0; return (roll * 9.8f) / groundspeed; } }
+        // turn radius
+        public float radius { get { if (groundspeed <= 1) return 0; return ((groundspeed * groundspeed)/(float)(9.8f*Math.Tan(roll * deg2rad))); } }
 
         //radio
         public float ch1in { get; set; }
