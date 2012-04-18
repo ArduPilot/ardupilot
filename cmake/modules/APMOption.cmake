@@ -1,27 +1,36 @@
-macro(apm_option NAME)
+function(apm_option NAME)
     cmake_parse_arguments(ARG
         "ADVANCED"
-        "TYPE;DESCRIPTION;DEFAULT" "OPTIONS" ${ARGN})
+        "TYPE;DESCRIPTION;DEFAULT" "OPTIONS;DEPENDS" ${ARGN})
 
-    if ("${ARG_TYPE}" STREQUAL "BOOL")
-        set("${NAME}" "${ARG_DEFAULT}" CACHE BOOL "${ARG_DESCRIPTION}") 
-    elseif ( ("${ARG_TYPE}" STREQUAL "STRING") OR ("${ARG_TYPE}" STREQUAL "COMBO"))
-        set("${NAME}" "${ARG_DEFAULT}" CACHE STRING "${ARG_DESCRIPTION}") 
-    else()
-        message(FATAL_ERROR "unknown type: \""${ARG_TYPE}"\" for add_option(${NAME}...")
-    endif()
+    #message(STATUS "parsing argument: ${NAME}")
 
-    if ("${ARG_TYPE}" STREQUAL "COMBO")
-        if ("${ARG_OPTIONS}" STREQUAL "")
-            message(FATAL_ERROR "must set OPTIONS for add_option(${NAME}...")
-        else()
-            set_property(CACHE "${NAME}" PROPERTY STRINGS "${ARG_OPTIONS}")
+    # if option dependencies not met, hide the option
+    foreach(DEPEND ${ARG_DEPENDS})
+        if (NOT ${${DEPEND}})
+            #message(STATUS "\tfailed dep: ${DEPEND}")
+            set(ARG_TYPE "INTERNAL")
+            set("${NAME}" "${ARG_DEFAULT}" CACHE INTERNAL "${ARG_DESCRIPTION}" FORCE) 
+            return()
         endif()
+    endforeach()
+
+    # set variable
+    set("${NAME}" "${ARG_DEFAULT}" CACHE "${ARG_TYPE}" "${ARG_DESCRIPTION}") 
+
+    # force variable reinit if it was internal (hidden)
+    get_property(VAR_TYPE CACHE ${NAME} PROPERTY TYPE) 
+    if ("${VAR_TYPE}" STREQUAL "INTERNAL")
+        message(STATUS "\tVAR_TYPE: ${VAR_TYPE}")
+        set("${NAME}" "${ARG_DEFAULT}" CACHE "${ARG_TYPE}" "${ARG_DESCRIPTION}" FORCE) 
     endif()
 
-    if (ARG_ADVANCED)
+    # set options for combo box
+    set_property(CACHE "${NAME}" PROPERTY STRINGS ${ARG_OPTIONS})
+
+    # mark as advanced if advanced option given
+    if(ARG_ADVANCED)
         mark_as_advanced(FORCE "${NAME}")
     endif()
 
-endmacro()
-
+endfunction()

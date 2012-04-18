@@ -10,9 +10,8 @@ set(PROJECT_VERSION_MINOR "3")
 set(PROJECT_VERSION_PATCH "3")
 set(PROJECT_VERSION "${PROJECT_VERSION_MAJOR}.${PROJECT_VERSION_MINOR}.${PROJECT_VERSION_PATCH}")
 
-
 # macro path
-list(APPEND CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake/modules")
+list(APPEND CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/../cmake/modules")
 
 # disallow in-source build
 include(MacroEnsureOutOfSourceBuild)
@@ -38,7 +37,7 @@ apm_option("APM_PROJECT" TYPE STRING
     DEFAULT "ArduPlane"
     OPTIONS "ArduPlane" "ArduCopter")
 
-include(cmake/options-ArduPlane.cmake)
+include(options.cmake)
 
 # modify flags from default toolchain flags
 set(APM_OPT_FLAGS "-Wformat -Wall -Wshadow -Wpointer-arith -Wcast-align -Wwrite-strings -Wformat=2")
