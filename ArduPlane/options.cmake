@@ -1,29 +1,42 @@
-# options
-#bool_option(LOGGING DESCRIPTION "Logging support?" DEFAULT OFF)
-#bool_option(GPS "Gps support?" ON)
-#option(CLI_SLIDER "Command-line-interface slider support?" OFF)
-#option(APM2 "Build for APM 2.0" OFF)
+#
+# This files is used by cmake to present options to the 
+# user in the cmake-gui, it can also be used directly to
+# set options in the cmake command line.
+#
+# This file generates APM_Config_cmake.h
+# which overrides the APM_Config.h file. When disributing
+# to the Arduino IDE user. APM_Confg_cmake.h could be copied to
+# APM_Config.h, but this is not necessary. The 
+# advantage would be that the Arduino user would have 
+# a more up-to-date/ complete list of options and the developers
+# using cmake have a nice gui/ command-line interface.
+# 
 
-# options
 apm_option("APM_PROGRAMMING_PORT" TYPE STRING
     DESCRIPTION "Programming upload port?"
     DEFAULT "/dev/ttyUSB0")
 
-apm_option("APM_BOARD" TYPE STRING
-    DESCRIPTION "ArduPilotMega board?" 
+apm_option("APM_HARDWARE" TYPE STRING
+    DESCRIPTION "APM Hardware?" 
+    OPTIONS "APM_HARDARE_APM2" "APM2_BETA_HARDWARE" "APM1"
+    DEFAULT "APM_HARDARE_APM2")
+
+apm_option("APM_PROCESSOR" TYPE STRING
+    DESCRIPTION "ArduPilotMega processor (2560 for APM2 and later APM1)?" 
     DEFAULT "mega2560"
     OPTIONS "mega" "mega2560")
 
-apm_option("APM_FRAME" TYPE STRING
-    DESCRIPTION "Vehicle type?"
-    DEFAULT "PLANE_FRAME"
-    OPTIONS
-        "PLANE FRAME"
-        "HELI_FRAME"
-        "HEXA_FRAME"
-        "OCTA_FRAME"
-        "Y6_FRAME"
-    )
+apm_option("CLI_ENABLED" TYPE BOOL
+    DESCRIPTION "Enable command line interface switch?" 
+    DEFAULT OFF)
+
+apm_option("LOGGING_ENABLED" TYPE BOOL
+    DESCRIPTION "Enable logging?" 
+    DEFAULT OFF)
+
+apm_option("QUATERNION_ENABLE" TYPE BOOL
+    DESCRIPTION "Enable quaterion navigation?" 
+    DEFAULT OFF)
 
 apm_option("GPS_PROTOCOL" TYPE STRING
     DESCRIPTION "GPS protocol?"
@@ -78,19 +91,19 @@ apm_option("HIL_PROTOCOL" TYPE STRING
     DEFAULT "HIL_PROTOCOL_MAVLINK"
     OPTIONS "HIL_PROTOCOL_MAVLINK" "HIL_PROTOCOL_XPLANE")
 
-apm_option("GPS_PROTOCOL" TYPE STRING
+apm_option("GCS_PROTOCOL" TYPE STRING
     DESCRIPTION "Ground station protocol?"
     DEFAULT "GCS_PROTOCOL_MAVLINK"
     OPTIONS "GCS_PROTOCOL_NONE" "GCS_PROTOCOL_MAVLINK")
 
 apm_option("GCS_PORT" TYPE STRING ADVANCED
     DESCRIPTION "Ground station port?"
-    DESCRIPTION "3"
+    DEFAULT "3"
     OPTIONS "0" "1" "2" "3")
 
 apm_option("MAV_SYSTEM_ID" TYPE STRING ADVANCED
     DESCRIPTION "MAVLink System ID?"
-    DESCRIPTION "1")
+    DEFAULT "1")
 
 apm_option("SERIAL0_BAUD" TYPE STRING ADVANCED
     DESCRIPTION "Serial 0 baudrate?"
@@ -122,39 +135,47 @@ apm_option("CUR_AMPS_OFFSET" TYPE STRING ADVANCED
     DESCRIPTION "Current amps offset?"
     DEFAULT "0.0")
 
-apm_option("CUR_AMPS_OFFSET" TYPE STRING ADVANCED
-    DESCRIPTION "Current amps offset?"
-    DEFAULT "0.0")
+apm_option("HIGH_DISCHARGE" TYPE STRING ADVANCED
+    DESCRIPTION "What to consider high discharge rate (milliamps)?"
+    DEFAULT "1760")
 
+apm_option("INPUT_VOLTAGE" TYPE STRING ADVANCED
+    DESCRIPTION "Voltage measured at the process (V)? (affects ADC measurements)"
+    DEFAULT "4.68")
 
-#set(CUR_AMPS_PER_VOLT "27.32" CACHE STRING "Current amps/volt?")
-#set(CUR_AMPS_OFFSET "0.0" CACHE STRING "Current amps offset?")
-#set(HIGH_DISCHARGE "1760" CACHE STRING "What to consider high discharge rate (milliamp-hours)?")
+set(RADIO_CHANNELS "1" "2" "3" "4" "5" "6" "7" "8")
+apm_option("FLIGHT_MODE_CHANNEL" TYPE STRING ADVANCED
+    DESCRIPTION "The radio channel to control the flight mode."
+    DEFAULT "8"
+    OPTIONS ${RADIO_CHANNELS})
 
-#set(INPUT_VOLTAGE "4.68" CACHE STRING "Voltage measured at the processor (volts)?")
+set(FLIGHT_MODES
+    MANUAL STABILIZE
+    FLY_BY_WIRE_A
+    FLY_BY_WIRE_B
+    RTL
+    AUTO
+    LOITER CIRCLE)
 
-#set(FLIGHT_MODE_CHANNEL "8" CACHE STRING "The radio channel to control the flight mode.")
-#set_property(CACHE FLIGHT_MODE_CHANNEL PROPERTY STRINGS 1 2 3 4 5 6 7 8)
+set(FLIGHT_MODES_RADIO_PWM      1165 1295 1425 1555 1685 1815)
 
-#set(FLIGHT_MODES MANUAL STABILIZE FLY_BY_WIRE_A FLY_BY_WIRE_B RTL AUTO LOITER CIRCLE)
+set(FLIGHT_MODES_DEFAULT
+    RTL
+    RTL
+    STABILIZE
+    STABILIZE
+    MANUAL
+    MANUAL)
 
-#set(FLIGHT_MODE_1 "RTL" CACHE STRING "Flight mode for radio position 1 (1165 ms)?")
-#set_property(CACHE FLIGHT_MODE_1 PROPERTY STRINGS ${FLIGHT_MODES}) 
-
-#set(FLIGHT_MODE_2 "RTL" CACHE STRING "Flight mode for radio position 2 (1295 ms)?")
-#set_property(CACHE FLIGHT_MODE_2 PROPERTY STRINGS ${FLIGHT_MODES}) 
-
-#set(FLIGHT_MODE_3 "STABILIZE" CACHE STRING "Flight mode for radio position 3 (1425 ms)?")
-#set_property(CACHE FLIGHT_MODE_3 PROPERTY STRINGS ${FLIGHT_MODES}) 
-
-#set(FLIGHT_MODE_4 "STABILIZE" CACHE STRING "Flight mode for radio position 4 (1555 ms)?")
-#set_property(CACHE FLIGHT_MODE_4 PROPERTY STRINGS ${FLIGHT_MODES}) 
-
-#set(FLIGHT_MODE_5 "MANUAL" CACHE STRING "Flight mode for radio position 5 (FAILSAFE if using channel 8) (1685 ms)?")
-#set_property(CACHE FLIGHT_MODE_5 PROPERTY STRINGS ${FLIGHT_MODES}) 
-
-#set(FLIGHT_MODE_6 "MANUAL" CACHE STRING "Flight mode for radio position 6 (FAILSAFE is using channel 8) (1815 ms)?")
-#set_property(CACHE FLIGHT_MODE_6 PROPERTY STRINGS ${FLIGHT_MODES}) 
+foreach(MODE 1 2 3 4 5 6)
+    math(EXPR INDEX "${MODE} -1")
+    list(GET FLIGHT_MODES_RADIO_PWM ${INDEX} RADIO_PWM)
+    list(GET FLIGHT_MODES_DEFAULT ${INDEX} FLIGHT_MODE_DEFAULT)
+    apm_option("FLIGHT_MODE_${MODE}" TYPE STRING ADVANCED
+        DESCRIPTION "Flight mode ${MODE} (pwm ${RADIO_PWM} ms)?"
+        DEFAULT "${FLIGHT_MODE_DEFAULT}"
+        OPTIONS ${FLIGHT_MODES})
+endforeach()
 
 #set(FLAP_1_SPEED "0" CACHE STRING "Speed below which flaps are deployed (m/s)?")
 #set(FLAP_1_PERCENT "0" CACHE STRING "Flap deployment percentage (%)?")
