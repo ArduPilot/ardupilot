@@ -102,7 +102,7 @@ static void init_ardupilot()
     SPI.begin();
     SPI.setClockDivider(SPI_CLOCK_DIV16); // 1MHZ SPI rate
 	//
-	// Initialize the isr_registry.
+	// Initialize the isr_registry
 	//
     isr_registry.init();
 
@@ -163,8 +163,9 @@ static void init_ardupilot()
 			Cellular_Modem modem(&Serial);
 			// Before starting GCS on Serial, initialize the modem
 			SendDebug("\nModem intialization: ");
-			if (modem.init_modem())
+			if (modem.init_modem()) {
 				SendDebug("success.\n");
+			}
 			else
 				SendDebug("failed.\n");
 		#endif // CELLULAR_MODEM_INIT
@@ -174,11 +175,12 @@ static void init_ardupilot()
     Serial3.begin(map_baudrate(g.serial3_baud, SERIAL3_BAUD), 128, 256);
 
 	#ifdef CELLULAR_MODEM_INIT // on APM1 board, cellular modem on Serial3, same as Xbee
-		Cellular_Modem modem(&Serial3);
+		Cellular_Modem modem_on_s3(&Serial3);
 		// Before starting GCS on Serial3, initialize the modem
 		SendDebug("\nModem intialization: ");
-		if (modem.init_modem())
+		if (modem_on_s3.init_modem()) {
 			SendDebug("success.\n");
+		}
 		else
 			SendDebug("failed.\n");
 	#endif // CELLULAR_MODEM_INIT

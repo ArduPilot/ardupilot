@@ -6,7 +6,7 @@
 const char* Cellular_Modem::init_script[] = {
 "+++ATH0",					// Break into channel if there is an existing connection
 "AT+CFUN=1,1",			// Hard reboot of modem
-"~~~~~~~~AT",			// Wait...
+"~~~~~~~~~~~~~~~~~~~~AT",			        // Wait...
 "AT V1 E1 X1 S0=0",		// Set error response and do not pickup on ring
 "AT+CREG=2",			// Set various notice messages and parameters
 "AT+CMEE=2",
@@ -17,16 +17,15 @@ const char* Cellular_Modem::init_script[] = {
 "AT+CSCLK=0",
 "AT+CIURC=1",
 "AT+CGEREP=2",
-"AT+IFC=2,2",			// Hardware flow control
+//"AT+IFC=2,2",			// Hardware flow control
 "AT+CIPMUX=0",			// Single channel communication (ie only one socket can be opened)
 "AT+CIPMODE=1",			// Transparent bridge mode
 "AT+CIPCCFG=8,10,10,0", // GPRS params
-"AT+CMUX=0,0,4,127,10,3,30,10,2", // GPRS/IP params
-"~~~~~~~AT+CSTT=\"%a\",\"%u\",\"%p\"",   // AT+CSTT="APN","username","password" - login to service provider/carrier
-"AT+CIICR",				// Connect!
-"~~~~AT+CIFSR",			// Get IP address (for info only)
-"AT+CIPSTART=\"%t\",\"%i\",\"%d\"",   // AT+CIPSTART="protocol","ip address or domain","port #" - make the bridge
-
+"~~~~AT+CMUX=0,0,4,127,10,3,30,10,2", // GPRS/IP params
+"~~~~AT+CSTT=\"%a\",\"%u\",\"%p\"",   // AT+CSTT="APN","username","password" - login to service provider/carrier
+"~~~~AT+CIICR",				// Connect!
+"~~~~~~~~~~AT+CIFSR",			// Get IP address (for info only)
+"~~~~AT+CIPSTART=\"%t\",\"%i\",\"%d\"",   // AT+CIPSTART="protocol","ip address or domain","port #" - make the bridge
 NULL, // MUST have a NULL termination or you get an infinite loop
 };
 
@@ -83,19 +82,19 @@ bool Cellular_Modem::init_modem() {
 					p->print(VAL_APN);
 					break;
 				case VAR_USER: // substitute for the user name
-					p->print(VAL_APN);
+					p->print(VAL_USER);
 					break;
 				case VAR_PW:	// substitute for the password
-					p->print(VAL_APN);
+					p->print(VAL_PW);
 					break;
 				case VAR_IP:  // substitute for the IP address
-					p->print(VAL_APN);
+					p->print(VAL_IP);
 					break;
 				case VAR_PROTO: // substitute for the protocol
-					p->print(VAL_APN);
+					p->print(VAL_PROTO);
 					break;
 				case VAR_PORT: //substitute for the port
-					p->print(VAL_APN);
+					p->print(VAL_PORT);
 					break;
 
 				default: // unknown substitution - this should not happen
@@ -118,37 +117,33 @@ bool Cellular_Modem::init_modem() {
 
 		// loop until response -- need breaker to avoid inf loop
 		start = millis(); // for timeout counting
-		do {
-			resp_buffer[0] = p->read(); // try for one character
-			if (resp_buffer[0] != -1) break; // we got something!
-			delay(10);
-		} while ((millis() - start) < RESP_TIMEOUT); // keep trying until timeout
-
-		if (resp_buffer[0] == -1)  { // no response - timeout!
-			Serial.println("Error: timeout - no response from modem\n");
-			return false;
-		}
+	    while (!p->available() && (millis() - start) < RESP_TIMEOUT) { // keep trying until timeout
+	    	delay(10);
+	    }
+	    if (!p->available())  { // no response - timeout!
+	    			Serial.println("Error: timeout - no response from modem\n");
+	    			break; // next line
+	    }
 		else { // get the response
 			delay(RESP_DELAY);  // Give the modem some time to respond
 
-			r_len = p->available(); // see how long the response is
+			do {
+				r_len = p->available(); // see how long the response is
 
-			if (r_len > RESP_BUFFER) return false; // our buffer is too small - TODO handle better
+				if (r_len > RESP_BUFFER) return false; // our buffer is too small - TODO handle better
 
 
-			for (r=1; r < r_len; r++) { // read the response
-				resp_buffer[r] = p->read();
-			}
-			resp_buffer[r_len] = '\0'; // NULL terminate the buffer
+				for (r=0; r < r_len; r++) { // read the response
+					resp_buffer[r] = p->read();
+				}
+				resp_buffer[r_len] = '\0'; // NULL terminate the buffer
 
-			// experimental
-			if (!this->parse_status(resp_buffer)) { // error or not ok!
-				Serial.printf("Error: %s",resp_buffer); // DEBUG
-				return false;
-			}
-			else {
-				Serial.printf("Success: %s",resp_buffer); // DEBUG
-			}
+				// experimental
+				if (this->parse_status(resp_buffer)) { // look for "OK" or "0"
+					Serial.printf("Success: %s",resp_buffer); // DEBUG
+					break; // send next line
+				}
+			} while (p->available() && (millis() - start) < RESP_TIMEOUT);
 		}
 		i++;  // next line
 		delay(LINE_DELAY);
@@ -156,8 +151,21 @@ bool Cellular_Modem::init_modem() {
     // we're done, without an error
 	Serial.printf("--MODEM Init: %lu msec", millis() - init_time); // DEBUG
 	return true;  // successful init
+	//send_test();
 }
 
+void Cellular_Modem::send_test() {
+
+	BetterStream	*p = (BetterStream *)_port;
+
+	Serial.println("MAVLINKoCIP TEST");
+	do { // forever
+		p->printf("MAVLINKoCIP TEST\n", 0x55);
+		Serial.write(".");
+		delay(300);
+		p->flush();
+	} while (true);
+}
 
 bool Cellular_Modem::parse_status(char *response) {
 	unsigned int i = 0;

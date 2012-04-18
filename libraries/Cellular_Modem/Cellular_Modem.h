@@ -27,9 +27,9 @@
 //  * (# of lines in script).
 //
 #define CHAR_DELAY 10 // number of milliseconds to wait between sending each character - most modems needs to be "paced"
-#define RESP_DELAY 100 // number of milliseconds to wait before checking for a response
-#define LINE_DELAY 200  // number of milliseconds to wait after each line is sent
-#define RESP_TIMEOUT 10000 // How many milliseconds to wait for a response before giving up with an error  - 10 seconds by default
+#define RESP_DELAY 500 // number of milliseconds to wait before checking for a response
+#define LINE_DELAY 500  // number of milliseconds to wait after each line is sent
+#define RESP_TIMEOUT 40000 // How many milliseconds to wait for a response before giving up with an error  - 30 seconds by default
 #define RESP_BUFFER 512 // size in bytes of response buffer
 
 //
@@ -74,7 +74,7 @@
 #define VAL_APN 	"epc.tmobile.com" // value for the APN
 #define VAL_USER 	"" // value for the user name
 #define VAL_PW 		""	// value for the password
-#define VAL_IP 		"mygcs.mydyndns.example.com"  // value for the IP address
+#define VAL_IP 		"uav.antonopoulos.com"  // value for the IP address
 #define VAL_PROTO 	"udp" // value for the protocol
 #define VAL_PORT    "14550"
 
@@ -93,6 +93,7 @@ public:
 	static const char* init_script[];
 	bool init_modem();
 	bool parse_status(char *response);
+	void send_test();
 	//char *parse_notices();
 
 protected:
