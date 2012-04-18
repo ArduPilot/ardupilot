@@ -13,17 +13,17 @@ Building using make
 
 Building using cmake
 -----------------------------------------------
+ - cd ArduPlane (ArduCopter etc ..)
  - mkdir build
  - cd build
- - cmake .. -DBOARD=mega -DPORT=/dev/ttyUSB0
+ - cmake .. -DAPM_BOARD=mega -DAPM_PORT=/dev/ttyUSB0
     You can select from mega/mega2560.
     If you have arduino installed in a non-standard location you by specify it by using:
         -DARDUINO_SDK_PATH=/path/to/arduino ..
- - make (will build every sketch)
- - make ArduPlane (will build just ArduPlane etc.)
- - make ArduPloat-upload (will upload the sketch)
+ - make (will build the sketch)
+ - make ArduPlane-upload (will upload the sketch ArduPlane etc.)
 
-    If you have a sync error during upload reset the board/power cycle the board
+    If you have a sync error during upload reset the board or power cycle the board
     before the upload starts.
 
  
@@ -41,6 +41,8 @@ Building using eclipse
         mkdir /home/name/apm-build 
         cd /home/name/apm-build
         cmake -G"Eclipse CDT4 - Unix Makefiles" -D CMAKE_BUILD_TYPE=Debug ../apm-src -D BOARD=mega -D PORT=/dev/ttyUSB0
+
+        Here apm-src can be any sketch, ArduPlane/ ArduCopter etc.
 
         Note: Unix can be substituted for MinGW/ MSYS/ NMake (for windows)
             (see http://www.vtk.org/Wiki/Eclipse_CDT4_Generator)
