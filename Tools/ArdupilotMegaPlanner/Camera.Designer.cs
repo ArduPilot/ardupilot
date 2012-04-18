@@ -70,12 +70,12 @@
             // 
             // num_agl
             // 
+            resources.ApplyResources(this.num_agl, "num_agl");
             this.num_agl.Increment = new decimal(new int[] {
             10,
             0,
             0,
             0});
-            resources.ApplyResources(this.num_agl, "num_agl");
             this.num_agl.Maximum = new decimal(new int[] {
             10000,
             0,
@@ -96,13 +96,13 @@
             // 
             // num_focallength
             // 
+            resources.ApplyResources(this.num_focallength, "num_focallength");
             this.num_focallength.DecimalPlaces = 1;
             this.num_focallength.Increment = new decimal(new int[] {
             1,
             0,
             0,
             65536});
-            resources.ApplyResources(this.num_focallength, "num_focallength");
             this.num_focallength.Maximum = new decimal(new int[] {
             180,
             0,
@@ -227,8 +227,8 @@
             // 
             // num_overlap
             // 
-            this.num_overlap.DecimalPlaces = 1;
             resources.ApplyResources(this.num_overlap, "num_overlap");
+            this.num_overlap.DecimalPlaces = 1;
             this.num_overlap.Name = "num_overlap";
             this.num_overlap.Value = new decimal(new int[] {
             60,
@@ -244,8 +244,8 @@
             // 
             // num_sidelap
             // 
-            this.num_sidelap.DecimalPlaces = 1;
             resources.ApplyResources(this.num_sidelap, "num_sidelap");
+            this.num_sidelap.DecimalPlaces = 1;
             this.num_sidelap.Name = "num_sidelap";
             this.num_sidelap.Value = new decimal(new int[] {
             30,
@@ -285,8 +285,8 @@
             // 
             // CMB_camera
             // 
-            this.CMB_camera.FormattingEnabled = true;
             resources.ApplyResources(this.CMB_camera, "CMB_camera");
+            this.CMB_camera.FormattingEnabled = true;
             this.CMB_camera.Name = "CMB_camera";
             this.CMB_camera.SelectedIndexChanged += new System.EventHandler(this.CMB_camera_SelectedIndexChanged);
             // 

@@ -54,6 +54,7 @@
             // 
             // groupBox4
             // 
+            resources.ApplyResources(this.groupBox4, "groupBox4");
             this.groupBox4.Controls.Add(this.label31);
             this.groupBox4.Controls.Add(this.label32);
             this.groupBox4.Controls.Add(this.label33);
@@ -64,7 +65,6 @@
             this.groupBox4.Controls.Add(this.TXT_voltage);
             this.groupBox4.Controls.Add(this.TXT_inputvoltage);
             this.groupBox4.Controls.Add(this.TXT_measuredvoltage);
-            resources.ApplyResources(this.groupBox4, "groupBox4");
             this.groupBox4.Name = "groupBox4";
             this.groupBox4.TabStop = false;
             // 
@@ -130,13 +130,13 @@
             // 
             // CMB_batmonsensortype
             // 
+            resources.ApplyResources(this.CMB_batmonsensortype, "CMB_batmonsensortype");
             this.CMB_batmonsensortype.FormattingEnabled = true;
             this.CMB_batmonsensortype.Items.AddRange(new object[] {
             resources.GetString("CMB_batmonsensortype.Items"),
             resources.GetString("CMB_batmonsensortype.Items1"),
             resources.GetString("CMB_batmonsensortype.Items2"),
             resources.GetString("CMB_batmonsensortype.Items3")});
-            resources.ApplyResources(this.CMB_batmonsensortype, "CMB_batmonsensortype");
             this.CMB_batmonsensortype.Name = "CMB_batmonsensortype";
             this.CMB_batmonsensortype.SelectedIndexChanged += new System.EventHandler(this.CMB_batmonsensortype_SelectedIndexChanged);
             // 
@@ -164,20 +164,20 @@
             // 
             // CMB_batmontype
             // 
+            resources.ApplyResources(this.CMB_batmontype, "CMB_batmontype");
             this.CMB_batmontype.FormattingEnabled = true;
             this.CMB_batmontype.Items.AddRange(new object[] {
             resources.GetString("CMB_batmontype.Items"),
             resources.GetString("CMB_batmontype.Items1"),
             resources.GetString("CMB_batmontype.Items2")});
-            resources.ApplyResources(this.CMB_batmontype, "CMB_batmontype");
             this.CMB_batmontype.Name = "CMB_batmontype";
             this.CMB_batmontype.SelectedIndexChanged += new System.EventHandler(this.CMB_batmontype_SelectedIndexChanged);
             // 
             // pictureBox5
             // 
+            resources.ApplyResources(this.pictureBox5, "pictureBox5");
             this.pictureBox5.BackColor = System.Drawing.Color.White;
             this.pictureBox5.BackgroundImage = global::ArdupilotMega.Properties.Resources.attocurrent;
-            resources.ApplyResources(this.pictureBox5, "pictureBox5");
             this.pictureBox5.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
             this.pictureBox5.Name = "pictureBox5";
             this.pictureBox5.TabStop = false;
