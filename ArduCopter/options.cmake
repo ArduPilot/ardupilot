@@ -1,23 +1,42 @@
-# options
+#
+# This files is used by cmake to present options to the 
+# user in the cmake-gui, it can also be used directly to
+# set options in the cmake command line.
+#
+# This file generates APM_Config_cmake.h
+# which overrides the APM_Config.h file. When disributing
+# to the Arduino IDE user. APM_Confg_cmake.h could be copied to
+# APM_Config.h, but this is not necessary. The 
+# advantage would be that the Arduino user would have 
+# a more up-to-date/ complete list of options and the developers
+# using cmake have a nice gui/ command-line interface.
+# 
+
 apm_option("APM_PROGRAMMING_PORT" TYPE STRING
     DESCRIPTION "Programming upload port?"
     DEFAULT "/dev/ttyUSB0")
 
-apm_option("APM_BOARD" TYPE STRING
-    DESCRIPTION "ArduPilotMega board?" 
+apm_option("APM_HARDWARE" TYPE STRING
+    DESCRIPTION "APM Hardware?" 
+    OPTIONS "APM_HARDARE_APM2" "APM2_BETA_HARDWARE" "APM1"
+    DEFAULT "APM_HARDARE_APM2")
+
+apm_option("APM_PROCESSOR" TYPE STRING
+    DESCRIPTION "ArduPilotMega processor (2560 for APM2 and later APM1)?" 
     DEFAULT "mega2560"
     OPTIONS "mega" "mega2560")
 
-apm_option("APM_FRAME" TYPE STRING
-    DESCRIPTION "Vehicle type?"
-    DEFAULT "PLANE_FRAME"
-    OPTIONS
-        "PLANE FRAME"
-        "HELI_FRAME"
-        "HEXA_FRAME"
-        "OCTA_FRAME"
-        "Y6_FRAME"
-    )
+apm_option("CLI_SLIDER_ENABLED" TYPE BOOL
+    DESCRIPTION "Enable command line interface switch?" 
+    DEFAULT OFF)
+
+apm_option("LOGGING_ENABLED" TYPE BOOL
+    DESCRIPTION "Enable logging?" 
+    DEFAULT OFF)
+
+apm_option("QUATERNION_ENABLE" TYPE BOOL ADVANCED
+    DESCRIPTION "Enable quaterion navigation?" 
+    DEFAULT OFF)
 
 apm_option("GPS_PROTOCOL" TYPE STRING
     DESCRIPTION "GPS protocol?"
@@ -72,19 +91,19 @@ apm_option("HIL_PROTOCOL" TYPE STRING
     DEFAULT "HIL_PROTOCOL_MAVLINK"
     OPTIONS "HIL_PROTOCOL_MAVLINK" "HIL_PROTOCOL_XPLANE")
 
-apm_option("GPS_PROTOCOL" TYPE STRING
+apm_option("GCS_PROTOCOL" TYPE STRING
     DESCRIPTION "Ground station protocol?"
     DEFAULT "GCS_PROTOCOL_MAVLINK"
     OPTIONS "GCS_PROTOCOL_NONE" "GCS_PROTOCOL_MAVLINK")
 
 apm_option("GCS_PORT" TYPE STRING ADVANCED
     DESCRIPTION "Ground station port?"
-    DESCRIPTION "3"
+    DEFAULT "3"
     OPTIONS "0" "1" "2" "3")
 
 apm_option("MAV_SYSTEM_ID" TYPE STRING ADVANCED
     DESCRIPTION "MAVLink System ID?"
-    DESCRIPTION "1")
+    DEFAULT "1")
 
 apm_option("SERIAL0_BAUD" TYPE STRING ADVANCED
     DESCRIPTION "Serial 0 baudrate?"
@@ -116,6 +135,41 @@ apm_option("CUR_AMPS_OFFSET" TYPE STRING ADVANCED
     DESCRIPTION "Current amps offset?"
     DEFAULT "0.0")
 
-apm_option("CUR_AMPS_OFFSET" TYPE STRING ADVANCED
-    DESCRIPTION "Current amps offset?"
-    DEFAULT "0.0")
+# arducopter specific
+apm_option("FRAME_CONFIG" TYPE STRING
+    DESCRIPTION "Vehicle type?"
+    DEFAULT "QUAD_FRAME"
+    OPTIONS
+        "QUAD_FRAME"
+        "TRI_FRAME"
+        "HEXA_FRAME"
+        "Y6_FRAME"
+        "OCTA_FRAME"
+        "OCTA_QUAD_FRAME"
+        "HELI_FRAME"
+    )
+
+apm_option("FRAME_ORIENTATION" TYPE STRING
+    DESCRIPTION "Vehicle type?"
+    DEFAULT "QUAD_FRAME"
+    OPTIONS
+	    "PLUS_FRAME"
+	    "X_FRAME"
+	    "V_FRAME"
+    )
+
+apm_option("CH7_OPTION" TYPE STRING
+    DESCRIPTION "Channel 7 option? (ADC_FILTER is experimental)"
+    DEFAULT "CH7_SAVE_WP" 
+    OPTIONS 
+        "CH7_DO_NOTHING"
+        "CH7_SET_HOVER"
+        "CH7_FLIP"
+        "CH7_RTL"
+        "CH7_AUTO_TRIM"
+        "CH7_ADC_FILTER"
+        "CH7_SAVE_WP")
+
+apm_option("ACCEL_ALT_HOLD" TYPE BOOL ADVANCED
+    DESCRIPTION "Disabled by default, work in progress."
+    DEFAULT OFF)
