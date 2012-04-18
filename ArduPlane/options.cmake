@@ -4,12 +4,31 @@
 #option(CLI_SLIDER "Command-line-interface slider support?" OFF)
 #option(APM2 "Build for APM 2.0" OFF)
 
-apm_option("APM_FRAME" TYPE "COMBO"
+# set booleans for project
+foreach(PROJECT_NAME "ArduPlane;ArduCopter")
+    if ("${APM_PROJECT}" STREQUAL "${PROJECT_NAME}")
+        set(IS_${PROJECT_NAME} true) 
+    else()
+        set(IS_${PROJECT_NAME} false) 
+    endif()
+endforeach()
+
+if (IS_ARDUCOPTER)
+endif()
+apm_option("APM_FRAME" TYPE STRING
+    DEPENDS IS_ARDUPLANE
     DESCRIPTION "Vehicle type?"
     DEFAULT "PLANE_FRAME"
-    OPTIONS "HELI_FRAME" "HEXA_FRAME" "OCTA_FRAME" "Y6_FRAME")
+    OPTIONS
+        "PLANE FRAME"
+        "HELI_FRAME"
+        "HEXA_FRAME"
+        "OCTA_FRAME"
+        "Y6_FRAME"
+    )
 
-apm_option("GPS_PROTOCOL" TYPE "COMBO"
+apm_option("GPS_PROTOCOL" TYPE STRING
+    DEPENDS IS_ARDUPLANE
     DESCRIPTION "GPS protocol?"
     DEFAULT "GPS_PROTOCOL_AUTO" 
     OPTIONS 
@@ -23,19 +42,23 @@ apm_option("GPS_PROTOCOL" TYPE "COMBO"
         "GPS_PROTOCOL_SIRF"
         "GPS_PROTOCOL_NMEA")
 
-apm_option("AIRSPEED_SENSOR" TYPE "BOOL"
+apm_option("AIRSPEED_SENSOR" TYPE BOOL
+    DEPENDS IS_ARDUPLANE
     DESCRIPTION "Enable airspeed sensor?"
     DEFAULT OFF)
 
-apm_option("AIRSPEED_RATIO" TYPE "STRING" ADVANCED
+apm_option("AIRSPEED_RATIO" TYPE STRING ADVANCED
+    DEPENDS IS_ARDUPLANE
     DESCRIPTION "Airspeed ratio?"
     DEFAULT "1.9936")
 
-apm_option("MAGNETOMETER" TYPE "BOOL"
+apm_option("MAGNETOMETER" TYPE BOOL
+    DEPENDS IS_ARDUPLANE
     DESCRIPTION "Enable airspeed sensor?"
     DEFAULT OFF)
 
-apm_option("MAG_ORIENTATION" TYPE "COMBO" ADVANCED
+apm_option("MAG_ORIENTATION" TYPE STRING ADVANCED
+    DEPENDS IS_ARDUPLANE
     DESCRIPTION "Magnetometer orientation?" 
     DEFAULT "AP_COMPASS_COMPONENTS_DOWN_PINS_FORWARD"
     OPTIONS 
@@ -44,7 +67,8 @@ apm_option("MAG_ORIENTATION" TYPE "COMBO" ADVANCED
         "AP_COMPASS_COMPONENTS_UP_PINS_FORWARD"
         "AP_COMPASS_COMPONENTS_UP_PINS_BACK")
 
-apm_option("HIL_MODE" TYPE "COMBO"
+apm_option("HIL_MODE" TYPE STRING
+    DEPENDS IS_ARDUPLANE
     DESCRIPTION "Hardware-in-the-loop- mode?"
     DEFAULT "HIL_MODE_DISABLED"
     OPTIONS 
@@ -52,59 +76,77 @@ apm_option("HIL_MODE" TYPE "COMBO"
         "HIL_MODE_ATTITUDE"
         "HIL_MODE_SENSORS")
 
-apm_option("HIL_PORT" TYPE "COMBO"
+apm_option("HIL_PORT" TYPE STRING
+    DEPENDS IS_ARDUPLANE
     DESCRIPTION "Port for Hardware-in-the-loop communication"
     DEFAULT "0"
     OPTIONS "0" "1" "2" "3")
 
-apm_option("HIL_PROTOCOL" TYPE "COMBO"
+apm_option("HIL_PROTOCOL" TYPE STRING
+    DEPENDS IS_ARDUPLANE
     DESCRIPTION "Hardware-in-the-loop protocol?"
     DEFAULT "HIL_PROTOCOL_MAVLINK"
     OPTIONS "HIL_PROTOCOL_MAVLINK" "HIL_PROTOCOL_XPLANE")
 
-apm_option("GPS_PROTOCOL" TYPE "COMBO"
+apm_option("GPS_PROTOCOL" TYPE STRING
+    DEPENDS IS_ARDUPLANE
     DESCRIPTION "Ground station protocol?"
     DEFAULT "GCS_PROTOCOL_MAVLINK"
     OPTIONS "GCS_PROTOCOL_NONE" "GCS_PROTOCOL_MAVLINK")
 
-apm_option("GCS_PORT" TYPE "COMBO" ADVANCED
+apm_option("GCS_PORT" TYPE STRING ADVANCED
+    DEPENDS IS_ARDUPLANE
     DESCRIPTION "Ground station port?"
     DESCRIPTION "3"
     OPTIONS "0" "1" "2" "3")
 
-apm_option("MAV_SYSTEM_ID" TYPE "STRING" ADVANCED
+apm_option("MAV_SYSTEM_ID" TYPE STRING ADVANCED
+    DEPENDS IS_ARDUPLANE
     DESCRIPTION "MAVLink System ID?"
     DESCRIPTION "1")
 
-apm_option("SERIAL0_BAUD" TYPE "COMBO" ADVANCED
+apm_option("SERIAL0_BAUD" TYPE STRING ADVANCED
+    DEPENDS IS_ARDUPLANE
     DESCRIPTION "Serial 0 baudrate?"
     DEFAULT "115200" 
     OPTIONS "57600" "115200") 
 
-apm_option("SERIAL3_BAUD" TYPE "COMBO" ADVANCED
+apm_option("SERIAL3_BAUD" TYPE STRING ADVANCED
+    DEPENDS IS_ARDUPLANE
     DESCRIPTION "Serial 3 baudrate?"
     DEFAULT "57600" 
     OPTIONS "57600" "115200") 
 
-apm_option("BATTERY_EVENT" TYPE "BOOL" ADVANCED
+apm_option("BATTERY_EVENT" TYPE BOOL ADVANCED
+    DEPENDS IS_ARDUPLANE
     DESCRIPTION "Enable low voltage/ high discharge warnings?"
     DEFAULT OFF)
 
-apm_option("LOW_VOLTAGE" TYPE "STRING" ADVANCED
+apm_option("LOW_VOLTAGE" TYPE STRING ADVANCED
+    DEPENDS IS_ARDUPLANE
     DESCRIPTION "Voltage to consider low (volts)?"
     DEFAULT "9.6")
 
-apm_option("VOLT_DIV_RATIO" TYPE "STRING" ADVANCED
+apm_option("VOLT_DIV_RATIO" TYPE STRING ADVANCED
+    DEPENDS IS_ARDUPLANE
     DESCRIPTION "Voltage division ratio?"
     DEFAULT "3.56")
 
-apm_option("CUR_AMPS_PER_VOLT" TYPE "STRING" ADVANCED
+apm_option("CUR_AMPS_PER_VOLT" TYPE STRING ADVANCED
+    DEPENDS IS_ARDUPLANE
     DESCRIPTION "Current amps/volt?"
     DEFAULT "27.32")
 
-apm_option("CUR_AMPS_PER_VOLT" TYPE "STRING" ADVANCED
-    DESCRIPTION "Current amps/volt?"
-    DEFAULT "27.32")
+apm_option("CUR_AMPS_OFFSET" TYPE STRING ADVANCED
+    DEPENDS IS_ARDUPLANE
+    DESCRIPTION "Current amps offset?"
+    DEFAULT "0.0")
+
+apm_option("CUR_AMPS_OFFSET" TYPE STRING ADVANCED
+    DEPENDS IS_ARDUPLANE
+    DESCRIPTION "Current amps offset?"
+    DEFAULT "0.0")
+
 
 #set(CUR_AMPS_PER_VOLT "27.32" CACHE STRING "Current amps/volt?")
 #set(CUR_AMPS_OFFSET "0.0" CACHE STRING "Current amps offset?")
