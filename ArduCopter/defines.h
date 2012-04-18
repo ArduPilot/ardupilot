@@ -129,8 +129,8 @@
 #define CIRCLE 7			// AUTO control
 #define POSITION 8			// AUTO control
 #define LAND 9				// AUTO control
-#define APPROACH 10			// AUTO control
-#define OF_LOITER 11		// Hold a single location using optical flow sensor
+#define OF_LOITER 10		// Hold a single location using optical flow sensor
+#define APPROACH 11			// AUTO control
 #define NUM_MODES 12
 
 #define SIMPLE_1 1
