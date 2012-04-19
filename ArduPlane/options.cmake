@@ -14,7 +14,7 @@
 
 apm_option("APM_PROGRAMMING_PORT" TYPE STRING
     DESCRIPTION "Programming upload port?"
-    DEFAULT "/dev/ttyUSB0")
+    DEFAULT "/dev/ttyACM0")
 
 apm_option("APM_HARDWARE" TYPE STRING
     DESCRIPTION "APM Hardware?" 
