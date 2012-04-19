@@ -132,6 +132,41 @@ namespace ArdupilotMega
             g.DrawLine(new Pen(Color.Black, 2), 0.0f, 0.0f, (float)Math.Cos((cog - 90) * deg2rad) * length, (float)Math.Sin((cog - 90) * deg2rad) * length);
             g.DrawLine(new Pen(Color.Orange, 2), 0.0f, 0.0f, (float)Math.Cos((target - 90) * deg2rad) * length, (float)Math.Sin((target - 90) * deg2rad) * length);
 // anti NaN
+            try
+            {
+
+                float desired_lead_dist = 100;
+
+                float alpha = (desired_lead_dist / MainV2.cs.radius) * rad2deg;
+
+                if (MainV2.cs.radius < 0)
+                {
+                    // fixme 
+
+                    float p1 = (float)Math.Cos((cog) * deg2rad) * MainV2.cs.radius + MainV2.cs.radius;
+
+                    float p2 = (float)Math.Sin((cog) * deg2rad) * MainV2.cs.radius + MainV2.cs.radius;
+
+                    g.DrawArc(new Pen(Color.HotPink, 2), p1, p2, Math.Abs(MainV2.cs.radius) * 2, Math.Abs(MainV2.cs.radius) * 2, cog, alpha);
+
+                }
+
+                else
+                {
+                    // correct
+
+                    float p1 = (float)Math.Cos((cog - 180) * deg2rad) * MainV2.cs.radius + MainV2.cs.radius;
+
+                    float p2 = (float)Math.Sin((cog - 180) * deg2rad) * MainV2.cs.radius + MainV2.cs.radius;
+
+                    g.DrawArc(new Pen(Color.HotPink, 2), -p1, -p2, MainV2.cs.radius * 2, MainV2.cs.radius * 2, cog - 180, alpha);
+                }
+
+            }
+
+            catch { }
+
+
             try {
             g.RotateTransform(heading);
             } catch{}

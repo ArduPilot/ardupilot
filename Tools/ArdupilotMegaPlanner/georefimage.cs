@@ -9,6 +9,8 @@ using com.drew.metadata;
 using log4net;
 using SharpKml.Base;
 using SharpKml.Dom;
+using System.Drawing;
+using System.Drawing.Imaging;
 
 namespace ArdupilotMega
 {
@@ -28,20 +30,25 @@ namespace ArdupilotMega
         private MyButton BUT_estoffset;
 
         int latpos = 4, lngpos = 5, altpos = 7;
+        private MyButton BUT_Geotagimages;
 
         internal Georefimage() {
             InitializeComponent();
         }
 
-        Hashtable filedatecahce = new Hashtable();
+        Hashtable filedatecache = new Hashtable();
+        Hashtable photocoords = new Hashtable();
+
+        Hashtable timecoordcache = new Hashtable();
+        Hashtable imagetotime = new Hashtable();
 
         DateTime getPhotoTime(string fn)
         {
             DateTime dtaken = DateTime.MinValue;
 
-            if (filedatecahce.ContainsKey(fn))
+            if (filedatecache.ContainsKey(fn))
             {
-                return (DateTime)filedatecahce[fn];
+                return (DateTime)filedatecache[fn];
             }
 
             try
@@ -68,7 +75,7 @@ namespace ArdupilotMega
                         dtaken = lcDirectory.GetDate(0x9003);
                         log.InfoFormat("does " + lcDirectory.GetTagName(0x9003) + " " + dtaken);
 
-                        filedatecahce[fn] = dtaken;
+                        filedatecache[fn] = dtaken;
 
                         break;
                     }
@@ -183,6 +190,10 @@ namespace ArdupilotMega
 
             DateTime startTime = DateTime.MinValue;
 
+            photocoords = new Hashtable();
+            timecoordcache = new Hashtable();
+            imagetotime = new Hashtable();
+
             //logFile = @"C:\Users\hog\Pictures\farm 1-10-2011\100SSCAM\2011-10-01 11-48 1.log";
 
             List<string[]> list = readLog(logFile);
@@ -209,15 +220,17 @@ namespace ArdupilotMega
             int first = 0;
             int matchs = 0;
 
-            foreach (string file in files)
+            int lastmatchindex = 0;
+
+            foreach (string filename in files)
             {
-                if (file.ToLower().EndsWith(".jpg"))
+                if (filename.ToLower().EndsWith(".jpg") && !filename.ToLower().Contains("_geotag"))
                 {
-                    DateTime dt = getPhotoTime(file);
+                    DateTime photodt = getPhotoTime(filename);
 
                     if (startTime == DateTime.MinValue)
                     {
-                        startTime = new DateTime(dt.Year, dt.Month, dt.Day, 0, 0, 0, 0, DateTimeKind.Utc).ToLocalTime();
+                        startTime = new DateTime(photodt.Year, photodt.Month, photodt.Day, 0, 0, 0, 0, DateTimeKind.Utc).ToLocalTime();
 
                         foreach (string[] arr in list)
                         {
@@ -233,20 +246,26 @@ namespace ArdupilotMega
                         TXT_outputlog.AppendText("Log min " + localmin + " max " + localmax + "\r\n");
                     }
 
-                    TXT_outputlog.AppendText("Photo  " + Path.GetFileNameWithoutExtension(file) + " time  " + dt + "\r\n");
+                    TXT_outputlog.AppendText("Photo  " + Path.GetFileNameWithoutExtension(filename) + " time  " + photodt + "\r\n");
+                    //Application.DoEvents();
+
+                    int a = 0;
 
                     foreach (string[] arr in list)
                     {
+                        a++;
+
+                        if (lastmatchindex > (a))
+                            continue;
                         //Application.DoEvents();
 
-                        DateTime crap = startTime.AddMilliseconds(int.Parse(arr[1])).AddSeconds(offsetseconds);
-
+                        DateTime logdt = startTime.AddMilliseconds(int.Parse(arr[1])).AddSeconds(offsetseconds);
 
                         if (first == 0)
                         {
-                            TXT_outputlog.AppendText("Photo " + Path.GetFileNameWithoutExtension(file) + " " + dt + " vs Log " + crap + "\r\n");
+                            TXT_outputlog.AppendText("Photo " + Path.GetFileNameWithoutExtension(filename) + " " + photodt + " vs Log " + logdt + "\r\n");
 
-                            TXT_outputlog.AppendText("offset should be about " + (dt - crap).TotalSeconds + "\r\n");
+                            TXT_outputlog.AppendText("offset should be about " + (photodt - logdt).TotalSeconds + "\r\n");
 
                             if (dooffset)
                                 return;
@@ -256,30 +275,39 @@ namespace ArdupilotMega
 
                         //Console.Write("ph " + dt + " log " + crap + "         \r");
 
-                        sw4.WriteLine("ph " + file + " " + dt + " log " + crap);
 
-                        if (dt.ToString("yyyy-MM-ddTHH:mm:ss") == crap.ToString("yyyy-MM-ddTHH:mm:ss"))
+                        timecoordcache[(long)(logdt.AddSeconds(-offsetseconds) - DateTime.MinValue).TotalSeconds] = new double[] {
+                            double.Parse(arr[latpos]), double.Parse(arr[lngpos]), double.Parse(arr[altpos]) 
+                        };
+
+                        sw4.WriteLine("ph " + filename + " " + photodt + " log " + logdt);
+
+                        if (photodt.ToString("yyyy-MM-ddTHH:mm:ss") == logdt.ToString("yyyy-MM-ddTHH:mm:ss"))
                         {
-                            TXT_outputlog.AppendText("MATCH Photo " + Path.GetFileNameWithoutExtension(file) + " " + dt + "\r\n");
+                            lastmatchindex = a;
+                             
+                            TXT_outputlog.AppendText("MATCH Photo " + Path.GetFileNameWithoutExtension(filename) + " " + photodt + "\r\n");
 
                             matchs++;
 
+                            
+
                              SharpKml.Dom.Timestamp tstamp = new SharpKml.Dom.Timestamp();
 
-                             tstamp.When = dt;
+                             tstamp.When = photodt;
 
                              kml.AddFeature(
                                  new Placemark()
                                  {
                                      Time = tstamp,
-                                     Name = Path.GetFileNameWithoutExtension(file),
+                                     Name = Path.GetFileNameWithoutExtension(filename),
                                      Geometry = new SharpKml.Dom.Point()
                                      {
                                          Coordinate = new Vector(double.Parse(arr[latpos]), double.Parse(arr[lngpos]), double.Parse(arr[altpos]))
                                      },
                                      Description = new Description()
                                      {
-                                         Text = "<table><tr><td><img src=\"" + Path.GetFileName(file).ToLower() + "\" width=500 /></td></tr></table>"
+                                         Text = "<table><tr><td><img src=\"" + Path.GetFileName(filename).ToLower() + "\" width=500 /></td></tr></table>"
                                      },
                                      StyleSelector = new Style()
                                      {
@@ -288,13 +316,15 @@ namespace ArdupilotMega
                                  }
                              );
 
+                             photocoords[filename] = new double[] { double.Parse(arr[latpos]), double.Parse(arr[lngpos]), double.Parse(arr[altpos]) };
 
+                             imagetotime[filename] = (long)(logdt.AddSeconds(-offsetseconds) - DateTime.MinValue).TotalSeconds;
 
-                            sw2.WriteLine(Path.GetFileNameWithoutExtension(file) + " " + arr[lngpos] + " " + arr[latpos] + " " + arr[altpos]);
-                            sw.WriteLine(Path.GetFileNameWithoutExtension(file) + "\t" + crap.ToString("yyyy:MM:dd HH:mm:ss") + "\t" + arr[lngpos] + "\t" + arr[latpos] + "\t" + arr[altpos]);
+                            sw2.WriteLine(Path.GetFileNameWithoutExtension(filename) + " " + arr[lngpos] + " " + arr[latpos] + " " + arr[altpos]);
+                            sw.WriteLine(Path.GetFileNameWithoutExtension(filename) + "\t" + logdt.ToString("yyyy:MM:dd HH:mm:ss") + "\t" + arr[lngpos] + "\t" + arr[latpos] + "\t" + arr[altpos]);
                             sw.Flush();
                             sw2.Flush();
-                            log.InfoFormat(Path.GetFileNameWithoutExtension(file) + " " + arr[lngpos] + " " + arr[latpos] + " " + arr[altpos] + "           ");
+                            log.InfoFormat(Path.GetFileNameWithoutExtension(filename) + " " + arr[lngpos] + " " + arr[latpos] + " " + arr[altpos] + "           ");
                             break;
                         }
                         //Console.WriteLine(crap);
@@ -322,41 +352,22 @@ namespace ArdupilotMega
         private void InitializeComponent()
         {
             this.openFileDialog1 = new System.Windows.Forms.OpenFileDialog();
-            this.BUT_browselog = new ArdupilotMega.MyButton();
-            this.BUT_browsedir = new ArdupilotMega.MyButton();
             this.TXT_logfile = new System.Windows.Forms.TextBox();
             this.TXT_jpgdir = new System.Windows.Forms.TextBox();
             this.TXT_offsetseconds = new System.Windows.Forms.TextBox();
-            this.BUT_doit = new ArdupilotMega.MyButton();
             this.folderBrowserDialog1 = new System.Windows.Forms.FolderBrowserDialog();
             this.TXT_outputlog = new System.Windows.Forms.TextBox();
             this.label1 = new System.Windows.Forms.Label();
+            this.BUT_Geotagimages = new ArdupilotMega.MyButton();
             this.BUT_estoffset = new ArdupilotMega.MyButton();
+            this.BUT_doit = new ArdupilotMega.MyButton();
+            this.BUT_browsedir = new ArdupilotMega.MyButton();
+            this.BUT_browselog = new ArdupilotMega.MyButton();
             this.SuspendLayout();
             // 
             // openFileDialog1
             // 
             this.openFileDialog1.FileName = "openFileDialog1";
-            // 
-            // BUT_browselog
-            // 
-            this.BUT_browselog.Location = new System.Drawing.Point(351, 12);
-            this.BUT_browselog.Name = "BUT_browselog";
-            this.BUT_browselog.Size = new System.Drawing.Size(75, 23);
-            this.BUT_browselog.TabIndex = 0;
-            this.BUT_browselog.Text = "Browse Log";
-            this.BUT_browselog.UseVisualStyleBackColor = true;
-            this.BUT_browselog.Click += new System.EventHandler(this.BUT_browselog_Click);
-            // 
-            // BUT_browsedir
-            // 
-            this.BUT_browsedir.Location = new System.Drawing.Point(351, 41);
-            this.BUT_browsedir.Name = "BUT_browsedir";
-            this.BUT_browsedir.Size = new System.Drawing.Size(75, 23);
-            this.BUT_browsedir.TabIndex = 1;
-            this.BUT_browsedir.Text = "Browse Directory";
-            this.BUT_browsedir.UseVisualStyleBackColor = true;
-            this.BUT_browsedir.Click += new System.EventHandler(this.BUT_browsedir_Click);
             // 
             // TXT_logfile
             // 
@@ -382,16 +393,6 @@ namespace ArdupilotMega
             this.TXT_offsetseconds.TabIndex = 4;
             this.TXT_offsetseconds.Text = "-86158";
             // 
-            // BUT_doit
-            // 
-            this.BUT_doit.Location = new System.Drawing.Point(194, 105);
-            this.BUT_doit.Name = "BUT_doit";
-            this.BUT_doit.Size = new System.Drawing.Size(75, 23);
-            this.BUT_doit.TabIndex = 5;
-            this.BUT_doit.Text = "Do It";
-            this.BUT_doit.UseVisualStyleBackColor = true;
-            this.BUT_doit.Click += new System.EventHandler(this.BUT_doit_Click);
-            // 
             // TXT_outputlog
             // 
             this.TXT_outputlog.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
@@ -414,6 +415,17 @@ namespace ArdupilotMega
             this.label1.TabIndex = 7;
             this.label1.Text = "Seconds offset";
             // 
+            // BUT_Geotagimages
+            // 
+            this.BUT_Geotagimages.Enabled = false;
+            this.BUT_Geotagimages.Location = new System.Drawing.Point(366, 105);
+            this.BUT_Geotagimages.Name = "BUT_Geotagimages";
+            this.BUT_Geotagimages.Size = new System.Drawing.Size(75, 23);
+            this.BUT_Geotagimages.TabIndex = 9;
+            this.BUT_Geotagimages.Text = "GeoTag Images";
+            this.BUT_Geotagimages.UseVisualStyleBackColor = true;
+            this.BUT_Geotagimages.Click += new System.EventHandler(this.BUT_Geotagimages_Click);
+            // 
             // BUT_estoffset
             // 
             this.BUT_estoffset.Location = new System.Drawing.Point(286, 67);
@@ -424,9 +436,40 @@ namespace ArdupilotMega
             this.BUT_estoffset.UseVisualStyleBackColor = true;
             this.BUT_estoffset.Click += new System.EventHandler(this.BUT_estoffset_Click);
             // 
+            // BUT_doit
+            // 
+            this.BUT_doit.Location = new System.Drawing.Point(285, 105);
+            this.BUT_doit.Name = "BUT_doit";
+            this.BUT_doit.Size = new System.Drawing.Size(75, 23);
+            this.BUT_doit.TabIndex = 5;
+            this.BUT_doit.Text = "Do It";
+            this.BUT_doit.UseVisualStyleBackColor = true;
+            this.BUT_doit.Click += new System.EventHandler(this.BUT_doit_Click);
+            // 
+            // BUT_browsedir
+            // 
+            this.BUT_browsedir.Location = new System.Drawing.Point(351, 41);
+            this.BUT_browsedir.Name = "BUT_browsedir";
+            this.BUT_browsedir.Size = new System.Drawing.Size(75, 23);
+            this.BUT_browsedir.TabIndex = 1;
+            this.BUT_browsedir.Text = "Browse Directory";
+            this.BUT_browsedir.UseVisualStyleBackColor = true;
+            this.BUT_browsedir.Click += new System.EventHandler(this.BUT_browsedir_Click);
+            // 
+            // BUT_browselog
+            // 
+            this.BUT_browselog.Location = new System.Drawing.Point(351, 12);
+            this.BUT_browselog.Name = "BUT_browselog";
+            this.BUT_browselog.Size = new System.Drawing.Size(75, 23);
+            this.BUT_browselog.TabIndex = 0;
+            this.BUT_browselog.Text = "Browse Log";
+            this.BUT_browselog.UseVisualStyleBackColor = true;
+            this.BUT_browselog.Click += new System.EventHandler(this.BUT_browselog_Click);
+            // 
             // Georefimage
             // 
             this.ClientSize = new System.Drawing.Size(453, 299);
+            this.Controls.Add(this.BUT_Geotagimages);
             this.Controls.Add(this.BUT_estoffset);
             this.Controls.Add(this.label1);
             this.Controls.Add(this.TXT_outputlog);
@@ -480,11 +523,150 @@ namespace ArdupilotMega
             }
             catch { }
             BUT_doit.Enabled = true;
+            BUT_Geotagimages.Enabled = true;
         }
 
         private void BUT_estoffset_Click(object sender, EventArgs e)
         {
             dowork(TXT_logfile.Text, TXT_jpgdir.Text, 0, true);
+        }
+
+        private void BUT_Geotagimages_Click(object sender, EventArgs e)
+        {
+
+            foreach (string file in photocoords.Keys)
+            {
+                WriteCoordinatesToImage(file, ((double[])photocoords[file])[0], ((double[])photocoords[file])[1], ((double[])photocoords[file])[2]);
+            }
+
+        }
+
+        byte[] coordtobytearray(double coordin)
+        {
+            double coord = Math.Abs(coordin);
+
+            byte[] output = new byte[sizeof(double) * 3];
+
+            int d = (int)coord;
+            int m = (int)((coord - d) * 60);
+            double s = ((((coord - d) * 60) - m) * 60);
+            /*
+21 00 00 00 01 00 00 00--> 33/1
+18 00 00 00 01 00 00 00--> 24/1
+06 02 00 00 0A 00 00 00--> 518/10
+*/
+
+            Array.Copy(BitConverter.GetBytes((uint)d), 0, output, 0, sizeof(uint));
+            Array.Copy(BitConverter.GetBytes((uint)1), 0, output, 4, sizeof(uint));
+            Array.Copy(BitConverter.GetBytes((uint)m), 0, output, 8, sizeof(uint));
+            Array.Copy(BitConverter.GetBytes((uint)1), 0, output, 12, sizeof(uint));
+            Array.Copy(BitConverter.GetBytes((uint)(s * 10)), 0, output, 16, sizeof(uint));
+            Array.Copy(BitConverter.GetBytes((uint)10), 0, output, 20, sizeof(uint));
+
+            return output;
+        }
+
+        void WriteCoordinatesToImage(string Filename, double dLat, double dLong, double alt)
+        {
+            using (MemoryStream ms = new MemoryStream(File.ReadAllBytes(Filename)))
+            {
+                TXT_outputlog.AppendText("GeoTagging "+Filename + "\n");
+                Application.DoEvents();
+
+                using (Image Pic = Image.FromStream(ms))
+                {
+                    PropertyItem[] pi = Pic.PropertyItems;
+
+                    pi[0].Id = 0x0004;
+                    pi[0].Type = 5;
+                    pi[0].Len = sizeof(ulong) * 3;
+                    pi[0].Value = coordtobytearray(dLong);
+                    Pic.SetPropertyItem(pi[0]);
+
+                    pi[0].Id = 0x0002;
+                    pi[0].Type = 5;
+                    pi[0].Len = sizeof(ulong) * 3;
+                    pi[0].Value = coordtobytearray(dLat);
+                    Pic.SetPropertyItem(pi[0]);
+
+                    pi[0].Id = 0x0006;
+                    pi[0].Type = 5;
+                    pi[0].Len = 8;
+                    pi[0].Value = new Rational(alt).GetBytes();
+                    Pic.SetPropertyItem(pi[0]);
+
+                    pi[0].Id = 1;
+                    pi[0].Len = 2;
+                    pi[0].Type = 2;
+                    if (dLat < 0)
+                    {
+                        pi[0].Value = new byte[] { (byte)'S', 0 };
+                    }
+                    else
+                    {
+                        pi[0].Value = new byte[] { (byte)'N', 0 };
+                    }
+                    Pic.SetPropertyItem(pi[0]);
+
+                    pi[0].Id = 3;
+                    pi[0].Len = 2;
+                    pi[0].Type = 2;
+                    if (dLong < 0)
+                    {
+                        pi[0].Value = new byte[] { (byte)'W', 0 };
+                    }
+                    else
+                    {
+                        pi[0].Value = new byte[] { (byte)'E', 0 };
+                    }
+                    Pic.SetPropertyItem(pi[0]);
+
+
+
+                    string outputfilename = Path.GetDirectoryName(Filename) + Path.DirectorySeparatorChar + Path.GetFileNameWithoutExtension(Filename) + "_geotag" + Path.GetExtension(Filename);
+
+                    File.Delete(outputfilename);
+
+                    Pic.Save(outputfilename);
+                }
+            }
+        }
+    }
+
+    public class Rational
+    {
+        uint dem = 0;
+        uint num = 0;
+
+        public Rational(double input)
+        {
+            Value = input;
+        }
+
+        public byte[] GetBytes()
+        {
+            byte[] answer = new byte[8];
+
+            Array.Copy(BitConverter.GetBytes((uint)num), 0, answer, 0, sizeof(uint));
+            Array.Copy(BitConverter.GetBytes((uint)dem), 0, answer, 4, sizeof(uint));
+
+            return answer;
+        }
+
+        public double Value { 
+            get { 
+                return num / dem;
+            } 
+            set {
+                if ((value % 1.0) != 0)
+                {
+                    dem = 100; num = (uint)(value * dem);
+                }
+                else
+                {
+                    dem = 1; num = (uint)(value);
+                }
+            } 
         }
     }
 }

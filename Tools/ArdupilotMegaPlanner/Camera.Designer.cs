@@ -231,7 +231,7 @@
             resources.ApplyResources(this.num_overlap, "num_overlap");
             this.num_overlap.Name = "num_overlap";
             this.num_overlap.Value = new decimal(new int[] {
-            60,
+            70,
             0,
             0,
             0});
@@ -248,7 +248,7 @@
             resources.ApplyResources(this.num_sidelap, "num_sidelap");
             this.num_sidelap.Name = "num_sidelap";
             this.num_sidelap.Value = new decimal(new int[] {
-            30,
+            60,
             0,
             0,
             0});

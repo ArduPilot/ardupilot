@@ -7,4 +7,4 @@ list below
 Test Developer ...
 
 Chris Anderson
-Phil Cole put this here after rebasing an old branch to master.
+Phil Cole after following the instructions explicitly.
