@@ -29,6 +29,7 @@
         private void InitializeComponent()
         {
             this.components = new System.ComponentModel.Container();
+            System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(ConfigArducopter));
             this.myLabel3 = new ArdupilotMega.MyLabel();
             this.TUNE_LOW = new System.Windows.Forms.NumericUpDown();
             this.TUNE_HIGH = new System.Windows.Forms.NumericUpDown();
@@ -180,35 +181,25 @@
             // 
             // myLabel3
             // 
-            this.myLabel3.Location = new System.Drawing.Point(540, 302);
+            resources.ApplyResources(this.myLabel3, "myLabel3");
             this.myLabel3.Name = "myLabel3";
             this.myLabel3.resize = false;
-            this.myLabel3.Size = new System.Drawing.Size(29, 23);
-            this.myLabel3.TabIndex = 42;
-            this.myLabel3.Text = "Min";
             // 
             // TUNE_LOW
             // 
-            this.TUNE_LOW.Location = new System.Drawing.Point(575, 305);
+            resources.ApplyResources(this.TUNE_LOW, "TUNE_LOW");
             this.TUNE_LOW.Name = "TUNE_LOW";
-            this.TUNE_LOW.Size = new System.Drawing.Size(51, 20);
-            this.TUNE_LOW.TabIndex = 41;
             // 
             // TUNE_HIGH
             // 
-            this.TUNE_HIGH.Location = new System.Drawing.Point(665, 305);
+            resources.ApplyResources(this.TUNE_HIGH, "TUNE_HIGH");
             this.TUNE_HIGH.Name = "TUNE_HIGH";
-            this.TUNE_HIGH.Size = new System.Drawing.Size(46, 20);
-            this.TUNE_HIGH.TabIndex = 40;
             // 
             // myLabel2
             // 
-            this.myLabel2.Location = new System.Drawing.Point(540, 277);
+            resources.ApplyResources(this.myLabel2, "myLabel2");
             this.myLabel2.Name = "myLabel2";
             this.myLabel2.resize = false;
-            this.myLabel2.Size = new System.Drawing.Size(53, 23);
-            this.myLabel2.TabIndex = 39;
-            this.myLabel2.Text = "Ch6 Opt";
             // 
             // TUNE
             // 
@@ -216,41 +207,36 @@
             this.TUNE.DropDownWidth = 150;
             this.TUNE.FormattingEnabled = true;
             this.TUNE.Items.AddRange(new object[] {
-            "CH6_NONE",
-            "CH6_STABILIZE_KP",
-            "CH6_STABILIZE_KI",
-            "CH6_YAW_KP",
-            "CH6_RATE_KP",
-            "CH6_RATE_KI",
-            "CH6_YAW_RATE_KP",
-            "CH6_THROTTLE_KP",
-            "CH6_TOP_BOTTOM_RATIO",
-            "CH6_RELAY",
-            "CH6_TRAVERSE_SPEED",
-            "CH6_NAV_P",
-            "CH6_LOITER_P",
-            "CH6_HELI_EXTERNAL_GYRO",
-            "CH6_THR_HOLD_KP",
-            "CH6_Z_GAIN",
-            "CH6_DAMP",
-            "CH6_OPTFLOW_KP",
-            "CH6_OPTFLOW_KI",
-            "CH6_OPTFLOW_KD",
-            "CH6_NAV_I",
-            "CH6_RATE_KD"});
-            this.TUNE.Location = new System.Drawing.Point(599, 277);
+            resources.GetString("TUNE.Items"),
+            resources.GetString("TUNE.Items1"),
+            resources.GetString("TUNE.Items2"),
+            resources.GetString("TUNE.Items3"),
+            resources.GetString("TUNE.Items4"),
+            resources.GetString("TUNE.Items5"),
+            resources.GetString("TUNE.Items6"),
+            resources.GetString("TUNE.Items7"),
+            resources.GetString("TUNE.Items8"),
+            resources.GetString("TUNE.Items9"),
+            resources.GetString("TUNE.Items10"),
+            resources.GetString("TUNE.Items11"),
+            resources.GetString("TUNE.Items12"),
+            resources.GetString("TUNE.Items13"),
+            resources.GetString("TUNE.Items14"),
+            resources.GetString("TUNE.Items15"),
+            resources.GetString("TUNE.Items16"),
+            resources.GetString("TUNE.Items17"),
+            resources.GetString("TUNE.Items18"),
+            resources.GetString("TUNE.Items19"),
+            resources.GetString("TUNE.Items20"),
+            resources.GetString("TUNE.Items21")});
+            resources.ApplyResources(this.TUNE, "TUNE");
             this.TUNE.Name = "TUNE";
-            this.TUNE.Size = new System.Drawing.Size(112, 21);
-            this.TUNE.TabIndex = 38;
             // 
             // myLabel1
             // 
-            this.myLabel1.Location = new System.Drawing.Point(540, 329);
+            resources.ApplyResources(this.myLabel1, "myLabel1");
             this.myLabel1.Name = "myLabel1";
             this.myLabel1.resize = false;
-            this.myLabel1.Size = new System.Drawing.Size(53, 23);
-            this.myLabel1.TabIndex = 37;
-            this.myLabel1.Text = "Ch7 Opt";
             // 
             // CH7_OPT
             // 
@@ -258,18 +244,16 @@
             this.CH7_OPT.DropDownWidth = 150;
             this.CH7_OPT.FormattingEnabled = true;
             this.CH7_OPT.Items.AddRange(new object[] {
-            "Do Nothing",
-            "",
-            "",
-            "Simple Mode",
-            "RTL",
-            "",
-            "",
-            "Save WP"});
-            this.CH7_OPT.Location = new System.Drawing.Point(599, 329);
+            resources.GetString("CH7_OPT.Items"),
+            resources.GetString("CH7_OPT.Items1"),
+            resources.GetString("CH7_OPT.Items2"),
+            resources.GetString("CH7_OPT.Items3"),
+            resources.GetString("CH7_OPT.Items4"),
+            resources.GetString("CH7_OPT.Items5"),
+            resources.GetString("CH7_OPT.Items6"),
+            resources.GetString("CH7_OPT.Items7")});
+            resources.ApplyResources(this.CH7_OPT, "CH7_OPT");
             this.CH7_OPT.Name = "CH7_OPT";
-            this.CH7_OPT.Size = new System.Drawing.Size(112, 21);
-            this.CH7_OPT.TabIndex = 36;
             // 
             // groupBox5
             // 
@@ -281,88 +265,56 @@
             this.groupBox5.Controls.Add(this.label20);
             this.groupBox5.Controls.Add(this.THR_RATE_P);
             this.groupBox5.Controls.Add(this.label25);
-            this.groupBox5.Location = new System.Drawing.Point(12, 267);
+            resources.ApplyResources(this.groupBox5, "groupBox5");
             this.groupBox5.Name = "groupBox5";
-            this.groupBox5.Size = new System.Drawing.Size(170, 110);
-            this.groupBox5.TabIndex = 35;
             this.groupBox5.TabStop = false;
-            this.groupBox5.Text = "Throttle Rate";
             // 
             // THR_RATE_D
             // 
-            this.THR_RATE_D.Location = new System.Drawing.Point(80, 60);
+            resources.ApplyResources(this.THR_RATE_D, "THR_RATE_D");
             this.THR_RATE_D.Name = "THR_RATE_D";
-            this.THR_RATE_D.Size = new System.Drawing.Size(78, 20);
-            this.THR_RATE_D.TabIndex = 14;
             // 
             // label29
             // 
-            this.label29.ImeMode = System.Windows.Forms.ImeMode.NoControl;
-            this.label29.Location = new System.Drawing.Point(6, 63);
+            resources.ApplyResources(this.label29, "label29");
             this.label29.Name = "label29";
-            this.label29.Size = new System.Drawing.Size(10, 13);
-            this.label29.TabIndex = 15;
-            this.label29.Text = "D";
             // 
             // label14
             // 
-            this.label14.ImeMode = System.Windows.Forms.ImeMode.NoControl;
-            this.label14.Location = new System.Drawing.Point(6, 86);
+            resources.ApplyResources(this.label14, "label14");
             this.label14.Name = "label14";
-            this.label14.Size = new System.Drawing.Size(65, 13);
-            this.label14.TabIndex = 16;
-            this.label14.Text = "IMAX";
             // 
             // THR_RATE_IMAX
             // 
-            this.THR_RATE_IMAX.Location = new System.Drawing.Point(80, 83);
+            resources.ApplyResources(this.THR_RATE_IMAX, "THR_RATE_IMAX");
             this.THR_RATE_IMAX.Name = "THR_RATE_IMAX";
-            this.THR_RATE_IMAX.Size = new System.Drawing.Size(78, 20);
-            this.THR_RATE_IMAX.TabIndex = 11;
             // 
             // THR_RATE_I
             // 
-            this.THR_RATE_I.Location = new System.Drawing.Point(80, 37);
+            resources.ApplyResources(this.THR_RATE_I, "THR_RATE_I");
             this.THR_RATE_I.Name = "THR_RATE_I";
-            this.THR_RATE_I.Size = new System.Drawing.Size(78, 20);
-            this.THR_RATE_I.TabIndex = 7;
             // 
             // label20
             // 
-            this.label20.ImeMode = System.Windows.Forms.ImeMode.NoControl;
-            this.label20.Location = new System.Drawing.Point(6, 40);
+            resources.ApplyResources(this.label20, "label20");
             this.label20.Name = "label20";
-            this.label20.Size = new System.Drawing.Size(10, 13);
-            this.label20.TabIndex = 14;
-            this.label20.Text = "I";
             // 
             // THR_RATE_P
             // 
-            this.THR_RATE_P.Location = new System.Drawing.Point(80, 13);
+            resources.ApplyResources(this.THR_RATE_P, "THR_RATE_P");
             this.THR_RATE_P.Name = "THR_RATE_P";
-            this.THR_RATE_P.Size = new System.Drawing.Size(78, 20);
-            this.THR_RATE_P.TabIndex = 5;
             // 
             // label25
             // 
-            this.label25.ImeMode = System.Windows.Forms.ImeMode.NoControl;
-            this.label25.Location = new System.Drawing.Point(6, 16);
+            resources.ApplyResources(this.label25, "label25");
             this.label25.Name = "label25";
-            this.label25.Size = new System.Drawing.Size(14, 13);
-            this.label25.TabIndex = 15;
-            this.label25.Text = "P";
             // 
             // CHK_lockrollpitch
             // 
-            this.CHK_lockrollpitch.AutoSize = true;
+            resources.ApplyResources(this.CHK_lockrollpitch, "CHK_lockrollpitch");
             this.CHK_lockrollpitch.Checked = true;
             this.CHK_lockrollpitch.CheckState = System.Windows.Forms.CheckState.Checked;
-            this.CHK_lockrollpitch.ImeMode = System.Windows.Forms.ImeMode.NoControl;
-            this.CHK_lockrollpitch.Location = new System.Drawing.Point(9, 247);
             this.CHK_lockrollpitch.Name = "CHK_lockrollpitch";
-            this.CHK_lockrollpitch.Size = new System.Drawing.Size(154, 17);
-            this.CHK_lockrollpitch.TabIndex = 34;
-            this.CHK_lockrollpitch.Text = "Lock Pitch and Roll Values";
             this.CHK_lockrollpitch.UseVisualStyleBackColor = true;
             // 
             // groupBox4
@@ -377,119 +329,77 @@
             this.groupBox4.Controls.Add(this.label15);
             this.groupBox4.Controls.Add(this.NAV_LAT_P);
             this.groupBox4.Controls.Add(this.label16);
-            this.groupBox4.Location = new System.Drawing.Point(540, 133);
+            resources.ApplyResources(this.groupBox4, "groupBox4");
             this.groupBox4.Name = "groupBox4";
-            this.groupBox4.Size = new System.Drawing.Size(170, 131);
-            this.groupBox4.TabIndex = 24;
             this.groupBox4.TabStop = false;
-            this.groupBox4.Text = "Nav WP";
             // 
             // NAV_LAT_D
             // 
-            this.NAV_LAT_D.Location = new System.Drawing.Point(80, 60);
+            resources.ApplyResources(this.NAV_LAT_D, "NAV_LAT_D");
             this.NAV_LAT_D.Name = "NAV_LAT_D";
-            this.NAV_LAT_D.Size = new System.Drawing.Size(78, 20);
-            this.NAV_LAT_D.TabIndex = 18;
             // 
             // label27
             // 
-            this.label27.ImeMode = System.Windows.Forms.ImeMode.NoControl;
-            this.label27.Location = new System.Drawing.Point(6, 63);
+            resources.ApplyResources(this.label27, "label27");
             this.label27.Name = "label27";
-            this.label27.Size = new System.Drawing.Size(10, 13);
-            this.label27.TabIndex = 19;
-            this.label27.Text = "D";
             // 
             // WP_SPEED_MAX
             // 
-            this.WP_SPEED_MAX.Location = new System.Drawing.Point(80, 107);
+            resources.ApplyResources(this.WP_SPEED_MAX, "WP_SPEED_MAX");
             this.WP_SPEED_MAX.Name = "WP_SPEED_MAX";
-            this.WP_SPEED_MAX.Size = new System.Drawing.Size(78, 20);
-            this.WP_SPEED_MAX.TabIndex = 16;
             // 
             // label9
             // 
-            this.label9.ImeMode = System.Windows.Forms.ImeMode.NoControl;
-            this.label9.Location = new System.Drawing.Point(6, 110);
+            resources.ApplyResources(this.label9, "label9");
             this.label9.Name = "label9";
-            this.label9.Size = new System.Drawing.Size(54, 13);
-            this.label9.TabIndex = 17;
-            this.label9.Text = "m/s";
             // 
             // NAV_LAT_IMAX
             // 
-            this.NAV_LAT_IMAX.Location = new System.Drawing.Point(80, 84);
+            resources.ApplyResources(this.NAV_LAT_IMAX, "NAV_LAT_IMAX");
             this.NAV_LAT_IMAX.Name = "NAV_LAT_IMAX";
-            this.NAV_LAT_IMAX.Size = new System.Drawing.Size(78, 20);
-            this.NAV_LAT_IMAX.TabIndex = 11;
             // 
             // label13
             // 
-            this.label13.ImeMode = System.Windows.Forms.ImeMode.NoControl;
-            this.label13.Location = new System.Drawing.Point(6, 87);
+            resources.ApplyResources(this.label13, "label13");
             this.label13.Name = "label13";
-            this.label13.Size = new System.Drawing.Size(65, 13);
-            this.label13.TabIndex = 12;
-            this.label13.Text = "IMAX";
             // 
             // NAV_LAT_I
             // 
-            this.NAV_LAT_I.Location = new System.Drawing.Point(80, 37);
+            resources.ApplyResources(this.NAV_LAT_I, "NAV_LAT_I");
             this.NAV_LAT_I.Name = "NAV_LAT_I";
-            this.NAV_LAT_I.Size = new System.Drawing.Size(78, 20);
-            this.NAV_LAT_I.TabIndex = 7;
             // 
             // label15
             // 
-            this.label15.ImeMode = System.Windows.Forms.ImeMode.NoControl;
-            this.label15.Location = new System.Drawing.Point(6, 40);
+            resources.ApplyResources(this.label15, "label15");
             this.label15.Name = "label15";
-            this.label15.Size = new System.Drawing.Size(10, 13);
-            this.label15.TabIndex = 14;
-            this.label15.Text = "I";
             // 
             // NAV_LAT_P
             // 
-            this.NAV_LAT_P.Location = new System.Drawing.Point(80, 13);
+            resources.ApplyResources(this.NAV_LAT_P, "NAV_LAT_P");
             this.NAV_LAT_P.Name = "NAV_LAT_P";
-            this.NAV_LAT_P.Size = new System.Drawing.Size(78, 20);
-            this.NAV_LAT_P.TabIndex = 5;
             // 
             // label16
             // 
-            this.label16.ImeMode = System.Windows.Forms.ImeMode.NoControl;
-            this.label16.Location = new System.Drawing.Point(6, 16);
+            resources.ApplyResources(this.label16, "label16");
             this.label16.Name = "label16";
-            this.label16.Size = new System.Drawing.Size(14, 13);
-            this.label16.TabIndex = 15;
-            this.label16.Text = "P";
             // 
             // groupBox6
             // 
             this.groupBox6.Controls.Add(this.XTRK_GAIN_SC1);
             this.groupBox6.Controls.Add(this.label18);
-            this.groupBox6.Location = new System.Drawing.Point(364, 267);
+            resources.ApplyResources(this.groupBox6, "groupBox6");
             this.groupBox6.Name = "groupBox6";
-            this.groupBox6.Size = new System.Drawing.Size(170, 43);
-            this.groupBox6.TabIndex = 25;
             this.groupBox6.TabStop = false;
-            this.groupBox6.Text = "Crosstrack Correction";
             // 
             // XTRK_GAIN_SC1
             // 
-            this.XTRK_GAIN_SC1.Location = new System.Drawing.Point(80, 13);
+            resources.ApplyResources(this.XTRK_GAIN_SC1, "XTRK_GAIN_SC1");
             this.XTRK_GAIN_SC1.Name = "XTRK_GAIN_SC1";
-            this.XTRK_GAIN_SC1.Size = new System.Drawing.Size(78, 20);
-            this.XTRK_GAIN_SC1.TabIndex = 5;
             // 
             // label18
             // 
-            this.label18.ImeMode = System.Windows.Forms.ImeMode.NoControl;
-            this.label18.Location = new System.Drawing.Point(6, 16);
+            resources.ApplyResources(this.label18, "label18");
             this.label18.Name = "label18";
-            this.label18.Size = new System.Drawing.Size(38, 13);
-            this.label18.TabIndex = 15;
-            this.label18.Text = "Gain";
             // 
             // groupBox7
             // 
@@ -499,60 +409,39 @@
             this.groupBox7.Controls.Add(this.label21);
             this.groupBox7.Controls.Add(this.THR_ALT_P);
             this.groupBox7.Controls.Add(this.label22);
-            this.groupBox7.Location = new System.Drawing.Point(188, 267);
+            resources.ApplyResources(this.groupBox7, "groupBox7");
             this.groupBox7.Name = "groupBox7";
-            this.groupBox7.Size = new System.Drawing.Size(170, 110);
-            this.groupBox7.TabIndex = 26;
             this.groupBox7.TabStop = false;
-            this.groupBox7.Text = "Altitude Hold";
             // 
             // THR_ALT_IMAX
             // 
-            this.THR_ALT_IMAX.Location = new System.Drawing.Point(80, 63);
+            resources.ApplyResources(this.THR_ALT_IMAX, "THR_ALT_IMAX");
             this.THR_ALT_IMAX.Name = "THR_ALT_IMAX";
-            this.THR_ALT_IMAX.Size = new System.Drawing.Size(78, 20);
-            this.THR_ALT_IMAX.TabIndex = 11;
             // 
             // label19
             // 
-            this.label19.ImeMode = System.Windows.Forms.ImeMode.NoControl;
-            this.label19.Location = new System.Drawing.Point(6, 66);
+            resources.ApplyResources(this.label19, "label19");
             this.label19.Name = "label19";
-            this.label19.Size = new System.Drawing.Size(65, 13);
-            this.label19.TabIndex = 12;
-            this.label19.Text = "IMAX";
             // 
             // THR_ALT_I
             // 
-            this.THR_ALT_I.Location = new System.Drawing.Point(80, 37);
+            resources.ApplyResources(this.THR_ALT_I, "THR_ALT_I");
             this.THR_ALT_I.Name = "THR_ALT_I";
-            this.THR_ALT_I.Size = new System.Drawing.Size(78, 20);
-            this.THR_ALT_I.TabIndex = 7;
             // 
             // label21
             // 
-            this.label21.ImeMode = System.Windows.Forms.ImeMode.NoControl;
-            this.label21.Location = new System.Drawing.Point(6, 40);
+            resources.ApplyResources(this.label21, "label21");
             this.label21.Name = "label21";
-            this.label21.Size = new System.Drawing.Size(10, 13);
-            this.label21.TabIndex = 14;
-            this.label21.Text = "I";
             // 
             // THR_ALT_P
             // 
-            this.THR_ALT_P.Location = new System.Drawing.Point(80, 13);
+            resources.ApplyResources(this.THR_ALT_P, "THR_ALT_P");
             this.THR_ALT_P.Name = "THR_ALT_P";
-            this.THR_ALT_P.Size = new System.Drawing.Size(78, 20);
-            this.THR_ALT_P.TabIndex = 5;
             // 
             // label22
             // 
-            this.label22.ImeMode = System.Windows.Forms.ImeMode.NoControl;
-            this.label22.Location = new System.Drawing.Point(6, 16);
+            resources.ApplyResources(this.label22, "label22");
             this.label22.Name = "label22";
-            this.label22.Size = new System.Drawing.Size(14, 13);
-            this.label22.TabIndex = 15;
-            this.label22.Text = "P";
             // 
             // groupBox19
             // 
@@ -562,60 +451,39 @@
             this.groupBox19.Controls.Add(this.label30);
             this.groupBox19.Controls.Add(this.HLD_LAT_P);
             this.groupBox19.Controls.Add(this.label31);
-            this.groupBox19.Location = new System.Drawing.Point(537, 13);
+            resources.ApplyResources(this.groupBox19, "groupBox19");
             this.groupBox19.Name = "groupBox19";
-            this.groupBox19.Size = new System.Drawing.Size(170, 95);
-            this.groupBox19.TabIndex = 27;
             this.groupBox19.TabStop = false;
-            this.groupBox19.Text = "Loiter";
             // 
             // HLD_LAT_IMAX
             // 
-            this.HLD_LAT_IMAX.Location = new System.Drawing.Point(80, 61);
+            resources.ApplyResources(this.HLD_LAT_IMAX, "HLD_LAT_IMAX");
             this.HLD_LAT_IMAX.Name = "HLD_LAT_IMAX";
-            this.HLD_LAT_IMAX.Size = new System.Drawing.Size(78, 20);
-            this.HLD_LAT_IMAX.TabIndex = 11;
             // 
             // label28
             // 
-            this.label28.ImeMode = System.Windows.Forms.ImeMode.NoControl;
-            this.label28.Location = new System.Drawing.Point(6, 64);
+            resources.ApplyResources(this.label28, "label28");
             this.label28.Name = "label28";
-            this.label28.Size = new System.Drawing.Size(65, 13);
-            this.label28.TabIndex = 12;
-            this.label28.Text = "IMAX";
             // 
             // HLD_LAT_I
             // 
-            this.HLD_LAT_I.Location = new System.Drawing.Point(80, 37);
+            resources.ApplyResources(this.HLD_LAT_I, "HLD_LAT_I");
             this.HLD_LAT_I.Name = "HLD_LAT_I";
-            this.HLD_LAT_I.Size = new System.Drawing.Size(78, 20);
-            this.HLD_LAT_I.TabIndex = 7;
             // 
             // label30
             // 
-            this.label30.ImeMode = System.Windows.Forms.ImeMode.NoControl;
-            this.label30.Location = new System.Drawing.Point(6, 40);
+            resources.ApplyResources(this.label30, "label30");
             this.label30.Name = "label30";
-            this.label30.Size = new System.Drawing.Size(10, 13);
-            this.label30.TabIndex = 14;
-            this.label30.Text = "I";
             // 
             // HLD_LAT_P
             // 
-            this.HLD_LAT_P.Location = new System.Drawing.Point(80, 13);
+            resources.ApplyResources(this.HLD_LAT_P, "HLD_LAT_P");
             this.HLD_LAT_P.Name = "HLD_LAT_P";
-            this.HLD_LAT_P.Size = new System.Drawing.Size(78, 20);
-            this.HLD_LAT_P.TabIndex = 5;
             // 
             // label31
             // 
-            this.label31.ImeMode = System.Windows.Forms.ImeMode.NoControl;
-            this.label31.Location = new System.Drawing.Point(6, 16);
+            resources.ApplyResources(this.label31, "label31");
             this.label31.Name = "label31";
-            this.label31.Size = new System.Drawing.Size(14, 13);
-            this.label31.TabIndex = 15;
-            this.label31.Text = "P";
             // 
             // groupBox20
             // 
@@ -625,60 +493,39 @@
             this.groupBox20.Controls.Add(this.label34);
             this.groupBox20.Controls.Add(this.STB_YAW_P);
             this.groupBox20.Controls.Add(this.label35);
-            this.groupBox20.Location = new System.Drawing.Point(364, 13);
+            resources.ApplyResources(this.groupBox20, "groupBox20");
             this.groupBox20.Name = "groupBox20";
-            this.groupBox20.Size = new System.Drawing.Size(170, 95);
-            this.groupBox20.TabIndex = 28;
             this.groupBox20.TabStop = false;
-            this.groupBox20.Text = "Stabilize Yaw";
             // 
             // STB_YAW_IMAX
             // 
-            this.STB_YAW_IMAX.Location = new System.Drawing.Point(80, 63);
+            resources.ApplyResources(this.STB_YAW_IMAX, "STB_YAW_IMAX");
             this.STB_YAW_IMAX.Name = "STB_YAW_IMAX";
-            this.STB_YAW_IMAX.Size = new System.Drawing.Size(78, 20);
-            this.STB_YAW_IMAX.TabIndex = 11;
             // 
             // label32
             // 
-            this.label32.ImeMode = System.Windows.Forms.ImeMode.NoControl;
-            this.label32.Location = new System.Drawing.Point(6, 66);
+            resources.ApplyResources(this.label32, "label32");
             this.label32.Name = "label32";
-            this.label32.Size = new System.Drawing.Size(65, 13);
-            this.label32.TabIndex = 12;
-            this.label32.Text = "IMAX ";
             // 
             // STB_YAW_I
             // 
-            this.STB_YAW_I.Location = new System.Drawing.Point(80, 37);
+            resources.ApplyResources(this.STB_YAW_I, "STB_YAW_I");
             this.STB_YAW_I.Name = "STB_YAW_I";
-            this.STB_YAW_I.Size = new System.Drawing.Size(78, 20);
-            this.STB_YAW_I.TabIndex = 7;
             // 
             // label34
             // 
-            this.label34.ImeMode = System.Windows.Forms.ImeMode.NoControl;
-            this.label34.Location = new System.Drawing.Point(6, 40);
+            resources.ApplyResources(this.label34, "label34");
             this.label34.Name = "label34";
-            this.label34.Size = new System.Drawing.Size(10, 13);
-            this.label34.TabIndex = 14;
-            this.label34.Text = "I";
             // 
             // STB_YAW_P
             // 
-            this.STB_YAW_P.Location = new System.Drawing.Point(80, 13);
+            resources.ApplyResources(this.STB_YAW_P, "STB_YAW_P");
             this.STB_YAW_P.Name = "STB_YAW_P";
-            this.STB_YAW_P.Size = new System.Drawing.Size(78, 20);
-            this.STB_YAW_P.TabIndex = 5;
             // 
             // label35
             // 
-            this.label35.ImeMode = System.Windows.Forms.ImeMode.NoControl;
-            this.label35.Location = new System.Drawing.Point(6, 16);
+            resources.ApplyResources(this.label35, "label35");
             this.label35.Name = "label35";
-            this.label35.Size = new System.Drawing.Size(14, 13);
-            this.label35.TabIndex = 15;
-            this.label35.Text = "P";
             // 
             // groupBox21
             // 
@@ -690,76 +537,49 @@
             this.groupBox21.Controls.Add(this.label41);
             this.groupBox21.Controls.Add(this.STB_PIT_P);
             this.groupBox21.Controls.Add(this.label42);
-            this.groupBox21.Location = new System.Drawing.Point(188, 13);
+            resources.ApplyResources(this.groupBox21, "groupBox21");
             this.groupBox21.Name = "groupBox21";
-            this.groupBox21.Size = new System.Drawing.Size(170, 114);
-            this.groupBox21.TabIndex = 29;
             this.groupBox21.TabStop = false;
-            this.groupBox21.Text = "Stabilize Pitch";
             // 
             // STAB_D
             // 
-            this.STAB_D.Location = new System.Drawing.Point(80, 88);
+            resources.ApplyResources(this.STAB_D, "STAB_D");
             this.STAB_D.Name = "STAB_D";
-            this.STAB_D.Size = new System.Drawing.Size(78, 20);
-            this.STAB_D.TabIndex = 16;
             // 
             // lblSTAB_D
             // 
-            this.lblSTAB_D.ImeMode = System.Windows.Forms.ImeMode.NoControl;
-            this.lblSTAB_D.Location = new System.Drawing.Point(6, 91);
+            resources.ApplyResources(this.lblSTAB_D, "lblSTAB_D");
             this.lblSTAB_D.Name = "lblSTAB_D";
-            this.lblSTAB_D.Size = new System.Drawing.Size(65, 13);
-            this.lblSTAB_D.TabIndex = 17;
-            this.lblSTAB_D.Text = "Stabilize D";
             // 
             // STB_PIT_IMAX
             // 
-            this.STB_PIT_IMAX.Location = new System.Drawing.Point(80, 63);
+            resources.ApplyResources(this.STB_PIT_IMAX, "STB_PIT_IMAX");
             this.STB_PIT_IMAX.Name = "STB_PIT_IMAX";
-            this.STB_PIT_IMAX.Size = new System.Drawing.Size(78, 20);
-            this.STB_PIT_IMAX.TabIndex = 11;
             // 
             // label36
             // 
-            this.label36.ImeMode = System.Windows.Forms.ImeMode.NoControl;
-            this.label36.Location = new System.Drawing.Point(6, 66);
+            resources.ApplyResources(this.label36, "label36");
             this.label36.Name = "label36";
-            this.label36.Size = new System.Drawing.Size(65, 13);
-            this.label36.TabIndex = 12;
-            this.label36.Text = "IMAX";
             // 
             // STB_PIT_I
             // 
-            this.STB_PIT_I.Location = new System.Drawing.Point(80, 37);
+            resources.ApplyResources(this.STB_PIT_I, "STB_PIT_I");
             this.STB_PIT_I.Name = "STB_PIT_I";
-            this.STB_PIT_I.Size = new System.Drawing.Size(78, 20);
-            this.STB_PIT_I.TabIndex = 7;
             // 
             // label41
             // 
-            this.label41.ImeMode = System.Windows.Forms.ImeMode.NoControl;
-            this.label41.Location = new System.Drawing.Point(6, 40);
+            resources.ApplyResources(this.label41, "label41");
             this.label41.Name = "label41";
-            this.label41.Size = new System.Drawing.Size(10, 13);
-            this.label41.TabIndex = 14;
-            this.label41.Text = "I";
             // 
             // STB_PIT_P
             // 
-            this.STB_PIT_P.Location = new System.Drawing.Point(80, 13);
+            resources.ApplyResources(this.STB_PIT_P, "STB_PIT_P");
             this.STB_PIT_P.Name = "STB_PIT_P";
-            this.STB_PIT_P.Size = new System.Drawing.Size(78, 20);
-            this.STB_PIT_P.TabIndex = 5;
             // 
             // label42
             // 
-            this.label42.ImeMode = System.Windows.Forms.ImeMode.NoControl;
-            this.label42.Location = new System.Drawing.Point(6, 16);
+            resources.ApplyResources(this.label42, "label42");
             this.label42.Name = "label42";
-            this.label42.Size = new System.Drawing.Size(14, 13);
-            this.label42.TabIndex = 15;
-            this.label42.Text = "P";
             // 
             // groupBox22
             // 
@@ -769,60 +589,39 @@
             this.groupBox22.Controls.Add(this.label45);
             this.groupBox22.Controls.Add(this.STB_RLL_P);
             this.groupBox22.Controls.Add(this.label46);
-            this.groupBox22.Location = new System.Drawing.Point(12, 13);
+            resources.ApplyResources(this.groupBox22, "groupBox22");
             this.groupBox22.Name = "groupBox22";
-            this.groupBox22.Size = new System.Drawing.Size(170, 95);
-            this.groupBox22.TabIndex = 30;
             this.groupBox22.TabStop = false;
-            this.groupBox22.Text = "Stabilize Roll";
             // 
             // STB_RLL_IMAX
             // 
-            this.STB_RLL_IMAX.Location = new System.Drawing.Point(80, 63);
+            resources.ApplyResources(this.STB_RLL_IMAX, "STB_RLL_IMAX");
             this.STB_RLL_IMAX.Name = "STB_RLL_IMAX";
-            this.STB_RLL_IMAX.Size = new System.Drawing.Size(78, 20);
-            this.STB_RLL_IMAX.TabIndex = 11;
             // 
             // label43
             // 
-            this.label43.ImeMode = System.Windows.Forms.ImeMode.NoControl;
-            this.label43.Location = new System.Drawing.Point(6, 66);
+            resources.ApplyResources(this.label43, "label43");
             this.label43.Name = "label43";
-            this.label43.Size = new System.Drawing.Size(65, 13);
-            this.label43.TabIndex = 12;
-            this.label43.Text = "IMAX";
             // 
             // STB_RLL_I
             // 
-            this.STB_RLL_I.Location = new System.Drawing.Point(80, 37);
+            resources.ApplyResources(this.STB_RLL_I, "STB_RLL_I");
             this.STB_RLL_I.Name = "STB_RLL_I";
-            this.STB_RLL_I.Size = new System.Drawing.Size(78, 20);
-            this.STB_RLL_I.TabIndex = 7;
             // 
             // label45
             // 
-            this.label45.ImeMode = System.Windows.Forms.ImeMode.NoControl;
-            this.label45.Location = new System.Drawing.Point(6, 40);
+            resources.ApplyResources(this.label45, "label45");
             this.label45.Name = "label45";
-            this.label45.Size = new System.Drawing.Size(10, 13);
-            this.label45.TabIndex = 14;
-            this.label45.Text = "I";
             // 
             // STB_RLL_P
             // 
-            this.STB_RLL_P.Location = new System.Drawing.Point(80, 13);
+            resources.ApplyResources(this.STB_RLL_P, "STB_RLL_P");
             this.STB_RLL_P.Name = "STB_RLL_P";
-            this.STB_RLL_P.Size = new System.Drawing.Size(78, 20);
-            this.STB_RLL_P.TabIndex = 5;
             // 
             // label46
             // 
-            this.label46.ImeMode = System.Windows.Forms.ImeMode.NoControl;
-            this.label46.Location = new System.Drawing.Point(6, 16);
+            resources.ApplyResources(this.label46, "label46");
             this.label46.Name = "label46";
-            this.label46.Size = new System.Drawing.Size(14, 13);
-            this.label46.TabIndex = 15;
-            this.label46.Text = "P";
             // 
             // groupBox23
             // 
@@ -834,76 +633,49 @@
             this.groupBox23.Controls.Add(this.label77);
             this.groupBox23.Controls.Add(this.RATE_YAW_P);
             this.groupBox23.Controls.Add(this.label82);
-            this.groupBox23.Location = new System.Drawing.Point(364, 133);
+            resources.ApplyResources(this.groupBox23, "groupBox23");
             this.groupBox23.Name = "groupBox23";
-            this.groupBox23.Size = new System.Drawing.Size(170, 108);
-            this.groupBox23.TabIndex = 31;
             this.groupBox23.TabStop = false;
-            this.groupBox23.Text = "Rate Yaw";
             // 
             // RATE_YAW_D
             // 
-            this.RATE_YAW_D.Location = new System.Drawing.Point(80, 60);
+            resources.ApplyResources(this.RATE_YAW_D, "RATE_YAW_D");
             this.RATE_YAW_D.Name = "RATE_YAW_D";
-            this.RATE_YAW_D.Size = new System.Drawing.Size(78, 20);
-            this.RATE_YAW_D.TabIndex = 8;
             // 
             // label10
             // 
-            this.label10.ImeMode = System.Windows.Forms.ImeMode.NoControl;
-            this.label10.Location = new System.Drawing.Point(6, 63);
+            resources.ApplyResources(this.label10, "label10");
             this.label10.Name = "label10";
-            this.label10.Size = new System.Drawing.Size(10, 13);
-            this.label10.TabIndex = 9;
-            this.label10.Text = "D";
             // 
             // RATE_YAW_IMAX
             // 
-            this.RATE_YAW_IMAX.Location = new System.Drawing.Point(80, 84);
+            resources.ApplyResources(this.RATE_YAW_IMAX, "RATE_YAW_IMAX");
             this.RATE_YAW_IMAX.Name = "RATE_YAW_IMAX";
-            this.RATE_YAW_IMAX.Size = new System.Drawing.Size(78, 20);
-            this.RATE_YAW_IMAX.TabIndex = 0;
             // 
             // label47
             // 
-            this.label47.ImeMode = System.Windows.Forms.ImeMode.NoControl;
-            this.label47.Location = new System.Drawing.Point(6, 87);
+            resources.ApplyResources(this.label47, "label47");
             this.label47.Name = "label47";
-            this.label47.Size = new System.Drawing.Size(65, 13);
-            this.label47.TabIndex = 1;
-            this.label47.Text = "IMAX";
             // 
             // RATE_YAW_I
             // 
-            this.RATE_YAW_I.Location = new System.Drawing.Point(80, 37);
+            resources.ApplyResources(this.RATE_YAW_I, "RATE_YAW_I");
             this.RATE_YAW_I.Name = "RATE_YAW_I";
-            this.RATE_YAW_I.Size = new System.Drawing.Size(78, 20);
-            this.RATE_YAW_I.TabIndex = 4;
             // 
             // label77
             // 
-            this.label77.ImeMode = System.Windows.Forms.ImeMode.NoControl;
-            this.label77.Location = new System.Drawing.Point(6, 40);
+            resources.ApplyResources(this.label77, "label77");
             this.label77.Name = "label77";
-            this.label77.Size = new System.Drawing.Size(10, 13);
-            this.label77.TabIndex = 5;
-            this.label77.Text = "I";
             // 
             // RATE_YAW_P
             // 
-            this.RATE_YAW_P.Location = new System.Drawing.Point(80, 13);
+            resources.ApplyResources(this.RATE_YAW_P, "RATE_YAW_P");
             this.RATE_YAW_P.Name = "RATE_YAW_P";
-            this.RATE_YAW_P.Size = new System.Drawing.Size(78, 20);
-            this.RATE_YAW_P.TabIndex = 6;
             // 
             // label82
             // 
-            this.label82.ImeMode = System.Windows.Forms.ImeMode.NoControl;
-            this.label82.Location = new System.Drawing.Point(6, 16);
+            resources.ApplyResources(this.label82, "label82");
             this.label82.Name = "label82";
-            this.label82.Size = new System.Drawing.Size(14, 13);
-            this.label82.TabIndex = 7;
-            this.label82.Text = "P";
             // 
             // groupBox24
             // 
@@ -915,76 +687,49 @@
             this.groupBox24.Controls.Add(this.label86);
             this.groupBox24.Controls.Add(this.RATE_PIT_P);
             this.groupBox24.Controls.Add(this.label87);
-            this.groupBox24.Location = new System.Drawing.Point(188, 133);
+            resources.ApplyResources(this.groupBox24, "groupBox24");
             this.groupBox24.Name = "groupBox24";
-            this.groupBox24.Size = new System.Drawing.Size(170, 108);
-            this.groupBox24.TabIndex = 32;
             this.groupBox24.TabStop = false;
-            this.groupBox24.Text = "Rate Pitch";
             // 
             // RATE_PIT_D
             // 
-            this.RATE_PIT_D.Location = new System.Drawing.Point(80, 60);
+            resources.ApplyResources(this.RATE_PIT_D, "RATE_PIT_D");
             this.RATE_PIT_D.Name = "RATE_PIT_D";
-            this.RATE_PIT_D.Size = new System.Drawing.Size(78, 20);
-            this.RATE_PIT_D.TabIndex = 10;
             // 
             // label11
             // 
-            this.label11.ImeMode = System.Windows.Forms.ImeMode.NoControl;
-            this.label11.Location = new System.Drawing.Point(6, 63);
+            resources.ApplyResources(this.label11, "label11");
             this.label11.Name = "label11";
-            this.label11.Size = new System.Drawing.Size(10, 13);
-            this.label11.TabIndex = 11;
-            this.label11.Text = "D";
             // 
             // RATE_PIT_IMAX
             // 
-            this.RATE_PIT_IMAX.Location = new System.Drawing.Point(80, 83);
+            resources.ApplyResources(this.RATE_PIT_IMAX, "RATE_PIT_IMAX");
             this.RATE_PIT_IMAX.Name = "RATE_PIT_IMAX";
-            this.RATE_PIT_IMAX.Size = new System.Drawing.Size(78, 20);
-            this.RATE_PIT_IMAX.TabIndex = 0;
             // 
             // label84
             // 
-            this.label84.ImeMode = System.Windows.Forms.ImeMode.NoControl;
-            this.label84.Location = new System.Drawing.Point(6, 86);
+            resources.ApplyResources(this.label84, "label84");
             this.label84.Name = "label84";
-            this.label84.Size = new System.Drawing.Size(65, 13);
-            this.label84.TabIndex = 1;
-            this.label84.Text = "IMAX";
             // 
             // RATE_PIT_I
             // 
-            this.RATE_PIT_I.Location = new System.Drawing.Point(80, 37);
+            resources.ApplyResources(this.RATE_PIT_I, "RATE_PIT_I");
             this.RATE_PIT_I.Name = "RATE_PIT_I";
-            this.RATE_PIT_I.Size = new System.Drawing.Size(78, 20);
-            this.RATE_PIT_I.TabIndex = 4;
             // 
             // label86
             // 
-            this.label86.ImeMode = System.Windows.Forms.ImeMode.NoControl;
-            this.label86.Location = new System.Drawing.Point(6, 40);
+            resources.ApplyResources(this.label86, "label86");
             this.label86.Name = "label86";
-            this.label86.Size = new System.Drawing.Size(10, 13);
-            this.label86.TabIndex = 5;
-            this.label86.Text = "I";
             // 
             // RATE_PIT_P
             // 
-            this.RATE_PIT_P.Location = new System.Drawing.Point(80, 13);
+            resources.ApplyResources(this.RATE_PIT_P, "RATE_PIT_P");
             this.RATE_PIT_P.Name = "RATE_PIT_P";
-            this.RATE_PIT_P.Size = new System.Drawing.Size(78, 20);
-            this.RATE_PIT_P.TabIndex = 6;
             // 
             // label87
             // 
-            this.label87.ImeMode = System.Windows.Forms.ImeMode.NoControl;
-            this.label87.Location = new System.Drawing.Point(6, 16);
+            resources.ApplyResources(this.label87, "label87");
             this.label87.Name = "label87";
-            this.label87.Size = new System.Drawing.Size(14, 13);
-            this.label87.TabIndex = 7;
-            this.label87.Text = "P";
             // 
             // groupBox25
             // 
@@ -996,82 +741,54 @@
             this.groupBox25.Controls.Add(this.label90);
             this.groupBox25.Controls.Add(this.RATE_RLL_P);
             this.groupBox25.Controls.Add(this.label91);
-            this.groupBox25.Location = new System.Drawing.Point(12, 133);
+            resources.ApplyResources(this.groupBox25, "groupBox25");
             this.groupBox25.Name = "groupBox25";
-            this.groupBox25.Size = new System.Drawing.Size(170, 108);
-            this.groupBox25.TabIndex = 33;
             this.groupBox25.TabStop = false;
-            this.groupBox25.Text = "Rate Roll";
             // 
             // RATE_RLL_D
             // 
-            this.RATE_RLL_D.Location = new System.Drawing.Point(80, 60);
+            resources.ApplyResources(this.RATE_RLL_D, "RATE_RLL_D");
             this.RATE_RLL_D.Name = "RATE_RLL_D";
-            this.RATE_RLL_D.Size = new System.Drawing.Size(78, 20);
-            this.RATE_RLL_D.TabIndex = 12;
             // 
             // label17
             // 
-            this.label17.ImeMode = System.Windows.Forms.ImeMode.NoControl;
-            this.label17.Location = new System.Drawing.Point(6, 63);
+            resources.ApplyResources(this.label17, "label17");
             this.label17.Name = "label17";
-            this.label17.Size = new System.Drawing.Size(10, 13);
-            this.label17.TabIndex = 13;
-            this.label17.Text = "D";
             // 
             // RATE_RLL_IMAX
             // 
-            this.RATE_RLL_IMAX.Location = new System.Drawing.Point(80, 83);
+            resources.ApplyResources(this.RATE_RLL_IMAX, "RATE_RLL_IMAX");
             this.RATE_RLL_IMAX.Name = "RATE_RLL_IMAX";
-            this.RATE_RLL_IMAX.Size = new System.Drawing.Size(78, 20);
-            this.RATE_RLL_IMAX.TabIndex = 0;
             // 
             // label88
             // 
-            this.label88.ImeMode = System.Windows.Forms.ImeMode.NoControl;
-            this.label88.Location = new System.Drawing.Point(6, 86);
+            resources.ApplyResources(this.label88, "label88");
             this.label88.Name = "label88";
-            this.label88.Size = new System.Drawing.Size(68, 13);
-            this.label88.TabIndex = 1;
-            this.label88.Text = "IMAX";
             // 
             // RATE_RLL_I
             // 
-            this.RATE_RLL_I.Location = new System.Drawing.Point(80, 37);
+            resources.ApplyResources(this.RATE_RLL_I, "RATE_RLL_I");
             this.RATE_RLL_I.Name = "RATE_RLL_I";
-            this.RATE_RLL_I.Size = new System.Drawing.Size(78, 20);
-            this.RATE_RLL_I.TabIndex = 4;
             // 
             // label90
             // 
-            this.label90.ImeMode = System.Windows.Forms.ImeMode.NoControl;
-            this.label90.Location = new System.Drawing.Point(6, 40);
+            resources.ApplyResources(this.label90, "label90");
             this.label90.Name = "label90";
-            this.label90.Size = new System.Drawing.Size(10, 13);
-            this.label90.TabIndex = 5;
-            this.label90.Text = "I";
             // 
             // RATE_RLL_P
             // 
-            this.RATE_RLL_P.Location = new System.Drawing.Point(80, 13);
+            resources.ApplyResources(this.RATE_RLL_P, "RATE_RLL_P");
             this.RATE_RLL_P.Name = "RATE_RLL_P";
-            this.RATE_RLL_P.Size = new System.Drawing.Size(78, 20);
-            this.RATE_RLL_P.TabIndex = 6;
             // 
             // label91
             // 
-            this.label91.ImeMode = System.Windows.Forms.ImeMode.NoControl;
-            this.label91.Location = new System.Drawing.Point(6, 16);
+            resources.ApplyResources(this.label91, "label91");
             this.label91.Name = "label91";
-            this.label91.Size = new System.Drawing.Size(14, 13);
-            this.label91.TabIndex = 7;
-            this.label91.Text = "P";
             // 
             // ConfigArducopter
             // 
-            this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
+            resources.ApplyResources(this, "$this");
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.AutoScroll = true;
             this.Controls.Add(this.myLabel3);
             this.Controls.Add(this.TUNE_LOW);
             this.Controls.Add(this.TUNE_HIGH);
@@ -1092,7 +809,6 @@
             this.Controls.Add(this.groupBox24);
             this.Controls.Add(this.groupBox25);
             this.Name = "ConfigArducopter";
-            this.Size = new System.Drawing.Size(728, 529);
             this.Load += new System.EventHandler(this.ConfigArducopter_Load);
             ((System.ComponentModel.ISupportInitialize)(this.TUNE_LOW)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.TUNE_HIGH)).EndInit();
