@@ -29,7 +29,7 @@ Please create a separate build directory and run 'cmake /path/to/${PROJECT_NAME}
 
 # built variables
 set(PROJECT_VERSION "${PROJECT_VERSION_MAJOR}.${PROJECT_VERSION_MINOR}.${PROJECT_VERSION_PATCH}")
-set(FIRMWARE_NAME "${PROJECT_NAME}-${APM_HARDWARE}-${APM_PROCESSOR}-${HIL_MODE}")
+set(FIRMWARE_NAME "${PROJECT_NAME}-${CONFIG_APM_HARDWARE}-${APM_PROCESSOR}-${HIL_MODE}")
 
 # modify flags from default toolchain flags
 set(APM_OPT_FLAGS "-Wformat -Wall -Wshadow -Wpointer-arith -Wcast-align -Wwrite-strings -Wformat=2")
