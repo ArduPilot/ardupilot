@@ -97,9 +97,9 @@
             // 
             // groupBox5
             // 
-            resources.ApplyResources(this.groupBox5, "groupBox5");
             this.groupBox5.Controls.Add(this.H1_ENABLE);
             this.groupBox5.Controls.Add(this.CCPM);
+            resources.ApplyResources(this.groupBox5, "groupBox5");
             this.groupBox5.Name = "groupBox5";
             this.groupBox5.TabStop = false;
             // 
@@ -132,11 +132,11 @@
             // 
             // groupBox3
             // 
-            resources.ApplyResources(this.groupBox3, "groupBox3");
             this.groupBox3.Controls.Add(this.label46);
             this.groupBox3.Controls.Add(this.label45);
             this.groupBox3.Controls.Add(this.GYR_ENABLE);
             this.groupBox3.Controls.Add(this.GYR_GAIN);
+            resources.ApplyResources(this.groupBox3, "groupBox3");
             this.groupBox3.Name = "groupBox3";
             this.groupBox3.TabStop = false;
             // 
@@ -182,13 +182,13 @@
             // 
             // groupBox1
             // 
-            resources.ApplyResources(this.groupBox1, "groupBox1");
             this.groupBox1.Controls.Add(this.label41);
             this.groupBox1.Controls.Add(this.label21);
             this.groupBox1.Controls.Add(this.COL_MIN);
             this.groupBox1.Controls.Add(this.COL_MID);
             this.groupBox1.Controls.Add(this.COL_MAX);
             this.groupBox1.Controls.Add(this.BUT_0collective);
+            resources.ApplyResources(this.groupBox1, "groupBox1");
             this.groupBox1.Name = "groupBox1";
             this.groupBox1.TabStop = false;
             // 
@@ -215,11 +215,11 @@
             // 
             // groupBox2
             // 
-            resources.ApplyResources(this.groupBox2, "groupBox2");
             this.groupBox2.Controls.Add(this.label24);
             this.groupBox2.Controls.Add(this.HS4_MIN);
             this.groupBox2.Controls.Add(this.HS4_MAX);
             this.groupBox2.Controls.Add(this.label40);
+            resources.ApplyResources(this.groupBox2, "groupBox2");
             this.groupBox2.Name = "groupBox2";
             this.groupBox2.TabStop = false;
             // 
@@ -422,11 +422,11 @@
             // 
             // HS4
             // 
-            resources.ApplyResources(this.HS4, "HS4");
             this.HS4.BackgroundColor = System.Drawing.Color.FromArgb(((int)(((byte)(67)))), ((int)(((byte)(68)))), ((int)(((byte)(69)))));
             this.HS4.BorderColor = System.Drawing.SystemColors.ActiveBorder;
             this.HS4.DataBindings.Add(new System.Windows.Forms.Binding("Value", this.currentStateBindingSource, "ch4in", true));
             this.HS4.Label = "Rudder";
+            resources.ApplyResources(this.HS4, "HS4");
             this.HS4.Maximum = 2200;
             this.HS4.maxline = 0;
             this.HS4.Minimum = 800;
@@ -442,11 +442,11 @@
             // 
             // HS3
             // 
-            resources.ApplyResources(this.HS3, "HS3");
             this.HS3.BackgroundColor = System.Drawing.Color.FromArgb(((int)(((byte)(67)))), ((int)(((byte)(68)))), ((int)(((byte)(69)))));
             this.HS3.BorderColor = System.Drawing.SystemColors.ActiveBorder;
             this.HS3.DataBindings.Add(new System.Windows.Forms.Binding("Value", this.currentStateBindingSource, "ch3in", true));
             this.HS3.Label = "Collective";
+            resources.ApplyResources(this.HS3, "HS3");
             this.HS3.Maximum = 2200;
             this.HS3.maxline = 0;
             this.HS3.Minimum = 800;
@@ -458,9 +458,9 @@
             // 
             // Gservoloc
             // 
-            resources.ApplyResources(this.Gservoloc, "Gservoloc");
             this.Gservoloc.BackColor = System.Drawing.Color.Transparent;
             this.Gservoloc.BackgroundImage = global::ArdupilotMega.Properties.Resources.Gaugebg;
+            resources.ApplyResources(this.Gservoloc, "Gservoloc");
             this.Gservoloc.BaseArcColor = System.Drawing.Color.Transparent;
             this.Gservoloc.BaseArcRadius = 60;
             this.Gservoloc.BaseArcStart = 90;

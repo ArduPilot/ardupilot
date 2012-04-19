@@ -129,6 +129,17 @@ namespace ArdupilotMega.GCSViews.ConfigurationView
 
         private void CHK_enablecompass_CheckedChanged(object sender, EventArgs e)
         {
+            if (((CheckBox)sender).Checked == true)
+            {
+                CHK_autodec.Enabled = true;
+                TXT_declination.Enabled = true;
+            }
+            else
+            {
+                CHK_autodec.Enabled = false;
+                TXT_declination.Enabled = false;
+            }
+
             if (startup)
                 return;
             try
@@ -250,6 +261,9 @@ namespace ArdupilotMega.GCSViews.ConfigurationView
             if (MainV2.comPort.param["FLOW_ENABLE"] != null)
                 CHK_enableoptflow.Checked = MainV2.comPort.param["FLOW_ENABLE"].ToString() == "1" ? true : false;
 
+            if (MainV2.comPort.param["COMPASS_AUTODEC"] != null)
+                CHK_autodec.Checked = MainV2.comPort.param["COMPASS_AUTODEC"].ToString() == "1" ? true : false;
+
 
             startup = false;
         }
@@ -263,6 +277,33 @@ namespace ArdupilotMega.GCSViews.ConfigurationView
             int.TryParse(minthro, out ans);
 
             MagCalib.ProcessLog(ans);
+        }
+
+        private void CHK_autodec_CheckedChanged(object sender, EventArgs e)
+        {
+            if (((CheckBox)sender).Checked == true)
+            {
+                TXT_declination.Enabled = false;
+            }
+            else
+            {
+                TXT_declination.Enabled = true;
+            }
+
+            if (startup)
+                return;
+            try
+            {
+                if (MainV2.comPort.param["COMPASS_AUTODEC"] == null)
+                {
+                    CustomMessageBox.Show("Not Available on " + MainV2.cs.firmware.ToString());
+                }
+                else
+                {
+                    MainV2.comPort.setParam("COMPASS_AUTODEC", ((CheckBox)sender).Checked == true ? 1 : 0);
+                }
+            }
+            catch { CustomMessageBox.Show("Set COMPASS_AUTODEC Failed"); }
         }
     }
 }

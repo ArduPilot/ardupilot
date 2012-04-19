@@ -34,7 +34,7 @@ namespace uploader
 			
 			// protocol constants
 			PROG_MULTI_MAX	= 64,	// maximum number of bytes in a PROG_MULTI command
-			READ_MULTI_MAX	= 255,	// largest read that can be requested
+			READ_MULTI_MAX	= 64,	// from 255 // largest read that can be requested
 			
 			// device IDs XXX should come with the firmware image...
 			DEVICE_ID_RF50	= 0x4d,
@@ -389,6 +389,12 @@ namespace uploader
 			}
 			log ("\n", 5);
 
+            while (port.BytesToWrite > 50)
+            {
+                int fred = 1;
+                fred++;
+                Console.WriteLine("slowdown");
+            }
 			port.Write (b, 0, 1);
 		}
 		

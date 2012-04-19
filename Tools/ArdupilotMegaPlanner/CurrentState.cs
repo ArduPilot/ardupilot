@@ -531,6 +531,9 @@ namespace ArdupilotMega
                         case (byte)(100 + Common.ac2modes.LAND):
                             mode = "Land";
                             break;
+                        case (byte)(100 + Common.ac2modes.APPROACH):
+                            mode = "APPROACH";
+                            break;
                         case (byte)(100 + Common.ac2modes.POSITION):
                             mode = "Position";
                             break;

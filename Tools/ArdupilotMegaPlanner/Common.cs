@@ -134,7 +134,7 @@ namespace ArdupilotMega
             try
             {
 
-                float desired_lead_dist = 75;
+                float desired_lead_dist = 100;
 
                 float alpha = (desired_lead_dist / MainV2.cs.radius) * rad2deg;
 
@@ -142,11 +142,11 @@ namespace ArdupilotMega
                 {
                     // fixme 
 
-                    float p1 = (float)Math.Cos((heading) * deg2rad) * MainV2.cs.radius + MainV2.cs.radius;
+                    float p1 = (float)Math.Cos((cog) * deg2rad) * MainV2.cs.radius + MainV2.cs.radius;
 
-                    float p2 = (float)Math.Sin((heading) * deg2rad) * MainV2.cs.radius + MainV2.cs.radius;
+                    float p2 = (float)Math.Sin((cog) * deg2rad) * MainV2.cs.radius + MainV2.cs.radius;
 
-                    g.DrawArc(new Pen(Color.HotPink, 2), p1, p2, Math.Abs(MainV2.cs.radius) * 2, Math.Abs(MainV2.cs.radius) * 2, heading, alpha);
+                    g.DrawArc(new Pen(Color.HotPink, 2), p1, p2, Math.Abs(MainV2.cs.radius) * 2, Math.Abs(MainV2.cs.radius) * 2, cog, alpha);
 
                 }
 
@@ -154,11 +154,11 @@ namespace ArdupilotMega
                 {
                     // correct
 
-                    float p1 = (float)Math.Cos((heading - 180) * deg2rad) * MainV2.cs.radius + MainV2.cs.radius;
+                    float p1 = (float)Math.Cos((cog - 180) * deg2rad) * MainV2.cs.radius + MainV2.cs.radius;
 
-                    float p2 = (float)Math.Sin((heading - 180) * deg2rad) * MainV2.cs.radius + MainV2.cs.radius;
+                    float p2 = (float)Math.Sin((cog - 180) * deg2rad) * MainV2.cs.radius + MainV2.cs.radius;
 
-                    g.DrawArc(new Pen(Color.HotPink, 2), -p1, -p2, MainV2.cs.radius * 2, MainV2.cs.radius * 2, heading - 180, alpha);
+                    g.DrawArc(new Pen(Color.HotPink, 2), -p1, -p2, MainV2.cs.radius * 2, MainV2.cs.radius * 2, cog - 180, alpha);
                 }
 
             }
@@ -364,7 +364,8 @@ namespace ArdupilotMega
             CIRCLE = 7,
             POSITION = 8,
             LAND = 9,				// AUTO control
-            OF_LOITER = 10
+            OF_LOITER = 10,
+			APPROACH = 11
         }
 
         public enum ac2ch7modes
