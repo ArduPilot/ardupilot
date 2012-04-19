@@ -16,10 +16,12 @@ include(CMakeParseArguments)
 include(APMOption)
 
 # options
-add_definitions(-DUSE_CMAKE_APM_CONFIG)
 include(options.cmake)
 include_directories(${CMAKE_BINARY_DIR})
-apm_option_generate_config(FILE "APM_Config_cmake.h" OPTIONS ${APM_OPTIONS})
+add_definitions(-DUSE_CMAKE_APM_CONFIG)
+apm_option_generate_config(FILE "APM_Config_cmake.h" BUILD_FLAGS APM_BUILD_FLAGS)
+add_definitions(${APM_BUILD_FLAGS})
+message(STATUS "build flags: ${APM_BUILD_FLAGS}")
 #configure_file(APM_Config2.h.cmake APM_Config2.h)
 
 # disallow in-source build
@@ -42,6 +44,7 @@ set(ARDUINO_EXTRA_LIBRARIES_PATH ${CMAKE_SOURCE_DIR}/../libraries)
 set(${FIRMWARE_NAME}_SKETCH ${CMAKE_SOURCE_DIR}/../${PROJECT_NAME})
 set(${FIRMWARE_NAME}_BOARD ${APM_PROCESSOR})
 set(${FIRMWARE_NAME}_PORT ${APM_PROGRAMMING_PORT})
+set(${FIRMWARE_NAME}_SRCS ${CMAKE_BINARY_DIR}/APM_Config_cmake.h)
 generate_arduino_firmware(${FIRMWARE_NAME})
 install(FILES ${CMAKE_BINARY_DIR}/${FIRMWARE_NAME}.hex DESTINATION "/")
 
