@@ -90,12 +90,14 @@ static void calc_XY_velocity(){
 	last_latitude 	= g_gps->latitude;
 }
 
+#if RETRO_LOITER_MODE == ENABLED
 static void calc_GPS_velocity()
 {
 	float temp = radians((float)g_gps->ground_course/100.0);
 	x_actual_speed = (float)g_gps->ground_speed * sin(temp);
 	y_actual_speed = (float)g_gps->ground_speed * cos(temp);
 }
+#endif
 
 static void calc_location_error(struct Location *next_loc)
 {
