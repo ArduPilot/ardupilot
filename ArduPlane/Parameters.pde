@@ -125,7 +125,8 @@ static const AP_Param::Info var_info[] PROGMEM = {
 	GOBJECT(compass,                "COMPASS_",	Compass),
 	GOBJECT(gcs0,					"SR0_",     GCS_MAVLINK),
 	GOBJECT(gcs3,					"SR3_",     GCS_MAVLINK),
-	GOBJECT(imu,					"IMU_",     IMU)
+	GOBJECT(imu,					"IMU_",     IMU),
+	GOBJECT(ahrs,					"AHRS_",    AP_AHRS)
 };
 
 

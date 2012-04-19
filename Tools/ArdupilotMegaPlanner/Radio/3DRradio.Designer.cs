@@ -74,509 +74,391 @@
             // 
             // Progressbar
             // 
-            this.Progressbar.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left)));
-            this.Progressbar.Location = new System.Drawing.Point(12, 402);
+            resources.ApplyResources(this.Progressbar, "Progressbar");
             this.Progressbar.Name = "Progressbar";
-            this.Progressbar.Size = new System.Drawing.Size(294, 36);
-            this.Progressbar.TabIndex = 2;
             // 
             // S1
             // 
             this.S1.FormattingEnabled = true;
             this.S1.Items.AddRange(new object[] {
-            "115",
-            "111",
-            "57",
-            "38",
-            "19",
-            "9",
-            "4",
-            "2",
-            "1"});
-            this.S1.Location = new System.Drawing.Point(87, 141);
+            resources.GetString("S1.Items"),
+            resources.GetString("S1.Items1"),
+            resources.GetString("S1.Items2"),
+            resources.GetString("S1.Items3"),
+            resources.GetString("S1.Items4"),
+            resources.GetString("S1.Items5"),
+            resources.GetString("S1.Items6"),
+            resources.GetString("S1.Items7"),
+            resources.GetString("S1.Items8")});
+            resources.ApplyResources(this.S1, "S1");
             this.S1.Name = "S1";
-            this.S1.Size = new System.Drawing.Size(80, 21);
-            this.S1.TabIndex = 4;
-            this.toolTip1.SetToolTip(this.S1, "Serial baud rate in rounded kbps. So 57 means 57600. \r\n");
+            this.toolTip1.SetToolTip(this.S1, resources.GetString("S1.ToolTip"));
             // 
             // label1
             // 
-            this.label1.AutoSize = true;
-            this.label1.Location = new System.Drawing.Point(15, 149);
+            resources.ApplyResources(this.label1, "label1");
             this.label1.Name = "label1";
-            this.label1.Size = new System.Drawing.Size(32, 13);
-            this.label1.TabIndex = 5;
-            this.label1.Text = "Baud";
             // 
             // S0
             // 
-            this.S0.Location = new System.Drawing.Point(87, 115);
+            resources.ApplyResources(this.S0, "S0");
             this.S0.Name = "S0";
             this.S0.ReadOnly = true;
-            this.S0.Size = new System.Drawing.Size(80, 20);
-            this.S0.TabIndex = 7;
             // 
             // label2
             // 
-            this.label2.AutoSize = true;
-            this.label2.Location = new System.Drawing.Point(15, 122);
+            resources.ApplyResources(this.label2, "label2");
             this.label2.Name = "label2";
-            this.label2.Size = new System.Drawing.Size(39, 13);
-            this.label2.TabIndex = 8;
-            this.label2.Text = "Format";
             // 
             // label3
             // 
-            this.label3.AutoSize = true;
-            this.label3.Location = new System.Drawing.Point(15, 176);
+            resources.ApplyResources(this.label3, "label3");
             this.label3.Name = "label3";
-            this.label3.Size = new System.Drawing.Size(53, 13);
-            this.label3.TabIndex = 10;
-            this.label3.Text = "Air Speed";
             // 
             // S2
             // 
             this.S2.FormattingEnabled = true;
             this.S2.Items.AddRange(new object[] {
-            "250",
-            "192",
-            "128",
-            "96",
-            "64",
-            "32",
-            "16",
-            "8",
-            "4",
-            "2"});
-            this.S2.Location = new System.Drawing.Point(87, 168);
+            resources.GetString("S2.Items"),
+            resources.GetString("S2.Items1"),
+            resources.GetString("S2.Items2"),
+            resources.GetString("S2.Items3"),
+            resources.GetString("S2.Items4"),
+            resources.GetString("S2.Items5"),
+            resources.GetString("S2.Items6"),
+            resources.GetString("S2.Items7"),
+            resources.GetString("S2.Items8"),
+            resources.GetString("S2.Items9")});
+            resources.ApplyResources(this.S2, "S2");
             this.S2.Name = "S2";
-            this.S2.Size = new System.Drawing.Size(80, 21);
-            this.S2.TabIndex = 9;
-            this.toolTip1.SetToolTip(this.S2, "AIR_SPEED is the inter-radio data rate in rounded kbps. So 128 means 128kbps. Max" +
-        " is 192, min is 2. I would not recommend values below 16 as the frequency hoppin" +
-        "g and tdm sync times get too long. ");
+            this.toolTip1.SetToolTip(this.S2, resources.GetString("S2.ToolTip"));
             // 
             // label4
             // 
-            this.label4.AutoSize = true;
-            this.label4.Location = new System.Drawing.Point(15, 203);
+            resources.ApplyResources(this.label4, "label4");
             this.label4.Name = "label4";
-            this.label4.Size = new System.Drawing.Size(38, 13);
-            this.label4.TabIndex = 12;
-            this.label4.Text = "Net ID";
             // 
             // S3
             // 
             this.S3.FormattingEnabled = true;
             this.S3.Items.AddRange(new object[] {
-            "1",
-            "2",
-            "3",
-            "4",
-            "5",
-            "6",
-            "7",
-            "8",
-            "9",
-            "10",
-            "11",
-            "12",
-            "13",
-            "14",
-            "15",
-            "16",
-            "17",
-            "18",
-            "19",
-            "20",
-            "21",
-            "22",
-            "23",
-            "24",
-            "25",
-            "26",
-            "27",
-            "28",
-            "29",
-            "30"});
-            this.S3.Location = new System.Drawing.Point(87, 195);
+            resources.GetString("S3.Items"),
+            resources.GetString("S3.Items1"),
+            resources.GetString("S3.Items2"),
+            resources.GetString("S3.Items3"),
+            resources.GetString("S3.Items4"),
+            resources.GetString("S3.Items5"),
+            resources.GetString("S3.Items6"),
+            resources.GetString("S3.Items7"),
+            resources.GetString("S3.Items8"),
+            resources.GetString("S3.Items9"),
+            resources.GetString("S3.Items10"),
+            resources.GetString("S3.Items11"),
+            resources.GetString("S3.Items12"),
+            resources.GetString("S3.Items13"),
+            resources.GetString("S3.Items14"),
+            resources.GetString("S3.Items15"),
+            resources.GetString("S3.Items16"),
+            resources.GetString("S3.Items17"),
+            resources.GetString("S3.Items18"),
+            resources.GetString("S3.Items19"),
+            resources.GetString("S3.Items20"),
+            resources.GetString("S3.Items21"),
+            resources.GetString("S3.Items22"),
+            resources.GetString("S3.Items23"),
+            resources.GetString("S3.Items24"),
+            resources.GetString("S3.Items25"),
+            resources.GetString("S3.Items26"),
+            resources.GetString("S3.Items27"),
+            resources.GetString("S3.Items28"),
+            resources.GetString("S3.Items29")});
+            resources.ApplyResources(this.S3, "S3");
             this.S3.Name = "S3";
-            this.S3.Size = new System.Drawing.Size(80, 21);
-            this.S3.TabIndex = 11;
             this.toolTip1.SetToolTip(this.S3, resources.GetString("S3.ToolTip"));
             // 
             // label5
             // 
-            this.label5.AutoSize = true;
-            this.label5.Location = new System.Drawing.Point(15, 230);
+            resources.ApplyResources(this.label5, "label5");
             this.label5.Name = "label5";
-            this.label5.Size = new System.Drawing.Size(52, 13);
-            this.label5.TabIndex = 14;
-            this.label5.Text = "Tx Power";
             // 
             // S4
             // 
             this.S4.FormattingEnabled = true;
             this.S4.Items.AddRange(new object[] {
-            "0",
-            "1",
-            "2",
-            "3",
-            "4",
-            "5",
-            "6",
-            "7",
-            "8",
-            "9",
-            "10",
-            "11",
-            "12",
-            "13",
-            "14",
-            "15",
-            "16",
-            "17",
-            "18",
-            "19",
-            "20"});
-            this.S4.Location = new System.Drawing.Point(87, 222);
+            resources.GetString("S4.Items"),
+            resources.GetString("S4.Items1"),
+            resources.GetString("S4.Items2"),
+            resources.GetString("S4.Items3"),
+            resources.GetString("S4.Items4"),
+            resources.GetString("S4.Items5"),
+            resources.GetString("S4.Items6"),
+            resources.GetString("S4.Items7"),
+            resources.GetString("S4.Items8"),
+            resources.GetString("S4.Items9"),
+            resources.GetString("S4.Items10"),
+            resources.GetString("S4.Items11"),
+            resources.GetString("S4.Items12"),
+            resources.GetString("S4.Items13"),
+            resources.GetString("S4.Items14"),
+            resources.GetString("S4.Items15"),
+            resources.GetString("S4.Items16"),
+            resources.GetString("S4.Items17"),
+            resources.GetString("S4.Items18"),
+            resources.GetString("S4.Items19"),
+            resources.GetString("S4.Items20")});
+            resources.ApplyResources(this.S4, "S4");
             this.S4.Name = "S4";
-            this.S4.Size = new System.Drawing.Size(80, 21);
-            this.S4.TabIndex = 13;
-            this.toolTip1.SetToolTip(this.S4, "TXPOWER is the transmit power in dBm. 20dBm is 100mW. It is useful to set this to" +
-        " lower levels for short range testing.\r\n");
+            this.toolTip1.SetToolTip(this.S4, resources.GetString("S4.ToolTip"));
             // 
             // label6
             // 
-            this.label6.AutoSize = true;
-            this.label6.Location = new System.Drawing.Point(15, 257);
+            resources.ApplyResources(this.label6, "label6");
             this.label6.Name = "label6";
-            this.label6.Size = new System.Drawing.Size(28, 13);
-            this.label6.TabIndex = 16;
-            this.label6.Text = "ECC";
             // 
             // S5
             // 
-            this.S5.Location = new System.Drawing.Point(87, 249);
+            resources.ApplyResources(this.S5, "S5");
             this.S5.Name = "S5";
-            this.S5.Size = new System.Drawing.Size(80, 21);
-            this.S5.TabIndex = 15;
             this.toolTip1.SetToolTip(this.S5, resources.GetString("S5.ToolTip"));
             // 
             // label7
             // 
-            this.label7.AutoSize = true;
-            this.label7.Location = new System.Drawing.Point(15, 284);
+            resources.ApplyResources(this.label7, "label7");
             this.label7.Name = "label7";
-            this.label7.Size = new System.Drawing.Size(44, 13);
-            this.label7.TabIndex = 18;
-            this.label7.Text = "Mavlink";
             // 
             // S6
             // 
-            this.S6.Location = new System.Drawing.Point(87, 276);
+            resources.ApplyResources(this.S6, "S6");
             this.S6.Name = "S6";
-            this.S6.Size = new System.Drawing.Size(80, 21);
-            this.S6.TabIndex = 17;
             this.toolTip1.SetToolTip(this.S6, resources.GetString("S6.ToolTip"));
             // 
             // label8
             // 
-            this.label8.AutoSize = true;
-            this.label8.Location = new System.Drawing.Point(15, 311);
+            resources.ApplyResources(this.label8, "label8");
             this.label8.Name = "label8";
-            this.label8.Size = new System.Drawing.Size(61, 13);
-            this.label8.TabIndex = 20;
-            this.label8.Text = "Op Resend";
             // 
             // S7
             // 
-            this.S7.Location = new System.Drawing.Point(87, 303);
+            resources.ApplyResources(this.S7, "S7");
             this.S7.Name = "S7";
-            this.S7.Size = new System.Drawing.Size(80, 21);
-            this.S7.TabIndex = 19;
             this.toolTip1.SetToolTip(this.S7, resources.GetString("S7.ToolTip"));
             // 
             // RS7
             // 
-            this.RS7.Location = new System.Drawing.Point(201, 303);
+            resources.ApplyResources(this.RS7, "RS7");
             this.RS7.Name = "RS7";
-            this.RS7.Size = new System.Drawing.Size(80, 21);
-            this.RS7.TabIndex = 29;
             this.toolTip1.SetToolTip(this.RS7, resources.GetString("RS7.ToolTip"));
             // 
             // RS6
             // 
-            this.RS6.Location = new System.Drawing.Point(201, 276);
+            resources.ApplyResources(this.RS6, "RS6");
             this.RS6.Name = "RS6";
-            this.RS6.Size = new System.Drawing.Size(80, 21);
-            this.RS6.TabIndex = 28;
             this.toolTip1.SetToolTip(this.RS6, resources.GetString("RS6.ToolTip"));
             // 
             // RS5
             // 
-            this.RS5.Location = new System.Drawing.Point(201, 249);
+            resources.ApplyResources(this.RS5, "RS5");
             this.RS5.Name = "RS5";
-            this.RS5.Size = new System.Drawing.Size(80, 21);
-            this.RS5.TabIndex = 27;
             this.toolTip1.SetToolTip(this.RS5, resources.GetString("RS5.ToolTip"));
             // 
             // RS4
             // 
             this.RS4.FormattingEnabled = true;
             this.RS4.Items.AddRange(new object[] {
-            "0",
-            "1",
-            "2",
-            "3",
-            "4",
-            "5",
-            "6",
-            "7",
-            "8",
-            "9",
-            "10",
-            "11",
-            "12",
-            "13",
-            "14",
-            "15",
-            "16",
-            "17",
-            "18",
-            "19",
-            "20"});
-            this.RS4.Location = new System.Drawing.Point(201, 222);
+            resources.GetString("RS4.Items"),
+            resources.GetString("RS4.Items1"),
+            resources.GetString("RS4.Items2"),
+            resources.GetString("RS4.Items3"),
+            resources.GetString("RS4.Items4"),
+            resources.GetString("RS4.Items5"),
+            resources.GetString("RS4.Items6"),
+            resources.GetString("RS4.Items7"),
+            resources.GetString("RS4.Items8"),
+            resources.GetString("RS4.Items9"),
+            resources.GetString("RS4.Items10"),
+            resources.GetString("RS4.Items11"),
+            resources.GetString("RS4.Items12"),
+            resources.GetString("RS4.Items13"),
+            resources.GetString("RS4.Items14"),
+            resources.GetString("RS4.Items15"),
+            resources.GetString("RS4.Items16"),
+            resources.GetString("RS4.Items17"),
+            resources.GetString("RS4.Items18"),
+            resources.GetString("RS4.Items19"),
+            resources.GetString("RS4.Items20")});
+            resources.ApplyResources(this.RS4, "RS4");
             this.RS4.Name = "RS4";
-            this.RS4.Size = new System.Drawing.Size(80, 21);
-            this.RS4.TabIndex = 26;
-            this.toolTip1.SetToolTip(this.RS4, "TXPOWER is the transmit power in dBm. 20dBm is 100mW. It is useful to set this to" +
-        " lower levels for short range testing.\r\n");
+            this.toolTip1.SetToolTip(this.RS4, resources.GetString("RS4.ToolTip"));
             // 
             // RS3
             // 
             this.RS3.FormattingEnabled = true;
             this.RS3.Items.AddRange(new object[] {
-            "1",
-            "2",
-            "3",
-            "4",
-            "5",
-            "6",
-            "7",
-            "8",
-            "9",
-            "10",
-            "11",
-            "12",
-            "13",
-            "14",
-            "15",
-            "16",
-            "17",
-            "18",
-            "19",
-            "20",
-            "21",
-            "22",
-            "23",
-            "24",
-            "25",
-            "26",
-            "27",
-            "28",
-            "29",
-            "30"});
-            this.RS3.Location = new System.Drawing.Point(201, 195);
+            resources.GetString("RS3.Items"),
+            resources.GetString("RS3.Items1"),
+            resources.GetString("RS3.Items2"),
+            resources.GetString("RS3.Items3"),
+            resources.GetString("RS3.Items4"),
+            resources.GetString("RS3.Items5"),
+            resources.GetString("RS3.Items6"),
+            resources.GetString("RS3.Items7"),
+            resources.GetString("RS3.Items8"),
+            resources.GetString("RS3.Items9"),
+            resources.GetString("RS3.Items10"),
+            resources.GetString("RS3.Items11"),
+            resources.GetString("RS3.Items12"),
+            resources.GetString("RS3.Items13"),
+            resources.GetString("RS3.Items14"),
+            resources.GetString("RS3.Items15"),
+            resources.GetString("RS3.Items16"),
+            resources.GetString("RS3.Items17"),
+            resources.GetString("RS3.Items18"),
+            resources.GetString("RS3.Items19"),
+            resources.GetString("RS3.Items20"),
+            resources.GetString("RS3.Items21"),
+            resources.GetString("RS3.Items22"),
+            resources.GetString("RS3.Items23"),
+            resources.GetString("RS3.Items24"),
+            resources.GetString("RS3.Items25"),
+            resources.GetString("RS3.Items26"),
+            resources.GetString("RS3.Items27"),
+            resources.GetString("RS3.Items28"),
+            resources.GetString("RS3.Items29")});
+            resources.ApplyResources(this.RS3, "RS3");
             this.RS3.Name = "RS3";
-            this.RS3.Size = new System.Drawing.Size(80, 21);
-            this.RS3.TabIndex = 25;
             this.toolTip1.SetToolTip(this.RS3, resources.GetString("RS3.ToolTip"));
             // 
             // RS2
             // 
             this.RS2.FormattingEnabled = true;
             this.RS2.Items.AddRange(new object[] {
-            "250",
-            "192",
-            "128",
-            "96",
-            "64",
-            "32",
-            "16",
-            "8",
-            "4",
-            "2"});
-            this.RS2.Location = new System.Drawing.Point(201, 168);
+            resources.GetString("RS2.Items"),
+            resources.GetString("RS2.Items1"),
+            resources.GetString("RS2.Items2"),
+            resources.GetString("RS2.Items3"),
+            resources.GetString("RS2.Items4"),
+            resources.GetString("RS2.Items5"),
+            resources.GetString("RS2.Items6"),
+            resources.GetString("RS2.Items7"),
+            resources.GetString("RS2.Items8"),
+            resources.GetString("RS2.Items9")});
+            resources.ApplyResources(this.RS2, "RS2");
             this.RS2.Name = "RS2";
-            this.RS2.Size = new System.Drawing.Size(80, 21);
-            this.RS2.TabIndex = 24;
-            this.toolTip1.SetToolTip(this.RS2, "AIR_SPEED is the inter-radio data rate in rounded kbps. So 128 means 128kbps. Max" +
-        " is 192, min is 2. I would not recommend values below 16 as the frequency hoppin" +
-        "g and tdm sync times get too long. ");
+            this.toolTip1.SetToolTip(this.RS2, resources.GetString("RS2.ToolTip"));
             // 
             // RS1
             // 
             this.RS1.FormattingEnabled = true;
             this.RS1.Items.AddRange(new object[] {
-            "115",
-            "111",
-            "57",
-            "38",
-            "19",
-            "9",
-            "4",
-            "2",
-            "1"});
-            this.RS1.Location = new System.Drawing.Point(201, 141);
+            resources.GetString("RS1.Items"),
+            resources.GetString("RS1.Items1"),
+            resources.GetString("RS1.Items2"),
+            resources.GetString("RS1.Items3"),
+            resources.GetString("RS1.Items4"),
+            resources.GetString("RS1.Items5"),
+            resources.GetString("RS1.Items6"),
+            resources.GetString("RS1.Items7"),
+            resources.GetString("RS1.Items8")});
+            resources.ApplyResources(this.RS1, "RS1");
             this.RS1.Name = "RS1";
-            this.RS1.Size = new System.Drawing.Size(80, 21);
-            this.RS1.TabIndex = 22;
-            this.toolTip1.SetToolTip(this.RS1, "Serial baud rate in rounded kbps. So 57 means 57600. \r\n");
+            this.toolTip1.SetToolTip(this.RS1, resources.GetString("RS1.ToolTip"));
             // 
             // RSSI
             // 
-            this.RSSI.Location = new System.Drawing.Point(87, 51);
-            this.RSSI.Multiline = true;
+            resources.ApplyResources(this.RSSI, "RSSI");
             this.RSSI.Name = "RSSI";
             this.RSSI.ReadOnly = true;
-            this.RSSI.Size = new System.Drawing.Size(194, 58);
-            this.RSSI.TabIndex = 34;
             this.toolTip1.SetToolTip(this.RSSI, resources.GetString("RSSI.ToolTip"));
             // 
             // RS0
             // 
-            this.RS0.Location = new System.Drawing.Point(201, 115);
+            resources.ApplyResources(this.RS0, "RS0");
             this.RS0.Name = "RS0";
             this.RS0.ReadOnly = true;
-            this.RS0.Size = new System.Drawing.Size(80, 20);
-            this.RS0.TabIndex = 23;
             // 
             // label9
             // 
-            this.label9.AutoSize = true;
-            this.label9.Location = new System.Drawing.Point(108, 9);
+            resources.ApplyResources(this.label9, "label9");
             this.label9.Name = "label9";
-            this.label9.Size = new System.Drawing.Size(33, 13);
-            this.label9.TabIndex = 30;
-            this.label9.Text = "Local";
             // 
             // label10
             // 
-            this.label10.AutoSize = true;
-            this.label10.Location = new System.Drawing.Point(225, 9);
+            resources.ApplyResources(this.label10, "label10");
             this.label10.Name = "label10";
-            this.label10.Size = new System.Drawing.Size(44, 13);
-            this.label10.TabIndex = 31;
-            this.label10.Text = "Remote";
             // 
             // RTI
             // 
-            this.RTI.Location = new System.Drawing.Point(201, 25);
+            resources.ApplyResources(this.RTI, "RTI");
             this.RTI.Name = "RTI";
             this.RTI.ReadOnly = true;
-            this.RTI.Size = new System.Drawing.Size(80, 20);
-            this.RTI.TabIndex = 33;
             // 
             // ATI
             // 
-            this.ATI.Location = new System.Drawing.Point(87, 25);
+            resources.ApplyResources(this.ATI, "ATI");
             this.ATI.Name = "ATI";
             this.ATI.ReadOnly = true;
-            this.ATI.Size = new System.Drawing.Size(80, 20);
-            this.ATI.TabIndex = 32;
             // 
             // label11
             // 
-            this.label11.AutoSize = true;
-            this.label11.Location = new System.Drawing.Point(15, 32);
+            resources.ApplyResources(this.label11, "label11");
             this.label11.Name = "label11";
-            this.label11.Size = new System.Drawing.Size(42, 13);
-            this.label11.TabIndex = 36;
-            this.label11.Text = "Version";
             // 
             // label12
             // 
-            this.label12.AutoSize = true;
-            this.label12.Location = new System.Drawing.Point(15, 58);
+            resources.ApplyResources(this.label12, "label12");
             this.label12.Name = "label12";
-            this.label12.Size = new System.Drawing.Size(32, 13);
-            this.label12.TabIndex = 37;
-            this.label12.Text = "RSSI";
             // 
             // BUT_savesettings
             // 
-            this.BUT_savesettings.Enabled = false;
-            this.BUT_savesettings.Location = new System.Drawing.Point(99, 330);
+            resources.ApplyResources(this.BUT_savesettings, "BUT_savesettings");
             this.BUT_savesettings.Name = "BUT_savesettings";
-            this.BUT_savesettings.Size = new System.Drawing.Size(75, 39);
-            this.BUT_savesettings.TabIndex = 21;
-            this.BUT_savesettings.Text = "Save Settings";
             this.BUT_savesettings.UseVisualStyleBackColor = true;
             this.BUT_savesettings.Click += new System.EventHandler(this.BUT_savesettings_Click);
             // 
             // BUT_getcurrent
             // 
-            this.BUT_getcurrent.Location = new System.Drawing.Point(18, 330);
+            resources.ApplyResources(this.BUT_getcurrent, "BUT_getcurrent");
             this.BUT_getcurrent.Name = "BUT_getcurrent";
-            this.BUT_getcurrent.Size = new System.Drawing.Size(75, 39);
-            this.BUT_getcurrent.TabIndex = 6;
-            this.BUT_getcurrent.Text = "Load Settings";
             this.BUT_getcurrent.UseVisualStyleBackColor = true;
             this.BUT_getcurrent.Click += new System.EventHandler(this.BUT_getcurrent_Click);
             // 
             // lbl_status
             // 
-            this.lbl_status.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left)));
+            resources.ApplyResources(this.lbl_status, "lbl_status");
             this.lbl_status.BackColor = System.Drawing.Color.Transparent;
-            this.lbl_status.Location = new System.Drawing.Point(12, 374);
             this.lbl_status.Name = "lbl_status";
-            this.lbl_status.Size = new System.Drawing.Size(294, 22);
-            this.lbl_status.TabIndex = 3;
             // 
             // BUT_upload
             // 
-            this.BUT_upload.Location = new System.Drawing.Point(180, 330);
+            resources.ApplyResources(this.BUT_upload, "BUT_upload");
             this.BUT_upload.Name = "BUT_upload";
-            this.BUT_upload.Size = new System.Drawing.Size(127, 39);
-            this.BUT_upload.TabIndex = 0;
-            this.BUT_upload.Text = "Upload Firmware (Local)";
             this.BUT_upload.UseVisualStyleBackColor = true;
             this.BUT_upload.Click += new System.EventHandler(this.BUT_upload_Click);
             // 
             // BUT_syncS2
             // 
-            this.BUT_syncS2.Location = new System.Drawing.Point(173, 168);
+            resources.ApplyResources(this.BUT_syncS2, "BUT_syncS2");
             this.BUT_syncS2.Name = "BUT_syncS2";
-            this.BUT_syncS2.Size = new System.Drawing.Size(22, 23);
-            this.BUT_syncS2.TabIndex = 38;
-            this.BUT_syncS2.Text = ">";
             this.BUT_syncS2.UseVisualStyleBackColor = true;
             this.BUT_syncS2.Click += new System.EventHandler(this.BUT_syncS2_Click);
             // 
             // BUT_syncS3
             // 
-            this.BUT_syncS3.Location = new System.Drawing.Point(173, 195);
+            resources.ApplyResources(this.BUT_syncS3, "BUT_syncS3");
             this.BUT_syncS3.Name = "BUT_syncS3";
-            this.BUT_syncS3.Size = new System.Drawing.Size(22, 23);
-            this.BUT_syncS3.TabIndex = 39;
-            this.BUT_syncS3.Text = ">";
             this.BUT_syncS3.UseVisualStyleBackColor = true;
             this.BUT_syncS3.Click += new System.EventHandler(this.BUT_syncS3_Click);
             // 
             // BUT_syncS5
             // 
-            this.BUT_syncS5.Location = new System.Drawing.Point(173, 247);
+            resources.ApplyResources(this.BUT_syncS5, "BUT_syncS5");
             this.BUT_syncS5.Name = "BUT_syncS5";
-            this.BUT_syncS5.Size = new System.Drawing.Size(22, 23);
-            this.BUT_syncS5.TabIndex = 40;
-            this.BUT_syncS5.Text = ">";
             this.BUT_syncS5.UseVisualStyleBackColor = true;
             this.BUT_syncS5.Click += new System.EventHandler(this.BUT_syncS5_Click);
             // 
             // _3DRradio
             // 
-            this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
+            resources.ApplyResources(this, "$this");
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.Controls.Add(this.BUT_syncS5);
             this.Controls.Add(this.BUT_syncS3);
@@ -619,7 +501,6 @@
             this.Controls.Add(this.BUT_upload);
             this.MinimumSize = new System.Drawing.Size(334, 482);
             this.Name = "_3DRradio";
-            this.Size = new System.Drawing.Size(334, 482);
             this.ResumeLayout(false);
             this.PerformLayout();
 

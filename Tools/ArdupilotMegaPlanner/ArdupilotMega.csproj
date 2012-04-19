@@ -543,6 +543,12 @@
     <EmbeddedResource Include="Antenna\Tracker.resx">
       <DependentUpon>Tracker.cs</DependentUpon>
     </EmbeddedResource>
+    <EmbeddedResource Include="Antenna\Tracker.zh-Hans.resx">
+      <DependentUpon>Tracker.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Camera.zh-Hans.resx">
+      <DependentUpon>Camera.cs</DependentUpon>
+    </EmbeddedResource>
     <EmbeddedResource Include="Controls\BackstageView\BackstageView.resx">
       <DependentUpon>BackstageView.cs</DependentUpon>
     </EmbeddedResource>
@@ -744,6 +750,9 @@
     </EmbeddedResource>
     <EmbeddedResource Include="MavlinkLog.es-ES.resx">
       <DependentUpon>MavlinkLog.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Radio\3DRradio.zh-Hans.resx">
+      <DependentUpon>3DRradio.cs</DependentUpon>
     </EmbeddedResource>
     <EmbeddedResource Include="RAW_Sensor.es-ES.resx">
       <DependentUpon>RAW_Sensor.cs</DependentUpon>

@@ -184,6 +184,8 @@
 #define CH6_LOITER_RATE_KI 28
 #define CH6_LOITER_RATE_KD 23
 
+#define CH6_AHRS_YAW_KP 30
+
 
 // nav byte mask
 // -------------

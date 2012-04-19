@@ -44,6 +44,7 @@
             this.pictureBox3 = new System.Windows.Forms.PictureBox();
             this.pictureBox1 = new System.Windows.Forms.PictureBox();
             this.BUT_MagCalibrationLog = new ArdupilotMega.MyButton();
+            this.CHK_autodec = new System.Windows.Forms.CheckBox();
             ((System.ComponentModel.ISupportInitialize)(this.pictureBox2)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.pictureBox4)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.pictureBox3)).BeginInit();
@@ -161,10 +162,18 @@
             this.BUT_MagCalibrationLog.UseVisualStyleBackColor = true;
             this.BUT_MagCalibrationLog.Click += new System.EventHandler(this.BUT_MagCalibrationLog_Click);
             // 
+            // CHK_autodec
+            // 
+            resources.ApplyResources(this.CHK_autodec, "CHK_autodec");
+            this.CHK_autodec.Name = "CHK_autodec";
+            this.CHK_autodec.UseVisualStyleBackColor = true;
+            this.CHK_autodec.CheckedChanged += new System.EventHandler(this.CHK_autodec_CheckedChanged);
+            // 
             // ConfigHardwareOptions
             // 
             resources.ApplyResources(this, "$this");
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
+            this.Controls.Add(this.CHK_autodec);
             this.Controls.Add(this.BUT_MagCalibrationLog);
             this.Controls.Add(this.BUT_MagCalibrationLive);
             this.Controls.Add(this.label27);
@@ -208,5 +217,6 @@
         private System.Windows.Forms.PictureBox pictureBox3;
         private System.Windows.Forms.PictureBox pictureBox1;
         private MyButton BUT_MagCalibrationLog;
+        private System.Windows.Forms.CheckBox CHK_autodec;
     }
 }

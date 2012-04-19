@@ -28,6 +28,7 @@
         /// </summary>
         private void InitializeComponent()
         {
+            System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(Tracker));
             this.CMB_interface = new System.Windows.Forms.ComboBox();
             this.label1 = new System.Windows.Forms.Label();
             this.CMB_baudrate = new System.Windows.Forms.ComboBox();
@@ -62,259 +63,168 @@
             // 
             this.CMB_interface.FormattingEnabled = true;
             this.CMB_interface.Items.AddRange(new object[] {
-            "Maestro",
-            "ArduTracker"});
-            this.CMB_interface.Location = new System.Drawing.Point(83, 10);
+            resources.GetString("CMB_interface.Items"),
+            resources.GetString("CMB_interface.Items1")});
+            resources.ApplyResources(this.CMB_interface, "CMB_interface");
             this.CMB_interface.Name = "CMB_interface";
-            this.CMB_interface.Size = new System.Drawing.Size(121, 21);
-            this.CMB_interface.TabIndex = 0;
-            this.CMB_interface.Text = "Maestro";
             // 
             // label1
             // 
-            this.label1.AutoSize = true;
-            this.label1.Location = new System.Drawing.Point(13, 13);
+            resources.ApplyResources(this.label1, "label1");
             this.label1.Name = "label1";
-            this.label1.Size = new System.Drawing.Size(49, 13);
-            this.label1.TabIndex = 1;
-            this.label1.Text = "Interface";
             // 
             // CMB_baudrate
             // 
             this.CMB_baudrate.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
             this.CMB_baudrate.FormattingEnabled = true;
             this.CMB_baudrate.Items.AddRange(new object[] {
-            "4800",
-            "9600",
-            "14400",
-            "19200",
-            "28800",
-            "38400",
-            "57600",
-            "115200"});
-            this.CMB_baudrate.Location = new System.Drawing.Point(337, 9);
+            resources.GetString("CMB_baudrate.Items"),
+            resources.GetString("CMB_baudrate.Items1"),
+            resources.GetString("CMB_baudrate.Items2"),
+            resources.GetString("CMB_baudrate.Items3"),
+            resources.GetString("CMB_baudrate.Items4"),
+            resources.GetString("CMB_baudrate.Items5"),
+            resources.GetString("CMB_baudrate.Items6"),
+            resources.GetString("CMB_baudrate.Items7")});
+            resources.ApplyResources(this.CMB_baudrate, "CMB_baudrate");
             this.CMB_baudrate.Name = "CMB_baudrate";
-            this.CMB_baudrate.Size = new System.Drawing.Size(121, 21);
-            this.CMB_baudrate.TabIndex = 2;
             // 
             // CMB_serialport
             // 
             this.CMB_serialport.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
             this.CMB_serialport.FormattingEnabled = true;
-            this.CMB_serialport.Location = new System.Drawing.Point(210, 10);
+            resources.ApplyResources(this.CMB_serialport, "CMB_serialport");
             this.CMB_serialport.Name = "CMB_serialport";
-            this.CMB_serialport.Size = new System.Drawing.Size(121, 21);
-            this.CMB_serialport.TabIndex = 1;
             // 
             // TRK_pantrim
             // 
-            this.TRK_pantrim.Location = new System.Drawing.Point(153, 81);
+            resources.ApplyResources(this.TRK_pantrim, "TRK_pantrim");
             this.TRK_pantrim.Maximum = 360;
             this.TRK_pantrim.Minimum = -360;
             this.TRK_pantrim.Name = "TRK_pantrim";
-            this.TRK_pantrim.Size = new System.Drawing.Size(375, 45);
-            this.TRK_pantrim.TabIndex = 5;
             this.TRK_pantrim.TickFrequency = 5;
             this.TRK_pantrim.Scroll += new System.EventHandler(this.TRK_pantrim_Scroll);
             // 
             // TXT_panrange
             // 
-            this.TXT_panrange.Location = new System.Drawing.Point(83, 81);
+            resources.ApplyResources(this.TXT_panrange, "TXT_panrange");
             this.TXT_panrange.Name = "TXT_panrange";
-            this.TXT_panrange.Size = new System.Drawing.Size(64, 20);
-            this.TXT_panrange.TabIndex = 4;
-            this.TXT_panrange.Text = "360";
             this.TXT_panrange.TextChanged += new System.EventHandler(this.TXT_panrange_TextChanged);
             // 
             // label3
             // 
-            this.label3.AutoSize = true;
-            this.label3.Location = new System.Drawing.Point(326, 65);
+            resources.ApplyResources(this.label3, "label3");
             this.label3.Name = "label3";
-            this.label3.Size = new System.Drawing.Size(27, 13);
-            this.label3.TabIndex = 10;
-            this.label3.Text = "Trim";
             // 
             // label4
             // 
-            this.label4.AutoSize = true;
-            this.label4.Location = new System.Drawing.Point(83, 65);
+            resources.ApplyResources(this.label4, "label4");
             this.label4.Name = "label4";
-            this.label4.Size = new System.Drawing.Size(39, 13);
-            this.label4.TabIndex = 11;
-            this.label4.Text = "Range";
             // 
             // label5
             // 
-            this.label5.AutoSize = true;
-            this.label5.Location = new System.Drawing.Point(83, 141);
+            resources.ApplyResources(this.label5, "label5");
             this.label5.Name = "label5";
-            this.label5.Size = new System.Drawing.Size(39, 13);
-            this.label5.TabIndex = 17;
-            this.label5.Text = "Range";
             // 
             // label6
             // 
-            this.label6.AutoSize = true;
-            this.label6.Location = new System.Drawing.Point(326, 141);
+            resources.ApplyResources(this.label6, "label6");
             this.label6.Name = "label6";
-            this.label6.Size = new System.Drawing.Size(27, 13);
-            this.label6.TabIndex = 16;
-            this.label6.Text = "Trim";
             // 
             // TXT_tiltrange
             // 
-            this.TXT_tiltrange.Location = new System.Drawing.Point(83, 157);
+            resources.ApplyResources(this.TXT_tiltrange, "TXT_tiltrange");
             this.TXT_tiltrange.Name = "TXT_tiltrange";
-            this.TXT_tiltrange.Size = new System.Drawing.Size(64, 20);
-            this.TXT_tiltrange.TabIndex = 6;
-            this.TXT_tiltrange.Text = "90";
             this.TXT_tiltrange.TextChanged += new System.EventHandler(this.TXT_tiltrange_TextChanged);
             // 
             // TRK_tilttrim
             // 
-            this.TRK_tilttrim.Location = new System.Drawing.Point(153, 157);
+            resources.ApplyResources(this.TRK_tilttrim, "TRK_tilttrim");
             this.TRK_tilttrim.Maximum = 180;
             this.TRK_tilttrim.Minimum = -180;
             this.TRK_tilttrim.Name = "TRK_tilttrim";
-            this.TRK_tilttrim.Size = new System.Drawing.Size(375, 45);
-            this.TRK_tilttrim.TabIndex = 7;
             this.TRK_tilttrim.TickFrequency = 5;
             this.TRK_tilttrim.Scroll += new System.EventHandler(this.TRK_tilttrim_Scroll);
             // 
             // label2
             // 
-            this.label2.AutoSize = true;
-            this.label2.Location = new System.Drawing.Point(12, 65);
+            resources.ApplyResources(this.label2, "label2");
             this.label2.Name = "label2";
-            this.label2.Size = new System.Drawing.Size(26, 13);
-            this.label2.TabIndex = 18;
-            this.label2.Text = "Pan";
             // 
             // label7
             // 
-            this.label7.AutoSize = true;
-            this.label7.Location = new System.Drawing.Point(12, 141);
+            resources.ApplyResources(this.label7, "label7");
             this.label7.Name = "label7";
-            this.label7.Size = new System.Drawing.Size(21, 13);
-            this.label7.TabIndex = 19;
-            this.label7.Text = "Tilt";
             // 
             // CHK_revpan
             // 
-            this.CHK_revpan.AutoSize = true;
-            this.CHK_revpan.Location = new System.Drawing.Point(534, 83);
+            resources.ApplyResources(this.CHK_revpan, "CHK_revpan");
             this.CHK_revpan.Name = "CHK_revpan";
-            this.CHK_revpan.Size = new System.Drawing.Size(46, 17);
-            this.CHK_revpan.TabIndex = 20;
-            this.CHK_revpan.Text = "Rev";
             this.CHK_revpan.UseVisualStyleBackColor = true;
             this.CHK_revpan.CheckedChanged += new System.EventHandler(this.CHK_revpan_CheckedChanged);
             // 
             // CHK_revtilt
             // 
-            this.CHK_revtilt.AutoSize = true;
-            this.CHK_revtilt.Location = new System.Drawing.Point(534, 159);
+            resources.ApplyResources(this.CHK_revtilt, "CHK_revtilt");
             this.CHK_revtilt.Name = "CHK_revtilt";
-            this.CHK_revtilt.Size = new System.Drawing.Size(46, 17);
-            this.CHK_revtilt.TabIndex = 21;
-            this.CHK_revtilt.Text = "Rev";
             this.CHK_revtilt.UseVisualStyleBackColor = true;
             this.CHK_revtilt.CheckedChanged += new System.EventHandler(this.CHK_revtilt_CheckedChanged);
             // 
             // TXT_pwmrangepan
             // 
-            this.TXT_pwmrangepan.Location = new System.Drawing.Point(83, 107);
+            resources.ApplyResources(this.TXT_pwmrangepan, "TXT_pwmrangepan");
             this.TXT_pwmrangepan.Name = "TXT_pwmrangepan";
-            this.TXT_pwmrangepan.Size = new System.Drawing.Size(64, 20);
-            this.TXT_pwmrangepan.TabIndex = 22;
-            this.TXT_pwmrangepan.Text = "1000";
             // 
             // TXT_pwmrangetilt
             // 
-            this.TXT_pwmrangetilt.Location = new System.Drawing.Point(83, 183);
+            resources.ApplyResources(this.TXT_pwmrangetilt, "TXT_pwmrangetilt");
             this.TXT_pwmrangetilt.Name = "TXT_pwmrangetilt";
-            this.TXT_pwmrangetilt.Size = new System.Drawing.Size(64, 20);
-            this.TXT_pwmrangetilt.TabIndex = 23;
-            this.TXT_pwmrangetilt.Text = "1000";
             // 
             // label8
             // 
-            this.label8.AutoSize = true;
-            this.label8.Location = new System.Drawing.Point(43, 110);
+            resources.ApplyResources(this.label8, "label8");
             this.label8.Name = "label8";
-            this.label8.Size = new System.Drawing.Size(34, 13);
-            this.label8.TabIndex = 24;
-            this.label8.Text = "PWM";
             // 
             // label9
             // 
-            this.label9.AutoSize = true;
-            this.label9.Location = new System.Drawing.Point(43, 186);
+            resources.ApplyResources(this.label9, "label9");
             this.label9.Name = "label9";
-            this.label9.Size = new System.Drawing.Size(34, 13);
-            this.label9.TabIndex = 25;
-            this.label9.Text = "PWM";
             // 
             // label10
             // 
-            this.label10.AutoSize = true;
-            this.label10.Location = new System.Drawing.Point(45, 160);
+            resources.ApplyResources(this.label10, "label10");
             this.label10.Name = "label10";
-            this.label10.Size = new System.Drawing.Size(34, 13);
-            this.label10.TabIndex = 27;
-            this.label10.Text = "Angle";
             // 
             // label11
             // 
-            this.label11.AutoSize = true;
-            this.label11.Location = new System.Drawing.Point(45, 84);
+            resources.ApplyResources(this.label11, "label11");
             this.label11.Name = "label11";
-            this.label11.Size = new System.Drawing.Size(34, 13);
-            this.label11.TabIndex = 26;
-            this.label11.Text = "Angle";
             // 
             // label12
             // 
-            this.label12.AutoSize = true;
-            this.label12.Font = new System.Drawing.Font("Microsoft Sans Serif", 8.25F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.label12.Location = new System.Drawing.Point(94, 40);
+            resources.ApplyResources(this.label12, "label12");
             this.label12.Name = "label12";
-            this.label12.Size = new System.Drawing.Size(403, 13);
-            this.label12.TabIndex = 28;
-            this.label12.Text = "Miss using this interface can cause servo damage, use with caution!!!";
             // 
             // BUT_connect
             // 
-            this.BUT_connect.Location = new System.Drawing.Point(476, 9);
+            resources.ApplyResources(this.BUT_connect, "BUT_connect");
             this.BUT_connect.Name = "BUT_connect";
-            this.BUT_connect.Size = new System.Drawing.Size(75, 23);
-            this.BUT_connect.TabIndex = 3;
-            this.BUT_connect.Text = "Connect";
             this.BUT_connect.UseVisualStyleBackColor = true;
             this.BUT_connect.Click += new System.EventHandler(this.BUT_connect_Click);
             // 
             // LBL_pantrim
             // 
-            this.LBL_pantrim.AutoSize = true;
-            this.LBL_pantrim.Location = new System.Drawing.Point(326, 113);
+            resources.ApplyResources(this.LBL_pantrim, "LBL_pantrim");
             this.LBL_pantrim.Name = "LBL_pantrim";
-            this.LBL_pantrim.Size = new System.Drawing.Size(34, 13);
-            this.LBL_pantrim.TabIndex = 29;
-            this.LBL_pantrim.Text = "Angle";
             // 
             // LBL_tilttrim
             // 
-            this.LBL_tilttrim.AutoSize = true;
-            this.LBL_tilttrim.Location = new System.Drawing.Point(326, 190);
+            resources.ApplyResources(this.LBL_tilttrim, "LBL_tilttrim");
             this.LBL_tilttrim.Name = "LBL_tilttrim";
-            this.LBL_tilttrim.Size = new System.Drawing.Size(34, 13);
-            this.LBL_tilttrim.TabIndex = 30;
-            this.LBL_tilttrim.Text = "Angle";
             // 
             // Tracker
             // 
-            this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
+            resources.ApplyResources(this, "$this");
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.Controls.Add(this.LBL_tilttrim);
             this.Controls.Add(this.LBL_pantrim);
@@ -343,7 +253,6 @@
             this.Controls.Add(this.label1);
             this.Controls.Add(this.CMB_interface);
             this.Name = "Tracker";
-            this.Size = new System.Drawing.Size(587, 212);
             this.FormClosing += new System.Windows.Forms.FormClosingEventHandler(this.Tracker_FormClosing);
             ((System.ComponentModel.ISupportInitialize)(this.TRK_pantrim)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.TRK_tilttrim)).EndInit();
