@@ -1,6 +1,6 @@
 function(apm_option NAME)
     cmake_parse_arguments(ARG
-        "ADVANCED"
+        "ADVANCED;DEFINE_ONLY"
         "TYPE;DESCRIPTION;DEFAULT" "OPTIONS;DEPENDS" ${ARGN})
 
     #message(STATUS "parsing argument: ${NAME}")
@@ -39,6 +39,12 @@ function(apm_option NAME)
         mark_as_advanced(FORCE "${NAME}")
     endif()
 
+    if(ARG_DEFINE_ONLY)
+        set("${NAME}_DEFINE_ONLY" TRUE CACHE INTERNAL "Define only?" FORCE) 
+    else()
+        set("${NAME}_DEFINE_ONLY" FALSE CACHE INTERNAL "Define only?" FORCE) 
+    endif()
+
 endfunction()
 
 function(apm_option_generate_config)
@@ -50,6 +56,14 @@ function(apm_option_generate_config)
         #message(STATUS "item: ${ITEM}")
         get_property(ITEM_VALUE CACHE ${ITEM} PROPERTY VALUE) 
         get_property(ITEM_HELP CACHE ${ITEM} PROPERTY HELPSTRING) 
-        file(APPEND "${CMAKE_BINARY_DIR}/${ARG_FILE}" "\n#define ${ITEM} ${ITEM_VALUE} // ${ITEM_HELP}")
+        if (${ITEM}_DEFINE_ONLY)
+            if (${ITEM}_VALUE)
+                file(APPEND "${CMAKE_BINARY_DIR}/${ARG_FILE}" "\n#define ${ITEM} // ${ITEM_HELP}")
+            else()
+                file(APPEND "${CMAKE_BINARY_DIR}/${ARG_FILE}" "\n//#define ${ITEM} // ${ITEM_HELP}")
+            endif()
+        else()
+            file(APPEND "${CMAKE_BINARY_DIR}/${ARG_FILE}" "\n#define ${ITEM} ${ITEM_VALUE} // ${ITEM_HELP}")
+        endif()
     endforeach()
 endfunction()
