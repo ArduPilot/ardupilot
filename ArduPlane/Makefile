@@ -30,6 +30,9 @@ mavlink10:
 sitl:
 	make -f ../libraries/Desktop/Makefile.desktop
 
+sitl-mavlink10:
+	make -f ../libraries/Desktop/Makefile.desktop EXTRAFLAGS="-DMAVLINK10"
+
 sitl-quaternion:
 	make -f ../libraries/Desktop/Makefile.desktop EXTRAFLAGS="-DQUATERNION_ENABLE=ENABLED"
 
