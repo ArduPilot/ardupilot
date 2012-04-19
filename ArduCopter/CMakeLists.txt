@@ -16,10 +16,13 @@ include(CMakeParseArguments)
 include(APMOption)
 
 # options
-add_definitions(-DUSE_CMAKE_APM_CONFIG)
 include(options.cmake)
 include_directories(${CMAKE_BINARY_DIR})
-apm_option_generate_config(FILE "APM_Config_cmake.h" OPTIONS ${APM_OPTIONS})
+add_definitions(-DUSE_CMAKE_APM_CONFIG)
+apm_option_generate_config(FILE "APM_Config_cmake.h" BUILD_FLAGS APM_BUILD_FLAGS)
+add_definitions(${APM_BUILD_FLAGS})
+message(STATUS "build flags: ${APM_BUILD_FLAGS}")
+#configure_file(APM_Config2.h.cmake APM_Config2.h)
 
 # disallow in-source build
 include(MacroEnsureOutOfSourceBuild)
@@ -28,7 +31,7 @@ Please create a separate build directory and run 'cmake /path/to/${PROJECT_NAME}
 
 # built variables
 set(PROJECT_VERSION "${PROJECT_VERSION_MAJOR}.${PROJECT_VERSION_MINOR}.${PROJECT_VERSION_PATCH}")
-set(FIRMWARE_NAME "${PROJECT_NAME}-${APM_HARDWARE}-${APM_PROCESSOR}-${HIL_MODE}")
+set(FIRMWARE_NAME "${PROJECT_NAME}-${CONFIG_APM_HARDWARE}-${APM_PROCESSOR}-${HIL_MODE}")
 
 # modify flags from default toolchain flags
 set(APM_OPT_FLAGS "-Wformat -Wall -Wshadow -Wpointer-arith -Wcast-align -Wwrite-strings -Wformat=2")
