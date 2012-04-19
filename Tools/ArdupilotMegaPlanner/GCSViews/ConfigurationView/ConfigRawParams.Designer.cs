@@ -29,6 +29,7 @@
         private void InitializeComponent()
         {
             this.components = new System.ComponentModel.Container();
+            System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(ConfigRawParams));
             System.Windows.Forms.DataGridViewCellStyle dataGridViewCellStyle1 = new System.Windows.Forms.DataGridViewCellStyle();
             System.Windows.Forms.DataGridViewCellStyle dataGridViewCellStyle2 = new System.Windows.Forms.DataGridViewCellStyle();
             this.BUT_compare = new ArdupilotMega.MyButton();
@@ -48,63 +49,36 @@
             // 
             // BUT_compare
             // 
-            this.BUT_compare.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
-            this.BUT_compare.ImeMode = System.Windows.Forms.ImeMode.NoControl;
-            this.BUT_compare.Location = new System.Drawing.Point(341, 119);
+            resources.ApplyResources(this.BUT_compare, "BUT_compare");
             this.BUT_compare.Name = "BUT_compare";
-            this.BUT_compare.Size = new System.Drawing.Size(103, 19);
-            this.BUT_compare.TabIndex = 72;
-            this.BUT_compare.Text = "Compare Params";
             this.BUT_compare.UseVisualStyleBackColor = true;
             this.BUT_compare.Click += new System.EventHandler(this.BUT_compare_Click);
             // 
             // BUT_rerequestparams
             // 
-            this.BUT_rerequestparams.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
-            this.BUT_rerequestparams.ImeMode = System.Windows.Forms.ImeMode.NoControl;
-            this.BUT_rerequestparams.Location = new System.Drawing.Point(341, 94);
+            resources.ApplyResources(this.BUT_rerequestparams, "BUT_rerequestparams");
             this.BUT_rerequestparams.Name = "BUT_rerequestparams";
-            this.BUT_rerequestparams.Size = new System.Drawing.Size(103, 19);
-            this.BUT_rerequestparams.TabIndex = 67;
-            this.BUT_rerequestparams.Text = "Refresh Params";
             this.BUT_rerequestparams.UseVisualStyleBackColor = true;
             this.BUT_rerequestparams.Click += new System.EventHandler(this.BUT_rerequestparams_Click);
             // 
             // BUT_writePIDS
             // 
-            this.BUT_writePIDS.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
-            this.BUT_writePIDS.ImeMode = System.Windows.Forms.ImeMode.NoControl;
-            this.BUT_writePIDS.Location = new System.Drawing.Point(341, 69);
+            resources.ApplyResources(this.BUT_writePIDS, "BUT_writePIDS");
             this.BUT_writePIDS.Name = "BUT_writePIDS";
-            this.BUT_writePIDS.Size = new System.Drawing.Size(103, 19);
-            this.BUT_writePIDS.TabIndex = 69;
-            this.BUT_writePIDS.Text = "Write Params";
             this.BUT_writePIDS.UseVisualStyleBackColor = true;
             this.BUT_writePIDS.Click += new System.EventHandler(this.BUT_writePIDS_Click);
             // 
             // BUT_save
             // 
-            this.BUT_save.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
-            this.BUT_save.ImeMode = System.Windows.Forms.ImeMode.NoControl;
-            this.BUT_save.Location = new System.Drawing.Point(341, 35);
-            this.BUT_save.Margin = new System.Windows.Forms.Padding(0);
+            resources.ApplyResources(this.BUT_save, "BUT_save");
             this.BUT_save.Name = "BUT_save";
-            this.BUT_save.Size = new System.Drawing.Size(104, 19);
-            this.BUT_save.TabIndex = 70;
-            this.BUT_save.Text = "Save";
             this.BUT_save.UseVisualStyleBackColor = true;
             this.BUT_save.Click += new System.EventHandler(this.BUT_save_Click);
             // 
             // BUT_load
             // 
-            this.BUT_load.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
-            this.BUT_load.ImeMode = System.Windows.Forms.ImeMode.NoControl;
-            this.BUT_load.Location = new System.Drawing.Point(341, 7);
-            this.BUT_load.Margin = new System.Windows.Forms.Padding(0);
+            resources.ApplyResources(this.BUT_load, "BUT_load");
             this.BUT_load.Name = "BUT_load";
-            this.BUT_load.Size = new System.Drawing.Size(104, 19);
-            this.BUT_load.TabIndex = 71;
-            this.BUT_load.Text = "Load";
             this.BUT_load.UseVisualStyleBackColor = true;
             this.BUT_load.Click += new System.EventHandler(this.BUT_load_Click);
             // 
@@ -112,9 +86,7 @@
             // 
             this.Params.AllowUserToAddRows = false;
             this.Params.AllowUserToDeleteRows = false;
-            this.Params.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
-            | System.Windows.Forms.AnchorStyles.Left) 
-            | System.Windows.Forms.AnchorStyles.Right)));
+            resources.ApplyResources(this.Params, "Params");
             dataGridViewCellStyle1.Alignment = System.Windows.Forms.DataGridViewContentAlignment.MiddleLeft;
             dataGridViewCellStyle1.BackColor = System.Drawing.Color.Maroon;
             dataGridViewCellStyle1.Font = new System.Drawing.Font("Microsoft Sans Serif", 8.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
@@ -130,7 +102,6 @@
             this.Default,
             this.mavScale,
             this.RawValue});
-            this.Params.Location = new System.Drawing.Point(14, 3);
             this.Params.Name = "Params";
             dataGridViewCellStyle2.Alignment = System.Windows.Forms.DataGridViewContentAlignment.MiddleLeft;
             dataGridViewCellStyle2.BackColor = System.Drawing.SystemColors.ActiveCaption;
@@ -141,45 +112,37 @@
             dataGridViewCellStyle2.WrapMode = System.Windows.Forms.DataGridViewTriState.True;
             this.Params.RowHeadersDefaultCellStyle = dataGridViewCellStyle2;
             this.Params.RowHeadersVisible = false;
-            this.Params.RowHeadersWidth = 150;
-            this.Params.Size = new System.Drawing.Size(321, 302);
-            this.Params.TabIndex = 68;
             this.Params.CellValueChanged += new System.Windows.Forms.DataGridViewCellEventHandler(this.Params_CellValueChanged);
             // 
             // Command
             // 
-            this.Command.HeaderText = "Command";
+            resources.ApplyResources(this.Command, "Command");
             this.Command.Name = "Command";
             this.Command.ReadOnly = true;
-            this.Command.Width = 150;
             // 
             // Value
             // 
-            this.Value.HeaderText = "Value";
+            resources.ApplyResources(this.Value, "Value");
             this.Value.Name = "Value";
-            this.Value.Width = 80;
             // 
             // Default
             // 
-            this.Default.HeaderText = "Default";
+            resources.ApplyResources(this.Default, "Default");
             this.Default.Name = "Default";
-            this.Default.Visible = false;
             // 
             // mavScale
             // 
-            this.mavScale.HeaderText = "mavScale";
+            resources.ApplyResources(this.mavScale, "mavScale");
             this.mavScale.Name = "mavScale";
-            this.mavScale.Visible = false;
             // 
             // RawValue
             // 
-            this.RawValue.HeaderText = "RawValue";
+            resources.ApplyResources(this.RawValue, "RawValue");
             this.RawValue.Name = "RawValue";
-            this.RawValue.Visible = false;
             // 
             // ConfigRawParams
             // 
-            this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
+            resources.ApplyResources(this, "$this");
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.Controls.Add(this.BUT_compare);
             this.Controls.Add(this.BUT_rerequestparams);
@@ -188,7 +151,6 @@
             this.Controls.Add(this.BUT_load);
             this.Controls.Add(this.Params);
             this.Name = "ConfigRawParams";
-            this.Size = new System.Drawing.Size(460, 305);
             this.Load += new System.EventHandler(this.ConfigRawParams_Load);
             ((System.ComponentModel.ISupportInitialize)(this.Params)).EndInit();
             this.ResumeLayout(false);
