@@ -61,11 +61,11 @@
             // 
             // CMB_interface
             // 
-            resources.ApplyResources(this.CMB_interface, "CMB_interface");
             this.CMB_interface.FormattingEnabled = true;
             this.CMB_interface.Items.AddRange(new object[] {
             resources.GetString("CMB_interface.Items"),
             resources.GetString("CMB_interface.Items1")});
+            resources.ApplyResources(this.CMB_interface, "CMB_interface");
             this.CMB_interface.Name = "CMB_interface";
             // 
             // label1
@@ -75,7 +75,6 @@
             // 
             // CMB_baudrate
             // 
-            resources.ApplyResources(this.CMB_baudrate, "CMB_baudrate");
             this.CMB_baudrate.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
             this.CMB_baudrate.FormattingEnabled = true;
             this.CMB_baudrate.Items.AddRange(new object[] {
@@ -87,13 +86,14 @@
             resources.GetString("CMB_baudrate.Items5"),
             resources.GetString("CMB_baudrate.Items6"),
             resources.GetString("CMB_baudrate.Items7")});
+            resources.ApplyResources(this.CMB_baudrate, "CMB_baudrate");
             this.CMB_baudrate.Name = "CMB_baudrate";
             // 
             // CMB_serialport
             // 
-            resources.ApplyResources(this.CMB_serialport, "CMB_serialport");
             this.CMB_serialport.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
             this.CMB_serialport.FormattingEnabled = true;
+            resources.ApplyResources(this.CMB_serialport, "CMB_serialport");
             this.CMB_serialport.Name = "CMB_serialport";
             // 
             // TRK_pantrim
