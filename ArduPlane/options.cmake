@@ -38,7 +38,7 @@ apm_option("LOGGING_ENABLED" TYPE BOOL
     DESCRIPTION "Enable logging?" 
     DEFAULT OFF)
 
-apm_option("QUATERNION_ENABLE" TYPE BOOL
+apm_option("QUATERNION_ENABLE" TYPE BOOL ADVANCED
     DESCRIPTION "Enable quaterion navigation?" 
     DEFAULT OFF)
 

@@ -1,6 +1,6 @@
 /// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 
-#define THISFIRMWARE "ArduCopter V2.6 Beta"
+#define THISFIRMWARE "ArduCopter V2.5.4"
 /*
 ArduCopter Version 2.5
 Lead author:	Jason Short
@@ -36,6 +36,8 @@ Sandro Benigno  	:Camera support
 Olivier Adler 		:PPM Encoder
 John Arne Birkeland	:PPM Encoder
 Adam M Rivera		:Auto Compass Declination
+Marco Robustini		:Alpha testing
+Robert Lefebvre		:Heli Support & LEDs
 
 And much more so PLEASE PM me on DIYDRONES to add your contribution to the List
 

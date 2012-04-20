@@ -478,27 +478,28 @@ namespace ArdupilotMega
                 {
                     comPort.BaseStream = new TcpSerial();
                 }
-                else
-                    if (CMB_serialport.Text == "UDP")
-                    {
-                        comPort.BaseStream = new UdpSerial();
-                    }
-                    else
-                    {
-                        comPort.BaseStream = new SerialPort();
-                    }
-                try
+                else if (CMB_serialport.Text == "UDP")
                 {
-                    comPort.BaseStream.BaudRate = int.Parse(CMB_baudrate.Text);
+                    comPort.BaseStream = new UdpSerial();
                 }
-                catch { }
-                comPort.BaseStream.DataBits = 8;
-                comPort.BaseStream.StopBits = (StopBits)Enum.Parse(typeof(StopBits), "1");
-                comPort.BaseStream.Parity = (Parity)Enum.Parse(typeof(Parity), "None");
+                else
+                {
+                    comPort.BaseStream = new SerialPort();
+                }
 
                 try
                 {
+                    // set port, then options
                     comPort.BaseStream.PortName = CMB_serialport.Text;
+
+                    comPort.BaseStream.DataBits = 8;
+                    comPort.BaseStream.StopBits = (StopBits)Enum.Parse(typeof(StopBits), "1");
+                    comPort.BaseStream.Parity = (Parity)Enum.Parse(typeof(Parity), "None");
+                    try
+                    {
+                        comPort.BaseStream.BaudRate = int.Parse(CMB_baudrate.Text);
+                    }
+                    catch { }
 
                     // false here
                     comPort.BaseStream.DtrEnable = false;
