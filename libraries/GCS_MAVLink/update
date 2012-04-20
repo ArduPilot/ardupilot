@@ -7,7 +7,7 @@ fi
 
 MAVLINK_VERSION=$1
 rm -rf  VERSION mavlink* include lib share *.zip
-wget https://github.com/downloads/mavlink/mavlink/mavlink-${MAVLINK_VERSION}.zip
+wget http://github.com/downloads/mavlink/mavlink/mavlink-${MAVLINK_VERSION}.zip
 unzip mavlink-${MAVLINK_VERSION}.zip
 mv mavlink-${MAVLINK_VERSION}/* .
 rm -rf  mavlink* share lib
