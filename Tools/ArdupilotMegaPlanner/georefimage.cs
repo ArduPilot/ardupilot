@@ -11,6 +11,7 @@ using SharpKml.Base;
 using SharpKml.Dom;
 using System.Drawing;
 using System.Drawing.Imaging;
+using System.Text;
 
 namespace ArdupilotMega
 {
@@ -29,7 +30,16 @@ namespace ArdupilotMega
         private TextBox TXT_outputlog;
         private MyButton BUT_estoffset;
 
-        int latpos = 4, lngpos = 5, altpos = 7;
+        int latpos = 4, lngpos = 5, altpos = 7, cogpos = 9;
+        private NumericUpDown numericUpDown1;
+        private NumericUpDown numericUpDown2;
+        private NumericUpDown numericUpDown3;
+        private NumericUpDown numericUpDown4;
+        private Label label2;
+        private Label label3;
+        private Label label4;
+        private Label label5;
+        private Label label6;
         private MyButton BUT_Geotagimages;
 
         internal Georefimage() {
@@ -136,7 +146,7 @@ namespace ArdupilotMega
 
 
                     string[] vals = new string[] { "GPS", (cs.datetime - new DateTime(cs.datetime.Year,cs.datetime.Month,cs.datetime.Day,0,0,0,DateTimeKind.Local)).TotalMilliseconds.ToString(), "1",
-                    cs.satcount.ToString(),cs.lat.ToString(),cs.lng.ToString(),"0.0",cs.alt.ToString(),cs.alt.ToString(),"0.0",cs.groundcourse.ToString()};
+                    cs.satcount.ToString(),cs.lat.ToString(),cs.lng.ToString(),"0.0",cs.alt.ToString(),cs.alt.ToString(),cs.groundspeed.ToString(),cs.groundcourse.ToString()};
 
                     if (oldvalues.Length > 2 && oldvalues[latpos] == vals[latpos]
                         && oldvalues[lngpos] == vals[lngpos]
@@ -316,7 +326,7 @@ namespace ArdupilotMega
                                  }
                              );
 
-                             photocoords[filename] = new double[] { double.Parse(arr[latpos]), double.Parse(arr[lngpos]), double.Parse(arr[altpos]) };
+                             photocoords[filename] = new double[] { double.Parse(arr[latpos]), double.Parse(arr[lngpos]), double.Parse(arr[altpos]), double.Parse(arr[cogpos]) };
 
                              imagetotime[filename] = (long)(logdt.AddSeconds(-offsetseconds) - DateTime.MinValue).TotalSeconds;
 
@@ -341,12 +351,63 @@ namespace ArdupilotMega
 
             MainV2.instance.georefkml = serializer.Xml;
 
+            writeGPX(dirWithImages + Path.DirectorySeparatorChar + "location.gpx");
+
             sw4.Close();
 
             sw2.Close();
             sw.Close();
 
             TXT_outputlog.AppendText("Done " + matchs + " matchs");
+        }
+
+        private void writeGPX(string filename)
+        {
+
+            using (System.Xml.XmlTextWriter xw = new System.Xml.XmlTextWriter(Path.GetDirectoryName(filename) + Path.DirectorySeparatorChar + Path.GetFileNameWithoutExtension(filename) + ".gpx", Encoding.ASCII))
+            {
+
+                xw.WriteStartElement("gpx");
+
+                xw.WriteStartElement("trk");
+
+                xw.WriteStartElement("trkseg");
+
+                List<string> items = new List<string>();
+
+                foreach (string photo in photocoords.Keys)
+                {
+                    items.Add(photo);
+                }
+
+                items.Sort();
+
+                foreach (string photo in items)
+                {
+
+
+                    xw.WriteStartElement("trkpt");
+                    xw.WriteAttributeString("lat", ((double[])photocoords[photo])[0].ToString(new System.Globalization.CultureInfo("en-US")));
+                    xw.WriteAttributeString("lon", ((double[])photocoords[photo])[1].ToString(new System.Globalization.CultureInfo("en-US")));
+
+                    // must stay as above
+
+                    xw.WriteElementString("time", ((DateTime)filedatecache[photo]).ToString("yyyy-MM-ddTHH:mm:ssZ"));
+
+                    xw.WriteElementString("ele", ((double[])photocoords[photo])[2].ToString(new System.Globalization.CultureInfo("en-US")));
+                    xw.WriteElementString("course", ((double[])photocoords[photo])[3].ToString(new System.Globalization.CultureInfo("en-US")));
+
+                    xw.WriteElementString("compass", ((double[])photocoords[photo])[3].ToString(new System.Globalization.CultureInfo("en-US")));
+
+                    xw.WriteEndElement();
+                }
+
+                xw.WriteEndElement();
+                xw.WriteEndElement();
+                xw.WriteEndElement();
+
+                xw.Close();
+            }
         }
 
         private void InitializeComponent()
@@ -363,6 +424,19 @@ namespace ArdupilotMega
             this.BUT_doit = new ArdupilotMega.MyButton();
             this.BUT_browsedir = new ArdupilotMega.MyButton();
             this.BUT_browselog = new ArdupilotMega.MyButton();
+            this.numericUpDown1 = new System.Windows.Forms.NumericUpDown();
+            this.numericUpDown2 = new System.Windows.Forms.NumericUpDown();
+            this.numericUpDown3 = new System.Windows.Forms.NumericUpDown();
+            this.numericUpDown4 = new System.Windows.Forms.NumericUpDown();
+            this.label2 = new System.Windows.Forms.Label();
+            this.label3 = new System.Windows.Forms.Label();
+            this.label4 = new System.Windows.Forms.Label();
+            this.label5 = new System.Windows.Forms.Label();
+            this.label6 = new System.Windows.Forms.Label();
+            ((System.ComponentModel.ISupportInitialize)(this.numericUpDown1)).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)(this.numericUpDown2)).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)(this.numericUpDown3)).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)(this.numericUpDown4)).BeginInit();
             this.SuspendLayout();
             // 
             // openFileDialog1
@@ -398,12 +472,12 @@ namespace ArdupilotMega
             this.TXT_outputlog.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
             | System.Windows.Forms.AnchorStyles.Left) 
             | System.Windows.Forms.AnchorStyles.Right)));
-            this.TXT_outputlog.Location = new System.Drawing.Point(28, 144);
+            this.TXT_outputlog.Location = new System.Drawing.Point(28, 190);
             this.TXT_outputlog.Multiline = true;
             this.TXT_outputlog.Name = "TXT_outputlog";
             this.TXT_outputlog.ReadOnly = true;
             this.TXT_outputlog.ScrollBars = System.Windows.Forms.ScrollBars.Both;
-            this.TXT_outputlog.Size = new System.Drawing.Size(398, 143);
+            this.TXT_outputlog.Size = new System.Drawing.Size(397, 160);
             this.TXT_outputlog.TabIndex = 6;
             // 
             // label1
@@ -418,7 +492,7 @@ namespace ArdupilotMega
             // BUT_Geotagimages
             // 
             this.BUT_Geotagimages.Enabled = false;
-            this.BUT_Geotagimages.Location = new System.Drawing.Point(366, 105);
+            this.BUT_Geotagimages.Location = new System.Drawing.Point(223, 161);
             this.BUT_Geotagimages.Name = "BUT_Geotagimages";
             this.BUT_Geotagimages.Size = new System.Drawing.Size(75, 23);
             this.BUT_Geotagimages.TabIndex = 9;
@@ -438,7 +512,7 @@ namespace ArdupilotMega
             // 
             // BUT_doit
             // 
-            this.BUT_doit.Location = new System.Drawing.Point(285, 105);
+            this.BUT_doit.Location = new System.Drawing.Point(142, 161);
             this.BUT_doit.Name = "BUT_doit";
             this.BUT_doit.Size = new System.Drawing.Size(75, 23);
             this.BUT_doit.TabIndex = 5;
@@ -466,9 +540,111 @@ namespace ArdupilotMega
             this.BUT_browselog.UseVisualStyleBackColor = true;
             this.BUT_browselog.Click += new System.EventHandler(this.BUT_browselog_Click);
             // 
+            // numericUpDown1
+            // 
+            this.numericUpDown1.Location = new System.Drawing.Point(130, 116);
+            this.numericUpDown1.Name = "numericUpDown1";
+            this.numericUpDown1.Size = new System.Drawing.Size(42, 20);
+            this.numericUpDown1.TabIndex = 10;
+            this.numericUpDown1.Value = new decimal(new int[] {
+            4,
+            0,
+            0,
+            0});
+            // 
+            // numericUpDown2
+            // 
+            this.numericUpDown2.Location = new System.Drawing.Point(178, 116);
+            this.numericUpDown2.Name = "numericUpDown2";
+            this.numericUpDown2.Size = new System.Drawing.Size(42, 20);
+            this.numericUpDown2.TabIndex = 11;
+            this.numericUpDown2.Value = new decimal(new int[] {
+            5,
+            0,
+            0,
+            0});
+            // 
+            // numericUpDown3
+            // 
+            this.numericUpDown3.Location = new System.Drawing.Point(226, 116);
+            this.numericUpDown3.Name = "numericUpDown3";
+            this.numericUpDown3.Size = new System.Drawing.Size(42, 20);
+            this.numericUpDown3.TabIndex = 12;
+            this.numericUpDown3.Value = new decimal(new int[] {
+            7,
+            0,
+            0,
+            0});
+            // 
+            // numericUpDown4
+            // 
+            this.numericUpDown4.Location = new System.Drawing.Point(274, 116);
+            this.numericUpDown4.Name = "numericUpDown4";
+            this.numericUpDown4.Size = new System.Drawing.Size(42, 20);
+            this.numericUpDown4.TabIndex = 13;
+            this.numericUpDown4.Value = new decimal(new int[] {
+            9,
+            0,
+            0,
+            0});
+            // 
+            // label2
+            // 
+            this.label2.AutoSize = true;
+            this.label2.Location = new System.Drawing.Point(127, 100);
+            this.label2.Name = "label2";
+            this.label2.Size = new System.Drawing.Size(22, 13);
+            this.label2.TabIndex = 14;
+            this.label2.Text = "Lat";
+            // 
+            // label3
+            // 
+            this.label3.AutoSize = true;
+            this.label3.Location = new System.Drawing.Point(175, 100);
+            this.label3.Name = "label3";
+            this.label3.Size = new System.Drawing.Size(25, 13);
+            this.label3.TabIndex = 15;
+            this.label3.Text = "Lon";
+            // 
+            // label4
+            // 
+            this.label4.AutoSize = true;
+            this.label4.Location = new System.Drawing.Point(223, 100);
+            this.label4.Name = "label4";
+            this.label4.Size = new System.Drawing.Size(19, 13);
+            this.label4.TabIndex = 16;
+            this.label4.Text = "Alt";
+            // 
+            // label5
+            // 
+            this.label5.AutoSize = true;
+            this.label5.Location = new System.Drawing.Point(271, 100);
+            this.label5.Name = "label5";
+            this.label5.Size = new System.Drawing.Size(47, 13);
+            this.label5.TabIndex = 17;
+            this.label5.Text = "Heading";
+            // 
+            // label6
+            // 
+            this.label6.AutoSize = true;
+            this.label6.Location = new System.Drawing.Point(63, 118);
+            this.label6.Name = "label6";
+            this.label6.Size = new System.Drawing.Size(61, 13);
+            this.label6.TabIndex = 18;
+            this.label6.Text = "Log Offsets";
+            // 
             // Georefimage
             // 
-            this.ClientSize = new System.Drawing.Size(453, 299);
+            this.ClientSize = new System.Drawing.Size(452, 362);
+            this.Controls.Add(this.label6);
+            this.Controls.Add(this.label5);
+            this.Controls.Add(this.label4);
+            this.Controls.Add(this.label3);
+            this.Controls.Add(this.label2);
+            this.Controls.Add(this.numericUpDown4);
+            this.Controls.Add(this.numericUpDown3);
+            this.Controls.Add(this.numericUpDown2);
+            this.Controls.Add(this.numericUpDown1);
             this.Controls.Add(this.BUT_Geotagimages);
             this.Controls.Add(this.BUT_estoffset);
             this.Controls.Add(this.label1);
@@ -480,6 +656,11 @@ namespace ArdupilotMega
             this.Controls.Add(this.BUT_browsedir);
             this.Controls.Add(this.BUT_browselog);
             this.Name = "Georefimage";
+            this.Text = "Geo Ref Images";
+            ((System.ComponentModel.ISupportInitialize)(this.numericUpDown1)).EndInit();
+            ((System.ComponentModel.ISupportInitialize)(this.numericUpDown2)).EndInit();
+            ((System.ComponentModel.ISupportInitialize)(this.numericUpDown3)).EndInit();
+            ((System.ComponentModel.ISupportInitialize)(this.numericUpDown4)).EndInit();
             this.ResumeLayout(false);
             this.PerformLayout();
 
