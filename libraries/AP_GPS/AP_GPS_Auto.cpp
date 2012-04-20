@@ -165,6 +165,17 @@ AP_GPS_Auto::_detect(void)
             break;
         }
 
+        // new style 3DR UBlox (April 2012)x
+        if (0xb5 == fingerprint[0] &&
+			0x62 == fingerprint[1] &&
+			0x0d == fingerprint[2] &&
+			0x01 == fingerprint[3]) {
+			// new style Ublox
+            gps = new AP_GPS_UBLOX(_port);
+            Serial.print_P(PSTR(" ublox "));
+            break;
+        }
+
         //
         // MTK v1.6
         //
