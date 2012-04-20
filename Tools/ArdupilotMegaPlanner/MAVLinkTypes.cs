@@ -56,25 +56,25 @@ namespace ArdupilotMega
         public enum MAV_CMD
         {
     	///<summary> Navigate to MISSION. |Hold time in decimal seconds. (ignored by fixed wing, time to stay at MISSION for rotary wing)| Acceptance radius in meters (if the sphere with this radius is hit, the MISSION counts as reached)| 0 to pass through the WP, if > 0 radius in meters to pass by WP. Positive value for clockwise orbit, negative value for counter-clockwise orbit. Allows trajectory control.| Desired yaw angle at MISSION (rotary wing)| Latitude| Longitude| Altitude|  </summary>
-            NAV_WAYPOINT=16, 
+            WAYPOINT=16, 
         	///<summary> Loiter around this MISSION an unlimited amount of time |Empty| Empty| Radius around MISSION, in meters. If positive loiter clockwise, else counter-clockwise| Desired yaw angle.| Latitude| Longitude| Altitude|  </summary>
-            NAV_LOITER_UNLIM=17, 
+            LOITER_UNLIM=17, 
         	///<summary> Loiter around this MISSION for X turns |Turns| Empty| Radius around MISSION, in meters. If positive loiter clockwise, else counter-clockwise| Desired yaw angle.| Latitude| Longitude| Altitude|  </summary>
-            NAV_LOITER_TURNS=18, 
+            LOITER_TURNS=18, 
         	///<summary> Loiter around this MISSION for X seconds |Seconds (decimal)| Empty| Radius around MISSION, in meters. If positive loiter clockwise, else counter-clockwise| Desired yaw angle.| Latitude| Longitude| Altitude|  </summary>
-            NAV_LOITER_TIME=19, 
+            LOITER_TIME=19, 
         	///<summary> Return to launch location |Empty| Empty| Empty| Empty| Empty| Empty| Empty|  </summary>
-            NAV_RETURN_TO_LAUNCH=20, 
+            RETURN_TO_LAUNCH=20, 
         	///<summary> Land at location |Empty| Empty| Empty| Desired yaw angle.| Latitude| Longitude| Altitude|  </summary>
-            NAV_LAND=21, 
+            LAND=21, 
         	///<summary> Takeoff from ground / hand |Minimum pitch (if airspeed sensor present), desired pitch without sensor| Empty| Empty| Yaw angle (if magnetometer present), ignored without magnetometer| Latitude| Longitude| Altitude|  </summary>
-            NAV_TAKEOFF=22, 
+            TAKEOFF=22, 
         	///<summary> Sets the region of interest (ROI) for a sensor set or the             vehicle itself. This can then be used by the vehicles control             system to control the vehicle attitude and the attitude of various             sensors such as cameras. |Region of intereset mode. (see MAV_ROI enum)| MISSION index/ target ID. (see MAV_ROI enum)| ROI index (allows a vehicle to manage multiple ROI's)| Empty| x the location of the fixed ROI (see MAV_FRAME)| y| z|  </summary>
-            NAV_ROI=80, 
+            ROI=80, 
         	///<summary> Control autonomous path planning on the MAV. |0: Disable local obstacle avoidance / local path planning (without resetting map), 1: Enable local path planning, 2: Enable and reset local path planning| 0: Disable full path planning (without resetting map), 1: Enable, 2: Enable and reset map/occupancy grid, 3: Enable and reset planned route, but not occupancy grid| Empty| Yaw angle at goal, in compass degrees, [0..360]| Latitude/X of goal| Longitude/Y of goal| Altitude/Z of goal|  </summary>
-            NAV_PATHPLANNING=81, 
+            PATHPLANNING=81, 
         	///<summary> NOP - This command is only used to mark the upper limit of the NAV/ACTION commands in the enumeration |Empty| Empty| Empty| Empty| Empty| Empty| Empty|  </summary>
-            NAV_LAST=95, 
+            LAST=95, 
         	///<summary> Delay mission state machine. |Delay in seconds (decimal)| Empty| Empty| Empty| Empty| Empty| Empty|  </summary>
             CONDITION_DELAY=112, 
         	///<summary> Ascend/descend at rate.  Delay mission state machine until desired altitude reached. |Descent / Ascend rate (m/s)| Empty| Empty| Empty| Empty| Empty| Finish Altitude|  </summary>
@@ -916,7 +916,7 @@ namespace ArdupilotMega
         /// <summary> receive errors </summary>
         public  UInt16 rxerrors;
             /// <summary> count of error corrected packets </summary>
-        public  UInt16 fixed;
+        public  UInt16 fixedp;
             /// <summary> local signal strength </summary>
         public  byte rssi;
             /// <summary> remote signal strength </summary>
@@ -1110,7 +1110,7 @@ namespace ArdupilotMega
         public  UInt16 param_index;
             /// <summary> Onboard parameter id </summary>
         [MarshalAs(UnmanagedType.ByValArray,SizeConst=16)]
-		public string param_id;
+		public byte[] param_id;
             /// <summary> Onboard parameter type: see MAV_VAR enum </summary>
         public  byte param_type;
     
@@ -1129,7 +1129,7 @@ namespace ArdupilotMega
         public  byte target_component;
             /// <summary> Onboard parameter id </summary>
         [MarshalAs(UnmanagedType.ByValArray,SizeConst=16)]
-		public string param_id;
+        public byte[] param_id;
             /// <summary> Onboard parameter type: see MAV_VAR enum </summary>
         public  byte param_type;
     

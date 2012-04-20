@@ -1,9 +1,0 @@
-MAVLink Micro Air Vehicle Message Marshalling Library
-
-The mavlink_to_html_table.xsl file is used to transform the MAVLink XML into a human-readable HTML table for online documentation.
-
-For more information, please visit:
-
-http://pixhawk.ethz.ch/software/mavlink
-
-(c) 2009-2010 Lorenz Meier / PIXHAWK Team
