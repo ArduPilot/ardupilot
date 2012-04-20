@@ -20,7 +20,7 @@ namespace ArdupilotMega.GCSViews.ConfigurationView
             this.backstageView.AddPage(new BackstageView.BackstageViewPage(new ConfigFlightModes(), "Flight Modes"));
             this.backstageView.AddPage(new BackstageView.BackstageViewPage(new ConfigHardwareOptions(), "Hardware Options"));
             this.backstageView.AddPage(new BackstageView.BackstageViewPage(new ConfigBatteryMonitoring(), "Battery Monitor"));
-            this.backstageView.AddPage(new BackstageView.BackstageViewPage(new ConfigAccelerometerCalibration(), "Level Calibration"));
+            this.backstageView.AddPage(new BackstageView.BackstageViewPage(new ConfigAccelerometerCalibrationQuad(), "Level Calibration"));
             this.backstageView.AddPage(new BackstageView.BackstageViewPage(new ConfigArducopter(), "Arducopter Setup"));
             this.backstageView.AddPage(new BackstageView.BackstageViewPage(new ConfigArduplane(), "Arduplane Setup"));
             this.backstageView.AddPage(new BackstageView.BackstageViewPage(new ConfigTradHeli(), "Heli Setup"));
