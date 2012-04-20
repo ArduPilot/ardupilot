@@ -9,6 +9,7 @@
 #include <FastSerial.h>
 #include <AP_Common.h>
 #include <AP_GPS.h>
+#include <AP_Math.h>
 
 FastSerialPort0(Serial);
 FastSerialPort1(Serial1);
@@ -19,7 +20,7 @@ AP_GPS_UBLOX gps(&Serial1);
 
 void setup()
 {
-    Serial.begin(38400);
+    Serial.begin(115200);
     Serial1.begin(38400);
     stderr = stdout;
     gps.print_errors = true;
