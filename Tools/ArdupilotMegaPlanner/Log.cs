@@ -209,8 +209,6 @@ namespace ArdupilotMega
                             sw.Close();
                             TextReader tr = new StreamReader(logfile);
 
-                            MainV2.cs.firmware = MainV2.Firmwares.ArduPlane;
-
                             this.Invoke((System.Windows.Forms.MethodInvoker)delegate()
 {
     TXT_seriallog.AppendText("Createing KML for " + logfile);
@@ -372,8 +370,6 @@ namespace ArdupilotMega
                 {
                     if (position[positionindex] == null)
                         position[positionindex] = new List<Point3D>();
-
-                    MainV2.cs.firmware = MainV2.Firmwares.ArduCopter2;
 
                     double alt = double.Parse(items[5], new System.Globalization.CultureInfo("en-US"));
 
@@ -812,8 +808,6 @@ namespace ArdupilotMega
 
                     TextReader tr = new StreamReader(logfile);
 
-                    MainV2.cs.firmware = MainV2.Firmwares.ArduPlane;
-
                     while (tr.Peek() != -1)
                     {
                         processLine(tr.ReadLine());
@@ -886,8 +880,6 @@ namespace ArdupilotMega
                     try
                     {
                         TextReader tr = new StreamReader(logfile);
-
-                        MainV2.cs.firmware = MainV2.Firmwares.ArduPlane;
 
                         while (tr.Peek() != -1)
                         {
