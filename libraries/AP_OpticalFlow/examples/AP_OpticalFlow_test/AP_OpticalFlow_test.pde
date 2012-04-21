@@ -19,19 +19,21 @@
 //
 FastSerialPort0(Serial);        // FTDI/console
 
-AP_OpticalFlow_ADNS3080 flowSensor;
-//AP_OpticalFlow_ADNS3080 flowSensor(A3);  // override chip select pin to use A3 if using APM2
+AP_OpticalFlow_ADNS3080 flowSensor;		// for APM1
+//AP_OpticalFlow_ADNS3080_APM2 flowSensor(A3);  // override chip select pin to use A3 if using APM2
 
 void setup()
-{  
+{
 	Serial.begin(115200);
 	Serial.println("ArduPilot Mega OpticalFlow library test ver 1.5");
 
 	delay(1000);
-	
+
 	// flowSensor initialization
-	if( flowSensor.init() == false )
-	    Serial.println("Failed to initialise ADNS3080");
+	if( flowSensor.init(true) == false ) {
+	    Serial.print("Failed to initialise ADNS3080 ");
+	}
+
 	flowSensor.set_orientation(AP_OPTICALFLOW_ADNS3080_PINS_FORWARD);
 	flowSensor.set_field_of_view(AP_OPTICALFLOW_ADNS3080_08_FOV);
 	
@@ -336,7 +338,7 @@ void display_motion()
 void loop()
 {
 	int value;
-	
+
 	// display menu to user
 	display_menu();
 	
