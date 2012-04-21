@@ -43,6 +43,19 @@ const struct Menu::command log_menu_commands[] PROGMEM = {
 	{"disable",	select_logs}
 };
 
+static int32_t get_int(float f)
+{
+	float_int.float_value = f;
+	return float_int.int_value;
+}
+
+static float get_float(int32_t i)
+{
+	float_int.int_value = i;
+	return float_int.float_value;
+}
+
+
 // A Macro to create the Menu
 MENU2(log_menu, "Log", log_menu_commands, print_log_menu);
 
