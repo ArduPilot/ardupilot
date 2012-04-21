@@ -33,6 +33,17 @@
 
 #define AP_SPI_TIMEOUT 1000
 
+// We use Serial Port 2 in SPI Mode
+#if defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__)
+	#define AP_SPI_DATAIN      50    // MISO  // PB3
+	#define AP_SPI_DATAOUT     51    // MOSI  // PB2
+	#define AP_SPI_CLOCK       52    // SCK   // PB1
+#else  // normal arduino SPI pins...these need to be checked
+	#define AP_SPI_DATAIN  12        //MISO
+	#define AP_SPI_DATAOUT 11        //MOSI
+	#define AP_SPI_CLOCK   13        //SCK
+#endif
+
 union NumericIntType
 {
    int         intValue;
