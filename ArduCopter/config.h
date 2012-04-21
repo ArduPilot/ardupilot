@@ -140,7 +140,7 @@
 # define PUSHBUTTON_PIN   (-1)
 # define CLI_SLIDER_ENABLED DISABLED
 # define USB_MUX_PIN      23
-# define OPTFLOW_CS_PIN   A6
+# define OPTFLOW_CS_PIN   A3
 # define BATTERY_PIN_1      1
 # define CURRENT_PIN_1      2
 #endif
