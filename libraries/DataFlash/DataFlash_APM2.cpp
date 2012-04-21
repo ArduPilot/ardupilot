@@ -91,14 +91,16 @@ unsigned char DataFlash_APM2::SPI_transfer(unsigned char data)
 	return UDR3;
 }
 
+// disable device
 void DataFlash_APM2::CS_inactive()
 {
-  digitalWrite(DF_SLAVESELECT,HIGH); //disable device
+	digitalWrite(DF_SLAVESELECT,HIGH);
 }
 
+// enable device
 void DataFlash_APM2::CS_active()
 {
-  digitalWrite(DF_SLAVESELECT,LOW); //enable device
+	digitalWrite(DF_SLAVESELECT,LOW);
 }
 
 // Constructors ////////////////////////////////////////////////////////////////
@@ -109,223 +111,261 @@ DataFlash_APM2::DataFlash_APM2()
 // Public Methods //////////////////////////////////////////////////////////////
 void DataFlash_APM2::Init(void)
 {
-  pinMode(DF_DATAOUT, OUTPUT);
-  pinMode(DF_DATAIN, INPUT);
-  pinMode(DF_SLAVESELECT,OUTPUT);
-  pinMode(DF_RESET,OUTPUT);
-  pinMode(DF_CARDDETECT, INPUT);
+	pinMode(DF_DATAOUT, OUTPUT);
+	pinMode(DF_DATAIN, INPUT);
+	pinMode(DF_SLAVESELECT,OUTPUT);
+	pinMode(DF_RESET,OUTPUT);
+	pinMode(DF_CARDDETECT, INPUT);
 
-  // Reset the chip
-  digitalWrite(DF_RESET,LOW);
-  delay(1);
-  digitalWrite(DF_RESET,HIGH);
+	// Reset the chip
+	digitalWrite(DF_RESET,LOW);
+	delay(1);
+	digitalWrite(DF_RESET,HIGH);
 
-  CS_inactive();     //disable device
+	// disable device
+	CS_inactive();
 
-  // Setup Serial Port3 in SPI mode (MSPI), Mode 0, Clock: 8Mhz
-  UBRR3 = 0;
-  DDRJ |= (1<<PJ2);                                   // SPI clock XCK3 (PJ2) as output. This enable SPI Master mode
-  // Set MSPI mode of operation and SPI data mode 0.
-  UCSR3C = (1<<UMSEL31)|(1<<UMSEL30);       //|(1<<1)|(1<<UCPOL3);
-  // Enable receiver and transmitter.
-  UCSR3B = (1<<RXEN3)|(1<<TXEN3);
-  // Set Baud rate
-  UBRR3 = 0;         // SPI running at 8Mhz
+	// Setup Serial Port3 in SPI mode (MSPI), Mode 0, Clock: 8Mhz
+	UBRR3 = 0;
+	DDRJ |= (1<<PJ2);                                   // SPI clock XCK3 (PJ2) as output. This enable SPI Master mode
+	// Set MSPI mode of operation and SPI data mode 0.
+	UCSR3C = (1<<UMSEL31)|(1<<UMSEL30);       //|(1<<1)|(1<<UCPOL3);
+	// Enable receiver and transmitter.
+	UCSR3B = (1<<RXEN3)|(1<<TXEN3);
+	// Set Baud rate
+	UBRR3 = 0;         // SPI running at 8Mhz
 
-  // get page size: 512 or 528  (by default: 528)
-  df_PageSize=PageSize();
+	// get page size: 512 or 528  (by default: 528)
+	df_PageSize=PageSize();
 
-  ReadManufacturerID();
+	ReadManufacturerID();
 
-  // see page 22 of the spec for the density code
-  uint8_t density_code = (df_device >> 8) & 0x1F;
-  
-  // note that we set df_NumPages to one lower than the highest, as
-  // the last page is reserved for a config page
-  if (density_code == 0x7) {
-      // 32 Mbit
-      df_NumPages = 8191;
-  } else if (density_code == 0x6) {
-      // 16 Mbit
-      df_NumPages = 4095;
-  } else {
-      // what is this??? card not inserted perhaps?
-      df_NumPages = 0;
-  }
+	// see page 22 of the spec for the density code
+	uint8_t density_code = (df_device >> 8) & 0x1F;
+
+	// note that we set df_NumPages to one lower than the highest, as
+	// the last page is reserved for a config page
+	if (density_code == 0x7) {
+		// 32 Mbit
+		df_NumPages = 8191;
+	} else if (density_code == 0x6) {
+		// 16 Mbit
+		df_NumPages = 4095;
+	} else {
+		// what is this??? card not inserted perhaps?
+		df_NumPages = 0;
+	}
 }
 
 // This function is mainly to test the device
 void DataFlash_APM2::ReadManufacturerID()
 {
-  CS_inactive();    // Reset dataflash command decoder
-  CS_active();
+	// activate dataflash command decoder
+	CS_active();
 
-  // Read manufacturer and ID command...
-  SPI_transfer(DF_READ_MANUFACTURER_AND_DEVICE_ID);
+	// Read manufacturer and ID command...
+	SPI_transfer(DF_READ_MANUFACTURER_AND_DEVICE_ID);
 
-  df_manufacturer = SPI_transfer(0xff);
-  df_device = SPI_transfer(0xff);
-  df_device = (df_device<<8) | SPI_transfer(0xff);
-  SPI_transfer(0xff);
+	df_manufacturer = SPI_transfer(0xff);
+	df_device = SPI_transfer(0xff);
+	df_device = (df_device<<8) | SPI_transfer(0xff);
+	SPI_transfer(0xff);
+
+	// release SPI bus for use by other sensors
+	CS_inactive();
 }
 
 // This function return 1 if Card is inserted on SD slot
 bool DataFlash_APM2::CardInserted()
 {
-    return (df_NumPages >= 4095 && digitalRead(DF_CARDDETECT) == 0);
+	return (df_NumPages >= 4095 && digitalRead(DF_CARDDETECT) == 0);
 }
 
 // Read the status register
 byte DataFlash_APM2::ReadStatusReg()
 {
-  CS_inactive();    // Reset dataflash command decoder
-  CS_active();
+	byte tmp;
 
-  // Read status command
-  SPI_transfer(DF_STATUS_REGISTER_READ);
-  return SPI_transfer(0x00);  // We only want to extract the READY/BUSY bit
+	// activate dataflash command decoder
+	CS_active();
+
+	// Read status command
+	SPI_transfer(DF_STATUS_REGISTER_READ);
+	tmp = SPI_transfer(0x00);  // We only want to extract the READY/BUSY bit
+
+	// release SPI bus for use by other sensors
+	CS_inactive();
+
+	return tmp;
 }
 
 // Read the status of the DataFlash
 inline
 byte DataFlash_APM2::ReadStatus()
 {
-  return(ReadStatusReg()&0x80);  // We only want to extract the READY/BUSY bit
+	return(ReadStatusReg()&0x80);  // We only want to extract the READY/BUSY bit
 }
-
 
 inline
 uint16_t DataFlash_APM2::PageSize()
 {
-  return(528-((ReadStatusReg()&0x01)<<4));  // if first bit 1 trhen 512 else 528 bytes
+	return(528-((ReadStatusReg()&0x01)<<4));  // if first bit 1 trhen 512 else 528 bytes
 }
-
 
 // Wait until DataFlash is in ready state...
 void DataFlash_APM2::WaitReady()
 {
-  while(!ReadStatus());
+	while(!ReadStatus());
 }
 
 void DataFlash_APM2::PageToBuffer(unsigned char BufferNum, uint16_t PageAdr)
 {
-  CS_inactive();
-  CS_active();
-  if (BufferNum==1)
-    SPI_transfer(DF_TRANSFER_PAGE_TO_BUFFER_1);
-  else
-    SPI_transfer(DF_TRANSFER_PAGE_TO_BUFFER_2);
+	// activate dataflash command decoder
+	CS_active();
 
-  if(df_PageSize==512){
-    SPI_transfer((unsigned char)(PageAdr >> 7));
-    SPI_transfer((unsigned char)(PageAdr << 1));
-  }else{
-    SPI_transfer((unsigned char)(PageAdr >> 6));
-    SPI_transfer((unsigned char)(PageAdr << 2));
-  }
-  SPI_transfer(0x00);	// don´t care bytes
+	if (BufferNum==1)
+		SPI_transfer(DF_TRANSFER_PAGE_TO_BUFFER_1);
+	else
+		SPI_transfer(DF_TRANSFER_PAGE_TO_BUFFER_2);
 
-  CS_inactive();	//initiate the transfer
-  CS_active();
+	if(df_PageSize==512){
+		SPI_transfer((unsigned char)(PageAdr >> 7));
+		SPI_transfer((unsigned char)(PageAdr << 1));
+	}else{
+		SPI_transfer((unsigned char)(PageAdr >> 6));
+		SPI_transfer((unsigned char)(PageAdr << 2));
+	}
+	SPI_transfer(0x00);		// don´t care bytes
 
-  while(!ReadStatus());  //monitor the status register, wait until busy-flag is high
+	//initiate the transfer
+	CS_inactive();
+	CS_active();
+
+	while(!ReadStatus());  //monitor the status register, wait until busy-flag is high
+
+	// release SPI bus for use by other sensors
+	CS_inactive();
 }
 
 void DataFlash_APM2::BufferToPage (unsigned char BufferNum, uint16_t PageAdr, unsigned char wait)
 {
-  CS_inactive();     // Reset dataflash command decoder
-  CS_active();
+	// activate dataflash command decoder
+	CS_active();
 
-  if (BufferNum==1)
-    SPI_transfer(DF_BUFFER_1_TO_PAGE_WITH_ERASE);
-  else
-    SPI_transfer(DF_BUFFER_2_TO_PAGE_WITH_ERASE);
+	if (BufferNum==1)
+		SPI_transfer(DF_BUFFER_1_TO_PAGE_WITH_ERASE);
+	else
+		SPI_transfer(DF_BUFFER_2_TO_PAGE_WITH_ERASE);
 
-  if(df_PageSize==512){
-    SPI_transfer((unsigned char)(PageAdr >> 7));
-    SPI_transfer((unsigned char)(PageAdr << 1));
-  }else{
-    SPI_transfer((unsigned char)(PageAdr >> 6));
-    SPI_transfer((unsigned char)(PageAdr << 2));
-  }
-  SPI_transfer(0x00);	// don´t care bytes
+	if(df_PageSize==512){
+		SPI_transfer((unsigned char)(PageAdr >> 7));
+		SPI_transfer((unsigned char)(PageAdr << 1));
+	}else{
+		SPI_transfer((unsigned char)(PageAdr >> 6));
+		SPI_transfer((unsigned char)(PageAdr << 2));
+	}
+	SPI_transfer(0x00);	// don´t care bytes
 
-  CS_inactive();	//initiate the transfer
-  CS_active();
+	//initiate the transfer
+	CS_inactive();
+	CS_active();
 
-  // Check if we need to wait to write the buffer to memory or we can continue...
-  if (wait)
+	// Check if we need to wait to write the buffer to memory or we can continue...
+	if (wait)
 	while(!ReadStatus());  //monitor the status register, wait until busy-flag is high
+
+	// release SPI bus for use by other sensors
+	CS_inactive();
 }
 
 void DataFlash_APM2::BufferWrite (unsigned char BufferNum, uint16_t IntPageAdr, unsigned char Data)
 {
-  CS_inactive();   // Reset dataflash command decoder
-  CS_active();
+	// activate dataflash command decoder
+	CS_active();
 
-  if (BufferNum==1)
-    SPI_transfer(DF_BUFFER_1_WRITE);
-  else
-    SPI_transfer(DF_BUFFER_2_WRITE);
-  SPI_transfer(0x00);				 //don't cares
-  SPI_transfer((unsigned char)(IntPageAdr>>8));  //upper part of internal buffer address
-  SPI_transfer((unsigned char)(IntPageAdr));	 //lower part of internal buffer address
-  SPI_transfer(Data);				 //write data byte
+	if (BufferNum==1)
+		SPI_transfer(DF_BUFFER_1_WRITE);
+	else
+		SPI_transfer(DF_BUFFER_2_WRITE);
+
+	SPI_transfer(0x00);								// don't care
+	SPI_transfer((unsigned char)(IntPageAdr>>8));	// upper part of internal buffer address
+	SPI_transfer((unsigned char)(IntPageAdr));		// lower part of internal buffer address
+	SPI_transfer(Data);								// write data byte
+
+	// release SPI bus for use by other sensors
+	CS_inactive();
 }
 
 unsigned char DataFlash_APM2::BufferRead (unsigned char BufferNum, uint16_t IntPageAdr)
 {
-  byte tmp;
+	byte tmp;
 
-  CS_inactive();   // Reset dataflash command decoder
-  CS_active();
+	// activate dataflash command decoder
+	CS_active();
 
-  if (BufferNum==1)
-    SPI_transfer(DF_BUFFER_1_READ);
-  else
-    SPI_transfer(DF_BUFFER_2_READ);
-  SPI_transfer(0x00);				 //don't cares
-  SPI_transfer((unsigned char)(IntPageAdr>>8));  //upper part of internal buffer address
-  SPI_transfer((unsigned char)(IntPageAdr));	 //lower part of internal buffer address
-  SPI_transfer(0x00);                            //don't cares
-  tmp = SPI_transfer(0x00);		         //read data byte
+	if (BufferNum==1)
+		SPI_transfer(DF_BUFFER_1_READ);
+	else
+		SPI_transfer(DF_BUFFER_2_READ);
 
-  return (tmp);
+	SPI_transfer(0x00);
+	SPI_transfer((unsigned char)(IntPageAdr>>8));	//upper part of internal buffer address
+	SPI_transfer((unsigned char)(IntPageAdr));		//lower part of internal buffer address
+	SPI_transfer(0x00);								//don't cares
+	tmp = SPI_transfer(0x00);						//read data byte
+
+	// release SPI bus for use by other sensors
+	CS_inactive();
+
+	return (tmp);
 }
 // *** END OF INTERNAL FUNCTIONS ***
 
 void DataFlash_APM2::PageErase (uint16_t PageAdr)
 {
-  CS_inactive();																//make sure to toggle CS signal in order
-  CS_active();																//to reset Dataflash command decoder
-  SPI_transfer(DF_PAGE_ERASE);   // Command
+	// activate dataflash command decoder
+	CS_active();
 
-  if(df_PageSize==512){
-    SPI_transfer((unsigned char)(PageAdr >> 7));
-    SPI_transfer((unsigned char)(PageAdr << 1));
-  }else{
-    SPI_transfer((unsigned char)(PageAdr >> 6));
-    SPI_transfer((unsigned char)(PageAdr << 2));
-  }
+	// Send page erase command
+	SPI_transfer(DF_PAGE_ERASE);
 
-  SPI_transfer(0x00);	           // "dont cares"
-  CS_inactive();               //initiate flash page erase
-  CS_active();
-  while(!ReadStatus());
+	if(df_PageSize==512){
+		SPI_transfer((unsigned char)(PageAdr >> 7));
+		SPI_transfer((unsigned char)(PageAdr << 1));
+	}else{
+		SPI_transfer((unsigned char)(PageAdr >> 6));
+		SPI_transfer((unsigned char)(PageAdr << 2));
+	}
+
+	SPI_transfer(0x00);
+
+	//initiate flash page erase
+	CS_inactive();
+	CS_active();
+	while(!ReadStatus());
+
+	// release SPI bus for use by other sensors
+	CS_inactive();
 }
 
 
 void DataFlash_APM2::ChipErase ()
 {
-  CS_inactive();																//make sure to toggle CS signal in order
-  CS_active();																//to reset Dataflash command decoder
-  // opcodes for chip erase
-  SPI_transfer(DF_CHIP_ERASE_0);
-  SPI_transfer(DF_CHIP_ERASE_1);
-  SPI_transfer(DF_CHIP_ERASE_2);
-  SPI_transfer(DF_CHIP_ERASE_3);
+	// activate dataflash command decoder
+	CS_active();
 
-  CS_inactive();               //initiate flash page erase
-  CS_active();
-  while(!ReadStatus());
+	// opcodes for chip erase
+	SPI_transfer(DF_CHIP_ERASE_0);
+	SPI_transfer(DF_CHIP_ERASE_1);
+	SPI_transfer(DF_CHIP_ERASE_2);
+	SPI_transfer(DF_CHIP_ERASE_3);
+
+	//initiate flash page erase
+	CS_inactive();
+	CS_active();
+	while(!ReadStatus());
+
+	// release SPI bus for use by other sensors
+	CS_inactive();
 }
