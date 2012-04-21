@@ -31,21 +31,21 @@
             this.components = new System.ComponentModel.Container();
             System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(ConfigTradHeli));
             this.groupBox5 = new System.Windows.Forms.GroupBox();
-            this.H1_ENABLE = new System.Windows.Forms.RadioButton();
+            this.H_SWASH_TYPE = new System.Windows.Forms.RadioButton();
             this.CCPM = new System.Windows.Forms.RadioButton();
             this.BUT_swash_manual = new ArdupilotMega.MyButton();
             this.label41 = new System.Windows.Forms.Label();
             this.groupBox3 = new System.Windows.Forms.GroupBox();
             this.label46 = new System.Windows.Forms.Label();
             this.label45 = new System.Windows.Forms.Label();
-            this.GYR_ENABLE = new System.Windows.Forms.CheckBox();
-            this.GYR_GAIN = new System.Windows.Forms.TextBox();
+            this.H_GYR_ENABLE = new System.Windows.Forms.CheckBox();
+            this.H_GYR_GAIN = new System.Windows.Forms.TextBox();
             this.BUT_HS4save = new ArdupilotMega.MyButton();
             this.label21 = new System.Windows.Forms.Label();
-            this.COL_MIN = new System.Windows.Forms.TextBox();
+            this.H_COL_MIN = new System.Windows.Forms.TextBox();
             this.groupBox1 = new System.Windows.Forms.GroupBox();
-            this.COL_MID = new System.Windows.Forms.TextBox();
-            this.COL_MAX = new System.Windows.Forms.TextBox();
+            this.H_COL_MID = new System.Windows.Forms.TextBox();
+            this.H_COL_MAX = new System.Windows.Forms.TextBox();
             this.BUT_0collective = new ArdupilotMega.MyButton();
             this.groupBox2 = new System.Windows.Forms.GroupBox();
             this.label24 = new System.Windows.Forms.Label();
@@ -60,17 +60,17 @@
             this.label37 = new System.Windows.Forms.Label();
             this.label36 = new System.Windows.Forms.Label();
             this.label26 = new System.Windows.Forms.Label();
-            this.PIT_MAX = new System.Windows.Forms.TextBox();
+            this.H_PIT_MAX = new System.Windows.Forms.TextBox();
             this.label25 = new System.Windows.Forms.Label();
-            this.ROL_MAX = new System.Windows.Forms.TextBox();
+            this.H_ROL_MAX = new System.Windows.Forms.TextBox();
             this.label23 = new System.Windows.Forms.Label();
             this.label22 = new System.Windows.Forms.Label();
             this.label20 = new System.Windows.Forms.Label();
             this.label19 = new System.Windows.Forms.Label();
             this.label18 = new System.Windows.Forms.Label();
-            this.SV3_POS = new System.Windows.Forms.TextBox();
-            this.SV2_POS = new System.Windows.Forms.TextBox();
-            this.SV1_POS = new System.Windows.Forms.TextBox();
+            this.H_SV3_POS = new System.Windows.Forms.TextBox();
+            this.H_SV2_POS = new System.Windows.Forms.TextBox();
+            this.H_SV1_POS = new System.Windows.Forms.TextBox();
             this.HS3_REV = new System.Windows.Forms.CheckBox();
             this.HS2_REV = new System.Windows.Forms.CheckBox();
             this.HS1_REV = new System.Windows.Forms.CheckBox();
@@ -97,19 +97,19 @@
             // 
             // groupBox5
             // 
-            this.groupBox5.Controls.Add(this.H1_ENABLE);
+            this.groupBox5.Controls.Add(this.H_SWASH_TYPE);
             this.groupBox5.Controls.Add(this.CCPM);
             resources.ApplyResources(this.groupBox5, "groupBox5");
             this.groupBox5.Name = "groupBox5";
             this.groupBox5.TabStop = false;
             // 
-            // H1_ENABLE
+            // H_SWASH_TYPE
             // 
-            resources.ApplyResources(this.H1_ENABLE, "H1_ENABLE");
-            this.H1_ENABLE.Name = "H1_ENABLE";
-            this.H1_ENABLE.TabStop = true;
-            this.H1_ENABLE.UseVisualStyleBackColor = true;
-            this.H1_ENABLE.CheckedChanged += new System.EventHandler(this.H1_ENABLE_CheckedChanged);
+            resources.ApplyResources(this.H_SWASH_TYPE, "H_SWASH_TYPE");
+            this.H_SWASH_TYPE.Name = "H_SWASH_TYPE";
+            this.H_SWASH_TYPE.TabStop = true;
+            this.H_SWASH_TYPE.UseVisualStyleBackColor = true;
+            this.H_SWASH_TYPE.CheckedChanged += new System.EventHandler(this.H_SWASH_TYPE_CheckedChanged);
             // 
             // CCPM
             // 
@@ -134,8 +134,8 @@
             // 
             this.groupBox3.Controls.Add(this.label46);
             this.groupBox3.Controls.Add(this.label45);
-            this.groupBox3.Controls.Add(this.GYR_ENABLE);
-            this.groupBox3.Controls.Add(this.GYR_GAIN);
+            this.groupBox3.Controls.Add(this.H_GYR_ENABLE);
+            this.groupBox3.Controls.Add(this.H_GYR_GAIN);
             resources.ApplyResources(this.groupBox3, "groupBox3");
             this.groupBox3.Name = "groupBox3";
             this.groupBox3.TabStop = false;
@@ -150,18 +150,18 @@
             resources.ApplyResources(this.label45, "label45");
             this.label45.Name = "label45";
             // 
-            // GYR_ENABLE
+            // H_GYR_ENABLE
             // 
-            resources.ApplyResources(this.GYR_ENABLE, "GYR_ENABLE");
-            this.GYR_ENABLE.Name = "GYR_ENABLE";
-            this.GYR_ENABLE.UseVisualStyleBackColor = true;
-            this.GYR_ENABLE.CheckedChanged += new System.EventHandler(this.GYR_ENABLE__CheckedChanged);
+            resources.ApplyResources(this.H_GYR_ENABLE, "H_GYR_ENABLE");
+            this.H_GYR_ENABLE.Name = "H_GYR_ENABLE";
+            this.H_GYR_ENABLE.UseVisualStyleBackColor = true;
+            this.H_GYR_ENABLE.CheckedChanged += new System.EventHandler(this.GYR_ENABLE__CheckedChanged);
             // 
-            // GYR_GAIN
+            // H_GYR_GAIN
             // 
-            resources.ApplyResources(this.GYR_GAIN, "GYR_GAIN");
-            this.GYR_GAIN.Name = "GYR_GAIN";
-            this.GYR_GAIN.Validating += new System.ComponentModel.CancelEventHandler(this.GYR_GAIN__Validating);
+            resources.ApplyResources(this.H_GYR_GAIN, "H_GYR_GAIN");
+            this.H_GYR_GAIN.Name = "H_GYR_GAIN";
+            this.H_GYR_GAIN.Validating += new System.ComponentModel.CancelEventHandler(this.GYR_GAIN__Validating);
             // 
             // BUT_HS4save
             // 
@@ -175,36 +175,36 @@
             resources.ApplyResources(this.label21, "label21");
             this.label21.Name = "label21";
             // 
-            // COL_MIN
+            // H_COL_MIN
             // 
-            resources.ApplyResources(this.COL_MIN, "COL_MIN");
-            this.COL_MIN.Name = "COL_MIN";
+            resources.ApplyResources(this.H_COL_MIN, "H_COL_MIN");
+            this.H_COL_MIN.Name = "H_COL_MIN";
             // 
             // groupBox1
             // 
             this.groupBox1.Controls.Add(this.label41);
             this.groupBox1.Controls.Add(this.label21);
-            this.groupBox1.Controls.Add(this.COL_MIN);
-            this.groupBox1.Controls.Add(this.COL_MID);
-            this.groupBox1.Controls.Add(this.COL_MAX);
+            this.groupBox1.Controls.Add(this.H_COL_MIN);
+            this.groupBox1.Controls.Add(this.H_COL_MID);
+            this.groupBox1.Controls.Add(this.H_COL_MAX);
             this.groupBox1.Controls.Add(this.BUT_0collective);
             resources.ApplyResources(this.groupBox1, "groupBox1");
             this.groupBox1.Name = "groupBox1";
             this.groupBox1.TabStop = false;
             // 
-            // COL_MID
+            // H_COL_MID
             // 
-            resources.ApplyResources(this.COL_MID, "COL_MID");
-            this.COL_MID.Name = "COL_MID";
-            this.COL_MID.Validating += new System.ComponentModel.CancelEventHandler(this.PWM_Validating);
+            resources.ApplyResources(this.H_COL_MID, "H_COL_MID");
+            this.H_COL_MID.Name = "H_COL_MID";
+            this.H_COL_MID.Validating += new System.ComponentModel.CancelEventHandler(this.PWM_Validating);
             // 
-            // COL_MAX
+            // H_COL_MAX
             // 
-            resources.ApplyResources(this.COL_MAX, "COL_MAX");
-            this.COL_MAX.Name = "COL_MAX";
-            this.COL_MAX.Enter += new System.EventHandler(this.COL_MAX__Enter);
-            this.COL_MAX.Leave += new System.EventHandler(this.COL_MAX__Leave);
-            this.COL_MAX.Validating += new System.ComponentModel.CancelEventHandler(this.PWM_Validating);
+            resources.ApplyResources(this.H_COL_MAX, "H_COL_MAX");
+            this.H_COL_MAX.Name = "H_COL_MAX";
+            this.H_COL_MAX.Enter += new System.EventHandler(this.COL_MAX__Enter);
+            this.H_COL_MAX.Leave += new System.EventHandler(this.COL_MAX__Leave);
+            this.H_COL_MAX.Validating += new System.ComponentModel.CancelEventHandler(this.PWM_Validating);
             // 
             // BUT_0collective
             // 
@@ -334,22 +334,22 @@
             resources.ApplyResources(this.label26, "label26");
             this.label26.Name = "label26";
             // 
-            // PIT_MAX
+            // H_PIT_MAX
             // 
-            resources.ApplyResources(this.PIT_MAX, "PIT_MAX");
-            this.PIT_MAX.Name = "PIT_MAX";
-            this.PIT_MAX.Validating += new System.ComponentModel.CancelEventHandler(this.PIT_MAX__Validating);
+            resources.ApplyResources(this.H_PIT_MAX, "H_PIT_MAX");
+            this.H_PIT_MAX.Name = "H_PIT_MAX";
+            this.H_PIT_MAX.Validating += new System.ComponentModel.CancelEventHandler(this.PIT_MAX__Validating);
             // 
             // label25
             // 
             resources.ApplyResources(this.label25, "label25");
             this.label25.Name = "label25";
             // 
-            // ROL_MAX
+            // H_ROL_MAX
             // 
-            resources.ApplyResources(this.ROL_MAX, "ROL_MAX");
-            this.ROL_MAX.Name = "ROL_MAX";
-            this.ROL_MAX.Validating += new System.ComponentModel.CancelEventHandler(this.ROL_MAX__Validating);
+            resources.ApplyResources(this.H_ROL_MAX, "H_ROL_MAX");
+            this.H_ROL_MAX.Name = "H_ROL_MAX";
+            this.H_ROL_MAX.Validating += new System.ComponentModel.CancelEventHandler(this.ROL_MAX__Validating);
             // 
             // label23
             // 
@@ -376,23 +376,23 @@
             resources.ApplyResources(this.label18, "label18");
             this.label18.Name = "label18";
             // 
-            // SV3_POS
+            // H_SV3_POS
             // 
-            resources.ApplyResources(this.SV3_POS, "SV3_POS");
-            this.SV3_POS.Name = "SV3_POS";
-            this.SV3_POS.Validating += new System.ComponentModel.CancelEventHandler(this.TXT_srvpos3_Validating);
+            resources.ApplyResources(this.H_SV3_POS, "H_SV3_POS");
+            this.H_SV3_POS.Name = "H_SV3_POS";
+            this.H_SV3_POS.Validating += new System.ComponentModel.CancelEventHandler(this.TXT_srvpos3_Validating);
             // 
-            // SV2_POS
+            // H_SV2_POS
             // 
-            resources.ApplyResources(this.SV2_POS, "SV2_POS");
-            this.SV2_POS.Name = "SV2_POS";
-            this.SV2_POS.Validating += new System.ComponentModel.CancelEventHandler(this.TXT_srvpos2_Validating);
+            resources.ApplyResources(this.H_SV2_POS, "H_SV2_POS");
+            this.H_SV2_POS.Name = "H_SV2_POS";
+            this.H_SV2_POS.Validating += new System.ComponentModel.CancelEventHandler(this.TXT_srvpos2_Validating);
             // 
-            // SV1_POS
+            // H_SV1_POS
             // 
-            resources.ApplyResources(this.SV1_POS, "SV1_POS");
-            this.SV1_POS.Name = "SV1_POS";
-            this.SV1_POS.Validating += new System.ComponentModel.CancelEventHandler(this.TXT_srvpos1_Validating);
+            resources.ApplyResources(this.H_SV1_POS, "H_SV1_POS");
+            this.H_SV1_POS.Name = "H_SV1_POS";
+            this.H_SV1_POS.Validating += new System.ComponentModel.CancelEventHandler(this.TXT_srvpos1_Validating);
             // 
             // HS3_REV
             // 
@@ -665,17 +665,17 @@
             this.Controls.Add(this.label37);
             this.Controls.Add(this.label36);
             this.Controls.Add(this.label26);
-            this.Controls.Add(this.PIT_MAX);
+            this.Controls.Add(this.H_PIT_MAX);
             this.Controls.Add(this.label25);
-            this.Controls.Add(this.ROL_MAX);
+            this.Controls.Add(this.H_ROL_MAX);
             this.Controls.Add(this.label23);
             this.Controls.Add(this.label22);
             this.Controls.Add(this.label20);
             this.Controls.Add(this.label19);
             this.Controls.Add(this.label18);
-            this.Controls.Add(this.SV3_POS);
-            this.Controls.Add(this.SV2_POS);
-            this.Controls.Add(this.SV1_POS);
+            this.Controls.Add(this.H_SV3_POS);
+            this.Controls.Add(this.H_SV2_POS);
+            this.Controls.Add(this.H_SV1_POS);
             this.Controls.Add(this.HS3_REV);
             this.Controls.Add(this.HS2_REV);
             this.Controls.Add(this.HS1_REV);
@@ -707,21 +707,21 @@
         #endregion
 
         private System.Windows.Forms.GroupBox groupBox5;
-        private System.Windows.Forms.RadioButton H1_ENABLE;
+        private System.Windows.Forms.RadioButton H_SWASH_TYPE;
         private System.Windows.Forms.RadioButton CCPM;
         private MyButton BUT_swash_manual;
         private System.Windows.Forms.Label label41;
         private System.Windows.Forms.GroupBox groupBox3;
         private System.Windows.Forms.Label label46;
         private System.Windows.Forms.Label label45;
-        private System.Windows.Forms.CheckBox GYR_ENABLE;
-        private System.Windows.Forms.TextBox GYR_GAIN;
+        private System.Windows.Forms.CheckBox H_GYR_ENABLE;
+        private System.Windows.Forms.TextBox H_GYR_GAIN;
         private MyButton BUT_HS4save;
         private System.Windows.Forms.Label label21;
-        private System.Windows.Forms.TextBox COL_MIN;
+        private System.Windows.Forms.TextBox H_COL_MIN;
         private System.Windows.Forms.GroupBox groupBox1;
-        private System.Windows.Forms.TextBox COL_MID;
-        private System.Windows.Forms.TextBox COL_MAX;
+        private System.Windows.Forms.TextBox H_COL_MID;
+        private System.Windows.Forms.TextBox H_COL_MAX;
         private MyButton BUT_0collective;
         private System.Windows.Forms.GroupBox groupBox2;
         private System.Windows.Forms.Label label24;
@@ -736,17 +736,17 @@
         private System.Windows.Forms.Label label37;
         private System.Windows.Forms.Label label36;
         private System.Windows.Forms.Label label26;
-        private System.Windows.Forms.TextBox PIT_MAX;
+        private System.Windows.Forms.TextBox H_PIT_MAX;
         private System.Windows.Forms.Label label25;
-        private System.Windows.Forms.TextBox ROL_MAX;
+        private System.Windows.Forms.TextBox H_ROL_MAX;
         private System.Windows.Forms.Label label23;
         private System.Windows.Forms.Label label22;
         private System.Windows.Forms.Label label20;
         private System.Windows.Forms.Label label19;
         private System.Windows.Forms.Label label18;
-        private System.Windows.Forms.TextBox SV3_POS;
-        private System.Windows.Forms.TextBox SV2_POS;
-        private System.Windows.Forms.TextBox SV1_POS;
+        private System.Windows.Forms.TextBox H_SV3_POS;
+        private System.Windows.Forms.TextBox H_SV2_POS;
+        private System.Windows.Forms.TextBox H_SV1_POS;
         private System.Windows.Forms.CheckBox HS3_REV;
         private System.Windows.Forms.CheckBox HS2_REV;
         private System.Windows.Forms.CheckBox HS1_REV;

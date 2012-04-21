@@ -69,7 +69,7 @@ namespace ArdupilotMega.GCSViews
             XTRK_GAIN_SC1.Name = "XTRK_GAIN_SC";
 
             // enable disable relevbant hardware tabs
-            if (MainV2.APMFirmware == MainV2.Firmwares.ArduPlane)
+            if (MainV2.cs.firmware == MainV2.Firmwares.ArduPlane)
             {
                 this.ConfigTabs.SuspendLayout();
                 ConfigTabs.SelectedIndex = 0;
@@ -656,7 +656,7 @@ namespace ArdupilotMega.GCSViews
             {
                 StreamWriter sw = new StreamWriter(sfd.OpenFile());
                 string input = DateTime.Now + " Frame : + | Arducopter Kit | Kit motors";
-                if (MainV2.APMFirmware == MainV2.Firmwares.ArduPlane)
+                if (MainV2.cs.firmware == MainV2.Firmwares.ArduPlane)
                 {
                     input = DateTime.Now + " Plane: Skywalker";
                 }
@@ -986,7 +986,7 @@ namespace ArdupilotMega.GCSViews
             if (startup)
                 return;
             MainV2.config["distunits"] = CMB_distunits.Text;
-            MainV2.instance.changeunits();
+            MainV2.instance.ChangeUnits();
         }
 
         private void CMB_speedunits_SelectedIndexChanged(object sender, EventArgs e)
@@ -994,7 +994,7 @@ namespace ArdupilotMega.GCSViews
             if (startup)
                 return;
             MainV2.config["speedunits"] = CMB_speedunits.Text;
-            MainV2.instance.changeunits();
+            MainV2.instance.ChangeUnits();
         }
 
 
