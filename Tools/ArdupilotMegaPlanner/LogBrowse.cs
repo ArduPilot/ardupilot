@@ -157,7 +157,7 @@ namespace ArdupilotMega
                 {
                     reader.Read();
                     reader.ReadStartElement("LOGFORMAT");
-                    if (MainV2.APMFirmware == MainV2.Firmwares.ArduPlane)
+                    if (MainV2.cs.firmware == MainV2.Firmwares.ArduPlane)
                     {
                         reader.ReadToFollowing("APM");
                     }

@@ -152,7 +152,7 @@
     </Reference>
     <Reference Include="Microsoft.DirectX.DirectInput, Version=1.0.2902.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35">
       <SpecificVersion>False</SpecificVersion>
-      <Private>True</Private>
+      <Private>False</Private>
     </Reference>
     <Reference Include="Microsoft.Dynamic">
     </Reference>
@@ -238,6 +238,12 @@
     <Compile Include="Controls\BackstageView\BackStageViewMenuPanel.cs">
       <SubType>Component</SubType>
     </Compile>
+    <Compile Include="Controls\ConnectionControl.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="Controls\ConnectionControl.Designer.cs">
+      <DependentUpon>ConnectionControl.cs</DependentUpon>
+    </Compile>
     <Compile Include="Controls\ConfigPanel.cs">
       <SubType>Form</SubType>
     </Compile>
@@ -253,6 +259,9 @@
     </Compile>
     <Compile Include="Controls\ProgressReporterDialogue.designer.cs">
       <DependentUpon>ProgressReporterDialogue.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Controls\ToolStripConnectionControl.cs">
+      <SubType>Component</SubType>
     </Compile>
     <Compile Include="GCSViews\ConfigurationView\ConfigAccelerometerCalibrationQuad.cs">
       <SubType>UserControl</SubType>
@@ -557,6 +566,9 @@
     </EmbeddedResource>
     <EmbeddedResource Include="Controls\BackstageView\BackstageView.resx">
       <DependentUpon>BackstageView.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Controls\ConnectionControl.resx">
+      <DependentUpon>ConnectionControl.cs</DependentUpon>
     </EmbeddedResource>
     <EmbeddedResource Include="Controls\ConfigPanel.resx">
       <DependentUpon>ConfigPanel.cs</DependentUpon>

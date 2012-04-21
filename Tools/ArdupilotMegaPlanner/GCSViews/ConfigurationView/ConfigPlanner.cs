@@ -237,8 +237,9 @@ namespace ArdupilotMega.GCSViews.ConfigurationView
             ((MyButton)sender).Enabled = true;
             startup = true;
 
-            // AR todo: fix this up
-            //Configuration_Load(null, null);
+            
+
+            startup = false;
         }
 
         private void CHK_speechbattery_CheckedChanged(object sender, EventArgs e)
@@ -276,7 +277,7 @@ namespace ArdupilotMega.GCSViews.ConfigurationView
             if (startup)
                 return;
             MainV2.config["distunits"] = CMB_distunits.Text;
-            MainV2.instance.changeunits();
+            MainV2.instance.ChangeUnits();
         }
 
         private void CMB_speedunits_SelectedIndexChanged(object sender, EventArgs e)
@@ -284,7 +285,7 @@ namespace ArdupilotMega.GCSViews.ConfigurationView
             if (startup)
                 return;
             MainV2.config["speedunits"] = CMB_speedunits.Text;
-            MainV2.instance.changeunits();
+            MainV2.instance.ChangeUnits();
         }
 
         private void CMB_rateattitude_SelectedIndexChanged(object sender, EventArgs e)
