@@ -2043,10 +2043,6 @@ static void tuning(){
 
 	switch(g.radio_tuning){
 
-		case CH6_DAMP:
-			g.stabilize_d.set(tuning_value);
-			break;
-
 		case CH6_RATE_KD:
 			g.pid_rate_roll.kD(tuning_value);
 			g.pid_rate_pitch.kD(tuning_value);
@@ -2062,6 +2058,7 @@ static void tuning(){
 			g.pi_stabilize_pitch.kI(tuning_value);
 			break;
 
+		case CH6_DAMP:
 		case CH6_STABILIZE_KD:
 			g.stabilize_d = tuning_value;
 			break;
