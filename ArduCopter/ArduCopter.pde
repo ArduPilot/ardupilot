@@ -199,7 +199,11 @@ static AP_Int8                *flight_modes = &g.flight_mode1;
 #endif
 
 #ifdef OPTFLOW_ENABLED
-	AP_OpticalFlow_ADNS3080 optflow(OPTFLOW_CS_PIN);
+	#if CONFIG_APM_HARDWARE == APM_HARDWARE_APM2
+		AP_OpticalFlow_ADNS3080_APM2 optflow(OPTFLOW_CS_PIN);
+	#else
+		AP_OpticalFlow_ADNS3080 optflow(OPTFLOW_CS_PIN);
+	#endif
 #else
     AP_OpticalFlow optflow;
 #endif
