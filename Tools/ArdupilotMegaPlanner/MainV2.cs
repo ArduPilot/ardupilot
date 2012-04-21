@@ -556,7 +556,7 @@ namespace ArdupilotMega
                 {
                     comPort.BaseStream = new TcpSerial();
                 }
-                    if (_connectionControl.CMB_serialport.Text == "UDP")
+                else if (_connectionControl.CMB_serialport.Text == "UDP")
                 {
                     comPort.BaseStream = new UdpSerial();
                 }
