@@ -77,6 +77,17 @@
     <format_version>118</format_version>
   </Firmware>
   <Firmware>
+    <url>http://meee146-planner.googlecode.com/git/Tools/ArdupilotMegaPlanner/Firmware/AC2-Y6-1280.hex</url>
+    <url2560>http://meee146-planner.googlecode.com/git/Tools/ArdupilotMegaPlanner/Firmware/AC2-Y6-2560.hex</url2560>
+    <url2560-2>http://meee146-planner.googlecode.com/git/Tools/ArdupilotMegaPlanner/Firmware/AC2-Y6-2560-2.hex</url2560-2>
+    <name>ArduCopter V2.5.3 Y6</name>
+    <desc>
+#define FRAME_CONFIG Y6_FRAME
+
+</desc>
+    <format_version>117</format_version>
+  </Firmware>
+  <Firmware>
     <url>http://meee146-planner.googlecode.com/git/Tools/ArdupilotMegaPlanner/Firmware/AC2-Octav-1280.hex</url>
     <url2560>http://meee146-planner.googlecode.com/git/Tools/ArdupilotMegaPlanner/Firmware/AC2-Octav-2560.hex</url2560>
     <url2560-2>http://meee146-planner.googlecode.com/git/Tools/ArdupilotMegaPlanner/Firmware/AC2-Octav-2560-2.hex</url2560-2>
