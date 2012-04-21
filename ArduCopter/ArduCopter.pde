@@ -488,6 +488,12 @@ static const float radius_of_earth 	= 6378100;		// meters
 // Used by Mavlink for unknow reasons
 static const float gravity 			= 9.81;			// meters/ sec^2
 
+// Unions for getting byte values
+union float_int{
+	int32_t int_value;
+	float float_value;
+} float_int;
+
 
 ////////////////////////////////////////////////////////////////////////////////
 // Location & Navigation
