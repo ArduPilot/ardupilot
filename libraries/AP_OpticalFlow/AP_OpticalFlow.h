@@ -60,5 +60,6 @@ protected:
 };
 
 #include "AP_OpticalFlow_ADNS3080.h"
+#include "AP_OpticalFlow_ADNS3080_APM2.h"
 
 #endif

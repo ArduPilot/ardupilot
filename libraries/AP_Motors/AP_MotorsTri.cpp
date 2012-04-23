@@ -128,7 +128,11 @@ void AP_MotorsTri::output_armed()
 
 	// also send out to tail command (we rely on any auto pilot to have updated the rc_yaw->radio_out to the correct value)
 	// note we do not save the radio_out to the motor_out array so it may not appear in the ch7out in the status screen of the mission planner
-	_rc->OutputCh(AP_MOTORS_CH_TRI_YAW, _rc_yaw->radio_out);
+	if( _rc_yaw->get_reverse() == true ) {
+		_rc->OutputCh(AP_MOTORS_CH_TRI_YAW, _rc_yaw->radio_trim - (_rc_yaw->radio_out - _rc_yaw->radio_trim));
+	}else{
+		_rc->OutputCh(AP_MOTORS_CH_TRI_YAW, _rc_yaw->radio_out);
+	}
 		
 	// InstantPWM
 	if( _speed_hz == AP_MOTORS_SPEED_INSTANT_PWM ) {

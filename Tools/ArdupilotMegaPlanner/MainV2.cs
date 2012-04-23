@@ -31,6 +31,8 @@ namespace ArdupilotMega
     {
         private static readonly ILog log =
             LogManager.GetLogger(System.Reflection.MethodBase.GetCurrentMethod().DeclaringType);
+
+        // used to hide/show console window
         [DllImport("user32.dll")]
         public static extern int FindWindow(string szClass, string szTitle);
         [DllImport("user32.dll")]
@@ -39,41 +41,88 @@ namespace ArdupilotMega
         const int SW_SHOWNORMAL = 1;
         const int SW_HIDE = 0;
 
+        /// <summary>
+        /// Main Comport interface
+        /// </summary>
         public static MAVLink comPort = new MAVLink();
+        /// <summary>
+        /// Comport name
+        /// </summary>
         public static string comPortName = "";
+        /// <summary>
+        /// use to store all internal config
+        /// </summary>
         public static Hashtable config = new Hashtable();
+        /// <summary>
+        /// used to prevent comport access for exclusive use
+        /// </summary>
         public static bool giveComport = false;
-        public static Firmwares APMFirmware = Firmwares.ArduPlane;
+        /// <summary>
+        /// mono detection
+        /// </summary>
         public static bool MONO = false;
-
+        /// <summary>
+        /// speech engein enable
+        /// </summary>
         public static bool speechEnable = false;
+        /// <summary>
+        /// spech engine static class
+        /// </summary>
         public static Speech speechEngine = null;
-
+        /// <summary>
+        /// joystick static class
+        /// </summary>
         public static Joystick joystick = null;
+        /// <summary>
+        /// track last joystick packet sent. used to track timming
+        /// </summary>
         DateTime lastjoystick = DateTime.Now;
-
+        /// <summary>
+        /// hud background image grabber from a video stream - not realy that efficent. ie no hardware overlays etc.
+        /// </summary>
         public static WebCamService.Capture cam = null;
-
+        /// <summary>
+        /// the static global state of the currently connected MAV
+        /// </summary>
         public static CurrentState cs = new CurrentState();
-
+        /// <summary>
+        /// controls the main serial reader thread
+        /// </summary>
         bool serialThread = false;
-
+        /// <summary>
+        /// unused at this point - potential to move all forms to this single binding source. need to evalutate performance/exception issues
+        /// </summary>
         static internal BindingSource bs;
-
-        TcpListener listener;
-
-        DateTime heatbeatSend = DateTime.Now;
-
+        /// <summary>
+        /// used for mini https server for websockets/mjpeg video stream, and network link kmls
+        /// </summary>
+        private TcpListener listener;
+        /// <summary>
+        /// track the last heartbeat sent
+        /// </summary>
+        private DateTime heatbeatSend = DateTime.Now;
+        /// <summary>
+        /// used to call anything as needed.
+        /// </summary>
         public static MainV2 instance = null;
-
+        /// <summary>
+        /// used to feed in a network link kml to the http server
+        /// </summary>
         public string georefkml = "";
 
+        /// <summary>
+        /// enum of firmwares
+        /// </summary>
         public enum Firmwares
         {
             ArduPlane,
             ArduCopter2,
         }
 
+        /// <summary>
+        /// declared here if i want a "single" instance of the form
+        /// ie configuration gets reloaded on every click
+        /// </summary>
         GCSViews.FlightData FlightData;
         GCSViews.FlightPlanner FlightPlanner;
         GCSViews.Configuration Configuration;
@@ -82,13 +131,20 @@ namespace ArdupilotMega
         GCSViews.Firmware Firmware;
         GCSViews.Terminal Terminal;
 
+        /// <summary>
+        /// control for the serial port and firmware selector.
+        /// </summary>
+        private ConnectionControl _connectionControl;
+
         public MainV2()
         {
             Form splash = new Splash();
             splash.Show();
 
             string strVersion = System.Reflection.Assembly.GetExecutingAssembly().GetName().Version.ToString();
-            strVersion = "";
+
+            strVersion = "mav " + MAVLink.MAVLINK_WIRE_PROTOCOL_VERSION;
+
             splash.Text = "APM Planner " + Application.ProductVersion + " " + strVersion + " By Michael Oborne";
 
             splash.Refresh();
@@ -98,6 +154,14 @@ namespace ArdupilotMega
             instance = this;
 
             InitializeComponent();
+            
+            _connectionControl = toolStripConnectionControl.ConnectionControl;
+            _connectionControl.CMB_baudrate.TextChanged += this.CMB_baudrate_TextChanged;
+            _connectionControl.CMB_baudrate.SelectedIndexChanged += this.CMB_baudrate_SelectedIndexChanged;
+            _connectionControl.CMB_serialport.SelectedIndexChanged += this.CMB_serialport_SelectedIndexChanged;
+            _connectionControl.CMB_serialport.Enter += this.CMB_serialport_Enter;
+            _connectionControl.CMB_serialport.Click += this.CMB_serialport_Click;
+            _connectionControl.TOOL_APMFirmware.SelectedIndexChanged += this.TOOL_APMFirmware_SelectedIndexChanged;
 
             srtm.datadirectory = Path.GetDirectoryName(Application.ExecutablePath) + Path.DirectorySeparatorChar + "srtm";
 
@@ -113,24 +177,35 @@ namespace ArdupilotMega
             List<object> list = new List<object>();
             foreach (object obj in Enum.GetValues(typeof(Firmwares)))
             {
-                TOOL_APMFirmware.Items.Add(obj);
+                _connectionControl.TOOL_APMFirmware.Items.Add(obj);
             }
 
-            if (TOOL_APMFirmware.Items.Count > 0)
-                TOOL_APMFirmware.SelectedIndex = 0;
+            if (_connectionControl.TOOL_APMFirmware.Items.Count > 0)
+                _connectionControl.TOOL_APMFirmware.SelectedIndex = 0;
 
             this.Text = splash.Text;
 
             comPort.BaseStream.BaudRate = 115200;
 
-            CMB_serialport.Items.AddRange(SerialPort.GetPortNames());
-            CMB_serialport.Items.Add("TCP");
-            CMB_serialport.Items.Add("UDP");
-            if (CMB_serialport.Items.Count > 0)
+            // ** Old
+//            CMB_serialport.Items.AddRange(SerialPort.GetPortNames());
+//            CMB_serialport.Items.Add("TCP");
+//            CMB_serialport.Items.Add("UDP");
+//            if (CMB_serialport.Items.Count > 0)
+//            {
+//                CMB_baudrate.SelectedIndex = 7;
+//                CMB_serialport.SelectedIndex = 0;
+//            }
+            // ** new
+            _connectionControl.CMB_serialport.Items.AddRange(SerialPort.GetPortNames());
+            _connectionControl.CMB_serialport.Items.Add("TCP");
+            _connectionControl.CMB_serialport.Items.Add("UDP");
+            if (_connectionControl.CMB_serialport.Items.Count > 0)
             {
-                CMB_baudrate.SelectedIndex = 7;
-                CMB_serialport.SelectedIndex = 0;
+                _connectionControl.CMB_baudrate.SelectedIndex = 7;
+                _connectionControl.CMB_serialport.SelectedIndex = 0;
             }
+            // ** Done
 
             splash.Refresh();
             Application.DoEvents();
@@ -172,7 +247,7 @@ namespace ArdupilotMega
             if (MainV2.config["CHK_GDIPlus"] != null)
                 GCSViews.FlightData.myhud.UseOpenGL = !bool.Parse(MainV2.config["CHK_GDIPlus"].ToString());
 
-            changeunits();
+            ChangeUnits();
 
             try
             {
@@ -258,6 +333,9 @@ namespace ArdupilotMega
             splash.Close();
         }
 
+        /// <summary>
+        /// used to create planner screenshots - access by control-s
+        /// </summary>
         internal void ScreenShot()
         {
             Rectangle bounds = Screen.GetBounds(Point.Empty);
@@ -276,13 +354,13 @@ namespace ArdupilotMega
 
         private void CMB_serialport_Click(object sender, EventArgs e)
         {
-            string oldport = CMB_serialport.Text;
-            CMB_serialport.Items.Clear();
-            CMB_serialport.Items.AddRange(SerialPort.GetPortNames());
-            CMB_serialport.Items.Add("TCP");
-            CMB_serialport.Items.Add("UDP");
-            if (CMB_serialport.Items.Contains(oldport))
-                CMB_serialport.Text = oldport;
+            string oldport = _connectionControl.CMB_serialport.Text;
+            _connectionControl.CMB_serialport.Items.Clear();
+            _connectionControl.CMB_serialport.Items.AddRange(SerialPort.GetPortNames());
+            _connectionControl.CMB_serialport.Items.Add("TCP");
+            _connectionControl.CMB_serialport.Items.Add("UDP");
+            if (_connectionControl.CMB_serialport.Items.Contains(oldport))
+                _connectionControl.CMB_serialport.Text = oldport;
         }
 
 
@@ -474,11 +552,11 @@ namespace ArdupilotMega
             }
             else
             {
-                if (CMB_serialport.Text == "TCP")
+                if (_connectionControl.CMB_serialport.Text == "TCP")
                 {
                     comPort.BaseStream = new TcpSerial();
                 }
-                else if (CMB_serialport.Text == "UDP")
+                else if (_connectionControl.CMB_serialport.Text == "UDP")
                 {
                     comPort.BaseStream = new UdpSerial();
                 }
@@ -490,31 +568,32 @@ namespace ArdupilotMega
                 try
                 {
                     // set port, then options
-                    comPort.BaseStream.PortName = CMB_serialport.Text;
+                    comPort.BaseStream.PortName = _connectionControl.CMB_serialport.Text;
 
                     comPort.BaseStream.DataBits = 8;
                     comPort.BaseStream.StopBits = (StopBits)Enum.Parse(typeof(StopBits), "1");
                     comPort.BaseStream.Parity = (Parity)Enum.Parse(typeof(Parity), "None");
                     try
                     {
-                        comPort.BaseStream.BaudRate = int.Parse(CMB_baudrate.Text);
+                        comPort.BaseStream.BaudRate = int.Parse(_connectionControl.CMB_baudrate.Text);
                     }
                     catch { }
+
+                    if (config["CHK_resetapmonconnect"] == null || bool.Parse(config["CHK_resetapmonconnect"].ToString()) == true)
+                        comPort.BaseStream.toggleDTR();
 
                     // false here
                     comPort.BaseStream.DtrEnable = false;
                     comPort.BaseStream.RtsEnable = false;
 
-                    if (config["CHK_resetapmonconnect"] == null || bool.Parse(config["CHK_resetapmonconnect"].ToString()) == true)
-                        comPort.BaseStream.toggleDTR();
-
-                    // if reset on connect is on dtr will be true here
-
+                    // cleanup from any previous sessions
                     if (comPort.logfile != null)
                         comPort.logfile.Close();
 
                     if (comPort.rawlogfile != null)
                         comPort.rawlogfile.Close();
+
+                    // setup to record new logs
                     try
                     {
                         Directory.CreateDirectory(Path.GetDirectoryName(Application.ExecutablePath) + Path.DirectorySeparatorChar + @"logs");
@@ -524,39 +603,44 @@ namespace ArdupilotMega
                     }
                     catch { CustomMessageBox.Show("Failed to create log - wont log this session"); } // soft fail
 
+                    // do the connect
                     comPort.Open(true);
 
+                    // detect firmware we are conected to.
                     if (comPort.param["SYSID_SW_TYPE"] != null)
                     {
                         if (float.Parse(comPort.param["SYSID_SW_TYPE"].ToString()) == 10)
                         {
-                            TOOL_APMFirmware.SelectedIndex = TOOL_APMFirmware.Items.IndexOf(Firmwares.ArduCopter2);
+                            _connectionControl.TOOL_APMFirmware.SelectedIndex = _connectionControl.TOOL_APMFirmware.Items.IndexOf(Firmwares.ArduCopter2);
                         }
                         else if (float.Parse(comPort.param["SYSID_SW_TYPE"].ToString()) == 0)
                         {
-                            TOOL_APMFirmware.SelectedIndex = TOOL_APMFirmware.Items.IndexOf(Firmwares.ArduPlane);
+                            _connectionControl.TOOL_APMFirmware.SelectedIndex = _connectionControl.TOOL_APMFirmware.Items.IndexOf(Firmwares.ArduPlane);
                         }
                     }
 
-                    cs.firmware = APMFirmware;
+                    // save the baudrate for this port
+                    config[_connectionControl.CMB_serialport.Text + "_BAUD"] = _connectionControl.CMB_baudrate.Text;
 
-                    config[CMB_serialport.Text + "_BAUD"] = CMB_baudrate.Text;
-
+                    // load wps on connect option.
                     if (config["loadwpsonconnect"] != null && bool.Parse(config["loadwpsonconnect"].ToString()) == true)
                     {
                         MenuFlightPlanner_Click(null, null);
                         FlightPlanner.BUT_read_Click(null, null);
                     }
 
+                    // set connected icon
                     this.MenuConnect.BackgroundImage = global::ArdupilotMega.Properties.Resources.disconnect;
                 }
                 catch (Exception ex)
                 {
+                    log.Warn(ex.ToString());
                     try
                     {
                         comPort.Close();
                     }
                     catch { }
+                    // detect firmware -> scan eeprom contents -> error if no valid ap param/apvar header detected.
                     try
                     {
                         string version = ArduinoDetect.DetectVersion(comPort.BaseStream.PortName);
@@ -601,10 +685,10 @@ namespace ArdupilotMega
 
         private void CMB_serialport_SelectedIndexChanged(object sender, EventArgs e)
         {
-            comPortName = CMB_serialport.Text;
+            comPortName = _connectionControl.CMB_serialport.Text;
             if (comPortName == "UDP" || comPortName == "TCP")
             {
-                CMB_baudrate.Enabled = false;
+                _connectionControl.CMB_baudrate.Enabled = false;
                 if (comPortName == "TCP")
                     MainV2.comPort.BaseStream = new TcpSerial();
                 if (comPortName == "UDP")
@@ -612,35 +696,32 @@ namespace ArdupilotMega
             }
             else
             {
-                CMB_baudrate.Enabled = true;
+                _connectionControl.CMB_baudrate.Enabled = true;
                 MainV2.comPort.BaseStream = new ArdupilotMega.SerialPort();
             }
 
             try
             {
-                comPort.BaseStream.PortName = CMB_serialport.Text;
+                comPort.BaseStream.PortName = _connectionControl.CMB_serialport.Text;
 
-                MainV2.comPort.BaseStream.BaudRate = int.Parse(CMB_baudrate.Text);
+                MainV2.comPort.BaseStream.BaudRate = int.Parse(_connectionControl.CMB_baudrate.Text);
 
-                if (config[CMB_serialport.Text + "_BAUD"] != null)
+                // check for saved baud rate and restore
+                if (config[_connectionControl.CMB_serialport.Text + "_BAUD"] != null)
                 {
-                    CMB_baudrate.Text = config[CMB_serialport.Text + "_BAUD"].ToString();
+                    _connectionControl.CMB_baudrate.Text = config[_connectionControl.CMB_serialport.Text + "_BAUD"].ToString();
                 }
             }
             catch { }
         }
 
-        private void toolStripMenuItem2_Click(object sender, EventArgs e)
-        {
-            //Form temp = new Main();
-            //temp.Show();
-        }
-
         private void MainV2_FormClosed(object sender, FormClosedEventArgs e)
         {
+            // shutdown threads
             GCSViews.FlightData.threadrun = 0;
             GCSViews.Simulation.threadrun = 0;
 
+            // shutdown local thread
             serialThread = false;
 
             try
@@ -665,6 +746,8 @@ namespace ArdupilotMega
             }
             catch { }
 
+
+            // save config
             xmlconfig(true);
         }
 
@@ -675,8 +758,6 @@ namespace ArdupilotMega
             {
                 try
                 {
-                    //System.Configuration.Configuration appconfig = System.Configuration.ConfigurationManager.OpenExeConfiguration(System.Configuration.ConfigurationUserLevel.None);
-
                     XmlTextWriter xmlwriter = new XmlTextWriter(Path.GetDirectoryName(Application.ExecutablePath) + Path.DirectorySeparatorChar + @"config.xml", Encoding.ASCII);
                     xmlwriter.Formatting = Formatting.Indented;
 
@@ -686,13 +767,9 @@ namespace ArdupilotMega
 
                     xmlwriter.WriteElementString("comport", comPortName);
 
-                    xmlwriter.WriteElementString("baudrate", CMB_baudrate.Text);
+                    xmlwriter.WriteElementString("baudrate", _connectionControl.CMB_baudrate.Text);
 
-                    xmlwriter.WriteElementString("APMFirmware", APMFirmware.ToString());
-
-                    //appconfig.AppSettings.Settings.Add("comport", comportname);
-                    //appconfig.AppSettings.Settings.Add("baudrate", CMB_baudrate.Text);
-                    //appconfig.AppSettings.Settings.Add("APMFirmware", APMFirmware.ToString());
+                    xmlwriter.WriteElementString("APMFirmware", MainV2.cs.firmware.ToString());
 
                     foreach (string key in config.Keys)
                     {
@@ -701,8 +778,6 @@ namespace ArdupilotMega
                             if (key == "" || key.Contains("/")) // "/dev/blah"
                                 continue;
                             xmlwriter.WriteElementString(key, config[key].ToString());
-
-                            //appconfig.AppSettings.Settings.Add(key, config[key].ToString());
                         }
                         catch { }
                     }
@@ -711,8 +786,6 @@ namespace ArdupilotMega
 
                     xmlwriter.WriteEndDocument();
                     xmlwriter.Close();
-
-                    //appconfig.Save();
                 }
                 catch (Exception ex) { CustomMessageBox.Show(ex.ToString()); }
             }
@@ -732,10 +805,10 @@ namespace ArdupilotMega
                                     case "comport":
                                         string temp = xmlreader.ReadString();
 
-                                        CMB_serialport.SelectedIndex = CMB_serialport.FindString(temp);
-                                        if (CMB_serialport.SelectedIndex == -1)
+                                        _connectionControl.CMB_serialport.SelectedIndex = _connectionControl.CMB_serialport.FindString(temp);
+                                        if (_connectionControl.CMB_serialport.SelectedIndex == -1)
                                         {
-                                            CMB_serialport.Text = temp; // allows ports that dont exist - yet
+                                            _connectionControl.CMB_serialport.Text = temp; // allows ports that dont exist - yet
                                         }
                                         comPort.BaseStream.PortName = temp;
                                         comPortName = temp;
@@ -743,20 +816,20 @@ namespace ArdupilotMega
                                     case "baudrate":
                                         string temp2 = xmlreader.ReadString();
 
-                                        CMB_baudrate.SelectedIndex = CMB_baudrate.FindString(temp2);
-                                        if (CMB_baudrate.SelectedIndex == -1)
+                                        _connectionControl.CMB_baudrate.SelectedIndex = _connectionControl.CMB_baudrate.FindString(temp2);
+                                        if (_connectionControl.CMB_baudrate.SelectedIndex == -1)
                                         {
-                                            CMB_baudrate.Text = temp2;
+                                            _connectionControl.CMB_baudrate.Text = temp2;
                                             //CMB_baudrate.SelectedIndex = CMB_baudrate.FindString("57600"); ; // must exist
                                         }
                                         //bau = int.Parse(CMB_baudrate.Text);
                                         break;
                                     case "APMFirmware":
                                         string temp3 = xmlreader.ReadString();
-                                        TOOL_APMFirmware.SelectedIndex = TOOL_APMFirmware.FindStringExact(temp3);
-                                        if (TOOL_APMFirmware.SelectedIndex == -1)
-                                            TOOL_APMFirmware.SelectedIndex = 0;
-                                        APMFirmware = (MainV2.Firmwares)Enum.Parse(typeof(MainV2.Firmwares), TOOL_APMFirmware.Text);
+                                        _connectionControl.TOOL_APMFirmware.SelectedIndex = _connectionControl.TOOL_APMFirmware.FindStringExact(temp3);
+                                        if (_connectionControl.TOOL_APMFirmware.SelectedIndex == -1)
+                                            _connectionControl.TOOL_APMFirmware.SelectedIndex = 0;
+                                        MainV2.cs.firmware = (MainV2.Firmwares)Enum.Parse(typeof(MainV2.Firmwares), _connectionControl.TOOL_APMFirmware.Text);
                                         break;
                                     case "Config":
                                         break;
@@ -781,11 +854,16 @@ namespace ArdupilotMega
         {
             try
             {
-                comPort.BaseStream.BaudRate = int.Parse(CMB_baudrate.Text);
+                comPort.BaseStream.BaudRate = int.Parse(_connectionControl.CMB_baudrate.Text);
             }
-            catch { }
+            catch
+            {
+            }
         }
 
+        /// <summary>
+        /// thread used to send joystick packets to the MAV
+        /// </summary>
         private void joysticksend()
         {
 
@@ -870,10 +948,11 @@ namespace ArdupilotMega
 
         DateTime connectButtonUpdate = DateTime.Now;
 
+        /// <summary>
+        /// Used to fix the icon status for unexpected unplugs etc...
+        /// </summary>
         private void updateConnectIcon()
         {
-            
-
             if ((DateTime.Now - connectButtonUpdate).Milliseconds > 500)
             {
                 //                        Console.WriteLine(DateTime.Now.Millisecond);
@@ -885,8 +964,8 @@ namespace ArdupilotMega
                         {
                             this.MenuConnect.BackgroundImage = global::ArdupilotMega.Properties.Resources.disconnect;
                             this.MenuConnect.BackgroundImage.Tag = "Disconnect";
-                            CMB_baudrate.Enabled = false;
-                            CMB_serialport.Enabled = false;
+                            _connectionControl.CMB_baudrate.Enabled = false;
+                            _connectionControl.CMB_serialport.Enabled = false;
                         });
                     }
                 }
@@ -898,8 +977,8 @@ namespace ArdupilotMega
                         {
                             this.MenuConnect.BackgroundImage = global::ArdupilotMega.Properties.Resources.connect;
                             this.MenuConnect.BackgroundImage.Tag = "Connect";
-                            CMB_baudrate.Enabled = true;
-                            CMB_serialport.Enabled = true;
+                            _connectionControl.CMB_baudrate.Enabled = true;
+                            _connectionControl.CMB_serialport.Enabled = true;
                         });
                     }
                 }
@@ -907,7 +986,16 @@ namespace ArdupilotMega
             }
         }
 
-
+        /// <summary>
+        /// main serial reader thread
+        /// controls
+        /// serial reading
+        /// link quality stats
+        /// speech voltage - custom - alt warning - data lost
+        /// heartbeat packet sending
+        /// 
+        /// and cant fall out
+        /// </summary>
         private void SerialReader()
         {
             if (serialThread == true)
@@ -1089,6 +1177,7 @@ namespace ArdupilotMega
             // for long running tasks using own threads.
             // for short use threadpool
 
+            // setup http server
             try
             {
                 listener = new TcpListener(IPAddress.Any, 56781);
@@ -1104,6 +1193,7 @@ namespace ArdupilotMega
                 CustomMessageBox.Show(ex.ToString());
             }
 
+            /// setup joystick packet sender
             new Thread(new ThreadStart(joysticksend))
             {
                 IsBackground = true,
@@ -1111,12 +1201,14 @@ namespace ArdupilotMega
                 Name = "Main joystick sender"
             }.Start();
 
+            // setup main serial reader
             new Thread(SerialReader)
             {
                 IsBackground = true,
                 Name = "Main Serial reader"
             }.Start();
 
+            // check for updates
             if (Debugger.IsAttached)
             {
                 log.Info("Skipping update test as it appears we are debugging");
@@ -1133,6 +1225,7 @@ namespace ArdupilotMega
                 }
             }
         }
+
 
         public static String ComputeWebSocketHandshakeSecurityHash09(String secWebSocketKey)
         {
@@ -1155,7 +1248,6 @@ namespace ArdupilotMega
         /// <summary>          
         /// little web server for sending network link kml's          
         /// </summary>          
-
         void listernforclients()
         {
             try
@@ -1440,8 +1532,7 @@ namespace ArdupilotMega
 
         private void TOOL_APMFirmware_SelectedIndexChanged(object sender, EventArgs e)
         {
-            APMFirmware = (MainV2.Firmwares)Enum.Parse(typeof(MainV2.Firmwares), TOOL_APMFirmware.Text);
-            MainV2.cs.firmware = APMFirmware;
+            MainV2.cs.firmware = (MainV2.Firmwares)Enum.Parse(typeof(MainV2.Firmwares), _connectionControl.TOOL_APMFirmware.Text);
         }
 
         private void MainV2_Resize(object sender, EventArgs e)
@@ -1858,7 +1949,12 @@ namespace ArdupilotMega
         }
 
 
-
+        /// <summary>
+        /// trying to replicate google code etags....... this doesnt work.
+        /// </summary>
+        /// <param name="fileName"></param>
+        /// <param name="modifyDate"></param>
+        /// <returns></returns>
         private string GetFileETag(string fileName, DateTime modifyDate)
         {
 
@@ -1892,29 +1988,34 @@ namespace ArdupilotMega
 
         }
 
-
+        /// <summary>
+        /// keyboard shortcuts override
+        /// </summary>
+        /// <param name="msg"></param>
+        /// <param name="keyData"></param>
+        /// <returns></returns>
         protected override bool ProcessCmdKey(ref Message msg, Keys keyData)
         {
-            if (keyData == (Keys.Control | Keys.F))
+            if (keyData == (Keys.Control | Keys.F)) // temp
             {
                 Form frm = new temp();
                 ThemeManager.ApplyThemeTo(frm);
                 frm.Show();
                 return true;
             }
-            if (keyData == (Keys.Control | Keys.S))
+            if (keyData == (Keys.Control | Keys.S)) // screenshot
             {
                 ScreenShot();
                 return true;
             }
-            if (keyData == (Keys.Control | Keys.G)) // test
+            if (keyData == (Keys.Control | Keys.G)) // nmea out
             {
                 Form frm = new SerialOutput();
                 ThemeManager.ApplyThemeTo(frm);
                 frm.Show();
                 return true;
             }
-            if (keyData == (Keys.Control | Keys.A)) // test
+            if (keyData == (Keys.Control | Keys.A)) // 3dr radio
             {
                 Form temp = new Form();
                 Control frm = new _3DRradio();
@@ -1925,7 +2026,7 @@ namespace ArdupilotMega
                 temp.Show();
                 return true;
             }
-            if (keyData == (Keys.Control | Keys.W)) // test
+            if (keyData == (Keys.Control | Keys.W)) // test ac config
             {
 
                 Controls.ConfigPanel cfg = new Controls.ConfigPanel();
@@ -2026,7 +2127,7 @@ namespace ArdupilotMega
             return "";
         }
 
-        public void changeunits()
+        public void ChangeUnits()
         {
             try
             {
@@ -2070,24 +2171,29 @@ namespace ArdupilotMega
             catch { }
 
         }
+
         private void CMB_baudrate_TextChanged(object sender, EventArgs e)
         {
             StringBuilder sb = new StringBuilder();
             int baud = 0;
-            for (int i = 0; i < CMB_baudrate.Text.Length; i++)
-                if (char.IsDigit(CMB_baudrate.Text[i]))
+            for (int i = 0; i < _connectionControl.CMB_baudrate.Text.Length; i++)
+                if (char.IsDigit(_connectionControl.CMB_baudrate.Text[i]))
                 {
-                    sb.Append(CMB_baudrate.Text[i]);
-                    baud = baud * 10 + CMB_baudrate.Text[i] - '0';
+                    sb.Append(_connectionControl.CMB_baudrate.Text[i]);
+                    baud = baud * 10 + _connectionControl.CMB_baudrate.Text[i] - '0';
                 }
-            if (CMB_baudrate.Text != sb.ToString())
-                CMB_baudrate.Text = sb.ToString();
+            if (_connectionControl.CMB_baudrate.Text != sb.ToString())
+            {
+                _connectionControl.CMB_baudrate.Text = sb.ToString();
+            }
             try
             {
                 if (baud > 0 && comPort.BaseStream.BaudRate != baud)
                     comPort.BaseStream.BaudRate = baud;
             }
-            catch (Exception) { }
+            catch (Exception)
+            {
+            }
         }
 
         private void CMB_serialport_Enter(object sender, EventArgs e)

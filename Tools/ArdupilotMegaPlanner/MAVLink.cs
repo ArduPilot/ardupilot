@@ -1027,8 +1027,9 @@ namespace ArdupilotMega
 
         public void requestDatastream(byte id, byte hzrate)
         {
+            
             double pps = 0;
-
+            /*
             switch (id)
             {
                 case (byte)MAVLink.MAV_DATA_STREAM.ALL:
@@ -1117,8 +1118,9 @@ namespace ArdupilotMega
             {
                 return;
             }
+             */
 
-            log.InfoFormat("Request stream {0} at {1} hz : currently {2}", Enum.Parse(typeof(MAV_DATA_STREAM), id.ToString()), hzrate, pps);
+            log.InfoFormat("Request stream {0} at {1} hz", Enum.Parse(typeof(MAV_DATA_STREAM), id.ToString()), hzrate);
             getDatastream(id, hzrate);
         }
 

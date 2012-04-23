@@ -586,9 +586,11 @@ static int32_t
 get_of_roll(int32_t control_roll)
 {
 #ifdef OPTFLOW_ENABLED
+	static int8_t log_counter = 0;					// used to slow down logging of PID values to dataflash
 	static float tot_x_cm = 0;  // total distance from target
     static uint32_t last_of_roll_update = 0;
 	int32_t new_roll = 0;
+	int32_t p,i,d;
 
 	// check if new optflow data available
 	if( optflow.last_update != last_of_roll_update) {
@@ -599,17 +601,35 @@ get_of_roll(int32_t control_roll)
 
 		// only stop roll if caller isn't modifying roll
 		if( control_roll == 0 && current_loc.alt < 1500) {
-			new_roll = g.pid_optflow_roll.get_pid(-tot_x_cm, 1.0);  // we could use the last update time to calculate the time change
+			p = g.pid_optflow_roll.get_p(-tot_x_cm);
+			i = g.pid_optflow_roll.get_i(-tot_x_cm,1.0);  // we could use the last update time to calculate the time change
+			d = g.pid_optflow_roll.get_d(-tot_x_cm,1.0);
+			new_roll = p+i+d;
 		}else{
 		    g.pid_optflow_roll.reset_I();
 			tot_x_cm = 0;
+			p = 0;  // for logging
+			i = 0;
+			d = 0;
 		}
 		// limit amount of change and maximum angle
 		of_roll = constrain(new_roll, (of_roll-20), (of_roll+20));
+
+#if LOGGING_ENABLED == ENABLED
+		// log output if PID logging is on and we are tuning the rate P, I or D gains
+		if( g.log_bitmask & MASK_LOG_PID && (g.radio_tuning == CH6_OPTFLOW_KP || g.radio_tuning == CH6_OPTFLOW_KI || g.radio_tuning == CH6_OPTFLOW_KD) ) {
+			log_counter++;
+			if( log_counter >= 5 ) {	// (update rate / desired output rate) = (100hz / 10hz) = 10
+				log_counter = 0;
+				Log_Write_PID(CH6_OPTFLOW_KP, tot_x_cm, p, i, d, of_roll, tuning_value);
+			}
+		}
+#endif  // LOGGING_ENABLED == ENABLED
 	}
 
 	// limit max angle
     of_roll = constrain(of_roll, -1000, 1000);
+
     return control_roll+of_roll;
 #else
     return control_roll;
@@ -620,9 +640,11 @@ static int32_t
 get_of_pitch(int32_t control_pitch)
 {
 #ifdef OPTFLOW_ENABLED
+	static int8_t log_counter = 0;					// used to slow down logging of PID values to dataflash
     static float tot_y_cm = 0;  // total distance from target
     static uint32_t last_of_pitch_update = 0;
 	int32_t new_pitch = 0;
+	int32_t p,i,d;
 
 	// check if new optflow data available
 	if( optflow.last_update != last_of_pitch_update ) {
@@ -633,18 +655,36 @@ get_of_pitch(int32_t control_pitch)
 
 		// only stop roll if caller isn't modifying pitch
 		if( control_pitch == 0 && current_loc.alt < 1500 ) {
-			new_pitch = g.pid_optflow_pitch.get_pid(tot_y_cm, 1.0);  // we could use the last update time to calculate the time change
+			p = g.pid_optflow_pitch.get_p(tot_y_cm);
+			i = g.pid_optflow_pitch.get_i(tot_y_cm, 1.0);  // we could use the last update time to calculate the time change
+			d = g.pid_optflow_pitch.get_d(tot_y_cm, 1.0);
+			new_pitch = p + i + d;
 		}else{
 		    tot_y_cm = 0;
 		    g.pid_optflow_pitch.reset_I();
+			p = 0;  // for logging
+			i = 0;
+			d = 0;
 		}
 
 		// limit amount of change
 		of_pitch = constrain(new_pitch, (of_pitch-20), (of_pitch+20));
+
+#if LOGGING_ENABLED == ENABLED
+		// log output if PID logging is on and we are tuning the rate P, I or D gains
+		if( g.log_bitmask & MASK_LOG_PID && (g.radio_tuning == CH6_OPTFLOW_KP || g.radio_tuning == CH6_OPTFLOW_KI || g.radio_tuning == CH6_OPTFLOW_KD) ) {
+			log_counter++;
+			if( log_counter >= 5 ) {	// (update rate / desired output rate) = (100hz / 10hz) = 10
+				log_counter = 0;
+				Log_Write_PID(CH6_OPTFLOW_KP+100, tot_y_cm, p, i, d, of_pitch, tuning_value);
+			}
+		}
+#endif  // LOGGING_ENABLED == ENABLED
 	}
 
 	// limit max angle
 	of_pitch = constrain(of_pitch, -1000, 1000);
+
     return control_pitch+of_pitch;
 #else
     return control_pitch;

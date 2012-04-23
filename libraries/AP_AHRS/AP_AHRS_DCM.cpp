@@ -279,7 +279,6 @@ AP_AHRS_DCM::drift_correction(float deltat)
 	Vector3f accel;
 	Vector3f error;
 	float error_norm = 0;
-	const float gravity_squared = (9.80665*9.80665);
 	float yaw_deltat = 0;
 
 	accel = _accel_vector;
@@ -295,58 +294,42 @@ AP_AHRS_DCM::drift_correction(float deltat)
 
 	//*****Roll and Pitch***************
 
-	// calculate the z component of the accel vector assuming it
-	// has a length of 9.8. This discards the z accelerometer
-	// sensor reading completely. Logs show that the z accel is
-	// the noisest, plus it has a disproportionate impact on the
-	// drift correction result because of the geometry when we are
-	// mostly flat. Dropping it completely seems to make the DCM
-	// algorithm much more resilient to large amounts of
-	// accelerometer noise.
-	float zsquared = gravity_squared - ((accel.x * accel.x) + (accel.y * accel.y));
-	if (zsquared < 0) {
+	// normalise the accelerometer vector to a standard length
+	// this is important to reduce the impact of noise on the
+	// drift correction, as very noisy vectors tend to have
+	// abnormally high lengths. By normalising the length we
+	// reduce their impact.
+	float accel_length = accel.length();
+	accel *= (_gravity / accel_length);
+	if (accel.is_inf()) {
+		// we can't do anything useful with this sample
 		_omega_P.zero();
-	} else {
-		if (accel.z > 0) {
-			accel.z = sqrt(zsquared);
-		} else {
-			accel.z = -sqrt(zsquared);
-		}
-
-		// calculate the error, in m/2^2, between the attitude
-		// implied by the accelerometers and the attitude
-		// in the current DCM matrix
-		error =  _dcm_matrix.c % accel;
-
-		// error from the above is in m/s^2 units.
-
-		// Limit max error to limit the effect of noisy values
-		// on the algorithm. This limits the error to about 11
-		// degrees
-		error_norm = error.length();
-		if (error_norm > 2) {
-			error *= (2 / error_norm);
-		}
-
-		// we now want to calculate _omega_P and _omega_I. The
-		// _omega_P value is what drags us quickly to the
-		// accelerometer reading.
-		_omega_P = error * _kp_roll_pitch;
-
-		// the _omega_I is the long term accumulated gyro
-		// error. This determines how much gyro drift we can
-		// handle.
-		Vector3f omega_I_delta = error * (_ki_roll_pitch * deltat);
-
-		// limit the slope of omega_I on each axis to
-		// the maximum drift rate
-		float drift_limit = _gyro_drift_limit * deltat;
-		omega_I_delta.x = constrain(omega_I_delta.x, -drift_limit, drift_limit);
-		omega_I_delta.y = constrain(omega_I_delta.y, -drift_limit, drift_limit);
-		omega_I_delta.z = constrain(omega_I_delta.z, -drift_limit, drift_limit);
-
-		_omega_I += omega_I_delta;
+		return;
 	}
+
+	// calculate the error, in m/2^2, between the attitude
+	// implied by the accelerometers and the attitude
+	// in the current DCM matrix
+	error =  _dcm_matrix.c % accel;
+
+	// Limit max error to limit the effect of noisy values
+	// on the algorithm. This limits the error to about 11
+	// degrees
+	error_norm = error.length();
+	if (error_norm > 2) {
+		error *= (2 / error_norm);
+	}
+
+	// we now want to calculate _omega_P and _omega_I. The
+	// _omega_P value is what drags us quickly to the
+	// accelerometer reading.
+	_omega_P = error * _kp_roll_pitch;
+
+	// the _omega_I is the long term accumulated gyro
+	// error. This determines how much gyro drift we can
+	// handle.
+	_omega_I_sum += error * (_ki_roll_pitch * deltat);
+	_omega_I_sum_time += deltat;
 
 	// these sums support the reporting of the DCM state via MAVLink
 	_error_rp_sum += error_norm;
@@ -467,17 +450,33 @@ AP_AHRS_DCM::drift_correction(float deltat)
 	// x/y drift correction is too inaccurate, and can lead to
 	// incorrect builups in the x/y drift. We rely on the
 	// accelerometers to get the x/y components right
-	float omega_Iz_delta = error.z * (_ki_yaw * yaw_deltat);
-
-	// limit the slope of omega_I.z to the maximum gyro drift rate
-	float drift_limit = _gyro_drift_limit * yaw_deltat;
-	omega_Iz_delta = constrain(omega_Iz_delta, -drift_limit, drift_limit);
-
-	_omega_I.z += omega_Iz_delta;
+	_omega_I_sum.z += error.z * (_ki_yaw * yaw_deltat);
 
 	// we keep the sum of yaw error for reporting via MAVLink.
 	_error_yaw_sum += error_course;
 	_error_yaw_count++;
+
+	if (_omega_I_sum_time > 10) {
+		// every 10 seconds we apply the accumulated
+		// _omega_I_sum changes to _omega_I. We do this to
+		// prevent short term feedback between the P and I
+		// terms of the controller. The _omega_I vector is
+		// supposed to refect long term gyro drift, but with
+		// high noise it can start to build up due to short
+		// term interactions. By summing it over 10 seconds we
+		// prevent the short term interactions and can apply
+		// the slope limit more accurately
+		float drift_limit = _gyro_drift_limit * _omega_I_sum_time;
+		_omega_I_sum.x = constrain(_omega_I_sum.x, -drift_limit, drift_limit);
+		_omega_I_sum.y = constrain(_omega_I_sum.y, -drift_limit, drift_limit);
+		_omega_I_sum.z = constrain(_omega_I_sum.z, -drift_limit, drift_limit);
+
+		_omega_I += _omega_I_sum;
+
+		// zero the sum
+		_omega_I_sum.zero();
+		_omega_I_sum_time = 0;
+	}
 }
 
 

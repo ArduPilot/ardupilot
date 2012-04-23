@@ -38,15 +38,15 @@
             this.backstageView.Dock = System.Windows.Forms.DockStyle.Fill;
             this.backstageView.Location = new System.Drawing.Point(0, 0);
             this.backstageView.Name = "backstageView";
-            this.backstageView.Size = new System.Drawing.Size(823, 468);
+            this.backstageView.Size = new System.Drawing.Size(931, 468);
             this.backstageView.TabIndex = 0;
             // 
             // Setup
             // 
-            this.ClientSize = new System.Drawing.Size(823, 468);
+            this.ClientSize = new System.Drawing.Size(931, 468);
             this.Controls.Add(this.backstageView);
             this.Icon = ((System.Drawing.Icon)(resources.GetObject("$this.Icon")));
-            this.MinimumSize = new System.Drawing.Size(839, 506);
+            this.MinimumSize = new System.Drawing.Size(947, 506);
             this.Name = "Setup";
             this.Text = "Setup";
             this.FormClosing += new System.Windows.Forms.FormClosingEventHandler(this.Setup_FormClosing);

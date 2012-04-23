@@ -14,6 +14,37 @@ namespace ArdupilotMega
 {
     public partial class _3DRradio : BackStageViewContentPanel
     {
+        /*
+responce 0 S0: FORMAT=25
+
+S1: SERIAL_SPEED=57
+
+S2: AIR_SPEED=64
+
+S3: NETID=25
+
+S4: TXPOWER=20
+
+S5: ECC=1
+
+S6: MAVLINK=1
+
+S7: OPPRESEND=1
+
+S8: MIN_FREQ=915000
+
+S9: MAX_FREQ=928000
+
+S10: NUM_CHANNELS=50
+
+S11: DUTY_CYCLE=100
+
+S12: LBT_RSSI=0
+
+S13: MANCHESTER=0
+
+         */
+
         public delegate void LogEventHandler(string message, int level = 0);
 
         public delegate void ProgressEventHandler(double completed);
@@ -65,8 +96,7 @@ namespace ArdupilotMega
 
             bool bootloadermode = false;
 
-            uploader.ProgressEvent += new ProgressEventHandler(uploader_ProgressEvent);
-            uploader.LogEvent += new LogEventHandler(uploader_LogEvent);
+
 
             try
             {
@@ -74,6 +104,10 @@ namespace ArdupilotMega
                 uploader_LogEvent("Trying Bootloader Mode");
                 uploader.port = comPort;
                 uploader.connect_and_sync();
+
+                uploader.ProgressEvent += new ProgressEventHandler(uploader_ProgressEvent);
+                uploader.LogEvent += new LogEventHandler(uploader_LogEvent);
+
                 uploader_LogEvent("In Bootloader Mode");
                 bootloadermode = true;
             }
@@ -82,10 +116,13 @@ namespace ArdupilotMega
                 comPort.Close();
                 comPort.BaudRate = MainV2.comPort.BaseStream.BaudRate;
                 comPort.Open();
+
+                uploader.ProgressEvent += new ProgressEventHandler(uploader_ProgressEvent);
+                uploader.LogEvent += new LogEventHandler(uploader_LogEvent);
+
                 uploader_LogEvent("Trying Firmware Mode");
                 bootloadermode = false;
             }
-
 
 
             if (bootloadermode || doConnect(comPort))
@@ -616,6 +653,21 @@ namespace ArdupilotMega
         private void BUT_syncS5_Click(object sender, EventArgs e)
         {
             RS5.Checked = S5.Checked;
+        }
+
+        private void BUT_syncS8_Click(object sender, EventArgs e)
+        {
+            RS8.Text = S8.Text;
+        }
+
+        private void BUT_syncS9_Click(object sender, EventArgs e)
+        {
+            RS9.Text = S9.Text;
+        }
+
+        private void BUT_syncS10_Click(object sender, EventArgs e)
+        {
+            RS10.Text = S10.Text;
         }
     }
 }

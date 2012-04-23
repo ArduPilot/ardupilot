@@ -35,14 +35,36 @@
 
 // We use Serial Port 2 in SPI Mode
 #if defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__)
-	#define AP_SPI_DATAIN      50    // MISO  // PB3
-	#define AP_SPI_DATAOUT     51    // MOSI  // PB2
-	#define AP_SPI_CLOCK       52    // SCK   // PB1
+	#define AP_SPI_DATAIN      15    // MISO
+	#define AP_SPI_DATAOUT     14    // MOSI
+	#define AP_SPI_CLOCK       PJ2   // SCK
 #else  // normal arduino SPI pins...these need to be checked
-	#define AP_SPI_DATAIN  12        //MISO
-	#define AP_SPI_DATAOUT 11        //MOSI
-	#define AP_SPI_CLOCK   13        //SCK
+	# error Please check the Tools/Board menu to ensure you have selected Arduino Mega as your target.
 #endif
+
+// mask for saving bit order and data mode to avoid interference with other users of the bus
+#define UCSR3C_MASK 0x07
+
+// SPI3 setting for UCSR3C
+#define SPI3_MODE_SPI 0xC0	// UMSEL31 = 1, UMSEL30 = 1
+
+// settings for phase and polarity bits of UCSR3C
+#define SPI3_MODE_MASK 0x03
+#define SPI3_MODE0 0x00
+#define SPI3_MODE1 0x01
+#define SPI3_MODE2 0x02
+#define SPI3_MODE3 0x03
+#define SPI3_MODE SPI3_MODE3
+
+// settings for phase and polarity bits of UCSR3C
+#define SPI3_ORDER_MASK 0x04
+#define SPI3_MSBFIRST 0x00
+#define SPI3_LSBFIRST 0x04
+
+#define SPI3_SPEED 0x04 // 2 megahertz?
+
+#define SPI3_DELAY 20	// delay in microseconds after sending data
+
 
 union NumericIntType
 {
@@ -52,19 +74,36 @@ union NumericIntType
 };
 
 	// Constructors ////////////////////////////////////////////////////////////////
-AP_OpticalFlow_ADNS3080::AP_OpticalFlow_ADNS3080(int cs_pin, int reset_pin) : _cs_pin(cs_pin), _reset_pin(reset_pin)
+AP_OpticalFlow_ADNS3080_APM2::AP_OpticalFlow_ADNS3080_APM2(int cs_pin, int reset_pin) : _cs_pin(cs_pin), _reset_pin(reset_pin)
 {
 	num_pixels = ADNS3080_PIXELS_X;
 	field_of_view = AP_OPTICALFLOW_ADNS3080_08_FOV;
 	scaler = AP_OPTICALFLOW_ADNS3080_SCALER;
 }
 
+// SPI Methods
+// *** INTERNAL FUNCTIONS ***
+unsigned char AP_OpticalFlow_ADNS3080_APM2::SPI_transfer(uint8_t data)
+{
+
+	/* Wait for empty transmit buffer */
+	while ( !( UCSR3A & (1<<UDRE3)) );
+
+	/* Put data into buffer, sends the data */
+	UDR3 = data;
+
+	/* Wait for data to be received */
+	while ( !(UCSR3A & (1<<RXC3)) );
+	
+	/* Get and return received data from buffer */
+	return UDR3;
+}
 
 // Public Methods //////////////////////////////////////////////////////////////
 // init - initialise sensor
 // initCommAPI parameter controls whether SPI interface is initialised (set to false if other devices are on the SPI bus and have already initialised the interface)
 bool
-AP_OpticalFlow_ADNS3080::init(bool initCommAPI)
+AP_OpticalFlow_ADNS3080_APM2::init(bool initCommAPI)
 {
     int retry = 0;
 
@@ -82,13 +121,24 @@ AP_OpticalFlow_ADNS3080::init(bool initCommAPI)
 
 	// start the SPI library:
 	if( initCommAPI ) {
-        SPI.begin();
+		// Setup Serial Port3 in SPI mode (MSPI), Mode 0, Clock: 8Mhz
+		UBRR3 = 0;
+		DDRJ |= (1<<PJ2);                                   // SPI clock XCK3 (PJ2) as output. This enable SPI Master mode
+		// put UART3 into SPI master mode
+		UCSR3C = SPI3_MODE_SPI | SPI3_MODE;
+		// Enable receiver and transmitter.
+		UCSR3B = (1<<RXEN3)|(1<<TXEN3);
+		// Set Baud rate
+		UBRR3 = SPI3_SPEED;         // SPI running at 8Mhz
 	}
+	
+	delay(10);
 
 	// check the sensor is functioning
 	while( retry < 3 ) {
-	    if( read_register(ADNS3080_PRODUCT_ID) == 0x17 )
+	    if( read_register(ADNS3080_PRODUCT_ID) == 0x17 ) {
 	        return true;
+		}
 	    retry++;
 	}
 
@@ -98,45 +148,38 @@ AP_OpticalFlow_ADNS3080::init(bool initCommAPI)
 //
 // backup_spi_settings - checks current SPI settings (clock speed, etc), sets values to what we need
 //
-byte
-AP_OpticalFlow_ADNS3080::backup_spi_settings()
+void AP_OpticalFlow_ADNS3080_APM2::backup_spi_settings()
 {
+
+	uint8_t temp;
+
+	/* Wait for empty transmit buffer */
+	while ( !( UCSR3A & (1<<UDRE3)) );
+
 	// store current spi values
-	orig_spi_settings_spcr = SPCR & (DORD | CPOL | CPHA);
-	orig_spi_settings_spsr = SPSR & SPI2X;
+	orig_spi_settings_ucsr3c = UCSR3C;
+	orig_spi_settings_ubrr3 = UBRR3;
 
-	// set the values that we need
-	SPI.setBitOrder(MSBFIRST);
-	SPI.setDataMode(SPI_MODE3);
-	SPI.setClockDivider(SPI_CLOCK_DIV8);  // sensor running at 2Mhz.  this is it's maximum speed
-
-	return orig_spi_settings_spcr;
+	// decide new value for UCSR3C
+	temp = (orig_spi_settings_ucsr3c & ~UCSR3C_MASK) | SPI3_MODE | SPI3_MSBFIRST;
+	UCSR3C = temp;
+	UBRR3 = SPI3_SPEED;         // SPI running at 1Mhz
 }
 
 // restore_spi_settings - restores SPI settings (clock speed, etc) to what their values were before the sensor used the bus
-byte
-AP_OpticalFlow_ADNS3080::restore_spi_settings()
+void AP_OpticalFlow_ADNS3080_APM2::restore_spi_settings()
 {
-    byte temp;
+	/* Wait for empty transmit buffer */
+	while ( !( UCSR3A & (1<<UDRE3)) );
 
-	// restore SPSR
-	temp = SPSR;
-	temp &= ~SPI2X;
-	temp |= orig_spi_settings_spsr;
-	SPSR = temp;
-
-	// restore SPCR
-    temp = SPCR;
-	temp &= ~(DORD | CPOL | CPHA);   // zero out the important bits
-	temp |= orig_spi_settings_spcr;  // restore important bits
-    SPCR = temp;
-
-	return temp;
+	// restore UCSRC3C and UBRR3
+	UCSR3C = orig_spi_settings_ucsr3c;
+    UBRR3 = orig_spi_settings_ubrr3;
 }
 
 // Read a register from the sensor
 byte
-AP_OpticalFlow_ADNS3080::read_register(byte address)
+AP_OpticalFlow_ADNS3080_APM2::read_register(byte address)
 {
     byte result = 0, junk = 0;
 
@@ -144,15 +187,15 @@ AP_OpticalFlow_ADNS3080::read_register(byte address)
 
 	// take the chip select low to select the device
     digitalWrite(_cs_pin, LOW);
-
+	
     // send the device the register you want to read:
-    junk = SPI.transfer(address);
-
+    junk = SPI_transfer(address);
+	
 	// small delay
-	delayMicroseconds(50);
-
+	delayMicroseconds(SPI3_DELAY);
+	
 	// send a value of 0 to read the first byte returned:
-    result = SPI.transfer(0x00);
+    result = SPI_transfer(0x00);
 
     // take the chip select high to de-select:
     digitalWrite(_cs_pin, HIGH);
@@ -164,7 +207,7 @@ AP_OpticalFlow_ADNS3080::read_register(byte address)
 
 // write a value to one of the sensor's registers
 void
-AP_OpticalFlow_ADNS3080::write_register(byte address, byte value)
+AP_OpticalFlow_ADNS3080_APM2::write_register(byte address, byte value)
 {
     byte junk = 0;
 
@@ -174,13 +217,13 @@ AP_OpticalFlow_ADNS3080::write_register(byte address, byte value)
     digitalWrite(_cs_pin, LOW);
 
 	// send register address
-    junk = SPI.transfer(address | 0x80 );
+    junk = SPI_transfer(address | 0x80 );
 
 	// small delay
-	delayMicroseconds(50);
+	delayMicroseconds(SPI3_DELAY);
 
 	// send data
-	junk = SPI.transfer(value);
+	junk = SPI_transfer(value);
 
     // take the chip select high to de-select:
     digitalWrite(_cs_pin, HIGH);
@@ -190,7 +233,7 @@ AP_OpticalFlow_ADNS3080::write_register(byte address, byte value)
 
 // reset sensor by holding a pin high (or is it low?) for 10us.
 void
-AP_OpticalFlow_ADNS3080::reset()
+AP_OpticalFlow_ADNS3080_APM2::reset()
 {
     // return immediately if the reset pin is not defined
     if( _reset_pin == 0)
@@ -203,18 +246,18 @@ AP_OpticalFlow_ADNS3080::reset()
 
 // read latest values from sensor and fill in x,y and totals
 bool
-AP_OpticalFlow_ADNS3080::update()
+AP_OpticalFlow_ADNS3080_APM2::update()
 {
     byte motion_reg;
     surface_quality = (unsigned int)read_register(ADNS3080_SQUAL);
-	delayMicroseconds(50);  // small delay
+	delayMicroseconds(SPI3_DELAY);  // small delay
 
     // check for movement, update x,y values
 	motion_reg = read_register(ADNS3080_MOTION);
 	_overflow = ((motion_reg & 0x10) != 0);  // check if we've had an overflow
 	if( (motion_reg & 0x80) != 0 ) {
 		raw_dx = ((char)read_register(ADNS3080_DELTA_X));
-		delayMicroseconds(50);  // small delay
+		delayMicroseconds(SPI3_DELAY);  // small delay
 		raw_dy = ((char)read_register(ADNS3080_DELTA_Y));
 		_motion = true;
 	}else{
@@ -230,34 +273,34 @@ AP_OpticalFlow_ADNS3080::update()
 }
 
 void
-AP_OpticalFlow_ADNS3080::disable_serial_pullup()
+AP_OpticalFlow_ADNS3080_APM2::disable_serial_pullup()
 {
     byte regVal = read_register(ADNS3080_EXTENDED_CONFIG);
 	regVal = (regVal | ADNS3080_SERIALNPU_OFF);
-	delayMicroseconds(50);  // small delay
+	delayMicroseconds(SPI3_DELAY);  // small delay
 	write_register(ADNS3080_EXTENDED_CONFIG, regVal);
 }
 
 // get_led_always_on - returns true if LED is always on, false if only on when required
 bool
-AP_OpticalFlow_ADNS3080::get_led_always_on()
+AP_OpticalFlow_ADNS3080_APM2::get_led_always_on()
 {
 	return ( (read_register(ADNS3080_CONFIGURATION_BITS) & 0x40) > 0 );
 }
 
 // set_led_always_on - set parameter to true if you want LED always on, otherwise false for only when required
 void
-AP_OpticalFlow_ADNS3080::set_led_always_on( bool alwaysOn )
+AP_OpticalFlow_ADNS3080_APM2::set_led_always_on( bool alwaysOn )
 {
     byte regVal = read_register(ADNS3080_CONFIGURATION_BITS);
     regVal = (regVal & 0xbf) | (alwaysOn << 6);
-	delayMicroseconds(50);  // small delay
+	delayMicroseconds(SPI3_DELAY);  // small delay
 	write_register(ADNS3080_CONFIGURATION_BITS, regVal);
 }
 
 // returns resolution (either 400 or 1600 counts per inch)
 int
-AP_OpticalFlow_ADNS3080::get_resolution()
+AP_OpticalFlow_ADNS3080_APM2::get_resolution()
 {
     if( (read_register(ADNS3080_CONFIGURATION_BITS) & 0x10) == 0 )
 	    return 400;
@@ -267,7 +310,7 @@ AP_OpticalFlow_ADNS3080::get_resolution()
 
 // set parameter to 400 or 1600 counts per inch
 void
-AP_OpticalFlow_ADNS3080::set_resolution(int resolution)
+AP_OpticalFlow_ADNS3080_APM2::set_resolution(int resolution)
 {
     byte regVal = read_register(ADNS3080_CONFIGURATION_BITS);
 
@@ -279,7 +322,7 @@ AP_OpticalFlow_ADNS3080::set_resolution(int resolution)
 		scaler = AP_OPTICALFLOW_ADNS3080_SCALER * 4;
 	}
 
-	delayMicroseconds(50);  // small delay
+	delayMicroseconds(SPI3_DELAY);  // small delay
 	write_register(ADNS3080_CONFIGURATION_BITS, regVal);
 
 	// this will affect conversion factors so update them
@@ -288,7 +331,7 @@ AP_OpticalFlow_ADNS3080::set_resolution(int resolution)
 
 // get_frame_rate_auto - return whether frame rate is set to "auto" or manual
 bool
-AP_OpticalFlow_ADNS3080::get_frame_rate_auto()
+AP_OpticalFlow_ADNS3080_APM2::get_frame_rate_auto()
 {
     byte regVal = read_register(ADNS3080_EXTENDED_CONFIG);
     if( (regVal & 0x01) != 0 ) {
@@ -300,16 +343,16 @@ AP_OpticalFlow_ADNS3080::get_frame_rate_auto()
 
 // set_frame_rate_auto - set frame rate to auto (true) or manual (false)
 void
-AP_OpticalFlow_ADNS3080::set_frame_rate_auto(bool auto_frame_rate)
+AP_OpticalFlow_ADNS3080_APM2::set_frame_rate_auto(bool auto_frame_rate)
 {
     byte regVal = read_register(ADNS3080_EXTENDED_CONFIG);
-	delayMicroseconds(50);  // small delay
+	delayMicroseconds(SPI3_DELAY);  // small delay
 	if( auto_frame_rate == true ) {
 		// set specific frame period
 		write_register(ADNS3080_FRAME_PERIOD_MAX_BOUND_LOWER,0xE0);
-		delayMicroseconds(50);  // small delay
+		delayMicroseconds(SPI3_DELAY);  // small delay
 		write_register(ADNS3080_FRAME_PERIOD_MAX_BOUND_UPPER,0x1A);
-		delayMicroseconds(50);  // small delay
+		delayMicroseconds(SPI3_DELAY);  // small delay
 
 		// decide what value to update in extended config
         regVal = (regVal & ~0x01);
@@ -322,35 +365,35 @@ AP_OpticalFlow_ADNS3080::set_frame_rate_auto(bool auto_frame_rate)
 
 // get frame period
 unsigned int
-AP_OpticalFlow_ADNS3080::get_frame_period()
+AP_OpticalFlow_ADNS3080_APM2::get_frame_period()
 {
     NumericIntType aNum;
 	aNum.byteValue[1] = read_register(ADNS3080_FRAME_PERIOD_UPPER);
-	delayMicroseconds(50);  // small delay
+	delayMicroseconds(SPI3_DELAY);  // small delay
     aNum.byteValue[0] = read_register(ADNS3080_FRAME_PERIOD_LOWER);
 	return aNum.uintValue;
 }
 
 // set frame period
 void
-AP_OpticalFlow_ADNS3080::set_frame_period(unsigned int period)
+AP_OpticalFlow_ADNS3080_APM2::set_frame_period(unsigned int period)
 {
     NumericIntType aNum;
 	aNum.uintValue = period;
 
 	// set frame rate to manual
 	set_frame_rate_auto(false);
-	delayMicroseconds(50);  // small delay
+	delayMicroseconds(SPI3_DELAY);  // small delay
 
 	// set specific frame period
 	write_register(ADNS3080_FRAME_PERIOD_MAX_BOUND_LOWER,aNum.byteValue[0]);
-	delayMicroseconds(50);  // small delay
+	delayMicroseconds(SPI3_DELAY);  // small delay
 	write_register(ADNS3080_FRAME_PERIOD_MAX_BOUND_UPPER,aNum.byteValue[1]);
 
 }
 
 unsigned int
-AP_OpticalFlow_ADNS3080::get_frame_rate()
+AP_OpticalFlow_ADNS3080_APM2::get_frame_rate()
 {
     unsigned long clockSpeed = ADNS3080_CLOCK_SPEED;
 	unsigned int rate = clockSpeed / get_frame_period();
@@ -358,7 +401,7 @@ AP_OpticalFlow_ADNS3080::get_frame_rate()
 }
 
 void
-AP_OpticalFlow_ADNS3080::set_frame_rate(unsigned int rate)
+AP_OpticalFlow_ADNS3080_APM2::set_frame_rate(unsigned int rate)
 {
     unsigned long clockSpeed = ADNS3080_CLOCK_SPEED;
     unsigned int period = (unsigned int)(clockSpeed / (unsigned long)rate);
@@ -368,7 +411,7 @@ AP_OpticalFlow_ADNS3080::set_frame_rate(unsigned int rate)
 
 // get_shutter_speed_auto - returns true if shutter speed is adjusted automatically, false if manual
 bool
-AP_OpticalFlow_ADNS3080::get_shutter_speed_auto()
+AP_OpticalFlow_ADNS3080_APM2::get_shutter_speed_auto()
 {
     byte regVal = read_register(ADNS3080_EXTENDED_CONFIG);
 	if( (regVal & 0x02) > 0 ) {
@@ -380,16 +423,16 @@ AP_OpticalFlow_ADNS3080::get_shutter_speed_auto()
 
 // set_shutter_speed_auto - set shutter speed to auto (true), or manual (false)
 void
-AP_OpticalFlow_ADNS3080::set_shutter_speed_auto(bool auto_shutter_speed)
+AP_OpticalFlow_ADNS3080_APM2::set_shutter_speed_auto(bool auto_shutter_speed)
 {
     byte regVal = read_register(ADNS3080_EXTENDED_CONFIG);
-	delayMicroseconds(50);  // small delay
+	delayMicroseconds(SPI3_DELAY);  // small delay
 	if( auto_shutter_speed ) {
 		// return shutter speed max to default
 		write_register(ADNS3080_SHUTTER_MAX_BOUND_LOWER,0x8c);
-		delayMicroseconds(50);  // small delay
+		delayMicroseconds(SPI3_DELAY);  // small delay
 		write_register(ADNS3080_SHUTTER_MAX_BOUND_UPPER,0x20);
-		delayMicroseconds(50);  // small delay
+		delayMicroseconds(SPI3_DELAY);  // small delay
 
 		// determine value to put into extended config
         regVal &= ~0x02;
@@ -398,16 +441,16 @@ AP_OpticalFlow_ADNS3080::set_shutter_speed_auto(bool auto_shutter_speed)
 	    regVal |= 0x02;
 	}
 	write_register(ADNS3080_EXTENDED_CONFIG, regVal);
-	delayMicroseconds(50);  // small delay
+	delayMicroseconds(SPI3_DELAY);  // small delay
 }
 
 // get_shutter_speed_auto - returns true if shutter speed is adjusted automatically, false if manual
 unsigned int
-AP_OpticalFlow_ADNS3080::get_shutter_speed()
+AP_OpticalFlow_ADNS3080_APM2::get_shutter_speed()
 {
     NumericIntType aNum;
 	aNum.byteValue[1] = read_register(ADNS3080_SHUTTER_UPPER);
-	delayMicroseconds(50);  // small delay
+	delayMicroseconds(SPI3_DELAY);  // small delay
     aNum.byteValue[0] = read_register(ADNS3080_SHUTTER_LOWER);
 	return aNum.uintValue;
 }
@@ -415,38 +458,38 @@ AP_OpticalFlow_ADNS3080::get_shutter_speed()
 
 // set_shutter_speed_auto - set shutter speed to auto (true), or manual (false)
 void
-AP_OpticalFlow_ADNS3080::set_shutter_speed(unsigned int shutter_speed)
+AP_OpticalFlow_ADNS3080_APM2::set_shutter_speed(unsigned int shutter_speed)
 {
     NumericIntType aNum;
 	aNum.uintValue = shutter_speed;
 
 	// set shutter speed to manual
     set_shutter_speed_auto(false);
-	delayMicroseconds(50);  // small delay
+	delayMicroseconds(SPI3_DELAY);  // small delay
 
 	// set specific shutter speed
 	write_register(ADNS3080_SHUTTER_MAX_BOUND_LOWER,aNum.byteValue[0]);
-	delayMicroseconds(50);  // small delay
+	delayMicroseconds(SPI3_DELAY);  // small delay
 	write_register(ADNS3080_SHUTTER_MAX_BOUND_UPPER,aNum.byteValue[1]);
-	delayMicroseconds(50);  // small delay
+	delayMicroseconds(SPI3_DELAY);  // small delay
 
 	// larger delay
 	delay(50);
 
 	// need to update frame period to cause shutter value to take effect
 	aNum.byteValue[1] = read_register(ADNS3080_FRAME_PERIOD_UPPER);
-	delayMicroseconds(50);  // small delay
+	delayMicroseconds(SPI3_DELAY);  // small delay
     aNum.byteValue[0] = read_register(ADNS3080_FRAME_PERIOD_LOWER);
-	delayMicroseconds(50);  // small delay
+	delayMicroseconds(SPI3_DELAY);  // small delay
 	write_register(ADNS3080_FRAME_PERIOD_MAX_BOUND_LOWER,aNum.byteValue[0]);
-	delayMicroseconds(50);  // small delay
+	delayMicroseconds(SPI3_DELAY);  // small delay
 	write_register(ADNS3080_FRAME_PERIOD_MAX_BOUND_UPPER,aNum.byteValue[1]);
-	delayMicroseconds(50);  // small delay
+	delayMicroseconds(SPI3_DELAY);  // small delay
 }
 
 // clear_motion - will cause the Delta_X, Delta_Y, and internal motion registers to be cleared
 void
-AP_OpticalFlow_ADNS3080::clear_motion()
+AP_OpticalFlow_ADNS3080_APM2::clear_motion()
 {
     write_register(ADNS3080_MOTION_CLEAR,0xFF);  // writing anything to this register will clear the sensor's motion registers
 	x = 0;
@@ -458,7 +501,7 @@ AP_OpticalFlow_ADNS3080::clear_motion()
 
 // get_pixel_data - captures an image from the sensor and stores it to the pixe_data array
 void
-AP_OpticalFlow_ADNS3080::print_pixel_data(Stream *serPort)
+AP_OpticalFlow_ADNS3080_APM2::print_pixel_data(Stream *serPort)
 {
     int i,j;
 	bool isFirstPixel = true;
@@ -483,7 +526,7 @@ AP_OpticalFlow_ADNS3080::print_pixel_data(Stream *serPort)
 			serPort->print(pixelValue,DEC);
 			if( j!= ADNS3080_PIXELS_X-1 )
 				serPort->print(",");
-			delayMicroseconds(50);
+			delayMicroseconds(SPI3_DELAY);
 		}
 		serPort->println();
 	}

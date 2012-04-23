@@ -105,8 +105,9 @@ namespace ArdupilotMega
         float cog = -1;
         float target = -1;
         float nav_bearing = -1;
+        public GMapControl MainMap;
 
-        public GMapMarkerPlane(PointLatLng p, float heading, float cog, float nav_bearing,float target)
+        public GMapMarkerPlane(PointLatLng p, float heading, float cog, float nav_bearing,float target, GMapControl map)
             : base(p)
         {
             this.heading = heading;
@@ -114,6 +115,7 @@ namespace ArdupilotMega
             this.target = target;
             this.nav_bearing = nav_bearing;
             Size = SizeSt;
+            MainMap = map;
         }
 
         public override void OnRender(Graphics g)
@@ -137,7 +139,11 @@ namespace ArdupilotMega
 
                 float desired_lead_dist = 100;
 
-                float alpha = (desired_lead_dist / MainV2.cs.radius) * rad2deg;
+
+                double width = (MainMap.Manager.GetDistance(MainMap.FromLocalToLatLng(0, 0), MainMap.FromLocalToLatLng(MainMap.Width, 0)) * 1000.0);
+                double m2pixelwidth = MainMap.Width / width;
+
+                float alpha = ((desired_lead_dist * (float)m2pixelwidth) / MainV2.cs.radius) * rad2deg;
 
                 if (MainV2.cs.radius < 0)
                 {
@@ -663,7 +669,7 @@ namespace ArdupilotMega
                 while (dataStream.CanRead && bytes > 0)
                 {
                     Application.DoEvents();
-                    log.Info(saveto + " " + bytes);
+                    log.Debug(saveto + " " + bytes);
                     int len = dataStream.Read(buf1, 0, buf1.Length);
                     bytes -= len;
                     fs.Write(buf1, 0, len);

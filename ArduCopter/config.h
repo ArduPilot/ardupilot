@@ -112,7 +112,11 @@
 
 // default RC speed in Hz if INSTANT_PWM is not used
 #ifndef RC_FAST_SPEED
-# define RC_FAST_SPEED 490
+# if FRAME_CONFIG == HELI_FRAME
+#   define RC_FAST_SPEED 125
+# else
+#   define RC_FAST_SPEED 490
+# endif
 #endif
 
 // LED and IO Pins
@@ -140,7 +144,7 @@
 # define PUSHBUTTON_PIN   (-1)
 # define CLI_SLIDER_ENABLED DISABLED
 # define USB_MUX_PIN      23
-# define OPTFLOW_CS_PIN   A6
+# define OPTFLOW_CS_PIN   A3
 # define BATTERY_PIN_1      1
 # define CURRENT_PIN_1      2
 #endif
