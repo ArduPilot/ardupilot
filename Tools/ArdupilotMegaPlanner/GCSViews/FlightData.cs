@@ -267,7 +267,7 @@ namespace ArdupilotMega.GCSViews
                     continue;
                 }
                 if (!comPort.BaseStream.IsOpen)
-                    lastdata = DateTime.MinValue;
+                    lastdata = DateTime.Now;
                 // re-request servo data
                 if (!(lastdata.AddSeconds(8) > DateTime.Now) && comPort.BaseStream.IsOpen)
                 {
@@ -479,7 +479,7 @@ namespace ArdupilotMega.GCSViews
 
                                 if (MainV2.cs.firmware == MainV2.Firmwares.ArduPlane)
                                 {
-                                    routes.Markers.Add(new GMapMarkerPlane(currentloc, MainV2.cs.yaw, MainV2.cs.groundcourse, MainV2.cs.nav_bearing, MainV2.cs.target_bearing));
+                                    routes.Markers.Add(new GMapMarkerPlane(currentloc, MainV2.cs.yaw, MainV2.cs.groundcourse, MainV2.cs.nav_bearing, MainV2.cs.target_bearing, gMapControl1));
                                 }
                                 else
                                 {

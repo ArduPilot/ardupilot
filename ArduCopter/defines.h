@@ -146,7 +146,7 @@
 // Attitude
 #define CH6_STABILIZE_KP 1
 #define CH6_STABILIZE_KI 2
-#define CH6_STABILIZE_KD 29
+#define CH6_STABILIZE_KD 29		// duplicate with CH6_DAMP
 #define CH6_YAW_KP 3
 #define CH6_YAW_KI 24
 // Rate
@@ -173,7 +173,7 @@
 // altitude controller
 #define CH6_THR_HOLD_KP 14
 #define CH6_Z_GAIN 15
-#define CH6_DAMP 16
+#define CH6_DAMP 16		// duplicate with CH6_YAW_RATE_KD
 
 // optical flow controller
 #define CH6_OPTFLOW_KP 17

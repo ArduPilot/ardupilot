@@ -102,6 +102,9 @@ protected:
 	// the limit of the gyro drift claimed by the sensors, in
 	// radians/s/s
 	float           _gyro_drift_limit;
+
+	// acceleration due to gravity in m/s/s
+	static const float _gravity = 9.80665;
 };
 
 #include <AP_AHRS_DCM.h>

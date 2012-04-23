@@ -199,7 +199,11 @@ static AP_Int8                *flight_modes = &g.flight_mode1;
 #endif
 
 #ifdef OPTFLOW_ENABLED
-	AP_OpticalFlow_ADNS3080 optflow(OPTFLOW_CS_PIN);
+	#if CONFIG_APM_HARDWARE == APM_HARDWARE_APM2
+		AP_OpticalFlow_ADNS3080_APM2 optflow(OPTFLOW_CS_PIN);
+	#else
+		AP_OpticalFlow_ADNS3080 optflow(OPTFLOW_CS_PIN);
+	#endif
 #else
     AP_OpticalFlow optflow;
 #endif
@@ -483,6 +487,12 @@ static float 	scaleLongDown 		= 1;
 static const float radius_of_earth 	= 6378100;		// meters
 // Used by Mavlink for unknow reasons
 static const float gravity 			= 9.81;			// meters/ sec^2
+
+// Unions for getting byte values
+union float_int{
+	int32_t int_value;
+	float float_value;
+} float_int;
 
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -2060,10 +2070,6 @@ static void tuning(){
 
 	switch(g.radio_tuning){
 
-		case CH6_DAMP:
-			g.stabilize_d.set(tuning_value);
-			break;
-
 		case CH6_RATE_KD:
 			g.pid_rate_roll.kD(tuning_value);
 			g.pid_rate_pitch.kD(tuning_value);
@@ -2079,6 +2085,7 @@ static void tuning(){
 			g.pi_stabilize_pitch.kI(tuning_value);
 			break;
 
+		case CH6_DAMP:
 		case CH6_STABILIZE_KD:
 			g.stabilize_d = tuning_value;
 			break;

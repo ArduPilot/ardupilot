@@ -43,6 +43,19 @@ const struct Menu::command log_menu_commands[] PROGMEM = {
 	{"disable",	select_logs}
 };
 
+static int32_t get_int(float f)
+{
+	float_int.float_value = f;
+	return float_int.int_value;
+}
+
+static float get_float(int32_t i)
+{
+	float_int.int_value = i;
+	return float_int.float_value;
+}
+
+
 // A Macro to create the Menu
 MENU2(log_menu, "Log", log_menu_commands, print_log_menu);
 
@@ -278,26 +291,21 @@ static void Log_Write_Raw()
 	Vector3f accel = imu.get_accel();
 	//Vector3f accel_filt	= imu.get_accel_filtered();
 
-	gyro *= t7;								// Scale up for storage as long integers
-	accel *= t7;
+	//gyro *= t7;								// Scale up for storage as long integers
+	//accel *= t7;
 	//accel_filt *= t7;
 
 	DataFlash.WriteByte(HEAD_BYTE1);
 	DataFlash.WriteByte(HEAD_BYTE2);
 	DataFlash.WriteByte(LOG_RAW_MSG);
 
-	DataFlash.WriteLong(gyro.x);
-	DataFlash.WriteLong(gyro.y);
-	DataFlash.WriteLong(gyro.z);
+	DataFlash.WriteLong(get_int(gyro.x));
+	DataFlash.WriteLong(get_int(gyro.y));
+	DataFlash.WriteLong(get_int(gyro.z));
 
-
-	//DataFlash.WriteLong(accels_rot.x * t7);
-	//DataFlash.WriteLong(accels_rot.y * t7);
-	//DataFlash.WriteLong(accels_rot.z * t7);
-
-	DataFlash.WriteLong(accel.x);
-	DataFlash.WriteLong(accel.y);
-	DataFlash.WriteLong(accel.z);
+	DataFlash.WriteLong(get_int(accel.x));
+	DataFlash.WriteLong(get_int(accel.y));
+	DataFlash.WriteLong(get_int(accel.z));
 
 	DataFlash.WriteByte(END_BYTE);
 }
@@ -308,9 +316,9 @@ static void Log_Read_Raw()
 	float logvar;
 	Serial.printf_P(PSTR("RAW,"));
 	for (int y = 0; y < 6; y++) {
-		logvar = (float)DataFlash.ReadLong() / t7;
+		logvar = get_float(DataFlash.ReadLong());
 		Serial.print(logvar);
-		Serial.print(",");
+		Serial.print(", ");
 	}
 	Serial.println(" ");
 }
@@ -764,7 +772,13 @@ static void Log_Read_Startup()
 
 static void Log_Write_Data(int8_t _type, float _data)
 {
-	Log_Write_Data(_type, (int32_t)(_data * 1000));
+	DataFlash.WriteByte(HEAD_BYTE1);
+	DataFlash.WriteByte(HEAD_BYTE2);
+	DataFlash.WriteByte(LOG_DATA_MSG);
+	DataFlash.WriteByte(_type);
+	DataFlash.WriteByte(1);
+	DataFlash.WriteLong(get_int(_data));
+	DataFlash.WriteByte(END_BYTE);
 }
 
 static void Log_Write_Data(int8_t _type, int32_t _data)
@@ -773,6 +787,7 @@ static void Log_Write_Data(int8_t _type, int32_t _data)
 	DataFlash.WriteByte(HEAD_BYTE2);
 	DataFlash.WriteByte(LOG_DATA_MSG);
 	DataFlash.WriteByte(_type);
+	DataFlash.WriteByte(0);
 	DataFlash.WriteLong(_data);
 	DataFlash.WriteByte(END_BYTE);
 }
@@ -781,8 +796,15 @@ static void Log_Write_Data(int8_t _type, int32_t _data)
 static void Log_Read_Data()
 {
 	int8_t  temp1 = DataFlash.ReadByte();
-	int32_t temp2 = DataFlash.ReadLong();
-	Serial.printf_P(PSTR("DATA: %d, %ld\n"), temp1, temp2);
+	int8_t  temp2 = DataFlash.ReadByte();
+
+	if(temp2 == 1){
+		float temp3 = get_float(DataFlash.ReadLong());
+		Serial.printf_P(PSTR("DATA: %d, %1.6f\n"), temp1, temp3);
+	}else{
+		int32_t temp3 = DataFlash.ReadLong();
+		Serial.printf_P(PSTR("DATA: %d, %ld\n"), temp1, temp3);
+	}
 }
 
 // Write an PID packet. Total length : 28 bytes

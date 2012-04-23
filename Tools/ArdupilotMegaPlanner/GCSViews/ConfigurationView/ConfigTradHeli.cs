@@ -22,65 +22,65 @@ namespace ArdupilotMega.GCSViews.ConfigurationView
             InitializeComponent();
         }
 
-        private void H1_ENABLE_CheckedChanged(object sender, EventArgs e)
+        private void H_SWASH_TYPE_CheckedChanged(object sender, EventArgs e)
         {
             if (startup)
                 return;
             try
             {
-                if (MainV2.comPort.param["H1_ENABLE"] == null)
+                if (MainV2.comPort.param["H_SWASH_TYPE"] == null)
                 {
                     CustomMessageBox.Show("Not Available on " + MainV2.cs.firmware.ToString());
                 }
                 else
                 {
-                    MainV2.comPort.setParam("H1_ENABLE", ((RadioButton)sender).Checked == true ? 1 : 0);
+                    MainV2.comPort.setParam("H_SWASH_TYPE", ((RadioButton)sender).Checked == true ? 1 : 0);
                 }
             }
-            catch { CustomMessageBox.Show("Set H1_ENABLE Failed"); }
+            catch { CustomMessageBox.Show("Set H_SWASH_TYPE Failed"); }
         }
 
         private void BUT_swash_manual_Click(object sender, EventArgs e)
         {
             try
             {
-                if (MainV2.comPort.param["HSV_MAN"].ToString() == "1")
+                if (MainV2.comPort.param["H_SV_MAN"].ToString() == "1")
                 {
-                    MainV2.comPort.setParam("COL_MIN", int.Parse(COL_MIN.Text));
-                    MainV2.comPort.setParam("COL_MAX", int.Parse(COL_MAX.Text));
-                    MainV2.comPort.setParam("HSV_MAN", 0); // randy request - last
+                    MainV2.comPort.setParam("H_COL_MIN", int.Parse(H_COL_MIN.Text));
+                    MainV2.comPort.setParam("H_COL_MAX", int.Parse(H_COL_MAX.Text));
+                    MainV2.comPort.setParam("H_SV_MAN", 0); // randy request - last
                     BUT_swash_manual.Text = "Manual";
 
-                    COL_MAX.Enabled = false;
-                    COL_MID.Enabled = false;
-                    COL_MIN.Enabled = false;
+                    H_COL_MAX.Enabled = false;
+                    H_COL_MID.Enabled = false;
+                    H_COL_MIN.Enabled = false;
                     BUT_0collective.Enabled = false;
                 }
                 else
                 {
-                    COL_MAX.Text = "1500";
-                    COL_MIN.Text = "1500";
-                    MainV2.comPort.setParam("HSV_MAN", 1); // randy request
+                    H_COL_MAX.Text = "1500";
+                    H_COL_MIN.Text = "1500";
+                    MainV2.comPort.setParam("H_SV_MAN", 1); // randy request
                     BUT_swash_manual.Text = "Save";
 
-                    COL_MAX.Enabled = true;
-                    COL_MID.Enabled = true;
-                    COL_MIN.Enabled = true;
+                    H_COL_MAX.Enabled = true;
+                    H_COL_MID.Enabled = true;
+                    H_COL_MIN.Enabled = true;
                     BUT_0collective.Enabled = true;
                 }
             }
-            catch { CustomMessageBox.Show("Failed to set HSV_MAN"); }
+            catch { CustomMessageBox.Show("Failed to set H_SV_MAN"); }
         }
 
         private void BUT_HS4save_Click(object sender, EventArgs e)
         {
             try
             {
-                if (MainV2.comPort.param["HSV_MAN"].ToString() == "1")
+                if (MainV2.comPort.param["H_SV_MAN"].ToString() == "1")
                 {
                     MainV2.comPort.setParam("HS4_MIN", int.Parse(HS4_MIN.Text));
                     MainV2.comPort.setParam("HS4_MAX", int.Parse(HS4_MAX.Text));
-                    MainV2.comPort.setParam("HSV_MAN", 0); // randy request - last
+                    MainV2.comPort.setParam("H_SV_MAN", 0); // randy request - last
                     BUT_HS4save.Text = "Manual";
 
                     HS4_MAX.Enabled = false;
@@ -90,7 +90,7 @@ namespace ArdupilotMega.GCSViews.ConfigurationView
                 {
                     HS4_MIN.Text = "1500";
                     HS4_MAX.Text = "1500";
-                    MainV2.comPort.setParam("HSV_MAN", 1); // randy request
+                    MainV2.comPort.setParam("H_SV_MAN", 1); // randy request
                     BUT_HS4save.Text = "Save";
 
 
@@ -98,7 +98,7 @@ namespace ArdupilotMega.GCSViews.ConfigurationView
                     HS4_MIN.Enabled = true;
                 }
             }
-            catch { CustomMessageBox.Show("Failed to set HSV_MAN"); }
+            catch { CustomMessageBox.Show("Failed to set H_SV_MAN"); }
         }
 
         private void tabHeli_Click(object sender, EventArgs e)
@@ -122,10 +122,10 @@ namespace ArdupilotMega.GCSViews.ConfigurationView
         {
             try
             {
-                if (int.Parse(COL_MIN.Text) > HS3.minline)
-                    COL_MIN.Text = HS3.minline.ToString();
-                if (int.Parse(COL_MAX.Text) < HS3.maxline)
-                    COL_MAX.Text = HS3.maxline.ToString();
+                if (int.Parse(H_COL_MIN.Text) > HS3.minline)
+                    H_COL_MIN.Text = HS3.minline.ToString();
+                if (int.Parse(H_COL_MAX.Text) < HS3.maxline)
+                    H_COL_MAX.Text = HS3.maxline.ToString();
             }
             catch { }
         }
@@ -194,10 +194,10 @@ namespace ArdupilotMega.GCSViews.ConfigurationView
 
             try
             {
-                MainV2.comPort.setParam("HSV_MAN", 1); // randy request
+                MainV2.comPort.setParam("H_SV_MAN", 1); // randy request
                 MainV2.comPort.setParam(((TextBox)sender).Name, test);
                 System.Threading.Thread.Sleep(100);
-                MainV2.comPort.setParam("HSV_MAN", 0); // randy request - last
+                MainV2.comPort.setParam("H_SV_MAN", 0); // randy request - last
 
             }
             catch { CustomMessageBox.Show("Set " + ((TextBox)sender).Name + " failed"); }
@@ -217,10 +217,10 @@ namespace ArdupilotMega.GCSViews.ConfigurationView
 
             try
             {
-                MainV2.comPort.setParam("HSV_MAN", 1); // randy request
+                MainV2.comPort.setParam("H_SV_MAN", 1); // randy request
                 MainV2.comPort.setParam(((TextBox)sender).Name, test);
                 System.Threading.Thread.Sleep(100);
-                MainV2.comPort.setParam("HSV_MAN", 0); // randy request - last
+                MainV2.comPort.setParam("H_SV_MAN", 0); // randy request - last
             }
             catch { CustomMessageBox.Show("Set " + ((TextBox)sender).Name + " failed"); }
         }
@@ -239,10 +239,10 @@ namespace ArdupilotMega.GCSViews.ConfigurationView
 
             try
             {
-                MainV2.comPort.setParam("HSV_MAN", 1); // randy request
+                MainV2.comPort.setParam("H_SV_MAN", 1); // randy request
                 MainV2.comPort.setParam(((TextBox)sender).Name, test);
                 System.Threading.Thread.Sleep(100);
-                MainV2.comPort.setParam("HSV_MAN", 0); // randy request - last
+                MainV2.comPort.setParam("H_SV_MAN", 0); // randy request - last
             }
             catch { CustomMessageBox.Show("Set " + ((TextBox)sender).Name + " failed"); }
         }
@@ -254,11 +254,11 @@ namespace ArdupilotMega.GCSViews.ConfigurationView
             try
             {
 
-                MainV2.comPort.setParam("COL_MID", MainV2.cs.ch3in);
+                MainV2.comPort.setParam("H_COL_MID", MainV2.cs.ch3in);
 
-                COL_MID.Text = MainV2.comPort.param["COL_MID"].ToString();
+                H_COL_MID.Text = MainV2.comPort.param["H_COL_MID"].ToString();
             }
-            catch { CustomMessageBox.Show("Set COL_MID_ failed"); }
+            catch { CustomMessageBox.Show("Set H_COL_MID failed"); }
         }
 
         private void HS1_REV_CheckedChanged(object sender, EventArgs e)
@@ -379,7 +379,7 @@ namespace ArdupilotMega.GCSViews.ConfigurationView
                 this.Enabled = true;
             }
 
-            if (MainV2.comPort.param["GYR_ENABLE"] == null)
+            if (MainV2.comPort.param["H_GYR_ENABLE"] == null)
             {
                 this.Enabled = false;
                 return;
@@ -394,10 +394,10 @@ namespace ArdupilotMega.GCSViews.ConfigurationView
             startup = true;
             try
             {
-                if (MainV2.comPort.param.ContainsKey("H1_ENABLE"))
+                if (MainV2.comPort.param.ContainsKey("H_SWASH_TYPE"))
                 {
-                    CCPM.Checked = MainV2.comPort.param["H1_ENABLE"].ToString() == "0" ? true : false;
-                    H1_ENABLE.Checked = !CCPM.Checked;
+                    CCPM.Checked = MainV2.comPort.param["H_SWASH_TYPE"].ToString() == "0" ? true : false;
+                    H_SWASH_TYPE.Checked = !CCPM.Checked;
                 }
 
                 foreach (string value in MainV2.comPort.param.Keys)
@@ -453,7 +453,7 @@ namespace ArdupilotMega.GCSViews.ConfigurationView
             }
             catch { }
 
-            if (MainV2.comPort.param["HSV_MAN"] == null || MainV2.comPort.param["HSV_MAN"].ToString() == "0")
+            if (MainV2.comPort.param["H_SV_MAN"] == null || MainV2.comPort.param["H_SV_MAN"].ToString() == "0")
                 return;
 
             if (HS3.minline == 0)
@@ -477,8 +477,8 @@ namespace ArdupilotMega.GCSViews.ConfigurationView
             {
                 try
                 {
-                    HS3.minline = int.Parse(COL_MIN.Text);
-                    HS3.maxline = int.Parse(COL_MAX.Text);
+                    HS3.minline = int.Parse(H_COL_MIN.Text);
+                    HS3.maxline = int.Parse(H_COL_MAX.Text);
                     HS4.maxline = int.Parse(HS4_MIN.Text);
                     HS4.minline = int.Parse(HS4_MAX.Text);
                 }

@@ -1,5 +1,5 @@
-#ifndef AP_OPTICALFLOW_ADNS3080_H
-#define AP_OPTICALFLOW_ADNS3080_H
+#ifndef AP_OPTICALFLOW_ADNS3080_APM2_H
+#define AP_OPTICALFLOW_ADNS3080_APM2_H
 
 #include "AP_OpticalFlow.h"
 
@@ -74,16 +74,17 @@
 #define ADNS3080_FRAME_RATE_MAX         6469
 #define ADNS3080_FRAME_RATE_MIN         2000
 
-class AP_OpticalFlow_ADNS3080 : public AP_OpticalFlow
+
+class AP_OpticalFlow_ADNS3080_APM2 : public AP_OpticalFlow
 {
   private:
     // bytes to store SPI settings
-    byte orig_spi_settings_spcr;
-	byte orig_spi_settings_spsr;
+    byte orig_spi_settings_ucsr3c;
+	byte orig_spi_settings_ubrr3;
 
 	// save and restore SPI settings
-	byte backup_spi_settings();
-	byte restore_spi_settings();
+	void backup_spi_settings();
+	void restore_spi_settings();
 
   public:
 	int _cs_pin;     // pin used for chip select
@@ -92,7 +93,7 @@ class AP_OpticalFlow_ADNS3080 : public AP_OpticalFlow
 	bool _overflow;  // true if the x or y data buffers overflowed
 
   public:
-	AP_OpticalFlow_ADNS3080(int cs_pin = ADNS3080_CHIP_SELECT, int reset_pin = ADNS3080_RESET);
+	AP_OpticalFlow_ADNS3080_APM2(int cs_pin = ADNS3080_CHIP_SELECT, int reset_pin = ADNS3080_RESET);
 	bool init(bool initCommAPI = true); // parameter controls whether I2C/SPI interface is initialised (set to false if other devices are on the I2C/SPI bus and have already initialised the interface)
 	byte read_register(byte address);
 	void write_register(byte address, byte value);
@@ -128,6 +129,13 @@ class AP_OpticalFlow_ADNS3080 : public AP_OpticalFlow
 	void clear_motion();  // will cause the x,y, dx, dy, and the sensor's motion registers to be cleared
 
 	void print_pixel_data(Stream *serPort); // dumps a 30x30 image to the Serial port
+
+	// SPI functions - we use UAT3 which is not supported by Arduino
+	unsigned char SPI_transfer(unsigned char data);
+	void CS_inactive();
+	void CS_active();
+	void PageErase (uint16_t PageAdr);
+	void ChipErase ();
 };
 
 #endif
