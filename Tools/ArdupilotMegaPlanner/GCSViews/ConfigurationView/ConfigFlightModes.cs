@@ -98,24 +98,15 @@ namespace ArdupilotMega.GCSViews.ConfigurationView
         {
             try
             {
-                if (MainV2.cs.firmware == MainV2.Firmwares.ArduPlane) // APM
-                {
-                    MainV2.comPort.setParam("FLTMODE1", (float)(int)Enum.Parse(typeof(Common.apmmodes), CMB_fmode1.Text));
-                    MainV2.comPort.setParam("FLTMODE2", (float)(int)Enum.Parse(typeof(Common.apmmodes), CMB_fmode2.Text));
-                    MainV2.comPort.setParam("FLTMODE3", (float)(int)Enum.Parse(typeof(Common.apmmodes), CMB_fmode3.Text));
-                    MainV2.comPort.setParam("FLTMODE4", (float)(int)Enum.Parse(typeof(Common.apmmodes), CMB_fmode4.Text));
-                    MainV2.comPort.setParam("FLTMODE5", (float)(int)Enum.Parse(typeof(Common.apmmodes), CMB_fmode5.Text));
-                    MainV2.comPort.setParam("FLTMODE6", (float)(int)Enum.Parse(typeof(Common.apmmodes), CMB_fmode6.Text));
-                }
+                MainV2.comPort.setParam("FLTMODE1", (float)Int32.Parse(CMB_fmode1.SelectedValue.ToString()));
+                MainV2.comPort.setParam("FLTMODE2", (float)Int32.Parse(CMB_fmode2.SelectedValue.ToString()));
+                MainV2.comPort.setParam("FLTMODE3", (float)Int32.Parse(CMB_fmode3.SelectedValue.ToString()));
+                MainV2.comPort.setParam("FLTMODE4", (float)Int32.Parse(CMB_fmode4.SelectedValue.ToString()));
+                MainV2.comPort.setParam("FLTMODE5", (float)Int32.Parse(CMB_fmode5.SelectedValue.ToString()));
+                MainV2.comPort.setParam("FLTMODE6", (float)Int32.Parse(CMB_fmode6.SelectedValue.ToString()));
+
                 if (MainV2.cs.firmware == MainV2.Firmwares.ArduCopter2) // ac2
                 {
-                    MainV2.comPort.setParam("FLTMODE1", (float)(int)Enum.Parse(typeof(Common.ac2modes), CMB_fmode1.Text));
-                    MainV2.comPort.setParam("FLTMODE2", (float)(int)Enum.Parse(typeof(Common.ac2modes), CMB_fmode2.Text));
-                    MainV2.comPort.setParam("FLTMODE3", (float)(int)Enum.Parse(typeof(Common.ac2modes), CMB_fmode3.Text));
-                    MainV2.comPort.setParam("FLTMODE4", (float)(int)Enum.Parse(typeof(Common.ac2modes), CMB_fmode4.Text));
-                    MainV2.comPort.setParam("FLTMODE5", (float)(int)Enum.Parse(typeof(Common.ac2modes), CMB_fmode5.Text));
-                    MainV2.comPort.setParam("FLTMODE6", (float)(int)Enum.Parse(typeof(Common.ac2modes), CMB_fmode6.Text));
-
                     float value = (float)(CB_simple1.Checked ? (int)SimpleMode.Simple1 : 0) + (CB_simple2.Checked ? (int)SimpleMode.Simple2 : 0) + (CB_simple3.Checked ? (int)SimpleMode.Simple3 : 0)
                         + (CB_simple4.Checked ? (int)SimpleMode.Simple4 : 0) + (CB_simple5.Checked ? (int)SimpleMode.Simple5 : 0) + (CB_simple6.Checked ? (int)SimpleMode.Simple6 : 0);
                     if (MainV2.comPort.param.ContainsKey("SIMPLE"))
@@ -159,19 +150,31 @@ namespace ArdupilotMega.GCSViews.ConfigurationView
                 CB_simple5.Visible = false;
                 CB_simple6.Visible = false;
 
-                var flightModes = EnumTranslator.Translate<Common.apmmodes>().Select(x => x.Value).OrderBy(x => x).ToList();
+                var flightModes = EnumTranslator.Translate<Common.apmmodes>();
 
-                CMB_fmode1.DataSource = flightModes;
+                CMB_fmode1.DataSource = flightModes.ToList();
+                CMB_fmode1.ValueMember = "Key";
+                CMB_fmode1.DisplayMember = "Value";
 
-                CMB_fmode2.DataSource = flightModes;
+                CMB_fmode2.DataSource = flightModes.ToList();
+                CMB_fmode2.ValueMember = "Key";
+                CMB_fmode2.DisplayMember = "Value";
 
-                CMB_fmode3.DataSource = flightModes;
+                CMB_fmode3.DataSource = flightModes.ToList();
+                CMB_fmode3.ValueMember = "Key";
+                CMB_fmode3.DisplayMember = "Value";
 
-                CMB_fmode4.DataSource = flightModes;
+                CMB_fmode4.DataSource = flightModes.ToList();
+                CMB_fmode4.ValueMember = "Key";
+                CMB_fmode4.DisplayMember = "Value";
 
-                CMB_fmode5.DataSource = flightModes;
+                CMB_fmode5.DataSource = flightModes.ToList();
+                CMB_fmode5.ValueMember = "Key";
+                CMB_fmode5.DisplayMember = "Value";
 
-                CMB_fmode6.DataSource = flightModes;
+                CMB_fmode6.DataSource = flightModes.ToList();
+                CMB_fmode6.ValueMember = "Key";
+                CMB_fmode6.DisplayMember = "Value";
 
                 try
                 {
@@ -187,19 +190,31 @@ namespace ArdupilotMega.GCSViews.ConfigurationView
             }
             if (MainV2.cs.firmware == MainV2.Firmwares.ArduCopter2) // ac2
             {
-               var flightModes = EnumTranslator.Translate<Common.ac2modes>().Select(x => x.Value).OrderBy(x => x).ToList();
+               var flightModes = EnumTranslator.Translate<Common.ac2modes>();
 
-                CMB_fmode1.DataSource = flightModes;
+               CMB_fmode1.DataSource = flightModes.ToList();
+               CMB_fmode1.ValueMember = "Key";
+               CMB_fmode1.DisplayMember = "Value";
 
-                CMB_fmode2.DataSource = flightModes;
+               CMB_fmode2.DataSource = flightModes.ToList();
+               CMB_fmode2.ValueMember = "Key";
+               CMB_fmode2.DisplayMember = "Value";
 
-                CMB_fmode3.DataSource = flightModes;
+               CMB_fmode3.DataSource = flightModes.ToList();
+               CMB_fmode3.ValueMember = "Key";
+               CMB_fmode3.DisplayMember = "Value";
 
-                CMB_fmode4.DataSource = flightModes;
+               CMB_fmode4.DataSource = flightModes.ToList();
+               CMB_fmode4.ValueMember = "Key";
+               CMB_fmode4.DisplayMember = "Value";
 
-                CMB_fmode5.DataSource = flightModes;
+               CMB_fmode5.DataSource = flightModes.ToList();
+               CMB_fmode5.ValueMember = "Key";
+               CMB_fmode5.DisplayMember = "Value";
 
-                CMB_fmode6.DataSource = flightModes;
+               CMB_fmode6.DataSource = flightModes.ToList();
+               CMB_fmode6.ValueMember = "Key";
+               CMB_fmode6.DisplayMember = "Value";
 
                 try
                 {
