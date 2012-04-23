@@ -524,7 +524,7 @@ namespace ArdupilotMega.GCSViews
             Down.Image = global::ArdupilotMega.Properties.Resources.down;
         }
 
-        void updateCMDParams()
+        public void updateCMDParams()
         {
             cmdParamNames = readCMDXML();
 

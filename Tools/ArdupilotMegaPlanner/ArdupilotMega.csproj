@@ -1129,6 +1129,7 @@
     <Content Include="mavcmd.xml">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
+    <None Include="Resources\octox.png" />
     <None Include="Resources\y6.png" />
     <None Include="Resources\new frames-13.png" />
     <None Include="Resources\new frames-12.png" />
