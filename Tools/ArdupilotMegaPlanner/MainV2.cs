@@ -402,6 +402,9 @@ namespace ArdupilotMega
 
             temp.Dock = DockStyle.Fill;
 
+            // refresh ap/ac specific items
+            FlightPlanner.updateCMDParams();
+
             MyView.Controls.Add(temp);
         }
 
@@ -579,12 +582,12 @@ namespace ArdupilotMega
                     }
                     catch { }
 
-                    if (config["CHK_resetapmonconnect"] == null || bool.Parse(config["CHK_resetapmonconnect"].ToString()) == true)
-                        comPort.BaseStream.toggleDTR();
-
                     // false here
                     comPort.BaseStream.DtrEnable = false;
                     comPort.BaseStream.RtsEnable = false;
+
+                    if (config["CHK_resetapmonconnect"] == null || bool.Parse(config["CHK_resetapmonconnect"].ToString()) == true)
+                        comPort.BaseStream.toggleDTR();
 
                     // cleanup from any previous sessions
                     if (comPort.logfile != null)

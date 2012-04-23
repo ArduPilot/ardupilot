@@ -36,10 +36,6 @@
             // cmb_Baud
             // 
             this.cmb_Baud.FormattingEnabled = true;
-            this.cmb_Baud.Location = new System.Drawing.Point(130, 12);
-            this.cmb_Baud.Name = "cmb_Baud";
-            this.cmb_Baud.Size = new System.Drawing.Size(70, 21);
-            this.cmb_Baud.TabIndex = 0;
             this.cmb_Baud.Items.AddRange(new object[] {
             "4800",
             "9600",
@@ -49,6 +45,10 @@
             "38400",
             "57600",
             "115200"});
+            this.cmb_Baud.Location = new System.Drawing.Point(130, 12);
+            this.cmb_Baud.Name = "cmb_Baud";
+            this.cmb_Baud.Size = new System.Drawing.Size(70, 21);
+            this.cmb_Baud.TabIndex = 0;
             // 
             // cmb_ConnectionType
             // 
@@ -70,11 +70,12 @@
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
+            this.BackgroundImage = global::ArdupilotMega.Properties.Resources.bg;
             this.Controls.Add(this.cmb_Connection);
             this.Controls.Add(this.cmb_ConnectionType);
             this.Controls.Add(this.cmb_Baud);
             this.Name = "ConnectionControl";
-            this.Size = new System.Drawing.Size(211, 75);
+            this.Size = new System.Drawing.Size(230, 76);
             this.ResumeLayout(false);
 
         }

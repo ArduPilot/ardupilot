@@ -257,6 +257,13 @@ namespace ArdupilotMega.Properties {
             }
         }
         
+        public static System.Drawing.Bitmap octox {
+            get {
+                object obj = ResourceManager.GetObject("octox", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
         public static System.Drawing.Bitmap opticalflow {
             get {
                 object obj = ResourceManager.GetObject("opticalflow", resourceCulture);

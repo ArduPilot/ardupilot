@@ -348,14 +348,23 @@ namespace ArdupilotMega
 
         public enum apmmodes
         {
+            [DisplayText("Manual")]
             MANUAL = 0,
+            [DisplayText("Circle")]
             CIRCLE = 1,
+            [DisplayText("Stabilize")]
             STABILIZE = 2,
+            [DisplayText("FBW A")]
             FLY_BY_WIRE_A = 5,
+            [DisplayText("FBW B")]
             FLY_BY_WIRE_B = 6,
+            [DisplayText("Auto")]
             AUTO = 10,
+            [DisplayText("RTL")]
             RTL = 11,
+            [DisplayText("Loiter")]
             LOITER = 12,
+            [DisplayText("Guided")]
             GUIDED = 15
         }
 
@@ -383,7 +392,7 @@ namespace ArdupilotMega
             LAND = 9,				// AUTO control
             OF_LOITER = 10,
             [Private(true)]
-            APPROACH = 11
+			APPROACH = 11
         }
 
         public enum ac2ch7modes
@@ -434,7 +443,7 @@ namespace ArdupilotMega
             // altitude controller
             CH6_THR_HOLD_KP = 14,
             CH6_Z_GAIN = 15,
-            CH6_DAMP = 16,
+            //CH6_DAMP = 16,
 
             // optical flow controller
             CH6_OPTFLOW_KP = 17,

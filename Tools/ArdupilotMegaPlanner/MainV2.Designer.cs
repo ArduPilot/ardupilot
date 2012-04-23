@@ -186,14 +186,17 @@
             this.MenuConnect.Name = "MenuConnect";
             this.MenuConnect.Padding = new System.Windows.Forms.Padding(0, 0, 72, 72);
             this.MenuConnect.Size = new System.Drawing.Size(76, 76);
-			this.MenuConnect.Click += new System.EventHandler(this.MenuConnect_Click);
+            this.MenuConnect.Click += new System.EventHandler(this.MenuConnect_Click);
             // 
             // toolStripConnectionControl
             // 
             this.toolStripConnectionControl.Alignment = System.Windows.Forms.ToolStripItemAlignment.Right;
-            this.toolStripConnectionControl.BackColor = System.Drawing.Color.Transparent;
+            this.toolStripConnectionControl.BackColor = System.Drawing.SystemColors.Control;
+            this.toolStripConnectionControl.BackgroundImage = global::ArdupilotMega.Properties.Resources.bg;
+            this.toolStripConnectionControl.Margin = new System.Windows.Forms.Padding(0);
             this.toolStripConnectionControl.Name = "toolStripConnectionControl";
-            this.toolStripConnectionControl.Size = new System.Drawing.Size(203, 73);
+            this.toolStripConnectionControl.Padding = new System.Windows.Forms.Padding(0, 0, 30, 0);
+            this.toolStripConnectionControl.Size = new System.Drawing.Size(233, 76);
             // 
             // MainV2
             // 
@@ -232,8 +235,8 @@
         private System.Windows.Forms.ToolStripButton MenuFirmware;
         private System.Windows.Forms.ToolStripButton MenuTerminal;
         private System.Windows.Forms.ToolStripButton MenuConnect;
-	
+
         private System.Windows.Forms.ToolStripButton MenuHelp;
-        private ArdupilotMega.Controls.ToolStripConnectionControl toolStripConnectionControl;
+        private Controls.ToolStripConnectionControl toolStripConnectionControl;
     }
 }
