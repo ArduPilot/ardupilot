@@ -69,7 +69,7 @@
     <url>http://meee146-planner.googlecode.com/git/Tools/ArdupilotMegaPlanner/Firmware/AC2-Hexa-1280.hex</url>
     <url2560>http://meee146-planner.googlecode.com/git/Tools/ArdupilotMegaPlanner/Firmware/AC2-Hexa-2560.hex</url2560>
     <url2560-2>http://meee146-planner.googlecode.com/git/Tools/ArdupilotMegaPlanner/Firmware/AC2-Hexa-2560-2.hex</url2560-2>
-    <name>ArduCopter V2.5.4 Hexa X</name>
+    <name>ArduCopter V2.5.4 Hexa</name>
     <desc>
 #define FRAME_CONFIG HEXA_FRAME
 
@@ -103,7 +103,7 @@
     <url>http://meee146-planner.googlecode.com/git/Tools/ArdupilotMegaPlanner/Firmware/AC2-Octa-1280.hex</url>
     <url2560>http://meee146-planner.googlecode.com/git/Tools/ArdupilotMegaPlanner/Firmware/AC2-Octa-2560.hex</url2560>
     <url2560-2>http://meee146-planner.googlecode.com/git/Tools/ArdupilotMegaPlanner/Firmware/AC2-Octa-2560-2.hex</url2560-2>
-    <name>ArduCopter V2.5.4 Octa X</name>
+    <name>ArduCopter V2.5.4 Octa</name>
     <desc>
 #define FRAME_CONFIG OCTA_FRAME
 
