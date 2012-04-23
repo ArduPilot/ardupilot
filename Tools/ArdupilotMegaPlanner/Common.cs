@@ -365,7 +365,7 @@ namespace ArdupilotMega
             STABILIZE = 0,			// hold level position
             [DisplayText("Acro")]
             ACRO = 1,			// rate control
-            [DisplayText("Altitude Hold")]
+            [DisplayText("Alt Hold")]
             ALT_HOLD = 2,		// AUTO control
             [DisplayText("Auto")]
             AUTO = 3,			// AUTO control
@@ -373,11 +373,11 @@ namespace ArdupilotMega
             GUIDED = 4,		// AUTO control
             [DisplayText("Loiter")]
             LOITER = 5,		// Hold a single location
-            [DisplayText("Return to Launch")]
+            [DisplayText("RTL")]
             RTL = 6,				// AUTO control
             [DisplayText("Circle")]
             CIRCLE = 7,
-            [DisplayText("Position Hold")]
+            [DisplayText("Pos Hold")]
             POSITION = 8,
             [DisplayText("Land")]
             LAND = 9,				// AUTO control
