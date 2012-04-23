@@ -178,11 +178,11 @@ namespace ArdupilotMega.GCSViews.ConfigurationView
 
                 try
                 {
-                    CMB_fmode1.Text = Enum.Parse(typeof(Common.apmmodes), MainV2.comPort.param["FLTMODE1"].ToString()).ToString();
-                    CMB_fmode2.Text = Enum.Parse(typeof(Common.apmmodes), MainV2.comPort.param["FLTMODE2"].ToString()).ToString();
-                    CMB_fmode3.Text = Enum.Parse(typeof(Common.apmmodes), MainV2.comPort.param["FLTMODE3"].ToString()).ToString();
-                    CMB_fmode4.Text = Enum.Parse(typeof(Common.apmmodes), MainV2.comPort.param["FLTMODE4"].ToString()).ToString();
-                    CMB_fmode5.Text = Enum.Parse(typeof(Common.apmmodes), MainV2.comPort.param["FLTMODE5"].ToString()).ToString();
+                    CMB_fmode1.Text = EnumTranslator.GetDisplayText(Enum.Parse(typeof(Common.apmmodes), MainV2.comPort.param["FLTMODE1"].ToString()));
+                    CMB_fmode2.Text = EnumTranslator.GetDisplayText(Enum.Parse(typeof(Common.apmmodes), MainV2.comPort.param["FLTMODE2"].ToString()));
+                    CMB_fmode3.Text = EnumTranslator.GetDisplayText(Enum.Parse(typeof(Common.apmmodes), MainV2.comPort.param["FLTMODE3"].ToString()));
+                    CMB_fmode4.Text = EnumTranslator.GetDisplayText(Enum.Parse(typeof(Common.apmmodes), MainV2.comPort.param["FLTMODE4"].ToString()));
+                    CMB_fmode5.Text = EnumTranslator.GetDisplayText(Enum.Parse(typeof(Common.apmmodes), MainV2.comPort.param["FLTMODE5"].ToString()));
                     CMB_fmode6.Text = Common.apmmodes.MANUAL.ToString();
                     CMB_fmode6.Enabled = false;
                 }
@@ -218,12 +218,12 @@ namespace ArdupilotMega.GCSViews.ConfigurationView
 
                 try
                 {
-                    CMB_fmode1.Text = Enum.Parse(typeof(Common.ac2modes), MainV2.comPort.param["FLTMODE1"].ToString()).ToString();
-                    CMB_fmode2.Text = Enum.Parse(typeof(Common.ac2modes), MainV2.comPort.param["FLTMODE2"].ToString()).ToString();
-                    CMB_fmode3.Text = Enum.Parse(typeof(Common.ac2modes), MainV2.comPort.param["FLTMODE3"].ToString()).ToString();
-                    CMB_fmode4.Text = Enum.Parse(typeof(Common.ac2modes), MainV2.comPort.param["FLTMODE4"].ToString()).ToString();
-                    CMB_fmode5.Text = Enum.Parse(typeof(Common.ac2modes), MainV2.comPort.param["FLTMODE5"].ToString()).ToString();
-                    CMB_fmode6.Text = Enum.Parse(typeof(Common.ac2modes), MainV2.comPort.param["FLTMODE6"].ToString()).ToString();
+                    CMB_fmode1.Text = EnumTranslator.GetDisplayText(Enum.Parse(typeof(Common.ac2modes), MainV2.comPort.param["FLTMODE1"].ToString()));
+                    CMB_fmode2.Text = EnumTranslator.GetDisplayText(Enum.Parse(typeof(Common.ac2modes), MainV2.comPort.param["FLTMODE2"].ToString()));
+                    CMB_fmode3.Text = EnumTranslator.GetDisplayText(Enum.Parse(typeof(Common.ac2modes), MainV2.comPort.param["FLTMODE3"].ToString()));
+                    CMB_fmode4.Text = EnumTranslator.GetDisplayText(Enum.Parse(typeof(Common.ac2modes), MainV2.comPort.param["FLTMODE4"].ToString()));
+                    CMB_fmode5.Text = EnumTranslator.GetDisplayText(Enum.Parse(typeof(Common.ac2modes), MainV2.comPort.param["FLTMODE5"].ToString()));
+                    CMB_fmode6.Text = EnumTranslator.GetDisplayText(Enum.Parse(typeof(Common.ac2modes), MainV2.comPort.param["FLTMODE6"].ToString()));
                     CMB_fmode6.Enabled = true;
 
                     int simple = int.Parse(MainV2.comPort.param["SIMPLE"].ToString());
