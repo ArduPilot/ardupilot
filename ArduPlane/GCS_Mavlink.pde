@@ -418,14 +418,14 @@ static void NOINLINE send_radio_out(mavlink_channel_t chan)
             chan,
             micros(),
             0, // port
-            g.channel_roll.radio_out,
-            g.channel_pitch.radio_out,
-            g.channel_throttle.radio_out,
-            g.channel_rudder.radio_out,
-            g.rc_5.radio_out,       // XXX currently only 4 RC channels defined
-            g.rc_6.radio_out,
-            g.rc_7.radio_out,
-            g.rc_8.radio_out);
+            APM_RC.OutputCh_current(0),
+            APM_RC.OutputCh_current(1),
+            APM_RC.OutputCh_current(2),
+            APM_RC.OutputCh_current(3),
+            APM_RC.OutputCh_current(4),
+            APM_RC.OutputCh_current(5),
+            APM_RC.OutputCh_current(6),
+            APM_RC.OutputCh_current(7));
 }
 
 static void NOINLINE send_vfr_hud(mavlink_channel_t chan)
