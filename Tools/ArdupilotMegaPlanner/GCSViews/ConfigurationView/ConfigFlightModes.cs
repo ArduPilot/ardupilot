@@ -98,24 +98,15 @@ namespace ArdupilotMega.GCSViews.ConfigurationView
         {
             try
             {
-                if (MainV2.cs.firmware == MainV2.Firmwares.ArduPlane) // APM
-                {
-                    MainV2.comPort.setParam("FLTMODE1", (float)(int)Enum.Parse(typeof(Common.apmmodes), CMB_fmode1.Text));
-                    MainV2.comPort.setParam("FLTMODE2", (float)(int)Enum.Parse(typeof(Common.apmmodes), CMB_fmode2.Text));
-                    MainV2.comPort.setParam("FLTMODE3", (float)(int)Enum.Parse(typeof(Common.apmmodes), CMB_fmode3.Text));
-                    MainV2.comPort.setParam("FLTMODE4", (float)(int)Enum.Parse(typeof(Common.apmmodes), CMB_fmode4.Text));
-                    MainV2.comPort.setParam("FLTMODE5", (float)(int)Enum.Parse(typeof(Common.apmmodes), CMB_fmode5.Text));
-                    MainV2.comPort.setParam("FLTMODE6", (float)(int)Enum.Parse(typeof(Common.apmmodes), CMB_fmode6.Text));
-                }
+                MainV2.comPort.setParam("FLTMODE1", (float)Int32.Parse(CMB_fmode1.SelectedValue.ToString()));
+                MainV2.comPort.setParam("FLTMODE2", (float)Int32.Parse(CMB_fmode2.SelectedValue.ToString()));
+                MainV2.comPort.setParam("FLTMODE3", (float)Int32.Parse(CMB_fmode3.SelectedValue.ToString()));
+                MainV2.comPort.setParam("FLTMODE4", (float)Int32.Parse(CMB_fmode4.SelectedValue.ToString()));
+                MainV2.comPort.setParam("FLTMODE5", (float)Int32.Parse(CMB_fmode5.SelectedValue.ToString()));
+                MainV2.comPort.setParam("FLTMODE6", (float)Int32.Parse(CMB_fmode6.SelectedValue.ToString()));
+
                 if (MainV2.cs.firmware == MainV2.Firmwares.ArduCopter2) // ac2
                 {
-                    MainV2.comPort.setParam("FLTMODE1", (float)(int)Enum.Parse(typeof(Common.ac2modes), CMB_fmode1.Text));
-                    MainV2.comPort.setParam("FLTMODE2", (float)(int)Enum.Parse(typeof(Common.ac2modes), CMB_fmode2.Text));
-                    MainV2.comPort.setParam("FLTMODE3", (float)(int)Enum.Parse(typeof(Common.ac2modes), CMB_fmode3.Text));
-                    MainV2.comPort.setParam("FLTMODE4", (float)(int)Enum.Parse(typeof(Common.ac2modes), CMB_fmode4.Text));
-                    MainV2.comPort.setParam("FLTMODE5", (float)(int)Enum.Parse(typeof(Common.ac2modes), CMB_fmode5.Text));
-                    MainV2.comPort.setParam("FLTMODE6", (float)(int)Enum.Parse(typeof(Common.ac2modes), CMB_fmode6.Text));
-
                     float value = (float)(CB_simple1.Checked ? (int)SimpleMode.Simple1 : 0) + (CB_simple2.Checked ? (int)SimpleMode.Simple2 : 0) + (CB_simple3.Checked ? (int)SimpleMode.Simple3 : 0)
                         + (CB_simple4.Checked ? (int)SimpleMode.Simple4 : 0) + (CB_simple5.Checked ? (int)SimpleMode.Simple5 : 0) + (CB_simple6.Checked ? (int)SimpleMode.Simple6 : 0);
                     if (MainV2.comPort.param.ContainsKey("SIMPLE"))
@@ -159,38 +150,39 @@ namespace ArdupilotMega.GCSViews.ConfigurationView
                 CB_simple5.Visible = false;
                 CB_simple6.Visible = false;
 
+                var flightModes = EnumTranslator.Translate<Common.apmmodes>();
 
-                CMB_fmode1.DataSource = EnumTranslator.Translate<Common.apmmodes>().ToList();
-                CMB_fmode1.ValueMember = "Value";
+                CMB_fmode1.DataSource = flightModes.ToList();
+                CMB_fmode1.ValueMember = "Key";
                 CMB_fmode1.DisplayMember = "Value";
 
-                CMB_fmode2.DataSource = EnumTranslator.Translate<Common.apmmodes>().ToList();
-                CMB_fmode2.ValueMember = "Value";
+                CMB_fmode2.DataSource = flightModes.ToList();
+                CMB_fmode2.ValueMember = "Key";
                 CMB_fmode2.DisplayMember = "Value";
 
-                CMB_fmode3.DataSource = EnumTranslator.Translate<Common.apmmodes>().ToList();
-                CMB_fmode3.ValueMember = "Value";
+                CMB_fmode3.DataSource = flightModes.ToList();
+                CMB_fmode3.ValueMember = "Key";
                 CMB_fmode3.DisplayMember = "Value";
 
-                CMB_fmode4.DataSource = EnumTranslator.Translate<Common.apmmodes>().ToList();
-                CMB_fmode4.ValueMember = "Value";
+                CMB_fmode4.DataSource = flightModes.ToList();
+                CMB_fmode4.ValueMember = "Key";
                 CMB_fmode4.DisplayMember = "Value";
 
-                CMB_fmode5.DataSource = EnumTranslator.Translate<Common.apmmodes>().ToList();
-                CMB_fmode5.ValueMember = "Value";
+                CMB_fmode5.DataSource = flightModes.ToList();
+                CMB_fmode5.ValueMember = "Key";
                 CMB_fmode5.DisplayMember = "Value";
 
-                CMB_fmode6.DataSource = EnumTranslator.Translate<Common.apmmodes>().ToList();
-                CMB_fmode6.ValueMember = "Value";
+                CMB_fmode6.DataSource = flightModes.ToList();
+                CMB_fmode6.ValueMember = "Key";
                 CMB_fmode6.DisplayMember = "Value";
 
                 try
                 {
-                    CMB_fmode1.Text = Enum.Parse(typeof(Common.apmmodes), MainV2.comPort.param["FLTMODE1"].ToString()).ToString();
-                    CMB_fmode2.Text = Enum.Parse(typeof(Common.apmmodes), MainV2.comPort.param["FLTMODE2"].ToString()).ToString();
-                    CMB_fmode3.Text = Enum.Parse(typeof(Common.apmmodes), MainV2.comPort.param["FLTMODE3"].ToString()).ToString();
-                    CMB_fmode4.Text = Enum.Parse(typeof(Common.apmmodes), MainV2.comPort.param["FLTMODE4"].ToString()).ToString();
-                    CMB_fmode5.Text = Enum.Parse(typeof(Common.apmmodes), MainV2.comPort.param["FLTMODE5"].ToString()).ToString();
+                    CMB_fmode1.Text = EnumTranslator.GetDisplayText(Enum.Parse(typeof(Common.apmmodes), MainV2.comPort.param["FLTMODE1"].ToString()));
+                    CMB_fmode2.Text = EnumTranslator.GetDisplayText(Enum.Parse(typeof(Common.apmmodes), MainV2.comPort.param["FLTMODE2"].ToString()));
+                    CMB_fmode3.Text = EnumTranslator.GetDisplayText(Enum.Parse(typeof(Common.apmmodes), MainV2.comPort.param["FLTMODE3"].ToString()));
+                    CMB_fmode4.Text = EnumTranslator.GetDisplayText(Enum.Parse(typeof(Common.apmmodes), MainV2.comPort.param["FLTMODE4"].ToString()));
+                    CMB_fmode5.Text = EnumTranslator.GetDisplayText(Enum.Parse(typeof(Common.apmmodes), MainV2.comPort.param["FLTMODE5"].ToString()));
                     CMB_fmode6.Text = Common.apmmodes.MANUAL.ToString();
                     CMB_fmode6.Enabled = false;
                 }
@@ -198,38 +190,40 @@ namespace ArdupilotMega.GCSViews.ConfigurationView
             }
             if (MainV2.cs.firmware == MainV2.Firmwares.ArduCopter2) // ac2
             {
-                CMB_fmode1.DataSource = EnumTranslator.Translate<Common.ac2modes>().ToList();
-                CMB_fmode1.ValueMember = "Value";
-                CMB_fmode1.DisplayMember = "Value";
+               var flightModes = EnumTranslator.Translate<Common.ac2modes>();
 
-                CMB_fmode2.DataSource = EnumTranslator.Translate<Common.ac2modes>().ToList();
-                CMB_fmode2.ValueMember = "Value";
-                CMB_fmode2.DisplayMember = "Value";
+               CMB_fmode1.DataSource = flightModes.ToList();
+               CMB_fmode1.ValueMember = "Key";
+               CMB_fmode1.DisplayMember = "Value";
 
-                CMB_fmode3.DataSource = EnumTranslator.Translate<Common.ac2modes>().ToList();
-                CMB_fmode3.ValueMember = "Value";
-                CMB_fmode3.DisplayMember = "Value";
+               CMB_fmode2.DataSource = flightModes.ToList();
+               CMB_fmode2.ValueMember = "Key";
+               CMB_fmode2.DisplayMember = "Value";
 
-                CMB_fmode4.DataSource = EnumTranslator.Translate<Common.ac2modes>().ToList();
-                CMB_fmode4.ValueMember = "Value";
-                CMB_fmode4.DisplayMember = "Value";
+               CMB_fmode3.DataSource = flightModes.ToList();
+               CMB_fmode3.ValueMember = "Key";
+               CMB_fmode3.DisplayMember = "Value";
 
-                CMB_fmode5.DataSource = EnumTranslator.Translate<Common.ac2modes>().ToList();
-                CMB_fmode5.ValueMember = "Value";
-                CMB_fmode5.DisplayMember = "Value";
+               CMB_fmode4.DataSource = flightModes.ToList();
+               CMB_fmode4.ValueMember = "Key";
+               CMB_fmode4.DisplayMember = "Value";
 
-                CMB_fmode6.DataSource = EnumTranslator.Translate<Common.ac2modes>().ToList();
-                CMB_fmode6.ValueMember = "Value";
-                CMB_fmode6.DisplayMember = "Value";
+               CMB_fmode5.DataSource = flightModes.ToList();
+               CMB_fmode5.ValueMember = "Key";
+               CMB_fmode5.DisplayMember = "Value";
+
+               CMB_fmode6.DataSource = flightModes.ToList();
+               CMB_fmode6.ValueMember = "Key";
+               CMB_fmode6.DisplayMember = "Value";
 
                 try
                 {
-                    CMB_fmode1.Text = Enum.Parse(typeof(Common.ac2modes), MainV2.comPort.param["FLTMODE1"].ToString()).ToString();
-                    CMB_fmode2.Text = Enum.Parse(typeof(Common.ac2modes), MainV2.comPort.param["FLTMODE2"].ToString()).ToString();
-                    CMB_fmode3.Text = Enum.Parse(typeof(Common.ac2modes), MainV2.comPort.param["FLTMODE3"].ToString()).ToString();
-                    CMB_fmode4.Text = Enum.Parse(typeof(Common.ac2modes), MainV2.comPort.param["FLTMODE4"].ToString()).ToString();
-                    CMB_fmode5.Text = Enum.Parse(typeof(Common.ac2modes), MainV2.comPort.param["FLTMODE5"].ToString()).ToString();
-                    CMB_fmode6.Text = Enum.Parse(typeof(Common.ac2modes), MainV2.comPort.param["FLTMODE6"].ToString()).ToString();
+                    CMB_fmode1.Text = EnumTranslator.GetDisplayText(Enum.Parse(typeof(Common.ac2modes), MainV2.comPort.param["FLTMODE1"].ToString()));
+                    CMB_fmode2.Text = EnumTranslator.GetDisplayText(Enum.Parse(typeof(Common.ac2modes), MainV2.comPort.param["FLTMODE2"].ToString()));
+                    CMB_fmode3.Text = EnumTranslator.GetDisplayText(Enum.Parse(typeof(Common.ac2modes), MainV2.comPort.param["FLTMODE3"].ToString()));
+                    CMB_fmode4.Text = EnumTranslator.GetDisplayText(Enum.Parse(typeof(Common.ac2modes), MainV2.comPort.param["FLTMODE4"].ToString()));
+                    CMB_fmode5.Text = EnumTranslator.GetDisplayText(Enum.Parse(typeof(Common.ac2modes), MainV2.comPort.param["FLTMODE5"].ToString()));
+                    CMB_fmode6.Text = EnumTranslator.GetDisplayText(Enum.Parse(typeof(Common.ac2modes), MainV2.comPort.param["FLTMODE6"].ToString()));
                     CMB_fmode6.Enabled = true;
 
                     int simple = int.Parse(MainV2.comPort.param["SIMPLE"].ToString());
