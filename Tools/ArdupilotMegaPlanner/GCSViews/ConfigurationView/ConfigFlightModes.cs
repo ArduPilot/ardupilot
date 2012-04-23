@@ -159,38 +159,19 @@ namespace ArdupilotMega.GCSViews.ConfigurationView
                 CB_simple5.Visible = false;
                 CB_simple6.Visible = false;
 
-                CMB_fmode1.Items.Clear();
-                CMB_fmode2.Items.Clear();
-                CMB_fmode3.Items.Clear();
-                CMB_fmode4.Items.Clear();
-                CMB_fmode5.Items.Clear();
-                CMB_fmode6.Items.Clear();
-
-                var flightModes = EnumTranslator.Translate<Common.apmmodes>();
+                var flightModes = EnumTranslator.Translate<Common.apmmodes>().Select(x => x.Value).OrderBy(x => x).ToList();
 
                 CMB_fmode1.DataSource = flightModes;
-                CMB_fmode1.ValueMember = "Value";
-                CMB_fmode1.DisplayMember = "Value";
 
                 CMB_fmode2.DataSource = flightModes;
-                CMB_fmode2.ValueMember = "Value";
-                CMB_fmode2.DisplayMember = "Value";
 
                 CMB_fmode3.DataSource = flightModes;
-                CMB_fmode3.ValueMember = "Value";
-                CMB_fmode3.DisplayMember = "Value";
 
                 CMB_fmode4.DataSource = flightModes;
-                CMB_fmode4.ValueMember = "Value";
-                CMB_fmode4.DisplayMember = "Value";
 
                 CMB_fmode5.DataSource = flightModes;
-                CMB_fmode5.ValueMember = "Value";
-                CMB_fmode5.DisplayMember = "Value";
 
                 CMB_fmode6.DataSource = flightModes;
-                CMB_fmode6.ValueMember = "Value";
-                CMB_fmode6.DisplayMember = "Value";
 
                 try
                 {
@@ -206,38 +187,19 @@ namespace ArdupilotMega.GCSViews.ConfigurationView
             }
             if (MainV2.cs.firmware == MainV2.Firmwares.ArduCopter2) // ac2
             {
-                CMB_fmode1.Items.Clear();
-                CMB_fmode2.Items.Clear();
-                CMB_fmode3.Items.Clear();
-                CMB_fmode4.Items.Clear();
-                CMB_fmode5.Items.Clear();
-                CMB_fmode6.Items.Clear();
-
-                var flightModes = EnumTranslator.Translate<Common.apmmodes>();
+               var flightModes = EnumTranslator.Translate<Common.ac2modes>().Select(x => x.Value).OrderBy(x => x).ToList();
 
                 CMB_fmode1.DataSource = flightModes;
-                CMB_fmode1.ValueMember = "Value";
-                CMB_fmode1.DisplayMember = "Value";
 
                 CMB_fmode2.DataSource = flightModes;
-                CMB_fmode2.ValueMember = "Value";
-                CMB_fmode2.DisplayMember = "Value";
 
                 CMB_fmode3.DataSource = flightModes;
-                CMB_fmode3.ValueMember = "Value";
-                CMB_fmode3.DisplayMember = "Value";
 
                 CMB_fmode4.DataSource = flightModes;
-                CMB_fmode4.ValueMember = "Value";
-                CMB_fmode4.DisplayMember = "Value";
 
                 CMB_fmode5.DataSource = flightModes;
-                CMB_fmode5.ValueMember = "Value";
-                CMB_fmode5.DisplayMember = "Value";
 
                 CMB_fmode6.DataSource = flightModes;
-                CMB_fmode6.ValueMember = "Value";
-                CMB_fmode6.DisplayMember = "Value";
 
                 try
                 {

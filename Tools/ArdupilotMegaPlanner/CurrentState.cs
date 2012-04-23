@@ -535,9 +535,6 @@ namespace ArdupilotMega
                         case (byte)(100 + Common.ac2modes.APPROACH):
                             mode = EnumTranslator.GetDisplayText(Common.ac2modes.APPROACH);
                             break;
-                        case (byte)(100 + Common.ac2modes.APPROACH):
-                            mode = "APPROACH";
-                            break;
                         case (byte)(100 + Common.ac2modes.POSITION):
                             mode = EnumTranslator.GetDisplayText(Common.ac2modes.POSITION);
                             break;
