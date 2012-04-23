@@ -934,11 +934,9 @@ void loop()
 
 		// check for new GPS messages
 		// --------------------------
-		#if RETRO_LOITER_MODE == DISABLED
-			if(GPS_enabled){
-				update_GPS();
-			}
-		#endif
+		if(!g.retro_loiter && GPS_enabled){
+			update_GPS();
+		}
 
 		// perform 10hz tasks
 		// ------------------
@@ -1010,11 +1008,9 @@ static void medium_loop()
 		case 0:
 			medium_loopCounter++;
 
-			#if RETRO_LOITER_MODE == ENABLED
-			if(GPS_enabled){
+			if(g.retro_loiter && GPS_enabled){
 				update_GPS();
 			}
-			#endif
 
 			#if HIL_MODE != HIL_MODE_ATTITUDE					// don't execute in HIL mode
 				if(g.compass_enabled){
@@ -1052,11 +1048,11 @@ static void medium_loop()
 					// this calculates the velocity for Loiter
 					// only called when there is new data
 					// ----------------------------------
-					#if RETRO_LOITER_MODE == ENABLED
-					calc_GPS_velocity();
-					#else
-					calc_XY_velocity();
-					#endif
+					if(g.retro_loiter){
+						calc_GPS_velocity();
+					} else {
+						calc_XY_velocity();
+					}
 
 					// If we have optFlow enabled we can grab a more accurate speed
 					// here and override the speed from the GPS
