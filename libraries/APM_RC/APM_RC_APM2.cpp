@@ -161,6 +161,24 @@ void APM_RC_APM2::OutputCh(unsigned char ch, uint16_t pwm)
   }
 }
 
+uint16_t APM_RC_APM2::OutputCh_current(uint8_t ch)
+{
+	uint16_t pwm=0;
+	switch(ch){
+	case 0:  pwm=OCR1B; break;  // out1
+	case 1:  pwm=OCR1A; break;  // out2
+	case 2:  pwm=OCR4C; break;  // out3
+	case 3:  pwm=OCR4B; break;  // out4
+	case 4:  pwm=OCR4A; break;  // out5
+	case 5:  pwm=OCR3C; break;  // out6
+	case 6:  pwm=OCR3B; break;  // out7
+	case 7:  pwm=OCR3A; break;  // out8
+	case 9:  pwm=OCR5B; break;  // out10
+	case 10: pwm=OCR5C; break;  // out11
+	}
+	return pwm>>1;
+}
+
 void APM_RC_APM2::enable_out(uint8_t ch)
 {
   switch(ch) {
