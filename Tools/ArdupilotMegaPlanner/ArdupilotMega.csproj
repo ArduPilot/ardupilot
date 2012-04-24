@@ -208,6 +208,7 @@
     <Reference Include="System.Xml">
       <Private>False</Private>
     </Reference>
+    <Reference Include="System.Xml.Linq" />
     <Reference Include="ZedGraph, Version=5.1.2.878, Culture=neutral, PublicKeyToken=02a83cbd123fcd60, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
     </Reference>
@@ -225,6 +226,7 @@
     <Compile Include="Attributes\DisplayTextAttribute.cs" />
     <Compile Include="Attributes\PrivateAttribute.cs" />
     <Compile Include="CodeGen.cs" />
+    <Compile Include="Constants\ParameterMetaDataConstants.cs" />
     <Compile Include="Controls\BackstageView\BackstageView.cs">
       <SubType>UserControl</SubType>
     </Compile>
@@ -552,7 +554,8 @@
     <Compile Include="LangUtility.cs" />
     <Compile Include="ThemeManager.cs" />
     <Compile Include="Utilities\EnumTranslator.cs" />
-    <Compile Include="Utilities\ParameterInformationParser.cs" />
+    <Compile Include="Utilities\ParameterMetaDataParser.cs" />
+    <Compile Include="Utilities\ParameterMetaDataRepository.cs" />
     <EmbeddedResource Include="Antenna\Tracker.resx">
       <DependentUpon>Tracker.cs</DependentUpon>
     </EmbeddedResource>
@@ -1081,7 +1084,9 @@
     <None Include="AeroSimRCAPMHil.zip">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
-    <None Include="app.config" />
+    <None Include="app.config">
+      <SubType>Designer</SubType>
+    </None>
     <None Include="arducopter-xplane.zip">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>

@@ -7,15 +7,14 @@ using System.Net;
 using System.Text.RegularExpressions;
 using System.Windows.Forms;
 using System.Xml;
+using ArdupilotMega.Constants;
 using log4net;
 
 namespace ArdupilotMega.Utilities
 {
-   public static class ParameterInformationParser
+   public static class ParameterMetaDataParser
    {
-      private const string META_DELIMETER = "@";
-      private const string PARAM_KEY = "Param";
-      private static readonly Regex _paramMetaRegex = new Regex(String.Format("{0}(?<MetaKey>[^:]+):(?<MetaValue>.+)", META_DELIMETER));
+      private static readonly Regex _paramMetaRegex = new Regex(String.Format("{0}(?<MetaKey>[^:]+):(?<MetaValue>.+)", ParameterMetaDataConstants.Delimeter));
       private static readonly ILog log =
          LogManager.GetLogger(System.Reflection.MethodBase.GetCurrentMethod().DeclaringType);
 
@@ -29,7 +28,7 @@ namespace ArdupilotMega.Utilities
             parameterLocations.RemoveAll(String.IsNullOrEmpty);
 
             string sStartupPath = Application.StartupPath;
-            using(var objXmlTextWriter = new XmlTextWriter(String.Format("{0}\\ParameterMetaData.xml", sStartupPath), null))
+            using (var objXmlTextWriter = new XmlTextWriter(String.Format("{0}\\{1}", sStartupPath, ConfigurationManager.AppSettings["ParameterMetaDataXMLFileName"]), null))
             {
                objXmlTextWriter.Formatting = Formatting.Indented;
                objXmlTextWriter.WriteStartDocument();
@@ -100,7 +99,7 @@ namespace ArdupilotMega.Utilities
       private static void ParseParameterInformation(string fileContents, XmlTextWriter objXmlTextWriter)
       {
          var indicies = new List<int>();
-         GetIndexOfMarkers(ref indicies, fileContents, META_DELIMETER + PARAM_KEY, 0);
+         GetIndexOfMarkers(ref indicies, fileContents, ParameterMetaDataConstants.Delimeter + ParameterMetaDataConstants.Param, 0);
 
          if(indicies.Count > 0)
          {
@@ -115,7 +114,7 @@ namespace ArdupilotMega.Utilities
                if(!String.IsNullOrEmpty(subStringToSearch))
                {
                   var metaIndicies = new List<int>();
-                  GetIndexOfMarkers(ref metaIndicies, subStringToSearch, META_DELIMETER, 0);
+                  GetIndexOfMarkers(ref metaIndicies, subStringToSearch, ParameterMetaDataConstants.Delimeter, 0);
 
                   if(metaIndicies.Count > 0)
                   {
@@ -125,7 +124,7 @@ namespace ArdupilotMega.Utilities
                      // Match based on the regex defined at the top of this class
                      Match paramNameKeyMatch = _paramMetaRegex.Match(paramNameKey);
 
-                     if (paramNameKeyMatch.Success && paramNameKeyMatch.Groups["MetaKey"].Value == PARAM_KEY)
+                     if (paramNameKeyMatch.Success && paramNameKeyMatch.Groups["MetaKey"].Value == ParameterMetaDataConstants.Param)
                      {
                         objXmlTextWriter.WriteStartElement(paramNameKeyMatch.Groups["MetaValue"].Value.Trim(new char[] { ' ' }));
 

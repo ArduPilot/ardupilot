@@ -2,12 +2,16 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.ComponentModel;
+using System.Configuration;
 using System.Drawing;
 using System.Data;
 using System.IO;
 using System.Linq;
 using System.Text;
+using System.Xml.Linq;
 using System.Windows.Forms;
+using ArdupilotMega.Constants;
+using ArdupilotMega.Utilities;
 using log4net;
 using ArdupilotMega.Controls.BackstageView;
 using ArdupilotMega.Controls;
@@ -18,6 +22,8 @@ namespace ArdupilotMega.GCSViews.ConfigurationView
     {
         private static readonly ILog log =
           LogManager.GetLogger(System.Reflection.MethodBase.GetCurrentMethod().DeclaringType);
+
+        private readonly ParameterMetaDataRepository _parameterMetaDataRepository;
 
         // Changes made to the params between writing to the copter
         readonly Hashtable _changes = new Hashtable();
@@ -41,6 +47,9 @@ namespace ArdupilotMega.GCSViews.ConfigurationView
         public ConfigRawParams()
         {
             InitializeComponent();
+           
+            // Init the accessor class for the parameter meta data
+            _parameterMetaDataRepository = new ParameterMetaDataRepository();
         }
 
         Hashtable loadParamFile(string Filename)
@@ -397,7 +406,13 @@ namespace ArdupilotMega.GCSViews.ConfigurationView
                 Params.Rows[Params.RowCount - 1].Cells[Value.Index].Value = ((float)MainV2.comPort.param[value]).ToString("0.###");
                 try
                 {
-                    if (tooltips[value] != null)
+                    string metaDataDescription = _parameterMetaDataRepository.GetParameterMetaData(value, ParameterMetaDataConstants.Description);
+                    if(!String.IsNullOrEmpty(metaDataDescription))
+                    {
+                       Params.Rows[Params.RowCount - 1].Cells[Command.Index].ToolTipText = metaDataDescription;
+                       Params.Rows[Params.RowCount - 1].Cells[Value.Index].ToolTipText = metaDataDescription;
+                    }
+                    else if (tooltips[value] != null)
                     {
                         Params.Rows[Params.RowCount - 1].Cells[Command.Index].ToolTipText = ((paramsettings)tooltips[value]).desc;
                         //Params.Rows[Params.RowCount - 1].Cells[RawValue.Index].ToolTipText = ((paramsettings)tooltips[value]).desc;
