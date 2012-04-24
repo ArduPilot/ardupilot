@@ -344,6 +344,16 @@ void sitl_simstate_send(uint8_t chan)
 {
 	double p, q, r;
 	float yaw;
+	extern void mavlink_simstate_send(uint8_t chan,
+					  float roll,
+					  float pitch,
+					  float yaw,
+					  float xAcc,
+					  float yAcc,
+					  float zAcc,
+					  float p,
+					  float q,
+					  float r);
 
 	// we want the gyro values to be directly comparable to the
 	// raw_imu message, which is in body frame
@@ -357,12 +367,12 @@ void sitl_simstate_send(uint8_t chan)
 		yaw -= 360;
 	}
 
-	mavlink_msg_simstate_send((mavlink_channel_t)chan,
-				  ToRad(sim_state.rollDeg),
-				  ToRad(sim_state.pitchDeg),
-				  ToRad(yaw),
-				  sim_state.xAccel,
-				  sim_state.yAccel,
-				  sim_state.zAccel,
-				  p, q, r);
+	mavlink_simstate_send(chan,
+			      ToRad(sim_state.rollDeg),
+			      ToRad(sim_state.pitchDeg),
+			      ToRad(yaw),
+			      sim_state.xAccel,
+			      sim_state.yAccel,
+			      sim_state.zAccel,
+			      p, q, r);
 }

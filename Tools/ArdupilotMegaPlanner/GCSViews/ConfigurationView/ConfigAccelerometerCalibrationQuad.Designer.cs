@@ -33,7 +33,7 @@
             this.label15 = new System.Windows.Forms.Label();
             this.pictureBoxQuadX = new System.Windows.Forms.PictureBox();
             this.pictureBoxQuad = new System.Windows.Forms.PictureBox();
-            this.BUT_levelac2 = new ArdupilotMega.MyButton();
+            this.BUT_levelac2 = new ArdupilotMega.Controls.MyButton();
             this.pictureBox1 = new System.Windows.Forms.PictureBox();
             this.pictureBox2 = new System.Windows.Forms.PictureBox();
             this.pictureBox3 = new System.Windows.Forms.PictureBox();
@@ -149,7 +149,7 @@
         private System.Windows.Forms.Label label15;
         private System.Windows.Forms.PictureBox pictureBoxQuadX;
         private System.Windows.Forms.PictureBox pictureBoxQuad;
-        private MyButton BUT_levelac2;
+        private ArdupilotMega.Controls.MyButton BUT_levelac2;
         private System.Windows.Forms.PictureBox pictureBox1;
         private System.Windows.Forms.PictureBox pictureBox2;
         private System.Windows.Forms.PictureBox pictureBox3;

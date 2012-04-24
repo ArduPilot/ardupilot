@@ -39,7 +39,7 @@
             this.CHK_revch4 = new System.Windows.Forms.CheckBox();
             this.CHK_revch2 = new System.Windows.Forms.CheckBox();
             this.CHK_revch1 = new System.Windows.Forms.CheckBox();
-            this.BUT_Calibrateradio = new ArdupilotMega.MyButton();
+            this.BUT_Calibrateradio = new ArdupilotMega.Controls.MyButton();
             this.BAR8 = new ArdupilotMega.HorizontalProgressBar2();
             this.currentStateBindingSource = new System.Windows.Forms.BindingSource(this.components);
             this.BAR7 = new ArdupilotMega.HorizontalProgressBar2();
@@ -289,7 +289,7 @@
         private System.Windows.Forms.CheckBox CHK_revch4;
         private System.Windows.Forms.CheckBox CHK_revch2;
         private System.Windows.Forms.CheckBox CHK_revch1;
-        private MyButton BUT_Calibrateradio;
+        private ArdupilotMega.Controls.MyButton BUT_Calibrateradio;
         private HorizontalProgressBar2 BAR8;
         private HorizontalProgressBar2 BAR7;
         private HorizontalProgressBar2 BAR6;

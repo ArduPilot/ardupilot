@@ -175,7 +175,7 @@
     <value>BUT_levelplane</value>
   </data>
   <data name="&gt;&gt;BUT_levelplane.Type" xml:space="preserve">
-    <value>ArdupilotMega.MyButton, ArdupilotMegaPlanner, Version=1.1.4492.39671, Culture=neutral, PublicKeyToken=null</value>
+    <value>ArdupilotMega.Controls.MyButton, ArdupilotMegaPlanner, Version=1.1.4492.39671, Culture=neutral, PublicKeyToken=null</value>
   </data>
   <data name="&gt;&gt;BUT_levelplane.Parent" xml:space="preserve">
     <value>$this</value>

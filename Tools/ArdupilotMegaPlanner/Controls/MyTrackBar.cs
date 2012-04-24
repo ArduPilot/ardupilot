@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Windows.Forms;
 
-namespace ArdupilotMega
+namespace ArdupilotMega.Controls
 {
     class MyTrackBar : TrackBar
     {

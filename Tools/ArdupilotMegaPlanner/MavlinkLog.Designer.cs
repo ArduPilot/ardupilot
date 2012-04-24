@@ -29,10 +29,10 @@
         private void InitializeComponent()
         {
             System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(MavlinkLog));
-            this.BUT_redokml = new ArdupilotMega.MyButton();
+            this.BUT_redokml = new ArdupilotMega.Controls.MyButton();
             this.progressBar1 = new System.Windows.Forms.ProgressBar();
-            this.BUT_humanreadable = new ArdupilotMega.MyButton();
-            this.BUT_graphmavlog = new ArdupilotMega.MyButton();
+            this.BUT_humanreadable = new ArdupilotMega.Controls.MyButton();
+            this.BUT_graphmavlog = new ArdupilotMega.Controls.MyButton();
             this.zg1 = new ZedGraph.ZedGraphControl();
             this.SuspendLayout();
             // 
@@ -91,10 +91,10 @@
 
         #endregion
 
-        private MyButton BUT_redokml;
+        private ArdupilotMega.Controls.MyButton BUT_redokml;
         private System.Windows.Forms.ProgressBar progressBar1;
-        private MyButton BUT_humanreadable;
-        private MyButton BUT_graphmavlog;
+        private ArdupilotMega.Controls.MyButton BUT_humanreadable;
+        private ArdupilotMega.Controls.MyButton BUT_graphmavlog;
         private ZedGraph.ZedGraphControl zg1;
     }
 }

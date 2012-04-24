@@ -30,11 +30,11 @@
         {
             System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(Terminal));
             this.TXT_terminal = new System.Windows.Forms.RichTextBox();
-            this.BUTsetupshow = new ArdupilotMega.MyButton();
-            this.BUTradiosetup = new ArdupilotMega.MyButton();
-            this.BUTtests = new ArdupilotMega.MyButton();
-            this.Logs = new ArdupilotMega.MyButton();
-            this.BUT_logbrowse = new ArdupilotMega.MyButton();
+            this.BUTsetupshow = new ArdupilotMega.Controls.MyButton();
+            this.BUTradiosetup = new ArdupilotMega.Controls.MyButton();
+            this.BUTtests = new ArdupilotMega.Controls.MyButton();
+            this.Logs = new ArdupilotMega.Controls.MyButton();
+            this.BUT_logbrowse = new ArdupilotMega.Controls.MyButton();
             this.SuspendLayout();
             // 
             // TXT_terminal
@@ -101,10 +101,10 @@
         #endregion
 
         private System.Windows.Forms.RichTextBox TXT_terminal;
-        private MyButton BUTsetupshow;
-        private MyButton BUTradiosetup;
-        private MyButton BUTtests;
-        private MyButton Logs;
-        private MyButton BUT_logbrowse;
+        private ArdupilotMega.Controls.MyButton BUTsetupshow;
+        private ArdupilotMega.Controls.MyButton BUTradiosetup;
+        private ArdupilotMega.Controls.MyButton BUTtests;
+        private ArdupilotMega.Controls.MyButton Logs;
+        private ArdupilotMega.Controls.MyButton BUT_logbrowse;
     }
 }

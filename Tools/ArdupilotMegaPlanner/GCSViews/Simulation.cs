@@ -13,7 +13,7 @@ using log4net;
 using ZedGraph; // Graphs
 using ArdupilotMega;
 using System.Reflection;
-
+using ArdupilotMega.Controls;
 using System.Drawing.Drawing2D;
 
 // Written by Michael Oborne

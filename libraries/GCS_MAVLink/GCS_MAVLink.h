@@ -8,7 +8,9 @@
 
 #include <BetterStream.h>
 
-#define MAVLINK_SEPARATE_HELPERS
+// we have separate helpers disabled to make it possible
+// to select MAVLink 1.0 in the arduino GUI build
+//#define MAVLINK_SEPARATE_HELPERS
 
 #ifdef MAVLINK10
 # include "include/mavlink/v1.0/ardupilotmega/version.h"

@@ -13,6 +13,7 @@ class APM_RC_APM1 : public APM_RC_Class
 	APM_RC_APM1();
 	void Init( Arduino_Mega_ISR_Registry * isr_reg );
 	void OutputCh(uint8_t ch, uint16_t pwm);
+	uint16_t OutputCh_current(uint8_t ch);
 	uint16_t InputCh(uint8_t ch);
 	uint8_t GetState();
 	bool setHIL(int16_t v[NUM_CHANNELS]);

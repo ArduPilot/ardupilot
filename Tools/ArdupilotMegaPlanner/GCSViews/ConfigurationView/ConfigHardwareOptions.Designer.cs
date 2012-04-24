@@ -29,7 +29,7 @@
         private void InitializeComponent()
         {
             System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(ConfigHardwareOptions));
-            this.BUT_MagCalibrationLive = new ArdupilotMega.MyButton();
+            this.BUT_MagCalibrationLive = new ArdupilotMega.Controls.MyButton();
             this.label27 = new System.Windows.Forms.Label();
             this.CMB_sonartype = new System.Windows.Forms.ComboBox();
             this.CHK_enableoptflow = new System.Windows.Forms.CheckBox();
@@ -43,7 +43,7 @@
             this.pictureBox4 = new System.Windows.Forms.PictureBox();
             this.pictureBox3 = new System.Windows.Forms.PictureBox();
             this.pictureBox1 = new System.Windows.Forms.PictureBox();
-            this.BUT_MagCalibrationLog = new ArdupilotMega.MyButton();
+            this.BUT_MagCalibrationLog = new ArdupilotMega.Controls.MyButton();
             this.CHK_autodec = new System.Windows.Forms.CheckBox();
             ((System.ComponentModel.ISupportInitialize)(this.pictureBox2)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.pictureBox4)).BeginInit();
@@ -202,7 +202,7 @@
 
         #endregion
 
-        private MyButton BUT_MagCalibrationLive;
+        private ArdupilotMega.Controls.MyButton BUT_MagCalibrationLive;
         private System.Windows.Forms.Label label27;
         private System.Windows.Forms.ComboBox CMB_sonartype;
         private System.Windows.Forms.CheckBox CHK_enableoptflow;
@@ -216,7 +216,7 @@
         private System.Windows.Forms.PictureBox pictureBox4;
         private System.Windows.Forms.PictureBox pictureBox3;
         private System.Windows.Forms.PictureBox pictureBox1;
-        private MyButton BUT_MagCalibrationLog;
+        private ArdupilotMega.Controls.MyButton BUT_MagCalibrationLog;
         private System.Windows.Forms.CheckBox CHK_autodec;
     }
 }

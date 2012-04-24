@@ -5,14 +5,6 @@ import util, time, os, sys, math
 import socket, struct
 import select, fgFDM, errno
 
-# find the mavlink.py module
-for d in [ 'pymavlink',
-           os.path.join(os.path.dirname(os.path.realpath(__file__)), '../pymavlink') ]:
-    if os.path.exists(d):
-        sys.path.insert(0, d)
-import mavlink
-
-
 def sim_send(m, a):
     '''send flight information to mavproxy and flightgear'''
     global fdm

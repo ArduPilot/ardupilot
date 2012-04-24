@@ -94,13 +94,14 @@ http://code.google.com/p/ardupilot-mega/downloads/list
 #include <ModeFilter.h>		// Mode Filter from Filter library
 #include <AverageFilter.h>	// Mode Filter from Filter library
 #include <AP_Relay.h>		// APM relay
-#include <GCS_MAVLink.h>    // MAVLink GCS definitions
 #include <memcheck.h>
 
 // Configuration
 #include "defines.h"
 #include "config.h"
 #include "config_channels.h"
+
+#include <GCS_MAVLink.h>    // MAVLink GCS definitions
 
 // Local modules
 #include "Parameters.h"

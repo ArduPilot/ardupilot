@@ -3,6 +3,7 @@ using System.Drawing;
 using System.Windows.Forms;
 using ArdupilotMega.Controls.BackstageView;
 using log4net;
+using ArdupilotMega.Controls;
 
 namespace ArdupilotMega
 {
@@ -84,7 +85,7 @@ namespace ArdupilotMega
                 {
                     Color PrimeColor = Color.FromArgb(0x94, 0xc1, 0x1f);
 
-                    MyButton but = (MyButton)ctl;
+                    ArdupilotMega.Controls.MyButton but = (MyButton)ctl;
                     //but.BGGradTop = Color.FromArgb(PrimeColor.R, PrimeColor.G, PrimeColor.B);
                     //but.BGGradBot = Color.FromArgb(255 - (int)(PrimeColor.R * 0.27), 255 - (int)(PrimeColor.G * 0.14), 255 - (int)(PrimeColor.B * 0.79));
                     //but.ForeColor = Color.FromArgb(0x40, 0x57, 0x04); //Color.FromArgb(255 - (int)(PrimeColor.R * 0.7), 255 - (int)(PrimeColor.G * 0.8), 255 - (int)(PrimeColor.B * 0.1));

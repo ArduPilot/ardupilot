@@ -3,8 +3,11 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 
-namespace ArdupilotMega
+namespace ArdupilotMega.Controls
 {
+    /// <summary>
+    /// Mono handles calls from other thread difrently - this prevents those crashs
+    /// </summary>
     class myGMAP : GMap.NET.WindowsForms.GMapControl
     {
         public bool inOnPaint = false;

@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Text;
-using System.IO.Ports;
 using System.Runtime.InteropServices;
 using System.Collections; // hashs
 using System.Diagnostics; // stopwatch
@@ -13,6 +12,7 @@ using System.Threading;
 using ArdupilotMega.Controls;
 using System.ComponentModel;
 using log4net;
+using ArdupilotMega.Comms;
 
 namespace ArdupilotMega
 {
@@ -1027,9 +1027,9 @@ namespace ArdupilotMega
 
         public void requestDatastream(byte id, byte hzrate)
         {
-            
-            double pps = 0;
             /*
+            double pps = 0;
+            
             switch (id)
             {
                 case (byte)MAVLink.MAV_DATA_STREAM.ALL:
@@ -1962,7 +1962,7 @@ namespace ArdupilotMega
                 // test fabs idea - http://diydrones.com/profiles/blogs/flying-with-joystick?commentId=705844%3AComment%3A818712&xg_source=msg_com_blogpost
                 if (BaseStream.IsOpen && BaseStream.BytesToWrite > 0)
                 {
-                    // slow down execution.
+                    // slow down execution. else 100% cpu
                     Thread.Sleep(1);
                     return new byte[0];
                 }
@@ -2161,8 +2161,18 @@ namespace ArdupilotMega
                 {
                     log.InfoFormat("Mavlink Bad Packet (Len Fail) len {0} pkno {1}", temp.Length, temp[5]);
 #if MAVLINK10
-                if (temp.Length == 11 && temp[0] == 'U' && temp[5] == 0)
-                    throw new Exception("Mavlink 0.9 Heartbeat, Please upgrade your AP, This planner is for Mavlink 1.0\n\n");
+                    if (temp.Length == 11 && temp[0] == 'U' && temp[5] == 0){
+                        string message ="Mavlink 0.9 Heartbeat, Please upgrade your AP, This planner is for Mavlink 1.0\n\n";
+                        System.Windows.Forms.CustomMessageBox.Show(message);
+                        throw new Exception(message);
+                    }
+#else
+                    if (temp.Length == 17 && temp[0] == 254 && temp[5] == 0)
+                    {
+                        string message = "Mavlink 1.0 Heartbeat, Please Upgrade your Mission Planner, This planner is for Mavlink 0.9\n\n";
+                        System.Windows.Forms.CustomMessageBox.Show(message);
+                        throw new Exception(message);
+                    }
 #endif
                     return new byte[0];
                 }

@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.ComponentModel;
 using System.Data;
 using System.Drawing;
@@ -23,6 +24,7 @@ using log4net;
 using ZedGraph; // Graphs
 using ArdupilotMega;
 using System.Reflection;
+using ArdupilotMega.Utilities;
 
 using System.IO;
 
@@ -710,6 +712,22 @@ namespace ArdupilotMega
             return null;
         }
 
+        public static List<KeyValuePair<int,string>> getModesList()
+        {
+            if (MainV2.cs.firmware == MainV2.Firmwares.ArduPlane)
+            {
+                var flightModes = EnumTranslator.Translate<apmmodes>();
+                return flightModes.ToList();
+            }
+            else if (MainV2.cs.firmware == MainV2.Firmwares.ArduCopter2)
+            {
+                var flightModes = EnumTranslator.Translate<ac2modes>();
+                return flightModes.ToList();
+            }
+
+            return null;
+        }
+
         public static Form LoadingBox(string title, string promptText)
         {
             Form form = new Form();
@@ -746,7 +764,7 @@ namespace ArdupilotMega
             Form form = new Form();
             System.Windows.Forms.Label label = new System.Windows.Forms.Label();
             CheckBox chk = new CheckBox();
-            MyButton buttonOk = new MyButton();
+            ArdupilotMega.Controls.MyButton buttonOk = new ArdupilotMega.Controls.MyButton();
             System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(MainV2));
             form.Icon = ((System.Drawing.Icon)(resources.GetObject("$this.Icon")));
 
@@ -806,8 +824,8 @@ namespace ArdupilotMega
             Form form = new Form();
             System.Windows.Forms.Label label = new System.Windows.Forms.Label();
             TextBox textBox = new TextBox();
-            MyButton buttonOk = new MyButton();
-            MyButton buttonCancel = new MyButton();
+            ArdupilotMega.Controls.MyButton buttonOk = new ArdupilotMega.Controls.MyButton();
+            ArdupilotMega.Controls.MyButton buttonCancel = new ArdupilotMega.Controls.MyButton();
 
             form.TopMost = true;
 

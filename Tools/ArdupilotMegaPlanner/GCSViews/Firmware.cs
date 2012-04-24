@@ -7,6 +7,7 @@ using System.IO;
 using System.Xml;
 using System.Net;
 using log4net;
+using ArdupilotMega.Arduino;
 
 namespace ArdupilotMega.GCSViews
 {
@@ -222,42 +223,6 @@ namespace ArdupilotMega.GCSViews
                     update(items[0]);
                 }
                 return;
-            }
-            else if (items.Count == 2 && false)
-            {
-                XorPlus select = new XorPlus();
-                ThemeManager.ApplyThemeTo(select);
-                select.ShowDialog();
-                int a = 0;
-
-                if (select.frame == "")
-                {
-                    return;
-                }
-
-                foreach (software temp in items)
-                {
-                    if (select.frame == "+" && temp.name.Contains("Plus"))
-                    {
-                        DialogResult dr = CustomMessageBox.Show("Are you sure you want to upload " + items[a].name + "?", "Continue", MessageBoxButtons.YesNo);
-                        if (dr == System.Windows.Forms.DialogResult.Yes)
-                        {
-                            update(items[a]);
-                            return;
-                        }
-                    }
-                    else if (select.frame == "X" && temp.name.Contains("X"))
-                    {
-                        DialogResult dr = CustomMessageBox.Show("Are you sure you want to upload " + items[a].name + "?", "Continue", MessageBoxButtons.YesNo);
-                        if (dr == System.Windows.Forms.DialogResult.Yes)
-                        {
-                            update(items[a]);
-                            return;
-                        }
-                    }
-
-                    a++;
-                }
             }
             else
             {
