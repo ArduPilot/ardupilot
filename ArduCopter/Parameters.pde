@@ -21,14 +21,14 @@ static const AP_Param::Info var_info[] PROGMEM = {
 	GSCALAR(sysid_my_gcs,	"SYSID_MYGCS"),
 	GSCALAR(serial3_baud,	"SERIAL3_BAUD"),
 	
-	// @Param
+	// @Param: ALT_HOLD_RTL
 	// @DisplayName: Alt Hold RTL
 	// @Description: This is the altitude the model will move to before Returning to Launch
 	// @Units: Meters
 	// @Range: 0 400
 	GSCALAR(RTL_altitude,	"ALT_HOLD_RTL"),
 	
-	// @Param
+	// @Param: SONAR_ENABLE
 	// @DisplayName: Enable Sonar
 	// @Description: Setting this to true (1) will enable the sonar. Setting this to false(0) will disable the sonar
 	GSCALAR(sonar_enabled,	"SONAR_ENABLE"),
@@ -44,19 +44,19 @@ static const AP_Param::Info var_info[] PROGMEM = {
 	GSCALAR(low_voltage,	"LOW_VOLT"),
 	GSCALAR(super_simple,	"SUPER_SIMPLE"),
 	
-	// @Param
+	// @Param: RTL_LAND
 	// @DisplayName: RTL Land
 	// @Description: Setting this to true (1) will enable landing after RTL. Setting this to false(0) will disable landing after RTL.
 	GSCALAR(rtl_land_enabled,	"RTL_LAND"),
 
-	// @Param
+	// @Param: APPROACH_ALT
 	// @DisplayName: Alt Hold RTL
 	// @Description: This is the altitude the model will move to before Returning to Launch
 	// @Units: Meters
 	// @Range: 1 10
 	GSCALAR(rtl_approach_alt,	"APPROACH_ALT"),
 
-	// @Param
+	// @Param: RETRO_LOITER
 	// @DisplayName: Retro Loiter
 	// @Description: Setting this to true (1) will enable the Loiter from 2.0.49. Setting this to false(0) will use the most recent Loiter routines.
 	GSCALAR(retro_loiter,	"RETRO_LOITER"),
@@ -116,7 +116,7 @@ static const AP_Param::Info var_info[] PROGMEM = {
 	GGROUP(rc_camera_pitch,	"CAM_P_", RC_Channel),
 	GGROUP(rc_camera_roll,	"CAM_R_", RC_Channel),
 	
-	// @Param
+	// @Param: RC_SPEED
 	// @DisplayName: ESC Update Speed
 	// @Description: This is the speed in Hertz that your ESCs will receive updates
 	// @Units: Hertz (Hz)
@@ -129,7 +129,7 @@ static const AP_Param::Info var_info[] PROGMEM = {
 	GSCALAR(camera_roll_gain, 	"CAM_R_G"),
 	GSCALAR(stabilize_d, 		"STAB_D"),
 	
-	// @Param
+	// @Param: STAB_D_S
 	// @DisplayName: Stabilize D Schedule
 	// @Description: This value is a percentage of scheduling applied to the Stabilize D term.
 	// @Range: 0 1
