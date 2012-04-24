@@ -36,43 +36,43 @@ namespace ArdupilotMega.GCSViews
         }
         
         
-        private ImageLabel pictureBoxAPM;
-        private ImageLabel pictureBoxQuad;
-        private ImageLabel pictureBoxHexa;
-        private ImageLabel pictureBoxTri;
-        private ImageLabel pictureBoxY6;
+        private ArdupilotMega.Controls.ImageLabel pictureBoxAPM;
+        private ArdupilotMega.Controls.ImageLabel pictureBoxQuad;
+        private ArdupilotMega.Controls.ImageLabel pictureBoxHexa;
+        private ArdupilotMega.Controls.ImageLabel pictureBoxTri;
+        private ArdupilotMega.Controls.ImageLabel pictureBoxY6;
         private System.Windows.Forms.Label lbl_status;
         private System.Windows.Forms.ProgressBar progress;
         private System.Windows.Forms.Label label2;
-        private ImageLabel pictureBoxHeli;
-        private MyButton BUT_setup;
+        private ArdupilotMega.Controls.ImageLabel pictureBoxHeli;
+        private ArdupilotMega.Controls.MyButton BUT_setup;
         private PictureBox pictureBoxHilimage;
         private PictureBox pictureBoxAPHil;
         private PictureBox pictureBoxACHil;
         private PictureBox pictureBoxACHHil;
-        private ImageLabel pictureBoxOcta;
+        private ArdupilotMega.Controls.ImageLabel pictureBoxOcta;
         private Label label1;
-        private ImageLabel pictureBoxOctav;
+        private ArdupilotMega.Controls.ImageLabel pictureBoxOctav;
 
         private void InitializeComponent()
         {
             System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(Firmware));
-            this.pictureBoxAPM = new ArdupilotMega.ImageLabel();
-            this.pictureBoxQuad = new ArdupilotMega.ImageLabel();
-            this.pictureBoxHexa = new ArdupilotMega.ImageLabel();
-            this.pictureBoxTri = new ArdupilotMega.ImageLabel();
-            this.pictureBoxY6 = new ArdupilotMega.ImageLabel();
+            this.pictureBoxAPM = new ArdupilotMega.Controls.ImageLabel();
+            this.pictureBoxQuad = new ArdupilotMega.Controls.ImageLabel();
+            this.pictureBoxHexa = new ArdupilotMega.Controls.ImageLabel();
+            this.pictureBoxTri = new ArdupilotMega.Controls.ImageLabel();
+            this.pictureBoxY6 = new ArdupilotMega.Controls.ImageLabel();
             this.lbl_status = new System.Windows.Forms.Label();
             this.progress = new System.Windows.Forms.ProgressBar();
             this.label2 = new System.Windows.Forms.Label();
-            this.pictureBoxHeli = new ArdupilotMega.ImageLabel();
-            this.BUT_setup = new ArdupilotMega.MyButton();
+            this.pictureBoxHeli = new ArdupilotMega.Controls.ImageLabel();
+            this.BUT_setup = new ArdupilotMega.Controls.MyButton();
             this.pictureBoxHilimage = new System.Windows.Forms.PictureBox();
             this.pictureBoxAPHil = new System.Windows.Forms.PictureBox();
             this.pictureBoxACHil = new System.Windows.Forms.PictureBox();
             this.pictureBoxACHHil = new System.Windows.Forms.PictureBox();
-            this.pictureBoxOcta = new ArdupilotMega.ImageLabel();
-            this.pictureBoxOctav = new ArdupilotMega.ImageLabel();
+            this.pictureBoxOcta = new ArdupilotMega.Controls.ImageLabel();
+            this.pictureBoxOctav = new ArdupilotMega.Controls.ImageLabel();
             this.label1 = new System.Windows.Forms.Label();
             ((System.ComponentModel.ISupportInitialize)(this.pictureBoxHilimage)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.pictureBoxAPHil)).BeginInit();

@@ -5,8 +5,6 @@ using System.Windows.Forms;
 
 namespace ArdupilotMega.Controls
 {
-
-
     /// <summary>
     /// Form that is shown to the user during a background operation
     /// </summary>

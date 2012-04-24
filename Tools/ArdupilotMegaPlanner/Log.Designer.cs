@@ -30,13 +30,13 @@
         {
             System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(Log));
             this.TXT_seriallog = new System.Windows.Forms.TextBox();
-            this.BUT_DLall = new ArdupilotMega.MyButton();
-            this.BUT_DLthese = new ArdupilotMega.MyButton();
-            this.BUT_clearlogs = new ArdupilotMega.MyButton();
+            this.BUT_DLall = new ArdupilotMega.Controls.MyButton();
+            this.BUT_DLthese = new ArdupilotMega.Controls.MyButton();
+            this.BUT_clearlogs = new ArdupilotMega.Controls.MyButton();
             this.CHK_logs = new System.Windows.Forms.CheckedListBox();
             this.TXT_status = new System.Windows.Forms.TextBox();
-            this.BUT_redokml = new ArdupilotMega.MyButton();
-            this.BUT_firstperson = new ArdupilotMega.MyButton();
+            this.BUT_redokml = new ArdupilotMega.Controls.MyButton();
+            this.BUT_firstperson = new ArdupilotMega.Controls.MyButton();
             this.SuspendLayout();
             // 
             // TXT_seriallog
@@ -114,13 +114,13 @@
 
         #endregion
 
-        private MyButton BUT_DLall;
-        private MyButton BUT_DLthese;
-        private MyButton BUT_clearlogs;
+        private ArdupilotMega.Controls.MyButton BUT_DLall;
+        private ArdupilotMega.Controls.MyButton BUT_DLthese;
+        private ArdupilotMega.Controls.MyButton BUT_clearlogs;
         private System.Windows.Forms.CheckedListBox CHK_logs;
         private System.Windows.Forms.TextBox TXT_status;
-        private MyButton BUT_redokml;
+        private ArdupilotMega.Controls.MyButton BUT_redokml;
         private System.Windows.Forms.TextBox TXT_seriallog;
-        private MyButton BUT_firstperson;
+        private ArdupilotMega.Controls.MyButton BUT_firstperson;
     }
 }

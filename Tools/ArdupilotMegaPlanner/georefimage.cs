@@ -19,16 +19,16 @@ namespace ArdupilotMega
     {
         private static readonly ILog log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
         private OpenFileDialog openFileDialog1;
-        private MyButton BUT_browselog;
-        private MyButton BUT_browsedir;
+        private ArdupilotMega.Controls.MyButton BUT_browselog;
+        private ArdupilotMega.Controls.MyButton BUT_browsedir;
         private TextBox TXT_logfile;
         private TextBox TXT_jpgdir;
         private TextBox TXT_offsetseconds;
-        private MyButton BUT_doit;
+        private ArdupilotMega.Controls.MyButton BUT_doit;
         private FolderBrowserDialog folderBrowserDialog1;
         private Label label1;
         private TextBox TXT_outputlog;
-        private MyButton BUT_estoffset;
+        private ArdupilotMega.Controls.MyButton BUT_estoffset;
 
         int latpos = 4, lngpos = 5, altpos = 7, cogpos = 9;
         private NumericUpDown numericUpDown1;
@@ -40,7 +40,7 @@ namespace ArdupilotMega
         private Label label4;
         private Label label5;
         private Label label6;
-        private MyButton BUT_Geotagimages;
+        private ArdupilotMega.Controls.MyButton BUT_Geotagimages;
 
         internal Georefimage() {
             InitializeComponent();
@@ -419,11 +419,11 @@ namespace ArdupilotMega
             this.folderBrowserDialog1 = new System.Windows.Forms.FolderBrowserDialog();
             this.TXT_outputlog = new System.Windows.Forms.TextBox();
             this.label1 = new System.Windows.Forms.Label();
-            this.BUT_Geotagimages = new ArdupilotMega.MyButton();
-            this.BUT_estoffset = new ArdupilotMega.MyButton();
-            this.BUT_doit = new ArdupilotMega.MyButton();
-            this.BUT_browsedir = new ArdupilotMega.MyButton();
-            this.BUT_browselog = new ArdupilotMega.MyButton();
+            this.BUT_Geotagimages = new ArdupilotMega.Controls.MyButton();
+            this.BUT_estoffset = new ArdupilotMega.Controls.MyButton();
+            this.BUT_doit = new ArdupilotMega.Controls.MyButton();
+            this.BUT_browsedir = new ArdupilotMega.Controls.MyButton();
+            this.BUT_browselog = new ArdupilotMega.Controls.MyButton();
             this.numericUpDown1 = new System.Windows.Forms.NumericUpDown();
             this.numericUpDown2 = new System.Windows.Forms.NumericUpDown();
             this.numericUpDown3 = new System.Windows.Forms.NumericUpDown();

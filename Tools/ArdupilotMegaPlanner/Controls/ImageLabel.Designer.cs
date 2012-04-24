@@ -1,4 +1,4 @@
-﻿namespace ArdupilotMega
+﻿namespace ArdupilotMega.Controls
 {
     partial class ImageLabel
     {

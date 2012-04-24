@@ -27,7 +27,7 @@ static bool mavlink_active;
 
 static NOINLINE void send_heartbeat(mavlink_channel_t chan)
 {
-#ifdef MAVLINK10
+#if MAVLINK10 == ENABLED
     uint8_t base_mode = MAV_MODE_FLAG_CUSTOM_MODE_ENABLED;
     uint8_t system_status = MAV_STATE_ACTIVE;
     uint32_t custom_mode = control_mode;
@@ -130,7 +130,7 @@ static NOINLINE void send_fence_status(mavlink_channel_t chan)
 
 static NOINLINE void send_extended_status1(mavlink_channel_t chan, uint16_t packet_drops)
 {
-#ifdef MAVLINK10
+#if MAVLINK10 == ENABLED
     uint32_t control_sensors_present = 0;
     uint32_t control_sensors_enabled;
     uint32_t control_sensors_health;
@@ -142,7 +142,7 @@ static NOINLINE void send_extended_status1(mavlink_channel_t chan, uint16_t pack
         control_sensors_present |= (1<<2); // compass present
     }
     control_sensors_present |= (1<<3); // absolute pressure sensor present
-    if (g_gps != NULL && g_gps->fix) {
+    if (g_gps != NULL && g_gps->status() == GPS::GPS_OK) {
         control_sensors_present |= (1<<5); // GPS present
     }
     control_sensors_present |= (1<<10); // 3D angular rate control
@@ -337,12 +337,10 @@ static void NOINLINE send_nav_controller_output(mavlink_channel_t chan)
 
 static void NOINLINE send_gps_raw(mavlink_channel_t chan)
 {
-#ifdef MAVLINK10
-    uint8_t fix;
-    if (g_gps->status() == 2) {
+#if MAVLINK10 == ENABLED
+    uint8_t fix = g_gps->status();
+    if (fix == GPS::GPS_OK) {
         fix = 3;
-    } else {
-        fix = 0;
     }
 
     mavlink_msg_gps_raw_int_send(
@@ -418,14 +416,14 @@ static void NOINLINE send_radio_out(mavlink_channel_t chan)
             chan,
             micros(),
             0, // port
-            g.channel_roll.radio_out,
-            g.channel_pitch.radio_out,
-            g.channel_throttle.radio_out,
-            g.channel_rudder.radio_out,
-            g.rc_5.radio_out,       // XXX currently only 4 RC channels defined
-            g.rc_6.radio_out,
-            g.rc_7.radio_out,
-            g.rc_8.radio_out);
+            APM_RC.OutputCh_current(0),
+            APM_RC.OutputCh_current(1),
+            APM_RC.OutputCh_current(2),
+            APM_RC.OutputCh_current(3),
+            APM_RC.OutputCh_current(4),
+            APM_RC.OutputCh_current(5),
+            APM_RC.OutputCh_current(6),
+            APM_RC.OutputCh_current(7));
 }
 
 static void NOINLINE send_vfr_hud(mavlink_channel_t chan)
@@ -503,6 +501,21 @@ static void NOINLINE send_ahrs(mavlink_channel_t chan)
 #endif // HIL_MODE != HIL_MODE_ATTITUDE
 
 #ifdef DESKTOP_BUILD
+void mavlink_simstate_send(uint8_t chan,
+                           float roll,
+                           float pitch,
+                           float yaw,
+                           float xAcc,
+                           float yAcc,
+                           float zAcc,
+                           float p,
+                           float q,
+                           float r)
+{
+    mavlink_msg_simstate_send((mavlink_channel_t)chan,
+                              roll, pitch, yaw, xAcc, yAcc, zAcc, p, q, r);
+}
+
 // report simulator state
 static void NOINLINE send_simstate(mavlink_channel_t chan)
 {
@@ -594,7 +607,7 @@ static bool mavlink_try_send_message(mavlink_channel_t chan, enum ap_message id,
         break;
 
     case MSG_GPS_RAW:
-#ifdef MAVLINK10
+#if MAVLINK10 == ENABLED
         CHECK_PAYLOAD_SIZE(GPS_RAW_INT);
 #else
         CHECK_PAYLOAD_SIZE(GPS_RAW);
@@ -1084,7 +1097,7 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
             break;
         }
 
-#ifdef MAVLINK10
+#if MAVLINK10 == ENABLED
     case MAVLINK_MSG_ID_COMMAND_LONG:
         {
             // decode
@@ -1109,15 +1122,10 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
                 result = MAV_RESULT_ACCEPTED;
                 break;
 
-#if 0
-                // not implemented yet, but could implement some of them
-            case MAV_CMD_NAV_LAND:
-            case MAV_CMD_NAV_TAKEOFF:
-            case MAV_CMD_NAV_ROI:
-            case MAV_CMD_NAV_PATHPLANNING:
+            case MAV_CMD_MISSION_START:
+                set_mode(AUTO);
+                result = MAV_RESULT_ACCEPTED;
                 break;
-#endif
-
 
             case MAV_CMD_PREFLIGHT_CALIBRATION:
                 if (packet.param1 == 1 ||
@@ -1279,7 +1287,7 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
             mavlink_set_mode_t packet;
             mavlink_msg_set_mode_decode(msg, &packet);
 
-#ifdef MAVLINK10
+#if MAVLINK10 == ENABLED
             if (!(packet.base_mode & MAV_MODE_FLAG_CUSTOM_MODE_ENABLED)) {
                 // we ignore base_mode as there is no sane way to map
                 // from that bitmap to a APM flight mode. We rely on
@@ -1335,7 +1343,7 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
             break;
 		}
 
-#ifndef MAVLINK10
+#if MAVLINK10 == DISABLED
     case MAVLINK_MSG_ID_SET_NAV_MODE:
 		{
             // decode
@@ -1687,7 +1695,7 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
                 break;
 
             default:
-#ifdef MAVLINK10
+#if MAVLINK10 == ENABLED
                 result = MAV_MISSION_UNSUPPORTED;
 #endif
                 break;
@@ -1903,7 +1911,7 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
 	#if HIL_MODE != HIL_MODE_DISABLED
         // This is used both as a sensor and to pass the location
         // in HIL_ATTITUDE mode.
-#ifdef MAVLINK10
+#if MAVLINK10 == ENABLED
 	case MAVLINK_MSG_ID_GPS_RAW_INT:
         {
             // decode
@@ -1941,7 +1949,7 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
             airspeed = 100*packet.airspeed;
             break;
         }
-#ifdef MAVLINK10
+#if MAVLINK10 == ENABLED
 	case MAVLINK_MSG_ID_HIL_STATE:
 		{
 			mavlink_hil_state_t packet;
@@ -2263,4 +2271,20 @@ static void gcs_send_text_fmt(const prog_char_t *fmt, ...)
     if (gcs3.initialised) {
         mavlink_send_message(MAVLINK_COMM_1, MSG_STATUSTEXT, 0);
     }
+}
+
+// this code was moved from libraries/GCS_MAVLink to allow compile
+// time selection of MAVLink 1.0
+BetterStream	*mavlink_comm_0_port;
+BetterStream	*mavlink_comm_1_port;
+
+mavlink_system_t mavlink_system = {7,1,0,0};
+
+uint8_t mavlink_check_target(uint8_t sysid, uint8_t compid)
+{
+    if (sysid != mavlink_system.sysid)
+        return 1;
+    // Currently we are not checking for correct compid since APM is not passing mavlink info to any subsystem
+    // If it is addressed to our system ID we assume it is for us
+    return 0; // no error
 }

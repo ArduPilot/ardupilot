@@ -24,6 +24,8 @@ namespace ArdupilotMega.GCSViews.ConfigurationView
             this.backstageView.AddPage(new BackstageView.BackstageViewPage(new ConfigAccelerometerCalibrationPlane(), "ArduPlane Level"));
             this.backstageView.AddPage(new BackstageView.BackstageViewPage(new ConfigTradHeli(), "Heli Setup"));
 
+            this.backstageView.AddPage(new BackstageView.BackstageViewPage(new ConfigRawParams(), "Raw params (Advanced)"));
+
             this.backstageView.AddPage(new BackstageView.BackstageViewPage(new ArdupilotMega._3DRradio(), "3DR Radio"));
 
             this.backstageView.AddPage(new BackstageView.BackstageViewPage(new ArdupilotMega.Antenna.Tracker(), "Antenna Tracker"));

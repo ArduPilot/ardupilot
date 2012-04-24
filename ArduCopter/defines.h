@@ -224,8 +224,6 @@
 #define RELAY_TOGGLE 5
 #define STOP_REPEAT 10
 
-//#define MAV_CMD_CONDITION_YAW 23
-
 //  GCS Message ID's
 /// NOTE: to ensure we never block on sending MAVLink messages
 /// please keep each MSG_ to a single MAVLink message. If need be

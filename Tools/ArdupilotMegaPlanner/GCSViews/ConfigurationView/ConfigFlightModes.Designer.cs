@@ -59,7 +59,7 @@
             this.CMB_fmode2 = new System.Windows.Forms.ComboBox();
             this.label1 = new System.Windows.Forms.Label();
             this.CMB_fmode1 = new System.Windows.Forms.ComboBox();
-            this.BUT_SaveModes = new ArdupilotMega.MyButton();
+            this.BUT_SaveModes = new ArdupilotMega.Controls.MyButton();
             ((System.ComponentModel.ISupportInitialize)(this.currentStateBindingSource)).BeginInit();
             this.SuspendLayout();
             // 
@@ -312,7 +312,7 @@
         private System.Windows.Forms.ComboBox CMB_fmode2;
         private System.Windows.Forms.Label label1;
         private System.Windows.Forms.ComboBox CMB_fmode1;
-        private MyButton BUT_SaveModes;
+        private ArdupilotMega.Controls.MyButton BUT_SaveModes;
         private System.Windows.Forms.BindingSource currentStateBindingSource;
     }
 }

@@ -196,7 +196,7 @@
     <value>BUT_updatecheck</value>
   </data>
   <data name="&gt;&gt;BUT_updatecheck.Type" xml:space="preserve">
-    <value>ArdupilotMega.MyButton, ArdupilotMegaPlanner, Version=1.0.0.0, Culture=neutral, PublicKeyToken=38326cb7e06851fc</value>
+    <value>ArdupilotMega.Controls.MyButton, ArdupilotMegaPlanner, Version=1.0.0.0, Culture=neutral, PublicKeyToken=38326cb7e06851fc</value>
   </data>
   <data name="&gt;&gt;BUT_updatecheck.Parent" xml:space="preserve">
     <value>$this</value>

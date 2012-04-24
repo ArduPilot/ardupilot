@@ -7,6 +7,7 @@ using System.Linq;
 using System.Text;
 using System.Windows.Forms;
 using ArdupilotMega.Controls.BackstageView;
+using ArdupilotMega.Controls;
 
 namespace ArdupilotMega.GCSViews.ConfigurationView
 {
@@ -428,7 +429,7 @@ namespace ArdupilotMega.GCSViews.ConfigurationView
                         }
                         if (control[0].GetType() == typeof(MyTrackBar))
                         {
-                            MyTrackBar temp = (MyTrackBar)control[0];
+                            ArdupilotMega.Controls.MyTrackBar temp = (MyTrackBar)control[0];
                             string option = MainV2.comPort.param[value].ToString();
                             temp.Value = int.Parse(option);
                         }

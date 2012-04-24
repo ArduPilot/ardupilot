@@ -355,7 +355,7 @@
     <Compile Include="Controls\AGauge.cs">
       <SubType>UserControl</SubType>
     </Compile>
-    <Compile Include="ArduinoDetect.cs" />
+    <Compile Include="Arduino\ArduinoDetect.cs" />
     <Compile Include="AviWriter.cs" />
     <Compile Include="Camera.cs">
       <SubType>Form</SubType>
@@ -364,12 +364,12 @@
       <DependentUpon>Camera.cs</DependentUpon>
     </Compile>
     <Compile Include="Capture.cs" />
-    <Compile Include="CommsSerialInterface.cs" />
-    <Compile Include="CommsSerialPort.cs">
+    <Compile Include="Comms\CommsSerialInterface.cs" />
+    <Compile Include="Comms\CommsSerialPort.cs">
       <SubType>Component</SubType>
     </Compile>
-    <Compile Include="CommsTCPSerial.cs" />
-    <Compile Include="CommsUdpSerial.cs" />
+    <Compile Include="Comms\CommsTCPSerial.cs" />
+    <Compile Include="Comms\CommsUdpSerial.cs" />
     <Compile Include="Controls\ImageLabel.cs">
       <SubType>UserControl</SubType>
     </Compile>
@@ -378,12 +378,6 @@
     </Compile>
     <Compile Include="Controls\myGMAP.cs">
       <SubType>UserControl</SubType>
-    </Compile>
-    <Compile Include="Controls\XorPlus.cs">
-      <SubType>Form</SubType>
-    </Compile>
-    <Compile Include="Controls\XorPlus.Designer.cs">
-      <DependentUpon>XorPlus.cs</DependentUpon>
     </Compile>
     <Compile Include="Radio\IHex.cs" />
     <Compile Include="Mavlink\MavlinkCRC.cs" />
@@ -439,14 +433,14 @@
     <Compile Include="Common.cs">
       <SubType>Component</SubType>
     </Compile>
-    <Compile Include="ArduinoComms.cs" />
+    <Compile Include="Arduino\ArduinoComms.cs" />
     <Compile Include="Controls\MyLabel.cs">
       <SubType>Component</SubType>
     </Compile>
     <Compile Include="Controls\MyUserControl.cs">
       <SubType>UserControl</SubType>
     </Compile>
-    <Compile Include="ArduinoSTKv2.cs">
+    <Compile Include="Arduino\ArduinoSTKv2.cs">
       <SubType>Component</SubType>
     </Compile>
     <Compile Include="paramcompare.cs">
@@ -473,7 +467,7 @@
     <Compile Include="GCSViews\Terminal.Designer.cs">
       <DependentUpon>Terminal.cs</DependentUpon>
     </Compile>
-    <Compile Include="HUD.cs">
+    <Compile Include="Controls\HUD.cs">
       <SubType>UserControl</SubType>
     </Compile>
     <Compile Include="MainV2.cs">
@@ -515,7 +509,7 @@
       <DependentUpon>ElevationProfile.cs</DependentUpon>
     </Compile>
     <Compile Include="MAVLink.cs" />
-    <Compile Include="ArduinoSTK.cs">
+    <Compile Include="Arduino\ArduinoSTK.cs">
       <SubType>Component</SubType>
     </Compile>
     <Compile Include="Log.cs">
@@ -759,9 +753,6 @@
     </EmbeddedResource>
     <EmbeddedResource Include="Controls\ImageLabel.resx">
       <DependentUpon>ImageLabel.cs</DependentUpon>
-    </EmbeddedResource>
-    <EmbeddedResource Include="Controls\XorPlus.resx">
-      <DependentUpon>XorPlus.cs</DependentUpon>
     </EmbeddedResource>
     <EmbeddedResource Include="GCSViews\Configuration.es-ES.resx">
       <DependentUpon>Configuration.cs</DependentUpon>
@@ -1024,6 +1015,7 @@
     </EmbeddedResource>
     <EmbeddedResource Include="GCSViews\Simulation.resx">
       <DependentUpon>Simulation.cs</DependentUpon>
+      <SubType>Designer</SubType>
     </EmbeddedResource>
     <EmbeddedResource Include="GCSViews\Simulation.zh-Hans.resx">
       <DependentUpon>Simulation.cs</DependentUpon>
@@ -1099,10 +1091,6 @@
     <None Include="m3u\networklink.kml">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
-    <None Include="MAC\Info.plist" />
-    <None Include="MAC\run.sh" />
-    <None Include="Msi\installer.bat" />
-    <None Include="Msi\installer.wxs" />
     <None Include="mykey.snk" />
     <None Include="Properties\app.manifest" />
     <None Include="Properties\DataSources\CurrentState.datasource" />

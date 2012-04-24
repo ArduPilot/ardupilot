@@ -16,6 +16,7 @@ using GMap.NET.CacheProviders;
 using log4net;
 
 using System.Security.Permissions;
+using ArdupilotMega.Arduino;
 
 namespace ArdupilotMega
 {

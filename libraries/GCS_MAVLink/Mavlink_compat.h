@@ -53,6 +53,8 @@
 #define mavlink_msg_waypoint_set_current_decode mavlink_msg_mission_set_current_decode
 #define mavlink_waypoint_set_current_t mavlink_mission_set_current_t
 
+#define MAV_CMD_DO_SET_ROI MAV_CMD_NAV_ROI
+
 static uint8_t mav_var_type(enum ap_var_type t)
 {
     if (t == AP_PARAM_INT8) {

@@ -1,0 +1,54 @@
+<?xml version='1.0'?>
+<mavlink>
+    <include>common.xml</include>
+    <enums>
+        <enum name="UALBERTA_AUTOPILOT_MODE">
+            <description>Available autopilot modes for ualberta uav</description>
+            <entry name="MODE_MANUAL_DIRECT">Raw input pulse widts sent to output</entry>
+            <entry name="MODE_MANUAL_SCALED">Inputs are normalized using calibration, the converted back to raw pulse widths for output</entry>
+            <entry name="MODE_AUTO_PID_ATT"> dfsdfs</entry>
+            <entry name="MODE_AUTO_PID_VEL"> dfsfds</entry>
+            <entry name="MODE_AUTO_PID_POS"> dfsdfsdfs</entry>
+        </enum>
+        <enum name="UALBERTA_NAV_MODE">
+            <description>Navigation filter mode</description>
+            <entry name="NAV_AHRS_INIT" />
+            <entry name="NAV_AHRS">AHRS mode</entry>
+            <entry name="NAV_INS_GPS_INIT">INS/GPS initialization mode</entry>
+            <entry name="NAV_INS_GPS">INS/GPS mode</entry>
+        </enum>
+        <enum name="UALBERTA_PILOT_MODE">
+            <description>Mode currently commanded by pilot</description>
+            <entry name="PILOT_MANUAL"> sdf</entry>
+            <entry name="PILOT_AUTO"> dfs</entry>
+            <entry name="PILOT_ROTO"> Rotomotion mode </entry>
+        </enum>
+    </enums>
+    <messages>
+        <message id="220" name="NAV_FILTER_BIAS">
+            <description>Accelerometer and Gyro biases from the navigation filter</description>
+            <field type="uint64_t" name="usec">Timestamp (microseconds)</field>
+            <field type="float" name="accel_0">b_f[0]</field>
+            <field type="float" name="accel_1">b_f[1]</field>
+            <field type="float" name="accel_2">b_f[2]</field>
+            <field type="float" name="gyro_0">b_f[0]</field>
+            <field type="float" name="gyro_1">b_f[1]</field>
+            <field type="float" name="gyro_2">b_f[2]</field>
+        </message>
+        <message id="221" name="RADIO_CALIBRATION">
+            <description>Complete set of calibration parameters for the radio</description>
+            <field type="uint16_t[3]" name="aileron">Aileron setpoints: left, center, right</field>
+            <field type="uint16_t[3]" name="elevator">Elevator setpoints: nose down, center, nose up</field>
+            <field type="uint16_t[3]" name="rudder">Rudder setpoints: nose left, center, nose right</field>
+            <field type="uint16_t[2]" name="gyro">Tail gyro mode/gain setpoints: heading hold, rate mode</field>
+            <field type="uint16_t[5]" name="pitch">Pitch curve setpoints (every 25%)</field>
+            <field type="uint16_t[5]" name="throttle">Throttle curve setpoints (every 25%)</field>
+        </message>
+        <message id="222" name="UALBERTA_SYS_STATUS">
+            <description>System status specific to ualberta uav</description>
+            <field type="uint8_t" name="mode">System mode, see UALBERTA_AUTOPILOT_MODE ENUM</field>
+            <field type="uint8_t" name="nav_mode">Navigation mode, see UALBERTA_NAV_MODE ENUM</field>
+            <field type="uint8_t" name="pilot">Pilot mode, see UALBERTA_PILOT_MODE</field>
+        </message>
+    </messages>
+</mavlink>

@@ -52,7 +52,7 @@
             this.label10 = new System.Windows.Forms.Label();
             this.label11 = new System.Windows.Forms.Label();
             this.label12 = new System.Windows.Forms.Label();
-            this.BUT_connect = new ArdupilotMega.MyButton();
+            this.BUT_connect = new ArdupilotMega.Controls.MyButton();
             this.LBL_pantrim = new System.Windows.Forms.Label();
             this.LBL_tilttrim = new System.Windows.Forms.Label();
             ((System.ComponentModel.ISupportInitialize)(this.TRK_pantrim)).BeginInit();
@@ -266,7 +266,7 @@
         private System.Windows.Forms.ComboBox CMB_interface;
         private System.Windows.Forms.Label label1;
         private System.Windows.Forms.ComboBox CMB_baudrate;
-        private MyButton BUT_connect;
+        private ArdupilotMega.Controls.MyButton BUT_connect;
         private System.Windows.Forms.ComboBox CMB_serialport;
         private System.Windows.Forms.TrackBar TRK_pantrim;
         private System.Windows.Forms.TextBox TXT_panrange;

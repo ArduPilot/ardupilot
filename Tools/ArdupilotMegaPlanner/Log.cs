@@ -17,6 +17,7 @@ using ICSharpCode.SharpZipLib.Zip;
 using ICSharpCode.SharpZipLib.Checksums;
 using ICSharpCode.SharpZipLib.Core;
 using log4net;
+using ArdupilotMega.Comms;
 
 
 namespace ArdupilotMega

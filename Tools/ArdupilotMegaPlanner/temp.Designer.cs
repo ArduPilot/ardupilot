@@ -28,26 +28,26 @@
         /// </summary>
         private void InitializeComponent()
         {
-            this.button1 = new ArdupilotMega.MyButton();
-            this.BUT_wipeeeprom = new ArdupilotMega.MyButton();
-            this.BUT_flashdl = new ArdupilotMega.MyButton();
-            this.BUT_flashup = new ArdupilotMega.MyButton();
-            this.BUT_dleeprom = new ArdupilotMega.MyButton();
-            this.BUT_copy1280 = new ArdupilotMega.MyButton();
-            this.BUT_copy2560 = new ArdupilotMega.MyButton();
-            this.BUT_copyto2560 = new ArdupilotMega.MyButton();
-            this.BUT_copyto1280 = new ArdupilotMega.MyButton();
-            this.button2 = new ArdupilotMega.MyButton();
+            this.button1 = new ArdupilotMega.Controls.MyButton();
+            this.BUT_wipeeeprom = new ArdupilotMega.Controls.MyButton();
+            this.BUT_flashdl = new ArdupilotMega.Controls.MyButton();
+            this.BUT_flashup = new ArdupilotMega.Controls.MyButton();
+            this.BUT_dleeprom = new ArdupilotMega.Controls.MyButton();
+            this.BUT_copy1280 = new ArdupilotMega.Controls.MyButton();
+            this.BUT_copy2560 = new ArdupilotMega.Controls.MyButton();
+            this.BUT_copyto2560 = new ArdupilotMega.Controls.MyButton();
+            this.BUT_copyto1280 = new ArdupilotMega.Controls.MyButton();
+            this.button2 = new ArdupilotMega.Controls.MyButton();
             this.label1 = new System.Windows.Forms.Label();
             this.label2 = new System.Windows.Forms.Label();
             this.label3 = new System.Windows.Forms.Label();
-            this.BUT_geinjection = new ArdupilotMega.MyButton();
-            this.BUT_clearcustommaps = new ArdupilotMega.MyButton();
-            this.BUT_lang_edit = new ArdupilotMega.MyButton();
-            this.BUT_georefimage = new ArdupilotMega.MyButton();
-            this.BUT_follow_me = new ArdupilotMega.MyButton();
-            this.BUT_ant_track = new ArdupilotMega.MyButton();
-            this.BUT_magcalib = new ArdupilotMega.MyButton();
+            this.BUT_geinjection = new ArdupilotMega.Controls.MyButton();
+            this.BUT_clearcustommaps = new ArdupilotMega.Controls.MyButton();
+            this.BUT_lang_edit = new ArdupilotMega.Controls.MyButton();
+            this.BUT_georefimage = new ArdupilotMega.Controls.MyButton();
+            this.BUT_follow_me = new ArdupilotMega.Controls.MyButton();
+            this.BUT_ant_track = new ArdupilotMega.Controls.MyButton();
+            this.BUT_magcalib = new ArdupilotMega.Controls.MyButton();
             this.SuspendLayout();
             // 
             // button1
@@ -279,26 +279,26 @@
 
         #endregion
 
-        private MyButton button1;
-        private MyButton BUT_wipeeeprom;
-        private MyButton BUT_flashdl;
-        private MyButton BUT_flashup;
-        private MyButton BUT_dleeprom;
-        private MyButton BUT_copy1280;
-        private MyButton BUT_copy2560;
-        private MyButton BUT_copyto2560;
-        private MyButton BUT_copyto1280;
-        private MyButton button2;
+        private ArdupilotMega.Controls.MyButton button1;
+        private ArdupilotMega.Controls.MyButton BUT_wipeeeprom;
+        private ArdupilotMega.Controls.MyButton BUT_flashdl;
+        private ArdupilotMega.Controls.MyButton BUT_flashup;
+        private ArdupilotMega.Controls.MyButton BUT_dleeprom;
+        private ArdupilotMega.Controls.MyButton BUT_copy1280;
+        private ArdupilotMega.Controls.MyButton BUT_copy2560;
+        private ArdupilotMega.Controls.MyButton BUT_copyto2560;
+        private ArdupilotMega.Controls.MyButton BUT_copyto1280;
+        private ArdupilotMega.Controls.MyButton button2;
         private System.Windows.Forms.Label label1;
         private System.Windows.Forms.Label label2;
         private System.Windows.Forms.Label label3;
-        private MyButton BUT_geinjection;
-        private MyButton BUT_clearcustommaps;
-        private MyButton BUT_lang_edit;
-        private MyButton BUT_georefimage;
-        private MyButton BUT_follow_me;
-        private MyButton BUT_ant_track;
-        private MyButton BUT_magcalib;
+        private ArdupilotMega.Controls.MyButton BUT_geinjection;
+        private ArdupilotMega.Controls.MyButton BUT_clearcustommaps;
+        private ArdupilotMega.Controls.MyButton BUT_lang_edit;
+        private ArdupilotMega.Controls.MyButton BUT_georefimage;
+        private ArdupilotMega.Controls.MyButton BUT_follow_me;
+        private ArdupilotMega.Controls.MyButton BUT_ant_track;
+        private ArdupilotMega.Controls.MyButton BUT_magcalib;
         //private SharpVectors.Renderers.Forms.SvgPictureBox svgPictureBox1;
 
     }

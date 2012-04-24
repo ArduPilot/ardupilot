@@ -28,3 +28,6 @@
 
 */
 
+// use this to enable the new MAVLink 1.0 protocol, instead of the
+// older 0.9 protocol
+// #define MAVLINK10 ENABLED
