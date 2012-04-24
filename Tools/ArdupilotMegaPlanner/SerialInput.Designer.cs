@@ -30,7 +30,7 @@
         {
             System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(SerialInput));
             this.CMB_serialport = new System.Windows.Forms.ComboBox();
-            this.BUT_connect = new ArdupilotMega.MyButton();
+            this.BUT_connect = new ArdupilotMega.Controls.MyButton();
             this.CMB_baudrate = new System.Windows.Forms.ComboBox();
             this.label1 = new System.Windows.Forms.Label();
             this.LBL_location = new System.Windows.Forms.Label();
@@ -125,7 +125,7 @@
         #endregion
 
         private System.Windows.Forms.ComboBox CMB_serialport;
-        private MyButton BUT_connect;
+        private ArdupilotMega.Controls.MyButton BUT_connect;
         private System.Windows.Forms.ComboBox CMB_baudrate;
         private System.Windows.Forms.Label label1;
         private System.Windows.Forms.Label LBL_location;

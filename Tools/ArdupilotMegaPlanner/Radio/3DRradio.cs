@@ -9,6 +9,8 @@ using System.Windows.Forms;
 using System.Net;
 using System.IO;
 using ArdupilotMega.Controls.BackstageView;
+using ArdupilotMega.Arduino;
+using ArdupilotMega.Comms;
 
 namespace ArdupilotMega
 {
@@ -226,7 +228,7 @@ S13: MANCHESTER=0
 
         private void BUT_savesettings_Click(object sender, EventArgs e)
         {
-            ArdupilotMega.ICommsSerial comPort = new SerialPort();
+            ArdupilotMega.Comms.ICommsSerial comPort = new SerialPort();
 
             try
             {
@@ -402,7 +404,7 @@ S13: MANCHESTER=0
 
         private void BUT_getcurrent_Click(object sender, EventArgs e)
         {
-            ArdupilotMega.ICommsSerial comPort = new SerialPort();
+            ArdupilotMega.Comms.ICommsSerial comPort = new SerialPort();
 
             try
             {
@@ -531,7 +533,7 @@ S13: MANCHESTER=0
             BUT_savesettings.Enabled = true;
         }
 
-        string Serial_ReadLine(ArdupilotMega.ICommsSerial comPort)
+        string Serial_ReadLine(ArdupilotMega.Comms.ICommsSerial comPort)
         {
             StringBuilder sb = new StringBuilder();
             DateTime Deadline = DateTime.Now.AddMilliseconds(comPort.ReadTimeout);
@@ -550,7 +552,7 @@ S13: MANCHESTER=0
             return sb.ToString();
         }
 
-        string doCommand(ArdupilotMega.ICommsSerial comPort, string cmd, int level = 0)
+        string doCommand(ArdupilotMega.Comms.ICommsSerial comPort, string cmd, int level = 0)
         {
             if (!comPort.IsOpen)
                 return "";
@@ -602,7 +604,7 @@ S13: MANCHESTER=0
             return ans;
         }
 
-        bool doConnect(ArdupilotMega.ICommsSerial comPort)
+        bool doConnect(ArdupilotMega.Comms.ICommsSerial comPort)
         {
             // clear buffer
             comPort.DiscardInBuffer();

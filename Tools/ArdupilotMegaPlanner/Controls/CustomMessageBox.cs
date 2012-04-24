@@ -169,7 +169,7 @@ namespace System.Windows.Forms
             switch (buttons)
             {
                 case MessageBoxButtons.OK:
-                    var but = new MyButton
+                    var but = new ArdupilotMega.Controls.MyButton
                                   {
                                       Size = new Size(75, 23),
                                       Text = "OK",
@@ -187,7 +187,7 @@ namespace System.Windows.Forms
                     if (msgBoxFrm.Width < (75 * 2 + FORM_X_MARGIN * 3))
                         msgBoxFrm.Width = (75 * 2 + FORM_X_MARGIN * 3);
 
-                    var butyes = new MyButton
+                    var butyes = new ArdupilotMega.Controls.MyButton
                     {
                         Size = new Size(75, 23),
                         Text = "Yes",
@@ -199,7 +199,7 @@ namespace System.Windows.Forms
                     msgBoxFrm.Controls.Add(butyes);
                     msgBoxFrm.AcceptButton = butyes;
 
-                    var butno = new MyButton
+                    var butno = new ArdupilotMega.Controls.MyButton
                     {
                         Size = new Size(75, 23),
                         Text = "No",

@@ -141,13 +141,13 @@
             this.RLL2SRV_P = new System.Windows.Forms.NumericUpDown();
             this.label52 = new System.Windows.Forms.Label();
             this.TabAC = new System.Windows.Forms.TabPage();
-            this.myLabel4 = new ArdupilotMega.MyLabel();
-            this.myLabel3 = new ArdupilotMega.MyLabel();
+            this.myLabel4 = new ArdupilotMega.Controls.MyLabel();
+            this.myLabel3 = new ArdupilotMega.Controls.MyLabel();
             this.TUNE_LOW = new System.Windows.Forms.NumericUpDown();
             this.TUNE_HIGH = new System.Windows.Forms.NumericUpDown();
-            this.myLabel2 = new ArdupilotMega.MyLabel();
+            this.myLabel2 = new ArdupilotMega.Controls.MyLabel();
             this.TUNE = new System.Windows.Forms.ComboBox();
-            this.myLabel1 = new ArdupilotMega.MyLabel();
+            this.myLabel1 = new ArdupilotMega.Controls.MyLabel();
             this.CH7_OPT = new System.Windows.Forms.ComboBox();
             this.groupBox5 = new System.Windows.Forms.GroupBox();
             this.THR_RATE_D = new System.Windows.Forms.NumericUpDown();
@@ -276,17 +276,17 @@
             this.CHK_hudshow = new System.Windows.Forms.CheckBox();
             this.label92 = new System.Windows.Forms.Label();
             this.CMB_videosources = new System.Windows.Forms.ComboBox();
-            this.BUT_Joystick = new ArdupilotMega.MyButton();
-            this.BUT_videostop = new ArdupilotMega.MyButton();
-            this.BUT_videostart = new ArdupilotMega.MyButton();
+            this.BUT_Joystick = new ArdupilotMega.Controls.MyButton();
+            this.BUT_videostop = new ArdupilotMega.Controls.MyButton();
+            this.BUT_videostart = new ArdupilotMega.Controls.MyButton();
             this.TabSetup = new System.Windows.Forms.TabPage();
             this.label109 = new System.Windows.Forms.Label();
-            this.BUT_rerequestparams = new ArdupilotMega.MyButton();
-            this.BUT_writePIDS = new ArdupilotMega.MyButton();
-            this.BUT_save = new ArdupilotMega.MyButton();
-            this.BUT_load = new ArdupilotMega.MyButton();
+            this.BUT_rerequestparams = new ArdupilotMega.Controls.MyButton();
+            this.BUT_writePIDS = new ArdupilotMega.Controls.MyButton();
+            this.BUT_save = new ArdupilotMega.Controls.MyButton();
+            this.BUT_load = new ArdupilotMega.Controls.MyButton();
             this.toolTip1 = new System.Windows.Forms.ToolTip(this.components);
-            this.BUT_compare = new ArdupilotMega.MyButton();
+            this.BUT_compare = new ArdupilotMega.Controls.MyButton();
             this.groupBox17 = new System.Windows.Forms.GroupBox();
             this.LOITER_LAT_D = new System.Windows.Forms.NumericUpDown();
             this.label28 = new System.Windows.Forms.Label();
@@ -2333,10 +2333,10 @@
 
         #endregion
 
-        private MyButton BUT_save;
-        private MyButton BUT_load;
+        private ArdupilotMega.Controls.MyButton BUT_save;
+        private ArdupilotMega.Controls.MyButton BUT_load;
         private System.Windows.Forms.DataGridView Params;
-        private MyButton BUT_writePIDS;
+        private ArdupilotMega.Controls.MyButton BUT_writePIDS;
         private System.Windows.Forms.TabControl ConfigTabs;
         private System.Windows.Forms.TabPage TabAP;
         private System.Windows.Forms.TabPage TabAC;
@@ -2505,8 +2505,8 @@
         private System.Windows.Forms.TabPage TabPlanner;
         private System.Windows.Forms.Label label92;
         private System.Windows.Forms.ComboBox CMB_videosources;
-        private MyButton BUT_videostop;
-        private MyButton BUT_videostart;
+        private ArdupilotMega.Controls.MyButton BUT_videostop;
+        private ArdupilotMega.Controls.MyButton BUT_videostart;
         private System.Windows.Forms.CheckBox CHK_hudshow;
         private System.Windows.Forms.CheckBox CHK_enablespeech;
         private System.Windows.Forms.ComboBox CMB_language;
@@ -2516,9 +2516,9 @@
         private System.Windows.Forms.CheckBox CHK_speechwaypoint;
         private System.Windows.Forms.CheckBox CHK_speechmode;
         private System.Windows.Forms.CheckBox CHK_speechcustom;
-        private MyButton BUT_rerequestparams;
+        private ArdupilotMega.Controls.MyButton BUT_rerequestparams;
         private System.Windows.Forms.CheckBox CHK_speechbattery;
-        private MyButton BUT_Joystick;
+        private ArdupilotMega.Controls.MyButton BUT_Joystick;
         private System.Windows.Forms.Label label96;
         private System.Windows.Forms.Label label95;
         private System.Windows.Forms.ComboBox CMB_speedunits;
@@ -2553,7 +2553,7 @@
         private System.Windows.Forms.DataGridViewTextBoxColumn Default;
         private System.Windows.Forms.DataGridViewTextBoxColumn mavScale;
         private System.Windows.Forms.DataGridViewTextBoxColumn RawValue;
-        private MyButton BUT_compare;
+        private ArdupilotMega.Controls.MyButton BUT_compare;
         private System.Windows.Forms.Label label12;
         private System.Windows.Forms.CheckBox CHK_GDIPlus;
         private System.Windows.Forms.GroupBox groupBox5;
@@ -2566,9 +2566,9 @@
         private System.Windows.Forms.Label label109;
         private System.Windows.Forms.Label label14;
         private System.Windows.Forms.Label label26;
-        private MyLabel myLabel1;
+        private ArdupilotMega.Controls.MyLabel myLabel1;
         private System.Windows.Forms.ComboBox CH7_OPT;
-        private MyLabel myLabel2;
+        private ArdupilotMega.Controls.MyLabel myLabel2;
         private System.Windows.Forms.ComboBox TUNE;
         private System.Windows.Forms.NumericUpDown RATE_YAW_D;
         private System.Windows.Forms.Label label10;
@@ -2586,8 +2586,8 @@
         private System.Windows.Forms.NumericUpDown TUNE_HIGH;
         private System.Windows.Forms.Label label33;
         private System.Windows.Forms.ComboBox CMB_ratesensors;
-        private MyLabel myLabel4;
-        private MyLabel myLabel3;
+        private ArdupilotMega.Controls.MyLabel myLabel4;
+        private ArdupilotMega.Controls.MyLabel myLabel3;
         private System.Windows.Forms.GroupBox groupBox17;
         private System.Windows.Forms.NumericUpDown LOITER_LAT_D;
         private System.Windows.Forms.Label label28;

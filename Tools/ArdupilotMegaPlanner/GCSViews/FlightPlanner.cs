@@ -21,6 +21,7 @@ using System.Threading;
 using log4net;
 using SharpKml.Base;
 using SharpKml.Dom;
+using ArdupilotMega.Controls;
 
 
 

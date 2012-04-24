@@ -8,6 +8,8 @@ using System.Text;
 using System.Windows.Forms;
 using ArdupilotMega;
 using System.IO.Ports;
+using ArdupilotMega.Comms;
+
 
 namespace ArdupilotMega.GCSViews
 {

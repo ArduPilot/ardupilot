@@ -193,7 +193,7 @@
     <value>Graphit</value>
   </data>
   <data name="&gt;&gt;Graphit.Type" xml:space="preserve">
-    <value>ArdupilotMega.MyButton, ArdupilotMegaPlanner, Version=1.0.0.0, Culture=neutral, PublicKeyToken=ff91852278f5092c</value>
+    <value>ArdupilotMega.Controls.MyButton, ArdupilotMegaPlanner, Version=1.0.0.0, Culture=neutral, PublicKeyToken=ff91852278f5092c</value>
   </data>
   <data name="&gt;&gt;Graphit.Parent" xml:space="preserve">
     <value>$this</value>
@@ -220,7 +220,7 @@
     <value>BUT_cleargraph</value>
   </data>
   <data name="&gt;&gt;BUT_cleargraph.Type" xml:space="preserve">
-    <value>ArdupilotMega.MyButton, ArdupilotMegaPlanner, Version=1.0.0.0, Culture=neutral, PublicKeyToken=ff91852278f5092c</value>
+    <value>ArdupilotMega.Controls.MyButton, ArdupilotMegaPlanner, Version=1.0.0.0, Culture=neutral, PublicKeyToken=ff91852278f5092c</value>
   </data>
   <data name="&gt;&gt;BUT_cleargraph.Parent" xml:space="preserve">
     <value>$this</value>
@@ -247,7 +247,7 @@
     <value>BUT_loadlog</value>
   </data>
   <data name="&gt;&gt;BUT_loadlog.Type" xml:space="preserve">
-    <value>ArdupilotMega.MyButton, ArdupilotMegaPlanner, Version=1.0.0.0, Culture=neutral, PublicKeyToken=ff91852278f5092c</value>
+    <value>ArdupilotMega.Controls.MyButton, ArdupilotMegaPlanner, Version=1.0.0.0, Culture=neutral, PublicKeyToken=ff91852278f5092c</value>
   </data>
   <data name="&gt;&gt;BUT_loadlog.Parent" xml:space="preserve">
     <value>$this</value>

@@ -16,6 +16,8 @@ using System.Globalization; // language
 using GMap.NET.WindowsForms.Markers;
 using ZedGraph; // Graphs
 using System.Drawing.Drawing2D;
+using ArdupilotMega.Controls;
+using ArdupilotMega.Utilities;
 
 // written by michael oborne
 namespace ArdupilotMega.GCSViews
@@ -71,7 +73,7 @@ namespace ArdupilotMega.GCSViews
 
         const float deg2rad = (float)(1.0 / rad2deg);
 
-        public static hud.HUD myhud = null;
+        public static ArdupilotMega.Controls.HUD myhud = null;
         public static GMapControl mymap = null;
 
         bool playingLog = false;
@@ -1224,7 +1226,9 @@ namespace ArdupilotMega.GCSViews
 
         private void CMB_modes_Click(object sender, EventArgs e)
         {
-            CMB_modes.DataSource = Enum.GetNames(Common.getModes());
+            CMB_modes.DataSource = Common.getModesList();
+            CMB_modes.ValueMember = "Key";
+            CMB_modes.DisplayMember = "Value";
         }
 
         private void hud1_DoubleClick(object sender, EventArgs e)

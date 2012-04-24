@@ -7,7 +7,7 @@ namespace ArdupilotMega.Antenna
 {
     interface ITrackerOutput
     {
-        SerialPort ComPort { get; set; }
+        Comms.SerialPort ComPort { get; set; }
 
         double TrimPan { get; set; }
         double TrimTilt { get; set; }

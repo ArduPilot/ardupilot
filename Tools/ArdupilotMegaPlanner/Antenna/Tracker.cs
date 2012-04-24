@@ -7,6 +7,7 @@ using System.Linq;
 using System.Text;
 using System.Windows.Forms;
 using ArdupilotMega.Controls.BackstageView;
+using ArdupilotMega.Comms;
 
 namespace ArdupilotMega.Antenna
 {

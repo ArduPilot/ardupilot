@@ -32,11 +32,11 @@
             System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(ConfigRawParams));
             System.Windows.Forms.DataGridViewCellStyle dataGridViewCellStyle1 = new System.Windows.Forms.DataGridViewCellStyle();
             System.Windows.Forms.DataGridViewCellStyle dataGridViewCellStyle2 = new System.Windows.Forms.DataGridViewCellStyle();
-            this.BUT_compare = new ArdupilotMega.MyButton();
-            this.BUT_rerequestparams = new ArdupilotMega.MyButton();
-            this.BUT_writePIDS = new ArdupilotMega.MyButton();
-            this.BUT_save = new ArdupilotMega.MyButton();
-            this.BUT_load = new ArdupilotMega.MyButton();
+            this.BUT_compare = new ArdupilotMega.Controls.MyButton();
+            this.BUT_rerequestparams = new ArdupilotMega.Controls.MyButton();
+            this.BUT_writePIDS = new ArdupilotMega.Controls.MyButton();
+            this.BUT_save = new ArdupilotMega.Controls.MyButton();
+            this.BUT_load = new ArdupilotMega.Controls.MyButton();
             this.Params = new System.Windows.Forms.DataGridView();
             this.Command = new System.Windows.Forms.DataGridViewTextBoxColumn();
             this.Value = new System.Windows.Forms.DataGridViewTextBoxColumn();
@@ -159,11 +159,11 @@
 
         #endregion
 
-        private MyButton BUT_compare;
-        private MyButton BUT_rerequestparams;
-        private MyButton BUT_writePIDS;
-        private MyButton BUT_save;
-        private MyButton BUT_load;
+        private ArdupilotMega.Controls.MyButton BUT_compare;
+        private ArdupilotMega.Controls.MyButton BUT_rerequestparams;
+        private ArdupilotMega.Controls.MyButton BUT_writePIDS;
+        private ArdupilotMega.Controls.MyButton BUT_save;
+        private ArdupilotMega.Controls.MyButton BUT_load;
         private System.Windows.Forms.DataGridView Params;
         private System.Windows.Forms.DataGridViewTextBoxColumn Command;
         private System.Windows.Forms.DataGridViewTextBoxColumn Value;

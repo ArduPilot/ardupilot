@@ -135,7 +135,7 @@
     <value>myLabel3</value>
   </data>
   <data name="&gt;&gt;myLabel3.Type" xml:space="preserve">
-    <value>ArdupilotMega.MyLabel, ArdupilotMegaPlanner, Version=1.1.4491.33622, Culture=neutral, PublicKeyToken=null</value>
+    <value>ArdupilotMega.Controls.MyLabel, ArdupilotMegaPlanner, Version=1.1.4491.33622, Culture=neutral, PublicKeyToken=null</value>
   </data>
   <data name="&gt;&gt;myLabel3.Parent" xml:space="preserve">
     <value>$this</value>
@@ -201,7 +201,7 @@
     <value>myLabel2</value>
   </data>
   <data name="&gt;&gt;myLabel2.Type" xml:space="preserve">
-    <value>ArdupilotMega.MyLabel, ArdupilotMegaPlanner, Version=1.1.4491.33622, Culture=neutral, PublicKeyToken=null</value>
+    <value>ArdupilotMega.Controls.MyLabel, ArdupilotMegaPlanner, Version=1.1.4491.33622, Culture=neutral, PublicKeyToken=null</value>
   </data>
   <data name="&gt;&gt;myLabel2.Parent" xml:space="preserve">
     <value>$this</value>
@@ -312,7 +312,7 @@
     <value>myLabel1</value>
   </data>
   <data name="&gt;&gt;myLabel1.Type" xml:space="preserve">
-    <value>ArdupilotMega.MyLabel, ArdupilotMegaPlanner, Version=1.1.4491.33622, Culture=neutral, PublicKeyToken=null</value>
+    <value>ArdupilotMega.Controls.MyLabel, ArdupilotMegaPlanner, Version=1.1.4491.33622, Culture=neutral, PublicKeyToken=null</value>
   </data>
   <data name="&gt;&gt;myLabel1.Parent" xml:space="preserve">
     <value>$this</value>

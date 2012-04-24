@@ -10,6 +10,7 @@ using System.Text;
 using System.Windows.Forms;
 using log4net;
 using ArdupilotMega.Controls.BackstageView;
+using ArdupilotMega.Controls;
 
 namespace ArdupilotMega.GCSViews.ConfigurationView
 {

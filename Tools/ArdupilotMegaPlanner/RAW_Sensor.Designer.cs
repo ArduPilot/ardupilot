@@ -53,7 +53,7 @@
             this.horizontalProgressBar2 = new ArdupilotMega.HorizontalProgressBar();
             this.horizontalProgressBar1 = new ArdupilotMega.HorizontalProgressBar();
             this.tabRawSensor = new System.Windows.Forms.TabPage();
-            this.BUT_savecsv = new ArdupilotMega.MyButton();
+            this.BUT_savecsv = new ArdupilotMega.Controls.MyButton();
             this.label3 = new System.Windows.Forms.Label();
             this.CMB_rawupdaterate = new System.Windows.Forms.ComboBox();
             this.aGauge1 = new AGaugeApp.AGauge();
@@ -1129,7 +1129,7 @@
         private VerticalProgressBar verticalProgressBar2;
         private VerticalProgressBar verticalProgressBar1;
         private System.Windows.Forms.TabControl tabControl;
-        private MyButton BUT_savecsv;
+        private ArdupilotMega.Controls.MyButton BUT_savecsv;
 
     }
 }

@@ -30,12 +30,12 @@
         {
             this.components = new System.ComponentModel.Container();
             System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(ConfigArducopter));
-            this.myLabel3 = new ArdupilotMega.MyLabel();
+            this.myLabel3 = new ArdupilotMega.Controls.MyLabel();
             this.TUNE_LOW = new System.Windows.Forms.NumericUpDown();
             this.TUNE_HIGH = new System.Windows.Forms.NumericUpDown();
-            this.myLabel2 = new ArdupilotMega.MyLabel();
+            this.myLabel2 = new ArdupilotMega.Controls.MyLabel();
             this.TUNE = new System.Windows.Forms.ComboBox();
-            this.myLabel1 = new ArdupilotMega.MyLabel();
+            this.myLabel1 = new ArdupilotMega.Controls.MyLabel();
             this.CH7_OPT = new System.Windows.Forms.ComboBox();
             this.groupBox5 = new System.Windows.Forms.GroupBox();
             this.THR_RATE_D = new System.Windows.Forms.NumericUpDown();
@@ -868,12 +868,12 @@
 
         #endregion
 
-        private MyLabel myLabel3;
+        private ArdupilotMega.Controls.MyLabel myLabel3;
         private System.Windows.Forms.NumericUpDown TUNE_LOW;
         private System.Windows.Forms.NumericUpDown TUNE_HIGH;
-        private MyLabel myLabel2;
+        private ArdupilotMega.Controls.MyLabel myLabel2;
         private System.Windows.Forms.ComboBox TUNE;
-        private MyLabel myLabel1;
+        private ArdupilotMega.Controls.MyLabel myLabel1;
         private System.Windows.Forms.ComboBox CH7_OPT;
         private System.Windows.Forms.GroupBox groupBox5;
         private System.Windows.Forms.NumericUpDown THR_RATE_D;

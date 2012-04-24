@@ -7,7 +7,6 @@ using System.Drawing;
 using System.Linq;
 using System.Text;
 using System.Windows.Forms;
-using System.IO.Ports;
 using System.IO;
 using System.Xml;
 using System.Collections;
@@ -24,6 +23,9 @@ using IronPython.Hosting;
 using log4net;
 using ArdupilotMega.Controls;
 using System.Security.Cryptography;
+using ArdupilotMega.Comms;
+using ArdupilotMega.Arduino;
+using System.IO.Ports;
 
 namespace ArdupilotMega
 {
@@ -197,7 +199,7 @@ namespace ArdupilotMega
 //                CMB_serialport.SelectedIndex = 0;
 //            }
             // ** new
-            _connectionControl.CMB_serialport.Items.AddRange(SerialPort.GetPortNames());
+            _connectionControl.CMB_serialport.Items.AddRange(ArdupilotMega.Comms.SerialPort.GetPortNames());
             _connectionControl.CMB_serialport.Items.Add("TCP");
             _connectionControl.CMB_serialport.Items.Add("UDP");
             if (_connectionControl.CMB_serialport.Items.Count > 0)
@@ -356,7 +358,7 @@ namespace ArdupilotMega
         {
             string oldport = _connectionControl.CMB_serialport.Text;
             _connectionControl.CMB_serialport.Items.Clear();
-            _connectionControl.CMB_serialport.Items.AddRange(SerialPort.GetPortNames());
+            _connectionControl.CMB_serialport.Items.AddRange(ArdupilotMega.Comms.SerialPort.GetPortNames());
             _connectionControl.CMB_serialport.Items.Add("TCP");
             _connectionControl.CMB_serialport.Items.Add("UDP");
             if (_connectionControl.CMB_serialport.Items.Contains(oldport))
@@ -565,7 +567,7 @@ namespace ArdupilotMega
                 }
                 else
                 {
-                    comPort.BaseStream = new SerialPort();
+                    comPort.BaseStream = new ArdupilotMega.Comms.SerialPort();
                 }
 
                 try
@@ -700,7 +702,7 @@ namespace ArdupilotMega
             else
             {
                 _connectionControl.CMB_baudrate.Enabled = true;
-                MainV2.comPort.BaseStream = new ArdupilotMega.SerialPort();
+                MainV2.comPort.BaseStream = new ArdupilotMega.Comms.SerialPort();
             }
 
             try

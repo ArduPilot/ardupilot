@@ -71,9 +71,9 @@
             this.CHK_hudshow = new System.Windows.Forms.CheckBox();
             this.label92 = new System.Windows.Forms.Label();
             this.CMB_videosources = new System.Windows.Forms.ComboBox();
-            this.BUT_Joystick = new ArdupilotMega.MyButton();
-            this.BUT_videostop = new ArdupilotMega.MyButton();
-            this.BUT_videostart = new ArdupilotMega.MyButton();
+            this.BUT_Joystick = new ArdupilotMega.Controls.MyButton();
+            this.BUT_videostop = new ArdupilotMega.Controls.MyButton();
+            this.BUT_videostart = new ArdupilotMega.Controls.MyButton();
             ((System.ComponentModel.ISupportInitialize)(this.NUM_tracklength)).BeginInit();
             this.SuspendLayout();
             // 
@@ -512,8 +512,8 @@
         private System.Windows.Forms.CheckBox CHK_hudshow;
         private System.Windows.Forms.Label label92;
         private System.Windows.Forms.ComboBox CMB_videosources;
-        private MyButton BUT_Joystick;
-        private MyButton BUT_videostop;
-        private MyButton BUT_videostart;
+        private ArdupilotMega.Controls.MyButton BUT_Joystick;
+        private ArdupilotMega.Controls.MyButton BUT_videostop;
+        private ArdupilotMega.Controls.MyButton BUT_videostart;
     }
 }

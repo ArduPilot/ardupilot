@@ -13,6 +13,7 @@ using System.Globalization;
 using System.Threading;
 using DirectShowLib;
 using System.Runtime.InteropServices;
+using ArdupilotMega.Controls;
 
 namespace ArdupilotMega.GCSViews
 {
