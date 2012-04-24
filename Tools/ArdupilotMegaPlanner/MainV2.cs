@@ -1232,7 +1232,7 @@ namespace ArdupilotMega
             }
 
             // TODO: Move this to a more appropriate place, like right after CheckForUpdate();
-            ParameterInformationParser.GetParameterInformation();
+            ParameterMetaDataParser.GetParameterInformation();
         }
 
 
