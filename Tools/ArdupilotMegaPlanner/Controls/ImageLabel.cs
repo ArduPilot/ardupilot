@@ -7,7 +7,7 @@ using System.Linq;
 using System.Text;
 using System.Windows.Forms;
 
-namespace ArdupilotMega
+namespace ArdupilotMega.Controls
 {
     public partial class ImageLabel : UserControl //ContainerControl
     {

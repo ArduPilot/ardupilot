@@ -8,6 +8,7 @@ using System.Text;
 using System.Windows.Forms;
 using ArdupilotMega.Controls.BackstageView;
 using ArdupilotMega.Utilities;
+using ArdupilotMega.Controls;
 
 namespace ArdupilotMega.GCSViews.ConfigurationView
 {

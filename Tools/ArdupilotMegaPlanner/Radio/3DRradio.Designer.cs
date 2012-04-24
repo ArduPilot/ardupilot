@@ -73,13 +73,13 @@
             this.ATI = new System.Windows.Forms.TextBox();
             this.label11 = new System.Windows.Forms.Label();
             this.label12 = new System.Windows.Forms.Label();
-            this.BUT_savesettings = new ArdupilotMega.MyButton();
-            this.BUT_getcurrent = new ArdupilotMega.MyButton();
+            this.BUT_savesettings = new ArdupilotMega.Controls.MyButton();
+            this.BUT_getcurrent = new ArdupilotMega.Controls.MyButton();
             this.lbl_status = new System.Windows.Forms.Label();
-            this.BUT_upload = new ArdupilotMega.MyButton();
-            this.BUT_syncS2 = new ArdupilotMega.MyButton();
-            this.BUT_syncS3 = new ArdupilotMega.MyButton();
-            this.BUT_syncS5 = new ArdupilotMega.MyButton();
+            this.BUT_upload = new ArdupilotMega.Controls.MyButton();
+            this.BUT_syncS2 = new ArdupilotMega.Controls.MyButton();
+            this.BUT_syncS3 = new ArdupilotMega.Controls.MyButton();
+            this.BUT_syncS5 = new ArdupilotMega.Controls.MyButton();
             this.label13 = new System.Windows.Forms.Label();
             this.label14 = new System.Windows.Forms.Label();
             this.label15 = new System.Windows.Forms.Label();
@@ -98,9 +98,9 @@
             this.label30 = new System.Windows.Forms.Label();
             this.label31 = new System.Windows.Forms.Label();
             this.label32 = new System.Windows.Forms.Label();
-            this.BUT_syncS8 = new ArdupilotMega.MyButton();
-            this.BUT_syncS9 = new ArdupilotMega.MyButton();
-            this.BUT_syncS10 = new ArdupilotMega.MyButton();
+            this.BUT_syncS8 = new ArdupilotMega.Controls.MyButton();
+            this.BUT_syncS9 = new ArdupilotMega.Controls.MyButton();
+            this.BUT_syncS10 = new ArdupilotMega.Controls.MyButton();
             this.SuspendLayout();
             // 
             // Progressbar
@@ -858,12 +858,12 @@
 
         #endregion
 
-        private MyButton BUT_upload;
+        private ArdupilotMega.Controls.MyButton BUT_upload;
         private System.Windows.Forms.ProgressBar Progressbar;
         private System.Windows.Forms.Label lbl_status;
         private System.Windows.Forms.ComboBox S1;
         private System.Windows.Forms.Label label1;
-        private MyButton BUT_getcurrent;
+        private ArdupilotMega.Controls.MyButton BUT_getcurrent;
         private System.Windows.Forms.TextBox S0;
         private System.Windows.Forms.Label label2;
         private System.Windows.Forms.Label label3;
@@ -878,7 +878,7 @@
         private System.Windows.Forms.CheckBox S6;
         private System.Windows.Forms.Label label8;
         private System.Windows.Forms.CheckBox S7;
-        private MyButton BUT_savesettings;
+        private ArdupilotMega.Controls.MyButton BUT_savesettings;
         private System.Windows.Forms.ToolTip toolTip1;
         private System.Windows.Forms.CheckBox RS7;
         private System.Windows.Forms.CheckBox RS6;
@@ -895,9 +895,9 @@
         private System.Windows.Forms.TextBox RSSI;
         private System.Windows.Forms.Label label11;
         private System.Windows.Forms.Label label12;
-        private MyButton BUT_syncS2;
-        private MyButton BUT_syncS3;
-        private MyButton BUT_syncS5;
+        private ArdupilotMega.Controls.MyButton BUT_syncS2;
+        private ArdupilotMega.Controls.MyButton BUT_syncS3;
+        private ArdupilotMega.Controls.MyButton BUT_syncS5;
         private System.Windows.Forms.ComboBox S9;
         private System.Windows.Forms.ComboBox S10;
         private System.Windows.Forms.ComboBox S11;
@@ -926,8 +926,8 @@
         private System.Windows.Forms.Label label30;
         private System.Windows.Forms.Label label31;
         private System.Windows.Forms.Label label32;
-        private MyButton BUT_syncS8;
-        private MyButton BUT_syncS9;
-        private MyButton BUT_syncS10;
+        private ArdupilotMega.Controls.MyButton BUT_syncS8;
+        private ArdupilotMega.Controls.MyButton BUT_syncS9;
+        private ArdupilotMega.Controls.MyButton BUT_syncS10;
     }
 }

@@ -558,7 +558,7 @@
     <value>BUT_savecsv</value>
   </data>
   <data name="&gt;&gt;BUT_savecsv.Type" xml:space="preserve">
-    <value>ArdupilotMega.MyButton, ArdupilotMegaPlanner, Version=1.0.0.0, Culture=neutral, PublicKeyToken=ff91852278f5092c</value>
+    <value>ArdupilotMega.Controls.MyButton, ArdupilotMegaPlanner, Version=1.0.0.0, Culture=neutral, PublicKeyToken=ff91852278f5092c</value>
   </data>
   <data name="&gt;&gt;BUT_savecsv.Parent" xml:space="preserve">
     <value>tabRawSensor</value>

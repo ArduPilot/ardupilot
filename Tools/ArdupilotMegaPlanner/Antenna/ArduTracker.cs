@@ -7,7 +7,7 @@ namespace ArdupilotMega.Antenna
 {
     class ArduTracker : ITrackerOutput
     {
-        public SerialPort ComPort { get; set; }
+        public Comms.SerialPort ComPort { get; set; }
         /// <summary>
         ///  0-360
         /// </summary>

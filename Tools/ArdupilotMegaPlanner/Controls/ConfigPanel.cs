@@ -118,7 +118,7 @@ namespace ArdupilotMega.Controls
 
                             this.Controls.Add(lbl);
 
-                            MyButton but = new MyButton();
+                            ArdupilotMega.Controls.MyButton but = new ArdupilotMega.Controls.MyButton();
 
                             but.Text = "Save";
                             but.Location = new Point(optionx + 100, y);

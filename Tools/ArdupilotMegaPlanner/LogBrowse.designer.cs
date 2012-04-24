@@ -32,9 +32,9 @@
             System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(LogBrowse));
             this.dataGridView1 = new System.Windows.Forms.DataGridView();
             this.zg1 = new ZedGraph.ZedGraphControl();
-            this.Graphit = new ArdupilotMega.MyButton();
-            this.BUT_cleargraph = new ArdupilotMega.MyButton();
-            this.BUT_loadlog = new ArdupilotMega.MyButton();
+            this.Graphit = new ArdupilotMega.Controls.MyButton();
+            this.BUT_cleargraph = new ArdupilotMega.Controls.MyButton();
+            this.BUT_loadlog = new ArdupilotMega.Controls.MyButton();
             this.toolTip1 = new System.Windows.Forms.ToolTip(this.components);
             ((System.ComponentModel.ISupportInitialize)(this.dataGridView1)).BeginInit();
             this.SuspendLayout();
@@ -107,9 +107,9 @@
 
         private System.Windows.Forms.DataGridView dataGridView1;
         private ZedGraph.ZedGraphControl zg1;
-        private MyButton Graphit;
-        private MyButton BUT_cleargraph;
-        private MyButton BUT_loadlog;
+        private ArdupilotMega.Controls.MyButton Graphit;
+        private ArdupilotMega.Controls.MyButton BUT_cleargraph;
+        private ArdupilotMega.Controls.MyButton BUT_loadlog;
         private System.Windows.Forms.ToolTip toolTip1;
     }
 }

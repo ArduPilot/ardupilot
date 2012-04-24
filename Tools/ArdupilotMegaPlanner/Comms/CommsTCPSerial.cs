@@ -9,9 +9,9 @@ using System.Net; // dns, ip address
 using System.Net.Sockets; // tcplistner
 using log4net;
 
-namespace System.IO.Ports
+namespace ArdupilotMega.Comms
 {
-    public class TcpSerial : ArdupilotMega.ICommsSerial
+    public class TcpSerial : ArdupilotMega.Comms.ICommsSerial
     {
         private static readonly ILog log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
         TcpClient client = new TcpClient();
@@ -93,11 +93,11 @@ namespace System.IO.Ports
             if (ArdupilotMega.MainV2.config["TCP_host"] != null)
                 host = ArdupilotMega.MainV2.config["TCP_host"].ToString();
 
-            if (Windows.Forms.DialogResult.Cancel == ArdupilotMega.Common.InputBox("remote host", "Enter host name/ip (ensure remote end is already started)", ref host))
+            if (System.Windows.Forms.DialogResult.Cancel == ArdupilotMega.Common.InputBox("remote host", "Enter host name/ip (ensure remote end is already started)", ref host))
             {
                 throw new Exception("Canceled by request");
             }
-            if (Windows.Forms.DialogResult.Cancel == ArdupilotMega.Common.InputBox("remote Port", "Enter remote port", ref dest))
+            if (System.Windows.Forms.DialogResult.Cancel == ArdupilotMega.Common.InputBox("remote Port", "Enter remote port", ref dest))
             {
                 throw new Exception("Canceled by request");
             }

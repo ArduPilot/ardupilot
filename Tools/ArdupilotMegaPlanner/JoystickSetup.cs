@@ -7,7 +7,8 @@ using System.Linq;
 using System.Text;
 using System.Windows.Forms;
 using Microsoft.DirectX.DirectInput;
-
+using ArdupilotMega.Controls;
+using ArdupilotMega.Utilities;
 
 
 namespace ArdupilotMega
@@ -408,7 +409,7 @@ namespace ArdupilotMega
         {
             MyLabel lbl = new MyLabel();
             ComboBox cmbbutton = new ComboBox();
-            MyButton mybut = new MyButton();
+            ArdupilotMega.Controls.MyButton mybut = new ArdupilotMega.Controls.MyButton();
             HorizontalProgressBar hbar = new HorizontalProgressBar();
             ComboBox cmbaction = new ComboBox();
 
@@ -440,7 +441,11 @@ namespace ArdupilotMega
 
             cmbaction.Location = new Point(hbar.Right + 5, y);
             cmbaction.Size = new Size(100, 21);
-            cmbaction.DataSource = (Enum.GetValues(Common.getModes()));
+
+            cmbaction.DataSource = Common.getModesList();
+            cmbaction.ValueMember = "Key";
+            cmbaction.DisplayMember = "Value";
+
             cmbaction.DropDownStyle = ComboBoxStyle.DropDownList;
             cmbaction.Name = "cmbaction" + name;
             if (MainV2.config["butaction" + name] != null)

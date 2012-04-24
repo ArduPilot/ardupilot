@@ -367,7 +367,7 @@
     <value>BUT_setup</value>
   </data>
   <data name="&gt;&gt;BUT_setup.Type" xml:space="preserve">
-    <value>ArdupilotMega.MyButton, ArdupilotMegaPlanner, Version=1.0.0.0, Culture=neutral, PublicKeyToken=38326cb7e06851fc</value>
+    <value>ArdupilotMega.Controls.MyButton, ArdupilotMegaPlanner, Version=1.0.0.0, Culture=neutral, PublicKeyToken=38326cb7e06851fc</value>
   </data>
   <data name="&gt;&gt;BUT_setup.Parent" xml:space="preserve">
     <value>$this</value>

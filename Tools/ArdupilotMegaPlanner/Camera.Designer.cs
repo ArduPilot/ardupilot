@@ -61,7 +61,7 @@
             this.TXT_distacflphotos = new System.Windows.Forms.TextBox();
             this.TXT_distflphotos = new System.Windows.Forms.TextBox();
             this.CMB_camera = new System.Windows.Forms.ComboBox();
-            this.BUT_save = new ArdupilotMega.MyButton();
+            this.BUT_save = new ArdupilotMega.Controls.MyButton();
             ((System.ComponentModel.ISupportInitialize)(this.num_agl)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.num_focallength)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.num_overlap)).BeginInit();
@@ -379,6 +379,6 @@
         private System.Windows.Forms.TextBox TXT_distacflphotos;
         private System.Windows.Forms.TextBox TXT_distflphotos;
         private System.Windows.Forms.ComboBox CMB_camera;
-        private MyButton BUT_save;
+        private ArdupilotMega.Controls.MyButton BUT_save;
     }
 }

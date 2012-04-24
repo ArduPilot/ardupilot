@@ -1959,7 +1959,7 @@ which result in a valid packet CRC
     <value>BUT_savesettings</value>
   </data>
   <data name="&gt;&gt;BUT_savesettings.Type" xml:space="preserve">
-    <value>ArdupilotMega.MyButton, ArdupilotMegaPlanner, Version=1.1.4494.22181, Culture=neutral, PublicKeyToken=null</value>
+    <value>ArdupilotMega.Controls.MyButton, ArdupilotMegaPlanner, Version=1.1.4494.22181, Culture=neutral, PublicKeyToken=null</value>
   </data>
   <data name="&gt;&gt;BUT_savesettings.Parent" xml:space="preserve">
     <value>$this</value>
@@ -1986,7 +1986,7 @@ which result in a valid packet CRC
     <value>BUT_getcurrent</value>
   </data>
   <data name="&gt;&gt;BUT_getcurrent.Type" xml:space="preserve">
-    <value>ArdupilotMega.MyButton, ArdupilotMegaPlanner, Version=1.1.4494.22181, Culture=neutral, PublicKeyToken=null</value>
+    <value>ArdupilotMega.Controls.MyButton, ArdupilotMegaPlanner, Version=1.1.4494.22181, Culture=neutral, PublicKeyToken=null</value>
   </data>
   <data name="&gt;&gt;BUT_getcurrent.Parent" xml:space="preserve">
     <value>$this</value>
@@ -2037,7 +2037,7 @@ which result in a valid packet CRC
     <value>BUT_upload</value>
   </data>
   <data name="&gt;&gt;BUT_upload.Type" xml:space="preserve">
-    <value>ArdupilotMega.MyButton, ArdupilotMegaPlanner, Version=1.1.4494.22181, Culture=neutral, PublicKeyToken=null</value>
+    <value>ArdupilotMega.Controls.MyButton, ArdupilotMegaPlanner, Version=1.1.4494.22181, Culture=neutral, PublicKeyToken=null</value>
   </data>
   <data name="&gt;&gt;BUT_upload.Parent" xml:space="preserve">
     <value>$this</value>
@@ -2061,7 +2061,7 @@ which result in a valid packet CRC
     <value>BUT_syncS2</value>
   </data>
   <data name="&gt;&gt;BUT_syncS2.Type" xml:space="preserve">
-    <value>ArdupilotMega.MyButton, ArdupilotMegaPlanner, Version=1.1.4494.22181, Culture=neutral, PublicKeyToken=null</value>
+    <value>ArdupilotMega.Controls.MyButton, ArdupilotMegaPlanner, Version=1.1.4494.22181, Culture=neutral, PublicKeyToken=null</value>
   </data>
   <data name="&gt;&gt;BUT_syncS2.Parent" xml:space="preserve">
     <value>$this</value>
@@ -2085,7 +2085,7 @@ which result in a valid packet CRC
     <value>BUT_syncS3</value>
   </data>
   <data name="&gt;&gt;BUT_syncS3.Type" xml:space="preserve">
-    <value>ArdupilotMega.MyButton, ArdupilotMegaPlanner, Version=1.1.4494.22181, Culture=neutral, PublicKeyToken=null</value>
+    <value>ArdupilotMega.Controls.MyButton, ArdupilotMegaPlanner, Version=1.1.4494.22181, Culture=neutral, PublicKeyToken=null</value>
   </data>
   <data name="&gt;&gt;BUT_syncS3.Parent" xml:space="preserve">
     <value>$this</value>
@@ -2109,7 +2109,7 @@ which result in a valid packet CRC
     <value>BUT_syncS5</value>
   </data>
   <data name="&gt;&gt;BUT_syncS5.Type" xml:space="preserve">
-    <value>ArdupilotMega.MyButton, ArdupilotMegaPlanner, Version=1.1.4494.22181, Culture=neutral, PublicKeyToken=null</value>
+    <value>ArdupilotMega.Controls.MyButton, ArdupilotMegaPlanner, Version=1.1.4494.22181, Culture=neutral, PublicKeyToken=null</value>
   </data>
   <data name="&gt;&gt;BUT_syncS5.Parent" xml:space="preserve">
     <value>$this</value>
@@ -2715,7 +2715,7 @@ which result in a valid packet CRC
     <value>BUT_syncS8</value>
   </data>
   <data name="&gt;&gt;BUT_syncS8.Type" xml:space="preserve">
-    <value>ArdupilotMega.MyButton, ArdupilotMegaPlanner, Version=1.1.4494.22181, Culture=neutral, PublicKeyToken=null</value>
+    <value>ArdupilotMega.Controls.MyButton, ArdupilotMegaPlanner, Version=1.1.4494.22181, Culture=neutral, PublicKeyToken=null</value>
   </data>
   <data name="&gt;&gt;BUT_syncS8.Parent" xml:space="preserve">
     <value>$this</value>
@@ -2742,7 +2742,7 @@ which result in a valid packet CRC
     <value>BUT_syncS9</value>
   </data>
   <data name="&gt;&gt;BUT_syncS9.Type" xml:space="preserve">
-    <value>ArdupilotMega.MyButton, ArdupilotMegaPlanner, Version=1.1.4494.22181, Culture=neutral, PublicKeyToken=null</value>
+    <value>ArdupilotMega.Controls.MyButton, ArdupilotMegaPlanner, Version=1.1.4494.22181, Culture=neutral, PublicKeyToken=null</value>
   </data>
   <data name="&gt;&gt;BUT_syncS9.Parent" xml:space="preserve">
     <value>$this</value>
@@ -2769,7 +2769,7 @@ which result in a valid packet CRC
     <value>BUT_syncS10</value>
   </data>
   <data name="&gt;&gt;BUT_syncS10.Type" xml:space="preserve">
-    <value>ArdupilotMega.MyButton, ArdupilotMegaPlanner, Version=1.1.4494.22181, Culture=neutral, PublicKeyToken=null</value>
+    <value>ArdupilotMega.Controls.MyButton, ArdupilotMegaPlanner, Version=1.1.4494.22181, Culture=neutral, PublicKeyToken=null</value>
   </data>
   <data name="&gt;&gt;BUT_syncS10.Parent" xml:space="preserve">
     <value>$this</value>

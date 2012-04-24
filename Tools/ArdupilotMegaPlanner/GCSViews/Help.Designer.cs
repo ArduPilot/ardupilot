@@ -31,7 +31,7 @@
             System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(Help));
             this.richTextBox1 = new System.Windows.Forms.RichTextBox();
             this.CHK_showconsole = new System.Windows.Forms.CheckBox();
-            this.BUT_updatecheck = new ArdupilotMega.MyButton();
+            this.BUT_updatecheck = new ArdupilotMega.Controls.MyButton();
             this.SuspendLayout();
             // 
             // richTextBox1
@@ -71,7 +71,7 @@
         #endregion
 
         private System.Windows.Forms.RichTextBox richTextBox1;
-        private MyButton BUT_updatecheck;
+        private ArdupilotMega.Controls.MyButton BUT_updatecheck;
         private System.Windows.Forms.CheckBox CHK_showconsole;
 
     }

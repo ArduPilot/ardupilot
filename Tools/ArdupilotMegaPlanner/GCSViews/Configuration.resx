@@ -367,7 +367,7 @@
     <value>myLabel2</value>
   </data>
   <data name="&gt;&gt;myLabel2.Type" xml:space="preserve">
-    <value>ArdupilotMega.MyLabel, ArdupilotMegaPlanner, Version=1.1.4484.12593, Culture=neutral, PublicKeyToken=null</value>
+    <value>ArdupilotMega.Controls.MyLabel, ArdupilotMegaPlanner, Version=1.1.4484.12593, Culture=neutral, PublicKeyToken=null</value>
   </data>
   <data name="&gt;&gt;myLabel2.Parent" xml:space="preserve">
     <value>groupBox17</value>
@@ -379,7 +379,7 @@
     <value>myLabel4</value>
   </data>
   <data name="&gt;&gt;myLabel4.Type" xml:space="preserve">
-    <value>ArdupilotMega.MyLabel, ArdupilotMegaPlanner, Version=1.1.4484.12593, Culture=neutral, PublicKeyToken=null</value>
+    <value>ArdupilotMega.Controls.MyLabel, ArdupilotMegaPlanner, Version=1.1.4484.12593, Culture=neutral, PublicKeyToken=null</value>
   </data>
   <data name="&gt;&gt;myLabel4.Parent" xml:space="preserve">
     <value>groupBox17</value>
@@ -403,7 +403,7 @@
     <value>myLabel3</value>
   </data>
   <data name="&gt;&gt;myLabel3.Type" xml:space="preserve">
-    <value>ArdupilotMega.MyLabel, ArdupilotMegaPlanner, Version=1.1.4484.12593, Culture=neutral, PublicKeyToken=null</value>
+    <value>ArdupilotMega.Controls.MyLabel, ArdupilotMegaPlanner, Version=1.1.4484.12593, Culture=neutral, PublicKeyToken=null</value>
   </data>
   <data name="&gt;&gt;myLabel3.Parent" xml:space="preserve">
     <value>groupBox17</value>
@@ -415,7 +415,7 @@
     <value>myLabel1</value>
   </data>
   <data name="&gt;&gt;myLabel1.Type" xml:space="preserve">
-    <value>ArdupilotMega.MyLabel, ArdupilotMegaPlanner, Version=1.1.4484.12593, Culture=neutral, PublicKeyToken=null</value>
+    <value>ArdupilotMega.Controls.MyLabel, ArdupilotMegaPlanner, Version=1.1.4484.12593, Culture=neutral, PublicKeyToken=null</value>
   </data>
   <data name="&gt;&gt;myLabel1.Parent" xml:space="preserve">
     <value>groupBox17</value>
@@ -2341,7 +2341,7 @@
     <value>BUT_Joystick</value>
   </data>
   <data name="&gt;&gt;BUT_Joystick.Type" xml:space="preserve">
-    <value>ArdupilotMega.MyButton, ArdupilotMegaPlanner, Version=1.1.4484.12593, Culture=neutral, PublicKeyToken=null</value>
+    <value>ArdupilotMega.Controls.MyButton, ArdupilotMegaPlanner, Version=1.1.4484.12593, Culture=neutral, PublicKeyToken=null</value>
   </data>
   <data name="&gt;&gt;BUT_Joystick.Parent" xml:space="preserve">
     <value>TabPlanner</value>
@@ -2353,7 +2353,7 @@
     <value>BUT_videostop</value>
   </data>
   <data name="&gt;&gt;BUT_videostop.Type" xml:space="preserve">
-    <value>ArdupilotMega.MyButton, ArdupilotMegaPlanner, Version=1.1.4484.12593, Culture=neutral, PublicKeyToken=null</value>
+    <value>ArdupilotMega.Controls.MyButton, ArdupilotMegaPlanner, Version=1.1.4484.12593, Culture=neutral, PublicKeyToken=null</value>
   </data>
   <data name="&gt;&gt;BUT_videostop.Parent" xml:space="preserve">
     <value>TabPlanner</value>
@@ -2365,7 +2365,7 @@
     <value>BUT_videostart</value>
   </data>
   <data name="&gt;&gt;BUT_videostart.Type" xml:space="preserve">
-    <value>ArdupilotMega.MyButton, ArdupilotMegaPlanner, Version=1.1.4484.12593, Culture=neutral, PublicKeyToken=null</value>
+    <value>ArdupilotMega.Controls.MyButton, ArdupilotMegaPlanner, Version=1.1.4484.12593, Culture=neutral, PublicKeyToken=null</value>
   </data>
   <data name="&gt;&gt;BUT_videostart.Parent" xml:space="preserve">
     <value>TabPlanner</value>
@@ -5926,7 +5926,7 @@
     <value>myLabel4</value>
   </data>
   <data name="&gt;&gt;myLabel4.Type" xml:space="preserve">
-    <value>ArdupilotMega.MyLabel, ArdupilotMegaPlanner, Version=1.1.4484.12593, Culture=neutral, PublicKeyToken=null</value>
+    <value>ArdupilotMega.Controls.MyLabel, ArdupilotMegaPlanner, Version=1.1.4484.12593, Culture=neutral, PublicKeyToken=null</value>
   </data>
   <data name="&gt;&gt;myLabel4.Parent" xml:space="preserve">
     <value>groupBox17</value>
@@ -5950,7 +5950,7 @@
     <value>myLabel3</value>
   </data>
   <data name="&gt;&gt;myLabel3.Type" xml:space="preserve">
-    <value>ArdupilotMega.MyLabel, ArdupilotMegaPlanner, Version=1.1.4484.12593, Culture=neutral, PublicKeyToken=null</value>
+    <value>ArdupilotMega.Controls.MyLabel, ArdupilotMegaPlanner, Version=1.1.4484.12593, Culture=neutral, PublicKeyToken=null</value>
   </data>
   <data name="&gt;&gt;myLabel3.Parent" xml:space="preserve">
     <value>groupBox17</value>
@@ -6016,7 +6016,7 @@
     <value>myLabel2</value>
   </data>
   <data name="&gt;&gt;myLabel2.Type" xml:space="preserve">
-    <value>ArdupilotMega.MyLabel, ArdupilotMegaPlanner, Version=1.1.4484.12593, Culture=neutral, PublicKeyToken=null</value>
+    <value>ArdupilotMega.Controls.MyLabel, ArdupilotMegaPlanner, Version=1.1.4484.12593, Culture=neutral, PublicKeyToken=null</value>
   </data>
   <data name="&gt;&gt;myLabel2.Parent" xml:space="preserve">
     <value>groupBox17</value>
@@ -6127,7 +6127,7 @@
     <value>myLabel1</value>
   </data>
   <data name="&gt;&gt;myLabel1.Type" xml:space="preserve">
-    <value>ArdupilotMega.MyLabel, ArdupilotMegaPlanner, Version=1.1.4484.12593, Culture=neutral, PublicKeyToken=null</value>
+    <value>ArdupilotMega.Controls.MyLabel, ArdupilotMegaPlanner, Version=1.1.4484.12593, Culture=neutral, PublicKeyToken=null</value>
   </data>
   <data name="&gt;&gt;myLabel1.Parent" xml:space="preserve">
     <value>groupBox17</value>
@@ -9018,7 +9018,7 @@ GDI+ = Enabled</value>
     <value>BUT_Joystick</value>
   </data>
   <data name="&gt;&gt;BUT_Joystick.Type" xml:space="preserve">
-    <value>ArdupilotMega.MyButton, ArdupilotMegaPlanner, Version=1.1.4484.12593, Culture=neutral, PublicKeyToken=null</value>
+    <value>ArdupilotMega.Controls.MyButton, ArdupilotMegaPlanner, Version=1.1.4484.12593, Culture=neutral, PublicKeyToken=null</value>
   </data>
   <data name="&gt;&gt;BUT_Joystick.Parent" xml:space="preserve">
     <value>TabPlanner</value>
@@ -9045,7 +9045,7 @@ GDI+ = Enabled</value>
     <value>BUT_videostop</value>
   </data>
   <data name="&gt;&gt;BUT_videostop.Type" xml:space="preserve">
-    <value>ArdupilotMega.MyButton, ArdupilotMegaPlanner, Version=1.1.4484.12593, Culture=neutral, PublicKeyToken=null</value>
+    <value>ArdupilotMega.Controls.MyButton, ArdupilotMegaPlanner, Version=1.1.4484.12593, Culture=neutral, PublicKeyToken=null</value>
   </data>
   <data name="&gt;&gt;BUT_videostop.Parent" xml:space="preserve">
     <value>TabPlanner</value>
@@ -9072,7 +9072,7 @@ GDI+ = Enabled</value>
     <value>BUT_videostart</value>
   </data>
   <data name="&gt;&gt;BUT_videostart.Type" xml:space="preserve">
-    <value>ArdupilotMega.MyButton, ArdupilotMegaPlanner, Version=1.1.4484.12593, Culture=neutral, PublicKeyToken=null</value>
+    <value>ArdupilotMega.Controls.MyButton, ArdupilotMegaPlanner, Version=1.1.4484.12593, Culture=neutral, PublicKeyToken=null</value>
   </data>
   <data name="&gt;&gt;BUT_videostart.Parent" xml:space="preserve">
     <value>TabPlanner</value>
@@ -9120,7 +9120,7 @@ GDI+ = Enabled</value>
     <value>BUT_rerequestparams</value>
   </data>
   <data name="&gt;&gt;BUT_rerequestparams.Type" xml:space="preserve">
-    <value>ArdupilotMega.MyButton, ArdupilotMegaPlanner, Version=1.1.4484.12593, Culture=neutral, PublicKeyToken=null</value>
+    <value>ArdupilotMega.Controls.MyButton, ArdupilotMegaPlanner, Version=1.1.4484.12593, Culture=neutral, PublicKeyToken=null</value>
   </data>
   <data name="&gt;&gt;BUT_rerequestparams.Parent" xml:space="preserve">
     <value>$this</value>
@@ -9153,7 +9153,7 @@ GDI+ = Enabled</value>
     <value>BUT_writePIDS</value>
   </data>
   <data name="&gt;&gt;BUT_writePIDS.Type" xml:space="preserve">
-    <value>ArdupilotMega.MyButton, ArdupilotMegaPlanner, Version=1.1.4484.12593, Culture=neutral, PublicKeyToken=null</value>
+    <value>ArdupilotMega.Controls.MyButton, ArdupilotMegaPlanner, Version=1.1.4484.12593, Culture=neutral, PublicKeyToken=null</value>
   </data>
   <data name="&gt;&gt;BUT_writePIDS.Parent" xml:space="preserve">
     <value>$this</value>
@@ -9189,7 +9189,7 @@ GDI+ = Enabled</value>
     <value>BUT_save</value>
   </data>
   <data name="&gt;&gt;BUT_save.Type" xml:space="preserve">
-    <value>ArdupilotMega.MyButton, ArdupilotMegaPlanner, Version=1.1.4484.12593, Culture=neutral, PublicKeyToken=null</value>
+    <value>ArdupilotMega.Controls.MyButton, ArdupilotMegaPlanner, Version=1.1.4484.12593, Culture=neutral, PublicKeyToken=null</value>
   </data>
   <data name="&gt;&gt;BUT_save.Parent" xml:space="preserve">
     <value>$this</value>
@@ -9225,7 +9225,7 @@ GDI+ = Enabled</value>
     <value>BUT_load</value>
   </data>
   <data name="&gt;&gt;BUT_load.Type" xml:space="preserve">
-    <value>ArdupilotMega.MyButton, ArdupilotMegaPlanner, Version=1.1.4484.12593, Culture=neutral, PublicKeyToken=null</value>
+    <value>ArdupilotMega.Controls.MyButton, ArdupilotMegaPlanner, Version=1.1.4484.12593, Culture=neutral, PublicKeyToken=null</value>
   </data>
   <data name="&gt;&gt;BUT_load.Parent" xml:space="preserve">
     <value>$this</value>
@@ -9258,7 +9258,7 @@ GDI+ = Enabled</value>
     <value>BUT_compare</value>
   </data>
   <data name="&gt;&gt;BUT_compare.Type" xml:space="preserve">
-    <value>ArdupilotMega.MyButton, ArdupilotMegaPlanner, Version=1.1.4484.12593, Culture=neutral, PublicKeyToken=null</value>
+    <value>ArdupilotMega.Controls.MyButton, ArdupilotMegaPlanner, Version=1.1.4484.12593, Culture=neutral, PublicKeyToken=null</value>
   </data>
   <data name="&gt;&gt;BUT_compare.Parent" xml:space="preserve">
     <value>$this</value>

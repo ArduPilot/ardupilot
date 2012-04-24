@@ -31,7 +31,7 @@
             this.components = new System.ComponentModel.Container();
             System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(ConfigAccelerometerCalibrationPlane));
             this.label28 = new System.Windows.Forms.Label();
-            this.BUT_levelplane = new ArdupilotMega.MyButton();
+            this.BUT_levelplane = new ArdupilotMega.Controls.MyButton();
             this.CHK_manuallevel = new System.Windows.Forms.CheckBox();
             this.toolTip1 = new System.Windows.Forms.ToolTip(this.components);
             this.label1 = new System.Windows.Forms.Label();
@@ -88,7 +88,7 @@
         #endregion
 
         private System.Windows.Forms.Label label28;
-        private MyButton BUT_levelplane;
+        private ArdupilotMega.Controls.MyButton BUT_levelplane;
         private System.Windows.Forms.CheckBox CHK_manuallevel;
         private System.Windows.Forms.ToolTip toolTip1;
         private System.Windows.Forms.Label label1;

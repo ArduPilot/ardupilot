@@ -403,7 +403,7 @@
     <value>BUT_Calibrateradio</value>
   </data>
   <data name="&gt;&gt;BUT_Calibrateradio.Type" xml:space="preserve">
-    <value>ArdupilotMega.MyButton, ArdupilotMegaPlanner, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null</value>
+    <value>ArdupilotMega.Controls.MyButton, ArdupilotMegaPlanner, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null</value>
   </data>
   <data name="&gt;&gt;BUT_Calibrateradio.Parent" xml:space="preserve">
     <value>$this</value>

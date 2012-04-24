@@ -1258,7 +1258,7 @@
     <value>BUT_detch8</value>
   </data>
   <data name="&gt;&gt;BUT_detch8.Type" xml:space="preserve">
-    <value>ArdupilotMega.MyButton, ArdupilotMegaPlanner, Version=1.0.0.0, Culture=neutral, PublicKeyToken=ff91852278f5092c</value>
+    <value>ArdupilotMega.Controls.MyButton, ArdupilotMegaPlanner, Version=1.0.0.0, Culture=neutral, PublicKeyToken=ff91852278f5092c</value>
   </data>
   <data name="&gt;&gt;BUT_detch8.Parent" xml:space="preserve">
     <value>$this</value>
@@ -1309,7 +1309,7 @@
     <value>BUT_detch4</value>
   </data>
   <data name="&gt;&gt;BUT_detch4.Type" xml:space="preserve">
-    <value>ArdupilotMega.MyButton, ArdupilotMegaPlanner, Version=1.0.0.0, Culture=neutral, PublicKeyToken=ff91852278f5092c</value>
+    <value>ArdupilotMega.Controls.MyButton, ArdupilotMegaPlanner, Version=1.0.0.0, Culture=neutral, PublicKeyToken=ff91852278f5092c</value>
   </data>
   <data name="&gt;&gt;BUT_detch4.Parent" xml:space="preserve">
     <value>$this</value>
@@ -1336,7 +1336,7 @@
     <value>BUT_detch3</value>
   </data>
   <data name="&gt;&gt;BUT_detch3.Type" xml:space="preserve">
-    <value>ArdupilotMega.MyButton, ArdupilotMegaPlanner, Version=1.0.0.0, Culture=neutral, PublicKeyToken=ff91852278f5092c</value>
+    <value>ArdupilotMega.Controls.MyButton, ArdupilotMegaPlanner, Version=1.0.0.0, Culture=neutral, PublicKeyToken=ff91852278f5092c</value>
   </data>
   <data name="&gt;&gt;BUT_detch3.Parent" xml:space="preserve">
     <value>$this</value>
@@ -1363,7 +1363,7 @@
     <value>BUT_detch2</value>
   </data>
   <data name="&gt;&gt;BUT_detch2.Type" xml:space="preserve">
-    <value>ArdupilotMega.MyButton, ArdupilotMegaPlanner, Version=1.0.0.0, Culture=neutral, PublicKeyToken=ff91852278f5092c</value>
+    <value>ArdupilotMega.Controls.MyButton, ArdupilotMegaPlanner, Version=1.0.0.0, Culture=neutral, PublicKeyToken=ff91852278f5092c</value>
   </data>
   <data name="&gt;&gt;BUT_detch2.Parent" xml:space="preserve">
     <value>$this</value>
@@ -1390,7 +1390,7 @@
     <value>BUT_detch1</value>
   </data>
   <data name="&gt;&gt;BUT_detch1.Type" xml:space="preserve">
-    <value>ArdupilotMega.MyButton, ArdupilotMegaPlanner, Version=1.0.0.0, Culture=neutral, PublicKeyToken=ff91852278f5092c</value>
+    <value>ArdupilotMega.Controls.MyButton, ArdupilotMegaPlanner, Version=1.0.0.0, Culture=neutral, PublicKeyToken=ff91852278f5092c</value>
   </data>
   <data name="&gt;&gt;BUT_detch1.Parent" xml:space="preserve">
     <value>$this</value>
@@ -1417,7 +1417,7 @@
     <value>BUT_enable</value>
   </data>
   <data name="&gt;&gt;BUT_enable.Type" xml:space="preserve">
-    <value>ArdupilotMega.MyButton, ArdupilotMegaPlanner, Version=1.0.0.0, Culture=neutral, PublicKeyToken=ff91852278f5092c</value>
+    <value>ArdupilotMega.Controls.MyButton, ArdupilotMegaPlanner, Version=1.0.0.0, Culture=neutral, PublicKeyToken=ff91852278f5092c</value>
   </data>
   <data name="&gt;&gt;BUT_enable.Parent" xml:space="preserve">
     <value>$this</value>
@@ -1444,7 +1444,7 @@
     <value>BUT_save</value>
   </data>
   <data name="&gt;&gt;BUT_save.Type" xml:space="preserve">
-    <value>ArdupilotMega.MyButton, ArdupilotMegaPlanner, Version=1.0.0.0, Culture=neutral, PublicKeyToken=ff91852278f5092c</value>
+    <value>ArdupilotMega.Controls.MyButton, ArdupilotMegaPlanner, Version=1.0.0.0, Culture=neutral, PublicKeyToken=ff91852278f5092c</value>
   </data>
   <data name="&gt;&gt;BUT_save.Parent" xml:space="preserve">
     <value>$this</value>
@@ -1567,7 +1567,7 @@
     <value>BUT_detch5</value>
   </data>
   <data name="&gt;&gt;BUT_detch5.Type" xml:space="preserve">
-    <value>ArdupilotMega.MyButton, ArdupilotMegaPlanner, Version=1.0.0.0, Culture=neutral, PublicKeyToken=ff91852278f5092c</value>
+    <value>ArdupilotMega.Controls.MyButton, ArdupilotMegaPlanner, Version=1.0.0.0, Culture=neutral, PublicKeyToken=ff91852278f5092c</value>
   </data>
   <data name="&gt;&gt;BUT_detch5.Parent" xml:space="preserve">
     <value>$this</value>
@@ -1618,7 +1618,7 @@
     <value>BUT_detch6</value>
   </data>
   <data name="&gt;&gt;BUT_detch6.Type" xml:space="preserve">
-    <value>ArdupilotMega.MyButton, ArdupilotMegaPlanner, Version=1.0.0.0, Culture=neutral, PublicKeyToken=ff91852278f5092c</value>
+    <value>ArdupilotMega.Controls.MyButton, ArdupilotMegaPlanner, Version=1.0.0.0, Culture=neutral, PublicKeyToken=ff91852278f5092c</value>
   </data>
   <data name="&gt;&gt;BUT_detch6.Parent" xml:space="preserve">
     <value>$this</value>
@@ -1669,7 +1669,7 @@
     <value>BUT_detch7</value>
   </data>
   <data name="&gt;&gt;BUT_detch7.Type" xml:space="preserve">
-    <value>ArdupilotMega.MyButton, ArdupilotMegaPlanner, Version=1.0.0.0, Culture=neutral, PublicKeyToken=ff91852278f5092c</value>
+    <value>ArdupilotMega.Controls.MyButton, ArdupilotMegaPlanner, Version=1.0.0.0, Culture=neutral, PublicKeyToken=ff91852278f5092c</value>
   </data>
   <data name="&gt;&gt;BUT_detch7.Parent" xml:space="preserve">
     <value>$this</value>

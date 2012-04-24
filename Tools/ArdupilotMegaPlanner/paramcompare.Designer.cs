@@ -34,7 +34,7 @@
             this.Value = new System.Windows.Forms.DataGridViewTextBoxColumn();
             this.newvalue = new System.Windows.Forms.DataGridViewTextBoxColumn();
             this.Use = new System.Windows.Forms.DataGridViewCheckBoxColumn();
-            this.BUT_save = new ArdupilotMega.MyButton();
+            this.BUT_save = new ArdupilotMega.Controls.MyButton();
             this.CHK_toggleall = new System.Windows.Forms.CheckBox();
             ((System.ComponentModel.ISupportInitialize)(this.Params)).BeginInit();
             this.SuspendLayout();
@@ -124,7 +124,7 @@
         #endregion
 
         private System.Windows.Forms.DataGridView Params;
-        private MyButton BUT_save;
+        private ArdupilotMega.Controls.MyButton BUT_save;
         private System.Windows.Forms.DataGridViewTextBoxColumn Command;
         private System.Windows.Forms.DataGridViewTextBoxColumn Value;
         private System.Windows.Forms.DataGridViewTextBoxColumn newvalue;
