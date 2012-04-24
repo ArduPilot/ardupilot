@@ -180,11 +180,26 @@ enum MAVLINK_DATA_STREAM_TYPE
 
 #define MAVLINK_MAX_PACKET_LEN (MAVLINK_MAX_PAYLOAD_LEN + MAVLINK_NUM_NON_PAYLOAD_BYTES) ///< Maximum packet length
 
+#define MAVLINK_MSG_ID_EXTENDED_MESSAGE 255
+#define MAVLINK_EXTENDED_HEADER_LEN 14
+
+#if (defined _MSC_VER) | ((defined __APPLE__) & (defined __MACH__)) | (defined __linux__)
+  /* full fledged 32bit++ OS */
+  #define MAVLINK_MAX_EXTENDED_PACKET_LEN 65507
+#else
+  /* small microcontrollers */
+  #define MAVLINK_MAX_EXTENDED_PACKET_LEN 2048
+#endif
+
+#define MAVLINK_MAX_EXTENDED_PAYLOAD_LEN (MAVLINK_MAX_EXTENDED_PACKET_LEN - MAVLINK_EXTENDED_HEADER_LEN - MAVLINK_NUM_NON_PAYLOAD_BYTES)
+
 typedef struct param_union {
 	union {
     float param_float;
     int32_t param_int32;
     uint32_t param_uint32;
+		uint8_t param_uint8;
+		uint8_t bytes[4];
 	};
 	uint8_t type;
 } mavlink_param_union_t;
@@ -209,6 +224,14 @@ typedef struct __mavlink_message {
 	uint64_t payload64[(MAVLINK_MAX_PAYLOAD_LEN+MAVLINK_NUM_CHECKSUM_BYTES+7)/8];
 } mavlink_message_t;
 
+
+typedef struct __mavlink_extended_message {
+       mavlink_message_t base_msg;
+       int32_t extended_payload_len;   ///< Length of extended payload if any
+       uint8_t extended_payload[MAVLINK_MAX_EXTENDED_PAYLOAD_LEN];
+} mavlink_extended_message_t;
+
+
 typedef enum {
 	MAVLINK_TYPE_CHAR     = 0,
 	MAVLINK_TYPE_UINT8_T  = 1,
@@ -229,9 +252,9 @@ typedef struct __mavlink_field_info {
 	const char *name;             // name of this field
 	const char *print_format;     // printing format hint, or NULL
 	mavlink_message_type_t type;  // type of this field
-	unsigned array_length;        // if non-zero, field is an array
-	unsigned wire_offset;         // offset of each field in the payload
-	unsigned structure_offset;    // offset in a C structure
+        unsigned int array_length;        // if non-zero, field is an array
+        unsigned int wire_offset;         // offset of each field in the payload
+        unsigned int structure_offset;    // offset in a C structure
 } mavlink_field_info_t;
 
 // note that in this structure the order of fields is the order
@@ -242,12 +265,12 @@ typedef struct __mavlink_message_info {
 	mavlink_field_info_t fields[MAVLINK_MAX_FIELDS];       // field information
 } mavlink_message_info_t;
 
-#define _MAV_PAYLOAD(msg) ((char *)(&(msg)->payload64[0]))
+#define _MAV_PAYLOAD(msg) ((const char *)(&((msg)->payload64[0])))
 #define _MAV_PAYLOAD_NON_CONST(msg) ((char *)(&((msg)->payload64[0])))
 
 // checksum is immediately after the payload bytes
-#define mavlink_ck_a(msg) *(msg->len + (uint8_t *)_MAV_PAYLOAD(msg))
-#define mavlink_ck_b(msg) *((msg->len+(uint16_t)1) + (uint8_t *)_MAV_PAYLOAD(msg))
+#define mavlink_ck_a(msg) *((msg)->len + (uint8_t *)_MAV_PAYLOAD_NON_CONST(msg))
+#define mavlink_ck_b(msg) *(((msg)->len+(uint16_t)1) + (uint8_t *)_MAV_PAYLOAD_NON_CONST(msg))
 
 typedef enum {
     MAVLINK_COMM_0,

@@ -52,7 +52,7 @@ static inline void crc_init(uint16_t* crcAccum)
  * @param  length  length of the byte array
  * @return the checksum over the buffer bytes
  **/
-static inline uint16_t crc_calculate(uint8_t* pBuffer, uint16_t length)
+static inline uint16_t crc_calculate(const uint8_t* pBuffer, uint16_t length)
 {
         uint16_t crcTmp;
         crc_init(&crcTmp);
