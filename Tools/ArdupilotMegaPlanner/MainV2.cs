@@ -20,6 +20,7 @@ using System.Speech.Synthesis;
 using System.Globalization;
 using System.Threading;
 using System.Net.Sockets;
+using ArdupilotMega.Utilities;
 using IronPython.Hosting;
 using log4net;
 using ArdupilotMega.Controls;
@@ -1227,6 +1228,9 @@ namespace ArdupilotMega
                     log.Error("Update check failed", ex);
                 }
             }
+
+            // TODO: Move this to a more appropriate place, like right after CheckForUpdate();
+            ParameterInformationParser.GetParameterInformation();
         }
 
 
