@@ -43,7 +43,7 @@ namespace ArdupilotMega.Utilities
                   // Plenty of timeout
                   request.Timeout = 10000;
 
-                  // Set the Method property of the request to POST.
+                  // Set the Method property of the request to GET.
                   request.Method = "GET";
 
                   // Get the response.
@@ -145,12 +145,14 @@ namespace ArdupilotMega.Utilities
                            // Test for success
                            if (metaMatch.Success)
                            {
+                              // Write the key value pair to XML
                               objXmlTextWriter.WriteStartElement(metaMatch.Groups["MetaKey"].Value.Trim(new char[] { ' ' }));
                               objXmlTextWriter.WriteString(metaMatch.Groups["MetaValue"].Value.Trim(new char[] { ' ' }));
                               objXmlTextWriter.WriteEndElement();
                            }
                         }
 
+                        // End this parameter node
                         objXmlTextWriter.WriteEndElement();
                      }
                   }
