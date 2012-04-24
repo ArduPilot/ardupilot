@@ -142,7 +142,7 @@ static NOINLINE void send_extended_status1(mavlink_channel_t chan, uint16_t pack
         control_sensors_present |= (1<<2); // compass present
     }
     control_sensors_present |= (1<<3); // absolute pressure sensor present
-    if (g_gps != NULL && g_gps->fix) {
+    if (g_gps != NULL && g_gps->status() == GPS::GPS_OK) {
         control_sensors_present |= (1<<5); // GPS present
     }
     control_sensors_present |= (1<<10); // 3D angular rate control
@@ -338,11 +338,9 @@ static void NOINLINE send_nav_controller_output(mavlink_channel_t chan)
 static void NOINLINE send_gps_raw(mavlink_channel_t chan)
 {
 #ifdef MAVLINK10
-    uint8_t fix;
-    if (g_gps->status() == 2) {
+    uint8_t fix = g_gps->status();
+    if (fix == GPS::GPS_OK) {
         fix = 3;
-    } else {
-        fix = 0;
     }
 
     mavlink_msg_gps_raw_int_send(
@@ -1109,15 +1107,10 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
                 result = MAV_RESULT_ACCEPTED;
                 break;
 
-#if 0
-                // not implemented yet, but could implement some of them
-            case MAV_CMD_NAV_LAND:
-            case MAV_CMD_NAV_TAKEOFF:
-            case MAV_CMD_NAV_ROI:
-            case MAV_CMD_NAV_PATHPLANNING:
+            case MAV_CMD_MISSION_START:
+                set_mode(AUTO);
+                result = MAV_RESULT_ACCEPTED;
                 break;
-#endif
-
 
             case MAV_CMD_PREFLIGHT_CALIBRATION:
                 if (packet.param1 == 1 ||
