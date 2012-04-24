@@ -8,7 +8,6 @@
 
 #include <FastSerial.h>
 #include <AP_Common.h>
-#include <GCS_MAVLink.h>
 #include <GPS.h>
 #include <Stream.h>
 #include <stdint.h>

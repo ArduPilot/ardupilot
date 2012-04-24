@@ -47,12 +47,13 @@ version 2.1 of the License, or (at your option) any later version.
 #include <Filter.h>			// Filter library
 #include <ModeFilter.h>		// Mode Filter from Filter library
 #include <AP_Relay.h>       // APM relay
-#include <AP_Mount.h>		// Camera/Antenna mount
-#include <GCS_MAVLink.h>    // MAVLink GCS definitions
 #include <memcheck.h>
 
 // Configuration
 #include "config.h"
+
+#include <GCS_MAVLink.h>    // MAVLink GCS definitions
+#include <AP_Mount.h>		// Camera/Antenna mount
 
 // Local modules
 #include "defines.h"
