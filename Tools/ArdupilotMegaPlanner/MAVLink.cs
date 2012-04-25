@@ -13,6 +13,7 @@ using ArdupilotMega.Controls;
 using System.ComponentModel;
 using log4net;
 using ArdupilotMega.Comms;
+using ArdupilotMega.Utilities;
 
 namespace ArdupilotMega
 {
@@ -678,7 +679,7 @@ namespace ArdupilotMega
                             continue;
                         }
 
-                        log.Info(DateTime.Now.Millisecond + " got param " + (par.param_index) + " of " + (par.param_count - 2) + " name: " + paramID);
+                        log.Info(DateTime.Now.Millisecond + " got param " + (par.param_index) + " of " + (par.param_count - 2) + " name: " + paramID );
 
                         modifyParamForDisplay(true, paramID, ref par.param_value);
                         param[paramID] = (par.param_value);
@@ -1027,7 +1028,7 @@ namespace ArdupilotMega
 
         public void requestDatastream(byte id, byte hzrate)
         {
-            /*
+            
             double pps = 0;
             
             switch (id)
@@ -1118,7 +1119,7 @@ namespace ArdupilotMega
             {
                 return;
             }
-             */
+             
 
             log.InfoFormat("Request stream {0} at {1} hz", Enum.Parse(typeof(MAV_DATA_STREAM), id.ToString()), hzrate);
             getDatastream(id, hzrate);
@@ -1148,7 +1149,7 @@ namespace ArdupilotMega
             {
                 return true;
             }
-
+            
             return false;
 
         }

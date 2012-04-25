@@ -7,7 +7,6 @@ using System.Net;
 using System.Text.RegularExpressions;
 using System.Windows.Forms;
 using System.Xml;
-using ArdupilotMega.Constants;
 using log4net;
 
 namespace ArdupilotMega.Utilities

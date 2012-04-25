@@ -11,13 +11,15 @@ using System.Windows.Forms;
 using DirectShowLib;
 using ArdupilotMega.Controls.BackstageView;
 using ArdupilotMega.Controls;
+using ArdupilotMega.Utilities;
+using System.Threading;
 
 namespace ArdupilotMega.GCSViews.ConfigurationView
 {
     public partial class ConfigPlanner : BackStageViewContentPanel
     {
-        // AR todo: replicate this functionality
         private bool startup = false;
+        List<CultureInfo> languages = new List<CultureInfo>();
 
         public ConfigPlanner()
         {
@@ -291,32 +293,54 @@ namespace ArdupilotMega.GCSViews.ConfigurationView
 
         private void CMB_rateattitude_SelectedIndexChanged(object sender, EventArgs e)
         {
+            if (startup)
+                return;
             MainV2.config[((ComboBox)sender).Name] = ((ComboBox)sender).Text;
             MainV2.cs.rateattitude = byte.Parse(((ComboBox)sender).Text);
+
+            MainV2.comPort.requestDatastream((byte)ArdupilotMega.MAVLink.MAV_DATA_STREAM.EXTRA1, MainV2.cs.rateattitude); // request attitude
+            MainV2.comPort.requestDatastream((byte)ArdupilotMega.MAVLink.MAV_DATA_STREAM.EXTRA2, MainV2.cs.rateattitude); // request vfr
         }
 
         private void CMB_rateposition_SelectedIndexChanged(object sender, EventArgs e)
         {
+            if (startup)
+                return;
             MainV2.config[((ComboBox)sender).Name] = ((ComboBox)sender).Text;
             MainV2.cs.rateposition = byte.Parse(((ComboBox)sender).Text);
+
+            MainV2.comPort.requestDatastream((byte)ArdupilotMega.MAVLink.MAV_DATA_STREAM.POSITION, MainV2.cs.rateposition); // request gps
         }
 
         private void CMB_ratestatus_SelectedIndexChanged(object sender, EventArgs e)
         {
+            if (startup)
+                return;
             MainV2.config[((ComboBox)sender).Name] = ((ComboBox)sender).Text;
             MainV2.cs.ratestatus = byte.Parse(((ComboBox)sender).Text);
+
+            MainV2.comPort.requestDatastream((byte)ArdupilotMega.MAVLink.MAV_DATA_STREAM.EXTENDED_STATUS, MainV2.cs.ratestatus); // mode
         }
 
         private void CMB_raterc_SelectedIndexChanged(object sender, EventArgs e)
         {
+            if (startup)
+                return;
             MainV2.config[((ComboBox)sender).Name] = ((ComboBox)sender).Text;
             MainV2.cs.raterc = byte.Parse(((ComboBox)sender).Text);
+
+            MainV2.comPort.requestDatastream((byte)ArdupilotMega.MAVLink.MAV_DATA_STREAM.RC_CHANNELS, MainV2.cs.raterc); // request rc info 
         }
 
         private void CMB_ratesensors_SelectedIndexChanged(object sender, EventArgs e)
         {
+            if (startup)
+                return;
             MainV2.config[((ComboBox)sender).Name] = ((ComboBox)sender).Text;
             MainV2.cs.ratesensors = byte.Parse(((ComboBox)sender).Text);
+
+            MainV2.comPort.requestDatastream((byte)ArdupilotMega.MAVLink.MAV_DATA_STREAM.EXTRA3, MainV2.cs.ratesensors); // request extra stuff - tridge
+            MainV2.comPort.requestDatastream((byte)ArdupilotMega.MAVLink.MAV_DATA_STREAM.RAW_SENSORS, MainV2.cs.ratesensors); // request raw sensor
         }
 
         private void CHK_mavdebug_CheckedChanged(object sender, EventArgs e)
@@ -371,5 +395,154 @@ namespace ArdupilotMega.GCSViews.ConfigurationView
             MainV2.config["CHK_GDIPlus"] = CHK_GDIPlus.Checked.ToString();
         }
 
+        private void ConfigPlanner_Load(object sender, EventArgs e)
+        {
+            startup = true;
+
+            // setup up camera button states
+            if (MainV2.cam != null)
+            {
+                BUT_videostart.Enabled = false;
+                CHK_hudshow.Checked = GCSViews.FlightData.myhud.hudon;
+            }
+            else
+            {
+                BUT_videostart.Enabled = true;
+            }
+
+            // setup speech states
+            if (MainV2.config["speechenable"] != null)
+                CHK_enablespeech.Checked = bool.Parse(MainV2.config["speechenable"].ToString());
+            if (MainV2.config["speechwaypointenabled"] != null)
+                CHK_speechwaypoint.Checked = bool.Parse(MainV2.config["speechwaypointenabled"].ToString());
+            if (MainV2.config["speechmodeenabled"] != null)
+                CHK_speechmode.Checked = bool.Parse(MainV2.config["speechmodeenabled"].ToString());
+            if (MainV2.config["speechcustomenabled"] != null)
+                CHK_speechcustom.Checked = bool.Parse(MainV2.config["speechcustomenabled"].ToString());
+            if (MainV2.config["speechbatteryenabled"] != null)
+                CHK_speechbattery.Checked = bool.Parse(MainV2.config["speechbatteryenabled"].ToString());
+            if (MainV2.config["speechaltenabled"] != null)
+                CHK_speechaltwarning.Checked = bool.Parse(MainV2.config["speechaltenabled"].ToString());
+
+            // this can't fail because it set at startup
+            NUM_tracklength.Value = int.Parse(MainV2.config["NUM_tracklength"].ToString());
+
+            // get wps on connect
+            if (MainV2.config["loadwpsonconnect"] != null)
+                CHK_loadwponconnect.Checked = bool.Parse(MainV2.config["loadwpsonconnect"].ToString());
+
+            // setup other config state
+            if (MainV2.config["CHK_resetapmonconnect"] != null)
+                CHK_resetapmonconnect.Checked = bool.Parse(MainV2.config["CHK_resetapmonconnect"].ToString());
+
+            CMB_rateattitude.Text = MainV2.cs.rateattitude.ToString();
+            CMB_rateposition.Text = MainV2.cs.rateposition.ToString();
+            CMB_raterc.Text = MainV2.cs.raterc.ToString();
+            CMB_ratestatus.Text = MainV2.cs.ratestatus.ToString();
+            CMB_ratesensors.Text = MainV2.cs.ratesensors.ToString();
+
+
+            if (MainV2.config["CHK_GDIPlus"] != null)
+                CHK_GDIPlus.Checked = bool.Parse(MainV2.config["CHK_GDIPlus"].ToString());
+
+            if (MainV2.config["CHK_maprotation"] != null)
+                CHK_maprotation.Checked = bool.Parse(MainV2.config["CHK_maprotation"].ToString());
+
+            //set hud color state
+            string hudcolor = (string)MainV2.config["hudcolor"];
+
+            CMB_osdcolor.DataSource = Enum.GetNames(typeof(KnownColor));
+            if (hudcolor != null)
+            {
+                int index = CMB_osdcolor.Items.IndexOf(hudcolor);
+                CMB_osdcolor.SelectedIndex = index;
+            }
+            else
+            {
+                int index = CMB_osdcolor.Items.IndexOf("White");
+                CMB_osdcolor.SelectedIndex = index;
+            }
+
+            // set distance/speed unit states
+            CMB_distunits.DataSource = Enum.GetNames(typeof(Common.distances));
+            CMB_speedunits.DataSource = Enum.GetNames(typeof(Common.speeds));
+
+            if (MainV2.config["distunits"] != null)
+                CMB_distunits.Text = MainV2.config["distunits"].ToString();
+            if (MainV2.config["speedunits"] != null)
+                CMB_speedunits.Text = MainV2.config["speedunits"].ToString();
+
+            // setup language selection
+            CultureInfo ci = null;
+            foreach (string name in new string[] { "en-US", "zh-Hans", "zh-TW", "ru-RU", "Fr", "Pl", "it-IT", "es-ES" })
+            {
+                ci = CultureInfoEx.GetCultureInfo(name);
+                if (ci != null)
+                    languages.Add(ci);
+            }
+
+            CMB_language.DisplayMember = "DisplayName";
+            CMB_language.DataSource = languages;
+            ci = Thread.CurrentThread.CurrentUICulture;
+            for (int i = 0; i < languages.Count; i++)
+            {
+                if (ci.IsChildOf(languages[i]))
+                {
+                    CMB_language.SelectedIndex = i;
+                    break;
+                }
+            }
+            CMB_language.SelectedIndexChanged += CMB_language_SelectedIndexChanged;
+
+            startup = false;
+        }
+
+        private void CMB_osdcolor_DrawItem(object sender, DrawItemEventArgs e)
+        {
+            if (e.Index < 0)
+                return;
+
+            Graphics g = e.Graphics;
+            Rectangle rect = e.Bounds;
+            Brush brush = null;
+
+            if ((e.State & DrawItemState.Selected) == 0)
+                brush = new SolidBrush(CMB_osdcolor.BackColor);
+            else
+                brush = SystemBrushes.Highlight;
+
+            g.FillRectangle(brush, rect);
+
+            brush = new SolidBrush(Color.FromName((string)CMB_osdcolor.Items[e.Index]));
+
+            g.FillRectangle(brush, rect.X + 2, rect.Y + 2, 30, rect.Height - 4);
+            g.DrawRectangle(Pens.Black, rect.X + 2, rect.Y + 2, 30, rect.Height - 4);
+
+            if ((e.State & DrawItemState.Selected) == 0)
+                brush = new SolidBrush(CMB_osdcolor.ForeColor);
+            else
+                brush = SystemBrushes.HighlightText;
+            g.DrawString(CMB_osdcolor.Items[e.Index].ToString(),
+                CMB_osdcolor.Font, brush, rect.X + 35, rect.Top + rect.Height - CMB_osdcolor.Font.Height);
+        }
+
+        private void CMB_videosources_Click(object sender, EventArgs e)
+        {
+            // the reason why i dont populate this list is because on linux/mac this call will fail.
+            WebCamService.Capture capt = new WebCamService.Capture();
+
+            List<string> devices = WebCamService.Capture.getDevices();
+
+            CMB_videosources.DataSource = devices;
+
+            capt.Dispose();
+        }
+
+        private void CHK_maprotation_CheckedChanged(object sender, EventArgs e)
+        {
+            if (startup)
+                return;
+            MainV2.config["CHK_maprotation"] = CHK_maprotation.Checked.ToString();
+        }
     }
 }

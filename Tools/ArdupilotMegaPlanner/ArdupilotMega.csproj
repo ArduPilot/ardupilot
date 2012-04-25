@@ -226,7 +226,7 @@
     <Compile Include="Attributes\DisplayTextAttribute.cs" />
     <Compile Include="Attributes\PrivateAttribute.cs" />
     <Compile Include="CodeGen.cs" />
-    <Compile Include="Constants\ParameterMetaDataConstants.cs" />
+    <Compile Include="Utilities\ParameterMetaDataConstants.cs" />
     <Compile Include="Controls\BackstageView\BackstageView.cs">
       <SubType>UserControl</SubType>
     </Compile>
@@ -249,7 +249,7 @@
       <DependentUpon>ConnectionControl.cs</DependentUpon>
     </Compile>
     <Compile Include="Controls\ConfigPanel.cs">
-      <SubType>Form</SubType>
+      <SubType>UserControl</SubType>
     </Compile>
     <Compile Include="Controls\ConfigPanel.Designer.cs">
       <DependentUpon>ConfigPanel.cs</DependentUpon>
@@ -321,12 +321,6 @@
     <Compile Include="GCSViews\ConfigurationView\ConfigTradHeli.Designer.cs">
       <DependentUpon>ConfigTradHeli.cs</DependentUpon>
     </Compile>
-    <Compile Include="GCSViews\ConfigurationView\Configuration.cs">
-      <SubType>Form</SubType>
-    </Compile>
-    <Compile Include="GCSViews\ConfigurationView\Configuration.Designer.cs">
-      <DependentUpon>Configuration.cs</DependentUpon>
-    </Compile>
     <Compile Include="GCSViews\ConfigurationView\ConfigRawParams.cs">
       <SubType>UserControl</SubType>
     </Compile>
@@ -340,7 +334,7 @@
       <DependentUpon>ConfigAccelerometerCalibrationPlane.cs</DependentUpon>
     </Compile>
     <Compile Include="GCSViews\ConfigurationView\Setup.cs">
-      <SubType>Form</SubType>
+      <SubType>UserControl</SubType>
     </Compile>
     <Compile Include="GCSViews\ConfigurationView\Setup.Designer.cs">
       <DependentUpon>Setup.cs</DependentUpon>
@@ -358,14 +352,14 @@
       <SubType>UserControl</SubType>
     </Compile>
     <Compile Include="Arduino\ArduinoDetect.cs" />
-    <Compile Include="AviWriter.cs" />
+    <Compile Include="Utilities\AviWriter.cs" />
     <Compile Include="Camera.cs">
       <SubType>Form</SubType>
     </Compile>
     <Compile Include="Camera.Designer.cs">
       <DependentUpon>Camera.cs</DependentUpon>
     </Compile>
-    <Compile Include="Capture.cs" />
+    <Compile Include="Utilities\Capture.cs" />
     <Compile Include="Comms\CommsSerialInterface.cs" />
     <Compile Include="Comms\CommsSerialPort.cs">
       <SubType>Component</SubType>
@@ -408,7 +402,7 @@
     <Compile Include="HIL\QuadCopter.cs" />
     <Compile Include="HIL\Quaternion.cs" />
     <Compile Include="HIL\Vector3d.cs" />
-    <Compile Include="hires.cs" />
+    <Compile Include="Utilities\hires.cs" />
     <Compile Include="MavlinkLog.cs">
       <SubType>Form</SubType>
     </Compile>
@@ -535,7 +529,7 @@
     <Compile Include="SerialOutput.Designer.cs">
       <DependentUpon>SerialOutput.cs</DependentUpon>
     </Compile>
-    <Compile Include="Speech.cs" />
+    <Compile Include="Utilities\Speech.cs" />
     <Compile Include="Splash.cs">
       <SubType>Form</SubType>
     </Compile>
@@ -543,7 +537,7 @@
       <DependentUpon>Splash.cs</DependentUpon>
     </Compile>
     <Compile Include="srtm.cs" />
-    <Compile Include="TCPConsole.cs" />
+    <Compile Include="Utilities\TCPConsole.cs" />
     <Compile Include="temp.cs">
       <SubType>Form</SubType>
     </Compile>
@@ -551,8 +545,8 @@
       <DependentUpon>temp.cs</DependentUpon>
     </Compile>
     <Compile Include="Radio\Uploader.cs" />
-    <Compile Include="LangUtility.cs" />
-    <Compile Include="ThemeManager.cs" />
+    <Compile Include="Utilities\LangUtility.cs" />
+    <Compile Include="Utilities\ThemeManager.cs" />
     <Compile Include="Utilities\EnumTranslator.cs" />
     <Compile Include="Utilities\ParameterMetaDataParser.cs" />
     <Compile Include="Utilities\ParameterMetaDataRepository.cs" />
@@ -684,7 +678,6 @@
     </EmbeddedResource>
     <EmbeddedResource Include="GCSViews\ConfigurationView\ConfigRadioInput.resx">
       <DependentUpon>ConfigRadioInput.cs</DependentUpon>
-      <SubType>Designer</SubType>
     </EmbeddedResource>
     <EmbeddedResource Include="GCSViews\ConfigurationView\ConfigRadioInput.zh-Hans.resx">
       <DependentUpon>ConfigRadioInput.cs</DependentUpon>
@@ -709,16 +702,12 @@
     </EmbeddedResource>
     <EmbeddedResource Include="GCSViews\ConfigurationView\ConfigTradHeli.resx">
       <DependentUpon>ConfigTradHeli.cs</DependentUpon>
-      <SubType>Designer</SubType>
     </EmbeddedResource>
     <EmbeddedResource Include="GCSViews\ConfigurationView\ConfigTradHeli.zh-Hans.resx">
       <DependentUpon>ConfigTradHeli.cs</DependentUpon>
     </EmbeddedResource>
     <EmbeddedResource Include="GCSViews\ConfigurationView\ConfigTradHeli.zh-TW.resx">
       <DependentUpon>ConfigTradHeli.cs</DependentUpon>
-    </EmbeddedResource>
-    <EmbeddedResource Include="GCSViews\ConfigurationView\Configuration.resx">
-      <DependentUpon>Configuration.cs</DependentUpon>
     </EmbeddedResource>
     <EmbeddedResource Include="GCSViews\ConfigurationView\ConfigAccelerometerCalibrationPlane.es-ES.resx">
       <DependentUpon>ConfigAccelerometerCalibrationPlane.cs</DependentUpon>
@@ -1084,9 +1073,7 @@
     <None Include="AeroSimRCAPMHil.zip">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
-    <None Include="app.config">
-      <SubType>Designer</SubType>
-    </None>
+    <None Include="app.config" />
     <None Include="arducopter-xplane.zip">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>

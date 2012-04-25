@@ -19,7 +19,6 @@ using System.Speech.Synthesis;
 using System.Globalization;
 using System.Threading;
 using System.Net.Sockets;
-using ArdupilotMega.Utilities;
 using IronPython.Hosting;
 using log4net;
 using ArdupilotMega.Controls;
@@ -27,6 +26,7 @@ using System.Security.Cryptography;
 using ArdupilotMega.Comms;
 using ArdupilotMega.Arduino;
 using System.IO.Ports;
+using ArdupilotMega.Utilities;
 
 namespace ArdupilotMega
 {
@@ -128,8 +128,8 @@ namespace ArdupilotMega
         /// </summary>
         GCSViews.FlightData FlightData;
         GCSViews.FlightPlanner FlightPlanner;
-        GCSViews.Configuration Configuration;
-        //GCSViews.ConfigurationView.Configuration Configuration;
+        //GCSViews.Configuration Configuration;
+        GCSViews.ConfigurationView.Setup Configuration;
         GCSViews.Simulation Simulation;
         GCSViews.Firmware Firmware;
         GCSViews.Terminal Terminal;
@@ -427,22 +427,18 @@ namespace ArdupilotMega
                 catch { }
             }
 
-            Configuration = new GCSViews.Configuration();
-            //Configuration = new GCSViews.ConfigurationView.Configuration();
+            //Configuration = new GCSViews.Configuration();
+            Configuration = new GCSViews.ConfigurationView.Setup();
 
             UserControl temp = Configuration;
 
             ThemeManager.ApplyThemeTo(temp);
-
-            //temp.Anchor = AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right | AnchorStyles.Top;
 
             temp.Location = new Point(0, 0);
 
             temp.Dock = DockStyle.Fill;
 
             temp.Size = MyView.Size;
-
-            //temp.Parent = MyView;
 
             MyView.Controls.Add(temp);
         }
@@ -1230,9 +1226,6 @@ namespace ArdupilotMega
                     log.Error("Update check failed", ex);
                 }
             }
-
-            // TODO: Move this to a more appropriate place, like right after CheckForUpdate();
-            ParameterMetaDataParser.GetParameterInformation();
         }
 
 
@@ -2042,7 +2035,7 @@ namespace ArdupilotMega
 
                 cfg.LoadXML("ArduCopterConfig.xml");
 
-                cfg.ShowDialog();
+                //cfg.ShowDialog();
 
                 return true;
             }
