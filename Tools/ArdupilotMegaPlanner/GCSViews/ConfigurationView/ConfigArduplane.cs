@@ -268,5 +268,37 @@ namespace ArdupilotMega.GCSViews.ConfigurationView
             }         
         }
 
+        private void BUT_writePIDS_Click(object sender, EventArgs e)
+        {
+            var temp = (Hashtable)changes.Clone();
+
+            foreach (string value in temp.Keys)
+            {
+                try
+                {
+                    MainV2.comPort.setParam(value, (float)changes[value]);
+
+                    try
+                    {
+                        // set control as well
+                        var textControls = this.Controls.Find(value, true);
+                        if (textControls.Length > 0)
+                        {
+                            textControls[0].BackColor = Color.FromArgb(0x43, 0x44, 0x45);
+                        }
+                    }
+                    catch
+                    {
+
+                    }
+
+                }
+                catch
+                {
+                    CustomMessageBox.Show("Set " + value + " Failed");
+                }
+            }
+        }
+
     }
 }

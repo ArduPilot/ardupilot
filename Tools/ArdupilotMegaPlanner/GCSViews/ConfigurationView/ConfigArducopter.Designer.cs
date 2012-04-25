@@ -126,6 +126,7 @@
             this.RATE_RLL_P = new System.Windows.Forms.NumericUpDown();
             this.label91 = new System.Windows.Forms.Label();
             this.toolTip1 = new System.Windows.Forms.ToolTip(this.components);
+            this.BUT_writePIDS = new ArdupilotMega.Controls.MyButton();
             ((System.ComponentModel.ISupportInitialize)(this.TUNE_LOW)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.TUNE_HIGH)).BeginInit();
             this.groupBox5.SuspendLayout();
@@ -785,10 +786,18 @@
             resources.ApplyResources(this.label91, "label91");
             this.label91.Name = "label91";
             // 
+            // BUT_writePIDS
+            // 
+            resources.ApplyResources(this.BUT_writePIDS, "BUT_writePIDS");
+            this.BUT_writePIDS.Name = "BUT_writePIDS";
+            this.BUT_writePIDS.UseVisualStyleBackColor = true;
+            this.BUT_writePIDS.Click += new System.EventHandler(this.BUT_writePIDS_Click);
+            // 
             // ConfigArducopter
             // 
             resources.ApplyResources(this, "$this");
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
+            this.Controls.Add(this.BUT_writePIDS);
             this.Controls.Add(this.myLabel3);
             this.Controls.Add(this.TUNE_LOW);
             this.Controls.Add(this.TUNE_HIGH);
@@ -964,5 +973,6 @@
         private System.Windows.Forms.NumericUpDown RATE_RLL_P;
         private System.Windows.Forms.Label label91;
         private System.Windows.Forms.ToolTip toolTip1;
+        private Controls.MyButton BUT_writePIDS;
     }
 }

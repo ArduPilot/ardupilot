@@ -63,8 +63,13 @@ namespace ArdupilotMega.GCSViews.ConfigurationView
                 readToolTips();
 
             // ensure the fields are populated before setting them
-            CH7_OPT.DataSource = Enum.GetNames(typeof(Common.ac2ch7modes));
-            TUNE.DataSource = Enum.GetNames(typeof(Common.ac2ch6modes));
+            CH7_OPT.DataSource = Utilities.EnumTranslator.Translate<Common.ac2ch7modes>().ToList();
+            CH7_OPT.DisplayMember = "Value";
+            CH7_OPT.ValueMember = "Key";
+
+            TUNE.DataSource = Utilities.EnumTranslator.Translate<Common.ac2ch6modes>().ToList();
+            TUNE.DisplayMember = "Value";
+            TUNE.ValueMember = "Key";
 
             // prefill all fields
             processToScreen();
@@ -225,7 +230,7 @@ namespace ArdupilotMega.GCSViews.ConfigurationView
 
                             ComboBox thisctl = ((ComboBox)ctl);
 
-                            thisctl.SelectedIndex = (int)(float)MainV2.comPort.param[value];
+                            thisctl.SelectedValue = (int)(float)MainV2.comPort.param[value];
 
                             thisctl.Validated += new EventHandler(ComboBox_Validated);
 
@@ -271,7 +276,7 @@ namespace ArdupilotMega.GCSViews.ConfigurationView
                 }
                 else if (sender.GetType() == typeof(ComboBox))
                 {
-                    value = ((ComboBox)sender).SelectedIndex;
+                    value = (int)((ComboBox)sender).SelectedValue;
                     changes[name] = value;
                 }
                 ((Control)sender).BackColor = Color.Green;
@@ -343,6 +348,38 @@ namespace ArdupilotMega.GCSViews.ConfigurationView
                 }
             }
             catch { }
+        }
+
+        private void BUT_writePIDS_Click(object sender, EventArgs e)
+        {
+            var temp = (Hashtable)changes.Clone();
+
+            foreach (string value in temp.Keys)
+            {
+                try
+                {
+                    MainV2.comPort.setParam(value, (float)changes[value]);
+
+                    try
+                    {
+                        // set control as well
+                        var textControls = this.Controls.Find(value, true);
+                        if (textControls.Length > 0)
+                        {
+                            textControls[0].BackColor = Color.FromArgb(0x43, 0x44, 0x45);
+                        }
+                    }
+                    catch
+                    {
+
+                    }
+
+                }
+                catch
+                {
+                    CustomMessageBox.Show("Set " + value + " Failed");
+                }
+            }
         }
       
         

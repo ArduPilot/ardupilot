@@ -14,6 +14,8 @@ using System.Threading;
 using DirectShowLib;
 using System.Runtime.InteropServices;
 using ArdupilotMega.Controls;
+using ArdupilotMega.Utilities;
+using System.Linq;
 
 namespace ArdupilotMega.GCSViews
 {
@@ -97,8 +99,13 @@ namespace ArdupilotMega.GCSViews
                 readToolTips();
 
             // ensure the fields are populated before setting them
-            CH7_OPT.DataSource = Enum.GetNames(typeof(Common.ac2ch7modes));
-            TUNE.DataSource = Enum.GetNames(typeof(Common.ac2ch6modes));
+            CH7_OPT.DataSource = EnumTranslator.Translate<Common.ac2ch7modes>().ToList();
+            CH7_OPT.DisplayMember = "Value";
+            CH7_OPT.ValueMember = "Key";
+
+            TUNE.DataSource = EnumTranslator.Translate<Common.ac2ch6modes>().ToList();
+            TUNE.DisplayMember = "Value";
+            TUNE.ValueMember = "Key";
 
             // prefill all fields
             param = MainV2.comPort.param;
@@ -726,11 +733,17 @@ namespace ArdupilotMega.GCSViews
             if (ConfigTabs.SelectedTab == TabSetup)
             {
 
-                    GCSViews.ConfigurationView.Setup temp = new GCSViews.ConfigurationView.Setup();
-
-                    ThemeManager.ApplyThemeTo(temp);
-
-                    temp.ShowDialog();
+                Form temp = new Form();
+                MyUserControl configview = new GCSViews.ConfigurationView.Setup();
+                temp.Controls.Add(configview);
+                ThemeManager.ApplyThemeTo(temp);
+                // fix title
+                temp.Text = configview.Name;
+                // fix size
+                temp.Size = configview.Size;
+                configview.Dock = DockStyle.Fill;
+                temp.FormClosing += configview.Close;
+                temp.ShowDialog();
 
                     startup = true;
                     processToScreen();
@@ -999,7 +1012,6 @@ namespace ArdupilotMega.GCSViews
         }
 
 
-
         private void CMB_rateattitude_SelectedIndexChanged(object sender, EventArgs e)
         {
             MainV2.config[((ComboBox)sender).Name] = ((ComboBox)sender).Text;
@@ -1010,18 +1022,21 @@ namespace ArdupilotMega.GCSViews
         {
             MainV2.config[((ComboBox)sender).Name] = ((ComboBox)sender).Text;
             MainV2.cs.rateposition = byte.Parse(((ComboBox)sender).Text);
+
         }
 
         private void CMB_ratestatus_SelectedIndexChanged(object sender, EventArgs e)
         {
             MainV2.config[((ComboBox)sender).Name] = ((ComboBox)sender).Text;
             MainV2.cs.ratestatus = byte.Parse(((ComboBox)sender).Text);
+
         }
 
         private void CMB_raterc_SelectedIndexChanged(object sender, EventArgs e)
         {
             MainV2.config[((ComboBox)sender).Name] = ((ComboBox)sender).Text;
             MainV2.cs.raterc = byte.Parse(((ComboBox)sender).Text);
+
         }
 
         private void CHK_mavdebug_CheckedChanged(object sender, EventArgs e)

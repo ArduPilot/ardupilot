@@ -74,6 +74,8 @@
             this.BUT_Joystick = new ArdupilotMega.Controls.MyButton();
             this.BUT_videostop = new ArdupilotMega.Controls.MyButton();
             this.BUT_videostart = new ArdupilotMega.Controls.MyButton();
+            this.label1 = new System.Windows.Forms.Label();
+            this.CHK_maprotation = new System.Windows.Forms.CheckBox();
             ((System.ComponentModel.ISupportInitialize)(this.NUM_tracklength)).BeginInit();
             this.SuspendLayout();
             // 
@@ -94,6 +96,7 @@
             resources.GetString("CMB_ratesensors.Items4")});
             resources.ApplyResources(this.CMB_ratesensors, "CMB_ratesensors");
             this.CMB_ratesensors.Name = "CMB_ratesensors";
+            this.CMB_ratesensors.SelectedIndexChanged += new System.EventHandler(this.CMB_ratesensors_SelectedIndexChanged);
             // 
             // label26
             // 
@@ -348,6 +351,7 @@
             this.CMB_osdcolor.FormattingEnabled = true;
             resources.ApplyResources(this.CMB_osdcolor, "CMB_osdcolor");
             this.CMB_osdcolor.Name = "CMB_osdcolor";
+            this.CMB_osdcolor.DrawItem += new System.Windows.Forms.DrawItemEventHandler(this.CMB_osdcolor_DrawItem);
             this.CMB_osdcolor.SelectedIndexChanged += new System.EventHandler(this.CMB_osdcolor_SelectedIndexChanged);
             // 
             // CMB_language
@@ -377,7 +381,7 @@
             resources.ApplyResources(this.CHK_hudshow, "CHK_hudshow");
             this.CHK_hudshow.Name = "CHK_hudshow";
             this.CHK_hudshow.UseVisualStyleBackColor = true;
-            this.CHK_hudshow.Click += new System.EventHandler(this.CHK_hudshow_CheckedChanged);
+            this.CHK_hudshow.CheckedChanged += new System.EventHandler(this.CHK_hudshow_CheckedChanged);
             // 
             // label92
             // 
@@ -391,6 +395,7 @@
             resources.ApplyResources(this.CMB_videosources, "CMB_videosources");
             this.CMB_videosources.Name = "CMB_videosources";
             this.CMB_videosources.SelectedIndexChanged += new System.EventHandler(this.CMB_videosources_SelectedIndexChanged);
+            this.CMB_videosources.Click += new System.EventHandler(this.CMB_videosources_Click);
             // 
             // BUT_Joystick
             // 
@@ -413,10 +418,24 @@
             this.BUT_videostart.UseVisualStyleBackColor = true;
             this.BUT_videostart.Click += new System.EventHandler(this.BUT_videostart_Click);
             // 
+            // label1
+            // 
+            resources.ApplyResources(this.label1, "label1");
+            this.label1.Name = "label1";
+            // 
+            // CHK_maprotation
+            // 
+            resources.ApplyResources(this.CHK_maprotation, "CHK_maprotation");
+            this.CHK_maprotation.Name = "CHK_maprotation";
+            this.CHK_maprotation.UseVisualStyleBackColor = true;
+            this.CHK_maprotation.CheckedChanged += new System.EventHandler(this.CHK_maprotation_CheckedChanged);
+            // 
             // ConfigPlanner
             // 
             resources.ApplyResources(this, "$this");
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
+            this.Controls.Add(this.label1);
+            this.Controls.Add(this.CHK_maprotation);
             this.Controls.Add(this.label33);
             this.Controls.Add(this.CMB_ratesensors);
             this.Controls.Add(this.label26);
@@ -463,6 +482,7 @@
             this.Controls.Add(this.BUT_videostop);
             this.Controls.Add(this.BUT_videostart);
             this.Name = "ConfigPlanner";
+            this.Load += new System.EventHandler(this.ConfigPlanner_Load);
             ((System.ComponentModel.ISupportInitialize)(this.NUM_tracklength)).EndInit();
             this.ResumeLayout(false);
 
@@ -515,5 +535,7 @@
         private ArdupilotMega.Controls.MyButton BUT_Joystick;
         private ArdupilotMega.Controls.MyButton BUT_videostop;
         private ArdupilotMega.Controls.MyButton BUT_videostart;
+        private System.Windows.Forms.Label label1;
+        private System.Windows.Forms.CheckBox CHK_maprotation;
     }
 }

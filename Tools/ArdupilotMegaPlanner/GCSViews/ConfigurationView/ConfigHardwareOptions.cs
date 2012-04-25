@@ -25,12 +25,12 @@ namespace ArdupilotMega.GCSViews.ConfigurationView
 
         private void BUT_MagCalibration_Click(object sender, EventArgs e)
         {
+            // list of x,y,z 's
             List<Tuple<float, float, float>> data = new List<Tuple<float, float, float>>();
 
+            // backup current rate and set to 10 hz
             byte backupratesens = MainV2.cs.ratesensors;
-
             MainV2.cs.ratesensors = 10;
-
             MainV2.comPort.requestDatastream((byte)MAVLink.MAV_DATA_STREAM.RAW_SENSORS, MainV2.cs.ratesensors); // mag captures at 10 hz
 
             CustomMessageBox.Show("Data will be collected for 30 seconds, Please click ok and move the apm around all axises");
@@ -43,6 +43,7 @@ namespace ArdupilotMega.GCSViews.ConfigurationView
 
             while (deadline > DateTime.Now)
             {
+                // dont let the gui hang
                 Application.DoEvents();
 
                 if (oldmx != MainV2.cs.mx &&
@@ -60,7 +61,9 @@ namespace ArdupilotMega.GCSViews.ConfigurationView
                 }
             }
 
+            // restore old sensor rate
             MainV2.cs.ratesensors = backupratesens;
+            MainV2.comPort.requestDatastream((byte)MAVLink.MAV_DATA_STREAM.RAW_SENSORS, MainV2.cs.ratesensors);
 
             if (data.Count < 10)
             {

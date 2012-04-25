@@ -26,6 +26,8 @@ using System.Xml;
 using log4net;
 using ZedGraph; // Graphs
 
+using ArdupilotMega.Utilities;
+
 using System.CodeDom.Compiler;
 
 namespace ArdupilotMega

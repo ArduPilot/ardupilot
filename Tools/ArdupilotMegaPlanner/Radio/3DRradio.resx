@@ -117,10 +117,6 @@
   <resheader name="writer">
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
-  <assembly alias="System.Windows.Forms" name="System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089" />
-  <data name="Progressbar.Anchor" type="System.Windows.Forms.AnchorStyles, System.Windows.Forms">
-    <value>Bottom, Left, Right</value>
-  </data>
   <assembly alias="System.Drawing" name="System.Drawing, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a" />
   <data name="Progressbar.Location" type="System.Drawing.Point, System.Drawing">
     <value>12, 389</value>
@@ -767,9 +763,6 @@
   <data name="&gt;&gt;S7.ZOrder" xml:space="preserve">
     <value>51</value>
   </data>
-  <data name="RS7.Anchor" type="System.Windows.Forms.AnchorStyles, System.Windows.Forms">
-    <value>Top, Right</value>
-  </data>
   <data name="RS7.Location" type="System.Drawing.Point, System.Drawing">
     <value>499, 287</value>
   </data>
@@ -794,9 +787,6 @@
   </data>
   <data name="&gt;&gt;RS7.ZOrder" xml:space="preserve">
     <value>41</value>
-  </data>
-  <data name="RS6.Anchor" type="System.Windows.Forms.AnchorStyles, System.Windows.Forms">
-    <value>Top, Right</value>
   </data>
   <data name="RS6.Location" type="System.Drawing.Point, System.Drawing">
     <value>499, 260</value>
@@ -823,9 +813,6 @@
   <data name="&gt;&gt;RS6.ZOrder" xml:space="preserve">
     <value>42</value>
   </data>
-  <data name="RS5.Anchor" type="System.Windows.Forms.AnchorStyles, System.Windows.Forms">
-    <value>Top, Right</value>
-  </data>
   <data name="RS5.Location" type="System.Drawing.Point, System.Drawing">
     <value>499, 233</value>
   </data>
@@ -850,9 +837,6 @@
   </data>
   <data name="&gt;&gt;RS5.ZOrder" xml:space="preserve">
     <value>43</value>
-  </data>
-  <data name="RS4.Anchor" type="System.Windows.Forms.AnchorStyles, System.Windows.Forms">
-    <value>Top, Right</value>
   </data>
   <data name="RS4.Items" xml:space="preserve">
     <value>0</value>
@@ -941,9 +925,6 @@
   </data>
   <data name="&gt;&gt;RS4.ZOrder" xml:space="preserve">
     <value>44</value>
-  </data>
-  <data name="RS3.Anchor" type="System.Windows.Forms.AnchorStyles, System.Windows.Forms">
-    <value>Top, Right</value>
   </data>
   <data name="RS3.Items" xml:space="preserve">
     <value>1</value>
@@ -1059,9 +1040,6 @@
   <data name="&gt;&gt;RS3.ZOrder" xml:space="preserve">
     <value>45</value>
   </data>
-  <data name="RS2.Anchor" type="System.Windows.Forms.AnchorStyles, System.Windows.Forms">
-    <value>Top, Right</value>
-  </data>
   <data name="RS2.Items" xml:space="preserve">
     <value>250</value>
   </data>
@@ -1115,9 +1093,6 @@
   </data>
   <data name="&gt;&gt;RS2.ZOrder" xml:space="preserve">
     <value>46</value>
-  </data>
-  <data name="RS1.Anchor" type="System.Windows.Forms.AnchorStyles, System.Windows.Forms">
-    <value>Top, Right</value>
   </data>
   <data name="RS1.Items" xml:space="preserve">
     <value>115</value>
@@ -1373,9 +1348,6 @@ which result in a valid packet CRC
   <data name="&gt;&gt;S12.ZOrder" xml:space="preserve">
     <value>27</value>
   </data>
-  <data name="RS12.Anchor" type="System.Windows.Forms.AnchorStyles, System.Windows.Forms">
-    <value>Top, Right</value>
-  </data>
   <data name="RS12.Items" xml:space="preserve">
     <value>0</value>
   </data>
@@ -1406,9 +1378,6 @@ which result in a valid packet CRC
   </data>
   <data name="&gt;&gt;RS12.ZOrder" xml:space="preserve">
     <value>17</value>
-  </data>
-  <data name="RS11.Anchor" type="System.Windows.Forms.AnchorStyles, System.Windows.Forms">
-    <value>Top, Right</value>
   </data>
   <data name="RS11.Items" xml:space="preserve">
     <value>10</value>
@@ -1464,9 +1433,6 @@ which result in a valid packet CRC
   </data>
   <data name="&gt;&gt;RS11.ZOrder" xml:space="preserve">
     <value>18</value>
-  </data>
-  <data name="RS10.Anchor" type="System.Windows.Forms.AnchorStyles, System.Windows.Forms">
-    <value>Top, Right</value>
   </data>
   <data name="RS10.Items" xml:space="preserve">
     <value>5</value>
@@ -1655,9 +1621,6 @@ which result in a valid packet CRC
   <data name="&gt;&gt;S8.ZOrder" xml:space="preserve">
     <value>26</value>
   </data>
-  <data name="RS8.Anchor" type="System.Windows.Forms.AnchorStyles, System.Windows.Forms">
-    <value>Top, Right</value>
-  </data>
   <data name="RS8.Items" xml:space="preserve">
     <value>902000</value>
   </data>
@@ -1705,9 +1668,6 @@ which result in a valid packet CRC
   </data>
   <data name="&gt;&gt;RS8.ZOrder" xml:space="preserve">
     <value>16</value>
-  </data>
-  <data name="RS9.Anchor" type="System.Windows.Forms.AnchorStyles, System.Windows.Forms">
-    <value>Top, Right</value>
   </data>
   <data name="RS9.Items" xml:space="preserve">
     <value>902000</value>
@@ -1757,9 +1717,6 @@ which result in a valid packet CRC
   <data name="&gt;&gt;RS9.ZOrder" xml:space="preserve">
     <value>20</value>
   </data>
-  <data name="RS0.Anchor" type="System.Windows.Forms.AnchorStyles, System.Windows.Forms">
-    <value>Top, Right</value>
-  </data>
   <data name="RS0.Location" type="System.Drawing.Point, System.Drawing">
     <value>499, 99</value>
   </data>
@@ -1808,9 +1765,6 @@ which result in a valid packet CRC
   <data name="&gt;&gt;label9.ZOrder" xml:space="preserve">
     <value>40</value>
   </data>
-  <data name="label10.Anchor" type="System.Windows.Forms.AnchorStyles, System.Windows.Forms">
-    <value>Top, Right</value>
-  </data>
   <data name="label10.AutoSize" type="System.Boolean, mscorlib">
     <value>True</value>
   </data>
@@ -1837,9 +1791,6 @@ which result in a valid packet CRC
   </data>
   <data name="&gt;&gt;label10.ZOrder" xml:space="preserve">
     <value>39</value>
-  </data>
-  <data name="RTI.Anchor" type="System.Windows.Forms.AnchorStyles, System.Windows.Forms">
-    <value>Top, Right</value>
   </data>
   <data name="RTI.Location" type="System.Drawing.Point, System.Drawing">
     <value>543, 25</value>
@@ -1937,9 +1888,6 @@ which result in a valid packet CRC
   <data name="&gt;&gt;label12.ZOrder" xml:space="preserve">
     <value>34</value>
   </data>
-  <data name="BUT_savesettings.Anchor" type="System.Windows.Forms.AnchorStyles, System.Windows.Forms">
-    <value>Bottom</value>
-  </data>
   <data name="BUT_savesettings.Enabled" type="System.Boolean, mscorlib">
     <value>False</value>
   </data>
@@ -1959,16 +1907,13 @@ which result in a valid packet CRC
     <value>BUT_savesettings</value>
   </data>
   <data name="&gt;&gt;BUT_savesettings.Type" xml:space="preserve">
-    <value>ArdupilotMega.Controls.MyButton, ArdupilotMegaPlanner, Version=1.1.4494.22181, Culture=neutral, PublicKeyToken=null</value>
+    <value>ArdupilotMega.Controls.MyButton, ArdupilotMegaPlanner, Version=1.1.4498.26252, Culture=neutral, PublicKeyToken=null</value>
   </data>
   <data name="&gt;&gt;BUT_savesettings.Parent" xml:space="preserve">
     <value>$this</value>
   </data>
   <data name="&gt;&gt;BUT_savesettings.ZOrder" xml:space="preserve">
     <value>49</value>
-  </data>
-  <data name="BUT_getcurrent.Anchor" type="System.Windows.Forms.AnchorStyles, System.Windows.Forms">
-    <value>Bottom</value>
   </data>
   <data name="BUT_getcurrent.Location" type="System.Drawing.Point, System.Drawing">
     <value>253, 319</value>
@@ -1986,16 +1931,13 @@ which result in a valid packet CRC
     <value>BUT_getcurrent</value>
   </data>
   <data name="&gt;&gt;BUT_getcurrent.Type" xml:space="preserve">
-    <value>ArdupilotMega.Controls.MyButton, ArdupilotMegaPlanner, Version=1.1.4494.22181, Culture=neutral, PublicKeyToken=null</value>
+    <value>ArdupilotMega.Controls.MyButton, ArdupilotMegaPlanner, Version=1.1.4498.26252, Culture=neutral, PublicKeyToken=null</value>
   </data>
   <data name="&gt;&gt;BUT_getcurrent.Parent" xml:space="preserve">
     <value>$this</value>
   </data>
   <data name="&gt;&gt;BUT_getcurrent.ZOrder" xml:space="preserve">
     <value>64</value>
-  </data>
-  <data name="lbl_status.Anchor" type="System.Windows.Forms.AnchorStyles, System.Windows.Forms">
-    <value>Bottom, Left, Right</value>
   </data>
   <data name="lbl_status.Location" type="System.Drawing.Point, System.Drawing">
     <value>12, 361</value>
@@ -2018,9 +1960,6 @@ which result in a valid packet CRC
   <data name="&gt;&gt;lbl_status.ZOrder" xml:space="preserve">
     <value>67</value>
   </data>
-  <data name="BUT_upload.Anchor" type="System.Windows.Forms.AnchorStyles, System.Windows.Forms">
-    <value>Bottom</value>
-  </data>
   <data name="BUT_upload.Location" type="System.Drawing.Point, System.Drawing">
     <value>403, 319</value>
   </data>
@@ -2037,7 +1976,7 @@ which result in a valid packet CRC
     <value>BUT_upload</value>
   </data>
   <data name="&gt;&gt;BUT_upload.Type" xml:space="preserve">
-    <value>ArdupilotMega.Controls.MyButton, ArdupilotMegaPlanner, Version=1.1.4494.22181, Culture=neutral, PublicKeyToken=null</value>
+    <value>ArdupilotMega.Controls.MyButton, ArdupilotMegaPlanner, Version=1.1.4498.26252, Culture=neutral, PublicKeyToken=null</value>
   </data>
   <data name="&gt;&gt;BUT_upload.Parent" xml:space="preserve">
     <value>$this</value>
@@ -2061,7 +2000,7 @@ which result in a valid packet CRC
     <value>BUT_syncS2</value>
   </data>
   <data name="&gt;&gt;BUT_syncS2.Type" xml:space="preserve">
-    <value>ArdupilotMega.Controls.MyButton, ArdupilotMegaPlanner, Version=1.1.4494.22181, Culture=neutral, PublicKeyToken=null</value>
+    <value>ArdupilotMega.Controls.MyButton, ArdupilotMegaPlanner, Version=1.1.4498.26252, Culture=neutral, PublicKeyToken=null</value>
   </data>
   <data name="&gt;&gt;BUT_syncS2.Parent" xml:space="preserve">
     <value>$this</value>
@@ -2085,7 +2024,7 @@ which result in a valid packet CRC
     <value>BUT_syncS3</value>
   </data>
   <data name="&gt;&gt;BUT_syncS3.Type" xml:space="preserve">
-    <value>ArdupilotMega.Controls.MyButton, ArdupilotMegaPlanner, Version=1.1.4494.22181, Culture=neutral, PublicKeyToken=null</value>
+    <value>ArdupilotMega.Controls.MyButton, ArdupilotMegaPlanner, Version=1.1.4498.26252, Culture=neutral, PublicKeyToken=null</value>
   </data>
   <data name="&gt;&gt;BUT_syncS3.Parent" xml:space="preserve">
     <value>$this</value>
@@ -2109,7 +2048,7 @@ which result in a valid packet CRC
     <value>BUT_syncS5</value>
   </data>
   <data name="&gt;&gt;BUT_syncS5.Type" xml:space="preserve">
-    <value>ArdupilotMega.Controls.MyButton, ArdupilotMegaPlanner, Version=1.1.4494.22181, Culture=neutral, PublicKeyToken=null</value>
+    <value>ArdupilotMega.Controls.MyButton, ArdupilotMegaPlanner, Version=1.1.4498.26252, Culture=neutral, PublicKeyToken=null</value>
   </data>
   <data name="&gt;&gt;BUT_syncS5.Parent" xml:space="preserve">
     <value>$this</value>
@@ -2120,6 +2059,7 @@ which result in a valid packet CRC
   <data name="label13.AutoSize" type="System.Boolean, mscorlib">
     <value>True</value>
   </data>
+  <assembly alias="System.Windows.Forms" name="System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089" />
   <data name="label13.ImeMode" type="System.Windows.Forms.ImeMode, System.Windows.Forms">
     <value>NoControl</value>
   </data>
@@ -2267,9 +2207,6 @@ which result in a valid packet CRC
   <data name="&gt;&gt;label17.ZOrder" xml:space="preserve">
     <value>21</value>
   </data>
-  <data name="label20.Anchor" type="System.Windows.Forms.AnchorStyles, System.Windows.Forms">
-    <value>Top, Right</value>
-  </data>
   <data name="label20.AutoSize" type="System.Boolean, mscorlib">
     <value>True</value>
   </data>
@@ -2299,9 +2236,6 @@ which result in a valid packet CRC
   </data>
   <data name="&gt;&gt;label20.ZOrder" xml:space="preserve">
     <value>11</value>
-  </data>
-  <data name="label21.Anchor" type="System.Windows.Forms.AnchorStyles, System.Windows.Forms">
-    <value>Top, Right</value>
   </data>
   <data name="label21.AutoSize" type="System.Boolean, mscorlib">
     <value>True</value>
@@ -2333,9 +2267,6 @@ which result in a valid packet CRC
   <data name="&gt;&gt;label21.ZOrder" xml:space="preserve">
     <value>12</value>
   </data>
-  <data name="label22.Anchor" type="System.Windows.Forms.AnchorStyles, System.Windows.Forms">
-    <value>Top, Right</value>
-  </data>
   <data name="label22.AutoSize" type="System.Boolean, mscorlib">
     <value>True</value>
   </data>
@@ -2365,9 +2296,6 @@ which result in a valid packet CRC
   </data>
   <data name="&gt;&gt;label22.ZOrder" xml:space="preserve">
     <value>13</value>
-  </data>
-  <data name="label23.Anchor" type="System.Windows.Forms.AnchorStyles, System.Windows.Forms">
-    <value>Top, Right</value>
   </data>
   <data name="label23.AutoSize" type="System.Boolean, mscorlib">
     <value>True</value>
@@ -2399,9 +2327,6 @@ which result in a valid packet CRC
   <data name="&gt;&gt;label23.ZOrder" xml:space="preserve">
     <value>14</value>
   </data>
-  <data name="label24.Anchor" type="System.Windows.Forms.AnchorStyles, System.Windows.Forms">
-    <value>Top, Right</value>
-  </data>
   <data name="label24.AutoSize" type="System.Boolean, mscorlib">
     <value>True</value>
   </data>
@@ -2431,9 +2356,6 @@ which result in a valid packet CRC
   </data>
   <data name="&gt;&gt;label24.ZOrder" xml:space="preserve">
     <value>15</value>
-  </data>
-  <data name="label25.Anchor" type="System.Windows.Forms.AnchorStyles, System.Windows.Forms">
-    <value>Top, Right</value>
   </data>
   <data name="label25.AutoSize" type="System.Boolean, mscorlib">
     <value>True</value>
@@ -2465,9 +2387,6 @@ which result in a valid packet CRC
   <data name="&gt;&gt;label25.ZOrder" xml:space="preserve">
     <value>3</value>
   </data>
-  <data name="label26.Anchor" type="System.Windows.Forms.AnchorStyles, System.Windows.Forms">
-    <value>Top, Right</value>
-  </data>
   <data name="label26.AutoSize" type="System.Boolean, mscorlib">
     <value>True</value>
   </data>
@@ -2497,9 +2416,6 @@ which result in a valid packet CRC
   </data>
   <data name="&gt;&gt;label26.ZOrder" xml:space="preserve">
     <value>4</value>
-  </data>
-  <data name="label27.Anchor" type="System.Windows.Forms.AnchorStyles, System.Windows.Forms">
-    <value>Top, Right</value>
   </data>
   <data name="label27.AutoSize" type="System.Boolean, mscorlib">
     <value>True</value>
@@ -2531,9 +2447,6 @@ which result in a valid packet CRC
   <data name="&gt;&gt;label27.ZOrder" xml:space="preserve">
     <value>5</value>
   </data>
-  <data name="label28.Anchor" type="System.Windows.Forms.AnchorStyles, System.Windows.Forms">
-    <value>Top, Right</value>
-  </data>
   <data name="label28.AutoSize" type="System.Boolean, mscorlib">
     <value>True</value>
   </data>
@@ -2563,9 +2476,6 @@ which result in a valid packet CRC
   </data>
   <data name="&gt;&gt;label28.ZOrder" xml:space="preserve">
     <value>6</value>
-  </data>
-  <data name="label29.Anchor" type="System.Windows.Forms.AnchorStyles, System.Windows.Forms">
-    <value>Top, Right</value>
   </data>
   <data name="label29.AutoSize" type="System.Boolean, mscorlib">
     <value>True</value>
@@ -2597,9 +2507,6 @@ which result in a valid packet CRC
   <data name="&gt;&gt;label29.ZOrder" xml:space="preserve">
     <value>7</value>
   </data>
-  <data name="label30.Anchor" type="System.Windows.Forms.AnchorStyles, System.Windows.Forms">
-    <value>Top, Right</value>
-  </data>
   <data name="label30.AutoSize" type="System.Boolean, mscorlib">
     <value>True</value>
   </data>
@@ -2630,9 +2537,6 @@ which result in a valid packet CRC
   <data name="&gt;&gt;label30.ZOrder" xml:space="preserve">
     <value>8</value>
   </data>
-  <data name="label31.Anchor" type="System.Windows.Forms.AnchorStyles, System.Windows.Forms">
-    <value>Top, Right</value>
-  </data>
   <data name="label31.AutoSize" type="System.Boolean, mscorlib">
     <value>True</value>
   </data>
@@ -2662,9 +2566,6 @@ which result in a valid packet CRC
   </data>
   <data name="&gt;&gt;label31.ZOrder" xml:space="preserve">
     <value>9</value>
-  </data>
-  <data name="label32.Anchor" type="System.Windows.Forms.AnchorStyles, System.Windows.Forms">
-    <value>Top, Right</value>
   </data>
   <data name="label32.AutoSize" type="System.Boolean, mscorlib">
     <value>True</value>
@@ -2715,7 +2616,7 @@ which result in a valid packet CRC
     <value>BUT_syncS8</value>
   </data>
   <data name="&gt;&gt;BUT_syncS8.Type" xml:space="preserve">
-    <value>ArdupilotMega.Controls.MyButton, ArdupilotMegaPlanner, Version=1.1.4494.22181, Culture=neutral, PublicKeyToken=null</value>
+    <value>ArdupilotMega.Controls.MyButton, ArdupilotMegaPlanner, Version=1.1.4498.26252, Culture=neutral, PublicKeyToken=null</value>
   </data>
   <data name="&gt;&gt;BUT_syncS8.Parent" xml:space="preserve">
     <value>$this</value>
@@ -2742,7 +2643,7 @@ which result in a valid packet CRC
     <value>BUT_syncS9</value>
   </data>
   <data name="&gt;&gt;BUT_syncS9.Type" xml:space="preserve">
-    <value>ArdupilotMega.Controls.MyButton, ArdupilotMegaPlanner, Version=1.1.4494.22181, Culture=neutral, PublicKeyToken=null</value>
+    <value>ArdupilotMega.Controls.MyButton, ArdupilotMegaPlanner, Version=1.1.4498.26252, Culture=neutral, PublicKeyToken=null</value>
   </data>
   <data name="&gt;&gt;BUT_syncS9.Parent" xml:space="preserve">
     <value>$this</value>
@@ -2769,7 +2670,7 @@ which result in a valid packet CRC
     <value>BUT_syncS10</value>
   </data>
   <data name="&gt;&gt;BUT_syncS10.Type" xml:space="preserve">
-    <value>ArdupilotMega.Controls.MyButton, ArdupilotMegaPlanner, Version=1.1.4494.22181, Culture=neutral, PublicKeyToken=null</value>
+    <value>ArdupilotMega.Controls.MyButton, ArdupilotMegaPlanner, Version=1.1.4498.26252, Culture=neutral, PublicKeyToken=null</value>
   </data>
   <data name="&gt;&gt;BUT_syncS10.Parent" xml:space="preserve">
     <value>$this</value>
@@ -2796,6 +2697,6 @@ which result in a valid packet CRC
     <value>_3DRradio</value>
   </data>
   <data name="&gt;&gt;$this.Type" xml:space="preserve">
-    <value>ArdupilotMega.Controls.BackstageView.BackStageViewContentPanel, ArdupilotMegaPlanner, Version=1.1.4494.22181, Culture=neutral, PublicKeyToken=null</value>
+    <value>ArdupilotMega.Controls.BackstageView.BackStageViewContentPanel, ArdupilotMegaPlanner, Version=1.1.4498.26252, Culture=neutral, PublicKeyToken=null</value>
   </data>
 </root>

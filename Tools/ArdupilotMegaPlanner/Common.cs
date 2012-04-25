@@ -125,6 +125,8 @@ namespace ArdupilotMega
             Matrix temp = g.Transform;
             g.TranslateTransform(LocalPosition.X, LocalPosition.Y);
 
+            g.RotateTransform(-MainMap.Bearing);
+
             int length = 500;
 // anti NaN
             try
@@ -445,7 +447,7 @@ namespace ArdupilotMega
             // altitude controller
             CH6_THR_HOLD_KP = 14,
             CH6_Z_GAIN = 15,
-            //CH6_DAMP = 16,
+            CH6_DAMP = 16,
 
             // optical flow controller
             CH6_OPTFLOW_KP = 17,
@@ -511,7 +513,7 @@ namespace ArdupilotMega
             {
                 if (Common.getModes() == typeof(Common.apmmodes))
                 {
-                    switch ((int)Enum.Parse(Common.getModes(), modein))
+                    switch (EnumTranslator.GetValue<Common.apmmodes>(modein))
                     {
                         case (int)Common.apmmodes.MANUAL:
                         case (int)Common.apmmodes.CIRCLE:
@@ -525,13 +527,13 @@ namespace ArdupilotMega
                             mode.custom_mode = (uint)(int)Enum.Parse(Common.getModes(), modein);
                             break;
                         default:
-                            MessageBox.Show("No Mode Changed " + (int)Enum.Parse(Common.getModes(), modein));
+                            MessageBox.Show("No Mode Changed " +  modein);
                             return false;
                     }
                 }
                 else if (Common.getModes() == typeof(Common.ac2modes))
                 {
-                    switch ((int)Enum.Parse(Common.getModes(), modein))
+                    switch (EnumTranslator.GetValue<Common.ac2modes>(modein))
                     {
                         case (int)Common.ac2modes.STABILIZE:
                         case (int)Common.ac2modes.AUTO:
@@ -545,7 +547,7 @@ namespace ArdupilotMega
                             mode.custom_mode = (uint)(int)Enum.Parse(Common.getModes(), modein);
                             break;
                         default:
-                            MessageBox.Show("No Mode Changed " + (int)Enum.Parse(Common.getModes(), modein));
+                            MessageBox.Show("No Mode Changed " +  modein);
                             return false;
                     }
                 }
@@ -555,7 +557,7 @@ namespace ArdupilotMega
             return true;
         }
 		
-		#else
+#else
         public static bool translateMode(string modein, ref  MAVLink.mavlink_set_nav_mode_t navmode, ref MAVLink.mavlink_set_mode_t mode)
         {
 
@@ -570,7 +572,7 @@ namespace ArdupilotMega
             {
                 if (Common.getModes() == typeof(Common.apmmodes))
                 {
-                    switch ((int)Enum.Parse(Common.getModes(), modein))
+                    switch (EnumTranslator.GetValue<Common.apmmodes>(modein))
                     {
                         case (int)Common.apmmodes.MANUAL:
                             mode.mode = (byte)MAVLink.MAV_MODE.MAV_MODE_MANUAL;
@@ -604,13 +606,13 @@ namespace ArdupilotMega
                             mode.mode = (byte)MAVLink.MAV_MODE.MAV_MODE_TEST2;
                             break;
                         default:
-                            CustomMessageBox.Show("No Mode Changed " + (int)Enum.Parse(Common.getModes(), modein));
+                            CustomMessageBox.Show("No Mode Changed " + modein);
                             return false;
                     }
                 }
                 else if (Common.getModes() == typeof(Common.ac2modes))
                 {
-                    switch ((int)Enum.Parse(Common.getModes(), modein))
+                    switch (EnumTranslator.GetValue<Common.ac2modes>(modein))
                     {
                         case (int)Common.ac2modes.GUIDED:
                             mode.mode = (byte)MAVLink.MAV_MODE.MAV_MODE_GUIDED;
@@ -632,7 +634,7 @@ namespace ArdupilotMega
                             mode.mode = (byte)MAVLink.MAV_MODE.MAV_MODE_AUTO;
                             break;
                         default:
-                            CustomMessageBox.Show("No Mode Changed " + (int)Enum.Parse(Common.getModes(), modein));
+                            CustomMessageBox.Show("No Mode Changed " +  modein);
                             return false;
                     }
                 }
@@ -697,7 +699,7 @@ namespace ArdupilotMega
             }
             catch (Exception ex) { log.Info("getFilefromNet(): " + ex.ToString()); return false; }
         }
-
+        
         public static Type getModes()
         {
             if (MainV2.cs.firmware == MainV2.Firmwares.ArduPlane)
