@@ -37,7 +37,7 @@ namespace ArdupilotMega.Utilities
                foreach (string parameterLocation in parameterLocations)
                {
                   // Write the start element for this parameter location
-                  objXmlTextWriter.WriteStartElement(parameterLocation);
+                  objXmlTextWriter.WriteStartElement(parameterLocation.ToLower().Contains("arducopter") ? MainV2.Firmwares.ArduCopter2.ToString() : MainV2.Firmwares.ArduPlane.ToString());
 
                   // Read and parse the content.
                   string dataFromAddress = ReadDataFromAddress(parameterLocation);
@@ -273,46 +273,55 @@ namespace ArdupilotMega.Utilities
 
          log.Info(address);
 
-         var request = WebRequest.Create(address);
-
-         // Plenty of timeout
-         request.Timeout = 10000;
-
-         // Set the Method property of the request to GET.
-         request.Method = "GET";
-
-         // Get the response.
-         using (var response = request.GetResponse())
+         // Make sure we don't blow up if the user is not connected or the endpoint is not available
+         try
          {
-            // Display the status.
-            log.Info(((HttpWebResponse) response).StatusDescription);
+            var request = WebRequest.Create(address);
 
-            // Get the stream containing content returned by the server.
-            using (var dataStream = response.GetResponseStream())
+            // Plenty of timeout
+            request.Timeout = 10000;
+
+            // Set the Method property of the request to GET.
+            request.Method = "GET";
+
+            // Get the response.
+            using (var response = request.GetResponse())
             {
-               if (dataStream != null)
+               // Display the status.
+               log.Info(((HttpWebResponse)response).StatusDescription);
+
+               // Get the stream containing content returned by the server.
+               using (var dataStream = response.GetResponseStream())
                {
-                  // Open the stream using a StreamReader for easy access.
-                  using (var reader = new StreamReader(dataStream))
+                  if (dataStream != null)
                   {
-                     // Store the data to return
-                     data = reader.ReadToEnd();
+                     // Open the stream using a StreamReader for easy access.
+                     using (var reader = new StreamReader(dataStream))
+                     {
+                        // Store the data to return
+                        data = reader.ReadToEnd();
 
-                     // Close the reader
-                     reader.Close();
+                        // Close the reader
+                        reader.Close();
+                     }
+
+                     // Close the datastream
+                     dataStream.Close();
                   }
-
-                  // Close the datastream
-                  dataStream.Close();
                }
+
+               // Close the response
+               response.Close();
             }
 
-            // Close the response
-            response.Close();
+            // Return the data
+            return data;
          }
-
-         // Return the data
-         return data;
+         catch (WebException ex)
+         {
+            log.Error(String.Format("The request to {0} failed.", address), ex);
+         }
+         return string.Empty;
       }
    }
 }
