@@ -25,6 +25,11 @@
 
 // table of user settable parameters
 const AP_Param::GroupInfo AP_AHRS::var_info[] PROGMEM = {
+	// @Param: YAW_P
+	// @DisplayName: Yaw P
+	// @Description: This controls the weight the compass has on the overall heading
+	// @Range: 0 .4
+	// @Increment: .01
     AP_GROUPINFO("YAW_P", 0, AP_AHRS_DCM, _kp_yaw),
     AP_GROUPEND
 };
