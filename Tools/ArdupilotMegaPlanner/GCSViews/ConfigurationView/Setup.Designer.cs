@@ -45,7 +45,7 @@
             // 
             this.ClientSize = new System.Drawing.Size(931, 468);
             this.Controls.Add(this.backstageView);
-            this.Icon = ((System.Drawing.Icon)(resources.GetObject("$this.Icon")));
+            //this.Icon = ((System.Drawing.Icon)(resources.GetObject("$this.Icon")));
             this.MinimumSize = new System.Drawing.Size(947, 506);
             this.Name = "Setup";
             this.Text = "Setup";

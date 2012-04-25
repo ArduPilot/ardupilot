@@ -8,10 +8,12 @@ using System.Linq;
 using System.Text;
 using System.Windows.Forms;
 using System.Xml;
+using ArdupilotMega.Controls.BackstageView;
+using ArdupilotMega.Utilities;
 
 namespace ArdupilotMega.Controls
 {
-    public partial class ConfigPanel : Form
+    public partial class ConfigPanel : BackStageViewContentPanel
     {
         /// <summary>
         /// store tempory pending changes

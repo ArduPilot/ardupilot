@@ -5,7 +5,7 @@ using ArdupilotMega.Controls.BackstageView;
 using log4net;
 using ArdupilotMega.Controls;
 
-namespace ArdupilotMega
+namespace ArdupilotMega.Utilities
 {
     /// <summary>
     /// Helper class for the stylng 'theming' of forms and controls, and provides MessageBox

@@ -8,6 +8,7 @@ using System.Xml;
 using System.Net;
 using log4net;
 using ArdupilotMega.Arduino;
+using ArdupilotMega.Utilities;
 
 namespace ArdupilotMega.GCSViews
 {
@@ -649,8 +650,16 @@ namespace ArdupilotMega.GCSViews
 
         private void BUT_setup_Click(object sender, EventArgs e)
         {
-            Form temp = new GCSViews.ConfigurationView.Setup();
+            Form temp = new Form();
+            MyUserControl configview = new GCSViews.ConfigurationView.Setup();
+            temp.Controls.Add(configview);
             ThemeManager.ApplyThemeTo(temp);
+            // fix title
+            temp.Text = configview.Name;
+            // fix size
+            temp.Size = configview.Size;
+            configview.Dock = DockStyle.Fill;
+            temp.FormClosing += configview.Close;
             temp.ShowDialog();
         }
 

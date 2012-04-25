@@ -214,10 +214,6 @@ namespace ArdupilotMega
                 {
                     if (sw != null)
                         sw.Close();
-
-                    MainV2.cs.ratesensors = 3; // hardcode 3 hz
-
-                    comPort.requestDatastream((byte)ArdupilotMega.MAVLink.MAV_DATA_STREAM.RAW_SENSORS, MainV2.cs.ratesensors); // request raw sensor
                 }
                 catch { }
             }

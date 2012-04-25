@@ -6,6 +6,7 @@ using System.Threading;
 using log4net;
 using System.Globalization;
 using ArdupilotMega.Comms;
+using ArdupilotMega.Utilities;
 
 namespace ArdupilotMega.Arduino
 {

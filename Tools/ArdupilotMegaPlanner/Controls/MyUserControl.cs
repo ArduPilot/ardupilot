@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Windows.Forms;
 
 namespace System.Windows.Forms
 {
@@ -10,6 +11,19 @@ namespace System.Windows.Forms
     /// </summary>
     public class MyUserControl : System.Windows.Forms.UserControl
     {
+        public event FormClosingEventHandler FormClosing;
+
+        public void Close(object sender, FormClosingEventArgs e)
+        {
+            if (FormClosing != null)
+                FormClosing(sender,e);
+        }
+
+        public void Close()
+        {
+            Close(this, new FormClosingEventArgs(CloseReason.UserClosing, false));
+        }
+
         protected override void WndProc(ref Message m)
         {
             try

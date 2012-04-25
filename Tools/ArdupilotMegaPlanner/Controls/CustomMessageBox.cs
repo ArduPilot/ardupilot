@@ -4,6 +4,7 @@ using System.Windows.Forms;
 //using ArdupilotMega.Controls;
 using System.Text;
 using ArdupilotMega;
+using ArdupilotMega.Utilities;
 
 namespace System.Windows.Forms
 {

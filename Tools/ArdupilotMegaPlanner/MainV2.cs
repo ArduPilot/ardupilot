@@ -2,9 +2,7 @@
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Configuration;
-using System.Data;
 using System.Drawing;
-using System.Linq;
 using System.Text;
 using System.Windows.Forms;
 using System.IO;
@@ -12,7 +10,6 @@ using System.Xml;
 using System.Collections;
 using System.Net;
 using System.Text.RegularExpressions;
-using System.Web;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Speech.Synthesis;
@@ -20,7 +17,6 @@ using System.Globalization;
 using System.Threading;
 using System.Net.Sockets;
 using ArdupilotMega.Utilities;
-using ArdupilotMega.Utilities.Constants;
 using IronPython.Hosting;
 using log4net;
 using ArdupilotMega.Controls;
@@ -129,8 +125,8 @@ namespace ArdupilotMega
         /// </summary>
         GCSViews.FlightData FlightData;
         GCSViews.FlightPlanner FlightPlanner;
-        GCSViews.Configuration Configuration;
-        //GCSViews.ConfigurationView.Configuration Configuration;
+        //GCSViews.Configuration Configuration;
+        GCSViews.ConfigurationView.Setup Configuration;
         GCSViews.Simulation Simulation;
         GCSViews.Firmware Firmware;
         GCSViews.Terminal Terminal;
@@ -428,22 +424,18 @@ namespace ArdupilotMega
                 catch { }
             }
 
-            Configuration = new GCSViews.Configuration();
-            //Configuration = new GCSViews.ConfigurationView.Configuration();
+            //Configuration = new GCSViews.Configuration();
+            Configuration = new GCSViews.ConfigurationView.Setup();
 
             UserControl temp = Configuration;
 
             ThemeManager.ApplyThemeTo(temp);
-
-            //temp.Anchor = AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right | AnchorStyles.Top;
 
             temp.Location = new Point(0, 0);
 
             temp.Dock = DockStyle.Fill;
 
             temp.Size = MyView.Size;
-
-            //temp.Parent = MyView;
 
             MyView.Controls.Add(temp);
         }
@@ -1738,11 +1730,18 @@ namespace ArdupilotMega
 
         static void DoUpdateWorker_DoWork(object sender, Controls.ProgressWorkerEventArgs e)
         {
-            ((ProgressReporterDialogue)sender).UpdateProgressAndStatus(-1, "Getting Base URL");
-            MainV2.updateCheckMain((ProgressReporterDialogue)sender);
+           // TODO: Is this the right place?
+           #region Fetch Parameter Meta Data
+           
+           var progressReporterDialogue = ((ProgressReporterDialogue) sender);
+           progressReporterDialogue.UpdateProgressAndStatus(-1, "Getting Updated Parameters");
 
-            // TODO: Is this the right place?
-            ParameterMetaDataParser.GetParameterInformation();
+           ParameterMetaDataParser.GetParameterInformation();
+           
+           #endregion Fetch Parameter Meta Data
+
+           progressReporterDialogue.UpdateProgressAndStatus(-1, "Getting Base URL");
+           MainV2.updateCheckMain(progressReporterDialogue);
         }
 
         private static bool updateCheck(ProgressReporterDialogue frmProgressReporter, string baseurl, string subdir)
@@ -2043,7 +2042,7 @@ namespace ArdupilotMega
 
                 cfg.LoadXML("ArduCopterConfig.xml");
 
-                cfg.ShowDialog();
+                //cfg.ShowDialog();
 
                 return true;
             }

@@ -115,6 +115,19 @@ namespace ArdupilotMega.Utilities
          return displayText;
       }
 
+      public static int GetValue<T>(string item)
+      {
+          var list = Translate<T>();
+
+          foreach (var kvp in list)
+          {
+              if (kvp.Value == item)
+                  return kvp.Key;
+          }
+
+          return -1;
+      }
+
    }  
 
 }
