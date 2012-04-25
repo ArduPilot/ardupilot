@@ -26,11 +26,14 @@ static const AP_Param::Info var_info[] PROGMEM = {
 	// @Description: This is the altitude the model will move to before Returning to Launch
 	// @Units: Meters
 	// @Range: 0 400
+	// @Increment: 1
+	// @User: Standard
 	GSCALAR(RTL_altitude,	"ALT_HOLD_RTL"),
 	
 	// @Param: SONAR_ENABLE
 	// @DisplayName: Enable Sonar
 	// @Description: Setting this to true (1) will enable the sonar. Setting this to false(0) will disable the sonar
+	// @User: Standard
 	GSCALAR(sonar_enabled,	"SONAR_ENABLE"),
 	
 	GSCALAR(sonar_type,	"SONAR_TYPE"),
@@ -47,6 +50,7 @@ static const AP_Param::Info var_info[] PROGMEM = {
 	// @Param: RTL_LAND
 	// @DisplayName: RTL Land
 	// @Description: Setting this to true (1) will enable landing after RTL. Setting this to false(0) will disable landing after RTL.
+	// @User: Standard
 	GSCALAR(rtl_land_enabled,	"RTL_LAND"),
 
 	// @Param: APPROACH_ALT
@@ -54,11 +58,14 @@ static const AP_Param::Info var_info[] PROGMEM = {
 	// @Description: This is the altitude the model will move to before Returning to Launch
 	// @Units: Meters
 	// @Range: 1 10
+	// @Increment: .1
+	// @User: Standard
 	GSCALAR(rtl_approach_alt,	"APPROACH_ALT"),
 
 	// @Param: RETRO_LOITER
 	// @DisplayName: Retro Loiter
 	// @Description: Setting this to true (1) will enable the Loiter from 2.0.49. Setting this to false(0) will use the most recent Loiter routines.
+	// @User: Standard
 	GSCALAR(retro_loiter,	"RETRO_LOITER"),
 
 	GSCALAR(waypoint_mode,	"WP_MODE"),
@@ -121,6 +128,7 @@ static const AP_Param::Info var_info[] PROGMEM = {
 	// @Description: This is the speed in Hertz that your ESCs will receive updates
 	// @Units: Hertz (Hz)
 	// @Values: 400,490
+	// @User: Advanced
 	GSCALAR(rc_speed, "RC_SPEED"),
 
 	// variable
@@ -133,6 +141,8 @@ static const AP_Param::Info var_info[] PROGMEM = {
 	// @DisplayName: Stabilize D Schedule
 	// @Description: This value is a percentage of scheduling applied to the Stabilize D term.
 	// @Range: 0 1
+	// @Increment: .01
+	// @User: Advanced
 	GSCALAR(stabilize_d_schedule, "STAB_D_S"),
 
 	GSCALAR(acro_p, 			"ACRO_P"),
@@ -168,10 +178,20 @@ static const AP_Param::Info var_info[] PROGMEM = {
 	GGROUP(pi_loiter_lon,	"HLD_LON_", APM_PI),
 
 	// variables not in the g class which contain EEPROM saved variables
+	
+	// @Lib: COMPASS_
+	// @Path: ../libraries/AP_Compass/Compass.cpp
 	GOBJECT(compass,        "COMPASS_", Compass),
+
 	GOBJECT(gcs0,			"SR0_",     GCS_MAVLINK),
 	GOBJECT(gcs3,			"SR3_",     GCS_MAVLINK),
+
+	// @Lib: IMU_
+	// @Path: ../libraries/AP_IMU/IMU.cpp
 	GOBJECT(imu,			"IMU_",     IMU),
+
+	// @Lib: AP_AHRS_
+	// @Path: ../libraries/AP_AHRS/AP_AHRS_DCM.cpp, ../libraries/AP_AHRS/AP_AHRS_Quaternion.cpp
 	GOBJECT(ahrs,			"AHRS_",    AP_AHRS),
 
 	#if FRAME_CONFIG ==	HELI_FRAME
