@@ -20,6 +20,7 @@ using System.Globalization;
 using System.Threading;
 using System.Net.Sockets;
 using ArdupilotMega.Utilities;
+using ArdupilotMega.Utilities.Constants;
 using IronPython.Hosting;
 using log4net;
 using ArdupilotMega.Controls;
@@ -1230,9 +1231,6 @@ namespace ArdupilotMega
                     log.Error("Update check failed", ex);
                 }
             }
-
-            // TODO: Move this to a more appropriate place, like right after CheckForUpdate();
-            ParameterMetaDataParser.GetParameterInformation();
         }
 
 
@@ -1742,6 +1740,9 @@ namespace ArdupilotMega
         {
             ((ProgressReporterDialogue)sender).UpdateProgressAndStatus(-1, "Getting Base URL");
             MainV2.updateCheckMain((ProgressReporterDialogue)sender);
+
+            // TODO: Is this the right place?
+            ParameterMetaDataParser.GetParameterInformation();
         }
 
         private static bool updateCheck(ProgressReporterDialogue frmProgressReporter, string baseurl, string subdir)
