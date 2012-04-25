@@ -7,7 +7,7 @@
       public const string ParamDelimeter = "@";
       public const string PathDelimeter = ",";
       public const string Param = "Param";
-      public const string Lib = "Lib";
+      public const string Group = "Group";
       public const string Path = "Path";
 
       #endregion
