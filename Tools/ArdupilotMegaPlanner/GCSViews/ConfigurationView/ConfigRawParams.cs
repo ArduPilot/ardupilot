@@ -1,20 +1,14 @@
 ﻿using System;
 using System.Collections;
-using System.Collections.Generic;
 using System.ComponentModel;
-using System.Configuration;
 using System.Drawing;
-using System.Data;
 using System.IO;
-using System.Linq;
 using System.Text;
-using System.Xml.Linq;
 using System.Windows.Forms;
-using ArdupilotMega.Constants;
 using ArdupilotMega.Utilities;
+using ArdupilotMega.Utilities.Constants;
 using log4net;
 using ArdupilotMega.Controls.BackstageView;
-using ArdupilotMega.Controls;
 
 namespace ArdupilotMega.GCSViews.ConfigurationView
 {
