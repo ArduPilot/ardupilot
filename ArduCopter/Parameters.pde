@@ -179,18 +179,18 @@ static const AP_Param::Info var_info[] PROGMEM = {
 
 	// variables not in the g class which contain EEPROM saved variables
 	
-	// @Lib: COMPASS_
+	// @Group: COMPASS_
 	// @Path: ../libraries/AP_Compass/Compass.cpp
 	GOBJECT(compass,        "COMPASS_", Compass),
 
 	GOBJECT(gcs0,			"SR0_",     GCS_MAVLINK),
 	GOBJECT(gcs3,			"SR3_",     GCS_MAVLINK),
 
-	// @Lib: IMU_
+	// @Group: IMU_
 	// @Path: ../libraries/AP_IMU/IMU.cpp
 	GOBJECT(imu,			"IMU_",     IMU),
 
-	// @Lib: AP_AHRS_
+	// @Group: AHRS_
 	// @Path: ../libraries/AP_AHRS/AP_AHRS_DCM.cpp, ../libraries/AP_AHRS/AP_AHRS_Quaternion.cpp
 	GOBJECT(ahrs,			"AHRS_",    AP_AHRS),
 

@@ -65,7 +65,7 @@ namespace ArdupilotMega.Utilities
       /// <param name="parameterLocation">The parameter location.</param>
       private static void ParseLibInformation(string fileContents, XmlTextWriter objXmlTextWriter, string parameterLocation)
       {
-         var parsedInformation = ParseKeyValuePairs(fileContents, ParameterMetaDataConstants.Lib);
+         var parsedInformation = ParseKeyValuePairs(fileContents, ParameterMetaDataConstants.Group);
          if (parsedInformation != null && parsedInformation.Count > 0)
          {
             // node is the prefix of the parameter group here
