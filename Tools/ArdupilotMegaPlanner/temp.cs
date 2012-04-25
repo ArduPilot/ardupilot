@@ -17,6 +17,7 @@ using log4net;
 
 using System.Security.Permissions;
 using ArdupilotMega.Arduino;
+using ArdupilotMega.Utilities;
 
 namespace ArdupilotMega
 {

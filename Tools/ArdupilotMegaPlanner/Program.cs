@@ -60,7 +60,7 @@ namespace ArdupilotMega
 
         static void Application_Idle(object sender, EventArgs e)
         {
-            Console.Write("Idle\r");
+           // Console.Write("Idle\r");
         }
 
         static void Application_ThreadException(object sender, System.Threading.ThreadExceptionEventArgs e)

@@ -5,7 +5,7 @@ using System.Text;
 using System.Net;
 using System.Net.Sockets;
 
-namespace ArdupilotMega
+namespace ArdupilotMega.Utilities
 {
     static class TCPConsole
     {

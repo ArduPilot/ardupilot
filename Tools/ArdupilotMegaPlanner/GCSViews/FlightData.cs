@@ -152,7 +152,9 @@ namespace ArdupilotMega.GCSViews
 
             CMB_action.DataSource = list;
 
-            CMB_modes.DataSource = Enum.GetNames(typeof(Common.apmmodes));
+            CMB_modes.DataSource = Common.getModesList();
+            CMB_modes.ValueMember = "Key";
+            CMB_modes.DisplayMember = "Value";
 
             CMB_setwp.SelectedIndex = 0;
 
@@ -288,7 +290,7 @@ namespace ArdupilotMega.GCSViews
                         comPort.requestDatastream((byte)ArdupilotMega.MAVLink.MAV_DATA_STREAM.RC_CHANNELS, MainV2.cs.raterc); // request rc info
                     }
                     catch { }
-                    lastdata = DateTime.Now.AddSeconds(12); // prevent flooding
+                    lastdata = DateTime.Now.AddSeconds(120); // prevent flooding
                 }
 
                 if (!MainV2.comPort.logreadmode)
@@ -408,6 +410,11 @@ namespace ArdupilotMega.GCSViews
 
                     if (tracklast.AddSeconds(1) < DateTime.Now)
                     {
+                        if (MainV2.config["CHK_maprotation"] != null && MainV2.config["CHK_maprotation"].ToString() == "True")
+                        {
+                            setMapBearing();
+                        }
+
                         gMapControl1.HoldInvalidation = true;
 
                         while (gMapControl1.inOnPaint == true)
@@ -421,7 +428,6 @@ namespace ArdupilotMega.GCSViews
                         }
                         if (MainV2.cs.lat != 0)
                             trackPoints.Add(new PointLatLng(MainV2.cs.lat, MainV2.cs.lng));
-
 
 
                         //                        if (CB_tuning.Checked == false) // draw if in view
@@ -512,6 +518,14 @@ namespace ArdupilotMega.GCSViews
                 catch (Exception ex) { Console.WriteLine("FD Main loop exception " + ex.ToString()); }
             }
             Console.WriteLine("FD Main loop exit");
+        }
+
+        private void setMapBearing()
+        {
+            this.Invoke((System.Windows.Forms.MethodInvoker)delegate()
+            {
+                gMapControl1.Bearing = (int)MainV2.cs.yaw;
+            });
         }
 
 

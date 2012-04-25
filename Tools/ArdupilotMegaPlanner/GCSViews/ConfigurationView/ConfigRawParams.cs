@@ -10,7 +10,6 @@ using System.Linq;
 using System.Text;
 using System.Xml.Linq;
 using System.Windows.Forms;
-using ArdupilotMega.Constants;
 using ArdupilotMega.Utilities;
 using log4net;
 using ArdupilotMega.Controls.BackstageView;
@@ -22,7 +21,6 @@ namespace ArdupilotMega.GCSViews.ConfigurationView
     {
         private static readonly ILog log =
           LogManager.GetLogger(System.Reflection.MethodBase.GetCurrentMethod().DeclaringType);
-
         private readonly ParameterMetaDataRepository _parameterMetaDataRepository;
 
         // Changes made to the params between writing to the copter
@@ -47,8 +45,6 @@ namespace ArdupilotMega.GCSViews.ConfigurationView
         public ConfigRawParams()
         {
             InitializeComponent();
-           
-            // Init the accessor class for the parameter meta data
             _parameterMetaDataRepository = new ParameterMetaDataRepository();
         }
 

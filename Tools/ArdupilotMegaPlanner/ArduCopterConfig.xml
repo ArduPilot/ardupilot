@@ -56,14 +56,14 @@ When the sticks are fully deflected:
       <FIELD>
         <NAME>Dampen</NAME>
         <PARAMNAME>STAB_D</PARAMNAME>
-        <RANGEMIN>0.001</RANGEMIN>
+        <RANGEMIN>0</RANGEMIN>
         <RANGEMAX>5</RANGEMAX>
         <STEP>0.001</STEP>
       </FIELD>
       <FIELD>
         <NAME>Dynamic</NAME>
         <PARAMNAME>STAB_D_S</PARAMNAME>
-        <RANGEMIN>0.001</RANGEMIN>
+        <RANGEMIN>0</RANGEMIN>
         <RANGEMAX>1</RANGEMAX>
         <STEP>0.001</STEP>
       </FIELD>
@@ -196,6 +196,88 @@ A distance error of 100cm * P of .25 = 25 cm/s
         <NAME>IMAX</NAME>
         <PARAMNAME>NAV_LAT_IMAX</PARAMNAME>
         <PARAMNAME>NAV_LON_IMAX</PARAMNAME>
+        <RANGEMIN>0</RANGEMIN>
+        <RANGEMAX>50</RANGEMAX>
+        <STEP>0.1</STEP>
+      </FIELD>
+    </FIELDS>
+    <SUBHEAD>WP Speed:</SUBHEAD>
+    <DESC>
+      How fast the copter should move towards the target. A larger value means a faster return to center, but can cause the copter to oscillate around the target.
+
+      in m/s
+    </DESC>
+    <FIELDS>
+      <FIELD>
+        <NAME>Speed</NAME>
+        <PARAMNAME>WP_SPEED_MAX</PARAMNAME>
+        <RANGEMIN>1</RANGEMIN>
+        <RANGEMAX>30</RANGEMAX>
+        <STEP>1</STEP>
+      </FIELD>
+    </FIELDS>
+  </Item>
+  <!-- Alt Hold -->
+  <Item>
+    <HEAD>Altitude Hold:</HEAD>
+    <SUBHEAD>Altitude Error:</SUBHEAD>
+    <DESC>
+      How fast the copter should go to reach the correct altitude.
+    </DESC>
+    <FIELDS>
+      <FIELD>
+        <NAME>P</NAME>
+        <PARAMNAME>THR_ALT_P</PARAMNAME>
+        <RANGEMIN>0.001</RANGEMIN>
+        <RANGEMAX>5</RANGEMAX>
+        <STEP>0.001</STEP>
+      </FIELD>
+      <FIELD>
+        <NAME>I</NAME>
+        <PARAMNAME>THR_ALT_I</PARAMNAME>
+        <RANGEMIN>0</RANGEMIN>
+        <RANGEMAX>5</RANGEMAX>
+        <STEP>0.001</STEP>
+      </FIELD>
+      <FIELD>
+        <NAME>IMAX</NAME>
+        <PARAMNAME>THR_ALT_IMAX</PARAMNAME>
+        <RANGEMIN>0</RANGEMIN>
+        <RANGEMAX>50</RANGEMAX>
+        <STEP>0.1</STEP>
+      </FIELD>
+    </FIELDS>
+    <SUBHEAD>Thrust Rate:</SUBHEAD>
+    <DESC>
+      How much thrust to give us the desired rate.
+      
+      This will change depending on the weight and thrust of your copter.
+    </DESC>
+    <FIELDS>
+      <FIELD>
+        <NAME>P</NAME>
+        <PARAMNAME>THR_RATE_P</PARAMNAME>
+        <RANGEMIN>0.001</RANGEMIN>
+        <RANGEMAX>5</RANGEMAX>
+        <STEP>0.001</STEP>
+      </FIELD>
+      <FIELD>
+        <NAME>I</NAME>
+        <PARAMNAME>THR_RATE_I</PARAMNAME>
+        <RANGEMIN>0</RANGEMIN>
+        <RANGEMAX>5</RANGEMAX>
+        <STEP>0.001</STEP>
+      </FIELD>
+      <FIELD>
+        <NAME>D</NAME>
+        <PARAMNAME>THR_RATE_D</PARAMNAME>
+        <RANGEMIN>0</RANGEMIN>
+        <RANGEMAX>5</RANGEMAX>
+        <STEP>0.001</STEP>
+      </FIELD>
+      <FIELD>
+        <NAME>IMAX</NAME>
+        <PARAMNAME>THR_RATE_IMAX</PARAMNAME>
         <RANGEMIN>0</RANGEMIN>
         <RANGEMAX>50</RANGEMAX>
         <STEP>0.1</STEP>

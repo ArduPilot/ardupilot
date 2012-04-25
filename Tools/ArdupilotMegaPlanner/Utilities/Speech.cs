@@ -5,7 +5,7 @@ using System.Text;
 using System.Speech.Synthesis;
 using log4net;
 
-namespace ArdupilotMega
+namespace ArdupilotMega.Utilities
 {
     public class Speech
     {
