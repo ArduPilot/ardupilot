@@ -41,7 +41,7 @@ namespace ArdupilotMega.Utilities
 
                   // Read and parse the content.
                   string dataFromAddress = ReadDataFromAddress(parameterLocation);
-                  ParseLibInformation(dataFromAddress, objXmlTextWriter, parameterLocation);
+                  ParseGroupInformation(dataFromAddress, objXmlTextWriter, parameterLocation);
                   ParseParameterInformation(dataFromAddress, objXmlTextWriter);
 
                   // Write the end element for this parameter location
@@ -58,12 +58,12 @@ namespace ArdupilotMega.Utilities
       }
 
       /// <summary>
-      /// Parses the lib information.
+      /// Parses the group parameter information.
       /// </summary>
       /// <param name="fileContents">The file contents.</param>
       /// <param name="objXmlTextWriter">The obj XML text writer.</param>
       /// <param name="parameterLocation">The parameter location.</param>
-      private static void ParseLibInformation(string fileContents, XmlTextWriter objXmlTextWriter, string parameterLocation)
+      private static void ParseGroupInformation(string fileContents, XmlTextWriter objXmlTextWriter, string parameterLocation)
       {
          var parsedInformation = ParseKeyValuePairs(fileContents, ParameterMetaDataConstants.Group);
          if (parsedInformation != null && parsedInformation.Count > 0)
