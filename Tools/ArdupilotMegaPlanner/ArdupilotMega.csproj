@@ -226,7 +226,8 @@
     <Compile Include="Attributes\DisplayTextAttribute.cs" />
     <Compile Include="Attributes\PrivateAttribute.cs" />
     <Compile Include="CodeGen.cs" />
-    <Compile Include="Constants\ParameterMetaDataConstants.cs" />
+    <Compile Include="Utilities\CollectionExtensions.cs" />
+    <Compile Include="Utilities\Constants\ParameterMetaDataConstants.cs" />
     <Compile Include="Controls\BackstageView\BackstageView.cs">
       <SubType>UserControl</SubType>
     </Compile>
