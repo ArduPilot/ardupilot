@@ -12,19 +12,119 @@
 
 const AP_Param::GroupInfo AP_MotorsHeli::var_info[] PROGMEM = {
 	AP_NESTEDGROUPINFO(AP_Motors, 0),
+	
+	// @Param: SV1_POS
+	// @DisplayName: Servo 1 Position
+	// @Description: This is the angular location of swash servo #1.
+	// @Range: -180 180
+	// @Units: Degrees
+	// @User: Standard
+	// @Increment: 1
 	AP_GROUPINFO("SV1_POS",	1,	AP_MotorsHeli,	servo1_pos),
+	
+	// @Param: SV2_POS
+	// @DisplayName: Servo 2 Position
+	// @Description: This is the angular location of swash servo #2.
+	// @Range: -180 180
+	// @Units: Degrees
+	// @User: Standard
+	// @Increment: 1
 	AP_GROUPINFO("SV2_POS",	2,	AP_MotorsHeli,	servo2_pos),
+	
+	// @Param: SV3_POS
+	// @DisplayName: Servo 3 Position
+	// @Description: This is the angular location of swash servo #3.
+	// @Range: -180 180
+	// @Units: Degrees
+	// @User: Standard
+	// @Increment: 1
 	AP_GROUPINFO("SV3_POS",	3,	AP_MotorsHeli,	servo3_pos),
+	
+	// @Param: ROL_MAX
+	// @DisplayName: Maximum Roll Angle
+	// @Description: This is the maximum allowable aircraft roll angle in Stabilize Mode.
+	// @Range: 0 18000
+	// @Units: Degrees
+	// @Increment: 1
+	// @User: Advanced
 	AP_GROUPINFO("ROL_MAX",	4,	AP_MotorsHeli,	roll_max),
+	
+	// @Param: PIT_MAX
+	// @DisplayName: Maximum Pitch Angle
+	// @Description: This is the maximum allowable aircraft pitch angle in Stabilize Mode.
+	// @Range: 0 18000
+	// @Units: Degrees
+	// @Increment: 1
+	// @User: Advanced
 	AP_GROUPINFO("PIT_MAX",	5,	AP_MotorsHeli,	pitch_max),
+	
+	// @Param: COL_MIN
+	// @DisplayName: Collective Pitch Minimum
+	// @Description: This controls the lowest possible servo position for the swashplate.
+	// @Range: 1000 2000
+	// @Units: PWM
+	// @Increment: 1
+	// @User: Standard
 	AP_GROUPINFO("COL_MIN",	6,	AP_MotorsHeli,	collective_min),
+	
+	// @Param: COL_MAX
+	// @DisplayName: Collective Pitch Maximum
+	// @Description: This controls the highest possible servo position for the swashplate.
+	// @Range: 1000 2000
+	// @Units: PWM
+	// @Increment: 1
+	// @User: Standard
 	AP_GROUPINFO("COL_MAX",	7,	AP_MotorsHeli,	collective_max),
+	
+	// @Param: COL_MID
+	// @DisplayName: Collective Pitch Mid-Point
+	// @Description: This is the swash servo position corresponding to zero collective pitch (or zero lift for Assymetrical blades).
+	// @Range: 1000 2000
+	// @Units: PWM
+	// @Increment: 1
+	// @User: Standard
 	AP_GROUPINFO("COL_MID",	8,	AP_MotorsHeli,	collective_mid),
+	
+	// @Param: GYR_ENABLE
+	// @DisplayName: External Gyro Enabled
+	// @Description: Setting this to true (1) will enable an external rudder gyro control. Setting this to false(0) will disable the external gyro control and will revert to internal rudder control.
+	// @User: Standard
 	AP_GROUPINFO("GYR_ENABLE",	9,	AP_MotorsHeli,	ext_gyro_enabled),
+	
+	// @Param: SWASH_TYPE
+	// @DisplayName: Swash Plate Type
+	// @Description: Setting this to 0 will configure for a 3-servo CCPM. Setting this to 1 will configure for mechanically mixed "H1".
+	// @User: Standard
 	AP_GROUPINFO("SWASH_TYPE",	10,	AP_MotorsHeli,	swash_type),				// changed from trunk
+	
+	// @Param: GYR_GAIM
+	// @DisplayName: External Gyro Gain
+	// @Description: This is the PWM which is passed to the external gyro when external gyro is enabled.
+	// @Range: 1000 2000
+	// @Units: PWM
+	// @Increment: 1
+	// @User: Standard
 	AP_GROUPINFO("GYR_GAIN",	11,	AP_MotorsHeli,	ext_gyro_gain),
+		
+	// @Param: SV_MAN
+	// @DisplayName: Manual Servo Mode
+	// @Description: Setting this to true (1) will pass radio inputs directly to servos. Setting this to false(0) will enable Arducopter control of servos.
+	// @User: Standard	
 	AP_GROUPINFO("SV_MAN",		12,	AP_MotorsHeli,	servo_manual),
+	
+	// @Param: PHANG
+	// @DisplayName: Swashplate Phase Angle Compensation
+	// @Description: This corrects for phase angle errors of the helicopter main rotor head.
+	// @Range: -90 90
+	// @Units: Degrees
+	// @User: Advanced
+	// @Increment: 1
 	AP_GROUPINFO("PHANG",		13,	AP_MotorsHeli,	phase_angle),				// changed from trunk
+	
+	// @Param: COLYAW
+	// @DisplayName: Collective-Yaw Mixing
+	// @Description: This is a feed-forward compensation to automatically add rudder input when collective pitch is increased.
+	// @Range: 0 5
 	AP_GROUPINFO("COLYAW",		14,	AP_MotorsHeli,	collective_yaw_effect),	// changed from trunk
     AP_GROUPEND
 };
