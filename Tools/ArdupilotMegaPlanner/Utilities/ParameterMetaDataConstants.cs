@@ -1,4 +1,4 @@
-﻿namespace ArdupilotMega.Utilities.Constants
+﻿namespace ArdupilotMega.Utilities
 {
    public sealed class ParameterMetaDataConstants
    {
