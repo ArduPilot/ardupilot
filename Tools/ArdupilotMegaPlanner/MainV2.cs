@@ -1733,8 +1733,18 @@ namespace ArdupilotMega
 
         static void DoUpdateWorker_DoWork(object sender, Controls.ProgressWorkerEventArgs e)
         {
-            ((ProgressReporterDialogue)sender).UpdateProgressAndStatus(-1, "Getting Base URL");
-            MainV2.updateCheckMain((ProgressReporterDialogue)sender);
+           // TODO: Is this the right place?
+           #region Fetch Parameter Meta Data
+           
+           var progressReporterDialogue = ((ProgressReporterDialogue) sender);
+           progressReporterDialogue.UpdateProgressAndStatus(-1, "Getting Updated Parameters");
+
+           ParameterMetaDataParser.GetParameterInformation();
+           
+           #endregion Fetch Parameter Meta Data
+
+           progressReporterDialogue.UpdateProgressAndStatus(-1, "Getting Base URL");
+           MainV2.updateCheckMain(progressReporterDialogue);
         }
 
         private static bool updateCheck(ProgressReporterDialogue frmProgressReporter, string baseurl, string subdir)

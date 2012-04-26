@@ -3,6 +3,7 @@ using System.Configuration;
 using System.IO;
 using System.Windows.Forms;
 using System.Xml.Linq;
+using System.Linq;
 
 namespace ArdupilotMega.Utilities
 {
@@ -32,7 +33,19 @@ namespace ArdupilotMega.Utilities
          {
             // Use this to find the endpoint node we are looking for
             // Either it will be pulled from a file in the ArduPlane hierarchy or the ArduCopter hierarchy
-            string endpointSearchString = (MainV2.cs.firmware == MainV2.Firmwares.ArduPlane) ? "arduplane" : "arducopter";
+            var element = _parameterMetaDataXML.Element(MainV2.cs.firmware.ToString());
+            if(element != null && element.HasElements)
+            {
+               var node = element.Element(nodeKey);
+               if(node != null && node.HasElements)
+               {
+                  var metaValue = node.Element(metaKey);
+                  if(metaValue != null)
+                  {
+                     return metaValue.Value;
+                  }
+               }
+            }
          }
          return string.Empty;
       }
