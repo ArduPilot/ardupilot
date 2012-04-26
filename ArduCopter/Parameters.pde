@@ -127,7 +127,7 @@ static const AP_Param::Info var_info[] PROGMEM = {
 	// @DisplayName: ESC Update Speed
 	// @Description: This is the speed in Hertz that your ESCs will receive updates
 	// @Units: Hertz (Hz)
-	// @Values: 400,490
+	// @Values: 125,400,490
 	// @User: Advanced
 	GSCALAR(rc_speed, "RC_SPEED"),
 
@@ -195,6 +195,8 @@ static const AP_Param::Info var_info[] PROGMEM = {
 	GOBJECT(ahrs,			"AHRS_",    AP_AHRS),
 
 	#if FRAME_CONFIG ==	HELI_FRAME
+	// @Group: H_
+	// @Path: ../libraries/AP_Motors/AP_MotorsHeli.cpp
 	GOBJECT(motors,	"H_",		AP_MotorsHeli),
 	#else
 	GOBJECT(motors,	"MOT_",		AP_Motors),
