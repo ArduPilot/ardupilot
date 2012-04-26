@@ -6,7 +6,6 @@ using System.IO;
 using System.Text;
 using System.Windows.Forms;
 using ArdupilotMega.Utilities;
-using ArdupilotMega.Utilities.Constants;
 using log4net;
 using ArdupilotMega.Controls.BackstageView;
 
