@@ -7,9 +7,9 @@ import mavutil, mavwp, random
 # get location of scripts
 testdir=os.path.dirname(os.path.realpath(__file__))
 
-FRAME='octa'
-TARGET='sitl-octa'
-HOME=location(-35.362938,149.165085,584,270)
+FRAME='+'
+TARGET='sitl'
+HOME=mavutil.location(-35.362938,149.165085,584,270)
 
 homeloc = None
 num_wp = 0
@@ -68,13 +68,13 @@ def loiter(mavproxy, mav, holdtime=60, maxaltchange=20):
     wait_mode(mav, 'LOITER')
     m = mav.recv_match(type='VFR_HUD', blocking=True)
     start_altitude = m.alt
-    start = current_location(mav)
+    start = mav.location()
     tstart = time.time()
     tholdstart = time.time()
     print("Holding loiter at %u meters for %u seconds" % (start_altitude, holdtime))
     while time.time() < tstart + holdtime:
         m = mav.recv_match(type='VFR_HUD', blocking=True)
-        pos = current_location(mav)
+        pos = mav.location()
         delta = get_distance(start, pos)
         print("Loiter Dist: %.2fm, alt:%u" % (delta, m.alt))
         if math.fabs(m.alt - start_altitude) > maxaltchange:
@@ -174,7 +174,7 @@ def fly_RTL(mavproxy, mav, side=60):
     tstart = time.time()
     while time.time() < tstart + 200:
         m = mav.recv_match(type='VFR_HUD', blocking=True)
-        pos = current_location(mav)
+        pos = mav.location()
         #delta = get_distance(start, pos)
         print("Alt: %u" % m.alt)
         if(m.alt <= 1):
@@ -199,7 +199,7 @@ def fly_failsafe(mavproxy, mav, side=60):
     tstart = time.time()
     while time.time() < tstart + 250:
         m = mav.recv_match(type='VFR_HUD', blocking=True)
-        pos = current_location(mav)
+        pos = mav.location()
         home_distance = get_distance(HOME, pos)
         print("Alt: %u  HomeDistance: %.0f" % (m.alt, home_distance))
         if m.alt <= 1 and home_distance < 10:
@@ -404,9 +404,8 @@ def fly_ArduCopter(viewerip=None):
     e = 'None'
     try:
         mav.wait_heartbeat()
-        mav.recv_match(type='GPS_RAW', blocking=True)
         setup_rc(mavproxy)
-        homeloc = current_location(mav)
+        homeloc = mav.location()
 
         print("# Calibrate level")
         if not calibrate_level(mavproxy, mav):
@@ -568,7 +567,7 @@ def fly_ArduCopter(viewerip=None):
 #!	        old_lon = 0
 #!
 #!	        while(1):
-#!	            pos = current_location(mav)
+#!	            pos = mav.location()
 #!	            tmp = (pos.lat *10e7) - (old_lat *10e7)
 #!	            print("tmp %d " % tmp)
 #!	            if(tmp > 0 ):

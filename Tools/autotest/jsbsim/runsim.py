@@ -5,6 +5,7 @@ import sys, os, pexpect, fdpexpect, socket
 import math, time, select, struct, signal, errno
 
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.realpath(__file__)), '..', 'pysim'))
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.realpath(__file__)), '..', 'pymavlink'))
 
 import util, fgFDM, atexit
 
@@ -260,7 +261,7 @@ def main_loop():
             update_wind(wind)
             last_wind_update = tnow
 
-        if tnow - last_report > 0.5:
+        if tnow - last_report > 3:
             print("FPS %u asl=%.1f agl=%.1f roll=%.1f pitch=%.1f a=(%.2f %.2f %.2f)" % (
                 frame_count / (time.time() - last_report),
                 fdm.get('altitude', units='meters'),

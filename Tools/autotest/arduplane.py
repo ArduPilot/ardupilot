@@ -287,11 +287,13 @@ def fly_ArduPlane(viewerip=None):
     failed = False
     e = 'None'
     try:
+        print("Waiting for a heartbeat with mavlink protocol %s" % mav.WIRE_PROTOCOL_VERSION)
         mav.wait_heartbeat()
+        print("Setting up RC parameters")
         setup_rc(mavproxy)
-        mav.recv_match(type='GPS_RAW', condition='MAV.flightmode!="INITIALISING" and GPS_RAW.fix_type==2 and GPS_RAW.lat != 0 and GPS_RAW.alt != 0 and VFR_HUD.alt > 10',
-                       blocking=True)
-        homeloc = current_location(mav)
+        print("Waiting for GPS fix")
+        mav.wait_gps_fix()
+        homeloc = mav.location()
         print("Home location: %s" % homeloc)
         if not takeoff(mavproxy, mav):
             print("Failed takeoff")
