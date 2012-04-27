@@ -32,10 +32,13 @@ def evaluate_condition(condition, vars):
         return False
     return v
 
+mavfile_global = None
 
 class mavfile(object):
     '''a generic mavlink port'''
-    def __init__(self, fd, address, source_system=255):
+    def __init__(self, fd, address, source_system=255, notimestamps=False):
+        global mavfile_global
+        mavfile_global = self
         self.fd = fd
         self.address = address
         self.messages = { 'MAV' : self }
@@ -59,6 +62,13 @@ class mavfile(object):
         self.timestamp = 0
         self.message_hooks = []
         self.idle_hooks = []
+        self.uptime = 0.0
+        self.notimestamps = notimestamps
+        self._timestamp = None
+        self.ground_pressure = None
+        self.ground_temperature = None
+        self.altitude = 0
+        self.WIRE_PROTOCOL_VERSION = mavlink.WIRE_PROTOCOL_VERSION
 
     def recv(self, n=None):
         '''default recv method'''
@@ -81,6 +91,16 @@ class mavfile(object):
         msg._timestamp = time.time()
         type = msg.get_type()
         self.messages[type] = msg
+
+        if 'usec' in msg.__dict__:
+            self.uptime = msg.usec * 1.0e-6
+
+        if self._timestamp is not None:
+            if self.notimestamps:
+                msg._timestamp = self.uptime
+            else:
+                msg._timestamp = self._timestamp
+
         self.timestamp = msg._timestamp
         if type == 'HEARTBEAT':
             self.target_system = msg.get_srcSystem()
@@ -92,6 +112,10 @@ class mavfile(object):
             if msg.param_index+1 == msg.param_count:
                 self.param_fetch_in_progress = False
                 self.param_fetch_complete = True
+            if str(msg.param_id) == 'GND_ABS_PRESS':
+                self.ground_pressure = msg.param_value
+            if str(msg.param_id) == 'GND_TEMP':
+                self.ground_temperature = msg.param_value
         elif type == 'SYS_STATUS' and mavlink.WIRE_PROTOCOL_VERSION == '0.9':
             self.flightmode = mode_string_v09(msg)
         elif type == 'GPS_RAW':
@@ -206,6 +230,52 @@ class mavfile(object):
         else:
             self.mav.waypoint_count_send(self.target_system, self.target_component, seq)
 
+    def set_mode_auto(self):
+        '''enter auto mode'''
+        if mavlink.WIRE_PROTOCOL_VERSION == '1.0':
+            self.mav.command_long_send(self.target_system, self.target_component,
+                                       mavlink.MAV_CMD_MISSION_START, 0, 0, 0, 0, 0, 0, 0, 0)
+        else:
+            MAV_ACTION_SET_AUTO = 13
+            self.mav.action_send(self.target_system, self.target_component, MAV_ACTION_SET_AUTO)
+
+    def set_mode_rtl(self):
+        '''enter RTL mode'''
+        if mavlink.WIRE_PROTOCOL_VERSION == '1.0':
+            self.mav.command_long_send(self.target_system, self.target_component,
+                                       mavlink.MAV_CMD_NAV_RETURN_TO_LAUNCH, 0, 0, 0, 0, 0, 0, 0, 0)
+        else:
+            MAV_ACTION_RETURN = 3
+            self.mav.action_send(self.target_system, self.target_component, MAV_ACTION_RETURN)
+
+    def set_mode_loiter(self):
+        '''enter LOITER mode'''
+        if mavlink.WIRE_PROTOCOL_VERSION == '1.0':
+            self.mav.command_long_send(self.target_system, self.target_component,
+                                       mavlink.MAV_CMD_NAV_LOITER_UNLIM, 0, 0, 0, 0, 0, 0, 0, 0)
+        else:
+            MAV_ACTION_LOITER = 27
+            self.mav.action_send(self.target_system, self.target_component, MAV_ACTION_LOITER)
+
+    def calibrate_imu(self):
+        '''calibrate IMU'''
+        if mavlink.WIRE_PROTOCOL_VERSION == '1.0':
+            self.mav.command_long_send(self.target_system, self.target_component,
+                                       mavlink.MAV_CMD_PREFLIGHT_CALIBRATION, 0,
+                                       1, 1, 1, 1, 0, 0, 0)
+        else:
+            MAV_ACTION_CALIBRATE_GYRO = 17
+            self.mav.action_send(self.target_system, self.target_component, MAV_ACTION_CALIBRATE_GYRO)
+
+    def calibrate_level(self):
+        '''calibrate accels'''
+        if mavlink.WIRE_PROTOCOL_VERSION == '1.0':
+            self.mav.command_long_send(self.target_system, self.target_component,
+                                       mavlink.MAV_CMD_PREFLIGHT_CALIBRATION, 0,
+                                       1, 1, 1, 1, 0, 0, 0)
+        else:
+            MAV_ACTION_CALIBRATE_ACC = 19
+            self.mav.action_send(self.target_system, self.target_component, MAV_ACTION_CALIBRATE_ACC)
 
 class mavserial(mavfile):
     '''a serial mavlink port'''
@@ -357,7 +427,6 @@ class mavlogfile(mavfile):
         self.writeable = write
         self.robust_parsing = robust_parsing
         self.planner_format = planner_format
-        self.notimestamps = notimestamps
         self._two64 = math.pow(2.0, 63)
         mode = 'rb'
         if self.writeable:
@@ -366,7 +435,13 @@ class mavlogfile(mavfile):
             else:
                 mode = 'wb'
         self.f = open(filename, mode)
-        mavfile.__init__(self, None, filename, source_system=source_system)
+        self.filesize = os.path.getsize(filename)
+        self.percent = 0
+        mavfile.__init__(self, None, filename, source_system=source_system, notimestamps=notimestamps)
+        if self.notimestamps:
+            self._timestamp = 0
+        else:
+            self._timestamp = time.time()
 
     def close(self):
         self.f.close()
@@ -382,6 +457,7 @@ class mavlogfile(mavfile):
     def pre_message(self):
         '''read timestamp if needed'''
         # read the timestamp
+        self.percent = (100.0 * self.f.tell()) / self.filesize
         if self.notimestamps:
             return
         if self.planner_format:
@@ -403,10 +479,6 @@ class mavlogfile(mavfile):
         '''add timestamp to message'''
         # read the timestamp
         super(mavlogfile, self).post_message(msg)
-        if self.notimestamps:
-            msg._timestamp = time.time()
-        else:
-            msg._timestamp = self._timestamp
         if self.planner_format:
             self.f.read(1) # trailing newline
         self.timestamp = msg._timestamp
@@ -467,6 +539,11 @@ class periodic_event(object):
     def __init__(self, frequency):
         self.frequency = float(frequency)
         self.last_time = time.time()
+
+    def force(self):
+        '''force immediate triggering'''
+        self.last_time = 0
+
     def trigger(self):
         '''return True if we should trigger now'''
         tnow = time.time()
@@ -601,6 +678,7 @@ def mode_string_v09(msg):
         (MAV_MODE_AUTO,   MAV_NAV_LANDING)   : "LANDING",
         (MAV_MODE_AUTO,   MAV_NAV_HOLD)      : "LOITER",
         (MAV_MODE_GUIDED, MAV_NAV_VECTOR)    : "GUIDED",
+        (MAV_MODE_GUIDED, MAV_NAV_WAYPOINT)  : "GUIDED",
         (100,             MAV_NAV_VECTOR)    : "STABILIZE",
         (101,             MAV_NAV_VECTOR)    : "ACRO",
         (102,             MAV_NAV_VECTOR)    : "ALT_HOLD",
@@ -615,7 +693,7 @@ def mode_string_v10(msg):
     '''mode string for 1.0 protocol, from heartbeat'''
     if not msg.base_mode & mavlink.MAV_MODE_FLAG_CUSTOM_MODE_ENABLED:
         return "Mode(0x%08x)" % msg.base_mode
-    mapping = {
+    mapping_apm = {
         0 : 'MANUAL',
         1 : 'CIRCLE',
         2 : 'STABILIZE',
@@ -630,8 +708,26 @@ def mode_string_v10(msg):
         15 : 'GUIDED',
         16 : 'INITIALISING'
         }
-    if msg.custom_mode in mapping:
-        return mapping[msg.custom_mode]
+    mapping_acm = {
+        0 : 'STABILIZE',
+        1 : 'ACRO',
+        2 : 'ALT_HOLD',
+        3 : 'AUTO',
+        4 : 'GUIDED',
+        5 : 'LOITER',
+        6 : 'RTL',
+        7 : 'CIRCLE',
+        8 : 'POSITION',
+        9 : 'LAND',
+        10 : 'OF_LOITER',
+        11 : 'APPROACH'
+        }
+    if msg.type == mavlink.MAV_TYPE_QUADROTOR:
+        if msg.custom_mode in mapping_acm:
+            return mapping_acm[msg.custom_mode]
+    if msg.type == mavlink.MAV_TYPE_FIXED_WING:
+        if msg.custom_mode in mapping_apm:
+            return mapping_apm[msg.custom_mode]
     return "Mode(%u)" % msg.custom_mode
 
     
