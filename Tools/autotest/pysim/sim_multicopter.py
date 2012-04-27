@@ -3,7 +3,10 @@
 from multicopter import MultiCopter
 import util, time, os, sys, math
 import socket, struct
-import select, fgFDM, errno
+import select, errno
+
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.realpath(__file__)), '..', 'pymavlink'))
+import fgFDM
 
 def sim_send(m, a):
     '''send flight information to mavproxy and flightgear'''

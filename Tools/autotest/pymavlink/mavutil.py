@@ -10,7 +10,7 @@ import socket, math, struct, time, os, fnmatch, array, sys, errno
 from math import *
 from mavextra import *
 
-if os.getenv('MAVLINK10'):
+if os.getenv('MAVLINK10') or 'MAVLINK10' in os.environ:
     import mavlinkv10 as mavlink
 else:
     import mavlink
@@ -33,6 +33,17 @@ def evaluate_condition(condition, vars):
     return v
 
 mavfile_global = None
+
+class location(object):
+    '''represent a GPS coordinate'''
+    def __init__(self, lat, lng, alt=0, heading=0):
+        self.lat = lat
+        self.lng = lng
+        self.alt = alt
+        self.heading = heading
+
+    def __str__(self):
+        return "lat=%.6f,lon=%.6f,alt=%.1f" % (self.lat, self.lng, self.alt)
 
 class mavfile(object):
     '''a generic mavlink port'''
@@ -223,6 +234,14 @@ class mavfile(object):
         else:
             self.mav.waypoint_set_current_send(self.target_system, self.target_component, seq)
 
+    def waypoint_current(self):
+        '''return current waypoint'''
+        if mavlink.WIRE_PROTOCOL_VERSION == '1.0':
+            m = self.recv_match(type='MISSION_CURRENT', blocking=True)
+        else:
+            m = self.recv_match(type='WAYPOINT_CURRENT', blocking=True)
+        return m.seq
+
     def waypoint_count_send(self, seq):
         '''wrapper for waypoint_count_send'''
         if mavlink.WIRE_PROTOCOL_VERSION == '1.0':
@@ -276,6 +295,30 @@ class mavfile(object):
         else:
             MAV_ACTION_CALIBRATE_ACC = 19
             self.mav.action_send(self.target_system, self.target_component, MAV_ACTION_CALIBRATE_ACC)
+
+    def wait_gps_fix(self):
+        self.recv_match(type='VFR_HUD', blocking=True)
+        if mavlink.WIRE_PROTOCOL_VERSION == '1.0':
+            self.recv_match(type='GPS_RAW_INT', blocking=True,
+                            condition='GPS_RAW_INT.fix_type==3 and GPS_RAW_INT.lat != 0 and GPS_RAW_INT.alt != 0')
+        else:
+            self.recv_match(type='GPS_RAW', blocking=True,
+                            condition='GPS_RAW.fix_type==2 and GPS_RAW.lat != 0 and GPS_RAW.alt != 0')
+
+    def location(self):
+        '''return current location'''
+        self.wait_gps_fix()
+        if mavlink.WIRE_PROTOCOL_VERSION == '1.0':
+            return location(self.messages['GPS_RAW_INT'].lat*1.0e-7,
+                            self.messages['GPS_RAW_INT'].lon*1.0e-7,
+                            self.messages['VFR_HUD'].alt,
+                            self.messages['VFR_HUD'].heading)
+        else:
+            return location(self.messages['GPS_RAW'].lat,
+                            self.messages['GPS_RAW'].lon,
+                            self.messages['VFR_HUD'].alt,
+                            self.messages['VFR_HUD'].heading)
+
 
 class mavserial(mavfile):
     '''a serial mavlink port'''

@@ -23,8 +23,6 @@ def idle_hook(mav):
 
 def message_hook(mav, msg):
     '''called as each mavlink msg is received'''
-#    if msg.get_type() in [ 'NAV_CONTROLLER_OUTPUT', 'GPS_RAW' ]:
-#        print(msg)
     idle_hook(mav)
 
 def expect_callback(e):
@@ -34,17 +32,6 @@ def expect_callback(e):
         if p == e:
             continue
         util.pexpect_drain(p)
-
-class location(object):
-    '''represent a GPS coordinate'''
-    def __init__(self, lat, lng, alt=0, heading=0):
-        self.lat = lat
-        self.lng = lng
-        self.alt = alt
-        self.heading = heading
-
-    def __str__(self):
-        return "lat=%.6f,lon=%.6f,alt=%.1f" % (self.lat, self.lng, self.alt)
 
 def get_distance(loc1, loc2):
     '''get ground distance between two locations'''
@@ -60,15 +47,6 @@ def get_bearing(loc1, loc2):
     if bearing < 0:
         bearing += 360.00
     return bearing;
-
-def current_location(mav):
-    '''return current location'''
-    # ensure we have a position
-    mav.recv_match(type='VFR_HUD', blocking=True)
-    mav.recv_match(type='GPS_RAW', blocking=True)
-    return location(mav.messages['GPS_RAW'].lat,
-                    mav.messages['GPS_RAW'].lon,
-                    mav.messages['VFR_HUD'].alt)
 
 def wait_altitude(mav, alt_min, alt_max, timeout=30):
     climb_rate = 0
@@ -148,10 +126,9 @@ def wait_heading(mav, heading, accuracy=5, timeout=30):
 def wait_distance(mav, distance, accuracy=5, timeout=30):
     '''wait for flight of a given distance'''
     tstart = time.time()
-    start = current_location(mav)
+    start = mav.location()
     while time.time() < tstart + timeout:
-        m = mav.recv_match(type='GPS_RAW', blocking=True)
-        pos = current_location(mav)
+        pos = mav.location()
         delta = get_distance(start, pos)
         print("Distance %.2f meters" % delta)
         if math.fabs(delta - distance) <= accuracy:
@@ -172,8 +149,7 @@ def wait_location(mav, loc, accuracy=5, timeout=30, target_altitude=None, height
     print("Waiting for location %.4f,%.4f at altitude %.1f height_accuracy=%.1f" % (
         loc.lat, loc.lng, target_altitude, height_accuracy))
     while time.time() < tstart + timeout:
-        m = mav.recv_match(type='GPS_RAW', blocking=True)
-        pos = current_location(mav)
+        pos = mav.location()
         delta = get_distance(loc, pos)
         print("Distance %.2f meters alt %.1f" % (delta, pos.alt))
         if delta <= accuracy:
@@ -188,9 +164,7 @@ def wait_waypoint(mav, wpnum_start, wpnum_end, allow_skip=True, max_dist=2, time
     '''wait for waypoint ranges'''
     tstart = time.time()
     # this message arrives after we set the current WP
-    m = mav.recv_match(type='WAYPOINT_CURRENT', blocking=True)
-
-    start_wp = m.seq
+    start_wp = mav.waypoint_current()
     current_wp = start_wp
 
     print("\ntest: wait for waypoint ranges start=%u end=%u\n\n" % (wpnum_start, wpnum_end))
@@ -199,8 +173,7 @@ def wait_waypoint(mav, wpnum_start, wpnum_end, allow_skip=True, max_dist=2, time
     #    return False
 
     while time.time() < tstart + timeout:
-        m = mav.recv_match(type='WAYPOINT_CURRENT', blocking=True)
-        seq = m.seq
+        seq = mav.waypoint_current()
         m = mav.recv_match(type='NAV_CONTROLLER_OUTPUT', blocking=True)
         wp_dist = m.wp_dist
         m = mav.recv_match(type='VFR_HUD', blocking=True)
