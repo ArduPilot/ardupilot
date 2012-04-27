@@ -21,9 +21,8 @@ def hover(mavproxy, mav):
 def calibrate_level(mavproxy, mav):
     '''init the accelerometers'''
     print("Initialising accelerometers")
-    MAV_ACTION_CALIBRATE_ACC = 19
-    mav.mav.action_send(mav.target_system, mav.target_component, MAV_ACTION_CALIBRATE_ACC)
-    mavproxy.expect('APM: action received')
+    mav.calibrate_level()
+    mavproxy.expect(['APM: action received', 'COMMAND_ACK'])
     return True
 
 def arm_motors(mavproxy, mav):
