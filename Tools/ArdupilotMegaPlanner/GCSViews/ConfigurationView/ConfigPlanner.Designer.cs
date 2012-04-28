@@ -360,7 +360,6 @@
             this.CMB_language.FormattingEnabled = true;
             resources.ApplyResources(this.CMB_language, "CMB_language");
             this.CMB_language.Name = "CMB_language";
-            this.CMB_language.SelectedIndexChanged += new System.EventHandler(this.CMB_language_SelectedIndexChanged);
             // 
             // label93
             // 

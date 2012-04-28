@@ -175,4 +175,82 @@
   <data name="BUT_upload.Text" xml:space="preserve">
     <value>上传固件 (本地)</value>
   </data>
+  <data name="label13.Size" type="System.Drawing.Size, System.Drawing">
+    <value>55, 13</value>
+  </data>
+  <data name="label13.Text" xml:space="preserve">
+    <value>最小频率</value>
+  </data>
+  <data name="label14.Size" type="System.Drawing.Size, System.Drawing">
+    <value>55, 13</value>
+  </data>
+  <data name="label14.Text" xml:space="preserve">
+    <value>最大频率</value>
+  </data>
+  <data name="label15.Size" type="System.Drawing.Size, System.Drawing">
+    <value>47, 13</value>
+  </data>
+  <data name="label15.Text" xml:space="preserve">
+    <value>信　　道</value>
+  </data>
+  <data name="label16.Size" type="System.Drawing.Size, System.Drawing">
+    <value>49, 13</value>
+  </data>
+  <data name="label16.Text" xml:space="preserve">
+    <value>占 空 比</value>
+  </data>
+  <data name="label21.Size" type="System.Drawing.Size, System.Drawing">
+    <value>49, 13</value>
+  </data>
+  <data name="label21.Text" xml:space="preserve">
+    <value>占 空 比</value>
+  </data>
+  <data name="label22.Size" type="System.Drawing.Size, System.Drawing">
+    <value>47, 13</value>
+  </data>
+  <data name="label22.Text" xml:space="preserve">
+    <value>信　　道</value>
+  </data>
+  <data name="label23.Size" type="System.Drawing.Size, System.Drawing">
+    <value>55, 13</value>
+  </data>
+  <data name="label23.Text" xml:space="preserve">
+    <value>最大频率</value>
+  </data>
+  <data name="label24.Size" type="System.Drawing.Size, System.Drawing">
+    <value>55, 13</value>
+  </data>
+  <data name="label24.Text" xml:space="preserve">
+    <value>最小频率</value>
+  </data>
+  <data name="label28.Size" type="System.Drawing.Size, System.Drawing">
+    <value>55, 13</value>
+  </data>
+  <data name="label28.Text" xml:space="preserve">
+    <value>发射功率</value>
+  </data>
+  <data name="label29.Size" type="System.Drawing.Size, System.Drawing">
+    <value>45, 13</value>
+  </data>
+  <data name="label29.Text" xml:space="preserve">
+    <value>网络 ID</value>
+  </data>
+  <data name="label30.Size" type="System.Drawing.Size, System.Drawing">
+    <value>47, 13</value>
+  </data>
+  <data name="label30.Text" xml:space="preserve">
+    <value>空　　速</value>
+  </data>
+  <data name="label31.Size" type="System.Drawing.Size, System.Drawing">
+    <value>47, 13</value>
+  </data>
+  <data name="label31.Text" xml:space="preserve">
+    <value>格　　式</value>
+  </data>
+  <data name="label32.Size" type="System.Drawing.Size, System.Drawing">
+    <value>49, 13</value>
+  </data>
+  <data name="label32.Text" xml:space="preserve">
+    <value>波 特 率</value>
+  </data>
 </root>
