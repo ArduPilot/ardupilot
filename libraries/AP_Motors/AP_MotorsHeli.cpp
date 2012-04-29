@@ -87,7 +87,8 @@ const AP_Param::GroupInfo AP_MotorsHeli::var_info[] PROGMEM = {
 	
 	// @Param: GYR_ENABLE
 	// @DisplayName: External Gyro Enabled
-	// @Description: Setting this to true (1) will enable an external rudder gyro control. Setting this to false(0) will disable the external gyro control and will revert to internal rudder control.
+	// @Description: Setting this to Enabled(1) will enable an external rudder gyro control. Setting this to Disabled(0) will disable the external gyro control and will revert to internal rudder control.
+	// @Values: 0:Disabled,1:Enabled
 	// @User: Standard
 	AP_GROUPINFO("GYR_ENABLE",	9,	AP_MotorsHeli,	ext_gyro_enabled),
 	
@@ -108,7 +109,8 @@ const AP_Param::GroupInfo AP_MotorsHeli::var_info[] PROGMEM = {
 		
 	// @Param: SV_MAN
 	// @DisplayName: Manual Servo Mode
-	// @Description: Setting this to true (1) will pass radio inputs directly to servos. Setting this to false(0) will enable Arducopter control of servos.
+	// @Description: Setting this to Enabled(1) will pass radio inputs directly to servos. Setting this to Disabled(0) will enable Arducopter control of servos.
+	// @Values: 0:Disabled,1:Enabled
 	// @User: Standard	
 	AP_GROUPINFO("SV_MAN",		12,	AP_MotorsHeli,	servo_manual),
 	
