@@ -32,24 +32,56 @@ static const AP_Param::Info var_info[] PROGMEM = {
 	
 	// @Param: SONAR_ENABLE
 	// @DisplayName: Enable Sonar
-	// @Description: Setting this to true (1) will enable the sonar. Setting this to false(0) will disable the sonar
+	// @Description: Setting this to Enabled(1) will enable the sonar. Setting this to Disabled(0) will disable the sonar
+	// @Values: 0:Disabled,1:Enabled
 	// @User: Standard
 	GSCALAR(sonar_enabled,	"SONAR_ENABLE"),
 	
 	GSCALAR(sonar_type,	"SONAR_TYPE"),
 	GSCALAR(battery_monitoring, "BATT_MONITOR"),
+
+	// @Param: VOLT_DIVIDER
+	// @DisplayName: Voltage Divider
+	// @Description: TODO
 	GSCALAR(volt_div_ratio,	"VOLT_DIVIDER"),
+
 	GSCALAR(curr_amp_per_volt,	"AMP_PER_VOLT"),
 	GSCALAR(input_voltage,	"INPUT_VOLTS"),
 	GSCALAR(pack_capacity,	"BATT_CAPACITY"),
+
+	// @Param: MAG_ENABLE
+	// @DisplayName: Enable Compass
+	// @Description: Setting this to Enabled(1) will enable the compass. Setting this to Disabled(0) will disable the compass
+	// @Values: 0:Disabled,1:Enabled
+	// @User: Standard
 	GSCALAR(compass_enabled,	"MAG_ENABLE"),
+	
+	// @Param: FLOW_ENABLE
+	// @DisplayName: Enable Optical Flow
+	// @Description: Setting this to Enabled(1) will enable optical flow. Setting this to Disabled(0) will disable optical flow
+	// @Values: 0:Disabled,1:Enabled
+	// @User: Standard
 	GSCALAR(optflow_enabled,	"FLOW_ENABLE"),
+	
+	// @Param: LOW_VOLT
+	// @DisplayName: Low Voltage
+	// @Description: Set this to the voltage you want to represent low voltage
+	// @Range: 0 20
+	// @Increment: .1
+	// @User: Standard
 	GSCALAR(low_voltage,	"LOW_VOLT"),
+	
+	// @Param: SUPER_SIMPLE
+	// @DisplayName: Enable Super Simple Mode
+	// @Description: Setting this to Enabled(1) will enable Super Simple Mode. Setting this to Disabled(0) will disable Super Simple Mode
+	// @Values: 0:Disabled,1:Enabled
+	// @User: Standard
 	GSCALAR(super_simple,	"SUPER_SIMPLE"),
 	
 	// @Param: RTL_LAND
 	// @DisplayName: RTL Land
-	// @Description: Setting this to true (1) will enable landing after RTL. Setting this to false(0) will disable landing after RTL.
+	// @Description: Setting this to Enabled(1) will enable landing after RTL. Setting this to Disabled(0) will disable landing after RTL.
+	// @Values: 0:Disabled,1:Enabled
 	// @User: Standard
 	GSCALAR(rtl_land_enabled,	"RTL_LAND"),
 
@@ -64,7 +96,8 @@ static const AP_Param::Info var_info[] PROGMEM = {
 
 	// @Param: RETRO_LOITER
 	// @DisplayName: Retro Loiter
-	// @Description: Setting this to true (1) will enable the Loiter from 2.0.49. Setting this to false(0) will use the most recent Loiter routines.
+	// @Description: Setting this to Enabled(1) will enable the Loiter from 2.0.49. Setting this to Disabled(0) will use the most recent Loiter routines.
+	// @Values: 0:Disabled,1:Enabled
 	// @User: Standard
 	GSCALAR(retro_loiter,	"RETRO_LOITER"),
 
