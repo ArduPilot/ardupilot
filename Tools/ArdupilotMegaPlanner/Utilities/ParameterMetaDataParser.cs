@@ -208,7 +208,7 @@ namespace ArdupilotMega.Utilities
                            {
                               // This is the end index for a substring to search for parameter attributes
                               // If we are on the last index in our collection, we will search to the end of the file
-                              var stopMetaIdx = (x == metaIndicies.Count - 1) ? subStringToSearch.Length : metaIndicies[x + 1];
+                              var stopMetaIdx = (x == metaIndicies.Count - 1) ? subStringToSearch.Length : metaIndicies[x + 1] + 1;
 
                               // This meta param string
                               var metaString = subStringToSearch.Substring(metaIndicies[x], (stopMetaIdx - metaIndicies[x]));
