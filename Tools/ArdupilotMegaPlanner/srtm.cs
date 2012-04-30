@@ -7,6 +7,7 @@ using System.Net;
 using System.Text.RegularExpressions;
 using ICSharpCode.SharpZipLib.Zip;
 using System.Threading;
+using System.Collections;
 
 namespace ArdupilotMega
 {
@@ -22,6 +23,8 @@ namespace ArdupilotMega
 
         static List<string> queue = new List<string>();
 
+        static Hashtable altcache = new Hashtable();
+
         public static int getAltitude(double lat, double lng, double zoom)
         {
             if (!Directory.Exists(datadirectory))
@@ -31,6 +34,12 @@ namespace ArdupilotMega
 
             lat += 0.00083333333333333;
             //lng += 0.0008;
+
+            if (altcache[lat * lng] != null)
+                return (int)(short)altcache[lat * lng];
+
+            if (altcache.Count > 10000)
+                altcache = new Hashtable();
 
             int x = (int)Math.Floor(lng);
             int y = (int)Math.Floor(lat);
@@ -92,6 +101,8 @@ namespace ArdupilotMega
                     Array.Reverse(data);
 
                     alt = BitConverter.ToInt16(data, 0);
+
+                    altcache[lat * lng] = alt;
 
                     return alt;
                 }

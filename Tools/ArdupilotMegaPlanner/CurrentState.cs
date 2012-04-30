@@ -262,6 +262,36 @@ namespace ArdupilotMega
         public float remnoise { get; set; }
         public ushort rxerrors { get; set; }
         public ushort fixedp { get; set; }
+        private float _localsnrdb = 0;
+        private float _remotesnrdb = 0;
+        private DateTime lastrssi = DateTime.Now;
+        private DateTime lastremrssi = DateTime.Now;
+        public float localsnrdb { get { if (lastrssi.AddSeconds(1) > DateTime.Now) { return _localsnrdb; } lastrssi = DateTime.Now; _localsnrdb = ((rssi - noise) / 1.9f) * 0.5f + _localsnrdb * 0.5f; return _localsnrdb; } }
+        public float remotesnrdb { get { if (lastremrssi.AddSeconds(1) > DateTime.Now) { return _remotesnrdb; } lastremrssi = DateTime.Now; _remotesnrdb = ((remrssi - remnoise) / 1.9f) * 0.5f + _remotesnrdb * 0.5f; return _remotesnrdb; } }
+        public float DistRSSIRemain {
+            get
+            {
+                float work = 0;
+                if (localsnrdb > remotesnrdb)
+                {
+                    // remote
+                    // minus fade margin
+                    work = remotesnrdb - 5;
+                }
+                else
+                {
+                    // local
+                    // minus fade margin
+                    work = localsnrdb - 5;
+                }
+
+                {
+                    work = DistToMAV * (float)Math.Pow(2.0, work / 6.0);
+                }
+
+                return work;
+            }
+        }
 
         // stats
         public ushort packetdropremote { get; set; }

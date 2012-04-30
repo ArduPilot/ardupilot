@@ -170,8 +170,13 @@
       <SpecificVersion>False</SpecificVersion>
       <HintPath>Lib\netDxf.dll</HintPath>
     </Reference>
-    <Reference Include="OpenTK, Version=1.0.0.0, Culture=neutral, PublicKeyToken=bad199fe84eb3df4, processorArchitecture=MSIL">
+    <Reference Include="OpenTK, Version=1.1.0.0, Culture=neutral, PublicKeyToken=bad199fe84eb3df4, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
+      <HintPath>Lib\OpenTK.dll</HintPath>
+    </Reference>
+    <Reference Include="OpenTK.Compatibility, Version=1.0.0.0, Culture=neutral, PublicKeyToken=bad199fe84eb3df4, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\..\..\..\..\Desktop\DIYDrones\opentk\trunk\Binaries\OpenTK\Debug\OpenTK.Compatibility.dll</HintPath>
     </Reference>
     <Reference Include="OpenTK.GLControl, Version=1.0.0.0, Culture=neutral, PublicKeyToken=bad199fe84eb3df4, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
@@ -227,6 +232,9 @@
     <Compile Include="Attributes\PrivateAttribute.cs" />
     <Compile Include="CodeGen.cs" />
     <Compile Include="Controls\IDynamicParameterControl.cs" />
+    <Compile Include="Controls\OpenGLtest.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
     <Compile Include="GCSViews\ConfigurationView\ConfigFriendlyParams.cs">
       <SubType>UserControl</SubType>
     </Compile>
@@ -591,6 +599,9 @@
     <EmbeddedResource Include="Controls\ProgressReporterDialogue.resx">
       <DependentUpon>ProgressReporterDialogue.cs</DependentUpon>
     </EmbeddedResource>
+    <EmbeddedResource Include="Controls\OpenGLtest.resx">
+      <DependentUpon>OpenGLtest.cs</DependentUpon>
+    </EmbeddedResource>
     <EmbeddedResource Include="GCSViews\ConfigurationView\ConfigAccelerometerCalibrationQuad.es-ES.resx">
       <DependentUpon>ConfigAccelerometerCalibrationQuad.cs</DependentUpon>
     </EmbeddedResource>
@@ -682,9 +693,6 @@
       <DependentUpon>ConfigHardwareOptions.cs</DependentUpon>
     </EmbeddedResource>
     <EmbeddedResource Include="GCSViews\ConfigurationView\ConfigPlanner.resx">
-      <DependentUpon>ConfigPlanner.cs</DependentUpon>
-    </EmbeddedResource>
-    <EmbeddedResource Include="GCSViews\ConfigurationView\ConfigPlanner.zh-Hans.resx">
       <DependentUpon>ConfigPlanner.cs</DependentUpon>
     </EmbeddedResource>
     <EmbeddedResource Include="GCSViews\ConfigurationView\ConfigRadioInput.es-ES.resx">
@@ -1105,9 +1113,7 @@
     <None Include="AeroSimRCAPMHil.zip">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
-    <None Include="app.config">
-      <SubType>Designer</SubType>
-    </None>
+    <None Include="app.config" />
     <None Include="arducopter-xplane.zip">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>

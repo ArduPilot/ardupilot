@@ -13,7 +13,7 @@ namespace uploader
 		private int bytes_processed;
 		public SerialPort port;
 		
-		private enum Code : byte
+		public enum Code : byte
 		{
 			// response codes
 			OK				= 0x10,
@@ -39,6 +39,7 @@ namespace uploader
 			// device IDs XXX should come with the firmware image...
 			DEVICE_ID_RF50	= 0x4d,
 			DEVICE_ID_HM_TRP= 0x4e,
+            DEVICE_ID_RFD900= 0X42,
 			
 			// frequency code bytes XXX should come with the firmware image...
 			FREQ_NONE		= 0xf0,
@@ -323,6 +324,17 @@ namespace uploader
 			
 			getSync ();
 		}
+
+        public void getDevice(ref Code device, ref Code freq)
+        {
+            send(Code.GET_DEVICE);
+            send(Code.EOC);
+
+            device = (Code)recv();
+            freq = (Code)recv();
+
+            getSync();
+        }
 		
 		/// <summary>
 		/// Expect the two-byte synchronisation codes within the read timeout.

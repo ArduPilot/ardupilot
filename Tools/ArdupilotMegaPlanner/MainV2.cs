@@ -259,7 +259,15 @@ namespace ArdupilotMega
                 }
 
                 if (config["MainMaximised"] != null)
+                {
                     this.WindowState = (FormWindowState)Enum.Parse(typeof(FormWindowState), config["MainMaximised"].ToString());
+                    // dont allow minimised start state
+                    if (this.WindowState == FormWindowState.Minimized)
+                    {
+                        this.WindowState = FormWindowState.Normal;
+                        this.Location = new Point(100, 100);
+                    }
+                }
 
                 if (config["MainHeight"] != null)
                     this.Height = int.Parse(config["MainHeight"].ToString());
@@ -1728,12 +1736,15 @@ namespace ArdupilotMega
            var progressReporterDialogue = ((ProgressReporterDialogue) sender);
            progressReporterDialogue.UpdateProgressAndStatus(-1, "Getting Updated Parameters");
 
-           ParameterMetaDataParser.GetParameterInformation();
+           try
+           {
+               ParameterMetaDataParser.GetParameterInformation();
+           }
+           catch (Exception ex) { log.Error(ex.ToString()); CustomMessageBox.Show("Error getting Parameter Information"); }
            
            #endregion Fetch Parameter Meta Data
 
            progressReporterDialogue.UpdateProgressAndStatus(-1, "Getting Base URL");
-
            // check for updates
            if (Debugger.IsAttached)
            {
@@ -2209,6 +2220,11 @@ namespace ArdupilotMega
         private void CMB_serialport_Enter(object sender, EventArgs e)
         {
             CMB_serialport_Click(sender, e);
+        }
+
+        private void MenuConnect_MouseHover(object sender, EventArgs e)
+        {
+
         }
     }
 }

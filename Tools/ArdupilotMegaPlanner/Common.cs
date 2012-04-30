@@ -447,7 +447,7 @@ namespace ArdupilotMega
             // altitude controller
             CH6_THR_HOLD_KP = 14,
             CH6_Z_GAIN = 15,
-            CH6_DAMP = 16,
+            //CH6_DAMP = 16,
 
             // optical flow controller
             CH6_OPTFLOW_KP = 17,

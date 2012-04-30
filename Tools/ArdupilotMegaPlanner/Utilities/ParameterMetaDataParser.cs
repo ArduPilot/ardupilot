@@ -34,6 +34,8 @@ namespace ArdupilotMega.Utilities
                objXmlTextWriter.Formatting = Formatting.Indented;
                objXmlTextWriter.WriteStartDocument();
 
+               objXmlTextWriter.WriteStartElement("Params");
+
                foreach (string parameterLocation in parameterLocations)
                {
                   // Write the start element for this parameter location
@@ -48,6 +50,8 @@ namespace ArdupilotMega.Utilities
                   objXmlTextWriter.WriteEndElement();
 
                }
+
+               objXmlTextWriter.WriteEndElement();
                
                // Clear the stream
                objXmlTextWriter.WriteEndDocument();
