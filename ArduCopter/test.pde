@@ -566,7 +566,8 @@ test_imu(uint8_t argc, const Menu::arg *argv)
 static int8_t
 test_gps(uint8_t argc, const Menu::arg *argv)
 {
-	#if defined( __AVR_ATmega1280__ )  // test disabled to save code size for 1280
+    // test disabled to save code size for 1280
+	#if defined( __AVR_ATmega1280__ ) || HIL_MODE != HIL_MODE_DISABLED
 		print_test_disabled();
 		return (0);
 	#else
