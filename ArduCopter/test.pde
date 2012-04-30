@@ -36,6 +36,9 @@ static int8_t	test_eedump(uint8_t argc, 		const Menu::arg *argv);
 static int8_t	test_rawgps(uint8_t argc, 		const Menu::arg *argv);
 //static int8_t	test_mission(uint8_t argc, 		const Menu::arg *argv);
 
+// this is declared here to remove compiler errors
+extern void		print_latlon(BetterStream *s, int32_t lat_or_lon);	// in Log.pde
+
 // This is the help function
 // PSTR is an AVR macro to read strings from flash memory
 // printf_P is a version of printf that reads from flash memory
