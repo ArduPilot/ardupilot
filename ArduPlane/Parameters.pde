@@ -25,6 +25,14 @@ static const AP_Param::Info var_info[] PROGMEM = {
     // @Values: 1:1200,2:2400,4:4800,9:9600,19:19200,38:38400,57:57600,111:111100,115:115200
 	// @User: Standard
 	GSCALAR(serial3_baud,           "SERIAL3_BAUD"),
+        
+    // @Param: KFF_PTCHCOMP
+	// @DisplayName: Pitch Compensation
+	// @Description: Adds pitch input to compensate for the loss of lift due to roll control.
+	// @Units: Percent
+	// @Range: 0 1
+	// @Increment: 0.1
+	// @User: Advanced
 	GSCALAR(kff_pitch_compensation, "KFF_PTCHCOMP"),
     
     // @Param: KFF_RDDRMIX
@@ -35,7 +43,21 @@ static const AP_Param::Info var_info[] PROGMEM = {
 	// @Increment: 0.1
 	// @User: Standard
 	GSCALAR(kff_rudder_mix,         "KFF_RDDRMIX"),
+        
+    // @Param: KFF_PTCH2THR
+	// @DisplayName: Pitch to Throttle Mix
+	// @Description: Pitch to throttle feed-forward gain.
+	// @Range: 0 5
+	// @Increment: 0.1
+	// @User: Advanced  
 	GSCALAR(kff_pitch_to_throttle,  "KFF_PTCH2THR"),
+        
+    // @Param: KFF_THR2PTCH
+	// @DisplayName: Throttle to Pitch Mix
+	// @Description: Throttle to pitch feed-forward gain.
+	// @Range: 0 5
+	// @Increment: 0.1
+	// @User: Advanced   
 	GSCALAR(kff_throttle_to_pitch,  "KFF_THR2PTCH"),
     
     // @Param: MANUAL_LEVEL
@@ -45,7 +67,22 @@ static const AP_Param::Info var_info[] PROGMEM = {
 	// @User: Advanced
 	GSCALAR(manual_level,           "MANUAL_LEVEL"),
 
+    // @Param: XTRK_GAIN_SC
+	// @DisplayName: Crosstrack Gain
+	// @Description: The scale between distance off the line and angle to meet the line (in Degrees * 100)
+	// @Units: Degrees
+	// @Range: 0 2000
+	// @Increment: 1
+	// @User: Standard
 	GSCALAR(crosstrack_gain,        "XTRK_GAIN_SC"),
+        
+    // @Param: XTRK_ANGLE_CD
+	// @DisplayName: Crosstrack Entry Angle
+	// @Description: Maximum angle used to correct for track following.
+	// @Units: Degrees
+	// @Range: 0 90
+	// @Increment: 1
+	// @User: Standard 
 	GSCALAR(crosstrack_entry_angle, "XTRK_ANGLE_CD"),
 
     // @Param: ALT_MIX
@@ -56,12 +93,37 @@ static const AP_Param::Info var_info[] PROGMEM = {
 	// @Increment: 0.1
 	// @User: Advanced
 	GSCALAR(altitude_mix,           "ALT_MIX"),
+        
+    // @Param: ARSPD_RATIO
+	// @DisplayName: Airspeed Ratio
+	// @Description: Used to scale raw adc airspeed sensor to a SI Unit (m/s)
+	// @Units: Scale
+	// @Range: 0 5
+	// @Increment: 0.001
+	// @User: Advanced   
 	GSCALAR(airspeed_ratio,         "ARSPD_RATIO"),
+        
 	GSCALAR(airspeed_offset,        "ARSPD_OFFSET"),
 
 	GSCALAR(command_total,          "CMD_TOTAL"),
 	GSCALAR(command_index,          "CMD_INDEX"),
+    
+    // @Param: WP_RADIUS
+	// @DisplayName: Waypoint Radius
+	// @Description: Defines the distance from a waypoint, that when crossed indicates the wp has been hit.
+	// @Units: Meters
+	// @Range: 1 127
+	// @Increment: 1
+	// @User: Standard 
 	GSCALAR(waypoint_radius,        "WP_RADIUS"),
+        
+    // @Param: WP_LOITER_RAD
+	// @DisplayName: Waypoint Loiter Radius
+	// @Description: Defines the distance from the waypoint center, the plane will maintain during a loiter
+	// @Units: Meters
+	// @Range: 1 127
+	// @Increment: 1
+	// @User: Standard   
 	GSCALAR(loiter_radius,          "WP_LOITER_RAD"),
 
 #if GEOFENCE_ENABLED == ENABLED
@@ -71,15 +133,53 @@ static const AP_Param::Info var_info[] PROGMEM = {
 	GSCALAR(fence_minalt,           "FENCE_MINALT"),
 	GSCALAR(fence_maxalt,           "FENCE_MAXALT"),
 #endif
-
+        
+    // @Param: ARSPD_FBW_MIN
+	// @DisplayName: Fly By Wire Minimum Airspeed
+	// @Description: Airspeed corresponding to minimum throttle in Fly By Wire B mode.
+	// @Units: m/s
+	// @Range: 5 50
+	// @Increment: 1
+	// @User: Standard   
 	GSCALAR(flybywire_airspeed_min, "ARSPD_FBW_MIN"),
+        
+    // @Param: ARSPD_FBW_MAX
+	// @DisplayName: Fly By Wire Maximum Airspeed
+	// @Description: Airspeed corresponding to maximum throttle in Fly By Wire B mode.
+	// @Units: m/s
+	// @Range: 5 50
+	// @Increment: 1
+	// @User: Standard
 	GSCALAR(flybywire_airspeed_max, "ARSPD_FBW_MAX"),
 
-    
+    // @Param: THR_MIN
+	// @DisplayName: Minimum Throttle
+	// @Description: The minimum throttle setting to which the autopilot will apply.
+	// @Units: Percent
+	// @Range: 0 100
+	// @Increment: 1
+	// @User: Standard
 	GSCALAR(throttle_min,           "THR_MIN"),
+        
+    // @Param: THR_MAX
+	// @DisplayName: Maximum Throttle
+	// @Description: The maximum throttle setting to which the autopilot will apply.
+	// @Units: Percent
+	// @Range: 0 100
+	// @Increment: 1
+	// @User: Standard
 	GSCALAR(throttle_max,           "THR_MAX"),
 	GSCALAR(throttle_slewrate,      "THR_SLEWRATE"),
+    
+    // @Param: THR_FAILSAFE
+	// @DisplayName: Throttle Failsafe Enable
+	// @Description: The throttle failsafe allows you to configure a software failsafe activated by a setting on the throttle input channel
+	// @Units: Percent
+	// @Values: 0:Disabled,1:Enabled
+	// @User: Standard
 	GSCALAR(throttle_fs_enabled,    "THR_FAILSAFE"),
+        
+        
 	GSCALAR(throttle_fs_value,      "THR_FS_VALUE"),
 	GSCALAR(throttle_cruise,        "TRIM_THROTTLE"),
 
@@ -95,8 +195,31 @@ static const AP_Param::Info var_info[] PROGMEM = {
 	GSCALAR(flight_mode5,           "FLTMODE5"),
 	GSCALAR(flight_mode6,           "FLTMODE6"),
 
+    // @Param: LIM_ROLL_CD
+	// @DisplayName: Maximum Bank Angle
+	// @Description: The maximum commanded bank angle in either direction
+	// @Units: Degrees
+	// @Range: 0 90
+	// @Increment: 1
+	// @User: Standard
 	GSCALAR(roll_limit,             "LIM_ROLL_CD"),
+        
+    // @Param: LIM_PITCH_MAX
+	// @DisplayName: Maximum Pitch Angle
+	// @Description: The maximum commanded pitch up angle
+	// @Units: Degrees
+	// @Range: 0 90
+	// @Increment: 1
+	// @User: Standard
 	GSCALAR(pitch_limit_max,        "LIM_PITCH_MAX"),
+        
+    // @Param: LIM_PITCH_MIN
+	// @DisplayName: Minimum Pitch Angle
+	// @Description: The minimum commanded pitch down angle
+	// @Units: Degrees
+	// @Range: 0 90
+	// @Increment: 1
+	// @User: Standard
 	GSCALAR(pitch_limit_min,        "LIM_PITCH_MIN"),
 
 	GSCALAR(auto_trim,              "TRIM_AUTO"),
@@ -135,7 +258,19 @@ static const AP_Param::Info var_info[] PROGMEM = {
 	GSCALAR(input_voltage,          "INPUT_VOLTS"),
 	GSCALAR(pack_capacity,          "BATT_CAPACITY"),
 	GSCALAR(inverted_flight_ch,     "INVERTEDFLT_CH"),
+    
+    // @Param: SONAR_ENABLE
+	// @DisplayName: Enable Sonar
+	// @Description: Setting this to Enabled(1) will enable the sonar. Setting this to Disabled(0) will disable the sonar
+	// @Values: 0:Disabled,1:Enabled
+	// @User: Standard
 	GSCALAR(sonar_enabled,          "SONAR_ENABLE"),
+        
+    // @Param: ARSPD_ENABLE
+	// @DisplayName: Enable Airspeed
+	// @Description: Setting this to Enabled(1) will enable the Airspeed sensor. Setting this to Disabled(0) will disable the Airspeed sensor
+	// @Values: 0:Disabled,1:Enabled
+	// @User: Standard
 	GSCALAR(airspeed_enabled,       "ARSPD_ENABLE"),
 
 	GGROUP(channel_roll,            "RC1_", RC_Channel),
@@ -156,10 +291,19 @@ static const AP_Param::Info var_info[] PROGMEM = {
 	GGROUP(pidNavPitchAltitude,     "ALT2PTCH_",  PID),
 
 	// variables not in the g class which contain EEPROM saved variables
+    
+	// @Group: COMPASS_
+	// @Path: ../libraries/AP_Compass/Compass.cpp
 	GOBJECT(compass,                "COMPASS_",	Compass),
 	GOBJECT(gcs0,					"SR0_",     GCS_MAVLINK),
 	GOBJECT(gcs3,					"SR3_",     GCS_MAVLINK),
+    
+	// @Group: IMU_
+	// @Path: ../libraries/AP_IMU/IMU.cpp
 	GOBJECT(imu,					"IMU_",     IMU),
+    
+    // @Group: AHRS_
+	// @Path: ../libraries/AP_AHRS/AP_AHRS_DCM.cpp, ../libraries/AP_AHRS/AP_AHRS_Quaternion.cpp
 	GOBJECT(ahrs,					"AHRS_",    AP_AHRS)
 };
 
