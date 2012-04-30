@@ -27,19 +27,6 @@ extern "C" {
 
 #define MAVLINK_ENABLED_ARDUPILOTMEGA
 
-#include "../common/common.h"
-
-// MAVLINK VERSION
-
-#ifndef MAVLINK_VERSION
-#define MAVLINK_VERSION 2
-#endif
-
-#if (MAVLINK_VERSION == 0)
-#undef MAVLINK_VERSION
-#define MAVLINK_VERSION 2
-#endif
-
 // ENUM DEFINITIONS
 
 
@@ -128,6 +115,19 @@ enum FENCE_BREACH
 	FENCE_BREACH_BOUNDARY=3, /* Breached fence boundary | */
 	FENCE_BREACH_ENUM_END=4, /*  | */
 };
+#endif
+
+#include "../common/common.h"
+
+// MAVLINK VERSION
+
+#ifndef MAVLINK_VERSION
+#define MAVLINK_VERSION 2
+#endif
+
+#if (MAVLINK_VERSION == 0)
+#undef MAVLINK_VERSION
+#define MAVLINK_VERSION 2
 #endif
 
 // MESSAGE DEFINITIONS
