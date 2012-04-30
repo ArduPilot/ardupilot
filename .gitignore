@@ -26,5 +26,8 @@ tags
 mav.log
 mav.log.raw
 status.txt
-
 /Tools/ArdupilotMegaPlanner/Msi/upload.bat
+*.exe
+*.dll
+*.obj
+*.zip
