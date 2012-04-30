@@ -118,7 +118,7 @@ test_eedump(uint8_t argc, const Menu::arg *argv)
 static int8_t
 test_radio_pwm(uint8_t argc, const Menu::arg *argv)
 {
-	#if defined( __AVR_ATmega1280__ )  // determines if optical flow code is included
+	#if defined( __AVR_ATmega1280__ )  // test disabled to save code size for 1280
 		print_test_disabled();
 		return (0);
 	#else
@@ -420,7 +420,7 @@ test_radio(uint8_t argc, const Menu::arg *argv)
 static int8_t
 test_ins(uint8_t argc, const Menu::arg *argv)
 {
-	#if defined( __AVR_ATmega1280__ )  // determines if optical flow code is included
+	#if defined( __AVR_ATmega1280__ )  // test disabled to save code size for 1280
 		print_test_disabled();
 		return (0);
 	#else
@@ -466,7 +466,7 @@ test_ins(uint8_t argc, const Menu::arg *argv)
 static int8_t
 test_imu(uint8_t argc, const Menu::arg *argv)
 {
-	#if defined( __AVR_ATmega1280__ )  // determines if optical flow code is included
+	#if defined( __AVR_ATmega1280__ )  // test disabled to save code size for 1280
 		print_test_disabled();
 		return (0);
 	#else
@@ -566,35 +566,40 @@ test_imu(uint8_t argc, const Menu::arg *argv)
 static int8_t
 test_gps(uint8_t argc, const Menu::arg *argv)
 {
-/*
-	print_hit_enter();
-	delay(1000);
+	#if defined( __AVR_ATmega1280__ )  // test disabled to save code size for 1280
+		print_test_disabled();
+		return (0);
+	#else
+		print_hit_enter();
+		delay(1000);
 
-	while(1){
-		delay(333);
+		while(1){
+			delay(333);
 
-		// Blink GPS LED if we don't have a fix
-		// ------------------------------------
-		update_GPS_light();
+			// Blink GPS LED if we don't have a fix
+			// ------------------------------------
+			update_GPS_light();
 
-		g_gps->update();
+			g_gps->update();
 
-		if (g_gps->new_data){
-			Serial.printf_P(PSTR("Lat: %ld, Lon %ld, Alt: %ldm, #sats: %d\n"),
-					g_gps->latitude,
-					g_gps->longitude,
-					g_gps->altitude/100,
-					g_gps->num_sats);
-			g_gps->new_data = false;
-		}else{
-			Serial.print(".");
+			if (g_gps->new_data){
+				Serial.printf_P(PSTR("Lat: "));
+				print_latlon(&Serial, g_gps->latitude);
+				Serial.printf_P(PSTR(", Lon "));
+				print_latlon(&Serial, g_gps->longitude);
+				Serial.printf_P(PSTR(", Alt: %ldm, #sats: %d\n"),
+						g_gps->altitude/100,
+						g_gps->num_sats);
+				g_gps->new_data = false;
+			}else{
+				Serial.print(".");
+			}
+			if(Serial.available() > 0){
+				return (0);
+			}
 		}
-		if(Serial.available() > 0){
-			return (0);
-		}
-	}
-	*/
-	return 0;
+		return 0;
+	#endif
 }
 
 // used to test the gain scheduler for Stab_D
@@ -811,7 +816,7 @@ test_battery(uint8_t argc, const Menu::arg *argv)
 
 static int8_t test_relay(uint8_t argc, const Menu::arg *argv)
 {
-	#if defined( __AVR_ATmega1280__ )  // determines if optical flow code is included
+	#if defined( __AVR_ATmega1280__ )  // test disabled to save code size for 1280
 		print_test_disabled();
 		return (0);
 	#else
@@ -904,7 +909,7 @@ test_wp(uint8_t argc, const Menu::arg *argv)
 static int8_t
 test_baro(uint8_t argc, const Menu::arg *argv)
 {
-	#if defined( __AVR_ATmega1280__ )  // determines if optical flow code is included
+	#if defined( __AVR_ATmega1280__ )  // test disabled to save code size for 1280
 		print_test_disabled();
 		return (0);
 	#else
@@ -935,7 +940,7 @@ test_baro(uint8_t argc, const Menu::arg *argv)
 static int8_t
 test_mag(uint8_t argc, const Menu::arg *argv)
 {
-	#if defined( __AVR_ATmega1280__ )  // determines if optical flow code is included
+	#if defined( __AVR_ATmega1280__ )  // test disabled to save code size for 1280
 		print_test_disabled();
 		return (0);
 	#else
@@ -1084,7 +1089,7 @@ test_optflow(uint8_t argc, const Menu::arg *argv)
 static int8_t
 test_logging(uint8_t argc, const Menu::arg *argv)
 {
-	#if defined( __AVR_ATmega1280__ )  // determines if optical flow code is included
+	#if defined( __AVR_ATmega1280__ )  // test disabled to save code size for 1280
 		print_test_disabled();
 		return (0);
 	#else
