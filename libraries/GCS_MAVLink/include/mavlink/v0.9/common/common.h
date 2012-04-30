@@ -27,19 +27,6 @@ extern "C" {
 
 #define MAVLINK_ENABLED_COMMON
 
-
-
-// MAVLINK VERSION
-
-#ifndef MAVLINK_VERSION
-#define MAVLINK_VERSION 2
-#endif
-
-#if (MAVLINK_VERSION == 0)
-#undef MAVLINK_VERSION
-#define MAVLINK_VERSION 2
-#endif
-
 // ENUM DEFINITIONS
 
 
@@ -79,6 +66,19 @@ enum MAV_ROI
 	MAV_ROI_TARGET=4, /* Point toward of given id. | */
 	MAV_ROI_ENUM_END=5, /*  | */
 };
+#endif
+
+
+
+// MAVLINK VERSION
+
+#ifndef MAVLINK_VERSION
+#define MAVLINK_VERSION 2
+#endif
+
+#if (MAVLINK_VERSION == 0)
+#undef MAVLINK_VERSION
+#define MAVLINK_VERSION 2
 #endif
 
 // MESSAGE DEFINITIONS

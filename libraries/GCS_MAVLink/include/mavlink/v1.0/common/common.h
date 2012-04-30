@@ -27,19 +27,6 @@ extern "C" {
 
 #define MAVLINK_ENABLED_COMMON
 
-
-
-// MAVLINK VERSION
-
-#ifndef MAVLINK_VERSION
-#define MAVLINK_VERSION 3
-#endif
-
-#if (MAVLINK_VERSION == 0)
-#undef MAVLINK_VERSION
-#define MAVLINK_VERSION 3
-#endif
-
 // ENUM DEFINITIONS
 
 
@@ -362,6 +349,19 @@ enum MAV_SEVERITY
 	MAV_SEVERITY_DEBUG=7, /* Useful non-operational messages that can assist in debugging. These should not occur during normal operation. | */
 	MAV_SEVERITY_ENUM_END=8, /*  | */
 };
+#endif
+
+
+
+// MAVLINK VERSION
+
+#ifndef MAVLINK_VERSION
+#define MAVLINK_VERSION 3
+#endif
+
+#if (MAVLINK_VERSION == 0)
+#undef MAVLINK_VERSION
+#define MAVLINK_VERSION 3
 #endif
 
 // MESSAGE DEFINITIONS
