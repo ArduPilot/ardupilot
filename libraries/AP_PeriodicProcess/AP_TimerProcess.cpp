@@ -18,6 +18,7 @@ ap_procedure AP_TimerProcess::_proc[AP_TIMERPROCESS_MAX_PROCS];
 ap_procedure AP_TimerProcess::_failsafe;
 bool AP_TimerProcess::_in_timer_call;
 uint8_t AP_TimerProcess::_pidx = 0;
+bool AP_TimerProcess::_suspended;
 
 AP_TimerProcess::AP_TimerProcess(uint8_t period)
 {
@@ -34,7 +35,8 @@ void AP_TimerProcess::init( Arduino_Mega_ISR_Registry * isr_reg )
 	TIFR2  = _BV(TOV2);	        // clear pending interrupts;
 	TIMSK2 = _BV(TOIE2);        // enable the overflow interrupt
 
-	_failsafe = NULL;
+    _failsafe = NULL;
+    _suspended = false;
 	_in_timer_call = false;
 
 	for (uint8_t i = 0; i < AP_TIMERPROCESS_MAX_PROCS; i++)
@@ -62,6 +64,16 @@ void AP_TimerProcess::register_process(ap_procedure proc)
 void AP_TimerProcess::set_failsafe(ap_procedure proc)
 {
 	_failsafe = proc;
+}
+
+void AP_TimerProcess::suspend_timer(void)
+{
+	_suspended = true;
+}
+
+void AP_TimerProcess::resume_timer(void)
+{
+	_suspended = false;
 }
 
 void AP_TimerProcess::run(void)
@@ -95,12 +107,14 @@ void AP_TimerProcess::run(void)
 	}
 	_in_timer_call = true;
 
-	// now call the timer based drivers
-	for (int i = 0; i < _pidx; i++) {
-		if (_proc[i] != NULL) {
-			_proc[i](tnow);
-		}
-	}
+    if (!_suspended) {
+        // now call the timer based drivers
+        for (int i = 0; i < _pidx; i++) {
+            if (_proc[i] != NULL) {
+                _proc[i](tnow);
+            }
+        }
+    }
 
 	// and the failsafe, if one is setup
 	if (_failsafe != NULL) {
