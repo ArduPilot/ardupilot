@@ -18,16 +18,43 @@ static const AP_Param::Info var_info[] PROGMEM = {
 	GSCALAR(software_type,          "SYSID_SW_TYPE"),
 	GSCALAR(sysid_this_mav,         "SYSID_THISMAV"),
 	GSCALAR(sysid_my_gcs,           "SYSID_MYGCS"),
+    
+    // @Param: SERIAL3_BAUD
+	// @DisplayName: Telemetry Baud Rate
+	// @Description: The baud rate used on the telemetry port
+    // @Values: 1:1200,2:2400,4:4800,9:9600,19:19200,38:38400,57:57600,111:111100,115:115200
+	// @User: Standard
 	GSCALAR(serial3_baud,           "SERIAL3_BAUD"),
 	GSCALAR(kff_pitch_compensation, "KFF_PTCHCOMP"),
+    
+    // @Param: KFF_RDDRMIX
+	// @DisplayName: Rudder Mix
+	// @Description: The ammount of rudder mix to apply during aileron movement
+	// @Units: Percent
+	// @Range: 0 1
+	// @Increment: 0.1
+	// @User: Standard
 	GSCALAR(kff_rudder_mix,         "KFF_RDDRMIX"),
 	GSCALAR(kff_pitch_to_throttle,  "KFF_PTCH2THR"),
 	GSCALAR(kff_throttle_to_pitch,  "KFF_THR2PTCH"),
+    
+    // @Param: MANUAL_LEVEL
+	// @DisplayName: Manual Level
+	// @Description: Setting this to Disabled(0) will enable autolevel on every boot. Setting it to Enabled(1) will do a calibration only when you tell it to
+	// @Values: 0:Disabled,1:Enabled
+	// @User: Advanced
 	GSCALAR(manual_level,           "MANUAL_LEVEL"),
 
 	GSCALAR(crosstrack_gain,        "XTRK_GAIN_SC"),
 	GSCALAR(crosstrack_entry_angle, "XTRK_ANGLE_CD"),
 
+    // @Param: ALT_MIX
+	// @DisplayName: Gps to Baro Mix
+	// @Description: The percent of mixing between gps altitude and baro altitude. 0 = 100% gps, 1 = 100% baro
+	// @Units: Percent
+	// @Range: 0 1
+	// @Increment: 0.1
+	// @User: Advanced
 	GSCALAR(altitude_mix,           "ALT_MIX"),
 	GSCALAR(airspeed_ratio,         "ARSPD_RATIO"),
 	GSCALAR(airspeed_offset,        "ARSPD_OFFSET"),
@@ -48,6 +75,7 @@ static const AP_Param::Info var_info[] PROGMEM = {
 	GSCALAR(flybywire_airspeed_min, "ARSPD_FBW_MIN"),
 	GSCALAR(flybywire_airspeed_max, "ARSPD_FBW_MAX"),
 
+    
 	GSCALAR(throttle_min,           "THR_MIN"),
 	GSCALAR(throttle_max,           "THR_MAX"),
 	GSCALAR(throttle_slewrate,      "THR_SLEWRATE"),
@@ -88,6 +116,12 @@ static const AP_Param::Info var_info[] PROGMEM = {
 	GSCALAR(FBWB_min_altitude,      "ALT_HOLD_FBWCM"),
 	GSCALAR(ground_temperature,     "GND_TEMP"),
 	GSCALAR(ground_pressure,        "GND_ABS_PRESS"),
+    
+    // @Param: MAG_ENABLE
+	// @DisplayName: Enable Compass
+	// @Description: Setting this to Enabled(1) will enable the compass. Setting this to Disabled(0) will disable the compass
+	// @Values: 0:Disabled,1:Enabled
+	// @User: Standard
 	GSCALAR(compass_enabled,        "MAG_ENABLE"),
 	GSCALAR(flap_1_percent,         "FLAP_1_PERCNT"),
 	GSCALAR(flap_1_speed,           "FLAP_1_SPEED"),
