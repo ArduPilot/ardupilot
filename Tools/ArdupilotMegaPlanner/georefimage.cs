@@ -40,6 +40,7 @@ namespace ArdupilotMega
         private Label label4;
         private Label label5;
         private Label label6;
+        private Controls.MyButton BUT_networklinkgeoref;
         private ArdupilotMega.Controls.MyButton BUT_Geotagimages;
 
         internal Georefimage() {
@@ -146,7 +147,7 @@ namespace ArdupilotMega
 
 
                     string[] vals = new string[] { "GPS", (cs.datetime - new DateTime(cs.datetime.Year,cs.datetime.Month,cs.datetime.Day,0,0,0,DateTimeKind.Local)).TotalMilliseconds.ToString(), "1",
-                    cs.satcount.ToString(),cs.lat.ToString(),cs.lng.ToString(),"0.0",cs.alt.ToString(),cs.alt.ToString(),cs.groundspeed.ToString(),cs.groundcourse.ToString()};
+                    cs.satcount.ToString(),cs.lat.ToString(),cs.lng.ToString(),"0.0",cs.alt.ToString(),cs.alt.ToString(),cs.groundspeed.ToString(),cs.yaw.ToString()};
 
                     if (oldvalues.Length > 2 && oldvalues[latpos] == vals[latpos]
                         && oldvalues[lngpos] == vals[lngpos]
@@ -433,6 +434,7 @@ namespace ArdupilotMega
             this.label4 = new System.Windows.Forms.Label();
             this.label5 = new System.Windows.Forms.Label();
             this.label6 = new System.Windows.Forms.Label();
+            this.BUT_networklinkgeoref = new ArdupilotMega.Controls.MyButton();
             ((System.ComponentModel.ISupportInitialize)(this.numericUpDown1)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.numericUpDown2)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.numericUpDown3)).BeginInit();
@@ -492,7 +494,7 @@ namespace ArdupilotMega
             // BUT_Geotagimages
             // 
             this.BUT_Geotagimages.Enabled = false;
-            this.BUT_Geotagimages.Location = new System.Drawing.Point(223, 161);
+            this.BUT_Geotagimages.Location = new System.Drawing.Point(259, 161);
             this.BUT_Geotagimages.Name = "BUT_Geotagimages";
             this.BUT_Geotagimages.Size = new System.Drawing.Size(75, 23);
             this.BUT_Geotagimages.TabIndex = 9;
@@ -512,7 +514,7 @@ namespace ArdupilotMega
             // 
             // BUT_doit
             // 
-            this.BUT_doit.Location = new System.Drawing.Point(142, 161);
+            this.BUT_doit.Location = new System.Drawing.Point(97, 161);
             this.BUT_doit.Name = "BUT_doit";
             this.BUT_doit.Size = new System.Drawing.Size(75, 23);
             this.BUT_doit.TabIndex = 5;
@@ -633,9 +635,20 @@ namespace ArdupilotMega
             this.label6.TabIndex = 18;
             this.label6.Text = "Log Offsets";
             // 
+            // BUT_networklinkgeoref
+            // 
+            this.BUT_networklinkgeoref.Location = new System.Drawing.Point(178, 161);
+            this.BUT_networklinkgeoref.Name = "BUT_networklinkgeoref";
+            this.BUT_networklinkgeoref.Size = new System.Drawing.Size(75, 23);
+            this.BUT_networklinkgeoref.TabIndex = 19;
+            this.BUT_networklinkgeoref.Text = "Location Kml";
+            this.BUT_networklinkgeoref.UseVisualStyleBackColor = true;
+            this.BUT_networklinkgeoref.Click += new System.EventHandler(this.BUT_networklinkgeoref_Click);
+            // 
             // Georefimage
             // 
             this.ClientSize = new System.Drawing.Size(452, 362);
+            this.Controls.Add(this.BUT_networklinkgeoref);
             this.Controls.Add(this.label6);
             this.Controls.Add(this.label5);
             this.Controls.Add(this.label4);
@@ -811,6 +824,11 @@ namespace ArdupilotMega
                     Pic.Save(outputfilename);
                 }
             }
+        }
+
+        private void BUT_networklinkgeoref_Click(object sender, EventArgs e)
+        {
+            System.Diagnostics.Process.Start(Path.GetDirectoryName(Application.ExecutablePath) + Path.DirectorySeparatorChar + "m3u" + Path.DirectorySeparatorChar + "GeoRefnetworklink.kml");
         }
     }
 

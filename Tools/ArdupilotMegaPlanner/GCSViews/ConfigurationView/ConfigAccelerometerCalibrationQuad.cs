@@ -24,6 +24,8 @@ namespace ArdupilotMega.GCSViews.ConfigurationView
             {
                 MainV2.comPort.setParam("FRAME", 1f);
                 CustomMessageBox.Show("Set to x");
+
+                lbl_frame.Text = "X";
             }
             catch { CustomMessageBox.Show("Set frame failed"); }
         }
@@ -53,6 +55,7 @@ namespace ArdupilotMega.GCSViews.ConfigurationView
             {
                 MainV2.comPort.setParam("FRAME", 0f);
                 CustomMessageBox.Show("Set to +");
+                lbl_frame.Text = "+";
             }
             catch { CustomMessageBox.Show("Set frame failed"); }
         }
@@ -76,6 +79,12 @@ namespace ArdupilotMega.GCSViews.ConfigurationView
                     return;
                 }
             }
+
+            try
+            {
+                lbl_frame.Text = ((float)MainV2.comPort.param["FRAME"] == 0) ? "+" : "X";
+            }
+            catch { lbl_frame.Text = "Invalid Frame"; }
         }
     }
 }

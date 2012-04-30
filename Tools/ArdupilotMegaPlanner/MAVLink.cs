@@ -570,7 +570,6 @@ namespace ArdupilotMega
 
         }
         */
-
         public void getParamList()
         {
             frmProgressReporter = new ProgressReporterDialogue
@@ -2125,7 +2124,7 @@ namespace ArdupilotMega
 
             Array.Resize<byte>(ref temp, count);
 
-            if (packetlosttimer.AddSeconds(10) < DateTime.Now)
+            if (packetlosttimer.AddSeconds(5) < DateTime.Now)
             {
                 packetlosttimer = DateTime.Now;
                 packetslost = (packetslost * 0.8f);
@@ -2211,7 +2210,7 @@ namespace ArdupilotMega
                         {
                             synclost++; // actualy sync loss's
 
-                            if (temp[2] < ((recvpacketcount + 1) % 0x100))
+                            if (temp[2] < ((recvpacketcount + 1)))
                             {
                                 packetslost += 0x100 - recvpacketcount + temp[2];
                             }
@@ -2220,7 +2219,7 @@ namespace ArdupilotMega
                                 packetslost += temp[2] - recvpacketcount;
                             }
 
-                            log.InfoFormat("lost {0} pkts {1}", temp[2], (int)packetslost);
+                            log.InfoFormat("lost {0} pktslost {1}", temp[2], (int)packetslost);
                         }
 
                         packetsnotlost++;

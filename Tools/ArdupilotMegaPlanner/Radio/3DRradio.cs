@@ -16,37 +16,6 @@ namespace ArdupilotMega
 {
     public partial class _3DRradio : BackStageViewContentPanel
     {
-        /*
-responce 0 S0: FORMAT=25
-
-S1: SERIAL_SPEED=57
-
-S2: AIR_SPEED=64
-
-S3: NETID=25
-
-S4: TXPOWER=20
-
-S5: ECC=1
-
-S6: MAVLINK=1
-
-S7: OPPRESEND=1
-
-S8: MIN_FREQ=915000
-
-S9: MAX_FREQ=928000
-
-S10: NUM_CHANNELS=50
-
-S11: DUTY_CYCLE=100
-
-S12: LBT_RSSI=0
-
-S13: MANCHESTER=0
-
-         */
-
         public delegate void LogEventHandler(string message, int level = 0);
 
         public delegate void ProgressEventHandler(double completed);
@@ -634,7 +603,7 @@ S13: MANCHESTER=0
 
             Console.Write("Connect Version: " + version.Trim() + "\n");
 
-            if (version.Contains("on HM-TRP"))
+            if (version.Contains("SiK") && version.Contains("on")) // should use a regex....
             {
                 return true;
             }

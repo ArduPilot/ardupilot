@@ -43,6 +43,12 @@ namespace ArdupilotMega
 
             //Common.linearRegression();
 
+            if (System.Diagnostics.Debugger.IsAttached)
+            {
+                // testing
+               // Utilities.ParameterMetaDataParser.GetParameterInformation();
+            }
+
             try
             {
                 Thread.CurrentThread.Name = "Base Thread";

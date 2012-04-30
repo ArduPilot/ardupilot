@@ -14,7 +14,7 @@ using System.Drawing.Drawing2D;
 using log4net;
 using OpenTK;
 using OpenTK.Graphics.OpenGL;
-using OpenTK.Graphics;
+//using OpenTK.Graphics;
 
 
 // Control written by Michael Oborne 2011
@@ -192,7 +192,7 @@ namespace ArdupilotMega.Controls
                 try
                 {
 
-                    GraphicsMode test = this.GraphicsMode;
+                    OpenTK.Graphics.GraphicsMode test = this.GraphicsMode;
                     log.Info(test.ToString());
                     log.Info("Vendor: " + GL.GetString(StringName.Vendor));
                     log.Info("Version: " + GL.GetString(StringName.Version));
@@ -875,12 +875,18 @@ namespace ArdupilotMega.Controls
 
                 //draw centre / current att
 
-                Rectangle centercircle = new Rectangle(halfwidth - 10, halfheight - 10, 20, 20);
+                Rectangle centercircle = new Rectangle(halfwidth - halfwidth / 2, halfheight - halfwidth / 2, halfwidth, halfwidth);
 
-                graphicsObject.DrawEllipse(redPen, centercircle);
-                graphicsObject.DrawLine(redPen, centercircle.Left - 10, halfheight, centercircle.Left, halfheight);
-                graphicsObject.DrawLine(redPen, centercircle.Right, halfheight, centercircle.Right + 10, halfheight);
-                graphicsObject.DrawLine(redPen, centercircle.Left + centercircle.Width / 2, centercircle.Top, centercircle.Left + centercircle.Width / 2, centercircle.Top - 10);
+                //graphicsObject.DrawEllipse(redPen, centercircle);
+                Pen redtemp = new Pen(Color.FromArgb(200, redPen.Color.R, redPen.Color.G, redPen.Color.B));
+                redtemp.Width = 4.0f;
+                // left
+                graphicsObject.DrawLine(redtemp, centercircle.Left - halfwidth / 5, halfheight, centercircle.Left, halfheight);
+                // right
+                graphicsObject.DrawLine(redtemp, centercircle.Right, halfheight, centercircle.Right + halfwidth / 5, halfheight);
+                // center point
+                graphicsObject.DrawLine(redtemp, halfwidth-1, halfheight, centercircle.Right - halfwidth / 3, halfheight + halfheight / 10);
+                graphicsObject.DrawLine(redtemp, halfwidth+1, halfheight, centercircle.Left + halfwidth / 3, halfheight + halfheight / 10);
 
                 // draw roll ind
 
@@ -1347,8 +1353,8 @@ namespace ArdupilotMega.Controls
         // Returns a System.Drawing.Bitmap with the contents of the current framebuffer
         public new Bitmap GrabScreenshot()
         {
-            if (GraphicsContext.CurrentContext == null)
-                throw new GraphicsContextMissingException();
+            if (OpenTK.Graphics.GraphicsContext.CurrentContext == null)
+                throw new OpenTK.Graphics.GraphicsContextMissingException();
 
             Bitmap bmp = new Bitmap(this.ClientSize.Width, this.ClientSize.Height);
             System.Drawing.Imaging.BitmapData data =

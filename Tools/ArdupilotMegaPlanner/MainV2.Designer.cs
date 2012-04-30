@@ -187,6 +187,7 @@
             this.MenuConnect.Padding = new System.Windows.Forms.Padding(0, 0, 72, 72);
             this.MenuConnect.Size = new System.Drawing.Size(76, 76);
             this.MenuConnect.Click += new System.EventHandler(this.MenuConnect_Click);
+            this.MenuConnect.MouseHover += new System.EventHandler(this.MenuConnect_MouseHover);
             // 
             // toolStripConnectionControl
             // 
