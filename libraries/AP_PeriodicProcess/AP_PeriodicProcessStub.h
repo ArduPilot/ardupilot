@@ -13,11 +13,14 @@ class AP_PeriodicProcessStub : public AP_PeriodicProcess
         void init( Arduino_Mega_ISR_Registry * isr_reg );
         void register_process(ap_procedure proc);
         void set_failsafe(ap_procedure proc);
+        void suspend_timer(void);
+        void resume_timer(void);
         static void run(void);
     protected:
         static uint8_t _period;
         static void (*_proc)(void);
         static void (*_failsafe)(void);
+        static bool _suspended;
 };
 
 #endif
