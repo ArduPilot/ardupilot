@@ -490,6 +490,12 @@ namespace ArdupilotMega
                 return false;
             }
 
+            if ((float)param[paramname] == value)
+            {
+                log.Debug("setParam "+paramname + " not modified");
+                return true;
+            }
+
             MainV2.giveComport = true;
 
             mavlink_param_set_t req = new mavlink_param_set_t();
