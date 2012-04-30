@@ -111,7 +111,9 @@ void AP_InertialSensor_MPU6000::init( AP_PeriodicProcess * scheduler )
 {
     if (_initialised) return;
     _initialised = 1;
+    scheduler->suspend_timer();
     hardware_init();
+    scheduler->resume_timer();
     scheduler->register_process( &AP_InertialSensor_MPU6000::read );
 }
 
