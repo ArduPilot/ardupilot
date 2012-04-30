@@ -624,7 +624,7 @@
 # define NAV_ROLL_P           0.7
 #endif
 #ifndef NAV_ROLL_I
-# define NAV_ROLL_I           0.0
+# define NAV_ROLL_I           0.1
 #endif
 #ifndef NAV_ROLL_D
 # define NAV_ROLL_D           0.02
@@ -637,7 +637,7 @@
 # define NAV_PITCH_ASP_P      0.65
 #endif
 #ifndef NAV_PITCH_ASP_I
-# define NAV_PITCH_ASP_I      0.0
+# define NAV_PITCH_ASP_I      0.1
 #endif
 #ifndef NAV_PITCH_ASP_D
 # define NAV_PITCH_ASP_D      0.0
@@ -650,7 +650,7 @@
 # define NAV_PITCH_ALT_P      0.65
 #endif
 #ifndef NAV_PITCH_ALT_I
-# define NAV_PITCH_ALT_I      0.0
+# define NAV_PITCH_ALT_I      0.1
 #endif
 #ifndef NAV_PITCH_ALT_D
 # define NAV_PITCH_ALT_D      0.0
