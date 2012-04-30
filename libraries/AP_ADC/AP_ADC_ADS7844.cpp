@@ -133,6 +133,7 @@ AP_ADC_ADS7844::AP_ADC_ADS7844()
 // Public Methods //////////////////////////////////////////////////////////////
 void AP_ADC_ADS7844::Init( AP_PeriodicProcess * scheduler )
 {
+    scheduler->suspend_timer();
 	pinMode(ADC_CHIP_SELECT, OUTPUT);
 
 	digitalWrite(ADC_CHIP_SELECT, HIGH);  // Disable device (Chip select is active low)
@@ -159,6 +160,7 @@ void AP_ADC_ADS7844::Init( AP_PeriodicProcess * scheduler )
 
 	last_ch6_micros = micros();
 
+    scheduler->resume_timer();
     scheduler->register_process( AP_ADC_ADS7844::read );
 
 }
