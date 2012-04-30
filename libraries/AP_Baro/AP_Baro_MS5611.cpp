@@ -113,6 +113,8 @@ void AP_Baro_MS5611::_spi_write(uint8_t reg)
 // SPI should be initialized externally
 bool AP_Baro_MS5611::init( AP_PeriodicProcess *scheduler )
 {
+    scheduler->suspend_timer();
+
 	pinMode(MS5611_CS, OUTPUT);	 // Chip select Pin
 	digitalWrite(MS5611_CS, HIGH);
 	delay(1);
@@ -137,6 +139,7 @@ bool AP_Baro_MS5611::init( AP_PeriodicProcess *scheduler )
 	Temp=0;
 	Press=0;
 
+    scheduler->resume_timer();
 	scheduler->register_process( AP_Baro_MS5611::_update );
 
 	healthy = true;
