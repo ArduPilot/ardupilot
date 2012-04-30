@@ -33,7 +33,7 @@ namespace ArdupilotMega.Utilities
          {
             // Use this to find the endpoint node we are looking for
             // Either it will be pulled from a file in the ArduPlane hierarchy or the ArduCopter hierarchy
-            var element = _parameterMetaDataXML.Element(MainV2.cs.firmware.ToString());
+            var element = _parameterMetaDataXML.Element("Params").Element(MainV2.cs.firmware.ToString());
             if(element != null && element.HasElements)
             {
                var node = element.Element(nodeKey);
