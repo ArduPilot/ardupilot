@@ -7,6 +7,7 @@ using System.Linq;
 using System.Text;
 using System.Windows.Forms;
 using ArdupilotMega.Controls.BackstageView;
+using ArdupilotMega.Utilities;
 
 namespace ArdupilotMega.GCSViews.ConfigurationView
 {
@@ -55,7 +56,9 @@ namespace ArdupilotMega.GCSViews.ConfigurationView
                     this.backstageView.AddPage(new BackstageView.BackstageViewPage(new ConfigArduplane(), "ArduPlane Config"));
                 }
 
-                this.backstageView.AddPage(new BackstageView.BackstageViewPage(new ConfigRawParams(), "Raw params (Adv)"));
+                this.backstageView.AddPage(new BackstageView.BackstageViewPage(new ConfigFriendlyParams { ParameterMode = ParameterMetaDataConstants.Standard }, "Standard Params"));
+                this.backstageView.AddPage(new BackstageView.BackstageViewPage(new ConfigFriendlyParams { ParameterMode = ParameterMetaDataConstants.Advanced }, "Advanced Params"));
+                this.backstageView.AddPage(new BackstageView.BackstageViewPage(new ConfigRawParams(), "Parameter List"));
             }
 
             
