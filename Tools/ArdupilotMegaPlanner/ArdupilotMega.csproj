@@ -226,6 +226,25 @@
     <Compile Include="Attributes\DisplayTextAttribute.cs" />
     <Compile Include="Attributes\PrivateAttribute.cs" />
     <Compile Include="CodeGen.cs" />
+    <Compile Include="Controls\IDynamicParameterControl.cs" />
+    <Compile Include="GCSViews\ConfigurationView\ConfigFriendlyParams.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="GCSViews\ConfigurationView\ConfigFriendlyParams.Designer.cs">
+      <DependentUpon>ConfigFriendlyParams.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Controls\RangeControl.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="Controls\RangeControl.Designer.cs">
+      <DependentUpon>RangeControl.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Controls\ValuesControl.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="Controls\ValuesControl.Designer.cs">
+      <DependentUpon>ValuesControl.cs</DependentUpon>
+    </Compile>
     <Compile Include="Utilities\CollectionExtensions.cs" />
     <Compile Include="Utilities\ParameterMetaDataConstants.cs" />
     <Compile Include="Controls\BackstageView\BackstageView.cs">
@@ -692,6 +711,9 @@
     <EmbeddedResource Include="GCSViews\ConfigurationView\ConfigRawParams.resx">
       <DependentUpon>ConfigRawParams.cs</DependentUpon>
     </EmbeddedResource>
+    <EmbeddedResource Include="GCSViews\ConfigurationView\ConfigFriendlyParams.resx">
+      <DependentUpon>ConfigFriendlyParams.cs</DependentUpon>
+    </EmbeddedResource>
     <EmbeddedResource Include="GCSViews\ConfigurationView\ConfigTradHeli.es-ES.resx">
       <DependentUpon>ConfigTradHeli.cs</DependentUpon>
     </EmbeddedResource>
@@ -733,6 +755,12 @@
     </EmbeddedResource>
     <EmbeddedResource Include="GCSViews\ConfigurationView\ConfigAccelerometerCalibrationPlane.zh-TW.resx">
       <DependentUpon>ConfigAccelerometerCalibrationPlane.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Controls\RangeControl.resx">
+      <DependentUpon>RangeControl.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Controls\ValuesControl.resx">
+      <DependentUpon>ValuesControl.cs</DependentUpon>
     </EmbeddedResource>
     <EmbeddedResource Include="GCSViews\ConfigurationView\Setup.resx">
       <DependentUpon>Setup.cs</DependentUpon>
@@ -1077,7 +1105,9 @@
     <None Include="AeroSimRCAPMHil.zip">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
-    <None Include="app.config" />
+    <None Include="app.config">
+      <SubType>Designer</SubType>
+    </None>
     <None Include="arducopter-xplane.zip">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>

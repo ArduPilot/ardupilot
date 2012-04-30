@@ -21,6 +21,7 @@ namespace ArdupilotMega
     {
         private static readonly ILog log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
         public ICommsSerial BaseStream = new SerialPort();
+        public event EventHandler ParamListChanged;
 
         private const double CONNECT_TIMEOUT_SECONDS = 30;
 
@@ -569,6 +570,7 @@ namespace ArdupilotMega
 
         }
         */
+
         public void getParamList()
         {
             frmProgressReporter = new ProgressReporterDialogue
@@ -582,6 +584,11 @@ namespace ArdupilotMega
             ThemeManager.ApplyThemeTo(frmProgressReporter);
 
             frmProgressReporter.RunBackgroundOperationAsync();
+
+            if (ParamListChanged != null)
+            {
+               ParamListChanged(this, null);
+            }
         }
 
         void FrmProgressReporterGetParams(object sender, ProgressWorkerEventArgs e)

@@ -18,6 +18,16 @@
       public const string Description = "Description";
       public const string Units = "Units";
       public const string Range = "Range";
+      public const string Values = "Values";
+      public const string Increment = "Increment";
+      public const string User = "User";
+
+      #endregion
+
+      #region Meta Values
+
+      public const string Advanced = "Advanced";
+      public const string Standard = "Standard";
 
       #endregion
    }

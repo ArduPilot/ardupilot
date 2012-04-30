@@ -1207,21 +1207,13 @@ namespace ArdupilotMega
                 Name = "Main Serial reader"
             }.Start();
 
-            // check for updates
-            if (Debugger.IsAttached)
+            try
             {
-                log.Info("Skipping update test as it appears we are debugging");
+               CheckForUpdate();
             }
-            else
+            catch (Exception ex)
             {
-                try
-                {
-                    CheckForUpdate();
-                }
-                catch (Exception ex)
-                {
-                    log.Error("Update check failed", ex);
-                }
+               log.Error("Update check failed", ex);
             }
         }
 
@@ -1741,7 +1733,16 @@ namespace ArdupilotMega
            #endregion Fetch Parameter Meta Data
 
            progressReporterDialogue.UpdateProgressAndStatus(-1, "Getting Base URL");
-           MainV2.updateCheckMain(progressReporterDialogue);
+
+           // check for updates
+           if (Debugger.IsAttached)
+           {
+              log.Info("Skipping update test as it appears we are debugging");
+           }
+           else
+           {
+              MainV2.updateCheckMain(progressReporterDialogue);
+           }
         }
 
         private static bool updateCheck(ProgressReporterDialogue frmProgressReporter, string baseurl, string subdir)
