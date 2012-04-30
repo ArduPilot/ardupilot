@@ -17,7 +17,7 @@ public:
 	AP_AHRS_DCM(IMU *imu, GPS *&gps) : AP_AHRS(imu, gps)
 	{
 		_kp_roll_pitch = 0.13;
-		_kp_yaw.set(0.4);
+		_kp_yaw.set(0.2);
 		_dcm_matrix(Vector3f(1, 0, 0),
 			    Vector3f(0, 1, 0),
 			    Vector3f(0, 0, 1));
