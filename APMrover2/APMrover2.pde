@@ -16,7 +16,7 @@ License as published by the Free Software Foundation; either
 version 2.1 of the License, or (at your option) any later version.
 
 //
-// JLN updates: last update 2012-04-30
+// JLN updates: last update 2012-05-01
 //
 // DOLIST:
 //  
@@ -24,6 +24,7 @@ version 2.1 of the License, or (at your option) any later version.
 //-------------------------------------------------------------------------------------------------------------------------
 // Dev Startup : 2012-04-21
 //
+//  2012-04-30: Successfully tested in autonomous nav with a waypoints list recorded in live mode
 //  2012-04-30: Now a full version for APM v1 or APM v2 with magnetometer
 //  2012-04-27: Cosmetic changes
 //  2012-04-26: Only one PID (pidNavRoll) for steering the wheel with nav_roll
@@ -48,7 +49,7 @@ version 2.1 of the License, or (at your option) any later version.
 // Ch3: to the motor ESC
 // Ch4: not used
 //
-// more infos this experimental version: http://diydrones.com/profile/JeanLouisNaudin
+// more infos about this experimental version: http://diydrones.com/profile/JeanLouisNaudin
 // =======================================================================================================
 */
 

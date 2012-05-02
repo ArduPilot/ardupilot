@@ -349,8 +349,8 @@ static void set_mode(byte mode)
 			break;
 
 		case AUTO:
-                        reload_commands();
-			update_auto();
+                        change_command(1); // restart to the 1st stored wp
+			//update_auto();
 			break;
 
 		case RTL:
@@ -366,7 +366,7 @@ static void set_mode(byte mode)
 			break;
 
 		default:
-			//do_RTL();
+			do_RTL();
 			break;
 	}
 

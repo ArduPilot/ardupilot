@@ -12,7 +12,7 @@
 
 #define AIRSPEED_SENSOR	    DISABLED
 #define MAGNETOMETER	    ENABLED
-#define LOGGING_ENABLED	    DISABLED
+#define LOGGING_ENABLED	    ENABLED
 
 //////////////////////////////////////////////////////////////////////////////
 // Serial port speeds.
@@ -413,7 +413,7 @@
 // Also, set the value of USE_CURRENT_ALT in meters.  This is mainly intended to allow
 // users to start using the APM without running the WaypointWriter first.
 //
-#define WP_RADIUS_DEFAULT       3   // meters
+#define WP_RADIUS_DEFAULT       5   // meters
 #define LOITER_RADIUS_DEFAULT	10   // 60
 #define USE_CURRENT_ALT		TRUE
 #define ALT_HOLD_HOME		0
