@@ -14,6 +14,9 @@
 #define MAGNETOMETER	    ENABLED
 #define LOGGING_ENABLED	    ENABLED
 
+#define MAG_ORIENTATION		AP_COMPASS_COMPONENTS_UP_PINS_FORWARD
+#define PARAM_DECLINATION       0.18  // Paris
+
 //////////////////////////////////////////////////////////////////////////////
 // Serial port speeds.
 //

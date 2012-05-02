@@ -1,6 +1,6 @@
 /// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 
-#define THISFIRMWARE "APMrover v2.0a JL NAUDIN" //New version of the APMrover for the APM v1 or APM v2 and magnetometer
+#define THISFIRMWARE "APMrover v2.0b JL NAUDIN" //New version of the APMrover for the APM v1 or APM v2 and magnetometer
 
 // This is a full version of Arduplane v2.32 specially adapted for a Rover by Jean-Louis Naudin (JLN) 
 
@@ -24,6 +24,7 @@ version 2.1 of the License, or (at your option) any later version.
 //-------------------------------------------------------------------------------------------------------------------------
 // Dev Startup : 2012-04-21
 //
+//  2012-05-01: special update for rover about ground_course if compass is enabled
 //  2012-04-30: Successfully tested in autonomous nav with a waypoints list recorded in live mode
 //  2012-04-30: Now a full version for APM v1 or APM v2 with magnetometer
 //  2012-04-27: Cosmetic changes
@@ -1046,8 +1047,13 @@ static void update_GPS(void)
 		current_loc.lng = g_gps->longitude;    // Lon * 10**7
 		current_loc.lat = g_gps->latitude;     // Lat * 10**7
                 current_loc.alt = max((g_gps->altitude - home.alt),0);
-                ground_course   = g_gps->ground_course;
                 ground_speed   = g_gps->ground_speed;
+                if (g.compass_enabled) {
+                  ground_course = (wrap_360(ToDeg(compass.heading) * 100));
+                } else {            
+                  ground_course = g_gps->ground_course;
+                }
+
 
         // see if we've breached the geo-fence
         geofence_check(false);

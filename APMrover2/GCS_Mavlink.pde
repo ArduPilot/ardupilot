@@ -317,7 +317,9 @@ static void NOINLINE send_location(mavlink_channel_t chan)
         g_gps->ground_speed * rot.a.x,  // X speed cm/s
         g_gps->ground_speed * rot.b.x,  // Y speed cm/s
         g_gps->ground_speed * rot.c.x,
-        g_gps->ground_course);          // course in 1/100 degree
+        //g_gps->ground_course);          // course in 1/100 degree
+        ground_course);          // course in 1/100 degree
+
 }
 
 static void NOINLINE send_nav_controller_output(mavlink_channel_t chan)
@@ -355,7 +357,8 @@ static void NOINLINE send_gps_raw(mavlink_channel_t chan)
         g_gps->hdop,
         65535,
         g_gps->ground_speed,  // cm/s
-        g_gps->ground_course, // 1/100 degrees,
+        //g_gps->ground_course, // 1/100 degrees,
+        ground_course, // 1/100 degrees,
         g_gps->num_sats);
 
 #else // MAVLINK10
@@ -369,7 +372,9 @@ static void NOINLINE send_gps_raw(mavlink_channel_t chan)
             g_gps->hdop,
             0.0,
             g_gps->ground_speed / 100.0,
-            g_gps->ground_course / 100.0);
+            //ground_course = (wrap_360(ToDeg(compass.heading) * 100));
+            //g_gps->ground_course / 100.0);
+            ground_course / 100.0);
 #endif  // MAVLINK10
 }
 
