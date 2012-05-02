@@ -63,7 +63,7 @@ static void navigate()
 // Disabled for now
 void calc_distance_error()
 {
-	distance_estimate 	+= (float)g_gps->ground_speed * .0002 * cos(radians(bearing_error * .01));
+	distance_estimate 	+= (float)ground_speed * .0002 * cos(radians(bearing_error * .01));
 	distance_estimate 	-= DST_EST_GAIN * (float)(distance_estimate - GPS_wp_distance);
 	wp_distance  		= max(distance_estimate,10);
 }
@@ -118,7 +118,7 @@ static long wrap_180(long error)
 
 static void calc_turn_radius()    // JLN update - adjut automaticaly the wp_radius Vs the speed and the turn angle
 {
-  wp_radius = g_gps->ground_speed * 150 / g.roll_limit.get();
+  wp_radius = ground_speed * 150 / g.roll_limit.get();
   //Serial.println(wp_radius, DEC);
 }
 

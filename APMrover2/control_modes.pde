@@ -66,7 +66,10 @@ if (g.ch7_option == CH7_SAVE_WP){         // set to 1
 				if(control_mode == MANUAL){          // if SW7 is ON in MANUAL = Erase the Flight Plan
 					// reset the mission
 					CH7_wp_index = 0;
-					g.command_total.set_and_save(CH7_wp_index);                                       
+					g.command_total.set_and_save(CH7_wp_index);
+                                        g.command_total = 0;
+                                        g.command_index =0;
+                                        nav_command_index = 0;
                                         #if X_PLANE == ENABLED
                                                 Serial.printf_P(PSTR("*** RESET the FPL\n"));
                                         #endif
@@ -81,7 +84,10 @@ if (g.ch7_option == CH7_SAVE_WP){         // set to 1
     
                                   // store the index
                                   g.command_total.set_and_save(CH7_wp_index);
-                                  
+                                  g.command_total = CH7_wp_index;
+                                  g.command_index = CH7_wp_index;
+                                  nav_command_index = 0;
+                                   
         			  // save command
         			  set_cmd_with_index(current_loc, CH7_wp_index);
                                                                              
