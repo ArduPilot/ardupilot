@@ -356,8 +356,8 @@ static void Log_Write_GPS(	int32_t log_Time, int32_t log_Lattitude, int32_t log_
 	DataFlash.WriteLong(log_gps_alt);
 	DataFlash.WriteLong(log_Ground_Speed);
 	DataFlash.WriteLong(log_Ground_Course);
-	DataFlash.WriteInt((int16_t)Vz);
-	DataFlash.WriteInt((int16_t)delta_Vz);
+	DataFlash.WriteInt(0);
+	DataFlash.WriteInt(0);
 	DataFlash.WriteInt((int)airspeed);
 	DataFlash.WriteByte(END_BYTE);
 }
