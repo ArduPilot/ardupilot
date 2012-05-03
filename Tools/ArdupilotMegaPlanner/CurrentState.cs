@@ -883,7 +883,7 @@ namespace ArdupilotMega
 
                     //climbrate = vfr.climb;
 
-                    if ((DateTime.Now - lastalt).TotalSeconds >= 0.1 && oldalt != alt)
+                    if ((DateTime.Now - lastalt).TotalSeconds >= 0.2 && oldalt != alt)
                     {
                         climbrate = (alt - oldalt) / (float)(DateTime.Now - lastalt).TotalSeconds;
                         verticalspeed = (alt - oldalt) / (float)(DateTime.Now - lastalt).TotalSeconds;

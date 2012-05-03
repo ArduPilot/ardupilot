@@ -46,7 +46,7 @@ namespace ArdupilotMega
             if (System.Diagnostics.Debugger.IsAttached)
             {
                 // testing
-                Utilities.ParameterMetaDataParser.GetParameterInformation();
+             //   Utilities.ParameterMetaDataParser.GetParameterInformation();
             }
 
             try
