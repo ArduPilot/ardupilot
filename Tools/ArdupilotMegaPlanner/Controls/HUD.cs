@@ -340,9 +340,12 @@ namespace ArdupilotMega.Controls
                 GL.Color4(penn.Color);
 
                 GL.Begin(BeginMode.LineStrip);
-                start -= 90;
+
+                start = 360 - start;
+                start -= 30;
+ 
                 float x = 0, y = 0;
-                for (int i = (int)start; i <= start + degrees; i++)
+                for (float i = start; i <= start + degrees; i++)
                 {
                     x = (float)Math.Sin(i * deg2rad) * rect.Width / 2;
                     y = (float)Math.Cos(i * deg2rad) * rect.Height / 2;
@@ -813,7 +816,7 @@ namespace ArdupilotMega.Controls
                 for (int a = -90; a <= 90; a += 5)
                 {
                     // limit to 40 degrees
-                    if (a >= _pitch - 34 && a <= _pitch + 25)
+                    if (a >= _pitch - 29 && a <= _pitch + 20)
                     {
                         if (a % 10 == 0)
                         {
@@ -841,7 +844,7 @@ namespace ArdupilotMega.Controls
 
                 graphicsObject.TranslateTransform(this.Width / 2, this.Height / 2 + this.Height / 14);
 
-                graphicsObject.RotateTransform(-_roll);
+               // graphicsObject.RotateTransform(_roll);
 
                 Point[] pointlist = new Point[3];
 
@@ -862,16 +865,24 @@ namespace ArdupilotMega.Controls
 
                 redPen.Width = 2;
 
-                for (int a = -45; a <= 45; a += 15)
+                int[] array = new int[] { -60,-45, -30,-20,-10,0,10,20,30,45,60 };
+
+                foreach (int a in array)
                 {
                     graphicsObject.ResetTransform();
                     graphicsObject.TranslateTransform(this.Width / 2, this.Height / 2 + this.Height / 14);
-                    graphicsObject.RotateTransform(a);
+                    graphicsObject.RotateTransform(a - _roll);
                     drawstring(graphicsObject, Math.Abs(a).ToString("##"), font, fontsize, whiteBrush, 0 - 6 - fontoffset, -lengthlong * 2 - extra);
                     graphicsObject.DrawLine(whitePen, 0, -halfheight, 0, -halfheight - 10);
                 }
 
                 graphicsObject.ResetTransform();
+
+                // draw roll ind
+
+                Rectangle arcrect = new Rectangle(this.Width / 2 - this.Height / 2, this.Height / 14, this.Height, this.Height);
+
+                graphicsObject.DrawArc(whitePen, arcrect, 180 + 30 + -_roll, 120);
 
                 //draw centre / current att
 
@@ -887,12 +898,6 @@ namespace ArdupilotMega.Controls
                 // center point
                 graphicsObject.DrawLine(redtemp, halfwidth-1, halfheight, centercircle.Right - halfwidth / 3, halfheight + halfheight / 10);
                 graphicsObject.DrawLine(redtemp, halfwidth+1, halfheight, centercircle.Left + halfwidth / 3, halfheight + halfheight / 10);
-
-                // draw roll ind
-
-                Rectangle arcrect = new Rectangle(this.Width / 2 - this.Height / 2, this.Height / 14, this.Height, this.Height);
-
-                graphicsObject.DrawArc(whitePen, arcrect, 180 + 45, 90);
 
                 //draw heading ind
 
@@ -912,8 +917,8 @@ namespace ArdupilotMega.Controls
                 //bottom line
                 graphicsObject.DrawLine(whitePen, headbg.Left + 5, headbg.Bottom - 5, headbg.Width - 5, headbg.Bottom - 5);
 
-                float space = (headbg.Width - 10) / 60.0f;
-                int start = (int)Math.Round((_heading - 30),1);
+                float space = (headbg.Width - 10) / 120.0f;
+                int start = (int)Math.Round((_heading - 60),1);
 
                 // draw for outside the 60 deg
                 if (_targetheading < start)
@@ -921,13 +926,13 @@ namespace ArdupilotMega.Controls
                     greenPen.Width = 6;
                     graphicsObject.DrawLine(greenPen, headbg.Left + 5 + space * 0, headbg.Bottom, headbg.Left + 5 + space * (0), headbg.Top);
                 }
-                if (_targetheading > _heading + 30)
+                if (_targetheading > _heading + 60)
                 {
                     greenPen.Width = 6;
                     graphicsObject.DrawLine(greenPen, headbg.Left + 5 + space * 60, headbg.Bottom, headbg.Left + 5 + space * (60), headbg.Top);
                 }
 
-                for (int a = start; a <= _heading + 30; a += 1)
+                for (int a = start; a <= _heading + 60; a += 1)
                 {
                     // target heading
                     if (((int)(a + 360) % 360) == (int)_targetheading)
@@ -943,7 +948,7 @@ namespace ArdupilotMega.Controls
                         blackPen.Width = 2;
                     }
 
-                    if ((int)a % 5 == 0)
+                    if ((int)a % 15 == 0)
                     {
                         //Console.WriteLine(a + " " + Math.Round(a, 1, MidpointRounding.AwayFromZero));
                         //Console.WriteLine(space +" " + a +" "+ (headbg.Left + 5 + space * (a - start)));
@@ -973,7 +978,19 @@ namespace ArdupilotMega.Controls
                             drawstring(graphicsObject, (disp % 360).ToString().PadLeft(3), font, fontsize, whiteBrush, headbg.Left - 5 + space * (a - start) - fontoffset, headbg.Bottom - 24 - (int)(fontoffset * 1.7));
                         }
                     }
+                    else if ((int)a % 5 == 0)
+                    {
+                        graphicsObject.DrawLine(whitePen, headbg.Left + 5 + space * (a - start), headbg.Bottom - 5, headbg.Left + 5 + space * (a - start), headbg.Bottom - 10);
+                    }
                 }
+
+                RectangleF rect = new RectangleF(headbg.Width / 2 - fontoffset - fontoffset, 0, fontoffset * 4, (int)(fontoffset * 1.7) + 24);
+
+                DrawRectangle(whitePen, rect);
+
+                FillRectangle(Brushes.Black, rect);
+
+                drawstring(graphicsObject, (heading % 360).ToString("0").PadLeft(3), font, fontsize, whiteBrush, headbg.Width / 2 - fontoffset - fontoffset, headbg.Bottom - 24 - (int)(fontoffset * 1.7));
 
                 //                Console.WriteLine("HUD 0 " + (DateTime.Now - starttime).TotalMilliseconds + " " + DateTime.Now.Millisecond);
 

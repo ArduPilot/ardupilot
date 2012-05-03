@@ -245,95 +245,99 @@ namespace ArdupilotMega.GCSViews.ConfigurationView
          {
             if(!String.IsNullOrEmpty(x.Key))
             {
-               bool controlAdded = false;
+                try
+                {
+                    bool controlAdded = false;
 
-               string value = ((float)MainV2.comPort.param[x.Key]).ToString("0.###");
-               string description = _parameterMetaDataRepository.GetParameterMetaData(x.Key, ParameterMetaDataConstants.Description);
-               string displayName = x.Value;
-               string units = _parameterMetaDataRepository.GetParameterMetaData(x.Key, ParameterMetaDataConstants.Units);
-                  
-               // If this is a range
-               string rangeRaw = _parameterMetaDataRepository.GetParameterMetaData(x.Key, ParameterMetaDataConstants.Range);
-               string incrementRaw = _parameterMetaDataRepository.GetParameterMetaData(x.Key, ParameterMetaDataConstants.Increment);
-               if (!String.IsNullOrEmpty(rangeRaw) && !String.IsNullOrEmpty(incrementRaw))
-               {
-                  float increment, intValue;
-                  float.TryParse(incrementRaw, out increment);
-                  float.TryParse(value, out intValue);
+                    string value = ((float)MainV2.comPort.param[x.Key]).ToString("0.###");
+                    string description = _parameterMetaDataRepository.GetParameterMetaData(x.Key, ParameterMetaDataConstants.Description);
+                    string displayName = x.Value;
+                    string units = _parameterMetaDataRepository.GetParameterMetaData(x.Key, ParameterMetaDataConstants.Units);
 
-                  string[] rangeParts = rangeRaw.Split(new[] { ' ' });
-                  if (rangeParts.Count() == 2 && increment > 0)
-                  {
-                     float lowerRange;
-                     float.TryParse(rangeParts[0], out lowerRange);
-                     float upperRange;
-                     float.TryParse(rangeParts[1], out upperRange);
+                    // If this is a range
+                    string rangeRaw = _parameterMetaDataRepository.GetParameterMetaData(x.Key, ParameterMetaDataConstants.Range);
+                    string incrementRaw = _parameterMetaDataRepository.GetParameterMetaData(x.Key, ParameterMetaDataConstants.Increment);
+                    if (!String.IsNullOrEmpty(rangeRaw) && !String.IsNullOrEmpty(incrementRaw))
+                    {
+                        float increment, intValue;
+                        float.TryParse(incrementRaw, out increment);
+                        float.TryParse(value, out intValue);
 
-                     int scaler = (int)float.Parse((1 / increment).ToString(CultureInfo.InvariantCulture));
-                     int scaledLowerRange = 0, scaledUpperRange = 0;
-                     int scaledIncrement = (int)increment;
-                     if(scaler > 0)
-                     {
-                        scaledLowerRange = (int)(lowerRange * scaler);
-                        scaledUpperRange = (int)(upperRange * scaler);
-                        scaledIncrement = (int)float.Parse((increment * scaler).ToString(CultureInfo.InvariantCulture));
-                        intValue *= scaler;
-                     }
-
-                     var rangeControl = new RangeControl();
-                     rangeControl.Name = x.Key;
-                     rangeControl.Scaler = scaler;
-                     rangeControl.DescriptionText = FitDescriptionText(units, description);
-                     rangeControl.LabelText = displayName;
-                     rangeControl.TrackBarControl.Minimum = scaledLowerRange;
-                     rangeControl.TrackBarControl.Maximum = scaledUpperRange;
-                     rangeControl.TrackBarControl.TickFrequency = scaledIncrement;
-                     rangeControl.TrackBarControl.Value = (int)intValue;
-
-                     rangeControl.NumericUpDownControl.Increment = (decimal)increment;
-                     rangeControl.NumericUpDownControl.DecimalPlaces = scaler.ToString(CultureInfo.InvariantCulture).Length - 1;
-                     rangeControl.NumericUpDownControl.Minimum = (decimal) lowerRange;
-                     rangeControl.NumericUpDownControl.Maximum = (decimal)upperRange;
-                     rangeControl.NumericUpDownControl.Value = (decimal)((float)MainV2.comPort.param[x.Key]);
-
-                     rangeControl.AttachEvents();
-
-                     tableLayoutPanel1.Controls.Add(rangeControl);
-
-                     controlAdded = true;
-                  }
-               }
-
-               if (!controlAdded)
-               {
-                  // If this is a subset of values
-                  string availableValuesRaw = _parameterMetaDataRepository.GetParameterMetaData(x.Key, ParameterMetaDataConstants.Values);
-                  if (!String.IsNullOrEmpty(availableValuesRaw))
-                  {
-                     string[] availableValues = availableValuesRaw.Split(new[] { ',' });
-                     if (availableValues.Any())
-                     {
-                        var valueControl = new ValuesControl();
-                        valueControl.Name = x.Key;
-                        valueControl.DescriptionText = FitDescriptionText(units, description);
-                        valueControl.LabelText = displayName;
-
-                        var splitValues = new List<KeyValuePair<string, string>>();
-                        // Add the values to the ddl
-                        availableValues.ForEach(val =>
+                        string[] rangeParts = rangeRaw.Split(new[] { ' ' });
+                        if (rangeParts.Count() == 2 && increment > 0)
                         {
-                           string[] valParts = val.Split(new[]{ ':' });
-                           splitValues.Add(new KeyValuePair<string, string>(valParts[0], (valParts.Length > 1) ? valParts[1] : valParts[0]));
-                        });
-                        valueControl.ComboBoxControl.DisplayMember = "Value";
-                        valueControl.ComboBoxControl.ValueMember = "Key";
-                        valueControl.ComboBoxControl.DataSource = splitValues;
-                        valueControl.ComboBoxControl.SelectedValue = value;
+                            float lowerRange;
+                            float.TryParse(rangeParts[0], out lowerRange);
+                            float upperRange;
+                            float.TryParse(rangeParts[1], out upperRange);
 
-                        tableLayoutPanel1.Controls.Add(valueControl);
-                     }
-                  }
-               }
+                            int scaler = (int)float.Parse((1 / increment).ToString(CultureInfo.InvariantCulture));
+                            int scaledLowerRange = 0, scaledUpperRange = 0;
+                            int scaledIncrement = (int)increment;
+                            if (scaler > 0)
+                            {
+                                scaledLowerRange = (int)(lowerRange * scaler);
+                                scaledUpperRange = (int)(upperRange * scaler);
+                                scaledIncrement = (int)float.Parse((increment * scaler).ToString(CultureInfo.InvariantCulture));
+                                intValue *= scaler;
+                            }
+
+                            var rangeControl = new RangeControl();
+                            rangeControl.Name = x.Key;
+                            rangeControl.Scaler = scaler;
+                            rangeControl.DescriptionText = FitDescriptionText(units, description);
+                            rangeControl.LabelText = displayName;
+                            rangeControl.TrackBarControl.Minimum = scaledLowerRange;
+                            rangeControl.TrackBarControl.Maximum = scaledUpperRange;
+                            rangeControl.TrackBarControl.TickFrequency = scaledIncrement;
+                            rangeControl.TrackBarControl.Value = (int)intValue;
+
+                            rangeControl.NumericUpDownControl.Increment = (decimal)increment;
+                            rangeControl.NumericUpDownControl.DecimalPlaces = scaler.ToString(CultureInfo.InvariantCulture).Length - 1;
+                            rangeControl.NumericUpDownControl.Minimum = (decimal)lowerRange;
+                            rangeControl.NumericUpDownControl.Maximum = (decimal)upperRange;
+                            rangeControl.NumericUpDownControl.Value = (decimal)((float)MainV2.comPort.param[x.Key]);
+
+                            rangeControl.AttachEvents();
+
+                            tableLayoutPanel1.Controls.Add(rangeControl);
+
+                            controlAdded = true;
+                        }
+                    }
+
+                    if (!controlAdded)
+                    {
+                        // If this is a subset of values
+                        string availableValuesRaw = _parameterMetaDataRepository.GetParameterMetaData(x.Key, ParameterMetaDataConstants.Values);
+                        if (!String.IsNullOrEmpty(availableValuesRaw))
+                        {
+                            string[] availableValues = availableValuesRaw.Split(new[] { ',' });
+                            if (availableValues.Any())
+                            {
+                                var valueControl = new ValuesControl();
+                                valueControl.Name = x.Key;
+                                valueControl.DescriptionText = FitDescriptionText(units, description);
+                                valueControl.LabelText = displayName;
+
+                                var splitValues = new List<KeyValuePair<string, string>>();
+                                // Add the values to the ddl
+                                availableValues.ForEach(val =>
+                                {
+                                    string[] valParts = val.Split(new[] { ':' });
+                                    splitValues.Add(new KeyValuePair<string, string>(valParts[0], (valParts.Length > 1) ? valParts[1] : valParts[0]));
+                                });
+                                valueControl.ComboBoxControl.DisplayMember = "Value";
+                                valueControl.ComboBoxControl.ValueMember = "Key";
+                                valueControl.ComboBoxControl.DataSource = splitValues;
+                                valueControl.ComboBoxControl.SelectedValue = value;
+
+                                tableLayoutPanel1.Controls.Add(valueControl);
+                            }
+                        }
+                    }
+                } // if there is an error simply dont show it, ie bad pde file, bad scale etc
+                catch (Exception ex) { log.Error(ex); }
             }
          });
         }

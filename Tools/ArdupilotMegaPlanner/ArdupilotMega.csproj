@@ -231,6 +231,12 @@
     <Compile Include="Attributes\DisplayTextAttribute.cs" />
     <Compile Include="Attributes\PrivateAttribute.cs" />
     <Compile Include="CodeGen.cs" />
+    <Compile Include="Controls\HSI.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="Controls\HSI.Designer.cs">
+      <DependentUpon>HSI.cs</DependentUpon>
+    </Compile>
     <Compile Include="Controls\IDynamicParameterControl.cs" />
     <Compile Include="Controls\OpenGLtest.cs">
       <SubType>UserControl</SubType>
@@ -595,6 +601,9 @@
     </EmbeddedResource>
     <EmbeddedResource Include="Controls\ConfigPanel.resx">
       <DependentUpon>ConfigPanel.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Controls\HSI.resx">
+      <DependentUpon>HSI.cs</DependentUpon>
     </EmbeddedResource>
     <EmbeddedResource Include="Controls\ProgressReporterDialogue.resx">
       <DependentUpon>ProgressReporterDialogue.cs</DependentUpon>

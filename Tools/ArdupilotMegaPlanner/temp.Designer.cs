@@ -48,7 +48,6 @@
             this.BUT_flashdl = new ArdupilotMega.Controls.MyButton();
             this.BUT_wipeeeprom = new ArdupilotMega.Controls.MyButton();
             this.button1 = new ArdupilotMega.Controls.MyButton();
-            this.test1 = new ArdupilotMega.Controls.OpenGLtest();
             this.SuspendLayout();
             // 
             // label1
@@ -245,24 +244,11 @@
             this.button1.UseVisualStyleBackColor = true;
             this.button1.Click += new System.EventHandler(this.button1_Click);
             // 
-            // test1
-            // 
-            this.test1.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
-            | System.Windows.Forms.AnchorStyles.Left) 
-            | System.Windows.Forms.AnchorStyles.Right)));
-            this.test1.BackColor = System.Drawing.Color.Black;
-            this.test1.Location = new System.Drawing.Point(571, 118);
-            this.test1.Name = "test1";
-            this.test1.Size = new System.Drawing.Size(150, 150);
-            this.test1.TabIndex = 20;
-            this.test1.VSync = false;
-            // 
             // temp
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(731, 281);
-            this.Controls.Add(this.test1);
             this.Controls.Add(this.BUT_magcalib);
             this.Controls.Add(this.BUT_ant_track);
             this.Controls.Add(this.BUT_follow_me);
@@ -313,8 +299,5 @@
         private ArdupilotMega.Controls.MyButton BUT_follow_me;
         private ArdupilotMega.Controls.MyButton BUT_ant_track;
         private ArdupilotMega.Controls.MyButton BUT_magcalib;
-        private Controls.OpenGLtest test1;
-        //private SharpVectors.Renderers.Forms.SvgPictureBox svgPictureBox1;
-
     }
 }
