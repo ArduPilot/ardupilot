@@ -455,7 +455,7 @@ namespace ArdupilotMega.GCSViews
                 if (port.connectAP())
                 {
                     log.Info("starting");
-                    lbl_status.Text = "Uploading " + FLASH.Length + " bytes to APM";
+                    lbl_status.Text = "Uploading " + FLASH.Length + " bytes to APM Board: "+board;
                     progress.Value = 0;
                     this.Refresh();
 

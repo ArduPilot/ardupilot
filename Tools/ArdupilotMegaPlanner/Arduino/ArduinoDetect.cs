@@ -49,6 +49,7 @@ namespace ArdupilotMega.Arduino
                     if (b1 == 0x14 && b2 == 0x10)
                     {
                         serialPort.Close();
+                        log.Info("is a 1280");
                         return "1280";
                     }
                 }
@@ -79,7 +80,7 @@ namespace ArdupilotMega.Arduino
                     if (temp[0] == 6 && temp[1] == 0 && temp.Length == 2)
                     {
                         serialPort.Close();
-
+                        log.Info("is a 2560");
                         return "2560";
 
                     }
@@ -130,6 +131,7 @@ namespace ArdupilotMega.Arduino
                     if (b1 == 0x14 && b2 == 0x10)
                     {
                         serialPort.Close();
+                        log.Info("is a 1280");
                         return "1280";
                     }
                 }
@@ -163,7 +165,7 @@ namespace ArdupilotMega.Arduino
                         //HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Enum\USB\VID_2341&PID_0010\640333439373519060F0\Device Parameters
                         if (!MainV2.MONO && !Thread.CurrentThread.CurrentUICulture.IsChildOf(CultureInfoEx.GetCultureInfo("zh-Hans")))
                         {
-                            ObjectQuery query = new ObjectQuery("SELECT * FROM Win32_USBControllerDevice");
+                            ObjectQuery query = new ObjectQuery("SELECT * FROM Win32_SerialPort"); // Win32_USBControllerDevice
                             ManagementObjectSearcher searcher = new ManagementObjectSearcher(query);
                             foreach (ManagementObject obj2 in searcher.Get())
                             {
@@ -171,12 +173,28 @@ namespace ArdupilotMega.Arduino
 
                                 // all apm 1-1.4 use a ftdi on the imu board.
 
-                                if (obj2["Dependent"].ToString().Contains(@"USB\\VID_2341&PID_0010"))
+                                obj2.Properties.ForEach(x =>
                                 {
+                                    try
+                                    {
+                                        log.Info(((PropertyData)x).Name.ToString() + " = " + ((PropertyData)x).Value.ToString());
+                                    }
+                                    catch { }
+                                });
+
+                                // check vid and pid
+                                if (obj2.Properties["PNPDeviceID"].Value.ToString().Contains(@"USB\VID_2341&PID_0010"))
+                                {
+                                    // check port name as well
+                                    if (obj2.Properties["Name"].Value.ToString().ToUpper().Contains(serialPort.PortName.ToUpper()))
+                                    {
+                                        log.Info("is a 2560-2");
                                         return "2560-2";
+                                    }
                                 }
                             }
 
+                            log.Info("is a 2560");
                             return "2560";
                         }
                         else
