@@ -736,7 +736,7 @@ namespace ArdupilotMega.Controls
                 int fontsize = this.Height / 30; // = 10
                 int fontoffset = fontsize - 10;
 
-                float every5deg = -this.Height / 60;
+                float every5deg = -this.Height / 65;
 
                 float pitchoffset = -_pitch * every5deg;
 
@@ -842,19 +842,19 @@ namespace ArdupilotMega.Controls
 
                 // draw roll ind needle
 
-                graphicsObject.TranslateTransform(this.Width / 2, this.Height / 2 + this.Height / 14);
-
-               // graphicsObject.RotateTransform(_roll);
-
+                graphicsObject.TranslateTransform(this.Width / 2, this.Height / 2);
+                
                 Point[] pointlist = new Point[3];
 
                 lengthlong = this.Height / 66;
 
-                int extra = this.Height / 15 * 7;
+                int extra = (int)(this.Height / 15 * 4.9f);
 
                 pointlist[0] = new Point(0, -lengthlong * 2 - extra);
                 pointlist[1] = new Point(-lengthlong, -lengthlong - extra);
                 pointlist[2] = new Point(lengthlong, -lengthlong - extra);
+
+                redPen.Width = 4;
 
                 if (Math.Abs(_roll) > 45)
                 {
@@ -870,19 +870,23 @@ namespace ArdupilotMega.Controls
                 foreach (int a in array)
                 {
                     graphicsObject.ResetTransform();
-                    graphicsObject.TranslateTransform(this.Width / 2, this.Height / 2 + this.Height / 14);
+                    graphicsObject.TranslateTransform(this.Width / 2, this.Height / 2);
                     graphicsObject.RotateTransform(a - _roll);
-                    drawstring(graphicsObject, Math.Abs(a).ToString("##"), font, fontsize, whiteBrush, 0 - 6 - fontoffset, -lengthlong * 2 - extra);
-                    graphicsObject.DrawLine(whitePen, 0, -halfheight, 0, -halfheight - 10);
+                    drawstring(graphicsObject, Math.Abs(a).ToString("0").PadLeft(2), font, fontsize, whiteBrush, 0 - 6 - fontoffset, -lengthlong * 8 - extra);
+                    graphicsObject.DrawLine(whitePen, 0, -lengthlong * 3 - extra, 0, -lengthlong * 3 - extra - lengthlong);
                 }
 
                 graphicsObject.ResetTransform();
+                graphicsObject.TranslateTransform(this.Width / 2, this.Height / 2);
 
                 // draw roll ind
+                RectangleF arcrect = new RectangleF(-lengthlong * 3 - extra, -lengthlong * 3 - extra, (extra + lengthlong * 3) * 2f, (extra + lengthlong * 3) * 2f);
 
-                Rectangle arcrect = new Rectangle(this.Width / 2 - this.Height / 2, this.Height / 14, this.Height, this.Height);
+                //DrawRectangle(Pens.Beige, arcrect);
 
-                graphicsObject.DrawArc(whitePen, arcrect, 180 + 30 + -_roll, 120);
+                graphicsObject.DrawArc(whitePen, arcrect, 180 + 30 + -_roll, 120); // 120
+
+                graphicsObject.ResetTransform();
 
                 //draw centre / current att
 
@@ -912,7 +916,7 @@ namespace ArdupilotMega.Controls
                 graphicsObject.FillRectangle(solidBrush, headbg);
 
                 // center
-                graphicsObject.DrawLine(redPen, headbg.Width / 2, headbg.Bottom, headbg.Width / 2, headbg.Top);
+             //   graphicsObject.DrawLine(redPen, headbg.Width / 2, headbg.Bottom, headbg.Width / 2, headbg.Top);
 
                 //bottom line
                 graphicsObject.DrawLine(whitePen, headbg.Left + 5, headbg.Bottom - 5, headbg.Width - 5, headbg.Bottom - 5);
@@ -984,13 +988,20 @@ namespace ArdupilotMega.Controls
                     }
                 }
 
-                RectangleF rect = new RectangleF(headbg.Width / 2 - fontoffset - fontoffset, 0, fontoffset * 4, (int)(fontoffset * 1.7) + 24);
+                RectangleF rect = new RectangleF(headbg.Width / 2 - (fontsize * 2.4f) / 2, 0, (fontsize * 2.4f), headbg.Height);
 
-                DrawRectangle(whitePen, rect);
+                //DrawRectangle(whitePen, rect);
 
-                FillRectangle(Brushes.Black, rect);
+                FillRectangle(new SolidBrush(Color.FromArgb(220,255,255,255)), rect);
 
-                drawstring(graphicsObject, (heading % 360).ToString("0").PadLeft(3), font, fontsize, whiteBrush, headbg.Width / 2 - fontoffset - fontoffset, headbg.Bottom - 24 - (int)(fontoffset * 1.7));
+                if (Math.Abs(_heading - _targetheading) < 4)
+                {
+                    drawstring(graphicsObject, (heading % 360).ToString("0").PadLeft(3), font, fontsize, Brushes.Green, headbg.Width / 2 - (fontsize * 1f), headbg.Bottom - 24 - (int)(fontoffset * 1.7));
+                }
+                else
+                {
+                    drawstring(graphicsObject, (heading % 360).ToString("0").PadLeft(3), font, fontsize, Brushes.Red, headbg.Width / 2 - (fontsize * 1f), headbg.Bottom - 24 - (int)(fontoffset * 1.7));
+                }
 
                 //                Console.WriteLine("HUD 0 " + (DateTime.Now - starttime).TotalMilliseconds + " " + DateTime.Now.Millisecond);
 
