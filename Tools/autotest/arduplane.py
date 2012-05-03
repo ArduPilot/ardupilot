@@ -90,6 +90,7 @@ def fly_LOITER(mavproxy, mav, num_circles=4):
     '''loiter where we are'''
     print("Testing LOITER for %u turns" % num_circles)
     mavproxy.send('switch 3\n')
+    mavproxy.send('loiter\n')
     wait_mode(mav, 'LOITER')
     while num_circles > 0:
         if not wait_heading(mav, 0):
