@@ -163,7 +163,7 @@ namespace ArdupilotMega.Arduino
                     {
                         serialPort.Close();
                         //HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Enum\USB\VID_2341&PID_0010\640333439373519060F0\Device Parameters
-                        if (!MainV2.MONO && !Thread.CurrentThread.CurrentUICulture.IsChildOf(CultureInfoEx.GetCultureInfo("zh-Hans")))
+                        if (!MainV2.MONO && !Thread.CurrentThread.CurrentCulture.IsChildOf(CultureInfoEx.GetCultureInfo("zh-Hans")))
                         {
                             ObjectQuery query = new ObjectQuery("SELECT * FROM Win32_SerialPort"); // Win32_USBControllerDevice
                             ManagementObjectSearcher searcher = new ManagementObjectSearcher(query);
