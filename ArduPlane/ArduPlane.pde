@@ -72,7 +72,12 @@ version 2.1 of the License, or (at your option) any later version.
 //
 FastSerialPort0(Serial);        // FTDI/console
 FastSerialPort1(Serial1);       // GPS port
-FastSerialPort3(Serial3);       // Telemetry port
+#if TELEMETRY_UART2 == ENABLED
+ // solder bridge set to enable UART2 instead of USB MUX
+ FastSerialPort2(Serial3);
+#else
+ FastSerialPort3(Serial3);       // Telemetry port for APM1
+#endif
 
 ////////////////////////////////////////////////////////////////////////////////
 // ISR Registry
