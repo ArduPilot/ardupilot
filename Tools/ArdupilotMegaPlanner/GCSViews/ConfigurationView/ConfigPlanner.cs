@@ -152,6 +152,9 @@ namespace ArdupilotMega.GCSViews.ConfigurationView
 
         private void CMB_language_SelectedIndexChanged(object sender, EventArgs e)
         {
+            if (startup)
+                return;
+
             MainV2.instance.changelanguage((CultureInfo)CMB_language.SelectedItem);
 
 #if !DEBUG
@@ -492,7 +495,7 @@ namespace ArdupilotMega.GCSViews.ConfigurationView
                     break;
                 }
             }
-            CMB_language.SelectedIndexChanged += CMB_language_SelectedIndexChanged;
+            //CMB_language.SelectedIndexChanged += CMB_language_SelectedIndexChanged;
 
             startup = false;
         }
