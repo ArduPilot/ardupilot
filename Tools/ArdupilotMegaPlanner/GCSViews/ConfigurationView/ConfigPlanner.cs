@@ -154,7 +154,6 @@ namespace ArdupilotMega.GCSViews.ConfigurationView
         {
             if (startup)
                 return;
-
             MainV2.instance.changelanguage((CultureInfo)CMB_language.SelectedItem);
 
 #if !DEBUG
