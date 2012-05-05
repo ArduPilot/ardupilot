@@ -127,6 +127,27 @@ static void init_ardupilot()
     // used to detect in-flight resets
     g.num_resets.set_and_save(g.num_resets+1);
 
+#ifdef CELLULAR_MODEM_INIT
+
+    #ifdef CONFIG_APM_HARDWARE == APM_HARDWARE_APM2 // we're on an APM2 board
+			// Before starting GCS on Serial, initialize the modem
+    		//SendDebug("\nModem intialization on Serial0: ");
+			Cellular_Modem modem(&Serial);
+	#else
+    		//SendDebug("\nModem intialization on Serial3: ");
+    		Cellular_Modem modem(&Serial3);
+	#endif // APM1 or APM2
+
+			if (modem.init_modem()) {
+				//SendDebug("success.\n");
+			}
+			else {
+				//SendDebug("failed.\n");
+			}
+
+#endif // CELLULAR_MODEM_INIT
+
+
 	// init the GCS
 	gcs0.init(&Serial);
 
