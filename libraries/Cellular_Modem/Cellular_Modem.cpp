@@ -113,7 +113,7 @@ bool Cellular_Modem::init_modem() {
 		}
 		p->println(); // Send the newline to "enter" the command
 
-		Serial.printf("\n--MODEM: [%s]\n",init_script[i]);  // DEBUG
+		//Serial.printf("\n--MODEM: [%s]\n",init_script[i]);  // DEBUG
 
 		// loop until response -- need breaker to avoid inf loop
 		start = millis(); // for timeout counting
@@ -140,7 +140,7 @@ bool Cellular_Modem::init_modem() {
 
 				// experimental
 				if (this->parse_status(resp_buffer)) { // look for "OK" or "0"
-					Serial.printf("Success: %s",resp_buffer); // DEBUG
+					//Serial.printf("Success: %s",resp_buffer); // DEBUG
 					break; // send next line
 				}
 			} while (p->available() && (millis() - start) < RESP_TIMEOUT);
@@ -149,7 +149,7 @@ bool Cellular_Modem::init_modem() {
 		delay(LINE_DELAY);
 	}
     // we're done, without an error
-	Serial.printf("--MODEM Init: %lu msec", millis() - init_time); // DEBUG
+	//Serial.printf("--MODEM Init: %lu msec", millis() - init_time); // DEBUG
 	return true;  // successful init
 	//send_test();
 }

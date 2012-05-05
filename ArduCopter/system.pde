@@ -150,40 +150,39 @@ static void init_ardupilot()
     // load parameters from EEPROM
     load_parameters();
 
-	// init the GCS
-    gcs0.init(&Serial);
+
+#ifdef CELLULAR_MODEM_INIT
+
+    #ifdef CONFIG_APM_HARDWARE == APM_HARDWARE_APM2 // we're on an APM2 board
+			// Before starting GCS on Serial, initialize the modem
+    		SendDebug("\nModem intialization on Serial0: ");
+			Cellular_Modem modem(&Serial);
+	#else
+    		SendDebug("\nModem intialization on Serial3: ");
+    		Cellular_Modem modem(&Serial3);
+	#endif // APM1 or APM2
+
+			if (modem.init_modem()) {
+				SendDebug("success.\n");
+			}
+			else {
+				SendDebug("failed.\n");
+			}
+
+#endif // CELLULAR_MODEM_INIT
+
+	 // init the GCS
+	 gcs0.init(&Serial);
 
 #if USB_MUX_PIN > 0
     if (!usb_connected) {
         // we are not connected via USB, re-init UART0 with right
         // baud rate
-        Serial.begin(map_baudrate(g.serial3_baud, SERIAL3_BAUD));
-
-		#ifdef CELLULAR_MODEM_INIT // on APM2 board, cellular modem on Serial0, same as console USB port and Xbee.
-			Cellular_Modem modem(&Serial);
-			// Before starting GCS on Serial, initialize the modem
-			SendDebug("\nModem intialization: ");
-			if (modem.init_modem()) {
-				SendDebug("success.\n");
-			}
-			else
-				SendDebug("failed.\n");
-		#endif // CELLULAR_MODEM_INIT
+        Serial.begin(map_baudrate(g.serial3_baud, SERIAL3_BAUD), 128, 256);
     }
 #else
     // we have a 2nd serial port for telemetry
     Serial3.begin(map_baudrate(g.serial3_baud, SERIAL3_BAUD), 128, 256);
-
-	#ifdef CELLULAR_MODEM_INIT // on APM1 board, cellular modem on Serial3, same as Xbee
-		Cellular_Modem modem_on_s3(&Serial3);
-		// Before starting GCS on Serial3, initialize the modem
-		SendDebug("\nModem intialization: ");
-		if (modem_on_s3.init_modem()) {
-			SendDebug("success.\n");
-		}
-		else
-			SendDebug("failed.\n");
-	#endif // CELLULAR_MODEM_INIT
 
 	gcs3.init(&Serial3);
 #endif
