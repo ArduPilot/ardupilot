@@ -5,6 +5,7 @@ using System.IO;
 using System.Windows.Forms;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
+using System.Reflection;
 
 namespace wix
 {
@@ -76,8 +77,8 @@ namespace wix
             }
 
             string path = args[0];
-
-            string file = Path.GetDirectoryName(Application.ExecutablePath) + Path.DirectorySeparatorChar+ "installer.wxs";
+            //Path.GetDirectoryName(Application.ExecutablePath) + Path.DirectorySeparatorChar+ 
+            string file = "installer.wxs";
 
             sw = new StreamWriter(file);
 
@@ -110,6 +111,47 @@ namespace wix
             P.Start();
             */
             //Console.ReadLine();
+
+            string exepath = Path.GetFullPath(path) + Path.DirectorySeparatorChar + "ArdupilotMegaPlanner.exe";
+            string version = Assembly.LoadFile(exepath).GetName().Version.ToString();
+
+            System.Diagnostics.FileVersionInfo fvi = FileVersionInfo.GetVersionInfo(exepath);
+
+            StreamWriter st = new StreamWriter("create.bat", false);
+
+            st.WriteLine("del installer.wixobj");
+
+            st.WriteLine(@"""%wix%\bin\candle"" installer.wxs -ext WiXNetFxExtension -ext WixDifxAppExtension -ext WixUIExtension.dll -ext WixUtilExtension");
+
+            st.WriteLine(@"""%wix%\bin\light"" installer.wixobj ""%wix%\bin\difxapp_x86.wixlib"" -o MissionPlanner32-" + fvi.FileVersion + ".msi -ext WiXNetFxExtension -ext WixDifxAppExtension -ext WixUIExtension.dll -ext WixUtilExtension");
+
+            st.WriteLine(@"""%wix%\bin\light"" installer.wixobj ""%wix%\bin\difxapp_x64.wixlib"" -o MissionPlanner64-" + fvi.FileVersion + ".msi -ext WiXNetFxExtension -ext WixDifxAppExtension -ext WixUIExtension.dll -ext WixUtilExtension");
+
+            st.WriteLine(@"""C:\Program Files\7-Zip\7z.exe"" a -tzip -xr!*.log -xr!ArdupilotPlanner.log* -xr!*.tlog -xr!config.xml -xr!gmapcache -xr!eeprom.bin -xr!dataflash.bin -xr!*.new ""Mission Planner " + fvi.FileVersion + @".zip"" ..\bin\release\*");
+
+            st.WriteLine("pause");
+
+            st.WriteLine("googlecode_upload.py -s \"Mission Planner zip file, " + fvi.FileVersion + "\" -p ardupilot-mega \"Mission Planner " + fvi.FileVersion + @".zip""");
+
+            st.WriteLine("googlecode_upload.py -s \"Mission Planner installer (32-bit)\" -p ardupilot-mega MissionPlanner32-" + fvi.FileVersion + ".msi");
+            st.WriteLine("googlecode_upload.py -s \"Mission Planner installer (64-bit)\" -p ardupilot-mega MissionPlanner64-" + fvi.FileVersion + ".msi");
+
+
+            st.Close();
+
+            runProgram("create.bat");
+
+
+        }
+
+        static void runProgram(string run)
+        {
+            System.Diagnostics.Process P = new System.Diagnostics.Process();
+            P.StartInfo.FileName = run;
+
+//            P.StartInfo.WorkingDirectory = Path.GetDirectoryName(Application.ExecutablePath);
+            P.StartInfo.UseShellExecute = true;
+            P.Start();
         }
 
         static void header()
@@ -262,10 +304,15 @@ data = @"
                 if (filepath.ToLower().EndsWith("release\\config.xml") || filepath.ToLower().Contains("ardupilotplanner.log") || filepath.ToLower().Contains("dataflash.bin") || filepath.ToLower().Contains(".etag"))
                     continue;
                 no++;
-                sw.WriteLine("<File Id=\"_" + no + "\" Source=\"" + filepath + "\" />");
+                
 
                 if (filepath.EndsWith("ArdupilotMegaPlanner.exe")) {
                     mainexeid = "_" + no;
+
+                    sw.WriteLine("<File Id=\"_" + no + "\" Source=\"" + filepath + "\" ><netfx:NativeImage Id=\"ngen_ArdupilotMegaPlannerexe\"/> </File>");
+
+                } else {
+                    sw.WriteLine("<File Id=\"_" + no + "\" Source=\"" + filepath + "\" />");
                 }
             }
 

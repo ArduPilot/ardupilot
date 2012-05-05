@@ -37,15 +37,15 @@
             this.backstageView.Dock = System.Windows.Forms.DockStyle.Fill;
             this.backstageView.Location = new System.Drawing.Point(0, 0);
             this.backstageView.Name = "backstageView";
-            this.backstageView.Size = new System.Drawing.Size(947, 506);
+            this.backstageView.Size = new System.Drawing.Size(1008, 506);
             this.backstageView.TabIndex = 0;
             // 
             // Setup
             // 
             this.Controls.Add(this.backstageView);
-            this.MinimumSize = new System.Drawing.Size(947, 506);
+            this.MinimumSize = new System.Drawing.Size(1000, 450);
             this.Name = "Setup";
-            this.Size = new System.Drawing.Size(947, 506);
+            this.Size = new System.Drawing.Size(1008, 506);
             this.FormClosing += new System.Windows.Forms.FormClosingEventHandler(this.Setup_FormClosing);
             this.Load += new System.EventHandler(this.Setup_Load);
             this.ResumeLayout(false);

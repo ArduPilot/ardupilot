@@ -810,8 +810,8 @@ namespace ArdupilotMega.Controls
 
                 //draw pitch           
 
-                int lengthshort = this.Width / 12;
-                int lengthlong = this.Width / 8;
+                int lengthshort = this.Width / 14;
+                int lengthlong = this.Width / 10;
 
                 for (int a = -90; a <= 90; a += 5)
                 {
@@ -996,11 +996,11 @@ namespace ArdupilotMega.Controls
 
                 if (Math.Abs(_heading - _targetheading) < 4)
                 {
-                    drawstring(graphicsObject, (heading % 360).ToString("0").PadLeft(3), font, fontsize, Brushes.Green, headbg.Width / 2 - (fontsize * 1f), headbg.Bottom - 24 - (int)(fontoffset * 1.7));
+                    drawstring(graphicsObject, (heading % 360).ToString("0").PadLeft(3), font, fontsize, whiteBrush, headbg.Width / 2 - (fontsize * 1f), headbg.Bottom - 24 - (int)(fontoffset * 1.7));
                 }
                 else
                 {
-                    drawstring(graphicsObject, (heading % 360).ToString("0").PadLeft(3), font, fontsize, Brushes.Red, headbg.Width / 2 - (fontsize * 1f), headbg.Bottom - 24 - (int)(fontoffset * 1.7));
+                    drawstring(graphicsObject, (heading % 360).ToString("0").PadLeft(3), font, fontsize, whiteBrush, headbg.Width / 2 - (fontsize * 1f), headbg.Bottom - 24 - (int)(fontoffset * 1.7));
                 }
 
                 //                Console.WriteLine("HUD 0 " + (DateTime.Now - starttime).TotalMilliseconds + " " + DateTime.Now.Millisecond);
