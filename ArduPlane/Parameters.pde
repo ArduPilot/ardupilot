@@ -29,7 +29,6 @@ static const AP_Param::Info var_info[] PROGMEM = {
     // @Param: KFF_PTCHCOMP
 	// @DisplayName: Pitch Compensation
 	// @Description: Adds pitch input to compensate for the loss of lift due to roll control.
-	// @Units: Percent
 	// @Range: 0 1
 	// @Increment: 0.1
 	// @User: Advanced
@@ -38,7 +37,6 @@ static const AP_Param::Info var_info[] PROGMEM = {
     // @Param: KFF_RDDRMIX
 	// @DisplayName: Rudder Mix
 	// @Description: The ammount of rudder mix to apply during aileron movement
-	// @Units: Percent
 	// @Range: 0 1
 	// @Increment: 0.1
 	// @User: Standard
@@ -70,7 +68,6 @@ static const AP_Param::Info var_info[] PROGMEM = {
     // @Param: XTRK_GAIN_SC
 	// @DisplayName: Crosstrack Gain
 	// @Description: The scale between distance off the line and angle to meet the line (in Degrees * 100)
-	// @Units: Degrees
 	// @Range: 0 2000
 	// @Increment: 1
 	// @User: Standard
