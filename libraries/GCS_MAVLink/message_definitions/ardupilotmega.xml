@@ -87,7 +87,7 @@
 	      <description>Breached minimum altitude</description>
 	    </entry>
 	    <entry name="FENCE_BREACH_MAXALT" value="2">
-	      <description>Breached minimum altitude</description>
+	      <description>Breached maximum altitude</description>
 	    </entry>
 	    <entry name="FENCE_BREACH_BOUNDARY" value="3">
 	      <description>Breached fence boundary</description>
