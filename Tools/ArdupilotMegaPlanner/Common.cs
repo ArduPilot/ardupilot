@@ -524,7 +524,7 @@ namespace ArdupilotMega
                         case (int)Common.apmmodes.FLY_BY_WIRE_A:
                         case (int)Common.apmmodes.FLY_BY_WIRE_B:
                             mode.base_mode = (byte)MAVLink.MAV_MODE_FLAG.CUSTOM_MODE_ENABLED;
-                            mode.custom_mode = (uint)(int)Enum.Parse(Common.getModes(), modein);
+                            mode.custom_mode = (uint)EnumTranslator.GetValue<Common.apmmodes>(modein);
                             break;
                         default:
                             MessageBox.Show("No Mode Changed " +  modein);
@@ -544,7 +544,7 @@ namespace ArdupilotMega
                         case (int)Common.ac2modes.CIRCLE:
                         case (int)Common.ac2modes.POSITION:
                             mode.base_mode = (byte)MAVLink.MAV_MODE_FLAG.CUSTOM_MODE_ENABLED;
-                            mode.custom_mode = (uint)(int)Enum.Parse(Common.getModes(), modein);
+                            mode.custom_mode = (uint)EnumTranslator.GetValue<Common.ac2modes>(modein);
                             break;
                         default:
                             MessageBox.Show("No Mode Changed " +  modein);

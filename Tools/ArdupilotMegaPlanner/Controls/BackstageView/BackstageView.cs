@@ -165,9 +165,11 @@ namespace ArdupilotMega.Controls.BackstageView
             this.pnlPages.Controls.Add(page.Page);
 
             if (_activePage == null)
+            {
                 _activePage = page;
 
-            ActivatePage(page);
+                ActivatePage(page);
+            }
         }
 
         private void CreateLinkButton(BackstageViewPage page)
@@ -202,6 +204,12 @@ namespace ArdupilotMega.Controls.BackstageView
         public void ActivatePage(BackstageViewPage associatedPage)
         {
             // deactivate the old page
+            _activePage.Page.Close();
+            Pages.ForEach(x =>
+            {
+                x.Page.Visible = false;
+            });
+
             _activePage.Page.Visible = false;
             var oldButton = this.pnlMenu.Controls.OfType<BackstageViewButton>().Single(b => b.Tag == _activePage);
             oldButton.IsSelected = false;
@@ -212,7 +220,7 @@ namespace ArdupilotMega.Controls.BackstageView
 
             _activePage = associatedPage;
 
-            _activePage.Page.OnLoad(new EventArgs());
+            _activePage.Page.DoLoad(new EventArgs());
         }
 
         public void Close()

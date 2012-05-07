@@ -312,7 +312,7 @@ namespace ArdupilotMega
         {
             mode = "";
             messages = new List<string>();
-            rateattitude = 3;
+            rateattitude = 10;
             rateposition = 3;
             ratestatus = 3;
             ratesensors = 3;
@@ -373,7 +373,7 @@ namespace ArdupilotMega
 
                 byte[] bytearray = mavinterface.packets[MAVLink.MAVLINK_MSG_ID_RC_CHANNELS_SCALED];
 
-                if (bytearray != null) // hil
+                if (bytearray != null) // hil mavlink 0.9
                 {
                     var hil = bytearray.ByteArrayToStructure<MAVLink.mavlink_rc_channels_scaled_t>(6);
 
@@ -385,6 +385,20 @@ namespace ArdupilotMega
                     hilch6 = hil.chan6_scaled;
                     hilch7 = hil.chan7_scaled;
                     hilch8 = hil.chan8_scaled;
+
+                    //MAVLink.packets[MAVLink.MAVLINK_MSG_ID_RC_CHANNELS_SCALED] = null;
+                }
+
+                bytearray = mavinterface.packets[MAVLink.MAVLINK_MSG_ID_HIL_CONTROLS];
+
+                if (bytearray != null) // hil mavlink 0.9 and 1.0
+                {
+                    var hil = bytearray.ByteArrayToStructure<MAVLink.mavlink_hil_controls_t>(6);
+
+                    hilch1 = (int)(hil.roll_ailerons * 10000);
+                    hilch2 = (int)(hil.pitch_elevator * 10000);
+                    hilch3 = (int)(hil.throttle * 10000);
+                    hilch4 = (int)(hil.yaw_rudder * 10000);
 
                     //MAVLink.packets[MAVLink.MAVLINK_MSG_ID_RC_CHANNELS_SCALED] = null;
                 }

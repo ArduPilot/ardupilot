@@ -150,64 +150,6 @@ namespace ArdupilotMega.GCSViews.ConfigurationView
         #region Methods
 
         /// <summary>
-        /// Loads the param file.
-        /// </summary>
-        /// <param name="Filename">The filename.</param>
-        /// <returns></returns>
-        private Hashtable loadParamFile(string Filename)
-        {
-            Hashtable param = new Hashtable();
-
-            StreamReader sr = new StreamReader(Filename);
-            while (!sr.EndOfStream)
-            {
-                string line = sr.ReadLine();
-
-                if (line.Contains("NOTE:"))
-                    CustomMessageBox.Show(line, "Saved Note");
-
-                if (line.StartsWith("#"))
-                    continue;
-
-                string[] items = line.Split(new char[] { ' ', ',', '\t' }, StringSplitOptions.RemoveEmptyEntries);
-
-                if (items.Length != 2)
-                    continue;
-
-                string name = items[0];
-                float value = float.Parse(items[1], new System.Globalization.CultureInfo("en-US"));
-
-                MAVLink.modifyParamForDisplay(true, name, ref value);
-
-                if (name == "SYSID_SW_MREV")
-                    continue;
-                if (name == "WP_TOTAL")
-                    continue;
-                if (name == "CMD_TOTAL")
-                    continue;
-                if (name == "FENCE_TOTAL")
-                    continue;
-                if (name == "SYS_NUM_RESETS")
-                    continue;
-                if (name == "ARSPD_OFFSET")
-                    continue;
-                if (name == "GND_ABS_PRESS")
-                    continue;
-                if (name == "GND_TEMP")
-                    continue;
-                if (name == "CMD_INDEX")
-                    continue;
-                if (name == "LOG_LASTFILE")
-                    continue;
-
-                param[name] = value;
-            }
-            sr.Close();
-
-            return param;
-        }
-
-        /// <summary>
         /// Sorts the param list.
         /// </summary>
         private void SortParamList()
@@ -241,6 +183,11 @@ namespace ArdupilotMega.GCSViews.ConfigurationView
         {
             tableLayoutPanel1.Controls.Clear();
             if (_params == null || _params.Count == 0) SortParamList();
+
+            // get the params if nothing exists already
+            if (_params != null && _params.Count == 0)
+                Utilities.ParameterMetaDataParser.GetParameterInformation();
+
             _params.ForEach(x => 
          {
             if(!String.IsNullOrEmpty(x.Key))

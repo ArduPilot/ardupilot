@@ -7,7 +7,7 @@ using System.Linq;
 
 namespace ArdupilotMega.Comms
 {
-    class SerialPort : System.IO.Ports.SerialPort,ICommsSerial
+    public class SerialPort : System.IO.Ports.SerialPort,ICommsSerial
     {
         public new void Open()
         {

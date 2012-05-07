@@ -68,7 +68,7 @@ namespace ArdupilotMega.GCSViews.ConfigurationView
             {
 #if MAVLINK10             
                             int fixme; // needs to be accel only    
-                            MainV2.comPort.doCommand(MAVLink.MAV_CMD.PREFLIGHT_CALIBRATION,1,1,1,1,1,1,1);
+                            MainV2.comPort.doCommand(MAVLink.MAV_CMD.PREFLIGHT_CALIBRATION,1,1,1,0,0,0,0);
 #else
                 MainV2.comPort.doAction(MAVLink.MAV_ACTION.MAV_ACTION_CALIBRATE_ACC);
 #endif

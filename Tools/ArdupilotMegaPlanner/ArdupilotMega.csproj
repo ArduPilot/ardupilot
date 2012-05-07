@@ -45,7 +45,7 @@
     <DefineConstants>TRACE;DEBUG;MAVLINK10cra</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
-    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <AllowUnsafeBlocks>false</AllowUnsafeBlocks>
     <DocumentationFile>
     </DocumentationFile>
     <CheckForOverflowUnderflow>false</CheckForOverflowUnderflow>
@@ -61,7 +61,7 @@
     <DefineConstants>TRACE;DEBUG;MAVLINK10cra</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
-    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <AllowUnsafeBlocks>false</AllowUnsafeBlocks>
     <DocumentationFile>
     </DocumentationFile>
     <CheckForOverflowUnderflow>false</CheckForOverflowUnderflow>
