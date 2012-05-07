@@ -15,9 +15,15 @@ namespace ArdupilotMega.Controls.BackstageView
                 FormClosing(this, new FormClosingEventArgs(CloseReason.UserClosing, false));
         }
 
-        public new void OnLoad(EventArgs e)
+        public void DoLoad(EventArgs e)
         {
             base.OnLoad(e);
+        }
+
+        public new void OnLoad(EventArgs e)
+        {
+            // this is now done on page load via parent control
+           // base.OnLoad(e);
         }
     }
 }

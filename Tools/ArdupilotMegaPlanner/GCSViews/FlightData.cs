@@ -1180,7 +1180,7 @@ namespace ArdupilotMega.GCSViews
             {
                 ((Button)sender).Enabled = false;
 #if MAVLINK10
-				MainV2.comPort.setMode("AUTO");
+				MainV2.comPort.setMode("Auto");
 #else
                 comPort.doAction(MAVLink.MAV_ACTION.MAV_ACTION_SET_AUTO);
 #endif
@@ -1210,7 +1210,7 @@ namespace ArdupilotMega.GCSViews
             {
                 ((Button)sender).Enabled = false;
 #if MAVLINK10
-				MainV2.comPort.setMode("MANUAL");
+				MainV2.comPort.setMode("Manual");
 #else
                 comPort.doAction(MAVLink.MAV_ACTION.MAV_ACTION_SET_MANUAL);
 #endif

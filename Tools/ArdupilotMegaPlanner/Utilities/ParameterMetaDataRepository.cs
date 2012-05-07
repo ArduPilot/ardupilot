@@ -17,8 +17,13 @@ namespace ArdupilotMega.Utilities
       public ParameterMetaDataRepository()
       {
          string paramMetaDataXMLFileName = String.Format("{0}\\{1}", Application.StartupPath, ConfigurationManager.AppSettings["ParameterMetaDataXMLFileName"]);
-         if (File.Exists(paramMetaDataXMLFileName))
-            _parameterMetaDataXML = XDocument.Load(paramMetaDataXMLFileName);
+         try
+         {
+             if (File.Exists(paramMetaDataXMLFileName))
+                 _parameterMetaDataXML = XDocument.Load(paramMetaDataXMLFileName);
+
+         }
+         catch { } // Exception System.Xml.XmlException: Root element is missing.
       }
 
       /// <summary>
@@ -33,19 +38,23 @@ namespace ArdupilotMega.Utilities
          {
             // Use this to find the endpoint node we are looking for
             // Either it will be pulled from a file in the ArduPlane hierarchy or the ArduCopter hierarchy
-            var element = _parameterMetaDataXML.Element("Params").Element(MainV2.cs.firmware.ToString());
-            if(element != null && element.HasElements)
-            {
-               var node = element.Element(nodeKey);
-               if(node != null && node.HasElements)
-               {
-                  var metaValue = node.Element(metaKey);
-                  if(metaValue != null)
-                  {
-                     return metaValue.Value;
-                  }
-               }
-            }
+             try
+             {
+                 var element = _parameterMetaDataXML.Element("Params").Element(MainV2.cs.firmware.ToString());
+                 if (element != null && element.HasElements)
+                 {
+                     var node = element.Element(nodeKey);
+                     if (node != null && node.HasElements)
+                     {
+                         var metaValue = node.Element(metaKey);
+                         if (metaValue != null)
+                         {
+                             return metaValue.Value;
+                         }
+                     }
+                 }
+             }
+             catch { } // Exception System.ArgumentException: '' is an invalid expanded name.
          }
          return string.Empty;
       }

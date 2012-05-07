@@ -11,6 +11,8 @@ using System.IO;
 using ArdupilotMega.Controls.BackstageView;
 using ArdupilotMega.Arduino;
 using ArdupilotMega.Comms;
+using log4net;
+using System.Reflection;
 
 namespace ArdupilotMega
 {
@@ -21,6 +23,8 @@ namespace ArdupilotMega
         public delegate void ProgressEventHandler(double completed);
 
         string firmwarefile = Path.GetDirectoryName(Application.ExecutablePath) + Path.DirectorySeparatorChar + "radio.hm_trp.hex";
+
+        private static readonly ILog log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
 
         public _3DRradio()
         {
@@ -34,7 +38,7 @@ namespace ArdupilotMega
         {
             // was https://raw.github.com/tridge/SiK/master/Firmware/dst/radio.hm_trp.hex
             // now http://www.samba.org/tridge/UAV/3DR/radio.hm_trp.hex
-
+            
             return Common.getFilefromNet("http://www.samba.org/tridge/UAV/3DR/radio.hm_trp.hex", firmwarefile);
         }
 
@@ -118,7 +122,7 @@ namespace ArdupilotMega
                         {
                             comPort.Write("AT&UPDATE\r\n");
                             string left = comPort.ReadExisting();
-                            Console.WriteLine(left);
+                            log.Info(left);
                             Sleep(700);
                             comPort.BaudRate = 115200;
                         }
@@ -165,6 +169,7 @@ namespace ArdupilotMega
                 {
                     Console.Write(message);
                     lbl_status.Text = message;
+                    log.Info(message);
                     Application.DoEvents();
                 }
             }
@@ -179,6 +184,7 @@ namespace ArdupilotMega
                 {
                     lbl_status.Text = message;
                     Console.WriteLine(message);
+                    log.Info(message);
                     Application.DoEvents();
                 }
             }
@@ -477,7 +483,7 @@ namespace ArdupilotMega
                         }
                         else
                         {
-                            Console.WriteLine("Odd config line :" + item);
+                            log.Info("Odd config line :" + item);
                         }
                     }
                 }
@@ -534,7 +540,7 @@ namespace ArdupilotMega
             // ignore all existing data
             comPort.DiscardInBuffer();
             lbl_status.Text = "Doing Command " + cmd;
-            Console.WriteLine("Doing Command " + cmd);
+            log.Info("Doing Command " + cmd);
             // write command
             comPort.Write(cmd + "\r\n");
             // read echoed line or existing data
@@ -544,7 +550,7 @@ namespace ArdupilotMega
                 temp = Serial_ReadLine(comPort);
             }
             catch { temp = comPort.ReadExisting(); }
-            Console.WriteLine("cmd " + cmd + " echo " + temp);
+            log.Info("cmd " + cmd + " echo " + temp);
             // delay for command
             Sleep(500);
             // get responce
@@ -564,7 +570,7 @@ namespace ArdupilotMega
                 }
             }
 
-            Console.WriteLine("responce " + level + " " + ans.Replace('\0', ' '));
+            log.Info("responce " + level + " " + ans.Replace('\0', ' '));
 
             // try again
             if (ans == "" && level == 0)
@@ -586,9 +592,9 @@ namespace ArdupilotMega
             // wait
             Sleep(1100);
             // check for config responce "OK"
-            Console.WriteLine("Connect btr " + comPort.BytesToRead + " baud " + comPort.BaudRate);
+            log.Info("Connect btr " + comPort.BytesToRead + " baud " + comPort.BaudRate);
             string conn = comPort.ReadExisting();
-            Console.WriteLine("Connect first responce " + conn.Replace('\0', ' ') + " " + conn.Length);
+            log.Info("Connect first responce " + conn.Replace('\0', ' ') + " " + conn.Length);
             if (conn.Contains("OK"))
             {
                 //return true;
@@ -601,7 +607,7 @@ namespace ArdupilotMega
 
             string version = doCommand(comPort, "ATI");
 
-            Console.Write("Connect Version: " + version.Trim() + "\n");
+            log.Info("Connect Version: " + version.Trim() + "\n");
 
             if (version.Contains("SiK") && version.Contains("on")) // should use a regex....
             {
