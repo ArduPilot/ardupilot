@@ -610,7 +610,12 @@ namespace ArdupilotMega
                 // now that we have closed the connection, cancel the connection stats
                 // so that the 'time connected' etc does not grow, but the user can still
                 // look at the now frozen stats on the still open form
-                ((ConnectionStats)this.connectionStatsForm.Controls[0]).StopUpdates();
+                try
+                {
+                    // if terminal is used, then closed using this button.... exception
+                    ((ConnectionStats)this.connectionStatsForm.Controls[0]).StopUpdates();
+                }
+                catch { }
 
                 this.MenuConnect.BackgroundImage = global::ArdupilotMega.Properties.Resources.connect;
             }
