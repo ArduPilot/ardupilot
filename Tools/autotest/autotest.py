@@ -94,14 +94,6 @@ def test_prerequesites():
     '''check we have the right directories and tools to run tests'''
     print("Testing prerequesites")
     util.mkdir_p(util.reltopdir('../buildlogs'))
-    if not os.path.exists(util.reltopdir('../HILTest/hil_quad.py')):
-        print('''
-You need to install HILTest in %s
-
-You can get it from git://git.samba.org/tridge/UAV/HILTest.git
-
-        ''' % util.reltopdir('../HILTest'))
-        return False
     return True
 
 
