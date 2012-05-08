@@ -60,20 +60,6 @@ namespace _3DRRadio.Properties {
             }
         }
         
-        internal static System.Drawing.Bitmap _3dr {
-            get {
-                object obj = ResourceManager.GetObject("3dr", resourceCulture);
-                return ((System.Drawing.Bitmap)(obj));
-            }
-        }
-        
-        internal static System.Drawing.Bitmap _3dr2 {
-            get {
-                object obj = ResourceManager.GetObject("3dr2", resourceCulture);
-                return ((System.Drawing.Bitmap)(obj));
-            }
-        }
-        
         internal static System.Drawing.Bitmap _3dr3 {
             get {
                 object obj = ResourceManager.GetObject("3dr3", resourceCulture);

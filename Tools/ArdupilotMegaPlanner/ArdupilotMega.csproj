@@ -201,6 +201,10 @@
     <Reference Include="System.Management">
       <Private>False</Private>
     </Reference>
+    <Reference Include="System.Reactive, Version=1.0.10621.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>Lib\System.Reactive.dll</HintPath>
+    </Reference>
     <Reference Include="System.Speech">
       <Private>True</Private>
     </Reference>
@@ -287,6 +291,12 @@
     </Compile>
     <Compile Include="Controls\ConfigPanel.Designer.cs">
       <DependentUpon>ConfigPanel.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Controls\ConnectionStats.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="Controls\ConnectionStats.designer.cs">
+      <DependentUpon>ConnectionStats.cs</DependentUpon>
     </Compile>
     <Compile Include="Controls\CustomMessageBox.cs" />
     <Compile Include="Controls\LineSeparator.cs">
@@ -601,6 +611,9 @@
     </EmbeddedResource>
     <EmbeddedResource Include="Controls\ConfigPanel.resx">
       <DependentUpon>ConfigPanel.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Controls\ConnectionStats.resx">
+      <DependentUpon>ConnectionStats.cs</DependentUpon>
     </EmbeddedResource>
     <EmbeddedResource Include="Controls\HSI.resx">
       <DependentUpon>HSI.cs</DependentUpon>
@@ -1122,13 +1135,9 @@
     <EmbeddedResource Include="temp.resx">
       <DependentUpon>temp.cs</DependentUpon>
     </EmbeddedResource>
-    <None Include="AeroSimRCAPMHil.zip">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </None>
+    <None Include="AeroSimRCAPMHil.zip" />
     <None Include="app.config" />
-    <None Include="arducopter-xplane.zip">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </None>
+    <None Include="arducopter-xplane.zip" />
     <None Include="m3u\GeoRefnetworklink.kml">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
@@ -1158,9 +1167,7 @@
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
       <SubType>Designer</SubType>
     </Content>
-    <Content Include="JSBSim.exe">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </Content>
+    <Content Include="JSBSim.exe" />
     <Content Include="mavcmd.xml">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>

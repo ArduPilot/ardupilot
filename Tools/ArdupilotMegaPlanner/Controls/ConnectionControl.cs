@@ -14,10 +14,28 @@ namespace ArdupilotMega.Controls
         public ConnectionControl()
         {
             InitializeComponent();
+            this.linkLabel1.Click += (sender, e) =>
+                                         {
+                                             if (ShowLinkStats!=null)
+                                                 ShowLinkStats.Invoke(this, EventArgs.Empty);
+                                         };
         }
 
+        public event EventHandler ShowLinkStats;
         public ComboBox CMB_baudrate { get { return this.cmb_Baud; } }
         public ComboBox CMB_serialport { get { return this.cmb_Connection; } }
         public ComboBox TOOL_APMFirmware { get { return this.cmb_ConnectionType; } }
+
+        /// <summary>
+        /// Called from the main form - set whether we are connected or not currently.
+        /// UI will be updated accordingly
+        /// </summary>
+        /// <param name="isConnected">Whether we are connected</param>
+        public void IsConnected(bool isConnected)
+        {
+            this.linkLabel1.Visible = isConnected;
+            cmb_Baud.Enabled = !isConnected;
+            cmb_Connection.Enabled = !isConnected;
+        }
     }
 }

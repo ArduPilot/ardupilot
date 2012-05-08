@@ -1518,11 +1518,8 @@
         //////////////////////////////////8=
 </value>
   </data>
-  <data name="$this.ImeMode" type="System.Windows.Forms.ImeMode, System.Windows.Forms">
-    <value>NoControl</value>
-  </data>
   <data name="$this.Text" xml:space="preserve">
-    <value>3DRRadio Config</value>
+    <value>3DRRadio Config 0.2</value>
   </data>
   <data name="&gt;&gt;$this.Name" xml:space="preserve">
     <value>Config</value>
