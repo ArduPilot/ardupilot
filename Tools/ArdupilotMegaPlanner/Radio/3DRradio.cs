@@ -172,6 +172,10 @@ namespace ArdupilotMega
                     log.Info(message);
                     Application.DoEvents();
                 }
+                else if (level < 5) // 5 = byte data
+                {
+                    log.Debug(message);
+                }
             }
             catch { }
         }

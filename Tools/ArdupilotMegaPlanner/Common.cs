@@ -465,7 +465,6 @@ namespace ArdupilotMega
             CH6_STABILIZE_KD = 29
         }
 
-
         public static void linearRegression()
         {
             double[] values = { 4.8, 4.8, 4.5, 3.9, 4.4, 3.6, 3.6, 2.9, 3.5, 3.0, 2.5, 2.2, 2.6, 2.1, 2.2 };

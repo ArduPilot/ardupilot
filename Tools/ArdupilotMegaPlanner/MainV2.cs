@@ -119,6 +119,7 @@ namespace ArdupilotMega
             ArduCopter2,
         }
 
+        DateTime connectButtonUpdate = DateTime.Now;
         /// <summary>
         /// declared here if i want a "single" instance of the form
         /// ie configuration gets reloaded on every click
@@ -131,10 +132,15 @@ namespace ArdupilotMega
         GCSViews.Firmware Firmware;
         GCSViews.Terminal Terminal;
 
+        private Form connectionStatsForm;
+        private ConnectionStats _connectionStats;
+
         /// <summary>
-        /// control for the serial port and firmware selector.
+        /// This 'Control' is the toolstrip control that holds the comport combo, baudrate combo etc
+        /// Otiginally seperate controls, each hosted in a toolstip sqaure, combined into this custom
+        /// control for layout reasons.
         /// </summary>
-        private ConnectionControl _connectionControl;
+        private readonly ConnectionControl _connectionControl;
 
         public MainV2()
         {
@@ -154,7 +160,7 @@ namespace ArdupilotMega
             instance = this;
 
             InitializeComponent();
-            
+
             _connectionControl = toolStripConnectionControl.ConnectionControl;
             _connectionControl.CMB_baudrate.TextChanged += this.CMB_baudrate_TextChanged;
             _connectionControl.CMB_baudrate.SelectedIndexChanged += this.CMB_baudrate_SelectedIndexChanged;
@@ -163,6 +169,7 @@ namespace ArdupilotMega
             _connectionControl.CMB_serialport.Click += this.CMB_serialport_Click;
             _connectionControl.TOOL_APMFirmware.SelectedIndexChanged += this.TOOL_APMFirmware_SelectedIndexChanged;
 
+            _connectionControl.ShowLinkStats += (sender, e) => ShowConnectionStatsForm();
             srtm.datadirectory = Path.GetDirectoryName(Application.ExecutablePath) + Path.DirectorySeparatorChar + "srtm";
 
             var t = Type.GetType("Mono.Runtime");
@@ -174,7 +181,6 @@ namespace ArdupilotMega
 
             MainMenu.Renderer = new MyRenderer();
 
-            List<object> list = new List<object>();
             foreach (object obj in Enum.GetValues(typeof(Firmwares)))
             {
                 _connectionControl.TOOL_APMFirmware.Items.Add(obj);
@@ -188,14 +194,14 @@ namespace ArdupilotMega
             comPort.BaseStream.BaudRate = 115200;
 
             // ** Old
-//            CMB_serialport.Items.AddRange(SerialPort.GetPortNames());
-//            CMB_serialport.Items.Add("TCP");
-//            CMB_serialport.Items.Add("UDP");
-//            if (CMB_serialport.Items.Count > 0)
-//            {
-//                CMB_baudrate.SelectedIndex = 7;
-//                CMB_serialport.SelectedIndex = 0;
-//            }
+            //            CMB_serialport.Items.AddRange(SerialPort.GetPortNames());
+            //            CMB_serialport.Items.Add("TCP");
+            //            CMB_serialport.Items.Add("UDP");
+            //            if (CMB_serialport.Items.Count > 0)
+            //            {
+            //                CMB_baudrate.SelectedIndex = 7;
+            //                CMB_serialport.SelectedIndex = 0;
+            //            }
             // ** new
             _connectionControl.CMB_serialport.Items.AddRange(ArdupilotMega.Comms.SerialPort.GetPortNames());
             _connectionControl.CMB_serialport.Items.Add("TCP");
@@ -339,6 +345,46 @@ namespace ArdupilotMega
 
 
             splash.Close();
+        }
+
+
+        private void ResetConnectionStats()
+        {
+            // If the form has been closed, or never shown before, we need do nothing, as 
+            // connection stats will be reset when shown
+            if (this.connectionStatsForm != null && connectionStatsForm.Visible)
+            {
+                // else the form is already showing.  reset the stats
+                this.connectionStatsForm.Controls.Clear();
+                _connectionStats = new ConnectionStats(comPort);
+                this.connectionStatsForm.Controls.Add(_connectionStats);
+                ThemeManager.ApplyThemeTo(this.connectionStatsForm);
+            }
+        }
+
+        private void ShowConnectionStatsForm()
+        {
+            if (this.connectionStatsForm == null || this.connectionStatsForm.IsDisposed)
+            {
+                // If the form has been closed, or never shown before, we need all new stuff
+                this.connectionStatsForm = new Form
+                                               {
+                                                   Width = 430,
+                                                   Height = 180,
+                                                   MaximizeBox = false,
+                                                   MinimizeBox = false,
+                                                   FormBorderStyle = FormBorderStyle.FixedDialog,
+                                                   Text = "Link Stats"
+                                               };
+                // Change the connection stats control, so that when/if the connection stats form is showing,
+                // there will be something to see
+                this.connectionStatsForm.Controls.Clear();
+                _connectionStats = new ConnectionStats(comPort);
+                this.connectionStatsForm.Controls.Add(_connectionStats);
+            }
+
+            this.connectionStatsForm.Show();
+            ThemeManager.ApplyThemeTo(this.connectionStatsForm);
         }
 
         /// <summary>
@@ -542,7 +588,10 @@ namespace ArdupilotMega
                         if (speechEngine != null) // cancel all pending speech
                             speechEngine.SpeakAsyncCancelAll();
                     }
-                    catch { }
+                    catch (Exception ex)
+                    {
+                        log.Error(ex);
+                    }
 
                     if (comPort.logfile != null)
                         comPort.logfile.Close();
@@ -553,24 +602,38 @@ namespace ArdupilotMega
                     comPort.BaseStream.DtrEnable = false;
                     comPort.Close();
                 }
-                catch (Exception ex) { log.Debug(ex.ToString()); }
+                catch (Exception ex)
+                {
+                    log.Error(ex);
+                }
+
+                // now that we have closed the connection, cancel the connection stats
+                // so that the 'time connected' etc does not grow, but the user can still
+                // look at the now frozen stats on the still open form
+                ((ConnectionStats)this.connectionStatsForm.Controls[0]).StopUpdates();
 
                 this.MenuConnect.BackgroundImage = global::ArdupilotMega.Properties.Resources.connect;
             }
             else
             {
-                if (_connectionControl.CMB_serialport.Text == "TCP")
+                switch (_connectionControl.CMB_serialport.Text)
                 {
-                    comPort.BaseStream = new TcpSerial();
+                    case "TCP":
+                        comPort.BaseStream = new TcpSerial();
+                        break;
+                    case "UDP":
+                        comPort.BaseStream = new UdpSerial();
+                        break;
+                    default:
+                        comPort.BaseStream = new Comms.SerialPort();
+                        break;
                 }
-                else if (_connectionControl.CMB_serialport.Text == "UDP")
-                {
-                    comPort.BaseStream = new UdpSerial();
-                }
-                else
-                {
-                    comPort.BaseStream = new ArdupilotMega.Comms.SerialPort();
-                }
+
+                // Tell the connection UI that we are now connected.
+                this._connectionControl.IsConnected(true);
+
+                // Here we want to reset the connection stats counter etc.
+                this.ResetConnectionStats();
 
                 try
                 {
@@ -849,11 +912,18 @@ namespace ArdupilotMega
                                         break;
                                 }
                             }
-                            catch (Exception ee) { log.Info(ee.Message); } // silent fail on bad entry
+                            // silent fail on bad entry
+                            catch (Exception ee)
+                            {
+                                log.Error(ee);
+                            }
                         }
                     }
                 }
-                catch (Exception ex) { log.Info("Bad Config File: " + ex.ToString()); } // bad config file
+                catch (Exception ex)
+                {
+                    log.Error("Bad Config File", ex);
+                }
             }
         }
 
@@ -939,7 +1009,7 @@ namespace ArdupilotMega
                                  
                                 }
                                  */
-//                                Console.WriteLine(DateTime.Now.Millisecond + " {0} {1} {2} {3} {4}", rc.chan1_raw, rc.chan2_raw, rc.chan3_raw, rc.chan4_raw,rate);
+                                //                                Console.WriteLine(DateTime.Now.Millisecond + " {0} {1} {2} {3} {4}", rc.chan1_raw, rc.chan2_raw, rc.chan3_raw, rc.chan4_raw,rate);
                                 comPort.sendPacket(rc);
                                 count++;
                                 lastjoystick = DateTime.Now;
@@ -947,18 +1017,19 @@ namespace ArdupilotMega
 
                         }
                     }
-                    System.Threading.Thread.Sleep(20);
+                    Thread.Sleep(20);
                 }
-                catch { } // cant fall out
+                catch
+                {
+
+                } // cant fall out
             }
         }
-
-        DateTime connectButtonUpdate = DateTime.Now;
 
         /// <summary>
         /// Used to fix the icon status for unexpected unplugs etc...
         /// </summary>
-        private void updateConnectIcon()
+        private void UpdateConnectIcon()
         {
             if ((DateTime.Now - connectButtonUpdate).Milliseconds > 500)
             {
@@ -971,8 +1042,7 @@ namespace ArdupilotMega
                         {
                             this.MenuConnect.BackgroundImage = global::ArdupilotMega.Properties.Resources.disconnect;
                             this.MenuConnect.BackgroundImage.Tag = "Disconnect";
-                            _connectionControl.CMB_baudrate.Enabled = false;
-                            _connectionControl.CMB_serialport.Enabled = false;
+                            _connectionControl.IsConnected(true);
                         });
                     }
                 }
@@ -984,8 +1054,9 @@ namespace ArdupilotMega
                         {
                             this.MenuConnect.BackgroundImage = global::ArdupilotMega.Properties.Resources.connect;
                             this.MenuConnect.BackgroundImage.Tag = "Connect";
-                            _connectionControl.CMB_baudrate.Enabled = true;
-                            _connectionControl.CMB_serialport.Enabled = true;
+                            _connectionControl.IsConnected(false);
+                            if (_connectionStats != null)
+                                _connectionStats.StopUpdates();
                         });
                     }
                 }
@@ -1022,9 +1093,9 @@ namespace ArdupilotMega
             {
                 try
                 {
-                    System.Threading.Thread.Sleep(5);
-                    
-                    updateConnectIcon();
+                    Thread.Sleep(5);
+
+                    UpdateConnectIcon();
 
                     if (speechEnable && speechEngine != null && (DateTime.Now - speechcustomtime).TotalSeconds > 30 && MainV2.cs.lat != 0 && (MainV2.comPort.logreadmode || comPort.BaseStream.IsOpen))
                     {
@@ -1121,7 +1192,7 @@ namespace ArdupilotMega
                 }
                 catch (Exception e)
                 {
-                    log.Info("Serial Reader fail :" + e.Message);
+                    log.Error("Serial Reader fail :" + e.Message);
                     try
                     {
                         comPort.Close();
@@ -1131,6 +1202,10 @@ namespace ArdupilotMega
             }
         }
 
+        /// <summary>
+        /// Override the stock ToolStripProfessionalRenderer to implement 'highlighting' of the 
+        /// currently selected GCS view.
+        /// </summary>
         private class MyRenderer : ToolStripProfessionalRenderer
         {
             public static ToolStripItem currentpressed;
@@ -1217,11 +1292,11 @@ namespace ArdupilotMega
 
             try
             {
-               CheckForUpdate();
+                CheckForUpdate();
             }
             catch (Exception ex)
             {
-               log.Error("Update check failed", ex);
+                log.Error("Update check failed", ex);
             }
         }
 
@@ -1253,7 +1328,11 @@ namespace ArdupilotMega
             {
                 listener.Start();
             }
-            catch { log.Info("do you have the planner open already"); return; } // in use
+            catch (Exception e)
+            {
+                log.Error("Exception starting lister. Possible multiple instances of planner?", e);
+                return;
+            } // in use
             // Enter the listening loop.               
             while (true)
             {
@@ -1281,12 +1360,12 @@ namespace ArdupilotMega
 
                     NetworkStream stream = client.GetStream();
 
-                    System.Text.ASCIIEncoding encoding = new System.Text.ASCIIEncoding();
+                    var asciiEncoding = new ASCIIEncoding();
 
-                    byte[] request = new byte[1024];
+                    var request = new byte[1024];
 
                     int len = stream.Read(request, 0, request.Length);
-                    string head = System.Text.ASCIIEncoding.ASCII.GetString(request, 0, len);
+                    string head = System.Text.Encoding.ASCII.GetString(request, 0, len);
                     log.Info(head);
 
                     int index = head.IndexOf('\n');
@@ -1322,8 +1401,8 @@ namespace ArdupilotMega
 
                             while (client.Connected)
                             {
-                                System.Threading.Thread.Sleep(200);
-                                log.Info(stream.DataAvailable + " " + client.Available);
+                                Thread.Sleep(200);
+                                log.Debug(stream.DataAvailable + " " + client.Available);
 
                                 while (client.Available > 0)
                                 {
@@ -1352,7 +1431,7 @@ namespace ArdupilotMega
                     else if (url.Contains("georefnetwork.kml"))
                     {
                         string header = "HTTP/1.1 200 OK\r\nContent-Type: application/vnd.google-earth.kml+xml\n\n";
-                        byte[] temp = encoding.GetBytes(header);
+                        byte[] temp = asciiEncoding.GetBytes(header);
                         stream.Write(temp, 0, temp.Length);
 
                         byte[] buffer = Encoding.ASCII.GetBytes(georefkml);
@@ -1364,7 +1443,7 @@ namespace ArdupilotMega
                     else if (url.Contains("network.kml"))
                     {
                         string header = "HTTP/1.1 200 OK\r\nContent-Type: application/vnd.google-earth.kml+xml\n\n";
-                        byte[] temp = encoding.GetBytes(header);
+                        byte[] temp = asciiEncoding.GetBytes(header);
                         stream.Write(temp, 0, temp.Length);
 
                         SharpKml.Dom.Document kml = new SharpKml.Dom.Document();
@@ -1433,7 +1512,7 @@ namespace ArdupilotMega
                     else if (url.Contains("block_plane_0.dae"))
                     {
                         string header = "HTTP/1.1 200 OK\r\nContent-Type: text/plain\n\n";
-                        byte[] temp = encoding.GetBytes(header);
+                        byte[] temp = asciiEncoding.GetBytes(header);
                         stream.Write(temp, 0, temp.Length);
 
                         BinaryReader file = new BinaryReader(File.Open("block_plane_0.dae", FileMode.Open, FileAccess.Read, FileShare.Read));
@@ -1451,7 +1530,7 @@ namespace ArdupilotMega
                     else if (url.Contains("hud.html"))
                     {
                         string header = "HTTP/1.1 200 OK\r\nContent-Type: text/html\n\n";
-                        byte[] temp = encoding.GetBytes(header);
+                        byte[] temp = asciiEncoding.GetBytes(header);
                         stream.Write(temp, 0, temp.Length);
 
                         BinaryReader file = new BinaryReader(File.Open("hud.html", FileMode.Open, FileAccess.Read, FileShare.Read));
@@ -1469,7 +1548,7 @@ namespace ArdupilotMega
                     else if (url.ToLower().Contains("hud.jpg") || url.ToLower().Contains("map.jpg") || url.ToLower().Contains("both.jpg"))
                     {
                         string header = "HTTP/1.1 200 OK\r\nContent-Type: multipart/x-mixed-replace;boundary=APMPLANNER\n\n--APMPLANNER\r\n";
-                        byte[] temp = encoding.GetBytes(header);
+                        byte[] temp = asciiEncoding.GetBytes(header);
                         stream.Write(temp, 0, temp.Length);
 
                         while (client.Connected)
@@ -1508,13 +1587,13 @@ namespace ArdupilotMega
                             }
 
                             header = "Content-Type: image/jpeg\r\nContent-Length: " + data.Length + "\r\n\r\n";
-                            temp = encoding.GetBytes(header);
+                            temp = asciiEncoding.GetBytes(header);
                             stream.Write(temp, 0, temp.Length);
 
                             stream.Write(data, 0, data.Length);
 
                             header = "\r\n--APMPLANNER\r\n";
-                            temp = encoding.GetBytes(header);
+                            temp = asciiEncoding.GetBytes(header);
                             stream.Write(temp, 0, temp.Length);
 
                         }
@@ -1525,7 +1604,10 @@ namespace ArdupilotMega
                     }
                     stream.Close();
                 }
-                catch (Exception ee) { log.Info("Failed mjpg " + ee.Message); }
+                catch (Exception ee)
+                {
+                    log.Error("Failed mjpg ", ee);
+                }
             }
         }
 
@@ -1730,30 +1812,30 @@ namespace ArdupilotMega
 
         static void DoUpdateWorker_DoWork(object sender, Controls.ProgressWorkerEventArgs e)
         {
-           // TODO: Is this the right place?
-           #region Fetch Parameter Meta Data
-           
-           var progressReporterDialogue = ((ProgressReporterDialogue) sender);
-           progressReporterDialogue.UpdateProgressAndStatus(-1, "Getting Updated Parameters");
+            // TODO: Is this the right place?
+            #region Fetch Parameter Meta Data
 
-           try
-           {
-               ParameterMetaDataParser.GetParameterInformation();
-           }
-           catch (Exception ex) { log.Error(ex.ToString()); CustomMessageBox.Show("Error getting Parameter Information"); }
-           
-           #endregion Fetch Parameter Meta Data
+            var progressReporterDialogue = ((ProgressReporterDialogue)sender);
+            progressReporterDialogue.UpdateProgressAndStatus(-1, "Getting Updated Parameters");
 
-           progressReporterDialogue.UpdateProgressAndStatus(-1, "Getting Base URL");
-           // check for updates
-           if (Debugger.IsAttached)
-           {
-              log.Info("Skipping update test as it appears we are debugging");
-           }
-           else
-           {
-              MainV2.updateCheckMain(progressReporterDialogue);
-           }
+            try
+            {
+                ParameterMetaDataParser.GetParameterInformation();
+            }
+            catch (Exception ex) { log.Error(ex.ToString()); CustomMessageBox.Show("Error getting Parameter Information"); }
+
+            #endregion Fetch Parameter Meta Data
+
+            progressReporterDialogue.UpdateProgressAndStatus(-1, "Getting Base URL");
+            // check for updates
+            if (Debugger.IsAttached)
+            {
+                log.Info("Skipping update test as it appears we are debugging");
+            }
+            else
+            {
+                MainV2.updateCheckMain(progressReporterDialogue);
+            }
         }
 
         private static bool updateCheck(ProgressReporterDialogue frmProgressReporter, string baseurl, string subdir)
@@ -1920,7 +2002,7 @@ namespace ArdupilotMega
                     // Get the response.
                     response = request.GetResponse();
                     // Display the status.
-                    log.Info(((HttpWebResponse)response).StatusDescription);
+                    log.Debug(((HttpWebResponse)response).StatusDescription);
                     // Get the stream containing content returned by the server.
                     dataStream = response.GetResponseStream();
 
@@ -1946,7 +2028,7 @@ namespace ArdupilotMega
                             }
                         }
                         catch { }
-                        log.Info(file + " " + bytes);
+                        log.Debug(file + " " + bytes);
                         int len = dataStream.Read(buf1, 0, 1024);
                         if (len == 0)
                             break;
@@ -2195,7 +2277,7 @@ namespace ArdupilotMega
 
         private void CMB_baudrate_TextChanged(object sender, EventArgs e)
         {
-            StringBuilder sb = new StringBuilder();
+            var sb = new StringBuilder();
             int baud = 0;
             for (int i = 0; i < _connectionControl.CMB_baudrate.Text.Length; i++)
                 if (char.IsDigit(_connectionControl.CMB_baudrate.Text[i]))

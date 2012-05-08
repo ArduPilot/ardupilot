@@ -296,6 +296,8 @@ namespace ArdupilotMega
         // stats
         public ushort packetdropremote { get; set; }
         public ushort linkqualitygcs { get; set; }
+        public ushort hwvoltage { get; set; }
+        public ushort i2cerrors { get; set; }
 
         // requested stream rates
         public byte rateattitude { get; set; }
@@ -400,8 +402,21 @@ namespace ArdupilotMega
                     hilch3 = (int)(hil.throttle * 10000);
                     hilch4 = (int)(hil.yaw_rudder * 10000);
 
-                    //MAVLink.packets[MAVLink.MAVLINK_MSG_ID_RC_CHANNELS_SCALED] = null;
+                    //MAVLink.packets[MAVLink.MAVLINK_MSG_ID_HIL_CONTROLS] = null;
                 }
+
+                bytearray = mavinterface.packets[MAVLink.MAVLINK_MSG_ID_HWSTATUS];
+
+                if (bytearray != null)
+                {
+                    var hwstatus = bytearray.ByteArrayToStructure<MAVLink.mavlink_hwstatus_t>(6);
+
+                    hwvoltage = hwstatus.Vcc;
+                    i2cerrors = hwstatus.I2Cerr;
+
+                    //MAVLink.packets[MAVLink.MAVLINK_MSG_ID_HWSTATUS] = null;
+                }
+                
 
                 bytearray = mavinterface.packets[MAVLink.MAVLINK_MSG_ID_NAV_CONTROLLER_OUTPUT];
 
