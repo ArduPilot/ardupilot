@@ -50,6 +50,10 @@
 # define CONFIG_APM_HARDWARE APM_HARDWARE_APM1
 #endif
 
+#ifndef LITE
+# define LITE DISABLED
+#endif
+
 #if defined( __AVR_ATmega1280__ )
 #define CLI_ENABLED DISABLED
 #define LOGGING_ENABLED DISABLED
@@ -826,6 +830,10 @@
 // use this to enable servos in HIL mode
 #ifndef HIL_SERVOS
 # define HIL_SERVOS DISABLED
+#endif
+
+#ifndef TRACE
+# define TRACE DISABLED
 #endif
 
 // use this to completely disable the CLI

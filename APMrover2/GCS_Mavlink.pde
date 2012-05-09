@@ -114,7 +114,8 @@ static NOINLINE void send_attitude(mavlink_channel_t chan)
         micros(),
         ahrs.roll,
         ahrs.pitch - radians(g.pitch_trim*0.01),
-        ahrs.yaw,
+        ToRad(ground_course/100.0),
+        //ahrs.yaw,
         omega.x,
         omega.y,
         omega.z);
@@ -317,9 +318,7 @@ static void NOINLINE send_location(mavlink_channel_t chan)
         g_gps->ground_speed * rot.a.x,  // X speed cm/s
         g_gps->ground_speed * rot.b.x,  // Y speed cm/s
         g_gps->ground_speed * rot.c.x,
-        //g_gps->ground_course);          // course in 1/100 degree
-        ground_course);          // course in 1/100 degree
-
+        g_gps->ground_course);          // course in 1/100 degree
 }
 
 static void NOINLINE send_nav_controller_output(mavlink_channel_t chan)
@@ -333,7 +332,7 @@ static void NOINLINE send_nav_controller_output(mavlink_channel_t chan)
         target_bearing / 100,
         wp_distance,
         altitude_error / 1.0e2,
-        airspeed_error,
+        groundspeed_error,
         crosstrack_error);
 }
 
@@ -357,8 +356,7 @@ static void NOINLINE send_gps_raw(mavlink_channel_t chan)
         g_gps->hdop,
         65535,
         g_gps->ground_speed,  // cm/s
-        //g_gps->ground_course, // 1/100 degrees,
-        ground_course, // 1/100 degrees,
+        g_gps->ground_course, // 1/100 degrees,
         g_gps->num_sats);
 
 #else // MAVLINK10
@@ -372,9 +370,7 @@ static void NOINLINE send_gps_raw(mavlink_channel_t chan)
             g_gps->hdop,
             0.0,
             g_gps->ground_speed / 100.0,
-            //ground_course = (wrap_360(ToDeg(compass.heading) * 100));
-            //g_gps->ground_course / 100.0);
-            ground_course / 100.0);
+            g_gps->ground_course / 100.0);
 #endif  // MAVLINK10
 }
 
@@ -484,13 +480,13 @@ static void NOINLINE send_raw_imu1(mavlink_channel_t chan)
 
 static void NOINLINE send_raw_imu2(mavlink_channel_t chan)
 {
-    int32_t pressure = barometer.get_pressure();
+    int32_t pressure = 0;
     mavlink_msg_scaled_pressure_send(
         chan,
         micros(),
         pressure/100.0,
         (pressure - g.ground_pressure)/100.0,
-        barometer.get_temperature());
+        0);
 }
 
 static void NOINLINE send_raw_imu3(mavlink_channel_t chan)
@@ -502,8 +498,8 @@ static void NOINLINE send_raw_imu3(mavlink_channel_t chan)
                                     mag_offsets.y,
                                     mag_offsets.z,
                                     compass.get_declination(),
-                                    barometer.get_raw_pressure(),
-                                    barometer.get_raw_temp(),
+                                    0,
+                                    0,
                                     imu.gx(), imu.gy(), imu.gz(),
                                     imu.ax(), imu.ay(), imu.az());
 }
@@ -1048,7 +1044,6 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
                 if (packet.param1 == 1 ||
                     packet.param2 == 1 ||
                     packet.param3 == 1) {
-                    startup_IMU_ground(false);
                 }
                 if (packet.param4 == 1) {
                     trim_radio();
@@ -1153,7 +1148,6 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
                 case MAV_ACTION_CALIBRATE_ACC:
                 case MAV_ACTION_CALIBRATE_PRESSURE:
                 case MAV_ACTION_REBOOT:  // this is a rough interpretation
-                    startup_IMU_ground(true);
                     result=1;
                     break;
 

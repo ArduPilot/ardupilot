@@ -10,10 +10,15 @@
 
 #define CONFIG_APM_HARDWARE APM_HARDWARE_APM1
 
+#define LITE  DISABLED    // if LITE is ENABLED, you may use an APM1280 or APM2560 CPU only (IMU less) with a GPS MT3329
+                          // if LITE is DISABLED, this is for a full APM v1 (Oilpan + GPS MT3329 + Magnetometer HMC5883L) or APM v2
+
 #define CLI_ENABLED         ENABLED
 #define CLI_SLIDER_ENABLED  DISABLED
 #define CLOSED_LOOP_NAV     ENABLED
 #define AUTO_WP_RADIUS      ENABLED
+
+#define TRACE               DISABLED
 
 //#include "APM_Config_HILmode.h"  // for test in HIL mode with AeroSIM Rc 3.83
 #include "APM_Config_Rover.h"      // to be used with the real Traxxas model Monster Jam Grinder

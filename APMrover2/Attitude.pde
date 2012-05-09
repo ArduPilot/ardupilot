@@ -6,39 +6,10 @@
 
 static void stabilize()
 {
-	float ch1_inf = 1.0;
-
 	// Calculate desired servo output for the turn  // Wheels Direction
 	// ---------------------------------------------
-         g.channel_roll.servo_out = nav_roll;
-
-	// Mix Stick input to allow users to override control surfaces
-	// -----------------------------------------------------------
-	if ((control_mode < FLY_BY_WIRE_A) ||
-        (ENABLE_STICK_MIXING == 1 &&
-         geofence_stickmixing() &&
-         control_mode > FLY_BY_WIRE_B &&
-         failsafe == FAILSAFE_NONE)) {
-
-		// TODO: use RC_Channel control_mix function?
-		ch1_inf = (float)g.channel_roll.radio_in - (float)g.channel_roll.radio_trim;
-		ch1_inf = fabs(ch1_inf);
-		ch1_inf = min(ch1_inf, 400.0);
-		ch1_inf = ((400.0 - ch1_inf) /400.0);
-
-		// scale the sensor input based on the stick input
-		// -----------------------------------------------
-		g.channel_roll.servo_out *= ch1_inf;
-
-		// Mix in stick inputs
-		// -------------------
-		g.channel_roll.servo_out +=	g.channel_roll.pwm_to_angle();
-
-		//Serial.printf_P(PSTR(" servo_out[CH_ROLL] "));
-		//Serial.println(servo_out[CH_ROLL],DEC);
-
-	}
-
+        
+      g.channel_roll.servo_out = nav_roll;
       g.channel_roll.servo_out = g.channel_roll.servo_out * g.turn_gain;
       g.channel_rudder.servo_out = g.channel_roll.servo_out;
 }

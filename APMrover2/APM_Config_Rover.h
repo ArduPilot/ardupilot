@@ -11,12 +11,14 @@
 //#define GROUND_START_DELAY  1
 
 #define AIRSPEED_SENSOR	    DISABLED
-#define MAGNETOMETER	    ENABLED
-#define LOGGING_ENABLED	    ENABLED
 
-#define MAG_ORIENTATION		AP_COMPASS_COMPONENTS_UP_PINS_FORWARD
-#define PARAM_DECLINATION       0.18  // Paris
+#if LITE == DISABLED
+  #define MAGNETOMETER	    ENABLED
+  #define LOGGING_ENABLED	    ENABLED
 
+  #define MAG_ORIENTATION		AP_COMPASS_COMPONENTS_UP_PINS_FORWARD
+  #define PARAM_DECLINATION       0.18  // Paris
+#endif
 //////////////////////////////////////////////////////////////////////////////
 // Serial port speeds.
 //
