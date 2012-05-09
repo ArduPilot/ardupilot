@@ -16,7 +16,7 @@ class AP_InertialSensor_MPU6000 : public AP_InertialSensor
 
   AP_InertialSensor_MPU6000( uint8_t cs_pin );
 
-  void init( AP_PeriodicProcess * scheduler );
+  uint16_t init( AP_PeriodicProcess * scheduler );
 
   /* Concrete implementation of AP_InertialSensor functions: */
   bool update();

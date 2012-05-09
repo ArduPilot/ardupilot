@@ -15,7 +15,7 @@ class AP_InertialSensor_Stub : public AP_InertialSensor
 
   AP_InertialSensor_Stub() {}
 
-  void init( AP_PeriodicProcess * scheduler );
+  uint16_t init( AP_PeriodicProcess * scheduler );
 
   /* Concrete implementation of AP_InertialSensor functions: */
   bool update();
