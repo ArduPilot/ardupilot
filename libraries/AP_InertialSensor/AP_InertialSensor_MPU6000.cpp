@@ -119,14 +119,15 @@ AP_InertialSensor_MPU6000::AP_InertialSensor_MPU6000( uint8_t cs_pin )
   _initialised = 0;
 }
 
-void AP_InertialSensor_MPU6000::init( AP_PeriodicProcess * scheduler )
+uint16_t AP_InertialSensor_MPU6000::init( AP_PeriodicProcess * scheduler )
 {
-    if (_initialised) return;
+    if (_initialised) return _product_id;
     _initialised = 1;
     scheduler->suspend_timer();
     hardware_init();
     scheduler->resume_timer();
     scheduler->register_process( &AP_InertialSensor_MPU6000::read );
+	return _product_id;
 }
 
 // accumulation in ISR - must be read with interrupts disabled

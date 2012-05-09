@@ -2,7 +2,9 @@
 
 #include "AP_InertialSensor_Stub.h"
 
-void AP_InertialSensor_Stub::init( AP_PeriodicProcess * scheduler ) {}
+uint16_t AP_InertialSensor_Stub::init( AP_PeriodicProcess * scheduler ) {
+	return AP_PRODUCT_ID_NONE;
+}
 
 /*================ AP_INERTIALSENSOR PUBLIC INTERFACE ==================== */
 

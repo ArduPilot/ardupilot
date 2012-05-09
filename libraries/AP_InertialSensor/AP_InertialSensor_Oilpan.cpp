@@ -48,9 +48,17 @@ AP_InertialSensor_Oilpan::AP_InertialSensor_Oilpan( AP_ADC * adc ) :
   _accel.z = 0;
 }
 
-void AP_InertialSensor_Oilpan::init( AP_PeriodicProcess * scheduler)
+uint16_t AP_InertialSensor_Oilpan::init( AP_PeriodicProcess * scheduler)
 {
   _adc->Init(scheduler);
+
+#if defined(DESKTOP_BUILD)
+	return AP_PRODUCT_ID_SITL;
+#elif defined(__AVR_ATmega1280__)
+	return AP_PRODUCT_ID_APM1_1280;
+#else
+	return AP_PRODUCT_ID_APM1_2560;
+#endif
 }
 
 bool AP_InertialSensor_Oilpan::update()
