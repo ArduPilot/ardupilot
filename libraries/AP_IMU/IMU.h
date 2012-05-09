@@ -120,6 +120,8 @@ protected:
 	/// number of microseconds that the accel and gyro values
 	/// were sampled over
 	uint32_t       _sample_time;
+	
+	AP_Int16 	   _product_id; // this is the product id returned from the INS init
 };
 
 #endif

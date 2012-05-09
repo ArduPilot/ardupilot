@@ -40,7 +40,7 @@
 #define MPUREG_FIFO_COUNTH 0x72
 #define MPUREG_FIFO_COUNTL 0x73
 #define MPUREG_FIFO_R_W 0x74
-#define MPUREG_PRODUCT_ID 0x0C // product ID REV C = 0x14 REV D = 0x58
+#define MPUREG_PRODUCT_ID 			0x0C	// Product ID Register
 
 
 // Configuration bits MPU 3000 and MPU 6000 (not revised)?
@@ -68,10 +68,20 @@
 #define BIT_RAW_RDY_EN        0x01
 #define BIT_I2C_IF_DIS              0x10
 #define BIT_INT_STATUS_DATA   0x01
-
-#define MPU6000_REV_C 				0x14
-#define MPU6000_REV_D 				0x58
-
+											// Product ID Description for MPU6000
+											// high 4 bits 	low 4 bits
+											// Product Name	Product Revision
+#define MPU6000ES_REV_C4 			0x14 	// 0001			0100
+#define MPU6000ES_REV_C5 			0x15 	// 0001			0101
+#define MPU6000ES_REV_D6 			0x16	// 0001			0110
+#define MPU6000ES_REV_D7 			0x17	// 0001			0111
+#define MPU6000ES_REV_D8 			0x18	// 0001			1000	
+#define MPU6000_REV_C4 				0x54	// 0101			0100 
+#define MPU6000_REV_C5 				0x55	// 0101			0101
+#define MPU6000_REV_D6 				0x56	// 0101			0110	
+#define MPU6000_REV_D7 				0x57	// 0101			0111
+#define MPU6000_REV_D8 				0x58	// 0101			1000
+#define MPU6000_REV_D9 				0x59	// 0101			1001
 
 
 uint8_t AP_InertialSensor_MPU6000::_cs_pin;
@@ -326,7 +336,8 @@ void AP_InertialSensor_MPU6000::hardware_init()
 	
 	//Serial.printf("Product_ID= 0x%x\n", (unsigned) _product_id);
 	
-	if (_product_id == MPU6000_REV_C) {
+	if ((_product_id == MPU6000ES_REV_C4) || (_product_id == MPU6000ES_REV_C5) ||
+		(_product_id == MPU6000_REV_C4)   || (_product_id == MPU6000_REV_C5)){
 		// Accel scale 8g (4096 LSB/g)
 		// Rev C has different scaling than rev D
 		register_write(MPUREG_ACCEL_CONFIG,1<<3);
@@ -334,8 +345,6 @@ void AP_InertialSensor_MPU6000::hardware_init()
 		// Accel scale 8g (4096 LSB/g)
 		register_write(MPUREG_ACCEL_CONFIG,2<<3);
 	}
-		
-	
     delay(1);
 
     // INT CFG => Interrupt on Data Ready

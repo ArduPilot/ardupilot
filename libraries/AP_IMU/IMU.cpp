@@ -4,6 +4,7 @@
 // this allows the sensor calibration to be saved to EEPROM
 const AP_Param::GroupInfo IMU::var_info[] PROGMEM = {
     AP_GROUPINFO("CAL", 0, IMU, _sensor_cal),
+	AP_GROUPINFO("PRODUCT_ID", 1, IMU, _product_id),
     AP_GROUPEND
 };
 
