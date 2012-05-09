@@ -40,6 +40,7 @@
 #define MPUREG_FIFO_COUNTH 0x72
 #define MPUREG_FIFO_COUNTL 0x73
 #define MPUREG_FIFO_R_W 0x74
+#define MPUREG_PRODUCT_ID 0x0C // product ID REV C = 0x14 REV D = 0x58
 
 
 // Configuration bits MPU 3000 and MPU 6000 (not revised)?
@@ -68,17 +69,26 @@
 #define BIT_I2C_IF_DIS              0x10
 #define BIT_INT_STATUS_DATA   0x01
 
+#define MPU6000_REV_C 				0x14
+#define MPU6000_REV_D 				0x58
+
+
+
 uint8_t AP_InertialSensor_MPU6000::_cs_pin;
 
-/* pch: by the data sheet, the gyro scale should be 16.4LSB per DPS
- *      Given the radians conversion factor (0.174532), the gyro scale factor
- *      is waaaay off - output values are way too sensitive.
- *      Previously a divisor of 128 was appropriate.
- *      After tridge's changes to ::read, 50.0 seems about right based
- *      on making some 360 deg rotations on my desk.
- *      This issue requires more investigation.
+/* 
+   RS-MPU-6000A-00.pdf, page 33, section 4.25 lists LSB sensitivity of
+   gyro as 16.4 LSB/DPS at scale factor of +/- 2000dps (FS_SEL==3)
  */
 const float AP_InertialSensor_MPU6000::_gyro_scale = (0.0174532 / 16.4);
+
+/* 
+   RS-MPU-6000A-00.pdf, page 31, section 4.23 lists LSB sensitivity of
+   accel as 4096 LSB/mg at scale factor of +/- 8g (AFS_SEL==2)
+
+   See note below about accel scaling of engineering sample MPU6k
+   variants however
+ */
 const float AP_InertialSensor_MPU6000::_accel_scale = 9.81 / 4096.0;
 
 /* pch: I believe the accel and gyro indicies are correct
@@ -93,6 +103,8 @@ const int8_t  AP_InertialSensor_MPU6000::_accel_data_sign[3]  = { 1, 1, -1 };
 const uint8_t AP_InertialSensor_MPU6000::_temp_data_index = 3;
 
 static volatile uint8_t _new_data;
+
+static uint8_t _product_id;
 
 AP_InertialSensor_MPU6000::AP_InertialSensor_MPU6000( uint8_t cs_pin )
 {
@@ -308,7 +320,21 @@ void AP_InertialSensor_MPU6000::hardware_init()
     delay(1);
     register_write(MPUREG_GYRO_CONFIG,BITS_FS_2000DPS);  // Gyro scale 2000º/s
     delay(1);
-    register_write(MPUREG_ACCEL_CONFIG,0x08);           // Accel scele 4g (4096LSB/g)
+	
+	_product_id = register_read(MPUREG_PRODUCT_ID); // read the product ID rev c has 1/2 the sensitivity of rev d
+	
+	//Serial.printf("Product_ID= 0x%x\n", (unsigned) _product_id);
+	
+	if (_product_id == MPU6000_REV_C) {
+		// Accel scale 8g (4096 LSB/g)
+		// Rev C has different scaling than rev D
+		register_write(MPUREG_ACCEL_CONFIG,1<<3);
+	} else {
+		// Accel scale 8g (4096 LSB/g)
+		register_write(MPUREG_ACCEL_CONFIG,2<<3);
+	}
+		
+	
     delay(1);
 
     // INT CFG => Interrupt on Data Ready
