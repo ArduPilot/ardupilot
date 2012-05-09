@@ -86,27 +86,8 @@ static void read_radio()
 
 	g.channel_throttle.set_pwm(APM_RC.InputCh(CH_3));
 	g.channel_rudder.set_pwm(APM_RC.InputCh(CH_4));
-
-    #if FLAPERON == ENABLED      
-        // JLN update for true flaperons
-        if (control_mode == MANUAL) {
-          g.rc_5.set_pwm(APM_RC.InputCh(CH_5));
- 	  g.rc_6.set_pwm(APM_RC.InputCh(CH_6));
-        } else {
-        aileron1 = g.rc_5.radio_trim + (BOOL_TO_SIGN(-g.rc_5.get_reverse()) *g.channel_roll.angle_to_pwm());
-        aileron2 = g.rc_6.radio_trim + (BOOL_TO_SIGN(-g.rc_6.get_reverse()) *g.channel_roll.angle_to_pwm());
-        
-        aileron1 = constrain(aileron1,(uint16_t)g.rc_5.radio_min,(uint16_t)g.rc_5.radio_max);
-        aileron2 = constrain(aileron2,(uint16_t)g.rc_6.radio_min,(uint16_t)g.rc_6.radio_max);
-                  
-        g.rc_5.set_pwm(aileron1);
-        g.rc_6.set_pwm(aileron2);
-        }
-    #else
   	g.rc_5.set_pwm(APM_RC.InputCh(CH_5));
  	g.rc_6.set_pwm(APM_RC.InputCh(CH_6));        
-    #endif
-
 	g.rc_7.set_pwm(APM_RC.InputCh(CH_7));
 	g.rc_8.set_pwm(APM_RC.InputCh(CH_8));
 

@@ -1,5 +1,5 @@
 // -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
-
+#if LITE == DISABLED
 // Sensors are not available in HIL_MODE_ATTITUDE
 #if HIL_MODE != HIL_MODE_ATTITUDE
 
@@ -83,6 +83,7 @@ static void zero_airspeed(void)
 }
 
 #endif // HIL_MODE != HIL_MODE_ATTITUDE
+#endif
 
 static void read_battery(void)
 {

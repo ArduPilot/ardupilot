@@ -1,11 +1,11 @@
 /// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 
-#define THISFIRMWARE "APMrover v2.0b JL NAUDIN" //New version of the APMrover for the APM v1 or APM v2 and magnetometer
+#define THISFIRMWARE "APMrover v2.0c JL NAUDIN" //New version of the APMrover for the APM v1 or APM v2 and magnetometer
 
 // This is a full version of Arduplane v2.32 specially adapted for a Rover by Jean-Louis Naudin (JLN) 
 
 /*
-Authors:    Doug Weibel, Jose Julio, Jordi Munoz, Jason Short, Andrew Tridgell, Randy Mackay, Pat Hickey, John Arne Birkeland, Olivier Adler
+Authors:    Doug Weibel, Jose Julio, Jordi Munoz, Jason Short, Andrew Tridgell, Randy Mackay, Pat Hickey, John Arne Birkeland, Olivier Adler, Jean-Louis Naudin
 Thanks to:  Chris Anderson, Michael Oborne, Paul Mather, Bill Premerlani, James Cohen, JB from rotorFX, Automatik, Fefenin, Peter Meister, Remzibi, Yury Smirnov, Sandro Benigno, Max Levine, Roberto Navoni, Lorenz Meier 
 Please contribute your ideas!
 
@@ -16,7 +16,7 @@ License as published by the Free Software Foundation; either
 version 2.1 of the License, or (at your option) any later version.
 
 //
-// JLN updates: last update 2012-05-01
+// JLN updates: last update 2012-05-04
 //
 // DOLIST:
 //  
@@ -24,6 +24,9 @@ version 2.1 of the License, or (at your option) any later version.
 //-------------------------------------------------------------------------------------------------------------------------
 // Dev Startup : 2012-04-21
 //
+//  2012-05-04: Added #define LITE ENABLED  for the APM1280 or APM2560 CPU IMUless version
+//  2012-05-03: Successful missions tests with a full APM2560 kit (GPS MT3329 + magnetometer HMC5883L)
+//  2012-05-03: removing stick mixing in auto mode
 //  2012-05-01: special update for rover about ground_course if compass is enabled
 //  2012-04-30: Successfully tested in autonomous nav with a waypoints list recorded in live mode
 //  2012-04-30: Now a full version for APM v1 or APM v2 with magnetometer
@@ -586,7 +589,6 @@ static long	nav_pitch;
 // Calculated radius for the wp turn based on ground speed and max turn angle
 static long    wp_radius;
 static long	toff_yaw;			// deg * 100 : yaw angle for takeoff
-static long     nav_yaw = 1;                    // deg * 100 : target yaw angle  - used only for thermal hunt
 static long	altitude_estimate = 0;		// for smoothing GPS output
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -643,8 +645,7 @@ static struct 	Location current_loc;
 static struct 	Location next_WP;
 // The location of the active waypoint in Guided mode.
 static struct  	Location guided_WP;
-static struct   Location soarwp1_WP = {0,0,0};	// temp waypoint for Ridge Soaring
-static struct   Location soarwp2_WP = {0,0,0};	// temp waypoint for Ridge Soaring
+
 // The location structure information from the Nav command being processed
 static struct 	Location next_nav_command;	
 // The location structure information from the Non-Nav command being processed
@@ -749,11 +750,12 @@ void loop()
 
 		if (millis() - perf_mon_timer > 20000) {
 			if (mainLoop_count != 0) {
+  #if LITE == DISABLED
 				if (g.log_bitmask & MASK_LOG_PM)
 					#if HIL_MODE != HIL_MODE_ATTITUDE
 					Log_Write_Performance();
 					#endif
-
+ #endif
 				resetPerfData();
 			}
 		}
@@ -787,11 +789,14 @@ static void fast_loop()
 		gcs_update();
 	#endif
 
+#if LITE == DISABLED
 	ahrs.update();
+#endif 
 
 	// uses the yaw from the DCM to give more accurate turns
 	calc_bearing_error();
 
+#if LITE == DISABLED
 	# if HIL_MODE == HIL_MODE_DISABLED
 		if (g.log_bitmask & MASK_LOG_ATTITUDE_FAST)
 			Log_Write_Attitude((int)ahrs.roll_sensor, (int)ahrs.pitch_sensor, (uint16_t)ahrs.yaw_sensor);
@@ -799,7 +804,7 @@ static void fast_loop()
 		if (g.log_bitmask & MASK_LOG_RAW)
 			Log_Write_Raw();
 	#endif
-
+#endif
 	// inertial navigation
 	// ------------------
 	#if INERTIAL_NAVIGATION == ENABLED
@@ -845,7 +850,8 @@ static void medium_loop()
                 update_GPS();
                 calc_gndspeed_undershoot();
             }
-
+            
+#if LITE == DISABLED
 			#if HIL_MODE != HIL_MODE_ATTITUDE
             if (g.compass_enabled && compass.read()) {
                 ahrs.set_compass(&compass);
@@ -857,6 +863,7 @@ static void medium_loop()
                 ahrs.set_compass(NULL);
             }
 			#endif
+#endif
 /*{
 Serial.print(ahrs.roll_sensor, DEC);	Serial.printf_P(PSTR("\t"));
 Serial.print(ahrs.pitch_sensor, DEC);	Serial.printf_P(PSTR("\t"));
@@ -877,7 +884,7 @@ Serial.println(tempaccel.z, DEC);
 
 			if(g_gps->new_data){
 				g_gps->new_data 	= false;
-				dTnav 				= millis() - nav_loopTimer;
+				dTnav 			= millis() - nav_loopTimer;
 				nav_loopTimer 		= millis();
 
 				// calculate the plane's desired bearing
@@ -901,7 +908,7 @@ Serial.println(tempaccel.z, DEC);
 		//-------------------------------------------------
 		case 3:
 			medium_loopCounter++;
-
+#if LITE == DISABLED
 			#if HIL_MODE != HIL_MODE_ATTITUDE
 				if ((g.log_bitmask & MASK_LOG_ATTITUDE_MED) && !(g.log_bitmask & MASK_LOG_ATTITUDE_FAST))
 					Log_Write_Attitude((int)ahrs.roll_sensor, (int)ahrs.pitch_sensor, (uint16_t)ahrs.yaw_sensor);
@@ -915,7 +922,7 @@ Serial.println(tempaccel.z, DEC);
 
 			if (g.log_bitmask & MASK_LOG_GPS)
 				Log_Write_GPS(g_gps->time, current_loc.lat, current_loc.lng, g_gps->altitude, current_loc.alt, (long) g_gps->ground_speed, g_gps->ground_course, g_gps->fix, g_gps->num_sats);
-
+#endif
             // send all requested output streams with rates requested
             // between 5 and 45 Hz
             gcs_data_stream_send(5,45);
@@ -949,12 +956,13 @@ static void slow_loop()
 			check_long_failsafe();
 			superslow_loopCounter++;
 			if(superslow_loopCounter >=200) {				//	200 = Execute every minute
+#if LITE == DISABLED
 				#if HIL_MODE != HIL_MODE_ATTITUDE
 					if(g.compass_enabled) {
 						compass.save_offsets();
 					}
 				#endif
-
+#endif
 				superslow_loopCounter = 0;
 			}
 			break;
@@ -988,22 +996,31 @@ static void slow_loop()
 #if USB_MUX_PIN > 0
             check_usb_mux();
 #endif
+
+#if TRACE == ENABLED
+              Serial.printf_P(PSTR("NAV->gnd_crs=%3.0f, nav_brg=%3.0f, tgt_brg=%3.0f, brg_err=%3.0f, nav_rll=%3.1f rsvo=%3.1f\n"), 
+                    (float)ground_course/100, (float)nav_bearing/100, (float)target_bearing/100, (float)bearing_error/100, (float)nav_roll/100, (float)g.channel_roll.servo_out/100);           
+             // Serial.printf_P(PSTR("WPL->g.command_total=%d, g.command_index=%d, nav_command_index=%d\n"), 
+                //    g.command_total, g.command_index, nav_command_index);                                 
+#endif                          
 			break;
 	}
 }
 
 static void one_second_loop()
 {
+#if LITE == DISABLED
 	if (g.log_bitmask & MASK_LOG_CUR)
 		Log_Write_Current();
-
+#endif
 	// send a heartbeat
 	gcs_send_message(MSG_HEARTBEAT);
     gcs_data_stream_send(1,3);
 }
 
 static void update_GPS(void)
-{
+{      static uint16_t hdg;
+  
 	g_gps->update();
 	update_GPS_light();
 
@@ -1026,19 +1043,20 @@ static void update_GPS(void)
 			} else {
 				if(ENABLE_AIR_START == 1 && (ground_start_avg / 5) < SPEEDFILT){
 					startup_ground();
-
+#if LITE == DISABLED
 					if (g.log_bitmask & MASK_LOG_CMD)
 						Log_Write_Startup(TYPE_GROUNDSTART_MSG);
-
+#endif
 					init_home();
 				} else if (ENABLE_AIR_START == 0) {
 					init_home();
 				}
-
+#if LITE == DISABLED
 				if (g.compass_enabled) {
 					// Set compass declination automatically
 					compass.set_initial_location(g_gps->latitude, g_gps->longitude);
 				}
+#endif
 				ground_start_count = 0;
 			}
 		}
@@ -1048,13 +1066,16 @@ static void update_GPS(void)
 		current_loc.lat = g_gps->latitude;     // Lat * 10**7
                 current_loc.alt = max((g_gps->altitude - home.alt),0);
                 ground_speed   = g_gps->ground_speed;
+#if LITE == DISABLED                
                 if (g.compass_enabled) {
-                  ground_course = (wrap_360(ToDeg(compass.heading) * 100));
-                } else {            
-                  ground_course = g_gps->ground_course;
+                  hdg=(ahrs.yaw_sensor / 100) % 360;
+                  ground_course = hdg * 100;
+                } else {
+#endif            
+                  ground_course = abs(g_gps->ground_course);
+#if LITE == DISABLED                  
                 }
-
-
+#endif
         // see if we've breached the geo-fence
         geofence_check(false);
 	}
