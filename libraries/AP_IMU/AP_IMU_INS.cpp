@@ -27,7 +27,7 @@ AP_IMU_INS::init( Start_style style,
                   void (*flash_leds_cb)(bool on),
                   AP_PeriodicProcess * scheduler )
 {
-    _ins->init(scheduler);
+    _product_id = _ins->init(scheduler);
     // if we are warm-starting, load the calibration data from EEPROM and go
     //
     if (WARM_START == style) {

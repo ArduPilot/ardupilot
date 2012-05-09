@@ -11,7 +11,10 @@
 class AP_IMU_Shim : public IMU
 {
 public:
-	AP_IMU_Shim(void) {}
+	AP_IMU_Shim(void) {
+		_product_id = AP_PRODUCT_ID_NONE;
+	}
+	
 
 	/// @name IMU protocol
 	//@{
@@ -69,6 +72,7 @@ public:
 
 	float get_gyro_drift_rate(void) { return 0; }
 
+	
 private:
 	/// set true when new data is delivered
 	bool		_updated;
