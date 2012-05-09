@@ -234,4 +234,13 @@ struct Location {
 # define SITL_debug(fmt, args...)
 #endif
 
+/*  Product IDs for all supported products follow */
+
+#define AP_PRODUCT_ID_NONE 			0x00 	// Hardware in the loop
+#define AP_PRODUCT_ID_APM1_1280 	0x01 	// APM1 with 1280 CPUs
+#define AP_PRODUCT_ID_APM1_2560 	0x02 	// APM1 with 2560 CPUs
+#define AP_PRODUCT_ID_SITL		 	0x03 	// Software in the loop
+#define AP_PRODUCT_ID_APM2_REVC     0x14 	// APM2 with REV C MPU 6000
+#define AP_PRODUCT_ID_APM2_REVD     0x58 	// APM2 with REV D MPU 6000
+
 #endif // _AP_COMMON_H
