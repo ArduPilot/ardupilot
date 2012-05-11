@@ -222,7 +222,10 @@ namespace uploader
 		{
 			send (Code.CHIP_ERASE);
 			send (Code.EOC);
-			
+
+            // sleep for 2 second - erase seems to take about 2 seconds
+            System.Threading.Thread.Sleep(2000);
+
 			getSync ();
 		}
 		
@@ -319,14 +322,16 @@ namespace uploader
 			freq = (Code)recv ();
 			
 			// XXX should be getting valid board/frequency data from firmware file
-			if ((id != Code.DEVICE_ID_HM_TRP) && (id != Code.DEVICE_ID_RF50))
-				throw new Exception ("bootloader device ID mismatch");
+            if ((id != Code.DEVICE_ID_HM_TRP) && (id != Code.DEVICE_ID_RF50) && (id != Code.DEVICE_ID_RFD900))
+				throw new Exception ("bootloader device ID mismatch - device:" + id.ToString());
 			
 			getSync ();
 		}
 
         public void getDevice(ref Code device, ref Code freq)
         {
+            connect_and_sync();
+
             send(Code.GET_DEVICE);
             send(Code.EOC);
 

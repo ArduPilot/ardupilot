@@ -64,6 +64,8 @@ namespace uploader
 			if (Count < 1)
 				throw new Exception ("no data in IntelHex file");
 			log (string.Format ("read {0} bytes from {1}\n", loadedSize, fromPath));
+
+            sr.Close();
 		}
 		
 		private void log (string message, int level = 0)
