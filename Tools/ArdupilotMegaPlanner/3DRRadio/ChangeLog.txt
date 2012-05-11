@@ -1,0 +1,4 @@
+﻿0.4 - adjust erase timeout - to prevent lost bootloader sync error.
+0.3 - add RFD900 support
+0.2 - change packet size to 32 bytes
+0.1 - Initial Release - Based off code by Mike Smith

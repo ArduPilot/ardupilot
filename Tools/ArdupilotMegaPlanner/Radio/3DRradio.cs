@@ -13,6 +13,7 @@ using ArdupilotMega.Arduino;
 using ArdupilotMega.Comms;
 using log4net;
 using System.Reflection;
+using System.Text.RegularExpressions;
 
 namespace ArdupilotMega
 {
@@ -22,7 +23,7 @@ namespace ArdupilotMega
 
         public delegate void ProgressEventHandler(double completed);
 
-        string firmwarefile = Path.GetDirectoryName(Application.ExecutablePath) + Path.DirectorySeparatorChar + "radio.hm_trp.hex";
+        string firmwarefile = Path.GetDirectoryName(Application.ExecutablePath) + Path.DirectorySeparatorChar + "radio.hex";
 
         private static readonly ILog log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
 
@@ -34,12 +35,23 @@ namespace ArdupilotMega
             RS3.DataSource = S3.DataSource;
         }
 
-        bool getFirmware()
+        bool getFirmware(uploader.Uploader.Code device)
         {
             // was https://raw.github.com/tridge/SiK/master/Firmware/dst/radio.hm_trp.hex
             // now http://www.samba.org/tridge/UAV/3DR/radio.hm_trp.hex
-            
-            return Common.getFilefromNet("http://www.samba.org/tridge/UAV/3DR/radio.hm_trp.hex", firmwarefile);
+
+            if (device == uploader.Uploader.Code.DEVICE_ID_HM_TRP)
+            {
+                return Common.getFilefromNet("http://www.samba.org/tridge/UAV/3DR/radio.hm_trp.hex", firmwarefile);
+            }
+            else if (device == uploader.Uploader.Code.DEVICE_ID_RFD900)
+            {
+                return Common.getFilefromNet("http://www.samba.org/tridge/UAV/3DR/radio.rfd900.hex", firmwarefile);
+            }
+            else
+            {
+                return false;
+            }
         }
 
         void Sleep(int mstimeout)
@@ -71,8 +83,7 @@ namespace ArdupilotMega
 
             bool bootloadermode = false;
 
-
-
+            // attempt bootloader mode
             try
             {
                 uploader_ProgressEvent(0);
@@ -88,6 +99,7 @@ namespace ArdupilotMega
             }
             catch
             {
+                // cleanup bootloader mode fail, and try firmware mode
                 comPort.Close();
                 comPort.BaudRate = MainV2.comPort.BaseStream.BaudRate;
                 comPort.Open();
@@ -99,46 +111,59 @@ namespace ArdupilotMega
                 bootloadermode = false;
             }
 
-
+            // check for either already bootloadermode, or if we can do a ATI to ID the firmware 
             if (bootloadermode || doConnect(comPort))
             {
-                if (getFirmware())
+
+                uploader.IHex iHex = new uploader.IHex();
+
+                iHex.LogEvent += new LogEventHandler(iHex_LogEvent);
+
+                iHex.ProgressEvent += new ProgressEventHandler(iHex_ProgressEvent);
+
+                // put into bootloader mode/udpate mode
+                if (!bootloadermode)
                 {
-                    uploader.IHex iHex = new uploader.IHex();
+                    try
+                    {
+                        comPort.Write("AT&UPDATE\r\n");
+                        string left = comPort.ReadExisting();
+                        log.Info(left);
+                        Sleep(700);
+                        comPort.BaudRate = 115200;
+                    }
+                    catch { }
+                }
 
-                    iHex.LogEvent += new LogEventHandler(iHex_LogEvent);
+                global::uploader.Uploader.Code device = global::uploader.Uploader.Code.FAILED;
+                global::uploader.Uploader.Code freq = global::uploader.Uploader.Code.FAILED;
 
-                    iHex.ProgressEvent += new ProgressEventHandler(iHex_ProgressEvent);
+                // get the device type and frequency in the bootloader
+                uploader.getDevice(ref device, ref freq);
 
+                // get firmware for this device
+                if (getFirmware(device))
+                {
+                    // load the hex
                     try
                     {
                         iHex.load(firmwarefile);
                     }
                     catch { CustomMessageBox.Show("Bad Firmware File"); goto exit; }
 
-                    if (!bootloadermode)
-                    {
-                        try
-                        {
-                            comPort.Write("AT&UPDATE\r\n");
-                            string left = comPort.ReadExisting();
-                            log.Info(left);
-                            Sleep(700);
-                            comPort.BaudRate = 115200;
-                        }
-                        catch { }
-                    }
-
+                    // upload the hex and verify
                     try
                     {
                         uploader.upload(comPort, iHex);
                     }
                     catch (Exception ex) { CustomMessageBox.Show("Upload Failed " + ex.Message); }
+
                 }
                 else
                 {
                     CustomMessageBox.Show("Failed to download new firmware");
                 }
+
             }
             else
             {
@@ -148,7 +173,6 @@ namespace ArdupilotMega
         exit:
             if (comPort.IsOpen)
                 comPort.Close();
-
         }
 
         void iHex_ProgressEvent(double completed)
@@ -406,9 +430,9 @@ namespace ArdupilotMega
 
                 lbl_status.Text = "Doing Command ATI & RTI";
 
-                ATI.Text = doCommand(comPort, "ATI1").Trim();
+                ATI.Text = doCommand(comPort, "ATI");
 
-                RTI.Text = doCommand(comPort, "RTI1").Trim();
+                RTI.Text = doCommand(comPort, "RTI");
 
                 RSSI.Text = doCommand(comPort, "ATI7").Trim();
 
@@ -613,7 +637,9 @@ namespace ArdupilotMega
 
             log.Info("Connect Version: " + version.Trim() + "\n");
 
-            if (version.Contains("SiK") && version.Contains("on")) // should use a regex....
+            Regex regex = new Regex(@"SiK\s+(.*)\s+on\s+(.*)");
+
+            if (regex.IsMatch(version))
             {
                 return true;
             }

@@ -140,9 +140,6 @@
   <data name="&gt;&gt;Progressbar.ZOrder" xml:space="preserve">
     <value>68</value>
   </data>
-  <metadata name="toolTip1.TrayLocation" type="System.Drawing.Point, System.Drawing, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a">
-    <value>17, 17</value>
-  </metadata>
   <data name="S1.Items" xml:space="preserve">
     <value>115</value>
   </data>
@@ -179,6 +176,9 @@
   <data name="S1.TabIndex" type="System.Int32, mscorlib">
     <value>4</value>
   </data>
+  <metadata name="toolTip1.TrayLocation" type="System.Drawing.Point, System.Drawing, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a">
+    <value>17, 17</value>
+  </metadata>
   <data name="S1.ToolTip" xml:space="preserve">
     <value>Serial baud rate in rounded kbps. So 57 means 57600. 
 </value>
@@ -561,9 +561,6 @@
   <data name="S4.TabIndex" type="System.Int32, mscorlib">
     <value>13</value>
   </data>
-  <metadata name="toolTip1.TrayLocation" type="System.Drawing.Point, System.Drawing, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a">
-    <value>17, 17</value>
-  </metadata>
   <data name="S4.ToolTip" xml:space="preserve">
     <value>TXPOWER is the transmit power in dBm. 20dBm is 100mW. It is useful to set this to lower levels for short range testing.
 </value>
@@ -1736,10 +1733,10 @@ which result in a valid packet CRC
     <value>39</value>
   </data>
   <data name="RTI.Location" type="System.Drawing.Point, System.Drawing">
-    <value>543, 25</value>
+    <value>531, 25</value>
   </data>
   <data name="RTI.Size" type="System.Drawing.Size, System.Drawing">
-    <value>80, 20</value>
+    <value>102, 20</value>
   </data>
   <data name="RTI.TabIndex" type="System.Int32, mscorlib">
     <value>33</value>
@@ -1757,10 +1754,10 @@ which result in a valid packet CRC
     <value>37</value>
   </data>
   <data name="ATI.Location" type="System.Drawing.Point, System.Drawing">
-    <value>157, 25</value>
+    <value>145, 25</value>
   </data>
   <data name="ATI.Size" type="System.Drawing.Size, System.Drawing">
-    <value>80, 20</value>
+    <value>102, 20</value>
   </data>
   <data name="ATI.TabIndex" type="System.Int32, mscorlib">
     <value>32</value>
@@ -1850,7 +1847,7 @@ which result in a valid packet CRC
     <value>BUT_savesettings</value>
   </data>
   <data name="&gt;&gt;BUT_savesettings.Type" xml:space="preserve">
-    <value>ArdupilotMega.Controls.MyButton, ArdupilotMegaPlanner, Version=1.1.4499.32931, Culture=neutral, PublicKeyToken=null</value>
+    <value>ArdupilotMega.Controls.MyButton, ArdupilotMegaPlanner, Version=1.1.4512.32829, Culture=neutral, PublicKeyToken=null</value>
   </data>
   <data name="&gt;&gt;BUT_savesettings.Parent" xml:space="preserve">
     <value>$this</value>
@@ -1874,7 +1871,7 @@ which result in a valid packet CRC
     <value>BUT_getcurrent</value>
   </data>
   <data name="&gt;&gt;BUT_getcurrent.Type" xml:space="preserve">
-    <value>ArdupilotMega.Controls.MyButton, ArdupilotMegaPlanner, Version=1.1.4499.32931, Culture=neutral, PublicKeyToken=null</value>
+    <value>ArdupilotMega.Controls.MyButton, ArdupilotMegaPlanner, Version=1.1.4512.32829, Culture=neutral, PublicKeyToken=null</value>
   </data>
   <data name="&gt;&gt;BUT_getcurrent.Parent" xml:space="preserve">
     <value>$this</value>
@@ -1919,7 +1916,7 @@ which result in a valid packet CRC
     <value>BUT_upload</value>
   </data>
   <data name="&gt;&gt;BUT_upload.Type" xml:space="preserve">
-    <value>ArdupilotMega.Controls.MyButton, ArdupilotMegaPlanner, Version=1.1.4499.32931, Culture=neutral, PublicKeyToken=null</value>
+    <value>ArdupilotMega.Controls.MyButton, ArdupilotMegaPlanner, Version=1.1.4512.32829, Culture=neutral, PublicKeyToken=null</value>
   </data>
   <data name="&gt;&gt;BUT_upload.Parent" xml:space="preserve">
     <value>$this</value>
@@ -1943,7 +1940,7 @@ which result in a valid packet CRC
     <value>BUT_syncS2</value>
   </data>
   <data name="&gt;&gt;BUT_syncS2.Type" xml:space="preserve">
-    <value>ArdupilotMega.Controls.MyButton, ArdupilotMegaPlanner, Version=1.1.4499.32931, Culture=neutral, PublicKeyToken=null</value>
+    <value>ArdupilotMega.Controls.MyButton, ArdupilotMegaPlanner, Version=1.1.4512.32829, Culture=neutral, PublicKeyToken=null</value>
   </data>
   <data name="&gt;&gt;BUT_syncS2.Parent" xml:space="preserve">
     <value>$this</value>
@@ -1967,7 +1964,7 @@ which result in a valid packet CRC
     <value>BUT_syncS3</value>
   </data>
   <data name="&gt;&gt;BUT_syncS3.Type" xml:space="preserve">
-    <value>ArdupilotMega.Controls.MyButton, ArdupilotMegaPlanner, Version=1.1.4499.32931, Culture=neutral, PublicKeyToken=null</value>
+    <value>ArdupilotMega.Controls.MyButton, ArdupilotMegaPlanner, Version=1.1.4512.32829, Culture=neutral, PublicKeyToken=null</value>
   </data>
   <data name="&gt;&gt;BUT_syncS3.Parent" xml:space="preserve">
     <value>$this</value>
@@ -1991,7 +1988,7 @@ which result in a valid packet CRC
     <value>BUT_syncS5</value>
   </data>
   <data name="&gt;&gt;BUT_syncS5.Type" xml:space="preserve">
-    <value>ArdupilotMega.Controls.MyButton, ArdupilotMegaPlanner, Version=1.1.4499.32931, Culture=neutral, PublicKeyToken=null</value>
+    <value>ArdupilotMega.Controls.MyButton, ArdupilotMegaPlanner, Version=1.1.4512.32829, Culture=neutral, PublicKeyToken=null</value>
   </data>
   <data name="&gt;&gt;BUT_syncS5.Parent" xml:space="preserve">
     <value>$this</value>
@@ -2559,7 +2556,7 @@ which result in a valid packet CRC
     <value>BUT_syncS8</value>
   </data>
   <data name="&gt;&gt;BUT_syncS8.Type" xml:space="preserve">
-    <value>ArdupilotMega.Controls.MyButton, ArdupilotMegaPlanner, Version=1.1.4499.32931, Culture=neutral, PublicKeyToken=null</value>
+    <value>ArdupilotMega.Controls.MyButton, ArdupilotMegaPlanner, Version=1.1.4512.32829, Culture=neutral, PublicKeyToken=null</value>
   </data>
   <data name="&gt;&gt;BUT_syncS8.Parent" xml:space="preserve">
     <value>$this</value>
@@ -2586,7 +2583,7 @@ which result in a valid packet CRC
     <value>BUT_syncS9</value>
   </data>
   <data name="&gt;&gt;BUT_syncS9.Type" xml:space="preserve">
-    <value>ArdupilotMega.Controls.MyButton, ArdupilotMegaPlanner, Version=1.1.4499.32931, Culture=neutral, PublicKeyToken=null</value>
+    <value>ArdupilotMega.Controls.MyButton, ArdupilotMegaPlanner, Version=1.1.4512.32829, Culture=neutral, PublicKeyToken=null</value>
   </data>
   <data name="&gt;&gt;BUT_syncS9.Parent" xml:space="preserve">
     <value>$this</value>
@@ -2613,7 +2610,7 @@ which result in a valid packet CRC
     <value>BUT_syncS10</value>
   </data>
   <data name="&gt;&gt;BUT_syncS10.Type" xml:space="preserve">
-    <value>ArdupilotMega.Controls.MyButton, ArdupilotMegaPlanner, Version=1.1.4499.32931, Culture=neutral, PublicKeyToken=null</value>
+    <value>ArdupilotMega.Controls.MyButton, ArdupilotMegaPlanner, Version=1.1.4512.32829, Culture=neutral, PublicKeyToken=null</value>
   </data>
   <data name="&gt;&gt;BUT_syncS10.Parent" xml:space="preserve">
     <value>$this</value>
@@ -2640,6 +2637,6 @@ which result in a valid packet CRC
     <value>_3DRradio</value>
   </data>
   <data name="&gt;&gt;$this.Type" xml:space="preserve">
-    <value>ArdupilotMega.Controls.BackstageView.BackStageViewContentPanel, ArdupilotMegaPlanner, Version=1.1.4499.32931, Culture=neutral, PublicKeyToken=null</value>
+    <value>ArdupilotMega.Controls.BackstageView.BackStageViewContentPanel, ArdupilotMegaPlanner, Version=1.1.4512.32829, Culture=neutral, PublicKeyToken=null</value>
   </data>
 </root>

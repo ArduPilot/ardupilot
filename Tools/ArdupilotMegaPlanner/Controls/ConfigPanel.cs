@@ -16,7 +16,7 @@ namespace ArdupilotMega.Controls
     public partial class ConfigPanel : BackStageViewContentPanel
     {
         /// <summary>
-        /// store tempory pending changes
+        /// store temp pending changes
         /// </summary>
         Hashtable _changed = new Hashtable();
         // store linked param options

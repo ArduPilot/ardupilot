@@ -68,14 +68,8 @@ namespace ArdupilotMega.GCSViews.ConfigurationView
 
         void readToolTips()
         {
-            System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(Configuration));
-
-            string data = resources.GetString("MAVParam");
-
-            if (data == null)
-            {
-                data = global::ArdupilotMega.Properties.Resources.MAVParam;
-            }
+            string data = global::ArdupilotMega.Properties.Resources.MAVParam;
+            
 
             string[] tips = data.Split(new char[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries);
 

@@ -21,6 +21,29 @@ namespace ArdupilotMega.GCSViews.ConfigurationView
         private bool startup = false;
         List<CultureInfo> languages = new List<CultureInfo>();
 
+        public class GCSBitmapInfo
+        {
+            public int Width { get; set; }
+            public int Height { get; set; }
+            public long Fps { get; set; }
+            public string Standard { get; set; }
+            public AMMediaType Media { get; set; }
+
+            public GCSBitmapInfo(int width, int height, long fps, string standard, AMMediaType media)
+            {
+                Width = width;
+                Height = height;
+                Fps = fps;
+                Standard = standard;
+                Media = media;
+            }
+
+            public override string ToString()
+            {
+                return Width.ToString() + " x " + Height.ToString() + String.Format(" {0:0.00} fps ", 10000000.0 / Fps) + Standard;
+            }
+        }
+
         public ConfigPlanner()
         {
             InitializeComponent();
@@ -32,13 +55,11 @@ namespace ArdupilotMega.GCSViews.ConfigurationView
             // stop first
             BUT_videostop_Click(sender, e);
 
-            var bmp = (GCSViews.Configuration.GCSBitmapInfo)CMB_videoresolutions.SelectedItem;
+            var bmp = (GCSBitmapInfo)CMB_videoresolutions.SelectedItem;
 
             try
             {
                 MainV2.cam = new WebCamService.Capture(CMB_videosources.SelectedIndex, bmp.Media);
-
-                MainV2.cam.showhud = CHK_hudshow.Checked;
 
                 MainV2.cam.Start();
 
@@ -83,7 +104,7 @@ namespace ArdupilotMega.GCSViews.ConfigurationView
             AMMediaType media = null;
             VideoInfoHeader v;
             VideoStreamConfigCaps c;
-            List<GCSViews.Configuration.GCSBitmapInfo> modes = new List<GCSViews.Configuration.GCSBitmapInfo>();
+            List<GCSBitmapInfo> modes = new List<GCSBitmapInfo>();
 
             // Get the ICaptureGraphBuilder2
             capGraph = (ICaptureGraphBuilder2)new CaptureGraphBuilder2();
@@ -124,7 +145,7 @@ namespace ArdupilotMega.GCSViews.ConfigurationView
                 hr = videoStreamConfig.GetStreamCaps(i, out media, TaskMemPointer);
                 v = (VideoInfoHeader)Marshal.PtrToStructure(media.formatPtr, typeof(VideoInfoHeader));
                 c = (VideoStreamConfigCaps)Marshal.PtrToStructure(TaskMemPointer, typeof(VideoStreamConfigCaps));
-                modes.Add(new GCSViews.Configuration.GCSBitmapInfo(v.BmiHeader.Width, v.BmiHeader.Height, c.MaxFrameInterval, c.VideoStandard.ToString(), media));
+                modes.Add(new GCSBitmapInfo(v.BmiHeader.Width, v.BmiHeader.Height, c.MaxFrameInterval, c.VideoStandard.ToString(), media));
             }
             Marshal.FreeCoTaskMem(TaskMemPointer);
             DsUtils.FreeAMMediaType(media);

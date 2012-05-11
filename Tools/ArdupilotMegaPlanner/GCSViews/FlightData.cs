@@ -985,8 +985,8 @@ namespace ArdupilotMega.GCSViews
                 catch { }
             }
         }
-
-        private void FlightData_ParentChanged(object sender, EventArgs e)
+		
+		        private void FlightData_ParentChanged(object sender, EventArgs e)
         {
             if (MainV2.cam != null)
             {

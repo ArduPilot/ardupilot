@@ -31,8 +31,6 @@ namespace ArdupilotMega
 
             Application.Idle += Application_Idle;
 
-            //CodeGen.runCode("Sin(0.55)");
-
             int wt = 0, ct = 0;
             ThreadPool.GetMaxThreads(out wt, out ct);
             log.Info("Max Threads: " + wt);

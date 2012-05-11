@@ -80,7 +80,7 @@
     <ManifestKeyFile>ArdupilotMega_TemporaryKey.pfx</ManifestKeyFile>
   </PropertyGroup>
   <PropertyGroup>
-    <GenerateManifests>false</GenerateManifests>
+    <GenerateManifests>true</GenerateManifests>
   </PropertyGroup>
   <PropertyGroup>
     <SignManifests>false</SignManifests>
@@ -516,12 +516,6 @@
     <Compile Include="MainV2.Designer.cs">
       <DependentUpon>MainV2.cs</DependentUpon>
     </Compile>
-    <Compile Include="GCSViews\Configuration.cs">
-      <SubType>UserControl</SubType>
-    </Compile>
-    <Compile Include="GCSViews\Configuration.Designer.cs">
-      <DependentUpon>Configuration.cs</DependentUpon>
-    </Compile>
     <Compile Include="GCSViews\Firmware.cs">
       <SubType>UserControl</SubType>
     </Compile>
@@ -811,9 +805,6 @@
     <EmbeddedResource Include="Controls\ImageLabel.resx">
       <DependentUpon>ImageLabel.cs</DependentUpon>
     </EmbeddedResource>
-    <EmbeddedResource Include="GCSViews\Configuration.es-ES.resx">
-      <DependentUpon>Configuration.cs</DependentUpon>
-    </EmbeddedResource>
     <EmbeddedResource Include="GCSViews\Firmware.es-ES.resx">
       <DependentUpon>Firmware.cs</DependentUpon>
     </EmbeddedResource>
@@ -858,18 +849,6 @@
     </EmbeddedResource>
     <EmbeddedResource Include="SerialInput.resx">
       <DependentUpon>SerialInput.cs</DependentUpon>
-    </EmbeddedResource>
-    <EmbeddedResource Include="GCSViews\Configuration.fr.resx">
-      <DependentUpon>Configuration.cs</DependentUpon>
-    </EmbeddedResource>
-    <EmbeddedResource Include="GCSViews\Configuration.it-IT.resx">
-      <DependentUpon>Configuration.cs</DependentUpon>
-    </EmbeddedResource>
-    <EmbeddedResource Include="GCSViews\Configuration.pl.resx">
-      <DependentUpon>Configuration.cs</DependentUpon>
-    </EmbeddedResource>
-    <EmbeddedResource Include="GCSViews\Configuration.zh-TW.resx">
-      <DependentUpon>Configuration.cs</DependentUpon>
     </EmbeddedResource>
     <EmbeddedResource Include="GCSViews\Firmware.fr.resx">
       <DependentUpon>Firmware.cs</DependentUpon>
@@ -1003,9 +982,6 @@
     <EmbeddedResource Include="ResEdit.resx">
       <DependentUpon>ResEdit.cs</DependentUpon>
     </EmbeddedResource>
-    <EmbeddedResource Include="GCSViews\Configuration.ru-RU.resx">
-      <DependentUpon>Configuration.cs</DependentUpon>
-    </EmbeddedResource>
     <EmbeddedResource Include="GCSViews\Firmware.ru-RU.resx">
       <DependentUpon>Firmware.cs</DependentUpon>
     </EmbeddedResource>
@@ -1042,14 +1018,6 @@
     </EmbeddedResource>
     <EmbeddedResource Include="MavlinkLog.resx">
       <DependentUpon>MavlinkLog.cs</DependentUpon>
-      <SubType>Designer</SubType>
-    </EmbeddedResource>
-    <EmbeddedResource Include="GCSViews\Configuration.resx">
-      <DependentUpon>Configuration.cs</DependentUpon>
-      <SubType>Designer</SubType>
-    </EmbeddedResource>
-    <EmbeddedResource Include="GCSViews\Configuration.zh-Hans.resx">
-      <DependentUpon>Configuration.cs</DependentUpon>
       <SubType>Designer</SubType>
     </EmbeddedResource>
     <EmbeddedResource Include="GCSViews\Firmware.zh-Hans.resx">

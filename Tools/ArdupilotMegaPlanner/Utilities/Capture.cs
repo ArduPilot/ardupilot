@@ -213,8 +213,6 @@ namespace WebCamService
             return list;
         }
 
-        public bool showhud = true;
-
         void timer1_Tick(object sender, EventArgs e)
         {
             try
@@ -376,6 +374,8 @@ namespace WebCamService
             media.majorType	= MediaType.Video;
             media.subType	= MediaSubType.RGB24;
             media.formatType = FormatType.VideoInfo;
+            sampGrabber.SetBufferSamples(false);
+            sampGrabber.SetOneShot(false);
             hr = sampGrabber.SetMediaType( media );
             DsError.ThrowExceptionForHR( hr );
 
