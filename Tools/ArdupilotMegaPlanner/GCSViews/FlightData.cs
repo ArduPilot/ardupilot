@@ -382,6 +382,12 @@ namespace ArdupilotMega.GCSViews
                     updateBindingSource();
                     //Console.WriteLine(DateTime.Now.Millisecond + " done ");
 
+                    if (ArdupilotMega.Controls.OpenGLtest.instance != null)
+                    {
+                        ArdupilotMega.Controls.OpenGLtest.instance.rpy = new OpenTK.Vector3(MainV2.cs.roll,MainV2.cs.pitch,MainV2.cs.yaw);
+                        ArdupilotMega.Controls.OpenGLtest.instance.LocationCenter = new PointLatLngAlt(MainV2.cs.lat,MainV2.cs.lng,MainV2.cs.alt,"here");
+                    }
+
                     if (tunning.AddMilliseconds(50) < DateTime.Now && CB_tuning.Checked == true)
                     {
 

@@ -712,6 +712,8 @@ namespace ArdupilotMega
                     log.Warn(ex.ToString());
                     try
                     {
+                        _connectionControl.IsConnected(false);
+                        UpdateConnectIcon();
                         comPort.Close();
                     }
                     catch { }

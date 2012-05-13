@@ -41,6 +41,10 @@ namespace ArdupilotMega
 
             //Common.linearRegression();
 
+            //Console.WriteLine(srtm.getAltitude(-35.115676879882812, 117.94178754638671,20));
+
+            //return;
+
             if (System.Diagnostics.Debugger.IsAttached)
             {
                 // testing

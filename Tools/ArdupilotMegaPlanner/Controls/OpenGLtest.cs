@@ -6,74 +6,144 @@ using OpenTK;
 using OpenTK.Graphics.OpenGL;
 using System.Drawing.Imaging;
 using System.Drawing;
+using GMap.NET;
+using GMap.NET.WindowsForms;
 
 namespace ArdupilotMega.Controls
 {
     public class OpenGLtest : GLControl
     {
-        int fixme;
+        public static OpenGLtest instance;
+
+        // terrain image
         Bitmap _terrain = new Bitmap(640,480);
+        int texture = 0;
+
+        float _angle = 0;
+        double cameraX, cameraY, cameraZ;       // camera coordinates
+        double lookX, lookY, lookZ;             // camera look-at coordinates
+
+        double step = 1 / 1200.0;
+
+        RectLatLng area = new RectLatLng(-35.04286,117.84262,0.1,0.1);
+
+        double _alt = 0;
+        public PointLatLngAlt LocationCenter { 
+            get { 
+                return new PointLatLngAlt(area.LocationMiddle.Lat, area.LocationMiddle.Lng,_alt,"");
+            }
+            set {
+
+                if (area.LocationMiddle.Lat == value.Lat && area.LocationMiddle.Lng == value.Lng)
+                    return;
+
+                if (value.Lat == 0 && value.Lng == 0)
+                    return;
+
+                _alt = value.Alt;
+                area = new RectLatLng(value.Lat + 0.15, value.Lng - 0.15, 0.3, 0.3);
+               // Console.WriteLine(area.LocationMiddle + " " + value.ToString());
+                this.Invalidate();
+            } 
+        }
+
+        public Vector3 rpy = new Vector3();
 
         public OpenGLtest()
         {
+            instance = this;
+
             InitializeComponent();
 
-            try
-            {
-                _terrain = new Bitmap(@"C:\Users\hog\Pictures\Denmark\[Group 1]-P1020169_P1020174-6 images.jpg");
-            }
-            catch {  }
-
-            _terrain = new Bitmap(_terrain, 512, 512);
-
-
             GL.GenTextures(1, out texture);
-            GL.BindTexture(TextureTarget.Texture2D, texture);
+        }
 
-            BitmapData data = _terrain.LockBits(new System.Drawing.Rectangle(0, 0, _terrain.Width, _terrain.Height),
-    ImageLockMode.ReadOnly, System.Drawing.Imaging.PixelFormat.Format32bppArgb);
+        void getImage()
+        {
+            MapType type = MapType.GoogleSatellite;
+            PureProjection prj = null;
+            int maxZoom;
 
-            //Console.WriteLine("w {0} h {1}",data.Width, data.Height);
+            GMaps.Instance.AdjustProjection(type, ref prj, out maxZoom);
+          int zoom = 11; // 12
+            if (!area.IsEmpty)
+            {
+                try
+                {
+                    List<GPoint> tileArea = prj.GetAreaTileList(area, zoom, 0);
+                    //string bigImage = zoom + "-" + type + "-vilnius.png";
 
-            GL.TexImage2D(TextureTarget.Texture2D, 0, PixelInternalFormat.Rgba, data.Width, data.Height, 0,
-                OpenTK.Graphics.OpenGL.PixelFormat.Bgra, PixelType.UnsignedByte, data.Scan0);
+                    //Console.WriteLine("Preparing: " + bigImage);
+                    //Console.WriteLine("Zoom: " + zoom);
+                    //Console.WriteLine("Type: " + type.ToString());
+                    //Console.WriteLine("Area: " + area);
 
-            _terrain.UnlockBits(data);
+                    var types = GMaps.Instance.GetAllLayersOfType(type);
 
-            GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMinFilter, (int)TextureMinFilter.Linear);
-            GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMagFilter, (int)TextureMagFilter.Linear);
+                    // current area
+                    GPoint topLeftPx = prj.FromLatLngToPixel(area.LocationTopLeft, zoom);
+                    GPoint rightButtomPx = prj.FromLatLngToPixel(area.Bottom, area.Right, zoom);
+                    GPoint pxDelta = new GPoint(rightButtomPx.X - topLeftPx.X, rightButtomPx.Y - topLeftPx.Y);
 
+                    int padding = 0;
+                    {
+                        using (Bitmap bmpDestination = new Bitmap(pxDelta.X + padding * 2, pxDelta.Y + padding * 2))
+                        {
+                            using (Graphics gfx = Graphics.FromImage(bmpDestination))
+                            {
+                                gfx.CompositingMode = System.Drawing.Drawing2D.CompositingMode.SourceOver;
+
+                                // get tiles & combine into one
+                                foreach (var p in tileArea)
+                                {
+                                   //Console.WriteLine("Downloading[" + p + "]: " + tileArea.IndexOf(p) + " of " + tileArea.Count);
+
+                                    foreach (MapType tp in types)
+                                    {
+                                        Exception ex;
+                                        WindowsFormsImage tile = GMaps.Instance.GetImageFrom(tp, p, zoom, out ex) as WindowsFormsImage;
+                                        if (tile != null)
+                                        {
+                                            using (tile)
+                                            {
+                                                int x = p.X * prj.TileSize.Width - topLeftPx.X + padding;
+                                                int y = p.Y * prj.TileSize.Width - topLeftPx.Y + padding;
+                                                {
+                                                    gfx.DrawImage(tile.Img, x, y, prj.TileSize.Width, prj.TileSize.Height);
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                            _terrain = new Bitmap(bmpDestination, 512, 512);
+
+
+                            GL.BindTexture(TextureTarget.Texture2D, texture);
+
+                            BitmapData data = _terrain.LockBits(new System.Drawing.Rectangle(0, 0, _terrain.Width, _terrain.Height),
+                    ImageLockMode.ReadOnly, System.Drawing.Imaging.PixelFormat.Format32bppArgb);
+
+                            //Console.WriteLine("w {0} h {1}",data.Width, data.Height);
+
+                            GL.TexImage2D(TextureTarget.Texture2D, 0, PixelInternalFormat.Rgba, data.Width, data.Height, 0,
+                                OpenTK.Graphics.OpenGL.PixelFormat.Bgra, PixelType.UnsignedByte, data.Scan0);
+
+                            _terrain.UnlockBits(data);
+
+                            GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMinFilter, (int)TextureMinFilter.Linear);
+                            GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMagFilter, (int)TextureMagFilter.Linear);
+
+
+                        }
+                    }
+                }
+                catch { }
+            }
         }
 
         const float rad2deg = (float)(180 / Math.PI);
         const float deg2rad = (float)(1.0 / rad2deg);
-
-        int[,] getElevationData(double lat, double lng, double direction)
-        {
-            int[,] answer = new int[400,400];
-
-            double step = 0.00083333333333333;
-
-            for (int y = 0; y < answer.GetLength(0) - 1; y++)
-            {
-                Console.WriteLine(y);
-                for (int x = 0; x < answer.GetLength(1) - 1; x++)
-                {
-                    double mlat = lat + step * (float)y + Math.Sin(direction * deg2rad) * step * (float)y;
-                    double mlng = lng + step * (float)x + Math.Cos(direction * deg2rad) * step * (float)x;
-
-                  //  Console.WriteLine(mlat + " "+mlng);
-
-                    int alt = srtm.getAltitude(mlat, mlng, 20);
-                    answer[x,y] = alt;
-                }
-            }
-
-            return answer;
-        }
-
-        int texture = 0;
-        private System.ComponentModel.IContainer components;
 
         public Vector3 Normal(Vector3 a, Vector3 b, Vector3 c)
         {
@@ -82,17 +152,20 @@ namespace ArdupilotMega.Controls
                 return norm;
         }
 
-        float _angle = 0;
-        double cameraX, cameraY, cameraZ;       // camera coordinates
-        double lookX, lookY, lookZ;             // camera look-at coordinates
-
 
         protected override void OnPaint(System.Windows.Forms.PaintEventArgs e)
         {
             if (this.DesignMode)
                 return;
 
-            _angle+=1;
+            if (area.LocationMiddle.Lat == 0 && area.LocationMiddle.Lng == 0)
+                return;
+
+            _angle+=1f;
+
+           // area.LocationTopLeft = new PointLatLng(area.LocationTopLeft.Lat + 0.0001,area.LocationTopLeft.Lng);
+
+            //area.Size = new SizeLatLng(0.1, 0.1);
 
             try
             {
@@ -101,64 +174,126 @@ namespace ArdupilotMega.Controls
             }
             catch { return;  }
 
+            double heightscale = (step / 90.0) * 4;
+
             float scale = 1.0f;
 
-             float radians =  (float)(Math.PI*(_angle-90.0f)/180.0f);
+            float radians = (float)(Math.PI * (rpy.Z * -1) / 180.0f);
 
-            int mouseY = (int)(900 * scale);
-  
-      // calculate the camera's position
-      cameraX = lookX + Math.Sin(radians)*mouseY;     // multiplying by mouseY makes the
-      cameraZ = lookZ + Math.Cos(radians)*mouseY;    // camera get closer/farther away with mouseY
-      cameraY = lookY + mouseY / 2.0f;
-  
-      // calculate the camera look-at coordinates as the center of the terrain map
-      lookX = (_terrain.Width * scale) / 2.0f;
-      lookY = 0 * scale;
-      lookZ = (_terrain.Height * scale) / 2.0f;
+             //radians = 0;
 
+            float mouseY = (float)(0.1 * scale);
+ 
+      cameraX = area.LocationMiddle.Lng;     // multiplying by mouseY makes the
+      cameraZ = area.LocationMiddle.Lat;    // camera get closer/farther away with mouseY
+      cameraY = (LocationCenter.Alt < srtm.getAltitude(cameraZ, cameraX, 20)) ? (srtm.getAltitude(cameraZ, cameraX, 20)+ 0.2) * heightscale : LocationCenter.Alt * heightscale;// (srtm.getAltitude(lookZ, lookX, 20) + 100) * heighscale;
+
+
+      lookX = area.LocationMiddle.Lng + Math.Sin(radians) * mouseY; ;
+      lookY = cameraY;
+      lookZ = area.LocationMiddle.Lat + Math.Cos(radians) * mouseY; ;
 
 
             MakeCurrent();
 
-            GL.ClearColor(Color.Green);
+
+            GL.MatrixMode(MatrixMode.Projection);
+
+            OpenTK.Matrix4 projection = OpenTK.Matrix4.CreatePerspectiveFieldOfView(60 * deg2rad, 1f, 0.00001f, 5000.0f);
+            GL.LoadMatrix(ref projection);
+
+            Matrix4 modelview = Matrix4.LookAt((float)cameraX, (float)cameraY, (float)cameraZ, (float)lookX, (float)lookY, (float)lookZ, 0,1,0);
+            GL.MatrixMode(MatrixMode.Modelview);
+
+            // roll
+            modelview = Matrix4.Mult(modelview,Matrix4.CreateRotationZ (rpy.X * deg2rad));
+            // pitch
+            modelview = Matrix4.Mult(modelview, Matrix4.CreateRotationX(rpy.Y * -deg2rad));
+
+            GL.LoadMatrix(ref modelview);
+
+            GL.ClearColor(Color.Blue);
 
             GL.Clear(ClearBufferMask.ColorBufferBit | ClearBufferMask.DepthBufferBit);
-            GL.LoadIdentity();
 
-            OpenTK.Graphics.Glu.LookAt(cameraX, cameraY, cameraZ, lookX, lookY, lookZ, 0.0, 1.0, 0.0);
+            GL.LightModel(LightModelParameter.LightModelAmbient,new float[] {1f,1f,1f,1f});
 
             GL.Enable(EnableCap.Texture2D);
-            GL.BindTexture(TextureTarget.Texture2D, texture);         
-            
-            double mlat = -34.73306;
-            double mlng = 117.8864897;
-            double step = 0.00083333333333333;
+            GL.BindTexture(TextureTarget.Texture2D, texture);
+            /*
+            GL.Begin(BeginMode.LineStrip);
 
-            int increment =50;
+            GL.Color3(Color.White);
+            GL.Vertex3(0, 0, 0);
 
-            for (int z = 0; z < _terrain.Height - 1; z += increment)
+            GL.Vertex3(area.Bottom, 0, area.Left);
+
+            GL.Vertex3(lookX, lookY, lookZ);
+
+            //GL.Vertex3(cameraX, cameraY, cameraZ);
+
+            GL.End();
+            */
+            System.Diagnostics.Stopwatch sw = new System.Diagnostics.Stopwatch();
+
+            sw.Start();
+
+            getImage();
+
+            sw.Stop();
+
+            Console.WriteLine("img " +sw.ElapsedMilliseconds);
+
+            sw.Start();
+
+           double increment = step * 1;
+
+            double cleanup = area.Bottom % increment;
+            double cleanup2 = area.Left % increment;
+
+            for (double z = (area.Bottom - cleanup); z < area.Top - step; z += increment)
             {
                 //Makes OpenGL draw a triangle at every three consecutive vertices
                 GL.Begin(BeginMode.TriangleStrip);
-                for (int x = 0; x < _terrain.Width - 1; x += increment)
+                for (double x = (area.Left - cleanup2); x < area.Right - step; x += increment)
                 {
+                    int heightl = srtm.getAltitude(z, area.Right + area.Left - x, 20);
 
-                   // Console.WriteLine(mlat + step * z +" "+ mlng + step * x);
+                 //   Console.WriteLine(x + " " + z);
 
-                    int heightl = srtm.getAltitude(mlat + step * z, mlng + step * x, 20);
+                    GL.Color3(Color.White);
 
-                    //GL.Color3(_terrain.GetPixel(x, z));
-                    GL.TexCoord2((x / (float)_terrain.Width),  (z / (float)_terrain.Height));
-                    GL.Vertex3(x * scale, heightl, z * scale); //  _terrain.GetPixel(x, z).R
+
+                   // int heightl = 0;
+
+                    double scale2 = (Math.Abs(x - area.Left) / area.WidthLng);// / (float)_terrain.Width;
+
+                    double scale3 = (Math.Abs(z - area.Bottom) / area.HeightLat);// / (float)_terrain.Height;
+
+                    double imgx = 1 - scale2;
+                    double imgy = 1 - scale3;
+                   // GL.Color3(Color.Red);
+
+                    //GL.Color3(_terrain.GetPixel(imgx, imgy));
+                    GL.TexCoord2(imgx,imgy);
+                    GL.Vertex3(x, heightl * heightscale, z); //  _terrain.GetPixel(x, z).R
             
                     try
                     {
-                        heightl = srtm.getAltitude(mlat + step * (z + increment), mlng + step * (x), 20);
+                        heightl = srtm.getAltitude(z + increment, area.Right + area.Left - x, 20);
 
-                        //GL.Color3(_terrain.GetPixel(x, z + increment));
-                        GL.TexCoord2((x / (float)_terrain.Width),  ((z + increment) / (float)_terrain.Height));
-                        GL.Vertex3(x * scale, heightl, z + increment * scale);
+                        //scale2 = (Math.Abs(x - area.Left) / area.WidthLng) * (float)_terrain.Width;
+
+                        scale3 = (Math.Abs(((z + increment) - area.Bottom)) / area.HeightLat);// / (float)_terrain.Height;
+
+                        imgx = 1- scale2;
+                        imgy = 1 - scale3;
+                       // GL.Color3(Color.Green);
+                       //GL.Color3(_terrain.GetPixel(imgx, imgy));
+                        GL.TexCoord2(imgx,imgy);
+                        GL.Vertex3(x, heightl * heightscale, z + increment);
+
+                      //  Console.WriteLine(x + " " + (z + step));
                     }
                     catch { break; }
                     
@@ -172,12 +307,16 @@ namespace ArdupilotMega.Controls
             GL.DepthMask(true);
             GL.Disable(EnableCap.Blend);
 
-            GL.Flush();     
-             
+            GL.Flush();
+
+
+            sw.Stop();
+
+            Console.WriteLine("GL  "+sw.ElapsedMilliseconds);
 
             this.SwapBuffers();
 
-          //  this.Invalidate();
+            //this.Invalidate();
         }
 
         private void InitializeComponent()
@@ -198,7 +337,7 @@ namespace ArdupilotMega.Controls
         {
             GL.Enable(EnableCap.DepthTest);
            // GL.Enable(EnableCap.Light0);
-          //  GL.Enable(EnableCap.Lighting);
+            GL.Enable(EnableCap.Lighting);
             GL.Enable(EnableCap.ColorMaterial);
             GL.Enable(EnableCap.Normalize);
 
@@ -213,16 +352,11 @@ namespace ArdupilotMega.Controls
 
         private void test_Resize(object sender, EventArgs e)
         {
+            MakeCurrent();
+
             GL.Viewport(0, 0, this.Width, this.Height);
-            GL.MatrixMode(MatrixMode.Projection);
-            GL.LoadIdentity();
-            if (Height == 0)
-                Height = 1;
 
-            OpenTK.Graphics.Glu.Perspective(54.0f, this.Width / this.Height, 1.0f, 5000.0f);
-
-            GL.MatrixMode(MatrixMode.Modelview);
-            GL.LoadIdentity();
+            this.Invalidate();
         }
     }
 }

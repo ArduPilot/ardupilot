@@ -32,6 +32,15 @@ namespace ArdupilotMega
         public temp()
         {
             InitializeComponent();
+
+            if (System.Diagnostics.Debugger.IsAttached) {
+
+                ArdupilotMega.Controls.OpenGLtest ogl = new Controls.OpenGLtest();
+
+                this.Controls.Add(ogl);
+
+                ogl.Dock = DockStyle.Fill;
+            }
         }
 
         private void temp_Load(object sender, EventArgs e)

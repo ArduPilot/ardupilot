@@ -174,10 +174,6 @@
       <SpecificVersion>False</SpecificVersion>
       <HintPath>Lib\OpenTK.dll</HintPath>
     </Reference>
-    <Reference Include="OpenTK.Compatibility, Version=1.0.0.0, Culture=neutral, PublicKeyToken=bad199fe84eb3df4, processorArchitecture=MSIL">
-      <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\..\..\..\..\Desktop\DIYDrones\opentk\trunk\Binaries\OpenTK\Debug\OpenTK.Compatibility.dll</HintPath>
-    </Reference>
     <Reference Include="OpenTK.GLControl, Version=1.0.0.0, Culture=neutral, PublicKeyToken=bad199fe84eb3df4, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
     </Reference>

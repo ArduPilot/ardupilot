@@ -304,6 +304,11 @@ namespace ArdupilotMega
             return (int)((Lat + Lng + Alt) * 100);
         }
 
+        public override string ToString()
+        {
+            return Lat + "," + Lng + "," + Alt;
+        }
+
         /// <summary>
         /// Calc Distance in M
         /// </summary>

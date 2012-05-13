@@ -53,6 +53,8 @@ namespace ArdupilotMega
         Hashtable timecoordcache = new Hashtable();
         Hashtable imagetotime = new Hashtable();
 
+        List<string[]> logcache = new List<string[]>();
+
         DateTime getPhotoTime(string fn)
         {
             DateTime dtaken = DateTime.MinValue;
@@ -120,6 +122,9 @@ namespace ArdupilotMega
 
         List<string[]> readLog(string fn)
         {
+            if (logcache.Count > 0)
+                return logcache;
+
             List<string[]> list = new List<string[]>();
 
             if (fn.ToLower().EndsWith("tlog"))
@@ -146,7 +151,7 @@ namespace ArdupilotMega
                     //		line	"GPS: 82686250, 1, 8, -34.1406480, 118.5441900, 0.0000, 309.1900, 315.9500, 0.0000, 279.1200"	string
 
 
-                    string[] vals = new string[] { "GPS", (cs.datetime - new DateTime(cs.datetime.Year,cs.datetime.Month,cs.datetime.Day,0,0,0,DateTimeKind.Local)).TotalMilliseconds.ToString(), "1",
+                    string[] vals = new string[] { "GPS", (cs.datetime.ToUniversalTime() - new DateTime(cs.datetime.Year,cs.datetime.Month,cs.datetime.Day,0,0,0,DateTimeKind.Utc)).TotalMilliseconds.ToString(), "1",
                     cs.satcount.ToString(),cs.lat.ToString(),cs.lng.ToString(),"0.0",cs.alt.ToString(),cs.alt.ToString(),cs.groundspeed.ToString(),cs.yaw.ToString()};
 
                     if (oldvalues.Length > 2 && oldvalues[latpos] == vals[latpos]
@@ -163,6 +168,8 @@ namespace ArdupilotMega
                 }
 
                 mine.logplaybackfile.Close();
+
+                logcache = list;
 
                 return list;
             }
@@ -190,6 +197,8 @@ namespace ArdupilotMega
 
             sr.Close();
             sr.Dispose();
+
+            logcache = list;
 
             return list;
         }
@@ -452,6 +461,7 @@ namespace ArdupilotMega
             this.TXT_logfile.Size = new System.Drawing.Size(317, 20);
             this.TXT_logfile.TabIndex = 2;
             this.TXT_logfile.Text = "C:\\Users\\hog\\Pictures\\farm 1-10-2011\\100SSCAM\\2011-10-01 11-48 1.log";
+            this.TXT_logfile.TextChanged += new System.EventHandler(this.TXT_logfile_TextChanged);
             // 
             // TXT_jpgdir
             // 
@@ -681,6 +691,8 @@ namespace ArdupilotMega
 
         private void BUT_browselog_Click(object sender, EventArgs e)
         {
+            logcache.Clear();
+
             openFileDialog1.Filter = "Logs|*.log;*.tlog";
             openFileDialog1.ShowDialog();
 
@@ -829,6 +841,11 @@ namespace ArdupilotMega
         private void BUT_networklinkgeoref_Click(object sender, EventArgs e)
         {
             System.Diagnostics.Process.Start(Path.GetDirectoryName(Application.ExecutablePath) + Path.DirectorySeparatorChar + "m3u" + Path.DirectorySeparatorChar + "GeoRefnetworklink.kml");
+        }
+
+        private void TXT_logfile_TextChanged(object sender, EventArgs e)
+        {
+            logcache.Clear();
         }
     }
 
