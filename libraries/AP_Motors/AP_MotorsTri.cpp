@@ -128,7 +128,9 @@ void AP_MotorsTri::output_armed()
 
 	// also send out to tail command (we rely on any auto pilot to have updated the rc_yaw->radio_out to the correct value)
 	// note we do not save the radio_out to the motor_out array so it may not appear in the ch7out in the status screen of the mission planner
-	if( _rc_yaw->get_reverse() == true ) {
+	// note: we use _rc_tail's (aka channel 7's) REV parameter to control whether the servo is reversed or not but this is a bit nonsensical.
+	//       a separate servo object (including min, max settings etc) would be better or at least a separate parameter to specify the direction of the tail servo
+	if( _rc_tail->get_reverse() == true ) {
 		_rc->OutputCh(AP_MOTORS_CH_TRI_YAW, _rc_yaw->radio_trim - (_rc_yaw->radio_out - _rc_yaw->radio_trim));
 	}else{
 		_rc->OutputCh(AP_MOTORS_CH_TRI_YAW, _rc_yaw->radio_out);
