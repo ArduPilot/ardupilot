@@ -21,7 +21,9 @@ class AP_MotorsTri : public AP_Motors {
 public: 
 
 	/// Constructor 
-	AP_MotorsTri( uint8_t APM_version, APM_RC_Class* rc_out, RC_Channel* rc_roll, RC_Channel* rc_pitch, RC_Channel* rc_throttle, RC_Channel* rc_yaw, uint16_t speed_hz = AP_MOTORS_SPEED_DEFAULT) : AP_Motors(APM_version, rc_out, rc_roll, rc_pitch, rc_throttle, rc_yaw, speed_hz) {};
+	AP_MotorsTri( uint8_t APM_version, APM_RC_Class* rc_out, RC_Channel* rc_roll, RC_Channel* rc_pitch, RC_Channel* rc_throttle, RC_Channel* rc_yaw, RC_Channel* rc_tail, uint16_t speed_hz = AP_MOTORS_SPEED_DEFAULT) :
+		AP_Motors(APM_version, rc_out, rc_roll, rc_pitch, rc_throttle, rc_yaw, speed_hz),
+		_rc_tail(rc_tail) {};
 
 	// init
 	virtual void Init();
@@ -46,6 +48,7 @@ protected:
 	virtual void output_armed();
 	virtual void output_disarmed();
 
+	RC_Channel*	_rc_tail;	// REV parameter used from this channel to determine direction of tail servo movement
 }; 
 
 #endif  // AP_MOTORSTRI
