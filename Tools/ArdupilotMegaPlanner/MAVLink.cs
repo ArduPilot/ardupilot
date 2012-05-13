@@ -699,7 +699,7 @@ namespace ArdupilotMega
                         mavlink_param_value_t par = buffer.ByteArrayToStructure<mavlink_param_value_t>(6);
 
                         // set new target
-                        param_total = (par.param_count - 1);
+                        param_total = (par.param_count);
 
 
                         string paramID = System.Text.ASCIIEncoding.ASCII.GetString(par.param_id);
@@ -718,7 +718,7 @@ namespace ArdupilotMega
                             continue;
                         }
 
-                        log.Info(DateTime.Now.Millisecond + " got param " + (par.param_index) + " of " + (par.param_count - 2) + " name: " + paramID);
+                        log.Info(DateTime.Now.Millisecond + " got param " + (par.param_index) + " of " + (par.param_count) + " name: " + paramID);
 
                         modifyParamForDisplay(true, paramID, ref par.param_value);
                         param[paramID] = (par.param_value);
@@ -730,7 +730,7 @@ namespace ArdupilotMega
                         this.frmProgressReporter.UpdateProgressAndStatus((got.Count * 100) / param_total, "Got param " + paramID);
 
                         // we have them all - lets escape eq total = 176 index = 0-175
-                        if (par.param_index == (param_total - 1))
+                        if (par.param_index == (param_total -1))
                             break;
                     }
                     else
@@ -1524,7 +1524,7 @@ namespace ArdupilotMega
         /// </summary>
         /// <param name="datin">packet byte array</param>
         /// <returns>struct of data</returns>
-        public object DebugPacket(byte[] datin, ref string text, bool PrintToConsole)
+        public object DebugPacket(byte[] datin, ref string text, bool PrintToConsole, string delimeter = " ")
         {
             string textoutput;
             try
@@ -1538,7 +1538,7 @@ namespace ArdupilotMega
                     byte compid = datin[4];
                     byte messid = datin[5];
 
-                    textoutput = string.Format("{0:X} {1:X} {2:X} {3:X} {4:X} {5:X} ", header, length, seq, sysid, compid, messid);
+                    textoutput = string.Format("{0:X}{6}{1:X}{6}{2:X}{6}{3:X}{6}{4:X}{6}{5:X}{6}", header, length, seq, sysid, compid, messid, delimeter);
 
                     object data = Activator.CreateInstance(MAVLINK_MESSAGE_INFO[messid]);
 
@@ -1549,7 +1549,7 @@ namespace ArdupilotMega
                     if (PrintToConsole)
                     {
 
-                        textoutput = textoutput + test.Name + " ";
+                        textoutput = textoutput + test.Name + delimeter;
 
                         foreach (var field in test.GetFields())
                         {
@@ -1559,7 +1559,7 @@ namespace ArdupilotMega
 
                             if (field.FieldType.IsArray)
                             {
-                                textoutput = textoutput + field.Name + "=";
+                                textoutput = textoutput + field.Name + delimeter;
                                 byte[] crap = (byte[])fieldValue;
                                 foreach (byte fiel in crap)
                                 {
@@ -1572,14 +1572,14 @@ namespace ArdupilotMega
                                         textoutput = textoutput + (char)fiel;
                                     }
                                 }
-                                textoutput = textoutput + " ";
+                                textoutput = textoutput + delimeter;
                             }
                             else
                             {
-                                textoutput = textoutput + field.Name + "=" + fieldValue.ToString() + " ";
+                                textoutput = textoutput + field.Name + delimeter + fieldValue.ToString() + delimeter;
                             }
                         }
-                        textoutput = textoutput + " Len:" + datin.Length + "\r\n";
+                        textoutput = textoutput + delimeter + "Len" + delimeter + datin.Length + "\r\n";
                         if (PrintToConsole)
                             Console.Write(textoutput);
 

@@ -34,6 +34,7 @@
             this.BUT_humanreadable = new ArdupilotMega.Controls.MyButton();
             this.BUT_graphmavlog = new ArdupilotMega.Controls.MyButton();
             this.zg1 = new ZedGraph.ZedGraphControl();
+            this.BUT_convertcsv = new ArdupilotMega.Controls.MyButton();
             this.SuspendLayout();
             // 
             // BUT_redokml
@@ -74,10 +75,18 @@
             this.zg1.ScrollMinY = 0D;
             this.zg1.ScrollMinY2 = 0D;
             // 
+            // BUT_convertcsv
+            // 
+            resources.ApplyResources(this.BUT_convertcsv, "BUT_convertcsv");
+            this.BUT_convertcsv.Name = "BUT_convertcsv";
+            this.BUT_convertcsv.UseVisualStyleBackColor = true;
+            this.BUT_convertcsv.Click += new System.EventHandler(this.BUT_convertcsv_Click);
+            // 
             // MavlinkLog
             // 
             resources.ApplyResources(this, "$this");
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
+            this.Controls.Add(this.BUT_convertcsv);
             this.Controls.Add(this.zg1);
             this.Controls.Add(this.BUT_graphmavlog);
             this.Controls.Add(this.BUT_humanreadable);
@@ -96,5 +105,6 @@
         private ArdupilotMega.Controls.MyButton BUT_humanreadable;
         private ArdupilotMega.Controls.MyButton BUT_graphmavlog;
         private ZedGraph.ZedGraphControl zg1;
+        private Controls.MyButton BUT_convertcsv;
     }
 }

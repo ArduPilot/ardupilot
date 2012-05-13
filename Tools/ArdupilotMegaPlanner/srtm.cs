@@ -13,7 +13,7 @@ namespace ArdupilotMega
 {
     class srtm
     {
-        public static string datadirectory;
+        public static string datadirectory = "./srtm/";
 
         static List<string> allhgts = new List<string>();
 
@@ -23,23 +23,20 @@ namespace ArdupilotMega
 
         static List<string> queue = new List<string>();
 
-        static Hashtable altcache = new Hashtable();
+        static Hashtable fnamecache = new Hashtable();
+
+        static Hashtable filecache = new Hashtable();
 
         public static int getAltitude(double lat, double lng, double zoom)
         {
-            if (!Directory.Exists(datadirectory))
-                Directory.CreateDirectory(datadirectory);
-
             short alt = 0;
 
-            lat += 0.00083333333333333;
-            //lng += 0.0008;
+            lat += 1 / 1199.0;
+            //lng -= 1 / 1201f;
 
-            if (altcache[lat * lng] != null)
-                return (int)(short)altcache[lat * lng];
-
-            if (altcache.Count > 10000)
-                altcache = new Hashtable();
+            // 		lat	-35.115676879882812	double
+            //		lng	117.94178754638671	double
+            // 		alt	70	short
 
             int x = (int)Math.Floor(lng);
             int y = (int)Math.Floor(lat);
@@ -56,19 +53,24 @@ namespace ArdupilotMega
             else
                 ew = "W";
 
-            string filename = ns + Math.Abs(y).ToString("00") + ew + Math.Abs(x).ToString("000") + ".hgt";
+            if (fnamecache[y] == null)
+                fnamecache[y] = Math.Abs(y).ToString("00");
+            if (fnamecache[1000 + x] == null)
+                fnamecache[1000 + x] = Math.Abs(x).ToString("000");
 
-            string filename2 = "srtm_" + Math.Round((lng + 2.5 + 180) / 5, 0).ToString("00") + "_" + Math.Round((60 - lat + 2.5) / 5, 0).ToString("00") + ".asc";
+            string filename = ns + fnamecache[y] + ew + fnamecache[1000 + x] + ".hgt";
 
             try
             {
 
-                if (File.Exists(datadirectory + Path.DirectorySeparatorChar + filename))
+                if (filecache.ContainsKey(datadirectory + Path.DirectorySeparatorChar + filename) || File.Exists(datadirectory + Path.DirectorySeparatorChar + filename))
                 { // srtm hgt files
-                    FileStream fs = new FileStream(datadirectory + Path.DirectorySeparatorChar + filename, FileMode.Open, FileAccess.Read, FileShare.Read);
+                    //FileStream fs = new FileStream(datadirectory + Path.DirectorySeparatorChar + filename, FileMode.Open, FileAccess.Read, FileShare.Read);
 
-                    float posx = 0;
-                    float row = 0;
+                    MemoryStream fs = readFile(datadirectory + Path.DirectorySeparatorChar + filename);
+
+                    int posx = 0;
+                    int row = 0;
 
                     if (fs.Length <= (1201 * 1201 * 2))
                     {
@@ -95,23 +97,20 @@ namespace ArdupilotMega
                     fs.Seek((int)(row + posx), SeekOrigin.Begin);
                     fs.Read(data, 0, data.Length);
 
-                    fs.Close();
-                    fs.Dispose();
+                    //fs.Close();
 
-                    Array.Reverse(data);
+                    //Array.Reverse(data);
 
-                    alt = BitConverter.ToInt16(data, 0);
-
-                    altcache[lat * lng] = alt;
+                    alt = (short)((data[0] << 8) + data[1]) ;//BitConverter.ToInt16(data, 0);
 
                     return alt;
                 }
-                else if (File.Exists(datadirectory + Path.DirectorySeparatorChar + filename2))
-                {
-                    // this is way to slow - and cacheing it will chew memory 6001 * 6001 * 4 = 144048004 bytes
-                    FileStream fs = new FileStream(datadirectory + Path.DirectorySeparatorChar + filename2, FileMode.Open, FileAccess.Read);
 
-                    StreamReader sr = new StreamReader(fs);
+                string filename2 = "srtm_" + Math.Round((lng + 2.5 + 180) / 5, 0).ToString("00") + "_" + Math.Round((60 - lat + 2.5) / 5, 0).ToString("00") + ".asc";
+
+                if (File.Exists(datadirectory + Path.DirectorySeparatorChar + filename2))
+                {
+                    StreamReader sr = new StreamReader(readFile(datadirectory + Path.DirectorySeparatorChar + filename2));
 
                     int nox = 0;
                     int noy = 0;
@@ -191,12 +190,17 @@ namespace ArdupilotMega
 
                     }
 
+                    //sr.Close();
+
                     return alt;
                 }
                 else // get something
                 {
                     if (zoom >= 15)
                     {
+                        if (!Directory.Exists(datadirectory))
+                            Directory.CreateDirectory(datadirectory);
+
                         if (requestThread == null)
                         {
                             Console.WriteLine("Getting " + filename);
@@ -227,6 +231,27 @@ namespace ArdupilotMega
             return alt;
         }
 
+        static MemoryStream readFile(string filename)
+        {
+            if (filecache.ContainsKey(filename))
+            {
+                return (MemoryStream)filecache[filename];
+            }
+            else
+            {
+                FileStream fs = new FileStream(filename, FileMode.Open, FileAccess.Read);
+
+                byte[] file = new byte[fs.Length];
+                fs.Read(file, 0, (int)fs.Length);
+
+                filecache[filename] = new MemoryStream(file);
+
+                fs.Close();
+
+                return (MemoryStream)filecache[filename];
+            }
+        }
+
         static void requestRunner()
         {
             while (true)
@@ -252,7 +277,7 @@ namespace ArdupilotMega
                     }
                 }
                 catch { }
-                Thread.Sleep(100);
+                Thread.Sleep(500);
             }
         }
 
@@ -270,7 +295,9 @@ namespace ArdupilotMega
 
             foreach (string item in list)
             {
-                List<string> hgtfiles = getListing(item);
+                List<string> hgtfiles = new List<string>();
+
+                hgtfiles = getListing(item);
 
                 foreach (string hgt in hgtfiles)
                 {
@@ -321,10 +348,30 @@ namespace ArdupilotMega
 
         static List<string> getListing(string url)
         {
+            string name = new Uri(url).AbsolutePath;
+
+            name = Path.GetFileName(name.TrimEnd('/'));
+
             List<string> list = new List<string>();
+
+            if (File.Exists(datadirectory + Path.DirectorySeparatorChar + name))
+            {
+                StreamReader sr = new StreamReader(datadirectory + Path.DirectorySeparatorChar + name);
+
+                while (!sr.EndOfStream)
+                {
+                    list.Add(sr.ReadLine());
+                }
+
+                sr.Close();
+
+                return list;
+            }
+
 
             try
             {
+                StreamWriter sw = new StreamWriter(datadirectory + Path.DirectorySeparatorChar + name);
 
                 WebRequest req = HttpWebRequest.Create(url);
 
@@ -349,6 +396,13 @@ namespace ArdupilotMega
 
                     }
                 }
+
+                list.ForEach(x =>
+                {
+                    sw.WriteLine((string)x);
+                });
+
+                sw.Close();
             }
             catch { }
 
