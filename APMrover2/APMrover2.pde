@@ -1,6 +1,6 @@
 /// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 
-#define THISFIRMWARE "APMrover v2.0c JL NAUDIN" //New version of the APMrover for the APM v1 or APM v2 and magnetometer
+#define THISFIRMWARE "APMrover v2.13 JL NAUDIN" //New version of the APMrover for the APM v1 or APM v2 and magnetometer + SONAR
 
 // This is a full version of Arduplane v2.32 specially adapted for a Rover by Jean-Louis Naudin (JLN) 
 
@@ -9,6 +9,8 @@ Authors:    Doug Weibel, Jose Julio, Jordi Munoz, Jason Short, Andrew Tridgell, 
 Thanks to:  Chris Anderson, Michael Oborne, Paul Mather, Bill Premerlani, James Cohen, JB from rotorFX, Automatik, Fefenin, Peter Meister, Remzibi, Yury Smirnov, Sandro Benigno, Max Levine, Roberto Navoni, Lorenz Meier 
 Please contribute your ideas!
 
+APMrover alpha version tester: Franco Borasio, Daniel Chapelat... 
+
 
 This firmware is free software; you can redistribute it and/or
 modify it under the terms of the GNU Lesser General Public
@@ -16,7 +18,7 @@ License as published by the Free Software Foundation; either
 version 2.1 of the License, or (at your option) any later version.
 
 //
-// JLN updates: last update 2012-05-04
+// JLN updates: last update 2012-05-14
 //
 // DOLIST:
 //  
@@ -24,6 +26,12 @@ version 2.1 of the License, or (at your option) any later version.
 //-------------------------------------------------------------------------------------------------------------------------
 // Dev Startup : 2012-04-21
 //
+//  2012-05-14: Added option (hold roll to full right + SW7 ON/OFF) to init_home during the wp_list reset
+//  2012-05-13: Add ROV_SONAR_TRIG (default = 200 cm)
+//  2012-05-13: Restart_nav() added and heading bug correction, tested OK in the field
+//  2012-05-12: RTL then stop update - Tested in the field
+//  2012-05-11: The rover now STOP after the RTL... (special update for Franco...)
+//  2012-05-11: Added SONAR detection for obstacle avoidance (alpha version for SONAR testing)
 //  2012-05-04: Added #define LITE ENABLED  for the APM1280 or APM2560 CPU IMUless version
 //  2012-05-03: Successful missions tests with a full APM2560 kit (GPS MT3329 + magnetometer HMC5883L)
 //  2012-05-03: removing stick mixing in auto mode
@@ -272,24 +280,29 @@ GCS_MAVLINK	gcs0;
 GCS_MAVLINK	gcs3;
 
 ////////////////////////////////////////////////////////////////////////////////
-// PITOT selection
+// SONAR selection
 ////////////////////////////////////////////////////////////////////////////////
 //
 ModeFilterInt16_Size5 sonar_mode_filter(2);
+#if CONFIG_SONAR == ENABLED
+	#if CONFIG_SONAR_SOURCE == SONAR_SOURCE_ADC
+	AP_AnalogSource_ADC sonar_analog_source( &adc, CONFIG_SONAR_SOURCE_ADC_CHANNEL, 0.25);
+	#elif CONFIG_SONAR_SOURCE == SONAR_SOURCE_ANALOG_PIN
+		AP_AnalogSource_Arduino sonar_analog_source(CONFIG_SONAR_SOURCE_ANALOG_PIN);
+	#endif
+	AP_RangeFinder_MaxsonarXL sonar(&sonar_analog_source, &sonar_mode_filter);
+#endif
+
+////////////////////////////////////////////////////////////////////////////////
+// PITOT selection
+////////////////////////////////////////////////////////////////////////////////
+//
 
 #if CONFIG_PITOT_SOURCE == PITOT_SOURCE_ADC
 AP_AnalogSource_ADC pitot_analog_source( &adc,
                         CONFIG_PITOT_SOURCE_ADC_CHANNEL, 1.0);
 #elif CONFIG_PITOT_SOURCE == PITOT_SOURCE_ANALOG_PIN
 AP_AnalogSource_Arduino pitot_analog_source(CONFIG_PITOT_SOURCE_ANALOG_PIN, 4.0);
-#endif
-
-#if SONAR_TYPE == MAX_SONAR_XL
-	AP_RangeFinder_MaxsonarXL sonar(&pitot_analog_source, &sonar_mode_filter);
-#elif SONAR_TYPE == MAX_SONAR_LV
-	// XXX honestly I think these output the same values
-	// If someone knows, can they confirm it?
-	AP_RangeFinder_MaxsonarXL sonar(&pitot_analog_source, &sonar_mode_filter);
 #endif
 
 // Barometer filter
@@ -444,6 +457,7 @@ static float	nav_gain_scaler 		= 1;
 // Direction held during phases of takeoff and landing
 // deg * 100 dir of plane,  A value of -1 indicates the course has not been set/is not in use
 static long    hold_course       	 	= -1;		// deg * 100 dir of plane
+static bool rtl_complete = false;
 
 // There may be two active commands in Auto mode.  
 // This indicates the active navigation command by index number
@@ -475,7 +489,9 @@ static long		airspeed_energy_error;
 static int		airspeed_nudge;
 // Similar to airspeed_nudge, but used when no airspeed sensor.
 // 0-(throttle_max - throttle_cruise) : throttle nudge in Auto mode using top 1/2 of throttle stick travel
-static int     throttle_nudge = 0;                 
+static int     throttle_nudge = 0;
+// The distance as reported by Sonar in cm – Values are 20 to 700 generally.
+static int16_t		sonar_dist;
 
 ////////////////////////////////////////////////////////////////////////////////
 // Ground speed
@@ -538,8 +554,7 @@ static int16_t 	ground_temperature;
 ////////////////////////////////////////////////////////////////////////////////
 // Raw absolute pressure measurement (filtered).  ADC units
 static unsigned long 	abs_pressure;
-// Altitude from the sonar sensor.  Meters.  Not yet implemented.
-static int		sonar_alt;
+
 // The altitude as reported by Baro in cm – Values can be quite high
 static int32_t		baro_alt;
 
@@ -791,6 +806,13 @@ static void fast_loop()
 
 #if LITE == DISABLED
 	ahrs.update();
+	// Read Sonar
+	// ----------
+    # if CONFIG_SONAR == ENABLED
+	if(g.sonar_enabled){
+		sonar_dist = sonar.read();
+	}
+    #endif
 #endif 
 
 	// uses the yaw from the DCM to give more accurate turns
@@ -818,7 +840,7 @@ static void fast_loop()
 
 	// apply desired roll, pitch and yaw to the plane
 	// ----------------------------------------------
-	if (control_mode > MANUAL)
+	if (control_mode > STABILIZE)
 		stabilize();
 
 	// write out the servo PWM values
@@ -1070,9 +1092,10 @@ static void update_GPS(void)
                 if (g.compass_enabled) {
                   hdg=(ahrs.yaw_sensor / 100) % 360;
                   ground_course = hdg * 100;
+                  ground_course = ahrs.yaw_sensor;
                 } else {
 #endif            
-                  ground_course = abs(g_gps->ground_course);
+                  ground_course = g_gps->ground_course;
 #if LITE == DISABLED                  
                 }
 #endif
@@ -1094,7 +1117,7 @@ static void update_current_flight_mode(void)
 				calc_nav_roll();
 				calc_throttle();
 				break;
-		}
+            }
 	}else{
 		switch(control_mode){
 			case RTL:
@@ -1112,6 +1135,13 @@ static void update_current_flight_mode(void)
 			case STABILIZE:
 				nav_roll        = 0;
 				nav_pitch       = 0;
+                       #if X_PLANE == ENABLED
+  				// servo_out is for Sim control only
+				// ---------------------------------
+				g.channel_roll.servo_out = g.channel_roll.pwm_to_angle();
+				g.channel_pitch.servo_out = g.channel_pitch.pwm_to_angle();
+				g.channel_rudder.servo_out = g.channel_roll.pwm_to_angle();                     
+                       #endif
 				// throttle is passthrough
 				break;
 
@@ -1132,7 +1162,7 @@ static void update_current_flight_mode(void)
 				// ---------------------------------
 				g.channel_roll.servo_out = g.channel_roll.pwm_to_angle();
 				g.channel_pitch.servo_out = g.channel_pitch.pwm_to_angle();
-				g.channel_rudder.servo_out = g.channel_rudder.pwm_to_angle();
+				g.channel_rudder.servo_out = g.channel_roll.pwm_to_angle();
 				break;
 				//roll: -13788.000,  pitch: -13698.000,   thr: 0.000, rud: -13742.000
 
@@ -1152,10 +1182,15 @@ static void update_navigation()
 
 		switch(control_mode){
 			case LOITER:
-			case RTL:
+			case RTL:        // no loitering around the wp with the rover, goes direct to the wp position
 			case GUIDED:
-				update_loiter();
+				// update_loiter();
+				calc_nav_roll();
 				calc_bearing_error();
+                                if(verify_RTL()) 
+                                {  g.channel_throttle.servo_out = g.throttle_min.get();
+                                   set_mode(MANUAL);
+                                }
 				break;
 
 		}

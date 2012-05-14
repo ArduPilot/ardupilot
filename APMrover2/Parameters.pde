@@ -104,8 +104,17 @@ static const AP_Param::Info var_info[] PROGMEM = {
 	GSCALAR(input_voltage,          "INPUT_VOLTS"),
 	GSCALAR(pack_capacity,          "BATT_CAPACITY"),
 	GSCALAR(inverted_flight_ch,     "INVERTEDFLT_CH"),
-
-	//GSCALAR(sonar_enabled,          "SONAR_ENABLE"),
+#if HIL_MODE != HIL_MODE_ATTITUDE
+#if LITE == DISABLED   
+	// @Param: SONAR_ENABLE
+	// @DisplayName: Enable Sonar
+	// @Description: Setting this to Enabled(1) will enable the sonar. Setting this to Disabled(0) will disable the sonar
+	// @Values: 0:Disabled,1:Enabled
+	// @User: Standard
+	GSCALAR(sonar_enabled,	        "SONAR_ENABLE"),
+	GSCALAR(sonar_type,	        "SONAR_TYPE"),
+#endif	
+#endif
 	GSCALAR(airspeed_enabled,       "ARSPD_ENABLE"),
 
  // ************************************************************
@@ -113,7 +122,7 @@ static const AP_Param::Info var_info[] PROGMEM = {
         
         GSCALAR(closed_loop_nav,        "ROV_CL_NAV"),
         GSCALAR(auto_wp_radius,         "ROV_AWPR_NAV"),
-        GSCALAR(nudgeoffset,            "ROV_NUDGE"),
+        GSCALAR(sonar_trigger,          "ROV_SONAR_TRIG"),
         GSCALAR(turn_gain,              "ROV_GAIN"),
 // ************************************************************
 

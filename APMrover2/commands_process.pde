@@ -68,9 +68,9 @@ static void process_next_command()
 			// we are out of commands!
 			gcs_send_text_P(SEVERITY_LOW,PSTR("out of commands!"));
 			
-                    if (g.closed_loop_nav)  {    // JLN update - replay the FPL (CLOSED_LOOP_NAV)
-                       change_command(1);
-                       return;
+                      if (g.closed_loop_nav)  {    // JLN update - replay the FPL (CLOSED_LOOP_NAV)
+                         restart_nav();
+                         return;
                     } else {
                      handle_no_commands();
                     }    
@@ -144,3 +144,5 @@ static void process_non_nav_command()
 		non_nav_command_ID = NO_COMMAND;
 	}
 }
+
+

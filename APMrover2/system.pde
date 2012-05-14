@@ -195,6 +195,10 @@ static void init_ardupilot()
             compass.null_offsets_enable();
         }
 	}
+	// initialise sonar
+	#if CONFIG_SONAR == ENABLED
+	init_sonar();
+	#endif
 #endif
 #endif
 	// Do GPS init
@@ -358,8 +362,8 @@ static void set_mode(byte mode)
 			break;
 
 		case AUTO:
-                        change_command(1); // restart to the 1st stored wp
-			//update_auto();
+                        rtl_complete = false;
+                        restart_nav();
 			break;
 
 		case RTL:

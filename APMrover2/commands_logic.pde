@@ -331,6 +331,7 @@ static bool verify_RTL()
 {
 	if (wp_distance <= g.waypoint_radius) {
 		gcs_send_text_P(SEVERITY_LOW,PSTR("Reached home"));
+                rtl_complete = true;
 		return true;
 	}else{
 		return false;

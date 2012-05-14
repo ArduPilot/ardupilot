@@ -33,8 +33,6 @@
 #define MAGNETOMETER	    DISABLED
 #define LOGGING_ENABLED	    DISABLED
 
-#define CH7_OPTION	    CH7_CH7_SAVE_WP
-
 #define TURN_GAIN		5
 
 #define CH7_OPTION	    CH7_SAVE_WP
@@ -422,8 +420,8 @@
 // Also, set the value of USE_CURRENT_ALT in meters.  This is mainly intended to allow
 // users to start using the APM without running the WaypointWriter first.
 //
-#define WP_RADIUS_DEFAULT       3   // meters
-#define LOITER_RADIUS_DEFAULT	10   // 60
+#define WP_RADIUS_DEFAULT       1   // meters
+#define LOITER_RADIUS_DEFAULT	5   
 #define USE_CURRENT_ALT		TRUE
 #define ALT_HOLD_HOME		0
 
