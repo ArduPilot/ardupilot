@@ -336,7 +336,7 @@ static const char *comma = ",";
 static const char* flight_mode_strings[] = {
 	"Manual",
 	"Circle",
-	"Stabilize",
+	"Learning",
 	"",
 	"",
 	"FBW_A",
@@ -846,8 +846,8 @@ static void fast_loop()
 
 	// apply desired roll, pitch and yaw to the plane
 	// ----------------------------------------------
-	if (control_mode > STABILIZE)
-		stabilize();
+	if (control_mode > LEARNING)
+		learning();
 
 	// write out the servo PWM values
 	// ------------------------------
@@ -1133,7 +1133,7 @@ static void update_current_flight_mode(void)
 			case FLY_BY_WIRE_B:
 				break;
 
-			case STABILIZE:
+			case LEARNING:
 				nav_roll        = 0;
 				nav_pitch       = 0;
                        #if X_PLANE == ENABLED

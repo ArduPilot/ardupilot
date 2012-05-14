@@ -275,7 +275,7 @@ static void geofence_check(bool altitude_check_only)
 
         if (control_mode == MANUAL && g.auto_trim) {
             // make sure we don't auto trim the surfaces on this change
-            control_mode = STABILIZE;
+            control_mode = LEARNING;
         }
 
         set_mode(GUIDED);

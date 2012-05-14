@@ -224,7 +224,7 @@ setup_flightmodes(uint8_t argc, const Menu::arg *argv)
 			while (
 				mode != MANUAL &&
 				mode != CIRCLE &&
-				mode != STABILIZE &&
+				mode != LEARNING &&
 				mode != FLY_BY_WIRE_A &&
 				mode != FLY_BY_WIRE_B &&
 				mode != AUTO &&

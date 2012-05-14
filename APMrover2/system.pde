@@ -355,7 +355,7 @@ static void set_mode(byte mode)
 	switch(control_mode)
 	{
 		case MANUAL:
-		case STABILIZE:
+		case LEARNING:
 		case CIRCLE:
 		case FLY_BY_WIRE_A:
 		case FLY_BY_WIRE_B: 

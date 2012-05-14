@@ -77,7 +77,7 @@ if (g.ch7_option == CH7_SAVE_WP){         // set to 1
                                         #endif
                                         CH7_wp_index = 1;                    
 					return;
-				} else if (control_mode == STABILIZE) {    // if SW7 is ON in STABILIZE = record the Wp                                 
+				} else if (control_mode == LEARNING) {    // if SW7 is ON in LEARNING = record the Wp                                 
         			   // set the next_WP (home is stored at 0)
         			   // max out at 100 since I think we need to stay under the EEPROM limit
         			   CH7_wp_index = constrain(CH7_wp_index, 1, 100);
@@ -113,7 +113,7 @@ if (g.ch7_option == CH7_SAVE_WP){         // set to 1
 		}else{ // switch is disengaged
 			if(trim_flag){
 				trim_flag = false;
-                                if (control_mode == STABILIZE) {
+                                if (control_mode == LEARNING) {
                                     set_mode(RTL);
                                 }
                                }

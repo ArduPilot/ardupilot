@@ -37,8 +37,8 @@
 
 #define FLIGHT_MODE_1         AUTO         // pos 0 ---
 #define FLIGHT_MODE_2         AUTO         // pos 1
-#define FLIGHT_MODE_3         STABILIZE    // pos 2
-#define FLIGHT_MODE_4         STABILIZE    // pos 3 --- 
+#define FLIGHT_MODE_3         LEARNING    // pos 2
+#define FLIGHT_MODE_4         LEARNING    // pos 3 --- 
 #define FLIGHT_MODE_5         MANUAL       // pos 4
 #define FLIGHT_MODE_6         MANUAL       // pos 5 ---
 
