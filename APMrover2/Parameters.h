@@ -24,7 +24,7 @@ public:
 	// GCS will interpret values 0-9 as ArduPilotMega.  Developers may use
 	// values within that range to identify different branches.
 	//
-    static const uint16_t k_software_type = 0;		// 0 for APM trunk
+    static const uint16_t k_software_type = 20;		// 0 for APM trunk
 
     enum {
         // Layout version number, always key zero.

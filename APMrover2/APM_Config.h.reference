@@ -263,9 +263,9 @@
 //  Name            | Description
 // -----------------+--------------------------------------------
 //                  |
-//  MANUAL          | Full manual control via the hardware multiplexer.
+//  MANUAL          | Full manual control via software.
 //                  |
-//  STABILIZE       | Tries to maintain level flight, but can be overridden with radio control inputs.
+//  LEARNING        | Full manual control, used for live waypoint definition via Ch7 toggle.
 //                  |
 //  FLY_BY_WIRE_A   | Autopilot style control via user input, with manual throttle.
 //                  |
@@ -298,8 +298,8 @@
 //
 //#define FLIGHT_MODE_1         RTL
 //#define FLIGHT_MODE_2         RTL
-//#define FLIGHT_MODE_3         STABILIZE
-//#define FLIGHT_MODE_4         STABILIZE
+//#define FLIGHT_MODE_3         LEARNING
+//#define FLIGHT_MODE_4         LEARNING
 //#define FLIGHT_MODE_5         MANUAL
 //#define FLIGHT_MODE_6         MANUAL
 //

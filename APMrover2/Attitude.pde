@@ -4,7 +4,7 @@
 // Function that controls aileron/rudder, elevator, rudder (if 4 channel control) and throttle to produce desired attitude and airspeed.
 //****************************************************************
 
-static void stabilize()
+static void learning()
 {
 	// Calculate desired servo output for the turn  // Wheels Direction
 	// ---------------------------------------------
@@ -111,7 +111,7 @@ static void set_servos(void)
 	rc_array[CH_7] = &g.rc_7;
 	rc_array[CH_8] = &g.rc_8;
 
-	if((control_mode == MANUAL) || (control_mode == STABILIZE)){
+	if((control_mode == MANUAL) || (control_mode == LEARNING)){
 		// do a direct pass through of radio values
 		g.channel_roll.radio_out 		= g.channel_roll.radio_in;
 		g.channel_pitch.radio_out 		= g.channel_pitch.radio_in;

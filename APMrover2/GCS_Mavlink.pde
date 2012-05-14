@@ -44,11 +44,11 @@ static NOINLINE void send_heartbeat(mavlink_channel_t chan)
     case MANUAL:
         base_mode = MAV_MODE_FLAG_MANUAL_INPUT_ENABLED;
         break;
-    case STABILIZE:
+    case LEARNING:
     case FLY_BY_WIRE_A:
     case FLY_BY_WIRE_B:
     case FLY_BY_WIRE_C:
-        base_mode = MAV_MODE_FLAG_STABILIZE_ENABLED;
+        base_mode = MAV_MODE_FLAG_LEARNING_ENABLED;
         break;
     case AUTO:
     case RTL:
@@ -56,7 +56,7 @@ static NOINLINE void send_heartbeat(mavlink_channel_t chan)
     case GUIDED:
     case CIRCLE:
         base_mode = MAV_MODE_FLAG_GUIDED_ENABLED |
-                    MAV_MODE_FLAG_STABILIZE_ENABLED;
+                    MAV_MODE_FLAG_LEARNING_ENABLED;
         // note that MAV_MODE_FLAG_AUTO_ENABLED does not match what
         // APM does in any mode, as that is defined as "system finds its own goal
         // positions", which APM does not currently do
@@ -68,7 +68,7 @@ static NOINLINE void send_heartbeat(mavlink_channel_t chan)
 
     if (control_mode != MANUAL && control_mode != INITIALISING) {
         // stabiliser of some form is enabled
-        base_mode |= MAV_MODE_FLAG_STABILIZE_ENABLED;
+        base_mode |= MAV_MODE_FLAG_LEARNING_ENABLED;
     }
 
 #if ENABLE_STICK_MIXING==ENABLED
@@ -165,7 +165,7 @@ static NOINLINE void send_extended_status1(mavlink_channel_t chan, uint16_t pack
     case MANUAL:
         break;
 
-    case STABILIZE:
+    case LEARNING:
     case FLY_BY_WIRE_A:
         control_sensors_enabled |= (1<<10); // 3D angular rate control
         control_sensors_enabled |= (1<<11); // attitude stabilisation
@@ -242,7 +242,7 @@ static NOINLINE void send_extended_status1(mavlink_channel_t chan, uint16_t pack
         case MANUAL:
             mode 		= MAV_MODE_MANUAL;
             break;
-        case STABILIZE:
+        case LEARNING:
             mode 		= MAV_MODE_TEST1;
             break;
         case FLY_BY_WIRE_A:
@@ -1315,7 +1315,7 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
             switch (packet.custom_mode) {
             case MANUAL:
             case CIRCLE:
-            case STABILIZE:
+            case LEARNING:
             case FLY_BY_WIRE_A:
             case FLY_BY_WIRE_B:
             case FLY_BY_WIRE_C:
@@ -1346,7 +1346,7 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
 					break;
 
                 case MAV_MODE_TEST1:
-					set_mode(STABILIZE);
+					set_mode(LEARNING);
 					break;
 
                 case MAV_MODE_TEST2:
