@@ -50,8 +50,16 @@
 # define CONFIG_APM_HARDWARE APM_HARDWARE_APM1
 #endif
 
+#ifndef X_PLANE
+# define X_PLANE DISABLED
+#endif
+
+#if X_PLANE == ENABLED
+# define LITE ENABLED
+#else
 #ifndef LITE
 # define LITE DISABLED
+#endif
 #endif
 
 #if defined( __AVR_ATmega1280__ )
@@ -181,8 +189,41 @@
 # define SONAR_TYPE             MAX_SONAR_LV	// MAX_SONAR_XL,  
 #endif
 
-#ifndef SONAR_ENABLED
-#define SONAR_ENABLED DISABLED
+//////////////////////////////////////////////////////////////////////////////
+// Sonar
+//
+
+#ifndef CONFIG_SONAR_SOURCE
+# define CONFIG_SONAR_SOURCE SONAR_SOURCE_ADC
+#endif
+
+#if CONFIG_SONAR_SOURCE == SONAR_SOURCE_ADC && CONFIG_ADC == DISABLED
+# warning Cannot use ADC for CONFIG_SONAR_SOURCE, becaude CONFIG_ADC is DISABLED
+# warning Defaulting CONFIG_SONAR_SOURCE to ANALOG_PIN
+# undef CONFIG_SONAR_SOURCE
+# define CONFIG_SONAR_SOURCE SONAR_SOURCE_ANALOG_PIN
+#endif
+
+#if CONFIG_SONAR_SOURCE == SONAR_SOURCE_ADC
+# ifndef CONFIG_SONAR_SOURCE_ADC_CHANNEL
+#  define CONFIG_SONAR_SOURCE_ADC_CHANNEL 7
+# endif
+#elif CONFIG_SONAR_SOURCE == SONAR_SOURCE_ANALOG_PIN
+# ifndef CONFIG_SONAR_SOURCE_ANALOG_PIN
+#  define CONFIG_SONAR_SOURCE_ANALOG_PIN A0
+# endif
+#else
+# warning Invalid value for CONFIG_SONAR_SOURCE, disabling sonar
+# undef SONAR_ENABLED
+# define SONAR_ENABLED DISABLED
+#endif
+
+#ifndef CONFIG_SONAR
+# define CONFIG_SONAR ENABLED
+#endif
+
+#ifndef SONAR_TRIGGER
+# define SONAR_TRIGGER       60        // trigger distance in cm 
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
@@ -195,6 +236,9 @@
 #if HIL_MODE != HIL_MODE_DISABLED	// we are in HIL mode
  # undef GPS_PROTOCOL
  # define GPS_PROTOCOL GPS_PROTOCOL_NONE
+ 
+  #undef CONFIG_SONAR
+ #define CONFIG_SONAR DISABLED
 #endif
 
 //////////////////////////////////////////////////////////////////////////////

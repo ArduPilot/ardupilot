@@ -76,7 +76,12 @@ static void calc_gndspeed_undershoot()
 }
 
 static void calc_bearing_error()
-{
+{        
+      #if CONFIG_SONAR == ENABLED
+	if((g.sonar_enabled) && (sonar_dist < g.sonar_trigger)) {
+	    nav_bearing += 9000;    // if obstacle in front turn 90° right	 
+	}
+      #endif
 	bearing_error = nav_bearing - ground_course;
 	bearing_error = wrap_180(bearing_error);
 }

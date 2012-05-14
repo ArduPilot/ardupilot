@@ -82,8 +82,12 @@ public:
 	k_param_input_voltage,
 	k_param_pack_capacity,
         k_param_airspeed_offset,
-  
-//	k_param_sonar_enabled,
+#if HIL_MODE != HIL_MODE_ATTITUDE
+#if LITE == DISABLED     
+ 	k_param_sonar_enabled,
+ 	k_param_sonar_type,
+#endif
+#endif
 	k_param_airspeed_enabled,
         
         //
@@ -127,7 +131,7 @@ public:
         
         k_param_closed_loop_nav,
         k_param_auto_wp_radius,
-        k_param_nudgeoffset,
+        k_param_sonar_trigger,
         k_param_turn_gain,
         
 // ************************************************************
@@ -328,8 +332,12 @@ public:
         AP_Float    input_voltage;
 	AP_Int16    pack_capacity;		// Battery pack capacity less reserve
         AP_Int8	    inverted_flight_ch; // 0=disabled, 1-8 is channel for inverted flight trigger
-
-       // AP_Int8	    sonar_enabled;
+#if HIL_MODE != HIL_MODE_ATTITUDE
+#if LITE == DISABLED   
+        AP_Int8	    sonar_enabled;
+	AP_Int8	    sonar_type;   // 0 = XL, 1 = LV, 2 = XLL (XL with 10m range)   
+#endif
+#endif
         AP_Int8	    airspeed_enabled;
         AP_Int8	    flap_1_percent;
         AP_Int8	    flap_1_speed;
@@ -341,7 +349,7 @@ public:
 
         AP_Int8     closed_loop_nav;
         AP_Int8     auto_wp_radius;
-        AP_Int16    nudgeoffset;
+        AP_Int16    sonar_trigger;
         AP_Int16    turn_gain;
     
 // ************************************************************   
@@ -460,8 +468,12 @@ public:
         input_voltage			(INPUT_VOLTAGE),
         pack_capacity	 		(HIGH_DISCHARGE),
         inverted_flight_ch      (0),
-       
-//        sonar_enabled			(SONAR_ENABLED),
+#if HIL_MODE != HIL_MODE_ATTITUDE
+#if LITE == DISABLED          
+        sonar_enabled			(SONAR_ENABLED),
+	sonar_type			(AP_RANGEFINDER_MAXSONARXL),        
+#endif
+#endif
         airspeed_enabled		(AIRSPEED_SENSOR),
         
 // ************ APMrover parameters  ************************
@@ -469,7 +481,7 @@ public:
 
         closed_loop_nav         (CLOSED_LOOP_NAV),
         auto_wp_radius          (AUTO_WP_RADIUS), 
-        nudgeoffset             (NUDGE_OFFSET),
+        sonar_trigger           (SONAR_TRIGGER),
         turn_gain               (TURN_GAIN), 
 
 // ************************************************************   

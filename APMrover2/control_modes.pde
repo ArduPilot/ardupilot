@@ -70,6 +70,8 @@ if (g.ch7_option == CH7_SAVE_WP){         // set to 1
                                         g.command_total = 0;
                                         g.command_index =0;
                                         nav_command_index = 0;
+                                        if(g.channel_roll.control_in > 3000) // if roll is full right store the current location as home
+                                            ground_start_count = 5;
                                         #if X_PLANE == ENABLED
                                                 Serial.printf_P(PSTR("*** RESET the FPL\n"));
                                         #endif

@@ -12,6 +12,7 @@
 	void set_next_WP(struct Location *wp)
 	void set_guided_WP(void)
 	void init_home()
+	void restart_nav()
 ************************************************************ 
 */
 
@@ -250,14 +251,14 @@ void init_home()
         home.alt        = g_gps->altitude;;
   					// Home is always 0
 #else
-	struct Location temp = get_cmd_with_index(0);    // JLN update - for HIL test only get the home param stored in the FPL
-        if (temp.alt > 0) {
-        	home.lng 	= temp.lng;			 // Lon * 10**7
-        	home.lat 	= temp.lat;			 // Lat * 10**7
-        } else {
+//	struct Location temp = get_cmd_with_index(0);    // JLN update - for HIL test only get the home param stored in the FPL
+//        if (temp.alt > 0) {
+//        	home.lng 	= temp.lng;			 // Lon * 10**7
+//        	home.lat 	= temp.lat;			 // Lat * 10**7
+//        } else {
         	home.lng 	= g_gps->longitude;		 // Lon * 10**7
         	home.lat 	= g_gps->latitude;		 // Lat * 10**7       
-        }
+//        }
         
          gps_base_alt    = g_gps->altitude;;             // get the stored home altitude as the base ref for AGL calculation.
          home.alt        = g_gps->altitude;;
@@ -282,3 +283,11 @@ void init_home()
 
 }
 
+static void restart_nav()
+{  
+  reset_I();
+  prev_WP = current_loc;
+  nav_command_ID = NO_COMMAND;
+  nav_command_index = 0;
+  process_next_command();
+}

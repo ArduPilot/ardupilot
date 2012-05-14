@@ -30,6 +30,9 @@
 #define SONAR 0
 #define BARO 1
 
+#define SONAR_SOURCE_ADC 1
+#define SONAR_SOURCE_ANALOG_PIN 2
+
 // CH 7 control
 #define CH7_DO_NOTHING   0
 #define CH7_SAVE_WP      1

@@ -12,9 +12,12 @@
 
 #define AIRSPEED_SENSOR	    DISABLED
 
+#define SONAR_ENABLED       DISABLED
+#define SONAR_TRIGGER       200        // trigger distance in cm 
+
 #if LITE == DISABLED
   #define MAGNETOMETER	    ENABLED
-  #define LOGGING_ENABLED	    ENABLED
+  #define LOGGING_ENABLED   ENABLED
 
   #define MAG_ORIENTATION		AP_COMPASS_COMPONENTS_UP_PINS_FORWARD
   #define PARAM_DECLINATION       0.18  // Paris
@@ -46,7 +49,7 @@
 #define TURN_GAIN		5
 
 #define CLOSED_LOOP_NAV       ENABLED     // set to ENABLED if closed loop navigation else set to DISABLED (Return To Lauch)
-#define AUTO_WP_RADIUS        ENABLED
+#define AUTO_WP_RADIUS        DISABLED
 
 #define MAX_DIST             50  //300       // max distance (in m) for the HEADALT mode
 #define SARSEC_BRANCH        50              // Long branch of the SARSEC pattern
@@ -418,8 +421,8 @@
 // Also, set the value of USE_CURRENT_ALT in meters.  This is mainly intended to allow
 // users to start using the APM without running the WaypointWriter first.
 //
-#define WP_RADIUS_DEFAULT       5   // meters
-#define LOITER_RADIUS_DEFAULT	10   // 60
+#define WP_RADIUS_DEFAULT       1   // meters
+#define LOITER_RADIUS_DEFAULT	5   // 60
 #define USE_CURRENT_ALT		TRUE
 #define ALT_HOLD_HOME		0
 

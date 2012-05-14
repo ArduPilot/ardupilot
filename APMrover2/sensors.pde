@@ -5,6 +5,17 @@
 
 void ReadSCP1000(void) {}
 
+#if CONFIG_SONAR == ENABLED
+static void init_sonar(void)
+{
+    #if CONFIG_SONAR_SOURCE == SONAR_SOURCE_ADC
+	    sonar.calculate_scaler(g.sonar_type, 3.3);
+	#else
+        sonar.calculate_scaler(g.sonar_type, 5.0);
+	#endif
+}
+#endif
+
 static void init_barometer(void)
 {
 	int flashcount = 0;
