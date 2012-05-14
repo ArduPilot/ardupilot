@@ -1,6 +1,6 @@
 /// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 
-#define THISFIRMWARE "APMrover v2.13 JL NAUDIN" //New version of the APMrover for the APM v1 or APM v2 and magnetometer + SONAR
+#define THISFIRMWARE "APMrover v2.14 JL NAUDIN" //New version of the APMrover for the APM v1 or APM v2 and magnetometer + SONAR
 
 // This is a full version of Arduplane v2.32 specially adapted for a Rover by Jean-Louis Naudin (JLN) 
 
@@ -26,7 +26,8 @@ version 2.1 of the License, or (at your option) any later version.
 //-------------------------------------------------------------------------------------------------------------------------
 // Dev Startup : 2012-04-21
 //
-//  2012-05-14: Added option (hold roll to full right + SW7 ON/OFF) to init_home during the wp_list reset
+//  2012-05-14: Update about mavlink library (now compatible with the latest version of mavlink)
+//  2012-05-14: Added option (with yaw full right)to init_home during the wp_list reset
 //  2012-05-13: Add ROV_SONAR_TRIG (default = 200 cm)
 //  2012-05-13: Restart_nav() added and heading bug correction, tested OK in the field
 //  2012-05-12: RTL then stop update - Tested in the field
@@ -124,7 +125,12 @@ version 2.1 of the License, or (at your option) any later version.
 //
 FastSerialPort0(Serial);        // FTDI/console
 FastSerialPort1(Serial1);       // GPS port
-FastSerialPort3(Serial3);       // Telemetry port
+#if TELEMETRY_UART2 == ENABLED
+ // solder bridge set to enable UART2 instead of USB MUX
+ FastSerialPort2(Serial3);
+#else
+ FastSerialPort3(Serial3);       // Telemetry port for APM1
+#endif
 
 ////////////////////////////////////////////////////////////////////////////////
 // ISR Registry
@@ -851,7 +857,7 @@ static void fast_loop()
 	// XXX is it appropriate to be doing the comms below on the fast loop?
 
     gcs_update();
-    gcs_data_stream_send(45,1000);
+    gcs_data_stream_send();
 }
 
 static void medium_loop()
@@ -945,9 +951,6 @@ Serial.println(tempaccel.z, DEC);
 			if (g.log_bitmask & MASK_LOG_GPS)
 				Log_Write_GPS(g_gps->time, current_loc.lat, current_loc.lng, g_gps->altitude, current_loc.alt, (long) g_gps->ground_speed, g_gps->ground_course, g_gps->fix, g_gps->num_sats);
 #endif
-            // send all requested output streams with rates requested
-            // between 5 and 45 Hz
-            gcs_data_stream_send(5,45);
 			break;
 
 		// This case controls the slow loop
@@ -1013,7 +1016,6 @@ static void slow_loop()
 			update_events();
 
             mavlink_system.sysid = g.sysid_this_mav;		// This is just an ugly hack to keep mavlink_system.sysid sync'd with our parameter
-            gcs_data_stream_send(3,5);
 
 #if USB_MUX_PIN > 0
             check_usb_mux();
@@ -1037,7 +1039,6 @@ static void one_second_loop()
 #endif
 	// send a heartbeat
 	gcs_send_message(MSG_HEARTBEAT);
-    gcs_data_stream_send(1,3);
 }
 
 static void update_GPS(void)
