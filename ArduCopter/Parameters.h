@@ -338,7 +338,7 @@ public:
 	rtl_approach_alt		(0.0),
 	retro_loiter			(RETRO_LOITER_MODE),
 	axis_enabled			(AXIS_LOCK_ENABLED),
-	copter_leds_mode		(0),
+	copter_leds_mode		(9),
 
 	waypoint_mode			(0),
 	command_total			(0),

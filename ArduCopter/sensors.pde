@@ -135,21 +135,18 @@ static void read_battery(void)
 	if((battery_voltage1 < g.low_voltage) || (g.battery_monitoring == 4 && current_total1 > g.pack_capacity)){
 		low_battery_event();
 
-		#if PIEZO_LOW_VOLTAGE == 1
-		// Only Activate if a battery is connected to avoid alarm on USB only
-		if (battery_voltage1 > 1){
-			piezo_on();
-		}else{
-			piezo_off();
+		if ( bitRead(g.copter_leds_mode, 3) ){	// Only Activate if a battery is connected to avoid alarm on USB only
+			if (battery_voltage1 > 1){
+				piezo_on();
+			}else{
+				piezo_off();
+			}
 		}
-		#endif
 
-	}else{
-		#if PIEZO_LOW_VOLTAGE == 1
-			piezo_off();
-		#endif
+	}elseif ( bitRead(g.copter_leds_mode, 3) ){
+		piezo_off();
 	}
-	#endif
+	#endif //BATTERY_EVENT
 }
 
 //v: 10.9453, a: 17.4023, mah: 8.2
