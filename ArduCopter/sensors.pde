@@ -128,7 +128,7 @@ static void read_battery(void)
 		current_total1	 += current_amps1 * 0.02778;	// called at 100ms on average, .0002778 is 1/3600 (conversion to hours)
 	}
 
-	#if BATTERY_EVENT == 1
+	#if BATTERY_EVENT == ENABLED
 	//if(battery_voltage < g.low_voltage)
 	//	low_battery_event();
 
@@ -143,7 +143,7 @@ static void read_battery(void)
 			}
 		}
 
-	}elseif ( bitRead(g.copter_leds_mode, 3) ){
+	}else if ( bitRead(g.copter_leds_mode, 3) ){
 		piezo_off();
 	}
 	#endif //BATTERY_EVENT
