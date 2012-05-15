@@ -42,6 +42,7 @@
             // 
             resources.ApplyResources(this.label28, "label28");
             this.label28.Name = "label28";
+            this.toolTip1.SetToolTip(this.label28, resources.GetString("label28.ToolTip"));
             // 
             // BUT_levelplane
             // 
@@ -63,11 +64,13 @@
             // 
             resources.ApplyResources(this.label1, "label1");
             this.label1.Name = "label1";
+            this.toolTip1.SetToolTip(this.label1, resources.GetString("label1.ToolTip"));
             // 
             // label2
             // 
             resources.ApplyResources(this.label2, "label2");
             this.label2.Name = "label2";
+            this.toolTip1.SetToolTip(this.label2, resources.GetString("label2.ToolTip"));
             // 
             // ConfigAccelerometerCalibrationPlane
             // 
@@ -79,6 +82,7 @@
             this.Controls.Add(this.label28);
             this.Controls.Add(this.BUT_levelplane);
             this.Name = "ConfigAccelerometerCalibrationPlane";
+            this.toolTip1.SetToolTip(this, resources.GetString("$this.ToolTip"));
             this.Load += new System.EventHandler(this.ConfigAccelerometerCalibration_Load);
             this.ResumeLayout(false);
             this.PerformLayout();
