@@ -108,9 +108,6 @@
 #define GUIDED 15
 #define INITIALISING 16     // in startup routines
 #define HEADALT      17   // Lock the current heading and altitude
-#define SARSEC       18   // Run a SAR type Sector Pattern
-#define SARGRID      19   // Run a SAR type Grid Pattern
-#define THERMAL      20   // Thermal hunter mode 
 #define LAND         21   // Landing mode
 
 // Commands - Note that APM now uses a subset of the MAVLink protocol commands.  See enum MAV_CMD in the GCS_Mavlink library
