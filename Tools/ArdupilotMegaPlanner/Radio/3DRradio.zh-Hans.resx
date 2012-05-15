@@ -117,6 +117,9 @@
   <resheader name="writer">
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
+  <data name="S1.ToolTip" xml:space="preserve">
+    <value>取整的kbps波特率。57就是 57600。</value>
+  </data>
   <assembly alias="System.Drawing" name="System.Drawing, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a" />
   <data name="label1.Size" type="System.Drawing.Size, System.Drawing">
     <value>49, 13</value>
@@ -136,6 +139,9 @@
   <data name="label3.Text" xml:space="preserve">
     <value>空　　速</value>
   </data>
+  <data name="S2.ToolTip" xml:space="preserve">
+    <value>空速是取整的数传之间数据传输率(kbps)。所以128就是128kbps。最大值为192，最小值为2。不建议低于16，否则调频和时分复用同步时间太长。</value>
+  </data>
   <data name="label4.Size" type="System.Drawing.Size, System.Drawing">
     <value>42, 13</value>
   </data>
@@ -147,6 +153,20 @@
   </data>
   <data name="label5.Text" xml:space="preserve">
     <value>发射功率</value>
+  </data>
+  <data name="RS2.ToolTip" xml:space="preserve">
+    <value>空速是取整的数传之间数据传输率(kbps)。所以128就是128kbps。最大值为192，最小值为2。不建议低于16，否则调频和时分复用同步时间太长。</value>
+  </data>
+  <data name="RS1.ToolTip" xml:space="preserve">
+    <value>取整的kbps波特率。57就是 57600。</value>
+  </data>
+  <data name="RSSI.ToolTip" xml:space="preserve">
+    <value>参见参数表中的RSSI-dbm图。末尾的数字是：
+txe: 传输错误数量（例如传输超时）
+rxe: 接受错误数量（crc错误，帧错误等）
+stx: 串口发送溢出数量
+rrx: 串口接收溢出数量
+ecc: 格雷码成功纠正的12位字数量</value>
   </data>
   <data name="label9.Size" type="System.Drawing.Size, System.Drawing">
     <value>31, 13</value>
