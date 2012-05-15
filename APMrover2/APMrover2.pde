@@ -18,7 +18,7 @@ License as published by the Free Software Foundation; either
 version 2.1 of the License, or (at your option) any later version.
 
 //
-// JLN updates: last update 2012-05-14
+// JLN updates: last update 2012-05-15
 //
 // DOLIST:
 //  
@@ -27,7 +27,7 @@ version 2.1 of the License, or (at your option) any later version.
 // Dev Startup : 2012-04-21
 //
 //  2012-05-14: Update about mavlink library (now compatible with the latest version of mavlink)
-//  2012-05-14: Added option (with yaw full right)to init_home during the wp_list reset
+//  2012-05-14: Added option (hold roll to full right + SW7 ON/OFF) to init_home during the wp_list reset
 //  2012-05-13: Add ROV_SONAR_TRIG (default = 200 cm)
 //  2012-05-13: Restart_nav() added and heading bug correction, tested OK in the field
 //  2012-05-12: RTL then stop update - Tested in the field
