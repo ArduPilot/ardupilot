@@ -84,10 +84,11 @@ static void init_arm_motors()
     }
 	motors.armed(true);
 
-	#if PIEZO_ARMING == 1
-	piezo_beep();
-	piezo_beep();
-	#endif
+	if ( bitRead(g.copter_leds_mode, 3) ){	
+		piezo_beep();
+		delay(50);
+		piezo_beep();
+	}
 
 	// Remember Orientation
 	// --------------------
@@ -137,9 +138,9 @@ static void init_disarm_motors()
 	// we are not in the air
 	takeoff_complete = false;
 
-	#if PIEZO_ARMING == 1
-	piezo_beep();
-	#endif
+	if ( bitRead(g.copter_leds_mode, 3) ){	
+		piezo_beep();
+	}
 }
 
 /*****************************************

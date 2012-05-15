@@ -140,12 +140,13 @@ static void init_ardupilot()
 	pinMode(COPTER_LED_6, OUTPUT);		//Motor or Aux LED
 	pinMode(COPTER_LED_7, OUTPUT);		//Motor or GPS LED
 	pinMode(COPTER_LED_8, OUTPUT);		//Motor or GPS LED
-#endif
-
-	#if PIEZO == 1
-		pinMode(PIEZO_PIN,OUTPUT);
+	
+	if ( !bitRead(g.copter_leds_mode, 3) ){	
 		piezo_beep();
-	#endif
+	}
+	
+#endif
+	
 
     // load parameters from EEPROM
     load_parameters();

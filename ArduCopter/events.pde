@@ -94,24 +94,3 @@ static void update_events()	// Used for MAV_CMD_DO_REPEAT_SERVO and MAV_CMD_DO_R
 	}
 }
 
-#if PIEZO == ENABLED
-void piezo_on()
-{
-	digitalWrite(PIEZO_PIN,HIGH);
-	//PORTF |= B00100000;
-}
-
-void piezo_off()
-{
-	digitalWrite(PIEZO_PIN,LOW);
-	//PORTF &= ~B00100000;
-}
-
-void piezo_beep()
-{
-	// Note: This command should not be used in time sensitive loops
-	piezo_on();
-	delay(100);
-	piezo_off();
-}
-#endif
