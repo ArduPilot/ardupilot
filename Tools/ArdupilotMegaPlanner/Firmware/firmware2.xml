@@ -82,7 +82,7 @@
     <url2560-2>http://meee146-planner.googlecode.com/git/Tools/ArdupilotMegaPlanner/Firmware/AC2-Y6-2560-2.hex</url2560-2>
     <name>ArduCopter V2.5.5 Y6</name>
     <desc>
-define FRAME_CONFIG Y6_FRAME
+#define FRAME_CONFIG Y6_FRAME
 
 </desc>
     <format_version>118</format_version>
