@@ -119,6 +119,7 @@
 # endif
 #endif
 
+////////////////////////////////////////////////////////
 // LED and IO Pins
 //
 #if CONFIG_APM_HARDWARE == APM_HARDWARE_APM1
@@ -149,9 +150,54 @@
 # define CURRENT_PIN_1      2
 #endif
 
+////////////////////////////////////////////////////////////////////////////////
+// CopterLEDs
+// The CopterLEDs output conflicts with APM2 Piezo Beeper output on AN5
+//
+
 #ifndef COPTER_LEDS
 #define COPTER_LEDS ENABLED
 #endif
+
+#define COPTER_LED_ON		HIGH
+#define COPTER_LED_OFF		LOW
+
+#if CONFIG_APM_HARDWARE == APM_HARDWARE_APM2
+#define COPTER_LED_1 AN4  	// Motor LED
+#define COPTER_LED_2 AN5  	// Motor or Aux LED
+#define COPTER_LED_3 AN6 	// Motor LED
+#define COPTER_LED_4 AN7 	// Motor or GPS LED
+#define COPTER_LED_5 AN8	// Motor LED
+#define COPTER_LED_6 AN9 	// Motor LED
+#define COPTER_LED_7 AN10 	// Motor LED
+#define COPTER_LED_8 AN11 	// Motor LED
+#elif CONFIG_APM_HARDWARE == APM_HARDWARE_APM1
+#define COPTER_LED_1 AN8  	// Motor LED
+#define COPTER_LED_2 AN9  	// Motor or Aux LED
+#define COPTER_LED_3 AN10 	// Motor LED
+#define COPTER_LED_4 AN11 	// Motor or GPS LED
+#define COPTER_LED_5 AN12	// Motor LED
+#define COPTER_LED_6 AN13 	// Motor LED
+#define COPTER_LED_7 AN14 	// Motor LED
+#define COPTER_LED_8 AN15 	// Motor LED
+#endif
+
+
+//////////////////////////////////////////////////////////////////////////////
+// Piezo Beeper  
+// The Piezo Beeper output conflicts with APM2 CopterLED output on AN5
+//
+
+#ifndef PIEZO
+# define PIEZO				ENABLED				//Enables Piezo Code and beeps once on Startup to verify operation
+#endif
+#ifndef PIEZO_LOW_VOLTAGE
+# define PIEZO_LOW_VOLTAGE	ENABLED				//Enables Tone on reaching low battery or current alert
+#endif
+#ifndef PIEZO_ARMING
+# define PIEZO_ARMING		ENABLED				//Two tones on ARM, 1 Tone on disarm
+#endif
+
 
 //////////////////////////////////////////////////////////////////////////////
 // Pushbutton & Relay
@@ -288,15 +334,7 @@
 #endif
 
 
-#ifndef PIEZO
-# define PIEZO				ENABLED				//Enables Piezo Code and beeps once on Startup to verify operation
-#endif
-#ifndef PIEZO_LOW_VOLTAGE
-# define PIEZO_LOW_VOLTAGE	ENABLED				//Enables Tone on reaching low battery or current alert
-#endif
-#ifndef PIEZO_ARMING
-# define PIEZO_ARMING		ENABLED				//Two tones on ARM, 1 Tone on disarm
-#endif
+
 
 
 //////////////////////////////////////////////////////////////////////////////

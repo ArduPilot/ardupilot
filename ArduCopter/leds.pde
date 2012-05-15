@@ -167,43 +167,49 @@ static void update_copter_leds(void)
 }
 
 static void copter_leds_reset(void) {
-	digitalWrite(COPTER_LED_1, LED_OFF);
-	digitalWrite(COPTER_LED_2, LED_OFF);
-	digitalWrite(COPTER_LED_3, LED_OFF);
-	digitalWrite(COPTER_LED_4, LED_OFF);
-	digitalWrite(COPTER_LED_5, LED_OFF);
-	digitalWrite(COPTER_LED_6, LED_OFF);
-	digitalWrite(COPTER_LED_7, LED_OFF);
-	digitalWrite(COPTER_LED_8, LED_OFF);
+	digitalWrite(COPTER_LED_1, COPTER_LED_OFF);
+	if (CONFIG_APM_HARDWARE == APM_HARDWARE_APM1 || PIEZO == DISABLED){  
+		digitalWrite(COPTER_LED_2, COPTER_LED_OFF);  						// The Piezo Beeper output conflicts with APM2 CopterLED output on AN5
+	}
+	digitalWrite(COPTER_LED_3, COPTER_LED_OFF);
+	digitalWrite(COPTER_LED_4, COPTER_LED_OFF);
+	digitalWrite(COPTER_LED_5, COPTER_LED_OFF);	
+	digitalWrite(COPTER_LED_6, COPTER_LED_OFF);
+	digitalWrite(COPTER_LED_7, COPTER_LED_OFF);
+	digitalWrite(COPTER_LED_8, COPTER_LED_OFF);
 }
 
 static void copter_leds_on(void) {
-	digitalWrite(COPTER_LED_1, LED_ON);
-	digitalWrite(COPTER_LED_2, LED_ON);
-	digitalWrite(COPTER_LED_3, LED_ON);
-	digitalWrite(COPTER_LED_4, LED_ON);
-	if ( !bitRead(g.copter_leds_mode, 2) ){
-		digitalWrite(COPTER_LED_5, LED_ON);
-		digitalWrite(COPTER_LED_6, LED_ON);
+	digitalWrite(COPTER_LED_1, COPTER_LED_ON);
+	digitalWrite(COPTER_LED_3, COPTER_LED_ON);
+	digitalWrite(COPTER_LED_5, COPTER_LED_ON);
+	digitalWrite(COPTER_LED_6, COPTER_LED_ON);
+	digitalWrite(COPTER_LED_7, COPTER_LED_ON);
+	digitalWrite(COPTER_LED_8, COPTER_LED_ON);
+	if (CONFIG_APM_HARDWARE == APM_HARDWARE_APM1 || PIEZO == DISABLED){  	// The Piezo Beeper output conflicts with APM2 CopterLED output on AN5
+		if ( !bitRead(g.copter_leds_mode, 2) ){
+			digitalWrite(COPTER_LED_2, COPTER_LED_ON);	
+		}
 	}
 	if ( !bitRead(g.copter_leds_mode, 1) ){
-		digitalWrite(COPTER_LED_7, LED_ON);
-		digitalWrite(COPTER_LED_8, LED_ON);
+		digitalWrite(COPTER_LED_4, COPTER_LED_ON);
 	}
 }
 
 static void copter_leds_off(void) {
-	digitalWrite(COPTER_LED_1, LED_OFF);
-	digitalWrite(COPTER_LED_2, LED_OFF);
-	digitalWrite(COPTER_LED_3, LED_OFF);
-	digitalWrite(COPTER_LED_4, LED_OFF);
-	if ( !bitRead(g.copter_leds_mode, 2) ){
-		digitalWrite(COPTER_LED_5, LED_OFF);
-		digitalWrite(COPTER_LED_6, LED_OFF);
+	digitalWrite(COPTER_LED_1, COPTER_LED_OFF);
+	digitalWrite(COPTER_LED_3, COPTER_LED_OFF);
+	digitalWrite(COPTER_LED_5, COPTER_LED_OFF);
+	digitalWrite(COPTER_LED_6, COPTER_LED_OFF);
+	digitalWrite(COPTER_LED_7, COPTER_LED_OFF);
+	digitalWrite(COPTER_LED_8, COPTER_LED_OFF);
+	if (CONFIG_APM_HARDWARE == APM_HARDWARE_APM1 || PIEZO == DISABLED){  	// The Piezo Beeper output conflicts with APM2 CopterLED output on AN5
+		if ( !bitRead(g.copter_leds_mode, 2) ){
+			digitalWrite(COPTER_LED_2, COPTER_LED_OFF);
+		}
 	}
 	if ( !bitRead(g.copter_leds_mode, 1) ){
-		digitalWrite(COPTER_LED_7, LED_OFF);
-		digitalWrite(COPTER_LED_8, LED_OFF);
+		digitalWrite(COPTER_LED_4, COPTER_LED_OFF);
 	}
 }
 
@@ -220,30 +226,34 @@ static void copter_leds_blink(void) {
 static void copter_leds_oscillate(void) {
 	copter_leds_motor_blink++;                                				// this increments once every 1/10 second because it is in the 10hz loop
 	if ( 0 < copter_leds_motor_blink && copter_leds_motor_blink < 3 ) {		// when the counter reaches 3 (1/5 sec), then toggle the leds
-		digitalWrite(COPTER_LED_1, LED_ON);
-		digitalWrite(COPTER_LED_2, LED_ON);
-		digitalWrite(COPTER_LED_3, LED_OFF);
-		digitalWrite(COPTER_LED_4, LED_OFF);
-		if ( !bitRead(g.copter_leds_mode, 2) ) {
-			digitalWrite(COPTER_LED_5, LED_ON);
-			digitalWrite(COPTER_LED_6, LED_ON);
+		digitalWrite(COPTER_LED_1, COPTER_LED_ON);
+		digitalWrite(COPTER_LED_3, COPTER_LED_OFF);
+		digitalWrite(COPTER_LED_5, COPTER_LED_ON);
+		digitalWrite(COPTER_LED_6, COPTER_LED_ON);
+		digitalWrite(COPTER_LED_7, COPTER_LED_OFF);
+		digitalWrite(COPTER_LED_8, COPTER_LED_OFF);
+		if (CONFIG_APM_HARDWARE == APM_HARDWARE_APM1 || PIEZO == DISABLED){  	// The Piezo Beeper output conflicts with APM2 CopterLED output on AN5
+			if ( !bitRead(g.copter_leds_mode, 2) ) {
+				digitalWrite(COPTER_LED_2, COPTER_LED_ON);
+			}
 		}
 		if ( !bitRead(g.copter_leds_mode, 1) ) {
-			digitalWrite(COPTER_LED_7, LED_OFF);
-			digitalWrite(COPTER_LED_8, LED_OFF);
+			digitalWrite(COPTER_LED_4, COPTER_LED_OFF);
 		}
 	}else if (2 < copter_leds_motor_blink && copter_leds_motor_blink < 5) {
-		digitalWrite(COPTER_LED_1, LED_OFF);
-		digitalWrite(COPTER_LED_2, LED_OFF);
-		digitalWrite(COPTER_LED_3, LED_ON);
-		digitalWrite(COPTER_LED_4, LED_ON);
-		if ( !bitRead(g.copter_leds_mode, 2) ) {
-			digitalWrite(COPTER_LED_5, LED_OFF);
-			digitalWrite(COPTER_LED_6, LED_OFF);
-		}
+		digitalWrite(COPTER_LED_1, COPTER_LED_OFF);
+		digitalWrite(COPTER_LED_3, COPTER_LED_ON);
+		digitalWrite(COPTER_LED_5, COPTER_LED_OFF);
+		digitalWrite(COPTER_LED_6, COPTER_LED_OFF);
+		digitalWrite(COPTER_LED_7, COPTER_LED_ON);
+		digitalWrite(COPTER_LED_8, COPTER_LED_ON);
+		if (CONFIG_APM_HARDWARE == APM_HARDWARE_APM1 || PIEZO == DISABLED){  	// The Piezo Beeper output conflicts with APM2 CopterLED output on AN5
+			if ( !bitRead(g.copter_leds_mode, 2) ) {
+				digitalWrite(COPTER_LED_2, COPTER_LED_OFF);
+			}
+		}	
 		if ( !bitRead(g.copter_leds_mode, 1) ) {
-			digitalWrite(COPTER_LED_7, LED_ON);
-			digitalWrite(COPTER_LED_8, LED_ON);
+			digitalWrite(COPTER_LED_4, COPTER_LED_ON);
 		}
 	}
 	else copter_leds_motor_blink = 0;              							// start blink cycle again  
@@ -252,13 +262,11 @@ static void copter_leds_oscillate(void) {
 
 
 static void copter_leds_GPS_on(void) {
-	digitalWrite(COPTER_LED_7, LED_ON);
-	digitalWrite(COPTER_LED_8, LED_ON);
+	digitalWrite(COPTER_LED_4, COPTER_LED_ON);
 }
 
 static void copter_leds_GPS_off(void) {
-	digitalWrite(COPTER_LED_7, LED_OFF);
-	digitalWrite(COPTER_LED_8, LED_OFF);
+	digitalWrite(COPTER_LED_4, COPTER_LED_OFF);
 }
 
 static void copter_leds_GPS_slow_blink(void) {
@@ -281,17 +289,16 @@ static void copter_leds_GPS_fast_blink(void) {
 	else copter_leds_GPS_blink = 0;              							// start blink cycle again
 }
 
-
-static void copter_leds_aux_off(void)
-{
-	digitalWrite(COPTER_LED_5, LED_OFF);
-	digitalWrite(COPTER_LED_6, LED_OFF);
+static void copter_leds_aux_off(void){
+	if (CONFIG_APM_HARDWARE == APM_HARDWARE_APM1 || PIEZO == DISABLED){  	// The Piezo Beeper output conflicts with APM2 CopterLED output on AN5
+		digitalWrite(COPTER_LED_2, COPTER_LED_OFF);
+	}
 }
 
-static void copter_leds_aux_on(void)
-{
-	digitalWrite(COPTER_LED_5, LED_ON);
-	digitalWrite(COPTER_LED_6, LED_ON);
+static void copter_leds_aux_on(void){
+	if (CONFIG_APM_HARDWARE == APM_HARDWARE_APM1 || PIEZO == DISABLED){  	// The Piezo Beeper output conflicts with APM2 CopterLED output on AN5
+		digitalWrite(COPTER_LED_2, COPTER_LED_ON);
+	}
 }
 
 #endif			//COPTER_LEDS
