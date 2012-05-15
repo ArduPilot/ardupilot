@@ -63,15 +63,6 @@
 #define NORMAL_LEDS 0
 #define AUTO_TRIM_LEDS 1
 
-// COPTER LEDs
-#define COPTER_LED_1 AN8  	// Motor LED
-#define COPTER_LED_2 AN9  	// Motor LED
-#define COPTER_LED_3 AN10 	// Motor LED
-#define COPTER_LED_4 AN11 	// Motor LED
-#define COPTER_LED_5 AN12	// Motor or Aux LED
-#define COPTER_LED_6 AN13 	// Motor or Aux LED
-#define COPTER_LED_7 AN14 	// Motor or GPS LED
-#define COPTER_LED_8 AN15 	// Motor or GPS LED
 
 // Internal defines, don't edit and expect things to work
 // -------------------------------------------------------
