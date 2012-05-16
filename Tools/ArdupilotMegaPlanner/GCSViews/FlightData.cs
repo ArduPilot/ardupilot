@@ -319,8 +319,27 @@ namespace ArdupilotMega.GCSViews
 
                     updatePlayPauseButton(true);
 
+                    switch (comPort.aptype)
+                    {
+                        case MAVLink.MAV_TYPE.MAV_FIXED_WING:
+                            MainV2.cs.firmware = MainV2.Firmwares.ArduPlane;
+                            break;
+                        case MAVLink.MAV_TYPE.MAV_QUADROTOR:
+                            MainV2.cs.firmware = MainV2.Firmwares.ArduCopter2;
+                            break;
+                        case MAVLink.MAV_TYPE.MAV_GROUND:
+                            MainV2.cs.firmware = MainV2.Firmwares.ArduRover;
+                            break;
+                        default:
+                            break;
+                    }
+
                     if (comPort.BaseStream.IsOpen)
+                    {
                         MainV2.comPort.logreadmode = false;
+                        MainV2.comPort.logplaybackfile.Close();
+                        MainV2.comPort.logplaybackfile = null;
+                    }
 
                     DateTime logplayback = MainV2.comPort.lastlogread;
                     try
@@ -356,7 +375,7 @@ namespace ArdupilotMega.GCSViews
                         tunning = DateTime.Now;
                     }
 
-                    if (MainV2.comPort.logplaybackfile.BaseStream.Position == MainV2.comPort.logplaybackfile.BaseStream.Length)
+                    if (MainV2.comPort.logplaybackfile != null && MainV2.comPort.logplaybackfile.BaseStream.Position == MainV2.comPort.logplaybackfile.BaseStream.Length)
                     {
                         MainV2.comPort.logreadmode = false;
                     }
@@ -494,6 +513,10 @@ namespace ArdupilotMega.GCSViews
                                 if (MainV2.cs.firmware == MainV2.Firmwares.ArduPlane)
                                 {
                                     routes.Markers.Add(new GMapMarkerPlane(currentloc, MainV2.cs.yaw, MainV2.cs.groundcourse, MainV2.cs.nav_bearing, MainV2.cs.target_bearing, gMapControl1));
+                                }
+                                else if (MainV2.cs.firmware == MainV2.Firmwares.ArduRover)
+                                {
+                                    routes.Markers.Add(new GMapMarkerRover(currentloc, MainV2.cs.yaw, MainV2.cs.groundcourse, MainV2.cs.nav_bearing, MainV2.cs.target_bearing, gMapControl1));
                                 }
                                 else
                                 {

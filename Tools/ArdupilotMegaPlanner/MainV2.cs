@@ -117,6 +117,7 @@ namespace ArdupilotMega
         {
             ArduPlane,
             ArduCopter2,
+            ArduRover
         }
 
         DateTime connectButtonUpdate = DateTime.Now;
@@ -640,6 +641,12 @@ namespace ArdupilotMega
                 // Here we want to reset the connection stats counter etc.
                 this.ResetConnectionStats();
 
+                //cleanup any log being played
+                comPort.logreadmode = false;
+                if (comPort.logplaybackfile != null)
+                    comPort.logplaybackfile.Close();
+                comPort.logplaybackfile = null;
+
                 try
                 {
                     // set port, then options
@@ -687,6 +694,10 @@ namespace ArdupilotMega
                         if (float.Parse(comPort.param["SYSID_SW_TYPE"].ToString()) == 10)
                         {
                             _connectionControl.TOOL_APMFirmware.SelectedIndex = _connectionControl.TOOL_APMFirmware.Items.IndexOf(Firmwares.ArduCopter2);
+                        }
+                        else if (float.Parse(comPort.param["SYSID_SW_TYPE"].ToString()) == 20)
+                        {
+                            _connectionControl.TOOL_APMFirmware.SelectedIndex = _connectionControl.TOOL_APMFirmware.Items.IndexOf(Firmwares.ArduRover);
                         }
                         else if (float.Parse(comPort.param["SYSID_SW_TYPE"].ToString()) == 0)
                         {

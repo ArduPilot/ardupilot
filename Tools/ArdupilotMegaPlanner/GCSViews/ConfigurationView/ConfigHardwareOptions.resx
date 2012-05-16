@@ -139,7 +139,7 @@
     <value>BUT_MagCalibrationLive</value>
   </data>
   <data name="&gt;&gt;BUT_MagCalibrationLive.Type" xml:space="preserve">
-    <value>ArdupilotMega.Controls.MyButton, ArdupilotMegaPlanner, Version=1.1.4491.32704, Culture=neutral, PublicKeyToken=null</value>
+    <value>ArdupilotMega.Controls.MyButton, ArdupilotMegaPlanner, Version=1.1.4517.33956, Culture=neutral, PublicKeyToken=null</value>
   </data>
   <data name="&gt;&gt;BUT_MagCalibrationLive.Parent" xml:space="preserve">
     <value>$this</value>
@@ -203,6 +203,9 @@
   </data>
   <data name="&gt;&gt;CMB_sonartype.ZOrder" xml:space="preserve">
     <value>4</value>
+  </data>
+  <data name="CHK_enableoptflow.Enabled" type="System.Boolean, mscorlib">
+    <value>False</value>
   </data>
   <data name="CHK_enableoptflow.ImeMode" type="System.Windows.Forms.ImeMode, System.Windows.Forms">
     <value>NoControl</value>
@@ -339,6 +342,9 @@
   <data name="&gt;&gt;TXT_declination.ZOrder" xml:space="preserve">
     <value>9</value>
   </data>
+  <data name="CHK_enableairspeed.Enabled" type="System.Boolean, mscorlib">
+    <value>False</value>
+  </data>
   <data name="CHK_enableairspeed.ImeMode" type="System.Windows.Forms.ImeMode, System.Windows.Forms">
     <value>NoControl</value>
   </data>
@@ -366,6 +372,9 @@
   <data name="&gt;&gt;CHK_enableairspeed.ZOrder" xml:space="preserve">
     <value>10</value>
   </data>
+  <data name="CHK_enablesonar.Enabled" type="System.Boolean, mscorlib">
+    <value>False</value>
+  </data>
   <data name="CHK_enablesonar.ImeMode" type="System.Windows.Forms.ImeMode, System.Windows.Forms">
     <value>NoControl</value>
   </data>
@@ -392,6 +401,9 @@
   </data>
   <data name="&gt;&gt;CHK_enablesonar.ZOrder" xml:space="preserve">
     <value>11</value>
+  </data>
+  <data name="CHK_enablecompass.Enabled" type="System.Boolean, mscorlib">
+    <value>False</value>
   </data>
   <data name="CHK_enablecompass.ImeMode" type="System.Windows.Forms.ImeMode, System.Windows.Forms">
     <value>NoControl</value>
@@ -526,7 +538,7 @@
     <value>BUT_MagCalibrationLog</value>
   </data>
   <data name="&gt;&gt;BUT_MagCalibrationLog.Type" xml:space="preserve">
-    <value>ArdupilotMega.Controls.MyButton, ArdupilotMegaPlanner, Version=1.1.4491.32704, Culture=neutral, PublicKeyToken=null</value>
+    <value>ArdupilotMega.Controls.MyButton, ArdupilotMegaPlanner, Version=1.1.4517.33956, Culture=neutral, PublicKeyToken=null</value>
   </data>
   <data name="&gt;&gt;BUT_MagCalibrationLog.Parent" xml:space="preserve">
     <value>$this</value>
@@ -577,6 +589,6 @@
     <value>ConfigHardwareOptions</value>
   </data>
   <data name="&gt;&gt;$this.Type" xml:space="preserve">
-    <value>ArdupilotMega.Controls.BackstageView.BackStageViewContentPanel, ArdupilotMegaPlanner, Version=1.1.4491.32704, Culture=neutral, PublicKeyToken=null</value>
+    <value>ArdupilotMega.Controls.BackstageView.BackStageViewContentPanel, ArdupilotMegaPlanner, Version=1.1.4517.33956, Culture=neutral, PublicKeyToken=null</value>
   </data>
 </root>

@@ -94,7 +94,12 @@ namespace ArdupilotMega.Utilities
         {
             if (MONO)
             {
-                _speechlinux.Close();
+                try
+                {
+                    if (_speechlinux != null)
+                        _speechlinux.Close();
+                }
+                catch { }
                 _state = SynthesizerState.Ready;
             }
             else

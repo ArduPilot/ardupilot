@@ -687,5 +687,15 @@ namespace ArdupilotMega.GCSViews
         {
             findfirmware("AC2-HELHIL-");
         }
+
+        private void pictureBoxAPHil_MouseEnter(object sender, EventArgs e)
+        {
+
+        }
+
+        private void pictureBoxAPHil_MouseLeave(object sender, EventArgs e)
+        {
+
+        }
     }
 }

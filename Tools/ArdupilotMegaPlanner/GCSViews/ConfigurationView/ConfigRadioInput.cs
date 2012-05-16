@@ -66,11 +66,7 @@ namespace ArdupilotMega.GCSViews.ConfigurationView
 
             startup = true;
 
-            if (MainV2.cs.firmware == MainV2.Firmwares.ArduCopter2)
-            {
-                groupBoxElevons.Visible = false;
-            }
-            else
+            if (MainV2.cs.firmware == MainV2.Firmwares.ArduPlane)
             {
                 try
                 {
@@ -80,6 +76,10 @@ namespace ArdupilotMega.GCSViews.ConfigurationView
                     CHK_elevonch2rev.Checked = MainV2.comPort.param["ELEVON_CH2_REV"].ToString() == "1";
                 }
                 catch { } // this will fail on arducopter
+            }
+            else
+            {
+                groupBoxElevons.Visible = false;
             }
             try
             {

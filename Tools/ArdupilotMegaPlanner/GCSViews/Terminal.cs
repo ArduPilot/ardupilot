@@ -138,7 +138,14 @@ namespace ArdupilotMega.GCSViews
                         string cmd = "";
                         lock (thisLock)
                         {
-                            cmd = TXT_terminal.Text.Substring(inputStartPos, TXT_terminal.Text.Length - inputStartPos - 1);
+                            if (MainV2.MONO)
+                            {
+                                cmd = TXT_terminal.Text.Substring(inputStartPos, TXT_terminal.Text.Length - inputStartPos);
+                            }
+                            else
+                            {
+                                cmd = TXT_terminal.Text.Substring(inputStartPos, TXT_terminal.Text.Length - inputStartPos - 1);
+                            }
                             TXT_terminal.Select(inputStartPos, TXT_terminal.Text.Length - inputStartPos);
                             TXT_terminal.SelectedText = "";
                             if (cmd.Length > 0 && (cmdHistory.Count == 0 || cmdHistory.Last() != cmd))

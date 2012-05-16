@@ -55,6 +55,12 @@ namespace ArdupilotMega.GCSViews.ConfigurationView
                     this.backstageView.AddPage(new BackstageView.BackstageViewPage(new ConfigAccelerometerCalibrationPlane(), "ArduPlane Level"));
                     this.backstageView.AddPage(new BackstageView.BackstageViewPage(new ConfigArduplane(), "ArduPlane Pids"));
                 }
+                /****************************** ArduRover **************************/
+                else if (MainV2.cs.firmware == MainV2.Firmwares.ArduRover)
+                {
+                    //this.backstageView.AddPage(new BackstageView.BackstageViewPage(new ConfigAccelerometerCalibrationPlane(), "ArduRover Level"));
+                    this.backstageView.AddPage(new BackstageView.BackstageViewPage(new ConfigArdurover(), "ArduRover Pids"));
+                }
 
                 this.backstageView.AddPage(new BackstageView.BackstageViewPage(new ConfigFriendlyParams { ParameterMode = ParameterMetaDataConstants.Standard }, "Standard Params"));
                 this.backstageView.AddPage(new BackstageView.BackstageViewPage(new ConfigFriendlyParams { ParameterMode = ParameterMetaDataConstants.Advanced }, "Advanced Params"));

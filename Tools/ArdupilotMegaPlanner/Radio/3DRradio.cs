@@ -31,6 +31,11 @@ namespace ArdupilotMega
         {
             InitializeComponent();
 
+            // hide advanced view
+            SPLIT_local.Panel2Collapsed = true;
+            SPLIT_remote.Panel2Collapsed = true;
+
+            // setup netid
             S3.DataSource = Enumerable.Range(0, 500).ToArray();
             RS3.DataSource = S3.DataSource;
         }
@@ -250,6 +255,9 @@ namespace ArdupilotMega
 
             if (doConnect(comPort))
             {
+                // cleanup
+                doCommand(comPort, "AT&T");
+
                 comPort.DiscardInBuffer();
 
                 lbl_status.Text = "Doing Command";
@@ -404,6 +412,18 @@ namespace ArdupilotMega
             comPort.Close();
         }
 
+        public static IEnumerable<int> Range(int start,int step, int end)
+        {
+            List<int> list = new List<int>();
+
+            for (int a = start; a <= end; a += step)
+            {
+                list.Add(a);
+            }
+
+            return list;
+        }
+
 
         private void BUT_getcurrent_Click(object sender, EventArgs e)
         {
@@ -426,6 +446,9 @@ namespace ArdupilotMega
 
             if (doConnect(comPort))
             {
+                // cleanup
+                doCommand(comPort, "AT&T");
+
                 comPort.DiscardInBuffer();
 
                 lbl_status.Text = "Doing Command ATI & RTI";
@@ -433,6 +456,30 @@ namespace ArdupilotMega
                 ATI.Text = doCommand(comPort, "ATI");
 
                 RTI.Text = doCommand(comPort, "RTI");
+
+                    uploader.Uploader.Code freq = (uploader.Uploader.Code)Enum.Parse(typeof(uploader.Uploader.Code), doCommand(comPort, "ATI3"));
+                    uploader.Uploader.Code board = (uploader.Uploader.Code)Enum.Parse(typeof(uploader.Uploader.Code), doCommand(comPort, "ATI2"));
+
+                    ATI3.Text = freq.ToString();
+                // 8 and 9
+                    if (freq == uploader.Uploader.Code.FREQ_915) {
+                        S8.DataSource = Range(895000, 1000, 935000);
+                        RS8.DataSource = Range(895000, 1000, 935000);
+
+                        S9.DataSource = Range(895000, 1000, 935000);
+                        RS9.DataSource = Range(895000, 1000, 935000);
+                    }
+                    else if (freq == uploader.Uploader.Code.FREQ_433)
+                    {
+                        S8.DataSource = Range(414000, 100, 454000);
+                        RS8.DataSource = Range(414000, 100, 454000);
+
+                        S9.DataSource = Range(414000, 100, 454000);
+                        RS9.DataSource = Range(414000, 100, 454000);
+                    }
+
+
+
 
                 RSSI.Text = doCommand(comPort, "ATI7").Trim();
 
@@ -450,7 +497,7 @@ namespace ArdupilotMega
 
                         if (values.Length == 3)
                         {
-                            Control[] controls = this.Controls.Find(values[0].Trim(), false);
+                            Control[] controls = this.Controls.Find(values[0].Trim(), true);
 
                             if (controls.Length > 0)
                             {
@@ -491,7 +538,7 @@ namespace ArdupilotMega
 
                         if (values.Length == 3)
                         {
-                            Control[] controls = this.Controls.Find("R" + values[0].Trim(), false);
+                            Control[] controls = this.Controls.Find("R" + values[0].Trim(), true);
 
                             if (controls.Length == 0)
                                 continue;
@@ -533,6 +580,8 @@ namespace ArdupilotMega
 
             comPort.Close();
 
+            BUT_Syncoptions.Enabled = true;
+
             BUT_savesettings.Enabled = true;
         }
 
@@ -555,7 +604,7 @@ namespace ArdupilotMega
             return sb.ToString();
         }
 
-        string doCommand(ArdupilotMega.Comms.ICommsSerial comPort, string cmd, int level = 0)
+        public string doCommand(ArdupilotMega.Comms.ICommsSerial comPort, string cmd, int level = 0)
         {
             if (!comPort.IsOpen)
                 return "";
@@ -607,7 +656,7 @@ namespace ArdupilotMega
             return ans;
         }
 
-        bool doConnect(ArdupilotMega.Comms.ICommsSerial comPort)
+        public bool doConnect(ArdupilotMega.Comms.ICommsSerial comPort)
         {
             // clear buffer
             comPort.DiscardInBuffer();
@@ -633,6 +682,10 @@ namespace ArdupilotMega
                 comPort.Write("\r\n");
             }
 
+
+
+            doCommand(comPort, "AT&T");
+
             string version = doCommand(comPort, "ATI");
 
             log.Info("Connect Version: " + version.Trim() + "\n");
@@ -647,34 +700,20 @@ namespace ArdupilotMega
             return false;
         }
 
-        private void BUT_syncS2_Click(object sender, EventArgs e)
+        private void BUT_Syncoptions_Click(object sender, EventArgs e)
         {
             RS2.Text = S2.Text;
-        }
-
-        private void BUT_syncS3_Click(object sender, EventArgs e)
-        {
             RS3.Text = S3.Text;
-        }
-
-        private void BUT_syncS5_Click(object sender, EventArgs e)
-        {
             RS5.Checked = S5.Checked;
-        }
-
-        private void BUT_syncS8_Click(object sender, EventArgs e)
-        {
             RS8.Text = S8.Text;
-        }
-
-        private void BUT_syncS9_Click(object sender, EventArgs e)
-        {
             RS9.Text = S9.Text;
+            RS10.Text = S10.Text;
         }
 
-        private void BUT_syncS10_Click(object sender, EventArgs e)
+        private void CHK_advanced_CheckedChanged(object sender, EventArgs e)
         {
-            RS10.Text = S10.Text;
+            SPLIT_local.Panel2Collapsed = !CHK_advanced.Checked;
+            SPLIT_remote.Panel2Collapsed = !CHK_advanced.Checked;
         }
     }
 }

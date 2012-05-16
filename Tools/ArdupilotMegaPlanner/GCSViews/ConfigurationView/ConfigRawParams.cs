@@ -161,7 +161,7 @@ namespace ArdupilotMega.GCSViews.ConfigurationView
             if (dr == DialogResult.OK)
             {
                 StreamWriter sw = new StreamWriter(sfd.OpenFile());
-                string input = DateTime.Now + " Frame : + | Arducopter Kit | Kit motors";
+                string input = DateTime.Now + " Frame : ";
                 if (MainV2.cs.firmware == MainV2.Firmwares.ArduPlane)
                 {
                     input = DateTime.Now + " Plane: Skywalker";
