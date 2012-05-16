@@ -59,42 +59,23 @@ static void calc_XY_velocity(){
 	// this speed is ~ in cm because we are using 10^7 numbers from GPS
 	float tmp = 1.0/dTnav;
 
-	// straightforward approach:
-	///*
-
 	x_actual_speed 	= (float)(g_gps->longitude - last_longitude)  * scaleLongDown * tmp;
 	y_actual_speed	= (float)(g_gps->latitude  - last_latitude)  * tmp;
 
-	x_actual_speed	= (x_actual_speed + x_speed_old * 3) / 4;
-	y_actual_speed	= (y_actual_speed + y_speed_old * 3) / 4;
-
-	//x_actual_speed	= x_actual_speed >> 1;
-	//y_actual_speed	= y_actual_speed >> 1;
+	x_actual_speed	= (x_actual_speed + x_speed_old ) / 2;
+	y_actual_speed	= (y_actual_speed + y_speed_old ) / 2;
 
 	x_speed_old 	= x_actual_speed;
 	y_speed_old 	= y_actual_speed;
 
-	/*
-	// Ryan Beall's forward estimator:
-	int16_t	x_speed_new = (float)(g_gps->longitude - last_longitude) * scaleLongDown* tmp;
-	int16_t	y_speed_new = (float)(g_gps->latitude  - last_latitude)  * tmp;
-
-	x_actual_speed 	= x_speed_new + (x_speed_new - x_speed_old);
-	y_actual_speed 	= y_speed_new + (y_speed_new - y_speed_old);
-
-	x_speed_old 	= x_speed_new;
-	y_speed_old 	= y_speed_new;
-	*/
-
 	last_longitude 	= g_gps->longitude;
 	last_latitude 	= g_gps->latitude;
-}
 
-static void calc_GPS_velocity()
-{
-	float temp = radians((float)g_gps->ground_course/100.0);
-	x_actual_speed = (float)g_gps->ground_speed * sin(temp);
-	y_actual_speed = (float)g_gps->ground_speed * cos(temp);
+	/*if(g_gps->ground_speed > 150){
+		float temp = radians((float)g_gps->ground_course/100.0);
+		x_actual_speed = (float)g_gps->ground_speed * sin(temp);
+		y_actual_speed = (float)g_gps->ground_speed * cos(temp);
+	}*/
 }
 
 static void calc_location_error(struct Location *next_loc)
@@ -162,11 +143,6 @@ static void calc_location_error(struct Location *next_loc)
 #define NAV_RATE_ERR_MAX 250
 static void calc_loiter(int x_error, int y_error)
 {
-	if(g.retro_loiter){
-		x_error = constrain(x_error, -NAV_ERR_MAX, NAV_ERR_MAX);
-		y_error = constrain(y_error, -NAV_ERR_MAX, NAV_ERR_MAX);
-	}
-
 	int32_t p,i,d;						// used to capture pid values for logging
 	int32_t output;
 	int32_t x_target_speed, y_target_speed;
@@ -182,14 +158,15 @@ static void calc_loiter(int x_error, int y_error)
 #endif
 
 	x_rate_error	= x_target_speed - x_actual_speed;			// calc the speed error
-	if(g.retro_loiter){
-		x_rate_error = constrain(x_rate_error, -NAV_RATE_ERR_MAX, NAV_RATE_ERR_MAX);
-	}
 	p				= g.pid_loiter_rate_lon.get_p(x_rate_error);
-	i				= g.pid_loiter_rate_lon.get_i(x_rate_error, dTnav);
-	d				= g.pid_loiter_rate_lon.get_d(x_rate_error, dTnav);
+	i				= g.pid_loiter_rate_lon.get_i(x_rate_error + x_error, dTnav);
+	d				= g.pid_loiter_rate_lon.get_d(x_error, dTnav);
+	d				= constrain(d, -2000, 2000);
 
-	//nav_lon			+= x_rate_d * (g.pid_loiter_rate_lon.kD() / dTnav);
+	// get rid of noise
+	if(abs(x_actual_speed) < 50){
+		d = 0;
+	}
 
 	output			= p + i + d;
 	nav_lon			= constrain(output, -3000, 3000); 			// 30°
@@ -212,14 +189,15 @@ static void calc_loiter(int x_error, int y_error)
 #endif
 
 	y_rate_error	= y_target_speed - y_actual_speed;
-	if(g.retro_loiter){
-		y_rate_error = constrain(y_rate_error, -NAV_RATE_ERR_MAX, NAV_RATE_ERR_MAX);
-	}
 	p				= g.pid_loiter_rate_lat.get_p(y_rate_error);
-	i				= g.pid_loiter_rate_lat.get_i(y_rate_error, dTnav);
-	d				= g.pid_loiter_rate_lat.get_d(y_rate_error, dTnav);
+	i				= g.pid_loiter_rate_lat.get_i(y_rate_error + y_error, dTnav);
+	d				= g.pid_loiter_rate_lat.get_d(y_error, dTnav);
+	d				= constrain(d, -2000, 2000);
 
-	//nav_lat			+= y_rate_d * (g.pid_loiter_rate_lat.kD() / dTnav);
+	// get rid of noise
+	if(abs(y_actual_speed) < 50){
+		d = 0;
+	}
 
 	output			= p + i + d;
 	nav_lat			= constrain(output, -3000, 3000); // 30°
