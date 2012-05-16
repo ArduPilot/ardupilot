@@ -1055,11 +1055,7 @@ static void medium_loop()
 					// this calculates the velocity for Loiter
 					// only called when there is new data
 					// ----------------------------------
-					if(g.retro_loiter){
-						calc_GPS_velocity();
-					} else {
-						calc_XY_velocity();
-					}
+					calc_XY_velocity();
 
 					// If we have optFlow enabled we can grab a more accurate speed
 					// here and override the speed from the GPS
