@@ -37,7 +37,7 @@ namespace ArdupilotMega.GCSViews.ConfigurationView
 
             float pwm = 0;
 
-            if (MainV2.cs.firmware == MainV2.Firmwares.ArduPlane) // APM 
+            if (MainV2.cs.firmware == MainV2.Firmwares.ArduPlane || MainV2.cs.firmware == MainV2.Firmwares.ArduRover) // APM 
             {
                 if (MainV2.comPort.param.ContainsKey("FLTMODE_CH"))
                 {
@@ -189,7 +189,53 @@ namespace ArdupilotMega.GCSViews.ConfigurationView
                 }
                 catch { }
             }
-            if (MainV2.cs.firmware == MainV2.Firmwares.ArduCopter2) // ac2
+            else if (MainV2.cs.firmware == MainV2.Firmwares.ArduRover) // APM
+            {
+                CB_simple1.Visible = false;
+                CB_simple2.Visible = false;
+                CB_simple3.Visible = false;
+                CB_simple4.Visible = false;
+                CB_simple5.Visible = false;
+                CB_simple6.Visible = false;
+
+                var flightModes = EnumTranslator.Translate<Common.aprovermodes>();
+
+                CMB_fmode1.DataSource = flightModes.ToList();
+                CMB_fmode1.ValueMember = "Key";
+                CMB_fmode1.DisplayMember = "Value";
+
+                CMB_fmode2.DataSource = flightModes.ToList();
+                CMB_fmode2.ValueMember = "Key";
+                CMB_fmode2.DisplayMember = "Value";
+
+                CMB_fmode3.DataSource = flightModes.ToList();
+                CMB_fmode3.ValueMember = "Key";
+                CMB_fmode3.DisplayMember = "Value";
+
+                CMB_fmode4.DataSource = flightModes.ToList();
+                CMB_fmode4.ValueMember = "Key";
+                CMB_fmode4.DisplayMember = "Value";
+
+                CMB_fmode5.DataSource = flightModes.ToList();
+                CMB_fmode5.ValueMember = "Key";
+                CMB_fmode5.DisplayMember = "Value";
+
+                CMB_fmode6.DataSource = flightModes.ToList();
+                CMB_fmode6.ValueMember = "Key";
+                CMB_fmode6.DisplayMember = "Value";
+
+                try
+                {
+                    CMB_fmode1.Text = EnumTranslator.GetDisplayText(Enum.Parse(typeof(Common.aprovermodes), MainV2.comPort.param["FLTMODE1"].ToString()));
+                    CMB_fmode2.Text = EnumTranslator.GetDisplayText(Enum.Parse(typeof(Common.aprovermodes), MainV2.comPort.param["FLTMODE2"].ToString()));
+                    CMB_fmode3.Text = EnumTranslator.GetDisplayText(Enum.Parse(typeof(Common.aprovermodes), MainV2.comPort.param["FLTMODE3"].ToString()));
+                    CMB_fmode4.Text = EnumTranslator.GetDisplayText(Enum.Parse(typeof(Common.aprovermodes), MainV2.comPort.param["FLTMODE4"].ToString()));
+                    CMB_fmode5.Text = EnumTranslator.GetDisplayText(Enum.Parse(typeof(Common.aprovermodes), MainV2.comPort.param["FLTMODE5"].ToString()));
+                    CMB_fmode6.Text = Common.aprovermodes.MANUAL.ToString();
+                    CMB_fmode6.Enabled = false;
+                }
+                catch { }
+            } else if (MainV2.cs.firmware == MainV2.Firmwares.ArduCopter2) // ac2
             {
                var flightModes = EnumTranslator.Translate<Common.ac2modes>();
 

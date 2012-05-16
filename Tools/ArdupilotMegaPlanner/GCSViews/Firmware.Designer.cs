@@ -172,6 +172,8 @@ namespace ArdupilotMega.GCSViews
             this.pictureBoxAPHil.Name = "pictureBoxAPHil";
             this.pictureBoxAPHil.TabStop = false;
             this.pictureBoxAPHil.Click += new System.EventHandler(this.pictureBoxAPHil_Click);
+            this.pictureBoxAPHil.MouseEnter += new System.EventHandler(this.pictureBoxAPHil_MouseEnter);
+            this.pictureBoxAPHil.MouseLeave += new System.EventHandler(this.pictureBoxAPHil_MouseLeave);
             // 
             // pictureBoxACHil
             // 

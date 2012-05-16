@@ -554,6 +554,9 @@ namespace ArdupilotMega.GCSViews
                 if (MainV2.cs.firmware == MainV2.Firmwares.ArduPlane)
                 {
                     reader.ReadToFollowing("APM");
+                } else if (MainV2.cs.firmware == MainV2.Firmwares.ArduRover)
+                {
+                    reader.ReadToFollowing("APRover");
                 }
                 else
                 {
@@ -3048,7 +3051,11 @@ namespace ArdupilotMega.GCSViews
 
                 if (MainV2.cs.firmware == MainV2.Firmwares.ArduPlane)
                 {
-                    routes.Markers.Add(new GMapMarkerPlane(currentloc, MainV2.cs.yaw, MainV2.cs.groundcourse, MainV2.cs.nav_bearing, MainV2.cs.target_bearing, MainMap) { ToolTipText = MainV2.cs.alt.ToString("0"), ToolTipMode = MarkerTooltipMode.Always });
+                    routes.Markers.Add(new GMapMarkerPlane(currentloc, MainV2.cs.yaw, MainV2.cs.groundcourse, MainV2.cs.nav_bearing, MainV2.cs.target_bearing, MainMap));
+                }
+                else if (MainV2.cs.firmware == MainV2.Firmwares.ArduRover)
+                {
+                    routes.Markers.Add(new GMapMarkerRover(currentloc, MainV2.cs.yaw, MainV2.cs.groundcourse, MainV2.cs.nav_bearing, MainV2.cs.target_bearing, MainMap));
                 }
                 else
                 {

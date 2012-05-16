@@ -38,8 +38,18 @@ namespace ArdupilotMega.Utilities
 
                foreach (string parameterLocation in parameterLocations)
                {
+                   string element = "none";
+
+                   if (parameterLocation.ToLower().Contains("arducopter")) {
+                       element = MainV2.Firmwares.ArduCopter2.ToString();
+                   } else if (parameterLocation.ToLower().Contains("arduplane")) {
+                       element = MainV2.Firmwares.ArduPlane.ToString();
+                   } else if (parameterLocation.ToLower().Contains("rover")) {
+                       element = MainV2.Firmwares.ArduRover.ToString();
+                   }
+
                   // Write the start element for this parameter location
-                  objXmlTextWriter.WriteStartElement(parameterLocation.ToLower().Contains("arducopter") ? MainV2.Firmwares.ArduCopter2.ToString() : MainV2.Firmwares.ArduPlane.ToString());
+                  objXmlTextWriter.WriteStartElement(element);
 
                   // Read and parse the content.
                   string dataFromAddress = ReadDataFromAddress(parameterLocation);

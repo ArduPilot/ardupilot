@@ -850,15 +850,17 @@ namespace ArdupilotMega.Controls
 
                 int extra = (int)(this.Height / 15 * 4.9f);
 
-                pointlist[0] = new Point(0, -lengthlong * 2 - extra);
-                pointlist[1] = new Point(-lengthlong, -lengthlong - extra);
-                pointlist[2] = new Point(lengthlong, -lengthlong - extra);
+                int lengthlongex = lengthlong + 2;
 
-                redPen.Width = 4;
+                pointlist[0] = new Point(0, -lengthlongex * 2 - extra);
+                pointlist[1] = new Point(-lengthlongex, -lengthlongex - extra);
+                pointlist[2] = new Point(lengthlongex, -lengthlongex - extra);
+
+                redPen.Width = 2;
 
                 if (Math.Abs(_roll) > 45)
                 {
-                    redPen.Width = 10;
+                    redPen.Width = 4;
                 }
 
                 graphicsObject.DrawPolygon(redPen, pointlist);

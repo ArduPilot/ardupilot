@@ -73,8 +73,11 @@ namespace Updater
                         bool done = false;
                         for (int try_count = 0; try_count < 10 && !done; try_count++)  // try no more than 5 times
                         {
-                            if (file.ToLower().Contains("updater.exe")) // cant self update on windows
+                            if (file.ToLower().Contains("updater.exe"))
+                            { // cant self update on windows
+                                done = true;
                                 break;
+                            }
                             try
                             {
                                 Console.Write("Move: " + file + " TO " + file.Remove(file.Length - 4));

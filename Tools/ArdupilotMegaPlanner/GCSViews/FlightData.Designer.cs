@@ -904,8 +904,8 @@
             // 
             // tracklog
             // 
-            this.tracklog.BackColor = System.Drawing.SystemColors.Control;
             resources.ApplyResources(this.tracklog, "tracklog");
+            this.tracklog.BackColor = System.Drawing.SystemColors.Control;
             this.tracklog.Maximum = 100;
             this.tracklog.Name = "tracklog";
             this.tracklog.Scroll += new System.EventHandler(this.tracklog_Scroll);

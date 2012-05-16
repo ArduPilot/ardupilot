@@ -97,6 +97,60 @@ namespace ArdupilotMega
         }
     }
 
+    public class GMapMarkerRover : GMapMarker
+    {
+        const float rad2deg = (float)(180 / Math.PI);
+        const float deg2rad = (float)(1.0 / rad2deg);
+
+        static readonly System.Drawing.Size SizeSt = new System.Drawing.Size(global::ArdupilotMega.Properties.Resources.rover.Width, global::ArdupilotMega.Properties.Resources.rover.Height);
+        float heading = 0;
+        float cog = -1;
+        float target = -1;
+        float nav_bearing = -1;
+        public GMapControl MainMap;
+
+        public GMapMarkerRover(PointLatLng p, float heading, float cog, float nav_bearing, float target, GMapControl map)
+            : base(p)
+        {
+            this.heading = heading;
+            this.cog = cog;
+            this.target = target;
+            this.nav_bearing = nav_bearing;
+            Size = SizeSt;
+            MainMap = map;
+        }
+
+        public override void OnRender(Graphics g)
+        {
+            Matrix temp = g.Transform;
+            g.TranslateTransform(LocalPosition.X, LocalPosition.Y);
+
+            g.RotateTransform(-MainMap.Bearing);
+
+            int length = 500;
+            // anti NaN
+            try
+            {
+                g.DrawLine(new Pen(Color.Red, 2), 0.0f, 0.0f, (float)Math.Cos((heading - 90) * deg2rad) * length, (float)Math.Sin((heading - 90) * deg2rad) * length);
+            }
+            catch { }
+            g.DrawLine(new Pen(Color.Green, 2), 0.0f, 0.0f, (float)Math.Cos((nav_bearing - 90) * deg2rad) * length, (float)Math.Sin((nav_bearing - 90) * deg2rad) * length);
+            g.DrawLine(new Pen(Color.Black, 2), 0.0f, 0.0f, (float)Math.Cos((cog - 90) * deg2rad) * length, (float)Math.Sin((cog - 90) * deg2rad) * length);
+            g.DrawLine(new Pen(Color.Orange, 2), 0.0f, 0.0f, (float)Math.Cos((target - 90) * deg2rad) * length, (float)Math.Sin((target - 90) * deg2rad) * length);
+            // anti NaN
+
+            try
+            {
+                g.RotateTransform(heading);
+            }
+            catch { }
+            g.DrawImageUnscaled(global::ArdupilotMega.Properties.Resources.rover, global::ArdupilotMega.Properties.Resources.rover.Width / -2, global::ArdupilotMega.Properties.Resources.rover.Height / -2);
+
+            g.Transform = temp;
+        }
+    }
+
+
     public class GMapMarkerPlane : GMapMarker
     {
         const float rad2deg = (float)(180 / Math.PI);
@@ -377,6 +431,33 @@ namespace ArdupilotMega
             GUIDED = 15
         }
 
+        public enum aprovermodes
+        {
+            [DisplayText("Manual")]
+            MANUAL = 0,
+            [DisplayText("Circle")]
+            CIRCLE = 1,
+            [DisplayText("Learning")]
+            LEARNING = 2,
+            [DisplayText("FBW A")]
+            FLY_BY_WIRE_A = 5,
+            [DisplayText("FBW B")]
+            FLY_BY_WIRE_B = 6,
+            [DisplayText("Auto")]
+            AUTO = 10,
+            [DisplayText("RTL")]
+            RTL = 11,
+            [DisplayText("Loiter")]
+            LOITER = 12,
+            [DisplayText("Guided")]
+            GUIDED = 15,
+            HEADALT = 17,
+            SARSEC = 18,
+            SARGRID = 19,
+            THERMAL = 20,
+            LAND = 21
+        }
+
         public enum ac2modes
         {
             [DisplayText("Stabilize")]
@@ -614,6 +695,46 @@ namespace ArdupilotMega
                             return false;
                     }
                 }
+                else if (Common.getModes() == typeof(Common.aprovermodes))
+                {
+                    switch (EnumTranslator.GetValue<Common.aprovermodes>(modein))
+                    {
+                        case (int)Common.aprovermodes.MANUAL:
+                            mode.mode = (byte)MAVLink.MAV_MODE.MAV_MODE_MANUAL;
+                            break;
+                        case (int)Common.aprovermodes.GUIDED:
+                            mode.mode = (byte)MAVLink.MAV_MODE.MAV_MODE_GUIDED;
+                            break;
+                        case (int)Common.aprovermodes.LEARNING:
+                            mode.mode = (byte)MAVLink.MAV_MODE.MAV_MODE_TEST1;
+                            break;
+                        // AUTO MODES
+                        case (int)Common.aprovermodes.AUTO:
+                            navmode.nav_mode = (byte)MAVLink.MAV_NAV.MAV_NAV_WAYPOINT;
+                            mode.mode = (byte)MAVLink.MAV_MODE.MAV_MODE_AUTO;
+                            break;
+                        case (int)Common.aprovermodes.RTL:
+                            navmode.nav_mode = (byte)MAVLink.MAV_NAV.MAV_NAV_RETURNING;
+                            mode.mode = (byte)MAVLink.MAV_MODE.MAV_MODE_AUTO;
+                            break;
+                        case (int)Common.aprovermodes.LOITER:
+                            navmode.nav_mode = (byte)MAVLink.MAV_NAV.MAV_NAV_LOITER;
+                            mode.mode = (byte)MAVLink.MAV_MODE.MAV_MODE_AUTO;
+                            break;
+                        // FBW
+                        case (int)Common.aprovermodes.FLY_BY_WIRE_A:
+                            navmode.nav_mode = (byte)1;
+                            mode.mode = (byte)MAVLink.MAV_MODE.MAV_MODE_TEST2;
+                            break;
+                        case (int)Common.aprovermodes.FLY_BY_WIRE_B:
+                            navmode.nav_mode = (byte)2;
+                            mode.mode = (byte)MAVLink.MAV_MODE.MAV_MODE_TEST2;
+                            break;
+                        default:
+                            CustomMessageBox.Show("No Mode Changed " + modein);
+                            return false;
+                    }
+                }
                 else if (Common.getModes() == typeof(Common.ac2modes))
                 {
                     switch (EnumTranslator.GetValue<Common.ac2modes>(modein))
@@ -714,6 +835,10 @@ namespace ArdupilotMega
             {
                 return typeof(ac2modes);
             }
+            else if (MainV2.cs.firmware == MainV2.Firmwares.ArduRover)
+            {
+                return typeof(aprovermodes);
+            }
 
             return null;
         }
@@ -728,6 +853,11 @@ namespace ArdupilotMega
             else if (MainV2.cs.firmware == MainV2.Firmwares.ArduCopter2)
             {
                 var flightModes = EnumTranslator.Translate<ac2modes>();
+                return flightModes.ToList();
+            }
+            else if (MainV2.cs.firmware == MainV2.Firmwares.ArduRover)
+            {
+                var flightModes = EnumTranslator.Translate<aprovermodes>();
                 return flightModes.ToList();
             }
 

@@ -136,7 +136,7 @@
     <value>pictureBoxAPM</value>
   </data>
   <data name="&gt;&gt;pictureBoxAPM.Type" xml:space="preserve">
-    <value>ArdupilotMega.ImageLabel, ArdupilotMegaPlanner, Version=1.0.0.0, Culture=neutral, PublicKeyToken=38326cb7e06851fc</value>
+    <value>ArdupilotMega.Controls.ImageLabel, ArdupilotMegaPlanner, Version=1.1.4516.33895, Culture=neutral, PublicKeyToken=null</value>
   </data>
   <data name="&gt;&gt;pictureBoxAPM.Parent" xml:space="preserve">
     <value>$this</value>
@@ -160,7 +160,7 @@
     <value>pictureBoxQuad</value>
   </data>
   <data name="&gt;&gt;pictureBoxQuad.Type" xml:space="preserve">
-    <value>ArdupilotMega.ImageLabel, ArdupilotMegaPlanner, Version=1.0.0.0, Culture=neutral, PublicKeyToken=38326cb7e06851fc</value>
+    <value>ArdupilotMega.Controls.ImageLabel, ArdupilotMegaPlanner, Version=1.1.4516.33895, Culture=neutral, PublicKeyToken=null</value>
   </data>
   <data name="&gt;&gt;pictureBoxQuad.Parent" xml:space="preserve">
     <value>$this</value>
@@ -184,7 +184,7 @@
     <value>pictureBoxHexa</value>
   </data>
   <data name="&gt;&gt;pictureBoxHexa.Type" xml:space="preserve">
-    <value>ArdupilotMega.ImageLabel, ArdupilotMegaPlanner, Version=1.0.0.0, Culture=neutral, PublicKeyToken=38326cb7e06851fc</value>
+    <value>ArdupilotMega.Controls.ImageLabel, ArdupilotMegaPlanner, Version=1.1.4516.33895, Culture=neutral, PublicKeyToken=null</value>
   </data>
   <data name="&gt;&gt;pictureBoxHexa.Parent" xml:space="preserve">
     <value>$this</value>
@@ -208,7 +208,7 @@
     <value>pictureBoxTri</value>
   </data>
   <data name="&gt;&gt;pictureBoxTri.Type" xml:space="preserve">
-    <value>ArdupilotMega.ImageLabel, ArdupilotMegaPlanner, Version=1.0.0.0, Culture=neutral, PublicKeyToken=38326cb7e06851fc</value>
+    <value>ArdupilotMega.Controls.ImageLabel, ArdupilotMegaPlanner, Version=1.1.4516.33895, Culture=neutral, PublicKeyToken=null</value>
   </data>
   <data name="&gt;&gt;pictureBoxTri.Parent" xml:space="preserve">
     <value>$this</value>
@@ -232,7 +232,7 @@
     <value>pictureBoxY6</value>
   </data>
   <data name="&gt;&gt;pictureBoxY6.Type" xml:space="preserve">
-    <value>ArdupilotMega.ImageLabel, ArdupilotMegaPlanner, Version=1.0.0.0, Culture=neutral, PublicKeyToken=38326cb7e06851fc</value>
+    <value>ArdupilotMega.Controls.ImageLabel, ArdupilotMegaPlanner, Version=1.1.4516.33895, Culture=neutral, PublicKeyToken=null</value>
   </data>
   <data name="&gt;&gt;pictureBoxY6.Parent" xml:space="preserve">
     <value>$this</value>
@@ -340,7 +340,7 @@
     <value>pictureBoxHeli</value>
   </data>
   <data name="&gt;&gt;pictureBoxHeli.Type" xml:space="preserve">
-    <value>ArdupilotMega.ImageLabel, ArdupilotMegaPlanner, Version=1.0.0.0, Culture=neutral, PublicKeyToken=38326cb7e06851fc</value>
+    <value>ArdupilotMega.Controls.ImageLabel, ArdupilotMegaPlanner, Version=1.1.4516.33895, Culture=neutral, PublicKeyToken=null</value>
   </data>
   <data name="&gt;&gt;pictureBoxHeli.Parent" xml:space="preserve">
     <value>$this</value>
@@ -367,7 +367,7 @@
     <value>BUT_setup</value>
   </data>
   <data name="&gt;&gt;BUT_setup.Type" xml:space="preserve">
-    <value>ArdupilotMega.Controls.MyButton, ArdupilotMegaPlanner, Version=1.0.0.0, Culture=neutral, PublicKeyToken=38326cb7e06851fc</value>
+    <value>ArdupilotMega.Controls.MyButton, ArdupilotMegaPlanner, Version=1.1.4516.33895, Culture=neutral, PublicKeyToken=null</value>
   </data>
   <data name="&gt;&gt;BUT_setup.Parent" xml:space="preserve">
     <value>$this</value>
@@ -496,7 +496,7 @@
     <value>pictureBoxOcta</value>
   </data>
   <data name="&gt;&gt;pictureBoxOcta.Type" xml:space="preserve">
-    <value>ArdupilotMega.ImageLabel, ArdupilotMegaPlanner, Version=1.0.0.0, Culture=neutral, PublicKeyToken=38326cb7e06851fc</value>
+    <value>ArdupilotMega.Controls.ImageLabel, ArdupilotMegaPlanner, Version=1.1.4516.33895, Culture=neutral, PublicKeyToken=null</value>
   </data>
   <data name="&gt;&gt;pictureBoxOcta.Parent" xml:space="preserve">
     <value>$this</value>
@@ -517,7 +517,7 @@
     <value>pictureBoxOctav</value>
   </data>
   <data name="&gt;&gt;pictureBoxOctav.Type" xml:space="preserve">
-    <value>ArdupilotMega.ImageLabel, ArdupilotMegaPlanner, Version=1.0.0.0, Culture=neutral, PublicKeyToken=38326cb7e06851fc</value>
+    <value>ArdupilotMega.Controls.ImageLabel, ArdupilotMegaPlanner, Version=1.1.4516.33895, Culture=neutral, PublicKeyToken=null</value>
   </data>
   <data name="&gt;&gt;pictureBoxOctav.Parent" xml:space="preserve">
     <value>$this</value>
@@ -565,6 +565,6 @@
     <value>Firmware</value>
   </data>
   <data name="&gt;&gt;$this.Type" xml:space="preserve">
-    <value>System.Windows.Forms.MyUserControl, ArdupilotMegaPlanner, Version=1.0.0.0, Culture=neutral, PublicKeyToken=38326cb7e06851fc</value>
+    <value>System.Windows.Forms.MyUserControl, ArdupilotMegaPlanner, Version=1.1.4516.33895, Culture=neutral, PublicKeyToken=null</value>
   </data>
 </root>

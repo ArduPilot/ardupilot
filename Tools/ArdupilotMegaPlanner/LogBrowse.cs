@@ -164,6 +164,10 @@ namespace ArdupilotMega
                     {
                         reader.ReadToFollowing("APM");
                     }
+                    else if (MainV2.cs.firmware == MainV2.Firmwares.ArduRover)
+                    {
+                        reader.ReadToFollowing("APRover");
+                    }
                     else
                     {
                         reader.ReadToFollowing("AC2");

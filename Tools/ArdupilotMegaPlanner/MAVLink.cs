@@ -111,7 +111,7 @@ namespace ArdupilotMega
         /// <summary>
         /// mavlink ap type
         /// </summary>
-        public byte aptype = 0;
+        public MAV_TYPE aptype = 0;
         /// <summary>
         /// used as a snapshot of what is loaded on the ap atm. - derived from the stream
         /// </summary>
@@ -196,6 +196,7 @@ namespace ArdupilotMega
             sysid = 0;
             compid = 0;
             param = new Hashtable();
+            packets.Initialize();
 
             try
             {
@@ -298,7 +299,7 @@ namespace ArdupilotMega
                         mavlink_heartbeat_t hb = buffer.ByteArrayToStructure<mavlink_heartbeat_t>(6);
 
                         mavlinkversion = hb.mavlink_version;
-                        aptype = hb.type;
+                        aptype = (MAV_TYPE)hb.type;
 
                         sysid = buffer[3];
                         compid = buffer[4];
@@ -1112,9 +1113,6 @@ namespace ArdupilotMega
                     }
                     break;
                 case (byte)MAVLink.MAV_DATA_STREAM.POSITION:
-                    // ac2 does not send rate position
-                    if (MainV2.cs.firmware == MainV2.Firmwares.ArduCopter2)
-                        return;
                     if (packetspersecondbuild[MAVLINK_MSG_ID_GLOBAL_POSITION_INT] < DateTime.Now.AddSeconds(-2))
                         break;
                     pps = packetspersecond[MAVLINK_MSG_ID_GLOBAL_POSITION_INT];
@@ -2542,6 +2540,13 @@ namespace ArdupilotMega
                     length = temp[1] + 6 + 2; // 6 header + 2 checksum
                 }
                 a++;
+            }
+
+            if (temp[5] == 0) {
+                mavlink_heartbeat_t hb = temp.ByteArrayToStructure<mavlink_heartbeat_t>(6);
+
+                mavlinkversion = hb.mavlink_version;
+                aptype = (MAV_TYPE)hb.type;
             }
 
             return temp;

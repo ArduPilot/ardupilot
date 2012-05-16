@@ -259,6 +259,12 @@
     <Compile Include="Controls\ValuesControl.Designer.cs">
       <DependentUpon>ValuesControl.cs</DependentUpon>
     </Compile>
+    <Compile Include="GCSViews\ConfigurationView\ConfigArdurover.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="GCSViews\ConfigurationView\ConfigArdurover.Designer.cs">
+      <DependentUpon>ConfigArdurover.cs</DependentUpon>
+    </Compile>
     <Compile Include="Utilities\CollectionExtensions.cs" />
     <Compile Include="Utilities\ParameterMetaDataConstants.cs" />
     <Compile Include="Controls\BackstageView\BackstageView.cs">
@@ -785,6 +791,9 @@
     <EmbeddedResource Include="Controls\ValuesControl.resx">
       <DependentUpon>ValuesControl.cs</DependentUpon>
     </EmbeddedResource>
+    <EmbeddedResource Include="GCSViews\ConfigurationView\ConfigArdurover.resx">
+      <DependentUpon>ConfigArdurover.cs</DependentUpon>
+    </EmbeddedResource>
     <EmbeddedResource Include="GCSViews\ConfigurationView\Setup.resx">
       <DependentUpon>Setup.cs</DependentUpon>
     </EmbeddedResource>
@@ -1144,6 +1153,7 @@
     <None Include="Resources\new frames-06.png" />
     <None Include="Resources\new frames-05.png" />
     <None Include="Resources\BR-0016-01-3T.jpg" />
+    <None Include="Resources\car.png" />
     <Content Include="Resources\MAVCmd.zh-Hans.txt" />
     <None Include="Resources\MAVParam.txt" />
     <Content Include="Resources\MAVParam.zh-Hans.txt" />

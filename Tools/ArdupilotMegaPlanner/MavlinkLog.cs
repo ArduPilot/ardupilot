@@ -59,7 +59,7 @@ namespace ArdupilotMega
         {
             SharpKml.Dom.AltitudeMode altmode = SharpKml.Dom.AltitudeMode.Absolute;
 
-            if (MainV2.cs.firmware == MainV2.Firmwares.ArduPlane)
+            if (MainV2.cs.firmware == MainV2.Firmwares.ArduPlane || MainV2.cs.firmware == MainV2.Firmwares.ArduRover)
             {
                 altmode = SharpKml.Dom.AltitudeMode.Absolute;
             }
@@ -438,6 +438,21 @@ namespace ArdupilotMega
                     mine.logplaybackfile = null;
 
                     Application.DoEvents();
+
+                    switch (mine.aptype)
+                    {
+                        case MAVLink.MAV_TYPE.MAV_FIXED_WING:
+                            MainV2.cs.firmware = MainV2.Firmwares.ArduPlane;
+                            break;
+                        case MAVLink.MAV_TYPE.MAV_QUADROTOR:
+                            MainV2.cs.firmware = MainV2.Firmwares.ArduCopter2;
+                            break;
+                        case MAVLink.MAV_TYPE.MAV_GROUND:
+                            MainV2.cs.firmware = MainV2.Firmwares.ArduRover;
+                            break;
+                        default:
+                            break;
+                    }
 
                     writeGPX(logfile);
                     writeKML(logfile + ".kml");

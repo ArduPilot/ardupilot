@@ -381,5 +381,85 @@
       <F3>Current</F3>
       <F4>Current total</F4>
     </CURR>
-  </APM>a
+  </APM>
+  <!-- -->
+  <APRover>
+    <GPS>
+      <F1>Time</F1>
+      <F2>Fix</F2>
+      <F3>Sats</F3>
+      <F4>Lat</F4>
+      <F5>Long</F5>
+      <F6>Sonar Alt</F6>
+      <F7>Mix Alt</F7>
+      <F8>GPSAlt</F8>
+      <F9>GR Speed</F9>
+      <F10>CRS</F10>
+    </GPS>
+    <ATT>
+      <F1>Roll</F1>
+      <F2>Pitch</F2>
+      <F3>Yaw</F3>
+    </ATT>
+    <NTUN>
+      <F1>Yaw</F1>
+      <F2>WP dist</F2>
+      <F3>Target Bear</F3>
+      <F4>Nav Bear</F4>
+      <F5>Alt Err</F5>
+      <F6>AS</F6>
+      <F7>NavGScaler</F7>
+    </NTUN>
+    <CTUN>
+      <F1>Servo Roll</F1>
+      <F2>nav_roll</F2>
+      <F3>roll_sensor</F3>
+      <F4>Servo Pitch</F4>
+      <F5>nav_pitch</F5>
+      <F6>pitch_sensor</F6>
+      <F7>Servo Throttle</F7>
+      <F8>Servo Rudder</F8>
+      <F9>accel y</F9>
+    </CTUN>
+    <PM>
+      <F1>loop time</F1>
+      <F2>Main count</F2>
+      <F3>G_Dt_max</F3>
+      <F4>Gyro Sat</F4>
+      <F5>adc constr</F5>
+      <F6>renorm_sqrt</F6>
+      <F7>renorm_blowup</F7>
+      <F8>gps_fix count</F8>
+      <F9>imu_health</F9>
+      <F10>dcm i x</F10>
+      <F11>dcm i y</F11>
+      <F12>dcm i z</F12>
+      <F13>pmtest</F13>
+    </PM>
+    <CMD>
+      <F1>Current #</F1>
+      <F2>ID</F2>
+      <F3>p1</F3>
+      <F4>Alt</F4>
+      <F5>Lat</F5>
+      <F6>Long</F6>
+    </CMD>
+    <RAW>
+      <F1>Gyro X</F1>
+      <F2>Gyro Y</F2>
+      <F3>Gyro Z</F3>
+      <F4>Accel X</F4>
+      <F5>Accel Y</F5>
+      <F6>Accel Z</F6>
+    </RAW>
+    <MOD>
+      <F1>FlightMode</F1>
+    </MOD>
+    <CURR>
+      <F1>Thr IN</F1>
+      <F2>Voltage</F2>
+      <F3>Current</F3>
+      <F4>Current total</F4>
+    </CURR>
+  </APRover>
 </LOGFORMAT>
