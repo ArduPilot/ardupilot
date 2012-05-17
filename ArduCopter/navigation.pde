@@ -3,17 +3,12 @@
 //****************************************************************
 // Function that will calculate the desired direction to fly and distance
 //****************************************************************
-static byte navigate()
+static void navigate()
 {
 	// waypoint distance from plane in cm
 	// ---------------------------------------
 	wp_distance 	= get_distance(&current_loc, &next_WP);
 	home_distance 	= get_distance(&current_loc, &home);
-
-	if (wp_distance < 0){
-		// something went very wrong
-		return 0;
-	}
 
 	// target_bearing is where we should be heading
 	// --------------------------------------------
@@ -23,8 +18,6 @@ static byte navigate()
 	// nav_bearing will includes xtrac correction
 	// ------------------------------------------
 	nav_bearing = target_bearing;
-
-	return 1;
 }
 
 static bool check_missed_wp()
@@ -36,8 +29,8 @@ static bool check_missed_wp()
 }
 
 // ------------------------------
-
 static void calc_XY_velocity(){
+	// called after GPS read
 	// offset calculation of GPS speed:
 	// used for estimations below 1.5m/s
 	// our GPS is about 1m per
@@ -80,12 +73,6 @@ static void calc_XY_velocity(){
 
 static void calc_location_error(struct Location *next_loc)
 {
-	static int16_t last_lon_error = 0;
-	static int16_t last_lat_error  = 0;
-
-	static int16_t last_lon_d = 0;
-	static int16_t last_lat_d = 0;
-
 	/*
 	Becuase we are using lat and lon to do our distance errors here's a quick chart:
 	100 	= 1m
@@ -100,43 +87,6 @@ static void calc_location_error(struct Location *next_loc)
 
 	// Y Error
 	lat_error	= next_loc->lat - current_loc.lat;							// 500 - 0 = 500 Go North
-
-	int16_t tmp;
-
-	// -------------------------------------
-	tmp	= (long_error - last_lon_error);
-	if(abs(abs(tmp) -last_lon_d) > 20){
-		tmp = x_rate_d;
-	}/*
-	if(long_error > 0){
-		if(tmp < 0) tmp = 0;
-	}else{
-		if(tmp > 0) tmp = 0;
-	}*/
-	x_rate_d	= lon_rate_d_filter.apply(tmp);
-	x_rate_d	= constrain(x_rate_d, -800, 800);
-	last_lon_d 	= abs(tmp);
-
-	// -------------------------------------
-	tmp	= (lat_error - last_lat_error);
-	if(abs(abs(tmp) -last_lat_d) > 20)
-		tmp = y_rate_d;
-	/*if(lat_error > 0){
-		if(tmp < 0) tmp = 0;
-	}else{
-		if(tmp > 0) tmp = 0;
-	}*/
-	y_rate_d	= lat_rate_d_filter.apply(tmp);
-	y_rate_d	= constrain(y_rate_d, -800, 800);
-	last_lat_d 	= abs(tmp);
-
-	// debug
-	//int16_t t22 = x_rate_d * (g.pid_loiter_rate_lon.kD() / dTnav);
-	//if(control_mode	== LOITER)
-	//	Serial.printf("XX, %d, %d, %d \n", long_error, t22, (int16_t)g.pid_loiter_rate_lon.get_integrator());
-
-	last_lon_error 	= long_error;
-	last_lat_error 	= lat_error;
 }
 
 #define NAV_ERR_MAX 600
@@ -212,54 +162,6 @@ static void calc_loiter(int x_error, int y_error)
 	// copy over I term to Nav_Rate
 	g.pid_nav_lon.set_integrator(g.pid_loiter_rate_lon.get_integrator());
 	g.pid_nav_lat.set_integrator(g.pid_loiter_rate_lat.get_integrator());
-
-	//Serial.printf("XX, %d, %d, %d\n", long_error, x_actual_speed, (int16_t)g.pid_loiter_rate_lon.get_integrator());
-
-	// Wind I term based on location error,
-	// limit windup
-	/*
-	int16_t x_iterm, y_iterm;
-	x_error 		= constrain(x_error, -NAV_ERR_MAX, NAV_ERR_MAX);
-	y_error 		= constrain(y_error, -NAV_ERR_MAX, NAV_ERR_MAX);
-	x_iterm 		= g.pi_loiter_lon.get_i(x_error, dTnav);
-	y_iterm 		= g.pi_loiter_lat.get_i(y_error, dTnav);
-	nav_lat			= nav_lat + y_iterm;
-	nav_lon			= nav_lon + x_iterm;
-	*/
-
-	/*
-	int8_t ttt = 1.0/dTnav;
-	int16_t t2 = g.pi_nav_lat.get_integrator();
-
-				// 1   2   3      4   5   6   7   8   9   10
-	Serial.printf("%d, %d, %d,    %d, %d, %d, %d, %d, %d, %d\n",
-					wp_distance, 	//1
-					y_error,		//2
-					y_GPS_speed,	//3
-
-					y_actual_speed,	//4  ;
-					y_target_speed,	//5
-					y_rate_error,	//6
-					nav_lat_p,		//7
-					nav_lat,		//8
-					y_iterm,		//9
-					t2);			//10
-	//*/
-
-	/*
-	int16_t t1 = g.pid_nav_lon.get_integrator(); // X
-	Serial.printf("%d, %1.4f, %d, %d, %d, %d, %d, %d, %d, %d\n",
-					wp_distance, 	//1
-					dTnav,			//2
-					x_error,		//3
-					x_GPS_speed,	//4
-					x_actual_speed,	//5
-					x_target_speed,	//6
-					x_rate_error,	//7
-					nav_lat,		//8
-					x_iterm,		//9
-					t1);			//10
-	//*/
 }
 
 static void calc_nav_rate(int max_speed)
@@ -286,76 +188,7 @@ static void calc_nav_rate(int max_speed)
 	g.pid_loiter_rate_lon.set_integrator(g.pid_nav_lon.get_integrator());
 	g.pid_loiter_rate_lat.set_integrator(g.pid_nav_lat.get_integrator());
 
-	//int16_t x_iterm 	= g.pi_loiter_lon.get_i(x_rate_error, dTnav);
-	//int16_t y_iterm 	= g.pi_loiter_lat.get_i(y_rate_error, dTnav);
-
-	//nav_lon				= nav_lon + x_iterm;
-	//nav_lat				= nav_lat + y_iterm;
-
-
-
-	/*
-	Serial.printf("max_sp %d,\t x_sp %d, y_sp %d,\t x_re: %d, y_re: %d, \tnav_lon: %d, nav_lat: %d, Xi:%d, Yi:%d, \t XE %d \n",
-					max_speed,
-					x_actual_speed,
-					y_actual_speed,
-					x_rate_error,
-					y_rate_error,
-					nav_lon,
-					nav_lat,
-					x_iterm,
-					y_iterm,
-					crosstrack_error);
-	//*/
-
-	// nav_lat and nav_lon will be rotated to the angle of the quad in calc_nav_pitch_roll()
-
-	/*Serial.printf("max_speed: %d, xspeed: %d, yspeed: %d, x_re: %d, y_re: %d, nav_lon: %ld, nav_lat: %ld  ",
-					max_speed,
-					x_actual_speed,
-					y_actual_speed,
-					x_rate_error,
-					y_rate_error,
-					nav_lon,
-					nav_lat);*/
 }
-
-
-/*static void calc_nav_lon(int rate)
-{
-	nav_lon		= g.pid_nav_lon.get_pid(rate, dTnav);
-	nav_lon		= constrain(nav_lon, -3000, 3000);
-}
-
-static void calc_nav_lat(int rate)
-{
-	nav_lat		= g.pid_nav_lat.get_pid(rate, dTnav);
-	nav_lat		= constrain(nav_lat, -3000, 3000);
-}
-*/
-
-//static int16_t get_corrected_angle(int16_t desired_rate, int16_t rate_out)
-/*{
-	int16_t tt = desired_rate;
-	// scale down the desired rate and square it
-	desired_rate = desired_rate / 20;
-	desired_rate = desired_rate * desired_rate;
-	int16_t tmp = 0;
-
-	if (tt > 0){
-		tmp = rate_out + (rate_out - desired_rate);
-		tmp = max(tmp, rate_out);
-	}else if (tt < 0){
-		tmp = rate_out + (rate_out + desired_rate);
-		tmp = min(tmp, rate_out);
-	}
-	//Serial.printf("rate:%d, norm:%d, out:%d \n", tt, rate_out, tmp);
-	return tmp;
-}*/
-
-//wp_distance,ttt, y_error, y_GPS_speed, y_actual_speed, y_target_speed, y_rate_error, nav_lat, y_iterm, t2
-
-
 
 // this calculation rotates our World frame of reference to the copter's frame of reference
 // We use the DCM's matrix to precalculate these trig values at 50hz
