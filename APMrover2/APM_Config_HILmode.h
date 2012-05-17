@@ -53,6 +53,11 @@
 #define MAX_DIST       50  //300       // max distance (in m) for the HEADALT mode
 #define SARSEC_BRANCH  50              // Long branch of the SARSEC pattern
 
+#define BOOSTER              2    // booster factor x2
+#define AUTO_WP_RADIUS       DISABLED
+#define AIRSPEED_CRUISE      3    // 4m/s
+#define THROTTLE_SLEW_LIMIT  2    // set to 2 for a smooth acceleration by 0.2 step
+
 //////////////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////////////
 // FLIGHT AND NAVIGATION CONTROL
@@ -65,7 +70,6 @@
 // is 10m/s, which is a conservative value suitable for relatively small,
 // light aircraft.
 //
-#define AIRSPEED_CRUISE     3
 #define GSBOOST             0   // 60 // boost the throttle if ground speed is too low in case of windy conditions // 100
 #define NUDGE_OFFSET	    0     //1603  // nudge_offset to get a good sustained speed in autonomous flight
 #define MIN_GNDSPEED       3
@@ -373,7 +377,6 @@
 #define THROTTLE_TE_I       0.0
 #define THROTTLE_TE_D       0.0
 #define THROTTLE_TE_INT_MAX 20
-#define THROTTLE_SLEW_LIMIT 0
 #define P_TO_T              0.0
 #define T_TO_P              0
 

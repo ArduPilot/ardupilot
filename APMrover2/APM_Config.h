@@ -20,8 +20,8 @@
 
 #define TRACE               DISABLED
 
-//#include "APM_Config_HILmode.h"  // for test in HIL mode with AeroSIM Rc 3.83
-#include "APM_Config_Rover.h"      // to be used with the real Traxxas model Monster Jam Grinder
+#include "APM_Config_HILmode.h"  // for test in HIL mode with AeroSIM Rc 3.83
+//#include "APM_Config_Rover.h"      // to be used with the real Traxxas model Monster Jam Grinder
 
 // Radio setup:
 // APM INPUT (Rec = receiver)
