@@ -25,14 +25,33 @@ static void crash_checker()
 }
 
 static void calc_throttle()
-{           
-	int throttle_target = g.throttle_cruise + throttle_nudge + 50;
-
-        // Normal airspeed target
-        target_airspeed = g.airspeed_cruise;       
-        groundspeed_error = target_airspeed - (float)ground_speed;       
-        g.channel_throttle.servo_out = throttle_target + g.pidTeThrottle.get_pid(groundspeed_error, dTnav);        
-	g.channel_throttle.servo_out = constrain(g.channel_throttle.servo_out, g.throttle_min.get(), g.throttle_max.get());
+{  int rov_speed;
+    
+   int throttle_target = g.throttle_cruise + throttle_nudge + 50;   
+   
+        target_airspeed = g.airspeed_cruise;    
+     
+   if(speed_boost)
+     rov_speed = g.booster * target_airspeed;
+   else 
+     rov_speed = target_airspeed;   
+        
+        groundspeed_error = rov_speed - (float)ground_speed; 
+        
+        int throttle_req = (throttle_target + g.pidTeThrottle.get_pid(groundspeed_error, dTnav)) * 10;
+        
+        if(g.throttle_slewrate > 0)
+        { if (throttle_req > throttle_last) 
+	      throttle = throttle + g.throttle_slewrate;
+          else if (throttle_req  < throttle_last) {
+	      throttle = throttle - g.throttle_slewrate;   
+          }
+    	  throttle =  constrain(throttle, 500, throttle_req);
+          throttle_last = throttle;
+        } else {
+          throttle = throttle_req;
+        }
+        g.channel_throttle.servo_out = constrain(((float)throttle / 10.0f), 0, g.throttle_max.get());
 }
 
 /*****************************************
@@ -74,6 +93,7 @@ float roll_slew_limit(float servo)
  *****************************************/
 static void throttle_slew_limit()
 {
+  /*
 	static int last = 1000;
 	if(g.throttle_slewrate) {		// if slew limit rate is set to zero then do not slew limit
 
@@ -81,8 +101,8 @@ static void throttle_slew_limit()
 		g.channel_throttle.radio_out = constrain(g.channel_throttle.radio_out, last - (int)temp, last + (int)temp);
 		last = g.channel_throttle.radio_out;
 	}
+*/
 }
-
 
 // Zeros out navigation Integrators if we are changing mode, have passed a waypoint, etc.
 // Keeps outdated data out of our calculations
@@ -125,19 +145,12 @@ static void set_servos(void)
 		g.channel_rudder.calc_pwm();             
 
 		g.channel_throttle.radio_out 	= g.channel_throttle.radio_in;
-
-		// convert 0 to 100% into PWM
 		g.channel_throttle.servo_out = constrain(g.channel_throttle.servo_out, g.throttle_min.get(), g.throttle_max.get());
 
-  		 //      g.channel_throttle.calc_pwm();
-
-		/*  TO DO - fix this for RC_Channel library
-		#if THROTTLE_REVERSE == 1
-			radio_out[CH_THROTTLE] = radio_max(CH_THROTTLE) + radio_min(CH_THROTTLE) - radio_out[CH_THROTTLE];
-		#endif
-		*/
         }
+                
         if (control_mode >= FLY_BY_WIRE_B) {
+          // convert 0 to 100% into PWM
             g.channel_throttle.calc_pwm();
             /* only do throttle slew limiting in modes where throttle
                control is automatic */

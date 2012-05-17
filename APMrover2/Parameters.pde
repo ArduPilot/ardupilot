@@ -124,6 +124,8 @@ static const AP_Param::Info var_info[] PROGMEM = {
         GSCALAR(auto_wp_radius,         "ROV_AWPR_NAV"),
         GSCALAR(sonar_trigger,          "ROV_SONAR_TRIG"),
         GSCALAR(turn_gain,              "ROV_GAIN"),
+        GSCALAR(booster,                 "ROV_BOOSTER"),
+        
 // ************************************************************
 
 	GGROUP(channel_roll,            "RC1_", RC_Channel),

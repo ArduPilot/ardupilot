@@ -351,7 +351,9 @@ static void set_mode(byte mode)
 
 	control_mode = mode;
 	crash_timer = 0;
-
+        throttle_last = 0;
+        throttle = 500;
+        
 	switch(control_mode)
 	{
 		case MANUAL:

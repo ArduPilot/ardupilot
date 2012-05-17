@@ -1,6 +1,6 @@
 /// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 
-#define THISFIRMWARE "APMrover v2.14 JL NAUDIN" //New version of the APMrover for the APM v1 or APM v2 and magnetometer + SONAR
+#define THISFIRMWARE "APMrover v2.16 JL NAUDIN" //New version of the APMrover for the APM v1 or APM v2 and magnetometer + SONAR
 
 // This is a full version of Arduplane v2.32 specially adapted for a Rover by Jean-Louis Naudin (JLN) 
 
@@ -18,7 +18,7 @@ License as published by the Free Software Foundation; either
 version 2.1 of the License, or (at your option) any later version.
 
 //
-// JLN updates: last update 2012-05-15
+// JLN updates: last update 2012-05-17
 //
 // DOLIST:
 //  
@@ -26,6 +26,9 @@ version 2.1 of the License, or (at your option) any later version.
 //-------------------------------------------------------------------------------------------------------------------------
 // Dev Startup : 2012-04-21
 //
+//  2012-05-17: added speed_boost during straight line
+//  2012-05-17: New update about the throttle rate control based on the field test done by Franco Borasio (Thanks Franco..)
+//  2012-05-15: The Throttle rate can be controlled by the THROTTLE_SLEW_LIMIT (the value give the step increase, 1 = 0.1)
 //  2012-05-14: Update about mavlink library (now compatible with the latest version of mavlink)
 //  2012-05-14: Added option (hold roll to full right + SW7 ON/OFF) to init_home during the wp_list reset
 //  2012-05-13: Add ROV_SONAR_TRIG (default = 200 cm)
@@ -505,6 +508,7 @@ static int16_t		sonar_dist;
 // The amount current ground speed is below min ground speed.  Centimeters per second
 static long		groundspeed_undershoot = 0;
 static long		ground_speed = 0;
+static int throttle_last = 0, throttle = 500;
 
 ////////////////////////////////////////////////////////////////////////////////
 // Location Errors
@@ -583,6 +587,7 @@ static bool  final = false;
 // JLN Update
 unsigned long  timesw                  = 0;
 static long 	ground_course = 0;		      // deg * 100 dir of plane
+static bool speed_boost = false;
 
 ////////////////////////////////////////////////////////////////////////////////
 // Loiter management
@@ -1023,9 +1028,7 @@ static void slow_loop()
 
 #if TRACE == ENABLED
               Serial.printf_P(PSTR("NAV->gnd_crs=%3.0f, nav_brg=%3.0f, tgt_brg=%3.0f, brg_err=%3.0f, nav_rll=%3.1f rsvo=%3.1f\n"), 
-                    (float)ground_course/100, (float)nav_bearing/100, (float)target_bearing/100, (float)bearing_error/100, (float)nav_roll/100, (float)g.channel_roll.servo_out/100);           
-             // Serial.printf_P(PSTR("WPL->g.command_total=%d, g.command_index=%d, nav_command_index=%d\n"), 
-                //    g.command_total, g.command_index, nav_command_index);                                 
+                    (float)ground_course/100, (float)nav_bearing/100, (float)target_bearing/100, (float)bearing_error/100, (float)nav_roll/100, (float)g.channel_roll.servo_out/100);                                
 #endif                          
 			break;
 	}
@@ -1165,7 +1168,6 @@ static void update_current_flight_mode(void)
 				g.channel_pitch.servo_out = g.channel_pitch.pwm_to_angle();
 				g.channel_rudder.servo_out = g.channel_roll.pwm_to_angle();
 				break;
-				//roll: -13788.000,  pitch: -13698.000,   thr: 0.000, rud: -13742.000
 
 		}
 	}

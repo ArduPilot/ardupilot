@@ -33,7 +33,6 @@
 #define GPS_PROTOCOL          GPS_PROTOCOL_AUTO
 
 #define CH7_OPTION	      CH7_SAVE_WP
-#define TUNING_OPTION	      TUN_NONE
 
 #define FLIGHT_MODE_1         AUTO         // pos 0 ---
 #define FLIGHT_MODE_2         AUTO         // pos 1
@@ -49,10 +48,21 @@
 #define TURN_GAIN		5
 
 #define CLOSED_LOOP_NAV       ENABLED     // set to ENABLED if closed loop navigation else set to DISABLED (Return To Lauch)
-#define AUTO_WP_RADIUS        DISABLED
 
 #define MAX_DIST             50  //300       // max distance (in m) for the HEADALT mode
 #define SARSEC_BRANCH        50              // Long branch of the SARSEC pattern
+/*
+During straight lines if the speed booster is enabled, after passing the Wp, 
+the speed is multplied by a speed factor ROV_BOOSTER   =  2     
+(i.e. this is my tested value... so the required speed will be 2 x 4 = 8 m/s in straight lines), 
+the when the rover approach the wp, it slow down to 4 m/s (TRIM_ARSPD_CM)...
+This feature works only if the ROV_AWPR_NAV is set to 0
+*/
+
+#define BOOSTER              2    // booster factor x2
+#define AUTO_WP_RADIUS       DISABLED
+#define AIRSPEED_CRUISE      4    // 4m/s
+#define THROTTLE_SLEW_LIMIT  2    // set to 2 for a smooth acceleration by 0.2 step
 
 //////////////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////////////
@@ -66,7 +76,6 @@
 // is 10m/s, which is a conservative value suitable for relatively small,
 // light aircraft.
 //
-#define AIRSPEED_CRUISE     3
 #define GSBOOST             0  
 #define NUDGE_OFFSET	    0  
 #define MIN_GNDSPEED       3

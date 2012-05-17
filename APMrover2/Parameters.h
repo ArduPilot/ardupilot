@@ -133,6 +133,7 @@ public:
         k_param_auto_wp_radius,
         k_param_sonar_trigger,
         k_param_turn_gain,
+        k_param_booster,        
         
 // ************************************************************
 //
@@ -351,7 +352,8 @@ public:
         AP_Int8     auto_wp_radius;
         AP_Int16    sonar_trigger;
         AP_Int16    turn_gain;
-    
+        AP_Int8     booster;
+        
 // ************************************************************   
 
         // RC channels
@@ -482,7 +484,8 @@ public:
         closed_loop_nav         (CLOSED_LOOP_NAV),
         auto_wp_radius          (AUTO_WP_RADIUS), 
         sonar_trigger           (SONAR_TRIGGER),
-        turn_gain               (TURN_GAIN), 
+        turn_gain               (TURN_GAIN),
+        booster                 (BOOSTER),        
 
 // ************************************************************   
         
