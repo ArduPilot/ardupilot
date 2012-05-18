@@ -869,7 +869,8 @@ static int16_t			superslow_loopCounter;
 static uint32_t 		loiter_timer;
 // disarms the copter while in Acro or Stabilize mode after 30 seconds of no flight
 static uint8_t 			auto_disarming_counter;
-
+// prevents duplicate GPS messages from entering system
+static uint32_t			last_gps_time;
 
 // Tracks if GPS is enabled based on statup routine
 // If we do not detect GPS at startup, we stop trying and assume GPS is not connected
@@ -1351,63 +1352,72 @@ static void update_GPS(void)
 	}
 
     if (g_gps->new_data && g_gps->fix) {
-
 		// clear new data flag
-    	g_gps->new_data = false;
+		g_gps->new_data = false;
 
-		gps_watchdog = 0;
+    	// check for duiplicate GPS messages
+		if(last_gps_time != g_gps->time){
 
-		// OK to run the nav routines
-		nav_ok = true;
+	    	// look for broken GPS
+			// ---------------
+			gps_watchdog = 0;
 
-		// for performance
-		// ---------------
-		gps_fix_count++;
+			// OK to run the nav routines
+			// ---------------
+			nav_ok = true;
 
-		// used to calculate speed in X and Y, iterms
-		// ------------------------------------------
-		dTnav 				= (float)(millis() - nav_loopTimer)/ 1000.0;
-		nav_loopTimer 		= millis();
+			// for performance monitoring
+			// --------------------------
+			gps_fix_count++;
 
-		// prevent runup from bad GPS
-		// --------------------------
-		dTnav = min(dTnav, 1.0);
+			// used to calculate speed in X and Y, iterms
+			// ------------------------------------------
+			dTnav 				= (float)(millis() - nav_loopTimer)/ 1000.0;
+			nav_loopTimer 		= millis();
 
-		if(ground_start_count > 1){
-			ground_start_count--;
+			// prevent runup from bad GPS
+			// --------------------------
+			dTnav = min(dTnav, 1.0);
 
-		} else if (ground_start_count == 1) {
+			if(ground_start_count > 1){
+				ground_start_count--;
 
-			// We countdown N number of good GPS fixes
-			// so that the altitude is more accurate
-			// -------------------------------------
-			if (current_loc.lat == 0) {
-				ground_start_count = 5;
+			} else if (ground_start_count == 1) {
 
-			}else{
-				if (g.compass_enabled) {
-					// Set compass declination automatically
-					compass.set_initial_location(g_gps->latitude, g_gps->longitude);
+				// We countdown N number of good GPS fixes
+				// so that the altitude is more accurate
+				// -------------------------------------
+				if (current_loc.lat == 0) {
+					ground_start_count = 5;
+
+				}else{
+					if (g.compass_enabled) {
+						// Set compass declination automatically
+						compass.set_initial_location(g_gps->latitude, g_gps->longitude);
+					}
+					// save home to eeprom (we must have a good fix to have reached this point)
+					init_home();
+					ground_start_count = 0;
 				}
-				// save home to eeprom (we must have a good fix to have reached this point)
-				init_home();
-				ground_start_count = 0;
 			}
+
+			current_loc.lng = g_gps->longitude;	// Lon * 10 * *7
+			current_loc.lat = g_gps->latitude;	// Lat * 10 * *7
+
+			calc_XY_velocity();
+
+			if (g.log_bitmask & MASK_LOG_GPS && motors.armed()){
+				Log_Write_GPS();
+			}
+
+			#if HIL_MODE == HIL_MODE_ATTITUDE					// only execute in HIL mode
+				//update_altitude();
+				alt_sensor_flag = true;
+			#endif
 		}
 
-		current_loc.lng = g_gps->longitude;	// Lon * 10 * *7
-		current_loc.lat = g_gps->latitude;	// Lat * 10 * *7
-
-		calc_XY_velocity();
-
-		if (g.log_bitmask & MASK_LOG_GPS && motors.armed()){
-			Log_Write_GPS();
-		}
-
-		#if HIL_MODE == HIL_MODE_ATTITUDE					// only execute in HIL mode
-			//update_altitude();
-			alt_sensor_flag = true;
-		#endif
+		// save GPS time so we don't get duplicate reads
+		last_gps_time = g_gps->time;
 	}
 }
 
