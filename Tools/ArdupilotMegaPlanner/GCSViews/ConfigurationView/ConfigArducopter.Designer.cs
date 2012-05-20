@@ -127,6 +127,7 @@
             this.label91 = new System.Windows.Forms.Label();
             this.toolTip1 = new System.Windows.Forms.ToolTip(this.components);
             this.BUT_writePIDS = new ArdupilotMega.Controls.MyButton();
+            this.BUT_rerequestparams = new ArdupilotMega.Controls.MyButton();
             ((System.ComponentModel.ISupportInitialize)(this.TUNE_LOW)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.TUNE_HIGH)).BeginInit();
             this.groupBox5.SuspendLayout();
@@ -793,10 +794,18 @@
             this.BUT_writePIDS.UseVisualStyleBackColor = true;
             this.BUT_writePIDS.Click += new System.EventHandler(this.BUT_writePIDS_Click);
             // 
+            // BUT_rerequestparams
+            // 
+            resources.ApplyResources(this.BUT_rerequestparams, "BUT_rerequestparams");
+            this.BUT_rerequestparams.Name = "BUT_rerequestparams";
+            this.BUT_rerequestparams.UseVisualStyleBackColor = true;
+            this.BUT_rerequestparams.Click += new System.EventHandler(this.BUT_rerequestparams_Click);
+            // 
             // ConfigArducopter
             // 
             resources.ApplyResources(this, "$this");
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
+            this.Controls.Add(this.BUT_rerequestparams);
             this.Controls.Add(this.BUT_writePIDS);
             this.Controls.Add(this.myLabel3);
             this.Controls.Add(this.TUNE_LOW);
@@ -974,5 +983,6 @@
         private System.Windows.Forms.Label label91;
         private System.Windows.Forms.ToolTip toolTip1;
         private Controls.MyButton BUT_writePIDS;
+        private Controls.MyButton BUT_rerequestparams;
     }
 }

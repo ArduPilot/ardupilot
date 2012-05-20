@@ -43,7 +43,14 @@ namespace ArdupilotMega
 
             //Console.WriteLine(srtm.getAltitude(-35.115676879882812, 117.94178754638671,20));
 
-            //return;
+
+            PointLatLngAlt plla = new PointLatLngAlt(54.0359, 5.4253, 0, "");
+            PointLatLngAlt plla2 = new PointLatLngAlt(54.3838, 3.0412, 0, "");
+
+            Console.WriteLine(plla.GetDistance(plla2));
+            Console.WriteLine(plla.GetDistance2(plla2));
+
+
 
             if (System.Diagnostics.Debugger.IsAttached)
             {

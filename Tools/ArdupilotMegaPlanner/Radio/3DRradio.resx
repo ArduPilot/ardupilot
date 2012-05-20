@@ -1799,7 +1799,7 @@ which result in a valid packet CRC
     <value>BUT_savesettings</value>
   </data>
   <data name="&gt;&gt;BUT_savesettings.Type" xml:space="preserve">
-    <value>ArdupilotMega.Controls.MyButton, ArdupilotMegaPlanner, Version=1.1.4519.35885, Culture=neutral, PublicKeyToken=null</value>
+    <value>ArdupilotMega.Controls.MyButton, 3DRRadio, Version=0.6.4521.12642, Culture=neutral, PublicKeyToken=null</value>
   </data>
   <data name="&gt;&gt;BUT_savesettings.Parent" xml:space="preserve">
     <value>$this</value>
@@ -1823,7 +1823,7 @@ which result in a valid packet CRC
     <value>BUT_getcurrent</value>
   </data>
   <data name="&gt;&gt;BUT_getcurrent.Type" xml:space="preserve">
-    <value>ArdupilotMega.Controls.MyButton, ArdupilotMegaPlanner, Version=1.1.4519.35885, Culture=neutral, PublicKeyToken=null</value>
+    <value>ArdupilotMega.Controls.MyButton, 3DRRadio, Version=0.6.4521.12642, Culture=neutral, PublicKeyToken=null</value>
   </data>
   <data name="&gt;&gt;BUT_getcurrent.Parent" xml:space="preserve">
     <value>$this</value>
@@ -1868,7 +1868,7 @@ which result in a valid packet CRC
     <value>BUT_upload</value>
   </data>
   <data name="&gt;&gt;BUT_upload.Type" xml:space="preserve">
-    <value>ArdupilotMega.Controls.MyButton, ArdupilotMegaPlanner, Version=1.1.4519.35885, Culture=neutral, PublicKeyToken=null</value>
+    <value>ArdupilotMega.Controls.MyButton, 3DRRadio, Version=0.6.4521.12642, Culture=neutral, PublicKeyToken=null</value>
   </data>
   <data name="&gt;&gt;BUT_upload.Parent" xml:space="preserve">
     <value>$this</value>
@@ -2559,7 +2559,7 @@ which result in a valid packet CRC
     <value>NoControl</value>
   </data>
   <data name="BUT_Syncoptions.Location" type="System.Drawing.Point, System.Drawing">
-    <value>338, 355</value>
+    <value>346, 355</value>
   </data>
   <data name="BUT_Syncoptions.Size" type="System.Drawing.Size, System.Drawing">
     <value>102, 29</value>
@@ -2574,7 +2574,7 @@ which result in a valid packet CRC
     <value>BUT_Syncoptions</value>
   </data>
   <data name="&gt;&gt;BUT_Syncoptions.Type" xml:space="preserve">
-    <value>ArdupilotMega.Controls.MyButton, ArdupilotMegaPlanner, Version=1.1.4519.35885, Culture=neutral, PublicKeyToken=null</value>
+    <value>ArdupilotMega.Controls.MyButton, 3DRRadio, Version=0.6.4521.12642, Culture=neutral, PublicKeyToken=null</value>
   </data>
   <data name="&gt;&gt;BUT_Syncoptions.Parent" xml:space="preserve">
     <value>$this</value>
@@ -2700,6 +2700,6 @@ which result in a valid packet CRC
     <value>_3DRradio</value>
   </data>
   <data name="&gt;&gt;$this.Type" xml:space="preserve">
-    <value>ArdupilotMega.Controls.BackstageView.BackStageViewContentPanel, ArdupilotMegaPlanner, Version=1.1.4519.35885, Culture=neutral, PublicKeyToken=null</value>
+    <value>ArdupilotMega.Controls.BackstageView.BackStageViewContentPanel, 3DRRadio, Version=0.6.4521.12642, Culture=neutral, PublicKeyToken=null</value>
   </data>
 </root>

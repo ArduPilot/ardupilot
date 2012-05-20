@@ -44,7 +44,7 @@ namespace ArdupilotMega
         /// <summary>
         /// Main Comport interface
         /// </summary>
-        public static MAVLink comPort = new MAVLink();
+        public static IMAVLink comPort = new MAVLink();
         /// <summary>
         /// Comport name
         /// </summary>
@@ -1310,7 +1310,10 @@ namespace ArdupilotMega
 
             try
             {
-                CheckForUpdate();
+                if (System.Diagnostics.Debugger.IsAttached)
+                {
+                    CheckForUpdate();
+                }
             }
             catch (Exception ex)
             {
@@ -1518,6 +1521,23 @@ namespace ArdupilotMega
 
                         kml.AddFeature(pmplane);
 
+                        SharpKml.Dom.CoordinateCollection coords = new SharpKml.Dom.CoordinateCollection();
+
+                        foreach (var point in GCSViews.FlightPlanner.pointlist)
+                        {
+                            if (point != null)
+                            coords.Add(new SharpKml.Base.Vector(point.Lat, point.Lng, point.Alt));
+
+                        }
+
+                        SharpKml.Dom.LineString ls = new SharpKml.Dom.LineString();
+                        ls.AltitudeMode = SharpKml.Dom.AltitudeMode.RelativeToGround;
+                        ls.Coordinates = coords;
+
+                        SharpKml.Dom.Placemark pm = new SharpKml.Dom.Placemark() { Geometry = ls };
+
+                        kml.AddFeature(pm);
+
                         SharpKml.Base.Serializer serializer = new SharpKml.Base.Serializer();
                         serializer.Serialize(kml);
 
@@ -1677,18 +1697,19 @@ namespace ArdupilotMega
                 {
                     process.StartInfo.FileName = exePath + Path.DirectorySeparatorChar + "Updater.exe";
                     process.StartInfo.Arguments = "";
-                    try
+                }
+
+                try
+                {
+                    foreach (string newupdater in Directory.GetFiles(exePath, "Updater.exe*.new"))
                     {
-                        foreach (string newupdater in Directory.GetFiles(exePath, "Updater.exe*.new"))
-                        {
-                            File.Copy(newupdater, newupdater.Remove(newupdater.Length - 4), true);
-                            File.Delete(newupdater);
-                        }
+                        File.Copy(newupdater, newupdater.Remove(newupdater.Length - 4), true);
+                        File.Delete(newupdater);
                     }
-                    catch (Exception ex)
-                    {
-                        log.Error("Exception during update", ex);
-                    }
+                }
+                catch (Exception ex)
+                {
+                    log.Error("Exception during update", ex);
                 }
                 if (frmProgressReporter != null)
                     frmProgressReporter.UpdateProgressAndStatus(-1, "Starting Updater");
@@ -1750,7 +1771,7 @@ namespace ArdupilotMega
             //dataStream = response.GetResponseStream();
             // Open the stream using a StreamReader for easy access.
 
-            bool shouldGetFile = false;
+            bool updateFound = false;
 
             if (File.Exists(path))
             {
@@ -1785,19 +1806,19 @@ namespace ArdupilotMega
 
                 if (LocalVersion != WebVersion)
                 {
-                    shouldGetFile = true;
+                    updateFound = true;
                 }
             }
             else
             {
-                shouldGetFile = true;
+                updateFound = true;
                 log.Info("File does not exist: Getting " + path);
                 // get it
             }
 
             response.Close();
 
-            if (shouldGetFile)
+            if (updateFound)
             {
                 var dr = CustomMessageBox.Show("Update Found\n\nDo you wish to update now?", "Update Now", MessageBoxButtons.YesNo);
                 if (dr == DialogResult.Yes)
@@ -2173,7 +2194,7 @@ namespace ArdupilotMega
                 // write
                 MainV2.comPort.doCommand(MAVLink.MAV_CMD.PREFLIGHT_STORAGE, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f);
                 //read
-                ///////MainV2.comPort.doCommand(MAVLink.MAV_CMD.PREFLIGHT_STORAGE, 1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f);
+                ///////MainV2.comPort.doCommand(MAVLink09.MAV_CMD.PREFLIGHT_STORAGE, 1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f);
 #else
                 MainV2.comPort.doAction(MAVLink.MAV_ACTION.MAV_ACTION_STORAGE_WRITE);
 #endif

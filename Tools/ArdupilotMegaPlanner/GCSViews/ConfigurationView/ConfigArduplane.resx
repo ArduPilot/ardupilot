@@ -237,7 +237,7 @@
     <value>$this</value>
   </data>
   <data name="&gt;&gt;groupBox3.ZOrder" xml:space="preserve">
-    <value>1</value>
+    <value>2</value>
   </data>
   <data name="THR_FS_VALUE.Location" type="System.Drawing.Point, System.Drawing">
     <value>111, 82</value>
@@ -550,7 +550,7 @@
     <value>$this</value>
   </data>
   <data name="&gt;&gt;groupBox1.ZOrder" xml:space="preserve">
-    <value>2</value>
+    <value>3</value>
   </data>
   <data name="ARSPD_RATIO.Location" type="System.Drawing.Point, System.Drawing">
     <value>111, 82</value>
@@ -838,7 +838,7 @@
     <value>$this</value>
   </data>
   <data name="&gt;&gt;groupBox2.ZOrder" xml:space="preserve">
-    <value>3</value>
+    <value>4</value>
   </data>
   <data name="LIM_PITCH_MIN.Location" type="System.Drawing.Point, System.Drawing">
     <value>111, 59</value>
@@ -1054,7 +1054,7 @@
     <value>$this</value>
   </data>
   <data name="&gt;&gt;groupBox15.ZOrder" xml:space="preserve">
-    <value>4</value>
+    <value>5</value>
   </data>
   <data name="XTRK_ANGLE_CD.Location" type="System.Drawing.Point, System.Drawing">
     <value>111, 36</value>
@@ -1246,7 +1246,7 @@
     <value>$this</value>
   </data>
   <data name="&gt;&gt;groupBox16.ZOrder" xml:space="preserve">
-    <value>5</value>
+    <value>6</value>
   </data>
   <data name="KFF_PTCH2THR.Location" type="System.Drawing.Point, System.Drawing">
     <value>111, 13</value>
@@ -1510,7 +1510,7 @@
     <value>$this</value>
   </data>
   <data name="&gt;&gt;groupBox14.ZOrder" xml:space="preserve">
-    <value>6</value>
+    <value>7</value>
   </data>
   <data name="ENRGY2THR_IMAX.Location" type="System.Drawing.Point, System.Drawing">
     <value>111, 82</value>
@@ -1822,7 +1822,7 @@
     <value>$this</value>
   </data>
   <data name="&gt;&gt;groupBox13.ZOrder" xml:space="preserve">
-    <value>7</value>
+    <value>8</value>
   </data>
   <data name="ALT2PTCH_IMAX.Location" type="System.Drawing.Point, System.Drawing">
     <value>111, 82</value>
@@ -2134,7 +2134,7 @@
     <value>$this</value>
   </data>
   <data name="&gt;&gt;groupBox12.ZOrder" xml:space="preserve">
-    <value>8</value>
+    <value>9</value>
   </data>
   <data name="ARSP2PTCH_IMAX.Location" type="System.Drawing.Point, System.Drawing">
     <value>111, 82</value>
@@ -2446,7 +2446,7 @@
     <value>$this</value>
   </data>
   <data name="&gt;&gt;groupBox11.ZOrder" xml:space="preserve">
-    <value>9</value>
+    <value>10</value>
   </data>
   <data name="HDNG2RLL_IMAX.Location" type="System.Drawing.Point, System.Drawing">
     <value>111, 82</value>
@@ -2758,7 +2758,7 @@
     <value>$this</value>
   </data>
   <data name="&gt;&gt;groupBox10.ZOrder" xml:space="preserve">
-    <value>10</value>
+    <value>11</value>
   </data>
   <data name="YW2SRV_IMAX.Location" type="System.Drawing.Point, System.Drawing">
     <value>111, 82</value>
@@ -3070,7 +3070,7 @@
     <value>$this</value>
   </data>
   <data name="&gt;&gt;groupBox9.ZOrder" xml:space="preserve">
-    <value>11</value>
+    <value>12</value>
   </data>
   <data name="PTCH2SRV_IMAX.Location" type="System.Drawing.Point, System.Drawing">
     <value>111, 82</value>
@@ -3382,7 +3382,7 @@
     <value>$this</value>
   </data>
   <data name="&gt;&gt;groupBox8.ZOrder" xml:space="preserve">
-    <value>12</value>
+    <value>13</value>
   </data>
   <data name="RLL2SRV_IMAX.Location" type="System.Drawing.Point, System.Drawing">
     <value>111, 82</value>
@@ -3586,7 +3586,7 @@
     <value>NoControl</value>
   </data>
   <data name="BUT_writePIDS.Location" type="System.Drawing.Point, System.Drawing">
-    <value>261, 437</value>
+    <value>204, 437</value>
   </data>
   <data name="BUT_writePIDS.Size" type="System.Drawing.Size, System.Drawing">
     <value>103, 19</value>
@@ -3601,12 +3601,42 @@
     <value>BUT_writePIDS</value>
   </data>
   <data name="&gt;&gt;BUT_writePIDS.Type" xml:space="preserve">
-    <value>ArdupilotMega.Controls.MyButton, ArdupilotMegaPlanner, Version=1.1.4498.24834, Culture=neutral, PublicKeyToken=null</value>
+    <value>ArdupilotMega.Controls.MyButton, ArdupilotMegaPlanner, Version=1.1.4523.24267, Culture=neutral, PublicKeyToken=null</value>
   </data>
   <data name="&gt;&gt;BUT_writePIDS.Parent" xml:space="preserve">
     <value>$this</value>
   </data>
   <data name="&gt;&gt;BUT_writePIDS.ZOrder" xml:space="preserve">
+    <value>1</value>
+  </data>
+  <data name="BUT_rerequestparams.ImeMode" type="System.Windows.Forms.ImeMode, System.Windows.Forms">
+    <value>NoControl</value>
+  </data>
+  <data name="BUT_rerequestparams.Location" type="System.Drawing.Point, System.Drawing">
+    <value>313, 437</value>
+  </data>
+  <data name="BUT_rerequestparams.Padding" type="System.Windows.Forms.Padding, System.Windows.Forms">
+    <value>0, 15, 0, 0</value>
+  </data>
+  <data name="BUT_rerequestparams.Size" type="System.Drawing.Size, System.Drawing">
+    <value>103, 19</value>
+  </data>
+  <data name="BUT_rerequestparams.TabIndex" type="System.Int32, mscorlib">
+    <value>75</value>
+  </data>
+  <data name="BUT_rerequestparams.Text" xml:space="preserve">
+    <value>Refresh Params</value>
+  </data>
+  <data name="&gt;&gt;BUT_rerequestparams.Name" xml:space="preserve">
+    <value>BUT_rerequestparams</value>
+  </data>
+  <data name="&gt;&gt;BUT_rerequestparams.Type" xml:space="preserve">
+    <value>ArdupilotMega.Controls.MyButton, ArdupilotMegaPlanner, Version=1.1.4523.24267, Culture=neutral, PublicKeyToken=null</value>
+  </data>
+  <data name="&gt;&gt;BUT_rerequestparams.Parent" xml:space="preserve">
+    <value>$this</value>
+  </data>
+  <data name="&gt;&gt;BUT_rerequestparams.ZOrder" xml:space="preserve">
     <value>0</value>
   </data>
   <metadata name="$this.Localizable" type="System.Boolean, mscorlib, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089">
@@ -3628,6 +3658,6 @@
     <value>ConfigArduplane</value>
   </data>
   <data name="&gt;&gt;$this.Type" xml:space="preserve">
-    <value>ArdupilotMega.Controls.BackstageView.BackStageViewContentPanel, ArdupilotMegaPlanner, Version=1.1.4498.24834, Culture=neutral, PublicKeyToken=null</value>
+    <value>ArdupilotMega.Controls.BackstageView.BackStageViewContentPanel, ArdupilotMegaPlanner, Version=1.1.4523.24267, Culture=neutral, PublicKeyToken=null</value>
   </data>
 </root>

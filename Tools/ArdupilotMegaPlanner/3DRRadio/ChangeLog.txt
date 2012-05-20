@@ -1,4 +1,6 @@
-﻿0.5 - add terminal
+﻿0.7 - fix typos - log rssi screen to log as well
+0.6 - add terminal logging to file, fix remote radio config
+0.5 - add terminal
 0.4 - adjust erase timeout - to prevent lost bootloader sync error.
 0.3 - add RFD900 support
 0.2 - change packet size to 32 bytes

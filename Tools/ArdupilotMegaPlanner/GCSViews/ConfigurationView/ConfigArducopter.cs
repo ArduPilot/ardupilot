@@ -374,6 +374,33 @@ namespace ArdupilotMega.GCSViews.ConfigurationView
                 }
             }
         }
+
+        /// <summary>
+        /// Handles the Click event of the BUT_rerequestparams control.
+        /// </summary>
+        /// <param name="sender">The source of the event.</param>
+        /// <param name="e">The <see cref="System.EventArgs"/> instance containing the event data.</param>
+        protected void BUT_rerequestparams_Click(object sender, EventArgs e)
+        {
+            if (!MainV2.comPort.BaseStream.IsOpen)
+                return;
+
+            ((Control)sender).Enabled = false;
+
+            try
+            {
+                MainV2.comPort.getParamList();
+            }
+            catch (Exception ex)
+            {
+                CustomMessageBox.Show("Error: getting param list " + ex.ToString());
+            }
+
+
+            ((Control)sender).Enabled = true;
+
+            this.DoLoad(new EventArgs());
+        }
       
         
     }

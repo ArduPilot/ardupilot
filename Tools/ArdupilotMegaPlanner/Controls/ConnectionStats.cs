@@ -11,10 +11,11 @@ namespace ArdupilotMega.Controls
 {
     public partial class ConnectionStats : UserControl
     {
-        private readonly MAVLink _mavlink;
+        private readonly IMAVLink _mavlink;
         private CompositeDisposable _subscriptionsDisposable;
 
-        public ConnectionStats(MAVLink comPort) : this()
+        public ConnectionStats(IMAVLink comPort)
+            : this()
         {
             _mavlink = comPort;
 

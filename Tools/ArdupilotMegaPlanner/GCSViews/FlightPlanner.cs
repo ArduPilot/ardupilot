@@ -1221,7 +1221,7 @@ namespace ArdupilotMega.GCSViews
 
             try
             {
-                MAVLink port = MainV2.comPort;
+                IMAVLink port = MainV2.comPort;
 
                 if (!port.BaseStream.IsOpen)
                 {
@@ -1330,7 +1330,7 @@ namespace ArdupilotMega.GCSViews
         {
             try
             {
-                MAVLink port = MainV2.comPort;
+                IMAVLink port = MainV2.comPort;
 
                 if (!port.BaseStream.IsOpen)
                 {
@@ -2491,6 +2491,12 @@ namespace ArdupilotMega.GCSViews
                 CustomMessageBox.Show("Right click the map to draw a polygon", "Area", MessageBoxButtons.OK, MessageBoxIcon.Exclamation);
                 return;
             }
+
+            // ensure points/latlong are current
+            MainMap.Zoom = (int)MainMap.Zoom;
+
+            MainMap.Refresh();
+
             GMapPolygon area = drawnpolygon;
             area.Points.Add(area.Points[0]); // make a full loop
             RectLatLng arearect = getPolyMinMax(area);
@@ -2541,7 +2547,7 @@ namespace ArdupilotMega.GCSViews
                 //Commands.Rows.Clear();
 #endif
                 // get x y components
-                double x1 = Math.Cos((double.Parse(angle)) * deg2rad);
+                double x1 = Math.Cos((double.Parse(angle)) * deg2rad); // needs to mod for long scale
                 double y1 = Math.Sin((double.Parse(angle)) * deg2rad);
 
                 // get x y step amount in lat lng from m

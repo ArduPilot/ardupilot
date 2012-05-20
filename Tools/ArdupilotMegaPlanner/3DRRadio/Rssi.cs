@@ -9,6 +9,7 @@ using System.Windows.Forms;
 using ZedGraph;
 using ArdupilotMega;
 using System.Text.RegularExpressions;
+using System.IO;
 
 namespace _3DRRadio
 {
@@ -26,10 +27,15 @@ namespace _3DRRadio
         {
             InitializeComponent();
 
-            zedGraphControl1.GraphPane.AddCurve("Rssi Local",plotdatarssil,Color.Red,SymbolType.None);
-            zedGraphControl1.GraphPane.AddCurve("Rssi Remote", plotdatarssir, Color.Green, SymbolType.None);
-            zedGraphControl1.GraphPane.AddCurve("Noice Local", plotdatanoicel, Color.Blue, SymbolType.None);
-            zedGraphControl1.GraphPane.AddCurve("Noice Remote", plotdatanoicer, Color.Orange, SymbolType.None);
+            zedGraphControl1.GraphPane.AddCurve("RSSI Local",plotdatarssil,Color.Red,SymbolType.None);
+            zedGraphControl1.GraphPane.AddCurve("RSSI Remote", plotdatarssir, Color.Green, SymbolType.None);
+            zedGraphControl1.GraphPane.AddCurve("Noise Local", plotdatanoicel, Color.Blue, SymbolType.None);
+            zedGraphControl1.GraphPane.AddCurve("Noise Remote", plotdatanoicer, Color.Orange, SymbolType.None);
+
+            zedGraphControl1.GraphPane.Title.Text = "RSSI";
+
+            if (Terminal.sw == null)
+                Terminal.sw = new StreamWriter("Terminal-" + DateTime.Now.ToString("yyyy-MM-dd HH-mm-ss") + ".txt");
         }
 
         private void BUT_connect_Click(object sender, EventArgs e)
@@ -112,6 +118,12 @@ L/R RSSI: 12/0  L/R noise: 16/0 pkts: 0  txe=0 rxe=0 stx=0 srx=0 ecc=0/0 temp=61
                     // Force a redraw
 
                     zedGraphControl1.Invalidate();
+
+                    if (Terminal.sw != null)
+                    {
+                        Terminal.sw.Write(line);
+                        Terminal.sw.Flush();
+                    }
                 }
 
             }

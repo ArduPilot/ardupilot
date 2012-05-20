@@ -231,6 +231,12 @@
     <Compile Include="Attributes\DisplayTextAttribute.cs" />
     <Compile Include="Attributes\PrivateAttribute.cs" />
     <Compile Include="CodeGen.cs" />
+    <Compile Include="Comms\CommsSerialInterface.cs" />
+    <Compile Include="Comms\CommsSerialPort.cs">
+      <SubType>Component</SubType>
+    </Compile>
+    <Compile Include="Comms\CommsTCPSerial.cs" />
+    <Compile Include="Comms\CommsUdpSerial.cs" />
     <Compile Include="Controls\HSI.cs">
       <SubType>UserControl</SubType>
     </Compile>
@@ -265,6 +271,7 @@
     <Compile Include="GCSViews\ConfigurationView\ConfigArdurover.Designer.cs">
       <DependentUpon>ConfigArdurover.cs</DependentUpon>
     </Compile>
+    <Compile Include="Mavlink\IMAVLink.cs" />
     <Compile Include="Utilities\CollectionExtensions.cs" />
     <Compile Include="Utilities\ParameterMetaDataConstants.cs" />
     <Compile Include="Controls\BackstageView\BackstageView.cs">
@@ -406,12 +413,6 @@
       <DependentUpon>Camera.cs</DependentUpon>
     </Compile>
     <Compile Include="Utilities\Capture.cs" />
-    <Compile Include="Comms\CommsSerialInterface.cs" />
-    <Compile Include="Comms\CommsSerialPort.cs">
-      <SubType>Component</SubType>
-    </Compile>
-    <Compile Include="Comms\CommsTCPSerial.cs" />
-    <Compile Include="Comms\CommsUdpSerial.cs" />
     <Compile Include="Controls\ImageLabel.cs">
       <SubType>UserControl</SubType>
     </Compile>
@@ -468,7 +469,7 @@
     <Compile Include="JoystickSetup.Designer.cs">
       <DependentUpon>JoystickSetup.cs</DependentUpon>
     </Compile>
-    <Compile Include="MAVLinkTypes.cs" />
+    <Compile Include="Mavlink\MAVLinkTypes.cs" />
     <Compile Include="Controls\MyButton.cs">
       <SubType>Component</SubType>
     </Compile>
@@ -537,14 +538,14 @@
       <SubType>Component</SubType>
     </Compile>
     <Compile Include="CurrentState.cs" />
-    <Compile Include="MAVLinkTypes0.9.cs" />
+    <Compile Include="Mavlink\MAVLinkTypes0.9.cs" />
     <Compile Include="ElevationProfile.cs">
       <SubType>Form</SubType>
     </Compile>
     <Compile Include="ElevationProfile.Designer.cs">
       <DependentUpon>ElevationProfile.cs</DependentUpon>
     </Compile>
-    <Compile Include="MAVLink.cs" />
+    <Compile Include="Mavlink\MAVLink.cs" />
     <Compile Include="Arduino\ArduinoSTK.cs">
       <SubType>Component</SubType>
     </Compile>
