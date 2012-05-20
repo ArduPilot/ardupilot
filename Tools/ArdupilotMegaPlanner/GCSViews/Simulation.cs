@@ -22,7 +22,7 @@ namespace ArdupilotMega.GCSViews
     public partial class Simulation : MyUserControl
     {
         private static readonly ILog log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
-        MAVLink comPort = MainV2.comPort;
+        IMAVLink comPort = MainV2.comPort;
         UdpClient XplanesSEND;
         UdpClient MavLink;
         Socket SimulatorRECV;
@@ -721,7 +721,7 @@ namespace ArdupilotMega.GCSViews
         /// <param name="data">Packet</param>
         /// <param name="receviedbytes">Length</param>
         /// <param name="comPort">Com Port</param>
-        private void RECVprocess(byte[] data, int receviedbytes, ArdupilotMega.MAVLink comPort)
+        private void RECVprocess(byte[] data, int receviedbytes, ArdupilotMega.IMAVLink comPort)
         {
 #if MAVLINK10
             ArdupilotMega.MAVLink.mavlink_hil_state_t hilstate = new ArdupilotMega.MAVLink.mavlink_hil_state_t();

@@ -326,6 +326,9 @@
   <data name="&gt;&gt;groupBox1.ZOrder" xml:space="preserve">
     <value>1</value>
   </data>
+  <data name="groupBox2.Anchor" type="System.Windows.Forms.AnchorStyles, System.Windows.Forms">
+    <value>Top, Bottom, Left, Right</value>
+  </data>
   <data name="groupBox2.Location" type="System.Drawing.Point, System.Drawing">
     <value>12, 108</value>
   </data>
@@ -393,10 +396,10 @@
     <value>Terminal</value>
   </data>
   <data name="rssiToolStripMenuItem.Size" type="System.Drawing.Size, System.Drawing">
-    <value>39, 20</value>
+    <value>41, 20</value>
   </data>
   <data name="rssiToolStripMenuItem.Text" xml:space="preserve">
-    <value>Rssi</value>
+    <value>RSSI</value>
   </data>
   <data name="helpToolStripMenuItem.Size" type="System.Drawing.Size, System.Drawing">
     <value>140, 22</value>
@@ -1585,7 +1588,7 @@
 </value>
   </data>
   <data name="$this.Text" xml:space="preserve">
-    <value>3DRRadio Config 0.5</value>
+    <value>3DRRadio Config 0.7</value>
   </data>
   <data name="&gt;&gt;settingsToolStripMenuItem.Name" xml:space="preserve">
     <value>settingsToolStripMenuItem</value>
@@ -1597,6 +1600,12 @@
     <value>terminalToolStripMenuItem</value>
   </data>
   <data name="&gt;&gt;terminalToolStripMenuItem.Type" xml:space="preserve">
+    <value>System.Windows.Forms.ToolStripMenuItem, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </data>
+  <data name="&gt;&gt;rssiToolStripMenuItem.Name" xml:space="preserve">
+    <value>rssiToolStripMenuItem</value>
+  </data>
+  <data name="&gt;&gt;rssiToolStripMenuItem.Type" xml:space="preserve">
     <value>System.Windows.Forms.ToolStripMenuItem, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </data>
   <data name="&gt;&gt;aboutToolStripMenuItem.Name" xml:space="preserve">
@@ -1615,12 +1624,6 @@
     <value>projectPageToolStripMenuItem</value>
   </data>
   <data name="&gt;&gt;projectPageToolStripMenuItem.Type" xml:space="preserve">
-    <value>System.Windows.Forms.ToolStripMenuItem, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
-  </data>
-  <data name="&gt;&gt;rssiToolStripMenuItem.Name" xml:space="preserve">
-    <value>rssiToolStripMenuItem</value>
-  </data>
-  <data name="&gt;&gt;rssiToolStripMenuItem.Type" xml:space="preserve">
     <value>System.Windows.Forms.ToolStripMenuItem, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </data>
   <data name="&gt;&gt;$this.Name" xml:space="preserve">

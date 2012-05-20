@@ -203,7 +203,7 @@ namespace ArdupilotMega
 
                 float alpha = ((desired_lead_dist * (float)m2pixelwidth) / MainV2.cs.radius) * rad2deg;
 
-                if (MainV2.cs.radius < 0)
+                if (MainV2.cs.radius < -1)
                 {
                     // fixme 
 
@@ -215,7 +215,7 @@ namespace ArdupilotMega
 
                 }
 
-                else
+                else if (MainV2.cs.radius > 1)
                 {
                     // correct
 
@@ -294,6 +294,9 @@ namespace ArdupilotMega
         public double Alt = 0;
         public string Tag = "";
         public Color color = Color.White;
+
+        const float rad2deg = (float)(180 / Math.PI);
+        const float deg2rad = (float)(1.0 / rad2deg);
 
         public PointLatLngAlt(double lat, double lng, double alt, string tag)
         {
@@ -378,7 +381,24 @@ namespace ArdupilotMega
             double num6 = num3 - d;
             double num7 = Math.Pow(Math.Sin(num6 / 2.0), 2.0) + ((Math.Cos(d) * Math.Cos(num3)) * Math.Pow(Math.Sin(num5 / 2.0), 2.0));
             double num8 = 2.0 * Math.Atan2(Math.Sqrt(num7), Math.Sqrt(1.0 - num7));
-            return (6378.137 * num8) * 1000; // M
+            return (6371 * num8) * 1000.0; // M
+        }
+
+        public double GetDistance2(PointLatLngAlt p2)
+        {
+            //http://www.movable-type.co.uk/scripts/latlong.html
+            var R = 6371; // 6371 km
+            var dLat = (p2.Lat - Lat) * deg2rad;
+            var dLon = (p2.Lng - Lng) * deg2rad;
+            var lat1 = Lat * deg2rad;
+            var lat2 = p2.Lat * deg2rad;
+
+            var a = Math.Sin(dLat / 2) * Math.Sin(dLat / 2) +
+                    Math.Sin(dLon / 2) * Math.Sin(dLon / 2) * Math.Cos(lat1) * Math.Cos(lat2);
+            var c = 2.0 * Math.Atan2(Math.Sqrt(a), Math.Sqrt(1 - a));
+            var d = R * c * 1000.0; // M
+
+            return d;
         }
     }
 
@@ -587,188 +607,6 @@ namespace ArdupilotMega
             //Console.ReadLine();
         }
        
-		#if MAVLINK10
-		
-        public static bool translateMode(string modein, ref MAVLink.mavlink_set_mode_t mode)
-        {
-            //MAVLink.mavlink_set_mode_t mode = new MAVLink.mavlink_set_mode_t();
-            mode.target_system = MainV2.comPort.sysid;
-
-            try
-            {
-                if (Common.getModes() == typeof(Common.apmmodes))
-                {
-                    switch (EnumTranslator.GetValue<Common.apmmodes>(modein))
-                    {
-                        case (int)Common.apmmodes.MANUAL:
-                        case (int)Common.apmmodes.CIRCLE:
-                        case (int)Common.apmmodes.STABILIZE:
-                        case (int)Common.apmmodes.AUTO:
-                        case (int)Common.apmmodes.RTL:
-                        case (int)Common.apmmodes.LOITER:
-                        case (int)Common.apmmodes.FLY_BY_WIRE_A:
-                        case (int)Common.apmmodes.FLY_BY_WIRE_B:
-                            mode.base_mode = (byte)MAVLink.MAV_MODE_FLAG.CUSTOM_MODE_ENABLED;
-                            mode.custom_mode = (uint)EnumTranslator.GetValue<Common.apmmodes>(modein);
-                            break;
-                        default:
-                            MessageBox.Show("No Mode Changed " +  modein);
-                            return false;
-                    }
-                }
-                else if (Common.getModes() == typeof(Common.ac2modes))
-                {
-                    switch (EnumTranslator.GetValue<Common.ac2modes>(modein))
-                    {
-                        case (int)Common.ac2modes.STABILIZE:
-                        case (int)Common.ac2modes.AUTO:
-                        case (int)Common.ac2modes.RTL:
-                        case (int)Common.ac2modes.LOITER:
-                        case (int)Common.ac2modes.ACRO:
-                        case (int)Common.ac2modes.ALT_HOLD:
-                        case (int)Common.ac2modes.CIRCLE:
-                        case (int)Common.ac2modes.POSITION:
-                            mode.base_mode = (byte)MAVLink.MAV_MODE_FLAG.CUSTOM_MODE_ENABLED;
-                            mode.custom_mode = (uint)EnumTranslator.GetValue<Common.ac2modes>(modein);
-                            break;
-                        default:
-                            MessageBox.Show("No Mode Changed " +  modein);
-                            return false;
-                    }
-                }
-            }
-            catch { System.Windows.Forms.MessageBox.Show("Failed to find Mode"); return false; }
-
-            return true;
-        }
-		
-#else
-        public static bool translateMode(string modein, ref  MAVLink.mavlink_set_nav_mode_t navmode, ref MAVLink.mavlink_set_mode_t mode)
-        {
-
-            //MAVLink.mavlink_set_nav_mode_t navmode = new MAVLink.mavlink_set_nav_mode_t();
-            navmode.target = MainV2.comPort.sysid;
-            navmode.nav_mode = 255;
-
-            //MAVLink.mavlink_set_mode_t mode = new MAVLink.mavlink_set_mode_t();
-            mode.target = MainV2.comPort.sysid;
-
-            try
-            {
-                if (Common.getModes() == typeof(Common.apmmodes))
-                {
-                    switch (EnumTranslator.GetValue<Common.apmmodes>(modein))
-                    {
-                        case (int)Common.apmmodes.MANUAL:
-                            mode.mode = (byte)MAVLink.MAV_MODE.MAV_MODE_MANUAL;
-                            break;
-                        case (int)Common.apmmodes.GUIDED:
-                            mode.mode = (byte)MAVLink.MAV_MODE.MAV_MODE_GUIDED;
-                            break;
-                        case (int)Common.apmmodes.STABILIZE:
-                            mode.mode = (byte)MAVLink.MAV_MODE.MAV_MODE_TEST1;
-                            break;
-                        // AUTO MODES
-                        case (int)Common.apmmodes.AUTO:
-                            navmode.nav_mode = (byte)MAVLink.MAV_NAV.MAV_NAV_WAYPOINT;
-                            mode.mode = (byte)MAVLink.MAV_MODE.MAV_MODE_AUTO;
-                            break;
-                        case (int)Common.apmmodes.RTL:
-                            navmode.nav_mode = (byte)MAVLink.MAV_NAV.MAV_NAV_RETURNING;
-                            mode.mode = (byte)MAVLink.MAV_MODE.MAV_MODE_AUTO;
-                            break;
-                        case (int)Common.apmmodes.LOITER:
-                            navmode.nav_mode = (byte)MAVLink.MAV_NAV.MAV_NAV_LOITER;
-                            mode.mode = (byte)MAVLink.MAV_MODE.MAV_MODE_AUTO;
-                            break;
-                        // FBW
-                        case (int)Common.apmmodes.FLY_BY_WIRE_A:
-                            navmode.nav_mode = (byte)1;
-                            mode.mode = (byte)MAVLink.MAV_MODE.MAV_MODE_TEST2;
-                            break;
-                        case (int)Common.apmmodes.FLY_BY_WIRE_B:
-                            navmode.nav_mode = (byte)2;
-                            mode.mode = (byte)MAVLink.MAV_MODE.MAV_MODE_TEST2;
-                            break;
-                        default:
-                            CustomMessageBox.Show("No Mode Changed " + modein);
-                            return false;
-                    }
-                }
-                else if (Common.getModes() == typeof(Common.aprovermodes))
-                {
-                    switch (EnumTranslator.GetValue<Common.aprovermodes>(modein))
-                    {
-                        case (int)Common.aprovermodes.MANUAL:
-                            mode.mode = (byte)MAVLink.MAV_MODE.MAV_MODE_MANUAL;
-                            break;
-                        case (int)Common.aprovermodes.GUIDED:
-                            mode.mode = (byte)MAVLink.MAV_MODE.MAV_MODE_GUIDED;
-                            break;
-                        case (int)Common.aprovermodes.LEARNING:
-                            mode.mode = (byte)MAVLink.MAV_MODE.MAV_MODE_TEST1;
-                            break;
-                        // AUTO MODES
-                        case (int)Common.aprovermodes.AUTO:
-                            navmode.nav_mode = (byte)MAVLink.MAV_NAV.MAV_NAV_WAYPOINT;
-                            mode.mode = (byte)MAVLink.MAV_MODE.MAV_MODE_AUTO;
-                            break;
-                        case (int)Common.aprovermodes.RTL:
-                            navmode.nav_mode = (byte)MAVLink.MAV_NAV.MAV_NAV_RETURNING;
-                            mode.mode = (byte)MAVLink.MAV_MODE.MAV_MODE_AUTO;
-                            break;
-                        case (int)Common.aprovermodes.LOITER:
-                            navmode.nav_mode = (byte)MAVLink.MAV_NAV.MAV_NAV_LOITER;
-                            mode.mode = (byte)MAVLink.MAV_MODE.MAV_MODE_AUTO;
-                            break;
-                        // FBW
-                        case (int)Common.aprovermodes.FLY_BY_WIRE_A:
-                            navmode.nav_mode = (byte)1;
-                            mode.mode = (byte)MAVLink.MAV_MODE.MAV_MODE_TEST2;
-                            break;
-                        case (int)Common.aprovermodes.FLY_BY_WIRE_B:
-                            navmode.nav_mode = (byte)2;
-                            mode.mode = (byte)MAVLink.MAV_MODE.MAV_MODE_TEST2;
-                            break;
-                        default:
-                            CustomMessageBox.Show("No Mode Changed " + modein);
-                            return false;
-                    }
-                }
-                else if (Common.getModes() == typeof(Common.ac2modes))
-                {
-                    switch (EnumTranslator.GetValue<Common.ac2modes>(modein))
-                    {
-                        case (int)Common.ac2modes.GUIDED:
-                            mode.mode = (byte)MAVLink.MAV_MODE.MAV_MODE_GUIDED;
-                            break;
-                        case (int)Common.ac2modes.STABILIZE:
-                            mode.mode = (byte)MAVLink.MAV_MODE.MAV_MODE_MANUAL;
-                            break;
-                        // AUTO MODES
-                        case (int)Common.ac2modes.AUTO:
-                            navmode.nav_mode = (byte)MAVLink.MAV_NAV.MAV_NAV_WAYPOINT;
-                            mode.mode = (byte)MAVLink.MAV_MODE.MAV_MODE_AUTO;
-                            break;
-                        case (int)Common.ac2modes.RTL:
-                            navmode.nav_mode = (byte)MAVLink.MAV_NAV.MAV_NAV_RETURNING;
-                            mode.mode = (byte)MAVLink.MAV_MODE.MAV_MODE_AUTO;
-                            break;
-                        case (int)Common.ac2modes.LOITER:
-                            navmode.nav_mode = (byte)MAVLink.MAV_NAV.MAV_NAV_LOITER;
-                            mode.mode = (byte)MAVLink.MAV_MODE.MAV_MODE_AUTO;
-                            break;
-                        default:
-                            CustomMessageBox.Show("No Mode Changed " +  modein);
-                            return false;
-                    }
-                }
-            }
-            catch { System.Windows.Forms.CustomMessageBox.Show("Failed to find Mode"); return false; }
-
-            return true;
-        }		
-		#endif
 
 
         

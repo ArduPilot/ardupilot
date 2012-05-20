@@ -22,14 +22,14 @@ namespace ArdupilotMega
         /// <param name="bytearray">The bytes of the mavlink packet</param>
         /// <param name="startoffset">The position in the byte array where the packet starts</param>
         /// <returns>The newly created mavlink packet</returns>
-        public static TMavlinkPacket ByteArrayToStructure<TMavlinkPacket>(this byte[] bytearray, int startoffset) where TMavlinkPacket : struct
+        public static TMavlinkPacket ByteArrayToStructure<TMavlinkPacket>(this byte[] bytearray, int startoffset = 6) where TMavlinkPacket : struct
         {
             object newPacket = new TMavlinkPacket();
             ByteArrayToStructure(bytearray, ref newPacket, startoffset);
             return (TMavlinkPacket)newPacket;
         }
 
-        public static TMavlinkPacket ByteArrayToStructureBigEndian<TMavlinkPacket>(this byte[] bytearray, int startoffset) where TMavlinkPacket : struct
+        public static TMavlinkPacket ByteArrayToStructureBigEndian<TMavlinkPacket>(this byte[] bytearray, int startoffset = 6) where TMavlinkPacket : struct
         {
             object newPacket = new TMavlinkPacket();
             ByteArrayToStructureEndian(bytearray, ref newPacket, startoffset);

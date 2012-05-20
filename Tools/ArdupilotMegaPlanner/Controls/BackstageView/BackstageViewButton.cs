@@ -135,6 +135,7 @@ namespace ArdupilotMega.Controls.BackstageView
             this.Invalidate();
 
         }
+
         /*
         // This IS necessary for transparency - windows only..... remove it
         protected override CreateParams CreateParams

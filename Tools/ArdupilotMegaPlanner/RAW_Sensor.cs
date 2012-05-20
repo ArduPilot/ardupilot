@@ -25,8 +25,6 @@ namespace ArdupilotMega
 
         int tickStart = 0;
 
-        MAVLink comPort = new MAVLink();
-
         public RAW_Sensor()
         {
             InitializeComponent();
@@ -141,7 +139,7 @@ namespace ArdupilotMega
 
         private void timer2serial_Tick(object sender, EventArgs e)
         {
-            if (!comPort.BaseStream.IsOpen && !MainV2.comPort.logreadmode)
+            if (!MainV2.comPort.BaseStream.IsOpen && !MainV2.comPort.logreadmode)
                 return;
 
             //Console.WriteLine(DateTime.Now.Millisecond + " timer2 serial");
@@ -208,7 +206,7 @@ namespace ArdupilotMega
 
         private void ACM_Setup_FormClosed(object sender, FormClosedEventArgs e)
         {
-            if (comPort != null && comPort.BaseStream.IsOpen)
+            if (MainV2.comPort != null && MainV2.comPort.BaseStream.IsOpen)
             {
                 try
                 {
@@ -225,9 +223,7 @@ namespace ArdupilotMega
         {
                     try
                     {
-                        comPort = MainV2.comPort;
-
-                        if (!comPort.BaseStream.IsOpen && !MainV2.comPort.logreadmode)
+                        if (!MainV2.comPort.BaseStream.IsOpen && !MainV2.comPort.logreadmode)
                         {
                             CustomMessageBox.Show("Please connect first");
                             this.Close();
@@ -237,13 +233,12 @@ namespace ArdupilotMega
                         //comPort.Open();
                         //comPort.stopall(true); // ensure off
 
-                        Console.WriteLine("Req streams {0} {1}", comPort.bps, DateTime.Now);
-                        //comPort.requestDatastream((byte)ArdupilotMega.MAVLink.MAV_DATA_STREAM.EXTENDED_STATUS, 0); // mode gps raw
-                        //comPort.requestDatastream((byte)ArdupilotMega.MAVLink.MAV_DATA_STREAM.POSITION, 3); // request location
-                        //comPort.requestDatastream((byte)ArdupilotMega.MAVLink.MAV_DATA_STREAM.EXTRA1, 3); // request attitude
-                        //comPort.requestDatastream((byte)ArdupilotMega.MAVLink.MAV_DATA_STREAM.EXTRA2, 3); // request vfr
-                        comPort.requestDatastream((byte)ArdupilotMega.MAVLink.MAV_DATA_STREAM.RAW_SENSORS, MainV2.cs.ratesensors); // request raw sensor
-                        //comPort.requestDatastream((byte)ArdupilotMega.MAVLink.MAV_DATA_STREAM.RC_CHANNELS, 3); // request rc info
+                        //comPort.requestDatastream((byte)ArdupilotMega.MAVLink09.MAV_DATA_STREAM.EXTENDED_STATUS, 0); // mode gps raw
+                        //comPort.requestDatastream((byte)ArdupilotMega.MAVLink09.MAV_DATA_STREAM.POSITION, 3); // request location
+                        //comPort.requestDatastream((byte)ArdupilotMega.MAVLink09.MAV_DATA_STREAM.EXTRA1, 3); // request attitude
+                        //comPort.requestDatastream((byte)ArdupilotMega.MAVLink09.MAV_DATA_STREAM.EXTRA2, 3); // request vfr
+                        MainV2.comPort.requestDatastream((byte)ArdupilotMega.MAVLink.MAV_DATA_STREAM.RAW_SENSORS, MainV2.cs.ratesensors); // request raw sensor
+                        //comPort.requestDatastream((byte)ArdupilotMega.MAVLink09.MAV_DATA_STREAM.RC_CHANNELS, 3); // request rc info
                     }
                     catch
                     {
@@ -256,7 +251,7 @@ namespace ArdupilotMega
         private void CMB_rawupdaterate_SelectedIndexChanged(object sender, EventArgs e)
         {
             MainV2.cs.ratesensors = (byte)int.Parse(CMB_rawupdaterate.Text);
-            comPort.requestDatastream((byte)ArdupilotMega.MAVLink.MAV_DATA_STREAM.RAW_SENSORS, (byte)int.Parse(CMB_rawupdaterate.Text)); // request raw sensor
+            MainV2.comPort.requestDatastream((byte)ArdupilotMega.MAVLink.MAV_DATA_STREAM.RAW_SENSORS, (byte)int.Parse(CMB_rawupdaterate.Text)); // request raw sensor
         }
 
         System.IO.StreamWriter sw = null;

@@ -9,6 +9,7 @@ using System.Windows.Forms;
 using System.IO.Ports;
 using ArdupilotMega;
 using ArdupilotMega.Comms;
+using System.IO;
 
 namespace _3DRRadio
 {
@@ -18,10 +19,14 @@ namespace _3DRRadio
         Object thisLock = new Object();
         public static bool threadrun = false;
         StringBuilder cmd = new StringBuilder();
+        internal static StreamWriter sw;
 
         public Terminal()
         {
             InitializeComponent();
+
+            if (sw == null)
+                sw = new StreamWriter("Terminal-" + DateTime.Now.ToString("yyyy-MM-dd HH-mm-ss") + ".txt");
         }
 
         void comPort_DataReceived(object sender, SerialDataReceivedEventArgs e)
@@ -34,6 +39,12 @@ namespace _3DRRadio
                 {
                     string data = comPort.ReadExisting();
                     //Console.Write(data);
+
+                    if (sw != null)
+                    {
+                        sw.Write(data);
+                        sw.Flush();
+                    }
 
                     addText(data);
                 }
@@ -113,6 +124,13 @@ namespace _3DRRadio
 
                     comPort.DtrEnable = false;
 
+                    try
+                    {
+                        //if (sw != null)
+                          //  sw.Close();
+                    }
+                    catch { }
+
                     if (threadrun == false)
                     {
                         comPort.Close();
@@ -174,10 +192,18 @@ namespace _3DRRadio
                         string temp = cmd.ToString();
 
                         if (cmd.ToString() == "+++")
+                        {
                             comPort.Write(Encoding.ASCII.GetBytes(cmd.ToString()), 0, cmd.Length);
+                        }
                         else
                         {
                             comPort.Write(Encoding.ASCII.GetBytes(cmd.ToString() + "\r"), 0, cmd.Length + 1);
+                        }
+
+                        if (sw != null)
+                        {
+                            sw.WriteLine(cmd.ToString());
+                            sw.Flush();
                         }
                     }
                     catch { CustomMessageBox.Show("Error writing to com port"); }

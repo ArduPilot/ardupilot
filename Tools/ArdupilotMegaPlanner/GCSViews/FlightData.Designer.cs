@@ -44,8 +44,9 @@
             this.Gspeed = new AGaugeApp.AGauge();
             this.tabStatus = new System.Windows.Forms.TabPage();
             this.tabTLogs = new System.Windows.Forms.TabPage();
+            this.lbl_playbackspeed = new ArdupilotMega.Controls.MyLabel();
             this.lbl_logpercent = new ArdupilotMega.Controls.MyLabel();
-            this.NUM_playbackspeed = new System.Windows.Forms.NumericUpDown();
+            this.NUM_playbackspeed = new ArdupilotMega.Controls.MyTrackBar();
             this.BUT_log2kml = new ArdupilotMega.Controls.MyButton();
             this.tracklog = new System.Windows.Forms.TrackBar();
             this.BUT_playlog = new ArdupilotMega.Controls.MyButton();
@@ -852,6 +853,7 @@
             // 
             // tabTLogs
             // 
+            this.tabTLogs.Controls.Add(this.lbl_playbackspeed);
             this.tabTLogs.Controls.Add(this.lbl_logpercent);
             this.tabTLogs.Controls.Add(this.NUM_playbackspeed);
             this.tabTLogs.Controls.Add(this.BUT_log2kml);
@@ -862,6 +864,12 @@
             this.tabTLogs.Name = "tabTLogs";
             this.tabTLogs.UseVisualStyleBackColor = true;
             // 
+            // lbl_playbackspeed
+            // 
+            resources.ApplyResources(this.lbl_playbackspeed, "lbl_playbackspeed");
+            this.lbl_playbackspeed.Name = "lbl_playbackspeed";
+            this.lbl_playbackspeed.resize = false;
+            // 
             // lbl_logpercent
             // 
             resources.ApplyResources(this.lbl_logpercent, "lbl_logpercent");
@@ -870,30 +878,14 @@
             // 
             // NUM_playbackspeed
             // 
-            this.NUM_playbackspeed.DecimalPlaces = 1;
-            this.NUM_playbackspeed.Increment = new decimal(new int[] {
-            1,
-            0,
-            0,
-            65536});
             resources.ApplyResources(this.NUM_playbackspeed, "NUM_playbackspeed");
-            this.NUM_playbackspeed.Maximum = new decimal(new int[] {
-            10,
-            0,
-            0,
-            0});
-            this.NUM_playbackspeed.Minimum = new decimal(new int[] {
-            1,
-            0,
-            0,
-            65536});
+            this.NUM_playbackspeed.LargeChange = 1;
+            this.NUM_playbackspeed.Maximum = 10D;
+            this.NUM_playbackspeed.Minimum = 0.01D;
             this.NUM_playbackspeed.Name = "NUM_playbackspeed";
             this.toolTip1.SetToolTip(this.NUM_playbackspeed, resources.GetString("NUM_playbackspeed.ToolTip"));
-            this.NUM_playbackspeed.Value = new decimal(new int[] {
-            1,
-            0,
-            0,
-            0});
+            this.NUM_playbackspeed.Value = 1D;
+            this.NUM_playbackspeed.Scroll += new System.EventHandler(this.NUM_playbackspeed_Scroll);
             // 
             // BUT_log2kml
             // 
@@ -1225,7 +1217,7 @@
         private ArdupilotMega.Controls.MyLabel lbl_winddir;
         private ArdupilotMega.Controls.MyButton BUT_joystick;
         private System.Windows.Forms.ToolTip toolTip1;
-        private System.Windows.Forms.NumericUpDown NUM_playbackspeed;
+        private ArdupilotMega.Controls.MyTrackBar NUM_playbackspeed;
         private System.Windows.Forms.ContextMenuStrip contextMenuStrip2;
         private System.Windows.Forms.ToolStripMenuItem recordHudToAVIToolStripMenuItem;
         private System.Windows.Forms.ToolStripMenuItem stopRecordToolStripMenuItem;
@@ -1236,5 +1228,6 @@
         private ArdupilotMega.Controls.MyLabel lbl_hdop;
         private ArdupilotMega.Controls.MyLabel lbl_sats;
         private Controls.HSI Gheading;
+        private Controls.MyLabel lbl_playbackspeed;
     }
 }

@@ -37,7 +37,7 @@ namespace ArdupilotMega
 
             // setup netid
             S3.DataSource = Enumerable.Range(0, 500).ToArray();
-            RS3.DataSource = S3.DataSource;
+            RS3.DataSource = Enumerable.Range(0, 500).ToArray();
         }
 
         bool getFirmware(uploader.Uploader.Code device)
@@ -515,7 +515,7 @@ namespace ArdupilotMega
                 }
 
                 // remote
-                foreach (Control ctl in this.Controls)
+                foreach (Control ctl in groupBox2.Controls)
                 {
                     if (ctl.Name.StartsWith("RS") && ctl.Name != "RSSI")
                         ctl.ResetText();
@@ -553,7 +553,7 @@ namespace ArdupilotMega
                             }
                             else if (controls[0].GetType() == typeof(ComboBox))
                             {
-                                ((ComboBox)controls[0]).SelectedText = values[2].Trim();
+                                ((ComboBox)controls[0]).Text = values[2].Trim();
                             }
                         }
                         else

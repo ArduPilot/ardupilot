@@ -439,20 +439,7 @@ namespace ArdupilotMega
 
                     Application.DoEvents();
 
-                    switch (mine.aptype)
-                    {
-                        case MAVLink.MAV_TYPE.MAV_FIXED_WING:
-                            MainV2.cs.firmware = MainV2.Firmwares.ArduPlane;
-                            break;
-                        case MAVLink.MAV_TYPE.MAV_QUADROTOR:
-                            MainV2.cs.firmware = MainV2.Firmwares.ArduCopter2;
-                            break;
-                        case MAVLink.MAV_TYPE.MAV_GROUND:
-                            MainV2.cs.firmware = MainV2.Firmwares.ArduRover;
-                            break;
-                        default:
-                            break;
-                    }
+                    mine.setAPType();
 
                     writeGPX(logfile);
                     writeKML(logfile + ".kml");
@@ -830,10 +817,10 @@ namespace ArdupilotMega
             string code = @"
 
         public double stage(object inp) {
-            return getAltAboveHome((MAVLink.mavlink_gps_raw_t) inp);
+            return getAltAboveHome((MAVLink09.mavlink_gps_raw_t) inp);
         }
 
-        public double getAltAboveHome(MAVLink.mavlink_gps_raw_t gps)
+        public double getAltAboveHome(MAVLink09.mavlink_gps_raw_t gps)
         {
             if (customforusenumber == -1 && gps.fix_type != 2)
                 customforusenumber = gps.alt;

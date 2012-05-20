@@ -301,8 +301,10 @@ data = @"
 
             foreach (string filepath in files)
             {
-                if (filepath.ToLower().EndsWith("release\\config.xml") || filepath.ToLower().Contains("ardupilotplanner.log") || filepath.ToLower().Contains("dataflash.bin") || filepath.ToLower().Contains(".etag"))
+                if (filepath.ToLower().EndsWith("release\\config.xml") || filepath.ToLower().Contains("ardupilotplanner.log") || 
+                    filepath.ToLower().Contains("dataflash.bin") || filepath.ToLower().Contains(".etag"))
                     continue;
+
                 no++;
                 
 
@@ -320,7 +322,7 @@ data = @"
 
             foreach (string dir in dirs)
             {
-                if (dir.EndsWith("gmapcache") || dir.EndsWith("srtm"))
+                if (dir.ToLower().EndsWith("gmapcache") || dir.ToLower().EndsWith("srtm") || dir.ToLower().EndsWith("logs"))
                     continue;
                 dodirectory(dir);
             }

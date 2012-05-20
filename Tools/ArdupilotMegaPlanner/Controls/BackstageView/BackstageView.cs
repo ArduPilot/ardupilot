@@ -191,6 +191,50 @@ namespace ArdupilotMega.Controls.BackstageView
 
             pnlMenu.Controls.Add(lnkButton);
             lnkButton.Click += this.ButtonClick;
+            lnkButton.DoubleClick += lnkButton_DoubleClick;
+        }
+
+        void lnkButton_DoubleClick(object sender, EventArgs e)
+        {
+            var backstageViewButton = ((BackstageViewButton)sender);
+            var associatedPage = backstageViewButton.Tag as BackstageViewPage;
+
+            Form popoutForm = new Form();
+            popoutForm.FormClosing += popoutForm_FormClosing;
+
+            int maxright = 0, maxdown = 0;
+
+            foreach (Control ctl in associatedPage.Page.Controls)
+            {
+                maxright = Math.Max(ctl.Right, maxright);
+                maxdown = Math.Max(ctl.Bottom, maxdown);
+            }
+
+            // set the height to 0, so we can derive the header height in the next step
+            popoutForm.Height = 0;
+
+            popoutForm.Size = new System.Drawing.Size(maxright + 20, maxdown + 20 + popoutForm.Height);
+            popoutForm.Controls.Add(associatedPage.Page);
+            popoutForm.Tag = associatedPage;
+
+            popoutForm.Text = associatedPage.LinkText;
+
+            popoutForm.BackColor = this.BackColor;
+            popoutForm.ForeColor = this.ForeColor;
+
+            popoutForm.Show(this);
+        }
+
+        void popoutForm_FormClosing(object sender, FormClosingEventArgs e)
+        {
+            // get the page back
+            var temp = ((Form)sender).Tag as BackstageViewPage;
+            // add back to where it belongs
+            this.pnlPages.Controls.Add(temp.Page);
+
+            // clear the controls, so we dont dispose the good control
+            ((Form)sender).Controls.Clear();
+            
         }
 
 
@@ -239,7 +283,7 @@ namespace ArdupilotMega.Controls.BackstageView
                 LinkText = linkText;
             }
 
-            public BackStageViewContentPanel Page { get; private set; }
+            public BackStageViewContentPanel Page { get; set; }
             public string LinkText { get; set; }
         }
     }

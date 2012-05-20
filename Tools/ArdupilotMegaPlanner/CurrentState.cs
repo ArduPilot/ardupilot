@@ -220,6 +220,9 @@ namespace ArdupilotMega
             {
                 float dist = DistToMAV;
 
+                if (dist < 5)
+                    return 0;
+
                 float altdiff = (float)(alt - HomeLocation.Alt);
 
                 float angle = (float)Math.Atan(altdiff / dist) * rad2deg;
@@ -244,6 +247,9 @@ namespace ArdupilotMega
                 if (bearing < 0) bearing += 360;//normalization
                 //bearing = bearing - 180;//absolut return direction
                 //if (bearing < 0) bearing += 360;//normalization
+
+                if (DistToMAV < 5)
+                    return 0;
 
                 return (float)bearing;
             }
@@ -339,7 +345,7 @@ namespace ArdupilotMega
             UpdateCurrentSettings(bs, false, MainV2.comPort);
         }
         */
-        public void UpdateCurrentSettings(System.Windows.Forms.BindingSource bs, bool updatenow, MAVLink mavinterface)
+        public void UpdateCurrentSettings(System.Windows.Forms.BindingSource bs, bool updatenow, IMAVLink mavinterface)
         {
             if (DateTime.Now > lastupdate.AddMilliseconds(19) || updatenow) // 50 hz
             {

@@ -41,10 +41,10 @@
             this.menuStrip1 = new System.Windows.Forms.MenuStrip();
             this.settingsToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.terminalToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.rssiToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.aboutToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.helpToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.projectPageToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
-            this.rssiToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.groupBox1.SuspendLayout();
             this.groupBox2.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.pictureBox1)).BeginInit();
@@ -108,8 +108,8 @@
             // 
             // groupBox2
             // 
-            this.groupBox2.Controls.Add(this.panel1);
             resources.ApplyResources(this.groupBox2, "groupBox2");
+            this.groupBox2.Controls.Add(this.panel1);
             this.groupBox2.Name = "groupBox2";
             this.groupBox2.TabStop = false;
             // 
@@ -142,6 +142,12 @@
             resources.ApplyResources(this.terminalToolStripMenuItem, "terminalToolStripMenuItem");
             this.terminalToolStripMenuItem.Click += new System.EventHandler(this.terminalToolStripMenuItem_Click);
             // 
+            // rssiToolStripMenuItem
+            // 
+            this.rssiToolStripMenuItem.Name = "rssiToolStripMenuItem";
+            resources.ApplyResources(this.rssiToolStripMenuItem, "rssiToolStripMenuItem");
+            this.rssiToolStripMenuItem.Click += new System.EventHandler(this.rssiToolStripMenuItem_Click);
+            // 
             // aboutToolStripMenuItem
             // 
             this.aboutToolStripMenuItem.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] {
@@ -162,12 +168,6 @@
             resources.ApplyResources(this.projectPageToolStripMenuItem, "projectPageToolStripMenuItem");
             this.projectPageToolStripMenuItem.Click += new System.EventHandler(this.projectPageToolStripMenuItem_Click);
             // 
-            // rssiToolStripMenuItem
-            // 
-            this.rssiToolStripMenuItem.Name = "rssiToolStripMenuItem";
-            resources.ApplyResources(this.rssiToolStripMenuItem, "rssiToolStripMenuItem");
-            this.rssiToolStripMenuItem.Click += new System.EventHandler(this.rssiToolStripMenuItem_Click);
-            // 
             // Config
             // 
             resources.ApplyResources(this, "$this");
@@ -178,7 +178,6 @@
             this.Controls.Add(this.pictureBox1);
             this.Controls.Add(this.menuStrip1);
             this.MainMenuStrip = this.menuStrip1;
-            this.MaximizeBox = false;
             this.Name = "Config";
             this.groupBox1.ResumeLayout(false);
             this.groupBox1.PerformLayout();

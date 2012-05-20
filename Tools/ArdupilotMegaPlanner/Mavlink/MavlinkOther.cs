@@ -7,6 +7,7 @@ namespace ArdupilotMega
 {
     public partial class MAVLink
     {
+
 #if !MAVLINK10
         enum MAV_CLASS
         {
@@ -161,7 +162,6 @@ namespace ArdupilotMega
             GLOBAL_RELATIVE_ALT = 3,
             LOCAL_ENU = 4
         };
-
 #endif
     }
 }

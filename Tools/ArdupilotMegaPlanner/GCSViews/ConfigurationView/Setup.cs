@@ -36,7 +36,7 @@ namespace ArdupilotMega.GCSViews.ConfigurationView
                     configpanel.LoadXML("ArduCopterConfig.xml");
                     this.backstageView.AddPage(new BackstageView.BackstageViewPage(configpanel, "ArduCopter Pids"));
 
-                    this.backstageView.AddPage(new BackstageView.BackstageViewPage(new ConfigArducopter(), "OLD ArduCopter Config"));
+                    this.backstageView.AddPage(new BackstageView.BackstageViewPage(new ConfigArducopter(), "ArduCopter Config"));
                 }
                 /****************************** ArduCopter **************************/
                 else if (MainV2.cs.firmware == MainV2.Firmwares.ArduCopter2)
@@ -47,7 +47,7 @@ namespace ArdupilotMega.GCSViews.ConfigurationView
                     configpanel.LoadXML("ArduCopterConfig.xml");
                     this.backstageView.AddPage(new BackstageView.BackstageViewPage(configpanel, "ArduCopter Pids"));
 
-                    this.backstageView.AddPage(new BackstageView.BackstageViewPage(new ConfigArducopter(), "OLD ArduCopter Config"));
+                    this.backstageView.AddPage(new BackstageView.BackstageViewPage(new ConfigArducopter(), "ArduCopter Config"));
                 }
                 /****************************** ArduPlane **************************/
                 else if (MainV2.cs.firmware == MainV2.Firmwares.ArduPlane)
@@ -79,7 +79,7 @@ namespace ArdupilotMega.GCSViews.ConfigurationView
 
             if (!MainV2.comPort.BaseStream.IsOpen)
             {
-                CustomMessageBox.Show("Please connect (click Connect Button) before using setup!!");
+                Common.MessageShowAgain("Config Connect", "Please connect (click Connect Button) before using setup!!");
             }
         }
 
