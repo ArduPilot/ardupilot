@@ -1,6 +1,6 @@
 /// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 
-#define THISFIRMWARE "APMrover v2.16 JL NAUDIN" //New version of the APMrover for the APM v1 or APM v2 and magnetometer + SONAR
+#define THISFIRMWARE "APMrover v2.16a JL NAUDIN" //New version of the APMrover for the APM v1 or APM v2 and magnetometer + SONAR
 
 // This is a full version of Arduplane v2.32 specially adapted for a Rover by Jean-Louis Naudin (JLN) 
 
@@ -18,7 +18,7 @@ License as published by the Free Software Foundation; either
 version 2.1 of the License, or (at your option) any later version.
 
 //
-// JLN updates: last update 2012-05-17
+// JLN updates: last update 2012-05-20
 //
 // DOLIST:
 //  
