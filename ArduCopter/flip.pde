@@ -40,7 +40,7 @@ void roll_flip()
 			break;
 
 		case 2: // Step 3 : ROLL (until we reach a certain angle [45deg])
-			if (dcm.roll_sensor < 4500){
+			if (ahrs.roll_sensor < 4500){
 				// Roll control
 				g.rc_1.servo_out = AAP_ROLL_OUT;
 				g.rc_3.servo_out = g.rc_3.control_in - AAP_THR_DEC;
@@ -50,7 +50,7 @@ void roll_flip()
 			break;
 
 		case 3: // Step 4 : CONTINUE ROLL (until we reach a certain angle [-45deg])
-			if ((dcm.roll_sensor >= 4500) || (dcm.roll_sensor < -4500)){
+			if ((ahrs.roll_sensor >= 4500) || (ahrs.roll_sensor < -4500)){
 				g.rc_1.servo_out = 0;
 				g.rc_3.servo_out = g.rc_3.control_in - AAP_THR_DEC;
 			}else{
