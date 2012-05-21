@@ -1334,6 +1334,7 @@ static void update_optical_flow(void)
 }
 #endif
 
+// called at 50hz
 static void update_GPS(void)
 {
 	// A counter that is used to grab at least 10 reads before commiting the Home location
