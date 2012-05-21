@@ -429,7 +429,7 @@ AP_AHRS_DCM::drift_correction(float deltat)
 		// lost the yaw reference sensor completely we don't
 		// keep using a stale offset
 		_omega_yaw_P *= 0.97;
-		return;
+		goto check_sum_time;
 	}
 
 	// ensure the course error is scaled from -PI to PI
@@ -461,6 +461,7 @@ AP_AHRS_DCM::drift_correction(float deltat)
 	_error_yaw_sum += error_course;
 	_error_yaw_count++;
 
+check_sum_time:
 	if (_omega_I_sum_time > 10) {
 		// every 10 seconds we apply the accumulated
 		// _omega_I_sum changes to _omega_I. We do this to
