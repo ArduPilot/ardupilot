@@ -11,7 +11,7 @@ void roll_flip()
 {
 	#define AAP_THR_INC 180
 	#define AAP_THR_DEC 90
-	#define AAP_ROLL_OUT 200
+	#define AAP_ROLL_OUT 2000
 	#define AAP_ROLL_RATE 3000	// up to 1250
 
 	static int 	AAP_timer = 0;
@@ -32,7 +32,6 @@ void roll_flip()
 			if (AAP_timer < 95){ 	// .5 seconds
 				g.rc_1.servo_out = get_stabilize_roll(0);
 				g.rc_3.servo_out = g.rc_3.control_in + AAP_THR_INC;
-				//g.rc_4.servo_out = get_stabilize_yaw(nav_yaw);
 				AAP_timer++;
 			}else{
 				AAP_state++;
@@ -40,19 +39,19 @@ void roll_flip()
 			}
 			break;
 
-		case 2: // Step 3 : ROLL (until we reach a certain angle [45º])
+		case 2: // Step 3 : ROLL (until we reach a certain angle [45deg])
 			if (dcm.roll_sensor < 4500){
 				// Roll control
-				g.rc_1.servo_out = AAP_ROLL_OUT;	//get_rate_roll(AAP_ROLL_RATE);
+				g.rc_1.servo_out = AAP_ROLL_OUT;
 				g.rc_3.servo_out = g.rc_3.control_in - AAP_THR_DEC;
 			}else{
 				AAP_state++;
 			}
 			break;
 
-		case 3: // Step 4 : CONTINUE ROLL (until we reach a certain angle [-45º])
+		case 3: // Step 4 : CONTINUE ROLL (until we reach a certain angle [-45deg])
 			if ((dcm.roll_sensor >= 4500) || (dcm.roll_sensor < -4500)){
-				g.rc_1.servo_out = 150; //get_rate_roll(AAP_ROLL_RATE);
+				g.rc_1.servo_out = 0;
 				g.rc_3.servo_out = g.rc_3.control_in - AAP_THR_DEC;
 			}else{
 				AAP_state++;
@@ -71,7 +70,8 @@ void roll_flip()
 			break;
 
 		case 5: // exit mode
-			//control_mode =
+			AAP_timer = 0;
+			AAP_state = 0;
 			do_flip = false;
 			break;
 	}
