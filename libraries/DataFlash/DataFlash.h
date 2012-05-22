@@ -32,7 +32,7 @@ class DataFlash_Class
 	virtual void PageToBuffer(unsigned char BufferNum, uint16_t PageAdr) = 0;
 	virtual unsigned char BufferRead (unsigned char BufferNum, uint16_t IntPageAdr) = 0;
 	virtual void PageErase(uint16_t PageAdr) = 0;
-	virtual void ChipErase(void) = 0;
+	virtual void ChipErase(void (*delay_cb)(unsigned long)) = 0;
 
 	// internal high level functions
 	int find_last_page(void);

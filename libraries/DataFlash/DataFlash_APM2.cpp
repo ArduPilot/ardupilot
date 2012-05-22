@@ -350,7 +350,7 @@ void DataFlash_APM2::PageErase (uint16_t PageAdr)
 }
 
 
-void DataFlash_APM2::ChipErase ()
+void DataFlash_APM2::ChipErase(void (*delay_cb)(unsigned long))
 {
 	// activate dataflash command decoder
 	CS_active();
@@ -364,7 +364,10 @@ void DataFlash_APM2::ChipErase ()
 	//initiate flash page erase
 	CS_inactive();
 	CS_active();
-	while(!ReadStatus());
+
+	while(!ReadStatus()) {
+        delay_cb(1);
+    }
 
 	// release SPI bus for use by other sensors
 	CS_inactive();

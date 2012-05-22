@@ -294,7 +294,7 @@ void DataFlash_APM1::PageErase (uint16_t PageAdr)
 }
 
 
-void DataFlash_APM1::ChipErase ()
+void DataFlash_APM1::ChipErase(void (*delay_cb)(unsigned long))
 {
 
   dataflash_CS_active();     // activate dataflash command decoder
@@ -306,7 +306,9 @@ void DataFlash_APM1::ChipErase ()
 
   dataflash_CS_inactive();               //initiate flash page erase
   dataflash_CS_active();
-  while(!ReadStatus());
+  while (!ReadStatus()) {
+      delay_cb(1);
+  }
 
   dataflash_CS_inactive();   // deactivate dataflash command decoder
 }

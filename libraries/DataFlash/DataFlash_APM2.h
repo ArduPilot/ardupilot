@@ -23,7 +23,7 @@ class DataFlash_APM2 : public DataFlash_Class
 	void CS_inactive();
 	void CS_active();
 	void PageErase (uint16_t PageAdr);
-	void ChipErase ();
+	void ChipErase(void (*delay_cb)(unsigned long));
 
   public:
 	DataFlash_APM2(); // Constructor
