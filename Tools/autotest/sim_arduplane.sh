@@ -9,7 +9,8 @@ make clean sitl
 
 tfile=$(tempfile)
 echo r > $tfile
-gnome-terminal -e "gdb -x $tfile --args /tmp/ArduPlane.build/ArduPlane.elf"
+#gnome-terminal -e "gdb -x $tfile --args /tmp/ArduPlane.build/ArduPlane.elf"
+gnome-terminal -e /tmp/ArduPlane.build/ArduPlane.elf
 #gnome-terminal -e "valgrind -q /tmp/ArduPlane.build/ArduPlane.elf"
 sleep 2
 rm -f $tfile
