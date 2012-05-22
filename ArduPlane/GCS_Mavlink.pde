@@ -938,6 +938,11 @@ GCS_MAVLINK::data_stream_send(void)
         return;
     }
 
+    if (in_mavlink_delay) {
+        // don't send any other stream types while in the delay callback
+        return;
+    }
+
     if (stream_trigger(STREAM_RAW_SENSORS)) {
         send_message(MSG_RAW_IMU1);
         send_message(MSG_RAW_IMU2);
@@ -2175,7 +2180,7 @@ GCS_MAVLINK::queued_waypoint_send()
 static void mavlink_delay(unsigned long t)
 {
     unsigned long tstart;
-    static unsigned long last_1hz, last_50hz;
+    static unsigned long last_1hz, last_50hz, last_5s;
 
     if (in_mavlink_delay) {
         // this should never happen, but let's not tempt fate by
@@ -2197,6 +2202,11 @@ static void mavlink_delay(unsigned long t)
         if (tnow - last_50hz > 20) {
             last_50hz = tnow;
             gcs_update();
+            gcs_data_stream_send();
+        }
+        if (tnow - last_5s > 5000) {
+            last_5s = tnow;
+            gcs_send_text_P(SEVERITY_LOW, PSTR("Initialising APM..."));
         }
         delay(1);
 #if USB_MUX_PIN > 0
