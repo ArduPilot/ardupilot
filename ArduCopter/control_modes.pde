@@ -141,6 +141,8 @@ static void read_trim_switch()
 				// save command
 				set_cmd_with_index(current_loc, CH7_wp_index);
 
+				copter_leds_nav_blink = 10;	// Cause the CopterLEDs to blink twice to indicate saved waypoint
+				
 				// 0 = home
 				// 1 = takeoff
 				// 2 = WP 2

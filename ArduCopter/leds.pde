@@ -101,11 +101,13 @@ static void clear_leds()
 //	Copter LEDS by Robert Lefebvre
 //	Based on the work of U4eake, Bill Sanford, Max Levine, and Oliver
 //	g.copter_leds_mode controls the copter leds function via bitmath
-//	Zeroeth bit turns motor leds on and off:  00000001
-//	First bit turns GPS function on and off: 00000010
-//	Second bit turns Aux function on and off: 00000100
-//	Third bit turns on Beeper (legacy Piezo) function: 00001000
-//	Fourth bit toggles between Fast Flash or Oscillate on Low Battery: 000100000 (0) does Fast Flash, (1) does Oscillate
+//	Zeroeth bit turns motor leds on and off:  								00000001
+//	First bit turns GPS function on and off: 								00000010
+//	Second bit turns Aux function on and off: 								00000100
+//	Third bit turns on Beeper (legacy Piezo) function: 						00001000
+//	Fourth bit toggles between Fast Flash or Oscillate on Low Battery: 		00010000		(0) does Fast Flash, (1) does Oscillate
+//	Fifth bit causes motor LEDs to Nav Blink: 								00100000
+//	Sixth bit causes GPS LEDs to Nav Blink: 								01000000
 //	This code is written in order to be backwards compatible with the old Motor_LEDS code
 //	I hope to include at least some of the Show_LEDS code in the future
 //	copter_leds_GPS_blink controls the blinking of the GPS LEDS
@@ -127,11 +129,17 @@ static void update_copter_leds(void)
 			if (low_batt == true) {
 				if ( bitRead(g.copter_leds_mode, 4 )) {
 					copter_leds_oscillate();				//if motors are armed, but battery level is low, motor leds fast blink
-				}else{
+				} else {
 					copter_leds_fast_blink();				//if motors are armed, but battery level is low, motor leds oscillate
 				}
-			} else {
+			} else if ( !bitRead(g.copter_leds_mode, 5 ) ) {
 				copter_leds_on();							//if motors are armed, battery level OK, all motor leds ON
+			} else if ( bitRead(g.copter_leds_mode, 5 ) ) {
+				if ( copter_leds_nav_blink >0 ) {
+					copter_leds_slow_blink();					//if nav command was seen, blink LEDs.
+				} else {
+					copter_leds_on();
+				}
 			}
 		} else {
 			copter_leds_slow_blink();						//if motors are not armed, blink motor leds
@@ -146,8 +154,16 @@ static void update_copter_leds(void)
 
 			case(2):
 				if(home_is_set) {
-					copter_leds_GPS_on();  								//Turn GPS LEDs on when gps has valid fix AND home is set
-				} else {
+					if ( !bitRead(g.copter_leds_mode, 6 ) ) {
+						copter_leds_GPS_on();						//Turn GPS LEDs on when gps has valid fix AND home is set
+					} else if (bitRead(g.copter_leds_mode, 6 ) ) {
+						if ( copter_leds_nav_blink >0 ) {
+							copter_leds_GPS_slow_blink();			//if nav command was seen, blink LEDs.
+						} else {
+							copter_leds_GPS_on();
+						}
+					}
+				} else { 
 					copter_leds_GPS_fast_blink();						//if GPS has fix, but home is not set, blink GPS LED fast
 				}
 				break;
@@ -228,29 +244,32 @@ static void copter_leds_off(void) {
 }
 
 static void copter_leds_slow_blink(void) {
-	copter_leds_motor_blink++;                                				// this increments once every 1/10 second because it is in the 10hz loop
-	if ( 0 < copter_leds_motor_blink && copter_leds_motor_blink < 6 ){		// when the counter reaches 5 (1/2 sec), then toggle the leds
-		copter_leds_on();
-	}else if (5 < copter_leds_motor_blink && copter_leds_motor_blink < 11){
+	copter_leds_motor_blink++;                                														// this increments once every 1/10 second because it is in the 10hz loop
+	if ( 0 < copter_leds_motor_blink && copter_leds_motor_blink < 6 ){												// when the counter reaches 5 (1/2 sec), then toggle the leds
 		copter_leds_off();
+		if (  bitRead(g.copter_leds_mode, 5 ) && !bitRead(g.copter_leds_mode, 6 ) && copter_leds_nav_blink >0 ) {	// if blinking is called by the Nav Blinker...
+			copter_leds_nav_blink--;																				// decrement the Nav Blink counter
+		}		
+	}else if (5 < copter_leds_motor_blink && copter_leds_motor_blink < 11){
+		copter_leds_on();
 	}
-	else copter_leds_motor_blink = 0;              							// start blink cycle again  
+	else copter_leds_motor_blink = 0;              																	// start blink cycle again  
 }
 
 static void copter_leds_fast_blink(void) {
-	copter_leds_motor_blink++;                                				// this increments once every 1/10 second because it is in the 10hz loop
-	if ( 0 < copter_leds_motor_blink && copter_leds_motor_blink < 3 ){		// when the counter reaches 3 (1/5 sec), then toggle the leds	
+	copter_leds_motor_blink++;                                														// this increments once every 1/10 second because it is in the 10hz loop
+	if ( 0 < copter_leds_motor_blink && copter_leds_motor_blink < 3 ){												// when the counter reaches 3 (1/5 sec), then toggle the leds	
 		copter_leds_on();
 	}else if (2 < copter_leds_motor_blink && copter_leds_motor_blink < 5){
 		copter_leds_off();
 	}
-	else copter_leds_motor_blink = 0;              							// start blink cycle again  
+	else copter_leds_motor_blink = 0;              																	// start blink cycle again  
 }
 
 
 static void copter_leds_oscillate(void) {
-	copter_leds_motor_blink++;                                				// this increments once every 1/10 second because it is in the 10hz loop
-	if ( 0 < copter_leds_motor_blink && copter_leds_motor_blink < 3 ) {		// when the counter reaches 3 (1/5 sec), then toggle the leds
+	copter_leds_motor_blink++;                                														// this increments once every 1/10 second because it is in the 10hz loop
+	if ( 0 < copter_leds_motor_blink && copter_leds_motor_blink < 3 ) {												// when the counter reaches 3 (1/5 sec), then toggle the leds
 		if ( !bitRead(g.copter_leds_mode, 2) ){
 			digitalWrite(COPTER_LED_1, COPTER_LED_ON);	
 		}
@@ -289,7 +308,7 @@ static void copter_leds_oscillate(void) {
 		digitalWrite(COPTER_LED_7, COPTER_LED_ON);
 		digitalWrite(COPTER_LED_8, COPTER_LED_ON);
 	}
-	else copter_leds_motor_blink = 0;              							// start blink cycle again  
+	else copter_leds_motor_blink = 0;              										// start blink cycle again  
 }
 
 
@@ -303,23 +322,26 @@ static void copter_leds_GPS_off(void) {
 }
 
 static void copter_leds_GPS_slow_blink(void) {
-	copter_leds_GPS_blink++;                                				// this increments once every 1/10 second because it is in the 10hz loop
-	if ( 0 < copter_leds_GPS_blink && copter_leds_GPS_blink < 6 ){			// when the counter reaches 5 (1/2 sec), then toggle the leds
+	copter_leds_GPS_blink++;                                							// this increments once every 1/10 second because it is in the 10hz loop
+	if ( 0 < copter_leds_GPS_blink && copter_leds_GPS_blink < 6 ){						// when the counter reaches 5 (1/2 sec), then toggle the leds
 			copter_leds_GPS_off();
+			if (  bitRead(g.copter_leds_mode, 6 ) && copter_leds_nav_blink >0 ) {		// if blinking is called by the Nav Blinker...
+				copter_leds_nav_blink--;												// decrement the Nav Blink counter
+			}
 		}else if (5 < copter_leds_GPS_blink && copter_leds_GPS_blink < 11){
 			copter_leds_GPS_on();
 		}
-	else copter_leds_GPS_blink = 0;              							// start blink cycle again
+	else copter_leds_GPS_blink = 0;              										// start blink cycle again
 }
 
 static void copter_leds_GPS_fast_blink(void) {
-	copter_leds_GPS_blink++;                                				// this increments once every 1/10 second because it is in the 10hz loop
-	if ( 0 < copter_leds_GPS_blink && copter_leds_GPS_blink < 3 ) {			// when the counter reaches 3 (1/5 sec), then toggle the leds	
+	copter_leds_GPS_blink++;                                							// this increments once every 1/10 second because it is in the 10hz loop
+	if ( 0 < copter_leds_GPS_blink && copter_leds_GPS_blink < 3 ) {						// when the counter reaches 3 (1/5 sec), then toggle the leds	
 			copter_leds_GPS_off();
 		}else if (2 < copter_leds_GPS_blink && copter_leds_GPS_blink < 5){
 			copter_leds_GPS_on();
 		}
-	else copter_leds_GPS_blink = 0;              							// start blink cycle again
+	else copter_leds_GPS_blink = 0;              										// start blink cycle again
 }
 
 static void copter_leds_aux_off(void){

@@ -471,6 +471,8 @@ static byte	led_mode = NORMAL_LEDS;
 static byte copter_leds_GPS_blink = 0;
 // Blinking indicates battery status
 static byte copter_leds_motor_blink = 0;
+// Navigation confirmation blinks
+static int8_t copter_leds_nav_blink = 0;
 
 ////////////////////////////////////////////////////////////////////////////////
 // GPS variables

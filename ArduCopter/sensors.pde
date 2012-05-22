@@ -135,6 +135,7 @@ static void read_battery(void)
 	if((battery_voltage1 < g.low_voltage) || (g.battery_monitoring == 4 && current_total1 > g.pack_capacity)){
 		low_battery_event();
 
+		#if COPTER_LEDS == ENABLED
 		if ( bitRead(g.copter_leds_mode, 3) ){	// Only Activate if a battery is connected to avoid alarm on USB only
 			if (battery_voltage1 > 1){
 				piezo_on();
@@ -142,9 +143,11 @@ static void read_battery(void)
 				piezo_off();
 			}
 		}
+		
 
 	}else if ( bitRead(g.copter_leds_mode, 3) ){
 		piezo_off();
+		#endif // COPTER_LEDS
 	}
 	#endif //BATTERY_EVENT
 }
