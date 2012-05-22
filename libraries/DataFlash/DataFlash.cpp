@@ -188,13 +188,8 @@ uint16_t DataFlash_Class::GetFilePage()
 
 void DataFlash_Class::EraseAll(void (*delay_cb)(unsigned long))
 {
+    ChipErase(delay_cb);
 	SetFileNumber(0xFFFF);
-	for(uint16_t j = 1; j <= df_NumPages; j++) {
-		PageErase(j);
-		StartWrite(j);
-        delay_cb(1);
-	}
-
     // write the logging format in the last page
     StartWrite(df_NumPages+1);
     WriteLong(DF_LOGGING_FORMAT);

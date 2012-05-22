@@ -19,7 +19,7 @@ class DataFlash_APM1 : public DataFlash_Class
 	unsigned char ReadStatus();
 	uint16_t PageSize();
 	void PageErase (uint16_t PageAdr);
-	void ChipErase ();
+	void ChipErase(void (*delay_cb)(unsigned long));
 
   public:
 
