@@ -11,7 +11,7 @@ static void stabilize()
 	float ch4_inf = 1.0;
 	float speed_scaler;
 
-	if (g.airspeed_enabled == true){
+	if (g.airspeed_enabled == true && g.airspeed_use == true){
 		if(airspeed > 0)
 			speed_scaler = (STANDARD_SPEED * 100) / airspeed;
 		else
@@ -130,7 +130,7 @@ static void crash_checker()
 
 static void calc_throttle()
 {
-  if (g.airspeed_enabled == false) {
+  if (g.airspeed_enabled == false || g.airspeed_use == false) {
 	int throttle_target = g.throttle_cruise + throttle_nudge;
 
     // TODO: think up an elegant way to bump throttle when
@@ -188,7 +188,7 @@ static void calc_nav_pitch()
 {
 	// Calculate the Pitch of the plane
 	// --------------------------------
-	if (g.airspeed_enabled == true) {
+	if (g.airspeed_enabled == true && g.airspeed_use == true) {
 		nav_pitch = -g.pidNavPitchAirspeed.get_pid(airspeed_error, dTnav);
 	} else {
 		nav_pitch = g.pidNavPitchAltitude.get_pid(altitude_error, dTnav);
@@ -349,7 +349,7 @@ static void set_servos(void)
 			if (
 					(control_mode == CIRCLE || control_mode >= FLY_BY_WIRE_B) &&
 					(abs(home.alt - current_loc.alt) < 1000) &&
-					((g.airspeed_enabled ? airspeed : g_gps->ground_speed) < 500 ) &&
+					(((g.airspeed_enabled && g.airspeed_use) ? airspeed : g_gps->ground_speed) < 500 ) &&
 					!(control_mode==AUTO && takeoff_complete == false)
 				) {
 				g.channel_throttle.servo_out = 0;
@@ -386,7 +386,7 @@ static void set_servos(void)
             // FIXME: use target_airspeed in both FBW_B and g.airspeed_enabled cases - Doug?
 			if (control_mode == FLY_BY_WIRE_B) {
 				flapSpeedSource = ((float)target_airspeed)/100;
-			} else if (g.airspeed_enabled == true) {
+			} else if (g.airspeed_enabled == true && g.airspeed_use == true) {
 				flapSpeedSource = g.airspeed_cruise/100;
 			} else {
 				flapSpeedSource = g.throttle_cruise;

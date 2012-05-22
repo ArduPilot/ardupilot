@@ -999,7 +999,7 @@ static void update_current_flight_mode(void)
 					nav_roll = 0;
 				}
 
-				if (g.airspeed_enabled == true)
+				if (g.airspeed_enabled == true && g.airspeed_use == true)
                                 {
 					calc_nav_pitch();
 					if (nav_pitch < (long)takeoff_pitch) nav_pitch = (long)takeoff_pitch;
@@ -1017,7 +1017,7 @@ static void update_current_flight_mode(void)
 			case MAV_CMD_NAV_LAND:
 				calc_nav_roll();
 
-				if (g.airspeed_enabled == true){
+				if (g.airspeed_enabled == true && g.airspeed_use == true) {
 					calc_nav_pitch();
 					calc_throttle();
 				}else{

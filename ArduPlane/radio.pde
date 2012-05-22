@@ -85,7 +85,7 @@ static void read_radio()
 	g.channel_throttle.servo_out = g.channel_throttle.control_in;
 
 	if (g.channel_throttle.servo_out > 50) {
-		if(g.airspeed_enabled == true) {
+		if(g.airspeed_enabled == true && g.airspeed_use == true) {
 			airspeed_nudge = (g.flybywire_airspeed_max * 100 - g.airspeed_cruise) * ((g.channel_throttle.norm_input()-0.5) / 0.5);
         } else {
 			throttle_nudge = (g.throttle_max - g.throttle_cruise) * ((g.channel_throttle.norm_input()-0.5) / 0.5);
