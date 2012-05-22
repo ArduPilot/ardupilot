@@ -85,6 +85,7 @@ public:
 		k_param_sonar_enabled,
 		k_param_airspeed_enabled,
         k_param_ahrs,  // AHRS group
+		k_param_airspeed_use,
 
         //
         // 150: Navigation parameters
@@ -319,6 +320,7 @@ public:
     AP_Int8		inverted_flight_ch; // 0=disabled, 1-8 is channel for inverted flight trigger
     AP_Int8		sonar_enabled;
     AP_Int8		airspeed_enabled;
+    AP_Int8		airspeed_use;
     AP_Int8		flap_1_percent;
     AP_Int8		flap_1_speed;
     AP_Int8		flap_2_percent;
@@ -436,6 +438,7 @@ public:
         inverted_flight_ch      (0),
         sonar_enabled			(SONAR_ENABLED),
         airspeed_enabled		(AIRSPEED_SENSOR),
+        airspeed_use			(1),
 
         // PID controller    initial P        initial I        initial D        initial imax
         //-----------------------------------------------------------------------------------

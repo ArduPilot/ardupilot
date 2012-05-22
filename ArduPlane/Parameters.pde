@@ -270,6 +270,13 @@ static const AP_Param::Info var_info[] PROGMEM = {
 	// @User: Standard
 	GSCALAR(airspeed_enabled,       "ARSPD_ENABLE"),
 
+    // @Param: ARSPD_USE
+	// @DisplayName: Use Airspeed if enabled
+	// @Description: Setting this to Enabled(1) will enable use of the Airspeed sensor for flight control when ARSPD_ENABLE is also true. This is separate from ARSPD_ENABLE to allow for the airspeed value to be logged without it being used for flight control
+	// @Values: 0:Disabled,1:Enabled
+	// @User: Advanced
+	GSCALAR(airspeed_use,       	"ARSPD_USE"),
+
 	GGROUP(channel_roll,            "RC1_", RC_Channel),
 	GGROUP(channel_pitch,           "RC2_", RC_Channel),
 	GGROUP(channel_throttle,        "RC3_", RC_Channel),
