@@ -897,6 +897,11 @@ GCS_MAVLINK::data_stream_send(void)
         return;
     }
 
+    if (in_mavlink_delay) {
+        // don't send any other stream types while in the delay callback
+        return;
+    }
+
     if (stream_trigger(STREAM_RAW_SENSORS)) {
 			send_message(MSG_RAW_IMU1);
 			send_message(MSG_RAW_IMU2);
@@ -1489,7 +1494,7 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
 
 	case MAVLINK_MSG_ID_PARAM_REQUEST_LIST: // 21
 		{
-			//send_text_P(SEVERITY_LOW,PSTR("param request list"));
+			// gcs_send_text_P(SEVERITY_LOW,PSTR("param request list"));
 
 			// decode
 			mavlink_param_request_list_t packet;
@@ -2082,7 +2087,7 @@ GCS_MAVLINK::queued_waypoint_send()
 static void mavlink_delay(unsigned long t)
 {
     uint32_t tstart;
-    static uint32_t last_1hz, last_50hz;
+    static uint32_t last_1hz, last_50hz, last_5s;
 
 	if (in_mavlink_delay) {
         // this should never happen, but let's not tempt fate by
@@ -2104,6 +2109,11 @@ static void mavlink_delay(unsigned long t)
         if (tnow - last_50hz > 20) {
             last_50hz = tnow;
             gcs_update();
+            gcs_data_stream_send();
+        }
+        if (tnow - last_5s > 5000) {
+            last_5s = tnow;
+            gcs_send_text_P(SEVERITY_LOW, PSTR("Initialising APM..."));
         }
         delay(1);
 		#if USB_MUX_PIN > 0
@@ -2121,8 +2131,8 @@ static void gcs_send_message(enum ap_message id)
 {
     gcs0.send_message(id);
     if (gcs3.initialised) {
-    gcs3.send_message(id);
-}
+        gcs3.send_message(id);
+    }
 }
 
 /*
@@ -2143,24 +2153,24 @@ static void gcs_update(void)
 {
 	gcs0.update();
     if (gcs3.initialised) {
-    gcs3.update();
-}
+        gcs3.update();
+    }
 }
 
 static void gcs_send_text(gcs_severity severity, const char *str)
 {
     gcs0.send_text(severity, str);
     if (gcs3.initialised) {
-    gcs3.send_text(severity, str);
-}
+        gcs3.send_text(severity, str);
+    }
 }
 
 static void gcs_send_text_P(gcs_severity severity, const prog_char_t *str)
 {
     gcs0.send_text(severity, str);
     if (gcs3.initialised) {
-    gcs3.send_text(severity, str);
-}
+        gcs3.send_text(severity, str);
+    }
 }
 
 /*

@@ -153,15 +153,15 @@ dump_log(uint8_t argc, const Menu::arg *argv)
 void erase_callback(unsigned long t) {
     mavlink_delay(t);
     if (DataFlash.GetWritePage() % 128 == 0) {
-        Serial.printf_P(PSTR("+"));
+        gcs_send_text_P(SEVERITY_LOW, PSTR("+"));
     }
 }
 
 static void do_erase_logs(void)
 {
-	Serial.printf_P(PSTR("\nErasing log...\n"));
+	gcs_send_text_P(SEVERITY_LOW, PSTR("Erasing logs"));
     DataFlash.EraseAll(erase_callback);
-	Serial.printf_P(PSTR("\nLog erased.\n"));
+	gcs_send_text_P(SEVERITY_LOW, PSTR("Log erase complete"));
 }
 
 static int8_t
