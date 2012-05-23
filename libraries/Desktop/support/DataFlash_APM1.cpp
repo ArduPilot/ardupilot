@@ -108,7 +108,7 @@ void DataFlash_APM1::PageErase (uint16_t PageAdr)
 
 void DataFlash_APM1::ChipErase(void (*delay_cb)(unsigned long))
 {
-	for (int i=0; DF_NUM_PAGES; i++) {
+	for (int i=0; i<DF_NUM_PAGES; i++) {
 		PageErase(i);
         delay_cb(1);
 	}
