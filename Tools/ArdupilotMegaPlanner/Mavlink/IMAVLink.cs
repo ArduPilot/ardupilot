@@ -71,7 +71,7 @@ namespace ArdupilotMega
         object DebugPacket(byte[] datin);
         object DebugPacket(byte[] datin, bool PrintToConsole);
         object DebugPacket(byte[] datin, ref string text);
-        object DebugPacket(byte[] datin, ref string text, bool PrintToConsole, string delimeter = " ");
+        object DebugPacket(byte[] datin, ref string text, bool PrintToConsole, string delimeter);
 
         // mav 09
         bool doAction(object actionid);

@@ -10,6 +10,7 @@ using ArdupilotMega;
 using System.IO.Ports;
 using ArdupilotMega.Comms;
 using ArdupilotMega.Utilities;
+using System.Text.RegularExpressions;
 
 namespace ArdupilotMega.GCSViews
 {
@@ -39,10 +40,22 @@ namespace ArdupilotMega.GCSViews
             {
                 lock (thisLock)
                 {
-                    string data = comPort.ReadExisting();
-                    //Console.Write(data);
+                    System.Threading.Thread.Sleep(20);
+                    byte[] buffer = new byte[256];
+                    int a = 0;
+                    while (comPort.BytesToRead > 0)
+                    {
+                        byte indata = (byte)comPort.ReadByte();
 
-                    addText(data);
+                        buffer[a] = indata;
+
+                        if (buffer[a] >= 0x20 && buffer[a] < 0x7f || buffer[a] == (int)'\n' || buffer[a] == (int)'\r')
+                        {
+                            a++;
+                        }
+                    }
+
+                    addText(ASCIIEncoding.ASCII.GetString(buffer,0,a+1));
                 }
             }
             catch (Exception) { if (!threadrun) return; TXT_terminal.AppendText("Error reading com port\r\n"); }
@@ -53,6 +66,13 @@ namespace ArdupilotMega.GCSViews
             this.Invoke((System.Windows.Forms.MethodInvoker)delegate()
             {
                 TXT_terminal.SelectionStart = TXT_terminal.Text.Length;
+
+                data = data.Replace("U3","");
+                data = data.Replace("U$", "");
+                data = data.Replace(@"U""","");
+                data = data.Replace("d'`F", "");
+                data = data.Replace("U.", "");
+                data = data.Replace("'`","");
 
                 data = data.TrimEnd('\r'); // else added \n all by itself
                 data = data.Replace("\0", " ");
@@ -213,8 +233,13 @@ namespace ArdupilotMega.GCSViews
                     try
                     {
                         comPort.Write("\n\n\n");
+
+                        System.Threading.Thread.Sleep(500);
+
+                        comPort.Write("\r\r\r?\r");
                     }
-                    catch { return; }
+                    catch { return; }                  
+
                     while (threadrun)
                     {
                         try

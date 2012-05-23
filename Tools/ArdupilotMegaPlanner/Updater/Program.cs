@@ -66,10 +66,14 @@ namespace Updater
             {
                 string[] files = Directory.GetFiles(directory);
 
+                Console.WriteLine("dir: "+directory);
+
                 foreach (string file in files)
                 {
                     if (file.ToLower().EndsWith(".new") && file.ToLower() != ".new") // cant move ".new" to ""
                     {
+                        Console.WriteLine("\t file: " + file);
+
                         bool done = false;
                         for (int try_count = 0; try_count < 10 && !done; try_count++)  // try no more than 5 times
                         {
@@ -88,7 +92,7 @@ namespace Updater
                             }
                             catch
                             {
-                                Console.WriteLine(" Failed.");
+                                Console.WriteLine(file + " Failed.");
                                 System.Threading.Thread.Sleep(500);
                             }
                         }
