@@ -309,7 +309,7 @@ static void NOINLINE send_gps_raw(mavlink_channel_t chan)
 
     mavlink_msg_gps_raw_int_send(
         chan,
-        micros(),
+        g_gps->last_fix_time*(uint64_t)1000,
         fix,
         g_gps->latitude,      // in 1E7 degrees
         g_gps->longitude,     // in 1E7 degrees
@@ -323,7 +323,7 @@ static void NOINLINE send_gps_raw(mavlink_channel_t chan)
 #else // MAVLINK10
     mavlink_msg_gps_raw_send(
         chan,
-        micros(),
+        g_gps->last_fix_time*(uint64_t)1000,
         g_gps->status(),
         g_gps->latitude / 1.0e7,
         g_gps->longitude / 1.0e7,
