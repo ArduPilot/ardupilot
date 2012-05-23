@@ -150,17 +150,10 @@ dump_log(uint8_t argc, const Menu::arg *argv)
 	return (0);
 }
 
-void erase_callback(unsigned long t) {
-    mavlink_delay(t);
-    if (DataFlash.GetWritePage() % 128 == 0) {
-        gcs_send_text_P(SEVERITY_LOW, PSTR("+"));
-    }
-}
-
 static void do_erase_logs(void)
 {
 	gcs_send_text_P(SEVERITY_LOW, PSTR("Erasing logs"));
-    DataFlash.EraseAll(erase_callback);
+    DataFlash.EraseAll(mavlink_delay);
 	gcs_send_text_P(SEVERITY_LOW, PSTR("Log erase complete"));
 }
 
