@@ -28,25 +28,25 @@ static const AP_Param::Info var_info[] PROGMEM = {
         
     // @Param: KFF_PTCHCOMP
 	// @DisplayName: Pitch Compensation
-	// @Description: Adds pitch input to compensate for the loss of lift due to roll control.
+	// @Description: Adds pitch input to compensate for the loss of lift due to roll control. 0 = 0 %, 1 = 100%
 	// @Range: 0 1
-	// @Increment: 0.1
+	// @Increment: 0.01
 	// @User: Advanced
 	GSCALAR(kff_pitch_compensation, "KFF_PTCHCOMP"),
     
     // @Param: KFF_RDDRMIX
 	// @DisplayName: Rudder Mix
-	// @Description: The ammount of rudder mix to apply during aileron movement
+	// @Description: The ammount of rudder mix to apply during aileron movement 0 = 0 %, 1 = 100%
 	// @Range: 0 1
-	// @Increment: 0.1
+	// @Increment: 0.01
 	// @User: Standard
 	GSCALAR(kff_rudder_mix,         "KFF_RDDRMIX"),
         
     // @Param: KFF_PTCH2THR
 	// @DisplayName: Pitch to Throttle Mix
-	// @Description: Pitch to throttle feed-forward gain.
+	// @Description: Pitch to throttle feed-forward gain. 
 	// @Range: 0 5
-	// @Increment: 0.1
+	// @Increment: 0.01
 	// @User: Advanced  
 	GSCALAR(kff_pitch_to_throttle,  "KFF_PTCH2THR"),
         
@@ -54,7 +54,7 @@ static const AP_Param::Info var_info[] PROGMEM = {
 	// @DisplayName: Throttle to Pitch Mix
 	// @Description: Throttle to pitch feed-forward gain.
 	// @Range: 0 5
-	// @Increment: 0.1
+	// @Increment: 0.01
 	// @User: Advanced   
 	GSCALAR(kff_throttle_to_pitch,  "KFF_THR2PTCH"),
     
