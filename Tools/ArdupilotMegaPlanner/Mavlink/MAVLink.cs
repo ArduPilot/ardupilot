@@ -231,6 +231,9 @@ namespace ArdupilotMega
         {
             frmProgressReporter.UpdateProgressAndStatus(-1, "Mavlink Connecting...");
 
+            // allow settings to settle - previous dtr 
+            System.Threading.Thread.Sleep(500);
+
             // reset
             sysid = 0;
             compid = 0;

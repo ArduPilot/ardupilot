@@ -1310,7 +1310,7 @@ namespace ArdupilotMega
 
             try
             {
-                if (System.Diagnostics.Debugger.IsAttached)
+                if (!System.Diagnostics.Debugger.IsAttached)
                 {
                     CheckForUpdate();
                 }

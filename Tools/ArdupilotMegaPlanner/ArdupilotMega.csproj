@@ -70,6 +70,11 @@
     <UseVSHostingProcess>true</UseVSHostingProcess>
     <FileAlignment>512</FileAlignment>
   </PropertyGroup>
+  <PropertyGroup Condition="'$(Mavlink10)'=='true'">
+    <DefineConstants>$(DefineConstants);MAVLINK10</DefineConstants>
+    <AssemblyName>ArdupilotMegaPlanner10</AssemblyName>
+    <OutputPath>bin\Release10\</OutputPath>
+  </PropertyGroup>
   <PropertyGroup>
     <StartupObject>ArdupilotMega.Program</StartupObject>
   </PropertyGroup>

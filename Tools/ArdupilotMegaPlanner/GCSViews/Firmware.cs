@@ -426,7 +426,7 @@ namespace ArdupilotMega.GCSViews
             {
                 if (FLASH.Length > 126976)
                 {
-                    CustomMessageBox.Show("Firmware is to big for a 1280, Please upgrade!!");
+                    CustomMessageBox.Show("Firmware is to big for a 1280, Please upgrade your hardware!!");
                     return;
                 }
                 //port = new ArduinoSTK();
