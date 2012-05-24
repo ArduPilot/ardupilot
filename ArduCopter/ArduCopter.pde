@@ -350,8 +350,6 @@ static const char* flight_mode_strings[] = {
 static int16_t x_actual_speed;
 static int16_t y_actual_speed;
 
-static int16_t x_rate_d;
-static int16_t y_rate_d;
 
 // The difference between the desired rate of travel and the actual rate of travel
 // updated after GPS read - 5-10hz
@@ -1773,7 +1771,7 @@ static void update_navigation()
 			if((wp_distance <= g.waypoint_radius) || check_missed_wp()){
 				// if loiter_timer value > 0, we are set to trigger auto_land or approach after 20 seconds
 				set_mode(LOITER);
-				if(g.rtl_approach_alt >= 1 || g.rtl_land_enabled || failsafe)
+				if(g.rtl_land_enabled || failsafe)
 					loiter_timer = millis();
 				else
 					loiter_timer = 0;
