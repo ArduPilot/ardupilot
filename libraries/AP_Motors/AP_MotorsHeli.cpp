@@ -427,7 +427,7 @@ void AP_MotorsHeli::move_swash(int16_t roll_out, int16_t pitch_out, int16_t coll
 
 		// rudder feed forward based on collective
 		if( !ext_gyro_enabled ) {
-			yaw_offset = collective_yaw_effect * abs(coll_out_scaled - collective_mid);
+			yaw_offset = collective_yaw_effect * abs(coll_out_scaled - throttle_mid);
 		}
 	}
 
