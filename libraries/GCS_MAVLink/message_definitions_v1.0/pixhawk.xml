@@ -8,6 +8,21 @@
                <entry value="2" name="DATA_TYPE_RAW_IMAGE"/>
                <entry value="3" name="DATA_TYPE_KINECT"/>
           </enum>
+          <enum name="MAV_CMD">
+               <!-- 1-10000 reserved for common commands -->
+               <entry value="10001" name="MAV_CMD_DO_START_SEARCH">
+                    <description>Starts a search</description>
+                    <param index="1">1 to arm, 0 to disarm</param>
+               </entry>
+               <entry value="10002" name="MAV_CMD_DO_FINISH_SEARCH">
+                    <description>Starts a search</description>
+                    <param index="1">1 to arm, 0 to disarm</param>
+               </entry>
+               <entry value="10003" name="MAV_CMD_NAV_SWEEP">
+                    <description>Starts a search</description>
+                    <param index="1">1 to arm, 0 to disarm</param>
+               </entry>
+          </enum>
      </enums>
      <messages>
           <message id="151" name="SET_CAM_SHUTTER">

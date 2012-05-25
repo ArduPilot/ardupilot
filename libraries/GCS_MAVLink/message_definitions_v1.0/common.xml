@@ -93,6 +93,9 @@
                <entry value="16" name="MAV_TYPE_FLAPPING_WING">
                     <description>Flapping wing</description>
                </entry>
+               <entry value="17" name="MAV_TYPE_KITE">
+                    <description>Flapping wing</description>
+               </entry>
           </enum>
           <!-- WARNING: MAV_ACTION Enum is no longer supported - has been removed. Please use MAV_CMD -->
           <enum name="MAV_MODE_FLAG">
@@ -748,7 +751,7 @@
                     <description>The Z or altitude value is out of range.</description>
                </entry>
           </enum>
-          <enum name="MAV_VAR">
+          <!--<enum name="MAV_VAR">
                <description>type of a mavlink parameter</description>
                <entry value="0" name="MAV_VAR_FLOAT">
                     <description>32 bit float</description>
@@ -771,7 +774,7 @@
                <entry value="6" name="MAV_VAR_INT32">
                     <description>32 bit signed integer</description>
                </entry>
-          </enum>
+          </enum>-->
           <enum name="MAV_RESULT">
                <description>result from a mavlink command</description>
                <entry value="0" name="MAV_RESULT_ACCEPTED">
@@ -932,8 +935,8 @@
                <description>Request to read the onboard parameter with the param_id string id. Onboard parameters are stored as key[const char*] -> value[float]. This allows to send a parameter to any other component (such as the GCS) without the need of previous knowledge of possible parameter names. Thus the same GCS can store different parameters for different autopilots. See also http://qgroundcontrol.org/parameter_interface for a full documentation of QGroundControl and IMU code.</description>
                <field type="uint8_t" name="target_system">System ID</field>
                <field type="uint8_t" name="target_component">Component ID</field>
-               <field type="char[16]" name="param_id">Onboard parameter id</field>
-               <field type="int16_t" name="param_index">Parameter index. Send -1 to use the param ID field as identifier</field>
+               <field type="char[16]" name="param_id">Onboard parameter id, terminated by NUL if the length is less than 16 human-readable chars and WITHOUT null termination (NUL) byte if the length is exactly 16 chars - applications have to provide 16+1 bytes storage if the ID is stored as string</field>
+               <field type="int16_t" name="param_index">Parameter index. Send -1 to use the param ID field as identifier (else the param id will be ignored)</field>
           </message>
           <message id="21" name="PARAM_REQUEST_LIST">
                <description>Request all parameters of this component. After his request, all parameters are emitted.</description>
@@ -942,9 +945,9 @@
           </message>
           <message id="22" name="PARAM_VALUE">
                <description>Emit the value of a onboard parameter. The inclusion of param_count and param_index in the message allows the recipient to keep track of received parameters and allows him to re-request missing parameters after a loss or timeout.</description>
-               <field type="char[16]" name="param_id">Onboard parameter id</field>
+               <field type="char[16]" name="param_id">Onboard parameter id, terminated by NUL if the length is less than 16 human-readable chars and WITHOUT null termination (NUL) byte if the length is exactly 16 chars - applications have to provide 16+1 bytes storage if the ID is stored as string</field>
                <field type="float" name="param_value">Onboard parameter value</field>
-               <field type="uint8_t" name="param_type">Onboard parameter type: see MAV_VAR enum</field>
+               <field type="uint8_t" name="param_type">Onboard parameter type: see MAVLINK_TYPE enum in mavlink/mavlink_types.h</field>
                <field type="uint16_t" name="param_count">Total number of onboard parameters</field>
                <field type="uint16_t" name="param_index">Index of this onboard parameter</field>
           </message>
@@ -952,9 +955,9 @@
                <description>Set a parameter value TEMPORARILY to RAM. It will be reset to default on system reboot. Send the ACTION MAV_ACTION_STORAGE_WRITE to PERMANENTLY write the RAM contents to EEPROM. IMPORTANT: The receiving component should acknowledge the new parameter value by sending a param_value message to all communication partners. This will also ensure that multiple GCS all have an up-to-date list of all parameters. If the sending GCS did not receive a PARAM_VALUE message within its timeout time, it should re-send the PARAM_SET message.</description>
                <field type="uint8_t" name="target_system">System ID</field>
                <field type="uint8_t" name="target_component">Component ID</field>
-               <field type="char[16]" name="param_id">Onboard parameter id</field>
+               <field type="char[16]" name="param_id">Onboard parameter id, terminated by NUL if the length is less than 16 human-readable chars and WITHOUT null termination (NUL) byte if the length is exactly 16 chars - applications have to provide 16+1 bytes storage if the ID is stored as string</field>
                <field type="float" name="param_value">Onboard parameter value</field>
-               <field type="uint8_t" name="param_type">Onboard parameter type: see MAV_VAR enum</field>
+               <field type="uint8_t" name="param_type">Onboard parameter type: see MAVLINK_TYPE enum in mavlink/mavlink_types.h</field>
           </message>
           <message id="24" name="GPS_RAW_INT">
                <description>The global position, as returned by the Global Positioning System (GPS). This is
@@ -1291,12 +1294,13 @@
                <field type="uint16_t" name="motor_left_sw">Left motor in + configuration, back left motor in x configuration</field>
           </message>
           <message id="61" name="SET_QUAD_SWARM_ROLL_PITCH_YAW_THRUST">
-               <description></description>
-               <field type="uint8_t[6]" name="target_systems">System IDs for 6 quadrotors: 0..5, the ID's are the MAVLink IDs</field>
-               <field type="int16_t[6]" name="roll">Desired roll angle in radians, scaled to int16 for 6 quadrotors: 0..5</field>
-               <field type="int16_t[6]" name="pitch">Desired pitch angle in radians, scaled to int16 for 6 quadrotors: 0..5</field>
-               <field type="int16_t[6]" name="yaw">Desired yaw angle in radians, scaled to int16 for 6 quadrotors: 0..5</field>
-               <field type="uint16_t[6]" name="thrust">Collective thrust, scaled to uint16 for 6 quadrotors: 0..5</field>
+               <description>Setpoint for up to four quadrotors in a group / wing</description>
+               <field type="uint8_t" name="group">ID of the quadrotor group (0 - 255, up to 256 groups supported)</field>
+               <field type="uint8_t" name="mode">ID of the flight mode (0 - 255, up to 256 modes supported)</field>
+               <field type="int16_t[4]" name="roll">Desired roll angle in radians +-PI (+-32767)</field>
+               <field type="int16_t[4]" name="pitch">Desired pitch angle in radians +-PI (+-32767)</field>
+               <field type="int16_t[4]" name="yaw">Desired yaw angle in radians, scaled to int16 +-PI (+-32767)</field>
+               <field type="uint16_t[4]" name="thrust">Collective thrust, scaled to uint16 (0..65535)</field>
           </message>
           <message id="62" name="NAV_CONTROLLER_OUTPUT">
                <description>Outputs of the APM navigation controller. The primary use of this message is to check the response and signs of the controller before actual flight and to assist with tuning controller parameters.</description>
@@ -1308,6 +1312,18 @@
                <field type="float" name="alt_error">Current altitude error in meters</field>
                <field type="float" name="aspd_error">Current airspeed error in meters/second</field>
                <field type="float" name="xtrack_error">Current crosstrack error on x-y plane in meters</field>
+          </message>
+          <message id="63" name="SET_QUAD_SWARM_LED_ROLL_PITCH_YAW_THRUST">
+               <description>Setpoint for up to four quadrotors in a group / wing</description>
+               <field type="uint8_t" name="group">ID of the quadrotor group (0 - 255, up to 256 groups supported)</field>
+               <field type="uint8_t" name="mode">ID of the flight mode (0 - 255, up to 256 modes supported)</field>
+               <field type="uint8_t[4]" name="led_red">RGB red channel (0-255)</field>
+               <field type="uint8_t[4]" name="led_blue">RGB green channel (0-255)</field>
+               <field type="uint8_t[4]" name="led_green">RGB blue channel (0-255)</field>
+               <field type="int16_t[4]" name="roll">Desired roll angle in radians +-PI (+-32767)</field>
+               <field type="int16_t[4]" name="pitch">Desired pitch angle in radians +-PI (+-32767)</field>
+               <field type="int16_t[4]" name="yaw">Desired yaw angle in radians, scaled to int16 +-PI (+-32767)</field>
+               <field type="uint16_t[4]" name="thrust">Collective thrust, scaled to uint16 (0..65535)</field>
           </message>
           <message id="64" name="STATE_CORRECTION">
                <description>Corrects the systems state by adding an error correction term to the position and velocity, and by rotating the attitude by a correction angle.</description>

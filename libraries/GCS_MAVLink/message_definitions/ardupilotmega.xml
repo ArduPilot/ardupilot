@@ -3,7 +3,7 @@
      <include>common.xml</include>
      <!-- note that APM specific messages should use the command id
       range from 150 to 250, to leave plenty of room for growth
-      of common.xml
+      of common.xml 
 
       If you prototype a message here, then you should consider if it
       is general enough to move into common.xml later
@@ -33,7 +33,7 @@
 	      <param index="6">Command Identity</param>
 	      <param index="7">Main engine cut-off time before camera trigger in seconds/10 (0 means no cut-off)</param>
 	    </entry>
-
+	    
 	    <entry name="MAV_CMD_DO_DIGICAM_CONTROL" value="203">
 	      <description>Mission command to control an on-board camera controller system.</description>
 	      <param index="1">Session control e.g. show/hide lens</param>
@@ -44,7 +44,7 @@
 	      <param index="6">Command Identity</param>
 	      <param index="7">Empty</param>
 	    </entry>
-
+	    
 	    <!-- Camera Mount Mission Commands Enumeration -->
 	    <entry name="MAV_CMD_DO_MOUNT_CONFIGURE" value="204">
 	      <description>Mission command to configure a camera or antenna mount</description>
@@ -56,7 +56,7 @@
 	      <param index="6">Empty</param>
 	      <param index="7">Empty</param>
 	    </entry>
-
+	
 	    <entry name="MAV_CMD_DO_MOUNT_CONTROL" value="205">
 	      <description>Mission command to control a camera or antenna mount</description>
 	      <param index="1">pitch(deg*100) or lat, depending on mount mode.</param>
@@ -87,7 +87,7 @@
 	      <description>Breached minimum altitude</description>
 	    </entry>
 	    <entry name="FENCE_BREACH_MAXALT" value="2">
-	      <description>Breached maximum altitude</description>
+	      <description>Breached minimum altitude</description>
 	    </entry>
 	    <entry name="FENCE_BREACH_BOUNDARY" value="3">
 	      <description>Breached fence boundary</description>
@@ -141,7 +141,7 @@
 	  <!-- Camera Controller Messages -->
 	  <message name="DIGICAM_CONFIGURE" id="154">
 	    <description>Configure on-board Camera Control System.</description>
-	    <field name="target_system" type="uint8_t">System ID</field>
+	    <field name="target_system" type="uint8_t">System ID</field>      
 	    <field name="target_component" type="uint8_t">Component ID</field>
 	    <field name="mode" type="uint8_t">Mode enumeration from 1 to N //P, TV, AV, M, Etc (0 means ignore)</field>
 	    <field name="shutter_speed" type="uint16_t">Divisor number //e.g. 1000 means 1/1000 (0 means ignore)</field>
@@ -149,7 +149,7 @@
 	    <field name="iso" type="uint8_t">ISO enumeration from 1 to N //e.g. 80, 100, 200, Etc (0 means ignore)</field>
 	    <field name="exposure_type" type="uint8_t">Exposure type enumeration from 1 to N (0 means ignore)</field>
 	    <field name="command_id" type="uint8_t">Command Identity (incremental loop: 0 to 255)//A command sent multiple times will be executed or pooled just once</field>
-	    <field name="engine_cut_off" type="uint8_t">Main engine cut-off time before camera trigger in seconds/10 (0 means no cut-off)</field>
+ 	    <field name="engine_cut_off" type="uint8_t">Main engine cut-off time before camera trigger in seconds/10 (0 means no cut-off)</field>
 	    <field name="extra_param" type="uint8_t">Extra parameters enumeration (0 means ignore)</field>
 	    <field name="extra_value" type="float">Correspondent value to given extra_param</field>
 	  </message>
@@ -178,7 +178,7 @@
 	    <field name="stab_pitch" type="uint8_t">(1 = yes, 0 = no)</field>
 	    <field name="stab_yaw" type="uint8_t">(1 = yes, 0 = no)</field>
 	  </message>
-
+    
 	  <message name="MOUNT_CONTROL" id="157">
 	    <description>Message to control a camera mount, directional antenna, etc.</description>
 	    <field name="target_system" type="uint8_t">System ID</field>
@@ -202,7 +202,7 @@
 	  <message name="FENCE_POINT" id="160">
 	    <description>A fence point. Used to set a point when from
 	      GCS -> MAV. Also used to return a point from MAV -> GCS</description>
-	    <field name="target_system" type="uint8_t">System ID</field>
+	    <field name="target_system" type="uint8_t">System ID</field>      
 	    <field name="target_component" type="uint8_t">Component ID</field>
 	    <field name="idx" type="uint8_t">point index (first point is 1, 0 is for return point)</field>
 	    <field name="count" type="uint8_t">total number of points (for sanity checking)</field>
@@ -212,7 +212,7 @@
 
 	  <message name="FENCE_FETCH_POINT" id="161">
 	    <description>Request a current fence point from MAV</description>
-	    <field name="target_system" type="uint8_t">System ID</field>
+	    <field name="target_system" type="uint8_t">System ID</field>      
 	    <field name="target_component" type="uint8_t">Component ID</field>
 	    <field name="idx" type="uint8_t">point index (first point is 1, 0 is for return point)</field>
 	  </message>
