@@ -140,13 +140,13 @@ static void init_ardupilot()
 	pinMode(COPTER_LED_6, OUTPUT);		//Motor or Aux LED
 	pinMode(COPTER_LED_7, OUTPUT);		//Motor or GPS LED
 	pinMode(COPTER_LED_8, OUTPUT);		//Motor or GPS LED
-	
-	if ( !bitRead(g.copter_leds_mode, 3) ){	
+
+	if ( !bitRead(g.copter_leds_mode, 3) ){
 		piezo_beep();
 	}
-	
+
 #endif
-	
+
 
     // load parameters from EEPROM
     load_parameters();
@@ -453,6 +453,7 @@ static void set_mode(byte mode)
 			roll_pitch_mode = CIRCLE_RP;
 			throttle_mode 	= CIRCLE_THR;
 			set_next_WP(&current_loc);
+			circle_WP 		= next_WP;
 			circle_angle 	= 0;
 			break;
 
