@@ -323,8 +323,8 @@ static void set_servos(void)
 			/*Elevon mode*/
 			float ch1;
 			float ch2;
-			ch1 = BOOL_TO_SIGN(g.reverse_elevons) * (g.channel_pitch.servo_out - g.channel_roll.servo_out);
-			ch2 = g.channel_pitch.servo_out + g.channel_roll.servo_out;
+			ch1 = g.channel_pitch.servo_out - (BOOL_TO_SIGN(g.reverse_elevons) * g.channel_roll.servo_out);
+			ch2 = g.channel_pitch.servo_out + (BOOL_TO_SIGN(g.reverse_elevons) * g.channel_roll.servo_out);
 			g.channel_roll.radio_out =	elevon1_trim + (BOOL_TO_SIGN(g.reverse_ch1_elevon) * (ch1 * 500.0/ SERVO_MAX));
 			g.channel_pitch.radio_out =	elevon2_trim + (BOOL_TO_SIGN(g.reverse_ch2_elevon) * (ch2 * 500.0/ SERVO_MAX));
 		}
