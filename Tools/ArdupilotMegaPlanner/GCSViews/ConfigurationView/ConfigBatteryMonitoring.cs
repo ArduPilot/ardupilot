@@ -358,6 +358,11 @@ namespace ArdupilotMega.GCSViews.ConfigurationView
             }
 
             return -1;
+        }
+
+        private void timer1_Tick(object sender, EventArgs e)
+        {
+            TXT_voltage.Text = MainV2.cs.battery_voltage.ToString();
         }  
     }
 }

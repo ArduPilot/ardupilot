@@ -158,6 +158,7 @@ namespace ArdupilotMega.Controls
 
         public bool bgon = true;
         public bool hudon = true;
+        public bool batteryon = true;
 
         [System.ComponentModel.Browsable(true), System.ComponentModel.Category("Values")]
         public Color hudcolor { get { return whitePen.Color; } set { whitePen = new Pen(value, 2); } }
@@ -1311,13 +1312,14 @@ namespace ArdupilotMega.Controls
 
 
                 // battery
+                if (batteryon)
+                {
+                    graphicsObject.ResetTransform();
 
-                graphicsObject.ResetTransform();
-
-                drawstring(graphicsObject, "Bat", font, fontsize + 2, whiteBrush, fontsize, this.Height - 30 - fontoffset);
-                drawstring(graphicsObject, _batterylevel.ToString("0.00v"), font, fontsize + 2, whiteBrush, fontsize * 4, this.Height - 30 - fontoffset);
-                drawstring(graphicsObject, _batteryremaining.ToString("0%"), font, fontsize + 2, whiteBrush, fontsize * 9, this.Height - 30 - fontoffset);
-
+                    drawstring(graphicsObject, "Bat", font, fontsize + 2, whiteBrush, fontsize, this.Height - 30 - fontoffset);
+                    drawstring(graphicsObject, _batterylevel.ToString("0.00v"), font, fontsize + 2, whiteBrush, fontsize * 4, this.Height - 30 - fontoffset);
+                    drawstring(graphicsObject, _batteryremaining.ToString("0%"), font, fontsize + 2, whiteBrush, fontsize * 9, this.Height - 30 - fontoffset);
+                }
                 // gps
 
                 string gps = "";

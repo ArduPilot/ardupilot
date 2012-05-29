@@ -25,6 +25,9 @@ namespace ArdupilotMega.Controls
 
         double step = 1 / 1200.0;
 
+        // image zoom level
+        int zoom = 11;
+
         RectLatLng area = new RectLatLng(-35.04286,117.84262,0.1,0.1);
 
         double _alt = 0;
@@ -65,7 +68,7 @@ namespace ArdupilotMega.Controls
             int maxZoom;
 
             GMaps.Instance.AdjustProjection(type, ref prj, out maxZoom);
-          int zoom = 11; // 12
+          //int zoom = 14; // 12
             if (!area.IsEmpty)
             {
                 try
@@ -85,6 +88,8 @@ namespace ArdupilotMega.Controls
                     GPoint rightButtomPx = prj.FromLatLngToPixel(area.Bottom, area.Right, zoom);
                     GPoint pxDelta = new GPoint(rightButtomPx.X - topLeftPx.X, rightButtomPx.Y - topLeftPx.Y);
 
+                    DateTime startimage = DateTime.Now;
+
                     int padding = 0;
                     {
                         using (Bitmap bmpDestination = new Bitmap(pxDelta.X + padding * 2, pxDelta.Y + padding * 2))
@@ -96,7 +101,7 @@ namespace ArdupilotMega.Controls
                                 // get tiles & combine into one
                                 foreach (var p in tileArea)
                                 {
-                                   //Console.WriteLine("Downloading[" + p + "]: " + tileArea.IndexOf(p) + " of " + tileArea.Count);
+                                   Console.WriteLine("Downloading[" + p + "]: " + tileArea.IndexOf(p) + " of " + tileArea.Count);
 
                                     foreach (MapType tp in types)
                                     {
@@ -114,6 +119,8 @@ namespace ArdupilotMega.Controls
                                             }
                                         }
                                     }
+                                    if ((DateTime.Now - startimage).TotalMilliseconds > 200)
+                                        break;
                                 }
                             }
                             _terrain = new Bitmap(bmpDestination, 512, 512);
@@ -136,6 +143,14 @@ namespace ArdupilotMega.Controls
 
 
                         }
+                    }
+                    if ((DateTime.Now - startimage).TotalMilliseconds > 200)
+                    {
+                        zoom--;
+                    }
+                    else
+                    {
+                        //zoom++;
                     }
                 }
                 catch { }
