@@ -389,7 +389,6 @@ static void set_mode(byte mode)
 			mode = STABILIZE;
 	}
 
-	old_control_mode 	= control_mode;
 	control_mode 		= mode;
 	control_mode 		= constrain(control_mode, 0, NUM_MODES - 1);
 
