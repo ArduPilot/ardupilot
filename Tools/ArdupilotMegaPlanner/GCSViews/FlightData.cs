@@ -1863,5 +1863,32 @@ print 'Roll complete'
             LogPlayBackSpeed = NUM_playbackspeed.Value;
             lbl_playbackspeed.Text = "x " + LogPlayBackSpeed;
         }
+
+        private void setMJPEGSourceToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            string url = MainV2.config["mjpeg_url"] != null ? MainV2.config["mjpeg_url"].ToString() : @"http://127.0.0.1:56781/map.jpg";
+
+            Common.InputBox("Mjpeg url", "Enter the url to the mjpeg source url", ref url);
+
+            MainV2.config["mjpeg_url"] = url;
+
+            Utilities.CaptureMJPEG.URL = url;
+
+            Utilities.CaptureMJPEG.OnNewImage += new EventHandler(CaptureMJPEG_OnNewImage);
+
+            Utilities.CaptureMJPEG.runAsync();
+        }
+
+        void CaptureMJPEG_OnNewImage(object sender, EventArgs e)
+        {
+            GCSViews.FlightData.myhud.bgimage = (Image)sender;
+        }
+
+        private void setAspectRatioToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            hud1.SixteenXNine = !hud1.SixteenXNine;
+            // force a redraw
+            SubMainHT_Panel1_Resize(null, null);
+        }
     }
 }

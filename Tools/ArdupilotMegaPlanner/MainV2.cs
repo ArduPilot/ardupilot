@@ -1321,7 +1321,6 @@ namespace ArdupilotMega
             }
         }
 
-
         public static String ComputeWebSocketHandshakeSecurityHash09(String secWebSocketKey)
         {
             const String MagicKEY = "258EAFA5-E914-47DA-95CA-C5AB0DC85B11";
@@ -1451,7 +1450,7 @@ namespace ArdupilotMega
                     }
                     else if (url.Contains("georefnetwork.kml"))
                     {
-                        string header = "HTTP/1.1 200 OK\r\nContent-Type: application/vnd.google-earth.kml+xml\n\n";
+                        string header = "HTTP/1.1 200 OK\r\nContent-Type: application/vnd.google-earth.kml+xml\r\n\r\n";
                         byte[] temp = asciiEncoding.GetBytes(header);
                         stream.Write(temp, 0, temp.Length);
 
@@ -1463,7 +1462,7 @@ namespace ArdupilotMega
                     }
                     else if (url.Contains("network.kml"))
                     {
-                        string header = "HTTP/1.1 200 OK\r\nContent-Type: application/vnd.google-earth.kml+xml\n\n";
+                        string header = "HTTP/1.1 200 OK\r\nContent-Type: application/vnd.google-earth.kml+xml\r\n\r\n";
                         byte[] temp = asciiEncoding.GetBytes(header);
                         stream.Write(temp, 0, temp.Length);
 
@@ -1549,7 +1548,7 @@ namespace ArdupilotMega
                     }
                     else if (url.Contains("block_plane_0.dae"))
                     {
-                        string header = "HTTP/1.1 200 OK\r\nContent-Type: text/plain\n\n";
+                        string header = "HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\n\r\n";
                         byte[] temp = asciiEncoding.GetBytes(header);
                         stream.Write(temp, 0, temp.Length);
 
@@ -1567,7 +1566,7 @@ namespace ArdupilotMega
                     }
                     else if (url.Contains("hud.html"))
                     {
-                        string header = "HTTP/1.1 200 OK\r\nContent-Type: text/html\n\n";
+                        string header = "HTTP/1.1 200 OK\r\nContent-Type: text/html\r\n\r\n";
                         byte[] temp = asciiEncoding.GetBytes(header);
                         stream.Write(temp, 0, temp.Length);
 
@@ -1585,7 +1584,7 @@ namespace ArdupilotMega
                     }
                     else if (url.ToLower().Contains("hud.jpg") || url.ToLower().Contains("map.jpg") || url.ToLower().Contains("both.jpg"))
                     {
-                        string header = "HTTP/1.1 200 OK\r\nContent-Type: multipart/x-mixed-replace;boundary=APMPLANNER\n\n--APMPLANNER\r\n";
+                        string header = "HTTP/1.1 200 OK\r\nContent-Type: multipart/x-mixed-replace;boundary=APMPLANNER\r\n\r\n--APMPLANNER\r\n";
                         byte[] temp = asciiEncoding.GetBytes(header);
                         stream.Write(temp, 0, temp.Length);
 
