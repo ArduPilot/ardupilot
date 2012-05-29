@@ -368,8 +368,6 @@ static bool		do_simple 			= false;
 // Used to maintain the state of the previous control switch position
 // This is set to -1 when we need to re-read the switch
 static byte 	oldSwitchPosition;
-// This is used to look for change in the control switch
-static byte 	old_control_mode = STABILIZE;
 
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -1251,22 +1249,22 @@ static void slow_loop()
 	}
 }
 
-#define AUTO_ARMING_DELAY 60
+#define AUTO_DISARMING_DELAY 25
 // 1Hz loop
 static void super_slow_loop()
 {
 	if (g.log_bitmask & MASK_LOG_CUR && motors.armed())
 		Log_Write_Current();
 
-	// this function disarms the copter if it has been sitting on the ground for any moment of time greater than 30s
+	// this function disarms the copter if it has been sitting on the ground for any moment of time greater than 25 seconds
 	// but only of the control mode is manual
 	if((control_mode <= ACRO) && (g.rc_3.control_in == 0)){
 		auto_disarming_counter++;
 
-		if(auto_disarming_counter == AUTO_ARMING_DELAY){
+		if(auto_disarming_counter == AUTO_DISARMING_DELAY){
 			init_disarm_motors();
-		}else if (auto_disarming_counter > AUTO_ARMING_DELAY){
-			auto_disarming_counter = AUTO_ARMING_DELAY + 1;
+		}else if (auto_disarming_counter > AUTO_DISARMING_DELAY){
+			auto_disarming_counter = AUTO_DISARMING_DELAY + 1;
 		}
 	}else{
 		auto_disarming_counter = 0;
