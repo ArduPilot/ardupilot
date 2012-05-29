@@ -1633,7 +1633,7 @@ void update_throttle_mode(void)
 
 			}else{
 				// we are on the ground
-				takeoff_complete = false;
+				//takeoff_complete = false;
 
 				// reset baro data if we are near home
 				if(home_distance < 400  || GPS_enabled == false){ // 4m from home
