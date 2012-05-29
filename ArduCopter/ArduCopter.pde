@@ -1624,11 +1624,13 @@ void update_throttle_mode(void)
 				}
 				#endif
 
-				// Code to manage the Copter state
-				if ((millis() - takeoff_timer) > 5000){
-					// we must be in the air by now
-					takeoff_complete 	= true;
+				if (takeoff_complete == false && motors.armed()){
+					if ((g.rc_3.control_in > g.throttle_cruise)){
+						// we must be in the air by now
+						takeoff_complete = true;
+					}
 				}
+
 			}else{
 				// we are on the ground
 				takeoff_complete = false;
