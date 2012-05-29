@@ -141,7 +141,8 @@ static void throttle_failsafe(uint16_t pwm)
 		// throttle has dropped below the mark
 		failsafeCounter++;
 		if (failsafeCounter == FS_COUNTER-1){
-			//
+			// called right before trigger
+			// do nothing
 		}else if(failsafeCounter == FS_COUNTER) {
 			// Don't enter Failsafe if we are not armed
 			// home distance is in meters
