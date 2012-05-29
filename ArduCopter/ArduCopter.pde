@@ -674,8 +674,6 @@ static byte		throttle_mode;
 // We must be in the air with throttle for 5 seconds before this flag is true
 // This flag is reset when we are in a manual throttle mode with 0 throttle or disarmed
 static boolean	takeoff_complete;
-// Used to record the most recent time since we enaged the throttle to take off
-static uint32_t	takeoff_timer;
 // Used to see if we have landed and if we should shut our engines - not fully implemented
 static boolean	land_complete = true;
 // used to manually override throttle in interactive Alt hold modes
@@ -1625,26 +1623,13 @@ void update_throttle_mode(void)
 				#endif
 
 				if (takeoff_complete == false && motors.armed()){
-					if ((g.rc_3.control_in > g.throttle_cruise)){
+					if (g.rc_3.control_in > g.throttle_cruise){
 						// we must be in the air by now
 						takeoff_complete = true;
 					}
 				}
 
 			}else{
-				// we are on the ground
-				//takeoff_complete = false;
-
-				// reset baro data if we are near home
-				if(home_distance < 400  || GPS_enabled == false){ // 4m from home
-					// causes Baro to do a quick recalibration
-					// XXX commented until further testing
-					// reset_baro();
-				}
-
-				// remember our time since takeoff
-				// -------------------------------
-				takeoff_timer = millis();
 
 				// make sure we also request 0 throttle out
 				// so the props stop ... properly
