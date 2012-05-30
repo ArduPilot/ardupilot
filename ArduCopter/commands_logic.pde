@@ -422,7 +422,7 @@ static bool verify_land_sonar()
 			landing_boost++;  // reduce the throttle at twice the normal rate
 
 			if(ground_detector < 30) {
-				ground_detector++
+				ground_detector++;
 			}else if (ground_detector == 30){
 				ground_detector++;
 				land_complete = true;
@@ -456,7 +456,7 @@ static bool verify_land_baro()
 			landing_boost++;
 
 			if(ground_detector < 30) {
-				ground_detector++
+				ground_detector++;
 			}else if (ground_detector == 30){
 				ground_detector++;
 				land_complete = true;
