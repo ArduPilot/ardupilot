@@ -424,9 +424,9 @@ static bool verify_land_sonar()
 			if(ground_detector < 30) {
 				ground_detector++;
 			}else if (ground_detector == 30){
-				ground_detector++;
 				land_complete = true;
 				if(g.rc_3.control_in == 0){
+					ground_detector++;
 					init_disarm_motors();
 				}
 				return true;
@@ -458,9 +458,9 @@ static bool verify_land_baro()
 			if(ground_detector < 30) {
 				ground_detector++;
 			}else if (ground_detector == 30){
-				ground_detector++;
 				land_complete = true;
 				if(g.rc_3.control_in == 0){
+					ground_detector++;
 					init_disarm_motors();
 				}
 				return true;
