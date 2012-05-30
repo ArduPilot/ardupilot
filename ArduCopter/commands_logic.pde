@@ -296,7 +296,7 @@ static void do_approach()
 {
 	// Set a contrained value to EEPROM
 	g.rtl_approach_alt.set(constrain((float)g.rtl_approach_alt, 1.0, 10.0));
-	
+
 	// Get the target_alt in cm
 	uint16_t target_alt = (uint16_t)(g.rtl_approach_alt * 100);
 
@@ -420,12 +420,13 @@ static bool verify_land_sonar()
 		// if we are low or don't seem to be decending much, increment ground detector
 		if(current_loc.alt < 40 || abs(climb_rate) < 20) {
 			landing_boost++;  // reduce the throttle at twice the normal rate
-			if(ground_detector++ >= 30) {
+
+			if(ground_detector < 30) {
+				ground_detector++
+			}else if (ground_detector == 30){
+				ground_detector++;
 				land_complete = true;
-				ground_detector = 30;
-				icount = 1;
 				if(g.rc_3.control_in == 0){
-					// init disarm motors
 					init_disarm_motors();
 				}
 				return true;
@@ -453,11 +454,13 @@ static bool verify_land_baro()
 	if(current_loc.alt < 150 ){
 		if(abs(climb_rate) < 20) {
 			landing_boost++;
-			if(ground_detector++ >= 30) {
+
+			if(ground_detector < 30) {
+				ground_detector++
+			}else if (ground_detector == 30){
+				ground_detector++;
 				land_complete = true;
-				ground_detector = 30;
 				if(g.rc_3.control_in == 0){
-					// init disarm motors
 					init_disarm_motors();
 				}
 				return true;
