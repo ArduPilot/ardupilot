@@ -1751,6 +1751,10 @@ static void update_navigation()
 			if((wp_distance <= g.waypoint_radius) || check_missed_wp()){
 				// if loiter_timer value > 0, we are set to trigger auto_land or approach after 20 seconds
 				set_mode(LOITER);
+				// force loitering above home
+				next_WP.lat = home.lat;
+				next_WP.lng = home.lng;
+
 				if(g.rtl_land_enabled || failsafe)
 					loiter_timer = millis();
 				else
