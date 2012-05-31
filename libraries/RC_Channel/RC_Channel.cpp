@@ -37,9 +37,18 @@ const AP_Param::GroupInfo RC_Channel::var_info[] PROGMEM = {
 void
 RC_Channel::set_range(int low, int high)
 {
-	_type 	= RC_CHANNEL_RANGE;
-	_high 	= high;
-	_low 	= low;
+	_type 		= RC_CHANNEL_RANGE;
+	_high 		= high;
+	_low 		= low;
+	_high_out 	= high;
+	_low_out 	= low;
+}
+
+void
+RC_Channel::set_range_out(int low, int high)
+{
+	_high_out	= high;
+	_low_out	= low;
 }
 
 void
@@ -79,8 +88,6 @@ void
 RC_Channel::set_type(uint8_t t)
 {
 	_type = t;
-	//Serial.print("type1: ");
-	//Serial.println(t,DEC);
 }
 
 // call after first read
@@ -92,9 +99,8 @@ RC_Channel::trim()
 
 // read input from APM_RC - create a control_in value
 void
-RC_Channel::set_pwm(int pwm)
+RC_Channel::set_pwm(int16_t pwm)
 {
-	//Serial.print(pwm,DEC);
 
 	/*if(_filter){
 		if(radio_in == 0)
@@ -105,13 +111,12 @@ RC_Channel::set_pwm(int pwm)
 		radio_in = pwm;
 	}*/
 
-	radio_in = constrain(pwm, radio_min.get(), radio_max.get());
+	radio_in = pwm;
 
 	if(_type == RC_CHANNEL_RANGE){
-		//Serial.print("range ");
 		control_in = pwm_to_range();
 		//control_in = constrain(control_in, _low, _high);
-		control_in = min(control_in, _high);
+		//control_in = min(control_in, _high);
 		control_in = (control_in < _dead_zone) ? 0 : control_in;
 
 		if (fabs(scale_output) != 1){
@@ -243,10 +248,12 @@ RC_Channel::angle_to_pwm()
 int16_t
 RC_Channel::pwm_to_range()
 {
+	int16_t r_in = constrain(radio_in, radio_min.get(), radio_max.get());
+
 	int radio_trim_low  = radio_min + _dead_zone;
 
-	if(radio_in > radio_trim_low)
-		return (_low + ((long)(_high - _low) * (long)(radio_in - radio_trim_low)) / (long)(radio_max - radio_trim_low));
+	if(r_in > radio_trim_low)
+		return (_low + ((long)(_high - _low) * (long)(r_in - radio_trim_low)) / (long)(radio_max - radio_trim_low));
 	else if(_dead_zone > 0)
 		return 0;
 	else
@@ -257,7 +264,7 @@ RC_Channel::pwm_to_range()
 int16_t
 RC_Channel::range_to_pwm()
 {
-	return ((long)(servo_out - _low) * (long)(radio_max - radio_min)) / (long)(_high - _low);
+	return ((long)(servo_out - _low_out) * (long)(radio_max - radio_min)) / (long)(_high_out - _low_out);
 }
 
 // ------------------------------------------

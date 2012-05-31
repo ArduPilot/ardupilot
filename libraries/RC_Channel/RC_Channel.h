@@ -41,6 +41,7 @@ class RC_Channel{
 
 	// setup the control preferences
 	void 		set_range(int low, int high);
+	void 		set_range_out(int low, int high);
 	void 		set_angle(int angle);
 	void 		set_reverse(bool reverse);
 	bool		get_reverse(void);
@@ -100,6 +101,8 @@ class RC_Channel{
 	uint8_t 	_type;
 	int16_t 	_high;
 	int16_t 	_low;
+	int16_t 	_high_out;
+	int16_t 	_low_out;
 };
 
 // This is ugly, but it fixes compilation on arduino
