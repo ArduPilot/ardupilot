@@ -246,7 +246,7 @@ RC_Channel::pwm_to_range()
 	if(radio_in > radio_trim_low)
 		return (_low + ((long)(_high - _low) * (long)(radio_in - radio_trim_low)) / (long)(radio_max - radio_trim_low));
 	else
-		return 0;
+		return _low;
 }
 
 
