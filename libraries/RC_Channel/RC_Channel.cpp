@@ -96,14 +96,16 @@ RC_Channel::set_pwm(int pwm)
 {
 	//Serial.print(pwm,DEC);
 
-	if(_filter){
+	/*if(_filter){
 		if(radio_in == 0)
 			radio_in = pwm;
 		else
 			radio_in = (pwm + radio_in) >> 1;		// Small filtering
 	}else{
 		radio_in = pwm;
-	}
+	}*/
+
+	radio_in = constrain(pwm, radio_min.get(), radio_max.get());
 
 	if(_type == RC_CHANNEL_RANGE){
 		//Serial.print("range ");
