@@ -66,6 +66,11 @@ static void init_rc_out()
 		read_radio();
 	}
 
+	// we want the input to be scaled correctly
+	g.rc_3.set_range_out(0,1000);
+
+
+
     // sanity check - prevent unconfigured radios from outputting
     if(g.rc_3.radio_min >= 1300){
         g.rc_3.radio_min = g.rc_3.radio_in;
