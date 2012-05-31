@@ -11,7 +11,7 @@
 #include "AP_MotorsHeli.h"
 
 const AP_Param::GroupInfo AP_MotorsHeli::var_info[] PROGMEM = {
-	AP_NESTEDGROUPINFO(AP_Motors, 0),
+	
 	
 	// @Param: SV1_POS
 	// @DisplayName: Servo 1 Position
@@ -96,7 +96,7 @@ const AP_Param::GroupInfo AP_MotorsHeli::var_info[] PROGMEM = {
 	// @DisplayName: Swash Plate Type
 	// @Description: Setting this to 0 will configure for a 3-servo CCPM. Setting this to 1 will configure for mechanically mixed "H1".
 	// @User: Standard
-	AP_GROUPINFO("SWASH_TYPE",	10,	AP_MotorsHeli,	swash_type),				// changed from trunk
+	AP_GROUPINFO("SWASH_TYPE",	10,	AP_MotorsHeli,	swash_type),				
 	
 	// @Param: GYR_GAIM
 	// @DisplayName: External Gyro Gain
@@ -121,13 +121,23 @@ const AP_Param::GroupInfo AP_MotorsHeli::var_info[] PROGMEM = {
 	// @Units: Degrees
 	// @User: Advanced
 	// @Increment: 1
-	AP_GROUPINFO("PHANG",		13,	AP_MotorsHeli,	phase_angle),				// changed from trunk
+	AP_GROUPINFO("PHANG",		13,	AP_MotorsHeli,	phase_angle),				
 	
 	// @Param: COLYAW
 	// @DisplayName: Collective-Yaw Mixing
 	// @Description: This is a feed-forward compensation to automatically add rudder input when collective pitch is increased.
 	// @Range: 0 5
-	AP_GROUPINFO("COLYAW",		14,	AP_MotorsHeli,	collective_yaw_effect),	// changed from trunk
+	AP_GROUPINFO("COLYAW",		14,	AP_MotorsHeli,	collective_yaw_effect),	
+	
+	// @Param: GOV_SETPOINT
+	// @DisplayName: External Motor Governor Setpoint
+	// @Description: This is the PWM which is passed to the external motor governor when external governor is enabled.
+	// @Range: 1000 2000
+	// @Units: PWM
+	// @Increment: 10
+	// @User: Standard
+	AP_GROUPINFO("GOV_SETPOINT", 15, AP_MotorsHeli, ext_gov_setpoint),
+	
     AP_GROUPEND
 };
 
@@ -159,6 +169,7 @@ void AP_MotorsHeli::enable()
 	_rc->enable_out(_motor_to_channel_map[AP_MOTORS_MOT_3]);	// swash servo 3
 	_rc->enable_out(_motor_to_channel_map[AP_MOTORS_MOT_4]);	// yaw
 	_rc->enable_out(AP_MOTORS_HELI_EXT_GYRO);	// for external gyro
+	_rc->enable_out(AP_MOTORS_HELI_EXT_ESC);	// for external ESC
 }
 
 // output_min - sends minimum values out to the motors
@@ -186,6 +197,8 @@ void AP_MotorsHeli::output_armed()
 	_rc_yaw->calc_pwm();
 
 	move_swash( _rc_roll->servo_out, _rc_pitch->servo_out, _rc_throttle->servo_out, _rc_yaw->servo_out );
+	
+	ext_esc_control();
 }
 
 // output_disarmed - sends commands to the motors
@@ -470,3 +483,61 @@ void AP_MotorsHeli::move_swash(int16_t roll_out, int16_t pitch_out, int16_t coll
 		_rc->Force_Out2_Out3();
 	}
 }
+
+void AP_MotorsHeli::ext_esc_control()
+
+{
+	switch ( AP_MOTORS_ESC_MODE_PASSTHROUGH ) {
+
+		case AP_MOTORS_ESC_MODE_PASSTHROUGH: 																	
+			if( armed() ){
+				_rc->OutputCh(AP_MOTORS_HELI_EXT_ESC, _rc_8->radio_in);		
+			} else {
+				_rc->OutputCh(AP_MOTORS_HELI_EXT_ESC, _rc_8->radio_min);
+			}
+		break;
+		
+		case AP_MOTORS_ESC_MODE_EXT_GOV:																		
+				
+			if( armed() && _rc_throttle->control_in > 10){
+				if (ext_esc_ramp < AP_MOTORS_EXT_ESC_RAMP_UP){
+					ext_esc_ramp++;
+					ext_esc_output = map(ext_esc_ramp, 0, AP_MOTORS_EXT_ESC_RAMP_UP, 1000, ext_gov_setpoint);
+				} else {
+					ext_esc_output = ext_gov_setpoint;
+				}
+			} else {
+				ext_esc_ramp = 0;	//Return ESC Ramp to 0
+				ext_esc_output = 1000; //Just to be sure ESC output is 0
+			}
+			_rc->OutputCh(AP_MOTORS_HELI_EXT_ESC, ext_esc_output);
+		break;
+		
+		//	case 3:																		// Open Loop ESC Control
+		//
+		//	coll_scaled = _motors->coll_out_scaled + 1000;
+		//	if(coll_scaled <= _motors->collective_mid){
+		//		esc_ol_output = map(coll_scaled, _motors->collective_min, _motors->collective_mid, esc_out_low, esc_out_mid);		// Bottom half of V-curve
+		//	} else if (coll_scaled > _motors->collective_mid){
+		//		esc_ol_output = map(coll_scaled, _motors->collective_mid, _motors->collective_max, esc_out_mid, esc_out_high);		// Top half of V-curve
+		//	} else { esc_ol_output = 1000; }																									// Just in case.
+		//
+		//	if(_motors->armed() && _rc_throttle->control_in > 10){
+		//			if (ext_esc_ramp < ext_esc_ramp_up){
+		//				ext_esc_ramp++;
+		//				ext_esc_output = map(ext_esc_ramp, 0, ext_esc_ramp_up, 1000, esc_ol_output);
+		//			} else {
+		//				ext_esc_output = esc_ol_output;
+		//			}
+		//		} else {
+		//			ext_esc_ramp = 0;	//Return ESC Ramp to 0
+		//			ext_esc_output = 1000; //Just to be sure ESC output is 0
+		//}
+		//		_rc->OutputCh(AP_MOTORS_HELI_EXT_ESC, ext_esc_output);
+		//	break;
+		
+			
+		default:
+		break;
+	}
+};
