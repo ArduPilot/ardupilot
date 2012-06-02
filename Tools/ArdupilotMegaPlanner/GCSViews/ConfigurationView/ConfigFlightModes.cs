@@ -19,12 +19,6 @@ namespace ArdupilotMega.GCSViews.ConfigurationView
         public ConfigFlightModes()
         {
             InitializeComponent();
-
-            timer.Tick += new EventHandler(timer_Tick);
-
-            timer.Enabled = true;
-            timer.Interval = 100;
-            timer.Start();
         }
 
         void timer_Tick(object sender, EventArgs e)
@@ -284,6 +278,14 @@ namespace ArdupilotMega.GCSViews.ConfigurationView
                 }
                 catch { }
             }
+
+
+
+            timer.Tick += new EventHandler(timer_Tick);
+
+            timer.Enabled = true;
+            timer.Interval = 100;
+            timer.Start();
         }
     }
 }

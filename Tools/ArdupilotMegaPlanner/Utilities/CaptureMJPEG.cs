@@ -41,6 +41,11 @@ namespace ArdupilotMega.Utilities
             asyncthread.Start();
         }
 
+        public static void Stop()
+        {
+            running = false;
+        }
+
         static void getUrl()
         {
 
@@ -116,7 +121,11 @@ namespace ArdupilotMega.Utilities
                 }
                 catch (Exception ex) { log.Info(ex); break; }
             }
-            
+
+            // clear last image
+            if (OnNewImage != null)
+                OnNewImage(null, new EventArgs());
+
             dataStream.Close();
             response.Close();
 

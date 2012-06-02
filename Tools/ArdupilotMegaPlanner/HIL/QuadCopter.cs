@@ -215,23 +215,23 @@ namespace ArdupilotMega.HIL
 
             foreach (var i in range((self.motors.Length)))
             {
-                roll_accel += -5000.0 * sin(radians(self.motors[i].angle)) * m[i];
-                pitch_accel += 5000.0 * cos(radians(self.motors[i].angle)) * m[i];
+                roll_accel += (-5000.0 * deg2rad) * sin(radians(self.motors[i].angle)) * m[i];
+                pitch_accel += (5000.0 * deg2rad) * cos(radians(self.motors[i].angle)) * m[i];
                 if (self.motors[i].clockwise)
                 {
-                    yaw_accel -= m[i] * 400.0;
+                    yaw_accel -= m[i] * 400.0 * deg2rad;
                 }
                 else
                 {
-                    yaw_accel += m[i] * 400.0;
+                    yaw_accel += m[i] * 400.0 * deg2rad;
                 }
                 thrust += m[i] * self.thrust_scale; // newtons
             }
 
             // rotational resistance
-            roll_accel -= (self.pDeg / self.terminal_rotation_rate) * 5000.0;
-            pitch_accel -= (self.qDeg / self.terminal_rotation_rate) * 5000.0;
-            yaw_accel -= (self.rDeg / self.terminal_rotation_rate) * 400.0;
+            roll_accel -= (self.pDeg / self.terminal_rotation_rate) * (5000.0 * deg2rad);
+            pitch_accel -= (self.qDeg / self.terminal_rotation_rate) * (5000.0 * deg2rad);
+            yaw_accel -= (self.rDeg / self.terminal_rotation_rate) * (400.0 * deg2rad);
 
             //Console.WriteLine("roll {0} {1} {2}", roll_accel, roll_rate, roll);
 
@@ -250,9 +250,9 @@ namespace ArdupilotMega.HIL
             self.pitch_rate = answer.Item2;
             self.yaw_rate = answer.Item3;
 
-            //self.roll_rate = pDeg;
-            //self.pitch_rate = qDeg;
-            //self.yaw_rate = rDeg;
+           // self.roll_rate = pDeg;
+           // self.pitch_rate = qDeg;
+           // self.yaw_rate = rDeg;
 
             //# update rotation
             roll += roll_rate * delta_time.TotalSeconds;

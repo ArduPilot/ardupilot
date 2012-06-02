@@ -375,6 +375,12 @@ namespace ArdupilotMega
 
             if (openFileDialog1.ShowDialog() == DialogResult.OK)
             {
+                if (MainV2.comPort.logplaybackfile != null)
+                {
+                    MainV2.comPort.logreadmode = false;
+                    MainV2.comPort.logplaybackfile.Close();
+                }
+
                 foreach (string logfile in openFileDialog1.FileNames)
                 {
 
@@ -537,6 +543,12 @@ namespace ArdupilotMega
 
             if (openFileDialog1.ShowDialog() == DialogResult.OK)
             {
+                if (MainV2.comPort.logplaybackfile != null)
+                {
+                    MainV2.comPort.logreadmode = false;
+                    MainV2.comPort.logplaybackfile.Close();
+                }
+
                 foreach (string logfile in openFileDialog1.FileNames)
                 {
 
@@ -599,6 +611,12 @@ namespace ArdupilotMega
 
             if (openFileDialog1.ShowDialog() == DialogResult.OK)
             {
+                if (MainV2.comPort.logplaybackfile != null)
+                {
+                    MainV2.comPort.logreadmode = false;
+                    MainV2.comPort.logplaybackfile.Close();
+                }
+
                 List<string> fields = GetLogFileValidFields(openFileDialog1.FileName);
 
                 zg1.GraphPane.CurveList.Clear();

@@ -154,12 +154,33 @@
     <value>1</value>
   </data>
   <data name="CMB_ratesensors.Items2" xml:space="preserve">
-    <value>3</value>
+    <value>2</value>
   </data>
   <data name="CMB_ratesensors.Items3" xml:space="preserve">
-    <value>10</value>
+    <value>3</value>
   </data>
   <data name="CMB_ratesensors.Items4" xml:space="preserve">
+    <value>4</value>
+  </data>
+  <data name="CMB_ratesensors.Items5" xml:space="preserve">
+    <value>5</value>
+  </data>
+  <data name="CMB_ratesensors.Items6" xml:space="preserve">
+    <value>6</value>
+  </data>
+  <data name="CMB_ratesensors.Items7" xml:space="preserve">
+    <value>7</value>
+  </data>
+  <data name="CMB_ratesensors.Items8" xml:space="preserve">
+    <value>8</value>
+  </data>
+  <data name="CMB_ratesensors.Items9" xml:space="preserve">
+    <value>9</value>
+  </data>
+  <data name="CMB_ratesensors.Items10" xml:space="preserve">
+    <value>10</value>
+  </data>
+  <data name="CMB_ratesensors.Items11" xml:space="preserve">
     <value>50</value>
   </data>
   <data name="CMB_ratesensors.Location" type="System.Drawing.Point, System.Drawing">
@@ -532,9 +553,30 @@
     <value>1</value>
   </data>
   <data name="CMB_raterc.Items2" xml:space="preserve">
-    <value>3</value>
+    <value>2</value>
   </data>
   <data name="CMB_raterc.Items3" xml:space="preserve">
+    <value>3</value>
+  </data>
+  <data name="CMB_raterc.Items4" xml:space="preserve">
+    <value>4</value>
+  </data>
+  <data name="CMB_raterc.Items5" xml:space="preserve">
+    <value>5</value>
+  </data>
+  <data name="CMB_raterc.Items6" xml:space="preserve">
+    <value>6</value>
+  </data>
+  <data name="CMB_raterc.Items7" xml:space="preserve">
+    <value>7</value>
+  </data>
+  <data name="CMB_raterc.Items8" xml:space="preserve">
+    <value>8</value>
+  </data>
+  <data name="CMB_raterc.Items9" xml:space="preserve">
+    <value>9</value>
+  </data>
+  <data name="CMB_raterc.Items10" xml:space="preserve">
     <value>10</value>
   </data>
   <data name="CMB_raterc.Location" type="System.Drawing.Point, System.Drawing">
@@ -673,9 +715,30 @@
     <value>1</value>
   </data>
   <data name="CMB_ratestatus.Items2" xml:space="preserve">
-    <value>3</value>
+    <value>2</value>
   </data>
   <data name="CMB_ratestatus.Items3" xml:space="preserve">
+    <value>3</value>
+  </data>
+  <data name="CMB_ratestatus.Items4" xml:space="preserve">
+    <value>4</value>
+  </data>
+  <data name="CMB_ratestatus.Items5" xml:space="preserve">
+    <value>5</value>
+  </data>
+  <data name="CMB_ratestatus.Items6" xml:space="preserve">
+    <value>6</value>
+  </data>
+  <data name="CMB_ratestatus.Items7" xml:space="preserve">
+    <value>7</value>
+  </data>
+  <data name="CMB_ratestatus.Items8" xml:space="preserve">
+    <value>8</value>
+  </data>
+  <data name="CMB_ratestatus.Items9" xml:space="preserve">
+    <value>9</value>
+  </data>
+  <data name="CMB_ratestatus.Items10" xml:space="preserve">
     <value>10</value>
   </data>
   <data name="CMB_ratestatus.Location" type="System.Drawing.Point, System.Drawing">
@@ -706,9 +769,30 @@
     <value>1</value>
   </data>
   <data name="CMB_rateposition.Items2" xml:space="preserve">
-    <value>3</value>
+    <value>2</value>
   </data>
   <data name="CMB_rateposition.Items3" xml:space="preserve">
+    <value>3</value>
+  </data>
+  <data name="CMB_rateposition.Items4" xml:space="preserve">
+    <value>4</value>
+  </data>
+  <data name="CMB_rateposition.Items5" xml:space="preserve">
+    <value>5</value>
+  </data>
+  <data name="CMB_rateposition.Items6" xml:space="preserve">
+    <value>6</value>
+  </data>
+  <data name="CMB_rateposition.Items7" xml:space="preserve">
+    <value>7</value>
+  </data>
+  <data name="CMB_rateposition.Items8" xml:space="preserve">
+    <value>8</value>
+  </data>
+  <data name="CMB_rateposition.Items9" xml:space="preserve">
+    <value>9</value>
+  </data>
+  <data name="CMB_rateposition.Items10" xml:space="preserve">
     <value>10</value>
   </data>
   <data name="CMB_rateposition.Location" type="System.Drawing.Point, System.Drawing">
@@ -739,9 +823,30 @@
     <value>1</value>
   </data>
   <data name="CMB_rateattitude.Items2" xml:space="preserve">
-    <value>3</value>
+    <value>2</value>
   </data>
   <data name="CMB_rateattitude.Items3" xml:space="preserve">
+    <value>3</value>
+  </data>
+  <data name="CMB_rateattitude.Items4" xml:space="preserve">
+    <value>4</value>
+  </data>
+  <data name="CMB_rateattitude.Items5" xml:space="preserve">
+    <value>5</value>
+  </data>
+  <data name="CMB_rateattitude.Items6" xml:space="preserve">
+    <value>6</value>
+  </data>
+  <data name="CMB_rateattitude.Items7" xml:space="preserve">
+    <value>7</value>
+  </data>
+  <data name="CMB_rateattitude.Items8" xml:space="preserve">
+    <value>8</value>
+  </data>
+  <data name="CMB_rateattitude.Items9" xml:space="preserve">
+    <value>9</value>
+  </data>
+  <data name="CMB_rateattitude.Items10" xml:space="preserve">
     <value>10</value>
   </data>
   <data name="CMB_rateattitude.Location" type="System.Drawing.Point, System.Drawing">
@@ -1268,7 +1373,7 @@
     <value>BUT_Joystick</value>
   </data>
   <data name="&gt;&gt;BUT_Joystick.Type" xml:space="preserve">
-    <value>ArdupilotMega.Controls.MyButton, ArdupilotMegaPlanner, Version=1.1.4513.13745, Culture=neutral, PublicKeyToken=null</value>
+    <value>ArdupilotMega.Controls.MyButton, ArdupilotMegaPlanner, Version=1.1.4534.12553, Culture=neutral, PublicKeyToken=null</value>
   </data>
   <data name="&gt;&gt;BUT_Joystick.Parent" xml:space="preserve">
     <value>$this</value>
@@ -1295,7 +1400,7 @@
     <value>BUT_videostop</value>
   </data>
   <data name="&gt;&gt;BUT_videostop.Type" xml:space="preserve">
-    <value>ArdupilotMega.Controls.MyButton, ArdupilotMegaPlanner, Version=1.1.4513.13745, Culture=neutral, PublicKeyToken=null</value>
+    <value>ArdupilotMega.Controls.MyButton, ArdupilotMegaPlanner, Version=1.1.4534.12553, Culture=neutral, PublicKeyToken=null</value>
   </data>
   <data name="&gt;&gt;BUT_videostop.Parent" xml:space="preserve">
     <value>$this</value>
@@ -1322,7 +1427,7 @@
     <value>BUT_videostart</value>
   </data>
   <data name="&gt;&gt;BUT_videostart.Type" xml:space="preserve">
-    <value>ArdupilotMega.Controls.MyButton, ArdupilotMegaPlanner, Version=1.1.4513.13745, Culture=neutral, PublicKeyToken=null</value>
+    <value>ArdupilotMega.Controls.MyButton, ArdupilotMegaPlanner, Version=1.1.4534.12553, Culture=neutral, PublicKeyToken=null</value>
   </data>
   <data name="&gt;&gt;BUT_videostart.Parent" xml:space="preserve">
     <value>$this</value>
@@ -1397,6 +1502,6 @@
     <value>ConfigPlanner</value>
   </data>
   <data name="&gt;&gt;$this.Type" xml:space="preserve">
-    <value>ArdupilotMega.Controls.BackstageView.BackStageViewContentPanel, ArdupilotMegaPlanner, Version=1.1.4513.13745, Culture=neutral, PublicKeyToken=null</value>
+    <value>ArdupilotMega.Controls.BackstageView.BackStageViewContentPanel, ArdupilotMegaPlanner, Version=1.1.4534.12553, Culture=neutral, PublicKeyToken=null</value>
   </data>
 </root>
