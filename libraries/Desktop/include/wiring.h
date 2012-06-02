@@ -113,6 +113,8 @@ int analogRead(uint8_t);
 void analogReference(uint8_t mode);
 void analogWrite(uint8_t, int);
 
+long map(long , long , long , long , long );
+
 unsigned long millis(void);
 unsigned long micros(void);
 void delay(unsigned long);
