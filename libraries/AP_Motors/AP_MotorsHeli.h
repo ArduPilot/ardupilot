@@ -14,6 +14,13 @@
 #include <APM_RC.h>         // ArduPilot Mega RC Library
 #include <AP_Motors.h>
 
+// below is required to make "map" function available to this library
+#if defined(ARDUINO) && ARDUINO >= 100
+	#include "Arduino.h"
+#else
+	#include "WProgram.h"
+#endif
+
 #define AP_MOTORS_HELI_SPEED_DEFAULT 125	// default servo update rate for helicopters
 #define AP_MOTORS_HELI_SPEED_DIGITAL_SERVOS 125	// update rate for digital servos
 #define AP_MOTORS_HELI_SPEED_ANALOG_SERVOS 125	// update rate for analog servos
@@ -65,21 +72,21 @@ public:
 		servo1_pos				(-60),
 		servo2_pos				(60),
 		servo3_pos				(180),
-		roll_max				(4500),
-		pitch_max				(4500),
 		collective_min			(1250),
 		collective_max			(1750),
 		collective_mid			(1500),
 		ext_gyro_enabled        (0),
 		ext_gyro_gain           (1350),
+		roll_max				(4500),
+		pitch_max				(4500),
 		phase_angle				(0),
 		collective_yaw_effect	(0),
 		servo_manual			(0),
-		throttle_mid(0),
-		ext_gov_setpoint(1500),
-		_roll_scaler(1),
-		_pitch_scaler(1),
-		_collective_scalar(1),
+		ext_gov_setpoint		(1500),
+		throttle_mid			(0),
+		_roll_scaler			(1),
+		_pitch_scaler			(1),
+		_collective_scalar		(1),
 		_swash_initialised(false)
 		{};
 
@@ -103,8 +110,7 @@ public:
 	AP_Int16	collective_yaw_effect;
 	AP_Int8		servo_manual;		// used to trigger swash reset from mission planner	
 	AP_Int16	ext_gov_setpoint;	// maximum output to the motor governor
-	int16_t throttle_mid;			// throttle mid point in pwm form (i.e. 0 ~ 1000)
-	int16_t coll_out_scaled;
+	int16_t 	throttle_mid;		// throttle mid point in pwm form (i.e. 0 ~ 1000)
 
 	
 	// init
