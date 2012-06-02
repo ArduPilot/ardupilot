@@ -75,7 +75,7 @@ public:
     virtual void	init(void) = 0;
 
     // Properties
-    long	time;			///< GPS time (milliseconds from epoch)
+    uint32_t time;			///< GPS time (milliseconds from epoch)
     long	date;			///< GPS date (FORMAT TBD)
     long	latitude;		///< latitude in degrees * 10,000,000
     long	longitude;		///< longitude in degrees * 10,000,000

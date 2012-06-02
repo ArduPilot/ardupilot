@@ -30,7 +30,7 @@ public:
     /// defines a member function set_<variable>(<type>)
     ///
 #define __GPS_SHIM_SET(__type, __name) void set_##__name(__type v) { __name = v; _updated = true; }
-    __GPS_SHIM_SET(long, time);
+    __GPS_SHIM_SET(uint32_t, time);
     __GPS_SHIM_SET(long, latitude);
     __GPS_SHIM_SET(long, longitude);
     __GPS_SHIM_SET(long, altitude);
