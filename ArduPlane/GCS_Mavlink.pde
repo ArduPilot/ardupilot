@@ -1926,7 +1926,7 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
             // set gps hil sensor
             g_gps->setHIL(packet.time_usec/1000.0,
                           packet.lat*1.0e-7, packet.lon*1.0e-7, packet.alt*1.0e-3,
-                          packet.vel*1.0e-2, packet.cog*1.0e-2, 0, 0);
+                          packet.vel*1.0e-2, packet.cog*1.0e-2, 0, 10);
             break;
         }
 #else // MAVLINK10
@@ -1938,7 +1938,7 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
 
             // set gps hil sensor
             g_gps->setHIL(packet.usec/1000.0,packet.lat,packet.lon,packet.alt,
-            packet.v,packet.hdg,0,0);
+            packet.v,packet.hdg,0,10);
             break;
         }
 #endif // MAVLINK10
@@ -1966,7 +1966,7 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
             // set gps hil sensor
             g_gps->setHIL(packet.time_usec/1000.0,
                           packet.lat*1.0e-7, packet.lon*1.0e-7, packet.alt*1.0e-3,
-                          vel*1.0e-2, cog*1.0e-2, 0, 0);
+                          vel*1.0e-2, cog*1.0e-2, 0, 10);
 			
 			#if HIL_MODE == HIL_MODE_SENSORS
 			
