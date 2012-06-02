@@ -35,7 +35,7 @@ const AP_Param::GroupInfo RC_Channel::var_info[] PROGMEM = {
 
 // setup the control preferences
 void
-RC_Channel::set_range(int low, int high)
+RC_Channel::set_range(int16_t low, int16_t high)
 {
 	_type 		= RC_CHANNEL_RANGE;
 	_high 		= high;
@@ -45,21 +45,21 @@ RC_Channel::set_range(int low, int high)
 }
 
 void
-RC_Channel::set_range_out(int low, int high)
+RC_Channel::set_range_out(int16_t low, int16_t high)
 {
 	_high_out	= high;
 	_low_out	= low;
 }
 
 void
-RC_Channel::set_angle(int angle)
+RC_Channel::set_angle(int16_t angle)
 {
 	_type 	= RC_CHANNEL_ANGLE;
 	_high 	= angle;
 }
 
 void
-RC_Channel::set_dead_zone(int dzone)
+RC_Channel::set_dead_zone(int16_t dzone)
 {
 	_dead_zone.set_and_save(abs(dzone >>1));
 }
@@ -138,12 +138,12 @@ RC_Channel::set_pwm(int16_t pwm)
 		if(expo) {
 			long temp = control_in;
 			temp = (temp * temp) / (long)_high;
-			control_in = (int)((control_in >= 0) ? temp : -temp);
+			control_in = (int16_t)((control_in >= 0) ? temp : -temp);
 		}*/
 	}
 }
 
-int
+int16_t
 RC_Channel::control_mix(float value)
 {
 	return (1 - abs(control_in / _high)) * value + control_in;
@@ -218,8 +218,8 @@ RC_Channel::update_min_max()
 int16_t
 RC_Channel::pwm_to_angle()
 {
-	int radio_trim_high = radio_trim + _dead_zone;
-	int radio_trim_low  = radio_trim - _dead_zone;
+	int16_t radio_trim_high = radio_trim + _dead_zone;
+	int16_t radio_trim_low  = radio_trim - _dead_zone;
 
     // prevent div by 0
     if ((radio_trim_low - radio_min) == 0 || (radio_max - radio_trim_high) == 0)
@@ -250,7 +250,7 @@ RC_Channel::pwm_to_range()
 {
 	int16_t r_in = constrain(radio_in, radio_min.get(), radio_max.get());
 
-	int radio_trim_low  = radio_min + _dead_zone;
+	int16_t radio_trim_low  = radio_min + _dead_zone;
 
 	if(r_in > radio_trim_low)
 		return (_low + ((long)(_high - _low) * (long)(r_in - radio_trim_low)) / (long)(radio_max - radio_trim_low));
