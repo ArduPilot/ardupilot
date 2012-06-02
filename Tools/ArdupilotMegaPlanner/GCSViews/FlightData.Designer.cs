@@ -21,6 +21,7 @@
             this.stopRecordToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.setMJPEGSourceToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.setAspectRatioToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.displayBatteryInfoToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.bindingSource1 = new System.Windows.Forms.BindingSource(this.components);
             this.tabControl1 = new System.Windows.Forms.TabControl();
             this.tabActions = new System.Windows.Forms.TabPage();
@@ -216,7 +217,8 @@
             this.recordHudToAVIToolStripMenuItem,
             this.stopRecordToolStripMenuItem,
             this.setMJPEGSourceToolStripMenuItem,
-            this.setAspectRatioToolStripMenuItem});
+            this.setAspectRatioToolStripMenuItem,
+            this.displayBatteryInfoToolStripMenuItem});
             this.contextMenuStrip2.Name = "contextMenuStrip2";
             resources.ApplyResources(this.contextMenuStrip2, "contextMenuStrip2");
             // 
@@ -243,6 +245,12 @@
             this.setAspectRatioToolStripMenuItem.Name = "setAspectRatioToolStripMenuItem";
             resources.ApplyResources(this.setAspectRatioToolStripMenuItem, "setAspectRatioToolStripMenuItem");
             this.setAspectRatioToolStripMenuItem.Click += new System.EventHandler(this.setAspectRatioToolStripMenuItem_Click);
+            // 
+            // displayBatteryInfoToolStripMenuItem
+            // 
+            this.displayBatteryInfoToolStripMenuItem.Name = "displayBatteryInfoToolStripMenuItem";
+            resources.ApplyResources(this.displayBatteryInfoToolStripMenuItem, "displayBatteryInfoToolStripMenuItem");
+            this.displayBatteryInfoToolStripMenuItem.Click += new System.EventHandler(this.displayBatteryInfoToolStripMenuItem_Click);
             // 
             // bindingSource1
             // 
@@ -1247,5 +1255,6 @@
         private Controls.MyLabel lbl_playbackspeed;
         private System.Windows.Forms.ToolStripMenuItem setMJPEGSourceToolStripMenuItem;
         private System.Windows.Forms.ToolStripMenuItem setAspectRatioToolStripMenuItem;
+        private System.Windows.Forms.ToolStripMenuItem displayBatteryInfoToolStripMenuItem;
     }
 }

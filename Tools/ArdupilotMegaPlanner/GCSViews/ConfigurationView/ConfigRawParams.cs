@@ -63,7 +63,12 @@ namespace ArdupilotMega.GCSViews.ConfigurationView
                     continue;
 
                 string name = items[0];
-                float value = float.Parse(items[1], new System.Globalization.CultureInfo("en-US"));
+                float value = 0;
+                try
+                {
+                    value = float.Parse(items[1], System.Globalization.CultureInfo.InvariantCulture);// new System.Globalization.CultureInfo("en-US"));
+                }
+                catch (Exception ex) { log.Error(ex); throw new FormatException("Invalid number on param " + name + " : " + items[1].ToString()); }
 
                 MAVLink.modifyParamForDisplay(true, name, ref value);
 

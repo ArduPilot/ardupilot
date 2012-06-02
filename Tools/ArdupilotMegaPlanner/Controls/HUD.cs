@@ -1341,7 +1341,7 @@ namespace ArdupilotMega.Controls
                     gps = ("GPS: 3D Fix");
                 }
 
-                drawstring(graphicsObject, gps, font, fontsize + 2, whiteBrush, this.Width - 10 * fontsize, this.Height - 30 - fontoffset);
+                drawstring(graphicsObject, gps, font, fontsize + 2, whiteBrush, this.Width - 13 * fontsize, this.Height - 30 - fontoffset);
 
 
                 if (isNaN)

@@ -1006,11 +1006,11 @@ namespace ArdupilotMega.GCSViews
 #else
                 imu.usec = ((ulong)DateTime.Now.ToBinary());
 #endif
-                imu.xgyro = (short)(fdm.phidot); // roll - yes
+                imu.xgyro = (short)(fdm.phidot * 1000); // roll - yes
                 //imu.xmag = (short)(Math.Sin(head * deg2rad) * 1000);
-                imu.ygyro = (short)(fdm.thetadot); // pitch - yes
+                imu.ygyro = (short)(fdm.thetadot * 1000); // pitch - yes
                 //imu.ymag = (short)(Math.Cos(head * deg2rad) * 1000);
-                imu.zgyro = (short)(fdm.psidot);
+                imu.zgyro = (short)(fdm.psidot * 1000);
                 imu.zmag = 0;
 
                 imu.xacc = (Int16)Math.Min(Int16.MaxValue, Math.Max(Int16.MinValue, (fdm.A_X_pilot * 9808 / 32.2))); // pitch
@@ -1019,7 +1019,7 @@ namespace ArdupilotMega.GCSViews
 
                 //Console.WriteLine("ax " + imu.xacc + " ay " + imu.yacc + " az " + imu.zacc);
 #if MAVLINK10
-                gps.alt = ((int)(fdm.altitude * ft2m * 1000));
+                gps.alt = ((int)(fdm.altitude * 1000));
                 gps.fix_type = 3;
                 gps.cog = (ushort)((((Math.Atan2(fdm.v_east, fdm.v_north) * rad2deg) + 360) % 360) * 100);
                 gps.lat = (int)(fdm.latitude * rad2deg * 1.0e7);
@@ -1027,7 +1027,7 @@ namespace ArdupilotMega.GCSViews
                 gps.time_usec = ((ulong)DateTime.Now.Ticks);
                 gps.vel = (ushort)(Math.Sqrt((fdm.v_north * fdm.v_north) + (fdm.v_east * fdm.v_east)) * ft2m * 100);
 #else
-                gps.alt = ((float)(fdm.altitude * ft2m));
+                gps.alt = ((float)(fdm.altitude));
                 gps.fix_type = 3;
                 gps.hdg = (float)(((Math.Atan2(fdm.v_east, fdm.v_north) * rad2deg) + 360) % 360);
                 //Console.WriteLine(gps.hdg);
@@ -1037,7 +1037,7 @@ namespace ArdupilotMega.GCSViews
                 gps.v = ((float)Math.Sqrt((fdm.v_north * fdm.v_north) + (fdm.v_east * fdm.v_east)) * ft2m);
 
 #endif
-                asp.airspeed = fdm.vcas * ft2m;
+                asp.airspeed = fdm.vcas * 0.5144444f;//  knots to m/s
             }
             else
             {

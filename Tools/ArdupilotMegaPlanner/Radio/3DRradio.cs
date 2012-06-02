@@ -278,7 +278,7 @@ namespace ArdupilotMega
 
                             if (values.Length == 3)
                             {
-                                Control[] controls = this.Controls.Find("R" + values[0].Trim(), false);
+                                Control[] controls = this.Controls.Find("R" + values[0].Trim(), true);
 
                                 if (controls.Length > 0)
                                 {
@@ -345,7 +345,7 @@ namespace ArdupilotMega
 
                             if (values.Length == 3)
                             {
-                                Control[] controls = this.Controls.Find(values[0].Trim(), false);
+                                Control[] controls = this.Controls.Find(values[0].Trim(), true);
 
                                 if (controls.Length > 0)
                                 {
