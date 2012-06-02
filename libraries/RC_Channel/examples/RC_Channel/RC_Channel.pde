@@ -5,28 +5,51 @@
 
 */
 
+#include <FastSerial.h>
+#include <AP_Common.h>		// ArduPilot Mega Common Library
+#include <Arduino_Mega_ISR_Registry.h>
+#include <AP_Math.h>        // ArduPilot Mega Vector/Matrix math Library
 #include <APM_RC.h> 		// ArduPilot Mega RC Library
 #include <RC_Channel.h> 	// ArduPilot Mega RC Library
 
+// define APM1 or APM2
+#define APM_HARDWARE_APM1	1
+#define APM_HARDWARE_APM2	2
 
-#define EE_RADIO_1 0x00	// all gains stored from here
-#define EE_RADIO_2 0x06	// all gains stored from here
-#define EE_RADIO_3 0x0C	// all gains stored from here
-#define EE_RADIO_4 0x12	// all gains stored from here
-#define EE_RADIO_5 0x18	// all gains stored from here
-#define EE_RADIO_6 0x1E	// all gains stored from here
-#define EE_RADIO_7 0x24	// all gains stored from here
-#define EE_RADIO_8 0x2A	// all gains stored from here
+// set your hardware type here
+#define CONFIG_APM_HARDWARE APM_HARDWARE_APM2
 
+Arduino_Mega_ISR_Registry isr_registry;
 
-RC_Channel rc_1(EE_RADIO_1);
-RC_Channel rc_2(EE_RADIO_2);
-RC_Channel rc_3(EE_RADIO_3);
-RC_Channel rc_4(EE_RADIO_4);
-RC_Channel rc_5(EE_RADIO_5);
-RC_Channel rc_6(EE_RADIO_6);
-RC_Channel rc_7(EE_RADIO_7);
-RC_Channel rc_8(EE_RADIO_8);
+////////////////////////////////////////////////////////////////////////////////
+// Serial ports
+////////////////////////////////////////////////////////////////////////////////
+//
+// Note that FastSerial port buffers are allocated at ::begin time,
+// so there is not much of a penalty to defining ports that we don't
+// use.
+//
+FastSerialPort0(Serial);        // FTDI/console
+FastSerialPort1(Serial1);       // GPS port
+FastSerialPort3(Serial3);       // Telemetry port
+
+////////////////////////////////////////////
+// RC Hardware
+////////////////////////////////////////////
+#if CONFIG_APM_HARDWARE == APM_HARDWARE_APM2
+    APM_RC_APM2 APM_RC;
+#else
+    APM_RC_APM1 APM_RC;
+#endif
+
+RC_Channel rc_1;
+RC_Channel rc_2;
+RC_Channel rc_3;
+RC_Channel rc_4;
+RC_Channel rc_5;
+RC_Channel rc_6;
+RC_Channel rc_7;
+RC_Channel rc_8;
 
 #define CH_1 0
 #define CH_2 1
@@ -39,9 +62,9 @@ RC_Channel rc_8(EE_RADIO_8);
 
 void setup()
 {
-	Serial.begin(38400);
+	Serial.begin(115200);
 	Serial.println("ArduPilot RC Channel test");
-	APM_RC.Init();		// APM Radio initialization
+	APM_RC.Init( &isr_registry );		// APM Radio initialization
 
 	
 	delay(500);
@@ -82,14 +105,14 @@ void setup()
 	
 	// set type of output, symmetrical angles or a number range;
 	rc_1.set_angle(4500);
-	rc_1.dead_zone = 80;
+	rc_1.set_dead_zone(80);
 	rc_2.set_angle(4500);
-	rc_2.dead_zone = 80;
+	rc_2.set_dead_zone(80);
 	rc_3.set_range(0,1000);
-	rc_3.dead_zone = 20;
+	rc_3.set_dead_zone(20);
 	rc_3.scale_output = .8; // gives more dynamic range to quads
 	rc_4.set_angle(6000); 
-	rc_4.dead_zone = 500;
+	rc_4.set_dead_zone(500);
 	rc_5.set_range(0,1000);
 	rc_5.set_filter(false);
 	rc_6.set_range(200,800);
