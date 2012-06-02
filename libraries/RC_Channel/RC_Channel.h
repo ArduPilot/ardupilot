@@ -40,15 +40,15 @@ class RC_Channel{
 	void		set_type(uint8_t t);
 
 	// setup the control preferences
-	void 		set_range(int low, int high);
-	void 		set_range_out(int low, int high);
-	void 		set_angle(int angle);
+	void 		set_range(int16_t low, int16_t high);
+	void 		set_range_out(int16_t low, int16_t high);
+	void 		set_angle(int16_t angle);
 	void 		set_reverse(bool reverse);
 	bool		get_reverse(void);
-	void		set_dead_zone(int dzone);
+	void		set_dead_zone(int16_t dzone);
 
 	// read input from APM_RC - create a control_in value
-	void 		set_pwm(int pwm);
+	void 		set_pwm(int16_t pwm);
 
 	// pwm is stored here
 	int16_t		radio_in;
@@ -62,7 +62,7 @@ class RC_Channel{
 	// value generated from PWM
 	int16_t 	control_in;
 
-	int			control_mix(float value);
+	int16_t			control_mix(float value);
 
 	// current values to the servos - degrees * 100 (approx assuming servo is -45 to 45 degrees except [3] is 0 to 100
 	int16_t 	servo_out;
