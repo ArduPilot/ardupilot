@@ -59,7 +59,6 @@ get_stabilize_pitch(int32_t target_angle)
 static int16_t
 get_stabilize_yaw(int32_t target_angle)
 {
-	static int8_t log_counter = 0;		// used to slow down logging of PID values to dataflash
 	int32_t target_rate,i_term;
 	int32_t angle_error;
 	int32_t output;
@@ -90,6 +89,7 @@ get_stabilize_yaw(int32_t target_angle)
 #endif
 
 #if LOGGING_ENABLED == ENABLED
+	static int8_t log_counter = 0;		// used to slow down logging of PID values to dataflash
 	// log output if PID logging is on and we are tuning the yaw
 	if( g.log_bitmask & MASK_LOG_PID && (g.radio_tuning == CH6_YAW_KP || g.radio_tuning == CH6_YAW_RATE_KP) ) {
 		log_counter++;
@@ -128,7 +128,6 @@ get_acro_yaw(int32_t target_rate)
 static int16_t
 get_rate_roll(int32_t target_rate)
 {
-	static int8_t log_counter = 0;					// used to slow down logging of PID values to dataflash
 	static int32_t last_rate = 0;					// previous iterations rate
 	int32_t p,i,d;									// used to capture pid values for logging
 	int32_t current_rate;							// this iteration's rate
@@ -162,6 +161,7 @@ get_rate_roll(int32_t target_rate)
 	output = constrain(output, -2500, 2500);
 
 #if LOGGING_ENABLED == ENABLED
+	static int8_t log_counter = 0;					// used to slow down logging of PID values to dataflash
 	// log output if PID logging is on and we are tuning the rate P, I or D gains
 	if( g.log_bitmask & MASK_LOG_PID && (g.radio_tuning == CH6_RATE_KP || g.radio_tuning == CH6_RATE_KI || g.radio_tuning == CH6_RATE_KD) ) {
 		log_counter++;
@@ -179,7 +179,6 @@ get_rate_roll(int32_t target_rate)
 static int16_t
 get_rate_pitch(int32_t target_rate)
 {
-	static int8_t log_counter = 0;					// used to slow down logging of PID values to dataflash
 	static int32_t last_rate = 0;					// previous iterations rate
 	int32_t p,i,d;									// used to capture pid values for logging
 	int32_t current_rate;							// this iteration's rate
@@ -213,6 +212,7 @@ get_rate_pitch(int32_t target_rate)
 	output = constrain(output, -2500, 2500);
 
 #if LOGGING_ENABLED == ENABLED
+	static int8_t log_counter = 0;					// used to slow down logging of PID values to dataflash
 	// log output if PID logging is on and we are tuning the rate P, I or D gains
 	if( g.log_bitmask & MASK_LOG_PID && (g.radio_tuning == CH6_RATE_KP || g.radio_tuning == CH6_RATE_KI || g.radio_tuning == CH6_RATE_KD) ) {
 		log_counter++;
@@ -230,7 +230,6 @@ get_rate_pitch(int32_t target_rate)
 static int16_t
 get_rate_yaw(int32_t target_rate)
 {
-	static int8_t log_counter = 0;					// used to slow down logging of PID values to dataflash
 	int32_t p,i,d;									// used to capture pid values for logging
 	int32_t rate_error;
 	int32_t output;
@@ -252,6 +251,7 @@ get_rate_yaw(int32_t target_rate)
 	output = constrain(output, -yaw_limit, yaw_limit);
 
 #if LOGGING_ENABLED == ENABLED
+	static int8_t log_counter = 0;					// used to slow down logging of PID values to dataflash
 	// log output if PID loggins is on and we are tuning the yaw
 	if( g.log_bitmask & MASK_LOG_PID && (g.radio_tuning == CH6_YAW_KP || g.radio_tuning == CH6_YAW_RATE_KP) ) {
 		log_counter++;
@@ -573,7 +573,6 @@ static int32_t
 get_of_roll(int32_t control_roll)
 {
 #ifdef OPTFLOW_ENABLED
-	static int8_t log_counter = 0;					// used to slow down logging of PID values to dataflash
 	static float tot_x_cm = 0;  // total distance from target
     static uint32_t last_of_roll_update = 0;
 	int32_t new_roll = 0;
@@ -603,6 +602,7 @@ get_of_roll(int32_t control_roll)
 		of_roll = constrain(new_roll, (of_roll-20), (of_roll+20));
 
 #if LOGGING_ENABLED == ENABLED
+	static int8_t log_counter = 0;					// used to slow down logging of PID values to dataflash
 		// log output if PID logging is on and we are tuning the rate P, I or D gains
 		if( g.log_bitmask & MASK_LOG_PID && (g.radio_tuning == CH6_OPTFLOW_KP || g.radio_tuning == CH6_OPTFLOW_KI || g.radio_tuning == CH6_OPTFLOW_KD) ) {
 			log_counter++;
@@ -627,7 +627,6 @@ static int32_t
 get_of_pitch(int32_t control_pitch)
 {
 #ifdef OPTFLOW_ENABLED
-	static int8_t log_counter = 0;					// used to slow down logging of PID values to dataflash
     static float tot_y_cm = 0;  // total distance from target
     static uint32_t last_of_pitch_update = 0;
 	int32_t new_pitch = 0;
@@ -658,6 +657,7 @@ get_of_pitch(int32_t control_pitch)
 		of_pitch = constrain(new_pitch, (of_pitch-20), (of_pitch+20));
 
 #if LOGGING_ENABLED == ENABLED
+	static int8_t log_counter = 0;					// used to slow down logging of PID values to dataflash
 		// log output if PID logging is on and we are tuning the rate P, I or D gains
 		if( g.log_bitmask & MASK_LOG_PID && (g.radio_tuning == CH6_OPTFLOW_KP || g.radio_tuning == CH6_OPTFLOW_KI || g.radio_tuning == CH6_OPTFLOW_KD) ) {
 			log_counter++;
