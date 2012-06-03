@@ -22,7 +22,7 @@ camera_stabilization()
 	// -----
 	// Allow user to control camera pitch with channel 6 (mixed with pitch DCM)
 	if(g.radio_tuning == 0) {
-		g.rc_camera_pitch.set_pwm(APM_RC.InputCh(CH_6));
+		g.rc_camera_pitch.set_pwm(g.rc_6.radio_in);
 		g.rc_camera_pitch.servo_out = g.rc_camera_pitch.control_mix(ahrs.pitch_sensor);
 	}else{
 		// unless channel 6 is already being used for tuning
