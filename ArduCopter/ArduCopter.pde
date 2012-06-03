@@ -1331,6 +1331,11 @@ static void update_GPS(void)
 	// A counter that is used to grab at least 10 reads before commiting the Home location
 	static byte ground_start_count	= 10;
 
+	// return immediately if GPS is not enabled
+	if( !GPS_enabled ) {
+		return;
+	}
+
 	g_gps->update();
 	update_GPS_light();
 
