@@ -1,5 +1,5 @@
 // -------------------------------------------------------------
-// PPM ENCODER V2.2.66 (15-03-2012)
+// PPM ENCODER V2.2.67 (03-06-2012)
 // -------------------------------------------------------------
 // Improved servo to ppm for ArduPilot MEGA v1.x (ATmega328p),
 // PhoneDrone and APM2 (ATmega32u2)
@@ -53,6 +53,9 @@
 // V2.2.66  - Added APM2 (ATmega32U2) support for using TX and RX status leds to indicate PWM and PPM traffic 
 //			- <RX>: <OFF> = no pwm input detected, <TOGGLE> = speed of toggle indicate how many channel are active, <ON> = input lost (failsafe)
 //			- <TX>: <OFF> = ppm output not started, <FAST TOGGLE> = normal PWM->PPM output or PPM passtrough failsafe, <SLOW TOGGLE> = PPM passtrough
+
+// 03-06-2012
+// V2.2.67 - Implemented detection and failsafe (throttle = 900us) for missing throttle signal. 
 
 // -------------------------------------------------------------
 
@@ -438,7 +441,10 @@ ISR( SERVO_INT_VECTOR )
 	// Toggle LED delay
 	static uint8_t led_delay = 0;
 	#endif
-    
+ 
+	// Missing throttle signal failsafe
+	static uint8_t throttle_timeout = 0;
+ 
 	// Servo input pin storage 
     static uint8_t servo_pins_old = 0;
 
@@ -547,7 +553,8 @@ CHECK_PINS_LOOP: // Input servo pin check loop
             // Update ppm[..]
             ppm[ _ppm_channel ] = servo_width;
 			
-		
+			//Reset throttle failsafe timeout
+			if( _ppm_channel == 5 ) throttle_timeout = 0;
         }
     }
     
@@ -592,11 +599,6 @@ CHECK_PINS_DONE:
     // Start PPM generator if not already running
     if( ppm_generator_active == false ) ppm_start();
 
-    //Has servo input changed while processing pins, if so we need to re-check pins
-    if( servo_pins != SERVO_INPUT ) goto CHECK_PINS_START;
-
-    // Clear interrupt event from already processed pin changes
-    PCIFR |= (1 << SERVO_INT_CLEAR_FLAG);
 
 	#if defined (__AVR_ATmega16U2__) || defined (__AVR_ATmega32U2__)
 	// Toggle RX LED when finished receiving servo pulses
@@ -606,6 +608,21 @@ CHECK_PINS_DONE:
 		led_delay = 0;
 	}
 	#endif	
+	
+	// Throttle failsafe
+	if( throttle_timeout++ >= 128 )
+	{
+		// Reset throttle timeout
+		throttle_timeout = 0;
+		// Set throttle failsafe value
+		ppm[ 5 ] = PPM_THROTTLE_FAILSAFE;
+	}
+	
+    //Has servo input changed while processing pins, if so we need to re-check pins
+    if( servo_pins != SERVO_INPUT ) goto CHECK_PINS_START;
+
+    // Clear interrupt event from already processed pin changes
+    PCIFR |= (1 << SERVO_INT_CLEAR_FLAG);
 }
 // ------------------------------------------------------------------------------
 
