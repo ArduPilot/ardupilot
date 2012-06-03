@@ -249,22 +249,24 @@ namespace ArdupilotMega.Controls.BackstageView
         {
             // deactivate the old page
             _activePage.Page.Close();
-            Pages.ForEach(x =>
-            {
-                x.Page.Visible = false;
-            });
+           // Pages.ForEach(x =>
+           // {
+              //  x.Page.Visible = false;
+           // });
 
+            // deactivate button
             _activePage.Page.Visible = false;
             var oldButton = this.pnlMenu.Controls.OfType<BackstageViewButton>().Single(b => b.Tag == _activePage);
             oldButton.IsSelected = false;
 
+            // ensure fields have been init
+            associatedPage.Page.DoLoad(new EventArgs());
+            // show it
             associatedPage.Page.Visible = true;
             var newButton = this.pnlMenu.Controls.OfType<BackstageViewButton>().Single(b => b.Tag == associatedPage);
             newButton.IsSelected = true;
 
             _activePage = associatedPage;
-
-            _activePage.Page.DoLoad(new EventArgs());
         }
 
         public void Close()
