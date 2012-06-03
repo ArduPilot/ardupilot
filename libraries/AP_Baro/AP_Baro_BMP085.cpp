@@ -102,7 +102,7 @@ bool AP_Baro_BMP085::init( AP_PeriodicProcess * scheduler )
 }
 
 // Read the sensor. This is a state machine
-// We read one time Temperature (state=1) and then 4 times Pressure (states 2-5)
+// We read Temperature (state=1) and then Pressure (state!=1) on alternate calls
 uint8_t AP_Baro_BMP085::read()
 {
 	uint8_t result = 0;
