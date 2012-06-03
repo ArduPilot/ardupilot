@@ -225,16 +225,19 @@ process_logs(uint8_t argc, const Menu::arg *argv)
 void print_latlon(BetterStream *s, int32_t lat_or_lon)
 {
 	int32_t dec_portion, frac_portion;
+	int32_t abs_lat_or_lon = labs(lat_or_lon);
 
 	// extract decimal portion (special handling of negative numbers to ensure we round towards zero)
-    dec_portion = labs(lat_or_lon) / T7;
-	if( lat_or_lon < 0 ){
-		dec_portion = -dec_portion;
-	}
+    dec_portion = abs_lat_or_lon / T7;
 
 	// extract fractional portion
-    frac_portion = labs(lat_or_lon - dec_portion*T7);
-    s->printf("%ld.%07ld",(long)dec_portion,(long)frac_portion);
+    frac_portion = abs_lat_or_lon - dec_portion*T7;
+
+	// print output including the minus sign
+	if( lat_or_lon < 0 ) {
+		s->printf_P(PSTR("-"));
+	}
+    s->printf_P(PSTR("%ld.%07ld"),(long)dec_portion,(long)frac_portion);
 }
 
 // Write an GPS packet. Total length : 31 bytes
