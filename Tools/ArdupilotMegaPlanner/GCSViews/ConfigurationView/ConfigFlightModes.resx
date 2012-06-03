@@ -946,7 +946,7 @@
     <value>BUT_SaveModes</value>
   </data>
   <data name="&gt;&gt;BUT_SaveModes.Type" xml:space="preserve">
-    <value>ArdupilotMega.Controls.MyButton, ArdupilotMegaPlanner, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null</value>
+    <value>ArdupilotMega.Controls.MyButton, ArdupilotMegaPlanner, Version=1.1.4536.38105, Culture=neutral, PublicKeyToken=null</value>
   </data>
   <data name="&gt;&gt;BUT_SaveModes.Parent" xml:space="preserve">
     <value>$this</value>
@@ -973,6 +973,6 @@
     <value>ConfigFlightModes</value>
   </data>
   <data name="&gt;&gt;$this.Type" xml:space="preserve">
-    <value>System.Windows.Forms.UserControl, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+    <value>ArdupilotMega.Controls.BackstageView.BackStageViewContentPanel, ArdupilotMegaPlanner, Version=1.1.4536.38105, Culture=neutral, PublicKeyToken=null</value>
   </data>
 </root>

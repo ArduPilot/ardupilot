@@ -120,6 +120,10 @@
             this.lbl_currentmode.DataBindings.Add(new System.Windows.Forms.Binding("Text", this.currentStateBindingSource, "mode", true));
             this.lbl_currentmode.Name = "lbl_currentmode";
             // 
+            // currentStateBindingSource
+            // 
+            this.currentStateBindingSource.DataSource = typeof(ArdupilotMega.CurrentState);
+            // 
             // label12
             // 
             resources.ApplyResources(this.label12, "label12");
