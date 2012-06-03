@@ -155,7 +155,7 @@ public:
 	//
 	// 210: Waypoint data
 	//
-	k_param_waypoint_mode = 210,
+	k_param_waypoint_mode = 210, // remove
 	k_param_command_total,
 	k_param_command_index,
 	k_param_command_nav_index,
