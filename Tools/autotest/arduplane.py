@@ -293,6 +293,7 @@ def fly_ArduPlane(viewerip=None):
         print("Setting up RC parameters")
         setup_rc(mavproxy)
         print("Waiting for GPS fix")
+        mav.recv_match(condition='VFR_HUD.alt>0', blocking=True)
         mav.wait_gps_fix()
         homeloc = mav.location()
         print("Home location: %s" % homeloc)
