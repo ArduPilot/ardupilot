@@ -51,9 +51,8 @@ static void read_trim_switch()
 {
 	#if CH7_OPTION == CH7_FLIP
 		if (g.rc_7.radio_in > CH_7_PWM_TRIGGER && g.rc_3.control_in != 0){
-			do_flip = true;
+			init_flip();
 		}
-
 	#elif CH7_OPTION == CH7_SET_HOVER
 		// switch is engaged
 		if (g.rc_7.radio_in > CH_7_PWM_TRIGGER){
@@ -142,7 +141,7 @@ static void read_trim_switch()
 				set_cmd_with_index(current_loc, CH7_wp_index);
 
 				copter_leds_nav_blink = 10;	// Cause the CopterLEDs to blink twice to indicate saved waypoint
-				
+
 				// 0 = home
 				// 1 = takeoff
 				// 2 = WP 2

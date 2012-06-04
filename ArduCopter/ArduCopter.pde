@@ -1459,8 +1459,12 @@ void update_roll_pitch_mode(void)
 	// hack to do auto_flip - need to remove, no one is using.
 	#if CH7_OPTION == CH7_FLIP
 	if (do_flip){
-		roll_flip();
-		return;
+		if(g.rc_1.control_in == 0){
+			roll_flip();
+			return;
+		}else{
+			do_flip = false;
+		}
 	}
 	#endif
 
