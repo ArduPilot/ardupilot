@@ -12,6 +12,11 @@
 // to select MAVLink 1.0 in the arduino GUI build
 //#define MAVLINK_SEPARATE_HELPERS
 
+#ifndef MAVLINK10
+// default to MAVLINK 1.0
+#define MAVLINK10 ENABLED
+#endif
+
 #if MAVLINK10 == ENABLED
 # include "include/mavlink/v1.0/ardupilotmega/version.h"
 #else
@@ -119,7 +124,7 @@ static inline int comm_get_txspace(mavlink_channel_t chan)
 }
 
 #define MAVLINK_USE_CONVENIENCE_FUNCTIONS
-#if MAVLINK10==1
+#if MAVLINK10==ENABLED
 # include "include/mavlink/v1.0/ardupilotmega/mavlink.h"
 #else
 # include "include/mavlink/v0.9/ardupilotmega/mavlink.h"
