@@ -173,12 +173,19 @@ AP_GPS_UBLOX::_parse_gps(void)
         longitude	= _buffer.posllh.longitude;
         latitude	= _buffer.posllh.latitude;
         altitude	= _buffer.posllh.altitude_msl / 10;
+		fix			= next_fix;
         break;
     case MSG_STATUS:
-        fix			= (_buffer.status.fix_status & NAV_STATUS_FIX_VALID) && (_buffer.status.fix_type == FIX_3D);
+        next_fix	= (_buffer.status.fix_status & NAV_STATUS_FIX_VALID) && (_buffer.status.fix_type == FIX_3D);
+		if (!next_fix) {
+			fix = false;
+		}
         break;
     case MSG_SOL:
-        fix			= (_buffer.solution.fix_status & NAV_STATUS_FIX_VALID) && (_buffer.solution.fix_type == FIX_3D);
+        next_fix	= (_buffer.solution.fix_status & NAV_STATUS_FIX_VALID) && (_buffer.solution.fix_type == FIX_3D);
+		if (!next_fix) {
+			fix = false;
+		}
         num_sats	= _buffer.solution.satellites;
         hdop		= _buffer.solution.position_DOP;
         break;
