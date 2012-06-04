@@ -1848,6 +1848,7 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
         }
 
 #if HIL_MODE != HIL_MODE_DISABLED
+#if MAVLINK10 != ENABLED
         // This is used both as a sensor and to pass the location
         // in HIL_ATTITUDE mode.
 	case MAVLINK_MSG_ID_GPS_RAW: //32
@@ -1870,6 +1871,7 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
             }
             break;
         }
+#endif
 #if HIL_MODE == HIL_MODE_ATTITUDE
     case MAVLINK_MSG_ID_ATTITUDE: //30
         {
