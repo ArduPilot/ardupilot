@@ -1,5 +1,5 @@
 // -------------------------------------------------------------
-// PPM ENCODER V2.2.67 (03-06-2012)
+// PPM ENCODER V2.2.68 (04-06-2012)
 // -------------------------------------------------------------
 // Improved servo to ppm for ArduPilot MEGA v1.x (ATmega328p),
 // PhoneDrone and APM2 (ATmega32u2)
@@ -56,6 +56,9 @@
 
 // 03-06-2012
 // V2.2.67 - Implemented detection and failsafe (throttle = 900us) for missing throttle signal. 
+
+// 04-06-2012
+// V2.2.68 - Fixed possible logic flaw in throttle failsafe reset if  _JITTER_FILTER_ is enabled
 
 // -------------------------------------------------------------
 
@@ -537,6 +540,9 @@ CHECK_PINS_LOOP: // Input servo pin check loop
             // Calculate servo channel position in ppm[..]
             uint8_t _ppm_channel = ( servo_channel << 1 ) + 1;
 
+			//Reset throttle failsafe timeout
+			if( _ppm_channel == 5 ) throttle_timeout = 0;
+
         #ifdef _AVERAGE_FILTER_
             // Average filter to smooth input jitter
             servo_width += ppm[ _ppm_channel ];
@@ -552,9 +558,6 @@ CHECK_PINS_LOOP: // Input servo pin check loop
 
             // Update ppm[..]
             ppm[ _ppm_channel ] = servo_width;
-			
-			//Reset throttle failsafe timeout
-			if( _ppm_channel == 5 ) throttle_timeout = 0;
         }
     }
     
