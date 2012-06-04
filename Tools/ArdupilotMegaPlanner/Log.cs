@@ -1014,5 +1014,18 @@ namespace ArdupilotMega
             cmd.Clear();
         }
 
+        private void BUT_dumpdf_Click(object sender, EventArgs e)
+        {
+            if (status == serialstatus.Done)
+            {
+                // add -1 entry
+                CHK_logs.Items.Add(-1, true);
+
+                System.Threading.Thread t11 = new System.Threading.Thread(delegate() { downloadsinglethread(); });
+                t11.Name = "Log download single thread";
+                t11.Start();
+            }
+        }
+
     }
 }

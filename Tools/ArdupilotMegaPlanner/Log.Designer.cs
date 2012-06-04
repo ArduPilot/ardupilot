@@ -37,6 +37,7 @@
             this.TXT_status = new System.Windows.Forms.TextBox();
             this.BUT_redokml = new ArdupilotMega.Controls.MyButton();
             this.BUT_firstperson = new ArdupilotMega.Controls.MyButton();
+            this.BUT_dumpdf = new ArdupilotMega.Controls.MyButton();
             this.SuspendLayout();
             // 
             // TXT_seriallog
@@ -92,10 +93,18 @@
             this.BUT_firstperson.UseVisualStyleBackColor = true;
             this.BUT_firstperson.Click += new System.EventHandler(this.BUT_firstperson_Click);
             // 
+            // BUT_dumpdf
+            // 
+            resources.ApplyResources(this.BUT_dumpdf, "BUT_dumpdf");
+            this.BUT_dumpdf.Name = "BUT_dumpdf";
+            this.BUT_dumpdf.UseVisualStyleBackColor = true;
+            this.BUT_dumpdf.Click += new System.EventHandler(this.BUT_dumpdf_Click);
+            // 
             // Log
             // 
             resources.ApplyResources(this, "$this");
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
+            this.Controls.Add(this.BUT_dumpdf);
             this.Controls.Add(this.BUT_firstperson);
             this.Controls.Add(this.BUT_redokml);
             this.Controls.Add(this.TXT_status);
@@ -122,5 +131,6 @@
         private ArdupilotMega.Controls.MyButton BUT_redokml;
         private System.Windows.Forms.TextBox TXT_seriallog;
         private ArdupilotMega.Controls.MyButton BUT_firstperson;
+        private Controls.MyButton BUT_dumpdf;
     }
 }

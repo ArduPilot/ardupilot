@@ -42,7 +42,31 @@ namespace ArdupilotMega
             //Common.linearRegression();
 
             //Console.WriteLine(srtm.getAltitude(-35.115676879882812, 117.94178754638671,20));
+            /*
+            Arduino.ArduinoSTK comport = new Arduino.ArduinoSTK();
 
+            comport.PortName = "com4";
+
+            comport.BaudRate = 57600;
+
+            comport.Open();
+
+            comport.connectAP();
+
+            comport.sync();
+
+            comport.sync();
+
+            Console.WriteLine( comport.getChipType(0));
+            
+            Console.WriteLine(comport.getChipType(1));
+
+            Console.WriteLine(comport.getChipType(2));
+
+            Console.ReadLine();
+
+            return;
+            */
             if (System.Diagnostics.Debugger.IsAttached)
             {
                 // testing

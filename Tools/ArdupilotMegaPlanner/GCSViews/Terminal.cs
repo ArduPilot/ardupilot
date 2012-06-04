@@ -53,6 +53,8 @@ namespace ArdupilotMega.GCSViews
                         {
                             a++;
                         }
+                        if (a == (buffer.Length-1))
+                            break;
                     }
 
                     addText(ASCIIEncoding.ASCII.GetString(buffer,0,a+1));
