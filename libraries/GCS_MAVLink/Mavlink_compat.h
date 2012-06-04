@@ -2,7 +2,7 @@
   compatibility header during transition to MAVLink 1.0
  */
 
-#ifdef MAVLINK10
+#if MAVLINK10==1
 // in MAVLink 1.0 'waypoint' becomes 'mission'. We can remove these
 // mappings once we are not trying to support both protocols
 
