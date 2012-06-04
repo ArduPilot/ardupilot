@@ -53,7 +53,9 @@ version 2.1 of the License, or (at your option) any later version.
 #include "config.h"
 
 #include <GCS_MAVLink.h>    // MAVLink GCS definitions
-#include <AP_Mount.h>		// Camera/Antenna mount
+
+// AP_Mount disabled until it works with MAVLink10
+// #include <AP_Mount.h>		// Camera/Antenna mount
 
 // Local modules
 #include "defines.h"
