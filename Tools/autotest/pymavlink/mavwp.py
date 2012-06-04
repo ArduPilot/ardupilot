@@ -36,6 +36,15 @@ class MAVWPLoader(object):
         w.seq = self.count()
         self.wpoints.append(w)
 
+    def set(self, w, idx):
+        '''set a waypoint'''
+        w.seq = idx
+        if w.seq == self.count():
+            return self.add(w)
+        if self.count() <= idx:
+            raise MAVWPError('adding waypoint at idx=%u past end of list (count=%u)' % (idx, self.count()))
+        self.wpoints[idx] = w
+
     def remove(self, w):
         '''remove a waypoint'''
         self.wpoints.remove(w)
