@@ -119,6 +119,9 @@ private:
 
     // Buffer parse & GPS state update
     bool		_parse_gps();
+
+	// used to update fix between status and position packets
+	bool next_fix;
 };
 
 #endif
