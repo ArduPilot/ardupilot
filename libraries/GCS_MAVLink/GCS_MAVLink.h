@@ -12,7 +12,7 @@
 // to select MAVLink 1.0 in the arduino GUI build
 //#define MAVLINK_SEPARATE_HELPERS
 
-#ifdef MAVLINK10
+#if MAVLINK10 == ENABLED
 # include "include/mavlink/v1.0/ardupilotmega/version.h"
 #else
 # include "include/mavlink/v0.9/ardupilotmega/version.h"
@@ -22,7 +22,7 @@
 #define MAVLINK_MAX_PAYLOAD_LEN MAVLINK_MAX_DIALECT_PAYLOAD_SIZE
 
 #define MAVLINK_COMM_NUM_BUFFERS 2
-#ifdef MAVLINK10
+#if MAVLINK10==ENABLED
 # include "include/mavlink/v1.0/mavlink_types.h"
 #else
 # include "include/mavlink/v0.9/mavlink_types.h"
@@ -119,7 +119,7 @@ static inline int comm_get_txspace(mavlink_channel_t chan)
 }
 
 #define MAVLINK_USE_CONVENIENCE_FUNCTIONS
-#ifdef MAVLINK10
+#if MAVLINK10==1
 # include "include/mavlink/v1.0/ardupilotmega/mavlink.h"
 #else
 # include "include/mavlink/v0.9/ardupilotmega/mavlink.h"
