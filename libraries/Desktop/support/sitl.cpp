@@ -25,7 +25,6 @@
 #include <wiring.h>
 #include <AP_PeriodicProcess.h>
 #include <AP_TimerProcess.h>
-#include <GCS_MAVLink.h>
 #include <avr/interrupt.h>
 #include "sitl_adc.h"
 #include "sitl_rc.h"
