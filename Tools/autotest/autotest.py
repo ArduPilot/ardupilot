@@ -6,7 +6,7 @@ import pexpect, os, sys, shutil, atexit
 import optparse, fnmatch, time, glob, traceback
 
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.realpath(__file__)), 'pysim'))
-sys.path.insert(0, os.path.join(os.path.dirname(os.path.realpath(__file__)), 'pymavlink'))
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.realpath(__file__)), '..', '..', '..', 'mavlink', 'pymavlink'))
 import util
 
 os.environ['PYTHONUNBUFFERED'] = '1'
