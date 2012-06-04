@@ -26,7 +26,7 @@ namespace ArdupilotMega.Antenna
         bool Setup();
         bool Pan(double Angle);
         bool Tilt(double Angle);
-        bool PanAndTilt(double Pan,double Tilt);
+        bool PanAndTilt(double Pan, double Tilt);
         bool Close();
     }
 }

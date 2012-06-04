@@ -1253,7 +1253,10 @@ namespace ArdupilotMega.GCSViews
             {
                 ((Button)sender).Enabled = false;
 #if MAVLINK10
-				MainV2.comPort.setMode("Manual");
+                if (MainV2.cs.firmware == MainV2.Firmwares.ArduPlane)
+				    MainV2.comPort.setMode("Manual");
+                if (MainV2.cs.firmware == MainV2.Firmwares.ArduCopter2)
+                    MainV2.comPort.setMode("Stabilize");
 #else
                 comPort.doAction(MAVLink.MAV_ACTION.MAV_ACTION_SET_MANUAL);
 #endif

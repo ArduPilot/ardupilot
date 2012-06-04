@@ -24,7 +24,7 @@ namespace ArdupilotMega.Antenna
         public int PanPWMRange { get; set; }
         public int TiltPWMRange { get; set; }
 
-        public bool PanReverse { get { return _panreverse == -1; } set { _panreverse = value == true ? -1 : 1 ;  } }
+        public bool PanReverse { get { return _panreverse == -1; } set { _panreverse = value == true ? -1 : 1; } }
         public bool TiltReverse { get { return _tiltreverse == -1; } set { _tiltreverse = value == true ? -1 : 1; } }
 
         int _panreverse = 1;
@@ -52,11 +52,11 @@ namespace ArdupilotMega.Antenna
             {
                 ComPort.Open();
             }
-            catch (Exception ex) { System.Windows.Forms.CustomMessageBox.Show("Connect failed " + ex.Message,"Error"); return false; }
+            catch (Exception ex) { System.Windows.Forms.CustomMessageBox.Show("Connect failed " + ex.Message, "Error"); return false; }
 
             return true;
         }
-        public bool Setup() 
+        public bool Setup()
         {
             int target = 100;
             // speed
@@ -86,7 +86,7 @@ namespace ArdupilotMega.Antenna
             return input;
         }
 
-        double wrap_range(double input,double range)
+        double wrap_range(double input, double range)
         {
             if (input > range)
                 return input - 360;
@@ -112,10 +112,10 @@ namespace ArdupilotMega.Antenna
 
             Console.WriteLine("P " + Angle + " " + target + " " + PointAtAngle);
 
-            var buffer = new byte[] { 0xff,PanAddress,target};
+            var buffer = new byte[] { 0xff, PanAddress, target };
             ComPort.Write(buffer, 0, buffer.Length);
 
-            return true; 
+            return true;
         }
 
         public bool Tilt(double Angle)
@@ -124,14 +124,14 @@ namespace ArdupilotMega.Antenna
 
             short PointAtAngle = Constrain((Angle - TrimTilt), TiltStartRange, TiltEndRange);
 
-            byte target = (byte)((((PointAtAngle / range ) * 2) * 127 + 127) * _tiltreverse);
+            byte target = (byte)((((PointAtAngle / range) * 2) * 127 + 127) * _tiltreverse);
 
             //Console.WriteLine("T " + Angle + " " + target + " " + PointAtAngle);
 
             var buffer = new byte[] { 0xff, TiltAddress, target };
             ComPort.Write(buffer, 0, buffer.Length);
 
-            return true; 
+            return true;
         }
 
         public bool PanAndTilt(double pan, double tilt)

@@ -249,10 +249,10 @@ namespace ArdupilotMega.Controls.BackstageView
         {
             // deactivate the old page
             _activePage.Page.Close();
-           // Pages.ForEach(x =>
-           // {
-              //  x.Page.Visible = false;
-           // });
+            Pages.ForEach(x =>
+            {
+                x.Page.Visible = false;
+            });
 
             // deactivate button
             _activePage.Page.Visible = false;

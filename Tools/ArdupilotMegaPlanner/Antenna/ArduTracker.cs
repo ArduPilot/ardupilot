@@ -58,7 +58,7 @@ namespace ArdupilotMega.Antenna
         }
         public bool Setup()
         {
-           
+
 
             return true;
         }
@@ -96,7 +96,7 @@ namespace ArdupilotMega.Antenna
             // conver the angle into a 0-pwmrange value
             int target = (int)((((PointAtAngle / range) * 2.0) * (PanPWMRange / 2) * _panreverse + centerpos));
 
-           // Console.WriteLine("P " + Angle + " " + target + " " + PointAtAngle);
+            // Console.WriteLine("P " + Angle + " " + target + " " + PointAtAngle);
 
             currentpan = target;
 
@@ -111,7 +111,7 @@ namespace ArdupilotMega.Antenna
 
             int target = (int)((((PointAtAngle / range) * 2.0) * (TiltPWMRange / 2) * _tiltreverse + 1500));
 
-           // Console.WriteLine("T " + Angle + " " + target + " " + PointAtAngle);
+            // Console.WriteLine("T " + Angle + " " + target + " " + PointAtAngle);
 
             currenttilt = target;
 

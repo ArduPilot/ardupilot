@@ -315,6 +315,32 @@ namespace ArdupilotMega.Arduino
             return true;
         }
 
+        public byte getChipType(byte part = 0)
+        {
+            byte answer = 0x00;
+
+            byte[] command = new byte[] { (byte)'V', 0x30, 0x01, part, 0x01, (byte)' ' };
+            this.Write(command, 0, command.Length);
+
+            byte[] chr = new byte[1];
+
+            this.Read(chr, 0, 1);
+
+            if (chr[0] == 0x14)
+            {
+                this.Read(chr, 0, 1);
+                answer = (byte)chr[0];
+
+                this.Read(chr, 0, 1);
+                if (chr[0] == 0x10)
+                {
+                    return answer;
+                }
+            }
+
+            return answer;
+        }
+
         public new bool Close()
         {
             try
