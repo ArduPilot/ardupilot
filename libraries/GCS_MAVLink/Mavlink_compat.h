@@ -58,16 +58,16 @@
 static uint8_t mav_var_type(enum ap_var_type t)
 {
     if (t == AP_PARAM_INT8) {
-        return MAV_VAR_INT8;
+	    return MAVLINK_TYPE_INT8_T;
     }
     if (t == AP_PARAM_INT16) {
-        return MAV_VAR_INT16;
+	    return MAVLINK_TYPE_INT16_T;
     }
     if (t == AP_PARAM_INT32) {
-        return MAV_VAR_INT32;
+	    return MAVLINK_TYPE_INT32_T;
     }
     // treat any others as float
-    return MAV_VAR_FLOAT;
+    return MAVLINK_TYPE_FLOAT;
 }
 
 #define MAV_FIXED_WING MAV_TYPE_FIXED_WING
