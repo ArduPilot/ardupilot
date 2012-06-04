@@ -24,6 +24,9 @@ apm2:
 apm2-mavlink10:
 	make -f Makefile EXTRAFLAGS="-DCONFIG_APM_HARDWARE=APM_HARDWARE_APM2 -DMAVLINK10=1"
 
+apm2-mavlink09:
+	make -f Makefile EXTRAFLAGS="-DCONFIG_APM_HARDWARE=APM_HARDWARE_APM2 -DMAVLINK10=0"
+
 apm2hexa:
 	make -f Makefile EXTRAFLAGS="-DCONFIG_APM_HARDWARE=APM_HARDWARE_APM2 -DFRAME_CONFIG=HEXA_FRAME"
 
@@ -33,11 +36,17 @@ apm2beta:
 mavlink10:
 	make -f Makefile EXTRAFLAGS="-DMAVLINK10=1"
 
+mavlink09:
+	make -f Makefile EXTRAFLAGS="-DMAVLINK10=0"
+
 sitl:
 	make -f ../libraries/Desktop/Makefile.desktop
 
 sitl-mavlink10:
 	make -f ../libraries/Desktop/Makefile.desktop EXTRAFLAGS="-DMAVLINK10=1"
+
+sitl-mavlink09:
+	make -f ../libraries/Desktop/Makefile.desktop EXTRAFLAGS="-DMAVLINK10=0"
 
 sitl-octa:
 	make -f ../libraries/Desktop/Makefile.desktop octa
