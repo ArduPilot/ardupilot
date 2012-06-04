@@ -1847,32 +1847,10 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
             break;
         }
 
-#if HIL_MODE != HIL_MODE_DISABLED
-#if MAVLINK10 != ENABLED
+#if HIL_MODE != HIL_MODE_DISABLED && MAVLINK10 != ENABLED
         // This is used both as a sensor and to pass the location
-        // in HIL_ATTITUDE mode.
-#if MAVLINK10 == ENABLED
-	case MAVLINK_MSG_ID_GPS_RAW_INT:
-        {
-            // decode
-            mavlink_gps_raw_int_t packet;
-            mavlink_msg_gps_raw_int_decode(msg, &packet);
-
-            // set gps hil sensor
-            g_gps->setHIL(packet.time_usec/1000.0,packet.lat/1.0e7,packet.lon/1.0e7,packet.alt/1000,
-                          packet.vel/100,packet.cog/100,0,0);
-            if (gps_base_alt == 0) {
-                gps_base_alt = packet.alt/10;
-            }
-            current_loc.lng = packet.lon;
-            current_loc.lat = packet.lat;
-            current_loc.alt = g_gps->altitude - gps_base_alt;
-            if (!home_is_set) {
-                init_home();
-            }
-            break;
-        }
-#else
+        // in HIL_ATTITUDE mode. Note that MAVLINK10 uses HIL_STATE
+        // instead
 	case MAVLINK_MSG_ID_GPS_RAW: //32
         {
             // decode
@@ -1893,7 +1871,6 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
             }
             break;
         }
-#endif
 #if HIL_MODE == HIL_MODE_ATTITUDE
     case MAVLINK_MSG_ID_ATTITUDE: //30
         {
@@ -1934,8 +1911,8 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
 
             break;
         }
-#endif
-#endif
+#endif // HIL_MODE_ATTITUDE
+#endif // HIL_MODE != HIL_MODE_DISABLED && MAVLINK10 != ENABLED
 /*
 	case MAVLINK_MSG_ID_HEARTBEAT:
 		{
