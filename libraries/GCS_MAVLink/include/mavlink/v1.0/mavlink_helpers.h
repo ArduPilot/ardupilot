@@ -137,7 +137,7 @@ MAVLINK_HELPER void _mav_finalize_message_chan_send(mavlink_channel_t chan, uint
  * @brief re-send a message over a uart channel
  * this is more stack efficient than re-marshalling the message
  */
-MAVLINK_HELPER void mav_uart_resend(mavlink_channel_t chan, const mavlink_message_t *msg)
+MAVLINK_HELPER void mavlink_uart_resend(mavlink_channel_t chan, const mavlink_message_t *msg)
 {
 	uint8_t ck[2];
 
@@ -147,7 +147,7 @@ MAVLINK_HELPER void mav_uart_resend(mavlink_channel_t chan, const mavlink_messag
 	MAVLINK_START_UART_SEND(chan, MAVLINK_NUM_NON_PAYLOAD_BYTES + msg->len);
 	_mavlink_send_uart(chan, (const char *)&msg->magic, MAVLINK_NUM_HEADER_BYTES);
 	_mavlink_send_uart(chan, _MAV_PAYLOAD(msg), msg->len);
-	_mavlink_send_uart(chan, ck, 2);
+	_mavlink_send_uart(chan, (const char *)ck, 2);
 	MAVLINK_END_UART_SEND(chan, MAVLINK_NUM_NON_PAYLOAD_BYTES + msg->len);
 }
 
