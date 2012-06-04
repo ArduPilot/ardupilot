@@ -39,7 +39,7 @@
 #define AP_MOTORS_ESC_MODE_PASSTHROUGH  1
 #define AP_MOTORS_ESC_MODE_EXT_GOV		2
 #define AP_MOTORS_EXT_ESC_RAMP_UP		1000 					//Temporary until we can make this a parameter
-#define AP_MOTORS_EXT_ESC ACTIVE AP_MOTORS_ESC_MODE_PASSTHROUGH	//Temporary until we can make this a parameter
+#define AP_MOTORS_EXT_ESC_ACTIVE AP_MOTORS_ESC_MODE_PASSTHROUGH	//Temporary until we can make this a parameter
 
 
 
