@@ -17,10 +17,10 @@ def altitude(SCALED_PRESSURE):
     '''calculate barometric altitude'''
     import mavutil
     self = mavutil.mavfile_global
-    if self.ground_pressure is None or self.ground_temperature is None:
+    if self.param('GND_ABS_PRESS', None) is None:
         return 0
-    scaling = self.ground_pressure / (SCALED_PRESSURE.press_abs*100.0)
-    temp = self.ground_temperature + 273.15
+    scaling = self.param('GND_ABS_PRESS', 1) / (SCALED_PRESSURE.press_abs*100.0)
+    temp = self.param('GND_TEMP', 0) + 273.15
     return log(scaling) * temp * 29271.267 * 0.001
 
 
