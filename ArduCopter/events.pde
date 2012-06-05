@@ -59,7 +59,15 @@ static void failsafe_off_event()
 
 static void low_battery_event(void)
 {
-	gcs_send_text_P(SEVERITY_HIGH,PSTR("Low Battery!"));
+    static uint32_t last_low_battery_message;
+    uint32_t tnow = millis();
+    if (((uint32_t)(tnow - last_low_battery_message)) > 5000) {
+        // only send this message at 5s intervals at most or we may
+        // flood the link
+        gcs_send_text_P(SEVERITY_LOW,PSTR("Low Battery!"));
+        last_low_battery_message = tnow;
+    }
+
 	low_batt = true;
 
 	// if we are in Auto mode, come home
