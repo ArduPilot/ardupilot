@@ -28,7 +28,8 @@ make clean $target
 
 tfile=$(tempfile)
 echo r > $tfile
-gnome-terminal -e "gdb -x $tfile --args /tmp/ArduCopter.build/ArduCopter.elf"
+#gnome-terminal -e "gdb -x $tfile --args /tmp/ArduCopter.build/ArduCopter.elf"
+gnome-terminal -e /tmp/ArduCopter.build/ArduCopter.elf
 #gnome-terminal -e "valgrind -q /tmp/ArduCopter.build/ArduCopter.elf"
 sleep 2
 rm -f $tfile

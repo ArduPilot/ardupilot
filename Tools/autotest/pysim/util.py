@@ -252,6 +252,24 @@ def BodyRatesToEarthRates(dcm, gyro):
     psiDot   = (q*sin(phi) + r*cos(phi))/cos(theta)
     return Vector3(phiDot, thetaDot, psiDot)
 
+def gps_newpos(lat, lon, bearing, distance):
+    '''extrapolate latitude/longitude given a heading and distance 
+    thanks to http://www.movable-type.co.uk/scripts/latlong.html
+    '''
+    from math import sin, asin, cos, atan2, radians, degrees
+    radius_of_earth = 6378100.0 # in meters
+    
+    lat1 = radians(lat)
+    lon1 = radians(lon)
+    brng = radians(bearing)
+    dr = distance/radius_of_earth
+    
+    lat2 = asin(sin(lat1)*cos(dr) +
+                cos(lat1)*sin(dr)*cos(brng))
+    lon2 = lon1 + atan2(sin(brng)*sin(dr)*cos(lat1), 
+                        cos(dr)-sin(lat1)*sin(lat2))
+    return (degrees(lat2), degrees(lon2))
+
 
 class Wind(object):
     '''a wind generation object'''

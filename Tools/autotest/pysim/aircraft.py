@@ -34,16 +34,14 @@ class Aircraft(object):
             position = self.position
         return (-position.z) + self.home_altitude <= self.ground_level + self.frame_height
 
-
     def update_position(self, delta_time):
         '''update lat/lon/alt from position'''
 
-        radius_of_earth = 6378100.0 # in meters
-        dlat = math.degrees(math.atan(self.position.x/radius_of_earth))
-        self.latitude  = self.home_latitude + dlat
-        lon_scale = math.cos(math.radians(self.latitude));
-        dlon = math.degrees(math.atan(self.position.y/radius_of_earth))/lon_scale
-        self.longitude = self.home_longitude + dlon
+        bearing = math.degrees(math.atan2(self.position.y, self.position.x))
+        distance = math.sqrt(self.position.x**2 + self.position.y**2)
+
+        (self.latitude, self.longitude) = util.gps_newpos(self.home_latitude, self.home_longitude,
+                                                          bearing, distance)
 
         self.altitude  = self.home_altitude - self.position.z
 
