@@ -654,26 +654,26 @@
 // Stabilize Rate Control
 //
 #ifndef RATE_ROLL_P
-# define RATE_ROLL_P        0.14
+# define RATE_ROLL_P        0.18
 #endif
 #ifndef RATE_ROLL_I
 # define RATE_ROLL_I        0.0
 #endif
 #ifndef RATE_ROLL_D
-# define RATE_ROLL_D        0.000 //.002
+# define RATE_ROLL_D        0.004
 #endif
 #ifndef RATE_ROLL_IMAX
 # define RATE_ROLL_IMAX	 	5			// degrees
 #endif
 
 #ifndef RATE_PITCH_P
-# define RATE_PITCH_P       0.14
+# define RATE_PITCH_P       0.18
 #endif
 #ifndef RATE_PITCH_I
 # define RATE_PITCH_I		0.0
 #endif
 #ifndef RATE_PITCH_D
-# define RATE_PITCH_D       0.00
+# define RATE_PITCH_D       0.004
 #endif
 #ifndef RATE_PITCH_IMAX
 # define RATE_PITCH_IMAX   	5			// degrees
@@ -694,7 +694,7 @@
 
 
 #ifndef STABILIZE_D
-# define STABILIZE_D 		0.15
+# define STABILIZE_D 		0.00
 #endif
 
 #ifndef STABILIZE_D_SCHEDULE
