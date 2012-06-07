@@ -254,8 +254,12 @@ get_rate_yaw(int32_t target_rate)
 	output 	= p+i+d;
 
 	// output control:
+	#if FRAME_CONFIG == HELI_FRAME
+	int16_t yaw_limit = 2800 + abs(g.rc_4.control_in);
+	#else
 	int16_t yaw_limit = 1400 + abs(g.rc_4.control_in);
-
+	#endif
+	
 	// constrain output
 	output = constrain(output, -yaw_limit, yaw_limit);
 
@@ -405,18 +409,9 @@ get_nav_yaw_offset(int yaw_input, int reset)
 		return ahrs.yaw_sensor;
 
 	}else{
-		// re-define nav_yaw if we have stick input
-		if(yaw_input != 0){
-			// set nav_yaw + or - the current location
-			_yaw = yaw_input + ahrs.yaw_sensor;
-			// we need to wrap our value so we can be 0 to 360 (*100)
-			return wrap_360(_yaw);
-
-		}else{
-			// no stick input, lets not change nav_yaw
-			return nav_yaw;
+		_yaw = nav_yaw + (yaw_input / 50);
+		return wrap_360(_yaw);
 		}
-	}
 }
 
 static int16_t get_angle_boost(int16_t value)
