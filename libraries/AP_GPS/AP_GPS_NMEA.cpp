@@ -94,13 +94,6 @@ const char AP_GPS_NMEA::_gpvtg_string[] PROGMEM = "GPVTG";
 AP_GPS_NMEA::AP_GPS_NMEA(Stream *s) :
     GPS(s)
 {
-    FastSerial	*fs = (FastSerial *)_port;
-
-    // Re-open the port with enough receive buffering for the messages we expect
-    // and very little tx buffering, since we don't care about sending.
-    // Leave the port speed alone as we don't actually know at what rate we're running...
-    //
-    fs->begin(0, 200, 16);
 }
 
 // Public Methods //////////////////////////////////////////////////////////////
