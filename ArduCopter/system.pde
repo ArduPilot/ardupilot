@@ -83,7 +83,9 @@ static void init_ardupilot()
 	// GPS serial port.
 	//
 	#if GPS_PROTOCOL != GPS_PROTOCOL_IMU
-	Serial1.begin(38400, 128, 16);
+    // standard gps running. Note that we need a 256 byte buffer for some
+    // GPS types (eg. UBLOX)
+    Serial1.begin(38400, 256, 16);
 	#endif
 
 	Serial.printf_P(PSTR("\n\nInit " THISFIRMWARE
