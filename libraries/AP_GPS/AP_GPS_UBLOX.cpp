@@ -9,8 +9,18 @@
 //	version 2.1 of the License, or (at your option) any later version.
 //
 
+#define UBLOX_DEBUGGING 0
+
+#if UBLOX_DEBUGGING
+#include <FastSerial.h>
+# define Debug(fmt, args...)  do {Serial.printf("%s:%d: " fmt "\n", __FUNCTION__, __LINE__ , ##args); delay(0); } while(0)
+#else
+# define Debug(fmt, args...)
+#endif
+
 #include "AP_GPS_UBLOX.h"
 #include <stdint.h>
+
 
 // Constructors ////////////////////////////////////////////////////////////////
 
@@ -71,6 +81,7 @@ AP_GPS_UBLOX::read(void)
                 break;
             }
             _step = 0;
+			Debug("reset %u", __LINE__);
             // FALLTHROUGH
         case 0:
             if(PREAMBLE1 == data)
@@ -90,10 +101,11 @@ AP_GPS_UBLOX::read(void)
             _step++;
             if (CLASS_NAV == data) {
                 _gather = true;					// class is interesting, maybe gather
-                _ck_b = _ck_a = data;			// reset the checksum accumulators
             } else {
                 _gather = false;				// class is not interesting, discard
+				Debug("not interesting class=0x%x", data);
             }
+			_ck_b = _ck_a = data;			// reset the checksum accumulators
             break;
         case 3:
             _step++;
@@ -116,7 +128,9 @@ AP_GPS_UBLOX::read(void)
                 default:
                     _gather = false;			// message is not interesting
                 }
-            }
+            } else {
+				Debug("not interesting msg_id 0x%x", _msg_id);
+			}
             break;
         case 4:
             _step++;
@@ -128,8 +142,10 @@ AP_GPS_UBLOX::read(void)
             _ck_b += (_ck_a += data);			// checksum byte
             _payload_length += (uint16_t)data;	// payload length high byte
             _payload_counter = 0;				// prepare to receive payload
-            if (_payload_length != _expect)
+            if (_payload_length != _expect && _gather) {
+				Debug("bad length _payload_length=%u _expect=%u", _payload_length, _expect);
                 _gather = false;
+			}
             break;
 
             // Receive message data
@@ -146,19 +162,24 @@ AP_GPS_UBLOX::read(void)
             //
         case 7:
             _step++;
-            if (_ck_a != data)
+            if (_ck_a != data) {
+				Debug("bad cka %x should be %x", data, _ck_a);
                 _step = 0;						// bad checksum
+			}
             break;
         case 8:
             _step = 0;
-            if (_ck_b != data)
+            if (_ck_b != data) {
+				Debug("bad ckb %x should be %x", data, _ck_b);
                 break;							// bad checksum
+			}
 
-            if (_gather) {
-                parsed = _parse_gps();			// Parse the new GPS packet
+            if (_gather && _parse_gps()) {
+				parsed = true;
             }
         }
     }
+	Debug("parsed = %u", (unsigned)parsed);
     return parsed;
 }
 
@@ -169,19 +190,27 @@ AP_GPS_UBLOX::_parse_gps(void)
 {
     switch (_msg_id) {
     case MSG_POSLLH:
+		Debug("MSG_POSLLH next_fix=%u", next_fix);
         time		= _buffer.posllh.time;
         longitude	= _buffer.posllh.longitude;
         latitude	= _buffer.posllh.latitude;
         altitude	= _buffer.posllh.altitude_msl / 10;
 		fix			= next_fix;
-        break;
+		_new_position = true;
+		break;
     case MSG_STATUS:
+		Debug("MSG_STATUS fix_status=%u fix_type=%u",
+					  _buffer.status.fix_status,
+					  _buffer.status.fix_type);
         next_fix	= (_buffer.status.fix_status & NAV_STATUS_FIX_VALID) && (_buffer.status.fix_type == FIX_3D);
 		if (!next_fix) {
 			fix = false;
 		}
         break;
     case MSG_SOL:
+		Debug("MSG_SOL fix_status=%u fix_type=%u",
+					  _buffer.solution.fix_status,
+					  _buffer.solution.fix_type);
         next_fix	= (_buffer.solution.fix_status & NAV_STATUS_FIX_VALID) && (_buffer.solution.fix_type == FIX_3D);
 		if (!next_fix) {
 			fix = false;
@@ -190,12 +219,21 @@ AP_GPS_UBLOX::_parse_gps(void)
         hdop		= _buffer.solution.position_DOP;
         break;
     case MSG_VELNED:
+		Debug("MSG_VELNED");
         speed_3d	= _buffer.velned.speed_3d;				// cm/s
         ground_speed = _buffer.velned.speed_2d;				// cm/s
         ground_course = _buffer.velned.heading_2d / 1000;	// Heading 2D deg * 100000 rescaled to deg * 100
+		_new_speed = true;
         break;
     default:
         return false;
     }
-    return true;
+
+	// we only return true when we get new position and speed data
+	// this ensures we don't use stale data
+	if (_new_position && _new_speed) {
+		_new_speed = _new_position = false;
+		return true;
+	}
+	return false;
 }

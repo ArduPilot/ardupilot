@@ -108,6 +108,12 @@ private:
     uint16_t	_payload_length;
     uint16_t	_payload_counter;
 
+	// do we have new position information?
+	bool		_new_position;
+
+	// do we have new speed information?
+	bool		_new_speed;
+
     // Receive buffer
     union {
         ubx_nav_posllh		posllh;
