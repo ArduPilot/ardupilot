@@ -86,7 +86,7 @@ static void init_ardupilot()
 	// GPS serial port.
 	//
     // standard gps running
-    Serial1.begin(38400, 128, 16);
+    Serial1.begin(38400, 256, 16);
 
 	Serial.printf_P(PSTR("\n\nInit " THISFIRMWARE
 						 "\n\nFree RAM: %u\n"),
