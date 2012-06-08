@@ -255,7 +255,7 @@ get_rate_yaw(int32_t target_rate)
 
 	// output control:
 	#if FRAME_CONFIG == HELI_FRAME
-	int16_t yaw_limit = 2800 + abs(g.rc_4.control_in);
+	int16_t yaw_limit = 4500;
 	#else
 	int16_t yaw_limit = 1400 + abs(g.rc_4.control_in);
 	#endif
