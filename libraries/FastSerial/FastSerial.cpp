@@ -82,6 +82,7 @@ void FastSerial::begin(long baud, unsigned int rxSpace, unsigned int txSpace)
 {
 	uint16_t ubrr;
 	bool use_u2x = true;
+	bool need_allocate = true;
 
 	// if we are currently open...
 	if (_open) {
@@ -92,14 +93,23 @@ void FastSerial::begin(long baud, unsigned int rxSpace, unsigned int txSpace)
 		if (0 == txSpace)
 			txSpace = _txBuffer->mask + 1;
 
-		// close the port in its current configuration, clears _open
-		end();
+		if (rxSpace == (_rxBuffer->mask + 1) && 
+			txSpace == (_txBuffer->mask + 1)) {
+			// avoid re-allocating the buffers if possible
+			need_allocate = false;
+			*_ucsrb &= ~(_portEnableBits | _portTxBits);
+		} else {
+			// close the port in its current configuration, clears _open
+			end();
+		}
 	}
 
-	// allocate buffers
-	if (!_allocBuffer(_rxBuffer, rxSpace ? : _default_rx_buffer_size) || !_allocBuffer(_txBuffer, txSpace ?	: _default_tx_buffer_size)) {
-		end();
-		return; // couldn't allocate buffers - fatal
+	if (need_allocate) {
+		// allocate buffers
+		if (!_allocBuffer(_rxBuffer, rxSpace ? : _default_rx_buffer_size) || !_allocBuffer(_txBuffer, txSpace ?	: _default_tx_buffer_size)) {
+			end();
+			return; // couldn't allocate buffers - fatal
+		}
 	}
 
 	// reset buffer pointers
