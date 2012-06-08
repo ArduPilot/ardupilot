@@ -1,5 +1,16 @@
 // -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: t -*-
 
+#include <FastSerial.h>
+
+#define GPS_DEBUGGING 1
+
+#if GPS_DEBUGGING
+#include <FastSerial.h>
+# define Debug(fmt, args...)  do {Serial.printf("%s:%d: " fmt "\n", __FUNCTION__, __LINE__ , ##args); delay(0); } while(0)
+#else
+# define Debug(fmt, args...)
+#endif
+
 #include "GPS.h"
 #if defined(ARDUINO) && ARDUINO >= 100
 	#include "Arduino.h"
@@ -11,18 +22,22 @@ void
 GPS::update(void)
 {
     bool	result;
+	uint32_t tnow;
 
     // call the GPS driver to process incoming data
     result = read();
 
+	tnow = millis();
+
     // if we did not get a message, and the idle timer has expired, re-init
     if (!result) {
-        if ((millis() - _idleTimer) > idleTimeout) {
+        if ((tnow - _idleTimer) > idleTimeout) {
+			Debug("gps read timeout %lu %lu", (unsigned long)tnow, (unsigned long)_idleTimer);
             _status = NO_GPS;
 
             init();
             // reset the idle timer
-            _idleTimer = millis();
+            _idleTimer = tnow;
         }
     } else {
         // we got a message, update our status correspondingly
@@ -32,7 +47,7 @@ GPS::update(void)
         new_data = true;
 
         // reset the idle timer
-        _idleTimer = millis();
+        _idleTimer = tnow;
 
 		if (_status == GPS_OK) {
 			// update our acceleration
