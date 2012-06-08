@@ -52,16 +52,17 @@ void loop()
     gps->update();
     if (gps->new_data) {
         if (gps->fix) {
-            Serial.print("\nLat: ");
+            Serial.print("Lat: ");
             print_latlon(&Serial,gps->latitude);
             Serial.print(" Lon: ");
             print_latlon(&Serial,gps->longitude);
-            Serial.printf(" Alt: %.2fm GSP: %.2fm/s CoG: %d SAT: %d TIM: %lu",
+            Serial.printf(" Alt: %.2fm GSP: %.2fm/s CoG: %d SAT: %d TIM: %lu STATUS: %u\n",
                           (float)gps->altitude / 100.0,
                           (float)gps->ground_speed / 100.0,
                           (int)gps->ground_course / 100,
                           gps->num_sats,
-                          gps->time);
+                          gps->time,
+						  gps->status());
         } else {
             Serial.println("No fix");
         }
