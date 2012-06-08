@@ -65,7 +65,8 @@ AP_GPS_Auto::read(void)
     //
     for (i = 0; i < (sizeof(baudrates) / sizeof(baudrates[0])); i++) {
 
-        _fs->begin(baudrates[i]);
+		// ensure the serial port has a large enough buffer for any protocol
+        _fs->begin(baudrates[i], 256, 16);
         if (NULL != (gps = _detect())) {
 
             // configure the detected GPS and give it a chance to listen to its device
