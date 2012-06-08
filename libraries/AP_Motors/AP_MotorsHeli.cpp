@@ -490,10 +490,16 @@ void AP_MotorsHeli::ext_esc_control()
 	switch ( AP_MOTORS_ESC_MODE_PASSTHROUGH ) {
 
 		case AP_MOTORS_ESC_MODE_PASSTHROUGH: 																	
-			if( armed() ){
-				_rc->OutputCh(AP_MOTORS_HELI_EXT_ESC, _rc_8->radio_in);		
-			} else {
+			if( armed() && _rc_8->control_in > 10 ){
+				if (ext_esc_ramp < AP_MOTORS_EXT_ESC_RAMP_UP){
+					ext_esc_ramp++;
+					ext_esc_output = map(ext_esc_ramp, 0, AP_MOTORS_EXT_ESC_RAMP_UP, 1000, _rc_8->control_in);
+				} else {
+					ext_esc_output = _rc_8->control_in;
+				}	
+			} else if( !armed() ) {
 				_rc->OutputCh(AP_MOTORS_HELI_EXT_ESC, _rc_8->radio_min);
+				ext_esc_ramp = 0;	//Return ESC Ramp to 0
 			}
 		break;
 		
