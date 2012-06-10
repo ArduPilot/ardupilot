@@ -102,12 +102,6 @@ static long wrap_180(long error)
 	return error;
 }
 
-static void calc_turn_radius()    // JLN update - adjut automaticaly the wp_radius Vs the speed and the turn angle
-{
-  wp_radius = ground_speed * 150 / g.roll_limit.get();
-  //Serial.println(wp_radius, DEC);
-}
-
 static void update_loiter()
 {
 	float power;

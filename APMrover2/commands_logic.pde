@@ -268,13 +268,21 @@ static bool verify_land()
 {
 }
 
+static void calc_turn_radius(void)    // JLN update - adjut automaticaly the wp_radius Vs the speed and the turn angle
+{
+  wp_radius = ground_speed * 150 / g.roll_limit.get();
+  //Serial.println(wp_radius, DEC);
+}
+
+
 static bool verify_nav_wp()
 {
 	hold_course = -1;
 	update_crosstrack();
 
         if(g.auto_wp_radius) 
-        { calc_turn_radius();  // JLN update - auto-adap the wp_radius Vs the gspeed and max roll angle
+        { 
+            calc_turn_radius();  // JLN update - auto-adap the wp_radius Vs the gspeed and max roll angle
 
           if ((wp_distance > 0) && (wp_distance <= wp_radius)) {
 		gcs_send_text_fmt(PSTR("Reached Waypoint #%i"),nav_command_index);
