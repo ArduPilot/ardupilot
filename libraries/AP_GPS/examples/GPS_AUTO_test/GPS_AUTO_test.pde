@@ -44,7 +44,7 @@ void setup()
 
     Serial.println("GPS AUTO library test");
     gps = &GPS;
-    gps->init();
+    gps->init(GPS::GPS_ENGINE_AIRBORNE_2G);
 }
 
 void loop()

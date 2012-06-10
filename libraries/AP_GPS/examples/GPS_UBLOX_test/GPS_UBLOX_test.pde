@@ -26,7 +26,7 @@ void setup()
     gps.print_errors = true;
 
     Serial.println("GPS UBLOX library test");
-    gps.init();	 // GPS Initialization
+    gps.init(GPS::GPS_ENGINE_AIRBORNE_2G);	 // GPS Initialization
     delay(1000);
 }
 void loop()
