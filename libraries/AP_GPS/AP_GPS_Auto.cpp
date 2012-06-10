@@ -34,10 +34,11 @@ AP_GPS_Auto::AP_GPS_Auto(FastSerial *s, GPS **gps)  :
 // Do nothing at init time - it may be too early to try detecting the GPS
 //
 void
-AP_GPS_Auto::init(void)
+AP_GPS_Auto::init(enum GPS_Engine_Setting nav_setting)
 {
     idleTimeout = 1200;
     if (callback == NULL) callback = delay;
+	_nav_setting = nav_setting;
 }
 
 // Called the first time that a client tries to kick the GPS to update.
@@ -70,7 +71,7 @@ AP_GPS_Auto::read(void)
         if (NULL != (gps = _detect())) {
 
             // configure the detected GPS and give it a chance to listen to its device
-            gps->init();
+            gps->init(_nav_setting);
             then = millis();
             while ((millis() - then) < 1200) {
                 // if we get a successful update from the GPS, we are done

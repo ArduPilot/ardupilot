@@ -58,7 +58,7 @@ public:
     /// Perform a (re)initialisation of the GPS; sends the
     /// protocol configuration messages.
     ///
-    virtual void	init();
+    virtual void	init(enum GPS_Engine_Setting nav_setting = GPS_ENGINE_NONE);
 
     /// Checks the serial receive buffer for characters,
     /// attempts to parse NMEA data and updates internal state

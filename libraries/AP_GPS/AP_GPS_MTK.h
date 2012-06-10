@@ -21,7 +21,7 @@
 class AP_GPS_MTK : public GPS {
 public:
     AP_GPS_MTK(Stream *s);
-    virtual void	init(void);
+    virtual void	init(enum GPS_Engine_Setting nav_setting = GPS_ENGINE_NONE);
     virtual bool	read(void);
 
 private:

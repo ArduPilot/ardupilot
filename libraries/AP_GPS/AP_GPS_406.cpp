@@ -25,12 +25,12 @@ AP_GPS_406::AP_GPS_406(Stream *s) : AP_GPS_SIRF(s)
 }
 
 // Public Methods ////////////////////////////////////////////////////////////////////
-void AP_GPS_406::init(void)
+void AP_GPS_406::init(enum GPS_Engine_Setting nav_setting)
 {
     _change_to_sirf_protocol();		// Changes to SIRF protocol and sets baud rate
     _configure_gps(); 				// Function to configure GPS, to output only the desired msg's
 
-    AP_GPS_SIRF::init();			// let the superclass do anything it might need here
+    AP_GPS_SIRF::init(nav_setting);			// let the superclass do anything it might need here
 
     idleTimeout = 1200;
 }

@@ -26,7 +26,7 @@ AP_GPS_MTK16::AP_GPS_MTK16(Stream *s) : GPS(s)
 
 // Public Methods //////////////////////////////////////////////////////////////
 void
-AP_GPS_MTK16::init(void)
+AP_GPS_MTK16::init(enum GPS_Engine_Setting nav_setting)
 {
     _port->flush();
 
