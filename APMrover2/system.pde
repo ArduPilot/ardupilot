@@ -209,7 +209,7 @@ static void init_ardupilot()
 
 	//mavlink_system.sysid = MAV_SYSTEM_ID;				// Using g.sysid_this_mav
 	mavlink_system.compid = 1;	//MAV_COMP_ID_IMU;   // We do not check for comp id
-	mavlink_system.type = MAV_GROUND;
+	mavlink_system.type = MAV_TYPE_GROUND_ROVER;
 
 	rc_override_active = APM_RC.setHIL(rc_override);		// Set initial values for no override
 

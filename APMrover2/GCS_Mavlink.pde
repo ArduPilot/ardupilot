@@ -48,15 +48,14 @@ static NOINLINE void send_heartbeat(mavlink_channel_t chan)
     case FLY_BY_WIRE_A:
     case FLY_BY_WIRE_B:
     case FLY_BY_WIRE_C:
-        base_mode = MAV_MODE_FLAG_LEARNING_ENABLED;
+        base_mode = MAV_MODE_FLAG_MANUAL_INPUT_ENABLED;
         break;
     case AUTO:
     case RTL:
     case LOITER:
     case GUIDED:
     case CIRCLE:
-        base_mode = MAV_MODE_FLAG_GUIDED_ENABLED |
-                    MAV_MODE_FLAG_LEARNING_ENABLED;
+        base_mode = MAV_MODE_FLAG_GUIDED_ENABLED;
         // note that MAV_MODE_FLAG_AUTO_ENABLED does not match what
         // APM does in any mode, as that is defined as "system finds its own goal
         // positions", which APM does not currently do
@@ -64,11 +63,6 @@ static NOINLINE void send_heartbeat(mavlink_channel_t chan)
     case INITIALISING:
         system_status = MAV_STATE_CALIBRATING;
         break;
-    }
-
-    if (control_mode != MANUAL && control_mode != INITIALISING) {
-        // stabiliser of some form is enabled
-        base_mode |= MAV_MODE_FLAG_LEARNING_ENABLED;
     }
 
 #if ENABLE_STICK_MIXING==ENABLED
