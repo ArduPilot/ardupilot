@@ -24,6 +24,15 @@ for b in all apm2 apm2beta hil sitl heli; do
 done
 popd
 
+echo "Testing APMRover build"
+pushd APMrover2
+for b in all; do
+    pwd
+    make clean
+    make $b
+done
+popd
+
 echo "Testing build of examples"
 
 examples="Tools/VARTest Tools/CPUInfo"
