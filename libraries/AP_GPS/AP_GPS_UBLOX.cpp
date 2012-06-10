@@ -31,7 +31,7 @@ AP_GPS_UBLOX::AP_GPS_UBLOX(Stream *s) : GPS(s)
 // Public Methods //////////////////////////////////////////////////////////////
 
 void
-AP_GPS_UBLOX::init(void)
+AP_GPS_UBLOX::init(enum GPS_Engine_Setting nav_setting)
 {
     // XXX it might make sense to send some CFG_MSG,CFG_NMEA messages to get the
     // right reporting configuration.
@@ -39,7 +39,12 @@ AP_GPS_UBLOX::init(void)
     _port->flush();
 
     _epoch = TIME_OF_WEEK;
-    idleTimeout = 1200;
+    idleTimeout = 1200;	
+
+	// configure the GPS for the messages we want
+	_configure_gps();
+
+	_nav_setting = nav_setting;
 }
 
 // Process bytes available from the stream
@@ -99,38 +104,13 @@ AP_GPS_UBLOX::read(void)
             //
         case 2:
             _step++;
-            if (CLASS_NAV == data) {
-                _gather = true;					// class is interesting, maybe gather
-            } else {
-                _gather = false;				// class is not interesting, discard
-				Debug("not interesting class=0x%x", data);
-            }
+			_class = data;
 			_ck_b = _ck_a = data;			// reset the checksum accumulators
             break;
         case 3:
             _step++;
             _ck_b += (_ck_a += data);			// checksum byte
             _msg_id = data;
-            if (_gather) {						// if class was interesting
-                switch(data) {
-                case MSG_POSLLH:				// message is interesting
-                    _expect = sizeof(ubx_nav_posllh);
-                    break;
-                case MSG_STATUS:
-                    _expect = sizeof(ubx_nav_status);
-                    break;
-                case MSG_SOL:
-                    _expect = sizeof(ubx_nav_solution);
-                    break;
-                case MSG_VELNED:
-                    _expect = sizeof(ubx_nav_velned);
-                    break;
-                default:
-                    _gather = false;			// message is not interesting
-                }
-            } else {
-				Debug("not interesting msg_id 0x%x", _msg_id);
-			}
             break;
         case 4:
             _step++;
@@ -140,20 +120,24 @@ AP_GPS_UBLOX::read(void)
         case 5:
             _step++;
             _ck_b += (_ck_a += data);			// checksum byte
-            _payload_length += (uint16_t)data;	// payload length high byte
-            _payload_counter = 0;				// prepare to receive payload
-            if (_payload_length != _expect && _gather) {
-				Debug("bad length _payload_length=%u _expect=%u", _payload_length, _expect);
-                _gather = false;
+
+            _payload_length += (uint16_t)(data<<8);
+			if (_payload_length > 512) {
+				Debug("large payload %u", (unsigned)_payload_length);
+				// assume very large payloads are line noise
+				_payload_length = 0;
+				_step = 0;
 			}
+            _payload_counter = 0;				// prepare to receive payload
             break;
 
             // Receive message data
             //
         case 6:
             _ck_b += (_ck_a += data);			// checksum byte
-            if (_gather)						// gather data if requested
-                _buffer.bytes[_payload_counter] = data;
+			if (_payload_counter < sizeof(_buffer)) {
+				_buffer.bytes[_payload_counter] = data;
+			}
             if (++_payload_counter == _payload_length)
                 _step++;
             break;
@@ -174,12 +158,11 @@ AP_GPS_UBLOX::read(void)
                 break;							// bad checksum
 			}
 
-            if (_gather && _parse_gps()) {
+			if (_parse_gps()) {
 				parsed = true;
             }
         }
     }
-	Debug("parsed = %u", (unsigned)parsed);
     return parsed;
 }
 
@@ -188,6 +171,39 @@ AP_GPS_UBLOX::read(void)
 bool
 AP_GPS_UBLOX::_parse_gps(void)
 {
+	if (_class == CLASS_ACK) {
+		Debug("ACK %u", (unsigned)_msg_id);
+		return false;
+	}
+
+	if (_class == CLASS_CFG && _msg_id == MSG_CFG_NAV_SETTINGS) {
+		if (_nav_setting != GPS_ENGINE_NONE && 
+			_buffer.nav_settings.dynModel != _nav_setting) {
+			// we've received the current nav settings, change the engine
+			// settings and send them back
+			Debug("Changing engine setting from %u to %u\n",
+				  (unsigned)_buffer.nav_settings.dynModel, (unsigned)_nav_setting);
+			_buffer.nav_settings.dynModel = _nav_setting;
+			_send_message(CLASS_CFG, MSG_CFG_NAV_SETTINGS, 
+						  &_buffer.nav_settings, 
+						  sizeof(_buffer.nav_settings));
+		}
+		return false;
+	}
+
+	if (_class != CLASS_NAV) {
+		Debug("Unexpected message 0x%02x 0x%02x", (unsigned)_class, (unsigned)_msg_id);
+		if (++_disable_counter == 0) {
+			// disable future sends of this message id, but
+			// only do this every 256 messages, as some
+			// message types can't be disabled and we don't
+			// want to get into an ack war
+			Debug("Disabling message 0x%02x 0x%02x", (unsigned)_class, (unsigned)_msg_id);
+			_configure_message_rate(_class, _msg_id, 0);
+		}
+		return false;
+	}
+
     switch (_msg_id) {
     case MSG_POSLLH:
 		Debug("MSG_POSLLH next_fix=%u", next_fix);
@@ -226,6 +242,11 @@ AP_GPS_UBLOX::_parse_gps(void)
 		_new_speed = true;
         break;
     default:
+		Debug("Unexpected NAV message 0x%02x", (unsigned)_msg_id);
+		if (++_disable_counter == 0) {
+			Debug("Disabling NAV message 0x%02x", (unsigned)_msg_id);
+			_configure_message_rate(CLASS_NAV, _msg_id, 0);
+		}
         return false;
     }
 
@@ -236,4 +257,100 @@ AP_GPS_UBLOX::_parse_gps(void)
 		return true;
 	}
 	return false;
+}
+
+
+// UBlox auto configuration
+
+/*
+  update checksum for a set of bytes
+ */
+void
+AP_GPS_UBLOX::_update_checksum(uint8_t *data, uint8_t len, uint8_t &ck_a, uint8_t &ck_b)
+{
+	while (len--) {
+		ck_a += *data;
+		ck_b += ck_a;
+		data++;
+	}
+}
+
+
+/*
+  send a ublox message
+ */
+void
+AP_GPS_UBLOX::_send_message(uint8_t msg_class, uint8_t msg_id, void *msg, uint8_t size)
+{
+	struct ubx_header header;
+	uint8_t ck_a=0, ck_b=0;
+	header.preamble1 = PREAMBLE1;
+	header.preamble2 = PREAMBLE2;
+	header.msg_class = msg_class;
+	header.msg_id    = msg_id;
+	header.length    = size;
+
+	_update_checksum((uint8_t *)&header.msg_class, sizeof(header)-2, ck_a, ck_b);
+	_update_checksum((uint8_t *)msg, size, ck_a, ck_b);
+
+	_port->write((const uint8_t *)&header, sizeof(header));
+	_port->write((const uint8_t *)msg, size);
+	_port->write((const uint8_t *)&ck_a, 1);
+	_port->write((const uint8_t *)&ck_b, 1);
+}
+
+
+/*
+  configure a UBlox GPS for the given message rate for a specific
+  message class and msg_id
+ */
+void
+AP_GPS_UBLOX::_configure_message_rate(uint8_t msg_class, uint8_t msg_id, uint8_t rate)
+{
+	struct ubx_cfg_msg_rate msg;
+	msg.msg_class = msg_class;
+	msg.msg_id    = msg_id;
+	msg.rate	  = rate;
+	_send_message(CLASS_CFG, MSG_CFG_SET_RATE, &msg, sizeof(msg));
+}
+
+/*
+  configure a UBlox GPS for the given message rate
+ */
+void
+AP_GPS_UBLOX::_configure_gps(void)
+{
+	struct ubx_cfg_nav_rate msg;
+
+	// this type 0x41 pubx sets us up for 38400 with
+	// NMEA+UBX input and UBX output
+	_send_pubx("$PUBX,41,1,0003,0001,38400,0");
+
+	// ask for navigation solutions every 200ms
+	msg.measure_rate_ms = 200;
+	msg.nav_rate        = 1;
+	msg.timeref         = 0; // UTC time
+	_send_message(CLASS_CFG, MSG_CFG_RATE, &msg, sizeof(msg));
+
+	// ask for the messages we parse to be sent on every navigation solution
+	_configure_message_rate(CLASS_NAV, MSG_POSLLH, 1);
+	_configure_message_rate(CLASS_NAV, MSG_STATUS, 1);
+	_configure_message_rate(CLASS_NAV, MSG_SOL, 1);
+	_configure_message_rate(CLASS_NAV, MSG_VELNED, 1);
+
+	// ask for the current navigation settings
+	_send_message(CLASS_CFG, MSG_CFG_NAV_SETTINGS, NULL, 0);	
+}
+
+void
+AP_GPS_UBLOX::_send_pubx(const char *msg)
+{
+	uint8_t csum = 0;
+	char suffix[4];
+	for (uint8_t i=1; msg[i]; i++) {
+		csum ^= msg[i];
+	}
+	_port->write(msg);
+	sprintf(suffix, "*%02x", (unsigned)csum);
+	_port->write((const uint8_t *)suffix, 3);
 }
