@@ -43,7 +43,7 @@ AP_GPS_IMU::AP_GPS_IMU(Stream *s) : GPS(s)
 
 // Public Methods //////////////////////////////////////////////////////////////
 void
-AP_GPS_IMU::init(void)
+AP_GPS_IMU::init(enum GPS_Engine_Setting nav_setting)
 {
     // we expect the stream to already be open at the corret bitrate
     idleTimeout = 1200;

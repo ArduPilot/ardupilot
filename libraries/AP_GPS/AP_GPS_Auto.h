@@ -24,7 +24,7 @@ public:
     AP_GPS_Auto(FastSerial *s, GPS **gps);
 
     /// Dummy init routine, does nothing
-    virtual void		init(void);
+    virtual void		init(enum GPS_Engine_Setting nav_setting = GPS_ENGINE_NONE);
 
     /// Detect and initialise the attached GPS unit.  Updates the
     /// pointer passed into the constructor when a GPS is detected.
@@ -47,5 +47,6 @@ private:
     static const prog_char _ublox_set_binary[];
     static const prog_char _sirf_set_binary[];
 
+	enum GPS_Engine_Setting _nav_setting;
 };
 #endif

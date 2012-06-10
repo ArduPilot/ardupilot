@@ -97,7 +97,7 @@ AP_GPS_NMEA::AP_GPS_NMEA(Stream *s) :
 }
 
 // Public Methods //////////////////////////////////////////////////////////////
-void AP_GPS_NMEA::init(void)
+void AP_GPS_NMEA::init(enum GPS_Engine_Setting nav_setting)
 {
     BetterStream	*bs = (BetterStream *)_port;
 

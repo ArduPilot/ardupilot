@@ -19,7 +19,7 @@ class AP_GPS_SIRF : public GPS {
 public:
     AP_GPS_SIRF(Stream *s);
 
-    virtual void   	init();
+    virtual void   	init(enum GPS_Engine_Setting nav_setting = GPS_ENGINE_NONE);
     virtual bool	read();
 
 private:

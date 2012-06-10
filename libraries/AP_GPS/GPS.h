@@ -36,6 +36,18 @@ public:
         GPS_OK = 2		///< Receiving valid messages and locked
     };
 
+	// GPS navigation engine settings. Not all GPS receivers support
+	// this
+	enum GPS_Engine_Setting {
+		GPS_ENGINE_NONE        = -1,
+		GPS_ENGINE_PEDESTRIAN  = 3,
+		GPS_ENGINE_AUTOMOTIVE  = 4,
+		GPS_ENGINE_SEA         = 5,
+		GPS_ENGINE_AIRBORNE_1G = 6,
+		GPS_ENGINE_AIRBORNE_2G = 7,
+		GPS_ENGINE_AIRBORNE_4G = 8
+	};
+
     /// Query GPS status
     ///
     /// The 'valid message' status indicates that a recognised message was
@@ -72,7 +84,7 @@ public:
     ///
     /// Must be implemented by the GPS driver.
     ///
-    virtual void	init(void) = 0;
+    virtual void	init(enum GPS_Engine_Setting engine_setting = GPS_ENGINE_NONE) = 0;
 
     // Properties
     uint32_t time;			///< GPS time (milliseconds from epoch)
@@ -165,6 +177,8 @@ protected:
 
     /// Time epoch code for the gps in use
     GPS_Time_Epoch				_epoch;
+
+	enum GPS_Engine_Setting _nav_setting;
 
 private:
 

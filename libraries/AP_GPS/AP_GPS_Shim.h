@@ -19,7 +19,7 @@ class AP_GPS_Shim : public GPS
 public:
     AP_GPS_Shim() : GPS(NULL) {}
 
-    virtual void init(void) {};
+    virtual void init(enum GPS_Engine_Setting nav_setting = GPS_ENGINE_NONE) {};
     virtual bool read(void) {
         bool updated = _updated;
         _updated = false;
