@@ -416,6 +416,7 @@ public:
         log_bitmask             (DEFAULT_LOG_BITMASK),
         log_last_filenumber     (0),
         reset_switch_chan		(0),
+        manual_level			(MANUAL_LEVEL),
         airspeed_cruise         (AIRSPEED_CRUISE_CM),
         min_gndspeed            (MIN_GNDSPEED_CM),
         pitch_trim              (0),
