@@ -218,7 +218,8 @@ static void init_ardupilot()
 
 	// Do GPS init
 	g_gps = &g_gps_driver;
-	g_gps->init();			// GPS Initialization
+    // GPS Initialization
+	g_gps->init(GPS::GPS_ENGINE_AIRBORNE_1G);
     g_gps->callback = mavlink_delay;
 
 	if(g.compass_enabled)
