@@ -198,6 +198,7 @@ uint32_t AP_GPS_NMEA::_parse_degrees()
     char *p, *q;
     uint8_t deg = 0, min = 0;
     unsigned int frac_min = 0;
+	int32_t ret = 0;
 
     // scan for decimal point or end of field
     for (p = _term; isdigit(*p); p++)
@@ -223,13 +224,14 @@ uint32_t AP_GPS_NMEA::_parse_degrees()
     // ten-thousandths of a minute
     if (*p == '.') {
         q = p + 1;
-        for (int i = 0; i < 4; i++) {
-            frac_min *= 10;
+        for (int i = 0; i < 5; i++) {
+            frac_min = (int32_t)(frac_min * 10);
             if (isdigit(*q))
                 frac_min += *q++ - '0';
         }
     }
-    return deg * 100000UL + (min * 10000UL + frac_min) / 6;
+	ret = (int32_t)deg * (int32_t)1000000UL + (int32_t)((min * 100000UL + frac_min) / 6UL);
+    return ret;
 }
 
 // Processes a just-completed term
@@ -245,8 +247,8 @@ bool AP_GPS_NMEA::_term_complete()
                 case _GPS_SENTENCE_GPRMC:
                     time			= _new_time;
                     date			= _new_date;
-                    latitude		= _new_latitude * 100;	// degrees*10e5 -> 10e7
-                    longitude		= _new_longitude * 100;	// degrees*10e5 -> 10e7
+                    latitude		= _new_latitude * 10;	// degrees*10e5 -> 10e7
+                    longitude		= _new_longitude * 10;	// degrees*10e5 -> 10e7
                     ground_speed	= _new_speed;
                     ground_course	= _new_course;
                     fix				= true;
@@ -254,8 +256,8 @@ bool AP_GPS_NMEA::_term_complete()
                 case _GPS_SENTENCE_GPGGA:
                     altitude		= _new_altitude;
                     time			= _new_time;
-                    latitude		= _new_latitude * 100;	// degrees*10e5 -> 10e7
-                    longitude		= _new_longitude * 100;	// degrees*10e5 -> 10e7
+                    latitude		= _new_latitude * 10;	// degrees*10e5 -> 10e7
+                    longitude		= _new_longitude * 10;	// degrees*10e5 -> 10e7
                     num_sats		= _new_satellite_count;
                     hdop			= _new_hdop;
                     fix				= true;
