@@ -3,14 +3,15 @@
 #if CLI_ENABLED == ENABLED
 
 // Functions called from the setup menu
-static int8_t	setup_radio			(uint8_t argc, const Menu::arg *argv);
-static int8_t	setup_show			(uint8_t argc, const Menu::arg *argv);
-static int8_t	setup_factory		(uint8_t argc, const Menu::arg *argv);
-static int8_t	setup_flightmodes	(uint8_t argc, const Menu::arg *argv);
-static int8_t	setup_erase			(uint8_t argc, const Menu::arg *argv);
+static int8_t	setup_radio				(uint8_t argc, const Menu::arg *argv);
+static int8_t	setup_show				(uint8_t argc, const Menu::arg *argv);
+static int8_t	setup_factory			(uint8_t argc, const Menu::arg *argv);
+static int8_t	setup_flightmodes		(uint8_t argc, const Menu::arg *argv);
+static int8_t	setup_level				(uint8_t argc, const Menu::arg *argv);
+static int8_t	setup_erase				(uint8_t argc, const Menu::arg *argv);
 static int8_t	setup_compass			(uint8_t argc, const Menu::arg *argv);
 static int8_t	setup_declination		(uint8_t argc, const Menu::arg *argv);
-static int8_t	setup_batt_monitor			(uint8_t argc, const Menu::arg *argv);
+static int8_t	setup_batt_monitor		(uint8_t argc, const Menu::arg *argv);
 
 // Command/function table for the setup menu
 static const struct Menu::command setup_menu_commands[] PROGMEM = {
@@ -19,6 +20,7 @@ static const struct Menu::command setup_menu_commands[] PROGMEM = {
 	{"reset", 			setup_factory},
 	{"radio",			setup_radio},
 	{"modes",			setup_flightmodes},
+	{"level",			setup_level},
 	{"compass",			setup_compass},
 	{"declination",		setup_declination},
 	{"battery",			setup_batt_monitor},
@@ -285,6 +287,13 @@ setup_erase(uint8_t argc, const Menu::arg *argv)
 	if (('y' != c) && ('Y' != c))
 		return(-1);
 	zero_eeprom();
+	return 0;
+}
+
+static int8_t
+setup_level(uint8_t argc, const Menu::arg *argv)
+{
+	startup_IMU_ground(true);
 	return 0;
 }
 
