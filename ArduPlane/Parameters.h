@@ -17,7 +17,7 @@ public:
     // The increment will prevent old parameters from being used incorrectly
     // by newer code.
     //
-    static const uint16_t k_format_version = 13;
+    static const uint16_t k_format_version = 14;
 
 	// The parameter software_type is set up solely for ground station use
 	// and identifies the software type (eg ArduPilotMega versus ArduCopterMega)
@@ -99,6 +99,14 @@ public:
         k_param_RTL_altitude,
         k_param_inverted_flight_ch,
         k_param_min_gndspeed,
+
+
+        //
+        // Camera parameters
+        //
+#if CAMERA == ENABLED
+        k_param_camera,
+#endif
 
         //
         // 170: Radio settings
@@ -325,6 +333,11 @@ public:
     AP_Int8		flap_1_speed;
     AP_Int8		flap_2_percent;
     AP_Int8		flap_2_speed;
+
+	// Camera
+#if CAMERA == ENABLED
+    AP_Camera		camera;
+#endif
 
     // RC channels
     RC_Channel  channel_roll;

@@ -8,6 +8,7 @@ enum keys {
     k_cntrl,
     k_guide,
     k_sensorCalib,
+    k_camera,
     k_nav,
 
     k_radioChannelsStart=10,

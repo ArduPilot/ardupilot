@@ -2058,6 +2058,20 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
         }
 #endif // HIL_MODE
 
+#if CAMERA == ENABLED
+    case MAVLINK_MSG_ID_DIGICAM_CONFIGURE:
+		{
+			g.camera.configure_msg(msg);
+			break;
+		}
+
+    case MAVLINK_MSG_ID_DIGICAM_CONTROL:
+		{
+			g.camera.control_msg(msg);
+			break;
+		}
+#endif // CAMERA == ENABLED
+
 #if MOUNT == ENABLED
     case MAVLINK_MSG_ID_MOUNT_CONFIGURE:
 		{

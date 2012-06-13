@@ -479,10 +479,17 @@
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
+// CAMERA TRIGGER AND CONTROL
+//
+#ifndef CAMERA
+# define CAMERA		DISABLED
+#endif
+
+//////////////////////////////////////////////////////////////////////////////
 // MOUNT (ANTENNA OR CAMERA)
 //
 #ifndef MOUNT
-# define MOUNT		DISABLED
+# define MOUNT		ENABLED
 #endif
 
 #if defined( __AVR_ATmega1280__ ) && CAMERA == ENABLED
