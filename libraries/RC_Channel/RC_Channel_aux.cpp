@@ -5,13 +5,33 @@
 
 const AP_Param::GroupInfo RC_Channel_aux::var_info[] PROGMEM = {
 	AP_NESTEDGROUPINFO(RC_Channel, 0),
+	// @Param: FUNCTION
+	// @DisplayName: Function assigned to this APM servo output
+	// @Description: Setting this to Disabled(0) will disable this output, any other value will enable the corresponding function
+	// @Values: 0:Disabled,1:Manual,2:Flap,3:Flap_auto,4:Aileron,5:flaperon,6:mount_pan,7:mount_tilt,8:mount_roll,9:mount_open,10:camera_trigger,11:release
+	// @User: Standard
 	AP_GROUPINFO("FUNCTION",       1, RC_Channel_aux, function),
+	// @Param: ANGLE_MIN
+	// @DisplayName: Minimum physical angular position of the object that this servo output controls
+	// @Description: Minimum physical angular position of the object that this servo output controls, this could be for example a camera pan angle, an aileron angle, etc
+	// @Units: Degrees
+	// @Range: -180 180
+	// @Increment: .01
+	// @User: Standard
 	AP_GROUPINFO("ANGLE_MIN",      2, RC_Channel_aux, angle_min),
+	// @Param: ANGLE_MAX
+	// @DisplayName: Maximum physical angular position of the object that this servo output controls
+	// @Description: Maximum physical angular position of the object that this servo output controls, this could be for example a camera pan angle, an aileron angle, etc
+	// @Units: Degrees
+	// @Range: -180 180
+	// @Increment: .01
+	// @User: Standard
 	AP_GROUPINFO("ANGLE_MAX",      3, RC_Channel_aux, angle_max),
 	AP_GROUPEND
 };
 
-RC_Channel_aux* g_rc_function[RC_Channel_aux::k_nr_aux_servo_functions];	// the aux. servo ch. assigned to each function
+// Global pointer array, indexed by a "RC function enum" and points to the RC channel output assigned to that function/operation
+RC_Channel_aux* g_rc_function[RC_Channel_aux::k_nr_aux_servo_functions];
 
 int16_t
 RC_Channel_aux::closest_limit(int16_t angle)
@@ -47,6 +67,31 @@ RC_Channel_aux::closest_limit(int16_t angle)
 	calc_pwm();
 
 	return angle;
+}
+
+// Gets the RC and integrates and then compares with the servo out angles to limit control input to servo travel.
+// That way the user doesn't get lost. Rotationally.
+void
+RC_Channel_aux::rc_input(float *control_angle, int16_t angle)
+{
+	if((radio_in < 1480 && angle < angle_max)||(radio_in > 1520 && angle > angle_min)){
+		*control_angle += ( 1500 - radio_in ) * .0001; // .0001 is the control speed scaler.
+	}
+}
+
+// Takes the desired servo angle(deg) and converts to microSeconds for PWM
+// Like this: 45 deg = 2000 us ; -45 deg/1000 us. 1000us/(90*100 deg) = 0.1111111111111
+void
+RC_Channel_aux::angle_out(int16_t angle)
+{
+	if(angle >= angle_max){
+		angle = angle_max;
+	}
+	if(angle <= angle_min){
+		angle = angle_min;
+	}
+	// Convert the angle*100 to pwm microseconds. 45 deg = 500 us.
+	radio_out = (/*_reverse * */ angle * 0.1111111) + 1500;
 }
 
 // map a function to a servo channel and output it
