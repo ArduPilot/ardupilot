@@ -72,6 +72,11 @@ static void calc_nav_roll()
 	// positive error = right turn
 
 	nav_roll = g.pidNavRoll.get_pid(bearing_error, dTnav, nav_gain_scaler);	//returns desired bank angle in degrees*100
+
+      if(obstacle) {  // obstacle avoidance 
+	    nav_roll += 9000;    // if obstacle in front turn 90° right	
+            speed_boost = false;
+      }
 	nav_roll = constrain(nav_roll, -g.roll_limit.get(), g.roll_limit.get());
 
 }
@@ -106,6 +111,10 @@ static void set_servos(void)
 	if((control_mode == MANUAL) || (control_mode == LEARNING)){
 		// do a direct pass through of radio values
 		g.channel_roll.radio_out 		= g.channel_roll.radio_in;
+
+                if(obstacle)    // obstacle in front, turn right in Stabilize mode
+                  g.channel_roll.radio_out -= 500;
+
 		g.channel_pitch.radio_out 		= g.channel_pitch.radio_in;
 
 		g.channel_throttle.radio_out 	= g.channel_throttle.radio_in;
