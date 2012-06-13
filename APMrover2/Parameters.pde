@@ -105,7 +105,7 @@ static const AP_Param::Info var_info[] PROGMEM = {
 	GSCALAR(pack_capacity,          "BATT_CAPACITY"),
 	GSCALAR(inverted_flight_ch,     "INVERTEDFLT_CH"),
 #if HIL_MODE != HIL_MODE_ATTITUDE
-#if LITE == DISABLED   
+#if CONFIG_SONAR == ENABLED     
 	// @Param: SONAR_ENABLE
 	// @DisplayName: Enable Sonar
 	// @Description: Setting this to Enabled(1) will enable the sonar. Setting this to Disabled(0) will disable the sonar

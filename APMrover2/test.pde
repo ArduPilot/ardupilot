@@ -18,7 +18,9 @@ static int8_t	test_relay(uint8_t argc,	 	const Menu::arg *argv);
 static int8_t	test_wp(uint8_t argc, 			const Menu::arg *argv);
 static int8_t	test_airspeed(uint8_t argc, 	const Menu::arg *argv);
 static int8_t	test_pressure(uint8_t argc, 	const Menu::arg *argv);
-static int8_t	test_vario(uint8_t argc, 	const Menu::arg *argv);
+#if CONFIG_SONAR == ENABLED
+static int8_t	test_sonar(uint8_t argc, 	const Menu::arg *argv);
+#endif
 static int8_t	test_mag(uint8_t argc, 			const Menu::arg *argv);
 static int8_t	test_xbee(uint8_t argc, 		const Menu::arg *argv);
 static int8_t	test_eedump(uint8_t argc, 		const Menu::arg *argv);
@@ -59,7 +61,9 @@ static const struct Menu::command test_menu_commands[] PROGMEM = {
 	{"imu",			test_imu},
 	{"airspeed",	test_airspeed},
 	{"airpressure",	test_pressure},
-	{"vario",	test_vario},
+#if CONFIG_SONAR == ENABLED
+	{"sonartest",	test_sonar},
+#endif
 	{"compass",		test_mag},
 #elif HIL_MODE == HIL_MODE_SENSORS
 	{"adc", 		test_adc},
@@ -663,12 +667,6 @@ test_pressure(uint8_t argc, const Menu::arg *argv)
 }
 
 static int8_t
-test_vario(uint8_t argc, const Menu::arg *argv)
-{
-
-}
-
-static int8_t
 test_rawgps(uint8_t argc, const Menu::arg *argv)
 {
   print_hit_enter();
@@ -690,6 +688,30 @@ test_rawgps(uint8_t argc, const Menu::arg *argv)
 		}
   }
 }
+
+#if CONFIG_SONAR == ENABLED
+static int8_t
+test_sonar(uint8_t argc, const Menu::arg *argv)
+{
+  print_hit_enter();
+	delay(1000);
+	init_sonar();
+	delay(1000);
+
+	while(1){
+	  delay(20);
+	  if(g.sonar_enabled){
+		sonar_dist = sonar.read();
+	  }
+    	  Serial.printf_P(PSTR("sonar_dist = %d\n"), (int)sonar_dist);
+
+          if(Serial.available() > 0){
+  		break;
+	    }
+  }
+  return (0);
+}
+#endif // SONAR == ENABLED
 #endif // HIL_MODE == HIL_MODE_DISABLED
 
 #endif // CLI_ENABLED

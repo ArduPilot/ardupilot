@@ -195,11 +195,45 @@ static void init_ardupilot()
             compass.null_offsets_enable();
         }
 	}
+#else
+  I2c.begin();
+  I2c.timeOut(20);
+
+  // I2c.setSpeed(true);
+
+  if (!compass.init()) {
+	  Serial.println("compass initialisation failed!");
+	  while (1) ;
+  }
+
+  compass.set_orientation(MAG_ORIENTATION);  // set compass's orientation on aircraft.
+  compass.set_offsets(0,0,0);  // set offsets to account for surrounding interference
+  compass.set_declination(ToRad(0.0));  // set local difference between magnetic north and true north
+
+  Serial.print("Compass auto-detected as: ");
+  switch( compass.product_id ) {
+      case AP_COMPASS_TYPE_HIL:
+	      Serial.println("HIL");
+		  break;
+      case AP_COMPASS_TYPE_HMC5843:
+	      Serial.println("HMC5843");
+		  break;
+      case AP_COMPASS_TYPE_HMC5883L:
+	      Serial.println("HMC5883L");
+		  break;
+      default:
+	      Serial.println("unknown");
+		  break;
+  }
+  
+  delay(3000);
+
+#endif
 	// initialise sonar
 	#if CONFIG_SONAR == ENABLED
 	init_sonar();
 	#endif
-#endif
+
 #endif
 	// Do GPS init
 	g_gps = &g_gps_driver;
