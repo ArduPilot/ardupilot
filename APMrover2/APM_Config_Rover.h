@@ -16,17 +16,19 @@
 #define SONAR_TRIGGER       200        // trigger distance in cm 
 
 #if LITE == DISABLED
-  #define MAGNETOMETER	    ENABLED
   #define LOGGING_ENABLED   ENABLED
-
-  #define MAG_ORIENTATION		AP_COMPASS_COMPONENTS_UP_PINS_FORWARD
-  #define PARAM_DECLINATION       0.18  // Paris
 #endif
+
+// for an accurate navigation a magnetometer must be used with the APM1 
+#define MAGNETOMETER	    ENABLED
+//#define MAG_ORIENTATION		AP_COMPASS_COMPONENTS_UP_PINS_FORWARD
+//#define PARAM_DECLINATION       0.18  // Paris
+
 //////////////////////////////////////////////////////////////////////////////
 // Serial port speeds.
 //
 #define SERIAL0_BAUD        115200
-#define SERIAL3_BAUD        115200
+#define SERIAL3_BAUD        57600
 
 //////////////////////////////////////////////////////////////////////////////
 // GPS_PROTOCOL 
@@ -59,7 +61,7 @@ the when the rover approach the wp, it slow down to 4 m/s (TRIM_ARSPD_CM)...
 This feature works only if the ROV_AWPR_NAV is set to 0
 */
 
-#define BOOSTER              2    // booster factor x2
+#define BOOSTER              1    // booster factor x1 = 1 or x2 = 2
 #define AUTO_WP_RADIUS       DISABLED
 #define AIRSPEED_CRUISE      4    // 4m/s
 #define THROTTLE_SLEW_LIMIT  2    // set to 2 for a smooth acceleration by 0.2 step

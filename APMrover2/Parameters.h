@@ -83,7 +83,7 @@ public:
 	k_param_pack_capacity,
         k_param_airspeed_offset,
 #if HIL_MODE != HIL_MODE_ATTITUDE
-#if LITE == DISABLED     
+#if CONFIG_SONAR == ENABLED       
  	k_param_sonar_enabled,
  	k_param_sonar_type,
 #endif
@@ -334,7 +334,7 @@ public:
 	AP_Int16    pack_capacity;		// Battery pack capacity less reserve
         AP_Int8	    inverted_flight_ch; // 0=disabled, 1-8 is channel for inverted flight trigger
 #if HIL_MODE != HIL_MODE_ATTITUDE
-#if LITE == DISABLED   
+#if CONFIG_SONAR == ENABLED     
         AP_Int8	    sonar_enabled;
 	AP_Int8	    sonar_type;   // 0 = XL, 1 = LV, 2 = XLL (XL with 10m range)   
 #endif
@@ -471,7 +471,7 @@ public:
         pack_capacity	 		(HIGH_DISCHARGE),
         inverted_flight_ch      (0),
 #if HIL_MODE != HIL_MODE_ATTITUDE
-#if LITE == DISABLED          
+#if CONFIG_SONAR == ENABLED            
         sonar_enabled			(SONAR_ENABLED),
 	sonar_type			(AP_RANGEFINDER_MAXSONARXL),        
 #endif

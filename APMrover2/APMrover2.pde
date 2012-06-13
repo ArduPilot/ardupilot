@@ -1,31 +1,26 @@
 /// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 
-#define THISFIRMWARE "APMrover v2.16a JL NAUDIN" //New version of the APMrover for the APM v1 or APM v2 and magnetometer + SONAR
+#define THISFIRMWARE "APMrover v2.20 JL NAUDIN" //New version of the APMrover for the APM v1 or APM v2 and magnetometer + SONAR
 
-// This is a full version of Arduplane v2.32 specially adapted for a Rover by Jean-Louis Naudin (JLN) 
-
+// This is the APMrover firmware derived from the Arduplane v2.32 by Jean-Louis Naudin (JLN) 
 /*
 Authors:    Doug Weibel, Jose Julio, Jordi Munoz, Jason Short, Andrew Tridgell, Randy Mackay, Pat Hickey, John Arne Birkeland, Olivier Adler, Jean-Louis Naudin
 Thanks to:  Chris Anderson, Michael Oborne, Paul Mather, Bill Premerlani, James Cohen, JB from rotorFX, Automatik, Fefenin, Peter Meister, Remzibi, Yury Smirnov, Sandro Benigno, Max Levine, Roberto Navoni, Lorenz Meier 
 Please contribute your ideas!
-
 APMrover alpha version tester: Franco Borasio, Daniel Chapelat... 
-
 
 This firmware is free software; you can redistribute it and/or
 modify it under the terms of the GNU Lesser General Public
 License as published by the Free Software Foundation; either
 version 2.1 of the License, or (at your option) any later version.
-
 //
-// JLN updates: last update 2012-05-20
-//
+// JLN updates: last update 2012-06-13
 // DOLIST:
-//  
-//
 //-------------------------------------------------------------------------------------------------------------------------
 // Dev Startup : 2012-04-21
 //
+//  2012-06-13: use RangeFinder optical SharpGP2Y instead of ultrasonic sonar
+//  2012-05-13: added Test sonar
 //  2012-05-17: added speed_boost during straight line
 //  2012-05-17: New update about the throttle rate control based on the field test done by Franco Borasio (Thanks Franco..)
 //  2012-05-15: The Throttle rate can be controlled by the THROTTLE_SLEW_LIMIT (the value give the step increase, 1 = 0.1)
@@ -294,12 +289,16 @@ GCS_MAVLINK	gcs3;
 //
 ModeFilterInt16_Size5 sonar_mode_filter(2);
 #if CONFIG_SONAR == ENABLED
+/*
 	#if CONFIG_SONAR_SOURCE == SONAR_SOURCE_ADC
 	AP_AnalogSource_ADC sonar_analog_source( &adc, CONFIG_SONAR_SOURCE_ADC_CHANNEL, 0.25);
 	#elif CONFIG_SONAR_SOURCE == SONAR_SOURCE_ANALOG_PIN
 		AP_AnalogSource_Arduino sonar_analog_source(CONFIG_SONAR_SOURCE_ANALOG_PIN);
 	#endif
 	AP_RangeFinder_MaxsonarXL sonar(&sonar_analog_source, &sonar_mode_filter);
+*/
+    AP_AnalogSource_Arduino sonar_analog_source(A0);   // use AN0 analog pin for APM2 on left
+    AP_RangeFinder_SharpGP2Y sonar(&sonar_analog_source, &sonar_mode_filter);
 #endif
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -817,14 +816,14 @@ static void fast_loop()
 
 #if LITE == DISABLED
 	ahrs.update();
+#endif 
 	// Read Sonar
 	// ----------
-    # if CONFIG_SONAR == ENABLED
+#if CONFIG_SONAR == ENABLED
 	if(g.sonar_enabled){
 		sonar_dist = sonar.read();
 	}
-    #endif
-#endif 
+#endif
 
 	// uses the yaw from the DCM to give more accurate turns
 	calc_bearing_error();
@@ -884,19 +883,23 @@ static void medium_loop()
                 calc_gndspeed_undershoot();
             }
             
-#if LITE == DISABLED
+//#if LITE == DISABLED
 			#if HIL_MODE != HIL_MODE_ATTITUDE
             if (g.compass_enabled && compass.read()) {
                 ahrs.set_compass(&compass);
                 // Calculate heading
-                Matrix3f m = ahrs.get_dcm_matrix();
+#if LITE == DISABLED                
+                Matrix3f m = ahrs.get_dcm_matrix();              
                 compass.calculate(m);
+#else
+                compass.calculate(0,0);  // roll = 0, pitch = 0
+#endif
                 compass.null_offsets();
             } else {
                 ahrs.set_compass(NULL);
             }
 			#endif
-#endif
+//#endif
 /*{
 Serial.print(ahrs.roll_sensor, DEC);	Serial.printf_P(PSTR("\t"));
 Serial.print(ahrs.pitch_sensor, DEC);	Serial.printf_P(PSTR("\t"));
@@ -1027,8 +1030,11 @@ static void slow_loop()
 #endif
 
 #if TRACE == ENABLED
-              Serial.printf_P(PSTR("NAV->gnd_crs=%3.0f, nav_brg=%3.0f, tgt_brg=%3.0f, brg_err=%3.0f, nav_rll=%3.1f rsvo=%3.1f\n"), 
-                    (float)ground_course/100, (float)nav_bearing/100, (float)target_bearing/100, (float)bearing_error/100, (float)nav_roll/100, (float)g.channel_roll.servo_out/100);                                
+         //     Serial.printf_P(PSTR("NAV->gnd_crs=%3.0f, nav_brg=%3.0f, tgt_brg=%3.0f, brg_err=%3.0f, nav_rll=%3.1f rsvo=%3.1f\n"), 
+         //           (float)ground_course/100, (float)nav_bearing/100, (float)target_bearing/100, (float)bearing_error/100, (float)nav_roll/100, (float)g.channel_roll.servo_out/100);           
+             // Serial.printf_P(PSTR("WPL->g.command_total=%d, g.command_index=%d, nav_command_index=%d\n"), 
+                //    g.command_total, g.command_index, nav_command_index);      
+    	   Serial.printf_P(PSTR("NAV->gnd_crs=%3.0f,  sonar_dist = %d\n"), (float)ground_course/100, (int)sonar_dist);                
 #endif                          
 			break;
 	}
@@ -1077,12 +1083,12 @@ static void update_GPS(void)
 				} else if (ENABLE_AIR_START == 0) {
 					init_home();
 				}
-#if LITE == DISABLED
+//#if LITE == DISABLED
 				if (g.compass_enabled) {
 					// Set compass declination automatically
 					compass.set_initial_location(g_gps->latitude, g_gps->longitude);
 				}
-#endif
+//#endif
 				ground_start_count = 0;
 			}
 		}
@@ -1098,8 +1104,13 @@ static void update_GPS(void)
                   ground_course = hdg * 100;
                   ground_course = ahrs.yaw_sensor;
                 } else {
-#endif            
-                  ground_course = g_gps->ground_course;
+#endif                
+    long magheading;
+    magheading = ToDeg(compass.heading) * 100;
+    if (magheading > 36000)	  magheading -= 36000;
+    if (magheading < 0)           magheading += 36000;
+
+    ground_course = magheading;
 #if LITE == DISABLED                  
                 }
 #endif

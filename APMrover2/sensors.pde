@@ -1,20 +1,22 @@
 // -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
-#if LITE == DISABLED
-// Sensors are not available in HIL_MODE_ATTITUDE
-#if HIL_MODE != HIL_MODE_ATTITUDE
-
-void ReadSCP1000(void) {}
-
 #if CONFIG_SONAR == ENABLED
 static void init_sonar(void)
 {
+  /*
     #if CONFIG_SONAR_SOURCE == SONAR_SOURCE_ADC
 	    sonar.calculate_scaler(g.sonar_type, 3.3);
 	#else
         sonar.calculate_scaler(g.sonar_type, 5.0);
 	#endif
+*/
 }
 #endif
+
+#if LITE == DISABLED
+// Sensors are not available in HIL_MODE_ATTITUDE
+#if HIL_MODE != HIL_MODE_ATTITUDE
+
+void ReadSCP1000(void) {}
 
 static void init_barometer(void)
 {

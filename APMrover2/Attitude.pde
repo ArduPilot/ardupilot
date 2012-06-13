@@ -76,34 +76,6 @@ static void calc_nav_roll()
 
 }
 
-/*****************************************
- * Roll servo slew limit
- *****************************************/
-/*
-float roll_slew_limit(float servo)
-{
-	static float last;
-	float temp = constrain(servo, last-ROLL_SLEW_LIMIT * delta_ms_fast_loop/1000.f, last + ROLL_SLEW_LIMIT * delta_ms_fast_loop/1000.f);
-	last = servo;
-	return temp;
-}*/
-
-/*****************************************
- * Throttle slew limit
- *****************************************/
-static void throttle_slew_limit()
-{
-  /*
-	static int last = 1000;
-	if(g.throttle_slewrate) {		// if slew limit rate is set to zero then do not slew limit
-
-		float temp = g.throttle_slewrate * G_Dt * 10.f;		//  * 10 to scale % to pwm range of 1000 to 2000
-		g.channel_throttle.radio_out = constrain(g.channel_throttle.radio_out, last - (int)temp, last + (int)temp);
-		last = g.channel_throttle.radio_out;
-	}
-*/
-}
-
 // Zeros out navigation Integrators if we are changing mode, have passed a waypoint, etc.
 // Keeps outdated data out of our calculations
 static void reset_I(void)
@@ -152,9 +124,6 @@ static void set_servos(void)
         if (control_mode >= FLY_BY_WIRE_B) {
           // convert 0 to 100% into PWM
             g.channel_throttle.calc_pwm();
-            /* only do throttle slew limiting in modes where throttle
-               control is automatic */
-            throttle_slew_limit();
         }
 
 
