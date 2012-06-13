@@ -36,7 +36,7 @@ static const AP_Param::Info var_info[] PROGMEM = {
     
     // @Param: KFF_RDDRMIX
 	// @DisplayName: Rudder Mix
-	// @Description: The ammount of rudder mix to apply during aileron movement 0 = 0 %, 1 = 100%
+	// @Description: The amount of rudder mix to apply during aileron movement 0 = 0 %, 1 = 100%
 	// @Range: 0 1
 	// @Increment: 0.01
 	// @User: Standard

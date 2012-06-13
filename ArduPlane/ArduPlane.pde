@@ -38,7 +38,7 @@ version 2.1 of the License, or (at your option) any later version.
 #include <AP_Baro.h>        // ArduPilot barometer library
 #include <AP_Compass.h>     // ArduPilot Mega Magnetometer Library
 #include <AP_Math.h>        // ArduPilot Mega Vector/Matrix math Library
-#include <AP_InertialSensor.h> // Inertial Sensor (uncalibated IMU) Library
+#include <AP_InertialSensor.h> // Inertial Sensor (uncalibrated IMU) Library
 #include <AP_IMU.h>         // ArduPilot Mega IMU Library
 #include <AP_AHRS.h>         // ArduPilot Mega DCM Library
 #include <PID.h>            // PID library

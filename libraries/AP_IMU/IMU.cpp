@@ -12,7 +12,7 @@ const AP_Param::GroupInfo IMU::var_info[] PROGMEM = {
 /* Empty implementations for the IMU functions.
  * Although these will never be used, in certain situations with
  * optimizations turned off, having empty implementations in an object
- * file will help satisify the linker.
+ * file will help satisfy the linker.
  */
 
 IMU::IMU () {}
