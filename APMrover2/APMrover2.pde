@@ -1,6 +1,6 @@
 /// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 
-#define THISFIRMWARE "APMrover v2.20 JL NAUDIN" //New version of the APMrover for the APM v1 or APM v2 and magnetometer + SONAR
+#define THISFIRMWARE "APMrover v2.20a JL NAUDIN" //New version of the APMrover for the APM v1 or APM v2 and magnetometer + SONAR
 
 // This is the APMrover firmware derived from the Arduplane v2.32 by Jean-Louis Naudin (JLN) 
 /*
@@ -20,7 +20,7 @@ version 2.1 of the License, or (at your option) any later version.
 // Dev Startup : 2012-04-21
 //
 //  2012-06-13: use RangeFinder optical SharpGP2Y instead of ultrasonic sonar
-//  2012-05-13: added Test sonar
+//  2012-06-13: added Test sonar
 //  2012-05-17: added speed_boost during straight line
 //  2012-05-17: New update about the throttle rate control based on the field test done by Franco Borasio (Thanks Franco..)
 //  2012-05-15: The Throttle rate can be controlled by the THROTTLE_SLEW_LIMIT (the value give the step increase, 1 = 0.1)
@@ -500,6 +500,7 @@ static int		airspeed_nudge;
 static int     throttle_nudge = 0;
 // The distance as reported by Sonar in cm – Values are 20 to 700 generally.
 static int16_t		sonar_dist;
+static bool obstacle = false;
 
 ////////////////////////////////////////////////////////////////////////////////
 // Ground speed
@@ -822,6 +823,12 @@ static void fast_loop()
 #if CONFIG_SONAR == ENABLED
 	if(g.sonar_enabled){
 		sonar_dist = sonar.read();
+
+	if(sonar_dist <= g.sonar_trigger)  {  // obstacle detected in front 
+            obstacle = true;
+      } else  { 
+            obstacle = false;
+            }
 	}
 #endif
 
@@ -1034,7 +1041,7 @@ static void slow_loop()
          //           (float)ground_course/100, (float)nav_bearing/100, (float)target_bearing/100, (float)bearing_error/100, (float)nav_roll/100, (float)g.channel_roll.servo_out/100);           
              // Serial.printf_P(PSTR("WPL->g.command_total=%d, g.command_index=%d, nav_command_index=%d\n"), 
                 //    g.command_total, g.command_index, nav_command_index);      
-    	   Serial.printf_P(PSTR("NAV->gnd_crs=%3.0f,  sonar_dist = %d\n"), (float)ground_course/100, (int)sonar_dist);                
+    	   Serial.printf_P(PSTR("NAV->gnd_crs=%3.0f,  sonar_dist = %d    obstacle = %d\n"), (float)ground_course/100, (int)sonar_dist, obstacle);                
 #endif                          
 			break;
 	}
