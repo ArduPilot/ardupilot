@@ -4,13 +4,15 @@
 
 extern RC_Channel_aux* g_rc_function[RC_Channel_aux::k_nr_aux_servo_functions];	// the aux. servo ch. assigned to each function
 
-AP_Mount::AP_Mount(GPS *gps, AP_AHRS *ahrs)
+AP_Mount::AP_Mount(const struct Location *current_loc, GPS *&gps, AP_AHRS *ahrs):
+_gps(gps)
 {
-	_ahrs=ahrs;
-	_gps=gps;
+	_ahrs = ahrs;
+	_current_loc = current_loc;
+
 	//set_mode(MAV_MOUNT_MODE_RETRACT);
-	//set_mode(MAV_MOUNT_MODE_RC_TARGETING); // FIXME: This is just to test without mavlink
-	set_mode(MAV_MOUNT_MODE_GPS_POINT); // FIXME: this is to test ONLY targeting
+	set_mode(MAV_MOUNT_MODE_RC_TARGETING); // FIXME: This is just to test without mavlink
+	//set_mode(MAV_MOUNT_MODE_GPS_POINT); // FIXME: this is to test ONLY targeting
 
 	_retract_angles.x=0;
 	_retract_angles.y=0;
@@ -56,81 +58,83 @@ void AP_Mount::update_mount_position()
 
 	switch(_mount_mode)
 	{
-	case MAV_MOUNT_MODE_RETRACT:
-		roll_angle =100*_retract_angles.x;
-		pitch_angle=100*_retract_angles.y;
-		yaw_angle  =100*_retract_angles.z;
-		break;
+		// move mount to a "retracted position" or to a position where a fourth servo can retract the entire mount into the fuselage
+		case MAV_MOUNT_MODE_RETRACT:
+			_roll_angle =100*_retract_angles.x;
+			_pitch_angle=100*_retract_angles.y;
+			_yaw_angle  =100*_retract_angles.z;
+			break;
 
-	case MAV_MOUNT_MODE_NEUTRAL:
-		roll_angle =100*_neutral_angles.x;
-		pitch_angle=100*_neutral_angles.y;
-		yaw_angle  =100*_neutral_angles.z;
-		break;
+		// move mount to a neutral position, typically pointing forward
+		case MAV_MOUNT_MODE_NEUTRAL:
+			_roll_angle =100*_neutral_angles.x;
+			_pitch_angle=100*_neutral_angles.y;
+			_yaw_angle  =100*_neutral_angles.z;
+			break;
 
-	case MAV_MOUNT_MODE_MAVLINK_TARGETING:
-	{
-		aux_vec.x = _mavlink_angles.x;
-		aux_vec.y = _mavlink_angles.y;
-		aux_vec.z = _mavlink_angles.z;
-		m = _ahrs->get_dcm_matrix();
-		m.transpose();
-		//rotate vector
-		targ = m*aux_vec;
-		// TODO The next three lines are probably not correct yet
-		roll_angle  = _stab_roll? degrees(atan2( targ.y,targ.z))*100:_mavlink_angles.y;	//roll
-		pitch_angle = _stab_pitch?degrees(atan2(-targ.x,targ.z))*100:_neutral_angles.x;	//pitch
-		yaw_angle   = _stab_yaw?  degrees(atan2(-targ.x,targ.y))*100:_neutral_angles.z;	//yaw
-		break;
-	}
-
-	case MAV_MOUNT_MODE_RC_TARGETING:  // radio manual control
-	{
-		// TODO It does work, but maybe is a good idea to replace this simplified implementation with a proper one
-		if (_ahrs)
+		// point to the angles given by a mavlink message
+		case MAV_MOUNT_MODE_MAVLINK_TARGETING:
 		{
-			roll_angle  = -_ahrs->roll_sensor;
-			pitch_angle = -_ahrs->pitch_sensor;
-			yaw_angle   = -_ahrs->yaw_sensor;
+			aux_vec.x = _mavlink_angles.x;
+			aux_vec.y = _mavlink_angles.y;
+			aux_vec.z = _mavlink_angles.z;
+			m = _ahrs->get_dcm_matrix();
+			m.transpose();
+			//rotate vector
+			targ = m*aux_vec;
+			// TODO The next three lines are probably not correct yet
+			_roll_angle  = _stab_roll? degrees(atan2( targ.y,targ.z))*100:_mavlink_angles.y;	//roll
+			_pitch_angle = _stab_pitch?degrees(atan2(-targ.x,targ.z))*100:_neutral_angles.x;	//pitch
+			_yaw_angle   = _stab_yaw?  degrees(atan2(-targ.x,targ.y))*100:_neutral_angles.z;	//yaw
+			break;
 		}
-		if (g_rc_function[RC_Channel_aux::k_mount_roll])
-			roll_angle  = rc_map(g_rc_function[RC_Channel_aux::k_mount_roll]);
-		if (g_rc_function[RC_Channel_aux::k_mount_pitch])
-			pitch_angle = rc_map(g_rc_function[RC_Channel_aux::k_mount_pitch]);
-		if (g_rc_function[RC_Channel_aux::k_mount_yaw])
-			yaw_angle   = rc_map(g_rc_function[RC_Channel_aux::k_mount_yaw]);
-		break;
-	}
 
-	case MAV_MOUNT_MODE_GPS_POINT:
-	{
-		if(_gps->fix)
+		// RC radio manual angle control, but with stabilization from the AHRS
+		case MAV_MOUNT_MODE_RC_TARGETING:
 		{
-			calc_GPS_target_vector(&_target_GPS_location);
+			G_RC_AUX(k_mount_roll)->rc_input(&_roll_control_angle, _roll_angle);
+			G_RC_AUX(k_mount_pitch)->rc_input(&_pitch_control_angle, _pitch_angle);
+			G_RC_AUX(k_mount_yaw)->rc_input(&_yaw_control_angle, _yaw_angle);
+			if (_ahrs){
+				calculate();
+			} else {
+				if (g_rc_function[RC_Channel_aux::k_mount_roll])
+					_roll_angle  = rc_map(g_rc_function[RC_Channel_aux::k_mount_roll]);
+				if (g_rc_function[RC_Channel_aux::k_mount_pitch])
+					_pitch_angle = rc_map(g_rc_function[RC_Channel_aux::k_mount_pitch]);
+				if (g_rc_function[RC_Channel_aux::k_mount_yaw])
+					_yaw_angle   = rc_map(g_rc_function[RC_Channel_aux::k_mount_yaw]);
+			}
+			break;
 		}
-		m = _ahrs->get_dcm_matrix();
-		m.transpose();
-		targ = m*_GPS_vector;
-		/* disable stabilization for now, this will help debug */
-		_stab_roll = 0;_stab_pitch=0;_stab_yaw=0;
-		/**/
-		// TODO The next three lines are probably not correct yet
-		roll_angle  = _stab_roll? degrees(atan2( targ.y,targ.z))*100:_GPS_vector.y;	//roll
-		pitch_angle = _stab_pitch?degrees(atan2(-targ.x,targ.z))*100:0;	//pitch
-		yaw_angle   = _stab_yaw?  degrees(atan2(-targ.x,targ.y))*100:degrees(atan2(-_GPS_vector.x,_GPS_vector.y))*100;	//yaw
-		break;
-	}
-	default:
-		//do nothing
-		break;
+
+		// point mount to a GPS point given by the mission planner
+		case MAV_MOUNT_MODE_GPS_POINT:
+		{
+			if(_gps->fix){
+				calc_GPS_target_angle(&_target_GPS_location);
+			}
+			if (_ahrs){
+				calculate();
+			}
+			break;
+		}
+		default:
+			//do nothing
+			break;
 	}
 
 	// write the results to the servos
+/*
+	G_RC_AUX(k_mount_roll)->angle_out(_roll_angle);
+	G_RC_AUX(k_mount_pitch)->angle_out(_pitch_angle);
+	G_RC_AUX(k_mount_yaw)->angle_out(_yaw_angle);
+*/
 	// Change scaling to 0.1 degrees in order to avoid overflows in the angle arithmetic
-	G_RC_AUX(k_mount_roll)->closest_limit(roll_angle/10);
-	G_RC_AUX(k_mount_pitch)->closest_limit(pitch_angle/10);
-	G_RC_AUX(k_mount_yaw)->closest_limit(yaw_angle/10);
-}	
+	G_RC_AUX(k_mount_roll)->closest_limit(_roll_angle/10);
+	G_RC_AUX(k_mount_pitch)->closest_limit(_pitch_angle/10);
+	G_RC_AUX(k_mount_yaw)->closest_limit(_yaw_angle/10);
+}
 
 void AP_Mount::set_mode(enum MAV_MOUNT_MODE mode)
 {
@@ -210,9 +214,9 @@ void AP_Mount::status_msg(mavlink_message_t *msg)
 	case MAV_MOUNT_MODE_NEUTRAL:			// neutral position (Roll,Pitch,Yaw) from EEPROM
 	case MAV_MOUNT_MODE_MAVLINK_TARGETING:	// neutral position and start MAVLink Roll,Pitch,Yaw control with stabilization
 	case MAV_MOUNT_MODE_RC_TARGETING:		// neutral position and start RC Roll,Pitch,Yaw control with stabilization
-		packet.pointing_b = roll_angle;		///< degrees*100
-		packet.pointing_a = pitch_angle;	///< degrees*100
-		packet.pointing_c = yaw_angle;		///< degrees*100
+		packet.pointing_b = _roll_angle;	///< degrees*100
+		packet.pointing_a = _pitch_angle;	///< degrees*100
+		packet.pointing_c = _yaw_angle;		///< degrees*100
 		break;
 	case MAV_MOUNT_MODE_GPS_POINT:         // neutral position and start to point to Lat,Lon,Alt
 		packet.pointing_a = _target_GPS_location.lat;	///< latitude
@@ -242,12 +246,20 @@ void AP_Mount::control_cmd()
 	// TODO get the information out of the mission command and use it
 }
 
-
-void AP_Mount::calc_GPS_target_vector(struct Location *target)
+void
+AP_Mount::calc_GPS_target_angle(struct Location *target)
 {
-	_GPS_vector.x = (target->lng-_gps->longitude) * cos((_gps->latitude+target->lat)/2)*.01113195;
-	_GPS_vector.y = (target->lat-_gps->latitude)*.01113195;
-	_GPS_vector.z = (_gps->altitude-target->alt);
+	float _GPS_vector_x = (target->lng-_current_loc->lng)*cos(ToRad((_current_loc->lat+target->lat)/(t7*2.0)))*.01113195;
+	float _GPS_vector_y = (target->lat-_current_loc->lat)*.01113195;
+	float _GPS_vector_z = (target->alt-_current_loc->alt);             // baro altitude(IN CM) should be adjusted to known home elevation before take off (Set altimeter).
+	float target_distance = 100.0*sqrt(_GPS_vector_x*_GPS_vector_x + _GPS_vector_y*_GPS_vector_y);  // Careful , centimeters here locally. Baro/alt is in cm, lat/lon is in meters.
+	_roll_control_angle   = 0;
+	_pitch_control_angle  = atan2(_GPS_vector_z, target_distance);
+	_yaw_control_angle    = atan2(_GPS_vector_x,_GPS_vector_y);
+	// Converts +/- 180 into 0-360.
+	if(_yaw_control_angle<0){
+		_yaw_control_angle += 2*M_PI;
+	}
 }
 
 void
@@ -268,10 +280,54 @@ AP_Mount::update_mount_type()
 	}
 }
 
+void
+AP_Mount::calculate()
+{
+	m = _ahrs->get_dcm_matrix();
+	m.transpose();
+	cam.from_euler(_roll_control_angle, _pitch_control_angle, _yaw_control_angle);
+	gimbal_target = m * cam;
+	gimbal_target.to_euler(&_roll, &_pitch, &_yaw);
+	_roll_angle = degrees(_roll)*100;
+	_pitch_angle = degrees(_pitch)*100;
+	_yaw_angle = degrees(_yaw)*100;
+}
+
 // This function is needed to let the HIL code compile
 long
 AP_Mount::rc_map(RC_Channel_aux* rc_ch)
 {
-  return (rc_ch->radio_in - rc_ch->radio_min) * (rc_ch->angle_max - rc_ch->angle_min) / (rc_ch->radio_max - rc_ch->radio_min) + rc_ch->angle_min;
+	return (rc_ch->radio_in - rc_ch->radio_min) * (rc_ch->angle_max - rc_ch->angle_min) / (rc_ch->radio_max - rc_ch->radio_min) + rc_ch->angle_min;
 }
 
+// For testing and development. Called in the medium loop.
+void
+AP_Mount::debug_output()
+{ 	Serial3.print("current   -     ");
+	Serial3.print("lat ");
+	Serial3.print(_current_loc->lat);
+	Serial3.print(",lon ");
+	Serial3.print(_current_loc->lng);
+	Serial3.print(",alt ");
+	Serial3.println(_current_loc->alt);
+
+	Serial3.print("gps       -     ");
+	Serial3.print("lat ");
+	Serial3.print(_gps->latitude);
+	Serial3.print(",lon ");
+	Serial3.print(_gps->longitude);
+	Serial3.print(",alt ");
+	Serial3.print(_gps->altitude);
+	Serial3.println();
+
+	Serial3.print("target   -      ");
+	Serial3.print("lat ");
+	Serial3.print(_target_GPS_location.lat);
+	Serial3.print(",lon ");
+	Serial3.print(_target_GPS_location.lng);
+	Serial3.print(",alt ");
+	Serial3.print(_target_GPS_location.alt);
+	Serial3.print(" hdg to targ ");
+	Serial3.print(degrees(_yaw_control_angle));
+	Serial3.println();
+}

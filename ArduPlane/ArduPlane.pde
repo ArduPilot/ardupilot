@@ -258,11 +258,6 @@ AP_AnalogSource_Arduino pitot_analog_source(CONFIG_PITOT_SOURCE_ANALOG_PIN, 4.0)
 
 AP_Relay relay;
 
-// Camera/Antenna mount tracking and stabilisation stuff
-// --------------------------------------
-#if MOUNT == ENABLED
-AP_Mount camera_mount(g_gps, &ahrs);
-#endif
 
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -636,6 +631,14 @@ static unsigned long 	dTnav;
 // % MCU cycles used
 static float 			load;
 
+
+// Camera/Antenna mount tracking and stabilisation stuff
+// --------------------------------------
+#if MOUNT == ENABLED
+// current_loc uses the baro/gps soloution for altitude rather than gps only.
+// mabe one could use current_loc for lat/lon too and eliminate g_gps alltogether?
+AP_Mount camera_mount(&current_loc, g_gps, &ahrs);
+#endif
 
 
 ////////////////////////////////////////////////////////////////////////////////

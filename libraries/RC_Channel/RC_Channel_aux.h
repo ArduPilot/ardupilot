@@ -1,8 +1,9 @@
 // -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: t -*-
 
 /// @file	RC_Channel_aux.h
-/// @brief	RC_Channel manager for Channels 5..8, with EEPROM-backed storage of constants.
+/// @brief	RC_Channel manager for auxiliary channels (5..8), with EEPROM-backed storage of constants.
 /// @author Amilcar Lucas
+/// @author Gregory Fletcher
 
 #ifndef RC_CHANNEL_AUX_H_
 #define RC_CHANNEL_AUX_H_
@@ -50,9 +51,13 @@ public:
 
 	int16_t closest_limit(int16_t angle);	// saturate to the closest angle limit if outside of min max angle interval
 
+	void angle_out(int16_t angle);
+
+	void rc_input(float *control_angle, int16_t angle);
+
 	void output_ch(unsigned char ch_nr);	// map a function to a servo channel and output it
 
-    static const struct AP_Param::GroupInfo var_info[];
+	static const struct AP_Param::GroupInfo var_info[];
 };
 
 void update_aux_servo_function(RC_Channel_aux* rc_5, RC_Channel_aux* rc_6, RC_Channel_aux* rc_7, RC_Channel_aux* rc_8);
