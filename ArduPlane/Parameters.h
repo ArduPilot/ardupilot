@@ -17,7 +17,7 @@ public:
     // The increment will prevent old parameters from being used incorrectly
     // by newer code.
     //
-    static const uint16_t k_format_version = 14;
+    static const uint16_t k_format_version = 13;
 
 	// The parameter software_type is set up solely for ground station use
 	// and identifies the software type (eg ArduPilotMega versus ArduCopterMega)
@@ -360,6 +360,8 @@ public:
     PID         pidNavPitchAltitude;
 
     Parameters() :
+	// variable				default
+	//----------------------------------------
         format_version          (k_format_version),
         software_type			(k_software_type),
 
