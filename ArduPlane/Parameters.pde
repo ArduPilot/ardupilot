@@ -277,6 +277,10 @@ static const AP_Param::Info var_info[] PROGMEM = {
 	// @User: Advanced
 	GSCALAR(airspeed_use,       	"ARSPD_USE"),
 
+#if CAMERA == ENABLED
+	GGROUP(camera,                  "CAM_",	AP_Camera),
+#endif
+
 	// RC channel
 	//-----------
 	GGROUP(channel_roll,            "RC1_", RC_Channel),

@@ -42,6 +42,8 @@ public:
 		k_mount_pitch	= 7,	// mount pitch (tilt)
 		k_mount_roll	= 8,	// mount roll
 		k_mount_open	= 9,	// mount open (deploy) / close (retract)
+		k_cam_trigger	= 10,	// camera trigger
+		k_egg_drop		= 11,	// egg drop
 		k_nr_aux_servo_functions // This must be the last enum value (only add new values _before_ this one)
 	} Aux_servo_function_t;
 

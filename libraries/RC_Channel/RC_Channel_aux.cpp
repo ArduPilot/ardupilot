@@ -159,4 +159,8 @@ void update_aux_servo_function(RC_Channel_aux* rc_5, RC_Channel_aux* rc_6, RC_Ch
 				g_rc_function[RC_Channel_aux::k_mount_roll]->angle_min / 10,
 				g_rc_function[RC_Channel_aux::k_mount_roll]->angle_max / 10);
 	G_RC_AUX(k_mount_open)->set_range(0,100);
+	G_RC_AUX(k_cam_trigger)->set_range(
+				g_rc_function[RC_Channel_aux::k_cam_trigger]->angle_min / 10,
+				g_rc_function[RC_Channel_aux::k_cam_trigger]->angle_max / 10);
+	G_RC_AUX(k_egg_drop)->set_range(0,100);
 }

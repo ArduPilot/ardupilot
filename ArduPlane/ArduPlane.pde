@@ -47,6 +47,7 @@ version 2.1 of the License, or (at your option) any later version.
 #include <Filter.h>			// Filter library
 #include <ModeFilter.h>		// Mode Filter from Filter library
 #include <AP_Relay.h>       // APM relay
+#include <AP_Camera.h>		// Photo or video camera
 #include <memcheck.h>
 
 // Configuration
@@ -516,7 +517,8 @@ static long	nav_pitch;
 // Waypoint distances
 ////////////////////////////////////////////////////////////////////////////////
 // Distance between plane and next waypoint.  Meters
-static long	wp_distance;
+// is not static because AP_Camera uses it
+long	wp_distance;
 // Distance between previous and next waypoint.  Meters
 static long	wp_totalDistance;
 
@@ -640,6 +642,9 @@ static float 			load;
 AP_Mount camera_mount(&current_loc, g_gps, &ahrs);
 #endif
 
+#if CAMERA == ENABLED
+//pinMode(camtrig, OUTPUT);			// these are free pins PE3(5), PH3(15), PH6(18), PB4(23), PB5(24), PL1(36), PL3(38), PA6(72), PA7(71), PK0(89), PK1(88), PK2(87), PK3(86), PK4(83), PK5(84), PK6(83), PK7(82)
+#endif
 
 ////////////////////////////////////////////////////////////////////////////////
 // Top-level logic
@@ -767,6 +772,10 @@ static void medium_loop()
 {
 #if MOUNT == ENABLED
 	camera_mount.update_mount_position();
+#endif
+
+#if CAMERA == ENABLED
+	g.camera.trigger_pic_cleanup();
 #endif
 
 	// This is the start of the medium (10 Hz) loop pieces

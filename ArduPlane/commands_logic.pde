@@ -102,6 +102,17 @@ static void handle_process_do_command()
 			do_repeat_relay();
 			break;
 
+#if CAMERA == ENABLED
+		case MAV_CMD_DO_CONTROL_VIDEO:		// Control on-board camera capturing. |Camera ID (-1 for all)| Transmission: 0: disabled, 1: enabled compressed, 2: enabled raw| Transmission mode: 0: video stream, >0: single images every n seconds (decimal)| Recording: 0: disabled, 1: enabled compressed, 2: enabled raw| Empty| Empty| Empty|
+			break;
+
+		case MAV_CMD_DO_DIGICAM_CONFIGURE:	// Mission command to configure an on-board camera controller system. |Modes: P, TV, AV, M, Etc| Shutter speed: Divisor number for one second| Aperture: F stop number| ISO number e.g. 80, 100, 200, Etc| Exposure type enumerator| Command Identity| Main engine cut-off time before camera trigger in seconds/10 (0 means no cut-off)|
+			break;
+
+		case MAV_CMD_DO_DIGICAM_CONTROL:	// Mission command to control an on-board camera controller system. |Session control e.g. show/hide lens| Zoom's absolute position| Zooming step value to offset zoom from the current position| Focus Locking, Unlocking or Re-locking| Shooting Command| Command Identity| Empty|
+			break;
+#endif
+
 #if MOUNT == ENABLED
 		// Sets the region of interest (ROI) for a sensor set or the
 		// vehicle itself. This can then be used by the vehicles control
