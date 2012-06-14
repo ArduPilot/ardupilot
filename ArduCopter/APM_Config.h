@@ -43,7 +43,7 @@
 
 #define ACCEL_ALT_HOLD 0		// disabled by default, work in progress
 
-#define INERTIAL_NAV ENABLED
+#define INERTIAL_NAV DISABLED
 
 
 #if INERTIAL_NAV == ENABLED
