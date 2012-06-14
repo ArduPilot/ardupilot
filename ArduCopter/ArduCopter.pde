@@ -832,6 +832,23 @@ static uint32_t condition_start;
 static float G_Dt		= 0.02;
 
 ////////////////////////////////////////////////////////////////////////////////
+// Inertial Navigation
+////////////////////////////////////////////////////////////////////////////////
+#if INERTIAL_NAV == ENABLED
+// The rotated accelerometer values
+static Vector3f accels_velocity;
+
+// accels rotated to world frame
+static Vector3f accels_rotated;
+
+// error correction
+static Vector3f speed_error;
+
+// Manage accel drift
+static Vector3f accels_offset;
+#endif
+
+////////////////////////////////////////////////////////////////////////////////
 // Performance monitoring
 ////////////////////////////////////////////////////////////////////////////////
 // Used to manage the rate of performance logging messages
@@ -978,6 +995,12 @@ static void fast_loop()
 	// IMU DCM Algorithm
 	// --------------------
 	read_AHRS();
+
+	// Inertial Nav
+	// --------------------
+	#if INERTIAL_NAV == ENABLED
+	calc_inertia();
+	#endif
 
 	// custom code/exceptions for flight modes
 	// ---------------------------------------
@@ -2002,6 +2025,11 @@ static void update_altitude()
 
 	// calc error
 	climb_rate_error = (climb_rate_actual - climb_rate) / 5;
+
+	#if INERTIAL_NAV == ENABLED
+	// inertial_nav
+	z_error_correction();
+	#endif
 }
 
 static void update_altitude_est()

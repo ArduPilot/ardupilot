@@ -259,7 +259,7 @@ get_rate_yaw(int32_t target_rate)
 	#else
 	int16_t yaw_limit = 1400 + abs(g.rc_4.control_in);
 	#endif
-	
+
 	// constrain output
 	output = constrain(output, -yaw_limit, yaw_limit);
 
@@ -297,7 +297,11 @@ get_nav_throttle(int32_t z_error)
 	int16_t i_hold 	= g.pi_alt_hold.get_i(z_error, .02);
 
 	// calculate rate error
-	z_rate_error 	= z_target_speed - climb_rate;
+	#if INERTIAL_NAV == ENABLED
+	z_rate_error	= z_target_speed - accels_velocity.z;			// calc the speed error
+	#else
+	z_rate_error	= z_target_speed - climb_rate;		// calc the speed error
+	#endif
 
 	// limit the rate
 	output =  constrain(g.pid_throttle.get_pid(z_rate_error, .02), -80, 120);

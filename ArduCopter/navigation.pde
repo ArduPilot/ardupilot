@@ -64,6 +64,11 @@ static void calc_XY_velocity(){
 	last_longitude 	= g_gps->longitude;
 	last_latitude 	= g_gps->latitude;
 
+	#if INERTIAL_NAV == ENABLED
+	// inertial_nav
+	xy_error_correction();
+	#endif
+
 	/*if(g_gps->ground_speed > 150){
 		float temp = radians((float)g_gps->ground_course/100.0);
 		x_actual_speed = (float)g_gps->ground_speed * sin(temp);
@@ -107,7 +112,15 @@ static void calc_loiter(int x_error, int y_error)
 	}
 #endif
 
+
+	// calculate rate error
+	#if INERTIAL_NAV == ENABLED
+	x_rate_error	= x_target_speed - accels_velocity.x;		// calc the speed error
+	#else
 	x_rate_error	= x_target_speed - x_actual_speed;			// calc the speed error
+	#endif
+
+
 	p				= g.pid_loiter_rate_lon.get_p(x_rate_error);
 	i				= g.pid_loiter_rate_lon.get_i(x_rate_error + x_error, dTnav);
 	d				= g.pid_loiter_rate_lon.get_d(x_error, dTnav);
@@ -138,7 +151,13 @@ static void calc_loiter(int x_error, int y_error)
 	}
 #endif
 
-	y_rate_error	= y_target_speed - y_actual_speed;
+	// calculate rate error
+	#if INERTIAL_NAV == ENABLED
+	y_rate_error	= y_target_speed - accels_velocity.y;		// calc the speed error
+	#else
+	y_rate_error	= y_target_speed - y_actual_speed;			// calc the speed error
+	#endif
+
 	p				= g.pid_loiter_rate_lat.get_p(y_rate_error);
 	i				= g.pid_loiter_rate_lat.get_i(y_rate_error + y_error, dTnav);
 	d				= g.pid_loiter_rate_lat.get_d(y_error, dTnav);

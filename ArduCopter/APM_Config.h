@@ -43,6 +43,26 @@
 
 #define ACCEL_ALT_HOLD 0		// disabled by default, work in progress
 
+#define INERTIAL_NAV ENABLED
+
+
+#if INERTIAL_NAV == ENABLED
+	#define ALT_HOLD_P			0.5
+	#define ALT_HOLD_I			0.007
+	#define ALT_HOLD_IMAX		300
+
+	// RATE control
+	#define THROTTLE_P			2		//
+	#define THROTTLE_I			0.5		// Don't edit
+	#define THROTTLE_D			0.0		//
+
+	#define LOITER_P			0.50
+	#define LOITER_I			0.0
+	#define LOITER_RATE_P		12			//
+	#define LOITER_RATE_I		1.0		// Wind control
+	#define LOITER_RATE_D		0.0		// try 2 or 3 for LOITER_RATE 1
+#endif
+
 
 //#define RATE_ROLL_I 	0.18
 //#define RATE_PITCH_I	0.18
@@ -77,7 +97,7 @@
 // MOT_n variables are used by the Frame mixing code. You must define
 // MOT_1 through MOT_m where m is the number of motors on your frame.
 // CH_n variables are used for RC output. These can be CH_1 through CH_8,
-// and CH_10 or CH_12. 
+// and CH_10 or CH_12.
 // Sample channel config. Must define all MOT_ chanels used by
 // your FRAME_TYPE.
 // #define CONFIG_CHANNELS CHANNEL_CONFIG_CUSTOM
