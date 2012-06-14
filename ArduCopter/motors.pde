@@ -85,7 +85,7 @@ static void init_arm_motors()
 	motors.armed(true);
 
 	#if COPTER_LEDS == ENABLED
-	if ( bitRead(g.copter_leds_mode, 3) ){	
+	if ( bitRead(g.copter_leds_mode, 3) ){
 		piezo_beep();
 		delay(50);
 		piezo_beep();
@@ -111,6 +111,10 @@ static void init_arm_motors()
 		did_ground_start = true;
 		startup_ground();
 	}
+
+	#if INERTIAL_NAV == ENABLED
+	calibrate_accels();
+	#endif
 
 	#if HIL_MODE != HIL_MODE_ATTITUDE
 		// read Baro pressure at ground -
@@ -141,7 +145,7 @@ static void init_disarm_motors()
 	takeoff_complete = false;
 
 	#if COPTER_LEDS == ENABLED
-	if ( bitRead(g.copter_leds_mode, 3) ){	
+	if ( bitRead(g.copter_leds_mode, 3) ){
 		piezo_beep();
 	}
 	#endif

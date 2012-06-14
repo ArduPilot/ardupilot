@@ -287,16 +287,47 @@ static void Log_Read_GPS()
 							temp8);		// 8 ground course
 }
 
-// Write an raw accel/gyro data packet. Total length : 28 bytes
+#if INERTIAL_NAV == ENABLED
+static void Log_Write_Raw()
+{
+	Vector3f accel = imu.get_accel();
+
+	DataFlash.WriteByte(HEAD_BYTE1);
+	DataFlash.WriteByte(HEAD_BYTE2);
+	DataFlash.WriteByte(LOG_RAW_MSG);
+
+	DataFlash.WriteLong(get_int(accels_offset.x));
+	DataFlash.WriteLong(get_int(accels_velocity.x));
+	DataFlash.WriteLong(get_int(speed_error.x));
+
+	DataFlash.WriteLong(get_int(accels_offset.z));
+	DataFlash.WriteLong(get_int(accels_velocity.z));
+	DataFlash.WriteLong(get_int(speed_error.z));
+
+	DataFlash.WriteLong(get_int(accel.x));
+	DataFlash.WriteLong(get_int(accel.y));
+	DataFlash.WriteLong(get_int(accel.z));
+
+	DataFlash.WriteByte(END_BYTE);
+}
+
+// Read a raw accel/gyro packet
+static void Log_Read_Raw()
+{
+	float logvar;
+	Serial.printf_P(PSTR("RAW,"));
+	for (int y = 0; y < 9; y++) {
+		logvar = get_float(DataFlash.ReadLong());
+		Serial.print(logvar);
+		Serial.print(", ");
+	}
+	Serial.println(" ");
+}
+#else
 static void Log_Write_Raw()
 {
 	Vector3f gyro = imu.get_gyro();
 	Vector3f accel = imu.get_accel();
-	//Vector3f accel_filt	= imu.get_accel_filtered();
-
-	//gyro *= t7;								// Scale up for storage as long integers
-	//accel *= t7;
-	//accel_filt *= t7;
 
 	DataFlash.WriteByte(HEAD_BYTE1);
 	DataFlash.WriteByte(HEAD_BYTE2);
@@ -325,6 +356,8 @@ static void Log_Read_Raw()
 	}
 	Serial.println(" ");
 }
+#endif
+
 
 // Write an Current data packet. Total length : 16 bytes
 static void Log_Write_Current()
