@@ -36,6 +36,11 @@ void z_error_correction()
 	accels_velocity.z	+= speed_error.z * 0.0350;							//speed_correction_z;
 	accels_velocity.z   -= g.pid_throttle.get_integrator() * 0.0045; 		//g.alt_offset_correction; // OK
 	accels_offset.z		-= g.pid_throttle.get_integrator() * 0.000003;		//g.alt_i_correction ; 	// .000002;
+
+	// For developement only
+	// ---------------------
+	if(motors.armed())
+		Log_Write_Raw();
 }
 
 void xy_error_correction()
@@ -62,10 +67,6 @@ void xy_error_correction()
 	accels_offset.y		-= g.pid_loiter_rate_lat.get_integrator() * 0.000003; 	// g.loiter_i_correction;
 
 
-	// For developement only
-	// ---------------------
-	if(motors.armed())
-		Log_Write_Raw();
 }
 
 static void calibrate_accels()
