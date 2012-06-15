@@ -123,9 +123,7 @@ public:
         //
         // Camera parameters
         //
-#if CAMERA == ENABLED
         k_param_camera,
-#endif
 
         //
         // 170: Radio settings
