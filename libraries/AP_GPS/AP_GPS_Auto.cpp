@@ -20,7 +20,6 @@
 static unsigned int	baudrates[] = {38400U, 57600U, 9600U, 4800U};
 
 const prog_char	AP_GPS_Auto::_mtk_set_binary[]   PROGMEM = MTK_SET_BINARY;
-const prog_char	AP_GPS_Auto::_ublox_set_binary[] PROGMEM = UBLOX_SET_BINARY;
 const prog_char	AP_GPS_Auto::_sirf_set_binary[]  PROGMEM = SIRF_SET_BINARY;
 
 
@@ -40,6 +39,7 @@ AP_GPS_Auto::init(enum GPS_Engine_Setting nav_setting)
     if (callback == NULL) callback = delay;
 	_nav_setting = nav_setting;
 }
+
 
 // Called the first time that a client tries to kick the GPS to update.
 //
@@ -109,8 +109,8 @@ AP_GPS_Auto::_detect(void)
     //
     Serial.print('G');
     gps = NULL;
-    for (tries = 0; tries < 2; tries++) {
 
+    for (tries = 0; tries < 2; tries++) {
         //
         // Empty the serial buffer and wait for 50ms of quiet.
         //
@@ -127,6 +127,22 @@ AP_GPS_Auto::_detect(void)
                 charcount++;
             }
         } while ((millis() - then) < 50 && charcount < 5000);
+
+		if (tries == 0) {
+			// write configuration strings to put the GPS into the preferred
+			// mode
+			_write_progstr_block(_fs, _mtk_set_binary, sizeof(_mtk_set_binary));
+			_write_progstr_block(_fs, AP_GPS_UBLOX::_ublox_set_binary, AP_GPS_UBLOX::_ublox_set_binary_size);
+			_write_progstr_block(_fs, _sirf_set_binary, sizeof(_sirf_set_binary));
+
+			// ensure its all been written
+			while (_fs->tx_pending()) {
+				callback(10);
+			}
+
+			// give the GPS time to react to the settings
+			callback(100);
+		}
 
         //
         // Collect four characters to fingerprint a device
@@ -199,24 +215,6 @@ AP_GPS_Auto::_detect(void)
             break;
         }
 
-        //
-        // If we haven't spammed the various init strings, send them now
-        // and retry to avoid a false-positive on the NMEA detector.
-        //
-        if (0 == tries) {
-            Serial.print('*');
-            // use the FastSerial port handle so that we can use PROGMEM strings
-            _fs->println_P((const prog_char_t *)_mtk_set_binary);
-            _fs->println_P((const prog_char_t *)_ublox_set_binary);
-            _fs->println_P((const prog_char_t *)_sirf_set_binary);
-
-            // give the GPS time to react to the settings
-            callback(100);
-            continue;
-        } else {
-            Serial.print('?');
-        }
-
 #if WITH_NMEA_MODE
         //
         // Something talking NMEA
@@ -230,6 +228,7 @@ AP_GPS_Auto::_detect(void)
             break;
         }
 #endif
+		Serial.printf("?");
     }
     return(gps);
 }

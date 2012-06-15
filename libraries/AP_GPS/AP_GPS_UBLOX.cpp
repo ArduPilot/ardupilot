@@ -11,8 +11,9 @@
 
 #define UBLOX_DEBUGGING 0
 
-#if UBLOX_DEBUGGING
 #include <FastSerial.h>
+
+#if UBLOX_DEBUGGING
 # define Debug(fmt, args...)  do {Serial.printf("%s:%d: " fmt "\n", __FUNCTION__, __LINE__ , ##args); delay(0); } while(0)
 #else
 # define Debug(fmt, args...)
@@ -21,6 +22,8 @@
 #include "AP_GPS_UBLOX.h"
 #include <stdint.h>
 
+const prog_char	AP_GPS_UBLOX::_ublox_set_binary[] PROGMEM = UBLOX_SET_BINARY;
+const uint8_t AP_GPS_UBLOX::_ublox_set_binary_size = sizeof(AP_GPS_UBLOX::_ublox_set_binary);
 
 // Constructors ////////////////////////////////////////////////////////////////
 
@@ -321,10 +324,17 @@ void
 AP_GPS_UBLOX::_configure_gps(void)
 {
 	struct ubx_cfg_nav_rate msg;
+	const unsigned baudrates[4] = {9600U, 19200U, 38400U, 57600U};
+	FastSerial *_fs = (FastSerial *)_port;
 
-	// this type 0x41 pubx sets us up for 38400 with
-	// NMEA+UBX input and UBX output
-	_send_pubx("$PUBX,41,1,0003,0001,38400,0");
+	// the GPS may be setup for a different baud rate. This ensures
+	// it gets configured correctly
+	for (uint8_t i=0; i<4; i++) {
+		_fs->begin(baudrates[i]);
+		_write_progstr_block(_fs, _ublox_set_binary, _ublox_set_binary_size);
+		while (_fs->tx_pending()) delay(1);
+	}
+	_fs->begin(38400U);
 
 	// ask for navigation solutions every 200ms
 	msg.measure_rate_ms = 200;
@@ -338,19 +348,11 @@ AP_GPS_UBLOX::_configure_gps(void)
 	_configure_message_rate(CLASS_NAV, MSG_SOL, 1);
 	_configure_message_rate(CLASS_NAV, MSG_VELNED, 1);
 
+	_configure_message_rate(CLASS_NAV, MSG_SOL, 1);
+	_configure_message_rate(CLASS_NAV, MSG_SOL, 1);
+	_configure_message_rate(CLASS_NAV, MSG_SOL, 1);
+	_configure_message_rate(CLASS_NAV, MSG_SOL, 1);
+
 	// ask for the current navigation settings
 	_send_message(CLASS_CFG, MSG_CFG_NAV_SETTINGS, NULL, 0);	
-}
-
-void
-AP_GPS_UBLOX::_send_pubx(const char *msg)
-{
-	uint8_t csum = 0;
-	char suffix[4];
-	for (uint8_t i=1; msg[i]; i++) {
-		csum ^= msg[i];
-	}
-	_port->write(msg);
-	sprintf(suffix, "*%02x", (unsigned)csum);
-	_port->write((const uint8_t *)suffix, 3);
 }
