@@ -3,7 +3,7 @@
 # Andrew Tridgell, October 2011
 
 import pexpect, os, sys, shutil, atexit
-import optparse, fnmatch, time, glob, traceback
+import optparse, fnmatch, time, glob, traceback, signal
 
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.realpath(__file__)), 'pysim'))
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.realpath(__file__)), '..', '..', '..', 'mavlink', 'pymavlink'))
@@ -96,6 +96,16 @@ def test_prerequesites():
     util.mkdir_p(util.reltopdir('../buildlogs'))
     return True
 
+def alarm_handler(signum, frame):
+    '''handle test timeout'''
+    global results, opts
+    try:
+        results.add('TIMEOUT', '<span class="failed-text">FAILED</span>', opts.timeout)
+        write_webresults(results)
+        os.killpg(0, signal.SIGKILL)
+    except Exception:
+        pass
+    sys.exit(1)
 
 ############## main program #############
 parser = optparse.OptionParser("autotest")
@@ -103,6 +113,7 @@ parser.add_option("--skip", type='string', default='', help='list of steps to sk
 parser.add_option("--list", action='store_true', default=False, help='list the available steps')
 parser.add_option("--viewerip", default=None, help='IP address to send MAVLink and fg packets to')
 parser.add_option("--experimental", default=False, action='store_true', help='enable experimental tests')
+parser.add_option("--timeout", default=2400, type='int', help='maximum runtime in seconds')
 
 opts, args = parser.parse_args()
 
@@ -127,6 +138,10 @@ steps = [
     ]
 
 skipsteps = opts.skip.split(',')
+
+# ensure we catch timeouts
+signal.signal(signal.SIGALRM, alarm_handler)
+signal.alarm(opts.timeout)
 
 def skip_step(step):
     '''see if a step should be skipped'''
@@ -235,11 +250,11 @@ def write_webresults(results):
         shutil.copy(f, util.reltopdir('../buildlogs/%s' % os.path.basename(f)))
 
 
+results = TestResults()
 
 def run_tests(steps):
     '''run a list of steps'''
-
-    results = TestResults()
+    global results
 
     passed = True
     failed = []
