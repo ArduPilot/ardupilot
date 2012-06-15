@@ -2,7 +2,7 @@
 
 #include <FastSerial.h>
 
-#define GPS_DEBUGGING 1
+#define GPS_DEBUGGING 0
 
 #if GPS_DEBUGGING
 #include <FastSerial.h>
@@ -80,4 +80,14 @@ void
 GPS::_error(const char *msg)
 {
     Serial.println(msg);
+}
+
+///
+/// write a block of configuration data to a GPS
+///
+void GPS::_write_progstr_block(Stream *_fs, const prog_char *pstr, uint8_t size)
+{
+	while (size--) {
+		_fs->write(pgm_read_byte(pstr++));
+	}
 }

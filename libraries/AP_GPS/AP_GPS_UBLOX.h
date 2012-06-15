@@ -13,7 +13,14 @@
 
 #include "GPS.h"
 
-#define UBLOX_SET_BINARY	"$PUBX,41,1,0003,0001,38400,0*26"
+/*
+  try to put a UBlox into binary mode. This is in two parts. First we
+  send a PUBX asking the UBlox to receive NMEA and UBX, and send UBX,
+  with a baudrate of 38400. Then we send a UBX message setting rate 1
+  for the NAV_SOL message. The setup of NAV_SOL is to cope with
+  configurations where all UBX binary message types are disabled.
+ */
+#define UBLOX_SET_BINARY "$PUBX,41,1,0003,0001,38400,0*26\n\265\142\006\001\003\000\001\006\001\022\117"
 
 class AP_GPS_UBLOX : public GPS
 {
@@ -22,6 +29,9 @@ public:
     AP_GPS_UBLOX(Stream *s);
     virtual void	init(enum GPS_Engine_Setting nav_setting = GPS_ENGINE_NONE);
     virtual bool	read();
+
+    static const prog_char _ublox_set_binary[];
+	static const uint8_t _ublox_set_binary_size;
 
 private:
     // u-blox UBX protocol essentials
@@ -123,6 +133,7 @@ private:
         MSG_STATUS = 0x3,
         MSG_SOL = 0x6,
         MSG_VELNED = 0x12,
+        MSG_CFG_PRT = 0x00,
         MSG_CFG_RATE = 0x08,
         MSG_CFG_SET_RATE = 0x01,
 		MSG_CFG_NAV_SETTINGS = 0x24
@@ -175,7 +186,6 @@ private:
 	// used to update fix between status and position packets
 	bool next_fix;
 
-	void _send_pubx(const char *msg);
 	void _configure_message_rate(uint8_t msg_class, uint8_t msg_id, uint8_t rate);
 	void _configure_gps(void);
 	void _update_checksum(uint8_t *data, uint8_t len, uint8_t &ck_a, uint8_t &ck_b);
