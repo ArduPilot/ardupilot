@@ -165,6 +165,11 @@ public:
 		_nonblocking_writes = !blocking;
 	}
 
+	// return true if there are bytes pending transmission
+	bool tx_pending(void) {
+        return (_txBuffer->head != _txBuffer->tail);
+	}
+
 private:
 
 	/// Bit mask for initialized ports
