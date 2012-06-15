@@ -8,6 +8,7 @@
 
 #include <inttypes.h>
 #include <Stream.h>
+#include <avr/pgmspace.h>
 
 /// @class	GPS
 /// @brief	Abstract base class for GPS receiver drivers.
