@@ -1,6 +1,7 @@
 /*
 	AP_RC_Channel.cpp - Radio library for Arduino Legacy Hardware
 	Code by Jason Short. DIYDrones.com
+	Improvements to implement channel curves by Ron Curry, 2012
 
 	This library is free software; you can redistribute it and / or
 		modify it under the terms of the GNU Lesser General Public
@@ -64,12 +65,103 @@ AP_RC_Channel::trim()
 	radio_trim = radio_in;
 }
 
+//-------------------------------------------------------------------------------
+// Support for PWM translation (i.e. curves or "expo")
+//
+//			Translation of the input PWM is done via a pointer "channel_curve" to an array that defines the PWM output value
+//			for any given input value. The array is structured with element 0 equal to the number of elements 
+//			in the curve. If the length is zero then the array defines no curve. If the "channel_curve" pointer 
+//			is NULL that is interpretted as no curve defined and is the default state.
+//
+//			Elements 1 to n  of the array contain the values for the curve. These are defined in terms of the actual
+//			PWM output pulsewidth desired for a given point on the curve with curve element 1 containing the value 
+//			for the lowest input value from the RC RX and element "n" containing the value for the highest input value
+//			from the RX.
+//
+//			Input PWM values are expected to be in the range of the radio calibration values "radio_min" to "radio_max". The
+//			user must have already completed the radio calibration otherwise output will be inaccurage. Input PWM values
+//			generate an index that falls between curve elements will cause the output to be interpolated in a linear fashion
+//			between the curve elements. For example: A curve defined as element 0 = 2 (length), element 1 = 900, and 
+//			element 2 = 2100 would define a linear straight line output between 900 and 2100 for valid input values. 
+//			Additional elements could be inserted between element 1 and element 2 to define more complex
+//			curves. - R. Curry 06-14-12
+
+
+
+// Sets curve for channel output to user defined curve
+// Input: curve - A pointer to a user defined output curve for this channel
+void
+AP_RC_Channel::set_channel_curve(int  *curve)
+{
+	_channel_curve = curve;					// Channel_curve points to array containing curve info
+}
+
+// Unsets the curve for this channel - i.e. no curve translation
+void
+AP_RC_Channel::unset_channel_curve()
+{
+	_channel_curve = NULL;
+}
+
+
+// Apply the current curve to a PWM value
+// Input: PWM value in range of radio_min to radio_max
+// Output: Translated PWM value
+int
+AP_RC_Channel::apply_curve(int pwm) 
+{
+	float scale;
+	int	index1, index2;
+	
+	if (_channel_curve != NULL)
+	{
+		if (_channel_curve[0] > 0)										// If the length of the curve isn't zero then use it
+		{		
+			// Calculate the index into the channel curve table
+			scale =  ((float)(pwm - radio_min) / 
+					  (float)(radio_max - radio_min)) * 
+						((float)_channel_curve[0]-1);	
+			index1 = (int)scale;									// get the index
+			scale -= (float)index1;									// scale now has the remainder for later
+			
+			if (index1 < 0) {										// If the PWM value below our range then clamp to lowest table entry
+				index1 = 0;
+				scale = 0.0;
+			}
+			
+			index2 = index1 + 1;									// Point to the next entry beyond our current for interpolation
+			if (index2 >= _channel_curve[0]) {							// If we are beyond the end then clamp to highest entry
+				index2 = _channel_curve[0] - 1;
+				if (index1 >= _channel_curve[0]) {						// Also check index 1 and clamp if necessary
+					index1 = _channel_curve[0] -1;
+				}
+			}
+			
+			// Do the lookup and interpolation
+			index1++;												// curve values start at entry 1
+			index2++;
+			pwm = ((_channel_curve[index1] * 
+					(1 - scale)) + (_channel_curve[index2] * 
+									scale));										// Get the pwm value from the curve and interpolate - done
+		}
+	}
+	
+	return pwm;																		// 
+}
+
+
+//-------------------------------------------------------------------------------
+
+
 // read input from APM_RC - create a control_in value
 void
 AP_RC_Channel::set_pwm(int pwm)
 {
-	//Serial.print(pwm,DEC);
+	//	Serial.print(pwm,DEC);
 
+	// Apply the curve - if any
+	pwm = apply_curve(pwm);
+	
 	if(_filter){
 		if(radio_in == 0)
 			radio_in = pwm;
@@ -88,16 +180,9 @@ AP_RC_Channel::set_pwm(int pwm)
 		control_in = pwm_to_angle();
 		control_in = (abs(control_in) < dead_zone) ? 0 : control_in;
 
-		/*
-		// coming soon ??
-		if(expo) {
-			long temp = control_in;
-			temp = (temp * temp) / (long)_high;
-			control_in = (int)((control_in >= 0) ? temp : -temp);
-		}
-		*/
 	}
 }
+
 
 int
 AP_RC_Channel::control_mix(float value)
@@ -124,7 +209,7 @@ AP_RC_Channel::calc_pwm(void)
 		pwm_out 	= angle_to_pwm();
 		radio_out 	= pwm_out + radio_trim;
 	}
-	radio_out = constrain(radio_out, radio_min, radio_max);
+	//	radio_out = constrain(radio_out, radio_min, radio_max);
 }
 
 // ------------------------------------------
