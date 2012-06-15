@@ -101,6 +101,14 @@ def alarm_handler(signum, frame):
     global results, opts
     try:
         results.add('TIMEOUT', '<span class="failed-text">FAILED</span>', opts.timeout)
+        util.pexpect_close_all()
+        results.addfile('Full Logs', 'autotest-output.txt')
+        results.addglob('DataFlash Log', '*.flashlog')
+        results.addglob("MAVLink log", '*.mavlog')
+        results.addfile('ArduPlane build log', 'ArduPlane.txt')
+        results.addfile('ArduPlane defaults', 'ArduPlane.defaults.txt')
+        results.addfile('ArduCopter build log', 'ArduCopter.txt')
+        results.addfile('ArduCopter defaults', 'ArduCopter.defaults.txt')
         write_webresults(results)
         os.killpg(0, signal.SIGKILL)
     except Exception:
