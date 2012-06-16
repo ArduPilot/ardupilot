@@ -16,11 +16,11 @@ public:
 	// Constructors
 	AP_AHRS_DCM(IMU *imu, GPS *&gps) : AP_AHRS(imu, gps)
 	{
-		_kp = 9;
 		_dcm_matrix.identity();
 
 		// base the ki values on the sensors drift rate
-		_ki = _gyro_drift_limit * 110;
+                _ki = _gyro_drift_limit * 5;
+                _kp = .13;
 	}
 
 	// return the smoothed gyro vector corrected for drift
@@ -65,10 +65,9 @@ private:
 
 	Vector3f	_omega_P;		// accel Omega Proportional correction
 	Vector3f 	_omega_I;		// Omega Integrator correction
-	Vector3f 	_omega_I_sum;		// summation vector for omegaI
-	float		_omega_I_sum_time;
 	Vector3f 	_omega_integ_corr;	// Partially corrected Gyro_Vector data - used for centrepetal correction
 	Vector3f 	_omega;			// Corrected Gyro_Vector data
+	Vector3f        _omega_I_delta;
 
 	// state to support status reporting
 	float		_renorm_val_sum;
