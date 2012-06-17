@@ -2,6 +2,7 @@
 
 /// @file	AP_Camera.h
 /// @brief	Photo or video camera manager, with EEPROM-backed storage of constants.
+/// @author Amilcar Lucas
 
 #ifndef AP_CAMERA_H
 #define AP_CAMERA_H
@@ -35,17 +36,17 @@ public:
 	void configure_msg(mavlink_message_t* msg);
 	void control_msg(mavlink_message_t* msg);
 
-	int picture_time;					// waypoint trigger variable
-	long wp_distance_min;				// take picture if distance to WP is smaller than this
+	int picture_time;					///< waypoint trigger variable
+	long wp_distance_min;				///< take picture if distance to WP is smaller than this
 
     static const struct AP_Param::GroupInfo var_info[];
 
 private:
-	uint8_t keep_cam_trigg_active_cycles; // event loop cycles to keep trigger active
-	int thr_pic;						// timer variable for throttle_pic
-	int camtrig;						// PK6 chosen as it not near anything so safer for soldering
+	uint8_t keep_cam_trigg_active_cycles; ///< event loop cycles to keep trigger active
+	int thr_pic;						///< timer variable for throttle_pic
+	int camtrig;						///< PK6 chosen as it not near anything so safer for soldering
 
-	AP_Int8		trigger_type;	// 0=Servo, 1=relay, 2=throttle_off time, 3=throttle_off waypoint 4=transistor
+	AP_Int8		trigger_type;	///< 0=Servo, 1=relay, 2=throttle_off time, 3=throttle_off waypoint, 4=transistor
 
 	void servo_pic();		// Servo operated camera
 	void relay_pic();		// basic relay activation
