@@ -12,13 +12,19 @@ extern AP_Relay relay;
 #define CAM_DEBUG DISABLED
 
 const AP_Param::GroupInfo AP_Camera::var_info[] PROGMEM = {
+	// @Param: TRIGG_TYPE
+	// @DisplayName: Camera shutter (trigger) type
+	// @Description: how to trigger the camera to take a picture
+	// @Values: 0:Servo,1:relay,2:throttle_off_time,3:throttle_off_waypoint,4:transistor
+	// @User: Standard
 	AP_GROUPINFO("TRIGG_TYPE",  0, AP_Camera, trigger_type),
 	AP_GROUPEND
 };
 
 
+/// Servo operated camera
 void
-AP_Camera::servo_pic()		// Servo operated camera
+AP_Camera::servo_pic()
 {
 	if (g_rc_function[RC_Channel_aux::k_cam_trigger])
 	{
@@ -27,15 +33,17 @@ AP_Camera::servo_pic()		// Servo operated camera
 	}
 }
 
+/// basic relay activation
 void
-AP_Camera::relay_pic()		// basic relay activation
+AP_Camera::relay_pic()
 {
 	relay.on();
 	keep_cam_trigg_active_cycles = 2;	// leave a message that it should be active for two event loop cycles
 }
 
+/// pictures blurry? use this trigger. Turns off the throttle until for # of cycles of medium loop then takes the picture and re-enables the throttle.
 void
-AP_Camera::throttle_pic()		// pictures blurry? use this trigger. Turns off the throttle until for # of cycles of medium loop then takes the picture and re-enables the throttle.
+AP_Camera::throttle_pic()
 {
 // TODO find a way to do this without using the global parameter g
 //	g.channel_throttle.radio_out = g.throttle_min;
@@ -47,8 +55,9 @@ AP_Camera::throttle_pic()		// pictures blurry? use this trigger. Turns off the t
 	thr_pic++;
 }
 
+/// pictures blurry? use this trigger. Turns off the throttle until closer to waypoint then takes the picture and re-enables the throttle.
 void
-AP_Camera::distance_pic()		// pictures blurry? use this trigger. Turns off the throttle until closer to waypoint then takes the picture and re-enables the throttle.
+AP_Camera::distance_pic()
 {
 // TODO find a way to do this without using the global parameter g
 //	g.channel_throttle.radio_out = g.throttle_min;
@@ -58,15 +67,16 @@ AP_Camera::distance_pic()		// pictures blurry? use this trigger. Turns off the t
 	}
 }
 
+/// hacked the circuit to run a transistor? use this trigger to send output.
 void
-AP_Camera::NPN_pic()		// hacked the circuit to run a transistor? use this trigger to send output.
+AP_Camera::NPN_pic()
 {
 	// TODO: Assign pin spare pin for output
 	digitalWrite(camtrig, HIGH);
 	keep_cam_trigg_active_cycles = 1;	// leave a message that it should be active for two event loop cycles
 }
 
-// single entry point to take pictures
+/// single entry point to take pictures
 void
 AP_Camera::trigger_pic()
 {
@@ -90,7 +100,7 @@ AP_Camera::trigger_pic()
 	}
 }
 
-// de-activate the trigger after some delay, but without using a delay() function
+/// de-activate the trigger after some delay, but without using a delay() function
 void
 AP_Camera::trigger_pic_cleanup()
 {
@@ -116,6 +126,8 @@ AP_Camera::trigger_pic_cleanup()
 		}
 	}
 }
+
+/// decode MavLink that configures camera
 void
 AP_Camera::configure_msg(mavlink_message_t* msg)
 {
@@ -143,6 +155,7 @@ AP_Camera::configure_msg(mavlink_message_t* msg)
 	mavlink_msg_digicam_configure_send(MAVLINK_COMM_3, packet.target_system, packet.target_component, packet.mode, packet.shutter_speed, packet.aperture, packet.iso, packet.exposure_type, packet.command_id, packet.engine_cut_off, packet.extra_param, packet.extra_value);
 }
 
+/// decode MavLink that controls camera
 void
 AP_Camera::control_msg(mavlink_message_t* msg)
 {
