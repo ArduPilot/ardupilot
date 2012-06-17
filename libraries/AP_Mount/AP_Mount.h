@@ -73,9 +73,6 @@ private:
 	long rc_map(RC_Channel_aux* rc_ch);
 
 	//members
-	Matrix3f m;              ///< holds 3 x 3 matrix, var is used as temp in calcs
-	Matrix3f cam;            ///< Rotation matrix earth to camera. Desired camera from input.
-	Matrix3f gimbal_target;  ///< Rotation matrix from plane to camera. Then Euler angles to the servos.
 	AP_AHRS *_ahrs;          ///< Rotation matrix from earth to plane.
 	GPS     *&_gps;
 	const struct Location *_current_loc;
@@ -83,9 +80,6 @@ private:
 	float _roll_control_angle;
 	float _pitch_control_angle;
 	float _yaw_control_angle;
-	float _roll;
-	float _pitch;
-	float _yaw;
 
 	int16_t _roll_angle;	 ///< degrees*100
 	int16_t _pitch_angle;	 ///< degrees*100

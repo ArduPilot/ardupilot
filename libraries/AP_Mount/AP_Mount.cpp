@@ -52,10 +52,6 @@ void AP_Mount::set_GPS_target_location(Location targetGPSLocation)
 // This one should be called periodically
 void AP_Mount::update_mount_position()
 {
-	Matrix3f m;					//holds 3 x 3 matrix, var is used as temp in calcs
-	Vector3f targ;				//holds target vector, var is used as temp in calcs
-	Vector3f aux_vec;			//holds target vector, var is used as temp in calcs
-
 	switch(_mount_mode)
 	{
 		// move mount to a "retracted position" or to a position where a fourth servo can retract the entire mount into the fuselage
@@ -75,17 +71,10 @@ void AP_Mount::update_mount_position()
 		// point to the angles given by a mavlink message
 		case MAV_MOUNT_MODE_MAVLINK_TARGETING:
 		{
-			aux_vec.x = _mavlink_angles.x;
-			aux_vec.y = _mavlink_angles.y;
-			aux_vec.z = _mavlink_angles.z;
-			m = _ahrs->get_dcm_matrix();
-			m.transpose();
-			//rotate vector
-			targ = m*aux_vec;
-			// TODO The next three lines are probably not correct yet
-			_roll_angle  = _stab_roll? degrees(atan2( targ.y,targ.z))*100:_mavlink_angles.y;	//roll
-			_pitch_angle = _stab_pitch?degrees(atan2(-targ.x,targ.z))*100:_neutral_angles.x;	//pitch
-			_yaw_angle   = _stab_yaw?  degrees(atan2(-targ.x,targ.y))*100:_neutral_angles.z;	//yaw
+			_roll_control_angle  = _mavlink_angles.x;
+			_pitch_control_angle = _mavlink_angles.y;
+			_yaw_control_angle   = _mavlink_angles.z;
+			calculate();
 			break;
 		}
 
@@ -113,8 +102,6 @@ void AP_Mount::update_mount_position()
 		{
 			if(_gps->fix){
 				calc_GPS_target_angle(&_target_GPS_location);
-			}
-			if (_ahrs){
 				calculate();
 			}
 			break;
@@ -141,6 +128,8 @@ void AP_Mount::set_mode(enum MAV_MOUNT_MODE mode)
 	_mount_mode=mode;
 }
 
+// Change the configuration of the mount
+// triggered by a MavLink packet.
 void AP_Mount::configure_msg(mavlink_message_t* msg)
 {
 	__mavlink_mount_configure_t packet;
@@ -155,6 +144,8 @@ void AP_Mount::configure_msg(mavlink_message_t* msg)
 	_stab_yaw   = packet.stab_yaw;
 }
 
+// Control the mount (depends on the previously set mount configuration)
+// triggered by a MavLink packet.
 void AP_Mount::control_msg(mavlink_message_t *msg)
 {
 	__mavlink_mount_control_t packet;
@@ -199,6 +190,8 @@ void AP_Mount::control_msg(mavlink_message_t *msg)
 	}
 }
 
+// Return mount status information (depends on the previously set mount configuration)
+// triggered by a MavLink packet.
 void AP_Mount::status_msg(mavlink_message_t *msg)
 {
 	__mavlink_mount_status_t packet;
@@ -231,16 +224,19 @@ void AP_Mount::status_msg(mavlink_message_t *msg)
 			packet.pointing_a, packet.pointing_b, packet.pointing_c);
 }
 
+// Set mount point/region of interest, triggered by mission script commands
 void AP_Mount::set_roi_cmd()
 {
 	// TODO get the information out of the mission command and use it
 }
 
+// Set mount configuration, triggered by mission script commands
 void AP_Mount::configure_cmd()
 {
 	// TODO get the information out of the mission command and use it
 }
 
+// Control the mount (depends on the previously set mount configuration), triggered by mission script commands
 void AP_Mount::control_cmd()
 {
 	// TODO get the information out of the mission command and use it
@@ -249,23 +245,23 @@ void AP_Mount::control_cmd()
 void
 AP_Mount::calc_GPS_target_angle(struct Location *target)
 {
-	float _GPS_vector_x = (target->lng-_current_loc->lng)*cos(ToRad((_current_loc->lat+target->lat)/(t7*2.0)))*.01113195;
-	float _GPS_vector_y = (target->lat-_current_loc->lat)*.01113195;
-	float _GPS_vector_z = (target->alt-_current_loc->alt);             // baro altitude(IN CM) should be adjusted to known home elevation before take off (Set altimeter).
-	float target_distance = 100.0*sqrt(_GPS_vector_x*_GPS_vector_x + _GPS_vector_y*_GPS_vector_y);  // Careful , centimeters here locally. Baro/alt is in cm, lat/lon is in meters.
+	float GPS_vector_x = (target->lng-_current_loc->lng)*cos(ToRad((_current_loc->lat+target->lat)/(t7*2.0)))*.01113195;
+	float GPS_vector_y = (target->lat-_current_loc->lat)*.01113195;
+	float GPS_vector_z = (target->alt-_current_loc->alt);             // baro altitude(IN CM) should be adjusted to known home elevation before take off (Set altimeter).
+	float target_distance = 100.0*sqrt(GPS_vector_x*GPS_vector_x + GPS_vector_y*GPS_vector_y);  // Careful , centimeters here locally. Baro/alt is in cm, lat/lon is in meters.
 	_roll_control_angle   = 0;
-	_pitch_control_angle  = atan2(_GPS_vector_z, target_distance);
-	_yaw_control_angle    = atan2(_GPS_vector_x,_GPS_vector_y);
+	_pitch_control_angle  = atan2(GPS_vector_z, target_distance);
+	_yaw_control_angle    = atan2(GPS_vector_x, GPS_vector_y);
 	// Converts +/- 180 into 0-360.
 	if(_yaw_control_angle<0){
 		_yaw_control_angle += 2*M_PI;
 	}
 }
 
+// Auto-detect the mount gimbal type depending on the functions assigned to the servos
 void
 AP_Mount::update_mount_type()
 {
-	// Auto-detect the mount gimbal type depending on the functions assigned to the servos
 	if ((g_rc_function[RC_Channel_aux::k_mount_roll] == NULL) && (g_rc_function[RC_Channel_aux::k_mount_pitch] != NULL) && (g_rc_function[RC_Channel_aux::k_mount_yaw] != NULL))
 	{
 		_mount_type = k_pan_tilt;
@@ -280,17 +276,27 @@ AP_Mount::update_mount_type()
 	}
 }
 
+// Inputs desired _roll_control_angle, _pitch_control_angle and _yaw_control_angle stabilizes them relative to the airframe
+// and calculates output _roll_angle, _pitch_angle and _yaw_angle
 void
 AP_Mount::calculate()
 {
-	m = _ahrs->get_dcm_matrix();
-	m.transpose();
-	cam.from_euler(_roll_control_angle, _pitch_control_angle, _yaw_control_angle);
-	gimbal_target = m * cam;
-	gimbal_target.to_euler(&_roll, &_pitch, &_yaw);
-	_roll_angle = degrees(_roll)*100;
-	_pitch_angle = degrees(_pitch)*100;
-	_yaw_angle = degrees(_yaw)*100;
+	Matrix3f m;             ///< holds 3 x 3 matrix, var is used as temp in calcs
+	Matrix3f cam;           ///< Rotation matrix earth to camera. Desired camera from input.
+	Matrix3f gimbal_target; ///< Rotation matrix from plane to camera. Then Euler angles to the servos.
+	float roll;
+	float pitch;
+	float yaw;
+	if (_ahrs){
+		m = _ahrs->get_dcm_matrix();
+		m.transpose();
+		cam.from_euler(_roll_control_angle, _pitch_control_angle, _yaw_control_angle);
+		gimbal_target = m * cam;
+		gimbal_target.to_euler(&roll, &pitch, &yaw);
+		_roll_angle  = degrees(roll)*100;
+		_pitch_angle = degrees(pitch)*100;
+		_yaw_angle   = degrees(yaw)*100;
+	}
 }
 
 // This function is needed to let the HIL code compile
