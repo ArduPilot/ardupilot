@@ -95,7 +95,6 @@ void setup(void)
 	compass.set_orientation(MAG_ORIENTATION);
 	if (compass.init()) {
 		Serial.printf("Enabling compass\n");
-		compass.null_offsets_enable();
 		dcm.set_compass(&compass);
 	}
 }
@@ -115,7 +114,6 @@ void loop(void)
 	last_t = now;
 
 	compass.read();
-	compass.calculate(dcm.get_dcm_matrix());
 	dcm.update_DCM();
 	delay(20);
 	counter++;

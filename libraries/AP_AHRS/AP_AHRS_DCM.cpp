@@ -70,22 +70,11 @@ AP_AHRS_DCM::update(void)
 void
 AP_AHRS_DCM::matrix_update(float _G_Dt)
 {
-	// _omega_integ_corr is used for centripetal correction
-	// (theoretically better than _omega)
-	_omega_integ_corr = _gyro_vector + _omega_I;
-
 	// Equation 16, adding proportional and integral correction terms
-	_omega = _omega_integ_corr + _omega_P;
+	_omega = _gyro_vector + _omega_I;
 
-	// this is a replacement of the DCM matrix multiply (equation
-	// 17), with known zero elements removed and the matrix
-	// operations inlined. This runs much faster than the original
-	// version of this code, as the compiler was doing a terrible
-	// job of realising that so many of the factors were in common
-	// or zero. It also uses much less stack, as we no longer need
-	// two additional local matrices
-
-	Vector3f r = _omega * _G_Dt;
+	// add in P correction terms
+	Vector3f r = (_omega + _omega_P + _omega_yaw_P) * _G_Dt;
 	_dcm_matrix.rotate(r);
 }
 
@@ -97,14 +86,9 @@ AP_AHRS_DCM::matrix_update(float _G_Dt)
 void
 AP_AHRS_DCM::reset(bool recover_eulers)
 {
-	if (_compass != NULL) {
-		_compass->null_offsets_disable();
-	}
-
 	// reset the integration terms
 	_omega_I.zero();
 	_omega_P.zero();
-	_omega_integ_corr.zero();
 	_omega.zero();
 
 	// if the caller wants us to try to recover to the current
@@ -115,12 +99,6 @@ AP_AHRS_DCM::reset(bool recover_eulers)
 	} else {
 		// otherwise make it flat
 		_dcm_matrix.from_euler(0, 0, 0);
-	}
-
-	if (_compass != NULL) {
-		_compass->null_offsets_enable();	// This call is needed to restart the nulling
-		// Otherwise the reset in the DCM matrix can mess up
-		// the nulling
 	}
 }
 
@@ -245,60 +223,19 @@ AP_AHRS_DCM::normalize(void)
 }
 
 
-
-// yaw drift correction using the compass
-void
-AP_AHRS_DCM::drift_correction_compass(float deltat)
+// produce a yaw error value. The returned value is proportional
+// to sin() of the current heading error in earth frame
+float
+AP_AHRS_DCM::yaw_error_compass(void)
 {
-	if (_compass == NULL ||
-	    _compass->last_update == _compass_last_update) {
-		// slowly degrade the yaw error term so we cope
-		// gracefully with the compass going offline
-		_drift_error_earth.z *= 0.97;
-		return;
-	}
-
 	Vector3f mag = Vector3f(_compass->mag_x, _compass->mag_y, _compass->mag_z);
-
-	if (!_have_initial_yaw) {
-		// this is our first estimate of the yaw,
-		// or the compass has come back online after
-		// no readings for 2 seconds.
-		//
-		// construct a DCM matrix based on the current
-		// roll/pitch and the compass heading.
-
-		// First ensure the compass heading has been
-		// calculated
-		_compass->calculate(_dcm_matrix);
-
-		// now construct a new DCM matrix
-		_compass->null_offsets_disable();
-		_dcm_matrix.from_euler(roll, pitch, _compass->heading);
-		_compass->null_offsets_enable();
-		_have_initial_yaw = true;
-		_field_strength = mag.length();
-		_compass_last_update = _compass->last_update;
-		return;
-	}
-
-	float yaw_deltat = 1.0e-6*(_compass->last_update - _compass_last_update);
-
-	_compass_last_update = _compass->last_update;
-
-	// keep a estimate of the magnetic field strength
-	_field_strength = (_field_strength * 0.95) + (mag.length() * 0.05);
-
 	// get the mag vector in the earth frame
 	Vector3f rb = _dcm_matrix * mag;
 
-	// normalise rb so that it can be directly combined with
-	// rotations given by the accelerometers, which are in 1g units
-	rb *= yaw_deltat / _field_strength;
-
+	rb.normalize();
 	if (rb.is_inf()) {
 		// not a valid vector
-		return;
+		return 0.0;
 	}
 
 	// get the earths magnetic field (only X and Y components needed)
@@ -308,14 +245,85 @@ AP_AHRS_DCM::drift_correction_compass(float deltat)
 	// calculate the error term in earth frame
 	Vector3f error = rb % mag_earth;
 
-	// setup the z component of the total drift error in earth
-	// frame. This is then used by the main drift correction code
-	_drift_error_earth.z = error.z*70; //constrain(error.z, -0.4, 0.4);
-	//TODO: figure out proper error scaling instead of using 70
+	return error.z;
+}
 
-	_error_yaw_sum += fabs(_drift_error_earth.z);
+// produce a yaw error value using the GPS. The returned value is proportional
+// to sin() of the current heading error in earth frame
+float
+AP_AHRS_DCM::yaw_error_gps(void)
+{
+	return sin(ToRad(_gps->ground_course * 0.01) - yaw);
+}
+
+
+// yaw drift correction using the compass or GPS
+// this function prodoces the _omega_yaw_P vector, and also
+// contributes to the _omega_I.z long term yaw drift estimate
+void
+AP_AHRS_DCM::drift_correction_yaw(float deltat)
+{
+	bool new_value = false;
+	float yaw_error;
+	float yaw_deltat;
+
+	if (_compass && _compass->use_for_yaw()) {
+		if (_compass->last_update != _compass_last_update) {
+			yaw_deltat = (_compass->last_update - _compass_last_update) * 1.0e-6;
+			_compass_last_update = _compass->last_update;
+			if (!_have_initial_yaw) {
+				float heading = _compass->calculate_heading(_dcm_matrix);
+				_dcm_matrix.from_euler(roll, pitch, heading);
+				_omega_yaw_P.zero();
+				_have_initial_yaw = true;
+			}
+			new_value = true;
+			yaw_error = yaw_error_compass();
+		}
+	} else if (_gps && _gps->status() == GPS::GPS_OK) {
+		if (_gps->last_fix_time != _gps_last_update &&
+		    _gps->ground_speed >= GPS_SPEED_MIN) {
+			yaw_deltat = (_gps->last_fix_time - _gps_last_update) * 1.0e-3;
+			_gps_last_update = _gps->last_fix_time;
+			if (!_have_initial_yaw) {
+				_dcm_matrix.from_euler(roll, pitch, ToRad(_gps->ground_course*0.01));
+				_omega_yaw_P.zero();
+				_have_initial_yaw = true;
+			}
+			new_value = true;
+			yaw_error = yaw_error_gps();
+		}
+	}
+
+	if (!new_value) {
+		// we don't have any new yaw information
+		// slowly decay _omega_yaw_P to cope with loss
+		// of our yaw source
+		_omega_yaw_P.z *= 0.97;
+		return;
+	}
+
+	// the yaw error is a vector in earth frame
+	Vector3f error = Vector3f(0,0, yaw_error);
+
+	// convert the error vector to body frame
+	error = _dcm_matrix.mul_transpose(error);
+
+	// update the proportional control to drag the
+	// yaw back to the right value
+	_omega_yaw_P = error * _kp_yaw.get();
+
+	// don't update the drift term if we lost the yaw reference
+	// for more than 2 seconds
+	if (yaw_deltat < 2.0) {
+		// also add to the I term
+		_omega_I_sum.z += error.z * _ki_yaw * yaw_deltat;
+	}
+
+	_error_yaw_sum += fabs(yaw_error);
 	_error_yaw_count++;
 }
+
 
 
 
@@ -332,23 +340,15 @@ void
 AP_AHRS_DCM::drift_correction(float deltat)
 {
     Vector3f error;
-    Vector3f gps_velocity;
-    bool nogps=false;
+    Vector3f velocity;
     uint32_t last_correction_time;
-
-    if(_omega.length() < ToRad(20))
-        _omega_I += _omega_I_delta * deltat;
 
     // perform yaw drift correction if we have a new yaw reference
     // vector
-    drift_correction_compass(deltat);
-
-    // scale the accel vector so it is in 1g units. This brings it
-    // into line with the mag vector, allowing the two to be combined
-    _accel_vector *= (deltat / _gravity);
+    drift_correction_yaw(deltat);
 
     // integrate the accel vector in the earth frame between GPS readings
-    _ra_sum += _dcm_matrix * _accel_vector;
+    _ra_sum += _dcm_matrix * (_accel_vector * deltat);
 
     // keep a sum of the deltat values, so we know how much time
     // we have integrated over
@@ -362,92 +362,84 @@ AP_AHRS_DCM::drift_correction(float deltat)
             // not enough time has accumulated
             return;
         }
-        nogps=true;
-        gps_velocity.zero();
+        velocity.zero();
+	_last_velocity.zero();
         last_correction_time = millis();
     } else {
         if (_gps->last_fix_time == _ra_sum_start) {
             // we don't have a new GPS fix - nothing more to do
             return;
         }
-        gps_velocity = Vector3f(_gps->velocity_north(), _gps->velocity_east(), 0);
+        velocity = Vector3f(_gps->velocity_north(), _gps->velocity_east(), 0);
+	if (_barometer != NULL) {
+		// Z velocity is down
+		velocity.z = - _barometer->get_climb_rate();
+	}
         last_correction_time = _gps->last_fix_time;
     }
-
-
 
     // see if this is our first time through - in which case we
     // just setup the start times and return
     if (_ra_sum_start == 0) {
         _ra_sum_start = last_correction_time;
-        _gps_last_velocity = gps_velocity;
+        _last_velocity = velocity;
         return;
     }
+
     // get the corrected acceleration vector in earth frame. Units
-    // are 1g
+    // are m/s/s
     Vector3f ge;
-    if(!nogps) {
-        ge = Vector3f(0, 0, -1.0) + ((gps_velocity - _gps_last_velocity)/_gravity)/_ra_deltat;
-    }
-    else {
-        ge = Vector3f(0, 0, -1.0);
-    }
-    // calculate the error term in earth frame
+    float v_scale = 1.0/(_ra_deltat*_gravity);
+    ge = Vector3f(0, 0, -1.0) + ((velocity - _last_velocity) * v_scale);
 
-    error = (_ra_sum/_ra_deltat % ge)/ge.length();
+    // calculate the error term in earth frame.
+    ge.normalize();
+    _ra_sum.normalize();
+    if (_ra_sum.is_inf() || ge.is_inf()) {
+	    // the _ra_sum length is zero - we are falling with
+	    // no apparent gravity. This gives us no information
+	    // about which way up we are, so treat the error as zero
+	    error = Vector3f(0,0,0);
+    } else {
+	    error = _ra_sum % ge;
+    }
 
-    // extract the X and Y components for the total drift
-    // error. The Z component comes from the yaw source
-    // we constrain the error on each axis to 0.2
-    // the Z component of this error comes from the yaw correction
-    _drift_error_earth.x = error.x; //constrain(error.x, -0.2, 0.2);
-    _drift_error_earth.y = error.y;// constrain(error.y, -0.2, 0.2);
-    //_drift_error_earth.z = error.z;
+    _error_rp_sum += error.length();
+    _error_rp_count++;
+
     // convert the error term to body frame
-    error = _dcm_matrix.mul_transpose(_drift_error_earth);
+    error = _dcm_matrix.mul_transpose(error);
 
     // we now want to calculate _omega_P and _omega_I. The
     // _omega_P value is what drags us quickly to the
     // accelerometer reading.
     _omega_P = error * _kp;
 
-    _omega_I_delta = (error * _ki) / _ra_deltat;
+    // accumulate some integrator error
+    _omega_I_sum += error * _ki * _ra_deltat;
+    _omega_I_sum_time += _ra_deltat;
 
-    // the _omega_I is the long term accumulated gyro
-    // error. This determines how much gyro drift we can
-    // handle.
-    //_omega_I_delta_sum += error * _ki * _ra_deltat;
-    //_omega_I_sum_time += _ra_deltat;
-
-    // if we have accumulated a gyro drift estimate for 15
-    // seconds, then move it to the _omega_I term which is applied
-    // on each update
-    /*if (_omega_I_sum_time > 5) {
-        // limit the slope of omega_I on each axis to
-        // the maximum drift rate reported by the sensor driver
-        //float drift_limit = _gyro_drift_limit * _ra_deltat * 2;
-        _omega_I_delta_sum /= _omega_I_sum_time;
-        _omega_I_delta_sum.x =_omega_I_delta_sum.x; //constrain(_omega_I_delta_sum.x, -drift_limit, drift_limit);
-        _omega_I_delta_sum.y =_omega_I_delta_sum.y; //constrain(_omega_I_delta_sum.y, -drift_limit, drift_limit);
-        _omega_I_delta_sum.z =_omega_I_delta_sum.z; //constrain(_omega_I_delta_sum.z, -drift_limit, drift_limit);
-        _omega_I_delta = _omega_I_delta_sum;
-        _omega_I_delta_sum.zero();
-        _omega_I_sum_time = 0;
-    }*/
-
+    if (_omega_I_sum_time >= 5) {
+	    // limit the rate of change of omega_I to the hardware
+	    // reported maximum gyro drift rate. This ensures that
+	    // short term errors don't cause a buildup of omega_I
+	    // beyond the physical limits of the device
+	    float change_limit = _gyro_drift_limit * _omega_I_sum_time;
+	    _omega_I_sum.x = constrain(_omega_I_sum.x, -change_limit, change_limit);
+	    _omega_I_sum.y = constrain(_omega_I_sum.y, -change_limit, change_limit);
+	    _omega_I_sum.z = constrain(_omega_I_sum.z, -change_limit, change_limit);
+	    _omega_I += _omega_I_sum;
+	    _omega_I_sum.zero();
+	    _omega_I_sum_time = 0;
+    }
 
     // zero our accumulator ready for the next GPS step
     _ra_sum.zero();
     _ra_deltat = 0;
     _ra_sum_start = last_correction_time;
 
-    // remember the GPS velocity for next time
-    _gps_last_velocity = gps_velocity;
-
-    // these sums support the reporting of the DCM state via MAVLink
-    _error_rp_sum += Vector3f(_drift_error_earth.x, _drift_error_earth.y, 0).length();
-    _error_rp_count++;
-
+    // remember the velocity for next time
+    _last_velocity = velocity;
 }
 
 

@@ -110,7 +110,6 @@ void setup(void)
 	compass.set_orientation(MAG_ORIENTATION);
 	if (compass.init()) {
 		Serial.printf("Enabling compass\n");
-		compass.null_offsets_enable();
 		ahrs.set_compass(&compass);
 	} else {
 		Serial.printf("No compass detected\n");
@@ -126,6 +125,7 @@ void loop(void)
 	static uint16_t counter;
 	static uint32_t last_t, last_print, last_compass;
 	uint32_t now = micros();
+	float heading = 0;
 
 	if (last_t == 0) {
 		last_t = now;
@@ -135,7 +135,7 @@ void loop(void)
 
 	if (now - last_compass > 100*1000UL &&
 		compass.read()) {
-		compass.calculate(ahrs.get_dcm_matrix());
+		heading = compass.calculate_heading(ahrs.get_dcm_matrix());
 		// read compass at 10Hz
 		last_compass = now;
 #if WITH_GPS
@@ -155,7 +155,7 @@ void loop(void)
 						ToDeg(drift.x),
 						ToDeg(drift.y),
 						ToDeg(drift.z),
-						compass.use_for_yaw()?ToDeg(compass.heading):0.0,
+						compass.use_for_yaw()?ToDeg(heading):0.0,
 						(1.0e6*counter)/(now-last_print));
 		last_print = now;
 		counter = 0;

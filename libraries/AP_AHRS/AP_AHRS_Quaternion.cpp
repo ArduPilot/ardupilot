@@ -100,13 +100,7 @@ void AP_AHRS_Quaternion::update_IMU(float deltat, Vector3f &gyro, Vector3f &acce
 	    // our quaternion is bad! Reset based on roll/pitch/yaw
 	    // and hope for the best ...
 	    renorm_blowup_count++;
-	    if (_compass) {
-		    _compass->null_offsets_disable();
-	    }
 	    q.from_euler(roll, pitch, yaw);
-	    if (_compass) {
-		    _compass->null_offsets_enable();
-	    }
 	    return;
     }
     SEq_1 *= norm;
@@ -263,9 +257,7 @@ void AP_AHRS_Quaternion::update_MARG(float deltat, Vector3f &gyro, Vector3f &acc
 	    // our quaternion is bad! Reset based on roll/pitch/yaw
 	    // and hope for the best ...
 	    renorm_blowup_count++;
-	    _compass->null_offsets_disable();
 	    q.from_euler(roll, pitch, yaw);
-	    _compass->null_offsets_disable();
 	    return;
     }
     SEq_1 *= norm;
@@ -311,12 +303,10 @@ void AP_AHRS_Quaternion::update(void)
 	if (!_have_initial_yaw && _compass &&
 	    _compass->use_for_yaw()) {
 		// setup the quaternion with initial compass yaw
-		_compass->null_offsets_disable();
-		q.from_euler(0, 0, _compass->heading);
+		q.from_euler(0, 0, _compass->calculate_heading(0,0));
 		_have_initial_yaw = true;
 		_compass_last_update = _compass->last_update;
 		gyro_bias.zero();
-		_compass->null_offsets_enable();
 	}
 
 	// get current IMU state
