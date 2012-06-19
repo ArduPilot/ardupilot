@@ -449,6 +449,8 @@ namespace ArdupilotMega
                 {
                     var hb = bytearray.ByteArrayToStructure<MAVLink.mavlink_heartbeat_t>(6);
 
+                    armed = (hb.base_mode & (byte)MAVLink.MAV_MODE_FLAG.SAFETY_ARMED) == (byte)MAVLink.MAV_MODE_FLAG.SAFETY_ARMED ? 4 : 3;
+
                     string oldmode = mode;
 
                     mode = "Unknown";
