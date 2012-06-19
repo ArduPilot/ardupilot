@@ -18,9 +18,13 @@ public:
 	{
 		_dcm_matrix.identity();
 
-		// base the ki values on the sensors drift rate
-                _ki = _gyro_drift_limit * 5;
-                _kp = .13;
+		// these are experimentally derived from the simulator
+		// with large drift levels
+                _ki = 0.0087;
+		_ki_yaw = 0.01;
+
+                _kp = 0.4;
+		_kp_yaw.set(0.4);
 	}
 
 	// return the smoothed gyro vector corrected for drift
@@ -44,6 +48,7 @@ public:
 private:
 	float		_kp;
 	float		_ki;
+	float		_ki_yaw;
 	bool		_have_initial_yaw;
 
 	// Methods
@@ -52,9 +57,9 @@ private:
 	void		check_matrix(void);
 	bool	 	renorm(Vector3f const &a, Vector3f &result);
 	void 		drift_correction(float deltat);
-	void 		drift_correction_old(float deltat);
-	void 		drift_correction_compass(float deltat);
 	void 		drift_correction_yaw(float deltat);
+	float		yaw_error_compass();
+	float		yaw_error_gps();
 	void 		euler_angles(void);
 
 	// primary representation of attitude
@@ -63,11 +68,12 @@ private:
 	Vector3f 	_gyro_vector;		// Store the gyros turn rate in a vector
 	Vector3f 	_accel_vector;		// current accel vector
 
-	Vector3f	_omega_P;		// accel Omega Proportional correction
+	Vector3f	_omega_P;		// accel Omega proportional correction
+	Vector3f	_omega_yaw_P;		// proportional yaw correction
 	Vector3f 	_omega_I;		// Omega Integrator correction
-	Vector3f 	_omega_integ_corr;	// Partially corrected Gyro_Vector data - used for centrepetal correction
+	Vector3f	_omega_I_sum;
+	float		_omega_I_sum_time;
 	Vector3f 	_omega;			// Corrected Gyro_Vector data
-	Vector3f        _omega_I_delta;
 
 	// state to support status reporting
 	float		_renorm_val_sum;
@@ -84,12 +90,9 @@ private:
 
 	// state of accel drift correction
 	Vector3f	_ra_sum;
-	Vector3f	_gps_last_velocity;
+	Vector3f	_last_velocity;
 	float		_ra_deltat;
 	uint32_t	_ra_sum_start;
-
-	// estimate of the magnetic field strength
-	float		_field_strength;
 
 	// current drift error in earth frame
 	Vector3f	_drift_error_earth;
