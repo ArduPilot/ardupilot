@@ -6,13 +6,13 @@
 const AP_Param::GroupInfo RC_Channel_aux::var_info[] PROGMEM = {
 	AP_NESTEDGROUPINFO(RC_Channel, 0),
 	// @Param: FUNCTION
-	// @DisplayName: Function assigned to this APM servo output
+	// @DisplayName: APM servo output function
 	// @Description: Setting this to Disabled(0) will disable this output, any other value will enable the corresponding function
 	// @Values: 0:Disabled,1:Manual,2:Flap,3:Flap_auto,4:Aileron,5:flaperon,6:mount_pan,7:mount_tilt,8:mount_roll,9:mount_open,10:camera_trigger,11:release
 	// @User: Standard
 	AP_GROUPINFO("FUNCTION",       1, RC_Channel_aux, function),
 	// @Param: ANGLE_MIN
-	// @DisplayName: Minimum physical angular position of the object that this servo output controls
+	// @DisplayName: Minimum object position
 	// @Description: Minimum physical angular position of the object that this servo output controls, this could be for example a camera pan angle, an aileron angle, etc
 	// @Units: Degrees
 	// @Range: -180 180
@@ -20,7 +20,7 @@ const AP_Param::GroupInfo RC_Channel_aux::var_info[] PROGMEM = {
 	// @User: Standard
 	AP_GROUPINFO("ANGLE_MIN",      2, RC_Channel_aux, angle_min),
 	// @Param: ANGLE_MAX
-	// @DisplayName: Maximum physical angular position of the object that this servo output controls
+	// @DisplayName: Maximum object position
 	// @Description: Maximum physical angular position of the object that this servo output controls, this could be for example a camera pan angle, an aileron angle, etc
 	// @Units: Degrees
 	// @Range: -180 180
