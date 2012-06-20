@@ -66,12 +66,13 @@ void loop()
     timer = micros();
     compass.read();
     unsigned long read_time = micros() - timer;
+    float heading;
 
     if (!compass.healthy) {
 	    Serial.println("not healthy");
 	    return;
     }
-    compass.calculate(0,0);  // roll = 0, pitch = 0 for this example
+    heading = compass.calculate_heading(0,0);  // roll = 0, pitch = 0 for this example
 
     // capture min
     if( compass.mag_x < min[0] )
@@ -96,7 +97,7 @@ void loop()
 
     // display all to user
     Serial.printf("Heading: %.2f (%3u,%3u,%3u) ",
-		  ToDeg(compass.heading),
+		  ToDeg(heading),
 		  compass.mag_x,
 		  compass.mag_y,
 		  compass.mag_z);

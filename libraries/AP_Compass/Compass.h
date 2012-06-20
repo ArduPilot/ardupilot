@@ -20,9 +20,6 @@ public:
 	int16_t         mag_x;          ///< magnetic field strength along the X axis
 	int16_t         mag_y;          ///< magnetic field strength along the Y axis
 	int16_t         mag_z;          ///< magnetic field strength along the Z axis
-	float           heading;        ///< compass heading in radians
-	float           heading_x;      ///< compass vector X magnitude
-	float           heading_y;      ///< compass vector Y magnitude
 	uint32_t        last_update;    ///< micros() time of last update
 	bool			healthy;        ///< true if last read OK
 
@@ -46,13 +43,17 @@ public:
 	/// @param  roll                The current airframe roll angle.
 	/// @param  pitch               The current airframe pitch angle.
 	///
-	virtual void calculate(float roll, float pitch);
+    /// @returns heading in radians
+    ///
+	virtual float calculate_heading(float roll, float pitch);
 
 	/// Calculate the tilt-compensated heading_ variables.
 	///
 	/// @param dcm_matrix			The current orientation rotation matrix
+    ///
+    /// @returns heading in radians
 	///
-	virtual void calculate(const Matrix3f &dcm_matrix);
+	virtual float calculate_heading(const Matrix3f &dcm_matrix);
 
 	/// Set the compass orientation matrix, used to correct for
 	/// various compass mounting positions.
@@ -100,16 +101,6 @@ public:
 	///
 	void null_offsets(void);
 
-
-	/// Enable/Start automatic offset updates 
-	///
-	void null_offsets_enable(void);
-
-
-	/// Disable/Stop automatic offset updates
-	///
-	void null_offsets_disable(void);
-
     /// return true if the compass should be used for yaw calculations
     bool use_for_yaw(void) { return healthy && _use_for_yaw; }
 
@@ -130,7 +121,6 @@ protected:
     AP_Int8             _use_for_yaw;           ///<enable use for yaw calculation
     AP_Int8             _auto_declination;      ///<enable automatic declination code
 
-	bool                _null_enable;        	///< enabled flag for offset nulling
 	bool                _null_init_done;        ///< first-time-around flag used by offset nulling
 
     ///< used by offset correction
