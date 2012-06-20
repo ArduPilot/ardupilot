@@ -25,7 +25,6 @@
 				 It returns a 1 if there are new data.
 		get_pressure() : return pressure in mbar*100 units
 		get_temperature() : return temperature in celsius degrees*100 units
-		get_altitude() : return altitude in meters
 
 	Internal functions:
 		_calculate() : Calculate Temperature and Pressure (temperature compensated) in real units
@@ -61,11 +60,10 @@ bool     AP_Baro_MS5611::_updated;
 
 uint8_t AP_Baro_MS5611::_spi_read(uint8_t reg)
 {
-  uint8_t dump;
   uint8_t return_value;
   uint8_t addr = reg; // | 0x80; // Set most significant bit
   digitalWrite(MS5611_CS, LOW);
-  dump = SPI.transfer(addr);
+  SPI.transfer(addr); // discarded
   return_value = SPI.transfer(0);
   digitalWrite(MS5611_CS, HIGH);
   return return_value;
@@ -73,11 +71,11 @@ uint8_t AP_Baro_MS5611::_spi_read(uint8_t reg)
 
 uint16_t AP_Baro_MS5611::_spi_read_16bits(uint8_t reg)
 {
-  uint8_t dump, byteH, byteL;
+  uint8_t byteH, byteL;
   uint16_t return_value;
   uint8_t addr = reg; // | 0x80; // Set most significant bit
   digitalWrite(MS5611_CS, LOW);
-  dump = SPI.transfer(addr);
+  SPI.transfer(addr); // discarded
   byteH = SPI.transfer(0);
   byteL = SPI.transfer(0);
   digitalWrite(MS5611_CS, HIGH);
@@ -87,11 +85,11 @@ uint16_t AP_Baro_MS5611::_spi_read_16bits(uint8_t reg)
 
 uint32_t AP_Baro_MS5611::_spi_read_adc()
 {
-  uint8_t dump,byteH,byteM,byteL;
+  uint8_t byteH,byteM,byteL;
   uint32_t return_value;
   uint8_t addr = 0x00;
   digitalWrite(MS5611_CS, LOW);
-  dump = SPI.transfer(addr);
+  SPI.transfer(addr); // discarded
   byteH = SPI.transfer(0);
   byteM = SPI.transfer(0);
   byteL = SPI.transfer(0);
@@ -103,9 +101,8 @@ uint32_t AP_Baro_MS5611::_spi_read_adc()
 
 void AP_Baro_MS5611::_spi_write(uint8_t reg)
 {
-  uint8_t dump;
   digitalWrite(MS5611_CS, LOW);
-  dump = SPI.transfer(reg);
+  SPI.transfer(reg); // discarded
   digitalWrite(MS5611_CS, HIGH);
 }
 
@@ -193,6 +190,9 @@ uint8_t AP_Baro_MS5611::read()
     }
     _sync_access = false;
     _calculate();
+    if (updated) {
+        _last_update = millis();
+    }
     return updated ? 1 : 0;
 }
 
@@ -238,19 +238,6 @@ int16_t AP_Baro_MS5611::get_temperature()
 {
 	// callers want the temperature in 0.1C units
 	return(Temp/10);
-}
-
-// Return altitude using the standard 1013.25 mbar at sea level reference
-float AP_Baro_MS5611::get_altitude()
-{
-	float tmp_float;
-	float Altitude;
-
-	tmp_float = (Press / 101325.0);
-	tmp_float = pow(tmp_float, 0.190295);
-	Altitude = 44330.0 * (1.0 - tmp_float);
-
-	return (Altitude);
 }
 
 int32_t AP_Baro_MS5611::get_raw_pressure() {

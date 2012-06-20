@@ -19,7 +19,6 @@ class AP_Baro_BMP085 : public AP_Baro
     uint8_t read();
     int32_t get_pressure();
     int16_t get_temperature();
-    float   get_altitude();
 
     int32_t get_raw_pressure();
     int32_t get_raw_temp();
