@@ -493,7 +493,7 @@ static void NOINLINE send_raw_imu2(mavlink_channel_t chan)
         chan,
         micros(),
         (float)barometer.get_pressure()/100.0,
-        (float)(barometer.get_pressure()-ground_pressure)/100.0,
+        (float)(barometer.get_pressure() - barometer.get_ground_pressure())/100.0,
         (int)(barometer.get_temperature()*10));
 }
 
