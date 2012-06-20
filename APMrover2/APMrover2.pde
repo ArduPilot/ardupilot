@@ -896,12 +896,6 @@ static void medium_loop()
             if (g.compass_enabled && compass.read()) {
                 ahrs.set_compass(&compass);
                 // Calculate heading
-#if LITE == DISABLED                
-                Matrix3f m = ahrs.get_dcm_matrix();              
-                compass.calculate(m);
-#else
-                compass.calculate(0,0);  // roll = 0, pitch = 0
-#endif
                 compass.null_offsets();
             } else {
                 ahrs.set_compass(NULL);
@@ -1113,12 +1107,7 @@ static void update_GPS(void)
                   ground_course = ahrs.yaw_sensor;
                 } else {
 #endif                
-    long magheading;
-    magheading = ToDeg(compass.heading) * 100;
-    if (magheading > 36000)	  magheading -= 36000;
-    if (magheading < 0)           magheading += 36000;
-
-    ground_course = magheading;
+    ground_course = ToDeg(ahrs.yaw) * 100;
 #if LITE == DISABLED                  
                 }
 #endif

@@ -192,7 +192,6 @@ static void init_ardupilot()
         } else {
             ahrs.set_compass(&compass);
             //compass.get_offsets();						// load offsets to account for airframe magnetic interference
-            compass.null_offsets_enable();
         }
 	}
 #else
