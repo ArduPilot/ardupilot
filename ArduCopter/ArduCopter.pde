@@ -629,10 +629,6 @@ static bool		low_batt = false;
 ////////////////////////////////////////////////////////////////////////////////
 // Altitude
 ////////////////////////////////////////////////////////////////////////////////
-// The pressure at home location - calibrated at arming
-static int32_t 	ground_pressure;
-// The ground temperature at home location - calibrated at arming
-static int16_t 	ground_temperature;
 // The cm we are off in altitude from next_WP.alt – Positive value means we are below the WP
 static int32_t		altitude_error;
 // The cm/s we are moving up or down based on sensor data - Positive = UP

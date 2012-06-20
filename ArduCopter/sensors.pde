@@ -18,68 +18,16 @@ static void init_sonar(void)
 
 static void init_barometer(void)
 {
-	#if HIL_MODE == HIL_MODE_SENSORS
-		gcs_update();					// look for inbound hil packets for initialization
-	#endif
-
-	ground_temperature = barometer.get_temperature();
-	int i;
-
-	// We take some readings...
-	for(i = 0; i < 60; i++){
-		delay(20);
-
-		// get new data from absolute pressure sensor
-		barometer.read();
-
-		//Serial.printf("init %ld, %d, -, %ld, %ld\n", barometer.RawTemp, barometer.Temp, barometer.RawPress,  barometer.Press);
-	}
-
-	for(i = 0; i < 40; i++){
-		delay(20);
-
-		#if HIL_MODE == HIL_MODE_SENSORS
-			gcs_update(); 				// look for inbound hil packets
-		#endif
-
-		// Get initial data from absolute pressure sensor
-		barometer.read();
-		ground_pressure 	= baro_filter.apply(barometer.get_pressure());
-
-		//Serial.printf("t: %ld, p: %d\n", ground_pressure, ground_temperature);
-
-		/*Serial.printf("init %d, %d, -, %d, %d, -, %d, %d\n",
-				barometer.RawTemp,
-				barometer.Temp,
-				barometer.RawPress,
-				barometer.Press,
-				ground_temperature,
-				ground_pressure);*/
-	}
-	// save our ground temp
-	ground_temperature	= barometer.get_temperature();
+    barometer.calibrate(mavlink_delay);
+    ahrs.set_barometer(&barometer);
+    gcs_send_text_P(SEVERITY_LOW, PSTR("barometer calibration complete"));
 }
 
-static void reset_baro(void)
-{
-	ground_pressure 	= baro_filter.apply(barometer.get_pressure());
-	ground_temperature	= barometer.get_temperature();
-}
-
+// return barometric altitude in centimeters
 static int32_t read_barometer(void)
 {
- 	float x, scaling, temp;
-
 	barometer.read();
-	float abs_pressure = baro_filter.apply(barometer.get_pressure());
-
-
-	//Serial.printf("%ld, %ld, %ld, %ld\n", barometer.RawTemp, barometer.RawPress, barometer.Press, abs_pressure);
-
-	scaling 				= (float)ground_pressure / abs_pressure;
-	temp 					= ((float)ground_temperature / 10.0f) + 273.15f;
-	x 						= log(scaling) * temp * 29271.267f;
-	return 	(x / 10);
+    return baro_filter.apply(barometer.get_altitude() * 100.0);
 }
 
 
