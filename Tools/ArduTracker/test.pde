@@ -370,7 +370,6 @@ test_imu(uint8_t argc, const Menu::arg *argv)
 				medium_loopCounter++;
 				if(medium_loopCounter == 5){
 					compass.read();		 				// Read magnetometer
-					compass.calculate(dcm.roll, dcm.pitch);		// Calculate heading
 					medium_loopCounter = 0;
 				}
 			#endif
@@ -418,11 +417,13 @@ test_mag(uint8_t argc, const Menu::arg *argv)
 	print_hit_enter();
 	
 	while(1){
+		float heading;
+
 		delay(250);	
 		compass.read();
-		compass.calculate(0,0);
+		heading = compass.calculate_heading(0,0);
 		Serial.printf_P(PSTR("Heading: ("));
-		Serial.print(ToDeg(compass.heading));
+		Serial.print(ToDeg(heading));
 		Serial.printf_P(PSTR(")  XYZ: ("));
 		Serial.print(compass.mag_x);
 		Serial.print(comma);
