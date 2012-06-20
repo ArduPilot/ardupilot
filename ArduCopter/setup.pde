@@ -719,13 +719,13 @@ setup_mag_offset(uint8_t argc, const Menu::arg *argv)
 	int _max[3] = {0,0,0};
 
 	compass.read();
-	compass.calculate(0,0);	// roll = 0, pitch = 0
 
 	while(1){
 		delay(50);
+        float heading;
 
 		compass.read();
-		compass.calculate(0,0);	// roll = 0, pitch = 0
+		heading = compass.calculate_heading(0,0);	// roll = 0, pitch = 0
 
 		if(compass.mag_x < _min[0])	_min[0] = compass.mag_x;
 		if(compass.mag_y < _min[1])	_min[1] = compass.mag_y;
@@ -744,7 +744,7 @@ setup_mag_offset(uint8_t argc, const Menu::arg *argv)
 		// display all to user
 		Serial.printf_P(PSTR("Heading: %u, \t (%d, %d, %d), (%4.4f, %4.4f, %4.4f)\n"),
 
-				(uint16_t)(wrap_360(ToDeg(compass.heading) * 100)) /100,
+				(uint16_t)(wrap_360(ToDeg(heading) * 100)) /100,
 
 				compass.mag_x,
 				compass.mag_y,

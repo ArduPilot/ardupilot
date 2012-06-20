@@ -744,7 +744,7 @@ static void Log_Write_Attitude()
 	DataFlash.WriteInt((int)ahrs.pitch_sensor);		// 4
 	DataFlash.WriteInt(g.rc_4.control_in);			// 5
 	DataFlash.WriteInt((uint16_t)ahrs.yaw_sensor);	// 6
-	DataFlash.WriteInt((uint16_t)(wrap_360(ToDeg(compass.heading)*100)));	// 7
+	DataFlash.WriteInt(0);	// 7 (this used to be compass.heading)
 
 	DataFlash.WriteByte(END_BYTE);
 }

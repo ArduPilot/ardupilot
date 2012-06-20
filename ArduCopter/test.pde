@@ -334,7 +334,6 @@ test_radio(uint8_t argc, const Menu::arg *argv)
 				if(medium_loopCounter == 5){
                     Matrix3f m = dcm.get_dcm_matrix();
 					compass.read();		 				// Read magnetometer
-					compass.calculate(m);
                     compass.null_offsets();
 					medium_loopCounter = 0;
 				}
@@ -552,8 +551,6 @@ test_imu(uint8_t argc, const Menu::arg *argv)
 
 				if(g.compass_enabled){
 					compass.read();		 				// Read magnetometer
-                    Matrix3f m = dcm.get_dcm_matrix();
-					compass.calculate(m);
                     compass.null_offsets();
 				}
 			}
@@ -954,10 +951,10 @@ test_mag(uint8_t argc, const Menu::arg *argv)
 			while(1){
 				delay(100);
 				if (compass.read()) {
-					compass.calculate(ahrs.get_dcm_matrix());
+					float heading = compass.calculate_heading(ahrs.get_dcm_matrix());
 					Vector3f maggy = compass.get_offsets();
 					Serial.printf_P(PSTR("Heading: %ld, XYZ: %d, %d, %d\n"),
-									(wrap_360(ToDeg(compass.heading) * 100)) /100,
+									(wrap_360(ToDeg(heading) * 100)) /100,
 									compass.mag_x,
 									compass.mag_y,
 									compass.mag_z);

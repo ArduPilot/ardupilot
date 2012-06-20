@@ -42,7 +42,6 @@ static void init_compass()
         return;
     }
     ahrs.set_compass(&compass);
-    compass.null_offsets_enable();
 }
 
 static void init_optflow()
