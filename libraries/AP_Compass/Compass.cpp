@@ -22,7 +22,6 @@ Compass::Compass(void) :
     _learn(1),
     _use_for_yaw(1),
     _auto_declination(1),
-    _null_enable(false),
     _null_init_done(false)
 {
 }
@@ -66,9 +65,7 @@ Compass::set_initial_location(long latitude, long longitude)
     // the declination based on the initial GPS fix
 	if (_auto_declination) {
 		// Set the declination based on the lat/lng from GPS
-		null_offsets_disable();
 		_declination.set(radians(AP_Declination::get_declination((float)latitude / 10000000, (float)longitude / 10000000)));
-		null_offsets_enable();
 	}
 }
 
@@ -85,8 +82,8 @@ Compass::get_declination()
 }
 
 
-void
-Compass::calculate(float roll, float pitch)
+float
+Compass::calculate_heading(float roll, float pitch)
 {
 //  Note - This function implementation is deprecated
 //  The alternate implementation of this function using the dcm matrix is preferred
@@ -96,6 +93,8 @@ Compass::calculate(float roll, float pitch)
     float sin_roll;
     float cos_pitch;
     float sin_pitch;
+    float heading;
+
     cos_roll = cos(roll);
 	sin_roll = sin(roll);
     cos_pitch = cos(pitch);
@@ -118,18 +117,18 @@ Compass::calculate(float roll, float pitch)
             heading += (2.0 * M_PI);
     }
 
-    // Optimization for external DCM use. Calculate normalized components
-    heading_x = cos(heading);
-    heading_y = sin(heading);
+    return heading;
 }
 
 
-void
-Compass::calculate(const Matrix3f &dcm_matrix)
+float
+Compass::calculate_heading(const Matrix3f &dcm_matrix)
 {
     float headX;
     float headY;
     float cos_pitch = safe_sqrt(1-(dcm_matrix.c.x*dcm_matrix.c.x));
+    float heading;
+
 	// sin(pitch) = - dcm_matrix(3,1)
 	// cos(pitch)*sin(roll) = - dcm_matrix(3,2)
 	// cos(pitch)*cos(roll) = - dcm_matrix(3,3)
@@ -138,7 +137,7 @@ Compass::calculate(const Matrix3f &dcm_matrix)
         // we are pointing straight up or down so don't update our
         // heading using the compass. Wait for the next iteration when
         // we hopefully will have valid values again.
-        return;
+        return 0;
     }
 
     // Tilt compensated magnetic field X component:
@@ -159,23 +158,7 @@ Compass::calculate(const Matrix3f &dcm_matrix)
             heading += (2.0 * M_PI);
     }
 
-    // Optimization for external DCM use. Calculate normalized components
-    heading_x = cos(heading);
-    heading_y = sin(heading);
-
-#if 0
-    if (isnan(heading_x) || isnan(heading_y)) {
-        Serial.printf("COMPASS: c.x %f c.y %f c.z %f cos_pitch %f mag_x %d mag_y %d mag_z %d headX %f headY %f heading %f heading_x %f heading_y %f\n",
-                      dcm_matrix.c.x,
-                      dcm_matrix.c.y,
-                      dcm_matrix.c.x,
-                      cos_pitch,
-                      (int)mag_x, (int)mag_y, (int)mag_z,
-                      headX, headY,
-                      heading,
-                      heading_x, heading_y);
-    }
-#endif
+    return heading;
 }
 
 
@@ -202,7 +185,7 @@ Compass::calculate(const Matrix3f &dcm_matrix)
 void
 Compass::null_offsets(void)
 {
-    if (_null_enable == false || _learn == 0) {
+    if (_learn == 0) {
         // auto-calibration is disabled
         return;
     }
@@ -273,19 +256,4 @@ Compass::null_offsets(void)
 
     // set the new offsets
     _offset.set(_offset.get() - diff);
-}
-
-
-void
-Compass::null_offsets_enable(void)
-{
-	_null_init_done = false;
-	_null_enable = true;
-}
-
-void
-Compass::null_offsets_disable(void)
-{
-	_null_init_done = false;
-	_null_enable = false;
 }
