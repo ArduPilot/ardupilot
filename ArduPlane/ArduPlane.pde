@@ -46,6 +46,7 @@ version 2.1 of the License, or (at your option) any later version.
 #include <AP_RangeFinder.h>	// Range finder library
 #include <Filter.h>			// Filter library
 #include <ModeFilter.h>		// Mode Filter from Filter library
+#include <LowPassFilter.h>	// LowPassFilter class (inherits from Filter class)
 #include <AP_Relay.h>       // APM relay
 #include <AP_Camera.h>		// Photo or video camera
 #include <memcheck.h>
@@ -469,8 +470,6 @@ static float   airspeed_pressure;
 ////////////////////////////////////////////////////////////////////////////////
 // Altitude Sensor variables
 ////////////////////////////////////////////////////////////////////////////////
-// Raw absolute pressure measurement (filtered).  ADC units
-static unsigned long 	abs_pressure;
 // Altitude from the sonar sensor.  Meters.  Not yet implemented.
 static int		sonar_alt;
 
