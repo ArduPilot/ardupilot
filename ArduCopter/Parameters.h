@@ -350,8 +350,8 @@ public:
 	crosstrack_gain			(CROSSTRACK_GAIN),
 	auto_land_timeout		(AUTO_LAND_TIME * 1000),
 
-	throttle_min			(0),
-	throttle_max			(1000),
+	throttle_min			(MINIMUM_THROTTLE),
+	throttle_max			(MAXIMUM_THROTTLE),
 	throttle_fs_enabled		(THROTTLE_FAILSAFE),
 	throttle_fs_action		(THROTTLE_FAILSAFE_ACTION),
 	throttle_fs_value 		(THROTTLE_FS_VALUE),

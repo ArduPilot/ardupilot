@@ -1642,7 +1642,7 @@ void update_throttle_mode(void)
 				    throttle_avg = g.throttle_cruise;
 				}
 				// calc average throttle
-				if ((g.rc_3.control_in > MINIMUM_THROTTLE) && abs(climb_rate) < 60){
+				if ((g.rc_3.control_in > g.throttle_min) && abs(climb_rate) < 60){
 					throttle_avg = throttle_avg * .98 + (float)g.rc_3.control_in * .02;
 					g.throttle_cruise = throttle_avg;
 				}
@@ -2054,9 +2054,9 @@ static void update_altitude_est()
 static void
 adjust_altitude()
 {
-	if(g.rc_3.control_in <= (MINIMUM_THROTTLE + THROTTLE_ADJUST)){
+	if(g.rc_3.control_in <= (g.throttle_min + THROTTLE_ADJUST)){
 		// we remove 0 to 100 PWM from hover
-		manual_boost = (g.rc_3.control_in - MINIMUM_THROTTLE) - THROTTLE_ADJUST;
+		manual_boost = (g.rc_3.control_in - g.throttle_min) - THROTTLE_ADJUST;
 		manual_boost = max(-THROTTLE_ADJUST, manual_boost);
 
 	}else if  (g.rc_3.control_in >= (MAXIMUM_THROTTLE - THROTTLE_ADJUST)){

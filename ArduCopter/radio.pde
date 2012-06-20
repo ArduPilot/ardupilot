@@ -26,7 +26,7 @@ static void init_rc_in()
 		// we do not want to limit the movment of the heli's swash plate
 		g.rc_3.set_range(0, 1000);
 	#else
-		g.rc_3.set_range(MINIMUM_THROTTLE, MAXIMUM_THROTTLE);
+		g.rc_3.set_range(g.throttle_min, g.throttle_max);
 	#endif
 	g.rc_4.set_angle(4500);
 
@@ -54,8 +54,8 @@ static void init_rc_out()
 	#endif
 	motors.set_frame_orientation(g.frame_orientation);
 	motors.Init();						// motor initialisation
-	motors.set_min_throttle(MINIMUM_THROTTLE);
-	motors.set_max_throttle(MAXIMUM_THROTTLE);
+	motors.set_min_throttle(g.throttle_min);
+	motors.set_max_throttle(g.throttle_max);
 
 	// this is the camera pitch5 and roll6
 	APM_RC.OutputCh(CH_CAM_PITCH, 1500);

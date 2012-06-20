@@ -189,7 +189,7 @@ static int8_t
 {
 	print_hit_enter();
 	delay(1000);
-	int16_t temp = MINIMUM_THROTTLE;
+	int16_t temp = g.throttle_min;
 
 	while(1){
 		delay(20);
