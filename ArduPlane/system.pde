@@ -173,7 +173,6 @@ static void init_ardupilot()
             g.compass_enabled = false;
         } else {
             ahrs.set_compass(&compass);
-            compass.null_offsets_enable();
         }
 	}
 #endif
