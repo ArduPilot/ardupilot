@@ -793,9 +793,6 @@ static void medium_loop()
 			#if HIL_MODE != HIL_MODE_ATTITUDE
             if (g.compass_enabled && compass.read()) {
                 ahrs.set_compass(&compass);
-                // Calculate heading
-                Matrix3f m = ahrs.get_dcm_matrix();
-                compass.calculate(m);
                 compass.null_offsets();
             } else {
                 ahrs.set_compass(NULL);

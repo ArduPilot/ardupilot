@@ -533,10 +533,7 @@ test_imu(uint8_t argc, const Menu::arg *argv)
 			if(g.compass_enabled) {
 				medium_loopCounter++;
 				if(medium_loopCounter == 5){
-					if (compass.read()) {
-                        // Calculate heading
-                        compass.calculate(ahrs.get_dcm_matrix());
-                    }
+					compass.read();
                     medium_loopCounter = 0;
 				}
 			}
@@ -573,7 +570,6 @@ test_mag(uint8_t argc, const Menu::arg *argv)
         Serial.println_P(PSTR("Compass initialisation failed!"));
         return 0;
     }
-    compass.null_offsets_enable();
     ahrs.set_compass(&compass);
     report_compass();
 
@@ -582,6 +578,8 @@ test_mag(uint8_t argc, const Menu::arg *argv)
     ahrs.reset();
 
 	int counter = 0;
+    float heading = 0;
+
 		//Serial.printf_P(PSTR("MAG_ORIENTATION: %d\n"), MAG_ORIENTATION);
 
     print_hit_enter();
@@ -602,7 +600,7 @@ test_mag(uint8_t argc, const Menu::arg *argv)
                 if (compass.read()) {
                     // Calculate heading
                     Matrix3f m = ahrs.get_dcm_matrix();
-                    compass.calculate(m);
+                    heading = compass.calculate_heading(m);
                     compass.null_offsets();
                 }
                 medium_loopCounter = 0;
@@ -613,7 +611,7 @@ test_mag(uint8_t argc, const Menu::arg *argv)
                 if (compass.healthy) {
                     Vector3f maggy = compass.get_offsets();
                     Serial.printf_P(PSTR("Heading: %ld, XYZ: %d, %d, %d,\tXYZoff: %6.2f, %6.2f, %6.2f\n"),
-                                    (wrap_360(ToDeg(compass.heading) * 100)) /100,
+                                    (wrap_360(ToDeg(heading) * 100)) /100,
                                     (int)compass.mag_x,
                                     (int)compass.mag_y,
                                     (int)compass.mag_z,
