@@ -434,15 +434,9 @@ get_nav_yaw_offset(int yaw_input, int reset)
 
 static int16_t get_angle_boost(int16_t value)
 {
-//	float temp = cos_pitch_x * cos_roll_x;
-//	temp = 1.0 - constrain(temp, .5, 1.0);
-//	int16_t output = temp * value;
-//	return constrain(output, 0, 200);
-//	return (int)(temp * value);
-
 	float temp = cos_pitch_x * cos_roll_x;
 	temp = constrain(temp, .5, 1.0);
-	return ((float)g.throttle_cruise / temp) - g.throttle_cruise;
+	return ((float)(g.throttle_cruise + 80) / temp) - (g.throttle_cruise + 80);
 }
 
 #if FRAME_CONFIG == HELI_FRAME
