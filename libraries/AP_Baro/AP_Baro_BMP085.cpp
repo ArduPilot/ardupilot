@@ -122,6 +122,9 @@ uint8_t AP_Baro_BMP085::read()
 			result = 1;					// New pressure reading
 		}
 	}
+    if (result) {
+        _last_update = millis();
+    }
 	return(result);
 }
 
@@ -131,10 +134,6 @@ int32_t AP_Baro_BMP085::get_pressure() {
 
 int16_t AP_Baro_BMP085::get_temperature() {
     return Temp;
-}
-
-float AP_Baro_BMP085::get_altitude() {
-    return 0.0; // TODO
 }
 
 int32_t AP_Baro_BMP085::get_raw_pressure() {

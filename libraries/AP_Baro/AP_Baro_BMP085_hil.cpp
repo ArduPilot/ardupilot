@@ -53,6 +53,7 @@ void AP_Baro_BMP085_HIL::setHIL(float _Temp, float _Press)
 	Temp 	= _Temp;
 	Press 	= _Press;
 	healthy = true;
+    _last_update = millis();
 }
 
 int32_t AP_Baro_BMP085_HIL::get_pressure() {
@@ -61,10 +62,6 @@ int32_t AP_Baro_BMP085_HIL::get_pressure() {
 
 int16_t AP_Baro_BMP085_HIL::get_temperature() {
     return Temp;
-}
-
-float AP_Baro_BMP085_HIL::get_altitude() {
-    return 0.0; // TODO
 }
 
 int32_t AP_Baro_BMP085_HIL::get_raw_pressure() {

@@ -15,7 +15,6 @@ class AP_Baro_MS5611 : public AP_Baro
   uint8_t read();
   int32_t get_pressure();     // in mbar*100 units
   int16_t get_temperature();  // in celsius degrees * 100 units
-  float get_altitude();        // in meter units
 
   int32_t get_raw_pressure();
   int32_t get_raw_temp();
