@@ -7,66 +7,23 @@ void ReadSCP1000(void) {}
 
 static void init_barometer(void)
 {
-	int flashcount = 0;
-	long 			ground_pressure = 0;
-	int 			ground_temperature;
-
-	while (ground_pressure == 0 || !barometer.healthy) {
-		barometer.read(); 					// Get initial data from absolute pressure sensor
-		ground_pressure 	= barometer.get_pressure();
-		ground_temperature 	= barometer.get_temperature();
-		mavlink_delay(20);
-		//Serial.printf("barometer.Press %ld\n", barometer.get_pressure());
-	}
-
-	for(int i = 0; i < 30; i++){		// We take some readings...
-
-		#if HIL_MODE == HIL_MODE_SENSORS
-        gcs_update(); 				// look for inbound hil packets
-		#endif
-        
-        do {
-            barometer.read(); 				// Get pressure sensor
-        } while (!barometer.healthy);
-		ground_pressure		= (ground_pressure * 9l   + barometer.get_pressure()) / 10l;
-		ground_temperature	= (ground_temperature * 9 + barometer.get_temperature()) / 10;
-
-		mavlink_delay(20);
-		if(flashcount == 5) {
-			digitalWrite(C_LED_PIN, LED_OFF);
-			digitalWrite(A_LED_PIN, LED_ON);
-			digitalWrite(B_LED_PIN, LED_OFF);
-		}
-
-		if(flashcount >= 10) {
-			flashcount = 0;
-			digitalWrite(C_LED_PIN, LED_ON);
-			digitalWrite(A_LED_PIN, LED_OFF);
-			digitalWrite(B_LED_PIN, LED_ON);
-		}
-		flashcount++;
-	}
-	
-	g.ground_pressure.set_and_save(ground_pressure);
-	g.ground_temperature.set_and_save(ground_temperature / 10.0f);
-	abs_pressure = ground_pressure;
-	
-    Serial.printf_P(PSTR("abs_pressure %ld\n"), abs_pressure);
-    gcs_send_text_P(SEVERITY_MEDIUM, PSTR("barometer calibration complete."));
+    barometer.calibrate(mavlink_delay);
+	g.ground_pressure.set_and_save(barometer.get_ground_pressure());
+	g.ground_temperature.set_and_save(barometer.get_ground_temperature() / 10.0f);
+    ahrs.set_barometer(&barometer);
+    gcs_send_text_P(SEVERITY_LOW, PSTR("barometer calibration complete"));
 }
 
-static long read_barometer(void)
+// filter altitude from the barometer with a 0.3 low pass
+// filter
+static LowPassFilterInt32 altitude_filter(0.3);
+
+// read the barometer and return the updated altitude in centimeters
+// above the calibration altitude
+static int32_t read_barometer(void)
 {
- 	float x, scaling, temp;
-
-	barometer.read();		// Get new data from absolute pressure sensor
-
-	//abs_pressure 			= (abs_pressure + barometer.get_pressure()) >> 1;		// Small filtering
-	abs_pressure 			= ((float)abs_pressure * .7) + ((float)barometer.get_pressure() * .3);		// large filtering
-	scaling 				= (float)g.ground_pressure / (float)abs_pressure;
-	temp 					= ((float)g.ground_temperature) + 273.15f;
-	x 						= log(scaling) * temp * 29271.267f;
-	return 	(x / 10);
+	barometer.read();
+    return altitude_filter.apply(((int32_t)barometer.get_altitude() * 100.0));
 }
 
 // in M/S * 100
