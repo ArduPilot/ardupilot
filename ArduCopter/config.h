@@ -743,7 +743,7 @@
 # define NAV_D				0.00		//
 #endif
 #ifndef NAV_IMAX
-# define NAV_IMAX			30			// degrees
+# define NAV_IMAX			18			// degrees
 #endif
 
 #ifndef AUTO_SLEW_RATE
