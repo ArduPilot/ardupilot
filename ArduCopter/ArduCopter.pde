@@ -1040,9 +1040,6 @@ static void medium_loop()
 			#if HIL_MODE != HIL_MODE_ATTITUDE					// don't execute in HIL mode
 				if(g.compass_enabled){
 					if (compass.read()) {
-                        // Calculate heading
-                        Matrix3f m = ahrs.get_dcm_matrix();
-                        compass.calculate(m);
                         compass.null_offsets();
                     }
 				}
