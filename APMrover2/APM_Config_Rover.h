@@ -61,7 +61,7 @@ the when the rover approach the wp, it slow down to 4 m/s (TRIM_ARSPD_CM)...
 This feature works only if the ROV_AWPR_NAV is set to 0
 */
 
-#define BOOSTER              1    // booster factor x1 = 1 or x2 = 2
+#define BOOSTER              2    // booster factor x1 = 1 or x2 = 2
 #define AUTO_WP_RADIUS       DISABLED
 #define AIRSPEED_CRUISE      4    // 4m/s
 #define THROTTLE_SLEW_LIMIT  2    // set to 2 for a smooth acceleration by 0.2 step
