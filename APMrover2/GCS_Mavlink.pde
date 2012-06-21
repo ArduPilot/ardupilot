@@ -377,7 +377,9 @@ static void NOINLINE send_servo_out(mavlink_channel_t chan)
     
     int thr_out = constrain((g.channel_throttle.servo_out *2) - 100, -100, 100);  // throttle set from -100 to 100
     mavlink_msg_rc_channels_scaled_send(
-	chan,
+        chan,
+        millis(),
+        0, // port 0
 	g.channel_roll.servo_out,
 	g.channel_pitch.servo_out,
         100 * thr_out,
@@ -386,7 +388,7 @@ static void NOINLINE send_servo_out(mavlink_channel_t chan)
         10000 * g.channel_pitch.norm_output(),
         10000 * g.channel_throttle.norm_output(),
         10000 * g.channel_rudder.norm_output(),
-	rssi);
+        rssi);    
 #else
     mavlink_msg_rc_channels_scaled_send(
         chan,
