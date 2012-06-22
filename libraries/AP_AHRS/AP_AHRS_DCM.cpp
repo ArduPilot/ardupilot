@@ -342,6 +342,7 @@ AP_AHRS_DCM::drift_correction(float deltat)
     Vector3f error;
     Vector3f velocity;
     uint32_t last_correction_time;
+    bool use_gps = true;
 
     // perform yaw drift correction if we have a new yaw reference
     // vector
@@ -354,7 +355,20 @@ AP_AHRS_DCM::drift_correction(float deltat)
     // we have integrated over
     _ra_deltat += deltat;
 
+    // check if we have GPS lock
     if (_gps == NULL || _gps->status() != GPS::GPS_OK) {
+	    use_gps = false;
+    }
+
+    // a copter (which has _fly_forward false) which doesn't have a
+    // compass for yaw can't rely on the GPS velocity lining up with
+    // the earth frame from DCM, so it needs to assume zero velocity
+    // in the drift correction
+    if (!_fly_forward && !(_compass && _compass->use_for_yaw())) {
+	    use_gps = false;
+    }
+
+    if (use_gps == false) {
         // no GPS, or no lock. We assume zero velocity. This at
         // least means we can cope with gyro drift while sitting
         // on a bench with no GPS lock
@@ -371,11 +385,13 @@ AP_AHRS_DCM::drift_correction(float deltat)
             return;
         }
         velocity = Vector3f(_gps->velocity_north(), _gps->velocity_east(), 0);
-	if (_barometer != NULL) {
-		// Z velocity is down
-		velocity.z = - _barometer->get_climb_rate();
-	}
         last_correction_time = _gps->last_fix_time;
+    }
+
+    // even without GPS lock we can correct for the vertical acceleration
+    if (_barometer != NULL) {
+	    // Z velocity is down
+	    velocity.z = - _barometer->get_climb_rate();
     }
 
     // see if this is our first time through - in which case we
