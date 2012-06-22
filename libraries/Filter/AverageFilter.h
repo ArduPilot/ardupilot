@@ -64,6 +64,8 @@ typedef AverageFilter<uint32_t,float,3> AverageFilterUInt32_Size3;
 typedef AverageFilter<uint32_t,float,4> AverageFilterUInt32_Size4;
 typedef AverageFilter<uint32_t,float,5> AverageFilterUInt32_Size5;
 
+typedef AverageFilter<float,float,5> AverageFilterFloat_Size5;
+
 // Public Methods //////////////////////////////////////////////////////////////
 
 template <class T, class U, uint8_t FILTER_SIZE>
