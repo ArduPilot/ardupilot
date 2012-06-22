@@ -14,13 +14,13 @@
 FastSerialPort0(Serial);
 FastSerialPort1(Serial1);
 
-AP_GPS_MTK gps(&Serial1);
+AP_GPS_MTK16 gps(&Serial1);
 #define T6 1000000
 #define T7 10000000
 
 void setup()
 {
-    Serial.begin(38400);
+    Serial.begin(115200);
     Serial1.begin(38400);
     stderr = stdout;
     gps.print_errors = true;
