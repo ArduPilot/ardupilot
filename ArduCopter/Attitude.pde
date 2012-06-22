@@ -253,15 +253,9 @@ get_rate_yaw(int32_t target_rate)
 
 	output 	= p+i+d;
 
-	// output control:
-	#if FRAME_CONFIG == HELI_FRAME
-	int16_t yaw_limit = 4500;
-	#else
-	int16_t yaw_limit = 1400 + abs(g.rc_4.control_in);
-	#endif
-
+	
 	// constrain output
-	output = constrain(output, -yaw_limit, yaw_limit);
+	output = constrain(output, -4500, 4500);
 
 #if LOGGING_ENABLED == ENABLED
 	static int8_t log_counter = 0;					// used to slow down logging of PID values to dataflash
