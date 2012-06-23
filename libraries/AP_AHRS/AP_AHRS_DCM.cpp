@@ -23,6 +23,12 @@
 // from the GPS and wait for the ground speed to get above GPS_SPEED_MIN
 #define GPS_SPEED_RESET 100
 
+// the limit (in degrees/second) beyond which we stop integrating
+// omega_I. At larger spin rates the DCM PI controller can get 'dizzy'
+// which results in false gyro drift. See
+// http://gentlenav.googlecode.com/files/fastRotations.pdf
+#define SPIN_RATE_LIMIT 20
+
 // table of user settable parameters
 const AP_Param::GroupInfo AP_AHRS::var_info[] PROGMEM = {
 	// @Param: YAW_P
@@ -257,6 +263,18 @@ AP_AHRS_DCM::yaw_error_gps(void)
 }
 
 
+float
+AP_AHRS_DCM::_P_gain(float spin_rate)
+{
+	if (spin_rate < ToDeg(50)) {
+		return 1.0;
+	}
+	if (spin_rate > ToDeg(500)) {
+		return 10.0;
+	}
+	return spin_rate/ToDeg(50);
+}
+
 // yaw drift correction using the compass or GPS
 // this function prodoces the _omega_yaw_P vector, and also
 // contributes to the _omega_I.z long term yaw drift estimate
@@ -309,13 +327,19 @@ AP_AHRS_DCM::drift_correction_yaw(float deltat)
 	// convert the error vector to body frame
 	error = _dcm_matrix.mul_transpose(error);
 
+	// the spin rate changes the P gain, and disables the
+	// integration at higher rates
+	float spin_rate = _omega.length();
+
 	// update the proportional control to drag the
-	// yaw back to the right value
-	_omega_yaw_P = error * _kp_yaw.get();
+	// yaw back to the right value. We use a gain
+	// that depends on the spin rate. See the fastRotations.pdf
+	// paper from Bill Premerlani
+	_omega_yaw_P = error * _P_gain(spin_rate) * _kp_yaw.get();
 
 	// don't update the drift term if we lost the yaw reference
 	// for more than 2 seconds
-	if (yaw_deltat < 2.0) {
+	if (yaw_deltat < 2.0 && spin_rate < ToRad(SPIN_RATE_LIMIT)) {
 		// also add to the I term
 		_omega_I_sum.z += error.z * _ki_yaw * yaw_deltat;
 	}
@@ -426,14 +450,19 @@ AP_AHRS_DCM::drift_correction(float deltat)
     // convert the error term to body frame
     error = _dcm_matrix.mul_transpose(error);
 
+    // base the P gain on the spin rate
+    float spin_rate = _omega.length();
+
     // we now want to calculate _omega_P and _omega_I. The
     // _omega_P value is what drags us quickly to the
     // accelerometer reading.
-    _omega_P = error * _kp;
+    _omega_P = error * _P_gain(spin_rate) * _kp;
 
     // accumulate some integrator error
-    _omega_I_sum += error * _ki * _ra_deltat;
-    _omega_I_sum_time += _ra_deltat;
+    if (spin_rate < ToRad(SPIN_RATE_LIMIT)) {
+	    _omega_I_sum += error * _ki * _ra_deltat;
+	    _omega_I_sum_time += _ra_deltat;
+    }
 
     if (_omega_I_sum_time >= 5) {
 	    // limit the rate of change of omega_I to the hardware

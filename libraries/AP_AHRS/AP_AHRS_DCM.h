@@ -75,6 +75,9 @@ private:
 	float		_omega_I_sum_time;
 	Vector3f 	_omega;			// Corrected Gyro_Vector data
 
+	// P term gain based on spin rate
+	float 		_P_gain(float spin_rate);
+
 	// state to support status reporting
 	float		_renorm_val_sum;
 	uint16_t	_renorm_val_count;
