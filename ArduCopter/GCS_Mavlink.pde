@@ -152,16 +152,31 @@ static NOINLINE void send_extended_status1(mavlink_channel_t chan, uint16_t pack
     // at the moment all sensors/controllers are assumed healthy
     control_sensors_health = control_sensors_present;
 
-    uint16_t battery_remaining = 1000.0 * (float)(g.pack_capacity - current_total1)/(float)g.pack_capacity;	//Mavlink scaling 100% = 1000
+    uint16_t battery_current = -1;
+    uint8_t  battery_remaining = -1;
+
+    if (current_total1 != 0 && g.pack_capacity != 0) {
+        battery_remaining = (100.0 * (g.pack_capacity - current_total1) / g.pack_capacity);
+    }
+    if (current_total1 != 0) {
+        battery_current = current_amps1 * 100;
+    }
+
+    if (g.battery_monitoring == 3) {
+        /*setting a out-of-range value.
+        It informs to external devices that
+        it cannot be calculated properly just by voltage*/
+        battery_remaining = 150;
+    }
 
     mavlink_msg_sys_status_send(
         chan,
         control_sensors_present,
         control_sensors_enabled,
         control_sensors_health,
-        0,
+        0, // CPU Load not supported in AC yet
         battery_voltage1 * 1000, // mV
-        0,
+        battery_current,        // in 10mA units
         battery_remaining,      // in %
         0, // comm drops %,
         0, // comm drops in pkts,

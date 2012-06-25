@@ -156,7 +156,7 @@ namespace ArdupilotMega
         //battery
         public float battery_voltage { get { return _battery_voltage; } set { _battery_voltage = value / 1000; } }
         private float _battery_voltage;
-        public float battery_remaining { get { return _battery_remaining; } set { _battery_remaining = value / 1000; if (_battery_remaining < 0 || _battery_remaining > 1) _battery_remaining = 0; } }
+        public float battery_remaining { get { return _battery_remaining; } set { _battery_remaining = value / 100; if (_battery_remaining < 0 || _battery_remaining > 1) _battery_remaining = 0; } }
         private float _battery_remaining;
 
         // pressure
