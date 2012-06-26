@@ -1924,7 +1924,7 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
             mavlink_msg_gps_raw_int_decode(msg, &packet);
 
             // set gps hil sensor
-            g_gps->setHIL(packet.time_usec/1000.0,
+            g_gps->setHIL(packet.time_usec/1000,
                           packet.lat*1.0e-7, packet.lon*1.0e-7, packet.alt*1.0e-3,
                           packet.vel*1.0e-2, packet.cog*1.0e-2, 0, 10);
             break;
@@ -1937,7 +1937,7 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
             mavlink_msg_gps_raw_decode(msg, &packet);
 
             // set gps hil sensor
-            g_gps->setHIL(packet.usec/1000.0,packet.lat,packet.lon,packet.alt,
+            g_gps->setHIL(packet.usec/1000,packet.lat,packet.lon,packet.alt,
             packet.v,packet.hdg,0,10);
             break;
         }
@@ -1964,7 +1964,7 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
 			float cog = wrap_360(ToDeg(atan2(packet.vx, packet.vy)) * 100);
 			
             // set gps hil sensor
-            g_gps->setHIL(packet.time_usec/1000.0,
+            g_gps->setHIL(packet.time_usec/1000,
                           packet.lat*1.0e-7, packet.lon*1.0e-7, packet.alt*1.0e-3,
                           vel*1.0e-2, cog*1.0e-2, 0, 10);
 			
