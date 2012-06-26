@@ -255,7 +255,7 @@ static void NOINLINE send_nav_controller_output(mavlink_channel_t chan)
         chan,
         nav_roll / 1.0e2,
         nav_pitch / 1.0e2,
-        nav_bearing / 1.0e2,
+        target_bearing / 1.0e2,
         target_bearing / 1.0e2,
         wp_distance / 1.0e2,
         altitude_error / 1.0e2,
@@ -1861,7 +1861,7 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
             APM_RC.setHIL(v);
             break;
         }
-        
+
 #if HIL_MODE != HIL_MODE_DISABLED && MAVLINK10 != ENABLED
         // This is used both as a sensor and to pass the location
         // in HIL_ATTITUDE mode. Note that MAVLINK10 uses HIL_STATE
@@ -1886,7 +1886,7 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
             }
             break;
         }
-        
+
 #if HIL_MODE == HIL_MODE_ATTITUDE
     case MAVLINK_MSG_ID_ATTITUDE: //30
         {
@@ -1929,21 +1929,21 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
         }
 #endif // HIL_MODE_ATTITUDE
 #endif // HIL_MODE != HIL_MODE_DISABLED && MAVLINK10 != ENABLED
-        
+
 #if MAVLINK10 == ENABLED && HIL_MODE != HIL_MODE_DISABLED
 	case MAVLINK_MSG_ID_HIL_STATE:
 		{
 			mavlink_hil_state_t packet;
 			mavlink_msg_hil_state_decode(msg, &packet);
-			
+
 			float vel = sqrt((packet.vx * (float)packet.vx) + (packet.vy * (float)packet.vy));
 			float cog = wrap_360(ToDeg(atan2(packet.vx, packet.vy)) * 100);
-			
+
             // set gps hil sensor
             g_gps->setHIL(packet.time_usec/1000.0,
                           packet.lat*1.0e-7, packet.lon*1.0e-7, packet.alt*1.0e-3,
                           vel*1.0e-2, cog*1.0e-2, 0, 10);
-                          
+
             if (gps_base_alt == 0) {
                 gps_base_alt = g_gps->altitude;
             }
@@ -1953,9 +1953,9 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
             if (!home_is_set) {
                 init_home();
             }
-			
+
 			#if HIL_MODE == HIL_MODE_SENSORS
-			
+
 			// rad/sec
             Vector3f gyros;
             gyros.x = (float)packet.xgyro / 1000.0;
@@ -1970,7 +1970,7 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
             imu.set_gyro(gyros);
 
             imu.set_accel(accels);
-			
+
 			#else
 
 			// set AHRS hil sensor
@@ -1982,7 +1982,7 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
 			break;
 		}
 #endif //  MAVLINK10 == ENABLED && HIL_MODE != HIL_MODE_DISABLED
-        
+
 /*
 	case MAVLINK_MSG_ID_HEARTBEAT:
 		{
