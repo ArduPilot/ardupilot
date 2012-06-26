@@ -278,7 +278,7 @@ get_nav_throttle(int32_t z_error)
 	int16_t z_rate_error, z_target_speed, output;
 
 	// a small boost for alt control to improve takeoff
-	int16_t boost_p	= constrain(z_error >> 1, -10, 50);
+	//int16_t boost_p	= constrain(z_error >> 1, -10, 50);
 
 	// convert to desired Rate:
 	z_target_speed 		= g.pi_alt_hold.get_p(z_error);
@@ -301,7 +301,7 @@ get_nav_throttle(int32_t z_error)
 	output =  constrain(g.pid_throttle.get_pid(z_rate_error, .02), -80, 120);
 
 	// output control:
-	return output + i_hold + boost_p;
+	return output + i_hold; //+ boost_p;
 }
 
 // Keeps old data out of our calculation / logs
