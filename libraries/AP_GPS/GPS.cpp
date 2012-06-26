@@ -70,7 +70,7 @@ GPS::update(void)
 }
 
 void
-GPS::setHIL(long _time, float _latitude, float _longitude, float _altitude,
+GPS::setHIL(uint32_t _time, float _latitude, float _longitude, float _altitude,
             float _ground_speed, float _ground_course, float _speed_3d, uint8_t _num_sats)
 {
 }

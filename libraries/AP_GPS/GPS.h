@@ -112,7 +112,7 @@ public:
     bool	print_errors; 	///< deprecated
 
     // HIL support
-    virtual void setHIL(long time, float latitude, float longitude, float altitude,
+    virtual void setHIL(uint32_t time, float latitude, float longitude, float altitude,
                         float ground_speed, float ground_course, float speed_3d, uint8_t num_sats);
 
     /// Time in milliseconds after which we will assume the GPS is no longer
