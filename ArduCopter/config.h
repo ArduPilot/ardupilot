@@ -734,7 +734,7 @@
 // WP Navigation control gains
 //
 #ifndef NAV_P
-# define NAV_P				3.0			//
+# define NAV_P				2.5			//
 #endif
 #ifndef NAV_I
 # define NAV_I				0.20		// Wind control
@@ -772,7 +772,7 @@
 #endif
 
 #ifndef ALT_HOLD_P
-# define ALT_HOLD_P			0.5		//
+# define ALT_HOLD_P			0.8		// .5
 #endif
 #ifndef ALT_HOLD_I
 # define ALT_HOLD_I			0.007
@@ -783,7 +783,7 @@
 
 // RATE control
 #ifndef THROTTLE_P
-# define THROTTLE_P			0.25	//
+# define THROTTLE_P			0.35	// .25
 #endif
 #ifndef THROTTLE_I
 # define THROTTLE_I			0.0		// Don't edit
@@ -800,7 +800,7 @@
 // Crosstrack compensation
 //
 #ifndef CROSSTRACK_GAIN
-# define CROSSTRACK_GAIN		1
+# define CROSSTRACK_GAIN		.2
 #endif
 
 
