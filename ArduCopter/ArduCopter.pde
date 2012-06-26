@@ -94,6 +94,7 @@ http://code.google.com/p/ardupilot-mega/downloads/list
 #include <Filter.h>			// Filter library
 #include <ModeFilter.h>		// Mode Filter from Filter library
 #include <AverageFilter.h>	// Mode Filter from Filter library
+#include <AP_LeadFilter.h>	// GPS Lead filter
 #include <AP_Relay.h>		// APM relay
 #include <memcheck.h>
 
@@ -319,17 +320,19 @@ ModeFilterInt16_Size5 sonar_mode_filter(2);
 ////////////////////////////////////////////////////////////////////////////////
 
 static const char* flight_mode_strings[] = {
-	"STABILIZE",
-	"ACRO",
-	"ALT_HOLD",
-	"AUTO",
-	"GUIDED",
-	"LOITER",
-	"RTL",
-	"CIRCLE",
-	"POSITION",
-	"LAND",
-	"OF_LOITER"};
+	"STABILIZE",	// 0
+	"ACRO",			// 1
+	"ALT_HOLD",		// 2
+	"AUTO",			// 3
+	"GUIDED",		// 4
+	"LOITER",		// 5
+	"RTL",			// 6
+	"CIRCLE",		// 7
+	"POSITION",		// 8
+	"LAND",			// 9
+	"OF_LOITER",	// 10
+	"APP",			// 11
+	"TOY"};			// 12
 
 /* Radio values
 		Channel assignments
@@ -509,9 +512,6 @@ union float_int{
 static bool	nav_ok;
 // This is the angle from the copter to the "next_WP" location in degrees * 100
 static int32_t	target_bearing;
-// This is the angle from the copter to the "next_WP" location
-// with the addition of Crosstrack error in degrees * 100
-static int32_t	nav_bearing;
 // Status of the Waypoint tracking mode. Options include:
 // NO_NAV_MODE, WP_MODE, LOITER_MODE, CIRCLE_MODE
 static byte	wp_control;
@@ -564,6 +564,9 @@ int32_t roll_axis;
 int32_t pitch_axis;
 
 // Filters
+AP_LeadFilter xLeadFilter;	// Long GPS lag filter
+AP_LeadFilter yLeadFilter;	// Lat  GPS lag filter
+
 AverageFilterInt32_Size3 roll_rate_d_filter;	// filtered acceleration
 AverageFilterInt32_Size3 pitch_rate_d_filter;	// filtered pitch acceleration
 
@@ -685,6 +688,10 @@ static int16_t 	landing_boost;
 //verifies landings
 static int16_t ground_detector;
 
+////////////////////////////////////////////////////////////////////////////////
+// Toy Mode
+////////////////////////////////////////////////////////////////////////////////
+static byte toy_yaw_rate = 1; // 1 = fast, 2 = med, 3 = slow
 
 ////////////////////////////////////////////////////////////////////////////////
 // Navigation general
@@ -837,6 +844,7 @@ static float G_Dt		= 0.02;
 #if INERTIAL_NAV == ENABLED
 // The rotated accelerometer values
 static Vector3f accels_velocity;
+static Vector3f accels_position;
 
 // accels rotated to world frame
 static Vector3f accels_rotated;
@@ -947,6 +955,10 @@ void loop()
 		// reads all of the necessary trig functions for cameras, throttle, etc.
 		// --------------------------------------------------------------------
 		update_trig();
+
+		// Rotate the Nav_lon and nav_lat vectors based on Yaw
+		// ---------------------------------------------------
+		calc_loiter_pitch_roll();
 
 		// check for new GPS messages
 		// --------------------------
@@ -1422,8 +1434,10 @@ static void update_GPS(void)
 				}
 			}
 
-			current_loc.lng = g_gps->longitude;	// Lon * 10 * *7
-			current_loc.lat = g_gps->latitude;	// Lat * 10 * *7
+			// the saving of location moved into calc_XY_velocity
+
+			//current_loc.lng = g_gps->longitude;	// Lon * 10 * *7
+			//current_loc.lat = g_gps->latitude;	// Lat * 10 * *7
 
 			calc_XY_velocity();
 
@@ -1468,6 +1482,11 @@ void update_yaw_mode(void)
 			//Serial.printf("nav_yaw %d ", nav_yaw);
 			nav_yaw  = wrap_360(nav_yaw);
 			break;
+
+		case YAW_TOY:
+			// handle Yaw in roll_pitch_mode
+			return;
+			break;
 	}
 
 	// Yaw control
@@ -1479,6 +1498,8 @@ void update_yaw_mode(void)
 void update_roll_pitch_mode(void)
 {
 	int control_roll, control_pitch;
+	int yaw_rate;
+
 
 	// hack to do auto_flip - need to remove, no one is using.
 	#if CH7_OPTION == CH7_FLIP
@@ -1551,6 +1572,28 @@ void update_roll_pitch_mode(void)
 			// mix in user control with optical flow
 			g.rc_1.servo_out = get_stabilize_roll(get_of_roll(g.rc_1.control_in));
 			g.rc_2.servo_out = get_stabilize_pitch(get_of_pitch(g.rc_2.control_in));
+			break;
+
+		case ROLL_PITCH_TOY:
+
+			yaw_rate = g.rc_1.control_in / toy_yaw_rate;
+
+			//yaw_rate = constrain(yaw_rate, -4500, 4500);
+
+			if (g.rc_7.radio_in > 1800){
+				// acro Yaw
+				g.rc_4.servo_out = get_acro_yaw(yaw_rate); // a 15° sec yaw
+			}else{
+				nav_yaw = get_nav_yaw_offset(yaw_rate, g.rc_3.control_in);
+				g.rc_4.servo_out = get_stabilize_yaw(nav_yaw);
+			}
+
+			// yaw_rate = roll angle
+			yaw_rate = (g_gps->ground_speed / 1200) * yaw_rate;
+			yaw_rate = min(yaw_rate, (4500 / toy_yaw_rate)); // 1(fast), 2, 3(slow)
+
+			g.rc_1.servo_out = get_stabilize_roll(yaw_rate);// our roll defined by speed and yaw rate
+			g.rc_2.servo_out = get_stabilize_pitch(g.rc_2.control_in);
 			break;
 	}
 
@@ -1814,7 +1857,8 @@ static void update_navigation()
 			// go of the sticks
 
 			if((abs(g.rc_2.control_in) + abs(g.rc_1.control_in)) > 500){
-				loiter_override 	= true;
+				if(wp_distance > 500)
+					loiter_override 	= true;
 			}
 
 			// Allow the user to take control temporarily,
@@ -1846,6 +1890,10 @@ static void update_navigation()
 					// just to make sure we clear the timer
 					loiter_timer = 0;
 					set_mode(LAND);
+					if(home_distance < 300){
+						next_WP.lat = home.lat;
+						next_WP.lng = home.lng;
+					}
 				}
 			}
 
@@ -2220,7 +2268,7 @@ static void update_nav_wp()
 		calc_loiter(long_error, lat_error);
 
 		// rotate pitch and roll to the copter frame of reference
-		calc_loiter_pitch_roll();
+		//calc_loiter_pitch_roll();
 
 	}else if(wp_control == CIRCLE_MODE){
 
@@ -2261,7 +2309,7 @@ static void update_nav_wp()
 		//CIRCLE: angle:29, dist:0, lat:400, lon:242
 
 		// rotate pitch and roll to the copter frame of reference
-		calc_loiter_pitch_roll();
+		//calc_loiter_pitch_roll();
 
 		// debug
 		//int angleTest = degrees(circle_angle);
@@ -2278,7 +2326,7 @@ static void update_nav_wp()
 		calc_nav_rate(speed);
 
 		// rotate pitch and roll to the copter frame of reference
-		calc_loiter_pitch_roll();
+		//calc_loiter_pitch_roll();
 
 	}else if(wp_control == NO_NAV_MODE){
 		// clear out our nav so we can do things like land straight down
@@ -2292,7 +2340,7 @@ static void update_nav_wp()
 		nav_lat			= constrain(nav_lat, -2000, 2000); 			// 20°
 
 		// rotate pitch and roll to the copter frame of reference
-		calc_loiter_pitch_roll();
+		//calc_loiter_pitch_roll();
 	}
 }
 
