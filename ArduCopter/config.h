@@ -555,6 +555,11 @@
 # define SUPER_SIMPLE		DISABLED
 #endif
 
+#ifndef SUPER_SIMPLE_RADIUS
+# define SUPER_SIMPLE_RADIUS	1000
+#endif
+
+
 // RTL Mode
 #ifndef RTL_AUTO_LAND
 # define RTL_AUTO_LAND 		ENABLED

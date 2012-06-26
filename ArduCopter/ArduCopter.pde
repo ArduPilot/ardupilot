@@ -1935,7 +1935,7 @@ static void update_navigation()
 	// are we in SIMPLE mode?
 	if(do_simple && g.super_simple){
 		// get distance to home
-		if(home_distance > 1000){ // 10m from home
+		if(home_distance > SUPER_SIMPLE_RADIUS){ // 10m from home
 			// we reset the angular offset to be a vector from home to the quad
 			initial_simple_bearing = home_to_copter_bearing;
 			//Serial.printf("ISB: %d\n", initial_simple_bearing);
