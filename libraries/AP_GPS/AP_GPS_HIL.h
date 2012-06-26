@@ -30,7 +30,7 @@ public:
      * @param speed_3d - ground speed in meters/second
      * @param altitude - altitude in meters
      */
-    virtual void setHIL(long time, float latitude, float longitude, float altitude,
+    virtual void setHIL(uint32_t time, float latitude, float longitude, float altitude,
                         float ground_speed, float ground_course, float speed_3d, uint8_t num_sats);
 
 private:

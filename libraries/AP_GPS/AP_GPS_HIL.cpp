@@ -38,7 +38,7 @@ bool AP_GPS_HIL::read(void)
     return result;
 }
 
-void AP_GPS_HIL::setHIL(long _time, float _latitude, float _longitude, float _altitude,
+void AP_GPS_HIL::setHIL(uint32_t _time, float _latitude, float _longitude, float _altitude,
                         float _ground_speed, float _ground_course, float _speed_3d, uint8_t _num_sats)
 {
     time 			= _time;
