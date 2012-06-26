@@ -1006,7 +1006,11 @@ GCS_MAVLINK::send_text(gcs_severity severity, const prog_char_t *str)
 void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
 {
 	struct Location tell_command = {};				// command for telemetry
-	static uint8_t mav_nav = 255;							// For setting mode (some require receipt of 2 messages...)
+
+	#if MAVLINK10 == ENABLED
+	#else
+		static uint8_t mav_nav = 255;							// For setting mode (some require receipt of 2 messages...)
+	#endif
 
 	switch (msg->msgid) {
 
