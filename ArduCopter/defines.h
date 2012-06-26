@@ -17,11 +17,13 @@
 #define YAW_ACRO 			1
 #define YAW_AUTO 			2
 #define YAW_LOOK_AT_HOME 	3
+#define YAW_TOY 			4
 
 #define ROLL_PITCH_STABLE 	0
 #define ROLL_PITCH_ACRO 	1
 #define ROLL_PITCH_AUTO		2
 #define ROLL_PITCH_STABLE_OF	3
+#define ROLL_PITCH_TOY		4
 
 #define THROTTLE_MANUAL 	0
 #define THROTTLE_HOLD 		1
@@ -122,7 +124,8 @@
 #define LAND 9				// AUTO control
 #define OF_LOITER 10		// Hold a single location using optical flow sensor
 #define APPROACH 11			// AUTO control
-#define NUM_MODES 12
+#define TOY 12				// Manual control
+#define NUM_MODES 13
 
 #define SIMPLE_1 1
 #define SIMPLE_2 2
