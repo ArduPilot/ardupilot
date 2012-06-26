@@ -382,8 +382,11 @@ static void set_mode(byte mode)
 	// if we don't have GPS lock
 	if(home_is_set == false){
 		// our max mode should be
-		if (mode > ALT_HOLD && mode != OF_LOITER)
+		if(mode == TOY || mode == OF_LOITER){
+			// nothing
+		}else if (mode > ALT_HOLD){
 			mode = STABILIZE;
+		}
 	}
 
 	// nothing but OF_LOITER for OptFlow only
@@ -512,6 +515,12 @@ static void set_mode(byte mode)
 			roll_pitch_mode = OF_LOITER_RP;
 			throttle_mode 	= OF_LOITER_THR;
 			set_next_WP(&current_loc);
+			break;
+
+		case TOY:
+			yaw_mode 		= YAW_TOY;
+			roll_pitch_mode = ROLL_PITCH_TOY;
+			throttle_mode 	= THROTTLE_MANUAL;
 			break;
 
 		default:
