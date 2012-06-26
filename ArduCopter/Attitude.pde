@@ -79,7 +79,7 @@ get_stabilize_yaw(int32_t target_angle)
 #if FRAME_CONFIG == HELI_FRAME
 	angle_error 		= constrain(angle_error, -4500, 4500);
 #else
-	angle_error 		= constrain(angle_error, -2000, 2000);
+	angle_error 		= constrain(angle_error, -4000, 4000);
 #endif
 
 	// convert angle error to desired Rate:
@@ -253,7 +253,6 @@ get_rate_yaw(int32_t target_rate)
 
 	output 	= p+i+d;
 
-	
 	// constrain output
 	output = constrain(output, -4500, 4500);
 
@@ -276,9 +275,10 @@ get_rate_yaw(int32_t target_rate)
 static int16_t
 get_nav_throttle(int32_t z_error)
 {
-	int16_t z_rate_error = 0;
-	int16_t z_target_speed = 0;
-	int16_t output = 0;
+	int16_t z_rate_error, z_target_speed, output;
+
+	// a small boost for alt control to improve takeoff
+	int16_t boost_p	= constrain(z_error >> 1, -10, 50);
 
 	// convert to desired Rate:
 	z_target_speed 		= g.pi_alt_hold.get_p(z_error);
@@ -301,7 +301,7 @@ get_nav_throttle(int32_t z_error)
 	output =  constrain(g.pid_throttle.get_pid(z_rate_error, .02), -80, 120);
 
 	// output control:
-	return output + i_hold;
+	return output + i_hold + boost_p;
 }
 
 // Keeps old data out of our calculation / logs
