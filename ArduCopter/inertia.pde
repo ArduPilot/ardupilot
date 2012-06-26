@@ -27,20 +27,8 @@ void calc_inertia()
 
 	// Integrate accels to get the velocity
 	// ------------------------------------
-	accels_velocity			+= temp;
-}
-
-void z_error_correction()
-{
-	speed_error.z 		= climb_rate - accels_velocity.z;
-	accels_velocity.z	+= speed_error.z * 0.0350;							//speed_correction_z;
-	accels_velocity.z   -= g.pid_throttle.get_integrator() * 0.0045; 		//g.alt_offset_correction; // OK
-	accels_offset.z		-= g.pid_throttle.get_integrator() * 0.000003;		//g.alt_i_correction ; 	// .000002;
-
-	// For developement only
-	// ---------------------
-	if(motors.armed())
-		Log_Write_Raw();
+	accels_velocity		+= temp;
+	accels_position		+= accels_velocity * G_Dt;
 }
 
 void xy_error_correction()
@@ -53,20 +41,43 @@ void xy_error_correction()
 	// correct integrated velocity by speed_error
 	// this number must be small or we will bring back sensor latency
 	// -------------------------------------------
-	accels_velocity.x	+= speed_error.x * 0.0175;								// g.speed_correction_x;
-	accels_velocity.y	+= speed_error.y * 0.0175;
+	accels_velocity.x	+= speed_error.x * 0.02;								// g.speed_correction_x;
+	accels_velocity.y	+= speed_error.y * 0.02;
 
 	// Error correct the accels to deal with calibration, drift and noise
 	// ------------------------------------------------------------------
-	accels_velocity.x	-= g.pid_loiter_rate_lon.get_integrator() * 0.007; 		// g.loiter_offset_correction; //.001;
-	accels_velocity.y	-= g.pid_loiter_rate_lat.get_integrator() * 0.007; 		// g.loiter_offset_correction; //.001;
+	accels_position.x	-= accels_position.x * 0.03; 		// g.loiter_offset_correction; //.001;
+	accels_position.y	-= accels_position.y * 0.03; 		// g.loiter_offset_correction; //.001;
 
 	// update our accel offsets
 	// -------------------------
-	accels_offset.x		-= g.pid_loiter_rate_lon.get_integrator() * 0.000003; 	// g.loiter_i_correction;
-	accels_offset.y		-= g.pid_loiter_rate_lat.get_integrator() * 0.000003; 	// g.loiter_i_correction;
+	accels_offset.x		-= accels_position.x * 0.000001; 	// g.loiter_i_correction;
+	accels_offset.y		-= accels_position.y * 0.000001; 	// g.loiter_i_correction;
+}
+
+void z_error_correction()
+{
+	// Calculate speed error
+	// ---------------------
+	speed_error.z 		= climb_rate - accels_velocity.z;
+
+	// correct integrated velocity by speed_error
+	// this number must be small or we will bring back sensor latency
+	// -------------------------------------------
+	accels_velocity.z	+= speed_error.z * 0.0350;							//speed_correction_z;
+
+	// ------------------------------------------------------------------
+	accels_velocity.z   -= accels_position.z * 0.006; 		//g.alt_offset_correction; // OK
+
+	// update our accel offsets
+	// -------------------------
+	accels_offset.z		-= accels_position.z * 0.000003;		//g.alt_i_correction ; 	// .000002;
 
 
+	// For developement only
+	// ---------------------
+	if(motors.armed())
+		Log_Write_Raw();
 }
 
 static void calibrate_accels()
@@ -87,7 +98,7 @@ static void calibrate_accels()
 		delay(10);
 		read_AHRS();
 		calc_inertia();
-		Serial.printf("call accels: %1.5f, %1.5f, %1.5f,\n", accels_rotated.x, accels_rotated.y, accels_rotated.z);
+		//Serial.printf("call accels: %1.5f, %1.5f, %1.5f,\n", accels_rotated.x, accels_rotated.y, accels_rotated.z);
 	}
 
 	accels_velocity /= 100;
