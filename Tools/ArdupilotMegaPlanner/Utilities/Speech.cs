@@ -104,7 +104,11 @@ namespace ArdupilotMega.Utilities
             }
             else
             {
-                _speechwindows.SpeakAsyncCancelAll();
+                try
+                {
+                    _speechwindows.SpeakAsyncCancelAll();
+                }
+                catch { } // System.PlatformNotSupportedException:
             }
         }
     }

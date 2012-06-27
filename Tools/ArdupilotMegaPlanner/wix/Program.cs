@@ -227,7 +227,9 @@ namespace wix
 
         <DirectoryRef Id=""ApplicationProgramsFolder"">
             <Component Id=""ApplicationShortcut"" Guid=""{8BC628BA-08A0-43d6-88C8-D4C007AC4607}"">
-                <Shortcut Id=""ApplicationStartMenuShortcut"" Name=""APM Planner"" Description=""Ardupilot Mega Planner"" Target=""[APMPlanner]ArdupilotMegaPlanner.exe"" WorkingDirectory=""APMPlanner"" />
+                <Shortcut Id=""ApplicationStartMenuShortcut"" Name=""APM Planner Mav 0.9"" Description=""Ardupilot Mega Planner"" Target=""[APMPlanner]ArdupilotMegaPlanner.exe"" WorkingDirectory=""APMPlanner"" />
+
+                <Shortcut Id=""ApplicationStartMenuShortcut10"" Name=""APM Planner Mav 1.0"" Description=""Ardupilot Mega Planner"" Target=""[APMPlanner]ArdupilotMegaPlanner10.exe"" WorkingDirectory=""APMPlanner"" />
                 <RemoveFolder Id=""ApplicationProgramsFolder"" On=""uninstall"" />
 
                 <Shortcut Id=""UninstallProduct"" Name=""Uninstall APM Planner"" Description=""Uninstalls My Application"" Target=""[System64Folder]msiexec.exe"" Arguments=""/x [ProductCode]"" />

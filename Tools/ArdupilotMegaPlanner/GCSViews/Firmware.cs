@@ -28,6 +28,13 @@ namespace ArdupilotMega.GCSViews
                 }
                 return true;
             }
+
+            if (keyData == (Keys.Control | Keys.R))
+            {
+                findfirmware("AR2");
+                return true;
+            }
+
             return base.ProcessCmdKey(ref msg, keyData);
         }
 

@@ -179,6 +179,7 @@
             // 
             resources.ApplyResources(this.H_COL_MIN, "H_COL_MIN");
             this.H_COL_MIN.Name = "H_COL_MIN";
+            this.H_COL_MIN.Validating += new System.ComponentModel.CancelEventHandler(this.PWM_Validating);
             // 
             // groupBox1
             // 

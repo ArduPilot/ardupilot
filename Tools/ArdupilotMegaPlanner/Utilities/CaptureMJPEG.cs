@@ -34,7 +34,7 @@ namespace ArdupilotMega.Utilities
             asyncthread = new Thread(new ThreadStart(getUrl))
             {
                 IsBackground = true,
-                Priority = ThreadPriority.Normal,
+                Priority = ThreadPriority.BelowNormal,
                 Name = "mjpg stream reader"
             }; 
             

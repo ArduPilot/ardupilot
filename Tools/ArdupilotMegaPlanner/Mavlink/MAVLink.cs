@@ -962,7 +962,7 @@ namespace ArdupilotMega
             if (actionid == MAV_CMD.PREFLIGHT_CALIBRATION)
             {
                 retrys = 1;
-                timeout = 6000;
+                timeout = 12000;
             }
 
             while (true)

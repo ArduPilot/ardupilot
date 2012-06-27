@@ -35,7 +35,7 @@ namespace ArdupilotMega.Controls
             // process hashdefines and update display
             foreach (string value in MainV2.comPort.param.Keys)
             {
-                if (value == null) // older ap vesion have a null param
+                if (value == null || value == "") // older ap version have a null param
                     continue;
                 Control[] text = this.Controls.Find(value, true);
                 foreach (Control ctl in text)

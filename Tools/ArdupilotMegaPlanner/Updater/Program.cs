@@ -45,11 +45,11 @@ namespace Updater
                     if (MAC)
                     {
                         P.StartInfo.FileName = "mono";
-                        P.StartInfo.Arguments = " \"" + Path.GetDirectoryName(Application.ExecutablePath) + Path.DirectorySeparatorChar + "ArdupilotMegaPlanner.exe\"";
+                        P.StartInfo.Arguments = " \"" + Path.GetDirectoryName(Application.ExecutablePath) + Path.DirectorySeparatorChar + "ArdupilotMegaPlanner10.exe\"";
                     }
                     else
                     {
-                        P.StartInfo.FileName = Path.GetDirectoryName(Application.ExecutablePath) + Path.DirectorySeparatorChar + "ArdupilotMegaPlanner.exe";
+                        P.StartInfo.FileName = Path.GetDirectoryName(Application.ExecutablePath) + Path.DirectorySeparatorChar + "ArdupilotMegaPlanner10.exe";
                         P.StartInfo.Arguments = "";
                     }
                     Console.WriteLine("Start " + P.StartInfo.FileName + " with " + P.StartInfo.Arguments);

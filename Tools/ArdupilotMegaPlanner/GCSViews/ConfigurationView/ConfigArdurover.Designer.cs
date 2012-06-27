@@ -81,6 +81,17 @@
             this.toolTip1 = new System.Windows.Forms.ToolTip(this.components);
             this.BUT_writePIDS = new ArdupilotMega.Controls.MyButton();
             this.BUT_rerequestparams = new ArdupilotMega.Controls.MyButton();
+            this.groupBox4 = new System.Windows.Forms.GroupBox();
+            this.ROV_GAIN = new System.Windows.Forms.NumericUpDown();
+            this.label9 = new System.Windows.Forms.Label();
+            this.ROV_CL_NAV = new System.Windows.Forms.NumericUpDown();
+            this.label10 = new System.Windows.Forms.Label();
+            this.ROV_BOOSTER = new System.Windows.Forms.NumericUpDown();
+            this.label11 = new System.Windows.Forms.Label();
+            this.ROV_AWPR_NAV = new System.Windows.Forms.NumericUpDown();
+            this.label12 = new System.Windows.Forms.Label();
+            this.ROV_SONAR_TRIG = new System.Windows.Forms.NumericUpDown();
+            this.label13 = new System.Windows.Forms.Label();
             this.groupBox3.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.THR_FS_VALUE)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.THR_MAX)).BeginInit();
@@ -108,6 +119,12 @@
             ((System.ComponentModel.ISupportInitialize)(this.HDNG2RLL_D)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.HDNG2RLL_I)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.HDNG2RLL_P)).BeginInit();
+            this.groupBox4.SuspendLayout();
+            ((System.ComponentModel.ISupportInitialize)(this.ROV_GAIN)).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)(this.ROV_CL_NAV)).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)(this.ROV_BOOSTER)).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)(this.ROV_AWPR_NAV)).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)(this.ROV_SONAR_TRIG)).BeginInit();
             this.SuspendLayout();
             // 
             // groupBox3
@@ -412,10 +429,77 @@
             this.BUT_rerequestparams.UseVisualStyleBackColor = true;
             this.BUT_rerequestparams.Click += new System.EventHandler(this.BUT_rerequestparams_Click);
             // 
+            // groupBox4
+            // 
+            this.groupBox4.Controls.Add(this.ROV_SONAR_TRIG);
+            this.groupBox4.Controls.Add(this.label13);
+            this.groupBox4.Controls.Add(this.ROV_GAIN);
+            this.groupBox4.Controls.Add(this.label9);
+            this.groupBox4.Controls.Add(this.ROV_CL_NAV);
+            this.groupBox4.Controls.Add(this.label10);
+            this.groupBox4.Controls.Add(this.ROV_BOOSTER);
+            this.groupBox4.Controls.Add(this.label11);
+            this.groupBox4.Controls.Add(this.ROV_AWPR_NAV);
+            this.groupBox4.Controls.Add(this.label12);
+            resources.ApplyResources(this.groupBox4, "groupBox4");
+            this.groupBox4.Name = "groupBox4";
+            this.groupBox4.TabStop = false;
+            // 
+            // ROV_GAIN
+            // 
+            resources.ApplyResources(this.ROV_GAIN, "ROV_GAIN");
+            this.ROV_GAIN.Name = "ROV_GAIN";
+            // 
+            // label9
+            // 
+            resources.ApplyResources(this.label9, "label9");
+            this.label9.Name = "label9";
+            // 
+            // ROV_CL_NAV
+            // 
+            resources.ApplyResources(this.ROV_CL_NAV, "ROV_CL_NAV");
+            this.ROV_CL_NAV.Name = "ROV_CL_NAV";
+            // 
+            // label10
+            // 
+            resources.ApplyResources(this.label10, "label10");
+            this.label10.Name = "label10";
+            // 
+            // ROV_BOOSTER
+            // 
+            resources.ApplyResources(this.ROV_BOOSTER, "ROV_BOOSTER");
+            this.ROV_BOOSTER.Name = "ROV_BOOSTER";
+            // 
+            // label11
+            // 
+            resources.ApplyResources(this.label11, "label11");
+            this.label11.Name = "label11";
+            // 
+            // ROV_AWPR_NAV
+            // 
+            resources.ApplyResources(this.ROV_AWPR_NAV, "ROV_AWPR_NAV");
+            this.ROV_AWPR_NAV.Name = "ROV_AWPR_NAV";
+            // 
+            // label12
+            // 
+            resources.ApplyResources(this.label12, "label12");
+            this.label12.Name = "label12";
+            // 
+            // ROV_SONAR_TRIG
+            // 
+            resources.ApplyResources(this.ROV_SONAR_TRIG, "ROV_SONAR_TRIG");
+            this.ROV_SONAR_TRIG.Name = "ROV_SONAR_TRIG";
+            // 
+            // label13
+            // 
+            resources.ApplyResources(this.label13, "label13");
+            this.label13.Name = "label13";
+            // 
             // ConfigArdurover
             // 
             resources.ApplyResources(this, "$this");
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
+            this.Controls.Add(this.groupBox4);
             this.Controls.Add(this.BUT_rerequestparams);
             this.Controls.Add(this.BUT_writePIDS);
             this.Controls.Add(this.groupBox3);
@@ -453,6 +537,12 @@
             ((System.ComponentModel.ISupportInitialize)(this.HDNG2RLL_D)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.HDNG2RLL_I)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.HDNG2RLL_P)).EndInit();
+            this.groupBox4.ResumeLayout(false);
+            ((System.ComponentModel.ISupportInitialize)(this.ROV_GAIN)).EndInit();
+            ((System.ComponentModel.ISupportInitialize)(this.ROV_CL_NAV)).EndInit();
+            ((System.ComponentModel.ISupportInitialize)(this.ROV_BOOSTER)).EndInit();
+            ((System.ComponentModel.ISupportInitialize)(this.ROV_AWPR_NAV)).EndInit();
+            ((System.ComponentModel.ISupportInitialize)(this.ROV_SONAR_TRIG)).EndInit();
             this.ResumeLayout(false);
 
         }
@@ -510,5 +600,16 @@
         private System.Windows.Forms.ToolTip toolTip1;
         private Controls.MyButton BUT_writePIDS;
         private Controls.MyButton BUT_rerequestparams;
+        private System.Windows.Forms.GroupBox groupBox4;
+        private System.Windows.Forms.NumericUpDown ROV_SONAR_TRIG;
+        private System.Windows.Forms.Label label13;
+        private System.Windows.Forms.NumericUpDown ROV_GAIN;
+        private System.Windows.Forms.Label label9;
+        private System.Windows.Forms.NumericUpDown ROV_CL_NAV;
+        private System.Windows.Forms.Label label10;
+        private System.Windows.Forms.NumericUpDown ROV_BOOSTER;
+        private System.Windows.Forms.Label label11;
+        private System.Windows.Forms.NumericUpDown ROV_AWPR_NAV;
+        private System.Windows.Forms.Label label12;
     }
 }
