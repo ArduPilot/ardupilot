@@ -77,11 +77,9 @@ void
 AP_AHRS_DCM::matrix_update(float _G_Dt)
 {
 	// Equation 16, adding proportional and integral correction terms
-	_omega = _gyro_vector + _omega_I;
+	_omega = _gyro_vector + _omega_I + _omega_P + _omega_yaw_P;
 
-	// add in P correction terms
-	Vector3f r = (_omega + _omega_P + _omega_yaw_P) * _G_Dt;
-	_dcm_matrix.rotate(r);
+	_dcm_matrix.rotate(_omega * _G_Dt);
 }
 
 
@@ -95,6 +93,7 @@ AP_AHRS_DCM::reset(bool recover_eulers)
 	// reset the integration terms
 	_omega_I.zero();
 	_omega_P.zero();
+	_omega_yaw_P.zero();
 	_omega.zero();
 
 	// if the caller wants us to try to recover to the current
@@ -279,7 +278,7 @@ AP_AHRS_DCM::_P_gain(float spin_rate)
 // this function prodoces the _omega_yaw_P vector, and also
 // contributes to the _omega_I.z long term yaw drift estimate
 void
-AP_AHRS_DCM::drift_correction_yaw(float deltat)
+AP_AHRS_DCM::drift_correction_yaw(void)
 {
 	bool new_value = false;
 	float yaw_error;
@@ -370,7 +369,7 @@ AP_AHRS_DCM::drift_correction(float deltat)
 
     // perform yaw drift correction if we have a new yaw reference
     // vector
-    drift_correction_yaw(deltat);
+    drift_correction_yaw();
 
     // integrate the accel vector in the earth frame between GPS readings
     _ra_sum += _dcm_matrix * (_accel_vector * deltat);
