@@ -111,6 +111,11 @@ namespace ArdupilotMega
         public string georefkml = "";
 
         /// <summary>
+        /// store the time we first connect
+        /// </summary>
+        DateTime connecttime = DateTime.Now;
+
+        /// <summary>
         /// enum of firmwares
         /// </summary>
         public enum Firmwares
@@ -685,6 +690,9 @@ namespace ArdupilotMega
                     }
                     catch { CustomMessageBox.Show("Failed to create log - wont log this session"); } // soft fail
 
+                    // reset connect time
+                    connecttime = DateTime.Now;
+
                     // do the connect
                     comPort.Open(true);
 
@@ -1193,8 +1201,8 @@ namespace ArdupilotMega
                         heatbeatSend = DateTime.Now;
                     }
 
-                    // data loss warning
-                    if ((DateTime.Now - comPort.lastvalidpacket).TotalSeconds > 10)
+                    // data loss warning - ignore first 30 seconds of connect
+                    if ((DateTime.Now - comPort.lastvalidpacket).TotalSeconds > 10 && (DateTime.Now - connecttime).TotalSeconds > 30)
                     {
                         if (speechEnable && speechEngine != null)
                         {
@@ -1690,12 +1698,12 @@ namespace ArdupilotMega
                 if (MONO)
                 {
                     process.StartInfo.FileName = "mono";
-                    process.StartInfo.Arguments = " \"" + exePath + Path.DirectorySeparatorChar + "Updater.exe\"";
+                    process.StartInfo.Arguments = " \"" + exePath + Path.DirectorySeparatorChar + "Updater.exe\"" + "\"" + Application.ExecutablePath + "\"";
                 }
                 else
                 {
                     process.StartInfo.FileName = exePath + Path.DirectorySeparatorChar + "Updater.exe";
-                    process.StartInfo.Arguments = "";
+                    process.StartInfo.Arguments = Application.ExecutablePath;
                 }
 
                 try
@@ -1747,9 +1755,11 @@ namespace ArdupilotMega
         private static void CheckForUpdate()
         {
             var baseurl = ConfigurationManager.AppSettings["UpdateLocation"];
-            string path = Path.GetFileName(Application.ExecutablePath);
+            string path = Path.GetDirectoryName(Application.ExecutablePath);
 
-            path = "version.txt";
+            path = path + Path.DirectorySeparatorChar + "version.txt";
+
+            log.Debug(path);
 
             // Create a request using a URL that can receive a post. 
             string requestUriString = baseurl + path;

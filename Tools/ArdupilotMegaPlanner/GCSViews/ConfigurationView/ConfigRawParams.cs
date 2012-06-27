@@ -52,7 +52,10 @@ namespace ArdupilotMega.GCSViews.ConfigurationView
                 string line = sr.ReadLine();
 
                 if (line.Contains("NOTE:"))
+                {
                     CustomMessageBox.Show(line, "Saved Note");
+                    continue;
+                }
 
                 if (line.StartsWith("#"))
                     continue;
@@ -91,6 +94,8 @@ namespace ArdupilotMega.GCSViews.ConfigurationView
                 if (name == "CMD_INDEX")
                     continue;
                 if (name == "LOG_LASTFILE")
+                    continue;
+                if (name == "FORMAT_VERSION")
                     continue;
 
                 param[name] = value;
@@ -140,6 +145,8 @@ namespace ArdupilotMega.GCSViews.ConfigurationView
                         if (name == "CMD_INDEX")
                             continue;
                         if (name == "LOG_LASTFILE")
+                            continue;
+                        if (name == "FORMAT_VERSION")
                             continue;
                         if (row.Cells[0].Value.ToString() == name)
                         {

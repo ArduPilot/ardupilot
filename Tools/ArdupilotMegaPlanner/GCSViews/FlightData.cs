@@ -1103,14 +1103,18 @@ namespace ArdupilotMega.GCSViews
 
         private void tracklog_Scroll(object sender, EventArgs e)
         {
-            BUT_clear_track_Click(sender, e);
+            try
+            {
+                BUT_clear_track_Click(sender, e);
 
-            MainV2.comPort.lastlogread = DateTime.MinValue;
+                MainV2.comPort.lastlogread = DateTime.MinValue;
 
-            if (MainV2.comPort.logplaybackfile != null)
-                MainV2.comPort.logplaybackfile.BaseStream.Position = (long)(MainV2.comPort.logplaybackfile.BaseStream.Length * (tracklog.Value / 100.0));
+                if (MainV2.comPort.logplaybackfile != null)
+                    MainV2.comPort.logplaybackfile.BaseStream.Position = (long)(MainV2.comPort.logplaybackfile.BaseStream.Length * (tracklog.Value / 100.0));
 
-            updateLogPlayPosition();
+                updateLogPlayPosition();
+            }
+            catch { } // ignore any invalid 
         }
 
         bool loaded = false;

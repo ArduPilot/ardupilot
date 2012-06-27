@@ -154,7 +154,11 @@ namespace ArdupilotMega.GCSViews.ConfigurationView
 
             if (MainV2.getConfig("video_options") != "" && CMB_videosources.Text != "")
             {
-                CMB_videoresolutions.SelectedIndex = int.Parse(MainV2.getConfig("video_options"));
+                try
+                {
+                    CMB_videoresolutions.SelectedIndex = int.Parse(MainV2.getConfig("video_options"));
+                }
+                catch { } // ignore bad entries
             }
         }
 

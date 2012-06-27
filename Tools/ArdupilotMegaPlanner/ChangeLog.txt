@@ -1,0 +1,12 @@
+﻿
+#####  1.1.94
+
+Fix Issue 668 - typo
+Fix issue 666 - now defaults to mav 1.0 planner
+Fix Issue 665 - mavlink 1.0 is now default
+Fix Issue 663 - increase timeout from 6 seconds to 12 seconds
+Fix Issue 662 - now reads sat count for mav 1.0
+Partial Issue 654 - added current to status, hud still wip
+Fix Issue 648 - add validation to value
+Fix Issue 638 - add delay
+Fix Issue 636 - check for version.txt in app directory

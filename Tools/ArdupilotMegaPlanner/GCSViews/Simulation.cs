@@ -789,7 +789,7 @@ namespace ArdupilotMega.GCSViews
                 float rdiff = (float)((att.roll - oldatt.roll) / timediff.TotalSeconds);
                 float ydiff = (float)((att.yaw - oldatt.yaw) / timediff.TotalSeconds);
 
-//                Console.WriteLine("{0:0.00000} {1:0.00000} {2:0.00000} \t {3:0.00000} {4:0.00000} {5:0.00000}", pdiff, rdiff, ydiff, DATA[17][0], DATA[17][1], DATA[17][2]);
+                //                Console.WriteLine("{0:0.00000} {1:0.00000} {2:0.00000} \t {3:0.00000} {4:0.00000} {5:0.00000}", pdiff, rdiff, ydiff, DATA[17][0], DATA[17][1], DATA[17][2]);
 
                 oldatt = att;
 
@@ -838,7 +838,7 @@ namespace ArdupilotMega.GCSViews
 #if MAVLINK10
                 gps.alt = (int)(DATA[20][2] * ft2m * 1000);
                 gps.fix_type = 3;
-                                if (xplane9)
+                if (xplane9)
                 {
                     gps.cog = (ushort)((float)DATA[19][2]);
                 }
@@ -1179,16 +1179,16 @@ namespace ArdupilotMega.GCSViews
                 sitlout.heading = gps.cog;
 #endif
 
-                sitlout.v_north =  DATA[21][4];
+                sitlout.v_north = DATA[21][4];
                 sitlout.v_east = DATA[21][5];
 
-               // correct accel
+                // correct accel
                 sitlout.ax = -ans.Item2; // pitch
                 sitlout.ay = -ans.Item1; // roll
                 sitlout.az = ans.Item3; // yaw
 
                 sitlout.phidot = -0.5;// att.pitchspeed;
-//                sitlout.thetadot = att.rollspeed;
+                //                sitlout.thetadot = att.rollspeed;
                 //sitlout.psidot = att.yawspeed;
 
                 sitlout.phi = att.roll * rad2deg;
@@ -1201,7 +1201,7 @@ namespace ArdupilotMega.GCSViews
 
                 byte[] sendme = StructureToByteArray(sitlout);
 
-                SITLSEND.Send(sendme,sendme.Length);
+                SITLSEND.Send(sendme, sendme.Length);
 
                 return;
             }
@@ -1248,10 +1248,10 @@ namespace ArdupilotMega.GCSViews
 
             comPort.sendPacket(hilstate);
 
-//            comPort.sendPacket(oldgps);
+            //            comPort.sendPacket(oldgps);
 
             comPort.sendPacket(asp);
-			
+
 #else
 
             if (chkSensor.Checked == false) // attitude
@@ -1268,11 +1268,11 @@ namespace ArdupilotMega.GCSViews
 
 #endif
 
-                MAVLink.mavlink_raw_pressure_t pres = new MAVLink.mavlink_raw_pressure_t();
-                double calc = (101325 * Math.Pow(1 - 2.25577 * Math.Pow(10, -5) * gps.alt, 5.25588)); // updated from valid gps
-                pres.press_diff1 = (short)(int)(calc - 101325); // 0 alt is 0 pa
+            MAVLink.mavlink_raw_pressure_t pres = new MAVLink.mavlink_raw_pressure_t();
+            double calc = (101325 * Math.Pow(1 - 2.25577 * Math.Pow(10, -5) * gps.alt, 5.25588)); // updated from valid gps
+            pres.press_diff1 = (short)(int)(calc - 101325); // 0 alt is 0 pa
 
-                comPort.sendPacket(pres);
+            comPort.sendPacket(pres);
 #if !MAVLINK10
                 comPort.sendPacket(asp);
             }
@@ -2025,7 +2025,11 @@ namespace ArdupilotMega.GCSViews
                 System.Diagnostics.Process P = new System.Diagnostics.Process();
                 P.StartInfo.FileName = ofd.FileName;
                 P.StartInfo.Arguments = extra + @" --geometry=400x300      --aircraft=arducopter      --native-fdm=socket,out,50,127.0.0.1,49005,udp 	 --generic=socket,in,50,127.0.0.1,49000,udp,quadhil 	 --fdm=external 	   --roll=0       --pitch=0       --wind=0@0       --turbulence=0.0       --prop:/sim/frame-rate-throttle-hz111111=30       --timeofday=noon       --shading-flat       --fog-disable       --disable-specular-highlight       --disable-skyblend       --disable-random-objects       --disable-panel       --disable-horizon-effect       --disable-clouds       --disable-anti-alias-hud ";
-                P.Start();
+                try
+                {
+                    P.Start();
+                }
+                catch { CustomMessageBox.Show("Failed to start FlightGear"); }
             }
         }
 
@@ -2076,7 +2080,11 @@ namespace ArdupilotMega.GCSViews
                 System.Diagnostics.Process P = new System.Diagnostics.Process();
                 P.StartInfo.FileName = ofd.FileName;
                 P.StartInfo.Arguments = extra + @" --geometry=400x300         --native-fdm=socket,out,50,127.0.0.1,49005,udp 	--generic=socket,in,50,127.0.0.1,49000,udp,MAVLink		   --roll=0       --pitch=0       --wind=0@0       --turbulence=0.0       --prop:/sim/frame-rate-throttle-hz=30       --timeofday=noon       --shading-flat       --fog-disable       --disable-specular-highlight       --disable-skyblend       --disable-random-objects       --disable-panel       --disable-horizon-effect       --disable-clouds       --disable-anti-alias-hud ";
-                P.Start();
+                try
+                {
+                    P.Start();
+                }
+                catch { CustomMessageBox.Show("Failed to start FlightGear"); }
             }
         }
 
@@ -2106,7 +2114,12 @@ namespace ArdupilotMega.GCSViews
                 System.Diagnostics.Process P = new System.Diagnostics.Process();
                 P.StartInfo.FileName = ofd.FileName;
                 P.StartInfo.Arguments = "";
-                P.Start();
+                try
+                {
+                    P.Start();
+                }
+                catch { CustomMessageBox.Show("Failed to start XPlanes"); }
+
             }
         }
 
@@ -2173,6 +2186,5 @@ namespace ArdupilotMega.GCSViews
                 CHKgraphthrottle.Visible = false;
             }
         }
-
     }
 }

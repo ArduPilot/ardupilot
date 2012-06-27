@@ -1140,6 +1140,7 @@
     <Content Include="ArduCopterConfig.xml">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
+    <Content Include="ChangeLog.txt" />
     <Content Include="Driver\Arduino MEGA 2560.inf">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>

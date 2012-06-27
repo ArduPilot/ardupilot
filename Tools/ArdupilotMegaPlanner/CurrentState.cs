@@ -158,6 +158,8 @@ namespace ArdupilotMega
         private float _battery_voltage;
         public float battery_remaining { get { return _battery_remaining; } set { _battery_remaining = value / 100; if (_battery_remaining < 0 || _battery_remaining > 1) _battery_remaining = 0; } }
         private float _battery_remaining;
+        public float current { get { return _current; } set { _current = value / 100; } }
+        private float _current;
 
         // pressure
         public float press_abs { get; set; }
@@ -450,7 +452,7 @@ namespace ArdupilotMega
                     var hb = bytearray.ByteArrayToStructure<MAVLink.mavlink_heartbeat_t>(6);
 
                     armed = (hb.base_mode & (byte)MAVLink.MAV_MODE_FLAG.SAFETY_ARMED) == (byte)MAVLink.MAV_MODE_FLAG.SAFETY_ARMED ? 4 : 3;
-
+					
                     string oldmode = mode;
 
                     mode = "Unknown";
@@ -545,6 +547,7 @@ namespace ArdupilotMega
 
                     battery_voltage = sysstatus.voltage_battery;
                     battery_remaining = sysstatus.battery_remaining;
+                    current = sysstatus.current_battery;
 
                     packetdropremote = sysstatus.drop_rate_comm;
 
@@ -732,6 +735,8 @@ namespace ArdupilotMega
                     //                    Console.WriteLine("gpsfix {0}",gpsstatus);
 
                     gpshdop = gps.eph;
+
+                    satcount = gps.satellites_visible;
 
                     groundspeed = gps.vel * 1.0e-2f;
                     groundcourse = gps.cog * 1.0e-2f;
