@@ -57,7 +57,7 @@ private:
 	void		check_matrix(void);
 	bool	 	renorm(Vector3f const &a, Vector3f &result);
 	void 		drift_correction(float deltat);
-	void 		drift_correction_yaw(float deltat);
+	void 		drift_correction_yaw(void);
 	float		yaw_error_compass();
 	float		yaw_error_gps();
 	void 		euler_angles(void);
