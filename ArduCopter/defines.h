@@ -198,6 +198,7 @@
 #define WP_MODE 2
 #define CIRCLE_MODE 3
 #define NO_NAV_MODE 4
+#define TOY_MODE 5
 
 // Waypoint options
 #define MASK_OPTIONS_RELATIVE_ALT 		1
