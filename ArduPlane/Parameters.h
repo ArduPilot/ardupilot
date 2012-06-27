@@ -91,9 +91,12 @@ public:
         k_param_imu = 130,  // sensor calibration
         k_param_altitude_mix,
         k_param_airspeed_ratio,
-        k_param_ground_temperature,
-        k_param_ground_pressure,
-		k_param_compass_enabled,
+
+        // ground_pressure and ground_temperature removed
+        // do not re-use 133 and 134 unless format_version
+        // is changed
+
+		k_param_compass_enabled = 135,
 		k_param_compass,
 		k_param_battery_monitoring,
 		k_param_volt_div_ratio,
@@ -105,6 +108,7 @@ public:
 		k_param_airspeed_enabled,
         k_param_ahrs,  // AHRS group
 		k_param_airspeed_use,
+        k_param_barometer,   // barometer ground calibration
 
         //
         // 150: Navigation parameters
@@ -333,8 +337,6 @@ public:
     AP_Int16    min_gndspeed;
     AP_Int16    pitch_trim;
     AP_Int16    RTL_altitude;
-    AP_Int16    ground_temperature;
-    AP_Int32    ground_pressure;
     AP_Int8		compass_enabled;
     AP_Int16    angle_of_attack;
     AP_Int8		battery_monitoring;	// 0=disabled, 3=voltage only, 4=voltage and current
@@ -454,8 +456,6 @@ public:
         pitch_trim              (0),
         RTL_altitude            (ALT_HOLD_HOME_CM),
         FBWB_min_altitude       (ALT_HOLD_FBW_CM),
-        ground_temperature      (0),
-        ground_pressure         (0),
         compass_enabled			(MAGNETOMETER),
         flap_1_percent			(FLAP_1_PERCENT),
         flap_1_speed			(FLAP_1_SPEED),
