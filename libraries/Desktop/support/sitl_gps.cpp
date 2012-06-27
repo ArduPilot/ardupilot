@@ -113,7 +113,6 @@ void sitl_update_gps(double latitude, double longitude, float altitude,
         const uint8_t MSG_POSLLH = 0x2;
 	const uint8_t MSG_STATUS = 0x3;
 	const uint8_t MSG_VELNED = 0x12;
-	double lon_scale;
 
 	// 5Hz, to match the real UBlox config in APM
 	if (millis() - gps_state.last_update < 200) {
