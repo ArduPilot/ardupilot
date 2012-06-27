@@ -38,6 +38,8 @@ class AP_Baro
     int16_t get_ground_temperature(void) { return _ground_temperature.get(); }
     int32_t get_ground_pressure(void) { return _ground_pressure.get(); }
 
+	static const struct AP_Param::GroupInfo var_info[];
+
 protected:
     uint32_t _last_update;
 

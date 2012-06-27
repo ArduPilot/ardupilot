@@ -234,8 +234,6 @@ static const AP_Param::Info var_info[] PROGMEM = {
 	GSCALAR(pitch_trim,             "TRIM_PITCH_CD"),
 	GSCALAR(RTL_altitude,           "ALT_HOLD_RTL"),
 	GSCALAR(FBWB_min_altitude,      "ALT_HOLD_FBWCM"),
-	GSCALAR(ground_temperature,     "GND_TEMP"),
-	GSCALAR(ground_pressure,        "GND_ABS_PRESS"),
 
     // @Param: MAG_ENABLE
 	// @DisplayName: Enable Compass
@@ -276,6 +274,10 @@ static const AP_Param::Info var_info[] PROGMEM = {
 	// @Values: 0:Disabled,1:Enabled
 	// @User: Advanced
 	GSCALAR(airspeed_use,       	"ARSPD_USE"),
+
+	// barometer ground calibration. The GND_ prefix is chosen for
+	// compatibility with previous releases of ArduPlane
+	GOBJECT(barometer, "GND_", AP_Baro),
 
 #if CAMERA == ENABLED
 	// @Group: CAM_

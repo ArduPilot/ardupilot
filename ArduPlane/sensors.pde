@@ -8,8 +8,6 @@ void ReadSCP1000(void) {}
 static void init_barometer(void)
 {
     barometer.calibrate(mavlink_delay);
-	g.ground_pressure.set_and_save(barometer.get_ground_pressure());
-	g.ground_temperature.set_and_save(barometer.get_ground_temperature() / 10.0f);
     ahrs.set_barometer(&barometer);
     gcs_send_text_P(SEVERITY_LOW, PSTR("barometer calibration complete"));
 }

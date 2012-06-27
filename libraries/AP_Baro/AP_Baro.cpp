@@ -12,6 +12,22 @@
 #include <AP_Common.h>
 #include <AP_Baro.h>
 
+// table of user settable parameters
+const AP_Param::GroupInfo AP_Baro::var_info[] PROGMEM = {
+	// @Param: ABS_PRESS
+	// @DisplayName: Absolute Pressure
+	// @Description: calibrated ground pressure
+	// @Increment: 1
+    AP_GROUPINFO("ABS_PRESS", 0, AP_Baro, _ground_pressure),
+
+	// @Param: ABS_PRESS
+	// @DisplayName: ground temperature
+	// @Description: calibrated ground temperature
+	// @Increment: 1
+    AP_GROUPINFO("TEMP", 1, AP_Baro, _ground_temperature),
+    AP_GROUPEND
+};
+
 // calibrate the barometer. This must be called at least once before
 // the altitude() or climb_rate() interfaces can be used
 void AP_Baro::calibrate(void (*callback)(unsigned long t))
