@@ -1493,7 +1493,6 @@ void update_yaw_mode(void)
 void update_roll_pitch_mode(void)
 {
 	int control_roll, control_pitch;
-	int yaw_rate;
 
 
 	// hack to do auto_flip - need to remove, no one is using.
@@ -1570,25 +1569,26 @@ void update_roll_pitch_mode(void)
 			break;
 
 		case ROLL_PITCH_TOY:
+			{
+				int yaw_rate = g.rc_1.control_in / toy_yaw_rate;
+				int roll_rate;
+				//yaw_rate = constrain(yaw_rate, -4500, 4500);
 
-			yaw_rate = g.rc_1.control_in / toy_yaw_rate;
+				if (g.rc_7.radio_in > 1800){
+					// acro Yaw
+					g.rc_4.servo_out = get_acro_yaw(yaw_rate); // a 15° sec yaw
+				}else{
+					nav_yaw = get_nav_yaw_offset(yaw_rate, g.rc_3.control_in);
+					g.rc_4.servo_out = get_stabilize_yaw(nav_yaw);
+				}
 
-			//yaw_rate = constrain(yaw_rate, -4500, 4500);
+				// yaw_rate = roll angle
+				roll_rate = (g_gps->ground_speed / 1200) * yaw_rate;
+				roll_rate = min(roll_rate, (4500 / toy_yaw_rate)); // 1(fast), 2, 3(slow)
 
-			if (g.rc_7.radio_in > 1800){
-				// acro Yaw
-				g.rc_4.servo_out = get_acro_yaw(yaw_rate); // a 15° sec yaw
-			}else{
-				nav_yaw = get_nav_yaw_offset(yaw_rate, g.rc_3.control_in);
-				g.rc_4.servo_out = get_stabilize_yaw(nav_yaw);
+				g.rc_1.servo_out = get_stabilize_roll(roll_rate);// our roll defined by speed and yaw rate
+				g.rc_2.servo_out = get_stabilize_pitch(g.rc_2.control_in);
 			}
-
-			// yaw_rate = roll angle
-			yaw_rate = (g_gps->ground_speed / 1200) * yaw_rate;
-			yaw_rate = min(yaw_rate, (4500 / toy_yaw_rate)); // 1(fast), 2, 3(slow)
-
-			g.rc_1.servo_out = get_stabilize_roll(yaw_rate);// our roll defined by speed and yaw rate
-			g.rc_2.servo_out = get_stabilize_pitch(g.rc_2.control_in);
 			break;
 	}
 
