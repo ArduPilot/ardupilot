@@ -26,7 +26,7 @@ autotest=$(dirname $(readlink -e $0))
 pushd $autotest/../../ArduCopter
 make clean $target-mavlink10
 
-tfile=$(tempfile)
+tfile=$(mktemp)
 echo r > $tfile
 #gnome-terminal -e "gdb -x $tfile --args /tmp/ArduCopter.build/ArduCopter.elf"
 gnome-terminal -e /tmp/ArduCopter.build/ArduCopter.elf

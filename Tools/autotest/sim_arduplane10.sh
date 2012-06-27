@@ -7,7 +7,7 @@ autotest=$(dirname $(readlink -e $0))
 pushd $autotest/../../ArduPlane
 make clean sitl-mavlink10
 
-tfile=$(tempfile)
+tfile=$(mktemp)
 echo r > $tfile
 #gnome-terminal -e "gdb -x $tfile --args /tmp/ArduPlane.build/ArduPlane.elf"
 gnome-terminal -e /tmp/ArduPlane.build/ArduPlane.elf
