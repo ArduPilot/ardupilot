@@ -58,7 +58,7 @@
 
 #define TRACE               ENABLED
 
-#include 'APM_Config_Rover.h'
+#include "APM_Config_Rover.h"
 
 </desc>
     <format_version>13</format_version>
