@@ -411,11 +411,17 @@ AP_AHRS_DCM::drift_correction(float deltat)
         last_correction_time = _gps->last_fix_time;
     }
 
-    // even without GPS lock we can correct for the vertical acceleration
+#if 0
+    /* 
+       NOTE: The barometric vertical acceleration correction is disabled 
+       until we work out how to filter it sufficiently to be usable
+       on ArduCopter
+    */
     if (_barometer != NULL) {
 	    // Z velocity is down
 	    velocity.z = - _barometer->get_climb_rate();
     }
+#endif
 
     // see if this is our first time through - in which case we
     // just setup the start times and return
