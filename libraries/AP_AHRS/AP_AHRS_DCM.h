@@ -16,15 +16,15 @@ public:
 	// Constructors
 	AP_AHRS_DCM(IMU *imu, GPS *&gps) : AP_AHRS(imu, gps)
 	{
-		_kp_roll_pitch = 0.13;
-		_kp_yaw.set(0.2);
-		_dcm_matrix(Vector3f(1, 0, 0),
-			    Vector3f(0, 1, 0),
-			    Vector3f(0, 0, 1));
+		_dcm_matrix.identity();
 
-		// base the ki values on the sensors drift rate
-		_ki_roll_pitch = _gyro_drift_limit * 5;
-		_ki_yaw        = _gyro_drift_limit * 8;
+		// these are experimentally derived from the simulator
+		// with large drift levels
+                _ki = 0.0087;
+		_ki_yaw = 0.01;
+
+                _kp = 0.4;
+		_kp_yaw.set(0.4);
 	}
 
 	// return the smoothed gyro vector corrected for drift
@@ -46,18 +46,20 @@ public:
 	AP_Float	_kp_yaw;
 
 private:
-	float		_kp_roll_pitch;
-	float		_ki_roll_pitch;
+	float		_kp;
+	float		_ki;
 	float		_ki_yaw;
 	bool		_have_initial_yaw;
 
 	// Methods
-	void 		accel_adjust(Vector3f &accel);
 	void 		matrix_update(float _G_Dt);
 	void 		normalize(void);
 	void		check_matrix(void);
 	bool	 	renorm(Vector3f const &a, Vector3f &result);
 	void 		drift_correction(float deltat);
+	void 		drift_correction_yaw(void);
+	float		yaw_error_compass();
+	float		yaw_error_gps();
 	void 		euler_angles(void);
 
 	// primary representation of attitude
@@ -66,13 +68,15 @@ private:
 	Vector3f 	_gyro_vector;		// Store the gyros turn rate in a vector
 	Vector3f 	_accel_vector;		// current accel vector
 
-	Vector3f	_omega_P;		// accel Omega Proportional correction
-	Vector3f	_omega_yaw_P;		// yaw Omega Proportional correction
+	Vector3f	_omega_P;		// accel Omega proportional correction
+	Vector3f	_omega_yaw_P;		// proportional yaw correction
 	Vector3f 	_omega_I;		// Omega Integrator correction
-	Vector3f 	_omega_I_sum;		// summation vector for omegaI
+	Vector3f	_omega_I_sum;
 	float		_omega_I_sum_time;
-	Vector3f 	_omega_integ_corr;	// Partially corrected Gyro_Vector data - used for centrepetal correction
 	Vector3f 	_omega;			// Corrected Gyro_Vector data
+
+	// P term gain based on spin rate
+	float 		_P_gain(float spin_rate);
 
 	// state to support status reporting
 	float		_renorm_val_sum;
@@ -86,6 +90,15 @@ private:
 
 	// time in millis when we last got a GPS heading
 	uint32_t	_gps_last_update;
+
+	// state of accel drift correction
+	Vector3f	_ra_sum;
+	Vector3f	_last_velocity;
+	float		_ra_deltat;
+	uint32_t	_ra_sum_start;
+
+	// current drift error in earth frame
+	Vector3f	_drift_error_earth;
 };
 
 #endif // AP_AHRS_DCM_H

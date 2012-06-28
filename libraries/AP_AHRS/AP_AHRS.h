@@ -28,7 +28,8 @@ public:
 	// Constructor
 	AP_AHRS(IMU *imu, GPS *&gps):
 		_imu(imu),
-		_gps(gps)
+		_gps(gps),
+		_barometer(NULL)
 	{
 		// base the ki values by the sensors maximum drift
 		// rate. The APM2 has gyros which are much less drift
@@ -89,9 +90,6 @@ protected:
 	// pointer to compass object, if enabled
 	Compass 	* _compass;
 
-	// pointer to compass object, if enabled
-	AP_Baro 	* _barometer;
-
 	// time in microseconds of last compass update
 	uint32_t        _compass_last_update;
 
@@ -99,8 +97,10 @@ protected:
 	//       IMU under us without our noticing.
 	IMU 		*_imu;
 	GPS 		*&_gps;
+	AP_Baro		*_barometer;
 
-	// true if we are doing centripetal acceleration correction
+	// true if we can assume the aircraft will be flying forward
+	// on its X axis
 	bool		_fly_forward;
 
 	// the limit of the gyro drift claimed by the sensors, in
