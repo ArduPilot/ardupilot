@@ -334,7 +334,7 @@ static const char* flight_mode_strings[] = {
 	"LAND",			// 9
 	"OF_LOITER",	// 10
 	"APP",			// 11
-	"TOY"};			// 12
+	"TOY"};			// 12	THOR Added for additional Fligt mode
 
 /* Radio values
 		Channel assignments
@@ -687,9 +687,25 @@ static int16_t 	landing_boost;
 static int16_t ground_detector;
 
 ////////////////////////////////////////////////////////////////////////////////
-// Toy Mode
+// Toy Mode - THOR
 ////////////////////////////////////////////////////////////////////////////////
-static byte toy_yaw_rate = 1; // 1 = fast, 2 = med, 3 = slow
+#define TOY_LOOKUP 0
+#define TOY_DELAY	150				// Equal to 1.5 s at 100hz
+static uint8_t 	toy_input_timer;	// A delay timer to engage loiter or WP mode
+static int16_t 	toy_speed;			// TO remember how fast we are going when we enage WP mode
+
+#if TOY_LOOKUP == 1
+static const int16_t  toy_lookup[] = {
+		186, 	373, 	558, 	745,
+		372, 	745, 	1117, 	1490,
+		558, 	1118, 	1675, 	2235,
+		743, 	1490, 	2233, 	2980,
+		929, 	1863, 	2792, 	3725,
+		1115, 	2235, 	3350, 	4470,
+		1301, 	2608, 	3908, 	4500,
+		1487, 	2980, 	4467, 	4500,
+		1673, 	3353, 	4500, 	4500};
+#endif
 
 ////////////////////////////////////////////////////////////////////////////////
 // Navigation general
@@ -1477,11 +1493,6 @@ void update_yaw_mode(void)
 			//Serial.printf("nav_yaw %d ", nav_yaw);
 			nav_yaw  = wrap_360(nav_yaw);
 			break;
-
-		case YAW_TOY:
-			// handle Yaw in roll_pitch_mode
-			return;
-			break;
 	}
 
 	// Yaw control
@@ -1568,27 +1579,10 @@ void update_roll_pitch_mode(void)
 			g.rc_2.servo_out = get_stabilize_pitch(get_of_pitch(g.rc_2.control_in));
 			break;
 
+		// THOR
+		// a call out to the main toy logic
 		case ROLL_PITCH_TOY:
-			{
-				int yaw_rate = g.rc_1.control_in / toy_yaw_rate;
-				int roll_rate;
-				//yaw_rate = constrain(yaw_rate, -4500, 4500);
-
-				if (g.rc_7.radio_in > 1800){
-					// acro Yaw
-					g.rc_4.servo_out = get_acro_yaw(yaw_rate); // a 15° sec yaw
-				}else{
-					nav_yaw = get_nav_yaw_offset(yaw_rate, g.rc_3.control_in);
-					g.rc_4.servo_out = get_stabilize_yaw(nav_yaw);
-				}
-
-				// yaw_rate = roll angle
-				roll_rate = (g_gps->ground_speed / 1200) * yaw_rate;
-				roll_rate = min(roll_rate, (4500 / toy_yaw_rate)); // 1(fast), 2, 3(slow)
-
-				g.rc_1.servo_out = get_stabilize_roll(roll_rate);// our roll defined by speed and yaw rate
-				g.rc_2.servo_out = get_stabilize_pitch(g.rc_2.control_in);
-			}
+			roll_pitch_toy();
 			break;
 	}
 
@@ -1926,6 +1920,10 @@ static void update_navigation()
 			update_nav_wp();
 			break;
 
+		// THOR added to enable Virtual WP nav
+		case TOY:
+			update_nav_wp();
+			break;
 	}
 
 	// are we in SIMPLE mode?
@@ -2321,8 +2319,8 @@ static void update_nav_wp()
 		// use error as the desired rate towards the target
 		calc_nav_rate(speed);
 
-		// rotate pitch and roll to the copter frame of reference
-		//calc_loiter_pitch_roll();
+	}else if(wp_control == TOY_MODE){ // THOR added to navigate to Virtual WP
+		calc_nav_rate(toy_speed);
 
 	}else if(wp_control == NO_NAV_MODE){
 		// clear out our nav so we can do things like land straight down
