@@ -268,6 +268,11 @@ static void timer_handler(int signum)
 			sitl.state.airspeed);
 	sitl_update_barometer(sitl.state.altitude);
 	sitl_update_compass(sitl.state.rollDeg, sitl.state.pitchDeg, sitl.state.heading);
+
+	// clear the ADC conversion flag,
+	// so the ADC code doesn't get stuck
+	ADCSRA &= ~_BV(ADSC);
+
 	sei();
 	running = false;
 }

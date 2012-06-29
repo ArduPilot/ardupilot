@@ -95,7 +95,7 @@ extern "C"{
 #define bitSet(value, bit) ((value) |= (1UL << (bit)))
 #define bitClear(value, bit) ((value) &= ~(1UL << (bit)))
 #define bitWrite(value, bit, bitvalue) (bitvalue ? bitSet(value, bit) : bitClear(value, bit))
-
+#define bit_is_set(value, bit) (((value) & bit) != 0)
 
 typedef unsigned int word;
 
@@ -109,7 +109,6 @@ void init(void);
 void pinMode(uint8_t, uint8_t);
 void digitalWrite(uint8_t, uint8_t);
 int digitalRead(uint8_t);
-int analogRead(uint8_t);
 void analogReference(uint8_t mode);
 void analogWrite(uint8_t, int);
 
