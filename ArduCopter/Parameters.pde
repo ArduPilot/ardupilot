@@ -227,6 +227,10 @@ static const AP_Param::Info var_info[] PROGMEM = {
 	// @Path: ../libraries/AP_AHRS/AP_AHRS_DCM.cpp, ../libraries/AP_AHRS/AP_AHRS_Quaternion.cpp
 	GOBJECT(ahrs,			"AHRS_",    AP_AHRS),
 
+#ifdef DESKTOP_BUILD
+	GOBJECT(sitl, "SIM_", SITL),
+#endif
+
 	#if FRAME_CONFIG ==	HELI_FRAME
 	// @Group: H_
 	// @Path: ../libraries/AP_Motors/AP_MotorsHeli.cpp

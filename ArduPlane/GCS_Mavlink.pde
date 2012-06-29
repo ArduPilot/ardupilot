@@ -501,26 +501,10 @@ static void NOINLINE send_ahrs(mavlink_channel_t chan)
 #endif // HIL_MODE != HIL_MODE_ATTITUDE
 
 #ifdef DESKTOP_BUILD
-void mavlink_simstate_send(uint8_t chan,
-                           float roll,
-                           float pitch,
-                           float yaw,
-                           float xAcc,
-                           float yAcc,
-                           float zAcc,
-                           float p,
-                           float q,
-                           float r)
-{
-    mavlink_msg_simstate_send((mavlink_channel_t)chan,
-                              roll, pitch, yaw, xAcc, yAcc, zAcc, p, q, r);
-}
-
 // report simulator state
 static void NOINLINE send_simstate(mavlink_channel_t chan)
 {
-    extern void sitl_simstate_send(uint8_t chan);
-    sitl_simstate_send((uint8_t)chan);
+    sitl.simstate_send(chan);
 }
 #endif
 

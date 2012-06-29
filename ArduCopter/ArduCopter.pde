@@ -186,6 +186,8 @@ static AP_Int8                *flight_modes = &g.flight_mode1;
 #ifdef DESKTOP_BUILD
     AP_Baro_BMP085_HIL barometer;
     AP_Compass_HIL          compass;
+#include <SITL.h>
+	SITL					sitl;
 #else
 
 #if CONFIG_BARO == AP_BARO_BMP085

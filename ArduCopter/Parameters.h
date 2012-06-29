@@ -51,13 +51,14 @@ public:
 	k_param_format_version = 0,
 	k_param_software_type,
 
+    // simulation
+    k_param_sitl = 10,
 
 	// Misc
 	//
 	k_param_log_bitmask = 20,
     k_param_log_last_filenumber,		// *** Deprecated - remove with next eeprom number change
 
-	#if FRAME_CONFIG ==	HELI_FRAME
 	//
 	// 80: Heli
 	//
@@ -65,7 +66,6 @@ public:
 	k_param_heli_servo_2,
 	k_param_heli_servo_3,
 	k_param_heli_servo_4,
-	#endif
 
 	//
 	// 90: Motors

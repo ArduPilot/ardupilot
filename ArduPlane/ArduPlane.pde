@@ -150,6 +150,8 @@ static AP_ADC_ADS7844          adc;
 #ifdef DESKTOP_BUILD
 AP_Baro_BMP085_HIL      barometer;
 AP_Compass_HIL          compass;
+#include <SITL.h>
+SITL					sitl;
 #else
 
 #if CONFIG_BARO == AP_BARO_BMP085
