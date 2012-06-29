@@ -197,12 +197,25 @@ static void calc_nav_rate(int max_speed)
 	x_rate_error 	= x_target_speed - x_actual_speed; // 413
 	x_rate_error 	= constrain(x_rate_error, -1000, 1000);
 	nav_lon			= g.pid_nav_lon.get_pid(x_rate_error, dTnav);
+	temp			= x_target_speed * x_target_speed;
+	temp			*= .0054;
+
+	if(x_target_speed < 0)
+		temp = -temp;
+	nav_lon			+= temp;
 	nav_lon			= constrain(nav_lon, -3000, 3000);
+
 
 	// North / South
 	y_rate_error 	= y_target_speed - y_actual_speed; // 413
 	y_rate_error 	= constrain(y_rate_error, -1000, 1000);	// added a rate error limit to keep pitching down to a minimum
 	nav_lat			= g.pid_nav_lat.get_pid(y_rate_error, dTnav);
+	temp			= y_target_speed * y_target_speed;
+	temp			*= .0054;
+
+	if(y_target_speed < 0)
+		temp = -temp;
+	nav_lat			+= temp;
 	nav_lat			= constrain(nav_lat, -3000, 3000);
 
 	// copy over I term to Loiter_Rate
