@@ -129,11 +129,6 @@ void digitalWrite(uint8_t pin, uint8_t val)
 {
 }
 
-int analogRead(uint8_t pin)
-{
-	return 0;
-}
-
 }
 
 
