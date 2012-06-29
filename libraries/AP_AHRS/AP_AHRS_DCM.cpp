@@ -76,10 +76,14 @@ AP_AHRS_DCM::update(void)
 void
 AP_AHRS_DCM::matrix_update(float _G_Dt)
 {
-	// Equation 16, adding proportional and integral correction terms
-	_omega = _gyro_vector + _omega_I + _omega_P + _omega_yaw_P;
+	// note that we do not include the P terms in _omega. This is
+	// because the spin_rate is calculated from _omega.length(),
+	// and including the P terms would give positive feedback into
+	// the _P_gain() calculation, which can lead to a very large P
+	// value
+	_omega = _gyro_vector + _omega_I;
 
-	_dcm_matrix.rotate(_omega * _G_Dt);
+	_dcm_matrix.rotate((_omega + _omega_P + _omega_yaw_P) * _G_Dt);
 }
 
 
