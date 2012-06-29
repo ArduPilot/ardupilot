@@ -381,7 +381,8 @@ static void set_mode(byte mode)
 {
 	// if we don't have GPS lock
 	if(home_is_set == false){
-		// our max mode should be
+		// THOR
+		// We don't care about Home if we don't have lock yet in Toy mode
 		if(mode == TOY || mode == OF_LOITER){
 			// nothing
 		}else if (mode > ALT_HOLD){
@@ -517,10 +518,14 @@ static void set_mode(byte mode)
 			set_next_WP(&current_loc);
 			break;
 
+		// THOR
+		// These are the flight modes for Toy mode
+		// See the defines for the enumerated values
 		case TOY:
 			yaw_mode 		= YAW_TOY;
 			roll_pitch_mode = ROLL_PITCH_TOY;
 			throttle_mode 	= THROTTLE_MANUAL;
+			wp_control 		= NO_NAV_MODE;
 			break;
 
 		default:
