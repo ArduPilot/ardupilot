@@ -28,7 +28,7 @@ public:
 	}
 
 	// return the smoothed gyro vector corrected for drift
-	Vector3f	get_gyro(void) {return _omega; }
+	Vector3f	get_gyro(void) {return _omega + _omega_P + _omega_yaw_P; }
 	Matrix3f	get_dcm_matrix(void) {return _dcm_matrix; }
 
 	// return the current drift correction integrator value
