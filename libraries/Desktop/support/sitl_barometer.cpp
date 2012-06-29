@@ -11,8 +11,11 @@
 #include <stdint.h>
 #include <math.h>
 #include <AP_Baro.h>     // ArduPilot Mega BMP085 Library
+#include <SITL.h>
 #include "desktop.h"
 #include "util.h"
+
+extern SITL sitl;
 
 /*
   setup the barometer with new input
@@ -30,7 +33,7 @@ void sitl_update_barometer(float altitude)
 	y = 1.0/exp(y);
 	y *= 95446.0;
 
-	Press = y;
+	Press = y + (rand_float() * sitl.baro_noise);
 
 	barometer.setHIL(Temp, Press);
 }

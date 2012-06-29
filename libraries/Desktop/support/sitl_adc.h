@@ -10,54 +10,6 @@
 #include <math.h>
 #include "util.h"
 
-static const float vibration_level = 0.2;
-static const float drift_speed = 0.2; // degrees/second/minute
-static const float drift_time  = 5; // time to reverse drift direction (minutes)
-// order                              zgyro, xgyro, ygyro, temp, xacc, yacc, zacc, aspd
-static const float noise_scale[8] = {   150,   150,   150,    0, 400,  400,  400,    0 };
-static const float noise_offset[8]= {     0,     0,     0,    0,   0,    0,    0,    0 };
-static const float drift_rate[8]  = {     1.0, 1.0,   1.0,    0,   0,    0,    0,    0 };
-static const float base_noise = 2;
-
-static inline float gyro_drift(uint8_t chan)
-{
-	if (drift_rate[chan] * drift_speed == 0.0) {
-		return 0;
-	}
-	extern long unsigned int micros(void);
-	double period  = drift_rate[chan] * drift_time * 2;
-	double minutes = fmod(micros() / 60.0e6, period);
-	if (minutes < period/2) {
-		return minutes * drift_speed / 0.4;
-	}
-	return (period - minutes) * drift_speed / 0.4;
-
-}
-
-static inline float noise_generator(uint8_t chan)
-{
-	extern float sitl_motor_speed[4];
-	uint8_t i;
-	float noise = 0;
-	uint8_t noise_count=0;
-	extern long unsigned int micros(void);
-	for (i=0; i<4; i++) {
-		if (sitl_motor_speed[i] > 0.0) {
-			float n = rand_float() * noise_scale[chan] * vibration_level;
-			//double t = micros() / 1.0e6;
-			//float freq = (rand_float() + 1.0) * sitl_motor_speed[i];
-			//noise += sin(fmod(t * freq * 2 * M_PI + i,
-			//2*M_PI)) * n;
-			noise += n + noise_offset[chan];
-			noise_count++;
-		}
-	}
-	if (noise_count == 0) {
-		return gyro_drift(chan) + rand_float() * base_noise * vibration_level;
-	}
-	return gyro_drift(chan) + noise/noise_count;
-}
-
 // this implements the UDR2 register
 struct ADC_UDR2 {
 	uint16_t value, next_value;
@@ -94,7 +46,6 @@ struct ADC_UDR2 {
 		}
 		next_analog = channels[chan];
 		idx = 1;
-		next_analog += noise_generator(chan) + 0.5;
 		if (next_analog > 0xFFF) next_analog = 0xFFF;
 		if (next_analog < 0) next_analog = 0;
 		next_value = ((unsigned)next_analog) << 3;
