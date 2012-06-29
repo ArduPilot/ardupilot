@@ -1298,7 +1298,7 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
                 break;
             }
 
-#else // MAVLINK10
+#else // MAVLINK.9
 			switch (packet.mode) {
 
 				case MAV_MODE_MANUAL:
@@ -1320,7 +1320,7 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
 					set_mode(STABILIZE);
 					break;
 			}
-#endif // MAVLINK10
+#endif
             break;
 		}
 
