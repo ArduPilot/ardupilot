@@ -20,7 +20,7 @@ static const AP_Param::Info var_info[] PROGMEM = {
 	GSCALAR(sysid_this_mav,	"SYSID_THISMAV"),
 	GSCALAR(sysid_my_gcs,	"SYSID_MYGCS"),
 	GSCALAR(serial3_baud,	"SERIAL3_BAUD"),
-	
+
 	// @Param: ALT_HOLD_RTL
 	// @DisplayName: Alt Hold RTL
 	// @Description: This is the altitude the model will move to before Returning to Launch
@@ -29,14 +29,14 @@ static const AP_Param::Info var_info[] PROGMEM = {
 	// @Increment: 1
 	// @User: Standard
 	GSCALAR(RTL_altitude,	"ALT_HOLD_RTL"),
-	
+
 	// @Param: SONAR_ENABLE
 	// @DisplayName: Enable Sonar
 	// @Description: Setting this to Enabled(1) will enable the sonar. Setting this to Disabled(0) will disable the sonar
 	// @Values: 0:Disabled,1:Enabled
 	// @User: Standard
 	GSCALAR(sonar_enabled,	"SONAR_ENABLE"),
-	
+
 	GSCALAR(sonar_type,	"SONAR_TYPE"),
 	GSCALAR(battery_monitoring, "BATT_MONITOR"),
 
@@ -55,14 +55,14 @@ static const AP_Param::Info var_info[] PROGMEM = {
 	// @Values: 0:Disabled,1:Enabled
 	// @User: Standard
 	GSCALAR(compass_enabled,	"MAG_ENABLE"),
-	
+
 	// @Param: FLOW_ENABLE
 	// @DisplayName: Enable Optical Flow
 	// @Description: Setting this to Enabled(1) will enable optical flow. Setting this to Disabled(0) will disable optical flow
 	// @Values: 0:Disabled,1:Enabled
 	// @User: Standard
 	GSCALAR(optflow_enabled,	"FLOW_ENABLE"),
-	
+
 	// @Param: LOW_VOLT
 	// @DisplayName: Low Voltage
 	// @Description: Set this to the voltage you want to represent low voltage
@@ -70,14 +70,14 @@ static const AP_Param::Info var_info[] PROGMEM = {
 	// @Increment: .1
 	// @User: Standard
 	GSCALAR(low_voltage,	"LOW_VOLT"),
-	
+
 	// @Param: SUPER_SIMPLE
 	// @DisplayName: Enable Super Simple Mode
 	// @Description: Setting this to Enabled(1) will enable Super Simple Mode. Setting this to Disabled(0) will disable Super Simple Mode
 	// @Values: 0:Disabled,1:Enabled
 	// @User: Standard
 	GSCALAR(super_simple,	"SUPER_SIMPLE"),
-	
+
 	// @Param: RTL_LAND
 	// @DisplayName: RTL Land
 	// @Description: Setting this to Enabled(1) will enable landing after RTL. Setting this to Disabled(0) will disable landing after RTL.
@@ -128,6 +128,10 @@ static const AP_Param::Info var_info[] PROGMEM = {
 
 	GSCALAR(log_bitmask,	"LOG_BITMASK"),
 	GSCALAR(log_last_filenumber, "LOG_LASTFILE"),
+	// THOR
+	// Added to allow change of Rate in the Mission planner
+	GSCALAR(toy_yaw_rate, "TOY_RATE"),
+
 	GSCALAR(esc_calibrate, "ESC"),
 	GSCALAR(radio_tuning, "TUNE"),
 	GSCALAR(radio_tuning_low, "TUNE_LOW"),
@@ -155,7 +159,7 @@ static const AP_Param::Info var_info[] PROGMEM = {
 	GGROUP(rc_8,	"RC8_", RC_Channel),
 	GGROUP(rc_camera_pitch,	"CAM_P_", RC_Channel),
 	GGROUP(rc_camera_roll,	"CAM_R_", RC_Channel),
-	
+
 	// @Param: RC_SPEED
 	// @DisplayName: ESC Update Speed
 	// @Description: This is the speed in Hertz that your ESCs will receive updates
@@ -169,7 +173,7 @@ static const AP_Param::Info var_info[] PROGMEM = {
 	GSCALAR(camera_pitch_gain, 	"CAM_P_G"),
 	GSCALAR(camera_roll_gain, 	"CAM_R_G"),
 	GSCALAR(stabilize_d, 		"STAB_D"),
-	
+
 	// @Param: STAB_D_S
 	// @DisplayName: Stabilize D Schedule
 	// @Description: This value is a percentage of scheduling applied to the Stabilize D term.
@@ -211,7 +215,7 @@ static const AP_Param::Info var_info[] PROGMEM = {
 	GGROUP(pi_loiter_lon,	"HLD_LON_", APM_PI),
 
 	// variables not in the g class which contain EEPROM saved variables
-	
+
 	// @Group: COMPASS_
 	// @Path: ../libraries/AP_Compass/Compass.cpp
 	GOBJECT(compass,        "COMPASS_", Compass),

@@ -58,6 +58,7 @@ public:
 	//
 	k_param_log_bitmask = 20,
     k_param_log_last_filenumber,		// *** Deprecated - remove with next eeprom number change
+	k_param_toy_yaw_rate,				// THOR The memory location for the Yaw Rate 1 = fast, 2 = med, 3 = slow
 
 	//
 	// 80: Heli
@@ -256,7 +257,7 @@ public:
 	//
 	AP_Int16	log_bitmask;
     AP_Int16	log_last_filenumber;		// *** Deprecated - remove with next eeprom number change
-
+	AP_Int8 	toy_yaw_rate;				// THOR The Yaw Rate 1 = fast, 2 = med, 3 = slow
 	AP_Int8		esc_calibrate;
 	AP_Int8		radio_tuning;
 	AP_Int16	radio_tuning_high;
@@ -367,6 +368,8 @@ public:
 
 	log_bitmask				(DEFAULT_LOG_BITMASK),
     log_last_filenumber     (0),
+    toy_yaw_rate			(2), // THOR The default Yaw Rate 1 = fast, 2 = med, 3 = slow
+
 	esc_calibrate 			(0),
 	radio_tuning 			(0),
 	radio_tuning_high 		(1000),
