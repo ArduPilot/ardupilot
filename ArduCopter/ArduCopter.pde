@@ -1824,7 +1824,8 @@ static void update_navigation()
 				next_WP.lat = home.lat;
 				next_WP.lng = home.lng;
 
-				if(g.rtl_land_enabled || failsafe)
+				// If land is enabled OR failsafe OR auto approach altitude is set
+				if(g.rtl_land_enabled || failsafe || g.rtl_approach_alt >= 1)
 					loiter_timer = millis();
 				else
 					loiter_timer = 0;
