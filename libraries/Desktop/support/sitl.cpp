@@ -25,29 +25,12 @@
 #include <wiring.h>
 #include <AP_PeriodicProcess.h>
 #include <AP_TimerProcess.h>
+#include <SITL.h>
 #include <avr/interrupt.h>
 #include "sitl_adc.h"
 #include "sitl_rc.h"
 #include "desktop.h"
 #include "util.h"
-
-/*
-  the sitl_fdm packet is received by the SITL build from the flight
-  simulator. This is used to feed the internal sensor emulation
- */
-struct sitl_fdm {
-	// little-endian packet format
-	double latitude, longitude; // degrees
-	double altitude;  // MSL
-	double heading;   // degrees
-	double speedN, speedE; // m/s
-	double xAccel, yAccel, zAccel;       // m/s/s in body frame
-	double rollRate, pitchRate, yawRate; // degrees/s/s in earth frame
-	double rollDeg, pitchDeg, yawDeg;    // euler angles, degrees
-	double airspeed; // m/s
-	uint32_t magic; // 0x4c56414e
-};
-
 
 #define SIMIN_PORT 5501
 #define RCOUT_PORT 5502
@@ -61,8 +44,8 @@ struct ADC_UDR2 UDR2;
 struct RC_ICR4 ICR4;
 extern AP_TimerProcess timer_scheduler;
 extern Arduino_Mega_ISR_Registry isr_registry;
+extern SITL sitl;
 
-static struct sitl_fdm sim_state;
 static uint32_t update_count;
 
 
@@ -133,7 +116,7 @@ static void sitl_fdm_input(void)
 			return;
 		}
 
-		sim_state = d.fg_pkt;
+		sitl.state = d.fg_pkt;
 		update_count++;
 
 		count++;
@@ -276,15 +259,15 @@ static void timer_handler(int signum)
 	}
 	last_update_count = update_count;
 
-	sitl_update_gps(sim_state.latitude, sim_state.longitude,
-			sim_state.altitude,
-			sim_state.speedN, sim_state.speedE, true);
-	sitl_update_adc(sim_state.rollDeg, sim_state.pitchDeg, sim_state.yawDeg,
-			sim_state.rollRate, sim_state.pitchRate, sim_state.yawRate,
-			sim_state.xAccel, sim_state.yAccel, sim_state.zAccel,
-			sim_state.airspeed);
-	sitl_update_barometer(sim_state.altitude);
-	sitl_update_compass(sim_state.rollDeg, sim_state.pitchDeg, sim_state.heading);
+	sitl_update_gps(sitl.state.latitude, sitl.state.longitude,
+			sitl.state.altitude,
+			sitl.state.speedN, sitl.state.speedE, !sitl.gps_disable);
+	sitl_update_adc(sitl.state.rollDeg, sitl.state.pitchDeg, sitl.state.yawDeg,
+			sitl.state.rollRate, sitl.state.pitchRate, sitl.state.yawRate,
+			sitl.state.xAccel, sitl.state.yAccel, sitl.state.zAccel,
+			sitl.state.airspeed);
+	sitl_update_barometer(sitl.state.altitude);
+	sitl_update_compass(sitl.state.rollDeg, sitl.state.pitchDeg, sitl.state.heading);
 	sei();
 	running = false;
 }
@@ -338,40 +321,3 @@ void sitl_setup(void)
 }
 
 
-/* report SITL state via MAVLink */
-void sitl_simstate_send(uint8_t chan)
-{
-	double p, q, r;
-	float yaw;
-	extern void mavlink_simstate_send(uint8_t chan,
-					  float roll,
-					  float pitch,
-					  float yaw,
-					  float xAcc,
-					  float yAcc,
-					  float zAcc,
-					  float p,
-					  float q,
-					  float r);
-
-	// we want the gyro values to be directly comparable to the
-	// raw_imu message, which is in body frame
-	convert_body_frame(sim_state.rollDeg, sim_state.pitchDeg,
-			   sim_state.rollRate, sim_state.pitchRate, sim_state.yawRate,
-			   &p, &q, &r);
-
-	// convert to same conventions as DCM
-	yaw = sim_state.yawDeg;
-	if (yaw > 180) {
-		yaw -= 360;
-	}
-
-	mavlink_simstate_send(chan,
-			      ToRad(sim_state.rollDeg),
-			      ToRad(sim_state.pitchDeg),
-			      ToRad(yaw),
-			      sim_state.xAccel,
-			      sim_state.yAccel,
-			      sim_state.zAccel,
-			      p, q, r);
-}

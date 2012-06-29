@@ -11,11 +11,14 @@
 #include <sys/types.h>
 #include <math.h>
 #include <AP_ADC.h>
+#include <SITL.h>
 #include <avr/interrupt.h>
 #include "wiring.h"
 #include "sitl_adc.h"
 #include "desktop.h"
 #include "util.h"
+
+extern SITL sitl;
 
 /*
   convert airspeed in m/s to an airspeed sensor value
@@ -31,6 +34,20 @@ static uint16_t airspeed_sensor(float airspeed)
 	return airspeed_raw;
 }
 
+
+static float gyro_drift(void)
+{
+	if (sitl.drift_speed == 0.0) {
+		return 0;
+	}
+	double period  = sitl.drift_time * 2;
+	double minutes = fmod(micros() / 60.0e6, period);
+	if (minutes < period/2) {
+		return minutes * ToRad(sitl.drift_speed);
+	}
+	return (period - minutes) * ToRad(sitl.drift_speed);
+
+}
 
 /*
   setup the ADC channels with new input
@@ -74,10 +91,33 @@ void sitl_update_adc(float roll, 	float pitch, 	float yaw,		// Relative to earth
 	const float _accel_scale = 9.80665 / 423.8;
 	double adc[7];
 	double p, q, r;
+	extern float sitl_motor_speed[4];
+	bool motors_on = false;
 
-	convert_body_frame(roll, pitch,
-			   rollRate, pitchRate, yawRate,
-			   &p, &q, &r);
+	SITL::convert_body_frame(roll, pitch,
+				 rollRate, pitchRate, yawRate,
+				 &p, &q, &r);
+
+	for (uint8_t i=0; i<4; i++) {
+		if (sitl_motor_speed[i] > 0.0) {
+			motors_on = true;
+		}
+	}
+
+	if (motors_on) {
+		// only add accel/gyro noise when motors are on
+		xAccel += sitl.accel_noise * rand_float();
+		yAccel += sitl.accel_noise * rand_float();
+		zAccel += sitl.accel_noise * rand_float();
+
+		p += ToRad(sitl.gyro_noise) * rand_float();
+		q += ToRad(sitl.gyro_noise) * rand_float();
+		r += ToRad(sitl.gyro_noise) * rand_float();
+	}
+
+	p += gyro_drift();
+	q += gyro_drift();
+	r += gyro_drift();
 
 	/* work out the ADC channel values */
 	adc[0] =  (p   / (_gyro_gain_x * _sensor_signs[0])) + gyro_offset;
