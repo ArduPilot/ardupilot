@@ -691,3 +691,133 @@ get_of_pitch(int32_t control_pitch)
     return control_pitch;
 #endif
 }
+
+
+// THOR
+// The function call for managing the flight mode Toy
+void roll_pitch_toy()
+{
+	bool manual_control = false;
+
+	if(g.rc_2.control_in != 0){ 		// pitch
+		manual_control  = true;
+
+	}else if(g.rc_1.control_in != 0){ 	// Roll/Yaw combo
+		// we have some user input
+		if(wp_control == TOY_MODE){
+			// we are heading to Virtual WP
+			manual_control  = true;
+		}else{
+			// we are in manual control
+			manual_control  = false;
+		}
+	}
+
+	// Yaw control - Yaw is always available, and will NOT exit the
+	// user from Loiter mode
+	int16_t yaw_rate = g.rc_1.control_in / g.toy_yaw_rate;
+	nav_yaw += yaw_rate / 100;
+	nav_yaw = wrap_360(nav_yaw);
+	g.rc_4.servo_out = get_stabilize_yaw(nav_yaw);
+
+	if(manual_control){
+		// user is in control: reset count-up timer
+		toy_input_timer = 0;
+
+		// roll_rate is the outcome of the linear equation or lookup table
+		// based on speed and Yaw rate
+		int16_t roll_rate;
+
+		// We manually set out modes based on the state of Toy mode:
+		// Handle throttle manually
+		throttle_mode 	= THROTTLE_MANUAL;
+		// Dont try to navigate or integrate a nav error
+		wp_control 		= NO_NAV_MODE;
+
+	#if TOY_LOOKUP == 1
+		uint8_t xx, yy;
+		// Lookup value
+		xx	= g_gps->ground_speed / 200;
+		yy	= abs(yaw_rate / 500);
+
+		// constrain to lookup Array range
+		xx = constrain(xx, 0, 3);
+		yy = constrain(yy, 0, 8);
+
+		roll_rate = toy_lookup[yy * 4 + xx];
+
+		if(yaw_rate == 0)
+			roll_rate = 0;
+		else if(yaw_rate < 0)
+			roll_rate = -roll_rate;
+
+		roll_rate = constrain(roll_rate, -(4500 / g.toy_yaw_rate.get()), (4500 / g.toy_yaw_rate.get()));
+	#else
+		// yaw_rate = roll angle
+		// Linear equation for Yaw:Speed to Roll
+		// default is 1000, lower for more roll action
+		roll_rate = (g_gps->ground_speed / 1000) * yaw_rate;
+		// limit roll rate to 15, 30, or 45 deg per second.
+		roll_rate = constrain(roll_rate, -(4500 / g.toy_yaw_rate.get()), (4500 / g.toy_yaw_rate.get()));
+	#endif
+
+		// Output the attitude
+		g.rc_1.servo_out = get_stabilize_roll(roll_rate);
+		g.rc_2.servo_out = get_stabilize_pitch(g.rc_2.control_in);
+
+	}else{
+		//no user input
+
+		// Hold current Yaw
+		g.rc_4.servo_out = get_stabilize_yaw(nav_yaw);
+
+		// Count-up to decision - Loiter or Virtual WP
+		toy_input_timer++;
+
+		if (toy_input_timer == TOY_DELAY){
+
+			// clear our I terms for Nav or we will carry over old values
+			reset_wind_I();
+
+			if (g_gps->ground_speed < 200) {
+				// loiter
+				wp_control = LOITER_MODE;
+				set_next_WP(&current_loc);
+
+			}else{
+				// hold velocity and
+				// calc a new WP 10000cm ahead (Approximate)
+				struct Location tmp;
+				tmp.lng = current_loc.lng + (10000 * cos_yaw_x);  	// X or East/West
+				tmp.lat = current_loc.lat + (10000 * sin_yaw_y);	// Y or North/South
+				tmp.alt = current_loc.alt;
+				set_next_WP(&tmp);
+
+				// A special navigation mode for Toy mode that maintains the entry speed
+				wp_control 	= TOY_MODE;
+				// Save our speed as we entered the mode
+				toy_speed 	= g_gps->ground_speed;
+			}
+
+			// Just level out until we hit 1.5s
+			g.rc_1.servo_out 	= get_stabilize_roll(0);
+			g.rc_2.servo_out 	= get_stabilize_pitch(0);
+
+		}else if (toy_input_timer > TOY_DELAY){
+			// we are in an alt hold throttle with manual override
+			throttle_mode 		= THROTTLE_HOLD;
+			// resets so we don't overflow the timer
+			toy_input_timer 	= TOY_DELAY;
+
+			// outputs the needed nav_control to maintain speed and direction
+			g.rc_1.servo_out 	= get_stabilize_roll(auto_roll);
+			g.rc_2.servo_out 	= get_stabilize_pitch(auto_pitch);
+
+		}else{
+
+			// outputs the needed nav_control to maintain speed and direction
+			g.rc_1.servo_out 	= get_stabilize_roll(0);
+			g.rc_2.servo_out 	= get_stabilize_pitch(0);
+		}
+	}
+}
