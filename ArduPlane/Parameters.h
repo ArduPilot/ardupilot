@@ -70,7 +70,6 @@ public:
         k_param_reset_switch_chan,
         k_param_manual_level,
 
-
 		// 110: Telemetry control
 		//
 		k_param_gcs0 = 110, // stream rates for port0
@@ -184,6 +183,9 @@ public:
         k_param_fence_channel,
         k_param_fence_minalt,
         k_param_fence_maxalt,
+
+        // simulator control
+        k_param_sitl = 230,
 
         //
         // 240: PID Controllers
