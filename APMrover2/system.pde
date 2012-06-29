@@ -602,34 +602,10 @@ void flash_leds(bool on)
 #ifndef DESKTOP_BUILD
 /*
  * Read Vcc vs 1.1v internal reference
- *
- * This call takes about 150us total. ADC conversion is 13 cycles of
- * 125khz default changes the mux if it isn't set, and return last
- * reading (allows necessary settle time) otherwise trigger the
- * conversion
  */
 uint16_t board_voltage(void)
 {
-	const uint8_t mux = (_BV(REFS0)|_BV(MUX4)|_BV(MUX3)|_BV(MUX2)|_BV(MUX1));
-
-	if (ADMUX == mux) {
-		ADCSRA |= _BV(ADSC);                // Convert
-		uint16_t counter=4000; // normally takes about 1700 loops
-		while (bit_is_set(ADCSRA, ADSC) && counter)  // Wait
-			counter--;
-		if (counter == 0) {
-			// we don't actually expect this timeout to happen,
-			// but we don't want any more code that could hang. We
-			// report 0V so it is clear in the logs that we don't know
-			// the value
-			return 0;
-		}
-		uint32_t result = ADCL | ADCH<<8;
-		return 1126400UL / result;       // Read and back-calculate Vcc in mV
-    }
-    // switch mux, settle time is needed. We don't want to delay
-    // waiting for the settle, so report 0 as a "don't know" value
-    ADMUX = mux;
-	return 0; // we don't know the current voltage
+    static AP_AnalogSource_Arduino vcc(ANALOG_PIN_VCC);
+    return vcc.read_vcc();
 }
 #endif
