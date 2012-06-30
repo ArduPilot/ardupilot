@@ -1298,6 +1298,13 @@ static void super_slow_loop()
 	if (g.log_bitmask & MASK_LOG_CUR && motors.armed())
 		Log_Write_Current();
 
+
+	#if 0 //CENTER_THROTTLE == 1
+	// recalibrate the throttle_cruise to center on the sticks
+	g.rc_3.set_range((g.throttle_cruise - (MAXIMUM_THROTTLE - g.throttle_cruise)), MAXIMUM_THROTTLE);
+	g.rc_3.set_range_out(0,1000);
+	#endif
+
 	// this function disarms the copter if it has been sitting on the ground for any moment of time greater than 25 seconds
 	// but only of the control mode is manual
 	if((control_mode <= ACRO) && (g.rc_3.control_in == 0)){
@@ -1675,7 +1682,7 @@ void update_throttle_mode(void)
 				}
 				// calc average throttle
 				if ((g.rc_3.control_in > g.throttle_min) && abs(climb_rate) < 60){
-					throttle_avg = throttle_avg * .98 + (float)g.rc_3.control_in * .02;
+					throttle_avg = throttle_avg * .99 + (float)g.rc_3.control_in * .01;
 					g.throttle_cruise = throttle_avg;
 				}
 				#endif
