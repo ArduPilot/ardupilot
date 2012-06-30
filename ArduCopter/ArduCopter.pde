@@ -2294,7 +2294,7 @@ static void update_nav_wp()
 		next_WP.lat = circle_WP.lat + (g.loiter_radius * 100 * sin(1.57 - circle_angle));
 
 		// calc the lat and long error to the target
-		calc_location_error(&circle_WP);
+		calc_location_error(&next_WP);
 
 		// use error as the desired rate towards the target
 		// nav_lon, nav_lat is calculated
