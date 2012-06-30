@@ -198,7 +198,7 @@ static void do_RTL(void)
 {
 	// TODO: Altitude option from mission planner
 	Location temp	= home;
-	temp.alt		= read_alt_to_hold();
+	temp.alt		= get_RTL_alt();
 
 	//so we know where we are navigating from
 	// --------------------------------------
@@ -561,7 +561,6 @@ static bool verify_loiter_turns()
 
 static bool verify_RTL()
 {
-	// loiter at the WP
 	wp_control 	= WP_MODE;
 
 	// Did we pass the WP?	// Distance checking

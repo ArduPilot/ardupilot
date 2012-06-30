@@ -105,15 +105,13 @@ static void set_cmd_with_index(struct Location temp, int i)
 		g.command_total.set_and_save(i+1);
 }
 
-static int32_t read_alt_to_hold()
+static int32_t get_RTL_alt()
 {
-	return current_loc.alt;
-	/*
-	if(g.RTL_altitude <= 0)
+	if(g.RTL_altitude <= 0){
 		return current_loc.alt;
-	else
-		return g.RTL_altitude;// + home.alt;
-	*/
+	}else{
+		return g.RTL_altitude;
+	}
 }
 
 
