@@ -45,8 +45,8 @@ private:
     }
     void autoLoop(const float dt) {
         //_board->debug->printf_P(PSTR("cont: ch1: %f\tch2: %f\n"),_board->rc[ch_sail]->getRadioPosition(), _board->rc[ch_str]->getRadioPosition());
-        float windDir = -.339373*analogRead(1)+175.999;       
-
+        static AP_AnalogSource_Arduino wind_pin(1);
+        float windDir = -.339373*wind_pin.read_average()+175.999;       
 
         // neglects heading command derivative
         float steering = -pidStr.update(_guide->getHeadingError(), -_nav->getYawRate(), dt);
