@@ -333,8 +333,7 @@ static const char* flight_mode_strings[] = {
 	"POSITION",		// 8
 	"LAND",			// 9
 	"OF_LOITER",	// 10
-	"APP",			// 11
-	"TOY"};			// 12	THOR Added for additional Fligt mode
+	"TOY"};			// 11	THOR Added for additional Fligt mode
 
 /* Radio values
 		Channel assignments
@@ -685,6 +684,8 @@ static int16_t 	landing_boost;
 // for controlling the landing throttle curve
 //verifies landings
 static int16_t ground_detector;
+// have we reached our desired altitude brefore heading home?
+static bool	rtl_reached_alt;
 
 ////////////////////////////////////////////////////////////////////////////////
 // Toy Mode - THOR
@@ -1819,24 +1820,19 @@ static void update_navigation()
 			break;
 
 		case RTL:
-			// We have reached Home
-			if((wp_distance <= g.waypoint_radius) || check_missed_wp()){
-				// if loiter_timer value > 0, we are set to trigger auto_land or approach after 20 seconds
-				set_mode(LOITER);
-				// force loitering above home
-				next_WP.lat = home.lat;
-				next_WP.lng = home.lng;
-
-				// If land is enabled OR failsafe OR auto approach altitude is set
-				if(g.rtl_land_enabled || failsafe || g.rtl_approach_alt >= 1)
-					loiter_timer = millis();
-				else
-					loiter_timer = 0;
-				break;
+			// have we reached the desired Altitude?
+			if(alt_change_flag <= REACHED_ALT){ // we are at or above the target alt
+				if(rtl_reached_alt == false){
+					rtl_reached_alt = true;
+					do_RTL();
+				}
+				wp_control = WP_MODE;
+				// checks if we have made it to home
+				update_nav_RTL();
+			} else{
+				// we need to loiter until we are ready to come home
+				wp_control = LOITER_MODE;
 			}
-
-			wp_control = WP_MODE;
-			slow_wp = true;
 
 			// calculates desired Yaw
 			#if FRAME_CONFIG ==	HELI_FRAME
@@ -1867,7 +1863,7 @@ static void update_navigation()
 				next_WP.lat = current_loc.lat;
 				next_WP.lng = current_loc.lng;
 
-				if( g.rc_2.control_in == 0 && g.rc_1.control_in == 0 ){
+				if(g.rc_2.control_in == 0 && g.rc_1.control_in == 0){
 					loiter_override 	= false;
 					wp_control 			= LOITER_MODE;
 				}
@@ -1877,19 +1873,19 @@ static void update_navigation()
 
 			if(loiter_timer != 0){
 				// If we have a safe approach alt set and we have been loitering for 20 seconds(default), begin approach
-				if(g.rtl_approach_alt >= 1 && (millis() - loiter_timer) > (RTL_APPROACH_DELAY * 1000)){
+				if((millis() - loiter_timer) > (uint32_t)g.auto_land_timeout.get()){
 					// just to make sure we clear the timer
 					loiter_timer = 0;
-					set_mode(APPROACH);
-				}
-				// Kick us out of loiter and begin landing if the loiter_timer is set
-				else if((millis() - loiter_timer) > (uint32_t)g.auto_land_timeout.get()){
-					// just to make sure we clear the timer
-					loiter_timer = 0;
-					set_mode(LAND);
-					if(home_distance < 300){
-						next_WP.lat = home.lat;
-						next_WP.lng = home.lng;
+					if(g.rtl_approach_alt == 0){
+						set_mode(LAND);
+						if(home_distance < 300){
+							next_WP.lat = home.lat;
+							next_WP.lng = home.lng;
+						}
+					}else{
+						if(g.rtl_approach_alt < current_loc.alt){
+							set_new_altitude(g.rtl_approach_alt);
+						}
 					}
 				}
 			}
@@ -1904,11 +1900,6 @@ static void update_navigation()
 			else
 				verify_land_baro();
 
-			// calculates the desired Roll and Pitch
-			update_nav_wp();
-			break;
-
-		case APPROACH:
 			// calculates the desired Roll and Pitch
 			update_nav_wp();
 			break;
@@ -1951,6 +1942,32 @@ static void update_navigation()
 			nav_yaw = 0;
 		}
 	}
+}
+
+static void update_nav_RTL()
+{
+	// Have we have reached Home?
+	if(wp_distance <= g.waypoint_radius){
+		// if loiter_timer value > 0, we are set to trigger auto_land or approach
+		set_mode(LOITER);
+		// just un case we arrive and we aren't at the lower RTL alt yet.
+		if(current_loc.alt > get_RTL_alt()){
+			set_new_altitude(get_RTL_alt());
+		}
+
+		// force loitering above home
+		next_WP.lat = home.lat;
+		next_WP.lng = home.lng;
+
+		// If land is enabled OR failsafe OR auto approach altitude is set
+		// we will go into automatic land, (g.rtl_approach_alt) is the lowest point
+		if(failsafe || g.rtl_approach_alt >= 0)
+			loiter_timer = millis();
+		else
+			loiter_timer = 0;
+	}
+
+	slow_wp = true;
 }
 
 static void read_AHRS(void)
