@@ -94,13 +94,6 @@ static const AP_Param::Info var_info[] PROGMEM = {
 	// @User: Standard
 	GSCALAR(rtl_approach_alt,	"APPROACH_ALT"),
 
-	// @Param: RETRO_LOITER
-	// @DisplayName: Retro Loiter
-	// @Description: Setting this to Enabled(1) will enable the Loiter from 2.0.49. Setting this to Disabled(0) will use the most recent Loiter routines.
-	// @Values: 0:Disabled,1:Enabled
-	// @User: Standard
-	GSCALAR(retro_loiter,	"RETRO_LOITER"),
-
 	GSCALAR(waypoint_mode,	"WP_MODE"),
 	GSCALAR(command_total,	"WP_TOTAL"),
 	GSCALAR(command_index,	"WP_INDEX"),
