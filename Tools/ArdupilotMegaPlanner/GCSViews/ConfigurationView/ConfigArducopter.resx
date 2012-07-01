@@ -119,7 +119,7 @@
   </resheader>
   <assembly alias="System.Drawing" name="System.Drawing, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a" />
   <data name="myLabel3.Location" type="System.Drawing.Point, System.Drawing">
-    <value>540, 302</value>
+    <value>364, 321</value>
   </data>
   <data name="myLabel3.Size" type="System.Drawing.Size, System.Drawing">
     <value>29, 23</value>
@@ -135,16 +135,16 @@
     <value>myLabel3</value>
   </data>
   <data name="&gt;&gt;myLabel3.Type" xml:space="preserve">
-    <value>ArdupilotMega.Controls.MyLabel, ArdupilotMegaPlanner, Version=1.1.4523.24267, Culture=neutral, PublicKeyToken=null</value>
+    <value>ArdupilotMega.Controls.MyLabel, ArdupilotMegaPlanner10, Version=1.1.4564.20854, Culture=neutral, PublicKeyToken=null</value>
   </data>
   <data name="&gt;&gt;myLabel3.Parent" xml:space="preserve">
     <value>$this</value>
   </data>
   <data name="&gt;&gt;myLabel3.ZOrder" xml:space="preserve">
-    <value>2</value>
+    <value>3</value>
   </data>
   <data name="TUNE_LOW.Location" type="System.Drawing.Point, System.Drawing">
-    <value>575, 305</value>
+    <value>399, 324</value>
   </data>
   <data name="TUNE_LOW.Size" type="System.Drawing.Size, System.Drawing">
     <value>51, 20</value>
@@ -162,10 +162,10 @@
     <value>$this</value>
   </data>
   <data name="&gt;&gt;TUNE_LOW.ZOrder" xml:space="preserve">
-    <value>3</value>
+    <value>4</value>
   </data>
   <data name="TUNE_HIGH.Location" type="System.Drawing.Point, System.Drawing">
-    <value>665, 305</value>
+    <value>489, 324</value>
   </data>
   <data name="TUNE_HIGH.Size" type="System.Drawing.Size, System.Drawing">
     <value>46, 20</value>
@@ -183,10 +183,10 @@
     <value>$this</value>
   </data>
   <data name="&gt;&gt;TUNE_HIGH.ZOrder" xml:space="preserve">
-    <value>4</value>
+    <value>5</value>
   </data>
   <data name="myLabel2.Location" type="System.Drawing.Point, System.Drawing">
-    <value>540, 277</value>
+    <value>364, 296</value>
   </data>
   <data name="myLabel2.Size" type="System.Drawing.Size, System.Drawing">
     <value>53, 23</value>
@@ -201,13 +201,13 @@
     <value>myLabel2</value>
   </data>
   <data name="&gt;&gt;myLabel2.Type" xml:space="preserve">
-    <value>ArdupilotMega.Controls.MyLabel, ArdupilotMegaPlanner, Version=1.1.4523.24267, Culture=neutral, PublicKeyToken=null</value>
+    <value>ArdupilotMega.Controls.MyLabel, ArdupilotMegaPlanner10, Version=1.1.4564.20854, Culture=neutral, PublicKeyToken=null</value>
   </data>
   <data name="&gt;&gt;myLabel2.Parent" xml:space="preserve">
     <value>$this</value>
   </data>
   <data name="&gt;&gt;myLabel2.ZOrder" xml:space="preserve">
-    <value>5</value>
+    <value>6</value>
   </data>
   <data name="TUNE.Items" xml:space="preserve">
     <value>CH6_NONE</value>
@@ -276,7 +276,7 @@
     <value>CH6_RATE_KD</value>
   </data>
   <data name="TUNE.Location" type="System.Drawing.Point, System.Drawing">
-    <value>599, 277</value>
+    <value>423, 296</value>
   </data>
   <data name="TUNE.Size" type="System.Drawing.Size, System.Drawing">
     <value>112, 21</value>
@@ -294,10 +294,10 @@
     <value>$this</value>
   </data>
   <data name="&gt;&gt;TUNE.ZOrder" xml:space="preserve">
-    <value>6</value>
+    <value>7</value>
   </data>
   <data name="myLabel1.Location" type="System.Drawing.Point, System.Drawing">
-    <value>540, 329</value>
+    <value>364, 348</value>
   </data>
   <data name="myLabel1.Size" type="System.Drawing.Size, System.Drawing">
     <value>53, 23</value>
@@ -312,13 +312,13 @@
     <value>myLabel1</value>
   </data>
   <data name="&gt;&gt;myLabel1.Type" xml:space="preserve">
-    <value>ArdupilotMega.Controls.MyLabel, ArdupilotMegaPlanner, Version=1.1.4523.24267, Culture=neutral, PublicKeyToken=null</value>
+    <value>ArdupilotMega.Controls.MyLabel, ArdupilotMegaPlanner10, Version=1.1.4564.20854, Culture=neutral, PublicKeyToken=null</value>
   </data>
   <data name="&gt;&gt;myLabel1.Parent" xml:space="preserve">
     <value>$this</value>
   </data>
   <data name="&gt;&gt;myLabel1.ZOrder" xml:space="preserve">
-    <value>7</value>
+    <value>8</value>
   </data>
   <data name="CH7_OPT.Items" xml:space="preserve">
     <value>Do Nothing</value>
@@ -345,7 +345,7 @@
     <value>Save WP</value>
   </data>
   <data name="CH7_OPT.Location" type="System.Drawing.Point, System.Drawing">
-    <value>599, 329</value>
+    <value>423, 348</value>
   </data>
   <data name="CH7_OPT.Size" type="System.Drawing.Size, System.Drawing">
     <value>112, 21</value>
@@ -363,7 +363,7 @@
     <value>$this</value>
   </data>
   <data name="&gt;&gt;CH7_OPT.ZOrder" xml:space="preserve">
-    <value>8</value>
+    <value>9</value>
   </data>
   <data name="THR_RATE_D.Location" type="System.Drawing.Point, System.Drawing">
     <value>80, 60</value>
@@ -559,7 +559,7 @@
     <value>7</value>
   </data>
   <data name="groupBox5.Location" type="System.Drawing.Point, System.Drawing">
-    <value>12, 267</value>
+    <value>12, 247</value>
   </data>
   <data name="groupBox5.Size" type="System.Drawing.Size, System.Drawing">
     <value>170, 110</value>
@@ -580,7 +580,7 @@
     <value>$this</value>
   </data>
   <data name="&gt;&gt;groupBox5.ZOrder" xml:space="preserve">
-    <value>9</value>
+    <value>10</value>
   </data>
   <data name="CHK_lockrollpitch.AutoSize" type="System.Boolean, mscorlib">
     <value>True</value>
@@ -589,7 +589,7 @@
     <value>NoControl</value>
   </data>
   <data name="CHK_lockrollpitch.Location" type="System.Drawing.Point, System.Drawing">
-    <value>9, 247</value>
+    <value>12, 112</value>
   </data>
   <data name="CHK_lockrollpitch.Size" type="System.Drawing.Size, System.Drawing">
     <value>154, 17</value>
@@ -610,7 +610,7 @@
     <value>$this</value>
   </data>
   <data name="&gt;&gt;CHK_lockrollpitch.ZOrder" xml:space="preserve">
-    <value>10</value>
+    <value>11</value>
   </data>
   <data name="NAV_LAT_D.Location" type="System.Drawing.Point, System.Drawing">
     <value>80, 60</value>
@@ -853,7 +853,7 @@
     <value>9</value>
   </data>
   <data name="groupBox4.Location" type="System.Drawing.Point, System.Drawing">
-    <value>540, 133</value>
+    <value>541, 247</value>
   </data>
   <data name="groupBox4.Size" type="System.Drawing.Size, System.Drawing">
     <value>170, 131</value>
@@ -874,7 +874,7 @@
     <value>$this</value>
   </data>
   <data name="&gt;&gt;groupBox4.ZOrder" xml:space="preserve">
-    <value>11</value>
+    <value>12</value>
   </data>
   <data name="XTRK_GAIN_SC1.Location" type="System.Drawing.Point, System.Drawing">
     <value>80, 13</value>
@@ -925,7 +925,7 @@
     <value>1</value>
   </data>
   <data name="groupBox6.Location" type="System.Drawing.Point, System.Drawing">
-    <value>364, 267</value>
+    <value>364, 247</value>
   </data>
   <data name="groupBox6.Size" type="System.Drawing.Size, System.Drawing">
     <value>170, 43</value>
@@ -946,7 +946,7 @@
     <value>$this</value>
   </data>
   <data name="&gt;&gt;groupBox6.ZOrder" xml:space="preserve">
-    <value>12</value>
+    <value>13</value>
   </data>
   <data name="THR_ALT_IMAX.Location" type="System.Drawing.Point, System.Drawing">
     <value>80, 63</value>
@@ -1093,7 +1093,7 @@
     <value>5</value>
   </data>
   <data name="groupBox7.Location" type="System.Drawing.Point, System.Drawing">
-    <value>188, 267</value>
+    <value>188, 247</value>
   </data>
   <data name="groupBox7.Size" type="System.Drawing.Size, System.Drawing">
     <value>170, 110</value>
@@ -1114,7 +1114,7 @@
     <value>$this</value>
   </data>
   <data name="&gt;&gt;groupBox7.ZOrder" xml:space="preserve">
-    <value>13</value>
+    <value>14</value>
   </data>
   <data name="HLD_LAT_IMAX.Location" type="System.Drawing.Point, System.Drawing">
     <value>80, 61</value>
@@ -1270,7 +1270,7 @@
     <value>27</value>
   </data>
   <data name="groupBox19.Text" xml:space="preserve">
-    <value>Loiter</value>
+    <value>Loiter Speed</value>
   </data>
   <data name="&gt;&gt;groupBox19.Name" xml:space="preserve">
     <value>groupBox19</value>
@@ -1282,7 +1282,7 @@
     <value>$this</value>
   </data>
   <data name="&gt;&gt;groupBox19.ZOrder" xml:space="preserve">
-    <value>14</value>
+    <value>15</value>
   </data>
   <data name="STB_YAW_IMAX.Location" type="System.Drawing.Point, System.Drawing">
     <value>80, 63</value>
@@ -1450,7 +1450,7 @@
     <value>$this</value>
   </data>
   <data name="&gt;&gt;groupBox20.ZOrder" xml:space="preserve">
-    <value>15</value>
+    <value>16</value>
   </data>
   <data name="STAB_D.Location" type="System.Drawing.Point, System.Drawing">
     <value>80, 88</value>
@@ -1666,7 +1666,7 @@
     <value>$this</value>
   </data>
   <data name="&gt;&gt;groupBox21.ZOrder" xml:space="preserve">
-    <value>16</value>
+    <value>17</value>
   </data>
   <data name="STB_RLL_IMAX.Location" type="System.Drawing.Point, System.Drawing">
     <value>80, 63</value>
@@ -1834,7 +1834,7 @@
     <value>$this</value>
   </data>
   <data name="&gt;&gt;groupBox22.ZOrder" xml:space="preserve">
-    <value>17</value>
+    <value>18</value>
   </data>
   <data name="RATE_YAW_D.Location" type="System.Drawing.Point, System.Drawing">
     <value>80, 60</value>
@@ -2050,7 +2050,7 @@
     <value>$this</value>
   </data>
   <data name="&gt;&gt;groupBox23.ZOrder" xml:space="preserve">
-    <value>18</value>
+    <value>19</value>
   </data>
   <data name="RATE_PIT_D.Location" type="System.Drawing.Point, System.Drawing">
     <value>80, 60</value>
@@ -2266,7 +2266,7 @@
     <value>$this</value>
   </data>
   <data name="&gt;&gt;groupBox24.ZOrder" xml:space="preserve">
-    <value>19</value>
+    <value>20</value>
   </data>
   <data name="RATE_RLL_D.Location" type="System.Drawing.Point, System.Drawing">
     <value>80, 60</value>
@@ -2482,7 +2482,7 @@
     <value>$this</value>
   </data>
   <data name="&gt;&gt;groupBox25.ZOrder" xml:space="preserve">
-    <value>20</value>
+    <value>21</value>
   </data>
   <metadata name="toolTip1.TrayLocation" type="System.Drawing.Point, System.Drawing, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a">
     <value>17, 17</value>
@@ -2506,13 +2506,13 @@
     <value>BUT_writePIDS</value>
   </data>
   <data name="&gt;&gt;BUT_writePIDS.Type" xml:space="preserve">
-    <value>ArdupilotMega.Controls.MyButton, ArdupilotMegaPlanner, Version=1.1.4523.24267, Culture=neutral, PublicKeyToken=null</value>
+    <value>ArdupilotMega.Controls.MyButton, ArdupilotMegaPlanner10, Version=1.1.4564.20854, Culture=neutral, PublicKeyToken=null</value>
   </data>
   <data name="&gt;&gt;BUT_writePIDS.Parent" xml:space="preserve">
     <value>$this</value>
   </data>
   <data name="&gt;&gt;BUT_writePIDS.ZOrder" xml:space="preserve">
-    <value>1</value>
+    <value>2</value>
   </data>
   <data name="BUT_rerequestparams.ImeMode" type="System.Windows.Forms.ImeMode, System.Windows.Forms">
     <value>NoControl</value>
@@ -2536,12 +2536,228 @@
     <value>BUT_rerequestparams</value>
   </data>
   <data name="&gt;&gt;BUT_rerequestparams.Type" xml:space="preserve">
-    <value>ArdupilotMega.Controls.MyButton, ArdupilotMegaPlanner, Version=1.1.4523.24267, Culture=neutral, PublicKeyToken=null</value>
+    <value>ArdupilotMega.Controls.MyButton, ArdupilotMegaPlanner10, Version=1.1.4564.20854, Culture=neutral, PublicKeyToken=null</value>
   </data>
   <data name="&gt;&gt;BUT_rerequestparams.Parent" xml:space="preserve">
     <value>$this</value>
   </data>
   <data name="&gt;&gt;BUT_rerequestparams.ZOrder" xml:space="preserve">
+    <value>1</value>
+  </data>
+  <data name="LOITER_LAT_D.Location" type="System.Drawing.Point, System.Drawing">
+    <value>80, 60</value>
+  </data>
+  <data name="LOITER_LAT_D.Size" type="System.Drawing.Size, System.Drawing">
+    <value>78, 20</value>
+  </data>
+  <data name="LOITER_LAT_D.TabIndex" type="System.Int32, mscorlib">
+    <value>8</value>
+  </data>
+  <data name="&gt;&gt;LOITER_LAT_D.Name" xml:space="preserve">
+    <value>LOITER_LAT_D</value>
+  </data>
+  <data name="&gt;&gt;LOITER_LAT_D.Type" xml:space="preserve">
+    <value>System.Windows.Forms.NumericUpDown, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </data>
+  <data name="&gt;&gt;LOITER_LAT_D.Parent" xml:space="preserve">
+    <value>groupBox1</value>
+  </data>
+  <data name="&gt;&gt;LOITER_LAT_D.ZOrder" xml:space="preserve">
+    <value>0</value>
+  </data>
+  <data name="label1.ImeMode" type="System.Windows.Forms.ImeMode, System.Windows.Forms">
+    <value>NoControl</value>
+  </data>
+  <data name="label1.Location" type="System.Drawing.Point, System.Drawing">
+    <value>6, 63</value>
+  </data>
+  <data name="label1.Size" type="System.Drawing.Size, System.Drawing">
+    <value>10, 13</value>
+  </data>
+  <data name="label1.TabIndex" type="System.Int32, mscorlib">
+    <value>9</value>
+  </data>
+  <data name="label1.Text" xml:space="preserve">
+    <value>D</value>
+  </data>
+  <data name="&gt;&gt;label1.Name" xml:space="preserve">
+    <value>label1</value>
+  </data>
+  <data name="&gt;&gt;label1.Type" xml:space="preserve">
+    <value>System.Windows.Forms.Label, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </data>
+  <data name="&gt;&gt;label1.Parent" xml:space="preserve">
+    <value>groupBox1</value>
+  </data>
+  <data name="&gt;&gt;label1.ZOrder" xml:space="preserve">
+    <value>1</value>
+  </data>
+  <data name="LOITER_LAT_IMAX.Location" type="System.Drawing.Point, System.Drawing">
+    <value>80, 84</value>
+  </data>
+  <data name="LOITER_LAT_IMAX.Size" type="System.Drawing.Size, System.Drawing">
+    <value>78, 20</value>
+  </data>
+  <data name="LOITER_LAT_IMAX.TabIndex" type="System.Int32, mscorlib">
+    <value>0</value>
+  </data>
+  <data name="&gt;&gt;LOITER_LAT_IMAX.Name" xml:space="preserve">
+    <value>LOITER_LAT_IMAX</value>
+  </data>
+  <data name="&gt;&gt;LOITER_LAT_IMAX.Type" xml:space="preserve">
+    <value>System.Windows.Forms.NumericUpDown, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </data>
+  <data name="&gt;&gt;LOITER_LAT_IMAX.Parent" xml:space="preserve">
+    <value>groupBox1</value>
+  </data>
+  <data name="&gt;&gt;LOITER_LAT_IMAX.ZOrder" xml:space="preserve">
+    <value>2</value>
+  </data>
+  <data name="label2.ImeMode" type="System.Windows.Forms.ImeMode, System.Windows.Forms">
+    <value>NoControl</value>
+  </data>
+  <data name="label2.Location" type="System.Drawing.Point, System.Drawing">
+    <value>6, 87</value>
+  </data>
+  <data name="label2.Size" type="System.Drawing.Size, System.Drawing">
+    <value>65, 13</value>
+  </data>
+  <data name="label2.TabIndex" type="System.Int32, mscorlib">
+    <value>1</value>
+  </data>
+  <data name="label2.Text" xml:space="preserve">
+    <value>IMAX</value>
+  </data>
+  <data name="&gt;&gt;label2.Name" xml:space="preserve">
+    <value>label2</value>
+  </data>
+  <data name="&gt;&gt;label2.Type" xml:space="preserve">
+    <value>System.Windows.Forms.Label, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </data>
+  <data name="&gt;&gt;label2.Parent" xml:space="preserve">
+    <value>groupBox1</value>
+  </data>
+  <data name="&gt;&gt;label2.ZOrder" xml:space="preserve">
+    <value>3</value>
+  </data>
+  <data name="LOITER_LAT_I.Location" type="System.Drawing.Point, System.Drawing">
+    <value>80, 37</value>
+  </data>
+  <data name="LOITER_LAT_I.Size" type="System.Drawing.Size, System.Drawing">
+    <value>78, 20</value>
+  </data>
+  <data name="LOITER_LAT_I.TabIndex" type="System.Int32, mscorlib">
+    <value>4</value>
+  </data>
+  <data name="&gt;&gt;LOITER_LAT_I.Name" xml:space="preserve">
+    <value>LOITER_LAT_I</value>
+  </data>
+  <data name="&gt;&gt;LOITER_LAT_I.Type" xml:space="preserve">
+    <value>System.Windows.Forms.NumericUpDown, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </data>
+  <data name="&gt;&gt;LOITER_LAT_I.Parent" xml:space="preserve">
+    <value>groupBox1</value>
+  </data>
+  <data name="&gt;&gt;LOITER_LAT_I.ZOrder" xml:space="preserve">
+    <value>4</value>
+  </data>
+  <data name="label3.ImeMode" type="System.Windows.Forms.ImeMode, System.Windows.Forms">
+    <value>NoControl</value>
+  </data>
+  <data name="label3.Location" type="System.Drawing.Point, System.Drawing">
+    <value>6, 40</value>
+  </data>
+  <data name="label3.Size" type="System.Drawing.Size, System.Drawing">
+    <value>10, 13</value>
+  </data>
+  <data name="label3.TabIndex" type="System.Int32, mscorlib">
+    <value>5</value>
+  </data>
+  <data name="label3.Text" xml:space="preserve">
+    <value>I</value>
+  </data>
+  <data name="&gt;&gt;label3.Name" xml:space="preserve">
+    <value>label3</value>
+  </data>
+  <data name="&gt;&gt;label3.Type" xml:space="preserve">
+    <value>System.Windows.Forms.Label, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </data>
+  <data name="&gt;&gt;label3.Parent" xml:space="preserve">
+    <value>groupBox1</value>
+  </data>
+  <data name="&gt;&gt;label3.ZOrder" xml:space="preserve">
+    <value>5</value>
+  </data>
+  <data name="LOITER_LAT_P.Location" type="System.Drawing.Point, System.Drawing">
+    <value>80, 13</value>
+  </data>
+  <data name="LOITER_LAT_P.Size" type="System.Drawing.Size, System.Drawing">
+    <value>78, 20</value>
+  </data>
+  <data name="LOITER_LAT_P.TabIndex" type="System.Int32, mscorlib">
+    <value>6</value>
+  </data>
+  <data name="&gt;&gt;LOITER_LAT_P.Name" xml:space="preserve">
+    <value>LOITER_LAT_P</value>
+  </data>
+  <data name="&gt;&gt;LOITER_LAT_P.Type" xml:space="preserve">
+    <value>System.Windows.Forms.NumericUpDown, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </data>
+  <data name="&gt;&gt;LOITER_LAT_P.Parent" xml:space="preserve">
+    <value>groupBox1</value>
+  </data>
+  <data name="&gt;&gt;LOITER_LAT_P.ZOrder" xml:space="preserve">
+    <value>6</value>
+  </data>
+  <data name="label4.ImeMode" type="System.Windows.Forms.ImeMode, System.Windows.Forms">
+    <value>NoControl</value>
+  </data>
+  <data name="label4.Location" type="System.Drawing.Point, System.Drawing">
+    <value>6, 16</value>
+  </data>
+  <data name="label4.Size" type="System.Drawing.Size, System.Drawing">
+    <value>14, 13</value>
+  </data>
+  <data name="label4.TabIndex" type="System.Int32, mscorlib">
+    <value>7</value>
+  </data>
+  <data name="label4.Text" xml:space="preserve">
+    <value>P</value>
+  </data>
+  <data name="&gt;&gt;label4.Name" xml:space="preserve">
+    <value>label4</value>
+  </data>
+  <data name="&gt;&gt;label4.Type" xml:space="preserve">
+    <value>System.Windows.Forms.Label, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </data>
+  <data name="&gt;&gt;label4.Parent" xml:space="preserve">
+    <value>groupBox1</value>
+  </data>
+  <data name="&gt;&gt;label4.ZOrder" xml:space="preserve">
+    <value>7</value>
+  </data>
+  <data name="groupBox1.Location" type="System.Drawing.Point, System.Drawing">
+    <value>537, 133</value>
+  </data>
+  <data name="groupBox1.Size" type="System.Drawing.Size, System.Drawing">
+    <value>170, 108</value>
+  </data>
+  <data name="groupBox1.TabIndex" type="System.Int32, mscorlib">
+    <value>32</value>
+  </data>
+  <data name="groupBox1.Text" xml:space="preserve">
+    <value>Rate Loiter</value>
+  </data>
+  <data name="&gt;&gt;groupBox1.Name" xml:space="preserve">
+    <value>groupBox1</value>
+  </data>
+  <data name="&gt;&gt;groupBox1.Type" xml:space="preserve">
+    <value>System.Windows.Forms.GroupBox, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </data>
+  <data name="&gt;&gt;groupBox1.Parent" xml:space="preserve">
+    <value>$this</value>
+  </data>
+  <data name="&gt;&gt;groupBox1.ZOrder" xml:space="preserve">
     <value>0</value>
   </data>
   <metadata name="$this.Localizable" type="System.Boolean, mscorlib, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089">
@@ -2566,6 +2782,6 @@
     <value>ConfigArducopter</value>
   </data>
   <data name="&gt;&gt;$this.Type" xml:space="preserve">
-    <value>ArdupilotMega.Controls.BackstageView.BackStageViewContentPanel, ArdupilotMegaPlanner, Version=1.1.4523.24267, Culture=neutral, PublicKeyToken=null</value>
+    <value>ArdupilotMega.Controls.BackstageView.BackStageViewContentPanel, ArdupilotMegaPlanner10, Version=1.1.4564.20854, Culture=neutral, PublicKeyToken=null</value>
   </data>
 </root>

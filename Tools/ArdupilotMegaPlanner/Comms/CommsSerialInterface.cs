@@ -50,7 +50,6 @@ namespace ArdupilotMega.Comms
          string PortName { get; set; }
          int ReadBufferSize { get; set; }
          int ReadTimeout { get; set; }
-         int ReceivedBytesThreshold { get; set; }
          bool RtsEnable { get; set; }
          StopBits StopBits { get; set; }
          int WriteBufferSize { get; set; }

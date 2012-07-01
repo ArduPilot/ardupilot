@@ -180,7 +180,7 @@ namespace ArdupilotMega.GCSViews.ConfigurationView
                 }
                 Common.InputBox("Custom Note", "Enter your Notes/Frame Type etc", ref input);
                 if (input != "")
-                    sw.WriteLine("NOTE: " + input.Replace(',', '|'));
+                    sw.WriteLine("#NOTE: " + input.Replace(',', '|'));
                 foreach (DataGridViewRow row in Params.Rows)
                 {
                     float value = float.Parse(row.Cells[1].Value.ToString());

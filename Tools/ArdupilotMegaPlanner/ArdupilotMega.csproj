@@ -219,6 +219,9 @@
       <Private>False</Private>
     </Reference>
     <Reference Include="System.Xml.Linq" />
+    <Reference Include="Transitions">
+      <HintPath>Lib\Transitions.dll</HintPath>
+    </Reference>
     <Reference Include="ZedGraph, Version=5.1.2.878, Culture=neutral, PublicKeyToken=02a83cbd123fcd60, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
     </Reference>
@@ -242,6 +245,7 @@
     </Compile>
     <Compile Include="Comms\CommsTCPSerial.cs" />
     <Compile Include="Comms\CommsUdpSerial.cs" />
+    <Compile Include="Presenter\ConfigCameraStabPresenter.cs" />
     <Compile Include="Controls\HSI.cs">
       <SubType>UserControl</SubType>
     </Compile>
@@ -249,8 +253,22 @@
       <DependentUpon>HSI.cs</DependentUpon>
     </Compile>
     <Compile Include="Controls\IDynamicParameterControl.cs" />
+    <Compile Include="Controls\LabelWithPseudoOpacity.cs">
+      <SubType>Component</SubType>
+    </Compile>
     <Compile Include="Controls\OpenGLtest.cs">
       <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="Controls\PictureBoxWithPseudoOpacity.cs">
+      <SubType>Component</SubType>
+    </Compile>
+    <Compile Include="Controls\PseudoOpacityHelper.cs" />
+    <Compile Include="Presenter\DelegateCommand.cs" />
+    <Compile Include="GCSViews\ConfigurationView\ConfigCameraStab.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="GCSViews\ConfigurationView\ConfigCameraStab.designer.cs">
+      <DependentUpon>ConfigCameraStab.cs</DependentUpon>
     </Compile>
     <Compile Include="GCSViews\ConfigurationView\ConfigFriendlyParams.cs">
       <SubType>UserControl</SubType>
@@ -276,6 +294,7 @@
     <Compile Include="GCSViews\ConfigurationView\ConfigArdurover.Designer.cs">
       <DependentUpon>ConfigArdurover.cs</DependentUpon>
     </Compile>
+    <Compile Include="Presenter\ICommand.cs" />
     <Compile Include="Mavlink\IMAVLink.cs" />
     <Compile Include="Utilities\CaptureMJPEG.cs" />
     <Compile Include="Utilities\CollectionExtensions.cs" />
@@ -674,6 +693,9 @@
     </EmbeddedResource>
     <EmbeddedResource Include="GCSViews\ConfigurationView\ConfigBatteryMonitoring.zh-TW.resx">
       <DependentUpon>ConfigBatteryMonitoring.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="GCSViews\ConfigurationView\ConfigCameraStab.resx">
+      <DependentUpon>ConfigCameraStab.cs</DependentUpon>
     </EmbeddedResource>
     <EmbeddedResource Include="GCSViews\ConfigurationView\ConfigFlightModes.es-ES.resx">
       <DependentUpon>ConfigFlightModes.cs</DependentUpon>
@@ -1131,6 +1153,7 @@
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
     <None Include="Resources\Welcome_CN.rtf" />
+    <None Include="Resources\Welcome_TW.rtf" />
     <None Include="Resources\Welcome_to_Michael_Oborne.rtf">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
@@ -1162,6 +1185,10 @@
     <None Include="Resources\new frames-05.png" />
     <None Include="Resources\BR-0016-01-3T.jpg" />
     <None Include="Resources\car.png" />
+    <None Include="Resources\iconWarning32.png" />
+    <None Include="Resources\iconWarning48.png" />
+    <None Include="Resources\cameraGimalPitch1.png" />
+    <None Include="Resources\cameraGimalRoll1.png" />
     <Content Include="Resources\MAVCmd.zh-Hans.txt" />
     <None Include="Resources\MAVParam.txt" />
     <Content Include="Resources\MAVParam.zh-Hans.txt" />

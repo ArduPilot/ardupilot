@@ -46,6 +46,7 @@ namespace ArdupilotMega.Controls
                         thisctl.Value = (decimal)(float)MainV2.comPort.param[value];
                         thisctl.Enabled = true;
                         thisctl.Validated += new EventHandler(thisctl_Validated);
+                        thisctl.ValueChanged += thisctl_Validated;
                     }
                     catch (Exception ex) { Console.WriteLine(ex.ToString()); }
                 }

@@ -112,7 +112,7 @@ namespace wix
             */
             //Console.ReadLine();
 
-            string exepath = Path.GetFullPath(path) + Path.DirectorySeparatorChar + "ArdupilotMegaPlanner.exe";
+            string exepath = Path.GetFullPath(path) + Path.DirectorySeparatorChar + "ArdupilotMegaPlanner10.exe";
             string version = Assembly.LoadFile(exepath).GetName().Version.ToString();
 
             System.Diagnostics.FileVersionInfo fvi = FileVersionInfo.GetVersionInfo(exepath);

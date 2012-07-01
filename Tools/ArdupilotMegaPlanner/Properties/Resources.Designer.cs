@@ -109,6 +109,18 @@ namespace ArdupilotMega.Properties {
             }
         }
         
+        public static System.Drawing.Bitmap cameraGimalPitch1 {
+            get {
+                object obj = ResourceManager.GetObject("cameraGimalPitch1", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        public static System.Drawing.Bitmap cameraGimalRoll1 {
+            get {
+                object obj = ResourceManager.GetObject("cameraGimalRoll1", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
         public static System.Drawing.Bitmap compass {
             get {
                 object obj = ResourceManager.GetObject("compass", resourceCulture);

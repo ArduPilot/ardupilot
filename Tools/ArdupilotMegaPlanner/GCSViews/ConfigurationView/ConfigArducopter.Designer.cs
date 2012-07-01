@@ -128,6 +128,15 @@
             this.toolTip1 = new System.Windows.Forms.ToolTip(this.components);
             this.BUT_writePIDS = new ArdupilotMega.Controls.MyButton();
             this.BUT_rerequestparams = new ArdupilotMega.Controls.MyButton();
+            this.groupBox1 = new System.Windows.Forms.GroupBox();
+            this.LOITER_LAT_D = new System.Windows.Forms.NumericUpDown();
+            this.label1 = new System.Windows.Forms.Label();
+            this.LOITER_LAT_IMAX = new System.Windows.Forms.NumericUpDown();
+            this.label2 = new System.Windows.Forms.Label();
+            this.LOITER_LAT_I = new System.Windows.Forms.NumericUpDown();
+            this.label3 = new System.Windows.Forms.Label();
+            this.LOITER_LAT_P = new System.Windows.Forms.NumericUpDown();
+            this.label4 = new System.Windows.Forms.Label();
             ((System.ComponentModel.ISupportInitialize)(this.TUNE_LOW)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.TUNE_HIGH)).BeginInit();
             this.groupBox5.SuspendLayout();
@@ -179,6 +188,11 @@
             ((System.ComponentModel.ISupportInitialize)(this.RATE_RLL_IMAX)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.RATE_RLL_I)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.RATE_RLL_P)).BeginInit();
+            this.groupBox1.SuspendLayout();
+            ((System.ComponentModel.ISupportInitialize)(this.LOITER_LAT_D)).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)(this.LOITER_LAT_IMAX)).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)(this.LOITER_LAT_I)).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)(this.LOITER_LAT_P)).BeginInit();
             this.SuspendLayout();
             // 
             // myLabel3
@@ -801,10 +815,65 @@
             this.BUT_rerequestparams.UseVisualStyleBackColor = true;
             this.BUT_rerequestparams.Click += new System.EventHandler(this.BUT_rerequestparams_Click);
             // 
+            // groupBox1
+            // 
+            this.groupBox1.Controls.Add(this.LOITER_LAT_D);
+            this.groupBox1.Controls.Add(this.label1);
+            this.groupBox1.Controls.Add(this.LOITER_LAT_IMAX);
+            this.groupBox1.Controls.Add(this.label2);
+            this.groupBox1.Controls.Add(this.LOITER_LAT_I);
+            this.groupBox1.Controls.Add(this.label3);
+            this.groupBox1.Controls.Add(this.LOITER_LAT_P);
+            this.groupBox1.Controls.Add(this.label4);
+            resources.ApplyResources(this.groupBox1, "groupBox1");
+            this.groupBox1.Name = "groupBox1";
+            this.groupBox1.TabStop = false;
+            // 
+            // LOITER_LAT_D
+            // 
+            resources.ApplyResources(this.LOITER_LAT_D, "LOITER_LAT_D");
+            this.LOITER_LAT_D.Name = "LOITER_LAT_D";
+            // 
+            // label1
+            // 
+            resources.ApplyResources(this.label1, "label1");
+            this.label1.Name = "label1";
+            // 
+            // LOITER_LAT_IMAX
+            // 
+            resources.ApplyResources(this.LOITER_LAT_IMAX, "LOITER_LAT_IMAX");
+            this.LOITER_LAT_IMAX.Name = "LOITER_LAT_IMAX";
+            // 
+            // label2
+            // 
+            resources.ApplyResources(this.label2, "label2");
+            this.label2.Name = "label2";
+            // 
+            // LOITER_LAT_I
+            // 
+            resources.ApplyResources(this.LOITER_LAT_I, "LOITER_LAT_I");
+            this.LOITER_LAT_I.Name = "LOITER_LAT_I";
+            // 
+            // label3
+            // 
+            resources.ApplyResources(this.label3, "label3");
+            this.label3.Name = "label3";
+            // 
+            // LOITER_LAT_P
+            // 
+            resources.ApplyResources(this.LOITER_LAT_P, "LOITER_LAT_P");
+            this.LOITER_LAT_P.Name = "LOITER_LAT_P";
+            // 
+            // label4
+            // 
+            resources.ApplyResources(this.label4, "label4");
+            this.label4.Name = "label4";
+            // 
             // ConfigArducopter
             // 
             resources.ApplyResources(this, "$this");
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
+            this.Controls.Add(this.groupBox1);
             this.Controls.Add(this.BUT_rerequestparams);
             this.Controls.Add(this.BUT_writePIDS);
             this.Controls.Add(this.myLabel3);
@@ -879,6 +948,11 @@
             ((System.ComponentModel.ISupportInitialize)(this.RATE_RLL_IMAX)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.RATE_RLL_I)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.RATE_RLL_P)).EndInit();
+            this.groupBox1.ResumeLayout(false);
+            ((System.ComponentModel.ISupportInitialize)(this.LOITER_LAT_D)).EndInit();
+            ((System.ComponentModel.ISupportInitialize)(this.LOITER_LAT_IMAX)).EndInit();
+            ((System.ComponentModel.ISupportInitialize)(this.LOITER_LAT_I)).EndInit();
+            ((System.ComponentModel.ISupportInitialize)(this.LOITER_LAT_P)).EndInit();
             this.ResumeLayout(false);
             this.PerformLayout();
 
@@ -984,5 +1058,14 @@
         private System.Windows.Forms.ToolTip toolTip1;
         private Controls.MyButton BUT_writePIDS;
         private Controls.MyButton BUT_rerequestparams;
+        private System.Windows.Forms.GroupBox groupBox1;
+        private System.Windows.Forms.NumericUpDown LOITER_LAT_D;
+        private System.Windows.Forms.Label label1;
+        private System.Windows.Forms.NumericUpDown LOITER_LAT_IMAX;
+        private System.Windows.Forms.Label label2;
+        private System.Windows.Forms.NumericUpDown LOITER_LAT_I;
+        private System.Windows.Forms.Label label3;
+        private System.Windows.Forms.NumericUpDown LOITER_LAT_P;
+        private System.Windows.Forms.Label label4;
     }
 }

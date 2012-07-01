@@ -326,6 +326,19 @@ namespace ArdupilotMega.GCSViews.ConfigurationView
                         arr[0].BackColor = Color.Green;
                     }
                 }
+                // keep loiter_lat and loiter_lon paired
+                if (name.Contains("LOITER_LAT_"))
+                {
+                    string newname = name.Replace("LOITER_LAT_", "LOITER_LON_");
+                    Control[] arr = this.Controls.Find(newname, true);
+                    changes[newname] = float.Parse(((Control)sender).Text);
+
+                    if (arr.Length > 0)
+                    {
+                        arr[0].Text = ((Control)sender).Text;
+                        arr[0].BackColor = Color.Green;
+                    }
+                }
                 // keep nav_lat and nav_lon paired
                 if (name.Contains("HLD_LAT_"))
                 {
