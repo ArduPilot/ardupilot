@@ -329,7 +329,8 @@ static const AP_Param::Info var_info[] PROGMEM = {
 	GOBJECT(ahrs,					"AHRS_",    AP_AHRS),
 
 #ifdef DESKTOP_BUILD
-	// @Group: SITL
+	// @Group: SIM_
+    // @Path: ../libraries/SITL/SITL.cpp
 	GOBJECT(sitl, "SIM_", SITL),
 #endif
 };
