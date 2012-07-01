@@ -565,12 +565,6 @@
 # define RTL_AUTO_LAND 		ENABLED
 #endif
 
-// RTL Approach Delay in seconds
-#ifndef RTL_APPROACH_DELAY
-# define RTL_APPROACH_DELAY	20
-#endif
-
-
 // LOITER Mode
 #ifndef OF_LOITER_YAW
 # define OF_LOITER_YAW 		YAW_HOLD
@@ -989,10 +983,6 @@
 # define QUATERNION_ENABLE DISABLED
 #endif
 
-
-#ifndef RETRO_LOITER_MODE
-# define RETRO_LOITER_MODE DISABLED
-#endif
 
 #ifndef ALTERNATIVE_YAW_MODE
 # define ALTERNATIVE_YAW_MODE DISABLED
