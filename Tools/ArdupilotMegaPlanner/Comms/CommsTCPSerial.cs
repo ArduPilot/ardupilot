@@ -23,7 +23,6 @@ namespace ArdupilotMega.Comms
 
         public int WriteBufferSize { get; set; }
         public int WriteTimeout { get; set; }
-        public int ReceivedBytesThreshold { get; set; }
         public bool RtsEnable { get; set; }
 
         ~TcpSerial()

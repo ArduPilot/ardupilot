@@ -577,6 +577,7 @@ namespace ArdupilotMega
         {
             giveComport = false;
 
+            // sanity check
             if (comPort.BaseStream.IsOpen && cs.groundspeed > 4)
             {
                 if (DialogResult.No == CustomMessageBox.Show("Your model is still moving are you sure you want to disconnect?", "Disconnect", MessageBoxButtons.YesNo))
@@ -585,25 +586,23 @@ namespace ArdupilotMega
                 }
             }
 
+            // cleanup from any previous sessions
+            if (comPort.logfile != null)
+                comPort.logfile.Close();
+
+            if (comPort.rawlogfile != null)
+                comPort.rawlogfile.Close();
+
+            comPort.logfile = null;
+            comPort.rawlogfile = null;
+
+            // decide if this is a connect or disconnect
             if (comPort.BaseStream.IsOpen)
             {
                 try
                 {
-                    try
-                    {
-                        if (speechEngine != null) // cancel all pending speech
-                            speechEngine.SpeakAsyncCancelAll();
-                    }
-                    catch (Exception ex)
-                    {
-                        log.Error(ex);
-                    }
-
-                    if (comPort.logfile != null)
-                        comPort.logfile.Close();
-
-                    if (comPort.rawlogfile != null)
-                        comPort.rawlogfile.Close();
+                    if (speechEngine != null) // cancel all pending speech
+                        speechEngine.SpeakAsyncCancelAll();
 
                     comPort.BaseStream.DtrEnable = false;
                     comPort.Close();
@@ -664,21 +663,15 @@ namespace ArdupilotMega
                     {
                         comPort.BaseStream.BaudRate = int.Parse(_connectionControl.CMB_baudrate.Text);
                     }
-                    catch { }
+                    catch (Exception exp) { log.Error(exp); }
 
                     // false here
                     comPort.BaseStream.DtrEnable = false;
                     comPort.BaseStream.RtsEnable = false;
 
+                    // reset on connect logic.
                     if (config["CHK_resetapmonconnect"] == null || bool.Parse(config["CHK_resetapmonconnect"].ToString()) == true)
                         comPort.BaseStream.toggleDTR();
-
-                    // cleanup from any previous sessions
-                    if (comPort.logfile != null)
-                        comPort.logfile.Close();
-
-                    if (comPort.rawlogfile != null)
-                        comPort.rawlogfile.Close();
 
                     // setup to record new logs
                     try
@@ -688,9 +681,9 @@ namespace ArdupilotMega
 
                         comPort.rawlogfile = new BinaryWriter(File.Open(Path.GetDirectoryName(Application.ExecutablePath) + Path.DirectorySeparatorChar + @"logs" + Path.DirectorySeparatorChar + DateTime.Now.ToString("yyyy-MM-dd HH-mm-ss") + ".rlog", FileMode.CreateNew, FileAccess.ReadWrite, FileShare.Read));
                     }
-                    catch { CustomMessageBox.Show("Failed to create log - wont log this session"); } // soft fail
+                    catch (Exception exp2) { log.Error(exp2); CustomMessageBox.Show("Failed to create log - wont log this session"); } // soft fail
 
-                    // reset connect time
+                    // reset connect time - for timeout functions
                     connecttime = DateTime.Now;
 
                     // do the connect
@@ -728,7 +721,7 @@ namespace ArdupilotMega
                 }
                 catch (Exception ex)
                 {
-                    log.Warn(ex.ToString());
+                    log.Warn(ex);
                     try
                     {
                         _connectionControl.IsConnected(false);
@@ -770,9 +763,12 @@ namespace ArdupilotMega
                                 return;
                             }
                         }
+                        else
+                        {
+                            log.Error("Could not download eeprom contents");
+                        }
                     }
-                    catch { }
-                    log.Debug(ex.ToString());
+                    catch (Exception exp3) { log.Error(exp3); }
                     //MessageBox.Show("Can not establish a connection\n\n" + ex.ToString());
                     return;
                 }
@@ -1762,7 +1758,7 @@ namespace ArdupilotMega
             log.Debug(path);
 
             // Create a request using a URL that can receive a post. 
-            string requestUriString = baseurl + path;
+            string requestUriString = baseurl + Path.GetFileName(path);
             log.Debug("Checking for update at: " + requestUriString);
             var webRequest = WebRequest.Create(requestUriString);
             webRequest.Timeout = 5000;

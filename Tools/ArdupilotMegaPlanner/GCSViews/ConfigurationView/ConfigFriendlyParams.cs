@@ -186,7 +186,13 @@ namespace ArdupilotMega.GCSViews.ConfigurationView
 
             // get the params if nothing exists already
             if (_params != null && _params.Count == 0)
-                Utilities.ParameterMetaDataParser.GetParameterInformation();
+            {
+                try
+                {
+                    Utilities.ParameterMetaDataParser.GetParameterInformation();
+                }
+                catch (Exception exp) { log.Error(exp); } // just to cleanup any errors
+            }
 
             _params.ForEach(x => 
          {
@@ -198,7 +204,7 @@ namespace ArdupilotMega.GCSViews.ConfigurationView
 
                     string value = ((float)MainV2.comPort.param[x.Key]).ToString("0.###");
                     string description = _parameterMetaDataRepository.GetParameterMetaData(x.Key, ParameterMetaDataConstants.Description);
-                    string displayName = x.Value;
+                    string displayName = x.Value + " (" + x.Key + ")";
                     string units = _parameterMetaDataRepository.GetParameterMetaData(x.Key, ParameterMetaDataConstants.Units);
 
                     // If this is a range
@@ -234,15 +240,15 @@ namespace ArdupilotMega.GCSViews.ConfigurationView
                             rangeControl.Scaler = scaler;
                             rangeControl.DescriptionText = FitDescriptionText(units, description);
                             rangeControl.LabelText = displayName;
-                            rangeControl.TrackBarControl.Minimum = scaledLowerRange;
-                            rangeControl.TrackBarControl.Maximum = scaledUpperRange;
+                            rangeControl.TrackBarControl.Minimum = Math.Min(scaledLowerRange,(int)intValue);
+                            rangeControl.TrackBarControl.Maximum = Math.Max(scaledUpperRange, (int)intValue);
                             rangeControl.TrackBarControl.TickFrequency = scaledIncrement;
                             rangeControl.TrackBarControl.Value = (int)intValue;
 
                             rangeControl.NumericUpDownControl.Increment = (decimal)increment;
                             rangeControl.NumericUpDownControl.DecimalPlaces = scaler.ToString(CultureInfo.InvariantCulture).Length - 1;
-                            rangeControl.NumericUpDownControl.Minimum = (decimal)lowerRange;
-                            rangeControl.NumericUpDownControl.Maximum = (decimal)upperRange;
+                            rangeControl.NumericUpDownControl.Minimum = (decimal)Math.Min(lowerRange, ((float)MainV2.comPort.param[x.Key]));
+                            rangeControl.NumericUpDownControl.Maximum = (decimal)Math.Max(upperRange, ((float)MainV2.comPort.param[x.Key]));
                             rangeControl.NumericUpDownControl.Value = (decimal)((float)MainV2.comPort.param[x.Key]);
 
                             rangeControl.AttachEvents();

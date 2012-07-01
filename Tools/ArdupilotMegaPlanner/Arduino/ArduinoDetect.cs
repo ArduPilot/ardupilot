@@ -30,6 +30,8 @@ namespace ArdupilotMega.Arduino
             serialPort.BaudRate = 57600;
             serialPort.Open();
 
+            serialPort.toggleDTR();
+
             Thread.Sleep(100);
 
             int a = 0;
@@ -64,6 +66,8 @@ namespace ArdupilotMega.Arduino
             serialPort.DtrEnable = true;
             serialPort.BaudRate = 115200;
             serialPort.Open();
+
+            serialPort.toggleDTR();
 
             Thread.Sleep(100);
 

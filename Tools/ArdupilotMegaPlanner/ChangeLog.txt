@@ -10,3 +10,11 @@ Partial Issue 654 - added current to status, hud still wip
 Fix Issue 648 - add validation to value
 Fix Issue 638 - add delay
 Fix Issue 636 - check for version.txt in app directory
+Fix config panel null bug
+Add more Ardurover config options
+Add Exceptions handling to video format selection
+Add FORMAT_VERSION to param file ignore list
+Fix NOTE param file line
+Add APMRover hidden firmware upload (control-R) on firmware screen.
+fix possible speach engine exception
+add dataflashlog for apmrover

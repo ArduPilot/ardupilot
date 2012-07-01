@@ -19,61 +19,13 @@ namespace ArdupilotMega.GCSViews.ConfigurationView
 
             if (MainV2.comPort.BaseStream.IsOpen)
             {
-                this.backstageView.AddPage(new BackstageView.BackstageViewPage(new ConfigRadioInput(), "Radio Calibration"));
-                this.backstageView.AddPage(new BackstageView.BackstageViewPage(new ConfigFlightModes(), "Flight Modes"));
-                this.backstageView.AddPage(new BackstageView.BackstageViewPage(new ConfigHardwareOptions(), "Hardware Options"));
-                this.backstageView.AddPage(new BackstageView.BackstageViewPage(new ConfigBatteryMonitoring(), "Battery Monitor"));
-
-
-                /******************************HELI **************************/
-                if (MainV2.comPort.param["H_GYR_ENABLE"] != null) // heli
-                {
-                    this.backstageView.AddPage(new BackstageView.BackstageViewPage(new ConfigAccelerometerCalibrationQuad(), "ArduCopter Level"));
-
-                    this.backstageView.AddPage(new BackstageView.BackstageViewPage(new ConfigTradHeli(), "Heli Setup"));
-
-                    var configpanel = new Controls.ConfigPanel();
-                    configpanel.LoadXML("ArduCopterConfig.xml");
-                    this.backstageView.AddPage(new BackstageView.BackstageViewPage(configpanel, "ArduCopter Pids"));
-
-                    this.backstageView.AddPage(new BackstageView.BackstageViewPage(new ConfigArducopter(), "ArduCopter Config"));
-                }
-                /****************************** ArduCopter **************************/
-                else if (MainV2.cs.firmware == MainV2.Firmwares.ArduCopter2)
-                {
-                    this.backstageView.AddPage(new BackstageView.BackstageViewPage(new ConfigAccelerometerCalibrationQuad(), "ArduCopter Level"));
-
-                    var configpanel = new Controls.ConfigPanel();
-                    configpanel.LoadXML("ArduCopterConfig.xml");
-                    this.backstageView.AddPage(new BackstageView.BackstageViewPage(configpanel, "ArduCopter Pids"));
-
-                    this.backstageView.AddPage(new BackstageView.BackstageViewPage(new ConfigArducopter(), "ArduCopter Config"));
-                }
-                /****************************** ArduPlane **************************/
-                else if (MainV2.cs.firmware == MainV2.Firmwares.ArduPlane)
-                {
-                    this.backstageView.AddPage(new BackstageView.BackstageViewPage(new ConfigAccelerometerCalibrationPlane(), "ArduPlane Level"));
-                    this.backstageView.AddPage(new BackstageView.BackstageViewPage(new ConfigArduplane(), "ArduPlane Pids"));
-                }
-                /****************************** ArduRover **************************/
-                else if (MainV2.cs.firmware == MainV2.Firmwares.ArduRover)
-                {
-                    //this.backstageView.AddPage(new BackstageView.BackstageViewPage(new ConfigAccelerometerCalibrationPlane(), "ArduRover Level"));
-                    this.backstageView.AddPage(new BackstageView.BackstageViewPage(new ConfigArdurover(), "ArduRover Pids"));
-                }
-
-                this.backstageView.AddPage(new BackstageView.BackstageViewPage(new ConfigFriendlyParams { ParameterMode = ParameterMetaDataConstants.Standard }, "Standard Params"));
-                this.backstageView.AddPage(new BackstageView.BackstageViewPage(new ConfigFriendlyParams { ParameterMode = ParameterMetaDataConstants.Advanced }, "Advanced Params"));
-                this.backstageView.AddPage(new BackstageView.BackstageViewPage(new ConfigRawParams(), "Parameter List"));
+                AddPagesForConnectedState();
             }
-
             
-
-            this.backstageView.AddPage(new BackstageView.BackstageViewPage(new ArdupilotMega._3DRradio(), "3DR Radio"));
-
-            this.backstageView.AddPage(new BackstageView.BackstageViewPage(new ArdupilotMega.Antenna.Tracker(), "Antenna Tracker"));
-
-            this.backstageView.AddPage(new BackstageView.BackstageViewPage(new ConfigPlanner(), "Planner"));
+            // These pages work when not connected to an APM
+            AddBackstageViewPage(new ArdupilotMega._3DRradio(), "3DR Radio");
+            AddBackstageViewPage(new ArdupilotMega.Antenna.Tracker(), "Antenna Tracker");
+            AddBackstageViewPage(new ConfigPlanner(), "Planner");
 
             this.backstageView.ActivatePage(backstageView.Pages[0]);
 
@@ -82,6 +34,68 @@ namespace ArdupilotMega.GCSViews.ConfigurationView
                 Common.MessageShowAgain("Config Connect", "Please connect (click Connect Button) before using setup!!");
             }
         }
+
+
+
+        // Add the pages that can only be shown when we are connected to an APM
+        private void AddPagesForConnectedState()
+        {
+            /****************************** Common  **************************/
+
+            AddBackstageViewPage(new ConfigRadioInput(), "Radio Calibration");
+            AddBackstageViewPage(new ConfigFlightModes(), "Flight Modes");
+            AddBackstageViewPage(new ConfigHardwareOptions(), "Hardware Options");
+            AddBackstageViewPage(new ConfigBatteryMonitoring(), "Battery Monitor");
+            AddBackstageViewPage(new ConfigCameraStab(), "Camera Gimbal");
+
+
+            /******************************HELI **************************/
+            if (MainV2.comPort.param["H_GYR_ENABLE"] != null) // heli
+            {
+                AddBackstageViewPage(new ConfigAccelerometerCalibrationQuad(), "ArduCopter Level");
+
+                AddBackstageViewPage(new ConfigTradHeli(), "Heli Setup");
+
+                var configpanel = new Controls.ConfigPanel();
+                configpanel.LoadXML("ArduCopterConfig.xml");
+                AddBackstageViewPage(configpanel, "ArduCopter Pids");
+
+                AddBackstageViewPage(new ConfigArducopter(), "ArduCopter Config");
+            }
+                /****************************** ArduCopter **************************/
+            else if (MainV2.cs.firmware == MainV2.Firmwares.ArduCopter2)
+            {
+                AddBackstageViewPage(new ConfigAccelerometerCalibrationQuad(), "ArduCopter Level");
+
+                var configpanel = new Controls.ConfigPanel();
+                configpanel.LoadXML("ArduCopterConfig.xml");
+                AddBackstageViewPage(configpanel, "ArduCopter Pids");
+
+                AddBackstageViewPage(new ConfigArducopter(), "ArduCopter Config");
+            }
+                /****************************** ArduPlane **************************/
+            else if (MainV2.cs.firmware == MainV2.Firmwares.ArduPlane)
+            {
+                AddBackstageViewPage(new ConfigAccelerometerCalibrationPlane(), "ArduPlane Level");
+                AddBackstageViewPage(new ConfigArduplane(), "ArduPlane Pids");
+            }
+                /****************************** ArduRover **************************/
+            else if (MainV2.cs.firmware == MainV2.Firmwares.ArduRover)
+            {
+                //AddBackstageViewPage(new ConfigAccelerometerCalibrationPlane(), "ArduRover Level"));
+                AddBackstageViewPage(new ConfigArdurover(), "ArduRover Pids");
+            }
+
+            AddBackstageViewPage(new ConfigFriendlyParams { ParameterMode = ParameterMetaDataConstants.Standard }, "Standard Params");
+            AddBackstageViewPage(new ConfigFriendlyParams { ParameterMode = ParameterMetaDataConstants.Advanced }, "Advanced Params");
+            AddBackstageViewPage(new ConfigRawParams(), "Parameter List");
+        }
+
+        private void AddBackstageViewPage(BackStageViewContentPanel userControl, string headerText)
+        {
+            backstageView.AddPage(new BackstageView.BackstageViewPage(userControl, headerText));
+        }
+
 
         private void Setup_Load(object sender, EventArgs e)
         {

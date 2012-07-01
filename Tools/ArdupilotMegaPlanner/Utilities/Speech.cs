@@ -54,25 +54,29 @@ namespace ArdupilotMega.Utilities
         {
             if (MONO)
             {
-                //if (_speechlinux == null)
+                try
                 {
+                    //if (_speechlinux == null)
+                    {
+                        _state = SynthesizerState.Speaking;
+                        _speechlinux = new System.Diagnostics.Process();
+                        _speechlinux.StartInfo.RedirectStandardInput = true;
+                        _speechlinux.StartInfo.UseShellExecute = false;
+                        _speechlinux.StartInfo.FileName = "festival";
+                        _speechlinux.Start();
+                        _speechlinux.Exited += new EventHandler(_speechlinux_Exited);
+
+                        log.Info("TTS: start " + _speechlinux.StartTime);
+
+                    }
+
                     _state = SynthesizerState.Speaking;
-                    _speechlinux = new System.Diagnostics.Process();
-                    _speechlinux.StartInfo.RedirectStandardInput = true;
-                    _speechlinux.StartInfo.UseShellExecute = false;
-                    _speechlinux.StartInfo.FileName = "festival";
-                    _speechlinux.Start();
-                    _speechlinux.Exited += new EventHandler(_speechlinux_Exited);
+                    _speechlinux.StandardInput.WriteLine("(SayText \"" + text + "\")");
+                    _speechlinux.StandardInput.WriteLine("(quit)");
 
-                    log.Info("TTS: start " + _speechlinux.StartTime);
-
+                    _speechlinux.Close();
                 }
-
-                _state = SynthesizerState.Speaking;
-                _speechlinux.StandardInput.WriteLine("(SayText \"" + text + "\")");
-                _speechlinux.StandardInput.WriteLine("(quit)");
-
-                _speechlinux.Close();
+                catch { } // ignore errors
 
                 _state = SynthesizerState.Ready;
             }

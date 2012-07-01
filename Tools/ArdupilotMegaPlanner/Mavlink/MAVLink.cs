@@ -289,7 +289,7 @@ namespace ArdupilotMega
                     }
 
                     // incase we are in setup mode
-                    BaseStream.WriteLine("planner\rgcs\r");
+                    //BaseStream.WriteLine("planner\rgcs\r");
 
                     log.Info(DateTime.Now.Millisecond + " Start connect loop ");
 
@@ -313,7 +313,7 @@ namespace ArdupilotMega
                     System.Threading.Thread.Sleep(1);
 
                     // incase we are in setup mode
-                    BaseStream.WriteLine("planner\rgcs\r");
+                    //BaseStream.WriteLine("planner\rgcs\r");
 
                     // can see 2 heartbeat packets at any time, and will connect - was one after the other
 
@@ -321,7 +321,7 @@ namespace ArdupilotMega
                         buffer = getHeartBeat();
 
                     // incase we are in setup mode
-                    BaseStream.WriteLine("planner\rgcs\r");
+                    //BaseStream.WriteLine("planner\rgcs\r");
 
                     System.Threading.Thread.Sleep(1);
 
@@ -556,7 +556,7 @@ namespace ArdupilotMega
         {
             if (!param.ContainsKey(paramname))
             {
-                log.Info("Param doesnt exist " + paramname);
+                log.Warn("Trying to set Param that doesnt exist " + paramname);
                 return false;
             }
 
@@ -568,11 +568,9 @@ namespace ArdupilotMega
 
             MainV2.giveComport = true;
 
-            mavlink_param_set_t req = new mavlink_param_set_t();
-            req.target_system = sysid;
-            req.target_component = compid;
+            var req = new mavlink_param_set_t {target_system = sysid, target_component = compid};
 
-            byte[] temp = ASCIIEncoding.ASCII.GetBytes(paramname);
+            byte[] temp = Encoding.ASCII.GetBytes(paramname);
 
             modifyParamForDisplay(false, paramname, ref value);
 #if MAVLINK10
@@ -2369,7 +2367,7 @@ namespace ArdupilotMega
 
                     try
                     {
-                        if (logfile != null && logfile.BaseStream.CanWrite)
+                        if (logfile != null && logfile.BaseStream.CanWrite && !logreadmode)
                         {
                             lock (logwritelock)
                             {

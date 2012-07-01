@@ -280,6 +280,10 @@ namespace ArdupilotMega
             get
             {
                 float work = 0;
+                if (localsnrdb == 0)
+                {
+                    return 0;
+                }
                 if (localsnrdb > remotesnrdb)
                 {
                     // remote
