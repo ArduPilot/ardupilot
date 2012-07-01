@@ -124,9 +124,8 @@
 #define POSITION 8			// AUTO control
 #define LAND 9				// AUTO control
 #define OF_LOITER 10		// Hold a single location using optical flow sensor
-#define APPROACH 11			// AUTO control
-#define TOY 12				// THOR Enum for Toy mode
-#define NUM_MODES 13
+#define TOY 11				// THOR Enum for Toy mode
+#define NUM_MODES 12
 
 #define SIMPLE_1 1
 #define SIMPLE_2 2
