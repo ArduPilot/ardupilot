@@ -8,8 +8,6 @@ static void read_control_switch()
 
 	if (oldSwitchPosition != switchPosition){
 		if(switch_debouncer){
-			// remember the prev location for GS
-			prev_WP 			= current_loc;
 			oldSwitchPosition 	= switchPosition;
 			switch_debouncer 	= false;
 
