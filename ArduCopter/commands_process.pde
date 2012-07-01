@@ -65,7 +65,12 @@ static void update_commands()
 				// we will disarm the motors after landing.
 			} else {
 				// If the approach altitude is valid (above 1m), do approach, else land
-				set_mode(((g.rtl_approach_alt >= 1) ? APPROACH : LAND));
+				if(g.rtl_approach_alt >= 1){
+					set_mode(LOITER);
+					set_new_altitude(g.rtl_approach_alt);
+				}else{
+					set_mode(LAND);
+				}
 			}
 		}
 	}
