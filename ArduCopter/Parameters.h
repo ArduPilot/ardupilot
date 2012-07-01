@@ -112,7 +112,6 @@ public:
 	k_param_crosstrack_gain,
 	k_param_auto_land_timeout,
 	k_param_rtl_approach_alt,
-	k_param_retro_loiter,
 
 
 	//
@@ -215,7 +214,6 @@ public:
 	AP_Int8		super_simple;
 	AP_Int8		rtl_land_enabled;
 	AP_Float	rtl_approach_alt;
-	AP_Int8		retro_loiter;
 	AP_Int8		axis_enabled;
 	AP_Int8		copter_leds_mode;	// Operating mode of LED lighting system
 
@@ -337,7 +335,6 @@ public:
 	super_simple			(SUPER_SIMPLE),
 	rtl_land_enabled		(RTL_AUTO_LAND),
 	rtl_approach_alt		(0.0),
-	retro_loiter			(RETRO_LOITER_MODE),
 	axis_enabled			(AXIS_LOCK_ENABLED),
 	copter_leds_mode		(9),
 
