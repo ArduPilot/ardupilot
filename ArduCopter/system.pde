@@ -421,6 +421,8 @@ static void set_mode(byte mode)
 	// if we change modes, we must clear landed flag
 	land_complete 	= false;
 
+	// have we acheived the proper altitude before RTL is enabled
+	rtl_reached_alt = false;
 	// debug to Serial terminal
 	//Serial.println(flight_mode_strings[control_mode]);
 
@@ -499,19 +501,13 @@ static void set_mode(byte mode)
 			do_land();
 			break;
 
-		case APPROACH:
-			yaw_mode 		= LOITER_YAW;
-			roll_pitch_mode = LOITER_RP;
-			throttle_mode 	= THROTTLE_AUTO;
-			do_approach();
-			break;
-
 		case RTL:
 			yaw_mode 		= RTL_YAW;
 			roll_pitch_mode = RTL_RP;
 			throttle_mode 	= RTL_THR;
-
-			do_RTL();
+			rtl_reached_alt = false;
+			set_next_WP(&current_loc);
+			set_new_altitude(get_RTL_alt());
 			break;
 
 		case OF_LOITER:
