@@ -801,6 +801,8 @@ static int32_t	nav_yaw;
 // A speed governer for Yaw control - limits the rate the quad can be turned by the autopilot
 static int32_t	auto_yaw;
 // Used to manage the Yaw hold capabilities -
+static bool yaw_stopped;
+static uint8_t yaw_timer;
 // Options include: no tracking, point at next wp, or at a target
 static byte 	yaw_tracking = MAV_ROI_WPNEXT;
 // In AP Mission scripting we have a fine level of control for Yaw
@@ -1107,7 +1109,6 @@ static void medium_loop()
 			//update_altitude();
 			//#endif
 			alt_sensor_flag = true;
-
 			break;
 
 		// This case deals with sending high rate telemetry
@@ -1484,12 +1485,22 @@ void update_yaw_mode(void)
 			break;
 
 		case YAW_HOLD:
-			// calcualte new nav_yaw offset
-			if (control_mode <= STABILIZE){
-				nav_yaw = get_nav_yaw_offset(g.rc_4.control_in, g.rc_3.control_in);
+			if(g.rc_4.control_in != 0){
+				g.rc_4.servo_out = get_acro_yaw(g.rc_4.control_in);
+				yaw_stopped = false;
+				yaw_timer = 150;
+			}else if (!yaw_stopped){
+				g.rc_4.servo_out = get_acro_yaw(0);
+				yaw_timer--;
+				if(yaw_timer == 0){
+					yaw_stopped = true;
+					nav_yaw = ahrs.yaw_sensor;
+				}
 			}else{
-				nav_yaw = get_nav_yaw_offset(g.rc_4.control_in, 1);
+				nav_yaw = get_nav_yaw_offset(g.rc_4.control_in, g.rc_3.control_in);
+				g.rc_4.servo_out = get_stabilize_yaw(nav_yaw);
 			}
+			return;
 			break;
 
 		case YAW_LOOK_AT_HOME:
@@ -2125,9 +2136,9 @@ adjust_altitude()
 		manual_boost = (g.rc_3.control_in - g.throttle_min) - THROTTLE_ADJUST;
 		manual_boost = max(-THROTTLE_ADJUST, manual_boost);
 
-	}else if  (g.rc_3.control_in >= (MAXIMUM_THROTTLE - THROTTLE_ADJUST)){
+	}else if  (g.rc_3.control_in >= (g.throttle_max - THROTTLE_ADJUST)){
 		// we add 0 to 100 PWM to hover
-		manual_boost = g.rc_3.control_in - (MAXIMUM_THROTTLE - THROTTLE_ADJUST);
+		manual_boost = g.rc_3.control_in - (g.throttle_max - THROTTLE_ADJUST);
 		manual_boost = min(THROTTLE_ADJUST, manual_boost);
 
 	}else {
