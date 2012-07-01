@@ -1293,7 +1293,6 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
             case POSITION:
             case LAND:
             case OF_LOITER:
-            case APPROACH:
                 set_mode(packet.custom_mode);
                 break;
             }
