@@ -104,18 +104,6 @@ static void process_now_command()
 	}
 }
 
-
-//static void handle_no_commands()
-/*{
-	switch (control_mode){
-		default:
-			set_mode(RTL);
-			break;
-	}
-	return;
-	Serial.println("Handle No CMDs");
-}*/
-
 /********************************************************************************/
 // Verify command Handlers
 /********************************************************************************/
@@ -254,7 +242,6 @@ static void do_nav_wp()
 	}
 	set_next_WP(&command_nav_queue);
 
-
 	// this is our bitmask to verify we have met all conditions to move on
 	wp_verify_byte 	= 0;
 
@@ -290,38 +277,6 @@ static void do_land()
 
 	// Set a new target altitude very low, incase we are landing on a hill!
 	set_new_altitude(-1000);
-}
-
-static void do_approach()
-{
-	// Set a contrained value to EEPROM
-	g.rtl_approach_alt.set(constrain((float)g.rtl_approach_alt, 1.0, 10.0));
-
-	// Get the target_alt in cm
-	uint16_t target_alt = (uint16_t)(g.rtl_approach_alt * 100);
-
-	// Make sure we are not using this to land and that we are currently above the target approach alt
-	if(g.rtl_approach_alt >= 1 && current_loc.alt > target_alt){
-		wp_control = LOITER_MODE;
-
-		// just to make sure
-		land_complete		= false;
-
-		// landing boost lowers the main throttle to mimmick
-		// the effect of a user's hand
-		landing_boost 		= 0;
-
-		// A counter that goes up if our climb rate stalls out.
-		ground_detector 	= 0;
-
-		// hold at our current location
-		set_next_WP(&current_loc);
-
-		// Set target alt based on user setting
-		set_new_altitude(target_alt);
-	} else {
-		set_mode(LOITER);
-	}
 }
 
 static void do_loiter_unlimited()
