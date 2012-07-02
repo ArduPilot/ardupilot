@@ -32,6 +32,7 @@
 
 */
 
+#include <FastSerial.h>
 #include <SPI.h>
 #include "AP_Baro_MS5611.h"
 
@@ -51,12 +52,14 @@
 #define CMD_CONVERT_D1_OSR4096 0x48   // Maximum resolution (oversampling)
 #define CMD_CONVERT_D2_OSR4096 0x58   // Maximum resolution (oversampling)
 
-uint32_t AP_Baro_MS5611::_s_D1;
-uint32_t AP_Baro_MS5611::_s_D2;
+uint32_t volatile AP_Baro_MS5611::_s_D1;
+uint32_t volatile AP_Baro_MS5611::_s_D2;
+uint8_t  volatile AP_Baro_MS5611::_d1_count;
+uint8_t  volatile AP_Baro_MS5611::_d2_count;
 uint8_t  AP_Baro_MS5611::_state;
 uint32_t AP_Baro_MS5611::_timer;
 bool     AP_Baro_MS5611::_sync_access;
-bool     AP_Baro_MS5611::_updated;
+bool     volatile AP_Baro_MS5611::_updated;
 
 uint8_t AP_Baro_MS5611::_spi_read(uint8_t reg)
 {
@@ -132,12 +135,20 @@ bool AP_Baro_MS5611::init( AP_PeriodicProcess *scheduler )
 	//Send a command to read Temp first
 	_spi_write(CMD_CONVERT_D2_OSR4096);
 	_timer = micros();
-	_state = 1;
+	_state = 0;
 	Temp=0;
 	Press=0;
 
+    _s_D1 = 0;
+    _s_D2 = 0;
+    _d1_count = 0;
+    _d2_count = 0;
+
     scheduler->resume_timer();
 	scheduler->register_process( AP_Baro_MS5611::_update );
+
+    // wait for at least one value to be read
+    while (!_updated) ;
 
 	healthy = true;
     return true;
@@ -160,20 +171,36 @@ void AP_Baro_MS5611::_update(uint32_t tnow)
 
     _timer = tnow;
 
-    if (_state == 1) {
-	    _s_D2 = _spi_read_adc();  				 // On state 1 we read temp
+    if (_state == 0) {
+	    _s_D2 += _spi_read_adc();  				 // On state 0 we read temp
+        _d2_count++;
+        if (_d2_count == 32) {
+            // we have summed 128 values. This only happens
+            // when we stop reading the barometer for a long time
+            // (more than 1.2 seconds)
+            _s_D2 >>= 1;
+            _d2_count = 16;
+        }
 	    _state++;
 	    _spi_write(CMD_CONVERT_D1_OSR4096);  // Command to read pressure
-    } else if (_state == 5) {
-	    _s_D1 = _spi_read_adc();
-	    _state = 1;			                // Start again from state = 1
-	    _spi_write(CMD_CONVERT_D2_OSR4096);	// Command to read temperature
-	    _updated = true;					                // New pressure reading
     } else {
-	    _s_D1 = _spi_read_adc();
+	    _s_D1 += _spi_read_adc();
+        _d1_count++;
+        if (_d1_count == 128) {
+            // we have summed 128 values. This only happens
+            // when we stop reading the barometer for a long time
+            // (more than 1.2 seconds)
+            _s_D1 >>= 1;
+            _d1_count = 64;
+        }
 	    _state++;
-	    _spi_write(CMD_CONVERT_D1_OSR4096);  // Command to read pressure
-	    _updated = true;					               // New pressure reading
+	    _updated = true;					                // New pressure reading
+        if (_state == 5) {
+            _spi_write(CMD_CONVERT_D2_OSR4096);	// Command to read temperature
+            _state = 0;
+        } else {
+            _spi_write(CMD_CONVERT_D1_OSR4096);	// Command to read pressure
+        }
     }
 }
 
@@ -181,10 +208,24 @@ uint8_t AP_Baro_MS5611::read()
 {
     _sync_access = true;
     bool updated = _updated;
-    _updated = 0;
-    if (updated > 0) {
-        D1 = _s_D1;
-        D2 = _s_D2;
+    if (updated) {
+        uint32_t sD1, sD2;
+        uint8_t d1count, d2count;
+        // we need to disable interrupts to access
+        // _s_D1 and _s_D2 as they are not atomic
+        cli();
+        sD1 = _s_D1; _s_D1 = 0;
+        sD2 = _s_D2; _s_D2 = 0;
+        d1count = _d1_count; _d1_count = 0;
+        d2count = _d2_count; _d2_count = 0;
+        _updated = false;
+        sei();
+        if (d1count != 0) {
+            D1 = sD1 / d1count;
+        }
+        if (d2count != 0) {
+            D2 = sD2 / d2count;
+        }
         _raw_press = D1;
         _raw_temp = D2;
     }
@@ -209,7 +250,8 @@ void AP_Baro_MS5611::_calculate()
 	// as per data sheet some intermediate results require over 32 bits, therefore
   // we define parameters as 64 bits to prevent overflow on operations
   // sub -20c temperature compensation is not included
-	dT = D2-((long)C5*256);
+    // Serial.printf("D1=%lu D2=%lu\n", (unsigned long)D1, (unsigned long)D2);
+	dT = D2-((int32_t)C5*256);
 	TEMP = 2000 + ((int64_t)dT * C6)/8388608;
 	OFF = (int64_t)C2 * 65536 + ((int64_t)C4 * dT ) / 128;
 	SENS = (int64_t)C1 * 32768 + ((int64_t)C3 * dT) / 256;

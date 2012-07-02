@@ -23,8 +23,10 @@ class AP_Baro_MS5611 : public AP_Baro
   /* Asynchronous handler functions: */ 
   static void _update(uint32_t );
   /* Asynchronous state: */
-  static bool _updated;
-  static uint32_t _s_D1, _s_D2;
+  static volatile bool _updated;
+  static volatile uint8_t _d1_count;
+  static volatile uint8_t _d2_count;
+  static volatile uint32_t _s_D1, _s_D2;
   static uint8_t _state;
   static uint32_t _timer;
   /* Gates access to asynchronous state: */
