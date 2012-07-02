@@ -34,7 +34,7 @@ void setup()
 	SPI.setClockDivider(SPI_CLOCK_DIV32); // 500khz for debugging, increase later
 
 	baro.init(&scheduler);
-	timer = micros();
+	timer = millis();
 }
 
 void loop()
@@ -42,8 +42,8 @@ void loop()
 	float tmp_float;
 	float Altitude;
 
-	if((micros()- timer) > 50000L){
-		timer = micros();
+	if((millis() - timer) > 100){
+		timer = millis();
 		baro.read();
 		unsigned long read_time = micros() - timer;
 		if (!baro.healthy) {
