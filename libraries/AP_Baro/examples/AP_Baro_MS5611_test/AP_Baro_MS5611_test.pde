@@ -5,6 +5,7 @@
 #include <AP_Math.h>		// ArduPilot Mega Vector/Matrix math Library
 #include <I2C.h>
 #include <SPI.h>
+#include <Filter.h>
 #include <Arduino_Mega_ISR_Registry.h>
 #include <AP_PeriodicProcess.h>
 #include <AP_Baro.h> // ArduPilot Mega ADC Library
