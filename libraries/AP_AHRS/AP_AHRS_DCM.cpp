@@ -37,6 +37,7 @@ const AP_Param::GroupInfo AP_AHRS::var_info[] PROGMEM = {
 	// @Range: 0 .4
 	// @Increment: .01
     AP_GROUPINFO("YAW_P", 0, AP_AHRS_DCM, _kp_yaw),
+    AP_GROUPINFO("RP_P",  1, AP_AHRS_DCM, _kp),
     AP_GROUPEND
 };
 

@@ -23,7 +23,7 @@ public:
                 _ki = 0.0087;
 		_ki_yaw = 0.01;
 
-                _kp = 0.4;
+                _kp.set(0.4);
 		_kp_yaw.set(0.4);
 	}
 
@@ -44,9 +44,9 @@ public:
 
 	// settable parameters
 	AP_Float	_kp_yaw;
+	AP_Float	_kp;
 
 private:
-	float		_kp;
 	float		_ki;
 	float		_ki_yaw;
 	bool		_have_initial_yaw;
