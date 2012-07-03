@@ -448,7 +448,7 @@
 #endif
 
 #ifndef AUTO_LAND_TIME
-# define AUTO_LAND_TIME	20
+# define AUTO_LAND_TIME	10
 #endif
 
 
