@@ -700,18 +700,9 @@ void roll_pitch_toy()
 {
 	bool manual_control = false;
 
-	if(g.rc_2.control_in != 0){ 		// pitch
+	if(g.rc_2.control_in != 0){
+		// If we pitch forward or back, resume manually control
 		manual_control  = true;
-
-	}else if(g.rc_1.control_in != 0){ 	// Roll/Yaw combo
-		// we have some user input
-		if(wp_control == TOY_MODE){
-			// we are heading to Virtual WP
-			manual_control  = true;
-		}else{
-			// we are in manual control
-			manual_control  = false;
-		}
 	}
 
 	// Yaw control - Yaw is always available, and will NOT exit the
@@ -732,6 +723,7 @@ void roll_pitch_toy()
 		// We manually set out modes based on the state of Toy mode:
 		// Handle throttle manually
 		throttle_mode 	= THROTTLE_MANUAL;
+
 		// Dont try to navigate or integrate a nav error
 		wp_control 		= NO_NAV_MODE;
 
@@ -768,55 +760,33 @@ void roll_pitch_toy()
 
 	}else{
 		//no user input
-
-		// Hold current Yaw
-		g.rc_4.servo_out = get_stabilize_yaw(nav_yaw);
-
-		// Count-up to decision - Loiter or Virtual WP
+		// Count-up to decision tp Loiter
 		toy_input_timer++;
 
-		if (toy_input_timer == TOY_DELAY){
+		//if (toy_input_timer == TOY_DELAY){
+		if((wp_control != LOITER_MODE) && ((g_gps->ground_speed < 150) || (toy_input_timer == TOY_DELAY))){
 
 			// clear our I terms for Nav or we will carry over old values
 			reset_wind_I();
+			// loiter
+			wp_control = LOITER_MODE;
 
-			if (g_gps->ground_speed < 200) {
-				// loiter
-				wp_control = LOITER_MODE;
-				set_next_WP(&current_loc);
-
-			}else{
-				// hold velocity and
-				// calc a new WP 10000cm ahead (Approximate)
-				struct Location tmp;
-				tmp.lng = current_loc.lng + (10000 * cos_yaw_x);  	// X or East/West
-				tmp.lat = current_loc.lat + (10000 * sin_yaw_y);	// Y or North/South
-				tmp.alt = current_loc.alt;
-				set_next_WP(&tmp);
-
-				// A special navigation mode for Toy mode that maintains the entry speed
-				wp_control 	= TOY_MODE;
-				// Save our speed as we entered the mode
-				toy_speed 	= g_gps->ground_speed;
-			}
-
-			// Just level out until we hit 1.5s
-			g.rc_1.servo_out 	= get_stabilize_roll(0);
-			g.rc_2.servo_out 	= get_stabilize_pitch(0);
-
-		}else if (toy_input_timer > TOY_DELAY){
 			// we are in an alt hold throttle with manual override
-			throttle_mode 		= THROTTLE_HOLD;
-			// resets so we don't overflow the timer
-			toy_input_timer 	= TOY_DELAY;
+			throttle_mode 	= THROTTLE_HOLD;
+
+			set_next_WP(&current_loc);
+		}
+
+		if (wp_control == LOITER_MODE){
+			// prevent timer overflow
+			toy_input_timer = TOY_DELAY;
 
 			// outputs the needed nav_control to maintain speed and direction
 			g.rc_1.servo_out 	= get_stabilize_roll(auto_roll);
 			g.rc_2.servo_out 	= get_stabilize_pitch(auto_pitch);
 
 		}else{
-
-			// outputs the needed nav_control to maintain speed and direction
+			// Coast
 			g.rc_1.servo_out 	= get_stabilize_roll(0);
 			g.rc_2.servo_out 	= get_stabilize_pitch(0);
 		}
