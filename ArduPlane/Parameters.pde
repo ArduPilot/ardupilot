@@ -328,6 +328,13 @@ static const AP_Param::Info var_info[] PROGMEM = {
 	// @Path: ../libraries/AP_AHRS/AP_AHRS_DCM.cpp, ../libraries/AP_AHRS/AP_AHRS_Quaternion.cpp
 	GOBJECT(ahrs,					"AHRS_",    AP_AHRS),
 
+#if MOUNT == ENABLED
+	// @Group: MNT_
+	// @Path: ../libraries/AP_Mount/AP_Mount.cpp
+	GOBJECT(camera_mount,           "MNT_",	AP_Mount),
+#endif
+
+
 #ifdef DESKTOP_BUILD
 	// @Group: SIM_
     // @Path: ../libraries/SITL/SITL.cpp
