@@ -257,7 +257,9 @@ def main_loop():
                 paused = False
                 jsb_console.send('resume\n')
 
-        if tnow - last_wind_update > 0.1:
+        # only simulate wind above 5 meters, to prevent crashes while
+        # waiting for takeoff
+        if tnow - last_wind_update > 0.1 and fdm.get('agl', units='meters') > 2:
             update_wind(wind)
             last_wind_update = tnow
 
