@@ -83,21 +83,6 @@ RC_Channel_aux::rc_input(float *control_angle, int16_t angle)
 	}
 }
 
-/// Takes the desired servo angle(deg) and converts to microSeconds for PWM
-/// Like this: 45 deg = 2000 us ; -45 deg/1000 us. 1000us/(90*100 deg) = 0.1111111111111
-void
-RC_Channel_aux::angle_out(int16_t angle)
-{
-	if(angle >= angle_max){
-		angle = angle_max;
-	}
-	if(angle <= angle_min){
-		angle = angle_min;
-	}
-	// Convert the angle*100 to pwm microseconds. 45 deg = 500 us.
-	radio_out = (/*_reverse * */ angle * 0.1111111) + 1500;
-}
-
 /// map a function to a servo channel and output it
 void
 RC_Channel_aux::output_ch(unsigned char ch_nr)
