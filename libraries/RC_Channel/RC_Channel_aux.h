@@ -53,8 +53,6 @@ public:
 
 	int16_t closest_limit(int16_t angle);
 
-	void angle_out(int16_t angle);
-
 	void rc_input(float *control_angle, int16_t angle);
 
 	void output_ch(unsigned char ch_nr);

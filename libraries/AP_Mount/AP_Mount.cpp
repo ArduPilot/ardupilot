@@ -129,11 +129,6 @@ void AP_Mount::update_mount_position()
 	}
 
 	// write the results to the servos
-/*
-	G_RC_AUX(k_mount_roll)->angle_out(_roll_angle);
-	G_RC_AUX(k_mount_pitch)->angle_out(_pitch_angle);
-	G_RC_AUX(k_mount_yaw)->angle_out(_yaw_angle);
-*/
 	// closest_limit() takes degrees * 10 units
 	G_RC_AUX(k_mount_roll)->closest_limit(_roll_angle*10);
 	G_RC_AUX(k_mount_pitch)->closest_limit(_pitch_angle*10);
