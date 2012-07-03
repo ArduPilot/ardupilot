@@ -7,12 +7,59 @@
 
 const AP_Param::GroupInfo AP_Mount::var_info[] PROGMEM = {
     // index 0 was used for the old orientation matrix
-    AP_GROUPINFO("MODE",       0, AP_Mount, _mount_mode),
+	// @Param: MODE
+	// @DisplayName: Mount operation mode
+	// @Description: Camera or antenna mount operation mode
+	// @Values: 0:retract,1:neutral,2:MavLink_targeting,3:RC_targeting,4:GPS_point
+	// @User: Standard
+    AP_GROUPINFO("MODE",       0, AP_Mount, _mount_mode), // see MAV_MOUNT_MODE at ardupilotmega.h
+
+    // @Param: RETRACT
+	// @DisplayName: Mount retract angles
+	// @Description: Mount angles when in retract operation mode
+	// @Units: Degrees
+	// @Range: -180 180
+	// @Increment: .01
+	// @User: Standard
     AP_GROUPINFO("RETRACT",    1, AP_Mount, _retract_angles),
+
+	// @Param: NEUTRAL
+	// @DisplayName: Mount neutral angles
+	// @Description: Mount angles when in neutral operation mode
+	// @Units: Degrees
+	// @Range: -180 180
+	// @Increment: .01
+	// @User: Standard
     AP_GROUPINFO("NEUTRAL",    2, AP_Mount, _neutral_angles),
+
+    // @Param: CONTROL
+	// @DisplayName: Mount control angles
+	// @Description: Mount angles when in MavLink or RC control operation mode
+	// @Units: Degrees
+	// @Range: -180 180
+	// @Increment: .01
+	// @User: Standard
     AP_GROUPINFO("CONTROL",    3, AP_Mount, _control_angles),
+
+	// @Param: STAB_ROLL
+	// @DisplayName: Stabilize mount roll
+	// @Description:enable roll stabilisation relative to Earth
+	// @Values: 0:Disabled,1:Enabled
+	// @User: Standard
     AP_GROUPINFO("STAB_ROLL",  4, AP_Mount, _stab_roll),
+
+	// @Param: STAB_PITCH
+	// @DisplayName: Stabilize mount pitch
+	// @Description: enable pitch/tilt stabilisation relative to Earth
+	// @Values: 0:Disabled,1:Enabled
+	// @User: Standard
     AP_GROUPINFO("STAB_PITCH", 5, AP_Mount, _stab_pitch),
+
+	// @Param: STAB_YAW
+	// @DisplayName: Stabilize mount yaw
+	// @Description: enable yaw/pan stabilisation relative to Earth
+	// @Values: 0:Disabled,1:Enabled
+	// @User: Standard
     AP_GROUPINFO("STAB_YAW",   6, AP_Mount, _stab_yaw),
     AP_GROUPEND
 };
