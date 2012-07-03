@@ -357,15 +357,26 @@ static bool verify_nav_wp()
 	hold_course = -1;
 	update_crosstrack();
 	if ((wp_distance > 0) && (wp_distance <= g.waypoint_radius)) {
-		gcs_send_text_fmt(PSTR("Reached Waypoint #%i"),nav_command_index);
+		gcs_send_text_fmt(PSTR("Reached Waypoint #%i dist %um"),
+                          (unsigned)nav_command_index,
+                          (unsigned)get_distance(&current_loc, &next_WP));
 		return true;
 	}
-	// add in a more complex case
-	// Doug to do
-	if(loiter_sum > 300){
+
+    // have we circled around the waypoint?
+	if (loiter_sum > 300){
 		gcs_send_text_P(SEVERITY_MEDIUM,PSTR("Missed WP"));
 		return true;
 	}
+
+    // have we flown past the waypoint?
+    if (location_passed_point(current_loc, prev_WP, next_WP)) {
+		gcs_send_text_fmt(PSTR("Passed Waypoint #%i dist %um"),
+                          (unsigned)nav_command_index,
+                          (unsigned)get_distance(&current_loc, &next_WP));
+        return true;
+    }
+
 	return false;
 }
 
