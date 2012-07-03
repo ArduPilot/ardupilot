@@ -167,6 +167,10 @@ public:
 	T angle(const Vector3<T> &v1, const Vector3<T> &v2)
 	{   return (T)acosf((v1*v2) / (v1.length()*v2.length()));  }
 
+	// computes the angle between this vector and another vector
+	T angle(const Vector3<T> &v2)
+		{   return (T)acosf(((*this)*v2) / (this->length()*v2.length()));  }
+
 	// computes the angle between 2 arbitrary normalized vectors
 	T angle_normalized(const Vector3<T> &v1, const Vector3<T> &v2)
 	{   return (T)acosf(v1*v2);  }
