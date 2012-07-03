@@ -224,22 +224,3 @@ static void reset_crosstrack()
 	crosstrack_bearing 	= get_bearing(&prev_WP, &next_WP);	// Used for track following
 }
 
-static long get_distance(struct Location *loc1, struct Location *loc2)
-{
-	if(loc1->lat == 0 || loc1->lng == 0)
-		return -1;
-	if(loc2->lat == 0 || loc2->lng == 0)
-		return -1;
-	float dlat 		= (float)(loc2->lat - loc1->lat);
-	float dlong		= ((float)(loc2->lng - loc1->lng)) * scaleLongDown;
-	return sqrt(sq(dlat) + sq(dlong)) * .01113195;
-}
-
-static long get_bearing(struct Location *loc1, struct Location *loc2)
-{
-	long off_x = loc2->lng - loc1->lng;
-	long off_y = (loc2->lat - loc1->lat) * scaleLongUp;
-	long bearing =	9000 + atan2(-off_y, off_x) * 5729.57795;
-	if (bearing < 0) bearing += 36000;
-	return bearing;
-}
