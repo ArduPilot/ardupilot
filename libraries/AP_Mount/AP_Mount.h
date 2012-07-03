@@ -35,13 +35,6 @@ public:
 	//Constructor
 	AP_Mount(const struct Location *current_loc, GPS *&gps, AP_AHRS *ahrs);
 
-	//enums
-	enum MountType{
-		k_pan_tilt = 0,			///< yaw-pitch
-		k_tilt_roll = 1,		///< pitch-roll
-		k_pan_tilt_roll = 2,	///< yaw-pitch-roll
-	};
-
 	// MAVLink methods
 	void configure_msg(mavlink_message_t* msg);
 	void control_msg(mavlink_message_t* msg);
