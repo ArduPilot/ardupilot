@@ -52,19 +52,20 @@ public:
 
 	// should be called periodically
 	void update_mount_position();
-	void update_mount_type();		///< Auto-detect the mount gimbal type depending on the functions assigned to the servos
 	void debug_output();			///< For testing and development. Called in the medium loop.
 	// Accessors
-	enum MountType get_mount_type();
+
+	// hook for eeprom variables
+    static const struct AP_Param::GroupInfo var_info[];
 
 private:
 
 	//methods
 	void set_mode(enum MAV_MOUNT_MODE mode);
 
-	void set_retract_angles(int roll, int pitch, int yaw);		///< set mount retracted position
-	void set_neutral_angles(int roll, int pitch, int yaw);
-	void set_mavlink_angles(int roll, int pitch, int yaw);
+	void set_retract_angles(float roll, float pitch, float yaw);		///< set mount retracted position
+	void set_neutral_angles(float roll, float pitch, float yaw);
+	void set_control_angles(float roll, float pitch, float yaw);
 	void set_GPS_target_location(Location targetGPSLocation);	///< used to tell the mount to track GPS location
 
 	// internal methods
@@ -81,21 +82,20 @@ private:
 	float _pitch_control_angle;
 	float _yaw_control_angle;
 
-	int16_t _roll_angle;	 ///< degrees*100
-	int16_t _pitch_angle;	 ///< degrees*100
-	int16_t _yaw_angle;		 ///< degrees*100
+	float _roll_angle;	 ///< degrees
+	float _pitch_angle;	 ///< degrees
+	float _yaw_angle;	 ///< degrees
 
-	uint8_t _stab_roll;  ///< (1 = yes, 0 = no)
-	uint8_t _stab_pitch; ///< (1 = yes, 0 = no)
-	uint8_t _stab_yaw;   ///< (1 = yes, 0 = no)
+	AP_Int8 _stab_roll;  ///< (1 = yes, 0 = no)
+	AP_Int8 _stab_pitch; ///< (1 = yes, 0 = no)
+	AP_Int8 _stab_yaw;   ///< (1 = yes, 0 = no)
 
-	enum MAV_MOUNT_MODE _mount_mode;
-	MountType _mount_type;
+	AP_Int8 _mount_mode;
 
 	struct Location _target_GPS_location;
 
-	Vector3i _retract_angles;		///< retracted position for mount, vector.x = roll vector.y = pitch, vector.z=yaw
-	Vector3i _neutral_angles;		///< neutral position for mount, vector.x = roll vector.y = pitch, vector.z=yaw
-	Vector3i _mavlink_angles;		///< mavlink position for mount, vector.x = roll vector.y = pitch, vector.z=yaw
+	AP_Vector3f _retract_angles;		///< retracted position for mount, vector.x = roll vector.y = pitch, vector.z=yaw
+	AP_Vector3f _neutral_angles;		///< neutral position for mount, vector.x = roll vector.y = pitch, vector.z=yaw
+	AP_Vector3f _control_angles;		///< GCS controlled position for mount, vector.x = roll vector.y = pitch, vector.z=yaw
 };
 #endif

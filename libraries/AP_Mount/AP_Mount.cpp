@@ -1,6 +1,21 @@
 // -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: t -*-
 
+#include <FastSerial.h>
+#include <AP_Common.h>
+#include <AP_Param.h>
 #include <AP_Mount.h>
+
+const AP_Param::GroupInfo AP_Mount::var_info[] PROGMEM = {
+    // index 0 was used for the old orientation matrix
+    AP_GROUPINFO("MODE",       0, AP_Mount, _mount_mode),
+    AP_GROUPINFO("RETRACT",    1, AP_Mount, _retract_angles),
+    AP_GROUPINFO("NEUTRAL",    2, AP_Mount, _neutral_angles),
+    AP_GROUPINFO("CONTROL",    3, AP_Mount, _control_angles),
+    AP_GROUPINFO("STAB_ROLL",  4, AP_Mount, _stab_roll),
+    AP_GROUPINFO("STAB_PITCH", 5, AP_Mount, _stab_pitch),
+    AP_GROUPINFO("STAB_YAW",   6, AP_Mount, _stab_yaw),
+    AP_GROUPEND
+};
 
 extern RC_Channel_aux* g_rc_function[RC_Channel_aux::k_nr_aux_servo_functions];	// the aux. servo ch. assigned to each function
 
@@ -10,37 +25,31 @@ _gps(gps)
 	_ahrs = ahrs;
 	_current_loc = current_loc;
 
-	//set_mode(MAV_MOUNT_MODE_RETRACT);
-	set_mode(MAV_MOUNT_MODE_RC_TARGETING); // FIXME: This is just to test without mavlink
-	//set_mode(MAV_MOUNT_MODE_GPS_POINT); // FIXME: this is to test ONLY targeting
+	// startup with the mount retracted
+	set_mode(MAV_MOUNT_MODE_RETRACT);
 
-	_retract_angles.x=0;
-	_retract_angles.y=0;
-	_retract_angles.z=0;
+	// default to zero angles
+	_retract_angles = Vector3f(0,0,0);
+	_neutral_angles = Vector3f(0,0,0);
+	_control_angles = Vector3f(0,0,0);
 }
 
-//sets the servo angles for retraction, note angles are * 100
-void AP_Mount::set_retract_angles(int roll, int pitch, int yaw)
+//sets the servo angles for retraction, note angles are in degrees
+void AP_Mount::set_retract_angles(float roll, float pitch, float yaw)
 {
-	_retract_angles.x=roll;
-	_retract_angles.y=pitch;
-	_retract_angles.z=yaw;
+	_retract_angles = Vector3f(roll, pitch, yaw);
 }
 
-//sets the servo angles for neutral, note angles are * 100
-void AP_Mount::set_neutral_angles(int roll, int pitch, int yaw)
+//sets the servo angles for neutral, note angles are in degrees
+void AP_Mount::set_neutral_angles(float roll, float pitch, float yaw)
 {
-	_neutral_angles.x=roll;
-	_neutral_angles.y=pitch;
-	_neutral_angles.z=yaw;
+	_neutral_angles = Vector3f(roll, pitch, yaw);
 }
 
-//sets the servo angles for MAVLink, note angles are * 100
-void AP_Mount::set_mavlink_angles(int roll, int pitch, int yaw)
+//sets the servo angles for MAVLink, note angles are in degrees
+void AP_Mount::set_control_angles(float roll, float pitch, float yaw)
 {
-	_mavlink_angles.x = roll;
-	_mavlink_angles.y = pitch;
-	_mavlink_angles.z = yaw;
+	_control_angles = Vector3f(roll, pitch, yaw);
 }
 
 // used to tell the mount to track GPS location
@@ -52,28 +61,35 @@ void AP_Mount::set_GPS_target_location(Location targetGPSLocation)
 // This one should be called periodically
 void AP_Mount::update_mount_position()
 {
-	switch(_mount_mode)
+	switch((enum MAV_MOUNT_MODE)_mount_mode.get())
 	{
 		// move mount to a "retracted position" or to a position where a fourth servo can retract the entire mount into the fuselage
 		case MAV_MOUNT_MODE_RETRACT:
-			_roll_angle =100*_retract_angles.x;
-			_pitch_angle=100*_retract_angles.y;
-			_yaw_angle  =100*_retract_angles.z;
+		{
+			Vector3f vec = _retract_angles.get();
+			_roll_angle  = vec.x;
+			_pitch_angle = vec.y;
+			_yaw_angle   = vec.z;
 			break;
+		}
 
 		// move mount to a neutral position, typically pointing forward
 		case MAV_MOUNT_MODE_NEUTRAL:
-			_roll_angle =100*_neutral_angles.x;
-			_pitch_angle=100*_neutral_angles.y;
-			_yaw_angle  =100*_neutral_angles.z;
+		{
+			Vector3f vec = _neutral_angles.get();
+			_roll_angle  = vec.x;
+			_pitch_angle = vec.y;
+			_yaw_angle   = vec.z;
 			break;
+		}
 
 		// point to the angles given by a mavlink message
 		case MAV_MOUNT_MODE_MAVLINK_TARGETING:
 		{
-			_roll_control_angle  = _mavlink_angles.x;
-			_pitch_control_angle = _mavlink_angles.y;
-			_yaw_control_angle   = _mavlink_angles.z;
+			Vector3f vec = _control_angles.get();
+			_roll_control_angle  = vec.x;
+			_pitch_control_angle = vec.y;
+			_yaw_control_angle   = vec.z;
 			calculate();
 			break;
 		}
@@ -81,9 +97,10 @@ void AP_Mount::update_mount_position()
 		// RC radio manual angle control, but with stabilization from the AHRS
 		case MAV_MOUNT_MODE_RC_TARGETING:
 		{
-			G_RC_AUX(k_mount_roll)->rc_input(&_roll_control_angle, _roll_angle);
-			G_RC_AUX(k_mount_pitch)->rc_input(&_pitch_control_angle, _pitch_angle);
-			G_RC_AUX(k_mount_yaw)->rc_input(&_yaw_control_angle, _yaw_angle);
+			// rc_input() takes degrees * 100 units
+			G_RC_AUX(k_mount_roll)->rc_input(&_roll_control_angle, _roll_angle*100);
+			G_RC_AUX(k_mount_pitch)->rc_input(&_pitch_control_angle, _pitch_angle*100);
+			G_RC_AUX(k_mount_yaw)->rc_input(&_yaw_control_angle, _yaw_angle*100);
 			if (_ahrs){
 				calculate();
 			} else {
@@ -117,15 +134,15 @@ void AP_Mount::update_mount_position()
 	G_RC_AUX(k_mount_pitch)->angle_out(_pitch_angle);
 	G_RC_AUX(k_mount_yaw)->angle_out(_yaw_angle);
 */
-	// Change scaling to 0.1 degrees in order to avoid overflows in the angle arithmetic
-	G_RC_AUX(k_mount_roll)->closest_limit(_roll_angle/10);
-	G_RC_AUX(k_mount_pitch)->closest_limit(_pitch_angle/10);
-	G_RC_AUX(k_mount_yaw)->closest_limit(_yaw_angle/10);
+	// closest_limit() takes degrees * 10 units
+	G_RC_AUX(k_mount_roll)->closest_limit(_roll_angle*10);
+	G_RC_AUX(k_mount_pitch)->closest_limit(_pitch_angle*10);
+	G_RC_AUX(k_mount_yaw)->closest_limit(_yaw_angle*10);
 }
 
 void AP_Mount::set_mode(enum MAV_MOUNT_MODE mode)
 {
-	_mount_mode=mode;
+	_mount_mode = (int8_t)mode;
 }
 
 // Change the configuration of the mount
@@ -155,26 +172,26 @@ void AP_Mount::control_msg(mavlink_message_t *msg)
 		return;
 	}
 
-	switch (_mount_mode)
+	switch ((enum MAV_MOUNT_MODE)_mount_mode.get())
 	{
 	case MAV_MOUNT_MODE_RETRACT:  // Load and keep safe position (Roll,Pitch,Yaw) from EEPROM and stop stabilization
-		set_retract_angles(packet.input_b, packet.input_a, packet.input_c);
+		set_retract_angles(packet.input_b*0.01, packet.input_a*0.01, packet.input_c*0.01);
 		if (packet.save_position)
 		{
-			// TODO: Save current trimmed position on EEPROM
+			_retract_angles.save();
 		}
 		break;
 
 	case MAV_MOUNT_MODE_NEUTRAL:  //  Load and keep neutral position (Roll,Pitch,Yaw) from EEPROM
-		set_neutral_angles(packet.input_b, packet.input_a, packet.input_c);
+		set_neutral_angles(packet.input_b*0.01, packet.input_a*0.01, packet.input_c*0.01);
 		if (packet.save_position)
 		{
-			// TODO: Save current trimmed position on EEPROM
+			_neutral_angles.save();
 		}
 		break;
 
 	case MAV_MOUNT_MODE_MAVLINK_TARGETING:  // Load neutral position and start MAVLink Roll,Pitch,Yaw control with stabilization
-		set_mavlink_angles(packet.input_b, packet.input_a, packet.input_c);
+		set_control_angles(packet.input_b*0.01, packet.input_a*0.01, packet.input_c*0.01);
 		break;
 
 	case MAV_MOUNT_MODE_RC_TARGETING:  // Load neutral position and start RC Roll,Pitch,Yaw control with stabilization
@@ -186,6 +203,9 @@ void AP_Mount::control_msg(mavlink_message_t *msg)
 		targetGPSLocation.lng = packet.input_b;
 		targetGPSLocation.alt = packet.input_c;
 		set_GPS_target_location(targetGPSLocation);
+		break;
+
+	case MAV_MOUNT_MODE_ENUM_END:
 		break;
 	}
 }
@@ -201,20 +221,22 @@ void AP_Mount::status_msg(mavlink_message_t *msg)
 		return;
 	}
 
-	switch (_mount_mode)
+	switch ((enum MAV_MOUNT_MODE)_mount_mode.get())
 	{
 	case MAV_MOUNT_MODE_RETRACT:			// safe position (Roll,Pitch,Yaw) from EEPROM and stop stabilization
 	case MAV_MOUNT_MODE_NEUTRAL:			// neutral position (Roll,Pitch,Yaw) from EEPROM
 	case MAV_MOUNT_MODE_MAVLINK_TARGETING:	// neutral position and start MAVLink Roll,Pitch,Yaw control with stabilization
 	case MAV_MOUNT_MODE_RC_TARGETING:		// neutral position and start RC Roll,Pitch,Yaw control with stabilization
-		packet.pointing_b = _roll_angle;	///< degrees*100
-		packet.pointing_a = _pitch_angle;	///< degrees*100
-		packet.pointing_c = _yaw_angle;		///< degrees*100
+		packet.pointing_b = _roll_angle*100;	///< degrees*100
+		packet.pointing_a = _pitch_angle*100;	///< degrees*100
+		packet.pointing_c = _yaw_angle*100;		///< degrees*100
 		break;
 	case MAV_MOUNT_MODE_GPS_POINT:         // neutral position and start to point to Lat,Lon,Alt
 		packet.pointing_a = _target_GPS_location.lat;	///< latitude
 		packet.pointing_b = _target_GPS_location.lng;	///< longitude
 		packet.pointing_c = _target_GPS_location.alt;	///< altitude
+		break;
+	case MAV_MOUNT_MODE_ENUM_END:
 		break;
 	}
 
@@ -258,44 +280,35 @@ AP_Mount::calc_GPS_target_angle(struct Location *target)
 	}
 }
 
-// Auto-detect the mount gimbal type depending on the functions assigned to the servos
-void
-AP_Mount::update_mount_type()
-{
-	if ((g_rc_function[RC_Channel_aux::k_mount_roll] == NULL) && (g_rc_function[RC_Channel_aux::k_mount_pitch] != NULL) && (g_rc_function[RC_Channel_aux::k_mount_yaw] != NULL))
-	{
-		_mount_type = k_pan_tilt;
-	}
-	if ((g_rc_function[RC_Channel_aux::k_mount_roll] != NULL) && (g_rc_function[RC_Channel_aux::k_mount_pitch] != NULL) && (g_rc_function[RC_Channel_aux::k_mount_yaw] == NULL))
-	{
-		_mount_type = k_tilt_roll;
-	}
-	if ((g_rc_function[RC_Channel_aux::k_mount_roll] != NULL) && (g_rc_function[RC_Channel_aux::k_mount_pitch] != NULL) && (g_rc_function[RC_Channel_aux::k_mount_yaw] != NULL))
-	{
-		_mount_type = k_pan_tilt_roll;
-	}
-}
-
 // Inputs desired _roll_control_angle, _pitch_control_angle and _yaw_control_angle stabilizes them relative to the airframe
 // and calculates output _roll_angle, _pitch_angle and _yaw_angle
 void
 AP_Mount::calculate()
 {
-	Matrix3f m;             ///< holds 3 x 3 matrix, var is used as temp in calcs
-	Matrix3f cam;           ///< Rotation matrix earth to camera. Desired camera from input.
-	Matrix3f gimbal_target; ///< Rotation matrix from plane to camera. Then Euler angles to the servos.
-	float roll;
-	float pitch;
-	float yaw;
-	if (_ahrs){
-		m = _ahrs->get_dcm_matrix();
-		m.transpose();
-		cam.from_euler(_roll_control_angle, _pitch_control_angle, _yaw_control_angle);
-		gimbal_target = m * cam;
-		gimbal_target.to_euler(&roll, &pitch, &yaw);
-		_roll_angle  = degrees(roll)*100;
-		_pitch_angle = degrees(pitch)*100;
-		_yaw_angle   = degrees(yaw)*100;
+	if (_ahrs) {
+		// only do the full 3D frame transform if we are doing yaw control
+		if (_stab_yaw) {
+			Matrix3f m;             ///< holds 3 x 3 matrix, var is used as temp in calcs
+			Matrix3f cam;           ///< Rotation matrix earth to camera. Desired camera from input.
+			Matrix3f gimbal_target; ///< Rotation matrix from plane to camera. Then Euler angles to the servos.
+			m = _ahrs->get_dcm_matrix();
+			m.transpose();
+			cam.from_euler(_roll_control_angle, _pitch_control_angle, _yaw_control_angle);
+			gimbal_target = m * cam;
+			gimbal_target.to_euler(&_roll_angle, &_pitch_angle, &_yaw_angle);
+		} else {
+			// otherwise base mount roll and pitch on the ahrs
+			// roll/pitch attitude, plus any requested angle
+			_roll_angle  = _roll_control_angle;
+			_pitch_angle = _pitch_control_angle;
+			_yaw_angle   = _yaw_control_angle;
+			if (_stab_roll) {
+				_roll_angle -= degrees(_ahrs->roll);
+			}
+			if (_stab_pitch) {
+				_pitch_angle -= degrees(_ahrs->pitch);
+			}
+		}
 	}
 }
 
