@@ -349,6 +349,33 @@ void DataFlash_APM2::PageErase (uint16_t PageAdr)
 	CS_inactive();
 }
 
+// erase a block of 8 pages.
+void DataFlash_APM2::BlockErase(uint16_t BlockAdr)
+{
+	// activate dataflash command decoder
+	CS_active();
+
+	// Send block erase command
+	SPI_transfer(DF_BLOCK_ERASE);
+
+	if (df_PageSize==512) {
+		SPI_transfer((unsigned char)(BlockAdr >> 3));
+		SPI_transfer((unsigned char)(BlockAdr << 5));
+	} else {
+		SPI_transfer((unsigned char)(BlockAdr >> 4));
+		SPI_transfer((unsigned char)(BlockAdr << 4));
+	}
+	SPI_transfer(0x00);
+
+	//initiate flash page erase
+	CS_inactive();
+	CS_active();
+	while(!ReadStatus());
+
+	// release SPI bus for use by other sensors
+	CS_inactive();
+}
+
 
 void DataFlash_APM2::ChipErase(void (*delay_cb)(unsigned long))
 {

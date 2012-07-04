@@ -294,6 +294,29 @@ void DataFlash_APM1::PageErase (uint16_t PageAdr)
 }
 
 
+void DataFlash_APM1::BlockErase (uint16_t BlockAdr)
+{
+  dataflash_CS_active();     // activate dataflash command decoder
+  SPI.transfer(DF_BLOCK_ERASE);   // Command
+
+  if (df_PageSize==512) {
+      SPI.transfer((unsigned char)(BlockAdr >> 3));
+      SPI.transfer((unsigned char)(BlockAdr << 5));
+  } else {
+      SPI.transfer((unsigned char)(BlockAdr >> 4));
+      SPI.transfer((unsigned char)(BlockAdr << 4));
+  }
+
+  SPI.transfer(0x00);	           // "dont cares"
+  dataflash_CS_inactive();               //initiate flash page erase
+  dataflash_CS_active();
+  while(!ReadStatus());
+
+  dataflash_CS_inactive();   // deactivate dataflash command decoder
+}
+
+
+
 void DataFlash_APM1::ChipErase(void (*delay_cb)(unsigned long))
 {
 
