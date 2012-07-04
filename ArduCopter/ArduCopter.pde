@@ -1508,7 +1508,7 @@ void update_yaw_mode(void)
 			break;
 
 		case YAW_AUTO:
-			nav_yaw += constrain(wrap_180(auto_yaw - nav_yaw), -20, 20); // 40 deg a second
+			nav_yaw += constrain(wrap_180(auto_yaw - nav_yaw), -60, 60); // 40 deg a second
 			//Serial.printf("nav_yaw %d ", nav_yaw);
 			nav_yaw  = wrap_360(nav_yaw);
 			break;
@@ -1961,10 +1961,9 @@ static void update_nav_RTL()
 	if(wp_distance <= g.waypoint_radius){
 		// if loiter_timer value > 0, we are set to trigger auto_land or approach
 		set_mode(LOITER);
+
 		// just un case we arrive and we aren't at the lower RTL alt yet.
-		if(current_loc.alt > get_RTL_alt()){
-			set_new_altitude(get_RTL_alt());
-		}
+		set_new_altitude(get_RTL_alt());
 
 		// force loitering above home
 		next_WP.lat = home.lat;
@@ -1972,6 +1971,7 @@ static void update_nav_RTL()
 
 		// If land is enabled OR failsafe OR auto approach altitude is set
 		// we will go into automatic land, (g.rtl_approach_alt) is the lowest point
+		// -1 means disable feature
 		if(failsafe || g.rtl_approach_alt >= 0)
 			loiter_timer = millis();
 		else
