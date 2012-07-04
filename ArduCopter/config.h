@@ -559,11 +559,11 @@
 # define SUPER_SIMPLE_RADIUS	1000
 #endif
 
-
 // RTL Mode
-#ifndef RTL_AUTO_LAND
-# define RTL_AUTO_LAND 		ENABLED
+#ifndef RTL_APPROACH_ALT
+# define RTL_APPROACH_ALT 	200
 #endif
+
 
 // LOITER Mode
 #ifndef OF_LOITER_YAW
@@ -771,10 +771,10 @@
 #endif
 
 #ifndef ALT_HOLD_P
-# define ALT_HOLD_P			0.8		// .5
+# define ALT_HOLD_P			0.4		// .5
 #endif
 #ifndef ALT_HOLD_I
-# define ALT_HOLD_I			0.007
+# define ALT_HOLD_I			0.038
 #endif
 #ifndef ALT_HOLD_IMAX
 # define ALT_HOLD_IMAX		300
