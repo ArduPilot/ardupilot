@@ -83,29 +83,15 @@ float AP_Baro::get_altitude(void)
 // note that this relies on read() being called regularly to get new data
 float AP_Baro::get_climb_rate(void)
 {
-    float alt, deltat;
-
     if (_last_climb_rate_t == _last_update) {
         // no new information
         return _climb_rate;
     }
-    if (_last_climb_rate_t == 0) {
-        // first call
-        _last_altitude = get_altitude();
-        _last_climb_rate_t = _last_update;
-        _climb_rate = 0.0;
-        return _climb_rate;
-    }
-
-    deltat = (_last_update - _last_climb_rate_t) * 1.0e-3;
-
-    alt = get_altitude();
-
-    // we use a 5 point average filter on the climb rate. This seems
-    // to produce somewhat reasonable results on real hardware
-    _climb_rate = _climb_rate_filter.apply((alt - _last_altitude) / deltat);
-    _last_altitude = alt;
     _last_climb_rate_t = _last_update;
+
+    // we use a 9 point derivative filter on the climb rate. This seems
+    // to produce somewhat reasonable results on real hardware
+    _climb_rate = _climb_rate_filter.apply(get_altitude());
 
 	return _climb_rate;
 }
