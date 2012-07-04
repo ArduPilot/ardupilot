@@ -632,7 +632,7 @@
 # define STABILIZE_PITCH_P		4.5
 #endif
 #ifndef STABILIZE_PITCH_I
-# define STABILIZE_PITCH_I		0.1
+# define STABILIZE_PITCH_I		0.01
 #endif
 #ifndef STABILIZE_PITCH_IMAX
 # define STABILIZE_PITCH_IMAX	40		// degrees
@@ -642,7 +642,7 @@
 # define STABILIZE_YAW_P		7.0		// increase for more aggressive Yaw Hold, decrease if it's bouncy
 #endif
 #ifndef  STABILIZE_YAW_I
-# define STABILIZE_YAW_I		0.01
+# define STABILIZE_YAW_I		0.02
 #endif
 #ifndef  STABILIZE_YAW_IMAX
 # define STABILIZE_YAW_IMAX		8		// degrees * 100
@@ -682,7 +682,7 @@
 # define RATE_YAW_P    		 .13
 #endif
 #ifndef RATE_YAW_I
-# define RATE_YAW_I    		 0.0
+# define RATE_YAW_I    		 0.02
 #endif
 #ifndef RATE_YAW_D
 # define RATE_YAW_D    		 0.000
@@ -788,7 +788,7 @@
 # define THROTTLE_I			0.0		// Don't edit
 #endif
 #ifndef THROTTLE_D
-# define THROTTLE_D			0.02	//
+# define THROTTLE_D			0.0	//
 #endif
 #ifndef THROTTLE_IMAX
 # define THROTTLE_IMAX		300
@@ -932,7 +932,7 @@
 // Navigation defaults
 //
 #ifndef WP_RADIUS_DEFAULT
-# define WP_RADIUS_DEFAULT	1
+# define WP_RADIUS_DEFAULT	2
 #endif
 
 #ifndef LOITER_RADIUS
