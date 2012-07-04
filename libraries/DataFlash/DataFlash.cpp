@@ -3,6 +3,7 @@
 	DataFlash.cpp - DataFlash log library generic code
 */
 
+#include <FastSerial.h>
 #include <stdint.h>
 #include "DataFlash.h"
 
@@ -188,8 +189,28 @@ uint16_t DataFlash_Class::GetFilePage()
 
 void DataFlash_Class::EraseAll(void (*delay_cb)(unsigned long))
 {
+    // write a bad value to the last page
+    StartWrite(df_NumPages+1);
+    WriteLong(DF_LOGGING_FORMAT_INVALID);
+	BufferToPage(df_BufferNum,df_PageAdr,1);
+
     ChipErase(delay_cb);
 	SetFileNumber(0xFFFF);
+
+    StartRead(0);
+    StartRead(df_NumPages+1);
+    int32_t format = ReadLong();
+
+    if (format == DF_LOGGING_FORMAT_INVALID) {
+        // the chip erase didn't work - fall back to a erasing
+        // each page separately. The errata on the APM2 dataflash chip
+        // suggests that chip erase won't always work
+        for(uint16_t j = 1; j <= (df_NumPages+1)/8; j++) {
+            BlockErase(j);
+            delay_cb(1);
+        }
+    }
+
     // write the logging format in the last page
     StartWrite(df_NumPages+1);
     WriteLong(DF_LOGGING_FORMAT);

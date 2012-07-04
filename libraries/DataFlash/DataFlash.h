@@ -12,6 +12,9 @@
 // this if (and only if!) the low level format changes
 #define DF_LOGGING_FORMAT    0x28122011
 
+// we use an invalie logging format to test the chip erase
+#define DF_LOGGING_FORMAT_INVALID   0x28122012
+
 class DataFlash_Class
 {
   private:
@@ -32,6 +35,7 @@ class DataFlash_Class
 	virtual void PageToBuffer(unsigned char BufferNum, uint16_t PageAdr) = 0;
 	virtual unsigned char BufferRead (unsigned char BufferNum, uint16_t IntPageAdr) = 0;
 	virtual void PageErase(uint16_t PageAdr) = 0;
+	virtual void BlockErase(uint16_t BlockAdr) = 0;
 	virtual void ChipErase(void (*delay_cb)(unsigned long)) = 0;
 
 	// internal high level functions
