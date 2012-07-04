@@ -105,6 +105,13 @@ void DataFlash_APM1::PageErase (uint16_t PageAdr)
 	pwrite(flash_fd, fill, DF_PAGE_SIZE, PageAdr*DF_PAGE_SIZE);
 }
 
+void DataFlash_APM1::BlockErase (uint16_t BlockAdr)
+{
+	uint8_t fill[DF_PAGE_SIZE*8];
+	memset(fill, 0xFF, sizeof(fill));
+	pwrite(flash_fd, fill, DF_PAGE_SIZE*8, BlockAdr*DF_PAGE_SIZE*8);
+}
+
 
 void DataFlash_APM1::ChipErase(void (*delay_cb)(unsigned long))
 {
