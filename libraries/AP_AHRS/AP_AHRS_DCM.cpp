@@ -411,7 +411,7 @@ AP_AHRS_DCM::drift_correction(float deltat)
 	_have_gps_lock = true;
     }
 
-#if 0
+#if 1
     /* 
        NOTE: The barometric vertical acceleration correction is disabled 
        until we work out how to filter it sufficiently to be usable
