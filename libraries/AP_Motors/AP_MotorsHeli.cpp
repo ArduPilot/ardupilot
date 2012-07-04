@@ -42,7 +42,7 @@ const AP_Param::GroupInfo AP_MotorsHeli::var_info[] PROGMEM = {
 	
 	// @Param: ROL_MAX
 	// @DisplayName: Maximum Roll Angle
-	// @Description: This is the maximum allowable aircraft roll angle in Stabilize Mode.
+	// @Description: This is the maximum allowable roll of the swash plate.
 	// @Range: 0 18000
 	// @Units: Degrees
 	// @Increment: 1
@@ -51,7 +51,7 @@ const AP_Param::GroupInfo AP_MotorsHeli::var_info[] PROGMEM = {
 	
 	// @Param: PIT_MAX
 	// @DisplayName: Maximum Pitch Angle
-	// @Description: This is the maximum allowable aircraft pitch angle in Stabilize Mode.
+	// @Description: This is the maximum allowable pitch of the swash plate.
 	// @Range: 0 18000
 	// @Units: Degrees
 	// @Increment: 1
@@ -87,7 +87,7 @@ const AP_Param::GroupInfo AP_MotorsHeli::var_info[] PROGMEM = {
 	
 	// @Param: GYR_ENABLE
 	// @DisplayName: External Gyro Enabled
-	// @Description: Setting this to Enabled(1) will enable an external rudder gyro control. Setting this to Disabled(0) will disable the external gyro control and will revert to internal rudder control.
+	// @Description: Setting this to Enabled(1) will enable an external rudder gyro control which means outputting a gain on channel 7 and using a simpler heading control algorithm. Setting this to Disabled(0) will disable the external gyro gain on channel 7 and revert to a more complex yaw control algorithm.
 	// @Values: 0:Disabled,1:Enabled
 	// @User: Standard
 	AP_GROUPINFO("GYR_ENABLE",	9,	AP_MotorsHeli,	ext_gyro_enabled),
@@ -98,7 +98,7 @@ const AP_Param::GroupInfo AP_MotorsHeli::var_info[] PROGMEM = {
 	// @User: Standard
 	AP_GROUPINFO("SWASH_TYPE",	10,	AP_MotorsHeli,	swash_type),				
 	
-	// @Param: GYR_GAIM
+	// @Param: GYR_GAIN
 	// @DisplayName: External Gyro Gain
 	// @Description: This is the PWM which is passed to the external gyro when external gyro is enabled.
 	// @Range: 1000 2000
@@ -109,14 +109,14 @@ const AP_Param::GroupInfo AP_MotorsHeli::var_info[] PROGMEM = {
 		
 	// @Param: SV_MAN
 	// @DisplayName: Manual Servo Mode
-	// @Description: Setting this to Enabled(1) will pass radio inputs directly to servos. Setting this to Disabled(0) will enable Arducopter control of servos.
+	// @Description: Setting this to Enabled(1) will pass radio inputs directly to servos. Setting this to Disabled(0) will enable Arducopter control of servos.  This is only meant to be used by the Mission Planner using swash plate set-up.
 	// @Values: 0:Disabled,1:Enabled
 	// @User: Standard	
 	AP_GROUPINFO("SV_MAN",		12,	AP_MotorsHeli,	servo_manual),
 	
 	// @Param: PHANG
 	// @DisplayName: Swashplate Phase Angle Compensation
-	// @Description: This corrects for phase angle errors of the helicopter main rotor head.
+	// @Description: This corrects for phase angle errors of the helicopter main rotor head.  For example if pitching the swash forward also induces a roll, that effect can be offset with this parameter.
 	// @Range: -90 90
 	// @Units: Degrees
 	// @User: Advanced
