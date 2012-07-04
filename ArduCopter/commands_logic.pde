@@ -216,14 +216,8 @@ static void do_takeoff()
 	// Start with current location
 	Location temp = current_loc;
 
-	// command_nav_queue.alt is a relative altitude!!!
-	if (command_nav_queue.options & MASK_OPTIONS_RELATIVE_ALT) {
-		temp.alt = command_nav_queue.alt + home.alt;
-		//Serial.printf("rel alt: %ld",temp.alt);
-	} else {
-		temp.alt = command_nav_queue.alt;
-		//Serial.printf("abs alt: %ld",temp.alt);
-	}
+	// alt is always relative
+	temp.alt = command_nav_queue.alt;
 
 	// prevent flips
 	reset_I_all();
@@ -236,10 +230,6 @@ static void do_nav_wp()
 {
 	wp_control = WP_MODE;
 
-	// command_nav_queue.alt is a relative altitude!!!
-	if (command_nav_queue.options & MASK_OPTIONS_RELATIVE_ALT) {
-		command_nav_queue.alt	+= home.alt;
-	}
 	set_next_WP(&command_nav_queue);
 
 	// this is our bitmask to verify we have met all conditions to move on
@@ -251,9 +241,7 @@ static void do_nav_wp()
 	// this is the delay, stored in seconds and expanded to millis
 	loiter_time_max = command_nav_queue.p1 * 1000;
 
-	// if we don't require an altitude minimum, we save this flag as passed (1)
-	if((next_WP.options & MASK_OPTIONS_RELATIVE_ALT) == 0){
-		// we don't need to worry about it
+	if((next_WP.options & WP_OPTION_ALT_REQUIRED) == false){
 		wp_verify_byte |= NAV_ALTITUDE;
 	}
 }
@@ -428,10 +416,9 @@ static bool verify_land_baro()
 static bool verify_nav_wp()
 {
 	// Altitude checking
-	if(next_WP.options & MASK_OPTIONS_RELATIVE_ALT){
+	if(next_WP.options & WP_OPTION_ALT_REQUIRED){
 		// we desire a certain minimum altitude
-		//if (current_loc.alt > next_WP.alt){
-		if (current_loc.alt > target_altitude){
+		if(alt_change_flag == REACHED_ALT){
 
 			// we have reached that altitude
 			wp_verify_byte |= NAV_ALTITUDE;
