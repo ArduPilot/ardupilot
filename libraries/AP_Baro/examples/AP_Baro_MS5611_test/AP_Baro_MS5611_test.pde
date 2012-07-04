@@ -34,6 +34,7 @@ void setup()
 	SPI.setClockDivider(SPI_CLOCK_DIV32); // 500khz for debugging, increase later
 
 	baro.init(&scheduler);
+	baro.calibrate(delay);
 	timer = millis();
 }
 
@@ -42,10 +43,10 @@ void loop()
 	float tmp_float;
 	float Altitude;
 
-	if((millis() - timer) > 100){
-		timer = millis();
+	if((micros() - timer) > 100000UL){
+		timer = micros();
 		baro.read();
-		unsigned long read_time = micros() - timer;
+		uint32_t read_time = micros() - timer;
 		if (!baro.healthy) {
 			Serial.println("not healthy");
 			return;
@@ -59,7 +60,9 @@ void loop()
 		tmp_float = pow(tmp_float, 0.190295);
 		Altitude = 44330.0 * (1.0 - tmp_float);
 		Serial.print(Altitude);
-		Serial.printf(" t=%u", (unsigned)read_time);
+		Serial.printf(" climb=%.2f t=%u", 
+			      baro.get_climb_rate(),
+			      (unsigned)read_time);
 		Serial.println();
 	}
 }
