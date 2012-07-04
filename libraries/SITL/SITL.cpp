@@ -22,6 +22,7 @@ const AP_Param::GroupInfo SITL::var_info[] PROGMEM = {
     AP_GROUPINFO("GPS_DISABLE",4, SITL,  gps_disable),
     AP_GROUPINFO("DRIFT_SPEED",5, SITL,  drift_speed),
     AP_GROUPINFO("DRIFT_TIME", 6, SITL,  drift_time),
+    AP_GROUPINFO("GPS_DELAY",  7, SITL,  gps_delay),
     AP_GROUPEND
 };
 
