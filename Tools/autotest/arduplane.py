@@ -65,7 +65,7 @@ def fly_left_circuit(mavproxy, mav):
         # hard left
         print("Starting turn %u" % i)
         mavproxy.send('rc 1 1000\n')
-        if not wait_heading(mav, 270 - (90*i)):
+        if not wait_heading(mav, 270 - (90*i), accuracy=10):
             return False
         mavproxy.send('rc 1 1500\n')
         print("Starting leg %u" % i)
@@ -93,9 +93,9 @@ def fly_LOITER(mavproxy, mav, num_circles=4):
     mavproxy.send('loiter\n')
     wait_mode(mav, 'LOITER')
     while num_circles > 0:
-        if not wait_heading(mav, 0):
+        if not wait_heading(mav, 0, accuracy=10):
             return False
-        if not wait_heading(mav, 180):
+        if not wait_heading(mav, 180, accuracy=10):
             return False
         num_circles -= 1
         print("Loiter %u circles left" % num_circles)
@@ -320,6 +320,7 @@ def fly_ArduPlane(viewerip=None):
             print("Failed mission")
             failed = True
     except pexpect.TIMEOUT, e:
+        print("Failed with timeout")
         failed = True
 
     mav.close()
