@@ -100,7 +100,7 @@ public:
 	k_param_auto_slew_rate,
 	k_param_sonar_type,
 	k_param_super_simple,
-	k_param_rtl_land_enabled,
+	k_param_rtl_land_enabled,	// Depricated!!
 	k_param_axis_enabled,
 	k_param_copter_leds_mode, //158
     k_param_ahrs,  // AHRS group
@@ -112,6 +112,7 @@ public:
 	k_param_crosstrack_gain,
 	k_param_auto_land_timeout,
 	k_param_rtl_approach_alt,
+	k_param_tilt_comp, //164
 
 
 	//
@@ -213,7 +214,8 @@ public:
 	AP_Float	low_voltage;
 	AP_Int8		super_simple;
 	AP_Int8		rtl_land_enabled;
-	AP_Float	rtl_approach_alt;
+	AP_Int16	rtl_approach_alt;
+	AP_Float	tilt_comp;
 	AP_Int8		axis_enabled;
 	AP_Int8		copter_leds_mode;	// Operating mode of LED lighting system
 
@@ -333,8 +335,9 @@ public:
 	optflow_enabled			(OPTFLOW),
 	low_voltage				(LOW_VOLTAGE),
 	super_simple			(SUPER_SIMPLE),
-	rtl_land_enabled		(RTL_AUTO_LAND),
-	rtl_approach_alt		(0.0),
+	rtl_land_enabled		(0),
+	rtl_approach_alt		(RTL_APPROACH_ALT),
+	tilt_comp				(.0054),
 	axis_enabled			(AXIS_LOCK_ENABLED),
 	copter_leds_mode		(9),
 

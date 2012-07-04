@@ -83,6 +83,7 @@ static const AP_Param::Info var_info[] PROGMEM = {
 	// @Description: Setting this to Enabled(1) will enable landing after RTL. Setting this to Disabled(0) will disable landing after RTL.
 	// @Values: 0:Disabled,1:Enabled
 	// @User: Standard
+	// @ DEPRICATED
 	GSCALAR(rtl_land_enabled,	"RTL_LAND"),
 
 	// @Param: APPROACH_ALT
@@ -93,6 +94,8 @@ static const AP_Param::Info var_info[] PROGMEM = {
 	// @Increment: .1
 	// @User: Standard
 	GSCALAR(rtl_approach_alt,	"APPROACH_ALT"),
+
+	GSCALAR(tilt_comp,	"TILT"),
 
 	GSCALAR(waypoint_mode,	"WP_MODE"),
 	GSCALAR(command_total,	"WP_TOTAL"),
