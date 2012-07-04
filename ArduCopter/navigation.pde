@@ -420,36 +420,3 @@ static int32_t wrap_180(int32_t error)
 	return error;
 }
 
-/*
-//static int32_t get_altitude_above_home(void)
-{
-	// This is the altitude above the home location
-	// The GPS gives us altitude at Sea Level
-	// if you slope soar, you should see a negative number sometimes
-	// -------------------------------------------------------------
-	return current_loc.alt - home.alt;
-}
-*/
-
-// distance is returned in cm
-static int32_t get_distance(struct Location *loc1, struct Location *loc2)
-{
-	float dlat 		= (float)(loc2->lat - loc1->lat);
-	float dlong		= ((float)(loc2->lng - loc1->lng)) * scaleLongDown;
-	dlong			= sqrt(sq(dlat) + sq(dlong)) * 1.113195;
-	return			dlong;
-}
-/*
-//static int32_t get_alt_distance(struct Location *loc1, struct Location *loc2)
-{
-	return abs(loc1->alt - loc2->alt);
-}
-*/
-static int32_t get_bearing(struct Location *loc1, struct Location *loc2)
-{
-	int32_t off_x = loc2->lng - loc1->lng;
-	int32_t off_y = (loc2->lat - loc1->lat) * scaleLongUp;
-	int32_t bearing =	9000 + atan2(-off_y, off_x) * 5729.57795;
-	if (bearing < 0) bearing += 36000;
-	return bearing;
-}
