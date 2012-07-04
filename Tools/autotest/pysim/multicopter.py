@@ -132,6 +132,7 @@ class MultiCopter(Aircraft):
 
         # update attitude
         self.dcm.rotate(self.gyro * delta_time)
+        self.dcm.normalize()
 
         # air resistance
         air_resistance = - self.velocity * (self.gravity/self.terminal_velocity)
