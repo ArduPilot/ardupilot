@@ -5,7 +5,7 @@
 
 #include <AP_Param.h>
 #include <Filter.h>
-#include <AverageFilter.h>
+#include <DerivativeFilter.h>
 #include "../AP_PeriodicProcess/AP_PeriodicProcess.h"
 
 class AP_Baro
@@ -47,11 +47,10 @@ private:
     AP_Int16    _ground_temperature;
     AP_Int32    _ground_pressure;
     float       _altitude;
-    uint32_t    _last_altitude_t;
-    float		_last_altitude;
     float       _climb_rate;
     uint32_t    _last_climb_rate_t;
-    AverageFilterFloat_Size5 _climb_rate_filter;
+    uint32_t    _last_altitude_t;
+    DerivativeFilter<float,float,9> _climb_rate_filter;
 };
 
 #include "AP_Baro_MS5611.h"
