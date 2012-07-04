@@ -6,6 +6,7 @@
 // Assorted useful math operations for ArduPilot(Mega)
 
 #include <AP_Common.h>
+#include <math.h>
 #include <stdint.h>
 #include "rotations.h"
 #include "vector2.h"
@@ -13,7 +14,6 @@
 #include "matrix3.h"
 #include "quaternion.h"
 #include "polygon.h"
-#include <math.h>
 
 // define AP_Param types AP_Vector3f and Ap_Matrix3f
 AP_PARAMDEFV(Matrix3f, Matrix3f, AP_PARAM_MATRIX3F);
