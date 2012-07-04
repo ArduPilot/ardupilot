@@ -708,9 +708,26 @@ void roll_pitch_toy()
 	// Yaw control - Yaw is always available, and will NOT exit the
 	// user from Loiter mode
 	int16_t yaw_rate = g.rc_1.control_in / g.toy_yaw_rate;
-	nav_yaw += yaw_rate / 100;
-	nav_yaw = wrap_360(nav_yaw);
-	g.rc_4.servo_out = get_stabilize_yaw(nav_yaw);
+	//nav_yaw += yaw_rate / 100;
+	//nav_yaw = wrap_360(nav_yaw);
+	//g.rc_4.servo_out = get_stabilize_yaw(nav_yaw);
+
+	if(g.rc_1.control_in != 0){
+		g.rc_4.servo_out = get_acro_yaw(yaw_rate);
+		yaw_stopped = false;
+		yaw_timer = 150;
+	}else if (!yaw_stopped){
+		g.rc_4.servo_out = get_acro_yaw(0);
+		yaw_timer--;
+		if(yaw_timer == 0){
+			yaw_stopped = true;
+			nav_yaw = ahrs.yaw_sensor;
+		}
+	}else{
+		nav_yaw = get_nav_yaw_offset(yaw_rate, g.rc_3.control_in);
+		g.rc_4.servo_out = get_stabilize_yaw(nav_yaw);
+	}
+
 
 	if(manual_control){
 		// user is in control: reset count-up timer
