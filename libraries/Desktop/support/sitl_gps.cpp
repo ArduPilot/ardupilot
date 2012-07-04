@@ -12,10 +12,27 @@
 #include <string.h>
 #include <errno.h>
 #include <math.h>
+#include <SITL.h>
 #include <AP_GPS.h>
 #include <AP_GPS_UBLOX.h>
 #include "desktop.h"
 #include "util.h"
+
+extern SITL sitl;
+
+#define MAX_GPS_DELAY 100
+
+struct gps_data {
+	double latitude;
+	double longitude;
+	float altitude;
+	double speedN;
+	double speedE;
+	bool have_lock;
+} gps_data[MAX_GPS_DELAY];
+
+static uint8_t next_gps_index;
+static uint8_t gps_delay;
 
 // state of GPS emulation
 static struct {
@@ -113,6 +130,7 @@ void sitl_update_gps(double latitude, double longitude, float altitude,
         const uint8_t MSG_POSLLH = 0x2;
 	const uint8_t MSG_STATUS = 0x3;
 	const uint8_t MSG_VELNED = 0x12;
+	struct gps_data d;
 
 	// 5Hz, to match the real UBlox config in APM
 	if (millis() - gps_state.last_update < 200) {
@@ -120,30 +138,53 @@ void sitl_update_gps(double latitude, double longitude, float altitude,
 	}
 	gps_state.last_update = millis();
 
+	d.latitude = latitude;
+	d.longitude = longitude;
+	d.altitude = altitude;
+	d.speedN = speedN;
+	d.speedE = speedE;
+	d.have_lock = have_lock;
+
+	// add in some GPS lag
+	gps_data[next_gps_index++] = d;
+	if (next_gps_index >= gps_delay) {
+		next_gps_index = 0;
+	}
+
+	d = gps_data[next_gps_index];
+
+	if (sitl.gps_delay != gps_delay) {
+		// cope with updates to the delay control
+		gps_delay = sitl.gps_delay;
+		for (uint8_t i=0; i<gps_delay; i++) {
+			gps_data[i] = d;
+		}
+	}
+
 	pos.time = millis(); // FIX
-	pos.longitude = longitude * 1.0e7;
-	pos.latitude  = latitude * 1.0e7;
-	pos.altitude_ellipsoid = altitude*1000.0;
-	pos.altitude_msl = altitude*1000.0;
+	pos.longitude = d.longitude * 1.0e7;
+	pos.latitude  = d.latitude * 1.0e7;
+	pos.altitude_ellipsoid = d.altitude*1000.0;
+	pos.altitude_msl = d.altitude*1000.0;
 	pos.horizontal_accuracy = 5;
 	pos.vertical_accuracy = 10;
 
 	status.time = pos.time;
-	status.fix_type = have_lock?3:0;
-	status.fix_status = have_lock?1:0;
+	status.fix_type = d.have_lock?3:0;
+	status.fix_status = d.have_lock?1:0;
 	status.differential_status = 0;
 	status.res = 0;
 	status.time_to_first_fix = 0;
 	status.uptime = millis();
 
 	velned.time = pos.time;
-	velned.ned_north = 100.0 * speedN;
-	velned.ned_east  = 100.0 * speedE;
+	velned.ned_north = 100.0 * d.speedN;
+	velned.ned_east  = 100.0 * d.speedE;
 	velned.ned_down  = 0;
 #define sqr(x) ((x)*(x))
-	velned.speed_2d = sqrt(sqr(speedN)+sqr(speedE)) * 100;
+	velned.speed_2d = sqrt(sqr(d.speedN)+sqr(d.speedE)) * 100;
 	velned.speed_3d = velned.speed_2d;
-	velned.heading_2d = ToDeg(atan2(speedE, speedN)) * 100000.0;
+	velned.heading_2d = ToDeg(atan2(d.speedE, d.speedN)) * 100000.0;
 	if (velned.heading_2d < 0.0) {
 		velned.heading_2d += 360.0 * 100000.0;
 	}
