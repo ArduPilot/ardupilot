@@ -79,7 +79,15 @@ bool location_passed_point(struct Location &location,
 	Vector2f pt1(point1.lat, point1.lng);
 	Vector2f pt2(point2.lat, point2.lng);
 	float angle = (loc1 - pt2).angle(pt1 - pt2);
-	if (angle == 0) {
+    if (isinf(angle)) {
+        // two of the points are co-located. 
+        // If location is equal to point2 then say we have passed the
+        // waypoint, otherwise say we haven't
+        if (get_distance(&location, &point2) == 0) {
+            return true;
+        }
+        return false;
+    } else if (angle == 0) {
 		// if we are exactly on the line between point1 and
 		// point2 then we are past the waypoint if the
 		// distance from location to point1 is greater then
