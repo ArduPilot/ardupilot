@@ -13,6 +13,7 @@
 #include "matrix3.h"
 #include "quaternion.h"
 #include "polygon.h"
+#include <math.h>
 
 // define AP_Param types AP_Vector3f and Ap_Matrix3f
 AP_PARAMDEFV(Matrix3f, Matrix3f, AP_PARAM_MATRIX3F);
