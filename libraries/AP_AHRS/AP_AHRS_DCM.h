@@ -99,6 +99,9 @@ private:
 
 	// current drift error in earth frame
 	Vector3f	_drift_error_earth;
+
+	// whether we have GPS lock
+	bool		_have_gps_lock;
 };
 
 #endif // AP_AHRS_DCM_H
