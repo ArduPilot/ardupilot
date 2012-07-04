@@ -461,7 +461,15 @@ AP_AHRS_DCM::drift_correction(float deltat)
 
     // step 6
     error = GA_b % GA_e2;
-    error.z = earth_error_Z;
+
+    // only use the gps/accelerometers for earth frame yaw correction 
+    // if we are not using a compass. Otherwise we have two competing
+    // controllers for yaw correction
+    if (_compass && _compass->use_for_yaw()) {
+	    error.z = 0;
+    } else {
+	    error.z = earth_error_Z;
+    }
 
     // convert the error term to body frame
     error = _dcm_matrix.mul_transpose(error);
