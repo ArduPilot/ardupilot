@@ -271,7 +271,7 @@ static void Log_Read_GPS()
 	float temp5 	= DataFlash.ReadLong() / 100.0;	// 5 sensor alt
 	float temp6 	= DataFlash.ReadLong() / 100.0;	// 6 gps alt
 	int16_t temp7 	= DataFlash.ReadInt();			// 7 ground speed
-	int32_t temp8 	= DataFlash.ReadLong();// 8 ground course
+	int32_t temp8 	= DataFlash.ReadLong();			// 8 ground course
 
 							//  1   2    3      4     5      6      7    8
 	Serial.printf_P(PSTR("GPS, %ld, %d, "),
