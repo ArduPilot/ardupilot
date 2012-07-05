@@ -261,7 +261,7 @@ static void geofence_check(bool altitude_check_only)
         // min and max
         if (g.fence_minalt >= g.fence_maxalt) {
             // invalid min/max, use RTL_altitude
-            guided_WP.alt = home.alt + (g.RTL_altitude * 100);
+            guided_WP.alt = home.alt + g.RTL_altitude;
         } else {
             guided_WP.alt = home.alt + 100*(g.fence_minalt + g.fence_maxalt)/2;
         }
