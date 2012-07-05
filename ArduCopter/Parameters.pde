@@ -19,6 +19,12 @@ static const AP_Param::Info var_info[] PROGMEM = {
 
 	GSCALAR(sysid_this_mav,	"SYSID_THISMAV"),
 	GSCALAR(sysid_my_gcs,	"SYSID_MYGCS"),
+
+    // @Param: SERIAL3_BAUD
+	// @DisplayName: Telemetry Baud Rate
+	// @Description: The baud rate used on the telemetry port
+	// @Values: 1:1200,2:2400,4:4800,9:9600,19:19200,38:38400,57:57600,111:111100,115:115200
+	// @User: Standard
 	GSCALAR(serial3_baud,	"SERIAL3_BAUD"),
 
 	// @Param: ALT_HOLD_RTL
@@ -93,7 +99,7 @@ static const AP_Param::Info var_info[] PROGMEM = {
 
 	// @Param: APPROACH_ALT
 	// @DisplayName: Alt Hold RTL
-	// @Description: This is the altitude the model will move to before Returning to Launch
+	// @Description: This is the altitude the vehicle will move to before Returning to Launch
 	// @Units: Meters
 	// @Range: 1 10
 	// @Increment: .1
@@ -106,17 +112,61 @@ static const AP_Param::Info var_info[] PROGMEM = {
 	GSCALAR(command_total,	"WP_TOTAL"),
 	GSCALAR(command_index,	"WP_INDEX"),
 	GSCALAR(command_nav_index,	"WP_MUST_INDEX"),
+
+    // @Param: WP_RADIUS
+	// @DisplayName: Waypoint Radius
+	// @Description: Defines the distance from a waypoint, that when crossed indicates the wp has been hit.
+	// @Units: Meters
+	// @Range: 1 127
+	// @Increment: 1
+	// @User: Standard
 	GSCALAR(waypoint_radius,	"WP_RADIUS"),
+
+    // @Param: WP_LOITER_RAD
+	// @DisplayName: Waypoint Loiter Radius
+	// @Description: Defines the distance from the waypoint center, the vehicle will maintain during a loiter
+	// @Units: Meters
+	// @Range: 1 127
+	// @Increment: 1
+	// @User: Standard
 	GSCALAR(loiter_radius,	"WP_LOITER_RAD"),
 	GSCALAR(waypoint_speed_max,	"WP_SPEED_MAX"),
 	GSCALAR(crosstrack_gain,	"XTRK_GAIN_SC"),
 	GSCALAR(auto_land_timeout,	"AUTO_LAND"),
 
+    // @Param: THR_MIN
+	// @DisplayName: Minimum Throttle
+	// @Description: The minimum throttle which the autopilot will apply.
+	// @Units: Percent
+	// @Range: 0 100
+	// @Increment: 1
+	// @User: Standard
 	GSCALAR(throttle_min,	"THR_MIN"),
+
+    // @Param: THR_MAX
+	// @DisplayName: Maximum Throttle
+	// @Description: The maximum throttle which the autopilot will apply.
+	// @Units: Percent
+	// @Range: 0 100
+	// @Increment: 1
+	// @User: Standard
 	GSCALAR(throttle_max,	"THR_MAX"),
+
+    // @Param: THR_FAILSAFE
+	// @DisplayName: Throttle Failsafe Enable
+	// @Description: The throttle failsafe allows you to configure a software failsafe activated by a setting on the throttle input channel
+	// @Values: 0:Disabled,1:Enabled
+	// @User: Standard
 	GSCALAR(throttle_fs_enabled,	"THR_FAILSAFE"),
+
 	GSCALAR(throttle_fs_action,	"THR_FS_ACTION"),
+
+    // @Param: THR_FS_VALUE
+	// @DisplayName: Throttle Failsafe Value
+	// @Description: The PWM level on channel 3 below which throttle sailsafe triggers
+	// @User: Standard
 	GSCALAR(throttle_fs_value, "THR_FS_VALUE"),
+
 	GSCALAR(throttle_cruise,	"TRIM_THROTTLE"),
 
 	GSCALAR(flight_mode1, "FLTMODE1"),
@@ -127,6 +177,10 @@ static const AP_Param::Info var_info[] PROGMEM = {
 	GSCALAR(flight_mode6, "FLTMODE6"),
 	GSCALAR(simple_modes, "SIMPLE"),
 
+    // @Param: LOG_BITMASK
+	// @DisplayName: Log bitmask
+	// @Description: bitmap of log fields to enable
+	// @User: Advanced
 	GSCALAR(log_bitmask,	"LOG_BITMASK"),
 	GSCALAR(log_last_filenumber, "LOG_LASTFILE"),
 	// THOR
