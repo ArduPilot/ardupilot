@@ -245,6 +245,7 @@
     </Compile>
     <Compile Include="Comms\CommsTCPSerial.cs" />
     <Compile Include="Comms\CommsUdpSerial.cs" />
+    <Compile Include="Delta.cs" />
     <Compile Include="Presenter\ConfigCameraStabPresenter.cs" />
     <Compile Include="Controls\HSI.cs">
       <SubType>UserControl</SubType>

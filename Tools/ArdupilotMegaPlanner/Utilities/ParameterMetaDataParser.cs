@@ -237,7 +237,8 @@ namespace ArdupilotMega.Utilities
                               }
                            }
                         }
-                        returnDict.Add(key, metaDict);
+                        if (!returnDict.ContainsKey(key))
+                            returnDict.Add(key, metaDict);
                      }
                   }
                }

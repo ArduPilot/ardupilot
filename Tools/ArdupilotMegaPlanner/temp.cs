@@ -904,5 +904,10 @@ namespace ArdupilotMega
         {
             MagCalib.ProcessLog();
         }
+
+        private void BUT_paramgen_Click(object sender, EventArgs e)
+        {
+            ParameterMetaDataParser.GetParameterInformation();
+        }
     }
 }

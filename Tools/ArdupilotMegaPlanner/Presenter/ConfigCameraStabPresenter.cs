@@ -250,7 +250,7 @@ namespace ArdupilotMega.Presenter
                     // handle boolean
                     if (val.GetType() == typeof(Boolean))
                     {
-                        if (!_mavlink.setParam(p.ApmPropertyName, ((Boolean)val) ? 1 : 0))
+                        if (!_mavlink.setParam(p.ApmPropertyName, ((Boolean)val) ? 1 : -1))
                             log.Error("Error setting Camstab parameter");
                     }
                     else

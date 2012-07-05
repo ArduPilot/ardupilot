@@ -51,7 +51,11 @@ namespace ArdupilotMega
             }
             else if (device == uploader.Uploader.Code.DEVICE_ID_RFD900)
             {
-                return Common.getFilefromNet("http://www.samba.org/tridge/UAV/3DR/radio.rfd900.hex", firmwarefile);
+                return Common.getFilefromNet("http://rfdesign.com.au/firmware/radio.rfd900.hex", firmwarefile);
+            }
+            else if (device == uploader.Uploader.Code.DEVICE_ID_RFD900A)
+            {
+                return Common.getFilefromNet("http://rfdesign.com.au/firmware/radio.rfd900a.hex", firmwarefile);
             }
             else
             {

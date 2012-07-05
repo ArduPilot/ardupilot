@@ -67,6 +67,12 @@ namespace ArdupilotMega
 
             return;
             */
+            char[] line = "testtesttesttesttest".ToCharArray();
+
+            Delta.delta_encode(ref line);
+
+            Delta.delta_decode(ref line);
+
             if (System.Diagnostics.Debugger.IsAttached)
             {
                 // testing
