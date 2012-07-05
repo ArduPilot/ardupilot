@@ -1,16 +1,7 @@
 /// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 
-extern "C" {
-  // AVR LibC Includes
-  #include <inttypes.h>
-  #include <avr/interrupt.h>
-}
-#if defined(ARDUINO) && ARDUINO >= 100
-  #include "Arduino.h"
-#else
-  #include "WConstants.h"
-#endif
-
+#include <FastSerial.h>
+#include <AP_Baro.h>
 #include "AP_Baro_BMP085_hil.h"
 
 // Constructors ////////////////////////////////////////////////////////////////
@@ -32,26 +23,33 @@ uint8_t AP_Baro_BMP085_HIL::read()
 {
 	uint8_t result = 0;
 
-	if (BMP085_State == 1){
-		BMP085_State++;
-	}else{
-
-		if (BMP085_State == 5){
-			BMP085_State = 1;				// Start again from state = 1
-			result = 1;						// New pressure reading
-		}else{
-			BMP085_State++;
-			result = 1;						// New pressure reading
-		}
+    if (_count != 0) {
+        result = 1;
+        Press = _pressure_sum / _count;
+        Temp = _temperature_sum / _count;
+        _pressure_samples = _count;
+        _count = 0;
+        _pressure_sum = 0;
+        _temperature_sum = 0;
 	}
-	return(result);
+
+	return result;
 }
 
 void AP_Baro_BMP085_HIL::setHIL(float _Temp, float _Press)
 {
-    // TODO: map floats to raw
-	Temp 	= _Temp;
-	Press 	= _Press;
+    _count++;
+    _pressure_sum += _Press;
+    _temperature_sum += _Temp;
+    if (_count == 128) {
+        // we have summed 128 values. This only happens
+        // when we stop reading the barometer for a long time
+        // (more than 1.2 seconds)
+        _count = 64;
+        _pressure_sum /= 2;
+        _temperature_sum /= 2;
+    }
+
 	healthy = true;
     _last_update = millis();
 }

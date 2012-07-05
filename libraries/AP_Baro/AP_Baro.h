@@ -30,6 +30,10 @@ class AP_Baro
     // of the last calibrate() call
     float get_altitude(void);
 
+    // return how many pressure samples were used to obtain
+    // the last pressure reading
+    uint8_t get_pressure_samples(void) { return _pressure_samples; }
+
     // get current climb rate in meters/s. A positive number means
     // going up
     float get_climb_rate(void);
@@ -42,6 +46,7 @@ class AP_Baro
 
 protected:
     uint32_t _last_update;
+    uint8_t _pressure_samples;
 
 private:
     AP_Int16    _ground_temperature;
