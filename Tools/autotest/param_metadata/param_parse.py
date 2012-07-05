@@ -13,6 +13,8 @@ prog_groups = re.compile(r"@Group:\s*(\w+).*((?:\n\s*//\s*@(\w+): (.*))+)\s*G", 
     
 prog_group_param = re.compile(r"@Param:\s*(\w+).*((?:\n\s*//\s*@(\w+): (.*))+)\s*AP_", re.MULTILINE)
 
+prog_values_field = re.compile(r"\s*(\w+:\w+)+,*")
+
 def camelcase_escape(word):
     if re.match(r"([A-Z][a-z]+[A-Z][a-z]*)", word.strip()):
         return "!"+word
@@ -35,7 +37,15 @@ def wiki_parameters(g, f):
         t += "\n\n_%s_\n" % wikichars_escape(param.Description)
         for field in param.__dict__.keys():
             if field not in ['name', 'DisplayName', 'Description', 'User'] and field in known_param_fields:
-                t += " * %s: %s\n" % (camelcase_escape(field), wikichars_escape(param.__dict__[field]))
+                if field == 'Values' and prog_values_field.match(param.__dict__[field]):
+                    t+= " * Values \n"
+                    values = (param.__dict__[field]).split(',')
+                    t+="|| *Value* || *Meaning* ||\n"
+                    for value in values:
+                        v = value.split(':')
+                        t+="|| "+v[0]+" || "+v[1]+" ||\n"
+                else:
+                    t += " * %s: %s\n" % (camelcase_escape(field), wikichars_escape(param.__dict__[field]))
                 
     #print t
     f.write(t)
