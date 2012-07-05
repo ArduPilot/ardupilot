@@ -91,7 +91,7 @@ float AP_Baro::get_climb_rate(void)
 
     // we use a 9 point derivative filter on the climb rate. This seems
     // to produce somewhat reasonable results on real hardware
-    _climb_rate = _climb_rate_filter.apply(get_altitude());
+    _climb_rate = _climb_rate_filter.apply(get_altitude(), _last_update) * 1.0e3;
 
 	return _climb_rate;
 }
