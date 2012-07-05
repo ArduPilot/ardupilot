@@ -50,7 +50,7 @@ private:
     float       _climb_rate;
     uint32_t    _last_climb_rate_t;
     uint32_t    _last_altitude_t;
-    DerivativeFilter<float,float,9> _climb_rate_filter;
+    DerivativeFilterFloat_Size7 _climb_rate_filter;
 };
 
 #include "AP_Baro_MS5611.h"
