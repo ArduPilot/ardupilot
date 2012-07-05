@@ -21,7 +21,7 @@ def camelcase_escape(word):
 
 def wiki_parameters(g, f):    
     
-    t = "\n\n= %s Parameters =\n"  % (camelcase_escape(g.name))
+    t = "\n\n== %s Parameters ==\n"  % (camelcase_escape(g.name))
     
     for param in g.params:
         t += "\n\n=== %s (%s) ===" % (camelcase_escape(param.DisplayName),camelcase_escape(param.name))
@@ -128,17 +128,21 @@ for library in libraries:
 wiki_fname = 'Parameters.wiki'
 f = open(wiki_fname, mode='w')
 preamble = '''#summary Dynamically generated list of documented parameters
+= Table of Contents = 
 <wiki:toc max_depth="4" />
     
-    
-    
+= Vehicles =    
 '''
 f.write(preamble)
 
 for vehicle in vehicles:
     wiki_parameters(vehicle, f)
+
+t = "\n\n=Libraries=\n\n"
+f.write(t)
     
 for library in libraries:
-    wiki_parameters(library, f)
+    if library.params:
+        wiki_parameters(library, f)
    
 f.close
