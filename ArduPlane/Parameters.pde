@@ -124,10 +124,41 @@ static const AP_Param::Info var_info[] PROGMEM = {
 	GSCALAR(loiter_radius,          "WP_LOITER_RAD"),
 
 #if GEOFENCE_ENABLED == ENABLED
+    // @Param: FENCE_ACTION
+	// @DisplayName: Action on geofence breach
+	// @Description: Defines the distance from the waypoint center, the plane will maintain during a loiter
+    // @Values: 0:None,1:GuidedMode
+	// @User: Standard
 	GSCALAR(fence_action,           "FENCE_ACTION"),
+
+    // @Param: FENCE_TOTAL
+	// @DisplayName: Fence Total
+	// @Description: Number of geofence points currently loaded
+	// @User: Standard
 	GSCALAR(fence_total,            "FENCE_TOTAL"),
+
+    // @Param: FENCE_CHANNEL
+	// @DisplayName: Fence Channel
+	// @Description: RC Channel to use to enable geofence. PWM input above 1750 enables the geofence
+	// @User: Standard
 	GSCALAR(fence_channel,          "FENCE_CHANNEL"),
+
+    // @Param: FENCE_MINALT
+	// @DisplayName: Fence Minimum Altitude
+	// @Description: Minimum altitude allowed before geofence triggers
+	// @Units: meters
+	// @Range: 0 32767
+	// @Increment: 1
+	// @User: Standard
 	GSCALAR(fence_minalt,           "FENCE_MINALT"),
+
+    // @Param: FENCE_MAXALT
+	// @DisplayName: Fence Maximum Altitude
+	// @Description: Maximum altitude allowed before geofence triggers
+	// @Units: meters
+	// @Range: 0 32767
+	// @Increment: 1
+	// @User: Standard
 	GSCALAR(fence_maxalt,           "FENCE_MAXALT"),
 #endif
 
@@ -166,30 +197,106 @@ static const AP_Param::Info var_info[] PROGMEM = {
 	// @Increment: 1
 	// @User: Standard
 	GSCALAR(throttle_max,           "THR_MAX"),
+
+	// @Param: THR_SLEWRATE
+	// @DisplayName: Throttlw slew rate
+	// @Description: maximum percentage change in throttle per second
+	// @Units: Percent
+	// @Range: 0 100
+	// @Increment: 1
+	// @User: Standard
 	GSCALAR(throttle_slewrate,      "THR_SLEWRATE"),
 
     // @Param: THR_FAILSAFE
 	// @DisplayName: Throttle Failsafe Enable
 	// @Description: The throttle failsafe allows you to configure a software failsafe activated by a setting on the throttle input channel
-	// @Units: Percent
 	// @Values: 0:Disabled,1:Enabled
 	// @User: Standard
 	GSCALAR(throttle_fs_enabled,    "THR_FAILSAFE"),
 
 
+    // @Param: THR_FS_VALUE
+	// @DisplayName: Throttle Failsafe Value
+	// @Description: The PWM level on channel 3 below which throttle sailsafe triggers
+	// @User: Standard
 	GSCALAR(throttle_fs_value,      "THR_FS_VALUE"),
+
+    // @Param: TRIM_THROTTLE
+	// @DisplayName: Throttle cruise percentage
+	// @Description: The target percentage of throttle to apply for normal flight
+	// @Units: Percent
+	// @Range: 0 100
+	// @Increment: 1
+	// @User: Standard
 	GSCALAR(throttle_cruise,        "TRIM_THROTTLE"),
 
+    // @Param: FS_SHORT_ACTN
+	// @DisplayName: Short failsafe action
+	// @Description: The action to take on a short (1 second) failsafe event
+	// @Values: 0:None,1:ReturnToLaunch
+	// @User: Standard
 	GSCALAR(short_fs_action,        "FS_SHORT_ACTN"),
+
+    // @Param: FS_LONG_ACTN
+	// @DisplayName: Long failsafe action
+	// @Description: The action to take on a long (20 second) failsafe event
+	// @Values: 0:None,1:ReturnToLaunch
+	// @User: Standard
 	GSCALAR(long_fs_action,         "FS_LONG_ACTN"),
+
+    // @Param: FS_GCS_ENABL
+	// @DisplayName: GCS failsafe enable
+	// @Description: Enable ground control station telemetry failsafe. Failsafe will trigger after 20 seconds of no MAVLink heartbeat messages
+	// @Values: 0:Disabled,1:Enabled
+	// @User: Standard
 	GSCALAR(gcs_heartbeat_fs_enabled, "FS_GCS_ENABL"),
 
+    // @Param: FLTMODE_CH
+	// @DisplayName: Flightmode channel
+	// @Description: RC Channel to use for flight mode control
+	// @User: Advanced
 	GSCALAR(flight_mode_channel,    "FLTMODE_CH"),
+
+    // @Param: FLTMODE1
+	// @DisplayName: FlightMode1
+	// @Values: 0:Manual,1:CIRCLE,2:STABILIZE,5:FBWA,6:FBWB,10:Auto,11:RTL,12:Loiter,15:Guided
+	// @User: Standard
+	// @Description: Flight mode for switch position 2 (910 to 1230 and above 2049)
 	GSCALAR(flight_mode1,           "FLTMODE1"),
+
+    // @Param: FLTMODE3
+	// @DisplayName: FlightMode1
+	// @Description: Flight mode for switch position 2 (1231 to 1360)
+	// @Values: 0:Manual,1:CIRCLE,2:STABILIZE,5:FBWA,6:FBWB,10:Auto,11:RTL,12:Loiter,15:Guided
+	// @User: Standard
 	GSCALAR(flight_mode2,           "FLTMODE2"),
+
+    // @Param: FLTMODE3
+	// @DisplayName: FlightMode1
+	// @Description: Flight mode for switch position 3 (1361 to 1490)
+	// @Values: 0:Manual,1:CIRCLE,2:STABILIZE,5:FBWA,6:FBWB,10:Auto,11:RTL,12:Loiter,15:Guided
+	// @User: Standard
 	GSCALAR(flight_mode3,           "FLTMODE3"),
+
+    // @Param: FLTMODE4
+	// @DisplayName: FlightMode4
+	// @Description: Flight mode for switch position 4 (1491 to 1620)
+	// @Values: 0:Manual,1:CIRCLE,2:STABILIZE,5:FBWA,6:FBWB,10:Auto,11:RTL,12:Loiter,15:Guided
+	// @User: Standard
 	GSCALAR(flight_mode4,           "FLTMODE4"),
+
+    // @Param: FLTMODE5
+	// @DisplayName: FlightMode5
+	// @Description: Flight mode for switch position 5 (1621 to 1749)
+	// @Values: 0:Manual,1:CIRCLE,2:STABILIZE,5:FBWA,6:FBWB,10:Auto,11:RTL,12:Loiter,15:Guided
+	// @User: Standard
 	GSCALAR(flight_mode5,           "FLTMODE5"),
+
+    // @Param: FLTMODE6
+	// @DisplayName: FlightMode6
+	// @Description: Flight mode for switch position 6 (1750 to 2049)
+	// @Values: 0:Manual,1:CIRCLE,2:STABILIZE,5:FBWA,6:FBWB,10:Auto,11:RTL,12:Loiter,15:Guided
+	// @User: Standard
 	GSCALAR(flight_mode6,           "FLTMODE6"),
 
     // @Param: LIM_ROLL_CD
@@ -219,20 +326,92 @@ static const AP_Param::Info var_info[] PROGMEM = {
 	// @User: Standard
 	GSCALAR(pitch_limit_min,        "LIM_PITCH_MIN"),
 
+    // @Param: AUTO_TRIM
+	// @DisplayName: Auto trim
+	// @Description: Set RC trim PWM levels to current levels when switching away from manual mode
+	// @Values: 0:Disabled,1:Enabled
+	// @User: Standard
 	GSCALAR(auto_trim,              "TRIM_AUTO"),
+
+    // @Param: SWITCH_ENABLE
+	// @DisplayName: Switch enable
+	// @Description: Enable dip switches on APM1
+	// @Values: 0:Disabled,1:Enabled
+	// @User: Advanced
 	GSCALAR(switch_enable,          "SWITCH_ENABLE"),
+
+    // @Param: MIX_MODE
+	// @DisplayName: Elevon mixing
+	// @Description: Enable elevon mixing
+	// @Values: 0:Disabled,1:Enabled
+	// @User: User
 	GSCALAR(mix_mode,               "ELEVON_MIXING"),
+
+    // @Param: ELEVON_REVERSE
+	// @DisplayName: Elevon reverse
+	// @Description: Reverse elevon mixing
+	// @Values: 0:Disabled,1:Enabled
+	// @User: User
 	GSCALAR(reverse_elevons,        "ELEVON_REVERSE"),
+
+
+    // @Param: ELEVON_REVERSE
+	// @DisplayName: Elevon reverse
+	// @Description: Reverse elevon channel 1
+	// @Values: 0:Disabled,1:Enabled
+	// @User: User
 	GSCALAR(reverse_ch1_elevon,     "ELEVON_CH1_REV"),
+
+    // @Param: ELEVON_REVERSE
+	// @DisplayName: Elevon reverse
+	// @Description: Reverse elevon channel 2
+	// @Values: 0:Disabled,1:Enabled
+	// @User: User
 	GSCALAR(reverse_ch2_elevon,     "ELEVON_CH2_REV"),
+
+    // @Param: SYS_NUM_RESETS
+	// @DisplayName: Num Resets
+	// @Description: Number of APM board resets
+	// @User: Advanced
 	GSCALAR(num_resets,             "SYS_NUM_RESETS"),
+
+    // @Param: LOG_BITMASK
+	// @DisplayName: Log bitmask
+	// @Description: bitmap of log fields to enable
+	// @User: Advanced
 	GSCALAR(log_bitmask,            "LOG_BITMASK"),
+
 	GSCALAR(log_last_filenumber,    "LOG_LASTFILE"),
+
+    // @Param: RST_SWITCH_CH
+	// @DisplayName: RC channel to use to reset to last flight mode after geofence takeover
+	// @User: Advanced
 	GSCALAR(reset_switch_chan,      "RST_SWITCH_CH"),
+
+    // @Param: TRIM_ARSPD_CM
+	// @DisplayName: Airspeed in cm/s to aim for when airspeed is enabled in auto mode
+	// @Units: cm/s
+	// @User: User
 	GSCALAR(airspeed_cruise,        "TRIM_ARSPD_CM"),
+
+    // @Param: MIN_GNDSPD_CM
+	// @DisplayName: Minimum ground speed in cm/s when under airspeed control
+	// @Units: cm/s
+	// @User: Advanced
 	GSCALAR(min_gndspeed,           "MIN_GNDSPD_CM"),
+
+    // @Param: TRIM_PITCH_CD
+	// @DisplayName: Pitch angle offset 
+	// @Units: centi-Degrees
+	// @User: Advanced
 	GSCALAR(pitch_trim,             "TRIM_PITCH_CD"),
+
+    // @Param: ALT_HOLD_RTL
+	// @DisplayName: Return to launch target altitude
+	// @Units: centimeters
+	// @User: User
 	GSCALAR(RTL_altitude,           "ALT_HOLD_RTL"),
+
 	GSCALAR(FBWB_min_altitude,      "ALT_HOLD_FBWCM"),
 
     // @Param: MAG_ENABLE
@@ -241,6 +420,7 @@ static const AP_Param::Info var_info[] PROGMEM = {
 	// @Values: 0:Disabled,1:Enabled
 	// @User: Standard
 	GSCALAR(compass_enabled,        "MAG_ENABLE"),
+
 	GSCALAR(flap_1_percent,         "FLAP_1_PERCNT"),
 	GSCALAR(flap_1_speed,           "FLAP_1_SPEED"),
 	GSCALAR(flap_2_percent,         "FLAP_2_PERCNT"),
