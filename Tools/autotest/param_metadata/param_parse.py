@@ -2,26 +2,37 @@ import os, glob, re
 
 from param import *
 
-def wiki_parameters(g):    
-    wiki_fname = '%s-Parameters.wiki' % g.name
-    f = open(wiki_fname, mode='w')
+
+# Regular expressions for parsing the parameter metadata
+
+prog_param = re.compile(r"@Param:\s*(\w+).*((?:\n\s*//\s*@(\w+): (.*))+)\s*G", re.MULTILINE)
+
+prog_param_fields = re.compile(r"\s*//\s*@(\w+): (.*)")
     
-    t = '''#summary Dynamically generated list of documented parameters for %s
+prog_groups = re.compile(r"@Group:\s*(\w+).*((?:\n\s*//\s*@(\w+): (.*))+)\s*G", re.MULTILINE)
     
-    = %s Parameters =
+prog_group_param = re.compile(r"@Param:\s*(\w+).*((?:\n\s*//\s*@(\w+): (.*))+)\s*AP_", re.MULTILINE)
+
+def camelcase_escape(word):
+    if re.match(r"([A-Z][a-z]+[A-Z][a-z]*)", word.strip()):
+        return "!"+word
+    else:
+        return word
+
+def wiki_parameters(g, f):    
     
-    '''  % (g.name, g.name)
+    t = "\n\n= %s Parameters =\n"  % (camelcase_escape(g.name))
     
     for param in g.params:
-        t += "\n\n=== %s (%s) ===" % (param.DisplayName, param.name)
+        t += "\n\n=== %s (%s) ===" % (camelcase_escape(param.DisplayName),camelcase_escape(param.name))
         t += "\n\n_%s_\n" % param.Description
         for field in param.__dict__.keys():
             if field not in ['name', 'DisplayName', 'Description', 'User'] and field in known_param_fields:
-                t += " * %s: %s\n" % (field, param.__dict__[field])
+                t += " * %s: %s\n" % (camelcase_escape(field), param.__dict__[field])
                 
-    print t
+    #print t
     f.write(t)
-    f.close
+
 
 
 
@@ -38,26 +49,26 @@ for vehicle_path in vehicle_paths:
     #print 'Added %s at %s' % (name, path)
     
 for vehicle in vehicles:
-    #print "\n\n===\n\n\nProcessing %s" % vehicle.name
+    print "===\n\n\nProcessing %s" % vehicle.name
     
     f = open(vehicle.path+'/Parameters.pde')
     p_text = f.read()
     f.close()
     
-    prog_param = re.compile(r"@Param:\s*(\w+).*((?:\n\s*//\s*@(\w+): (.*))+)\s*GSCALAR", re.MULTILINE)
-    prog_param_fields = re.compile(r"\s*//\s*@(\w+): (.*)")
-
-    prog_groups = re.compile(r"@Group:\s*(\w+).*\n.*@Path:\s*(.*)\s*\n\s*GOBJECT", re.MULTILINE)
     
-    prog_group_param = re.compile(r"@Param:\s*(\w+).*((?:\n\s*//\s*@(\w+): (.*))+)\s*AP_GROUPINFO", re.MULTILINE)
 
     param_matches = prog_param.findall(p_text)
     group_matches = prog_groups.findall(p_text)
     
-    ##print group_matches
+    print group_matches
     for group_match in group_matches:
-        paths = prog_param_fields.findall(group_match[1])
-        l = Library(group_match[0],group_match[1])
+        l = Library(group_match[0])
+        fields = prog_param_fields.findall(group_match[1])
+        for field in fields:
+            if field[0] in known_group_fields:
+                setattr(l, field[0], field[1])
+            else:
+                print "unknown parameter metadata field %s" % field[0]
         if l not in libraries:
             libraries.append(l)
         
@@ -65,9 +76,9 @@ for vehicle in vehicles:
         
     for param_match in param_matches:
         p = Parameter(param_match[0])
-        #print p.name + ' '
+        print p.name + ' '
         field_text = param_match[1]
-        #  #print "\n\nParameter: %s\n" % p.name
+        #print "\n\nParameter: %s\n" % p.name
         fields = prog_param_fields.findall(field_text)
         for field in fields:
             if field[0] in known_param_fields:
@@ -79,14 +90,14 @@ for vehicle in vehicles:
         vehicle.params.append(p)
         
     ##print vehicle.__dict__
-    #print "Processed %u params" % len(vehicle.params)
+    print "Processed %u params" % len(vehicle.params)
     
-#print "Found %u documented libraries" % len(libraries)
+print "Found %u documented libraries" % len(libraries)
 
 for library in libraries:
-    #print "\n\n===\n\n\nProcessing library %s" % library.name
+    print "===\n\n\nProcessing library %s" % library.name
     
-    paths = library.path.split(',')
+    paths = library.Path.split(',')
     for path in paths:
         path = path.strip()
         #print "\n Processing file %s" % path
@@ -95,10 +106,10 @@ for library in libraries:
         f.close()
         
         param_matches = prog_group_param.findall(p_text)
-        #print "Found %u documented parameters" % len(param_matches)
+        print "Found %u documented parameters" % len(param_matches)
         for param_match in param_matches:
-            p = Parameter(param_match[0])
-            #print p.name + ' '
+            p = Parameter(library.name+param_match[0])
+            print p.name + ' '
             field_text = param_match[1]
             #  #print "\n\nParameter: %s\n" % p.name
             fields = prog_param_fields.findall(field_text)
@@ -114,10 +125,20 @@ for library in libraries:
             
     #print "Processed %u documented parameters" % len(library.params)
 
+wiki_fname = 'Parameters.wiki'
+f = open(wiki_fname, mode='w')
+preamble = '''#summary Dynamically generated list of documented parameters
+<wiki:toc max_depth="4" />
+    
+    
+    
+'''
+f.write(preamble)
 
 for vehicle in vehicles:
-    wiki_parameters(vehicle)
+    wiki_parameters(vehicle, f)
     
 for library in libraries:
-    wiki_parameters(library)
-    
+    wiki_parameters(library, f)
+   
+f.close

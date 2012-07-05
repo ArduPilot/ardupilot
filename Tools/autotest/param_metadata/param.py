@@ -11,9 +11,8 @@ class Vehicle(object):
         self.params = []
         
 class Library(object):
-    def __init__ (self, name, path):
+    def __init__ (self, name):
         self.name = name
-        self.path = path
         self.params = []
         
 known_param_fields = [
@@ -24,4 +23,9 @@ known_param_fields = [
              'Units',
              'Increment',
              'User',                         
+                      ]
+
+known_group_fields = [
+                      'Path',
+                      'DisplayName',
                       ]
