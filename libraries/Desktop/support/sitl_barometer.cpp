@@ -25,6 +25,13 @@ void sitl_update_barometer(float altitude)
 {
 	extern AP_Baro_BMP085_HIL barometer;
 	double Temp, Press, y;
+	static uint32_t last_update;
+
+	// 80Hz, to match the real APM2 barometer
+	if (millis() - last_update < 12) {
+		return;
+	}
+	last_update = millis();
 
 	Temp = 312;
 
