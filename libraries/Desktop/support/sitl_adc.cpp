@@ -104,16 +104,21 @@ void sitl_update_adc(float roll, 	float pitch, 	float yaw,		// Relative to earth
 		}
 	}
 
+	// minimum noise levels are 2 bits
+	float accel_noise = _accel_scale*2;
+	float gyro_noise = _gyro_gain_y*2;
 	if (motors_on) {
-		// only add accel/gyro noise when motors are on
-		xAccel += sitl.accel_noise * rand_float();
-		yAccel += sitl.accel_noise * rand_float();
-		zAccel += sitl.accel_noise * rand_float();
-
-		p += ToRad(sitl.gyro_noise) * rand_float();
-		q += ToRad(sitl.gyro_noise) * rand_float();
-		r += ToRad(sitl.gyro_noise) * rand_float();
+		// add extra noise when the motors are on
+		accel_noise += sitl.accel_noise;
+		gyro_noise += ToRad(sitl.gyro_noise);
 	}
+	xAccel += accel_noise * rand_float();
+	yAccel += accel_noise * rand_float();
+	zAccel += accel_noise * rand_float();
+
+	p += gyro_noise * rand_float();
+	q += gyro_noise * rand_float();
+	r += gyro_noise * rand_float();
 
 	p += gyro_drift();
 	q += gyro_drift();
