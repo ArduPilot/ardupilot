@@ -141,6 +141,8 @@ public:
 	k_param_camera_pitch_gain,
 	k_param_camera_roll_gain,
     k_param_rc_speed,
+	k_param_camera_pitch_continuous,
+	k_param_camera_roll_continuous,
 
     //
     // 200: flight modes
@@ -286,6 +288,8 @@ public:
 
 	AP_Float	camera_pitch_gain;
 	AP_Float	camera_roll_gain;
+	AP_Int8		camera_pitch_continuous;
+	AP_Int8		camera_roll_continuous;
 	AP_Float	stabilize_d;
 	AP_Float	stabilize_d_schedule;
 
@@ -382,6 +386,8 @@ public:
 
 	camera_pitch_gain 		(CAM_PITCH_GAIN),
 	camera_roll_gain 		(CAM_ROLL_GAIN),
+	camera_pitch_continuous	(CAM_PITCH_CONTINUOUS),
+	camera_roll_continuous	(CAM_ROLL_CONTINUOUS),
 	stabilize_d 			(STABILIZE_D),
 	stabilize_d_schedule	(STABILIZE_D_SCHEDULE),
 	acro_p					(ACRO_P),

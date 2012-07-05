@@ -166,9 +166,11 @@ static const AP_Param::Info var_info[] PROGMEM = {
 
 	// variable
 	//---------
-	GSCALAR(camera_pitch_gain, 	"CAM_P_G"),
-	GSCALAR(camera_roll_gain, 	"CAM_R_G"),
-	GSCALAR(stabilize_d, 		"STAB_D"),
+	GSCALAR(camera_pitch_gain,		"CAM_P_G"),
+	GSCALAR(camera_roll_gain, 		"CAM_R_G"),
+	GSCALAR(camera_pitch_continuous,"CAM_P_CONT"),
+	GSCALAR(camera_roll_continuous,	"CAM_R_CONT"),
+	GSCALAR(stabilize_d, 			"STAB_D"),
 
 	// @Param: STAB_D_S
 	// @DisplayName: Stabilize D Schedule
