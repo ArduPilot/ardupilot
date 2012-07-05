@@ -93,6 +93,9 @@ static void show_timings(void)
 	TIMEIT("sin()", v_out = sin(v_f), 20);
 	TIMEIT("cos()", v_out = cos(v_f), 20);
 	TIMEIT("tan()", v_out = tan(v_f), 20);
+	TIMEIT("acos()", v_out = acos(v_f * 0.2), 20);
+	TIMEIT("asin()", v_out = asin(v_f * 0.2), 20);
+	TIMEIT("atan2()", v_out = atan2(v_f * 0.2, v_f * 0.3), 20);
 	TIMEIT("sqrt()",v_out = sqrt(v_f), 20);
 
 	TIMEIT("iadd8", v_out_8 += v_8, 100);

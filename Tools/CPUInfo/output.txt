@@ -21,9 +21,12 @@ dadd          9.18 usec/call
 dsub          9.25 usec/call
 dmul          6.14 usec/call
 ddiv          6.07 usec/call
-sin()       118.14 usec/call
-cos()       106.82 usec/call
-tan()       152.97 usec/call
+sin()       112.35 usec/call
+cos()       113.11 usec/call
+tan()       154.92 usec/call
+acos()      167.69 usec/call
+asin()       82.16 usec/call
+atan2()     193.34 usec/call
 sqrt()       31.67 usec/call
 iadd8         0.48 usec/call
 isub8         0.48 usec/call
