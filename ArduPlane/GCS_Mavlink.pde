@@ -349,7 +349,7 @@ static void NOINLINE send_vfr_hud(mavlink_channel_t chan)
         (ahrs.yaw_sensor / 100) % 360,
         (uint16_t)(100 * (g.channel_throttle.norm_output() / 2.0 + 0.5)), // scale -1,1 to 0-100
         current_loc.alt / 100.0,
-        0);
+        barometer.get_climb_rate());
 }
 
 #if HIL_MODE != HIL_MODE_ATTITUDE
