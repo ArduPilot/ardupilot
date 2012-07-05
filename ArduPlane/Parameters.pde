@@ -76,8 +76,8 @@ static const AP_Param::Info var_info[] PROGMEM = {
     // @Param: XTRK_ANGLE_CD
 	// @DisplayName: Crosstrack Entry Angle
 	// @Description: Maximum angle used to correct for track following.
-	// @Units: Degrees
-	// @Range: 0 90
+	// @Units: centi-Degrees
+	// @Range: 0 9000
 	// @Increment: 1
 	// @User: Standard
 	GSCALAR(crosstrack_entry_angle, "XTRK_ANGLE_CD"),
@@ -195,8 +195,8 @@ static const AP_Param::Info var_info[] PROGMEM = {
     // @Param: LIM_ROLL_CD
 	// @DisplayName: Maximum Bank Angle
 	// @Description: The maximum commanded bank angle in either direction
-	// @Units: Degrees
-	// @Range: 0 90
+	// @Units: centi-Degrees
+	// @Range: 0 9000
 	// @Increment: 1
 	// @User: Standard
 	GSCALAR(roll_limit,             "LIM_ROLL_CD"),
@@ -204,8 +204,8 @@ static const AP_Param::Info var_info[] PROGMEM = {
     // @Param: LIM_PITCH_MAX
 	// @DisplayName: Maximum Pitch Angle
 	// @Description: The maximum commanded pitch up angle
-	// @Units: Degrees
-	// @Range: 0 90
+	// @Units: centi-Degrees
+	// @Range: 0 9000
 	// @Increment: 1
 	// @User: Standard
 	GSCALAR(pitch_limit_max,        "LIM_PITCH_MAX"),
@@ -213,8 +213,8 @@ static const AP_Param::Info var_info[] PROGMEM = {
     // @Param: LIM_PITCH_MIN
 	// @DisplayName: Minimum Pitch Angle
 	// @Description: The minimum commanded pitch down angle
-	// @Units: Degrees
-	// @Range: 0 90
+	// @Units: centi-Degrees
+	// @Range: 0 9000
 	// @Increment: 1
 	// @User: Standard
 	GSCALAR(pitch_limit_min,        "LIM_PITCH_MIN"),
