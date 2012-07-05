@@ -19,16 +19,23 @@ def camelcase_escape(word):
     else:
         return word
 
+def wikichars_escape(text):
+    for c in "*,{,},[,],_,=,#,^,~,!,@,$,|,<,>,&,|,\,/".split(','):
+        text = re.sub("\\"+c, '`'+c+'`', text)
+    return text
+
+
+
 def wiki_parameters(g, f):    
     
     t = "\n\n== %s Parameters ==\n"  % (camelcase_escape(g.name))
     
     for param in g.params:
         t += "\n\n=== %s (%s) ===" % (camelcase_escape(param.DisplayName),camelcase_escape(param.name))
-        t += "\n\n_%s_\n" % param.Description
+        t += "\n\n_%s_\n" % wikichars_escape(param.Description)
         for field in param.__dict__.keys():
             if field not in ['name', 'DisplayName', 'Description', 'User'] and field in known_param_fields:
-                t += " * %s: %s\n" % (camelcase_escape(field), param.__dict__[field])
+                t += " * %s: %s\n" % (camelcase_escape(field), wikichars_escape(param.__dict__[field]))
                 
     #print t
     f.write(t)
@@ -146,3 +153,4 @@ for library in libraries:
         wiki_parameters(library, f)
    
 f.close
+
