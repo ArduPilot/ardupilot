@@ -18,27 +18,31 @@
 #include <FilterWithBuffer.h>
 
 // 1st parameter <T> is the type of data being filtered.  
-// 2nd parameter <U> is a larger data type used during summation to prevent overflows
-// 3rd parameter <FILTER_SIZE> is the number of elements in the filter
-template <class T, class U, uint8_t FILTER_SIZE>
+// 2nd parameter <FILTER_SIZE> is the number of elements in the filter
+template <class T, uint8_t FILTER_SIZE>
 class DerivativeFilter : public FilterWithBuffer<T,FILTER_SIZE>
 {
   public:
 	// constructor
-	DerivativeFilter() : FilterWithBuffer<T,FILTER_SIZE>(), _num_samples(0) {};
+	DerivativeFilter() : FilterWithBuffer<T,FILTER_SIZE>() {};
 
 	// apply - Add a new raw value to the filter, retrieve the filtered result
-	virtual float apply(T sample);
+	virtual float apply(T sample, uint32_t timestamp);
 
 	// reset - clear the filter
 	virtual void reset();
 
   private:
     uint32_t _last_time;
-	uint8_t	_num_samples;	// the number of samples in the filter, maxes out at size of the filter
+
+    // microsecond timestamps for samples. This is needed
+    // to cope with non-uniform time spacing of the data
+    uint32_t _timestamps[FILTER_SIZE];
 };
 
-typedef DerivativeFilter<float,float,9> DerivativeFilterFloat_Size9;
+typedef DerivativeFilter<float,5> DerivativeFilterFloat_Size5;
+typedef DerivativeFilter<float,7> DerivativeFilterFloat_Size7;
+typedef DerivativeFilter<float,9> DerivativeFilterFloat_Size9;
 
 
 #endif // Derivative_h

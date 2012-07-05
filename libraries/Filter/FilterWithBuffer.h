@@ -35,10 +35,9 @@ class FilterWithBuffer : public Filter<T>
 	// get filter size
 	virtual uint8_t get_filter_size() { return FILTER_SIZE; };
 
+  protected:
 	T		samples[FILTER_SIZE];	// buffer of samples
 	uint8_t	sample_index;			// pointer to the next empty slot in the buffer
-
-  private:
 };
 
 // Typedef for convenience
