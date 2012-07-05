@@ -26,15 +26,21 @@ def wikichars_escape(text):
         text = re.sub("\\"+c, '`'+c+'`', text)
     return text
 
-
-
 def wiki_parameters(g, f):    
     
     t = "\n\n== %s Parameters ==\n"  % (camelcase_escape(g.name))
     
     for param in g.params:
-        t += "\n\n=== %s (%s) ===" % (camelcase_escape(param.DisplayName),camelcase_escape(param.name))
-        t += "\n\n_%s_\n" % wikichars_escape(param.Description)
+        if hasattr(param, 'DisplayName'):   
+            t += "\n\n=== %s (%s) ===" % (camelcase_escape(param.DisplayName),camelcase_escape(param.name))
+        else:
+            t += "\n\n=== %s ===" % camelcase_escape(param.name)
+                
+        if hasattr(param, 'Description'):   
+            t += "\n\n_%s_\n" % wikichars_escape(param.Description)
+        else:
+            t += "\n\n_TODO: description_\n"
+            
         for field in param.__dict__.keys():
             if field not in ['name', 'DisplayName', 'Description', 'User'] and field in known_param_fields:
                 if field == 'Values' and prog_values_field.match(param.__dict__[field]):
@@ -49,8 +55,6 @@ def wiki_parameters(g, f):
                 
     #print t
     f.write(t)
-
-
 
 
 apm_path = os.path.join(os.path.dirname(os.path.realpath(__file__)), '../../../')
@@ -114,33 +118,36 @@ print "Found %u documented libraries" % len(libraries)
 for library in libraries:
     print "===\n\n\nProcessing library %s" % library.name
     
-    paths = library.Path.split(',')
-    for path in paths:
-        path = path.strip()
-        #print "\n Processing file %s" % path
-        f = open(os.path.normpath(os.path.join(apm_path + '/libraries/' + path)))
-        p_text = f.read()
-        f.close()
-        
-        param_matches = prog_group_param.findall(p_text)
-        print "Found %u documented parameters" % len(param_matches)
-        for param_match in param_matches:
-            p = Parameter(library.name+param_match[0])
-            print p.name + ' '
-            field_text = param_match[1]
-            #  #print "\n\nParameter: %s\n" % p.name
-            fields = prog_param_fields.findall(field_text)
-            for field in fields:
-                if field[0] in known_param_fields:
-                    #  #print "    %s: %s" % (field[0], field[1])
-                    setattr(p, field[0], field[1])
-                else:
-                    print "unknown parameter metadata field %s" % field[0]
-                
-            ##print p.__dict__
-            library.params.append(p)
+    if hasattr(library, 'Path'):   
+        paths = library.Path.split(',')
+        for path in paths:
+            path = path.strip()
+            #print "\n Processing file %s" % path
+            f = open(os.path.normpath(os.path.join(apm_path + '/libraries/' + path)))
+            p_text = f.read()
+            f.close()
             
-    #print "Processed %u documented parameters" % len(library.params)
+            param_matches = prog_group_param.findall(p_text)
+            print "Found %u documented parameters" % len(param_matches)
+            for param_match in param_matches:
+                p = Parameter(library.name+param_match[0])
+                print p.name + ' '
+                field_text = param_match[1]
+                #  #print "\n\nParameter: %s\n" % p.name
+                fields = prog_param_fields.findall(field_text)
+                for field in fields:
+                    if field[0] in known_param_fields:
+                        #  #print "    %s: %s" % (field[0], field[1])
+                        setattr(p, field[0], field[1])
+                    else:
+                        print "unknown parameter metadata field %s" % field[0]
+                    
+                ##print p.__dict__
+                library.params.append(p)
+    else:
+        print "Skipped: no Path found"
+
+    print "Processed %u documented parameters" % len(library.params)
 
 wiki_fname = 'Parameters.wiki'
 f = open(wiki_fname, mode='w')
