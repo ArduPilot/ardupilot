@@ -47,6 +47,11 @@ static const AP_Param::Info var_info[] PROGMEM = {
 
 	GSCALAR(curr_amp_per_volt,	"AMP_PER_VOLT"),
 	GSCALAR(input_voltage,	"INPUT_VOLTS"),
+
+	// @Param: BATT_CAPACITY
+	// @DisplayName: Battery Capacity
+	// @Description: Battery capacity in milliamp-hours (mAh)
+	// @Units: mAh 
 	GSCALAR(pack_capacity,	"BATT_CAPACITY"),
 
 	// @Param: MAG_ENABLE
