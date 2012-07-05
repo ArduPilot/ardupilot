@@ -384,7 +384,7 @@ static void NOINLINE send_vfr_hud(mavlink_channel_t chan)
         (ahrs.yaw_sensor / 100) % 360,
         g.rc_3.servo_out/10,
         current_loc.alt / 100.0,
-        climb_rate);
+        climb_rate / 100.0);
 }
 
 #if HIL_MODE != HIL_MODE_ATTITUDE
