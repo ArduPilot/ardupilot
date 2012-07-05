@@ -175,7 +175,7 @@ void AP_Baro_MS5611::_update(uint32_t tnow)
 	    _s_D2 += _spi_read_adc();  				 // On state 0 we read temp
         _d2_count++;
         if (_d2_count == 32) {
-            // we have summed 128 values. This only happens
+            // we have summed 32 values. This only happens
             // when we stop reading the barometer for a long time
             // (more than 1.2 seconds)
             _s_D2 >>= 1;
@@ -226,6 +226,7 @@ uint8_t AP_Baro_MS5611::read()
         if (d2count != 0) {
             D2 = sD2 / d2count;
         }
+        _pressure_samples = d1count;
         _raw_press = D1;
         _raw_temp = D2;
     }

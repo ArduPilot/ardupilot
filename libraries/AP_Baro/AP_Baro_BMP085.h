@@ -11,7 +11,9 @@ class AP_Baro_BMP085 : public AP_Baro
 {
   public:
 	AP_Baro_BMP085(bool apm2_hardware):
-			_apm2_hardware(apm2_hardware) {};  // Constructor
+        _apm2_hardware(apm2_hardware) {
+             _pressure_samples = 1;
+         };  // Constructor
 
 
     /* AP_Baro public interface: */
