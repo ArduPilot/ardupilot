@@ -411,17 +411,15 @@ AP_AHRS_DCM::drift_correction(float deltat)
 	_have_gps_lock = true;
     }
 
-#if 1
     /* 
-       NOTE: The barometric vertical acceleration correction is disabled 
-       until we work out how to filter it sufficiently to be usable
-       on ArduCopter
+       The barometer for vertical velocity is only enabled if we got
+       at least 5 pressure samples for the reading. This ensures we
+       don't use very noisy climb rate data
     */
-    if (_barometer != NULL) {
+    if (_barometer != NULL && _barometer->get_pressure_samples() >= 5) {
 	    // Z velocity is down
 	    velocity.z = - _barometer->get_climb_rate();
     }
-#endif
 
     // see if this is our first time through - in which case we
     // just setup the start times and return
