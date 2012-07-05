@@ -97,10 +97,6 @@ apm_option("MAV_SYSTEM_ID" TYPE STRING ADVANCED
     DESCRIPTION "MAVLink System ID?"
     DEFAULT "1")
 
-apm_option("MAVLINK10" TYPE BOOL DEFINE_ONLY BUILD_FLAG
-    DESCRIPTION "Use mavlink version 1.0?" 
-    DEFAULT OFF)
-
 apm_option("SERIAL0_BAUD" TYPE STRING ADVANCED
     DESCRIPTION "Serial 0 baudrate?"
     DEFAULT "115200" 

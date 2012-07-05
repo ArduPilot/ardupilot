@@ -34,26 +34,8 @@ apm2beta:
 	make -f Makefile EXTRAFLAGS="-DCONFIG_APM_HARDWARE=APM_HARDWARE_APM2 -DAPM2_BETA_HARDWARE"
 
 
-apm2-mavlink10:
-	make -f Makefile EXTRAFLAGS="-DCONFIG_APM_HARDWARE=APM_HARDWARE_APM2 -DMAVLINK10=ENABLED"
-
-apm2-mavlink09:
-	make -f Makefile EXTRAFLAGS="-DCONFIG_APM_HARDWARE=APM_HARDWARE_APM2 -DMAVLINK10=DISABLED"
-
-mavlink10:
-	make -f Makefile EXTRAFLAGS="-DMAVLINK10=ENABLED"
-
-mavlink09:
-	make -f Makefile EXTRAFLAGS="-DMAVLINK10=DISABLED"
-
 sitl:
 	make -f ../libraries/Desktop/Makefile.desktop
-
-sitl-mavlink10:
-	make -f ../libraries/Desktop/Makefile.desktop EXTRAFLAGS="-DMAVLINK10=ENABLED"
-
-sitl-mavlink09:
-	make -f ../libraries/Desktop/Makefile.desktop EXTRAFLAGS="-DMAVLINK10=DISABLED"
 
 sitl-mount:
 	make -f ../libraries/Desktop/Makefile.desktop EXTRAFLAGS="-DMOUNT=ENABLED"

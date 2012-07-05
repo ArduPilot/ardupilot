@@ -25,6 +25,3 @@ hexa:
 
 y6:
 	make -f $(DESKTOP)/Makefile.desktop EXTRAFLAGS="-DFRAME_CONFIG=Y6_FRAME"
-
-mavlink10:
-	make -f $(DESKTOP)/Makefile.desktop EXTRAFLAGS="-DHIL_MODE=HIL_MODE_ATTITUDE -DMAVLINK10"
