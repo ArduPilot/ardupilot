@@ -28,7 +28,7 @@ class SITL
 {
 public:
 	SITL() {
-		baro_noise  = 10;   // Pascals
+		baro_noise  = 3;   // Pascals
 		gyro_noise  = 30;   // degrees/s
 		accel_noise = 3;    // m/s/s
 		mag_noise   = 10;   // mag units
