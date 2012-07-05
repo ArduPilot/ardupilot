@@ -52,7 +52,7 @@ float DerivativeFilter<T,FILTER_SIZE>::apply(T sample, uint32_t timestamp)
     case 9:
         result = 2*14*(f(1) - f(-1)) / (x(1) - x(-1))
                + 4*14*(f(2) - f(-2)) / (x(2) - x(-2)) 
-               + 6* 6*(f(3) - f(-3)) / (x(3) - x(-3));
+               + 6* 6*(f(3) - f(-3)) / (x(3) - x(-3))
                + 8* 1*(f(4) - f(-4)) / (x(4) - x(-4));
         result /= 128;
         break;
