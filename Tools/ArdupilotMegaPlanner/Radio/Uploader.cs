@@ -39,7 +39,8 @@ namespace uploader
 			// device IDs XXX should come with the firmware image...
 			DEVICE_ID_RF50	= 0x4d,
 			DEVICE_ID_HM_TRP= 0x4e,
-            DEVICE_ID_RFD900= 0X42,
+            DEVICE_ID_RFD900 = 0X42,
+            DEVICE_ID_RFD900A = 0X43,
 			
 			// frequency code bytes XXX should come with the firmware image...
 			FREQ_NONE		= 0xf0,
@@ -322,7 +323,7 @@ namespace uploader
 			freq = (Code)recv ();
 			
 			// XXX should be getting valid board/frequency data from firmware file
-            if ((id != Code.DEVICE_ID_HM_TRP) && (id != Code.DEVICE_ID_RF50) && (id != Code.DEVICE_ID_RFD900))
+            if ((id != Code.DEVICE_ID_HM_TRP) && (id != Code.DEVICE_ID_RF50) && (id != Code.DEVICE_ID_RFD900) && (id != Code.DEVICE_ID_RFD900A))
 				throw new Exception ("bootloader device ID mismatch - device:" + id.ToString());
 			
 			getSync ();

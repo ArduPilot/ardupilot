@@ -1,6 +1,14 @@
-﻿
-#####  1.1.94
+﻿* APM Planner 1.1.95
+fix config panel value change detection
+add loiter_ to AC config screen
+Add praram name to Friendly param, and exception ignoring.
+fix param file note line
+intergrate andrews gimbal config.
+fix any possible log appending issues
+remove old cli planner on connect
+modify speech to not crash on windows mono
 
+* APM Planner 1.1.94
 Fix Issue 668 - typo
 Fix issue 666 - now defaults to mav 1.0 planner
 Fix Issue 665 - mavlink 1.0 is now default
@@ -18,3 +26,98 @@ Fix NOTE param file line
 Add APMRover hidden firmware upload (control-R) on firmware screen.
 fix possible speach engine exception
 add dataflashlog for apmrover
+
+* APM Planner 1.1.93
+fix armed/disarmed message
+
+* APM Planner 1.1.92
+add dump -1 option to log dump
+fix terminal issue with logs
+fix mavlink 1.0 manual/stablaize Mode
+fix config screen showing incorrect tab
+
+* APM Planner 1.1.91
+fix datasource binding exception.
+
+* APM Planner 1.1.90
+3drradio save settings fix
+fix mavlink10 hil scaling
+fix some exceptions
+
+* APM Planner 1.1.89
+add mjpeg video source
+add 16x9 hud
+conform to http/1.1 specs for mjpeg
+
+* APM Planner 1.1.88
+fix updater
+
+* APM Planner 1.1.87
+add popouts in config/setup
+add more text to hud heading nw,ne,sw,se
+add 5 m filter to antenna tracker
+add refresh param buttons
+remove the word old, as people still want it.
+modify telem playback interface with slider bars
+add posible fix to bad grid spacing
+move mavlink code.
+
+* APM Planner 1.1.86
+add ArduRover
+simplify connect
+modify hardware screen
+fix mono terminal issue
+modify 3drradio screen
+modify updater
+
+* APM Planner 1.1.85
+work on opengltest
+fix last missing param
+fix com port selection on connecting to bad comport
+add convert to csv. entire log
+add log caching to image georef. for tlog and logs
+add srtm data caching
+
+* APM Planner 1.1.84
+3dr radio fix's + rfd900
+other misc fixs
+
+* APM Planner 1.1.83
+fix null exception. if connect and not view the link stats, an exception is thrown on disconnect.
+
+* APM Planner 1.1.82
+modify 3dr radio packet size 64 > 32
+add andrews link status Mod - thanks
+add hw voltage to status
+add generic logbrowse pid class "pid-*" > "pid-1"
+
+* APM Planner 1.1.81
+mavlink 1.0 fixs
+simulation hil fix for lorenz
+modify default att rate to 10 hz
+
+* APM Planner 1.1.80
+hazy's lang mod
+more hud mods - shorten lines
+msi work + uploader
+
+* APM Planner 1.1.79
+modify hud
+modify apm1 vs apm2 detector
+
+* APM Planner 1.1.78
+recommit
+
+* APM Planner 1.1.77
+fix param xml namespace issue
+prevent sending unchanged params
+
+* APM Planner 1.1.76
+Modify Hud center
+add 3dr snr's and snr based distance estimate
+display current frame type
+fix disapearing window
+add base xml level to param xml (xml standard)
+add georef kml refrence
+this includes adams new dynamic params
+

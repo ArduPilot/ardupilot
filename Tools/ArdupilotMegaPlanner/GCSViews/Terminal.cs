@@ -77,7 +77,7 @@ namespace ArdupilotMega.GCSViews
                 data = data.Replace("'`","");
 
                 data = data.TrimEnd('\r'); // else added \n all by itself
-                data = data.Replace("\0", " ");
+                data = data.Replace("\0", "");
                 TXT_terminal.AppendText(data);
                 if (data.Contains("\b"))
                 {
@@ -230,7 +230,7 @@ namespace ArdupilotMega.GCSViews
                                 comPort_DataReceived((object)null, (SerialDataReceivedEventArgs)null);
                             }
                         }
-                        catch { return; }
+                        catch { threadrun = false;  return; }
                     }
                     try
                     {
@@ -259,12 +259,12 @@ namespace ArdupilotMega.GCSViews
                         catch { }
                     }
 
+                    threadrun = false;
+
                     comPort.DtrEnable = false;
 
-                    if (threadrun == false)
-                    {
-                        comPort.Close();
-                    }
+                    comPort.Close();
+
                     Console.WriteLine("Comport thread close");
                 });
                 t11.IsBackground = true;
