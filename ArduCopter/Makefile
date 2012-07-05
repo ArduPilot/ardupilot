@@ -21,32 +21,14 @@ heli:
 apm2:
 	make -f Makefile EXTRAFLAGS="-DCONFIG_APM_HARDWARE=APM_HARDWARE_APM2"
 
-apm2-mavlink10:
-	make -f Makefile EXTRAFLAGS="-DCONFIG_APM_HARDWARE=APM_HARDWARE_APM2 -DMAVLINK10=ENABLED"
-
-apm2-mavlink09:
-	make -f Makefile EXTRAFLAGS="-DCONFIG_APM_HARDWARE=APM_HARDWARE_APM2 -DMAVLINK10=DISABLED"
-
 apm2hexa:
 	make -f Makefile EXTRAFLAGS="-DCONFIG_APM_HARDWARE=APM_HARDWARE_APM2 -DFRAME_CONFIG=HEXA_FRAME"
 
 apm2beta:
 	make -f Makefile EXTRAFLAGS="-DCONFIG_APM_HARDWARE=APM_HARDWARE_APM2 -DAPM2_BETA_HARDWARE"
 
-mavlink10:
-	make -f Makefile EXTRAFLAGS="-DMAVLINK10=ENABLED"
-
-mavlink09:
-	make -f Makefile EXTRAFLAGS="-DMAVLINK10=DISABLED"
-
 sitl:
 	make -f ../libraries/Desktop/Makefile.desktop
-
-sitl-mavlink10:
-	make -f ../libraries/Desktop/Makefile.desktop EXTRAFLAGS="-DMAVLINK10=ENABLED"
-
-sitl-mavlink09:
-	make -f ../libraries/Desktop/Makefile.desktop EXTRAFLAGS="-DMAVLINK10=DISABLED"
 
 sitl-octa:
 	make -f ../libraries/Desktop/Makefile.desktop octa

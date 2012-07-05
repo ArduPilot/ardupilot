@@ -8,7 +8,7 @@ set -x
 
 echo "Testing ArduPlane build"
 pushd ArduPlane
-for b in all apm2 apm2beta hil hilsensors mavlink10 sitl sitl-mavlink10 sitl-mount; do
+for b in all apm2 apm2beta hil hilsensors sitl sitl-mount; do
     pwd
     make clean
     make $b

@@ -59,8 +59,6 @@ def deltree(path):
 
 def build_SIL(atype, target='sitl'):
     '''build desktop SIL'''
-    if os.getenv('MAVLINK10'):
-        target += '-mavlink10'
     run_cmd("make clean %s" % target,
             dir=reltopdir(atype),
             checkfail=True)

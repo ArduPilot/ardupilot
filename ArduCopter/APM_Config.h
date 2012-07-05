@@ -109,7 +109,3 @@
 // #define MOT_6 CH_4
 // #define MOT_7 CH_7
 // #define MOT_8 CH_8
-
-// use this to enable the new MAVLink 1.0 protocol, instead of the
-// older 0.9 protocol
-// #define MAVLINK10 ENABLED

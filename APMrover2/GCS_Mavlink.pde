@@ -27,7 +27,6 @@ static bool mavlink_active;
 
 static NOINLINE void send_heartbeat(mavlink_channel_t chan)
 {
-#if MAVLINK10 == ENABLED
     uint8_t base_mode = MAV_MODE_FLAG_CUSTOM_MODE_ENABLED;
     uint8_t system_status = MAV_STATE_ACTIVE;
     uint32_t custom_mode = control_mode;
@@ -92,12 +91,6 @@ static NOINLINE void send_heartbeat(mavlink_channel_t chan)
         base_mode,
         custom_mode,
         system_status);
-#else // MAVLINK10
-    mavlink_msg_heartbeat_send(
-        chan,
-        mavlink_system.type,
-        MAV_AUTOPILOT_ARDUPILOTMEGA);
-#endif // MAVLINK10
 }
 
 static NOINLINE void send_attitude(mavlink_channel_t chan)
@@ -125,7 +118,6 @@ static NOINLINE void send_fence_status(mavlink_channel_t chan)
 
 static NOINLINE void send_extended_status1(mavlink_channel_t chan, uint16_t packet_drops)
 {
-#if MAVLINK10 == ENABLED
     uint32_t control_sensors_present = 0;
     uint32_t control_sensors_enabled;
     uint32_t control_sensors_health;
@@ -228,69 +220,6 @@ static NOINLINE void send_extended_status1(mavlink_channel_t chan, uint16_t pack
         0, // comm drops in pkts,
         0, 0, 0, 0);
 
-#else // MAVLINK10
-        uint8_t mode 	 = MAV_MODE_UNINIT;
-        uint8_t nav_mode = MAV_NAV_VECTOR;
-
-        switch(control_mode) {
-        case MANUAL:
-            mode 		= MAV_MODE_MANUAL;
-            break;
-        case LEARNING:
-            mode 		= MAV_MODE_TEST1;
-            break;
-        case FLY_BY_WIRE_A:
-            mode 		= MAV_MODE_TEST2;
-            nav_mode 	= 1;				//FBW nav_mode mapping;  1=A, 2=B, 3=C, etc.
-            break;
-        case FLY_BY_WIRE_B:
-            mode 		= MAV_MODE_TEST2;
-            nav_mode 	= 2;				//FBW nav_mode mapping;  1=A, 2=B, 3=C, etc.
-            break;
-        case GUIDED:
-            mode 		= MAV_MODE_GUIDED;
-            break;
-        case AUTO:
-            mode 		= MAV_MODE_AUTO;
-            nav_mode 	= MAV_NAV_WAYPOINT;
-            break;
-        case RTL:
-            mode 		= MAV_MODE_AUTO;
-            nav_mode 	= MAV_NAV_RETURNING;
-            break;
-        case LOITER:
-            mode 		= MAV_MODE_AUTO;
-            nav_mode 	= MAV_NAV_LOITER;
-            break;
-        case INITIALISING:
-            mode 		= MAV_MODE_UNINIT;
-            nav_mode 	= MAV_NAV_GROUNDED;
-            break;
-        case CIRCLE:
-            mode        = MAV_MODE_TEST3;
-            break;
-        }
-
-        uint8_t status 		= MAV_STATE_ACTIVE;
-        uint16_t battery_remaining = 1000.0 * (float)(g.pack_capacity - current_total1)/(float)g.pack_capacity;	//Mavlink scaling 100% = 1000
-
-        if (g.battery_monitoring == 3) {
-            /*setting a out-of-range value.
-            It informs to external devices that
-            it cannot be calculated properly just by voltage*/
-            battery_remaining = 1500;
-        }
-
-        mavlink_msg_sys_status_send(
-            chan,
-            mode,
-            nav_mode,
-            status,
-            load * 1000,
-            battery_voltage1 * 1000,
-            battery_remaining,
-            packet_drops);
-#endif // MAVLINK10
 }
 
 static void NOINLINE send_meminfo(mavlink_channel_t chan)
@@ -332,7 +261,6 @@ static void NOINLINE send_nav_controller_output(mavlink_channel_t chan)
 
 static void NOINLINE send_gps_raw(mavlink_channel_t chan)
 {
-#if MAVLINK10 == ENABLED
     uint8_t fix = g_gps->status();
     if (fix == GPS::GPS_OK) {
         fix = 3;
@@ -350,20 +278,6 @@ static void NOINLINE send_gps_raw(mavlink_channel_t chan)
         g_gps->ground_speed,  // cm/s
         g_gps->ground_course, // 1/100 degrees,
         g_gps->num_sats);
-
-#else // MAVLINK10
-        mavlink_msg_gps_raw_send(
-            chan,
-            micros(),
-            g_gps->status(),
-            g_gps->latitude / 1.0e7,
-            g_gps->longitude / 1.0e7,
-            g_gps->altitude / 100.0,
-            g_gps->hdop,
-            0.0,
-            g_gps->ground_speed / 100.0,
-            g_gps->ground_course / 100.0);
-#endif  // MAVLINK10
 }
 
 static void NOINLINE send_servo_out(mavlink_channel_t chan)
@@ -621,11 +535,7 @@ static bool mavlink_try_send_message(mavlink_channel_t chan, enum ap_message id,
         break;
 
     case MSG_GPS_RAW:
-#if MAVLINK10 == ENABLED
         CHECK_PAYLOAD_SIZE(GPS_RAW_INT);
-#else
-        CHECK_PAYLOAD_SIZE(GPS_RAW);
-#endif
         send_gps_raw(chan);
         break;
 
@@ -1111,7 +1021,6 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
             break;
         }
 
-#if MAVLINK10 == ENABLED
     case MAVLINK_MSG_ID_COMMAND_LONG:
         {
             // decode
@@ -1169,135 +1078,6 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
             break;
         }
 
-#else // MAVLINK10
-    case MAVLINK_MSG_ID_ACTION:
-        {
-            // decode
-            mavlink_action_t packet;
-            mavlink_msg_action_decode(msg, &packet);
-            if (mavlink_check_target(packet.target,packet.target_component)) break;
-
-            uint8_t result = 0;
-
-            // do action
-            send_text(SEVERITY_LOW,PSTR("action received: "));
-//Serial.println(packet.action);
-            switch(packet.action){
-
-                case MAV_ACTION_LAUNCH:
-                    //set_mode(TAKEOFF);
-                    break;
-
-                case MAV_ACTION_RETURN:
-                    set_mode(RTL);
-                    result=1;
-                    break;
-
-                case MAV_ACTION_EMCY_LAND:
-                    //set_mode(LAND);
-                    break;
-
-                case MAV_ACTION_HALT:
-                    do_loiter_at_location();
-                    result=1;
-                    break;
-
-                    /* No mappable implementation in APM 2.0
-                case MAV_ACTION_MOTORS_START:
-                case MAV_ACTION_CONFIRM_KILL:
-                case MAV_ACTION_EMCY_KILL:
-                case MAV_ACTION_MOTORS_STOP:
-                case MAV_ACTION_SHUTDOWN:
-                    break;
-                */
-
-                case MAV_ACTION_CONTINUE:
-                    process_next_command();
-                    result=1;
-                    break;
-
-                case MAV_ACTION_SET_MANUAL:
-                    set_mode(MANUAL);
-                    result=1;
-                    break;
-
-                case MAV_ACTION_SET_AUTO:
-                    set_mode(AUTO);
-                    result=1;
-                    // clearing failsafe should not be needed
-                    // here. Added based on some puzzling results in
-                    // the simulator (tridge)
-                    failsafe = FAILSAFE_NONE;
-                    break;
-
-                case MAV_ACTION_STORAGE_READ:
-                    // we load all variables at startup, and
-                    // save on each mavlink set
-                    result=1;
-                    break;
-
-                case MAV_ACTION_STORAGE_WRITE:
-                    // this doesn't make any sense, as we save
-                    // all settings as they come in
-                    result=1;
-                    break;
-
-                case MAV_ACTION_CALIBRATE_RC: break;
-                    trim_radio();
-                    result=1;
-                    break;
-
-                case MAV_ACTION_CALIBRATE_GYRO:
-                case MAV_ACTION_CALIBRATE_MAG:
-                case MAV_ACTION_CALIBRATE_ACC:
-                case MAV_ACTION_CALIBRATE_PRESSURE:
-                case MAV_ACTION_REBOOT:  // this is a rough interpretation
-                #if LITE == DISABLED                
-                    startup_IMU_ground(true);
-                #endif
-                    result=1;
-                    break;
-
-                /*    For future implemtation
-                case MAV_ACTION_REC_START: break;
-                case MAV_ACTION_REC_PAUSE: break;
-                case MAV_ACTION_REC_STOP: break;
-                */
-
-                /* Takeoff is not an implemented flight mode in APM 2.0
-                case MAV_ACTION_TAKEOFF:
-                    set_mode(TAKEOFF);
-                    break;
-                */
-
-                case MAV_ACTION_NAVIGATE:
-                    set_mode(AUTO);
-                    result=1;
-                    break;
-
-                /* Land is not an implemented flight mode in APM 2.0
-                case MAV_ACTION_LAND:
-                    set_mode(LAND);
-                    break;
-                */
-
-                case MAV_ACTION_LOITER:
-                    set_mode(LOITER);
-                    result=1;
-                    break;
-
-                default: break;
-                }
-
-                mavlink_msg_action_ack_send(
-                    chan,
-                    packet.action,
-                    result
-                    );
-
-            break;
-        }
-#endif
 
     case MAVLINK_MSG_ID_SET_MODE:
 		{
@@ -1305,7 +1085,6 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
             mavlink_set_mode_t packet;
             mavlink_msg_set_mode_decode(msg, &packet);
 
-#if MAVLINK10 == ENABLED
             if (!(packet.base_mode & MAV_MODE_FLAG_CUSTOM_MODE_ENABLED)) {
                 // we ignore base_mode as there is no sane way to map
                 // from that bitmap to a APM flight mode. We rely on
@@ -1326,53 +1105,8 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
                 break;
             }
 
-#else // MAVLINK10
-
-            switch(packet.mode){
-
-                case MAV_MODE_MANUAL:
-					set_mode(MANUAL);
-					break;
-
-				case MAV_MODE_GUIDED:
-					set_mode(GUIDED);
-					break;
-
-				case MAV_MODE_AUTO:
-					if(mav_nav == 255 || mav_nav == MAV_NAV_WAYPOINT) 	set_mode(AUTO);
-					if(mav_nav == MAV_NAV_RETURNING)					set_mode(RTL);
-					if(mav_nav == MAV_NAV_LOITER)						set_mode(LOITER);
-					mav_nav = 255;
-					break;
-
-                case MAV_MODE_TEST1:
-					set_mode(LEARNING);
-					break;
-
-                case MAV_MODE_TEST2:
-					if(mav_nav == 255 || mav_nav == 1) 	set_mode(FLY_BY_WIRE_A);
-					if(mav_nav == 2)					set_mode(FLY_BY_WIRE_B);
-					//if(mav_nav == 3)					set_mode(FLY_BY_WIRE_C);
-					mav_nav = 255;
-					break;
-
-			}
-#endif
             break;
 		}
-
-#if MAVLINK10 == DISABLED
-    case MAVLINK_MSG_ID_SET_NAV_MODE:
-		{
-            // decode
-            mavlink_set_nav_mode_t packet;
-            mavlink_msg_set_nav_mode_decode(msg, &packet);
-			// To set some flight modes we must first receive a "set nav mode" message and then a "set mode" message
-			mav_nav = packet.nav_mode;
-			break;
-		}
-#endif // MAVLINK10
-
 
     case MAVLINK_MSG_ID_WAYPOINT_REQUEST_LIST:
         {
@@ -1713,9 +1447,7 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
                 break;
 
             default:
-#if MAVLINK10 == ENABLED
                 result = MAV_MISSION_UNSUPPORTED;
-#endif
                 break;
             }
 
@@ -1929,7 +1661,6 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
 	#if HIL_MODE != HIL_MODE_DISABLED
         // This is used both as a sensor and to pass the location
         // in HIL_ATTITUDE mode.
-#if MAVLINK10 == ENABLED
 	case MAVLINK_MSG_ID_GPS_RAW_INT:
         {
             // decode
@@ -1942,19 +1673,6 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
                           packet.vel*1.0e-2, packet.cog*1.0e-2, 0, 0);
             break;
         }
-#else // MAVLINK10
-	case MAVLINK_MSG_ID_GPS_RAW:
-        {
-            // decode
-            mavlink_gps_raw_t packet;
-            mavlink_msg_gps_raw_decode(msg, &packet);
-
-            // set gps hil sensor
-            g_gps->setHIL(packet.usec/1000.0,packet.lat,packet.lon,packet.alt,
-            packet.v,packet.hdg,0,0);
-            break;
-        }
-#endif // MAVLINK10
 
         //    Is this resolved? - MAVLink protocol change.....
     case MAVLINK_MSG_ID_VFR_HUD:
@@ -1967,7 +1685,7 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
             airspeed = 100*packet.airspeed;
             break;
         }
-#if MAVLINK10 == ENABLED
+
 	case MAVLINK_MSG_ID_HIL_STATE:
 		{
 			mavlink_hil_state_t packet;
@@ -2008,7 +1726,6 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
 
 			break;
 		}
-#endif // MAVLINK10
 #endif
 #if HIL_MODE == HIL_MODE_ATTITUDE
     case MAVLINK_MSG_ID_ATTITUDE:

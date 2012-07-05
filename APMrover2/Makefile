@@ -24,9 +24,6 @@ apm2:
 apm2beta:
 	make -f Makefile EXTRAFLAGS="-DCONFIG_APM_HARDWARE=APM_HARDWARE_APM2 -DAPM2_BETA_HARDWARE"
 
-mavlink10:
-	make -f Makefile EXTRAFLAGS="-DMAVLINK10"
-
 sitl:
 	make -f ../libraries/Desktop/Makefile.desktop
 
