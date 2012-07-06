@@ -422,15 +422,17 @@ static void NOINLINE send_simstate(mavlink_channel_t chan)
 }
 #endif
 
-#ifndef DESKTOP_BUILD
 static void NOINLINE send_hwstatus(mavlink_channel_t chan)
 {
     mavlink_msg_hwstatus_send(
         chan,
         board_voltage(),
+#ifdef DESKTOP_BUILD
+        0);
+#else
         I2c.lockup_count());
-}
 #endif
+}
 
 static void NOINLINE send_gps_status(mavlink_channel_t chan)
 {
@@ -601,10 +603,8 @@ static bool mavlink_try_send_message(mavlink_channel_t chan, enum ap_message id,
         break;
 
     case MSG_HWSTATUS:
-#ifndef DESKTOP_BUILD
         CHECK_PAYLOAD_SIZE(HWSTATUS);
         send_hwstatus(chan);
-#endif
         break;
 
     case MSG_RETRY_DEFERRED:
@@ -919,7 +919,6 @@ GCS_MAVLINK::send_text(gcs_severity severity, const prog_char_t *str)
 void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
 {
     struct Location tell_command = {};                // command for telemetry
-	static uint8_t mav_nav=255;							// For setting mode (some require receipt of 2 messages...)
 
     switch (msg->msgid) {
 

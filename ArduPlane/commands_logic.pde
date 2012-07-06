@@ -452,7 +452,7 @@ static void do_within_distance()
 
 static bool verify_wait_delay()
 {
-	if ((unsigned)(millis() - condition_start) > condition_value){
+	if (millis() - condition_start > condition_value){
 		condition_value 	= 0;
 		return true;
 	}

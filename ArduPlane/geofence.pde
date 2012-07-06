@@ -33,7 +33,7 @@ static struct geofence_state {
  */
 static Vector2l get_fence_point_with_index(unsigned i)
 {
-    uint32_t mem;
+    intptr_t mem;
     Vector2l ret;
 
     if (i > (unsigned)g.fence_total) {
@@ -52,7 +52,7 @@ static Vector2l get_fence_point_with_index(unsigned i)
 // save a fence point
 static void set_fence_point_with_index(Vector2l &point, unsigned i)
 {
-    uint32_t mem;
+    intptr_t mem;
 
     if (i >= (unsigned)g.fence_total.get()) {
         // not allowed

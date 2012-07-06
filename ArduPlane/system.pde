@@ -577,7 +577,6 @@ void flash_leds(bool on)
     digitalWrite(C_LED_PIN, on?LED_ON:LED_OFF);
 }
 
-#ifndef DESKTOP_BUILD
 /*
  * Read Vcc vs 1.1v internal reference
  */
@@ -586,4 +585,4 @@ uint16_t board_voltage(void)
     static AP_AnalogSource_Arduino vcc(ANALOG_PIN_VCC);
     return vcc.read_vcc();
 }
-#endif
+
