@@ -38,7 +38,7 @@ static void calc_throttle()
         
         groundspeed_error = rov_speed - (float)ground_speed; 
         
-        int throttle_req = (throttle_target + g.pidTeThrottle.get_pid(groundspeed_error, dTnav)) * 10;
+        int throttle_req = (throttle_target + g.pidTeThrottle.get_pid(groundspeed_error)) * 10;
         
         if(g.throttle_slewrate > 0)
         { if (throttle_req > throttle_last) 
@@ -71,7 +71,7 @@ static void calc_nav_roll()
         // negative error = left turn
 	// positive error = right turn
 
-	nav_roll = g.pidNavRoll.get_pid(bearing_error, dTnav, nav_gain_scaler);	//returns desired bank angle in degrees*100
+	nav_roll = g.pidNavRoll.get_pid(bearing_error, nav_gain_scaler);	//returns desired bank angle in degrees*100
 
       if(obstacle) {  // obstacle avoidance 
 	    nav_roll += 9000;    // if obstacle in front turn 90° right	
