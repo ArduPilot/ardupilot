@@ -94,7 +94,11 @@ uint16_t AP_AnalogSource_Arduino::read_raw(void)
 // scaled read for board Vcc
 uint16_t AP_AnalogSource_Arduino::read_vcc(void)
 {
-    return 1126400UL / read_raw();
+    uint16_t v = read_raw();
+    if (v == 0) {
+        return 0;
+    }
+    return 1126400UL / v;
 }
 
 // read the average 16 bit value since the last
