@@ -38,7 +38,7 @@ public:
 	///
 	/// @returns		The updated control output.
 	///
-	long 	get_pid(int32_t error, uint16_t dt, float scaler = 1.0);
+	int32_t	get_pid(int32_t error, float scaler = 1.0);
 
 	/// Reset the PID integrator
 	///
@@ -86,6 +86,9 @@ private:
 	float				_integrator;		///< integrator value
 	int32_t				_last_error;		///< last error for derivative
 	float				_last_derivative; 	///< last derivative for low-pass filter
+	uint32_t			_last_t;
+
+	int32_t	_get_pid(int32_t error, uint16_t dt, float scaler);
 
 	/// Low pass filter cut frequency for derivative calculation.
 	///

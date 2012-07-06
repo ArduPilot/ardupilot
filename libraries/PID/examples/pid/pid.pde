@@ -6,6 +6,7 @@
 #include <FastSerial.h>
 #include <avr/pgmspace.h>
 #include <AP_Common.h>
+#include <AP_Math.h>
 #include <APM_RC.h> // ArduPilot RC Library
 #include <PID.h> // ArduPilot Mega RC Library
 #include <Arduino_Mega_ISR_Registry.h>
@@ -21,7 +22,7 @@ Arduino_Mega_ISR_Registry isr_registry;
     APM_RC_APM1 APM_RC;
 #endif
 
-PID pid(AP_Var::k_key_none, NULL);
+PID pid;
 
 void setup()
 {
@@ -51,7 +52,7 @@ void loop()
 	delay(20);
 	//rc.read_pwm();
 	long error 		= APM_RC.InputCh(0) - radio_trim;
-	long control 	= pid.get_pid(error, 20, 1);
+	long control 	= pid.get_pid(error, 1);
 
 	Serial.print("control: ");
 	Serial.println(control,DEC);
