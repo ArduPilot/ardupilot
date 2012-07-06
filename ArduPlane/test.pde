@@ -89,7 +89,7 @@ static void print_hit_enter()
 static int8_t
 test_eedump(uint8_t argc, const Menu::arg *argv)
 {
-	int		i, j;
+	intptr_t i, j;
 
 	// hexdump the EEPROM
 	for (i = 0; i < EEPROM_MAX_ADDR; i += 16) {
