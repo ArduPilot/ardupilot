@@ -40,9 +40,6 @@ void setup()
 
 void loop()
 {
-	float tmp_float;
-	float Altitude;
-
 	if((micros() - timer) > 100000UL){
 		timer = micros();
 		baro.read();
@@ -56,13 +53,11 @@ void loop()
 		Serial.print(" Temperature:");
 		Serial.print(baro.get_temperature());
 		Serial.print(" Altitude:");
-		tmp_float = (baro.get_pressure() / 101325.0);
-		tmp_float = pow(tmp_float, 0.190295);
-		Altitude = 44330.0 * (1.0 - tmp_float);
-		Serial.print(Altitude);
-		Serial.printf(" climb=%.2f t=%u", 
+		Serial.print(baro.get_altitude());
+		Serial.printf(" climb=%.2f t=%u samples=%u", 
 			      baro.get_climb_rate(),
-			      (unsigned)read_time);
+			      (unsigned)read_time,
+			      (unsigned)baro.get_pressure_samples());
 		Serial.println();
 	}
 }
