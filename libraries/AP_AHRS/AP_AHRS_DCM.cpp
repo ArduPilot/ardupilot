@@ -342,7 +342,8 @@ AP_AHRS_DCM::drift_correction_yaw(void)
 	// yaw back to the right value. We use a gain
 	// that depends on the spin rate. See the fastRotations.pdf
 	// paper from Bill Premerlani
-	_omega_yaw_P = error * _P_gain(spin_rate) * _kp_yaw.get();
+
+	_omega_yaw_P.z = error.z * _P_gain(spin_rate) * _kp_yaw.get();
 
 	// don't update the drift term if we lost the yaw reference
 	// for more than 2 seconds
@@ -411,6 +412,8 @@ AP_AHRS_DCM::drift_correction(float deltat)
 	_have_gps_lock = true;
     }
 
+#define USE_BAROMETER_FOR_VERTICAL_VELOCITY 1
+#if USE_BAROMETER_FOR_VERTICAL_VELOCITY
     /* 
        The barometer for vertical velocity is only enabled if we got
        at least 5 pressure samples for the reading. This ensures we
@@ -420,6 +423,7 @@ AP_AHRS_DCM::drift_correction(float deltat)
 	    // Z velocity is down
 	    velocity.z = - _barometer->get_climb_rate();
     }
+#endif
 
     // see if this is our first time through - in which case we
     // just setup the start times and return
@@ -443,8 +447,14 @@ AP_AHRS_DCM::drift_correction(float deltat)
     // calculate the error term in earth frame.
     Vector3f GA_b = _ra_sum / _ra_deltat;
     GA_b.normalize();
+    if (GA_b.is_inf()) {
+	    // wait for some non-zero acceleration information
+	    return;	    
+    }
     Vector3f error = GA_b % GA_e;
-    
+
+#define YAW_INDEPENDENT_DRIFT_CORRECTION 0
+#if YAW_INDEPENDENT_DRIFT_CORRECTION    
     // step 2 calculate earth_error_Z
     float earth_error_Z = error.z;
 
@@ -459,14 +469,14 @@ AP_AHRS_DCM::drift_correction(float deltat)
 
     // step 6
     error = GA_b % GA_e2;
+    error.z = earth_error_Z;
+#endif // YAW_INDEPENDENT_DRIFT_CORRECTION
 
     // only use the gps/accelerometers for earth frame yaw correction 
     // if we are not using a compass. Otherwise we have two competing
     // controllers for yaw correction
     if (_compass && _compass->use_for_yaw()) {
 	    error.z = 0;
-    } else {
-	    error.z = earth_error_Z;
     }
 
     // convert the error term to body frame
