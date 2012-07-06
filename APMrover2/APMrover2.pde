@@ -733,10 +733,6 @@ static byte 			superslow_loopCounter;
 // Counter to trigger execution of 1 Hz processes
 static byte				counter_one_herz;
 
-// used to track the elapsed time for navigation PID integral terms
-static unsigned long 	nav_loopTimer;				
-// Elapsed time since last call to navigation pid functions
-static unsigned long 	dTnav;
 // % MCU cycles used
 static float 			load;
 
@@ -922,8 +918,6 @@ Serial.println(tempaccel.z, DEC);
 
 			if(g_gps->new_data){
 				g_gps->new_data 	= false;
-				dTnav 			= millis() - nav_loopTimer;
-				nav_loopTimer 		= millis();
 
 				// calculate the plane's desired bearing
 				// -------------------------------------
