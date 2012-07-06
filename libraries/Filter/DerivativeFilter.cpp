@@ -16,15 +16,20 @@
 #include <DerivativeFilter.h>
 
 template <class T,  uint8_t FILTER_SIZE>
-float DerivativeFilter<T,FILTER_SIZE>::apply(T sample, uint32_t timestamp)
+void DerivativeFilter<T,FILTER_SIZE>::update(T sample, uint32_t timestamp)
 {
-	float result = 0;
-
     // add timestamp before we apply to FilterWithBuffer
     _timestamps[FilterWithBuffer<T,FILTER_SIZE>::sample_index] = timestamp;
 
 	// call parent's apply function to get the sample into the array
 	FilterWithBuffer<T,FILTER_SIZE>::apply(sample);
+}
+
+
+template <class T,  uint8_t FILTER_SIZE>
+float DerivativeFilter<T,FILTER_SIZE>::slope(void)
+{
+	float result = 0;
 
     // use f() to make the code match the maths a bit better. Note
     // that unlike an average filter, we care about the order of the elements
@@ -81,13 +86,16 @@ void DerivativeFilter<T,FILTER_SIZE>::reset(void)
 }
 
 // add new instances as needed here
-template float DerivativeFilter<float,5>::apply(float sample, uint32_t timestamp);
+template void DerivativeFilter<float,5>::update(float sample, uint32_t timestamp);
+template float DerivativeFilter<float,5>::slope(void);
 template void DerivativeFilter<float,5>::reset(void);
 
-template float DerivativeFilter<float,7>::apply(float sample, uint32_t timestamp);
+template void DerivativeFilter<float,7>::update(float sample, uint32_t timestamp);
+template float DerivativeFilter<float,7>::slope(void);
 template void DerivativeFilter<float,7>::reset(void);
 
-template float DerivativeFilter<float,9>::apply(float sample, uint32_t timestamp);
+template void DerivativeFilter<float,9>::update(float sample, uint32_t timestamp);
+template float DerivativeFilter<float,9>::slope(void);
 template void DerivativeFilter<float,9>::reset(void);
 
 

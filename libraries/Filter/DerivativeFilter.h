@@ -26,8 +26,11 @@ class DerivativeFilter : public FilterWithBuffer<T,FILTER_SIZE>
 	// constructor
 	DerivativeFilter() : FilterWithBuffer<T,FILTER_SIZE>() {};
 
-	// apply - Add a new raw value to the filter, retrieve the filtered result
-	virtual float apply(T sample, uint32_t timestamp);
+	// update - Add a new raw value to the filter, but don't recalculate
+	virtual void update(T sample, uint32_t timestamp);
+
+	// return the derivative value
+	virtual float slope(void);
 
 	// reset - clear the filter
 	virtual void reset();
