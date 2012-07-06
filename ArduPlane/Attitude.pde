@@ -48,7 +48,7 @@ static void stabilize()
 
 	// Calculate dersired servo output for the roll
 	// ---------------------------------------------
-	g.channel_roll.servo_out = g.pidServoRoll.get_pid((nav_roll - ahrs.roll_sensor), delta_ms_fast_loop, speed_scaler);
+	g.channel_roll.servo_out = g.pidServoRoll.get_pid((nav_roll - ahrs.roll_sensor), speed_scaler);
 	long tempcalc = nav_pitch +
 	        fabs(ahrs.roll_sensor * g.kff_pitch_compensation) +
 	        (g.channel_throttle.servo_out * g.kff_throttle_to_pitch) -
@@ -57,7 +57,7 @@ static void stabilize()
         // when flying upside down the elevator control is inverted
         tempcalc = -tempcalc;
     }
-	g.channel_pitch.servo_out = g.pidServoPitch.get_pid(tempcalc, delta_ms_fast_loop, speed_scaler);
+	g.channel_pitch.servo_out = g.pidServoPitch.get_pid(tempcalc, speed_scaler);
 
 	// Mix Stick input to allow users to override control surfaces
 	// -----------------------------------------------------------
@@ -154,7 +154,7 @@ static void calc_throttle()
 		energy_error = airspeed_energy_error + (float)altitude_error * 0.098f;
 
 		// positive energy errors make the throttle go higher
-		g.channel_throttle.servo_out = g.throttle_cruise + g.pidTeThrottle.get_pid(energy_error, dTnav);
+		g.channel_throttle.servo_out = g.throttle_cruise + g.pidTeThrottle.get_pid(energy_error);
 		g.channel_throttle.servo_out += (g.channel_pitch.servo_out * g.kff_pitch_to_throttle);
 
 		g.channel_throttle.servo_out = constrain(g.channel_throttle.servo_out,
@@ -176,7 +176,7 @@ static void calc_nav_yaw(float speed_scaler)
 	long error = (long)(-temp.y*100.0);
 
 	// Control is a feedforward from the aileron control + a PID to coordinate the turn (drive y axis accel to zero)
-	g.channel_rudder.servo_out = g.kff_rudder_mix * g.channel_roll.servo_out + g.pidServoRudder.get_pid(error, delta_ms_fast_loop, speed_scaler);
+	g.channel_rudder.servo_out = g.kff_rudder_mix * g.channel_roll.servo_out + g.pidServoRudder.get_pid(error, speed_scaler);
 #else
 	g.channel_rudder.servo_out = g.kff_rudder_mix * g.channel_roll.servo_out;
 	// XXX probably need something here based on heading
@@ -189,9 +189,9 @@ static void calc_nav_pitch()
 	// Calculate the Pitch of the plane
 	// --------------------------------
 	if (g.airspeed_enabled == true && g.airspeed_use == true) {
-		nav_pitch = -g.pidNavPitchAirspeed.get_pid(airspeed_error, dTnav);
+		nav_pitch = -g.pidNavPitchAirspeed.get_pid(airspeed_error);
 	} else {
-		nav_pitch = g.pidNavPitchAltitude.get_pid(altitude_error, dTnav);
+		nav_pitch = g.pidNavPitchAltitude.get_pid(altitude_error);
     }
 	nav_pitch = constrain(nav_pitch, g.pitch_limit_min.get(), g.pitch_limit_max.get());
 }
@@ -211,7 +211,7 @@ static void calc_nav_roll()
 	// positive error = right turn
 	// Calculate the required roll of the plane
 	// ----------------------------------------
-	nav_roll = g.pidNavRoll.get_pid(bearing_error, dTnav, nav_gain_scaler);	//returns desired bank angle in degrees*100
+	nav_roll = g.pidNavRoll.get_pid(bearing_error, nav_gain_scaler);	//returns desired bank angle in degrees*100
 	nav_roll = constrain(nav_roll, -g.roll_limit.get(), g.roll_limit.get());
 
 	Vector3f omega;

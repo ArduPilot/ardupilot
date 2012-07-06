@@ -15,11 +15,20 @@ const AP_Param::GroupInfo PID::var_info[] PROGMEM = {
 	AP_GROUPEND
 };
 
-long
-PID::get_pid(int32_t error, uint16_t dt, float scaler)
+int32_t
+PID::get_pid(int32_t error, float scaler)
 {
+	uint32_t tnow = millis();
+	uint32_t dt = tnow - _last_t;
 	float output		= 0;
- 	float delta_time	= (float)dt / 1000.0;
+ 	float delta_time;
+
+	if (_last_t == 0 || dt > 1000) {
+		dt = 0;
+	}
+	_last_t = tnow;
+
+	delta_time = (float)dt / 1000.0;
 
 	// Compute proportional component
 	output += error * _kp;

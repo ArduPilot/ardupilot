@@ -650,10 +650,10 @@
 # define NAV_ROLL_P           0.7
 #endif
 #ifndef NAV_ROLL_I
-# define NAV_ROLL_I           0.1
+# define NAV_ROLL_I           0.02
 #endif
 #ifndef NAV_ROLL_D
-# define NAV_ROLL_D           0.02
+# define NAV_ROLL_D           0.1
 #endif
 #ifndef NAV_ROLL_INT_MAX
 # define NAV_ROLL_INT_MAX     5
