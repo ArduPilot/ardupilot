@@ -18,7 +18,7 @@
 
 	Methods:
 		init() : Initialization and sensor reset
-		read() : Read sensor data and _calculate Temperature, Pressure and Altitude
+		read() : Read sensor data and _calculate Temperature, Pressure
 		         This function is optimized so the main host don´t need to wait
 				 You can call this function in your main loop
 				 Maximum data output frequency 100Hz - this allows maximum oversampling in the chip ADC
@@ -221,10 +221,10 @@ uint8_t AP_Baro_MS5611::read()
         _updated = false;
         sei();
         if (d1count != 0) {
-            D1 = sD1 / d1count;
+            D1 = ((float)sD1) / d1count;
         }
         if (d2count != 0) {
-            D2 = sD2 / d2count;
+            D2 = ((float)sD2) / d2count;
         }
         _pressure_samples = d1count;
         _raw_press = D1;
@@ -241,46 +241,49 @@ uint8_t AP_Baro_MS5611::read()
 // Calculate Temperature and compensated Pressure in real units (Celsius degrees*100, mbar*100).
 void AP_Baro_MS5611::_calculate()
 {
-	int32_t dT;
-	int64_t TEMP;  // 64 bits
-	int64_t OFF;
-	int64_t SENS;
-	int64_t P;
+	float dT;
+	float TEMP;
+	float OFF;
+	float SENS;
+	float P;
 
 	// Formulas from manufacturer datasheet
-	// as per data sheet some intermediate results require over 32 bits, therefore
-  // we define parameters as 64 bits to prevent overflow on operations
-  // sub -20c temperature compensation is not included
-    // Serial.printf("D1=%lu D2=%lu\n", (unsigned long)D1, (unsigned long)D2);
-	dT = D2-((int32_t)C5*256);
-	TEMP = 2000 + ((int64_t)dT * C6)/8388608;
-	OFF = (int64_t)C2 * 65536 + ((int64_t)C4 * dT ) / 128;
-	SENS = (int64_t)C1 * 32768 + ((int64_t)C3 * dT) / 256;
+    // sub -20c temperature compensation is not included
 
-	if (TEMP < 2000){   // second order temperature compensation
-		int64_t T2 = (((int64_t)dT)*dT) >> 31;
-		int64_t Aux_64 = (TEMP-2000)*(TEMP-2000);
-		int64_t OFF2 = (5*Aux_64)>>1;
-		int64_t SENS2 = (5*Aux_64)>>2;
+    // we do the calculations using floating point
+    // as this is much faster on an AVR2560, and also allows
+    // us to take advantage of the averaging of D1 and D1 over
+    // multiple samples, giving us more precision
+	dT = D2-(((uint32_t)C5)<<8);
+	TEMP = (dT * C6)/8388608;
+	OFF = C2 * 65536.0 + (C4 * dT) / 128;
+	SENS = C1 * 32768.0 + (C3 * dT) / 256;
+
+	if (TEMP < 0) {
+        // second order temperature compensation when under 20 degrees C
+		float T2 = (dT*dT) / 0x80000000;
+		float Aux = TEMP*TEMP;
+		float OFF2 = 2.5*Aux;
+		float SENS2 = 1.25*Aux;
 		TEMP = TEMP - T2;
 		OFF = OFF - OFF2;
 		SENS = SENS - SENS2;
 	}
 
 	P = (D1*SENS/2097152 - OFF)/32768;
-	Temp = TEMP;
+	Temp = TEMP + 2000;
 	Press = P;
 }
 
-int32_t AP_Baro_MS5611::get_pressure()
+float AP_Baro_MS5611::get_pressure()
 {
-	return(Press);
+	return Press;
 }
 
-int16_t AP_Baro_MS5611::get_temperature()
+float AP_Baro_MS5611::get_temperature()
 {
 	// callers want the temperature in 0.1C units
-	return(Temp/10);
+	return Temp/10;
 }
 
 int32_t AP_Baro_MS5611::get_raw_pressure() {

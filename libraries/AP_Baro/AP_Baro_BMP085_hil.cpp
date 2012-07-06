@@ -25,8 +25,8 @@ uint8_t AP_Baro_BMP085_HIL::read()
 
     if (_count != 0) {
         result = 1;
-        Press = _pressure_sum / _count;
-        Temp = _temperature_sum / _count;
+        Press = ((float)_pressure_sum) / _count;
+        Temp = ((float)_temperature_sum) / _count;
         _pressure_samples = _count;
         _count = 0;
         _pressure_sum = 0;
@@ -54,11 +54,11 @@ void AP_Baro_BMP085_HIL::setHIL(float _Temp, float _Press)
     _last_update = millis();
 }
 
-int32_t AP_Baro_BMP085_HIL::get_pressure() {
+float AP_Baro_BMP085_HIL::get_pressure() {
     return Press;
 }
 
-int16_t AP_Baro_BMP085_HIL::get_temperature() {
+float AP_Baro_BMP085_HIL::get_temperature() {
     return Temp;
 }
 

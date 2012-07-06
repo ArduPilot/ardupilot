@@ -15,8 +15,8 @@ class AP_Baro
 	AP_Baro() {}
 	virtual bool    init(AP_PeriodicProcess *scheduler)=0;
 	virtual uint8_t read() = 0;
-	virtual int32_t get_pressure() = 0;
-	virtual int16_t get_temperature() = 0;
+	virtual float get_pressure() = 0;
+	virtual float get_temperature() = 0;
 	
 	virtual int32_t get_raw_pressure() = 0;
 	virtual int32_t get_raw_temp() = 0;
@@ -39,8 +39,8 @@ class AP_Baro
     float get_climb_rate(void);
 
     // the ground values are only valid after calibration
-    int16_t get_ground_temperature(void) { return _ground_temperature.get(); }
-    int32_t get_ground_pressure(void) { return _ground_pressure.get(); }
+    float get_ground_temperature(void) { return _ground_temperature.get(); }
+    float get_ground_pressure(void) { return _ground_pressure.get(); }
 
 	static const struct AP_Param::GroupInfo var_info[];
 
@@ -49,8 +49,8 @@ protected:
     uint8_t _pressure_samples;
 
 private:
-    AP_Int16    _ground_temperature;
-    AP_Int32    _ground_pressure;
+    AP_Float    _ground_temperature;
+    AP_Float    _ground_pressure;
     float       _altitude;
     float       _climb_rate;
     uint32_t    _last_climb_rate_t;

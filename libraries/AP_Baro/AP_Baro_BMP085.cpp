@@ -128,11 +128,11 @@ uint8_t AP_Baro_BMP085::read()
 	return(result);
 }
 
-int32_t AP_Baro_BMP085::get_pressure() {
+float AP_Baro_BMP085::get_pressure() {
     return Press;
 }
 
-int16_t AP_Baro_BMP085::get_temperature() {
+float AP_Baro_BMP085::get_temperature() {
     return Temp;
 }
 

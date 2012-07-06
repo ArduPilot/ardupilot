@@ -14,17 +14,20 @@
 
 // table of user settable parameters
 const AP_Param::GroupInfo AP_Baro::var_info[] PROGMEM = {
+    // NOTE: Index numbers 0 and 1 were for the old integer
+    // ground temperature and pressure
+
 	// @Param: ABS_PRESS
 	// @DisplayName: Absolute Pressure
 	// @Description: calibrated ground pressure
 	// @Increment: 1
-    AP_GROUPINFO("ABS_PRESS", 0, AP_Baro, _ground_pressure),
+    AP_GROUPINFO("ABS_PRESS", 2, AP_Baro, _ground_pressure),
 
 	// @Param: ABS_PRESS
 	// @DisplayName: ground temperature
 	// @Description: calibrated ground temperature
 	// @Increment: 1
-    AP_GROUPINFO("TEMP", 1, AP_Baro, _ground_temperature),
+    AP_GROUPINFO("TEMP", 3, AP_Baro, _ground_temperature),
     AP_GROUPEND
 };
 
@@ -32,8 +35,8 @@ const AP_Param::GroupInfo AP_Baro::var_info[] PROGMEM = {
 // the altitude() or climb_rate() interfaces can be used
 void AP_Baro::calibrate(void (*callback)(unsigned long t))
 {
-	int32_t ground_pressure = 0;
-	int16_t ground_temperature;
+	float ground_pressure = 0;
+	float ground_temperature = 0;
 
 	while (ground_pressure == 0 || !healthy) {
 		read(); // Get initial data from absolute pressure sensor
@@ -41,14 +44,27 @@ void AP_Baro::calibrate(void (*callback)(unsigned long t))
 		ground_temperature 	= get_temperature();
 		callback(20);
 	}
-
-	for (int i = 0; i < 30; i++) {
+    // let the barometer settle for a full second after startup
+    // the MS5611 reads quite a long way off for the first second,
+    // leading to about 1m of error if we don't wait    
+	for (uint16_t i = 0; i < 10; i++) {
 		do {
 			read();
 		} while (!healthy);
-		ground_pressure		= (ground_pressure * 9l   + get_pressure()) / 10l;
-		ground_temperature	= (ground_temperature * 9 + get_temperature()) / 10;
-		callback(20);
+		ground_pressure 	= get_pressure();
+		ground_temperature 	= get_temperature();
+		callback(100);
+    }
+
+    // now average over 5 values for the ground pressure and
+    // temperature settings    
+	for (uint16_t i = 0; i < 5; i++) {
+		do {
+			read();
+		} while (!healthy);
+		ground_pressure		= ground_pressure * 0.8     + get_pressure() * 0.2;
+		ground_temperature	= ground_temperature * 0.8  + get_temperature() * 0.2;
+		callback(100);
 	}
 
 	_ground_pressure.set_and_save(ground_pressure);
@@ -75,6 +91,10 @@ float AP_Baro::get_altitude(void)
 	_altitude = log(scaling) * temp * 29.271267f;
 
     _last_altitude_t = _last_update;
+
+    // ensure the climb rate filter is updated
+    _climb_rate_filter.update(_altitude, _last_update);
+
     return _altitude;
 }
 
@@ -83,15 +103,15 @@ float AP_Baro::get_altitude(void)
 // note that this relies on read() being called regularly to get new data
 float AP_Baro::get_climb_rate(void)
 {
-    if (_last_climb_rate_t == _last_update) {
+    if (_last_climb_rate_t == _last_altitude_t) {
         // no new information
         return _climb_rate;
     }
-    _last_climb_rate_t = _last_update;
+    _last_climb_rate_t = _last_altitude_t;
 
-    // we use a 9 point derivative filter on the climb rate. This seems
+    // we use a 7 point derivative filter on the climb rate. This seems
     // to produce somewhat reasonable results on real hardware
-    _climb_rate = _climb_rate_filter.apply(get_altitude(), _last_update) * 1.0e3;
+    _climb_rate = _climb_rate_filter.slope() * 1.0e3;
 
 	return _climb_rate;
 }

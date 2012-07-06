@@ -9,8 +9,8 @@ class AP_Baro_BMP085_HIL : public AP_Baro
 {
 private:
 	uint8_t BMP085_State;
-    int32_t Temp;
-    int32_t Press;
+    float Temp;
+    float Press;
     int32_t _pressure_sum;
     int32_t _temperature_sum;
     uint8_t _count;
@@ -20,8 +20,8 @@ public:
 
 	bool init(AP_PeriodicProcess * scheduler);
 	uint8_t read();
-	int32_t get_pressure();
-	int16_t get_temperature();
+	float get_pressure();
+	float get_temperature();
 	int32_t get_raw_pressure();
 	int32_t get_raw_temp();
 	void setHIL(float Temp, float Press);

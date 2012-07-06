@@ -19,8 +19,8 @@ class AP_Baro_BMP085 : public AP_Baro
     /* AP_Baro public interface: */
     bool    init(AP_PeriodicProcess * scheduler);
     uint8_t read();
-    int32_t get_pressure();
-    int16_t get_temperature();
+    float get_pressure();
+    float get_temperature();
 
     int32_t get_raw_pressure();
     int32_t get_raw_temp();
