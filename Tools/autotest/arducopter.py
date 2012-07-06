@@ -14,8 +14,8 @@ HOME=mavutil.location(-35.362938,149.165085,584,270)
 homeloc = None
 num_wp = 0
 
-def hover(mavproxy, mav):
-    mavproxy.send('rc 3 1395\n')
+def hover(mavproxy, mav, hover_throttle=1300):
+    mavproxy.send('rc 3 %u\n' % hover_throttle)
     return True
 
 def calibrate_level(mavproxy, mav):
@@ -49,11 +49,11 @@ def disarm_motors(mavproxy, mav):
     return True
 
 
-def takeoff(mavproxy, mav, alt_min = 30):
+def takeoff(mavproxy, mav, alt_min = 30, takeoff_throttle=1510):
     '''takeoff get to 30m altitude'''
     mavproxy.send('switch 6\n') # stabilize mode
     wait_mode(mav, 'STABILIZE')
-    mavproxy.send('rc 3 1510\n')
+    mavproxy.send('rc 3 %u\n' % takeoff_throttle)
     m = mav.recv_match(type='VFR_HUD', blocking=True)
     if (m.alt < alt_min):
         wait_altitude(mav, alt_min, (alt_min + 5))
@@ -84,16 +84,16 @@ def loiter(mavproxy, mav, holdtime=60, maxaltchange=20):
     print("Loiter FAILED")
     return False
 
-def change_alt(mavproxy, mav, alt_min):
+def change_alt(mavproxy, mav, alt_min, climb_throttle=1920, descend_throttle=1120):
     '''change altitude'''
     m = mav.recv_match(type='VFR_HUD', blocking=True)
     if(m.alt < alt_min):
         print("Rise to alt:%u from %u" % (alt_min, m.alt))
-        mavproxy.send('rc 3 1920\n')
+        mavproxy.send('rc 3 %u\n' % climb_throttle)
         wait_altitude(mav, alt_min, (alt_min + 5))
     else:
         print("Lower to alt:%u from %u" % (alt_min, m.alt))
-        mavproxy.send('rc 3 1120\n')
+        mavproxy.send('rc 3 %u\n' % descend_throttle)
         wait_altitude(mav, (alt_min -5), alt_min)
     hover(mavproxy, mav)
     return True
@@ -155,7 +155,7 @@ def fly_square(mavproxy, mav, side=50, timeout=120):
 
     return not failed
 
-def fly_RTL(mavproxy, mav, side=60):
+def fly_RTL(mavproxy, mav, side=60, timeout=250):
     '''Fly, return, land'''
     mavproxy.send('switch 6\n')
     wait_mode(mav, 'STABILIZE')
@@ -171,7 +171,7 @@ def fly_RTL(mavproxy, mav, side=60):
     print("# Enter RTL")
     mavproxy.send('switch 3\n')
     tstart = time.time()
-    while time.time() < tstart + 200:
+    while time.time() < tstart + timeout:
         m = mav.recv_match(type='VFR_HUD', blocking=True)
         pos = mav.location()
         #delta = get_distance(start, pos)
@@ -180,7 +180,7 @@ def fly_RTL(mavproxy, mav, side=60):
             return True
     return True
 
-def fly_failsafe(mavproxy, mav, side=60):
+def fly_failsafe(mavproxy, mav, side=60, timeout=120):
     '''Fly, Failsafe, return, land'''
     mavproxy.send('switch 6\n')
     wait_mode(mav, 'STABILIZE')
@@ -196,7 +196,7 @@ def fly_failsafe(mavproxy, mav, side=60):
     print("# Enter Failsafe")
     mavproxy.send('rc 3 900\n')
     tstart = time.time()
-    while time.time() < tstart + 250:
+    while time.time() < tstart + timeout:
         m = mav.recv_match(type='VFR_HUD', blocking=True)
         pos = mav.location()
         home_distance = get_distance(HOME, pos)
@@ -205,7 +205,7 @@ def fly_failsafe(mavproxy, mav, side=60):
             print("Reached failsafe home OK")
             mavproxy.send('rc 3 1100\n')
             return True
-    print("Failed to land on failsafe RTL - timed out after 120 seconds")
+    print("Failed to land on failsafe RTL - timed out after %u seconds" % timeout)
     return False
 
 
@@ -548,33 +548,3 @@ def fly_ArduCopter(viewerip=None):
 
 
 
-
-
-#!	        mavproxy.send('rc 2 1390\n')
-#!	        #adjust till the rate is 0;
-#!
-#!	        mavproxy.send('rc 4 1610\n')
-#!	        if not wait_heading(mav, 0):
-#!	            return False
-#!	        mavproxy.send('rc 4 1500\n')
-#!
-#!	        mavproxy.send('rc 2 1455\n')
-#!	        #adjust till the rate is 0;
-#!	        pitch_test = 1455
-#!	        roll_test = 1500
-#!	        old_lat = 0
-#!	        old_lon = 0
-#!
-#!	        while(1):
-#!	            pos = mav.location()
-#!	            tmp = (pos.lat *10e7) - (old_lat *10e7)
-#!	            print("tmp %d " % tmp)
-#!	            if(tmp > 0 ):
-#!	                print("higher tmp %d " % (tmp))
-#!	                pitch_test += 1
-#!	            if(tmp < 0 ):
-#!	                print("lower tmp %d " % (tmp))
-#!	                pitch_test -= 1
-#!	            mavproxy.send('rc 2 %u\n' % math.floor(pitch_test))
-#!	            old_lat = pos.lat
-#!	            #old_lon = pos.lon
