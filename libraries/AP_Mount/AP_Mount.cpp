@@ -134,10 +134,10 @@ void AP_Mount::update_mount_position()
 		case MAV_MOUNT_MODE_MAVLINK_TARGETING:
 		{
 			Vector3f vec = _control_angles.get();
-			_roll_control_angle  = vec.x;
-			_pitch_control_angle = vec.y;
-			_yaw_control_angle   = vec.z;
-			calculate();
+			_roll_control_angle  = radians(vec.x);
+			_pitch_control_angle = radians(vec.y);
+			_yaw_control_angle   = radians(vec.z);
+			stabilize();
 			break;
 		}
 
@@ -149,7 +149,7 @@ void AP_Mount::update_mount_position()
 			G_RC_AUX(k_mount_pitch)->rc_input(&_pitch_control_angle, _pitch_angle*100);
 			G_RC_AUX(k_mount_yaw)->rc_input(&_yaw_control_angle, _yaw_angle*100);
 			if (_ahrs){
-				calculate();
+				stabilize();
 			} else {
 				if (g_rc_function[RC_Channel_aux::k_mount_roll])
 					_roll_angle  = rc_map(g_rc_function[RC_Channel_aux::k_mount_roll]);
@@ -166,7 +166,7 @@ void AP_Mount::update_mount_position()
 		{
 			if(_gps->fix){
 				calc_GPS_target_angle(&_target_GPS_location);
-				calculate();
+				stabilize();
 			}
 			break;
 		}
@@ -237,6 +237,12 @@ void AP_Mount::control_msg(mavlink_message_t *msg)
 		break;
 
 	case MAV_MOUNT_MODE_RC_TARGETING:  // Load neutral position and start RC Roll,Pitch,Yaw control with stabilization
+		{
+			Vector3f vec = _neutral_angles.get();
+			_roll_angle  = vec.x;
+			_pitch_angle = vec.y;
+			_yaw_angle   = vec.z;
+		}
 		break;
 
 	case MAV_MOUNT_MODE_GPS_POINT:  // Load neutral position and start to point to Lat,Lon,Alt
@@ -322,10 +328,17 @@ AP_Mount::calc_GPS_target_angle(struct Location *target)
 	}
 }
 
-// Inputs desired _roll_control_angle, _pitch_control_angle and _yaw_control_angle stabilizes them relative to the airframe
-// and calculates output _roll_angle, _pitch_angle and _yaw_angle
+/// Stabilizes mount relative to the Earth's frame
+/// Inputs:
+///    _roll_control_angle   desired roll       angle in radians,
+///    _pitch_control_angle  desired pitch/tilt angle in radians,
+///    _yaw_control_angle    desired yaw/pan    angle in radians
+/// Outputs:
+///    _roll_angle           stabilized roll       angle in degrees,
+///    _pitch_angle          stabilized pitch/tilt angle in degrees,
+///    _yaw_angle            stabilized yaw/pan    angle in degrees
 void
-AP_Mount::calculate()
+AP_Mount::stabilize()
 {
 	if (_ahrs) {
 		// only do the full 3D frame transform if we are doing yaw control
@@ -338,12 +351,15 @@ AP_Mount::calculate()
 			cam.from_euler(_roll_control_angle, _pitch_control_angle, _yaw_control_angle);
 			gimbal_target = m * cam;
 			gimbal_target.to_euler(&_roll_angle, &_pitch_angle, &_yaw_angle);
+			_roll_angle  = degrees(_roll_angle);
+			_pitch_angle = degrees(_pitch_angle);
+			_yaw_angle   = degrees(_yaw_angle);
 		} else {
 			// otherwise base mount roll and pitch on the ahrs
 			// roll/pitch attitude, plus any requested angle
-			_roll_angle  = _roll_control_angle;
-			_pitch_angle = _pitch_control_angle;
-			_yaw_angle   = _yaw_control_angle;
+			_roll_angle  = degrees(_roll_control_angle);
+			_pitch_angle = degrees(_pitch_control_angle);
+			_yaw_angle   = degrees(_yaw_control_angle);
 			if (_stab_roll) {
 				_roll_angle -= degrees(_ahrs->roll);
 			}

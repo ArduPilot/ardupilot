@@ -63,7 +63,7 @@ private:
 
 	// internal methods
 	void calc_GPS_target_angle(struct Location *target);
-	void calculate();
+	void stabilize();
 	long rc_map(RC_Channel_aux* rc_ch);
 
 	//members
@@ -71,9 +71,9 @@ private:
 	GPS     *&_gps;
 	const struct Location *_current_loc;
 	static const float t7 = 10000000.0;
-	float _roll_control_angle;
-	float _pitch_control_angle;
-	float _yaw_control_angle;
+	float _roll_control_angle;  ///< radians
+	float _pitch_control_angle; ///< radians
+	float _yaw_control_angle;   ///< radians
 
 	float _roll_angle;	 ///< degrees
 	float _pitch_angle;	 ///< degrees
