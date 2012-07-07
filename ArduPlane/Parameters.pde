@@ -384,30 +384,35 @@ static const AP_Param::Info var_info[] PROGMEM = {
 	GSCALAR(log_last_filenumber,    "LOG_LASTFILE"),
 
     // @Param: RST_SWITCH_CH
-	// @DisplayName: RC channel to use to reset to last flight mode after geofence takeover
+	// @DisplayName: Reset Switch Channel
+	// @Description: RC channel to use to reset to last flight mode after geofence takeover
 	// @User: Advanced
 	GSCALAR(reset_switch_chan,      "RST_SWITCH_CH"),
 
     // @Param: TRIM_ARSPD_CM
-	// @DisplayName: Airspeed in cm/s to aim for when airspeed is enabled in auto mode
+	// @DisplayName: Target airspeed
+	// @Description: Airspeed in cm/s to aim for when airspeed is enabled in auto mode
 	// @Units: cm/s
 	// @User: User
 	GSCALAR(airspeed_cruise,        "TRIM_ARSPD_CM"),
 
     // @Param: MIN_GNDSPD_CM
-	// @DisplayName: Minimum ground speed in cm/s when under airspeed control
+	// @DisplayName: Minimum ground speed
+	// @Description: Minimum ground speed in cm/s when under airspeed control
 	// @Units: cm/s
 	// @User: Advanced
 	GSCALAR(min_gndspeed,           "MIN_GNDSPD_CM"),
 
     // @Param: TRIM_PITCH_CD
 	// @DisplayName: Pitch angle offset 
+	// @Description: offset to add to pitch - used for trimming tail draggers
 	// @Units: centi-Degrees
 	// @User: Advanced
 	GSCALAR(pitch_trim,             "TRIM_PITCH_CD"),
 
     // @Param: ALT_HOLD_RTL
-	// @DisplayName: Return to launch target altitude
+	// @DisplayName: RTL altitude
+	// @Description: Return to launch target altitude
 	// @Units: centimeters
 	// @User: User
 	GSCALAR(RTL_altitude,           "ALT_HOLD_RTL"),
