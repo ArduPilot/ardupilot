@@ -36,7 +36,8 @@ const AP_Param::GroupInfo RC_Channel_aux::var_info[] PROGMEM = {
 /// Global pointer array, indexed by a "RC function enum" and points to the RC channel output assigned to that function/operation
 RC_Channel_aux* g_rc_function[RC_Channel_aux::k_nr_aux_servo_functions];
 
-/// saturate to the closest angle limit if outside of min max angle interval
+/// saturate to the closest angle limit if outside of [min max] angle interval
+/// input angle is in degrees * 10
 int16_t
 RC_Channel_aux::closest_limit(int16_t angle)
 {
@@ -67,7 +68,7 @@ RC_Channel_aux::closest_limit(int16_t angle)
 	}
 
 	servo_out = angle;
-	// convert angle to PWM using a linear transformation (ignores trimming because the camera limits might not be symmetric)
+	// convert angle to PWM using a linear transformation (ignores trimming because the servo limits might not be symmetric)
 	calc_pwm();
 
 	return angle;
