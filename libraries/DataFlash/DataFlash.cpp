@@ -201,7 +201,10 @@ void DataFlash_Class::EraseAll(void (*delay_cb)(unsigned long))
     StartRead(df_NumPages+1);
     int32_t format = ReadLong();
 
-    if (format == DF_LOGGING_FORMAT_INVALID) {
+//    if (format == DF_LOGGING_FORMAT_INVALID)
+//	the current method for checking if chip erase worked is producing false positives
+//  we are forcing the block erase until we have a deterministic test method
+	{
         // the chip erase didn't work - fall back to a erasing
         // each page separately. The errata on the APM2 dataflash chip
         // suggests that chip erase won't always work
