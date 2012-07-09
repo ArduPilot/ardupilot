@@ -3,7 +3,7 @@
 #define THISFIRMWARE "ArduPlane V2.40"
 /*
 Authors:    Doug Weibel, Jose Julio, Jordi Munoz, Jason Short, Andrew Tridgell, Randy Mackay, Pat Hickey, John Arne Birkeland, Olivier Adler
-Thanks to:  Chris Anderson, Michael Oborne, Paul Mather, Bill Premerlani, James Cohen, JB from rotorFX, Automatik, Fefenin, Peter Meister, Remzibi, Yury Smirnov, Sandro Benigno, Max Levine, Roberto Navoni, Lorenz Meier
+Thanks to:  Chris Anderson, Michael Oborne, Paul Mather, Bill Premerlani, James Cohen, JB from rotorFX, Automatik, Fefenin, Peter Meister, Remzibi, Yury Smirnov, Sandro Benigno, Max Levine, Roberto Navoni, Lorenz Meier, Yury MonZon
 Please contribute your ideas!
 
 
@@ -1064,6 +1064,9 @@ static void update_current_flight_mode(void)
 				// Substitute stick inputs for Navigation control output
 				// We use g.pitch_limit_min because its magnitude is
 				// normally greater than g.pitch_limit_max
+                
+                // Thanks to Yury MonZon for the altitude limit code!
+
 				nav_roll = g.channel_roll.norm_input() * g.roll_limit;
 				altitude_error = g.channel_pitch.norm_input() * g.pitch_limit_min;
 
