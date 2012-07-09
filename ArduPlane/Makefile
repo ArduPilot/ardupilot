@@ -46,3 +46,8 @@ sitl-quaternion:
 etags:
 	cd .. && etags -f ArduPlane/TAGS --langmap=C++:.pde.cpp.h $$(git ls-files ArduPlane libraries)
 
+obc:
+	make -f Makefile EXTRAFLAGS="-DCONFIG_APM_HARDWARE=APM_HARDWARE_APM2 -DOBC_FAILSAFE=ENABLED -DTELEMETRY_UART2=ENABLED"
+
+obc-sitl:
+	make -f ../libraries/Desktop/Makefile.desktop EXTRAFLAGS="-DOBC_FAILSAFE=ENABLED"

@@ -89,6 +89,12 @@ FastSerialPort1(Serial1);       // GPS port
 // variables
 AP_Param param_loader(var_info, WP_START_BYTE);
 
+// Outback Challenge failsafe support
+#if OBC_FAILSAFE == ENABLED
+#include <APM_OBC.h>
+APM_OBC obc;
+#endif
+
 
 ////////////////////////////////////////////////////////////////////////////////
 // ISR Registry
@@ -915,6 +921,14 @@ Serial.println(tempaccel.z, DEC);
 			}
 
 			slow_loop();
+
+#if OBC_FAILSAFE == ENABLED
+            // perform OBC failsafe checks
+            obc.check(OBC_MODE(control_mode),
+                      last_heartbeat_ms,
+                      g_gps?g_gps->last_fix_time:0);
+#endif
+
 			break;
 	}
 }

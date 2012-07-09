@@ -564,6 +564,10 @@ const AP_Param::Info var_info[] PROGMEM = {
 	GOBJECT(sitl, "SIM_", SITL),
 #endif
 
+#if OBC_FAILSAFE == ENABLED
+	GOBJECT(obc,  "FS_", APM_OBC),
+#endif
+
 	AP_VAREND
 };
 

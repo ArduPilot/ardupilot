@@ -843,3 +843,8 @@
 #ifndef DMP_ENABLED
 # define DMP_ENABLED DISABLED
 #endif
+
+// OBC Failsafe enable
+#ifndef OBC_FAILSAFE
+# define OBC_FAILSAFE DISABLED
+#endif
