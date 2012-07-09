@@ -49,7 +49,7 @@ def wiki_parameters(g, f):
                     t+="|| *Value* || *Meaning* ||\n"
                     for value in values:
                         v = value.split(':')
-                        t+="|| "+v[0]+" || "+v[1]+" ||\n"
+                        t+="|| "+v[0]+" || "+camelcase_escape(v[1])+" ||\n"
                 else:
                     t += " * %s: %s\n" % (camelcase_escape(field), wikichars_escape(param.__dict__[field]))
                 
@@ -96,7 +96,7 @@ for vehicle in vehicles:
         
         
     for param_match in param_matches:
-        p = Parameter(param_match[0])
+        p = Parameter(vehicle.name+":"+param_match[0])
         print p.name + ' '
         field_text = param_match[1]
         #print "\n\nParameter: %s\n" % p.name
