@@ -173,7 +173,7 @@ static void calc_loiter(int x_error, int y_error)
 	g.pid_nav_lat.set_integrator(g.pid_loiter_rate_lat.get_integrator());
 }
 
-static void calc_nav_rate(int max_speed)
+static void calc_nav_rate(int16_t max_speed)
 {
 	float temp, temp_x, temp_y;
 
@@ -191,19 +191,17 @@ static void calc_nav_rate(int max_speed)
 	temp_y 			= sin(temp);
 
 	// rotate desired spped vector:
-	int16_t x_target_speed = max_speed   * temp_x - cross_speed * temp_y;
-	int16_t y_target_speed = cross_speed * temp_x + max_speed   * temp_y;
+	int32_t x_target_speed = max_speed   * temp_x - cross_speed * temp_y;
+	int32_t y_target_speed = cross_speed * temp_x + max_speed   * temp_y;
 
 	// East / West
 	x_rate_error 	= x_target_speed - x_actual_speed; // 413
 	x_rate_error 	= constrain(x_rate_error, -1000, 1000);
 	nav_lon			= g.pid_nav_lon.get_pid(x_rate_error, dTnav);
-	temp			= x_target_speed * x_target_speed;
-	temp			*= g.tilt_comp;
+	int32_t tilt	= (x_target_speed * x_target_speed * (int32_t)g.tilt_comp) / 10000;
 
-	if(x_target_speed < 0)
-		temp = -temp;
-	nav_lon			+= temp;
+	if(x_target_speed < 0) tilt = -tilt;
+	nav_lon			+= tilt;
 	nav_lon			= constrain(nav_lon, -3000, 3000);
 
 
@@ -211,12 +209,10 @@ static void calc_nav_rate(int max_speed)
 	y_rate_error 	= y_target_speed - y_actual_speed; // 413
 	y_rate_error 	= constrain(y_rate_error, -1000, 1000);	// added a rate error limit to keep pitching down to a minimum
 	nav_lat			= g.pid_nav_lat.get_pid(y_rate_error, dTnav);
-	temp			= y_target_speed * y_target_speed;
-	temp			*= g.tilt_comp;
+	tilt			= (y_target_speed * y_target_speed * (int32_t)g.tilt_comp) / 10000;
 
-	if(y_target_speed < 0)
-		temp = -temp;
-	nav_lat			+= temp;
+	if(y_target_speed < 0)	tilt = -tilt;
+	nav_lat			+= tilt;
 	nav_lat			= constrain(nav_lat, -3000, 3000);
 
 	// copy over I term to Loiter_Rate
