@@ -734,13 +734,13 @@
 // WP Navigation control gains
 //
 #ifndef NAV_P
-# define NAV_P				2.4			//
+# define NAV_P				2.2			//
 #endif
 #ifndef NAV_I
 # define NAV_I				0.17		// Wind control
 #endif
 #ifndef NAV_D
-# define NAV_D				0.00		//
+# define NAV_D				0.00		// .95
 #endif
 #ifndef NAV_IMAX
 # define NAV_IMAX			18			// degrees

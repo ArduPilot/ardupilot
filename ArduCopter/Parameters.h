@@ -217,7 +217,7 @@ public:
 	AP_Int8		super_simple;
 	AP_Int8		rtl_land_enabled;
 	AP_Int16	rtl_approach_alt;
-	AP_Float	tilt_comp;
+	AP_Int8		tilt_comp;
 	AP_Int8		axis_enabled;
 	AP_Int8		copter_leds_mode;	// Operating mode of LED lighting system
 
@@ -341,7 +341,7 @@ public:
 	super_simple			(SUPER_SIMPLE),
 	rtl_land_enabled		(0),
 	rtl_approach_alt		(RTL_APPROACH_ALT),
-	tilt_comp				(.0054),
+	tilt_comp				(54),
 	axis_enabled			(AXIS_LOCK_ENABLED),
 	copter_leds_mode		(9),
 
