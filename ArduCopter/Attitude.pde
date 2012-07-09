@@ -713,11 +713,11 @@ void roll_pitch_toy()
 	//g.rc_4.servo_out = get_stabilize_yaw(nav_yaw);
 
 	if(g.rc_1.control_in != 0){
-		g.rc_4.servo_out = get_acro_yaw(yaw_rate);
+		g.rc_4.servo_out = get_rate_yaw(yaw_rate);
 		yaw_stopped = false;
 		yaw_timer = 150;
 	}else if (!yaw_stopped){
-		g.rc_4.servo_out = get_acro_yaw(0);
+		g.rc_4.servo_out = get_rate_yaw(0);
 		yaw_timer--;
 		if(yaw_timer == 0){
 			yaw_stopped = true;
