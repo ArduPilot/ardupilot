@@ -109,6 +109,8 @@ static int32_t get_RTL_alt()
 {
 	if(g.RTL_altitude <= 0){
 		return current_loc.alt;
+	}else if (g.RTL_altitude < current_loc.alt){
+		return current_loc.alt;
 	}else{
 		return g.RTL_altitude;
 	}
