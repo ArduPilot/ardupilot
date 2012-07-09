@@ -185,8 +185,9 @@ public:
         k_param_fence_minalt,
         k_param_fence_maxalt,
 
-        // simulator control
+        // other objects
         k_param_sitl = 230,
+        k_param_obc,
 
         //
         // 240: PID Controllers
