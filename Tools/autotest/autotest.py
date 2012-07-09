@@ -102,6 +102,8 @@ def alarm_handler(signum, frame):
     try:
         results.add('TIMEOUT', '<span class="failed-text">FAILED</span>', opts.timeout)
         util.pexpect_close_all()
+        convert_gpx()
+        results.addglob("Google Earth track", '*.kmz')
         results.addfile('Full Logs', 'autotest-output.txt')
         results.addglob('DataFlash Log', '*.flashlog')
         results.addglob("MAVLink log", '*.mavlog')
