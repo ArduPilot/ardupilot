@@ -435,7 +435,7 @@ static int16_t rc_override[8] = {0,0,0,0,0,0,0,0};
 // Status flag that tracks whether we are under GCS control
 static bool rc_override_active = false;
 // Status flag that tracks whether we are under GCS control
-static uint32_t rc_override_fs_timer = 0;
+static uint32_t rc_override_fs_timer;
 
 ////////////////////////////////////////////////////////////////////////////////
 // Failsafe
