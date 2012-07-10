@@ -144,10 +144,20 @@ void AP_Mount::update_mount_position()
 		// RC radio manual angle control, but with stabilization from the AHRS
 		case MAV_MOUNT_MODE_RC_TARGETING:
 		{
+//#define MNT_SPRING_LOADED_JOYSTICK
+#ifdef MNT_SPRING_LOADED_JOYSTICK
 			// rc_input() takes degrees * 100 units
 			G_RC_AUX(k_mount_roll)->rc_input(&_roll_control_angle, _roll_angle*100);
 			G_RC_AUX(k_mount_pitch)->rc_input(&_pitch_control_angle, _pitch_angle*100);
 			G_RC_AUX(k_mount_yaw)->rc_input(&_yaw_control_angle, _yaw_angle*100);
+#else
+			if (g_rc_function[RC_Channel_aux::k_mount_roll])
+				_roll_control_angle  = g_rc_function[RC_Channel_aux::k_mount_roll]->angle_input_rad();
+			if (g_rc_function[RC_Channel_aux::k_mount_pitch])
+				_pitch_control_angle = g_rc_function[RC_Channel_aux::k_mount_pitch]->angle_input_rad();
+			if (g_rc_function[RC_Channel_aux::k_mount_yaw])
+				_yaw_control_angle   = g_rc_function[RC_Channel_aux::k_mount_yaw]->angle_input_rad();
+#endif
 			stabilize();
 			break;
 		}

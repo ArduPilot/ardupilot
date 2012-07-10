@@ -55,6 +55,10 @@ public:
 
 	void rc_input(float *control_angle, int16_t angle);
 
+	long angle_input();
+
+	float angle_input_rad();
+
 	void output_ch(unsigned char ch_nr);
 
 	static const struct AP_Param::GroupInfo var_info[];
