@@ -34,6 +34,7 @@ public:
 
 	// settable parameters
 	AP_Float	_kp_yaw;
+	AP_Float	gps_gain;
 
 private:
 	Vector3f 	_omega;
