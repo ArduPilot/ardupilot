@@ -7,8 +7,8 @@ static void navigate()
 {
 	// waypoint distance from plane in cm
 	// ---------------------------------------
-	wp_distance 	= get_distance(&current_loc, &next_WP);
-	home_distance 	= get_distance(&current_loc, &home);
+	wp_distance 	= get_distance_cm(&current_loc, &next_WP);
+	home_distance 	= get_distance_cm(&current_loc, &home);
 
 	// target_bearing is where we should be heading
 	// --------------------------------------------

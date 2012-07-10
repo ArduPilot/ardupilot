@@ -137,7 +137,7 @@ static void set_next_WP(struct Location *wp)
 	if (next_WP.lat == 0 || command_nav_index <= 1){
 		prev_WP = current_loc;
 	}else{
-		if (get_distance(&current_loc, &next_WP) < 500)
+		if (get_distance_cm(&current_loc, &next_WP) < 500)
 			prev_WP = next_WP;
 		else
 			prev_WP = current_loc;
@@ -165,7 +165,7 @@ static void set_next_WP(struct Location *wp)
 
 	// this is handy for the groundstation
 	// -----------------------------------
-	wp_distance 		= get_distance(&current_loc, &next_WP);
+	wp_distance 		= get_distance_cm(&current_loc, &next_WP);
 	target_bearing 		= get_bearing(&prev_WP, &next_WP);
 
 	// calc the location error:
