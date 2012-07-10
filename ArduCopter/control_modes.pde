@@ -110,14 +110,16 @@ static void read_trim_switch()
 					// increment index to WP index of 1 (home is stored at 0)
 					CH7_wp_index = 1;
 
+					Location temp	= home;
 					// set our location ID to 16, MAV_CMD_NAV_WAYPOINT
-					current_loc.id = MAV_CMD_NAV_TAKEOFF;
+					temp.id = MAV_CMD_NAV_TAKEOFF;
+					temp.alt = current_loc.alt;
 
 					// save command:
 					// we use the current altitude to be the target for takeoff.
 					// only altitude will matter to the AP mission script for takeoff.
 					// If we are above the altitude, we will skip the command.
-					set_cmd_with_index(current_loc, CH7_wp_index);
+					set_cmd_with_index(temp, CH7_wp_index);
 				}
 
 				// increment index
