@@ -31,13 +31,26 @@
 
 // table of user settable parameters
 const AP_Param::GroupInfo AP_AHRS::var_info[] PROGMEM = {
-	// @Param: YAW_P
-	// @DisplayName: Yaw P
-	// @Description: This controls the weight the compass has on the overall heading
-	// @Range: 0 .4
-	// @Increment: .01
+    // @Param: AHRS_YAW_P
+    // @DisplayName: Yaw P
+    // @Description: This controls the weight the compass has on the overall heading
+    // @Range: 0 .4
+    // @Increment: .01
     AP_GROUPINFO("YAW_P", 0, AP_AHRS_DCM, _kp_yaw),
+
+    // @Param: AHRS_RP_P
+    // @DisplayName: AHRS RP_P
+    // @Description: This controls how fast the accelerometers correct the attitude
+    // @Range: 0 .4
+    // @Increment: .01
     AP_GROUPINFO("RP_P",  1, AP_AHRS_DCM, _kp),
+
+    // @Param: AHRS_GPS_GAIN
+    // @DisplayName: AHRS GPS gain
+    // @Description: This controls how how much to use the GPS to correct the attitude
+    // @Range: 0.0 1.0
+    // @Increment: .01
+    AP_GROUPINFO("GPS_GAIN",  2, AP_AHRS_DCM, gps_gain),
     AP_GROUPEND
 };
 
@@ -437,6 +450,7 @@ AP_AHRS_DCM::drift_correction(float deltat)
     // are m/s/s
     Vector3f GA_e;
     float v_scale = 1.0/(_ra_deltat*_gravity);
+    v_scale *= gps_gain;
     GA_e = Vector3f(0, 0, -1.0) + ((velocity - _last_velocity) * v_scale);
     GA_e.normalize();
     if (GA_e.is_inf()) {

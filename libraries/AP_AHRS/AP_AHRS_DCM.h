@@ -25,6 +25,7 @@ public:
 
                 _kp.set(0.4);
 		_kp_yaw.set(0.4);
+		gps_gain.set(1.0);
 	}
 
 	// return the smoothed gyro vector corrected for drift
@@ -45,6 +46,7 @@ public:
 	// settable parameters
 	AP_Float	_kp_yaw;
 	AP_Float	_kp;
+	AP_Float	gps_gain;
 
 private:
 	float		_ki;
