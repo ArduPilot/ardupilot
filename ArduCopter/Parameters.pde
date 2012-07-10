@@ -314,6 +314,9 @@ static void load_parameters(void)
 		}
 	}
 
+	// change the default for the AHRS_GPS_GAIN for ArduCopter
+	ahrs.gps_gain.set(0.0);
+
 	if (!g.format_version.load() ||
 	    g.format_version != Parameters::k_format_version) {
 
