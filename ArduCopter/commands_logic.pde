@@ -759,7 +759,7 @@ static void do_set_home()
 		home.id		= MAV_CMD_NAV_WAYPOINT;
 		home.lng	= command_cond_queue.lng;				// Lon * 10**7
 		home.lat	= command_cond_queue.lat;				// Lat * 10**7
-		home.alt	= max(command_cond_queue.alt, 0);
+		home.alt	= 0;
 		home_is_set = true;
 	}
 }
