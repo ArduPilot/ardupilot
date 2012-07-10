@@ -96,6 +96,8 @@ http://code.google.com/p/ardupilot-mega/downloads/list
 #include <AverageFilter.h>	// Mode Filter from Filter library
 #include <AP_LeadFilter.h>	// GPS Lead filter
 #include <AP_Relay.h>		// APM relay
+#include <AP_Camera.h>		// Photo or video camera
+#include <AP_Mount.h>		// Camera/Antenna mount
 #include <memcheck.h>
 
 // Configuration
@@ -345,6 +347,8 @@ static const char* flight_mode_strings[] = {
 			6 	User assignable
 			7	trainer switch - sets throttle nominal (toggle switch), sets accels to Level (hold > 1 second)
 			8	TBD
+		Each Aux channel can be configured to have any of the available auxiliary functions assigned to it.
+		See libraries/RC_Channel/RC_Channel_aux.h for more information
 */
 
 //Documentation of GLobals:
@@ -716,7 +720,8 @@ static int32_t	home_to_copter_bearing;
 // distance between plane and home in cm
 static int32_t	home_distance;
 // distance between plane and next_WP in cm
-static int32_t	wp_distance;
+// is not static because AP_Camera uses it
+int32_t	wp_distance;
 
 ////////////////////////////////////////////////////////////////////////////////
 // 3D Location vectors
@@ -927,6 +932,18 @@ AP_Relay relay;
 	static bool usb_connected;
 #endif
 
+
+// Camera/Antenna mount tracking and stabilisation stuff
+// --------------------------------------
+#if MOUNT == ENABLED
+// current_loc uses the baro/gps soloution for altitude rather than gps only.
+// mabe one could use current_loc for lat/lon too and eliminate g_gps alltogether?
+AP_Mount camera_mount(&current_loc, g_gps, &ahrs);
+#endif
+
+#if CAMERA == ENABLED
+//pinMode(camtrig, OUTPUT);			// these are free pins PE3(5), PH3(15), PH6(18), PB4(23), PB5(24), PL1(36), PL3(38), PA6(72), PA7(71), PK0(89), PK1(88), PK2(87), PK3(86), PK4(83), PK5(84), PK6(83), PK7(82)
+#endif
 
 ////////////////////////////////////////////////////////////////////////////////
 // Top-level logic
@@ -1215,6 +1232,13 @@ static void fifty_hz_loop()
 		gcs_send_message(MSG_RADIO_OUT);
 	#endif
 
+#if MOUNT == ENABLED
+	camera_mount.update_mount_position();
+#endif
+
+#if CAMERA == ENABLED
+	g.camera.trigger_pic_cleanup();
+#endif
 
 	# if HIL_MODE == HIL_MODE_DISABLED
 		if (g.log_bitmask & MASK_LOG_ATTITUDE_FAST && motors.armed())
@@ -1223,9 +1247,6 @@ static void fifty_hz_loop()
 		if (g.log_bitmask & MASK_LOG_RAW && motors.armed())
 			Log_Write_Raw();
 	#endif
-
-
-	camera_stabilization();
 
 	// kick the GCS to process uplink data
 	gcs_update();
@@ -1265,6 +1286,7 @@ static void slow_loop()
 			// -------------------------------
 			read_control_switch();
 
+			update_aux_servo_function(&g.rc_5, &g.rc_6, &g.rc_7, &g.rc_8);
 			// agmatthews - USERHOOKS
 			#ifdef USERHOOK_SLOWLOOP
 			   USERHOOK_SLOWLOOP

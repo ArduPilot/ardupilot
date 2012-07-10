@@ -38,10 +38,7 @@ static void init_rc_in()
 	g.rc_4.set_type(RC_CHANNEL_ANGLE_RAW);
 
 	//set auxiliary ranges
-	g.rc_5.set_range(0,1000);
-	g.rc_6.set_range(0,1000);
-	g.rc_7.set_range(0,1000);
-	g.rc_8.set_range(0,1000);
+	update_aux_servo_function(&g.rc_5, &g.rc_6, &g.rc_7, &g.rc_8);
 }
 
 static void init_rc_out()
@@ -57,9 +54,6 @@ static void init_rc_out()
 	motors.set_min_throttle(g.throttle_min);
 	motors.set_max_throttle(g.throttle_max);
 
-	// this is the camera pitch5 and roll6
-	APM_RC.OutputCh(CH_CAM_PITCH, 1500);
-	APM_RC.OutputCh(CH_CAM_ROLL, 1500);
 
 	for(byte i = 0; i < 5; i++){
 		delay(20);

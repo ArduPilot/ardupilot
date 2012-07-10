@@ -16,6 +16,10 @@
 #include <APO.h>
 #include <AP_AnalogSource.h>
 #include <AP_InertialSensor.h>
+#include <AP_Camera.h>
+#include <AP_Mount.h>
+#include <AP_Relay.h>
+#include <RC_Channel.h>
 
 // Vehicle Configuration
 //#include "BoatGeneric.h"

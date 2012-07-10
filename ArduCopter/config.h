@@ -483,6 +483,28 @@
 
 
 //////////////////////////////////////////////////////////////////////////////
+// CAMERA TRIGGER AND CONTROL
+//
+#ifndef CAMERA
+# define CAMERA		ENABLED
+#endif
+
+//////////////////////////////////////////////////////////////////////////////
+// MOUNT (ANTENNA OR CAMERA)
+//
+#ifndef MOUNT
+# define MOUNT		ENABLED
+#endif
+
+#if defined( __AVR_ATmega1280__ ) && MOUNT == ENABLED
+// The small ATmega1280 chip does not have enough memory for camera support
+// so disable CLI, this will allow camera support and other improvements to fit.
+// This should almost have no side effects, because the APM planner can now do a complete board setup.
+#define CLI_ENABLED DISABLED
+#endif
+
+
+//////////////////////////////////////////////////////////////////////////////
 // Attitude Control
 //
 
