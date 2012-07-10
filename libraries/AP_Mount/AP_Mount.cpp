@@ -148,16 +148,7 @@ void AP_Mount::update_mount_position()
 			G_RC_AUX(k_mount_roll)->rc_input(&_roll_control_angle, _roll_angle*100);
 			G_RC_AUX(k_mount_pitch)->rc_input(&_pitch_control_angle, _pitch_angle*100);
 			G_RC_AUX(k_mount_yaw)->rc_input(&_yaw_control_angle, _yaw_angle*100);
-			if (_ahrs){
-				stabilize();
-			} else {
-				if (g_rc_function[RC_Channel_aux::k_mount_roll])
-					_roll_angle  = rc_map(g_rc_function[RC_Channel_aux::k_mount_roll]);
-				if (g_rc_function[RC_Channel_aux::k_mount_pitch])
-					_pitch_angle = rc_map(g_rc_function[RC_Channel_aux::k_mount_pitch]);
-				if (g_rc_function[RC_Channel_aux::k_mount_yaw])
-					_yaw_angle   = rc_map(g_rc_function[RC_Channel_aux::k_mount_yaw]);
-			}
+			stabilize();
 			break;
 		}
 
@@ -351,8 +342,8 @@ AP_Mount::stabilize()
 			cam.from_euler(_roll_control_angle, _pitch_control_angle, _yaw_control_angle);
 			gimbal_target = m * cam;
 			gimbal_target.to_euler(&_roll_angle, &_pitch_angle, &_yaw_angle);
-			_roll_angle  = degrees(_roll_angle);
-			_pitch_angle = degrees(_pitch_angle);
+			_roll_angle  = _stab_roll?degrees(_roll_angle):degrees(_roll_control_angle);
+			_pitch_angle = _stab_pitch?degrees(_pitch_angle):degrees(_pitch_control_angle);
 			_yaw_angle   = degrees(_yaw_angle);
 		} else {
 			// otherwise base mount roll and pitch on the ahrs
@@ -367,6 +358,10 @@ AP_Mount::stabilize()
 				_pitch_angle -= degrees(_ahrs->pitch);
 			}
 		}
+	} else {
+		_roll_angle  = degrees(_roll_control_angle);
+		_pitch_angle = degrees(_pitch_control_angle);
+		_yaw_angle   = degrees(_yaw_control_angle);
 	}
 }
 
