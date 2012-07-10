@@ -173,7 +173,21 @@ private:
         uint8_t     spare;
     };
 
-    // This header is prepended to a variable stored in EEPROM.
+/* This header is prepended to a variable stored in EEPROM.
+   The meaning is as follows:
+
+   - key: the k_param enum value from Parameter.h in the sketch
+
+   - group_element: This is zero for top level parameters. For
+                    parameters stored within an object the top 4 bits
+                    are the idx field of the GroupInfo structue (the index into
+                    the first level of object indirection). The second
+                    4 bits are the idx field from the second level of
+                    object indirection. This allows for two levels of
+                    object to be stored in the eeprom
+
+   - type: the ap_var_type value for the variable
+*/
     struct Param_header {
         uint8_t    key;
         uint8_t    group_element;
