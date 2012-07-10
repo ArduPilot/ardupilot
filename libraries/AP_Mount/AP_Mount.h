@@ -64,7 +64,6 @@ private:
 	// internal methods
 	void calc_GPS_target_angle(struct Location *target);
 	void stabilize();
-	long rc_map(RC_Channel_aux* rc_ch);
 
 	//members
 	AP_AHRS *_ahrs;          ///< Rotation matrix from earth to plane.

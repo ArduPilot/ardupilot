@@ -313,10 +313,12 @@ AP_Mount::calc_GPS_target_angle(struct Location *target)
 	_roll_control_angle   = 0;
 	_pitch_control_angle  = atan2(GPS_vector_z, target_distance);
 	_yaw_control_angle    = atan2(GPS_vector_x, GPS_vector_y);
+/*
 	// Converts +/- 180 into 0-360.
 	if(_yaw_control_angle<0){
 		_yaw_control_angle += 2*M_PI;
 	}
+*/
 }
 
 /// Stabilizes mount relative to the Earth's frame
@@ -363,13 +365,6 @@ AP_Mount::stabilize()
 		_pitch_angle = degrees(_pitch_control_angle);
 		_yaw_angle   = degrees(_yaw_control_angle);
 	}
-}
-
-// This function is needed to let the HIL code compile
-long
-AP_Mount::rc_map(RC_Channel_aux* rc_ch)
-{
-	return (rc_ch->radio_in - rc_ch->radio_min) * (rc_ch->angle_max - rc_ch->angle_min) / (rc_ch->radio_max - rc_ch->radio_min) + rc_ch->angle_min;
 }
 
 // For testing and development. Called in the medium loop.
