@@ -202,8 +202,6 @@ static void init_ardupilot()
 	init_rc_in();		// sets up rc channels from radio
 	init_rc_out();		// sets up the timer libs
 
-	init_camera();
-
     timer_scheduler.init( &isr_registry );
 
     // initialise the analog port reader

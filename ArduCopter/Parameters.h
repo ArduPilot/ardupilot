@@ -116,6 +116,11 @@ public:
 
 
 	//
+	// Camera parameters
+	//
+	k_param_camera,
+
+	//
 	// 170: Radio settings
 	//
 	k_param_rc_1 = 170,
@@ -126,8 +131,8 @@ public:
 	k_param_rc_6,
 	k_param_rc_7,
 	k_param_rc_8,
-	k_param_rc_camera_pitch,// rc_9
-	k_param_rc_camera_roll, // rc_10
+	k_param_rc_9,
+	k_param_rc_10,
 	k_param_throttle_min,
 	k_param_throttle_max,
 	k_param_throttle_fs_enabled,
@@ -273,17 +278,22 @@ public:
 	RC_Channel	heli_servo_1, heli_servo_2, heli_servo_3, heli_servo_4;	// servos for swash plate and tail
 	#endif
 
+	// Camera
+#if CAMERA == ENABLED
+    AP_Camera		camera;
+#endif
+
 	// RC channels
 	RC_Channel	rc_1;
 	RC_Channel	rc_2;
 	RC_Channel	rc_3;
 	RC_Channel	rc_4;
-	RC_Channel	rc_5;
-	RC_Channel	rc_6;
-	RC_Channel	rc_7;
-	RC_Channel	rc_8;
-	RC_Channel	rc_camera_pitch;
-	RC_Channel	rc_camera_roll;
+	RC_Channel_aux	rc_5;
+	RC_Channel_aux	rc_6;
+	RC_Channel_aux	rc_7;
+	RC_Channel_aux	rc_8;
+	RC_Channel_aux	rc_9;
+	RC_Channel_aux	rc_10;
     AP_Int16    rc_speed; // speed of fast RC Channels in Hz
 
 	AP_Float	camera_pitch_gain;

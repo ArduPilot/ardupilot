@@ -99,8 +99,36 @@ static void process_now_command()
 			do_repeat_relay();
 			break;
 
+#if CAMERA == ENABLED
+		case MAV_CMD_DO_CONTROL_VIDEO:		// Control on-board camera capturing. |Camera ID (-1 for all)| Transmission: 0: disabled, 1: enabled compressed, 2: enabled raw| Transmission mode: 0: video stream, >0: single images every n seconds (decimal)| Recording: 0: disabled, 1: enabled compressed, 2: enabled raw| Empty| Empty| Empty|
+			break;
+
+		case MAV_CMD_DO_DIGICAM_CONFIGURE:	// Mission command to configure an on-board camera controller system. |Modes: P, TV, AV, M, Etc| Shutter speed: Divisor number for one second| Aperture: F stop number| ISO number e.g. 80, 100, 200, Etc| Exposure type enumerator| Command Identity| Main engine cut-off time before camera trigger in seconds/10 (0 means no cut-off)|
+			break;
+
+		case MAV_CMD_DO_DIGICAM_CONTROL:	// Mission command to control an on-board camera controller system. |Session control e.g. show/hide lens| Zoom's absolute position| Zooming step value to offset zoom from the current position| Focus Locking, Unlocking or Re-locking| Shooting Command| Command Identity| Empty|
+			break;
+#endif
+
+		// Sets the region of interest (ROI) for a sensor set or the
+		// vehicle itself. This can then be used by the vehicles control
+		// system to control the vehicle attitude and the attitude of various
+		// devices such as cameras.
+		//    |Region of interest mode. (see MAV_ROI enum)| Waypoint index/ target ID. (see MAV_ROI enum)| ROI index (allows a vehicle to manage multiple cameras etc.)| Empty| x the location of the fixed ROI (see MAV_FRAME)| y| z|
 		case MAV_CMD_DO_SET_ROI: // 201
 			do_target_yaw();
+#if MOUNT == ENABLED
+			camera_mount.set_roi_cmd();
+			break;
+
+		case MAV_CMD_DO_MOUNT_CONFIGURE:	// Mission command to configure a camera mount |Mount operation mode (see MAV_CONFIGURE_MOUNT_MODE enum)| stabilize roll? (1 = yes, 0 = no)| stabilize pitch? (1 = yes, 0 = no)| stabilize yaw? (1 = yes, 0 = no)| Empty| Empty| Empty|
+			camera_mount.configure_cmd();
+			break;
+
+		case MAV_CMD_DO_MOUNT_CONTROL:		// Mission command to control a camera mount |pitch(deg*100) or lat, depending on mount mode.| roll(deg*100) or lon depending on mount mode| yaw(deg*100) or alt (in cm) depending on mount mode| Empty| Empty| Empty| Empty|
+			camera_mount.control_cmd();
+			break;
+#endif
 	}
 }
 

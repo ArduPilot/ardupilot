@@ -202,18 +202,42 @@ static const AP_Param::Info var_info[] PROGMEM = {
 	GGROUP(heli_servo_4,	"HS4_", RC_Channel),
 	#endif
 
+#if CAMERA == ENABLED
+	// @Group: CAM_
+	// @Path: ../libraries/AP_Camera/AP_Camera.cpp
+	GGROUP(camera,                  "CAM_",	AP_Camera),
+#endif
+
 	// RC channel
 	//-----------
 	GGROUP(rc_1,	"RC1_", RC_Channel),
 	GGROUP(rc_2,	"RC2_", RC_Channel),
 	GGROUP(rc_3,	"RC3_", RC_Channel),
 	GGROUP(rc_4,	"RC4_", RC_Channel),
-	GGROUP(rc_5,	"RC5_", RC_Channel),
-	GGROUP(rc_6,	"RC6_", RC_Channel),
-	GGROUP(rc_7,	"RC7_", RC_Channel),
-	GGROUP(rc_8,	"RC8_", RC_Channel),
-	GGROUP(rc_camera_pitch,	"CAM_P_", RC_Channel),
-	GGROUP(rc_camera_roll,	"CAM_R_", RC_Channel),
+
+	// @Group: RC5_
+	// @Path: ../libraries/RC_Channel/RC_Channel_aux.cpp
+	GGROUP(rc_5,                    "RC5_", RC_Channel_aux),
+
+	// @Group: RC6_
+	// @Path: ../libraries/RC_Channel/RC_Channel_aux.cpp
+	GGROUP(rc_6,                    "RC6_", RC_Channel_aux),
+
+	// @Group: RC7_
+	// @Path: ../libraries/RC_Channel/RC_Channel_aux.cpp
+	GGROUP(rc_7,                    "RC7_", RC_Channel_aux),
+
+	// @Group: RC8_
+	// @Path: ../libraries/RC_Channel/RC_Channel_aux.cpp
+	GGROUP(rc_8,                    "RC8_", RC_Channel_aux),
+
+	// @Group: RC9_
+	// @Path: ../libraries/RC_Channel/RC_Channel_aux.cpp
+	GGROUP(rc_9,                    "RC9_", RC_Channel_aux),
+
+	// @Group: RC10_
+	// @Path: ../libraries/RC_Channel/RC_Channel_aux.cpp
+	GGROUP(rc_10,                    "RC10_", RC_Channel_aux),
 
 	// @Param: RC_SPEED
 	// @DisplayName: ESC Update Speed
