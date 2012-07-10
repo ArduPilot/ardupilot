@@ -84,6 +84,20 @@ RC_Channel_aux::rc_input(float *control_angle, int16_t angle)
 	}
 }
 
+/// returns the angle (degrees*100) that the RC_Channel input is receiving
+long
+RC_Channel_aux::angle_input()
+{
+	return (get_reverse()?-1:1) * ((long)radio_in - (long)radio_min) * ((long)angle_max - (long)angle_min) / ((long)radio_max - (long)radio_min) + (get_reverse()?angle_max:angle_min);
+}
+
+/// returns the angle (radians) that the RC_Channel input is receiving
+float
+RC_Channel_aux::angle_input_rad()
+{
+	return radians(angle_input()*0.01);
+}
+
 /// map a function to a servo channel and output it
 void
 RC_Channel_aux::output_ch(unsigned char ch_nr)
