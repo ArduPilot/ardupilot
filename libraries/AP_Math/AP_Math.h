@@ -31,7 +31,10 @@ float safe_sqrt(float v);
 enum Rotation rotation_combination(enum Rotation r1, enum Rotation r2, bool *found = NULL);
 
 // return distance in meters between two locations
-int32_t get_distance(const struct Location *loc1, const struct Location *loc2);
+float get_distance(const struct Location *loc1, const struct Location *loc2);
+
+// return distance in centimeters between two locations
+int32_t get_distance_cm(const struct Location *loc1, const struct Location *loc2);
 
 // return bearing in centi-degrees between two locations
 int32_t get_bearing(const struct Location *loc1, const struct Location *loc2);

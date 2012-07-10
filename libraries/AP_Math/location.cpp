@@ -42,7 +42,7 @@ static float longitude_scale(const struct Location *loc)
 
 // return distance in meters to between two locations, or -1
 // if one of the locations is invalid
-int32_t get_distance(const struct Location *loc1, const struct Location *loc2)
+float get_distance(const struct Location *loc1, const struct Location *loc2)
 {
 	if (loc1->lat == 0 || loc1->lng == 0)
 		return -1;
@@ -51,6 +51,13 @@ int32_t get_distance(const struct Location *loc1, const struct Location *loc2)
 	float dlat 		= (float)(loc2->lat - loc1->lat);
 	float dlong		= ((float)(loc2->lng - loc1->lng)) * longitude_scale(loc2);
 	return sqrt(sq(dlat) + sq(dlong)) * .01113195;
+}
+
+// return distance in centimeters to between two locations, or -1 if
+// one of the locations is invalid
+int32_t get_distance_cm(const struct Location *loc1, const struct Location *loc2)
+{
+    return get_distance(loc1, loc2) * 100;
 }
 
 // return bearing in centi-degrees between two locations
