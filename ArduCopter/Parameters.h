@@ -382,7 +382,7 @@ public:
 
 	log_bitmask				(DEFAULT_LOG_BITMASK),
     log_last_filenumber     (0),
-    toy_yaw_rate			(2), // THOR The default Yaw Rate 1 = fast, 2 = med, 3 = slow
+    toy_yaw_rate			(1), // THOR The default Yaw Rate 1 = fast, 2 = med, 3 = slow
 
 	esc_calibrate 			(0),
 	radio_tuning 			(0),
