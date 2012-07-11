@@ -858,7 +858,7 @@ test_wp(uint8_t argc, const Menu::arg *argv)
 	}
 
 	Serial.printf_P(PSTR("%d wp\n"), (int)g.command_total);
-	Serial.printf_P(PSTR("Hit rad: %d\n"), (int)g.waypoint_radius);
+	Serial.printf_P(PSTR("Hit rad: %dm\n"), (int)g.waypoint_radius);
 	//Serial.printf_P(PSTR("Loiter radius: %d\n\n"), (int)g.loiter_radius);
 
 	report_wp();
