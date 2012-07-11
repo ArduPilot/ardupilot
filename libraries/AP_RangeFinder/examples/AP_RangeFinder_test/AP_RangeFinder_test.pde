@@ -33,8 +33,9 @@ FastSerialPort0(Serial);        // FTDI/console
 // declare global instances
 Arduino_Mega_ISR_Registry isr_registry;
 ModeFilterInt16_Size5 mode_filter(2);
+AP_TimerProcess  timer_scheduler;
+
 #ifdef USE_ADC_ADS7844
-    AP_TimerProcess  adc_scheduler;
     AP_ADC_ADS7844 adc;
     AP_AnalogSource_ADC adc_source(&adc, AP_RANGEFINDER_PITOT_TYPE_ADC_CHANNEL, 0.25);    // use Pitot tube
 #else
@@ -51,14 +52,18 @@ void setup()
     Serial.println("Range Finder Test v1.1");
 	Serial.print("Sonar Type: ");
 	Serial.println(SONAR_TYPE);
-	
-#ifdef USE_ADC_ADS7844
+
     isr_registry.init();
-    adc_scheduler.init(&isr_registry);
+    timer_scheduler.init(&isr_registry);
+
+#ifdef USE_ADC_ADS7844
     adc.filter_result = true;
-    adc.Init(&adc_scheduler);   // APM ADC initialization
+    adc.Init(&timer_scheduler);   // APM ADC initialization
     aRF.calculate_scaler(SONAR_TYPE,3.3);   // setup scaling for sonar
 #else
+    // initialise the analog port reader
+    AP_AnalogSource_Arduino::init_timer(&timer_scheduler);
+
     aRF.calculate_scaler(SONAR_TYPE,5.0);   // setup scaling for sonar
 #endif
 	

@@ -27,8 +27,7 @@ static volatile struct {
 // each conversion takes about 125 microseconds
 static void adc_timer(uint32_t t)
 {
-	if (bit_is_set(ADCSRA, ADSC) ||
-        num_pins_watched == 0) {
+	if (bit_is_set(ADCSRA, ADSC) || num_pins_watched == 0) {
         // conversion is still running. This should be
         // very rare, as we are called at 1kHz
         return;
@@ -142,6 +141,18 @@ void AP_AnalogSource_Arduino::assign_pin_index(uint8_t pin)
             delay(1000);
         }
     }
+
+	// allow pin to be a channel (i.e. "A0") or an actual pin
+#if defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__)
+	if (pin >= 54) pin -= 54;
+#elif defined(__AVR_ATmega32U4__)
+	if (pin >= 18) pin -= 18;
+#elif defined(__AVR_ATmega1284__)
+	if (pin >= 24) pin -= 24;
+#else
+	if (pin >= 14) pin -= 14;
+#endif
+
     _pin_index = num_pins_watched;
     pins[_pin_index].pin = pin;
     num_pins_watched++;
