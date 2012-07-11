@@ -2101,21 +2101,24 @@ static void update_altitude()
 			scale = (float)(sonar_alt - 400) / 200.0;
 			scale = constrain(scale, 0.0, 1.0);
 			// solve for a blended altitude
-			current_loc.alt = ((float)sonar_alt * (1.0 - scale)) + ((float)baro_alt * scale) + home.alt;
+			current_loc.alt = ((float)sonar_alt * (1.0 - scale)) + ((float)baro_alt * scale);
 
 			// solve for a blended climb_rate
 			climb_rate_actual = ((float)sonar_rate * (1.0 - scale)) + (float)baro_rate * scale;
 
 		}else{
 			// we must be higher than sonar (>800), don't get tricked by bad sonar reads
-			current_loc.alt = baro_alt + home.alt; // home alt = 0
+			current_loc.alt = baro_alt;
 			// dont blend, go straight baro
-			climb_rate_actual 	= baro_rate;
+
+			//climb_rate_actual 	= baro_rate;
+			// Tridge's cool Baro patch
+			climb_rate_actual = barometer.get_climb_rate() * 100;
 		}
 
 	}else{
 		// NO Sonar case
-		current_loc.alt = baro_alt + home.alt;
+		current_loc.alt = baro_alt;
 		climb_rate_actual = baro_rate;
 	}
 
@@ -2412,3 +2415,11 @@ static void update_auto_yaw()
 	//Serial.printf("auto_yaw %d ", auto_yaw);
 	// MAV_ROI_NONE = basic Yaw hold
 }
+/*
+	MAV_ROI_NONE=0,  No region of interest. |
+	MAV_ROI_WPNEXT=1,  Point toward next MISSION. |
+	MAV_ROI_WPINDEX=2,  Point toward given MISSION. |
+	MAV_ROI_LOCATION=3,  Point toward fixed location. |
+	MAV_ROI_TARGET=4,  Point toward of given id.
+	MAV_ROI_ENUM_END=5,
+*/
