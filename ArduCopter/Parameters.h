@@ -359,7 +359,7 @@ public:
 	command_total			(0),
 	command_index			(0),
 	command_nav_index		(0),
-	waypoint_radius			(WP_RADIUS_DEFAULT * 100),
+	waypoint_radius			(WP_RADIUS_DEFAULT),
 	loiter_radius			(LOITER_RADIUS),
 	waypoint_speed_max		(WAYPOINT_SPEED_MAX),
 	crosstrack_gain			(CROSSTRACK_GAIN),
