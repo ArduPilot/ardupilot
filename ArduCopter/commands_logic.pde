@@ -454,7 +454,7 @@ static bool verify_nav_wp()
 	}
 
 	// Did we pass the WP?	// Distance checking
-	if((wp_distance <= g.waypoint_radius) || check_missed_wp()){
+	if((wp_distance <= (g.waypoint_radius * 100)) || check_missed_wp()){
 
 		// if we have a distance calc error, wp_distance may be less than 0
 		if(wp_distance > 0){
@@ -505,7 +505,7 @@ static bool verify_loiter_time()
 			return true;
 		}
 	}
-	if(wp_control == WP_MODE &&  wp_distance <= g.waypoint_radius){
+	if(wp_control == WP_MODE &&  wp_distance <= (g.waypoint_radius * 100)){
 		// reset our loiter time
 		loiter_time = millis();
 		// switch to position hold
@@ -534,7 +534,7 @@ static bool verify_RTL()
 	wp_control 	= WP_MODE;
 
 	// Did we pass the WP?	// Distance checking
-	if((wp_distance <= g.waypoint_radius) || check_missed_wp()){
+	if((wp_distance <= (g.waypoint_radius * 100)) || check_missed_wp()){
 		wp_control 	= LOITER_MODE;
 
 		//gcs_send_text_P(SEVERITY_LOW,PSTR("Reached home"));

@@ -257,7 +257,7 @@ static int16_t calc_desired_speed(int16_t max_speed, bool _slow)
 	// limit the ramp up of the speed
 	// waypoint_speed_gov is reset to 0 at each new WP command
 	if(max_speed > waypoint_speed_gov){
-		waypoint_speed_gov += (int)(200.0 * dTnav); // increase at .5/ms
+		waypoint_speed_gov += (int)(100.0 * dTnav); // increase at .5/ms
 		max_speed = waypoint_speed_gov;
 	}
 
