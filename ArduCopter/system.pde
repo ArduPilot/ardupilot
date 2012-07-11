@@ -401,6 +401,7 @@ static void set_mode(byte mode)
 	control_mode 		= constrain(control_mode, 0, NUM_MODES - 1);
 
 	// used to stop fly_aways
+	// set to false if we have low throttle
 	motors.auto_armed(g.rc_3.control_in > 0);
 
 	// clearing value used in interactive alt hold
