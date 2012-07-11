@@ -756,7 +756,7 @@
 // WP Navigation control gains
 //
 #ifndef NAV_P
-# define NAV_P				2.2			//
+# define NAV_P				2.4			//
 #endif
 #ifndef NAV_I
 # define NAV_I				0.17		// Wind control
@@ -805,7 +805,7 @@
 
 // RATE control
 #ifndef THROTTLE_P
-# define THROTTLE_P			0.35	// .25
+# define THROTTLE_P			0.4	// .25
 #endif
 #ifndef THROTTLE_I
 # define THROTTLE_I			0.0		// Don't edit
