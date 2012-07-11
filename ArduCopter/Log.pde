@@ -633,7 +633,7 @@ static void Log_Write_Control_Tuning()
 	DataFlash.WriteInt(nav_throttle);					// 5
 	DataFlash.WriteInt(angle_boost);					// 6
 	DataFlash.WriteInt(manual_boost);					// 7
-	DataFlash.WriteInt(climb_rate);						// 8
+	DataFlash.WriteInt(climb_rate_actual);				// 8
 	DataFlash.WriteInt(g.rc_3.servo_out);				// 9
 	DataFlash.WriteInt(g.pi_alt_hold.get_integrator());	// 10
 	DataFlash.WriteInt(g.pid_throttle.get_integrator());// 11
