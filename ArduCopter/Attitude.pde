@@ -707,17 +707,18 @@ void roll_pitch_toy()
 
 	// Yaw control - Yaw is always available, and will NOT exit the
 	// user from Loiter mode
-	int16_t yaw_rate = g.rc_1.control_in / g.toy_yaw_rate;
+	int16_t yaw_rate = g.rc_1.control_in;// / g.toy_yaw_rate;
+
 	//nav_yaw += yaw_rate / 100;
 	//nav_yaw = wrap_360(nav_yaw);
 	//g.rc_4.servo_out = get_stabilize_yaw(nav_yaw);
 
-	if(g.rc_1.control_in != 0){
-		g.rc_4.servo_out = get_rate_yaw(yaw_rate);
+	if(g.rc_1.control_in != 0){ // roll
+		g.rc_4.servo_out = get_acro_yaw(yaw_rate);
 		yaw_stopped = false;
 		yaw_timer = 150;
 	}else if (!yaw_stopped){
-		g.rc_4.servo_out = get_rate_yaw(0);
+		g.rc_4.servo_out = get_acro_yaw(0);
 		yaw_timer--;
 		if(yaw_timer == 0){
 			yaw_stopped = true;
@@ -727,7 +728,6 @@ void roll_pitch_toy()
 		nav_yaw = get_nav_yaw_offset(yaw_rate, g.rc_3.control_in);
 		g.rc_4.servo_out = get_stabilize_yaw(nav_yaw);
 	}
-
 
 	if(manual_control){
 		// user is in control: reset count-up timer
@@ -761,14 +761,21 @@ void roll_pitch_toy()
 		else if(yaw_rate < 0)
 			roll_rate = -roll_rate;
 
-		roll_rate = constrain(roll_rate, -(4500 / g.toy_yaw_rate.get()), (4500 / g.toy_yaw_rate.get()));
+		int16_t roll_limit = 4500 / g.toy_yaw_rate;
+		roll_rate = constrain(roll_rate, -roll_limit, roll_limit);
 	#else
 		// yaw_rate = roll angle
 		// Linear equation for Yaw:Speed to Roll
 		// default is 1000, lower for more roll action
-		roll_rate = (g_gps->ground_speed / 1000) * yaw_rate;
+		//roll_rate = ((float)g_gps->ground_speed / 600) * (float)yaw_rate;
+		roll_rate = ((int32_t)g.rc_2.control_in * (yaw_rate/100)) /20;
+		Serial.printf("roll_rate: %d\n",roll_rate);
+
 		// limit roll rate to 15, 30, or 45 deg per second.
-		roll_rate = constrain(roll_rate, -(4500 / g.toy_yaw_rate.get()), (4500 / g.toy_yaw_rate.get()));
+		int16_t roll_limit = 4500 / g.toy_yaw_rate;
+		roll_rate = constrain(roll_rate, -roll_limit, roll_limit);
+
+		Serial.printf("yaw_rate %d, roll_rate %d, lim %d\n",yaw_rate, roll_rate, roll_limit);
 	#endif
 
 		// Output the attitude
