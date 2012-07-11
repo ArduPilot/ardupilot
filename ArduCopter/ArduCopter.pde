@@ -1980,7 +1980,7 @@ static void update_navigation()
 static void update_nav_RTL()
 {
 	// Have we have reached Home?
-	if(wp_distance <= g.waypoint_radius){
+	if(wp_distance <= (g.waypoint_radius * 100)){
 		// if loiter_timer value > 0, we are set to trigger auto_land or approach
 		set_mode(LOITER);
 
