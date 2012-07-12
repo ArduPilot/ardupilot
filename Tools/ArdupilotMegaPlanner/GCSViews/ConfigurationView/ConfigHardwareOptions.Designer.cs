@@ -69,7 +69,8 @@
             this.CMB_sonartype.Items.AddRange(new object[] {
             resources.GetString("CMB_sonartype.Items"),
             resources.GetString("CMB_sonartype.Items1"),
-            resources.GetString("CMB_sonartype.Items2")});
+            resources.GetString("CMB_sonartype.Items2"),
+            resources.GetString("CMB_sonartype.Items3")});
             resources.ApplyResources(this.CMB_sonartype, "CMB_sonartype");
             this.CMB_sonartype.Name = "CMB_sonartype";
             this.CMB_sonartype.SelectedIndexChanged += new System.EventHandler(this.CMB_sonartype_SelectedIndexChanged);

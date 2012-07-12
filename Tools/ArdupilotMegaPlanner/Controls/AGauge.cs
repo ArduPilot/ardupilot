@@ -1471,6 +1471,18 @@ System.ComponentModel.Description("Enables or disables the range selected by Nee
         }
 #endregion
 
+        /// <summary>
+        /// this is to fix a mono off screen drawing issue
+        /// </summary>
+        /// <returns></returns>
+        public bool ThisReallyVisible()
+        {
+            if (Parent != null)
+                return this.Bounds.IntersectsWith(Parent.ClientRectangle);
+
+            return true;
+        } 
+
 #region base member overrides
         protected override void OnPaintBackground(PaintEventArgs pevent)
         {
@@ -1482,6 +1494,9 @@ System.ComponentModel.Description("Enables or disables the range selected by Nee
             {
                 return;
             }
+
+            if (!ThisReallyVisible())
+                return;
 
             float scale = 1;
 

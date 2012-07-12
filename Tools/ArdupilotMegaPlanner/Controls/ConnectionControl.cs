@@ -37,5 +37,17 @@ namespace ArdupilotMega.Controls
             cmb_Baud.Enabled = !isConnected;
             cmb_Connection.Enabled = !isConnected;
         }
+
+        private void ConnectionControl_MouseClick(object sender, MouseEventArgs e)
+        {
+            if (e.X > cmb_ConnectionType.Location.X &&
+                e.Y > cmb_ConnectionType.Location.Y &&
+                e.X < cmb_ConnectionType.Right &&
+                e.Y < cmb_ConnectionType.Bottom)
+            {
+                cmb_ConnectionType.Visible = true;
+            }
+        }
+
     }
 }

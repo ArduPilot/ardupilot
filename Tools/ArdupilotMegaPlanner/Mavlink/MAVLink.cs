@@ -343,6 +343,8 @@ namespace ArdupilotMega
                         mavlinkversion = hb.mavlink_version;
                         aptype = (MAV_TYPE)hb.type;
 
+                        setAPType();
+
                         sysid = buffer[3];
                         compid = buffer[4];
                         recvpacketcount = buffer[2];
@@ -960,7 +962,7 @@ namespace ArdupilotMega
             if (actionid == MAV_CMD.PREFLIGHT_CALIBRATION)
             {
                 retrys = 1;
-                timeout = 12000;
+                timeout = 25000;
             }
 
             while (true)
@@ -2115,7 +2117,7 @@ namespace ArdupilotMega
                                     log.InfoFormat("MAVLINK: S wait time out btr {0} len {1}", BaseStream.BytesToRead, length);
                                     throw new Exception("Timeout");
                                 }
-                                System.Threading.Thread.Sleep(1);
+                              //  System.Threading.Thread.Sleep(1);
                             }
                             if (BaseStream.IsOpen)
                             {

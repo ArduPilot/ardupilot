@@ -49,9 +49,23 @@ namespace ArdupilotMega.Controls
                     this.Width = textSize.Width;
                 }
 
-                this.Invalidate();
+                if (this.Visible && ThisReallyVisible())
+                    this.Invalidate();
             }
         }
+
+        /// <summary>
+        /// this is to fix a mono off screen drawing issue
+        /// </summary>
+        /// <returns></returns>
+        public bool ThisReallyVisible()
+        {
+            if (Parent != null)
+                return this.Bounds.IntersectsWith(Parent.ClientRectangle);
+
+            return true;
+        } 
+
 
         SolidBrush s = new SolidBrush(Color.White);
         SolidBrush b = new SolidBrush(Color.Black);

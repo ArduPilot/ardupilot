@@ -29,7 +29,7 @@ namespace ArdupilotMega
 
             Application.ThreadException += Application_ThreadException;
 
-            Application.Idle += Application_Idle;
+       //     Application.Idle += Application_Idle;
 
             int wt = 0, ct = 0;
             ThreadPool.GetMaxThreads(out wt, out ct);
@@ -96,7 +96,8 @@ namespace ArdupilotMega
 
         static void Application_Idle(object sender, EventArgs e)
         {
-           // Console.Write("Idle\r");
+            System.Threading.Thread.Sleep(10);
+            Console.Write("Idle\r");
         }
 
         static void Application_ThreadException(object sender, System.Threading.ThreadExceptionEventArgs e)
@@ -125,8 +126,8 @@ namespace ArdupilotMega
             }
             if (e.Exception.GetType() == typeof(FileNotFoundException) || e.Exception.GetType() == typeof(BadImageFormatException)) // i get alot of error from people who click the exe from inside a zip file.
             {
-                CustomMessageBox.Show("You are missing some DLL's. Please extract the zip file somewhere. OR Use the update feature from the menu");
-                return;
+                CustomMessageBox.Show("You are missing some DLL's. Please extract the zip file somewhere. OR Use the update feature from the menu " + e.Exception.ToString() );
+               // return;
             }
             DialogResult dr = CustomMessageBox.Show("An error has occurred\n"+ex.ToString() + "\n\nReport this Error???", "Send Error", MessageBoxButtons.YesNo);
             if (DialogResult.Yes == dr)

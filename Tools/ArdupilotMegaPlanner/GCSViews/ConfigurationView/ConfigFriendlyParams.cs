@@ -190,6 +190,10 @@ namespace ArdupilotMega.GCSViews.ConfigurationView
                 try
                 {
                     Utilities.ParameterMetaDataParser.GetParameterInformation();
+
+                    _parameterMetaDataRepository.Reload();
+
+                    SortParamList();
                 }
                 catch (Exception exp) { log.Error(exp); } // just to cleanup any errors
             }

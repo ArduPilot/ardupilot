@@ -117,7 +117,7 @@ namespace ArdupilotMega.Utilities
                     zg1.GraphPane.Fill = new ZedGraph.Fill(Color.FromArgb(0x37, 0x37, 0x38));
 
                     foreach (ZedGraph.LineItem li in zg1.GraphPane.CurveList)
-                        li.Line.Width = 4;
+                        li.Line.Width = 2;
 
                     zg1.GraphPane.Title.FontSpec.FontColor = TextColor;
 
