@@ -774,7 +774,7 @@
 
 
 #ifndef WAYPOINT_SPEED_MAX
-# define WAYPOINT_SPEED_MAX		600			// 6m/s error = 13mph
+# define WAYPOINT_SPEED_MAX		500			// 6m/s error = 13mph
 #endif
 
 #ifndef WAYPOINT_SPEED_MIN
