@@ -355,17 +355,17 @@ static const AP_Param::Info var_info[] PROGMEM = {
 	GSCALAR(reverse_elevons,        "ELEVON_REVERSE"),
 
 
-    // @Param: ELEVON_REVERSE
+    // @Param: ELEVON_CH1_REV
 	// @DisplayName: Elevon reverse
 	// @Description: Reverse elevon channel 1
-	// @Values: 0:Disabled,1:Enabled
+	// @Values: -1:Disabled,1:Enabled
 	// @User: User
 	GSCALAR(reverse_ch1_elevon,     "ELEVON_CH1_REV"),
 
-    // @Param: ELEVON_REVERSE
+    // @Param: ELEVON_CH2_REV
 	// @DisplayName: Elevon reverse
 	// @Description: Reverse elevon channel 2
-	// @Values: 0:Disabled,1:Enabled
+	// @Values: -1:Disabled,1:Enabled
 	// @User: User
 	GSCALAR(reverse_ch2_elevon,     "ELEVON_CH2_REV"),
 
