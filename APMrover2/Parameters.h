@@ -336,7 +336,9 @@ public:
 #if HIL_MODE != HIL_MODE_ATTITUDE
 #if CONFIG_SONAR == ENABLED     
         AP_Int8	    sonar_enabled;
-	AP_Int8	    sonar_type;   // 0 = XL, 1 = LV, 2 = XLL (XL with 10m range)   
+	AP_Int8	    sonar_type;   // 0 = XL, 1 = LV,
+				  // 2 = XLL (XL with 10m range)   
+				  // 3 = HRLV 
 #endif
 #endif
         AP_Int8	    airspeed_enabled;
