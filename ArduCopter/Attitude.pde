@@ -707,7 +707,7 @@ void roll_pitch_toy()
 
 	// Yaw control - Yaw is always available, and will NOT exit the
 	// user from Loiter mode
-	int16_t yaw_rate = g.rc_1.control_in;// / g.toy_yaw_rate;
+	int16_t yaw_rate = g.rc_1.control_in / g.toy_yaw_rate;
 
 	//nav_yaw += yaw_rate / 100;
 	//nav_yaw = wrap_360(nav_yaw);
@@ -725,7 +725,6 @@ void roll_pitch_toy()
 			nav_yaw = ahrs.yaw_sensor;
 		}
 	}else{
-		nav_yaw = get_nav_yaw_offset(yaw_rate, g.rc_3.control_in);
 		g.rc_4.servo_out = get_stabilize_yaw(nav_yaw);
 	}
 
@@ -735,7 +734,7 @@ void roll_pitch_toy()
 
 		// roll_rate is the outcome of the linear equation or lookup table
 		// based on speed and Yaw rate
-		int16_t roll_rate;
+		int16_t roll_rate = 0;
 
 		// We manually set out modes based on the state of Toy mode:
 		// Handle throttle manually
@@ -768,14 +767,16 @@ void roll_pitch_toy()
 		// Linear equation for Yaw:Speed to Roll
 		// default is 1000, lower for more roll action
 		//roll_rate = ((float)g_gps->ground_speed / 600) * (float)yaw_rate;
-		roll_rate = ((int32_t)g.rc_2.control_in * (yaw_rate/100)) /20;
-		Serial.printf("roll_rate: %d\n",roll_rate);
+		roll_rate = ((int32_t)g.rc_2.control_in * (yaw_rate/100)) /40;
+		//Serial.printf("roll_rate: %d\n",roll_rate);
 
 		// limit roll rate to 15, 30, or 45 deg per second.
-		int16_t roll_limit = 4500 / g.toy_yaw_rate;
-		roll_rate = constrain(roll_rate, -roll_limit, roll_limit);
+		//int16_t roll_limit = 4500 / g.toy_yaw_rate;
+		//roll_rate = constrain(roll_rate, -roll_limit, roll_limit);
 
-		Serial.printf("yaw_rate %d, roll_rate %d, lim %d\n",yaw_rate, roll_rate, roll_limit);
+		roll_rate = constrain(roll_rate, -2500, 2500);
+
+		//Serial.printf("yaw_rate %d, roll_rate %d, lim %d\n",yaw_rate, roll_rate, roll_limit);
 	#endif
 
 		// Output the attitude
