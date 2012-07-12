@@ -23,6 +23,8 @@ Arduino_Mega_ISR_Registry isr_registry;
 #define HEARTBEAT_PIN A0
 #define FAILSAFE_PIN  A1
 
+#define COMPETITION_MODE 0
+
 void setup() {
 	Serial.begin(115200, 256, 256);
 	isr_registry.init();
@@ -80,11 +82,19 @@ void loop()
 		last_print = tnow;
 	}
 	if (failsafe_enabled || heartbeat_failure) {
+#if COMPETITION_MODE
+		// if we are in failover, send receiver input straight
+		// to the servos
+		for (uint8_t ch=0; ch<4; ch++) {
+			APM_RC.OutputCh(ch, 1000);
+		}
+#else
 		// if we are in failover, send receiver input straight
 		// to the servos
 		for (uint8_t ch=0; ch<4; ch++) {
 			APM_RC.OutputCh(ch, pwm[ch+4]);
 		}
+#endif
 	} else {
 		// otherwise send autopilot output to the servos
 		for (uint8_t ch=0; ch<4; ch++) {
