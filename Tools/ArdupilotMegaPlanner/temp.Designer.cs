@@ -31,6 +31,7 @@
             this.label1 = new System.Windows.Forms.Label();
             this.label2 = new System.Windows.Forms.Label();
             this.label3 = new System.Windows.Forms.Label();
+            this.BUT_paramgen = new ArdupilotMega.Controls.MyButton();
             this.BUT_magcalib = new ArdupilotMega.Controls.MyButton();
             this.BUT_ant_track = new ArdupilotMega.Controls.MyButton();
             this.BUT_follow_me = new ArdupilotMega.Controls.MyButton();
@@ -48,7 +49,6 @@
             this.BUT_flashdl = new ArdupilotMega.Controls.MyButton();
             this.BUT_wipeeeprom = new ArdupilotMega.Controls.MyButton();
             this.button1 = new ArdupilotMega.Controls.MyButton();
-            this.BUT_paramgen = new ArdupilotMega.Controls.MyButton();
             this.SuspendLayout();
             // 
             // label1
@@ -77,6 +77,16 @@
             this.label3.Size = new System.Drawing.Size(273, 13);
             this.label3.TabIndex = 13;
             this.label3.Text = "1280 - can do full copy\'s   2560- full read, write flash only";
+            // 
+            // BUT_paramgen
+            // 
+            this.BUT_paramgen.Location = new System.Drawing.Point(206, 118);
+            this.BUT_paramgen.Name = "BUT_paramgen";
+            this.BUT_paramgen.Size = new System.Drawing.Size(75, 23);
+            this.BUT_paramgen.TabIndex = 20;
+            this.BUT_paramgen.Text = "Param gen";
+            this.BUT_paramgen.UseVisualStyleBackColor = true;
+            this.BUT_paramgen.Click += new System.EventHandler(this.BUT_paramgen_Click);
             // 
             // BUT_magcalib
             // 
@@ -245,21 +255,11 @@
             this.button1.UseVisualStyleBackColor = true;
             this.button1.Click += new System.EventHandler(this.button1_Click);
             // 
-            // BUT_paramgen
-            // 
-            this.BUT_paramgen.Location = new System.Drawing.Point(206, 118);
-            this.BUT_paramgen.Name = "BUT_paramgen";
-            this.BUT_paramgen.Size = new System.Drawing.Size(75, 23);
-            this.BUT_paramgen.TabIndex = 20;
-            this.BUT_paramgen.Text = "Param gen";
-            this.BUT_paramgen.UseVisualStyleBackColor = true;
-            this.BUT_paramgen.Click += new System.EventHandler(this.BUT_paramgen_Click);
-            // 
             // temp
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(731, 281);
+            this.ClientSize = new System.Drawing.Size(696, 288);
             this.Controls.Add(this.BUT_paramgen);
             this.Controls.Add(this.BUT_magcalib);
             this.Controls.Add(this.BUT_ant_track);

@@ -36,6 +36,10 @@ namespace ArdupilotMega.GCSViews
         {
             if (!comPort.IsOpen)
                 return;
+
+            // if btr > 0 then this shouldnt happen
+            comPort.ReadTimeout = 300;
+
             try
             {
                 lock (thisLock)
@@ -43,6 +47,7 @@ namespace ArdupilotMega.GCSViews
                     System.Threading.Thread.Sleep(20);
                     byte[] buffer = new byte[256];
                     int a = 0;
+
                     while (comPort.BytesToRead > 0)
                     {
                         byte indata = (byte)comPort.ReadByte();
@@ -60,12 +65,12 @@ namespace ArdupilotMega.GCSViews
                     addText(ASCIIEncoding.ASCII.GetString(buffer,0,a+1));
                 }
             }
-            catch (Exception) { if (!threadrun) return; TXT_terminal.AppendText("Error reading com port\r\n"); }
+            catch (Exception ex) { Console.WriteLine(ex.ToString()); if (!threadrun) return; TXT_terminal.AppendText("Error reading com port\r\n"); }
         }
 
         void addText(string data)
         {
-            this.Invoke((System.Windows.Forms.MethodInvoker)delegate()
+            this.BeginInvoke((System.Windows.Forms.MethodInvoker)delegate()
             {
                 TXT_terminal.SelectionStart = TXT_terminal.Text.Length;
 
@@ -86,6 +91,7 @@ namespace ArdupilotMega.GCSViews
                 }
                 inputStartPos = TXT_terminal.SelectionStart;
             });
+
         }
 
         private void TXT_terminal_Click(object sender, EventArgs e)
@@ -178,9 +184,12 @@ namespace ArdupilotMega.GCSViews
                         }
                         // do not change this  \r is correct - no \n
                         if (cmd == "+++")
+                        {
                             comPort.Write(Encoding.ASCII.GetBytes(cmd), 0, cmd.Length);
-                        else {
-                        comPort.Write(Encoding.ASCII.GetBytes(cmd + "\r"), 0, cmd.Length + 1);
+                        }
+                        else
+                        {
+                            comPort.Write(Encoding.ASCII.GetBytes(cmd + "\r"), 0, cmd.Length + 1);
                         }
                     }
                     catch { CustomMessageBox.Show("Error writing to com port"); }
@@ -196,6 +205,23 @@ namespace ArdupilotMega.GCSViews
                 catch { MessageBox.Show("Error writing to com port"); }
             }
             e.Handled = true;*/
+        }
+
+        private void readandsleep(int time)
+        {
+             DateTime start = DateTime.Now;
+
+                    while ((DateTime.Now - start).TotalMilliseconds < time)
+                    {
+                        try
+                        {
+                            if (comPort.BytesToRead > 0)
+                            {
+                                comPort_DataReceived((object)null, (SerialDataReceivedEventArgs)null);
+                            }
+                        }
+                        catch { threadrun = false;  return; }
+                    }
         }
 
         private void Terminal_Load(object sender, EventArgs e)
@@ -219,28 +245,18 @@ namespace ArdupilotMega.GCSViews
                 {
                     threadrun = true;
 
-                    DateTime start = DateTime.Now;
-
-                    while ((DateTime.Now - start).TotalMilliseconds < 2000)
-                    {
-                        try
-                        {
-                            if (comPort.BytesToRead > 0)
-                            {
-                                comPort_DataReceived((object)null, (SerialDataReceivedEventArgs)null);
-                            }
-                        }
-                        catch { threadrun = false;  return; }
-                    }
+                    // 2 secs
+                    readandsleep(2000);
                     try
                     {
                         comPort.Write("\n\n\n");
 
-                        System.Threading.Thread.Sleep(500);
+                        // 1 secs
+                        readandsleep(1000);
 
                         comPort.Write("\r\r\r?\r");
                     }
-                    catch { return; }                  
+                    catch { threadrun = false; return; }                  
 
                     while (threadrun)
                     {

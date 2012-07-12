@@ -285,7 +285,7 @@ namespace ArdupilotMega.GCSViews
                     float result;
                     bool pass = float.TryParse(TXT_homealt.Text, out result);
 
-                    if (result == 0 || pass == false)
+                    if (pass == false)
                     {
                         CustomMessageBox.Show("You must have a home altitude");
                         return;
@@ -306,8 +306,10 @@ namespace ArdupilotMega.GCSViews
                     ans = (int)ans;
                     if (alt != 0) // use passed in value;
                         cell.Value = alt.ToString();
-                    if (ans == 0)
+                    if (ans == 0) // default
                         cell.Value = 50;
+                    if (ans == 0 && MainV2.cs.firmware == MainV2.Firmwares.ArduCopter2) 
+                        cell.Value = 15;
                     //   online          verify height
                     if (isonline && CHK_geheight.Checked)
                     {

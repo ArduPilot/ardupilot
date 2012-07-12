@@ -535,8 +535,8 @@ namespace ArdupilotMega
             [DisplayText("Land")]
             LAND = 9,				// AUTO control
             OF_LOITER = 10,
-            [Private(true)]
-			APPROACH = 11
+            [DisplayText("Toy")]
+			TOY = 11
         }
 
         public enum ac2ch7modes

@@ -328,9 +328,9 @@ namespace ArdupilotMega
             messages = new List<string>();
             rateattitude = 10;
             rateposition = 3;
-            ratestatus = 3;
-            ratesensors = 3;
-            raterc = 3;
+            ratestatus = 2;
+            ratesensors = 2;
+            raterc = 2;
             datetime = DateTime.MinValue;
         }
 
@@ -493,6 +493,9 @@ namespace ArdupilotMega
                                     break;
                                 case (byte)(Common.apmmodes.CIRCLE):
                                     mode = "Circle";
+                                    break;
+                                case 16:
+                                    mode = "Initialising";
                                     break;
                                 default:
                                     mode = "Unknown";

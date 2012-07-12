@@ -194,7 +194,7 @@ namespace ArdupilotMega.Controls
                 {
 
                     OpenTK.Graphics.GraphicsMode test = this.GraphicsMode;
-                    log.Info(test.ToString());
+                   // log.Info(test.ToString());
                     log.Info("Vendor: " + GL.GetString(StringName.Vendor));
                     log.Info("Version: " + GL.GetString(StringName.Version));
                     log.Info("Device: " + GL.GetString(StringName.Renderer));
@@ -217,7 +217,7 @@ namespace ArdupilotMega.Controls
                     GL.Enable(EnableCap.Blend);
 
                 }
-                catch (Exception ex) { log.Info("HUD opengl onload " + ex.ToString()); }
+                catch (Exception ex) { log.Error("HUD opengl onload 1 ", ex); }
 
                 try
                 {
@@ -229,7 +229,7 @@ namespace ArdupilotMega.Controls
 
                     GL.Hint(HintTarget.TextureCompressionHint, HintMode.Nicest);
                 }
-                catch { }
+                catch (Exception ex) { log.Error("HUD opengl onload 2 ", ex); }
 
                 try
                 {
@@ -239,7 +239,7 @@ namespace ArdupilotMega.Controls
                     GL.Enable(EnableCap.PolygonSmooth);
 
                 }
-                catch { }
+                catch (Exception ex) { log.Error("HUD opengl onload 3 ", ex); }
             }
 
             started = true;
@@ -252,6 +252,8 @@ namespace ArdupilotMega.Controls
         {
             //GL.Enable(EnableCap.AlphaTest)
 
+            
+            
             if (!started)
                 return;
 
@@ -310,7 +312,7 @@ namespace ArdupilotMega.Controls
             if (DateTime.Now.Second != countdate.Second)
             {
                 countdate = DateTime.Now;
-               // Console.WriteLine("HUD " + count + " hz drawtime " + (huddrawtime / count) + " gl " + opengl);
+                Console.WriteLine("HUD " + count + " hz drawtime " + (huddrawtime / count) + " gl " + opengl);
                 if ((huddrawtime / count) > 1000)
                     opengl = false;
 

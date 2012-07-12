@@ -16,14 +16,19 @@ namespace ArdupilotMega.Utilities
       /// </summary>
       public ParameterMetaDataRepository()
       {
-         string paramMetaDataXMLFileName = String.Format("{0}\\{1}", Application.StartupPath, ConfigurationManager.AppSettings["ParameterMetaDataXMLFileName"]);
-         try
-         {
-             if (File.Exists(paramMetaDataXMLFileName))
-                 _parameterMetaDataXML = XDocument.Load(paramMetaDataXMLFileName);
+          Reload();
+      }
 
-         }
-         catch { } // Exception System.Xml.XmlException: Root element is missing.
+      public void Reload()
+      {
+          string paramMetaDataXMLFileName = String.Format("{0}\\{1}", Application.StartupPath, ConfigurationManager.AppSettings["ParameterMetaDataXMLFileName"]);
+          try
+          {
+              if (File.Exists(paramMetaDataXMLFileName))
+                  _parameterMetaDataXML = XDocument.Load(paramMetaDataXMLFileName);
+
+          }
+          catch { } // Exception System.Xml.XmlException: Root element is missing.
       }
 
       /// <summary>

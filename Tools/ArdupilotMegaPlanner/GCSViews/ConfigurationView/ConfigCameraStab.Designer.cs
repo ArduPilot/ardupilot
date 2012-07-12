@@ -81,7 +81,7 @@ namespace ArdupilotMega.GCSViews.ConfigurationView
             // 
             this.pictureBox1.BackColor = System.Drawing.Color.Transparent;
             this.pictureBox1.BackgroundImage = global::ArdupilotMega.Properties.Resources.cameraGimalPitch1;
-            this.pictureBox1.BackgroundImageLayout = System.Windows.Forms.ImageLayout.Stretch;
+            this.pictureBox1.BackgroundImageLayout = System.Windows.Forms.ImageLayout.Zoom;
             this.pictureBox1.Location = new System.Drawing.Point(33, 52);
             this.pictureBox1.Name = "pictureBox1";
             this.pictureBox1.Size = new System.Drawing.Size(203, 112);
@@ -261,7 +261,7 @@ namespace ArdupilotMega.GCSViews.ConfigurationView
             // pictureBox2
             // 
             this.pictureBox2.BackgroundImage = global::ArdupilotMega.Properties.Resources.cameraGimalRoll1;
-            this.pictureBox2.BackgroundImageLayout = System.Windows.Forms.ImageLayout.Stretch;
+            this.pictureBox2.BackgroundImageLayout = System.Windows.Forms.ImageLayout.Zoom;
             this.pictureBox2.Location = new System.Drawing.Point(33, 207);
             this.pictureBox2.Name = "pictureBox2";
             this.pictureBox2.Size = new System.Drawing.Size(203, 112);

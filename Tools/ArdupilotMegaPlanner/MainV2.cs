@@ -975,6 +975,12 @@ namespace ArdupilotMega
             {
                 try
                 {
+                    if (MONO)
+                    {
+                        log.Error("Mono: closing joystick thread");
+                        break;
+                    }
+
                     if (!MONO)
                     {
                         //joystick stuff
@@ -1152,8 +1158,6 @@ namespace ArdupilotMega
 
                             GCSViews.FlightData.myhud.Invalidate();
                         }
-
-                        GC.Collect();
                     }
 
                     if (speechEnable && speechEngine != null && (MainV2.comPort.logreadmode || comPort.BaseStream.IsOpen))
@@ -1210,7 +1214,9 @@ namespace ArdupilotMega
                     //Console.WriteLine(DateTime.Now.Millisecond + " " + comPort.BaseStream.BytesToRead);
 
                     while (comPort.BaseStream.BytesToRead > minbytes && giveComport == false)
+                    {
                         comPort.readPacket();
+                    }
                 }
                 catch (Exception e)
                 {

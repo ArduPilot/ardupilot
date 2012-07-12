@@ -92,7 +92,7 @@ namespace ArdupilotMega.Controls.BackstageView
                                          new Point(Width, midheight - arSize)
                                      };
 
-               g.DrawString(Text, new Font(FontFamily.GenericSansSerif, 10), new SolidBrush(SelectedTextColor), 20, 6);
+               g.DrawString(Text, new Font(FontFamily.GenericSansSerif, 10, FontStyle.Bold), new SolidBrush(SelectedTextColor), 10, 6);
 
                g.FillPolygon(arrowBrush, arrowPoints);
 
@@ -116,7 +116,7 @@ namespace ArdupilotMega.Controls.BackstageView
                    g.DrawLine(butPen, 0, Height - 1, Width, Height - 1);
                }
 
-               g.DrawString(Text, new Font(FontFamily.GenericSansSerif, 10), new SolidBrush(this.UnSelectedTextColor), 20, 6);
+               g.DrawString(Text, new Font(FontFamily.GenericSansSerif, 10,FontStyle.Bold), new SolidBrush(this.UnSelectedTextColor), 5, 6);
            }
         }
 

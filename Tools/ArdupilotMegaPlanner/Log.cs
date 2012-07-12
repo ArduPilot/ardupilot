@@ -62,6 +62,23 @@ namespace ArdupilotMega
             InitializeComponent();
         }
 
+        private void readandsleep(int time)
+        {
+            DateTime start = DateTime.Now;
+
+            while ((DateTime.Now - start).TotalMilliseconds < time)
+            {
+                try
+                {
+                    if (comPort.BytesToRead > 0)
+                    {
+                        comPort_DataReceived((object)null, (SerialDataReceivedEventArgs)null);
+                    }
+                }
+                catch { threadrun = false; return; }
+            }
+        }
+
         private void Log_Load(object sender, EventArgs e)
         {
             status = serialstatus.Connecting;
@@ -87,7 +104,7 @@ namespace ArdupilotMega
 
                 threadrun = true;
 
-                System.Threading.Thread.Sleep(2000);
+                readandsleep(2500);
 
                 try
                 {

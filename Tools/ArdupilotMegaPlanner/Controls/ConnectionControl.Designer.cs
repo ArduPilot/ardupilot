@@ -91,6 +91,7 @@
             this.Controls.Add(this.cmb_Baud);
             this.Name = "ConnectionControl";
             this.Size = new System.Drawing.Size(230, 76);
+            this.MouseClick += new System.Windows.Forms.MouseEventHandler(this.ConnectionControl_MouseClick);
             this.ResumeLayout(false);
             this.PerformLayout();
 

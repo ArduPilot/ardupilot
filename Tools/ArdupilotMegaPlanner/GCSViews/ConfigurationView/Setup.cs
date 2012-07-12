@@ -46,12 +46,13 @@ namespace ArdupilotMega.GCSViews.ConfigurationView
             AddBackstageViewPage(new ConfigFlightModes(), "Flight Modes");
             AddBackstageViewPage(new ConfigHardwareOptions(), "Hardware Options");
             AddBackstageViewPage(new ConfigBatteryMonitoring(), "Battery Monitor");
-            AddBackstageViewPage(new ConfigCameraStab(), "Camera Gimbal");
 
 
             /******************************HELI **************************/
             if (MainV2.comPort.param["H_GYR_ENABLE"] != null) // heli
             {
+                AddBackstageViewPage(new ConfigCameraStab(), "Camera Gimbal");
+
                 AddBackstageViewPage(new ConfigAccelerometerCalibrationQuad(), "ArduCopter Level");
 
                 AddBackstageViewPage(new ConfigTradHeli(), "Heli Setup");
@@ -65,6 +66,8 @@ namespace ArdupilotMega.GCSViews.ConfigurationView
                 /****************************** ArduCopter **************************/
             else if (MainV2.cs.firmware == MainV2.Firmwares.ArduCopter2)
             {
+                AddBackstageViewPage(new ConfigCameraStab(), "Camera Gimbal");
+
                 AddBackstageViewPage(new ConfigAccelerometerCalibrationQuad(), "ArduCopter Level");
 
                 var configpanel = new Controls.ConfigPanel();
