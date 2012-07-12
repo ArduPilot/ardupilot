@@ -18,12 +18,12 @@ public:
 	/// Constructor
 	///
 	AP_Camera() :
-		trigger_type    (0),
 		picture_time	(0),			// waypoint trigger variable
+		wp_distance_min (10),
+		keep_cam_trigg_active_cycles (0),
 		thr_pic			(0),			// timer variable for throttle_pic
 		camtrig			(83),			// PK6 chosen as it not near anything so safer for soldering
-		keep_cam_trigg_active_cycles (0),
-		wp_distance_min (10)
+		trigger_type    (0)
 	{}
 
 	// single entry point to take pictures
