@@ -157,7 +157,7 @@ static bool verify_must()
 			break;
 
 		case MAV_CMD_NAV_LOITER_UNLIM:
-			return false;
+			return verify_loiter_unlimited();
 			break;
 
 		case MAV_CMD_NAV_LOITER_TURNS:
@@ -493,10 +493,14 @@ static bool verify_nav_wp()
 	}
 }
 
-//static bool verify_loiter_unlim()
-//{
-//	return false;
-//}
+static bool verify_loiter_unlimited()
+{
+	if(wp_control == WP_MODE &&  wp_distance <= (g.waypoint_radius * 100)){
+		// switch to position hold
+		wp_control 	= LOITER_MODE;
+	}
+	return false;
+}
 
 static bool verify_loiter_time()
 {
