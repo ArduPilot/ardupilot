@@ -431,12 +431,12 @@ setup_sonar(uint8_t argc, const Menu::arg *argv)
 	} else if (!strcmp_P(argv[1].str, PSTR("off"))) {
 		g.sonar_enabled.set_and_save(false);
 
-	} else if (argc > 1 && (argv[1].i >= 0 && argv[1].i <= 2)) {
+	} else if (argc > 1 && (argv[1].i >= 0 && argv[1].i <= 3)) {
 	    g.sonar_enabled.set_and_save(true);  // if you set the sonar type, surely you want it on
 		g.sonar_type.set_and_save(argv[1].i);
 
 	}else{
-		Serial.printf_P(PSTR("\nOp:[on, off, 0-2]\n"));
+		Serial.printf_P(PSTR("\nOp:[on, off, 0-3]\n"));
 		report_sonar();
 		return 0;
 	}
@@ -824,7 +824,7 @@ static void report_sonar()
 	Serial.printf_P(PSTR("Sonar\n"));
 	print_divider();
 	print_enabled(g.sonar_enabled.get());
-	Serial.printf_P(PSTR("Type: %d (0=XL, 1=LV, 2=XLL)"), (int)g.sonar_type);
+	Serial.printf_P(PSTR("Type: %d (0=XL, 1=LV, 2=XLL, 3=HRLV)"), (int)g.sonar_type);
 	print_blanks(2);
 }
 
