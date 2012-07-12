@@ -2404,8 +2404,11 @@ static void update_auto_yaw()
 	if(wp_control == LOITER_MODE)
 		return;
 
-	// this tracks a location so the copter is always pointing towards it.
-	if(yaw_tracking == MAV_ROI_LOCATION){
+	if(control_mode == CIRCLE_MODE){
+		auto_yaw = get_bearing(&current_loc, &circle_WP);
+
+	}else if(yaw_tracking == MAV_ROI_LOCATION){
+		// this tracks a location so the copter is always pointing towards it.
 		auto_yaw = get_bearing(&current_loc, &target_WP);
 
 	}else if(yaw_tracking == MAV_ROI_WPNEXT){

@@ -310,9 +310,6 @@ static void do_loiter_turns()
 {
 	wp_control = CIRCLE_MODE;
 
-	// reset desired location
-
-
 	if(command_nav_queue.lat == 0){
 		// allow user to specify just the altitude
 		if(command_nav_queue.alt > 0){
@@ -322,6 +319,8 @@ static void do_loiter_turns()
 	}else{
 		set_next_WP(&command_nav_queue);
 	}
+
+	circle_WP = next_WP;
 
 	loiter_total = command_nav_queue.p1 * 360;
 	loiter_sum	 = 0;
