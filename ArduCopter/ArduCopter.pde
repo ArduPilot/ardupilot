@@ -2404,7 +2404,7 @@ static void update_auto_yaw()
 	if(wp_control == LOITER_MODE)
 		return;
 
-	if(control_mode == CIRCLE_MODE){
+	if(control_mode == CIRCLE){
 		auto_yaw = get_bearing(&current_loc, &circle_WP);
 
 	}else if(yaw_tracking == MAV_ROI_LOCATION){
