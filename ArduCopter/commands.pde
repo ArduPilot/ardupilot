@@ -198,7 +198,10 @@ static void init_home()
 	// -------------------
 	// no need to save this to EPROM
 	set_cmd_with_index(home, 0);
-	print_wp(&home, 0);
+	//print_wp(&home, 0);
+
+	if (g.log_bitmask & MASK_LOG_CMD)
+		Log_Write_Cmd(0, &home);
 
 	// Save prev loc this makes the calcs look better before commands are loaded
 	prev_WP = home;
