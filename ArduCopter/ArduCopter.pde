@@ -1514,6 +1514,9 @@ void update_yaw_mode(void)
 			}else if (!yaw_stopped){
 				g.rc_4.servo_out = get_acro_yaw(0);
 				yaw_timer--;
+				if ( abs(omega.z * DEGX100) < 1000 ){
+					yaw_stopped = true;
+				}
 				if(yaw_timer == 0){
 					yaw_stopped = true;
 					nav_yaw = ahrs.yaw_sensor;
