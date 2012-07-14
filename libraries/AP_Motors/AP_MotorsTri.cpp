@@ -51,7 +51,7 @@ void AP_MotorsTri::output_min()
 	_rc->OutputCh(_motor_to_channel_map[AP_MOTORS_MOT_1], _rc_throttle->radio_min);
 	_rc->OutputCh(_motor_to_channel_map[AP_MOTORS_MOT_2], _rc_throttle->radio_min);
 	_rc->OutputCh(_motor_to_channel_map[AP_MOTORS_MOT_4], _rc_throttle->radio_min);
-	_rc->OutputCh(_motor_to_channel_map[AP_MOTORS_CH_TRI_YAW], _rc_throttle->radio_trim);
+	_rc->OutputCh(_motor_to_channel_map[AP_MOTORS_CH_TRI_YAW], _rc_yaw->radio_trim);
 
 	// InstantPWM
 	if( _speed_hz == AP_MOTORS_SPEED_INSTANT_PWM ) {
