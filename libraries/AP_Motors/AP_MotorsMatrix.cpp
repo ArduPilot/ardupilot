@@ -125,6 +125,7 @@ void AP_MotorsMatrix::output_armed()
 	int8_t i;
 	int16_t out_min = _rc_throttle->radio_min;
 	int16_t out_max = _rc_throttle->radio_max;
+	int16_t yaw_contribution = 0;
 
 	// Throttle is 0 to 1000 only
 	_rc_throttle->servo_out = constrain(_rc_throttle->servo_out, 0, _max_throttle);
@@ -141,10 +142,16 @@ void AP_MotorsMatrix::output_armed()
 	// mix roll, pitch, yaw, throttle into output for each motor
 	for( i=0; i<AP_MOTORS_MAX_NUM_MOTORS; i++ ) {
 		if( motor_enabled[i] ) {
+			yaw_contribution = _rc_yaw->pwm_out*_yaw_factor[i];
+			if (yaw_contribution > 0 ){
+				yaw_contribution *= 0.7;
+			}else{
+				yaw_contribution *= 1.42;
+			}
 			motor_out[i] = _rc_throttle->radio_out +
 							_rc_roll->pwm_out * _roll_factor[i] +
 							_rc_pitch->pwm_out * _pitch_factor[i] +
-							_rc_yaw->pwm_out*_yaw_factor[i];
+							yaw_contribution;
 		}
 	}
 
