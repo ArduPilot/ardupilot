@@ -324,16 +324,7 @@ get_rate_yaw(int32_t target_rate)
 	d = g.pid_rate_yaw.get_d(rate_error, G_Dt);
 
 	output 	= p+i+d;
-
-#if FRAME_CONFIG == HELI_FRAME
 	output = constrain(output, -4500, 4500);
-#else
-	// output control:
-	int16_t yaw_limit = 1900 + abs(g.rc_4.control_in);
-
-	// constrain output
-	output = constrain(output, -yaw_limit, yaw_limit);
-#endif
 
 #if LOGGING_ENABLED == ENABLED
 	static int8_t log_counter = 0;					// used to slow down logging of PID values to dataflash
