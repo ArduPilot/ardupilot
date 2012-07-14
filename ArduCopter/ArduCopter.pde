@@ -1938,7 +1938,6 @@ static void update_navigation()
 			break;
 
 		case CIRCLE:
-			yaw_tracking	= MAV_ROI_WPNEXT;
 			wp_control 		= CIRCLE_MODE;
 
 			// calculates desired Yaw
@@ -2353,12 +2352,17 @@ static void update_nav_wp()
 		next_WP.lng = circle_WP.lng + (g.loiter_radius * 100 * cos(1.57 - circle_angle) * scaleLongUp);
 		next_WP.lat = circle_WP.lat + (g.loiter_radius * 100 * sin(1.57 - circle_angle));
 
-		// calc the lat and long error to the target
-		calc_location_error(&next_WP);
-
 		// use error as the desired rate towards the target
 		// nav_lon, nav_lat is calculated
-		calc_loiter(long_error, lat_error);
+
+		if(wp_distance > 400){
+			calc_nav_rate(calc_desired_speed(g.waypoint_speed_max, true));
+		}else{
+			// calc the lat and long error to the target
+			calc_location_error(&next_WP);
+
+			calc_loiter(long_error, lat_error);
+		}
 
 		//CIRCLE: angle:29, dist:0, lat:400, lon:242
 
@@ -2400,23 +2404,20 @@ static void update_nav_wp()
 
 static void update_auto_yaw()
 {
-	// If we Loiter, don't start Yawing, allow Yaw control
-	if(wp_control == LOITER_MODE)
-		return;
-
-	if(control_mode == CIRCLE){
+	if(wp_control == CIRCLE_MODE){
+		//trace("CIRCLE mode")
 		auto_yaw = get_bearing(&current_loc, &circle_WP);
 
+	}else if(wp_control == LOITER_MODE){
+		// just hold nav_yaw
+
 	}else if(yaw_tracking == MAV_ROI_LOCATION){
-		// this tracks a location so the copter is always pointing towards it.
 		auto_yaw = get_bearing(&current_loc, &target_WP);
 
 	}else if(yaw_tracking == MAV_ROI_WPNEXT){
 		// Point towards next WP
 		auto_yaw = target_bearing;
 	}
-	//Serial.printf("auto_yaw %d ", auto_yaw);
-	// MAV_ROI_NONE = basic Yaw hold
 }
 /*
 	MAV_ROI_NONE=0,  No region of interest. |
