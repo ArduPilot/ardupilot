@@ -130,8 +130,75 @@ get_acro_pitch(int32_t target_rate)
 static int16_t
 get_acro_yaw(int32_t target_rate)
 {
+	static int32_t last_target_rate = 0;			// last iteration's target rate
+	int32_t p,i,d;									// used to capture pid values for logging
+	int32_t	rate_error;								// current yaw rate error
+	int32_t	current_rate;							// current real yaw rate
+	int32_t decel_boost;							// gain scheduling if we are overshooting
+	int32_t output;									// output to rate controller
+
 	target_rate = g.pi_stabilize_yaw.get_p(target_rate);
-	return get_rate_yaw(target_rate);
+	current_rate = omega.z * DEGX100;
+	rate_error = target_rate - current_rate;
+	
+	//Gain Scheduling:
+	//If the yaw input is to the right, but stick is moving to the middle
+	//and actual rate is greater than the target rate then we are 
+	//going to overshoot the yaw target to the left side, so we should
+	//strengthen the yaw output to slow down the yaw! 
+	
+#if (FRAME_CONFIG == HELI_FRAME	|| FRAME_CONFIG == TRI_FRAME)	
+	if ( target_rate > 0 && last_target_rate > target_rate && rate_error < 0 ){
+		decel_boost = 1;
+	} else if (target_rate < 0 && last_target_rate < target_rate && rate_error > 0 ){
+		decel_boost = 1;
+	} else if (target_rate == 0 && abs(current_rate) > 1000){
+		decel_boost = 1;	
+	} else {
+		decel_boost = 0;
+	}
+	
+	last_target_rate = target_rate;
+	
+#else
+
+	decel_boost = 0;
+	
+#endif
+	
+	// separately calculate p, i, d values for logging
+	// we will use d=0, and hold i at it's last value
+	// since manual inputs are never steady state
+	
+	p = g.pid_rate_yaw.get_p(rate_error);
+	i = g.pid_rate_yaw.get_integrator();
+	d = 0;
+
+	if (decel_boost){
+		p *= 2;
+	}
+	
+	output 	= p+i+d;
+
+	// output control:	
+	// constrain output
+	output = constrain(output, -4500, 4500);
+
+#if LOGGING_ENABLED == ENABLED
+	static int8_t log_counter = 0;					// used to slow down logging of PID values to dataflash
+	// log output if PID loggins is on and we are tuning the yaw
+	if( g.log_bitmask & MASK_LOG_PID && (g.radio_tuning == CH6_YAW_KP || g.radio_tuning == CH6_YAW_RATE_KP) ) {
+		log_counter++;
+		if( log_counter >= 10 ) {	// (update rate / desired output rate) = (100hz / 10hz) = 10
+			log_counter = 0;
+			Log_Write_PID(CH6_YAW_RATE_KP, rate_error, p, i, d, output, tuning_value);
+		}
+	}
+#endif
+
+	return output;
+	
+	
 }
 
 static int16_t
