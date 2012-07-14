@@ -1511,13 +1511,12 @@ void update_yaw_mode(void)
 				g.rc_4.servo_out = get_acro_yaw(g.rc_4.control_in);
 				yaw_stopped = false;
 				yaw_timer = 150;
+
 			}else if (!yaw_stopped){
 				g.rc_4.servo_out = get_acro_yaw(0);
 				yaw_timer--;
-				if ( abs(omega.z * DEGX100) < 1000 ){
-					yaw_stopped = true;
-				}
-				if(yaw_timer == 0){
+
+				if((yaw_timer == 0) || (fabs(omega.z) < .17)){
 					yaw_stopped = true;
 					nav_yaw = ahrs.yaw_sensor;
 				}
