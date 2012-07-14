@@ -31,21 +31,21 @@
 
 // table of user settable parameters
 const AP_Param::GroupInfo AP_AHRS::var_info[] PROGMEM = {
-    // @Param: AHRS_YAW_P
+    // @Param: YAW_P
     // @DisplayName: Yaw P
     // @Description: This controls the weight the compass has on the overall heading
     // @Range: 0 .4
     // @Increment: .01
     AP_GROUPINFO("YAW_P", 0, AP_AHRS_DCM, _kp_yaw),
 
-    // @Param: AHRS_RP_P
+    // @Param: RP_P
     // @DisplayName: AHRS RP_P
     // @Description: This controls how fast the accelerometers correct the attitude
     // @Range: 0 .4
     // @Increment: .01
     AP_GROUPINFO("RP_P",  1, AP_AHRS_DCM, _kp),
 
-    // @Param: AHRS_GPS_GAIN
+    // @Param: GPS_GAIN
     // @DisplayName: AHRS GPS gain
     // @Description: This controls how how much to use the GPS to correct the attitude
     // @Range: 0.0 1.0
