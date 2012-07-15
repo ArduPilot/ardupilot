@@ -333,6 +333,40 @@ static void init_ardupilot()
 	Log_Write_Data(24, (float)g.pid_loiter_rate_lon.kD());
 #endif
 
+
+///////////////////////////////////////////////////////////////////////////////
+// Experimental AP_Limits library - set constraints, limits, fences, minima, maxima on various parameters
+////////////////////////////////////////////////////////////////////////////////
+#ifdef AP_LIMITS
+
+	// AP_Limits modules are stored as a _linked list_. That allows us to define an infinite number of modules
+	// and also to allocate no space until we actually need to.
+
+	// The linked list looks (logically) like this
+	//   [limits module] -> [first limit module] -> [second limit module] -> [third limit module] -> NULL
+
+
+	// The details of the linked list are handled by the methods
+	// modules_first, modules_current, modules_next, modules_last, modules_add
+	// in limits
+
+	limits.modules_add(&gpslock_limit);
+	limits.modules_add(&geofence_limit);
+	limits.modules_add(&altitude_limit);
+
+
+	if (limits.debug())  {
+		gcs_send_text_P(SEVERITY_LOW,PSTR("Limits Modules Loaded"));
+
+		AP_Limit_Module *m = limits.modules_first();
+		while (m) {
+			gcs_send_text_P(SEVERITY_LOW, get_module_name(m->get_module_id()));
+			m = limits.modules_next();
+		}
+	}
+
+#endif
+
 	SendDebug("\nReady to FLY ");
 }
 

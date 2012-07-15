@@ -244,6 +244,7 @@ enum ap_message {
     MSG_NEXT_WAYPOINT,
     MSG_NEXT_PARAM,
     MSG_STATUSTEXT,
+    MSG_LIMITS_STATUS,
     MSG_AHRS,
     MSG_SIMSTATE,
     MSG_HWSTATUS,
@@ -367,7 +368,13 @@ enum gcs_severity {
 #define WP_SIZE 15
 
 #define ONBOARD_PARAM_NAME_LENGTH 15
-#define MAX_WAYPOINTS  ((EEPROM_MAX_ADDR - WP_START_BYTE) / WP_SIZE) - 1 // - 1 to be safe
+
+// fence points are stored at the end of the EEPROM
+#define MAX_FENCEPOINTS 20
+#define FENCE_WP_SIZE sizeof(Vector2l)
+#define FENCE_START_BYTE (EEPROM_MAX_ADDR-(MAX_FENCEPOINTS*FENCE_WP_SIZE))
+
+#define MAX_WAYPOINTS  ((FENCE_START_BYTE - WP_START_BYTE) / WP_SIZE) - 1 // - 1 to be safe
 
 // mark a function as not to be inlined
 #define NOINLINE __attribute__((noinline))

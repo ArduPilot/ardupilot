@@ -113,6 +113,13 @@ http://code.google.com/p/ardupilot-mega/downloads/list
 
 #include <AP_Declination.h> // ArduPilot Mega Declination Helper Library
 
+// Limits library - Puts limits on the vehicle, and takes recovery actions
+#include <AP_Limits.h>
+#include <AP_Limit_GPSLock.h> // a limits library module
+#include <AP_Limit_Geofence.h> // a limits library module
+#include <AP_Limit_Altitude.h> // a limits library module
+
+
 ////////////////////////////////////////////////////////////////////////////////
 // Serial ports
 ////////////////////////////////////////////////////////////////////////////////
@@ -946,6 +953,21 @@ AP_Mount camera_mount(&current_loc, g_gps, &ahrs);
 #endif
 
 ////////////////////////////////////////////////////////////////////////////////
+// Experimental AP_Limits library - set constraints, limits, fences, minima, maxima on various parameters
+////////////////////////////////////////////////////////////////////////////////
+#ifdef AP_LIMITS
+
+	AP_Limits			limits;
+
+	AP_Limit_GPSLock 	gpslock_limit(g_gps);
+
+	AP_Limit_Geofence	geofence_limit(FENCE_START_BYTE, FENCE_WP_SIZE, MAX_FENCEPOINTS, g_gps, &home, &current_loc);
+
+	AP_Limit_Altitude	altitude_limit(&current_loc);
+
+#endif
+
+////////////////////////////////////////////////////////////////////////////////
 // Top-level logic
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -1256,6 +1278,14 @@ static void fifty_hz_loop()
 
 static void slow_loop()
 {
+
+#ifdef AP_LIMITS
+
+		// Run the AP_Limits main loop
+		limits_loop();
+
+#endif // AP_LIMITS_ENABLED
+
 	// This is the slow (3 1/3 Hz) loop pieces
 	//----------------------------------------
 	switch (slow_loopCounter){
