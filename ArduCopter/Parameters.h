@@ -122,9 +122,10 @@ public:
 
 
 	//
-	// Camera parameters
+	// Camera and mount parameters
 	//
-	k_param_camera,
+	k_param_camera = 165,
+	k_param_camera_mount,
 
 	//
 	// 170: Radio settings
@@ -137,8 +138,8 @@ public:
 	k_param_rc_6,
 	k_param_rc_7,
 	k_param_rc_8,
-	k_param_rc_9,
-	k_param_rc_10,
+	k_param_rc_camera_pitch,
+	k_param_rc_camera_roll,
 	k_param_throttle_min,
 	k_param_throttle_max,
 	k_param_throttle_fs_enabled,
@@ -149,11 +150,8 @@ public:
 	k_param_radio_tuning,
 	k_param_radio_tuning_high,
 	k_param_radio_tuning_low,
-	k_param_camera_pitch_gain,
-	k_param_camera_roll_gain,
-    k_param_rc_speed,
-	k_param_camera_pitch_continuous,
-	k_param_camera_roll_continuous,
+    k_param_rc_speed = 192,
+	k_param_rc_camera_yaw = 193,
 
     //
     // 200: flight modes
@@ -296,18 +294,18 @@ public:
 	RC_Channel	rc_2;
 	RC_Channel	rc_3;
 	RC_Channel	rc_4;
-	RC_Channel_aux	rc_5;
-	RC_Channel_aux	rc_6;
-	RC_Channel_aux	rc_7;
-	RC_Channel_aux	rc_8;
-	RC_Channel_aux	rc_9;
-	RC_Channel_aux	rc_10;
+	RC_Channel	rc_5;
+	RC_Channel	rc_6;
+	RC_Channel	rc_7;
+	RC_Channel	rc_8;
+
+#if MOUNT == ENABLED
+	RC_Channel_aux	rc_camera_roll;
+	RC_Channel_aux	rc_camera_pitch;
+	RC_Channel_aux	rc_camera_yaw;
+#endif
     AP_Int16    rc_speed; // speed of fast RC Channels in Hz
 
-	AP_Float	camera_pitch_gain;
-	AP_Float	camera_roll_gain;
-	AP_Int8		camera_pitch_continuous;
-	AP_Int8		camera_roll_continuous;
 	AP_Float	stabilize_d;
 	AP_Float	stabilize_d_schedule;
 
@@ -402,10 +400,6 @@ public:
 
     rc_speed(RC_FAST_SPEED),
 
-	camera_pitch_gain 		(CAM_PITCH_GAIN),
-	camera_roll_gain 		(CAM_ROLL_GAIN),
-	camera_pitch_continuous	(CAM_PITCH_CONTINUOUS),
-	camera_roll_continuous	(CAM_ROLL_CONTINUOUS),
 	stabilize_d 			(STABILIZE_D),
 	stabilize_d_schedule	(STABILIZE_D_SCHEDULE),
 	acro_p					(ACRO_P),
