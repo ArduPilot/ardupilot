@@ -9,7 +9,7 @@ const AP_Param::GroupInfo RC_Channel_aux::var_info[] PROGMEM = {
 	// @Param: FUNCTION
 	// @DisplayName: Servo out function
 	// @Description: Setting this to Disabled(0) will disable this output, any other value will enable the corresponding function
-	// @Values: 0:Disabled,1:Manual,2:Flap,3:Flap_auto,4:Aileron,5:flaperon,6:mount_pan,7:mount_tilt,8:mount_roll,9:mount_open,10:camera_trigger,11:release
+	// @Values: 0:Disabled,1:Manual,2:Flap,3:Flap_auto,4:Aileron,5:flaperon,6:mount_pan,7:mount_pitch,8:mount_roll,9:mount_open,10:camera_trigger,11:release
 	// @User: Standard
 	AP_GROUPINFO("FUNCTION",       1, RC_Channel_aux, function),
 
@@ -98,6 +98,16 @@ RC_Channel_aux::angle_input_rad()
 	return radians(angle_input()*0.01);
 }
 
+/// enable_out_ch - enable the channel through APM_RC
+void
+RC_Channel_aux::enable_out_ch(unsigned char ch_nr)
+{
+	// enable_out this channel if it assigned to a function
+	if( function != k_none ) {
+		_apm_rc->enable_out(ch_nr);
+	}
+}
+
 /// map a function to a servo channel and output it
 void
 RC_Channel_aux::output_ch(unsigned char ch_nr)
@@ -112,7 +122,6 @@ RC_Channel_aux::output_ch(unsigned char ch_nr)
 		radio_out = radio_in;
 		break;
 	}
-
 	_apm_rc->OutputCh(ch_nr, radio_out);
 }
 
@@ -120,14 +129,21 @@ RC_Channel_aux::output_ch(unsigned char ch_nr)
 /// This is to be done before rc_init so that the channels get correctly initialized.
 /// It also should be called periodically because the user might change the configuration and
 /// expects the changes to take effect instantly
-void update_aux_servo_function(RC_Channel_aux* rc_5, RC_Channel_aux* rc_6, RC_Channel_aux* rc_7, RC_Channel_aux* rc_8)
+void update_aux_servo_function(RC_Channel_aux* rc_a, RC_Channel_aux* rc_b, RC_Channel_aux* rc_c, RC_Channel_aux* rc_d)
 {
 	// positions 0..3 of this array never get used, but this is a stack array, so the entire array gets freed at the end of the function
 	RC_Channel_aux::Aux_servo_function_t aux_servo_function[4];
-	aux_servo_function[0] = (RC_Channel_aux::Aux_servo_function_t)rc_5->function.get();
-	aux_servo_function[1] = (RC_Channel_aux::Aux_servo_function_t)rc_6->function.get();
-	aux_servo_function[2] = (RC_Channel_aux::Aux_servo_function_t)rc_7->function.get();
-	aux_servo_function[3] = (RC_Channel_aux::Aux_servo_function_t)rc_8->function.get();
+
+	// initialise array
+	aux_servo_function[0] = RC_Channel_aux::k_none;
+	aux_servo_function[1] = RC_Channel_aux::k_none;
+	aux_servo_function[2] = RC_Channel_aux::k_none;
+	aux_servo_function[3] = RC_Channel_aux::k_none;
+
+	if( rc_a != NULL ) { aux_servo_function[0] = (RC_Channel_aux::Aux_servo_function_t)rc_a->function.get(); }
+	if( rc_b != NULL ) { aux_servo_function[1] = (RC_Channel_aux::Aux_servo_function_t)rc_b->function.get(); }
+	if( rc_c != NULL ) { aux_servo_function[2] = (RC_Channel_aux::Aux_servo_function_t)rc_c->function.get(); }
+	if( rc_d != NULL ) { aux_servo_function[3] = (RC_Channel_aux::Aux_servo_function_t)rc_d->function.get(); }
 
 	for (uint8_t i = 0; i < 4; i++) {
 		if (aux_servo_function[i] >= RC_Channel_aux::k_nr_aux_servo_functions) {
@@ -143,10 +159,10 @@ void update_aux_servo_function(RC_Channel_aux* rc_5, RC_Channel_aux* rc_6, RC_Ch
 	}
 
 	// assign the RC channel to each function
-	g_rc_function[aux_servo_function[0]] = rc_5;
-	g_rc_function[aux_servo_function[1]] = rc_6;
-	g_rc_function[aux_servo_function[2]] = rc_7;
-	g_rc_function[aux_servo_function[3]] = rc_8;
+	if( rc_a != NULL ) { g_rc_function[aux_servo_function[0]] = rc_a; }
+	if( rc_b != NULL ) { g_rc_function[aux_servo_function[1]] = rc_b; }
+	if( rc_c != NULL ) { g_rc_function[aux_servo_function[2]] = rc_c; }
+	if( rc_d != NULL ) { g_rc_function[aux_servo_function[3]] = rc_d; }
 
 	//set auxiliary ranges
 	G_RC_AUX(k_flap)->set_range(0,100);
