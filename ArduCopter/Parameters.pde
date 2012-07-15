@@ -214,30 +214,24 @@ static const AP_Param::Info var_info[] PROGMEM = {
 	GGROUP(rc_2,	"RC2_", RC_Channel),
 	GGROUP(rc_3,	"RC3_", RC_Channel),
 	GGROUP(rc_4,	"RC4_", RC_Channel),
+	GGROUP(rc_5,	"RC5_", RC_Channel),
+	GGROUP(rc_6,	"RC6_", RC_Channel),
+	GGROUP(rc_7,    "RC7_", RC_Channel),
+	GGROUP(rc_8,    "RC8_", RC_Channel),
 
-	// @Group: RC5_
+#if MOUNT == ENABLED
+	// @Group: CAM_R_
 	// @Path: ../libraries/RC_Channel/RC_Channel_aux.cpp
-	GGROUP(rc_5,                    "RC5_", RC_Channel_aux),
+	GGROUP(rc_camera_roll,	"CAM_R_", RC_Channel_aux),
 
-	// @Group: RC6_
+	// @Group: CAM_P_
 	// @Path: ../libraries/RC_Channel/RC_Channel_aux.cpp
-	GGROUP(rc_6,                    "RC6_", RC_Channel_aux),
+	GGROUP(rc_camera_pitch,	"CAM_P_", RC_Channel_aux),
 
-	// @Group: RC7_
+	// @Group: CAM_Y_
 	// @Path: ../libraries/RC_Channel/RC_Channel_aux.cpp
-	GGROUP(rc_7,                    "RC7_", RC_Channel_aux),
-
-	// @Group: RC8_
-	// @Path: ../libraries/RC_Channel/RC_Channel_aux.cpp
-	GGROUP(rc_8,                    "RC8_", RC_Channel_aux),
-
-	// @Group: RC9_
-	// @Path: ../libraries/RC_Channel/RC_Channel_aux.cpp
-	GGROUP(rc_9,                    "RC9_", RC_Channel_aux),
-
-	// @Group: RC10_
-	// @Path: ../libraries/RC_Channel/RC_Channel_aux.cpp
-	GGROUP(rc_10,                    "RC10_", RC_Channel_aux),
+	GGROUP(rc_camera_yaw,	"CAM_Y_", RC_Channel_aux),
+#endif
 
 	// @Param: RC_SPEED
 	// @DisplayName: ESC Update Speed
@@ -249,10 +243,6 @@ static const AP_Param::Info var_info[] PROGMEM = {
 
 	// variable
 	//---------
-	GSCALAR(camera_pitch_gain,		"CAM_P_G"),
-	GSCALAR(camera_roll_gain, 		"CAM_R_G"),
-	GSCALAR(camera_pitch_continuous,"CAM_P_CONT"),
-	GSCALAR(camera_roll_continuous,	"CAM_R_CONT"),
 	GSCALAR(stabilize_d, 			"STAB_D"),
 
 	// @Param: STAB_D_S
@@ -311,6 +301,12 @@ static const AP_Param::Info var_info[] PROGMEM = {
 	// @Group: AHRS_
 	// @Path: ../libraries/AP_AHRS/AP_AHRS_DCM.cpp, ../libraries/AP_AHRS/AP_AHRS_Quaternion.cpp
 	GOBJECT(ahrs,			"AHRS_",    AP_AHRS),
+
+#if MOUNT == ENABLED
+	// @Group: MNT_
+	// @Path: ../libraries/AP_Mount/AP_Mount.cpp
+	GOBJECT(camera_mount,           "MNT_",	AP_Mount),
+#endif
 
 #ifdef DESKTOP_BUILD
 	GOBJECT(sitl, "SIM_", SITL),
