@@ -338,25 +338,6 @@
 
 
 //////////////////////////////////////////////////////////////////////////////
-//  CAMERA GAINS
-#ifndef CAM_ROLL_GAIN
-# define CAM_ROLL_GAIN			1.0
-#endif
-#ifndef CAM_PITCH_GAIN
-# define CAM_PITCH_GAIN			1.0
-#endif
-
-//////////////////////////////////////////////////////////////////////////////
-//  CAMERA SERVO TYPE
-#ifndef CAM_PITCH_CONTINUOUS
-# define CAM_PITCH_CONTINUOUS           0
-#endif
-#ifndef CAM_ROLL_CONTINUOUS
-# define CAM_ROLL_CONTINUOUS            0
-#endif
-
-
-//////////////////////////////////////////////////////////////////////////////
 //  OPTICAL_FLOW
 #if defined( __AVR_ATmega2560__ )  // determines if optical flow code is included
   #define OPTFLOW_ENABLED
