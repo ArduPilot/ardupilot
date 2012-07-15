@@ -93,7 +93,26 @@
 	      <description>Breached fence boundary</description>
 	    </entry>
 	  </enum>
+	  
+	<!--  AP_Limits Enums -->
+	<enum name="LIMITS_STATE">
+		<entry name="LIMITS_INIT" value="0"> <description> pre-initialization</description></entry>
+		<entry name="LIMITS_DISABLED" value="1"> <description> disabled</description></entry>
+		<entry name="LIMITS_ENABLED" value="2"> <description> checking limits</description></entry>
+		<entry name="LIMITS_TRIGGERED" value="3"> <description> a limit has been breached</description></entry>
+		<entry name="LIMITS_RECOVERING" value="4"> <description> taking action eg. RTL</description></entry>
+		<entry name="LIMITS_RECOVERED" value="5"> <description> we're no longer in breach of a limit</description></entry>
+	</enum>
+	
+	<!--  AP_Limits Modules - power of 2 (1,2,4,8,16,32 etc) so we can send as bitfield -->
+	<enum name="LIMIT_MODULE">
+		<entry name="LIMIT_GPSLOCK" value="1"> <description> pre-initialization</description></entry>
+		<entry name="LIMIT_GEOFENCE" value="2"> <description> disabled</description></entry>
+		<entry name="LIMIT_ALTITUDE" value="4"> <description> checking limits</description></entry>
+	</enum>
+	
 	</enums>
+	
 
      <messages>
           <message id="150" name="SENSOR_OFFSETS">
@@ -266,5 +285,21 @@
 	    <field type="uint16_t" name="rxerrors">receive errors</field>
 	    <field type="uint16_t" name="fixed">count of error corrected packets</field>
 	  </message>
+	  
+	  <!--  AP_Limits messages -->
+	  <message name="LIMITS_STATUS" id="169">
+	    <description>Status of AP_Limits. Sent in extended
+	    status stream when AP_Limits is enabled</description>
+	    <field name="limits_state" type="uint8_t">state of AP_Limits, (see enum LimitState, LIMITS_STATE)</field>
+	    <field name="last_trigger" type="uint32_t">time of last breach in milliseconds since boot</field>
+	    <field name="last_action" type="uint32_t">time of last recovery action in milliseconds since boot</field>
+	    <field name="last_recovery" type="uint32_t">time of last successful recovery in milliseconds since boot</field>
+	    <field name="last_clear" type="uint32_t">time of last all-clear in milliseconds since boot</field>
+	    <field name="breach_count" type="uint16_t">number of fence breaches</field>
+	    <field name="mods_enabled" type="uint8_t">AP_Limit_Module bitfield of enabled modules, (see enum moduleid or LIMIT_MODULE)</field>
+	    <field name="mods_required" type="uint8_t">AP_Limit_Module bitfield of required modules, (see enum moduleid or LIMIT_MODULE)</field>
+	    <field name="mods_triggered" type="uint8_t">AP_Limit_Module bitfield of triggered modules, (see enum moduleid or LIMIT_MODULE)</field>	    
+	  </message>
+	 
      </messages>
 </mavlink>

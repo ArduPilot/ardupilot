@@ -93,6 +93,14 @@ static NOINLINE void send_attitude(mavlink_channel_t chan)
         omega.z);
 }
 
+#ifdef AP_LIMITS
+static NOINLINE void send_limits_status(mavlink_channel_t chan)
+{
+	limits_send_mavlink_status(chan);
+}
+#endif
+
+
 static NOINLINE void send_extended_status1(mavlink_channel_t chan, uint16_t packet_drops)
 {
     uint32_t control_sensors_present = 0;
@@ -577,6 +585,15 @@ static bool mavlink_try_send_message(mavlink_channel_t chan, enum ap_message id,
         send_statustext(chan);
         break;
 
+#ifdef AP_LIMITS
+
+    case MSG_LIMITS_STATUS:
+    	CHECK_PAYLOAD_SIZE(LIMITS_STATUS);
+    	send_limits_status(chan);
+        break;
+
+#endif
+
     case MSG_AHRS:
 #if HIL_MODE != HIL_MODE_ATTITUDE
         CHECK_PAYLOAD_SIZE(AHRS);
@@ -845,6 +862,8 @@ GCS_MAVLINK::data_stream_send(void)
 			send_message(MSG_CURRENT_WAYPOINT);
 			send_message(MSG_GPS_RAW);			// TODO - remove this message after location message is working
 			send_message(MSG_NAV_CONTROLLER_OUTPUT);
+			send_message(MSG_LIMITS_STATUS);
+
 
             if (last_gps_satellites != g_gps->num_sats) {
                 // this message is mostly a huge waste of bandwidth,
@@ -1764,6 +1783,42 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
             }
             break;
         }
+
+#ifdef AP_LIMITS
+
+	// receive an AP_Limits fence point from GCS and store in EEPROM
+    	// receive a fence point from GCS and store in EEPROM
+        case MAVLINK_MSG_ID_FENCE_POINT: {
+            mavlink_fence_point_t packet;
+            mavlink_msg_fence_point_decode(msg, &packet);
+			if (packet.count != geofence_limit.fence_total()) {
+				send_text(SEVERITY_LOW,PSTR("bad fence point"));
+			} else {
+				Vector2l point;
+				point.x = packet.lat*1.0e7;
+				point.y = packet.lng*1.0e7;
+				geofence_limit.set_fence_point_with_index(point, packet.idx);
+			}
+            break;
+        }
+	// send a fence point to GCS
+	case MAVLINK_MSG_ID_FENCE_FETCH_POINT: {
+		mavlink_fence_fetch_point_t packet;
+		mavlink_msg_fence_fetch_point_decode(msg, &packet);
+		if (mavlink_check_target(packet.target_system, packet.target_component))
+			break;
+		if (packet.idx >= geofence_limit.fence_total()) {
+			send_text(SEVERITY_LOW,PSTR("bad fence point"));
+		} else {
+            Vector2l point = geofence_limit.get_fence_point_with_index(packet.idx);
+			mavlink_msg_fence_point_send(chan, 0, 0, packet.idx, geofence_limit.fence_total(),
+										 point.x*1.0e-7, point.y*1.0e-7);
+		}
+		break;
+	}
+
+
+#endif // AP_LIMITS ENABLED
 
 	} // end switch
 } // end handle mavlink

@@ -882,6 +882,65 @@ static void mavlink_test_radio(uint8_t system_id, uint8_t component_id, mavlink_
         MAVLINK_ASSERT(memcmp(&packet1, &packet2, sizeof(packet1)) == 0);
 }
 
+static void mavlink_test_limits_status(uint8_t system_id, uint8_t component_id, mavlink_message_t *last_msg)
+{
+	mavlink_message_t msg;
+        uint8_t buffer[MAVLINK_MAX_PACKET_LEN];
+        uint16_t i;
+	mavlink_limits_status_t packet_in = {
+		5,
+	963497516,
+	963497724,
+	963497932,
+	963498140,
+	18119,
+	254,
+	65,
+	132,
+	};
+	mavlink_limits_status_t packet1, packet2;
+        memset(&packet1, 0, sizeof(packet1));
+        	packet1.limits_state = packet_in.limits_state;
+        	packet1.last_trigger = packet_in.last_trigger;
+        	packet1.last_action = packet_in.last_action;
+        	packet1.last_recovery = packet_in.last_recovery;
+        	packet1.last_clear = packet_in.last_clear;
+        	packet1.breach_count = packet_in.breach_count;
+        	packet1.mods_enabled = packet_in.mods_enabled;
+        	packet1.mods_required = packet_in.mods_required;
+        	packet1.mods_triggered = packet_in.mods_triggered;
+        
+        
+
+        memset(&packet2, 0, sizeof(packet2));
+	mavlink_msg_limits_status_encode(system_id, component_id, &msg, &packet1);
+	mavlink_msg_limits_status_decode(&msg, &packet2);
+        MAVLINK_ASSERT(memcmp(&packet1, &packet2, sizeof(packet1)) == 0);
+
+        memset(&packet2, 0, sizeof(packet2));
+	mavlink_msg_limits_status_pack(system_id, component_id, &msg , packet1.limits_state , packet1.last_trigger , packet1.last_action , packet1.last_recovery , packet1.last_clear , packet1.breach_count , packet1.mods_enabled , packet1.mods_required , packet1.mods_triggered );
+	mavlink_msg_limits_status_decode(&msg, &packet2);
+        MAVLINK_ASSERT(memcmp(&packet1, &packet2, sizeof(packet1)) == 0);
+
+        memset(&packet2, 0, sizeof(packet2));
+	mavlink_msg_limits_status_pack_chan(system_id, component_id, MAVLINK_COMM_0, &msg , packet1.limits_state , packet1.last_trigger , packet1.last_action , packet1.last_recovery , packet1.last_clear , packet1.breach_count , packet1.mods_enabled , packet1.mods_required , packet1.mods_triggered );
+	mavlink_msg_limits_status_decode(&msg, &packet2);
+        MAVLINK_ASSERT(memcmp(&packet1, &packet2, sizeof(packet1)) == 0);
+
+        memset(&packet2, 0, sizeof(packet2));
+        mavlink_msg_to_send_buffer(buffer, &msg);
+        for (i=0; i<mavlink_msg_get_send_buffer_length(&msg); i++) {
+        	comm_send_ch(MAVLINK_COMM_0, buffer[i]);
+        }
+	mavlink_msg_limits_status_decode(last_msg, &packet2);
+        MAVLINK_ASSERT(memcmp(&packet1, &packet2, sizeof(packet1)) == 0);
+        
+        memset(&packet2, 0, sizeof(packet2));
+	mavlink_msg_limits_status_send(MAVLINK_COMM_1 , packet1.limits_state , packet1.last_trigger , packet1.last_action , packet1.last_recovery , packet1.last_clear , packet1.breach_count , packet1.mods_enabled , packet1.mods_required , packet1.mods_triggered );
+	mavlink_msg_limits_status_decode(last_msg, &packet2);
+        MAVLINK_ASSERT(memcmp(&packet1, &packet2, sizeof(packet1)) == 0);
+}
+
 static void mavlink_test_ardupilotmega(uint8_t system_id, uint8_t component_id, mavlink_message_t *last_msg)
 {
 	mavlink_test_sensor_offsets(system_id, component_id, last_msg);
@@ -900,6 +959,7 @@ static void mavlink_test_ardupilotmega(uint8_t system_id, uint8_t component_id, 
 	mavlink_test_simstate(system_id, component_id, last_msg);
 	mavlink_test_hwstatus(system_id, component_id, last_msg);
 	mavlink_test_radio(system_id, component_id, last_msg);
+	mavlink_test_limits_status(system_id, component_id, last_msg);
 }
 
 #ifdef __cplusplus

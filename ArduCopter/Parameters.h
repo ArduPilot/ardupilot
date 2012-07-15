@@ -60,7 +60,13 @@ public:
     k_param_log_last_filenumber,		// *** Deprecated - remove with next eeprom number change
 	k_param_toy_yaw_rate,				// THOR The memory location for the Yaw Rate 1 = fast, 2 = med, 3 = slow
 
-	//
+	// 65: AP_Limits Library
+	k_param_limits = 65,
+	k_param_gpslock_limit,
+	k_param_geofence_limit,
+	k_param_altitude_limit,
+
+    //
 	// 80: Heli
 	//
 	k_param_heli_servo_1 = 80,
