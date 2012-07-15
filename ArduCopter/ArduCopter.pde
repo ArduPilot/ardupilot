@@ -1255,7 +1255,19 @@ static void fifty_hz_loop()
 	#endif
 
 #if MOUNT == ENABLED
+	static bool mount_initialised = false;
 	camera_mount.update_mount_position();
+	// enable camera servos.  TO-DO: move to AP_Mount library
+	if( mount_initialised == false ) {
+		mount_initialised = true;
+		g.rc_camera_roll.enable_out_ch(CH_CAM_ROLL);
+		g.rc_camera_pitch.enable_out_ch(CH_CAM_PITCH);
+		g.rc_camera_yaw.enable_out_ch(CH_CAM_YAW);
+	}
+	// move camera servos.  TO-DO: move this to AP_Mount library
+	g.rc_camera_roll.output_ch(CH_CAM_ROLL);
+	g.rc_camera_pitch.output_ch(CH_CAM_PITCH);
+	g.rc_camera_yaw.output_ch(CH_CAM_PITCH);
 #endif
 
 #if CAMERA == ENABLED
@@ -1316,7 +1328,7 @@ static void slow_loop()
 			// -------------------------------
 			read_control_switch();
 
-			update_aux_servo_function(&g.rc_5, &g.rc_6, &g.rc_7, &g.rc_8);
+			update_aux_servo_function(&g.rc_camera_roll, &g.rc_camera_pitch, &g.rc_camera_yaw);
 			// agmatthews - USERHOOKS
 			#ifdef USERHOOK_SLOWLOOP
 			   USERHOOK_SLOWLOOP
