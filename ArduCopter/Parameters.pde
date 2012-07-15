@@ -312,7 +312,7 @@ static const AP_Param::Info var_info[] PROGMEM = {
 	GOBJECT(sitl, "SIM_", SITL),
 #endif
 
-	//@Group: LIMITS_
+	//@Group: LIM_
 	//@Path: ,../libraries/AP_Limits/AP_Limits.cpp,../libraries/AP_Limits/AP_Limit_GPSLock.cpp, ../libraries/AP_Limits/AP_Limit_Geofence.cpp, ../libraries/AP_Limits/AP_Limit_Altitude.cpp, ../libraries/AP_Limits/AP_Limit_Module.cpp
 	GOBJECT(limits,			"LIM_",    AP_Limits),
 	GOBJECT(gpslock_limit,		"LIM_",    AP_Limit_GPSLock),
