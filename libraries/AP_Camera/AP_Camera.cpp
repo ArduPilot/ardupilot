@@ -5,7 +5,7 @@
 #include <../RC_Channel/RC_Channel_aux.h>
 
 extern RC_Channel_aux* g_rc_function[RC_Channel_aux::k_nr_aux_servo_functions];	// the aux. servo ch. assigned to each function
-extern long	wp_distance;
+extern int32_t	wp_distance;
 extern AP_Relay relay;
 
 // ------------------------------
