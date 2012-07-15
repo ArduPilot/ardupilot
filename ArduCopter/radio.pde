@@ -38,7 +38,11 @@ static void init_rc_in()
 	g.rc_4.set_type(RC_CHANNEL_ANGLE_RAW);
 
 	//set auxiliary ranges
-	update_aux_servo_function(&g.rc_5, &g.rc_6, &g.rc_7, &g.rc_8);
+	g.rc_5.set_range(0,1000);
+	g.rc_6.set_range(0,1000);
+	g.rc_7.set_range(0,1000);
+	g.rc_8.set_range(0,1000);
+	update_aux_servo_function(&g.rc_camera_roll, &g.rc_camera_pitch, &g.rc_camera_yaw);
 }
 
 static void init_rc_out()
@@ -54,7 +58,6 @@ static void init_rc_out()
 	motors.set_min_throttle(g.throttle_min);
 	motors.set_max_throttle(g.throttle_max);
 
-
 	for(byte i = 0; i < 5; i++){
 		delay(20);
 		read_radio();
@@ -62,8 +65,6 @@ static void init_rc_out()
 
 	// we want the input to be scaled correctly
 	g.rc_3.set_range_out(0,1000);
-
-
 
     // sanity check - prevent unconfigured radios from outputting
     if(g.rc_3.radio_min >= 1300){
@@ -102,6 +103,7 @@ static void init_rc_out()
 
 void output_min()
 {
+	// enable motors
 	motors.enable();
 	motors.output_min();
 }
