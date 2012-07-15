@@ -306,7 +306,7 @@ void AP_MotorsMatrix::remove_motor(int8_t motor_num)
 	int8_t i;
 
 	// ensure valid motor number is provided
-	if( motor_num >= 0 && motor_num <= AP_MOTORS_MAX_NUM_MOTORS ) {
+	if( motor_num >= 0 && motor_num < AP_MOTORS_MAX_NUM_MOTORS ) {
 
 		// if the motor was enabled decrement the number of motors
 		if( motor_enabled[motor_num] )
