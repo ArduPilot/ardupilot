@@ -963,6 +963,44 @@
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
+// AP_Limits Defaults
+//
+
+
+// Enable/disable AP_Limits
+#ifndef AP_LIMITS
+ #define AP_LIMITS ENABLED
+#endif
+
+// Use PIN for displaying LIMITS status. 0 is disabled.
+#ifndef LIMITS_TRIGGERED_PIN
+ #define LIMITS_TRIGGERED_PIN 0
+#endif
+
+// PWM of "on" state for LIM_CHANNEL
+#ifndef LIMITS_ENABLE_PWM
+ #define LIMITS_ENABLE_PWM 1800
+#endif
+
+#ifndef LIM_ENABLED
+ #define LIM_ENABLED 0
+#endif
+
+#ifndef LIM_ALT_ON
+ #define LIM_ALT_ON 0
+#endif
+
+#ifndef LIM_FNC_ON
+ #define LIM_FNC_ON 0
+#endif
+
+#ifndef LIM_GPSLCK_ON
+ #define LIM_GPSLCK_ON 0
+#endif
+
+
+
+//////////////////////////////////////////////////////////////////////////////
 // Developer Items
 //
 

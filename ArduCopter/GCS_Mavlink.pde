@@ -93,7 +93,7 @@ static NOINLINE void send_attitude(mavlink_channel_t chan)
         omega.z);
 }
 
-#ifdef AP_LIMITS
+#if AP_LIMITS == ENABLED
 static NOINLINE void send_limits_status(mavlink_channel_t chan)
 {
 	limits_send_mavlink_status(chan);
@@ -585,7 +585,7 @@ static bool mavlink_try_send_message(mavlink_channel_t chan, enum ap_message id,
         send_statustext(chan);
         break;
 
-#ifdef AP_LIMITS
+#if AP_LIMITS == ENABLED
 
     case MSG_LIMITS_STATUS:
     	CHECK_PAYLOAD_SIZE(LIMITS_STATUS);
