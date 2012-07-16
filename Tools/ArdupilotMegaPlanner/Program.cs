@@ -29,7 +29,7 @@ namespace ArdupilotMega
 
             Application.ThreadException += Application_ThreadException;
 
-       //     Application.Idle += Application_Idle;
+            Application.Idle += Application_Idle;
 
             int wt = 0, ct = 0;
             ThreadPool.GetMaxThreads(out wt, out ct);
@@ -96,8 +96,11 @@ namespace ArdupilotMega
 
         static void Application_Idle(object sender, EventArgs e)
         {
-            System.Threading.Thread.Sleep(10);
-            Console.Write("Idle\r");
+            //System.Threading.Thread.Sleep(10);
+            //Console.Write("Idle\n");
+
+            System.Threading.Thread.Sleep(20);
+            Application.DoEvents();
         }
 
         static void Application_ThreadException(object sender, System.Threading.ThreadExceptionEventArgs e)

@@ -198,7 +198,7 @@ namespace ArdupilotMega.GCSViews.ConfigurationView
                 catch (Exception exp) { log.Error(exp); } // just to cleanup any errors
             }
 
-            _params.ForEach(x => 
+            _params.OrderBy(x => x.Key).ForEach(x => 
          {
             if(!String.IsNullOrEmpty(x.Key))
             {

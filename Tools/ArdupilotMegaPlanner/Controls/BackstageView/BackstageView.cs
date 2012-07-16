@@ -5,6 +5,7 @@ using System.Drawing;
 using System.Linq;
 using System.Windows.Forms;
 using ArdupilotMega.Controls.BackstageView;
+using ArdupilotMega.Utilities;
 
 namespace ArdupilotMega.Controls.BackstageView
 {
@@ -162,7 +163,7 @@ namespace ArdupilotMega.Controls.BackstageView
 
             _pages.Add(page);
             CreateLinkButton(page);
-            this.pnlPages.Controls.Add(page.Page);
+            //this.pnlPages.Controls.Add(page.Page);
 
             if (_activePage == null)
             {
@@ -253,16 +254,23 @@ namespace ArdupilotMega.Controls.BackstageView
             {
                 x.Page.Visible = false;
             });
+            this.pnlPages.Controls.Remove(_activePage.Page);
 
             // deactivate button
             _activePage.Page.Visible = false;
             var oldButton = this.pnlMenu.Controls.OfType<BackstageViewButton>().Single(b => b.Tag == _activePage);
             oldButton.IsSelected = false;
 
+
+            ThemeManager.ApplyThemeTo(associatedPage.Page);
+
             // ensure fields have been init
             associatedPage.Page.DoLoad(new EventArgs());
             // show it
             associatedPage.Page.Visible = true;
+            // add control
+            this.pnlPages.Controls.Add(associatedPage.Page);
+
             var newButton = this.pnlMenu.Controls.OfType<BackstageViewButton>().Single(b => b.Tag == associatedPage);
             newButton.IsSelected = true;
 

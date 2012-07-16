@@ -572,6 +572,9 @@ namespace ArdupilotMega.GCSViews
 
             DateTime lastdata = DateTime.MinValue;
 
+            // set enable hil status flag - sends base_mode = 0
+            MainV2.comPort.setMode(new MAVLink.mavlink_set_mode_t() { target_system = MainV2.comPort.sysid }, MAVLink.MAV_MODE_FLAG.HIL_ENABLED);
+
             while (threadrun == 1)
             {
                 if (comPort.BaseStream.IsOpen == false) { break; }
@@ -580,6 +583,7 @@ namespace ArdupilotMega.GCSViews
                 {
                     try
                     {
+
                         if (CHK_quad.Checked && !RAD_aerosimrc.Checked)// || chkSensor.Checked && RAD_JSBSim.Checked)
                         {
                             comPort.requestDatastream((byte)ArdupilotMega.MAVLink.MAV_DATA_STREAM.RAW_CONTROLLER, 0); // request servoout

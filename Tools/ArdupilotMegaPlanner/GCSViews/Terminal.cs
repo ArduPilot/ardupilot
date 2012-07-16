@@ -26,8 +26,7 @@ namespace ArdupilotMega.GCSViews
 
         public Terminal()
         {
-            while (threadrun == true)
-                threadrun = false;
+            threadrun = false;
 
             InitializeComponent();
         }
@@ -153,6 +152,8 @@ namespace ArdupilotMega.GCSViews
                 comPort.Close();
             }
             System.Threading.Thread.Sleep(400);
+
+            MainV2.giveComport = false;
         }
 
         private void TXT_terminal_KeyPress(object sender, KeyPressEventArgs e)

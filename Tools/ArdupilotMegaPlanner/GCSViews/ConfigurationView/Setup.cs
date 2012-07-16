@@ -16,12 +16,17 @@ namespace ArdupilotMega.GCSViews.ConfigurationView
         public Setup()
         {
             InitializeComponent();
+        }
+
+
+        private void Setup_Load(object sender, EventArgs e)
+        {
 
             if (MainV2.comPort.BaseStream.IsOpen)
             {
                 AddPagesForConnectedState();
             }
-            
+
             // These pages work when not connected to an APM
             AddBackstageViewPage(new ArdupilotMega._3DRradio(), "3DR Radio");
             AddBackstageViewPage(new ArdupilotMega.Antenna.Tracker(), "Antenna Tracker");
@@ -34,7 +39,6 @@ namespace ArdupilotMega.GCSViews.ConfigurationView
                 Common.MessageShowAgain("Config Connect", "Please connect (click Connect Button) before using setup!!");
             }
         }
-
 
 
         // Add the pages that can only be shown when we are connected to an APM
@@ -75,6 +79,7 @@ namespace ArdupilotMega.GCSViews.ConfigurationView
                 AddBackstageViewPage(configpanel, "ArduCopter Pids");
 
                 AddBackstageViewPage(new ConfigArducopter(), "ArduCopter Config");
+                AddBackstageViewPage(new ConfigAP_Limits(), "GeoFence");
             }
                 /****************************** ArduPlane **************************/
             else if (MainV2.cs.firmware == MainV2.Firmwares.ArduPlane)
@@ -99,11 +104,6 @@ namespace ArdupilotMega.GCSViews.ConfigurationView
             backstageView.AddPage(new BackstageView.BackstageViewPage(userControl, headerText));
         }
 
-
-        private void Setup_Load(object sender, EventArgs e)
-        {
-
-        }
 
         private void Setup_FormClosing(object sender, FormClosingEventArgs e)
         {

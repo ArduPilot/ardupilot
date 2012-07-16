@@ -298,6 +298,7 @@ namespace ArdupilotMega.GCSViews
                 lbl_status.Text = "Detecting APM Version";
 
                 this.Refresh();
+                Application.DoEvents();
 
                 board = ArduinoDetect.DetectBoard(MainV2.comPortName);
 
@@ -373,6 +374,7 @@ namespace ArdupilotMega.GCSViews
                 lbl_status.Text = "Downloading from Internet";
 
                 this.Refresh();
+                Application.DoEvents();
 
                 dataStream.ReadTimeout = 30000;
 
@@ -397,6 +399,7 @@ namespace ArdupilotMega.GCSViews
 
                 progress.Value = 100;
                 this.Refresh();
+                Application.DoEvents();
                 log.Info("Downloaded");
             }
             catch (Exception ex) { lbl_status.Text = "Failed download"; CustomMessageBox.Show("Failed to download new firmware : " + ex.ToString()); return; }
@@ -412,6 +415,7 @@ namespace ArdupilotMega.GCSViews
             {
                 lbl_status.Text = "Reading Hex File";
                 this.Refresh();
+                Application.DoEvents();
                 sr = new StreamReader(filename);
                 FLASH = readIntelHEXv2(sr);
                 sr.Close();

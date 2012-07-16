@@ -131,7 +131,7 @@ namespace ArdupilotMega
         public float nav_bearing { get; set; }
         public float target_bearing { get; set; }
         public float wp_dist { get { return (_wpdist * multiplierdist); } set { _wpdist = value; } }
-        public float alt_error { get { return _alt_error * multiplierdist; } set { _alt_error = value; } }
+        public float alt_error { get { return _alt_error * multiplierdist; } set { _alt_error = value; _targetalt = (float)Math.Round(alt + alt_error, 0); } }
         public float ber_error { get { return (target_bearing - yaw); } set { } }
         public float aspd_error { get { return _aspd_error * multiplierspeed; } set { _aspd_error = value; } }
         public float xtrack_error { get; set; }
@@ -141,9 +141,10 @@ namespace ArdupilotMega
         float _wpdist;
         float _aspd_error;
         float _alt_error;
+        float _targetalt;
 
-        public float targetaltd100 { get { return ((alt + alt_error) / 100) % 10; } }
-        public float targetalt { get { return (float)Math.Round(alt + alt_error, 0); } }
+        public float targetaltd100 { get { return (_targetalt / 100) % 10; } }
+        public float targetalt { get { return _targetalt; } }
 
         //airspeed_error = (airspeed_error - airspeed);
         public float targetairspeed { get { return (float)Math.Round(airspeed + aspd_error / 100, 0); } }
