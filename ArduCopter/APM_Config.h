@@ -109,20 +109,3 @@
 // #define MOT_6 CH_4
 // #define MOT_7 CH_7
 // #define MOT_8 CH_8
-
-
-///
-//
-// AP_Limits
-//
-//
-
-
-// Enable/disable AP_Limits
-#define AP_LIMITS ENABLED
-
-// Use PIN for displaying LIMITS status. 0 is disabled.
-#define LIMITS_TRIGGERED_PIN 0
-
-// PWM of "on" state for LIM_CHANNEL
-#define LIMITS_ENABLE_PWM 1800

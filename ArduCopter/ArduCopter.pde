@@ -1291,7 +1291,7 @@ static void fifty_hz_loop()
 static void slow_loop()
 {
 
-#ifdef AP_LIMITS
+#if AP_LIMITS == ENABLED
 
 		// Run the AP_Limits main loop
 		limits_loop();
