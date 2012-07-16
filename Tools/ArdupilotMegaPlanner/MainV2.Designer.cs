@@ -29,7 +29,7 @@
         private void InitializeComponent()
         {
             System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(MainV2));
-            this.MyView = new System.Windows.Forms.Panel();
+            this.MyView = new ArdupilotMega.Controls.MainSwitcher();
             this.MainMenu = new System.Windows.Forms.MenuStrip();
             this.MenuFlightData = new System.Windows.Forms.ToolStripButton();
             this.MenuFlightPlanner = new System.Windows.Forms.ToolStripButton();
@@ -227,7 +227,7 @@
         #endregion
 
 
-        private System.Windows.Forms.Panel MyView;
+        private ArdupilotMega.Controls.MainSwitcher MyView;
         private System.Windows.Forms.MenuStrip MainMenu;
         private System.Windows.Forms.ToolStripButton MenuFlightData;
         private System.Windows.Forms.ToolStripButton MenuFlightPlanner;

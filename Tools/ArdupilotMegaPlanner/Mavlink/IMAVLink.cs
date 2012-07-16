@@ -100,6 +100,7 @@ namespace ArdupilotMega
         void sendPacket(object indata);
         bool setFencePoint(byte index, PointLatLngAlt plla, byte fencepointcount);
         void setMode(string modein);
+        void setMode(ArdupilotMega.MAVLink.mavlink_set_mode_t mode, ArdupilotMega.MAVLink.MAV_MODE_FLAG base_mode = 0);
         void setMountConfigure(ArdupilotMega.MAVLink.MAV_MOUNT_MODE mountmode, bool stabroll, bool stabpitch, bool stabyaw);
         void setMountControl(double pa, double pb, double pc, bool islatlng);
         bool setParam(string paramname, float value);

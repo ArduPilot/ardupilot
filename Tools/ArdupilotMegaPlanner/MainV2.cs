@@ -132,11 +132,10 @@ namespace ArdupilotMega
         /// </summary>
         GCSViews.FlightData FlightData;
         GCSViews.FlightPlanner FlightPlanner;
-        //GCSViews.Configuration Configuration;
-        GCSViews.ConfigurationView.Setup Configuration;
+        //GCSViews.ConfigurationView.Setup Configuration;
         GCSViews.Simulation Simulation;
-        GCSViews.Firmware Firmware;
-        GCSViews.Terminal Terminal;
+        //GCSViews.Firmware Firmware;
+        //GCSViews.Terminal Terminal;
 
         private Form connectionStatsForm;
         private ConnectionStats _connectionStats;
@@ -157,7 +156,7 @@ namespace ArdupilotMega
 
             strVersion = "mav " + MAVLink.MAVLINK_WIRE_PROTOCOL_VERSION;
 
-            splash.Text = "APM Planner " + Application.ProductVersion + " " + strVersion + " By Michael Oborne";
+            splash.Text = "Mission Planner " + Application.ProductVersion + " " + strVersion;
 
             splash.Refresh();
 
@@ -246,9 +245,9 @@ namespace ArdupilotMega
             {
                 FlightData = new GCSViews.FlightData();
                 FlightPlanner = new GCSViews.FlightPlanner();
-                //Configuration = new GCSViews.Configuration();
+                //Configuration = new GCSViews.ConfigurationView.Setup();
                 Simulation = new GCSViews.Simulation();
-                Firmware = new GCSViews.Firmware();
+                //Firmware = new GCSViews.Firmware();
                 //Terminal = new GCSViews.Terminal();
 
                 // preload
@@ -426,114 +425,36 @@ namespace ArdupilotMega
 
         private void MenuFlightData_Click(object sender, EventArgs e)
         {
-            MyView.Controls.Clear();
-
-            GCSViews.Terminal.threadrun = false;
-
-            UserControl temp = FlightData;
-
-            ThemeManager.ApplyThemeTo(temp);
-
-            temp.Anchor = AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right | AnchorStyles.Top;
-
-            temp.Location = new Point(0, MainMenu.Height);
-
-            temp.Dock = DockStyle.Fill;
-
-            MyView.Controls.Add(temp);
+            MyView.ShowScreen("FlightData");
 
             if (MainV2.config["FlightSplitter"] != null)
-                ((GCSViews.FlightData)temp).MainHcopy.SplitterDistance = int.Parse(MainV2.config["FlightSplitter"].ToString());
+            {
+                FlightData.MainHcopy.SplitterDistance = int.Parse(MainV2.config["FlightSplitter"].ToString()) - 1;
+                FlightData.MainHcopy.SplitterDistance = int.Parse(MainV2.config["FlightSplitter"].ToString());
+            }
         }
 
         private void MenuFlightPlanner_Click(object sender, EventArgs e)
         {
-            MyView.Controls.Clear();
-
-            GCSViews.Terminal.threadrun = false;
-
-            UserControl temp = FlightPlanner;
-
-            ThemeManager.ApplyThemeTo(temp);
-
-            temp.Anchor = AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right | AnchorStyles.Top;
-
-            temp.Location = new Point(0, MainMenu.Height);
-
-            temp.Dock = DockStyle.Fill;
-
             // refresh ap/ac specific items
             FlightPlanner.updateCMDParams();
 
-            MyView.Controls.Add(temp);
+            MyView.ShowScreen("FlightPlanner");
         }
 
         private void MenuConfiguration_Click(object sender, EventArgs e)
         {
-            MyView.Controls.Clear();
-
-            GCSViews.Terminal.threadrun = false;
-
-            // dispose of old else memory leak
-            if (Configuration != null)
-            {
-                try
-                {
-                    Configuration.Dispose();
-                }
-                catch { }
-            }
-
-            //Configuration = new GCSViews.Configuration();
-            Configuration = new GCSViews.ConfigurationView.Setup();
-
-            UserControl temp = Configuration;
-
-            ThemeManager.ApplyThemeTo(temp);
-
-            temp.Location = new Point(0, 0);
-
-            temp.Dock = DockStyle.Fill;
-
-            temp.Size = MyView.Size;
-
-            MyView.Controls.Add(temp);
+            MyView.ShowScreen("Config");
         }
 
         private void MenuSimulation_Click(object sender, EventArgs e)
         {
-            MyView.Controls.Clear();
-
-            GCSViews.Terminal.threadrun = false;
-
-            UserControl temp = Simulation;
-
-            ThemeManager.ApplyThemeTo(temp);
-
-            temp.Anchor = AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right | AnchorStyles.Top;
-
-            temp.Location = new Point(0, MainMenu.Height);
-
-            temp.Dock = DockStyle.Fill;
-
-            MyView.Controls.Add(temp);
+            MyView.ShowScreen("Simulation");
         }
 
         private void MenuFirmware_Click(object sender, EventArgs e)
         {
-            MyView.Controls.Clear();
-
-            GCSViews.Terminal.threadrun = false;
-
-            UserControl temp = Firmware;
-
-            ThemeManager.ApplyThemeTo(temp);
-
-            temp.Anchor = AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right | AnchorStyles.Top;
-
-            temp.Dock = DockStyle.Fill;
-
-            MyView.Controls.Add(temp);
+            MyView.ShowScreen("Firmware");
         }
 
         private void MenuTerminal_Click(object sender, EventArgs e)
@@ -543,34 +464,7 @@ namespace ArdupilotMega
                 MenuConnect_Click(sender, e);
             }
 
-            giveComport = true;
-
-            MyView.Controls.Clear();
-
-            this.MenuConnect.BackgroundImage = global::ArdupilotMega.Properties.Resources.disconnect;
-
-            // dispose of old else memory leak
-            if (Terminal != null)
-            {
-                try
-                {
-                    Terminal.Dispose();
-                }
-                catch { }
-            }
-
-            Terminal = new GCSViews.Terminal();
-
-            UserControl temp = Terminal;
-
-            ThemeManager.ApplyThemeTo(temp);
-
-            temp.Anchor = AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right | AnchorStyles.Top;
-
-            temp.Dock = DockStyle.Fill;
-
-            MyView.Controls.Add(temp);
-
+            MyView.ShowScreen("Terminal");
         }
 
         private void MenuConnect_Click(object sender, EventArgs e)
@@ -1066,7 +960,7 @@ namespace ArdupilotMega
                 {
                     if ((string)this.MenuConnect.BackgroundImage.Tag != "Disconnect")
                     {
-                        this.Invoke((MethodInvoker)delegate
+                        this.BeginInvoke((MethodInvoker)delegate
                         {
                             this.MenuConnect.BackgroundImage = global::ArdupilotMega.Properties.Resources.disconnect;
                             this.MenuConnect.BackgroundImage.Tag = "Disconnect";
@@ -1078,15 +972,25 @@ namespace ArdupilotMega
                 {
                     if ((string)this.MenuConnect.BackgroundImage.Tag != "Connect")
                     {
-                        this.Invoke((MethodInvoker)delegate
+                        this.BeginInvoke((MethodInvoker)delegate
                         {
                             this.MenuConnect.BackgroundImage = global::ArdupilotMega.Properties.Resources.connect;
                             this.MenuConnect.BackgroundImage.Tag = "Connect";
                             _connectionControl.IsConnected(false);
-                            if (_connectionStats != null)
+                            if (_connectionStats != null) 
+                            {
                                 _connectionStats.StopUpdates();
+                            }
                         });
                     }
+
+                    if (comPort.logreadmode)
+                    {
+                        this.BeginInvoke((MethodInvoker)delegate
+                        {
+                            _connectionControl.IsConnected(true);
+                        });
+                    } 
                 }
                 connectButtonUpdate = DateTime.Now;
             }
@@ -1144,22 +1048,6 @@ namespace ArdupilotMega
                         speechcustomtime = DateTime.Now;
                     }
 
-                    if ((DateTime.Now - comPort.lastvalidpacket).TotalSeconds > 10)
-                    {
-                        MainV2.cs.linkqualitygcs = 0;
-                    }
-
-                    if ((DateTime.Now - comPort.lastvalidpacket).TotalSeconds >= 1)
-                    {
-                        if (linkqualitytime.Second != DateTime.Now.Second)
-                        {
-                            MainV2.cs.linkqualitygcs = (ushort)(MainV2.cs.linkqualitygcs * 0.8f);
-                            linkqualitytime = DateTime.Now;
-
-                            GCSViews.FlightData.myhud.Invalidate();
-                        }
-                    }
-
                     if (speechEnable && speechEngine != null && (MainV2.comPort.logreadmode || comPort.BaseStream.IsOpen))
                     {
                         float warnalt = float.MaxValue;
@@ -1179,6 +1067,23 @@ namespace ArdupilotMega
                     {
                         System.Threading.Thread.Sleep(100);
                         continue;
+                    }
+
+                    if ((DateTime.Now - comPort.lastvalidpacket).TotalSeconds > 10)
+                    {
+                        MainV2.cs.linkqualitygcs = 0;
+                    }
+
+                    if ((DateTime.Now - comPort.lastvalidpacket).TotalSeconds >= 1)
+                    {
+                        if (linkqualitytime.Second != DateTime.Now.Second)
+                        {
+                            MainV2.cs.linkqualitygcs = (ushort)(MainV2.cs.linkqualitygcs * 0.8f);
+                            linkqualitytime = DateTime.Now;
+
+                            int fixme;
+                            //GCSViews.FlightData.myhud.Invalidate();
+                        }
                     }
 
                     if (heatbeatSend.Second != DateTime.Now.Second)
@@ -1281,7 +1186,15 @@ namespace ArdupilotMega
 
         private void MainV2_Load(object sender, EventArgs e)
         {
-            // init button depressed
+            MyView.AddScreen(new MainSwitcher.Screen("FlightData",FlightData,true));
+            MyView.AddScreen(new MainSwitcher.Screen("FlightPlanner", FlightPlanner, true));
+            MyView.AddScreen(new MainSwitcher.Screen("Config", new GCSViews.ConfigurationView.Setup(), false));
+            MyView.AddScreen(new MainSwitcher.Screen("Simulation", Simulation, true));
+            MyView.AddScreen(new MainSwitcher.Screen("Firmware", new GCSViews.Firmware(), false));
+            MyView.AddScreen(new MainSwitcher.Screen("Terminal", new GCSViews.Terminal(), false));
+            MyView.AddScreen(new MainSwitcher.Screen("Help", new GCSViews.Help(), false));
+
+            // init button depressed - ensures correct action
             MenuFlightData_Click(sender, e);
 
             // for long running tasks using own threads.
@@ -1671,21 +1584,7 @@ namespace ArdupilotMega
 
         private void MenuHelp_Click(object sender, EventArgs e)
         {
-            MyView.Controls.Clear();
-
-            UserControl temp = new GCSViews.Help();
-
-            ThemeManager.ApplyThemeTo(temp);
-
-            temp.Anchor = AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right | AnchorStyles.Top;
-
-            temp.Dock = DockStyle.Fill;
-
-            MyView.Controls.Add(temp);
-
-            temp.ForeColor = Color.White;
-
-            temp.BackColor = Color.FromArgb(0x26, 0x27, 0x28);
+            MyView.ShowScreen("Help");
         }
 
 
@@ -2230,7 +2129,7 @@ namespace ArdupilotMega
                 config["language"] = ci.Name;
                 //System.Threading.Thread.CurrentThread.CurrentCulture = ci;
 
-                HashSet<Control> views = new HashSet<Control> { FlightData, FlightPlanner, Simulation, Firmware };
+                HashSet<Control> views = new HashSet<Control> { FlightData, FlightPlanner, Simulation };
 
                 foreach (Control view in MyView.Controls)
                     views.Add(view);

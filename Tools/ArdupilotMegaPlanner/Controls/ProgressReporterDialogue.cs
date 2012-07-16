@@ -185,8 +185,8 @@ namespace ArdupilotMega.Controls
 
             if (this.InvokeRequired)
             {
-
-                this.Invoke((MethodInvoker) delegate
+                // invoke async
+                this.BeginInvoke((MethodInvoker) delegate
                     {
 
                         lblProgressMessage.Text = status;

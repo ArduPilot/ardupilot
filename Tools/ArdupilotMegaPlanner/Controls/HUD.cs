@@ -252,7 +252,7 @@ namespace ArdupilotMega.Controls
         {
             //GL.Enable(EnableCap.AlphaTest)
 
-            
+           // Console.WriteLine("hud paint");
             
             if (!started)
                 return;

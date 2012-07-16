@@ -1486,6 +1486,7 @@ System.ComponentModel.Description("Enables or disables the range selected by Nee
 #region base member overrides
         protected override void OnPaintBackground(PaintEventArgs pevent)
         {
+            base.OnPaintBackground(pevent);
         }
 
         protected override void OnPaint(PaintEventArgs pe)
@@ -1497,6 +1498,8 @@ System.ComponentModel.Description("Enables or disables the range selected by Nee
 
             if (!ThisReallyVisible())
                 return;
+
+            base.OnPaint(pe);
 
             float scale = 1;
 

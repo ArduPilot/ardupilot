@@ -94,10 +94,10 @@ namespace ArdupilotMega.Controls.BackstageView
 
                g.DrawString(Text, new Font(FontFamily.GenericSansSerif, 10, FontStyle.Bold), new SolidBrush(SelectedTextColor), 10, 6);
 
-               g.FillPolygon(arrowBrush, arrowPoints);
-
                var pencilBrush = new Pen(this.PencilBorderColor);
 
+               g.DrawLine(pencilBrush, Width - 1, 0, Width - 1, Height - 1);
+               g.FillPolygon(arrowBrush, arrowPoints); 
 
                g.DrawPolygon(pencilBrush, arrowPoints);
 

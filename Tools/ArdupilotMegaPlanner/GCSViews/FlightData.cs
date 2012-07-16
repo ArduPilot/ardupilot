@@ -1271,11 +1271,6 @@ namespace ArdupilotMega.GCSViews
 
         private void BUT_log2kml_Click(object sender, EventArgs e)
         {
-            if (DialogResult.Cancel == Common.MessageShowAgain("Tlog to KML Firmware Version", "When converting logs, ensure your Firmware version is set correctly.\n(Near your com port selection.)"))
-            {
-                return;
-            }
-
             Form frm = new MavlinkLog();
             ThemeManager.ApplyThemeTo(frm);
             frm.ShowDialog();

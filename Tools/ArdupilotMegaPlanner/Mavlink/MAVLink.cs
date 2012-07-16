@@ -2002,9 +2002,7 @@ namespace ArdupilotMega
 
                 if (translateMode(modein, ref mode))
                 {
-                    generatePacket((byte)MAVLink.MAVLINK_MSG_ID_SET_MODE, mode);
-                    System.Threading.Thread.Sleep(10);
-                    generatePacket((byte)MAVLink.MAVLINK_MSG_ID_SET_MODE, mode);
+                    setMode(mode);
                 }
             }
             catch { System.Windows.Forms.MessageBox.Show("Failed to change Modes"); }
@@ -2029,6 +2027,15 @@ namespace ArdupilotMega
             catch { System.Windows.Forms.CustomMessageBox.Show("Failed to change Modes"); }
 
 #endif
+        }
+
+        public void setMode(mavlink_set_mode_t mode, MAV_MODE_FLAG base_mode = 0)
+        {
+            mode.base_mode |= (byte)base_mode;
+
+            generatePacket((byte)MAVLink.MAVLINK_MSG_ID_SET_MODE, mode);
+            System.Threading.Thread.Sleep(10);
+            generatePacket((byte)MAVLink.MAVLINK_MSG_ID_SET_MODE, mode);
         }
 
         /// <summary>
@@ -2605,6 +2612,7 @@ namespace ArdupilotMega
 
                 mavlinkversion = hb.mavlink_version;
                 aptype = (MAV_TYPE)hb.type;
+                setAPType();
             }
 
             return temp;

@@ -245,7 +245,19 @@
     </Compile>
     <Compile Include="Comms\CommsTCPSerial.cs" />
     <Compile Include="Comms\CommsUdpSerial.cs" />
+    <Compile Include="Controls\MainSwitcher.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="Controls\MainSwitcher.Designer.cs">
+      <DependentUpon>MainSwitcher.cs</DependentUpon>
+    </Compile>
     <Compile Include="Delta.cs" />
+    <Compile Include="GCSViews\ConfigurationView\ConfigAP_Limits.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="GCSViews\ConfigurationView\ConfigAP_Limits.Designer.cs">
+      <DependentUpon>ConfigAP_Limits.cs</DependentUpon>
+    </Compile>
     <Compile Include="Presenter\ConfigCameraStabPresenter.cs" />
     <Compile Include="Controls\HSI.cs">
       <SubType>UserControl</SubType>
@@ -641,6 +653,9 @@
     <EmbeddedResource Include="Controls\HSI.resx">
       <DependentUpon>HSI.cs</DependentUpon>
     </EmbeddedResource>
+    <EmbeddedResource Include="Controls\MainSwitcher.resx">
+      <DependentUpon>MainSwitcher.cs</DependentUpon>
+    </EmbeddedResource>
     <EmbeddedResource Include="Controls\ProgressReporterDialogue.resx">
       <DependentUpon>ProgressReporterDialogue.cs</DependentUpon>
     </EmbeddedResource>
@@ -823,6 +838,9 @@
     </EmbeddedResource>
     <EmbeddedResource Include="GCSViews\ConfigurationView\ConfigArdurover.resx">
       <DependentUpon>ConfigArdurover.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="GCSViews\ConfigurationView\ConfigAP_Limits.resx">
+      <DependentUpon>ConfigAP_Limits.cs</DependentUpon>
     </EmbeddedResource>
     <EmbeddedResource Include="GCSViews\ConfigurationView\Setup.resx">
       <DependentUpon>Setup.cs</DependentUpon>

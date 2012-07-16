@@ -99,7 +99,7 @@
             this.myLabel1.Location = new System.Drawing.Point(4, 4);
             this.myLabel1.Name = "myLabel1";
             this.myLabel1.resize = false;
-            this.myLabel1.Size = new System.Drawing.Size(301, 23);
+            this.myLabel1.Size = new System.Drawing.Size(471, 23);
             this.myLabel1.TabIndex = 0;
             this.myLabel1.Text = "myLabel1";
             // 

@@ -835,10 +835,10 @@ namespace ArdupilotMega
             string code = @"
 
         public double stage(object inp) {
-            return getAltAboveHome((MAVLink09.mavlink_gps_raw_t) inp);
+            return getAltAboveHome((MAVLink.mavlink_gps_raw_int_t) inp);
         }
 
-        public double getAltAboveHome(MAVLink09.mavlink_gps_raw_t gps)
+        public double getAltAboveHome(MAVLink.mavlink_gps_raw_int_t gps)
         {
             if (customforusenumber == -1 && gps.fix_type != 2)
                 customforusenumber = gps.alt;
@@ -870,12 +870,17 @@ namespace ArdupilotMega
                 // from here
                 PointPairList result = (PointPairList)this.datappl[field];
 
-                object assemblyInstance = results.CompiledAssembly.CreateInstance("ExpressionEvaluator.Calculator");
-
-                foreach (double time in temp.Keys)
+                try
                 {
-                    result.Add(time, (double)mi.Invoke(assemblyInstance, new object[] { temp[time] }));
+
+                    object assemblyInstance = results.CompiledAssembly.CreateInstance("ExpressionEvaluator.Calculator");
+
+                    foreach (double time in temp.Keys)
+                    {
+                        result.Add(time, (double)mi.Invoke(assemblyInstance, new object[] { temp[time] }));
+                    }
                 }
+                catch { }
             }
             else
             {
@@ -976,16 +981,16 @@ namespace ArdupilotMega
 
             PointPairList list = ((PointPairList)this.datappl[field]);
 
-            PointPairList listfix = ((PointPairList)this.datappl["fix_type mavlink_gps_raw_t"]);
-            PointPairList listx = ((PointPairList)this.datappl["lat mavlink_gps_raw_t"]);
-            PointPairList listy = ((PointPairList)this.datappl["lon mavlink_gps_raw_t"]);
-            PointPairList listz = ((PointPairList)this.datappl["alt mavlink_gps_raw_t"]);
+            PointPairList listfix = ((PointPairList)this.datappl["fix_type mavlink_gps_raw_int_t"]);
+            PointPairList listx = ((PointPairList)this.datappl["lat mavlink_gps_raw_int_t"]);
+            PointPairList listy = ((PointPairList)this.datappl["lon mavlink_gps_raw_int_t"]);
+            PointPairList listz = ((PointPairList)this.datappl["alt mavlink_gps_raw_int_t"]);
 
             for (int a = 0; a < listfix.Count; a++)
             {
-                if (listfix[a].Y == 2)
+                if (listfix[a].Y == 3)
                 {
-                    home = new PointLatLngAlt(listx[a].Y, listy[a].Y, listz[a].Y,"Home");
+                    home = new PointLatLngAlt(listx[a].Y / 10000000.0, listy[a].Y / 10000000.0, listz[a].Y / 1000.0, "Home");
                     break;
                 }
             }
@@ -995,7 +1000,7 @@ namespace ArdupilotMega
             for (int a = 0; a < listx.Count; a++)
             {
 
-                double ans = home.GetDistance(new PointLatLngAlt(listx[a].Y, listy[a].Y, listz[a].Y, "Point"));
+                double ans = home.GetDistance(new PointLatLngAlt(listx[a].Y / 10000000.0, listy[a].Y / 10000000.0, listz[a].Y / 1000.0, "Point"));
 
                 //Console.WriteLine("{0} {1} {2} {3}", ans, listx[a].Y, listy[a].Y, listz[a].Y);
 
