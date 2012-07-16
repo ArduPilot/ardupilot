@@ -344,8 +344,8 @@ static void NOINLINE send_vfr_hud(mavlink_channel_t chan)
 {
     mavlink_msg_vfr_hud_send(
         chan,
-        (float)airspeed / 100.0,
-        (float)g_gps->ground_speed / 100.0,
+        airspeed.get_airspeed(),
+        (float)g_gps->ground_speed * 0.01,
         (ahrs.yaw_sensor / 100) % 360,
         (uint16_t)(100 * (g.channel_throttle.norm_output() / 2.0 + 0.5)), // scale -1,1 to 0-100
         current_loc.alt / 100.0,
@@ -1654,7 +1654,7 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
             mavlink_msg_vfr_hud_decode(msg, &packet);
 
             // set airspeed
-            airspeed = 100*packet.airspeed;
+            airspeed.set_HIL(100*packet.airspeed);
             break;
         }
 

@@ -49,6 +49,7 @@ version 2.1 of the License, or (at your option) any later version.
 #include <LowPassFilter.h>	// LowPassFilter class (inherits from Filter class)
 #include <AP_Relay.h>       // APM relay
 #include <AP_Camera.h>		// Photo or video camera
+#include <AP_Airspeed.h>
 #include <memcheck.h>
 
 // Configuration
@@ -406,8 +407,6 @@ static byte	non_nav_command_ID	= NO_COMMAND;
 ////////////////////////////////////////////////////////////////////////////////
 // Airspeed
 ////////////////////////////////////////////////////////////////////////////////
-// The current airspeed estimate/measurement in centimeters per second
-static int16_t		airspeed;
 // The calculated airspeed to use in FBW-B.  Also used in higher modes for insuring min ground speed is met.
 // Also used for flap deployment criteria.  Centimeters per second.static int32_t		target_airspeed;
 static int32_t		target_airspeed;
@@ -459,10 +458,7 @@ static float	current_total1;
 ////////////////////////////////////////////////////////////////////////////////
 // Airspeed Sensors
 ////////////////////////////////////////////////////////////////////////////////
-// Raw differential pressure measurement (filtered).  ADC units
-static float   airspeed_raw;
-// Raw differential pressure less the zero pressure offset.  ADC units
-static float   airspeed_pressure;
+AP_Airspeed airspeed(&pitot_analog_source, AIRSPEED_RATIO, AIRSPEED_SENSOR);
 
 ////////////////////////////////////////////////////////////////////////////////
 // Altitude Sensor variables
@@ -710,12 +706,8 @@ static void fast_loop()
 
 	// Read Airspeed
 	// -------------
-	if (g.airspeed_enabled == true) {
-#if HIL_MODE != HIL_MODE_ATTITUDE
+	if (airspeed.enabled()) {
 		read_airspeed();
-#else
-		calc_airspeed_errors();
-#endif
 	}
 
 	#if HIL_MODE == HIL_MODE_SENSORS
@@ -994,7 +986,7 @@ static void update_current_flight_mode(void)
 					nav_roll = 0;
 				}
 
-				if(g.airspeed_enabled == true && g.airspeed_use == true){
+				if(airspeed.use()) {
 					calc_nav_pitch();
 					if(nav_pitch < (long)takeoff_pitch)
 						nav_pitch = (long)takeoff_pitch;
@@ -1012,7 +1004,7 @@ static void update_current_flight_mode(void)
 			case MAV_CMD_NAV_LAND:
 				calc_nav_roll();
 
-				if (g.airspeed_enabled == true && g.airspeed_use == true) {
+				if (airspeed.use()) {
 					calc_nav_pitch();
 					calc_throttle();
 				}else{

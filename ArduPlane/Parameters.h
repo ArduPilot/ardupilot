@@ -89,11 +89,9 @@ public:
         //
         k_param_imu = 130,  // sensor calibration
         k_param_altitude_mix,
-        k_param_airspeed_ratio,
-
-        // ground_pressure and ground_temperature removed
-        // do not re-use 133 and 134 unless format_version
-        // is changed
+        k_param_airspeed_ratio, // UNUSED
+        k_param_ground_pressure, // UNUSED
+        k_param_ground_temperature, // UNUSED
 
 		k_param_compass_enabled = 135,
 		k_param_compass,
@@ -102,12 +100,13 @@ public:
 		k_param_curr_amp_per_volt,
 		k_param_input_voltage,
 		k_param_pack_capacity,
-        k_param_airspeed_offset,
+        k_param_airspeed_offset, // UNUSED
 		k_param_sonar_enabled,
-		k_param_airspeed_enabled,
+		k_param_airspeed_enabled, // UNUSED
         k_param_ahrs,  // AHRS group
-		k_param_airspeed_use,
+		k_param_airspeed_use, // UNUSED
         k_param_barometer,   // barometer ground calibration
+        k_param_airspeed,  // AP_Airspeed parameters
 
         //
         // 150: Navigation parameters
@@ -269,8 +268,6 @@ public:
     // Estimation
     //
     AP_Float    altitude_mix;
-    AP_Float    airspeed_ratio;
-	AP_Int16	airspeed_offset;
 
     // Waypoints
     //
@@ -349,8 +346,6 @@ public:
 	AP_Int16	pack_capacity;		// Battery pack capacity less reserve
     AP_Int8		inverted_flight_ch; // 0=disabled, 1-8 is channel for inverted flight trigger
     AP_Int8		sonar_enabled;
-    AP_Int8		airspeed_enabled;
-    AP_Int8		airspeed_use;
     AP_Int8		flap_1_percent;
     AP_Int8		flap_1_speed;
     AP_Int8		flap_2_percent;
@@ -400,8 +395,6 @@ public:
         crosstrack_entry_angle  (XTRACK_ENTRY_ANGLE_CENTIDEGREE),
 
         altitude_mix            (ALTITUDE_MIX),
-        airspeed_ratio          (AIRSPEED_RATIO),
-        airspeed_offset			(0),
 
         /* XXX waypoint_mode missing here */
         command_total           (0),
@@ -473,8 +466,6 @@ public:
         pack_capacity	 		(HIGH_DISCHARGE),
         inverted_flight_ch      (0),
         sonar_enabled			(SONAR_ENABLED),
-        airspeed_enabled		(AIRSPEED_SENSOR),
-        airspeed_use			(1),
 
         // PID controller    initial P        initial I        initial D        initial imax
         //-----------------------------------------------------------------------------------

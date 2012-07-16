@@ -650,7 +650,7 @@ test_airspeed(uint8_t argc, const Menu::arg *argv)
 	// Serial.println(pitot_analog_source.read());
     Serial.printf_P(PSTR("airspeed_ch: %.1f\n"), airspeed_ch);
 
-	if (g.airspeed_enabled == false){
+	if (!airspeed.enabled()) {
 		Serial.printf_P(PSTR("airspeed: "));
 		print_enabled(false);
 		return (0);
@@ -664,7 +664,7 @@ test_airspeed(uint8_t argc, const Menu::arg *argv)
 		while(1){
 			delay(20);
 			read_airspeed();
-			Serial.printf_P(PSTR("%.1f m/s\n"), airspeed / 100.0);
+			Serial.printf_P(PSTR("%.1f m/s\n"), airspeed.get_airspeed());
 
 			if(Serial.available() > 0){
 				return (0);

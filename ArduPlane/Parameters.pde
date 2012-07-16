@@ -91,17 +91,6 @@ static const AP_Param::Info var_info[] PROGMEM = {
 	// @User: Advanced
 	GSCALAR(altitude_mix,           "ALT_MIX"),
 
-    // @Param: ARSPD_RATIO
-	// @DisplayName: Airspeed Ratio
-	// @Description: Used to scale raw adc airspeed sensor to a SI Unit (m/s)
-	// @Units: Scale
-	// @Range: 0 5
-	// @Increment: 0.001
-	// @User: Advanced
-	GSCALAR(airspeed_ratio,         "ARSPD_RATIO"),
-
-	GSCALAR(airspeed_offset,        "ARSPD_OFFSET"),
-
 	GSCALAR(command_total,          "CMD_TOTAL"),
 	GSCALAR(command_index,          "CMD_INDEX"),
 
@@ -446,20 +435,6 @@ static const AP_Param::Info var_info[] PROGMEM = {
 	// @User: Standard
 	GSCALAR(sonar_enabled,          "SONAR_ENABLE"),
 
-    // @Param: ARSPD_ENABLE
-	// @DisplayName: Enable Airspeed
-	// @Description: Setting this to Enabled(1) will enable the Airspeed sensor. Setting this to Disabled(0) will disable the Airspeed sensor
-	// @Values: 0:Disabled,1:Enabled
-	// @User: Standard
-	GSCALAR(airspeed_enabled,       "ARSPD_ENABLE"),
-
-    // @Param: ARSPD_USE
-	// @DisplayName: Use Airspeed if enabled
-	// @Description: Setting this to Enabled(1) will enable use of the Airspeed sensor for flight control when ARSPD_ENABLE is also true. This is separate from ARSPD_ENABLE to allow for the airspeed value to be logged without it being used for flight control
-	// @Values: 0:Disabled,1:Enabled
-	// @User: Advanced
-	GSCALAR(airspeed_use,       	"ARSPD_USE"),
-
 	// barometer ground calibration. The GND_ prefix is chosen for
 	// compatibility with previous releases of ArduPlane
 	GOBJECT(barometer, "GND_", AP_Baro),
@@ -516,6 +491,10 @@ static const AP_Param::Info var_info[] PROGMEM = {
     // @Group: AHRS_
 	// @Path: ../libraries/AP_AHRS/AP_AHRS_DCM.cpp, ../libraries/AP_AHRS/AP_AHRS_Quaternion.cpp
 	GOBJECT(ahrs,					"AHRS_",    AP_AHRS),
+
+    // @Group: ARSPD_
+	// @Path: ../libraries/AP_Airspeed/AP_Airspeed.cpp
+	GOBJECT(airspeed,				"ARSPD_",   AP_Airspeed),
 
 #if MOUNT == ENABLED
 	// @Group: MNT_
