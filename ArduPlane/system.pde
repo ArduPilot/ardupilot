@@ -470,13 +470,13 @@ static void startup_IMU_ground(bool force_accel_level)
 	//-----------------------------
 	init_barometer();
 
-    if (g.airspeed_enabled == true) {
+    if (airspeed.enabled()) {
         // initialize airspeed sensor
         // --------------------------
         zero_airspeed();
-        gcs_send_text_P(SEVERITY_LOW,PSTR("<startup_ground> zero airspeed calibrated"));
+        gcs_send_text_P(SEVERITY_LOW,PSTR("zero airspeed calibrated"));
     } else {
-        gcs_send_text_P(SEVERITY_LOW,PSTR("<startup_ground> NO airspeed"));
+        gcs_send_text_P(SEVERITY_LOW,PSTR("NO airspeed"));
     }
 
 #endif // HIL_MODE_ATTITUDE

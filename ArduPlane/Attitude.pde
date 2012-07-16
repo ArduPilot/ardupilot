@@ -11,12 +11,14 @@ static void stabilize()
 	float ch4_inf = 1.0;
 	float speed_scaler;
 
-	if (g.airspeed_enabled == true && g.airspeed_use == true){
-		if(airspeed > 0)
-			speed_scaler = (STANDARD_SPEED * 100) / airspeed;
-		else
+	if (airspeed.use()) {
+        float aspeed = airspeed.get_airspeed();
+		if (aspeed > 0) {
+			speed_scaler = STANDARD_SPEED / aspeed;
+        } else {
 			speed_scaler = 2.0;
-			speed_scaler = constrain(speed_scaler, 0.5, 2.0);
+        }
+        speed_scaler = constrain(speed_scaler, 0.5, 2.0);
 	} else {
 		if (g.channel_throttle.servo_out > 0){
 			speed_scaler = 0.5 + ((float)THROTTLE_CRUISE / g.channel_throttle.servo_out / 2.0);	// First order taylor expansion of square root
@@ -130,13 +132,12 @@ static void crash_checker()
 
 static void calc_throttle()
 {
-  if (g.airspeed_enabled == false || g.airspeed_use == false) {
-	int throttle_target = g.throttle_cruise + throttle_nudge;
+    if (!airspeed.use()) {
+        int throttle_target = g.throttle_cruise + throttle_nudge;
 
-    // TODO: think up an elegant way to bump throttle when
-    // groundspeed_undershoot > 0 in the no airspeed sensor case; PID
-    // control?
-
+        // TODO: think up an elegant way to bump throttle when
+        // groundspeed_undershoot > 0 in the no airspeed sensor case; PID
+        // control?
 
 		// no airspeed sensor, we use nav pitch to determine the proper throttle output
 		// AUTO, RTL, etc
@@ -188,7 +189,7 @@ static void calc_nav_pitch()
 {
 	// Calculate the Pitch of the plane
 	// --------------------------------
-	if (g.airspeed_enabled == true && g.airspeed_use == true) {
+	if (airspeed.use()) {
 		nav_pitch = -g.pidNavPitchAirspeed.get_pid(airspeed_error);
 	} else {
 		nav_pitch = g.pidNavPitchAltitude.get_pid(altitude_error);
@@ -349,7 +350,7 @@ static void set_servos(void)
 			if (
 					(control_mode == CIRCLE || control_mode >= FLY_BY_WIRE_B) &&
 					(abs(home.alt - current_loc.alt) < 1000) &&
-					(((g.airspeed_enabled && g.airspeed_use) ? airspeed : g_gps->ground_speed) < 500 ) &&
+					((airspeed.use()? airspeed.get_airspeed_cm() : g_gps->ground_speed) < 500 ) &&
 					!(control_mode==AUTO && takeoff_complete == false)
 				) {
 				g.channel_throttle.servo_out = 0;
@@ -386,7 +387,7 @@ static void set_servos(void)
             // FIXME: use target_airspeed in both FBW_B and g.airspeed_enabled cases - Doug?
 			if (control_mode == FLY_BY_WIRE_B) {
 				flapSpeedSource = ((float)target_airspeed)/100;
-			} else if (g.airspeed_enabled == true && g.airspeed_use == true) {
+			} else if (airspeed.use()) {
 				flapSpeedSource = g.airspeed_cruise/100;
 			} else {
 				flapSpeedSource = g.throttle_cruise;

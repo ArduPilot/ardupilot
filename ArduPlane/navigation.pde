@@ -64,6 +64,8 @@ void calc_distance_error()
 
 static void calc_airspeed_errors()
 {
+    float aspeed_cm = airspeed.get_airspeed_cm();
+
     // Normal airspeed target
     target_airspeed = g.airspeed_cruise;
 
@@ -79,7 +81,7 @@ static void calc_airspeed_errors()
     // but only when this is faster than the target airspeed commanded
     // above.
     if (control_mode >= FLY_BY_WIRE_B && (g.min_gndspeed > 0)) {
-        long min_gnd_target_airspeed = airspeed + groundspeed_undershoot;
+        long min_gnd_target_airspeed = aspeed_cm + groundspeed_undershoot;
         if (min_gnd_target_airspeed > target_airspeed)
             target_airspeed = min_gnd_target_airspeed;
     }
@@ -93,8 +95,8 @@ static void calc_airspeed_errors()
     if (target_airspeed > (g.flybywire_airspeed_max * 100))
         target_airspeed = (g.flybywire_airspeed_max * 100);
 
-    airspeed_error = target_airspeed - airspeed;
-    airspeed_energy_error = ((target_airspeed * target_airspeed) - ((long)airspeed * (long)airspeed))/20000; //Changed 0.00005f * to / 20000 to avoid floating point calculation
+    airspeed_error = target_airspeed - aspeed_cm;
+    airspeed_energy_error = ((target_airspeed * target_airspeed) - (aspeed_cm*aspeed_cm))*0.00005;
 }
 
 static void calc_gndspeed_undershoot()
@@ -141,25 +143,6 @@ static void calc_altitude_error()
 	} else if (non_nav_command_ID != MAV_CMD_CONDITION_CHANGE_ALT) {
 		target_altitude = next_WP.alt;
 	}
-
-	/*
-	// Disabled for now
-	#if AIRSPEED_SENSOR == 1
-		long    altitude_estimate;                  // for smoothing GPS output
-
-		// special thanks to Ryan Beall for this one
-		float pitch_angle 	= pitch_sensor - g.pitch_trim; // pitch_angle = pitch sensor - angle of attack of your plane at level *100 (50 = .5°)
-		pitch_angle			= constrain(pitch_angle, -2000, 2000);
-		float scale			= sin(radians(pitch_angle * .01));
-		altitude_estimate 	+= (float)airspeed * .0002 * scale;
-		altitude_estimate 	-= ALT_EST_GAIN * (float)(altitude_estimate - current_loc.alt);
-
-		// compute altitude error for throttle control
-		altitude_error  = target_altitude - altitude_estimate;
-	#else
-		altitude_error 	= target_altitude - current_loc.alt;
-	#endif
-	*/
 
 	altitude_error 	= target_altitude - current_loc.alt;
 }

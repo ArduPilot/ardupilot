@@ -27,34 +27,13 @@ static int32_t read_barometer(void)
 // in M/S * 100
 static void read_airspeed(void)
 {
-	#if GPS_PROTOCOL != GPS_PROTOCOL_IMU	// Xplane will supply the airspeed
-		if (g.airspeed_offset == 0) {
-            // runtime enabling of airspeed, we need to do instant
-            // calibration before we can use it. This isn't as
-            // accurate as the 50 point average in zero_airspeed(),
-            // but it is better than using it uncalibrated
-            airspeed_raw = pitot_analog_source.read();
-            g.airspeed_offset.set_and_save(airspeed_raw);
-		}
-		airspeed_raw 		= (pitot_analog_source.read() * 0.1) + (airspeed_raw * 0.9);
-		airspeed_pressure 	= max((airspeed_raw - g.airspeed_offset), 0);
-		airspeed 			= sqrt(airspeed_pressure * g.airspeed_ratio) * 100;
-	#endif
-
+    airspeed.read();
 	calc_airspeed_errors();
 }
 
 static void zero_airspeed(void)
 {
-    float sum = 0;
-    int c;
-	airspeed_raw = pitot_analog_source.read();
-	for(c = 0; c < 250; c++) {
-		delay(2);
-		sum += pitot_analog_source.read();
-	}
-    sum /= c;
-	g.airspeed_offset.set_and_save((int16_t)sum);
+    airspeed.calibrate(mavlink_delay);
 }
 
 #endif // HIL_MODE != HIL_MODE_ATTITUDE
