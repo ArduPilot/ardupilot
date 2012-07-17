@@ -25,10 +25,44 @@
 APM_RC_Class *RC_Channel::_apm_rc;
 
 const AP_Param::GroupInfo RC_Channel::var_info[] PROGMEM = {
+	// @Param: MIN
+	// @DisplayName: RC min PWM
+	// @Description: RC minimum PWM pulse width. Typically 1000 is lower limit, 1500 is neutral and 2000 is upper limit.
+	// @Units: ms
+	// @Range: 800 2200
+	// @Increment: 1
+	// @User: Advanced
 	AP_GROUPINFO("MIN",  0, RC_Channel, radio_min),
+
+	// @Param: TRIM
+	// @DisplayName: RC trim PWM
+	// @Description: RC trim (neutral) PWM pulse width. Typically 1000 is lower limit, 1500 is neutral and 2000 is upper limit.
+	// @Units: ms
+	// @Range: 800 2200
+	// @Increment: 1
+	// @User: Advanced
 	AP_GROUPINFO("TRIM", 1, RC_Channel, radio_trim),
+
+	// @Param: MAX
+	// @DisplayName: RC max PWM
+	// @Description: RC maximum PWM pulse width. Typically 1000 is lower limit, 1500 is neutral and 2000 is upper limit.
+	// @Units: ms
+	// @Range: 800 2200
+	// @Increment: 1
+	// @User: Advanced
 	AP_GROUPINFO("MAX",  2, RC_Channel, radio_max),
+
+	// @Param: REV
+	// @DisplayName: RC reverse
+	// @Description: Reverse servo operation. Ignored unless did switches are disabled.
+	// @Values: 1:Normal,-1:Reversed
+	// @User: Advanced
 	AP_GROUPINFO("REV",  3, RC_Channel, _reverse),
+
+	// @Param: DZ
+	// @DisplayName: RC dead-zone
+	// @Description: dead zone around trim.
+	// @User: Advanced
 	AP_GROUPINFO("DZ",   4, RC_Channel, _dead_zone),
 	AP_GROUPEND
 };

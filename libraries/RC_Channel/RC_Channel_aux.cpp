@@ -16,18 +16,18 @@ const AP_Param::GroupInfo RC_Channel_aux::var_info[] PROGMEM = {
 	// @Param: ANGLE_MIN
 	// @DisplayName: Minimum object position
 	// @Description: Minimum physical angular position of the object that this servo output controls. For example a camera pan angle, an aileron angle, etc
-	// @Units: Degrees
-	// @Range: -180 180
-	// @Increment: .01
+	// @Units: centi-Degrees
+	// @Range: -18000 17999
+	// @Increment: 1
 	// @User: Standard
 	AP_GROUPINFO("ANGLE_MIN",      2, RC_Channel_aux, angle_min),
 
 	// @Param: ANGLE_MAX
 	// @DisplayName: Maximum object position
 	// @Description: Maximum physical angular position of the object that this servo output controls. For example a camera pan angle, an aileron angle, etc
-	// @Units: Degrees
-	// @Range: -180 180
-	// @Increment: .01
+	// @Units: centi-Degrees
+	// @Range: -18000 17999
+	// @Increment: 1
 	// @User: Standard
 	AP_GROUPINFO("ANGLE_MAX",      3, RC_Channel_aux, angle_max),
 	AP_GROUPEND
@@ -131,19 +131,11 @@ RC_Channel_aux::output_ch(unsigned char ch_nr)
 /// expects the changes to take effect instantly
 void update_aux_servo_function(RC_Channel_aux* rc_a, RC_Channel_aux* rc_b, RC_Channel_aux* rc_c, RC_Channel_aux* rc_d)
 {
-	// positions 0..3 of this array never get used, but this is a stack array, so the entire array gets freed at the end of the function
 	RC_Channel_aux::Aux_servo_function_t aux_servo_function[4];
-
-	// initialise array
-	aux_servo_function[0] = RC_Channel_aux::k_none;
-	aux_servo_function[1] = RC_Channel_aux::k_none;
-	aux_servo_function[2] = RC_Channel_aux::k_none;
-	aux_servo_function[3] = RC_Channel_aux::k_none;
-
-	if( rc_a != NULL ) { aux_servo_function[0] = (RC_Channel_aux::Aux_servo_function_t)rc_a->function.get(); }
-	if( rc_b != NULL ) { aux_servo_function[1] = (RC_Channel_aux::Aux_servo_function_t)rc_b->function.get(); }
-	if( rc_c != NULL ) { aux_servo_function[2] = (RC_Channel_aux::Aux_servo_function_t)rc_c->function.get(); }
-	if( rc_d != NULL ) { aux_servo_function[3] = (RC_Channel_aux::Aux_servo_function_t)rc_d->function.get(); }
+	aux_servo_function[0] = (rc_a == NULL)?RC_Channel_aux::k_none:(RC_Channel_aux::Aux_servo_function_t)rc_a->function.get();
+	aux_servo_function[1] = (rc_b == NULL)?RC_Channel_aux::k_none:(RC_Channel_aux::Aux_servo_function_t)rc_b->function.get();
+	aux_servo_function[2] = (rc_c == NULL)?RC_Channel_aux::k_none:(RC_Channel_aux::Aux_servo_function_t)rc_c->function.get();
+	aux_servo_function[3] = (rc_d == NULL)?RC_Channel_aux::k_none:(RC_Channel_aux::Aux_servo_function_t)rc_d->function.get();
 
 	for (uint8_t i = 0; i < 4; i++) {
 		if (aux_servo_function[i] >= RC_Channel_aux::k_nr_aux_servo_functions) {
