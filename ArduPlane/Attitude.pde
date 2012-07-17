@@ -202,17 +202,11 @@ static void calc_nav_pitch()
 
 static void calc_nav_roll()
 {
-
-	// Adjust gain based on ground speed - We need lower nav gain going in to a headwind, etc.
-	// This does not make provisions for wind speed in excess of airframe speed
-	nav_gain_scaler = (float)g_gps->ground_speed / (STANDARD_SPEED * 100.0);
-	nav_gain_scaler = constrain(nav_gain_scaler, 0.2, 1.4);
-
 	// negative error = left turn
 	// positive error = right turn
 	// Calculate the required roll of the plane
 	// ----------------------------------------
-	nav_roll = g.pidNavRoll.get_pid(bearing_error, nav_gain_scaler);	//returns desired bank angle in degrees*100
+	nav_roll = g.pidNavRoll.get_pid(bearing_error);	//returns desired bank angle in degrees*100
 	nav_roll = constrain(nav_roll, -g.roll_limit.get(), g.roll_limit.get());
 
 	Vector3f omega;
