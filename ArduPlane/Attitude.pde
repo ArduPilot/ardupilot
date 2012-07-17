@@ -198,8 +198,6 @@ static void calc_nav_pitch()
 }
 
 
-#define YAW_DAMPENER 0
-
 static void calc_nav_roll()
 {
 	// negative error = left turn
@@ -208,18 +206,6 @@ static void calc_nav_roll()
 	// ----------------------------------------
 	nav_roll = g.pidNavRoll.get_pid(bearing_error);	//returns desired bank angle in degrees*100
 	nav_roll = constrain(nav_roll, -g.roll_limit.get(), g.roll_limit.get());
-
-	Vector3f omega;
-	omega = ahrs.get_gyro();
-
-	// rate limiter
-	long rate		= degrees(omega.z) * 100; 										// 3rad = 17188 , 6rad = 34377
-	rate			= constrain(rate, -6000, 6000);									// limit input
-	int dampener 	= rate * YAW_DAMPENER;											// 34377 * .175 = 6000
-
-	// add in yaw dampener
-	nav_roll		-= dampener;
-	nav_roll		= constrain(nav_roll, -g.roll_limit.get(), g.roll_limit.get());
 }
 
 
