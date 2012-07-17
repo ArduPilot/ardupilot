@@ -236,8 +236,8 @@ static void NOINLINE send_location(mavlink_channel_t chan)
         millis(),
         current_loc.lat,                // in 1E7 degrees
         current_loc.lng,                // in 1E7 degrees
-        g_gps->altitude*10,             // millimeters above sea level
-        current_loc.alt * 10,           // millimeters above ground
+        g_gps->altitude * 10,             // millimeters above sea level
+        (current_loc.alt - home.alt) * 10,           // millimeters above ground
         g_gps->ground_speed * rot.a.x,  // X speed cm/s
         g_gps->ground_speed * rot.b.x,  // Y speed cm/s
         g_gps->ground_speed * rot.c.x,
