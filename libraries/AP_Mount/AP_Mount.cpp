@@ -6,7 +6,6 @@
 #include <AP_Mount.h>
 
 const AP_Param::GroupInfo AP_Mount::var_info[] PROGMEM = {
-    // index 0 was used for the old orientation matrix
 	// @Param: MODE
 	// @DisplayName: Mount operation mode
 	// @Description: Camera or antenna mount operation mode
@@ -17,27 +16,27 @@ const AP_Param::GroupInfo AP_Mount::var_info[] PROGMEM = {
     // @Param: RETRACT
 	// @DisplayName: Mount retract angles
 	// @Description: Mount angles when in retract operation mode
-	// @Units: Degrees
-	// @Range: -180 180
-	// @Increment: .01
+	// @Units: centi-Degrees
+	// @Range: -18000 17999
+	// @Increment: 1
 	// @User: Standard
     AP_GROUPINFO("RETRACT",    1, AP_Mount, _retract_angles),
 
 	// @Param: NEUTRAL
 	// @DisplayName: Mount neutral angles
 	// @Description: Mount angles when in neutral operation mode
-	// @Units: Degrees
-	// @Range: -180 180
-	// @Increment: .01
+	// @Units: centi-Degrees
+	// @Range: -18000 17999
+	// @Increment: 1
 	// @User: Standard
     AP_GROUPINFO("NEUTRAL",    2, AP_Mount, _neutral_angles),
 
     // @Param: CONTROL
 	// @DisplayName: Mount control angles
 	// @Description: Mount angles when in MavLink or RC control operation mode
-	// @Units: Degrees
-	// @Range: -180 180
-	// @Increment: .01
+	// @Units: centi-Degrees
+	// @Range: -18000 17999
+	// @Increment: 1
 	// @User: Standard
     AP_GROUPINFO("CONTROL",    3, AP_Mount, _control_angles),
 
