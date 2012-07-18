@@ -42,7 +42,10 @@ static void init_rc_in()
 	g.rc_6.set_range(0,1000);
 	g.rc_7.set_range(0,1000);
 	g.rc_8.set_range(0,1000);
+
+	#if MOUNT == ENABLED
 	update_aux_servo_function(&g.rc_camera_roll, &g.rc_camera_pitch, &g.rc_camera_yaw);
+	#endif
 }
 
 static void init_rc_out()
