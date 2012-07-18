@@ -393,7 +393,7 @@ static const AP_Param::Info var_info[] PROGMEM = {
 	GSCALAR(min_gndspeed,           "MIN_GNDSPD_CM"),
 
     // @Param: TRIM_PITCH_CD
-	// @DisplayName: Pitch angle offset 
+	// @DisplayName: Pitch angle offset
 	// @Description: offset to add to pitch - used for trimming tail draggers
 	// @Units: centi-Degrees
 	// @User: Advanced
@@ -475,6 +475,20 @@ static const AP_Param::Info var_info[] PROGMEM = {
 	// @Group: RC8_
 	// @Path: ../libraries/RC_Channel/RC_Channel_aux.cpp
 	GGROUP(rc_8,                    "RC8_", RC_Channel_aux),
+
+#if CONFIG_APM_HARDWARE == APM_HARDWARE_APM2
+	// @Group: RC9_
+	// @Path: ../libraries/RC_Channel/RC_Channel_aux.cpp
+	GGROUP(rc_9,                    "RC9_", RC_Channel_aux),
+
+	// @Group: RC10_
+	// @Path: ../libraries/RC_Channel/RC_Channel_aux.cpp
+	GGROUP(rc_10,                    "RC10_", RC_Channel_aux),
+
+	// @Group: RC11_
+	// @Path: ../libraries/RC_Channel/RC_Channel_aux.cpp
+	GGROUP(rc_11,                    "RC11_", RC_Channel_aux),
+#endif
 
 	GGROUP(pidNavRoll,              "HDNG2RLL_",  PID),
 	GGROUP(pidServoRoll,            "RLL2SRV_",   PID),

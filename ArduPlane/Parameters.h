@@ -151,6 +151,9 @@ public:
 		k_param_gcs_heartbeat_fs_enabled,
         k_param_throttle_slewrate,
 
+        k_param_rc_9,
+        k_param_rc_10,
+        k_param_rc_11,
         //
         // 200: Feed-forward gains
         //
@@ -365,6 +368,11 @@ public:
 	RC_Channel_aux	rc_6;
 	RC_Channel_aux	rc_7;
 	RC_Channel_aux	rc_8;
+#if CONFIG_APM_HARDWARE == APM_HARDWARE_APM2
+	RC_Channel_aux	rc_9;
+	RC_Channel_aux	rc_10;
+	RC_Channel_aux	rc_11;
+#endif
 
     // PID controllers
     //
