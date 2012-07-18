@@ -129,15 +129,26 @@ RC_Channel_aux::output_ch(unsigned char ch_nr)
 /// This is to be done before rc_init so that the channels get correctly initialized.
 /// It also should be called periodically because the user might change the configuration and
 /// expects the changes to take effect instantly
-void update_aux_servo_function(RC_Channel_aux* rc_a, RC_Channel_aux* rc_b, RC_Channel_aux* rc_c, RC_Channel_aux* rc_d)
+/// Supports up to seven aux servo outputs (typically CH5 ... CH11)
+/// All servos must be configured with a single call to this function
+void update_aux_servo_function(	RC_Channel_aux* rc_a,
+								RC_Channel_aux* rc_b,
+								RC_Channel_aux* rc_c,
+								RC_Channel_aux* rc_d,
+								RC_Channel_aux* rc_e,
+								RC_Channel_aux* rc_f,
+								RC_Channel_aux* rc_g)
 {
-	RC_Channel_aux::Aux_servo_function_t aux_servo_function[4];
+	RC_Channel_aux::Aux_servo_function_t aux_servo_function[7];
 	aux_servo_function[0] = (rc_a == NULL)?RC_Channel_aux::k_none:(RC_Channel_aux::Aux_servo_function_t)rc_a->function.get();
 	aux_servo_function[1] = (rc_b == NULL)?RC_Channel_aux::k_none:(RC_Channel_aux::Aux_servo_function_t)rc_b->function.get();
 	aux_servo_function[2] = (rc_c == NULL)?RC_Channel_aux::k_none:(RC_Channel_aux::Aux_servo_function_t)rc_c->function.get();
 	aux_servo_function[3] = (rc_d == NULL)?RC_Channel_aux::k_none:(RC_Channel_aux::Aux_servo_function_t)rc_d->function.get();
+	aux_servo_function[4] = (rc_e == NULL)?RC_Channel_aux::k_none:(RC_Channel_aux::Aux_servo_function_t)rc_e->function.get();
+	aux_servo_function[5] = (rc_f == NULL)?RC_Channel_aux::k_none:(RC_Channel_aux::Aux_servo_function_t)rc_f->function.get();
+	aux_servo_function[6] = (rc_g == NULL)?RC_Channel_aux::k_none:(RC_Channel_aux::Aux_servo_function_t)rc_g->function.get();
 
-	for (uint8_t i = 0; i < 4; i++) {
+	for (uint8_t i = 0; i < 7; i++) {
 		if (aux_servo_function[i] >= RC_Channel_aux::k_nr_aux_servo_functions) {
 			// invalid setting
 			aux_servo_function[i] = RC_Channel_aux::k_none;
@@ -155,6 +166,9 @@ void update_aux_servo_function(RC_Channel_aux* rc_a, RC_Channel_aux* rc_b, RC_Ch
 	if( rc_b != NULL ) { g_rc_function[aux_servo_function[1]] = rc_b; }
 	if( rc_c != NULL ) { g_rc_function[aux_servo_function[2]] = rc_c; }
 	if( rc_d != NULL ) { g_rc_function[aux_servo_function[3]] = rc_d; }
+	if( rc_e != NULL ) { g_rc_function[aux_servo_function[3]] = rc_e; }
+	if( rc_f != NULL ) { g_rc_function[aux_servo_function[3]] = rc_f; }
+	if( rc_g != NULL ) { g_rc_function[aux_servo_function[3]] = rc_g; }
 
 	//set auxiliary ranges
 	G_RC_AUX(k_flap)->set_range(0,100);
