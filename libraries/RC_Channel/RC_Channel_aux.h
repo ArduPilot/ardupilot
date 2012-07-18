@@ -66,7 +66,7 @@ public:
 	static const struct AP_Param::GroupInfo var_info[];
 };
 
-void update_aux_servo_function(RC_Channel_aux* rc_a = NULL, RC_Channel_aux* rc_b = NULL, RC_Channel_aux* rc_c = NULL, RC_Channel_aux* rc_d = NULL);
+void update_aux_servo_function(RC_Channel_aux* rc_a = NULL, RC_Channel_aux* rc_b = NULL, RC_Channel_aux* rc_c = NULL, RC_Channel_aux* rc_d = NULL, RC_Channel_aux* rc_e = NULL, RC_Channel_aux* rc_f = NULL, RC_Channel_aux* rc_g = NULL);
 extern RC_Channel_aux* g_rc_function[RC_Channel_aux::k_nr_aux_servo_functions];	// the aux. servo ch. assigned to each function
 
 #endif /* RC_CHANNEL_AUX_H_ */
