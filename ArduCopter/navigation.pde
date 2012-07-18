@@ -60,10 +60,12 @@ static void calc_XY_velocity(){
 	#if INERTIAL_NAV == ENABLED
 	// inertial_nav
 	xy_error_correction();
-	#endif
-
+	current_loc.lng = xLeadFilter.get_position(g_gps->longitude, accels_velocity.x);
+	current_loc.lat = yLeadFilter.get_position(g_gps->latitude,  accels_velocity.y);
+	#else
 	current_loc.lng = xLeadFilter.get_position(g_gps->longitude, x_actual_speed);
 	current_loc.lat = yLeadFilter.get_position(g_gps->latitude,  y_actual_speed);
+	#endif
 }
 
 static void calc_location_error(struct Location *next_loc)
@@ -195,7 +197,13 @@ static void calc_nav_rate(int16_t max_speed)
 	int32_t y_target_speed = cross_speed * temp_x + max_speed   * temp_y;
 
 	// East / West
+	// calculate rate error
+	#if INERTIAL_NAV == ENABLED
+	x_rate_error	= x_target_speed - accels_velocity.x;		// calc the speed error
+	#else
 	x_rate_error 	= x_target_speed - x_actual_speed; // 413
+	#endif
+
 	x_rate_error 	= constrain(x_rate_error, -1000, 1000);
 	nav_lon			= g.pid_nav_lon.get_pid(x_rate_error, dTnav);
 	int32_t tilt	= (x_target_speed * x_target_speed * (int32_t)g.tilt_comp) / 10000;
@@ -206,7 +214,13 @@ static void calc_nav_rate(int16_t max_speed)
 
 
 	// North / South
+	// calculate rate error
+	#if INERTIAL_NAV == ENABLED
+	y_rate_error	= y_target_speed - accels_velocity.y;		// calc the speed error
+	#else
 	y_rate_error 	= y_target_speed - y_actual_speed; // 413
+	#endif
+
 	y_rate_error 	= constrain(y_rate_error, -1000, 1000);	// added a rate error limit to keep pitching down to a minimum
 	nav_lat			= g.pid_nav_lat.get_pid(y_rate_error, dTnav);
 	tilt			= (y_target_speed * y_target_speed * (int32_t)g.tilt_comp) / 10000;
