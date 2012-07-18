@@ -17,7 +17,7 @@
 
 #include "AP_LeadFilter.h"
 
-// setup the control preferences
+/*
 int32_t
 AP_LeadFilter::get_position(int32_t pos, int16_t vel)
 {
@@ -26,4 +26,15 @@ AP_LeadFilter::get_position(int32_t pos, int16_t vel)
 	pos += (vel - _last_velocity);
 	_last_velocity = vel;
 	return pos;
+}
+*/
+
+// setup the control preferences
+int32_t
+AP_LeadFilter::get_position(int32_t pos, int16_t vel)
+{
+	// assumes a 1 second delay in the GPS
+	int16_t acc = vel - _last_velocity;
+	_last_velocity = vel;
+	return pos + vel + acc;
 }
