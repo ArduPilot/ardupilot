@@ -476,8 +476,6 @@ static bool takeoff_complete    = true;
 static bool	land_complete;
 // Altitude threshold to complete a takeoff command in autonomous modes.  Centimeters
 static int32_t	takeoff_altitude;
-// Pitch to hold during landing command in the no airspeed sensor case.  Hundredths of a degree
-static int16_t			landing_pitch;
 // Minimum pitch to hold during takeoff command execution.  Hundredths of a degree
 static int16_t			takeoff_pitch;
 
@@ -1014,7 +1012,7 @@ static void update_current_flight_mode(void)
 				}else{
 					calc_nav_pitch();               // calculate nav_pitch just to use for calc_throttle
 					calc_throttle();                // throttle based on altitude error
-					nav_pitch = landing_pitch;      // pitch held constant
+					nav_pitch = g.land_pitch_cd;      // pitch held constant
 				}
 
 				if (land_complete) {

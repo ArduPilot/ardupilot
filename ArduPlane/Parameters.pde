@@ -65,6 +65,13 @@ static const AP_Param::Info var_info[] PROGMEM = {
 	// @User: Advanced
 	GSCALAR(manual_level,           "MANUAL_LEVEL"),
 
+	// @Param: land_pitch_cd
+	// @DisplayName: Landing Pitch
+	// @Description: Used in autoland for planes without airspeed sensors in hundredths of a degree
+	// @Units: centi-Degrees
+	// @User: Advanced
+	GSCALAR(land_pitch_cd,          "land_pitch_cd"),
+
     // @Param: XTRK_GAIN_SC
 	// @DisplayName: Crosstrack Gain
 	// @Description: The scale between distance off the line and angle to meet the line (in Degrees * 100)
