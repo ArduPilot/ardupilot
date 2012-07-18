@@ -29,6 +29,12 @@
 #include <GCS_MAVLink.h>
 #include <../RC_Channel/RC_Channel_aux.h>
 
+// #defines to control function of RC Channel used to manually provide angular offset to AP_Mount when we can't use RC_Channel_aux (which is the case for ArduCopter).
+#define AP_MOUNT_MANUAL_RC_FUNCTION_DISABLED	0
+#define AP_MOUNT_MANUAL_RC_FUNCTION_ROLL		1
+#define AP_MOUNT_MANUAL_RC_FUNCTION_PITCH		2
+#define AP_MOUNT_MANUAL_RC_FUNCTION_YAW			3
+
 class AP_Mount
 {
 public:
@@ -46,7 +52,10 @@ public:
 	// should be called periodically
 	void update_mount_position();
 	void debug_output();			///< For testing and development. Called in the medium loop.
-	// Accessors
+
+	// to allow manual input of an angle from the pilot when RC_Channel_aux cannot be used
+	void set_manual_rc_channel(RC_Channel *rc);			// define which RC_Channel is to be used for manual control
+	void set_manual_rc_channel_function(int8_t fn);		// set whether manual rc channel controlls roll (1), pitch (2) or yaw (3).
 
 	// hook for eeprom variables
     static const struct AP_Param::GroupInfo var_info[];
@@ -89,5 +98,9 @@ private:
 	AP_Vector3f _retract_angles;		///< retracted position for mount, vector.x = roll vector.y = pitch, vector.z=yaw
 	AP_Vector3f _neutral_angles;		///< neutral position for mount, vector.x = roll vector.y = pitch, vector.z=yaw
 	AP_Vector3f _control_angles;		///< GCS controlled position for mount, vector.x = roll vector.y = pitch, vector.z=yaw
+
+	// RC_Channel for providing direct angular input from pilot
+	RC_Channel* _manual_rc;
+	int8_t		_manual_rc_function;
 };
 #endif

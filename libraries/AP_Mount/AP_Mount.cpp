@@ -78,6 +78,10 @@ _gps(gps)
 	_retract_angles = Vector3f(0,0,0);
 	_neutral_angles = Vector3f(0,0,0);
 	_control_angles = Vector3f(0,0,0);
+
+	// default manual rc channel to disabled
+	_manual_rc = NULL;
+	_manual_rc_function = AP_MOUNT_MANUAL_RC_FUNCTION_DISABLED;
 }
 
 //sets the servo angles for retraction, note angles are in degrees
@@ -150,12 +154,32 @@ void AP_Mount::update_mount_position()
 			G_RC_AUX(k_mount_pitch)->rc_input(&_pitch_control_angle, _pitch_angle*100);
 			G_RC_AUX(k_mount_yaw)->rc_input(&_yaw_control_angle, _yaw_angle*100);
 #else
-			if (g_rc_function[RC_Channel_aux::k_mount_roll])
-				_roll_control_angle  = g_rc_function[RC_Channel_aux::k_mount_roll]->angle_input_rad();
-			if (g_rc_function[RC_Channel_aux::k_mount_pitch])
-				_pitch_control_angle = g_rc_function[RC_Channel_aux::k_mount_pitch]->angle_input_rad();
-			if (g_rc_function[RC_Channel_aux::k_mount_yaw])
-				_yaw_control_angle   = g_rc_function[RC_Channel_aux::k_mount_yaw]->angle_input_rad();
+			// allow pilot input to come directly from an RC_Channel
+			if( _manual_rc != NULL ) {
+				float manual_angle = radians((float)(4500 - _manual_rc->control_in ) / 100.0);
+				switch( _manual_rc_function ) {
+					case AP_MOUNT_MANUAL_RC_FUNCTION_ROLL:
+						_roll_control_angle = manual_angle;
+						break;
+					case AP_MOUNT_MANUAL_RC_FUNCTION_PITCH:
+						_pitch_control_angle = manual_angle;
+						break;
+					case AP_MOUNT_MANUAL_RC_FUNCTION_YAW:
+						_yaw_control_angle = manual_angle;
+						break;
+					default:
+						// do nothing
+						break;
+				}
+			}else{
+				// take pilot's input from RC_Channel_aux
+				if (g_rc_function[RC_Channel_aux::k_mount_roll])
+					_roll_control_angle  = g_rc_function[RC_Channel_aux::k_mount_roll]->angle_input_rad();
+				if (g_rc_function[RC_Channel_aux::k_mount_pitch])
+					_pitch_control_angle = g_rc_function[RC_Channel_aux::k_mount_pitch]->angle_input_rad();
+				if (g_rc_function[RC_Channel_aux::k_mount_yaw])
+					_yaw_control_angle   = g_rc_function[RC_Channel_aux::k_mount_yaw]->angle_input_rad();
+			}
 #endif
 			stabilize();
 			break;
@@ -373,6 +397,28 @@ AP_Mount::stabilize()
 		_roll_angle  = degrees(_roll_control_angle);
 		_pitch_angle = degrees(_pitch_control_angle);
 		_yaw_angle   = degrees(_yaw_control_angle);
+	}
+}
+
+// set_manual_rc_channel - define which RC_Channel is to be used for manual control
+void
+AP_Mount::set_manual_rc_channel(RC_Channel* rc)
+{
+	_manual_rc = rc;
+}
+
+// set_manual_rc_channel_function - set whether manual rc channel is disabled, controls roll (1), pitch (2) or yaw (3).
+void
+AP_Mount::set_manual_rc_channel_function(int8_t fn)
+{
+	// update scaler if the function has changed
+	if( _manual_rc_function != fn ) {
+		_manual_rc_function = fn;
+
+		// ensure pilot's input appears in the range 0 ~ 9000 ( 90 degrees * 100 ).  We will subtract 45 degrees later to make the range +-45 degrees
+		if( _manual_rc != NULL && fn != AP_MOUNT_MANUAL_RC_FUNCTION_DISABLED ) {
+			_manual_rc->set_range( 0, 9000 );
+		}
 	}
 }
 
