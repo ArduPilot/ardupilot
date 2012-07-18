@@ -69,6 +69,7 @@ public:
         k_param_log_last_filenumber,		// *** Deprecated - remove with next eeprom number change
         k_param_reset_switch_chan,
         k_param_manual_level,
+		k_param_land_pitch_cd,
 
 		// 110: Telemetry control
 		//
@@ -337,6 +338,7 @@ public:
     AP_Int8		reset_switch_chan;
     AP_Int8		manual_level;
     AP_Int16    airspeed_cruise_cm;
+	AP_Int16	land_pitch_cd;
     AP_Int16    min_gndspeed;
     AP_Int16    pitch_trim;
     AP_Int16    RTL_altitude;
@@ -456,6 +458,7 @@ public:
         reset_switch_chan		(0),
         manual_level			(MANUAL_LEVEL),
         airspeed_cruise_cm      (AIRSPEED_CRUISE_CM),
+		land_pitch_cd			(0),
         min_gndspeed            (MIN_GNDSPEED_CM),
         pitch_trim              (0),
         RTL_altitude            (ALT_HOLD_HOME_CM),
