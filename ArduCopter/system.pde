@@ -507,9 +507,6 @@ static void set_mode(byte mode)
 			roll_pitch_mode = LOITER_RP;
 			throttle_mode 	= LOITER_THR;
 			set_next_WP(&current_loc);
-			#if INERTIAL_NAV == ENABLED
-			zero_accels();
-			#endif
 			break;
 
 		case POSITION:
