@@ -55,7 +55,7 @@ public:
 
 	void rc_input(float *control_angle, int16_t angle);
 
-	long angle_input();
+	int32_t angle_input();
 
 	float angle_input_rad();
 

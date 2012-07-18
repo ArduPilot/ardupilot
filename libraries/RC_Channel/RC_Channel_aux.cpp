@@ -85,10 +85,10 @@ RC_Channel_aux::rc_input(float *control_angle, int16_t angle)
 }
 
 /// returns the angle (degrees*100) that the RC_Channel input is receiving
-long
+int32_t
 RC_Channel_aux::angle_input()
 {
-	return (get_reverse()?-1:1) * ((long)radio_in - (long)radio_min) * ((long)angle_max - (long)angle_min) / ((long)radio_max - (long)radio_min) + (get_reverse()?angle_max:angle_min);
+	return (get_reverse()?-1:1) * (radio_in - radio_min) * (int32_t)(angle_max - angle_min) / (radio_max - radio_min) + (get_reverse()?angle_max:angle_min);
 }
 
 /// returns the angle (radians) that the RC_Channel input is receiving
