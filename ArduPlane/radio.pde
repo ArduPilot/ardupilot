@@ -28,7 +28,11 @@ static void init_rc_in()
 	//g.channel_throttle.dead_zone = 6;
 
 	//set auxiliary ranges
+#if CONFIG_APM_HARDWARE == APM_HARDWARE_APM1
 	update_aux_servo_function(&g.rc_5, &g.rc_6, &g.rc_7, &g.rc_8);
+#else
+	update_aux_servo_function(&g.rc_5, &g.rc_6, &g.rc_7, &g.rc_8, &g.rc_9, &g.rc_10, &g.rc_11);
+#endif
 }
 
 static void init_rc_out()

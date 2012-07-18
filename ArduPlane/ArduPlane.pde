@@ -897,7 +897,11 @@ static void slow_loop()
 			// ----------------------------------
 			update_servo_switches();
 
+#if CONFIG_APM_HARDWARE == APM_HARDWARE_APM1
 			update_aux_servo_function(&g.rc_5, &g.rc_6, &g.rc_7, &g.rc_8);
+#else
+			update_aux_servo_function(&g.rc_5, &g.rc_6, &g.rc_7, &g.rc_8, &g.rc_9, &g.rc_10, &g.rc_11);
+#endif
 			break;
 
 		case 2:
@@ -1056,7 +1060,7 @@ static void update_current_flight_mode(void)
 				// Substitute stick inputs for Navigation control output
 				// We use g.pitch_limit_min because its magnitude is
 				// normally greater than g.pitch_limit_max
-                
+
                 // Thanks to Yury MonZon for the altitude limit code!
 
 				nav_roll = g.channel_roll.norm_input() * g.roll_limit;
