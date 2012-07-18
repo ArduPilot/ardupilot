@@ -12,7 +12,7 @@ static int8_t	test_gps(uint8_t argc, 			const Menu::arg *argv);
 //static int8_t	test_tri(uint8_t argc, 			const Menu::arg *argv);
 //static int8_t	test_adc(uint8_t argc, 			const Menu::arg *argv);
 static int8_t	test_ins(uint8_t argc, 			const Menu::arg *argv);
-static int8_t	test_imu(uint8_t argc, 			const Menu::arg *argv);
+//static int8_t	test_imu(uint8_t argc, 			const Menu::arg *argv);
 //static int8_t	test_dcm_eulers(uint8_t argc, 	const Menu::arg *argv);
 //static int8_t	test_dcm(uint8_t argc, 			const Menu::arg *argv);
 //static int8_t	test_omega(uint8_t argc, 		const Menu::arg *argv);
@@ -66,7 +66,7 @@ const struct Menu::command test_menu_commands[] PROGMEM = {
 	{"gps",			test_gps},
 //	{"adc", 		test_adc},
 	{"ins", 		test_ins},
-	{"imu",			test_imu},
+//	{"imu",			test_imu},
 //	{"dcm",			test_dcm_eulers},
 	//{"omega",		test_omega},
 //	{"stab_d",		test_stab_d},
@@ -419,6 +419,69 @@ test_radio(uint8_t argc, const Menu::arg *argv)
 #endif
 */
 
+/*
+static int8_t
+test_adc(uint8_t argc, const Menu::arg *argv)
+{
+	ins.init(&timer_scheduler);
+
+	int8_t mytimer = 0;
+	startup_ground();
+	Serial.println("OK");
+
+	while(1){
+		// We want this to execute fast
+		// ----------------------------
+		uint32_t timer 			= micros();
+
+		if ((timer - fast_loopTimer) >= 10000 && imu.new_data_available()) {
+			G_Dt 				= (float)(timer - fast_loopTimer) / 1000000.f;		// used by PI Loops
+			fast_loopTimer 		= timer;
+
+			read_AHRS();
+
+			//calc_inertia();
+			accels_rotated		= ahrs.get_dcm_matrix() * imu.get_accel();
+			//accels_rotated		+= accels_offset;						// skew accels to account for long term error using calibration
+
+			mytimer++;
+
+			if ((timer - fiftyhz_loopTimer) >= 20000) {
+				fiftyhz_loopTimer		= timer;
+				//sensed_loc.lng = sensed_loc.lat = sensed_loc.alt = 0;
+
+				// position fix
+				//inertial_error_correction();
+			}
+
+			if (mytimer >= 10){
+				float test = sqrt(sq(accels_rotated.x) + sq(accels_rotated.y) + sq(accels_rotated.z)) / 9.80665;
+
+				Vector3f _accels = imu.get_accel();
+				mytimer = 0;
+
+
+				Serial.printf("%1.4f, %1.4f, %1.4f  |   %1.4f, %1.4f, %1.4f   |  %d, %1.4f, %d, %1.4f \n",
+									_accels.x,
+									_accels.y,
+									_accels.z,
+									accels_rotated.x,
+									accels_rotated.y,
+									accels_rotated.z,
+									test);
+
+
+			}
+
+			if(Serial.available() > 0){
+				return (0);
+			}
+		}
+	}
+	return (0);
+}
+*/
+
 static int8_t
 test_ins(uint8_t argc, const Menu::arg *argv)
 {
@@ -441,6 +504,8 @@ test_ins(uint8_t argc, const Menu::arg *argv)
 			ins.get_accels(accel);
 			temp = ins.temperature();
 
+			float test = sqrt(sq(accel[0]) + sq(accel[1]) + sq(accel[2])) / 9.80665;
+
 			Serial.printf_P(PSTR("g"));
 
 			for (int i = 0; i < 3; i++) {
@@ -452,7 +517,10 @@ test_ins(uint8_t argc, const Menu::arg *argv)
 			for (int i = 0; i < 3; i++) {
 				Serial.printf_P(PSTR(" %7.4f"),accel[i]);
 			}
-			Serial.printf_P(PSTR(" t %7.4f \n"), temp);
+
+			Serial.printf_P(PSTR(" t %7.4f "), temp);
+			Serial.printf_P(PSTR(" | %7.4f \n"), test);
+
 			delay(40);
 			if(Serial.available() > 0){
 				return (0);
@@ -465,6 +533,7 @@ test_ins(uint8_t argc, const Menu::arg *argv)
 /*
   test the IMU interface
  */
+/*
 static int8_t
 test_imu(uint8_t argc, const Menu::arg *argv)
 {
@@ -500,6 +569,87 @@ test_imu(uint8_t argc, const Menu::arg *argv)
 		}
 	#endif
 }
+*/
+
+/*
+static int8_t
+test_imu(uint8_t argc, const Menu::arg *argv)
+{
+	print_hit_enter();
+	Serial.printf_P(PSTR("ADC\n"));
+	adc.Init(&timer_scheduler);
+
+	delay(1000);
+	Vector3f avg;
+	avg.x = adc.Ch(4);
+	avg.y = adc.Ch(5);
+	avg.z = adc.Ch(6);
+
+	//Serial.printf_P(PSTR("init %.2f, %.2f, %.2f\n"), avg.x, avg.y, avg.z);
+	Vector3f low = avg;
+	Vector3f high = avg;
+
+	while(1){
+		delay(100);
+		avg.x = avg.x * .95 + adc.Ch(4) * .05;
+		avg.y = avg.y * .95 + adc.Ch(5) * .05;
+		avg.z = avg.z * .95 + adc.Ch(6) * .05;
+
+		if(avg.x > high.x)
+			high.x = ceil(high.x *.9 + avg.x * .1);
+
+		if(avg.y > high.y)
+			high.y = ceil(high.y *.9 + avg.y * .1);
+
+		if(avg.z > high.z)
+			high.z = ceil(high.z *.9 + avg.z * .1);
+
+		//
+		if(avg.x < low.x)
+			low.x = floor(low.x *.9 + avg.x * .1);
+
+		if(avg.y < low.y)
+			low.y = floor(low.y *.9 + avg.y * .1);
+
+		if(avg.z < low.z)
+			low.z = floor(low.z *.9 + avg.z * .1);
+
+		Serial.printf_P(PSTR("%.2f, %.2f, %.2f \t| %.2f, %.2f, %.2f \t| %.2f, %.2f, %.2f\n"), avg.x, avg.y, avg.z, low.x, low.y, low.z, high.x, high.y, high.z);
+
+		//Serial.printf_P(PSTR("%.2f, %.2f, %.2f \t| %d, %d\n"), avg.x, avg.y, avg.z, _count[0], _sum[0]);
+
+		//Serial.println();
+		if(Serial.available() > 0){
+			Serial.printf_P(PSTR("Y to save\n"));
+			int c;
+			c = Serial.read();
+
+			do {
+				c = Serial.read();
+			} while (-1 == c);
+
+			if (('y' == c) || ('Y' == c)){
+				ins._x_high 	= high.x;
+				ins._x_low 		= low.x;
+				ins._y_high 	= high.y;
+				ins._y_low 		= low.y;
+				ins._z_high 	= high.z;
+				ins._z_low 		= low.z;
+				ins._x_high.save();
+				ins._x_low.save();
+				ins._y_high.save();
+				ins._y_low.save();
+				ins._z_high.save();
+				ins._z_low.save();
+				Serial.printf_P(PSTR("saved\n"));
+			}
+
+			return (0);
+		}
+	}
+}
+*/
+
 
 
 /*
