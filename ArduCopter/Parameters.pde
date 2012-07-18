@@ -210,13 +210,29 @@ static const AP_Param::Info var_info[] PROGMEM = {
 
 	// RC channel
 	//-----------
+	// @Group: RC1_
+	// @Path: ../libraries/RC_Channel/RC_Channel.cpp
 	GGROUP(rc_1,	"RC1_", RC_Channel),
+	// @Group: RC2_
+	// @Path: ../libraries/RC_Channel/RC_Channel.cpp
 	GGROUP(rc_2,	"RC2_", RC_Channel),
+	// @Group: RC3_
+	// @Path: ../libraries/RC_Channel/RC_Channel.cpp
 	GGROUP(rc_3,	"RC3_", RC_Channel),
+	// @Group: RC4_
+	// @Path: ../libraries/RC_Channel/RC_Channel.cpp
 	GGROUP(rc_4,	"RC4_", RC_Channel),
+	// @Group: RC5_
+	// @Path: ../libraries/RC_Channel/RC_Channel.cpp
 	GGROUP(rc_5,	"RC5_", RC_Channel),
+	// @Group: RC6_
+	// @Path: ../libraries/RC_Channel/RC_Channel.cpp
 	GGROUP(rc_6,	"RC6_", RC_Channel),
+	// @Group: RC7_
+	// @Path: ../libraries/RC_Channel/RC_Channel.cpp
 	GGROUP(rc_7,    "RC7_", RC_Channel),
+	// @Group: RC8_
+	// @Path: ../libraries/RC_Channel/RC_Channel.cpp
 	GGROUP(rc_8,    "RC8_", RC_Channel),
 
 #if MOUNT == ENABLED
