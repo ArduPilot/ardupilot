@@ -70,6 +70,7 @@ public:
         k_param_reset_switch_chan,
         k_param_manual_level,
 		k_param_land_pitch_cd,
+		k_param_ins,
 
 		// 110: Telemetry control
 		//
@@ -292,7 +293,6 @@ public:
     //
     AP_Int8     flybywire_airspeed_min;
     AP_Int8     flybywire_airspeed_max;
-    AP_Int16    FBWB_min_altitude;
 
     // Throttle
     //
@@ -338,23 +338,25 @@ public:
     AP_Int8		reset_switch_chan;
     AP_Int8		manual_level;
     AP_Int16    airspeed_cruise_cm;
+    AP_Int16    RTL_altitude;
 	AP_Int16	land_pitch_cd;
     AP_Int16    min_gndspeed;
     AP_Int16    pitch_trim;
-    AP_Int16    RTL_altitude;
+    AP_Int16    FBWB_min_altitude;
+
     AP_Int8		compass_enabled;
     AP_Int16    angle_of_attack;
     AP_Int8		battery_monitoring;	// 0=disabled, 3=voltage only, 4=voltage and current
+    AP_Int8		flap_1_percent;
+    AP_Int8		flap_1_speed;
+    AP_Int8		flap_2_percent;
+    AP_Int8		flap_2_speed;
     AP_Float	volt_div_ratio;
     AP_Float	curr_amp_per_volt;
     AP_Float	input_voltage;
 	AP_Int16	pack_capacity;		// Battery pack capacity less reserve
     AP_Int8		inverted_flight_ch; // 0=disabled, 1-8 is channel for inverted flight trigger
     AP_Int8		sonar_enabled;
-    AP_Int8		flap_1_percent;
-    AP_Int8		flap_1_speed;
-    AP_Int8		flap_2_percent;
-    AP_Int8		flap_2_speed;
 
 	// Camera
 #if CAMERA == ENABLED
@@ -458,19 +460,19 @@ public:
         reset_switch_chan		(0),
         manual_level			(MANUAL_LEVEL),
         airspeed_cruise_cm      (AIRSPEED_CRUISE_CM),
+        RTL_altitude            (ALT_HOLD_HOME_CM),
 		land_pitch_cd			(0),
         min_gndspeed            (MIN_GNDSPEED_CM),
         pitch_trim              (0),
-        RTL_altitude            (ALT_HOLD_HOME_CM),
         FBWB_min_altitude       (ALT_HOLD_FBW_CM),
         compass_enabled			(MAGNETOMETER),
+        battery_monitoring 		(DISABLED),
         flap_1_percent			(FLAP_1_PERCENT),
         flap_1_speed			(FLAP_1_SPEED),
         flap_2_percent			(FLAP_2_PERCENT),
         flap_2_speed			(FLAP_2_SPEED),
 
 
-        battery_monitoring 		(DISABLED),
         volt_div_ratio			(VOLT_DIV_RATIO),
         curr_amp_per_volt		(CURR_AMP_PER_VOLT),
         input_voltage			(INPUT_VOLTAGE),
