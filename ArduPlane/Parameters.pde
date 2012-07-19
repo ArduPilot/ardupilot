@@ -383,7 +383,7 @@ static const AP_Param::Info var_info[] PROGMEM = {
 	// @Description: Airspeed in cm/s to aim for when airspeed is enabled in auto mode
 	// @Units: cm/s
 	// @User: User
-	GSCALAR(airspeed_cruise,        "TRIM_ARSPD_CM"),
+	GSCALAR(airspeed_cruise_cm,        "TRIM_ARSPD_CM"),
 
     // @Param: MIN_GNDSPD_CM
 	// @DisplayName: Minimum ground speed

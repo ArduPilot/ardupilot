@@ -995,7 +995,7 @@ static void update_current_flight_mode(void)
 					if(nav_pitch < (long)takeoff_pitch)
 						nav_pitch = (long)takeoff_pitch;
 				} else {
-					nav_pitch = (long)((float)g_gps->ground_speed / (float)g.airspeed_cruise * (float)takeoff_pitch * 0.5);
+					nav_pitch = (long)((float)g_gps->ground_speed / (float)g.airspeed_cruise_cm * (float)takeoff_pitch * 0.5);
 					nav_pitch = constrain(nav_pitch, 500l, (long)takeoff_pitch);
 				}
 

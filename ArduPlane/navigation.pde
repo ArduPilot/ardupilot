@@ -67,7 +67,7 @@ static void calc_airspeed_errors()
     float aspeed_cm = airspeed.get_airspeed_cm();
 
     // Normal airspeed target
-    target_airspeed = g.airspeed_cruise;
+    target_airspeed = g.airspeed_cruise_cm;
 
     // FBW_B airspeed target
     if (control_mode == FLY_BY_WIRE_B) {
