@@ -257,6 +257,7 @@ static void do_takeoff()
 static void do_nav_wp()
 {
 	wp_control = WP_MODE;
+	slow_wp = false;
 
 	set_next_WP(&command_nav_queue);
 
