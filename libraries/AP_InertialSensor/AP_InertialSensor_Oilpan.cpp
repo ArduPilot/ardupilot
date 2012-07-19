@@ -25,7 +25,9 @@ const float AP_InertialSensor_Oilpan::_adc_constraint = 900;
 const float AP_InertialSensor_Oilpan::_gravity = 423.8;
 
 ///< would like to use _gravity here, but cannot
-const float AP_InertialSensor_Oilpan::_accel_scale = 9.80665 / 423.8;
+//const float AP_InertialSensor_Oilpan::_accel_x_scale = 9.80665 / 413.195;
+//const float AP_InertialSensor_Oilpan::_accel_y_scale = 9.80665 / 412.985;
+//const float AP_InertialSensor_Oilpan::_accel_z_scale = 9.80665 / 403.69;
 
 #define ToRad(x) (x*0.01745329252)  // *pi/180
 // IDG500 Sensitivity (from datasheet) => 2.0mV/degree/s,
@@ -35,10 +37,28 @@ const float AP_InertialSensor_Oilpan::_gyro_gain_x = ToRad(0.4);
 const float AP_InertialSensor_Oilpan::_gyro_gain_y = ToRad(0.41);
 const float AP_InertialSensor_Oilpan::_gyro_gain_z = ToRad(0.41);
 
+const AP_Param::GroupInfo AP_InertialSensor_Oilpan::var_info[] PROGMEM = {
+    // index 0 was used for the old orientation matrix
+    AP_GROUPINFO("XH",  	0, AP_InertialSensor_Oilpan, _x_high),
+    AP_GROUPINFO("XL",    	1, AP_InertialSensor_Oilpan, _x_low),
+    AP_GROUPINFO("YH",  	2, AP_InertialSensor_Oilpan, _y_high),
+    AP_GROUPINFO("YL",    	3, AP_InertialSensor_Oilpan, _y_low),
+    AP_GROUPINFO("ZH",		4, AP_InertialSensor_Oilpan, _z_high),
+    AP_GROUPINFO("ZL",		5, AP_InertialSensor_Oilpan, _z_low),
+    AP_GROUPEND
+};
+
+
 /* ------ Public functions -------------------------------------------*/
 
 AP_InertialSensor_Oilpan::AP_InertialSensor_Oilpan( AP_ADC * adc ) :
-  _adc(adc)
+  _adc(adc),
+  _x_high(2465),
+  _x_low(1617),
+  _y_high(2465),
+  _y_low(1617),
+  _z_high(2465),
+  _z_low(1617)
 {
   _gyro.x = 0;
   _gyro.y = 0;
@@ -51,6 +71,13 @@ AP_InertialSensor_Oilpan::AP_InertialSensor_Oilpan( AP_ADC * adc ) :
 uint16_t AP_InertialSensor_Oilpan::init( AP_PeriodicProcess * scheduler)
 {
   _adc->Init(scheduler);
+
+	_accel_mid.x 	= (_x_high + _x_low) / 2;
+	_accel_mid.y 	= (_y_high + _y_low) / 2;
+	_accel_mid.z 	= (_z_high + _z_low) / 2;
+	_accel_scale.x 	= 9.80665 / ((float)_x_high - _accel_mid.x);
+	_accel_scale.y 	= 9.80665 / ((float)_y_high - _accel_mid.y);
+	_accel_scale.z 	= 9.80665 / ((float)_z_high - _accel_mid.z);
 
 #if defined(DESKTOP_BUILD)
 	return AP_PRODUCT_ID_SITL;
@@ -72,9 +99,20 @@ bool AP_InertialSensor_Oilpan::update()
   _gyro.y = _gyro_gain_y * _sensor_signs[1] * _gyro_apply_std_offset( adc_values[1] );
   _gyro.z = _gyro_gain_z * _sensor_signs[2] * _gyro_apply_std_offset( adc_values[2] );
 
-  _accel.x = _accel_scale * _sensor_signs[3] * _accel_apply_std_offset( adc_values[3] );
-  _accel.y = _accel_scale * _sensor_signs[4] * _accel_apply_std_offset( adc_values[4] );
-  _accel.z = _accel_scale * _sensor_signs[5] * _accel_apply_std_offset( adc_values[5] );
+ // _accel.x = _accel_x_scale * _sensor_signs[3] * _accel_apply_std_offset( adc_values[3] );
+ // _accel.y = _accel_y_scale * _sensor_signs[4] * _accel_apply_std_offset( adc_values[4] );
+ // _accel.z = _accel_z_scale * _sensor_signs[5] * _accel_apply_std_offset( adc_values[5] );
+
+	_accel.x = _accel_scale.x * _sensor_signs[3] * (adc_values[3] - _accel_mid.x);
+	_accel.y = _accel_scale.y * _sensor_signs[4] * (adc_values[4] - _accel_mid.y);
+	_accel.z = _accel_scale.z * _sensor_signs[5] * (adc_values[5] - _accel_mid.z);
+
+
+/*
+X  = 1619.30 to 2445.69
+Y =  1609.45 to 2435.42
+Z =  1627.44  to 2434.82
+*/
 
   return true;
 }

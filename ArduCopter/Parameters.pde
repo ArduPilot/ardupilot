@@ -57,7 +57,7 @@ static const AP_Param::Info var_info[] PROGMEM = {
 	// @Param: BATT_CAPACITY
 	// @DisplayName: Battery Capacity
 	// @Description: Battery capacity in milliamp-hours (mAh)
-	// @Units: mAh 
+	// @Units: mAh
 	GSCALAR(pack_capacity,	"BATT_CAPACITY"),
 
 	// @Param: MAG_ENABLE
@@ -306,6 +306,10 @@ static const AP_Param::Info var_info[] PROGMEM = {
 	// @Group: COMPASS_
 	// @Path: ../libraries/AP_Compass/Compass.cpp
 	GOBJECT(compass,        "COMPASS_", Compass),
+
+	// @Group: INS_
+	// @Path: ../libraries/AP_InertialSensor/AP_InertialSensor_Oilpan.cpp
+	GOBJECT(ins,        	"INS_", AP_InertialSensor_Oilpan),
 
 	GOBJECT(gcs0,			"SR0_",     GCS_MAVLINK),
 	GOBJECT(gcs3,			"SR3_",     GCS_MAVLINK),
