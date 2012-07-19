@@ -137,7 +137,6 @@ get_acro_yaw(int32_t target_rate)
 static int16_t
 get_acro_yaw2(int32_t target_rate)
 {
-	static int32_t last_target_rate = 0;			// last iteration's target rate
 	int32_t p,i,d;									// used to capture pid values for logging
 	int32_t	rate_error;								// current yaw rate error
 	int32_t	current_rate;							// current real yaw rate
@@ -155,6 +154,7 @@ get_acro_yaw2(int32_t target_rate)
 	//strengthen the yaw output to slow down the yaw!
 
 #if (FRAME_CONFIG == HELI_FRAME	|| FRAME_CONFIG == TRI_FRAME)
+	static int32_t last_target_rate = 0;			// last iteration's target rate
 	if ( target_rate > 0 && last_target_rate > target_rate && rate_error < 0 ){
 		decel_boost = 1;
 	} else if (target_rate < 0 && last_target_rate < target_rate && rate_error > 0 ){
@@ -345,10 +345,7 @@ get_rate_yaw(int32_t target_rate)
 static int16_t
 get_nav_throttle(int32_t z_error)
 {
-	int16_t z_rate_error, z_target_speed, output;
-
-	// a small boost for alt control to improve takeoff
-	//int16_t boost_p	= constrain(z_error >> 1, -10, 50);
+	int16_t z_target_speed;
 
 	// convert to desired Rate:
 	z_target_speed 		= g.pi_alt_hold.get_p(z_error);
@@ -360,6 +357,16 @@ get_nav_throttle(int32_t z_error)
 	// compensates throttle setpoint error for hovering
 	int16_t i_hold 	= g.pi_alt_hold.get_i(z_error, .02);
 
+	// output control:
+	return get_throttle_rate(z_target_speed) + i_hold; //+ boost_p;
+}
+
+
+static int16_t
+get_throttle_rate(int16_t z_target_speed)
+{
+	int16_t z_rate_error, output;
+
 	// calculate rate error
 	#if INERTIAL_NAV == ENABLED
 	z_rate_error	= z_target_speed - accels_velocity.z;			// calc the speed error
@@ -367,11 +374,16 @@ get_nav_throttle(int32_t z_error)
 	z_rate_error	= z_target_speed - climb_rate;		// calc the speed error
 	#endif
 
-	// limit the rate
-	output =  constrain(g.pid_throttle.get_pid(z_rate_error, .02), -80, 120);
+	int32_t tmp	= (z_target_speed * z_target_speed * (int32_t)g.throttle_cruise) / 200000;
 
-	// output control:
-	return output + i_hold; //+ boost_p;
+	if(z_target_speed < 0) tmp = -tmp;
+
+	output			= constrain(tmp, -3200, 3200);
+
+	// limit the rate
+	output +=  constrain(g.pid_throttle.get_pid(z_rate_error, .02), -80, 120);
+
+	return output;
 }
 
 // Keeps old data out of our calculation / logs
@@ -777,7 +789,7 @@ void roll_pitch_toy()
 	//g.rc_4.servo_out = get_stabilize_yaw(nav_yaw);
 
 	if(g.rc_1.control_in != 0){ // roll
-		g.rc_4.servo_out = get_acro_yaw(yaw_rate);
+		g.rc_4.servo_out = get_acro_yaw(yaw_rate/2);
 		yaw_stopped = false;
 		yaw_timer = 150;
 	}else if (!yaw_stopped){
