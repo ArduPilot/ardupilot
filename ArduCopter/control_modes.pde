@@ -47,11 +47,7 @@ static void reset_control_switch()
 // set this to your trainer switch
 static void read_trim_switch()
 {
-	#if CH7_OPTION == CH7_FLIP
-		if (g.rc_7.radio_in > CH_7_PWM_TRIGGER && g.rc_3.control_in != 0){
-			init_flip();
-		}
-	#elif CH7_OPTION == CH7_SET_HOVER
+	#if CH7_OPTION == CH7_SET_HOVER
 		// switch is engaged
 		if (g.rc_7.radio_in > CH_7_PWM_TRIGGER){
 			trim_flag = true;
@@ -75,6 +71,11 @@ static void read_trim_switch()
 
 	if(g.ch7_option == CH7_SIMPLE_MODE){
 		do_simple = (g.rc_7.radio_in > CH_7_PWM_TRIGGER);
+
+	}else if (g.ch7_option == CH7_FLIP){
+		if (g.rc_7.radio_in > CH_7_PWM_TRIGGER && g.rc_3.control_in != 0){
+			init_flip();
+		}
 
 	}else if (g.ch7_option == CH7_RTL){
 		if (trim_flag == false && g.rc_7.radio_in > CH_7_PWM_TRIGGER){
