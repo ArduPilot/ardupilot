@@ -439,11 +439,10 @@ static void set_mode(byte mode)
 	motors.auto_armed(g.rc_3.control_in > 0);
 
 	// clearing value used in interactive alt hold
-	manual_boost = 0;
+	reset_throttle_counter = 0;
 
 	// clearing value used to force the copter down in landing mode
 	landing_boost = 0;
-	reset_throttle_flag = false;
 
 	// do we want to come to a stop or pass a WP?
 	slow_wp = false;
