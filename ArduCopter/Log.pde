@@ -296,17 +296,16 @@ static void Log_Write_Raw()
 	DataFlash.WriteByte(HEAD_BYTE2);
 	DataFlash.WriteByte(LOG_RAW_MSG);
 
-	DataFlash.WriteLong(get_int(accels_offset.x));
 	DataFlash.WriteLong(get_int(accels_velocity.x));
-	DataFlash.WriteLong(get_int(speed_error.x));
-
-	DataFlash.WriteLong(get_int(accels_offset.z));
+	DataFlash.WriteInt(x_actual_speed);
+	DataFlash.WriteLong(get_int(accels_velocity.y));
+	DataFlash.WriteInt(y_actual_speed);
 	DataFlash.WriteLong(get_int(accels_velocity.z));
-	DataFlash.WriteLong(get_int(speed_error.z));
+	DataFlash.WriteInt(climb_rate_actual);
 
-	DataFlash.WriteLong(get_int(accel.x));
-	DataFlash.WriteLong(get_int(accel.y));
-	DataFlash.WriteLong(get_int(accel.z));
+	//DataFlash.WriteLong(get_int(accel.x));
+	//DataFlash.WriteLong(get_int(accel.y));
+	//DataFlash.WriteLong(get_int(accel.z));
 
 	DataFlash.WriteByte(END_BYTE);
 }
@@ -314,6 +313,7 @@ static void Log_Write_Raw()
 // Read a raw accel/gyro packet
 static void Log_Read_Raw()
 {
+	/*
 	float logvar;
 	Serial.printf_P(PSTR("RAW,"));
 	for (int y = 0; y < 9; y++) {
@@ -322,6 +322,23 @@ static void Log_Read_Raw()
 		Serial.print(", ");
 	}
 	Serial.println(" ");
+	*/
+
+	float vx 	= get_float(DataFlash.ReadLong());
+	int16_t sx	= DataFlash.ReadInt();
+	float vy 	= get_float(DataFlash.ReadLong());
+	int16_t sy	= DataFlash.ReadInt();
+	float vz 	= get_float(DataFlash.ReadLong());
+	int16_t sz	= DataFlash.ReadInt();
+
+	Serial.printf_P(PSTR("RAW, %1.4f, %d, %1.4f, %d, %1.4f, %d\n"),
+							vx,
+							sx,
+							vy,
+							sy,
+							vz,
+							sz);
+
 }
 #else
 static void Log_Write_Raw()
@@ -632,11 +649,10 @@ static void Log_Write_Control_Tuning()
 	DataFlash.WriteInt(next_WP.alt);					// 4
 	DataFlash.WriteInt(nav_throttle);					// 5
 	DataFlash.WriteInt(angle_boost);					// 6
-	DataFlash.WriteInt(manual_boost);					// 7
-	DataFlash.WriteInt(climb_rate_actual);				// 8
-	DataFlash.WriteInt(g.rc_3.servo_out);				// 9
-	DataFlash.WriteInt(g.pi_alt_hold.get_integrator());	// 10
-	DataFlash.WriteInt(g.pid_throttle.get_integrator());// 11
+	DataFlash.WriteInt(climb_rate_actual);				// 7
+	DataFlash.WriteInt(g.rc_3.servo_out);				// 8
+	DataFlash.WriteInt(g.pi_alt_hold.get_integrator());	// 9
+	DataFlash.WriteInt(g.pid_throttle.get_integrator());// 10
 
 	DataFlash.WriteByte(END_BYTE);
 }
@@ -648,7 +664,7 @@ static void Log_Read_Control_Tuning()
 
 	Serial.printf_P(PSTR("CTUN, "));
 
-	for(uint8_t i = 1; i < 11; i++ ){
+	for(uint8_t i = 1; i < 10; i++ ){
 		temp = DataFlash.ReadInt();
 		Serial.printf("%d, ", (int)temp);
 	}
