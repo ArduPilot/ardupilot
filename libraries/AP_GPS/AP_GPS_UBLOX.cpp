@@ -348,11 +348,6 @@ AP_GPS_UBLOX::_configure_gps(void)
 	_configure_message_rate(CLASS_NAV, MSG_SOL, 1);
 	_configure_message_rate(CLASS_NAV, MSG_VELNED, 1);
 
-	_configure_message_rate(CLASS_NAV, MSG_SOL, 1);
-	_configure_message_rate(CLASS_NAV, MSG_SOL, 1);
-	_configure_message_rate(CLASS_NAV, MSG_SOL, 1);
-	_configure_message_rate(CLASS_NAV, MSG_SOL, 1);
-
 	// ask for the current navigation settings
 	_send_message(CLASS_CFG, MSG_CFG_NAV_SETTINGS, NULL, 0);	
 }
