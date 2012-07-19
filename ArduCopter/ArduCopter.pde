@@ -613,9 +613,7 @@ static struct 	Location circle_WP;
 ////////////////////////////////////////////////////////////////////////////////
 // Used to enable Jose's flip code
 // when true the Roll/Pitch/Throttle control is sent to the flip state machine
-#if CH7_OPTION == CH7_FLIP
 static bool do_flip = false;
-#endif
 // Used to track the CH7 toggle state.
 // When CH7 goes LOW PWM from HIGH PWM, this value will have been set true
 // This allows advanced functionality to know when to execute
@@ -1611,16 +1609,15 @@ void update_roll_pitch_mode(void)
 
 
 	// hack to do auto_flip - need to remove, no one is using.
-	#if CH7_OPTION == CH7_FLIP
 	if (do_flip){
 		if(g.rc_1.control_in == 0){
 			roll_flip();
 			return;
 		}else{
+			// force an exit from the loop if we are not hands off sticks.
 			do_flip = false;
 		}
 	}
-	#endif
 
 	switch(roll_pitch_mode){
 		case ROLL_PITCH_ACRO:
