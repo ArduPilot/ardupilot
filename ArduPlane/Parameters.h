@@ -116,7 +116,7 @@ public:
         k_param_roll_limit,
         k_param_pitch_limit_max,
         k_param_pitch_limit_min,
-        k_param_airspeed_cruise,
+        k_param_airspeed_cruise_cm,
         k_param_RTL_altitude,
         k_param_inverted_flight_ch,
         k_param_min_gndspeed,
@@ -336,7 +336,7 @@ public:
     AP_Int16	log_last_filenumber;		// *** Deprecated - remove with next eeprom number change
     AP_Int8		reset_switch_chan;
     AP_Int8		manual_level;
-    AP_Int16    airspeed_cruise;
+    AP_Int16    airspeed_cruise_cm;
     AP_Int16    min_gndspeed;
     AP_Int16    pitch_trim;
     AP_Int16    RTL_altitude;
@@ -455,7 +455,7 @@ public:
         log_last_filenumber     (0),
         reset_switch_chan		(0),
         manual_level			(MANUAL_LEVEL),
-        airspeed_cruise         (AIRSPEED_CRUISE_CM),
+        airspeed_cruise_cm      (AIRSPEED_CRUISE_CM),
         min_gndspeed            (MIN_GNDSPEED_CM),
         pitch_trim              (0),
         RTL_altitude            (ALT_HOLD_HOME_CM),

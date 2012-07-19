@@ -210,7 +210,7 @@ static void calc_nav_roll()
 	if(airspeed.use()) {
 		speed = airspeed.get_airspeed();
 	} else {
-		speed = g.airspeed_cruise*0.01;
+		speed = g.airspeed_cruise_cm*0.01;
 		
 		// Floor the speed so that the user can't enter a bad value
 		if(speed < 6) {
@@ -384,7 +384,7 @@ static void set_servos(void)
 			if (control_mode == FLY_BY_WIRE_B) {
 				flapSpeedSource = ((float)target_airspeed)/100;
 			} else if (airspeed.use()) {
-				flapSpeedSource = g.airspeed_cruise/100;
+				flapSpeedSource = g.airspeed_cruise_cm/100;
 			} else {
 				flapSpeedSource = g.throttle_cruise;
 			}

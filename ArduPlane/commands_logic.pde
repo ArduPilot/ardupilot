@@ -523,7 +523,7 @@ static void do_change_speed()
 	{
 		case 0: // Airspeed
 			if(next_nonnav_command.alt > 0)
-				g.airspeed_cruise.set(next_nonnav_command.alt * 100);
+				g.airspeed_cruise_cm.set(next_nonnav_command.alt * 100);
 			break;
 		case 1: // Ground speed
 			g.min_gndspeed.set(next_nonnav_command.alt * 100);
