@@ -278,7 +278,7 @@ static int16_t get_desired_speed(int16_t max_speed, bool _slow)
 	return max_speed;
 }
 
-static int16_t get_desired_climb_rate(int16_t speed)
+static int16_t get_desired_climb_rate()
 {
 	if(alt_change_flag == ASCENDING){
 		return constrain(altitude_error / 4, 65, 180); // 180cm /s up
