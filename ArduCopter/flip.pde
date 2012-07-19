@@ -1,12 +1,11 @@
 // 2010 Jose Julio
-// 2011 Adapted for AC2 by Jason Short
+// 2011 Adapted and updated for AC2 by Jason Short
 //
 // Automatic Acrobatic Procedure (AAP) v1 : Roll flip
 // State machine aproach:
 //    Some states are fixed commands (for a fixed time)
 //    Some states are fixed commands (until some IMU condition)
 //    Some states include controls inside
-#if CH7_OPTION == CH7_FLIP
 uint8_t flip_timer;
 uint8_t	flip_state;
 
@@ -85,4 +84,3 @@ void roll_flip()
 			break;
 	}
 }
-#endif
