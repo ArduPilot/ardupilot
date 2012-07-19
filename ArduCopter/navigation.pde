@@ -261,10 +261,10 @@ static int16_t get_desired_speed(int16_t max_speed, bool _slow)
 
 	// max_speed is default 600 or 6m/s
 	if(_slow){
-		max_speed 		= min(max_speed, wp_distance / 2);
+		max_speed 		= min(max_speed, wp_distance / 4);
 		max_speed 		= max(max_speed, 0);
 	}else{
-		max_speed 		= min(max_speed, wp_distance);
+		max_speed 		= min(max_speed, wp_distance / 2);
 		max_speed 		= max(max_speed, WAYPOINT_SPEED_MIN);	// go at least 100cm/s
 	}
 
@@ -281,10 +281,10 @@ static int16_t get_desired_speed(int16_t max_speed, bool _slow)
 static int16_t get_desired_climb_rate(int16_t speed)
 {
 	if(alt_change_flag == ASCENDING){
-		return constrain(altitude_error / 4, 65, speed);
+		return constrain(altitude_error / 4, 65, 180); // 180cm /s up
 
 	}else if(alt_change_flag == DESCENDING){
-		return constrain(altitude_error / 6, -speed, -10);
+		return constrain(altitude_error / 6, -100, 0); // -100cm /s down
 
 	}else{
 		return 0;
