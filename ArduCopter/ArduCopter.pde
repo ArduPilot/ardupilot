@@ -272,10 +272,10 @@ AP_TimerProcess timer_scheduler;
 	AP_Baro_BMP085_HIL      barometer;
 	AP_Compass_HIL          compass;
 	AP_GPS_HIL              g_gps_driver(NULL);
-    AP_IMU_Shim imu;
-    AP_AHRS_DCM  ahrs(&imu, g_gps);
-    AP_PeriodicProcessStub timer_scheduler;
-    AP_InertialSensor_Stub ins;
+    AP_IMU_Shim 			imu;
+    AP_AHRS_DCM  			ahrs(&imu, g_gps);
+    AP_PeriodicProcessStub 	timer_scheduler;
+    AP_InertialSensor_Stub 	ins;
 
     static int32_t          gps_base_alt;
 
@@ -656,7 +656,7 @@ static int32_t		baro_alt;
 // The climb_rate as reported by Baro in cm/s
 static int16_t		baro_rate;
 // used to switch out of Manual Boost
-static boolean 		reset_throttle_flag;
+static int8_t 		reset_throttle_counter;
 // used to track when to read sensors vs estimate alt
 static boolean 		alt_sensor_flag;
 
@@ -685,7 +685,7 @@ static boolean	takeoff_complete;
 // Used to see if we have landed and if we should shut our engines - not fully implemented
 static boolean	land_complete = true;
 // used to manually override throttle in interactive Alt hold modes
-static int16_t 	manual_boost;
+//static int16_t 	manual_boost;
 // An additional throttle added to keep the copter at the same altitude when banking
 static int16_t 	angle_boost;
 // Push copter down for clean landing
@@ -875,12 +875,15 @@ static Vector3f accels_position;
 
 // accels rotated to world frame
 static Vector3f accels_rotated;
+//static Vector3f position_error;
 
 // error correction
 static Vector3f speed_error;
 
 // Manage accel drift
-static Vector3f accels_offset;
+//static float z_offset;
+//static Vector3f accels_scale;
+
 #endif
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -1799,83 +1802,61 @@ void update_throttle_mode(void)
 
 		case THROTTLE_HOLD:
 			// allow interactive changing of atitude
-			adjust_altitude();
+			if(g.rc_3.control_in < 200){
+				reset_throttle_counter = 50;
+				nav_throttle 		= get_throttle_rate(-80);
+				g.rc_3.servo_out 	= g.throttle_cruise + nav_throttle + angle_boost;
+				break;
+			}else if (g.rc_3.control_in > 800){
+				reset_throttle_counter = 50;
+				nav_throttle 		= get_throttle_rate(80);
+				g.rc_3.servo_out 	= g.throttle_cruise + nav_throttle + angle_boost;
+				break;
+			}
 
-			// fall through
+			if(reset_throttle_counter > 0){
+				reset_throttle_counter--;
+				if(reset_throttle_counter == 0){
+					force_new_altitude(max(current_loc.alt, 100));
+				}else{
+					nav_throttle 		= get_throttle_rate(0);
+				}
+			}
+
+			// else fall through
 
 		case THROTTLE_AUTO:
 			// calculate angle boost
 			angle_boost = get_angle_boost(g.throttle_cruise);
 
-			// manual command up or down?
-			if(manual_boost != 0){
-				#if FRAME_CONFIG == HELI_FRAME
-					throttle_out = heli_get_angle_boost(g.throttle_cruise + manual_boost);
-				#else
-					throttle_out = g.throttle_cruise + angle_boost + manual_boost;
-				#endif
+			// 10hz
+			if(motors.auto_armed() == true){
 
-				//force a reset of the altitude change
-				clear_new_altitude();
+				// how far off are we
+				altitude_error = get_altitude_error();
 
-				/*
-				int16_t iterm = g.pi_alt_hold.get_integrator();
-
-				Serial.printf("tar_alt: %d, actual_alt: %d \talt_err: %d, \t manb: %d, iterm %d\n",
-									next_WP.alt,
-									current_loc.alt,
-									altitude_error,
-									manual_boost,
-									iterm);
-				//*/
-				// this lets us know we need to update the altitude after manual throttle control
-				reset_throttle_flag = true;
-
-			}else{
-				// we are under automatic throttle control
-				// ---------------------------------------
-				if(reset_throttle_flag)	{
-					force_new_altitude(max(current_loc.alt, 100));
-					reset_throttle_flag = false;
-					update_throttle_cruise();
+				int16_t desired_speed;
+				if(alt_change_flag == REACHED_ALT){ // we are at or above the target alt
+					desired_speed 		= g.pi_alt_hold.get_p(altitude_error);			// calculate desired speed from lon error
+					desired_speed		= constrain(desired_speed, -250, 250);
+					nav_throttle 		= get_throttle_rate(desired_speed);
+				}else{
+					desired_speed 		= get_desired_climb_rate(150);
+					nav_throttle 		= get_throttle_rate(desired_speed);
 				}
-
-				// 10hz, 			don't run up i term
-				if(motors.auto_armed() == true){
-
-					// how far off are we
-					altitude_error = get_altitude_error();
-
-					// get the AP throttle
-					nav_throttle = get_nav_throttle(altitude_error);
-
-					/*
-					Serial.printf("tar_alt: %d, actual_alt: %d \talt_err: %d, \tnav_thr: %d, \talt Int: %d\n",
-										next_WP.alt,
-										current_loc.alt,
-										altitude_error,
-										nav_throttle,
-										(int16_t)g.pi_alt_hold.get_integrator());
-					//*/
-
-				}
-
-				// hack to remove the influence of the ground effect
-				if(g.sonar_enabled && current_loc.alt < 100 && landing_boost != 0) {
-					nav_throttle = min(nav_throttle, 0);
-				}
-
-				#if FRAME_CONFIG == HELI_FRAME
-					throttle_out = heli_get_angle_boost(g.throttle_cruise + nav_throttle + get_z_damping() - landing_boost);
-				#else
-					throttle_out = g.throttle_cruise + nav_throttle + angle_boost + get_z_damping() - landing_boost;
-				#endif
 			}
 
-			// light filter of output
-			//g.rc_3.servo_out = (g.rc_3.servo_out * (THROTTLE_FILTER_SIZE - 1) + throttle_out) / THROTTLE_FILTER_SIZE;
+			// hack to remove the influence of the ground effect
+			if(g.sonar_enabled && current_loc.alt < 100 && landing_boost != 0) {
+				nav_throttle = min(nav_throttle, 0);
+			}
 
-			// no filter
+			#if FRAME_CONFIG == HELI_FRAME
+				throttle_out = heli_get_angle_boost(g.throttle_cruise + nav_throttle - landing_boost);
+			#else
+				throttle_out = g.throttle_cruise + nav_throttle + angle_boost - landing_boost;
+			#endif
+
 			g.rc_3.servo_out = throttle_out;
 			break;
 	}
@@ -2119,15 +2100,19 @@ static void update_altitude()
 	#else
 		// This is real life
 
+		#if INERTIAL_NAV == ENABLED
+		baro_rate			= accels_velocity.z;
+
+		#else
 		// read in Actual Baro Altitude
 		baro_alt 			= read_barometer();
-		//Serial.printf("baro_alt: %d \n", baro_alt);
 
 		// calc the vertical accel rate
 		int temp			= (baro_alt - old_baro_alt) * 10;
 		baro_rate 			= (temp + baro_rate) >> 1;
 		baro_rate			= constrain(baro_rate, -300, 300);
 		old_baro_alt		= baro_alt;
+		#endif
 
 		// Note: sonar_alt is calculated in a faster loop and filtered with a mode filter
 	#endif
@@ -2211,6 +2196,7 @@ static void update_altitude_est()
 	//Serial.printf(" %d, %d, %d, %d\n", climb_rate_actual, climb_rate_error, climb_rate, current_loc.alt);
 }
 
+/*
 #define THROTTLE_ADJUST 225
 static void
 adjust_altitude()
@@ -2229,6 +2215,7 @@ adjust_altitude()
 		manual_boost = 0;
 	}
 }
+*/
 
 static void tuning(){
 	tuning_value = (float)g.rc_6.control_in / 1000.0;
@@ -2416,7 +2403,7 @@ static void update_nav_wp()
 		// nav_lon, nav_lat is calculated
 
 		if(wp_distance > 400){
-			calc_nav_rate(calc_desired_speed(g.waypoint_speed_max, true));
+			calc_nav_rate(get_desired_speed(g.waypoint_speed_max, true));
 		}else{
 			// calc the lat and long error to the target
 			calc_location_error(&next_WP);
@@ -2439,7 +2426,7 @@ static void update_nav_wp()
 		// calc error to target
 		calc_location_error(&next_WP);
 
-		int16_t speed = calc_desired_speed(g.waypoint_speed_max, slow_wp);
+		int16_t speed = get_desired_speed(g.waypoint_speed_max, slow_wp);
 		// use error as the desired rate towards the target
 		calc_nav_rate(speed);
 
@@ -2465,7 +2452,6 @@ static void update_nav_wp()
 static void update_auto_yaw()
 {
 	if(wp_control == CIRCLE_MODE){
-		//trace("CIRCLE mode")
 		auto_yaw = get_bearing(&current_loc, &circle_WP);
 
 	}else if(wp_control == LOITER_MODE){
