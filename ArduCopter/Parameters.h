@@ -344,7 +344,7 @@ public:
 	sysid_my_gcs			(255),
     serial3_baud			(SERIAL3_BAUD/1000),
 
-	RTL_altitude			(ALT_HOLD_HOME * 100),
+	RTL_altitude			(ALT_HOLD_HOME),
 	sonar_enabled			(DISABLED),
 	sonar_type				(AP_RANGEFINDER_MAXSONARXL),
     battery_monitoring 		(DISABLED),
