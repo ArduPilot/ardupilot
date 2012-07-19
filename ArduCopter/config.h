@@ -944,7 +944,7 @@
 #endif
 
 #ifndef ALT_HOLD_HOME
-# define ALT_HOLD_HOME 0		// height to return to Home, 0 = Maintain current altitude
+# define ALT_HOLD_HOME 0		// height to return to Home in CM, 0 = Maintain current altitude
 #endif
 
 #ifndef USE_CURRENT_ALT
