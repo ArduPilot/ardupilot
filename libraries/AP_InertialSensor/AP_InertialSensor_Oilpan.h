@@ -34,11 +34,27 @@ class AP_InertialSensor_Oilpan : public AP_InertialSensor
   void reset_sample_time();
   float get_gyro_drift_rate();
 
-  private:
+  static const struct AP_Param::GroupInfo var_info[];
 
-  AP_ADC *_adc;
+  AP_Int16  _x_high;
+  AP_Int16  _x_low;
+  AP_Int16  _y_high;
+  AP_Int16  _y_low;
+  AP_Int16  _z_high;
+  AP_Int16  _z_low;
+
+  Vector3f _accel_scale;
+
+  private:
   Vector3f _gyro;
   Vector3f _accel;
+
+  Vector3f _accel_high;
+  Vector3f _accel_low;
+  Vector3f _accel_mid;
+
+  AP_ADC *_adc;
+
   float _temp;
 
   uint32_t _sample_time;
@@ -48,7 +64,6 @@ class AP_InertialSensor_Oilpan : public AP_InertialSensor
   static const uint8_t _gyro_temp_ch;
 
   static const float _gravity;
-  static const float _accel_scale;
 
   static const float _gyro_gain_x;
   static const float _gyro_gain_y;

@@ -50,6 +50,7 @@ public:
 	//
 	k_param_format_version = 0,
 	k_param_software_type,
+	k_param_ins,
 
     // simulation
     k_param_sitl = 10,
@@ -216,7 +217,7 @@ public:
 	AP_Int8		sonar_enabled;
 	AP_Int8		sonar_type;   // 0 = XL, 1 = LV,
 				      // 2 = XLL (XL with 10m range)
-				      // 3 = HRLV 
+				      // 3 = HRLV
     AP_Int8		battery_monitoring;	// 0=disabled, 3=voltage only, 4=voltage and current
     AP_Float	volt_div_ratio;
     AP_Float	curr_amp_per_volt;
