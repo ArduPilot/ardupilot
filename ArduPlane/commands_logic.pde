@@ -143,7 +143,7 @@ static void handle_no_commands()
 	nav_command_ID = MAV_CMD_NAV_LOITER_UNLIM;
 	non_nav_command_ID = WAIT_COMMAND;
 	handle_process_nav_cmd();
-	
+
 }
 
 /********************************************************************************/
@@ -206,11 +206,11 @@ static bool verify_condition_command()		// Returns true if command complete
     case MAV_CMD_CONDITION_CHANGE_ALT:
         return verify_change_alt();
         break;
-        
+
     case WAIT_COMMAND:
         return 0;
         break;
-        
+
 
     default:
         gcs_send_text_P(SEVERITY_HIGH,PSTR("verify_conditon: Invalid or no current Condition cmd"));
@@ -452,7 +452,7 @@ static void do_within_distance()
 
 static bool verify_wait_delay()
 {
-	if (millis() - condition_start > condition_value){
+	if ((unsigned)(millis() - condition_start) > (unsigned)condition_value){
 		condition_value 	= 0;
 		return true;
 	}
@@ -496,7 +496,7 @@ static void do_jump()
 		nav_command_ID		= NO_COMMAND;
 		next_nav_command.id = NO_COMMAND;
 		non_nav_command_ID 	= NO_COMMAND;
-		
+
 		temp 				= get_cmd_with_index(g.command_index);
 		temp.lat 			= next_nonnav_command.lat - 1;					// Decrement repeat counter
 
