@@ -291,8 +291,8 @@ static void do_land()
 	// hold at our current location
 	set_next_WP(&current_loc);
 
-	// Set a new target altitude very low, incase we are landing on a hill!
-	set_new_altitude(-1000);
+	// Set a new target altitude
+	set_new_altitude(0);
 }
 
 static void do_loiter_unlimited()
@@ -300,10 +300,13 @@ static void do_loiter_unlimited()
 	wp_control = LOITER_MODE;
 
 	//Serial.println("dloi ");
-	if(command_nav_queue.lat == 0)
+	if(command_nav_queue.lat == 0){
 		set_next_WP(&current_loc);
-	else
+		wp_control = LOITER_MODE;
+	}else{
 		set_next_WP(&command_nav_queue);
+		wp_control = WP_MODE;
+	}
 }
 
 static void do_loiter_turns()
