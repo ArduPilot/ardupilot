@@ -684,8 +684,6 @@ static byte		throttle_mode;
 static boolean	takeoff_complete;
 // Used to see if we have landed and if we should shut our engines - not fully implemented
 static boolean	land_complete = true;
-// used to manually override throttle in interactive Alt hold modes
-//static int16_t 	manual_boost;
 // An additional throttle added to keep the copter at the same altitude when banking
 static int16_t 	angle_boost;
 // Push copter down for clean landing
