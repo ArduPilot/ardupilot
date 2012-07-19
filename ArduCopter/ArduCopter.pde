@@ -1839,7 +1839,7 @@ void update_throttle_mode(void)
 					desired_speed		= constrain(desired_speed, -250, 250);
 					nav_throttle 		= get_throttle_rate(desired_speed);
 				}else{
-					desired_speed 		= get_desired_climb_rate(150);
+					desired_speed 		= get_desired_climb_rate();
 					nav_throttle 		= get_throttle_rate(desired_speed);
 				}
 			}
@@ -2018,7 +2018,7 @@ static void update_navigation()
 static void update_nav_RTL()
 {
 	// Have we have reached Home?
-	if(wp_distance <= (g.waypoint_radius * 100)){
+	if(wp_distance <= 100 /* || check_missed_wp()*/){
 		// if loiter_timer value > 0, we are set to trigger auto_land or approach
 		set_mode(LOITER);
 
@@ -2029,7 +2029,7 @@ static void update_nav_RTL()
 		next_WP.lat = home.lat;
 		next_WP.lng = home.lng;
 
-		// If land is enabled OR failsafe OR auto approach altitude is set
+		// If failsafe OR auto approach altitude is set
 		// we will go into automatic land, (g.rtl_approach_alt) is the lowest point
 		// -1 means disable feature
 		if(failsafe || g.rtl_approach_alt >= 0)
@@ -2365,9 +2365,6 @@ static void update_nav_wp()
 		// use error as the desired rate towards the target
 		calc_loiter(long_error, lat_error);
 
-		// rotate pitch and roll to the copter frame of reference
-		//calc_loiter_pitch_roll();
-
 	}else if(wp_control == CIRCLE_MODE){
 
 		// check if we have missed the WP
@@ -2411,9 +2408,6 @@ static void update_nav_wp()
 
 		//CIRCLE: angle:29, dist:0, lat:400, lon:242
 
-		// rotate pitch and roll to the copter frame of reference
-		//calc_loiter_pitch_roll();
-
 		// debug
 		//int angleTest = degrees(circle_angle);
 		//int nroll = nav_roll;
@@ -2441,9 +2435,6 @@ static void update_nav_wp()
 
 		nav_lon			= constrain(nav_lon, -2000, 2000); 			// 20°
 		nav_lat			= constrain(nav_lat, -2000, 2000); 			// 20°
-
-		// rotate pitch and roll to the copter frame of reference
-		//calc_loiter_pitch_roll();
 	}
 }
 
