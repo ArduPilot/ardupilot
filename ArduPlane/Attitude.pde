@@ -200,11 +200,27 @@ static void calc_nav_pitch()
 
 static void calc_nav_roll()
 {
-	// negative error = left turn
-	// positive error = right turn
-	// Calculate the required roll of the plane
-	// ----------------------------------------
-	nav_roll = g.pidNavRoll.get_pid(bearing_error);	//returns desired bank angle in degrees*100
+	// Scale from centidegrees (PID input) to radians per second. A P gain of 1.0 should result in a
+	// desired rate of 1 degree per second per degree of error - if you're 15 degrees off, you'll try
+	// to turn at 15 degrees per second.
+	float turn_rate = ToRad(g.pidNavRoll.get_pid(bearing_error) * .01);
+
+	// Use airspeed_cruise as an analogue for airspeed if we don't have airspeed.
+	float speed;
+	if(airspeed.use()) {
+		speed = airspeed.get_airspeed();
+	} else {
+		speed = g.airspeed_cruise*0.01;
+		
+		// Floor the speed so that the user can't enter a bad value
+		if(speed < 6) {
+			speed = 6;
+		}
+	}
+	
+	// Bank angle = V*R/g, where V is airspeed, R is turn rate, and g is gravity.
+	nav_roll = ToDeg(atan(speed*turn_rate/9.81)*100);
+
 	nav_roll = constrain(nav_roll, -g.roll_limit.get(), g.roll_limit.get());
 }
 
