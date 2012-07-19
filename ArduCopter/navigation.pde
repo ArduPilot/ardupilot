@@ -124,7 +124,7 @@ static void calc_loiter(int x_error, int y_error)
 	}
 
 	output			= p + i + d;
-	nav_lon			= constrain(output, -3000, 3000); 			// 30°
+	nav_lon			= constrain(output, -3200, 3200);
 
 #if LOGGING_ENABLED == ENABLED
 	// log output if PID logging is on and we are tuning the yaw
@@ -161,7 +161,7 @@ static void calc_loiter(int x_error, int y_error)
 	}
 
 	output			= p + i + d;
-	nav_lat			= constrain(output, -3000, 3000); // 30°
+	nav_lat			= constrain(output, -3200, 3200);
 
 #if LOGGING_ENABLED == ENABLED
 	// log output if PID logging is on and we are tuning the yaw
@@ -199,9 +199,9 @@ static void calc_nav_rate(int16_t max_speed)
 	// East / West
 	// calculate rate error
 	#if INERTIAL_NAV == ENABLED
-	x_rate_error	= x_target_speed - accels_velocity.x;		// calc the speed error
+	x_rate_error	= x_target_speed - accels_velocity.x;
 	#else
-	x_rate_error 	= x_target_speed - x_actual_speed; // 413
+	x_rate_error 	= x_target_speed - x_actual_speed;
 	#endif
 
 	x_rate_error 	= constrain(x_rate_error, -1000, 1000);
@@ -210,15 +210,15 @@ static void calc_nav_rate(int16_t max_speed)
 
 	if(x_target_speed < 0) tilt = -tilt;
 	nav_lon			+= tilt;
-	nav_lon			= constrain(nav_lon, -3000, 3000);
+	nav_lon			= constrain(nav_lon, -3200, 3200);
 
 
 	// North / South
 	// calculate rate error
 	#if INERTIAL_NAV == ENABLED
-	y_rate_error	= y_target_speed - accels_velocity.y;		// calc the speed error
+	y_rate_error	= y_target_speed - accels_velocity.y;
 	#else
-	y_rate_error 	= y_target_speed - y_actual_speed; // 413
+	y_rate_error 	= y_target_speed - y_actual_speed;
 	#endif
 
 	y_rate_error 	= constrain(y_rate_error, -1000, 1000);	// added a rate error limit to keep pitching down to a minimum
@@ -227,7 +227,7 @@ static void calc_nav_rate(int16_t max_speed)
 
 	if(y_target_speed < 0)	tilt = -tilt;
 	nav_lat			+= tilt;
-	nav_lat			= constrain(nav_lat, -3000, 3000);
+	nav_lat			= constrain(nav_lat, -3200, 3200);
 
 	// copy over I term to Loiter_Rate
 	g.pid_loiter_rate_lon.set_integrator(g.pid_nav_lon.get_integrator());
@@ -248,7 +248,7 @@ static void calc_loiter_pitch_roll()
 	auto_pitch = -auto_pitch;
 }
 
-static int16_t calc_desired_speed(int16_t max_speed, bool _slow)
+static int16_t get_desired_speed(int16_t max_speed, bool _slow)
 {
 	/*
 	|< WP Radius
@@ -278,6 +278,18 @@ static int16_t calc_desired_speed(int16_t max_speed, bool _slow)
 	return max_speed;
 }
 
+static int16_t get_desired_climb_rate(int16_t speed)
+{
+	if(alt_change_flag == ASCENDING){
+		return constrain(altitude_error / 4, 65, speed);
+
+	}else if(alt_change_flag == DESCENDING){
+		return constrain(altitude_error / 6, -speed, -10);
+
+	}else{
+		return 0;
+	}
+}
 
 static void update_crosstrack(void)
 {
@@ -293,7 +305,8 @@ static int32_t get_altitude_error()
 	// Next_WP alt is our target alt
 	// It changes based on climb rate
 	// until it reaches the target_altitude
-	return next_WP.alt - current_loc.alt;
+	//return next_WP.alt - current_loc.alt;
+	return target_altitude - current_loc.alt;
 }
 
 static void clear_new_altitude()
@@ -353,7 +366,7 @@ static int32_t get_new_altitude()
 
 	if(alt_change_flag == ASCENDING){
 		// we are below, going up
-		if(current_loc.alt >=  target_altitude){
+		if(current_loc.alt >  target_altitude){
 			alt_change_flag = REACHED_ALT;
 		}
 
