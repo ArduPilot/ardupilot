@@ -1581,7 +1581,9 @@ void update_yaw_mode(void)
 					nav_yaw = ahrs.yaw_sensor;
 				}
 			}else{
-				nav_yaw = get_nav_yaw_offset(g.rc_4.control_in, g.rc_3.control_in);
+				if(motors.armed() == false)
+					nav_yaw = ahrs.yaw_sensor;
+
 				g.rc_4.servo_out = get_stabilize_yaw(nav_yaw);
 			}
 			return;
@@ -1596,6 +1598,10 @@ void update_yaw_mode(void)
 			//Serial.printf("nav_yaw %d ", nav_yaw);
 			nav_yaw  = wrap_360(nav_yaw);
 			break;
+
+		case YAW_TOY:
+			return;
+
 	}
 
 	// Yaw control
@@ -1611,7 +1617,7 @@ void update_roll_pitch_mode(void)
 
 	// hack to do auto_flip - need to remove, no one is using.
 	if (do_flip){
-		if(g.rc_1.control_in == 0){
+		if(abs(g.rc_1.control_in) < 2000){
 			roll_flip();
 			return;
 		}else{
@@ -1802,12 +1808,12 @@ void update_throttle_mode(void)
 			// allow interactive changing of atitude
 			if(g.rc_3.control_in < 200){
 				reset_throttle_counter = 50;
-				nav_throttle 		= get_throttle_rate(-80);
+				nav_throttle 		= get_throttle_rate(-120);
 				g.rc_3.servo_out 	= g.throttle_cruise + nav_throttle + angle_boost;
 				break;
 			}else if (g.rc_3.control_in > 800){
 				reset_throttle_counter = 50;
-				nav_throttle 		= get_throttle_rate(80);
+				nav_throttle 		= get_throttle_rate(180);
 				g.rc_3.servo_out 	= g.throttle_cruise + nav_throttle + angle_boost;
 				break;
 			}
