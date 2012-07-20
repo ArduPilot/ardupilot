@@ -430,7 +430,7 @@
 #endif
 
 #ifndef AUTO_LAND_TIME
-# define AUTO_LAND_TIME	10
+# define AUTO_LAND_TIME	5
 #endif
 
 
@@ -565,7 +565,11 @@
 
 // RTL Mode
 #ifndef RTL_APPROACH_ALT
-# define RTL_APPROACH_ALT 	200
+# define RTL_APPROACH_ALT 	200 // cm!!!
+#endif
+
+#ifndef RTL_HOLD_ALT
+# define RTL_HOLD_ALT 1500		// height to return to Home in CM, 0 = Maintain current altitude
 #endif
 
 
@@ -786,10 +790,10 @@
 
 // RATE control
 #ifndef THROTTLE_P
-# define THROTTLE_P			0.4	// .25
+# define THROTTLE_P			0.3	// .25
 #endif
 #ifndef THROTTLE_I
-# define THROTTLE_I			0.02
+# define THROTTLE_I			0.03
 #endif
 #ifndef THROTTLE_D
 # define THROTTLE_D			0.0	//
@@ -941,10 +945,6 @@
 
 #ifndef LOITER_RADIUS
 # define LOITER_RADIUS 10		// meters for circle mode
-#endif
-
-#ifndef ALT_HOLD_HOME
-# define ALT_HOLD_HOME 0		// height to return to Home in CM, 0 = Maintain current altitude
 #endif
 
 #ifndef USE_CURRENT_ALT
