@@ -262,7 +262,7 @@ static int16_t get_desired_speed(int16_t max_speed, bool _slow)
 	// max_speed is default 600 or 6m/s
 	if(_slow){
 		max_speed 		= min(max_speed, wp_distance / 4);
-		max_speed 		= max(max_speed, 0);
+		max_speed 		= max(max_speed, 100);
 	}else{
 		max_speed 		= min(max_speed, wp_distance / 2);
 		max_speed 		= max(max_speed, WAYPOINT_SPEED_MIN);	// go at least 100cm/s
