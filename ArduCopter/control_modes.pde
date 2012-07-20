@@ -73,7 +73,7 @@ static void read_trim_switch()
 		do_simple = (g.rc_7.radio_in > CH_7_PWM_TRIGGER);
 
 	}else if (g.ch7_option == CH7_FLIP){
-		if (g.rc_7.radio_in > CH_7_PWM_TRIGGER && g.rc_3.control_in != 0){
+		if (g.rc_7.radio_in > CH_7_PWM_TRIGGER && takeoff_complete && g.rc_3.control_in != 0){
 			if(do_flip == false)
 				init_flip();
 		}
