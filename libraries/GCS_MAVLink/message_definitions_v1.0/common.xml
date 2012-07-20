@@ -1018,7 +1018,7 @@
           </message>
           <message id="29" name="SCALED_PRESSURE">
                <description>The pressure readings for the typical setup of one absolute and differential pressure sensor. The units are as specified in each field.</description>
-               <field type="uint32_t" name="time_boot_ms">Timestamp (microseconds since UNIX epoch or microseconds since system boot)</field>
+               <field type="uint32_t" name="time_boot_ms">Timestamp (milliseconds since system boot)</field>
                <field type="float" name="press_abs">Absolute pressure (hectopascal)</field>
                <field type="float" name="press_diff">Differential pressure 1 (hectopascal)</field>
                <field type="int16_t" name="temperature">Temperature measurement (0.01 degrees celsius)</field>
@@ -1097,7 +1097,7 @@
           </message>
           <message id="36" name="SERVO_OUTPUT_RAW">
                <description>The RAW values of the servo outputs (for RC input from the remote, use the RC_CHANNELS messages). The standard PPM modulation is as follows: 1000 microseconds: 0%, 2000 microseconds: 100%.</description>
-               <field type="uint32_t" name="time_usec">Timestamp (since UNIX epoch or microseconds since system boot)</field>
+               <field type="uint32_t" name="time_usec">Timestamp (microseconds since system boot)</field>
                <field type="uint8_t" name="port">Servo output port (set of 8 outputs = 1 port). Most MAVs will just use one, but this allows to encode more than 8 servos.</field>
                <field type="uint16_t" name="servo1_raw">Servo output 1 value, in microseconds</field>
                <field type="uint16_t" name="servo2_raw">Servo output 2 value, in microseconds</field>

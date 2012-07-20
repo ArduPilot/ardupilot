@@ -60,7 +60,6 @@ MAVLINK_HELPER uint16_t mavlink_finalize_message(mavlink_message_t* msg, uint8_t
 MAVLINK_HELPER void _mav_finalize_message_chan_send(mavlink_channel_t chan, uint8_t msgid, const char *packet, uint8_t length);
 #endif // MAVLINK_CRC_EXTRA
 MAVLINK_HELPER uint16_t mavlink_msg_to_send_buffer(uint8_t *buffer, const mavlink_message_t *msg);
-MAVLINK_HELPER void mavlink_uart_resend(mavlink_channel_t chan, const mavlink_message_t *msg);
 MAVLINK_HELPER void mavlink_start_checksum(mavlink_message_t* msg);
 MAVLINK_HELPER void mavlink_update_checksum(mavlink_message_t* msg, uint8_t c);
 MAVLINK_HELPER uint8_t mavlink_parse_char(uint8_t chan, uint8_t c, mavlink_message_t* r_message, mavlink_status_t* r_mavlink_status);
@@ -68,6 +67,7 @@ MAVLINK_HELPER uint8_t put_bitfield_n_by_index(int32_t b, uint8_t bits, uint8_t 
 					       uint8_t* r_bit_index, uint8_t* buffer);
 #ifdef MAVLINK_USE_CONVENIENCE_FUNCTIONS
 MAVLINK_HELPER void _mavlink_send_uart(mavlink_channel_t chan, const char *buf, uint16_t len);
+MAVLINK_HELPER void _mavlink_resend_uart(mavlink_channel_t chan, const mavlink_message_t *msg);
 #endif
 
 /**
