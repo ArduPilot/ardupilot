@@ -18,7 +18,7 @@ static int8_t	test_ins(uint8_t argc, 			const Menu::arg *argv);
 //static int8_t	test_omega(uint8_t argc, 		const Menu::arg *argv);
 //static int8_t	test_stab_d(uint8_t argc, 		const Menu::arg *argv);
 static int8_t	test_battery(uint8_t argc, 		const Menu::arg *argv);
-//static int8_t	test_boost(uint8_t argc, 		const Menu::arg *argv);
+//static int8_t	test_toy(uint8_t argc, 		const Menu::arg *argv);
 //static int8_t	test_wp_nav(uint8_t argc, 		const Menu::arg *argv);
 //static int8_t	test_reverse(uint8_t argc, 		const Menu::arg *argv);
 static int8_t	test_tuning(uint8_t argc, 		const Menu::arg *argv);
@@ -75,7 +75,7 @@ const struct Menu::command test_menu_commands[] PROGMEM = {
 	//{"tri",			test_tri},
 	{"relay",		test_relay},
 	{"wp",			test_wp},
-//	{"boost",		test_boost},
+//	{"toy",			test_toy},
 #if HIL_MODE != HIL_MODE_ATTITUDE
 	{"altitude",	test_baro},
 	{"sonar",		test_sonar},
@@ -183,27 +183,30 @@ test_radio_pwm(uint8_t argc, const Menu::arg *argv)
 	}
 }*/
 
-/*
-static int8_t
-//test_boost(uint8_t argc, const Menu::arg *argv)
+
+/*static int8_t
+//test_toy(uint8_t argc, const Menu::arg *argv)
 {
-	print_hit_enter();
-	delay(1000);
-	int16_t temp = g.throttle_min;
+	int16_t yaw_rate;
+	int16_t roll_rate;
+	g.rc_1.control_in = -2500;
+	g.rc_2.control_in = 2500;
 
-	while(1){
-		delay(20);
-		g.rc_3.control_in = temp;
-		adjust_altitude();
-		Serial.printf("tmp:%d, boost: %d\n", temp, manual_boost);
-		temp++;
+	g.toy_yaw_rate = 3;
+	yaw_rate = g.rc_1.control_in / g.toy_yaw_rate;
+	roll_rate = ((int32_t)g.rc_2.control_in * (yaw_rate/100)) /40;
+	Serial.printf("yaw_rate, %d, roll_rate, %d\n", yaw_rate, roll_rate);
 
-		if(temp > MAXIMUM_THROTTLE){
-			return (0);
-		}
-	}
-}
-//*/
+	g.toy_yaw_rate = 2;
+	yaw_rate = g.rc_1.control_in / g.toy_yaw_rate;
+	roll_rate = ((int32_t)g.rc_2.control_in * (yaw_rate/100)) /40;
+	Serial.printf("yaw_rate, %d, roll_rate, %d\n", yaw_rate, roll_rate);
+
+	g.toy_yaw_rate = 1;
+	yaw_rate = g.rc_1.control_in / g.toy_yaw_rate;
+	roll_rate = ((int32_t)g.rc_2.control_in * (yaw_rate/100)) /40;
+	Serial.printf("yaw_rate, %d, roll_rate, %d\n", yaw_rate, roll_rate);
+}*/
 
 static int8_t
 test_radio(uint8_t argc, const Menu::arg *argv)
