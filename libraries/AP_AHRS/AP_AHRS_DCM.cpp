@@ -489,9 +489,13 @@ AP_AHRS_DCM::drift_correction(float deltat)
     // to reduce the impact of two competing yaw controllers, we
     // reduce the impact of the gps/accelerometers on yaw when we are
     // flat, but still allow for yaw correction using the
-    // accelerometers at high roll angles.
+    // accelerometers at high roll angles as long as we have a GPS
     if (_compass && _compass->use_for_yaw()) {
-	    error.z *= sin(fabs(roll));
+	    if (_gps && _gps->status() == GPS::GPS_OK && gps_gain == 1.0) {
+		    error.z *= sin(fabs(roll));
+	    } else {
+		    error.z = 0;
+	    }
     }
 
     // convert the error term to body frame
