@@ -43,11 +43,12 @@ static void arm_motors()
  							gcs_send_message(MSG_LIMITS_STATUS);
 
  							arming_counter++; // restart timer by cycling
- 						}
- 	 					else {
+ 						}else{
  	 						init_arm_motors();
  	 					}
-					} else init_arm_motors();
+					}else{
+						init_arm_motors();
+					}
 
 #else  // without AP_LIMITS, just arm motors
 					init_arm_motors();
