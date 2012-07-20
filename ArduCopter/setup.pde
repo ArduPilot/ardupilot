@@ -258,7 +258,7 @@ setup_accel(uint8_t argc, const Menu::arg *argv)
 static int8_t
 setup_accel_scale(uint8_t argc, const Menu::arg *argv)
 {
-	#if CONFIG_ADC == ENABLED
+	#if CONFIG_ADC == ENABLED && HIL_MODE == HIL_MODE_DISABLED
 	int8_t accel_num;
 	float accel_avg = 0;
 
