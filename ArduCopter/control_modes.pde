@@ -73,10 +73,22 @@ static void read_trim_switch()
 		do_simple = (g.rc_7.radio_in > CH_7_PWM_TRIGGER);
 
 	}else if (g.ch7_option == CH7_FLIP){
-		if (g.rc_7.radio_in > CH_7_PWM_TRIGGER && takeoff_complete && g.rc_3.control_in != 0){
-			if(do_flip == false)
+		if (trim_flag == false && g.rc_7.radio_in > CH_7_PWM_TRIGGER){
+			trim_flag = true;
+
+			// don't flip if we accidentally engaged flip, but didn't notice and tried to takeoff
+			if(g.rc_3.control_in != 0 && takeoff_complete){
 				init_flip();
+			}
 		}
+		if (trim_flag == true && g.rc_7.control_in < 800){
+			trim_flag = false;
+		}
+
+		//if (g.rc_7.radio_in > CH_7_PWM_TRIGGER && takeoff_complete && g.rc_3.control_in != 0){
+		//	if(do_flip == false)
+		//		init_flip();
+		//}
 
 	}else if (g.ch7_option == CH7_RTL){
 		if (trim_flag == false && g.rc_7.radio_in > CH_7_PWM_TRIGGER){
