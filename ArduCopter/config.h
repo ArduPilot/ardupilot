@@ -667,7 +667,7 @@
 # define RATE_ROLL_I        0.0
 #endif
 #ifndef RATE_ROLL_D
-# define RATE_ROLL_D        0.004
+# define RATE_ROLL_D        0.005
 #endif
 #ifndef RATE_ROLL_IMAX
 # define RATE_ROLL_IMAX	 	5			// degrees
@@ -680,7 +680,7 @@
 # define RATE_PITCH_I		0.0
 #endif
 #ifndef RATE_PITCH_D
-# define RATE_PITCH_D       0.004
+# define RATE_PITCH_D       0.005
 #endif
 #ifndef RATE_PITCH_IMAX
 # define RATE_PITCH_IMAX   	5			// degrees
