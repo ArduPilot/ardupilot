@@ -281,10 +281,10 @@ static int16_t get_desired_speed(int16_t max_speed, bool _slow)
 static int16_t get_desired_climb_rate()
 {
 	if(alt_change_flag == ASCENDING){
-		return constrain(altitude_error / 4, 65, 180); // 180cm /s up
+		return constrain(altitude_error / 4, 100, 180); // 180cm /s up, minimum is 100cm/s
 
 	}else if(alt_change_flag == DESCENDING){
-		return constrain(altitude_error / 6, -100, 0); // -100cm /s down
+		return constrain(altitude_error / 6, -100, -10); // -100cm /s down, max is -10cms
 
 	}else{
 		return 0;
