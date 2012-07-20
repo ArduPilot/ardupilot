@@ -1223,8 +1223,8 @@ static void fifty_hz_loop()
 	// ------------------------------------------
 	update_altitude_est();
 
-	// moved to slower loop
-	// --------------------
+	// Update the throttle ouput
+	// -------------------------
 	update_throttle_mode();
 
 	// Read Sonar
@@ -1614,8 +1614,6 @@ void update_roll_pitch_mode(void)
 {
 	int control_roll, control_pitch;
 
-
-	// hack to do auto_flip - need to remove, no one is using.
 	if (do_flip){
 		if(abs(g.rc_1.control_in) < 2000){
 			roll_flip();
@@ -1694,16 +1692,16 @@ void update_roll_pitch_mode(void)
 			break;
 	}
 
-	if(g.rc_3.control_in == 0 && roll_pitch_mode <= ROLL_PITCH_ACRO){
-		reset_rate_I();
-		reset_stability_I();
-	}
+	//if(g.rc_3.control_in == 0 && roll_pitch_mode <= ROLL_PITCH_ACRO){
+		//reset_rate_I();
+		//reset_stability_I();
+	//}
 
-	if(takeoff_complete == false){
+	//if(takeoff_complete == false){
 		// reset these I terms to prevent awkward tipping on takeoff
 		//reset_rate_I();
 		//reset_stability_I();
-	}
+	//}
 
 	if(new_radio_frame){
 		// clear new radio frame info
@@ -1756,6 +1754,9 @@ void update_simple_mode(void)
 // controls all throttle behavior
 void update_throttle_mode(void)
 {
+	if(do_flip) // this is pretty bad but needed to flip in AP modes.
+		return;
+
 	int16_t throttle_out;
 
 	#if AUTO_THROTTLE_HOLD != 0
