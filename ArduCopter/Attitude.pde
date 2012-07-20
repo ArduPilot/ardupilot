@@ -479,8 +479,10 @@ static void reset_stability_I(void)
 throttle control
 ****************************************************************/
 
+/* Depricated
+
 static long
-get_nav_yaw_offset(int yaw_input, int reset)
+//get_nav_yaw_offset(int yaw_input, int reset)
 {
 	int32_t _yaw;
 
@@ -501,6 +503,7 @@ get_nav_yaw_offset(int yaw_input, int reset)
 		}
 	}
 }
+*/
 
 static int16_t get_angle_boost(int16_t value)
 {
@@ -784,22 +787,22 @@ void roll_pitch_toy()
 	// user from Loiter mode
 	int16_t yaw_rate = g.rc_1.control_in / g.toy_yaw_rate;
 
-	//nav_yaw += yaw_rate / 100;
-	//nav_yaw = wrap_360(nav_yaw);
-	//g.rc_4.servo_out = get_stabilize_yaw(nav_yaw);
-
 	if(g.rc_1.control_in != 0){ // roll
 		g.rc_4.servo_out = get_acro_yaw(yaw_rate/2);
 		yaw_stopped = false;
 		yaw_timer = 150;
+
 	}else if (!yaw_stopped){
 		g.rc_4.servo_out = get_acro_yaw(0);
 		yaw_timer--;
-		if(yaw_timer == 0){
+
+		if((yaw_timer == 0) || (fabs(omega.z) < .17)){
 			yaw_stopped = true;
 			nav_yaw = ahrs.yaw_sensor;
 		}
 	}else{
+		if(motors.armed() == false)
+			nav_yaw = ahrs.yaw_sensor;
 		g.rc_4.servo_out = get_stabilize_yaw(nav_yaw);
 	}
 
