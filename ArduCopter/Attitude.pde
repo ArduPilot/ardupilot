@@ -412,6 +412,9 @@ static void reset_nav_params(void)
 
 	// We want to by default pass WPs
 	slow_wp = false;
+
+	// make sure we stick to Nav yaw on takeoff
+	auto_yaw = nav_yaw;
 }
 
 /*
