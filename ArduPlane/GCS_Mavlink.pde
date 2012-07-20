@@ -104,7 +104,7 @@ static NOINLINE void send_attitude(mavlink_channel_t chan)
     Vector3f omega = ahrs.get_gyro();
     mavlink_msg_attitude_send(
         chan,
-        micros(),
+        millis(),
         ahrs.roll,
         ahrs.pitch - radians(g.pitch_trim*0.01),
         ahrs.yaw,
@@ -377,7 +377,7 @@ static void NOINLINE send_raw_imu2(mavlink_channel_t chan)
     int32_t pressure = barometer.get_pressure();
     mavlink_msg_scaled_pressure_send(
         chan,
-        micros(),
+        millis(),
         pressure/100.0,
         (pressure - barometer.get_ground_pressure())/100.0,
         barometer.get_temperature());

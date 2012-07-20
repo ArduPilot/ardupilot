@@ -84,7 +84,7 @@ static NOINLINE void send_attitude(mavlink_channel_t chan)
 {
     mavlink_msg_attitude_send(
         chan,
-        micros(),
+        millis(),
         ahrs.roll,
         ahrs.pitch,
         ahrs.yaw,
@@ -418,7 +418,7 @@ static void NOINLINE send_raw_imu2(mavlink_channel_t chan)
 {
     mavlink_msg_scaled_pressure_send(
         chan,
-        micros(),
+        millis(),
         (float)barometer.get_pressure()/100.0,
         (float)(barometer.get_pressure() - barometer.get_ground_pressure())/100.0,
         (int)(barometer.get_temperature()*10));
