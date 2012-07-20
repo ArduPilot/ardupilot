@@ -1692,10 +1692,10 @@ void update_roll_pitch_mode(void)
 			break;
 	}
 
-	//if(g.rc_3.control_in == 0 && roll_pitch_mode <= ROLL_PITCH_ACRO){
-		//reset_rate_I();
-		//reset_stability_I();
-	//}
+	if(g.rc_3.control_in == 0 && control_mode <= ACRO){
+		reset_rate_I();
+		reset_stability_I();
+	}
 
 	//if(takeoff_complete == false){
 		// reset these I terms to prevent awkward tipping on takeoff
@@ -2025,7 +2025,7 @@ static void update_navigation()
 static void update_nav_RTL()
 {
 	// Have we have reached Home?
-	if(wp_distance <= 100 /* || check_missed_wp()*/){
+	if(wp_distance <= 200 || check_missed_wp()){
 		// if loiter_timer value > 0, we are set to trigger auto_land or approach
 		set_mode(LOITER);
 
