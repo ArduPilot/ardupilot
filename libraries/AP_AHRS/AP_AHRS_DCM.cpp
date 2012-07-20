@@ -486,11 +486,12 @@ AP_AHRS_DCM::drift_correction(float deltat)
     error.z = earth_error_Z;
 #endif // YAW_INDEPENDENT_DRIFT_CORRECTION
 
-    // only use the gps/accelerometers for earth frame yaw correction 
-    // if we are not using a compass. Otherwise we have two competing
-    // controllers for yaw correction
+    // to reduce the impact of two competing yaw controllers, we
+    // reduce the impact of the gps/accelerometers on yaw when we are
+    // flat, but still allow for yaw correction using the
+    // accelerometers at high roll angles.
     if (_compass && _compass->use_for_yaw()) {
-	    error.z = 0;
+	    error.z *= sin(fabs(roll));
     }
 
     // convert the error term to body frame
