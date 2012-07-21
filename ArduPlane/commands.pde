@@ -143,6 +143,16 @@ static void set_next_WP(struct Location *wp)
 	// ---------------------
 	next_WP = *wp;
 
+    // are we already past the waypoint? This happens when we jump
+    // waypoints, and it can cause us to skip a waypoint. If we are
+    // past the waypoint when we start on a leg, then use the current
+    // location as the previous waypoint, to prevent immediately
+    // considering the waypoint complete
+    if (location_passed_point(current_loc, prev_WP, next_WP)) {
+        gcs_send_text_P(SEVERITY_LOW, PSTR("Resetting prev_WP"));
+        prev_WP = current_loc;
+    }
+
 	// used to control FBW and limit the rate of climb
 	// -----------------------------------------------
 	target_altitude = current_loc.alt;
