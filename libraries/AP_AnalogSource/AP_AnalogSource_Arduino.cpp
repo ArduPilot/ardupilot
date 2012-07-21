@@ -142,16 +142,18 @@ void AP_AnalogSource_Arduino::assign_pin_index(uint8_t pin)
         }
     }
 
-	// allow pin to be a channel (i.e. "A0") or an actual pin
+    if (pin != ANALOG_PIN_VCC) {
+        // allow pin to be a channel (i.e. "A0") or an actual pin
 #if defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__)
-	if (pin >= 54) pin -= 54;
+        if (pin >= 54) pin -= 54;
 #elif defined(__AVR_ATmega32U4__)
-	if (pin >= 18) pin -= 18;
+        if (pin >= 18) pin -= 18;
 #elif defined(__AVR_ATmega1284__)
-	if (pin >= 24) pin -= 24;
+        if (pin >= 24) pin -= 24;
 #else
-	if (pin >= 14) pin -= 14;
+        if (pin >= 14) pin -= 14;
 #endif
+    }
 
     _pin_index = num_pins_watched;
     pins[_pin_index].pin = pin;
