@@ -11,7 +11,7 @@ using ArdupilotMega.Controls.BackstageView;
 
 namespace ArdupilotMega.GCSViews.ConfigurationView
 {
-    public partial class ConfigRawParams : BackStageViewContentPanel
+    public partial class ConfigRawParams : UserControl, IActivate
     {
         private static readonly ILog log =
           LogManager.GetLogger(System.Reflection.MethodBase.GetCurrentMethod().DeclaringType);
@@ -424,7 +424,7 @@ namespace ArdupilotMega.GCSViews.ConfigurationView
             Params.Sort(Params.Columns[0], ListSortDirection.Ascending);
         }
 
-        private void ConfigRawParams_Load(object sender, EventArgs e)
+        public void Activate()
         {
             // read tooltips
             if (tooltips.Count == 0)

@@ -303,6 +303,11 @@
             // THR_RATE_IMAX
             // 
             resources.ApplyResources(this.THR_RATE_IMAX, "THR_RATE_IMAX");
+            this.THR_RATE_IMAX.Maximum = new decimal(new int[] {
+            1000,
+            0,
+            0,
+            0});
             this.THR_RATE_IMAX.Name = "THR_RATE_IMAX";
             // 
             // THR_RATE_I
@@ -896,7 +901,6 @@
             this.Controls.Add(this.groupBox24);
             this.Controls.Add(this.groupBox25);
             this.Name = "ConfigArducopter";
-            this.Load += new System.EventHandler(this.ConfigArducopter_Load);
             ((System.ComponentModel.ISupportInitialize)(this.TUNE_LOW)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.TUNE_HIGH)).EndInit();
             this.groupBox5.ResumeLayout(false);

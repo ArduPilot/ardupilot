@@ -64,7 +64,22 @@ namespace ArdupilotMega.Controls
                 return this.Bounds.IntersectsWith(Parent.ClientRectangle);
 
             return true;
-        } 
+        }
+
+        public override void Refresh()
+        {
+            base.Refresh();
+        }
+
+        protected override void OnParentBindingContextChanged(EventArgs e)
+        {
+            base.OnParentBindingContextChanged(e);
+        }
+
+        protected override void OnVisibleChanged(EventArgs e)
+        {
+            base.OnVisibleChanged(e);
+        }
 
 
         SolidBrush s = new SolidBrush(Color.White);
@@ -75,9 +90,7 @@ namespace ArdupilotMega.Controls
         protected override void OnPaint(PaintEventArgs e)
         {
             
-            TextRenderer.DrawText(e.Graphics, label, this.Font, new Point(0, 0), ForeColor);
-            /*
-            //return;
+           // TextRenderer.DrawText(e.Graphics, label, this.Font, new Point(0, 0), ForeColor);
 
             stringFormat.Alignment = StringAlignment.Near;
             stringFormat.LineAlignment = StringAlignment.Center;
@@ -85,7 +98,7 @@ namespace ArdupilotMega.Controls
             s = new SolidBrush(ForeColor);
 
             e.Graphics.DrawString(label, this.Font, s, new PointF(0, this.Height / 2.0f), stringFormat);
-             */
+
         }
 
         protected override void OnPaintBackground(PaintEventArgs pevent)

@@ -78,6 +78,7 @@ namespace ArdupilotMega
         public float mz { get; set; }
 
         public float magfield { get { return (float)Math.Sqrt(Math.Pow(mx, 2) + Math.Pow(my, 2) + Math.Pow(mz, 2)); } }
+        public float accelsq { get { return (float)Math.Sqrt(Math.Pow(ax, 2) + Math.Pow(ay, 2) + Math.Pow(az, 2)) / 980.665f; } }
 
         // calced turn rate
         public float turnrate { get { if (groundspeed <= 1) return 0; return (roll * 9.8f) / groundspeed; } }
@@ -131,9 +132,9 @@ namespace ArdupilotMega
         public float nav_bearing { get; set; }
         public float target_bearing { get; set; }
         public float wp_dist { get { return (_wpdist * multiplierdist); } set { _wpdist = value; } }
-        public float alt_error { get { return _alt_error * multiplierdist; } set { _alt_error = value; _targetalt = (float)Math.Round(alt + alt_error, 0); } }
+        public float alt_error { get { return _alt_error * multiplierdist; } set { if (_alt_error == value) return; _alt_error = value; _targetalt = _targetalt * 0.5f + (float)Math.Round(alt + alt_error, 0) * 0.5f; Console.WriteLine(_targetalt); } }
         public float ber_error { get { return (target_bearing - yaw); } set { } }
-        public float aspd_error { get { return _aspd_error * multiplierspeed; } set { _aspd_error = value; } }
+        public float aspd_error { get { return _aspd_error * multiplierspeed; } set { if (_aspd_error == value) return; _aspd_error = value; _targetairspeed = _targetairspeed * 0.5f + (float)Math.Round(airspeed + aspd_error / 100, 0) * 0.5f; } }
         public float xtrack_error { get; set; }
         public float wpno { get; set; }
         public string mode { get; set; }
@@ -142,12 +143,13 @@ namespace ArdupilotMega
         float _aspd_error;
         float _alt_error;
         float _targetalt;
+        float _targetairspeed;
 
         public float targetaltd100 { get { return (_targetalt / 100) % 10; } }
         public float targetalt { get { return _targetalt; } }
 
         //airspeed_error = (airspeed_error - airspeed);
-        public float targetairspeed { get { return (float)Math.Round(airspeed + aspd_error / 100, 0); } }
+        public float targetairspeed { get { return _targetairspeed; } }
 
 
         //message
@@ -352,7 +354,7 @@ namespace ArdupilotMega
             UpdateCurrentSettings(bs, false, MainV2.comPort);
         }
         */
-        public void UpdateCurrentSettings(System.Windows.Forms.BindingSource bs, bool updatenow, IMAVLink mavinterface)
+        public void UpdateCurrentSettings(System.Windows.Forms.BindingSource bs, bool updatenow, MAVLink mavinterface)
         {
             if (DateTime.Now > lastupdate.AddMilliseconds(19) || updatenow) // 50 hz
             {
@@ -430,24 +432,6 @@ namespace ArdupilotMega
                     //MAVLink.packets[MAVLink.MAVLINK_MSG_ID_HWSTATUS] = null;
                 }
                 
-
-                bytearray = mavinterface.packets[MAVLink.MAVLINK_MSG_ID_NAV_CONTROLLER_OUTPUT];
-
-                if (bytearray != null)
-                {
-                    var nav = bytearray.ByteArrayToStructure<MAVLink.mavlink_nav_controller_output_t>(6);
-
-                    nav_roll = nav.nav_roll;
-                    nav_pitch = nav.nav_pitch;
-                    nav_bearing = nav.nav_bearing;
-                    target_bearing = nav.target_bearing;
-                    wp_dist = nav.wp_dist;
-                    alt_error = nav.alt_error;
-                    aspd_error = nav.aspd_error;
-                    xtrack_error = nav.xtrack_error;
-
-                    //MAVLink.packets[MAVLink.MAVLINK_MSG_ID_NAV_CONTROLLER_OUTPUT] = null;
-                }
 #if MAVLINK10
 
                 
@@ -849,6 +833,26 @@ namespace ArdupilotMega
                 }
 
 #endif
+
+
+                bytearray = mavinterface.packets[MAVLink.MAVLINK_MSG_ID_NAV_CONTROLLER_OUTPUT];
+
+                if (bytearray != null)
+                {
+                    var nav = bytearray.ByteArrayToStructure<MAVLink.mavlink_nav_controller_output_t>(6);
+
+                    nav_roll = nav.nav_roll;
+                    nav_pitch = nav.nav_pitch;
+                    nav_bearing = nav.nav_bearing;
+                    target_bearing = nav.target_bearing;
+                    wp_dist = nav.wp_dist;
+                    alt_error = nav.alt_error;
+                    aspd_error = nav.aspd_error;
+                    xtrack_error = nav.xtrack_error;
+
+                    //MAVLink.packets[MAVLink.MAVLINK_MSG_ID_NAV_CONTROLLER_OUTPUT] = null;
+                }
+
                 bytearray = mavinterface.packets[MAVLink.MAVLINK_MSG_ID_RC_CHANNELS_RAW];
                 if (bytearray != null)
                 {
@@ -964,7 +968,7 @@ namespace ArdupilotMega
                     //System.Diagnostics.Debug.WriteLine(DateTime.Now.Millisecond);
                     //Console.WriteLine(DateTime.Now.Millisecond);
                     bs.DataSource = this;
-                    //Console.WriteLine(DateTime.Now.Millisecond + " 1 " + updatenow);
+                   // Console.WriteLine(DateTime.Now.Millisecond + " 1 " + updatenow + " " + System.Threading.Thread.CurrentThread.Name);
                     bs.ResetBindings(false);
                     //Console.WriteLine(DateTime.Now.Millisecond + " done ");
                 }

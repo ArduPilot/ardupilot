@@ -182,9 +182,37 @@ namespace ArdupilotMega.Controls
 
         public override void Refresh()
         {
+            if (!ThisReallyVisible())
+            {
+                return;
+            }
+
             //base.Refresh();
             OnPaint(new PaintEventArgs(this.CreateGraphics(),this.ClientRectangle));
         }
+
+        /// <summary>
+        /// Override to prevent offscreen drawing the control - mono mac
+        /// </summary>
+        public new void Invalidate()
+        {
+            if (!ThisReallyVisible())
+            {
+                return;
+            }
+
+            base.Invalidate();
+        }
+
+        /// <summary>
+        /// this is to fix a mono off screen drawing issue
+        /// </summary>
+        /// <returns></returns>
+        public bool ThisReallyVisible()
+        {
+            //Control ctl = Control.FromHandle(this.Handle);
+            return this.Visible;
+        } 
 
         protected override void OnLoad(EventArgs e)
         {
@@ -245,8 +273,10 @@ namespace ArdupilotMega.Controls
             started = true;
         }
 
+        object lockit = new object();
         bool inOnPaint = false;
         string otherthread = "";
+
 
         protected override void OnPaint(PaintEventArgs e)
         {
@@ -270,15 +300,20 @@ namespace ArdupilotMega.Controls
                 return;              
             }
 
-            if (inOnPaint)
+            lock (lockit)
             {
-                log.Info("Was in onpaint Hud th:" + System.Threading.Thread.CurrentThread.Name + " in " + otherthread);
-                return;
+
+                if (inOnPaint)
+                {
+                    log.Info("Was in onpaint Hud th:" + System.Threading.Thread.CurrentThread.Name + " in " + otherthread);
+                    return;
+                }
+
+                otherthread = System.Threading.Thread.CurrentThread.Name;
+
+                inOnPaint = true;
+
             }
-
-            otherthread = System.Threading.Thread.CurrentThread.Name;
-
-            inOnPaint = true;
 
             starttime = DateTime.Now;
 
@@ -700,6 +735,8 @@ namespace ArdupilotMega.Controls
                     graphicsObjectGDIP.PixelOffsetMode = PixelOffsetMode.HighSpeed;
                     graphicsObjectGDIP.TextRenderingHint = System.Drawing.Text.TextRenderingHint.SystemDefault;
                 }
+
+                graphicsObjectGDIP.InterpolationMode = InterpolationMode.Bilinear;
 
 
                 graphicsObject.Clear(Color.Gray);
@@ -1310,7 +1347,7 @@ namespace ArdupilotMega.Controls
 
                     graphicsObject.DrawLine(redPen, scrollbg.Left, scrollbg.Top - (int)(fontsize * 2.2) - 2, scrollbg.Left + 50, scrollbg.Top - (int)(fontsize * 2.2) - 2 - 20);
                 }
-                drawstring(graphicsObject, _datetime.ToString("HH:mm:ss"), font, fontsize, whiteBrush, scrollbg.Left - 20, scrollbg.Top - fontsize - 2 - 20);
+                drawstring(graphicsObject, _datetime.ToString("HH:mm:ss"), font, fontsize, whiteBrush, scrollbg.Left - 30, scrollbg.Top - fontsize - 2 - 20);
 
 
                 // battery
@@ -1558,27 +1595,86 @@ namespace ArdupilotMega.Controls
             if (text == null || text == "")
                 return;
 
-            pth.Reset();
-            
-            if (text != null)
-                pth.AddString(text, font.FontFamily, 0, fontsize + 5, new Point((int)x, (int)y), StringFormat.GenericTypographic);
+                       
+            char[] chars = text.ToCharArray();
 
-            //Draw the edge
-            // this uses lots of cpu time
+            float maxy = 0;
 
-            //e.SmoothingMode = SmoothingMode.HighSpeed;
+            foreach (char cha in chars)
+            {
+                int charno = (int)cha;
 
-            if (e == null || P == null || pth == null || pth.PointCount == 0)
-                return;
-            
-            //if (!ArdupilotMega.MainV2.MONO)
+                int charid = charno + (128 * (int)fontsize);
+
+                if (charbitmaps[charid] == null)
+                {
+                    charbitmaps[charid] = new Bitmap(128, 128, System.Drawing.Imaging.PixelFormat.Format32bppArgb);
+
+                    charbitmaps[charid].MakeTransparent(Color.Transparent);
+
+                    //charbitmaptexid
+
+                    float maxx = this.Width / 150; // for space
+
+
+                    // create bitmap
+                    using (Graphics gfx = Graphics.FromImage(charbitmaps[charid]))
+                    {
+                        pth.Reset();
+
+                        if (text != null)
+                            pth.AddString(cha + "", font.FontFamily, 0, fontsize + 5, new Point((int)0, (int)0), StringFormat.GenericTypographic);
+
+                        gfx.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.AntiAlias;
+
+                        gfx.DrawPath(P, pth);
+
+                        //Draw the face
+
+                        gfx.FillPath(brush, pth);
+
+
+                        if (pth.PointCount > 0)
+                        {
+                            foreach (PointF pnt in pth.PathPoints)
+                            {
+                                if (pnt.X > maxx)
+                                    maxx = pnt.X;
+
+                                if (pnt.Y > maxy)
+                                    maxy = pnt.Y;
+                            }
+                        }
+                    }
+
+                    charwidth[charid] = (int)(maxx + 2);
+                }
+
+                // draw it
+
+                float scale = 1.0f;
+
+                DrawImage(charbitmaps[charid], (int)x, (int)y, charbitmaps[charid].Width, charbitmaps[charid].Height);
+
+                x += charwidth[charid] * scale;
+
+                /*
+                pth.Reset();
+
+                if (text != null)
+                    pth.AddString(text, font.FontFamily, 0, fontsize + 5, new Point((int)x, (int)y), StringFormat.GenericTypographic);
+
+                if (e == null || P == null || pth == null || pth.PointCount == 0)
+                    return;
+
                 e.DrawPath(P, pth);
 
-            //Draw the face
+                //Draw the face
 
-            e.FillPath(brush, pth);
+                e.FillPath(brush, pth);
+                */
+            }
 
-            //pth.Dispose();
         }
 
         protected override void OnHandleCreated(EventArgs e)
@@ -1646,6 +1742,8 @@ namespace ArdupilotMega.Controls
             {
                 if (opengl)
                 {
+                    MakeCurrent();
+
                     GL.MatrixMode(MatrixMode.Projection);
                     GL.LoadIdentity();
                     GL.Ortho(0, Width, Height, 0, -1, 1);

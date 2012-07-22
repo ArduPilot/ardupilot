@@ -83,7 +83,6 @@
             this.Controls.Add(this.BUT_levelplane);
             this.Name = "ConfigAccelerometerCalibrationPlane";
             this.toolTip1.SetToolTip(this, resources.GetString("$this.ToolTip"));
-            this.Load += new System.EventHandler(this.ConfigAccelerometerCalibration_Load);
             this.ResumeLayout(false);
             this.PerformLayout();
 

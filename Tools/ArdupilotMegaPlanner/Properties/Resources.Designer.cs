@@ -177,6 +177,18 @@ namespace ArdupilotMega.Properties {
             }
         }
         
+        public static System.Drawing.Bitmap frames_plus {
+            get {
+                object obj = ResourceManager.GetObject("frames_plus", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        public static System.Drawing.Bitmap frames_x {
+            get {
+                object obj = ResourceManager.GetObject("frames_x", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
         public static System.Drawing.Bitmap Gaugebg {
             get {
                 object obj = ResourceManager.GetObject("Gaugebg", resourceCulture);

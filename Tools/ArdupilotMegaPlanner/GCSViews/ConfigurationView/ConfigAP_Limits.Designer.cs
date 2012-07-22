@@ -259,7 +259,6 @@
             this.Controls.Add(this.LIM_ENABLED);
             this.Controls.Add(this.LNK_wiki);
             this.Name = "ConfigAP_Limits";
-            this.Load += new System.EventHandler(this.ConfigAP_Limits_Load);
             this.groupBox1.ResumeLayout(false);
             this.groupBox1.PerformLayout();
             this.groupBox5.ResumeLayout(false);

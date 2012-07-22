@@ -52,7 +52,7 @@ namespace System.Windows.Forms
             var msgBoxFrm = new Form
                                 {
                                     FormBorderStyle = FormBorderStyle.FixedDialog,
-                                    ShowInTaskbar = false,
+                                    ShowInTaskbar = true,
                                     StartPosition = FormStartPosition.CenterScreen,
                                     Text = caption,
                                     MaximizeBox = false,
@@ -60,7 +60,7 @@ namespace System.Windows.Forms
                                     Width = textSize.Width + 50,
                                     Height = textSize.Height + 100,
                                     TopMost = true,
-                                    TopLevel = true,
+                                    TopLevel = true
                                 };
 
             Rectangle screenRectangle = msgBoxFrm.RectangleToScreen(msgBoxFrm.ClientRectangle);
@@ -103,6 +103,8 @@ namespace System.Windows.Forms
             }
             catch { }
 
+           Console.WriteLine("CustomMessageBox 1");
+
             if (System.Windows.Forms.Application.OpenForms.Count > 0)
             {
                 msgBoxFrm.StartPosition = FormStartPosition.Manual;
@@ -110,12 +112,16 @@ namespace System.Windows.Forms
                 // center of first form
                 msgBoxFrm.Location = new Point(parentForm.Location.X + parentForm.Width / 2 - msgBoxFrm.Width / 2,
                     parentForm.Location.Y + parentForm.Height / 2 - msgBoxFrm.Height / 2);
-                DialogResult test = msgBoxFrm.ShowDialog();
+                Console.WriteLine("CustomMessageBox 2a");
+                DialogResult test = msgBoxFrm.ShowDialog(null);
             }
             else
             {
-                DialogResult test = msgBoxFrm.ShowDialog();
+                Console.WriteLine("CustomMessageBox 2b");
+                DialogResult test = msgBoxFrm.ShowDialog(null);
             }
+
+            Console.WriteLine("CustomMessageBox 3");
 
             DialogResult answer = _state;
 

@@ -18,13 +18,14 @@ using ZedGraph; // Graphs
 using System.Drawing.Drawing2D;
 using ArdupilotMega.Controls;
 using ArdupilotMega.Utilities;
+using ArdupilotMega.Controls.BackstageView;
 
 // written by michael oborne
 namespace ArdupilotMega.GCSViews
 {
-    partial class FlightData : MyUserControl
+    partial class FlightData : MyUserControl, IActivate, IDeactivate
     {
-        ArdupilotMega.IMAVLink comPort = MainV2.comPort;
+        ArdupilotMega.MAVLink comPort = MainV2.comPort;
         public static int threadrun = 0;
         StreamWriter swlog;
         int tickStart = 0;
@@ -196,6 +197,22 @@ namespace ArdupilotMega.GCSViews
             catch { }
         }
 
+        public void Activate()
+        {
+            if (CB_tuning.Checked)
+                ZedGraphTimer.Start();
+
+          //  SubMainLeft.Panel1.Controls.Clear();
+          //  SubMainLeft.Panel1.Controls.Add(hud1);
+        }
+
+        public void Deactivate()
+        {
+            //SubMainLeft.Panel1.Controls.Remove(hud1);
+            hud1.Size = new System.Drawing.Size(0, 0);
+            ZedGraphTimer.Stop();
+        }
+
         void tabControl1_DrawItem(object sender, DrawItemEventArgs e)
         {
             // Draw the background of the ListBox control for each item.
@@ -223,8 +240,6 @@ namespace ArdupilotMega.GCSViews
 
         private void FlightData_Load(object sender, EventArgs e)
         {
-            MainV2.bs = bindingSource1;
-
             System.Threading.Thread t11 = new System.Threading.Thread(new System.Threading.ThreadStart(mainloop))
             {
                 IsBackground = true,
@@ -254,6 +269,8 @@ namespace ArdupilotMega.GCSViews
             DateTime tracklast = DateTime.Now.AddSeconds(0);
 
             DateTime tunning = DateTime.Now.AddSeconds(0);
+
+            DateTime mapupdate = DateTime.Now.AddSeconds(0);
 
             DateTime vidrec = DateTime.Now.AddSeconds(0);
 
@@ -318,8 +335,6 @@ namespace ArdupilotMega.GCSViews
                     if (threadrun == 0) { return; }
 
                     updatePlayPauseButton(true);
-
-                    MainV2.comPort.setAPType();
 
                     if (comPort.BaseStream.IsOpen)
                     {
@@ -429,51 +444,63 @@ namespace ArdupilotMega.GCSViews
                             setMapBearing();
                         }
 
+                        if (route == null)
+                        {
+                            route = new GMapRoute(trackPoints, "track");
+                            routes.Routes.Add(route);
+                        }
+
+                        PointLatLng currentloc = new PointLatLng(MainV2.cs.lat, MainV2.cs.lng);
+
                         gMapControl1.HoldInvalidation = true;
+
+                        int cnt = 0;
 
                         while (gMapControl1.inOnPaint == true)
                         {
                             System.Threading.Thread.Sleep(1);
+                            cnt++;
                         }
-						
-                        if (trackPoints.Count > int.Parse(MainV2.config["NUM_tracklength"].ToString()))
+
+                        if (route.Points.Count > int.Parse(MainV2.config["NUM_tracklength"].ToString()))
                         {
-                            trackPoints.RemoveRange(0, trackPoints.Count - int.Parse(MainV2.config["NUM_tracklength"].ToString()));
+                          //  trackPoints.RemoveRange(0, trackPoints.Count - int.Parse(MainV2.config["NUM_tracklength"].ToString()));
+                            route.Points.RemoveRange(0, route.Points.Count - int.Parse(MainV2.config["NUM_tracklength"].ToString()));
                         }
                         if (MainV2.cs.lat != 0)
-                            trackPoints.Add(new PointLatLng(MainV2.cs.lat, MainV2.cs.lng));
+                        {
+                           // trackPoints.Add(currentloc);
+                            route.Points.Add(currentloc);
+                        }
 
 
                         //                        if (CB_tuning.Checked == false) // draw if in view
                         {
-
-                            if (MainV2.comPort.logreadmode && MainV2.comPort.logplaybackfile != null)
-                            {
-                                // this is for the pulled wp list from a mavlink logfile
-                                FlightPlanner.pointlist.Clear();
-                                FlightPlanner.pointlist.AddRange(MainV2.comPort.wps);
-                            }
-
 
                             while (gMapControl1.inOnPaint == true)
                             {
                                 System.Threading.Thread.Sleep(1);
                             }
 
-                            updateClearRoutes();
-
-                            route = new GMapRoute(trackPoints, "track");
+                            //route = new GMapRoute(route.Points, "track");
                             //track.Stroke = Pens.Red;
                             //route.Stroke = new Pen(Color.FromArgb(144, Color.Red));
                             //route.Stroke.Width = 5;
                             //route.Tag = "track";
 
+                            routes.Routes.Clear();
                             routes.Routes.Add(route);
 
                             if (waypoints.AddSeconds(10) < DateTime.Now)
                             {
                                 //Console.WriteLine("Doing FD WP's");
                                 polygons.Markers.Clear();
+
+                                if (MainV2.comPort.logreadmode && MainV2.comPort.logplaybackfile != null)
+                                {
+                                        FlightPlanner.pointlist.Clear();
+                                        FlightPlanner.pointlist.AddRange(MainV2.comPort.wps);
+                                }
 
                                 foreach (PointLatLngAlt plla in FlightPlanner.pointlist)
                                 {
@@ -494,29 +521,35 @@ namespace ArdupilotMega.GCSViews
 
                             //routes.Polygons.Add(poly);    
 
-                            if (trackPoints.Count > 0)
+                            if (route.Points.Count > 0)
                             {
-                                PointLatLng currentloc = new PointLatLng(MainV2.cs.lat, MainV2.cs.lng);
+                                // add primary route icon
+                                if (routes.Markers.Count != 1)
+                                {
+                                    routes.Markers.Clear();
+                                    routes.Markers.Add( new GMapMarkerCross(currentloc));
+                                }
 
                                 if (MainV2.cs.firmware == MainV2.Firmwares.ArduPlane)
                                 {
-                                    routes.Markers.Add(new GMapMarkerPlane(currentloc, MainV2.cs.yaw, MainV2.cs.groundcourse, MainV2.cs.nav_bearing, MainV2.cs.target_bearing, gMapControl1));
+                                    routes.Markers[0] = (new GMapMarkerPlane(currentloc, MainV2.cs.yaw, MainV2.cs.groundcourse, MainV2.cs.nav_bearing, MainV2.cs.target_bearing, gMapControl1));
                                 }
                                 else if (MainV2.cs.firmware == MainV2.Firmwares.ArduRover)
                                 {
-                                    routes.Markers.Add(new GMapMarkerRover(currentloc, MainV2.cs.yaw, MainV2.cs.groundcourse, MainV2.cs.nav_bearing, MainV2.cs.target_bearing, gMapControl1));
+                                    routes.Markers[0] = (new GMapMarkerRover(currentloc, MainV2.cs.yaw, MainV2.cs.groundcourse, MainV2.cs.nav_bearing, MainV2.cs.target_bearing, gMapControl1));
                                 }
                                 else
                                 {
-                                    routes.Markers.Add(new GMapMarkerQuad(currentloc, MainV2.cs.yaw, MainV2.cs.groundcourse, MainV2.cs.nav_bearing));
+                                    routes.Markers[0] = (new GMapMarkerQuad(currentloc, MainV2.cs.yaw, MainV2.cs.groundcourse, MainV2.cs.nav_bearing));
                                 }
 
-                                if (trackPoints[trackPoints.Count - 1].Lat != 0 && (DateTime.Now.Second % 4 == 0) && CHK_autopan.Checked)
+                                if (route.Points[route.Points.Count - 1].Lat != 0 && (mapupdate.AddSeconds(3) < DateTime.Now) && CHK_autopan.Checked)
                                 {
                                     updateMapPosition(currentloc);
+                                    mapupdate = DateTime.Now;
                                 }
 
-                                if (trackPoints.Count == 1 && gMapControl1.Zoom == 3) // 3 is the default load zoom
+                                if (route.Points.Count == 1 && gMapControl1.Zoom == 3) // 3 is the default load zoom
                                 {
                                     updateMapPosition(currentloc);
                                     updateMapZoom(17);
@@ -539,28 +572,19 @@ namespace ArdupilotMega.GCSViews
 
         private void setMapBearing()
         {
-            this.Invoke((System.Windows.Forms.MethodInvoker)delegate()
+            this.BeginInvoke((System.Windows.Forms.MethodInvoker)delegate()
             {
                 gMapControl1.Bearing = (int)MainV2.cs.yaw;
             });
-        }
-
-
-        // to prevent cross thread calls while in a draw and exception
-        private void updateClearRoutes()
-        {
-            // not async
-            this.Invoke((System.Windows.Forms.MethodInvoker)delegate()
-           {
-               routes.Markers.Clear();
-               routes.Routes.Clear();
-           });
         }
 
         private void updatePlayPauseButton(bool playing)
         {
             if (playing)
             {
+                if (BUT_playlog.Text == "Pause") 
+                    return;
+
                 this.BeginInvoke((System.Windows.Forms.MethodInvoker)delegate()
                 {
                     try
@@ -626,9 +650,10 @@ namespace ArdupilotMega.GCSViews
             {
                 try
                 {
-                    tracklog.Value = (int)(MainV2.comPort.logplaybackfile.BaseStream.Position / (double)MainV2.comPort.logplaybackfile.BaseStream.Length * 100);
-
-                    lbl_logpercent.Text = (MainV2.comPort.logplaybackfile.BaseStream.Position / (double)MainV2.comPort.logplaybackfile.BaseStream.Length).ToString("0.00%");
+                    if (tracklog.Visible)
+                        tracklog.Value = (int)(MainV2.comPort.logplaybackfile.BaseStream.Position / (double)MainV2.comPort.logplaybackfile.BaseStream.Length * 100);
+                    if (lbl_logpercent.Visible)
+                        lbl_logpercent.Text = (MainV2.comPort.logplaybackfile.BaseStream.Position / (double)MainV2.comPort.logplaybackfile.BaseStream.Length).ToString("0.00%");
                 }
                 catch { }
             });
@@ -806,15 +831,20 @@ namespace ArdupilotMega.GCSViews
         {
             ZedGraphTimer.Stop();
             threadrun = 0;
-            if (comPort.BaseStream.IsOpen)
+            try
             {
-                comPort.Close();
+                if (comPort.BaseStream.IsOpen)
+                {
+                    comPort.Close();
+                }
             }
+            catch { }
         }
 
         private void BUT_clear_track_Click(object sender, EventArgs e)
         {
-            trackPoints.Clear();
+            if (route !=null)
+                route.Points.Clear();
         }
 
         private void BUT_save_log_Click(object sender, EventArgs e)
@@ -1349,7 +1379,7 @@ namespace ArdupilotMega.GCSViews
 
                 foreach (Control temp in tabStatus.Controls)
                 {
-                    temp.DataBindings.Clear();
+                  //  temp.DataBindings.Clear();
                     //temp.Dispose();
                 }
                 //tabStatus.Controls.Clear();
@@ -1387,10 +1417,14 @@ namespace ArdupilotMega.GCSViews
                     }
                     catch { }
 
+                    if (add)
+                    {
+
                     lbl1.Location = new Point(x, y);
                     lbl1.Size = new System.Drawing.Size(75, 13);
                     lbl1.Text = field.Name;
                     lbl1.Name = field.Name;
+                    lbl1.Visible = true;
                     lbl2.AutoSize = false;
 
                     lbl2.Location = new Point(lbl1.Right + 5, y);
@@ -1398,10 +1432,10 @@ namespace ArdupilotMega.GCSViews
                     //if (lbl2.Name == "")
                     lbl2.DataBindings.Add(new System.Windows.Forms.Binding("Text", this.bindingSource1, field.Name, true, System.Windows.Forms.DataSourceUpdateMode.OnValidation, ""));
                     lbl2.Name = field.Name + "value";
+                    lbl2.Visible = true;
                     //lbl2.Text = fieldValue.ToString();
 
-                    if (add)
-                    {
+
                         tabStatus.Controls.Add(lbl1);
                         tabStatus.Controls.Add(lbl2);
                     }
@@ -1426,7 +1460,9 @@ namespace ArdupilotMega.GCSViews
             {
                 foreach (Control temp in tabStatus.Controls)
                 {
-                    temp.DataBindings.Clear();
+                 //   temp.DataBindings.Clear();
+                  //  temp.Dispose();
+                  //  tabStatus.Controls.Remove(temp);
                 }
             }
         }
@@ -1903,5 +1939,6 @@ print 'Roll complete'
         {
             hud1.batteryon = !hud1.batteryon;
         }
+
     }
 }

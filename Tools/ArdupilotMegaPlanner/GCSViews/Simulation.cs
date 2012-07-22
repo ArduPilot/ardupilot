@@ -22,7 +22,7 @@ namespace ArdupilotMega.GCSViews
     public partial class Simulation : MyUserControl
     {
         private static readonly ILog log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
-        IMAVLink comPort = MainV2.comPort;
+        MAVLink comPort = MainV2.comPort;
         UdpClient XplanesSEND;
         UdpClient MavLink;
         Socket SimulatorRECV;
@@ -263,6 +263,8 @@ namespace ArdupilotMega.GCSViews
 
         private void Simulation_Load(object sender, EventArgs e)
         {
+            timer_servo_graph.Stop();
+
             GPSrate.SelectedIndex = 2;
 
             xmlconfig(false);
@@ -725,7 +727,7 @@ namespace ArdupilotMega.GCSViews
         /// <param name="data">Packet</param>
         /// <param name="receviedbytes">Length</param>
         /// <param name="comPort">Com Port</param>
-        private void RECVprocess(byte[] data, int receviedbytes, ArdupilotMega.IMAVLink comPort)
+        private void RECVprocess(byte[] data, int receviedbytes, ArdupilotMega.MAVLink comPort)
         {
 #if MAVLINK10
             ArdupilotMega.MAVLink.mavlink_hil_state_t hilstate = new ArdupilotMega.MAVLink.mavlink_hil_state_t();
@@ -2189,6 +2191,11 @@ namespace ArdupilotMega.GCSViews
                 CHKgraphrudder.Visible = false;
                 CHKgraphthrottle.Visible = false;
             }
+        }
+
+        private void Simulation_FormClosing(object sender, FormClosingEventArgs e)
+        {
+            timer_servo_graph.Stop();
         }
     }
 }

@@ -12,7 +12,7 @@ using ArdupilotMega.Utilities;
 
 namespace ArdupilotMega.Antenna
 {
-    public partial class Tracker : BackStageViewContentPanel
+    public partial class Tracker : UserControl, IDeactivate
     {
         System.Threading.Thread t12;
         static bool threadrun = false;
@@ -217,7 +217,7 @@ namespace ArdupilotMega.Antenna
 
         }
 
-        private void Tracker_FormClosing(object sender, FormClosingEventArgs e)
+        public void Deactivate()
         {
             saveconfig();
         }

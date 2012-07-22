@@ -7,6 +7,7 @@ using System.Linq;
 using System.Text;
 using System.Windows.Forms;
 using ArdupilotMega.Utilities;
+using ArdupilotMega.Controls.BackstageView;
 
 namespace ArdupilotMega.Controls
 {
@@ -43,6 +44,11 @@ namespace ArdupilotMega.Controls
                 // check if we need to remove the current control
                 if (!current.Persistent)
                 {
+                    if (current.Control is IDeactivate)
+                    {
+                        ((IDeactivate)(current.Control)).Deactivate();
+                    }
+
                     // cleanup
                     current.Control.Close();
 
@@ -62,6 +68,11 @@ namespace ArdupilotMega.Controls
             nextscreen.Control.Size = this.Size;
 
             nextscreen.Visible = true;
+
+            if (nextscreen.Control is IActivate)
+            {
+                ((IActivate)(nextscreen.Control)).Activate();
+            }
 
             this.Controls.Add(nextscreen.Control);
 

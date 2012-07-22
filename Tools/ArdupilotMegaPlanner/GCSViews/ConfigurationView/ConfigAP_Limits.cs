@@ -13,7 +13,7 @@ using System.Diagnostics;
 
 namespace ArdupilotMega.GCSViews.ConfigurationView
 {
-    public partial class ConfigAP_Limits : BackStageViewContentPanel
+    public partial class ConfigAP_Limits : UserControl, IActivate
     {
         public ConfigAP_Limits()
         {
@@ -73,7 +73,7 @@ namespace ArdupilotMega.GCSViews.ConfigurationView
             ProcessChange(sender, e);
         }
 
-        private void ConfigAP_Limits_Load(object sender, EventArgs e)
+        public void Activate()
         {
             PopulateData();
         }

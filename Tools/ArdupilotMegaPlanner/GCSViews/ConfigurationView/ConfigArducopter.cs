@@ -12,7 +12,7 @@ using ArdupilotMega.Controls;
 
 namespace ArdupilotMega.GCSViews.ConfigurationView
 {
-    public partial class ConfigArducopter : BackStageViewContentPanel
+    public partial class ConfigArducopter : UserControl, IActivate
     {
         Hashtable changes = new Hashtable();
         static Hashtable tooltips = new Hashtable();
@@ -34,7 +34,7 @@ namespace ArdupilotMega.GCSViews.ConfigurationView
             public string desc;
         }
 
-        private void ConfigArducopter_Load(object sender, EventArgs e)
+        public void Activate()
         {
             if (!MainV2.comPort.BaseStream.IsOpen)
             {
@@ -201,6 +201,12 @@ namespace ArdupilotMega.GCSViews.ConfigurationView
                             {
                                 thisctl.Maximum = 180;
                                 thisctl.Minimum = -180;
+                            }
+
+                            if (thisctl.Name.ToUpper().EndsWith("THR_RATE_IMAX"))
+                            {
+                                thisctl.Maximum = 1000; // is a pwm
+                                thisctl.Minimum = 0;
                             }
 
                             thisctl.Enabled = true;
@@ -412,7 +418,8 @@ namespace ArdupilotMega.GCSViews.ConfigurationView
 
             ((Control)sender).Enabled = true;
 
-            this.DoLoad(new EventArgs());
+
+            this.Activate();
         }
       
         

@@ -25,18 +25,22 @@ namespace ArdupilotMega.GCSViews.ConfigurationView
             if (MainV2.comPort.BaseStream.IsOpen)
             {
                 AddPagesForConnectedState();
+			//	backstageView.AddSpacer(20);
             }
 
             // These pages work when not connected to an APM
             AddBackstageViewPage(new ArdupilotMega._3DRradio(), "3DR Radio");
             AddBackstageViewPage(new ArdupilotMega.Antenna.Tracker(), "Antenna Tracker");
+//backstageView.AddSpacer(15);
             AddBackstageViewPage(new ConfigPlanner(), "Planner");
 
             this.backstageView.ActivatePage(backstageView.Pages[0]);
 
             if (!MainV2.comPort.BaseStream.IsOpen)
             {
-                Common.MessageShowAgain("Config Connect", "Please connect (click Connect Button) before using setup!!");
+                ThemeManager.ApplyThemeTo(this);
+                Common.MessageShowAgain("Config Connect", @"Please connect (click Connect Button) before using setup.
+If you are just setting up 3DR radios, you may continue without connecting.");
             }
         }
 
@@ -61,8 +65,7 @@ namespace ArdupilotMega.GCSViews.ConfigurationView
 
                 AddBackstageViewPage(new ConfigTradHeli(), "Heli Setup");
 
-                var configpanel = new Controls.ConfigPanel();
-                configpanel.LoadXML("ArduCopterConfig.xml");
+                var configpanel = new Controls.ConfigPanel(Application.StartupPath + System.IO.Path.DirectorySeparatorChar + "ArduCopterConfig.xml");
                 AddBackstageViewPage(configpanel, "ArduCopter Pids");
 
                 AddBackstageViewPage(new ConfigArducopter(), "ArduCopter Config");
@@ -74,8 +77,7 @@ namespace ArdupilotMega.GCSViews.ConfigurationView
 
                 AddBackstageViewPage(new ConfigAccelerometerCalibrationQuad(), "ArduCopter Level");
 
-                var configpanel = new Controls.ConfigPanel();
-                configpanel.LoadXML("ArduCopterConfig.xml");
+                var configpanel = new Controls.ConfigPanel(Application.StartupPath + System.IO.Path.DirectorySeparatorChar + "ArduCopterConfig.xml");
                 AddBackstageViewPage(configpanel, "ArduCopter Pids");
 
                 AddBackstageViewPage(new ConfigArducopter(), "ArduCopter Config");
@@ -99,9 +101,9 @@ namespace ArdupilotMega.GCSViews.ConfigurationView
             AddBackstageViewPage(new ConfigRawParams(), "Parameter List");
         }
 
-        private void AddBackstageViewPage(BackStageViewContentPanel userControl, string headerText)
+        private void AddBackstageViewPage(UserControl userControl, string headerText)
         {
-            backstageView.AddPage(new BackstageView.BackstageViewPage(userControl, headerText));
+            backstageView.AddPage(userControl, headerText);
         }
 
 

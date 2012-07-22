@@ -11,7 +11,7 @@ using ArdupilotMega.Controls;
 
 namespace ArdupilotMega.GCSViews.ConfigurationView
 {
-    public partial class ConfigHardwareOptions : BackStageViewContentPanel
+    public partial class ConfigHardwareOptions : UserControl, IActivate
     {
         bool startup = false;
 
@@ -233,7 +233,7 @@ namespace ArdupilotMega.GCSViews.ConfigurationView
             catch { CustomMessageBox.Show("Set SONAR_TYPE Failed"); }
         }
 
-        private void ConfigHardwareOptions_Load(object sender, EventArgs e)
+        public void Activate()
         {
             if (!MainV2.comPort.BaseStream.IsOpen)
             {

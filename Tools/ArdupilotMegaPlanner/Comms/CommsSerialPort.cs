@@ -48,6 +48,7 @@ namespace ArdupilotMega.Comms
                     allPorts.AddRange(Directory.GetFiles("/dev/serial/by-id/", "*"));
                 allPorts.AddRange(Directory.GetFiles("/dev/", "ttyACM*"));
                 allPorts.AddRange(Directory.GetFiles("/dev/", "ttyUSB*"));
+                allPorts.AddRange(Directory.GetFiles("/dev/", "rfcomm*"));
             }
 
             string[] ports = System.IO.Ports.SerialPort.GetPortNames()

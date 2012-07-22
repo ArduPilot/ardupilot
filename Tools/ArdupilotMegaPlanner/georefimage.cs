@@ -215,12 +215,19 @@ namespace ArdupilotMega
             imagetotime = new Hashtable();
 
             //logFile = @"C:\Users\hog\Pictures\farm 1-10-2011\100SSCAM\2011-10-01 11-48 1.log";
+            TXT_outputlog.AppendText("Read Log\n");
 
             List<string[]> list = readLog(logFile);
 
+            TXT_outputlog.AppendText("Log Read\n");
+
             //dirWithImages = @"C:\Users\hog\Pictures\farm 1-10-2011\100SSCAM";
 
+            TXT_outputlog.AppendText("Read images\n");
+
             string[] files = Directory.GetFiles(dirWithImages);
+
+            TXT_outputlog.AppendText("images read\n");
 
             Document kml = new Document();
 
@@ -241,6 +248,8 @@ namespace ArdupilotMega
             int matchs = 0;
 
             int lastmatchindex = 0;
+
+            TXT_outputlog.AppendText("start Processing\n");
 
             foreach (string filename in files)
             {
@@ -277,7 +286,9 @@ namespace ArdupilotMega
 
                         if (lastmatchindex > (a))
                             continue;
-                        //Application.DoEvents();
+
+                        if (a % 1000 == 0)
+                         Application.DoEvents();
 
                         DateTime logdt = startTime.AddMilliseconds(int.Parse(arr[1])).AddSeconds(offsetseconds);
 
@@ -291,6 +302,13 @@ namespace ArdupilotMega
                                 return;
 
                             first++;
+                        }
+
+                        // time has past, logs are in time order
+                        if (photodt < logdt.AddSeconds(-1))
+                        {
+                            lastmatchindex = a;
+                            break;
                         }
 
                         //Console.Write("ph " + dt + " log " + crap + "         \r");

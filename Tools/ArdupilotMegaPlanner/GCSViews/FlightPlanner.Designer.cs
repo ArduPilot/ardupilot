@@ -111,13 +111,13 @@
             this.jumpToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.jumpstartToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.jumpwPToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.createWpCircleToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.toolStripSeparator1 = new System.Windows.Forms.ToolStripSeparator();
             this.ContextMeasure = new System.Windows.Forms.ToolStripMenuItem();
             this.rotateMapToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.polygonToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.addPolygonPointToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.clearPolygonToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
-            this.clearMissionToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.geoFenceToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.toolStripMenuItem1 = new System.Windows.Forms.ToolStripMenuItem();
             this.toolStripSeparator4 = new System.Windows.Forms.ToolStripSeparator();
@@ -126,6 +126,7 @@
             this.setReturnLocationToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.loadFromFileToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.saveToFileToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.clearMissionToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.trackBar1 = new ArdupilotMega.Controls.MyTrackBar();
             this.label11 = new System.Windows.Forms.Label();
             this.panelBASE = new System.Windows.Forms.Panel();
@@ -721,12 +722,13 @@
             this.deleteWPToolStripMenuItem,
             this.loiterToolStripMenuItem,
             this.jumpToolStripMenuItem,
+            this.createWpCircleToolStripMenuItem,
             this.toolStripSeparator1,
             this.ContextMeasure,
             this.rotateMapToolStripMenuItem,
             this.polygonToolStripMenuItem,
-            this.clearMissionToolStripMenuItem,
-            this.geoFenceToolStripMenuItem});
+            this.geoFenceToolStripMenuItem,
+            this.clearMissionToolStripMenuItem});
             this.contextMenuStrip1.Name = "contextMenuStrip1";
             resources.ApplyResources(this.contextMenuStrip1, "contextMenuStrip1");
             // 
@@ -783,6 +785,12 @@
             resources.ApplyResources(this.jumpwPToolStripMenuItem, "jumpwPToolStripMenuItem");
             this.jumpwPToolStripMenuItem.Click += new System.EventHandler(this.jumpwPToolStripMenuItem_Click);
             // 
+            // createWpCircleToolStripMenuItem
+            // 
+            this.createWpCircleToolStripMenuItem.Name = "createWpCircleToolStripMenuItem";
+            resources.ApplyResources(this.createWpCircleToolStripMenuItem, "createWpCircleToolStripMenuItem");
+            this.createWpCircleToolStripMenuItem.Click += new System.EventHandler(this.createWpCircleToolStripMenuItem_Click);
+            // 
             // toolStripSeparator1
             // 
             this.toolStripSeparator1.Name = "toolStripSeparator1";
@@ -819,12 +827,6 @@
             this.clearPolygonToolStripMenuItem.Name = "clearPolygonToolStripMenuItem";
             resources.ApplyResources(this.clearPolygonToolStripMenuItem, "clearPolygonToolStripMenuItem");
             this.clearPolygonToolStripMenuItem.Click += new System.EventHandler(this.clearPolygonToolStripMenuItem_Click);
-            // 
-            // clearMissionToolStripMenuItem
-            // 
-            this.clearMissionToolStripMenuItem.Name = "clearMissionToolStripMenuItem";
-            resources.ApplyResources(this.clearMissionToolStripMenuItem, "clearMissionToolStripMenuItem");
-            this.clearMissionToolStripMenuItem.Click += new System.EventHandler(this.clearMissionToolStripMenuItem_Click);
             // 
             // geoFenceToolStripMenuItem
             // 
@@ -879,6 +881,12 @@
             resources.ApplyResources(this.saveToFileToolStripMenuItem, "saveToFileToolStripMenuItem");
             this.saveToFileToolStripMenuItem.Click += new System.EventHandler(this.saveToFileToolStripMenuItem_Click);
             // 
+            // clearMissionToolStripMenuItem
+            // 
+            this.clearMissionToolStripMenuItem.Name = "clearMissionToolStripMenuItem";
+            resources.ApplyResources(this.clearMissionToolStripMenuItem, "clearMissionToolStripMenuItem");
+            this.clearMissionToolStripMenuItem.Click += new System.EventHandler(this.clearMissionToolStripMenuItem_Click);
+            // 
             // trackBar1
             // 
             resources.ApplyResources(this.trackBar1, "trackBar1");
@@ -911,7 +919,6 @@
             // 
             // timer1
             // 
-            this.timer1.Enabled = true;
             this.timer1.Interval = 1000;
             this.timer1.Tick += new System.EventHandler(this.timer1_Tick);
             // 
@@ -923,6 +930,7 @@
             this.Controls.Add(this.panelBASE);
             this.MinimumSize = new System.Drawing.Size(1008, 461);
             this.Name = "FlightPlanner";
+            this.FormClosing += new System.Windows.Forms.FormClosingEventHandler(this.FlightPlanner_FormClosing);
             this.Load += new System.EventHandler(this.Planner_Load);
             this.Resize += new System.EventHandler(this.Planner_Resize);
             ((System.ComponentModel.ISupportInitialize)(this.Commands)).EndInit();
@@ -1037,5 +1045,6 @@
         private System.Windows.Forms.ToolStripMenuItem toolStripMenuItem1;
         private System.Windows.Forms.ToolStripMenuItem GeoFenceuploadToolStripMenuItem;
         private System.Windows.Forms.ToolStripSeparator toolStripSeparator4;
+        private System.Windows.Forms.ToolStripMenuItem createWpCircleToolStripMenuItem;
     }
 }

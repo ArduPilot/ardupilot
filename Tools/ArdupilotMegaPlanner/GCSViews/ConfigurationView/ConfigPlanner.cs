@@ -16,10 +16,10 @@ using System.Threading;
 
 namespace ArdupilotMega.GCSViews.ConfigurationView
 {
-    public partial class ConfigPlanner : BackStageViewContentPanel
+    public partial class ConfigPlanner : UserControl, IActivate
     {
         private bool startup = false;
-        List<CultureInfo> languages = new List<CultureInfo>();
+        private List<CultureInfo> _languages;
 
         public class GCSBitmapInfo
         {
@@ -422,104 +422,12 @@ namespace ArdupilotMega.GCSViews.ConfigurationView
             MainV2.config["CHK_GDIPlus"] = CHK_GDIPlus.Checked.ToString();
         }
 
+        // This load handler now only contains code that should execute once
+        // on start up. See Activate() for the remainder
         private void ConfigPlanner_Load(object sender, EventArgs e)
         {
             startup = true;
 
-            // setup up camera button states
-            if (MainV2.cam != null)
-            {
-                BUT_videostart.Enabled = false;
-                CHK_hudshow.Checked = GCSViews.FlightData.myhud.hudon;
-            }
-            else
-            {
-                BUT_videostart.Enabled = true;
-            }
-
-            // setup speech states
-            if (MainV2.config["speechenable"] != null)
-                CHK_enablespeech.Checked = bool.Parse(MainV2.config["speechenable"].ToString());
-            if (MainV2.config["speechwaypointenabled"] != null)
-                CHK_speechwaypoint.Checked = bool.Parse(MainV2.config["speechwaypointenabled"].ToString());
-            if (MainV2.config["speechmodeenabled"] != null)
-                CHK_speechmode.Checked = bool.Parse(MainV2.config["speechmodeenabled"].ToString());
-            if (MainV2.config["speechcustomenabled"] != null)
-                CHK_speechcustom.Checked = bool.Parse(MainV2.config["speechcustomenabled"].ToString());
-            if (MainV2.config["speechbatteryenabled"] != null)
-                CHK_speechbattery.Checked = bool.Parse(MainV2.config["speechbatteryenabled"].ToString());
-            if (MainV2.config["speechaltenabled"] != null)
-                CHK_speechaltwarning.Checked = bool.Parse(MainV2.config["speechaltenabled"].ToString());
-
-            // this can't fail because it set at startup
-            NUM_tracklength.Value = int.Parse(MainV2.config["NUM_tracklength"].ToString());
-
-            // get wps on connect
-            if (MainV2.config["loadwpsonconnect"] != null)
-                CHK_loadwponconnect.Checked = bool.Parse(MainV2.config["loadwpsonconnect"].ToString());
-
-            // setup other config state
-            if (MainV2.config["CHK_resetapmonconnect"] != null)
-                CHK_resetapmonconnect.Checked = bool.Parse(MainV2.config["CHK_resetapmonconnect"].ToString());
-
-            CMB_rateattitude.Text = MainV2.cs.rateattitude.ToString();
-            CMB_rateposition.Text = MainV2.cs.rateposition.ToString();
-            CMB_raterc.Text = MainV2.cs.raterc.ToString();
-            CMB_ratestatus.Text = MainV2.cs.ratestatus.ToString();
-            CMB_ratesensors.Text = MainV2.cs.ratesensors.ToString();
-
-
-            if (MainV2.config["CHK_GDIPlus"] != null)
-                CHK_GDIPlus.Checked = bool.Parse(MainV2.config["CHK_GDIPlus"].ToString());
-
-            if (MainV2.config["CHK_maprotation"] != null)
-                CHK_maprotation.Checked = bool.Parse(MainV2.config["CHK_maprotation"].ToString());
-
-            //set hud color state
-            string hudcolor = (string)MainV2.config["hudcolor"];
-
-            CMB_osdcolor.DataSource = Enum.GetNames(typeof(KnownColor));
-            if (hudcolor != null)
-            {
-                int index = CMB_osdcolor.Items.IndexOf(hudcolor);
-                CMB_osdcolor.SelectedIndex = index;
-            }
-            else
-            {
-                int index = CMB_osdcolor.Items.IndexOf("White");
-                CMB_osdcolor.SelectedIndex = index;
-            }
-
-            // set distance/speed unit states
-            CMB_distunits.DataSource = Enum.GetNames(typeof(Common.distances));
-            CMB_speedunits.DataSource = Enum.GetNames(typeof(Common.speeds));
-
-            if (MainV2.config["distunits"] != null)
-                CMB_distunits.Text = MainV2.config["distunits"].ToString();
-            if (MainV2.config["speedunits"] != null)
-                CMB_speedunits.Text = MainV2.config["speedunits"].ToString();
-
-            // setup language selection
-            CultureInfo ci = null;
-            foreach (string name in new string[] { "en-US", "zh-Hans", "zh-TW", "ru-RU", "Fr", "Pl", "it-IT", "es-ES" })
-            {
-                ci = CultureInfoEx.GetCultureInfo(name);
-                if (ci != null)
-                    languages.Add(ci);
-            }
-
-            CMB_language.DisplayMember = "DisplayName";
-            CMB_language.DataSource = languages;
-            ci = Thread.CurrentThread.CurrentUICulture;
-            for (int i = 0; i < languages.Count; i++)
-            {
-                if (ci.IsChildOf(languages[i]))
-                {
-                    CMB_language.SelectedIndex = i;
-                    break;
-                }
-            }
-            //CMB_language.SelectedIndexChanged += CMB_language_SelectedIndexChanged;
 
             startup = false;
         }
@@ -570,6 +478,95 @@ namespace ArdupilotMega.GCSViews.ConfigurationView
             if (startup)
                 return;
             MainV2.config["CHK_maprotation"] = CHK_maprotation.Checked.ToString();
+        }
+        // Called every time that this control is made current in the backstage view
+        public void Activate()
+        {
+            startup = true; // flag to ignore changes while we programatically populate controls
+
+
+            CMB_osdcolor.DataSource = Enum.GetNames(typeof(KnownColor));
+
+            // set distance/speed unit states
+            CMB_distunits.DataSource = Enum.GetNames(typeof(Common.distances));
+            CMB_speedunits.DataSource = Enum.GetNames(typeof(Common.speeds));
+
+            // setup language selection
+            var cultureCodes = new[] { "en-US", "zh-Hans", "zh-TW", "ru-RU", "Fr", "Pl", "it-IT", "es-ES" };
+
+            _languages = cultureCodes
+                .Select(CultureInfoEx.GetCultureInfo)
+                .Where(c => c != null)
+                .ToList();
+
+            CMB_language.DisplayMember = "DisplayName";
+            CMB_language.DataSource = _languages;
+            var currentUiCulture = Thread.CurrentThread.CurrentUICulture;
+
+            for (int i = 0; i < _languages.Count; i++)
+            {
+                if (currentUiCulture.IsChildOf(_languages[i]))
+                {
+                    CMB_language.SelectedIndex = i;
+                    break;
+                }
+            }
+
+            // setup up camera button states
+            if (MainV2.cam != null)
+            {
+                BUT_videostart.Enabled = false;
+                CHK_hudshow.Checked = GCSViews.FlightData.myhud.hudon;
+            }
+            else
+            {
+                BUT_videostart.Enabled = true;
+            }
+
+            // setup speech states
+            SetCheckboxFromConfig("speechenable", CHK_enablespeech);
+            SetCheckboxFromConfig("speechwaypointenabled", CHK_speechwaypoint);
+            SetCheckboxFromConfig("speechmodeenabled", CHK_speechmode);
+            SetCheckboxFromConfig("speechcustomenabled", CHK_speechcustom);
+            SetCheckboxFromConfig("speechbatteryenabled", CHK_speechbattery);
+            SetCheckboxFromConfig("speechaltenabled", CHK_speechaltwarning);
+
+            // this can't fail because it set at startup
+            NUM_tracklength.Value = int.Parse(MainV2.config["NUM_tracklength"].ToString());
+
+            // get wps on connect
+            SetCheckboxFromConfig("loadwpsonconnect", CHK_loadwponconnect);
+
+            // setup other config state
+            SetCheckboxFromConfig("CHK_resetapmonconnect", CHK_resetapmonconnect);
+
+            CMB_rateattitude.Text = MainV2.cs.rateattitude.ToString();
+            CMB_rateposition.Text = MainV2.cs.rateposition.ToString();
+            CMB_raterc.Text = MainV2.cs.raterc.ToString();
+            CMB_ratestatus.Text = MainV2.cs.ratestatus.ToString();
+            CMB_ratesensors.Text = MainV2.cs.ratesensors.ToString();
+
+            SetCheckboxFromConfig("CHK_GDIPlus", CHK_GDIPlus);
+            SetCheckboxFromConfig("CHK_maprotation", CHK_maprotation);
+
+            //set hud color state
+            string hudcolor = (string)MainV2.config["hudcolor"];
+            int index = CMB_osdcolor.Items.IndexOf(hudcolor ?? "White");
+            CMB_osdcolor.SelectedIndex = index;
+
+
+            if (MainV2.config["distunits"] != null)
+                CMB_distunits.Text = MainV2.config["distunits"].ToString();
+            if (MainV2.config["speedunits"] != null)
+                CMB_speedunits.Text = MainV2.config["speedunits"].ToString();
+        }
+
+
+        
+        private static void SetCheckboxFromConfig(string configKey, CheckBox chk)
+        {
+            if (MainV2.config[configKey] != null)
+                chk.Checked = bool.Parse(MainV2.config[configKey].ToString());
         }
     }
 }

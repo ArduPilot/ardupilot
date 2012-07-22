@@ -77,6 +77,7 @@
             // TXT_status
             // 
             resources.ApplyResources(this.TXT_status, "TXT_status");
+            this.TXT_status.ForeColor = System.Drawing.Color.Red;
             this.TXT_status.Name = "TXT_status";
             // 
             // BUT_redokml

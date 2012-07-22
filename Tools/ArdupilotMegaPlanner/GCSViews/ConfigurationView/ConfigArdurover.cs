@@ -12,7 +12,7 @@ using ArdupilotMega.Controls;
 
 namespace ArdupilotMega.GCSViews.ConfigurationView
 {
-    public partial class ConfigArdurover : BackStageViewContentPanel
+    public partial class ConfigArdurover : UserControl, IActivate
     {
         Hashtable changes = new Hashtable();
         static Hashtable tooltips = new Hashtable();
@@ -23,7 +23,7 @@ namespace ArdupilotMega.GCSViews.ConfigurationView
             InitializeComponent();
         }
 
-        private void ConfigArduplane_Load(object sender, EventArgs e)
+        public void Activate()
         {
             if (!MainV2.comPort.BaseStream.IsOpen)
             {
@@ -318,7 +318,7 @@ namespace ArdupilotMega.GCSViews.ConfigurationView
 
             ((Control)sender).Enabled = true;
 
-            this.DoLoad(new EventArgs());
+            this.Activate();
         }
 
     }

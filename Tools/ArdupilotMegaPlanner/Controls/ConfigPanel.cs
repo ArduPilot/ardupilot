@@ -13,7 +13,7 @@ using ArdupilotMega.Utilities;
 
 namespace ArdupilotMega.Controls
 {
-    public partial class ConfigPanel : BackStageViewContentPanel
+    public partial class ConfigPanel : UserControl
     {
         /// <summary>
         /// store temp pending changes
@@ -22,9 +22,11 @@ namespace ArdupilotMega.Controls
         // store linked param options
         Hashtable _linkedParams = new Hashtable();
 
-        public ConfigPanel()
+        public ConfigPanel(string XMLFile)
         {
             InitializeComponent();
+
+            LoadXML(XMLFile);
         }
 
         /// <summary>

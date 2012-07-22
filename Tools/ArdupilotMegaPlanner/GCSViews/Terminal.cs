@@ -147,10 +147,15 @@ namespace ArdupilotMega.GCSViews
         {
             threadrun = false;
 
-            if (comPort.IsOpen)
+            try
             {
-                comPort.Close();
+                if (comPort.IsOpen)
+                {
+                    comPort.Close();
+                }
             }
+            catch { } // Exception System.IO.IOException: The specified port does not exist.
+
             System.Threading.Thread.Sleep(400);
 
             MainV2.giveComport = false;

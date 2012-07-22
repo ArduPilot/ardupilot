@@ -19,7 +19,7 @@ using System.Windows.Forms;
 
 namespace ArdupilotMega
 {
-    public partial class MAVLink: IMAVLink
+    public partial class MAVLink
     {
         private static readonly ILog log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
         public ICommsSerial BaseStream { get; set; }
@@ -703,6 +703,8 @@ namespace ArdupilotMega
             DateTime start = DateTime.Now;
             DateTime restart = DateTime.Now;
 
+            DateTime lastmessage = DateTime.MinValue;
+
             do
             {
 
@@ -763,13 +765,15 @@ namespace ArdupilotMega
 
                         log.Info(DateTime.Now.Millisecond + " got param " + (par.param_index) + " of " + (par.param_count) + " name: " + paramID);
 
+                        //Console.WriteLine(DateTime.Now.Millisecond + " gp " + BaseStream.BytesToRead);
+
                         modifyParamForDisplay(true, paramID, ref par.param_value);
                         param[paramID] = (par.param_value);
                         param_count++;
                         got.Add(par.param_index);
 
-                        //                        if (Progress != null)
-                        //                            Progress((param.Count * 100) / param_total, "Got param " + paramID);
+                        Console.WriteLine(DateTime.Now.Millisecond + " gp1 " + BaseStream.BytesToRead);
+
                         this.frmProgressReporter.UpdateProgressAndStatus((got.Count * 100) / param_total, "Got param " + paramID);
 
                         // we have them all - lets escape eq total = 176 index = 0-175
@@ -782,6 +786,7 @@ namespace ArdupilotMega
                     }
                     //stopwatch.Stop();
                     //Console.WriteLine("Time elapsed: {0}", stopwatch.Elapsed);
+                    Console.WriteLine(DateTime.Now.Millisecond + " gp2 " + BaseStream.BytesToRead);
                 }
             } while (got.Count < param_total);
 
@@ -801,14 +806,12 @@ namespace ArdupilotMega
 
         public static void modifyParamForDisplay(bool fromapm, string paramname, ref float value)
         {
-            if (paramname.ToUpper().EndsWith("_IMAX") || paramname.ToUpper().EndsWith("ALT_HOLD_RTL") || paramname.ToUpper().EndsWith("TRIM_ARSPD_CM")
+            if (paramname.ToUpper().EndsWith("_IMAX") || paramname.ToUpper().EndsWith("ALT_HOLD_RTL") || paramname.ToUpper().EndsWith("APPROACH_ALT") || paramname.ToUpper().EndsWith("TRIM_ARSPD_CM")
                 || paramname.ToUpper().EndsWith("XTRK_ANGLE_CD") || paramname.ToUpper().EndsWith("LIM_PITCH_MAX") || paramname.ToUpper().EndsWith("LIM_PITCH_MIN")
                 || paramname.ToUpper().EndsWith("LIM_ROLL_CD") || paramname.ToUpper().EndsWith("PITCH_MAX") || paramname.ToUpper().EndsWith("WP_SPEED_MAX"))
             {
-                if (paramname.ToUpper().EndsWith("THR_HOLD_IMAX"))
-                {
+                if (paramname.ToUpper().EndsWith("THR_RATE_IMAX") || paramname.ToUpper().EndsWith("THR_HOLD_IMAX"))
                     return;
-                }
 
                 if (fromapm)
                 {
@@ -2049,7 +2052,7 @@ namespace ArdupilotMega
         /// <returns></returns>
         public byte[] readPacket()
         {
-            byte[] temp = new byte[300];
+            byte[] buffer = new byte[300];
             int count = 0;
             int length = 0;
             int readcount = 0;
@@ -2073,6 +2076,7 @@ namespace ArdupilotMega
 
             lock (readlock)
             {
+//                Console.WriteLine(DateTime.Now.Millisecond + " SR " + BaseStream.BytesToRead);
 
                 while (BaseStream.IsOpen || logreadmode)
                 {
@@ -2104,11 +2108,11 @@ namespace ArdupilotMega
 
                             if (oldlogformat)
                             {
-                                temp = readlogPacket(); //old style log
+                                buffer = readlogPacket(); //old style log
                             }
                             else
                             {
-                                temp = readlogPacketMavlink();
+                                buffer = readlogPacketMavlink();
                             }
                         }
                         else
@@ -2126,51 +2130,53 @@ namespace ArdupilotMega
                                 }
                               //  System.Threading.Thread.Sleep(1);
                             }
+                            //Console.WriteLine(DateTime.Now.Millisecond + " SR1 " + BaseStream.BytesToRead);
                             if (BaseStream.IsOpen)
                             {
-                                temp[count] = (byte)BaseStream.ReadByte();
+                                buffer[count] = (byte)BaseStream.ReadByte();
                                 if (rawlogfile != null && rawlogfile.BaseStream.CanWrite)
-                                    rawlogfile.Write(temp[count]);
+                                    rawlogfile.Write(buffer[count]);
                             }
                         }
                     }
                     catch (Exception e) { log.Info("MAVLink readpacket read error: " + e.ToString()); break; }
 
                     // check if looks like a mavlink packet and check for exclusions and write to console
-                    if (temp[0] != 254 && temp[0] != 'U' || lastbad[0] == 'I' && lastbad[1] == 'M' || lastbad[1] == 'G' || lastbad[1] == 'A') // out of sync "AUTO" "GUIDED" "IMU"
+                    if (buffer[0] != 254 && buffer[0] != 'U' || lastbad[0] == 'I' && lastbad[1] == 'M' || lastbad[1] == 'G' || lastbad[1] == 'A') // out of sync "AUTO" "GUIDED" "IMU"
                     {
-                        if (temp[0] >= 0x20 && temp[0] <= 127 || temp[0] == '\n' || temp[0] == '\r')
+                        if (buffer[0] >= 0x20 && buffer[0] <= 127 || buffer[0] == '\n' || buffer[0] == '\r')
                         {
-                            TCPConsole.Write(temp[0]);
-                            Console.Write((char)temp[0]);
+                            TCPConsole.Write(buffer[0]);
+                            Console.Write((char)buffer[0]);
                         }
                         _bytesReceivedSubj.OnNext(1);
                         count = 0;
                         lastbad[0] = lastbad[1];
-                        lastbad[1] = temp[0];
-                        temp[1] = 0;
+                        lastbad[1] = buffer[0];
+                        buffer[1] = 0;
                         continue;
                     }
                     // reset count on valid packet
                     readcount = 0;
 
+                    //Console.WriteLine(DateTime.Now.Millisecond + " SR2 " + BaseStream.BytesToRead);
 
-                    if (temp[0] == 'U' || temp[0] == 254)
+                    if (buffer[0] == 'U' || buffer[0] == 254)
                     {
-                        length = temp[1] + 6 + 2 - 2; // data + header + checksum - U - length
+                        length = buffer[1] + 6 + 2 - 2; // data + header + checksum - U - length
                         if (count >= 5 || logreadmode)
                         {
                             if (sysid != 0)
                             {
-                                if (sysid != temp[3] || compid != temp[4])
+                                if (sysid != buffer[3] || compid != buffer[4])
                                 {
-                                    if (temp[3] == '3' && temp[4] == 'D')
+                                    if (buffer[3] == '3' && buffer[4] == 'D')
                                     {
                                         // this is a 3dr radio rssi packet
                                     }
                                     else
                                     {
-                                        log.InfoFormat("Mavlink Bad Packet (not addressed to this MAV) got {0} {1} vs {2} {3}", temp[3], temp[4], sysid, compid);
+                                        log.InfoFormat("Mavlink Bad Packet (not addressed to this MAV) got {0} {1} vs {2} {3}", buffer[3], buffer[4], sysid, compid);
                                         return new byte[0];
                                     }
                                 }
@@ -2197,12 +2203,11 @@ namespace ArdupilotMega
                                     }
                                     if (BaseStream.IsOpen)
                                     {
-                                        int read = BaseStream.Read(temp, 6, length - 4);
+                                        int read = BaseStream.Read(buffer, 6, length - 4);
                                         if (rawlogfile != null && rawlogfile.BaseStream.CanWrite)
                                         {
                                             // write only what we read, temp is the whole packet, so 6-end
-                                            rawlogfile.Write(temp, 6, read);
-                                            rawlogfile.BaseStream.Flush();
+                                            rawlogfile.Write(buffer, 6, read);
                                         }
                                     }
                                 }
@@ -2218,11 +2223,13 @@ namespace ArdupilotMega
                     if (count == 299)
                         break;
                 }
+
+                //Console.WriteLine(DateTime.Now.Millisecond + " SR3 " + BaseStream.BytesToRead);
             }// end readlock
 
-            Array.Resize<byte>(ref temp, count);
+            Array.Resize<byte>(ref buffer, count);
 
-            _bytesReceivedSubj.OnNext(temp.Length);
+            _bytesReceivedSubj.OnNext(buffer.Length);
 
             if (packetlosttimer.AddSeconds(5) < DateTime.Now)
             {
@@ -2241,34 +2248,34 @@ namespace ArdupilotMega
                 bpstime = DateTime.Now;
             }
 
-            bps1 += temp.Length;
+            bps1 += buffer.Length;
 
             bps = (bps1 + bps2) / 2;
 
-            if (temp.Length >= 5 && temp[3] == 255 && logreadmode) // gcs packet
+            if (buffer.Length >= 5 && buffer[3] == 255 && logreadmode) // gcs packet
             {
-                getWPsfromstream(ref temp);
-                return temp;// new byte[0];
+                getWPsfromstream(ref buffer);
+                return buffer;// new byte[0];
             }
 
-            ushort crc = MavlinkCRC.crc_calculate(temp, temp.Length - 2);
+            ushort crc = MavlinkCRC.crc_calculate(buffer, buffer.Length - 2);
 
-            if (temp.Length > 5 && temp[0] == 254)
+            if (buffer.Length > 5 && buffer[0] == 254)
             {
-                crc = MavlinkCRC.crc_accumulate(MAVLINK_MESSAGE_CRCS[temp[5]], crc);
+                crc = MavlinkCRC.crc_accumulate(MAVLINK_MESSAGE_CRCS[buffer[5]], crc);
             }
 
-            if (temp.Length > 5 && temp[1] != MAVLINK_MESSAGE_LENGTHS[temp[5]])
+            if (buffer.Length > 5 && buffer[1] != MAVLINK_MESSAGE_LENGTHS[buffer[5]])
             {
-                if (MAVLINK_MESSAGE_LENGTHS[temp[5]] == 0) // pass for unknown packets
+                if (MAVLINK_MESSAGE_LENGTHS[buffer[5]] == 0) // pass for unknown packets
                 {
 
                 }
                 else
                 {
-                    log.InfoFormat("Mavlink Bad Packet (Len Fail) len {0} pkno {1}", temp.Length, temp[5]);
+                    log.InfoFormat("Mavlink Bad Packet (Len Fail) len {0} pkno {1}", buffer.Length, buffer[5]);
 #if MAVLINK10
-                    if (temp.Length == 11 && temp[0] == 'U' && temp[5] == 0){
+                    if (buffer.Length == 11 && buffer[0] == 'U' && buffer[5] == 0){
                         string message ="Mavlink 0.9 Heartbeat, Please upgrade your AP, This planner is for Mavlink 1.0\n\n";
                         System.Windows.Forms.CustomMessageBox.Show(message);
                         throw new Exception(message);
@@ -2285,28 +2292,28 @@ namespace ArdupilotMega
                 }
             }
 
-            if (temp.Length < 5 || temp[temp.Length - 1] != (crc >> 8) || temp[temp.Length - 2] != (crc & 0xff))
+            if (buffer.Length < 5 || buffer[buffer.Length - 1] != (crc >> 8) || buffer[buffer.Length - 2] != (crc & 0xff))
             {
                 int packetno = -1;
-                if (temp.Length > 5)
+                if (buffer.Length > 5)
                 {
-                    packetno = temp[5];
+                    packetno = buffer[5];
                 }
-                log.InfoFormat("Mavlink Bad Packet (crc fail) len {0} crc {1} pkno {2}", temp.Length, crc, packetno);
+                log.InfoFormat("Mavlink Bad Packet (crc fail) len {0} crc {1} pkno {2}", buffer.Length, crc, packetno);
                 return new byte[0];
             }
 
             try
             {
-                if ((temp[0] == 'U' || temp[0] == 254) && temp.Length >= temp[1])
+                if ((buffer[0] == 'U' || buffer[0] == 254) && buffer.Length >= buffer[1])
                 {
-                    if (temp[3] == '3' && temp[4] == 'D')
+                    if (buffer[3] == '3' && buffer[4] == 'D')
                     {
 
                     }
                     else
                     {
-                        byte packetSeqNo = temp[2];
+                        byte packetSeqNo = buffer[2];
                         int expectedPacketSeqNo = ((recvpacketcount + 1) % 0x100);
 
                         if (packetSeqNo != expectedPacketSeqNo)
@@ -2340,26 +2347,26 @@ namespace ArdupilotMega
 
                     //                    Console.Write(temp[5] + " " + DateTime.Now.Millisecond + " " + packetspersecond[temp[5]] + " " + (DateTime.Now - packetspersecondbuild[temp[5]]).TotalMilliseconds + "     \n");
 
-                    if (double.IsInfinity(packetspersecond[temp[5]]))
-                        packetspersecond[temp[5]] = 0;
+                    if (double.IsInfinity(packetspersecond[buffer[5]]))
+                        packetspersecond[buffer[5]] = 0;
 
-                    packetspersecond[temp[5]] = (((1000 / ((DateTime.Now - packetspersecondbuild[temp[5]]).TotalMilliseconds) + packetspersecond[temp[5]]) / 2));
+                    packetspersecond[buffer[5]] = (((1000 / ((DateTime.Now - packetspersecondbuild[buffer[5]]).TotalMilliseconds) + packetspersecond[buffer[5]]) / 2));
 
-                    packetspersecondbuild[temp[5]] = DateTime.Now;
+                    packetspersecondbuild[buffer[5]] = DateTime.Now;
 
                     //Console.WriteLine("Packet {0}",temp[5]);
                     // store packet history
                     lock (objlock)
                     {
-                        packets[temp[5]] = temp;
+                        packets[buffer[5]] = buffer;
                     }
 
                     if (debugmavlink)
-                        DebugPacket(temp);
+                        DebugPacket(buffer);
 
-                    if (temp[5] == MAVLink.MAVLINK_MSG_ID_STATUSTEXT) // status text
+                    if (buffer[5] == MAVLink.MAVLINK_MSG_ID_STATUSTEXT) // status text
                     {
-                        string logdata = Encoding.ASCII.GetString(temp, 7, temp.Length - 7);
+                        string logdata = Encoding.ASCII.GetString(buffer, 7, buffer.Length - 7);
                         int ind = logdata.IndexOf('\0');
                         if (ind != -1)
                             logdata = logdata.Substring(0, ind);
@@ -2372,7 +2379,7 @@ namespace ArdupilotMega
 
                     }
 
-                    getWPsfromstream(ref temp);
+                    getWPsfromstream(ref buffer);
 
                     try
                     {
@@ -2383,8 +2390,12 @@ namespace ArdupilotMega
                                 byte[] datearray = BitConverter.GetBytes((UInt64)((DateTime.UtcNow - new DateTime(1970, 1, 1)).TotalMilliseconds * 1000)); //ASCIIEncoding.ASCII.GetBytes(DateTime.Now.ToBinary() + ":");
                                 Array.Reverse(datearray);
                                 logfile.Write(datearray, 0, datearray.Length);
-                                logfile.Write(temp, 0, temp.Length);
-                                logfile.Flush();
+                                logfile.Write(buffer, 0, buffer.Length);
+
+                                if (buffer[5] == 0)  {// flush on heartbeat - 1 seconds
+                                    logfile.Flush();
+									rawlogfile.BaseStream.Flush();
+								}
                             }
                         }
 
@@ -2398,7 +2409,9 @@ namespace ArdupilotMega
 
             //            Console.Write((DateTime.Now - start).TotalMilliseconds.ToString("00.000") + "\t" + temp.Length + "     \r");
 
-            return temp;
+         //   Console.WriteLine(DateTime.Now.Millisecond + " SR4 " + BaseStream.BytesToRead);
+
+            return buffer;
         }
 
         /// <summary>

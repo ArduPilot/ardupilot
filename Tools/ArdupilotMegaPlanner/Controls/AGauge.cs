@@ -1410,6 +1410,8 @@ System.ComponentModel.Description("Enables or disables the range selected by Nee
             }
         }
 
+
+
         #endregion
 
 #region helper
@@ -1472,21 +1474,36 @@ System.ComponentModel.Description("Enables or disables the range selected by Nee
 #endregion
 
         /// <summary>
+        /// Override to prevent offscreen drawing the control - mono mac
+        /// </summary>
+        public new void Invalidate()
+        {
+            if (!ThisReallyVisible())
+            {
+                return;
+            }
+
+            base.Invalidate();
+        }
+
+        public override void Refresh()
+        {
+            base.Refresh();
+        }
+
+        /// <summary>
         /// this is to fix a mono off screen drawing issue
         /// </summary>
         /// <returns></returns>
         public bool ThisReallyVisible()
         {
-            if (Parent != null)
-                return this.Bounds.IntersectsWith(Parent.ClientRectangle);
-
-            return true;
+            Control ctl = Control.FromHandle(this.Handle);
+            return ctl.Visible;
         } 
 
 #region base member overrides
         protected override void OnPaintBackground(PaintEventArgs pevent)
         {
-            base.OnPaintBackground(pevent);
         }
 
         protected override void OnPaint(PaintEventArgs pe)
@@ -1497,9 +1514,11 @@ System.ComponentModel.Description("Enables or disables the range selected by Nee
             }
 
             if (!ThisReallyVisible())
+            {
+                Console.WriteLine(this.Visible);
+                base.OnPaint(pe);
                 return;
-
-            base.OnPaint(pe);
+            }
 
             float scale = 1;
 

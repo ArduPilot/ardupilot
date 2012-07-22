@@ -23,11 +23,12 @@ using SharpKml.Base;
 using SharpKml.Dom;
 using ArdupilotMega.Controls;
 using ArdupilotMega.Utilities;
+using ArdupilotMega.Controls.BackstageView;
 
 
 namespace ArdupilotMega.GCSViews
 {
-    partial class FlightPlanner : MyUserControl
+    partial class FlightPlanner : MyUserControl, IDeactivate
     {
         private static readonly ILog log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
         int selectedrow = 0;
@@ -697,6 +698,8 @@ namespace ArdupilotMega.GCSViews
             panelMap_Resize(null, null);
 
             writeKML();
+
+            timer1.Start();
         }
 
         void parser_ElementAdded(object sender, SharpKml.Base.ElementEventArgs e)
@@ -1223,7 +1226,7 @@ namespace ArdupilotMega.GCSViews
 
             try
             {
-                IMAVLink port = MainV2.comPort;
+                MAVLink port = MainV2.comPort;
 
                 if (!port.BaseStream.IsOpen)
                 {
@@ -1256,12 +1259,13 @@ namespace ArdupilotMega.GCSViews
             catch (Exception ex) { error = 1; CustomMessageBox.Show("Error : " + ex.ToString()); }
             try
             {
-                this.BeginInvoke((MethodInvoker)delegate()
+                this.Invoke((MethodInvoker)delegate()
                 {
                     if (error == 0)
                     {
                         try
                         {
+                            log.Info("Process " + cmds.Count);
                             processToScreen(cmds);
                         }
                         catch (Exception exx) { log.Info(exx.ToString()); }
@@ -1332,7 +1336,7 @@ namespace ArdupilotMega.GCSViews
         {
             try
             {
-                IMAVLink port = MainV2.comPort;
+                MAVLink port = MainV2.comPort;
 
                 if (!port.BaseStream.IsOpen)
                 {
@@ -1430,7 +1434,9 @@ namespace ArdupilotMega.GCSViews
         void processToScreen(List<Locationwp> cmds)
         {
             quickadd = true;
-            Commands.Rows.Clear();
+
+            while (Commands.Rows.Count > 0)
+                Commands.Rows.RemoveAt(0);
 
             if (cmds.Count == 0)
             {
@@ -1500,25 +1506,6 @@ namespace ArdupilotMega.GCSViews
             }
             try
             {
-                DataGridViewTextBoxCell cellhome;
-                cellhome = Commands.Rows[0].Cells[Lat.Index] as DataGridViewTextBoxCell;
-                if (cellhome.Value != null)
-                {
-                    if (cellhome.Value.ToString() != TXT_homelat.Text && cellhome.Value.ToString() != "0")
-                    {
-                        DialogResult dr = CustomMessageBox.Show("Reset Home to loaded coords", "Reset Home Coords", MessageBoxButtons.YesNo);
-
-                        if (dr == DialogResult.Yes)
-                        {
-                            TXT_homelat.Text = (double.Parse(cellhome.Value.ToString())).ToString();
-                            cellhome = Commands.Rows[0].Cells[Lon.Index] as DataGridViewTextBoxCell;
-                            TXT_homelng.Text = (double.Parse(cellhome.Value.ToString())).ToString();
-                            cellhome = Commands.Rows[0].Cells[Alt.Index] as DataGridViewTextBoxCell;
-                            TXT_homealt.Text = (double.Parse(cellhome.Value.ToString()) * MainV2.cs.multiplierdist).ToString();
-                        }
-                    }
-                }
-
                 log.Info("Setting wp params");
 
                 string hold_alt = ((int)((float)param["ALT_HOLD_RTL"] * MainV2.cs.multiplierdist)).ToString();
@@ -1551,6 +1538,26 @@ namespace ArdupilotMega.GCSViews
                 CHK_holdalt.Checked = Convert.ToBoolean((float)param["ALT_HOLD_RTL"] > 0);
                 log.Info("param ALT_HOLD_RTL " + CHK_holdalt.Checked.ToString());
 
+
+
+                DataGridViewTextBoxCell cellhome;
+                cellhome = Commands.Rows[0].Cells[Lat.Index] as DataGridViewTextBoxCell;
+                if (cellhome.Value != null)
+                {
+                    if (cellhome.Value.ToString() != TXT_homelat.Text && cellhome.Value.ToString() != "0")
+                    {
+                        DialogResult dr = CustomMessageBox.Show("Reset Home to loaded coords", "Reset Home Coords", MessageBoxButtons.YesNo);
+
+                        if (dr == DialogResult.Yes)
+                        {
+                            TXT_homelat.Text = (double.Parse(cellhome.Value.ToString())).ToString();
+                            cellhome = Commands.Rows[0].Cells[Lon.Index] as DataGridViewTextBoxCell;
+                            TXT_homelng.Text = (double.Parse(cellhome.Value.ToString())).ToString();
+                            cellhome = Commands.Rows[0].Cells[Alt.Index] as DataGridViewTextBoxCell;
+                            TXT_homealt.Text = (double.Parse(cellhome.Value.ToString()) * MainV2.cs.multiplierdist).ToString();
+                        }
+                    }
+                }
             }
             catch (Exception ex) { log.Info(ex.ToString()); } // if there is no valid home
 
@@ -2840,7 +2847,8 @@ namespace ArdupilotMega.GCSViews
 
         private void clearMissionToolStripMenuItem_Click(object sender, EventArgs e)
         {
-            Commands.Rows.Clear();
+            while (Commands.Rows.Count > 0)
+                Commands.Rows.RemoveAt(0);
             selectedrow = 0;
             writeKML();
         }
@@ -3393,6 +3401,67 @@ namespace ArdupilotMega.GCSViews
 
                 return (T)formatter.Deserialize(ms);
             }
+        }
+
+        private void createWpCircleToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            string RadiusIn = "50";
+            Common.InputBox("Radius", "Radius", ref RadiusIn);
+
+            string Pointsin = "20";
+            Common.InputBox("Points", "Number of points to generate Circle", ref Pointsin);
+
+            int Points = 0;
+            int Radius = 0;
+
+            if (!int.TryParse(RadiusIn, out Radius))
+            {
+                CustomMessageBox.Show("Bad Radius");
+                return;
+            }
+
+            if (!int.TryParse(Pointsin, out Points))
+            {
+                CustomMessageBox.Show("Bad Point value");
+                return;
+            }
+
+
+
+            for (double a = 0; a <= 360; a += 360.0f / Points)
+            {
+
+                selectedrow = Commands.Rows.Add();
+
+                Commands.Rows[selectedrow].Cells[Command.Index].Value = MAVLink.MAV_CMD.WAYPOINT.ToString();
+
+                ChangeColumnHeader(MAVLink.MAV_CMD.WAYPOINT.ToString());
+
+                float d = Radius;
+                float R = 6371000;
+
+                var lat2 = Math.Asin(Math.Sin(end.Lat * deg2rad) * Math.Cos(d / R) +
+              Math.Cos(end.Lat * deg2rad) * Math.Sin(d / R) * Math.Cos(a * deg2rad));
+                var lon2 = end.Lng * deg2rad + Math.Atan2(Math.Sin(a * deg2rad) * Math.Sin(d / R) * Math.Cos(end.Lat * deg2rad),
+                                     Math.Cos(d / R) - Math.Sin(end.Lat * deg2rad) * Math.Sin(lat2));
+
+                PointLatLng pll = new PointLatLng(lat2 * rad2deg, lon2 * rad2deg);
+
+                setfromGE(pll.Lat, pll.Lng, (int)float.Parse(TXT_DefaultAlt.Text));
+
+            }
+
+            //drawnpolygon.Points.Add(new PointLatLng(start.Lat, start.Lng));
+        }
+
+        public void Deactivate()
+        {
+            timer1.Stop();
+        }
+
+        private void FlightPlanner_FormClosing(object sender, FormClosingEventArgs e)
+        {
+            timer1.Stop();
         }
     }
 }

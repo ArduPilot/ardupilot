@@ -1,33 +1,22 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.ComponentModel;
-using System.Drawing;
-using System.Data;
-using System.Linq;
-using System.Text;
+using System.Reflection;
 using System.Windows.Forms;
 using ArdupilotMega.Controls.BackstageView;
-using ArdupilotMega.Controls;
+using log4net;
+using Transitions;
 
 namespace ArdupilotMega.GCSViews.ConfigurationView
 {
-    public partial class ConfigAccelerometerCalibrationQuad : BackStageViewContentPanel
+    public partial class ConfigAccelerometerCalibrationQuad : UserControl, IActivate, IDeactivate
     {
+        private static readonly ILog Log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
+
+        private const float DisabledOpacity = 0.2F;
+        private const float EnabledOpacity = 1.0F;
+
         public ConfigAccelerometerCalibrationQuad()
         {
             InitializeComponent();
-        }
-
-        private void pictureBoxQuadX_Click(object sender, EventArgs e)
-        {
-            try
-            {
-                MainV2.comPort.setParam("FRAME", 1f);
-                CustomMessageBox.Show("Set to x");
-
-                lbl_frame.Text = "X";
-            }
-            catch { CustomMessageBox.Show("Set frame failed"); }
         }
 
         private void BUT_levelac2_Click(object sender, EventArgs e)
@@ -35,56 +24,95 @@ namespace ArdupilotMega.GCSViews.ConfigurationView
             try
             {
 #if MAVLINK10
+                Log.Info("Sending level command (mavlink 1.0)");                
                 int fixme; // needs to be accel only
                 MainV2.comPort.doCommand(MAVLink.MAV_CMD.PREFLIGHT_CALIBRATION,1,1,1,1,1,1,1);
 #else
+                log.Info("Sending level command (mavlink 0.9)");
                 MainV2.comPort.doAction(MAVLink.MAV_ACTION.MAV_ACTION_CALIBRATE_ACC);
 #endif
 
                 BUT_levelac2.Text = "Complete";
             }
-            catch
+            catch(Exception ex)
             {
+                Log.Error("Exception on level", ex);
                 CustomMessageBox.Show("Failed to level : ac2 2.0.37+ is required");
             }
         }
 
-        private void pictureBoxQuad_Click(object sender, EventArgs e)
+        private void pictureBox_Click(object sender, EventArgs e)
         {
-            try
-            {
-                MainV2.comPort.setParam("FRAME", 0f);
-                CustomMessageBox.Show("Set to +");
-                lbl_frame.Text = "+";
-            }
-            catch { CustomMessageBox.Show("Set frame failed"); }
+            if (sender == pictureBoxPlus)
+                radioButton_Plus.Checked = true;
+            else
+                radioButton_X.Checked = true;
         }
 
-        private void ConfigAccelerometerCalibration_Load(object sender, EventArgs e)
+        private void SetPlus()
         {
-            if (!MainV2.comPort.BaseStream.IsOpen)
+            FadePicBoxes(DisabledOpacity, EnabledOpacity);
+            SetFrameParam(true);
+        }
+
+        private void SetX()
+        {
+            FadePicBoxes(EnabledOpacity, DisabledOpacity);
+            SetFrameParam(false);
+        }
+
+        private void SetFrameParam(bool isPlus)
+        {
+            var f = isPlus ? 0f : 1f;
+
+            try
             {
-                this.Enabled = false;
-                return;
+                MainV2.comPort.setParam("FRAME", f);
+            }
+            catch
+            {
+                CustomMessageBox.Show("Set frame failed", "Error", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+            }
+        }
+
+        private void FadePicBoxes(float xOpacity, float plusOpacity)
+        {
+            var fade = new Transition(new TransitionType_Linear(400));
+            fade.add(pictureBoxX, "Opacity", xOpacity);
+            fade.add(pictureBoxPlus, "Opacity", plusOpacity);
+            fade.run();
+        }
+
+        public void Activate()
+        {
+            if ((float)MainV2.comPort.param["FRAME"] == 0)
+            {
+                this.radioButton_Plus.Checked = true;
+                pictureBoxX.Opacity = DisabledOpacity;
+                pictureBoxPlus.Opacity = EnabledOpacity;
             }
             else
             {
-                if (MainV2.cs.firmware == MainV2.Firmwares.ArduCopter2)
-                {
-                    this.Enabled = true;
-                }
-                else
-                {
-                    this.Enabled = false;
-                    return;
-                }
+                this.radioButton_X.Checked = true;
+                pictureBoxX.Opacity = EnabledOpacity;
+                pictureBoxPlus.Opacity = DisabledOpacity;
             }
 
-            try
-            {
-                lbl_frame.Text = ((float)MainV2.comPort.param["FRAME"] == 0) ? "+" : "X";
-            }
-            catch { lbl_frame.Text = "Invalid Frame"; }
+            radioButton_Plus.CheckedChanged += RadioButtonPlusCheckedChanged;
+        }
+
+        public void Deactivate()
+        {
+            radioButton_Plus.CheckedChanged -= RadioButtonPlusCheckedChanged;
+
+        }
+
+        void RadioButtonPlusCheckedChanged(object sender, EventArgs e)
+        {
+            if (radioButton_X.Checked)
+                SetX();
+            else
+                SetPlus();
         }
     }
 }

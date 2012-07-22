@@ -10,7 +10,7 @@ using Transitions;
 
 namespace ArdupilotMega.GCSViews.ConfigurationView
 {
-    public partial class ConfigCameraStab : BackStageViewContentPanel
+    public partial class ConfigCameraStab : UserControl, IActivate
     {
         private ConfigCameraStabPresenter _presenter;
         private Transition[] _ErrorTransition;
@@ -23,7 +23,7 @@ namespace ArdupilotMega.GCSViews.ConfigurationView
             LBL_Error.Opacity = 0.0F;
         }
 
-        private void ConfigCameraStab_Load(object sender, EventArgs ev)
+        public void Activate()
         {
             _presenter = new ConfigCameraStabPresenter(MainV2.comPort);
             presenterBindingSource.DataSource = _presenter;

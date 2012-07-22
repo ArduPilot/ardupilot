@@ -11,7 +11,7 @@ using ArdupilotMega.Controls;
 
 namespace ArdupilotMega.GCSViews.ConfigurationView
 {
-    public partial class ConfigRadioInput : BackStageViewContentPanel
+    public partial class ConfigRadioInput : UserControl, IActivate, IDeactivate
     {
         bool startup = false;
         bool run = false;
@@ -36,10 +36,11 @@ namespace ArdupilotMega.GCSViews.ConfigurationView
 
             // setup rc update
             timer.Tick += new EventHandler(timer_Tick);
+        }
 
-            timer.Enabled = true;
-            timer.Interval = 100;
-            timer.Start();
+        public void Deactivate()
+        {
+            timer.Stop();
         }
 
         void timer_Tick(object sender, EventArgs e)
@@ -52,17 +53,11 @@ namespace ArdupilotMega.GCSViews.ConfigurationView
             catch { }
         }
 
-        private void ConfigRadioInput_Load(object sender, EventArgs e)
+        public void Activate()
         {
-            if (!MainV2.comPort.BaseStream.IsOpen)
-            {
-                this.Enabled = false;
-                return;
-            }
-            else
-            {
-                this.Enabled = true;
-            }
+            timer.Enabled = true;
+            timer.Interval = 100;
+            timer.Start();
 
             startup = true;
 

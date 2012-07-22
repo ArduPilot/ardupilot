@@ -84,7 +84,7 @@ namespace ArdupilotMega
             // undo autochange in mouse over
             if (Pen.Color == Color.Blue)
                 Pen.Color = Color.White;
-            
+
                 double width = (MainMap.Manager.GetDistance(MainMap.FromLocalToLatLng(0, 0), MainMap.FromLocalToLatLng(MainMap.Width, 0)) * 1000.0);
                 double height = (MainMap.Manager.GetDistance(MainMap.FromLocalToLatLng(0, 0), MainMap.FromLocalToLatLng(MainMap.Height, 0)) * 1000.0);
                 double m2pixelwidth = MainMap.Width / width;

@@ -308,7 +308,6 @@
       <DependentUpon>ConfigArdurover.cs</DependentUpon>
     </Compile>
     <Compile Include="Presenter\ICommand.cs" />
-    <Compile Include="Mavlink\IMAVLink.cs" />
     <Compile Include="Utilities\CaptureMJPEG.cs" />
     <Compile Include="Utilities\CollectionExtensions.cs" />
     <Compile Include="Utilities\ParameterMetaDataConstants.cs" />
@@ -1208,6 +1207,8 @@
     <None Include="Resources\iconWarning48.png" />
     <None Include="Resources\cameraGimalPitch1.png" />
     <None Include="Resources\cameraGimalRoll1.png" />
+    <None Include="Resources\frames_plus.png" />
+    <None Include="Resources\frames_x.png" />
     <Content Include="Resources\MAVCmd.zh-Hans.txt" />
     <None Include="Resources\MAVParam.txt" />
     <Content Include="Resources\MAVParam.zh-Hans.txt" />

@@ -17,7 +17,7 @@ using System.Text.RegularExpressions;
 
 namespace ArdupilotMega
 {
-    public partial class _3DRradio : BackStageViewContentPanel
+    public partial class _3DRradio : UserControl
     {
         public delegate void LogEventHandler(string message, int level = 0);
 
@@ -718,6 +718,15 @@ namespace ArdupilotMega
         {
             SPLIT_local.Panel2Collapsed = !CHK_advanced.Checked;
             SPLIT_remote.Panel2Collapsed = !CHK_advanced.Checked;
+        }
+
+        private void linkLabel1_LinkClicked(object sender, LinkLabelLinkClickedEventArgs e)
+        {
+            CustomMessageBox.Show(@"The 3DR Radios have 2 status LEDs, one red and one green.
+green LED blinking - searching for another radio 
+green LED solid - link is established with another radio 
+red LED flashing - transmitting data 
+red LED solid - in firmware update mode");
         }
     }
 }

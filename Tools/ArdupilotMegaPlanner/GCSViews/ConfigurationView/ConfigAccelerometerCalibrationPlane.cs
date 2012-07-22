@@ -11,7 +11,7 @@ using ArdupilotMega.Controls;
 
 namespace ArdupilotMega.GCSViews.ConfigurationView
 {
-    public partial class ConfigAccelerometerCalibrationPlane : BackStageViewContentPanel
+    public partial class ConfigAccelerometerCalibrationPlane : UserControl, IActivate
     {
         bool startup = false;
 
@@ -20,7 +20,7 @@ namespace ArdupilotMega.GCSViews.ConfigurationView
             InitializeComponent();
         }
 
-        private void ConfigAccelerometerCalibration_Load(object sender, EventArgs e)
+        public void Activate()
         {
             if (!MainV2.comPort.BaseStream.IsOpen)
             {

@@ -35,12 +35,7 @@ namespace ArdupilotMega.Controls
                     throw new ArgumentOutOfRangeException();
 
                 _opacity = value;
-                Console.WriteLine("Opacity:" + _opacity);
                 Invalidate();
-                Invalidate();
-                Invalidate();
-                Invalidate();
-                
             }
         }
 

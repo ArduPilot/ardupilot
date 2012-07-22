@@ -31,10 +31,6 @@ namespace ArdupilotMega
 
             Application.Idle += Application_Idle;
 
-            int wt = 0, ct = 0;
-            ThreadPool.GetMaxThreads(out wt, out ct);
-            log.Info("Max Threads: " + wt);
-
             //MagCalib.ProcessLog();
 
             //MessageBox.Show("NOTE: This version may break advanced mission scripting");
@@ -67,17 +63,7 @@ namespace ArdupilotMega
 
             return;
             */
-            char[] line = "testtesttesttesttest".ToCharArray();
-
-            Delta.delta_encode(ref line);
-
-            Delta.delta_decode(ref line);
-
-            if (System.Diagnostics.Debugger.IsAttached)
-            {
-                // testing
-             //   Utilities.ParameterMetaDataParser.GetParameterInformation();
-            }
+           
 
             try
             {
@@ -94,13 +80,19 @@ namespace ArdupilotMega
             }
         }
 
+        static DateTime lastidle = DateTime.Now;
+
         static void Application_Idle(object sender, EventArgs e)
         {
             //System.Threading.Thread.Sleep(10);
             //Console.Write("Idle\n");
+            if (lastidle.AddMilliseconds(20) < DateTime.Now)
+            {
+                Application.DoEvents();
+                lastidle = DateTime.Now;
+            }
 
-            System.Threading.Thread.Sleep(20);
-            Application.DoEvents();
+            System.Threading.Thread.Sleep(1);
         }
 
         static void Application_ThreadException(object sender, System.Threading.ThreadExceptionEventArgs e)

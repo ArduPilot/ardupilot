@@ -151,7 +151,6 @@
             this.Controls.Add(this.BUT_load);
             this.Controls.Add(this.Params);
             this.Name = "ConfigRawParams";
-            this.Load += new System.EventHandler(this.ConfigRawParams_Load);
             ((System.ComponentModel.ISupportInitialize)(this.Params)).EndInit();
             this.ResumeLayout(false);
 
