@@ -21,7 +21,7 @@ namespace ArdupilotMega.Utilities
 
       public void Reload()
       {
-          string paramMetaDataXMLFileName = String.Format("{0}\\{1}", Application.StartupPath, ConfigurationManager.AppSettings["ParameterMetaDataXMLFileName"]);
+          string paramMetaDataXMLFileName = String.Format("{0}{1}{2}", Application.StartupPath, Path.DirectorySeparatorChar, ConfigurationManager.AppSettings["ParameterMetaDataXMLFileName"]);
           try
           {
               if (File.Exists(paramMetaDataXMLFileName))

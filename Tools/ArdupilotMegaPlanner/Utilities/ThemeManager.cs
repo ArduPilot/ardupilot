@@ -105,7 +105,7 @@ namespace ArdupilotMega.Utilities
                     DomainUpDown txt = (DomainUpDown)ctl;
                     txt.BorderStyle = BorderStyle.None;
                 }
-                else if (ctl.GetType() == typeof(GroupBox))
+                else if (ctl.GetType() == typeof(GroupBox) || ctl.GetType() == typeof(UserControl))
                 {
                     ctl.BackColor = BGColor;
                     ctl.ForeColor = TextColor;// Color.FromArgb(0xe6, 0xe8, 0xea);

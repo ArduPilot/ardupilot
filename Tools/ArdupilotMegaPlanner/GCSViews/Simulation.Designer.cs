@@ -40,7 +40,6 @@
             this.TXT_pitch = new ArdupilotMega.Controls.MyLabel();
             this.TXT_heading = new ArdupilotMega.Controls.MyLabel();
             this.TXT_wpdist = new ArdupilotMega.Controls.MyLabel();
-            this.currentStateBindingSource = new System.Windows.Forms.BindingSource(this.components);
             this.TXT_bererror = new ArdupilotMega.Controls.MyLabel();
             this.TXT_alterror = new ArdupilotMega.Controls.MyLabel();
             this.TXT_lat = new ArdupilotMega.Controls.MyLabel();
@@ -114,7 +113,6 @@
             this.toolTip1 = new System.Windows.Forms.ToolTip(this.components);
             this.RAD_JSBSim = new System.Windows.Forms.RadioButton();
             this.CHK_xplane10 = new System.Windows.Forms.CheckBox();
-            ((System.ComponentModel.ISupportInitialize)(this.currentStateBindingSource)).BeginInit();
             this.panel1.SuspendLayout();
             this.panel2.SuspendLayout();
             this.panel3.SuspendLayout();
@@ -199,10 +197,6 @@
             resources.ApplyResources(this.TXT_wpdist, "TXT_wpdist");
             this.TXT_wpdist.Name = "TXT_wpdist";
             this.TXT_wpdist.resize = false;
-            // 
-            // currentStateBindingSource
-            // 
-            this.currentStateBindingSource.DataSource = typeof(ArdupilotMega.CurrentState);
             // 
             // TXT_bererror
             // 
@@ -743,8 +737,8 @@
             this.Controls.Add(this.CHKREV_pitch);
             this.Controls.Add(this.CHKREV_roll);
             this.Name = "Simulation";
+            this.FormClosing += new System.Windows.Forms.FormClosingEventHandler(this.Simulation_FormClosing);
             this.Load += new System.EventHandler(this.Simulation_Load);
-            ((System.ComponentModel.ISupportInitialize)(this.currentStateBindingSource)).EndInit();
             this.panel1.ResumeLayout(false);
             this.panel2.ResumeLayout(false);
             this.panel3.ResumeLayout(false);
@@ -833,7 +827,6 @@
         private ArdupilotMega.Controls.MyLabel TXT_yaw;
         private ArdupilotMega.Controls.MyButton but_advsettings;
         private System.Windows.Forms.CheckBox chkSensor;
-        private System.Windows.Forms.BindingSource currentStateBindingSource;
         private System.Windows.Forms.CheckBox CHK_quad;
         private ArdupilotMega.Controls.MyButton BUT_startfgquad;
         private ArdupilotMega.Controls.MyButton BUT_startfgplane;

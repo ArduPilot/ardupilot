@@ -29,7 +29,7 @@ namespace ArdupilotMega.Utilities
             parameterLocations.RemoveAll(String.IsNullOrEmpty);
 
             string sStartupPath = Application.StartupPath;
-            using (var objXmlTextWriter = new XmlTextWriter(String.Format("{0}\\{1}", sStartupPath, ConfigurationManager.AppSettings["ParameterMetaDataXMLFileName"]), null))
+            using (var objXmlTextWriter = new XmlTextWriter(String.Format("{0}{1}{2}", Application.StartupPath, Path.DirectorySeparatorChar, ConfigurationManager.AppSettings["ParameterMetaDataXMLFileName"]), null))
             {
                objXmlTextWriter.Formatting = Formatting.Indented;
                objXmlTextWriter.WriteStartDocument();
@@ -96,6 +96,7 @@ namespace ArdupilotMega.Utilities
                      .ForEach(path => path.Value.Split(new []{ ParameterMetaDataConstants.PathDelimeter }, StringSplitOptions.None)
                         .ForEach(separatedPath =>
                         {
+                            log.Info("Process "+ node.Key + " : "  + separatedPath);
                            // Match based on the regex defined at the top of this class
                            Match pathMatch = _parentDirectoryRegex.Match(separatedPath);
                            if (pathMatch.Success && pathMatch.Groups["Path"] != null && !String.IsNullOrEmpty(pathMatch.Groups["Path"].Value))

@@ -14,7 +14,7 @@ using log4net;
 
 namespace ArdupilotMega.GCSViews.ConfigurationView
 {
-    public partial class ConfigFriendlyParams : BackStageViewContentPanel
+    public partial class ConfigFriendlyParams : UserControl, IActivate
     {
         #region Class Fields
 
@@ -130,7 +130,7 @@ namespace ArdupilotMega.GCSViews.ConfigurationView
         /// </summary>
         /// <param name="sender">The source of the event.</param>
         /// <param name="e">The <see cref="System.EventArgs"/> instance containing the event data.</param>
-        protected void ConfigRawParamsV2_Load(object sender, EventArgs e)
+        public void Activate()
         {
             BindParamList();
         }
@@ -297,6 +297,8 @@ namespace ArdupilotMega.GCSViews.ConfigurationView
                 catch (Exception ex) { log.Error(ex); }
             }
          });
+
+            ThemeManager.ApplyThemeTo(this);
         }
 
         /// <summary>

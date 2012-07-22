@@ -509,7 +509,6 @@
             this.Controls.Add(this.groupBox14);
             this.Controls.Add(this.groupBox11);
             this.Name = "ConfigArdurover";
-            this.Load += new System.EventHandler(this.ConfigArduplane_Load);
             this.groupBox3.ResumeLayout(false);
             ((System.ComponentModel.ISupportInitialize)(this.THR_FS_VALUE)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.THR_MAX)).EndInit();

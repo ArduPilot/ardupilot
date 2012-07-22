@@ -17,6 +17,9 @@ namespace ArdupilotMega.Controls
         private Exception workerException;
         public ProgressWorkerEventArgs doWorkArgs;
 
+        internal int _progress = -1;
+        internal string _status = "";
+
         public delegate void DoWorkEventHandler(object sender, ProgressWorkerEventArgs e);
 
         // This is the event that will be raised on the BG thread
@@ -48,7 +51,7 @@ namespace ArdupilotMega.Controls
 
             // mono fix - ensure the dialog is running
             while (this.IsHandleCreated == false)
-                System.Threading.Thread.Sleep(5);
+                System.Threading.Thread.Sleep(1);
 
             try
             {
@@ -59,10 +62,18 @@ namespace ArdupilotMega.Controls
                 // The background operation thew an exception.
                 // Examine the work args, if there is an error, then display that and the exception details
                 // Otherwise display 'Unexpected error' and exception details
+                timer1.Stop();
                 ShowDoneWithError(e, doWorkArgs.ErrorMessage);
                 return;
             }
 
+            // stop the timer
+            timer1.Stop();
+            // run once more to do final message and progressbar
+            this.Invoke((MethodInvoker)delegate
+            {
+                timer1_Tick(null, null);
+            });
 
             if (doWorkArgs.CancelRequested && doWorkArgs.CancelAcknowledged)
             {
@@ -183,24 +194,9 @@ namespace ArdupilotMega.Controls
             if (doWorkArgs.CancelRequested && !doWorkArgs.CancelAcknowledged)
                 return;
 
-            if (this.InvokeRequired)
-            {
-                // invoke async
-                this.BeginInvoke((MethodInvoker) delegate
-                    {
+            _progress = progress;
+            _status = status;
 
-                        lblProgressMessage.Text = status;
-                        if (progress == -1)
-                        {
-                            this.progressBar1.Style = ProgressBarStyle.Marquee;
-                        }
-                        else
-                        {
-                            this.progressBar1.Style = ProgressBarStyle.Continuous;
-                            this.progressBar1.Value = progress;
-                        }
-                    });
-            }
         }
 
         private void linkLabel1_LinkClicked(object sender, LinkLabelLinkClickedEventArgs e)
@@ -210,6 +206,25 @@ namespace ArdupilotMega.Controls
                           + this.workerException.StackTrace;
 
             CustomMessageBox.Show(message,"Exception Details",MessageBoxButtons.OK,MessageBoxIcon.Information);
+        }
+
+        /// <summary>
+        /// prevent using invokes on main update status call "UpdateProgressAndStatus", as this is slow on mono
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void timer1_Tick(object sender, EventArgs e)
+        {
+            lblProgressMessage.Text = _status;
+            if (_progress == -1)
+            {
+                this.progressBar1.Style = ProgressBarStyle.Marquee;
+            }
+            else
+            {
+                this.progressBar1.Style = ProgressBarStyle.Continuous;
+                this.progressBar1.Value = _progress;
+            }
         }
 
     }

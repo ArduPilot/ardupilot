@@ -10,9 +10,6 @@ namespace ArdupilotMega.Controls
         {
             var bgcolor = c.BackColor;
             int alpha = 255 - ((int)(opacity * 255));
-
-            Console.WriteLine("Alpha:" + alpha);
-            
             
             var opacityColor = Color.FromArgb(alpha, bgcolor.R, bgcolor.G, bgcolor.B);
             using (var brush = new SolidBrush(opacityColor))

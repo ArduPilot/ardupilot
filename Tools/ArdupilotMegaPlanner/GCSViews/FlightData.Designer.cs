@@ -1161,6 +1161,7 @@
             this.Controls.Add(this.label6);
             this.MinimumSize = new System.Drawing.Size(1008, 461);
             this.Name = "FlightData";
+            this.FormClosing += new System.Windows.Forms.FormClosingEventHandler(this.FlightData_FormClosing);
             this.Load += new System.EventHandler(this.FlightData_Load);
             this.Resize += new System.EventHandler(this.FlightData_Resize);
             this.ParentChanged += new System.EventHandler(this.FlightData_ParentChanged);

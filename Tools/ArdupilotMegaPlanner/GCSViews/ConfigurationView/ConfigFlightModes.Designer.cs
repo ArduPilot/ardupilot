@@ -279,7 +279,6 @@
             this.Controls.Add(this.CMB_fmode1);
             this.Controls.Add(this.BUT_SaveModes);
             this.Name = "ConfigFlightModes";
-            this.Load += new System.EventHandler(this.ConfigFlightModes_Load);
             ((System.ComponentModel.ISupportInitialize)(this.currentStateBindingSource)).EndInit();
             this.ResumeLayout(false);
             this.PerformLayout();

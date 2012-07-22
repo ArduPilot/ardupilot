@@ -33,12 +33,14 @@ namespace ArdupilotMega.Controls
         /// </summary>
         private void InitializeComponent()
         {
+            this.components = new System.ComponentModel.Container();
             this.progressBar1 = new System.Windows.Forms.ProgressBar();
             this.lblProgressMessage = new System.Windows.Forms.Label();
             this.btnCancel = new System.Windows.Forms.Button();
             this.imgWarning = new System.Windows.Forms.PictureBox();
             this.linkLabel1 = new System.Windows.Forms.LinkLabel();
             this.btnClose = new System.Windows.Forms.Button();
+            this.timer1 = new System.Windows.Forms.Timer(this.components);
             ((System.ComponentModel.ISupportInitialize)(this.imgWarning)).BeginInit();
             this.SuspendLayout();
             // 
@@ -94,7 +96,7 @@ namespace ArdupilotMega.Controls
             this.linkLabel1.Visible = false;
             this.linkLabel1.LinkClicked += new System.Windows.Forms.LinkLabelLinkClickedEventHandler(this.linkLabel1_LinkClicked);
             // 
-            // btn_Close
+            // btnClose
             // 
             this.btnClose.Location = new System.Drawing.Point(213, 109);
             this.btnClose.Name = "btnClose";
@@ -103,6 +105,11 @@ namespace ArdupilotMega.Controls
             this.btnClose.Text = "Close";
             this.btnClose.UseVisualStyleBackColor = true;
             this.btnClose.Click += new System.EventHandler(this.btn_Close_Click);
+            // 
+            // timer1
+            // 
+            this.timer1.Enabled = true;
+            this.timer1.Tick += new System.EventHandler(this.timer1_Tick);
             // 
             // ProgressReporterDialogue
             // 
@@ -123,6 +130,7 @@ namespace ArdupilotMega.Controls
             this.SizeGripStyle = System.Windows.Forms.SizeGripStyle.Hide;
             this.StartPosition = System.Windows.Forms.FormStartPosition.CenterParent;
             this.Text = "Progress";
+            this.TopMost = true;
             ((System.ComponentModel.ISupportInitialize)(this.imgWarning)).EndInit();
             this.ResumeLayout(false);
             this.PerformLayout();
@@ -137,5 +145,6 @@ namespace ArdupilotMega.Controls
         private PictureBox imgWarning;
         private LinkLabel linkLabel1;
         private Button btnClose;
+        private Timer timer1;
     }
 }

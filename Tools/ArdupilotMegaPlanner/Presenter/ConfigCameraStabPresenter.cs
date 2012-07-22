@@ -34,10 +34,10 @@ namespace ArdupilotMega.Presenter
         private CameraAxisProperties _pitchAxis;
         private CameraAxisProperties _rollAxis;
 
-        private readonly IMAVLink _mavlink;
+        private readonly MAVLink _mavlink;
         private readonly Dictionary<string, string> _errors;
 
-        public ConfigCameraStabPresenter(IMAVLink mavlink)
+        public ConfigCameraStabPresenter(MAVLink mavlink)
         {
             _mavlink = mavlink;
             _errors = new Dictionary<string, string>();

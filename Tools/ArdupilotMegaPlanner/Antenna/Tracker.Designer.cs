@@ -253,7 +253,6 @@
             this.Controls.Add(this.label1);
             this.Controls.Add(this.CMB_interface);
             this.Name = "Tracker";
-            this.FormClosing += new System.Windows.Forms.FormClosingEventHandler(this.Tracker_FormClosing);
             ((System.ComponentModel.ISupportInitialize)(this.TRK_pantrim)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.TRK_tilttrim)).EndInit();
             this.ResumeLayout(false);

@@ -79,7 +79,6 @@
          this.Controls.Add(this.tableLayoutPanel1);
          this.Name = "ConfigFriendlyParams";
          this.Size = new System.Drawing.Size(673, 177);
-         this.Load += new System.EventHandler(this.ConfigRawParamsV2_Load);
          this.ResumeLayout(false);
 
       }

@@ -9,6 +9,12 @@ using ArdupilotMega.Utilities;
 
 namespace ArdupilotMega.Controls.BackstageView
 {
+    /// <summary>
+    /// A Control to somewhat emulate the 'backstage view' as in MS Office 2010
+    /// </summary>
+    /// <remarks>
+    /// 'Tabs' are added as a control in a <see cref="BackstageViewPage"/>
+    /// </remarks>
     public partial class BackstageView : UserControl
     {
         private Color _buttonsAreaBgColor = Color.White;
@@ -18,13 +24,14 @@ namespace ArdupilotMega.Controls.BackstageView
         private Color _highlightColor1 = Color.DarkBlue;
         private Color _highlightColor2 = Color.Blue;
 
-        private readonly List<BackstageViewPage> _pages= new List<BackstageViewPage>();
+        private readonly List<BackstageViewItem> _items = new List<BackstageViewItem>();
         private BackstageViewPage _activePage;
         private const int ButtonSpacing = 30;
         private const int ButtonHeight = 30;
 
         public BackstageViewPage SelectedPage { get { return _activePage; } }
-        public List<BackstageViewPage> Pages { get { return _pages; } }
+        
+        public List<BackstageViewPage> Pages { get { return _items.OfType<BackstageViewPage>().ToList(); } }
 
         public BackstageView()
         {
@@ -38,12 +45,6 @@ namespace ArdupilotMega.Controls.BackstageView
             pnlMenu.GradColor = this.BackColor;
         }
 
-        protected override void OnPaint(PaintEventArgs e)
-        {
-            base.OnPaint(e);
-        }
-
-
         public override Color BackColor
         {
             get
@@ -53,7 +54,7 @@ namespace ArdupilotMega.Controls.BackstageView
             set
             {
                 base.BackColor = value;
-                UpdateButtons();
+                UpdateButtonAppearance();
                 pnlMenu.GradColor = this.BackColor;
             }
         }
@@ -68,7 +69,7 @@ namespace ArdupilotMega.Controls.BackstageView
                 _buttonsAreaPencilColor = value;
                 pnlMenu.PencilBorderColor = _buttonsAreaPencilColor;
                 pnlMenu.Invalidate();
-                UpdateButtons();
+                UpdateButtonAppearance();
                 Invalidate();
             }
         }
@@ -96,7 +97,7 @@ namespace ArdupilotMega.Controls.BackstageView
             set
             {
                 _selectedTextColor = value;
-                UpdateButtons();
+                UpdateButtonAppearance();
             }
         }
 
@@ -108,7 +109,7 @@ namespace ArdupilotMega.Controls.BackstageView
             set
             {
                 _unSelectedTextColor = value;
-                UpdateButtons();
+                UpdateButtonAppearance();
                 Invalidate();
             }
         }
@@ -121,7 +122,7 @@ namespace ArdupilotMega.Controls.BackstageView
             set
             {
                 _highlightColor1 = value;
-                UpdateButtons();
+                UpdateButtonAppearance();
                 Invalidate();
             }
         }
@@ -134,36 +135,33 @@ namespace ArdupilotMega.Controls.BackstageView
             set
             {
                 _highlightColor2 = value;
-                UpdateButtons();
+                UpdateButtonAppearance();
                 Invalidate();
             }
         }
-
-       
-        private void UpdateButtons()
+          
+        /// <summary>
+        /// Add a page (tab) to this backstage view. Will be added at the end/bottom
+        /// </summary>
+        public void AddPage(UserControl userControl, string headerText)
         {
-            foreach (var backstageViewButton in pnlMenu.Controls.OfType<BackstageViewButton>())
-            {
-                backstageViewButton.HighlightColor2 = _highlightColor2;
-                backstageViewButton.HighlightColor1 = _highlightColor1;
-                backstageViewButton.UnSelectedTextColor = _unSelectedTextColor;
-                backstageViewButton.SelectedTextColor = _selectedTextColor;
-                backstageViewButton.ContentPageColor = this.BackColor;
-                backstageViewButton.PencilBorderColor = _buttonsAreaPencilColor;
+            var page = new BackstageViewPage(userControl, headerText)
+                           {
+                               Page =
+                                   {
+                                       Anchor = AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right | AnchorStyles.Top,
+                                       Location = new Point(pnlMenu.Width, 0),
+                                       Dock = DockStyle.Fill
+                                   }
+                           };
 
-                backstageViewButton.Invalidate();
-            }
-        }
-
-        public void AddPage(BackstageViewPage page)
-        {
-            page.Page.Anchor = AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right | AnchorStyles.Top;
-            page.Page.Location = new Point(pnlMenu.Width, 0);
-            page.Page.Dock = DockStyle.Fill;
-
-            _pages.Add(page);
+            _items.Add(page);
+         
             CreateLinkButton(page);
-            //this.pnlPages.Controls.Add(page.Page);
+
+            page.Page.Visible = false;
+            
+            this.pnlPages.Controls.Add(page.Page);
 
             if (_activePage == null)
             {
@@ -173,13 +171,22 @@ namespace ArdupilotMega.Controls.BackstageView
             }
         }
 
+        /// <summary>
+        /// Add a spacer to this backstage view. Will be added at the end/bottom
+        /// </summary>
+        /// <param name="spacerheight">the amount to space by</param>
+        public void AddSpacer(int spacerheight)
+        {
+            _items.Add(new BackstageViewSpacer(spacerheight));
+        }
+
         private void CreateLinkButton(BackstageViewPage page)
         {
             var lnkButton = new BackstageViewButton
                                 {
                                     Text = page.LinkText,
                                     Tag = page,
-                                    Top = _pages.IndexOf(page) * ButtonSpacing,
+                        Top = _items.TakeWhile(i => i != page).Sum(i => i.Spacing),
                                     Width = this.pnlMenu.Width,
                                     Height = ButtonHeight,
                                     ContentPageColor = this.BackColor,
@@ -195,12 +202,32 @@ namespace ArdupilotMega.Controls.BackstageView
             lnkButton.DoubleClick += lnkButton_DoubleClick;
         }
 
-        void lnkButton_DoubleClick(object sender, EventArgs e)
+        private void UpdateButtonAppearance()
+        {
+            foreach (var backstageViewButton in pnlMenu.Controls.OfType<BackstageViewButton>())
+            {
+                backstageViewButton.HighlightColor2 = _highlightColor2;
+                backstageViewButton.HighlightColor1 = _highlightColor1;
+                backstageViewButton.UnSelectedTextColor = _unSelectedTextColor;
+                backstageViewButton.SelectedTextColor = _selectedTextColor;
+                backstageViewButton.ContentPageColor = this.BackColor;
+                backstageViewButton.PencilBorderColor = _buttonsAreaPencilColor;
+
+                backstageViewButton.Invalidate();
+            }
+        }
+
+        /*
+         * Experimental - double clicking a button will spawn it out into a new form
+         * Care must be given to lifecycle here - two pages can now be interacted with 
+         * 'simultaneously'
+         */ 
+        private void lnkButton_DoubleClick(object sender, EventArgs e)
         {
             var backstageViewButton = ((BackstageViewButton)sender);
             var associatedPage = backstageViewButton.Tag as BackstageViewPage;
 
-            Form popoutForm = new Form();
+            var popoutForm = new Form();
             popoutForm.FormClosing += popoutForm_FormClosing;
 
             int maxright = 0, maxdown = 0;
@@ -214,7 +241,7 @@ namespace ArdupilotMega.Controls.BackstageView
             // set the height to 0, so we can derive the header height in the next step
             popoutForm.Height = 0;
 
-            popoutForm.Size = new System.Drawing.Size(maxright + 20, maxdown + 20 + popoutForm.Height);
+            popoutForm.Size = new Size(maxright + 20, maxdown + 20 + popoutForm.Height);
             popoutForm.Controls.Add(associatedPage.Page);
             popoutForm.Tag = associatedPage;
 
@@ -226,18 +253,17 @@ namespace ArdupilotMega.Controls.BackstageView
             popoutForm.Show(this);
         }
 
-        void popoutForm_FormClosing(object sender, FormClosingEventArgs e)
+        private void popoutForm_FormClosing(object sender, FormClosingEventArgs e)
         {
             // get the page back
             var temp = ((Form)sender).Tag as BackstageViewPage;
+
             // add back to where it belongs
             this.pnlPages.Controls.Add(temp.Page);
 
-            // clear the controls, so we dont dispose the good control
+            // clear the controls, so we dont dispose the good control when it closes
             ((Form)sender).Controls.Clear();
-            
         }
-
 
         private void ButtonClick(object sender, EventArgs e)
         {
@@ -248,29 +274,36 @@ namespace ArdupilotMega.Controls.BackstageView
 
         public void ActivatePage(BackstageViewPage associatedPage)
         {
-            // deactivate the old page
-            _activePage.Page.Close();
-            Pages.ForEach(x =>
+            // Deactivate old page
+            if (_activePage.Page is IDeactivate)
             {
-                x.Page.Visible = false;
-            });
-            this.pnlPages.Controls.Remove(_activePage.Page);
+                ((IDeactivate)(_activePage.Page)).Deactivate();
+            }
+
+            // deactivate the old page - obsolete way of notifying activation
+            //_activePage.Page.Close();
+
+            foreach (var p in Pages)
+                p.Page.Visible = false;
 
             // deactivate button
             _activePage.Page.Visible = false;
             var oldButton = this.pnlMenu.Controls.OfType<BackstageViewButton>().Single(b => b.Tag == _activePage);
             oldButton.IsSelected = false;
 
+            // ensure fields have been init - obsolete way of notifying activation
+            //associatedPage.Page.DoLoad(new EventArgs());
 
-            ThemeManager.ApplyThemeTo(associatedPage.Page);
+            // new way of notifying activation. Goal is to get rid of BackStageViewContentPanel
+            // so plain old user controls can be added
+            if (associatedPage.Page is IActivate)
+            {
+                ((IActivate)(associatedPage.Page)).Activate();
+            }
 
-            // ensure fields have been init
-            associatedPage.Page.DoLoad(new EventArgs());
             // show it
             associatedPage.Page.Visible = true;
-            // add control
-            this.pnlPages.Controls.Add(associatedPage.Page);
-
+            
             var newButton = this.pnlMenu.Controls.OfType<BackstageViewButton>().Single(b => b.Tag == associatedPage);
             newButton.IsSelected = true;
 
@@ -279,22 +312,70 @@ namespace ArdupilotMega.Controls.BackstageView
 
         public void Close()
         {
-            foreach (BackstageViewPage page in _pages)
+            foreach (var page in _items)
             {
-                page.Page.Close();
+                if (((BackstageViewPage)page).Page is IDeactivate)
+                {
+                    ((IDeactivate)((BackstageViewPage)(page)).Page).Deactivate();
+                }
+                else
+                {
+                    ((BackstageViewPage)page).Page.Dispose();
+                }
             }
         }
 
-        public class BackstageViewPage
+        public abstract class BackstageViewItem
+        {
+            public abstract int Spacing { get; }
+        }
+
+        /// <summary>
+        /// Place-holder for a bit of blank space in a <see cref="BackstageView"/>
+        /// Used to visually seperate logically related groups of link buttons
+        /// </summary>
+        public class BackstageViewSpacer : BackstageViewItem
+        {
+            private int _spacing;
+
+            public BackstageViewSpacer(int spacerheight)
+            {
+                _spacing = spacerheight;
+            }
+
+            // How much (vertical) space the thing takes up in the button menu
+            public override int Spacing
+            {
+                get { return _spacing; }
+            }
+        }
+
+
+        /// <summary>
+        /// Data structure to hold information about a 'tab' in the <see cref="BackstageView"/>
+        /// </summary>
+        public class BackstageViewPage : BackstageViewItem
         {            
-            public BackstageViewPage(BackStageViewContentPanel page, string linkText)
+            public BackstageViewPage(UserControl page, string linkText)
             {
                 Page = page;
                 LinkText = linkText;
             }
 
-            public BackStageViewContentPanel Page { get; set; }
+            /// <summary>
+            /// The user content of the tab
+            /// </summary>
+            public UserControl Page { get; set; }
+
+            /// <summary>
+            /// The text to go in the 'tab header'
+            /// </summary>
             public string LinkText { get; set; }
+
+            public override int Spacing
+            {
+                get { return ButtonSpacing; }
+            }
         }
     }
 

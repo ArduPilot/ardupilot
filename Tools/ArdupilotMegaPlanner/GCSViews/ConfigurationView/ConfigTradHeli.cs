@@ -11,7 +11,7 @@ using ArdupilotMega.Controls;
 
 namespace ArdupilotMega.GCSViews.ConfigurationView
 {
-    public partial class ConfigTradHeli : BackStageViewContentPanel
+    public partial class ConfigTradHeli : UserControl, IActivate, IDeactivate
     {
         bool startup = false;
         bool inpwmdetect = false;
@@ -368,17 +368,8 @@ namespace ArdupilotMega.GCSViews.ConfigurationView
             MainV2.comPort.setParam(((CheckBox)sender).Name, ((CheckBox)sender).Checked == true ? 1.0f : 0.0f);
         }
 
-        private void ConfigTradHeli_Load(object sender, EventArgs e)
+        public void Activate()
         {
-            if (!MainV2.comPort.BaseStream.IsOpen)
-            {
-                this.Enabled = false;
-                return;
-            }
-            else
-            {
-                this.Enabled = true;
-            }
 
             if (MainV2.comPort.param["H_GYR_ENABLE"] == null)
             {
@@ -487,8 +478,10 @@ namespace ArdupilotMega.GCSViews.ConfigurationView
             }
         }
 
-        private void ConfigTradHeli_FormClosing(object sender, FormClosingEventArgs e)
+        public void Deactivate()
         {
+            timer.Stop();
+
             startup = true;
         }
     }

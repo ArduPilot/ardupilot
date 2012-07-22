@@ -44,7 +44,7 @@ namespace ArdupilotMega
         /// <summary>
         /// Main Comport interface
         /// </summary>
-        public static IMAVLink comPort = new MAVLink();
+        public static MAVLink comPort = new MAVLink();
         /// <summary>
         /// Comport name
         /// </summary>
@@ -89,10 +89,6 @@ namespace ArdupilotMega
         /// controls the main serial reader thread
         /// </summary>
         bool serialThread = false;
-        /// <summary>
-        /// unused at this point - potential to move all forms to this single binding source. need to evalutate performance/exception issues
-        /// </summary>
-        static internal BindingSource bs;
         /// <summary>
         /// used for mini https server for websockets/mjpeg video stream, and network link kmls
         /// </summary>
@@ -977,7 +973,7 @@ namespace ArdupilotMega
                             this.MenuConnect.BackgroundImage = global::ArdupilotMega.Properties.Resources.connect;
                             this.MenuConnect.BackgroundImage.Tag = "Connect";
                             _connectionControl.IsConnected(false);
-                            if (_connectionStats != null) 
+                            if (_connectionStats != null)
                             {
                                 _connectionStats.StopUpdates();
                             }
@@ -990,7 +986,7 @@ namespace ArdupilotMega
                         {
                             _connectionControl.IsConnected(true);
                         });
-                    } 
+                    }
                 }
                 connectButtonUpdate = DateTime.Now;
             }
@@ -1014,8 +1010,8 @@ namespace ArdupilotMega
 
             int minbytes = 10;
 
-            if (MONO)
-                minbytes = 0;
+            //  if (MONO)
+            //      minbytes = 0;
 
             DateTime speechcustomtime = DateTime.Now;
 
@@ -1081,8 +1077,7 @@ namespace ArdupilotMega
                             MainV2.cs.linkqualitygcs = (ushort)(MainV2.cs.linkqualitygcs * 0.8f);
                             linkqualitytime = DateTime.Now;
 
-                            int fixme;
-                            //GCSViews.FlightData.myhud.Invalidate();
+                            GCSViews.FlightData.myhud.Invalidate();
                         }
                     }
 
@@ -1116,16 +1111,19 @@ namespace ArdupilotMega
                         }
                     }
 
-                    //Console.WriteLine(DateTime.Now.Millisecond + " " + comPort.BaseStream.BytesToRead);
+                 //   Console.WriteLine(DateTime.Now.Millisecond + " " + comPort.BaseStream.BytesToRead);
 
                     while (comPort.BaseStream.BytesToRead > minbytes && giveComport == false)
                     {
+                        //Console.WriteLine(DateTime.Now.Millisecond + " SR1 " + comPort.BaseStream.BytesToRead );
                         comPort.readPacket();
+                        //Console.WriteLine(DateTime.Now.Millisecond + " SR2 " + comPort.BaseStream.BytesToRead);
                     }
+                  //  Console.WriteLine("SR left");
                 }
                 catch (Exception e)
                 {
-                    log.Error("Serial Reader fail :" + e.Message);
+                    log.Error("Serial Reader fail :" + e.ToString());
                     try
                     {
                         comPort.Close();
@@ -1186,7 +1184,7 @@ namespace ArdupilotMega
 
         private void MainV2_Load(object sender, EventArgs e)
         {
-            MyView.AddScreen(new MainSwitcher.Screen("FlightData",FlightData,true));
+            MyView.AddScreen(new MainSwitcher.Screen("FlightData", FlightData, true));
             MyView.AddScreen(new MainSwitcher.Screen("FlightPlanner", FlightPlanner, true));
             MyView.AddScreen(new MainSwitcher.Screen("Config", new GCSViews.ConfigurationView.Setup(), false));
             MyView.AddScreen(new MainSwitcher.Screen("Simulation", Simulation, true));
@@ -1228,7 +1226,8 @@ namespace ArdupilotMega
             new Thread(SerialReader)
             {
                 IsBackground = true,
-                Name = "Main Serial reader"
+                Name = "Main Serial reader",
+                Priority = ThreadPriority.AboveNormal
             }.Start();
 
             try
@@ -1448,7 +1447,7 @@ namespace ArdupilotMega
                         foreach (var point in GCSViews.FlightPlanner.pointlist)
                         {
                             if (point != null)
-                            coords.Add(new SharpKml.Base.Vector(point.Lat, point.Lng, point.Alt));
+                                coords.Add(new SharpKml.Base.Vector(point.Lat, point.Lng, point.Alt));
 
                         }
 
@@ -1977,7 +1976,7 @@ namespace ArdupilotMega
                             }
                         }
                         catch { }
-                        log.Debug(file + " " + bytes);
+                    //    log.Debug(file + " " + bytes);
                         int len = dataStream.Read(buf1, 0, 1024);
                         if (len == 0)
                             break;
@@ -2081,11 +2080,9 @@ namespace ArdupilotMega
             if (keyData == (Keys.Control | Keys.W)) // test ac config
             {
 
-                Controls.ConfigPanel cfg = new Controls.ConfigPanel();
+                Controls.ConfigPanel cfg = new Controls.ConfigPanel(Application.StartupPath + System.IO.Path.DirectorySeparatorChar + "ArduCopterConfig.xml");
 
-                cfg.LoadXML("ArduCopterConfig.xml");
-
-                //cfg.ShowDialog();
+                //cfg.Show();
 
                 return true;
             }

@@ -11,7 +11,7 @@ using ArdupilotMega.Controls;
 
 namespace ArdupilotMega.GCSViews.ConfigurationView
 {
-    public partial class ConfigBatteryMonitoring : BackStageViewContentPanel
+    public partial class ConfigBatteryMonitoring : UserControl, IActivate, IDeactivate
     {
         bool startup = false;
 
@@ -278,18 +278,13 @@ namespace ArdupilotMega.GCSViews.ConfigurationView
             }
         }
 
-        private void ConfigBatteryMonitoring_Load(object sender, EventArgs e)
+        public void Deactivate()
         {
-            if (!MainV2.comPort.BaseStream.IsOpen)
-            {
-                this.Enabled = false;
-                return;
-            }
-            else
-            {
-                this.Enabled = true;
-            }
+            timer1.Stop();
+        }
 
+        public void Activate()
+        {
             startup = true;
             bool not_supported = false;
             if (MainV2.comPort.param["BATT_MONITOR"] != null)
@@ -345,6 +340,8 @@ namespace ArdupilotMega.GCSViews.ConfigurationView
             }
 
             startup = false;
+
+            timer1.Start();
         }
 
         int getIndex(ComboBox ctl, int no)

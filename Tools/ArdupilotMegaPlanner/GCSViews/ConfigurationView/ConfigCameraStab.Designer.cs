@@ -574,7 +574,6 @@ namespace ArdupilotMega.GCSViews.ConfigurationView
             this.Controls.Add(this.pictureBox1);
             this.Name = "ConfigCameraStab";
             this.Size = new System.Drawing.Size(674, 432);
-            this.Load += new System.EventHandler(this.ConfigCameraStab_Load);
             ((System.ComponentModel.ISupportInitialize)(this.pictureBox1)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.numericUpDown1)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.presenterBindingSource)).EndInit();

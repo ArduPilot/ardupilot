@@ -269,7 +269,6 @@
             this.Controls.Add(this.BARyaw);
             this.Controls.Add(this.BARroll);
             this.Name = "ConfigRadioInput";
-            this.Load += new System.EventHandler(this.ConfigRadioInput_Load);
             this.groupBoxElevons.ResumeLayout(false);
             this.groupBoxElevons.PerformLayout();
             ((System.ComponentModel.ISupportInitialize)(this.currentStateBindingSource)).EndInit();

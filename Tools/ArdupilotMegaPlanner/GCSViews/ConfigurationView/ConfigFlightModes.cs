@@ -12,7 +12,7 @@ using ArdupilotMega.Controls;
 
 namespace ArdupilotMega.GCSViews.ConfigurationView
 {
-    public partial class ConfigFlightModes : BackStageViewContentPanel
+    public partial class ConfigFlightModes : UserControl, IActivate, IDeactivate
     {
         Timer timer = new Timer();
 
@@ -124,18 +124,13 @@ namespace ArdupilotMega.GCSViews.ConfigurationView
             Simple6 = 32,
         }
 
-        private void ConfigFlightModes_Load(object sender, EventArgs e)
+        public void Deactivate()
         {
-            if (!MainV2.comPort.BaseStream.IsOpen)
-            {
-                this.Enabled = false;
-                return;
-            }
-            else
-            {
-                this.Enabled = true;
-            }
+            timer.Stop();
+        }
 
+        public void Activate()
+        {
             if (MainV2.cs.firmware == MainV2.Firmwares.ArduPlane) // APM
             {
                 CB_simple1.Visible = false;

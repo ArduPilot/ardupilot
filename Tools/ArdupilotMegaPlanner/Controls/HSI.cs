@@ -31,6 +31,29 @@ namespace ArdupilotMega.Controls
             set { _navbearing = value; }
         }
 
+        /// <summary>
+        /// Override to prevent offscreen drawing the control - mono mac
+        /// </summary>
+        public new void Invalidate()
+        {
+            if (!ThisReallyVisible())
+            {
+                return;
+            }
+
+            base.Invalidate();
+        }
+
+        /// <summary>
+        /// this is to fix a mono off screen drawing issue
+        /// </summary>
+        /// <returns></returns>
+        public bool ThisReallyVisible()
+        {
+            Control ctl = Control.FromHandle(this.Handle);
+            return ctl.Visible;
+        } 
+
         public HSI()
         {
             InitializeComponent();

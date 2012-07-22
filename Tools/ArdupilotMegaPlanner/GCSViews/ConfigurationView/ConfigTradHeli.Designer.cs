@@ -685,8 +685,6 @@
             this.Controls.Add(this.HS3);
             this.Controls.Add(this.Gservoloc);
             this.Name = "ConfigTradHeli";
-            this.FormClosing += new System.Windows.Forms.FormClosingEventHandler(this.ConfigTradHeli_FormClosing);
-            this.Load += new System.EventHandler(this.ConfigTradHeli_Load);
             this.groupBox5.ResumeLayout(false);
             this.groupBox5.PerformLayout();
             this.groupBox3.ResumeLayout(false);
