@@ -224,6 +224,11 @@ AP_AHRS_HIL             ahrs(&imu, g_gps);
 AP_GPS_HIL              g_gps_driver(NULL);
 AP_Compass_HIL          compass; // never used
 AP_Baro_BMP085_HIL      barometer;
+#ifdef DESKTOP_BUILD
+#include <SITL.h>
+SITL					sitl;
+AP_InertialSensor_Oilpan ins( &adc );
+#endif
 
 #else
  #error Unrecognised HIL_MODE setting.
@@ -705,7 +710,9 @@ static void fast_loop()
 	// Read Airspeed
 	// -------------
 	if (airspeed.enabled()) {
+#if HIL_MODE != HIL_MODE_ATTITUDE
 		read_airspeed();
+#endif
 	}
 
 	#if HIL_MODE == HIL_MODE_SENSORS
