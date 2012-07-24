@@ -38,6 +38,10 @@ static void failsafe_on_event()
 
 static void failsafe_off_event()
 {
+	// If we are in AUTO, no need to do anything
+	if(control_mode == AUTO)
+		return;
+
 	if (g.throttle_fs_action == 2){
 		// We're back in radio contact
 		// return to AP
