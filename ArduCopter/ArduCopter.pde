@@ -291,6 +291,10 @@ AP_TimerProcess timer_scheduler;
 	#ifdef OPTFLOW_ENABLED
 		AP_OpticalFlow_ADNS3080 optflow(OPTFLOW_CS_PIN);
 	#endif
+#ifdef DESKTOP_BUILD
+#include <SITL.h>
+	SITL					sitl;
+#endif
     static int32_t          gps_base_alt;
 #else
 	#error Unrecognised HIL_MODE setting.
