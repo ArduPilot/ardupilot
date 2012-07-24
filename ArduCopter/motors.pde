@@ -12,7 +12,7 @@ static void arm_motors()
 	static int arming_counter;
 
 	// don't allow arming/disarming in anything but manual
-	if ((g.rc_3.control_in > 0) || (control_mode >= ALT_HOLD) || (arming_counter > LEVEL_DELAY)){
+	if ((g.rc_3.control_in > 0) || (control_mode >= ALT_HOLD) || (control_mode == TOY) || (arming_counter > LEVEL_DELAY)){
 		arming_counter = 0;
 		return;
 	}
