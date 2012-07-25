@@ -132,7 +132,7 @@ namespace ArdupilotMega
         public float nav_bearing { get; set; }
         public float target_bearing { get; set; }
         public float wp_dist { get { return (_wpdist * multiplierdist); } set { _wpdist = value; } }
-        public float alt_error { get { return _alt_error * multiplierdist; } set { if (_alt_error == value) return; _alt_error = value; _targetalt = _targetalt * 0.5f + (float)Math.Round(alt + alt_error, 0) * 0.5f; Console.WriteLine(_targetalt); } }
+        public float alt_error { get { return _alt_error * multiplierdist; } set { if (_alt_error == value) return; _alt_error = value; _targetalt = _targetalt * 0.5f + (float)Math.Round(alt + alt_error, 0) * 0.5f; } }
         public float ber_error { get { return (target_bearing - yaw); } set { } }
         public float aspd_error { get { return _aspd_error * multiplierspeed; } set { if (_aspd_error == value) return; _aspd_error = value; _targetairspeed = _targetairspeed * 0.5f + (float)Math.Round(airspeed + aspd_error / 100, 0) * 0.5f; } }
         public float xtrack_error { get; set; }
@@ -593,9 +593,6 @@ namespace ArdupilotMega
                             break;
                         case (byte)(100 + Common.ac2modes.LAND):
                             mode = EnumTranslator.GetDisplayText(Common.ac2modes.LAND);
-                            break;
-                        case (byte)(100 + Common.ac2modes.APPROACH):
-                            mode = EnumTranslator.GetDisplayText(Common.ac2modes.APPROACH);
                             break;
                         case (byte)(100 + Common.ac2modes.POSITION):
                             mode = EnumTranslator.GetDisplayText(Common.ac2modes.POSITION);

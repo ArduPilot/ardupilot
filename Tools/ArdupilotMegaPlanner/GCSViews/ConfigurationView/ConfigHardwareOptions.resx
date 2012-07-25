@@ -123,7 +123,7 @@
   </data>
   <assembly alias="System.Drawing" name="System.Drawing, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a" />
   <data name="BUT_MagCalibrationLive.Location" type="System.Drawing.Point, System.Drawing">
-    <value>331, 13</value>
+    <value>180, 38</value>
   </data>
   <data name="BUT_MagCalibrationLive.Size" type="System.Drawing.Size, System.Drawing">
     <value>60, 23</value>
@@ -139,19 +139,19 @@
     <value>BUT_MagCalibrationLive</value>
   </data>
   <data name="&gt;&gt;BUT_MagCalibrationLive.Type" xml:space="preserve">
-    <value>ArdupilotMega.Controls.MyButton, ArdupilotMegaPlanner10, Version=1.1.4576.35069, Culture=neutral, PublicKeyToken=null</value>
+    <value>ArdupilotMega.Controls.MyButton, ArdupilotMegaPlanner10, Version=1.1.4589.38394, Culture=neutral, PublicKeyToken=null</value>
   </data>
   <data name="&gt;&gt;BUT_MagCalibrationLive.Parent" xml:space="preserve">
     <value>$this</value>
   </data>
   <data name="&gt;&gt;BUT_MagCalibrationLive.ZOrder" xml:space="preserve">
-    <value>2</value>
+    <value>14</value>
   </data>
   <data name="label27.ImeMode" type="System.Windows.Forms.ImeMode, System.Windows.Forms">
     <value>NoControl</value>
   </data>
   <data name="label27.Location" type="System.Drawing.Point, System.Drawing">
-    <value>455, 45</value>
+    <value>304, 70</value>
   </data>
   <data name="label27.Size" type="System.Drawing.Size, System.Drawing">
     <value>145, 20</value>
@@ -172,7 +172,7 @@
     <value>$this</value>
   </data>
   <data name="&gt;&gt;label27.ZOrder" xml:space="preserve">
-    <value>3</value>
+    <value>15</value>
   </data>
   <data name="CMB_sonartype.Items" xml:space="preserve">
     <value>XL-EZ0</value>
@@ -187,7 +187,7 @@
     <value>HRLV</value>
   </data>
   <data name="CMB_sonartype.Location" type="System.Drawing.Point, System.Drawing">
-    <value>243, 122</value>
+    <value>180, 168</value>
   </data>
   <data name="CMB_sonartype.Size" type="System.Drawing.Size, System.Drawing">
     <value>121, 21</value>
@@ -205,7 +205,7 @@
     <value>$this</value>
   </data>
   <data name="&gt;&gt;CMB_sonartype.ZOrder" xml:space="preserve">
-    <value>4</value>
+    <value>16</value>
   </data>
   <data name="CHK_enableoptflow.Enabled" type="System.Boolean, mscorlib">
     <value>False</value>
@@ -214,7 +214,7 @@
     <value>NoControl</value>
   </data>
   <data name="CHK_enableoptflow.Location" type="System.Drawing.Point, System.Drawing">
-    <value>97, 285</value>
+    <value>108, 327</value>
   </data>
   <data name="CHK_enableoptflow.Size" type="System.Drawing.Size, System.Drawing">
     <value>134, 19</value>
@@ -235,7 +235,7 @@
     <value>$this</value>
   </data>
   <data name="&gt;&gt;CHK_enableoptflow.ZOrder" xml:space="preserve">
-    <value>5</value>
+    <value>0</value>
   </data>
   <data name="pictureBox2.BackgroundImageLayout" type="System.Windows.Forms.ImageLayout, System.Windows.Forms">
     <value>Zoom</value>
@@ -244,7 +244,7 @@
     <value>NoControl</value>
   </data>
   <data name="pictureBox2.Location" type="System.Drawing.Point, System.Drawing">
-    <value>13, 259</value>
+    <value>11, 357</value>
   </data>
   <data name="pictureBox2.Size" type="System.Drawing.Size, System.Drawing">
     <value>75, 75</value>
@@ -262,7 +262,7 @@
     <value>$this</value>
   </data>
   <data name="&gt;&gt;pictureBox2.ZOrder" xml:space="preserve">
-    <value>6</value>
+    <value>17</value>
   </data>
   <data name="linkLabelmagdec.AutoSize" type="System.Boolean, mscorlib">
     <value>True</value>
@@ -271,7 +271,7 @@
     <value>NoControl</value>
   </data>
   <data name="linkLabelmagdec.Location" type="System.Drawing.Point, System.Drawing">
-    <value>338, 68</value>
+    <value>187, 93</value>
   </data>
   <data name="linkLabelmagdec.Size" type="System.Drawing.Size, System.Drawing">
     <value>104, 13</value>
@@ -292,13 +292,13 @@
     <value>$this</value>
   </data>
   <data name="&gt;&gt;linkLabelmagdec.ZOrder" xml:space="preserve">
-    <value>7</value>
+    <value>18</value>
   </data>
   <data name="label100.ImeMode" type="System.Windows.Forms.ImeMode, System.Windows.Forms">
     <value>NoControl</value>
   </data>
   <data name="label100.Location" type="System.Drawing.Point, System.Drawing">
-    <value>240, 45</value>
+    <value>105, 73</value>
   </data>
   <data name="label100.Size" type="System.Drawing.Size, System.Drawing">
     <value>72, 16</value>
@@ -319,13 +319,13 @@
     <value>$this</value>
   </data>
   <data name="&gt;&gt;label100.ZOrder" xml:space="preserve">
-    <value>8</value>
+    <value>19</value>
   </data>
   <data name="TXT_declination.Enabled" type="System.Boolean, mscorlib">
     <value>False</value>
   </data>
   <data name="TXT_declination.Location" type="System.Drawing.Point, System.Drawing">
-    <value>331, 45</value>
+    <value>180, 70</value>
   </data>
   <data name="TXT_declination.Size" type="System.Drawing.Size, System.Drawing">
     <value>121, 20</value>
@@ -343,7 +343,7 @@
     <value>$this</value>
   </data>
   <data name="&gt;&gt;TXT_declination.ZOrder" xml:space="preserve">
-    <value>9</value>
+    <value>20</value>
   </data>
   <data name="CHK_enableairspeed.Enabled" type="System.Boolean, mscorlib">
     <value>False</value>
@@ -352,7 +352,7 @@
     <value>NoControl</value>
   </data>
   <data name="CHK_enableairspeed.Location" type="System.Drawing.Point, System.Drawing">
-    <value>97, 202</value>
+    <value>108, 222</value>
   </data>
   <data name="CHK_enableairspeed.Size" type="System.Drawing.Size, System.Drawing">
     <value>103, 17</value>
@@ -373,7 +373,7 @@
     <value>$this</value>
   </data>
   <data name="&gt;&gt;CHK_enableairspeed.ZOrder" xml:space="preserve">
-    <value>10</value>
+    <value>3</value>
   </data>
   <data name="CHK_enablesonar.Enabled" type="System.Boolean, mscorlib">
     <value>False</value>
@@ -382,7 +382,7 @@
     <value>NoControl</value>
   </data>
   <data name="CHK_enablesonar.Location" type="System.Drawing.Point, System.Drawing">
-    <value>94, 124</value>
+    <value>108, 114</value>
   </data>
   <data name="CHK_enablesonar.Size" type="System.Drawing.Size, System.Drawing">
     <value>90, 17</value>
@@ -403,7 +403,7 @@
     <value>$this</value>
   </data>
   <data name="&gt;&gt;CHK_enablesonar.ZOrder" xml:space="preserve">
-    <value>11</value>
+    <value>6</value>
   </data>
   <data name="CHK_enablecompass.Enabled" type="System.Boolean, mscorlib">
     <value>False</value>
@@ -412,7 +412,7 @@
     <value>NoControl</value>
   </data>
   <data name="CHK_enablecompass.Location" type="System.Drawing.Point, System.Drawing">
-    <value>97, 44</value>
+    <value>108, 6</value>
   </data>
   <data name="CHK_enablecompass.Size" type="System.Drawing.Size, System.Drawing">
     <value>105, 17</value>
@@ -433,7 +433,7 @@
     <value>$this</value>
   </data>
   <data name="&gt;&gt;CHK_enablecompass.ZOrder" xml:space="preserve">
-    <value>12</value>
+    <value>9</value>
   </data>
   <data name="pictureBox4.BackgroundImageLayout" type="System.Windows.Forms.ImageLayout, System.Windows.Forms">
     <value>Zoom</value>
@@ -442,7 +442,7 @@
     <value>NoControl</value>
   </data>
   <data name="pictureBox4.Location" type="System.Drawing.Point, System.Drawing">
-    <value>13, 176</value>
+    <value>11, 249</value>
   </data>
   <data name="pictureBox4.Size" type="System.Drawing.Size, System.Drawing">
     <value>75, 75</value>
@@ -460,7 +460,7 @@
     <value>$this</value>
   </data>
   <data name="&gt;&gt;pictureBox4.ZOrder" xml:space="preserve">
-    <value>13</value>
+    <value>21</value>
   </data>
   <data name="pictureBox3.BackgroundImageLayout" type="System.Windows.Forms.ImageLayout, System.Windows.Forms">
     <value>Zoom</value>
@@ -469,7 +469,7 @@
     <value>NoControl</value>
   </data>
   <data name="pictureBox3.Location" type="System.Drawing.Point, System.Drawing">
-    <value>13, 94</value>
+    <value>11, 141</value>
   </data>
   <data name="pictureBox3.Size" type="System.Drawing.Size, System.Drawing">
     <value>75, 75</value>
@@ -487,7 +487,7 @@
     <value>$this</value>
   </data>
   <data name="&gt;&gt;pictureBox3.ZOrder" xml:space="preserve">
-    <value>14</value>
+    <value>22</value>
   </data>
   <data name="pictureBox1.BackgroundImageLayout" type="System.Windows.Forms.ImageLayout, System.Windows.Forms">
     <value>Zoom</value>
@@ -502,7 +502,7 @@
     <value />
   </data>
   <data name="pictureBox1.Location" type="System.Drawing.Point, System.Drawing">
-    <value>13, 13</value>
+    <value>11, 33</value>
   </data>
   <data name="pictureBox1.Size" type="System.Drawing.Size, System.Drawing">
     <value>75, 75</value>
@@ -520,13 +520,13 @@
     <value>$this</value>
   </data>
   <data name="&gt;&gt;pictureBox1.ZOrder" xml:space="preserve">
-    <value>15</value>
+    <value>23</value>
   </data>
   <data name="BUT_MagCalibrationLog.ImeMode" type="System.Windows.Forms.ImeMode, System.Windows.Forms">
     <value>NoControl</value>
   </data>
   <data name="BUT_MagCalibrationLog.Location" type="System.Drawing.Point, System.Drawing">
-    <value>392, 13</value>
+    <value>241, 38</value>
   </data>
   <data name="BUT_MagCalibrationLog.Size" type="System.Drawing.Size, System.Drawing">
     <value>60, 23</value>
@@ -541,13 +541,13 @@
     <value>BUT_MagCalibrationLog</value>
   </data>
   <data name="&gt;&gt;BUT_MagCalibrationLog.Type" xml:space="preserve">
-    <value>ArdupilotMega.Controls.MyButton, ArdupilotMegaPlanner10, Version=1.1.4576.35069, Culture=neutral, PublicKeyToken=null</value>
+    <value>ArdupilotMega.Controls.MyButton, ArdupilotMegaPlanner10, Version=1.1.4589.38394, Culture=neutral, PublicKeyToken=null</value>
   </data>
   <data name="&gt;&gt;BUT_MagCalibrationLog.Parent" xml:space="preserve">
     <value>$this</value>
   </data>
   <data name="&gt;&gt;BUT_MagCalibrationLog.ZOrder" xml:space="preserve">
-    <value>1</value>
+    <value>13</value>
   </data>
   <data name="CHK_autodec.Enabled" type="System.Boolean, mscorlib">
     <value>False</value>
@@ -556,7 +556,7 @@
     <value>NoControl</value>
   </data>
   <data name="CHK_autodec.Location" type="System.Drawing.Point, System.Drawing">
-    <value>243, 25</value>
+    <value>92, 50</value>
   </data>
   <data name="CHK_autodec.Size" type="System.Drawing.Size, System.Drawing">
     <value>82, 17</value>
@@ -577,7 +577,232 @@
     <value>$this</value>
   </data>
   <data name="&gt;&gt;CHK_autodec.ZOrder" xml:space="preserve">
-    <value>0</value>
+    <value>12</value>
+  </data>
+  <data name="label5.AutoSize" type="System.Boolean, mscorlib">
+    <value>True</value>
+  </data>
+  <data name="label5.Font" type="System.Drawing.Font, System.Drawing">
+    <value>Microsoft Sans Serif, 12pt</value>
+  </data>
+  <data name="label5.Location" type="System.Drawing.Point, System.Drawing">
+    <value>7, 3</value>
+  </data>
+  <data name="label5.Size" type="System.Drawing.Size, System.Drawing">
+    <value>76, 20</value>
+  </data>
+  <data name="label5.TabIndex" type="System.Int32, mscorlib">
+    <value>66</value>
+  </data>
+  <data name="label5.Text" xml:space="preserve">
+    <value>Compass</value>
+  </data>
+  <data name="&gt;&gt;label5.Name" xml:space="preserve">
+    <value>label5</value>
+  </data>
+  <data name="&gt;&gt;label5.Type" xml:space="preserve">
+    <value>System.Windows.Forms.Label, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </data>
+  <data name="&gt;&gt;label5.Parent" xml:space="preserve">
+    <value>$this</value>
+  </data>
+  <data name="&gt;&gt;label5.ZOrder" xml:space="preserve">
+    <value>10</value>
+  </data>
+  <data name="groupBox2.Anchor" type="System.Windows.Forms.AnchorStyles, System.Windows.Forms">
+    <value>Top, Left, Right</value>
+  </data>
+  <data name="groupBox2.Location" type="System.Drawing.Point, System.Drawing">
+    <value>3, 21</value>
+  </data>
+  <data name="groupBox2.Size" type="System.Drawing.Size, System.Drawing">
+    <value>731, 5</value>
+  </data>
+  <data name="groupBox2.TabIndex" type="System.Int32, mscorlib">
+    <value>65</value>
+  </data>
+  <data name="&gt;&gt;groupBox2.Name" xml:space="preserve">
+    <value>groupBox2</value>
+  </data>
+  <data name="&gt;&gt;groupBox2.Type" xml:space="preserve">
+    <value>System.Windows.Forms.GroupBox, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </data>
+  <data name="&gt;&gt;groupBox2.Parent" xml:space="preserve">
+    <value>$this</value>
+  </data>
+  <data name="&gt;&gt;groupBox2.ZOrder" xml:space="preserve">
+    <value>11</value>
+  </data>
+  <data name="label1.AutoSize" type="System.Boolean, mscorlib">
+    <value>True</value>
+  </data>
+  <data name="label1.Font" type="System.Drawing.Font, System.Drawing">
+    <value>Microsoft Sans Serif, 12pt</value>
+  </data>
+  <data name="label1.ImeMode" type="System.Windows.Forms.ImeMode, System.Windows.Forms">
+    <value>NoControl</value>
+  </data>
+  <data name="label1.Location" type="System.Drawing.Point, System.Drawing">
+    <value>7, 111</value>
+  </data>
+  <data name="label1.Size" type="System.Drawing.Size, System.Drawing">
+    <value>52, 20</value>
+  </data>
+  <data name="label1.TabIndex" type="System.Int32, mscorlib">
+    <value>68</value>
+  </data>
+  <data name="label1.Text" xml:space="preserve">
+    <value>Sonar</value>
+  </data>
+  <data name="&gt;&gt;label1.Name" xml:space="preserve">
+    <value>label1</value>
+  </data>
+  <data name="&gt;&gt;label1.Type" xml:space="preserve">
+    <value>System.Windows.Forms.Label, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </data>
+  <data name="&gt;&gt;label1.Parent" xml:space="preserve">
+    <value>$this</value>
+  </data>
+  <data name="&gt;&gt;label1.ZOrder" xml:space="preserve">
+    <value>7</value>
+  </data>
+  <data name="groupBox1.Anchor" type="System.Windows.Forms.AnchorStyles, System.Windows.Forms">
+    <value>Top, Left, Right</value>
+  </data>
+  <data name="groupBox1.Location" type="System.Drawing.Point, System.Drawing">
+    <value>3, 129</value>
+  </data>
+  <data name="groupBox1.Size" type="System.Drawing.Size, System.Drawing">
+    <value>731, 5</value>
+  </data>
+  <data name="groupBox1.TabIndex" type="System.Int32, mscorlib">
+    <value>67</value>
+  </data>
+  <data name="&gt;&gt;groupBox1.Name" xml:space="preserve">
+    <value>groupBox1</value>
+  </data>
+  <data name="&gt;&gt;groupBox1.Type" xml:space="preserve">
+    <value>System.Windows.Forms.GroupBox, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </data>
+  <data name="&gt;&gt;groupBox1.Parent" xml:space="preserve">
+    <value>$this</value>
+  </data>
+  <data name="&gt;&gt;groupBox1.ZOrder" xml:space="preserve">
+    <value>8</value>
+  </data>
+  <data name="label2.AutoSize" type="System.Boolean, mscorlib">
+    <value>True</value>
+  </data>
+  <data name="label2.Font" type="System.Drawing.Font, System.Drawing">
+    <value>Microsoft Sans Serif, 12pt</value>
+  </data>
+  <data name="label2.ImeMode" type="System.Windows.Forms.ImeMode, System.Windows.Forms">
+    <value>NoControl</value>
+  </data>
+  <data name="label2.Location" type="System.Drawing.Point, System.Drawing">
+    <value>7, 219</value>
+  </data>
+  <data name="label2.Size" type="System.Drawing.Size, System.Drawing">
+    <value>72, 20</value>
+  </data>
+  <data name="label2.TabIndex" type="System.Int32, mscorlib">
+    <value>70</value>
+  </data>
+  <data name="label2.Text" xml:space="preserve">
+    <value>Airspeed</value>
+  </data>
+  <data name="&gt;&gt;label2.Name" xml:space="preserve">
+    <value>label2</value>
+  </data>
+  <data name="&gt;&gt;label2.Type" xml:space="preserve">
+    <value>System.Windows.Forms.Label, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </data>
+  <data name="&gt;&gt;label2.Parent" xml:space="preserve">
+    <value>$this</value>
+  </data>
+  <data name="&gt;&gt;label2.ZOrder" xml:space="preserve">
+    <value>4</value>
+  </data>
+  <data name="groupBox3.Anchor" type="System.Windows.Forms.AnchorStyles, System.Windows.Forms">
+    <value>Top, Left, Right</value>
+  </data>
+  <data name="groupBox3.Location" type="System.Drawing.Point, System.Drawing">
+    <value>3, 237</value>
+  </data>
+  <data name="groupBox3.Size" type="System.Drawing.Size, System.Drawing">
+    <value>731, 5</value>
+  </data>
+  <data name="groupBox3.TabIndex" type="System.Int32, mscorlib">
+    <value>69</value>
+  </data>
+  <data name="&gt;&gt;groupBox3.Name" xml:space="preserve">
+    <value>groupBox3</value>
+  </data>
+  <data name="&gt;&gt;groupBox3.Type" xml:space="preserve">
+    <value>System.Windows.Forms.GroupBox, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </data>
+  <data name="&gt;&gt;groupBox3.Parent" xml:space="preserve">
+    <value>$this</value>
+  </data>
+  <data name="&gt;&gt;groupBox3.ZOrder" xml:space="preserve">
+    <value>5</value>
+  </data>
+  <data name="label3.AutoSize" type="System.Boolean, mscorlib">
+    <value>True</value>
+  </data>
+  <data name="label3.Font" type="System.Drawing.Font, System.Drawing">
+    <value>Microsoft Sans Serif, 12pt</value>
+  </data>
+  <data name="label3.ImeMode" type="System.Windows.Forms.ImeMode, System.Windows.Forms">
+    <value>NoControl</value>
+  </data>
+  <data name="label3.Location" type="System.Drawing.Point, System.Drawing">
+    <value>7, 327</value>
+  </data>
+  <data name="label3.Size" type="System.Drawing.Size, System.Drawing">
+    <value>95, 20</value>
+  </data>
+  <data name="label3.TabIndex" type="System.Int32, mscorlib">
+    <value>72</value>
+  </data>
+  <data name="label3.Text" xml:space="preserve">
+    <value>Optical Flow</value>
+  </data>
+  <data name="&gt;&gt;label3.Name" xml:space="preserve">
+    <value>label3</value>
+  </data>
+  <data name="&gt;&gt;label3.Type" xml:space="preserve">
+    <value>System.Windows.Forms.Label, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </data>
+  <data name="&gt;&gt;label3.Parent" xml:space="preserve">
+    <value>$this</value>
+  </data>
+  <data name="&gt;&gt;label3.ZOrder" xml:space="preserve">
+    <value>1</value>
+  </data>
+  <data name="groupBox4.Anchor" type="System.Windows.Forms.AnchorStyles, System.Windows.Forms">
+    <value>Top, Left, Right</value>
+  </data>
+  <data name="groupBox4.Location" type="System.Drawing.Point, System.Drawing">
+    <value>3, 345</value>
+  </data>
+  <data name="groupBox4.Size" type="System.Drawing.Size, System.Drawing">
+    <value>731, 5</value>
+  </data>
+  <data name="groupBox4.TabIndex" type="System.Int32, mscorlib">
+    <value>71</value>
+  </data>
+  <data name="&gt;&gt;groupBox4.Name" xml:space="preserve">
+    <value>groupBox4</value>
+  </data>
+  <data name="&gt;&gt;groupBox4.Type" xml:space="preserve">
+    <value>System.Windows.Forms.GroupBox, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </data>
+  <data name="&gt;&gt;groupBox4.Parent" xml:space="preserve">
+    <value>$this</value>
+  </data>
+  <data name="&gt;&gt;groupBox4.ZOrder" xml:space="preserve">
+    <value>2</value>
   </data>
   <metadata name="$this.Localizable" type="System.Boolean, mscorlib, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089">
     <value>True</value>
@@ -586,12 +811,12 @@
     <value>6, 13</value>
   </data>
   <data name="$this.Size" type="System.Drawing.Size, System.Drawing">
-    <value>602, 351</value>
+    <value>737, 450</value>
   </data>
   <data name="&gt;&gt;$this.Name" xml:space="preserve">
     <value>ConfigHardwareOptions</value>
   </data>
   <data name="&gt;&gt;$this.Type" xml:space="preserve">
-    <value>ArdupilotMega.Controls.BackstageView.BackStageViewContentPanel, ArdupilotMegaPlanner10, Version=1.1.4576.35069, Culture=neutral, PublicKeyToken=null</value>
+    <value>System.Windows.Forms.UserControl, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </data>
 </root>

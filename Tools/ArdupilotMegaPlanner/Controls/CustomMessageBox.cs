@@ -60,7 +60,6 @@ namespace System.Windows.Forms
                                     Width = textSize.Width + 50,
                                     Height = textSize.Height + 100,
                                     TopMost = true,
-                                    TopLevel = true
                                 };
 
             Rectangle screenRectangle = msgBoxFrm.RectangleToScreen(msgBoxFrm.ClientRectangle);

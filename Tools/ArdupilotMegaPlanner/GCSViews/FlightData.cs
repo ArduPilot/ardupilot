@@ -125,6 +125,25 @@ namespace ArdupilotMega.GCSViews
                 chk_box_CheckedChanged((object)(new CheckBox() { Name = "nav_pitch", Checked = true }), new EventArgs());
             }
 
+            for (int f = 1; f < 10; f++ )
+            {
+                // load settings
+                if (MainV2.config["quickView" + f] != null)
+                {
+                    Control[] ctls = this.Controls.Find("quickView" + f, true);
+                    if (ctls.Length > 0)
+                    {
+                        // set description
+                        ((QuickView)ctls[0]).desc = MainV2.config["quickView" + f].ToString();
+
+                        // set databinding for value
+                        ((QuickView)ctls[0]).DataBindings.Clear();
+                        ((QuickView)ctls[0]).DataBindings.Add(new System.Windows.Forms.Binding("number", this.bindingSource1, MainV2.config["quickView" + f].ToString(), true));
+                    }
+                }
+            }
+
+
             List<string> list = new List<string>();
 
             //foreach (object obj in Enum.GetValues(typeof(MAVLink09.MAV_ACTION)))
@@ -202,6 +221,8 @@ namespace ArdupilotMega.GCSViews
             if (CB_tuning.Checked)
                 ZedGraphTimer.Start();
 
+            hud1.Visible = true;
+            hud1.Enabled = true;
           //  SubMainLeft.Panel1.Controls.Clear();
           //  SubMainLeft.Panel1.Controls.Add(hud1);
         }
@@ -209,7 +230,10 @@ namespace ArdupilotMega.GCSViews
         public void Deactivate()
         {
             //SubMainLeft.Panel1.Controls.Remove(hud1);
-            hud1.Size = new System.Drawing.Size(0, 0);
+
+            hud1.Visible = false;
+            hud1.Enabled = false;
+
             ZedGraphTimer.Stop();
         }
 
@@ -504,19 +528,17 @@ namespace ArdupilotMega.GCSViews
 
                                 foreach (PointLatLngAlt plla in FlightPlanner.pointlist)
                                 {
-                                    if (plla == null || plla.Lng == 0 || plla.Lat == 0)
+                                    if (plla == null)
                                         break;
+                                    if (plla.Lng == 0 || plla.Lat == 0)
+                                        continue;
+
                                     addpolygonmarker(plla.Tag, plla.Lng, plla.Lat, (int)plla.Alt,plla.color,polygons);
                                 }
 
                                 RegeneratePolygon();
 
                                 waypoints = DateTime.Now;
-                            }
-
-                            if (MainV2.cs.mode.ToLower() == "guided" && GuidedModeWP != null && GuidedModeWP.Lat != 0)
-                            {
-                                addpolygonmarker("Guided Mode", GuidedModeWP.Lng, GuidedModeWP.Lat, (int)GuidedModeWP.Alt, Color.Blue, routes);
                             }
 
                             //routes.Polygons.Add(poly);    
@@ -528,6 +550,11 @@ namespace ArdupilotMega.GCSViews
                                 {
                                     routes.Markers.Clear();
                                     routes.Markers.Add( new GMapMarkerCross(currentloc));
+                                }
+
+                                if (MainV2.cs.mode.ToLower() == "guided" && GuidedModeWP != null && GuidedModeWP.Lat != 0)
+                                {
+                                    addpolygonmarker("Guided Mode", GuidedModeWP.Lng, GuidedModeWP.Lat, (int)GuidedModeWP.Alt, Color.Blue, routes);
                                 }
 
                                 if (MainV2.cs.firmware == MainV2.Firmwares.ArduPlane)
@@ -1420,24 +1447,29 @@ namespace ArdupilotMega.GCSViews
                     if (add)
                     {
 
-                    lbl1.Location = new Point(x, y);
-                    lbl1.Size = new System.Drawing.Size(75, 13);
-                    lbl1.Text = field.Name;
-                    lbl1.Name = field.Name;
-                    lbl1.Visible = true;
-                    lbl2.AutoSize = false;
+                        lbl1.Location = new Point(x, y);
+                        lbl1.Size = new System.Drawing.Size(75, 13);
+                        lbl1.Text = field.Name;
+                        lbl1.Name = field.Name;
+                        lbl1.Visible = true;
+                        lbl2.AutoSize = false;
 
-                    lbl2.Location = new Point(lbl1.Right + 5, y);
-                    lbl2.Size = new System.Drawing.Size(50, 13);
-                    //if (lbl2.Name == "")
-                    lbl2.DataBindings.Add(new System.Windows.Forms.Binding("Text", this.bindingSource1, field.Name, true, System.Windows.Forms.DataSourceUpdateMode.OnValidation, ""));
-                    lbl2.Name = field.Name + "value";
-                    lbl2.Visible = true;
-                    //lbl2.Text = fieldValue.ToString();
+                        lbl2.Location = new Point(lbl1.Right + 5, y);
+                        lbl2.Size = new System.Drawing.Size(50, 13);
+                        //if (lbl2.Name == "")
+                        lbl2.DataBindings.Add(new System.Windows.Forms.Binding("Text", this.bindingSource1, field.Name, true, System.Windows.Forms.DataSourceUpdateMode.OnValidation, ""));
+                        lbl2.Name = field.Name + "value";
+                        lbl2.Visible = true;
+                        //lbl2.Text = fieldValue.ToString();
 
 
                         tabStatus.Controls.Add(lbl1);
                         tabStatus.Controls.Add(lbl2);
+                    }
+                    else
+                    {
+                        lbl1.Location = new Point(x, y);
+                        lbl2.Location = new Point(lbl1.Right + 5, y);
                     }
 
                     //Application.DoEvents();
@@ -1940,5 +1972,87 @@ print 'Roll complete'
             hud1.batteryon = !hud1.batteryon;
         }
 
+        private void quickView_DoubleClick(object sender, EventArgs e)
+        {
+
+            Form selectform = new Form()
+            {
+                Name = "select",
+                Width = 50,
+                Height = 250,
+                Text = "Display This"
+            };
+
+            int x = 10;
+            int y = 10;
+
+            object thisBoxed = MainV2.cs;
+            Type test = thisBoxed.GetType();
+
+            foreach (var field in test.GetProperties())
+            {
+                // field.Name has the field's name.
+                object fieldValue;
+                try
+                {
+                    fieldValue = field.GetValue(thisBoxed, null); // Get value
+                }
+                catch { continue; }
+
+                // Get the TypeCode enumeration. Multiple types get mapped to a common typecode.
+                TypeCode typeCode = Type.GetTypeCode(fieldValue.GetType());
+
+                if (!(typeCode == TypeCode.Single))
+                    continue;
+
+                CheckBox chk_box = new CheckBox();
+
+                if (((QuickView)sender).desc == field.Name)
+                    chk_box.Checked = true;
+
+                chk_box.Text = field.Name;
+                chk_box.Name = field.Name;
+                chk_box.Tag = ((QuickView)sender);
+                chk_box.Location = new Point(x, y);
+                chk_box.Size = new System.Drawing.Size(100, 20);
+                chk_box.CheckedChanged += new EventHandler(chk_box_quickview_CheckedChanged);
+
+                selectform.Controls.Add(chk_box);
+
+                Application.DoEvents();
+
+                x += 0;
+                y += 20;
+
+                if (y > selectform.Height - 50)
+                {
+                    x += 100;
+                    y = 10;
+
+                    selectform.Width = x + 100;
+                }
+            }
+            ThemeManager.ApplyThemeTo(selectform);
+            selectform.Show();
+        }
+
+        void chk_box_quickview_CheckedChanged(object sender, EventArgs e)
+        {
+            if (((CheckBox)sender).Checked)
+            {
+                // save settings
+                MainV2.config[((QuickView)((CheckBox)sender).Tag).Name] = ((CheckBox)sender).Name;
+
+                // set description
+                ((QuickView)((CheckBox)sender).Tag).desc = ((CheckBox)sender).Name;
+
+                // set databinding for value
+                ((QuickView)((CheckBox)sender).Tag).DataBindings.Clear();
+                ((QuickView)((CheckBox)sender).Tag).DataBindings.Add(new System.Windows.Forms.Binding("number",this.bindingSource1, ((CheckBox)sender).Name, true));
+
+                // close selection form
+                ((Form)((CheckBox)sender).Parent).Close();
+            }
+        }
     }
 }

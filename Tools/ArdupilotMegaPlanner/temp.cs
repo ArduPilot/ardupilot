@@ -890,7 +890,7 @@ namespace ArdupilotMega
 
         private void BUT_follow_me_Click(object sender, EventArgs e)
         {
-            SerialInput si = new SerialInput();
+            FollowMe si = new FollowMe();
             ThemeManager.ApplyThemeTo((Form)si);
             si.Show();
         }
