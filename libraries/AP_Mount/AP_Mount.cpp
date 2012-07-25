@@ -79,9 +79,29 @@ _gps(gps)
 	_neutral_angles = Vector3f(0,0,0);
 	_control_angles = Vector3f(0,0,0);
 
+	// default mount type to roll/pitch (which is the most common for copter)
+	_mount_type = k_tilt_roll;
+
 	// default manual rc channel to disabled
 	_manual_rc = NULL;
 	_manual_rc_function = AP_MOUNT_MANUAL_RC_FUNCTION_DISABLED;
+}
+
+// Auto-detect the mount gimbal type depending on the functions assigned to the servos
+void AP_Mount::update_mount_type()
+{
+	if ((g_rc_function[RC_Channel_aux::k_mount_roll] == NULL) && (g_rc_function[RC_Channel_aux::k_mount_pitch] != NULL) && (g_rc_function[RC_Channel_aux::k_mount_yaw] != NULL))
+	{
+		_mount_type = k_pan_tilt;
+	}
+	if ((g_rc_function[RC_Channel_aux::k_mount_roll] != NULL) && (g_rc_function[RC_Channel_aux::k_mount_pitch] != NULL) && (g_rc_function[RC_Channel_aux::k_mount_yaw] == NULL))
+	{
+		_mount_type = k_tilt_roll;
+	}
+	if ((g_rc_function[RC_Channel_aux::k_mount_roll] != NULL) && (g_rc_function[RC_Channel_aux::k_mount_pitch] != NULL) && (g_rc_function[RC_Channel_aux::k_mount_yaw] != NULL))
+	{
+		_mount_type = k_pan_tilt_roll;
+	}
 }
 
 //sets the servo angles for retraction, note angles are in degrees
@@ -279,6 +299,10 @@ void AP_Mount::control_msg(mavlink_message_t *msg)
 
 	case MAV_MOUNT_MODE_ENUM_END:
 		break;
+
+	default:
+		// do nothing
+		break;
 	}
 }
 
@@ -319,9 +343,13 @@ void AP_Mount::status_msg(mavlink_message_t *msg)
 }
 
 // Set mount point/region of interest, triggered by mission script commands
-void AP_Mount::set_roi_cmd()
+void AP_Mount::set_roi_cmd(struct Location *target_loc)
 {
-	// TODO get the information out of the mission command and use it
+	// set the target gps location
+	_target_GPS_location = *target_loc;
+
+	// set the mode to GPS tracking mode
+	set_mode(MAV_MOUNT_MODE_GPS_POINT);
 }
 
 // Set mount configuration, triggered by mission script commands
