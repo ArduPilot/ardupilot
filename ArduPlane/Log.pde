@@ -315,7 +315,7 @@ static void Log_Write_Nav_Tuning()
 	DataFlash.WriteInt((uint16_t)nav_bearing);
 	DataFlash.WriteInt(altitude_error);
 	DataFlash.WriteInt((int16_t)airspeed.get_airspeed_cm());
-	DataFlash.WriteInt((int16_t)(nav_gain_scaler*1000));
+	DataFlash.WriteInt(0); // was nav_gain_scaler
 	DataFlash.WriteByte(END_BYTE);
 }
 

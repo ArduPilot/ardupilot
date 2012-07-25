@@ -394,8 +394,6 @@ static int32_t	target_bearing;
 //This is the direction from the last waypoint to the next waypoint
 // deg * 100 : 0 to 360
 static int32_t	crosstrack_bearing;
-// A gain scaler to account for ground speed/headwind/tailwind
-static float	nav_gain_scaler 		= 1;
 // Direction held during phases of takeoff and landing
 // deg * 100 dir of plane,  A value of -1 indicates the course has not been set/is not in use
 static int32_t    hold_course       	 	= -1;		// deg * 100 dir of plane
