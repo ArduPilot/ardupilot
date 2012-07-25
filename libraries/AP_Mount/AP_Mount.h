@@ -41,17 +41,27 @@ public:
 	//Constructor
 	AP_Mount(const struct Location *current_loc, GPS *&gps, AP_AHRS *ahrs);
 
+	//enums
+	enum MountType{
+		k_pan_tilt = 0,			///< yaw-pitch
+		k_tilt_roll = 1,		///< pitch-roll
+		k_pan_tilt_roll = 2,	///< yaw-pitch-roll
+	};
+
 	// MAVLink methods
 	void configure_msg(mavlink_message_t* msg);
 	void control_msg(mavlink_message_t* msg);
 	void status_msg(mavlink_message_t* msg);
-	void set_roi_cmd();
+	void set_roi_cmd(struct Location *target_loc);
 	void configure_cmd();
 	void control_cmd();
 
 	// should be called periodically
 	void update_mount_position();
+	void update_mount_type();		///< Auto-detect the mount gimbal type depending on the functions assigned to the servos
 	void debug_output();			///< For testing and development. Called in the medium loop.
+	// Accessors
+	enum MountType get_mount_type() { return _mount_type; }
 
 	// to allow manual input of an angle from the pilot when RC_Channel_aux cannot be used
 	void set_manual_rc_channel(RC_Channel *rc);			// define which RC_Channel is to be used for manual control
@@ -92,6 +102,7 @@ private:
 	AP_Int8 _stab_yaw;   ///< (1 = yes, 0 = no)
 
 	AP_Int8 _mount_mode;
+	MountType _mount_type;
 
 	struct Location _target_GPS_location;
 
