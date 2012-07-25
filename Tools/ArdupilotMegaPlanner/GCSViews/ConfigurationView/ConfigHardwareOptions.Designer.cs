@@ -45,6 +45,14 @@
             this.pictureBox1 = new System.Windows.Forms.PictureBox();
             this.BUT_MagCalibrationLog = new ArdupilotMega.Controls.MyButton();
             this.CHK_autodec = new System.Windows.Forms.CheckBox();
+            this.label5 = new System.Windows.Forms.Label();
+            this.groupBox2 = new System.Windows.Forms.GroupBox();
+            this.label1 = new System.Windows.Forms.Label();
+            this.groupBox1 = new System.Windows.Forms.GroupBox();
+            this.label2 = new System.Windows.Forms.Label();
+            this.groupBox3 = new System.Windows.Forms.GroupBox();
+            this.label3 = new System.Windows.Forms.Label();
+            this.groupBox4 = new System.Windows.Forms.GroupBox();
             ((System.ComponentModel.ISupportInitialize)(this.pictureBox2)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.pictureBox4)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.pictureBox3)).BeginInit();
@@ -170,23 +178,79 @@
             this.CHK_autodec.UseVisualStyleBackColor = true;
             this.CHK_autodec.CheckedChanged += new System.EventHandler(this.CHK_autodec_CheckedChanged);
             // 
+            // label5
+            // 
+            resources.ApplyResources(this.label5, "label5");
+            this.label5.ForeColor = System.Drawing.SystemColors.ControlText;
+            this.label5.Name = "label5";
+            // 
+            // groupBox2
+            // 
+            resources.ApplyResources(this.groupBox2, "groupBox2");
+            this.groupBox2.Name = "groupBox2";
+            this.groupBox2.TabStop = false;
+            // 
+            // label1
+            // 
+            resources.ApplyResources(this.label1, "label1");
+            this.label1.ForeColor = System.Drawing.SystemColors.ControlText;
+            this.label1.Name = "label1";
+            // 
+            // groupBox1
+            // 
+            resources.ApplyResources(this.groupBox1, "groupBox1");
+            this.groupBox1.Name = "groupBox1";
+            this.groupBox1.TabStop = false;
+            // 
+            // label2
+            // 
+            resources.ApplyResources(this.label2, "label2");
+            this.label2.ForeColor = System.Drawing.SystemColors.ControlText;
+            this.label2.Name = "label2";
+            // 
+            // groupBox3
+            // 
+            resources.ApplyResources(this.groupBox3, "groupBox3");
+            this.groupBox3.Name = "groupBox3";
+            this.groupBox3.TabStop = false;
+            // 
+            // label3
+            // 
+            resources.ApplyResources(this.label3, "label3");
+            this.label3.ForeColor = System.Drawing.SystemColors.ControlText;
+            this.label3.Name = "label3";
+            // 
+            // groupBox4
+            // 
+            resources.ApplyResources(this.groupBox4, "groupBox4");
+            this.groupBox4.Name = "groupBox4";
+            this.groupBox4.TabStop = false;
+            // 
             // ConfigHardwareOptions
             // 
             resources.ApplyResources(this, "$this");
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
+            this.Controls.Add(this.CHK_enableoptflow);
+            this.Controls.Add(this.label3);
+            this.Controls.Add(this.groupBox4);
+            this.Controls.Add(this.CHK_enableairspeed);
+            this.Controls.Add(this.label2);
+            this.Controls.Add(this.groupBox3);
+            this.Controls.Add(this.CHK_enablesonar);
+            this.Controls.Add(this.label1);
+            this.Controls.Add(this.groupBox1);
+            this.Controls.Add(this.CHK_enablecompass);
+            this.Controls.Add(this.label5);
+            this.Controls.Add(this.groupBox2);
             this.Controls.Add(this.CHK_autodec);
             this.Controls.Add(this.BUT_MagCalibrationLog);
             this.Controls.Add(this.BUT_MagCalibrationLive);
             this.Controls.Add(this.label27);
             this.Controls.Add(this.CMB_sonartype);
-            this.Controls.Add(this.CHK_enableoptflow);
             this.Controls.Add(this.pictureBox2);
             this.Controls.Add(this.linkLabelmagdec);
             this.Controls.Add(this.label100);
             this.Controls.Add(this.TXT_declination);
-            this.Controls.Add(this.CHK_enableairspeed);
-            this.Controls.Add(this.CHK_enablesonar);
-            this.Controls.Add(this.CHK_enablecompass);
             this.Controls.Add(this.pictureBox4);
             this.Controls.Add(this.pictureBox3);
             this.Controls.Add(this.pictureBox1);
@@ -218,5 +282,13 @@
         private System.Windows.Forms.PictureBox pictureBox1;
         private ArdupilotMega.Controls.MyButton BUT_MagCalibrationLog;
         private System.Windows.Forms.CheckBox CHK_autodec;
+        private System.Windows.Forms.Label label5;
+        private System.Windows.Forms.GroupBox groupBox2;
+        private System.Windows.Forms.Label label1;
+        private System.Windows.Forms.GroupBox groupBox1;
+        private System.Windows.Forms.Label label2;
+        private System.Windows.Forms.GroupBox groupBox3;
+        private System.Windows.Forms.Label label3;
+        private System.Windows.Forms.GroupBox groupBox4;
     }
 }

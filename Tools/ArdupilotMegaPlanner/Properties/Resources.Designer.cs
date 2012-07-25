@@ -115,12 +115,21 @@ namespace ArdupilotMega.Properties {
                 return ((System.Drawing.Bitmap)(obj));
             }
         }
+        
         public static System.Drawing.Bitmap cameraGimalRoll1 {
             get {
                 object obj = ResourceManager.GetObject("cameraGimalRoll1", resourceCulture);
                 return ((System.Drawing.Bitmap)(obj));
             }
         }
+        
+        public static System.Drawing.Bitmap cameraGimalYaw {
+            get {
+                object obj = ResourceManager.GetObject("cameraGimalYaw", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
         public static System.Drawing.Bitmap compass {
             get {
                 object obj = ResourceManager.GetObject("compass", resourceCulture);
@@ -183,12 +192,14 @@ namespace ArdupilotMega.Properties {
                 return ((System.Drawing.Bitmap)(obj));
             }
         }
+        
         public static System.Drawing.Bitmap frames_x {
             get {
                 object obj = ResourceManager.GetObject("frames_x", resourceCulture);
                 return ((System.Drawing.Bitmap)(obj));
             }
         }
+        
         public static System.Drawing.Bitmap Gaugebg {
             get {
                 object obj = ResourceManager.GetObject("Gaugebg", resourceCulture);

@@ -2034,11 +2034,13 @@ namespace ArdupilotMega
 
         public void setMode(mavlink_set_mode_t mode, MAV_MODE_FLAG base_mode = 0)
         {
+#if MAVLINK10
             mode.base_mode |= (byte)base_mode;
 
             generatePacket((byte)MAVLink.MAVLINK_MSG_ID_SET_MODE, mode);
             System.Threading.Thread.Sleep(10);
             generatePacket((byte)MAVLink.MAVLINK_MSG_ID_SET_MODE, mode);
+#endif
         }
 
         /// <summary>
@@ -2281,7 +2283,7 @@ namespace ArdupilotMega
                         throw new Exception(message);
                     }
 #else
-                    if (temp.Length == 17 && temp[0] == 254 && temp[5] == 0)
+                    if (buffer.Length == 17 && buffer[0] == 254 && buffer[5] == 0)
                     {
                         string message = "Mavlink 1.0 Heartbeat, Please Upgrade your Mission Planner, This planner is for Mavlink 0.9\n\n";
                         System.Windows.Forms.CustomMessageBox.Show(message);
@@ -2421,15 +2423,15 @@ namespace ArdupilotMega
         void getWPsfromstream(ref byte[] buffer)
         {
 #if MAVLINK10
-                    if (buffer[5] == MAVLINK_MSG_ID_MISSION_COUNT)
-                    {
-                        // clear old
-                        wps = new PointLatLngAlt[wps.Length];
-                    }
+            if (buffer[5] == MAVLINK_MSG_ID_MISSION_COUNT)
+            {
+                // clear old
+                wps = new PointLatLngAlt[wps.Length];
+            }
 
-                    if (buffer[5] == MAVLink.MAVLINK_MSG_ID_MISSION_ITEM)
-                    {
-                        mavlink_mission_item_t wp = buffer.ByteArrayToStructure<mavlink_mission_item_t>(6);
+            if (buffer[5] == MAVLink.MAVLINK_MSG_ID_MISSION_ITEM)
+            {
+                mavlink_mission_item_t wp = buffer.ByteArrayToStructure<mavlink_mission_item_t>(6);
 #else
 
             if (buffer[5] == MAVLINK_MSG_ID_WAYPOINT_COUNT)
@@ -2444,6 +2446,8 @@ namespace ArdupilotMega
 
 #endif
                 wps[wp.seq] = new PointLatLngAlt(wp.x, wp.y, wp.z, wp.seq.ToString());
+
+                Console.WriteLine("WP # {7} cmd {8} p1 {0} p2 {1} p3 {2} p4 {3} x {4} y {5} z {6}",wp.param1,wp.param2,wp.param3,wp.param4,wp.x,wp.y,wp.z,wp.seq,wp.command);
             }
         }
 

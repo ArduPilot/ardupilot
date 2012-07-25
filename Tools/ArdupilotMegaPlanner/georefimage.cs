@@ -478,7 +478,6 @@ namespace ArdupilotMega
             this.TXT_logfile.Name = "TXT_logfile";
             this.TXT_logfile.Size = new System.Drawing.Size(317, 20);
             this.TXT_logfile.TabIndex = 2;
-            this.TXT_logfile.Text = "C:\\Users\\hog\\Pictures\\farm 1-10-2011\\100SSCAM\\2011-10-01 11-48 1.log";
             this.TXT_logfile.TextChanged += new System.EventHandler(this.TXT_logfile_TextChanged);
             // 
             // TXT_jpgdir
@@ -487,7 +486,6 @@ namespace ArdupilotMega
             this.TXT_jpgdir.Name = "TXT_jpgdir";
             this.TXT_jpgdir.Size = new System.Drawing.Size(317, 20);
             this.TXT_jpgdir.TabIndex = 3;
-            this.TXT_jpgdir.Text = "C:\\Users\\hog\\Pictures\\farm 1-10-2011\\100SSCAM";
             // 
             // TXT_offsetseconds
             // 
@@ -495,7 +493,7 @@ namespace ArdupilotMega
             this.TXT_offsetseconds.Name = "TXT_offsetseconds";
             this.TXT_offsetseconds.Size = new System.Drawing.Size(100, 20);
             this.TXT_offsetseconds.TabIndex = 4;
-            this.TXT_offsetseconds.Text = "-86158";
+            this.TXT_offsetseconds.Text = "0";
             // 
             // TXT_outputlog
             // 

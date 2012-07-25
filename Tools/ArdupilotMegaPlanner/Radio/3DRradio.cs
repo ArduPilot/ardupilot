@@ -482,7 +482,11 @@ namespace ArdupilotMega
                         RS9.DataSource = Range(414000, 100, 454000);
                     }
 
-
+                    if (board == uploader.Uploader.Code.DEVICE_ID_RFD900 || board == uploader.Uploader.Code.DEVICE_ID_RFD900A)
+                    {
+                        S4.DataSource = Range(1, 1, 30);
+                        RS4.DataSource = Range(1, 1, 30);
+                    }
 
 
                 RSSI.Text = doCommand(comPort, "ATI7").Trim();

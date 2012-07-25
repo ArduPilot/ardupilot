@@ -28,7 +28,7 @@ namespace ArdupilotMega.GCSViews.ConfigurationView
                 int fixme; // needs to be accel only
                 MainV2.comPort.doCommand(MAVLink.MAV_CMD.PREFLIGHT_CALIBRATION,1,1,1,1,1,1,1);
 #else
-                log.Info("Sending level command (mavlink 0.9)");
+                Log.Info("Sending level command (mavlink 0.9)");
                 MainV2.comPort.doAction(MAVLink.MAV_ACTION.MAV_ACTION_CALIBRATE_ACC);
 #endif
 

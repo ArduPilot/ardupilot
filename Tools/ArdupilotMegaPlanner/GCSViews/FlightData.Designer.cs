@@ -24,6 +24,13 @@
             this.displayBatteryInfoToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.bindingSource1 = new System.Windows.Forms.BindingSource(this.components);
             this.tabControl1 = new System.Windows.Forms.TabControl();
+            this.tabQuick = new System.Windows.Forms.TabPage();
+            this.quickView6 = new ArdupilotMega.Controls.QuickView();
+            this.quickView5 = new ArdupilotMega.Controls.QuickView();
+            this.quickView4 = new ArdupilotMega.Controls.QuickView();
+            this.quickView3 = new ArdupilotMega.Controls.QuickView();
+            this.quickView2 = new ArdupilotMega.Controls.QuickView();
+            this.quickView1 = new ArdupilotMega.Controls.QuickView();
             this.tabActions = new System.Windows.Forms.TabPage();
             this.BUT_script = new ArdupilotMega.Controls.MyButton();
             this.BUT_joystick = new ArdupilotMega.Controls.MyButton();
@@ -85,6 +92,7 @@
             this.contextMenuStrip2.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.bindingSource1)).BeginInit();
             this.tabControl1.SuspendLayout();
+            this.tabQuick.SuspendLayout();
             this.tabActions.SuspendLayout();
             this.tabGauges.SuspendLayout();
             this.tabTLogs.SuspendLayout();
@@ -258,6 +266,7 @@
             // 
             // tabControl1
             // 
+            this.tabControl1.Controls.Add(this.tabQuick);
             this.tabControl1.Controls.Add(this.tabActions);
             this.tabControl1.Controls.Add(this.tabGauges);
             this.tabControl1.Controls.Add(this.tabStatus);
@@ -267,6 +276,78 @@
             this.tabControl1.SelectedIndex = 0;
             this.tabControl1.DrawItem += new System.Windows.Forms.DrawItemEventHandler(this.tabControl1_DrawItem);
             this.tabControl1.SelectedIndexChanged += new System.EventHandler(this.tabControl1_SelectedIndexChanged);
+            // 
+            // tabQuick
+            // 
+            resources.ApplyResources(this.tabQuick, "tabQuick");
+            this.tabQuick.Controls.Add(this.quickView6);
+            this.tabQuick.Controls.Add(this.quickView5);
+            this.tabQuick.Controls.Add(this.quickView4);
+            this.tabQuick.Controls.Add(this.quickView3);
+            this.tabQuick.Controls.Add(this.quickView2);
+            this.tabQuick.Controls.Add(this.quickView1);
+            this.tabQuick.Name = "tabQuick";
+            this.tabQuick.UseVisualStyleBackColor = true;
+            // 
+            // quickView6
+            // 
+            this.quickView6.DataBindings.Add(new System.Windows.Forms.Binding("number", this.bindingSource1, "DistToMAV", true));
+            this.quickView6.desc = "DistToMAV";
+            resources.ApplyResources(this.quickView6, "quickView6");
+            this.quickView6.Name = "quickView6";
+            this.quickView6.number = "0.0";
+            this.quickView6.numberColor = System.Drawing.Color.FromArgb(((int)(((byte)(0)))), ((int)(((byte)(255)))), ((int)(((byte)(252)))));
+            this.quickView6.DoubleClick += new System.EventHandler(this.quickView_DoubleClick);
+            // 
+            // quickView5
+            // 
+            this.quickView5.DataBindings.Add(new System.Windows.Forms.Binding("number", this.bindingSource1, "verticalspeed", true));
+            this.quickView5.desc = "verticalspeed";
+            resources.ApplyResources(this.quickView5, "quickView5");
+            this.quickView5.Name = "quickView5";
+            this.quickView5.number = "0.0";
+            this.quickView5.numberColor = System.Drawing.Color.FromArgb(((int)(((byte)(254)))), ((int)(((byte)(254)))), ((int)(((byte)(86)))));
+            this.quickView5.DoubleClick += new System.EventHandler(this.quickView_DoubleClick);
+            // 
+            // quickView4
+            // 
+            this.quickView4.DataBindings.Add(new System.Windows.Forms.Binding("number", this.bindingSource1, "yaw", true));
+            this.quickView4.desc = "yaw";
+            resources.ApplyResources(this.quickView4, "quickView4");
+            this.quickView4.Name = "quickView4";
+            this.quickView4.number = "0.0";
+            this.quickView4.numberColor = System.Drawing.Color.FromArgb(((int)(((byte)(0)))), ((int)(((byte)(255)))), ((int)(((byte)(83)))));
+            this.quickView4.DoubleClick += new System.EventHandler(this.quickView_DoubleClick);
+            // 
+            // quickView3
+            // 
+            this.quickView3.DataBindings.Add(new System.Windows.Forms.Binding("number", this.bindingSource1, "wp_dist", true));
+            this.quickView3.desc = "wp_dist";
+            resources.ApplyResources(this.quickView3, "quickView3");
+            this.quickView3.Name = "quickView3";
+            this.quickView3.number = "0.0";
+            this.quickView3.numberColor = System.Drawing.Color.FromArgb(((int)(((byte)(255)))), ((int)(((byte)(96)))), ((int)(((byte)(91)))));
+            this.quickView3.DoubleClick += new System.EventHandler(this.quickView_DoubleClick);
+            // 
+            // quickView2
+            // 
+            this.quickView2.DataBindings.Add(new System.Windows.Forms.Binding("number", this.bindingSource1, "groundspeed", true));
+            this.quickView2.desc = "groundspeed";
+            resources.ApplyResources(this.quickView2, "quickView2");
+            this.quickView2.Name = "quickView2";
+            this.quickView2.number = "0.0";
+            this.quickView2.numberColor = System.Drawing.Color.FromArgb(((int)(((byte)(254)))), ((int)(((byte)(132)))), ((int)(((byte)(46)))));
+            this.quickView2.DoubleClick += new System.EventHandler(this.quickView_DoubleClick);
+            // 
+            // quickView1
+            // 
+            this.quickView1.DataBindings.Add(new System.Windows.Forms.Binding("number", this.bindingSource1, "alt", true));
+            this.quickView1.desc = "alt";
+            resources.ApplyResources(this.quickView1, "quickView1");
+            this.quickView1.Name = "quickView1";
+            this.quickView1.number = "0.0";
+            this.quickView1.numberColor = System.Drawing.Color.FromArgb(((int)(((byte)(209)))), ((int)(((byte)(151)))), ((int)(((byte)(248)))));
+            this.quickView1.DoubleClick += new System.EventHandler(this.quickView_DoubleClick);
             // 
             // tabActions
             // 
@@ -1175,6 +1256,7 @@
             this.contextMenuStrip2.ResumeLayout(false);
             ((System.ComponentModel.ISupportInitialize)(this.bindingSource1)).EndInit();
             this.tabControl1.ResumeLayout(false);
+            this.tabQuick.ResumeLayout(false);
             this.tabActions.ResumeLayout(false);
             this.tabGauges.ResumeLayout(false);
             this.tabTLogs.ResumeLayout(false);
@@ -1257,5 +1339,12 @@
         private System.Windows.Forms.ToolStripMenuItem setMJPEGSourceToolStripMenuItem;
         private System.Windows.Forms.ToolStripMenuItem setAspectRatioToolStripMenuItem;
         private System.Windows.Forms.ToolStripMenuItem displayBatteryInfoToolStripMenuItem;
+        private System.Windows.Forms.TabPage tabQuick;
+        private Controls.QuickView quickView3;
+        private Controls.QuickView quickView2;
+        private Controls.QuickView quickView1;
+        private Controls.QuickView quickView4;
+        private Controls.QuickView quickView6;
+        private Controls.QuickView quickView5;
     }
 }

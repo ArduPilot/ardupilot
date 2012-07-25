@@ -574,8 +574,10 @@ namespace ArdupilotMega.GCSViews
 
             DateTime lastdata = DateTime.MinValue;
 
+            #if MAVLINK10
             // set enable hil status flag - sends base_mode = 0
             MainV2.comPort.setMode(new MAVLink.mavlink_set_mode_t() { target_system = MainV2.comPort.sysid }, MAVLink.MAV_MODE_FLAG.HIL_ENABLED);
+#endif
 
             while (threadrun == 1)
             {
@@ -873,7 +875,7 @@ namespace ArdupilotMega.GCSViews
                 gps.v = ((float)(DATA[3][7] * 0.44704));
 #endif
 
-                asp.airspeed = ((float)(DATA[3][5] * 0.44704));
+                asp.airspeed = ((float)(DATA[3][5] * .0044704));
 
 
             }
@@ -1243,8 +1245,8 @@ namespace ArdupilotMega.GCSViews
             hilstate.roll = att.roll;
             hilstate.rollspeed = att.rollspeed;
             hilstate.time_usec = gps.time_usec;
-            hilstate.vx = (short)(gps.vel * Math.Sin(gps.cog / 100.0 * deg2rad));
-            hilstate.vy = (short)(gps.vel * Math.Cos(gps.cog / 100.0 * deg2rad));
+            hilstate.vx = (short)(gps.vel * Math.Sin(gps.cog * deg2rad));
+            hilstate.vy = (short)(gps.vel * Math.Cos(gps.cog * deg2rad));
             hilstate.vz = 0;
             hilstate.xacc = imu.xacc;
             hilstate.yacc = imu.yacc;

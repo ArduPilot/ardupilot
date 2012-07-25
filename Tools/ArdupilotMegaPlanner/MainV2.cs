@@ -382,6 +382,7 @@ namespace ArdupilotMega
                 this.connectionStatsForm.Controls.Clear();
                 _connectionStats = new ConnectionStats(comPort);
                 this.connectionStatsForm.Controls.Add(_connectionStats);
+                this.connectionStatsForm.Width = _connectionStats.Width;
             }
 
             this.connectionStatsForm.Show();
@@ -1598,7 +1599,7 @@ namespace ArdupilotMega
                 if (MONO)
                 {
                     process.StartInfo.FileName = "mono";
-                    process.StartInfo.Arguments = " \"" + exePath + Path.DirectorySeparatorChar + "Updater.exe\"" + "\"" + Application.ExecutablePath + "\"";
+                    process.StartInfo.Arguments = " \"" + exePath + Path.DirectorySeparatorChar + "Updater.exe\"" + "  \"" + Application.ExecutablePath + "\"";
                 }
                 else
                 {

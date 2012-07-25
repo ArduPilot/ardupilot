@@ -36,9 +36,10 @@ namespace ArdupilotMega.GCSViews.ConfigurationView
 
             this.backstageView.ActivatePage(backstageView.Pages[0]);
 
+            ThemeManager.ApplyThemeTo(this);
+
             if (!MainV2.comPort.BaseStream.IsOpen)
             {
-                ThemeManager.ApplyThemeTo(this);
                 Common.MessageShowAgain("Config Connect", @"Please connect (click Connect Button) before using setup.
 If you are just setting up 3DR radios, you may continue without connecting.");
             }
@@ -59,7 +60,7 @@ If you are just setting up 3DR radios, you may continue without connecting.");
             /******************************HELI **************************/
             if (MainV2.comPort.param["H_GYR_ENABLE"] != null) // heli
             {
-                AddBackstageViewPage(new ConfigCameraStab(), "Camera Gimbal");
+                AddBackstageViewPage(new ConfigMount(), "Camera Gimbal");
 
                 AddBackstageViewPage(new ConfigAccelerometerCalibrationQuad(), "ArduCopter Level");
 
@@ -69,11 +70,14 @@ If you are just setting up 3DR radios, you may continue without connecting.");
                 AddBackstageViewPage(configpanel, "ArduCopter Pids");
 
                 AddBackstageViewPage(new ConfigArducopter(), "ArduCopter Config");
+                AddBackstageViewPage(new ConfigAP_Limits(), "GeoFence");
             }
                 /****************************** ArduCopter **************************/
             else if (MainV2.cs.firmware == MainV2.Firmwares.ArduCopter2)
             {
-                AddBackstageViewPage(new ConfigCameraStab(), "Camera Gimbal");
+                //AddBackstageViewPage(new ConfigCameraStab(), "Camera Gimbal");
+
+                AddBackstageViewPage(new ConfigMount(), "Camera Gimbal");
 
                 AddBackstageViewPage(new ConfigAccelerometerCalibrationQuad(), "ArduCopter Level");
 

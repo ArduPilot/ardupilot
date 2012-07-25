@@ -251,12 +251,33 @@
     <Compile Include="Controls\MainSwitcher.Designer.cs">
       <DependentUpon>MainSwitcher.cs</DependentUpon>
     </Compile>
+    <Compile Include="Controls\MavlinkCheckBox.cs">
+      <SubType>Component</SubType>
+    </Compile>
+    <Compile Include="Controls\MavlinkComboBox.cs">
+      <SubType>Component</SubType>
+    </Compile>
+    <Compile Include="Controls\MavlinkNumericUpDown.cs">
+      <SubType>Component</SubType>
+    </Compile>
+    <Compile Include="Controls\QuickView.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="Controls\QuickView.Designer.cs">
+      <DependentUpon>QuickView.cs</DependentUpon>
+    </Compile>
     <Compile Include="Delta.cs" />
     <Compile Include="GCSViews\ConfigurationView\ConfigAP_Limits.cs">
       <SubType>UserControl</SubType>
     </Compile>
     <Compile Include="GCSViews\ConfigurationView\ConfigAP_Limits.Designer.cs">
       <DependentUpon>ConfigAP_Limits.cs</DependentUpon>
+    </Compile>
+    <Compile Include="GCSViews\ConfigurationView\ConfigMount.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="GCSViews\ConfigurationView\ConfigMount.designer.cs">
+      <DependentUpon>ConfigMount.cs</DependentUpon>
     </Compile>
     <Compile Include="Presenter\ConfigCameraStabPresenter.cs" />
     <Compile Include="Controls\HSI.cs">
@@ -462,11 +483,11 @@
     <Compile Include="Radio\IHex.cs" />
     <Compile Include="Mavlink\MavlinkCRC.cs" />
     <Compile Include="Mavlink\MavlinkUtil.cs" />
-    <Compile Include="SerialInput.cs">
+    <Compile Include="FollowMe.cs">
       <SubType>Form</SubType>
     </Compile>
-    <Compile Include="SerialInput.Designer.cs">
-      <DependentUpon>SerialInput.cs</DependentUpon>
+    <Compile Include="FollowMe.Designer.cs">
+      <DependentUpon>FollowMe.cs</DependentUpon>
     </Compile>
     <Compile Include="GCSViews\Firmware.Designer.cs">
       <DependentUpon>Firmware.cs</DependentUpon>
@@ -661,6 +682,9 @@
     <EmbeddedResource Include="Controls\OpenGLtest.resx">
       <DependentUpon>OpenGLtest.cs</DependentUpon>
     </EmbeddedResource>
+    <EmbeddedResource Include="Controls\QuickView.resx">
+      <DependentUpon>QuickView.cs</DependentUpon>
+    </EmbeddedResource>
     <EmbeddedResource Include="GCSViews\ConfigurationView\ConfigAccelerometerCalibrationQuad.es-ES.resx">
       <DependentUpon>ConfigAccelerometerCalibrationQuad.cs</DependentUpon>
     </EmbeddedResource>
@@ -841,6 +865,9 @@
     <EmbeddedResource Include="GCSViews\ConfigurationView\ConfigAP_Limits.resx">
       <DependentUpon>ConfigAP_Limits.cs</DependentUpon>
     </EmbeddedResource>
+    <EmbeddedResource Include="GCSViews\ConfigurationView\ConfigMount.resx">
+      <DependentUpon>ConfigMount.cs</DependentUpon>
+    </EmbeddedResource>
     <EmbeddedResource Include="GCSViews\ConfigurationView\Setup.resx">
       <DependentUpon>Setup.cs</DependentUpon>
     </EmbeddedResource>
@@ -893,14 +920,14 @@
     <EmbeddedResource Include="RAW_Sensor.es-ES.resx">
       <DependentUpon>RAW_Sensor.cs</DependentUpon>
     </EmbeddedResource>
-    <EmbeddedResource Include="SerialInput.es-ES.resx">
-      <DependentUpon>SerialInput.cs</DependentUpon>
+    <EmbeddedResource Include="FollowMe.es-ES.resx">
+      <DependentUpon>FollowMe.cs</DependentUpon>
     </EmbeddedResource>
-    <EmbeddedResource Include="SerialInput.pl.resx">
-      <DependentUpon>SerialInput.cs</DependentUpon>
+    <EmbeddedResource Include="FollowMe.pl.resx">
+      <DependentUpon>FollowMe.cs</DependentUpon>
     </EmbeddedResource>
-    <EmbeddedResource Include="SerialInput.resx">
-      <DependentUpon>SerialInput.cs</DependentUpon>
+    <EmbeddedResource Include="FollowMe.resx">
+      <DependentUpon>FollowMe.cs</DependentUpon>
     </EmbeddedResource>
     <EmbeddedResource Include="GCSViews\Firmware.fr.resx">
       <DependentUpon>Firmware.cs</DependentUpon>
@@ -1209,6 +1236,7 @@
     <None Include="Resources\cameraGimalRoll1.png" />
     <None Include="Resources\frames_plus.png" />
     <None Include="Resources\frames_x.png" />
+    <None Include="Resources\cameraGimalYaw.png" />
     <Content Include="Resources\MAVCmd.zh-Hans.txt" />
     <None Include="Resources\MAVParam.txt" />
     <Content Include="Resources\MAVParam.zh-Hans.txt" />
@@ -1285,7 +1313,6 @@
       <Install>true</Install>
     </BootstrapperPackage>
   </ItemGroup>
-  <ItemGroup />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <PropertyGroup>
     <PostBuildEvent>"$(TargetDir)version.exe" "$(TargetPath)" &gt; "$(TargetDir)version.txt"</PostBuildEvent>

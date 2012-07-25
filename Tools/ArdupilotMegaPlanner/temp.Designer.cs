@@ -80,7 +80,7 @@
             // 
             // BUT_paramgen
             // 
-            this.BUT_paramgen.Location = new System.Drawing.Point(206, 118);
+            this.BUT_paramgen.Location = new System.Drawing.Point(323, 118);
             this.BUT_paramgen.Name = "BUT_paramgen";
             this.BUT_paramgen.Size = new System.Drawing.Size(75, 23);
             this.BUT_paramgen.TabIndex = 20;
@@ -259,7 +259,7 @@
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(696, 288);
+            this.ClientSize = new System.Drawing.Size(685, 285);
             this.Controls.Add(this.BUT_paramgen);
             this.Controls.Add(this.BUT_magcalib);
             this.Controls.Add(this.BUT_ant_track);
