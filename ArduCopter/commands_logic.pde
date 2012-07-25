@@ -36,6 +36,11 @@ static void process_nav_command()
 			do_RTL();
 			break;
 
+		// point the copter and camera at a region of interest (ROI)
+		case MAV_CMD_NAV_ROI: // 80
+			do_nav_roi();
+			break;
+
 		default:
 			break;
 	}
@@ -110,17 +115,7 @@ static void process_now_command()
 			break;
 #endif
 
-		// Sets the region of interest (ROI) for a sensor set or the
-		// vehicle itself. This can then be used by the vehicles control
-		// system to control the vehicle attitude and the attitude of various
-		// devices such as cameras.
-		//    |Region of interest mode. (see MAV_ROI enum)| Waypoint index/ target ID. (see MAV_ROI enum)| ROI index (allows a vehicle to manage multiple cameras etc.)| Empty| x the location of the fixed ROI (see MAV_FRAME)| y| z|
-		case MAV_CMD_DO_SET_ROI: // 201
-			do_target_yaw();
 #if MOUNT == ENABLED
-			camera_mount.set_roi_cmd();
-			break;
-
 		case MAV_CMD_DO_MOUNT_CONFIGURE:	// Mission command to configure a camera mount |Mount operation mode (see MAV_CONFIGURE_MOUNT_MODE enum)| stabilize roll? (1 = yes, 0 = no)| stabilize pitch? (1 = yes, 0 = no)| stabilize yaw? (1 = yes, 0 = no)| Empty| Empty| Empty|
 			camera_mount.configure_cmd();
 			break;
@@ -129,6 +124,10 @@ static void process_now_command()
 			camera_mount.control_cmd();
 			break;
 #endif
+
+		default:
+			// do nothing with unrecognized MAVLink messages
+			break;
 	}
 }
 
@@ -144,16 +143,16 @@ static bool verify_must()
 			return verify_takeoff();
 			break;
 
+		case MAV_CMD_NAV_WAYPOINT:
+			return verify_nav_wp();
+			break;
+
 		case MAV_CMD_NAV_LAND:
 			if(g.sonar_enabled == true){
 				return verify_land_sonar();
 			}else{
 				return verify_land_baro();
 			}
-			break;
-
-		case MAV_CMD_NAV_WAYPOINT:
-			return verify_nav_wp();
 			break;
 
 		case MAV_CMD_NAV_LOITER_UNLIM:
@@ -170,6 +169,10 @@ static bool verify_must()
 
 		case MAV_CMD_NAV_RETURN_TO_LAUNCH:
 			return verify_RTL();
+			break;
+
+		case MAV_CMD_NAV_ROI: // 80
+			return verify_nav_roi();
 			break;
 
 		default:
@@ -695,6 +698,39 @@ static bool verify_yaw()
 	}
 }
 
+// verify_nav_roi - verifies that actions required by MAV_CMD_NAV_ROI have completed
+//              we assume the camera command has been successfully implemented by the do_nav_roi command
+//              so all we need to check is whether we needed to yaw the copter (due to the mount type) and
+//              whether that yaw has completed
+//	TO-DO: add support for other features of MAV_NAV_ROI including pointing at a given waypoint
+static bool verify_nav_roi()
+{
+#if MOUNT == ENABLED
+	// check if mount type requires us to rotate the quad
+	if( camera_mount.get_mount_type() == AP_Mount::k_tilt_roll ) {
+		// ensure yaw has gotten to within 2 degrees of the target
+		if( abs(wrap_180(ahrs.yaw_sensor-auto_yaw)) <= 200 ) {
+			nav_yaw = auto_yaw;	// ensure target yaw for YAW_HOLD is our desired yaw
+			return true;
+		}else{
+			return false;
+		}
+	}else{
+		// if no rotation required, assume the camera instruction was implemented immediately
+		return true;
+	}
+#else
+	// if we have no camera mount simply check we've reached the desired yaw
+	// ensure yaw has gotten to within 2 degrees of the target
+	if( abs(wrap_180(ahrs.yaw_sensor-auto_yaw)) <= 200 ) {
+		nav_yaw = auto_yaw;	// ensure target yaw for YAW_HOLD is our desired yaw
+		return true;
+	}else{
+		return false;
+	}
+#endif
+}
+
 /********************************************************************************/
 //	Do (Now) commands
 /********************************************************************************/
@@ -816,4 +852,36 @@ static void do_repeat_relay()
 	event_delay		= command_cond_queue.lat * 500.0; // /2 (half cycle time) * 1000 (convert to milliseconds)
 	event_repeat	= command_cond_queue.alt * 2;
 	update_events();
+}
+
+// do_nav_roi - starts actions required by MAV_CMD_NAV_ROI
+//              this involves either moving the camera to point at the ROI (region of interest)
+//              and possibly rotating the copter to point at the ROI if our mount type does not support a yaw feature
+//				Note: the ROI should already be in the command_nav_queue global variable
+//	TO-DO: add support for other features of MAV_NAV_ROI including pointing at a given waypoint
+static void do_nav_roi()
+{
+#if MOUNT == ENABLED
+
+	// check if mount type requires us to rotate the quad
+	if( camera_mount.get_mount_type() == AP_Mount::k_tilt_roll ) {
+		yaw_tracking = MAV_ROI_LOCATION;
+		target_WP = command_nav_queue;
+		auto_yaw = get_bearing(&current_loc, &target_WP);
+	}
+	// send the command to the camera mount
+	camera_mount.set_roi_cmd(&command_nav_queue);
+
+	// TO-DO: expand handling of the do_nav_roi to support all modes of the MAVLink.  Currently we only handle mode 4 (see below)
+	//		0: do nothing
+	//		1: point at next waypoint
+	//		2: point at a waypoint taken from WP# parameter (2nd parameter?)
+	//		3: point at a location given by alt, lon, lat parameters
+	//		4: point at a target given a target id (can't be implmented)
+#else
+	// if we have no camera mount simply rotate the quad
+	yaw_tracking = MAV_ROI_LOCATION;
+	target_WP = command_nav_queue;
+	auto_yaw = get_bearing(&current_loc, &target_WP);
+#endif
 }
