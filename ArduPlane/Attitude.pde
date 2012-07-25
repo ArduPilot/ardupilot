@@ -200,6 +200,8 @@ static void calc_nav_pitch()
 
 static void calc_nav_roll()
 {
+#define NAV_ROLL_BY_RATE 0
+#if NAV_ROLL_BY_RATE
 	// Scale from centidegrees (PID input) to radians per second. A P gain of 1.0 should result in a
 	// desired rate of 1 degree per second per degree of error - if you're 15 degrees off, you'll try
 	// to turn at 15 degrees per second.
@@ -220,6 +222,14 @@ static void calc_nav_roll()
 	
 	// Bank angle = V*R/g, where V is airspeed, R is turn rate, and g is gravity.
 	nav_roll = ToDeg(atan(speed*turn_rate/9.81)*100);
+
+#else
+    // this is the old nav_roll calculation. We will use this for 2.50
+    // then remove for a future release
+    float nav_gain_scaler = (float)g_gps->ground_speed / (STANDARD_SPEED * 100.0);
+    nav_gain_scaler = constrain(nav_gain_scaler, 0.2, 1.4);
+    nav_roll = g.pidNavRoll.get_pid(bearing_error, nav_gain_scaler); //returns desired bank angle in degrees*100
+#endif
 
 	nav_roll = constrain(nav_roll, -g.roll_limit.get(), g.roll_limit.get());
 }
