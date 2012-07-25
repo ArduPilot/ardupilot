@@ -120,7 +120,13 @@ static void handle_process_do_command()
 		// devices such as cameras.
 		//    |Region of interest mode. (see MAV_ROI enum)| Waypoint index/ target ID. (see MAV_ROI enum)| ROI index (allows a vehicle to manage multiple cameras etc.)| Empty| x the location of the fixed ROI (see MAV_FRAME)| y| z|
 		case MAV_CMD_DO_SET_ROI:
+#if 0
+            // we need to extract the location from the mission to
+            // support this
 			camera_mount.set_roi_cmd();
+#else
+            gcs_send_text_P(SEVERITY_LOW, PSTR("DO_SET_ROI not supported"));
+#endif
 			break;
 
 		case MAV_CMD_DO_MOUNT_CONFIGURE:	// Mission command to configure a camera mount |Mount operation mode (see MAV_CONFIGURE_MOUNT_MODE enum)| stabilize roll? (1 = yes, 0 = no)| stabilize pitch? (1 = yes, 0 = no)| stabilize yaw? (1 = yes, 0 = no)| Empty| Empty| Empty|
