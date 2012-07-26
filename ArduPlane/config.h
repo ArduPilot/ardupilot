@@ -817,11 +817,9 @@
 // Developer Items
 //
 
-#ifndef STANDARD_SPEED
-# define STANDARD_SPEED		15.0
-#define STANDARD_SPEED_SQUARED (STANDARD_SPEED * STANDARD_SPEED)
+#ifndef SCALING_SPEED
+# define SCALING_SPEED		15.0
 #endif
-#define STANDARD_THROTTLE_SQUARED (THROTTLE_CRUISE * THROTTLE_CRUISE)
 
 // use this to enable servos in HIL mode
 #ifndef HIL_SERVOS

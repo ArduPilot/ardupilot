@@ -14,7 +14,7 @@ static void stabilize()
 	if (airspeed.use()) {
         float aspeed = airspeed.get_airspeed();
 		if (aspeed > 0) {
-			speed_scaler = STANDARD_SPEED / aspeed;
+			speed_scaler = g.scaling_speed / aspeed;
         } else {
 			speed_scaler = 2.0;
         }
@@ -226,7 +226,7 @@ static void calc_nav_roll()
 #else
     // this is the old nav_roll calculation. We will use this for 2.50
     // then remove for a future release
-    float nav_gain_scaler = (float)g_gps->ground_speed / (STANDARD_SPEED * 100.0);
+    float nav_gain_scaler = 0.01 * g_gps->ground_speed / g.scaling_speed;
     nav_gain_scaler = constrain(nav_gain_scaler, 0.2, 1.4);
     nav_roll = g.pidNavRoll.get_pid(bearing_error, nav_gain_scaler); //returns desired bank angle in degrees*100
 #endif
