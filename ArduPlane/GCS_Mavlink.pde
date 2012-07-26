@@ -1654,7 +1654,7 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
             mavlink_msg_vfr_hud_decode(msg, &packet);
 
             // set airspeed
-            airspeed.set_HIL(100*packet.airspeed);
+            airspeed.set_HIL(packet.airspeed);
             break;
         }
 
