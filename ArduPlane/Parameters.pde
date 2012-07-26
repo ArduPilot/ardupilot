@@ -513,9 +513,11 @@ static const AP_Param::Info var_info[] PROGMEM = {
 	GOBJECT(gcs0,					"SR0_",     GCS_MAVLINK),
 	GOBJECT(gcs3,					"SR3_",     GCS_MAVLINK),
 
+#if HIL_MODE == HIL_MODE_DISABLED
 	// @Group: INS_
 	// @Path: ../libraries/AP_InertialSensor/AP_InertialSensor_Oilpan.cpp
 	GOBJECT(ins,        			"INS_", AP_InertialSensor_Oilpan),
+#endif
 
 	// @Group: IMU_
 	// @Path: ../libraries/AP_IMU/IMU.cpp

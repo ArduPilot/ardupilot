@@ -1675,9 +1675,10 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
 			
 			// rad/sec
             Vector3f gyros;
-            gyros.x = (float)packet.xgyro / 1000.0;
-            gyros.y = (float)packet.ygyro / 1000.0;
-            gyros.z = (float)packet.zgyro / 1000.0;
+            gyros.x = packet.rollspeed;
+            gyros.y = packet.pitchspeed;
+            gyros.z = packet.yawspeed;
+
             // m/s/s
             Vector3f accels;
             accels.x = (float)packet.xacc / 1000.0;
