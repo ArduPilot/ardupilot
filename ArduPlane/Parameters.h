@@ -163,6 +163,7 @@ public:
         k_param_kff_rudder_mix,
         k_param_kff_pitch_to_throttle,
         k_param_kff_throttle_to_pitch,
+        k_param_scaling_speed,
 
         //
         // 210: flight modes
@@ -264,6 +265,9 @@ public:
     AP_Float    kff_rudder_mix;
     AP_Float    kff_pitch_to_throttle;
     AP_Float    kff_throttle_to_pitch;
+
+    // speed used for speed scaling
+    AP_Float    scaling_speed;
 
     // Crosstrack navigation
     //
@@ -402,6 +406,7 @@ public:
         kff_rudder_mix          (RUDDER_MIX),
         kff_pitch_to_throttle   (P_TO_T),
         kff_throttle_to_pitch   (T_TO_P),
+        scaling_speed           (SCALING_SPEED),
 
         crosstrack_gain         (XTRACK_GAIN_SCALED),
         crosstrack_entry_angle  (XTRACK_ENTRY_ANGLE_CENTIDEGREE),

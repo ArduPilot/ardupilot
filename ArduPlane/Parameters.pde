@@ -392,6 +392,13 @@ static const AP_Param::Info var_info[] PROGMEM = {
 	// @User: User
 	GSCALAR(airspeed_cruise_cm,        "TRIM_ARSPD_CM"),
 
+    // @Param: SCALING_SPEED
+	// @DisplayName: speed used for speed scaling calculations
+	// @Description: Airspeed in m/s to use when calculating surface speed scaling. Note that changing this value will affect all PID values
+	// @Units: m/s
+	// @User: Advanced
+	GSCALAR(scaling_speed,        "SCALING_SPEED"),
+
     // @Param: MIN_GNDSPD_CM
 	// @DisplayName: Minimum ground speed
 	// @Description: Minimum ground speed in cm/s when under airspeed control
