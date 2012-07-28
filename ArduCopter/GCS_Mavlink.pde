@@ -220,7 +220,6 @@ static void NOINLINE send_nav_controller_output(mavlink_channel_t chan)
         crosstrack_error);	// was 0
 }
 
-#if HIL_MODE != HIL_MODE_ATTITUDE
 static void NOINLINE send_ahrs(mavlink_channel_t chan)
 {
     Vector3f omega_I = ahrs.get_gyro_drift();
@@ -234,7 +233,6 @@ static void NOINLINE send_ahrs(mavlink_channel_t chan)
         ahrs.get_error_rp(),
         ahrs.get_error_yaw());
 }
-#endif // HIL_MODE != HIL_MODE_ATTITUDE
 
 #ifdef DESKTOP_BUILD
 // report simulator state
@@ -395,7 +393,6 @@ static void NOINLINE send_vfr_hud(mavlink_channel_t chan)
         climb_rate / 100.0);
 }
 
-#if HIL_MODE != HIL_MODE_ATTITUDE
 static void NOINLINE send_raw_imu1(mavlink_channel_t chan)
 {
     Vector3f accel = imu.get_accel();
@@ -438,7 +435,6 @@ static void NOINLINE send_raw_imu3(mavlink_channel_t chan)
                                     imu.gx(), imu.gy(), imu.gz(),
                                     imu.ax(), imu.ay(), imu.az());
 }
-#endif // HIL_MODE != HIL_MODE_ATTITUDE
 
 static void NOINLINE send_gps_status(mavlink_channel_t chan)
 {
@@ -535,7 +531,6 @@ static bool mavlink_try_send_message(mavlink_channel_t chan, enum ap_message id,
         send_vfr_hud(chan);
         break;
 
-#if HIL_MODE != HIL_MODE_ATTITUDE
     case MSG_RAW_IMU1:
         CHECK_PAYLOAD_SIZE(RAW_IMU);
         send_raw_imu1(chan);
@@ -550,7 +545,6 @@ static bool mavlink_try_send_message(mavlink_channel_t chan, enum ap_message id,
         CHECK_PAYLOAD_SIZE(SENSOR_OFFSETS);
         send_raw_imu3(chan);
         break;
-#endif // HIL_MODE != HIL_MODE_ATTITUDE
 
     case MSG_GPS_STATUS:
         CHECK_PAYLOAD_SIZE(GPS_STATUS);
@@ -595,10 +589,8 @@ static bool mavlink_try_send_message(mavlink_channel_t chan, enum ap_message id,
 #endif
 
     case MSG_AHRS:
-#if HIL_MODE != HIL_MODE_ATTITUDE
         CHECK_PAYLOAD_SIZE(AHRS);
         send_ahrs(chan);
-#endif
         break;
 
     case MSG_SIMSTATE:
@@ -1666,13 +1658,12 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
                 init_home();
             }
 
-			#if HIL_MODE == HIL_MODE_SENSORS
 
 			// rad/sec
             Vector3f gyros;
-            gyros.x = (float)packet.xgyro / 1000.0;
-            gyros.y = (float)packet.ygyro / 1000.0;
-            gyros.z = (float)packet.zgyro / 1000.0;
+            gyros.x = packet.rollspeed;
+            gyros.y = packet.pitchspeed;
+            gyros.z = packet.yawspeed;
             // m/s/s
             Vector3f accels;
             accels.x = (float)packet.xacc / 1000.0;
@@ -1683,13 +1674,12 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
 
             imu.set_accel(accels);
 
-			#else
 
 			// set AHRS hil sensor
             ahrs.setHil(packet.roll,packet.pitch,packet.yaw,packet.rollspeed,
             packet.pitchspeed,packet.yawspeed);
 
-			#endif
+			
 
 			break;
 		}
