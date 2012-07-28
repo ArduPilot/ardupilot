@@ -52,13 +52,13 @@ const AP_Param::GroupInfo AP_InertialSensor_Oilpan::var_info[] PROGMEM = {
 /* ------ Public functions -------------------------------------------*/
 
 AP_InertialSensor_Oilpan::AP_InertialSensor_Oilpan( AP_ADC * adc ) :
-  _adc(adc),
   _x_high(2465),
   _x_low(1617),
   _y_high(2465),
   _y_low(1617),
   _z_high(2465),
-  _z_low(1617)
+  _z_low(1617),
+  _adc(adc)
 {
   _gyro.x = 0;
   _gyro.y = 0;
