@@ -870,7 +870,6 @@ void AP_InertialSensor_MPU6000::dmp_set_sensor_fusion_accel_gain(uint8_t gain)
 // Load initial memory values into DMP memory banks
 void AP_InertialSensor_MPU6000::dmp_load_mem()
 {
-	uint8_t dump;
 
 	for(int i = 0; i < 7; i++) {
 		register_write(MPUREG_BANK_SEL,i);      //MPUREG_BANK_SEL
@@ -878,10 +877,10 @@ void AP_InertialSensor_MPU6000::dmp_load_mem()
 			uint8_t start_addy = j * 0x10;
 			register_write(MPUREG_MEM_START_ADDR,start_addy);
 			digitalWrite(_cs_pin, LOW);
-			dump = SPI.transfer(MPUREG_MEM_R_W);
+			SPI.transfer(MPUREG_MEM_R_W);
 			for(int k = 0; k < 16; k++){
-				unsigned char byteToSend = pgm_read_byte(&(dmpMem[i][j][k]));
-				dump = SPI.transfer((uint8_t) byteToSend);
+				uint8_t byteToSend = pgm_read_byte(&(dmpMem[i][j][k]));
+				SPI.transfer((uint8_t) byteToSend);
 			}
 			digitalWrite(_cs_pin, HIGH);
 		}
@@ -892,28 +891,27 @@ void AP_InertialSensor_MPU6000::dmp_load_mem()
 		uint8_t start_addy = j * 0x10;
 		register_write(MPUREG_MEM_START_ADDR,start_addy);
 		digitalWrite(_cs_pin, LOW);
-		dump = SPI.transfer(MPUREG_MEM_R_W);
+		SPI.transfer(MPUREG_MEM_R_W);
 		for(int k = 0; k < 16; k++){
-			unsigned char byteToSend = pgm_read_byte(&(dmpMem[7][j][k]));
-			dump = SPI.transfer((uint8_t) byteToSend);
+			uint8_t byteToSend = pgm_read_byte(&(dmpMem[7][j][k]));
+			SPI.transfer((uint8_t) byteToSend);
 		}
 		digitalWrite(_cs_pin, HIGH);
 	}
 
 	register_write(MPUREG_MEM_START_ADDR,0x80);
 	digitalWrite(_cs_pin, LOW);
-	dump = SPI.transfer(MPUREG_MEM_R_W);
+	SPI.transfer(MPUREG_MEM_R_W);
 	for(int k = 0; k < 9; k++){
-		unsigned char byteToSend = pgm_read_byte(&(dmpMem[7][8][k]));
-		dump = SPI.transfer((uint8_t) byteToSend);
+		uint8_t byteToSend = pgm_read_byte(&(dmpMem[7][8][k]));
+		SPI.transfer((uint8_t) byteToSend);
 	}
 	digitalWrite(_cs_pin, HIGH);
 }
 
 // ========= DMP MEMORY ================================
 
-//dmpMem from dmpDefaultMantis.c
-unsigned char dmpMem[8][16][16] PROGMEM = {
+const uint8_t dmpMem[8][16][16] PROGMEM = {
   {
     {
       0xFB, 0x00, 0x00, 0x3E, 0x00, 0x0B, 0x00, 0x36, 0x00, 0x01, 0x00, 0x02, 0x00, 0x03, 0x00, 0x00    }
