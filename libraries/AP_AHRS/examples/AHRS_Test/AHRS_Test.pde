@@ -24,7 +24,7 @@
 #include <Filter.h>
 
 // uncomment this for a APM2 board
-//#define APM2_HARDWARE
+#define APM2_HARDWARE
 
 #define WITH_GPS 0
 
@@ -56,6 +56,7 @@ AP_IMU_INS imu(&ins);
 // choose which AHRS system to use
 AP_AHRS_DCM  ahrs(&imu, g_gps);
 //AP_AHRS_Quaternion  ahrs(&imu, g_gps);
+//AP_AHRS_MPU6000  ahrs(&imu, g_gps, &ins);		// only works with APM2
 
 AP_Baro_BMP085_HIL      barometer;
 
@@ -108,7 +109,9 @@ void setup(void)
 	imu.init_accel(delay, flash_leds);
 
 	compass.set_orientation(MAG_ORIENTATION);
-	if (compass.init()) {
+	ahrs.init();
+
+	if( compass.init() ) {
 		Serial.printf("Enabling compass\n");
 		ahrs.set_compass(&compass);
 	} else {
