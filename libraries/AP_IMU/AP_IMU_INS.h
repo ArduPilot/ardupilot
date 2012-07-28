@@ -63,6 +63,9 @@ public:
 	virtual float		ay()				{ return _sensor_cal[4]; }
 	virtual float		az()				{ return _sensor_cal[5]; }
 
+	virtual void		gx(const float v)		{ _sensor_cal[0] = v; }
+	virtual void		gy(const float v)		{ _sensor_cal[1] = v; }
+	virtual void		gz(const float v)		{ _sensor_cal[2] = v; }
 	virtual void		ax(const float v)		{ _sensor_cal[3] = v; }
 	virtual void		ay(const float v)		{ _sensor_cal[4] = v; }
 	virtual void		az(const float v)		{ _sensor_cal[5] = v; }
