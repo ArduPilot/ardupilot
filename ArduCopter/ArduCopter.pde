@@ -1589,7 +1589,9 @@ void update_yaw_mode(void)
 					nav_yaw = ahrs.yaw_sensor;
 				}
 			}else{
-				if(motors.armed() == false)
+				// reset target yaw to current yaw if the motors are disarmed or throttle is zero
+				// Note: we do not want to reset yaw if failsafe has been triggered even though throttle maybe zero (in fact, normally throttle is zero in failsafe)
+				if(motors.armed() == false || (g.rc_3.control_in == 0 && !failsafe) )
 					nav_yaw = ahrs.yaw_sensor;
 
 				g.rc_4.servo_out = get_stabilize_yaw(nav_yaw);
