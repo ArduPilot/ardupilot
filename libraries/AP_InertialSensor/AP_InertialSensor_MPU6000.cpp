@@ -879,7 +879,7 @@ void AP_InertialSensor_MPU6000::dmp_load_mem()
 			digitalWrite(_cs_pin, LOW);
 			SPI.transfer(MPUREG_MEM_R_W);
 			for(int k = 0; k < 16; k++){
-				uint8_t byteToSend = pgm_read_byte(&(dmpMem[i][j][k]));
+				uint8_t byteToSend = pgm_read_byte((const prog_char *)&(dmpMem[i][j][k]));
 				SPI.transfer((uint8_t) byteToSend);
 			}
 			digitalWrite(_cs_pin, HIGH);
@@ -893,7 +893,7 @@ void AP_InertialSensor_MPU6000::dmp_load_mem()
 		digitalWrite(_cs_pin, LOW);
 		SPI.transfer(MPUREG_MEM_R_W);
 		for(int k = 0; k < 16; k++){
-			uint8_t byteToSend = pgm_read_byte(&(dmpMem[7][j][k]));
+			uint8_t byteToSend = pgm_read_byte((const prog_char *)&(dmpMem[7][j][k]));
 			SPI.transfer((uint8_t) byteToSend);
 		}
 		digitalWrite(_cs_pin, HIGH);
@@ -903,7 +903,7 @@ void AP_InertialSensor_MPU6000::dmp_load_mem()
 	digitalWrite(_cs_pin, LOW);
 	SPI.transfer(MPUREG_MEM_R_W);
 	for(int k = 0; k < 9; k++){
-		uint8_t byteToSend = pgm_read_byte(&(dmpMem[7][8][k]));
+		uint8_t byteToSend = pgm_read_byte((const prog_char *)&(dmpMem[7][8][k]));
 		SPI.transfer((uint8_t) byteToSend);
 	}
 	digitalWrite(_cs_pin, HIGH);
