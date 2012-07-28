@@ -258,6 +258,9 @@ static void init_ardupilot()
 		//read_EEPROM_airstart_critical();
 #if HIL_MODE != HIL_MODE_ATTITUDE
 		imu.init(IMU::WARM_START, mavlink_delay, flash_leds, &timer_scheduler);
+
+		// initialise ahrs (may push imu calibration into the mpu6000 if using that device).
+		ahrs.init();
 		ahrs.set_fly_forward(true);
 #endif
 

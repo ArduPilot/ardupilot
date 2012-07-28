@@ -17,6 +17,7 @@
 // simulation. Remove the leading "/* and trailing "*/" to enable:
 
 //#define HIL_MODE            HIL_MODE_DISABLED
+//#define DMP_ENABLED ENABLED
 
 /*
 // HIL_MODE SELECTION
