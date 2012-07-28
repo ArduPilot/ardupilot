@@ -39,6 +39,9 @@ public:
 		_gyro_drift_limit = imu->get_gyro_drift_rate();
 	}
 
+	// empty init
+	virtual void init() {};
+
 	// Accessors
 	void		set_fly_forward(bool b) { _fly_forward = b; }
 	void		set_compass(Compass *compass) { _compass = compass; }
@@ -84,7 +87,7 @@ public:
 	// attitude
 	virtual Matrix3f get_dcm_matrix(void) = 0;
 
-	static const struct AP_Param::GroupInfo var_info[];
+	//static const struct AP_Param::GroupInfo var_info[];
 
 protected:
 	// pointer to compass object, if enabled
@@ -113,6 +116,7 @@ protected:
 
 #include <AP_AHRS_DCM.h>
 #include <AP_AHRS_Quaternion.h>
+#include <AP_AHRS_MPU6000.h>
 #include <AP_AHRS_HIL.h>
 
 #endif // AP_AHRS_H
