@@ -385,6 +385,8 @@ static void startup_ground(void)
 		#if CLI_ENABLED == ENABLED
 			report_imu();
 		#endif
+		// initialise ahrs (may push imu calibration into the mpu6000 if using that device).
+		ahrs.init();
 	#endif
 
 	// reset the leds
