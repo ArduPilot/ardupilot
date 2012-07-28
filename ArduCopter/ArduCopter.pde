@@ -262,7 +262,11 @@ static GPS         *g_gps_null;
 #if QUATERNION_ENABLE == ENABLED
  AP_AHRS_Quaternion ahrs(&imu, g_gps_null);
 #else
- AP_AHRS_DCM ahrs(&imu, g_gps);
+ #if DMP_ENABLED == ENABLED && CONFIG_APM_HARDWARE == APM_HARDWARE_APM2
+  AP_AHRS_MPU6000  ahrs(&imu, g_gps, &ins);		// only works with APM2
+ #else
+  AP_AHRS_DCM ahrs(&imu, g_gps);
+ #endif
 #endif
 
 AP_TimerProcess timer_scheduler;
@@ -2367,6 +2371,11 @@ static void tuning(){
 
 		case CH6_AHRS_YAW_KP:
 			ahrs._kp_yaw.set(tuning_value);
+			break;
+
+		case CH6_AHRS_KP:
+			ahrs._kp.set(tuning_value);
+			//ahrs.push_gains_to_dmp();
 			break;
 	}
 }
