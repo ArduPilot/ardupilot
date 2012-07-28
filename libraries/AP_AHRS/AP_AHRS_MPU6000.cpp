@@ -238,7 +238,6 @@ AP_AHRS_MPU6000::drift_correction_yaw(void)
 	float yaw_delta = 0;
 	bool new_value = false;
 	float yaw_error;
-	float yaw_deltat;
 	static float heading;
 
 	// we assume the DCM matrix is completely uncorrect for yaw
@@ -259,7 +258,6 @@ AP_AHRS_MPU6000::drift_correction_yaw(void)
 	// if we have new compass data
 	if( _compass && _compass->use_for_yaw() ) {
 		if (_compass->last_update != _compass_last_update) {
-			yaw_deltat = (_compass->last_update - _compass_last_update) * 1.0e-6;
 			_compass_last_update = _compass->last_update;
 			heading = _compass->calculate_heading(_dcm_matrix);
 			if( !_have_initial_yaw ) {
