@@ -48,6 +48,9 @@ public:
 	AP_Float	_kp;
 	AP_Float	gps_gain;
 
+	// for holding parameters
+	static const struct AP_Param::GroupInfo var_info[];
+
 private:
 	float		_ki;
 	float		_ki_yaw;

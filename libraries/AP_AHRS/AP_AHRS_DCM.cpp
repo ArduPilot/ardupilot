@@ -30,7 +30,7 @@
 #define SPIN_RATE_LIMIT 20
 
 // table of user settable parameters
-const AP_Param::GroupInfo AP_AHRS::var_info[] PROGMEM = {
+const AP_Param::GroupInfo AP_AHRS_DCM::var_info[] PROGMEM = {
     // @Param: YAW_P
     // @DisplayName: Yaw P
     // @Description: This controls the weight the compass has on the overall heading
