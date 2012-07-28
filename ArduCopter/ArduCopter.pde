@@ -2369,14 +2369,16 @@ static void tuning(){
 			g.pid_optflow_pitch.kD(tuning_value);
 			break;
 
+#if HIL_MODE != HIL_MODE_ATTITUDE					// do not allow modifying _kp or _kp_yaw gains in HIL mode
 		case CH6_AHRS_YAW_KP:
 			ahrs._kp_yaw.set(tuning_value);
 			break;
 
 		case CH6_AHRS_KP:
 			ahrs._kp.set(tuning_value);
-			//ahrs.push_gains_to_dmp();
 			break;
+#endif
+
 	}
 }
 
