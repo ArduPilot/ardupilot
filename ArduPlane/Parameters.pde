@@ -532,7 +532,7 @@ static const AP_Param::Info var_info[] PROGMEM = {
 
     // @Group: AHRS_
 	// @Path: ../libraries/AP_AHRS/AP_AHRS_DCM.cpp, ../libraries/AP_AHRS/AP_AHRS_Quaternion.cpp
-	GOBJECT(ahrs,					"AHRS_",    AP_AHRS),
+	GOBJECT(ahrs,					"AHRS_",    AP_AHRS_DCM),
 
     // @Group: ARSPD_
 	// @Path: ../libraries/AP_Airspeed/AP_Airspeed.cpp
