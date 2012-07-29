@@ -70,7 +70,7 @@ static const AP_Param::Info var_info[] PROGMEM = {
 	// @Description: Used in autoland for planes without airspeed sensors in hundredths of a degree
 	// @Units: centi-Degrees
 	// @User: Advanced
-	GSCALAR(land_pitch_cd,          "land_pitch_cd"),
+	GSCALAR(land_pitch_cd,          "LAND_PITCH_CD"),
 
     // @Param: XTRK_GAIN_SC
 	// @DisplayName: Crosstrack Gain
