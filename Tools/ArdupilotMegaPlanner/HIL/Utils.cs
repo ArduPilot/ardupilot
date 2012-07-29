@@ -7,10 +7,10 @@ namespace ArdupilotMega.HIL
 {
     public class Utils
     {
-        public const float rad2deg = (float)(180 / System.Math.PI);
-        public const float deg2rad = (float)(1.0 / rad2deg);
-        public const float ft2m = (float)(1.0 / 3.2808399);
-        public const float kts2fps = (float)1.68780986;
+        public const double rad2deg = (180 / System.Math.PI);
+        public const double deg2rad = (1.0 / rad2deg);
+        public const double ft2m = (1.0 / 3.2808399);
+        public const double kts2fps = 1.68780986;
 
         public static double sin(double val)
         {
@@ -19,6 +19,14 @@ namespace ArdupilotMega.HIL
         public static double cos(double val)
         {
             return System.Math.Cos(val);
+        }
+        public static double asin(double val)
+        {
+            return System.Math.Asin(val);
+        }
+        public static double atan2(double val, double val2)
+        {
+            return System.Math.Atan2(val, val2);
         }
         public static double radians(double val)
         {
@@ -97,7 +105,7 @@ namespace ArdupilotMega.HIL
             var R = Po * (sin(phi) * sin(psi) + cos(phi) * cos(psi) * sin(theta)) - Qo * (cos(psi) * sin(phi) - cos(phi) * sin(psi) * sin(theta)) + Ro * cos(phi) * cos(theta);
 
 
-//            P = 0;
+            //            P = 0;
             //Q = 0;
             //R = 0;
 
@@ -160,7 +168,7 @@ namespace ArdupilotMega.HIL
              * */
         }
 
-        public static Tuple<double, double, double> OGLtoBCBF(double phi, double theta, double psi,double x, double y, double z)
+        public static Tuple<double, double, double> OGLtoBCBF(double phi, double theta, double psi, double x, double y, double z)
         {
             double x_NED, y_NED, z_NED;
             double Cr, Cp, Cy;
@@ -231,21 +239,25 @@ namespace ArdupilotMega.HIL
             ﻿z = Z_plane;
         }
 
-        public static Tuple<double, double, double> BodyRatesToEarthRates(double roll, double pitch, double yaw, double pDeg, double qDeg, double rDeg)
+        public static Vector3 BodyRatesToEarthRates(Matrix3 dcm, Vector3 gyro)
         {
-            //convert the angular velocities from body frame to
+            //'''convert the angular velocities from body frame to
             //earth frame.
 
-            //all inputs and outputs are in degrees
+            //all inputs and outputs are in radians/s
 
-            //returns a tuple, (rollRate,pitchRate,yawRate)
+            //returns a earth rate vector
+            //'''
 
-            var p = radians(pDeg);
-            var q = radians(qDeg);
-            var r = radians(rDeg);
+            var p = gyro.x;
+            var q = gyro.y;
+            var r = gyro.z;
 
-            var phi = radians(roll);
-            var theta = radians(pitch);
+            double phi = 0;
+            double theta = 0;
+            double psi = 0;
+
+            dcm.to_euler(ref phi, ref theta, ref psi);
 
             var phiDot = p + tan(theta) * (q * sin(phi) + r * cos(phi));
             var thetaDot = q * cos(phi) - r * sin(phi);
@@ -253,7 +265,7 @@ namespace ArdupilotMega.HIL
                 theta += 1.0e-10;
             var psiDot = (q * sin(phi) + r * cos(phi)) / cos(theta);
 
-            return new Tuple<double, double, double>(degrees(phiDot), degrees(thetaDot), degrees(psiDot));
+            return new Vector3((phiDot), (thetaDot), (psiDot));
         }
     }
 }

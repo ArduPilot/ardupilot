@@ -50,11 +50,8 @@ namespace ArdupilotMega.GCSViews
 
         // gps buffer
         int gpsbufferindex = 0;
-#if !MAVLINK10
-        ArdupilotMega.MAVLink.mavlink_gps_raw_t[] gpsbuffer = new MAVLink.mavlink_gps_raw_t[5];
-#else
-        ArdupilotMega.MAVLink.mavlink_gps_raw_int_t[] gpsbuffer = new MAVLink.mavlink_gps_raw_int_t[5];
-#endif
+
+        sitl_fdm[] sitl_fdmbuffer = new sitl_fdm[5];
 
         // set defaults
         int rollgain = 10000;
@@ -92,29 +89,21 @@ namespace ArdupilotMega.GCSViews
         }
 
         [StructLayout(LayoutKind.Sequential, Pack = 1)]
-        public struct sitldata
+        public struct sitl_fdm
         {
-            public double lat;
-            public double lon;
-            public double alt;
-            public double heading;
-            public double v_north;
-            public double v_east;
-            public double ax;
-            public double ay;
-            public double az;
-            public double phidot;
-            public double thetadot;
-            public double psidot;
-            public double phi;
-            public double theta;
-            /// <summary>
-            /// heading
-            /// </summary>
-            public double psi;
-            public double vcas;
-            public int check;
-        }
+            // this is the packet sent by the simulator
+            // to the APM executable to update the simulator state
+            // All values are little-endian
+            public double latitude, longitude; // degrees
+            public double altitude;  // MSL
+            public double heading;   // degrees
+            public double speedN, speedE; // m/s
+            public double xAccel, yAccel, zAccel;       // m/s/s in body frame
+            public double rollRate, pitchRate, yawRate; // degrees/s/s in earth frame
+            public double rollDeg, pitchDeg, yawDeg;    // euler angles, degrees
+            public double airspeed; // m/s
+            public UInt32 magic; // 0x4c56414e
+        };
 
         const int AEROSIMRC_MAX_CHANNELS = 39;
 
@@ -633,6 +622,7 @@ namespace ArdupilotMega.GCSViews
                 if (comPort.BaseStream.IsOpen == false) { break; }
                 try
                 {
+
                     MainV2.cs.UpdateCurrentSettings(null); // when true this uses alot more cpu time
 
                     if ((DateTime.Now - simsendtime).TotalMilliseconds > 19)
@@ -715,13 +705,9 @@ namespace ArdupilotMega.GCSViews
             MavLink = new UdpClient("127.0.0.1", 14550);
         }
 
-        float oldax = 0, olday = 0, oldaz = 0;
         DateTime oldtime = DateTime.Now;
-#if MAVLINK10
-        ArdupilotMega.MAVLink.mavlink_gps_raw_int_t oldgps = new MAVLink.mavlink_gps_raw_int_t();
-#endif
 
-        ArdupilotMega.MAVLink.mavlink_attitude_t oldatt = new ArdupilotMega.MAVLink.mavlink_attitude_t();
+        sitl_fdm oldgps = new sitl_fdm();
 
         /// <summary>
         /// Recevied UDP packet, process and send required data to serial port.
@@ -731,19 +717,7 @@ namespace ArdupilotMega.GCSViews
         /// <param name="comPort">Com Port</param>
         private void RECVprocess(byte[] data, int receviedbytes, ArdupilotMega.MAVLink comPort)
         {
-#if MAVLINK10
-            ArdupilotMega.MAVLink.mavlink_hil_state_t hilstate = new ArdupilotMega.MAVLink.mavlink_hil_state_t();
-
-            ArdupilotMega.MAVLink.mavlink_gps_raw_int_t gps = new ArdupilotMega.MAVLink.mavlink_gps_raw_int_t();
-#else
-            ArdupilotMega.MAVLink.mavlink_gps_raw_t gps = new ArdupilotMega.MAVLink.mavlink_gps_raw_t();
-#endif
-            ArdupilotMega.MAVLink.mavlink_raw_imu_t imu = new ArdupilotMega.MAVLink.mavlink_raw_imu_t();
-
-
-            ArdupilotMega.MAVLink.mavlink_attitude_t att = new ArdupilotMega.MAVLink.mavlink_attitude_t();
-
-            ArdupilotMega.MAVLink.mavlink_vfr_hud_t asp = new ArdupilotMega.MAVLink.mavlink_vfr_hud_t();
+            sitl_fdm sitldata = new sitl_fdm();
 
             if (data[0] == 'D' && data[1] == 'A')
             {
@@ -774,114 +748,55 @@ namespace ArdupilotMega.GCSViews
 
                 if (xplane9)
                 {
-                    att.pitch = (DATA[18][0] * deg2rad);
-                    att.roll = (DATA[18][1] * deg2rad);
-                    att.yaw = (DATA[18][2] * deg2rad);
-                    att.pitchspeed = (DATA[17][0]);
-                    att.rollspeed = (DATA[17][1]);
-                    att.yawspeed = (DATA[17][2]);
+                    sitldata.pitchDeg = (DATA[18][0]);
+                    sitldata.rollDeg = (DATA[18][1]);
+                    sitldata.yawDeg = (DATA[18][2]);
+                    sitldata.pitchRate = (DATA[17][0] * rad2deg);
+                    sitldata.rollRate = (DATA[17][1] * rad2deg);
+                    sitldata.yawRate = (DATA[17][2] * rad2deg);
+
+                    sitldata.heading = ((float)DATA[19][2]);
                 }
                 else
                 {
-                    att.pitch = (DATA[17][0] * deg2rad);
-                    att.roll = (DATA[17][1] * deg2rad);
-                    att.yaw = (DATA[17][2] * deg2rad);
-                    att.pitchspeed = (DATA[16][0]);
-                    att.rollspeed = (DATA[16][1]);
-                    att.yawspeed = (DATA[16][2]);
+                    sitldata.pitchDeg = (DATA[17][0]);
+                    sitldata.rollDeg = (DATA[17][1]);
+                    sitldata.yawDeg = (DATA[17][2]);
+                    sitldata.pitchRate = (DATA[16][0] * rad2deg);
+                    sitldata.rollRate = (DATA[16][1] * rad2deg);
+                    sitldata.yawRate = (DATA[16][2] * rad2deg);
+
+                    sitldata.heading = (DATA[18][2]);
                 }
 
-                TimeSpan timediff = DateTime.Now - oldtime;
+                sitldata.airspeed = ((DATA[3][5] * .44704));
 
-                float pdiff = (float)((att.pitch - oldatt.pitch) / timediff.TotalSeconds);
-                float rdiff = (float)((att.roll - oldatt.roll) / timediff.TotalSeconds);
-                float ydiff = (float)((att.yaw - oldatt.yaw) / timediff.TotalSeconds);
+                sitldata.latitude = (DATA[20][0]);
+                sitldata.longitude = (DATA[20][1]);
+                sitldata.altitude = (DATA[20][2] * ft2m);
 
-                //                Console.WriteLine("{0:0.00000} {1:0.00000} {2:0.00000} \t {3:0.00000} {4:0.00000} {5:0.00000}", pdiff, rdiff, ydiff, DATA[17][0], DATA[17][1], DATA[17][2]);
+                sitldata.speedN = DATA[21][3];// (DATA[3][7] * 0.44704 * Math.Sin(sitldata.heading * deg2rad));
+                sitldata.speedE = -DATA[21][5];// (DATA[3][7] * 0.44704 * Math.Cos(sitldata.heading * deg2rad));
 
-                oldatt = att;
+        //        YLScsDrawing.Drawing3d.Vector3d accel3D = HIL.QuadCopter.RPY_to_XYZ(DATA[18][1], DATA[18][0], 0, -9.8); //DATA[18][2]
 
-                Int16 xgyro = Constrain(att.rollspeed * 1000.0, Int16.MinValue, Int16.MaxValue);
-                Int16 ygyro = Constrain(att.pitchspeed * 1000.0, Int16.MinValue, Int16.MaxValue);
-                Int16 zgyro = Constrain(att.yawspeed * 1000.0, Int16.MinValue, Int16.MaxValue);
+        //        float turnrad = (float)(((DATA[3][7] * 0.44704) * (DATA[3][7] * 0.44704) * 1.943844) / (float)(11.26 * Math.Tan(sitldata.rollDeg * deg2rad))) * ft2m;
 
-                oldtime = DateTime.Now;
+         //       float centripaccel = (float)((DATA[3][7] * 0.44704) * (DATA[3][7] * 0.44704)) / turnrad;
 
-                YLScsDrawing.Drawing3d.Vector3d accel3D = HIL.QuadCopter.RPY_to_XYZ(DATA[18][1], DATA[18][0], 0, -9.8); //DATA[18][2]
+          //      YLScsDrawing.Drawing3d.Vector3d cent3D = HIL.QuadCopter.RPY_to_XYZ(DATA[18][1] - 90, 0, 0, centripaccel);
 
-                float turnrad = (float)(((DATA[3][7] * 0.44704) * (DATA[3][7] * 0.44704) * 1.943844) / (float)(11.26 * Math.Tan(att.roll))) * ft2m;
+         //       accel3D -= cent3D;
 
-                float centripaccel = (float)((DATA[3][7] * 0.44704) * (DATA[3][7] * 0.44704)) / turnrad;
-
-                //Console.WriteLine("old {0} {1} {2}",accel3D.X,accel3D.Y,accel3D.Z);
-
-                YLScsDrawing.Drawing3d.Vector3d cent3D = HIL.QuadCopter.RPY_to_XYZ(DATA[18][1] - 90, 0, 0, centripaccel);
-
-                accel3D -= cent3D;
-
-                //Console.WriteLine("new {0} {1} {2}", accel3D.X, accel3D.Y, accel3D.Z);
-
-                oldax = DATA[4][5];
-                olday = DATA[4][6];
-                oldaz = DATA[4][4];
-
-                double head = DATA[18][2] - 90;
-#if MAVLINK10
-                imu.time_usec = ((ulong)DateTime.Now.ToBinary());
-#else
-                imu.usec = ((ulong)DateTime.Now.ToBinary());
-#endif
-                imu.xgyro = xgyro; // roll - yes
-                imu.xmag = (short)(Math.Sin(head * deg2rad) * 1000);
-                imu.ygyro = ygyro; // pitch - yes
-                imu.ymag = (short)(Math.Cos(head * deg2rad) * 1000);
-                imu.zgyro = zgyro;
-                imu.zmag = 0;
-
-                imu.xacc = (Int16)(accel3D.X * 1000); // pitch
-                imu.yacc = (Int16)(accel3D.Y * 1000); // roll
-                imu.zacc = (Int16)(accel3D.Z * 1000);
-
-                //Console.WriteLine("ax " + imu.xacc + " ay " + imu.yacc + " az " + imu.zacc);
-#if MAVLINK10
-                gps.alt = (int)(DATA[20][2] * ft2m * 1000);
-                gps.fix_type = 3;
-                if (xplane9)
-                {
-                    gps.cog = (ushort)((float)DATA[19][2]);
-                }
-                else
-                {
-                    gps.cog = (ushort)((float)DATA[18][2]);
-                }
-                gps.lat = (int)(DATA[20][0] * 1.0e7);
-                gps.lon = (int)(DATA[20][1] * 1.0e7);
-                gps.time_usec = ((ulong)0);
-                gps.vel = (ushort)(DATA[3][7] * 0.44704 * 100);
-#else
-                gps.alt = ((float)(DATA[20][2] * ft2m));
-                gps.fix_type = 3;
-                if (xplane9)
-                {
-                    gps.hdg = ((float)DATA[19][2]);
-                }
-                else
-                {
-                    gps.hdg = ((float)DATA[18][2]);
-                }
-                gps.lat = ((float)DATA[20][0]);
-                gps.lon = ((float)DATA[20][1]);
-                gps.usec = ((ulong)0);
-                gps.v = ((float)(DATA[3][7] * 0.44704));
-#endif
-
-                asp.airspeed = ((float)(DATA[3][5] * .0044704));
-
+            //    sitldata.xAccel = accel3D.X;
+           //     sitldata.yAccel = accel3D.Y;
+           //     sitldata.zAccel = accel3D.Z;
 
             }
             else if (receviedbytes == 0x64) // FG binary udp
             {
                 //FlightGear
+                /*
 
                 fgIMUData imudata2 = data.ByteArrayToStructureBigEndian<fgIMUData>(0);
 
@@ -930,196 +845,75 @@ namespace ArdupilotMega.GCSViews
                 //FileStream stream = File.OpenWrite("fgdata.txt");
                 //stream.Write(data, 0, receviedbytes);
                 //stream.Close();
+                 */
             }
             else if (receviedbytes == 662 || receviedbytes == 658) // 658 = 3.83   662 = 3.91
             {
+                
                 aeroin = data.ByteArrayToStructure<TDataFromAeroSimRC>(0);
 
-                att.pitch = (aeroin.Model_fPitch);
-                att.roll = (aeroin.Model_fRoll * -1);
-                att.yaw = (float)((aeroin.Model_fHeading));
+                sitldata.pitchDeg = (aeroin.Model_fPitch * rad2deg);
+                sitldata.rollDeg = (aeroin.Model_fRoll * -1 * rad2deg);
+                sitldata.yawDeg = ((aeroin.Model_fHeading * rad2deg));
 
-                //Console.WriteLine("degs r {0:0.000} p {1:0.000} y {2:0.000} rates {3:0.000} {4:0.000} {5:0.000}", att.roll * -rad2deg, att.pitch * rad2deg, att.yaw * rad2deg, aeroin.Model_fAngVelX * rad2deg, aeroin.Model_fAngVelY * rad2deg, aeroin.Model_fAngVelZ * rad2deg);
+                sitldata.pitchRate = aeroin.Model_fAngVel_Body_X * rad2deg;
+                sitldata.rollRate = aeroin.Model_fAngVel_Body_Y * rad2deg;
+                sitldata.yawRate = -aeroin.Model_fAngVel_Body_Z * rad2deg;
 
-                //Console.WriteLine("mine2 {0} {1} {2} ", answer.Item1 , answer.Item2 , answer.Item3 );
+                sitldata.xAccel = aeroin.Model_fAccel_Body_X; // pitch
+                sitldata.yAccel = aeroin.Model_fAccel_Body_Y; // roll
+                sitldata.zAccel = aeroin.Model_fAccel_Body_Z;
 
-                //StreamWriter SW = new StreamWriter("aerosim.txt",true);
-
-                //SW.WriteLine(aeroin.Model_fRoll + "," + aeroin.Model_fPitch + "," + aeroin.Model_fHeading + "," + aeroin.Model_fAngVelX + "," + aeroin.Model_fAngVelY + "," + aeroin.Model_fAngVelZ);
-
-                //SW.Close();
-
-                att.pitchspeed = (float)aeroin.Model_fAngVel_Body_X;
-                att.rollspeed = (float)aeroin.Model_fAngVel_Body_Y;
-                att.yawspeed = (float)-aeroin.Model_fAngVel_Body_Z;
+           //     YLScsDrawing.Drawing3d.Vector3d accel3D = HIL.QuadCopter.RPY_to_XYZ(att.roll, att.pitch, 0, -9.8); //DATA[18][2]
 
 
-#if MAVLINK10
-                imu.time_usec = ((ulong)DateTime.Now.ToBinary());
-#else
-                imu.usec = ((ulong)DateTime.Now.ToBinary());
-#endif
-                imu.xgyro = (short)(aeroin.Model_fAngVel_Body_X * 1000); // roll - yes
-                //imu.xmag = (short)(Math.Sin(head * deg2rad) * 1000);
-                imu.ygyro = (short)(aeroin.Model_fAngVel_Body_Y * 1000); // pitch - yes
-                //imu.ymag = (short)(Math.Cos(head * deg2rad) * 1000);
-                imu.zgyro = (short)(aeroin.Model_fAngVel_Body_Z * 1000);
-                //imu.zmag = 0;
+                sitldata.altitude = aeroin.Model_fPosZ;
+                sitldata.latitude = aeroin.Model_fLatitude;
+                sitldata.longitude = aeroin.Model_fLongitude;
 
-                YLScsDrawing.Drawing3d.Vector3d accel3D = HIL.QuadCopter.RPY_to_XYZ(att.roll, att.pitch, 0, -9.8); //DATA[18][2]
+                sitldata.speedN = aeroin.Model_fVelX;
+                sitldata.speedE = aeroin.Model_fVelY;
 
-                imu.xacc = (Int16)((accel3D.X + aeroin.Model_fAccel_Body_X) * 1000); // pitch
-                imu.yacc = (Int16)((accel3D.Y + aeroin.Model_fAccel_Body_Y) * 1000); // roll
-                imu.zacc = (Int16)((accel3D.Z + aeroin.Model_fAccel_Body_Z) * 1000);
-
-                //                Console.WriteLine("x {0} y {1} z {2}", imu.xacc, imu.yacc, imu.zacc);
-
-#if MAVLINK10
-                gps.alt = ((int)(aeroin.Model_fPosZ) * 1000);
-                gps.fix_type = 3;
-                gps.cog = (ushort)(Math.Atan2(aeroin.Model_fVelX, aeroin.Model_fVelY) * rad2deg * 100);
-                gps.lat = (int)(aeroin.Model_fLatitude * 1.0e7);
-                gps.lon = (int)(aeroin.Model_fLongitude * 1.0e7);
-                gps.time_usec = ((ulong)DateTime.Now.Ticks);
-                gps.vel = (ushort)(Math.Sqrt((aeroin.Model_fVelY * aeroin.Model_fVelY) + (aeroin.Model_fVelX * aeroin.Model_fVelX)) * 100);
-#else
-                gps.alt = ((float)(aeroin.Model_fPosZ));
-                gps.fix_type = 3;
-                gps.hdg = ((float)Math.Atan2(aeroin.Model_fVelX, aeroin.Model_fVelY) * rad2deg);
-                gps.lat = ((float)aeroin.Model_fLatitude);
-                gps.lon = ((float)aeroin.Model_fLongitude);
-                gps.usec = ((ulong)DateTime.Now.Ticks);
-                gps.v = ((float)Math.Sqrt((aeroin.Model_fVelY * aeroin.Model_fVelY) + (aeroin.Model_fVelX * aeroin.Model_fVelX)));
-
-#endif
                 float xvec = aeroin.Model_fVelY - aeroin.Model_fWindVelY;
                 float yvec = aeroin.Model_fVelX - aeroin.Model_fWindVelX;
 
-                asp.airspeed = ((float)Math.Sqrt((yvec * yvec) + (xvec * xvec)));
-
+                sitldata.airspeed = ((float)Math.Sqrt((yvec * yvec) + (xvec * xvec)));
             }
             else if (receviedbytes == 408)
             {
-
+                
                 FGNetFDM fdm = data.ByteArrayToStructureBigEndian<FGNetFDM>(0);
 
                 lastfdmdata = fdm;
 
-                att.roll = fdm.phi;
-                att.pitch = fdm.theta;
-                att.yaw = fdm.psi;
 
-#if MAVLINK10
-                imu.time_usec = ((ulong)DateTime.Now.ToBinary());
-#else
-                imu.usec = ((ulong)DateTime.Now.ToBinary());
-#endif
-                imu.xgyro = (short)(fdm.phidot * 1000); // roll - yes
-                //imu.xmag = (short)(Math.Sin(head * deg2rad) * 1000);
-                imu.ygyro = (short)(fdm.thetadot * 1000); // pitch - yes
-                //imu.ymag = (short)(Math.Cos(head * deg2rad) * 1000);
-                imu.zgyro = (short)(fdm.psidot * 1000);
-                imu.zmag = 0;
+                sitldata.rollDeg = fdm.phi * rad2deg;
+                sitldata.pitchDeg = fdm.theta * rad2deg;
+                sitldata.yawDeg = fdm.psi * rad2deg;
 
-                imu.xacc = (Int16)Math.Min(Int16.MaxValue, Math.Max(Int16.MinValue, (fdm.A_X_pilot * 9808 / 32.2))); // pitch
-                imu.yacc = (Int16)Math.Min(Int16.MaxValue, Math.Max(Int16.MinValue, (fdm.A_Y_pilot * 9808 / 32.2))); // roll
-                imu.zacc = (Int16)Math.Min(Int16.MaxValue, Math.Max(Int16.MinValue, (fdm.A_Z_pilot / 32.2 * 9808)));
 
-                //Console.WriteLine("ax " + imu.xacc + " ay " + imu.yacc + " az " + imu.zacc);
-#if MAVLINK10
-                gps.alt = ((int)(fdm.altitude * 1000));
-                gps.fix_type = 3;
-                gps.cog = (ushort)((((Math.Atan2(fdm.v_east, fdm.v_north) * rad2deg) + 360) % 360) * 100);
-                gps.lat = (int)(fdm.latitude * rad2deg * 1.0e7);
-                gps.lon = (int)(fdm.longitude * rad2deg * 1.0e7);
-                gps.time_usec = ((ulong)DateTime.Now.Ticks);
-                gps.vel = (ushort)(Math.Sqrt((fdm.v_north * fdm.v_north) + (fdm.v_east * fdm.v_east)) * ft2m * 100);
-#else
-                gps.alt = ((float)(fdm.altitude));
-                gps.fix_type = 3;
-                gps.hdg = (float)(((Math.Atan2(fdm.v_east, fdm.v_north) * rad2deg) + 360) % 360);
-                //Console.WriteLine(gps.hdg);
-                gps.lat = ((float)fdm.latitude * rad2deg);
-                gps.lon = ((float)fdm.longitude * rad2deg);
-                gps.usec = ((ulong)DateTime.Now.Ticks);
-                gps.v = ((float)Math.Sqrt((fdm.v_north * fdm.v_north) + (fdm.v_east * fdm.v_east)) * ft2m);
+                sitldata.rollRate = fdm.phidot * rad2deg;
+                sitldata.pitchRate = fdm.thetadot * rad2deg;
+                sitldata.yawRate = fdm.psidot * rad2deg;
 
-#endif
-                asp.airspeed = fdm.vcas * 0.5144444f;//  knots to m/s
+                sitldata.xAccel = (fdm.A_X_pilot * 9.808 / 32.2); // pitch
+                sitldata.yAccel =  (fdm.A_Y_pilot * 9.808 / 32.2); // roll
+                sitldata.zAccel =  (fdm.A_Z_pilot / 32.2 * 9.808);
+
+                sitldata.altitude = (fdm.altitude);
+                sitldata.latitude = (fdm.latitude * rad2deg);
+                sitldata.longitude = (fdm.longitude * rad2deg);
+
+                sitldata.speedN = fdm.v_east * ft2m;
+                sitldata.speedE = fdm.v_north * ft2m;
+
+                sitldata.airspeed = fdm.vcas * 0.5144444f;//  knots to m/s
+                 
             }
             else
             {
-                //FlightGear - old style udp
-
-                DATA[20] = new float[8];
-
-                DATA[18] = new float[8];
-
-                DATA[19] = new float[8];
-
-                DATA[3] = new float[8];
-
-                // this text line is defined from ardupilot.xml
-                string telem = Encoding.ASCII.GetString(data, 0, data.Length);
-
-                try
-                {
-                    // should convert this to regex.... or just leave it.
-                    int oldpos = 0;
-                    int pos = telem.IndexOf(",");
-                    DATA[20][0] = float.Parse(telem.Substring(oldpos, pos - 1), new System.Globalization.CultureInfo("en-US"));
-
-                    oldpos = pos;
-                    pos = telem.IndexOf(",", pos + 1);
-                    DATA[20][1] = float.Parse(telem.Substring(oldpos + 1, pos - 1 - oldpos), new System.Globalization.CultureInfo("en-US"));
-
-                    oldpos = pos;
-                    pos = telem.IndexOf(",", pos + 1);
-                    DATA[20][2] = float.Parse(telem.Substring(oldpos + 1, pos - 1 - oldpos), new System.Globalization.CultureInfo("en-US"));
-
-                    oldpos = pos;
-                    pos = telem.IndexOf(",", pos + 1);
-                    DATA[18][1] = float.Parse(telem.Substring(oldpos + 1, pos - 1 - oldpos), new System.Globalization.CultureInfo("en-US"));
-
-                    oldpos = pos;
-                    pos = telem.IndexOf(",", pos + 1);
-                    DATA[18][0] = float.Parse(telem.Substring(oldpos + 1, pos - 1 - oldpos), new System.Globalization.CultureInfo("en-US"));
-
-                    oldpos = pos;
-                    pos = telem.IndexOf(",", pos + 1);
-                    DATA[19][2] = float.Parse(telem.Substring(oldpos + 1, pos - 1 - oldpos), new System.Globalization.CultureInfo("en-US"));
-
-                    oldpos = pos;
-                    pos = telem.IndexOf("\n", pos + 1);
-                    DATA[3][6] = float.Parse(telem.Substring(oldpos + 1, pos - 1 - oldpos), new System.Globalization.CultureInfo("en-US"));
-                    DATA[3][7] = DATA[3][6];
-                }
-                catch (Exception) { }
-
-                chkSensor.Checked = false;
-
-                att.pitch = (DATA[18][0]);
-                att.roll = (DATA[18][1]);
-                att.yaw = (DATA[19][2]);
-#if MAVLINK10
-                gps.alt = ((int)(DATA[20][2] * ft2m * 1000));
-                gps.fix_type = 3;
-                gps.cog = (ushort)(DATA[18][2] * 100);
-                gps.lat = (int)(DATA[20][0] * 1.0e7);
-                gps.lon = (int)(DATA[20][1] * 1.0e7);
-                gps.time_usec = ((ulong)0);
-                gps.vel = (ushort)((DATA[3][7] * 0.44704 * 100));
-#else
-                gps.alt = ((float)(DATA[20][2] * ft2m));
-                gps.fix_type = 3;
-                gps.hdg = ((float)DATA[18][2]);
-                gps.lat = ((float)DATA[20][0]);
-                gps.lon = ((float)DATA[20][1]);
-                gps.usec = ((ulong)0);
-                gps.v = ((float)(DATA[3][7] * 0.44704));
-#endif
-
-                asp.airspeed = ((float)(DATA[3][6] * 0.44704));
+                log.Info("Bad Udp Packet " + receviedbytes);
+                return;
             }
 
             // write arduimu to ardupilot
@@ -1168,53 +962,14 @@ namespace ArdupilotMega.GCSViews
 
             if (RAD_softXplanes.Checked && chkSensor.Checked)
             {
-                sitldata sitlout = new sitldata();
+                sitldata.magic = (int)0x4c56414e;
 
-                ArdupilotMega.HIL.Utils.FLIGHTtoBCBF(ref att.pitchspeed, ref att.rollspeed, ref att.yawspeed, DATA[19][0] * deg2rad, DATA[19][1] * deg2rad);
-
-                //Console.WriteLine("{0:0.00000} {1:0.00000} {2:0.00000} \t {3:0.00000} {4:0.00000} {5:0.00000}", att.pitchspeed, att.rollspeed, att.yawspeed, DATA[17][0], DATA[17][1], DATA[17][2]);
-
-                Tuple<double, double, double> ans = ArdupilotMega.HIL.Utils.OGLtoBCBF(att.pitch, att.roll, att.yaw, 0, 0, 9.8);
-
-                //Console.WriteLine("acc {0:0.00000} {1:0.00000} {2:0.00000} \t {3:0.00000} {4:0.00000} {5:0.00000}", ans.Item1, ans.Item2, ans.Item3, accel3D.X, accel3D.Y, accel3D.Z);
-
-                sitlout.alt = gps.alt;
-                sitlout.lat = gps.lat;
-                sitlout.lon = gps.lon;
-#if !MAVLINK10
-                sitlout.heading = gps.hdg;
-#else
-                sitlout.heading = gps.cog;
-#endif
-
-                sitlout.v_north = DATA[21][4];
-                sitlout.v_east = DATA[21][5];
-
-                // correct accel
-                sitlout.ax = -ans.Item2; // pitch
-                sitlout.ay = -ans.Item1; // roll
-                sitlout.az = ans.Item3; // yaw
-
-                sitlout.phidot = -0.5;// att.pitchspeed;
-                //                sitlout.thetadot = att.rollspeed;
-                //sitlout.psidot = att.yawspeed;
-
-                sitlout.phi = att.roll * rad2deg;
-                sitlout.theta = att.pitch * rad2deg;
-                sitlout.psi = att.yaw * rad2deg;
-
-                sitlout.vcas = asp.airspeed;
-
-                sitlout.check = (int)0x4c56414e;
-
-                byte[] sendme = StructureToByteArray(sitlout);
+                byte[] sendme = StructureToByteArray(sitldata);
 
                 SITLSEND.Send(sendme, sendme.Length);
-
+                
                 return;
             }
-
-#if MAVLINK10
 
             TimeSpan gpsspan = DateTime.Now - lastgpsupdate;
 
@@ -1224,12 +979,12 @@ namespace ArdupilotMega.GCSViews
                 lastgpsupdate = DateTime.Now;
 
                 // save current fix = 3
-                gpsbuffer[gpsbufferindex % gpsbuffer.Length] = gps;
+                sitl_fdmbuffer[gpsbufferindex % sitl_fdmbuffer.Length] = sitldata;
 
                 //                Console.WriteLine((gpsbufferindex % gpsbuffer.Length) + " " + ((gpsbufferindex + (gpsbuffer.Length - 1)) % gpsbuffer.Length));
 
                 // return buffer index + 5 = (3 + 5) = 8 % 6 = 2
-                oldgps = gpsbuffer[(gpsbufferindex + (gpsbuffer.Length - 1)) % gpsbuffer.Length];
+                oldgps = sitl_fdmbuffer[(gpsbufferindex + (sitl_fdmbuffer.Length - 1)) % sitl_fdmbuffer.Length];
 
                 //comPort.sendPacket(oldgps);
 
@@ -1237,72 +992,42 @@ namespace ArdupilotMega.GCSViews
             }
 
 
-            hilstate.alt = oldgps.alt;
-            hilstate.lat = oldgps.lat;
-            hilstate.lon = oldgps.lon;
-            hilstate.pitch = att.pitch;
-            hilstate.pitchspeed = att.pitchspeed;
-            hilstate.roll = att.roll;
-            hilstate.rollspeed = att.rollspeed;
-            hilstate.time_usec = gps.time_usec;
-            hilstate.vx = (short)(gps.vel * Math.Sin(gps.cog * deg2rad));
-            hilstate.vy = (short)(gps.vel * Math.Cos(gps.cog * deg2rad));
-            hilstate.vz = 0;
-            hilstate.xacc = imu.xacc;
-            hilstate.yacc = imu.yacc;
-            hilstate.yaw = att.yaw;
-            hilstate.yawspeed = att.yawspeed;
-            hilstate.zacc = imu.zacc;
+            MAVLink.mavlink_hil_state_t hilstate = new MAVLink.mavlink_hil_state_t();
+
+            hilstate.time_usec = (UInt64)DateTime.Now.Ticks; // microsec
+            
+            hilstate.lat = (int)(oldgps.latitude * 1e7); // * 1E7
+            hilstate.lon = (int)(oldgps.longitude * 1e7); // * 1E7
+            hilstate.alt = (int)(oldgps.altitude * 1000); // mm
+
+         //   Console.WriteLine(hilstate.alt);
+
+            hilstate.pitch = (float)sitldata.pitchDeg * deg2rad; // (rad)
+            hilstate.pitchspeed = (float)sitldata.pitchRate * rad2deg; // (rad/s)
+            hilstate.roll = (float)sitldata.rollDeg * deg2rad; // (rad)
+            hilstate.rollspeed = (float)sitldata.rollRate * deg2rad; // (rad/s)
+            hilstate.yaw = (float)sitldata.yawDeg * deg2rad; // (rad)
+            hilstate.yawspeed = (float)sitldata.yawRate * deg2rad; // (rad/s)
+            
+            hilstate.vx = (short)(sitldata.speedN * 100); // m/s * 100
+            hilstate.vy = (short)(sitldata.speedE * 100); // m/s * 100
+            hilstate.vz = 0; // m/s * 100
+
+            hilstate.xacc = (short)(sitldata.xAccel * 1000); // (mg)
+            hilstate.yacc = (short)(sitldata.yAccel * 1000); // (mg)
+            hilstate.zacc = (short)(sitldata.zAccel * 1000); // (mg)
 
             comPort.sendPacket(hilstate);
 
             //            comPort.sendPacket(oldgps);
 
-            comPort.sendPacket(asp);
-
-#else
-
-            if (chkSensor.Checked == false) // attitude
-            {
-                comPort.sendPacket(att);
-
-                comPort.sendPacket(asp);
-            }
-            else // raw imu
-            {
-                // imudata
-
-                comPort.sendPacket(imu);
-
-#endif
+            comPort.sendPacket(new MAVLink.mavlink_vfr_hud_t() { airspeed = (float)sitldata.airspeed } );
 
             MAVLink.mavlink_raw_pressure_t pres = new MAVLink.mavlink_raw_pressure_t();
-            double calc = (101325 * Math.Pow(1 - 2.25577 * Math.Pow(10, -5) * gps.alt, 5.25588)); // updated from valid gps
+            double calc = (101325 * Math.Pow(1 - 2.25577 * Math.Pow(10, -5) * sitldata.altitude, 5.25588)); // updated from valid gps
             pres.press_diff1 = (short)(int)(calc - 101325); // 0 alt is 0 pa
 
-            comPort.sendPacket(pres);
-#if !MAVLINK10
-                comPort.sendPacket(asp);
-            }
-
-            TimeSpan gpsspan = DateTime.Now - lastgpsupdate;
-
-            // add gps delay
-            if (gpsspan.TotalMilliseconds >= GPS_rate)
-            {
-                lastgpsupdate = DateTime.Now;
-
-                // save current fix = 3
-                gpsbuffer[gpsbufferindex % gpsbuffer.Length] = gps;
-
-//                Console.WriteLine((gpsbufferindex % gpsbuffer.Length) + " " + ((gpsbufferindex + (gpsbuffer.Length - 1)) % gpsbuffer.Length));
-
-                // return buffer index + 5 = (3 + 5) = 8 % 6 = 2
-                comPort.sendPacket(gpsbuffer[(gpsbufferindex + (gpsbuffer.Length - 1)) % gpsbuffer.Length]);
-
-                gpsbufferindex++;
-            }
-#endif
+           // comPort.sendPacket(pres);
         }
 
         HIL.QuadCopter quad = new HIL.QuadCopter();
@@ -1395,9 +1120,9 @@ namespace ArdupilotMega.GCSViews
                 Array.Copy(BitConverter.GetBytes((double)(quad.longitude)), 0, FlightGear, 40, 8);
                 Array.Copy(BitConverter.GetBytes((double)(quad.altitude * 1 / ft2m)), 0, FlightGear, 48, 8);
                 Array.Copy(BitConverter.GetBytes((double)((quad.altitude - quad.ground_level) * 1 / ft2m)), 0, FlightGear, 56, 8);
-                Array.Copy(BitConverter.GetBytes((double)(quad.roll)), 0, FlightGear, 64, 8);
-                Array.Copy(BitConverter.GetBytes((double)(quad.pitch)), 0, FlightGear, 72, 8);
-                Array.Copy(BitConverter.GetBytes((double)(quad.yaw)), 0, FlightGear, 80, 8);
+                Array.Copy(BitConverter.GetBytes((double)(quad.roll * rad2deg)), 0, FlightGear, 64, 8);
+                Array.Copy(BitConverter.GetBytes((double)(quad.pitch * rad2deg)), 0, FlightGear, 72, 8);
+                Array.Copy(BitConverter.GetBytes((double)(quad.yaw * rad2deg)), 0, FlightGear, 80, 8);
 
                 if (RAD_softFlightGear.Checked || RAD_softXplanes.Checked)
                 {

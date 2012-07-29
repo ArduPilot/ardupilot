@@ -53,6 +53,13 @@ namespace ArdupilotMega.Controls
             while (this.IsHandleCreated == false)
                 System.Threading.Thread.Sleep(1);
 
+            this.Invoke((MethodInvoker)delegate
+         {
+             // if this windows isnt the current active windows, popups inherit the wrong parent.
+             this.Focus();
+             Application.DoEvents();
+         });
+
             try
             {
                 if (this.DoWork != null) this.DoWork(this, doWorkArgs);
@@ -215,15 +222,22 @@ namespace ArdupilotMega.Controls
         /// <param name="e"></param>
         private void timer1_Tick(object sender, EventArgs e)
         {
+            // this value is being currupted - not thread safe
+            int pgv = _progress;
+
             lblProgressMessage.Text = _status;
-            if (_progress == -1)
+            if (pgv == -1)
             {
                 this.progressBar1.Style = ProgressBarStyle.Marquee;
             }
             else
             {
                 this.progressBar1.Style = ProgressBarStyle.Continuous;
-                this.progressBar1.Value = _progress;
+                try
+                {
+                    this.progressBar1.Value = pgv;
+                }
+                catch { } // clean fail. and ignore, chances are we will hit this again in the next 100 ms
             }
         }
 

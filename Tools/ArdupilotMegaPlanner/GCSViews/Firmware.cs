@@ -546,12 +546,12 @@ namespace ArdupilotMega.GCSViews
                 {
                     try
                     {
-                        Console.Write(((SerialPort)port).ReadExisting().Replace("\0"," "));
+                      //  Console.Write(((SerialPort)port).ReadExisting().Replace("\0"," "));
                     }
                     catch { }
                     System.Threading.Thread.Sleep(1000);
                     progress.Value = (int)Math.Min(((DateTime.Now - startwait).TotalSeconds / 17 * 100),100);
-                    progress.Refresh();
+                    Application.DoEvents();
                 }
                 try
                 {

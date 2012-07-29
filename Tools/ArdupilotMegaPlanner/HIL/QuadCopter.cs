@@ -7,6 +7,7 @@ using log4net;
 using YLScsDrawing.Drawing3d;
 using ArdupilotMega.HIL;
 
+
 namespace ArdupilotMega.HIL
 {
     public class Motor : Utils
@@ -116,7 +117,7 @@ namespace ArdupilotMega.HIL
         double terminal_rotation_rate;
         Motor[] motors;
 
-        Vector3d old_position;
+        Vector3 old_position;
 
 
         //# scaling from total motor power to Newtons. Allows the copter
@@ -136,7 +137,7 @@ namespace ArdupilotMega.HIL
             motor_speed = new double[motors.Length];
             hover_throttle = 0.37;
             terminal_velocity = 30.0;
-            terminal_rotation_rate = 4 * 360.0;
+            terminal_rotation_rate = 4 * 360.0 * deg2rad;
 
             thrust_scale = (mass * gravity) / (motors.Length * hover_throttle);
 
@@ -145,57 +146,27 @@ namespace ArdupilotMega.HIL
 
         double scale_rc(int sn, float servo, float min, float max)
         {
-            float min_pwm = 1000;
-            float max_pwm = 2000;
-            //'''scale a PWM value'''       # default to servo range of 1000 to 2000  
-            if (MainV2.comPort.param.Count > 0)
-            {
-                min_pwm = int.Parse(MainV2.comPort.param["RC3_MIN"].ToString());
-                max_pwm = int.Parse(MainV2.comPort.param["RC3_MAX"].ToString());
-            }
-
-            float p = (servo - min_pwm) / (max_pwm - min_pwm);
-
-            float v = min + p * (max - min);
-
-            if (v < min)
-                v = min;
-            if (v > max)
-                v = max;
-            return v;
+            return ((servo - 1000) / 1000.0);
         }
+
+
 
         public void update(ref double[] servos, ArdupilotMega.GCSViews.Simulation.FGNetFDM fdm)
         {
             for (int i = 0; i < servos.Length; i++)
             {
-                if (servos[i] <= 0.0)
+                var servo = servos[(int)self.motors[i].servo - 1];
+                if (servo <= 0.0)
                 {
                     motor_speed[i] = 0;
                 }
                 else
                 {
-                    motor_speed[i] = scale_rc(i, (float)servos[i], 0.0f, 1.0f);
+                    motor_speed[i] = scale_rc(i, (float)servo, 0.0f, 1.0f);
                     //servos[i] = motor_speed[i];
                 }
             }
             double[] m = motor_speed;
-
-            /*
-            roll = 0;
-            pitch = 0;
-            yaw = 0;
-            roll_rate = 0;
-            pitch_rate = 0;
-            yaw_rate = 0;
-            */
-
-            //            Console.WriteLine("\nin m {0:0.000000} {1:0.000000} {2:0.000000} {3:0.000000}", m[0], m[1], m[2], m[3]);
-            //            Console.WriteLine("in vel {0:0.000000} {1:0.000000} {2:0.000000}", velocity.X, velocity.Y, velocity.Z);
-            //Console.WriteLine("in r {0:0.000000} p {1:0.000000} y {2:0.000000}    - r {3:0.000000} p {4:0.000000} y {5:0.000000}", roll, pitch, yaw, roll_rate, pitch_rate, yaw_rate);
-
-
-            //            m[0] *= 0.5;
 
             //# how much time has passed?
             DateTime t = DateTime.Now;
@@ -208,218 +179,133 @@ namespace ArdupilotMega.HIL
             }
 
             // rotational acceleration, in degrees/s/s, in body frame
-            double roll_accel = 0.0;
-            double pitch_accel = 0.0;
-            double yaw_accel = 0.0;
+            Vector3 rot_accel = new Vector3(0, 0, 0);
             double thrust = 0.0;
 
             foreach (var i in range((self.motors.Length)))
             {
-                roll_accel += (-5000.0 * deg2rad) * sin(radians(self.motors[i].angle)) * m[i];
-                pitch_accel += (5000.0 * deg2rad) * cos(radians(self.motors[i].angle)) * m[i];
+                rot_accel.x += -radians(5000.0) * sin(radians(self.motors[i].angle)) * m[i];
+                rot_accel.y += radians(5000.0) * cos(radians(self.motors[i].angle)) * m[i];
                 if (self.motors[i].clockwise)
                 {
-                    yaw_accel -= m[i] * 400.0 * deg2rad;
+                    rot_accel.z -= m[i] * radians(400.0);
                 }
                 else
                 {
-                    yaw_accel += m[i] * 400.0 * deg2rad;
+                    rot_accel.z += m[i] * radians(400.0);
                 }
                 thrust += m[i] * self.thrust_scale; // newtons
             }
 
-            // rotational resistance
-            roll_accel -= (self.pDeg / self.terminal_rotation_rate) * (5000.0 * deg2rad);
-            pitch_accel -= (self.qDeg / self.terminal_rotation_rate) * (5000.0 * deg2rad);
-            yaw_accel -= (self.rDeg / self.terminal_rotation_rate) * (400.0 * deg2rad);
+            // rotational air resistance
+            rot_accel.x -= self.gyro.x * radians(5000.0) / self.terminal_rotation_rate;
+            rot_accel.y -= self.gyro.y * radians(5000.0) / self.terminal_rotation_rate;
+            rot_accel.z -= self.gyro.z * radians(400.0) / self.terminal_rotation_rate;
 
-            //Console.WriteLine("roll {0} {1} {2}", roll_accel, roll_rate, roll);
+          //  Console.WriteLine("rot_accel " + rot_accel.ToString());
 
-            //# update rotational rates in body frame
-            self.pDeg += roll_accel * delta_time.TotalSeconds;
-            self.qDeg += pitch_accel * delta_time.TotalSeconds;
-            self.rDeg += yaw_accel * delta_time.TotalSeconds;
+            // update rotational rates in body frame
+            self.gyro += rot_accel * delta_time.TotalSeconds;
 
-            // Console.WriteLine("roll {0} {1} {2}", roll_accel, roll_rate, roll);
+         //   Console.WriteLine("gyro " + gyro.ToString());
 
-            // calculate rates in earth frame
+            // update attitude
+            self.dcm.rotate(self.gyro * delta_time.TotalSeconds);
+            self.dcm.normalize();
 
-            var answer = BodyRatesToEarthRates(self.roll, self.pitch, self.yaw,
-                                                     self.pDeg, self.qDeg, self.rDeg);
-            self.roll_rate = answer.Item1;
-            self.pitch_rate = answer.Item2;
-            self.yaw_rate = answer.Item3;
 
-           // self.roll_rate = pDeg;
-           // self.pitch_rate = qDeg;
-           // self.yaw_rate = rDeg;
+            // air resistance
+            Vector3 air_resistance = -self.velocity * (self.gravity / self.terminal_velocity);
 
-            //# update rotation
-            roll += roll_rate * delta_time.TotalSeconds;
-            pitch += pitch_rate * delta_time.TotalSeconds;
-            yaw += yaw_rate * delta_time.TotalSeconds;
+            accel_body = new Vector3(0, 0, -thrust / self.mass);
+            Vector3 accel_earth = self.dcm * accel_body;
+            accel_earth += new Vector3(0, 0, self.gravity);
+            accel_earth += air_resistance;
+            // add in some wind
+            //  accel_earth += self.wind.accel(self.velocity);
 
-            //            Console.WriteLine("roll {0} {1} {2}", roll_accel, roll_rate, roll);
+            // if we're on the ground, then our vertical acceleration is limited
+            // to zero. This effectively adds the force of the ground on the aircraft
+            if (self.on_ground() && accel_earth.z > 0)
+                accel_earth.z = 0;
 
-            //Console.WriteLine("r {0:0.0} p {1:0.0} y {2:0.0}    - r {3:0.0} p {4:0.0} y {5:0.0}  ms {6:0.000}", roll, pitch, yaw, roll_rate, pitch_rate, yaw_rate, delta_time.TotalSeconds);
+            // work out acceleration as seen by the accelerometers. It sees the kinematic
+            // acceleration (ie. real movement), plus gravity
+            self.accel_body = self.dcm.transposed() * (accel_earth + new Vector3(0, 0, -self.gravity));
 
-            //# air resistance
-            Vector3d air_resistance = -velocity * (gravity / terminal_velocity);
+            // new velocity vector
+            self.velocity += accel_earth * delta_time.TotalSeconds;
 
-            //# normalise rotations
-            normalise();
+            if (double.IsNaN(velocity.x) || double.IsNaN(velocity.y) || double.IsNaN(velocity.z))
+                velocity = new Vector3();
 
-            double accel = thrust / mass;
+            // new position vector
+            old_position = self.position.copy();
+            self.position += self.velocity * delta_time.TotalSeconds;
 
-            //Console.WriteLine("in {0:0.000000} {1:0.000000} {2:0.000000} {3:0.000000}", roll, pitch, yaw, accel);
-
-            Vector3d accel3D = RPY_to_XYZ(roll, pitch, yaw, accel);
-            //Console.WriteLine("accel3D " + accel3D.X + " " + accel3D.Y + " " + accel3D.Z);
-            accel3D += new Vector3d(0, 0, -gravity);
-            accel3D += air_resistance;
-
-            Random rand = new Random();
-
-            //velocity.X += .02 + rand.NextDouble() * .03;
-            //velocity.Y += .02 + rand.NextDouble() * .03;
-
-            //# new velocity vector
-            velocity += accel3D * delta_time.TotalSeconds;
-            this.accel = accel3D;
-
-            //# new position vector
-            old_position = new Vector3d(position);
-            position += velocity * delta_time.TotalSeconds;
-
-            //            Console.WriteLine(fdm.agl + " "+ fdm.altitude);
-
-            //Console.WriteLine("Z {0} halt {1}  < gl {2} fh {3}" ,position.Z , home_altitude , ground_level , frame_height);
-
-            if (home_latitude == 0 || home_latitude > 90 || home_latitude < -90 || home_longitude == 0)
+            if (home_latitude == 0)
             {
-                this.home_latitude = fdm.latitude * rad2deg;
-                this.home_longitude = fdm.longitude * rad2deg;
-                this.home_altitude = fdm.altitude * ft2m;
-                this.ground_level = this.home_altitude;
-
-                this.altitude = fdm.altitude * ft2m;
-                this.latitude = fdm.latitude * rad2deg;
-                this.longitude = fdm.longitude * rad2deg;
+                home_latitude = fdm.latitude * rad2deg;
+                home_longitude = fdm.longitude * rad2deg;
+                home_altitude = altitude;
             }
 
-            //# constrain height to the ground
-            if (position.Z + home_altitude < ground_level + frame_height)
+            // constrain height to the ground
+            if (self.on_ground())
             {
-                if (old_position.Z + home_altitude > ground_level + frame_height)
-                {
-                    //                    Console.WriteLine("Hit ground at {0} m/s", (-velocity.Z));
-                }
-                velocity = new Vector3d(0, 0, 0);
-                roll_rate = 0;
-                pitch_rate = 0;
-                yaw_rate = 0;
-                roll = 0;
-                pitch = 0;
-                position = new Vector3d(position.X, position.Y,
-                                               ground_level + frame_height - home_altitude + 0);
-                // Console.WriteLine("here " + position.Z);
+                if (!self.on_ground(old_position))
+                    Console.WriteLine("Hit ground at {0} m/s", (self.velocity.z));
+
+                self.velocity = new Vector3(0, 0, 0);
+                // zero roll/pitch, but keep yaw
+                double r = 0;
+                double p = 0;
+                double y = 0;
+                self.dcm.to_euler(ref r, ref p, ref y);
+                self.dcm.from_euler(0, 0, y);
+
+                self.position = new Vector3(self.position.x, self.position.y,
+                                        -(self.ground_level + self.frame_height - self.home_altitude));
             }
 
-            //# update lat/lon/altitude
-            update_position();
+            // update lat/lon/altitude
+            self.update_position(delta_time.TotalSeconds);
 
             // send to apm
-#if MAVLINK10
-            ArdupilotMega.MAVLink.mavlink_gps_raw_int_t gps = new ArdupilotMega.MAVLink.mavlink_gps_raw_int_t();
-#else
-            ArdupilotMega.MAVLink.mavlink_gps_raw_t gps = new ArdupilotMega.MAVLink.mavlink_gps_raw_t();
-#endif
+            MAVLink.mavlink_hil_state_t hilstate = new MAVLink.mavlink_hil_state_t();
 
-            ArdupilotMega.MAVLink.mavlink_attitude_t att = new ArdupilotMega.MAVLink.mavlink_attitude_t();
+            hilstate.time_usec = (UInt64)DateTime.Now.Ticks; // microsec
 
-            ArdupilotMega.MAVLink.mavlink_vfr_hud_t asp = new ArdupilotMega.MAVLink.mavlink_vfr_hud_t();
+            hilstate.lat = (int)(latitude * 1e7); // * 1E7
+            hilstate.lon = (int)(longitude * 1e7); // * 1E7
+            hilstate.alt = (int)(altitude * 1000); // mm
 
-            att.roll = (float)roll * deg2rad;
-            att.pitch = (float)pitch * deg2rad;
-            att.yaw = (float)yaw * deg2rad;
-            att.rollspeed = (float)roll_rate * deg2rad;
-            att.pitchspeed = (float)pitch_rate * deg2rad;
-            att.yawspeed = (float)yaw_rate * deg2rad;
+            self.dcm.to_euler(ref roll, ref pitch, ref yaw);
 
-#if MAVLINK10
-
-            gps.alt = ((int)(altitude * 1000));
-            gps.fix_type = 3;
-            gps.vel = (ushort)(Math.Sqrt((velocity.X * velocity.X) + (velocity.Y * velocity.Y)) * 100);
-            gps.cog = (ushort)((((Math.Atan2(velocity.Y, velocity.X) * rad2deg) + 360) % 360) * 100);
-            gps.lat = (int)(latitude* 1.0e7);
-            gps.lon = (int)(longitude * 1.0e7);
-            gps.time_usec = ((ulong)DateTime.Now.Ticks);
-
-            asp.airspeed = gps.vel;
-			
-#else
-            gps.alt = ((float)(altitude));
-            gps.fix_type = 3;
-
-            gps.lat = ((float)latitude);
-            gps.lon = ((float)longitude);
-            gps.usec = ((ulong)DateTime.Now.Ticks);
-
-            //Random rand = new Random();
-            //gps.alt += (rand.Next(100) - 50) / 100.0f;
-            //gps.lat += (float)((rand.NextDouble() - 0.5) * 0.00005);
-            //gps.lon += (float)((rand.NextDouble() - 0.5) * 0.00005);
-            //gps.v += (float)(rand.NextDouble() - 0.5) * 1.0f;
-
-            gps.v = ((float)Math.Sqrt((velocity.X * velocity.X) + (velocity.Y * velocity.Y)));
-            gps.hdg = (float)(((Math.Atan2(velocity.Y, velocity.X) * rad2deg) + 360) % 360); ;
-
-            asp.airspeed = gps.v;
-#endif
-
-            MainV2.comPort.sendPacket(att);
-
-            MAVLink.mavlink_raw_pressure_t pres = new MAVLink.mavlink_raw_pressure_t();
-            double calc = (101325 * Math.Pow(1 - 2.25577 * Math.Pow(10, -5) * gps.alt, 5.25588));
-            pres.press_diff1 = (short)(int)(calc); // 0 alt is 0 pa
-
-            MainV2.comPort.sendPacket(pres);
-
-            MainV2.comPort.sendPacket(asp);
-
-            if (framecount % 120 == 0)
-            {// 50 / 10 = 5 hz
-                MainV2.comPort.sendPacket(gps);
-                //Console.WriteLine(DateTime.Now.Millisecond + " GPS" );
+            if (double.IsNaN(roll))
+            {
+                self.dcm.identity();
             }
 
-            framecount++;
-        }
+            hilstate.roll = (float)roll;
+            hilstate.pitch = (float)pitch;
+            hilstate.yaw = (float)yaw;
 
-        public static Vector3d RPY_to_XYZ(double roll, double pitch, double yaw, double length)
-        {
-            Vector3d v = new Vector3d(0, 0, length);
-            v = new_rotate_euler(-deg2rad * (pitch), 0, -deg2rad * (roll)) * v;
-            v = new_rotate_euler(0, deg2rad * (yaw), 0) * v;
-            return v;
-        }
+            Vector3 earth_rates = Utils.BodyRatesToEarthRates(dcm, gyro);
 
-        public static Quaternion new_rotate_euler(double heading, double attitude, double bank)
-        {
-            Quaternion Q = new Quaternion();
-            double c1 = Math.Cos(heading / 2);
-            double s1 = Math.Sin(heading / 2);
-            double c2 = Math.Cos(attitude / 2);
-            double s2 = Math.Sin(attitude / 2);
-            double c3 = Math.Cos(bank / 2);
-            double s3 = Math.Sin(bank / 2);
+            hilstate.rollspeed = (float)earth_rates.x;
+            hilstate.pitchspeed = (float)earth_rates.y;
+            hilstate.yawspeed = (float)earth_rates.z;
 
-            Q.W = c1 * c2 * c3 - s1 * s2 * s3;
-            Q.X = s1 * s2 * c3 + c1 * c2 * s3;
-            Q.Y = s1 * c2 * c3 + c1 * s2 * s3;
-            Q.Z = c1 * s2 * c3 - s1 * c2 * s3;
-            return Q;
+            hilstate.vx = (short)(velocity.y * 100); // m/s * 100
+            hilstate.vy = (short)(velocity.x * 100); // m/s * 100
+            hilstate.vz = 0; // m/s * 100
+
+            hilstate.xacc = (short)(accelerometer.x * 1000); // (mg)
+            hilstate.yacc = (short)(accelerometer.y * 1000); // (mg)
+            hilstate.zacc = (short)(accelerometer.z * 1000); // (mg)
+
+            MainV2.comPort.sendPacket(hilstate);
         }
     }
 }

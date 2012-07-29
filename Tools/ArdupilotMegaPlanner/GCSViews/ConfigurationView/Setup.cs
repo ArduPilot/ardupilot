@@ -90,6 +90,8 @@ If you are just setting up 3DR radios, you may continue without connecting.");
                 /****************************** ArduPlane **************************/
             else if (MainV2.cs.firmware == MainV2.Firmwares.ArduPlane)
             {
+                AddBackstageViewPage(new ConfigMount(), "Camera Gimbal");
+
                 AddBackstageViewPage(new ConfigAccelerometerCalibrationPlane(), "ArduPlane Level");
                 AddBackstageViewPage(new ConfigArduplane(), "ArduPlane Pids");
             }

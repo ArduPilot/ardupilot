@@ -805,6 +805,8 @@ namespace ArdupilotMega.GCSViews
                 catch { cmd = option; }
                 //Console.WriteLine("editformat " + option + " value " + cmd);
                 ChangeColumnHeader(cmd);
+
+                writeKML();
             }
             catch (Exception ex) { CustomMessageBox.Show(ex.ToString()); }
         }
@@ -938,6 +940,37 @@ namespace ArdupilotMega.GCSViews
             catch (Exception ex) { log.Info(ex.ToString()); }
         }
 
+        void updateRowNumbers()
+        {
+            // number rows 
+            System.Threading.Thread t1 = new System.Threading.Thread(delegate()
+            {
+                // thread for updateing row numbers
+                for (int a = 0; a < Commands.Rows.Count - 0; a++)
+                {
+                    try
+                    {
+                        if (Commands.Rows[a].HeaderCell.Value == null)
+                        {
+                            Commands.Rows[a].HeaderCell.Style.Alignment = DataGridViewContentAlignment.MiddleCenter;
+                            Commands.Rows[a].HeaderCell.Value = (a + 1).ToString();
+                        }
+                        // skip rows with the correct number
+                        string rowno = Commands.Rows[a].HeaderCell.Value.ToString();
+                        if (!rowno.Equals((a + 1).ToString()))
+                        {
+                            // this code is where the delay is when deleting.
+                            Commands.Rows[a].HeaderCell.Value = (a + 1).ToString();
+                        }
+                    }
+                    catch (Exception) { }
+                }
+            });
+            t1.Name = "Row number updater";
+            t1.IsBackground = true;
+            t1.Start();
+        }
+
         /// <summary>
         /// used to write a KML, update the Map view polygon, and update the row headers
         /// </summary>
@@ -994,33 +1027,7 @@ namespace ArdupilotMega.GCSViews
 
                 int usable = 0;
 
-                // number rows 
-                System.Threading.Thread t1 = new System.Threading.Thread(delegate()
-                {
-                    // thread for updateing row numbers
-                    for (int a = 0; a < Commands.Rows.Count - 0; a++)
-                    {
-                        try
-                        {
-                            if (Commands.Rows[a].HeaderCell.Value == null)
-                            {
-                                Commands.Rows[a].HeaderCell.Style.Alignment = DataGridViewContentAlignment.MiddleCenter;
-                                Commands.Rows[a].HeaderCell.Value = (a + 1).ToString();
-                            }
-                            // skip rows with the correct number
-                            string rowno = Commands.Rows[a].HeaderCell.Value.ToString();
-                            if (!rowno.Equals((a + 1).ToString()))
-                            {
-                                // this code is where the delay is when deleting.
-                                Commands.Rows[a].HeaderCell.Value = (a + 1).ToString();
-                            }
-                        }
-                        catch (Exception) { }
-                    }
-                });
-                t1.Name = "Row number updater";
-                t1.IsBackground = true;
-                t1.Start();
+                updateRowNumbers();
 
                 long temp = System.Diagnostics.Stopwatch.GetTimestamp();
 
@@ -1041,11 +1048,30 @@ namespace ArdupilotMega.GCSViews
                             if (cell4 == "?" || cell3 == "?")
                                 continue;
 
-                            
-                            if (command == (byte)MAVLink.MAV_CMD.LOITER_TIME || command == (byte)MAVLink.MAV_CMD.LOITER_TURNS || command == (byte)MAVLink.MAV_CMD.LOITER_UNLIM) {
+                            if (command == (byte)MAVLink.MAV_CMD.ROI)
+                            {
+                                pointlist.Add(new PointLatLngAlt(double.Parse(cell3), double.Parse(cell4), (int)double.Parse(cell2) + homealt,"ROI"+(a+1).ToString()) { color = Color.Red });
+                                GMapMarkerGoogleRed m = new GMapMarkerGoogleRed(new PointLatLng(double.Parse(cell3), double.Parse(cell4)));
+                                m.ToolTipMode = MarkerTooltipMode.Always;
+                                m.ToolTipText = (a + 1).ToString();
+                                m.Tag = (a + 1).ToString();
+
+                                GMapMarkerRect mBorders = new GMapMarkerRect(m.Position);
+                                {
+                                    mBorders.InnerMarker = m;
+                                    mBorders.Tag = "Dont draw line";
+                                }
+                                // order matters
+                                objects.Markers.Add(m);
+                                objects.Markers.Add(mBorders);
+                            } 
+                            else if (command == (byte)MAVLink.MAV_CMD.LOITER_TIME || command == (byte)MAVLink.MAV_CMD.LOITER_TURNS || command == (byte)MAVLink.MAV_CMD.LOITER_UNLIM) 
+                            {
                                 pointlist.Add(new PointLatLngAlt(double.Parse(cell3), double.Parse(cell4), (int)double.Parse(cell2) + homealt, (a + 1).ToString()){ color  = Color.LightBlue });
                                 addpolygonmarker((a + 1).ToString(), double.Parse(cell4), double.Parse(cell3), (int)double.Parse(cell2) , Color.LightBlue);
-                            } else {
+                            } 
+                            else 
+                            {
                                 pointlist.Add(new PointLatLngAlt(double.Parse(cell3), double.Parse(cell4), (int)double.Parse(cell2) + homealt, (a + 1).ToString()));
                                 addpolygonmarker((a + 1).ToString(), double.Parse(cell4), double.Parse(cell3), (int)double.Parse(cell2) ,null);
                             }
@@ -1896,16 +1922,14 @@ namespace ArdupilotMega.GCSViews
         GMapPolygon drawnpolygon;
         GMapPolygon gf;
 
-        GMapOverlay kmlpolygons;
-        GMapOverlay geofence;
-
-
         // layers
         GMapOverlay top;
-        internal GMapOverlay objects;
-        static GMapOverlay routes;// static so can update from gcs
-        static GMapOverlay polygons;
+        public static GMapOverlay objects; // where the markers a drawn
+        public static GMapOverlay routes;// static so can update from gcs
+        public static GMapOverlay polygons; // where the track is drawn
         GMapOverlay drawnpolygons;
+        GMapOverlay kmlpolygons;
+        GMapOverlay geofence;
 
         // etc
         readonly Random rnd = new Random();
@@ -2071,6 +2095,7 @@ namespace ArdupilotMega.GCSViews
                 {
                     try
                     {
+                        // check if this is a grid point
                         if (CurentRectMarker.InnerMarker.Tag.ToString().Contains("grid"))
                         {
                             drawnpolygon.Points[int.Parse(CurentRectMarker.InnerMarker.Tag.ToString().Replace("grid", "")) - 1] = new PointLatLng(point.Lat, point.Lng);
@@ -2082,19 +2107,25 @@ namespace ArdupilotMega.GCSViews
 
                     PointLatLng pnew = MainMap.FromLocalToLatLng(e.X, e.Y);
 
-                    int? pIndex = (int?)CurentRectMarker.Tag;
-                    if (pIndex.HasValue)
+                    // adjust polyline point while we drag
+                    try
                     {
-                        if (pIndex < polygon.Points.Count)
+                        int? pIndex = (int?)CurentRectMarker.Tag;
+                        if (pIndex.HasValue)
                         {
-                            polygon.Points[pIndex.Value] = pnew;
-                            lock (thisLock)
+                            if (pIndex < polygon.Points.Count)
                             {
-                                MainMap.UpdatePolygonLocalPosition(polygon);
+                                polygon.Points[pIndex.Value] = pnew;
+                                lock (thisLock)
+                                {
+                                    MainMap.UpdatePolygonLocalPosition(polygon);
+                                }
                             }
                         }
                     }
+                    catch { }
 
+                    // update rect and marker pos.
                     if (currentMarker.IsVisible)
                     {
                         currentMarker.Position = pnew;
@@ -2225,8 +2256,11 @@ namespace ArdupilotMega.GCSViews
             {
                 if (m is GMapMarkerRect)
                 {
-                    m.Tag = polygonPoints.Count;
-                    polygonPoints.Add(m.Position);
+                    if (m.Tag == null)
+                    {
+                        m.Tag = polygonPoints.Count;
+                        polygonPoints.Add(m.Position);
+                    }
                 }
             }
 

@@ -836,6 +836,7 @@ namespace ArdupilotMega
             ArdupilotMega.Controls.MyButton buttonCancel = new ArdupilotMega.Controls.MyButton();
 
             form.TopMost = true;
+            form.TopLevel = true;
 
             form.Text = title;
             label.Text = promptText;

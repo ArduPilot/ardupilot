@@ -8,7 +8,7 @@ namespace ArdupilotMega
 #if MAVLINK10
     partial class MAVLink
     {
-        public const string MAVLINK_BUILD_DATE = "Sun Apr  8 12:29:46 2012";
+        public const string MAVLINK_BUILD_DATE = "Thu Jul 26 18:28:25 2012";
         public const string MAVLINK_WIRE_PROTOCOL_VERSION = "1.0";
         public const int MAVLINK_MAX_DIALECT_PAYLOAD_SIZE = 42;
 
@@ -25,11 +25,11 @@ namespace ArdupilotMega
         
         public const bool MAVLINK_NEED_BYTE_SWAP = (MAVLINK_ENDIAN == MAVLINK_LITTLE_ENDIAN);
         
-        public byte[] MAVLINK_MESSAGE_LENGTHS = new byte[] {9, 31, 12, 0, 14, 28, 3, 32, 0, 0, 0, 6, 0, 0, 0, 0, 0, 0, 0, 0, 20, 2, 25, 23, 30, 101, 22, 26, 16, 14, 28, 32, 28, 28, 22, 22, 21, 6, 6, 37, 4, 4, 2, 2, 4, 2, 2, 3, 13, 12, 19, 17, 15, 15, 27, 25, 18, 18, 20, 20, 0, 0, 26, 0, 36, 0, 6, 4, 0, 21, 18, 0, 0, 0, 20, 0, 33, 3, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 56, 42, 33, 0, 0, 0, 0, 0, 0, 0, 18, 32, 32, 20, 32, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 42, 8, 4, 12, 15, 13, 6, 15, 14, 0, 12, 3, 8, 28, 36, 3, 9, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 36, 30, 18, 18, 51, 9, 3};
+        public byte[] MAVLINK_MESSAGE_LENGTHS = new byte[] {9, 31, 12, 0, 14, 28, 3, 32, 0, 0, 0, 6, 0, 0, 0, 0, 0, 0, 0, 0, 20, 2, 25, 23, 30, 101, 22, 26, 16, 14, 28, 32, 28, 28, 22, 22, 21, 6, 6, 37, 4, 4, 2, 2, 4, 2, 2, 3, 13, 12, 19, 17, 15, 15, 27, 25, 18, 18, 20, 20, 9, 34, 26, 46, 36, 0, 6, 4, 0, 21, 18, 0, 0, 0, 20, 0, 33, 3, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 28, 56, 42, 33, 0, 0, 0, 0, 0, 0, 0, 26, 32, 32, 20, 32, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 42, 8, 4, 12, 15, 13, 6, 15, 14, 0, 12, 3, 8, 28, 36, 3, 9, 22, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 36, 30, 18, 18, 51, 9, 0};
 
-        public byte[] MAVLINK_MESSAGE_CRCS = new byte[] {50, 124, 137, 0, 237, 217, 104, 119, 0, 0, 0, 89, 0, 0, 0, 0, 0, 0, 0, 0, 214, 159, 220, 168, 24, 23, 170, 144, 67, 115, 39, 246, 185, 104, 237, 244, 222, 212, 9, 254, 230, 28, 28, 132, 221, 232, 11, 153, 41, 39, 214, 223, 141, 33, 15, 3, 100, 24, 239, 238, 0, 0, 183, 0, 130, 0, 148, 21, 0, 52, 124, 0, 0, 0, 20, 0, 152, 143, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 183, 63, 54, 0, 0, 0, 0, 0, 0, 0, 19, 102, 158, 208, 56, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 134, 219, 208, 188, 84, 22, 19, 21, 134, 0, 78, 68, 189, 127, 42, 21, 21, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 204, 49, 170, 44, 83, 46, 247};
+        public byte[] MAVLINK_MESSAGE_CRCS = new byte[] {50, 124, 137, 0, 237, 217, 104, 119, 0, 0, 0, 89, 0, 0, 0, 0, 0, 0, 0, 0, 214, 159, 220, 168, 24, 23, 170, 144, 67, 115, 39, 246, 185, 104, 237, 244, 222, 212, 9, 254, 230, 28, 28, 132, 221, 232, 11, 153, 41, 39, 214, 223, 141, 33, 15, 3, 100, 24, 239, 238, 30, 240, 183, 130, 130, 0, 148, 21, 0, 52, 124, 0, 0, 0, 20, 0, 152, 143, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 231, 183, 63, 54, 0, 0, 0, 0, 0, 0, 0, 175, 102, 158, 208, 56, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 134, 219, 208, 188, 84, 22, 19, 21, 134, 0, 78, 68, 189, 127, 42, 21, 21, 144, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 204, 49, 170, 44, 83, 46, 0};
 
-        public Type[] MAVLINK_MESSAGE_INFO = new Type[] {typeof( mavlink_heartbeat_t ), typeof( mavlink_sys_status_t ), typeof( mavlink_system_time_t ), null, typeof( mavlink_ping_t ), typeof( mavlink_change_operator_control_t ), typeof( mavlink_change_operator_control_ack_t ), typeof( mavlink_auth_key_t ), null, null, null, typeof( mavlink_set_mode_t ), null, null, null, null, null, null, null, null, typeof( mavlink_param_request_read_t ), typeof( mavlink_param_request_list_t ), typeof( mavlink_param_value_t ), typeof( mavlink_param_set_t ), typeof( mavlink_gps_raw_int_t ), typeof( mavlink_gps_status_t ), typeof( mavlink_scaled_imu_t ), typeof( mavlink_raw_imu_t ), typeof( mavlink_raw_pressure_t ), typeof( mavlink_scaled_pressure_t ), typeof( mavlink_attitude_t ), typeof( mavlink_attitude_quaternion_t ), typeof( mavlink_local_position_ned_t ), typeof( mavlink_global_position_int_t ), typeof( mavlink_rc_channels_scaled_t ), typeof( mavlink_rc_channels_raw_t ), typeof( mavlink_servo_output_raw_t ), typeof( mavlink_mission_request_partial_list_t ), typeof( mavlink_mission_write_partial_list_t ), typeof( mavlink_mission_item_t ), typeof( mavlink_mission_request_t ), typeof( mavlink_mission_set_current_t ), typeof( mavlink_mission_current_t ), typeof( mavlink_mission_request_list_t ), typeof( mavlink_mission_count_t ), typeof( mavlink_mission_clear_all_t ), typeof( mavlink_mission_item_reached_t ), typeof( mavlink_mission_ack_t ), typeof( mavlink_set_gps_global_origin_t ), typeof( mavlink_gps_global_origin_t ), typeof( mavlink_set_local_position_setpoint_t ), typeof( mavlink_local_position_setpoint_t ), typeof( mavlink_global_position_setpoint_int_t ), typeof( mavlink_set_global_position_setpoint_int_t ), typeof( mavlink_safety_set_allowed_area_t ), typeof( mavlink_safety_allowed_area_t ), typeof( mavlink_set_roll_pitch_yaw_thrust_t ), typeof( mavlink_set_roll_pitch_yaw_speed_thrust_t ), typeof( mavlink_roll_pitch_yaw_thrust_setpoint_t ), typeof( mavlink_roll_pitch_yaw_speed_thrust_setpoint_t ), null, null, typeof( mavlink_nav_controller_output_t ), null, typeof( mavlink_state_correction_t ), null, typeof( mavlink_request_data_stream_t ), typeof( mavlink_data_stream_t ), null, typeof( mavlink_manual_control_t ), typeof( mavlink_rc_channels_override_t ), null, null, null, typeof( mavlink_vfr_hud_t ), null, typeof( mavlink_command_long_t ), typeof( mavlink_command_ack_t ), null, null, null, null, null, null, null, null, null, null, null, null, typeof( mavlink_hil_state_t ), typeof( mavlink_hil_controls_t ), typeof( mavlink_hil_rc_inputs_raw_t ), null, null, null, null, null, null, null, typeof( mavlink_optical_flow_t ), typeof( mavlink_global_vision_position_estimate_t ), typeof( mavlink_vision_position_estimate_t ), typeof( mavlink_vision_speed_estimate_t ), typeof( mavlink_vicon_position_estimate_t ), null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, typeof( mavlink_sensor_offsets_t ), typeof( mavlink_set_mag_offsets_t ), typeof( mavlink_meminfo_t ), typeof( mavlink_ap_adc_t ), typeof( mavlink_digicam_configure_t ), typeof( mavlink_digicam_control_t ), typeof( mavlink_mount_configure_t ), typeof( mavlink_mount_control_t ), typeof( mavlink_mount_status_t ), null, typeof( mavlink_fence_point_t ), typeof( mavlink_fence_fetch_point_t ), typeof( mavlink_fence_status_t ), typeof( mavlink_ahrs_t ), typeof( mavlink_simstate_t ), typeof( mavlink_hwstatus_t ), typeof( mavlink_radio_t ), null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, typeof( mavlink_memory_vect_t ), typeof( mavlink_debug_vect_t ), typeof( mavlink_named_value_float_t ), typeof( mavlink_named_value_int_t ), typeof( mavlink_statustext_t ), typeof( mavlink_debug_t ), typeof( mavlink_extended_message_t )};
+        public Type[] MAVLINK_MESSAGE_INFO = new Type[] {typeof( mavlink_heartbeat_t ), typeof( mavlink_sys_status_t ), typeof( mavlink_system_time_t ), null, typeof( mavlink_ping_t ), typeof( mavlink_change_operator_control_t ), typeof( mavlink_change_operator_control_ack_t ), typeof( mavlink_auth_key_t ), null, null, null, typeof( mavlink_set_mode_t ), null, null, null, null, null, null, null, null, typeof( mavlink_param_request_read_t ), typeof( mavlink_param_request_list_t ), typeof( mavlink_param_value_t ), typeof( mavlink_param_set_t ), typeof( mavlink_gps_raw_int_t ), typeof( mavlink_gps_status_t ), typeof( mavlink_scaled_imu_t ), typeof( mavlink_raw_imu_t ), typeof( mavlink_raw_pressure_t ), typeof( mavlink_scaled_pressure_t ), typeof( mavlink_attitude_t ), typeof( mavlink_attitude_quaternion_t ), typeof( mavlink_local_position_ned_t ), typeof( mavlink_global_position_int_t ), typeof( mavlink_rc_channels_scaled_t ), typeof( mavlink_rc_channels_raw_t ), typeof( mavlink_servo_output_raw_t ), typeof( mavlink_mission_request_partial_list_t ), typeof( mavlink_mission_write_partial_list_t ), typeof( mavlink_mission_item_t ), typeof( mavlink_mission_request_t ), typeof( mavlink_mission_set_current_t ), typeof( mavlink_mission_current_t ), typeof( mavlink_mission_request_list_t ), typeof( mavlink_mission_count_t ), typeof( mavlink_mission_clear_all_t ), typeof( mavlink_mission_item_reached_t ), typeof( mavlink_mission_ack_t ), typeof( mavlink_set_gps_global_origin_t ), typeof( mavlink_gps_global_origin_t ), typeof( mavlink_set_local_position_setpoint_t ), typeof( mavlink_local_position_setpoint_t ), typeof( mavlink_global_position_setpoint_int_t ), typeof( mavlink_set_global_position_setpoint_int_t ), typeof( mavlink_safety_set_allowed_area_t ), typeof( mavlink_safety_allowed_area_t ), typeof( mavlink_set_roll_pitch_yaw_thrust_t ), typeof( mavlink_set_roll_pitch_yaw_speed_thrust_t ), typeof( mavlink_roll_pitch_yaw_thrust_setpoint_t ), typeof( mavlink_roll_pitch_yaw_speed_thrust_setpoint_t ), typeof( mavlink_set_quad_motors_setpoint_t ), typeof( mavlink_set_quad_swarm_roll_pitch_yaw_thrust_t ), typeof( mavlink_nav_controller_output_t ), typeof( mavlink_set_quad_swarm_led_roll_pitch_yaw_thrust_t ), typeof( mavlink_state_correction_t ), null, typeof( mavlink_request_data_stream_t ), typeof( mavlink_data_stream_t ), null, typeof( mavlink_manual_control_t ), typeof( mavlink_rc_channels_override_t ), null, null, null, typeof( mavlink_vfr_hud_t ), null, typeof( mavlink_command_long_t ), typeof( mavlink_command_ack_t ), null, null, null, null, null, null, null, null, null, null, null, typeof( mavlink_local_position_ned_system_global_offset_t ), typeof( mavlink_hil_state_t ), typeof( mavlink_hil_controls_t ), typeof( mavlink_hil_rc_inputs_raw_t ), null, null, null, null, null, null, null, typeof( mavlink_optical_flow_t ), typeof( mavlink_global_vision_position_estimate_t ), typeof( mavlink_vision_position_estimate_t ), typeof( mavlink_vision_speed_estimate_t ), typeof( mavlink_vicon_position_estimate_t ), null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, typeof( mavlink_sensor_offsets_t ), typeof( mavlink_set_mag_offsets_t ), typeof( mavlink_meminfo_t ), typeof( mavlink_ap_adc_t ), typeof( mavlink_digicam_configure_t ), typeof( mavlink_digicam_control_t ), typeof( mavlink_mount_configure_t ), typeof( mavlink_mount_control_t ), typeof( mavlink_mount_status_t ), null, typeof( mavlink_fence_point_t ), typeof( mavlink_fence_fetch_point_t ), typeof( mavlink_fence_status_t ), typeof( mavlink_ahrs_t ), typeof( mavlink_simstate_t ), typeof( mavlink_hwstatus_t ), typeof( mavlink_radio_t ), typeof( mavlink_limits_status_t ), null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, typeof( mavlink_memory_vect_t ), typeof( mavlink_debug_vect_t ), typeof( mavlink_named_value_float_t ), typeof( mavlink_named_value_int_t ), typeof( mavlink_statustext_t ), typeof( mavlink_debug_t ), null};
 
         public const byte MAVLINK_VERSION = 2;
     
@@ -127,8 +127,10 @@ namespace ArdupilotMega
             OVERRIDE_GOTO=252, 
         	///<summary> start running a mission |first_item: the first mission item to run| last_item:  the last mission item to run (after this item is run, the mission ends)|  </summary>
             MISSION_START=300, 
+        	///<summary> Arms / Disarms a component |1 to arm, 0 to disarm|  </summary>
+            COMPONENT_ARM_DISARM=400, 
         	///<summary>  | </summary>
-            ENUM_END=301, 
+            ENUM_END=401, 
         
         };
         
@@ -157,6 +159,40 @@ namespace ArdupilotMega
             BOUNDARY=3, 
         	///<summary>  | </summary>
             ENUM_END=4, 
+        
+        };
+        
+        /** @brief  */
+        public enum LIMITS_STATE
+        {
+    	///<summary>  pre-initialization | </summary>
+            LIMITS_INIT=0, 
+        	///<summary>  disabled | </summary>
+            LIMITS_DISABLED=1, 
+        	///<summary>  checking limits | </summary>
+            LIMITS_ENABLED=2, 
+        	///<summary>  a limit has been breached | </summary>
+            LIMITS_TRIGGERED=3, 
+        	///<summary>  taking action eg. RTL | </summary>
+            LIMITS_RECOVERING=4, 
+        	///<summary>  we're no longer in breach of a limit | </summary>
+            LIMITS_RECOVERED=5, 
+        	///<summary>  | </summary>
+            ENUM_END=6, 
+        
+        };
+        
+        /** @brief  */
+        public enum LIMIT_MODULE
+        {
+    	///<summary>  pre-initialization | </summary>
+            LIMIT_GPSLOCK=1, 
+        	///<summary>  disabled | </summary>
+            LIMIT_GEOFENCE=2, 
+        	///<summary>  checking limits | </summary>
+            LIMIT_ALTITUDE=4, 
+        	///<summary>  | </summary>
+            ENUM_END=5, 
         
         };
         
@@ -191,6 +227,50 @@ namespace ArdupilotMega
             FP=11, 
         	///<summary>  | </summary>
             ENUM_END=12, 
+        
+        };
+        
+        /** @brief  */
+        public enum MAV_TYPE
+        {
+    	///<summary> Generic micro air vehicle. | </summary>
+            GENERIC=0, 
+        	///<summary> Fixed wing aircraft. | </summary>
+            FIXED_WING=1, 
+        	///<summary> Quadrotor | </summary>
+            QUADROTOR=2, 
+        	///<summary> Coaxial helicopter | </summary>
+            COAXIAL=3, 
+        	///<summary> Normal helicopter with tail rotor. | </summary>
+            HELICOPTER=4, 
+        	///<summary> Ground installation | </summary>
+            ANTENNA_TRACKER=5, 
+        	///<summary> Operator control unit / ground control station | </summary>
+            GCS=6, 
+        	///<summary> Airship, controlled | </summary>
+            AIRSHIP=7, 
+        	///<summary> Free balloon, uncontrolled | </summary>
+            FREE_BALLOON=8, 
+        	///<summary> Rocket | </summary>
+            ROCKET=9, 
+        	///<summary> Ground rover | </summary>
+            GROUND_ROVER=10, 
+        	///<summary> Surface vessel, boat, ship | </summary>
+            SURFACE_BOAT=11, 
+        	///<summary> Submarine | </summary>
+            SUBMARINE=12, 
+        	///<summary> Hexarotor | </summary>
+            HEXAROTOR=13, 
+        	///<summary> Octorotor | </summary>
+            OCTOROTOR=14, 
+        	///<summary> Octorotor | </summary>
+            TRICOPTER=15, 
+        	///<summary> Flapping wing | </summary>
+            FLAPPING_WING=16, 
+        	///<summary> Flapping wing | </summary>
+            KITE=17, 
+        	///<summary>  | </summary>
+            ENUM_END=18, 
         
         };
         
@@ -309,48 +389,6 @@ namespace ArdupilotMega
             POWEROFF=7, 
         	///<summary>  | </summary>
             ENUM_END=8, 
-        
-        };
-        
-        /** @brief  */
-        public enum MAV_TYPE
-        {
-    	///<summary> Generic micro air vehicle. | </summary>
-            GENERIC=0, 
-        	///<summary> Fixed wing aircraft. | </summary>
-            FIXED_WING=1, 
-        	///<summary> Quadrotor | </summary>
-            QUADROTOR=2, 
-        	///<summary> Coaxial helicopter | </summary>
-            COAXIAL=3, 
-        	///<summary> Normal helicopter with tail rotor. | </summary>
-            HELICOPTER=4, 
-        	///<summary> Ground installation | </summary>
-            ANTENNA_TRACKER=5, 
-        	///<summary> Operator control unit / ground control station | </summary>
-            GCS=6, 
-        	///<summary> Airship, controlled | </summary>
-            AIRSHIP=7, 
-        	///<summary> Free balloon, uncontrolled | </summary>
-            FREE_BALLOON=8, 
-        	///<summary> Rocket | </summary>
-            ROCKET=9, 
-        	///<summary> Ground rover | </summary>
-            GROUND_ROVER=10, 
-        	///<summary> Surface vessel, boat, ship | </summary>
-            SURFACE_BOAT=11, 
-        	///<summary> Submarine | </summary>
-            SUBMARINE=12, 
-        	///<summary> Hexarotor | </summary>
-            HEXAROTOR=13, 
-        	///<summary> Octorotor | </summary>
-            OCTOROTOR=14, 
-        	///<summary> Octorotor | </summary>
-            TRICOPTER=15, 
-        	///<summary> Flapping wing | </summary>
-            FLAPPING_WING=16, 
-        	///<summary>  | </summary>
-            ENUM_END=17, 
         
         };
         
@@ -522,28 +560,6 @@ namespace ArdupilotMega
         
         };
         
-        /** @brief type of a mavlink parameter */
-        public enum MAV_VAR
-        {
-    	///<summary> 32 bit float | </summary>
-            FLOAT=0, 
-        	///<summary> 8 bit unsigned integer | </summary>
-            UINT8=1, 
-        	///<summary> 8 bit signed integer | </summary>
-            INT8=2, 
-        	///<summary> 16 bit unsigned integer | </summary>
-            UINT16=3, 
-        	///<summary> 16 bit signed integer | </summary>
-            INT16=4, 
-        	///<summary> 32 bit unsigned integer | </summary>
-            UINT32=5, 
-        	///<summary> 32 bit signed integer | </summary>
-            INT32=6, 
-        	///<summary>  | </summary>
-            ENUM_END=7, 
-        
-        };
-        
         /** @brief result from a mavlink command */
         public enum MAV_RESULT
         {
@@ -597,6 +613,30 @@ namespace ArdupilotMega
             MAV_MISSION_DENIED=14, 
         	///<summary>  | </summary>
             ENUM_END=15, 
+        
+        };
+        
+        /** @brief Indicates the severity level, generally used for status messages to indicate their relative urgency. Based on RFC-5424 using expanded definitions at: http://www.kiwisyslog.com/kb/info:-syslog-message-levels/. */
+        public enum MAV_SEVERITY
+        {
+    	///<summary> System is unusable. This is a "panic" condition. | </summary>
+            EMERGENCY=0, 
+        	///<summary> Action should be taken immediately. Indicates error in non-critical systems. | </summary>
+            ALERT=1, 
+        	///<summary> Action must be taken immediately. Indicates failure in a primary system. | </summary>
+            CRITICAL=2, 
+        	///<summary> Indicates an error in secondary/redundant systems. | </summary>
+            ERROR=3, 
+        	///<summary> Indicates about a possible future error if this is not resolved within a given timeframe. Example would be a low battery warning. | </summary>
+            WARNING=4, 
+        	///<summary> An unusual event has occured, though not an error condition. This should be investigated for the root cause. | </summary>
+            NOTICE=5, 
+        	///<summary> Normal operational messages. Useful for logging. No action is required for these messages. | </summary>
+            INFO=6, 
+        	///<summary> Useful non-operational messages that can assist in debugging. These should not occur during normal operation. | </summary>
+            DEBUG=7, 
+        	///<summary>  | </summary>
+            ENUM_END=8, 
         
         };
         
@@ -927,6 +967,32 @@ namespace ArdupilotMega
         public  byte noise;
             /// <summary> remote background noise level </summary>
         public  byte remnoise;
+    
+    };
+
+
+    public const byte MAVLINK_MSG_ID_LIMITS_STATUS = 167;
+    [StructLayout(LayoutKind.Sequential,Pack=1,Size=22)]
+    public struct mavlink_limits_status_t
+    {
+        /// <summary> time of last breach in milliseconds since boot </summary>
+        public  UInt32 last_trigger;
+            /// <summary> time of last recovery action in milliseconds since boot </summary>
+        public  UInt32 last_action;
+            /// <summary> time of last successful recovery in milliseconds since boot </summary>
+        public  UInt32 last_recovery;
+            /// <summary> time of last all-clear in milliseconds since boot </summary>
+        public  UInt32 last_clear;
+            /// <summary> number of fence breaches </summary>
+        public  UInt16 breach_count;
+            /// <summary> state of AP_Limits, (see enum LimitState, LIMITS_STATE) </summary>
+        public  byte limits_state;
+            /// <summary> AP_Limit_Module bitfield of enabled modules, (see enum moduleid or LIMIT_MODULE) </summary>
+        public  byte mods_enabled;
+            /// <summary> AP_Limit_Module bitfield of required modules, (see enum moduleid or LIMIT_MODULE) </summary>
+        public  byte mods_required;
+            /// <summary> AP_Limit_Module bitfield of triggered modules, (see enum moduleid or LIMIT_MODULE) </summary>
+        public  byte mods_triggered;
     
     };
 
@@ -1859,6 +1925,48 @@ namespace ArdupilotMega
     };
 
 
+    public const byte MAVLINK_MSG_ID_SET_QUAD_MOTORS_SETPOINT = 60;
+    [StructLayout(LayoutKind.Sequential,Pack=1,Size=9)]
+    public struct mavlink_set_quad_motors_setpoint_t
+    {
+        /// <summary> Front motor in + configuration, front left motor in x configuration </summary>
+        public  UInt16 motor_front_nw;
+            /// <summary> Right motor in + configuration, front right motor in x configuration </summary>
+        public  UInt16 motor_right_ne;
+            /// <summary> Back motor in + configuration, back right motor in x configuration </summary>
+        public  UInt16 motor_back_se;
+            /// <summary> Left motor in + configuration, back left motor in x configuration </summary>
+        public  UInt16 motor_left_sw;
+            /// <summary> System ID of the system that should set these motor commands </summary>
+        public  byte target_system;
+    
+    };
+
+
+    public const byte MAVLINK_MSG_ID_SET_QUAD_SWARM_ROLL_PITCH_YAW_THRUST = 61;
+    [StructLayout(LayoutKind.Sequential,Pack=1,Size=34)]
+    public struct mavlink_set_quad_swarm_roll_pitch_yaw_thrust_t
+    {
+        /// <summary> Desired roll angle in radians +-PI (+-32767) </summary>
+        [MarshalAs(UnmanagedType.ByValArray,SizeConst=4)]
+        public Int16[] roll;
+            /// <summary> Desired pitch angle in radians +-PI (+-32767) </summary>
+        [MarshalAs(UnmanagedType.ByValArray,SizeConst=4)]
+        public Int16[] pitch;
+            /// <summary> Desired yaw angle in radians, scaled to int16 +-PI (+-32767) </summary>
+        [MarshalAs(UnmanagedType.ByValArray,SizeConst=4)]
+        public Int16[] yaw;
+            /// <summary> Collective thrust, scaled to uint16 (0..65535) </summary>
+        [MarshalAs(UnmanagedType.ByValArray,SizeConst=4)]
+        public UInt16[] thrust;
+            /// <summary> ID of the quadrotor group (0 - 255, up to 256 groups supported) </summary>
+        public  byte group;
+            /// <summary> ID of the flight mode (0 - 255, up to 256 modes supported) </summary>
+        public  byte mode;
+    
+    };
+
+
     public const byte MAVLINK_MSG_ID_NAV_CONTROLLER_OUTPUT = 62;
     [StructLayout(LayoutKind.Sequential,Pack=1,Size=26)]
     public struct mavlink_nav_controller_output_t
@@ -1879,6 +1987,39 @@ namespace ArdupilotMega
         public  Int16 target_bearing;
             /// <summary> Distance to active MISSION in meters </summary>
         public  UInt16 wp_dist;
+    
+    };
+
+
+    public const byte MAVLINK_MSG_ID_SET_QUAD_SWARM_LED_ROLL_PITCH_YAW_THRUST = 63;
+    [StructLayout(LayoutKind.Sequential,Pack=1,Size=46)]
+    public struct mavlink_set_quad_swarm_led_roll_pitch_yaw_thrust_t
+    {
+        /// <summary> Desired roll angle in radians +-PI (+-32767) </summary>
+        [MarshalAs(UnmanagedType.ByValArray,SizeConst=4)]
+        public Int16[] roll;
+            /// <summary> Desired pitch angle in radians +-PI (+-32767) </summary>
+        [MarshalAs(UnmanagedType.ByValArray,SizeConst=4)]
+        public Int16[] pitch;
+            /// <summary> Desired yaw angle in radians, scaled to int16 +-PI (+-32767) </summary>
+        [MarshalAs(UnmanagedType.ByValArray,SizeConst=4)]
+        public Int16[] yaw;
+            /// <summary> Collective thrust, scaled to uint16 (0..65535) </summary>
+        [MarshalAs(UnmanagedType.ByValArray,SizeConst=4)]
+        public UInt16[] thrust;
+            /// <summary> ID of the quadrotor group (0 - 255, up to 256 groups supported) </summary>
+        public  byte group;
+            /// <summary> ID of the flight mode (0 - 255, up to 256 modes supported) </summary>
+        public  byte mode;
+            /// <summary> RGB red channel (0-255) </summary>
+        [MarshalAs(UnmanagedType.ByValArray,SizeConst=4)]
+		public byte[] led_red;
+            /// <summary> RGB green channel (0-255) </summary>
+        [MarshalAs(UnmanagedType.ByValArray,SizeConst=4)]
+		public byte[] led_blue;
+            /// <summary> RGB blue channel (0-255) </summary>
+        [MarshalAs(UnmanagedType.ByValArray,SizeConst=4)]
+		public byte[] led_green;
     
     };
 
@@ -2057,6 +2198,28 @@ namespace ArdupilotMega
     };
 
 
+    public const byte MAVLINK_MSG_ID_LOCAL_POSITION_NED_SYSTEM_GLOBAL_OFFSET = 89;
+    [StructLayout(LayoutKind.Sequential,Pack=1,Size=28)]
+    public struct mavlink_local_position_ned_system_global_offset_t
+    {
+        /// <summary> Timestamp (milliseconds since system boot) </summary>
+        public  UInt32 time_boot_ms;
+            /// <summary> X Position </summary>
+        public  Single x;
+            /// <summary> Y Position </summary>
+        public  Single y;
+            /// <summary> Z Position </summary>
+        public  Single z;
+            /// <summary> Roll </summary>
+        public  Single roll;
+            /// <summary> Pitch </summary>
+        public  Single pitch;
+            /// <summary> Yaw </summary>
+        public  Single yaw;
+    
+    };
+
+
     public const byte MAVLINK_MSG_ID_HIL_STATE = 90;
     [StructLayout(LayoutKind.Sequential,Pack=1,Size=56)]
     public struct mavlink_hil_state_t
@@ -2164,12 +2327,16 @@ namespace ArdupilotMega
 
 
     public const byte MAVLINK_MSG_ID_OPTICAL_FLOW = 100;
-    [StructLayout(LayoutKind.Sequential,Pack=1,Size=18)]
+    [StructLayout(LayoutKind.Sequential,Pack=1,Size=26)]
     public struct mavlink_optical_flow_t
     {
         /// <summary> Timestamp (UNIX) </summary>
         public  UInt64 time_usec;
-            /// <summary> Ground distance in meters </summary>
+            /// <summary> Flow in meters in x-sensor direction, angular-speed compensated </summary>
+        public  Single flow_comp_m_x;
+            /// <summary> Flow in meters in y-sensor direction, angular-speed compensated </summary>
+        public  Single flow_comp_m_y;
+            /// <summary> Ground distance in meters. Positive value: distance known. Negative value: Unknown distance </summary>
         public  Single ground_distance;
             /// <summary> Flow in pixels in x-sensor direction </summary>
         public  Int16 flow_x;
@@ -2357,20 +2524,6 @@ namespace ArdupilotMega
     
     };
 
-
-    public const byte MAVLINK_MSG_ID_EXTENDED_MESSAGE = 255;
-    [StructLayout(LayoutKind.Sequential,Pack=1,Size=3)]
-    public struct mavlink_extended_message_t
-    {
-        /// <summary> System which should execute the command </summary>
-        public  byte target_system;
-            /// <summary> Component which should execute the command, 0 for all components </summary>
-        public  byte target_component;
-            /// <summary> Retransmission / ACK flags </summary>
-        public  byte protocol_flags;
-    
-    };
-
      }
-#endif
+     #endif
 }

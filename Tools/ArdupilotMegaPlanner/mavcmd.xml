@@ -66,13 +66,13 @@
       <Z>Alt</Z>
     </TAKEOFF>
     <ROI>
-      <P1>MAV_ROI</P1>
-      <P2>WP#</P2>
-      <P3>ROI#</P3>
+      <P1></P1>
+      <P2></P2>
+      <P3></P3>
       <P4></P4>
-      <X></X>
-      <Y></Y>
-      <Z></Z>
+      <X>Lat</X>
+      <Y>Long</Y>
+      <Z>Alt</Z>
     </ROI>
     <PATHPLANNING>
       <P1></P1>
@@ -308,9 +308,9 @@
       <P2></P2>
       <P3></P3>
       <P4></P4>
-      <X></X>
-      <Y></Y>
-      <Z></Z>
+      <X>Lat</X>
+      <Y>Long</Y>
+      <Z>Alt</Z>
     </ROI>
     <PATHPLANNING>
       <P1></P1>

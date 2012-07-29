@@ -78,7 +78,7 @@ namespace ArdupilotMega
         public float mz { get; set; }
 
         public float magfield { get { return (float)Math.Sqrt(Math.Pow(mx, 2) + Math.Pow(my, 2) + Math.Pow(mz, 2)); } }
-        public float accelsq { get { return (float)Math.Sqrt(Math.Pow(ax, 2) + Math.Pow(ay, 2) + Math.Pow(az, 2)) / 980.665f; } }
+        public float accelsq { get { return (float)Math.Sqrt(Math.Pow(ax, 2) + Math.Pow(ay, 2) + Math.Pow(az, 2)) / 1000.0f /*980.665f*/; } }
 
         // calced turn rate
         public float turnrate { get { if (groundspeed <= 1) return 0; return (roll * 9.8f) / groundspeed; } }
@@ -324,6 +324,7 @@ namespace ArdupilotMega
         // reference
         public DateTime datetime { get; set; }
 
+        private object locker = new object();
 
         public CurrentState()
         {
@@ -356,195 +357,199 @@ namespace ArdupilotMega
         */
         public void UpdateCurrentSettings(System.Windows.Forms.BindingSource bs, bool updatenow, MAVLink mavinterface)
         {
-            if (DateTime.Now > lastupdate.AddMilliseconds(19) || updatenow) // 50 hz
+            lock (locker)
             {
-                lastupdate = DateTime.Now;
-
-                if (DateTime.Now.Second != lastwindcalc.Second)
+                if (DateTime.Now > lastupdate.AddMilliseconds(19) || updatenow) // 50 hz
                 {
-                    lastwindcalc = DateTime.Now;
-                    dowindcalc();
-                }
+                    lastupdate = DateTime.Now;
 
-                if (mavinterface.packets[MAVLink.MAVLINK_MSG_ID_STATUSTEXT] != null) // status text 
-                {
 
-                    string logdata = DateTime.Now + " " + Encoding.ASCII.GetString(mavinterface.packets[MAVLink.MAVLINK_MSG_ID_STATUSTEXT], 6, mavinterface.packets[MAVLink.MAVLINK_MSG_ID_STATUSTEXT].Length - 6);
 
-                    int ind = logdata.IndexOf('\0');
-                    if (ind != -1)
-                        logdata = logdata.Substring(0, ind);
-
-                    try
+                    if (DateTime.Now.Second != lastwindcalc.Second)
                     {
-                        while (messages.Count > 5)
-                        {
-                            messages.RemoveAt(0);
-                        }
-                        messages.Add(logdata + "\n");
-
+                        lastwindcalc = DateTime.Now;
+                        dowindcalc();
                     }
-                    catch { }
-                    mavinterface.packets[MAVLink.MAVLINK_MSG_ID_STATUSTEXT] = null;
-                }
 
-                byte[] bytearray = mavinterface.packets[MAVLink.MAVLINK_MSG_ID_RC_CHANNELS_SCALED];
+                    if (mavinterface.packets[MAVLink.MAVLINK_MSG_ID_STATUSTEXT] != null) // status text 
+                    {
 
-                if (bytearray != null) // hil mavlink 0.9
-                {
-                    var hil = bytearray.ByteArrayToStructure<MAVLink.mavlink_rc_channels_scaled_t>(6);
+                        string logdata = DateTime.Now + " " + Encoding.ASCII.GetString(mavinterface.packets[MAVLink.MAVLINK_MSG_ID_STATUSTEXT], 6, mavinterface.packets[MAVLink.MAVLINK_MSG_ID_STATUSTEXT].Length - 6);
 
-                    hilch1 = hil.chan1_scaled;
-                    hilch2 = hil.chan2_scaled;
-                    hilch3 = hil.chan3_scaled;
-                    hilch4 = hil.chan4_scaled;
-                    hilch5 = hil.chan5_scaled;
-                    hilch6 = hil.chan6_scaled;
-                    hilch7 = hil.chan7_scaled;
-                    hilch8 = hil.chan8_scaled;
+                        int ind = logdata.IndexOf('\0');
+                        if (ind != -1)
+                            logdata = logdata.Substring(0, ind);
 
-                    //MAVLink.packets[MAVLink.MAVLINK_MSG_ID_RC_CHANNELS_SCALED] = null;
-                }
+                        try
+                        {
+                            while (messages.Count > 5)
+                            {
+                                messages.RemoveAt(0);
+                            }
+                            messages.Add(logdata + "\n");
 
-                bytearray = mavinterface.packets[MAVLink.MAVLINK_MSG_ID_HIL_CONTROLS];
+                        }
+                        catch { }
+                        mavinterface.packets[MAVLink.MAVLINK_MSG_ID_STATUSTEXT] = null;
+                    }
 
-                if (bytearray != null) // hil mavlink 0.9 and 1.0
-                {
-                    var hil = bytearray.ByteArrayToStructure<MAVLink.mavlink_hil_controls_t>(6);
+                    byte[] bytearray = mavinterface.packets[MAVLink.MAVLINK_MSG_ID_RC_CHANNELS_SCALED];
 
-                    hilch1 = (int)(hil.roll_ailerons * 10000);
-                    hilch2 = (int)(hil.pitch_elevator * 10000);
-                    hilch3 = (int)(hil.throttle * 10000);
-                    hilch4 = (int)(hil.yaw_rudder * 10000);
+                    if (bytearray != null) // hil mavlink 0.9
+                    {
+                        var hil = bytearray.ByteArrayToStructure<MAVLink.mavlink_rc_channels_scaled_t>(6);
 
-                    //MAVLink.packets[MAVLink.MAVLINK_MSG_ID_HIL_CONTROLS] = null;
-                }
+                        hilch1 = hil.chan1_scaled;
+                        hilch2 = hil.chan2_scaled;
+                        hilch3 = hil.chan3_scaled;
+                        hilch4 = hil.chan4_scaled;
+                        hilch5 = hil.chan5_scaled;
+                        hilch6 = hil.chan6_scaled;
+                        hilch7 = hil.chan7_scaled;
+                        hilch8 = hil.chan8_scaled;
 
-                bytearray = mavinterface.packets[MAVLink.MAVLINK_MSG_ID_HWSTATUS];
+                        //MAVLink.packets[MAVLink.MAVLINK_MSG_ID_RC_CHANNELS_SCALED] = null;
+                    }
 
-                if (bytearray != null)
-                {
-                    var hwstatus = bytearray.ByteArrayToStructure<MAVLink.mavlink_hwstatus_t>(6);
+                    bytearray = mavinterface.packets[MAVLink.MAVLINK_MSG_ID_HIL_CONTROLS];
 
-                    hwvoltage = hwstatus.Vcc;
-                    i2cerrors = hwstatus.I2Cerr;
+                    if (bytearray != null) // hil mavlink 0.9 and 1.0
+                    {
+                        var hil = bytearray.ByteArrayToStructure<MAVLink.mavlink_hil_controls_t>(6);
 
-                    //MAVLink.packets[MAVLink.MAVLINK_MSG_ID_HWSTATUS] = null;
-                }
-                
+                        hilch1 = (int)(hil.roll_ailerons * 10000);
+                        hilch2 = (int)(hil.pitch_elevator * 10000);
+                        hilch3 = (int)(hil.throttle * 10000);
+                        hilch4 = (int)(hil.yaw_rudder * 10000);
+
+                        //MAVLink.packets[MAVLink.MAVLINK_MSG_ID_HIL_CONTROLS] = null;
+                    }
+
+                    bytearray = mavinterface.packets[MAVLink.MAVLINK_MSG_ID_HWSTATUS];
+
+                    if (bytearray != null)
+                    {
+                        var hwstatus = bytearray.ByteArrayToStructure<MAVLink.mavlink_hwstatus_t>(6);
+
+                        hwvoltage = hwstatus.Vcc;
+                        i2cerrors = hwstatus.I2Cerr;
+
+                        //MAVLink.packets[MAVLink.MAVLINK_MSG_ID_HWSTATUS] = null;
+                    }
+
 #if MAVLINK10
 
-                
-                bytearray = mavinterface.packets[MAVLink.MAVLINK_MSG_ID_HEARTBEAT];
-                if (bytearray != null)
-                {
-                    var hb = bytearray.ByteArrayToStructure<MAVLink.mavlink_heartbeat_t>(6);
 
-                    armed = (hb.base_mode & (byte)MAVLink.MAV_MODE_FLAG.SAFETY_ARMED) == (byte)MAVLink.MAV_MODE_FLAG.SAFETY_ARMED ? 4 : 3;
-					
-                    string oldmode = mode;
-
-                    mode = "Unknown";
-
-                    if ((hb.base_mode & (byte)MAVLink.MAV_MODE_FLAG.CUSTOM_MODE_ENABLED) != 0)
+                    bytearray = mavinterface.packets[MAVLink.MAVLINK_MSG_ID_HEARTBEAT];
+                    if (bytearray != null)
                     {
-                        if (hb.type == (byte)MAVLink.MAV_TYPE.FIXED_WING)
+                        var hb = bytearray.ByteArrayToStructure<MAVLink.mavlink_heartbeat_t>(6);
+
+                        armed = (hb.base_mode & (byte)MAVLink.MAV_MODE_FLAG.SAFETY_ARMED) == (byte)MAVLink.MAV_MODE_FLAG.SAFETY_ARMED ? 4 : 3;
+
+                        string oldmode = mode;
+
+                        mode = "Unknown";
+
+                        if ((hb.base_mode & (byte)MAVLink.MAV_MODE_FLAG.CUSTOM_MODE_ENABLED) != 0)
                         {
-                            switch (hb.custom_mode)
+                            if (hb.type == (byte)MAVLink.MAV_TYPE.FIXED_WING)
                             {
-                                case (byte)(Common.apmmodes.MANUAL):
-                                    mode = "Manual";
-                                    break;
-                                case (byte)(Common.apmmodes.GUIDED):
-                                    mode = "Guided";
-                                    break;
-                                case (byte)(Common.apmmodes.STABILIZE):
-                                    mode = "Stabilize";
-                                    break;
-                                case (byte)(Common.apmmodes.FLY_BY_WIRE_A):
-                                    mode = "FBW A";
-                                    break;
-                                case (byte)(Common.apmmodes.FLY_BY_WIRE_B):
-                                    mode = "FBW B";
-                                    break;
-                                case (byte)(Common.apmmodes.AUTO):
-                                    mode = "Auto";
-                                    break;
-                                case (byte)(Common.apmmodes.RTL):
-                                    mode = "RTL";
-                                    break;
-                                case (byte)(Common.apmmodes.LOITER):
-                                    mode = "Loiter";
-                                    break;
-                                case (byte)(Common.apmmodes.CIRCLE):
-                                    mode = "Circle";
-                                    break;
-                                case 16:
-                                    mode = "Initialising";
-                                    break;
-                                default:
-                                    mode = "Unknown";
-                                    break;
+                                switch (hb.custom_mode)
+                                {
+                                    case (byte)(Common.apmmodes.MANUAL):
+                                        mode = "Manual";
+                                        break;
+                                    case (byte)(Common.apmmodes.GUIDED):
+                                        mode = "Guided";
+                                        break;
+                                    case (byte)(Common.apmmodes.STABILIZE):
+                                        mode = "Stabilize";
+                                        break;
+                                    case (byte)(Common.apmmodes.FLY_BY_WIRE_A):
+                                        mode = "FBW A";
+                                        break;
+                                    case (byte)(Common.apmmodes.FLY_BY_WIRE_B):
+                                        mode = "FBW B";
+                                        break;
+                                    case (byte)(Common.apmmodes.AUTO):
+                                        mode = "Auto";
+                                        break;
+                                    case (byte)(Common.apmmodes.RTL):
+                                        mode = "RTL";
+                                        break;
+                                    case (byte)(Common.apmmodes.LOITER):
+                                        mode = "Loiter";
+                                        break;
+                                    case (byte)(Common.apmmodes.CIRCLE):
+                                        mode = "Circle";
+                                        break;
+                                    case 16:
+                                        mode = "Initialising";
+                                        break;
+                                    default:
+                                        mode = "Unknown";
+                                        break;
+                                }
+                            }
+                            else if (hb.type == (byte)MAVLink.MAV_TYPE.QUADROTOR)
+                            {
+                                switch (hb.custom_mode)
+                                {
+                                    case (byte)(Common.ac2modes.STABILIZE):
+                                        mode = "Stabilize";
+                                        break;
+                                    case (byte)(Common.ac2modes.ACRO):
+                                        mode = "Acro";
+                                        break;
+                                    case (byte)(Common.ac2modes.ALT_HOLD):
+                                        mode = "Alt Hold";
+                                        break;
+                                    case (byte)(Common.ac2modes.AUTO):
+                                        mode = "Auto";
+                                        break;
+                                    case (byte)(Common.ac2modes.GUIDED):
+                                        mode = "Guided";
+                                        break;
+                                    case (byte)(Common.ac2modes.LOITER):
+                                        mode = "Loiter";
+                                        break;
+                                    case (byte)(Common.ac2modes.RTL):
+                                        mode = "RTL";
+                                        break;
+                                    case (byte)(Common.ac2modes.CIRCLE):
+                                        mode = "Circle";
+                                        break;
+                                    case (byte)(Common.ac2modes.LAND):
+                                        mode = "Land";
+                                        break;
+                                    default:
+                                        mode = "Unknown";
+                                        break;
+                                }
                             }
                         }
-                        else if (hb.type == (byte)MAVLink.MAV_TYPE.QUADROTOR) 
+
+                        if (oldmode != mode && MainV2.speechEnable && MainV2.getConfig("speechmodeenabled") == "True")
                         {
-                            switch (hb.custom_mode)
-                            {
-                                case (byte)(Common.ac2modes.STABILIZE):
-                                    mode = "Stabilize";
-                                    break;
-                                case (byte)(Common.ac2modes.ACRO):
-                                    mode = "Acro";
-                                    break;
-                                case (byte)(Common.ac2modes.ALT_HOLD):
-                                    mode = "Alt Hold";
-                                    break;
-                                case (byte)(Common.ac2modes.AUTO):
-                                    mode = "Auto";
-                                    break;
-                                case (byte)(Common.ac2modes.GUIDED):
-                                    mode = "Guided";
-                                    break;
-                                case (byte)(Common.ac2modes.LOITER):
-                                    mode = "Loiter";
-                                    break;
-                                case (byte)(Common.ac2modes.RTL):
-                                    mode = "RTL";
-                                    break;
-                                case (byte)(Common.ac2modes.CIRCLE):
-                                    mode = "Circle";
-                                    break;
-                                        case (byte)(Common.ac2modes.LAND):
-                            mode = "Land";
-                            break;
-                                default:
-                                    mode = "Unknown";
-                                    break;
-                            }
+                            MainV2.speechEngine.SpeakAsync(Common.speechConversion(MainV2.getConfig("speechmode")));
                         }
                     }
 
-                    if (oldmode != mode && MainV2.speechEnable && MainV2.getConfig("speechmodeenabled") == "True")
+
+                    bytearray = mavinterface.packets[ArdupilotMega.MAVLink.MAVLINK_MSG_ID_SYS_STATUS];
+                    if (bytearray != null)
                     {
-                        MainV2.speechEngine.SpeakAsync(Common.speechConversion(MainV2.getConfig("speechmode")));
+                        var sysstatus = bytearray.ByteArrayToStructure<MAVLink.mavlink_sys_status_t>(6);
+
+                        battery_voltage = sysstatus.voltage_battery;
+                        battery_remaining = sysstatus.battery_remaining;
+                        current = sysstatus.current_battery;
+
+                        packetdropremote = sysstatus.drop_rate_comm;
+
+                        //MAVLink.packets[ArdupilotMega.MAVLink.MAVLINK_MSG_ID_SYS_STATUS] = null;
                     }
-                }
-
-
-                bytearray = mavinterface.packets[ArdupilotMega.MAVLink.MAVLINK_MSG_ID_SYS_STATUS];
-                if (bytearray != null)
-                {
-                    var sysstatus = bytearray.ByteArrayToStructure<MAVLink.mavlink_sys_status_t>(6);
-
-                    battery_voltage = sysstatus.voltage_battery;
-                    battery_remaining = sysstatus.battery_remaining;
-                    current = sysstatus.current_battery;
-
-                    packetdropremote = sysstatus.drop_rate_comm;
-
-                    //MAVLink.packets[ArdupilotMega.MAVLink.MAVLINK_MSG_ID_SYS_STATUS] = null;
-                }
 #else
 
                 bytearray = mavinterface.packets[MAVLink.MAVLINK_MSG_ID_SYS_STATUS];
@@ -665,73 +670,73 @@ namespace ArdupilotMega
                 }
 #endif
 
-                bytearray = mavinterface.packets[MAVLink.MAVLINK_MSG_ID_SCALED_PRESSURE];
-                if (bytearray != null)
-                {
-                    var pres = bytearray.ByteArrayToStructure<MAVLink.mavlink_scaled_pressure_t>(6);
-                    press_abs = pres.press_abs;
-                    press_temp = pres.temperature;
-                }
+                    bytearray = mavinterface.packets[MAVLink.MAVLINK_MSG_ID_SCALED_PRESSURE];
+                    if (bytearray != null)
+                    {
+                        var pres = bytearray.ByteArrayToStructure<MAVLink.mavlink_scaled_pressure_t>(6);
+                        press_abs = pres.press_abs;
+                        press_temp = pres.temperature;
+                    }
 
-                bytearray = mavinterface.packets[MAVLink.MAVLINK_MSG_ID_SENSOR_OFFSETS];
-                if (bytearray != null)
-                {
-                    var sensofs = bytearray.ByteArrayToStructure<MAVLink.mavlink_sensor_offsets_t>(6);
+                    bytearray = mavinterface.packets[MAVLink.MAVLINK_MSG_ID_SENSOR_OFFSETS];
+                    if (bytearray != null)
+                    {
+                        var sensofs = bytearray.ByteArrayToStructure<MAVLink.mavlink_sensor_offsets_t>(6);
 
-                    mag_ofs_x = sensofs.mag_ofs_x;
-                    mag_ofs_y = sensofs.mag_ofs_y;
-                    mag_ofs_z = sensofs.mag_ofs_z;
-                    mag_declination = sensofs.mag_declination;
+                        mag_ofs_x = sensofs.mag_ofs_x;
+                        mag_ofs_y = sensofs.mag_ofs_y;
+                        mag_ofs_z = sensofs.mag_ofs_z;
+                        mag_declination = sensofs.mag_declination;
 
-                    raw_press = sensofs.raw_press;
-                    raw_temp = sensofs.raw_temp;
+                        raw_press = sensofs.raw_press;
+                        raw_temp = sensofs.raw_temp;
 
-                    gyro_cal_x = sensofs.gyro_cal_x;
-                    gyro_cal_y = sensofs.gyro_cal_y;
-                    gyro_cal_z = sensofs.gyro_cal_z;
+                        gyro_cal_x = sensofs.gyro_cal_x;
+                        gyro_cal_y = sensofs.gyro_cal_y;
+                        gyro_cal_z = sensofs.gyro_cal_z;
 
-                    accel_cal_x = sensofs.accel_cal_x;
-                    accel_cal_y = sensofs.accel_cal_y;
-                    accel_cal_z = sensofs.accel_cal_z;
+                        accel_cal_x = sensofs.accel_cal_x;
+                        accel_cal_y = sensofs.accel_cal_y;
+                        accel_cal_z = sensofs.accel_cal_z;
 
-                }
+                    }
 
-                bytearray = mavinterface.packets[MAVLink.MAVLINK_MSG_ID_ATTITUDE];
+                    bytearray = mavinterface.packets[MAVLink.MAVLINK_MSG_ID_ATTITUDE];
 
-                if (bytearray != null)
-                {
-                    var att = bytearray.ByteArrayToStructure<MAVLink.mavlink_attitude_t>(6);
+                    if (bytearray != null)
+                    {
+                        var att = bytearray.ByteArrayToStructure<MAVLink.mavlink_attitude_t>(6);
 
-                    roll = att.roll * rad2deg;
-                    pitch = att.pitch * rad2deg;
-                    yaw = att.yaw * rad2deg;
+                        roll = att.roll * rad2deg;
+                        pitch = att.pitch * rad2deg;
+                        yaw = att.yaw * rad2deg;
 
-                    //                    Console.WriteLine(roll + " " + pitch + " " + yaw);
+                        //                    Console.WriteLine(roll + " " + pitch + " " + yaw);
 
-                    //MAVLink.packets[MAVLink.MAVLINK_MSG_ID_ATTITUDE] = null;
-                }
+                        //MAVLink.packets[MAVLink.MAVLINK_MSG_ID_ATTITUDE] = null;
+                    }
 #if MAVLINK10
-                bytearray = mavinterface.packets[MAVLink.MAVLINK_MSG_ID_GPS_RAW_INT];
-                if (bytearray != null)
-                {
-                    var gps = bytearray.ByteArrayToStructure<MAVLink.mavlink_gps_raw_int_t>(6);
+                    bytearray = mavinterface.packets[MAVLink.MAVLINK_MSG_ID_GPS_RAW_INT];
+                    if (bytearray != null)
+                    {
+                        var gps = bytearray.ByteArrayToStructure<MAVLink.mavlink_gps_raw_int_t>(6);
 
-                    lat = gps.lat * 1.0e-7f;
-                    lng = gps.lon * 1.0e-7f;
-                    //                alt = gps.alt; // using vfr as includes baro calc
+                        lat = gps.lat * 1.0e-7f;
+                        lng = gps.lon * 1.0e-7f;
+                        //                alt = gps.alt; // using vfr as includes baro calc
 
-                    gpsstatus = gps.fix_type;
-                    //                    Console.WriteLine("gpsfix {0}",gpsstatus);
+                        gpsstatus = gps.fix_type;
+                        //                    Console.WriteLine("gpsfix {0}",gpsstatus);
 
-                    gpshdop = gps.eph;
+                        gpshdop = gps.eph;
 
-                    satcount = gps.satellites_visible;
+                        satcount = gps.satellites_visible;
 
-                    groundspeed = gps.vel * 1.0e-2f;
-                    groundcourse = gps.cog * 1.0e-2f;
+                        groundspeed = gps.vel * 1.0e-2f;
+                        groundcourse = gps.cog * 1.0e-2f;
 
-                    //MAVLink.packets[MAVLink.MAVLINK_MSG_ID_GPS_RAW] = null;
-                }
+                        //MAVLink.packets[MAVLink.MAVLINK_MSG_ID_GPS_RAW] = null;
+                    }
 #else
 
                 bytearray = mavinterface.packets[MAVLink.MAVLINK_MSG_ID_GPS_RAW];
@@ -755,52 +760,52 @@ namespace ArdupilotMega
                 }
 #endif
 
-                bytearray = mavinterface.packets[MAVLink.MAVLINK_MSG_ID_GPS_STATUS];
-                if (bytearray != null)
-                {
-                    var gps = bytearray.ByteArrayToStructure<MAVLink.mavlink_gps_status_t>(6);
-                    satcount = gps.satellites_visible;
-                }
-
-                bytearray = mavinterface.packets[MAVLink.MAVLINK_MSG_ID_RADIO];
-                if (bytearray != null)
-                {
-                    var radio = bytearray.ByteArrayToStructure<MAVLink.mavlink_radio_t>(6);
-                    rssi = radio.rssi;
-                    remrssi = radio.remrssi;
-                    txbuffer = radio.txbuf;
-                    rxerrors = radio.rxerrors;
-                    noise  = radio.noise;
-                    remnoise = radio.remnoise;
-                    fixedp = radio.fixedp;
-                }
-
-                bytearray = mavinterface.packets[MAVLink.MAVLINK_MSG_ID_GLOBAL_POSITION_INT];
-                if (bytearray != null)
-                {
-                    var loc = bytearray.ByteArrayToStructure<MAVLink.mavlink_global_position_int_t>(6);
-
-                    //alt = loc.alt / 1000.0f;
-                    lat = loc.lat / 10000000.0f;
-                    lng = loc.lon / 10000000.0f;
-                }
-#if MAVLINK10
-                bytearray = mavinterface.packets[MAVLink.MAVLINK_MSG_ID_MISSION_CURRENT];
-                if (bytearray != null)
-                {
-                    var wpcur = bytearray.ByteArrayToStructure<MAVLink.mavlink_mission_current_t>(6);
-              
-                    int oldwp = (int)wpno;
-
-                    wpno = wpcur.seq;
-
-                    if (oldwp != wpno && MainV2.speechEnable && MainV2.getConfig("speechwaypointenabled") == "True")
+                    bytearray = mavinterface.packets[MAVLink.MAVLINK_MSG_ID_GPS_STATUS];
+                    if (bytearray != null)
                     {
-                        MainV2.speechEngine.SpeakAsync(Common.speechConversion(MainV2.getConfig("speechwaypoint")));
+                        var gps = bytearray.ByteArrayToStructure<MAVLink.mavlink_gps_status_t>(6);
+                        satcount = gps.satellites_visible;
                     }
 
-                    //MAVLink.packets[ArdupilotMega.MAVLink.MAVLINK_MSG_ID_WAYPOINT_CURRENT] = null;
-                }
+                    bytearray = mavinterface.packets[MAVLink.MAVLINK_MSG_ID_RADIO];
+                    if (bytearray != null)
+                    {
+                        var radio = bytearray.ByteArrayToStructure<MAVLink.mavlink_radio_t>(6);
+                        rssi = radio.rssi;
+                        remrssi = radio.remrssi;
+                        txbuffer = radio.txbuf;
+                        rxerrors = radio.rxerrors;
+                        noise = radio.noise;
+                        remnoise = radio.remnoise;
+                        fixedp = radio.fixedp;
+                    }
+
+                    bytearray = mavinterface.packets[MAVLink.MAVLINK_MSG_ID_GLOBAL_POSITION_INT];
+                    if (bytearray != null)
+                    {
+                        var loc = bytearray.ByteArrayToStructure<MAVLink.mavlink_global_position_int_t>(6);
+
+                        //alt = loc.alt / 1000.0f;
+                        lat = loc.lat / 10000000.0f;
+                        lng = loc.lon / 10000000.0f;
+                    }
+#if MAVLINK10
+                    bytearray = mavinterface.packets[MAVLink.MAVLINK_MSG_ID_MISSION_CURRENT];
+                    if (bytearray != null)
+                    {
+                        var wpcur = bytearray.ByteArrayToStructure<MAVLink.mavlink_mission_current_t>(6);
+
+                        int oldwp = (int)wpno;
+
+                        wpno = wpcur.seq;
+
+                        if (oldwp != wpno && MainV2.speechEnable && MainV2.getConfig("speechwaypointenabled") == "True")
+                        {
+                            MainV2.speechEngine.SpeakAsync(Common.speechConversion(MainV2.getConfig("speechwaypoint")));
+                        }
+
+                        //MAVLink.packets[ArdupilotMega.MAVLink.MAVLINK_MSG_ID_WAYPOINT_CURRENT] = null;
+                    }
 #else
 
                 bytearray = mavinterface.packets[MAVLink.MAVLINK_MSG_ID_GLOBAL_POSITION];
@@ -832,145 +837,146 @@ namespace ArdupilotMega
 #endif
 
 
-                bytearray = mavinterface.packets[MAVLink.MAVLINK_MSG_ID_NAV_CONTROLLER_OUTPUT];
+                    bytearray = mavinterface.packets[MAVLink.MAVLINK_MSG_ID_NAV_CONTROLLER_OUTPUT];
 
-                if (bytearray != null)
-                {
-                    var nav = bytearray.ByteArrayToStructure<MAVLink.mavlink_nav_controller_output_t>(6);
-
-                    nav_roll = nav.nav_roll;
-                    nav_pitch = nav.nav_pitch;
-                    nav_bearing = nav.nav_bearing;
-                    target_bearing = nav.target_bearing;
-                    wp_dist = nav.wp_dist;
-                    alt_error = nav.alt_error;
-                    aspd_error = nav.aspd_error;
-                    xtrack_error = nav.xtrack_error;
-
-                    //MAVLink.packets[MAVLink.MAVLINK_MSG_ID_NAV_CONTROLLER_OUTPUT] = null;
-                }
-
-                bytearray = mavinterface.packets[MAVLink.MAVLINK_MSG_ID_RC_CHANNELS_RAW];
-                if (bytearray != null)
-                {
-                    var rcin = bytearray.ByteArrayToStructure<MAVLink.mavlink_rc_channels_raw_t>(6);
-
-                    ch1in = rcin.chan1_raw;
-                    ch2in = rcin.chan2_raw;
-                    ch3in = rcin.chan3_raw;
-                    ch4in = rcin.chan4_raw;
-                    ch5in = rcin.chan5_raw;
-                    ch6in = rcin.chan6_raw;
-                    ch7in = rcin.chan7_raw;
-                    ch8in = rcin.chan8_raw;
-
-                    //MAVLink.packets[MAVLink.MAVLINK_MSG_ID_RC_CHANNELS_RAW] = null;
-                }
-
-                bytearray = mavinterface.packets[MAVLink.MAVLINK_MSG_ID_SERVO_OUTPUT_RAW];
-                if (bytearray != null)
-                {
-                    var servoout = bytearray.ByteArrayToStructure<MAVLink.mavlink_servo_output_raw_t>(6);
-
-                    ch1out = servoout.servo1_raw;
-                    ch2out = servoout.servo2_raw;
-                    ch3out = servoout.servo3_raw;
-                    ch4out = servoout.servo4_raw;
-                    ch5out = servoout.servo5_raw;
-                    ch6out = servoout.servo6_raw;
-                    ch7out = servoout.servo7_raw;
-                    ch8out = servoout.servo8_raw;
-
-                    //MAVLink.packets[MAVLink.MAVLINK_MSG_ID_SERVO_OUTPUT_RAW] = null;
-                }
-
-
-                bytearray = mavinterface.packets[MAVLink.MAVLINK_MSG_ID_RAW_IMU];
-                if (bytearray != null)
-                {
-                    var imu = bytearray.ByteArrayToStructure<MAVLink.mavlink_raw_imu_t>(6);
-
-                    gx = imu.xgyro;
-                    gy = imu.ygyro;
-                    gz = imu.zgyro;
-
-                    ax = imu.xacc;
-                    ay = imu.yacc;
-                    az = imu.zacc;
-
-                    mx = imu.xmag;
-                    my = imu.ymag;
-                    mz = imu.zmag;
-
-                    //MAVLink.packets[MAVLink.MAVLINK_MSG_ID_RAW_IMU] = null;
-                }
-
-                bytearray = mavinterface.packets[MAVLink.MAVLINK_MSG_ID_SCALED_IMU];
-                if (bytearray != null)
-                {
-                    var imu = bytearray.ByteArrayToStructure<MAVLink.mavlink_scaled_imu_t>(6);
-
-                    gx = imu.xgyro;
-                    gy = imu.ygyro;
-                    gz = imu.zgyro;
-
-                    ax = imu.xacc;
-                    ay = imu.yacc;
-                    az = imu.zacc;
-
-                    //MAVLink.packets[MAVLink.MAVLINK_MSG_ID_RAW_IMU] = null;
-                }
-
-
-                bytearray = mavinterface.packets[MAVLink.MAVLINK_MSG_ID_VFR_HUD];
-                if (bytearray != null)
-                {
-                    var vfr = bytearray.ByteArrayToStructure<MAVLink.mavlink_vfr_hud_t>(6);
-
-                    groundspeed = vfr.groundspeed;
-                    airspeed = vfr.airspeed;
-
-                    alt = vfr.alt; // this might include baro
-
-                    //climbrate = vfr.climb;
-
-                    if ((DateTime.Now - lastalt).TotalSeconds >= 0.2 && oldalt != alt)
+                    if (bytearray != null)
                     {
-                        climbrate = (alt - oldalt) / (float)(DateTime.Now - lastalt).TotalSeconds;
-                        verticalspeed = (alt - oldalt) / (float)(DateTime.Now - lastalt).TotalSeconds;
-                        if (float.IsInfinity(_verticalspeed))
-                            _verticalspeed = 0;
-                        lastalt = DateTime.Now;
-                        oldalt = alt;
+                        var nav = bytearray.ByteArrayToStructure<MAVLink.mavlink_nav_controller_output_t>(6);
+
+                        nav_roll = nav.nav_roll;
+                        nav_pitch = nav.nav_pitch;
+                        nav_bearing = nav.nav_bearing;
+                        target_bearing = nav.target_bearing;
+                        wp_dist = nav.wp_dist;
+                        alt_error = nav.alt_error;
+                        aspd_error = nav.aspd_error;
+                        xtrack_error = nav.xtrack_error;
+
+                        //MAVLink.packets[MAVLink.MAVLINK_MSG_ID_NAV_CONTROLLER_OUTPUT] = null;
                     }
 
-                    //MAVLink.packets[MAVLink.MAVLINK_MSG_ID_VFR_HUD] = null;
+                    bytearray = mavinterface.packets[MAVLink.MAVLINK_MSG_ID_RC_CHANNELS_RAW];
+                    if (bytearray != null)
+                    {
+                        var rcin = bytearray.ByteArrayToStructure<MAVLink.mavlink_rc_channels_raw_t>(6);
+
+                        ch1in = rcin.chan1_raw;
+                        ch2in = rcin.chan2_raw;
+                        ch3in = rcin.chan3_raw;
+                        ch4in = rcin.chan4_raw;
+                        ch5in = rcin.chan5_raw;
+                        ch6in = rcin.chan6_raw;
+                        ch7in = rcin.chan7_raw;
+                        ch8in = rcin.chan8_raw;
+
+                        //MAVLink.packets[MAVLink.MAVLINK_MSG_ID_RC_CHANNELS_RAW] = null;
+                    }
+
+                    bytearray = mavinterface.packets[MAVLink.MAVLINK_MSG_ID_SERVO_OUTPUT_RAW];
+                    if (bytearray != null)
+                    {
+                        var servoout = bytearray.ByteArrayToStructure<MAVLink.mavlink_servo_output_raw_t>(6);
+
+                        ch1out = servoout.servo1_raw;
+                        ch2out = servoout.servo2_raw;
+                        ch3out = servoout.servo3_raw;
+                        ch4out = servoout.servo4_raw;
+                        ch5out = servoout.servo5_raw;
+                        ch6out = servoout.servo6_raw;
+                        ch7out = servoout.servo7_raw;
+                        ch8out = servoout.servo8_raw;
+
+                        //MAVLink.packets[MAVLink.MAVLINK_MSG_ID_SERVO_OUTPUT_RAW] = null;
+                    }
+
+
+                    bytearray = mavinterface.packets[MAVLink.MAVLINK_MSG_ID_RAW_IMU];
+                    if (bytearray != null)
+                    {
+                        var imu = bytearray.ByteArrayToStructure<MAVLink.mavlink_raw_imu_t>(6);
+
+                        gx = imu.xgyro;
+                        gy = imu.ygyro;
+                        gz = imu.zgyro;
+
+                        ax = imu.xacc;
+                        ay = imu.yacc;
+                        az = imu.zacc;
+
+                        mx = imu.xmag;
+                        my = imu.ymag;
+                        mz = imu.zmag;
+
+                        //MAVLink.packets[MAVLink.MAVLINK_MSG_ID_RAW_IMU] = null;
+                    }
+
+                    bytearray = mavinterface.packets[MAVLink.MAVLINK_MSG_ID_SCALED_IMU];
+                    if (bytearray != null)
+                    {
+                        var imu = bytearray.ByteArrayToStructure<MAVLink.mavlink_scaled_imu_t>(6);
+
+                        gx = imu.xgyro;
+                        gy = imu.ygyro;
+                        gz = imu.zgyro;
+
+                        ax = imu.xacc;
+                        ay = imu.yacc;
+                        az = imu.zacc;
+
+                        //MAVLink.packets[MAVLink.MAVLINK_MSG_ID_RAW_IMU] = null;
+                    }
+
+
+                    bytearray = mavinterface.packets[MAVLink.MAVLINK_MSG_ID_VFR_HUD];
+                    if (bytearray != null)
+                    {
+                        var vfr = bytearray.ByteArrayToStructure<MAVLink.mavlink_vfr_hud_t>(6);
+
+                        groundspeed = vfr.groundspeed;
+                        airspeed = vfr.airspeed;
+
+                        alt = vfr.alt; // this might include baro
+
+                        //climbrate = vfr.climb;
+
+                        if ((DateTime.Now - lastalt).TotalSeconds >= 0.2 && oldalt != alt)
+                        {
+                            climbrate = (alt - oldalt) / (float)(DateTime.Now - lastalt).TotalSeconds;
+                            verticalspeed = (alt - oldalt) / (float)(DateTime.Now - lastalt).TotalSeconds;
+                            if (float.IsInfinity(_verticalspeed))
+                                _verticalspeed = 0;
+                            lastalt = DateTime.Now;
+                            oldalt = alt;
+                        }
+
+                        //MAVLink.packets[MAVLink.MAVLINK_MSG_ID_VFR_HUD] = null;
+                    }
+
+                    bytearray = mavinterface.packets[MAVLink.MAVLINK_MSG_ID_MEMINFO];
+                    if (bytearray != null)
+                    {
+                        var mem = bytearray.ByteArrayToStructure<MAVLink.mavlink_meminfo_t>(6);
+                        freemem = mem.freemem;
+                        brklevel = mem.brkval;
+                    }
                 }
 
-                bytearray = mavinterface.packets[MAVLink.MAVLINK_MSG_ID_MEMINFO];
-                if (bytearray != null)
+                //Console.WriteLine(DateTime.Now.Millisecond + " start ");
+                // update form
+                try
                 {
-                    var mem = bytearray.ByteArrayToStructure<MAVLink.mavlink_meminfo_t>(6);
-                    freemem = mem.freemem;
-                    brklevel = mem.brkval;
+                    if (bs != null)
+                    {
+                        //System.Diagnostics.Debug.WriteLine(DateTime.Now.Millisecond);
+                        //Console.WriteLine(DateTime.Now.Millisecond);
+                        bs.DataSource = this;
+                        // Console.WriteLine(DateTime.Now.Millisecond + " 1 " + updatenow + " " + System.Threading.Thread.CurrentThread.Name);
+                        bs.ResetBindings(false);
+                        //Console.WriteLine(DateTime.Now.Millisecond + " done ");
+                    }
                 }
+                catch { log.InfoFormat("CurrentState Binding error"); }
             }
-
-            //Console.WriteLine(DateTime.Now.Millisecond + " start ");
-            // update form
-            try
-            {
-                if (bs != null)
-                {
-                    //System.Diagnostics.Debug.WriteLine(DateTime.Now.Millisecond);
-                    //Console.WriteLine(DateTime.Now.Millisecond);
-                    bs.DataSource = this;
-                   // Console.WriteLine(DateTime.Now.Millisecond + " 1 " + updatenow + " " + System.Threading.Thread.CurrentThread.Name);
-                    bs.ResetBindings(false);
-                    //Console.WriteLine(DateTime.Now.Millisecond + " done ");
-                }
-            }
-            catch { log.InfoFormat("CurrentState Binding error"); }
         }
 
         public object Clone()

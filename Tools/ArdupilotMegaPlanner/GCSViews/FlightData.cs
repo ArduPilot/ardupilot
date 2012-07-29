@@ -512,13 +512,17 @@ namespace ArdupilotMega.GCSViews
                             //route.Stroke.Width = 5;
                             //route.Tag = "track";
 
-                            routes.Routes.Clear();
-                            routes.Routes.Add(route);
+                            updateClearRoutes();
 
                             if (waypoints.AddSeconds(10) < DateTime.Now)
                             {
                                 //Console.WriteLine("Doing FD WP's");
+                                while (gMapControl1.inOnPaint == true)
+                                {
+                                    System.Threading.Thread.Sleep(1);
+                                }
                                 polygons.Markers.Clear();
+                                routes.Markers.Clear();
 
                                 if (MainV2.comPort.logreadmode && MainV2.comPort.logplaybackfile != null)
                                 {
@@ -532,6 +536,12 @@ namespace ArdupilotMega.GCSViews
                                         break;
                                     if (plla.Lng == 0 || plla.Lat == 0)
                                         continue;
+
+                                    if (plla.Tag.StartsWith("ROI"))
+                                    {
+                                        addpolygonmarkerred(plla.Tag, plla.Lng, plla.Lat, (int)plla.Alt, plla.color, routes);
+                                        continue;
+                                    }
 
                                     addpolygonmarker(plla.Tag, plla.Lng, plla.Lat, (int)plla.Alt,plla.color,polygons);
                                 }
@@ -604,6 +614,19 @@ namespace ArdupilotMega.GCSViews
                 gMapControl1.Bearing = (int)MainV2.cs.yaw;
             });
         }
+
+
+        // to prevent cross thread calls while in a draw and exception
+        private void updateClearRoutes()
+        {
+            // not async
+            this.Invoke((System.Windows.Forms.MethodInvoker)delegate()
+            {
+                routes.Routes.Clear();
+                routes.Routes.Add(route);
+            });
+        }
+
 
         private void updatePlayPauseButton(bool playing)
         {
@@ -710,6 +733,27 @@ namespace ArdupilotMega.GCSViews
                         {
                             mBorders.Color = color.Value;
                         }
+                }
+
+                overlay.Markers.Add(m);
+                overlay.Markers.Add(mBorders);
+            }
+            catch (Exception) { }
+        }
+
+        private void addpolygonmarkerred(string tag, double lng, double lat, int alt, Color? color, GMapOverlay overlay)
+        {
+            try
+            {
+                PointLatLng point = new PointLatLng(lat, lng);
+                GMapMarkerGoogleRed m = new GMapMarkerGoogleRed(point);
+                m.ToolTipMode = MarkerTooltipMode.Always;
+                m.ToolTipText = tag;
+                m.Tag = tag;
+
+                GMapMarkerRect mBorders = new GMapMarkerRect(point);
+                {
+                    mBorders.InnerMarker = m;
                 }
 
                 overlay.Markers.Add(m);
@@ -1660,52 +1704,82 @@ namespace ArdupilotMega.GCSViews
                 if (list1item == null)
                 {
                     if (setupPropertyInfo(ref list1item, ((CheckBox)sender).Name, MainV2.cs))
+                    {
+                        list1.Clear();
                         list1curve = zg1.GraphPane.AddCurve(((CheckBox)sender).Name, list1, Color.Red, SymbolType.None);
+                    }
                 }
                 else if (list2item == null)
                 {
                     if (setupPropertyInfo(ref list2item, ((CheckBox)sender).Name, MainV2.cs))
+                    {
+                        list2.Clear();
                         list2curve = zg1.GraphPane.AddCurve(((CheckBox)sender).Name, list2, Color.Blue, SymbolType.None);
+                    }
                 }
                 else if (list3item == null)
                 {
                     if (setupPropertyInfo(ref list3item, ((CheckBox)sender).Name, MainV2.cs))
+                    {
+                        list3.Clear();
                         list3curve = zg1.GraphPane.AddCurve(((CheckBox)sender).Name, list3, Color.Green, SymbolType.None);
+                    }
                 }
                 else if (list4item == null)
                 {
                     if (setupPropertyInfo(ref list4item, ((CheckBox)sender).Name, MainV2.cs))
+                    {
+                        list4.Clear();
                         list4curve = zg1.GraphPane.AddCurve(((CheckBox)sender).Name, list4, Color.Orange, SymbolType.None);
+                    }
                 }
                 else if (list5item == null)
                 {
                     if (setupPropertyInfo(ref list5item, ((CheckBox)sender).Name, MainV2.cs))
+                    {
+                        list5.Clear();
                         list5curve = zg1.GraphPane.AddCurve(((CheckBox)sender).Name, list5, Color.Yellow, SymbolType.None);
+                    }
                 }
                 else if (list6item == null)
                 {
                     if (setupPropertyInfo(ref list6item, ((CheckBox)sender).Name, MainV2.cs))
+                    {
+                        list6.Clear();
                         list6curve = zg1.GraphPane.AddCurve(((CheckBox)sender).Name, list6, Color.Magenta, SymbolType.None);
+                    }
                 }
                 else if (list7item == null)
                 {
                     if (setupPropertyInfo(ref list7item, ((CheckBox)sender).Name, MainV2.cs))
+                    {
+                        list7.Clear();
                         list7curve = zg1.GraphPane.AddCurve(((CheckBox)sender).Name, list7, Color.Purple, SymbolType.None);
+                    }
                 }
                 else if (list8item == null)
                 {
                     if (setupPropertyInfo(ref list8item, ((CheckBox)sender).Name, MainV2.cs))
+                    {
+                        list8.Clear();
                         list8curve = zg1.GraphPane.AddCurve(((CheckBox)sender).Name, list8, Color.LimeGreen, SymbolType.None);
+                    }
                 }
                 else if (list9item == null)
                 {
                     if (setupPropertyInfo(ref list9item, ((CheckBox)sender).Name, MainV2.cs))
+                    {
+                        list9.Clear();
                         list9curve = zg1.GraphPane.AddCurve(((CheckBox)sender).Name, list9, Color.Cyan, SymbolType.None);
+                    }
                 }
                 else if (list10item == null)
                 {
                     if (setupPropertyInfo(ref list10item, ((CheckBox)sender).Name, MainV2.cs))
+                    {
+                        list10.Clear();
                         list10curve = zg1.GraphPane.AddCurve(((CheckBox)sender).Name, list10, Color.Violet, SymbolType.None);
+                    }
                 }
                 else
                 {

@@ -30,24 +30,24 @@
         {
             System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(ConfigAP_Limits));
             this.LNK_wiki = new System.Windows.Forms.LinkLabel();
-            this.LIM_ENABLED = new System.Windows.Forms.CheckBox();
+            this.LIM_ENABLED = new ArdupilotMega.Controls.MavlinkCheckBox();
             this.groupBox1 = new System.Windows.Forms.GroupBox();
             this.textBox1 = new System.Windows.Forms.TextBox();
             this.groupBox5 = new System.Windows.Forms.GroupBox();
-            this.LIM_GPSLCK_REQ = new System.Windows.Forms.CheckBox();
-            this.LIM_FNC_REQ = new System.Windows.Forms.CheckBox();
-            this.LIM_ALT_REQ = new System.Windows.Forms.CheckBox();
+            this.LIM_GPSLCK_REQ = new ArdupilotMega.Controls.MavlinkCheckBox();
+            this.LIM_FNC_REQ = new ArdupilotMega.Controls.MavlinkCheckBox();
+            this.LIM_ALT_REQ = new ArdupilotMega.Controls.MavlinkCheckBox();
             this.groupBox4 = new System.Windows.Forms.GroupBox();
-            this.LIM_REQUIRED = new System.Windows.Forms.CheckBox();
+            this.LIM_REQUIRED = new ArdupilotMega.Controls.MavlinkCheckBox();
             this.myLabel4 = new ArdupilotMega.Controls.MyLabel();
             this.LIM_CHANNEL = new System.Windows.Forms.NumericUpDown();
             this.myLabel3 = new ArdupilotMega.Controls.MyLabel();
             this.LIM_FNC_RAD = new System.Windows.Forms.NumericUpDown();
-            this.LIM_FNC_SMPL = new System.Windows.Forms.CheckBox();
+            this.LIM_FNC_SMPL = new ArdupilotMega.Controls.MavlinkCheckBox();
             this.groupBox3 = new System.Windows.Forms.GroupBox();
-            this.LIM_GPSLCK_ON = new System.Windows.Forms.CheckBox();
+            this.LIM_GPSLCK_ON = new ArdupilotMega.Controls.MavlinkCheckBox();
             this.groupBox2 = new System.Windows.Forms.GroupBox();
-            this.LIM_ALT_ON = new System.Windows.Forms.CheckBox();
+            this.LIM_ALT_ON = new ArdupilotMega.Controls.MavlinkCheckBox();
             this.myLabel1 = new ArdupilotMega.Controls.MyLabel();
             this.LIM_ALT_MAX = new System.Windows.Forms.NumericUpDown();
             this.myLabel2 = new ArdupilotMega.Controls.MyLabel();
@@ -281,28 +281,28 @@
         #endregion
 
         private System.Windows.Forms.LinkLabel LNK_wiki;
-        private System.Windows.Forms.CheckBox LIM_ENABLED;
+        private ArdupilotMega.Controls.MavlinkCheckBox LIM_ENABLED;
         private System.Windows.Forms.GroupBox groupBox1;
         private Controls.MyLabel myLabel2;
         private Controls.MyLabel myLabel1;
         private System.Windows.Forms.NumericUpDown LIM_ALT_MAX;
         private System.Windows.Forms.NumericUpDown LIM_ALT_MIN;
         private System.Windows.Forms.GroupBox groupBox2;
-        private System.Windows.Forms.CheckBox LIM_ALT_ON;
+        private ArdupilotMega.Controls.MavlinkCheckBox LIM_ALT_ON;
         private System.Windows.Forms.GroupBox groupBox3;
-        private System.Windows.Forms.CheckBox LIM_GPSLCK_ON;
+        private ArdupilotMega.Controls.MavlinkCheckBox LIM_GPSLCK_ON;
         private System.Windows.Forms.GroupBox groupBox4;
         private Controls.MyLabel myLabel3;
         private System.Windows.Forms.NumericUpDown LIM_FNC_RAD;
-        private System.Windows.Forms.CheckBox LIM_FNC_SMPL;
+        private ArdupilotMega.Controls.MavlinkCheckBox LIM_FNC_SMPL;
         private Controls.MyLabel myLabel4;
         private System.Windows.Forms.NumericUpDown LIM_CHANNEL;
-        private System.Windows.Forms.CheckBox LIM_REQUIRED;
+        private ArdupilotMega.Controls.MavlinkCheckBox LIM_REQUIRED;
         private System.Windows.Forms.GroupBox groupBox5;
-        private System.Windows.Forms.CheckBox LIM_FNC_REQ;
-        private System.Windows.Forms.CheckBox LIM_ALT_REQ;
+        private ArdupilotMega.Controls.MavlinkCheckBox LIM_FNC_REQ;
+        private ArdupilotMega.Controls.MavlinkCheckBox LIM_ALT_REQ;
         private System.Windows.Forms.TextBox textBox1;
-        private System.Windows.Forms.CheckBox LIM_GPSLCK_REQ;
+        private ArdupilotMega.Controls.MavlinkCheckBox LIM_GPSLCK_REQ;
 
     }
 }

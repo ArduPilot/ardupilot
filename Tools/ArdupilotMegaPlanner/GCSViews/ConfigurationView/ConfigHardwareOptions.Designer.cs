@@ -181,7 +181,6 @@
             // label5
             // 
             resources.ApplyResources(this.label5, "label5");
-            this.label5.ForeColor = System.Drawing.SystemColors.ControlText;
             this.label5.Name = "label5";
             // 
             // groupBox2
@@ -193,7 +192,6 @@
             // label1
             // 
             resources.ApplyResources(this.label1, "label1");
-            this.label1.ForeColor = System.Drawing.SystemColors.ControlText;
             this.label1.Name = "label1";
             // 
             // groupBox1
@@ -205,7 +203,6 @@
             // label2
             // 
             resources.ApplyResources(this.label2, "label2");
-            this.label2.ForeColor = System.Drawing.SystemColors.ControlText;
             this.label2.Name = "label2";
             // 
             // groupBox3
@@ -217,7 +214,6 @@
             // label3
             // 
             resources.ApplyResources(this.label3, "label3");
-            this.label3.ForeColor = System.Drawing.SystemColors.ControlText;
             this.label3.Name = "label3";
             // 
             // groupBox4
