@@ -1,4 +1,63 @@
-﻿* APM Planner 1.1.95
+﻿* Mission Planner 1.2
+Enable Mount config screen
+Add Quick View (double click to change)
+fix mono updater issue
+RFD900 transmit values Mod
+new mavlink controls (wip)
+
+
+* APM Planner 1.1.99
+Convert to IActivate, IDeactivate scheme, thanks andrew
+add support for rfcomm* interfaces on linux
+fix guage off screen draw mono issue.
+remove use of BackStageViewContentPanel
+andrews spacer changes - not using dues to screen space issue
+change configpanel constructor to load xml directly
+remove IMavlink Interface
+fix hsi off screen draw issue on mono
+modify hud to use sprite fonts, instead of drawing via GDI+
+modify progress reporter to use a 10hz timer to update screen, using invoke/begininvoke fails on mono at 50hz (over 100ms per call).
+fix targetalt and target airspeed jumping issue.
+lots of cleanup on tab switching, ie stoping timers/other
+3dr radio status led update
+update ardurover car icon
+speedup georef image screen. tested on over 1000 images.
+
+* APM Planner 1.1.98
+Modify BackStage View - will change again soon
+modify target alt calc
+change order on param lists
+remove old firmware selection dialog
+add hil mod flag to hil connect
+implement main switcher - will change again soon
+change some invokes to async, to prevent other threads slowing.
+fix mavlink log graphing error
+modify help text
+general mono for mac fixs - still combating https://bugzilla.xamarin.com/show_bug.cgi?id=3124
+
+
+* APM Planner 1.1.97
+add toy Mode
+fix some mono issues
+fix opengl hud issue
+change config font size
+modify mylabel for mono
+modify default telem rates
+add extra sonar option
+remove 0 home alt check
+fix terminal hang issue
+remove application idle call, causes 100% cpu on mono
+update gimbal icons
+modify graph line thinkness
+
+* APM Planner 1.1.96
+Fix camera stab reverse boxs
+add better param data duplicate handling
+add rfd900a
+tweak terminal settings
+
+
+* APM Planner 1.1.95
 fix config panel value change detection
 add loiter_ to AC config screen
 Add praram name to Friendly param, and exception ignoring.

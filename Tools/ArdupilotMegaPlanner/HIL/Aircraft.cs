@@ -19,72 +19,77 @@ namespace ArdupilotMega.HIL
         public double longitude = 0;
         public double altitude = 0;
 
-        public double pitch = 0.0;     //# degrees
-        public double roll = 0.0;    //# degrees
-        public double yaw = 0.0;   //# degrees
+        public Matrix3 dcm = new Matrix3();
 
-        public double pitch_rate = 0.0;  //# degrees/s
-        public double roll_rate = 0.0;  //# degrees/s
-        public double yaw_rate = 0.0;  //# degrees/s
+        public Vector3 gyro = new Vector3(0, 0, 0);
 
-        public double pDeg = 0.0;   // degrees/s
-        public double qDeg = 0.0;   // degrees/s
-        public double rDeg = 0.0;   // degrees/s
+        public Vector3 accel_body = new Vector3(0, 0, 0);
 
-        public Vector3d velocity = new Vector3d(0, 0, 0); //# m/s, North, East, Up
-        public Vector3d position = new Vector3d(0, 0, 0); //# m North, East, Up
-        public Vector3d accel = new Vector3d(0, 0, 0); //# m/s/s North, East, Up
+        public Vector3 velocity = new Vector3(0, 0, 0); //# m/s, North, East, Up
+        public Vector3 position = new Vector3(0, 0, 0); //# m North, East, Up
+        public Vector3 accel = new Vector3(0, 0, 0); //# m/s/s North, East, Up
         public double mass = 0.0;
         public double update_frequency = 50;//# in Hz
-        public double gravity = 9.8;//# m/s/s
-        public Vector3d accelerometer = new Vector3d(0, 0, -9.8);
+        public double gravity = 9.80665;//# m/s/s
+        public Vector3 accelerometer = new Vector3(0, 0, -9.80665);
+
+        public double roll = 0;
+        public double pitch = 0; 
+        public double yaw = 0;
 
         public Aircraft()
         {
             self = this;
         }
 
-        public void normalise()
+        public bool on_ground(Vector3 position = null)
         {
-            roll = norm(roll, -180, 180);
-            pitch = norm(pitch, -180, 180);
-            yaw = norm(yaw, 0, 360);
+            // '''return true if we are on the ground'''
+            if (position == null)
+                position = self.position;
+            return (-position.z) + self.home_altitude <= self.ground_level + self.frame_height;
         }
 
-        double norm(double angle, double min, double max)
-        {
-            while (angle > max)
-                angle -= 360;
-            while (angle < min)
-                angle += 360;
-            return angle;
-        }
-
-        public void update_position()
+        public void update_position(double delta_time = 0)
         {
             //'''update lat/lon/alt from position'''
 
-            double radius_of_earth = 6378100.0;// # in meters
-            double dlat = rad2deg * (Math.Atan(position.X / radius_of_earth));
-            double dlon = rad2deg * (Math.Atan(position.Y / radius_of_earth));
+            double bearing = degrees(atan2(self.position.y, self.position.x));
+            double distance = sqrt(self.position.x * self.position.x + self.position.y * self.position.y);
 
-            altitude = home_altitude + position.Z;
-            latitude = home_latitude + dlat;
-            longitude = home_longitude + dlon;
+            gps_newpos(self.home_latitude, self.home_longitude,
+                                                              bearing, distance);
 
-            // work out what the accelerometer would see
-            double xAccel = sin(radians(self.pitch)) * cos(radians(self.roll));
-            double yAccel = -sin(radians(self.roll)) * cos(radians(self.pitch));
-            double zAccel = -cos(radians(self.roll)) * cos(radians(self.pitch));
-            double scale = 9.81 / sqrt((xAccel * xAccel) + (yAccel * yAccel) + (zAccel * zAccel));
-            xAccel *= scale;
-            yAccel *= scale;
-            zAccel *= scale;
-            self.accelerometer = new Vector3d(xAccel, yAccel, zAccel);
+            self.altitude = self.home_altitude - self.position.z;
+
+            Vector3 velocity_body = self.dcm.transposed() * self.velocity;
+
+            self.accelerometer = self.accel_body.copy();
 
         }
 
+        public void gps_newpos(double lat, double lon, double bearing, double distance)
+        {
+            // '''extrapolate latitude/longitude given a heading and distance 
+            //   thanks to http://www.movable-type.co.uk/scripts/latlong.html
+            //  '''
+            // from math import sin, asin, cos, atan2, radians, degrees
+            double radius_of_earth = 6378100.0;//# in meters
 
+            double lat1 = radians(lat);
+            double lon1 = radians(lon);
+            double brng = radians(bearing);
+            double dr = distance / radius_of_earth;
+
+            double lat2 = asin(sin(lat1) * cos(dr) +
+                        cos(lat1) * sin(dr) * cos(brng));
+            double lon2 = lon1 + atan2(sin(brng) * sin(dr) * cos(lat1),
+                                cos(dr) - sin(lat1) * sin(lat2));
+
+            latitude = degrees(lat2);
+            longitude = degrees(lon2);
+            //return (degrees(lat2), degrees(lon2));
+        }
 
     }
 }

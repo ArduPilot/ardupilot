@@ -47,54 +47,54 @@ namespace ArdupilotMega.GCSViews.ConfigurationView
             this.label10 = new System.Windows.Forms.Label();
             this.label11 = new System.Windows.Forms.Label();
             this.label12 = new System.Windows.Forms.Label();
-            this.mavlinkNumericUpDown3 = new ArdupilotMega.Controls.MavlinkNumericUpDown();
-            this.mavlinkNumericUpDown4 = new ArdupilotMega.Controls.MavlinkNumericUpDown();
+            this.mavlinkNumericUpDownRAM = new ArdupilotMega.Controls.MavlinkNumericUpDown();
+            this.mavlinkNumericUpDownRAMX = new ArdupilotMega.Controls.MavlinkNumericUpDown();
             this.label13 = new System.Windows.Forms.Label();
             this.label14 = new System.Windows.Forms.Label();
-            this.mavlinkNumericUpDown5 = new ArdupilotMega.Controls.MavlinkNumericUpDown();
-            this.mavlinkNumericUpDown6 = new ArdupilotMega.Controls.MavlinkNumericUpDown();
-            this.mavlinkCheckBox2 = new ArdupilotMega.Controls.MavlinkCheckBox();
+            this.mavlinkNumericUpDownRSM = new ArdupilotMega.Controls.MavlinkNumericUpDown();
+            this.mavlinkNumericUpDownRSMX = new ArdupilotMega.Controls.MavlinkNumericUpDown();
+            this.mavlinkCheckBoxRR = new ArdupilotMega.Controls.MavlinkCheckBox();
             this.label16 = new System.Windows.Forms.Label();
             this.label17 = new System.Windows.Forms.Label();
             this.label18 = new System.Windows.Forms.Label();
             this.label19 = new System.Windows.Forms.Label();
-            this.mavlinkNumericUpDown7 = new ArdupilotMega.Controls.MavlinkNumericUpDown();
-            this.mavlinkNumericUpDown8 = new ArdupilotMega.Controls.MavlinkNumericUpDown();
+            this.mavlinkNumericUpDownPAM = new ArdupilotMega.Controls.MavlinkNumericUpDown();
+            this.mavlinkNumericUpDownPAMX = new ArdupilotMega.Controls.MavlinkNumericUpDown();
             this.label20 = new System.Windows.Forms.Label();
             this.label21 = new System.Windows.Forms.Label();
-            this.mavlinkNumericUpDown9 = new ArdupilotMega.Controls.MavlinkNumericUpDown();
-            this.mavlinkNumericUpDown10 = new ArdupilotMega.Controls.MavlinkNumericUpDown();
-            this.mavlinkCheckBox3 = new ArdupilotMega.Controls.MavlinkCheckBox();
+            this.mavlinkNumericUpDownPSM = new ArdupilotMega.Controls.MavlinkNumericUpDown();
+            this.mavlinkNumericUpDownPSMX = new ArdupilotMega.Controls.MavlinkNumericUpDown();
+            this.mavlinkCheckBoxPR = new ArdupilotMega.Controls.MavlinkCheckBox();
             this.label1 = new System.Windows.Forms.Label();
             this.label2 = new System.Windows.Forms.Label();
             this.label3 = new System.Windows.Forms.Label();
             this.label4 = new System.Windows.Forms.Label();
-            this.mavlinkNumericUpDown1 = new ArdupilotMega.Controls.MavlinkNumericUpDown();
-            this.mavlinkNumericUpDown2 = new ArdupilotMega.Controls.MavlinkNumericUpDown();
+            this.mavlinkNumericUpDownTAM = new ArdupilotMega.Controls.MavlinkNumericUpDown();
+            this.mavlinkNumericUpDownTAMX = new ArdupilotMega.Controls.MavlinkNumericUpDown();
             this.label7 = new System.Windows.Forms.Label();
             this.label8 = new System.Windows.Forms.Label();
-            this.mavlinkNumericUpDown11 = new ArdupilotMega.Controls.MavlinkNumericUpDown();
-            this.mavlinkNumericUpDown12 = new ArdupilotMega.Controls.MavlinkNumericUpDown();
-            this.mavlinkCheckBox1 = new ArdupilotMega.Controls.MavlinkCheckBox();
-            this.mavlinkComboBoxTilt = new ArdupilotMega.Controls.MavlinkComboBox();
-            this.mavlinkComboBoxRoll = new ArdupilotMega.Controls.MavlinkComboBox();
-            this.mavlinkComboBoxPan = new ArdupilotMega.Controls.MavlinkComboBox();
+            this.mavlinkNumericUpDownTSM = new ArdupilotMega.Controls.MavlinkNumericUpDown();
+            this.mavlinkNumericUpDownTSMX = new ArdupilotMega.Controls.MavlinkNumericUpDown();
+            this.mavlinkCheckBoxTR = new ArdupilotMega.Controls.MavlinkCheckBox();
+            this.mavlinkComboBoxTilt = new System.Windows.Forms.ComboBox();
+            this.mavlinkComboBoxRoll = new System.Windows.Forms.ComboBox();
+            this.mavlinkComboBoxPan = new System.Windows.Forms.ComboBox();
             ((System.ComponentModel.ISupportInitialize)(this.pictureBox1)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.pictureBox2)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.PBOX_WarningIcon)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.pictureBox3)).BeginInit();
-            ((System.ComponentModel.ISupportInitialize)(this.mavlinkNumericUpDown3)).BeginInit();
-            ((System.ComponentModel.ISupportInitialize)(this.mavlinkNumericUpDown4)).BeginInit();
-            ((System.ComponentModel.ISupportInitialize)(this.mavlinkNumericUpDown5)).BeginInit();
-            ((System.ComponentModel.ISupportInitialize)(this.mavlinkNumericUpDown6)).BeginInit();
-            ((System.ComponentModel.ISupportInitialize)(this.mavlinkNumericUpDown7)).BeginInit();
-            ((System.ComponentModel.ISupportInitialize)(this.mavlinkNumericUpDown8)).BeginInit();
-            ((System.ComponentModel.ISupportInitialize)(this.mavlinkNumericUpDown9)).BeginInit();
-            ((System.ComponentModel.ISupportInitialize)(this.mavlinkNumericUpDown10)).BeginInit();
-            ((System.ComponentModel.ISupportInitialize)(this.mavlinkNumericUpDown1)).BeginInit();
-            ((System.ComponentModel.ISupportInitialize)(this.mavlinkNumericUpDown2)).BeginInit();
-            ((System.ComponentModel.ISupportInitialize)(this.mavlinkNumericUpDown11)).BeginInit();
-            ((System.ComponentModel.ISupportInitialize)(this.mavlinkNumericUpDown12)).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)(this.mavlinkNumericUpDownRAM)).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)(this.mavlinkNumericUpDownRAMX)).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)(this.mavlinkNumericUpDownRSM)).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)(this.mavlinkNumericUpDownRSMX)).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)(this.mavlinkNumericUpDownPAM)).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)(this.mavlinkNumericUpDownPAMX)).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)(this.mavlinkNumericUpDownPSM)).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)(this.mavlinkNumericUpDownPSMX)).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)(this.mavlinkNumericUpDownTAM)).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)(this.mavlinkNumericUpDownTAMX)).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)(this.mavlinkNumericUpDownTSM)).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)(this.mavlinkNumericUpDownTSMX)).BeginInit();
             this.SuspendLayout();
             // 
             // pictureBox1
@@ -269,60 +269,60 @@ namespace ArdupilotMega.GCSViews.ConfigurationView
             this.label12.TabIndex = 102;
             this.label12.Text = "Min";
             // 
-            // mavlinkNumericUpDown3
+            // mavlinkNumericUpDownRAM
             // 
-            this.mavlinkNumericUpDown3.Enabled = false;
-            this.mavlinkNumericUpDown3.Increment = new decimal(new int[] {
+            this.mavlinkNumericUpDownRAM.Enabled = false;
+            this.mavlinkNumericUpDownRAM.Increment = new decimal(new int[] {
             10,
             0,
             0,
             0});
-            this.mavlinkNumericUpDown3.Location = new System.Drawing.Point(385, 181);
-            this.mavlinkNumericUpDown3.Max = 1F;
-            this.mavlinkNumericUpDown3.Maximum = new decimal(new int[] {
+            this.mavlinkNumericUpDownRAM.Location = new System.Drawing.Point(385, 181);
+            this.mavlinkNumericUpDownRAM.Max = 1F;
+            this.mavlinkNumericUpDownRAM.Maximum = new decimal(new int[] {
             2200,
             0,
             0,
             0});
-            this.mavlinkNumericUpDown3.Min = 0F;
-            this.mavlinkNumericUpDown3.Name = "mavlinkNumericUpDown3";
-            this.mavlinkNumericUpDown3.param = null;
-            this.mavlinkNumericUpDown3.ParamName = null;
-            this.mavlinkNumericUpDown3.Size = new System.Drawing.Size(59, 20);
-            this.mavlinkNumericUpDown3.TabIndex = 101;
-            this.mavlinkNumericUpDown3.Value = new decimal(new int[] {
+            this.mavlinkNumericUpDownRAM.Min = 0F;
+            this.mavlinkNumericUpDownRAM.Name = "mavlinkNumericUpDownRAM";
+            this.mavlinkNumericUpDownRAM.param = null;
+            this.mavlinkNumericUpDownRAM.ParamName = null;
+            this.mavlinkNumericUpDownRAM.Size = new System.Drawing.Size(59, 20);
+            this.mavlinkNumericUpDownRAM.TabIndex = 101;
+            this.mavlinkNumericUpDownRAM.Value = new decimal(new int[] {
             1000,
             0,
             0,
             0});
             // 
-            // mavlinkNumericUpDown4
+            // mavlinkNumericUpDownRAMX
             // 
-            this.mavlinkNumericUpDown4.Enabled = false;
-            this.mavlinkNumericUpDown4.Increment = new decimal(new int[] {
+            this.mavlinkNumericUpDownRAMX.Enabled = false;
+            this.mavlinkNumericUpDownRAMX.Increment = new decimal(new int[] {
             10,
             0,
             0,
             0});
-            this.mavlinkNumericUpDown4.Location = new System.Drawing.Point(385, 207);
-            this.mavlinkNumericUpDown4.Max = 1F;
-            this.mavlinkNumericUpDown4.Maximum = new decimal(new int[] {
+            this.mavlinkNumericUpDownRAMX.Location = new System.Drawing.Point(385, 207);
+            this.mavlinkNumericUpDownRAMX.Max = 1F;
+            this.mavlinkNumericUpDownRAMX.Maximum = new decimal(new int[] {
             2200,
             0,
             0,
             0});
-            this.mavlinkNumericUpDown4.Min = 0F;
-            this.mavlinkNumericUpDown4.Minimum = new decimal(new int[] {
+            this.mavlinkNumericUpDownRAMX.Min = 0F;
+            this.mavlinkNumericUpDownRAMX.Minimum = new decimal(new int[] {
             800,
             0,
             0,
             0});
-            this.mavlinkNumericUpDown4.Name = "mavlinkNumericUpDown4";
-            this.mavlinkNumericUpDown4.param = null;
-            this.mavlinkNumericUpDown4.ParamName = null;
-            this.mavlinkNumericUpDown4.Size = new System.Drawing.Size(59, 20);
-            this.mavlinkNumericUpDown4.TabIndex = 100;
-            this.mavlinkNumericUpDown4.Value = new decimal(new int[] {
+            this.mavlinkNumericUpDownRAMX.Name = "mavlinkNumericUpDownRAMX";
+            this.mavlinkNumericUpDownRAMX.param = null;
+            this.mavlinkNumericUpDownRAMX.ParamName = null;
+            this.mavlinkNumericUpDownRAMX.Size = new System.Drawing.Size(59, 20);
+            this.mavlinkNumericUpDownRAMX.TabIndex = 100;
+            this.mavlinkNumericUpDownRAMX.Value = new decimal(new int[] {
             2000,
             0,
             0,
@@ -348,85 +348,85 @@ namespace ArdupilotMega.GCSViews.ConfigurationView
             this.label14.TabIndex = 98;
             this.label14.Text = "Min";
             // 
-            // mavlinkNumericUpDown5
+            // mavlinkNumericUpDownRSM
             // 
-            this.mavlinkNumericUpDown5.Enabled = false;
-            this.mavlinkNumericUpDown5.Increment = new decimal(new int[] {
+            this.mavlinkNumericUpDownRSM.Enabled = false;
+            this.mavlinkNumericUpDownRSM.Increment = new decimal(new int[] {
             10,
             0,
             0,
             0});
-            this.mavlinkNumericUpDown5.Location = new System.Drawing.Point(276, 181);
-            this.mavlinkNumericUpDown5.Max = 1F;
-            this.mavlinkNumericUpDown5.Maximum = new decimal(new int[] {
+            this.mavlinkNumericUpDownRSM.Location = new System.Drawing.Point(276, 181);
+            this.mavlinkNumericUpDownRSM.Max = 1F;
+            this.mavlinkNumericUpDownRSM.Maximum = new decimal(new int[] {
             2200,
             0,
             0,
             0});
-            this.mavlinkNumericUpDown5.Min = 0F;
-            this.mavlinkNumericUpDown5.Minimum = new decimal(new int[] {
+            this.mavlinkNumericUpDownRSM.Min = 0F;
+            this.mavlinkNumericUpDownRSM.Minimum = new decimal(new int[] {
             800,
             0,
             0,
             0});
-            this.mavlinkNumericUpDown5.Name = "mavlinkNumericUpDown5";
-            this.mavlinkNumericUpDown5.param = null;
-            this.mavlinkNumericUpDown5.ParamName = null;
-            this.mavlinkNumericUpDown5.Size = new System.Drawing.Size(59, 20);
-            this.mavlinkNumericUpDown5.TabIndex = 97;
-            this.mavlinkNumericUpDown5.Value = new decimal(new int[] {
+            this.mavlinkNumericUpDownRSM.Name = "mavlinkNumericUpDownRSM";
+            this.mavlinkNumericUpDownRSM.param = null;
+            this.mavlinkNumericUpDownRSM.ParamName = null;
+            this.mavlinkNumericUpDownRSM.Size = new System.Drawing.Size(59, 20);
+            this.mavlinkNumericUpDownRSM.TabIndex = 97;
+            this.mavlinkNumericUpDownRSM.Value = new decimal(new int[] {
             1000,
             0,
             0,
             0});
             // 
-            // mavlinkNumericUpDown6
+            // mavlinkNumericUpDownRSMX
             // 
-            this.mavlinkNumericUpDown6.Enabled = false;
-            this.mavlinkNumericUpDown6.Increment = new decimal(new int[] {
+            this.mavlinkNumericUpDownRSMX.Enabled = false;
+            this.mavlinkNumericUpDownRSMX.Increment = new decimal(new int[] {
             10,
             0,
             0,
             0});
-            this.mavlinkNumericUpDown6.Location = new System.Drawing.Point(276, 207);
-            this.mavlinkNumericUpDown6.Max = 1F;
-            this.mavlinkNumericUpDown6.Maximum = new decimal(new int[] {
+            this.mavlinkNumericUpDownRSMX.Location = new System.Drawing.Point(276, 207);
+            this.mavlinkNumericUpDownRSMX.Max = 1F;
+            this.mavlinkNumericUpDownRSMX.Maximum = new decimal(new int[] {
             2200,
             0,
             0,
             0});
-            this.mavlinkNumericUpDown6.Min = 0F;
-            this.mavlinkNumericUpDown6.Minimum = new decimal(new int[] {
+            this.mavlinkNumericUpDownRSMX.Min = 0F;
+            this.mavlinkNumericUpDownRSMX.Minimum = new decimal(new int[] {
             800,
             0,
             0,
             0});
-            this.mavlinkNumericUpDown6.Name = "mavlinkNumericUpDown6";
-            this.mavlinkNumericUpDown6.param = null;
-            this.mavlinkNumericUpDown6.ParamName = null;
-            this.mavlinkNumericUpDown6.Size = new System.Drawing.Size(59, 20);
-            this.mavlinkNumericUpDown6.TabIndex = 96;
-            this.mavlinkNumericUpDown6.Value = new decimal(new int[] {
+            this.mavlinkNumericUpDownRSMX.Name = "mavlinkNumericUpDownRSMX";
+            this.mavlinkNumericUpDownRSMX.param = null;
+            this.mavlinkNumericUpDownRSMX.ParamName = null;
+            this.mavlinkNumericUpDownRSMX.Size = new System.Drawing.Size(59, 20);
+            this.mavlinkNumericUpDownRSMX.TabIndex = 96;
+            this.mavlinkNumericUpDownRSMX.Value = new decimal(new int[] {
             2000,
             0,
             0,
             0});
             // 
-            // mavlinkCheckBox2
+            // mavlinkCheckBoxRR
             // 
-            this.mavlinkCheckBox2.AutoSize = true;
-            this.mavlinkCheckBox2.Enabled = false;
-            this.mavlinkCheckBox2.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(224)))), ((int)(((byte)(224)))), ((int)(((byte)(224)))));
-            this.mavlinkCheckBox2.Location = new System.Drawing.Point(267, 233);
-            this.mavlinkCheckBox2.Name = "mavlinkCheckBox2";
-            this.mavlinkCheckBox2.OffValue = 0F;
-            this.mavlinkCheckBox2.OnValue = 1F;
-            this.mavlinkCheckBox2.param = null;
-            this.mavlinkCheckBox2.ParamName = null;
-            this.mavlinkCheckBox2.Size = new System.Drawing.Size(66, 17);
-            this.mavlinkCheckBox2.TabIndex = 95;
-            this.mavlinkCheckBox2.Text = "Reverse";
-            this.mavlinkCheckBox2.UseVisualStyleBackColor = true;
+            this.mavlinkCheckBoxRR.AutoSize = true;
+            this.mavlinkCheckBoxRR.Enabled = false;
+            this.mavlinkCheckBoxRR.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(224)))), ((int)(((byte)(224)))), ((int)(((byte)(224)))));
+            this.mavlinkCheckBoxRR.Location = new System.Drawing.Point(267, 233);
+            this.mavlinkCheckBoxRR.Name = "mavlinkCheckBoxRR";
+            this.mavlinkCheckBoxRR.OffValue = 0F;
+            this.mavlinkCheckBoxRR.OnValue = 1F;
+            this.mavlinkCheckBoxRR.param = null;
+            this.mavlinkCheckBoxRR.ParamName = null;
+            this.mavlinkCheckBoxRR.Size = new System.Drawing.Size(66, 17);
+            this.mavlinkCheckBoxRR.TabIndex = 95;
+            this.mavlinkCheckBoxRR.Text = "Reverse";
+            this.mavlinkCheckBoxRR.UseVisualStyleBackColor = true;
             // 
             // label16
             // 
@@ -468,60 +468,60 @@ namespace ArdupilotMega.GCSViews.ConfigurationView
             this.label19.TabIndex = 113;
             this.label19.Text = "Min";
             // 
-            // mavlinkNumericUpDown7
+            // mavlinkNumericUpDownPAM
             // 
-            this.mavlinkNumericUpDown7.Enabled = false;
-            this.mavlinkNumericUpDown7.Increment = new decimal(new int[] {
+            this.mavlinkNumericUpDownPAM.Enabled = false;
+            this.mavlinkNumericUpDownPAM.Increment = new decimal(new int[] {
             10,
             0,
             0,
             0});
-            this.mavlinkNumericUpDown7.Location = new System.Drawing.Point(385, 305);
-            this.mavlinkNumericUpDown7.Max = 1F;
-            this.mavlinkNumericUpDown7.Maximum = new decimal(new int[] {
+            this.mavlinkNumericUpDownPAM.Location = new System.Drawing.Point(385, 305);
+            this.mavlinkNumericUpDownPAM.Max = 1F;
+            this.mavlinkNumericUpDownPAM.Maximum = new decimal(new int[] {
             2200,
             0,
             0,
             0});
-            this.mavlinkNumericUpDown7.Min = 0F;
-            this.mavlinkNumericUpDown7.Name = "mavlinkNumericUpDown7";
-            this.mavlinkNumericUpDown7.param = null;
-            this.mavlinkNumericUpDown7.ParamName = null;
-            this.mavlinkNumericUpDown7.Size = new System.Drawing.Size(59, 20);
-            this.mavlinkNumericUpDown7.TabIndex = 112;
-            this.mavlinkNumericUpDown7.Value = new decimal(new int[] {
+            this.mavlinkNumericUpDownPAM.Min = 0F;
+            this.mavlinkNumericUpDownPAM.Name = "mavlinkNumericUpDownPAM";
+            this.mavlinkNumericUpDownPAM.param = null;
+            this.mavlinkNumericUpDownPAM.ParamName = null;
+            this.mavlinkNumericUpDownPAM.Size = new System.Drawing.Size(59, 20);
+            this.mavlinkNumericUpDownPAM.TabIndex = 112;
+            this.mavlinkNumericUpDownPAM.Value = new decimal(new int[] {
             1000,
             0,
             0,
             0});
             // 
-            // mavlinkNumericUpDown8
+            // mavlinkNumericUpDownPAMX
             // 
-            this.mavlinkNumericUpDown8.Enabled = false;
-            this.mavlinkNumericUpDown8.Increment = new decimal(new int[] {
+            this.mavlinkNumericUpDownPAMX.Enabled = false;
+            this.mavlinkNumericUpDownPAMX.Increment = new decimal(new int[] {
             10,
             0,
             0,
             0});
-            this.mavlinkNumericUpDown8.Location = new System.Drawing.Point(385, 331);
-            this.mavlinkNumericUpDown8.Max = 1F;
-            this.mavlinkNumericUpDown8.Maximum = new decimal(new int[] {
+            this.mavlinkNumericUpDownPAMX.Location = new System.Drawing.Point(385, 331);
+            this.mavlinkNumericUpDownPAMX.Max = 1F;
+            this.mavlinkNumericUpDownPAMX.Maximum = new decimal(new int[] {
             2200,
             0,
             0,
             0});
-            this.mavlinkNumericUpDown8.Min = 0F;
-            this.mavlinkNumericUpDown8.Minimum = new decimal(new int[] {
+            this.mavlinkNumericUpDownPAMX.Min = 0F;
+            this.mavlinkNumericUpDownPAMX.Minimum = new decimal(new int[] {
             800,
             0,
             0,
             0});
-            this.mavlinkNumericUpDown8.Name = "mavlinkNumericUpDown8";
-            this.mavlinkNumericUpDown8.param = null;
-            this.mavlinkNumericUpDown8.ParamName = null;
-            this.mavlinkNumericUpDown8.Size = new System.Drawing.Size(59, 20);
-            this.mavlinkNumericUpDown8.TabIndex = 111;
-            this.mavlinkNumericUpDown8.Value = new decimal(new int[] {
+            this.mavlinkNumericUpDownPAMX.Name = "mavlinkNumericUpDownPAMX";
+            this.mavlinkNumericUpDownPAMX.param = null;
+            this.mavlinkNumericUpDownPAMX.ParamName = null;
+            this.mavlinkNumericUpDownPAMX.Size = new System.Drawing.Size(59, 20);
+            this.mavlinkNumericUpDownPAMX.TabIndex = 111;
+            this.mavlinkNumericUpDownPAMX.Value = new decimal(new int[] {
             2000,
             0,
             0,
@@ -547,85 +547,85 @@ namespace ArdupilotMega.GCSViews.ConfigurationView
             this.label21.TabIndex = 109;
             this.label21.Text = "Min";
             // 
-            // mavlinkNumericUpDown9
+            // mavlinkNumericUpDownPSM
             // 
-            this.mavlinkNumericUpDown9.Enabled = false;
-            this.mavlinkNumericUpDown9.Increment = new decimal(new int[] {
+            this.mavlinkNumericUpDownPSM.Enabled = false;
+            this.mavlinkNumericUpDownPSM.Increment = new decimal(new int[] {
             10,
             0,
             0,
             0});
-            this.mavlinkNumericUpDown9.Location = new System.Drawing.Point(276, 305);
-            this.mavlinkNumericUpDown9.Max = 1F;
-            this.mavlinkNumericUpDown9.Maximum = new decimal(new int[] {
+            this.mavlinkNumericUpDownPSM.Location = new System.Drawing.Point(276, 305);
+            this.mavlinkNumericUpDownPSM.Max = 1F;
+            this.mavlinkNumericUpDownPSM.Maximum = new decimal(new int[] {
             2200,
             0,
             0,
             0});
-            this.mavlinkNumericUpDown9.Min = 0F;
-            this.mavlinkNumericUpDown9.Minimum = new decimal(new int[] {
+            this.mavlinkNumericUpDownPSM.Min = 0F;
+            this.mavlinkNumericUpDownPSM.Minimum = new decimal(new int[] {
             800,
             0,
             0,
             0});
-            this.mavlinkNumericUpDown9.Name = "mavlinkNumericUpDown9";
-            this.mavlinkNumericUpDown9.param = null;
-            this.mavlinkNumericUpDown9.ParamName = null;
-            this.mavlinkNumericUpDown9.Size = new System.Drawing.Size(59, 20);
-            this.mavlinkNumericUpDown9.TabIndex = 108;
-            this.mavlinkNumericUpDown9.Value = new decimal(new int[] {
+            this.mavlinkNumericUpDownPSM.Name = "mavlinkNumericUpDownPSM";
+            this.mavlinkNumericUpDownPSM.param = null;
+            this.mavlinkNumericUpDownPSM.ParamName = null;
+            this.mavlinkNumericUpDownPSM.Size = new System.Drawing.Size(59, 20);
+            this.mavlinkNumericUpDownPSM.TabIndex = 108;
+            this.mavlinkNumericUpDownPSM.Value = new decimal(new int[] {
             1000,
             0,
             0,
             0});
             // 
-            // mavlinkNumericUpDown10
+            // mavlinkNumericUpDownPSMX
             // 
-            this.mavlinkNumericUpDown10.Enabled = false;
-            this.mavlinkNumericUpDown10.Increment = new decimal(new int[] {
+            this.mavlinkNumericUpDownPSMX.Enabled = false;
+            this.mavlinkNumericUpDownPSMX.Increment = new decimal(new int[] {
             10,
             0,
             0,
             0});
-            this.mavlinkNumericUpDown10.Location = new System.Drawing.Point(276, 331);
-            this.mavlinkNumericUpDown10.Max = 1F;
-            this.mavlinkNumericUpDown10.Maximum = new decimal(new int[] {
+            this.mavlinkNumericUpDownPSMX.Location = new System.Drawing.Point(276, 331);
+            this.mavlinkNumericUpDownPSMX.Max = 1F;
+            this.mavlinkNumericUpDownPSMX.Maximum = new decimal(new int[] {
             2200,
             0,
             0,
             0});
-            this.mavlinkNumericUpDown10.Min = 0F;
-            this.mavlinkNumericUpDown10.Minimum = new decimal(new int[] {
+            this.mavlinkNumericUpDownPSMX.Min = 0F;
+            this.mavlinkNumericUpDownPSMX.Minimum = new decimal(new int[] {
             800,
             0,
             0,
             0});
-            this.mavlinkNumericUpDown10.Name = "mavlinkNumericUpDown10";
-            this.mavlinkNumericUpDown10.param = null;
-            this.mavlinkNumericUpDown10.ParamName = null;
-            this.mavlinkNumericUpDown10.Size = new System.Drawing.Size(59, 20);
-            this.mavlinkNumericUpDown10.TabIndex = 107;
-            this.mavlinkNumericUpDown10.Value = new decimal(new int[] {
+            this.mavlinkNumericUpDownPSMX.Name = "mavlinkNumericUpDownPSMX";
+            this.mavlinkNumericUpDownPSMX.param = null;
+            this.mavlinkNumericUpDownPSMX.ParamName = null;
+            this.mavlinkNumericUpDownPSMX.Size = new System.Drawing.Size(59, 20);
+            this.mavlinkNumericUpDownPSMX.TabIndex = 107;
+            this.mavlinkNumericUpDownPSMX.Value = new decimal(new int[] {
             2000,
             0,
             0,
             0});
             // 
-            // mavlinkCheckBox3
+            // mavlinkCheckBoxPR
             // 
-            this.mavlinkCheckBox3.AutoSize = true;
-            this.mavlinkCheckBox3.Enabled = false;
-            this.mavlinkCheckBox3.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(224)))), ((int)(((byte)(224)))), ((int)(((byte)(224)))));
-            this.mavlinkCheckBox3.Location = new System.Drawing.Point(267, 357);
-            this.mavlinkCheckBox3.Name = "mavlinkCheckBox3";
-            this.mavlinkCheckBox3.OffValue = 0F;
-            this.mavlinkCheckBox3.OnValue = 1F;
-            this.mavlinkCheckBox3.param = null;
-            this.mavlinkCheckBox3.ParamName = null;
-            this.mavlinkCheckBox3.Size = new System.Drawing.Size(66, 17);
-            this.mavlinkCheckBox3.TabIndex = 106;
-            this.mavlinkCheckBox3.Text = "Reverse";
-            this.mavlinkCheckBox3.UseVisualStyleBackColor = true;
+            this.mavlinkCheckBoxPR.AutoSize = true;
+            this.mavlinkCheckBoxPR.Enabled = false;
+            this.mavlinkCheckBoxPR.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(224)))), ((int)(((byte)(224)))), ((int)(((byte)(224)))));
+            this.mavlinkCheckBoxPR.Location = new System.Drawing.Point(267, 357);
+            this.mavlinkCheckBoxPR.Name = "mavlinkCheckBoxPR";
+            this.mavlinkCheckBoxPR.OffValue = 0F;
+            this.mavlinkCheckBoxPR.OnValue = 1F;
+            this.mavlinkCheckBoxPR.param = null;
+            this.mavlinkCheckBoxPR.ParamName = null;
+            this.mavlinkCheckBoxPR.Size = new System.Drawing.Size(66, 17);
+            this.mavlinkCheckBoxPR.TabIndex = 106;
+            this.mavlinkCheckBoxPR.Text = "Reverse";
+            this.mavlinkCheckBoxPR.UseVisualStyleBackColor = true;
             // 
             // label1
             // 
@@ -667,60 +667,60 @@ namespace ArdupilotMega.GCSViews.ConfigurationView
             this.label4.TabIndex = 124;
             this.label4.Text = "Min";
             // 
-            // mavlinkNumericUpDown1
+            // mavlinkNumericUpDownTAM
             // 
-            this.mavlinkNumericUpDown1.Enabled = false;
-            this.mavlinkNumericUpDown1.Increment = new decimal(new int[] {
+            this.mavlinkNumericUpDownTAM.Enabled = false;
+            this.mavlinkNumericUpDownTAM.Increment = new decimal(new int[] {
             10,
             0,
             0,
             0});
-            this.mavlinkNumericUpDown1.Location = new System.Drawing.Point(385, 54);
-            this.mavlinkNumericUpDown1.Max = 1F;
-            this.mavlinkNumericUpDown1.Maximum = new decimal(new int[] {
+            this.mavlinkNumericUpDownTAM.Location = new System.Drawing.Point(385, 54);
+            this.mavlinkNumericUpDownTAM.Max = 1F;
+            this.mavlinkNumericUpDownTAM.Maximum = new decimal(new int[] {
             2200,
             0,
             0,
             0});
-            this.mavlinkNumericUpDown1.Min = 0F;
-            this.mavlinkNumericUpDown1.Name = "mavlinkNumericUpDown1";
-            this.mavlinkNumericUpDown1.param = null;
-            this.mavlinkNumericUpDown1.ParamName = null;
-            this.mavlinkNumericUpDown1.Size = new System.Drawing.Size(59, 20);
-            this.mavlinkNumericUpDown1.TabIndex = 123;
-            this.mavlinkNumericUpDown1.Value = new decimal(new int[] {
+            this.mavlinkNumericUpDownTAM.Min = 0F;
+            this.mavlinkNumericUpDownTAM.Name = "mavlinkNumericUpDownTAM";
+            this.mavlinkNumericUpDownTAM.param = null;
+            this.mavlinkNumericUpDownTAM.ParamName = null;
+            this.mavlinkNumericUpDownTAM.Size = new System.Drawing.Size(59, 20);
+            this.mavlinkNumericUpDownTAM.TabIndex = 123;
+            this.mavlinkNumericUpDownTAM.Value = new decimal(new int[] {
             1000,
             0,
             0,
             0});
             // 
-            // mavlinkNumericUpDown2
+            // mavlinkNumericUpDownTAMX
             // 
-            this.mavlinkNumericUpDown2.Enabled = false;
-            this.mavlinkNumericUpDown2.Increment = new decimal(new int[] {
+            this.mavlinkNumericUpDownTAMX.Enabled = false;
+            this.mavlinkNumericUpDownTAMX.Increment = new decimal(new int[] {
             10,
             0,
             0,
             0});
-            this.mavlinkNumericUpDown2.Location = new System.Drawing.Point(385, 80);
-            this.mavlinkNumericUpDown2.Max = 1F;
-            this.mavlinkNumericUpDown2.Maximum = new decimal(new int[] {
+            this.mavlinkNumericUpDownTAMX.Location = new System.Drawing.Point(385, 80);
+            this.mavlinkNumericUpDownTAMX.Max = 1F;
+            this.mavlinkNumericUpDownTAMX.Maximum = new decimal(new int[] {
             2200,
             0,
             0,
             0});
-            this.mavlinkNumericUpDown2.Min = 0F;
-            this.mavlinkNumericUpDown2.Minimum = new decimal(new int[] {
+            this.mavlinkNumericUpDownTAMX.Min = 0F;
+            this.mavlinkNumericUpDownTAMX.Minimum = new decimal(new int[] {
             800,
             0,
             0,
             0});
-            this.mavlinkNumericUpDown2.Name = "mavlinkNumericUpDown2";
-            this.mavlinkNumericUpDown2.param = null;
-            this.mavlinkNumericUpDown2.ParamName = null;
-            this.mavlinkNumericUpDown2.Size = new System.Drawing.Size(59, 20);
-            this.mavlinkNumericUpDown2.TabIndex = 122;
-            this.mavlinkNumericUpDown2.Value = new decimal(new int[] {
+            this.mavlinkNumericUpDownTAMX.Name = "mavlinkNumericUpDownTAMX";
+            this.mavlinkNumericUpDownTAMX.param = null;
+            this.mavlinkNumericUpDownTAMX.ParamName = null;
+            this.mavlinkNumericUpDownTAMX.Size = new System.Drawing.Size(59, 20);
+            this.mavlinkNumericUpDownTAMX.TabIndex = 122;
+            this.mavlinkNumericUpDownTAMX.Value = new decimal(new int[] {
             2000,
             0,
             0,
@@ -746,95 +746,92 @@ namespace ArdupilotMega.GCSViews.ConfigurationView
             this.label8.TabIndex = 120;
             this.label8.Text = "Min";
             // 
-            // mavlinkNumericUpDown11
+            // mavlinkNumericUpDownTSM
             // 
-            this.mavlinkNumericUpDown11.Enabled = false;
-            this.mavlinkNumericUpDown11.Increment = new decimal(new int[] {
+            this.mavlinkNumericUpDownTSM.Enabled = false;
+            this.mavlinkNumericUpDownTSM.Increment = new decimal(new int[] {
             10,
             0,
             0,
             0});
-            this.mavlinkNumericUpDown11.Location = new System.Drawing.Point(276, 54);
-            this.mavlinkNumericUpDown11.Max = 1F;
-            this.mavlinkNumericUpDown11.Maximum = new decimal(new int[] {
+            this.mavlinkNumericUpDownTSM.Location = new System.Drawing.Point(276, 54);
+            this.mavlinkNumericUpDownTSM.Max = 1F;
+            this.mavlinkNumericUpDownTSM.Maximum = new decimal(new int[] {
             2200,
             0,
             0,
             0});
-            this.mavlinkNumericUpDown11.Min = 0F;
-            this.mavlinkNumericUpDown11.Minimum = new decimal(new int[] {
+            this.mavlinkNumericUpDownTSM.Min = 0F;
+            this.mavlinkNumericUpDownTSM.Minimum = new decimal(new int[] {
             800,
             0,
             0,
             0});
-            this.mavlinkNumericUpDown11.Name = "mavlinkNumericUpDown11";
-            this.mavlinkNumericUpDown11.param = null;
-            this.mavlinkNumericUpDown11.ParamName = null;
-            this.mavlinkNumericUpDown11.Size = new System.Drawing.Size(59, 20);
-            this.mavlinkNumericUpDown11.TabIndex = 119;
-            this.mavlinkNumericUpDown11.Value = new decimal(new int[] {
+            this.mavlinkNumericUpDownTSM.Name = "mavlinkNumericUpDownTSM";
+            this.mavlinkNumericUpDownTSM.param = null;
+            this.mavlinkNumericUpDownTSM.ParamName = null;
+            this.mavlinkNumericUpDownTSM.Size = new System.Drawing.Size(59, 20);
+            this.mavlinkNumericUpDownTSM.TabIndex = 119;
+            this.mavlinkNumericUpDownTSM.Value = new decimal(new int[] {
             1000,
             0,
             0,
             0});
             // 
-            // mavlinkNumericUpDown12
+            // mavlinkNumericUpDownTSMX
             // 
-            this.mavlinkNumericUpDown12.Enabled = false;
-            this.mavlinkNumericUpDown12.Increment = new decimal(new int[] {
+            this.mavlinkNumericUpDownTSMX.Enabled = false;
+            this.mavlinkNumericUpDownTSMX.Increment = new decimal(new int[] {
             10,
             0,
             0,
             0});
-            this.mavlinkNumericUpDown12.Location = new System.Drawing.Point(276, 80);
-            this.mavlinkNumericUpDown12.Max = 1F;
-            this.mavlinkNumericUpDown12.Maximum = new decimal(new int[] {
+            this.mavlinkNumericUpDownTSMX.Location = new System.Drawing.Point(276, 80);
+            this.mavlinkNumericUpDownTSMX.Max = 1F;
+            this.mavlinkNumericUpDownTSMX.Maximum = new decimal(new int[] {
             2200,
             0,
             0,
             0});
-            this.mavlinkNumericUpDown12.Min = 0F;
-            this.mavlinkNumericUpDown12.Minimum = new decimal(new int[] {
+            this.mavlinkNumericUpDownTSMX.Min = 0F;
+            this.mavlinkNumericUpDownTSMX.Minimum = new decimal(new int[] {
             800,
             0,
             0,
             0});
-            this.mavlinkNumericUpDown12.Name = "mavlinkNumericUpDown12";
-            this.mavlinkNumericUpDown12.param = null;
-            this.mavlinkNumericUpDown12.ParamName = null;
-            this.mavlinkNumericUpDown12.Size = new System.Drawing.Size(59, 20);
-            this.mavlinkNumericUpDown12.TabIndex = 118;
-            this.mavlinkNumericUpDown12.Value = new decimal(new int[] {
+            this.mavlinkNumericUpDownTSMX.Name = "mavlinkNumericUpDownTSMX";
+            this.mavlinkNumericUpDownTSMX.param = null;
+            this.mavlinkNumericUpDownTSMX.ParamName = null;
+            this.mavlinkNumericUpDownTSMX.Size = new System.Drawing.Size(59, 20);
+            this.mavlinkNumericUpDownTSMX.TabIndex = 118;
+            this.mavlinkNumericUpDownTSMX.Value = new decimal(new int[] {
             2000,
             0,
             0,
             0});
             // 
-            // mavlinkCheckBox1
+            // mavlinkCheckBoxTR
             // 
-            this.mavlinkCheckBox1.AutoSize = true;
-            this.mavlinkCheckBox1.Enabled = false;
-            this.mavlinkCheckBox1.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(224)))), ((int)(((byte)(224)))), ((int)(((byte)(224)))));
-            this.mavlinkCheckBox1.Location = new System.Drawing.Point(267, 106);
-            this.mavlinkCheckBox1.Name = "mavlinkCheckBox1";
-            this.mavlinkCheckBox1.OffValue = 0F;
-            this.mavlinkCheckBox1.OnValue = 1F;
-            this.mavlinkCheckBox1.param = null;
-            this.mavlinkCheckBox1.ParamName = null;
-            this.mavlinkCheckBox1.Size = new System.Drawing.Size(66, 17);
-            this.mavlinkCheckBox1.TabIndex = 117;
-            this.mavlinkCheckBox1.Text = "Reverse";
-            this.mavlinkCheckBox1.UseVisualStyleBackColor = true;
+            this.mavlinkCheckBoxTR.AutoSize = true;
+            this.mavlinkCheckBoxTR.Enabled = false;
+            this.mavlinkCheckBoxTR.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(224)))), ((int)(((byte)(224)))), ((int)(((byte)(224)))));
+            this.mavlinkCheckBoxTR.Location = new System.Drawing.Point(267, 106);
+            this.mavlinkCheckBoxTR.Name = "mavlinkCheckBoxTR";
+            this.mavlinkCheckBoxTR.OffValue = 0F;
+            this.mavlinkCheckBoxTR.OnValue = 1F;
+            this.mavlinkCheckBoxTR.param = null;
+            this.mavlinkCheckBoxTR.ParamName = null;
+            this.mavlinkCheckBoxTR.Size = new System.Drawing.Size(66, 17);
+            this.mavlinkCheckBoxTR.TabIndex = 117;
+            this.mavlinkCheckBoxTR.Text = "Reverse";
+            this.mavlinkCheckBoxTR.UseVisualStyleBackColor = true;
             // 
             // mavlinkComboBoxTilt
             // 
             this.mavlinkComboBoxTilt.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
-            this.mavlinkComboBoxTilt.Enabled = false;
             this.mavlinkComboBoxTilt.FormattingEnabled = true;
             this.mavlinkComboBoxTilt.Location = new System.Drawing.Point(71, 3);
             this.mavlinkComboBoxTilt.Name = "mavlinkComboBoxTilt";
-            this.mavlinkComboBoxTilt.param = null;
-            this.mavlinkComboBoxTilt.ParamName = null;
             this.mavlinkComboBoxTilt.Size = new System.Drawing.Size(121, 21);
             this.mavlinkComboBoxTilt.TabIndex = 128;
             this.mavlinkComboBoxTilt.SelectedIndexChanged += new System.EventHandler(this.mavlinkComboBox_SelectedIndexChanged);
@@ -842,12 +839,9 @@ namespace ArdupilotMega.GCSViews.ConfigurationView
             // mavlinkComboBoxRoll
             // 
             this.mavlinkComboBoxRoll.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
-            this.mavlinkComboBoxRoll.Enabled = false;
             this.mavlinkComboBoxRoll.FormattingEnabled = true;
             this.mavlinkComboBoxRoll.Location = new System.Drawing.Point(71, 131);
             this.mavlinkComboBoxRoll.Name = "mavlinkComboBoxRoll";
-            this.mavlinkComboBoxRoll.param = null;
-            this.mavlinkComboBoxRoll.ParamName = null;
             this.mavlinkComboBoxRoll.Size = new System.Drawing.Size(121, 21);
             this.mavlinkComboBoxRoll.TabIndex = 129;
             this.mavlinkComboBoxRoll.SelectedIndexChanged += new System.EventHandler(this.mavlinkComboBox_SelectedIndexChanged);
@@ -855,12 +849,9 @@ namespace ArdupilotMega.GCSViews.ConfigurationView
             // mavlinkComboBoxPan
             // 
             this.mavlinkComboBoxPan.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
-            this.mavlinkComboBoxPan.Enabled = false;
             this.mavlinkComboBoxPan.FormattingEnabled = true;
             this.mavlinkComboBoxPan.Location = new System.Drawing.Point(71, 255);
             this.mavlinkComboBoxPan.Name = "mavlinkComboBoxPan";
-            this.mavlinkComboBoxPan.param = null;
-            this.mavlinkComboBoxPan.ParamName = null;
             this.mavlinkComboBoxPan.Size = new System.Drawing.Size(121, 21);
             this.mavlinkComboBoxPan.TabIndex = 130;
             this.mavlinkComboBoxPan.SelectedIndexChanged += new System.EventHandler(this.mavlinkComboBox_SelectedIndexChanged);
@@ -875,35 +866,35 @@ namespace ArdupilotMega.GCSViews.ConfigurationView
             this.Controls.Add(this.label2);
             this.Controls.Add(this.label3);
             this.Controls.Add(this.label4);
-            this.Controls.Add(this.mavlinkNumericUpDown1);
-            this.Controls.Add(this.mavlinkNumericUpDown2);
+            this.Controls.Add(this.mavlinkNumericUpDownTAM);
+            this.Controls.Add(this.mavlinkNumericUpDownTAMX);
             this.Controls.Add(this.label7);
             this.Controls.Add(this.label8);
-            this.Controls.Add(this.mavlinkNumericUpDown11);
-            this.Controls.Add(this.mavlinkNumericUpDown12);
-            this.Controls.Add(this.mavlinkCheckBox1);
+            this.Controls.Add(this.mavlinkNumericUpDownTSM);
+            this.Controls.Add(this.mavlinkNumericUpDownTSMX);
+            this.Controls.Add(this.mavlinkCheckBoxTR);
             this.Controls.Add(this.label16);
             this.Controls.Add(this.label17);
             this.Controls.Add(this.label18);
             this.Controls.Add(this.label19);
-            this.Controls.Add(this.mavlinkNumericUpDown7);
-            this.Controls.Add(this.mavlinkNumericUpDown8);
+            this.Controls.Add(this.mavlinkNumericUpDownPAM);
+            this.Controls.Add(this.mavlinkNumericUpDownPAMX);
             this.Controls.Add(this.label20);
             this.Controls.Add(this.label21);
-            this.Controls.Add(this.mavlinkNumericUpDown9);
-            this.Controls.Add(this.mavlinkNumericUpDown10);
-            this.Controls.Add(this.mavlinkCheckBox3);
+            this.Controls.Add(this.mavlinkNumericUpDownPSM);
+            this.Controls.Add(this.mavlinkNumericUpDownPSMX);
+            this.Controls.Add(this.mavlinkCheckBoxPR);
             this.Controls.Add(this.label9);
             this.Controls.Add(this.label10);
             this.Controls.Add(this.label11);
             this.Controls.Add(this.label12);
-            this.Controls.Add(this.mavlinkNumericUpDown3);
-            this.Controls.Add(this.mavlinkNumericUpDown4);
+            this.Controls.Add(this.mavlinkNumericUpDownRAM);
+            this.Controls.Add(this.mavlinkNumericUpDownRAMX);
             this.Controls.Add(this.label13);
             this.Controls.Add(this.label14);
-            this.Controls.Add(this.mavlinkNumericUpDown5);
-            this.Controls.Add(this.mavlinkNumericUpDown6);
-            this.Controls.Add(this.mavlinkCheckBox2);
+            this.Controls.Add(this.mavlinkNumericUpDownRSM);
+            this.Controls.Add(this.mavlinkNumericUpDownRSMX);
+            this.Controls.Add(this.mavlinkCheckBoxRR);
             this.Controls.Add(this.label15);
             this.Controls.Add(this.groupBox3);
             this.Controls.Add(this.pictureBox3);
@@ -922,18 +913,18 @@ namespace ArdupilotMega.GCSViews.ConfigurationView
             ((System.ComponentModel.ISupportInitialize)(this.pictureBox2)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.PBOX_WarningIcon)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.pictureBox3)).EndInit();
-            ((System.ComponentModel.ISupportInitialize)(this.mavlinkNumericUpDown3)).EndInit();
-            ((System.ComponentModel.ISupportInitialize)(this.mavlinkNumericUpDown4)).EndInit();
-            ((System.ComponentModel.ISupportInitialize)(this.mavlinkNumericUpDown5)).EndInit();
-            ((System.ComponentModel.ISupportInitialize)(this.mavlinkNumericUpDown6)).EndInit();
-            ((System.ComponentModel.ISupportInitialize)(this.mavlinkNumericUpDown7)).EndInit();
-            ((System.ComponentModel.ISupportInitialize)(this.mavlinkNumericUpDown8)).EndInit();
-            ((System.ComponentModel.ISupportInitialize)(this.mavlinkNumericUpDown9)).EndInit();
-            ((System.ComponentModel.ISupportInitialize)(this.mavlinkNumericUpDown10)).EndInit();
-            ((System.ComponentModel.ISupportInitialize)(this.mavlinkNumericUpDown1)).EndInit();
-            ((System.ComponentModel.ISupportInitialize)(this.mavlinkNumericUpDown2)).EndInit();
-            ((System.ComponentModel.ISupportInitialize)(this.mavlinkNumericUpDown11)).EndInit();
-            ((System.ComponentModel.ISupportInitialize)(this.mavlinkNumericUpDown12)).EndInit();
+            ((System.ComponentModel.ISupportInitialize)(this.mavlinkNumericUpDownRAM)).EndInit();
+            ((System.ComponentModel.ISupportInitialize)(this.mavlinkNumericUpDownRAMX)).EndInit();
+            ((System.ComponentModel.ISupportInitialize)(this.mavlinkNumericUpDownRSM)).EndInit();
+            ((System.ComponentModel.ISupportInitialize)(this.mavlinkNumericUpDownRSMX)).EndInit();
+            ((System.ComponentModel.ISupportInitialize)(this.mavlinkNumericUpDownPAM)).EndInit();
+            ((System.ComponentModel.ISupportInitialize)(this.mavlinkNumericUpDownPAMX)).EndInit();
+            ((System.ComponentModel.ISupportInitialize)(this.mavlinkNumericUpDownPSM)).EndInit();
+            ((System.ComponentModel.ISupportInitialize)(this.mavlinkNumericUpDownPSMX)).EndInit();
+            ((System.ComponentModel.ISupportInitialize)(this.mavlinkNumericUpDownTAM)).EndInit();
+            ((System.ComponentModel.ISupportInitialize)(this.mavlinkNumericUpDownTAMX)).EndInit();
+            ((System.ComponentModel.ISupportInitialize)(this.mavlinkNumericUpDownTSM)).EndInit();
+            ((System.ComponentModel.ISupportInitialize)(this.mavlinkNumericUpDownTSMX)).EndInit();
             this.ResumeLayout(false);
             this.PerformLayout();
 
@@ -957,38 +948,38 @@ namespace ArdupilotMega.GCSViews.ConfigurationView
         private System.Windows.Forms.Label label10;
         private System.Windows.Forms.Label label11;
         private System.Windows.Forms.Label label12;
-        private MavlinkNumericUpDown mavlinkNumericUpDown3;
-        private MavlinkNumericUpDown mavlinkNumericUpDown4;
+        private MavlinkNumericUpDown mavlinkNumericUpDownRAM;
+        private MavlinkNumericUpDown mavlinkNumericUpDownRAMX;
         private System.Windows.Forms.Label label13;
         private System.Windows.Forms.Label label14;
-        private MavlinkNumericUpDown mavlinkNumericUpDown5;
-        private MavlinkNumericUpDown mavlinkNumericUpDown6;
-        private MavlinkCheckBox mavlinkCheckBox2;
+        private MavlinkNumericUpDown mavlinkNumericUpDownRSM;
+        private MavlinkNumericUpDown mavlinkNumericUpDownRSMX;
+        private MavlinkCheckBox mavlinkCheckBoxRR;
         private System.Windows.Forms.Label label16;
         private System.Windows.Forms.Label label17;
         private System.Windows.Forms.Label label18;
         private System.Windows.Forms.Label label19;
-        private MavlinkNumericUpDown mavlinkNumericUpDown7;
-        private MavlinkNumericUpDown mavlinkNumericUpDown8;
+        private MavlinkNumericUpDown mavlinkNumericUpDownPAM;
+        private MavlinkNumericUpDown mavlinkNumericUpDownPAMX;
         private System.Windows.Forms.Label label20;
         private System.Windows.Forms.Label label21;
-        private MavlinkNumericUpDown mavlinkNumericUpDown9;
-        private MavlinkNumericUpDown mavlinkNumericUpDown10;
-        private MavlinkCheckBox mavlinkCheckBox3;
+        private MavlinkNumericUpDown mavlinkNumericUpDownPSM;
+        private MavlinkNumericUpDown mavlinkNumericUpDownPSMX;
+        private MavlinkCheckBox mavlinkCheckBoxPR;
         private System.Windows.Forms.Label label1;
         private System.Windows.Forms.Label label2;
         private System.Windows.Forms.Label label3;
         private System.Windows.Forms.Label label4;
-        private MavlinkNumericUpDown mavlinkNumericUpDown1;
-        private MavlinkNumericUpDown mavlinkNumericUpDown2;
+        private MavlinkNumericUpDown mavlinkNumericUpDownTAM;
+        private MavlinkNumericUpDown mavlinkNumericUpDownTAMX;
         private System.Windows.Forms.Label label7;
         private System.Windows.Forms.Label label8;
-        private MavlinkNumericUpDown mavlinkNumericUpDown11;
-        private MavlinkNumericUpDown mavlinkNumericUpDown12;
-        private MavlinkCheckBox mavlinkCheckBox1;
-        private MavlinkComboBox mavlinkComboBoxTilt;
-        private MavlinkComboBox mavlinkComboBoxRoll;
-        private MavlinkComboBox mavlinkComboBoxPan;
+        private MavlinkNumericUpDown mavlinkNumericUpDownTSM;
+        private MavlinkNumericUpDown mavlinkNumericUpDownTSMX;
+        private MavlinkCheckBox mavlinkCheckBoxTR;
+        private System.Windows.Forms.ComboBox mavlinkComboBoxTilt;
+        private System.Windows.Forms.ComboBox mavlinkComboBoxRoll;
+        private System.Windows.Forms.ComboBox mavlinkComboBoxPan;
 
     }
 }

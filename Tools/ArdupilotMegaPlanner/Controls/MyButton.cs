@@ -41,43 +41,46 @@ namespace ArdupilotMega.Controls
             {
                 Graphics gr = pevent.Graphics;
 
-                //  gr.SmoothingMode = SmoothingMode.AntiAlias;
+                gr.Clear(this.BackColor);
+
+                gr.SmoothingMode = SmoothingMode.AntiAlias;
 
                 Rectangle outside = new Rectangle(0, 0, this.Width, this.Height);
 
                 LinearGradientBrush linear = new LinearGradientBrush(outside, BGGradTop, BGGradBot, LinearGradientMode.Vertical);
 
-                Pen mypen = new Pen(Outline, 2);
-                /*
-                gr.FillRectangle(new SolidBrush(Color.FromArgb(0x26, 0x27, 0x28)), outside);
+                Pen mypen = new Pen(Outline, 1);
+                
+            //    gr.FillRectangle(new SolidBrush(Color.FromArgb(0x26, 0x27, 0x28)), outside);
 
                 GraphicsPath outline = new GraphicsPath();
 
-                float wid = this.Height / 5f;
-                float widright = wid + 1;
+                float wid = this.Height / 3f;
+
+                int width = this.Width - 1;
+                int height = this.Height - 1;
 
                 // tl
                 outline.AddArc(0, 0, wid, wid, 180, 90);
                 // top line
-                outline.AddLine(wid, 0, this.Width - widright, 0);
+                outline.AddLine(wid, 0, width - wid, 0);
                 // tr
-                outline.AddArc(this.Width - widright, 0, wid, wid, 270, 90);
+                outline.AddArc(width - wid, 0, wid, wid, 270, 90);
                 // br
-                outline.AddArc(this.Width - widright, this.Height - widright, wid, wid, 0, 90);
+                outline.AddArc(width - wid, height - wid, wid, wid, 0, 90);
                 // bottom line
-                outline.AddLine(wid, this.Height - 1, this.Width - widright, this.Height - 1);
+                outline.AddLine(wid, height, width - wid, height);
                 // bl
-                outline.AddArc(0, this.Height - widright, wid, wid, 90, 90);
+                outline.AddArc(0, height - wid, wid, wid, 90, 90);
 
 
                 gr.FillPath(linear, outline);
 
-                gr.DrawPath(mypen, outline);
+              //  gr.DrawPath(mypen, outline);
 
-                */
 
-                gr.FillRectangle(linear, outside);
-                gr.DrawRectangle(mypen, outside);
+             //   gr.FillRectangle(linear, outside);
+             //   gr.DrawRectangle(mypen, outside);
 
 
                 SolidBrush mybrush = new SolidBrush(TextColor);
@@ -86,20 +89,20 @@ namespace ArdupilotMega.Controls
                 {
                     SolidBrush brush = new SolidBrush(Color.FromArgb(73, 0x2b, 0x3a, 0x03));
 
-                    gr.FillRectangle(brush, 0, 0, this.Width, this.Height);
+                    gr.FillPath(brush, outline);
                 }
                 if (mousedown)
                 {
                     SolidBrush brush = new SolidBrush(Color.FromArgb(73, 0x2b, 0x3a, 0x03));
 
-                    gr.FillRectangle(brush, 0, 0, this.Width, this.Height);
+                    gr.FillPath(brush, outline);
                 }
 
                 if (!this.Enabled)
                 {
                     SolidBrush brush = new SolidBrush(Color.FromArgb(150, 0x2b, 0x3a, 0x03));
 
-                    gr.FillRectangle(brush, 0, 0, this.Width, this.Height);
+                    gr.FillPath(brush, outline);
                 }
 
 

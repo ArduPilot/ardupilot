@@ -40,11 +40,10 @@
       <F4>WP Alt</F4>
       <F5>Nav Throttle</F5>
       <F6>Angle boost</F6>
-      <F7>Manual boost</F7>
-      <F8>Climb Rate</F8>
-      <F9>rc3 servo out</F9>
-      <F10>alt hold int</F10>
-      <F11>Thr int</F11>
+      <F7>Climb Rate</F7>
+      <F8>rc3 servo out</F8>
+      <F9>alt hold int</F9>
+      <F10>Thr int</F10>
     </CTUN>
     <PM>
       <F1>Gyro Saturation</F1>

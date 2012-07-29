@@ -70,10 +70,10 @@
     <UseVSHostingProcess>true</UseVSHostingProcess>
     <FileAlignment>512</FileAlignment>
   </PropertyGroup>
-  <PropertyGroup Condition="'$(Mavlink10)'=='true'">
-    <DefineConstants>$(DefineConstants);MAVLINK10</DefineConstants>
-    <AssemblyName>ArdupilotMegaPlanner10</AssemblyName>
-    <OutputPath>bin\Release10\</OutputPath>
+  <PropertyGroup Condition="'$(Mavlink10)'=='false'">
+    <DefineConstants>TRACE;DEBUG</DefineConstants>
+    <AssemblyName>ArdupilotMegaPlanner</AssemblyName>
+    <OutputPath>bin\Release09\</OutputPath>
   </PropertyGroup>
   <PropertyGroup>
     <StartupObject>ArdupilotMega.Program</StartupObject>
@@ -182,6 +182,10 @@
     <Reference Include="OpenTK.GLControl, Version=1.0.0.0, Culture=neutral, PublicKeyToken=bad199fe84eb3df4, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
     </Reference>
+    <Reference Include="Sharp3D.Math, Version=1.1.3.0, Culture=neutral, PublicKeyToken=529e2e82fcc0ba71">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>Lib\Sharp3D.Math.dll</HintPath>
+    </Reference>
     <Reference Include="SharpKml, Version=1.1.0.0, Culture=neutral, PublicKeyToken=e608cd7d975805ad, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
     </Reference>
@@ -279,6 +283,9 @@
     <Compile Include="GCSViews\ConfigurationView\ConfigMount.designer.cs">
       <DependentUpon>ConfigMount.cs</DependentUpon>
     </Compile>
+    <Compile Include="HIL\FlashQuad.cs" />
+    <Compile Include="HIL\Matrix3.cs" />
+    <Compile Include="HIL\Vector3.cs" />
     <Compile Include="Presenter\ConfigCameraStabPresenter.cs" />
     <Compile Include="Controls\HSI.cs">
       <SubType>UserControl</SubType>

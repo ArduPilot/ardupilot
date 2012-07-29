@@ -43,76 +43,114 @@ namespace ArdupilotMega.GCSViews.ConfigurationView
             LNK_wiki.MouseLeave += (s, e) => FadeLinkTo((LinkLabel)s, Color.WhiteSmoke);
 
             SetErrorMessageOpacity();
+
+            if (MainV2.cs.firmware == MainV2.Firmwares.ArduPlane)
+            {
+                mavlinkComboBoxTilt.Items.AddRange(Enum.GetNames(typeof(Channelap)));
+                mavlinkComboBoxRoll.Items.AddRange(Enum.GetNames(typeof(Channelap)));
+                mavlinkComboBoxPan.Items.AddRange(Enum.GetNames(typeof(Channelap)));
+            }
+            else
+            {
+                mavlinkComboBoxTilt.Items.AddRange(Enum.GetNames(typeof(Channelac)));
+                mavlinkComboBoxRoll.Items.AddRange(Enum.GetNames(typeof(Channelac)));
+                mavlinkComboBoxPan.Items.AddRange(Enum.GetNames(typeof(Channelac)));
+            }
         }
 
         // 0 = disabled 1 = enabled
         enum Channelap
         {
             Disable = 0,
-            CH_5 = 1,
-            CH_6 = 1,
-            CH_7 = 1,
-            CH_8 = 1
+            RC5 = 1,
+            RC6 = 1,
+            RC7 = 1,
+            RC8 = 1
         }
 
         // 0 = disabled 1 = enabled
         enum Channelac
         {
             Disable = 0,
-            CAM_P = 7,
-            CAM_R = 8,
-            CAM_Y = 6
+            CAM_P = 1,
+            CAM_R = 1,
+            CAM_Y = 1
         }
 
         public void Activate()
         {
-            if (MainV2.cs.firmware == MainV2.Firmwares.ArduPlane)
+            foreach (string item in MainV2.comPort.param.Keys)
             {
-                mavlinkComboBoxTilt.setup(typeof(Channelap), "MNT_STAB_PITCH", MainV2.comPort.param);
-                mavlinkComboBoxRoll.setup(typeof(Channelap), "MNT_STAB_ROLL", MainV2.comPort.param);
-                mavlinkComboBoxPan.setup(typeof(Channelap), "MNT_STAB_YAW", MainV2.comPort.param);
-            }
-            else
-            {
-                mavlinkComboBoxTilt.setup(typeof(Channelac), "CAM_P_FUNCTION", MainV2.comPort.param, "MNT_STAB_PITCH");
-                mavlinkComboBoxRoll.setup(typeof(Channelac), "CAM_R_FUNCTION", MainV2.comPort.param, "MNT_STAB_ROLL");
-                mavlinkComboBoxPan.setup(typeof(Channelac), "CAM_Y_FUNCTION", MainV2.comPort.param, "MNT_STAB_YAW");
+                if (item.EndsWith("_FUNCTION"))
+                {
+                    switch (MainV2.comPort.param[item].ToString())
+                    {
+                        case "6":
+                            mavlinkComboBoxPan.Text = item.Replace("_FUNCTION", "");
+                            break;
+                        case "7":
+                            mavlinkComboBoxTilt.Text = item.Replace("_FUNCTION", "");
+                            break;
+                        case "8":
+                            mavlinkComboBoxRoll.Text = item.Replace("_FUNCTION", "");
+                            break;
+                        default:
+                            break;
+                    }
+                }
             }
 
             updatePitch();
             updateRoll();
             updateYaw();
-
         }
 
         void updatePitch()
         {
             // pitch
-            mavlinkNumericUpDown11.setup(800, 2200, 1, 1, mavlinkComboBoxTilt.Text +"_MIN", MainV2.comPort.param);
-            mavlinkNumericUpDown12.setup(800, 2200, 1, 1, mavlinkComboBoxTilt.Text + "_MAX", MainV2.comPort.param);
-            mavlinkNumericUpDown1.setup(-90, 0, 100, 1, mavlinkComboBoxTilt.Text + "_ANGLE_MIN", MainV2.comPort.param);
-            mavlinkNumericUpDown2.setup(0, 90, 100, 1, mavlinkComboBoxTilt.Text + "_ANGLE_MAX", MainV2.comPort.param);
-            mavlinkCheckBox1.setup(-1, 1, mavlinkComboBoxTilt.Text + "_REV", MainV2.comPort.param);
+            if (mavlinkComboBoxTilt.Text != "Disable")
+            {
+                MainV2.comPort.setParam(mavlinkComboBoxTilt.Text + "_FUNCTION",7);
+                MainV2.comPort.setParam("MNT_STAB_PITCH",1);
+            }
+
+            mavlinkNumericUpDownTSM.setup(800, 2200, 1, 1, mavlinkComboBoxTilt.Text +"_MIN", MainV2.comPort.param);
+            mavlinkNumericUpDownTSMX.setup(800, 2200, 1, 1, mavlinkComboBoxTilt.Text + "_MAX", MainV2.comPort.param);
+            mavlinkNumericUpDownTAM.setup(-90, 0, 100, 1, mavlinkComboBoxTilt.Text + "_ANGLE_MIN", MainV2.comPort.param);
+            mavlinkNumericUpDownTAMX.setup(0, 90, 100, 1, mavlinkComboBoxTilt.Text + "_ANGLE_MAX", MainV2.comPort.param);
+            mavlinkCheckBoxTR.setup(-1, 1, mavlinkComboBoxTilt.Text + "_REV", MainV2.comPort.param);
         }
 
         void updateRoll()
         {
             // roll
-            mavlinkNumericUpDown5.setup(800, 2200, 1, 1, mavlinkComboBoxRoll.Text +"_MIN", MainV2.comPort.param);
-            mavlinkNumericUpDown6.setup(800, 2200, 1, 1, mavlinkComboBoxRoll.Text + "_MAX", MainV2.comPort.param);
-            mavlinkNumericUpDown3.setup(-90, 0, 100, 1, mavlinkComboBoxRoll.Text + "_ANGLE_MIN", MainV2.comPort.param);
-            mavlinkNumericUpDown4.setup(0, 90, 100, 1, mavlinkComboBoxRoll.Text + "_ANGLE_MAX", MainV2.comPort.param);
-            mavlinkCheckBox2.setup(-1, 1, mavlinkComboBoxRoll.Text + "_REV", MainV2.comPort.param);
+            if (mavlinkComboBoxRoll.Text != "Disable")
+            {
+                MainV2.comPort.setParam(mavlinkComboBoxRoll.Text + "_FUNCTION", 8);
+                MainV2.comPort.setParam("MNT_STAB_ROLL", 1);
+            }
+
+            mavlinkNumericUpDownRSM.setup(800, 2200, 1, 1, mavlinkComboBoxRoll.Text +"_MIN", MainV2.comPort.param);
+            mavlinkNumericUpDownRSMX.setup(800, 2200, 1, 1, mavlinkComboBoxRoll.Text + "_MAX", MainV2.comPort.param);
+            mavlinkNumericUpDownRAM.setup(-90, 0, 100, 1, mavlinkComboBoxRoll.Text + "_ANGLE_MIN", MainV2.comPort.param);
+            mavlinkNumericUpDownRAMX.setup(0, 90, 100, 1, mavlinkComboBoxRoll.Text + "_ANGLE_MAX", MainV2.comPort.param);
+            mavlinkCheckBoxRR.setup(-1, 1, mavlinkComboBoxRoll.Text + "_REV", MainV2.comPort.param);
         }
 
         void updateYaw()
         {
             // yaw
-            mavlinkNumericUpDown9.setup(800, 2200, 1, 1, mavlinkComboBoxPan.Text + "_MIN", MainV2.comPort.param);
-            mavlinkNumericUpDown10.setup(800, 2200, 1, 1, mavlinkComboBoxPan.Text + "_MAX", MainV2.comPort.param);
-            mavlinkNumericUpDown7.setup(-90, 0, 100, 1, mavlinkComboBoxPan.Text + "_ANGLE_MIN", MainV2.comPort.param);
-            mavlinkNumericUpDown8.setup(0, 90, 100, 1, mavlinkComboBoxPan.Text + "_ANGLE_MAX", MainV2.comPort.param);
-            mavlinkCheckBox3.setup(-1, 1, mavlinkComboBoxPan.Text + "_REV", MainV2.comPort.param);
+            if (mavlinkComboBoxPan.Text != "Disable")
+            {
+                MainV2.comPort.setParam(mavlinkComboBoxPan.Text + "_FUNCTION", 6);
+                MainV2.comPort.setParam("MNT_STAB_YAW", 1);
+            }
+
+            mavlinkNumericUpDownPSM.setup(800, 2200, 1, 1, mavlinkComboBoxPan.Text + "_MIN", MainV2.comPort.param);
+            mavlinkNumericUpDownPSMX.setup(800, 2200, 1, 1, mavlinkComboBoxPan.Text + "_MAX", MainV2.comPort.param);
+            mavlinkNumericUpDownPAM.setup(-90, 0, 100, 1, mavlinkComboBoxPan.Text + "_ANGLE_MIN", MainV2.comPort.param);
+            mavlinkNumericUpDownPAMX.setup(0, 90, 100, 1, mavlinkComboBoxPan.Text + "_ANGLE_MAX", MainV2.comPort.param);
+            mavlinkCheckBoxPR.setup(-1, 1, mavlinkComboBoxPan.Text + "_REV", MainV2.comPort.param);
         }
 
         private void SetErrorMessageOpacity()

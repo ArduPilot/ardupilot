@@ -8,7 +8,6 @@ using System.Threading;
 using log4net;
 using log4net.Config;
 
-
 namespace ArdupilotMega
 {
     static class Program
@@ -63,7 +62,6 @@ namespace ArdupilotMega
 
             return;
             */
-           
 
             try
             {
