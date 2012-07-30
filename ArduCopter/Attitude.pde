@@ -848,7 +848,7 @@ void roll_pitch_toy()
 		// Linear equation for Yaw:Speed to Roll
 		// default is 1000, lower for more roll action
 		//roll_rate = ((float)g_gps->ground_speed / 600) * (float)yaw_rate;
-		roll_rate = ((int32_t)g.rc_2.control_in * (yaw_rate/100)) /40;
+		roll_rate = -((int32_t)g.rc_2.control_in * (yaw_rate/100)) /40;
 		//Serial.printf("roll_rate: %d\n",roll_rate);
 
 		// limit roll rate to 15, 30, or 45 deg per second.
