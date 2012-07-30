@@ -595,19 +595,19 @@
 #ifdef MOTORS_JD880
 # define STABILIZE_ROLL_P 		3.7
 # define STABILIZE_ROLL_I 		0.0
-# define STABILIZE_ROLL_IMAX	40.0		// degrees
+# define STABILIZE_ROLL_IMAX	8.0		// degrees
 # define STABILIZE_PITCH_P		3.7
 # define STABILIZE_PITCH_I		0.0
-# define STABILIZE_PITCH_IMAX	40.0		// degrees
+# define STABILIZE_PITCH_IMAX	8.0		// degrees
 #endif
 
 #ifdef MOTORS_JD850
 # define STABILIZE_ROLL_P 		4.2
 # define STABILIZE_ROLL_I 		0.0
-# define STABILIZE_ROLL_IMAX 	40.0		// degrees
+# define STABILIZE_ROLL_IMAX 	8.0		// degrees
 # define STABILIZE_PITCH_P		4.2
 # define STABILIZE_PITCH_I		0.0
-# define STABILIZE_PITCH_IMAX	40.0		// degrees
+# define STABILIZE_PITCH_IMAX	8.0		// degrees
 #endif
 
 
@@ -633,7 +633,7 @@
 # define STABILIZE_ROLL_I 		0.01
 #endif
 #ifndef STABILIZE_ROLL_IMAX
-# define STABILIZE_ROLL_IMAX 	40		// degrees
+# define STABILIZE_ROLL_IMAX 	8.0		// degrees
 #endif
 
 #ifndef STABILIZE_PITCH_P
@@ -643,7 +643,7 @@
 # define STABILIZE_PITCH_I		0.01
 #endif
 #ifndef STABILIZE_PITCH_IMAX
-# define STABILIZE_PITCH_IMAX	40		// degrees
+# define STABILIZE_PITCH_IMAX	8.0		// degrees
 #endif
 
 #ifndef  STABILIZE_YAW_P
@@ -653,7 +653,7 @@
 # define STABILIZE_YAW_I		0.02
 #endif
 #ifndef  STABILIZE_YAW_IMAX
-# define STABILIZE_YAW_IMAX		8		// degrees * 100
+# define STABILIZE_YAW_IMAX		8.0		// degrees * 100
 #endif
 
 
@@ -670,7 +670,7 @@
 # define RATE_ROLL_D        0.005
 #endif
 #ifndef RATE_ROLL_IMAX
-# define RATE_ROLL_IMAX	 	5			// degrees
+# define RATE_ROLL_IMAX	 	5.0			// degrees
 #endif
 
 #ifndef RATE_PITCH_P
@@ -683,7 +683,7 @@
 # define RATE_PITCH_D       0.005
 #endif
 #ifndef RATE_PITCH_IMAX
-# define RATE_PITCH_IMAX   	5			// degrees
+# define RATE_PITCH_IMAX   	5.0			// degrees
 #endif
 
 #ifndef RATE_YAW_P
@@ -696,7 +696,7 @@
 # define RATE_YAW_D    		 0.000
 #endif
 #ifndef RATE_YAW_IMAX
-# define RATE_YAW_IMAX 		  50		// degrees
+# define RATE_YAW_IMAX 		  8.0		// degrees
 #endif
 
 
