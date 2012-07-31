@@ -487,7 +487,7 @@ void AP_MotorsHeli::move_swash(int16_t roll_out, int16_t pitch_out, int16_t coll
 void AP_MotorsHeli::ext_esc_control()
 
 {
-	switch ( AP_MOTORS_ESC_MODE_PASSTHROUGH ) {
+	switch ( AP_MOTORS_EXT_ESC_ACTIVE ) {
 
 		case AP_MOTORS_ESC_MODE_PASSTHROUGH: 																	
 			if( armed() && _rc_8->control_in > 10 ){
@@ -513,7 +513,10 @@ void AP_MotorsHeli::ext_esc_control()
 					ext_esc_output = ext_gov_setpoint;
 				}
 			} else {
-				ext_esc_ramp = 0;	//Return ESC Ramp to 0
+				ext_esc_ramp--;	//Return ESC Ramp to 0
+				if (ext_esc_ramp < 0){
+					ext_esc_ramp = 0;
+				}
 				ext_esc_output = 1000; //Just to be sure ESC output is 0
 			}
 			_rc->OutputCh(AP_MOTORS_HELI_EXT_ESC, ext_esc_output);
