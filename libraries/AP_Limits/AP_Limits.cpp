@@ -44,8 +44,15 @@ const AP_Param::GroupInfo AP_Limits::var_info[] PROGMEM = {
 	// @Range: 1-8
 	// @User: Standard
 	AP_GROUPINFO("CHANNEL",		4,	AP_Limits,	_channel),
-    AP_GROUPEND
 
+	// @Param: RECMODE
+	// @DisplayName: Limits Recovery Mode
+	// @Description: Select how Limits should "recover". Set to 0 for RTL-like mode, where the vehicle navigates back to home until it is "safe". Set to 1, for bounce-mode, where the vehicle will hold position when it hits a limit. RTL mode is better for large fenced areas, Bounce mode for smaller spaces. Note: RTL mode will cause the vehicle to yaw 180 degrees  (turn around) to navigate towards home when it hits a limit.
+	// @Values: 0:RTL mode, 1: Bounce mode
+    // @User: Standard
+	AP_GROUPINFO("RECMODE",		5,	AP_Limits,	_recmode),
+
+    AP_GROUPEND
 };
 
 AP_Limits::AP_Limits() {
@@ -193,4 +200,8 @@ void AP_Limits::set_state(int s) {
 
 AP_Int8 AP_Limits::channel() {
 	return _channel;
+}
+
+AP_Int8 AP_Limits::recmode() {
+	return _recmode;
 }
