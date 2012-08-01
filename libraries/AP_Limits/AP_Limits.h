@@ -49,6 +49,7 @@ public:
 	AP_Int8				state();
 	AP_Int8				safetime();
 	AP_Int8				channel();
+	AP_Int8				recmode();
 
 	// module linked list management methods
 	void				modules(AP_Limit_Module *m); // pointer to the first module in linked list of modules
@@ -91,6 +92,7 @@ protected:
 	AP_Int8				_safetime; // how long after recovered before switching to stabilize
 	AP_Int8				_state; // overall state - used in the main loop state machine inside the vehicle's slow loop.
 	AP_Int8				_channel; // channel used for switching limits on/off
+	AP_Int8				_recmode; // recovery mode: 0=RTL mode, 1=bounce mode
 
 private:
 	AP_Limit_Module		*_modules_head; // points to linked list of modules

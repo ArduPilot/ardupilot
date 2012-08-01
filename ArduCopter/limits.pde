@@ -229,18 +229,18 @@ static void limits_loop() {
 				limits.old_mode_switch = oldSwitchPosition;
 
 
-				// Take action
-				// This ensures no "radical" RTL, like a full throttle take-off,happens if something triggers at ground level
-				if ((uint32_t) current_loc.alt < ((uint32_t)home.alt * 200) ) { // we're under 2m (200cm), already at "people" height or on the ground
-					if (limits.debug()) gcs_send_text_P(SEVERITY_LOW,PSTR("Limits Action: near ground - LAND"));
-					// TODO: Will this work for a plane? Does it make sense in general?
-
-					set_mode(LAND);
-					limits.last_action = millis(); // start counter
-				    gcs_send_message(MSG_LIMITS_STATUS);
-
-					break;
-				}
+//				// Take action
+//				// This ensures no "radical" RTL, like a full throttle take-off,happens if something triggers at ground level
+//				if ((uint32_t) current_loc.alt < ((uint32_t)home.alt * 200) ) { // we're under 2m (200cm), already at "people" height or on the ground
+//					if (limits.debug()) gcs_send_text_P(SEVERITY_LOW,PSTR("Limits Action: near ground - do nothing"));
+//					// TODO: Will this work for a plane? Does it make sense in general?
+//
+//					//set_mode(LAND);
+//					limits.last_action = millis(); // start counter
+//				    gcs_send_message(MSG_LIMITS_STATUS);
+//
+//					break;
+//				}
 
 
 				// TODO: This applies only to planes - hold for porting
@@ -250,29 +250,51 @@ static void limits_loop() {
 //					}
 
 
+				switch (limits.recmode()) {
 
-				if (limits.debug()) gcs_send_text_P(SEVERITY_LOW,PSTR("Limits Action - GUIDED to home"));
-				set_recovery_home_alt();
-				set_mode(GUIDED);
-				limits.last_action = millis();
-			    gcs_send_message(MSG_LIMITS_STATUS);
+				case 0:			// RTL mode
 
+					if (limits.debug()) gcs_send_text_P(SEVERITY_LOW,PSTR("Limits Action - RTL"));
 
-//				if (!nav_ok) { // we don't have navigational data, now what?
-//
-//					if (limits.debug()) gcs_send_text_P(SEVERITY_LOW,PSTR("Limits No NAV for recovery!"));
-//
-//					// flying vehicles - land?
-//					//set_mode(ALT_HOLD);
-//
-//					// other vehicles - TODO
-//				}
+					set_mode(RTL);
+					limits.last_action = millis();
+					gcs_send_message(MSG_LIMITS_STATUS);
+					break;
+
+				case 1:			// Bounce mode
+
+					if (limits.debug()) gcs_send_text_P(SEVERITY_LOW,PSTR("Limits Action - bounce mode, POSITION"));
+					// ALT_HOLD gives us yaw hold, roll& pitch hold and throttle hold.
+					// It is like position hold, but without manual throttle control.
+
+					//set_recovery_home_alt();
+					set_mode(POSITION);
+					throttle_mode = THROTTLE_AUTO;
+					limits.last_action = millis();
+					gcs_send_message(MSG_LIMITS_STATUS);
+					break;
+
+				}
 				break;
 			}
 
-			// ESCALATE We have not recovered after 5 minutes of recovery action
 
-			if (((uint32_t)millis() - (uint32_t)limits.last_action) > 300000 ) {
+			// In bounce mode, take control for 3 seconds, and then wait for the pilot to make us "safe".
+			// If the vehicle does not recover, the escalation action will trigger.
+			if (limits.recmode() == 1) {
+
+					if (control_mode == POSITION && ((uint32_t)millis() - (uint32_t)limits.last_action) > 3000) {
+						if (limits.debug()) gcs_send_text_P(SEVERITY_LOW,PSTR("Limits Recovery Bounce: Returning control to pilot"));
+						set_mode(STABILIZE);
+					} else if (control_mode == STABILIZE && ((uint32_t)millis() - (uint32_t)limits.last_action) > 6000) {
+						// after 3 more seconds, reset action counter to take action again
+						limits.last_action = 0;
+					}
+			}
+
+			// ESCALATE We have not recovered after 2 minutes of recovery action
+
+			if (((uint32_t)millis() - (uint32_t)limits.last_action) > 120000 ) {
 
 				// TODO: Secondary recovery
 				if (limits.debug()) gcs_send_text_P(SEVERITY_LOW,PSTR("Limits Recovery Escalation: RTL"));
