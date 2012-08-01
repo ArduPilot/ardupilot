@@ -807,6 +807,9 @@ Serial.println(tempaccel.z, DEC);
 		case 1:
 			medium_loopCounter++;
 
+			// Read 6-position switch on radio
+			// -------------------------------
+			read_control_switch();
 
 			if(g_gps->new_data){
 				g_gps->new_data 	= false;
@@ -895,10 +898,6 @@ static void slow_loop()
 
 		case 1:
 			slow_loopCounter++;
-
-			// Read 3-position switch on radio
-			// -------------------------------
-			read_control_switch();
 
 			// Read Control Surfaces/Mix switches
 			// ----------------------------------
