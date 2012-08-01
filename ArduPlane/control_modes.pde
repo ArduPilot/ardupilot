@@ -1,8 +1,9 @@
 /// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 
+
 static void read_control_switch()
 {
-	
+	static bool switch_debouncer;
 	byte switchPosition = readSwitch();
 	
 	// If switchPosition = 255 this indicates that the mode control channel input was out of range
@@ -19,6 +20,15 @@ static void read_control_switch()
         (g.reset_switch_chan != 0 && 
          APM_RC.InputCh(g.reset_switch_chan-1) > RESET_SWITCH_CHAN_PWM)) {
 
+        if (switch_debouncer == false) {
+            // this ensures that mode switches only happen if the
+            // switch changes for 2 reads. This prevents momentary
+            // spikes in the mode control channel from causing a mode
+            // switch
+            switch_debouncer = true;
+            return;
+        }
+
 		set_mode(flight_modes[switchPosition]);
 
 		oldSwitchPosition = switchPosition;
@@ -28,6 +38,8 @@ static void read_control_switch()
 		// -------------------------
 		reset_I();
 	}
+
+    switch_debouncer = false;
 
     if (g.inverted_flight_ch != 0) {
         // if the user has configured an inverted flight channel, then
