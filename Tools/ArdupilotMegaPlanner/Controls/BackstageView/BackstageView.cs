@@ -33,6 +33,8 @@ namespace ArdupilotMega.Controls.BackstageView
         
         public List<BackstageViewPage> Pages { get { return _items.OfType<BackstageViewPage>().ToList(); } }
 
+        private BackstageViewPage popoutPage = null;
+
         public BackstageView()
         {
             InitializeComponent();
@@ -247,6 +249,8 @@ namespace ArdupilotMega.Controls.BackstageView
 
             popoutForm.Text = associatedPage.LinkText;
 
+            popoutPage = associatedPage;
+
             popoutForm.BackColor = this.BackColor;
             popoutForm.ForeColor = this.ForeColor;
 
@@ -263,6 +267,7 @@ namespace ArdupilotMega.Controls.BackstageView
 
             // clear the controls, so we dont dispose the good control when it closes
             ((Form)sender).Controls.Clear();
+            popoutPage = null;
         }
 
         private void ButtonClick(object sender, EventArgs e)
@@ -314,6 +319,9 @@ namespace ArdupilotMega.Controls.BackstageView
         {
             foreach (var page in _items)
             {
+                if (popoutPage != null && popoutPage == page)
+                    continue;
+
                 if (((BackstageViewPage)page).Page is IDeactivate)
                 {
                     ((IDeactivate)((BackstageViewPage)(page)).Page).Deactivate();

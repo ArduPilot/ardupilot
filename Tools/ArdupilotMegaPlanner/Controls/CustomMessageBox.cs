@@ -104,20 +104,20 @@ namespace System.Windows.Forms
 
            Console.WriteLine("CustomMessageBox 1");
 
-            if (System.Windows.Forms.Application.OpenForms.Count > 0)
+          /*  if (System.Windows.Forms.Application.OpenForms.Count > 0)
             {
                 msgBoxFrm.StartPosition = FormStartPosition.Manual;
                 Form parentForm = System.Windows.Forms.Application.OpenForms[0];
                 // center of first form
                 msgBoxFrm.Location = new Point(parentForm.Location.X + parentForm.Width / 2 - msgBoxFrm.Width / 2,
                     parentForm.Location.Y + parentForm.Height / 2 - msgBoxFrm.Height / 2);
-                Console.WriteLine("CustomMessageBox 2a");
-                DialogResult test = msgBoxFrm.ShowDialog(null);
+                Console.WriteLine("CustomMessageBox 2a " + parentForm.Name);
+                DialogResult test = msgBoxFrm.ShowDialog();
             }
-            else
+            else*/
             {
                 Console.WriteLine("CustomMessageBox 2b");
-                DialogResult test = msgBoxFrm.ShowDialog(null);
+                DialogResult test = msgBoxFrm.ShowDialog();
             }
 
             Console.WriteLine("CustomMessageBox 3");

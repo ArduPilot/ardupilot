@@ -131,6 +131,7 @@ namespace ArdupilotMega.Controls
             this.StartPosition = System.Windows.Forms.FormStartPosition.CenterParent;
             this.Text = "Progress";
             this.TopMost = true;
+            this.Load += new System.EventHandler(this.ProgressReporterDialogue_Load);
             ((System.ComponentModel.ISupportInitialize)(this.imgWarning)).EndInit();
             this.ResumeLayout(false);
             this.PerformLayout();

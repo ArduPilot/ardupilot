@@ -221,18 +221,22 @@ namespace ArdupilotMega.GCSViews
             if (CB_tuning.Checked)
                 ZedGraphTimer.Start();
 
-            hud1.Visible = true;
-            hud1.Enabled = true;
-          //  SubMainLeft.Panel1.Controls.Clear();
-          //  SubMainLeft.Panel1.Controls.Add(hud1);
+            if (!hud1.Visible)
+                hud1.Visible = true;
+            if (!hud1.Enabled)
+                hud1.Enabled = true;
+
+            hud1.Dock = DockStyle.Fill;
         }
 
         public void Deactivate()
         {
-            //SubMainLeft.Panel1.Controls.Remove(hud1);
 
-            hud1.Visible = false;
+            hud1.Dock = DockStyle.None;
+            hud1.Size = new System.Drawing.Size(5,5);
             hud1.Enabled = false;
+            hud1.Visible = false;
+           //     hud1.Location = new Point(-1000,-1000);
 
             ZedGraphTimer.Stop();
         }
@@ -517,12 +521,7 @@ namespace ArdupilotMega.GCSViews
                             if (waypoints.AddSeconds(10) < DateTime.Now)
                             {
                                 //Console.WriteLine("Doing FD WP's");
-                                while (gMapControl1.inOnPaint == true)
-                                {
-                                    System.Threading.Thread.Sleep(1);
-                                }
-                                polygons.Markers.Clear();
-                                routes.Markers.Clear();
+                                updateMissionRoute();
 
                                 if (MainV2.comPort.logreadmode && MainV2.comPort.logplaybackfile != null)
                                 {
@@ -624,6 +623,17 @@ namespace ArdupilotMega.GCSViews
             {
                 routes.Routes.Clear();
                 routes.Routes.Add(route);
+            });
+        }
+
+        // to prevent cross thread calls while in a draw and exception
+        private void updateMissionRoute()
+        {
+            // not async
+            this.Invoke((System.Windows.Forms.MethodInvoker)delegate()
+            {
+                polygons.Markers.Clear();
+                routes.Markers.Clear();
             });
         }
 

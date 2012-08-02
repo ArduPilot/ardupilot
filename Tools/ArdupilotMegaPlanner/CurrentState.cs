@@ -325,6 +325,7 @@ namespace ArdupilotMega
         public DateTime datetime { get; set; }
 
         private object locker = new object();
+        bool useLocation = false;
 
         public CurrentState()
         {
@@ -721,8 +722,11 @@ namespace ArdupilotMega
                     {
                         var gps = bytearray.ByteArrayToStructure<MAVLink.mavlink_gps_raw_int_t>(6);
 
-                        lat = gps.lat * 1.0e-7f;
-                        lng = gps.lon * 1.0e-7f;
+                        if (!useLocation)
+                        {
+                            lat = gps.lat * 1.0e-7f;
+                            lng = gps.lon * 1.0e-7f;
+                        }
                         //                alt = gps.alt; // using vfr as includes baro calc
 
                         gpsstatus = gps.fix_type;
@@ -784,6 +788,8 @@ namespace ArdupilotMega
                     if (bytearray != null)
                     {
                         var loc = bytearray.ByteArrayToStructure<MAVLink.mavlink_global_position_int_t>(6);
+
+                        useLocation = true;
 
                         //alt = loc.alt / 1000.0f;
                         lat = loc.lat / 10000000.0f;
