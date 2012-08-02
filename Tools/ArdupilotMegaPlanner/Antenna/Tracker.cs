@@ -21,7 +21,8 @@ namespace ArdupilotMega.Antenna
         enum interfaces
         {
             Maestro,
-            ArduTracker
+            ArduTracker,
+            DegreeTracker
         }
 
         public Tracker()
@@ -110,6 +111,8 @@ namespace ArdupilotMega.Antenna
                 tracker = new ArdupilotMega.Antenna.Maestro();
             if (CMB_interface.Text == "ArduTracker")
                 tracker = new ArdupilotMega.Antenna.ArduTracker();
+            if (CMB_interface.Text == "DegreeTracker")
+                tracker = new ArdupilotMega.Antenna.DegreeTracker();
 
             try
             {

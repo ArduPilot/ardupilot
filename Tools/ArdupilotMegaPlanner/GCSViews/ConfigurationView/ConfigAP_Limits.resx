@@ -149,6 +149,9 @@
   <data name="LIM_ENABLED.AutoSize" type="System.Boolean, mscorlib">
     <value>True</value>
   </data>
+  <data name="LIM_ENABLED.Enabled" type="System.Boolean, mscorlib">
+    <value>False</value>
+  </data>
   <data name="LIM_ENABLED.Location" type="System.Drawing.Point, System.Drawing">
     <value>247, 9</value>
   </data>
@@ -204,6 +207,9 @@
   <data name="LIM_GPSLCK_REQ.AutoSize" type="System.Boolean, mscorlib">
     <value>True</value>
   </data>
+  <data name="LIM_GPSLCK_REQ.Enabled" type="System.Boolean, mscorlib">
+    <value>False</value>
+  </data>
   <assembly alias="System.Windows.Forms" name="System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089" />
   <data name="LIM_GPSLCK_REQ.ImeMode" type="System.Windows.Forms.ImeMode, System.Windows.Forms">
     <value>NoControl</value>
@@ -235,6 +241,9 @@
   <data name="LIM_FNC_REQ.AutoSize" type="System.Boolean, mscorlib">
     <value>True</value>
   </data>
+  <data name="LIM_FNC_REQ.Enabled" type="System.Boolean, mscorlib">
+    <value>False</value>
+  </data>
   <data name="LIM_FNC_REQ.ImeMode" type="System.Windows.Forms.ImeMode, System.Windows.Forms">
     <value>NoControl</value>
   </data>
@@ -264,6 +273,9 @@
   </data>
   <data name="LIM_ALT_REQ.AutoSize" type="System.Boolean, mscorlib">
     <value>True</value>
+  </data>
+  <data name="LIM_ALT_REQ.Enabled" type="System.Boolean, mscorlib">
+    <value>False</value>
   </data>
   <data name="LIM_ALT_REQ.ImeMode" type="System.Windows.Forms.ImeMode, System.Windows.Forms">
     <value>NoControl</value>
@@ -322,6 +334,9 @@
   <data name="LIM_REQUIRED.AutoSize" type="System.Boolean, mscorlib">
     <value>True</value>
   </data>
+  <data name="LIM_REQUIRED.Enabled" type="System.Boolean, mscorlib">
+    <value>False</value>
+  </data>
   <data name="LIM_REQUIRED.ImeMode" type="System.Windows.Forms.ImeMode, System.Windows.Forms">
     <value>NoControl</value>
   </data>
@@ -353,7 +368,7 @@
     <value>6, 95</value>
   </data>
   <data name="myLabel4.Size" type="System.Drawing.Size, System.Drawing">
-    <value>60, 23</value>
+    <value>65, 23</value>
   </data>
   <data name="myLabel4.TabIndex" type="System.Int32, mscorlib">
     <value>10</value>
@@ -365,7 +380,7 @@
     <value>myLabel4</value>
   </data>
   <data name="&gt;&gt;myLabel4.Type" xml:space="preserve">
-    <value>ArdupilotMega.Controls.MyLabel, ArdupilotMegaPlanner10, Version=1.1.4579.36338, Culture=neutral, PublicKeyToken=null</value>
+    <value>ArdupilotMega.Controls.MyLabel, ArdupilotMegaPlanner10, Version=1.1.4597.13822, Culture=neutral, PublicKeyToken=null</value>
   </data>
   <data name="&gt;&gt;myLabel4.Parent" xml:space="preserve">
     <value>groupBox4</value>
@@ -410,7 +425,7 @@
     <value>myLabel3</value>
   </data>
   <data name="&gt;&gt;myLabel3.Type" xml:space="preserve">
-    <value>ArdupilotMega.Controls.MyLabel, ArdupilotMegaPlanner10, Version=1.1.4579.36338, Culture=neutral, PublicKeyToken=null</value>
+    <value>ArdupilotMega.Controls.MyLabel, ArdupilotMegaPlanner10, Version=1.1.4597.13822, Culture=neutral, PublicKeyToken=null</value>
   </data>
   <data name="&gt;&gt;myLabel3.Parent" xml:space="preserve">
     <value>groupBox4</value>
@@ -441,6 +456,9 @@
   </data>
   <data name="LIM_FNC_SMPL.AutoSize" type="System.Boolean, mscorlib">
     <value>True</value>
+  </data>
+  <data name="LIM_FNC_SMPL.Enabled" type="System.Boolean, mscorlib">
+    <value>False</value>
   </data>
   <data name="LIM_FNC_SMPL.ImeMode" type="System.Windows.Forms.ImeMode, System.Windows.Forms">
     <value>NoControl</value>
@@ -496,6 +514,9 @@
   <data name="LIM_GPSLCK_ON.AutoSize" type="System.Boolean, mscorlib">
     <value>True</value>
   </data>
+  <data name="LIM_GPSLCK_ON.Enabled" type="System.Boolean, mscorlib">
+    <value>False</value>
+  </data>
   <data name="LIM_GPSLCK_ON.ImeMode" type="System.Windows.Forms.ImeMode, System.Windows.Forms">
     <value>NoControl</value>
   </data>
@@ -550,6 +571,9 @@
   <data name="LIM_ALT_ON.AutoSize" type="System.Boolean, mscorlib">
     <value>True</value>
   </data>
+  <data name="LIM_ALT_ON.Enabled" type="System.Boolean, mscorlib">
+    <value>False</value>
+  </data>
   <data name="LIM_ALT_ON.Location" type="System.Drawing.Point, System.Drawing">
     <value>69, 19</value>
   </data>
@@ -590,7 +614,7 @@
     <value>myLabel1</value>
   </data>
   <data name="&gt;&gt;myLabel1.Type" xml:space="preserve">
-    <value>ArdupilotMega.Controls.MyLabel, ArdupilotMegaPlanner10, Version=1.1.4579.36338, Culture=neutral, PublicKeyToken=null</value>
+    <value>ArdupilotMega.Controls.MyLabel, ArdupilotMegaPlanner10, Version=1.1.4597.13822, Culture=neutral, PublicKeyToken=null</value>
   </data>
   <data name="&gt;&gt;myLabel1.Parent" xml:space="preserve">
     <value>groupBox2</value>
@@ -635,7 +659,7 @@
     <value>myLabel2</value>
   </data>
   <data name="&gt;&gt;myLabel2.Type" xml:space="preserve">
-    <value>ArdupilotMega.Controls.MyLabel, ArdupilotMegaPlanner10, Version=1.1.4579.36338, Culture=neutral, PublicKeyToken=null</value>
+    <value>ArdupilotMega.Controls.MyLabel, ArdupilotMegaPlanner10, Version=1.1.4597.13822, Culture=neutral, PublicKeyToken=null</value>
   </data>
   <data name="&gt;&gt;myLabel2.Parent" xml:space="preserve">
     <value>groupBox2</value>
@@ -725,6 +749,6 @@
     <value>ConfigAP_Limits</value>
   </data>
   <data name="&gt;&gt;$this.Type" xml:space="preserve">
-    <value>ArdupilotMega.Controls.BackstageView.BackStageViewContentPanel, ArdupilotMegaPlanner10, Version=1.1.4579.36338, Culture=neutral, PublicKeyToken=null</value>
+    <value>System.Windows.Forms.UserControl, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </data>
 </root>

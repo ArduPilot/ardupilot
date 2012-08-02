@@ -184,7 +184,7 @@ namespace ArdupilotMega.Controls
         {
             if (!ThisReallyVisible())
             {
-                return;
+              //  return;
             }
 
             //base.Refresh();
@@ -198,7 +198,7 @@ namespace ArdupilotMega.Controls
         {
             if (!ThisReallyVisible())
             {
-                return;
+              //  return;
             }
 
             base.Invalidate();

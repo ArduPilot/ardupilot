@@ -41,14 +41,14 @@ namespace ArdupilotMega.Controls
                 // remove reference
                 this.Controls.Remove(current.Control);
 
+                if (current.Control is IDeactivate)
+                {
+                    ((IDeactivate)(current.Control)).Deactivate();
+                }
+
                 // check if we need to remove the current control
                 if (!current.Persistent)
                 {
-                    if (current.Control is IDeactivate)
-                    {
-                        ((IDeactivate)(current.Control)).Deactivate();
-                    }
-
                     // cleanup
                     current.Control.Close();
 

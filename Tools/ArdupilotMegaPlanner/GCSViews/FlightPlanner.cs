@@ -28,7 +28,7 @@ using ArdupilotMega.Controls.BackstageView;
 
 namespace ArdupilotMega.GCSViews
 {
-    partial class FlightPlanner : MyUserControl, IDeactivate
+    partial class FlightPlanner : MyUserControl, IDeactivate, IActivate
     {
         private static readonly ILog log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
         int selectedrow = 0;
@@ -3486,6 +3486,11 @@ namespace ArdupilotMega.GCSViews
             }
 
             //drawnpolygon.Points.Add(new PointLatLng(start.Lat, start.Lng));
+        }
+
+        public void Activate()
+        {
+            timer1.Start();
         }
 
         public void Deactivate()

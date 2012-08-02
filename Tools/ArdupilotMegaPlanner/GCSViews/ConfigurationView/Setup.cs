@@ -13,9 +13,13 @@ namespace ArdupilotMega.GCSViews.ConfigurationView
 {
     public partial class Setup : MyUserControl
     {
+        // remeber the last page accessed
+        static string lastpagename = "";
+
         public Setup()
         {
             InitializeComponent();
+            ThemeManager.ApplyThemeTo(this);
         }
 
 
@@ -34,7 +38,17 @@ namespace ArdupilotMega.GCSViews.ConfigurationView
 //backstageView.AddSpacer(15);
             AddBackstageViewPage(new ConfigPlanner(), "Planner");
 
-            this.backstageView.ActivatePage(backstageView.Pages[0]);
+            // remeber last page accessed
+            foreach (BackstageView.BackstageViewPage page in backstageView.Pages) {
+                if (page.LinkText == lastpagename)
+                {
+                    this.backstageView.ActivatePage(page);
+                    break;
+                }
+            }
+
+
+            //this.backstageView.ActivatePage(backstageView.Pages[0]);
 
             ThemeManager.ApplyThemeTo(this);
 
@@ -115,6 +129,8 @@ If you are just setting up 3DR radios, you may continue without connecting.");
 
         private void Setup_FormClosing(object sender, FormClosingEventArgs e)
         {
+            lastpagename = backstageView.SelectedPage.LinkText;
+
             backstageView.Close();
         }
     }

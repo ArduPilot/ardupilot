@@ -93,11 +93,13 @@ namespace ArdupilotMega.GCSViews.ConfigurationView
                         Console.WriteLine(chk.Name + " "+  copy[key]);
 
                         chk.Checked = (float)copy[key] == 1 ? true: false;
+                        chk.Enabled = true;
                     }
                     else if (ctls[0].GetType() == typeof(NumericUpDown))
                     {
                         NumericUpDown nud = ((NumericUpDown)ctls[0]);
                         nud.Value = (decimal)(float)copy[key];
+                        nud.Enabled = true;
                     }
                 }
             }

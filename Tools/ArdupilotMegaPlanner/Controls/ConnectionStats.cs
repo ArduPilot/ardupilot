@@ -39,6 +39,10 @@ namespace ArdupilotMega.Controls
                 .Buffer(TimeSpan.FromSeconds(1))
                 .Select(bytes => bytes.Sum());
 
+            var bytesSentEverySecond = _mavlink.BytesSent
+    .Buffer(TimeSpan.FromSeconds(1))
+    .Select(bytes => bytes.Sum());
+
             var subscriptions = new List<IDisposable>
                                     {
                                         // Total number of packets received
@@ -94,7 +98,7 @@ namespace ArdupilotMega.Controls
                                             .Select(ToHumanReadableByteCount)
                                             .SubscribeForTextUpdates(txt_BytesSent),
 
-                                        _mavlink.BytesSent
+                                        bytesSentEverySecond
                                             .Buffer(TimeSpan.FromSeconds(5), TimeSpan.FromSeconds(1))
                                             .Select(xs => xs.Any() ? xs.Average() : 0)
                                             .Select(x => ToHumanReadableByteCount((int) x))

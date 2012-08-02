@@ -2,6 +2,8 @@
 using System.ComponentModel;
 using System.Threading;
 using System.Windows.Forms;
+using System.Reflection;
+using log4net;
 
 namespace ArdupilotMega.Controls
 {
@@ -14,6 +16,8 @@ namespace ArdupilotMega.Controls
     /// </remarks>
     public partial class ProgressReporterDialogue : Form
     {
+        private static readonly ILog log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
+
         private Exception workerException;
         public ProgressWorkerEventArgs doWorkArgs;
 
@@ -43,6 +47,8 @@ namespace ArdupilotMega.Controls
 
         private void RunBackgroundOperation(object o)
         {
+            log.Info("RunBackgroundOperation");
+
             try
             {
                 Thread.CurrentThread.Name = "ProgressReporterDialogue Background thread";
@@ -51,7 +57,11 @@ namespace ArdupilotMega.Controls
 
             // mono fix - ensure the dialog is running
             while (this.IsHandleCreated == false)
-                System.Threading.Thread.Sleep(1);
+            {
+                System.Threading.Thread.Sleep(100);
+            }
+
+            log.Info("Focus ctl");
 
             this.Invoke((MethodInvoker)delegate
          {
@@ -62,7 +72,9 @@ namespace ArdupilotMega.Controls
 
             try
             {
+                log.Info("DoWork");
                 if (this.DoWork != null) this.DoWork(this, doWorkArgs);
+                log.Info("DoWork Done");
             }
             catch(Exception e)
             {
@@ -239,6 +251,11 @@ namespace ArdupilotMega.Controls
                 }
                 catch { } // clean fail. and ignore, chances are we will hit this again in the next 100 ms
             }
+        }
+
+        private void ProgressReporterDialogue_Load(object sender, EventArgs e)
+        {
+            this.Focus();
         }
 
     }

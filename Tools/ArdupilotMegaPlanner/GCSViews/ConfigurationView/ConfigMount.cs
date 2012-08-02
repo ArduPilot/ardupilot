@@ -105,13 +105,32 @@ namespace ArdupilotMega.GCSViews.ConfigurationView
             updateYaw();
         }
 
+        void ensureDisabled(ComboBox cmb, int number)
+        {
+            foreach (string item in cmb.Items) 
+            {
+                if (MainV2.comPort.param.ContainsKey(item+"_FUNCTION")) {
+                    float ans = (float)MainV2.comPort.param[item+"_FUNCTION"];
+
+                    if (ans == number)
+                    {
+                        MainV2.comPort.setParam(item + "_FUNCTION",0);
+                    }
+                }
+            }
+        }
+
         void updatePitch()
         {
             // pitch
             if (mavlinkComboBoxTilt.Text != "Disable")
             {
-                MainV2.comPort.setParam(mavlinkComboBoxTilt.Text + "_FUNCTION",7);
-                MainV2.comPort.setParam("MNT_STAB_PITCH",1);
+                MainV2.comPort.setParam(mavlinkComboBoxTilt.Text + "_FUNCTION", 7);
+                MainV2.comPort.setParam("MNT_STAB_PITCH", 1);
+            }
+            else
+            {
+                ensureDisabled(mavlinkComboBoxTilt,7);
             }
 
             mavlinkNumericUpDownTSM.setup(800, 2200, 1, 1, mavlinkComboBoxTilt.Text +"_MIN", MainV2.comPort.param);
@@ -129,6 +148,10 @@ namespace ArdupilotMega.GCSViews.ConfigurationView
                 MainV2.comPort.setParam(mavlinkComboBoxRoll.Text + "_FUNCTION", 8);
                 MainV2.comPort.setParam("MNT_STAB_ROLL", 1);
             }
+            else
+            {
+                ensureDisabled(mavlinkComboBoxRoll,8);
+            }
 
             mavlinkNumericUpDownRSM.setup(800, 2200, 1, 1, mavlinkComboBoxRoll.Text +"_MIN", MainV2.comPort.param);
             mavlinkNumericUpDownRSMX.setup(800, 2200, 1, 1, mavlinkComboBoxRoll.Text + "_MAX", MainV2.comPort.param);
@@ -144,6 +167,10 @@ namespace ArdupilotMega.GCSViews.ConfigurationView
             {
                 MainV2.comPort.setParam(mavlinkComboBoxPan.Text + "_FUNCTION", 6);
                 MainV2.comPort.setParam("MNT_STAB_YAW", 1);
+            }
+            else
+            {
+                ensureDisabled(mavlinkComboBoxPan,6);
             }
 
             mavlinkNumericUpDownPSM.setup(800, 2200, 1, 1, mavlinkComboBoxPan.Text + "_MIN", MainV2.comPort.param);

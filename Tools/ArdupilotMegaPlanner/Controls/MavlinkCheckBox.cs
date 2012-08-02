@@ -9,6 +9,8 @@ namespace ArdupilotMega.Controls
 {
     public class MavlinkCheckBox : CheckBox
     {
+        public new event EventHandler CheckedChanged;
+
         [System.ComponentModel.Browsable(true)]
         public float OnValue { get; set; }
 
@@ -77,6 +79,9 @@ namespace ArdupilotMega.Controls
 
         void MavlinkCheckBox_CheckedChanged(object sender, EventArgs e)
         {
+            if (this.CheckedChanged != null)
+                this.CheckedChanged(sender, e);
+
             if (this.Checked)
             {
                 enableControl(true);

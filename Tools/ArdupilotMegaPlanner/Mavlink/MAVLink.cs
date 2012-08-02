@@ -231,6 +231,8 @@ namespace ArdupilotMega
         {
             frmProgressReporter.UpdateProgressAndStatus(-1, "Mavlink Connecting...");
 
+            MainV2.giveComport = true;
+
             // allow settings to settle - previous dtr 
             System.Threading.Thread.Sleep(500);
 
@@ -242,8 +244,6 @@ namespace ArdupilotMega
 
             try
             {
-                MainV2.giveComport = true;
-
                 BaseStream.ReadBufferSize = 4 * 1024;
 
                 lock (objlock) // so we dont have random traffic

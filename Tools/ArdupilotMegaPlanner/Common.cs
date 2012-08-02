@@ -818,6 +818,8 @@ namespace ArdupilotMega
 
             form.Dispose();
 
+            form = null;
+
             return dialogResult;
         }
 
@@ -834,9 +836,11 @@ namespace ArdupilotMega
             TextBox textBox = new TextBox();
             ArdupilotMega.Controls.MyButton buttonOk = new ArdupilotMega.Controls.MyButton();
             ArdupilotMega.Controls.MyButton buttonCancel = new ArdupilotMega.Controls.MyButton();
+            System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(MainV2));
+            form.Icon = ((System.Drawing.Icon)(resources.GetObject("$this.Icon")));
 
             form.TopMost = true;
-            form.TopLevel = true;
+            //form.TopLevel = true;
 
             form.Text = title;
             label.Text = promptText;
@@ -861,7 +865,7 @@ namespace ArdupilotMega
             form.Controls.AddRange(new Control[] { label, textBox, buttonOk, buttonCancel });
             form.ClientSize = new Size(Math.Max(300, label.Right + 10), form.ClientSize.Height);
             form.FormBorderStyle = FormBorderStyle.FixedDialog;
-            form.StartPosition = FormStartPosition.CenterScreen;
+            form.StartPosition = FormStartPosition.CenterParent;
             form.MinimizeBox = false;
             form.MaximizeBox = false;
             form.AcceptButton = buttonOk;
@@ -871,7 +875,9 @@ namespace ArdupilotMega
 
             DialogResult dialogResult = DialogResult.Cancel;
 
-            dialogResult = form.ShowDialog();
+            form.ShowDialog();
+
+            dialogResult = form.DialogResult;
 
             if (dialogResult == DialogResult.OK)
             {
@@ -879,6 +885,8 @@ namespace ArdupilotMega
             }
 
             form.Dispose();
+
+            form = null;
             
             return dialogResult;
         }

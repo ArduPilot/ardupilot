@@ -24,6 +24,7 @@ using System.Security.Cryptography;
 using ArdupilotMega.Comms;
 using ArdupilotMega.Arduino;
 using System.IO.Ports;
+using Transitions;
 
 namespace ArdupilotMega
 {
@@ -1194,6 +1195,7 @@ namespace ArdupilotMega
             MyView.AddScreen(new MainSwitcher.Screen("Help", new GCSViews.Help(), false));
 
             // init button depressed - ensures correct action
+            //int fixme;
             MenuFlightData_Click(sender, e);
 
             // for long running tasks using own threads.
