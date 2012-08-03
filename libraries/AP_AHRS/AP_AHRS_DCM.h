@@ -20,8 +20,11 @@ public:
 
 		// these are experimentally derived from the simulator
 		// with large drift levels
-                _ki = 0.0087;
+		_ki = 0.0087;
 		_ki_yaw = 0.01;
+		_kp.set(0.4);
+		_kp_yaw.set(0.4);
+		gps_gain.set(1.0);
 	}
 
 	// return the smoothed gyro vector corrected for drift
