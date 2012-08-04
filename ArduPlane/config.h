@@ -485,11 +485,22 @@
 # define MOUNT		ENABLED
 #endif
 
-#if defined( __AVR_ATmega1280__ ) && (CAMERA == ENABLED || MOUNT == ENABLED)
-// The small ATmega1280 chip does not have enough memory for camera support
-// so disable CLI, this will allow camera support and other improvements to fit.
+#if defined( __AVR_ATmega1280__ ) && (MOUNT == ENABLED)
+
+// The small ATmega1280 chip does not have enough memory for mount support
+// so disable CLI, this will allow mount support and other improvements to fit.
 // This should almost have no side effects, because the APM planner can now do a complete board setup.
-#define CLI_ENABLED DISABLED
+# define CLI_ENABLED DISABLED
+
+// The small ATmega1280 chip does not have enough memory for mount support
+// so disable AUTO GPS support, this will allow mount support and other improvements to fit.
+// This should almost have no side effects, because the most users use MTK anyways.
+// If the user defined a GPS protocol, than we will NOT overwrite it
+# if GPS_PROTOCOL == GPS_PROTOCOL_AUTO
+#  undef GPS_PROTOCOL
+#  define GPS_PROTOCOL GPS_PROTOCOL_MTK
+# endif
+
 #endif
 
 
