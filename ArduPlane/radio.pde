@@ -5,7 +5,7 @@
 static byte failsafeCounter = 0;		// we wait a second to take over the throttle and send the plane circling
 
 
-extern RC_Channel* rc_ch[8];
+extern RC_Channel* rc_ch[NUM_CHANNELS];
 
 static void init_rc_in()
 {
