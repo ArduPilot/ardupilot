@@ -4,6 +4,9 @@
 // ----------------------------------------------------------------------------
 static int8_t failsafeCounter = 0;		// we wait a second to take over the throttle and send the plane circling
 
+
+extern RC_Channel* rc_ch[8];
+
 static void default_dead_zones()
 {
 	g.rc_1.set_dead_zone(60);
@@ -37,6 +40,15 @@ static void init_rc_in()
 	g.rc_2.set_type(RC_CHANNEL_ANGLE_RAW);
 	g.rc_4.set_type(RC_CHANNEL_ANGLE_RAW);
 
+	rc_ch[CH_1] = &g.rc_1;
+	rc_ch[CH_2] = &g.rc_2;
+	rc_ch[CH_3] = &g.rc_3;
+	rc_ch[CH_4] = &g.rc_4;
+	rc_ch[CH_5] = &g.rc_5;
+	rc_ch[CH_6] = &g.rc_6;
+	rc_ch[CH_7] = &g.rc_7;
+	rc_ch[CH_8] = &g.rc_8;
+
 	//set auxiliary ranges
 	g.rc_5.set_range(0,1000);
 	g.rc_6.set_range(0,1000);
@@ -51,6 +63,12 @@ static void init_rc_in()
 static void init_rc_out()
 {
 	APM_RC.Init( &isr_registry );		// APM Radio initialization
+
+#if CONFIG_APM_HARDWARE != APM_HARDWARE_APM1
+  APM_RC.enable_out(CH_9);
+  APM_RC.enable_out(CH_10);
+  APM_RC.enable_out(CH_11);
+#endif
 	#if INSTANT_PWM == 1
 	motors.set_update_rate(AP_MOTORS_SPEED_INSTANT_PWM);
 	#else

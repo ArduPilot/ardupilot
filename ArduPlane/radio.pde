@@ -5,6 +5,8 @@
 static byte failsafeCounter = 0;		// we wait a second to take over the throttle and send the plane circling
 
 
+extern RC_Channel* rc_ch[8];
+
 static void init_rc_in()
 {
 	// set rc reversing
@@ -27,6 +29,15 @@ static void init_rc_in()
 	//g.channel_rudder.dead_zone 	= 60;
 	//g.channel_throttle.dead_zone = 6;
 
+	rc_ch[CH_1] = &g.channel_roll;
+	rc_ch[CH_2] = &g.channel_pitch;
+	rc_ch[CH_3] = &g.channel_throttle;
+	rc_ch[CH_4] = &g.channel_rudder;
+	rc_ch[CH_5] = &g.rc_5;
+	rc_ch[CH_6] = &g.rc_6;
+	rc_ch[CH_7] = &g.rc_7;
+	rc_ch[CH_8] = &g.rc_8;
+
 	//set auxiliary ranges
 #if CONFIG_APM_HARDWARE == APM_HARDWARE_APM1
 	update_aux_servo_function(&g.rc_5, &g.rc_6, &g.rc_7, &g.rc_8);
@@ -48,6 +59,12 @@ static void init_rc_out()
   APM_RC.enable_out(CH_7);
   APM_RC.enable_out(CH_8);
 
+#if CONFIG_APM_HARDWARE != APM_HARDWARE_APM1
+  APM_RC.enable_out(CH_9);
+  APM_RC.enable_out(CH_10);
+  APM_RC.enable_out(CH_11);
+#endif
+
 	APM_RC.OutputCh(CH_1, 	g.channel_roll.radio_trim);					// Initialization of servo outputs
 	APM_RC.OutputCh(CH_2, 	g.channel_pitch.radio_trim);
 	APM_RC.OutputCh(CH_3, 	g.channel_throttle.radio_min);
@@ -55,8 +72,14 @@ static void init_rc_out()
 
 	APM_RC.OutputCh(CH_5, 	g.rc_5.radio_trim);
 	APM_RC.OutputCh(CH_6, 	g.rc_6.radio_trim);
-	APM_RC.OutputCh(CH_7,   g.rc_7.radio_trim);
-  APM_RC.OutputCh(CH_8,   g.rc_8.radio_trim);
+	APM_RC.OutputCh(CH_7, 	g.rc_7.radio_trim);
+	APM_RC.OutputCh(CH_8, 	g.rc_8.radio_trim);
+
+#if CONFIG_APM_HARDWARE != APM_HARDWARE_APM1
+	APM_RC.OutputCh(CH_9, 	g.rc_9.radio_trim);
+	APM_RC.OutputCh(CH_10,	g.rc_10.radio_trim);
+	APM_RC.OutputCh(CH_11,	g.rc_11.radio_trim);
+#endif
 }
 
 static void read_radio()
