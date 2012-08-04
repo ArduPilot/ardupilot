@@ -1355,6 +1355,10 @@ static void slow_loop()
 			update_aux_servo_function(&g.rc_camera_roll, &g.rc_camera_pitch, &g.rc_camera_yaw);
 			#endif
 
+#if MOUNT == ENABLED
+			camera_mount.update_mount_type();
+#endif
+
 			// agmatthews - USERHOOKS
 			#ifdef USERHOOK_SLOWLOOP
 			   USERHOOK_SLOWLOOP
