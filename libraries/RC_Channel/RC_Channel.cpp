@@ -24,7 +24,7 @@
 
 /// global array with pointers to all APM RC channels, will be used by AP_Mount and AP_Camera classes
 /// It points to RC input channels, both APM1 and APM2 only have 8 input channels.
-RC_Channel* rc_ch[8];
+RC_Channel* rc_ch[NUM_CHANNELS];
 
 APM_RC_Class *RC_Channel::_apm_rc;
 
