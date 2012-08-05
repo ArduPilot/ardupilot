@@ -1026,7 +1026,7 @@
 
 // use this to disable the CLI slider switch
 #ifndef CLI_SLIDER_ENABLED
-# define CLI_SLIDER_ENABLED ENABLED
+# define CLI_SLIDER_ENABLED DISABLED
 #endif
 
 // delay to prevent Xbee bricking, in milliseconds
