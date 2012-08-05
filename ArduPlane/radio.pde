@@ -50,20 +50,11 @@ static void init_rc_out()
 {
 	APM_RC.Init( &isr_registry );		// APM Radio initialization
 
-  APM_RC.enable_out(CH_1);
-  APM_RC.enable_out(CH_2);
-  APM_RC.enable_out(CH_3);
-  APM_RC.enable_out(CH_4);
-  APM_RC.enable_out(CH_5);
-  APM_RC.enable_out(CH_6);
-  APM_RC.enable_out(CH_7);
-  APM_RC.enable_out(CH_8);
-
-#if CONFIG_APM_HARDWARE != APM_HARDWARE_APM1
-  APM_RC.enable_out(CH_9);
-  APM_RC.enable_out(CH_10);
-  APM_RC.enable_out(CH_11);
-#endif
+	APM_RC.enable_out(CH_1);
+	APM_RC.enable_out(CH_2);
+	APM_RC.enable_out(CH_3);
+	APM_RC.enable_out(CH_4);
+	enable_aux_servos();
 
 	APM_RC.OutputCh(CH_1, 	g.channel_roll.radio_trim);					// Initialization of servo outputs
 	APM_RC.OutputCh(CH_2, 	g.channel_pitch.radio_trim);
@@ -114,7 +105,7 @@ static void read_radio()
 	if (g.channel_throttle.servo_out > 50) {
 		if (airspeed.use()) {
 			airspeed_nudge = (g.flybywire_airspeed_max * 100 - g.airspeed_cruise_cm) * ((g.channel_throttle.norm_input()-0.5) / 0.5);
-        } else {
+		} else {
 			throttle_nudge = (g.throttle_max - g.throttle_cruise) * ((g.channel_throttle.norm_input()-0.5) / 0.5);
 		}
 	} else {
