@@ -190,3 +190,14 @@ void update_aux_servo_function(	RC_Channel_aux* rc_a,
 				g_rc_function[RC_Channel_aux::k_cam_trigger]->angle_max / 10);
 	G_RC_AUX(k_egg_drop)->set_range(0,100);
 }
+
+/// Should be called after the the servo functions have been initialized
+void
+enable_aux_servos()
+{
+	for (uint8_t i = 0; i < RC_Channel_aux::k_nr_aux_servo_functions ; i++)
+	{
+		if (g_rc_function[i]) g_rc_function[i]->enable_out();
+	}
+}
+

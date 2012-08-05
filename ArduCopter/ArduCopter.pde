@@ -1271,10 +1271,6 @@ static void fifty_hz_loop()
 		// set-up channel 6 to control pitch
 		camera_mount.set_manual_rc_channel( &g.rc_6 );
 
-		// enable output channels
-		g.rc_camera_roll.enable_out_ch(CH_CAM_ROLL);
-		g.rc_camera_pitch.enable_out_ch(CH_CAM_PITCH);
-		g.rc_camera_yaw.enable_out_ch(CH_CAM_YAW);
 	}
 
 	// update pilot's commands to mount
@@ -1288,9 +1284,9 @@ static void fifty_hz_loop()
 	camera_mount.update_mount_position();
 
 	// move camera servos.  TO-DO: move this to AP_Mount library
-	g.rc_camera_roll.output_ch(CH_CAM_ROLL);
-	g.rc_camera_pitch.output_ch(CH_CAM_PITCH);
-	g.rc_camera_yaw.output_ch(CH_CAM_PITCH);
+	g.rc_camera_roll.output();
+	g.rc_camera_pitch.output();
+	g.rc_camera_yaw.output();
 #endif
 
 #if CAMERA == ENABLED
@@ -1354,6 +1350,7 @@ static void slow_loop()
 			#if MOUNT == ENABLED
 			update_aux_servo_function(&g.rc_camera_roll, &g.rc_camera_pitch, &g.rc_camera_yaw);
 			#endif
+			enable_aux_servos();
 
 #if MOUNT == ENABLED
 			camera_mount.update_mount_type();

@@ -331,3 +331,15 @@ void RC_Channel::set_apm_rc( APM_RC_Class * apm_rc )
 {
     _apm_rc = apm_rc;
 }
+
+void
+RC_Channel::output()
+{
+    _apm_rc->OutputCh(_ch_out, radio_out);
+}
+
+void
+RC_Channel::enable_out()
+{
+    _apm_rc->enable_out(_ch_out);
+}

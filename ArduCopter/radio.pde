@@ -64,14 +64,6 @@ static void init_rc_out()
 {
 	APM_RC.Init( &isr_registry );		// APM Radio initialization
 
-#if CONFIG_APM_HARDWARE != APM_HARDWARE_APM1
-	APM_RC.enable_out(CH_9);
-	APM_RC.enable_out(CH_10);
-	APM_RC.enable_out(CH_11);
-  	APM_RC.OutputCh(CH_9, 	g.rc_9.radio_trim);
-	APM_RC.OutputCh(CH_10,	g.rc_10.radio_trim);
-	APM_RC.OutputCh(CH_11,	g.rc_11.radio_trim);
-#endif
 	#if INSTANT_PWM == 1
 	motors.set_update_rate(AP_MOTORS_SPEED_INSTANT_PWM);
 	#else
@@ -123,6 +115,8 @@ static void init_rc_out()
 		// send miinimum throttle out to ESC
 		output_min();
 	}
+
+	enable_aux_servos();
 }
 
 void output_min()

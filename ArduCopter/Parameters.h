@@ -399,6 +399,20 @@ public:
 	ch7_option 				(CH7_OPTION),
 	auto_slew_rate			(AUTO_SLEW_RATE),
 
+    rc_1					(CH_1),
+    rc_2					(CH_2),
+    rc_3					(CH_3),
+    rc_4					(CH_4),
+    rc_5					(CH_5),
+    rc_6					(CH_6),
+    rc_7					(CH_7),
+    rc_8					(CH_8),
+#if MOUNT == ENABLED
+    rc_camera_roll			(CH_9),
+    rc_camera_pitch			(CH_10),
+    rc_camera_yaw			(CH_11),
+#endif
+
     rc_speed(RC_FAST_SPEED),
 
 	stabilize_d 			(STABILIZE_D),

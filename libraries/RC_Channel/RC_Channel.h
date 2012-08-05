@@ -18,7 +18,7 @@ class RC_Channel{
 	/// @param key      EEPROM storage key for the channel trim parameters.
 	/// @param name     Optional name for the group.
 	///
-       RC_Channel() :
+       RC_Channel(uint8_t ch_out) :
         radio_min (1100),
         radio_trim(1500),
         radio_max (1900),
@@ -26,7 +26,8 @@ class RC_Channel{
 		_filter(false),
 		_reverse(1),
 		_dead_zone(0),
-		_high(1) {}
+		_high(1),
+		_ch_out(ch_out) {}
 
 	// setup min and max radio values in CLI
 	void 		update_min_max();
@@ -90,6 +91,8 @@ class RC_Channel{
 
 	float		scale_output;
     static void set_apm_rc(APM_RC_Class * apm_rc);
+    void output();
+    void enable_out();
     static APM_RC_Class *_apm_rc;
 
     static const struct AP_Param::GroupInfo var_info[];
@@ -103,6 +106,7 @@ class RC_Channel{
 	int16_t 	_low;
 	int16_t 	_high_out;
 	int16_t 	_low_out;
+	uint8_t 	_ch_out;
 };
 
 // This is ugly, but it fixes compilation on arduino

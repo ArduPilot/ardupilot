@@ -23,8 +23,8 @@ public:
 	/// @param key      EEPROM storage key for the channel trim parameters.
 	/// @param name     Optional name for the group.
 	///
-	RC_Channel_aux() :
-		RC_Channel(),
+	RC_Channel_aux(uint8_t ch_out) :
+		RC_Channel(ch_out),
 		function  (0),
 		angle_min (-4500), // assume -45 degrees min deflection
 		angle_max (4500)   // assume  45 degrees max deflection
@@ -67,6 +67,7 @@ public:
 };
 
 void update_aux_servo_function(RC_Channel_aux* rc_a = NULL, RC_Channel_aux* rc_b = NULL, RC_Channel_aux* rc_c = NULL, RC_Channel_aux* rc_d = NULL, RC_Channel_aux* rc_e = NULL, RC_Channel_aux* rc_f = NULL, RC_Channel_aux* rc_g = NULL);
+void enable_aux_servos();
 extern RC_Channel_aux* g_rc_function[RC_Channel_aux::k_nr_aux_servo_functions];	// the aux. servo ch. assigned to each function
 
 #endif /* RC_CHANNEL_AUX_H_ */

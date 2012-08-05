@@ -485,6 +485,20 @@ public:
         inverted_flight_ch      (0),
         sonar_enabled			(SONAR_ENABLED),
 
+        channel_roll			(CH_1),
+        channel_pitch			(CH_2),
+        channel_throttle		(CH_3),
+        channel_rudder			(CH_4),
+        rc_5					(CH_5),
+        rc_6					(CH_6),
+        rc_7					(CH_7),
+        rc_8					(CH_8),
+#if CONFIG_APM_HARDWARE == APM_HARDWARE_APM2
+        rc_9					(CH_9),
+        rc_10					(CH_10),
+        rc_11					(CH_11),
+#endif
+
         // PID controller    initial P        initial I        initial D        initial imax
         //-----------------------------------------------------------------------------------
         pidNavRoll          (NAV_ROLL_P,      NAV_ROLL_I,      NAV_ROLL_D,      NAV_ROLL_INT_MAX_CENTIDEGREE),
