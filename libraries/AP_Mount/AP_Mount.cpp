@@ -226,6 +226,8 @@ void AP_Mount::set_GPS_target_location(Location targetGPSLocation)
 /// This one should be called periodically
 void AP_Mount::update_mount_position()
 {
+	static bool mount_open = 0; // 0 is closed
+
 	switch((enum MAV_MOUNT_MODE)_mount_mode.get())
 	{
 		// move mount to a "retracted position" or to a position where a fourth servo can retract the entire mount into the fuselage
@@ -310,6 +312,15 @@ void AP_Mount::update_mount_position()
 		default:
 			//do nothing
 			break;
+	}
+
+	// move mount to a "retracted position" into the fuselage with a fourth servo
+	if (g_rc_function[RC_Channel_aux::k_mount_open]){
+		bool mount_open_new = (enum MAV_MOUNT_MODE)_mount_mode.get()==MAV_MOUNT_MODE_RETRACT?0:1;
+		if (mount_open != mount_open_new) {
+			mount_open = mount_open_new;
+			move_servo(g_rc_function[RC_Channel_aux::k_mount_open], mount_open_new, 0, 1);
+		}
 	}
 
 	// write the results to the servos
