@@ -39,6 +39,8 @@ Adam M Rivera		:Auto Compass Declination
 Marco Robustini		:Alpha testing
 Angel Fernandez		:Alpha testing
 Robert Lefebvre		:Heli Support & LEDs
+Amilcar Lucas		:mount and camera configuration
+Gregory Fletcher	:mount orientation math
 
 And much more so PLEASE PM me on DIYDRONES to add your contribution to the List
 
