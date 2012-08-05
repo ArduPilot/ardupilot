@@ -467,17 +467,26 @@
 // CAMERA TRIGGER AND CONTROL
 //
 #ifndef CAMERA
-# define CAMERA		ENABLED
+# if defined( __AVR_ATmega1280__ )
+#  define CAMERA	DISABLED
+# else
+#  define CAMERA	ENABLED
+# endif
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
 // MOUNT (ANTENNA OR CAMERA)
 //
 #ifndef MOUNT
-# define MOUNT		ENABLED
+# if defined( __AVR_ATmega1280__ )
+#  define MOUNT		DISABLED
+# else
+#  define MOUNT		ENABLED
+# endif
 #endif
 
 #if defined( __AVR_ATmega1280__ ) && (MOUNT == ENABLED)
+# warning "You choose to enable MOUNT on a small ATmega1280, CLI, CAMERA and AP_LIMITS will be disabled to free some space for it"
 
 // The small ATmega1280 chip does not have enough memory for mount support
 // so disable CLI, this will allow mount support and other improvements to fit.
@@ -496,6 +505,7 @@
 // To save some more space
 # undef CAMERA
 # define CAMERA		DISABLED
+# define AP_LIMITS	DISABLED
 
 #endif
 
@@ -1021,7 +1031,12 @@
 
 // use this to completely disable the CLI
 #ifndef CLI_ENABLED
-# define CLI_ENABLED ENABLED
+// Sorry the chip is just too small to let this fit
+# if defined( __AVR_ATmega1280__ )
+#  define CLI_ENABLED		DISABLED
+# else
+#  define CLI_ENABLED		ENABLED
+# endif
 #endif
 
 // use this to disable the CLI slider switch
