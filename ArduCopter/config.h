@@ -493,6 +493,10 @@
 #  define GPS_PROTOCOL GPS_PROTOCOL_MTK
 # endif
 
+// To save some more space
+# undef CAMERA
+# define CAMERA		DISABLED
+
 #endif
 
 
