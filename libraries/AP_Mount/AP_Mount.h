@@ -29,12 +29,6 @@
 #include <GCS_MAVLink.h>
 #include <../RC_Channel/RC_Channel_aux.h>
 
-// #defines to control function of RC Channel used to manually provide angular offset to AP_Mount when we can't use RC_Channel_aux (which is the case for ArduCopter).
-#define AP_MOUNT_MANUAL_RC_FUNCTION_DISABLED	0
-#define AP_MOUNT_MANUAL_RC_FUNCTION_ROLL		1
-#define AP_MOUNT_MANUAL_RC_FUNCTION_PITCH		2
-#define AP_MOUNT_MANUAL_RC_FUNCTION_YAW			3
-
 class AP_Mount
 {
 public:
@@ -43,9 +37,10 @@ public:
 
 	//enums
 	enum MountType{
-		k_pan_tilt = 0,			///< yaw-pitch
-		k_tilt_roll = 1,		///< pitch-roll
-		k_pan_tilt_roll = 2,	///< yaw-pitch-roll
+		k_unknown = 0,			///< unknown type
+		k_pan_tilt = 1,			///< yaw-pitch
+		k_tilt_roll = 2,		///< pitch-roll
+		k_pan_tilt_roll = 3,	///< yaw-pitch-roll
 	};
 
 	// MAVLink methods
@@ -62,11 +57,6 @@ public:
 	void debug_output();			///< For testing and development. Called in the medium loop.
 	// Accessors
 	enum MountType get_mount_type() { return _mount_type; }
-
-	// to allow manual input of an angle from the pilot when RC_Channel_aux cannot be used
-	void set_manual_rc_channel(RC_Channel *rc);			// define which RC_Channel is to be used for manual control
-	void set_manual_rc_channel_function(int8_t fn);		// set whether manual rc channel controlls roll (1), pitch (2) or yaw (3).
-
 	// hook for eeprom variables
     static const struct AP_Param::GroupInfo var_info[];
 
@@ -75,43 +65,56 @@ private:
 	//methods
 	void set_mode(enum MAV_MOUNT_MODE mode);
 
-	void set_retract_angles(float roll, float pitch, float yaw);		///< set mount retracted position
-	void set_neutral_angles(float roll, float pitch, float yaw);
-	void set_control_angles(float roll, float pitch, float yaw);
+	void set_retract_angles(float roll, float tilt, float pan);		///< set mount retracted position
+	void set_neutral_angles(float roll, float tilt, float pan);
+	void set_control_angles(float roll, float tilt, float pan);
 	void set_GPS_target_location(Location targetGPSLocation);	///< used to tell the mount to track GPS location
 
 	// internal methods
 	void calc_GPS_target_angle(struct Location *target);
 	void stabilize();
+	int16_t closest_limit(int16_t angle, int16_t* angle_min, int16_t* angle_max);
+	void move_servo(RC_Channel* rc, int16_t angle, int16_t angle_min, int16_t angle_max);
+	int32_t angle_input(RC_Channel* rc, int16_t angle_min, int16_t angle_max);
+	float angle_input_rad(RC_Channel* rc, int16_t angle_min, int16_t angle_max);
 
 	//members
 	AP_AHRS *_ahrs;          ///< Rotation matrix from earth to plane.
 	GPS     *&_gps;
 	const struct Location *_current_loc;
-	static const float t7 = 10000000.0;
-	float _roll_control_angle;  ///< radians
-	float _pitch_control_angle; ///< radians
-	float _yaw_control_angle;   ///< radians
-
-	float _roll_angle;	 ///< degrees
-	float _pitch_angle;	 ///< degrees
-	float _yaw_angle;	 ///< degrees
-
-	AP_Int8 _stab_roll;  ///< (1 = yes, 0 = no)
-	AP_Int8 _stab_pitch; ///< (1 = yes, 0 = no)
-	AP_Int8 _stab_yaw;   ///< (1 = yes, 0 = no)
-
-	AP_Int8 _mount_mode;
+	struct Location _target_GPS_location;
 	MountType _mount_type;
 
-	struct Location _target_GPS_location;
+	float _roll_control_angle;  ///< radians
+	float _tilt_control_angle;  ///< radians
+	float _pan_control_angle;   ///< radians
 
-	AP_Vector3f _retract_angles;		///< retracted position for mount, vector.x = roll vector.y = pitch, vector.z=yaw
-	AP_Vector3f _neutral_angles;		///< neutral position for mount, vector.x = roll vector.y = pitch, vector.z=yaw
-	AP_Vector3f _control_angles;		///< GCS controlled position for mount, vector.x = roll vector.y = pitch, vector.z=yaw
+	float _roll_angle;	 ///< degrees
+	float _tilt_angle;	 ///< degrees
+	float _pan_angle;	 ///< degrees
 
+	// EEPROM parameters
+	AP_Int8 _stab_roll;  ///< (1 = yes, 0 = no)
+	AP_Int8 _stab_tilt;  ///< (1 = yes, 0 = no)
+	AP_Int8 _stab_pan;   ///< (1 = yes, 0 = no)
+
+	AP_Int8 _mount_mode;
 	// RC_Channel for providing direct angular input from pilot
-	RC_Channel* _manual_rc;
-	int8_t		_manual_rc_function;
+	AP_Int8 _roll_rc_in;
+	AP_Int8 _tilt_rc_in;
+	AP_Int8 _pan_rc_in;
+
+	AP_Int16 	_roll_angle_min;	///< min angle limit of actuated surface in 0.01 degree units
+	AP_Int16 	_roll_angle_max;	///< max angle limit of actuated surface in 0.01 degree units
+	AP_Int16 	_tilt_angle_min;	///< min angle limit of actuated surface in 0.01 degree units
+	AP_Int16 	_tilt_angle_max;	///< max angle limit of actuated surface in 0.01 degree units
+	AP_Int16 	_pan_angle_min;		///< min angle limit of actuated surface in 0.01 degree units
+	AP_Int16 	_pan_angle_max;		///< max angle limit of actuated surface in 0.01 degree units
+
+	//AP_Int8		_joystick_speed;
+
+	AP_Vector3f _retract_angles;		///< retracted position for mount, vector.x = roll vector.y = tilt, vector.z=pan
+	AP_Vector3f _neutral_angles;		///< neutral position for mount, vector.x = roll vector.y = tilt, vector.z=pan
+	AP_Vector3f _control_angles;		///< GCS controlled position for mount, vector.x = roll vector.y = tilt, vector.z=pan
 };
 #endif

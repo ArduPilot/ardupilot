@@ -3,7 +3,6 @@
 /// @file	RC_Channel_aux.h
 /// @brief	RC_Channel manager for auxiliary channels (5..8), with EEPROM-backed storage of constants.
 /// @author Amilcar Lucas
-/// @author Gregory Fletcher
 
 #ifndef RC_CHANNEL_AUX_H_
 #define RC_CHANNEL_AUX_H_
@@ -25,9 +24,7 @@ public:
 	///
 	RC_Channel_aux(uint8_t ch_out) :
 		RC_Channel(ch_out),
-		function  (0),
-		angle_min (-4500), // assume -45 degrees min deflection
-		angle_max (4500)   // assume  45 degrees max deflection
+		function  (0)
 	{}
 
 	typedef enum
@@ -38,8 +35,8 @@ public:
 		k_flap_auto		= 3,	///< flap automated
 		k_aileron		= 4,	///< aileron
 		k_flaperon		= 5,	///< flaperon (flaps and aileron combined, needs two independent servos one for each wing)
-		k_mount_yaw		= 6,	///< mount yaw (pan)
-		k_mount_pitch	= 7,	///< mount pitch (tilt)
+		k_mount_pan		= 6,	///< mount yaw (pan)
+		k_mount_tilt	= 7,	///< mount pitch (tilt)
 		k_mount_roll	= 8,	///< mount roll
 		k_mount_open	= 9,	///< mount open (deploy) / close (retract)
 		k_cam_trigger	= 10,	///< camera trigger
@@ -48,16 +45,6 @@ public:
 	} Aux_servo_function_t;
 
 	AP_Int8 	function;	///< see Aux_servo_function_t enum
-	AP_Int16 	angle_min;	///< min angle limit of actuated surface in 0.01 degree units
-	AP_Int16 	angle_max;	///< max angle limit of actuated surface in 0.01 degree units
-
-	int16_t closest_limit(int16_t angle);
-
-	void rc_input(float *control_angle, int16_t angle);
-
-	int32_t angle_input();
-
-	float angle_input_rad();
 
 	void enable_out_ch(unsigned char ch_nr);
 

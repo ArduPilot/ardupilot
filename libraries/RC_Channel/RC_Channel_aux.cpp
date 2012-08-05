@@ -9,94 +9,15 @@ const AP_Param::GroupInfo RC_Channel_aux::var_info[] PROGMEM = {
 	// @Param: FUNCTION
 	// @DisplayName: Servo out function
 	// @Description: Setting this to Disabled(0) will disable this output, any other value will enable the corresponding function
-	// @Values: 0:Disabled,1:Manual,2:Flap,3:Flap_auto,4:Aileron,5:flaperon,6:mount_pan,7:mount_pitch,8:mount_roll,9:mount_open,10:camera_trigger,11:release
+	// @Values: 0:Disabled,1:Manual,2:Flap,3:Flap_auto,4:Aileron,5:flaperon,6:mount_pan,7:mount_tilt,8:mount_roll,9:mount_open,10:camera_trigger,11:release
 	// @User: Standard
 	AP_GROUPINFO("FUNCTION",       1, RC_Channel_aux, function),
 
-	// @Param: ANGLE_MIN
-	// @DisplayName: Minimum object position
-	// @Description: Minimum physical angular position of the object that this servo output controls. For example a camera pan angle, an aileron angle, etc
-	// @Units: centi-Degrees
-	// @Range: -18000 17999
-	// @Increment: 1
-	// @User: Standard
-	AP_GROUPINFO("ANGLE_MIN",      2, RC_Channel_aux, angle_min),
-
-	// @Param: ANGLE_MAX
-	// @DisplayName: Maximum object position
-	// @Description: Maximum physical angular position of the object that this servo output controls. For example a camera pan angle, an aileron angle, etc
-	// @Units: centi-Degrees
-	// @Range: -18000 17999
-	// @Increment: 1
-	// @User: Standard
-	AP_GROUPINFO("ANGLE_MAX",      3, RC_Channel_aux, angle_max),
 	AP_GROUPEND
 };
 
 /// Global pointer array, indexed by a "RC function enum" and points to the RC channel output assigned to that function/operation
 RC_Channel_aux* g_rc_function[RC_Channel_aux::k_nr_aux_servo_functions];
-
-/// saturate to the closest angle limit if outside of [min max] angle interval
-/// input angle is in degrees * 10
-int16_t
-RC_Channel_aux::closest_limit(int16_t angle)
-{
-	// Change scaling to 0.1 degrees in order to avoid overflows in the angle arithmetic
-	int16_t min = angle_min / 10;
-	int16_t max = angle_max / 10;
-
-	// Make sure the angle lies in the interval [-180 .. 180[ degrees
-	while (angle < -1800) angle += 3600;
-	while (angle >= 1800) angle -= 3600;
-
-	// Make sure the angle limits lie in the interval [-180 .. 180[ degrees
-	while (min < -1800) min += 3600;
-	while (min >= 1800) min -= 3600;
-	while (max < -1800) max += 3600;
-	while (max >= 1800) max -= 3600;
-	// This is done every time because the user might change the min, max values on the fly
-	set_range(min, max);
-
-	// If the angle is outside servo limits, saturate the angle to the closest limit
-	// On a circle the closest angular position must be carefully calculated to account for wrap-around
-	if ((angle < min) && (angle > max)){
-		// angle error if min limit is used
-		int16_t err_min = min - angle + (angle<min?0:3600); // add 360 degrees if on the "wrong side"
-		// angle error if max limit is used
-		int16_t err_max = angle - max + (angle>max?0:3600); // add 360 degrees if on the "wrong side"
-		angle = err_min<err_max?min:max;
-	}
-
-	servo_out = angle;
-	// convert angle to PWM using a linear transformation (ignores trimming because the servo limits might not be symmetric)
-	calc_pwm();
-
-	return angle;
-}
-
-/// Gets the RC and integrates and then compares with the servo out angles to limit control input to servo travel.
-/// That way the user doesn't get lost. Rotationally.
-void
-RC_Channel_aux::rc_input(float *control_angle, int16_t angle)
-{
-	if((radio_in < 1480 && angle < angle_max)||(radio_in > 1520 && angle > angle_min)){
-		*control_angle += ( 1500 - radio_in ) * .0001; // .0001 is the control speed scaler.
-	}
-}
-
-/// returns the angle (degrees*100) that the RC_Channel input is receiving
-int32_t
-RC_Channel_aux::angle_input()
-{
-	return (get_reverse()?-1:1) * (radio_in - radio_min) * (int32_t)(angle_max - angle_min) / (radio_max - radio_min) + (get_reverse()?angle_max:angle_min);
-}
-
-/// returns the angle (radians) that the RC_Channel input is receiving
-float
-RC_Channel_aux::angle_input_rad()
-{
-	return radians(angle_input()*0.01);
-}
 
 /// enable_out_ch - enable the channel through APM_RC
 void
@@ -131,6 +52,7 @@ RC_Channel_aux::output_ch(unsigned char ch_nr)
 /// expects the changes to take effect instantly
 /// Supports up to seven aux servo outputs (typically CH5 ... CH11)
 /// All servos must be configured with a single call to this function
+/// (do not call this twice with different parameters, the second call will reset the effect of the first call)
 void update_aux_servo_function(	RC_Channel_aux* rc_a,
 								RC_Channel_aux* rc_b,
 								RC_Channel_aux* rc_c,
@@ -175,12 +97,13 @@ void update_aux_servo_function(	RC_Channel_aux* rc_a,
 	G_RC_AUX(k_flap_auto)->set_range(0,100);
 	G_RC_AUX(k_aileron)->set_angle(4500);
 	G_RC_AUX(k_flaperon)->set_range(0,100);
-	G_RC_AUX(k_mount_yaw)->set_range(
-				g_rc_function[RC_Channel_aux::k_mount_yaw]->angle_min / 10,
-				g_rc_function[RC_Channel_aux::k_mount_yaw]->angle_max / 10);
-	G_RC_AUX(k_mount_pitch)->set_range(
-				g_rc_function[RC_Channel_aux::k_mount_pitch]->angle_min / 10,
-				g_rc_function[RC_Channel_aux::k_mount_pitch]->angle_max / 10);
+/*
+	G_RC_AUX(k_mount_pan)->set_range(
+				g_rc_function[RC_Channel_aux::k_mount_pan]->angle_min / 10,
+				g_rc_function[RC_Channel_aux::k_mount_pan]->angle_max / 10);
+	G_RC_AUX(k_mount_tilt)->set_range(
+				g_rc_function[RC_Channel_aux::k_mount_tilt]->angle_min / 10,
+				g_rc_function[RC_Channel_aux::k_mount_tilt]->angle_max / 10);
 	G_RC_AUX(k_mount_roll)->set_range(
 				g_rc_function[RC_Channel_aux::k_mount_roll]->angle_min / 10,
 				g_rc_function[RC_Channel_aux::k_mount_roll]->angle_max / 10);
@@ -188,6 +111,7 @@ void update_aux_servo_function(	RC_Channel_aux* rc_a,
 	G_RC_AUX(k_cam_trigger)->set_range(
 				g_rc_function[RC_Channel_aux::k_cam_trigger]->angle_min / 10,
 				g_rc_function[RC_Channel_aux::k_cam_trigger]->angle_max / 10);
+*/
 	G_RC_AUX(k_egg_drop)->set_range(0,100);
 }
 
