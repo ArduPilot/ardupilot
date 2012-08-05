@@ -10,6 +10,7 @@ version 2.1 of the License, or (at your option) any later version.
 // Libraries
 #include <FastSerial.h>
 #include <AP_Common.h>
+#include <AP_Math.h>
 #include <Arduino_Mega_ISR_Registry.h>
 #include <APM_RC.h>         // ArduPilot Mega RC Library
 
@@ -52,8 +53,10 @@ void loop()
 	uint32_t tnow = millis();
 	uint8_t heartbeat_pin = digitalRead(HEARTBEAT_PIN);
 
-	// to minimise latency run the main loop at 200Hz
-	delay(5);
+    // see if we have a new radio frame
+	if (APM_RC.GetState() != 1) {
+        return;
+    }
 
 	if (heartbeat_pin != last_heartbeat) {
 		last_heartbeat = heartbeat_pin;
