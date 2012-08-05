@@ -1262,31 +1262,8 @@ static void fifty_hz_loop()
 	#endif
 
 #if MOUNT == ENABLED
-	static bool mount_initialised = false;
-
-	// do camera mount initialisation.  TO-DO: move to AP_Mount library or init_ardupilot
-	if( mount_initialised == false ) {
-		mount_initialised = true;
-
-		// set-up channel 6 to control pitch
-		camera_mount.set_manual_rc_channel( &g.rc_6 );
-
-	}
-
-	// update pilot's commands to mount
-	if( g.radio_tuning == 0 ) {
-		camera_mount.set_manual_rc_channel_function( AP_MOUNT_MANUAL_RC_FUNCTION_PITCH );
-	}else{
-		camera_mount.set_manual_rc_channel_function( AP_MOUNT_MANUAL_RC_FUNCTION_DISABLED );
-	}
-
 	// update camera mount's position
 	camera_mount.update_mount_position();
-
-	// move camera servos.  TO-DO: move this to AP_Mount library
-	g.rc_camera_roll.output();
-	g.rc_camera_pitch.output();
-	g.rc_camera_yaw.output();
 #endif
 
 #if CAMERA == ENABLED
