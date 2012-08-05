@@ -73,7 +73,7 @@
 
 // agmatthews USERHOOKS
 // the choice of function names is up to the user and does not have to match these
-// uncomment these hooks and ensure there is a matching function un your "UserCode.pde" file
+// uncomment these hooks and ensure there is a matching function on your "UserCode.pde" file
 //#define USERHOOK_FASTLOOP userhook_FastLoop();
 #define USERHOOK_50HZLOOP userhook_50Hz();
 //#define USERHOOK_MEDIUMLOOP userhook_MediumLoop();
@@ -81,7 +81,7 @@
 //#define USERHOOK_SUPERSLOWLOOP userhook_SuperSlowLoop();
 #define USERHOOK_INIT userhook_init();
 
-// the choice of includeed variables file (*.h) is up to the user and does not have to match this one
+// the choice of included variables file (*.h) is up to the user and does not have to match this one
 // Ensure the defined file exists and is in the arducopter directory
 #define USERHOOK_VARIABLES "UserVariables.h"
 
@@ -99,7 +99,7 @@
 // MOT_1 through MOT_m where m is the number of motors on your frame.
 // CH_n variables are used for RC output. These can be CH_1 through CH_8,
 // and CH_10 or CH_12.
-// Sample channel config. Must define all MOT_ chanels used by
+// Sample channel config. Must define all MOT_ channels used by
 // your FRAME_TYPE.
 // #define CONFIG_CHANNELS CHANNEL_CONFIG_CUSTOM
 // #define MOT_1 CH_6
