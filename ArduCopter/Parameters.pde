@@ -236,17 +236,17 @@ static const AP_Param::Info var_info[] PROGMEM = {
 	GGROUP(rc_8,    "RC8_", RC_Channel),
 
 #if MOUNT == ENABLED
-	// @Group: CAM_R_
+	// @Group: RC9_
 	// @Path: ../libraries/RC_Channel/RC_Channel_aux.cpp
-	GGROUP(rc_camera_roll,	"CAM_R_", RC_Channel_aux),
+	GGROUP(rc_9,                    "RC9_", RC_Channel_aux),
 
-	// @Group: CAM_P_
+	// @Group: RC10_
 	// @Path: ../libraries/RC_Channel/RC_Channel_aux.cpp
-	GGROUP(rc_camera_pitch,	"CAM_P_", RC_Channel_aux),
+	GGROUP(rc_10,                    "RC10_", RC_Channel_aux),
 
-	// @Group: CAM_Y_
+	// @Group: RC11_
 	// @Path: ../libraries/RC_Channel/RC_Channel_aux.cpp
-	GGROUP(rc_camera_yaw,	"CAM_Y_", RC_Channel_aux),
+	GGROUP(rc_11,                    "RC11_", RC_Channel_aux),
 #endif
 
 	// @Param: RC_SPEED
