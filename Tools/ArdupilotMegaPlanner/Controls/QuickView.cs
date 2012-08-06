@@ -36,5 +36,23 @@ namespace ArdupilotMega.Controls
             this.OnDoubleClick(e);
         }
 
+        public override void Refresh()
+        {
+            if (this.Visible)
+                base.Refresh();
+        }
+
+        protected override void OnInvalidated(InvalidateEventArgs e)
+        {
+            if (this.Visible)
+                base.OnInvalidated(e);
+        }
+
+        protected override void OnPaint(PaintEventArgs e)
+        {
+            if (this.Visible)
+                base.OnPaint(e);
+        }
+
     }
 }

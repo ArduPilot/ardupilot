@@ -214,6 +214,34 @@ namespace ArdupilotMega.GCSViews.ConfigurationView
                     // If this is a range
                     string rangeRaw = _parameterMetaDataRepository.GetParameterMetaData(x.Key, ParameterMetaDataConstants.Range);
                     string incrementRaw = _parameterMetaDataRepository.GetParameterMetaData(x.Key, ParameterMetaDataConstants.Increment);
+
+                    // modify for scaling
+                    float test = 1;
+                    MAVLink.modifyParamForDisplay(true, x.Key, ref test);
+
+                    if (test != 1)
+                    {
+                        if (units.ToLower() == "centi-degrees")
+                        {
+                            units = "Degrees";
+                            incrementRaw = "0.1";
+                            string[] rangeParts = rangeRaw.Split(new[] { ' ' });
+                            if (rangeParts.Count() == 2)
+                            {
+                                float lowerRange;
+                                float.TryParse(rangeParts[0], out lowerRange);
+                                float upperRange;
+                                float.TryParse(rangeParts[1], out upperRange);
+
+                                rangeRaw = (lowerRange / 100) + " " + (upperRange / 100);
+                            }
+                        }
+                        else
+                        {
+                            units += " / " + (int)(1 / test);
+                        }
+                    }
+
                     if (!String.IsNullOrEmpty(rangeRaw) && !String.IsNullOrEmpty(incrementRaw))
                     {
                         float increment, intValue;

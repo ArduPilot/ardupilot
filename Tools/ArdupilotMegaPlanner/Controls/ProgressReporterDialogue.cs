@@ -21,6 +21,7 @@ namespace ArdupilotMega.Controls
         private Exception workerException;
         public ProgressWorkerEventArgs doWorkArgs;
 
+        internal object locker = new object();
         internal int _progress = -1;
         internal string _status = "";
 
@@ -213,8 +214,11 @@ namespace ArdupilotMega.Controls
             if (doWorkArgs.CancelRequested && !doWorkArgs.CancelAcknowledged)
                 return;
 
-            _progress = progress;
-            _status = status;
+            lock (locker)
+            {
+                _progress = progress;
+                _status = status;
+            }
 
         }
 
@@ -234,10 +238,12 @@ namespace ArdupilotMega.Controls
         /// <param name="e"></param>
         private void timer1_Tick(object sender, EventArgs e)
         {
-            // this value is being currupted - not thread safe
-            int pgv = _progress;
-
-            lblProgressMessage.Text = _status;
+            int pgv = -1;
+            lock (locker)
+            {
+                pgv = _progress;
+                lblProgressMessage.Text = _status;
+            }
             if (pgv == -1)
             {
                 this.progressBar1.Style = ProgressBarStyle.Marquee;
@@ -248,7 +254,7 @@ namespace ArdupilotMega.Controls
                 try
                 {
                     this.progressBar1.Value = pgv;
-                }
+                } // Exception System.ArgumentOutOfRangeException: Value of '-12959800' is not valid for 'Value'. 'Value' should be between 'minimum' and 'maximum'.
                 catch { } // clean fail. and ignore, chances are we will hit this again in the next 100 ms
             }
         }

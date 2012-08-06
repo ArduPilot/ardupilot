@@ -42,7 +42,8 @@ namespace ArdupilotMega
                 {
                     double[] ans = getOffsets(openFileDialog1.FileName, throttleThreshold);
 
-                    SaveOffsets(ans);
+                    if (ans.Length != 1)
+                        SaveOffsets(ans);
                 }
                 catch (Exception ex) { log.Debug(ex.ToString()); }
             }
@@ -82,7 +83,12 @@ namespace ArdupilotMega
             log.Info("Start log: " + DateTime.Now);
 
                 MAVLink mine = new MAVLink();
-                mine.logplaybackfile = new BinaryReader(File.Open(logfile, FileMode.Open, FileAccess.Read, FileShare.Read));
+                try
+                {
+                    mine.logplaybackfile = new BinaryReader(File.Open(logfile, FileMode.Open, FileAccess.Read, FileShare.Read));
+                }
+                catch (Exception ex) { log.Debug(ex.ToString()); CustomMessageBox.Show("Log Can not be opened. Are you still connected?"); return new double[] {0}; }
+
                 mine.logreadmode = true;
 
                 mine.packets.Initialize(); // clear

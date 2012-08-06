@@ -469,6 +469,7 @@ namespace ArdupilotMega.GCSViews
                     {
                         if (MainV2.config["CHK_maprotation"] != null && MainV2.config["CHK_maprotation"].ToString() == "True")
                         {
+                            // dont holdinvalidation here
                             setMapBearing();
                         }
 
@@ -516,12 +517,14 @@ namespace ArdupilotMega.GCSViews
                             //route.Stroke.Width = 5;
                             //route.Tag = "track";
 
-                            updateClearRoutes();
+                            //updateClearRoutes();
+
+                            gMapControl1.UpdateRouteLocalPosition(route);
 
                             if (waypoints.AddSeconds(10) < DateTime.Now)
                             {
                                 //Console.WriteLine("Doing FD WP's");
-                                updateMissionRoute();
+                                updateMissionRouteMarkers();
 
                                 if (MainV2.comPort.logreadmode && MainV2.comPort.logplaybackfile != null)
                                 {
@@ -608,7 +611,7 @@ namespace ArdupilotMega.GCSViews
 
         private void setMapBearing()
         {
-            this.BeginInvoke((System.Windows.Forms.MethodInvoker)delegate()
+            this.Invoke((System.Windows.Forms.MethodInvoker)delegate()
             {
                 gMapControl1.Bearing = (int)MainV2.cs.yaw;
             });
@@ -627,7 +630,7 @@ namespace ArdupilotMega.GCSViews
         }
 
         // to prevent cross thread calls while in a draw and exception
-        private void updateMissionRoute()
+        private void updateMissionRouteMarkers()
         {
             // not async
             this.Invoke((System.Windows.Forms.MethodInvoker)delegate()
@@ -656,6 +659,9 @@ namespace ArdupilotMega.GCSViews
             }
             else
             {
+                if (BUT_playlog.Text == "Play")
+                    return;
+
                 this.BeginInvoke((System.Windows.Forms.MethodInvoker)delegate()
                 {
                     try
@@ -735,7 +741,7 @@ namespace ArdupilotMega.GCSViews
                         mBorders.InnerMarker = m;
                         try
                         {
-                            mBorders.wprad = (int)float.Parse(ArdupilotMega.MainV2.config["TXT_WPRad"].ToString());
+                            mBorders.wprad = (int)(float.Parse(ArdupilotMega.MainV2.config["TXT_WPRad"].ToString()) / MainV2.cs.multiplierdist);
                         }
                         catch { }
                         mBorders.MainMap = gMapControl1;
@@ -1511,7 +1517,7 @@ namespace ArdupilotMega.GCSViews
                         lbl2.Location = new Point(lbl1.Right + 5, y);
                         lbl2.Size = new System.Drawing.Size(50, 13);
                         //if (lbl2.Name == "")
-                        lbl2.DataBindings.Add(new System.Windows.Forms.Binding("Text", this.bindingSource1, field.Name, true, System.Windows.Forms.DataSourceUpdateMode.OnValidation, ""));
+                        lbl2.DataBindings.Add(new System.Windows.Forms.Binding("Text", this.bindingSource1, field.Name, false, System.Windows.Forms.DataSourceUpdateMode.OnValidation, "0"));
                         lbl2.Name = field.Name + "value";
                         lbl2.Visible = true;
                         //lbl2.Text = fieldValue.ToString();

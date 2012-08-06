@@ -99,6 +99,9 @@ namespace ArdupilotMega
 
             log.Debug(ex.ToString());
 
+            if (ex.Message == "Requested registry access is not allowed.") {
+                return;
+            }
             if (ex.Message == "The port is closed.") {
                 CustomMessageBox.Show("Serial connection has been lost");
                 return;
