@@ -132,6 +132,12 @@ namespace ArdupilotMega.Utilities
             running = false;
         }
 
+        static void getUrlRTSP()
+        {
+
+        
+        }
+
         static Dictionary<string, string> getHeader(StreamReader stream)
         {
             Dictionary<string, string> answer = new Dictionary<string, string>();

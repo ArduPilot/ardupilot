@@ -84,6 +84,12 @@ namespace ArdupilotMega.GCSViews.ConfigurationView
 
         public void Activate()
         {
+            if (!MainV2.comPort.param.ContainsKey("FRAME"))
+            {
+                this.Enabled = false;
+                return;
+            }
+
             if ((float)MainV2.comPort.param["FRAME"] == 0)
             {
                 this.radioButton_Plus.Checked = true;

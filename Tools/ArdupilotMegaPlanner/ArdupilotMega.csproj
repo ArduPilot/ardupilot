@@ -79,7 +79,7 @@
     <StartupObject>ArdupilotMega.Program</StartupObject>
   </PropertyGroup>
   <PropertyGroup>
-    <ManifestCertificateThumbprint>92959F7BF337E6755031B3721140373D9674958B</ManifestCertificateThumbprint>
+    <ManifestCertificateThumbprint>02470CFADCC96F21D82436EFEE4A079F3AA2292B</ManifestCertificateThumbprint>
   </PropertyGroup>
   <PropertyGroup>
     <ManifestKeyFile>ArdupilotMega_TemporaryKey.pfx</ManifestKeyFile>
@@ -88,7 +88,7 @@
     <GenerateManifests>true</GenerateManifests>
   </PropertyGroup>
   <PropertyGroup>
-    <SignManifests>false</SignManifests>
+    <SignManifests>true</SignManifests>
   </PropertyGroup>
   <PropertyGroup>
     <SignAssembly>false</SignAssembly>
@@ -1193,6 +1193,7 @@
     <None Include="AeroSimRCAPMHil.zip" />
     <None Include="app.config" />
     <None Include="arducopter-xplane.zip" />
+    <None Include="ArdupilotMega_TemporaryKey.pfx" />
     <None Include="m3u\GeoRefnetworklink.kml">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>

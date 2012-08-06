@@ -100,9 +100,13 @@ namespace ArdupilotMega.GCSViews.ConfigurationView
                 }
             }
 
-            updatePitch();
-            updateRoll();
-            updateYaw();
+            try
+            {
+                updatePitch();
+                updateRoll();
+                updateYaw();
+            }
+            catch (Exception ex) { CustomMessageBox.Show("Failed to set Param\n" + ex.ToString()); this.Enabled = false; return; }
         }
 
         void ensureDisabled(ComboBox cmb, int number)
@@ -130,6 +134,7 @@ namespace ArdupilotMega.GCSViews.ConfigurationView
             }
             else
             {
+                MainV2.comPort.setParam("MNT_STAB_PITCH", 0);
                 ensureDisabled(mavlinkComboBoxTilt,7);
             }
 
@@ -150,6 +155,7 @@ namespace ArdupilotMega.GCSViews.ConfigurationView
             }
             else
             {
+                MainV2.comPort.setParam("MNT_STAB_ROLL", 0);
                 ensureDisabled(mavlinkComboBoxRoll,8);
             }
 
@@ -170,6 +176,7 @@ namespace ArdupilotMega.GCSViews.ConfigurationView
             }
             else
             {
+                MainV2.comPort.setParam("MNT_STAB_YAW", 0);
                 ensureDisabled(mavlinkComboBoxPan,6);
             }
 
@@ -242,9 +249,13 @@ namespace ArdupilotMega.GCSViews.ConfigurationView
             if (MainV2.comPort.param.ContainsKey("MNT_MODE"))
                 MainV2.comPort.setParam("MNT_MODE",3);
 
-            updatePitch();
-            updateRoll();
-            updateYaw();
+            try
+            {
+                updatePitch();
+                updateRoll();
+                updateYaw();
+            }
+            catch (Exception ex) { CustomMessageBox.Show("Failed to set Param\n"+ex.ToString()); return; }
         }
     }
 }

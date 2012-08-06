@@ -63,7 +63,7 @@ namespace ArdupilotMega
                 {
                     foreach (DataGridViewRow dgvr in dgv.Rows)
                     {
-                        if (dgvr.Cells[0].Value.ToString() == row.Cells[Command.Index].Value.ToString())
+                        if (dgvr.Cells[0].Value.ToString().Trim() == row.Cells[Command.Index].Value.ToString().Trim())
                         {
                             dgvr.Cells[1].Value = row.Cells[newvalue.Index].Value.ToString();
                             break;

@@ -553,7 +553,12 @@ namespace ArdupilotMega
                 {
 
                     MAVLink mine = new MAVLink();
-                    mine.logplaybackfile = new BinaryReader(File.Open(logfile, FileMode.Open, FileAccess.Read, FileShare.Read));
+                    try
+                    {
+                        mine.logplaybackfile = new BinaryReader(File.Open(logfile, FileMode.Open, FileAccess.Read, FileShare.Read));
+                    }
+                    catch (Exception ex) { log.Debug(ex.ToString()); CustomMessageBox.Show("Log Can not be opened. Are you still connected?"); return; }
+ 
                     mine.logreadmode = true;
 
                     mine.packets.Initialize(); // clear
@@ -664,7 +669,11 @@ namespace ArdupilotMega
             {
 
                 MAVLink MavlinkInterface = new MAVLink();
-                MavlinkInterface.logplaybackfile = new BinaryReader(File.Open(logfile, FileMode.Open, FileAccess.Read, FileShare.Read));
+                try
+                {
+                    MavlinkInterface.logplaybackfile = new BinaryReader(File.Open(logfile, FileMode.Open, FileAccess.Read, FileShare.Read));
+                }
+                catch (Exception ex) { log.Debug(ex.ToString()); CustomMessageBox.Show("Log Can not be opened. Are you still connected?"); return options; }
                 MavlinkInterface.logreadmode = true;
 
                 MavlinkInterface.packets.Initialize(); // clear
@@ -1199,7 +1208,11 @@ namespace ArdupilotMega
                 {
 
                     MAVLink mine = new MAVLink();
-                    mine.logplaybackfile = new BinaryReader(File.Open(logfile, FileMode.Open, FileAccess.Read, FileShare.Read));
+                    try
+                    {
+                        mine.logplaybackfile = new BinaryReader(File.Open(logfile, FileMode.Open, FileAccess.Read, FileShare.Read));
+                    }
+                    catch (Exception ex) { log.Debug(ex.ToString()); CustomMessageBox.Show("Log Can not be opened. Are you still connected?"); return; }
                     mine.logreadmode = true;
 
                     mine.packets.Initialize(); // clear
