@@ -399,6 +399,13 @@ public:
 	ch7_option 				(CH7_OPTION),
 	auto_slew_rate			(AUTO_SLEW_RATE),
 
+#if FRAME_CONFIG ==	HELI_FRAME
+    heli_servo_1			(CH_1),
+    heli_servo_2			(CH_2),
+    heli_servo_3			(CH_3),
+    heli_servo_4			(CH_4),
+#endif
+
     rc_1					(CH_1),
     rc_2					(CH_2),
     rc_3					(CH_3),
