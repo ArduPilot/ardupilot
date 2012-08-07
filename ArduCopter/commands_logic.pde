@@ -586,43 +586,43 @@ static void do_yaw()
 	command_yaw_speed		= command_cond_queue.lat * 100; 	// ms * 100
 	command_yaw_relative	= command_cond_queue.lng;			// 1 = Relative,	 0 = Absolute
 
-
-
-	// if unspecified go 30° a second
+	// if unspecified turn at 30° per second
 	if(command_yaw_speed == 0)
 		command_yaw_speed = 3000;
 
-	// if unspecified go counterclockwise
-	if(command_yaw_dir == 0)
-		command_yaw_dir = -1;
-	else
-		command_yaw_dir = 1;
+	// ensure direction is valid, if invalid default to counter clockwise
+	if(command_yaw_dir > 1)
+		command_yaw_dir = 0;	// 0 = counter clockwise, 1 = clockwise
 
-	if (command_yaw_relative == 1){
+	if(command_yaw_relative == 1){
 		// relative
 		command_yaw_delta	= command_cond_queue.alt * 100;
-
+		if(command_yaw_dir == 0){	// 0 = counter clockwise, 1 = clockwise
+			command_yaw_end = command_yaw_start - command_yaw_delta;
+		}else{
+			command_yaw_end = command_yaw_start + command_yaw_delta;
+		}
+		command_yaw_end = wrap_360(command_yaw_end);
 	}else{
 		// absolute
 		command_yaw_end		= command_cond_queue.alt * 100;
 
 		// calculate the delta travel in deg * 100
-		if(command_yaw_dir == 1){
-			if(command_yaw_start >= command_yaw_end){
-				command_yaw_delta = 36000 - (command_yaw_start - command_yaw_end);
-			}else{
-				command_yaw_delta = command_yaw_end - command_yaw_start;
-			}
-		}else{
+		if(command_yaw_dir == 0){	// 0 = counter clockwise, 1 = clockwise
 			if(command_yaw_start > command_yaw_end){
 				command_yaw_delta = command_yaw_start - command_yaw_end;
 			}else{
 				command_yaw_delta = 36000 + (command_yaw_start - command_yaw_end);
 			}
+		}else{
+			if(command_yaw_start >= command_yaw_end){
+				command_yaw_delta = 36000 - (command_yaw_start - command_yaw_end);
+			}else{
+				command_yaw_delta = command_yaw_end - command_yaw_start;
+			}
 		}
 		command_yaw_delta = wrap_360(command_yaw_delta);
 	}
-
 
 	// rate to turn deg per second - default is ten
 	command_yaw_time	= (command_yaw_delta / command_yaw_speed) * 1000;
@@ -682,6 +682,9 @@ static bool verify_yaw()
 		nav_yaw 	= command_yaw_end;
 		auto_yaw 	= nav_yaw;
 
+		// TO-DO: there's still a problem with Condition_yaw, it will do it two times(probably more) sometimes, if it hasn't reached the next waypoint yet.
+		// it should only do it one time so there should be code here to prevent another Condition_Yaw.
+
 		//Serial.println("Y");
 		return true;
 
@@ -690,7 +693,11 @@ static bool verify_yaw()
 		// power is a ratio of the time : .5 = half done
 		float power = (float)(millis() - command_yaw_start_time) / (float)command_yaw_time;
 
-		nav_yaw		= command_yaw_start + ((float)command_yaw_delta * power * command_yaw_dir);
+		if(command_yaw_dir == 0) {	// 0 = counter clockwise, 1 = clockwise
+			nav_yaw		= command_yaw_start - ((float)command_yaw_delta * power );
+		}else{
+			nav_yaw		= command_yaw_start + ((float)command_yaw_delta * power );
+		}
 		nav_yaw		= wrap_360(nav_yaw);
 		auto_yaw 	= nav_yaw;
 		//Serial.printf("ny %ld\n",nav_yaw);
