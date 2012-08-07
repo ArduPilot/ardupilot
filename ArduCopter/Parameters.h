@@ -139,8 +139,8 @@ public:
 	k_param_rc_6,
 	k_param_rc_7,
 	k_param_rc_8,
-	k_param_rc_camera_pitch,
-	k_param_rc_camera_roll,
+	k_param_rc_9,
+	k_param_rc_10,
 	k_param_throttle_min,
 	k_param_throttle_max,
 	k_param_throttle_fs_enabled,
@@ -152,7 +152,7 @@ public:
 	k_param_radio_tuning_high,
 	k_param_radio_tuning_low,
     k_param_rc_speed = 192,
-	k_param_rc_camera_yaw = 193,
+	k_param_rc_11 = 193,
 
     //
     // 200: flight modes
@@ -301,9 +301,9 @@ public:
 	RC_Channel	rc_8;
 
 #if MOUNT == ENABLED
-	RC_Channel_aux	rc_camera_roll;
-	RC_Channel_aux	rc_camera_pitch;
-	RC_Channel_aux	rc_camera_yaw;
+	RC_Channel_aux	rc_9;
+	RC_Channel_aux	rc_10;
+	RC_Channel_aux	rc_11;
 #endif
     AP_Int16    rc_speed; // speed of fast RC Channels in Hz
 
@@ -399,6 +399,13 @@ public:
 	ch7_option 				(CH7_OPTION),
 	auto_slew_rate			(AUTO_SLEW_RATE),
 
+#if FRAME_CONFIG ==	HELI_FRAME
+    heli_servo_1			(CH_1),
+    heli_servo_2			(CH_2),
+    heli_servo_3			(CH_3),
+    heli_servo_4			(CH_4),
+#endif
+
     rc_1					(CH_1),
     rc_2					(CH_2),
     rc_3					(CH_3),
@@ -408,9 +415,9 @@ public:
     rc_7					(CH_7),
     rc_8					(CH_8),
 #if MOUNT == ENABLED
-    rc_camera_roll			(CH_9),
-    rc_camera_pitch			(CH_10),
-    rc_camera_yaw			(CH_11),
+    rc_9					(CH_9),
+    rc_10					(CH_10),
+    rc_11					(CH_11),
 #endif
 
     rc_speed(RC_FAST_SPEED),
