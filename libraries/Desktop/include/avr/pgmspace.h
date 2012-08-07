@@ -38,6 +38,8 @@ extern void *memcpy_P(void *dest, PGM_P src, size_t n);
 static inline uint8_t pgm_read_byte(PGM_P s) { return (uint8_t)*s; }
 	static inline uint8_t pgm_read_byte_far(const void *s) { return *(const uint8_t *)s; }
 static inline uint16_t pgm_read_word(const void *s) { return *(const uint16_t *)s; }
+static inline uint32_t pgm_read_dword(const void *s) { return *(const uint32_t *)s; }
+static inline float    pgm_read_float(const void *s) { return *(const float *)s; }
 
 #define GETBYTE(flag, mask, pnt)        ({      \
        unsigned char __c;                       \
