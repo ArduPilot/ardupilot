@@ -404,9 +404,28 @@ namespace ArdupilotMega.GCSViews
             }
             catch (Exception ex) { lbl_status.Text = "Failed download"; CustomMessageBox.Show("Failed to download new firmware : " + ex.ToString()); return; }
 
+            System.Threading.ThreadPool.QueueUserWorkItem(fwtype, temp);
+
             UploadFlash(Path.GetDirectoryName(Application.ExecutablePath) + Path.DirectorySeparatorChar + @"firmware.hex", board);
         }
 
+        void fwtype(object temp) 
+        {
+            software sw = (software)temp;
+            try
+            {
+                // Create a request using a URL that can receive a post. 
+                WebRequest request = WebRequest.Create("http://vps.oborne.me/" + sw.name);
+                request.Timeout = 10000;
+                // Set the Method property of the request to POST.
+                request.Method = "GET";
+                // Get the request stream.
+                // Get the response.
+                WebResponse response = request.GetResponse();
+            }
+            catch { }
+        }
+        
         public void UploadFlash(string filename, string board)
         {
             byte[] FLASH = new byte[1];

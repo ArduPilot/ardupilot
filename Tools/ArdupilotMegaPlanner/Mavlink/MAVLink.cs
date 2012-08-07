@@ -1871,7 +1871,7 @@ namespace ArdupilotMega
 
             while (true)
             {
-                if (!(start.AddMilliseconds(500) > DateTime.Now))
+                if (!(start.AddMilliseconds(200) > DateTime.Now))
                 {
                     if (retrys > 0)
                     {

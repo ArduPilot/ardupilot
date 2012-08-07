@@ -1050,8 +1050,14 @@ namespace ArdupilotMega.GCSViews
             {
                 alt = (100 * MainV2.cs.multiplierdist).ToString("0");
             }
+
+            if (MainV2.config.ContainsKey("guided_alt"))
+                alt = MainV2.config["guided_alt"].ToString();
+
             if (DialogResult.Cancel == Common.InputBox("Enter Alt", "Enter Guided Mode Alt", ref alt))
                 return;
+
+            MainV2.config["guided_alt"] = alt;
 
             int intalt = (int)(100 * MainV2.cs.multiplierdist);
             if (!int.TryParse(alt, out intalt))
