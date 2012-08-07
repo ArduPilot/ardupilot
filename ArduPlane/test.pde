@@ -23,9 +23,6 @@ static int8_t	test_xbee(uint8_t argc, 		const Menu::arg *argv);
 static int8_t	test_eedump(uint8_t argc, 		const Menu::arg *argv);
 static int8_t	test_rawgps(uint8_t argc, 			const Menu::arg *argv);
 static int8_t	test_modeswitch(uint8_t argc, 		const Menu::arg *argv);
-#if CONFIG_APM_HARDWARE != APM_HARDWARE_APM2
-static int8_t	test_dipswitches(uint8_t argc, 		const Menu::arg *argv);
-#endif
 static int8_t	test_logging(uint8_t argc, 		const Menu::arg *argv);
 
 // Creates a constant array of structs representing menu options
@@ -175,7 +172,6 @@ test_radio(uint8_t argc, const Menu::arg *argv)
 	while(1){
 		delay(20);
 		read_radio();
-		update_servo_switches();
 
 		g.channel_roll.calc_pwm();
 		g.channel_pitch.calc_pwm();
@@ -418,40 +414,6 @@ test_logging(uint8_t argc, const Menu::arg *argv)
                     (unsigned long)DataFlash.ReadLong(), (unsigned long)DF_LOGGING_FORMAT);
     return 0;
 }
-
-#if CONFIG_APM_HARDWARE != APM_HARDWARE_APM2
-static int8_t
-test_dipswitches(uint8_t argc, const Menu::arg *argv)
-{
-	print_hit_enter();
-	delay(1000);
-
-    if (!g.switch_enable) {
-        Serial.println_P(PSTR("dip switches disabled, using EEPROM"));
-    }
-
-	while(1){
-		delay(100);
-		update_servo_switches();
-
-		if (g.mix_mode == 0) {
-			Serial.printf_P(PSTR("Mix:standard \trev roll:%d, rev pitch:%d, rev rudder:%d\n"),
-				(int)g.channel_roll.get_reverse(),
-				(int)g.channel_pitch.get_reverse(),
-				(int)g.channel_rudder.get_reverse());
-		} else {
-			Serial.printf_P(PSTR("Mix:elevons \trev elev:%d, rev ch1:%d, rev ch2:%d\n"),
-				(int)g.reverse_elevons,
-				(int)g.reverse_ch1_elevon,
-				(int)g.reverse_ch2_elevon);
-		}
-		if(Serial.available() > 0){
-			return (0);
-		}
-	}
-}
-#endif // CONFIG_APM_HARDWARE != APM_HARDWARE_APM2
-
 
 //-------------------------------------------------------------------------------------------
 // tests in this section are for real sensors or sensors that have been simulated

@@ -202,12 +202,6 @@ static void init_ardupilot()
 	pinMode(C_LED_PIN, OUTPUT);			// GPS status LED
 	pinMode(A_LED_PIN, OUTPUT);			// GPS status LED
 	pinMode(B_LED_PIN, OUTPUT);			// GPS status LED
-#if SLIDE_SWITCH_PIN > 0
-	pinMode(SLIDE_SWITCH_PIN, INPUT);	// To enter interactive mode
-#endif
-#if CONFIG_PUSHBUTTON == ENABLED
-	pinMode(PUSHBUTTON_PIN, INPUT);		// unused
-#endif
 #if CONFIG_RELAY == ENABLED
 	DDRL |= B00000100;					// Set Port L, pin 2 to output for the relay
 #endif
@@ -223,31 +217,7 @@ static void init_ardupilot()
      */
     timer_scheduler.set_failsafe(failsafe_check);
 
-
-	// If the switch is in 'menu' mode, run the main menu.
-	//
-	// Since we can't be sure that the setup or test mode won't leave
-	// the system in an odd state, we don't let the user exit the top
-	// menu; they must reset in order to fly.
-	//
-#if CLI_ENABLED == ENABLED && CLI_SLIDER_ENABLED == ENABLED
-	if (digitalRead(SLIDE_SWITCH_PIN) == 0) {
-		digitalWrite(A_LED_PIN,LED_ON);		// turn on setup-mode LED
-		Serial.printf_P(PSTR("\n"
-							 "Entering interactive setup mode...\n"
-							 "\n"
-							 "If using the Arduino Serial Monitor, ensure Line Ending is set to Carriage Return.\n"
-							 "Type 'help' to list commands, 'exit' to leave a submenu.\n"
-							 "Visit the 'setup' menu for first-time configuration.\n"));
-        Serial.println_P(PSTR("\nMove the slide switch and reset to FLY.\n"));
-        run_cli();
-	}
-#else
     Serial.printf_P(PSTR("\nPress ENTER 3 times to start interactive setup\n\n"));
-#endif // CLI_ENABLED
-
-	// read in the flight switches
-	update_servo_switches();
 
 	if (ENABLE_AIR_START == 1) {
 		// Perform an air start and get back to flying

@@ -906,10 +906,6 @@ static void slow_loop()
 		case 1:
 			slow_loopCounter++;
 
-			// Read Control Surfaces/Mix switches
-			// ----------------------------------
-			update_servo_switches();
-
 #if CONFIG_APM_HARDWARE == APM_HARDWARE_APM1
 			update_aux_servo_function(&g.rc_5, &g.rc_6, &g.rc_7, &g.rc_8);
 #else

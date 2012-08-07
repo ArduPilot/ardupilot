@@ -54,7 +54,7 @@ public:
         // Misc
         //
         k_param_auto_trim,
-        k_param_switch_enable,
+        k_param_switch_enable, // UNUSED
         k_param_log_bitmask,
         k_param_pitch_trim,
         k_param_mix_mode,
@@ -331,7 +331,6 @@ public:
     // Misc
     //
     AP_Int8     auto_trim;
-    AP_Int8     switch_enable;
     AP_Int8     mix_mode;
     AP_Int8     reverse_elevons;
     AP_Int8     reverse_ch1_elevon;
