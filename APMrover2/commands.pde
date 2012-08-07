@@ -184,7 +184,7 @@ static void set_next_WP(struct Location *wp)
 	// this is handy for the groundstation
 	wp_totalDistance 	= get_distance(&current_loc, &next_WP);
 	wp_distance 		= wp_totalDistance;
-	target_bearing 		= get_bearing(&current_loc, &next_WP);
+	target_bearing 		= get_bearing_cd(&current_loc, &next_WP);
 	nav_bearing 		= target_bearing;
 
 	// to check if we have missed the WP
@@ -219,7 +219,7 @@ static void set_guided_WP(void)
 	// this is handy for the groundstation
 	wp_totalDistance 	= get_distance(&current_loc, &next_WP);
 	wp_distance 		= wp_totalDistance;
-	target_bearing 		= get_bearing(&current_loc, &next_WP);
+	target_bearing 		= get_bearing_cd(&current_loc, &next_WP);
 
 	// to check if we have missed the WP
 	// ----------------------------
