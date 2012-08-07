@@ -34,14 +34,14 @@ const AP_Param::GroupInfo AP_AHRS_MPU6000::var_info[] PROGMEM = {
     // @Description: This controls the weight the compass has on the overall heading
     // @Range: 0 .4
     // @Increment: .01
-    AP_GROUPINFO("YAW_P", 0, AP_AHRS_MPU6000, _kp_yaw),
+    AP_GROUPINFO("YAW_P", 0, AP_AHRS_MPU6000, _kp_yaw, 0.4),
 
     // @Param: AHRS_RP_P
     // @DisplayName: AHRS RP_P
     // @Description: This controls how fast the accelerometers correct the attitude
     // @Range: 0 .4
     // @Increment: .01
-    AP_GROUPINFO("RP_P",  1, AP_AHRS_MPU6000, _kp),
+    AP_GROUPINFO("RP_P",  1, AP_AHRS_MPU6000, _kp, 0.4),
     AP_GROUPEND
 };
 
