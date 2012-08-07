@@ -166,7 +166,7 @@ static void set_next_WP(struct Location *wp)
 	// this is handy for the groundstation
 	// -----------------------------------
 	wp_distance 		= get_distance_cm(&current_loc, &next_WP);
-	target_bearing 		= get_bearing(&prev_WP, &next_WP);
+	target_bearing 		= get_bearing_cd(&prev_WP, &next_WP);
 
 	// calc the location error:
 	calc_location_error(&next_WP);

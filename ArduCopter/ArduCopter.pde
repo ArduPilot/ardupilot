@@ -2011,7 +2011,7 @@ static void update_navigation()
 	if(yaw_mode == YAW_LOOK_AT_HOME){
 		if(home_is_set){
 			//nav_yaw = point_at_home_yaw();
-			nav_yaw = get_bearing(&current_loc, &home);
+			nav_yaw = get_bearing_cd(&current_loc, &home);
 		} else {
 			nav_yaw = 0;
 		}
@@ -2457,13 +2457,13 @@ static void update_nav_wp()
 static void update_auto_yaw()
 {
 	if(wp_control == CIRCLE_MODE){
-		auto_yaw = get_bearing(&current_loc, &circle_WP);
+		auto_yaw = get_bearing_cd(&current_loc, &circle_WP);
 
 	}else if(wp_control == LOITER_MODE){
 		// just hold nav_yaw
 
 	}else if(yaw_tracking == MAV_ROI_LOCATION){
-		auto_yaw = get_bearing(&current_loc, &target_WP);
+		auto_yaw = get_bearing_cd(&current_loc, &target_WP);
 
 	}else if(yaw_tracking == MAV_ROI_WPNEXT){
 		// Point towards next WP
