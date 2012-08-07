@@ -329,13 +329,6 @@ const AP_Param::Info var_info[] PROGMEM = {
 	// @User: Standard
 	GSCALAR(auto_trim,              "TRIM_AUTO",      AUTO_TRIM),
 
-    // @Param: SWITCH_ENABLE
-	// @DisplayName: Switch enable
-	// @Description: Enable dip switches on APM1
-	// @Values: 0:Disabled,1:Enabled
-	// @User: Advanced
-	GSCALAR(switch_enable,          "SWITCH_ENABLE",  REVERSE_SWITCH),
-
     // @Param: MIX_MODE
 	// @DisplayName: Elevon mixing
 	// @Description: Enable elevon mixing

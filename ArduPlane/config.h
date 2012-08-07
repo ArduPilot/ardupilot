@@ -68,7 +68,6 @@
 
 #if CONFIG_APM_HARDWARE == APM_HARDWARE_APM2
 # define CONFIG_IMU_TYPE   CONFIG_IMU_MPU6000
-# define CONFIG_PUSHBUTTON DISABLED
 # define CONFIG_RELAY      DISABLED
 # define MAG_ORIENTATION   AP_COMPASS_APM2_SHIELD
 # define CONFIG_SONAR_SOURCE SONAR_SOURCE_ANALOG_PIN
@@ -96,8 +95,6 @@
 # define C_LED_PIN        35
 # define LED_ON           HIGH
 # define LED_OFF          LOW
-# define SLIDE_SWITCH_PIN 40
-# define PUSHBUTTON_PIN   41
 # define USB_MUX_PIN      -1
 # define CONFIG_RELAY     ENABLED
 # define BATTERY_PIN_1	  0
@@ -108,9 +105,6 @@
 # define C_LED_PIN        25
 # define LED_ON           LOW
 # define LED_OFF          HIGH
-# define SLIDE_SWITCH_PIN (-1)
-# define PUSHBUTTON_PIN   (-1)
-# define CLI_SLIDER_ENABLED DISABLED
 #if TELEMETRY_UART2 == ENABLED
 # define USB_MUX_PIN -1
 #else
@@ -446,13 +440,6 @@
 //
 #ifndef ENABLE_AIR_START
 # define ENABLE_AIR_START		DISABLED
-#endif
-
-//////////////////////////////////////////////////////////////////////////////
-// ENABLE REVERSE_SWITCH
-//
-#ifndef REVERSE_SWITCH
-# define REVERSE_SWITCH		ENABLED
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
@@ -840,11 +827,6 @@
 // use this to completely disable the CLI
 #ifndef CLI_ENABLED
 # define CLI_ENABLED ENABLED
-#endif
-
-// use this to disable the CLI slider switch
-#ifndef CLI_SLIDER_ENABLED
-# define CLI_SLIDER_ENABLED ENABLED
 #endif
 
 // delay to prevent Xbee bricking, in milliseconds

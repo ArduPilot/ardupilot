@@ -65,25 +65,3 @@ static void reset_control_switch()
 	read_control_switch();
 }
 
-static void update_servo_switches()
-{
-#if CONFIG_APM_HARDWARE != APM_HARDWARE_APM2
-	if (!g.switch_enable) {
-        // switches are disabled in EEPROM (see SWITCH_ENABLE option)
-        // this means the EEPROM control of all channel reversal is enabled
-		return;
-	}
-	// up is reverse
-	// up is elevon
-	g.mix_mode 		= (PINL & 128) ? 1 : 0; // 1 for elevon mode
-	if (g.mix_mode == 0) {
-		g.channel_roll.set_reverse((PINE & 128) ? true : false);
-		g.channel_pitch.set_reverse((PINE & 64) ? true : false);
-		g.channel_rudder.set_reverse((PINL & 64) ? true : false);
-	} else {
-		g.reverse_elevons 	= (PINE & 128) ? true : false;
-		g.reverse_ch1_elevon = (PINE & 64) ? true : false;
-		g.reverse_ch2_elevon = (PINL & 64) ? true : false;
-	}
-#endif
-}

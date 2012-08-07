@@ -9,9 +9,6 @@ extern RC_Channel* rc_ch[NUM_CHANNELS];
 
 static void init_rc_in()
 {
-	// set rc reversing
-	update_servo_switches();
-
 	// set rc channel ranges
 	g.channel_roll.set_angle(SERVO_MAX);
 	g.channel_pitch.set_angle(SERVO_MAX);
