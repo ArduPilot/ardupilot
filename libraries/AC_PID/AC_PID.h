@@ -28,14 +28,12 @@ public:
 	    const float &initial_p = 0.0,
 	    const float &initial_i = 0.0,
 	    const float &initial_d = 0.0,
-	    const int16_t &initial_imax = 0.0) :
-
-		_kp  (initial_p),
-		_ki  (initial_i),
-		_kd  (initial_d),
-		_imax(abs(initial_imax))
+	    const int16_t &initial_imax = 0.0)
 	{
-		// no need for explicit load, assuming that the main code uses AP_Param::load_all.
+		_kp = initial_p;
+		_ki = initial_i;
+		_kd = initial_d;
+		_imax = abs(initial_imax);
 	}
 
 	/// Iterate the PID, return the new control value

@@ -8,9 +8,9 @@
 #include "APM_PI.h"
 
 const AP_Param::GroupInfo APM_PI::var_info[] PROGMEM = {
-	AP_GROUPINFO("P",    0, APM_PI, _kp),
-	AP_GROUPINFO("I",    1, APM_PI, _ki),
-	AP_GROUPINFO("IMAX", 2, APM_PI, _imax),
+	AP_GROUPINFO("P",    0, APM_PI, _kp, 0),
+	AP_GROUPINFO("I",    1, APM_PI, _ki, 0),
+	AP_GROUPINFO("IMAX", 2, APM_PI, _imax, 0),
 	AP_GROUPEND
 };
 
