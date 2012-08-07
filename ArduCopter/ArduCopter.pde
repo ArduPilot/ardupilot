@@ -1327,7 +1327,7 @@ static void slow_loop()
 			read_control_switch();
 
 			#if MOUNT == ENABLED
-			update_aux_servo_function(&g.rc_camera_roll, &g.rc_camera_pitch, &g.rc_camera_yaw);
+			update_aux_servo_function(&g.rc_9, &g.rc_10, &g.rc_11);
 			#endif
 			enable_aux_servos();
 
