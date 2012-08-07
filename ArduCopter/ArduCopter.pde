@@ -134,6 +134,12 @@ FastSerialPort0(Serial);        // FTDI/console
 FastSerialPort1(Serial1);       // GPS port
 FastSerialPort3(Serial3);       // Telemetry port
 
+// this sets up the parameter table, and sets the default values. This
+// must be the first AP_Param variable declared to ensure its
+// constructor runs before the constructors of the other AP_Param
+// variables
+AP_Param param_loader(var_info, WP_START_BYTE);
+
 Arduino_Mega_ISR_Registry isr_registry;
 
 ////////////////////////////////////////////////////////////////////////////////

@@ -9,23 +9,23 @@
   version 2.1 of the License, or (at your option) any later version.
 */
 
-#define GSCALAR(v, name) { g.v.vtype, name, Parameters::k_param_ ## v, &g.v }
-#define GGROUP(v, name, class) { AP_PARAM_GROUP, name, Parameters::k_param_ ## v, &g.v, class::var_info }
-#define GOBJECT(v, name, class) { AP_PARAM_GROUP, name, Parameters::k_param_ ## v, &v, class::var_info }
+#define GSCALAR(v, name, def) { g.v.vtype, name, Parameters::k_param_ ## v, &g.v, {def_value:def} }
+#define GGROUP(v, name, class) { AP_PARAM_GROUP, name, Parameters::k_param_ ## v, &g.v, {group_info:class::var_info} }
+#define GOBJECT(v, name, class) { AP_PARAM_GROUP, name, Parameters::k_param_ ## v, &v, {group_info:class::var_info} }
 
-static const AP_Param::Info var_info[] PROGMEM = {
-	GSCALAR(format_version, "SYSID_SW_MREV"),
-	GSCALAR(software_type,  "SYSID_SW_TYPE"),
+const AP_Param::Info var_info[] PROGMEM = {
+	GSCALAR(format_version, "SYSID_SW_MREV",   0),
+	GSCALAR(software_type,  "SYSID_SW_TYPE",   Parameters::k_software_type),
 
-	GSCALAR(sysid_this_mav,	"SYSID_THISMAV"),
-	GSCALAR(sysid_my_gcs,	"SYSID_MYGCS"),
+	GSCALAR(sysid_this_mav,	"SYSID_THISMAV",   MAV_SYSTEM_ID),
+	GSCALAR(sysid_my_gcs,	"SYSID_MYGCS",     255),
 
     // @Param: SERIAL3_BAUD
 	// @DisplayName: Telemetry Baud Rate
 	// @Description: The baud rate used on the telemetry port
 	// @Values: 1:1200,2:2400,4:4800,9:9600,19:19200,38:38400,57:57600,111:111100,115:115200
 	// @User: Standard
-	GSCALAR(serial3_baud,	"SERIAL3_BAUD"),
+	GSCALAR(serial3_baud,	"SERIAL3_BAUD",     SERIAL3_BAUD/1000),
 
 	// @Param: ALT_HOLD_RTL
 	// @DisplayName: Alt Hold RTL
@@ -34,45 +34,45 @@ static const AP_Param::Info var_info[] PROGMEM = {
 	// @Range: 0 400
 	// @Increment: 1
 	// @User: Standard
-	GSCALAR(RTL_altitude,	"ALT_HOLD_RTL"),
+	GSCALAR(RTL_altitude,	"ALT_HOLD_RTL",     RTL_HOLD_ALT),
 
 	// @Param: SONAR_ENABLE
 	// @DisplayName: Enable Sonar
 	// @Description: Setting this to Enabled(1) will enable the sonar. Setting this to Disabled(0) will disable the sonar
 	// @Values: 0:Disabled,1:Enabled
 	// @User: Standard
-	GSCALAR(sonar_enabled,	"SONAR_ENABLE"),
+	GSCALAR(sonar_enabled,	"SONAR_ENABLE",     DISABLED),
 
-	GSCALAR(sonar_type,	"SONAR_TYPE"),
-	GSCALAR(battery_monitoring, "BATT_MONITOR"),
+	GSCALAR(sonar_type,	"SONAR_TYPE",           AP_RANGEFINDER_MAXSONARXL),
+	GSCALAR(battery_monitoring, "BATT_MONITOR", DISABLED),
 
 	// @Param: VOLT_DIVIDER
 	// @DisplayName: Voltage Divider
 	// @Description: TODO
-	GSCALAR(volt_div_ratio,	"VOLT_DIVIDER"),
+	GSCALAR(volt_div_ratio,	"VOLT_DIVIDER",     VOLT_DIV_RATIO),
 
-	GSCALAR(curr_amp_per_volt,	"AMP_PER_VOLT"),
-	GSCALAR(input_voltage,	"INPUT_VOLTS"),
+	GSCALAR(curr_amp_per_volt,	"AMP_PER_VOLT", CURR_AMP_PER_VOLT),
+	GSCALAR(input_voltage,	"INPUT_VOLTS",      INPUT_VOLTAGE),
 
 	// @Param: BATT_CAPACITY
 	// @DisplayName: Battery Capacity
 	// @Description: Battery capacity in milliamp-hours (mAh)
 	// @Units: mAh
-	GSCALAR(pack_capacity,	"BATT_CAPACITY"),
+	GSCALAR(pack_capacity,	"BATT_CAPACITY",    HIGH_DISCHARGE),
 
 	// @Param: MAG_ENABLE
 	// @DisplayName: Enable Compass
 	// @Description: Setting this to Enabled(1) will enable the compass. Setting this to Disabled(0) will disable the compass
 	// @Values: 0:Disabled,1:Enabled
 	// @User: Standard
-	GSCALAR(compass_enabled,	"MAG_ENABLE"),
+	GSCALAR(compass_enabled,	"MAG_ENABLE",   MAGNETOMETER),
 
 	// @Param: FLOW_ENABLE
 	// @DisplayName: Enable Optical Flow
 	// @Description: Setting this to Enabled(1) will enable optical flow. Setting this to Disabled(0) will disable optical flow
 	// @Values: 0:Disabled,1:Enabled
 	// @User: Standard
-	GSCALAR(optflow_enabled,	"FLOW_ENABLE"),
+	GSCALAR(optflow_enabled,	"FLOW_ENABLE",  OPTFLOW),
 
 	// @Param: LOW_VOLT
 	// @DisplayName: Low Voltage
@@ -80,14 +80,14 @@ static const AP_Param::Info var_info[] PROGMEM = {
 	// @Range: 0 20
 	// @Increment: .1
 	// @User: Standard
-	GSCALAR(low_voltage,	"LOW_VOLT"),
+	GSCALAR(low_voltage,	"LOW_VOLT",         LOW_VOLTAGE),
 
 	// @Param: SUPER_SIMPLE
 	// @DisplayName: Enable Super Simple Mode
 	// @Description: Setting this to Enabled(1) will enable Super Simple Mode. Setting this to Disabled(0) will disable Super Simple Mode
 	// @Values: 0:Disabled,1:Enabled
 	// @User: Standard
-	GSCALAR(super_simple,	"SUPER_SIMPLE"),
+	GSCALAR(super_simple,	"SUPER_SIMPLE",     SUPER_SIMPLE),
 
 	// @Param: RTL_LAND
 	// @DisplayName: RTL Land
@@ -95,7 +95,7 @@ static const AP_Param::Info var_info[] PROGMEM = {
 	// @Values: 0:Disabled,1:Enabled
 	// @User: Standard
 	// @ DEPRICATED
-	GSCALAR(rtl_land_enabled,	"RTL_LAND"),
+	GSCALAR(rtl_land_enabled,	"RTL_LAND",     0),
 
 	// @Param: APPROACH_ALT
 	// @DisplayName: Alt Hold RTL
@@ -104,14 +104,14 @@ static const AP_Param::Info var_info[] PROGMEM = {
 	// @Range: 1 10
 	// @Increment: .1
 	// @User: Standard
-	GSCALAR(rtl_approach_alt,	"APPROACH_ALT"),
+	GSCALAR(rtl_approach_alt,	"APPROACH_ALT", RTL_APPROACH_ALT),
 
-	GSCALAR(tilt_comp,	"TILT"),
+	GSCALAR(tilt_comp,	"TILT",                 54),
 
-	GSCALAR(waypoint_mode,	"WP_MODE"),
-	GSCALAR(command_total,	"WP_TOTAL"),
-	GSCALAR(command_index,	"WP_INDEX"),
-	GSCALAR(command_nav_index,	"WP_MUST_INDEX"),
+	GSCALAR(waypoint_mode,	"WP_MODE",          0),
+	GSCALAR(command_total,	"WP_TOTAL",         0),
+	GSCALAR(command_index,	"WP_INDEX",         0),
+	GSCALAR(command_nav_index,	"WP_MUST_INDEX",0),
 
     // @Param: WP_RADIUS
 	// @DisplayName: Waypoint Radius
@@ -120,7 +120,7 @@ static const AP_Param::Info var_info[] PROGMEM = {
 	// @Range: 1 127
 	// @Increment: 1
 	// @User: Standard
-	GSCALAR(waypoint_radius,	"WP_RADIUS"),
+	GSCALAR(waypoint_radius,	"WP_RADIUS",    WP_RADIUS_DEFAULT),
 
     // @Param: WP_LOITER_RAD
 	// @DisplayName: Waypoint Loiter Radius
@@ -129,10 +129,10 @@ static const AP_Param::Info var_info[] PROGMEM = {
 	// @Range: 1 127
 	// @Increment: 1
 	// @User: Standard
-	GSCALAR(loiter_radius,	"WP_LOITER_RAD"),
-	GSCALAR(waypoint_speed_max,	"WP_SPEED_MAX"),
-	GSCALAR(crosstrack_gain,	"XTRK_GAIN_SC"),
-	GSCALAR(auto_land_timeout,	"AUTO_LAND"),
+	GSCALAR(loiter_radius,	"WP_LOITER_RAD",    LOITER_RADIUS),
+	GSCALAR(waypoint_speed_max,	"WP_SPEED_MAX", WAYPOINT_SPEED_MAX),
+	GSCALAR(crosstrack_gain,	"XTRK_GAIN_SC", CROSSTRACK_GAIN),
+	GSCALAR(auto_land_timeout,	"AUTO_LAND",    AUTO_LAND_TIME*1000),
 
     // @Param: THR_MIN
 	// @DisplayName: Minimum Throttle
@@ -141,7 +141,7 @@ static const AP_Param::Info var_info[] PROGMEM = {
 	// @Range: 0 100
 	// @Increment: 1
 	// @User: Standard
-	GSCALAR(throttle_min,	"THR_MIN"),
+	GSCALAR(throttle_min,	"THR_MIN",          MINIMUM_THROTTLE),
 
     // @Param: THR_MAX
 	// @DisplayName: Maximum Throttle
@@ -150,50 +150,50 @@ static const AP_Param::Info var_info[] PROGMEM = {
 	// @Range: 0 100
 	// @Increment: 1
 	// @User: Standard
-	GSCALAR(throttle_max,	"THR_MAX"),
+	GSCALAR(throttle_max,	"THR_MAX",          MAXIMUM_THROTTLE),
 
     // @Param: THR_FAILSAFE
 	// @DisplayName: Throttle Failsafe Enable
 	// @Description: The throttle failsafe allows you to configure a software failsafe activated by a setting on the throttle input channel
 	// @Values: 0:Disabled,1:Enabled
 	// @User: Standard
-	GSCALAR(throttle_fs_enabled,	"THR_FAILSAFE"),
+	GSCALAR(throttle_fs_enabled,	"THR_FAILSAFE", THROTTLE_FAILSAFE),
 
-	GSCALAR(throttle_fs_action,	"THR_FS_ACTION"),
+	GSCALAR(throttle_fs_action,	"THR_FS_ACTION",    THROTTLE_FAILSAFE_ACTION),
 
     // @Param: THR_FS_VALUE
 	// @DisplayName: Throttle Failsafe Value
 	// @Description: The PWM level on channel 3 below which throttle sailsafe triggers
 	// @User: Standard
-	GSCALAR(throttle_fs_value, "THR_FS_VALUE"),
+	GSCALAR(throttle_fs_value, "THR_FS_VALUE",      THROTTLE_FS_VALUE),
 
-	GSCALAR(throttle_cruise,	"TRIM_THROTTLE"),
+	GSCALAR(throttle_cruise,	"TRIM_THROTTLE",    THROTTLE_CRUISE),
 
-	GSCALAR(flight_mode1, "FLTMODE1"),
-	GSCALAR(flight_mode2, "FLTMODE2"),
-	GSCALAR(flight_mode3, "FLTMODE3"),
-	GSCALAR(flight_mode4, "FLTMODE4"),
-	GSCALAR(flight_mode5, "FLTMODE5"),
-	GSCALAR(flight_mode6, "FLTMODE6"),
-	GSCALAR(simple_modes, "SIMPLE"),
+	GSCALAR(flight_mode1, "FLTMODE1",               FLIGHT_MODE_1),
+	GSCALAR(flight_mode2, "FLTMODE2",               FLIGHT_MODE_2),
+	GSCALAR(flight_mode3, "FLTMODE3",               FLIGHT_MODE_3),
+	GSCALAR(flight_mode4, "FLTMODE4",               FLIGHT_MODE_4),
+	GSCALAR(flight_mode5, "FLTMODE5",               FLIGHT_MODE_5),
+	GSCALAR(flight_mode6, "FLTMODE6",               FLIGHT_MODE_6),
+	GSCALAR(simple_modes, "SIMPLE",                 0),
 
     // @Param: LOG_BITMASK
 	// @DisplayName: Log bitmask
 	// @Description: bitmap of log fields to enable
 	// @User: Advanced
-	GSCALAR(log_bitmask,	"LOG_BITMASK"),
-	GSCALAR(log_last_filenumber, "LOG_LASTFILE"),
+	GSCALAR(log_bitmask,	"LOG_BITMASK",          DEFAULT_LOG_BITMASK),
+	GSCALAR(log_last_filenumber, "LOG_LASTFILE",    0),
 	// THOR
 	// Added to allow change of Rate in the Mission planner
-	GSCALAR(toy_yaw_rate, "TOY_RATE"),
+	GSCALAR(toy_yaw_rate, "TOY_RATE",               1),
 
-	GSCALAR(esc_calibrate, "ESC"),
-	GSCALAR(radio_tuning, "TUNE"),
-	GSCALAR(radio_tuning_low, "TUNE_LOW"),
-	GSCALAR(radio_tuning_high, "TUNE_HIGH"),
-	GSCALAR(frame_orientation, "FRAME"),
-	GSCALAR(ch7_option, "CH7_OPT"),
-	GSCALAR(auto_slew_rate, "AUTO_SLEW"),
+	GSCALAR(esc_calibrate, "ESC",                   0),
+	GSCALAR(radio_tuning, "TUNE",                   0),
+	GSCALAR(radio_tuning_low, "TUNE_LOW",           0),
+	GSCALAR(radio_tuning_high, "TUNE_HIGH",         1000),
+	GSCALAR(frame_orientation, "FRAME",             FRAME_ORIENTATION),
+	GSCALAR(ch7_option, "CH7_OPT",                  CH7_OPTION),
+	GSCALAR(auto_slew_rate, "AUTO_SLEW",            AUTO_SLEW_RATE),
 
 	#if FRAME_CONFIG ==	HELI_FRAME
 	GGROUP(heli_servo_1,	"HS1_", RC_Channel),
@@ -255,11 +255,11 @@ static const AP_Param::Info var_info[] PROGMEM = {
 	// @Units: Hertz (Hz)
 	// @Values: 125,400,490
 	// @User: Advanced
-	GSCALAR(rc_speed, "RC_SPEED"),
+	GSCALAR(rc_speed, "RC_SPEED",              RC_FAST_SPEED),
 
 	// variable
 	//---------
-	GSCALAR(stabilize_d, 			"STAB_D"),
+	GSCALAR(stabilize_d, 			"STAB_D",  STABILIZE_D),
 
 	// @Param: STAB_D_S
 	// @DisplayName: Stabilize D Schedule
@@ -267,12 +267,12 @@ static const AP_Param::Info var_info[] PROGMEM = {
 	// @Range: 0 1
 	// @Increment: .01
 	// @User: Advanced
-	GSCALAR(stabilize_d_schedule, "STAB_D_S"),
+	GSCALAR(stabilize_d_schedule, "STAB_D_S",  STABILIZE_D_SCHEDULE),
 
-	GSCALAR(acro_p, 			"ACRO_P"),
-	GSCALAR(axis_lock_p, 		"AXIS_P"),
-	GSCALAR(axis_enabled, 		"AXIS_ENABLE"),
-	GSCALAR(copter_leds_mode,	"LED_MODE"),
+	GSCALAR(acro_p, 			"ACRO_P",      ACRO_P),
+	GSCALAR(axis_lock_p, 		"AXIS_P",      AXIS_LOCK_P),
+	GSCALAR(axis_enabled, 		"AXIS_ENABLE", AXIS_LOCK_ENABLED),
+	GSCALAR(copter_leds_mode,	"LED_MODE",    9),
 
 	// PID controller
 	//---------------
@@ -350,21 +350,13 @@ static const AP_Param::Info var_info[] PROGMEM = {
 	#else
 	GOBJECT(motors,	"MOT_",		AP_Motors),
 	#endif
+
+	AP_VAREND
 };
 
 
 static void load_parameters(void)
 {
-	// setup the AP_Var subsystem for storage to EEPROM
-	if (!AP_Param::setup(var_info, sizeof(var_info)/sizeof(var_info[0]), WP_START_BYTE)) {
-		// this can only happen on startup, and its a definate coding
-		// error. Best not to continue so the programmer catches it
-		while (1) {
-			Serial.println_P(PSTR("ERROR: Failed to setup AP_Param"));
-			delay(1000);
-		}
-	}
-
 	// change the default for the AHRS_GPS_GAIN for ArduCopter
 	ahrs.gps_gain.set(0.0);
 
