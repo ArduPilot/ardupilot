@@ -385,7 +385,6 @@ This feature works only if the ROV_AWPR_NAV is set to 0
 #define THROTTLE_TE_I       0.0
 #define THROTTLE_TE_D       0.0
 #define THROTTLE_TE_INT_MAX 20
-#define THROTTLE_SLEW_LIMIT 0
 #define P_TO_T              0.0
 #define T_TO_P              0
 
