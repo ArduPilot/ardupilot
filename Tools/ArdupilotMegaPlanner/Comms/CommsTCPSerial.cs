@@ -8,6 +8,7 @@ using System.Threading;
 using System.Net; // dns, ip address
 using System.Net.Sockets; // tcplistner
 using log4net;
+using System.IO;
 
 namespace ArdupilotMega.Comms
 {
@@ -75,13 +76,15 @@ namespace ArdupilotMega.Comms
             set;
         }
 
-        public  void Open()
+        public void Open()
         {
             if (client.Client.Connected)
             {
                 log.Warn("tcpserial socket already open");
                 return;
             }
+
+            log.Info("TCP Open");
 
             string dest = Port;
             string host = "127.0.0.1";
@@ -100,6 +103,7 @@ namespace ArdupilotMega.Comms
             {
                 throw new Exception("Canceled by request");
             }
+
             Port = dest;
 
             ArdupilotMega.MainV2.config["TCP_port"] = Port;

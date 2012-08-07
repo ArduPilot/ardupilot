@@ -101,26 +101,7 @@ namespace System.Windows.Forms
                 ThemeManager.ApplyThemeTo(msgBoxFrm);
             }
             catch { }
-
-           Console.WriteLine("CustomMessageBox 1");
-
-          /*  if (System.Windows.Forms.Application.OpenForms.Count > 0)
-            {
-                msgBoxFrm.StartPosition = FormStartPosition.Manual;
-                Form parentForm = System.Windows.Forms.Application.OpenForms[0];
-                // center of first form
-                msgBoxFrm.Location = new Point(parentForm.Location.X + parentForm.Width / 2 - msgBoxFrm.Width / 2,
-                    parentForm.Location.Y + parentForm.Height / 2 - msgBoxFrm.Height / 2);
-                Console.WriteLine("CustomMessageBox 2a " + parentForm.Name);
-                DialogResult test = msgBoxFrm.ShowDialog();
-            }
-            else*/
-            {
-                Console.WriteLine("CustomMessageBox 2b");
-                DialogResult test = msgBoxFrm.ShowDialog();
-            }
-
-            Console.WriteLine("CustomMessageBox 3");
+            DialogResult test = msgBoxFrm.ShowDialog();
 
             DialogResult answer = _state;
 

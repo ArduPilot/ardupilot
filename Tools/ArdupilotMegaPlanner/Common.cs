@@ -840,7 +840,7 @@ namespace ArdupilotMega
             form.Icon = ((System.Drawing.Icon)(resources.GetObject("$this.Icon")));
 
             form.TopMost = true;
-            //form.TopLevel = true;
+            form.TopLevel = true;
 
             form.Text = title;
             label.Text = promptText;
@@ -864,8 +864,8 @@ namespace ArdupilotMega
             form.ClientSize = new Size(396, 107);
             form.Controls.AddRange(new Control[] { label, textBox, buttonOk, buttonCancel });
             form.ClientSize = new Size(Math.Max(300, label.Right + 10), form.ClientSize.Height);
-            form.FormBorderStyle = FormBorderStyle.FixedDialog;
-            form.StartPosition = FormStartPosition.CenterParent;
+            form.FormBorderStyle = FormBorderStyle.FixedSingle;
+            form.StartPosition = FormStartPosition.CenterScreen;
             form.MinimizeBox = false;
             form.MaximizeBox = false;
             form.AcceptButton = buttonOk;
@@ -875,7 +875,11 @@ namespace ArdupilotMega
 
             DialogResult dialogResult = DialogResult.Cancel;
 
-            form.ShowDialog();
+            Console.WriteLine("Input Box");
+
+                form.ShowDialog();
+
+            Console.WriteLine("Input Box 2");
 
             dialogResult = form.DialogResult;
 
