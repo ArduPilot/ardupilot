@@ -8,10 +8,10 @@
 #include "PID.h"
 
 const AP_Param::GroupInfo PID::var_info[] PROGMEM = {
-	AP_GROUPINFO("P",    0, PID, _kp),
-	AP_GROUPINFO("I",    1, PID, _ki),
-	AP_GROUPINFO("D",    2, PID, _kd),
-	AP_GROUPINFO("IMAX", 3, PID, _imax),
+	AP_GROUPINFO("P",    0, PID, _kp, 0),
+	AP_GROUPINFO("I",    1, PID, _ki, 0),
+	AP_GROUPINFO("D",    2, PID, _kd, 0),
+	AP_GROUPINFO("IMAX", 3, PID, _imax, 0),
 	AP_GROUPEND
 };
 

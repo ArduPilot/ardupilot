@@ -25,12 +25,11 @@ public:
 	///
 	APM_PI(const float &initial_p = 0.0,
 		   const float &initial_i = 0.0,
-		   const int16_t &initial_imax = 0.0) :
-		_kp  (initial_p),
-		_ki  (initial_i),
-		_imax(initial_imax)
+		   const int16_t &initial_imax = 0.0)
 	{
-		// no need for explicit load, assuming that the main code uses AP_Var::load_all.
+		_kp = initial_p;
+		_ki = initial_i;
+		_imax = initial_imax;
 	}
 
 	/// Iterate the PI, return the new control value
