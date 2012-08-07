@@ -31,14 +31,15 @@
 #define AP_CLASSTYPE(class, element) (((const class *)1)->element.vtype)
 
 // declare a group var_info line
-#define AP_GROUPINFO(name, idx, class, element) { AP_CLASSTYPE(class, element), idx, name, AP_VAROFFSET(class, element) }
+#define AP_GROUPINFO(name, idx, class, element, def) { AP_CLASSTYPE(class, element), idx, name, AP_VAROFFSET(class, element), {def_value:def} }
 
 // declare a nested group entry in a group var_info
 #ifdef AP_NESTED_GROUPS_ENABLED
-#define AP_NESTEDGROUPINFO(class, idx) { AP_PARAM_GROUP, idx, "", 0, class::var_info }
+#define AP_NESTEDGROUPINFO(class, idx) { AP_PARAM_GROUP, idx, "", 0, { group_info: class::var_info } }
 #endif
 
-#define AP_GROUPEND	{ AP_PARAM_NONE, 0xFF, "" }
+#define AP_GROUPEND	{ AP_PARAM_NONE, 0xFF, "", 0, { group_info : NULL } }
+#define AP_VAREND	{ AP_PARAM_NONE, "", 0, NULL, { group_info : NULL } }
 
 enum ap_var_type {
     AP_PARAM_NONE    = 0,
@@ -67,27 +68,42 @@ public:
         uint8_t idx;  // identifier within the group
         const char name[AP_MAX_NAME_SIZE];
         uintptr_t offset; // offset within the object
-        const struct GroupInfo *group_info;
+        union {
+            const struct GroupInfo *group_info;
+            const float def_value;
+        };
     };
     struct Info {
         uint8_t type; // AP_PARAM_*
         const char name[AP_MAX_NAME_SIZE];
         uint8_t key; // k_param_*
         void *ptr;    // pointer to the variable in memory
-        const struct GroupInfo *group_info;
+        union {
+            const struct GroupInfo *group_info;
+            const float def_value;
+        };
     };
-
-    // a token used for first()/next() state
-    typedef struct {
-        uint8_t key;
-        uint8_t group_element;
-        uint8_t idx; // offset into array types
-    } ParamToken;
 
     // called once at startup to setup the _var_info[] table. This
     // will also check the EEPROM header and re-initialise it if the
     // wrong version is found
-    static bool setup(const struct Info *info, uint8_t num_vars, uint16_t eeprom_size);
+    static bool setup(const struct Info *info, uint16_t eeprom_size);
+
+    // constructor to load default values and setup var_info table
+    AP_Param(const struct Info *info, uint16_t eeprom_size) {
+        setup(info, eeprom_size);
+        load_defaults();
+    }
+
+    // empty constructor for child classes
+    AP_Param() {}
+
+    // a token used for first()/next() state
+    typedef struct {
+        uint32_t key:8;
+        uint32_t idx:6; // offset into array types
+        uint32_t group_element:18;
+    } ParamToken;
 
     // return true if AP_Param has been initialised via setup()
     static bool initialised(void);
@@ -136,6 +152,15 @@ public:
     ///
     static bool load_all(void);
 
+    // set a AP_Param variable to a specified value 
+    static void set_value(enum ap_var_type type, void *ptr, float def_value);
+
+    // load default values for scalars in a group
+    static void load_defaults_group(const struct GroupInfo *group_info, uintptr_t base);
+
+    // load default values for all scalars
+    static void load_defaults(void);
+
     /// Erase all variables in EEPROM.
     ///
     static void erase_all(void);
@@ -179,24 +204,21 @@ private:
    - key: the k_param enum value from Parameter.h in the sketch
 
    - group_element: This is zero for top level parameters. For
-                    parameters stored within an object the top 4 bits
-                    are the idx field of the GroupInfo structue (the index into
-                    the first level of object indirection). The second
-                    4 bits are the idx field from the second level of
-                    object indirection. This allows for two levels of
-                    object to be stored in the eeprom
+                    parameters stored within an object this is divided
+                    into 3 lots of 6 bits, allowing for three levels
+                    of object to be stored in the eeprom
 
    - type: the ap_var_type value for the variable
 */
     struct Param_header {
-        uint8_t    key;
-        uint8_t    group_element;
-        uint8_t    type;
+        uint32_t   key:8;
+        uint32_t   type:6;
+        uint32_t   group_element:18;
     };
 
     // number of bits in each level of nesting of groups
-    static const uint8_t _group_level_shift = 4;
-    static const uint8_t _group_bits  = 8;
+    static const uint8_t _group_level_shift = 6;
+    static const uint8_t _group_bits  = 18;
 
     static const uint8_t  _sentinal_key   = 0xFF;
     static const uint8_t  _sentinal_type  = 0xFF;
@@ -241,7 +263,7 @@ private:
     // values filled into the EEPROM header
     static const uint8_t   k_EEPROM_magic0      = 0x50;
     static const uint8_t   k_EEPROM_magic1      = 0x41;   ///< "AP"
-    static const uint8_t   k_EEPROM_revision    = 5;        ///< current format revision
+    static const uint8_t   k_EEPROM_revision    = 6;      ///< current format revision
 };
 
 /// Template class for scalar variables.
@@ -256,18 +278,6 @@ template<typename T, ap_var_type PT>
 class AP_ParamT : public AP_Param
 {
 public:
-    /// Constructor for scalar variable.
-    ///
-    /// Initialises a stand-alone variable with optional initial value.
-    ///
-    /// @param  default_value   Value the variable should have at startup.
-    ///
-    AP_ParamT<T,PT> (const T initial_value = 0) :
-        AP_Param(),
-        _value(initial_value)
-    {
-    }
-
     static const ap_var_type vtype = PT;
 
     /// Value getter
@@ -346,6 +356,7 @@ template<typename T, ap_var_type PT>
 class AP_ParamV : public AP_Param
 {
 public:
+
     static const ap_var_type vtype = PT;
 
     /// Value getter
@@ -406,6 +417,7 @@ template<typename T, uint8_t N, ap_var_type PT>
 class AP_ParamA : public AP_Param
 {
 public:
+
     static const ap_var_type vtype = PT;
 
     /// Array operator accesses members.

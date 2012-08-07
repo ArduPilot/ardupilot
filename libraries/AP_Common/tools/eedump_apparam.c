@@ -18,7 +18,7 @@ struct EEPROM_header {
 
 static const uint16_t   k_EEPROM_magic0     = 0x50;
 static const uint16_t   k_EEPROM_magic1     = 0x41;
-static const uint16_t   k_EEPROM_revision   = 5;
+static const uint16_t   k_EEPROM_revision   = 6;
 
 enum ap_var_type {
     AP_PARAM_NONE    = 0,
@@ -37,9 +37,9 @@ static const char *type_names[8] = {
 };
 
 struct Param_header {
-        uint8_t    key;
-        uint8_t    group_element;
-        uint8_t    type;
+        uint32_t   key:8;
+        uint32_t   type:6;
+        uint32_t   group_element:18;
 };
 
 
