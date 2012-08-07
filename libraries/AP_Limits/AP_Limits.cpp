@@ -15,42 +15,42 @@ const AP_Param::GroupInfo AP_Limits::var_info[] PROGMEM = {
 	// @Description: Setting this to Enabled(1) will enable the limits system
 	// @Values: 0:Disabled,1:Enabled
 	// @User: Standard
-	AP_GROUPINFO("ENABLED",		0,	AP_Limits,	_enabled),
+	AP_GROUPINFO("ENABLED",		0,	AP_Limits,	_enabled, 0),
 
 	// @Param: REQUIRED
 	// @DisplayName: Limits Library Required
 	// @Description: Setting this to 1 will enable the limits pre-arm checklist
 	// @Values: 0:Disabled,1:Enabled
 	// @User: Standard
-	AP_GROUPINFO("REQUIRED",	1,	AP_Limits,	_required),
+	AP_GROUPINFO("REQUIRED",	1,	AP_Limits,	_required, 0),
 
 	// @Param: DEBUG
 	// @DisplayName: Enable Limits Debug
 	// @Description: Setting this to 1 will turn on debugging messages on the console and via MAVLink STATUSTEXT messages
 	// @Values: 0:Disabled,1:Enabled
 	// @User: Standard
-	AP_GROUPINFO("DEBUG",		2,	AP_Limits,	_debug),
+	AP_GROUPINFO("DEBUG",		2,	AP_Limits,	_debug,    0),
 
 	// @Param: SAFETIME
 	// @DisplayName: Limits Safetime
 	// @Description: Automatic return of controls to pilot. Set to 0 to disable (full RTL) or a number of seconds after complete recovery to return the controls to the pilot in STABILIZE
 	// @Values: 0:Disabled,1-255:Seconds before returning control
 	// @User: Standard
-	AP_GROUPINFO("SAFETIME",	3,	AP_Limits,	_safetime),
+	AP_GROUPINFO("SAFETIME",	3,	AP_Limits,	_safetime, 0),
 
 	// @Param: CHANNEL
 	// @DisplayName: Limits Channel
 	// @Description: Channel for Limits on/off control. If channel exceeds LIMITS_ENABLE_PWM, it turns limits on, and vice-versa.
 	// @Range: 1-8
 	// @User: Standard
-	AP_GROUPINFO("CHANNEL",		4,	AP_Limits,	_channel),
+	AP_GROUPINFO("CHANNEL",		4,	AP_Limits,	_channel,  0),
 
 	// @Param: RECMODE
 	// @DisplayName: Limits Recovery Mode
 	// @Description: Select how Limits should "recover". Set to 0 for RTL-like mode, where the vehicle navigates back to home until it is "safe". Set to 1, for bounce-mode, where the vehicle will hold position when it hits a limit. RTL mode is better for large fenced areas, Bounce mode for smaller spaces. Note: RTL mode will cause the vehicle to yaw 180 degrees  (turn around) to navigate towards home when it hits a limit.
 	// @Values: 0:RTL mode, 1: Bounce mode
     // @User: Standard
-	AP_GROUPINFO("RECMODE",		5,	AP_Limits,	_recmode),
+	AP_GROUPINFO("RECMODE",		5,	AP_Limits,	_recmode,  0),
 
     AP_GROUPEND
 };

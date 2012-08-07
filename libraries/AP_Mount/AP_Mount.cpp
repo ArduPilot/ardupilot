@@ -11,7 +11,7 @@ const AP_Param::GroupInfo AP_Mount::var_info[] PROGMEM = {
 	// @Description: Camera or antenna mount operation mode
 	// @Values: 0:retract,1:neutral,2:MavLink_targeting,3:RC_targeting,4:GPS_point
 	// @User: Standard
-    AP_GROUPINFO("MODE",       0, AP_Mount, _mount_mode), // see MAV_MOUNT_MODE at ardupilotmega.h
+    AP_GROUPINFO("MODE",       0, AP_Mount, _mount_mode, 0), // see MAV_MOUNT_MODE at ardupilotmega.h
 
     // @Param: RETRACT
 	// @DisplayName: Mount retract angles
@@ -20,7 +20,7 @@ const AP_Param::GroupInfo AP_Mount::var_info[] PROGMEM = {
 	// @Range: -18000 17999
 	// @Increment: 1
 	// @User: Standard
-    AP_GROUPINFO("RETRACT",    1, AP_Mount, _retract_angles),
+    AP_GROUPINFO("RETRACT",    1, AP_Mount, _retract_angles, 0),
 
 	// @Param: NEUTRAL
 	// @DisplayName: Mount neutral angles
@@ -29,7 +29,7 @@ const AP_Param::GroupInfo AP_Mount::var_info[] PROGMEM = {
 	// @Range: -18000 17999
 	// @Increment: 1
 	// @User: Standard
-    AP_GROUPINFO("NEUTRAL",    2, AP_Mount, _neutral_angles),
+    AP_GROUPINFO("NEUTRAL",    2, AP_Mount, _neutral_angles, 0),
 
     // @Param: CONTROL
 	// @DisplayName: Mount control angles
@@ -38,35 +38,35 @@ const AP_Param::GroupInfo AP_Mount::var_info[] PROGMEM = {
 	// @Range: -18000 17999
 	// @Increment: 1
 	// @User: Standard
-    AP_GROUPINFO("CONTROL",    3, AP_Mount, _control_angles),
+    AP_GROUPINFO("CONTROL",    3, AP_Mount, _control_angles, 0),
 
 	// @Param: STAB_ROLL
 	// @DisplayName: Stabilize mount roll
 	// @Description:enable roll stabilisation relative to Earth
 	// @Values: 0:Disabled,1:Enabled
 	// @User: Standard
-    AP_GROUPINFO("STAB_ROLL",  4, AP_Mount, _stab_roll),
+    AP_GROUPINFO("STAB_ROLL",  4, AP_Mount, _stab_roll, 0),
 
 	// @Param: STAB_TILT
 	// @DisplayName: Stabilize mount tilt
 	// @Description: enable tilt (pitch) stabilisation relative to Earth
 	// @Values: 0:Disabled,1:Enabled
 	// @User: Standard
-    AP_GROUPINFO("STAB_TILT", 5, AP_Mount, _stab_tilt),
+    AP_GROUPINFO("STAB_TILT", 5, AP_Mount, _stab_tilt,  0),
 
 	// @Param: STAB_PAN
 	// @DisplayName: Stabilize mount pan
 	// @Description: enable pan (yaw) stabilisation relative to Earth
 	// @Values: 0:Disabled,1:Enabled
 	// @User: Standard
-    AP_GROUPINFO("STAB_PAN",   6, AP_Mount, _stab_pan),
+    AP_GROUPINFO("STAB_PAN",   6, AP_Mount, _stab_pan,  0),
 
 	// @Param: ROLL_RC_IN
 	// @DisplayName: roll RC input channel
 	// @Description: 0 for none, any other for the RC channel to be used to control roll movements
 	// @Values: 0:Disabled,5:RC5,6:RC6,7:RC7,8:RC8
 	// @User: Standard
-	AP_GROUPINFO("ROLL_RC_IN",  7, AP_Mount, _roll_rc_in),
+	AP_GROUPINFO("ROLL_RC_IN",  7, AP_Mount, _roll_rc_in, 0),
 
 	// @Param: ROLL_ANGLE_MIN
 	// @DisplayName: Minimum roll angle
@@ -75,7 +75,7 @@ const AP_Param::GroupInfo AP_Mount::var_info[] PROGMEM = {
 	// @Range: -18000 17999
 	// @Increment: 1
 	// @User: Standard
-	AP_GROUPINFO("ROLL_ANGMIN", 8, AP_Mount, _roll_angle_min),
+	AP_GROUPINFO("ROLL_ANGMIN", 8, AP_Mount, _roll_angle_min, 0),
 
 	// @Param: ROLL_ANGLE_MAX
 	// @DisplayName: Maximum roll angle
@@ -84,14 +84,14 @@ const AP_Param::GroupInfo AP_Mount::var_info[] PROGMEM = {
 	// @Range: -18000 17999
 	// @Increment: 1
 	// @User: Standard
-	AP_GROUPINFO("ROLL_ANGMAX", 9, AP_Mount, _roll_angle_max),
+	AP_GROUPINFO("ROLL_ANGMAX", 9, AP_Mount, _roll_angle_max, 0),
 
 	// @Param: TILT_RC_IN
 	// @DisplayName: tilt (pitch) RC input channel
 	// @Description: 0 for none, any other for the RC channel to be used to control tilt (pitch) movements
 	// @Values: 0:Disabled,5:RC5,6:RC6,7:RC7,8:RC8
 	// @User: Standard
-	AP_GROUPINFO("TILT_RC_IN",  10, AP_Mount, _tilt_rc_in),
+	AP_GROUPINFO("TILT_RC_IN",  10, AP_Mount, _tilt_rc_in,    0),
 
 	// @Param: TILT_ANGLE_MIN
 	// @DisplayName: Minimum tilt angle
@@ -100,7 +100,7 @@ const AP_Param::GroupInfo AP_Mount::var_info[] PROGMEM = {
 	// @Range: -18000 17999
 	// @Increment: 1
 	// @User: Standard
-	AP_GROUPINFO("TILT_ANGMIN", 11, AP_Mount, _tilt_angle_min),
+	AP_GROUPINFO("TILT_ANGMIN", 11, AP_Mount, _tilt_angle_min, 0),
 
 	// @Param: TILT_ANGLE_MAX
 	// @DisplayName: Maximum tilt angle
@@ -109,14 +109,14 @@ const AP_Param::GroupInfo AP_Mount::var_info[] PROGMEM = {
 	// @Range: -18000 17999
 	// @Increment: 1
 	// @User: Standard
-	AP_GROUPINFO("TILT_ANGMAX", 12, AP_Mount, _tilt_angle_max),
+	AP_GROUPINFO("TILT_ANGMAX", 12, AP_Mount, _tilt_angle_max, 0),
 
 	// @Param: PAN_RC_IN
 	// @DisplayName: pan (yaw) RC input channel
 	// @Description: 0 for none, any other for the RC channel to be used to control pan (yaw) movements
 	// @Values: 0:Disabled,5:RC5,6:RC6,7:RC7,8:RC8
 	// @User: Standard
-	AP_GROUPINFO("PAN_RC_IN",  13, AP_Mount, _pan_rc_in),
+	AP_GROUPINFO("PAN_RC_IN",  13, AP_Mount, _pan_rc_in,       0),
 
 	// @Param: PAN_ANGLE_MIN
 	// @DisplayName: Minimum pan angle
@@ -125,7 +125,7 @@ const AP_Param::GroupInfo AP_Mount::var_info[] PROGMEM = {
 	// @Range: -18000 17999
 	// @Increment: 1
 	// @User: Standard
-	AP_GROUPINFO("PAN_ANGMIN",  14, AP_Mount, _pan_angle_min),
+	AP_GROUPINFO("PAN_ANGMIN",  14, AP_Mount, _pan_angle_min,  0),
 
 	// @Param: PAN_ANGLE_MAX
 	// @DisplayName: Maximum pan angle
@@ -134,7 +134,7 @@ const AP_Param::GroupInfo AP_Mount::var_info[] PROGMEM = {
 	// @Range: -18000 17999
 	// @Increment: 1
 	// @User: Standard
-	AP_GROUPINFO("PAN_ANGMAX",  15, AP_Mount, _pan_angle_max),
+	AP_GROUPINFO("PAN_ANGMAX",  15, AP_Mount, _pan_angle_max,  0),
 /*
 	Must be commented out because the framework does not support more than 16 parameters
 	// @Param: JOYSTICK_SPEED

@@ -36,7 +36,7 @@ const AP_Param::GroupInfo RC_Channel::var_info[] PROGMEM = {
 	// @Range: 800 2200
 	// @Increment: 1
 	// @User: Advanced
-	AP_GROUPINFO("MIN",  0, RC_Channel, radio_min),
+	AP_GROUPINFO("MIN",  0, RC_Channel, radio_min, 1100),
 
 	// @Param: TRIM
 	// @DisplayName: RC trim PWM
@@ -45,7 +45,7 @@ const AP_Param::GroupInfo RC_Channel::var_info[] PROGMEM = {
 	// @Range: 800 2200
 	// @Increment: 1
 	// @User: Advanced
-	AP_GROUPINFO("TRIM", 1, RC_Channel, radio_trim),
+	AP_GROUPINFO("TRIM", 1, RC_Channel, radio_trim, 1500),
 
 	// @Param: MAX
 	// @DisplayName: RC max PWM
@@ -54,20 +54,20 @@ const AP_Param::GroupInfo RC_Channel::var_info[] PROGMEM = {
 	// @Range: 800 2200
 	// @Increment: 1
 	// @User: Advanced
-	AP_GROUPINFO("MAX",  2, RC_Channel, radio_max),
+	AP_GROUPINFO("MAX",  2, RC_Channel, radio_max, 1900),
 
 	// @Param: REV
 	// @DisplayName: RC reverse
 	// @Description: Reverse servo operation. Ignored on APM1 unless dip-switches are disabled.
 	// @Values: -1:Reversed,1:Normal
 	// @User: Advanced
-	AP_GROUPINFO("REV",  3, RC_Channel, _reverse),
+	AP_GROUPINFO("REV",  3, RC_Channel, _reverse, 1),
 
 	// @Param: DZ
 	// @DisplayName: RC dead-zone
 	// @Description: dead zone around trim.
 	// @User: Advanced
-	AP_GROUPINFO("DZ",   4, RC_Channel, _dead_zone),
+	AP_GROUPINFO("DZ",   4, RC_Channel, _dead_zone, 0),
 	AP_GROUPEND
 };
 

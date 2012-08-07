@@ -11,7 +11,7 @@ const AP_Param::GroupInfo RC_Channel_aux::var_info[] PROGMEM = {
 	// @Description: Setting this to Disabled(0) will disable this output, any other value will enable the corresponding function
 	// @Values: 0:Disabled,1:Manual,2:Flap,3:Flap_auto,4:Aileron,5:flaperon,6:mount_pan,7:mount_tilt,8:mount_roll,9:mount_open,10:camera_trigger,11:release
 	// @User: Standard
-	AP_GROUPINFO("FUNCTION",       1, RC_Channel_aux, function),
+	AP_GROUPINFO("FUNCTION",       1, RC_Channel_aux, function, 0),
 
 	AP_GROUPEND
 };

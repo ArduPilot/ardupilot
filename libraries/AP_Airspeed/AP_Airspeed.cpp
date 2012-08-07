@@ -20,25 +20,25 @@ const AP_Param::GroupInfo AP_Airspeed::var_info[] PROGMEM = {
     // @DisplayName: Airspeed enable
     // @Description: enable airspeed sensor
     // @Values: 0:Disable,1:Enable
-    AP_GROUPINFO("ENABLE",    0, AP_Airspeed, _enable),
+    AP_GROUPINFO("ENABLE",    0, AP_Airspeed, _enable, 1),
 
     // @Param: USE
     // @DisplayName: Airspeed use
     // @Description: use airspeed for flight control
     // @Values: 0:Use,1:Don't Use
-    AP_GROUPINFO("USE",    1, AP_Airspeed, _use),
+    AP_GROUPINFO("USE",    1, AP_Airspeed, _use, 0),
 
     // @Param: OFFSET
     // @DisplayName: Airspeed offset
     // @Description: Airspeed calibration offset
     // @Increment: 0.1
-    AP_GROUPINFO("OFFSET", 2, AP_Airspeed, _offset),
+    AP_GROUPINFO("OFFSET", 2, AP_Airspeed, _offset, 0),
 
     // @Param: RATIO
     // @DisplayName: Airspeed ratio
     // @Description: Airspeed calibration ratio
     // @Increment: 0.1
-    AP_GROUPINFO("RATIO",  3, AP_Airspeed, _ratio),
+    AP_GROUPINFO("RATIO",  3, AP_Airspeed, _ratio, 0),
 
     AP_GROUPEND
 };

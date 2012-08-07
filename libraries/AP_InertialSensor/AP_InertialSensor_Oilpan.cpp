@@ -39,12 +39,12 @@ const float AP_InertialSensor_Oilpan::_gyro_gain_z = ToRad(0.41);
 
 const AP_Param::GroupInfo AP_InertialSensor_Oilpan::var_info[] PROGMEM = {
     // index 0 was used for the old orientation matrix
-    AP_GROUPINFO("XH",  	0, AP_InertialSensor_Oilpan, _x_high),
-    AP_GROUPINFO("XL",    	1, AP_InertialSensor_Oilpan, _x_low),
-    AP_GROUPINFO("YH",  	2, AP_InertialSensor_Oilpan, _y_high),
-    AP_GROUPINFO("YL",    	3, AP_InertialSensor_Oilpan, _y_low),
-    AP_GROUPINFO("ZH",		4, AP_InertialSensor_Oilpan, _z_high),
-    AP_GROUPINFO("ZL",		5, AP_InertialSensor_Oilpan, _z_low),
+    AP_GROUPINFO("XH",  	0, AP_InertialSensor_Oilpan, _x_high, 2465),
+    AP_GROUPINFO("XL",    	1, AP_InertialSensor_Oilpan, _x_low,  1617),
+    AP_GROUPINFO("YH",  	2, AP_InertialSensor_Oilpan, _y_high, 2465),
+    AP_GROUPINFO("YL",    	3, AP_InertialSensor_Oilpan, _y_low,  1617),
+    AP_GROUPINFO("ZH",		4, AP_InertialSensor_Oilpan, _z_high, 2465),
+    AP_GROUPINFO("ZL",		5, AP_InertialSensor_Oilpan, _z_low,  1617),
     AP_GROUPEND
 };
 
@@ -52,12 +52,6 @@ const AP_Param::GroupInfo AP_InertialSensor_Oilpan::var_info[] PROGMEM = {
 /* ------ Public functions -------------------------------------------*/
 
 AP_InertialSensor_Oilpan::AP_InertialSensor_Oilpan( AP_ADC * adc ) :
-  _x_high(2465),
-  _x_low(1617),
-  _y_high(2465),
-  _y_low(1617),
-  _z_high(2465),
-  _z_low(1617),
   _adc(adc)
 {
   _gyro.x = 0;

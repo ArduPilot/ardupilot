@@ -17,7 +17,7 @@ const AP_Param::GroupInfo AP_Camera::var_info[] PROGMEM = {
 	// @Description: how to trigger the camera to take a picture
 	// @Values: 0:Servo,1:relay,2:throttle_off_time,3:throttle_off_waypoint,4:transistor
 	// @User: Standard
-	AP_GROUPINFO("TRIGG_TYPE",  0, AP_Camera, trigger_type),
+	AP_GROUPINFO("TRIGG_TYPE",  0, AP_Camera, trigger_type, 0),
 	AP_GROUPEND
 };
 

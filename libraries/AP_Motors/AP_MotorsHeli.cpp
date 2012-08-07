@@ -20,7 +20,7 @@ const AP_Param::GroupInfo AP_MotorsHeli::var_info[] PROGMEM = {
 	// @Units: Degrees
 	// @User: Standard
 	// @Increment: 1
-	AP_GROUPINFO("SV1_POS",	1,	AP_MotorsHeli,	servo1_pos),
+	AP_GROUPINFO("SV1_POS",	1,	AP_MotorsHeli,	servo1_pos, -60),
 	
 	// @Param: SV2_POS
 	// @DisplayName: Servo 2 Position
@@ -29,7 +29,7 @@ const AP_Param::GroupInfo AP_MotorsHeli::var_info[] PROGMEM = {
 	// @Units: Degrees
 	// @User: Standard
 	// @Increment: 1
-	AP_GROUPINFO("SV2_POS",	2,	AP_MotorsHeli,	servo2_pos),
+	AP_GROUPINFO("SV2_POS",	2,	AP_MotorsHeli,	servo2_pos,  60),
 	
 	// @Param: SV3_POS
 	// @DisplayName: Servo 3 Position
@@ -38,7 +38,7 @@ const AP_Param::GroupInfo AP_MotorsHeli::var_info[] PROGMEM = {
 	// @Units: Degrees
 	// @User: Standard
 	// @Increment: 1
-	AP_GROUPINFO("SV3_POS",	3,	AP_MotorsHeli,	servo3_pos),
+	AP_GROUPINFO("SV3_POS",	3,	AP_MotorsHeli,	servo3_pos,  180),
 	
 	// @Param: ROL_MAX
 	// @DisplayName: Maximum Roll Angle
@@ -47,7 +47,7 @@ const AP_Param::GroupInfo AP_MotorsHeli::var_info[] PROGMEM = {
 	// @Units: Degrees
 	// @Increment: 1
 	// @User: Advanced
-	AP_GROUPINFO("ROL_MAX",	4,	AP_MotorsHeli,	roll_max),
+	AP_GROUPINFO("ROL_MAX",	4,	AP_MotorsHeli,	roll_max,    4500),
 	
 	// @Param: PIT_MAX
 	// @DisplayName: Maximum Pitch Angle
@@ -56,7 +56,7 @@ const AP_Param::GroupInfo AP_MotorsHeli::var_info[] PROGMEM = {
 	// @Units: Degrees
 	// @Increment: 1
 	// @User: Advanced
-	AP_GROUPINFO("PIT_MAX",	5,	AP_MotorsHeli,	pitch_max),
+	AP_GROUPINFO("PIT_MAX",	5,	AP_MotorsHeli,	pitch_max,   4500),
 	
 	// @Param: COL_MIN
 	// @DisplayName: Collective Pitch Minimum
@@ -65,7 +65,7 @@ const AP_Param::GroupInfo AP_MotorsHeli::var_info[] PROGMEM = {
 	// @Units: PWM
 	// @Increment: 1
 	// @User: Standard
-	AP_GROUPINFO("COL_MIN",	6,	AP_MotorsHeli,	collective_min),
+	AP_GROUPINFO("COL_MIN",	6,	AP_MotorsHeli,	collective_min, 1250),
 	
 	// @Param: COL_MAX
 	// @DisplayName: Collective Pitch Maximum
@@ -74,7 +74,7 @@ const AP_Param::GroupInfo AP_MotorsHeli::var_info[] PROGMEM = {
 	// @Units: PWM
 	// @Increment: 1
 	// @User: Standard
-	AP_GROUPINFO("COL_MAX",	7,	AP_MotorsHeli,	collective_max),
+	AP_GROUPINFO("COL_MAX",	7,	AP_MotorsHeli,	collective_max, 1750),
 	
 	// @Param: COL_MID
 	// @DisplayName: Collective Pitch Mid-Point
@@ -83,20 +83,20 @@ const AP_Param::GroupInfo AP_MotorsHeli::var_info[] PROGMEM = {
 	// @Units: PWM
 	// @Increment: 1
 	// @User: Standard
-	AP_GROUPINFO("COL_MID",	8,	AP_MotorsHeli,	collective_mid),
+	AP_GROUPINFO("COL_MID",	8,	AP_MotorsHeli,	collective_mid, 1500),
 	
 	// @Param: GYR_ENABLE
 	// @DisplayName: External Gyro Enabled
 	// @Description: Setting this to Enabled(1) will enable an external rudder gyro control which means outputting a gain on channel 7 and using a simpler heading control algorithm. Setting this to Disabled(0) will disable the external gyro gain on channel 7 and revert to a more complex yaw control algorithm.
 	// @Values: 0:Disabled,1:Enabled
 	// @User: Standard
-	AP_GROUPINFO("GYR_ENABLE",	9,	AP_MotorsHeli,	ext_gyro_enabled),
+	AP_GROUPINFO("GYR_ENABLE",	9,	AP_MotorsHeli,	ext_gyro_enabled, 0),
 	
 	// @Param: SWASH_TYPE
 	// @DisplayName: Swash Plate Type
 	// @Description: Setting this to 0 will configure for a 3-servo CCPM. Setting this to 1 will configure for mechanically mixed "H1".
 	// @User: Standard
-	AP_GROUPINFO("SWASH_TYPE",	10,	AP_MotorsHeli,	swash_type),				
+	AP_GROUPINFO("SWASH_TYPE",	10,	AP_MotorsHeli,	swash_type, AP_MOTORS_HELI_SWASH_CCPM),				
 	
 	// @Param: GYR_GAIN
 	// @DisplayName: External Gyro Gain
@@ -105,14 +105,14 @@ const AP_Param::GroupInfo AP_MotorsHeli::var_info[] PROGMEM = {
 	// @Units: PWM
 	// @Increment: 1
 	// @User: Standard
-	AP_GROUPINFO("GYR_GAIN",	11,	AP_MotorsHeli,	ext_gyro_gain),
+	AP_GROUPINFO("GYR_GAIN",	11,	AP_MotorsHeli,	ext_gyro_gain, 1350),
 		
 	// @Param: SV_MAN
 	// @DisplayName: Manual Servo Mode
 	// @Description: Setting this to Enabled(1) will pass radio inputs directly to servos. Setting this to Disabled(0) will enable Arducopter control of servos.  This is only meant to be used by the Mission Planner using swash plate set-up.
 	// @Values: 0:Disabled,1:Enabled
 	// @User: Standard	
-	AP_GROUPINFO("SV_MAN",		12,	AP_MotorsHeli,	servo_manual),
+	AP_GROUPINFO("SV_MAN",		12,	AP_MotorsHeli,	servo_manual,  0),
 	
 	// @Param: PHANG
 	// @DisplayName: Swashplate Phase Angle Compensation
@@ -121,13 +121,13 @@ const AP_Param::GroupInfo AP_MotorsHeli::var_info[] PROGMEM = {
 	// @Units: Degrees
 	// @User: Advanced
 	// @Increment: 1
-	AP_GROUPINFO("PHANG",		13,	AP_MotorsHeli,	phase_angle),				
+	AP_GROUPINFO("PHANG",		13,	AP_MotorsHeli,	phase_angle,   0),				
 	
 	// @Param: COLYAW
 	// @DisplayName: Collective-Yaw Mixing
 	// @Description: This is a feed-forward compensation to automatically add rudder input when collective pitch is increased.
 	// @Range: 0 5
-	AP_GROUPINFO("COLYAW",		14,	AP_MotorsHeli,	collective_yaw_effect),	
+	AP_GROUPINFO("COLYAW",		14,	AP_MotorsHeli,	collective_yaw_effect, 0),	
 	
 	// @Param: GOV_SETPOINT
 	// @DisplayName: External Motor Governor Setpoint
@@ -136,7 +136,7 @@ const AP_Param::GroupInfo AP_MotorsHeli::var_info[] PROGMEM = {
 	// @Units: PWM
 	// @Increment: 10
 	// @User: Standard
-	AP_GROUPINFO("GOV_SETPOINT", 15, AP_MotorsHeli, ext_gov_setpoint),
+	AP_GROUPINFO("GOV_SETPOINT", 15, AP_MotorsHeli, ext_gov_setpoint, 1500),
 	
     AP_GROUPEND
 };

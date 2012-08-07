@@ -3,11 +3,11 @@
 
 const AP_Param::GroupInfo Compass::var_info[] PROGMEM = {
     // index 0 was used for the old orientation matrix
-    AP_GROUPINFO("OFS",    1, Compass, _offset),
-    AP_GROUPINFO("DEC",    2, Compass, _declination),
-    AP_GROUPINFO("LEARN",  3, Compass, _learn), // true if learning calibration
-    AP_GROUPINFO("USE",    4, Compass, _use_for_yaw), // true if used for DCM yaw
-    AP_GROUPINFO("AUTODEC",5, Compass, _auto_declination),
+    AP_GROUPINFO("OFS",    1, Compass, _offset, 0),
+    AP_GROUPINFO("DEC",    2, Compass, _declination, 0),
+    AP_GROUPINFO("LEARN",  3, Compass, _learn, 1), // true if learning calibration
+    AP_GROUPINFO("USE",    4, Compass, _use_for_yaw, 1), // true if used for DCM yaw
+    AP_GROUPINFO("AUTODEC",5, Compass, _auto_declination, 1),
     AP_GROUPEND
 };
 
@@ -18,10 +18,6 @@ const AP_Param::GroupInfo Compass::var_info[] PROGMEM = {
 Compass::Compass(void) :
 	product_id(AP_COMPASS_TYPE_UNKNOWN),
     _orientation(ROTATION_NONE),
-    _declination		(0.0),
-    _learn(1),
-    _use_for_yaw(1),
-    _auto_declination(1),
     _null_init_done(false)
 {
 }
