@@ -290,11 +290,11 @@ static void Log_Write_Control_Tuning()
 	DataFlash.WriteByte(HEAD_BYTE1);
 	DataFlash.WriteByte(HEAD_BYTE2);
 	DataFlash.WriteByte(LOG_CONTROL_TUNING_MSG);
-	DataFlash.WriteInt((int)(g.channel_roll.servo_out));
-	DataFlash.WriteInt((int)nav_roll);
+	DataFlash.WriteInt(g.channel_roll.servo_out);
+	DataFlash.WriteInt(nav_roll_cd);
 	DataFlash.WriteInt((int)ahrs.roll_sensor);
 	DataFlash.WriteInt((int)(g.channel_pitch.servo_out));
-	DataFlash.WriteInt((int)nav_pitch);
+	DataFlash.WriteInt((int)nav_pitch_cd);
 	DataFlash.WriteInt((int)ahrs.pitch_sensor);
 	DataFlash.WriteInt((int)(g.channel_throttle.servo_out));
 	DataFlash.WriteInt((int)(g.channel_rudder.servo_out));
@@ -311,9 +311,9 @@ static void Log_Write_Nav_Tuning()
 	DataFlash.WriteByte(LOG_NAV_TUNING_MSG);
 	DataFlash.WriteInt((uint16_t)ahrs.yaw_sensor);
 	DataFlash.WriteInt((int16_t)wp_distance);
-	DataFlash.WriteInt((uint16_t)target_bearing);
-	DataFlash.WriteInt((uint16_t)nav_bearing);
-	DataFlash.WriteInt(altitude_error);
+	DataFlash.WriteInt(target_bearing_cd);
+	DataFlash.WriteInt(nav_bearing_cd);
+	DataFlash.WriteInt(altitude_error_cm);
 	DataFlash.WriteInt((int16_t)airspeed.get_airspeed_cm());
 	DataFlash.WriteInt(0); // was nav_gain_scaler
 	DataFlash.WriteByte(END_BYTE);

@@ -106,7 +106,7 @@ static NOINLINE void send_attitude(mavlink_channel_t chan)
         chan,
         millis(),
         ahrs.roll,
-        ahrs.pitch - radians(g.pitch_trim*0.01),
+        ahrs.pitch - radians(g.pitch_trim_cd*0.01),
         ahrs.yaw,
         omega.x,
         omega.y,
@@ -251,16 +251,16 @@ static void NOINLINE send_location(mavlink_channel_t chan)
 
 static void NOINLINE send_nav_controller_output(mavlink_channel_t chan)
 {
-    int16_t bearing = (hold_course==-1?nav_bearing:hold_course) / 100;
+    int16_t bearing = (hold_course==-1?nav_bearing_cd:hold_course) / 100;
     mavlink_msg_nav_controller_output_send(
         chan,
-        nav_roll / 1.0e2,
-        nav_pitch / 1.0e2,
+        nav_roll_cd * 0.01,
+        nav_pitch_cd * 0.01,
         bearing,
-        target_bearing / 100,
+        target_bearing_cd * 0.01,
         wp_distance,
-        altitude_error / 1.0e2,
-        airspeed_error,
+        altitude_error_cm * 0.01,
+        airspeed_error_cm,
         crosstrack_error);
 }
 
@@ -1664,7 +1664,7 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
 			mavlink_msg_hil_state_decode(msg, &packet);
 			
 			float vel = sqrt((packet.vx * (float)packet.vx) + (packet.vy * (float)packet.vy));
-			float cog = wrap_360(ToDeg(atan2(packet.vx, packet.vy)) * 100);
+			float cog = wrap_360_cd(ToDeg(atan2(packet.vx, packet.vy)) * 100);
 			
             // set gps hil sensor
             g_gps->setHIL(packet.time_usec/1000,

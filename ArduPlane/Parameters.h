@@ -50,13 +50,13 @@ public:
         //
         k_param_format_version = 0,
 		k_param_software_type,
+        k_param_num_resets,
 
         // Misc
         //
-        k_param_auto_trim,
-        k_param_switch_enable, // UNUSED
+        k_param_auto_trim      = 10,
         k_param_log_bitmask,
-        k_param_pitch_trim,
+        k_param_pitch_trim_cd,
         k_param_mix_mode,
         k_param_reverse_elevons,
         k_param_reverse_ch1_elevon,
@@ -65,8 +65,6 @@ public:
         k_param_flap_1_speed,
         k_param_flap_2_percent,
         k_param_flap_2_speed,
-        k_param_num_resets,
-        k_param_log_last_filenumber,		// *** Deprecated - remove with next eeprom number change
         k_param_reset_switch_chan,
         k_param_manual_level,
 		k_param_land_pitch_cd,
@@ -84,29 +82,23 @@ public:
         //
         k_param_flybywire_airspeed_min = 120,
         k_param_flybywire_airspeed_max,
-        k_param_FBWB_min_altitude,  // 0=disabled, minimum value for altitude in cm (for first time try 30 meters = 3000 cm)
+        k_param_FBWB_min_altitude_cm,  // 0=disabled, minimum value for altitude in cm (for first time try 30 meters = 3000 cm)
 
         //
         // 130: Sensor parameters
         //
         k_param_imu = 130,  // sensor calibration
         k_param_altitude_mix,
-        k_param_airspeed_ratio, // UNUSED
-        k_param_ground_pressure, // UNUSED
-        k_param_ground_temperature, // UNUSED
 
-		k_param_compass_enabled = 135,
+		k_param_compass_enabled,
 		k_param_compass,
 		k_param_battery_monitoring,
 		k_param_volt_div_ratio,
 		k_param_curr_amp_per_volt,
 		k_param_input_voltage,
 		k_param_pack_capacity,
-        k_param_airspeed_offset, // UNUSED
 		k_param_sonar_enabled,
-		k_param_airspeed_enabled, // UNUSED
         k_param_ahrs,  // AHRS group
-		k_param_airspeed_use, // UNUSED
         k_param_barometer,   // barometer ground calibration
         k_param_airspeed,  // AP_Airspeed parameters
 
@@ -115,19 +107,19 @@ public:
         //
         k_param_crosstrack_gain = 150,
         k_param_crosstrack_entry_angle,
-        k_param_roll_limit,
-        k_param_pitch_limit_max,
-        k_param_pitch_limit_min,
+        k_param_roll_limit_cd,
+        k_param_pitch_limit_max_cd,
+        k_param_pitch_limit_min_cd,
         k_param_airspeed_cruise_cm,
-        k_param_RTL_altitude,
+        k_param_RTL_altitude_cm,
         k_param_inverted_flight_ch,
-        k_param_min_gndspeed,
+        k_param_min_gndspeed_cm,
 
 
         //
         // Camera and mount parameters
         //
-        k_param_camera = 159,
+        k_param_camera = 160,
         k_param_camera_mount,
 
         //
@@ -141,6 +133,9 @@ public:
         k_param_rc_6,
         k_param_rc_7,
         k_param_rc_8,
+        k_param_rc_9,
+        k_param_rc_10,
+        k_param_rc_11,
 
         k_param_throttle_min,
         k_param_throttle_max,
@@ -153,9 +148,6 @@ public:
 		k_param_gcs_heartbeat_fs_enabled,
         k_param_throttle_slewrate,
 
-        k_param_rc_9,
-        k_param_rc_10,
-        k_param_rc_11,
         //
         // 200: Feed-forward gains
         //
@@ -195,56 +187,12 @@ public:
 
         //
         // 240: PID Controllers
-        //
-        // Heading-to-roll PID:
-        // heading error from command to roll command deviation from trim
-        // (bank to turn strategy)
-        //
         k_param_pidNavRoll = 240,
-
-        // Roll-to-servo PID:
-        // roll error from command to roll servo deviation from trim
-        // (tracks commanded bank angle)
-        //
         k_param_pidServoRoll,
-
-        //
-        // Pitch control
-        //
-        // Pitch-to-servo PID:
-        // pitch error from command to pitch servo deviation from trim
-        // (front-side strategy)
-        //
         k_param_pidServoPitch,
-
-        // Airspeed-to-pitch PID:
-        // airspeed error from command to pitch servo deviation from trim
-        // (back-side strategy)
-        //
         k_param_pidNavPitchAirspeed,
-
-        //
-        // Yaw control
-        //
-        // Yaw-to-servo PID:
-        // yaw rate error from command to yaw servo deviation from trim
-        // (stabilizes dutch roll)
-        //
         k_param_pidServoRudder,
-
-        //
-        // Throttle control
-        //
-        // Energy-to-throttle PID:
-        // total energy error from command to throttle servo deviation from trim
-        // (throttle back-side strategy alternative)
-        //
         k_param_pidTeThrottle,
-
-        // Altitude-to-pitch PID:
-        // altitude error from command to pitch servo deviation from trim
-        // (throttle front-side strategy alternative)
-        //
         k_param_pidNavPitchAltitude,
 
         // 254,255: reserved
@@ -283,8 +231,9 @@ public:
     AP_Int8     waypoint_mode;
     AP_Int8     command_total;
     AP_Int8     command_index;
-    AP_Int8     waypoint_radius;
-    AP_Int8     loiter_radius;
+    AP_Int16    waypoint_radius;
+    AP_Int16    loiter_radius;
+
 #if GEOFENCE_ENABLED == ENABLED
     AP_Int8     fence_action;
     AP_Int8     fence_total;
@@ -295,8 +244,8 @@ public:
 
     // Fly-by-wire
     //
-    AP_Int8     flybywire_airspeed_min;
-    AP_Int8     flybywire_airspeed_max;
+    AP_Int16    flybywire_airspeed_min;
+    AP_Int16    flybywire_airspeed_max;
 
     // Throttle
     //
@@ -324,9 +273,9 @@ public:
 
     // Navigational maneuvering limits
     //
-    AP_Int16    roll_limit;
-    AP_Int16    pitch_limit_max;
-    AP_Int16    pitch_limit_min;
+    AP_Int16    roll_limit_cd;
+    AP_Int16    pitch_limit_max_cd;
+    AP_Int16    pitch_limit_min_cd;
 
     // Misc
     //
@@ -337,18 +286,16 @@ public:
     AP_Int8     reverse_ch2_elevon;
     AP_Int16    num_resets;
     AP_Int16    log_bitmask;
-    AP_Int16	log_last_filenumber;		// *** Deprecated - remove with next eeprom number change
     AP_Int8		reset_switch_chan;
     AP_Int8		manual_level;
-    AP_Int16    airspeed_cruise_cm;
-    AP_Int16    RTL_altitude;
+    AP_Int32    airspeed_cruise_cm;
+    AP_Int32    RTL_altitude_cm;
 	AP_Int16	land_pitch_cd;
-    AP_Int16    min_gndspeed;
-    AP_Int16    pitch_trim;
-    AP_Int16    FBWB_min_altitude;
+    AP_Int32    min_gndspeed_cm;
+    AP_Int16    pitch_trim_cd;
+    AP_Int16    FBWB_min_altitude_cm;
 
     AP_Int8		compass_enabled;
-    AP_Int16    angle_of_attack;
     AP_Int8		battery_monitoring;	// 0=disabled, 3=voltage only, 4=voltage and current
     AP_Int8		flap_1_percent;
     AP_Int8		flap_1_speed;
@@ -357,7 +304,7 @@ public:
     AP_Float	volt_div_ratio;
     AP_Float	curr_amp_per_volt;
     AP_Float	input_voltage;
-	AP_Int16	pack_capacity;		// Battery pack capacity less reserve
+	AP_Int32	pack_capacity;		// Battery pack capacity less reserve
     AP_Int8		inverted_flight_ch; // 0=disabled, 1-8 is channel for inverted flight trigger
     AP_Int8		sonar_enabled;
 

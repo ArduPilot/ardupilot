@@ -122,10 +122,10 @@ static void decrement_cmd_index()
 
 static long read_alt_to_hold()
 {
-	if(g.RTL_altitude < 0)
+	if (g.RTL_altitude_cm < 0) {
 		return current_loc.alt;
-	else
-		return g.RTL_altitude + home.alt;
+    }
+    return g.RTL_altitude_cm + home.alt;
 }
 
 
@@ -155,12 +155,12 @@ static void set_next_WP(struct Location *wp)
 
 	// used to control FBW and limit the rate of climb
 	// -----------------------------------------------
-	target_altitude = current_loc.alt;
+	target_altitude_cm = current_loc.alt;
 
 	if(prev_WP.id != MAV_CMD_NAV_TAKEOFF && prev_WP.alt != home.alt && (next_WP.id == MAV_CMD_NAV_WAYPOINT || next_WP.id == MAV_CMD_NAV_LAND))
-		offset_altitude = next_WP.alt - prev_WP.alt;
+		offset_altitude_cm = next_WP.alt - prev_WP.alt;
 	else
-		offset_altitude = 0;
+		offset_altitude_cm = 0;
 
 	// zero out our loiter vals to watch for missed waypoints
 	loiter_delta 		= 0;
@@ -170,12 +170,12 @@ static void set_next_WP(struct Location *wp)
 	// this is handy for the groundstation
 	wp_totalDistance 	= get_distance(&current_loc, &next_WP);
 	wp_distance 		= wp_totalDistance;
-	target_bearing 		= get_bearing(&current_loc, &next_WP);
-	nav_bearing 		= target_bearing;
+	target_bearing_cd	= get_bearing_cd(&current_loc, &next_WP);
+	nav_bearing_cd 		= target_bearing_cd;
 
 	// to check if we have missed the WP
 	// ----------------------------
-	old_target_bearing 	= target_bearing;
+	old_target_bearing_cd 	= target_bearing_cd;
 
 	// set a new crosstrack bearing
 	// ----------------------------
@@ -194,17 +194,17 @@ static void set_guided_WP(void)
 
 	// used to control FBW and limit the rate of climb
 	// -----------------------------------------------
-	target_altitude = current_loc.alt;
-	offset_altitude = next_WP.alt - prev_WP.alt;
+	target_altitude_cm = current_loc.alt;
+	offset_altitude_cm = next_WP.alt - prev_WP.alt;
 
 	// this is handy for the groundstation
 	wp_totalDistance 	= get_distance(&current_loc, &next_WP);
 	wp_distance 		= wp_totalDistance;
-	target_bearing 		= get_bearing(&current_loc, &next_WP);
+	target_bearing_cd	= get_bearing_cd(&current_loc, &next_WP);
 
 	// to check if we have missed the WP
 	// ----------------------------
-	old_target_bearing 	= target_bearing;
+	old_target_bearing_cd = target_bearing_cd;
 
 	// set a new crosstrack bearing
 	// ----------------------------
@@ -242,7 +242,7 @@ void init_home()
 	// Load home for a default guided_WP
 	// -------------
 	guided_WP = home;
-	guided_WP.alt += g.RTL_altitude;
+	guided_WP.alt += g.RTL_altitude_cm;
 
 }
 

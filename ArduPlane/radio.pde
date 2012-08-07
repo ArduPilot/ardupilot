@@ -101,12 +101,12 @@ static void read_radio()
 
 	if (g.channel_throttle.servo_out > 50) {
 		if (airspeed.use()) {
-			airspeed_nudge = (g.flybywire_airspeed_max * 100 - g.airspeed_cruise_cm) * ((g.channel_throttle.norm_input()-0.5) / 0.5);
+			airspeed_nudge_cm = (g.flybywire_airspeed_max * 100 - g.airspeed_cruise_cm) * ((g.channel_throttle.norm_input()-0.5) / 0.5);
 		} else {
 			throttle_nudge = (g.throttle_max - g.throttle_cruise) * ((g.channel_throttle.norm_input()-0.5) / 0.5);
 		}
 	} else {
-		airspeed_nudge = 0;
+		airspeed_nudge_cm = 0;
 		throttle_nudge = 0;
 	}
 

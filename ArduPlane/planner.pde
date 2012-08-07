@@ -34,8 +34,8 @@ planner_gcs(uint8_t argc, const Menu::arg *argv)
 
   int loopcount = 0;
   while (1) {
-    if (millis()-fast_loopTimer > 19) {
-      fast_loopTimer      = millis();
+    if (millis()-fast_loopTimer_ms > 19) {
+      fast_loopTimer_ms      = millis();
       
       gcs_update();
       
