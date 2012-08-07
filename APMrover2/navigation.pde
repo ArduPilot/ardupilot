@@ -35,7 +35,7 @@ static void navigate()
 
 	// target_bearing is where we should be heading
 	// --------------------------------------------
-	target_bearing 	= get_bearing(&current_loc, &next_WP);
+	target_bearing 	= get_bearing_cd(&current_loc, &next_WP);
 
 	// nav_bearing will includes xtrac correction
 	// ------------------------------------------
@@ -138,27 +138,7 @@ static void update_crosstrack(void)
 
 static void reset_crosstrack()
 {
-	crosstrack_bearing 	= get_bearing(&prev_WP, &next_WP);	// Used for track following
-}
-
-static long get_distance(struct Location *loc1, struct Location *loc2)
-{
-	if(loc1->lat == 0 || loc1->lng == 0)
-		return -1;
-	if(loc2->lat == 0 || loc2->lng == 0)
-		return -1;
-	float dlat 		= (float)(loc2->lat - loc1->lat);
-	float dlong		= ((float)(loc2->lng - loc1->lng)) * scaleLongDown;
-	return sqrt(sq(dlat) + sq(dlong)) * .01113195;
-}
-
-static long get_bearing(struct Location *loc1, struct Location *loc2)
-{
-	long off_x = loc2->lng - loc1->lng;
-	long off_y = (loc2->lat - loc1->lat) * scaleLongUp;
-	long bearing =	9000 + atan2(-off_y, off_x) * 5729.57795;
-	if (bearing < 0) bearing += 36000;
-	return bearing;
+	crosstrack_bearing 	= get_bearing_cd(&prev_WP, &next_WP);	// Used for track following
 }
 
 void reached_waypoint()
