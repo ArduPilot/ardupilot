@@ -14,21 +14,21 @@ const AP_Param::GroupInfo AP_Limit_Geofence::var_info[] PROGMEM = {
 	// @Description: Setting this to Enabled(1) will enable the geofence. Setting this to Disabled(0) will disable the geofence
 	// @Values: 0:Disabled,1:Enabled
 	// @User: Standard
-	AP_GROUPINFO("FNC_ON",	0,	AP_Limit_Geofence,	_enabled),
+	AP_GROUPINFO("FNC_ON",	0,	AP_Limit_Geofence,	_enabled, 0),
 
 	// @Param: FNC_REQ
 	// @DisplayName: Require Geofence
 	// @Description: Setting this to Enabled(1) will make being inside the geofence a required check before arming the vehicle.
 	// @Values: 0:Disabled,1:Enabled
 	// @User: Standard
-	AP_GROUPINFO("FNC_REQ",	1,	AP_Limit_Geofence,	_required),
+	AP_GROUPINFO("FNC_REQ",	1,	AP_Limit_Geofence,	_required, 0),
 
 	// @Param: FNC_SMPL
 	// @DisplayName: Require Geofence
 	// @Description: "Simple" geofence (enabled - 1) is based on a radius from the home position, "Complex" (disabled - 0) define a complex fence by lat/long positions
 	// @Values: 0:Disabled,1:Enabled
 	// @User: Standard
-	AP_GROUPINFO("FNC_SMPL", 2,	AP_Limit_Geofence,	_simple),
+	AP_GROUPINFO("FNC_SMPL", 2,	AP_Limit_Geofence,	_simple, 0),
 
 	// @Param: FNC_RAD
 	// @DisplayName: Require Geofence
@@ -37,9 +37,9 @@ const AP_Param::GroupInfo AP_Limit_Geofence::var_info[] PROGMEM = {
 	// @Range: 0 32767
 	// @Increment: 1
 	// @User: Standard
-	AP_GROUPINFO("FNC_RAD",	3,	AP_Limit_Geofence,	_radius),
+	AP_GROUPINFO("FNC_RAD",	3,	AP_Limit_Geofence,	_radius, 0),
 
-	AP_GROUPINFO("FNC_TOT",	4,	AP_Limit_Geofence,	_fence_total),
+	AP_GROUPINFO("FNC_TOT",	4,	AP_Limit_Geofence,	_fence_total, 0),
     AP_GROUPEND
 
 

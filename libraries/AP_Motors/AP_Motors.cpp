@@ -12,13 +12,12 @@
 
 // parameters for the motor class
 const AP_Param::GroupInfo AP_Motors::var_info[] PROGMEM = {
-	AP_GROUPINFO("TB_RATIO", 0, AP_Motors,	top_bottom_ratio),  // not used
+	AP_GROUPINFO("TB_RATIO", 0, AP_Motors,	top_bottom_ratio, AP_MOTORS_TOP_BOTTOM_RATIO),  // not used
     AP_GROUPEND
 };
 
 // Constructor 
 AP_Motors::AP_Motors( uint8_t APM_version, APM_RC_Class* rc_out, RC_Channel* rc_roll, RC_Channel* rc_pitch, RC_Channel* rc_throttle, RC_Channel* rc_yaw, uint16_t speed_hz ) :
-	top_bottom_ratio(AP_MOTORS_TOP_BOTTOM_RATIO),
 	_rc(rc_out),
 	_rc_roll(rc_roll),
 	_rc_pitch(rc_pitch),
@@ -32,6 +31,8 @@ AP_Motors::AP_Motors( uint8_t APM_version, APM_RC_Class* rc_out, RC_Channel* rc_
 	_max_throttle(AP_MOTORS_DEFAULT_MAX_THROTTLE)
 {
 	uint8_t i;
+
+	top_bottom_ratio = AP_MOTORS_TOP_BOTTOM_RATIO;
 	
 	// initialise motor map
 	if( APM_version == AP_MOTORS_APM1 ) {

@@ -67,28 +67,14 @@ public:
 		_servo_2(swash_servo_2),
 		_servo_3(swash_servo_3),
 		_servo_4(yaw_servo),
-		_rc_8(rc_8),
-		swash_type(AP_MOTORS_HELI_SWASH_CCPM),
-		servo1_pos				(-60),
-		servo2_pos				(60),
-		servo3_pos				(180),
-		collective_min			(1250),
-		collective_max			(1750),
-		collective_mid			(1500),
-		ext_gyro_enabled        (0),
-		ext_gyro_gain           (1350),
-		roll_max				(4500),
-		pitch_max				(4500),
-		phase_angle				(0),
-		collective_yaw_effect	(0),
-		servo_manual			(0),
-		ext_gov_setpoint		(1500),
-		throttle_mid			(0),
-		_roll_scaler			(1),
-		_pitch_scaler			(1),
-		_collective_scalar		(1),
-		_swash_initialised(false)
-		{};
+		_rc_8(rc_8)
+		{
+			throttle_mid = 0;
+			_roll_scaler = 1;
+			_pitch_scaler = 1;
+			_collective_scalar = 1;
+			_swash_initialised = false;
+		};
 
 	RC_Channel	*_servo_1;
 	RC_Channel	*_servo_2;

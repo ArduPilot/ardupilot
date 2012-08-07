@@ -23,8 +23,7 @@ public:
 	/// @param name     Optional name for the group.
 	///
 	RC_Channel_aux(uint8_t ch_out) :
-		RC_Channel(ch_out),
-		function  (0)
+		RC_Channel(ch_out)
 	{}
 
 	typedef enum

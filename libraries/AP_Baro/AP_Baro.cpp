@@ -21,13 +21,13 @@ const AP_Param::GroupInfo AP_Baro::var_info[] PROGMEM = {
 	// @DisplayName: Absolute Pressure
 	// @Description: calibrated ground pressure
 	// @Increment: 1
-    AP_GROUPINFO("ABS_PRESS", 2, AP_Baro, _ground_pressure),
+    AP_GROUPINFO("ABS_PRESS", 2, AP_Baro, _ground_pressure, 0),
 
 	// @Param: ABS_PRESS
 	// @DisplayName: ground temperature
 	// @Description: calibrated ground temperature
 	// @Increment: 1
-    AP_GROUPINFO("TEMP", 3, AP_Baro, _ground_temperature),
+    AP_GROUPINFO("TEMP", 3, AP_Baro, _ground_temperature, 0),
     AP_GROUPEND
 };
 

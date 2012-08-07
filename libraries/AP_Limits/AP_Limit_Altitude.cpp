@@ -15,14 +15,14 @@ const AP_Param::GroupInfo AP_Limit_Altitude::var_info[] PROGMEM = {
 	// @Description: Setting this to Enabled(1) will enable the altitude. Setting this to Disabled(0) will disable the altitude
 	// @Values: 0:Disabled,1:Enabled
 	// @User: Standard
-	AP_GROUPINFO("ALT_ON",	0,	AP_Limit_Altitude,	_enabled),
+	AP_GROUPINFO("ALT_ON",	0,	AP_Limit_Altitude,	_enabled, 0),
 
 	// @Param: ALT_REQD
 	// @DisplayName: Require altitude
 	// @Description: Setting this to Enabled(1) will make being inside the altitude a required check before arming the vehicle.
 	// @Values: 0:Disabled,1:Enabled
 	// @User: Standard
-	AP_GROUPINFO("ALT_REQ",	1,	AP_Limit_Altitude,	_required),
+	AP_GROUPINFO("ALT_REQ",	1,	AP_Limit_Altitude,	_required, 0),
 
 	// @Param: ALT_MIN
 	// @DisplayName: Minimum Altitude
@@ -31,7 +31,7 @@ const AP_Param::GroupInfo AP_Limit_Altitude::var_info[] PROGMEM = {
 	// @Range: 0 250000
 	// @Increment: 1
 	// @User: Standard
-	AP_GROUPINFO("ALT_MIN",	2,	AP_Limit_Altitude,	_min_alt),
+	AP_GROUPINFO("ALT_MIN",	2,	AP_Limit_Altitude,	_min_alt, 0),
 
 	// @Param: ALT_MAX
 	// @DisplayName: Maximum Altitude
@@ -40,7 +40,7 @@ const AP_Param::GroupInfo AP_Limit_Altitude::var_info[] PROGMEM = {
 	// @Range: 0 250000
 	// @Increment: 1
 	// @User: Standard
-	AP_GROUPINFO("ALT_MAX",	3,	AP_Limit_Altitude,	_max_alt),
+	AP_GROUPINFO("ALT_MAX",	3,	AP_Limit_Altitude,	_max_alt, 0),
     AP_GROUPEND
 };
 
