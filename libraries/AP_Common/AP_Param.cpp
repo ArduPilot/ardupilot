@@ -31,6 +31,7 @@
 // some useful progmem macros
 #define PGM_UINT8(addr) pgm_read_byte((const prog_char *)addr)
 #define PGM_UINT16(addr) pgm_read_word((const uint16_t *)addr)
+#define PGM_FLOAT(addr) pgm_read_float((const float *)addr)
 #define PGM_POINTER(addr) pgm_read_pointer((const void *)addr)
 
 // the 'GROUP_ID' of a element of a group is the 8 bit identifier used
@@ -197,29 +198,32 @@ bool AP_Param::check_var_info(void)
             return false;
         }
     }
-    if (total_size > _eeprom_size) {
-        serialDebug("total_size %u exceeds _eeprom_size %u",
-                    total_size, _eeprom_size);
-        return false;
-    }
+
+    // we no longer check if total_size is larger than _eeprom_size,
+    // as we allow for more variables than could fit, relying on not
+    // saving default values
+
     return true;
 }
 
 
 // setup the _var_info[] table
-bool AP_Param::setup(const AP_Param::Info *info, uint8_t num_vars, uint16_t eeprom_size)
+bool AP_Param::setup(const struct AP_Param::Info *info, uint16_t eeprom_size)
 {
     struct EEPROM_header hdr;
+    uint8_t i;
 
     _eeprom_size = eeprom_size;
     _var_info = info;
-    _num_vars = num_vars;
+
+    for (i=0; PGM_UINT8(&info[i].type) != AP_PARAM_NONE; i++) ;
+    _num_vars = i;
 
     if (!check_var_info()) {
         return false;
     }
 
-    serialDebug("setup %u vars", (unsigned)num_vars);
+    serialDebug("setup %u vars", (unsigned)_num_vars);
 
     // check the header
     eeprom_read_block(&hdr, 0, sizeof(hdr));
@@ -621,6 +625,17 @@ bool AP_Param::save(void)
         return false;
     }
 
+    // if the value is the default value then don't save
+    if (phdr.type <= AP_PARAM_FLOAT && 
+        cast_to_float((enum ap_var_type)phdr.type) == PGM_FLOAT(&info->def_value)) {
+        return true;
+    }
+
+    if (ofs+type_size((enum ap_var_type)phdr.type)+2*sizeof(phdr) >= _eeprom_size) {
+        // we are out of room for saving variables
+        return false;
+    }
+
     // write a new sentinal, then the data, then the header
     write_sentinal(ofs + sizeof(phdr) + type_size((enum ap_var_type)phdr.type));
     eeprom_write_check(ap, ofs+sizeof(phdr), type_size((enum ap_var_type)phdr.type));
@@ -655,6 +670,14 @@ bool AP_Param::load(void)
     // scan EEPROM to find the right location
     uint16_t ofs;
     if (!scan(&phdr, &ofs)) {
+        // if the value isn't stored in EEPROM then set the default value
+        if (ginfo != NULL) {
+            uintptr_t base = PGM_POINTER(&info->ptr);
+            set_value((enum ap_var_type)phdr.type, (void*)(base + PGM_UINT16(&ginfo->offset)), 
+                      PGM_FLOAT(&ginfo->def_value));
+        } else {
+            set_value((enum ap_var_type)phdr.type, (void*)PGM_POINTER(&info->ptr), PGM_FLOAT(&info->def_value));
+        }
         return false;
     }
 
@@ -674,12 +697,69 @@ bool AP_Param::load(void)
     return true;
 }
 
+// set a AP_Param variable to a specified value 
+void AP_Param::set_value(enum ap_var_type type, void *ptr, float def_value)
+{
+    switch (type) {
+    case AP_PARAM_INT8:
+        ((AP_Int8 *)ptr)->set(def_value);
+        break;
+    case AP_PARAM_INT16:
+        ((AP_Int16 *)ptr)->set(def_value);
+        break;
+    case AP_PARAM_INT32:
+        ((AP_Int32 *)ptr)->set(def_value);
+        break;
+    case AP_PARAM_FLOAT:
+        ((AP_Float *)ptr)->set(def_value);
+        break;
+    default:
+        break;
+    }
+}
+
+// load default values for scalars in a group
+void AP_Param::load_defaults_group(const struct GroupInfo *group_info, uintptr_t base)
+{
+    uint8_t type;
+    for (uint8_t i=0;
+         (type=PGM_UINT8(&group_info[i].type)) != AP_PARAM_NONE;
+         i++) {
+        if (type == AP_PARAM_GROUP) {
+            const struct GroupInfo *ginfo = (const struct GroupInfo *)PGM_POINTER(&group_info[i].group_info);
+            load_defaults_group(ginfo, base);
+        } else if (type <= AP_PARAM_FLOAT) {
+            void *ptr = (void *)(base + PGM_UINT16(&group_info[i].offset));
+            set_value((enum ap_var_type)type, ptr, PGM_FLOAT(&group_info[i].def_value));    
+        }
+    }
+}
+
+
+// load default values for all scalars
+void AP_Param::load_defaults(void)
+{
+    for (uint8_t i=0; i<_num_vars; i++) {
+        uint8_t type = PGM_UINT8(&_var_info[i].type);
+        if (type == AP_PARAM_GROUP) {
+            const struct GroupInfo *group_info = (const struct GroupInfo *)PGM_POINTER(&_var_info[i].group_info);
+            uintptr_t base = PGM_POINTER(&_var_info[i].ptr);
+            load_defaults_group(group_info, base);
+        } else if (type <= AP_PARAM_FLOAT) {
+            void *ptr = (void*)PGM_POINTER(&_var_info[i].ptr);
+            set_value((enum ap_var_type)type, ptr, PGM_FLOAT(&_var_info[i].def_value));
+        }
+    }
+}
+
+
 // Load all variables from EEPROM
 //
 bool AP_Param::load_all(void)
 {
     struct Param_header phdr;
     uint16_t ofs = sizeof(AP_Param::EEPROM_header);
+
     while (ofs < _eeprom_size) {
         eeprom_read_block(&phdr, (void *)ofs, sizeof(phdr));
         // note that this is an || not an && for robustness
