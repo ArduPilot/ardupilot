@@ -30,7 +30,7 @@ static void stabilize()
 	}
 
 	if(crash_timer > 0){
-		nav_roll = 0;
+		nav_roll_cd = 0;
 	}
 
     if (inverted_flight) {
@@ -39,8 +39,8 @@ static void stabilize()
         // would really confuse the PID code. The easiest way to
         // handle this is to ensure both go in the same direction from
         // zero
-        nav_roll += 18000;
-        if (ahrs.roll_sensor < 0) nav_roll -= 36000;
+        nav_roll_cd += 18000;
+        if (ahrs.roll_sensor < 0) nav_roll_cd -= 36000;
     }
 
 	// For Testing Only
@@ -50,11 +50,11 @@ static void stabilize()
 
 	// Calculate dersired servo output for the roll
 	// ---------------------------------------------
-	g.channel_roll.servo_out = g.pidServoRoll.get_pid((nav_roll - ahrs.roll_sensor), speed_scaler);
-	long tempcalc = nav_pitch +
+	g.channel_roll.servo_out = g.pidServoRoll.get_pid((nav_roll_cd - ahrs.roll_sensor), speed_scaler);
+	int32_t tempcalc = nav_pitch_cd +
 	        fabs(ahrs.roll_sensor * g.kff_pitch_compensation) +
 	        (g.channel_throttle.servo_out * g.kff_throttle_to_pitch) -
-	        (ahrs.pitch_sensor - g.pitch_trim);
+	        (ahrs.pitch_sensor - g.pitch_trim_cd);
     if (inverted_flight) {
         // when flying upside down the elevator control is inverted
         tempcalc = -tempcalc;
@@ -142,17 +142,17 @@ static void calc_throttle()
 		// no airspeed sensor, we use nav pitch to determine the proper throttle output
 		// AUTO, RTL, etc
 		// ---------------------------------------------------------------------------
-		if (nav_pitch >= 0) {
-			g.channel_throttle.servo_out = throttle_target + (g.throttle_max - throttle_target) * nav_pitch / g.pitch_limit_max;
+		if (nav_pitch_cd >= 0) {
+			g.channel_throttle.servo_out = throttle_target + (g.throttle_max - throttle_target) * nav_pitch_cd / g.pitch_limit_max_cd;
 		} else {
-			g.channel_throttle.servo_out = throttle_target - (throttle_target - g.throttle_min) * nav_pitch / g.pitch_limit_min;
+			g.channel_throttle.servo_out = throttle_target - (throttle_target - g.throttle_min) * nav_pitch_cd / g.pitch_limit_min_cd;
 		}
 
 		g.channel_throttle.servo_out = constrain(g.channel_throttle.servo_out, g.throttle_min.get(), g.throttle_max.get());
 	} else {
 		// throttle control with airspeed compensation
 		// -------------------------------------------
-		energy_error = airspeed_energy_error + (float)altitude_error * 0.098f;
+		energy_error = airspeed_energy_error + altitude_error_cm * 0.098f;
 
 		// positive energy errors make the throttle go higher
 		g.channel_throttle.servo_out = g.throttle_cruise + g.pidTeThrottle.get_pid(energy_error);
@@ -190,11 +190,11 @@ static void calc_nav_pitch()
 	// Calculate the Pitch of the plane
 	// --------------------------------
 	if (airspeed.use()) {
-		nav_pitch = -g.pidNavPitchAirspeed.get_pid(airspeed_error);
+		nav_pitch_cd = -g.pidNavPitchAirspeed.get_pid(airspeed_error_cm);
 	} else {
-		nav_pitch = g.pidNavPitchAltitude.get_pid(altitude_error);
+		nav_pitch_cd = g.pidNavPitchAltitude.get_pid(altitude_error_cm);
     }
-	nav_pitch = constrain(nav_pitch, g.pitch_limit_min.get(), g.pitch_limit_max.get());
+	nav_pitch_cd = constrain(nav_pitch_cd, g.pitch_limit_min_cd.get(), g.pitch_limit_max_cd.get());
 }
 
 
@@ -205,7 +205,7 @@ static void calc_nav_roll()
 	// Scale from centidegrees (PID input) to radians per second. A P gain of 1.0 should result in a
 	// desired rate of 1 degree per second per degree of error - if you're 15 degrees off, you'll try
 	// to turn at 15 degrees per second.
-	float turn_rate = ToRad(g.pidNavRoll.get_pid(bearing_error) * .01);
+	float turn_rate = ToRad(g.pidNavRoll.get_pid(bearing_error_cd) * .01);
 
 	// Use airspeed_cruise as an analogue for airspeed if we don't have airspeed.
 	float speed;
@@ -228,10 +228,10 @@ static void calc_nav_roll()
     // then remove for a future release
     float nav_gain_scaler = 0.01 * g_gps->ground_speed / g.scaling_speed;
     nav_gain_scaler = constrain(nav_gain_scaler, 0.2, 1.4);
-    nav_roll = g.pidNavRoll.get_pid(bearing_error, nav_gain_scaler); //returns desired bank angle in degrees*100
+    nav_roll_cd = g.pidNavRoll.get_pid(bearing_error_cd, nav_gain_scaler); //returns desired bank angle in degrees*100
 #endif
 
-	nav_roll = constrain(nav_roll, -g.roll_limit.get(), g.roll_limit.get());
+	nav_roll_cd = constrain(nav_roll_cd, -g.roll_limit_cd.get(), g.roll_limit_cd.get());
 }
 
 
@@ -392,9 +392,9 @@ static void set_servos(void)
 		} else if (control_mode >= FLY_BY_WIRE_B) {
             // FIXME: use target_airspeed in both FBW_B and g.airspeed_enabled cases - Doug?
 			if (control_mode == FLY_BY_WIRE_B) {
-				flapSpeedSource = ((float)target_airspeed)/100;
+				flapSpeedSource = target_airspeed_cm * 0.01;
 			} else if (airspeed.use()) {
-				flapSpeedSource = g.airspeed_cruise_cm/100;
+				flapSpeedSource = g.airspeed_cruise_cm * 0.01;
 			} else {
 				flapSpeedSource = g.throttle_cruise;
 			}

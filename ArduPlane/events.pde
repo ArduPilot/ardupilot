@@ -92,7 +92,7 @@ void low_battery_event(void)
 
 static void update_events(void)	// Used for MAV_CMD_DO_REPEAT_SERVO and MAV_CMD_DO_REPEAT_RELAY
 {
-	if(event_repeat == 0 || (millis() - event_timer) < event_delay)
+	if(event_repeat == 0 || (millis() - event_timer_ms) < event_delay_ms)
 		return;
 
 	if (event_repeat > 0){
@@ -100,7 +100,7 @@ static void update_events(void)	// Used for MAV_CMD_DO_REPEAT_SERVO and MAV_CMD_
 	}
 
 	if(event_repeat != 0) {		// event_repeat = -1 means repeat forever
-		event_timer = millis();
+		event_timer_ms = millis();
 
 		if (event_id >= CH_5 && event_id <= CH_8) {
 			if(event_repeat%2) {

@@ -29,17 +29,17 @@ static void navigate()
 
 	// target_bearing is where we should be heading
 	// --------------------------------------------
-	target_bearing 	= get_bearing(&current_loc, &next_WP);
+	target_bearing_cd 	= get_bearing_cd(&current_loc, &next_WP);
 
 	// nav_bearing will includes xtrac correction
 	// ------------------------------------------
-	nav_bearing = target_bearing;
+	nav_bearing_cd = target_bearing_cd;
 
 	// check if we have missed the WP
-	loiter_delta = (target_bearing - old_target_bearing)/100;
+	loiter_delta = (target_bearing_cd - old_target_bearing_cd)/100;
 
 	// reset the old value
-	old_target_bearing = target_bearing;
+	old_target_bearing_cd = target_bearing_cd;
 
 	// wrap values
 	if (loiter_delta > 180) loiter_delta -= 360;
@@ -56,7 +56,7 @@ static void navigate()
 // Disabled for now
 void calc_distance_error()
 {
-	distance_estimate 	+= (float)g_gps->ground_speed * .0002 * cos(radians(bearing_error * .01));
+	distance_estimate 	+= (float)g_gps->ground_speed * .0002 * cos(radians(bearing_error_cd * .01));
 	distance_estimate 	-= DST_EST_GAIN * (float)(distance_estimate - GPS_wp_distance);
 	wp_distance  		= max(distance_estimate,10);
 }
@@ -67,11 +67,11 @@ static void calc_airspeed_errors()
     float aspeed_cm = airspeed.get_airspeed_cm();
 
     // Normal airspeed target
-    target_airspeed = g.airspeed_cruise_cm;
+    target_airspeed_cm = g.airspeed_cruise_cm;
 
     // FBW_B airspeed target
     if (control_mode == FLY_BY_WIRE_B) {
-        target_airspeed = ((int)(g.flybywire_airspeed_max -
+        target_airspeed_cm = ((int)(g.flybywire_airspeed_max -
                                  g.flybywire_airspeed_min) *
                            g.channel_throttle.servo_out) +
                           ((int)g.flybywire_airspeed_min * 100);
@@ -80,29 +80,29 @@ static void calc_airspeed_errors()
     // Set target to current airspeed + ground speed undershoot,
     // but only when this is faster than the target airspeed commanded
     // above.
-    if (control_mode >= FLY_BY_WIRE_B && (g.min_gndspeed > 0)) {
-        long min_gnd_target_airspeed = aspeed_cm + groundspeed_undershoot;
-        if (min_gnd_target_airspeed > target_airspeed)
-            target_airspeed = min_gnd_target_airspeed;
+    if (control_mode >= FLY_BY_WIRE_B && (g.min_gndspeed_cm > 0)) {
+        int32_t min_gnd_target_airspeed = aspeed_cm + groundspeed_undershoot;
+        if (min_gnd_target_airspeed > target_airspeed_cm)
+            target_airspeed_cm = min_gnd_target_airspeed;
     }
 
     // Bump up the target airspeed based on throttle nudging
-    if (control_mode >= AUTO && airspeed_nudge > 0) {
-        target_airspeed += airspeed_nudge;
+    if (control_mode >= AUTO && airspeed_nudge_cm > 0) {
+        target_airspeed_cm += airspeed_nudge_cm;
     }
 
     // Apply airspeed limit
-    if (target_airspeed > (g.flybywire_airspeed_max * 100))
-        target_airspeed = (g.flybywire_airspeed_max * 100);
+    if (target_airspeed_cm > (g.flybywire_airspeed_max * 100))
+        target_airspeed_cm = (g.flybywire_airspeed_max * 100);
 
-    airspeed_error = target_airspeed - aspeed_cm;
-    airspeed_energy_error = ((target_airspeed * target_airspeed) - (aspeed_cm*aspeed_cm))*0.00005;
+    airspeed_error_cm = target_airspeed_cm - aspeed_cm;
+    airspeed_energy_error = ((target_airspeed_cm * target_airspeed_cm) - (aspeed_cm*aspeed_cm))*0.00005;
 }
 
 static void calc_gndspeed_undershoot()
 {
     // Function is overkill, but here in case we want to add filtering later
-    groundspeed_undershoot = (g.min_gndspeed > 0) ? (g.min_gndspeed - g_gps->ground_speed) : 0;
+    groundspeed_undershoot = (g.min_gndspeed_cm > 0) ? (g.min_gndspeed_cm - g_gps->ground_speed) : 0;
 }
 
 static void calc_bearing_error()
@@ -117,44 +117,44 @@ static void calc_bearing_error()
           correction using the GPS typically takes 10 seconds or so
           for a 180 degree correction.
          */
-		bearing_error = nav_bearing - ahrs.yaw_sensor;
+		bearing_error_cd = nav_bearing_cd - ahrs.yaw_sensor;
 	} else {
 
 		// TODO: we need to use the Yaw gyro for in between GPS reads,
 		// maybe as an offset from a saved gryo value.
-		bearing_error = nav_bearing - g_gps->ground_course;
+		bearing_error_cd = nav_bearing_cd - g_gps->ground_course;
 	}
 
-	bearing_error = wrap_180(bearing_error);
+	bearing_error_cd = wrap_180_cd(bearing_error_cd);
 }
 
 static void calc_altitude_error()
 {
-	if(control_mode == AUTO && offset_altitude != 0) {
+	if(control_mode == AUTO && offset_altitude_cm != 0) {
 		// limit climb rates
-		target_altitude = next_WP.alt - ((float)((wp_distance -30) * offset_altitude) / (float)(wp_totalDistance - 30));
+		target_altitude_cm = next_WP.alt - ((float)((wp_distance -30) * offset_altitude_cm) / (float)(wp_totalDistance - 30));
 
 		// stay within a certain range
 		if(prev_WP.alt > next_WP.alt){
-			target_altitude = constrain(target_altitude, next_WP.alt, prev_WP.alt);
+			target_altitude_cm = constrain(target_altitude_cm, next_WP.alt, prev_WP.alt);
 		}else{
-			target_altitude = constrain(target_altitude, prev_WP.alt, next_WP.alt);
+			target_altitude_cm = constrain(target_altitude_cm, prev_WP.alt, next_WP.alt);
 		}
 	} else if (non_nav_command_ID != MAV_CMD_CONDITION_CHANGE_ALT) {
-		target_altitude = next_WP.alt;
+		target_altitude_cm = next_WP.alt;
 	}
 
-	altitude_error 	= target_altitude - current_loc.alt;
+	altitude_error_cm 	= target_altitude_cm - current_loc.alt;
 }
 
-static long wrap_360(long error)
+static int32_t wrap_360_cd(int32_t error)
 {
 	if (error > 36000)	error -= 36000;
 	if (error < 0)		error += 36000;
 	return error;
 }
 
-static long wrap_180(long error)
+static int32_t wrap_180_cd(int32_t error)
 {
 	if (error > 18000)	error -= 36000;
 	if (error < -18000)	error += 36000;
@@ -168,15 +168,14 @@ static void update_loiter()
 	if(wp_distance <= g.loiter_radius){
 		power = float(wp_distance) / float(g.loiter_radius);
 		power = constrain(power, 0.5, 1);
-		nav_bearing += (int)(9000.0 * (2.0 + power));
-	}else if(wp_distance < (g.loiter_radius + LOITER_RANGE)){
+		nav_bearing_cd += 9000.0 * (2.0 + power);
+	} else if(wp_distance < (g.loiter_radius + LOITER_RANGE)){
 		power = -((float)(wp_distance - g.loiter_radius - LOITER_RANGE) / LOITER_RANGE);
 		power = constrain(power, 0.5, 1);			//power = constrain(power, 0, 1);
-		nav_bearing -= power * 9000;
-
-	}else{
+		nav_bearing_cd -= power * 9000;
+	} else{
 		update_crosstrack();
-		loiter_time = millis();			// keep start time for loiter updating till we get within LOITER_RANGE of orbit
+		loiter_time_ms = millis();			// keep start time for loiter updating till we get within LOITER_RANGE of orbit
 
 	}
 /*
@@ -188,22 +187,23 @@ static void update_loiter()
 
 	update_crosstrack();
 */
-	nav_bearing = wrap_360(nav_bearing);
+	nav_bearing_cd = wrap_360_cd(nav_bearing_cd);
 }
 
 static void update_crosstrack(void)
 {
 	// Crosstrack Error
 	// ----------------
-	if (abs(wrap_180(target_bearing - crosstrack_bearing)) < 4500) {	 // If we are too far off or too close we don't do track following
-		crosstrack_error = sin(radians((target_bearing - crosstrack_bearing) / (float)100)) * (float)wp_distance;	 // Meters we are off track line
-		nav_bearing += constrain(crosstrack_error * g.crosstrack_gain, -g.crosstrack_entry_angle.get(), g.crosstrack_entry_angle.get());
-		nav_bearing = wrap_360(nav_bearing);
+    // If we are too far off or too close we don't do track following
+	if (abs(wrap_180_cd(target_bearing_cd - crosstrack_bearing_cd)) < 4500) {
+		crosstrack_error = sin(radians((target_bearing_cd - crosstrack_bearing_cd) * 0.01)) * wp_distance;	 // Meters we are off track line
+		nav_bearing_cd += constrain(crosstrack_error * g.crosstrack_gain, -g.crosstrack_entry_angle.get(), g.crosstrack_entry_angle.get());
+		nav_bearing_cd = wrap_360_cd(nav_bearing_cd);
 	}
 }
 
 static void reset_crosstrack()
 {
-	crosstrack_bearing 	= get_bearing(&prev_WP, &next_WP);	// Used for track following
+	crosstrack_bearing_cd 	= get_bearing_cd(&prev_WP, &next_WP);	// Used for track following
 }
 

@@ -40,9 +40,6 @@ static const struct Menu::command test_menu_commands[] PROGMEM = {
 	{"xbee",			test_xbee},
 	{"eedump",			test_eedump},
 	{"modeswitch",		test_modeswitch},
-#if CONFIG_APM_HARDWARE != APM_HARDWARE_APM2
-	{"dipswitches",		test_dipswitches},
-#endif
 
 	// Tests below here are for hardware sensors only present
 	// when real sensors are attached or they are emulated
@@ -318,10 +315,10 @@ test_wp(uint8_t argc, const Menu::arg *argv)
 	delay(1000);
 
 	// save the alitude above home option
-	if(g.RTL_altitude < 0){
+	if (g.RTL_altitude_cm < 0){
 		Serial.printf_P(PSTR("Hold current altitude\n"));
 	}else{
-		Serial.printf_P(PSTR("Hold altitude of %dm\n"), (int)g.RTL_altitude/100);
+		Serial.printf_P(PSTR("Hold altitude of %dm\n"), (int)g.RTL_altitude_cm/100);
 	}
 
 	Serial.printf_P(PSTR("%d waypoints\n"), (int)g.command_total);
@@ -483,10 +480,10 @@ test_imu(uint8_t argc, const Menu::arg *argv)
 
 	while(1){
 		delay(20);
-		if (millis() - fast_loopTimer > 19) {
-			delta_ms_fast_loop 	= millis() - fast_loopTimer;
+		if (millis() - fast_loopTimer_ms > 19) {
+			delta_ms_fast_loop 	= millis() - fast_loopTimer_ms;
 			G_Dt 				= (float)delta_ms_fast_loop / 1000.f;		// used by DCM integrator
-			fast_loopTimer		= millis();
+			fast_loopTimer_ms	= millis();
 
 			// IMU
 			// ---
@@ -548,10 +545,10 @@ test_mag(uint8_t argc, const Menu::arg *argv)
 
     while(1) {
 		delay(20);
-		if (millis() - fast_loopTimer > 19) {
-			delta_ms_fast_loop 	= millis() - fast_loopTimer;
+		if (millis() - fast_loopTimer_ms > 19) {
+			delta_ms_fast_loop 	= millis() - fast_loopTimer_ms;
 			G_Dt 				= (float)delta_ms_fast_loop / 1000.f;		// used by DCM integrator
-			fast_loopTimer		= millis();
+			fast_loopTimer_ms	= millis();
 
 			// IMU
 			// ---
@@ -573,7 +570,7 @@ test_mag(uint8_t argc, const Menu::arg *argv)
                 if (compass.healthy) {
                     Vector3f maggy = compass.get_offsets();
                     Serial.printf_P(PSTR("Heading: %ld, XYZ: %d, %d, %d,\tXYZoff: %6.2f, %6.2f, %6.2f\n"),
-                                    (wrap_360(ToDeg(heading) * 100)) /100,
+                                    (wrap_360_cd(ToDeg(heading) * 100)) /100,
                                     (int)compass.mag_x,
                                     (int)compass.mag_y,
                                     (int)compass.mag_z,

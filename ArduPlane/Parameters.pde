@@ -302,7 +302,7 @@ const AP_Param::Info var_info[] PROGMEM = {
 	// @Range: 0 9000
 	// @Increment: 1
 	// @User: Standard
-	GSCALAR(roll_limit,             "LIM_ROLL_CD",    HEAD_MAX_CENTIDEGREE),
+	GSCALAR(roll_limit_cd,          "LIM_ROLL_CD",    HEAD_MAX_CENTIDEGREE),
 
     // @Param: LIM_PITCH_MAX
 	// @DisplayName: Maximum Pitch Angle
@@ -311,7 +311,7 @@ const AP_Param::Info var_info[] PROGMEM = {
 	// @Range: 0 9000
 	// @Increment: 1
 	// @User: Standard
-	GSCALAR(pitch_limit_max,        "LIM_PITCH_MAX",  PITCH_MAX_CENTIDEGREE),
+	GSCALAR(pitch_limit_max_cd,     "LIM_PITCH_MAX",  PITCH_MAX_CENTIDEGREE),
 
     // @Param: LIM_PITCH_MIN
 	// @DisplayName: Minimum Pitch Angle
@@ -320,7 +320,7 @@ const AP_Param::Info var_info[] PROGMEM = {
 	// @Range: 0 9000
 	// @Increment: 1
 	// @User: Standard
-	GSCALAR(pitch_limit_min,        "LIM_PITCH_MIN",  PITCH_MIN_CENTIDEGREE),
+	GSCALAR(pitch_limit_min_cd,     "LIM_PITCH_MIN",  PITCH_MIN_CENTIDEGREE),
 
     // @Param: AUTO_TRIM
 	// @DisplayName: Auto trim
@@ -370,8 +370,6 @@ const AP_Param::Info var_info[] PROGMEM = {
 	// @User: Advanced
 	GSCALAR(log_bitmask,            "LOG_BITMASK",    DEFAULT_LOG_BITMASK),
 
-	GSCALAR(log_last_filenumber,    "LOG_LASTFILE",   0),
-
     // @Param: RST_SWITCH_CH
 	// @DisplayName: Reset Switch Channel
 	// @Description: RC channel to use to reset to last flight mode after geofence takeover
@@ -397,23 +395,23 @@ const AP_Param::Info var_info[] PROGMEM = {
 	// @Description: Minimum ground speed in cm/s when under airspeed control
 	// @Units: cm/s
 	// @User: Advanced
-	GSCALAR(min_gndspeed,           "MIN_GNDSPD_CM",  MIN_GNDSPEED_CM),
+	GSCALAR(min_gndspeed_cm,      "MIN_GNDSPD_CM",  MIN_GNDSPEED_CM),
 
     // @Param: TRIM_PITCH_CD
 	// @DisplayName: Pitch angle offset
 	// @Description: offset to add to pitch - used for trimming tail draggers
 	// @Units: centi-Degrees
 	// @User: Advanced
-	GSCALAR(pitch_trim,             "TRIM_PITCH_CD",  0),
+	GSCALAR(pitch_trim_cd,        "TRIM_PITCH_CD",  0),
 
     // @Param: ALT_HOLD_RTL
 	// @DisplayName: RTL altitude
 	// @Description: Return to launch target altitude
 	// @Units: centimeters
 	// @User: User
-	GSCALAR(RTL_altitude,           "ALT_HOLD_RTL",   ALT_HOLD_HOME_CM),
+	GSCALAR(RTL_altitude_cm,        "ALT_HOLD_RTL",   ALT_HOLD_HOME_CM),
 
-	GSCALAR(FBWB_min_altitude,      "ALT_HOLD_FBWCM", ALT_HOLD_FBW_CM),
+	GSCALAR(FBWB_min_altitude_cm,   "ALT_HOLD_FBWCM", ALT_HOLD_FBW_CM),
 
     // @Param: MAG_ENABLE
 	// @DisplayName: Enable Compass

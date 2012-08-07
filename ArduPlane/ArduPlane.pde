@@ -396,15 +396,19 @@ static bool	GPS_enabled 	= false;
 // Constants
 const	float radius_of_earth 	= 6378100;	// meters
 const	float gravity 			= 9.81;		// meters/ sec^2
+
 // This is the currently calculated direction to fly.
 // deg * 100 : 0 to 360
-static int32_t	nav_bearing;
+static int32_t	nav_bearing_cd;
+
 // This is the direction to the next waypoint or loiter center
 // deg * 100 : 0 to 360
-static int32_t	target_bearing;
+static int32_t	target_bearing_cd;
+
 //This is the direction from the last waypoint to the next waypoint
 // deg * 100 : 0 to 360
-static int32_t	crosstrack_bearing;
+static int32_t	crosstrack_bearing_cd;
+
 // Direction held during phases of takeoff and landing
 // deg * 100 dir of plane,  A value of -1 indicates the course has not been set/is not in use
 static int32_t    hold_course       	 	= -1;		// deg * 100 dir of plane
@@ -422,18 +426,23 @@ static byte	non_nav_command_ID	= NO_COMMAND;
 // Airspeed
 ////////////////////////////////////////////////////////////////////////////////
 // The calculated airspeed to use in FBW-B.  Also used in higher modes for insuring min ground speed is met.
-// Also used for flap deployment criteria.  Centimeters per second.static int32_t		target_airspeed;
-static int32_t		target_airspeed;
+// Also used for flap deployment criteria.  Centimeters per second.
+static int32_t		target_airspeed_cm;
+
 // The difference between current and desired airspeed.  Used in the pitch controller.  Centimeters per second.
-static float	airspeed_error;
+static float	airspeed_error_cm;
+
 // The calculated total energy error (kinetic (altitude) plus potential (airspeed)).
 // Used by the throttle controller
 static int32_t 	energy_error;
+
 // kinetic portion of energy error (m^2/s^2)
 static int32_t		airspeed_energy_error;
+
 // An amount that the airspeed should be increased in auto modes based on the user positioning the
 // throttle stick in the top half of the range.  Centimeters per second.
-static int16_t		airspeed_nudge;
+static int16_t		airspeed_nudge_cm;
+
 // Similar to airspeed_nudge, but used when no airspeed sensor.
 // 0-(throttle_max - throttle_cruise) : throttle nudge in Auto mode using top 1/2 of throttle stick travel
 static int16_t     throttle_nudge = 0;
@@ -448,9 +457,11 @@ static int32_t		groundspeed_undershoot = 0;
 // Location Errors
 ////////////////////////////////////////////////////////////////////////////////
 // Difference between current bearing and desired bearing.  Hundredths of a degree
-static int32_t	bearing_error;
+static int32_t	bearing_error_cd;
+
 // Difference between current altitude and desired altitude.  Centimeters
-static int32_t	altitude_error;
+static int32_t	altitude_error_cm;
+
 // Distance perpandicular to the course line that we are off trackline.  Meters
 static float	crosstrack_error;
 
@@ -490,39 +501,47 @@ static bool takeoff_complete    = true;
 static bool	land_complete;
 // Altitude threshold to complete a takeoff command in autonomous modes.  Centimeters
 static int32_t	takeoff_altitude;
+
 // Minimum pitch to hold during takeoff command execution.  Hundredths of a degree
-static int16_t			takeoff_pitch;
+static int16_t			takeoff_pitch_cd;
 
 ////////////////////////////////////////////////////////////////////////////////
 // Loiter management
 ////////////////////////////////////////////////////////////////////////////////
 // Previous target bearing.  Used to calculate loiter rotations.  Hundredths of a degree
-static int32_t 	old_target_bearing;
+static int32_t 	old_target_bearing_cd;
+
 // Total desired rotation in a loiter.  Used for Loiter Turns commands.  Degrees
 static int16_t		loiter_total;
+
 // The amount in degrees we have turned since recording old_target_bearing
 static int16_t 	loiter_delta;
+
 // Total rotation in a loiter.  Used for Loiter Turns commands and to check for missed waypoints.  Degrees
 static int16_t		loiter_sum;
+
 // The amount of time we have been in a Loiter.  Used for the Loiter Time command.  Milliseconds.
-static int32_t 	loiter_time;
+static uint32_t 	loiter_time_ms;
+
 // The amount of time we should stay in a loiter for the Loiter Time command.  Milliseconds.
-static int16_t 	loiter_time_max;
+static uint32_t 	loiter_time_max_ms;
 
 ////////////////////////////////////////////////////////////////////////////////
 // Navigation control variables
 ////////////////////////////////////////////////////////////////////////////////
 // The instantaneous desired bank angle.  Hundredths of a degree
-static int32_t	nav_roll;
+static int32_t	nav_roll_cd;
+
 // The instantaneous desired pitch angle.  Hundredths of a degree
-static int32_t	nav_pitch;
+static int32_t	nav_pitch_cd;
 
 ////////////////////////////////////////////////////////////////////////////////
 // Waypoint distances
 ////////////////////////////////////////////////////////////////////////////////
 // Distance between plane and next waypoint.  Meters
 // is not static because AP_Camera uses it
-long	wp_distance;
+int32_t	wp_distance;
+
 // Distance between previous and next waypoint.  Meters
 static int32_t	wp_totalDistance;
 
@@ -531,10 +550,13 @@ static int32_t	wp_totalDistance;
 ////////////////////////////////////////////////////////////////////////////////
 // Flag indicating current event type
 static byte 		event_id;
+
 // when the event was started in ms
-static int32_t 		event_timer;
+static int32_t 		event_timer_ms;
+
 // how long to delay the next firing of event in millis
-static uint16_t 	event_delay;
+static uint16_t 	event_delay_ms;
+
 // how many times to cycle : -1 (or -2) = forever, 2 = do one cycle, 4 = do two cycles
 static int16_t 		event_repeat = 0;
 // per command value, such as PWM for servos
@@ -552,7 +574,7 @@ static int32_t 	condition_value;
 // For example in a delay command the condition_start records that start time for the delay
 static uint32_t condition_start;
 // A value used in condition commands.  For example the rate at which to change altitude.
-static int16_t 		condition_rate;
+static int16_t 	condition_rate;
 
 ////////////////////////////////////////////////////////////////////////////////
 // 3D Location vectors
@@ -579,9 +601,9 @@ static struct 	Location next_nonnav_command;
 // Altitude / Climb rate control
 ////////////////////////////////////////////////////////////////////////////////
 // The current desired altitude.  Altitude is linearly ramped between waypoints.  Centimeters
-static int32_t 	target_altitude;
+static int32_t 	target_altitude_cm;
 // Altitude difference between previous and current waypoint.  Centimeters
-static int32_t 	offset_altitude;
+static int32_t 	offset_altitude_cm;
 
 ////////////////////////////////////////////////////////////////////////////////
 // IMU variables
@@ -608,16 +630,20 @@ static int16_t		pmTest1 = 0;
 // System Timers
 ////////////////////////////////////////////////////////////////////////////////
 // Time in miliseconds of start of main control loop.  Milliseconds
-static uint32_t 	fast_loopTimer;
+static uint32_t 	fast_loopTimer_ms;
+
 // Time Stamp when fast loop was complete.  Milliseconds
-static uint32_t 	fast_loopTimeStamp;
+static uint32_t 	fast_loopTimeStamp_ms;
+
 // Number of milliseconds used in last main loop cycle
 static uint8_t 		delta_ms_fast_loop;
+
 // Counter of main loop executions.  Used for performance monitoring and failsafe processing
 static uint16_t			mainLoop_count;
 
 // Time in miliseconds of start of medium control loop.  Milliseconds
-static uint32_t 	medium_loopTimer;
+static uint32_t 	medium_loopTimer_ms;
+
 // Counters for branching from main control loop to slower loops
 static byte 			medium_loopCounter;
 // Number of milliseconds used in last medium loop cycle
@@ -659,11 +685,11 @@ void loop()
 {
 	// We want this to execute at 50Hz if possible
 	// -------------------------------------------
-	if (millis()-fast_loopTimer > 19) {
-		delta_ms_fast_loop	= millis() - fast_loopTimer;
-		load                = (float)(fast_loopTimeStamp - fast_loopTimer)/delta_ms_fast_loop;
+	if (millis() - fast_loopTimer_ms > 19) {
+		delta_ms_fast_loop	= millis() - fast_loopTimer_ms;
+		load                = (float)(fast_loopTimeStamp_ms - fast_loopTimer_ms)/delta_ms_fast_loop;
 		G_Dt                = (float)delta_ms_fast_loop / 1000.f;
-		fast_loopTimer      = millis();
+		fast_loopTimer_ms   = millis();
 
 		mainLoop_count++;
 
@@ -692,7 +718,7 @@ void loop()
 			}
 		}
 
-		fast_loopTimeStamp = millis();
+		fast_loopTimeStamp_ms = millis();
 	}
 }
 
@@ -871,8 +897,8 @@ Serial.println(tempaccel.z, DEC);
 		//---------------------------------
 		case 4:
 			medium_loopCounter = 0;
-			delta_ms_medium_loop	= millis() - medium_loopTimer;
-			medium_loopTimer      	= millis();
+			delta_ms_medium_loop	= millis() - medium_loopTimer_ms;
+			medium_loopTimer_ms    	= millis();
 
 			if (g.battery_monitoring != 0){
 				read_battery();
@@ -1001,16 +1027,16 @@ static void update_current_flight_mode(void)
 				if (hold_course != -1) {
 					calc_nav_roll();
 				} else {
-					nav_roll = 0;
+					nav_roll_cd = 0;
 				}
 
 				if(airspeed.use()) {
 					calc_nav_pitch();
-					if(nav_pitch < (long)takeoff_pitch)
-						nav_pitch = (long)takeoff_pitch;
+					if (nav_pitch_cd < takeoff_pitch_cd)
+						nav_pitch_cd = takeoff_pitch_cd;
 				} else {
-					nav_pitch = (long)((float)g_gps->ground_speed / (float)g.airspeed_cruise_cm * (float)takeoff_pitch * 0.5);
-					nav_pitch = constrain(nav_pitch, 500l, (long)takeoff_pitch);
+					nav_pitch_cd = (float)g_gps->ground_speed / (float)g.airspeed_cruise_cm * (float)takeoff_pitch_cd * 0.5;
+					nav_pitch_cd = constrain(nav_pitch_cd, 500, takeoff_pitch_cd);
 				}
 
 				g.channel_throttle.servo_out = g.throttle_max; //TODO: Replace with THROTTLE_TAKEOFF or other method of controlling throttle
@@ -1028,7 +1054,7 @@ static void update_current_flight_mode(void)
 				}else{
 					calc_nav_pitch();               // calculate nav_pitch just to use for calc_throttle
 					calc_throttle();                // throttle based on altitude error
-					nav_pitch = g.land_pitch_cd;      // pitch held constant
+					nav_pitch_cd = g.land_pitch_cd; // pitch held constant
 				}
 
 				if (land_complete) {
@@ -1063,11 +1089,13 @@ static void update_current_flight_mode(void)
 
 			case FLY_BY_WIRE_A:
 				// set nav_roll and nav_pitch using sticks
-				nav_roll = g.channel_roll.norm_input() * g.roll_limit;
-				nav_pitch = g.channel_pitch.norm_input() * (-1) * g.pitch_limit_min;
+				nav_roll_cd  = g.channel_roll.norm_input() * g.roll_limit_cd;
+				nav_pitch_cd = g.channel_pitch.norm_input() * (-1) * g.pitch_limit_min_cd;
 				// We use pitch_min above because it is usually greater magnitude then pitch_max.  -1 is to compensate for its sign.
-				nav_pitch = constrain(nav_pitch, -3000, 3000);	// trying to give more pitch authority
-				if (inverted_flight) nav_pitch = -nav_pitch;
+				nav_pitch_cd = constrain(nav_pitch_cd, -3000, 3000);	// trying to give more pitch authority
+				if (inverted_flight) {
+                    nav_pitch_cd = -nav_pitch_cd;
+                }
 				break;
 
 			case FLY_BY_WIRE_B:
@@ -1077,23 +1105,25 @@ static void update_current_flight_mode(void)
 
                 // Thanks to Yury MonZon for the altitude limit code!
 
-				nav_roll = g.channel_roll.norm_input() * g.roll_limit;
-				altitude_error = g.channel_pitch.norm_input() * g.pitch_limit_min;
+				nav_roll_cd = g.channel_roll.norm_input() * g.roll_limit_cd;
+				altitude_error_cm = g.channel_pitch.norm_input() * g.pitch_limit_min_cd;
 
-				if ((current_loc.alt>=home.alt+g.FBWB_min_altitude) || (g.FBWB_min_altitude == 0)) {
-	 				altitude_error = g.channel_pitch.norm_input() * g.pitch_limit_min;
+				if ((current_loc.alt >= home.alt+g.FBWB_min_altitude_cm) || (g.FBWB_min_altitude_cm == 0)) {
+	 				altitude_error_cm = g.channel_pitch.norm_input() * g.pitch_limit_min_cd;
 				} else {
-					if (g.channel_pitch.norm_input()<0)
-						altitude_error =( (home.alt + g.FBWB_min_altitude) - current_loc.alt) + g.channel_pitch.norm_input() * g.pitch_limit_min ;
-					else altitude_error =( (home.alt + g.FBWB_min_altitude) - current_loc.alt) ;
+					if (g.channel_pitch.norm_input()<0) {
+						altitude_error_cm =( (home.alt + g.FBWB_min_altitude_cm) - current_loc.alt) + g.channel_pitch.norm_input() * g.pitch_limit_min_cd;
+					} else {
+                        altitude_error_cm =( (home.alt + g.FBWB_min_altitude_cm) - current_loc.alt);
+                    }
 				}
 				calc_throttle();
 				calc_nav_pitch();
 				break;
 
 			case STABILIZE:
-				nav_roll        = 0;
-				nav_pitch       = 0;
+				nav_roll_cd        = 0;
+				nav_pitch_cd       = 0;
 				// throttle is passthrough
 				break;
 
@@ -1101,8 +1131,8 @@ static void update_current_flight_mode(void)
 				// we have no GPS installed and have lost radio contact
 				// or we just want to fly around in a gentle circle w/o GPS
 				// ----------------------------------------------------
-				nav_roll = g.roll_limit / 3;
-				nav_pitch 		= 0;
+				nav_roll_cd  = g.roll_limit_cd / 3;
+				nav_pitch_cd = 0;
 
 				if (failsafe != FAILSAFE_NONE){
 					g.channel_throttle.servo_out = g.throttle_cruise;

@@ -247,7 +247,7 @@ static void do_takeoff()
 {
 	set_next_WP(&next_nav_command);
 	// pitch in deg, airspeed  m/s, throttle %, track WP 1 or 0
-	takeoff_pitch 	 	= (int)next_nav_command.p1 * 100;
+	takeoff_pitch_cd	 	= (int)next_nav_command.p1 * 100;
 			//Serial.printf_P(PSTR("TO pitch:"));	Serial.println(takeoff_pitch);
 			//Serial.printf_P(PSTR("home.alt:"));	Serial.println(home.alt);
 	takeoff_altitude 	= next_nav_command.alt;
@@ -282,8 +282,8 @@ static void do_loiter_turns()
 static void do_loiter_time()
 {
 	set_next_WP(&next_nav_command);
-	loiter_time = millis();
-	loiter_time_max = next_nav_command.p1; // units are (seconds * 10)
+	loiter_time_ms = millis();
+	loiter_time_max_ms = next_nav_command.p1 * (uint32_t)100; // units are (seconds * 10)
 }
 
 /********************************************************************************/
@@ -304,7 +304,7 @@ static bool verify_takeoff()
 
 	if (hold_course != -1) {
 		// recalc bearing error with hold_course;
-		nav_bearing = hold_course;
+		nav_bearing_cd = hold_course;
 		// recalc bearing error
 		calc_bearing_error();
 	}
@@ -348,7 +348,7 @@ static bool verify_land()
 
 	if (hold_course != -1){
 		// recalc bearing error with hold_course;
-		nav_bearing = hold_course;
+		nav_bearing_cd = hold_course;
 		// recalc bearing error
 		calc_bearing_error();
 	}
@@ -396,7 +396,7 @@ static bool verify_loiter_time()
 {
 	update_loiter();
 	calc_bearing_error();
-	if ((millis() - loiter_time) > (unsigned long)loiter_time_max * 10000l) {		// scale loiter_time_max from (sec*10) to milliseconds
+	if ((millis() - loiter_time_ms) > loiter_time_max_ms) {
 		gcs_send_text_P(SEVERITY_LOW,PSTR("verify_nav: LOITER time complete"));
 		return true;
 	}
@@ -441,9 +441,9 @@ static void do_change_alt()
 	condition_rate		= abs((int)next_nonnav_command.lat);
 	condition_value 	= next_nonnav_command.alt;
 	if(condition_value < current_loc.alt) condition_rate = -condition_rate;
-	target_altitude		= current_loc.alt + (condition_rate / 10);		// Divide by ten for 10Hz update
+	target_altitude_cm	= current_loc.alt + (condition_rate / 10);		// Divide by ten for 10Hz update
 	next_WP.alt 		= condition_value;								// For future nav calculations
-	offset_altitude 	= 0;											// For future nav calculations
+	offset_altitude_cm 	= 0;											// For future nav calculations
 }
 
 static void do_within_distance()
@@ -470,7 +470,7 @@ static bool verify_change_alt()
 		condition_value = 0;
 		return true;
 	}
-	target_altitude += condition_rate / 10;
+	target_altitude_cm += condition_rate / 10;
 	return false;
 }
 
@@ -531,7 +531,7 @@ static void do_change_speed()
 				g.airspeed_cruise_cm.set(next_nonnav_command.alt * 100);
 			break;
 		case 1: // Ground speed
-			g.min_gndspeed.set(next_nonnav_command.alt * 100);
+			g.min_gndspeed_cm.set(next_nonnav_command.alt * 100);
 			break;
 	}
 
@@ -574,8 +574,8 @@ static void do_repeat_servo()
 
 	if(next_nonnav_command.p1 >= CH_5 + 1 && next_nonnav_command.p1 <= CH_8 + 1) {
 
-		event_timer 	= 0;
-		event_delay 	= next_nonnav_command.lng * 500.0;	// /2 (half cycle time) * 1000 (convert to milliseconds)
+		event_timer_ms 	= 0;
+		event_delay_ms 	= next_nonnav_command.lng * 500.0;	// /2 (half cycle time) * 1000 (convert to milliseconds)
 		event_repeat 	= next_nonnav_command.lat * 2;
 		event_value 	= next_nonnav_command.alt;
 
@@ -600,8 +600,8 @@ static void do_repeat_servo()
 static void do_repeat_relay()
 {
 	event_id 		= RELAY_TOGGLE;
-	event_timer 	= 0;
-	event_delay 	= next_nonnav_command.lat * 500.0;	// /2 (half cycle time) * 1000 (convert to milliseconds)
+	event_timer_ms 	= 0;
+	event_delay_ms 	= next_nonnav_command.lat * 500.0;	// /2 (half cycle time) * 1000 (convert to milliseconds)
 	event_repeat	= next_nonnav_command.alt * 2;
 	update_events();
 }
