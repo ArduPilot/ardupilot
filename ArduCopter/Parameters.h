@@ -335,69 +335,6 @@ public:
 
 	// Note: keep initializers here in the same order as they are declared above.
 	Parameters() :
-	// variable				default
-	//----------------------------------------
-    format_version			(k_format_version),
-	software_type			(k_software_type),
-
-	sysid_this_mav			(MAV_SYSTEM_ID),
-	sysid_my_gcs			(255),
-    serial3_baud			(SERIAL3_BAUD/1000),
-
-	RTL_altitude			(RTL_HOLD_ALT),
-	sonar_enabled			(DISABLED),
-	sonar_type				(AP_RANGEFINDER_MAXSONARXL),
-    battery_monitoring 		(DISABLED),
-    volt_div_ratio			(VOLT_DIV_RATIO),
-    curr_amp_per_volt		(CURR_AMP_PER_VOLT),
-    input_voltage			(INPUT_VOLTAGE),
-	pack_capacity			(HIGH_DISCHARGE),
-	compass_enabled			(MAGNETOMETER),
-	optflow_enabled			(OPTFLOW),
-	low_voltage				(LOW_VOLTAGE),
-	super_simple			(SUPER_SIMPLE),
-	rtl_land_enabled		(0),
-	rtl_approach_alt		(RTL_APPROACH_ALT),
-	tilt_comp				(54),
-	axis_enabled			(AXIS_LOCK_ENABLED),
-	copter_leds_mode		(9),
-
-	waypoint_mode			(0),
-	command_total			(0),
-	command_index			(0),
-	command_nav_index		(0),
-	waypoint_radius			(WP_RADIUS_DEFAULT),
-	loiter_radius			(LOITER_RADIUS),
-	waypoint_speed_max		(WAYPOINT_SPEED_MAX),
-	crosstrack_gain			(CROSSTRACK_GAIN),
-	auto_land_timeout		(AUTO_LAND_TIME * 1000),
-
-	throttle_min			(MINIMUM_THROTTLE),
-	throttle_max			(MAXIMUM_THROTTLE),
-	throttle_fs_enabled		(THROTTLE_FAILSAFE),
-	throttle_fs_action		(THROTTLE_FAILSAFE_ACTION),
-	throttle_fs_value 		(THROTTLE_FS_VALUE),
-	throttle_cruise			(THROTTLE_CRUISE),
-
-    flight_mode1            (FLIGHT_MODE_1),
-    flight_mode2            (FLIGHT_MODE_2),
-    flight_mode3            (FLIGHT_MODE_3),
-    flight_mode4            (FLIGHT_MODE_4),
-    flight_mode5            (FLIGHT_MODE_5),
-    flight_mode6            (FLIGHT_MODE_6),
-    simple_modes            (0),
-
-	log_bitmask				(DEFAULT_LOG_BITMASK),
-    log_last_filenumber     (0),
-    toy_yaw_rate			(1), // THOR The default Yaw Rate 1 = fast, 2 = med, 3 = slow
-
-	esc_calibrate 			(0),
-	radio_tuning 			(0),
-	radio_tuning_high 		(1000),
-	radio_tuning_low 		(0),
-	frame_orientation 		(FRAME_ORIENTATION),
-	ch7_option 				(CH7_OPTION),
-	auto_slew_rate			(AUTO_SLEW_RATE),
 
 #if FRAME_CONFIG ==	HELI_FRAME
     heli_servo_1			(CH_1),
@@ -419,13 +356,6 @@ public:
     rc_10					(CH_10),
     rc_11					(CH_11),
 #endif
-
-    rc_speed(RC_FAST_SPEED),
-
-	stabilize_d 			(STABILIZE_D),
-	stabilize_d_schedule	(STABILIZE_D_SCHEDULE),
-	acro_p					(ACRO_P),
-	axis_lock_p				(AXIS_LOCK_P),
 
 	// PID controller	initial P	   	    initial I		 	initial D       	initial imax
 	//-----------------------------------------------------------------------------------------------------
@@ -456,6 +386,8 @@ public:
 	{
 	}
 };
+
+extern const AP_Param::Info var_info[];
 
 #endif // PARAMETERS_H
 
