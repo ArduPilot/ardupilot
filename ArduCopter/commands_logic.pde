@@ -874,7 +874,7 @@ static void do_nav_roi()
 	if( camera_mount.get_mount_type() == AP_Mount::k_tilt_roll ) {
 		yaw_tracking = MAV_ROI_LOCATION;
 		target_WP = command_nav_queue;
-		auto_yaw = get_bearing(&current_loc, &target_WP);
+		auto_yaw = get_bearing_cd(&current_loc, &target_WP);
 	}
 	// send the command to the camera mount
 	camera_mount.set_roi_cmd(&command_nav_queue);
@@ -889,6 +889,6 @@ static void do_nav_roi()
 	// if we have no camera mount simply rotate the quad
 	yaw_tracking = MAV_ROI_LOCATION;
 	target_WP = command_nav_queue;
-	auto_yaw = get_bearing(&current_loc, &target_WP);
+	auto_yaw = get_bearing_cd(&current_loc, &target_WP);
 #endif
 }

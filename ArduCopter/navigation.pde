@@ -12,8 +12,8 @@ static void navigate()
 
 	// target_bearing is where we should be heading
 	// --------------------------------------------
-	target_bearing 			= get_bearing(&current_loc, &next_WP);
-	home_to_copter_bearing 	= get_bearing(&home, &current_loc);
+	target_bearing 			= get_bearing_cd(&current_loc, &next_WP);
+	home_to_copter_bearing 	= get_bearing_cd(&home, &current_loc);
 }
 
 static bool check_missed_wp()
