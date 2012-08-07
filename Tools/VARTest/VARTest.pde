@@ -25,10 +25,17 @@
 #include <AP_IMU.h>         // ArduPilot Mega IMU Library
 #include <AP_GPS.h>
 #include <AP_Math.h>
+#include <SITL.h>
 #include <GCS_MAVLink.h>
 #include <config.h>
 #include <Parameters.h>
 #include <AP_Declination.h>
+
+// this sets up the parameter table, and sets the default values. This
+// must be the first AP_Param variable declared to ensure its
+// constructor runs before the constructors of the other AP_Param
+// variables
+AP_Param param_loader(var_info, WP_START_BYTE);
 
 static Parameters g;
 
@@ -50,6 +57,12 @@ AP_Compass_HIL          compass;
 static AP_Compass_HMC5843 compass;
 #endif
 AP_Baro_BMP085_HIL      barometer;
+
+SITL					sitl;
+
+BetterStream  *mavlink_comm_0_port;
+BetterStream  *mavlink_comm_1_port;
+mavlink_system_t mavlink_system = {7,1,0,0};
 
 FastSerialPort0(Serial);
 FastSerialPort1(Serial1);       // GPS port
@@ -118,7 +131,7 @@ void setup() {
 	for (AP_Param *ap = AP_Param::first(&token, &type);
 		 ap;
 		 ap=AP_Param::next(&token, &type)) {
-		test_variable(ap, type);
+		//test_variable(ap, type);
 	}
 
 	AP_Param::show_all();
