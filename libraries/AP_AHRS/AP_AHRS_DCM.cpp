@@ -36,21 +36,21 @@ const AP_Param::GroupInfo AP_AHRS_DCM::var_info[] PROGMEM = {
     // @Description: This controls the weight the compass has on the overall heading
     // @Range: 0 .4
     // @Increment: .01
-    AP_GROUPINFO("YAW_P", 0, AP_AHRS_DCM, _kp_yaw),
+    AP_GROUPINFO("YAW_P", 0, AP_AHRS_DCM, _kp_yaw, 0.4),
 
     // @Param: RP_P
     // @DisplayName: AHRS RP_P
     // @Description: This controls how fast the accelerometers correct the attitude
     // @Range: 0 .4
     // @Increment: .01
-    AP_GROUPINFO("RP_P",  1, AP_AHRS_DCM, _kp),
+    AP_GROUPINFO("RP_P",  1, AP_AHRS_DCM, _kp, 0.4),
 
     // @Param: GPS_GAIN
     // @DisplayName: AHRS GPS gain
     // @Description: This controls how how much to use the GPS to correct the attitude
     // @Range: 0.0 1.0
     // @Increment: .01
-    AP_GROUPINFO("GPS_GAIN",  2, AP_AHRS_DCM, gps_gain),
+    AP_GROUPINFO("GPS_GAIN",  2, AP_AHRS_DCM, gps_gain, 1.0),
     AP_GROUPEND
 };
 
