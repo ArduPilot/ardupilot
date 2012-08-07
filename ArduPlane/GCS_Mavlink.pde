@@ -693,15 +693,15 @@ void mavlink_send_text(mavlink_channel_t chan, gcs_severity severity, const char
 }
 
 const AP_Param::GroupInfo GCS_MAVLINK::var_info[] PROGMEM = {
-    AP_GROUPINFO("RAW_SENS", 0, GCS_MAVLINK, streamRateRawSensors),
-	AP_GROUPINFO("EXT_STAT", 1, GCS_MAVLINK, streamRateExtendedStatus),
-    AP_GROUPINFO("RC_CHAN",  2, GCS_MAVLINK, streamRateRCChannels),
-	AP_GROUPINFO("RAW_CTRL", 3, GCS_MAVLINK, streamRateRawController),
-	AP_GROUPINFO("POSITION", 4, GCS_MAVLINK, streamRatePosition),
-	AP_GROUPINFO("EXTRA1",   5, GCS_MAVLINK, streamRateExtra1),
-	AP_GROUPINFO("EXTRA2",   6, GCS_MAVLINK, streamRateExtra2),
-	AP_GROUPINFO("EXTRA3",   7, GCS_MAVLINK, streamRateExtra3),
-	AP_GROUPINFO("PARAMS",   8, GCS_MAVLINK, streamRateParams),
+    AP_GROUPINFO("RAW_SENS", 0, GCS_MAVLINK, streamRateRawSensors,     0),
+	AP_GROUPINFO("EXT_STAT", 1, GCS_MAVLINK, streamRateExtendedStatus, 0),
+    AP_GROUPINFO("RC_CHAN",  2, GCS_MAVLINK, streamRateRCChannels,     0),
+	AP_GROUPINFO("RAW_CTRL", 3, GCS_MAVLINK, streamRateRawController,  0),
+	AP_GROUPINFO("POSITION", 4, GCS_MAVLINK, streamRatePosition,       0),
+	AP_GROUPINFO("EXTRA1",   5, GCS_MAVLINK, streamRateExtra1,         0),
+	AP_GROUPINFO("EXTRA2",   6, GCS_MAVLINK, streamRateExtra2,         0),
+	AP_GROUPINFO("EXTRA3",   7, GCS_MAVLINK, streamRateExtra3,         0),
+	AP_GROUPINFO("PARAMS",   8, GCS_MAVLINK, streamRateParams,         0),
     AP_GROUPEND
 };
 

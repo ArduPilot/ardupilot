@@ -395,96 +395,6 @@ public:
     Parameters() :
 	// variable				default
 	//----------------------------------------
-        format_version          (k_format_version),
-        software_type			(k_software_type),
-
-        sysid_this_mav			(MAV_SYSTEM_ID),
-        sysid_my_gcs			(255),
-        serial3_baud			(SERIAL3_BAUD/1000),
-
-        kff_pitch_compensation  (PITCH_COMP),
-        kff_rudder_mix          (RUDDER_MIX),
-        kff_pitch_to_throttle   (P_TO_T),
-        kff_throttle_to_pitch   (T_TO_P),
-        scaling_speed           (SCALING_SPEED),
-
-        crosstrack_gain         (XTRACK_GAIN_SCALED),
-        crosstrack_entry_angle  (XTRACK_ENTRY_ANGLE_CENTIDEGREE),
-
-        altitude_mix            (ALTITUDE_MIX),
-
-        /* XXX waypoint_mode missing here */
-        command_total           (0),
-        command_index           (0),
-        waypoint_radius         (WP_RADIUS_DEFAULT),
-        loiter_radius           (LOITER_RADIUS_DEFAULT),
-
-#if GEOFENCE_ENABLED == ENABLED
-        fence_action            (0),
-        fence_total             (0),
-        fence_channel           (0),
-        fence_minalt            (0),
-        fence_maxalt            (0),
-#endif
-
-        flybywire_airspeed_min  (AIRSPEED_FBW_MIN),
-        flybywire_airspeed_max  (AIRSPEED_FBW_MAX),
-
-        throttle_min            (THROTTLE_MIN),
-        throttle_max            (THROTTLE_MAX),
-        throttle_slewrate		(THROTTLE_SLEW_LIMIT),
-        throttle_fs_enabled   	(THROTTLE_FAILSAFE),
-        throttle_fs_value 		(THROTTLE_FS_VALUE),
-        throttle_cruise         (THROTTLE_CRUISE),
-
-        short_fs_action			(SHORT_FAILSAFE_ACTION),
-        long_fs_action			(LONG_FAILSAFE_ACTION),
-        gcs_heartbeat_fs_enabled(GCS_HEARTBEAT_FAILSAFE),
-
-        flight_mode_channel     (FLIGHT_MODE_CHANNEL),
-        flight_mode1            (FLIGHT_MODE_1),
-        flight_mode2            (FLIGHT_MODE_2),
-        flight_mode3            (FLIGHT_MODE_3),
-        flight_mode4            (FLIGHT_MODE_4),
-        flight_mode5            (FLIGHT_MODE_5),
-        flight_mode6            (FLIGHT_MODE_6),
-
-        roll_limit              (HEAD_MAX_CENTIDEGREE),
-        pitch_limit_max         (PITCH_MAX_CENTIDEGREE),
-        pitch_limit_min         (PITCH_MIN_CENTIDEGREE),
-
-        auto_trim               (AUTO_TRIM),
-        switch_enable           (REVERSE_SWITCH),
-        mix_mode                (ELEVON_MIXING),
-        reverse_elevons         (ELEVON_REVERSE),
-        reverse_ch1_elevon      (ELEVON_CH1_REVERSE),
-        reverse_ch2_elevon      (ELEVON_CH2_REVERSE),
-        num_resets              (0),
-        log_bitmask             (DEFAULT_LOG_BITMASK),
-        log_last_filenumber     (0),
-        reset_switch_chan		(0),
-        manual_level			(MANUAL_LEVEL),
-        airspeed_cruise_cm      (AIRSPEED_CRUISE_CM),
-        RTL_altitude            (ALT_HOLD_HOME_CM),
-		land_pitch_cd			(0),
-        min_gndspeed            (MIN_GNDSPEED_CM),
-        pitch_trim              (0),
-        FBWB_min_altitude       (ALT_HOLD_FBW_CM),
-        compass_enabled			(MAGNETOMETER),
-        battery_monitoring 		(DISABLED),
-        flap_1_percent			(FLAP_1_PERCENT),
-        flap_1_speed			(FLAP_1_SPEED),
-        flap_2_percent			(FLAP_2_PERCENT),
-        flap_2_speed			(FLAP_2_SPEED),
-
-
-        volt_div_ratio			(VOLT_DIV_RATIO),
-        curr_amp_per_volt		(CURR_AMP_PER_VOLT),
-        input_voltage			(INPUT_VOLTAGE),
-        pack_capacity	 		(HIGH_DISCHARGE),
-        inverted_flight_ch      (0),
-        sonar_enabled			(SONAR_ENABLED),
-
         channel_roll			(CH_1),
         channel_pitch			(CH_2),
         channel_throttle		(CH_3),
@@ -510,5 +420,7 @@ public:
         pidNavPitchAltitude (NAV_PITCH_ALT_P, NAV_PITCH_ALT_I, NAV_PITCH_ALT_D, NAV_PITCH_ALT_INT_MAX_CM)
         {}
 };
+
+extern const AP_Param::Info var_info[];
 
 #endif // PARAMETERS_H
