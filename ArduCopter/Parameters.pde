@@ -333,7 +333,7 @@ const AP_Param::Info var_info[] PROGMEM = {
 #endif
 
 #if MOUNT2 == ENABLED
-	// @Group: MNT_
+	// @Group: MNT2_
 	// @Path: ../libraries/AP_Mount/AP_Mount.cpp
 	GOBJECT(camera_mount2,           "MNT2_",	AP_Mount),
 #endif

@@ -486,11 +486,7 @@
 #endif
 
 #ifndef MOUNT2
-# if defined( __AVR_ATmega1280__ )
-#  define MOUNT2		DISABLED
-# else
-#  define MOUNT2		ENABLED
-# endif
+# define MOUNT2		DISABLED
 #endif
 
 #if defined( __AVR_ATmega1280__ ) && (MOUNT == ENABLED || MOUNT2 == ENABLED)

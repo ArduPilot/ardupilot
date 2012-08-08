@@ -121,6 +121,7 @@ public:
         //
         k_param_camera = 160,
         k_param_camera_mount,
+        k_param_camera_mount2,
 
         //
         // 170: Radio settings
