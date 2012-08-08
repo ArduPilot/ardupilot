@@ -38,7 +38,7 @@ const AP_Param::GroupInfo AP_Airspeed::var_info[] PROGMEM = {
     // @DisplayName: Airspeed ratio
     // @Description: Airspeed calibration ratio
     // @Increment: 0.1
-    AP_GROUPINFO("RATIO",  3, AP_Airspeed, _ratio, 0),
+    AP_GROUPINFO("RATIO",  3, AP_Airspeed, _ratio, 1.9936),
 
     AP_GROUPEND
 };
