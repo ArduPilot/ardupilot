@@ -70,13 +70,11 @@ static NOINLINE void send_heartbeat(mavlink_channel_t chan)
         base_mode |= MAV_MODE_FLAG_STABILIZE_ENABLED;
     }
 
-#if ENABLE_STICK_MIXING==ENABLED
-    if (control_mode != INITIALISING) {
+    if (g.stick_mixing && control_mode != INITIALISING) {
         // all modes except INITIALISING have some form of manual
         // override if stick mixing is enabled
         base_mode |= MAV_MODE_FLAG_MANUAL_INPUT_ENABLED;
     }
-#endif
 
 #if HIL_MODE != HIL_MODE_DISABLED
     base_mode |= MAV_MODE_FLAG_HIL_ENABLED;

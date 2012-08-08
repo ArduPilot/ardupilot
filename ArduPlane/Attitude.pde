@@ -64,7 +64,7 @@ static void stabilize()
 	// Mix Stick input to allow users to override control surfaces
 	// -----------------------------------------------------------
 	if ((control_mode < FLY_BY_WIRE_A) ||
-        (ENABLE_STICK_MIXING == 1 &&
+        (g.stick_mixing &&
          geofence_stickmixing() &&
          control_mode > FLY_BY_WIRE_B &&
          failsafe == FAILSAFE_NONE)) {
@@ -98,7 +98,7 @@ static void stabilize()
 	// important for steering on the ground during landing
 	// -----------------------------------------------
 	if (control_mode <= FLY_BY_WIRE_B ||
-        (ENABLE_STICK_MIXING == 1 &&
+        (g.stick_mixing && 
          geofence_stickmixing() &&
          failsafe == FAILSAFE_NONE)) {
 		ch4_inf = (float)g.channel_rudder.radio_in - (float)g.channel_rudder.radio_trim;
