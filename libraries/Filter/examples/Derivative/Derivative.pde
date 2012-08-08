@@ -35,16 +35,13 @@ mavlink_system_t mavlink_system;
 
 FastSerialPort0(Serial);        // FTDI/console
 
-DerivativeFilter<float,7> derivative;
+DerivativeFilter<float,11> derivative;
 
 // setup routine
 void setup()
 {
 	// Open up a serial connection
 	Serial.begin(115200);
-	
-	// introduction
-	Serial.printf("ArduPilot DerivativeFilter test\n");
 }
 
 static float noise(void)
@@ -58,12 +55,10 @@ void loop()
 	delay(50);
 	float t = millis()*1.0e-3;
 	float s = sin(t);
-	s += noise();
+	//s += noise();
 	uint32_t t1 = micros();
-	float output = derivative.apply(s, t1) * 1.0e6;
+	derivative.update(s, t1);
+	float output = derivative.slope() * 1.0e6;
 	uint32_t t2 = micros();
-	Serial.printf("cos(t)=%.2f filter=%.2f tdiff=%u\n",
-		      cos(t), output, t2-t1);
+	Serial.printf("%f %f %f %f\n", t, output, s, cos(t));
 }
-
-
