@@ -358,7 +358,10 @@ const AP_Param::Info var_info[] PROGMEM = {
 static void load_parameters(void)
 {
 	// change the default for the AHRS_GPS_GAIN for ArduCopter
-	ahrs.gps_gain.set(0.0);
+	// if it hasn't been set by the user
+	if (!ahrs.gps_gain.load()) {
+		ahrs.gps_gain.set_and_save(0.0);
+	}
 
 	if (!g.format_version.load() ||
 	    g.format_version != Parameters::k_format_version) {
