@@ -21,7 +21,7 @@ static LowPassFilterInt32 altitude_filter(0.3);
 static int32_t read_barometer(void)
 {
 	barometer.read();
-    return altitude_filter.apply(((int32_t)barometer.get_altitude() * 100.0));
+    return altitude_filter.apply(barometer.get_altitude() * 100.0);
 }
 
 // in M/S * 100
