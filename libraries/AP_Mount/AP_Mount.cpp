@@ -11,7 +11,7 @@ const AP_Param::GroupInfo AP_Mount::var_info[] PROGMEM = {
 	// @Description: Camera or antenna mount operation mode
 	// @Values: 0:retract,1:neutral,2:MavLink_targeting,3:RC_targeting,4:GPS_point
 	// @User: Standard
-    AP_GROUPINFO("MODE",       0, AP_Mount, _mount_mode, 0), // see MAV_MOUNT_MODE at ardupilotmega.h
+    AP_GROUPINFO("MODE",       0, AP_Mount, _mount_mode, MAV_MOUNT_MODE_RETRACT), // see MAV_MOUNT_MODE at ardupilotmega.h
 
     // @Param: RETRACT
 	// @DisplayName: Mount retract angles
@@ -75,7 +75,7 @@ const AP_Param::GroupInfo AP_Mount::var_info[] PROGMEM = {
 	// @Range: -18000 17999
 	// @Increment: 1
 	// @User: Standard
-	AP_GROUPINFO("ROLL_ANGMIN", 8, AP_Mount, _roll_angle_min, 0),
+	AP_GROUPINFO("ROLL_ANGMIN", 8, AP_Mount, _roll_angle_min, -4500),
 
 	// @Param: ROLL_ANGLE_MAX
 	// @DisplayName: Maximum roll angle
@@ -84,7 +84,7 @@ const AP_Param::GroupInfo AP_Mount::var_info[] PROGMEM = {
 	// @Range: -18000 17999
 	// @Increment: 1
 	// @User: Standard
-	AP_GROUPINFO("ROLL_ANGMAX", 9, AP_Mount, _roll_angle_max, 0),
+	AP_GROUPINFO("ROLL_ANGMAX", 9, AP_Mount, _roll_angle_max, 4500),
 
 	// @Param: TILT_RC_IN
 	// @DisplayName: tilt (pitch) RC input channel
@@ -100,7 +100,7 @@ const AP_Param::GroupInfo AP_Mount::var_info[] PROGMEM = {
 	// @Range: -18000 17999
 	// @Increment: 1
 	// @User: Standard
-	AP_GROUPINFO("TILT_ANGMIN", 11, AP_Mount, _tilt_angle_min, 0),
+	AP_GROUPINFO("TILT_ANGMIN", 11, AP_Mount, _tilt_angle_min, -4500),
 
 	// @Param: TILT_ANGLE_MAX
 	// @DisplayName: Maximum tilt angle
@@ -109,7 +109,7 @@ const AP_Param::GroupInfo AP_Mount::var_info[] PROGMEM = {
 	// @Range: -18000 17999
 	// @Increment: 1
 	// @User: Standard
-	AP_GROUPINFO("TILT_ANGMAX", 12, AP_Mount, _tilt_angle_max, 0),
+	AP_GROUPINFO("TILT_ANGMAX", 12, AP_Mount, _tilt_angle_max, 4500),
 
 	// @Param: PAN_RC_IN
 	// @DisplayName: pan (yaw) RC input channel
@@ -125,7 +125,7 @@ const AP_Param::GroupInfo AP_Mount::var_info[] PROGMEM = {
 	// @Range: -18000 17999
 	// @Increment: 1
 	// @User: Standard
-	AP_GROUPINFO("PAN_ANGMIN",  14, AP_Mount, _pan_angle_min,  0),
+	AP_GROUPINFO("PAN_ANGMIN",  14, AP_Mount, _pan_angle_min,  -4500),
 
 	// @Param: PAN_ANGLE_MAX
 	// @DisplayName: Maximum pan angle
@@ -134,7 +134,7 @@ const AP_Param::GroupInfo AP_Mount::var_info[] PROGMEM = {
 	// @Range: -18000 17999
 	// @Increment: 1
 	// @User: Standard
-	AP_GROUPINFO("PAN_ANGMAX",  15, AP_Mount, _pan_angle_max,  0),
+	AP_GROUPINFO("PAN_ANGMAX",  15, AP_Mount, _pan_angle_max,  4500),
 /*
 	Must be commented out because the framework does not support more than 16 parameters
 	// @Param: JOYSTICK_SPEED
@@ -157,9 +157,6 @@ _gps(gps)
 	_ahrs = ahrs;
 	_current_loc = current_loc;
 
-	// startup with the mount retracted
-	set_mode(MAV_MOUNT_MODE_RETRACT);
-
 	// default to zero angles
 	_retract_angles = Vector3f(0,0,0);
 	_neutral_angles = Vector3f(0,0,0);
@@ -172,13 +169,6 @@ _gps(gps)
 	_pan_rc_in = 0;
 	_tilt_rc_in= 0;
 	_roll_rc_in= 0;
-
-	_pan_angle_min  = -4500; // assume -45 degrees min deflection
-	_pan_angle_max  =  4500; // assume  45 degrees max deflection
-	_tilt_angle_min = -4500; // assume -45 degrees min deflection
-	_tilt_angle_max =  4500; // assume  45 degrees max deflection
-	_roll_angle_min = -4500; // assume -45 degrees min deflection
-	_roll_angle_max =  4500; // assume  45 degrees max deflection
 }
 
 /// Auto-detect the mount gimbal type depending on the functions assigned to the servos
