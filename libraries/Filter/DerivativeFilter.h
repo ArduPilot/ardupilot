@@ -36,7 +36,8 @@ class DerivativeFilter : public FilterWithBuffer<T,FILTER_SIZE>
 	virtual void reset();
 
   private:
-    uint32_t _last_time;
+    bool _new_data;
+    float _last_slope;
 
     // microsecond timestamps for samples. This is needed
     // to cope with non-uniform time spacing of the data
