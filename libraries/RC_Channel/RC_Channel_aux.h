@@ -14,7 +14,6 @@
 
 /// @class	RC_Channel_aux
 /// @brief	Object managing one aux. RC channel (CH5-8), with information about its function
-/// 	    Also contains physical min,max angular deflection, to allow calibrating open-loop servo movements
 class RC_Channel_aux : public RC_Channel{
 public:
 	/// Constructor
@@ -40,6 +39,10 @@ public:
 		k_mount_open	= 9,	///< mount open (deploy) / close (retract)
 		k_cam_trigger	= 10,	///< camera trigger
 		k_egg_drop		= 11,	///< egg drop
+		k_mount2_pan	= 12,	///< mount2 yaw (pan)
+		k_mount2_tilt	= 13,	///< mount2 pitch (tilt)
+		k_mount2_roll	= 14,	///< mount2 roll
+		k_mount2_open	= 15,	///< mount2 open (deploy) / close (retract)
 		k_nr_aux_servo_functions ///< This must be the last enum value (only add new values _before_ this one)
 	} Aux_servo_function_t;
 
