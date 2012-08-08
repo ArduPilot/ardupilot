@@ -665,7 +665,13 @@ static float 			load;
 #if MOUNT == ENABLED
 // current_loc uses the baro/gps soloution for altitude rather than gps only.
 // mabe one could use current_loc for lat/lon too and eliminate g_gps alltogether?
-AP_Mount camera_mount(&current_loc, g_gps, &ahrs);
+AP_Mount camera_mount(&current_loc, g_gps, &ahrs, 0);
+#endif
+
+#if MOUNT2 == ENABLED
+// current_loc uses the baro/gps soloution for altitude rather than gps only.
+// mabe one could use current_loc for lat/lon too and eliminate g_gps alltogether?
+AP_Mount camera_mount2(&current_loc, g_gps, &ahrs, 1);
 #endif
 
 #if CAMERA == ENABLED
@@ -796,6 +802,10 @@ static void medium_loop()
 {
 #if MOUNT == ENABLED
 	camera_mount.update_mount_position();
+#endif
+
+#if MOUNT2 == ENABLED
+	camera_mount2.update_mount_position();
 #endif
 
 #if CAMERA == ENABLED
@@ -941,6 +951,9 @@ static void slow_loop()
 
 #if MOUNT == ENABLED
 			camera_mount.update_mount_type();
+#endif
+#if MOUNT2 == ENABLED
+			camera_mount2.update_mount_type();
 #endif
 			break;
 

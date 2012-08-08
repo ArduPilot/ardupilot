@@ -460,7 +460,11 @@
 # define MOUNT		ENABLED
 #endif
 
-#if defined( __AVR_ATmega1280__ ) && (MOUNT == ENABLED)
+#ifndef MOUNT2
+# define MOUNT2		DISABLED
+#endif
+
+#if defined( __AVR_ATmega1280__ ) && (MOUNT == ENABLED || MOUNT2 == ENABLED)
 
 // The small ATmega1280 chip does not have enough memory for mount support
 // so disable CLI, this will allow mount support and other improvements to fit.
