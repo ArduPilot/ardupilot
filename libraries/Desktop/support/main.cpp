@@ -7,6 +7,8 @@
 #include <getopt.h>
 #include <signal.h>
 #include <string.h>
+#include <AP_Common.h>
+#include <AP_Param.h>
 #include "desktop.h"
 
 void setup(void);
@@ -47,7 +49,7 @@ int main(int argc, char * const argv[])
 			desktop_state.slider = true;
 			break;
 		case 'w':
-			unlink("eeprom.bin");
+			AP_Param::erase_all();
 			unlink("dataflash.bin");
 			break;
 		case 'r':
