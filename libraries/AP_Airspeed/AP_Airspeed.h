@@ -13,14 +13,8 @@ class AP_Airspeed
 {
 public:
 	// constructor
-	AP_Airspeed(AP_AnalogSource *source, float ratio, bool enable) {
+	AP_Airspeed(AP_AnalogSource *source) {
 		_source = source;
-		_offset.set(0);
-		_ratio.set(ratio);
-        
-        // by default enable but don't use the airspeed sensor
-		_use.set(1);
-		_enable.set(enable?1:0);
 	}
 
 	// read the analog source and update _airspeed
