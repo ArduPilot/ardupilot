@@ -150,7 +150,7 @@ const AP_Param::GroupInfo AP_Mount::var_info[] PROGMEM = {
 extern RC_Channel_aux* g_rc_function[RC_Channel_aux::k_nr_aux_servo_functions];	// the aux. servo ch. assigned to each function
 extern RC_Channel* rc_ch[NUM_CHANNELS];
 
-AP_Mount::AP_Mount(const struct Location *current_loc, GPS *&gps, AP_AHRS *ahrs):
+AP_Mount::AP_Mount(const struct Location *current_loc, GPS *&gps, AP_AHRS *ahrs, uint8_t id):
 _gps(gps)
 {
 	_ahrs = ahrs;
@@ -163,21 +163,33 @@ _gps(gps)
 
 	// default unknown mount type
 	_mount_type = k_unknown;
+
+	if (id == 0) {
+		_roll_idx = RC_Channel_aux::k_mount_roll;
+		_tilt_idx = RC_Channel_aux::k_mount_tilt;
+		_pan_idx  = RC_Channel_aux::k_mount_pan;
+		_open_idx = RC_Channel_aux::k_mount_open;
+	} else {
+		_roll_idx = RC_Channel_aux::k_mount2_roll;
+		_tilt_idx = RC_Channel_aux::k_mount2_tilt;
+		_pan_idx  = RC_Channel_aux::k_mount2_pan;
+		_open_idx = RC_Channel_aux::k_mount2_open;
+	}
 }
 
 /// Auto-detect the mount gimbal type depending on the functions assigned to the servos
 void
 AP_Mount::update_mount_type()
 {
-	if ((g_rc_function[RC_Channel_aux::k_mount_roll] == NULL) && (g_rc_function[RC_Channel_aux::k_mount_tilt] != NULL) && (g_rc_function[RC_Channel_aux::k_mount_pan] != NULL))
+	if ((g_rc_function[_roll_idx] == NULL) && (g_rc_function[_tilt_idx] != NULL) && (g_rc_function[_pan_idx] != NULL))
 	{
 		_mount_type = k_pan_tilt;
 	}
-	if ((g_rc_function[RC_Channel_aux::k_mount_roll] != NULL) && (g_rc_function[RC_Channel_aux::k_mount_tilt] != NULL) && (g_rc_function[RC_Channel_aux::k_mount_pan] == NULL))
+	if ((g_rc_function[_roll_idx] != NULL) && (g_rc_function[_tilt_idx] != NULL) && (g_rc_function[_pan_idx] == NULL))
 	{
 		_mount_type = k_tilt_roll;
 	}
-	if ((g_rc_function[RC_Channel_aux::k_mount_roll] != NULL) && (g_rc_function[RC_Channel_aux::k_mount_tilt] != NULL) && (g_rc_function[RC_Channel_aux::k_mount_pan] != NULL))
+	if ((g_rc_function[_roll_idx] != NULL) && (g_rc_function[_tilt_idx] != NULL) && (g_rc_function[_pan_idx] != NULL))
 	{
 		_mount_type = k_pan_tilt_roll;
 	}
@@ -299,18 +311,18 @@ void AP_Mount::update_mount_position()
 	}
 
 	// move mount to a "retracted position" into the fuselage with a fourth servo
-	if (g_rc_function[RC_Channel_aux::k_mount_open]){
+	if (g_rc_function[_open_idx]){
 		bool mount_open_new = (enum MAV_MOUNT_MODE)_mount_mode.get()==MAV_MOUNT_MODE_RETRACT?0:1;
 		if (mount_open != mount_open_new) {
 			mount_open = mount_open_new;
-			move_servo(g_rc_function[RC_Channel_aux::k_mount_open], mount_open_new, 0, 1);
+			move_servo(g_rc_function[_open_idx], mount_open_new, 0, 1);
 		}
 	}
 
 	// write the results to the servos
-	move_servo(g_rc_function[RC_Channel_aux::k_mount_roll], _roll_angle*10, _roll_angle_min*0.1, _roll_angle_max*0.1);
-	move_servo(g_rc_function[RC_Channel_aux::k_mount_tilt], _tilt_angle*10, _tilt_angle_min*0.1, _tilt_angle_max*0.1);
-	move_servo(g_rc_function[RC_Channel_aux::k_mount_pan ],  _pan_angle*10,  _pan_angle_min*0.1,  _pan_angle_max*0.1);
+	move_servo(g_rc_function[_roll_idx], _roll_angle*10, _roll_angle_min*0.1, _roll_angle_max*0.1);
+	move_servo(g_rc_function[_tilt_idx], _tilt_angle*10, _tilt_angle_min*0.1, _tilt_angle_max*0.1);
+	move_servo(g_rc_function[_pan_idx ],  _pan_angle*10,  _pan_angle_min*0.1,  _pan_angle_max*0.1);
 }
 
 void AP_Mount::set_mode(enum MAV_MOUNT_MODE mode)

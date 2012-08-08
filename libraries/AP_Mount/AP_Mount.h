@@ -33,7 +33,7 @@ class AP_Mount
 {
 public:
 	//Constructor
-	AP_Mount(const struct Location *current_loc, GPS *&gps, AP_AHRS *ahrs);
+	AP_Mount(const struct Location *current_loc, GPS *&gps, AP_AHRS *ahrs, uint8_t id);
 
 	//enums
 	enum MountType{
@@ -84,6 +84,11 @@ private:
 	const struct Location *_current_loc;
 	struct Location _target_GPS_location;
 	MountType _mount_type;
+
+	uint8_t _roll_idx;   ///< RC_Channel_aux mount roll function index
+	uint8_t _tilt_idx;   ///< RC_Channel_aux mount tilt function index
+	uint8_t _pan_idx ;   ///< RC_Channel_aux mount pan  function index
+	uint8_t _open_idx;   ///< RC_Channel_aux mount open function index
 
 	float _roll_control_angle;  ///< radians
 	float _tilt_control_angle;  ///< radians
