@@ -35,7 +35,6 @@ static void update_auto()
 static void reload_commands_airstart()
 {
 	init_commands();
-	g.command_index.load();        // XXX can we assume it's been loaded already by ::load_all?
 	decrement_cmd_index();
 }
 
