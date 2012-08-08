@@ -890,8 +890,6 @@ static void report_wp(byte index = 255)
 
 static void report_sonar()
 {
-	g.sonar_enabled.load();
-	g.sonar_type.load();
 	Serial.printf_P(PSTR("Sonar\n"));
 	print_divider();
 	print_enabled(g.sonar_enabled.get());
