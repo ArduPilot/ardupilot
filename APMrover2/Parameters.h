@@ -491,6 +491,14 @@ public:
 
 // ************************************************************   
         
+        channel_roll			(CH_1),
+        channel_pitch			(CH_2),
+        channel_throttle		(CH_3),
+        channel_rudder			(CH_4),
+        rc_5					(CH_5),
+        rc_6					(CH_6),
+        rc_7					(CH_7),
+        rc_8					(CH_8),
 
 
         // PID controller    initial P        initial I        initial D        initial imax
