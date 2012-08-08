@@ -135,16 +135,15 @@ const AP_Param::GroupInfo AP_Mount::var_info[] PROGMEM = {
 	// @Increment: 1
 	// @User: Standard
 	AP_GROUPINFO("PAN_ANGMAX",  15, AP_Mount, _pan_angle_max,  4500),
-/*
-	Must be commented out because the framework does not support more than 16 parameters
+
 	// @Param: JOYSTICK_SPEED
 	// @DisplayName: mount joystick speed
 	// @Description: 0 for position control, small for low speeds, 10 for max speed
 	// @Range: 0 10
 	// @Increment: 1
 	// @User: Standard
-	AP_GROUPINFO("JOYSTICK_SPEED",  16, AP_Mount, _joystick_speed),
-*/
+	AP_GROUPINFO("JOYSTICK_SPEED",  16, AP_Mount, _joystick_speed, 0),
+
 	AP_GROUPEND
 };
 
@@ -164,11 +163,6 @@ _gps(gps)
 
 	// default unknown mount type
 	_mount_type = k_unknown;
-
-	// default manual rc channel to disabled
-	_pan_rc_in = 0;
-	_tilt_rc_in= 0;
-	_roll_rc_in= 0;
 }
 
 /// Auto-detect the mount gimbal type depending on the functions assigned to the servos
@@ -254,7 +248,7 @@ void AP_Mount::update_mount_position()
 		// RC radio manual angle control, but with stabilization from the AHRS
 		case MAV_MOUNT_MODE_RC_TARGETING:
 		{
-/*			if (_joystick_speed) {  // for spring loaded joysticks
+			if (_joystick_speed) {  // for spring loaded joysticks
 				// allow pilot speed position input to come directly from an RC_Channel
 				if (_roll_rc_in && (rc_ch[_roll_rc_in-1])) {
 					//_roll_control_angle += angle_input(rc_ch[_roll_rc_in-1], _roll_angle_min, _roll_angle_max) * 0.00001 * _joystick_speed;
@@ -275,7 +269,7 @@ void AP_Mount::update_mount_position()
 					if (_pan_control_angle > radians(_pan_angle_max*0.01)) _pan_control_angle = radians(_pan_angle_max*0.01);
 				}
 			} else {
-*/				// allow pilot position input to come directly from an RC_Channel
+				// allow pilot position input to come directly from an RC_Channel
 				if (_roll_rc_in && (rc_ch[_roll_rc_in-1])) {
 					_roll_control_angle = angle_input_rad(rc_ch[_roll_rc_in-1], _roll_angle_min, _roll_angle_max);
 				}
@@ -285,7 +279,7 @@ void AP_Mount::update_mount_position()
 				if (_pan_rc_in && (rc_ch[_pan_rc_in-1])) {
 					_pan_control_angle = angle_input_rad(rc_ch[_pan_rc_in-1], _pan_angle_min, _pan_angle_max);
 				}
-//			}
+			}
 			stabilize();
 			break;
 		}

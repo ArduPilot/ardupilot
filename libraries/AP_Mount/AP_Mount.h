@@ -111,7 +111,7 @@ private:
 	AP_Int16 	_pan_angle_min;		///< min angle limit of actuated surface in 0.01 degree units
 	AP_Int16 	_pan_angle_max;		///< max angle limit of actuated surface in 0.01 degree units
 
-	//AP_Int8		_joystick_speed;
+	AP_Int8		_joystick_speed;
 
 	AP_Vector3f _retract_angles;		///< retracted position for mount, vector.x = roll vector.y = tilt, vector.z=pan
 	AP_Vector3f _neutral_angles;		///< neutral position for mount, vector.x = roll vector.y = tilt, vector.z=pan
