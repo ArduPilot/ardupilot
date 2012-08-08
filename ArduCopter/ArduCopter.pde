@@ -963,6 +963,12 @@ AP_Relay relay;
 AP_Mount camera_mount(&current_loc, g_gps, &ahrs);
 #endif
 
+#if MOUNT2 == ENABLED
+// current_loc uses the baro/gps soloution for altitude rather than gps only.
+// mabe one could use current_loc for lat/lon too and eliminate g_gps alltogether?
+AP_Mount camera_mount2(&current_loc, g_gps, &ahrs);
+#endif
+
 #if CAMERA == ENABLED
 //pinMode(camtrig, OUTPUT);			// these are free pins PE3(5), PH3(15), PH6(18), PB4(23), PB5(24), PL1(36), PL3(38), PA6(72), PA7(71), PK0(89), PK1(88), PK2(87), PK3(86), PK4(83), PK5(84), PK6(83), PK7(82)
 #endif
@@ -1274,6 +1280,11 @@ static void fifty_hz_loop()
 	camera_mount.update_mount_position();
 #endif
 
+#if MOUNT2 == ENABLED
+	// update camera mount's position
+	camera_mount2.update_mount_position();
+#endif
+
 #if CAMERA == ENABLED
 	g.camera.trigger_pic_cleanup();
 #endif
@@ -1339,6 +1350,10 @@ static void slow_loop()
 
 #if MOUNT == ENABLED
 			camera_mount.update_mount_type();
+#endif
+
+#if MOUNT2 == ENABLED
+			camera_mount2.update_mount_type();
 #endif
 
 			// agmatthews - USERHOOKS
