@@ -33,8 +33,8 @@ float DerivativeFilter<T,FILTER_SIZE>::slope(void)
 
     // use f() to make the code match the maths a bit better. Note
     // that unlike an average filter, we care about the order of the elements
-    #define f(i) FilterWithBuffer<T,FILTER_SIZE>::samples[(((FilterWithBuffer<T,FILTER_SIZE>::sample_index-1)+i)+3*FILTER_SIZE/2) % FILTER_SIZE]
-    #define x(i) _timestamps[(((FilterWithBuffer<T,FILTER_SIZE>::sample_index-1)+i)+3*FILTER_SIZE/2) % FILTER_SIZE]
+    #define f(i) FilterWithBuffer<T,FILTER_SIZE>::samples[(((FilterWithBuffer<T,FILTER_SIZE>::sample_index-1)+i+1)+3*FILTER_SIZE/2) % FILTER_SIZE]
+    #define x(i) _timestamps[(((FilterWithBuffer<T,FILTER_SIZE>::sample_index-1)+i+1)+3*FILTER_SIZE/2) % FILTER_SIZE]
 
     if (_timestamps[FILTER_SIZE-1] == _timestamps[FILTER_SIZE-2]) {
         // we haven't filled the buffer yet - assume zero derivative
@@ -97,6 +97,10 @@ template void DerivativeFilter<float,7>::reset(void);
 template void DerivativeFilter<float,9>::update(float sample, uint32_t timestamp);
 template float DerivativeFilter<float,9>::slope(void);
 template void DerivativeFilter<float,9>::reset(void);
+
+template void DerivativeFilter<float,11>::update(float sample, uint32_t timestamp);
+template float DerivativeFilter<float,11>::slope(void);
+template void DerivativeFilter<float,11>::reset(void);
 
 
 
