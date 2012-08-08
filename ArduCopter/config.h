@@ -485,7 +485,15 @@
 # endif
 #endif
 
-#if defined( __AVR_ATmega1280__ ) && (MOUNT == ENABLED)
+#ifndef MOUNT2
+# if defined( __AVR_ATmega1280__ )
+#  define MOUNT2		DISABLED
+# else
+#  define MOUNT2		ENABLED
+# endif
+#endif
+
+#if defined( __AVR_ATmega1280__ ) && (MOUNT == ENABLED || MOUNT2 == ENABLED)
 # warning "You choose to enable MOUNT on a small ATmega1280, CLI, CAMERA and AP_LIMITS will be disabled to free some space for it"
 
 // The small ATmega1280 chip does not have enough memory for mount support

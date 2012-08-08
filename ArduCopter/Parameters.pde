@@ -332,6 +332,12 @@ const AP_Param::Info var_info[] PROGMEM = {
 	GOBJECT(camera_mount,           "MNT_",	AP_Mount),
 #endif
 
+#if MOUNT2 == ENABLED
+	// @Group: MNT_
+	// @Path: ../libraries/AP_Mount/AP_Mount.cpp
+	GOBJECT(camera_mount2,           "MNT2_",	AP_Mount),
+#endif
+
 #ifdef DESKTOP_BUILD
 	GOBJECT(sitl, "SIM_", SITL),
 #endif
