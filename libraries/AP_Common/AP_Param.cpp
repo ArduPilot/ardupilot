@@ -626,9 +626,23 @@ bool AP_Param::save(void)
     }
 
     // if the value is the default value then don't save
-    if (phdr.type <= AP_PARAM_FLOAT && 
-        cast_to_float((enum ap_var_type)phdr.type) == PGM_FLOAT(&info->def_value)) {
-        return true;
+    if (phdr.type <= AP_PARAM_FLOAT) {
+        float v1 = cast_to_float((enum ap_var_type)phdr.type);
+        float v2;
+        if (ginfo != NULL) {
+            v2 = PGM_FLOAT(&ginfo->def_value);
+        } else {
+            v2 = PGM_FLOAT(&info->def_value);
+        }
+        if (v1 == v2) {
+            return true;
+        }
+        if (phdr.type != AP_PARAM_INT32 &&
+            (fabs(v1-v2) < 0.0001*fabs(v1))) {
+            // for other than 32 bit integers, we accept values within
+            // 0.01 percent of the current value as being the same
+            return true;            
+        }
     }
 
     if (ofs+type_size((enum ap_var_type)phdr.type)+2*sizeof(phdr) >= _eeprom_size) {
