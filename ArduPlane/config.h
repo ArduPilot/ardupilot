@@ -317,13 +317,13 @@
 # define FLAP_1_PERCENT 0
 #endif
 #ifndef FLAP_1_SPEED
-# define FLAP_1_SPEED 255
+# define FLAP_1_SPEED 0
 #endif
 #ifndef FLAP_2_PERCENT
 # define FLAP_2_PERCENT 0
 #endif
 #ifndef FLAP_2_SPEED
-# define FLAP_2_SPEED 255
+# define FLAP_2_SPEED 0
 #endif
 //////////////////////////////////////////////////////////////////////////////
 // FLIGHT_MODE

@@ -398,9 +398,9 @@ static void set_servos(void)
 			} else {
 				flapSpeedSource = g.throttle_cruise;
 			}
-			if ( flapSpeedSource > g.flap_1_speed) {
+			if ( g.flap_1_speed != 0 && flapSpeedSource > g.flap_1_speed) {
 				g_rc_function[RC_Channel_aux::k_flap_auto]->servo_out = 0;
-			} else if (flapSpeedSource > g.flap_2_speed) {
+			} else if (g.flap_2_speed != 0 && flapSpeedSource > g.flap_2_speed) {
 				g_rc_function[RC_Channel_aux::k_flap_auto]->servo_out = g.flap_1_percent;
 			} else {
 				g_rc_function[RC_Channel_aux::k_flap_auto]->servo_out = g.flap_2_percent;
