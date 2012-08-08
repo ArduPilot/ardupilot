@@ -52,8 +52,6 @@ private:
     AP_Float    _ground_temperature;
     AP_Float    _ground_pressure;
     float       _altitude;
-    float       _climb_rate;
-    uint32_t    _last_climb_rate_t;
     uint32_t    _last_altitude_t;
     DerivativeFilterFloat_Size7 _climb_rate_filter;
 };
