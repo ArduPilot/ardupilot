@@ -65,6 +65,13 @@ const AP_Param::Info var_info[] PROGMEM = {
 	// @User: Advanced
 	GSCALAR(manual_level,           "MANUAL_LEVEL",   MANUAL_LEVEL),
 
+    // @Param: STICK_MIXING
+	// @DisplayName: Stick Mixing
+	// @Description: When enabled, this adds user stick input to the control surfaces in auto modes, allowing the user to have some degree of flight control without changing modes
+	// @Values: 0:Disabled,1:Enabled
+	// @User: Advanced
+	GSCALAR(stick_mixing,           "STICK_MIXING",   1),
+
 	// @Param: land_pitch_cd
 	// @DisplayName: Landing Pitch
 	// @Description: Used in autoland for planes without airspeed sensors in hundredths of a degree
