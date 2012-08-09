@@ -67,6 +67,9 @@
 #define AUTO_TRIM_LEDS 1
 
 
+#define CH_7_PWM_TRIGGER 1800
+#define CH_6_PWM_TRIGGER 1500
+
 // Internal defines, don't edit and expect things to work
 // -------------------------------------------------------
 
@@ -200,6 +203,12 @@
 #define CIRCLE_MODE 3
 #define NO_NAV_MODE 4
 #define TOY_MODE 5			// THOR This mode defines the Virtual WP following mode
+
+// TOY mixing options
+#define TOY_LOOKUP_TABLE 0
+#define TOY_LINEAR_MIXER 1
+#define TOY_EXTERNAL_MIXER 2
+
 
 // Waypoint options
 #define MASK_OPTIONS_RELATIVE_ALT 		1
