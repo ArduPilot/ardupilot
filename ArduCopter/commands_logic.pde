@@ -363,8 +363,7 @@ static bool verify_takeoff()
 		return false;
 	}
 	// are we above our target altitude?
-	//return (current_loc.alt > next_WP.alt);
-	return (current_loc.alt > target_altitude);
+	return (current_loc.alt > next_WP.alt);
 }
 
 // called at 10hz
