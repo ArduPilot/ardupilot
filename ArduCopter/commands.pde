@@ -9,6 +9,8 @@ static void init_commands()
 	command_cond_queue.id 	= NO_COMMAND;
 	command_nav_queue.id 	= NO_COMMAND;
 
+	fast_corner 			= false;
+
 	// default Yaw tracking
 	yaw_tracking 			= MAV_ROI_WPNEXT;
 }
@@ -177,7 +179,7 @@ static void set_next_WP(struct Location *wp)
 
 	// reset speed governer
 	// --------------------
-	waypoint_speed_gov = WAYPOINT_SPEED_MIN;
+	waypoint_speed_gov = g_gps->ground_speed;
 }
 
 
