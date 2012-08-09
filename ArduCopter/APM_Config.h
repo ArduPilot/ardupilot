@@ -2,8 +2,8 @@
 
 // Example config file. Take a look at config.h. Any term define there can be overridden by defining it here.
 
-// # define CONFIG_APM_HARDWARE APM_HARDWARE_APM2
-// # define APM2_BETA_HARDWARE
+//#define CONFIG_APM_HARDWARE APM_HARDWARE_APM2
+//#define APM2_BETA_HARDWARE
 
 // GPS is auto-selected
 
@@ -30,7 +30,7 @@
 	V_FRAME
 	*/
 
-//# define CH7_OPTION		CH7_SAVE_WP
+//#define CH7_OPTION		CH7_SAVE_WP
 	/*
 	CH7_DO_NOTHING
 	CH7_SET_HOVER
@@ -42,8 +42,12 @@
 	CH7_SAVE_WP
 	*/
 
-#define ACCEL_ALT_HOLD 0		// disabled by default, work in progress
+//#define TOY_EDF	ENABLED
 
+#define TOY_MIXER TOY_LOOKUP_TABLE
+
+
+#define ACCEL_ALT_HOLD 0		// disabled by default, work in progress
 #define INERTIAL_NAV DISABLED
 
 
@@ -89,7 +93,7 @@
 // to disable, set to 0
 #define AUTO_THROTTLE_HOLD 1
 
-//# define LOGGING_ENABLED		DISABLED
+//#define LOGGING_ENABLED		DISABLED
 
 
 // Custom channel config - Expert Use Only.
