@@ -125,7 +125,7 @@ void AP_MotorsMatrix::output_armed()
 	int8_t i;
 	int16_t out_min = _rc_throttle->radio_min;
 	int16_t out_max = _rc_throttle->radio_max;
-	int16_t yaw_contribution = 0;
+	//int16_t yaw_contribution = 0;
 
 	// Throttle is 0 to 1000 only
 	_rc_throttle->servo_out = constrain(_rc_throttle->servo_out, 0, _max_throttle);
@@ -142,16 +142,16 @@ void AP_MotorsMatrix::output_armed()
 	// mix roll, pitch, yaw, throttle into output for each motor
 	for( i=0; i<AP_MOTORS_MAX_NUM_MOTORS; i++ ) {
 		if( motor_enabled[i] ) {
-			yaw_contribution = _rc_yaw->pwm_out*_yaw_factor[i];
+			/*yaw_contribution = _rc_yaw->pwm_out*_yaw_factor[i];
 			if (yaw_contribution > 0 ){
 				yaw_contribution *= 0.7;
 			}else{
 				yaw_contribution *= 1.42;
-			}
+			}*/
 			motor_out[i] = _rc_throttle->radio_out +
 							_rc_roll->pwm_out * _roll_factor[i] +
 							_rc_pitch->pwm_out * _pitch_factor[i] +
-							yaw_contribution;
+							_rc_yaw->pwm_out*_yaw_factor[i];
 		}
 	}
 
@@ -235,7 +235,7 @@ void AP_MotorsMatrix::output_test()
 
 	// first delay is longer
 	delay(4000);
-	
+
 	// loop through all the possible orders spinning any motors that match that description
 	for( i=min_order; i<=max_order; i++ ) {
 		for( j=0; j<AP_MOTORS_MAX_NUM_MOTORS; j++ ) {
@@ -258,7 +258,7 @@ void AP_MotorsMatrix::add_motor_raw(int8_t motor_num, float roll_fac, float pitc
 {
 	// ensure valid motor number is provided
 	if( motor_num >= 0 && motor_num < AP_MOTORS_MAX_NUM_MOTORS ) {
-	
+
 		// increment number of motors if this motor is being newly motor_enabled
 		if( !motor_enabled[motor_num] ) {
 			motor_enabled[motor_num] = true;
@@ -320,7 +320,7 @@ void AP_MotorsMatrix::remove_motor(int8_t motor_num)
 		opposite_motor[motor_num] = AP_MOTORS_MATRIX_MOTOR_UNDEFINED;
 	}
 
-	// if another motor has referred to this motor as it's opposite, remove that reference 
+	// if another motor has referred to this motor as it's opposite, remove that reference
 	for( i=0; i<AP_MOTORS_MAX_NUM_MOTORS; i++ ) {
 		if( opposite_motor[i] == motor_num )
 			opposite_motor[i] = AP_MOTORS_MATRIX_MOTOR_UNDEFINED;
