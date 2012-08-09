@@ -29,9 +29,9 @@
 /// change in your local copy of APM_Config.h.
 ///
 #ifdef USE_CMAKE_APM_CONFIG
-#include "APM_Config_cmake.h"  // <== Prefer cmake config if it exists
+#include "APM_Config_cmake.h"	// <== Prefer cmake config if it exists
 #else
-#include "APM_Config.h"  // <== THIS INCLUDE, DO NOT EDIT IT. EVER.
+#include "APM_Config.h"	// <== THIS INCLUDE, DO NOT EDIT IT. EVER.
 #endif
 
 
@@ -76,6 +76,10 @@
 #ifndef FRAME_ORIENTATION
 # define FRAME_ORIENTATION	X_FRAME
 #endif
+#ifndef TOY_EDF
+# define TOY_EDF	DISABLED
+#endif
+
 
 //////////////////////////////////////////////////////////////////////////////
 // IMU Selection
@@ -339,8 +343,8 @@
 
 //////////////////////////////////////////////////////////////////////////////
 //  OPTICAL_FLOW
-#if defined( __AVR_ATmega2560__ )  // determines if optical flow code is included
-  #define OPTFLOW_ENABLED
+#if defined( __AVR_ATmega2560__ )	// determines if optical flow code is included
+	#define OPTFLOW_ENABLED
 #endif
 #ifndef OPTFLOW					// sets global enabled/disabled flag for optflow (as seen in CLI)
 # define OPTFLOW				DISABLED
@@ -356,25 +360,25 @@
 #endif
 // optical flow based loiter PI values
 #ifndef OPTFLOW_ROLL_P
-  #define OPTFLOW_ROLL_P 2.5
+	#define OPTFLOW_ROLL_P 2.5
 #endif
 #ifndef OPTFLOW_ROLL_I
-  #define OPTFLOW_ROLL_I 3.2
+	#define OPTFLOW_ROLL_I 3.2
 #endif
 #ifndef OPTFLOW_ROLL_D
-  #define OPTFLOW_ROLL_D 0.12
+	#define OPTFLOW_ROLL_D 0.12
 #endif
 #ifndef OPTFLOW_PITCH_P
-  #define OPTFLOW_PITCH_P 2.5
+	#define OPTFLOW_PITCH_P 2.5
 #endif
 #ifndef OPTFLOW_PITCH_I
-  #define OPTFLOW_PITCH_I 3.2
+	#define OPTFLOW_PITCH_I 3.2
 #endif
 #ifndef OPTFLOW_PITCH_D
-  #define OPTFLOW_PITCH_D 0.12
+	#define OPTFLOW_PITCH_D 0.12
 #endif
 #ifndef OPTFLOW_IMAX
-  #define OPTFLOW_IMAX 4
+	#define OPTFLOW_IMAX 4
 #endif
 
 
@@ -690,33 +694,33 @@
 // Stabilize Rate Control
 //
 #ifndef RATE_ROLL_P
-# define RATE_ROLL_P        0.18
+# define RATE_ROLL_P        0.185
 #endif
 #ifndef RATE_ROLL_I
 # define RATE_ROLL_I        0.0
 #endif
 #ifndef RATE_ROLL_D
-# define RATE_ROLL_D        0.005
+# define RATE_ROLL_D        0.008
 #endif
 #ifndef RATE_ROLL_IMAX
 # define RATE_ROLL_IMAX	 	5.0			// degrees
 #endif
 
 #ifndef RATE_PITCH_P
-# define RATE_PITCH_P       0.18
+# define RATE_PITCH_P       0.185
 #endif
 #ifndef RATE_PITCH_I
 # define RATE_PITCH_I		0.0
 #endif
 #ifndef RATE_PITCH_D
-# define RATE_PITCH_D       0.005
+# define RATE_PITCH_D       0.008
 #endif
 #ifndef RATE_PITCH_IMAX
 # define RATE_PITCH_IMAX   	5.0			// degrees
 #endif
 
 #ifndef RATE_YAW_P
-# define RATE_YAW_P    		 .13
+# define RATE_YAW_P    		 .25
 #endif
 #ifndef RATE_YAW_I
 # define RATE_YAW_I    		 0.02
@@ -811,7 +815,7 @@
 # define ALT_HOLD_P			0.3		// .5
 #endif
 #ifndef ALT_HOLD_I
-# define ALT_HOLD_I			0.038
+# define ALT_HOLD_I			0.04
 #endif
 #ifndef ALT_HOLD_IMAX
 # define ALT_HOLD_IMAX		300
@@ -825,7 +829,7 @@
 # define THROTTLE_I			0.03
 #endif
 #ifndef THROTTLE_D
-# define THROTTLE_D			0.0	//
+# define THROTTLE_D			0.0
 #endif
 #ifndef THROTTLE_IMAX
 # define THROTTLE_IMAX		300
