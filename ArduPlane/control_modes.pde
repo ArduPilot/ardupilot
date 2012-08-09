@@ -39,6 +39,13 @@ static void read_control_switch()
 		reset_I();
 	}
 
+    if (g.reset_mission_chan != 0 && 
+        APM_RC.InputCh(g.reset_mission_chan-1) > RESET_SWITCH_CHAN_PWM) {
+        // reset to first waypoint in mission
+		prev_WP = current_loc;
+        change_command(1);
+    }
+
     switch_debouncer = false;
 
     if (g.inverted_flight_ch != 0) {

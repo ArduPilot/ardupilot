@@ -70,6 +70,7 @@ public:
 		k_param_land_pitch_cd,
 		k_param_ins,
         k_param_stick_mixing,
+        k_param_reset_mission_chan,
 
 		// 110: Telemetry control
 		//
@@ -289,6 +290,7 @@ public:
     AP_Int16    num_resets;
     AP_Int16    log_bitmask;
     AP_Int8		reset_switch_chan;
+    AP_Int8		reset_mission_chan;
     AP_Int8		manual_level;
     AP_Int32    airspeed_cruise_cm;
     AP_Int32    RTL_altitude_cm;
