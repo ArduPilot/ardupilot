@@ -29,7 +29,7 @@ static __attribute__((noinline)) const uint32_t *current_stackptr(void)
 void memcheck_update_stackptr(void)
 {
     if (current_stackptr() < stack_low) {
-        unsigned s = (uintptr_t)(current_stackptr() - STACK_OFFSET);
+        uintptr_t s = (uintptr_t)(current_stackptr() - STACK_OFFSET);
         stack_low = (uint32_t *)(s & ~3);
     }
 }
