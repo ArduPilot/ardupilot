@@ -69,6 +69,7 @@ static void init_rc_out()
 	#else
 	motors.set_update_rate(g.rc_speed);
 	#endif
+
 	motors.set_frame_orientation(g.frame_orientation);
 	motors.Init();						// motor initialisation
 	motors.set_min_throttle(g.throttle_min);
@@ -117,6 +118,12 @@ static void init_rc_out()
 	}
 
 	enable_aux_servos();
+
+	#if TOY_EDF == ENABLED
+	// add access to CH8 and CH6
+	APM_RC.enable_out(CH_8);
+	APM_RC.enable_out(CH_6);
+	#endif
 }
 
 void output_min()
