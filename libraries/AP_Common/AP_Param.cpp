@@ -71,9 +71,9 @@ void AP_Param::eeprom_write_check(const void *ptr, uint16_t ofs, uint8_t size)
 {
     const uint8_t *b = (const uint8_t *)ptr;
     while (size--) {
-        uint8_t v = eeprom_read_byte((const uint8_t *)ofs);
+        uint8_t v = eeprom_read_byte((const uint8_t *)(uintptr_t)ofs);
         if (v != *b) {
-            eeprom_write_byte((uint8_t *)ofs, *b);
+            eeprom_write_byte((uint8_t *)(uintptr_t)ofs, *b);
         }
         b++;
         ofs++;
@@ -432,7 +432,7 @@ bool AP_Param::scan(const AP_Param::Param_header *target, uint16_t *pofs)
     struct Param_header phdr;
     uint16_t ofs = sizeof(AP_Param::EEPROM_header);
     while (ofs < _eeprom_size) {
-        eeprom_read_block(&phdr, (void *)ofs, sizeof(phdr));
+        eeprom_read_block(&phdr, (void *)(uintptr_t)ofs, sizeof(phdr));
         if (phdr.type == target->type &&
             phdr.key == target->key &&
             phdr.group_element == target->group_element) {
@@ -775,7 +775,7 @@ bool AP_Param::load_all(void)
     uint16_t ofs = sizeof(AP_Param::EEPROM_header);
 
     while (ofs < _eeprom_size) {
-        eeprom_read_block(&phdr, (void *)ofs, sizeof(phdr));
+        eeprom_read_block(&phdr, (void *)(uintptr_t)ofs, sizeof(phdr));
         // note that this is an || not an && for robustness
         // against power off while adding a variable
         if (phdr.type == _sentinal_type ||

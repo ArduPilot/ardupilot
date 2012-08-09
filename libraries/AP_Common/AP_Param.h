@@ -221,7 +221,7 @@ private:
     static const uint8_t _group_bits  = 18;
 
     static const uint8_t  _sentinal_key   = 0xFF;
-    static const uint8_t  _sentinal_type  = 0xFF;
+    static const uint8_t  _sentinal_type  = 0x3F;
     static const uint8_t  _sentinal_group = 0xFF;
 
     static bool check_group_info(const struct GroupInfo *group_info, uint16_t *total_size, uint8_t max_bits);
