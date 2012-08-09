@@ -15,9 +15,10 @@ static void failsafe_on_event()
 				set_mode(RTL);
 				// We add an additional 10m to the current altitude
 				//next_WP.alt += 1000;
-				set_new_altitude(target_altitude + 1000);
+				set_new_altitude(next_WP.alt + 1000);
 			}
-			// 2 = Stay in AUTO and ignore failsafe
+			//if (g.throttle_fs_action == 2)
+			//  Stay in AUTO and ignore failsafe
 			break;
 
 		default:
@@ -27,7 +28,7 @@ static void failsafe_on_event()
 				set_mode(RTL);
 				// We add an additional 10m to the current altitude
 				//next_WP.alt += 1000;
-				set_new_altitude(target_altitude + 1000);
+				set_new_altitude(next_WP.alt + 1000);
 			}else{
 				// We have no GPS so we must land
 				set_mode(LAND);
