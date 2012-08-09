@@ -119,7 +119,7 @@ static void handle_process_do_command()
 		// system to control the vehicle attitude and the attitude of various
 		// devices such as cameras.
 		//    |Region of interest mode. (see MAV_ROI enum)| Waypoint index/ target ID. (see MAV_ROI enum)| ROI index (allows a vehicle to manage multiple cameras etc.)| Empty| x the location of the fixed ROI (see MAV_FRAME)| y| z|
-		case MAV_CMD_DO_SET_ROI:
+		case MAV_CMD_NAV_ROI:
 #if 0
 			// send the command to the camera mount
 			camera_mount.set_roi_cmd(&command_nav_queue);

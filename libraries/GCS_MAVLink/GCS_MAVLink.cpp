@@ -29,3 +29,21 @@ uint8_t mavlink_check_target(uint8_t sysid, uint8_t compid)
     // If it is addressed to our system ID we assume it is for us
     return 0; // no error
 }
+
+// return a MAVLink variable type given a AP_Param type
+uint8_t mav_var_type(enum ap_var_type t)
+{
+    if (t == AP_PARAM_INT8) {
+	    return MAVLINK_TYPE_INT8_T;
+    }
+    if (t == AP_PARAM_INT16) {
+	    return MAVLINK_TYPE_INT16_T;
+    }
+    if (t == AP_PARAM_INT32) {
+	    return MAVLINK_TYPE_INT32_T;
+    }
+    // treat any others as float
+    return MAVLINK_TYPE_FLOAT;
+}
+
+
