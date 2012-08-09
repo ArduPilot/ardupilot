@@ -27,9 +27,6 @@ Arduino_Mega_ISR_Registry isr_registry;
 AP_Baro_BMP085_HIL      barometer;
 AP_Compass_HIL     compass;
 SITL sitl;
-BetterStream *mavlink_comm_0_port;
-BetterStream *mavlink_comm_1_port;
-mavlink_system_t mavlink_system;
 #endif
 
 FastSerialPort(Serial, 0);
