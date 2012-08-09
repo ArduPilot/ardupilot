@@ -41,63 +41,42 @@ static void reset_control_switch()
 	read_control_switch();
 }
 
-#define CH_7_PWM_TRIGGER 1800
-
 // read at 10 hz
 // set this to your trainer switch
 static void read_trim_switch()
 {
-	#if CH7_OPTION == CH7_SET_HOVER
-		// switch is engaged
-		if (g.rc_7.radio_in > CH_7_PWM_TRIGGER){
-			trim_flag = true;
-
-		}else{ // switch is disengaged
-
-			if(trim_flag){
-				trim_flag = false;
-
-				// set the throttle nominal
-				if(g.rc_3.control_in > 150){
-					g.throttle_cruise.set_and_save(g.rc_3.control_in);
-						//Serial.printf("tnom %d\n", g.throttle_cruise.get());
-				}
-			}
-		}
-
-	#else
-
+	/*
 	// this is the normal operation set by the mission planner
+	if (g.rc_6.radio_in < CH_6_PWM_TRIGGER){
+		g.ch7_option = CH7_FLIP;
+	}else{
+		g.ch7_option = CH7_SAVE_WP;
+	}*/
 
 	if(g.ch7_option == CH7_SIMPLE_MODE){
 		do_simple = (g.rc_7.radio_in > CH_7_PWM_TRIGGER);
 
 	}else if (g.ch7_option == CH7_FLIP){
-		if (trim_flag == false && g.rc_7.radio_in > CH_7_PWM_TRIGGER){
-			trim_flag = true;
+		if (CH7_flag == false && g.rc_7.radio_in > CH_7_PWM_TRIGGER){
+			CH7_flag = true;
 
 			// don't flip if we accidentally engaged flip, but didn't notice and tried to takeoff
 			if(g.rc_3.control_in != 0 && takeoff_complete){
 				init_flip();
 			}
 		}
-		if (trim_flag == true && g.rc_7.control_in < 800){
-			trim_flag = false;
+		if (CH7_flag == true && g.rc_7.control_in < 800){
+			CH7_flag = false;
 		}
 
-		//if (g.rc_7.radio_in > CH_7_PWM_TRIGGER && takeoff_complete && g.rc_3.control_in != 0){
-		//	if(do_flip == false)
-		//		init_flip();
-		//}
-
 	}else if (g.ch7_option == CH7_RTL){
-		if (trim_flag == false && g.rc_7.radio_in > CH_7_PWM_TRIGGER){
-			trim_flag = true;
+		if (CH7_flag == false && g.rc_7.radio_in > CH_7_PWM_TRIGGER){
+			CH7_flag = true;
 			set_mode(RTL);
 		}
 
-		if (trim_flag == true && g.rc_7.control_in < 800){
-			trim_flag = false;
+		if (CH7_flag == true && g.rc_7.control_in < 800){
+			CH7_flag = false;
 			if (control_mode == RTL || control_mode == LOITER){
 				reset_control_switch();
 			}
@@ -105,11 +84,11 @@ static void read_trim_switch()
 
 	}else if (g.ch7_option == CH7_SAVE_WP){
 		if (g.rc_7.radio_in > CH_7_PWM_TRIGGER){ // switch is engaged
-			trim_flag = true;
+			CH7_flag = true;
 
 		}else{ // switch is disengaged
-			if(trim_flag){
-				trim_flag = false;
+			if(CH7_flag){
+				CH7_flag = false;
 
 				if(control_mode == AUTO){
 					// reset the mission
@@ -167,8 +146,6 @@ static void read_trim_switch()
 			auto_level_counter = 10;
 		}
 	}
-	#endif
-
 }
 
 static void auto_trim()
