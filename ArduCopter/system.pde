@@ -554,8 +554,13 @@ static void set_mode(byte mode)
 		case TOY:
 			yaw_mode 		= YAW_TOY;
 			roll_pitch_mode = ROLL_PITCH_TOY;
-			throttle_mode 	= THROTTLE_MANUAL;
 			wp_control 		= NO_NAV_MODE;
+
+			// init throttle
+			update_toy_throttle();
+
+			// hold the current altitude
+			set_new_altitude(current_loc.alt);
 			break;
 
 		default:
@@ -569,9 +574,6 @@ static void set_mode(byte mode)
 		// Receiver will be outputting low throttle
 		motors.auto_armed(true);
 	}
-
-	// called to calculate gain for alt hold
-	update_throttle_cruise();
 
 	if(roll_pitch_mode <= ROLL_PITCH_ACRO){
 		// We are under manual attitude control
@@ -615,9 +617,8 @@ init_simple_bearing()
 	initial_simple_bearing = ahrs.yaw_sensor;
 }
 
-static void update_throttle_cruise()
+static void update_throttle_cruise(int16_t tmp)
 {
-	int16_t tmp = g.pi_alt_hold.get_integrator();
 	if(tmp != 0){
 		g.throttle_cruise += tmp;
 		reset_throttle_I();
