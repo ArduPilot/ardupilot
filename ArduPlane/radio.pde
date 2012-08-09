@@ -90,11 +90,6 @@ static void read_radio()
 	g.rc_7.set_pwm(APM_RC.InputCh(CH_7));
 	g.rc_8.set_pwm(APM_RC.InputCh(CH_8));
 
-	//  TO DO  - go through and patch throttle reverse for RC_Channel library compatibility
-	#if THROTTLE_REVERSE == 1
-		g.channel_throttle.radio_in = g.channel_throttle.radio_max + g.channel_throttle.radio_min - g.channel_throttle.radio_in;
-	#endif
-
 	control_failsafe(g.channel_throttle.radio_in);
 
 	g.channel_throttle.servo_out = g.channel_throttle.control_in;
