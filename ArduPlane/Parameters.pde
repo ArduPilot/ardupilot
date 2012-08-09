@@ -379,9 +379,15 @@ const AP_Param::Info var_info[] PROGMEM = {
 
     // @Param: RST_SWITCH_CH
 	// @DisplayName: Reset Switch Channel
-	// @Description: RC channel to use to reset to last flight mode after geofence takeover
+	// @Description: RC channel to use to reset to last flight mode	after geofence takeover.
 	// @User: Advanced
 	GSCALAR(reset_switch_chan,      "RST_SWITCH_CH",  0),
+
+    // @Param: RST_MISSION_CH
+	// @DisplayName: Reset Mission Channel
+	// @Description: RC channel to use to reset the mission to the first waypoint. When this channel goes above 1750 the mission is reset. Set RST_MISSION_CH to 0 to disable.
+	// @User: Advanced
+	GSCALAR(reset_mission_chan,      "RST_MISSION_CH",  0),
 
     // @Param: TRIM_ARSPD_CM
 	// @DisplayName: Target airspeed
