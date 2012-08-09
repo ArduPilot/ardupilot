@@ -115,4 +115,7 @@ static inline int comm_get_txspace(mavlink_channel_t chan)
 
 uint8_t mavlink_check_target(uint8_t sysid, uint8_t compid);
 
+// return a MAVLink variable type given a AP_Param type
+uint8_t mav_var_type(enum ap_var_type t);
+
 #endif // GCS_MAVLink_h

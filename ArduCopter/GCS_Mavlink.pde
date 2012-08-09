@@ -1,7 +1,5 @@
 // -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 
-#include "Mavlink_compat.h"
-
 // use this to prevent recursion during sensor init
 static bool in_mavlink_delay;
 
@@ -450,7 +448,7 @@ static void NOINLINE send_gps_status(mavlink_channel_t chan)
 
 static void NOINLINE send_current_waypoint(mavlink_channel_t chan)
 {
-    mavlink_msg_waypoint_current_send(
+    mavlink_msg_mission_current_send(
         chan,
         (uint16_t)g.command_index);
 }
@@ -552,7 +550,7 @@ static bool mavlink_try_send_message(mavlink_channel_t chan, enum ap_message id,
         break;
 
     case MSG_CURRENT_WAYPOINT:
-        CHECK_PAYLOAD_SIZE(WAYPOINT_CURRENT);
+        CHECK_PAYLOAD_SIZE(MISSION_CURRENT);
         send_current_waypoint(chan);
         break;
 
@@ -566,7 +564,7 @@ static bool mavlink_try_send_message(mavlink_channel_t chan, enum ap_message id,
         break;
 
     case MSG_NEXT_WAYPOINT:
-        CHECK_PAYLOAD_SIZE(WAYPOINT_REQUEST);
+        CHECK_PAYLOAD_SIZE(MISSION_REQUEST);
         if (chan == MAVLINK_COMM_0) {
             gcs0.queued_waypoint_send();
         } else {
@@ -1107,18 +1105,18 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
 			break;
 		}
 	*/
-	case MAVLINK_MSG_ID_WAYPOINT_REQUEST_LIST: //43
+	case MAVLINK_MSG_ID_MISSION_REQUEST_LIST: //43
 		{
 			//send_text_P(SEVERITY_LOW,PSTR("waypoint request list"));
 
 			// decode
-			mavlink_waypoint_request_list_t packet;
-			mavlink_msg_waypoint_request_list_decode(msg, &packet);
+			mavlink_mission_request_list_t packet;
+			mavlink_msg_mission_request_list_decode(msg, &packet);
 			if (mavlink_check_target(packet.target_system, packet.target_component))
 				break;
 
 			// Start sending waypoints
-			mavlink_msg_waypoint_count_send(
+			mavlink_msg_mission_count_send(
 				chan,msg->sysid,
 				msg->compid,
 				g.command_total); // includes home
@@ -1132,7 +1130,7 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
 		}
 
 	// XXX read a WP from EEPROM and send it to the GCS
-	case MAVLINK_MSG_ID_WAYPOINT_REQUEST: // 40
+	case MAVLINK_MSG_ID_MISSION_REQUEST: // 40
 		{
 			//send_text_P(SEVERITY_LOW,PSTR("waypoint request"));
 
@@ -1141,8 +1139,8 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
 			// 5/10/11 - We are trying out relaxing the requirement that we be in waypoint sending mode to respond to a waypoint request.  DEW
 
 			// decode
-			mavlink_waypoint_request_t packet;
-			mavlink_msg_waypoint_request_decode(msg, &packet);
+			mavlink_mission_request_t packet;
+			mavlink_msg_mission_request_decode(msg, &packet);
 
  			if (mavlink_check_target(packet.target_system, packet.target_component))
  				break;
@@ -1238,7 +1236,7 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
 					break;
 			}
 
-			mavlink_msg_waypoint_send(chan,msg->sysid,
+			mavlink_msg_mission_item_send(chan,msg->sysid,
 										msg->compid,
 										packet.seq,
 										frame,
@@ -1258,13 +1256,13 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
 			break;
 		}
 
-	case MAVLINK_MSG_ID_WAYPOINT_ACK: //47
+	case MAVLINK_MSG_ID_MISSION_ACK: //47
 		{
 			//send_text_P(SEVERITY_LOW,PSTR("waypoint ack"));
 
 			// decode
-			mavlink_waypoint_ack_t packet;
-			mavlink_msg_waypoint_ack_decode(msg, &packet);
+			mavlink_mission_ack_t packet;
+			mavlink_msg_mission_ack_decode(msg, &packet);
 			if (mavlink_check_target(packet.target_system,packet.target_component)) break;
 
 			// turn off waypoint send
@@ -1289,13 +1287,13 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
 			break;
 		}
 
-	case MAVLINK_MSG_ID_WAYPOINT_CLEAR_ALL: // 45
+	case MAVLINK_MSG_ID_MISSION_CLEAR_ALL: // 45
 		{
 			//send_text_P(SEVERITY_LOW,PSTR("waypoint clear all"));
 
 			// decode
-			mavlink_waypoint_clear_all_t packet;
-			mavlink_msg_waypoint_clear_all_decode(msg, &packet);
+			mavlink_mission_clear_all_t packet;
+			mavlink_msg_mission_clear_all_decode(msg, &packet);
 			if (mavlink_check_target(packet.target_system, packet.target_component)) break;
 
 			// clear all waypoints
@@ -1304,34 +1302,34 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
 
 			// send acknowledgement 3 times to makes sure it is received
 			for (int i=0;i<3;i++)
-				mavlink_msg_waypoint_ack_send(chan, msg->sysid, msg->compid, type);
+				mavlink_msg_mission_ack_send(chan, msg->sysid, msg->compid, type);
 
 			break;
 		}
 
-	case MAVLINK_MSG_ID_WAYPOINT_SET_CURRENT: // 41
+	case MAVLINK_MSG_ID_MISSION_SET_CURRENT: // 41
 		{
 			//send_text_P(SEVERITY_LOW,PSTR("waypoint set current"));
 
 			// decode
-			mavlink_waypoint_set_current_t packet;
-			mavlink_msg_waypoint_set_current_decode(msg, &packet);
+			mavlink_mission_set_current_t packet;
+			mavlink_msg_mission_set_current_decode(msg, &packet);
 			if (mavlink_check_target(packet.target_system,packet.target_component)) break;
 
 			// set current command
 			change_command(packet.seq);
 
-			mavlink_msg_waypoint_current_send(chan, g.command_index);
+			mavlink_msg_mission_current_send(chan, g.command_index);
 			break;
 		}
 
-	case MAVLINK_MSG_ID_WAYPOINT_COUNT: // 44
+	case MAVLINK_MSG_ID_MISSION_COUNT: // 44
 		{
 			//send_text_P(SEVERITY_LOW,PSTR("waypoint count"));
 
 			// decode
-			mavlink_waypoint_count_t packet;
-			mavlink_msg_waypoint_count_decode(msg, &packet);
+			mavlink_mission_count_t packet;
+			mavlink_msg_mission_count_decode(msg, &packet);
 			if (mavlink_check_target(packet.target_system,packet.target_component)) break;
 
 			// start waypoint receiving
@@ -1360,11 +1358,11 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
 #endif
 
 	// XXX receive a WP from GCS and store in EEPROM
-	case MAVLINK_MSG_ID_WAYPOINT: //39
+	case MAVLINK_MSG_ID_MISSION_ITEM: //39
 		{
 			// decode
-			mavlink_waypoint_t packet;
-			mavlink_msg_waypoint_decode(msg, &packet);
+			mavlink_mission_item_t packet;
+			mavlink_msg_mission_item_decode(msg, &packet);
 			if (mavlink_check_target(packet.target_system,packet.target_component)) break;
 
 			// defaults
@@ -1484,7 +1482,7 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
 				set_next_WP(&guided_WP);
 
 				// verify we recevied the command
-				mavlink_msg_waypoint_ack_send(
+				mavlink_msg_mission_ack_send(
 						chan,
 						msg->sysid,
 						msg->compid,
@@ -1512,7 +1510,7 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
 				if (waypoint_request_i == (uint16_t)g.command_total){
 					uint8_t type = 0; // ok (0), error(1)
 
-					mavlink_msg_waypoint_ack_send(
+					mavlink_msg_mission_ack_send(
 						chan,
 						msg->sysid,
 						msg->compid,
@@ -1910,7 +1908,7 @@ GCS_MAVLINK::queued_waypoint_send()
 {
     if (waypoint_receiving &&
         waypoint_request_i < (unsigned)g.command_total) {
-        mavlink_msg_waypoint_request_send(
+        mavlink_msg_mission_request_send(
             chan,
             waypoint_dest_sysid,
             waypoint_dest_compid,
