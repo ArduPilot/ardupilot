@@ -60,10 +60,6 @@ AP_Baro_BMP085_HIL      barometer;
 
 SITL					sitl;
 
-BetterStream  *mavlink_comm_0_port;
-BetterStream  *mavlink_comm_1_port;
-mavlink_system_t mavlink_system = {7,1,0,0};
-
 FastSerialPort0(Serial);
 FastSerialPort1(Serial1);       // GPS port
 
