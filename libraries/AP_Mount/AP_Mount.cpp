@@ -61,88 +61,88 @@ const AP_Param::GroupInfo AP_Mount::var_info[] PROGMEM = {
 	// @User: Standard
     AP_GROUPINFO("STAB_PAN",   6, AP_Mount, _stab_pan,  0),
 
-	// @Param: ROLL_RC_IN
+	// @Param: RC_IN_ROLL
 	// @DisplayName: roll RC input channel
 	// @Description: 0 for none, any other for the RC channel to be used to control roll movements
 	// @Values: 0:Disabled,5:RC5,6:RC6,7:RC7,8:RC8
 	// @User: Standard
-	AP_GROUPINFO("ROLL_RC_IN",  7, AP_Mount, _roll_rc_in, 0),
+	AP_GROUPINFO("RC_IN_ROLL",  7, AP_Mount, _roll_rc_in, 0),
 
-	// @Param: ROLL_ANGLE_MIN
+	// @Param: ANGMIN_ROL
 	// @DisplayName: Minimum roll angle
 	// @Description: Minimum physical roll angular position of mount.
 	// @Units: centi-Degrees
 	// @Range: -18000 17999
 	// @Increment: 1
 	// @User: Standard
-	AP_GROUPINFO("ROLL_ANGMIN", 8, AP_Mount, _roll_angle_min, -4500),
+	AP_GROUPINFO("ANGMIN_ROL", 8, AP_Mount, _roll_angle_min, -4500),
 
-	// @Param: ROLL_ANGLE_MAX
+	// @Param: ANGMAX_ROL
 	// @DisplayName: Maximum roll angle
 	// @Description: Maximum physical roll angular position of the mount
 	// @Units: centi-Degrees
 	// @Range: -18000 17999
 	// @Increment: 1
 	// @User: Standard
-	AP_GROUPINFO("ROLL_ANGMAX", 9, AP_Mount, _roll_angle_max, 4500),
+	AP_GROUPINFO("ANGMAX_ROL", 9, AP_Mount, _roll_angle_max, 4500),
 
-	// @Param: TILT_RC_IN
+	// @Param: RC_IN_TILT
 	// @DisplayName: tilt (pitch) RC input channel
 	// @Description: 0 for none, any other for the RC channel to be used to control tilt (pitch) movements
 	// @Values: 0:Disabled,5:RC5,6:RC6,7:RC7,8:RC8
 	// @User: Standard
-	AP_GROUPINFO("TILT_RC_IN",  10, AP_Mount, _tilt_rc_in,    0),
+	AP_GROUPINFO("RC_IN_TILT",  10, AP_Mount, _tilt_rc_in,    0),
 
-	// @Param: TILT_ANGLE_MIN
+	// @Param: ANGMIN_TIL
 	// @DisplayName: Minimum tilt angle
 	// @Description: Minimum physical tilt (pitch) angular position of mount.
 	// @Units: centi-Degrees
 	// @Range: -18000 17999
 	// @Increment: 1
 	// @User: Standard
-	AP_GROUPINFO("TILT_ANGMIN", 11, AP_Mount, _tilt_angle_min, -4500),
+	AP_GROUPINFO("ANGMIN_TIL", 11, AP_Mount, _tilt_angle_min, -4500),
 
-	// @Param: TILT_ANGLE_MAX
+	// @Param: ANGMAX_TIL
 	// @DisplayName: Maximum tilt angle
 	// @Description: Maximum physical tilt (pitch) angular position of the mount
 	// @Units: centi-Degrees
 	// @Range: -18000 17999
 	// @Increment: 1
 	// @User: Standard
-	AP_GROUPINFO("TILT_ANGMAX", 12, AP_Mount, _tilt_angle_max, 4500),
+	AP_GROUPINFO("ANGMAX_TIL", 12, AP_Mount, _tilt_angle_max, 4500),
 
-	// @Param: PAN_RC_IN
+	// @Param: RC_IN_PAN
 	// @DisplayName: pan (yaw) RC input channel
 	// @Description: 0 for none, any other for the RC channel to be used to control pan (yaw) movements
 	// @Values: 0:Disabled,5:RC5,6:RC6,7:RC7,8:RC8
 	// @User: Standard
-	AP_GROUPINFO("PAN_RC_IN",  13, AP_Mount, _pan_rc_in,       0),
+	AP_GROUPINFO("RC_IN_PAN",  13, AP_Mount, _pan_rc_in,       0),
 
-	// @Param: PAN_ANGLE_MIN
+	// @Param: ANGMIN_PAN
 	// @DisplayName: Minimum pan angle
 	// @Description: Minimum physical pan (yaw) angular position of mount.
 	// @Units: centi-Degrees
 	// @Range: -18000 17999
 	// @Increment: 1
 	// @User: Standard
-	AP_GROUPINFO("PAN_ANGMIN",  14, AP_Mount, _pan_angle_min,  -4500),
+	AP_GROUPINFO("ANGMIN_PAN",  14, AP_Mount, _pan_angle_min,  -4500),
 
-	// @Param: PAN_ANGLE_MAX
+	// @Param: ANGMAX_PAN
 	// @DisplayName: Maximum pan angle
 	// @Description: Maximum physical pan (yaw) angular position of the mount
 	// @Units: centi-Degrees
 	// @Range: -18000 17999
 	// @Increment: 1
 	// @User: Standard
-	AP_GROUPINFO("PAN_ANGMAX",  15, AP_Mount, _pan_angle_max,  4500),
+	AP_GROUPINFO("ANGMAX_PAN",  15, AP_Mount, _pan_angle_max,  4500),
 
-	// @Param: JOYSTICK_SPEED
+	// @Param: JSTICK_SPD
 	// @DisplayName: mount joystick speed
 	// @Description: 0 for position control, small for low speeds, 10 for max speed
 	// @Range: 0 10
 	// @Increment: 1
 	// @User: Standard
-	AP_GROUPINFO("JOYSTICK_SPEED",  16, AP_Mount, _joystick_speed, 0),
+	AP_GROUPINFO("JSTICK_SPD",  16, AP_Mount, _joystick_speed, 0),
 
 	AP_GROUPEND
 };
