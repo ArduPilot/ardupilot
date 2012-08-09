@@ -370,13 +370,12 @@ void AP_InertialSensor_MPU6000::read(uint32_t )
 
 uint8_t AP_InertialSensor_MPU6000::register_read( uint8_t reg )
 {
-  uint8_t dump;
   uint8_t return_value;
   uint8_t addr = reg | 0x80; // Set most significant bit
 
   digitalWrite(_cs_pin, LOW);
 
-  dump = SPI.transfer(addr);
+  SPI.transfer(addr);
   return_value = SPI.transfer(0);
 
   digitalWrite(_cs_pin, HIGH);
@@ -386,10 +385,9 @@ uint8_t AP_InertialSensor_MPU6000::register_read( uint8_t reg )
 
 void AP_InertialSensor_MPU6000::register_write(uint8_t reg, uint8_t val)
 {
-  uint8_t dump;
   digitalWrite(_cs_pin, LOW);
-  dump = SPI.transfer(reg);
-  dump = SPI.transfer(val);
+  SPI.transfer(reg);
+  SPI.transfer(val);
   digitalWrite(_cs_pin, HIGH);
 }
 
@@ -551,14 +549,12 @@ void AP_InertialSensor_MPU6000::set_accel_offsets(int16_t offsetX, int16_t offse
 //    at a time into the MPUREG_MEM_R_W register
 void AP_InertialSensor_MPU6000::dmp_register_write(uint8_t bank, uint8_t address, uint8_t num_bytes, uint8_t data[])
 {
-  uint8_t dump;
-
   register_write(MPUREG_BANK_SEL,bank);
   register_write(MPUREG_MEM_START_ADDR,address);
   digitalWrite(_cs_pin, LOW);
-  dump = SPI.transfer(MPUREG_MEM_R_W);
-  for( uint8_t i=0; i<num_bytes; i++ ) {
-    dump = SPI.transfer(data[i]);
+  SPI.transfer(MPUREG_MEM_R_W);
+  for (uint8_t i=0; i<num_bytes; i++) {
+      SPI.transfer(data[i]);
   }
   digitalWrite(_cs_pin, HIGH);
 }
@@ -663,10 +659,9 @@ void AP_InertialSensor_MPU6000::FIFO_getPacket()
 {
 	uint8_t i;
 	int16_t q_long[4];
-	uint8_t dump;
 	uint8_t addr = MPUREG_FIFO_R_W | 0x80;	// Set most significant bit to indicate a read
 	digitalWrite(_cs_pin, LOW);				// enable the device
-	dump = SPI.transfer(addr);				// send address we want to read from
+	SPI.transfer(addr);				// send address we want to read from
 	for(i = 0; i < _fifoCountL; i++){
 		_received_packet[i] = SPI.transfer(0);	// request value
 	}
@@ -854,16 +849,15 @@ void AP_InertialSensor_MPU6000::dmp_set_fifo_rate(uint8_t rate)
 // The official invensense name is inv_key_0_96 (??)
 void AP_InertialSensor_MPU6000::dmp_set_sensor_fusion_accel_gain(uint8_t gain)
 {
-	uint8_t dump;
 	//inv_key_0_96
 	register_write(MPUREG_BANK_SEL,0x00);
 	register_write(MPUREG_MEM_START_ADDR, 0x60);
 	digitalWrite(_cs_pin, LOW);
-	dump = SPI.transfer(MPUREG_MEM_R_W);
-	dump = SPI.transfer(0x00);
-	dump = SPI.transfer(gain);  // Original : 0x80    To test: 0x40,  0x20 (too less)
-	dump = SPI.transfer(0x00);
-	dump = SPI.transfer(0x00);
+	SPI.transfer(MPUREG_MEM_R_W);
+	SPI.transfer(0x00);
+	SPI.transfer(gain);  // Original : 0x80    To test: 0x40,  0x20 (too less)
+	SPI.transfer(0x00);
+	SPI.transfer(0x00);
 	digitalWrite(_cs_pin, HIGH);
 }
 
