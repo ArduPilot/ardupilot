@@ -367,12 +367,6 @@ static void set_servos(void)
 
 		g.channel_throttle.calc_pwm();
 
-		/*  TO DO - fix this for RC_Channel library
-		#if THROTTLE_REVERSE == 1
-			radio_out[CH_THROTTLE] = radio_max(CH_THROTTLE) + radio_min(CH_THROTTLE) - radio_out[CH_THROTTLE];
-		#endif
-		*/
-
         if (control_mode >= FLY_BY_WIRE_B) {
             /* only do throttle slew limiting in modes where throttle
                control is automatic */

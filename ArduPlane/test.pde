@@ -157,11 +157,6 @@ test_radio(uint8_t argc, const Menu::arg *argv)
 	print_hit_enter();
 	delay(1000);
 
-	#if THROTTLE_REVERSE == 1
-		Serial.printf_P(PSTR("Throttle is reversed in config: \n"));
-		delay(1000);
-	#endif
-
 	// read the radio to set trims
 	// ---------------------------
 	trim_radio();
