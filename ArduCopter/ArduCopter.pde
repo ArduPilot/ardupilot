@@ -544,7 +544,7 @@ static int32_t	target_bearing;
 // NO_NAV_MODE, WP_MODE, LOITER_MODE, CIRCLE_MODE
 static byte	wp_control;
 // Register containing the index of the current navigation command in the mission script
-static uint8_t	command_nav_index;
+static int16_t	command_nav_index;
 // Register containing the index of the previous navigation command in the mission script
 // Used to manage the execution of conditional commands
 static uint8_t	prev_nav_index;
@@ -632,8 +632,8 @@ static struct 	Location circle_WP;
 static bool do_flip = false;
 // Used to track the CH7 toggle state.
 // When CH7 goes LOW PWM from HIGH PWM, this value will have been set true
-// This allows advanced functionality to know when to execute
-static boolean trim_flag;
+// Allows advanced functionality to know when to execute
+static boolean CH7_flag;
 // This register tracks the current Mission Command index when writing
 // a mission using CH7 in flight
 static int8_t CH7_wp_index;
@@ -710,26 +710,6 @@ static int16_t ground_detector;
 // have we reached our desired altitude brefore heading home?
 static bool	rtl_reached_alt;
 
-////////////////////////////////////////////////////////////////////////////////
-// Toy Mode - THOR
-////////////////////////////////////////////////////////////////////////////////
-#define TOY_LOOKUP 0
-#define TOY_DELAY	150				// Equal to 1.5 s at 100hz
-static uint8_t 	toy_input_timer;	// A delay timer to engage loiter or WP mode
-static int16_t 	toy_speed;			// TO remember how fast we are going when we enage WP mode
-
-#if TOY_LOOKUP == 1
-static const int16_t  toy_lookup[] = {
-		186, 	373, 	558, 	745,
-		372, 	745, 	1117, 	1490,
-		558, 	1118, 	1675, 	2235,
-		743, 	1490, 	2233, 	2980,
-		929, 	1863, 	2792, 	3725,
-		1115, 	2235, 	3350, 	4470,
-		1301, 	2608, 	3908, 	4500,
-		1487, 	2980, 	4467, 	4500,
-		1673, 	3353, 	4500, 	4500};
-#endif
 
 ////////////////////////////////////////////////////////////////////////////////
 // Navigation general
@@ -762,6 +742,9 @@ static struct 	Location command_nav_queue;
 static struct 	Location command_cond_queue;
 // Holds the current loaded command from the EEPROM for guided mode
 static struct   Location guided_WP;
+
+// should we take the waypoint quickly or slow down?
+static bool 	fast_corner;
 
 ////////////////////////////////////////////////////////////////////////////////
 // Crosstrack
@@ -809,13 +792,8 @@ static uint32_t throttle_integrator;
 // Climb rate control
 ////////////////////////////////////////////////////////////////////////////////
 // Time when we intiated command in millis - used for controlling decent rate
-// The orginal altitude used to base our new altitude during decent
-static int32_t 	original_altitude;
 // Used to track the altitude offset for climbrate control
-static int32_t 	target_altitude;
-static uint32_t alt_change_timer;
 static int8_t 	alt_change_flag;
-static uint32_t alt_change;
 
 ////////////////////////////////////////////////////////////////////////////////
 // Navigation Yaw control
@@ -1163,11 +1141,14 @@ static void medium_loop()
 		case 2:
 			medium_loopCounter++;
 
-			// Read altitude from sensors
-			// --------------------------
-			//#if HIL_MODE != HIL_MODE_ATTITUDE					// don't execute in HIL mode
-			//update_altitude();
-			//#endif
+			if(control_mode == TOY){
+				update_toy_throttle();
+
+				if(throttle_mode == THROTTLE_AUTO){
+					update_toy_altitude();
+				}
+			}
+
 			alt_sensor_flag = true;
 			break;
 
@@ -1256,6 +1237,10 @@ static void fifty_hz_loop()
 			sonar_alt = sonar.read();
 		}
     #endif
+
+	#if TOY_EDF == ENABLED
+	edf_toy();
+	#endif
 
 	// syncronise optical flow reads with altitude reads
 	#ifdef OPTFLOW_ENABLED
@@ -1575,6 +1560,11 @@ void update_yaw_mode(void)
 			return;
 			break;
 
+		// update to allow external roll/yaw mixing
+		#if TOY_LOOKUP == TOY_EXTERNAL_MIXER
+		case YAW_TOY:
+		#endif
+
 		case YAW_HOLD:
 			if(g.rc_4.control_in != 0){
 				g.rc_4.servo_out = get_acro_yaw(g.rc_4.control_in);
@@ -1602,23 +1592,16 @@ void update_yaw_mode(void)
 
 		case YAW_LOOK_AT_HOME:
 			//nav_yaw updated in update_navigation()
+			g.rc_4.servo_out = get_stabilize_yaw(nav_yaw);
 			break;
 
 		case YAW_AUTO:
 			nav_yaw += constrain(wrap_180(auto_yaw - nav_yaw), -60, 60); // 40 deg a second
 			//Serial.printf("nav_yaw %d ", nav_yaw);
 			nav_yaw  = wrap_360(nav_yaw);
+			g.rc_4.servo_out = get_stabilize_yaw(nav_yaw);
 			break;
-
-		case YAW_TOY:
-			return;
-
 	}
-
-	// Yaw control
-	g.rc_4.servo_out = get_stabilize_yaw(nav_yaw);
-
-	//Serial.printf("4: %d\n",g.rc_4.servo_out);
 }
 
 void update_roll_pitch_mode(void)
@@ -1626,7 +1609,7 @@ void update_roll_pitch_mode(void)
 	int control_roll, control_pitch;
 
 	if (do_flip){
-		if(abs(g.rc_1.control_in) < 2000){
+		if(abs(g.rc_1.control_in) < 4000){
 			roll_flip();
 			return;
 		}else{
@@ -1845,7 +1828,6 @@ void update_throttle_mode(void)
 			// calculate angle boost
 			angle_boost = get_angle_boost(g.throttle_cruise);
 
-			// 10hz
 			if(motors.auto_armed() == true){
 
 				// how far off are we
@@ -1854,6 +1836,7 @@ void update_throttle_mode(void)
 				int16_t desired_speed;
 				if(alt_change_flag == REACHED_ALT){ // we are at or above the target alt
 					desired_speed 		= g.pi_alt_hold.get_p(altitude_error);			// calculate desired speed from lon error
+					update_throttle_cruise(g.pi_alt_hold.get_i(altitude_error, .02));
 					desired_speed		= constrain(desired_speed, -250, 250);
 					nav_throttle 		= get_throttle_rate(desired_speed);
 				}else{
@@ -2102,9 +2085,9 @@ static void update_trig(void){
 static void update_altitude()
 {
 	static int16_t 	old_sonar_alt 	= 0;
-	static int32_t 	old_baro_alt 	= 0;
 
 	#if HIL_MODE == HIL_MODE_ATTITUDE
+		static int32_t 	old_baro_alt 	= 0;
 		// we are in the SIM, fake out the baro and Sonar
 		int fake_relative_alt = g_gps->altitude - gps_base_alt;
 		baro_alt			= fake_relative_alt;
@@ -2189,7 +2172,7 @@ static void update_altitude()
 	}
 
 	// update the target altitude
-	next_WP.alt = get_new_altitude();
+	verify_altitude();
 
 	// calc error
 	climb_rate_error = (climb_rate_actual - climb_rate) / 5;
@@ -2452,9 +2435,6 @@ static void update_nav_wp()
 		int16_t speed = get_desired_speed(g.waypoint_speed_max, slow_wp);
 		// use error as the desired rate towards the target
 		calc_nav_rate(speed);
-
-	}else if(wp_control == TOY_MODE){ // THOR added to navigate to Virtual WP
-		calc_nav_rate(toy_speed);
 
 	}else if(wp_control == NO_NAV_MODE){
 		// clear out our nav so we can do things like land straight down
