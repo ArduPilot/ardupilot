@@ -95,7 +95,7 @@ public:
     /// the system, as they can be validated by the system when the client hands
     /// them back.
     ///
-    typedef uint32_t Meta_handle;
+    typedef uintptr_t Meta_handle;
 
     /// Return a value that can be used as an external pointer to an instance
     /// of a subclass.
