@@ -12,13 +12,24 @@ static void arm_motors()
 	static int arming_counter;
 
 	// don't allow arming/disarming in anything but manual
-	if ((g.rc_3.control_in > 0) || (control_mode >= ALT_HOLD) || (control_mode == TOY) || (arming_counter > LEVEL_DELAY)){
+	if ((g.rc_3.control_in > 0) || (arming_counter > LEVEL_DELAY)){
 		arming_counter = 0;
 		return;
 	}
 
+	if ((control_mode > ACRO) && (control_mode != TOY)){
+		arming_counter = 0;
+		return;
+	}
+
+	#if TOY_EDF == ENABLED
+		int16_t tmp = g.rc_1.control_in;
+	#else
+		int16_t tmp = g.rc_4.control_in;
+	#endif
+
 	// full right
-	if (g.rc_4.control_in > 4000) {
+	if (tmp > 4000) {
 		if (arming_counter == LEVEL_DELAY){
 			//Serial.printf("\nAL\n");
 			// begin auto leveling
@@ -62,7 +73,7 @@ static void arm_motors()
 		}
 
 	// full left
-	}else if (g.rc_4.control_in < -4000) {
+	}else if (tmp < -4000) {
 		if (arming_counter == LEVEL_DELAY){
 			//Serial.printf("\nLEV\n");
 
@@ -137,6 +148,9 @@ static void init_arm_motors()
 		startup_ground();
 	}
 
+	ahrs._kp.set(0.1);
+	ahrs._kp_yaw.set(0.1);
+
 	#if HIL_MODE != HIL_MODE_ATTITUDE
 		// read Baro pressure at ground -
 		// this resets Baro for more accuracy
@@ -161,6 +175,9 @@ static void init_disarm_motors()
 	compass.save_offsets();
 
 	g.throttle_cruise.save();
+
+	ahrs._kp.set(0.8);
+	ahrs._kp_yaw.set(0.8);
 
 	// we are not in the air
 	takeoff_complete = false;
