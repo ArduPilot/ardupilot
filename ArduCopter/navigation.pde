@@ -21,7 +21,7 @@ static bool check_missed_wp()
 	int32_t temp;
 	temp = target_bearing - original_target_bearing;
 	temp = wrap_180(temp);
-	return (abs(temp) > 10000);	// we passed the waypoint by 100 degrees
+	return (abs(temp) > 9000);	// we passed the waypoint by 100 degrees
 }
 
 // ------------------------------
@@ -259,12 +259,10 @@ static int16_t get_desired_speed(int16_t max_speed, bool _slow)
 	           |< we should slow to 1.5 m/s as we hit the target
 	*/
 
-	// max_speed is default 600 or 6m/s
-	if(_slow){
-		max_speed 		= min(max_speed, wp_distance / 4);
-		max_speed 		= max(max_speed, 100);
+	if(fast_corner){
+		//max_speed 		= max_speed;
 	}else{
-		max_speed 		= min(max_speed, wp_distance / 2);
+		max_speed 		= min(max_speed, (wp_distance - g.waypoint_radius) / 3);
 		max_speed 		= max(max_speed, WAYPOINT_SPEED_MIN);	// go at least 100cm/s
 	}
 
@@ -305,8 +303,7 @@ static int32_t get_altitude_error()
 	// Next_WP alt is our target alt
 	// It changes based on climb rate
 	// until it reaches the target_altitude
-	//return next_WP.alt - current_loc.alt;
-	return target_altitude - current_loc.alt;
+	return next_WP.alt - current_loc.alt;
 }
 
 static void clear_new_altitude()
@@ -317,115 +314,39 @@ static void clear_new_altitude()
 static void force_new_altitude(int32_t _new_alt)
 {
 	next_WP.alt 	= _new_alt;
-	target_altitude = _new_alt;
 	alt_change_flag = REACHED_ALT;
 }
 
 static void set_new_altitude(int32_t _new_alt)
 {
-	if(_new_alt == current_loc.alt){
-		force_new_altitude(_new_alt);
-		return;
-	}
+	next_WP.alt 	= _new_alt;
 
-	// We start at the current location altitude and gradually change alt
-	next_WP.alt = current_loc.alt;
-
-	// for calculating the delta time
-	alt_change_timer = millis();
-
-	// save the target altitude
-	target_altitude = _new_alt;
-
-	// reset our altitude integrator
-	alt_change = 0;
-
-	// save the original altitude
-	original_altitude = current_loc.alt;
-
-	// to decide if we have reached the target altitude
-	if(target_altitude > original_altitude){
+	if(next_WP.alt > current_loc.alt + 20){
 		// we are below, going up
 		alt_change_flag = ASCENDING;
-		//Serial.printf("go up\n");
-	}else if(target_altitude < original_altitude){
+
+	}else if(next_WP.alt < current_loc.alt - 20){
 		// we are above, going down
 		alt_change_flag = DESCENDING;
-		//Serial.printf("go down\n");
+
 	}else{
 		// No Change
 		alt_change_flag = REACHED_ALT;
-		//Serial.printf("reached alt\n");
 	}
-	//Serial.printf("new alt: %d Org alt: %d\n", target_altitude, original_altitude);
 }
 
-static int32_t get_new_altitude()
+static void verify_altitude()
 {
-	// returns a new next_WP.alt
-
 	if(alt_change_flag == ASCENDING){
 		// we are below, going up
-		if(current_loc.alt >  target_altitude){
+		if(current_loc.alt >  next_WP.alt - 50){
 			alt_change_flag = REACHED_ALT;
-		}
-
-		// we shouldn't command past our target
-		if(next_WP.alt >=  target_altitude){
-			return target_altitude;
 		}
 	}else if (alt_change_flag == DESCENDING){
 		// we are above, going down
-		if(current_loc.alt <=  target_altitude)
+		if(current_loc.alt <=  next_WP.alt + 50)
 			alt_change_flag = REACHED_ALT;
-
-		// we shouldn't command past our target
-		if(next_WP.alt <=  target_altitude){
-			return target_altitude;
-		}
 	}
-
-	// if we have reached our target altitude, return the target alt
-	if(alt_change_flag == REACHED_ALT){
-		return target_altitude;
-	}
-
-	int32_t diff 	= abs(next_WP.alt - target_altitude);
-	// scale is how we generate a desired rate from the elapsed time
-	// a smaller scale means faster rates
-	int8_t			_scale 	= 4;
-
-	if (next_WP.alt < target_altitude){
-		// we are below the target alt
-		if(diff < 200){
-			_scale = 4;
-		} else {
-			_scale = 3;
-		}
-	}else {
-		// we are above the target, going down
-		if(diff < 400){
-			_scale = 5;
-		}
-		if(diff < 100){
-			_scale = 6;
-		}
-	}
-
-	// we use the elapsed time as our altitude offset
-	// 1000 = 1 sec
-	// 1000 >> 4 = 64cm/s descent by default
-	int32_t change = (millis() - alt_change_timer) >> _scale;
-
-	if(alt_change_flag == ASCENDING){
-		alt_change += change;
-	}else{
-		alt_change -= change;
-	}
-	// for generating delta time
-	alt_change_timer = millis();
-
-	return original_altitude + alt_change;
 }
 
 
