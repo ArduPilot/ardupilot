@@ -10,78 +10,58 @@ uint8_t flip_timer;
 uint8_t	flip_state;
 
 #define AAP_THR_INC 170
-#define AAP_THR_DEC 90
+#define AAP_THR_DEC 120
 #define AAP_ROLL_OUT 2000
+
+static int8_t flip_dir;
 
 void init_flip()
 {
 	if(do_flip == false){
 		do_flip = true;
-		flip_timer = 0;
 		flip_state = 0;
+		flip_dir = (ahrs.roll_sensor >= 0) ? 1 :-1;
 	}
 }
 
 void roll_flip()
 {
-	// Yaw
-	g.rc_4.servo_out = get_stabilize_yaw(nav_yaw);
-
 	// Pitch
-	g.rc_2.servo_out = get_stabilize_pitch(0);
+	g.rc_2.servo_out = get_stabilize_pitch(g.rc_2.control_in);
+
+	int32_t roll = ahrs.roll_sensor * flip_dir;
 
 	// Roll State machine
 	switch (flip_state){
-		case 0: // Step 1 : Initialize
-			flip_timer = 0;
-			flip_state++;
-			break;
-		case 1: // Step 2 : Increase throttle to start maneuver
-			if (flip_timer < 90){ 	// .5 seconds
-				g.rc_1.servo_out = get_stabilize_roll(0);
-				g.rc_3.servo_out = g.throttle_cruise + AAP_THR_INC;
-				flip_timer++;
-			}else{
-				flip_state++;
-				flip_timer = 0;
-			}
-			break;
-
-		case 2: // Step 3 : ROLL (until we reach a certain angle [45deg])
-			if (ahrs.roll_sensor < 4500){
+		case 0:
+			if (roll < 4500){
 				// Roll control
-				g.rc_1.servo_out = AAP_ROLL_OUT;
-				g.rc_3.servo_out = g.throttle_cruise;
+				g.rc_1.servo_out = AAP_ROLL_OUT * flip_dir;
+				g.rc_3.servo_out = g.rc_3.control_in + AAP_THR_INC;
 			}else{
 				flip_state++;
 			}
 			break;
 
-		case 3: // Step 4 : CONTINUE ROLL (until we reach a certain angle [-45deg])
-			if((ahrs.roll_sensor >= 4500) || (ahrs.roll_sensor < -9000)){// we are in second half of roll
-				//g.rc_1.servo_out = 0;
-				g.rc_1.servo_out = get_rate_roll(40000);
-				g.rc_3.servo_out = g.throttle_cruise - AAP_THR_DEC;
-			}else{
-				flip_state++;
-			}
-			break;
-
-		case 4: // Step 5 : Increase throttle to stop the descend
-			if (flip_timer < 120){ // .5 seconds
-				g.rc_1.servo_out = get_stabilize_roll(0);
-				g.rc_3.servo_out = g.throttle_cruise + g.throttle_cruise / 2;
-				flip_timer++;
+		case 1:
+			if((roll >= 4500) || (roll < -9000)){
+				g.rc_1.servo_out = get_rate_roll(40000 * flip_dir);
+				g.rc_3.servo_out = g.rc_3.control_in - AAP_THR_DEC;
 			}else{
 				flip_state++;
 				flip_timer = 0;
 			}
 			break;
 
-		case 5: // exit mode
-			flip_timer = 0;
-			flip_state = 0;
-			do_flip = false;
+		case 2:
+			if (flip_timer < 100){
+				g.rc_1.servo_out = get_stabilize_roll(g.rc_1.control_in);
+				g.rc_3.servo_out = g.rc_3.control_in + AAP_THR_INC;
+				flip_timer++;
+			}else{
+				do_flip = false;
+				flip_state = 0;
+			}
 			break;
 	}
 }
