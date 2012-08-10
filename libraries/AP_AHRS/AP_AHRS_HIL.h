@@ -33,6 +33,7 @@ public:
 	float get_error_yaw(void) { return 0; }
 
 	// settable parameters
+	AP_Float	_kp;
 	AP_Float	_kp_yaw;
 	AP_Float	gps_gain;
 
