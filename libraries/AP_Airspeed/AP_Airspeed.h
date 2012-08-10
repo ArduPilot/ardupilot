@@ -32,7 +32,7 @@ public:
 	float get_airspeed_cm(void) { return _airspeed*100; }
 
     // return true if airspeed is enabled, and airspeed use is set
-    bool use(void) { return _enable && _use; }
+    bool use(void) { return _enable && _use && _offset != 0; }
 
     // return true if airspeed is enabled
     bool enabled(void) { return _enable; }

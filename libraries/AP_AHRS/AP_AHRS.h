@@ -12,6 +12,7 @@
 #include <AP_Math.h>
 #include <inttypes.h>
 #include <AP_Compass.h>
+#include <AP_Airspeed.h>
 #include <AP_GPS.h>
 #include <AP_IMU.h>
 #include <AP_Baro.h>
@@ -46,6 +47,7 @@ public:
 	void		set_fly_forward(bool b) { _fly_forward = b; }
 	void		set_compass(Compass *compass) { _compass = compass; }
 	void		set_barometer(AP_Baro *barometer) { _barometer = barometer; }
+	void		set_airspeed(AP_Airspeed *airspeed) { _airspeed = airspeed; }
 
 	// Methods
 	virtual void update(void) = 0;
@@ -90,8 +92,11 @@ public:
 	//static const struct AP_Param::GroupInfo var_info[];
 
 protected:
-	// pointer to compass object, if enabled
+	// pointer to compass object, if available
 	Compass 	* _compass;
+
+	// pointer to airspeed object, if available
+	AP_Airspeed     * _airspeed;
 
 	// time in microseconds of last compass update
 	uint32_t        _compass_last_update;
