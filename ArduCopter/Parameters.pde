@@ -369,6 +369,16 @@ static void load_parameters(void)
 		ahrs.gps_gain.set_and_save(0.0);
 	}
 
+	// setup different AHRS gains for ArduCopter than the default
+	// but allow users to override in their config
+	if (!ahrs._kp.load()) {
+		ahrs._kp.set_and_save(0.1);
+	}
+	if (!ahrs._kp_yaw.load()) {
+		ahrs._kp_yaw.set_and_save(0.1);
+	}
+
+
 	if (!g.format_version.load() ||
 	    g.format_version != Parameters::k_format_version) {
 
