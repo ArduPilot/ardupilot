@@ -148,9 +148,6 @@ static void init_arm_motors()
 		startup_ground();
 	}
 
-	ahrs._kp.set(0.1);
-	ahrs._kp_yaw.set(0.1);
-
 	#if HIL_MODE != HIL_MODE_ATTITUDE
 		// read Baro pressure at ground -
 		// this resets Baro for more accuracy
