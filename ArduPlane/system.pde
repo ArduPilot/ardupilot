@@ -183,6 +183,9 @@ static void init_ardupilot()
 	}
 #endif
 
+    // give AHRS the airspeed sensor
+    ahrs.set_airspeed(&airspeed);
+
 	// Do GPS init
 	g_gps = &g_gps_driver;
     // GPS Initialization
