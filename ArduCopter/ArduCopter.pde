@@ -563,7 +563,7 @@ static int16_t waypoint_speed_gov;
 static int32_t	long_error, lat_error;
 // Are we navigating while holding a positon? This is set to false once the speed drops below 1m/s
 static boolean 	loiter_override;
-
+static int16_t waypoint_radius;
 
 ////////////////////////////////////////////////////////////////////////////////
 // Orientation
