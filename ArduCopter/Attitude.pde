@@ -403,6 +403,9 @@ static void reset_nav_params(void)
 
 	// make sure we stick to Nav yaw on takeoff
 	auto_yaw = nav_yaw;
+
+	// revert to smaller radius set in params
+	waypoint_radius = g.waypoint_radius;
 }
 
 /*

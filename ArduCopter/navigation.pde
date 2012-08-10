@@ -260,8 +260,10 @@ static int16_t get_desired_speed(int16_t max_speed, bool _slow)
 	*/
 
 	if(fast_corner){
+		waypoint_radius = g.waypoint_radius * 2;
 		//max_speed 		= max_speed;
 	}else{
+		waypoint_radius = g.waypoint_radius;
 		max_speed 		= min(max_speed, (wp_distance - g.waypoint_radius) / 3);
 		max_speed 		= max(max_speed, WAYPOINT_SPEED_MIN);	// go at least 100cm/s
 	}
