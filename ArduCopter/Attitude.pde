@@ -351,26 +351,6 @@ get_rate_yaw(int32_t target_rate)
 }
 
 static int16_t
-get_nav_throttle(int32_t z_error)
-{
-	int16_t z_target_speed;
-
-	// convert to desired Rate:
-	z_target_speed 		= g.pi_alt_hold.get_p(z_error);
-	z_target_speed 		= constrain(z_target_speed, -250, 250);
-
-	// limit error to prevent I term wind up
-	z_error 		= constrain(z_error, -400, 400);
-
-	// compensates throttle setpoint error for hovering
-	int16_t i_hold 	= g.pi_alt_hold.get_i(z_error, .02);
-
-	// output control:
-	return get_throttle_rate(z_target_speed) + i_hold; //+ boost_p;
-}
-
-
-static int16_t
 get_throttle_rate(int16_t z_target_speed)
 {
 	int16_t z_rate_error, output;
