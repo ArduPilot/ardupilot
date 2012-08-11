@@ -24,6 +24,9 @@
 #include <FastSerial.h>
 #include "AP_Math.h"
 
+// radius of earth in meters
+#define RADIUS_OF_EARTH 6378100
+
 static float longitude_scale(const struct Location *loc)
 {
 	static uint32_t last_lat;
@@ -109,3 +112,37 @@ bool location_passed_point(struct Location &location,
 	return false;	
 }
 
+/*
+  extrapolate latitude/longitude given bearing and distance
+  thanks to http://www.movable-type.co.uk/scripts/latlong.html
+
+  This function is precise, but costs about 1.7 milliseconds on an AVR2560
+*/
+void location_update(struct Location *loc, float bearing, float distance)
+{
+	float lat1 = radians(loc->lat*1.0e-7);
+	float lon1 = radians(loc->lng*1.0e-7);
+	float brng = radians(bearing);
+	float dr = distance/RADIUS_OF_EARTH;
+
+	float lat2 = asin(sin(lat1)*cos(dr) +
+                      cos(lat1)*sin(dr)*cos(brng));
+    float lon2 = lon1 + atan2(sin(brng)*sin(dr)*cos(lat1), 
+                              cos(dr)-sin(lat1)*sin(lat2));
+    loc->lat = degrees(lat2)*1.0e7;
+    loc->lng = degrees(lon2)*1.0e7;
+}
+
+/*
+  extrapolate latitude/longitude given distances north and east
+  This function costs about 80 usec on an AVR2560
+*/
+void location_offset(struct Location *loc, float ofs_north, float ofs_east)
+{
+    if (ofs_north != 0 || ofs_east != 0) {
+        float dlat = ofs_north * 89.831520982;
+        float dlng = (ofs_east * 89.831520982) / longitude_scale(loc);
+        loc->lat += dlat;
+        loc->lng += dlng;
+    }
+}
