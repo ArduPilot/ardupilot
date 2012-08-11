@@ -102,6 +102,11 @@ public:
 		return true;
 	}
 
+	// return a wind estimation vector, in m/s
+	Vector3f wind_estimate(void) {
+		return _wind;
+	}
+
 protected:
 	// pointer to compass object, if available
 	Compass 	* _compass;
@@ -125,6 +130,9 @@ protected:
 	// the limit of the gyro drift claimed by the sensors, in
 	// radians/s/s
 	float           _gyro_drift_limit;
+	
+	// estimated wind in m/s
+	Vector3f	_wind;
 
 	// acceleration due to gravity in m/s/s
 	static const float _gravity = 9.80665;

@@ -51,6 +51,7 @@ const AP_Param::GroupInfo AP_AHRS_DCM::var_info[] PROGMEM = {
     // @Range: 0.0 1.0
     // @Increment: .01
     AP_GROUPINFO("GPS_GAIN",  2, AP_AHRS_DCM, gps_gain, 1.0),
+
     AP_GROUPEND
 };
 
@@ -295,6 +296,15 @@ AP_AHRS_DCM::_P_gain(float spin_rate)
 	return spin_rate/ToDeg(50);
 }
 
+// return true if we have and should use GPS
+bool AP_AHRS_DCM::have_gps(void)
+{
+	if (!_gps || _gps->status() != GPS::GPS_OK) {
+		return false;
+	}
+	return true;	    
+}
+
 // yaw drift correction using the compass or GPS
 // this function prodoces the _omega_yaw_P vector, and also
 // contributes to the _omega_I.z long term yaw drift estimate
@@ -318,7 +328,7 @@ AP_AHRS_DCM::drift_correction_yaw(void)
 			new_value = true;
 			yaw_error = yaw_error_compass();
 		}
-	} else if (_fly_forward && _gps && _gps->status() == GPS::GPS_OK) {
+	} else if (_fly_forward && have_gps()) {
 		if (_gps->last_fix_time != _gps_last_update &&
 		    _gps->ground_speed >= GPS_SPEED_MIN) {
 			yaw_deltat = (_gps->last_fix_time - _gps_last_update) * 1.0e-3;
@@ -398,7 +408,7 @@ AP_AHRS_DCM::drift_correction(float deltat)
     // we have integrated over
     _ra_deltat += deltat;
 
-    if (_gps == NULL || _gps->status() != GPS::GPS_OK) {
+    if (!have_gps()) {
         // no GPS, or no lock. We assume zero velocity. This at
         // least means we can cope with gyro drift while sitting
         // on a bench with no GPS lock
@@ -406,24 +416,19 @@ AP_AHRS_DCM::drift_correction(float deltat)
             // not enough time has accumulated
             return;
         }
-	float speed_estimate;
+	float airspeed;
 	if (_airspeed && _airspeed->use()) {
-		// use airspeed to estimate our ground velocity in
-		// earth frame. This isn't exactly right, but is
-		// better than nothing
-		speed_estimate = _airspeed->get_airspeed() * cos(pitch);
-	} else if (_gps != NULL) {
-		// use the last gps speed for our speed estimate. This 
-		// will work for short GPS outages, or where we don't
-		// change speed a lot
-		speed_estimate = _gps->last_ground_speed();
+		airspeed = _airspeed->get_airspeed();
 	} else {
-		speed_estimate = 0;
+		airspeed = _last_airspeed;		
 	}
-	// calculate our ground speed vector using our speed estimate
-	velocity.x = speed_estimate * cos(yaw);
-	velocity.y = speed_estimate * sin(yaw);
-	velocity.z = 0;
+	// use airspeed to estimate our ground velocity in
+	// earth frame by subtracting the wind
+	velocity = _dcm_matrix.colx() * airspeed;
+
+	// add in wind estimate
+	velocity += _wind;
+
 	last_correction_time = millis();
 	_have_gps_lock = false;
 
@@ -453,6 +458,11 @@ AP_AHRS_DCM::drift_correction(float deltat)
 	// once we have a single GPS lock, we update using
 	// dead-reckoning from then on
 	_have_position = true;
+
+	// keep last airspeed estimate for dead-reckoning purposes
+	Vector3f airspeed = velocity - _wind;
+	airspeed.z = 0;
+	_last_airspeed = airspeed.length();
     }
 
 #define USE_BAROMETER_FOR_VERTICAL_VELOCITY 1
@@ -524,7 +534,7 @@ AP_AHRS_DCM::drift_correction(float deltat)
     // flat, but still allow for yaw correction using the
     // accelerometers at high roll angles as long as we have a GPS
     if (_compass && _compass->use_for_yaw()) {
-	    if (_gps && _gps->status() == GPS::GPS_OK && gps_gain == 1.0) {
+	    if (have_gps() && gps_gain == 1.0) {
 		    error.z *= sin(fabs(roll));
 	    } else {
 		    error.z = 0;
@@ -572,7 +582,68 @@ AP_AHRS_DCM::drift_correction(float deltat)
 
     // remember the velocity for next time
     _last_velocity = velocity;
+
+    if (_have_gps_lock && _fly_forward) {
+	    // update wind estimate
+	    estimate_wind(velocity);
+    }
 }
+
+
+// update our wind speed estimate
+// this is based on the wind speed estimation code from MatrixPilot by
+// Bill Premerlani. Adaption for ArduPilot by Jon Challinger
+// See http://gentlenav.googlecode.com/files/WindEstimation.pdf
+void AP_AHRS_DCM::estimate_wind(Vector3f &velocity)
+{
+	Vector3f fuselageDirection = Vector3f(_dcm_matrix.a.x,_dcm_matrix.b.x,_dcm_matrix.c.x);
+	Vector3f fuselageDirectionDiff = fuselageDirection - _last_fuse;
+	uint32_t now = millis();
+
+	// scrap our data and start over if we're taking too long to get a direction change
+	if (now - _last_wind_time > 10000) {
+		_last_wind_time = now;
+		_last_fuse = fuselageDirection;
+		_last_vel = velocity;
+		return;
+	}
+
+	float diff_length = fuselageDirectionDiff.length();
+	if (diff_length > 0.2) {
+		float V;
+		Vector3f velocityDiff = velocity - _last_vel;
+
+		// if we have an airspeed sensor, then use that,
+		// otherwise estimate it using equation 6
+		if (_airspeed && _airspeed->use()) {
+			float airspeed = _airspeed->get_airspeed();
+			V = (_dcm_matrix.colx() * airspeed).length();
+		} else {
+			V = velocityDiff.length() / diff_length;
+		}
+		
+		_last_fuse = fuselageDirection;
+		_last_vel = velocity;
+		
+		Vector3f fuselageDirectionSum = fuselageDirection + _last_fuse;
+		Vector3f velocitySum = velocity + _last_vel;
+		
+		float theta = atan2(velocityDiff.y, velocityDiff.x) - atan2(fuselageDirectionDiff.y, fuselageDirectionDiff.x);
+		float sintheta = sin(theta);
+		float costheta = cos(theta);
+		
+		Vector3f wind = Vector3f();
+		wind.x = velocitySum.x - V * (costheta * fuselageDirectionSum.x - sintheta * fuselageDirectionSum.y);
+		wind.y = velocitySum.y - V * (sintheta * fuselageDirectionSum.x + costheta * fuselageDirectionSum.y);
+		wind.z = velocitySum.z - V * fuselageDirectionSum.z;
+		wind *= 0.5;
+
+		_wind = _wind * 0.92 + wind * 0.08;
+
+		_last_wind_time = now;
+	}
+}
+
 
 
 // calculate the euler angles which will be used for high level
