@@ -83,6 +83,59 @@ static void test_passed_waypoint(void)
 	Serial.println("waypoint tests OK");
 }
 
+static void test_one_offset(struct Location &loc, 
+                            float ofs_north, float ofs_east,
+                            float dist, float bearing)
+{
+    struct Location loc2;
+    float dist2, bearing2;
+
+    loc2 = loc;
+    uint32_t t1 = micros();
+    location_offset(&loc2, ofs_north, ofs_east);
+    Serial.printf("location_offset took %u usec\n", 
+                  micros() - t1);
+    dist2 = get_distance(&loc, &loc2);
+    bearing2 = get_bearing_cd(&loc, &loc2) * 0.01;
+    float brg_error = bearing2-bearing;
+    if (brg_error > 180) {
+        brg_error -= 360;
+    } else if (brg_error < -180) {
+        brg_error += 360;
+    }
+
+    if (abs(dist - dist2) > 1.0 ||
+        brg_error > 1.0) {
+        Serial.printf("Failed offset test brg_error=%f dist_error=%f\n",
+                      brg_error, dist-dist2);
+    }
+}
+
+static const struct {
+    float ofs_north, ofs_east, distance, bearing;
+} test_offsets[] = {
+    { 1000, 1000,  sqrt(2.0)*1000, 45 },
+    { 1000, -1000, sqrt(2.0)*1000, -45 },
+    { 1000, 0,     1000, 0 },
+    { 0, 1000,     1000, 90 },
+};
+
+static void test_offset(void)
+{
+    struct Location loc;
+
+    loc.lat = -35*1.0e7;
+    loc.lng = 149*1.0e7;
+    
+	for (uint8_t i=0; i<ARRAY_LENGTH(test_offsets); i++) {
+        test_one_offset(loc, 
+                        test_offsets[i].ofs_north, 
+                        test_offsets[i].ofs_east, 
+                        test_offsets[i].distance,
+                        test_offsets[i].bearing);
+    }
+}
+
 /*
   polygon tests
  */
@@ -90,6 +143,7 @@ void setup(void)
 {
     Serial.begin(115200);
     test_passed_waypoint();
+    test_offset();
 }
 
 void

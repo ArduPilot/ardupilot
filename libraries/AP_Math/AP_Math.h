@@ -48,5 +48,11 @@ bool location_passed_point(struct Location &location,
 						   struct Location &point1, 			   
 						   struct Location &point2);
 
+//  extrapolate latitude/longitude given bearing and distance
+void location_update(struct Location *loc, float bearing, float distance);
+
+// extrapolate latitude/longitude given distances north and east
+void location_offset(struct Location *loc, float ofs_north, float ofs_east);
+
 #endif // AP_MATH_H
 
