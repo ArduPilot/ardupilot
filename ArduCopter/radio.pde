@@ -117,8 +117,6 @@ static void init_rc_out()
 		output_min();
 	}
 
-	enable_aux_servos();
-
 	#if TOY_EDF == ENABLED
 	// add access to CH8 and CH6
 	APM_RC.enable_out(CH_8);
