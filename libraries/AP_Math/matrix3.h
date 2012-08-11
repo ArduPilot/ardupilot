@@ -95,6 +95,18 @@ public:
 	// multiplication of transpose by a vector
 	Vector3<T> mul_transpose(const Vector3<T> &v) const;
 
+	// extract x column
+	Vector3<T> colx(void) const
+		{ return Vector3f(a.x, b.x, c.x); }
+
+	// extract y column
+	Vector3<T> coly(void) const
+		{ return Vector3f(a.y, b.y, c.y); }
+
+	// extract z column
+	Vector3<T> colz(void) const
+		{ return Vector3f(a.z, b.z, c.z); }
+
 	// multiplication by another Matrix3<T>
 	Matrix3<T> operator *(const Matrix3<T> &m) const;
 
