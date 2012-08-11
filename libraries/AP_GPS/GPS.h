@@ -134,6 +134,11 @@ public:
 	float velocity_north(void) { return _status == GPS_OK? _velocity_north : 0; }
 	float velocity_east(void)  { return _status == GPS_OK? _velocity_east  : 0; }
 
+	// last ground speed in m/s. This can be used when we have no GPS
+	// lock to return the last ground speed we had with lock
+	float last_ground_speed(void) { return _last_ground_speed_cm * 0.01; }
+	
+
 	// the time we got our last fix in system milliseconds
 	uint32_t last_fix_time;
 
@@ -202,7 +207,7 @@ private:
     GPS_Status					_status;
 
 	// previous ground speed in cm/s
-    uint32_t _last_ground_speed;
+    uint32_t _last_ground_speed_cm;
 
 	// smoothed estimate of our acceleration, in m/s/s
 	float _acceleration;

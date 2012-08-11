@@ -54,7 +54,7 @@ GPS::update(void)
 		if (_status == GPS_OK) {
 			// update our acceleration
 			float deltat = 1.0e-3 * (_idleTimer - last_fix_time);
-			float deltav = 1.0e-2 * ((float)ground_speed - (float)_last_ground_speed);
+			float deltav = 1.0e-2 * ((float)ground_speed - (float)_last_ground_speed_cm);
 			float gps_heading = ToRad(ground_course * 0.01);
 			float gps_speed   = ground_speed * 0.01;
 			float sin_heading, cos_heading;
@@ -63,7 +63,7 @@ GPS::update(void)
 			sin_heading = sin(gps_heading);
 
 			last_fix_time = _idleTimer;
-			_last_ground_speed = ground_speed;
+			_last_ground_speed_cm = ground_speed;
 
 			_velocity_north = gps_speed * cos_heading;
 			_velocity_east  = gps_speed * sin_heading;
