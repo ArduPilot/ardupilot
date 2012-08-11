@@ -30,6 +30,8 @@
 #include <config.h>
 #include <Parameters.h>
 #include <AP_Declination.h>
+#include <AP_AnalogSource.h>
+#include <AP_Airspeed.h>
 
 // this sets up the parameter table, and sets the default values. This
 // must be the first AP_Param variable declared to ensure its

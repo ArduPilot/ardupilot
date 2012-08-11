@@ -102,6 +102,7 @@ version 2.1 of the License, or (at your option) any later version.
 #include <AP_Relay.h>       // APM relay
 #include <AP_Mount.h>		// Camera/Antenna mount
 #include <GCS_MAVLink.h>    // MAVLink GCS definitions
+#include <AP_Airspeed.h>    // needed for AHRS build
 #include <memcheck.h>
 
 // Configuration
