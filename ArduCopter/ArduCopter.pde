@@ -100,6 +100,7 @@ http://code.google.com/p/ardupilot-mega/downloads/list
 #include <AP_Relay.h>		// APM relay
 #include <AP_Camera.h>		// Photo or video camera
 #include <AP_Mount.h>		// Camera/Antenna mount
+#include <AP_Airspeed.h>    // needed for AHRS build
 #include <memcheck.h>
 
 // Configuration
