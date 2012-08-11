@@ -89,7 +89,18 @@ public:
 	// attitude
 	virtual Matrix3f get_dcm_matrix(void) = 0;
 
-	//static const struct AP_Param::GroupInfo var_info[];
+	// get our current position, either from GPS or via
+	// dead-reckoning. Return true if a position is available,
+	// otherwise false. This only updates the lat and lng fields
+	// of the Location	
+	bool get_position(struct Location *loc) {
+		if (!_gps || _gps->status() != GPS::GPS_OK) {
+			return false;
+		}
+		loc->lat = _gps->latitude;
+		loc->lng = _gps->longitude;
+		return true;
+	}
 
 protected:
 	// pointer to compass object, if available
