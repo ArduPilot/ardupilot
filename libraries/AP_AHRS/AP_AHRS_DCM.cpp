@@ -52,6 +52,12 @@ const AP_Param::GroupInfo AP_AHRS_DCM::var_info[] PROGMEM = {
     // @Increment: .01
     AP_GROUPINFO("GPS_GAIN",  2, AP_AHRS_DCM, gps_gain, 1.0),
 
+    // @Param: GPS_USE
+    // @DisplayName: enable/disable use of GPS for position estimation
+    // @Description: This controls how how much to use the GPS to correct the attitude. This is for testing the dead-reckoning code
+    // @User: Advanced
+    AP_GROUPINFO("GPS_USE",  3, AP_AHRS_DCM, _gps_use, 1),
+
     AP_GROUPEND
 };
 
@@ -299,7 +305,7 @@ AP_AHRS_DCM::_P_gain(float spin_rate)
 // return true if we have and should use GPS
 bool AP_AHRS_DCM::have_gps(void)
 {
-	if (!_gps || _gps->status() != GPS::GPS_OK) {
+	if (!_gps || _gps->status() != GPS::GPS_OK || !_gps_use) {
 		return false;
 	}
 	return true;	    
