@@ -89,14 +89,14 @@ public:
 
     // Properties
     uint32_t time;			///< GPS time (milliseconds from epoch)
-    long	date;			///< GPS date (FORMAT TBD)
-    long	latitude;		///< latitude in degrees * 10,000,000
-    long	longitude;		///< longitude in degrees * 10,000,000
-    long	altitude;		///< altitude in cm
-    long	ground_speed;	///< ground speed in cm/sec
-    long	ground_course;	///< ground course in 100ths of a degree
-    long	speed_3d;		///< 3D speed in cm/sec (not always available)
-    int		hdop;			///< horizontal dilution of precision in cm
+    uint32_t date;			///< GPS date (FORMAT TBD)
+    int32_t	latitude;		///< latitude in degrees * 10,000,000
+    int32_t	longitude;		///< longitude in degrees * 10,000,000
+    int32_t	altitude;		///< altitude in cm
+    uint32_t ground_speed;	///< ground speed in cm/sec
+    int32_t	ground_course;	///< ground course in 100ths of a degree
+    int32_t	speed_3d;		///< 3D speed in cm/sec (not always available)
+    int16_t hdop;			///< horizontal dilution of precision in cm
     uint8_t num_sats;		///< Number of visible satelites
 
     /// Set to true when new data arrives.  A client may set this
