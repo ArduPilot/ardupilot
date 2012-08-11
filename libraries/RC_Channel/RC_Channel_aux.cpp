@@ -119,7 +119,8 @@ void update_aux_servo_function(	RC_Channel_aux* rc_a,
 void
 enable_aux_servos()
 {
-	for (uint8_t i = 0; i < RC_Channel_aux::k_nr_aux_servo_functions ; i++)
+	// cycle thru all functions except k_none and k_nr_aux_servo_functions
+	for (uint8_t i = 1; i < RC_Channel_aux::k_nr_aux_servo_functions ; i++)
 	{
 		if (g_rc_function[i]) g_rc_function[i]->enable_out();
 	}
