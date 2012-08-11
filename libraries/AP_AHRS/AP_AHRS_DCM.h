@@ -68,6 +68,8 @@ private:
 	float		yaw_error_compass();
 	float		yaw_error_gps();
 	void 		euler_angles(void);
+	void 		estimate_wind(Vector3f &velocity);
+	bool		have_gps(void);
 
 	// primary representation of attitude
 	Matrix3f	_dcm_matrix;
@@ -120,6 +122,12 @@ private:
 
 	// whether we have a position estimate
 	bool		_have_position;
+
+	// support for wind estimation
+	Vector3f	_last_fuse;
+	Vector3f	_last_vel;
+	uint32_t	_last_wind_time;
+	float		_last_airspeed;
 };
 
 #endif // AP_AHRS_DCM_H
