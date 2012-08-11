@@ -242,7 +242,7 @@ static void NOINLINE send_location(mavlink_channel_t chan)
         g_gps->ground_speed * rot.a.x,  // X speed cm/s
         g_gps->ground_speed * rot.b.x,  // Y speed cm/s
         g_gps->ground_speed * rot.c.x,
-        g_gps->ground_course);          // course in 1/100 degree
+        ahrs.yaw_sensor);
 }
 
 static void NOINLINE send_nav_controller_output(mavlink_channel_t chan)
