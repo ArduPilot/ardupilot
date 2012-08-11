@@ -430,6 +430,16 @@ static void NOINLINE send_hwstatus(mavlink_channel_t chan)
 #endif
 }
 
+static void NOINLINE send_wind(mavlink_channel_t chan)
+{
+    Vector3f wind = ahrs.wind_estimate();
+    mavlink_msg_wind_send(
+        chan,
+        degrees(atan2(wind.y, wind.x)),
+        sqrt(sq(wind.x)+sq(wind.y)),
+        wind.z);
+}
+
 static void NOINLINE send_gps_status(mavlink_channel_t chan)
 {
     mavlink_msg_gps_status_send(
@@ -601,6 +611,11 @@ static bool mavlink_try_send_message(mavlink_channel_t chan, enum ap_message id,
     case MSG_HWSTATUS:
         CHECK_PAYLOAD_SIZE(HWSTATUS);
         send_hwstatus(chan);
+        break;
+
+    case MSG_WIND:
+        CHECK_PAYLOAD_SIZE(WIND);
+        send_wind(chan);
         break;
 
     case MSG_RETRY_DEFERRED:
@@ -883,6 +898,7 @@ GCS_MAVLINK::data_stream_send(void)
     if (stream_trigger(STREAM_EXTRA3)) {
         send_message(MSG_AHRS);
         send_message(MSG_HWSTATUS);
+        send_message(MSG_WIND);
     }
 }
 
