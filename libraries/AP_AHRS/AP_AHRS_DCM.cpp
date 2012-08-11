@@ -402,14 +402,34 @@ AP_AHRS_DCM::drift_correction(float deltat)
         // no GPS, or no lock. We assume zero velocity. This at
         // least means we can cope with gyro drift while sitting
         // on a bench with no GPS lock
-        if (_ra_deltat < 0.1) {
+        if (_ra_deltat < 0.2) {
             // not enough time has accumulated
             return;
         }
-        velocity.zero();
-	_last_velocity.zero();
-        last_correction_time = millis();
+	float speed_estimate;
+	if (_airspeed && _airspeed->use()) {
+		// use airspeed to estimate our ground velocity in
+		// earth frame. This isn't exactly right, but is
+		// better than nothing
+		speed_estimate = _airspeed->get_airspeed() * cos(pitch);
+	} else if (_gps != NULL) {
+		// use the last gps speed for our speed estimate. This 
+		// will work for short GPS outages, or where we don't
+		// change speed a lot
+		speed_estimate = _gps->last_ground_speed();
+	} else {
+		speed_estimate = 0;
+	}
+	// calculate our ground speed vector using our speed estimate
+	velocity.x = speed_estimate * cos(yaw);
+	velocity.y = speed_estimate * sin(yaw);
+	velocity.z = 0;
+	last_correction_time = millis();
 	_have_gps_lock = false;
+
+	// update position delta for get_position()
+	_position_offset_north += velocity.x * _ra_deltat;
+	_position_offset_east  += velocity.y * _ra_deltat;
     } else {
         if (_gps->last_fix_time == _ra_sum_start) {
             // we don't have a new GPS fix - nothing more to do
@@ -423,6 +443,16 @@ AP_AHRS_DCM::drift_correction(float deltat)
 		_last_velocity = velocity;
 	}
 	_have_gps_lock = true;
+
+	// remember position for get_position()
+	_last_lat = _gps->latitude;
+	_last_lng = _gps->longitude;
+	_position_offset_north = 0;
+	_position_offset_east = 0;
+
+	// once we have a single GPS lock, we update using
+	// dead-reckoning from then on
+	_have_position = true;
     }
 
 #define USE_BAROMETER_FOR_VERTICAL_VELOCITY 1
@@ -589,3 +619,17 @@ float AP_AHRS_DCM::get_error_yaw(void)
 	_error_yaw_count = 0;
 	return _error_yaw_last;
 }
+
+// return our current position estimate using 
+// dead-reckoning or GPS
+bool AP_AHRS_DCM::get_position(struct Location *loc) 
+{
+	if (!_have_position) {
+		return false;
+	}
+	loc->lat = _last_lat;
+	loc->lng = _last_lng;
+	location_offset(loc, _position_offset_north, _position_offset_east);
+	return true;
+}
+

@@ -38,6 +38,9 @@ public:
 	void 		update(void);
 	void 		reset(bool recover_eulers = false);
 
+	// dead-reckoning support
+	bool get_position(struct Location *loc);
+
 	// status reporting
 	float		get_error_rp(void);
 	float		get_error_yaw(void);
@@ -106,6 +109,17 @@ private:
 
 	// whether we have GPS lock
 	bool		_have_gps_lock;
+
+	// the lat/lng where we last had GPS lock
+	int32_t         _last_lat;
+	int32_t         _last_lng;
+
+	// position offset from last GPS lock
+	float		_position_offset_north;
+	float		_position_offset_east;
+
+	// whether we have a position estimate
+	bool		_have_position;
 };
 
 #endif // AP_AHRS_DCM_H
