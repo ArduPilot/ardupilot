@@ -390,6 +390,9 @@ static int16_t     ground_start_avg;
 // If we do not detect GPS at startup, we stop trying and assume GPS is not connected
 static bool	GPS_enabled 	= false;
 
+// true if we have a position estimate from AHRS
+static bool have_position;
+
 ////////////////////////////////////////////////////////////////////////////////
 // Location & Navigation
 ////////////////////////////////////////////////////////////////////////////////
@@ -854,12 +857,9 @@ Serial.println(tempaccel.z, DEC);
 			// -------------------------------
 			read_control_switch();
 
-			if(g_gps->new_data){
-				g_gps->new_data 	= false;
-				// calculate the plane's desired bearing
-				// -------------------------------------
-				navigate();
-			}
+            // calculate the plane's desired bearing
+            // -------------------------------------
+            navigate();
 
 			break;
 
@@ -985,7 +985,12 @@ static void update_GPS(void)
 	g_gps->update();
 	update_GPS_light();
 
+    // get position from AHRS
+    have_position = ahrs.get_position(&current_loc);
+
 	if (g_gps->new_data && g_gps->fix) {
+        g_gps->new_data = false;
+
 		// for performance
 		// ---------------
 		gps_fix_count++;
@@ -1020,10 +1025,6 @@ static void update_GPS(void)
 				ground_start_count = 0;
 			}
 		}
-
-
-		current_loc.lng = g_gps->longitude;    // Lon * 10**7
-		current_loc.lat = g_gps->latitude;     // Lat * 10**7
 
         // see if we've breached the geo-fence
         geofence_check(false);
