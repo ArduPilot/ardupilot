@@ -48,6 +48,8 @@
 #define CH7_AUTO_TRIM 5
 #define CH7_ADC_FILTER 6
 #define CH7_SAVE_WP 7
+#define CH7_MULTI_MODE 8
+
 
 // Frame types
 #define QUAD_FRAME 0
@@ -68,7 +70,9 @@
 
 
 #define CH_7_PWM_TRIGGER 1800
+#define CH_6_PWM_TRIGGER_HIGH 1800
 #define CH_6_PWM_TRIGGER 1500
+#define CH_6_PWM_TRIGGER_LOW 1200
 
 // Internal defines, don't edit and expect things to work
 // -------------------------------------------------------
@@ -127,8 +131,9 @@
 #define POSITION 8			// AUTO control
 #define LAND 9				// AUTO control
 #define OF_LOITER 10		// Hold a single location using optical flow sensor
-#define TOY 11				// THOR Enum for Toy mode
-#define NUM_MODES 12
+#define TOY_A 11				// THOR Enum for Toy mode
+#define TOY_M 12				// THOR Enum for Toy mode
+#define NUM_MODES 13
 
 #define SIMPLE_1 1
 #define SIMPLE_2 2
