@@ -40,6 +40,7 @@
 	CH7_AUTO_TRIM
 	CH7_ADC_FILTER (experimental)
 	CH7_SAVE_WP
+	CH7_MULTI_MODE
 	*/
 
 //#define TOY_EDF	ENABLED
