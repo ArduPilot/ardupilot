@@ -1169,11 +1169,8 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
 				case MAV_CMD_NAV_LOITER_TURNS:
 				case MAV_CMD_NAV_TAKEOFF:
 				case MAV_CMD_DO_SET_HOME:
-					param1 = tell_command.p1;
-					break;
-
 				case MAV_CMD_NAV_LOITER_TIME:
-					param1 = tell_command.p1*10;    // APM loiter time is in ten second increments
+					param1 = tell_command.p1;
 					break;
 
 				case MAV_CMD_CONDITION_CHANGE_ALT:
@@ -1408,7 +1405,8 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
             
             if (result != MAV_MISSION_ACCEPTED) goto mission_failed;
 
-            switch (tell_command.id) {                    // Switch to map APM command fields inot MAVLink command fields
+            // Switch to map APM command fields into MAVLink command fields
+            switch (tell_command.id) {                    
             case MAV_CMD_NAV_WAYPOINT:
             case MAV_CMD_NAV_LOITER_UNLIM:
             case MAV_CMD_NAV_RETURN_TO_LAUNCH:
@@ -1418,15 +1416,12 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
             case MAV_CMD_NAV_LOITER_TURNS:
             case MAV_CMD_NAV_TAKEOFF:
             case MAV_CMD_DO_SET_HOME:
+            case MAV_CMD_NAV_LOITER_TIME:
                 tell_command.p1 = packet.param1;
                 break;
 
             case MAV_CMD_CONDITION_CHANGE_ALT:
                 tell_command.lat = packet.param1;
-                break;
-
-            case MAV_CMD_NAV_LOITER_TIME:
-                tell_command.p1 = packet.param1 / 10;    // APM loiter time is in ten second increments
                 break;
 
             case MAV_CMD_CONDITION_DELAY:

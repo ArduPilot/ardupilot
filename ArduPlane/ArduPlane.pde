@@ -515,13 +515,13 @@ static int16_t			takeoff_pitch_cd;
 static int32_t 	old_target_bearing_cd;
 
 // Total desired rotation in a loiter.  Used for Loiter Turns commands.  Degrees
-static int16_t		loiter_total;
+static int32_t		loiter_total;
 
 // The amount in degrees we have turned since recording old_target_bearing
 static int16_t 	loiter_delta;
 
 // Total rotation in a loiter.  Used for Loiter Turns commands and to check for missed waypoints.  Degrees
-static int16_t		loiter_sum;
+static int32_t		loiter_sum;
 
 // The amount of time we have been in a Loiter.  Used for the Loiter Time command.  Milliseconds.
 static uint32_t 	loiter_time_ms;
