@@ -161,37 +161,29 @@ static bool verify_nav_command()	// Returns true if command complete
 
 		case MAV_CMD_NAV_TAKEOFF:
 			return verify_takeoff();
-			break;
 
 		case MAV_CMD_NAV_LAND:
 			return verify_land();
-			break;
 
 		case MAV_CMD_NAV_WAYPOINT:
 			return verify_nav_wp();
-			break;
 
 		case MAV_CMD_NAV_LOITER_UNLIM:
 			return verify_loiter_unlim();
-			break;
 
 		case MAV_CMD_NAV_LOITER_TURNS:
 			return verify_loiter_turns();
-			break;
 
 		case MAV_CMD_NAV_LOITER_TIME:
 			return verify_loiter_time();
-			break;
 
 		case MAV_CMD_NAV_RETURN_TO_LAUNCH:
 			return verify_RTL();
-			break;
 
 		default:
 			gcs_send_text_P(SEVERITY_HIGH,PSTR("verify_nav: Invalid or no current Nav cmd"));
-			return false;
-			break;
 	}
+    return false;
 }
 
 static bool verify_condition_command()		// Returns true if command complete
@@ -283,7 +275,7 @@ static void do_loiter_time()
 {
 	set_next_WP(&next_nav_command);
 	loiter_time_ms = millis();
-	loiter_time_max_ms = next_nav_command.p1 * (uint32_t)100; // units are (seconds * 10)
+	loiter_time_max_ms = next_nav_command.p1 * (uint32_t)1000; // units are seconds
 }
 
 /********************************************************************************/
