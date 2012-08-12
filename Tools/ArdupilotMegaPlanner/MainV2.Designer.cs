@@ -78,11 +78,13 @@
             this.MainMenu.Size = new System.Drawing.Size(1008, 76);
             this.MainMenu.TabIndex = 5;
             this.MainMenu.Text = "menuStrip1";
+            this.MainMenu.MouseLeave += new System.EventHandler(this.MainMenu_MouseLeave);
             // 
             // MenuFlightData
             // 
             this.MenuFlightData.AutoSize = false;
             this.MenuFlightData.BackgroundImage = global::ArdupilotMega.Properties.Resources.data;
+            this.MenuFlightData.BackgroundImageLayout = System.Windows.Forms.ImageLayout.Zoom;
             this.MenuFlightData.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Image;
             this.MenuFlightData.ImageTransparentColor = System.Drawing.Color.Magenta;
             this.MenuFlightData.Margin = new System.Windows.Forms.Padding(0);
@@ -95,6 +97,7 @@
             // 
             this.MenuFlightPlanner.AutoSize = false;
             this.MenuFlightPlanner.BackgroundImage = global::ArdupilotMega.Properties.Resources.planner;
+            this.MenuFlightPlanner.BackgroundImageLayout = System.Windows.Forms.ImageLayout.Zoom;
             this.MenuFlightPlanner.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Image;
             this.MenuFlightPlanner.ImageTransparentColor = System.Drawing.Color.Magenta;
             this.MenuFlightPlanner.Margin = new System.Windows.Forms.Padding(0);
@@ -109,6 +112,7 @@
             // 
             this.MenuConfiguration.AutoSize = false;
             this.MenuConfiguration.BackgroundImage = global::ArdupilotMega.Properties.Resources.configuration;
+            this.MenuConfiguration.BackgroundImageLayout = System.Windows.Forms.ImageLayout.Zoom;
             this.MenuConfiguration.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Image;
             this.MenuConfiguration.ImageTransparentColor = System.Drawing.Color.Magenta;
             this.MenuConfiguration.Margin = new System.Windows.Forms.Padding(0);
@@ -123,6 +127,7 @@
             // 
             this.MenuSimulation.AutoSize = false;
             this.MenuSimulation.BackgroundImage = global::ArdupilotMega.Properties.Resources.simulation;
+            this.MenuSimulation.BackgroundImageLayout = System.Windows.Forms.ImageLayout.Zoom;
             this.MenuSimulation.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Image;
             this.MenuSimulation.ImageTransparentColor = System.Drawing.Color.Magenta;
             this.MenuSimulation.Margin = new System.Windows.Forms.Padding(0);
@@ -137,6 +142,7 @@
             // 
             this.MenuFirmware.AutoSize = false;
             this.MenuFirmware.BackgroundImage = global::ArdupilotMega.Properties.Resources.firmware;
+            this.MenuFirmware.BackgroundImageLayout = System.Windows.Forms.ImageLayout.Zoom;
             this.MenuFirmware.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Image;
             this.MenuFirmware.ImageTransparentColor = System.Drawing.Color.Magenta;
             this.MenuFirmware.Margin = new System.Windows.Forms.Padding(0);
@@ -151,6 +157,7 @@
             // 
             this.MenuTerminal.AutoSize = false;
             this.MenuTerminal.BackgroundImage = global::ArdupilotMega.Properties.Resources.terminal;
+            this.MenuTerminal.BackgroundImageLayout = System.Windows.Forms.ImageLayout.Zoom;
             this.MenuTerminal.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Image;
             this.MenuTerminal.ImageTransparentColor = System.Drawing.Color.Magenta;
             this.MenuTerminal.Margin = new System.Windows.Forms.Padding(0);
@@ -165,6 +172,7 @@
             // 
             this.MenuHelp.AutoSize = false;
             this.MenuHelp.BackgroundImage = global::ArdupilotMega.Properties.Resources.help;
+            this.MenuHelp.BackgroundImageLayout = System.Windows.Forms.ImageLayout.Zoom;
             this.MenuHelp.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Image;
             this.MenuHelp.ImageTransparentColor = System.Drawing.Color.Magenta;
             this.MenuHelp.Margin = new System.Windows.Forms.Padding(0);
@@ -180,6 +188,7 @@
             this.MenuConnect.Alignment = System.Windows.Forms.ToolStripItemAlignment.Right;
             this.MenuConnect.AutoSize = false;
             this.MenuConnect.BackgroundImage = global::ArdupilotMega.Properties.Resources.connect;
+            this.MenuConnect.BackgroundImageLayout = System.Windows.Forms.ImageLayout.Zoom;
             this.MenuConnect.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Image;
             this.MenuConnect.ImageTransparentColor = System.Drawing.Color.Magenta;
             this.MenuConnect.Margin = new System.Windows.Forms.Padding(0);
@@ -187,7 +196,6 @@
             this.MenuConnect.Padding = new System.Windows.Forms.Padding(0, 0, 72, 72);
             this.MenuConnect.Size = new System.Drawing.Size(76, 76);
             this.MenuConnect.Click += new System.EventHandler(this.MenuConnect_Click);
-            this.MenuConnect.MouseHover += new System.EventHandler(this.MenuConnect_MouseHover);
             // 
             // toolStripConnectionControl
             // 
@@ -216,6 +224,7 @@
             this.FormClosing += new System.Windows.Forms.FormClosingEventHandler(this.MainV2_FormClosing);
             this.FormClosed += new System.Windows.Forms.FormClosedEventHandler(this.MainV2_FormClosed);
             this.Load += new System.EventHandler(this.MainV2_Load);
+            this.MouseMove += new System.Windows.Forms.MouseEventHandler(this.MainV2_MouseMove);
             this.Resize += new System.EventHandler(this.MainV2_Resize);
             this.MainMenu.ResumeLayout(false);
             this.MainMenu.PerformLayout();

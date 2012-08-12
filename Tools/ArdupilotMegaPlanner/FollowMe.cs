@@ -51,7 +51,7 @@ namespace ArdupilotMega
                 } catch {CustomMessageBox.Show("Invalid BaudRate"); return;}
                 try {
                 comPort.Open();
-                } catch {CustomMessageBox.Show("Error Connecting\nif using com0com please rename the ports to COM??"); return;}
+                } catch (Exception ex) {CustomMessageBox.Show("Error Connecting\nif using com0com please rename the ports to COM??\n" + ex.ToString()); return;}
 
 
                 string alt = "100";
@@ -159,7 +159,7 @@ namespace ArdupilotMega
                             {
                                 MainV2.giveComport = true;
 
-                                MainV2.comPort.setWP(gotohere, 0, MAVLink.MAV_FRAME.GLOBAL_RELATIVE_ALT, (byte)2);
+                                MainV2.comPort.setGuidedModeWP(gotohere);
 
                                 GCSViews.FlightData.GuidedModeWP = new PointLatLngAlt(gotohere);
 

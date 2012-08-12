@@ -895,19 +895,11 @@ namespace ArdupilotMega
             si.Show();
         }
 
-        private void BUT_ant_track_Click(object sender, EventArgs e)
-        {
-            new Antenna.Tracker().Show();
-        }
-
-        private void BUT_magcalib_Click(object sender, EventArgs e)
-        {
-            MagCalib.ProcessLog();
-        }
-
         private void BUT_paramgen_Click(object sender, EventArgs e)
         {
             ParameterMetaDataParser.GetParameterInformation();
         }
+
+     
     }
 }

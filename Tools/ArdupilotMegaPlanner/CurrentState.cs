@@ -202,7 +202,10 @@ namespace ArdupilotMega
         public ushort rcoverridech7 { get; set; }
         public ushort rcoverridech8 { get; set; }
 
+
+        public float HomeAlt { get { return (float)HomeLocation.Alt; } set { } }
         internal PointLatLngAlt HomeLocation = new PointLatLngAlt();
+
         public float DistToMAV
         {
             get

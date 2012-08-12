@@ -40,7 +40,6 @@ namespace ArdupilotMega.GCSViews
 
         public static List<PointLatLngAlt> pointlist = new List<PointLatLngAlt>(); // used to calc distance
         static public Object thisLock = new Object();
-        private TextBox textBox1;
         private ComponentResourceManager rm = new ComponentResourceManager(typeof(FlightPlanner));
 
         private Dictionary<string, string[]> cmdParamNames = new Dictionary<string, string[]>();
@@ -1420,7 +1419,11 @@ namespace ArdupilotMega.GCSViews
                     temp.p3 = (float)(double.Parse(Commands.Rows[a].Cells[Param3.Index].Value.ToString()));
                     temp.p4 = (float)(double.Parse(Commands.Rows[a].Cells[Param4.Index].Value.ToString()));
 
-                    port.setWP(temp, (ushort)(a + 1), frame, 0);
+                    MAVLink.MAV_MISSION_RESULT ans = port.setWP(temp, (ushort)(a + 1), frame, 0);
+                    if (ans != MAVLink.MAV_MISSION_RESULT.MAV_MISSION_ACCEPTED)
+                    {
+                        throw new Exception("Upload WPs Failed " + Commands.Rows[a].Cells[Command.Index].Value.ToString() + " " + Enum.Parse(typeof(MAVLink.MAV_MISSION_RESULT), ans.ToString()));
+                    }
                 }
 
                 port.setWPACK();
@@ -2434,42 +2437,7 @@ namespace ArdupilotMega.GCSViews
 
         private void BUT_Prefetch_Click(object sender, EventArgs e)
         {
-            RectLatLng area = MainMap.SelectedArea;
-            if (area.IsEmpty)
-            {
-                DialogResult res = CustomMessageBox.Show("No ripp area defined, ripp displayed on screen?", "Rip", MessageBoxButtons.YesNo);
-                if (res == DialogResult.Yes)
-                {
-                    area = MainMap.CurrentViewArea;
-                }
-            }
-
-            if (!area.IsEmpty)
-            {
-                DialogResult res = CustomMessageBox.Show("Ready ripp at Zoom = " + (int)MainMap.Zoom + " ?", "GMap.NET", MessageBoxButtons.YesNo);
-
-                for (int i = 1; i <= MainMap.MaxZoom; i++)
-                {
-                    if (res == DialogResult.Yes)
-                    {
-                        TilePrefetcher obj = new TilePrefetcher();
-                        obj.ShowCompleteMessage = false;
-                        obj.Start(area, MainMap.Projection, i, MainMap.MapType, 100);
-                    }
-                    else if (res == DialogResult.No)
-                    {
-                        continue;
-                    }
-                    else if (res == DialogResult.Cancel)
-                    {
-                        break;
-                    }
-                }
-            }
-            else
-            {
-                CustomMessageBox.Show("Select map area holding ALT", "GMap.NET", MessageBoxButtons.OK, MessageBoxIcon.Exclamation);
-            }
+            
         }
 
         /// <summary>
@@ -2527,232 +2495,7 @@ namespace ArdupilotMega.GCSViews
 
         private void BUT_grid_Click(object sender, EventArgs e)
         {
-            polygongridmode = false;
-
-            if (drawnpolygon == null || drawnpolygon.Points.Count == 0)
-            {
-                CustomMessageBox.Show("Right click the map to draw a polygon", "Area", MessageBoxButtons.OK, MessageBoxIcon.Exclamation);
-                return;
-            }
-
-            // ensure points/latlong are current
-            MainMap.Zoom = (int)MainMap.Zoom;
-
-            MainMap.Refresh();
-
-            GMapPolygon area = drawnpolygon;
-            area.Points.Add(area.Points[0]); // make a full loop
-            RectLatLng arearect = getPolyMinMax(area);
-            if (area.Distance > 0)
-            {
-
-                PointLatLng topright = new PointLatLng(arearect.LocationTopLeft.Lat, arearect.LocationRightBottom.Lng);
-                PointLatLng bottomleft = new PointLatLng(arearect.LocationRightBottom.Lat, arearect.LocationTopLeft.Lng);
-
-                double diagdist = MainMap.Manager.GetDistance(arearect.LocationTopLeft, arearect.LocationRightBottom) * 1000;
-                double heightdist = MainMap.Manager.GetDistance(arearect.LocationTopLeft, bottomleft) * 1000;
-                double widthdist = MainMap.Manager.GetDistance(arearect.LocationTopLeft, topright) * 1000;
-
-
-
-                string alt = (100 * MainV2.cs.multiplierdist).ToString("0");
-                Common.InputBox("Altitude", "Relative Altitude", ref alt);
-
-
-                string distance = (50 * MainV2.cs.multiplierdist).ToString("0");
-                Common.InputBox("Distance", "Distance between lines", ref distance);
-
-                //string overshoot = (30 * MainV2.cs.multiplierdist).ToString("0");
-                //Common.InputBox("Overshoot", "Enter of line overshoot amount", ref overshoot);
-
-                string angle = (90).ToString("0");
-                Common.InputBox("Angle", "Enter the line direction (0-180)", ref angle);
-
-                double tryme = 0;
-
-                if (!double.TryParse(angle, out tryme))
-                {
-                    CustomMessageBox.Show("Invalid Angle");
-                    return;
-                }
-                if (!double.TryParse(alt, out tryme))
-                {
-                    CustomMessageBox.Show("Invalid Alt");
-                    return;
-                }
-                if (!double.TryParse(distance, out tryme))
-                {
-                    CustomMessageBox.Show("Invalid Distance");
-                    return;
-                }
-
-#if DEBUG
-                //Commands.Rows.Clear();
-#endif
-                // get x y components
-                double x1 = Math.Cos((double.Parse(angle)) * deg2rad); // needs to mod for long scale
-                double y1 = Math.Sin((double.Parse(angle)) * deg2rad);
-
-                // get x y step amount in lat lng from m
-                double latdiff = arearect.HeightLat / ((heightdist / (double.Parse(distance) * (y1) / MainV2.cs.multiplierdist)));
-                double lngdiff = arearect.WidthLng / ((widthdist / (double.Parse(distance) * (x1) / MainV2.cs.multiplierdist)));
-
-                double latlngdiff = Math.Sqrt(latdiff * latdiff + lngdiff * lngdiff);
-
-                double fulllatdiff = arearect.HeightLat * x1 * 2;
-                double fulllngdiff = arearect.WidthLng * y1 * 2;
-
-                // lat - up down
-                // lng - left right
-
-                int overshootdist = 0;// (int)(double.Parse(overshoot) / MainV2.cs.multiplierdist);
-
-                int altitude = (int)(double.Parse(alt) / MainV2.cs.multiplierdist);
-
-                double overshootdistlng = arearect.WidthLng / widthdist * overshootdist;
-
-                bool dir = false;
-
-                int count = 0;
-
-                double x = bottomleft.Lat - Math.Abs(fulllatdiff);
-                double y = bottomleft.Lng - Math.Abs(fulllngdiff);
-
-                log.InfoFormat("{0} < {1} {2} < {3}", x, (topright.Lat), y, (topright.Lng));
-
-                while (x < (topright.Lat + Math.Abs(fulllatdiff)) && y < (topright.Lng + Math.Abs(fulllngdiff)))
-                {
-                    if (double.Parse(angle) < 45)
-                    {
-                        x = bottomleft.Lat;
-                        y += latlngdiff;
-                    }
-                    else if (double.Parse(angle) > 135)
-                    {
-                        x = arearect.LocationTopLeft.Lat; //arearect.LocationTopLeft.Lat;
-                        y += latlngdiff;
-                    }
-                    else if (double.Parse(angle) > 90)
-                    {
-                        y = bottomleft.Lng; //arearect.LocationTopLeft.Lat;
-                        x += latlngdiff;
-                    }
-                    else
-                    {
-                        y = bottomleft.Lng;
-                        x += latlngdiff;
-                    }
-
-                    //callMe(x , y, 0);
-                    //callMe(x + (fulllatdiff), y + (fulllngdiff), 0);
-
-                    //continue;
-
-                    PointLatLng closestlatlong = PointLatLng.Zero;
-                    PointLatLng farestlatlong = PointLatLng.Zero;
-
-                    double noc = double.MaxValue;
-                    double nof = double.MinValue;
-
-                    if (dir)
-                    {
-                        double ax = x;
-                        double ay = y;
-
-                        double bx = x + fulllatdiff;
-                        double by = y + fulllngdiff;
-                        int a = -1;
-                        PointLatLng newlatlong = PointLatLng.Zero;
-                        foreach (PointLatLng pnt in area.Points)
-                        {
-                            a++;
-                            if (a == 0)
-                            {
-                                continue;
-                            }
-                            newlatlong = FindLineIntersection(area.Points[a - 1], area.Points[a], new PointLatLng(ax, ay), new PointLatLng(bx, by));
-                            if (!newlatlong.IsZero)
-                            {
-                                if (noc > MainMap.Manager.GetDistance(new PointLatLng(ax, ay), newlatlong))
-                                {
-                                    closestlatlong.Lat = newlatlong.Lat;
-                                    closestlatlong.Lng = newlatlong.Lng;
-                                    noc = MainMap.Manager.GetDistance(new PointLatLng(ax, ay), newlatlong);
-                                }
-                                if (nof < MainMap.Manager.GetDistance(new PointLatLng(ax, ay), newlatlong))
-                                {
-                                    farestlatlong.Lat = newlatlong.Lat;
-                                    farestlatlong.Lng = newlatlong.Lng;
-                                    nof = MainMap.Manager.GetDistance(new PointLatLng(ax, ay), newlatlong);
-                                }
-                            }
-                        }
-
-                        if (!farestlatlong.IsZero)
-                            callMe(farestlatlong.Lat, farestlatlong.Lng, altitude);
-                        if (!closestlatlong.IsZero)
-                            callMe(closestlatlong.Lat, closestlatlong.Lng - overshootdistlng, altitude);
-
-                        //callMe(x, topright.Lng, altitude);
-                        //callMe(x, bottomleft.Lng - overshootdistlng, altitude);
-                    }
-                    else
-                    {
-                        double ax = x;
-                        double ay = y;
-
-                        double bx = x + fulllatdiff;
-                        double by = y + fulllngdiff;
-                        int a = -1;
-                        PointLatLng newlatlong = PointLatLng.Zero;
-                        foreach (PointLatLng pnt in area.Points)
-                        {
-                            a++;
-                            if (a == 0)
-                            {
-                                continue;
-                            }
-                            newlatlong = FindLineIntersection(area.Points[a - 1], area.Points[a], new PointLatLng(ax, ay), new PointLatLng(bx, by));
-                            if (!newlatlong.IsZero)
-                            {
-                                if (noc > MainMap.Manager.GetDistance(new PointLatLng(ax, ay), newlatlong))
-                                {
-                                    closestlatlong.Lat = newlatlong.Lat;
-                                    closestlatlong.Lng = newlatlong.Lng;
-                                    noc = MainMap.Manager.GetDistance(new PointLatLng(ax, ay), newlatlong);
-                                }
-                                if (nof < MainMap.Manager.GetDistance(new PointLatLng(ax, ay), newlatlong))
-                                {
-                                    farestlatlong.Lat = newlatlong.Lat;
-                                    farestlatlong.Lng = newlatlong.Lng;
-                                    nof = MainMap.Manager.GetDistance(new PointLatLng(ax, ay), newlatlong);
-                                }
-                            }
-                        }
-                        if (!closestlatlong.IsZero)
-                            callMe(closestlatlong.Lat, closestlatlong.Lng, altitude);
-                        if (!farestlatlong.IsZero)
-                            callMe(farestlatlong.Lat, farestlatlong.Lng + overshootdistlng, altitude);
-                        //callMe(x, bottomleft.Lng, altitude);
-                        //callMe(x, topright.Lng + overshootdistlng, altitude);
-                    }
-
-                    dir = !dir;
-
-                    count++;
-
-                    if (Commands.RowCount > 150)
-                    {
-                        CustomMessageBox.Show("Stopping at 150 WP's");
-                        break;
-                    }
-                }
-
-                //drawnpolygon.Points.Clear();
-                //drawnpolygons.Markers.Clear();
-                MainMap.Refresh();
-
-            }
+            
         }
 
         private void label4_LinkClicked(object sender, LinkLabelLinkClickedEventArgs e)
@@ -3027,64 +2770,12 @@ namespace ArdupilotMega.GCSViews
 
         private void BUT_zoomto_Click(object sender, EventArgs e)
         {
-            string place = "Perth Airport, Australia";
-            if (DialogResult.OK == Common.InputBox("Location", "Enter your location", ref place))
-            {
-
-                GeoCoderStatusCode status = MainMap.SetCurrentPositionByKeywords(place);
-                if (status != GeoCoderStatusCode.G_GEO_SUCCESS)
-                {
-                    CustomMessageBox.Show("Google Maps Geocoder can't find: '" + place + "', reason: " + status.ToString(), "GMap.NET", MessageBoxButtons.OK, MessageBoxIcon.Exclamation);
-                }
-                else
-                {
-                    MainMap.Zoom = 15;
-                }
-            }
+            
         }
 
         private void BUT_loadkml_Click(object sender, EventArgs e)
         {
 
-            OpenFileDialog fd = new OpenFileDialog();
-            fd.Filter = "Google Earth KML (*.kml)|*.kml";
-            fd.DefaultExt = ".kml";
-            DialogResult result = fd.ShowDialog();
-            string file = fd.FileName;
-            if (file != "")
-            {
-                try
-                {
-                    kmlpolygons.Polygons.Clear();
-                    kmlpolygons.Routes.Clear();
-
-                    FlightData.kmlpolygons.Routes.Clear();
-                    FlightData.kmlpolygons.Polygons.Clear();
-
-                    string kml = new StreamReader(File.OpenRead(file)).ReadToEnd();
-
-                    kml = kml.Replace("<Snippet/>", "");
-
-                    var parser = new SharpKml.Base.Parser();
-
-                    parser.ElementAdded += parser_ElementAdded;
-                    parser.ParseString(kml, true);
-
-                    if (DialogResult.Yes == CustomMessageBox.Show("Do you want to load this into the flight data screen?", "Load data", MessageBoxButtons.YesNo))
-                    {
-                        foreach (var temp in kmlpolygons.Polygons)
-                        {
-                            FlightData.kmlpolygons.Polygons.Add(temp);
-                        }
-                        foreach (var temp in kmlpolygons.Routes)
-                        {
-                            FlightData.kmlpolygons.Routes.Add(temp);
-                        }
-                    }
-
-                }
-                catch (Exception ex) { CustomMessageBox.Show("Bad KML File :" + ex.ToString()); }
-            }
 
         }
 
@@ -3501,6 +3192,353 @@ namespace ArdupilotMega.GCSViews
         private void FlightPlanner_FormClosing(object sender, FormClosingEventArgs e)
         {
             timer1.Stop();
+        }
+
+        private void setROIToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            selectedrow = Commands.Rows.Add();
+
+            Commands.Rows[selectedrow].Cells[Command.Index].Value = MAVLink.MAV_CMD.ROI.ToString();
+
+            //Commands.Rows[selectedrow].Cells[Param1.Index].Value = time;
+
+            ChangeColumnHeader(MAVLink.MAV_CMD.ROI.ToString());
+
+            setfromGE(end.Lat, end.Lng, (int)float.Parse(TXT_DefaultAlt.Text));
+
+            writeKML();
+        }
+
+        private void gridToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            polygongridmode = false;
+
+            if (drawnpolygon == null || drawnpolygon.Points.Count == 0)
+            {
+                CustomMessageBox.Show("Right click the map to draw a polygon", "Area", MessageBoxButtons.OK, MessageBoxIcon.Exclamation);
+                return;
+            }
+
+            // ensure points/latlong are current
+            MainMap.Zoom = (int)MainMap.Zoom;
+
+            MainMap.Refresh();
+
+            GMapPolygon area = drawnpolygon;
+            area.Points.Add(area.Points[0]); // make a full loop
+            RectLatLng arearect = getPolyMinMax(area);
+            if (area.Distance > 0)
+            {
+
+                PointLatLng topright = new PointLatLng(arearect.LocationTopLeft.Lat, arearect.LocationRightBottom.Lng);
+                PointLatLng bottomleft = new PointLatLng(arearect.LocationRightBottom.Lat, arearect.LocationTopLeft.Lng);
+
+                double diagdist = MainMap.Manager.GetDistance(arearect.LocationTopLeft, arearect.LocationRightBottom) * 1000;
+                double heightdist = MainMap.Manager.GetDistance(arearect.LocationTopLeft, bottomleft) * 1000;
+                double widthdist = MainMap.Manager.GetDistance(arearect.LocationTopLeft, topright) * 1000;
+
+
+
+                string alt = (100 * MainV2.cs.multiplierdist).ToString("0");
+                Common.InputBox("Altitude", "Relative Altitude", ref alt);
+
+
+                string distance = (50 * MainV2.cs.multiplierdist).ToString("0");
+                Common.InputBox("Distance", "Distance between lines", ref distance);
+
+                //string overshoot = (30 * MainV2.cs.multiplierdist).ToString("0");
+                //Common.InputBox("Overshoot", "Enter of line overshoot amount", ref overshoot);
+
+                string angle = (90).ToString("0");
+                Common.InputBox("Angle", "Enter the line direction (0-180)", ref angle);
+
+                double tryme = 0;
+
+                if (!double.TryParse(angle, out tryme))
+                {
+                    CustomMessageBox.Show("Invalid Angle");
+                    return;
+                }
+                if (!double.TryParse(alt, out tryme))
+                {
+                    CustomMessageBox.Show("Invalid Alt");
+                    return;
+                }
+                if (!double.TryParse(distance, out tryme))
+                {
+                    CustomMessageBox.Show("Invalid Distance");
+                    return;
+                }
+
+#if DEBUG
+                //Commands.Rows.Clear();
+#endif
+                // get x y components
+                double x1 = Math.Cos((double.Parse(angle)) * deg2rad); // needs to mod for long scale
+                double y1 = Math.Sin((double.Parse(angle)) * deg2rad);
+
+                // get x y step amount in lat lng from m
+                double latdiff = arearect.HeightLat / ((heightdist / (double.Parse(distance) * (y1) / MainV2.cs.multiplierdist)));
+                double lngdiff = arearect.WidthLng / ((widthdist / (double.Parse(distance) * (x1) / MainV2.cs.multiplierdist)));
+
+                double latlngdiff = Math.Sqrt(latdiff * latdiff + lngdiff * lngdiff);
+
+                double fulllatdiff = arearect.HeightLat * x1 * 2;
+                double fulllngdiff = arearect.WidthLng * y1 * 2;
+
+                // lat - up down
+                // lng - left right
+
+                int overshootdist = 0;// (int)(double.Parse(overshoot) / MainV2.cs.multiplierdist);
+
+                int altitude = (int)(double.Parse(alt) / MainV2.cs.multiplierdist);
+
+                double overshootdistlng = arearect.WidthLng / widthdist * overshootdist;
+
+                bool dir = false;
+
+                int count = 0;
+
+                double x = bottomleft.Lat - Math.Abs(fulllatdiff);
+                double y = bottomleft.Lng - Math.Abs(fulllngdiff);
+
+                log.InfoFormat("{0} < {1} {2} < {3}", x, (topright.Lat), y, (topright.Lng));
+
+                while (x < (topright.Lat + Math.Abs(fulllatdiff)) && y < (topright.Lng + Math.Abs(fulllngdiff)))
+                {
+                    if (double.Parse(angle) < 45)
+                    {
+                        x = bottomleft.Lat;
+                        y += latlngdiff;
+                    }
+                    else if (double.Parse(angle) > 135)
+                    {
+                        x = arearect.LocationTopLeft.Lat; //arearect.LocationTopLeft.Lat;
+                        y += latlngdiff;
+                    }
+                    else if (double.Parse(angle) > 90)
+                    {
+                        y = bottomleft.Lng; //arearect.LocationTopLeft.Lat;
+                        x += latlngdiff;
+                    }
+                    else
+                    {
+                        y = bottomleft.Lng;
+                        x += latlngdiff;
+                    }
+
+                    //callMe(x , y, 0);
+                    //callMe(x + (fulllatdiff), y + (fulllngdiff), 0);
+
+                    //continue;
+
+                    PointLatLng closestlatlong = PointLatLng.Zero;
+                    PointLatLng farestlatlong = PointLatLng.Zero;
+
+                    double noc = double.MaxValue;
+                    double nof = double.MinValue;
+
+                    if (dir)
+                    {
+                        double ax = x;
+                        double ay = y;
+
+                        double bx = x + fulllatdiff;
+                        double by = y + fulllngdiff;
+                        int a = -1;
+                        PointLatLng newlatlong = PointLatLng.Zero;
+                        foreach (PointLatLng pnt in area.Points)
+                        {
+                            a++;
+                            if (a == 0)
+                            {
+                                continue;
+                            }
+                            newlatlong = FindLineIntersection(area.Points[a - 1], area.Points[a], new PointLatLng(ax, ay), new PointLatLng(bx, by));
+                            if (!newlatlong.IsZero)
+                            {
+                                if (noc > MainMap.Manager.GetDistance(new PointLatLng(ax, ay), newlatlong))
+                                {
+                                    closestlatlong.Lat = newlatlong.Lat;
+                                    closestlatlong.Lng = newlatlong.Lng;
+                                    noc = MainMap.Manager.GetDistance(new PointLatLng(ax, ay), newlatlong);
+                                }
+                                if (nof < MainMap.Manager.GetDistance(new PointLatLng(ax, ay), newlatlong))
+                                {
+                                    farestlatlong.Lat = newlatlong.Lat;
+                                    farestlatlong.Lng = newlatlong.Lng;
+                                    nof = MainMap.Manager.GetDistance(new PointLatLng(ax, ay), newlatlong);
+                                }
+                            }
+                        }
+
+                        if (!farestlatlong.IsZero)
+                            callMe(farestlatlong.Lat, farestlatlong.Lng, altitude);
+                        if (!closestlatlong.IsZero)
+                            callMe(closestlatlong.Lat, closestlatlong.Lng - overshootdistlng, altitude);
+
+                        //callMe(x, topright.Lng, altitude);
+                        //callMe(x, bottomleft.Lng - overshootdistlng, altitude);
+                    }
+                    else
+                    {
+                        double ax = x;
+                        double ay = y;
+
+                        double bx = x + fulllatdiff;
+                        double by = y + fulllngdiff;
+                        int a = -1;
+                        PointLatLng newlatlong = PointLatLng.Zero;
+                        foreach (PointLatLng pnt in area.Points)
+                        {
+                            a++;
+                            if (a == 0)
+                            {
+                                continue;
+                            }
+                            newlatlong = FindLineIntersection(area.Points[a - 1], area.Points[a], new PointLatLng(ax, ay), new PointLatLng(bx, by));
+                            if (!newlatlong.IsZero)
+                            {
+                                if (noc > MainMap.Manager.GetDistance(new PointLatLng(ax, ay), newlatlong))
+                                {
+                                    closestlatlong.Lat = newlatlong.Lat;
+                                    closestlatlong.Lng = newlatlong.Lng;
+                                    noc = MainMap.Manager.GetDistance(new PointLatLng(ax, ay), newlatlong);
+                                }
+                                if (nof < MainMap.Manager.GetDistance(new PointLatLng(ax, ay), newlatlong))
+                                {
+                                    farestlatlong.Lat = newlatlong.Lat;
+                                    farestlatlong.Lng = newlatlong.Lng;
+                                    nof = MainMap.Manager.GetDistance(new PointLatLng(ax, ay), newlatlong);
+                                }
+                            }
+                        }
+                        if (!closestlatlong.IsZero)
+                            callMe(closestlatlong.Lat, closestlatlong.Lng, altitude);
+                        if (!farestlatlong.IsZero)
+                            callMe(farestlatlong.Lat, farestlatlong.Lng + overshootdistlng, altitude);
+                        //callMe(x, bottomleft.Lng, altitude);
+                        //callMe(x, topright.Lng + overshootdistlng, altitude);
+                    }
+
+                    dir = !dir;
+
+                    count++;
+
+                    if (Commands.RowCount > 150)
+                    {
+                        CustomMessageBox.Show("Stopping at 150 WP's");
+                        break;
+                    }
+                }
+
+                //drawnpolygon.Points.Clear();
+                //drawnpolygons.Markers.Clear();
+                MainMap.Refresh();
+
+            }
+        }
+
+        private void zoomToToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            string place = "Perth Airport, Australia";
+            if (DialogResult.OK == Common.InputBox("Location", "Enter your location", ref place))
+            {
+
+                GeoCoderStatusCode status = MainMap.SetCurrentPositionByKeywords(place);
+                if (status != GeoCoderStatusCode.G_GEO_SUCCESS)
+                {
+                    CustomMessageBox.Show("Google Maps Geocoder can't find: '" + place + "', reason: " + status.ToString(), "GMap.NET", MessageBoxButtons.OK, MessageBoxIcon.Exclamation);
+                }
+                else
+                {
+                    MainMap.Zoom = 15;
+                }
+            }
+        }
+
+        private void prefetchToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            RectLatLng area = MainMap.SelectedArea;
+            if (area.IsEmpty)
+            {
+                DialogResult res = CustomMessageBox.Show("No ripp area defined, ripp displayed on screen?", "Rip", MessageBoxButtons.YesNo);
+                if (res == DialogResult.Yes)
+                {
+                    area = MainMap.CurrentViewArea;
+                }
+            }
+
+            if (!area.IsEmpty)
+            {
+                DialogResult res = CustomMessageBox.Show("Ready ripp at Zoom = " + (int)MainMap.Zoom + " ?", "GMap.NET", MessageBoxButtons.YesNo);
+
+                for (int i = 1; i <= MainMap.MaxZoom; i++)
+                {
+                    if (res == DialogResult.Yes)
+                    {
+                        TilePrefetcher obj = new TilePrefetcher();
+                        obj.ShowCompleteMessage = false;
+                        obj.Start(area, MainMap.Projection, i, MainMap.MapType, 100);
+                    }
+                    else if (res == DialogResult.No)
+                    {
+                        continue;
+                    }
+                    else if (res == DialogResult.Cancel)
+                    {
+                        break;
+                    }
+                }
+            }
+            else
+            {
+                CustomMessageBox.Show("Select map area holding ALT", "GMap.NET", MessageBoxButtons.OK, MessageBoxIcon.Exclamation);
+            }
+        }
+
+        private void kMLOverlayToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+
+            OpenFileDialog fd = new OpenFileDialog();
+            fd.Filter = "Google Earth KML (*.kml)|*.kml";
+            fd.DefaultExt = ".kml";
+            DialogResult result = fd.ShowDialog();
+            string file = fd.FileName;
+            if (file != "")
+            {
+                try
+                {
+                    kmlpolygons.Polygons.Clear();
+                    kmlpolygons.Routes.Clear();
+
+                    FlightData.kmlpolygons.Routes.Clear();
+                    FlightData.kmlpolygons.Polygons.Clear();
+
+                    string kml = new StreamReader(File.OpenRead(file)).ReadToEnd();
+
+                    kml = kml.Replace("<Snippet/>", "");
+
+                    var parser = new SharpKml.Base.Parser();
+
+                    parser.ElementAdded += parser_ElementAdded;
+                    parser.ParseString(kml, true);
+
+                    if (DialogResult.Yes == CustomMessageBox.Show("Do you want to load this into the flight data screen?", "Load data", MessageBoxButtons.YesNo))
+                    {
+                        foreach (var temp in kmlpolygons.Polygons)
+                        {
+                            FlightData.kmlpolygons.Polygons.Add(temp);
+                        }
+                        foreach (var temp in kmlpolygons.Routes)
+                        {
+                            FlightData.kmlpolygons.Routes.Add(temp);
+                        }
+                    }
+
+                }
+                catch (Exception ex) { CustomMessageBox.Show("Bad KML File :" + ex.ToString()); }
+            }
         }
     }
 }

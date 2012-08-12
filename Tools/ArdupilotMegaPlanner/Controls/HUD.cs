@@ -151,6 +151,9 @@ namespace ArdupilotMega.Controls
         public DateTime datetime { get { return _datetime; } set { if (_datetime != value) { _datetime = value; this.Invalidate(); } } }
 
         [System.ComponentModel.Browsable(true), System.ComponentModel.Category("Values")]
+        public float groundalt { get; set; }
+
+        [System.ComponentModel.Browsable(true), System.ComponentModel.Category("Values")]
         public int status { get; set; }
         
         int statuslast = 0;
@@ -1245,6 +1248,8 @@ namespace ArdupilotMega.Controls
                     greenPen.Color = Color.FromArgb(255, greenPen.Color);
                 }
 
+                bool ground = false;
+
                 for (int a = (int)start; a <= (_alt + viewrange / 2); a += 1)
                 {
                     if (a == Math.Round(_targetalt) && _targetalt != 0)
@@ -1252,12 +1257,21 @@ namespace ArdupilotMega.Controls
                         greenPen.Width = 6;
                         graphicsObject.DrawLine(greenPen, scrollbg.Left, scrollbg.Top - space * (a - start), scrollbg.Left + scrollbg.Width, scrollbg.Top - space * (a - start));
                     }
+
+
+                    // ground doesnt appear if we are not in view or below ground level
+                    if (a == Math.Round(groundalt) && groundalt != 0 && ground == false)
+                    {
+                        graphicsObject.FillRectangle(new SolidBrush(Color.FromArgb(100,Color.BurlyWood)), new RectangleF(scrollbg.Left, scrollbg.Top - space * (a - start), scrollbg.Width, (space * (a - start))));
+                    }
+
                     if (a % 5 == 0)
                     {
                         //Console.WriteLine(a + " " + scrollbg.Left + " " + (scrollbg.Top - space * (a - start)) + " " + (scrollbg.Left + 20) + " " + (scrollbg.Top - space * (a - start)));
                         graphicsObject.DrawLine(whitePen, scrollbg.Left, scrollbg.Top - space * (a - start), scrollbg.Left + 10, scrollbg.Top - space * (a - start));
                         drawstring(graphicsObject, a.ToString().PadLeft(5), font, fontsize, whiteBrush, scrollbg.Left + 0 + (int)(0 * fontoffset), scrollbg.Top - space * (a - start) - 6 - fontoffset);
                     }
+
                 }
 
                 greenPen.Width = 4;

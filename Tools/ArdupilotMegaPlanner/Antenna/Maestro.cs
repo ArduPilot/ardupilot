@@ -110,7 +110,7 @@ namespace ArdupilotMega.Antenna
             // conver the angle into a 0-255 value
             byte target = (byte)((((PointAtAngle / range) * 2.0) * 127 + centerpos) * _panreverse);
 
-            Console.WriteLine("P " + Angle + " " + target + " " + PointAtAngle);
+           // Console.WriteLine("P " + Angle + " " + target + " " + PointAtAngle);
 
             var buffer = new byte[] { 0xff, PanAddress, target };
             ComPort.Write(buffer, 0, buffer.Length);

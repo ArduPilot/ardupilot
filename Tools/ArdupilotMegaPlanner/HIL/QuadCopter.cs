@@ -107,7 +107,6 @@ namespace ArdupilotMega.HIL
         private static readonly ILog log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
         QuadCopter self;
 
-        int framecount = 0;
         DateTime seconds = DateTime.Now;
 
         double[] motor_speed = null;

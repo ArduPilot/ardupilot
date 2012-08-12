@@ -227,6 +227,11 @@ namespace ArdupilotMega.GCSViews
                 hud1.Enabled = true;
 
             hud1.Dock = DockStyle.Fill;
+
+            foreach (Control ctl in splitContainer1.Panel2.Controls)
+            {
+                ctl.Visible = true;
+            }
         }
 
         public void Deactivate()
@@ -312,7 +317,7 @@ namespace ArdupilotMega.GCSViews
 
                 if (MainV2.giveComport == true)
                 {
-                    System.Threading.Thread.Sleep(20);
+                    System.Threading.Thread.Sleep(100);
                     continue;
                 }
                 if (!comPort.BaseStream.IsOpen)
@@ -571,7 +576,7 @@ namespace ArdupilotMega.GCSViews
 
                                 if (MainV2.cs.firmware == MainV2.Firmwares.ArduPlane)
                                 {
-                                    routes.Markers[0] = (new GMapMarkerPlane(currentloc, MainV2.cs.yaw, MainV2.cs.groundcourse, MainV2.cs.nav_bearing, MainV2.cs.target_bearing, gMapControl1));
+                                    routes.Markers[0] = (new GMapMarkerPlane(currentloc, MainV2.cs.yaw, MainV2.cs.groundcourse, MainV2.cs.nav_bearing, MainV2.cs.target_bearing, gMapControl1) { ToolTipText = MainV2.cs.alt.ToString("0"), ToolTipMode = MarkerTooltipMode.Always });
                                 }
                                 else if (MainV2.cs.firmware == MainV2.Firmwares.ArduRover)
                                 {
@@ -1040,30 +1045,12 @@ namespace ArdupilotMega.GCSViews
                 return;
             }
 
-            string alt = "100";
-
-            if (MainV2.cs.firmware == MainV2.Firmwares.ArduCopter2)
+            if (GuidedModeWP.Alt == 0)
             {
-                alt = (10 * MainV2.cs.multiplierdist).ToString("0");
-            }
-            else
-            {
-                alt = (100 * MainV2.cs.multiplierdist).ToString("0");
-            }
+                flyToHereAltToolStripMenuItem_Click(null, null);
 
-            if (MainV2.config.ContainsKey("guided_alt"))
-                alt = MainV2.config["guided_alt"].ToString();
-
-            if (DialogResult.Cancel == Common.InputBox("Enter Alt", "Enter Guided Mode Alt", ref alt))
-                return;
-
-            MainV2.config["guided_alt"] = alt;
-
-            int intalt = (int)(100 * MainV2.cs.multiplierdist);
-            if (!int.TryParse(alt, out intalt))
-            {
-                CustomMessageBox.Show("Bad Alt");
-                return;
+                if (GuidedModeWP.Alt == 0) 
+                    return;
             }
 
             if (gotolocation.Lat == 0 || gotolocation.Lng == 0)
@@ -1075,19 +1062,15 @@ namespace ArdupilotMega.GCSViews
             Locationwp gotohere = new Locationwp();
 
             gotohere.id = (byte)MAVLink.MAV_CMD.WAYPOINT;
-            gotohere.alt = (float)(intalt / MainV2.cs.multiplierdist); // back to m
+            gotohere.alt = (float)(GuidedModeWP.Alt); // back to m
             gotohere.lat = (float)(gotolocation.Lat);
             gotohere.lng = (float)(gotolocation.Lng);
 
             try
             {
-                MainV2.giveComport = true;
-
-                MainV2.comPort.setWP(gotohere, 0, MAVLink.MAV_FRAME.GLOBAL_RELATIVE_ALT, (byte)2);
+                MainV2.comPort.setGuidedModeWP(gotohere);
 
                 GuidedModeWP = new PointLatLngAlt(gotohere.lat, gotohere.lng, gotohere.alt,"Guided Mode");
-
-                MainV2.giveComport = false;
             }
             catch (Exception ex) { MainV2.giveComport = false; CustomMessageBox.Show("Error sending command : " + ex.Message); }
 
@@ -2148,6 +2131,99 @@ print 'Roll complete'
 
                 // close selection form
                 ((Form)((CheckBox)sender).Parent).Close();
+            }
+        }
+
+        private void flyToHereAltToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            string alt = "100";
+
+            if (MainV2.cs.firmware == MainV2.Firmwares.ArduCopter2)
+            {
+                alt = (10 * MainV2.cs.multiplierdist).ToString("0");
+            }
+            else
+            {
+                alt = (100 * MainV2.cs.multiplierdist).ToString("0");
+            }
+
+            if (MainV2.config.ContainsKey("guided_alt"))
+                alt = MainV2.config["guided_alt"].ToString();
+
+            if (DialogResult.Cancel == Common.InputBox("Enter Alt", "Enter Guided Mode Alt", ref alt))
+                return;
+
+            MainV2.config["guided_alt"] = alt;
+
+            int intalt = (int)(100 * MainV2.cs.multiplierdist);
+            if (!int.TryParse(alt, out intalt))
+            {
+                CustomMessageBox.Show("Bad Alt");
+                return;
+            }
+
+            GuidedModeWP.Alt = intalt;
+
+            if (MainV2.cs.mode == "Guided")
+            {
+                MainV2.comPort.setGuidedModeWP(new Locationwp() { alt = (float)GuidedModeWP.Alt, lat = (float)GuidedModeWP.Lat, lng = (float)GuidedModeWP.Lng });
+            }
+        }
+
+        private void flightPlannerToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            foreach (Control ctl in splitContainer1.Panel2.Controls)
+            {
+                ctl.Visible = false;
+            }
+
+            foreach (MainSwitcher.Screen sc in MainV2.View.screens)
+            {
+                if (sc.Name == "FlightPlanner")
+                {
+                    MyButton but = new MyButton() { Location = new Point(splitContainer1.Panel2.Width / 2, 0), Text = "Close" };
+                    but.Click += new EventHandler(but_Click);
+
+                    splitContainer1.Panel2.Controls.Add(but);
+                    splitContainer1.Panel2.Controls.Add(sc.Control);
+                    ThemeManager.ApplyThemeTo(sc.Control);
+                    
+                    sc.Control.Dock = DockStyle.Fill;
+                    sc.Control.Visible = true;
+
+                    if (sc.Control is IActivate)
+                    {
+                        ((IActivate)(sc.Control)).Activate();
+                    }
+
+                    but.BringToFront();
+                    break;
+                }
+            }
+        }
+
+        void but_Click(object sender, EventArgs e)
+        {
+            foreach (MainSwitcher.Screen sc in MainV2.View.screens)
+            {
+                if (sc.Name == "FlightPlanner")
+                {
+                    splitContainer1.Panel2.Controls.Remove(sc.Control);
+                    splitContainer1.Panel2.Controls.Remove((Control)sender);
+                    sc.Control.Visible = false;
+
+                    if (sc.Control is IDeactivate)
+                    {
+                        ((IDeactivate)(sc.Control)).Deactivate();
+                    }
+
+                    break;
+                }
+            }
+
+            foreach (Control ctl in splitContainer1.Panel2.Controls)
+            {
+                ctl.Visible = true;
             }
         }
     }

@@ -30,7 +30,7 @@ namespace ArdupilotMega.Comms
          void toggleDTR();
 
         // Properties
-         //Stream BaseStream { get; }
+         Stream BaseStream { get; }
          int BaudRate { get; set; }
          //bool BreakState { get; set; }
          int BytesToRead { get; }
