@@ -420,7 +420,7 @@ static void set_mode(byte mode)
 	if(home_is_set == false){
 		// THOR
 		// We don't care about Home if we don't have lock yet in Toy mode
-		if(mode == TOY || mode == OF_LOITER){
+		if(mode == TOY_A || mode == TOY_M || mode == OF_LOITER){
 			// nothing
 		}else if (mode > ALT_HOLD){
 			mode = STABILIZE;
@@ -551,16 +551,24 @@ static void set_mode(byte mode)
 		// THOR
 		// These are the flight modes for Toy mode
 		// See the defines for the enumerated values
-		case TOY:
+		case TOY_A:
 			yaw_mode 		= YAW_TOY;
 			roll_pitch_mode = ROLL_PITCH_TOY;
+			throttle_mode 	= THROTTLE_AUTO;
 			wp_control 		= NO_NAV_MODE;
 
-			// init throttle
-			update_toy_throttle();
+			// save throttle for fast exit of Alt hold
+			saved_toy_throttle = g.rc_3.control_in;
 
 			// hold the current altitude
 			set_new_altitude(current_loc.alt);
+			break;
+
+		case TOY_M:
+			yaw_mode 		= YAW_TOY;
+			roll_pitch_mode = ROLL_PITCH_TOY;
+			wp_control 		= NO_NAV_MODE;
+			throttle_mode 	= THROTTLE_MANUAL;
 			break;
 
 		default:
