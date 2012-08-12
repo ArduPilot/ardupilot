@@ -359,7 +359,8 @@ static const char* flight_mode_strings[] = {
 	"POSITION",		// 8
 	"LAND",			// 9
 	"OF_LOITER",	// 10
-	"TOY"};			// 11	THOR Added for additional Fligt mode
+	"TOY_M",		// 11
+	"TOY_A"};		// 12	THOR Added for additional Fligt mode
 
 /* Radio values
 		Channel assignments
@@ -676,6 +677,7 @@ static int16_t		baro_rate;
 static int8_t 		reset_throttle_counter;
 // used to track when to read sensors vs estimate alt
 static boolean 		alt_sensor_flag;
+static int16_t 		saved_toy_throttle;
 
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -1142,7 +1144,7 @@ static void medium_loop()
 		case 2:
 			medium_loopCounter++;
 
-			if(control_mode == TOY){
+			if(control_mode == TOY_A){
 				update_toy_throttle();
 
 				if(throttle_mode == THROTTLE_AUTO){
@@ -1987,12 +1989,9 @@ static void update_navigation()
 			break;
 
 		case STABILIZE:
+		case TOY_A:
+		case TOY_M:
 			wp_control = NO_NAV_MODE;
-			update_nav_wp();
-			break;
-
-		// THOR added to enable Virtual WP nav
-		case TOY:
 			update_nav_wp();
 			break;
 	}
