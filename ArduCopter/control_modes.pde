@@ -45,18 +45,24 @@ static void reset_control_switch()
 // set this to your trainer switch
 static void read_trim_switch()
 {
-	/*
-	// this is the normal operation set by the mission planner
-	if (g.rc_6.radio_in < CH_6_PWM_TRIGGER){
-		g.ch7_option = CH7_FLIP;
-	}else{
-		g.ch7_option = CH7_SAVE_WP;
-	}*/
+	int8_t option;
 
-	if(g.ch7_option == CH7_SIMPLE_MODE){
+	if(g.ch7_option == CH7_MULTI_MODE){
+		if (g.rc_6.radio_in < CH_6_PWM_TRIGGER_LOW){
+			option = CH7_FLIP;
+		}else if (g.rc_6.radio_in > CH_6_PWM_TRIGGER_HIGH){
+			option = CH7_SAVE_WP;
+		}else{
+			option = CH7_RTL;
+		}
+	}else{
+		option = g.ch7_option;
+	}
+
+	if(option == CH7_SIMPLE_MODE){
 		do_simple = (g.rc_7.radio_in > CH_7_PWM_TRIGGER);
 
-	}else if (g.ch7_option == CH7_FLIP){
+	}else if (option == CH7_FLIP){
 		if (CH7_flag == false && g.rc_7.radio_in > CH_7_PWM_TRIGGER){
 			CH7_flag = true;
 
@@ -69,7 +75,7 @@ static void read_trim_switch()
 			CH7_flag = false;
 		}
 
-	}else if (g.ch7_option == CH7_RTL){
+	}else if (option == CH7_RTL){
 		if (CH7_flag == false && g.rc_7.radio_in > CH_7_PWM_TRIGGER){
 			CH7_flag = true;
 			set_mode(RTL);
@@ -82,7 +88,7 @@ static void read_trim_switch()
 			}
 		}
 
-	}else if (g.ch7_option == CH7_SAVE_WP){
+	}else if (option == CH7_SAVE_WP){
 		if (g.rc_7.radio_in > CH_7_PWM_TRIGGER){ // switch is engaged
 			CH7_flag = true;
 
@@ -141,7 +147,7 @@ static void read_trim_switch()
 				// 3 = command total
 			}
 		}
-	}else if (g.ch7_option == CH7_AUTO_TRIM){
+	}else if (option == CH7_AUTO_TRIM){
 		if (g.rc_7.radio_in > CH_7_PWM_TRIGGER){
 			auto_level_counter = 10;
 		}
