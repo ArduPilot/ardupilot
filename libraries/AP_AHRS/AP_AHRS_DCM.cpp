@@ -597,12 +597,12 @@ AP_AHRS_DCM::drift_correction(float deltat)
 
 
 // update our wind speed estimate
-// this is based on the wind speed estimation code from MatrixPilot by
-// Bill Premerlani. Adaption for ArduPilot by Jon Challinger
-// See http://gentlenav.googlecode.com/files/WindEstimation.pdf
 void AP_AHRS_DCM::estimate_wind(Vector3f &velocity)
 {
-	Vector3f fuselageDirection = Vector3f(_dcm_matrix.a.x,_dcm_matrix.b.x,_dcm_matrix.c.x);
+ 	// this is based on the wind speed estimation code from MatrixPilot by
+	// Bill Premerlani. Adaption for ArduPilot by Jon Challinger
+	// See http://gentlenav.googlecode.com/files/WindEstimation.pdf
+	Vector3f fuselageDirection = _dcm_matrix.colx();
 	Vector3f fuselageDirectionDiff = fuselageDirection - _last_fuse;
 	uint32_t now = millis();
 
@@ -616,17 +616,13 @@ void AP_AHRS_DCM::estimate_wind(Vector3f &velocity)
 
 	float diff_length = fuselageDirectionDiff.length();
 	if (diff_length > 0.2) {
+		// when turning, use the attitude response to estimate
+		// wind speed
 		float V;
 		Vector3f velocityDiff = velocity - _last_vel;
 
-		// if we have an airspeed sensor, then use that,
-		// otherwise estimate it using equation 6
-		if (_airspeed && _airspeed->use()) {
-			float airspeed = _airspeed->get_airspeed();
-			V = (_dcm_matrix.colx() * airspeed).length();
-		} else {
-			V = velocityDiff.length() / diff_length;
-		}
+		// estimate airspeed it using equation 6
+		V = velocityDiff.length() / diff_length;
 		
 		_last_fuse = fuselageDirection;
 		_last_vel = velocity;
@@ -644,10 +640,16 @@ void AP_AHRS_DCM::estimate_wind(Vector3f &velocity)
 		wind.z = velocitySum.z - V * fuselageDirectionSum.z;
 		wind *= 0.5;
 
-		_wind = _wind * 0.92 + wind * 0.08;
+		_wind = _wind * 0.95 + wind * 0.05;
 
 		_last_wind_time = now;
+	} else if (now - _last_wind_time > 2000 && _airspeed && _airspeed->use()) {
+		// when flying straight use airspeed to get wind estimate if available
+		Vector3f airspeed = _dcm_matrix.colx() * _airspeed->get_airspeed();
+		Vector3f wind = velocity - airspeed;
+		_wind = _wind * 0.92 + wind * 0.08;
 	}
+
 }
 
 
