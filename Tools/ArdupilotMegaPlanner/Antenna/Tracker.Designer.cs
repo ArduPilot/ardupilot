@@ -55,6 +55,7 @@
             this.BUT_connect = new ArdupilotMega.Controls.MyButton();
             this.LBL_pantrim = new System.Windows.Forms.Label();
             this.LBL_tilttrim = new System.Windows.Forms.Label();
+            this.BUT_find = new ArdupilotMega.Controls.MyButton();
             ((System.ComponentModel.ISupportInitialize)(this.TRK_pantrim)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.TRK_tilttrim)).BeginInit();
             this.SuspendLayout();
@@ -222,10 +223,18 @@
             resources.ApplyResources(this.LBL_tilttrim, "LBL_tilttrim");
             this.LBL_tilttrim.Name = "LBL_tilttrim";
             // 
+            // BUT_find
+            // 
+            resources.ApplyResources(this.BUT_find, "BUT_find");
+            this.BUT_find.Name = "BUT_find";
+            this.BUT_find.UseVisualStyleBackColor = true;
+            this.BUT_find.Click += new System.EventHandler(this.BUT_find_Click);
+            // 
             // Tracker
             // 
             resources.ApplyResources(this, "$this");
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
+            this.Controls.Add(this.BUT_find);
             this.Controls.Add(this.LBL_tilttrim);
             this.Controls.Add(this.LBL_pantrim);
             this.Controls.Add(this.label12);
@@ -288,5 +297,6 @@
         private System.Windows.Forms.Label label12;
         private System.Windows.Forms.Label LBL_pantrim;
         private System.Windows.Forms.Label LBL_tilttrim;
+        private Controls.MyButton BUT_find;
     }
 }

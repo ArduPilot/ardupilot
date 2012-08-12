@@ -16,6 +16,8 @@ using System.Reflection;
 using ArdupilotMega.Controls;
 using System.Drawing.Drawing2D;
 
+using ArdupilotMega.HIL;
+
 // Written by Michael Oborne
 namespace ArdupilotMega.GCSViews
 {
@@ -697,6 +699,10 @@ namespace ArdupilotMega.GCSViews
             XplanesSEND = new UdpClient(simIP, simPort);
 
             OutputLog.AppendText("Sending to port UDP " + simPort + " (planner->sim)\n");
+
+            setupXplane();
+
+            OutputLog.AppendText("Sent xplane settings\n");
         }
 
         private void SetupUDPMavLink()
@@ -778,19 +784,29 @@ namespace ArdupilotMega.GCSViews
                 sitldata.speedN = DATA[21][3];// (DATA[3][7] * 0.44704 * Math.Sin(sitldata.heading * deg2rad));
                 sitldata.speedE = -DATA[21][5];// (DATA[3][7] * 0.44704 * Math.Cos(sitldata.heading * deg2rad));
 
-        //        YLScsDrawing.Drawing3d.Vector3d accel3D = HIL.QuadCopter.RPY_to_XYZ(DATA[18][1], DATA[18][0], 0, -9.8); //DATA[18][2]
+                Matrix3 dcm = new Matrix3();
+                dcm.from_euler(sitldata.rollDeg * deg2rad, sitldata.pitchDeg * deg2rad, sitldata.yawDeg * deg2rad);
 
-        //        float turnrad = (float)(((DATA[3][7] * 0.44704) * (DATA[3][7] * 0.44704) * 1.943844) / (float)(11.26 * Math.Tan(sitldata.rollDeg * deg2rad))) * ft2m;
+                // rad = tas^2 / (tan(angle) * G)
+                float turnrad = (float)(((DATA[3][7] * 0.44704) * (DATA[3][7] * 0.44704)) / (float)(9.8f * Math.Tan(sitldata.rollDeg * deg2rad)));
 
-         //       float centripaccel = (float)((DATA[3][7] * 0.44704) * (DATA[3][7] * 0.44704)) / turnrad;
+                float gload = (float)(1 / Math.Cos(sitldata.rollDeg * deg2rad)); // calculated Gs
 
-          //      YLScsDrawing.Drawing3d.Vector3d cent3D = HIL.QuadCopter.RPY_to_XYZ(DATA[18][1] - 90, 0, 0, centripaccel);
+                // a = v^2/r
+                float centripaccel = (float)((DATA[3][7] * 0.44704) * (DATA[3][7] * 0.44704)) / turnrad;
 
-         //       accel3D -= cent3D;
+                Vector3 accel_body = dcm.transposed() * (new Vector3(0, 0, -9.8));
 
-            //    sitldata.xAccel = accel3D.X;
-           //     sitldata.yAccel = accel3D.Y;
-           //     sitldata.zAccel = accel3D.Z;
+                Vector3 centrip_accel = new Vector3(0, centripaccel * Math.Cos(sitldata.rollDeg * deg2rad), centripaccel * Math.Sin(sitldata.rollDeg * deg2rad));
+
+                accel_body -= centrip_accel;
+
+                sitldata.xAccel = DATA[4][5] * 9.8;
+                sitldata.yAccel = DATA[4][6] * 9.8;
+                sitldata.zAccel = (0 - DATA[4][4]) * 9.8;
+
+                Console.WriteLine(accel_body.ToString());
+                Console.WriteLine("        {0} {1} {2}",sitldata.xAccel, sitldata.yAccel, sitldata.zAccel);
 
             }
             else if (receviedbytes == 0x64) // FG binary udp
@@ -908,6 +924,9 @@ namespace ArdupilotMega.GCSViews
                 sitldata.speedE = fdm.v_north * ft2m;
 
                 sitldata.airspeed = fdm.vcas * 0.5144444f;//  knots to m/s
+
+                if (RAD_JSBSim.Checked)
+                    sitldata.airspeed = fdm.vcas * 0.3048f;//  fps to m/s
                  
             }
             else
@@ -1414,6 +1433,72 @@ namespace ArdupilotMega.GCSViews
                     Array.Copy(BitConverter.GetBytes((int)-999), 0, Xplane, a, 4);
                     a += 4;
                     Array.Copy(BitConverter.GetBytes((int)-999), 0, Xplane, a, 4);
+                }
+
+                try
+                {
+                    XplanesSEND.Send(Xplane, Xplane.Length);
+
+                }
+                catch (Exception e) { log.Info("Xplanes udp send error " + e.Message); }
+            }
+        }
+
+        void setupXplane()
+        {
+            if (RAD_softXplanes.Checked)
+            {
+
+
+                // sending only 1 packet instead of many.
+
+                byte[] Xplane = new byte[5 + 4 * 8];
+
+                Xplane[0] = (byte)'D';
+                Xplane[1] = (byte)'S';
+                Xplane[2] = (byte)'E';
+                Xplane[3] = (byte)'L';
+                Xplane[4] = 0;
+
+                if (CHK_xplane10.Checked)
+                {
+                    int pos = 5;
+                    Xplane[pos] = 0x3;
+                    pos += 4;
+                    Xplane[pos] = 0x4;
+                    pos += 4;
+                    Xplane[pos] = 0x6;
+                    pos += 4;
+                    Xplane[pos] = 0x10;
+                    pos += 4;
+                    Xplane[pos] = 0x11;
+                    pos += 4;
+                    Xplane[pos] = 0x12;
+                    pos += 4;
+                    Xplane[pos] = 0x14;
+                    pos += 4;
+                    Xplane[pos] = 0x15;
+                    pos += 4;
+                }
+                else
+                {
+                    int pos = 5;
+                    Xplane[pos] = 0x3;
+                    pos += 4;
+                    Xplane[pos] = 0x4;
+                    pos += 4;
+                    Xplane[pos] = 0x6;
+                    pos += 4;
+                    Xplane[pos] = 0x11;
+                    pos += 4;
+                    Xplane[pos] = 0x12;
+                    pos += 4;
+                    Xplane[pos] = 0x13;
+                    pos += 4;
+                    Xplane[pos] = 0x14;
+                    pos += 4;
+                    Xplane[pos] = 0x15;
+                    pos += 4;
                 }
 
                 try

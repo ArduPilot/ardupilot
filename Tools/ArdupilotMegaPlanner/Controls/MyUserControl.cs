@@ -13,7 +13,7 @@ namespace System.Windows.Forms
     {
         /// <summary>
         /// implement an on closing event to tidy up enviroment. 
-        /// Using preedefined refrence as can easerly change betwen form and user control this way.
+        /// Using preedefined refrence as can easerly change between form and user control this way.
         /// </summary>
         public event FormClosingEventHandler FormClosing;
 

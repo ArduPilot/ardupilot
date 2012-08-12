@@ -404,18 +404,19 @@ namespace ArdupilotMega.GCSViews
             }
             catch (Exception ex) { lbl_status.Text = "Failed download"; CustomMessageBox.Show("Failed to download new firmware : " + ex.ToString()); return; }
 
-            System.Threading.ThreadPool.QueueUserWorkItem(fwtype, temp);
+            System.Threading.ThreadPool.QueueUserWorkItem(apmtype, temp.name + "!" + board);
 
             UploadFlash(Path.GetDirectoryName(Application.ExecutablePath) + Path.DirectorySeparatorChar + @"firmware.hex", board);
         }
 
-        void fwtype(object temp) 
+        void apmtype(object temp)
         {
-            software sw = (software)temp;
             try
             {
                 // Create a request using a URL that can receive a post. 
-                WebRequest request = WebRequest.Create("http://vps.oborne.me/" + sw.name);
+                HttpWebRequest request = (HttpWebRequest)HttpWebRequest.Create("http://vps.oborne.me/axs/ax.pl?" + (string)temp);
+                //request.AllowAutoRedirect = true;
+                request.UserAgent = MainV2.instance.Text + " (res" + MainV2.instance.Width + "x" + MainV2.instance.Height + "; " + Environment.OSVersion.VersionString + ")";
                 request.Timeout = 10000;
                 // Set the Method property of the request to POST.
                 request.Method = "GET";

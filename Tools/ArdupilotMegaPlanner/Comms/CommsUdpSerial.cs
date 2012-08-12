@@ -21,6 +21,7 @@ namespace ArdupilotMega.Comms
         public int WriteBufferSize { get; set; }
         public int WriteTimeout { get; set; }
         public bool RtsEnable { get; set; }
+        public Stream BaseStream { get { return this.BaseStream; } }
 
         ~UdpSerial()
         {

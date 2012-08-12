@@ -32,8 +32,6 @@
             this.label2 = new System.Windows.Forms.Label();
             this.label3 = new System.Windows.Forms.Label();
             this.BUT_paramgen = new ArdupilotMega.Controls.MyButton();
-            this.BUT_magcalib = new ArdupilotMega.Controls.MyButton();
-            this.BUT_ant_track = new ArdupilotMega.Controls.MyButton();
             this.BUT_follow_me = new ArdupilotMega.Controls.MyButton();
             this.BUT_georefimage = new ArdupilotMega.Controls.MyButton();
             this.BUT_lang_edit = new ArdupilotMega.Controls.MyButton();
@@ -80,7 +78,7 @@
             // 
             // BUT_paramgen
             // 
-            this.BUT_paramgen.Location = new System.Drawing.Point(323, 118);
+            this.BUT_paramgen.Location = new System.Drawing.Point(459, 185);
             this.BUT_paramgen.Name = "BUT_paramgen";
             this.BUT_paramgen.Size = new System.Drawing.Size(75, 23);
             this.BUT_paramgen.TabIndex = 20;
@@ -88,28 +86,9 @@
             this.BUT_paramgen.UseVisualStyleBackColor = true;
             this.BUT_paramgen.Click += new System.EventHandler(this.BUT_paramgen_Click);
             // 
-            // BUT_magcalib
-            // 
-            this.BUT_magcalib.Location = new System.Drawing.Point(119, 164);
-            this.BUT_magcalib.Name = "BUT_magcalib";
-            this.BUT_magcalib.Size = new System.Drawing.Size(96, 23);
-            this.BUT_magcalib.TabIndex = 19;
-            this.BUT_magcalib.Text = "Mag Calib";
-            this.BUT_magcalib.Click += new System.EventHandler(this.BUT_magcalib_Click);
-            // 
-            // BUT_ant_track
-            // 
-            this.BUT_ant_track.Location = new System.Drawing.Point(404, 164);
-            this.BUT_ant_track.Name = "BUT_ant_track";
-            this.BUT_ant_track.Size = new System.Drawing.Size(75, 23);
-            this.BUT_ant_track.TabIndex = 18;
-            this.BUT_ant_track.Text = "Antenna Tracker";
-            this.BUT_ant_track.UseVisualStyleBackColor = true;
-            this.BUT_ant_track.Click += new System.EventHandler(this.BUT_ant_track_Click);
-            // 
             // BUT_follow_me
             // 
-            this.BUT_follow_me.Location = new System.Drawing.Point(485, 164);
+            this.BUT_follow_me.Location = new System.Drawing.Point(378, 185);
             this.BUT_follow_me.Name = "BUT_follow_me";
             this.BUT_follow_me.Size = new System.Drawing.Size(75, 23);
             this.BUT_follow_me.TabIndex = 17;
@@ -119,7 +98,7 @@
             // 
             // BUT_georefimage
             // 
-            this.BUT_georefimage.Location = new System.Drawing.Point(221, 164);
+            this.BUT_georefimage.Location = new System.Drawing.Point(195, 185);
             this.BUT_georefimage.Name = "BUT_georefimage";
             this.BUT_georefimage.Size = new System.Drawing.Size(96, 23);
             this.BUT_georefimage.TabIndex = 0;
@@ -128,7 +107,7 @@
             // 
             // BUT_lang_edit
             // 
-            this.BUT_lang_edit.Location = new System.Drawing.Point(323, 164);
+            this.BUT_lang_edit.Location = new System.Drawing.Point(297, 185);
             this.BUT_lang_edit.Name = "BUT_lang_edit";
             this.BUT_lang_edit.Size = new System.Drawing.Size(75, 23);
             this.BUT_lang_edit.TabIndex = 16;
@@ -261,8 +240,6 @@
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(685, 285);
             this.Controls.Add(this.BUT_paramgen);
-            this.Controls.Add(this.BUT_magcalib);
-            this.Controls.Add(this.BUT_ant_track);
             this.Controls.Add(this.BUT_follow_me);
             this.Controls.Add(this.BUT_georefimage);
             this.Controls.Add(this.BUT_lang_edit);
@@ -309,8 +286,6 @@
         private ArdupilotMega.Controls.MyButton BUT_lang_edit;
         private ArdupilotMega.Controls.MyButton BUT_georefimage;
         private ArdupilotMega.Controls.MyButton BUT_follow_me;
-        private ArdupilotMega.Controls.MyButton BUT_ant_track;
-        private ArdupilotMega.Controls.MyButton BUT_magcalib;
         private Controls.MyButton BUT_paramgen;
     }
 }

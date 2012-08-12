@@ -236,11 +236,11 @@ namespace ArdupilotMega.Arduino
             AP_PARAM_GROUP
         };
 
-        static string[] type_names = new string[] {
+       internal static string[] type_names = new string[] {
 	"NONE", "INT8", "INT16", "INT32", "FLOAT", "VECTOR3F", "VECTOR6F","MATRIX6F", "GROUP"
 };
 
-       static byte type_size(ap_var_type type)
+      internal static byte type_size(ap_var_type type)
 {
     switch (type) {
     case ap_var_type.AP_PARAM_NONE:
@@ -367,6 +367,50 @@ namespace ArdupilotMega.Arduino
                             Console.Write(" {0:X2}", buffer[pos]);
                             pos++;
                         }
+                    }
+                }
+
+                if (buffer[0] == 'P' && buffer[1] == 'A' && buffer[2] == 6) // ap param
+                {
+                    int pos = 4;
+                    byte key = 0;
+                    while (pos < (1024 * 4))
+                    {
+                        key = buffer[pos];
+                        pos++;
+
+                        if (key == 0xff)
+                        {
+                            log.InfoFormat("end sentinal at {0}", pos - 1);
+                            break;
+                        }
+
+                        int type = buffer[pos] & 0x3f; // 6 bits
+
+                        uint group = BitConverter.ToUInt32(buffer, pos);//((byte)(buffer[pos]) >> 6) | ((byte)(buffer[pos + 1]) << 8) | ((byte)(buffer[pos + 2]) << 16); // 18 bits
+
+                        group = (group >> 6) & 0x3ffff;
+                        pos++;
+                        pos++;
+                        pos++;
+
+                        int size = ArduinoDetect.type_size((ArduinoDetect.ap_var_type)Enum.Parse(typeof(ArduinoDetect.ap_var_type), type.ToString()));
+
+                            Console.Write("{0:X4}: type {1} ({2}) key {3} group_element {4} size {5} value ", pos - 4, type, ArduinoDetect.type_names[type], key, group, size);
+
+                        if (key == 0)
+                        {
+                            //Array.Reverse(buffer, pos, 2);
+                             return BitConverter.ToUInt16(buffer, pos);
+                        }
+
+
+                        for (int i = 0; i < size; i++)
+                        {
+                            Console.Write(" {0:X2}", buffer[pos]);
+                            pos++;
+                        }
+                        Console.WriteLine();
                     }
                 }
             }

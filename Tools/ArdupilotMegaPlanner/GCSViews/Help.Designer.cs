@@ -38,6 +38,7 @@
             // 
             resources.ApplyResources(this.richTextBox1, "richTextBox1");
             this.richTextBox1.Cursor = System.Windows.Forms.Cursors.Default;
+            this.richTextBox1.DetectUrls = false;
             this.richTextBox1.Name = "richTextBox1";
             // 
             // CHK_showconsole

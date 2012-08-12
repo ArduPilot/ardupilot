@@ -224,5 +224,81 @@ namespace ArdupilotMega.Antenna
         {
             saveconfig();
         }
+
+        private void BUT_find_Click(object sender, EventArgs e)
+        {
+            System.Threading.ThreadPool.QueueUserWorkItem(tm1_Tick);
+        }
+
+        void tm1_Tick(object item)
+        {
+            
+            float snr = MainV2.cs.localsnrdb;
+            float best = snr;
+
+            float tilt = 0;
+            float pan = 0;
+
+            this.Invoke((MethodInvoker)delegate
+            {
+                tilt = TRK_tilttrim.Value;
+                pan = TRK_pantrim.Value;
+            });
+
+
+            // scan entire range withing 30 degrees
+            float ans = checkpos((pan - float.Parse(TXT_panrange.Text) / 4), (pan + float.Parse(TXT_panrange.Text) / 4) - 1, 30);
+            
+            // scan new range within 30 - little overlap
+            ans = checkpos((-30 + ans), (30 + ans), 5);
+
+            // scan new range
+            ans = checkpos((-5 + ans), (5 + ans), 1);
+
+            setpan(ans);
+
+
+        }
+
+        void setpan(float no)
+        {
+            this.Invoke((MethodInvoker)delegate
+            {
+                try
+                {
+                    TRK_pantrim.Value = (int)no;
+                    TRK_pantrim_Scroll(null, null);
+                }
+                catch { return; }
+            });
+        }
+
+        float checkpos(float start, float end,float scale)
+        {
+            float lastsnr = 0;
+            float best = 0;
+
+            setpan(start);
+
+            System.Threading.Thread.Sleep(4000);
+
+            for (float n = start; n < end; n += scale)
+            {
+                setpan(n);
+
+                System.Threading.Thread.Sleep(2000);
+
+                Console.WriteLine("Angle " + n + " snr " + MainV2.cs.localsnrdb);
+
+                if (MainV2.cs.localsnrdb > lastsnr)
+                {
+ 
+                    best = n;
+                    lastsnr = MainV2.cs.localsnrdb;
+                }
+            }
+
+            return best;
+        }
     }
 }

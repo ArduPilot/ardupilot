@@ -18,11 +18,18 @@ namespace ArdupilotMega.Controls
         int noofchars = 0;
         bool autosize = false;
 
+        SolidBrush s = new SolidBrush(Color.White);
+        SolidBrush b = new SolidBrush(Color.Black);
+
+        StringFormat stringFormat = new StringFormat();
+
         [System.ComponentModel.Browsable(true)]
         public bool resize { get { return autosize; } set { autosize = value; } }
 
         public MyLabel()
         {
+            stringFormat.Alignment = StringAlignment.Near;
+            stringFormat.LineAlignment = StringAlignment.Center;
         }
 
         public override string Text
@@ -81,30 +88,45 @@ namespace ArdupilotMega.Controls
             base.OnVisibleChanged(e);
         }
 
+        public override Color BackColor
+        {
+            get
+            {
+                return base.BackColor;
+            }
+            set
+            {
+                base.BackColor = value;
+                b = new SolidBrush(value);
+                this.Invalidate();
+            }
+        }
 
-        SolidBrush s = new SolidBrush(Color.White);
-        SolidBrush b = new SolidBrush(Color.Black);
 
-        StringFormat stringFormat = new StringFormat();
+        public override System.Drawing.Color ForeColor
+        {
+            get
+            {
+                return base.ForeColor;
+            }
+            set
+            {
+                base.ForeColor = value;
+                s = new SolidBrush(value);
+                this.Invalidate();
+            }
+        }
 
         protected override void OnPaint(PaintEventArgs e)
         {
             
            // TextRenderer.DrawText(e.Graphics, label, this.Font, new Point(0, 0), ForeColor);
 
-            stringFormat.Alignment = StringAlignment.Near;
-            stringFormat.LineAlignment = StringAlignment.Center;
-
-            s = new SolidBrush(ForeColor);
-
             e.Graphics.DrawString(label, this.Font, s, new PointF(0, this.Height / 2.0f), stringFormat);
-
         }
 
         protected override void OnPaintBackground(PaintEventArgs pevent)
         {
-            b = new SolidBrush(BackColor);
-
             pevent.Graphics.FillRectangle(b, this.ClientRectangle);
 
             base.OnPaintBackground(pevent);

@@ -102,6 +102,9 @@ namespace ArdupilotMega
         /// used to call anything as needed.
         /// </summary>
         public static MainV2 instance = null;
+
+        public static MainSwitcher View;
+
         /// <summary>
         /// used to feed in a network link kml to the http server
         /// </summary>
@@ -162,6 +165,8 @@ namespace ArdupilotMega
             instance = this;
 
             InitializeComponent();
+
+            View = MyView;
 
             _connectionControl = toolStripConnectionControl.ConnectionControl;
             _connectionControl.CMB_baudrate.TextChanged += this.CMB_baudrate_TextChanged;
@@ -2050,6 +2055,12 @@ namespace ArdupilotMega
         /// <returns></returns>
         protected override bool ProcessCmdKey(ref Message msg, Keys keyData)
         {
+            if (keyData == Keys.F12)
+            {
+                MenuConnect_Click(null, null);
+                return true;
+            }
+
             if (keyData == (Keys.Control | Keys.F)) // temp
             {
                 Form frm = new temp();
@@ -2253,9 +2264,15 @@ namespace ArdupilotMega
             CMB_serialport_Click(sender, e);
         }
 
-        private void MenuConnect_MouseHover(object sender, EventArgs e)
+        private void MainMenu_MouseLeave(object sender, EventArgs e)
         {
+            //MainMenu.Visible = false;
+        }
 
+        private void MainV2_MouseMove(object sender, MouseEventArgs e)
+        {
+           // if (e.Y < 50)
+           //     MainMenu.Visible = true;
         }
     }
 }
