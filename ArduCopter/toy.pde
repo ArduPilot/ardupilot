@@ -2,8 +2,7 @@
 // Toy Mode - THOR
 ////////////////////////////////////////////////////////////////////////////////
 static boolean CH7_toy_flag;
-static boolean CH6_toy_flag;
-static int16_t saved_toy_throttle;
+//static boolean CH6_toy_flag;
 
 #if TOY_MIXER == TOY_LOOKUP_TABLE
 static const int16_t  toy_lookup[] = {
@@ -21,6 +20,8 @@ static const int16_t  toy_lookup[] = {
 //called at 10hz
 void update_toy_throttle()
 {
+	/*
+	// Disabled, now handled by TOY_A (Alt hold) and TOY_M (Manual throttle)
 	if (false == CH6_toy_flag && g.rc_6.radio_in >= CH_6_PWM_TRIGGER){
 		CH6_toy_flag = true;
 		throttle_mode 	= THROTTLE_MANUAL;
@@ -30,13 +31,14 @@ void update_toy_throttle()
 		throttle_mode 	= THROTTLE_AUTO;
 		set_new_altitude(current_loc.alt);
 		saved_toy_throttle = g.rc_3.control_in;
-	}
+	}*/
 
 	// look for a change in throttle position to exit throttle hold
 	if(abs(g.rc_3.control_in - saved_toy_throttle) > 40){
 		throttle_mode 	= THROTTLE_MANUAL;
 	}
 }
+
 #define TOY_ALT_SMALL 25
 #define TOY_ALT_LARGE 100
 
@@ -165,7 +167,7 @@ void roll_pitch_toy()
 	#if TOY_EDF == ENABLED
 			// Output the attitude
 		g.rc_1.servo_out = get_stabilize_roll(roll_rate);
-		g.rc_2.servo_out = get_stabilize_pitch(0);
+		g.rc_2.servo_out = get_stabilize_pitch(g.rc_6.control_in); // use CH6 to trim pitch
 
 	#else
 		// Output the attitude
