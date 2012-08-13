@@ -53,6 +53,11 @@ public:
 	// allow for runtime disabling of GPS usage for position
 	AP_Int8		_gps_use;
 
+	// return a wind estimation vector, in m/s
+	Vector3f wind_estimate(void) {
+		return _wind;
+	}
+
 	// for holding parameters
 	static const struct AP_Param::GroupInfo var_info[];
 
@@ -131,6 +136,9 @@ private:
 	Vector3f	_last_vel;
 	uint32_t	_last_wind_time;
 	float		_last_airspeed;       
+
+	// estimated wind in m/s
+	Vector3f	_wind;
 };
 
 #endif // AP_AHRS_DCM_H
