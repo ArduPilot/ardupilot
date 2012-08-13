@@ -72,7 +72,9 @@ static struct Location get_cmd_with_index(int i)
 	}
 
 	// Add on home altitude if we are a nav command (or other command with altitude) and stored alt is relative
-	if((temp.id < MAV_CMD_NAV_LAST || temp.id == MAV_CMD_CONDITION_CHANGE_ALT) && temp.options & MASK_OPTIONS_RELATIVE_ALT){
+	if ((temp.id < MAV_CMD_NAV_LAST || temp.id == MAV_CMD_CONDITION_CHANGE_ALT) && 
+       (temp.options & MASK_OPTIONS_RELATIVE_ALT) &&
+        (temp.lat != 0 || temp.lng != 0)) {
 		temp.alt += home.alt;
 	}
 
@@ -141,6 +143,19 @@ static void set_next_WP(struct Location *wp)
 	// Load the next_WP slot
 	// ---------------------
 	next_WP = *wp;
+
+    // if lat and lon is zero, then use current lat/lon
+    // this allows a mission to contain a "loiter on the spot"
+    // command
+    if (next_WP.lat == 0 && next_WP.lng == 0) {
+        next_WP.lat = current_loc.lat;
+        next_WP.lng = current_loc.lng;
+        // additionally treat zero altitude as current altitude
+        if (next_WP.alt == 0) {
+            next_WP.alt = current_loc.alt;
+        }
+    }
+
 
     // are we already past the waypoint? This happens when we jump
     // waypoints, and it can cause us to skip a waypoint. If we are
