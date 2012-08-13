@@ -120,7 +120,7 @@ void APM_RC_APM2::Init( Arduino_Mega_ISR_Registry * isr_reg )
   OCR3C = 0xFFFF;
   ICR3 = 40000; // 0.5us tick => 50hz freq
 
-  //--------------- TIMER5: PPM INPUT ---------------------------------
+  //--------------- TIMER5: PPM INPUT, OUT10, and OUT11 ---------------
   // Init PPM input on Timer 5
   pinMode(48, INPUT);  // PPM Input (PL1/ICP5)
   pinMode(45, OUTPUT); // OUT10 (PL4/OC5B)
