@@ -45,6 +45,10 @@ void loop()
         Serial.print(gps.ground_speed / 100.0);
         Serial.print(" COG:");
         Serial.print(gps.ground_course / 100.0, DEC);
+		Serial.printf(" VEL: %.2f %.2f %.2f",
+					  gps.velocity_north(),
+					  gps.velocity_east(),
+					  sqrt(sq(gps.velocity_north())+sq(gps.velocity_east())));
         Serial.print(" SAT:");
         Serial.print(gps.num_sats, DEC);
         Serial.print(" FIX:");
