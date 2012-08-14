@@ -8,7 +8,7 @@
     test ArduPlane using Rascal110 and JSBSim
   </description>
 
-  <use aircraft="Rascal" initialize="reset_CMAC"/>
+  <use aircraft="Rascal" initialize="reset"/>
 
   <!-- we control the servos via the jsbsim console
        interface on TCP 5124 -->
