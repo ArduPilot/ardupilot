@@ -19,8 +19,8 @@ static void navigate()
 	// ----------------------------
 	wp_distance = get_distance(&current_loc, &next_WP);
 
-	if (wp_distance < 0){
-		gcs_send_text_P(SEVERITY_HIGH,PSTR("<navigate> WP error - distance < 0"));
+	if (wp_distance < 0) {
+		gcs_send_text_P(SEVERITY_HIGH,PSTR("WP error - distance < 0"));
 		//Serial.println(wp_distance,DEC);
 		return;
 	}
