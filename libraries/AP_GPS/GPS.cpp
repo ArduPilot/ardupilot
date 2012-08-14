@@ -52,36 +52,23 @@ GPS::update(void)
         _idleTimer = tnow;
 
 		if (_status == GPS_OK) {
-			// update our acceleration
-			float deltat = 1.0e-3 * (_idleTimer - last_fix_time);
-			float deltav = 1.0e-2 * ((float)ground_speed - (float)_last_ground_speed_cm);
-			float gps_heading = ToRad(ground_course * 0.01);
-			float gps_speed   = ground_speed * 0.01;
-			float sin_heading, cos_heading;
-
-			cos_heading = cos(gps_heading);
-			sin_heading = sin(gps_heading);
-
 			last_fix_time = _idleTimer;
 			_last_ground_speed_cm = ground_speed;
 
-			_velocity_north = gps_speed * cos_heading;
-			_velocity_east  = gps_speed * sin_heading;
-
-			if (deltat > 2.0 || deltat == 0) {
-				// we didn't get a fix for 2 seconds - set
-				// acceleration to zero, as the estimate will be too
-				// far out
-				_acceleration = 0;
-				_acceleration_north = 0;
-				_acceleration_east = 0;
+			if (_have_raw_velocity) {
+				// the GPS is able to give us velocity numbers directly
+				_velocity_north = _vel_north * 0.01;
+				_velocity_east  = _vel_east * 0.01;
 			} else {
-				// calculate a mildly smoothed acceleration value
-				_acceleration = (0.7 * _acceleration) + (0.3 * (deltav/deltat));
+				float gps_heading = ToRad(ground_course * 0.01);
+				float gps_speed   = ground_speed * 0.01;
+				float sin_heading, cos_heading;
 
-				// calculate the components, to save time in the AHRS code
-				_acceleration_north = _acceleration * cos_heading;
-				_acceleration_east  = _acceleration * sin_heading;
+				cos_heading = cos(gps_heading);
+				sin_heading = sin(gps_heading);
+
+				_velocity_north = gps_speed * cos_heading;
+				_velocity_east  = gps_speed * sin_heading;
 			}
 		}
     }

@@ -123,13 +123,6 @@ public:
     ///
     uint32_t	idleTimeout;
 
-	// our approximate linear acceleration in m/s/s
-	float acceleration(void) { return _acceleration; }
-
-	// components of acceleration in 2D, in m/s/s
-	float acceleration_north(void) { return _status == GPS_OK? _acceleration_north : 0; }
-	float acceleration_east(void)  { return _status == GPS_OK? _acceleration_east  : 0; }
-
 	// components of velocity in 2D, in m/s
 	float velocity_north(void) { return _status == GPS_OK? _velocity_north : 0; }
 	float velocity_east(void)  { return _status == GPS_OK? _velocity_east  : 0; }
@@ -196,6 +189,14 @@ protected:
 
 	void _write_progstr_block(Stream *_fs, const prog_char *pstr, uint8_t size);
 
+	// velocities in cm/s if available from the GPS
+	int32_t _vel_north;
+	int32_t _vel_east;
+	int32_t _vel_down;
+
+	// does this GPS support raw velocity numbers?
+	bool _have_raw_velocity;
+
 private:
 
 
@@ -209,15 +210,9 @@ private:
 	// previous ground speed in cm/s
     uint32_t _last_ground_speed_cm;
 
-	// smoothed estimate of our acceleration, in m/s/s
-	float _acceleration;
-	float _acceleration_north;
-	float _acceleration_east;
-
 	// components of the velocity, in m/s
 	float _velocity_north;
 	float _velocity_east;
-
 };
 
 inline long
