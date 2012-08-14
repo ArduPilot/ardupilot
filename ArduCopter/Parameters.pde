@@ -28,8 +28,8 @@ const AP_Param::Info var_info[] PROGMEM = {
 	GSCALAR(serial3_baud,	"SERIAL3_BAUD",     SERIAL3_BAUD/1000),
 
 	// @Param: ALT_HOLD_RTL
-	// @DisplayName: Alt Hold RTL
-	// @Description: This is the altitude the model will move to before Returning to Launch
+	// @DisplayName: RTL Altitude
+	// @Description: This is the altitude the model will move to before Returning to Launch.  Set to zero to return at current altitude.
 	// @Units: Meters
 	// @Range: 0 400
 	// @Increment: 1
@@ -89,17 +89,9 @@ const AP_Param::Info var_info[] PROGMEM = {
 	// @User: Standard
 	GSCALAR(super_simple,	"SUPER_SIMPLE",     SUPER_SIMPLE),
 
-	// @Param: RTL_LAND
-	// @DisplayName: RTL Land
-	// @Description: Setting this to Enabled(1) will enable landing after RTL. Setting this to Disabled(0) will disable landing after RTL.
-	// @Values: 0:Disabled,1:Enabled
-	// @User: Standard
-	// @ DEPRICATED
-	GSCALAR(rtl_land_enabled,	"RTL_LAND",     0),
-
 	// @Param: APPROACH_ALT
-	// @DisplayName: Alt Hold RTL
-	// @Description: This is the altitude the vehicle will move to before Returning to Launch
+	// @DisplayName: RTL Approach Altitude
+	// @Description: This is the altitude the vehicle will move to as the final stage of Returning to Launch.  Set to zero to land.
 	// @Units: Meters
 	// @Range: 1 10
 	// @Increment: .1
