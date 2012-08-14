@@ -33,6 +33,7 @@ FLTMODE5        5
 FLTMODE6		0
 SUPER_SIMPLE	0
 THR_FAILSAFE	1
+APPROACH_ALT	0
 # flightmodes
 # switch 1 Circle
 # switch 2 LAND
