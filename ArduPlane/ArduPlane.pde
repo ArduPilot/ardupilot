@@ -368,6 +368,10 @@ static bool 	ch3_failsafe;
 static byte    crash_timer;
 // A timer used to track how long since we have received the last GCS heartbeat or rc override message
 static uint32_t rc_override_fs_timer = 0;
+
+// the time when the last HEARTBEAT message arrived from a GCS
+static uint32_t last_heartbeat_ms;
+
 // A timer used to track how long we have been in a "short failsafe" condition due to loss of RC signal
 static uint32_t ch3_failsafe_timer = 0;
 

@@ -1657,7 +1657,7 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
         {
             // We keep track of the last time we received a heartbeat from our GCS for failsafe purposes
 			if(msg->sysid != g.sysid_my_gcs) break;
-			rc_override_fs_timer = millis();
+			last_heartbeat_ms = rc_override_fs_timer = millis();
 			pmTest1++;
             break;
         }
