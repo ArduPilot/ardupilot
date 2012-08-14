@@ -735,6 +735,8 @@ static struct 	Location home;
 static boolean	home_is_set;
 // Current location of the copter
 static struct 	Location current_loc;
+// lead filtered loc
+static struct 	Location filtered_loc;
 // Next WP is the desired location of the copter - the next waypoint or loiter location
 static struct 	Location next_WP;
 // Prev WP is used to get the optimum path from one WP to the next
@@ -746,8 +748,6 @@ static struct 	Location command_cond_queue;
 // Holds the current loaded command from the EEPROM for guided mode
 static struct   Location guided_WP;
 
-// should we take the waypoint quickly or slow down?
-static bool 	fast_corner;
 
 ////////////////////////////////////////////////////////////////////////////////
 // Crosstrack
@@ -757,6 +757,8 @@ static bool 	fast_corner;
 static int32_t 	original_target_bearing;
 // The amount of angle correction applied to target_bearing to bring the copter back on its optimum path
 static int16_t	crosstrack_error;
+// should we take the waypoint quickly or slow down?
+static bool 	fast_corner;
 
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -1533,10 +1535,8 @@ static void update_GPS(void)
 				}
 			}
 
-			// the saving of location moved into calc_XY_velocity
-
-			//current_loc.lng = g_gps->longitude;	// Lon * 10 * *7
-			//current_loc.lat = g_gps->latitude;	// Lat * 10 * *7
+			current_loc.lng = g_gps->longitude;	// Lon * 10^7
+			current_loc.lat = g_gps->latitude;	// Lat * 10^7
 
 			calc_XY_velocity();
 
