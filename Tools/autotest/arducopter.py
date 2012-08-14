@@ -180,7 +180,7 @@ def fly_RTL(mavproxy, mav, side=60, timeout=250):
             return True
     return True
 
-def fly_failsafe(mavproxy, mav, side=60, timeout=120):
+def fly_failsafe(mavproxy, mav, side=60, timeout=180):
     '''Fly, Failsafe, return, land'''
     mavproxy.send('switch 6\n')
     wait_mode(mav, 'STABILIZE')
