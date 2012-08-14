@@ -7,8 +7,8 @@ static void navigate()
 {
 	// waypoint distance from plane in cm
 	// ---------------------------------------
-	wp_distance 	= get_distance_cm(&current_loc, &next_WP);
-	home_distance 	= get_distance_cm(&current_loc, &home);
+	wp_distance 	= get_distance_cm(&filtered_loc, &next_WP);
+	home_distance 	= get_distance_cm(&filtered_loc, &home);
 
 	// target_bearing is where we should be heading
 	// --------------------------------------------
@@ -60,11 +60,11 @@ static void calc_XY_velocity(){
 	#if INERTIAL_NAV == ENABLED
 	// inertial_nav
 	xy_error_correction();
-	current_loc.lng = xLeadFilter.get_position(g_gps->longitude, accels_velocity.x);
-	current_loc.lat = yLeadFilter.get_position(g_gps->latitude,  accels_velocity.y);
+	filtered_loc.lng = xLeadFilter.get_position(g_gps->longitude, accels_velocity.x);
+	filtered_loc.lat = yLeadFilter.get_position(g_gps->latitude,  accels_velocity.y);
 	#else
-	current_loc.lng = xLeadFilter.get_position(g_gps->longitude, x_actual_speed);
-	current_loc.lat = yLeadFilter.get_position(g_gps->latitude,  y_actual_speed);
+	filtered_loc.lng = xLeadFilter.get_position(g_gps->longitude, x_actual_speed);
+	filtered_loc.lat = yLeadFilter.get_position(g_gps->latitude,  y_actual_speed);
 	#endif
 }
 
