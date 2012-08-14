@@ -316,12 +316,6 @@ void AP_AHRS_Quaternion::update(void)
 	accel = - _imu->get_accel();
 
 	if (_fly_forward && _gps && _gps->status() == GPS::GPS_OK) {
-		// compensate for linear acceleration. This makes a
-		// surprisingly large difference in the pitch estimate when
-		// turning, plus on takeoff and landing
-		float acceleration = _gps->acceleration();
-		accel.x += acceleration;
-
 		// compensate for centripetal acceleration
 		float veloc;
 		veloc = _gps->ground_speed * 0.01;
