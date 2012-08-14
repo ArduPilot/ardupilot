@@ -2012,7 +2012,7 @@ static void gcs_send_text_P(gcs_severity severity, const prog_char_t *str)
   only one fits in the queue, so if you send more than one before the
   last one gets into the serial buffer then the old one will be lost
  */
-static void gcs_send_text_fmt(const prog_char_t *fmt, ...)
+void gcs_send_text_fmt(const prog_char_t *fmt, ...)
 {
     char fmtstr[40];
     va_list ap;

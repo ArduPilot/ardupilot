@@ -2,7 +2,7 @@
 
 // For changing active command mid-mission
 //----------------------------------------
-static void change_command(uint8_t cmd_index)
+void change_command(uint8_t cmd_index)
 {
 	struct Location temp = get_cmd_with_index(cmd_index);
 

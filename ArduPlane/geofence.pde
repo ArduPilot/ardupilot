@@ -316,6 +316,13 @@ static void geofence_send_status(mavlink_channel_t chan)
     }
 }
 
+// public function for use in failsafe modules
+bool geofence_breached(void) 
+{ 
+    return geofence_state?geofence_state->fence_triggered:false; 
+}
+
+
 #else // GEOFENCE_ENABLED
 
 static void geofence_check(bool altitude_check_only) { }
