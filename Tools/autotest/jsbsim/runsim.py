@@ -31,23 +31,25 @@ def jsb_set(variable, value):
     global jsb_console
     jsb_console.send('set %s %s\r\n' % (variable, value))
 
-def setup_home(home):
-    '''setup home location'''
+def setup_template(home):
+    '''setup aircraft/Rascal/reset.xml'''
     v = home.split(',')
     if len(v) != 4:
-        print("home should be lat,lng,alt,hdg")
+        print("home should be lat,lng,alt,hdg - '%s'" % home)
         sys.exit(1)
     latitude = float(v[0])
     longitude = float(v[1])
     altitude = float(v[2])
     heading = float(v[3])
     sitl_state.ground_height = altitude
-
-    jsb_set('position/lat-gc-deg', latitude)
-    jsb_set('position/long-gc-deg', longitude)
-    jsb_set('attitude/psi-rad', math.radians(heading))
-    jsb_set('attitude/phi-rad', 0)
-    jsb_set('attitude/theta-rad', 0)
+    template = os.path.join('aircraft', 'Rascal', 'reset_template.xml')
+    reset = os.path.join('aircraft', 'Rascal', 'reset.xml')
+    xml = open(template).read() % { 'LATITUDE'  : str(latitude),
+                                    'LONGITUDE' : str(longitude),
+                                    'HEADING'   : str(heading) }
+    open(reset, mode='w').write(xml)
+    print("Wrote %s" % reset)
+    
 
 def process_sitl_input(buf):
     '''process control changes from SITL sim'''
@@ -142,6 +144,8 @@ os.chdir(util.reltopdir('Tools/autotest'))
 # kill off child when we exit
 atexit.register(util.pexpect_close_all)
 
+setup_template(opts.home)
+
 # start child
 cmd = "JSBSim --realtime --suspend --nice --simulation-rate=1000 --logdirectivefile=jsbsim/fgout.xml --script=%s" % opts.script
 if opts.options:
@@ -197,9 +201,6 @@ if opts.fgout:
 
 # setup wind generator
 wind = util.Wind(opts.wind)
-
-
-setup_home(opts.home)
 
 fdm = fgFDM.fgFDM()
 
