@@ -37,6 +37,9 @@ extern "C" {
   #include <inttypes.h>
   #include <avr/interrupt.h>
 }
+//#include <FastSerial.h>
+//#include <AP_Common.h>
+
 #if defined(ARDUINO) && ARDUINO >= 100
 	#include "Arduino.h"
 #else
@@ -44,7 +47,15 @@ extern "C" {
 #endif
 
 #include "DataFlash_APM2.h"
+/*
+#define ENABLE_FASTSERIAL_DEBUG
 
+#ifdef ENABLE_FASTSERIAL_DEBUG
+# define serialDebug(fmt, args...)  if (FastSerial::getInitialized(0)) do {Serial.printf("%s:%d: " fmt "\n", __FUNCTION__, __LINE__ , ##args); delay(0); } while(0)
+#else
+# define serialDebug(fmt, args...)
+#endif
+*/
 // DataFlash is connected to Serial Port 3 (we will use SPI mode)
 #if defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__)
 	#define DF_DATAOUT 14        // MOSI
@@ -155,6 +166,8 @@ void DataFlash_APM2::Init(void)
 		// what is this??? card not inserted perhaps?
 		df_NumPages = 0;
 	}
+
+	//serialDebug("density_code %d pages %d, size %d\n", density_code, df_NumPages, df_PageSize);
 }
 
 // This function is mainly to test the device
@@ -359,13 +372,14 @@ void DataFlash_APM2::BlockErase(uint16_t BlockAdr)
 	SPI_transfer(DF_BLOCK_ERASE);
 
 	if (df_PageSize==512) {
-		SPI_transfer((unsigned char)(BlockAdr >> 3));
-		SPI_transfer((unsigned char)(BlockAdr << 5));
-	} else {
 		SPI_transfer((unsigned char)(BlockAdr >> 4));
 		SPI_transfer((unsigned char)(BlockAdr << 4));
+	} else {
+		SPI_transfer((unsigned char)(BlockAdr >> 3));
+		SPI_transfer((unsigned char)(BlockAdr << 5));
 	}
 	SPI_transfer(0x00);
+	//serialDebug("BL Erase, %d\n", BlockAdr);
 
 	//initiate flash page erase
 	CS_inactive();
@@ -379,6 +393,8 @@ void DataFlash_APM2::BlockErase(uint16_t BlockAdr)
 
 void DataFlash_APM2::ChipErase(void (*delay_cb)(unsigned long))
 {
+	//serialDebug("Chip Erase\n");
+
 	// activate dataflash command decoder
 	CS_active();
 
