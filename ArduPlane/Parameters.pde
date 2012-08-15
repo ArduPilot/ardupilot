@@ -79,6 +79,22 @@ const AP_Param::Info var_info[] PROGMEM = {
 	// @User: Advanced
 	GSCALAR(land_pitch_cd,          "LAND_PITCH_CD",  0),
 
+	// @Param: land_flare_alt
+	// @DisplayName: Landing flare altitude
+	// @Description: Altitude in autoland at which to lock heading and flare to the LAND_PITCH_CD pitch
+	// @Units: meters
+	// @Increment: 0.1
+	// @User: Advanced
+	GSCALAR(land_flare_alt,          "LAND_FLARE_ALT",  3.0),
+
+	// @Param: land_flare_sec
+	// @DisplayName: Landing flare time
+	// @Description: Time before landing point at which to lock heading and flare to the LAND_PITCH_CD pitch
+	// @Units: seconds
+	// @Increment: 0.1
+	// @User: Advanced
+	GSCALAR(land_flare_sec,          "LAND_FLARE_SEC",  2.0),	
+
     // @Param: XTRK_GAIN_SC
 	// @DisplayName: Crosstrack Gain
 	// @Description: The scale between distance off the line and angle to meet the line (in Degrees * 100)

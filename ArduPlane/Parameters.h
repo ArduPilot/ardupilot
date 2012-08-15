@@ -71,6 +71,8 @@ public:
 		k_param_ins,
         k_param_stick_mixing,
         k_param_reset_mission_chan,
+		k_param_land_flare_alt,
+		k_param_land_flare_sec,
 
 		// 110: Telemetry control
 		//
@@ -297,6 +299,8 @@ public:
     AP_Int32    airspeed_cruise_cm;
     AP_Int32    RTL_altitude_cm;
 	AP_Int16	land_pitch_cd;
+	AP_Float	land_flare_alt;
+	AP_Float	land_flare_sec;
     AP_Int32    min_gndspeed_cm;
     AP_Int16    pitch_trim_cd;
     AP_Int16    FBWB_min_altitude_cm;
