@@ -104,7 +104,7 @@ uint16_t AP_AnalogSource_Arduino::read_vcc(void)
 // time read_average() was called. This gives a very cheap
 // filtered value, as new values are produced at 500/N Hz
 // where N is the total number of analog sources
-uint16_t AP_AnalogSource_Arduino::read_average(void)
+float AP_AnalogSource_Arduino::read_average(void)
 {
     uint16_t sum;
     uint8_t sum_count;
@@ -119,7 +119,7 @@ uint16_t AP_AnalogSource_Arduino::read_average(void)
     pins[_pin_index].sum = 0;
     pins[_pin_index].sum_count = 0;
     sei();
-    return sum / sum_count;
+    return sum / (float)sum_count;
 }
 
 // read with the prescaler. This uses the averaged value since
