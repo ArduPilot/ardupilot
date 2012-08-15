@@ -912,9 +912,8 @@ static void Log_Read(int start_page, int end_page)
 						 "\nFree RAM: %u\n"),
                     memcheck_available_memory());
 
-    if(start_page > end_page)
-    {
-	packet_count = Log_Read_Process(start_page, DataFlash.df_NumPages);
+    if(start_page > end_page){
+    	packet_count = Log_Read_Process(start_page, DataFlash.df_NumPages);
     	packet_count += Log_Read_Process(1, end_page);
     } else {
     	packet_count = Log_Read_Process(start_page, end_page);
