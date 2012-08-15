@@ -172,16 +172,19 @@ static void calc_throttle()
 // ----------------------------------------------------------------------------------------
 static void calc_nav_yaw(float speed_scaler)
 {
-#if HIL_MODE != HIL_MODE_ATTITUDE
-	Vector3f temp = imu.get_accel();
-	long error = (long)(-temp.y*100.0);
+    // always do rudder mixing from roll
+    g.channel_rudder.servo_out = g.kff_rudder_mix * g.channel_roll.servo_out;
 
-	// Control is a feedforward from the aileron control + a PID to coordinate the turn (drive y axis accel to zero)
-	g.channel_rudder.servo_out = g.kff_rudder_mix * g.channel_roll.servo_out + g.pidServoRudder.get_pid(error, speed_scaler);
-#else
-	g.channel_rudder.servo_out = g.kff_rudder_mix * g.channel_roll.servo_out;
-	// XXX probably need something here based on heading
-#endif
+    if (hold_course != -1) {
+        // steering on or close to ground
+        g.channel_rudder.servo_out += g.pidRdrSteer.get_pid(bearing_error_cd);  
+    } else {
+        // a PID to coordinate the turn (drive y axis accel to zero)
+        Vector3f temp = imu.get_accel();
+        int32_t error = -temp.y*100.0;
+
+        g.channel_rudder.servo_out += g.pidServoRudder.get_pid(error, speed_scaler);
+    }
 }
 
 

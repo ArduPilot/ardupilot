@@ -198,6 +198,7 @@ public:
         k_param_pidServoRudder,
         k_param_pidTeThrottle,
         k_param_pidNavPitchAltitude,
+        k_param_pidRdrSteer,
 
         // 254,255: reserved
     };
@@ -343,6 +344,7 @@ public:
     PID         pidServoRudder;
     PID         pidTeThrottle;
     PID         pidNavPitchAltitude;
+    PID         pidRdrSteer;
 
     Parameters() :
 	// variable				default
@@ -369,7 +371,8 @@ public:
         pidNavPitchAirspeed (NAV_PITCH_ASP_P, NAV_PITCH_ASP_I, NAV_PITCH_ASP_D, NAV_PITCH_ASP_INT_MAX_CMSEC),
         pidServoRudder      (SERVO_YAW_P,     SERVO_YAW_I,     SERVO_YAW_D,     SERVO_YAW_INT_MAX),
         pidTeThrottle       (THROTTLE_TE_P,   THROTTLE_TE_I,   THROTTLE_TE_D,   THROTTLE_TE_INT_MAX),
-        pidNavPitchAltitude (NAV_PITCH_ALT_P, NAV_PITCH_ALT_I, NAV_PITCH_ALT_D, NAV_PITCH_ALT_INT_MAX_CM)
+        pidNavPitchAltitude (NAV_PITCH_ALT_P, NAV_PITCH_ALT_I, NAV_PITCH_ALT_D, NAV_PITCH_ALT_INT_MAX_CM),
+        pidRdrSteer         (0, 0, 0, 0)
         {}
 };
 

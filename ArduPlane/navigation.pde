@@ -105,24 +105,7 @@ static void calc_gndspeed_undershoot()
 
 static void calc_bearing_error()
 {
-	if(takeoff_complete == true  || g.compass_enabled == true) {
-        /*
-          most of the time we use the yaw sensor for heading, even if
-          we don't have a compass. The yaw sensor is drift corrected
-          in the DCM library. We only use the gps ground course
-          directly if we haven't completed takeoff, as the yaw drift
-          correction won't have had a chance to kick in. Drift
-          correction using the GPS typically takes 10 seconds or so
-          for a 180 degree correction.
-         */
-		bearing_error_cd = nav_bearing_cd - ahrs.yaw_sensor;
-	} else {
-
-		// TODO: we need to use the Yaw gyro for in between GPS reads,
-		// maybe as an offset from a saved gryo value.
-		bearing_error_cd = nav_bearing_cd - g_gps->ground_course;
-	}
-
+    bearing_error_cd = nav_bearing_cd - ahrs.yaw_sensor;
 	bearing_error_cd = wrap_180_cd(bearing_error_cd);
 }
 
