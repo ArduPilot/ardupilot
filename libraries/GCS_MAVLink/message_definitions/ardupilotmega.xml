@@ -76,6 +76,9 @@
 	    <entry name="FENCE_ACTION_GUIDED" value="1">
 	      <description>Switched to guided mode to return point (fence point 0)</description>
 	    </entry>
+	    <entry name="FENCE_ACTION_REPORT" value="2">
+	      <description>Report fence breach, but don't take action</description>
+	    </entry>
 	  </enum>
 
 	  <enum name="FENCE_BREACH">
