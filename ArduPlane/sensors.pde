@@ -34,6 +34,7 @@ static void read_airspeed(void)
 static void zero_airspeed(void)
 {
     airspeed.calibrate(mavlink_delay);
+    gcs_send_text_P(SEVERITY_LOW,PSTR("zero airspeed calibrated"));
 }
 
 #endif // HIL_MODE != HIL_MODE_ATTITUDE

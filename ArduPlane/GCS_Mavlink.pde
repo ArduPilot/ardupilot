@@ -1038,9 +1038,13 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
 
             case MAV_CMD_PREFLIGHT_CALIBRATION:
                 if (packet.param1 == 1 ||
-                    packet.param2 == 1 ||
-                    packet.param3 == 1) {
+                    packet.param2 == 1) {
                     startup_IMU_ground(true);
+                } else if (packet.param3 == 1) {
+                    init_barometer();
+                    if (airspeed.enabled()) {
+                        zero_airspeed();
+                    }
                 }
                 if (packet.param4 == 1) {
                     trim_radio();
