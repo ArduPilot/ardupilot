@@ -129,8 +129,8 @@ const AP_Param::Info var_info[] PROGMEM = {
 #if GEOFENCE_ENABLED == ENABLED
     // @Param: FENCE_ACTION
 	// @DisplayName: Action on geofence breach
-	// @Description: Defines the distance from the waypoint center, the plane will maintain during a loiter
-    // @Values: 0:None,1:GuidedMode
+	// @Description: What to do on fence breach
+    // @Values: 0:None,1:GuidedMode,2:ReportOnly
 	// @User: Standard
 	GSCALAR(fence_action,           "FENCE_ACTION",   0),
 
