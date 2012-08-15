@@ -317,14 +317,14 @@ static bool verify_land()
 
     // Set land_complete if we are within 2 seconds distance or within
     // 3 meters altitude of the landing point
-	if (((wp_distance > 0) && (wp_distance <= (2*g_gps->ground_speed/100)))
-		|| (current_loc.alt <= next_WP.alt + 300)){
+	if (((wp_distance > 0) && (wp_distance <= (g.land_flare_sec*g_gps->ground_speed*0.01)))
+		|| (current_loc.alt <= next_WP.alt + g.land_flare_alt*100)) {
 
 		land_complete = true;
 
 		if (hold_course == -1) {
-            // we have just reached the threshold of 2 seconds or 3
-			// meters to landing. We now don't want to do any radical
+            // we have just reached the threshold of to flare for landing.
+			// We now don't want to do any radical
 			// turns, as rolling could put the wings into the runway.
 			// To prevent further turns we set hold_course to the
 			// current heading. Previously we set this to
@@ -333,7 +333,7 @@ static bool verify_land()
 			// sudden large roll correction which is very nasty at
 			// this point in the landing.
 			hold_course = ahrs.yaw_sensor;
-            gcs_send_text_fmt(PSTR("Holding course %ld"), hold_course);
+            gcs_send_text_fmt(PSTR("Land Complete - Hold course %ld"), hold_course);
 		}
 
         // reload any airspeed or groundspeed parameters that may have
