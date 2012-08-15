@@ -283,14 +283,11 @@ static void do_loiter_time()
 /********************************************************************************/
 static bool verify_takeoff()
 {
-	if (g_gps->ground_speed > 300){
+	if (ahrs.yaw_initialised()) {
 		if (hold_course == -1) {
 			// save our current course to take off
-			if(g.compass_enabled) {
-				hold_course = ahrs.yaw_sensor;
-			} else {
-				hold_course = g_gps->ground_course;
-			}
+            hold_course = ahrs.yaw_sensor;
+            gcs_send_text_fmt(PSTR("Holding course %ld"), hold_course);
 		}
 	}
 
@@ -335,10 +332,11 @@ static bool verify_land()
 			// sudden large roll correction which is very nasty at
 			// this point in the landing.
 			hold_course = ahrs.yaw_sensor;
+            gcs_send_text_fmt(PSTR("Holding course %ld"), hold_course);
 		}
 	}
 
-	if (hold_course != -1){
+	if (hold_course != -1) {
 		// recalc bearing error with hold_course;
 		nav_bearing_cd = hold_course;
 		// recalc bearing error

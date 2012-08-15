@@ -515,6 +515,7 @@ const AP_Param::Info var_info[] PROGMEM = {
 	GGROUP(pidServoRudder,          "YW2SRV_",    PID),
 	GGROUP(pidTeThrottle,           "ENRGY2THR_", PID),
 	GGROUP(pidNavPitchAltitude,     "ALT2PTCH_",  PID),
+	GGROUP(pidRdrSteer,             "RDRSTEER_",  PID),
 
 	// variables not in the g class which contain EEPROM saved variables
 
