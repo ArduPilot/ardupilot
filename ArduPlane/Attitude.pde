@@ -177,7 +177,7 @@ static void calc_nav_yaw(float speed_scaler)
 
     if (hold_course != -1) {
         // steering on or close to ground
-        g.channel_rudder.servo_out += g.pidRdrSteer.get_pid(bearing_error_cd);  
+        g.channel_rudder.servo_out += g.pidWheelSteer.get_pid(bearing_error_cd);  
     } else {
         // a PID to coordinate the turn (drive y axis accel to zero)
         Vector3f temp = imu.get_accel();
