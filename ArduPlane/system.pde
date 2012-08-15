@@ -450,7 +450,6 @@ static void startup_IMU_ground(bool force_accel_level)
         // initialize airspeed sensor
         // --------------------------
         zero_airspeed();
-        gcs_send_text_P(SEVERITY_LOW,PSTR("zero airspeed calibrated"));
     } else {
         gcs_send_text_P(SEVERITY_LOW,PSTR("NO airspeed"));
     }
