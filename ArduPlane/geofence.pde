@@ -121,18 +121,14 @@ failed:
 static bool geofence_enabled(void)
 {
     if (g.fence_action == FENCE_ACTION_NONE ||
-        g.fence_channel == 0 ||
-        APM_RC.InputCh(g.fence_channel-1) < FENCE_ENABLE_PWM) {
+        (g.fence_action != FENCE_ACTION_REPORT &&
+         (g.fence_channel == 0 ||
+          APM_RC.InputCh(g.fence_channel-1) < FENCE_ENABLE_PWM))) {
         // geo-fencing is disabled
         if (geofence_state != NULL) {
             // re-arm for when the channel trigger is switched on
             geofence_state->fence_triggered = false;
         }
-        return false;
-    }
-
-    if (!g_gps->fix) {
-        // we can't do much without a GPS fix
         return false;
     }
 
@@ -203,6 +199,7 @@ static void geofence_check(bool altitude_check_only)
 
     bool outside = false;
     uint8_t breach_type = FENCE_BREACH_NONE;
+    struct Location loc;
 
     if (geofence_check_minalt()) {
         outside = true;
@@ -210,10 +207,10 @@ static void geofence_check(bool altitude_check_only)
     } else if (geofence_check_maxalt()) {
         outside = true;
         breach_type = FENCE_BREACH_MAXALT;
-    } else if (!altitude_check_only) {
+    } else if (!altitude_check_only && ahrs.get_position(&loc)) {
         Vector2l location;
-        location.x = current_loc.lat;
-        location.y = current_loc.lng;
+        location.x = loc.lat;
+        location.y = loc.lng;
         outside = Polygon_outside(location, &geofence_state->boundary[1], geofence_state->num_points-1);
         if (outside) {
             breach_type = FENCE_BREACH_BOUNDARY;
