@@ -32,7 +32,7 @@ class AP_AnalogSource_Arduino : public AP_AnalogSource
 
     // read the average 16 bit ADC value since
     // we last called read_average().
-    uint16_t read_average(void);
+    float read_average(void);
 
     private:
     uint8_t _pin_index;
