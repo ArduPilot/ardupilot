@@ -64,7 +64,7 @@ void DataFlash_Class::WriteByte(uint8_t data)
                 if (df_PageAdr>df_NumPages)  // If we reach the end of the memory, stop here
                     df_Stop_Write=1;
             }
-            
+
             if (df_BufferNum==1)  // Change buffer to continue writing...
                 df_BufferNum=2;
             else
@@ -141,7 +141,7 @@ uint8_t DataFlash_Class::ReadByte()
         {
             df_Read_PageAdr = 0;
         }
-        
+
         // We are starting a new page - read FileNumber and FilePage
 		df_FileNumber = BufferRead(df_Read_BufferNum,0);   // High byte
 		df_FileNumber = (df_FileNumber<<8) | BufferRead(df_Read_BufferNum,1); // Low byte
@@ -189,31 +189,10 @@ uint16_t DataFlash_Class::GetFilePage()
 
 void DataFlash_Class::EraseAll(void (*delay_cb)(unsigned long))
 {
-    // write a bad value to the last page
-    StartWrite(df_NumPages+1);
-    WriteLong(DF_LOGGING_FORMAT_INVALID);
-	BufferToPage(df_BufferNum,df_PageAdr,1);
-
-    ChipErase(delay_cb);
-	SetFileNumber(0xFFFF);
-
-    StartRead(0);
-    StartRead(df_NumPages+1);
-    int32_t format = ReadLong();
-
-//    if (format == DF_LOGGING_FORMAT_INVALID)
-//	the current method for checking if chip erase worked is producing false positives
-//  we are forcing the block erase until we have a deterministic test method
-	{
-        // the chip erase didn't work - fall back to a erasing
-        // each page separately. The errata on the APM2 dataflash chip
-        // suggests that chip erase won't always work
-        for(uint16_t j = 1; j <= (df_NumPages+1)/8; j++) {
-            BlockErase(j);
-            delay_cb(1);
-        }
-    }
-
+	for(uint16_t j = 1; j <= (df_NumPages+1)/8; j++) {
+		BlockErase(j);
+		delay_cb(1);
+	}
     // write the logging format in the last page
     StartWrite(df_NumPages+1);
     WriteLong(DF_LOGGING_FORMAT);
