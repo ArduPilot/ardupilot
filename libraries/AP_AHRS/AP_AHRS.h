@@ -107,7 +107,14 @@ public:
 		return Vector3f(0,0,0);
 	}
 
+	// return true if yaw has been initialised
+	bool yaw_initialised(void) { 
+		return _have_initial_yaw;
+	}
+
 protected:
+	// whether the yaw value has been intialised with a reference
+	bool		_have_initial_yaw;
 
 	// pointer to compass object, if available
 	Compass 	* _compass;

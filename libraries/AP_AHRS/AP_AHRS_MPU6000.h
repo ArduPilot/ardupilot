@@ -67,7 +67,6 @@ public:
 private:
 	float		_ki;
 	float		_ki_yaw;
-	bool		_have_initial_yaw;
 	AP_InertialSensor_MPU6000	*_mpu6000;
 
 	// Methods
