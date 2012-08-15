@@ -334,6 +334,12 @@ static bool verify_land()
 			hold_course = ahrs.yaw_sensor;
             gcs_send_text_fmt(PSTR("Holding course %ld"), hold_course);
 		}
+
+        // reload any airspeed or groundspeed parameters that may have
+        // been set for landing        
+        g.airspeed_cruise_cm.load();
+        g.min_gndspeed_cm.load();
+        g.throttle_cruise.load();
 	}
 
 	if (hold_course != -1) {
