@@ -520,8 +520,10 @@ static void do_change_speed()
 	switch (next_nonnav_command.p1)
 	{
 		case 0: // Airspeed
-			if(next_nonnav_command.alt > 0)
+			if (next_nonnav_command.alt > 0) {
 				g.airspeed_cruise_cm.set(next_nonnav_command.alt * 100);
+                gcs_send_text_fmt(PSTR("Set airspeed %u m/s"), (unsigned)next_nonnav_command.alt);
+            }
 			break;
 		case 1: // Ground speed
 			g.min_gndspeed_cm.set(next_nonnav_command.alt * 100);
