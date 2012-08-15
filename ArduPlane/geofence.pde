@@ -235,7 +235,8 @@ static void geofence_check(bool altitude_check_only)
     }
 
     // we are outside the fence
-    if (geofence_state->fence_triggered && control_mode == GUIDED) {
+    if (geofence_state->fence_triggered && 
+        (control_mode == GUIDED || g.fence_action == FENCE_ACTION_REPORT)) {
         // we have already triggered, don't trigger again until the
         // user disables/re-enables using the fence channel switch
         return;
@@ -256,6 +257,9 @@ static void geofence_check(bool altitude_check_only)
 
     // see what action the user wants
     switch (g.fence_action) {
+    case FENCE_ACTION_REPORT:
+        break;
+
     case FENCE_ACTION_GUIDED:
         // fly to the return point, with an altitude half way between
         // min and max
