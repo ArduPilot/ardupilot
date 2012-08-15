@@ -69,7 +69,7 @@ void AP_Airspeed::read(void)
 	if (!_enable) {
 		return;
 	}
-	_airspeed_raw 		= _filter.apply(_source->read());
+	_airspeed_raw 		= _source->read();
 	airspeed_pressure 	= max((_airspeed_raw - _offset), 0);
 	_airspeed		= sqrt(airspeed_pressure * _ratio);	
 }
