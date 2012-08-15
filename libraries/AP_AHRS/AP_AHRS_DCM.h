@@ -64,7 +64,6 @@ public:
 private:
 	float		_ki;
 	float		_ki_yaw;
-	bool		_have_initial_yaw;
 
 	// Methods
 	void 		matrix_update(float _G_Dt);

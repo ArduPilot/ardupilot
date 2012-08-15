@@ -58,8 +58,6 @@ private:
 	void 		update_IMU(float deltat, Vector3f &gyro, Vector3f &accel);
 	void 		update_MARG(float deltat, Vector3f &gyro, Vector3f &accel, Vector3f &mag);
 
-	bool		_have_initial_yaw;
-
 	// Methods
 	void 		accel_adjust(void);
 
