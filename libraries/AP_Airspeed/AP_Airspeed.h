@@ -50,7 +50,6 @@ private:
 	AP_Int8     _enable;
 	float	    _airspeed;
 	float	    _airspeed_raw;
-    AverageFilterFloat_Size5 _filter;
 };
 
 

@@ -761,14 +761,6 @@ static void fast_loop()
 	// ------------------------------------
 	check_short_failsafe();
 
-	// Read Airspeed
-	// -------------
-	if (airspeed.enabled()) {
-#if HIL_MODE != HIL_MODE_ATTITUDE
-		read_airspeed();
-#endif
-	}
-
 	#if HIL_MODE == HIL_MODE_SENSORS
 		// update hil before AHRS update
 		gcs_update();
@@ -877,6 +869,14 @@ Serial.println(tempaccel.z, DEC);
 		//------------------------------
 		case 2:
 			medium_loopCounter++;
+
+            // Read Airspeed
+            // -------------
+#if HIL_MODE != HIL_MODE_ATTITUDE
+            if (airspeed.enabled()) {
+                read_airspeed();
+            }
+#endif
 
 			// Read altitude from sensors
 			// ------------------
