@@ -1080,13 +1080,11 @@ static void update_current_flight_mode(void)
 			case MAV_CMD_NAV_LAND:
 				calc_nav_roll();
 
-				if (airspeed.use()) {
-					calc_nav_pitch();
-					calc_throttle();
-				}else{
-					calc_nav_pitch();               // calculate nav_pitch just to use for calc_throttle
-					calc_throttle();                // throttle based on altitude error
-					nav_pitch_cd = g.land_pitch_cd; // pitch held constant
+                calc_nav_pitch();
+                calc_throttle();
+				if (!airspeed.use() || land_complete) {
+                    // hold pitch constant in final approach
+					nav_pitch_cd = g.land_pitch_cd; 
 				}
 
 				if (land_complete) {
@@ -1100,6 +1098,7 @@ static void update_current_flight_mode(void)
                 // we are doing normal AUTO flight, the special cases
                 // are for takeoff and landing
 				hold_course = -1;
+                land_complete = false;
 				calc_nav_roll();
 				calc_nav_pitch();
 				calc_throttle();

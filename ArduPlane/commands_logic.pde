@@ -8,6 +8,7 @@ handle_process_nav_cmd()
 {
 	// reset navigation integrators
 	// -------------------------
+    land_complete = false;
 	reset_I();
 
 		gcs_send_text_fmt(PSTR("Executing command ID #%i"),next_nav_command.id);
@@ -319,9 +320,9 @@ static bool verify_land()
 	if (((wp_distance > 0) && (wp_distance <= (2*g_gps->ground_speed/100)))
 		|| (current_loc.alt <= next_WP.alt + 300)){
 
-		land_complete = 1;
+		land_complete = true;
 
-		if(hold_course == -1) {
+		if (hold_course == -1) {
             // we have just reached the threshold of 2 seconds or 3
 			// meters to landing. We now don't want to do any radical
 			// turns, as rolling could put the wings into the runway.
