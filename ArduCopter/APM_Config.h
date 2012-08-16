@@ -44,8 +44,7 @@
 	*/
 
 //#define TOY_EDF	ENABLED
-
-#define TOY_MIXER TOY_LOOKUP_TABLE
+//#define TOY_MIXER TOY_LOOKUP_TABLE
 
 
 #define ACCEL_ALT_HOLD 0		// disabled by default, work in progress
