@@ -81,7 +81,7 @@ static void update_commands()
 				}else{
 					int32_t temp = get_bearing_cd(&next_WP, &tmp_loc) - original_target_bearing;
 					temp = wrap_180(temp);
-					fast_corner = abs(temp) < 6000;
+					fast_corner = labs(temp) < 6000;
 				}
 			}
 		}else{

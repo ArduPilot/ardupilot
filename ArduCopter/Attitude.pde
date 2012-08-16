@@ -22,7 +22,7 @@ get_stabilize_roll(int32_t target_angle)
 	int32_t target_rate = g.pi_stabilize_roll.get_p(target_angle);
 
 	int16_t i_stab;
-	if(abs(ahrs.roll_sensor) < 500){
+	if(labs(ahrs.roll_sensor) < 500){
 		target_angle 		= constrain(target_angle, -500, 500);
 		i_stab 				= g.pi_stabilize_roll.get_i(target_angle, G_Dt);
 	}else{
@@ -54,7 +54,7 @@ get_stabilize_pitch(int32_t target_angle)
 	int32_t target_rate = g.pi_stabilize_pitch.get_p(target_angle);
 
 	int16_t i_stab;
-	if(abs(ahrs.roll_sensor) < 500){
+	if(labs(ahrs.pitch_sensor) < 500){
 		target_angle 		= constrain(target_angle, -500, 500);
 		i_stab 				= g.pi_stabilize_pitch.get_i(target_angle, G_Dt);
 	}else{
@@ -159,7 +159,7 @@ get_acro_yaw2(int32_t target_rate)
 		decel_boost = 1;
 	} else if (target_rate < 0 && last_target_rate < target_rate && rate_error > 0 ){
 		decel_boost = 1;
-	} else if (target_rate == 0 && abs(current_rate) > 1000){
+	} else if (target_rate == 0 && labs(current_rate) > 1000){
 		decel_boost = 1;
 	} else {
 		decel_boost = 0;
