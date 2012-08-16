@@ -79,6 +79,10 @@
 #ifndef TOY_EDF
 # define TOY_EDF	DISABLED
 #endif
+#ifndef TOY_MIXER
+# define TOY_MIXER	TOY_LINEAR_MIXER
+#endif
+
 
 
 //////////////////////////////////////////////////////////////////////////////
