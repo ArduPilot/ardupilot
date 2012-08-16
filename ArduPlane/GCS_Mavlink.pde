@@ -807,9 +807,16 @@ GCS_MAVLINK::update(void)
 bool GCS_MAVLINK::stream_trigger(enum streams stream_num)
 {
     AP_Int16 *stream_rates = &streamRateRawSensors;
-    uint8_t rate = (uint8_t)stream_rates[stream_num].get();
+    float rate = (uint8_t)stream_rates[stream_num].get();
 
-    if (rate == 0) {
+    // send at a much lower rate while handling waypoints and
+    // parameter sends
+    if (waypoint_receiving || waypoint_sending || 
+        _queued_parameter != NULL) {
+        rate *= 0.25;
+    }
+
+    if (rate <= 0) {
         return false;
     }
 
@@ -830,11 +837,6 @@ bool GCS_MAVLINK::stream_trigger(enum streams stream_num)
 void
 GCS_MAVLINK::data_stream_send(void)
 {
-    if (waypoint_receiving || waypoint_sending) {
-        // don't interfere with mission transfer
-        return;
-    }
-
     if (_queued_parameter != NULL) {
         if (streamRateParams.get() <= 0) {
             streamRateParams.set(50);
@@ -842,8 +844,6 @@ GCS_MAVLINK::data_stream_send(void)
         if (stream_trigger(STREAM_PARAMS)) {
             send_message(MSG_NEXT_PARAM);
         }
-        // don't send anything else at the same time as parameters
-        return;
     }
 
     if (in_mavlink_delay) {
