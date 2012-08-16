@@ -567,6 +567,9 @@ static int32_t	long_error, lat_error;
 static boolean 	loiter_override;
 static int16_t waypoint_radius;
 
+static int16_t control_roll;
+static int16_t control_pitch;
+
 ////////////////////////////////////////////////////////////////////////////////
 // Orientation
 ////////////////////////////////////////////////////////////////////////////////
@@ -1607,8 +1610,6 @@ void update_yaw_mode(void)
 
 void update_roll_pitch_mode(void)
 {
-	int16_t control_roll, control_pitch;
-
 	if (do_flip){
 		if(abs(g.rc_1.control_in) < 4000){
 			roll_flip();
@@ -1650,9 +1651,12 @@ void update_roll_pitch_mode(void)
 				update_simple_mode();
 			}
 
+			control_roll 		= g.rc_1.control_in;
+			control_pitch 		= g.rc_2.control_in;
+
 			// in this mode, nav_roll and nav_pitch = the iterm
-			g.rc_1.servo_out = get_stabilize_roll(g.rc_1.control_in);
-			g.rc_2.servo_out = get_stabilize_pitch(g.rc_2.control_in);
+			g.rc_1.servo_out = get_stabilize_roll(control_roll);
+			g.rc_2.servo_out = get_stabilize_pitch(control_pitch);
 			break;
 
 		case ROLL_PITCH_AUTO:
@@ -1666,6 +1670,7 @@ void update_roll_pitch_mode(void)
 
 			control_roll 		= g.rc_1.control_mix(nav_roll);
 			control_pitch 		= g.rc_2.control_mix(nav_pitch);
+
 			g.rc_1.servo_out 	= get_stabilize_roll(control_roll);
 			g.rc_2.servo_out 	= get_stabilize_pitch(control_pitch);
 			break;
@@ -1675,9 +1680,13 @@ void update_roll_pitch_mode(void)
 			if(do_simple && new_radio_frame){
 				update_simple_mode();
 			}
+
+			control_roll 		= g.rc_1.control_in;
+			control_pitch 		= g.rc_2.control_in;
+
 			// mix in user control with optical flow
-			g.rc_1.servo_out = get_stabilize_roll(get_of_roll(g.rc_1.control_in));
-			g.rc_2.servo_out = get_stabilize_pitch(get_of_pitch(g.rc_2.control_in));
+			g.rc_1.servo_out = get_stabilize_roll(get_of_roll(control_roll));
+			g.rc_2.servo_out = get_stabilize_pitch(get_of_pitch(control_pitch));
 			break;
 
 		// THOR
@@ -1737,11 +1746,11 @@ void update_simple_mode(void)
 	}
 
 	// Rotate input by the initial bearing
-	int16_t control_roll 	= g.rc_1.control_in * simple_cos_x + g.rc_2.control_in * simple_sin_y;
-	int16_t control_pitch 	= -(g.rc_1.control_in * simple_sin_y - g.rc_2.control_in * simple_cos_x);
+	int16_t _roll 	= g.rc_1.control_in * simple_cos_x + g.rc_2.control_in * simple_sin_y;
+	int16_t _pitch 	= -(g.rc_1.control_in * simple_sin_y - g.rc_2.control_in * simple_cos_x);
 
-	g.rc_1.control_in = control_roll;
-	g.rc_2.control_in = control_pitch;
+	g.rc_1.control_in = _roll;
+	g.rc_2.control_in = _pitch;
 }
 
 #define THROTTLE_FILTER_SIZE 2
@@ -2461,7 +2470,7 @@ static void update_auto_yaw()
 
 	}else if(yaw_tracking == MAV_ROI_WPNEXT){
 		// Point towards next WP
-		auto_yaw = target_bearing;
+		auto_yaw = original_target_bearing;
 	}
 }
 /*
