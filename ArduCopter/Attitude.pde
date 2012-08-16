@@ -514,7 +514,7 @@ static int16_t heli_get_angle_boost(int16_t throttle)
 {
     float angle_boost_factor = cos_pitch_x * cos_roll_x;
 	angle_boost_factor = 1.0 - constrain(angle_boost_factor, .5, 1.0);
-	int throttle_above_mid = max(throttle - motors.throttle_mid,0);
+	int16_t throttle_above_mid = max(throttle - motors.throttle_mid,0);
 	return throttle + throttle_above_mid*angle_boost_factor;
 
 }
@@ -525,9 +525,9 @@ static int16_t heli_get_angle_boost(int16_t throttle)
 #if ACCEL_ALT_HOLD == 2
 // z -14.4306 = going up
 // z -6.4306 = going down
-static int get_z_damping()
+static int16_t get_z_damping()
 {
-	int output;
+	int16_t output;
 
 	Z_integrator 	+= get_world_Z_accel() - Z_offset;
 	output 			= Z_integrator * 3;
@@ -546,7 +546,7 @@ float get_world_Z_accel()
 static void init_z_damper()
 {
 	Z_offset = 0;
-	for (int i = 0; i < NUM_G_SAMPLES; i++){
+	for (int16_t i = 0; i < NUM_G_SAMPLES; i++){
 		delay(5);
 		read_AHRS();
 		Z_offset += get_world_Z_accel();
@@ -593,7 +593,7 @@ float get_world_Z_accel()
 static void init_z_damper()
 {
 	estimatedAccelOffset = 0;
-	for (int i = 0; i < NUM_G_SAMPLES; i++){
+	for (int16_t i = 0; i < NUM_G_SAMPLES; i++){
 		delay(5);
 		read_AHRS();
 		estimatedAccelOffset += get_world_Z_accel();
@@ -634,7 +634,7 @@ float dead_reckon_Z(float sensedPos, float sensedAccel)
 	return synVelo;
 }
 
-static int get_z_damping()
+static int16_t get_z_damping()
 {
 	float sensedAccel = get_world_Z_accel();
 	float sensedPos = current_loc.alt / 100.0;
@@ -645,7 +645,7 @@ static int get_z_damping()
 
 #else
 
-static int get_z_damping()
+static int16_t get_z_damping()
 {
 	return 0;
 }
