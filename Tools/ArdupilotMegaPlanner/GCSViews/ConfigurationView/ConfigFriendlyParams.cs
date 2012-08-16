@@ -198,6 +198,8 @@ namespace ArdupilotMega.GCSViews.ConfigurationView
                 catch (Exception exp) { log.Error(exp); } // just to cleanup any errors
             }
 
+            this.SuspendLayout();
+
             _params.OrderBy(x => x.Key).ForEach(x => 
          {
             if(!String.IsNullOrEmpty(x.Key))
@@ -327,6 +329,8 @@ namespace ArdupilotMega.GCSViews.ConfigurationView
          });
 
             ThemeManager.ApplyThemeTo(this);
+
+            this.ResumeLayout();
         }
 
         /// <summary>

@@ -16,7 +16,6 @@ namespace ArdupilotMega.Comms
     {
         private static readonly ILog log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
         TcpClient client = new TcpClient();
-        BufferedStream clientbuf;
         IPEndPoint RemoteIpEndPoint = new IPEndPoint(IPAddress.Any, 0);
 
         int retrys = 3;
@@ -95,7 +94,7 @@ namespace ArdupilotMega.Comms
             if (ArdupilotMega.MainV2.config["TCP_host"] != null)
                 host = ArdupilotMega.MainV2.config["TCP_host"].ToString();
 
-            if (!MainV2.MONO)
+            //if (!MainV2.MONO)
             {
                 if (System.Windows.Forms.DialogResult.Cancel == ArdupilotMega.Common.InputBox("remote host", "Enter host name/ip (ensure remote end is already started)", ref host))
                 {
@@ -117,8 +116,6 @@ namespace ArdupilotMega.Comms
             client.NoDelay = true;
             client.Client.NoDelay = true;
 
-            clientbuf = new BufferedStream(client.GetStream());
-
             VerifyConnected();
 
             return;
@@ -139,7 +136,6 @@ namespace ArdupilotMega.Comms
                 {
                     log.Info("tcp reconnect");
                     client.Connect(ArdupilotMega.MainV2.config["TCP_host"].ToString(), int.Parse(ArdupilotMega.MainV2.config["TCP_port"].ToString()));
-                    clientbuf = new BufferedStream(client.GetStream());
                     retrys--;
                 }
 

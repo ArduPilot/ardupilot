@@ -161,7 +161,7 @@ namespace ArdupilotMega
 
                                 MainV2.comPort.setGuidedModeWP(gotohere);
 
-                                GCSViews.FlightData.GuidedModeWP = new PointLatLngAlt(gotohere);
+                                MainV2.cs.GuidedModeWP = new PointLatLngAlt(gotohere);
 
                                 MainV2.giveComport = false;
                             }

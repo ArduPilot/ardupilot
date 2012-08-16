@@ -206,18 +206,23 @@ namespace ArdupilotMega
         public float HomeAlt { get { return (float)HomeLocation.Alt; } set { } }
         internal PointLatLngAlt HomeLocation = new PointLatLngAlt();
 
+        PointLatLngAlt _trackerloc = new PointLatLngAlt();
+        internal PointLatLngAlt TrackerLocation { get { if (_trackerloc.Lng != 0) return _trackerloc; return HomeLocation; } set { _trackerloc = value; } }
+
+        internal PointLatLngAlt GuidedModeWP = new PointLatLngAlt();
+
         public float DistToMAV
         {
             get
             {
                 // shrinking factor for longitude going to poles direction
-                double rads = Math.Abs(HomeLocation.Lat) * 0.0174532925;
+                double rads = Math.Abs(TrackerLocation.Lat) * 0.0174532925;
                 double scaleLongDown = Math.Cos(rads);
                 double scaleLongUp = 1.0f / Math.Cos(rads);
 
                 //DST to Home
-                double dstlat = Math.Abs(HomeLocation.Lat - lat) * 111319.5;
-                double dstlon = Math.Abs(HomeLocation.Lng - lng) * 111319.5 * scaleLongDown;
+                double dstlat = Math.Abs(TrackerLocation.Lat - lat) * 111319.5;
+                double dstlon = Math.Abs(TrackerLocation.Lng - lng) * 111319.5 * scaleLongDown;
                 return (float)Math.Sqrt((dstlat * dstlat) + (dstlon * dstlon));
             }
         }
@@ -231,7 +236,7 @@ namespace ArdupilotMega
                 if (dist < 5)
                     return 0;
 
-                float altdiff = (float)(alt - HomeLocation.Alt);
+                float altdiff = (float)(alt - TrackerLocation.Alt);
 
                 float angle = (float)Math.Atan(altdiff / dist) * rad2deg;
 
@@ -244,13 +249,13 @@ namespace ArdupilotMega
             get
             {
                 // shrinking factor for longitude going to poles direction
-                double rads = Math.Abs(HomeLocation.Lat) * 0.0174532925;
+                double rads = Math.Abs(TrackerLocation.Lat) * 0.0174532925;
                 double scaleLongDown = Math.Cos(rads);
                 double scaleLongUp = 1.0f / Math.Cos(rads);
 
                 //DIR to Home
-                double dstlon = (HomeLocation.Lng - lng); //OffSet_X
-                double dstlat = (HomeLocation.Lat - lat) * scaleLongUp; //OffSet Y
+                double dstlon = (TrackerLocation.Lng - lng); //OffSet_X
+                double dstlat = (TrackerLocation.Lat - lat) * scaleLongUp; //OffSet Y
                 double bearing = 90 + (Math.Atan2(dstlat, -dstlon) * 57.295775); //absolut home direction
                 if (bearing < 0) bearing += 360;//normalization
                 //bearing = bearing - 180;//absolut return direction

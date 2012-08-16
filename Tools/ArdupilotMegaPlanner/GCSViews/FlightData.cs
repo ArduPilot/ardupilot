@@ -80,8 +80,6 @@ namespace ArdupilotMega.GCSViews
         bool playingLog = false;
         double LogPlayBackSpeed = 1.0;
 
-        public static PointLatLngAlt GuidedModeWP = new PointLatLngAlt();
-
         AviWriter aviwriter;
 
         public SplitContainer MainHcopy = null;
@@ -569,9 +567,9 @@ namespace ArdupilotMega.GCSViews
                                     routes.Markers.Add( new GMapMarkerCross(currentloc));
                                 }
 
-                                if (MainV2.cs.mode.ToLower() == "guided" && GuidedModeWP != null && GuidedModeWP.Lat != 0)
+                                if (MainV2.cs.mode.ToLower() == "guided" && MainV2.cs.GuidedModeWP != null && MainV2.cs.GuidedModeWP.Lat != 0)
                                 {
-                                    addpolygonmarker("Guided Mode", GuidedModeWP.Lng, GuidedModeWP.Lat, (int)GuidedModeWP.Alt, Color.Blue, routes);
+                                    addpolygonmarker("Guided Mode", MainV2.cs.GuidedModeWP.Lng, MainV2.cs.GuidedModeWP.Lat, (int)MainV2.cs.GuidedModeWP.Alt, Color.Blue, routes);
                                 }
 
                                 if (MainV2.cs.firmware == MainV2.Firmwares.ArduPlane)
@@ -1045,11 +1043,11 @@ namespace ArdupilotMega.GCSViews
                 return;
             }
 
-            if (GuidedModeWP.Alt == 0)
+            if (MainV2.cs.GuidedModeWP.Alt == 0)
             {
                 flyToHereAltToolStripMenuItem_Click(null, null);
 
-                if (GuidedModeWP.Alt == 0) 
+                if (MainV2.cs.GuidedModeWP.Alt == 0) 
                     return;
             }
 
@@ -1062,7 +1060,7 @@ namespace ArdupilotMega.GCSViews
             Locationwp gotohere = new Locationwp();
 
             gotohere.id = (byte)MAVLink.MAV_CMD.WAYPOINT;
-            gotohere.alt = (float)(GuidedModeWP.Alt); // back to m
+            gotohere.alt = (float)(MainV2.cs.GuidedModeWP.Alt); // back to m
             gotohere.lat = (float)(gotolocation.Lat);
             gotohere.lng = (float)(gotolocation.Lng);
 
@@ -1070,7 +1068,7 @@ namespace ArdupilotMega.GCSViews
             {
                 MainV2.comPort.setGuidedModeWP(gotohere);
 
-                GuidedModeWP = new PointLatLngAlt(gotohere.lat, gotohere.lng, gotohere.alt,"Guided Mode");
+                MainV2.cs.GuidedModeWP = new PointLatLngAlt(gotohere.lat, gotohere.lng, gotohere.alt, "Guided Mode");
             }
             catch (Exception ex) { MainV2.giveComport = false; CustomMessageBox.Show("Error sending command : " + ex.Message); }
 
@@ -2162,11 +2160,11 @@ print 'Roll complete'
                 return;
             }
 
-            GuidedModeWP.Alt = intalt;
+            MainV2.cs.GuidedModeWP.Alt = intalt;
 
             if (MainV2.cs.mode == "Guided")
             {
-                MainV2.comPort.setGuidedModeWP(new Locationwp() { alt = (float)GuidedModeWP.Alt, lat = (float)GuidedModeWP.Lat, lng = (float)GuidedModeWP.Lng });
+                MainV2.comPort.setGuidedModeWP(new Locationwp() { alt = (float)MainV2.cs.GuidedModeWP.Alt, lat = (float)MainV2.cs.GuidedModeWP.Lat, lng = (float)MainV2.cs.GuidedModeWP.Lng });
             }
         }
 

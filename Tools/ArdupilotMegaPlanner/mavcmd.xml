@@ -45,7 +45,7 @@
       <P4></P4>
       <X></X>
       <Y></Y>
-      <Z>Alt</Z>
+      <Z></Z>
     </RETURN_TO_LAUNCH>
     <LAND>
       <P1></P1>
@@ -281,9 +281,9 @@
       <P2></P2>
       <P3></P3>
       <P4></P4>
-      <X>Lat</X>
-      <Y>Long</Y>
-      <Z>Alt</Z>
+      <X></X>
+      <Y></Y>
+      <Z></Z>
     </RETURN_TO_LAUNCH>
     <LAND>
       <P1></P1>
