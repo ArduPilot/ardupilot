@@ -343,7 +343,7 @@ get_rate_yaw(int32_t target_rate)
 		return output;
 	#else
 		// output control:
-		int16_t yaw_limit = 2000 + abs(g.rc_4.control_in);
+		int16_t yaw_limit = 2200 + abs(g.rc_4.control_in);
 		// smoother Yaw control:
 		return constrain(output, -yaw_limit, yaw_limit);
 	#endif
