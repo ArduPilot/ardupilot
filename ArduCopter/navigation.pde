@@ -12,7 +12,7 @@ static void navigate()
 
 	// target_bearing is where we should be heading
 	// --------------------------------------------
-	target_bearing 			= get_bearing_cd(&current_loc, &next_WP);
+	target_bearing 			= get_bearing_cd(&filtered_loc, &next_WP);
 	home_to_copter_bearing 	= get_bearing_cd(&home, &current_loc);
 }
 
@@ -185,7 +185,7 @@ static void calc_nav_rate(int16_t max_speed)
 	int16_t cross_speed = crosstrack_error * -g.crosstrack_gain; // scale down crosstrack_error in cm
 	// XXX replace above with crosstrack gain.
 
-	cross_speed	= constrain(cross_speed, -200, 200);
+	cross_speed	= constrain(cross_speed, -150, 150);
 
 	// rotate by 90 to deal with trig functions
 	temp 			= (9000l - target_bearing) * RADX100;
