@@ -760,8 +760,7 @@ static void Log_Write_Attitude()
 	DataFlash.WriteInt((int)ahrs.pitch_sensor);		// 4
 	DataFlash.WriteInt(g.rc_4.control_in);			// 5
 	DataFlash.WriteInt((uint16_t)ahrs.yaw_sensor);	// 6
-	DataFlash.WriteInt(0);	// 7 (this used to be compass.heading)
-
+	DataFlash.WriteInt((uint16_t)nav_yaw);			// 7 (this used to be compass.heading)
 	DataFlash.WriteByte(END_BYTE);
 }
 
@@ -775,17 +774,16 @@ static void Log_Read_Attitude()
 	int16_t temp5 	= DataFlash.ReadInt();
 	uint16_t temp6 	= DataFlash.ReadInt();
 	uint16_t temp7 	= DataFlash.ReadInt();
-	temp7 			= wrap_360(temp7);
 
 							// 1   2   3    4   5   6  7
 	Serial.printf_P(PSTR("ATT, %d, %d, %d, %d, %d, %u, %u\n"),
-		(int)temp1,
-		(int)temp2,
-		(int)temp3,
-		(int)temp4,
-		(int)temp5,
-		(unsigned int)temp6,
-		(unsigned int)temp7);
+		temp1,
+		temp2,
+		temp3,
+		temp4,
+		temp5,
+		temp6,
+		temp7);
 }
 
 // Write a mode packet. Total length : 7 bytes
@@ -890,13 +888,13 @@ static void Log_Read_PID()
 
 						   //  1    2    3    4    5    6      7
 	Serial.printf_P(PSTR("PID-%d, %ld, %ld, %ld, %ld, %ld, %4.4f\n"),
-                    (int)temp1,		// pid id
-                    (long)temp2,	// error
-                    (long)temp3,	// p
-                    (long)temp4,	// i
-                    (long)temp5,	// d
-                    (long)temp6,	// output
-                    temp7);			// gain
+                    temp1,		// pid id
+                    temp2,		// error
+                    temp3,		// p
+                    temp4,		// i
+                    temp5,		// d
+                    temp6,		// output
+                    temp7);		// gain
 }
 
 // Read the DataFlash log memory
