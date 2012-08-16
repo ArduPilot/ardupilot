@@ -104,7 +104,7 @@ static void test_one_offset(struct Location &loc,
         brg_error += 360;
     }
 
-    if (abs(dist - dist2) > 1.0 ||
+    if (fabs(dist - dist2) > 1.0 ||
         brg_error > 1.0) {
         Serial.printf("Failed offset test brg_error=%f dist_error=%f\n",
                       brg_error, dist-dist2);
