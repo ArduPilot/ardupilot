@@ -1,10 +1,5 @@
 // -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 
-// Sensors are not available in HIL_MODE_ATTITUDE
-#if HIL_MODE != HIL_MODE_ATTITUDE
-
-void ReadSCP1000(void) {}
-
 static void init_barometer(void)
 {
     barometer.calibrate(mavlink_delay);
@@ -36,8 +31,6 @@ static void zero_airspeed(void)
     airspeed.calibrate(mavlink_delay);
     gcs_send_text_P(SEVERITY_LOW,PSTR("zero airspeed calibrated"));
 }
-
-#endif // HIL_MODE != HIL_MODE_ATTITUDE
 
 static void read_battery(void)
 {
