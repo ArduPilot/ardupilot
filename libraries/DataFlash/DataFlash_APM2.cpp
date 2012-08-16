@@ -55,7 +55,8 @@ extern "C" {
 #else
 # define serialDebug(fmt, args...)
 #endif
-*/
+//*/
+
 // DataFlash is connected to Serial Port 3 (we will use SPI mode)
 #if defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__)
 	#define DF_DATAOUT 14        // MOSI
@@ -122,6 +123,9 @@ DataFlash_APM2::DataFlash_APM2()
 // Public Methods //////////////////////////////////////////////////////////////
 void DataFlash_APM2::Init(void)
 {
+	// init to zero
+	df_NumPages = 0;
+
 	pinMode(DF_DATAOUT, OUTPUT);
 	pinMode(DF_DATAIN, INPUT);
 	pinMode(DF_SLAVESELECT,OUTPUT);
@@ -162,9 +166,6 @@ void DataFlash_APM2::Init(void)
 	} else if (density_code == 0x6) {
 		// 16 Mbit
 		df_NumPages = 4095;
-	} else {
-		// what is this??? card not inserted perhaps?
-		df_NumPages = 0;
 	}
 
 	//serialDebug("density_code %d pages %d, size %d\n", density_code, df_NumPages, df_PageSize);
@@ -191,7 +192,9 @@ void DataFlash_APM2::ReadManufacturerID()
 // This function return 1 if Card is inserted on SD slot
 bool DataFlash_APM2::CardInserted()
 {
-	return (df_NumPages >= 4095 && digitalRead(DF_CARDDETECT) == 0);
+	//serialDebug("df_NumPages %d, detect:%d\n", df_NumPages, tmp);
+	//return (df_NumPages >= 4095 && digitalRead(DF_CARDDETECT) == 0);
+	return (df_NumPages >= 4095);
 }
 
 // Read the status register
