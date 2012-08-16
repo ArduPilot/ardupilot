@@ -29,15 +29,16 @@
 
 static float longitude_scale(const struct Location *loc)
 {
-	static uint32_t last_lat;
+	static int32_t last_lat;
 	static float scale = 1.0;
 	if (abs(last_lat - loc->lat) < 100000) {
-		// we are within 0.01 degrees (about 1km) of the 
+		// we are within 0.01 degrees (about 1km) of the
 		// same latitude. We can avoid the cos() and return
-		// the same scale factor.  
+		// the same scale factor.
 		return scale;
 	}
 	scale = cos((fabs((float)loc->lat)/1.0e7) * 0.0174532925);
+	last_lat = loc->lat;
 	return scale;
 }
 
@@ -73,13 +74,13 @@ int32_t get_bearing_cd(const struct Location *loc1, const struct Location *loc2)
 	return bearing;
 }
 
-// see if location is past a line perpendicular to 
-// the line between point1 and point2. If point1 is 
+// see if location is past a line perpendicular to
+// the line between point1 and point2. If point1 is
 // our previous waypoint and point2 is our target waypoint
 // then this function returns true if we have flown past
 // the target waypoint
-bool location_passed_point(struct Location &location, 
-			   struct Location &point1, 			   
+bool location_passed_point(struct Location &location,
+			   struct Location &point1,
 			   struct Location &point2)
 {
 	// the 3 points form a triangle. If the angle between lines
@@ -90,7 +91,7 @@ bool location_passed_point(struct Location &location,
 	Vector2f pt2(point2.lat, point2.lng);
 	float angle = (loc1 - pt2).angle(pt1 - pt2);
     if (isinf(angle)) {
-        // two of the points are co-located. 
+        // two of the points are co-located.
         // If location is equal to point2 then say we have passed the
         // waypoint, otherwise say we haven't
         if (get_distance(&location, &point2) == 0) {
@@ -102,14 +103,14 @@ bool location_passed_point(struct Location &location,
 		// point2 then we are past the waypoint if the
 		// distance from location to point1 is greater then
 		// the distance from point2 to point1
-		return get_distance(&location, &point1) > 
+		return get_distance(&location, &point1) >
 			get_distance(&point2, &point1);
-		
+
 	}
 	if (degrees(angle) > 90) {
 		return true;
 	}
-	return false;	
+	return false;
 }
 
 /*
@@ -127,7 +128,7 @@ void location_update(struct Location *loc, float bearing, float distance)
 
 	float lat2 = asin(sin(lat1)*cos(dr) +
                       cos(lat1)*sin(dr)*cos(brng));
-    float lon2 = lon1 + atan2(sin(brng)*sin(dr)*cos(lat1), 
+    float lon2 = lon1 + atan2(sin(brng)*sin(dr)*cos(lat1),
                               cos(dr)-sin(lat1)*sin(lat2));
     loc->lat = degrees(lat2)*1.0e7;
     loc->lng = degrees(lon2)*1.0e7;
