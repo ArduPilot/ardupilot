@@ -208,3 +208,12 @@ void runInterrupt(uint8_t inum)
 		interrupt_table[inum].call();
 	}
 }
+
+// this version of abs() is here to ensure it is 16 bit
+// which allows us to find abs() bugs in SITL
+int abs(int v)
+{
+	int16_t v16 = (int16_t)v;
+	if (v16 >= 0) return v16;
+	return -v16;
+}
