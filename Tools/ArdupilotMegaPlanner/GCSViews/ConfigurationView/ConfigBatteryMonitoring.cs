@@ -293,26 +293,6 @@ namespace ArdupilotMega.GCSViews.ConfigurationView
                 {
                     CMB_batmontype.SelectedIndex = getIndex(CMB_batmontype, (int)float.Parse(MainV2.comPort.param["BATT_MONITOR"].ToString()));
                 }
-
-                // ignore language re . vs ,
-
-                if (TXT_ampspervolt.Text == (13.6612).ToString())
-                {
-                    CMB_batmonsensortype.SelectedIndex = 1;
-                }
-                else if (TXT_ampspervolt.Text == (27.3224).ToString())
-                {
-                    CMB_batmonsensortype.SelectedIndex = 2;
-                }
-                else if (TXT_ampspervolt.Text == (54.64481).ToString())
-                {
-                    CMB_batmonsensortype.SelectedIndex = 3;
-                }
-                else
-                {
-                    CMB_batmonsensortype.SelectedIndex = 0;
-                }
-
             }
 
             if (MainV2.comPort.param["BATT_CAPACITY"] != null)
@@ -337,6 +317,25 @@ namespace ArdupilotMega.GCSViews.ConfigurationView
                 TXT_measuredvoltage.Enabled = false;
                 TXT_divider.Enabled = false;
                 TXT_ampspervolt.Enabled = false;
+            }
+
+            // ignore language re . vs ,
+
+            if (TXT_ampspervolt.Text == (13.6612).ToString())
+            {
+                CMB_batmonsensortype.SelectedIndex = 1;
+            }
+            else if (TXT_ampspervolt.Text == (27.3224).ToString())
+            {
+                CMB_batmonsensortype.SelectedIndex = 2;
+            }
+            else if (TXT_ampspervolt.Text == (54.64481).ToString())
+            {
+                CMB_batmonsensortype.SelectedIndex = 3;
+            }
+            else
+            {
+                CMB_batmonsensortype.SelectedIndex = 0;
             }
 
             startup = false;

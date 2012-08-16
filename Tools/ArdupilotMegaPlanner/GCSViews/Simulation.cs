@@ -805,8 +805,8 @@ namespace ArdupilotMega.GCSViews
                 sitldata.yAccel = DATA[4][6] * 9.8;
                 sitldata.zAccel = (0 - DATA[4][4]) * 9.8;
 
-                Console.WriteLine(accel_body.ToString());
-                Console.WriteLine("        {0} {1} {2}",sitldata.xAccel, sitldata.yAccel, sitldata.zAccel);
+          //      Console.WriteLine(accel_body.ToString());
+          //      Console.WriteLine("        {0} {1} {2}",sitldata.xAccel, sitldata.yAccel, sitldata.zAccel);
 
             }
             else if (receviedbytes == 0x64) // FG binary udp

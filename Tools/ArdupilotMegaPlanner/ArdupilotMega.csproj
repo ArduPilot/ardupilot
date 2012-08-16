@@ -271,6 +271,12 @@
     <Compile Include="Controls\QuickView.Designer.cs">
       <DependentUpon>QuickView.cs</DependentUpon>
     </Compile>
+    <Compile Include="SerialOutput2.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="SerialOutput2.Designer.cs">
+      <DependentUpon>SerialOutput2.cs</DependentUpon>
+    </Compile>
     <Compile Include="Delta.cs" />
     <Compile Include="GCSViews\ConfigurationView\ConfigAP_Limits.cs">
       <SubType>UserControl</SubType>
@@ -692,6 +698,9 @@
     </EmbeddedResource>
     <EmbeddedResource Include="Controls\QuickView.resx">
       <DependentUpon>QuickView.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="SerialOutput2.resx">
+      <DependentUpon>SerialOutput2.cs</DependentUpon>
     </EmbeddedResource>
     <EmbeddedResource Include="GCSViews\ConfigurationView\ConfigAccelerometerCalibrationQuad.es-ES.resx">
       <DependentUpon>ConfigAccelerometerCalibrationQuad.cs</DependentUpon>

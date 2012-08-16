@@ -184,6 +184,9 @@ namespace ArdupilotMega
 
             speechEngine = new Speech();
 
+            // proxy loader - dll load now instead of on config form load
+            new Transition(new TransitionType_EaseInEaseOut(2000));
+
             MyRenderer.currentpressed = MenuFlightData;
 
             MainMenu.Renderer = new MyRenderer();

@@ -45,73 +45,6 @@ namespace ArdupilotMega.GCSViews
         private Dictionary<string, string[]> cmdParamNames = new Dictionary<string, string[]>();
 
         /// <summary>
-        /// Reads defines.h for all valid commands and eeprom positions
-        /// </summary>
-        /// <param name="file">File Path</param>
-        /// <returns></returns>
-        public bool readdefines(string file)
-        {
-            if (!File.Exists(file))
-            {
-                return false;
-            }
-            try
-            {
-                StreamReader sr = new StreamReader(file); //"defines.h"
-                while (!sr.EndOfStream)
-                {
-                    string line = sr.ReadLine();
-                    Regex regex2 = new Regex(@"define\s+([^\s]+)\s+([^\s]+)", RegexOptions.IgnoreCase);
-                    if (regex2.IsMatch(line))
-                    {
-                        MatchCollection matchs = regex2.Matches(line);
-                        for (int i = 0; i < matchs.Count; i++)
-                        {
-                            int num = 0;
-                            if (matchs[i].Groups[2].Value.ToString().ToLower().Contains("0x"))
-                            {
-                                try
-                                {
-                                    num = Convert.ToInt32(matchs[i].Groups[2].Value.ToString(), 16);
-                                }
-                                catch (Exception) { System.Diagnostics.Debug.WriteLine("BAD hex " + matchs[i].Groups[1].Value.ToString()); }
-                            }
-                            else
-                            {
-                                try
-                                {
-                                    num = Convert.ToInt32(matchs[i].Groups[2].Value.ToString(), 10);
-                                }
-                                catch (Exception) { System.Diagnostics.Debug.WriteLine("BAD dec " + matchs[i].Groups[1].Value.ToString()); }
-                            }
-                            System.Diagnostics.Debug.WriteLine(matchs[i].Groups[1].Value.ToString() + " = " + matchs[i].Groups[2].Value.ToString() + " = " + num.ToString());
-                            try
-                            {
-                             //   hashdefines.Add(matchs[i].Groups[1].Value.ToString(), num);
-                            }
-                            catch (Exception) { }
-                        }
-                    }
-                }
-
-                sr.Close();
-
-
-               // if (!hashdefines.ContainsKey("WP_START_BYTE"))
-                {
-                    CustomMessageBox.Show("Your Ardupilot Mega project defines.h is Invalid");
-                    //return false;
-                }
-            }
-            catch (Exception)
-            {
-                CustomMessageBox.Show("Can't open file!");
-                return false;
-            }
-            return true;
-        }
-
-        /// <summary>
         /// Read from waypoint writter *.h file
         /// </summary>
         /// <param name="file">File Path</param>
@@ -236,6 +169,12 @@ namespace ArdupilotMega.GCSViews
                 }
                 TXT_homelat.Text = lat.ToString();
                 TXT_homelng.Text = lng.ToString();
+                return;
+            }
+
+            if (pointno == "Tracker Home")
+            {
+                MainV2.cs.TrackerLocation = new PointLatLngAlt(lat, lng, alt, "");
                 return;
             }
 
@@ -698,6 +637,8 @@ namespace ArdupilotMega.GCSViews
 
             writeKML();
 
+            panelWaypoints.Expand = false;
+
             timer1.Start();
         }
 
@@ -951,7 +892,7 @@ namespace ArdupilotMega.GCSViews
                     {
                         if (Commands.Rows[a].HeaderCell.Value == null)
                         {
-                            Commands.Rows[a].HeaderCell.Style.Alignment = DataGridViewContentAlignment.MiddleCenter;
+                            Commands.Rows[a].HeaderCell.Style.Alignment = DataGridViewContentAlignment.MiddleLeft;
                             Commands.Rows[a].HeaderCell.Value = (a + 1).ToString();
                         }
                         // skip rows with the correct number
@@ -2295,13 +2236,7 @@ namespace ArdupilotMega.GCSViews
 
         private void comboBoxMapType_SelectedValueChanged(object sender, EventArgs e)
         {
-            try
-            {
-                MainMap.MapType = (MapType)comboBoxMapType.SelectedItem;
-                FlightData.mymap.MapType = (MapType)comboBoxMapType.SelectedItem;
-                MainV2.config["MapType"] = comboBoxMapType.Text;
-            }
-            catch { CustomMessageBox.Show("Map change failed. try zomming out first."); }
+
         }
 
         private void Commands_EditingControlShowing(object sender, DataGridViewEditingControlShowingEventArgs e)
@@ -2383,12 +2318,7 @@ namespace ArdupilotMega.GCSViews
 
         private void button1_Click(object sender, EventArgs e)
         {
-            writeKML();
-            double homealt;
-            double.TryParse(TXT_homealt.Text, out homealt);
-            Form temp = new ElevationProfile(pointlist, homealt);
-            ThemeManager.ApplyThemeTo(temp);
-            temp.ShowDialog();
+
         }
 
         private void CHK_altmode_CheckedChanged(object sender, EventArgs e)
@@ -2753,9 +2683,7 @@ namespace ArdupilotMega.GCSViews
 
         private void BUT_Camera_Click(object sender, EventArgs e)
         {
-            Camera form = new Camera();
-            ThemeManager.ApplyThemeTo(form);
-            form.Show();
+
         }
 
         private void panelMap_Resize(object sender, EventArgs e)
@@ -2783,7 +2711,15 @@ namespace ArdupilotMega.GCSViews
         {
             try
             {
+                if (isMouseDown)
+                    return;
+
                 routes.Markers.Clear();
+
+                if (MainV2.cs.TrackerLocation != MainV2.cs.HomeLocation && MainV2.cs.TrackerLocation.Lng != 0)
+                {
+                    addpolygonmarker("Tracker Home", MainV2.cs.TrackerLocation.Lng, MainV2.cs.TrackerLocation.Lat, (int)MainV2.cs.TrackerLocation.Alt, Color.Blue, routes);
+                }
 
                 if (MainV2.cs.lat == 0 || MainV2.cs.lng == 0)
                     return;
@@ -2802,8 +2738,47 @@ namespace ArdupilotMega.GCSViews
                 {
                     routes.Markers.Add(new GMapMarkerQuad(currentloc, MainV2.cs.yaw, MainV2.cs.groundcourse, MainV2.cs.nav_bearing));
                 }
+
+                if (MainV2.cs.mode.ToLower() == "guided" && MainV2.cs.GuidedModeWP != null && MainV2.cs.GuidedModeWP.Lat != 0)
+                {
+                    addpolygonmarker("Guided Mode", MainV2.cs.GuidedModeWP.Lng, MainV2.cs.GuidedModeWP.Lat, (int)MainV2.cs.GuidedModeWP.Alt, Color.Red, routes);
+                }
+
+
             }
             catch { }
+        }
+
+        private void addpolygonmarker(string tag, double lng, double lat, int alt, Color? color, GMapOverlay overlay)
+        {
+            try
+            {
+                PointLatLng point = new PointLatLng(lat, lng);
+                GMapMarkerGoogleGreen m = new GMapMarkerGoogleGreen(point);
+                m.ToolTipMode = MarkerTooltipMode.Always;
+                m.ToolTipText = tag;
+                m.Tag = tag;
+
+                GMapMarkerRect mBorders = new GMapMarkerRect(point);
+                {
+
+                    mBorders.InnerMarker = m;
+                    try
+                    {
+                        mBorders.wprad = (int)(float.Parse(ArdupilotMega.MainV2.config["TXT_WPRad"].ToString()) / MainV2.cs.multiplierdist);
+                    }
+                    catch { }
+                    mBorders.MainMap = MainMap;
+                    if (color.HasValue)
+                    {
+                        mBorders.Color = color.Value;
+                    }
+                }
+
+                overlay.Markers.Add(m);
+                overlay.Markers.Add(mBorders);
+            }
+            catch (Exception) { }
         }
 
         private void GeoFenceuploadToolStripMenuItem_Click(object sender, EventArgs e)
@@ -3539,6 +3514,110 @@ namespace ArdupilotMega.GCSViews
                 }
                 catch (Exception ex) { CustomMessageBox.Show("Bad KML File :" + ex.ToString()); }
             }
+        }
+
+        private void elevationGraphToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            writeKML();
+            double homealt;
+            double.TryParse(TXT_homealt.Text, out homealt);
+            Form temp = new ElevationProfile(pointlist, homealt);
+            ThemeManager.ApplyThemeTo(temp);
+            temp.ShowDialog();
+        }
+
+        private void cameraToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            Camera form = new Camera();
+            ThemeManager.ApplyThemeTo(form);
+            form.Show();
+        }
+
+        private void rTLToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            selectedrow = Commands.Rows.Add();
+
+            Commands.Rows[selectedrow].Cells[Command.Index].Value = MAVLink.MAV_CMD.RETURN_TO_LAUNCH.ToString();
+
+            //Commands.Rows[selectedrow].Cells[Param1.Index].Value = time;
+
+            ChangeColumnHeader(MAVLink.MAV_CMD.RETURN_TO_LAUNCH.ToString());
+
+            writeKML();
+        }
+
+        private void landToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            selectedrow = Commands.Rows.Add();
+
+            Commands.Rows[selectedrow].Cells[Command.Index].Value = MAVLink.MAV_CMD.LAND.ToString();
+
+            //Commands.Rows[selectedrow].Cells[Param1.Index].Value = time;
+
+            ChangeColumnHeader(MAVLink.MAV_CMD.LAND.ToString());
+
+            setfromGE(end.Lat, end.Lng, 1);
+
+            writeKML();
+        }
+
+        private void takeoffToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            // altitude
+            string alt = "10";
+
+            Common.InputBox("Altitude", "Please enter your takeoff altitude", ref alt);
+
+            int alti = -1;
+
+            if (!int.TryParse(alt, out alti))
+            {
+                MessageBox.Show("Bad Alt");
+                return;
+            }
+
+            // take off pitch
+            int topi = 0;
+
+            if (MainV2.cs.firmware == MainV2.Firmwares.ArduPlane)
+            {
+                string top = "15";
+
+                Common.InputBox("Takeoff Pitch", "Please enter your takeoff pitch", ref alt);
+
+                if (!int.TryParse(top, out topi))
+                {
+                    MessageBox.Show("Bad Takeoff pitch");
+                    return;
+                }
+            }
+            
+            selectedrow = Commands.Rows.Add();
+
+            Commands.Rows[selectedrow].Cells[Command.Index].Value = MAVLink.MAV_CMD.TAKEOFF.ToString();
+
+            Commands.Rows[selectedrow].Cells[Param1.Index].Value = topi;
+
+            Commands.Rows[selectedrow].Cells[Alt.Index].Value = alti;
+
+            ChangeColumnHeader(MAVLink.MAV_CMD.TAKEOFF.ToString());
+
+            writeKML();
+        }
+
+        private void loadWPFileToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            BUT_loadwpfile_Click(null, null);
+        }
+
+        private void saveWPFileToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            SaveFile_Click(null, null);
+        }
+
+        private void trackerHomeToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            MainV2.cs.TrackerLocation = new PointLatLngAlt(end) { Alt = MainV2.cs.HomeAlt };
         }
     }
 }

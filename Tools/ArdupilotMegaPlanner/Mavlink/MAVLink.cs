@@ -156,7 +156,6 @@ namespace ArdupilotMega
             this._bytesSentSubj = new Subject<int>();
             this.WhenPacketLost = new Subject<int>();
             this.WhenPacketReceived = new Subject<int>();
-            this.objlock = new object();
             this.readlock = new object();
             this.logwritelock = new object();
             this.lastvalidpacket = DateTime.Now;
@@ -242,6 +241,8 @@ namespace ArdupilotMega
             param = new Hashtable();
             packets.Initialize();
 
+            bool hbseen = false;
+
             try
             {
                 BaseStream.ReadBufferSize = 4 * 1024;
@@ -305,9 +306,18 @@ namespace ArdupilotMega
                     {
                         //if (Progress != null)
                         //    Progress(-1, "No Heatbeat Packets");
+                        countDown.Stop();
                         this.Close();
-                        progressWorkerEventArgs.ErrorMessage = "No Heatbeat Packets Received";
-                        throw new Exception("No Mavlink Heartbeat Packets where read from this port - Verify Baud Rate and setup\nAPM Planner waits for 2 valid heartbeat packets before connecting");
+                        if (hbseen)
+                        {
+                            progressWorkerEventArgs.ErrorMessage = "Only 1 Heatbeat Received";
+                            throw new Exception("Only 1 Mavlink Heartbeat Packets was read from this port - Verify your hardware is setup correctly\nAPM Planner waits for 2 valid heartbeat packets before connecting");
+                        }
+                        else
+                        {
+                            progressWorkerEventArgs.ErrorMessage = "No Heatbeat Packets Received";
+                            throw new Exception("No Mavlink Heartbeat Packets where read from this port - Verify Baud Rate and setup\nAPM Planner waits for 2 valid heartbeat packets before connecting");
+                        }
                     }
 
                     System.Threading.Thread.Sleep(1);
@@ -328,11 +338,9 @@ namespace ArdupilotMega
                     if (buffer1.Length == 0)
                         buffer1 = getHeartBeat();
 
-                    try
-                    {
-                        log.Debug("MAv Data: len " + buffer.Length + " btr " + BaseStream.BytesToRead);
-                    }
-                    catch { }
+
+                    if (buffer.Length > 0 || buffer1.Length > 0)
+                        hbseen = true;
 
                     count++;
 
@@ -356,8 +364,6 @@ namespace ArdupilotMega
 
                 countDown.Stop();
 
-                //                if (Progress != null)
-                //                    Progress(-1, "Getting Params.. (sysid " + sysid + " compid " + compid + ") ");
                 frmProgressReporter.UpdateProgressAndStatus(0, "Getting Params.. (sysid " + sysid + " compid " + compid + ") ");
 
                 if (getparams)
@@ -379,8 +385,6 @@ namespace ArdupilotMega
                 }
                 catch { }
                 MainV2.giveComport = false;
-                //                if (Progress != null)
-                //                    Progress(-1, "Connect Failed\n" + e.Message);
                 if (string.IsNullOrEmpty(progressWorkerEventArgs.ErrorMessage))
                     progressWorkerEventArgs.ErrorMessage = "Connect Failed";
                 throw e;
@@ -497,7 +501,7 @@ namespace ArdupilotMega
             {
                 lock (objlock)
                 {
-                    BaseStream.Write(packet, 0, i);
+                        BaseStream.Write(packet, 0, i);
                 }
                 _bytesSentSubj.OnNext(i);
             }
@@ -690,7 +694,7 @@ namespace ArdupilotMega
 
             int retrys = 6;
             int param_count = 0;
-            int param_total = 5;
+            int param_total = 1;
 
         goagain:
 
@@ -706,6 +710,7 @@ namespace ArdupilotMega
             DateTime lastmessage = DateTime.MinValue;
 
             //hires.Stopwatch stopwatch = new hires.Stopwatch();
+            int packets = 0;
 
             do
             {
@@ -730,7 +735,16 @@ namespace ArdupilotMega
                         continue;
                     }
                     MainV2.giveComport = false;
-                    throw new Exception("Timeout on read - getParamList " + got.Count + " " + param_total + "\n\nYour serial link isn't fast enough\n");
+                    if (packets > 0 && param_total == 1)
+                    {
+                        throw new Exception("Timeout on read - getParamList\n"+packets+" Packets where received, but no paramater packets where received\n");
+                    }
+                    if (packets == 0)
+                    {
+                        throw new Exception("Timeout on read - getParamList\nNo Packets where received\n");
+                    }
+                    
+                    throw new Exception("Timeout on read - getParamList\nReceived: " + got.Count + " of " + param_total + " after 6 retrys\n\nPlease Check\n1. Link Speed\n2. Link Quality\n3. Hardware hasn't hung");
                 }
 
                 //Console.WriteLine(DateTime.Now.Millisecond + " gp0 ");
@@ -739,6 +753,7 @@ namespace ArdupilotMega
                 //Console.WriteLine(DateTime.Now.Millisecond + " gp1 ");
                 if (buffer.Length > 5)
                 {
+                    packets++;
                    // stopwatch.Start();
                     if (buffer[5] == MAVLINK_MSG_ID_PARAM_VALUE)
                     {

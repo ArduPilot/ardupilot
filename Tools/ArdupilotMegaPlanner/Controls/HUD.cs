@@ -29,7 +29,7 @@ namespace ArdupilotMega.Controls
         object paintlock = new object();
         object streamlock = new object();
         MemoryStream _streamjpg = new MemoryStream();
-        [System.ComponentModel.Browsable(false)]
+        //[System.ComponentModel.Browsable(false)]
         public MemoryStream streamjpg { get { lock (streamlock) { return _streamjpg; } } set { lock (streamlock) { _streamjpg = value; } } }
         /// <summary>
         /// this is to reduce cpu usage

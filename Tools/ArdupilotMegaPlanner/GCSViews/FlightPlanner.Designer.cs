@@ -63,8 +63,6 @@
             this.panel5 = new System.Windows.Forms.Panel();
             this.BUT_write = new ArdupilotMega.Controls.MyButton();
             this.BUT_read = new ArdupilotMega.Controls.MyButton();
-            this.SaveFile = new ArdupilotMega.Controls.MyButton();
-            this.BUT_loadwpfile = new ArdupilotMega.Controls.MyButton();
             this.panel1 = new System.Windows.Forms.Panel();
             this.label4 = new System.Windows.Forms.LinkLabel();
             this.label3 = new System.Windows.Forms.Label();
@@ -84,14 +82,12 @@
             this.TXT_mousealt = new System.Windows.Forms.TextBox();
             this.TXT_mouselong = new System.Windows.Forms.TextBox();
             this.TXT_mouselat = new System.Windows.Forms.TextBox();
-            this.comboBoxMapType = new System.Windows.Forms.ComboBox();
             this.lbl_status = new System.Windows.Forms.Label();
             this.panelWaypoints = new BSE.Windows.Forms.Panel();
             this.splitter1 = new BSE.Windows.Forms.Splitter();
-            this.BUT_Camera = new ArdupilotMega.Controls.MyButton();
-            this.button1 = new ArdupilotMega.Controls.MyButton();
             this.BUT_Add = new ArdupilotMega.Controls.MyButton();
             this.panelAction = new BSE.Windows.Forms.Panel();
+            this.comboBoxMapType = new System.Windows.Forms.ComboBox();
             this.panelMap = new System.Windows.Forms.Panel();
             this.lbl_distance = new System.Windows.Forms.Label();
             this.lbl_homedist = new System.Windows.Forms.Label();
@@ -99,7 +95,6 @@
             this.MainMap = new ArdupilotMega.Controls.myGMAP();
             this.contextMenuStrip1 = new System.Windows.Forms.ContextMenuStrip(this.components);
             this.deleteWPToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
-            this.setROIToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.loiterToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.loiterForeverToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.loitertimeToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
@@ -107,6 +102,10 @@
             this.jumpToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.jumpstartToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.jumpwPToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.rTLToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.landToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.takeoffToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.setROIToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.clearMissionToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.toolStripSeparator1 = new System.Windows.Forms.ToolStripSeparator();
             this.polygonToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
@@ -129,6 +128,13 @@
             this.zoomToToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.prefetchToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.kMLOverlayToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.elevationGraphToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.cameraToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.fileLoadSaveToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.loadWPFileToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.saveWPFileToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.trackerHomeToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.flyToHereToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.trackBar1 = new ArdupilotMega.Controls.MyTrackBar();
             this.label11 = new System.Windows.Forms.Label();
             this.panelBASE = new System.Windows.Forms.Panel();
@@ -338,8 +344,6 @@
             resources.ApplyResources(this.panel5, "panel5");
             this.panel5.Controls.Add(this.BUT_write);
             this.panel5.Controls.Add(this.BUT_read);
-            this.panel5.Controls.Add(this.SaveFile);
-            this.panel5.Controls.Add(this.BUT_loadwpfile);
             this.panel5.Name = "panel5";
             // 
             // BUT_write
@@ -355,20 +359,6 @@
             this.BUT_read.Name = "BUT_read";
             this.BUT_read.UseVisualStyleBackColor = true;
             this.BUT_read.Click += new System.EventHandler(this.BUT_read_Click);
-            // 
-            // SaveFile
-            // 
-            resources.ApplyResources(this.SaveFile, "SaveFile");
-            this.SaveFile.Name = "SaveFile";
-            this.SaveFile.UseVisualStyleBackColor = true;
-            this.SaveFile.Click += new System.EventHandler(this.SaveFile_Click);
-            // 
-            // BUT_loadwpfile
-            // 
-            resources.ApplyResources(this.BUT_loadwpfile, "BUT_loadwpfile");
-            this.BUT_loadwpfile.Name = "BUT_loadwpfile";
-            this.BUT_loadwpfile.UseVisualStyleBackColor = true;
-            this.BUT_loadwpfile.Click += new System.EventHandler(this.BUT_loadwpfile_Click);
             // 
             // panel1
             // 
@@ -493,14 +483,6 @@
             resources.ApplyResources(this.TXT_mouselat, "TXT_mouselat");
             this.TXT_mouselat.Name = "TXT_mouselat";
             // 
-            // comboBoxMapType
-            // 
-            resources.ApplyResources(this.comboBoxMapType, "comboBoxMapType");
-            this.comboBoxMapType.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
-            this.comboBoxMapType.FormattingEnabled = true;
-            this.comboBoxMapType.Name = "comboBoxMapType";
-            this.toolTip1.SetToolTip(this.comboBoxMapType, resources.GetString("comboBoxMapType.ToolTip"));
-            // 
             // lbl_status
             // 
             resources.ApplyResources(this.lbl_status, "lbl_status");
@@ -509,15 +491,12 @@
             // panelWaypoints
             // 
             this.panelWaypoints.AssociatedSplitter = this.splitter1;
-            resources.ApplyResources(this.panelWaypoints, "panelWaypoints");
             this.panelWaypoints.BackColor = System.Drawing.Color.Transparent;
             this.panelWaypoints.CaptionFont = new System.Drawing.Font("Segoe UI", 11.75F, System.Drawing.FontStyle.Bold);
             this.panelWaypoints.CaptionHeight = 21;
             this.panelWaypoints.ColorScheme = BSE.Windows.Forms.ColorScheme.Custom;
-            this.panelWaypoints.Controls.Add(this.BUT_Camera);
             this.panelWaypoints.Controls.Add(this.CHK_altmode);
             this.panelWaypoints.Controls.Add(this.LBL_WPRad);
-            this.panelWaypoints.Controls.Add(this.button1);
             this.panelWaypoints.Controls.Add(this.label5);
             this.panelWaypoints.Controls.Add(this.TXT_loiterrad);
             this.panelWaypoints.Controls.Add(this.CHK_holdalt);
@@ -540,6 +519,7 @@
             this.panelWaypoints.CustomColors.ContentGradientBegin = System.Drawing.SystemColors.ButtonFace;
             this.panelWaypoints.CustomColors.ContentGradientEnd = System.Drawing.Color.FromArgb(((int)(((byte)(252)))), ((int)(((byte)(252)))), ((int)(((byte)(252)))));
             this.panelWaypoints.CustomColors.InnerBorderColor = System.Drawing.SystemColors.Window;
+            resources.ApplyResources(this.panelWaypoints, "panelWaypoints");
             this.panelWaypoints.ForeColor = System.Drawing.SystemColors.ControlText;
             this.panelWaypoints.Image = null;
             this.panelWaypoints.LinearGradientMode = System.Drawing.Drawing2D.LinearGradientMode.Vertical;
@@ -557,22 +537,6 @@
             resources.ApplyResources(this.splitter1, "splitter1");
             this.splitter1.Name = "splitter1";
             this.splitter1.TabStop = false;
-            // 
-            // BUT_Camera
-            // 
-            resources.ApplyResources(this.BUT_Camera, "BUT_Camera");
-            this.BUT_Camera.Name = "BUT_Camera";
-            this.toolTip1.SetToolTip(this.BUT_Camera, resources.GetString("BUT_Camera.ToolTip"));
-            this.BUT_Camera.UseVisualStyleBackColor = true;
-            this.BUT_Camera.Click += new System.EventHandler(this.BUT_Camera_Click);
-            // 
-            // button1
-            // 
-            resources.ApplyResources(this.button1, "button1");
-            this.button1.Name = "button1";
-            this.toolTip1.SetToolTip(this.button1, resources.GetString("button1.ToolTip"));
-            this.button1.UseVisualStyleBackColor = true;
-            this.button1.Click += new System.EventHandler(this.button1_Click);
             // 
             // BUT_Add
             // 
@@ -619,6 +583,14 @@
             this.panelAction.ToolTipTextExpandIconPanelCollapsed = null;
             this.panelAction.ToolTipTextExpandIconPanelExpanded = null;
             this.panelAction.PanelCollapsing += new System.EventHandler<BSE.Windows.Forms.XPanderStateChangeEventArgs>(this.panel4_PanelCollapsing);
+            // 
+            // comboBoxMapType
+            // 
+            resources.ApplyResources(this.comboBoxMapType, "comboBoxMapType");
+            this.comboBoxMapType.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
+            this.comboBoxMapType.FormattingEnabled = true;
+            this.comboBoxMapType.Name = "comboBoxMapType";
+            this.toolTip1.SetToolTip(this.comboBoxMapType, resources.GetString("comboBoxMapType.ToolTip"));
             // 
             // panelMap
             // 
@@ -680,15 +652,21 @@
             // 
             this.contextMenuStrip1.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {
             this.deleteWPToolStripMenuItem,
-            this.setROIToolStripMenuItem,
             this.loiterToolStripMenuItem,
             this.jumpToolStripMenuItem,
+            this.rTLToolStripMenuItem,
+            this.landToolStripMenuItem,
+            this.takeoffToolStripMenuItem,
+            this.setROIToolStripMenuItem,
             this.clearMissionToolStripMenuItem,
             this.toolStripSeparator1,
             this.polygonToolStripMenuItem,
             this.geoFenceToolStripMenuItem,
             this.autoWPToolStripMenuItem,
-            this.mapToolToolStripMenuItem});
+            this.mapToolToolStripMenuItem,
+            this.fileLoadSaveToolStripMenuItem,
+            this.trackerHomeToolStripMenuItem,
+            this.flyToHereToolStripMenuItem});
             this.contextMenuStrip1.Name = "contextMenuStrip1";
             resources.ApplyResources(this.contextMenuStrip1, "contextMenuStrip1");
             // 
@@ -697,12 +675,6 @@
             this.deleteWPToolStripMenuItem.Name = "deleteWPToolStripMenuItem";
             resources.ApplyResources(this.deleteWPToolStripMenuItem, "deleteWPToolStripMenuItem");
             this.deleteWPToolStripMenuItem.Click += new System.EventHandler(this.deleteWPToolStripMenuItem_Click);
-            // 
-            // setROIToolStripMenuItem
-            // 
-            this.setROIToolStripMenuItem.Name = "setROIToolStripMenuItem";
-            resources.ApplyResources(this.setROIToolStripMenuItem, "setROIToolStripMenuItem");
-            this.setROIToolStripMenuItem.Click += new System.EventHandler(this.setROIToolStripMenuItem_Click);
             // 
             // loiterToolStripMenuItem
             // 
@@ -750,6 +722,30 @@
             this.jumpwPToolStripMenuItem.Name = "jumpwPToolStripMenuItem";
             resources.ApplyResources(this.jumpwPToolStripMenuItem, "jumpwPToolStripMenuItem");
             this.jumpwPToolStripMenuItem.Click += new System.EventHandler(this.jumpwPToolStripMenuItem_Click);
+            // 
+            // rTLToolStripMenuItem
+            // 
+            this.rTLToolStripMenuItem.Name = "rTLToolStripMenuItem";
+            resources.ApplyResources(this.rTLToolStripMenuItem, "rTLToolStripMenuItem");
+            this.rTLToolStripMenuItem.Click += new System.EventHandler(this.rTLToolStripMenuItem_Click);
+            // 
+            // landToolStripMenuItem
+            // 
+            this.landToolStripMenuItem.Name = "landToolStripMenuItem";
+            resources.ApplyResources(this.landToolStripMenuItem, "landToolStripMenuItem");
+            this.landToolStripMenuItem.Click += new System.EventHandler(this.landToolStripMenuItem_Click);
+            // 
+            // takeoffToolStripMenuItem
+            // 
+            this.takeoffToolStripMenuItem.Name = "takeoffToolStripMenuItem";
+            resources.ApplyResources(this.takeoffToolStripMenuItem, "takeoffToolStripMenuItem");
+            this.takeoffToolStripMenuItem.Click += new System.EventHandler(this.takeoffToolStripMenuItem_Click);
+            // 
+            // setROIToolStripMenuItem
+            // 
+            this.setROIToolStripMenuItem.Name = "setROIToolStripMenuItem";
+            resources.ApplyResources(this.setROIToolStripMenuItem, "setROIToolStripMenuItem");
+            this.setROIToolStripMenuItem.Click += new System.EventHandler(this.setROIToolStripMenuItem_Click);
             // 
             // clearMissionToolStripMenuItem
             // 
@@ -847,6 +843,7 @@
             // 
             this.createWpCircleToolStripMenuItem.Name = "createWpCircleToolStripMenuItem";
             resources.ApplyResources(this.createWpCircleToolStripMenuItem, "createWpCircleToolStripMenuItem");
+            this.createWpCircleToolStripMenuItem.Click += new System.EventHandler(this.createWpCircleToolStripMenuItem_Click);
             // 
             // gridToolStripMenuItem
             // 
@@ -861,7 +858,9 @@
             this.rotateMapToolStripMenuItem,
             this.zoomToToolStripMenuItem,
             this.prefetchToolStripMenuItem,
-            this.kMLOverlayToolStripMenuItem});
+            this.kMLOverlayToolStripMenuItem,
+            this.elevationGraphToolStripMenuItem,
+            this.cameraToolStripMenuItem});
             this.mapToolToolStripMenuItem.Name = "mapToolToolStripMenuItem";
             resources.ApplyResources(this.mapToolToolStripMenuItem, "mapToolToolStripMenuItem");
             // 
@@ -869,11 +868,13 @@
             // 
             this.ContextMeasure.Name = "ContextMeasure";
             resources.ApplyResources(this.ContextMeasure, "ContextMeasure");
+            this.ContextMeasure.Click += new System.EventHandler(this.ContextMeasure_Click);
             // 
             // rotateMapToolStripMenuItem
             // 
             this.rotateMapToolStripMenuItem.Name = "rotateMapToolStripMenuItem";
             resources.ApplyResources(this.rotateMapToolStripMenuItem, "rotateMapToolStripMenuItem");
+            this.rotateMapToolStripMenuItem.Click += new System.EventHandler(this.rotateMapToolStripMenuItem_Click);
             // 
             // zoomToToolStripMenuItem
             // 
@@ -892,6 +893,49 @@
             this.kMLOverlayToolStripMenuItem.Name = "kMLOverlayToolStripMenuItem";
             resources.ApplyResources(this.kMLOverlayToolStripMenuItem, "kMLOverlayToolStripMenuItem");
             this.kMLOverlayToolStripMenuItem.Click += new System.EventHandler(this.kMLOverlayToolStripMenuItem_Click);
+            // 
+            // elevationGraphToolStripMenuItem
+            // 
+            this.elevationGraphToolStripMenuItem.Name = "elevationGraphToolStripMenuItem";
+            resources.ApplyResources(this.elevationGraphToolStripMenuItem, "elevationGraphToolStripMenuItem");
+            this.elevationGraphToolStripMenuItem.Click += new System.EventHandler(this.elevationGraphToolStripMenuItem_Click);
+            // 
+            // cameraToolStripMenuItem
+            // 
+            this.cameraToolStripMenuItem.Name = "cameraToolStripMenuItem";
+            resources.ApplyResources(this.cameraToolStripMenuItem, "cameraToolStripMenuItem");
+            this.cameraToolStripMenuItem.Click += new System.EventHandler(this.cameraToolStripMenuItem_Click);
+            // 
+            // fileLoadSaveToolStripMenuItem
+            // 
+            this.fileLoadSaveToolStripMenuItem.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] {
+            this.loadWPFileToolStripMenuItem,
+            this.saveWPFileToolStripMenuItem});
+            this.fileLoadSaveToolStripMenuItem.Name = "fileLoadSaveToolStripMenuItem";
+            resources.ApplyResources(this.fileLoadSaveToolStripMenuItem, "fileLoadSaveToolStripMenuItem");
+            // 
+            // loadWPFileToolStripMenuItem
+            // 
+            this.loadWPFileToolStripMenuItem.Name = "loadWPFileToolStripMenuItem";
+            resources.ApplyResources(this.loadWPFileToolStripMenuItem, "loadWPFileToolStripMenuItem");
+            this.loadWPFileToolStripMenuItem.Click += new System.EventHandler(this.loadWPFileToolStripMenuItem_Click);
+            // 
+            // saveWPFileToolStripMenuItem
+            // 
+            this.saveWPFileToolStripMenuItem.Name = "saveWPFileToolStripMenuItem";
+            resources.ApplyResources(this.saveWPFileToolStripMenuItem, "saveWPFileToolStripMenuItem");
+            this.saveWPFileToolStripMenuItem.Click += new System.EventHandler(this.saveWPFileToolStripMenuItem_Click);
+            // 
+            // trackerHomeToolStripMenuItem
+            // 
+            this.trackerHomeToolStripMenuItem.Name = "trackerHomeToolStripMenuItem";
+            resources.ApplyResources(this.trackerHomeToolStripMenuItem, "trackerHomeToolStripMenuItem");
+            this.trackerHomeToolStripMenuItem.Click += new System.EventHandler(this.trackerHomeToolStripMenuItem_Click);
+            // 
+            // flyToHereToolStripMenuItem
+            // 
+            this.flyToHereToolStripMenuItem.Name = "flyToHereToolStripMenuItem";
+            resources.ApplyResources(this.flyToHereToolStripMenuItem, "flyToHereToolStripMenuItem");
             // 
             // trackBar1
             // 
@@ -959,7 +1003,6 @@
 
         #endregion
 
-        private ArdupilotMega.Controls.MyButton SaveFile;
         private ArdupilotMega.Controls.MyButton BUT_read;
         private ArdupilotMega.Controls.MyButton BUT_write;
         private System.Windows.Forms.Panel panel5;
@@ -982,8 +1025,6 @@
         private System.Windows.Forms.TextBox TXT_mousealt;
         private System.Windows.Forms.TextBox TXT_mouselong;
         private System.Windows.Forms.TextBox TXT_mouselat;
-        private ArdupilotMega.Controls.MyButton BUT_loadwpfile;
-        private System.Windows.Forms.ComboBox comboBoxMapType;
         private System.Windows.Forms.Label lbl_status;
         private System.Windows.Forms.DataGridView Commands;
         private System.Windows.Forms.CheckBox CHK_geheight;
@@ -995,7 +1036,6 @@
         private System.Windows.Forms.TextBox TXT_loiterrad;
         private System.Windows.Forms.Label label5;
         private System.Windows.Forms.CheckBox CHK_holdalt;
-        private ArdupilotMega.Controls.MyButton button1;
         private System.Windows.Forms.CheckBox CHK_altmode;
         private BSE.Windows.Forms.Panel panelWaypoints;
         private BSE.Windows.Forms.Panel panelAction;
@@ -1023,7 +1063,6 @@
         private System.Windows.Forms.ToolStripMenuItem jumpwPToolStripMenuItem;
         private System.Windows.Forms.ToolStripSeparator toolStripSeparator1;
         private System.Windows.Forms.ToolStripMenuItem deleteWPToolStripMenuItem;
-        private ArdupilotMega.Controls.MyButton BUT_Camera;
         private System.Windows.Forms.DataGridViewComboBoxColumn Command;
         private System.Windows.Forms.DataGridViewTextBoxColumn Param1;
         private System.Windows.Forms.DataGridViewTextBoxColumn Param2;
@@ -1054,5 +1093,16 @@
         private System.Windows.Forms.ToolStripMenuItem zoomToToolStripMenuItem;
         private System.Windows.Forms.ToolStripMenuItem prefetchToolStripMenuItem;
         private System.Windows.Forms.ToolStripMenuItem kMLOverlayToolStripMenuItem;
+        private System.Windows.Forms.ToolStripMenuItem elevationGraphToolStripMenuItem;
+        private System.Windows.Forms.ToolStripMenuItem cameraToolStripMenuItem;
+        private System.Windows.Forms.ToolStripMenuItem rTLToolStripMenuItem;
+        private System.Windows.Forms.ToolStripMenuItem landToolStripMenuItem;
+        private System.Windows.Forms.ToolStripMenuItem takeoffToolStripMenuItem;
+        private System.Windows.Forms.ComboBox comboBoxMapType;
+        private System.Windows.Forms.ToolStripMenuItem fileLoadSaveToolStripMenuItem;
+        private System.Windows.Forms.ToolStripMenuItem loadWPFileToolStripMenuItem;
+        private System.Windows.Forms.ToolStripMenuItem saveWPFileToolStripMenuItem;
+        private System.Windows.Forms.ToolStripMenuItem trackerHomeToolStripMenuItem;
+        private System.Windows.Forms.ToolStripMenuItem flyToHereToolStripMenuItem;
     }
 }

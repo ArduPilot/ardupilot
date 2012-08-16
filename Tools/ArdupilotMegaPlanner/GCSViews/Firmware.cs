@@ -416,7 +416,7 @@ namespace ArdupilotMega.GCSViews
                 // Create a request using a URL that can receive a post. 
                 HttpWebRequest request = (HttpWebRequest)HttpWebRequest.Create("http://vps.oborne.me/axs/ax.pl?" + (string)temp);
                 //request.AllowAutoRedirect = true;
-                request.UserAgent = MainV2.instance.Text + " (res" + MainV2.instance.Width + "x" + MainV2.instance.Height + "; " + Environment.OSVersion.VersionString + ")";
+                request.UserAgent = MainV2.instance.Text + " (res" + Screen.PrimaryScreen.Bounds.Width + "x" + Screen.PrimaryScreen.Bounds.Height + "; " + Environment.OSVersion.VersionString + "; cores " + Environment.ProcessorCount + ")";
                 request.Timeout = 10000;
                 // Set the Method property of the request to POST.
                 request.Method = "GET";

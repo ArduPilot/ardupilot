@@ -47,6 +47,7 @@
             this.BUT_flashdl = new ArdupilotMega.Controls.MyButton();
             this.BUT_wipeeeprom = new ArdupilotMega.Controls.MyButton();
             this.button1 = new ArdupilotMega.Controls.MyButton();
+            this.myButton1 = new ArdupilotMega.Controls.MyButton();
             this.SuspendLayout();
             // 
             // label1
@@ -234,11 +235,22 @@
             this.button1.UseVisualStyleBackColor = true;
             this.button1.Click += new System.EventHandler(this.button1_Click);
             // 
+            // myButton1
+            // 
+            this.myButton1.Location = new System.Drawing.Point(542, 127);
+            this.myButton1.Name = "myButton1";
+            this.myButton1.Size = new System.Drawing.Size(75, 23);
+            this.myButton1.TabIndex = 21;
+            this.myButton1.Text = "MD";
+            this.myButton1.UseVisualStyleBackColor = true;
+            this.myButton1.Click += new System.EventHandler(this.myButton1_Click);
+            // 
             // temp
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(685, 285);
+            this.Controls.Add(this.myButton1);
             this.Controls.Add(this.BUT_paramgen);
             this.Controls.Add(this.BUT_follow_me);
             this.Controls.Add(this.BUT_georefimage);
@@ -287,5 +299,6 @@
         private ArdupilotMega.Controls.MyButton BUT_georefimage;
         private ArdupilotMega.Controls.MyButton BUT_follow_me;
         private Controls.MyButton BUT_paramgen;
+        private Controls.MyButton myButton1;
     }
 }
