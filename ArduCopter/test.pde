@@ -19,7 +19,7 @@ static int8_t	test_ins(uint8_t argc, 			const Menu::arg *argv);
 //static int8_t	test_stab_d(uint8_t argc, 		const Menu::arg *argv);
 static int8_t	test_battery(uint8_t argc, 		const Menu::arg *argv);
 //static int8_t	test_toy(uint8_t argc, 		const Menu::arg *argv);
-//static int8_t	test_wp_nav(uint8_t argc, 		const Menu::arg *argv);
+static int8_t	test_wp_nav(uint8_t argc, 		const Menu::arg *argv);
 //static int8_t	test_reverse(uint8_t argc, 		const Menu::arg *argv);
 static int8_t	test_tuning(uint8_t argc, 		const Menu::arg *argv);
 static int8_t	test_relay(uint8_t argc,	 	const Menu::arg *argv);
@@ -88,7 +88,7 @@ const struct Menu::command test_menu_commands[] PROGMEM = {
 //	{"rawgps",		test_rawgps},
 //	{"mission",		test_mission},
 	//{"reverse",		test_reverse},
-	//{"wp",			test_wp_nav},
+	{"nav",			test_wp_nav},
 };
 
 // A Macro to create the Menu
@@ -1235,6 +1235,20 @@ test_optflow(uint8_t argc, const Menu::arg *argv)
 	#endif
 }
 
+
+static int8_t
+test_wp_nav(uint8_t argc, const Menu::arg *argv)
+{
+	current_loc.lat = 389539260;
+	current_loc.lng = -1199540200;
+
+	next_WP.lat = 389538528;
+	next_WP.lng = -1199541248;
+
+	// got 235;, should be 228
+	navigate();
+	Serial.printf("bear: %ld\n", target_bearing);
+}
 
 /*
   test the dataflash is working
