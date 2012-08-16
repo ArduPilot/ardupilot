@@ -358,7 +358,7 @@ static void set_servos(void)
 			*/
 			if (
 					(control_mode == CIRCLE || control_mode >= FLY_BY_WIRE_B) &&
-					(abs(home.alt - current_loc.alt) < 1000) &&
+					(labs(home.alt - current_loc.alt) < 1000) &&
 					((airspeed.use()? airspeed.get_airspeed_cm() : g_gps->ground_speed) < 500 ) &&
 					!(control_mode==AUTO && takeoff_complete == false)
 				) {

@@ -117,7 +117,7 @@ void
 Navigation::calc_long_scaling(int32_t lat)
 {
 	// this is used to offset the shrinking longitude as we go towards the poles	
-	float rads 			= (abs(lat) / T7) * 0.0174532925;
+	float rads 			= (fabs(lat) / T7) * 0.0174532925;
 	_scaleLongDown 		= cos(rads);
 	_scaleLongUp 		= 1.0f / cos(rads);
 }
