@@ -13,6 +13,9 @@ static bool mavlink_active;
 // check if a message will fit in the payload space available
 #define CHECK_PAYLOAD_SIZE(id) if (payload_space < MAVLINK_MSG_ID_## id ##_LEN) return false
 
+// prototype this for use inside the GCS class
+void gcs_send_text_fmt(const prog_char_t *fmt, ...);
+
 /*
   !!NOTE!!
 
@@ -1252,6 +1255,36 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
             _queued_parameter = AP_Param::first(&_queued_parameter_token, &_queued_parameter_type);
             _queued_parameter_index = 0;
             _queued_parameter_count = _count_parameters();
+            break;
+        }
+
+    case MAVLINK_MSG_ID_PARAM_REQUEST_READ:
+        {
+            // decode
+            mavlink_param_request_read_t packet;
+            mavlink_msg_param_request_read_decode(msg, &packet);
+            if (mavlink_check_target(packet.target_system,packet.target_component)) break;
+            if (packet.param_index != -1) {
+                gcs_send_text_P(SEVERITY_LOW, PSTR("Param by index not supported"));
+                break;
+            }
+
+            enum ap_var_type p_type;
+            AP_Param *vp = AP_Param::find(packet.param_id, &p_type);
+            if (vp == NULL) {
+                gcs_send_text_fmt(PSTR("Unknown parameter %s"), packet.param_id);
+                break;
+            }
+            char param_name[ONBOARD_PARAM_NAME_LENGTH];
+            vp->copy_name(param_name, sizeof(param_name), true);
+
+            float value = vp->cast_to_float(p_type);
+            mavlink_msg_param_value_send(
+                chan,
+                param_name,
+                value,
+                mav_var_type(p_type),
+                -1, -1);
             break;
         }
 
