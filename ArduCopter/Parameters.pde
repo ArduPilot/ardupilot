@@ -385,7 +385,7 @@ static void load_parameters(void)
 		default_dead_zones();
 		Serial.println_P(PSTR("done."));
 	} else {
-		unsigned long before = micros();
+		uint32_t before = micros();
 		// Load all auto-loaded EEPROM variables
 		AP_Param::load_all();
 

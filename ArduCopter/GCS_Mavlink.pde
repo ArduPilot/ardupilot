@@ -468,7 +468,7 @@ static void NOINLINE send_statustext(mavlink_channel_t chan)
 // try to send a message, return false if it won't fit in the serial tx buffer
 static bool mavlink_try_send_message(mavlink_channel_t chan, enum ap_message id, uint16_t packet_drops)
 {
-    int payload_space = comm_get_txspace(chan) - MAVLINK_NUM_NON_PAYLOAD_BYTES;
+    int16_t payload_space = comm_get_txspace(chan) - MAVLINK_NUM_NON_PAYLOAD_BYTES;
 
     if (chan == MAVLINK_COMM_1 && millis() < MAVLINK_TELEMETRY_PORT_DELAY) {
         // defer any messages on the telemetry port for 1 second after
@@ -941,7 +941,7 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
 			if (mavlink_check_target(packet.target_system, packet.target_component))
 				break;
 
-			int freq = 0; // packet frequency
+			int16_t freq = 0; // packet frequency
 
 			if (packet.start_stop == 0)
 				freq = 0; // stop sending
@@ -1334,7 +1334,7 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
 			g.command_total.set_and_save(1);
 
 			// send acknowledgement 3 times to makes sure it is received
-			for (int i=0;i<3;i++)
+			for (int16_t i=0;i<3;i++)
 				mavlink_msg_mission_ack_send(chan, msg->sysid, msg->compid, type);
 
 			break;

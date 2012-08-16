@@ -88,7 +88,7 @@ static void calc_location_error(struct Location *next_loc)
 
 #define NAV_ERR_MAX 600
 #define NAV_RATE_ERR_MAX 250
-static void calc_loiter(int x_error, int y_error)
+static void calc_loiter(int16_t x_error, int16_t y_error)
 {
 	int32_t p,i,d;						// used to capture pid values for logging
 	int32_t output;

@@ -62,10 +62,10 @@ MENU2(log_menu, "Log", log_menu_commands, print_log_menu);
 static bool
 print_log_menu(void)
 {
-	int log_start;
-	int log_end;
-	int temp;
-	int last_log_num = DataFlash.find_last_log();
+	int16_t log_start;
+	int16_t log_end;
+	int16_t temp;
+	int16_t last_log_num = DataFlash.find_last_log();
 
 	uint16_t num_logs = DataFlash.get_num_logs();
 
@@ -95,8 +95,8 @@ print_log_menu(void)
 	}else{
 		Serial.printf_P(PSTR("\n%u logs\n"), (unsigned)num_logs);
 
-		for(int i=num_logs;i>=1;i--) {
-            int last_log_start = log_start, last_log_end = log_end;
+		for(int16_t i=num_logs;i>=1;i--) {
+            int16_t last_log_start = log_start, last_log_end = log_end;
 			temp = last_log_num-i+1;
 			DataFlash.get_log_boundaries(temp, log_start, log_end);
 			Serial.printf_P(PSTR("Log %d,    start %d,   end %d\n"), temp, log_start, log_end);
@@ -113,9 +113,9 @@ print_log_menu(void)
 static int8_t
 dump_log(uint8_t argc, const Menu::arg *argv)
 {
-	int dump_log;
-	int dump_log_start;
-	int dump_log_end;
+	int16_t dump_log;
+	int16_t dump_log_start;
+	int16_t dump_log_end;
 	byte last_log_num;
 
 	// check that the requested log number can be read
@@ -316,7 +316,7 @@ static void Log_Read_Raw()
 	/*
 	float logvar;
 	Serial.printf_P(PSTR("RAW,"));
-	for (int y = 0; y < 9; y++) {
+	for (int16_t y = 0; y < 9; y++) {
 		logvar = get_float(DataFlash.ReadLong());
 		Serial.print(logvar);
 		Serial.print(", ");
@@ -366,7 +366,7 @@ static void Log_Read_Raw()
 {
 	float logvar;
 	Serial.printf_P(PSTR("RAW,"));
-	for (int y = 0; y < 6; y++) {
+	for (int16_t y = 0; y < 6; y++) {
 		logvar = get_float(DataFlash.ReadLong());
 		Serial.print(logvar);
 		Serial.print(", ");
@@ -731,9 +731,9 @@ static void Log_Read_Cmd()
 	int8_t temp3 	= DataFlash.ReadByte();
 	int8_t temp4 	= DataFlash.ReadByte();
 	int8_t temp5 	= DataFlash.ReadByte();
-	long   temp6 	= DataFlash.ReadLong();
-	long   temp7 	= DataFlash.ReadLong();
-	long   temp8 	= DataFlash.ReadLong();
+	int32_t temp6 	= DataFlash.ReadLong();
+	int32_t temp7 	= DataFlash.ReadLong();
+	int32_t temp8 	= DataFlash.ReadLong();
 
 							//  1   2    3   4   5   6   7    8
 	Serial.printf_P(PSTR( "CMD, %d, %d, %d, %d, %d, %ld, %ld, %ld\n"),
@@ -900,9 +900,9 @@ static void Log_Read_PID()
 }
 
 // Read the DataFlash log memory
-static void Log_Read(int start_page, int end_page)
+static void Log_Read(int16_t start_page, int16_t end_page)
 {
-	int packet_count = 0;
+	int16_t packet_count = 0;
 
 	#ifdef AIRFRAME_NAME
 		Serial.printf_P(PSTR((AIRFRAME_NAME)
@@ -923,12 +923,12 @@ static void Log_Read(int start_page, int end_page)
 }
 
 // Read the DataFlash log memory : Packet Parser
-static int Log_Read_Process(int start_page, int end_page)
+static int16_t Log_Read_Process(int16_t start_page, int16_t end_page)
 {
 	byte data;
 	byte log_step 		= 0;
-	int page 			= start_page;
-	int packet_count = 0;
+	int16_t page 			= start_page;
+	int16_t packet_count = 0;
 
 	DataFlash.StartRead(start_page);
 
@@ -1031,7 +1031,7 @@ static int Log_Read_Process(int start_page, int end_page)
 
 static void Log_Write_Startup() {}
 static void Log_Read_Startup() {}
-static void Log_Read(int start_page, int end_page) {}
+static void Log_Read(int16_t start_page, int16_t end_page) {}
 static void Log_Write_Cmd(byte num, struct Location *wp) {}
 static void Log_Write_Mode(byte mode) {}
 static void Log_Write_Raw() {}

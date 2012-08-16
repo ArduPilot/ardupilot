@@ -906,8 +906,6 @@ static byte 			medium_loopCounter;
 static byte 			slow_loopCounter;
 // Counters for branching at 1 hz
 static byte				counter_one_herz;
-// Stat machine counter for Simple Mode
-static byte				simple_counter;
 // used to track the elapsed time between GPS reads
 static uint32_t         nav_loopTimer;
 // Delta Time in milliseconds for navigation computations, updated with every good GPS read
@@ -1609,7 +1607,7 @@ void update_yaw_mode(void)
 
 void update_roll_pitch_mode(void)
 {
-	int control_roll, control_pitch;
+	int16_t control_roll, control_pitch;
 
 	if (do_flip){
 		if(abs(g.rc_1.control_in) < 4000){
@@ -1719,13 +1717,14 @@ void update_roll_pitch_mode(void)
 // new radio frame is used to make sure we only call this at 50hz
 void update_simple_mode(void)
 {
+	static byte simple_counter = 0;		// State machine counter for Simple Mode
 	static float simple_sin_y=0, simple_cos_x=0;
 
 	// used to manage state machine
 	// which improves speed of function
 	simple_counter++;
 
-	int delta = wrap_360(ahrs.yaw_sensor - initial_simple_bearing)/100;
+	int16_t delta = wrap_360(ahrs.yaw_sensor - initial_simple_bearing)/100;
 
 	if (simple_counter == 1){
 		// roll
@@ -1738,8 +1737,8 @@ void update_simple_mode(void)
 	}
 
 	// Rotate input by the initial bearing
-	int control_roll 	= g.rc_1.control_in * simple_cos_x + g.rc_2.control_in * simple_sin_y;
-	int control_pitch 	= -(g.rc_1.control_in * simple_sin_y - g.rc_2.control_in * simple_cos_x);
+	int16_t control_roll 	= g.rc_1.control_in * simple_cos_x + g.rc_2.control_in * simple_sin_y;
+	int16_t control_pitch 	= -(g.rc_1.control_in * simple_sin_y - g.rc_2.control_in * simple_cos_x);
 
 	g.rc_1.control_in = control_roll;
 	g.rc_2.control_in = control_pitch;
@@ -2089,7 +2088,7 @@ static void update_altitude()
 	#if HIL_MODE == HIL_MODE_ATTITUDE
 		static int32_t 	old_baro_alt 	= 0;
 		// we are in the SIM, fake out the baro and Sonar
-		int fake_relative_alt = g_gps->altitude - gps_base_alt;
+		int16_t fake_relative_alt = g_gps->altitude - gps_base_alt;
 		baro_alt			= fake_relative_alt;
 		sonar_alt			= fake_relative_alt;
 
@@ -2109,14 +2108,14 @@ static void update_altitude()
 		// calc the vertical accel rate
 		/*
 		// 2.6 way
-		int temp			= (baro_alt - old_baro_alt) * 10;
+		int16_t temp			= (baro_alt - old_baro_alt) * 10;
 		baro_rate 			= (temp + baro_rate) >> 1;
 		baro_rate			= constrain(baro_rate, -300, 300);
 		old_baro_alt		= baro_alt;
 		*/
 
 		// Using Tridge's new clamb rate calc
-		int temp			= barometer.get_climb_rate() * 100;
+		int16_t temp			= barometer.get_climb_rate() * 100;
 		baro_rate 			= (temp + baro_rate) >> 1;
 		baro_rate			= constrain(baro_rate, -300, 300);
 		#endif
@@ -2382,7 +2381,7 @@ static void update_nav_wp()
 	}else if(wp_control == CIRCLE_MODE){
 
 		// check if we have missed the WP
-		int loiter_delta = (target_bearing - old_target_bearing)/100;
+		int16_t loiter_delta = (target_bearing - old_target_bearing)/100;
 
 		// reset the old value
 		old_target_bearing = target_bearing;
@@ -2396,7 +2395,7 @@ static void update_nav_wp()
 
 		// create a virtual waypoint that circles the next_WP
 		// Count the degrees we have circulated the WP
-		//int circle_angle = wrap_360(target_bearing + 3000 + 18000) / 100;
+		//int16_t circle_angle = wrap_360(target_bearing + 3000 + 18000) / 100;
 
 		circle_angle += (circle_rate * dTnav);
 		//1° = 0.0174532925 radians
@@ -2423,9 +2422,9 @@ static void update_nav_wp()
 		//CIRCLE: angle:29, dist:0, lat:400, lon:242
 
 		// debug
-		//int angleTest = degrees(circle_angle);
-		//int nroll = nav_roll;
-		//int npitch = nav_pitch;
+		//int16_t angleTest = degrees(circle_angle);
+		//int16_t nroll = nav_roll;
+		//int16_t npitch = nav_pitch;
 		//Serial.printf("CIRCLE: angle:%d, dist:%d, X:%d, Y:%d, P:%d, R:%d  \n", angleTest, (int)wp_distance , (int)long_error, (int)lat_error, npitch, nroll);
 
 	}else if(wp_control == WP_MODE){

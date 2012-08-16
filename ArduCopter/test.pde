@@ -256,7 +256,7 @@ test_radio(uint8_t argc, const Menu::arg *argv)
 	#if THROTTLE_FAILSAFE
 	byte fail_test;
 	print_hit_enter();
-	for(int i = 0; i < 50; i++){
+	for(int16_t i = 0; i < 50; i++){
 		delay(20);
 		read_radio();
 	}
@@ -409,7 +409,7 @@ test_radio(uint8_t argc, const Menu::arg *argv)
   delay(50);
 
 	while(1){
-		for(int i = 0; i < 9; i++){
+		for(int16_t i = 0; i < 9; i++){
 			Serial.printf_P(PSTR("%.1f,"),adc.Ch(i));
 		}
 		Serial.println();
@@ -511,13 +511,13 @@ test_ins(uint8_t argc, const Menu::arg *argv)
 
 			Serial.printf_P(PSTR("g"));
 
-			for (int i = 0; i < 3; i++) {
+			for (int16_t i = 0; i < 3; i++) {
 				Serial.printf_P(PSTR(" %7.4f"), gyro[i]);
 			}
 
 			Serial.printf_P(PSTR(" a"));
 
-			for (int i = 0; i < 3; i++) {
+			for (int16_t i = 0; i < 3; i++) {
 				Serial.printf_P(PSTR(" %7.4f"),accel[i]);
 			}
 
@@ -624,7 +624,7 @@ test_imu(uint8_t argc, const Menu::arg *argv)
 		//Serial.println();
 		if(Serial.available() > 0){
 			Serial.printf_P(PSTR("Y to save\n"));
-			int c;
+			int16_t c;
 			c = Serial.read();
 
 			do {
@@ -823,9 +823,9 @@ test_stab_d(uint8_t argc, const Menu::arg *argv)
 							temp.b.x, temp.b.y, temp.b.z,
 							temp.c.x, temp.c.y, temp.c.z);
 
-		int _pitch 		= degrees(-asin(temp.c.x));
-		int _roll 		= degrees(atan2(temp.c.y, temp.c.z));
-		int _yaw 		= degrees(atan2(temp.b.x, temp.a.x));
+		int16_t _pitch 		= degrees(-asin(temp.c.x));
+		int16_t _roll 		= degrees(atan2(temp.c.y, temp.c.z));
+		int16_t _yaw 		= degrees(atan2(temp.b.x, temp.a.x));
 		Serial.printf_P(PSTR(	"angles\n"
 								"%d \t %d \t %d\n\n"),
 								_pitch,

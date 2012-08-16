@@ -36,12 +36,12 @@ union f_out{
 
 union i_out {
 	byte bytes[2];
-	int value;
+	int16_t value;
 } intOut;
 
 union l_out{
 	byte bytes[4];
-	long value;
+	int32_t value;
 } longOut;
 
 // Add binary values to the buffer
@@ -50,7 +50,7 @@ void write_byte(byte val)
 	mess_buffer[buff_pointer++] = val;
 }
 
-void write_int(int val )
+void write_int(int16_t val )
 {
 	intOut.value = val;
 	mess_buffer[buff_pointer++] = intOut.bytes[0];
@@ -66,7 +66,7 @@ void write_float(float val)
 	mess_buffer[buff_pointer++] = floatOut.bytes[3];
 }
 
-void write_long(long val)
+void write_long(int32_t val)
 {
 	longOut.value = val;
 	mess_buffer[buff_pointer++] = longOut.bytes[0];

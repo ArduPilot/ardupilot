@@ -116,7 +116,7 @@ setup_show(uint8_t argc, const Menu::arg *argv)
 static int8_t
 setup_factory(uint8_t argc, const Menu::arg *argv)
 {
-	int c;
+	int16_t c;
 
 	Serial.printf_P(PSTR("\n'Y' = factory reset, any other key to abort:\n"));
 
@@ -525,10 +525,10 @@ setup_heli(uint8_t argc, const Menu::arg *argv)
 {
 
 	uint8_t active_servo = 0;
-	int value = 0;
-	int temp;
-	int state = 0;   // 0 = set rev+pos, 1 = capture min/max
-	int max_roll=0, max_pitch=0, min_collective=0, max_collective=0, min_tail=0, max_tail=0;
+	int16_t value = 0;
+	int16_t temp;
+	int16_t state = 0;   // 0 = set rev+pos, 1 = capture min/max
+	int16_t max_roll=0, max_pitch=0, min_collective=0, max_collective=0, min_tail=0, max_tail=0;
 
 	// initialise swash plate
 	motors.init_swash();
@@ -786,8 +786,8 @@ setup_mag_offset(uint8_t argc, const Menu::arg *argv)
 	print_hit_enter();
 	init_compass();
 
-	int _min[3] = {0,0,0};
-	int _max[3] = {0,0,0};
+	int16_t _min[3] = {0,0,0};
+	int16_t _max[3] = {0,0,0};
 
 	compass.read();
 
@@ -973,7 +973,7 @@ static void report_flight_modes()
 	Serial.printf_P(PSTR("Flight modes\n"));
 	print_divider();
 
-	for(int i = 0; i < 6; i++ ){
+	for(int16_t i = 0; i < 6; i++ ){
 		print_switch(i, flight_modes[i], (g.simple_modes & (1<<i)));
 	}
 	print_blanks(2);
@@ -1085,7 +1085,7 @@ static void zero_eeprom(void)
 
 	Serial.printf_P(PSTR("\nErasing EEPROM\n"));
 
-	for (int i = 0; i < EEPROM_MAX_ADDR; i++) {
+	for (int16_t i = 0; i < EEPROM_MAX_ADDR; i++) {
 		eeprom_write_byte((uint8_t *) i, b);
 	}
 
@@ -1113,7 +1113,7 @@ print_gyro_offsets(void)
 #if FRAME_CONFIG == HELI_FRAME
 
 static RC_Channel *
-heli_get_servo(int servo_num){
+heli_get_servo(int16_t servo_num){
 	if( servo_num == CH_1 )
 	    return motors._servo_1;
 	if( servo_num == CH_2 )
@@ -1126,7 +1126,7 @@ heli_get_servo(int servo_num){
 }
 
 // Used to read integer values from the serial port
-static int read_num_from_serial() {
+static int16_t read_num_from_serial() {
 	byte index = 0;
 	byte timeout = 0;
 	char data[5] = "";
@@ -1149,7 +1149,7 @@ static int read_num_from_serial() {
 #endif // CLI_ENABLED
 
 static void
-print_blanks(int num)
+print_blanks(int16_t num)
 {
 	while(num > 0){
 		num--;
