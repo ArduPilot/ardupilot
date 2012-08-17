@@ -20,21 +20,21 @@
 
 class AP_ADC_ADS7844 : public AP_ADC
 {
-	public:
-	AP_ADC_ADS7844();  // Constructor
-	void Init( AP_PeriodicProcess * scheduler );
+public:
+    AP_ADC_ADS7844();      // Constructor
+    void                Init( AP_PeriodicProcess * scheduler );
 
-	// Read 1 sensor value
-	float Ch(unsigned char ch_num);
+    // Read 1 sensor value
+    float               Ch(unsigned char ch_num);
 
-	// Read 6 sensors at once
-	uint32_t Ch6(const uint8_t *channel_numbers, float *result);
+    // Read 6 sensors at once
+    uint32_t            Ch6(const uint8_t *channel_numbers, float *result);
 
     // check if Ch6 would block
-	bool new_data_available(const uint8_t *channel_numbers);
+    bool                new_data_available(const uint8_t *channel_numbers);
 
-	private:
-	static void read(uint32_t);
+private:
+    static void         read(uint32_t);
 
 };
 
