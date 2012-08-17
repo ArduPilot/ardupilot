@@ -18,9 +18,9 @@
 
 #include <inttypes.h>
 
-#define MENU_COMMANDLINE_MAX	32	///< maximum input line length
-#define MENU_ARGS_MAX			4	///< maximum number of arguments
-#define MENU_COMMAND_MAX		14	///< maximum size of a command name
+#define MENU_COMMANDLINE_MAX    32      ///< maximum input line length
+#define MENU_ARGS_MAX                   4       ///< maximum number of arguments
+#define MENU_COMMAND_MAX                14      ///< maximum size of a command name
 
 /// Class defining and handling one menu tree
 class Menu {
@@ -35,9 +35,9 @@ public:
     /// the inputs to your function.
     ///
     struct arg {
-        const char	*str;			///< string form of the argument
-        long		i;				///< integer form of the argument (if a number)
-        float		f;				///< floating point form of the argument (if a number)
+        const char *str;                        ///< string form of the argument
+        long i;                                         ///< integer form of the argument (if a number)
+        float f;                                        ///< floating point form of the argument (if a number)
     };
 
     /// menu command function
@@ -54,7 +54,7 @@ public:
     ///						command, so that the same function can be used
     ///						to handle more than one command.
     ///
-    typedef int8_t			(*func)(uint8_t argc, const struct arg *argv);
+    typedef int8_t (*func)(uint8_t argc, const struct arg *argv);
 
     /// menu pre-prompt function
     ///
@@ -63,7 +63,7 @@ public:
     ///
     /// If this function returns false, the menu exits.
     ///
-    typedef bool			(*preprompt)(void);
+    typedef bool (*preprompt)(void);
 
     /// menu command description
     ///
@@ -71,7 +71,7 @@ public:
         /// Name of the command, as typed or received.
         /// Command names are limited in size to keep this structure compact.
         ///
-        const char	command[MENU_COMMAND_MAX];
+        const char command[MENU_COMMAND_MAX];
 
         /// The function to call when the command is received.
         ///
@@ -84,7 +84,7 @@ public:
         /// The "?", "help" and "exit" commands are always defined, but
         /// can be overridden by explicit entries in the command array.
         ///
-        int8_t			(*func)(uint8_t argc, const struct arg *argv);	///< callback function
+        int8_t (*func)(uint8_t argc, const struct arg *argv);                   ///< callback function
     };
 
     /// constructor
@@ -99,27 +99,27 @@ public:
     Menu(const char *prompt, const struct command *commands, uint8_t entries, preprompt ppfunc = 0);
 
     /// menu runner
-    void				run(void);
+    void        run(void);
 
 private:
     /// Implements the default 'help' command.
     ///
-    void				_help(void);					///< implements the 'help' command
+    void        _help(void);                                                            ///< implements the 'help' command
 
     /// calls the function for the n'th menu item
     ///
     /// @param n			Index for the menu item to call
     /// @param argc			Number of arguments prepared for the menu item
     ///
-    int8_t				_call(uint8_t n, uint8_t argc);
+    int8_t                  _call(uint8_t n, uint8_t argc);
 
-    const char			*_prompt;						///< prompt to display
-    const command		*_commands;						///< array of commands
-    const uint8_t		_entries;						///< size of the menu
-    const preprompt		_ppfunc;						///< optional pre-prompt action
+    const char *            _prompt;                                                    ///< prompt to display
+    const command *         _commands;                                                  ///< array of commands
+    const uint8_t           _entries;                                                   ///< size of the menu
+    const preprompt         _ppfunc;                                                    ///< optional pre-prompt action
 
-    static char			_inbuf[MENU_COMMANDLINE_MAX];	///< input buffer
-    static arg			_argv[MENU_ARGS_MAX + 1];		///< arguments
+    static char             _inbuf[MENU_COMMANDLINE_MAX];       ///< input buffer
+    static arg              _argv[MENU_ARGS_MAX + 1];                   ///< arguments
 };
 
 /// Macros used to define a menu.
@@ -132,12 +132,12 @@ private:
 ///
 /// The MENU2 macro supports the optional pre-prompt printing function.
 ///
-#define MENU(name, prompt, commands)							\
-	static const char __menu_name__ ##name[] PROGMEM = prompt;	\
-	static Menu name(__menu_name__ ##name, commands, sizeof(commands) / sizeof(commands[0]))
+#define MENU(name, prompt, commands)                                                    \
+    static const char __menu_name__ ## name[] PROGMEM = prompt;      \
+    static Menu name(__menu_name__ ## name, commands, sizeof(commands) / sizeof(commands[0]))
 
-#define MENU2(name, prompt, commands, preprompt)				\
-	static const char __menu_name__ ##name[] PROGMEM = prompt;	\
-	static Menu name(__menu_name__ ##name, commands, sizeof(commands) / sizeof(commands[0]), preprompt)
+#define MENU2(name, prompt, commands, preprompt)                                \
+    static const char __menu_name__ ## name[] PROGMEM = prompt;      \
+    static Menu name(__menu_name__ ## name, commands, sizeof(commands) / sizeof(commands[0]), preprompt)
 
 #endif
