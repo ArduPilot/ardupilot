@@ -1,17 +1,17 @@
 // -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 /*
-  failsafe support
-  Andrew Tridgell, December 2011
+ *  failsafe support
+ *  Andrew Tridgell, December 2011
  */
 
 /*
-  our failsafe strategy is to detect main loop lockup and switch to
-  passing inputs straight from the RC inputs to RC outputs.
+ *  our failsafe strategy is to detect main loop lockup and switch to
+ *  passing inputs straight from the RC inputs to RC outputs.
  */
 
 /*
-  this failsafe_check function is called from the core timer interrupt
-  at 1kHz.
+ *  this failsafe_check function is called from the core timer interrupt
+ *  at 1kHz.
  */
 void failsafe_check(uint32_t tnow)
 {
@@ -29,14 +29,14 @@ void failsafe_check(uint32_t tnow)
 
     if (tnow - last_timestamp > 200000) {
         // we have gone at least 0.2 seconds since the main loop
-        // ran. That means we're in trouble, or perhaps are in 
+        // ran. That means we're in trouble, or perhaps are in
         // an initialisation routine or log erase. Start passing RC
         // inputs through to outputs
         in_failsafe = true;
     }
 
     if (in_failsafe && tnow - last_timestamp > 20000) {
-        // pass RC inputs to outputs every 20ms        
+        // pass RC inputs to outputs every 20ms
         last_timestamp = tnow;
         APM_RC.clearOverride();
         for (uint8_t ch=0; ch<8; ch++) {
