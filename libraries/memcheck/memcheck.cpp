@@ -1,8 +1,8 @@
 /// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 
 /*
-  note that we use a 32 bit sentinel to reduce the chance
-  of false positives with uninitialised stack variables
+ *  note that we use a 32 bit sentinel to reduce the chance
+ *  of false positives with uninitialised stack variables
  */
 
 #include <AP_Common.h>
@@ -14,17 +14,17 @@ extern unsigned __brkval;
 #define SENTINEL 0x28021967
 
 /*
-  return the current stack pointer
+ *  return the current stack pointer
  */
-static __attribute__((noinline)) const uint32_t *current_stackptr(void) 
+static __attribute__((noinline)) const uint32_t *current_stackptr(void)
 {
     return (const uint32_t *)__builtin_frame_address(0);
 }
 
 /*
-  this can be added in deeply nested code to ensure we catch 
-  deep stack usage. It should be caught by the sentinel, but this
-  is an added protection
+ *  this can be added in deeply nested code to ensure we catch
+ *  deep stack usage. It should be caught by the sentinel, but this
+ *  is an added protection
  */
 void memcheck_update_stackptr(void)
 {
@@ -35,7 +35,7 @@ void memcheck_update_stackptr(void)
 }
 
 /*
-  initialise memcheck, setting up the sentinels
+ *  initialise memcheck, setting up the sentinels
  */
 void memcheck_init(void)
 {
@@ -51,8 +51,8 @@ void memcheck_init(void)
 }
 
 /*
-  this returns the real amount of free memory by looking for
-  overwrites of the stack sentinel values
+ *  this returns the real amount of free memory by looking for
+ *  overwrites of the stack sentinel values
  */
 unsigned memcheck_available_memory(void)
 {
