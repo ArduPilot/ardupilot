@@ -19,12 +19,12 @@
 //#define HIL_MODE            HIL_MODE_DISABLED
 
 /*
-// HIL_MODE SELECTION
-//
-// Mavlink supports
-// 1. HIL_MODE_ATTITUDE : simulated position, airspeed, and attitude
-// 2. HIL_MODE_SENSORS: full sensor simulation
-//#define HIL_MODE            HIL_MODE_ATTITUDE
-
-*/
+ *  // HIL_MODE SELECTION
+ *  //
+ *  // Mavlink supports
+ *  // 1. HIL_MODE_ATTITUDE : simulated position, airspeed, and attitude
+ *  // 2. HIL_MODE_SENSORS: full sensor simulation
+ *  //#define HIL_MODE            HIL_MODE_ATTITUDE
+ *
+ */
 
