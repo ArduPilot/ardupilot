@@ -22,14 +22,14 @@
 // return the rotation matrix equivalent for this quaternion
 void Quaternion::rotation_matrix(Matrix3f &m)
 {
-	float q3q3 = q3 * q3;
-	float q3q4 = q3 * q4;
-	float q2q2 = q2 * q2;
-	float q2q3 = q2 * q3;
-	float q2q4 = q2 * q4;
-	float q1q2 = q1 * q2;
-	float q1q3 = q1 * q3;
-	float q1q4 = q1 * q4;
+    float q3q3 = q3 * q3;
+    float q3q4 = q3 * q4;
+    float q2q2 = q2 * q2;
+    float q2q3 = q2 * q3;
+    float q2q4 = q2 * q4;
+    float q1q2 = q1 * q2;
+    float q1q3 = q1 * q3;
+    float q1q4 = q1 * q4;
     float q4q4 = q4 * q4;
 
     m.a.x = 1-2*(q3q3 + q4q4);
