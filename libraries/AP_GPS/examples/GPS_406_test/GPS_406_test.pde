@@ -1,10 +1,10 @@
 // -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: t -*-
 /*
-	Example of GPS 406 library.
-	Code by Jordi Munoz and Jose Julio. DIYDrones.com
-
-	Works with Ardupilot Mega Hardware (GPS on Serial Port1)
-*/
+ *       Example of GPS 406 library.
+ *       Code by Jordi Munoz and Jose Julio. DIYDrones.com
+ *
+ *       Works with Ardupilot Mega Hardware (GPS on Serial Port1)
+ */
 
 #include <FastSerial.h>
 #include <AP_Common.h>
@@ -27,7 +27,7 @@ void setup()
     gps.print_errors = true;
 
     Serial.println("GPS 406 library test");
-    gps.init();	 // GPS Initialization
+    gps.init();  // GPS Initialization
     delay(1000);
 }
 void loop()
