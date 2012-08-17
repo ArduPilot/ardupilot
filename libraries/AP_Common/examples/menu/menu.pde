@@ -7,7 +7,7 @@ FastSerialPort0(Serial);
 int8_t
 menu_test(uint8_t argc, const Menu::arg *argv)
 {
-    int	i;
+    int i;
 
     Serial.printf("This is a test with %d arguments\n", argc);
     for (i = 1; i < argc; i++) {
@@ -24,7 +24,7 @@ menu_auto(uint8_t argc, const Menu::arg *argv)
 
 const struct Menu::command top_menu_commands[] PROGMEM = {
     {"*",               menu_auto},
-    {"test",			menu_test},
+    {"test",                    menu_test},
 };
 
 MENU(top, "menu", top_menu_commands);
