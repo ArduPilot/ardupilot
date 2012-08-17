@@ -23,9 +23,9 @@
 // #define ENABLE_FASTSERIAL_DEBUG
 
 #ifdef ENABLE_FASTSERIAL_DEBUG
-# define serialDebug(fmt, args...)  if (FastSerial::getInitialized(0)) do {Serial.printf("%s:%d: " fmt "\n", __FUNCTION__, __LINE__ , ##args); delay(0); } while(0)
+ # define serialDebug(fmt, args ...)  if (FastSerial::getInitialized(0)) do {Serial.printf("%s:%d: " fmt "\n", __FUNCTION__, __LINE__, ## args); delay(0); } while(0)
 #else
-# define serialDebug(fmt, args...)
+ # define serialDebug(fmt, args ...)
 #endif
 
 // some useful progmem macros
@@ -110,9 +110,9 @@ void AP_Param::erase_all(void)
 }
 
 // validate a group info table
-bool AP_Param::check_group_info(const struct AP_Param::GroupInfo *group_info,
-                                uint16_t *total_size,
-                                uint8_t group_shift)
+bool AP_Param::check_group_info(const struct AP_Param::GroupInfo *  group_info,
+                                uint16_t *                          total_size,
+                                uint8_t                             group_shift)
 {
     uint8_t type;
     int8_t max_idx = -1;
@@ -309,13 +309,13 @@ const struct AP_Param::Info *AP_Param::find_by_header(struct Param_header phdr, 
 }
 
 // find the info structure for a variable in a group
-const struct AP_Param::Info *AP_Param::find_var_info_group(const struct GroupInfo *group_info,
-                                                           uint8_t vindex,
-                                                           uint8_t group_base,
-                                                           uint8_t group_shift,
-                                                           uint8_t *group_element,
+const struct AP_Param::Info *AP_Param::find_var_info_group(const struct GroupInfo * group_info,
+                                                           uint8_t                  vindex,
+                                                           uint8_t                  group_base,
+                                                           uint8_t                  group_shift,
+                                                           uint8_t *                group_element,
                                                            const struct GroupInfo **group_ret,
-                                                           uint8_t *idx)
+                                                           uint8_t *                idx)
 {
     uintptr_t base = PGM_POINTER(&_var_info[vindex].ptr);
     uint8_t type;
@@ -344,17 +344,17 @@ const struct AP_Param::Info *AP_Param::find_var_info_group(const struct GroupInf
             }
         } else // Forgive the poor formatting - if continues below.
 #endif // AP_NESTED_GROUPS_ENABLED
-        if ((uintptr_t)this == base + ofs) {
+        if ((uintptr_t) this == base + ofs) {
             *group_element = GROUP_ID(group_info, group_base, i, group_shift);
             *group_ret = &group_info[i];
             *idx = 0;
             return &_var_info[vindex];
         } else if (type == AP_PARAM_VECTOR3F &&
-                   (base+ofs+sizeof(float) == (uintptr_t)this ||
-                    base+ofs+2*sizeof(float) == (uintptr_t)this)) {
+                   (base+ofs+sizeof(float) == (uintptr_t) this ||
+                    base+ofs+2*sizeof(float) == (uintptr_t) this)) {
             // we are inside a Vector3f. We need to work out which
             // element of the vector the current object refers to.
-            *idx = (((uintptr_t)this) - (base+ofs))/sizeof(float);
+            *idx = (((uintptr_t) this) - (base+ofs))/sizeof(float);
             *group_element = GROUP_ID(group_info, group_base, i, group_shift);
             *group_ret = &group_info[i];
             return &_var_info[vindex];
@@ -364,9 +364,9 @@ const struct AP_Param::Info *AP_Param::find_var_info_group(const struct GroupInf
 }
 
 // find the info structure for a variable
-const struct AP_Param::Info *AP_Param::find_var_info(uint8_t *group_element,
-                                                     const struct GroupInfo **group_ret,
-                                                     uint8_t *idx)
+const struct AP_Param::Info *AP_Param::find_var_info(uint8_t *                  group_element,
+                                                     const struct GroupInfo **  group_ret,
+                                                     uint8_t *                  idx)
 {
     for (uint8_t i=0; i<_num_vars; i++) {
         uint8_t type = PGM_UINT8(&_var_info[i].type);
@@ -378,17 +378,17 @@ const struct AP_Param::Info *AP_Param::find_var_info(uint8_t *group_element,
             if (info != NULL) {
                 return info;
             }
-        } else if (base == (uintptr_t)this) {
+        } else if (base == (uintptr_t) this) {
             *group_element = 0;
             *group_ret = NULL;
             *idx = 0;
             return &_var_info[i];
         } else if (type == AP_PARAM_VECTOR3F &&
-                   (base+sizeof(float) == (uintptr_t)this ||
-                    base+2*sizeof(float) == (uintptr_t)this)) {
+                   (base+sizeof(float) == (uintptr_t) this ||
+                    base+2*sizeof(float) == (uintptr_t) this)) {
             // we are inside a Vector3f. Work out which element we are
             // referring to.
-            *idx = (((uintptr_t)this) - base)/sizeof(float);
+            *idx = (((uintptr_t) this) - base)/sizeof(float);
             *group_element = 0;
             *group_ret = NULL;
             return &_var_info[i];
@@ -501,7 +501,7 @@ void AP_Param::copy_name(char *buffer, size_t buffer_size, bool force_scalar)
             add_vector3f_suffix(buffer, buffer_size, idx);
         }
     } else if ((force_scalar || idx != 0) && AP_PARAM_VECTOR3F == PGM_UINT8(&info->type)) {
-            add_vector3f_suffix(buffer, buffer_size, idx);
+        add_vector3f_suffix(buffer, buffer_size, idx);
     }
 }
 
@@ -621,7 +621,7 @@ bool AP_Param::save(void)
         eeprom_write_check(ap, ofs+sizeof(phdr), type_size((enum ap_var_type)phdr.type));
         return true;
     }
-    if (ofs == (uint16_t)~0) {
+    if (ofs == (uint16_t) ~0) {
         return false;
     }
 
@@ -641,7 +641,7 @@ bool AP_Param::save(void)
             (fabs(v1-v2) < 0.0001*fabs(v1))) {
             // for other than 32 bit integers, we accept values within
             // 0.01 percent of the current value as being the same
-            return true;            
+            return true;
         }
     }
 
@@ -687,7 +687,7 @@ bool AP_Param::load(void)
         // if the value isn't stored in EEPROM then set the default value
         if (ginfo != NULL) {
             uintptr_t base = PGM_POINTER(&info->ptr);
-            set_value((enum ap_var_type)phdr.type, (void*)(base + PGM_UINT16(&ginfo->offset)), 
+            set_value((enum ap_var_type)phdr.type, (void*)(base + PGM_UINT16(&ginfo->offset)),
                       PGM_FLOAT(&ginfo->def_value));
         } else {
             set_value((enum ap_var_type)phdr.type, (void*)PGM_POINTER(&info->ptr), PGM_FLOAT(&info->def_value));
@@ -711,7 +711,7 @@ bool AP_Param::load(void)
     return true;
 }
 
-// set a AP_Param variable to a specified value 
+// set a AP_Param variable to a specified value
 void AP_Param::set_value(enum ap_var_type type, void *ptr, float def_value)
 {
     switch (type) {
@@ -744,7 +744,7 @@ void AP_Param::load_defaults_group(const struct GroupInfo *group_info, uintptr_t
             load_defaults_group(ginfo, base);
         } else if (type <= AP_PARAM_FLOAT) {
             void *ptr = (void *)(base + PGM_UINT16(&group_info[i].offset));
-            set_value((enum ap_var_type)type, ptr, PGM_FLOAT(&group_info[i].def_value));    
+            set_value((enum ap_var_type)type, ptr, PGM_FLOAT(&group_info[i].def_value));
         }
     }
 }
