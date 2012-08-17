@@ -24,28 +24,28 @@ public:
     AP_GPS_Auto(FastSerial *s, GPS **gps);
 
     /// Dummy init routine, does nothing
-    virtual void		init(enum GPS_Engine_Setting nav_setting = GPS_ENGINE_NONE);
+    virtual void        init(enum GPS_Engine_Setting nav_setting = GPS_ENGINE_NONE);
 
     /// Detect and initialise the attached GPS unit.  Updates the
     /// pointer passed into the constructor when a GPS is detected.
     ///
-    virtual bool 	read(void);
+    virtual bool        read(void);
 
 private:
     /// Copy of the port, known at construction time to be a real FastSerial port.
-    FastSerial	*_fs;
+    FastSerial *      _fs;
 
     /// global GPS driver pointer, updated by auto-detection
     ///
-    GPS			**_gps;
+    GPS **     _gps;
 
     /// low-level auto-detect routine
     ///
-    GPS			*_detect(void);
+    GPS *                           _detect(void);
 
-    static const prog_char _mtk_set_binary[];
-    static const prog_char _sirf_set_binary[];
+    static const prog_char          _mtk_set_binary[];
+    static const prog_char          _sirf_set_binary[];
 
-	enum GPS_Engine_Setting _nav_setting;
+    enum GPS_Engine_Setting         _nav_setting;
 };
 #endif
