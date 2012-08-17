@@ -20,10 +20,10 @@
 #ifndef AP_META_CLASS_H
 #define AP_META_CLASS_H
 
-#include <stddef.h>			// for size_t
+#include <stddef.h>                     // for size_t
 #include <inttypes.h>
 
-#include <avr/io.h>			// for RAMEND
+#include <avr/io.h>                     // for RAMEND
 ///
 /// Basic meta-class from which other AP_* classes can derive.
 ///
@@ -68,7 +68,7 @@ public:
     ///
     /// @return					A type-unique value for this.
     ///
-    Type_id meta_type_id(void) const {
+    Type_id        meta_type_id(void) const {
         return *(Type_id *)this;
     }
 
@@ -82,8 +82,8 @@ public:
     /// @return                 The Type_id value for T.
     ///
     template<typename T>
-    static Type_id meta_type_id(void) {
-        T tmp;
+    static Type_id        meta_type_id(void) {
+        T        tmp;
         return tmp.meta_type_id();
     }
 
@@ -107,8 +107,8 @@ public:
     ///
     /// @return					An opaque handle
     ///
-    Meta_handle meta_get_handle(void) const {
-        return ((Meta_handle)meta_type_id() << 16) | (uintptr_t)this;
+    Meta_handle        meta_get_handle(void) const {
+        return ((Meta_handle)meta_type_id() << 16) | (uintptr_t) this;
     }
 
     /// Validates an AP_Meta_class handle.
@@ -123,9 +123,9 @@ public:
     /// @return					The instance pointer if the handle is good,
     ///							or NULL if it is bad.
     ///
-    static AP_Meta_class *meta_validate_handle(Meta_handle handle) {
-        AP_Meta_class *candidate = (AP_Meta_class *)(handle & 0xffff); // extract object pointer
-        uint16_t id = handle >> 16; // and claimed type
+    static AP_Meta_class *      meta_validate_handle(Meta_handle handle) {
+        AP_Meta_class *         candidate = (AP_Meta_class *)(handle & 0xffff); // extract object pointer
+        uint16_t                id = handle >> 16; // and claimed type
 
         // Sanity-check the pointer to ensure it lies within the device RAM, so that
         // a bad handle won't cause ::meta_type_id to read outside of SRAM.
@@ -169,7 +169,7 @@ public:
     /// @return					True if the two objects are of the same class, false
     ///							if they are not.
     ///
-    static bool meta_type_equivalent(AP_Meta_class *p1, AP_Meta_class *p2) {
+    static bool        meta_type_equivalent(AP_Meta_class *p1, AP_Meta_class *p2) {
         return p1->meta_type_id() == p2->meta_type_id();
     }
 
@@ -190,8 +190,8 @@ public:
     /// @return					NULL if p is not of precisely type T, otherwise p cast to T.
     ///
     template<typename T>
-    static T *meta_cast(AP_Meta_class *p) {
-        T tmp;
+    static T *      meta_cast(AP_Meta_class *p) {
+        T        tmp;
         if (meta_type_equivalent(p, &tmp)) {
             return (T *)p;
         }
@@ -206,8 +206,8 @@ public:
     /// @return                 NULL if this is not of precisely type T, otherwise this cast to T.
     ///
     template<typename T>
-    T *meta_cast(void) {
-        T tmp;
+    T *      meta_cast(void) {
+        T        tmp;
         if (meta_type_equivalent(this, &tmp)) {
             return (T*)this;
         }
@@ -234,7 +234,7 @@ public:
     ///							have overflowed the buffer.  If the return value is zero,
     ///							the class does not support serialization.
     ///
-    virtual size_t serialize(void *buf, size_t bufSize) const;
+    virtual size_t        serialize(void *buf, size_t bufSize) const;
 
     /// Unserialize the class.
     ///
@@ -253,7 +253,7 @@ public:
     ///							value is zero the class does not support unserialisation or
     ///							the data in the buffer is invalid.
     ///
-    virtual size_t unserialize(void *buf, size_t bufSize);
+    virtual size_t        unserialize(void *buf, size_t bufSize);
 };
 
 #endif // AP_Meta_class_H
