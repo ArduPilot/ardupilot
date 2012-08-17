@@ -22,22 +22,24 @@
 template <class T, uint8_t FILTER_SIZE>
 class FilterWithBuffer : public Filter<T>
 {
-  public:
-	// constructor
-	FilterWithBuffer();
+public:
+    // constructor
+    FilterWithBuffer();
 
-	// apply - Add a new raw value to the filter, retrieve the filtered result
-	virtual T apply(T sample);
+    // apply - Add a new raw value to the filter, retrieve the filtered result
+    virtual T        apply(T sample);
 
-	// reset - clear the filter
-	virtual void reset();
+    // reset - clear the filter
+    virtual void        reset();
 
-	// get filter size
-	virtual uint8_t get_filter_size() { return FILTER_SIZE; };
+    // get filter size
+    virtual uint8_t        get_filter_size() {
+        return FILTER_SIZE;
+    };
 
-  protected:
-	T		samples[FILTER_SIZE];	// buffer of samples
-	uint8_t	sample_index;			// pointer to the next empty slot in the buffer
+protected:
+    T               samples[FILTER_SIZE];       // buffer of samples
+    uint8_t         sample_index;               // pointer to the next empty slot in the buffer
 };
 
 // Typedef for convenience
@@ -70,42 +72,42 @@ typedef FilterWithBuffer<uint32_t,7> FilterWithBufferUInt32_Size7;
 // Constructor
 template <class T, uint8_t FILTER_SIZE>
 FilterWithBuffer<T,FILTER_SIZE>::FilterWithBuffer() :
-	Filter<T>(),
-	sample_index(0)
+    Filter<T>(),
+    sample_index(0)
 {
-	// clear sample buffer
-	reset();
+    // clear sample buffer
+    reset();
 }
 
 // reset - clear all samples from the buffer
 template <class T, uint8_t FILTER_SIZE>
-void FilterWithBuffer<T,FILTER_SIZE>::reset()
+void FilterWithBuffer<T,FILTER_SIZE>::        reset()
 {
-	// call base class reset
-	Filter<T>::reset();
+    // call base class reset
+    Filter<T>::reset();
 
-	// clear samples buffer
-	for( int8_t i=0; i<FILTER_SIZE; i++ ) {
-		samples[i] = 0;
-	}
+    // clear samples buffer
+    for( int8_t i=0; i<FILTER_SIZE; i++ ) {
+        samples[i] = 0;
+    }
 
-	// reset index back to beginning of the array
-	sample_index = 0;
+    // reset index back to beginning of the array
+    sample_index = 0;
 }
 
 // apply - take in a new raw sample, and return the filtered results
 template <class T, uint8_t FILTER_SIZE>
-T FilterWithBuffer<T,FILTER_SIZE>::apply(T sample)
+T FilterWithBuffer<T,FILTER_SIZE>::        apply(T sample)
 {
-	// add sample to array
-	samples[sample_index++] = sample;
+    // add sample to array
+    samples[sample_index++] = sample;
 
-	// wrap index if necessary
-	if( sample_index >= FILTER_SIZE )
-		sample_index = 0;
+    // wrap index if necessary
+    if( sample_index >= FILTER_SIZE )
+        sample_index = 0;
 
-	// base class doesn't know what filtering to do so we just return the raw sample
-	return sample;
+    // base class doesn't know what filtering to do so we just return the raw sample
+    return sample;
 }
 
 #endif
