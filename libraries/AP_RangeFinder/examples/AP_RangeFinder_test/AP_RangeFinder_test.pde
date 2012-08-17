@@ -1,7 +1,7 @@
 /*
-  AP_RangeFinder_test
-  Code by DIYDrones.com
-*/
+ *  AP_RangeFinder_test
+ *  Code by DIYDrones.com
+ */
 
 // includes
 #include <FastSerial.h>
@@ -10,9 +10,9 @@
 #include <AP_RangeFinder.h>     // Range finder library
 #include <Arduino_Mega_ISR_Registry.h>
 #include <AP_PeriodicProcess.h>
-#include <AP_ADC.h>				// ArduPilot Mega Analog to Digital Converter Library
+#include <AP_ADC.h>                             // ArduPilot Mega Analog to Digital Converter Library
 #include <AP_AnalogSource.h>
-#include <ModeFilter.h>			// mode filter
+#include <ModeFilter.h>                 // mode filter
 
 ////////////////////////////////////////////////////////////////////////////////
 // Serial ports
@@ -33,13 +33,13 @@ FastSerialPort0(Serial);        // FTDI/console
 // declare global instances
 Arduino_Mega_ISR_Registry isr_registry;
 ModeFilterInt16_Size5 mode_filter(2);
-AP_TimerProcess  timer_scheduler;
+AP_TimerProcess timer_scheduler;
 
 #ifdef USE_ADC_ADS7844
-    AP_ADC_ADS7844 adc;
-    AP_AnalogSource_ADC adc_source(&adc, AP_RANGEFINDER_PITOT_TYPE_ADC_CHANNEL, 0.25);    // use Pitot tube
+AP_ADC_ADS7844 adc;
+AP_AnalogSource_ADC adc_source(&adc, AP_RANGEFINDER_PITOT_TYPE_ADC_CHANNEL, 0.25);        // use Pitot tube
 #else
-    AP_AnalogSource_Arduino adc_source(A0);   // use AN0 analog pin for APM2 on left
+AP_AnalogSource_Arduino adc_source(A0);       // use AN0 analog pin for APM2 on left
 #endif
 
 // create the range finder object
@@ -50,8 +50,8 @@ void setup()
 {
     Serial.begin(115200);
     Serial.println("Range Finder Test v1.1");
-	Serial.print("Sonar Type: ");
-	Serial.println(SONAR_TYPE);
+    Serial.print("Sonar Type: ");
+    Serial.println(SONAR_TYPE);
 
     isr_registry.init();
     timer_scheduler.init(&isr_registry);
@@ -66,7 +66,7 @@ void setup()
 
     aRF.calculate_scaler(SONAR_TYPE,5.0);   // setup scaling for sonar
 #endif
-	
+
 }
 
 void loop()
