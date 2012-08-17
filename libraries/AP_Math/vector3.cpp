@@ -82,7 +82,7 @@ void Vector3<T>::rotate(enum Rotation rotation)
     }
     case ROTATION_ROLL_180_YAW_135: {
         tmp = HALF_SQRT_2*(y - x);
-	y   = HALF_SQRT_2*(y + x);
+        y   = HALF_SQRT_2*(y + x);
         x = tmp; z = -z;
         return;
     }
@@ -92,7 +92,7 @@ void Vector3<T>::rotate(enum Rotation rotation)
     }
     case ROTATION_ROLL_180_YAW_225: {
         tmp = -HALF_SQRT_2*(x + y);
-	y   =  HALF_SQRT_2*(y - x);
+        y   =  HALF_SQRT_2*(y - x);
         x = tmp; z = -z;
         return;
     }
@@ -102,7 +102,7 @@ void Vector3<T>::rotate(enum Rotation rotation)
     }
     case ROTATION_ROLL_180_YAW_315: {
         tmp =  HALF_SQRT_2*(x - y);
-	y   = -HALF_SQRT_2*(x + y);
+        y   = -HALF_SQRT_2*(x + y);
         x = tmp; z = -z;
         return;
     }
@@ -120,7 +120,9 @@ Vector3<T> Vector3<T>::operator %(const Vector3<T> &v) const
 // dot product
 template <typename T>
 T Vector3<T>::operator *(const Vector3<T> &v) const
-{ return x*v.x + y*v.y + z*v.z;	}
+{
+    return x*v.x + y*v.y + z*v.z;
+}
 
 template <typename T>
 float Vector3<T>::length(void) const
