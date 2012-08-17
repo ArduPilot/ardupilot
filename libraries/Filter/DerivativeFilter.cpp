@@ -29,12 +29,12 @@ void DerivativeFilter<T,FILTER_SIZE>::update(T sample, uint32_t timestamp)
         // this is not a new timestamp - ignore
         return;
     }
-    
+
     // add timestamp before we apply to FilterWithBuffer
     _timestamps[i] = timestamp;
 
-	// call parent's apply function to get the sample into the array
-	FilterWithBuffer<T,FILTER_SIZE>::apply(sample);
+    // call parent's apply function to get the sample into the array
+    FilterWithBuffer<T,FILTER_SIZE>::apply(sample);
 
     _new_data = true;
 }
@@ -47,12 +47,12 @@ float DerivativeFilter<T,FILTER_SIZE>::slope(void)
         return _last_slope;
     }
 
-	float result = 0;
+    float result = 0;
 
     // use f() to make the code match the maths a bit better. Note
     // that unlike an average filter, we care about the order of the elements
-    #define f(i) FilterWithBuffer<T,FILTER_SIZE>::samples[(((FilterWithBuffer<T,FILTER_SIZE>::sample_index-1)+i+1)+3*FILTER_SIZE/2) % FILTER_SIZE]
-    #define x(i) _timestamps[(((FilterWithBuffer<T,FILTER_SIZE>::sample_index-1)+i+1)+3*FILTER_SIZE/2) % FILTER_SIZE]
+#define f(i) FilterWithBuffer<T,FILTER_SIZE>::samples[(((FilterWithBuffer<T,FILTER_SIZE>::sample_index-1)+i+1)+3*FILTER_SIZE/2) % FILTER_SIZE]
+#define x(i) _timestamps[(((FilterWithBuffer<T,FILTER_SIZE>::sample_index-1)+i+1)+3*FILTER_SIZE/2) % FILTER_SIZE]
 
     if (_timestamps[FILTER_SIZE-1] == _timestamps[FILTER_SIZE-2]) {
         // we haven't filled the buffer yet - assume zero derivative
@@ -63,28 +63,28 @@ float DerivativeFilter<T,FILTER_SIZE>::slope(void)
     switch (FILTER_SIZE) {
     case 5:
         result = 2*2*(f(1) - f(-1)) / (x(1) - x(-1))
-               + 4*1*(f(2) - f(-2)) / (x(2) - x(-2));
+                 + 4*1*(f(2) - f(-2)) / (x(2) - x(-2));
         result /= 8;
         break;
     case 7:
         result = 2*5*(f(1) - f(-1)) / (x(1) - x(-1))
-               + 4*4*(f(2) - f(-2)) / (x(2) - x(-2)) 
-               + 6*1*(f(3) - f(-3)) / (x(3) - x(-3));
+                 + 4*4*(f(2) - f(-2)) / (x(2) - x(-2))
+                 + 6*1*(f(3) - f(-3)) / (x(3) - x(-3));
         result /= 32;
         break;
     case 9:
         result = 2*14*(f(1) - f(-1)) / (x(1) - x(-1))
-               + 4*14*(f(2) - f(-2)) / (x(2) - x(-2)) 
-               + 6* 6*(f(3) - f(-3)) / (x(3) - x(-3))
-               + 8* 1*(f(4) - f(-4)) / (x(4) - x(-4));
+                 + 4*14*(f(2) - f(-2)) / (x(2) - x(-2))
+                 + 6* 6*(f(3) - f(-3)) / (x(3) - x(-3))
+                 + 8* 1*(f(4) - f(-4)) / (x(4) - x(-4));
         result /= 128;
         break;
     case 11:
         result =  2*42*(f(1) - f(-1)) / (x(1) - x(-1))
-               +  4*48*(f(2) - f(-2)) / (x(2) - x(-2)) 
-               +  6*27*(f(3) - f(-3)) / (x(3) - x(-3))
-               +  8* 8*(f(4) - f(-4)) / (x(4) - x(-4))
-               + 10* 1*(f(5) - f(-5)) / (x(5) - x(-5));
+                 +  4*48*(f(2) - f(-2)) / (x(2) - x(-2))
+                 +  6*27*(f(3) - f(-3)) / (x(3) - x(-3))
+                 +  8* 8*(f(4) - f(-4)) / (x(4) - x(-4))
+                 + 10* 1*(f(5) - f(-5)) / (x(5) - x(-5));
         result /= 512;
         break;
     default:
@@ -107,8 +107,8 @@ float DerivativeFilter<T,FILTER_SIZE>::slope(void)
 template <class T, uint8_t FILTER_SIZE>
 void DerivativeFilter<T,FILTER_SIZE>::reset(void)
 {
-	// call parent's apply function to get the sample into the array
-	FilterWithBuffer<T,FILTER_SIZE>::reset();
+    // call parent's apply function to get the sample into the array
+    FilterWithBuffer<T,FILTER_SIZE>::reset();
 }
 
 // add new instances as needed here
