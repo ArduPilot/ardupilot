@@ -11,25 +11,25 @@ FastSerialPort(Serial, 0);
 
 #ifdef DESKTOP_BUILD
 // all of this is needed to build with SITL
-#include <DataFlash.h>
-#include <APM_RC.h>
-#include <GCS_MAVLink.h>
-#include <Arduino_Mega_ISR_Registry.h>
-#include <AP_PeriodicProcess.h>
-#include <AP_ADC.h>
-#include <AP_Baro.h>
-#include <AP_Compass.h>
-#include <AP_GPS.h>
+ #include <DataFlash.h>
+ #include <APM_RC.h>
+ #include <GCS_MAVLink.h>
+ #include <Arduino_Mega_ISR_Registry.h>
+ #include <AP_PeriodicProcess.h>
+ #include <AP_ADC.h>
+ #include <AP_Baro.h>
+ #include <AP_Compass.h>
+ #include <AP_GPS.h>
 Arduino_Mega_ISR_Registry isr_registry;
-AP_Baro_BMP085_HIL      barometer;
-AP_Compass_HIL     compass;
+AP_Baro_BMP085_HIL barometer;
+AP_Compass_HIL compass;
 #endif
 
 #include <AP_Declination.h> // ArduPilot Mega Declination Helper Library
 
 
 // standard rotation matrices (these are the originals from the old code)
-#define MATRIX_ROTATION_NONE               Matrix3f(1, 0, 0, 0, 1, 0, 0 ,0, 1)
+#define MATRIX_ROTATION_NONE               Matrix3f(1, 0, 0, 0, 1, 0, 0,0, 1)
 #define MATRIX_ROTATION_YAW_45             Matrix3f(0.70710678, -0.70710678, 0, 0.70710678, 0.70710678, 0, 0, 0, 1)
 #define MATRIX_ROTATION_YAW_90             Matrix3f(0, -1, 0, 1, 0, 0, 0, 0, 1)
 #define MATRIX_ROTATION_YAW_135            Matrix3f(-0.70710678, -0.70710678, 0, 0.70710678, -0.70710678, 0, 0, 0, 1)
@@ -57,17 +57,17 @@ static void print_matrix(Matrix3f &m)
 // test one matrix
 static void test_matrix(enum Rotation rotation, Matrix3f m)
 {
-	Matrix3f m2, diff;
-	const float accuracy = 1.0e-6;
-	m2.rotation(rotation);
-	diff = (m - m2);
-	if (diff.a.length() > accuracy ||
-	    diff.b.length() > accuracy ||
-	    diff.c.length() > accuracy) {
-		Serial.printf("rotation matrix %u incorrect\n", (unsigned)rotation);
+    Matrix3f m2, diff;
+    const float accuracy = 1.0e-6;
+    m2.rotation(rotation);
+    diff = (m - m2);
+    if (diff.a.length() > accuracy ||
+        diff.b.length() > accuracy ||
+        diff.c.length() > accuracy) {
+        Serial.printf("rotation matrix %u incorrect\n", (unsigned)rotation);
         print_matrix(m);
         print_matrix(m2);
-	}
+    }
 }
 
 // test generation of rotation matrices
@@ -95,19 +95,19 @@ static void test_matrices(void)
 // test rotation of vectors
 static void test_vector(enum Rotation rotation, Vector3f v1, bool show=true)
 {
-	Vector3f v2, diff;
-	Matrix3f m;
-	v2 = v1;
-	m.rotation(rotation);
-	v1.rotate(rotation);
-	v2 = m * v2;
-	diff = v1 - v2;
-	if (diff.length() > 1.0e-6) {
-		Serial.printf("rotation vector %u incorrect\n", (unsigned)rotation);
-		Serial.printf("%u  %f %f %f\n",
-			      (unsigned)rotation,
-			      v2.x, v2.y, v2.z);
-	}
+    Vector3f v2, diff;
+    Matrix3f m;
+    v2 = v1;
+    m.rotation(rotation);
+    v1.rotate(rotation);
+    v2 = m * v2;
+    diff = v1 - v2;
+    if (diff.length() > 1.0e-6) {
+        Serial.printf("rotation vector %u incorrect\n", (unsigned)rotation);
+        Serial.printf("%u  %f %f %f\n",
+                      (unsigned)rotation,
+                      v2.x, v2.y, v2.z);
+    }
     if (show) {
         Serial.printf("%u  %f %f %f\n",
                       (unsigned)rotation,
@@ -118,8 +118,8 @@ static void test_vector(enum Rotation rotation, Vector3f v1, bool show=true)
 // generate a random float between -1 and 1
 static float rand_num(void)
 {
-	float ret = ((unsigned)random()) % 2000000;
-	return (ret - 1.0e6) / 1.0e6;
+    float ret = ((unsigned)random()) % 2000000;
+    return (ret - 1.0e6) / 1.0e6;
 }
 
 // test rotation of vectors
@@ -127,10 +127,10 @@ static void test_vector(enum Rotation rotation)
 {
     uint8_t i;
 
-	Vector3f v1;
-	v1.x = 1;
-	v1.y = 2;
-	v1.z = 3;
+    Vector3f v1;
+    v1.x = 1;
+    v1.y = 2;
+    v1.z = 3;
     test_vector(rotation, v1);
 
     for (i=0; i<10; i++) {
@@ -170,8 +170,8 @@ static void test_combinations(void)
     enum Rotation r1, r2, r3;
     bool found;
 
-	for (r1=ROTATION_NONE; r1<ROTATION_MAX;
-	     r1 = (enum Rotation)((uint8_t)r1+1)) {
+    for (r1=ROTATION_NONE; r1<ROTATION_MAX;
+         r1 = (enum Rotation)((uint8_t)r1+1)) {
         for (r2=ROTATION_NONE; r2<ROTATION_MAX;
              r2 = (enum Rotation)((uint8_t)r2+1)) {
             r3 = rotation_combination(r1, r2, &found);
@@ -187,7 +187,7 @@ static void test_combinations(void)
 }
 
 /*
-  rotation tests
+ *  rotation tests
  */
 void setup(void)
 {
