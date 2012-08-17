@@ -30,14 +30,14 @@ Menu::Menu(const prog_char *prompt, const Menu::command *commands, uint8_t entri
 void
 Menu::run(void)
 {
-    int8_t		ret;
-    uint8_t		len, i;
-    uint8_t		argc;
-    int			c;
-    char		*s;
+    int8_t ret;
+    uint8_t len, i;
+    uint8_t argc;
+    int c;
+    char                *s;
 
     // loop performing commands
-    for (;;) {
+    for (;; ) {
 
         // run the pre-prompt function, if one is defined
         if ((NULL != _ppfunc) && !_ppfunc())
@@ -46,7 +46,7 @@ Menu::run(void)
         // loop reading characters from the input
         len = 0;
         Serial.printf("%S] ", FPSTR(_prompt));
-        for (;;) {
+        for (;; ) {
             c = Serial.read();
             if (-1 == c)
                 continue;
@@ -84,13 +84,13 @@ Menu::run(void)
             if ('\0' == _argv[argc].str)
                 break;
             _argv[argc].i = atol(_argv[argc].str);
-            _argv[argc].f = atof(_argv[argc].str);	// calls strtod, > 700B !
+            _argv[argc].f = atof(_argv[argc].str);      // calls strtod, > 700B !
             argc++;
         }
 
-		if (_argv[0].str == NULL) {
-			continue;
-		}
+        if (_argv[0].str == NULL) {
+            continue;
+        }
 
         // populate arguments that have not been specified with "" and 0
         // this is safer than NULL in the case where commands may look
@@ -103,7 +103,7 @@ Menu::run(void)
             i++;
         }
 
-		bool cmd_found = false;
+        bool cmd_found = false;
         // look for a command matching the first word (note that it may be empty)
         for (i = 0; i < _entries; i++) {
             if (!strcasecmp_P(_argv[0].str, _commands[i].command)) {
@@ -127,8 +127,8 @@ Menu::run(void)
 
         if (cmd_found==false)
         {
-    		Serial.println("Invalid command, type 'help'");
-    	}
+            Serial.println("Invalid command, type 'help'");
+        }
 
     }
 }
@@ -137,7 +137,7 @@ Menu::run(void)
 void
 Menu::_help(void)
 {
-    int		i;
+    int i;
 
     Serial.println("Commands:");
     for (i = 0; i < _entries; i++)
@@ -148,7 +148,7 @@ Menu::_help(void)
 int8_t
 Menu::_call(uint8_t n, uint8_t argc)
 {
-    func		fn;
+    func fn;
 
     fn = (func)pgm_read_pointer(&_commands[n].func);
     return(fn(argc, &_argv[0]));
