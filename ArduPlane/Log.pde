@@ -48,8 +48,8 @@ MENU2(log_menu, "Log", log_menu_commands, print_log_menu);
 static bool
 print_log_menu(void)
 {
-	int log_start;
-	int log_end;
+	int16_t log_start;
+	int16_t log_end;
 	int temp;	
 	int last_log_num = DataFlash.find_last_log();
 	
@@ -104,8 +104,8 @@ static int8_t
 dump_log(uint8_t argc, const Menu::arg *argv)
 {
 	int dump_log;
-	int dump_log_start;
-	int dump_log_end;
+	int16_t dump_log_start;
+	int16_t dump_log_end;
 	byte last_log_num;
 
 	// check that the requested log number can be read
