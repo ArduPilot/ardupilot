@@ -13,26 +13,26 @@
 #include <AP_Param.h>
 
 #ifndef AP_Limit_Altitude_H
-#define  AP_Limit_Altitude_H
+ #define  AP_Limit_Altitude_H
 #endif  // AP_Limit_Altitude_H
 
-class AP_Limit_Altitude: public AP_Limit_Module {
+class AP_Limit_Altitude : public AP_Limit_Module {
 
 public:
-	AP_Limit_Altitude(struct Location *current_loc);
+    AP_Limit_Altitude(struct Location *current_loc);
 
-	AP_Int32 min_alt();
-	AP_Int32 max_alt();
+    AP_Int32        min_alt();
+    AP_Int32        max_alt();
 
-	bool init();
-	bool triggered();
+    bool            init();
+    bool            triggered();
 
-    static const struct AP_Param::GroupInfo var_info[];
+    static const struct AP_Param::GroupInfo         var_info[];
 
 protected:
-	struct Location		*_current_loc;
-	AP_Int32			_min_alt;
-	AP_Int32			_max_alt;
+    struct Location *                               _current_loc;
+    AP_Int32        _min_alt;
+    AP_Int32        _max_alt;
 
 
 };
