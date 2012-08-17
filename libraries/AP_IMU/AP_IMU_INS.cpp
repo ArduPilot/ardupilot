@@ -22,10 +22,10 @@
 #include "AP_IMU_INS.h"
 
 void
-AP_IMU_INS::init( Start_style style,
-                  void (*delay_cb)(unsigned long t),
-                  void (*flash_leds_cb)(bool on),
-                  AP_PeriodicProcess * scheduler )
+AP_IMU_INS::init( Start_style           style,
+                  void                  (*delay_cb)(unsigned long t),
+                  void                  (*flash_leds_cb)(bool on),
+                  AP_PeriodicProcess *  scheduler )
 {
     _product_id = _ins->init(scheduler);
     // if we are warm-starting, load the calibration data from EEPROM and go
@@ -60,22 +60,22 @@ AP_IMU_INS::_init_gyro(void (*delay_cb)(unsigned long t), void (*flash_leds_cb)(
     float ins_gyro[3];
     float best_diff = 0;
 
-	// cold start
-	delay_cb(100);
-	Serial.printf_P(PSTR("Init Gyro"));
+    // cold start
+    delay_cb(100);
+    Serial.printf_P(PSTR("Init Gyro"));
 
-	for(int c = 0; c < 25; c++) {
-    // Mostly we are just flashing the LED's here
-    // to tell the user to keep the IMU still
+    for(int c = 0; c < 25; c++) {
+        // Mostly we are just flashing the LED's here
+        // to tell the user to keep the IMU still
         FLASH_LEDS(true);
-		delay_cb(20);
+        delay_cb(20);
 
         _ins->update();
         _ins->get_gyros(ins_gyro);
 
         FLASH_LEDS(false);
-		delay_cb(20);
-	}
+        delay_cb(20);
+    }
 
     // the strategy is to average 200 points over 1 second, then do it
     // again and see if the 2nd average is within a small margin of
@@ -85,7 +85,7 @@ AP_IMU_INS::_init_gyro(void (*delay_cb)(unsigned long t), void (*flash_leds_cb)(
 
     // we try to get a good calibration estimate for up to 10 seconds
     // if the gyros are stable, we should get it in 2 seconds
-	for (int j = 0; j <= 10; j++) {
+    for (int j = 0; j <= 10; j++) {
         Vector3f gyro_sum, gyro_avg, gyro_diff;
         float diff_norm;
         uint8_t i;
@@ -152,68 +152,68 @@ AP_IMU_INS::init_accel(void (*delay_cb)(unsigned long t), void (*flash_leds_cb)(
 void
 AP_IMU_INS::_init_accel(void (*delay_cb)(unsigned long t), void (*flash_leds_cb)(bool on))
 {
-	int flashcount = 0;
-	float adc_in;
-	float prev[6] = {0,0,0};
-	float total_change;
-	float max_offset;
+    int flashcount = 0;
+    float adc_in;
+    float prev[6] = {0,0,0};
+    float total_change;
+    float max_offset;
     float ins_accel[3];
 
 
-	// cold start
-	delay_cb(500);
+    // cold start
+    delay_cb(500);
 
-	Serial.printf_P(PSTR("Init Accel"));
+    Serial.printf_P(PSTR("Init Accel"));
 
-	for (int j=3; j<=5; j++) _sensor_cal[j] = 500;		// Just a large value to load prev[j] the first time
+    for (int j=3; j<=5; j++) _sensor_cal[j] = 500;              // Just a large value to load prev[j] the first time
 
-	do {
-    _ins->update();
-    _ins->get_accels(ins_accel);
+    do {
+        _ins->update();
+        _ins->get_accels(ins_accel);
 
-		for (int j = 3; j <= 5; j++){
-			prev[j] = _sensor_cal[j];
-			adc_in 		    = ins_accel[j-3];
-			_sensor_cal[j]	= adc_in;
-		}
+        for (int j = 3; j <= 5; j++) {
+            prev[j] = _sensor_cal[j];
+            adc_in              = ins_accel[j-3];
+            _sensor_cal[j]  = adc_in;
+        }
 
-		for(int i = 0; i < 50; i++){		// We take some readings...
+        for(int i = 0; i < 50; i++) {                   // We take some readings...
 
-			delay_cb(20);
-      _ins->update();
-      _ins->get_accels(ins_accel);
+            delay_cb(20);
+            _ins->update();
+            _ins->get_accels(ins_accel);
 
-			for (int j = 3; j < 6; j++){
-				adc_in 	    	= ins_accel[j-3];
-				_sensor_cal[j]	= _sensor_cal[j] * 0.9 + adc_in * 0.1;
-			}
+            for (int j = 3; j < 6; j++) {
+                adc_in          = ins_accel[j-3];
+                _sensor_cal[j]  = _sensor_cal[j] * 0.9 + adc_in * 0.1;
+            }
 
-			if(flashcount == 5) {
-				Serial.printf_P(PSTR("*"));
+            if(flashcount == 5) {
+                Serial.printf_P(PSTR("*"));
                 FLASH_LEDS(true);
-			}
+            }
 
-			if(flashcount >= 10) {
-				flashcount = 0;
+            if(flashcount >= 10) {
+                flashcount = 0;
                 FLASH_LEDS(false);
-			}
-			flashcount++;
-		}
+            }
+            flashcount++;
+        }
 
-		// null gravity from the Z accel
-		_sensor_cal[5] += 9.805;
+        // null gravity from the Z accel
+        _sensor_cal[5] += 9.805;
 
-		total_change = fabs(prev[3] - _sensor_cal[3]) + fabs(prev[4] - _sensor_cal[4]) +fabs(prev[5] - _sensor_cal[5]);
-		max_offset = (_sensor_cal[3] > _sensor_cal[4]) ? _sensor_cal[3] : _sensor_cal[4];
-		max_offset = (max_offset > _sensor_cal[5]) ? max_offset : _sensor_cal[5];
+        total_change = fabs(prev[3] - _sensor_cal[3]) + fabs(prev[4] - _sensor_cal[4]) +fabs(prev[5] - _sensor_cal[5]);
+        max_offset = (_sensor_cal[3] > _sensor_cal[4]) ? _sensor_cal[3] : _sensor_cal[4];
+        max_offset = (max_offset > _sensor_cal[5]) ? max_offset : _sensor_cal[5];
 
-		delay_cb(500);
-	} while (  total_change > _accel_total_cal_change || max_offset > _accel_max_cal_offset);
+        delay_cb(500);
+    } while (  total_change > _accel_total_cal_change || max_offset > _accel_max_cal_offset);
 
-	Serial.printf_P(PSTR(" "));
+    Serial.printf_P(PSTR(" "));
 }
 
-  float
+float
 AP_IMU_INS::_calibrated(uint8_t channel, float ins_value)
 {
     return ins_value - _sensor_cal[channel];
@@ -223,28 +223,28 @@ AP_IMU_INS::_calibrated(uint8_t channel, float ins_value)
 bool
 AP_IMU_INS::update(void)
 {
-  float gyros[3];
-  float accels[3];
+    float gyros[3];
+    float accels[3];
 
-  _ins->update();
-  _ins->get_gyros(gyros);
-  _ins->get_accels(accels);
-  _sample_time = _ins->sample_time();
+    _ins->update();
+    _ins->get_gyros(gyros);
+    _ins->get_accels(accels);
+    _sample_time = _ins->sample_time();
 
-	// convert corrected gyro readings to delta acceleration
-	//
-	_gyro.x = _calibrated(0, gyros[0]);
-	_gyro.y = _calibrated(1, gyros[1]);
-	_gyro.z = _calibrated(2, gyros[2]);
+    // convert corrected gyro readings to delta acceleration
+    //
+    _gyro.x = _calibrated(0, gyros[0]);
+    _gyro.y = _calibrated(1, gyros[1]);
+    _gyro.z = _calibrated(2, gyros[2]);
 
-	// convert corrected accelerometer readings to acceleration
-	//
-	_accel.x = _calibrated(3, accels[0]);
-	_accel.y = _calibrated(4, accels[1]);
-	_accel.z = _calibrated(5, accels[2]);
+    // convert corrected accelerometer readings to acceleration
+    //
+    _accel.x = _calibrated(3, accels[0]);
+    _accel.y = _calibrated(4, accels[1]);
+    _accel.z = _calibrated(5, accels[2]);
 
-	// always updated
-	return true;
+    // always updated
+    return true;
 }
 
 bool AP_IMU_INS::new_data_available(void) {
