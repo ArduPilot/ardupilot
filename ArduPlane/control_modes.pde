@@ -3,12 +3,12 @@
 
 static void read_control_switch()
 {
-	static bool switch_debouncer;
-	byte switchPosition = readSwitch();
-	
-	// If switchPosition = 255 this indicates that the mode control channel input was out of range
-	// If we get this value we do not want to change modes.
-	if(switchPosition == 255) return;
+    static bool switch_debouncer;
+    byte switchPosition = readSwitch();
+
+    // If switchPosition = 255 this indicates that the mode control channel input was out of range
+    // If we get this value we do not want to change modes.
+    if(switchPosition == 255) return;
 
     // we look for changes in the switch position. If the
     // RST_SWITCH_CH parameter is set, then it is a switch that can be
@@ -16,8 +16,8 @@ static void read_control_switch()
     // when returning to the previous mode after a failsafe or fence
     // breach. This channel is best used on a momentary switch (such
     // as a spring loaded trainer switch).
-	if (oldSwitchPosition != switchPosition ||
-        (g.reset_switch_chan != 0 && 
+    if (oldSwitchPosition != switchPosition ||
+        (g.reset_switch_chan != 0 &&
          APM_RC.InputCh(g.reset_switch_chan-1) > RESET_SWITCH_CHAN_PWM)) {
 
         if (switch_debouncer == false) {
@@ -29,20 +29,20 @@ static void read_control_switch()
             return;
         }
 
-		set_mode(flight_modes[switchPosition]);
+        set_mode(flight_modes[switchPosition]);
 
-		oldSwitchPosition = switchPosition;
-		prev_WP = current_loc;
+        oldSwitchPosition = switchPosition;
+        prev_WP = current_loc;
 
-		// reset navigation integrators
-		// -------------------------
-		reset_I();
-	}
+        // reset navigation integrators
+        // -------------------------
+        reset_I();
+    }
 
-    if (g.reset_mission_chan != 0 && 
+    if (g.reset_mission_chan != 0 &&
         APM_RC.InputCh(g.reset_mission_chan-1) > RESET_SWITCH_CHAN_PWM) {
         // reset to first waypoint in mission
-		prev_WP = current_loc;
+        prev_WP = current_loc;
         change_command(1);
     }
 
@@ -56,19 +56,19 @@ static void read_control_switch()
 }
 
 static byte readSwitch(void){
-	uint16_t pulsewidth = APM_RC.InputCh(g.flight_mode_channel - 1);
-	if (pulsewidth <= 910 || pulsewidth >= 2090) 	return 255;	// This is an error condition
-	if (pulsewidth > 1230 && pulsewidth <= 1360) 	return 1;
-	if (pulsewidth > 1360 && pulsewidth <= 1490) 	return 2;
-	if (pulsewidth > 1490 && pulsewidth <= 1620) 	return 3;
-	if (pulsewidth > 1620 && pulsewidth <= 1749) 	return 4;	// Software Manual
-	if (pulsewidth >= 1750) 						return 5;	// Hardware Manual
-	return 0;
+    uint16_t pulsewidth = APM_RC.InputCh(g.flight_mode_channel - 1);
+    if (pulsewidth <= 910 || pulsewidth >= 2090) return 255;            // This is an error condition
+    if (pulsewidth > 1230 && pulsewidth <= 1360) return 1;
+    if (pulsewidth > 1360 && pulsewidth <= 1490) return 2;
+    if (pulsewidth > 1490 && pulsewidth <= 1620) return 3;
+    if (pulsewidth > 1620 && pulsewidth <= 1749) return 4;              // Software Manual
+    if (pulsewidth >= 1750) return 5;                                                           // Hardware Manual
+    return 0;
 }
 
 static void reset_control_switch()
 {
-	oldSwitchPosition = 0;
-	read_control_switch();
+    oldSwitchPosition = 0;
+    read_control_switch();
 }
 
