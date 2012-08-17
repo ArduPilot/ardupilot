@@ -20,21 +20,21 @@
 #include "AP_Math.h"
 
 /*
-  The point in polygon algorithm is based on:
-  http://www.ecse.rpi.edu/Homepages/wrf/Research/Short_Notes/pnpoly.html
-*/
+ *  The point in polygon algorithm is based on:
+ *  http://www.ecse.rpi.edu/Homepages/wrf/Research/Short_Notes/pnpoly.html
+ */
 
 
 /*
-  Polygon_outside(): test for a point in a polygon
-      Input:   P = a point,
-               V[] = vertex points of a polygon V[n+1] with V[n]=V[0]
-      Return:  true if P is outside the polygon
-
-  This does not take account of the curvature of the earth, but we
-  expect that to be very small over the distances involved in the
-  fence boundary
-*/
+ *  Polygon_outside(): test for a point in a polygon
+ *     Input:   P = a point,
+ *              V[] = vertex points of a polygon V[n+1] with V[n]=V[0]
+ *     Return:  true if P is outside the polygon
+ *
+ *  This does not take account of the curvature of the earth, but we
+ *  expect that to be very small over the distances involved in the
+ *  fence boundary
+ */
 bool Polygon_outside(const Vector2l &P, const Vector2l *V, unsigned n)
 {
     unsigned i, j;
@@ -49,7 +49,7 @@ bool Polygon_outside(const Vector2l &P, const Vector2l *V, unsigned n)
         dy1 = P.y - V[i].y;
         dy2 = V[j].y - V[i].y;
         int8_t dx1s, dx2s, dy1s, dy2s, m1, m2;
-#define sign(x) ((x)<0?-1:1)
+#define sign(x) ((x)<0 ? -1 : 1)
         dx1s = sign(dx1);
         dx2s = sign(dx2);
         dy1s = sign(dy1);
@@ -73,17 +73,17 @@ bool Polygon_outside(const Vector2l &P, const Vector2l *V, unsigned n)
             } else if ( dx1 * (int64_t)dy2 < dx2 * (int64_t)dy1 ) {
                 outside = !outside;
             }
-        }            
+        }
     }
     return outside;
 }
 
 /*
-  check if a polygon is complete. 
-
-  We consider a polygon to be complete if we have at least 4 points,
-  and the first point is the same as the last point. That is the
-  minimum requirement for the Polygon_outside function to work
+ *  check if a polygon is complete.
+ *
+ *  We consider a polygon to be complete if we have at least 4 points,
+ *  and the first point is the same as the last point. That is the
+ *  minimum requirement for the Polygon_outside function to work
  */
 bool Polygon_complete(const Vector2l *V, unsigned n)
 {
