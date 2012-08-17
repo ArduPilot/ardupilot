@@ -1,7 +1,7 @@
 // -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: t -*-
 /*
-	Example of AnalogSource Arduino
-*/
+ *       Example of AnalogSource Arduino
+ */
 
 #include <FastSerial.h>
 #include <AP_Math.h>
@@ -30,12 +30,12 @@ void setup()
 
 void loop()
 {
-	while (true) {
-		delay(1000);
-		Serial.printf("Vcc: %u PIN0: %u  PIN1: %u  PIN1_avg: %u\n",
-			      (unsigned)vcc_source.read_vcc(),
-			      (unsigned)pin0.read_raw(),
-			      (unsigned)pin1.read_raw(),
-			      (unsigned)pin1.read_average());
-	}
+    while (true) {
+        delay(1000);
+        Serial.printf("Vcc: %u PIN0: %u  PIN1: %u  PIN1_avg: %u\n",
+                      (unsigned)vcc_source.read_vcc(),
+                      (unsigned)pin0.read_raw(),
+                      (unsigned)pin1.read_raw(),
+                      (unsigned)pin1.read_average());
+    }
 }
