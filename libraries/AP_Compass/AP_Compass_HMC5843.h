@@ -46,21 +46,22 @@
 
 class AP_Compass_HMC5843 : public Compass
 {
-  private:
-	float calibration[3];
-    bool _initialised;
-	virtual bool read_raw(void);
-    uint8_t _base_config;
-	virtual bool re_initialise(void);
-    bool read_register(uint8_t address, uint8_t *value);
-    bool write_register(uint8_t address, byte value);
-    uint32_t _retry_time; // when unhealthy the millis() value to retry at
+private:
+    float               calibration[3];
+    bool                _initialised;
+    virtual bool        read_raw(void);
+    uint8_t             _base_config;
+    virtual bool        re_initialise(void);
+    bool                read_register(uint8_t address, uint8_t *value);
+    bool                write_register(uint8_t address, byte value);
+    uint32_t            _retry_time; // when unhealthy the millis() value to retry at
 
-  public:
-	AP_Compass_HMC5843() : Compass() {}
-	virtual bool init(void);
-	virtual bool read(void);
-	virtual void set_orientation(enum Rotation rotation);
+public:
+    AP_Compass_HMC5843() : Compass() {
+    }
+    virtual bool        init(void);
+    virtual bool        read(void);
+    virtual void        set_orientation(enum Rotation rotation);
 
 };
 #endif
