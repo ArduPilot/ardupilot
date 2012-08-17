@@ -15,13 +15,13 @@
 FastSerialPort(Serial, 0);
 
 Arduino_Mega_ISR_Registry isr_registry;
-AP_TimerProcess  scheduler;
+AP_TimerProcess scheduler;
 AP_InertialSensor_MPU6000 ins( 53 ); /* chip select is pin 53 */
 
 void setup(void)
 {
-	Serial.begin(115200);
-	Serial.println("Doing INS startup...");
+    Serial.begin(115200);
+    Serial.println("Doing INS startup...");
 
     SPI.begin();
     SPI.setClockDivider(SPI_CLOCK_DIV16); // 1MHZ SPI rate
@@ -29,25 +29,25 @@ void setup(void)
     isr_registry.init();
     scheduler.init(&isr_registry);
 
-	// we need to stop the barometer from holding the SPI bus
-	pinMode(40, OUTPUT);
+    // we need to stop the barometer from holding the SPI bus
+    pinMode(40, OUTPUT);
     digitalWrite(40, HIGH);
 
-	ins.init(&scheduler);
+    ins.init(&scheduler);
 }
 
 void loop(void)
 {
-	float accel[3];
-	float gyro[3];
-	float temperature;
+    float accel[3];
+    float gyro[3];
+    float temperature;
 
-	delay(20);
-	ins.update();
-	ins.get_gyros(gyro);
-	ins.get_accels(accel);
-	temperature = ins.temperature();
+    delay(20);
+    ins.update();
+    ins.get_gyros(gyro);
+    ins.get_accels(accel);
+    temperature = ins.temperature();
 
-	Serial.printf("AX: %f  AY: %f  AZ: %f  GX: %f  GY: %f  GZ: %f T=%f\n",
-				  accel[0], accel[1], accel[2], gyro[0], gyro[1], gyro[2], temperature);
+    Serial.printf("AX: %f  AY: %f  AZ: %f  GX: %f  GY: %f  GZ: %f T=%f\n",
+                  accel[0], accel[1], accel[2], gyro[0], gyro[1], gyro[2], temperature);
 }
