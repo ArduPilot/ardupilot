@@ -15,22 +15,22 @@
 
 /// @class	AP_Relay
 /// @brief	Class to manage the APM relay
-class AP_Relay{
+class AP_Relay {
 public:
-	// activate the relay
-	void on();
+    // activate the relay
+    void        on();
 
-	// de-activate the relay
-	void off();
+    // de-activate the relay
+    void        off();
 
-	// toggle the relay status
-	void toggle();
+    // toggle the relay status
+    void        toggle();
 
-	// set the relay status (on/off)
-	void set(bool status);
+    // set the relay status (on/off)
+    void        set(bool status);
 
-	// get the relay status (on/off)
-	bool get();
+    // get the relay status (on/off)
+    bool        get();
 };
 
 
