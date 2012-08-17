@@ -6,7 +6,7 @@
 #include <FastSerial.h>
 #include <AP_Common.h>
 
-#include "AP_GPS.h"		// includes AP_GPS_Auto.h
+#include "AP_GPS.h"             // includes AP_GPS_Auto.h
 
 // Define this to add NMEA to the auto-detection cycle.
 //
@@ -17,10 +17,10 @@
 //
 //#define WITH_NMEA_MODE	1
 
-static unsigned int	baudrates[] = {38400U, 57600U, 9600U, 4800U};
+static unsigned int baudrates[] = {38400U, 57600U, 9600U, 4800U};
 
-const prog_char	AP_GPS_Auto::_mtk_set_binary[]   PROGMEM = MTK_SET_BINARY;
-const prog_char	AP_GPS_Auto::_sirf_set_binary[]  PROGMEM = SIRF_SET_BINARY;
+const prog_char AP_GPS_Auto::_mtk_set_binary[]   PROGMEM = MTK_SET_BINARY;
+const prog_char AP_GPS_Auto::_sirf_set_binary[]  PROGMEM = SIRF_SET_BINARY;
 
 
 AP_GPS_Auto::AP_GPS_Auto(FastSerial *s, GPS **gps)  :
@@ -37,7 +37,7 @@ AP_GPS_Auto::init(enum GPS_Engine_Setting nav_setting)
 {
     idleTimeout = 1200;
     if (callback == NULL) callback = delay;
-	_nav_setting = nav_setting;
+    _nav_setting = nav_setting;
 }
 
 
@@ -54,8 +54,8 @@ AP_GPS_Auto::init(enum GPS_Engine_Setting nav_setting)
 bool
 AP_GPS_Auto::read(void)
 {
-    GPS		*gps;
-    uint8_t		i;
+    GPS         *gps;
+    uint8_t i;
     uint32_t then;
 
     // Loop through possible baudrates trying to detect a GPS at one of them.
@@ -66,7 +66,7 @@ AP_GPS_Auto::read(void)
     //
     for (i = 0; i < (sizeof(baudrates) / sizeof(baudrates[0])); i++) {
 
-		// ensure the serial port has a large enough buffer for any protocol
+        // ensure the serial port has a large enough buffer for any protocol
         _fs->begin(baudrates[i], 256, 16);
         if (NULL != (gps = _detect())) {
 
@@ -99,10 +99,10 @@ GPS *
 AP_GPS_Auto::_detect(void)
 {
     uint32_t then;
-    uint8_t	fingerprint[4];
-    uint8_t	tries;
+    uint8_t fingerprint[4];
+    uint8_t tries;
     uint16_t charcount;
-    GPS		*gps;
+    GPS         *gps;
 
     //
     // Loop attempting to detect a recognized GPS
@@ -128,21 +128,21 @@ AP_GPS_Auto::_detect(void)
             }
         } while ((millis() - then) < 50 && charcount < 5000);
 
-		if (tries == 0) {
-			// write configuration strings to put the GPS into the preferred
-			// mode
-			_write_progstr_block(_fs, _mtk_set_binary, sizeof(_mtk_set_binary));
-			_write_progstr_block(_fs, AP_GPS_UBLOX::_ublox_set_binary, AP_GPS_UBLOX::_ublox_set_binary_size);
-			_write_progstr_block(_fs, _sirf_set_binary, sizeof(_sirf_set_binary));
+        if (tries == 0) {
+            // write configuration strings to put the GPS into the preferred
+            // mode
+            _write_progstr_block(_fs, _mtk_set_binary, sizeof(_mtk_set_binary));
+            _write_progstr_block(_fs, AP_GPS_UBLOX::_ublox_set_binary, AP_GPS_UBLOX::_ublox_set_binary_size);
+            _write_progstr_block(_fs, _sirf_set_binary, sizeof(_sirf_set_binary));
 
-			// ensure its all been written
-			while (_fs->tx_pending()) {
-				callback(10);
-			}
+            // ensure its all been written
+            while (_fs->tx_pending()) {
+                callback(10);
+            }
 
-			// give the GPS time to react to the settings
-			callback(100);
-		}
+            // give the GPS time to react to the settings
+            callback(100);
+        }
 
         //
         // Collect four characters to fingerprint a device
@@ -167,8 +167,8 @@ AP_GPS_Auto::_detect(void)
         // it to make the MTK look sort-of like it was talking UBX?)
         //
         if ((0xb5 == fingerprint[0]) &&
-                (0x62 == fingerprint[1]) &&
-                (0x01 == fingerprint[2])) {
+            (0x62 == fingerprint[1]) &&
+            (0x01 == fingerprint[2])) {
 
             // message 5 is MTK pretending to talk UBX
             if (0x05 == fingerprint[3]) {
@@ -185,10 +185,10 @@ AP_GPS_Auto::_detect(void)
 
         // new style 3DR UBlox (April 2012)x
         if (0xb5 == fingerprint[0] &&
-			0x62 == fingerprint[1] &&
-			0x0d == fingerprint[2] &&
-			0x01 == fingerprint[3]) {
-			// new style Ublox
+            0x62 == fingerprint[1] &&
+            0x0d == fingerprint[2] &&
+            0x01 == fingerprint[3]) {
+            // new style Ublox
             gps = new AP_GPS_UBLOX(_port);
             Serial.print_P(PSTR(" ublox "));
             break;
@@ -198,8 +198,8 @@ AP_GPS_Auto::_detect(void)
         // MTK v1.6
         //
         if ((0xd0 == fingerprint[0]) &&
-                (0xdd == fingerprint[1]) &&
-                (0x20 == fingerprint[2])) {
+            (0xdd == fingerprint[1]) &&
+            (0x20 == fingerprint[2])) {
             gps = new AP_GPS_MTK16(_port);
             Serial.print_P(PSTR(" MTK1.6 "));
             break;
@@ -209,7 +209,7 @@ AP_GPS_Auto::_detect(void)
         // SIRF in binary mode
         //
         if ((0xa0 == fingerprint[0]) &&
-                (0xa2 == fingerprint[1])) {
+            (0xa2 == fingerprint[1])) {
             gps = new AP_GPS_SIRF(_port);
             Serial.print_P(PSTR(" SiRF "));
             break;
@@ -220,7 +220,7 @@ AP_GPS_Auto::_detect(void)
         // Something talking NMEA
         //
         if (('$' == fingerprint[0]) &&
-                (('G' == fingerprint[1]) || ('P' == fingerprint[1]))) {
+            (('G' == fingerprint[1]) || ('P' == fingerprint[1]))) {
 
             // XXX this may be a bit presumptive, might want to give the GPS a couple of
             //     iterations around the loop to react to init strings?
@@ -228,7 +228,7 @@ AP_GPS_Auto::_detect(void)
             break;
         }
 #endif
-		Serial.printf("?");
+        Serial.printf("?");
     }
     return(gps);
 }
