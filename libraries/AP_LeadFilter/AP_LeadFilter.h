@@ -10,19 +10,20 @@
 
 /// @class	AP_LeadFilter
 /// @brief	Object managing GPS lag
-class AP_LeadFilter{
-  public:
-	/// Constructor
-	///
-	///
-       AP_LeadFilter() :
-		_last_velocity(0) {}
+class AP_LeadFilter {
+public:
+    /// Constructor
+    ///
+    ///
+    AP_LeadFilter() :
+        _last_velocity(0) {
+    }
 
-	// setup min and max radio values in CLI
-	int32_t 	get_position(int32_t pos, int16_t vel);
+    // setup min and max radio values in CLI
+    int32_t         get_position(int32_t pos, int16_t vel);
 
-  private:
-	int16_t		_last_velocity;
+private:
+    int16_t         _last_velocity;
 
 };
 
