@@ -11,21 +11,21 @@ FastSerialPort(Serial, 0);
 
 #ifdef DESKTOP_BUILD
 // all of this is needed to build with SITL
-#include <DataFlash.h>
-#include <APM_RC.h>
-#include <GCS_MAVLink.h>
-#include <Arduino_Mega_ISR_Registry.h>
-#include <AP_PeriodicProcess.h>
-#include <AP_ADC.h>
-#include <SPI.h>
-#include <I2C.h>
-#include <AP_Baro.h>
-#include <AP_Compass.h>
-#include <AP_GPS.h>
-#include <Filter.h>
+ #include <DataFlash.h>
+ #include <APM_RC.h>
+ #include <GCS_MAVLink.h>
+ #include <Arduino_Mega_ISR_Registry.h>
+ #include <AP_PeriodicProcess.h>
+ #include <AP_ADC.h>
+ #include <SPI.h>
+ #include <I2C.h>
+ #include <AP_Baro.h>
+ #include <AP_Compass.h>
+ #include <AP_GPS.h>
+ #include <Filter.h>
 Arduino_Mega_ISR_Registry isr_registry;
-AP_Baro_BMP085_HIL      barometer;
-AP_Compass_HIL     compass;
+AP_Baro_BMP085_HIL barometer;
+AP_Compass_HIL compass;
 #endif
 
 #include <AP_Declination.h>
@@ -215,8 +215,8 @@ void test_frame_transforms(void)
 // generate a random float between -1 and 1
 static float rand_num(void)
 {
-	float ret = ((unsigned)random()) % 2000000;
-	return (ret - 1.0e6) / 1.0e6;
+    float ret = ((unsigned)random()) % 2000000;
+    return (ret - 1.0e6) / 1.0e6;
 }
 
 void test_matrix_rotate(void)
@@ -259,7 +259,7 @@ void test_matrix_rotate(void)
 }
 
 /*
-  euler angle tests
+ *  euler angle tests
  */
 void setup(void)
 {
