@@ -24,35 +24,36 @@
 class Loop
 {
 public:
-    Loop() : _fptr(), _data(), _period(), _subLoops(), _timeStamp(), _load(), _dt() {};
+    Loop() : _fptr(), _data(), _period(), _subLoops(), _timeStamp(), _load(), _dt() {
+    };
     Loop(float frequency, void (*fptr)(void *) = NULL, void * data = NULL);
-    void update();
-    Vector<Loop *> & subLoops() {
+    void                    update();
+    Vector<Loop *> &        subLoops() {
         return _subLoops;
     }
-    float frequency() {
+    float                   frequency() {
         return 1.0e6/_period;
     }
-    void frequency(float _frequency) {
+    void                    frequency(float _frequency) {
         _period = 1e6/_frequency;
     }
-    uint32_t timeStamp() {
+    uint32_t                timeStamp() {
         return _timeStamp;
     }
-    float dt() {
+    float                   dt() {
         return _dt;
     }
-    uint8_t load() {
+    uint8_t                 load() {
         return _load;
     }
 protected:
-    void (*_fptr)(void *);
-    void * _data;
-    uint32_t _period;
-    Vector<Loop *> _subLoops;
-    uint32_t _timeStamp;
-    uint8_t _load;
-    float _dt;
+    void                    (*_fptr)(void *);
+    void *                  _data;
+    uint32_t                _period;
+    Vector<Loop *>          _subLoops;
+    uint32_t                _timeStamp;
+    uint8_t                 _load;
+    float                   _dt;
 };
 
 #endif
