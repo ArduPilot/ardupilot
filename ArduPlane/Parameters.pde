@@ -199,6 +199,13 @@ const AP_Param::Info var_info[] PROGMEM = {
 	// @User: Standard
 	GSCALAR(flybywire_airspeed_max, "ARSPD_FBW_MAX",  AIRSPEED_FBW_MAX),
 
+    // @Param: FBWB_ELEV_REV
+	// @DisplayName: Fly By Wire elevator reverse
+	// @Description: Reverse sense of elevator in FBWB. When set to 0 up elevator (pulling back on the stick) means to lower altitude. When set to 1, up elevator means to raise altitude.
+	// @Values: 0:Disabled,1:Enabled
+	// @User: Standard
+	GSCALAR(flybywire_elev_reverse, "FBWB_ELEV_REV",  0),
+
     // @Param: THR_MIN
 	// @DisplayName: Minimum Throttle
 	// @Description: The minimum throttle setting to which the autopilot will apply.
