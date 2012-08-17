@@ -12,33 +12,33 @@
 
 class AP_AnalogSource_Arduino : public AP_AnalogSource
 {
-    public:
+public:
     AP_AnalogSource_Arduino( uint8_t pin, float prescale = 1.0 ) :
         _prescale(prescale) {
         assign_pin_index(pin);
     }
 
     // setup the timer callback
-    static void init_timer(AP_PeriodicProcess * scheduler);
+    static void         init_timer(AP_PeriodicProcess * scheduler);
 
     // read a value with a prescale
-    float read(void);
+    float               read(void);
 
     // read the raw 16 bit ADC value
-    uint16_t read_raw(void);
+    uint16_t            read_raw(void);
 
     // read a Vcc value in millivolts
-    uint16_t read_vcc(void);
+    uint16_t            read_vcc(void);
 
     // read the average 16 bit ADC value since
     // we last called read_average().
-    float read_average(void);
+    float           read_average(void);
 
-    private:
-    uint8_t _pin_index;
-    float _prescale;
+private:
+    uint8_t         _pin_index;
+    float           _prescale;
 
-    void assign_pin_index(uint8_t pin);
+    void            assign_pin_index(uint8_t pin);
 };
 
 #endif // __AP_ANALOG_SOURCE_ARDUINO_H__
