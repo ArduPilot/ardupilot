@@ -187,6 +187,12 @@ static void sitl_simulator_output(void)
 	}
 
 	if (!desktop_state.quadcopter) {
+		// add in engine multiplier
+		if (pwm[2] > 1000) {
+			pwm[2] = ((pwm[2]-1000) * sitl.engine_mul) + 1000;
+			if (pwm[2] > 2000) pwm[2] = 2000;
+		}
+
 		// 400kV motor, 16V
 		sitl_motor_speed[0] = ((pwm[2]-1000)/1000.0) * 400 * 16 / 60.0;
 	} else {
