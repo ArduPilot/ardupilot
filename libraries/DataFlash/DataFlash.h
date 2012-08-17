@@ -84,7 +84,7 @@ class DataFlash_Class
 
 	// high level interface
 	int find_last_log(void);
-	void get_log_boundaries(uint8_t log_num, int & start_page, int & end_page);
+	void get_log_boundaries(uint8_t log_num, int16_t & start_page, int16_t & end_page);
 	uint8_t get_num_logs(void);
 	void start_new_log(void);
 
