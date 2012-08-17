@@ -7,7 +7,7 @@
 //
 
 ///
-/// @file 		AP_Common.h
+/// @file       AP_Common.h
 /// @brief		Common definitions and utility routines for the ArduPilot
 ///				libraries.
 ///
@@ -17,9 +17,9 @@
 
 // Get the common arduino functions
 #if defined(ARDUINO) && ARDUINO >= 100
-	#include "Arduino.h"
+ #include "Arduino.h"
 #else
-	#include "wiring.h"
+ #include "wiring.h"
 #endif
 // ... and remove some of their stupid macros
 #undef round
@@ -34,16 +34,16 @@ typedef struct {
 } prog_char_t;
 
 #include <stdint.h>
-#include "include/menu.h"		/// simple menu subsystem
+#include "include/menu.h"               /// simple menu subsystem
 #include "c++.h" // c++ additions
 //#include "AP_Vector.h"
 //#include "AP_Loop.h"
 
 // default to AP_Param system, unless USE_AP_VAR is defined
 #ifdef USE_AP_VAR
-#include "AP_Var.h"
+ #include "AP_Var.h"
 #else
-#include "AP_Param.h"
+ #include "AP_Param.h"
 #endif
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -74,9 +74,9 @@ typedef struct {
 // production as it generates bad code.
 //
 #if PRINTF_FORMAT_WARNING_DEBUG
-# undef PSTR
-# define PSTR(_x)		_x		// help the compiler with printf_P
-# define float double			// silence spurious format warnings for %f
+ # undef PSTR
+ # define PSTR(_x)               _x             // help the compiler with printf_P
+ # define float double                  // silence spurious format warnings for %f
 #else
 // This is a workaround for GCC bug c++/34734.
 //
@@ -85,17 +85,17 @@ typedef struct {
 // has an equivalent effect but avoids the warnings, which otherwise
 // make finding real issues difficult.
 //
-#ifdef DESKTOP_BUILD
-# undef PROGMEM
-# define PROGMEM __attribute__(())
-#else
-# undef PROGMEM
-# define PROGMEM __attribute__(( section(".progmem.data") ))
-#endif
+ #ifdef DESKTOP_BUILD
+  # undef PROGMEM
+  # define PROGMEM __attribute__(())
+ #else
+  # undef PROGMEM
+  # define PROGMEM __attribute__(( section(".progmem.data") ))
+ #endif
 
-# undef PSTR
-# define PSTR(s) (__extension__({static prog_char __c[] PROGMEM = (s); \
-                (prog_char_t *)&__c[0];}))
+ # undef PSTR
+ # define PSTR(s) (__extension__({static prog_char __c[] PROGMEM = (s); \
+                                  (prog_char_t *)&__c[0]; }))
 #endif
 
 // a varient of PSTR() for progmem strings passed to %S in printf()
@@ -103,47 +103,47 @@ typedef struct {
 #define FPSTR(s) (wchar_t *)(s)
 
 
-static inline int strcasecmp_P(const char *str1, const prog_char_t *pstr)
+static inline int        strcasecmp_P(const char *str1, const prog_char_t *pstr)
 {
     return strcasecmp_P(str1, (const prog_char *)pstr);
 }
 
-static inline int strcmp_P(const char *str1, const prog_char_t *pstr)
+static inline int        strcmp_P(const char *str1, const prog_char_t *pstr)
 {
     return strcmp_P(str1, (const prog_char *)pstr);
 }
 
-static inline size_t strlen_P(const prog_char_t *pstr)
+static inline size_t        strlen_P(const prog_char_t *pstr)
 {
     return strlen_P((const prog_char *)pstr);
 }
 
-static inline void *memcpy_P(void *dest, const prog_char_t *src, size_t n)
+static inline void *      memcpy_P(void *dest, const prog_char_t *src, size_t n)
 {
     return memcpy_P(dest, (const prog_char *)src, n);
 }
 
-// strlcat_P() in AVR libc seems to be broken 
-static inline size_t strlcat_P(char *d, const prog_char_t *s, size_t bufsize)
+// strlcat_P() in AVR libc seems to be broken
+static inline size_t        strlcat_P(char *d, const prog_char_t *s, size_t bufsize)
 {
-	size_t len1 = strlen(d);
-	size_t len2 = strlen_P(s);
-	size_t ret = len1 + len2;
-    
-	if (len1+len2 >= bufsize) {
-		if (bufsize < (len1+1)) {
-			return ret;
-		}
-		len2 = bufsize - (len1+1);
-	}
-	if (len2 > 0) {
-		memcpy_P(d+len1, s, len2);
-		d[len1+len2] = 0;
-	}
-	return ret;
+    size_t          len1 = strlen(d);
+    size_t          len2 = strlen_P(s);
+    size_t          ret = len1 + len2;
+
+    if (len1+len2 >= bufsize) {
+        if (bufsize < (len1+1)) {
+            return ret;
+        }
+        len2 = bufsize - (len1+1);
+    }
+    if (len2 > 0) {
+        memcpy_P(d+len1, s, len2);
+        d[len1+len2] = 0;
+    }
+    return ret;
 }
 
-static inline char *strncpy_P(char *buffer, const prog_char_t *pstr, size_t buffer_size)
+static inline char *      strncpy_P(char *buffer, const prog_char_t *pstr, size_t buffer_size)
 {
     return strncpy_P(buffer, (const prog_char *)pstr, buffer_size);
 }
@@ -151,7 +151,7 @@ static inline char *strncpy_P(char *buffer, const prog_char_t *pstr, size_t buff
 
 // read something the size of a pointer. This makes the menu code more
 // portable
-static inline uintptr_t pgm_read_pointer(const void *s)
+static inline uintptr_t        pgm_read_pointer(const void *s)
 {
     if (sizeof(uintptr_t) == sizeof(uint16_t)) {
         return (uintptr_t)pgm_read_word(s);
@@ -160,7 +160,7 @@ static inline uintptr_t pgm_read_pointer(const void *s)
             uintptr_t p;
             uint8_t a[sizeof(uintptr_t)];
         } u;
-        uint8_t i;
+        uint8_t        i;
         for (i=0; i< sizeof(uintptr_t); i++) {
             u.a[i] = pgm_read_byte(i + (const prog_char *)s);
         }
@@ -180,10 +180,10 @@ static inline uintptr_t pgm_read_pointer(const void *s)
 /// when passing PROGMEM strings to static object constructors because the PSTR
 /// hack can't be used at global scope.
 ///
-#define PROGMEM_STRING(_v, _s)	static const char _v[] PROGMEM = _s
+#define PROGMEM_STRING(_v, _s)  static const char _v[] PROGMEM = _s
 
-#define ToRad(x) (x*0.01745329252)	// *pi/180
-#define ToDeg(x) (x*57.2957795131)	// *180/pi
+#define ToRad(x) (x*0.01745329252)      // *pi/180
+#define ToDeg(x) (x*57.2957795131)      // *180/pi
 // @}
 
 
@@ -191,24 +191,24 @@ static inline uintptr_t pgm_read_pointer(const void *s)
 /// @name	Types
 ///
 /// Data structures and types used throughout the libraries and applications. 0 = default
-/// bit 0: Altitude is stored 			    0: Absolute,	1: Relative
-/// bit 1: Chnage Alt between WP 		    0: Gradually,	1: ASAP
+/// bit 0: Altitude is stored               0: Absolute,	1: Relative
+/// bit 1: Chnage Alt between WP            0: Gradually,	1: ASAP
 /// bit 2:
 /// bit 3: Req.to hit WP.alt to continue    0: No,          1: Yes
-/// bit 4: Relative to Home					0: No, 			1: Yes
+/// bit 4: Relative to Home					0: No,          1: Yes
 /// bit 5:
 /// bit 6:
-/// bit 7: Move to next Command 		    0: YES, 		1: Loiter until commanded
+/// bit 7: Move to next Command             0: YES,         1: Loiter until commanded
 
 //@{
 
 struct Location {
-    uint8_t		id;					///< command id
-    uint8_t		options;			///< options bitmask (1<<0 = relative altitude)
-    uint8_t		p1;					///< param 1
-    int32_t		alt;				///< param 2 - Altitude in centimeters (meters * 100)
-    int32_t		lat;				///< param 3 - Lattitude * 10**7
-    int32_t		lng;				///< param 4 - Longitude * 10**7
+    uint8_t id;                                                 ///< command id
+    uint8_t options;                                    ///< options bitmask (1<<0 = relative altitude)
+    uint8_t p1;                                                 ///< param 1
+    int32_t alt;                                        ///< param 2 - Altitude in centimeters (meters * 100)
+    int32_t lat;                                        ///< param 3 - Lattitude * 10**7
+    int32_t lng;                                        ///< param 4 - Longitude * 10**7
 };
 
 //@}
@@ -222,34 +222,34 @@ struct Location {
 
 /// XXX this should probably be replaced with radians()/degrees(), but their
 /// inclusion in wiring.h makes doing that here difficult.
-#define ToDeg(x) (x*57.2957795131)	// *180/pi
-#define ToRad(x) (x*0.01745329252)	// *pi/180
+#define ToDeg(x) (x*57.2957795131)      // *180/pi
+#define ToRad(x) (x*0.01745329252)      // *pi/180
 
 //@}
 
 #ifdef DESKTOP_BUILD
 // used to report serious errors in autotest
-# define SITL_debug(fmt, args...)  fprintf(stdout, "%s:%u " fmt, __FUNCTION__, __LINE__, ##args)
+ # define SITL_debug(fmt, args ...)  fprintf(stdout, "%s:%u " fmt, __FUNCTION__, __LINE__, ## args)
 #else
-# define SITL_debug(fmt, args...)
+ # define SITL_debug(fmt, args ...)
 #endif
 
 /*  Product IDs for all supported products follow */
 
-#define AP_PRODUCT_ID_NONE 			0x00 	// Hardware in the loop
-#define AP_PRODUCT_ID_APM1_1280 	0x01 	// APM1 with 1280 CPUs
-#define AP_PRODUCT_ID_APM1_2560 	0x02 	// APM1 with 2560 CPUs
-#define AP_PRODUCT_ID_SITL		 	0x03 	// Software in the loop
-#define AP_PRODUCT_ID_APM2ES_REV_C4 0x14 	// APM2 with MPU6000ES_REV_C4
-#define AP_PRODUCT_ID_APM2ES_REV_C5	0x15 	// APM2 with MPU6000ES_REV_C5
-#define AP_PRODUCT_ID_APM2ES_REV_D6	0x16	// APM2 with MPU6000ES_REV_D6
-#define AP_PRODUCT_ID_APM2ES_REV_D7	0x17	// APM2 with MPU6000ES_REV_D7
-#define AP_PRODUCT_ID_APM2ES_REV_D8	0x18	// APM2 with MPU6000ES_REV_D8	
-#define AP_PRODUCT_ID_APM2_REV_C4	0x54	// APM2 with MPU6000_REV_C4 	
-#define AP_PRODUCT_ID_APM2_REV_C5	0x55	// APM2 with MPU6000_REV_C5 	
-#define AP_PRODUCT_ID_APM2_REV_D6	0x56	// APM2 with MPU6000_REV_D6 		
-#define AP_PRODUCT_ID_APM2_REV_D7	0x57	// APM2 with MPU6000_REV_D7 	
-#define AP_PRODUCT_ID_APM2_REV_D8	0x58	// APM2 with MPU6000_REV_D8 	
-#define AP_PRODUCT_ID_APM2_REV_D9	0x59	// APM2 with MPU6000_REV_D9 	
+#define AP_PRODUCT_ID_NONE                      0x00    // Hardware in the loop
+#define AP_PRODUCT_ID_APM1_1280         0x01    // APM1 with 1280 CPUs
+#define AP_PRODUCT_ID_APM1_2560         0x02    // APM1 with 2560 CPUs
+#define AP_PRODUCT_ID_SITL                      0x03    // Software in the loop
+#define AP_PRODUCT_ID_APM2ES_REV_C4 0x14        // APM2 with MPU6000ES_REV_C4
+#define AP_PRODUCT_ID_APM2ES_REV_C5     0x15    // APM2 with MPU6000ES_REV_C5
+#define AP_PRODUCT_ID_APM2ES_REV_D6     0x16    // APM2 with MPU6000ES_REV_D6
+#define AP_PRODUCT_ID_APM2ES_REV_D7     0x17    // APM2 with MPU6000ES_REV_D7
+#define AP_PRODUCT_ID_APM2ES_REV_D8     0x18    // APM2 with MPU6000ES_REV_D8
+#define AP_PRODUCT_ID_APM2_REV_C4       0x54    // APM2 with MPU6000_REV_C4
+#define AP_PRODUCT_ID_APM2_REV_C5       0x55    // APM2 with MPU6000_REV_C5
+#define AP_PRODUCT_ID_APM2_REV_D6       0x56    // APM2 with MPU6000_REV_D6
+#define AP_PRODUCT_ID_APM2_REV_D7       0x57    // APM2 with MPU6000_REV_D7
+#define AP_PRODUCT_ID_APM2_REV_D8       0x58    // APM2 with MPU6000_REV_D8
+#define AP_PRODUCT_ID_APM2_REV_D9       0x59    // APM2 with MPU6000_REV_D9
 
 #endif // _AP_COMMON_H
