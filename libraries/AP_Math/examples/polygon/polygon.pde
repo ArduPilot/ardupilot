@@ -10,9 +10,9 @@
 FastSerialPort(Serial, 0);
 
 /*
-  this is the boundary of the 2010 outback challenge
-  Note that the last point must be the same as the first for the
-  Polygon_outside() algorithm
+ *  this is the boundary of the 2010 outback challenge
+ *  Note that the last point must be the same as the first for the
+ *  Polygon_outside() algorithm
  */
 static const Vector2l OBC_boundary[] = {
     Vector2l(-265695640, 1518373730),
@@ -59,7 +59,7 @@ static const struct {
 #define ARRAY_LENGTH(x) (sizeof((x))/sizeof((x)[0]))
 
 /*
-  polygon tests
+ *  polygon tests
  */
 void setup(void)
 {
@@ -86,13 +86,13 @@ void setup(void)
         Serial.printf_P(PSTR("%10f,%10f  %s  %s\n"),
                         1.0e-7*test_points[i].point.x,
                         1.0e-7*test_points[i].point.y,
-                        result?"OUTSIDE":"INSIDE ",
-                        result == test_points[i].outside?"PASS":"FAIL");
+                        result ? "OUTSIDE" : "INSIDE ",
+                        result == test_points[i].outside ? "PASS" : "FAIL");
         if (result != test_points[i].outside) {
             all_passed = false;
         }
     }
-    Serial.println(all_passed?"TEST PASSED":"TEST FAILED");
+    Serial.println(all_passed ? "TEST PASSED" : "TEST FAILED");
 
     Serial.println("Speed test:");
     start_time = micros();
@@ -104,9 +104,9 @@ void setup(void)
                 all_passed = false;
             }
         }
-    }    
+    }
     Serial.printf("%u usec/call\n", (unsigned)((micros() - start_time)/(count*ARRAY_LENGTH(test_points))));
-    Serial.println(all_passed?"ALL TESTS PASSED":"TEST FAILED");                  
+    Serial.println(all_passed ? "ALL TESTS PASSED" : "TEST FAILED");
 }
 
 void
