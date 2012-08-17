@@ -1,19 +1,19 @@
 // -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 /*
-  geo-fencing support
-  Andrew Tridgell, December 2011
+ *  geo-fencing support
+ *  Andrew Tridgell, December 2011
  */
 
 #if GEOFENCE_ENABLED == ENABLED
 
 /*
-  The state of geo-fencing. This structure is dynamically allocated
-  the first time it is used. This means we only pay for the pointer
-  and not the structure on systems where geo-fencing is not being
-  used.
-
-  We store a copy of the boundary in memory as we need to access it
-  very quickly at runtime
+ *  The state of geo-fencing. This structure is dynamically allocated
+ *  the first time it is used. This means we only pay for the pointer
+ *  and not the structure on systems where geo-fencing is not being
+ *  used.
+ *
+ *  We store a copy of the boundary in memory as we need to access it
+ *  very quickly at runtime
  */
 static struct geofence_state {
     uint8_t num_points;
@@ -29,7 +29,7 @@ static struct geofence_state {
 
 
 /*
-  fence boundaries fetch/store
+ *  fence boundaries fetch/store
  */
 static Vector2l get_fence_point_with_index(unsigned i)
 {
@@ -71,7 +71,7 @@ static void set_fence_point_with_index(Vector2l &point, unsigned i)
 }
 
 /*
-  allocate and fill the geofence state structure
+ *  allocate and fill the geofence state structure
  */
 static void geofence_load(void)
 {
@@ -116,7 +116,7 @@ failed:
 }
 
 /*
-  return true if geo-fencing is enabled
+ *  return true if geo-fencing is enabled
  */
 static bool geofence_enabled(void)
 {
@@ -137,7 +137,7 @@ static bool geofence_enabled(void)
 
 
 /*
-  return true if we have breached the geo-fence minimum altiude
+ *  return true if we have breached the geo-fence minimum altiude
  */
 static bool geofence_check_minalt(void)
 {
@@ -151,7 +151,7 @@ static bool geofence_check_minalt(void)
 }
 
 /*
-  return true if we have breached the geo-fence maximum altiude
+ *  return true if we have breached the geo-fence maximum altiude
  */
 static bool geofence_check_maxalt(void)
 {
@@ -166,7 +166,7 @@ static bool geofence_check_maxalt(void)
 
 
 /*
-  check if we have breached the geo-fence
+ *  check if we have breached the geo-fence
  */
 static void geofence_check(bool altitude_check_only)
 {
@@ -222,9 +222,9 @@ static void geofence_check(bool altitude_check_only)
             // we have moved back inside the fence
             geofence_state->fence_triggered = false;
             gcs_send_text_P(SEVERITY_LOW,PSTR("geo-fence OK"));
-#if FENCE_TRIGGERED_PIN > 0
+ #if FENCE_TRIGGERED_PIN > 0
             digitalWrite(FENCE_TRIGGERED_PIN, LOW);
-#endif
+ #endif
             gcs_send_message(MSG_FENCE_STATUS);
         }
         // we're inside, all is good with the world
@@ -232,7 +232,7 @@ static void geofence_check(bool altitude_check_only)
     }
 
     // we are outside the fence
-    if (geofence_state->fence_triggered && 
+    if (geofence_state->fence_triggered &&
         (control_mode == GUIDED || g.fence_action == FENCE_ACTION_REPORT)) {
         // we have already triggered, don't trigger again until the
         // user disables/re-enables using the fence channel switch
@@ -245,9 +245,9 @@ static void geofence_check(bool altitude_check_only)
     geofence_state->breach_time = millis();
     geofence_state->breach_type = breach_type;
 
-#if FENCE_TRIGGERED_PIN > 0
+ #if FENCE_TRIGGERED_PIN > 0
     digitalWrite(FENCE_TRIGGERED_PIN, HIGH);
-#endif
+ #endif
 
     gcs_send_text_P(SEVERITY_LOW,PSTR("geo-fence triggered"));
     gcs_send_message(MSG_FENCE_STATUS);
@@ -286,10 +286,10 @@ static void geofence_check(bool altitude_check_only)
 }
 
 /*
-  return true if geofencing allows stick mixing. When we have
-  triggered failsafe and are in GUIDED mode then stick mixing is
-  disabled. Otherwise the aircraft may not be able to recover from
-  a breach of the geo-fence
+ *  return true if geofencing allows stick mixing. When we have
+ *  triggered failsafe and are in GUIDED mode then stick mixing is
+ *  disabled. Otherwise the aircraft may not be able to recover from
+ *  a breach of the geo-fence
  */
 static bool geofence_stickmixing(void) {
     if (geofence_enabled() &&
@@ -304,7 +304,7 @@ static bool geofence_stickmixing(void) {
 }
 
 /*
-
+ *
  */
 static void geofence_send_status(mavlink_channel_t chan)
 {
@@ -318,16 +318,21 @@ static void geofence_send_status(mavlink_channel_t chan)
 }
 
 // public function for use in failsafe modules
-bool geofence_breached(void) 
-{ 
-    return geofence_state?geofence_state->fence_triggered:false; 
+bool geofence_breached(void)
+{
+    return geofence_state ? geofence_state->fence_triggered : false;
 }
 
 
 #else // GEOFENCE_ENABLED
 
-static void geofence_check(bool altitude_check_only) { }
-static bool geofence_stickmixing(void) { return true; }
-static bool geofence_enabled(void) { return false; }
+static void geofence_check(bool altitude_check_only) {
+}
+static bool geofence_stickmixing(void) {
+    return true;
+}
+static bool geofence_enabled(void) {
+    return false;
+}
 
 #endif // GEOFENCE_ENABLED
