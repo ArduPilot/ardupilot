@@ -19,22 +19,22 @@
 class AP_GPS_MTK16 : public GPS {
 public:
     AP_GPS_MTK16(Stream *s);
-    virtual void	init(enum GPS_Engine_Setting nav_setting = GPS_ENGINE_NONE);
-    virtual bool	read(void);
+    virtual void        init(enum GPS_Engine_Setting nav_setting = GPS_ENGINE_NONE);
+    virtual bool        read(void);
 
 private:
 // XXX this is being ignored by the compiler #pragma pack(1)
     struct diyd_mtk_msg {
-        int32_t		latitude;
-        int32_t		longitude;
-        int32_t		altitude;
-        int32_t		ground_speed;
-        int32_t		ground_course;
-        uint8_t		satellites;
-        uint8_t		fix_type;
-        uint32_t	utc_date;
-        uint32_t	utc_time;
-        uint16_t	hdop;
+        int32_t latitude;
+        int32_t longitude;
+        int32_t altitude;
+        int32_t ground_speed;
+        int32_t ground_course;
+        uint8_t satellites;
+        uint8_t fix_type;
+        uint32_t utc_date;
+        uint32_t utc_time;
+        uint16_t hdop;
     };
 // #pragma pack(pop)
     enum diyd_mtk_fix_type {
@@ -50,22 +50,22 @@ private:
     };
 
     // Packet checksum accumulators
-    uint8_t 	_ck_a;
-    uint8_t 	_ck_b;
+    uint8_t         _ck_a;
+    uint8_t         _ck_b;
 
     // State machine state
-    uint8_t 	_step;
-    uint8_t		_payload_counter;
+    uint8_t         _step;
+    uint8_t         _payload_counter;
 
     // Time from UNIX Epoch offset
-    long		_time_offset;
-    bool		_offset_calculated;
+    long            _time_offset;
+    bool            _offset_calculated;
 
     // Receive buffer
     union {
-        diyd_mtk_msg	msg;
-        uint8_t			bytes[];
+        diyd_mtk_msg msg;
+        uint8_t bytes[];
     } _buffer;
 };
 
-#endif	// AP_GPS_MTK16_H
+#endif  // AP_GPS_MTK16_H
