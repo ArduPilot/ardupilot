@@ -5,36 +5,36 @@
 #define GPS_DEBUGGING 0
 
 #if GPS_DEBUGGING
-#include <FastSerial.h>
-# define Debug(fmt, args...)  do {Serial.printf("%s:%d: " fmt "\n", __FUNCTION__, __LINE__ , ##args); delay(0); } while(0)
+ #include <FastSerial.h>
+ # define Debug(fmt, args ...)  do {Serial.printf("%s:%d: " fmt "\n", __FUNCTION__, __LINE__, ## args); delay(0); } while(0)
 #else
-# define Debug(fmt, args...)
+ # define Debug(fmt, args ...)
 #endif
 
 #include <AP_Common.h>
 #include <AP_Math.h>
 #include "GPS.h"
 #if defined(ARDUINO) && ARDUINO >= 100
-	#include "Arduino.h"
+ #include "Arduino.h"
 #else
-	#include "WProgram.h"
+ #include "WProgram.h"
 #endif
 
 void
 GPS::update(void)
 {
-    bool	result;
-	uint32_t tnow;
+    bool result;
+    uint32_t tnow;
 
     // call the GPS driver to process incoming data
     result = read();
 
-	tnow = millis();
+    tnow = millis();
 
     // if we did not get a message, and the idle timer has expired, re-init
     if (!result) {
         if ((tnow - _idleTimer) > idleTimeout) {
-			Debug("gps read timeout %lu %lu", (unsigned long)tnow, (unsigned long)_idleTimer);
+            Debug("gps read timeout %lu %lu", (unsigned long)tnow, (unsigned long)_idleTimer);
             _status = NO_GPS;
 
             init(_nav_setting);
@@ -51,26 +51,26 @@ GPS::update(void)
         // reset the idle timer
         _idleTimer = tnow;
 
-		if (_status == GPS_OK) {
-			last_fix_time = _idleTimer;
-			_last_ground_speed_cm = ground_speed;
+        if (_status == GPS_OK) {
+            last_fix_time = _idleTimer;
+            _last_ground_speed_cm = ground_speed;
 
-			if (_have_raw_velocity) {
-				// the GPS is able to give us velocity numbers directly
-				_velocity_north = _vel_north * 0.01;
-				_velocity_east  = _vel_east * 0.01;
-			} else {
-				float gps_heading = ToRad(ground_course * 0.01);
-				float gps_speed   = ground_speed * 0.01;
-				float sin_heading, cos_heading;
+            if (_have_raw_velocity) {
+                // the GPS is able to give us velocity numbers directly
+                _velocity_north = _vel_north * 0.01;
+                _velocity_east  = _vel_east * 0.01;
+            } else {
+                float gps_heading = ToRad(ground_course * 0.01);
+                float gps_speed   = ground_speed * 0.01;
+                float sin_heading, cos_heading;
 
-				cos_heading = cos(gps_heading);
-				sin_heading = sin(gps_heading);
+                cos_heading = cos(gps_heading);
+                sin_heading = sin(gps_heading);
 
-				_velocity_north = gps_speed * cos_heading;
-				_velocity_east  = gps_speed * sin_heading;
-			}
-		}
+                _velocity_north = gps_speed * cos_heading;
+                _velocity_east  = gps_speed * sin_heading;
+            }
+        }
     }
 }
 
@@ -92,7 +92,7 @@ GPS::_error(const char *msg)
 ///
 void GPS::_write_progstr_block(Stream *_fs, const prog_char *pstr, uint8_t size)
 {
-	while (size--) {
-		_fs->write(pgm_read_byte(pstr++));
-	}
+    while (size--) {
+        _fs->write(pgm_read_byte(pstr++));
+    }
 }
