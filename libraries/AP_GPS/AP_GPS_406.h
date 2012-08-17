@@ -14,18 +14,18 @@
 
 #include "AP_GPS_SIRF.h"
 
-#define GPS_406_BITRATE		57600
+#define GPS_406_BITRATE         57600
 
 class AP_GPS_406 : public AP_GPS_SIRF
 {
 public:
     // Methods
     AP_GPS_406(Stream *port);
-    virtual void	init(enum GPS_Engine_Setting nav_setting = GPS_ENGINE_NONE);
+    virtual void        init(enum GPS_Engine_Setting nav_setting = GPS_ENGINE_NONE);
 
 private:
-    void		_change_to_sirf_protocol(void);
-    void		_configure_gps(void);
+    void                _change_to_sirf_protocol(void);
+    void                _configure_gps(void);
 };
 
 #endif
