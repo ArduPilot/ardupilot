@@ -10,9 +10,9 @@
 #include <stdlib.h>
 #include "c++.h"
 #if defined(ARDUINO) && ARDUINO >= 100
-	#include "Arduino.h"
+ #include "Arduino.h"
 #else
-	#include "WProgram.h"
+ #include "WProgram.h"
 #endif
 
 void * operator new(size_t size)
@@ -62,7 +62,8 @@ void __cxa_guard_release (__guard *g)
     *(char *)g = 1;
 };
 
-void __cxa_guard_abort (__guard *) {};
+void __cxa_guard_abort (__guard *) {
+};
 
 // free memory
 extern unsigned int __bss_end;
