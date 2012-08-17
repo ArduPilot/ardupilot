@@ -16,7 +16,7 @@ const AP_Param::GroupInfo Compass::var_info[] PROGMEM = {
 // their values.
 //
 Compass::Compass(void) :
-	product_id(AP_COMPASS_TYPE_UNKNOWN),
+    product_id(AP_COMPASS_TYPE_UNKNOWN),
     _orientation(ROTATION_NONE),
     _null_init_done(false)
 {
@@ -59,10 +59,10 @@ Compass::set_initial_location(int32_t latitude, int32_t longitude)
 {
     // if automatic declination is configured, then compute
     // the declination based on the initial GPS fix
-	if (_auto_declination) {
-		// Set the declination based on the lat/lng from GPS
-		_declination.set(radians(AP_Declination::get_declination((float)latitude / 10000000, (float)longitude / 10000000)));
-	}
+    if (_auto_declination) {
+        // Set the declination based on the lat/lng from GPS
+        _declination.set(radians(AP_Declination::get_declination((float)latitude / 10000000, (float)longitude / 10000000)));
+    }
 }
 
 void
@@ -74,7 +74,7 @@ Compass::set_declination(float radians)
 float
 Compass::get_declination()
 {
-  return _declination.get();
+    return _declination.get();
 }
 
 
@@ -92,9 +92,9 @@ Compass::calculate_heading(float roll, float pitch)
     float heading;
 
     cos_roll = cos(roll);
-	sin_roll = sin(roll);
+    sin_roll = sin(roll);
     cos_pitch = cos(pitch);
-	sin_pitch = sin(pitch);
+    sin_pitch = sin(pitch);
 
     // Tilt compensated magnetic field X component:
     headX = mag_x*cos_pitch + mag_y*sin_roll*sin_pitch + mag_z*cos_roll*sin_pitch;
@@ -125,9 +125,9 @@ Compass::calculate_heading(const Matrix3f &dcm_matrix)
     float cos_pitch = safe_sqrt(1-(dcm_matrix.c.x*dcm_matrix.c.x));
     float heading;
 
-	// sin(pitch) = - dcm_matrix(3,1)
-	// cos(pitch)*sin(roll) = - dcm_matrix(3,2)
-	// cos(pitch)*cos(roll) = - dcm_matrix(3,3)
+    // sin(pitch) = - dcm_matrix(3,1)
+    // cos(pitch)*sin(roll) = - dcm_matrix(3,2)
+    // cos(pitch)*cos(roll) = - dcm_matrix(3,3)
 
     if (cos_pitch == 0.0) {
         // we are pointing straight up or down so don't update our
@@ -142,7 +142,7 @@ Compass::calculate_heading(const Matrix3f &dcm_matrix)
     headY = mag_y*dcm_matrix.c.z/cos_pitch - mag_z*dcm_matrix.c.y/cos_pitch;
     // magnetic heading
     // 6/4/11 - added constrain to keep bad values from ruining DCM Yaw - Jason S.
-	heading = constrain(atan2(-headY,headX), -3.15, 3.15);
+    heading = constrain(atan2(-headY,headX), -3.15, 3.15);
 
     // Declination correction (if supplied)
     if( fabs(_declination) > 0.0 )
@@ -159,24 +159,24 @@ Compass::calculate_heading(const Matrix3f &dcm_matrix)
 
 
 /*
-  this offset nulling algorithm is inspired by this paper from Bill Premerlani
-
-  http://gentlenav.googlecode.com/files/MagnetometerOffsetNullingRevisited.pdf
-
-  The base algorithm works well, but is quite sensitive to
-  noise. After long discussions with Bill, the following changes were
-  made:
-
-    1) we keep a history buffer that effectively divides the mag
-       vectors into a set of N streams. The algorithm is run on the
-       streams separately
-
-    2) within each stream we only calculate a change when the mag
-       vector has changed by a significant amount.
-
-  This gives us the property that we learn quickly if there is no
-  noise, but still learn correctly (and slowly) in the face of lots of
-  noise.
+ *  this offset nulling algorithm is inspired by this paper from Bill Premerlani
+ *
+ *  http://gentlenav.googlecode.com/files/MagnetometerOffsetNullingRevisited.pdf
+ *
+ *  The base algorithm works well, but is quite sensitive to
+ *  noise. After long discussions with Bill, the following changes were
+ *  made:
+ *
+ *   1) we keep a history buffer that effectively divides the mag
+ *      vectors into a set of N streams. The algorithm is run on the
+ *      streams separately
+ *
+ *   2) within each stream we only calculate a change when the mag
+ *      vector has changed by a significant amount.
+ *
+ *  This gives us the property that we learn quickly if there is no
+ *  noise, but still learn correctly (and slowly) in the face of lots of
+ *  noise.
  */
 void
 Compass::null_offsets(void)
