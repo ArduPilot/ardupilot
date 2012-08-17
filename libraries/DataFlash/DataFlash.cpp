@@ -273,7 +273,7 @@ void DataFlash_Class::start_new_log(void)
 
 // This function finds the first and last pages of a log file
 // The first page may be greater than the last page if the DataFlash has been filled and partially overwritten.
-void DataFlash_Class::get_log_boundaries(uint8_t log_num, int & start_page, int & end_page)
+void DataFlash_Class::get_log_boundaries(uint8_t log_num, int16_t & start_page, int16_t & end_page)
 {
 	int num = get_num_logs();
 	int look;
