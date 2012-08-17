@@ -5,7 +5,7 @@ COMMIT=$2
 function do_commit {
   if [ $COMMIT == 1 ] ;then
       git commit $1 --author="uncrustify <pat@moreproductive.org>" \
-          --message="uncrustify";
+          --message="uncrustify $1";
   fi
 }
 
