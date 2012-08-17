@@ -17,27 +17,31 @@
 #include <inttypes.h>
 #include <Filter.h>
 
-// 1st parameter <T> is the type of data being filtered.  
+// 1st parameter <T> is the type of data being filtered.
 template <class T>
 class LowPassFilter : public Filter<T>
 {
-  public:
-	// constructor
-	LowPassFilter(float gain);
+public:
+    // constructor
+    LowPassFilter(float gain);
 
-	// apply - Add a new raw value to the filter, retrieve the filtered result
-	virtual T apply(T sample);
+    // apply - Add a new raw value to the filter, retrieve the filtered result
+    virtual T        apply(T sample);
 
-	// reset - clear the filter - next sample added will become the new base value
-	virtual void reset() { _base_value_set = false; };
+    // reset - clear the filter - next sample added will become the new base value
+    virtual void        reset() {
+        _base_value_set = false;
+    };
 
-	// reset - clear the filter and provide the new base value
-	virtual void reset( T new_base_value ) { _base_value = new_base_value; _base_value_set = true;};
+    // reset - clear the filter and provide the new base value
+    virtual void        reset( T new_base_value ) {
+        _base_value = new_base_value; _base_value_set = true;
+    };
 
-  private:
-	float	_gain;				// gain value  (like 0.02) applied to each new value
-	bool	_base_value_set;	// true if the base value has been set
-	float	_base_value;		// the number of samples in the filter, maxes out at size of the filter
+private:
+    float           _gain;                      // gain value  (like 0.02) applied to each new value
+    bool            _base_value_set;    // true if the base value has been set
+    float           _base_value;        // the number of samples in the filter, maxes out at size of the filter
 };
 
 // Typedef for convenience (1st argument is the data type, 2nd is a larger datatype to handle overflows, 3rd is buffer size)
@@ -56,34 +60,34 @@ typedef LowPassFilter<float> LowPassFilterFloat;
 
 template <class T>
 LowPassFilter<T>::LowPassFilter(float gain) :
-	Filter<T>(),
-	_gain(gain),
-	_base_value_set(false)
+    Filter<T>(),
+    _gain(gain),
+    _base_value_set(false)
 {
-	// bounds checking on _gain
-	if( _gain > 1.0) {
-		_gain = 1.0;
-	}else if( _gain < 0.0 ) {
-		_gain = 0.0;
-	}
+    // bounds checking on _gain
+    if( _gain > 1.0) {
+        _gain = 1.0;
+    }else if( _gain < 0.0 ) {
+        _gain = 0.0;
+    }
 };
 
 // Public Methods //////////////////////////////////////////////////////////////
 
 template <class T>
-T LowPassFilter<T>::apply(T sample)
+T LowPassFilter<T>::        apply(T sample)
 {
-	// initailise _base_value if required
-	if( ! _base_value_set ) {
-		_base_value = sample;
-		_base_value_set = true;
-	}
+    // initailise _base_value if required
+    if( !_base_value_set ) {
+        _base_value = sample;
+        _base_value_set = true;
+    }
 
-	// do the filtering
-	_base_value = _gain * (float)sample + (1.0 - _gain) * _base_value;
+    // do the filtering
+    _base_value = _gain * (float)sample + (1.0 - _gain) * _base_value;
 
-	// return the value.  Should be no need to check limits
-	return (T)_base_value;
+    // return the value.  Should be no need to check limits
+    return (T)_base_value;
 }
 
 #endif
