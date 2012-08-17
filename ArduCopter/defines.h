@@ -4,8 +4,8 @@
 #define _DEFINES_H
 
 // Just so that it's completely clear...
-#define ENABLED			1
-#define DISABLED		0
+#define ENABLED                 1
+#define DISABLED                0
 
 // this avoids a very common config error
 #define ENABLE ENABLED
@@ -13,22 +13,23 @@
 
 // Flight modes
 // ------------
-#define YAW_HOLD 			0
-#define YAW_ACRO 			1
-#define YAW_AUTO 			2
-#define YAW_LOOK_AT_HOME 	3
-#define YAW_TOY 			4	// THOR This is the Yaw mode
+#define YAW_HOLD                        0
+#define YAW_ACRO                        1
+#define YAW_AUTO                        2
+#define YAW_LOOK_AT_HOME        3
+#define YAW_TOY                         4       // THOR This is the Yaw mode
 
 
-#define ROLL_PITCH_STABLE 	0
-#define ROLL_PITCH_ACRO 	1
-#define ROLL_PITCH_AUTO		2
-#define ROLL_PITCH_STABLE_OF	3
-#define ROLL_PITCH_TOY		4	// THOR This is the Roll and Pitch mode
+#define ROLL_PITCH_STABLE       0
+#define ROLL_PITCH_ACRO         1
+#define ROLL_PITCH_AUTO         2
+#define ROLL_PITCH_STABLE_OF    3
+#define ROLL_PITCH_TOY          4       // THOR This is the Roll and Pitch
+                                        // mode
 
-#define THROTTLE_MANUAL 	0
-#define THROTTLE_HOLD 		1
-#define THROTTLE_AUTO		2
+#define THROTTLE_MANUAL         0
+#define THROTTLE_HOLD           1
+#define THROTTLE_AUTO           2
 
 
 // active altitude sensor
@@ -79,8 +80,8 @@
 
 #define TRUE 1
 #define FALSE 0
-#define ToRad(x) (x*0.01745329252)	// *pi/180
-#define ToDeg(x) (x*57.2957795131)	// *180/pi
+#define ToRad(x) (x*0.01745329252)      // *pi/180
+#define ToDeg(x) (x*57.2957795131)      // *180/pi
 
 #define DEBUG 0
 #define LOITER_RANGE 60 // for calculating power outside of loiter radius
@@ -89,15 +90,15 @@
 #define T7 10000000
 
 // GPS type codes - use the names, not the numbers
-#define GPS_PROTOCOL_NONE	-1
-#define GPS_PROTOCOL_NMEA	0
-#define GPS_PROTOCOL_SIRF	1
-#define GPS_PROTOCOL_UBLOX	2
-#define GPS_PROTOCOL_IMU	3
-#define GPS_PROTOCOL_MTK	4
-#define GPS_PROTOCOL_HIL	5
-#define GPS_PROTOCOL_MTK16	6
-#define GPS_PROTOCOL_AUTO	7
+#define GPS_PROTOCOL_NONE       -1
+#define GPS_PROTOCOL_NMEA       0
+#define GPS_PROTOCOL_SIRF       1
+#define GPS_PROTOCOL_UBLOX      2
+#define GPS_PROTOCOL_IMU        3
+#define GPS_PROTOCOL_MTK        4
+#define GPS_PROTOCOL_HIL        5
+#define GPS_PROTOCOL_MTK16      6
+#define GPS_PROTOCOL_AUTO       7
 
 #define CH_ROLL CH_1
 #define CH_PITCH CH_2
@@ -110,29 +111,30 @@
 #define RC_CHANNEL_ANGLE_RAW 2
 
 // HIL enumerations
-#define HIL_MODE_DISABLED			0
-#define HIL_MODE_ATTITUDE			1
-#define HIL_MODE_SENSORS			2
+#define HIL_MODE_DISABLED                       0
+#define HIL_MODE_ATTITUDE                       1
+#define HIL_MODE_SENSORS                        2
 
-#define ASCENDING			1
-#define DESCENDING			-1
-#define REACHED_ALT			0
+#define ASCENDING                       1
+#define DESCENDING                      -1
+#define REACHED_ALT                     0
 
 // Auto Pilot modes
 // ----------------
-#define STABILIZE 0			// hold level position
-#define ACRO 1				// rate control
-#define ALT_HOLD 2			// AUTO control
-#define AUTO 3				// AUTO control
-#define GUIDED 4			// AUTO control
-#define LOITER 5			// Hold a single location
-#define RTL 6				// AUTO control
-#define CIRCLE 7			// AUTO control
-#define POSITION 8			// AUTO control
-#define LAND 9				// AUTO control
-#define OF_LOITER 10		// Hold a single location using optical flow sensor
-#define TOY_A 11				// THOR Enum for Toy mode
-#define TOY_M 12				// THOR Enum for Toy mode
+#define STABILIZE 0                     // hold level position
+#define ACRO 1                          // rate control
+#define ALT_HOLD 2                      // AUTO control
+#define AUTO 3                          // AUTO control
+#define GUIDED 4                        // AUTO control
+#define LOITER 5                        // Hold a single location
+#define RTL 6                           // AUTO control
+#define CIRCLE 7                        // AUTO control
+#define POSITION 8                      // AUTO control
+#define LAND 9                          // AUTO control
+#define OF_LOITER 10            // Hold a single location using optical flow
+                                // sensor
+#define TOY_A 11                                // THOR Enum for Toy mode
+#define TOY_M 12                                // THOR Enum for Toy mode
 #define NUM_MODES 13
 
 #define SIMPLE_1 1
@@ -148,7 +150,7 @@
 // Attitude
 #define CH6_STABILIZE_KP 1
 #define CH6_STABILIZE_KI 2
-#define CH6_STABILIZE_KD 29		// duplicate with CH6_DAMP
+#define CH6_STABILIZE_KD 29             // duplicate with CH6_DAMP
 #define CH6_YAW_KP 3
 #define CH6_YAW_KI 24
 // Rate
@@ -164,7 +166,7 @@
 #define CH6_TOP_BOTTOM_RATIO 8
 #define CH6_RELAY 9
 // Navigation
-#define CH6_TRAVERSE_SPEED 10	// maximum speed to next way point
+#define CH6_TRAVERSE_SPEED 10   // maximum speed to next way point
 #define CH6_NAV_KP 11
 #define CH6_LOITER_KP 12
 #define CH6_LOITER_KI 27
@@ -175,7 +177,7 @@
 // altitude controller
 #define CH6_THR_HOLD_KP 14
 #define CH6_Z_GAIN 15
-#define CH6_DAMP 16		// duplicate with CH6_YAW_RATE_KD
+#define CH6_DAMP 16             // duplicate with CH6_YAW_RATE_KD
 
 // optical flow controller
 #define CH6_OPTFLOW_KP 17
@@ -187,8 +189,8 @@
 #define CH6_LOITER_RATE_KI 28
 #define CH6_LOITER_RATE_KD 23
 
-#define CH6_AHRS_YAW_KP	30
-#define CH6_AHRS_KP		31
+#define CH6_AHRS_YAW_KP 30
+#define CH6_AHRS_KP             31
 
 
 // nav byte mask
@@ -198,8 +200,10 @@
 #define NAV_DELAY    4
 
 
-// Commands - Note that APM now uses a subset of the MAVLink protocol commands.  See enum MAV_CMD in the GCS_Mavlink library
-#define CMD_BLANK 0 // there is no command stored in the mem location requested
+// Commands - Note that APM now uses a subset of the MAVLink protocol
+// commands.  See enum MAV_CMD in the GCS_Mavlink library
+#define CMD_BLANK 0 // there is no command stored in the mem location
+                    // requested
 #define NO_COMMAND 0
 
 
@@ -207,7 +211,8 @@
 #define WP_MODE 2
 #define CIRCLE_MODE 3
 #define NO_NAV_MODE 4
-#define TOY_MODE 5			// THOR This mode defines the Virtual WP following mode
+#define TOY_MODE 5                      // THOR This mode defines the Virtual
+                                        // WP following mode
 
 // TOY mixing options
 #define TOY_LOOKUP_TABLE 0
@@ -216,14 +221,14 @@
 
 
 // Waypoint options
-#define MASK_OPTIONS_RELATIVE_ALT 		1
-#define WP_OPTION_ALT_CHANGE 			2
-#define WP_OPTION_YAW 					4
-#define WP_OPTION_ALT_REQUIRED			8
-#define WP_OPTION_RELATIVE				16
+#define MASK_OPTIONS_RELATIVE_ALT               1
+#define WP_OPTION_ALT_CHANGE                    2
+#define WP_OPTION_YAW                                   4
+#define WP_OPTION_ALT_REQUIRED                  8
+#define WP_OPTION_RELATIVE                              16
 //#define WP_OPTION_					32
 //#define WP_OPTION_					64
-#define WP_OPTION_NEXT_CMD				128
+#define WP_OPTION_NEXT_CMD                              128
 
 //repeating events
 #define NO_REPEAT 0
@@ -274,38 +279,38 @@ enum gcs_severity {
 };
 
 //  Logging parameters
-#define TYPE_AIRSTART_MSG		0x00
-#define TYPE_GROUNDSTART_MSG	0x01
-#define LOG_ATTITUDE_MSG		0x01
-#define LOG_GPS_MSG				0x02
-#define LOG_MODE_MSG			0X03
-#define LOG_CONTROL_TUNING_MSG	0X04
-#define LOG_NAV_TUNING_MSG		0X05
-#define LOG_PERFORMANCE_MSG		0X06
-#define LOG_RAW_MSG				0x07
-#define LOG_CMD_MSG				0x08
-#define LOG_CURRENT_MSG 		0x09
-#define LOG_STARTUP_MSG 		0x0A
-#define LOG_MOTORS_MSG 			0x0B
-#define LOG_OPTFLOW_MSG 		0x0C
-#define LOG_DATA_MSG 			0x0D
-#define LOG_PID_MSG 			0x0E
-#define LOG_INDEX_MSG			0xF0
-#define MAX_NUM_LOGS			50
+#define TYPE_AIRSTART_MSG               0x00
+#define TYPE_GROUNDSTART_MSG    0x01
+#define LOG_ATTITUDE_MSG                0x01
+#define LOG_GPS_MSG                             0x02
+#define LOG_MODE_MSG                    0X03
+#define LOG_CONTROL_TUNING_MSG  0X04
+#define LOG_NAV_TUNING_MSG              0X05
+#define LOG_PERFORMANCE_MSG             0X06
+#define LOG_RAW_MSG                             0x07
+#define LOG_CMD_MSG                             0x08
+#define LOG_CURRENT_MSG                 0x09
+#define LOG_STARTUP_MSG                 0x0A
+#define LOG_MOTORS_MSG                  0x0B
+#define LOG_OPTFLOW_MSG                 0x0C
+#define LOG_DATA_MSG                    0x0D
+#define LOG_PID_MSG                     0x0E
+#define LOG_INDEX_MSG                   0xF0
+#define MAX_NUM_LOGS                    50
 
-#define MASK_LOG_ATTITUDE_FAST 	(1<<0)
-#define MASK_LOG_ATTITUDE_MED 	(1<<1)
-#define MASK_LOG_GPS 			(1<<2)
-#define MASK_LOG_PM 			(1<<3)
-#define MASK_LOG_CTUN 			(1<<4)
-#define MASK_LOG_NTUN			(1<<5)
-#define MASK_LOG_MODE			(1<<6)
-#define MASK_LOG_RAW			(1<<7)
-#define MASK_LOG_CMD			(1<<8)
-#define MASK_LOG_CUR			(1<<9)
-#define MASK_LOG_MOTORS			(1<<10)
-#define MASK_LOG_OPTFLOW		(1<<11)
-#define MASK_LOG_PID			(1<<12)
+#define MASK_LOG_ATTITUDE_FAST  (1<<0)
+#define MASK_LOG_ATTITUDE_MED   (1<<1)
+#define MASK_LOG_GPS                    (1<<2)
+#define MASK_LOG_PM                     (1<<3)
+#define MASK_LOG_CTUN                   (1<<4)
+#define MASK_LOG_NTUN                   (1<<5)
+#define MASK_LOG_MODE                   (1<<6)
+#define MASK_LOG_RAW                    (1<<7)
+#define MASK_LOG_CMD                    (1<<8)
+#define MASK_LOG_CUR                    (1<<9)
+#define MASK_LOG_MOTORS                 (1<<10)
+#define MASK_LOG_OPTFLOW                (1<<11)
+#define MASK_LOG_PID                    (1<<12)
 
 // Waypoint Modes
 // ----------------
@@ -326,7 +331,8 @@ enum gcs_severity {
 #define EVENT_LOOP 4
 
 // Climb rate calculations
-#define	ALTITUDE_HISTORY_LENGTH 8	//Number of (time,altitude) points to regress a climb rate from
+#define ALTITUDE_HISTORY_LENGTH 8       //Number of (time,altitude) points to
+                                        // regress a climb rate from
 
 #define BATTERY_VOLTAGE(x) (x*(g.input_voltage/1024.0))*g.volt_div_ratio
 #define CURRENT_AMPS(x) ((x*(g.input_voltage/1024.0))-CURR_AMPS_OFFSET)*g.curr_amp_per_volt
@@ -336,23 +342,33 @@ enum gcs_severity {
 /* ************************************************************** */
 /* Expansion PIN's that people can use for various things. */
 
-// AN0 - 7 are located at edge of IMU PCB "above" pressure sensor and Expansion port
+// AN0 - 7 are located at edge of IMU PCB "above" pressure sensor and
+// Expansion port
 // AN0 - 5 are also located next to voltage dividers and sliding SW2 switch
-// AN0 - 3 has 10kOhm resistor in serial, include 3.9kOhm to make it as voltage divider
-// AN4 - 5 are direct GPIO pins from atmega1280 and they are the latest pins next to SW2 switch
+// AN0 - 3 has 10kOhm resistor in serial, include 3.9kOhm to make it as
+// voltage divider
+// AN4 - 5 are direct GPIO pins from atmega1280 and they are the latest pins
+// next to SW2 switch
 // Look more ArduCopter Wiki for voltage dividers and other ports
 #define AN0  54  // resistor, vdiv use, divider 1 closest to relay
 #define AN1  55  // resistor, vdiv use, divider 2
 #define AN2  56  // resistor, vdiv use, divider 3
 #define AN3  57  // resistor, vdiv use, divider 4 closest to SW2
-#define AN4  58  // direct GPIO pin, default as analog input, next to SW2 switch
-#define AN5  59  // direct GPIO pin, default as analog input, next to SW2 switch
-#define AN6  60  // direct GPIO pin, default as analog input, close to Pressure sensor, Expansion Ports
-#define AN7  61  // direct GPIO pin, default as analog input, close to Pressure sensor, Expansion Ports
+#define AN4  58  // direct GPIO pin, default as analog input, next to SW2
+                 // switch
+#define AN5  59  // direct GPIO pin, default as analog input, next to SW2
+                 // switch
+#define AN6  60  // direct GPIO pin, default as analog input, close to
+                 // Pressure sensor, Expansion Ports
+#define AN7  61  // direct GPIO pin, default as analog input, close to
+                 // Pressure sensor, Expansion Ports
 
-// AN8 - 15 are located at edge of IMU PCB "above" pressure sensor and Expansion port
-// AN8 - 15 PINs are not connected anywhere, they are located as last 8 pins on edge of the board above Expansion Ports
-// even pins (8,10,12,14) are at edge of board, Odd pins (9,11,13,15) are on inner row
+// AN8 - 15 are located at edge of IMU PCB "above" pressure sensor and
+// Expansion port
+// AN8 - 15 PINs are not connected anywhere, they are located as last 8 pins
+// on edge of the board above Expansion Ports
+// even pins (8,10,12,14) are at edge of board, Odd pins (9,11,13,15) are on
+// inner row
 #define AN8  62  // NC
 #define AN9  63  // NC
 #define AN10  64 // NC
@@ -377,9 +393,10 @@ enum gcs_severity {
 
 
 // EEPROM addresses
-#define EEPROM_MAX_ADDR		4096
+#define EEPROM_MAX_ADDR         4096
 // parameters get the first 1536 bytes of EEPROM, remainder is for waypoints
-#define WP_START_BYTE 0x600 // where in memory home WP is stored + all other WP
+#define WP_START_BYTE 0x600 // where in memory home WP is stored + all other
+                            // WP
 #define WP_SIZE 15
 
 #define ONBOARD_PARAM_NAME_LENGTH 15
@@ -389,7 +406,11 @@ enum gcs_severity {
 #define FENCE_WP_SIZE sizeof(Vector2l)
 #define FENCE_START_BYTE (EEPROM_MAX_ADDR-(MAX_FENCEPOINTS*FENCE_WP_SIZE))
 
-#define MAX_WAYPOINTS  ((FENCE_START_BYTE - WP_START_BYTE) / WP_SIZE) - 1 // - 1 to be safe
+#define MAX_WAYPOINTS  ((FENCE_START_BYTE - WP_START_BYTE) / WP_SIZE) - 1 // -
+                                                                          // 1
+                                                                          // to
+                                                                          // be
+                                                                          // safe
 
 // mark a function as not to be inlined
 #define NOINLINE __attribute__((noinline))
