@@ -2,14 +2,14 @@
 
 // These are function definitions so the Menu can be constructed before the functions
 // are defined below. Order matters to the compiler.
-static int8_t	planner_gcs(uint8_t argc, 		const Menu::arg *argv);
+static int8_t   planner_gcs(uint8_t argc,               const Menu::arg *argv);
 
 // Creates a constant array of structs representing menu options
 // and stores them in Flash memory, not RAM.
 // User enters the string in the console to call the functions on the right.
 // See class Menu in AP_Common for implementation details
 const struct Menu::command planner_menu_commands[] PROGMEM = {
-	{"gcs",		planner_gcs},
+    {"gcs",         planner_gcs},
 };
 
 // A Macro to create the Menu
@@ -18,23 +18,23 @@ MENU(planner_menu, "planner", planner_menu_commands);
 static int8_t
 planner_mode(uint8_t argc, const Menu::arg *argv)
 {
-	Serial.printf_P(PSTR("Planner Mode\nNot intended for manual use\n\n"));
-	planner_menu.run();
-	return (0);
+    Serial.printf_P(PSTR("Planner Mode\nNot intended for manual use\n\n"));
+    planner_menu.run();
+    return (0);
 }
 
 static int8_t
 planner_gcs(uint8_t argc, const Menu::arg *argv)
 {
-	gcs0.init(&Serial);
+    gcs0.init(&Serial);
 
-	int16_t loopcount = 0;
+    int16_t loopcount = 0;
 
-	while (1) {
-		if (millis()-fast_loopTimer > 19) {
-			fast_loopTimer			= millis();
+    while (1) {
+        if (millis()-fast_loopTimer > 19) {
+            fast_loopTimer                  = millis();
 
-			gcs_update();
+            gcs_update();
 
             read_radio();
 
@@ -44,9 +44,9 @@ planner_gcs(uint8_t argc, const Menu::arg *argv)
                 gcs_send_message(MSG_HEARTBEAT);
             }
 
-			loopcount++;
-		}
-	}
-	return 0;
+            loopcount++;
+        }
+    }
+    return 0;
 }
 
