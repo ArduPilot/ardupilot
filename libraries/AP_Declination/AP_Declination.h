@@ -11,13 +11,13 @@
  *	Scott Ferguson
  *	scottfromscott@gmail.com
  *
-*/
+ */
 class AP_Declination
 {
 public:
-	static float get_declination(float lat, float lon);
+    static float            get_declination(float lat, float lon);
 private:
-	static int16_t get_lookup_value(uint8_t x, uint8_t y);
+    static int16_t          get_lookup_value(uint8_t x, uint8_t y);
 };
 
 #endif // AP_Declination_h
