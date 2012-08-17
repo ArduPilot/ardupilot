@@ -19,15 +19,19 @@
 template <class T>
 class Filter
 {
-  public:
-	// constructor
-	Filter() {};
+public:
+    // constructor
+    Filter() {
+    };
 
-	// apply - Add a new raw value to the filter, retrieve the filtered result
-	virtual T apply(T sample) { return sample; };
-	
-	// reset - clear the filter
-	virtual void reset() {};
+    // apply - Add a new raw value to the filter, retrieve the filtered result
+    virtual T        apply(T sample) {
+        return sample;
+    };
+
+    // reset - clear the filter
+    virtual void        reset() {
+    };
 
 };
 
