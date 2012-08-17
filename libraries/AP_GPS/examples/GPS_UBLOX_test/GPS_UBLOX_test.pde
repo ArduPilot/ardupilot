@@ -1,10 +1,10 @@
 // -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: t -*-
 /*
-	Example of GPS UBlox library.
-	Code by Jordi Munoz and Jose Julio. DIYDrones.com
-
-	Works with Ardupilot Mega Hardware (GPS on Serial Port1)
-*/
+ *       Example of GPS UBlox library.
+ *       Code by Jordi Munoz and Jose Julio. DIYDrones.com
+ *
+ *       Works with Ardupilot Mega Hardware (GPS on Serial Port1)
+ */
 
 #include <FastSerial.h>
 #include <AP_Common.h>
@@ -26,7 +26,7 @@ void setup()
     gps.print_errors = true;
 
     Serial.println("GPS UBLOX library test");
-    gps.init(GPS::GPS_ENGINE_AIRBORNE_2G);	 // GPS Initialization
+    gps.init(GPS::GPS_ENGINE_AIRBORNE_2G);       // GPS Initialization
     delay(1000);
 }
 void loop()
@@ -45,10 +45,10 @@ void loop()
         Serial.print(gps.ground_speed / 100.0);
         Serial.print(" COG:");
         Serial.print(gps.ground_course / 100.0, DEC);
-		Serial.printf(" VEL: %.2f %.2f %.2f",
-					  gps.velocity_north(),
-					  gps.velocity_east(),
-					  sqrt(sq(gps.velocity_north())+sq(gps.velocity_east())));
+        Serial.printf(" VEL: %.2f %.2f %.2f",
+                      gps.velocity_north(),
+                      gps.velocity_east(),
+                      sqrt(sq(gps.velocity_north())+sq(gps.velocity_east())));
         Serial.print(" SAT:");
         Serial.print(gps.num_sats, DEC);
         Serial.print(" FIX:");
