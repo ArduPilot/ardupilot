@@ -22,41 +22,41 @@
 FastSerialPort(Serial, 0);
 
 Arduino_Mega_ISR_Registry isr_registry;
-AP_TimerProcess  adc_scheduler;
+AP_TimerProcess adc_scheduler;
 
-AP_ADC_ADS7844	adc;
+AP_ADC_ADS7844 adc;
 AP_InertialSensor_Oilpan oilpan_ins(&adc);
 AP_IMU_INS imu(&oilpan_ins,0);
 
 static void flash_leds(bool on)
 {
-    digitalWrite(A_LED_PIN, on?LED_OFF:LED_ON);
-    digitalWrite(C_LED_PIN, on?LED_ON:LED_OFF);
+    digitalWrite(A_LED_PIN, on ? LED_OFF : LED_ON);
+    digitalWrite(C_LED_PIN, on ? LED_ON : LED_OFF);
 }
 
 void setup(void)
 {
-	Serial.begin(115200);
-	Serial.println("Doing IMU startup...");
+    Serial.begin(115200);
+    Serial.println("Doing IMU startup...");
 
     isr_registry.init();
     adc_scheduler.init(&isr_registry);
 
     /* Should also call ins.init and adc.init */
-	imu.init(IMU::COLD_START, delay, flash_leds, &adc_scheduler);
-	imu.init_accel(delay, flash_leds);
+    imu.init(IMU::COLD_START, delay, flash_leds, &adc_scheduler);
+    imu.init_accel(delay, flash_leds);
 }
 
 void loop(void)
 {
-	Vector3f	accel;
-	Vector3f	gyro;
+    Vector3f accel;
+    Vector3f gyro;
 
-	delay(1000);
-	imu.update();
-	accel = imu.get_accel();
-	gyro = imu.get_gyro();
+    delay(1000);
+    imu.update();
+    accel = imu.get_accel();
+    gyro = imu.get_gyro();
 
-	Serial.printf("AX: %4.4f  AY: %4.4f  AZ: %4.4f  GX: %4.4f  GY: %4.4f  GZ: %4.4f\n",
-				  accel.x, accel.y, accel.z, gyro.x, gyro.y, gyro.z);
+    Serial.printf("AX: %4.4f  AY: %4.4f  AZ: %4.4f  GX: %4.4f  GY: %4.4f  GZ: %4.4f\n",
+                  accel.x, accel.y, accel.z, gyro.x, gyro.y, gyro.z);
 }
