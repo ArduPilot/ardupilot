@@ -369,11 +369,8 @@ static bool verify_takeoff()
 // called at 10hz
 static bool verify_land_sonar()
 {
-	static float icount = 1;
-
 	if(current_loc.alt > 300){
 		wp_control = LOITER_MODE;
-		icount = 1;
 		ground_detector = 0;
 	}else{
 		// begin to pull down on the throttle
