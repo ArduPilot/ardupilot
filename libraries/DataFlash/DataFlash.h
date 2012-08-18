@@ -36,7 +36,7 @@ class DataFlash_Class
 	virtual unsigned char BufferRead (unsigned char BufferNum, uint16_t IntPageAdr) = 0;
 	virtual void PageErase(uint16_t PageAdr) = 0;
 	virtual void BlockErase(uint16_t BlockAdr) = 0;
-	virtual void ChipErase(void (*delay_cb)(uint32_t)) = 0;
+	virtual void ChipErase(void (*delay_cb)(unsigned long)) = 0;
 
 	// internal high level functions
 	int16_t find_last_page(void);
@@ -58,7 +58,7 @@ class DataFlash_Class
 	int16_t GetWritePage(void);
 
 	// erase handling
-	void EraseAll(void (*delay_cb)(uint32_t));
+	void EraseAll(void (*delay_cb)(unsigned long));
 	bool NeedErase(void);
 
 	// Write methods

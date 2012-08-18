@@ -20,7 +20,7 @@ class DataFlash_APM1 : public DataFlash_Class
 	uint16_t PageSize();
 	void PageErase (uint16_t PageAdr);
 	void BlockErase (uint16_t BlockAdr);
-	void ChipErase(void (*delay_cb)(uint32_t));
+	void ChipErase(void (*delay_cb)(unsigned long));
 
   public:
 

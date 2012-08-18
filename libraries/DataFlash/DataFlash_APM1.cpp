@@ -317,7 +317,7 @@ void DataFlash_APM1::BlockErase (uint16_t BlockAdr)
 
 
 
-void DataFlash_APM1::ChipErase(void (*delay_cb)(uint32_t))
+void DataFlash_APM1::ChipErase(void (*delay_cb)(unsigned long))
 {
 
   dataflash_CS_active();     // activate dataflash command decoder

@@ -187,7 +187,7 @@ uint16_t DataFlash_Class::GetFilePage()
 	return df_FilePage;
 }
 
-void DataFlash_Class::EraseAll(void (*delay_cb)(uint32_t))
+void DataFlash_Class::EraseAll(void (*delay_cb)(unsigned long))
 {
 	for(uint16_t j = 1; j <= (df_NumPages+1)/8; j++) {
 		BlockErase(j);
