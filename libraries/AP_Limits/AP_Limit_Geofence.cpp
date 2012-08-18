@@ -48,13 +48,13 @@ const AP_Param::GroupInfo AP_Limit_Geofence::var_info[] PROGMEM = {
 
 AP_Limit_Geofence::AP_Limit_Geofence(uint32_t efs, uint8_t f_wp_s, uint8_t max_fp, GPS *&gps, struct Location *h_loc, struct Location *c_loc) :
 	AP_Limit_Module(AP_LIMITS_GEOFENCE),
+	_gps(gps),
+	_current_loc(c_loc),
+	_home(h_loc),
 	_eeprom_fence_start(efs),
 	_fence_wp_size(f_wp_s),
 	_max_fence_points(max_fp),
-	_boundary_uptodate(false),
-	_current_loc(c_loc),
-	_home(h_loc),
-	_gps(gps)
+	_boundary_uptodate(false)
 {
 	update_boundary();
 }
