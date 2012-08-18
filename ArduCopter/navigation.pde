@@ -311,15 +311,15 @@ static void clear_new_altitude()
 	alt_change_flag = REACHED_ALT;
 }
 
-static void force_new_altitude(int32_t _new_alt)
+static void force_new_altitude(int32_t new_alt)
 {
-	next_WP.alt 	= _new_alt;
+	next_WP.alt 	= new_alt;
 	alt_change_flag = REACHED_ALT;
 }
 
-static void set_new_altitude(int32_t _new_alt)
+static void set_new_altitude(int32_t new_alt)
 {
-	next_WP.alt 	= _new_alt;
+	next_WP.alt 	= new_alt;
 
 	if(next_WP.alt > current_loc.alt + 20){
 		// we are below, going up
