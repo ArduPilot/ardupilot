@@ -50,8 +50,8 @@ print_log_menu(void)
 {
 	int16_t log_start;
 	int16_t log_end;
-	int temp;	
-	int last_log_num = DataFlash.find_last_log();
+	int16_t temp;
+	int16_t last_log_num = DataFlash.find_last_log();
 	
 	uint16_t num_logs = DataFlash.get_num_logs();
 
@@ -83,13 +83,13 @@ print_log_menu(void)
 	if (num_logs == 0) {
 		Serial.printf_P(PSTR("\nNo logs\n\n"));
 	}else{
-		Serial.printf_P(PSTR("\n%d logs\n"), num_logs);
+		Serial.printf_P(PSTR("\n%d logs\n"), (int)num_logs);
 
-		for(int i=num_logs;i>=1;i--) {
-            int last_log_start = log_start, last_log_end = log_end;
+		for(int16_t i=num_logs;i>=1;i--) {
+            int16_t last_log_start = log_start, last_log_end = log_end;
 			temp = last_log_num-i+1;
 			DataFlash.get_log_boundaries(temp, log_start, log_end);
-			Serial.printf_P(PSTR("Log %d,    start %d,   end %d\n"), temp, log_start, log_end);
+			Serial.printf_P(PSTR("Log %d,    start %d,   end %d\n"), (int)temp, (int)log_start, (int)log_end);
             if (last_log_start == log_start && last_log_end == log_end) {
                 // we are printing bogus logs
                 break;
@@ -103,10 +103,10 @@ print_log_menu(void)
 static int8_t
 dump_log(uint8_t argc, const Menu::arg *argv)
 {
-	int dump_log;
+	int16_t dump_log;
 	int16_t dump_log_start;
 	int16_t dump_log_end;
-	byte last_log_num;
+	int16_t last_log_num;
 
 	// check that the requested log number can be read
 	dump_log = argv[1].i;
@@ -115,9 +115,9 @@ dump_log(uint8_t argc, const Menu::arg *argv)
 	if (dump_log == -2) {
 		for(uint16_t count=1; count<=DataFlash.df_NumPages; count++) {
 			DataFlash.StartRead(count);
-			Serial.printf_P(PSTR("DF page, log file #, log page: %d,\t"), count);
-			Serial.printf_P(PSTR("%d,\t"), DataFlash.GetFileNumber());
-			Serial.printf_P(PSTR("%d\n"), DataFlash.GetFilePage());
+			Serial.printf_P(PSTR("DF page, log file #, log page: %d,\t"), (int)count);
+			Serial.printf_P(PSTR("%d,\t"), (int)DataFlash.GetFileNumber());
+			Serial.printf_P(PSTR("%d\n"), (int)DataFlash.GetFilePage());
 		}
 		return(-1);
 	} else if (dump_log <= 0) {
@@ -131,9 +131,9 @@ dump_log(uint8_t argc, const Menu::arg *argv)
 
 	DataFlash.get_log_boundaries(dump_log, dump_log_start, dump_log_end);
 	Serial.printf_P(PSTR("Dumping Log %d,    start pg %d,   end pg %d\n"),
-				  dump_log,
-				  dump_log_start,
-				  dump_log_end);
+				  (int)dump_log,
+				  (int)dump_log_start,
+				  (int)dump_log_end);
 
 	Log_Read(dump_log_start, dump_log_end);
 	Serial.printf_P(PSTR("Done\n"));
@@ -274,7 +274,7 @@ static void Log_Write_Startup(byte type)
 	struct Location cmd = get_cmd_with_index(0);
 		Log_Write_Cmd(0, &cmd);
 
-	for (int i = 1; i <= g.command_total; i++){
+	for (int16_t i = 1; i <= g.command_total; i++){
 		cmd = get_cmd_with_index(i);
 		Log_Write_Cmd(i, &cmd);
 	}
@@ -388,10 +388,10 @@ static void Log_Write_Current()
 static void Log_Read_Current()
 {
 	Serial.printf_P(PSTR("CURR: %d, %4.4f, %4.4f, %d\n"),
-			DataFlash.ReadInt(),
+			(int)DataFlash.ReadInt(),
 			((float)DataFlash.ReadInt() / 100.f),
 			((float)DataFlash.ReadInt() / 100.f),
-			DataFlash.ReadInt());
+			(int)DataFlash.ReadInt());
 }
 
 // Read an control tuning packet
@@ -400,7 +400,7 @@ static void Log_Read_Control_Tuning()
 	float logvar;
 
 	Serial.printf_P(PSTR("CTUN:"));
-	for (int y = 1; y < 10; y++) {
+	for (int16_t y = 1; y < 10; y++) {
 		logvar = DataFlash.ReadInt();
 		if(y < 8) logvar 	= logvar/100.f;
 		if(y == 9) logvar 	= logvar/10000.f;
@@ -419,7 +419,7 @@ static void Log_Read_Nav_Tuning()
     }
 	Serial.printf_P(PSTR("NTUN: %4.4f, %d, %4.4f, %4.4f, %4.4f, %4.4f, %4.4f,\n"),		// \n
                     d[0]/100.0,
-                    d[1],
+                    (int)d[1],
                     ((uint16_t)d[2])/100.0,
                     ((uint16_t)d[3])/100.0,
                     d[4]/100.0,
@@ -431,13 +431,13 @@ static void Log_Read_Nav_Tuning()
 static void Log_Read_Performance()
 {
 	int32_t pm_time;
-	int logvar;
+	int16_t logvar;
 
 	Serial.printf_P(PSTR("PM:"));
 	pm_time = DataFlash.ReadLong();
 	Serial.print(pm_time);
 	Serial.print(comma);
-	for (int y = 1; y <= 12; y++) {
+	for (int16_t y = 1; y <= 12; y++) {
 		if(y < 3 || y > 7){
 			logvar = DataFlash.ReadInt();
 		}else{
@@ -456,12 +456,12 @@ static void Log_Read_Cmd()
 	int32_t logvarl;
 
 	Serial.printf_P(PSTR("CMD:"));
-	for(int i = 1; i < 4; i++) {
+	for(int16_t i = 1; i < 4; i++) {
 		logvarb = DataFlash.ReadByte();
 		Serial.print(logvarb, DEC);
 		Serial.print(comma);
 	}
-	for(int i = 1; i < 4; i++) {
+	for(int16_t i = 1; i < 4; i++) {
 		logvarl = DataFlash.ReadLong();
 		Serial.print(logvarl, DEC);
 		Serial.print(comma);
@@ -491,8 +491,8 @@ static void Log_Read_Attitude()
     d[1] = DataFlash.ReadInt();
     d[2] = DataFlash.ReadInt();
 	Serial.printf_P(PSTR("ATT: %d, %d, %u\n"),
-                    d[0], d[1],
-                    (uint16_t)d[2]);
+                    (int)d[0], (int)d[1],
+                    (unsigned)d[2]);
 }
 
 // Read a mode packet
@@ -530,7 +530,7 @@ static void Log_Read_Raw()
 {
 	float logvar;
 	Serial.printf_P(PSTR("RAW:"));
-	for (int y = 0; y < 6; y++) {
+	for (int16_t y = 0; y < 6; y++) {
 		logvar = (float)DataFlash.ReadLong() / t7;
 		Serial.print(logvar);
 		Serial.print(comma);
@@ -541,7 +541,7 @@ static void Log_Read_Raw()
 // Read the DataFlash log memory : Packet Parser
 static void Log_Read(int16_t start_page, int16_t end_page)
 {
-	int packet_count = 0;
+	int16_t packet_count = 0;
 
 	#ifdef AIRFRAME_NAME
 		Serial.printf_P(PSTR((AIRFRAME_NAME)
@@ -558,16 +558,16 @@ static void Log_Read(int16_t start_page, int16_t end_page)
     	packet_count = Log_Read_Process(start_page, end_page);
     }
 
-	Serial.printf_P(PSTR("Number of packets read: %d\n"), packet_count);
+	Serial.printf_P(PSTR("Number of packets read: %d\n"), (int)packet_count);
 }
 
 // Read the DataFlash log memory : Packet Parser
-static int Log_Read_Process(int16_t start_page, int16_t end_page)
+static int16_t Log_Read_Process(int16_t start_page, int16_t end_page)
 {
 	byte data;
 	byte log_step = 0;
-	int page = start_page;
-	int packet_count = 0;
+	int16_t page = start_page;
+	int16_t packet_count = 0;
 
 	DataFlash.StartRead(start_page);
 	while (page < end_page && page != -1){
@@ -635,7 +635,7 @@ static int Log_Read_Process(int16_t start_page, int16_t end_page)
 				if(data == END_BYTE){
 					 packet_count++;
 				}else{
-					Serial.printf_P(PSTR("Error Reading END_BYTE: %d\n"),data);
+					Serial.printf_P(PSTR("Error Reading END_BYTE: %d\n"),(int)data);
 				}
 				log_step = 0;			// Restart sequence: new packet...
 				break;
