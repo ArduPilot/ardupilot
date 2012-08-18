@@ -309,7 +309,7 @@ public:
         return (*this)*(1/norm());
     }
     // sum
-    const sumType sum(const size_t & start=0,const int & end=-1) const {
+    const sumType sum(const size_t & start=0,const int16_t & end=-1) const {
         size_t end2;
         if (end==-1) end2=getSize()-1;
         else end2=end;
@@ -317,7 +317,7 @@ public:
         for (size_t i=start; i<=end2; i++) _sum += (*this)(i);
         return _sum;
     }
-    void sumFletcher(uint8_t & CK_A, uint8_t & CK_B, const size_t & start=0,const int & end=-1) const {
+    void sumFletcher(uint8_t & CK_A, uint8_t & CK_B, const size_t & start=0,const int16_t & end=-1) const {
         size_t end2;
         if (end==-1) end2=getSize()-1;
         else end2=end;

@@ -61,8 +61,8 @@ public:
 private:
     const char  *_name;         ///< name of the current test
     bool        _fail;          ///< set if any ::require calls indicate the test failed
-    static int  _passed;        ///< global pass count
-    static int  _failed;        ///< global fail count
+    static int16_t	_passed;        ///< global pass count
+    static int16_t	_failed;        ///< global fail count
 };
 
 /// Constructor
@@ -104,8 +104,8 @@ Test::report()
     Serial.printf("\n%d passed  %d failed\n", _passed, _failed);
 }
 
-int Test::_passed = 0;
-int Test::_failed = 0;
+int16_t Test::_passed = 0;
+int16_t Test::_failed = 0;
 
 /// Start a new test.
 ///
