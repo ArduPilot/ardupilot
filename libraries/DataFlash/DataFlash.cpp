@@ -275,8 +275,8 @@ void DataFlash_Class::start_new_log(void)
 // The first page may be greater than the last page if the DataFlash has been filled and partially overwritten.
 void DataFlash_Class::get_log_boundaries(uint8_t log_num, int16_t & start_page, int16_t & end_page)
 {
-	int num = get_num_logs();
-	int look;
+	int16_t num = get_num_logs();
+	int16_t look;
 
 	if(num == 1)
 	{
@@ -310,7 +310,7 @@ void DataFlash_Class::get_log_boundaries(uint8_t log_num, int16_t & start_page, 
 			}
 		}
 	}
-	if(start_page == (int)df_NumPages+1 || start_page == 0) start_page=1;
+	if(start_page == (int16_t)df_NumPages+1 || start_page == 0) start_page=1;
 	end_page = find_last_page_of_log((uint16_t)log_num);
 	if(end_page <= 0) end_page = start_page;
 }
@@ -326,15 +326,15 @@ bool DataFlash_Class::check_wrapped(void)
 
 
 // This funciton finds the last log number
-int DataFlash_Class::find_last_log(void)
+int16_t DataFlash_Class::find_last_log(void)
 {
-	int last_page = find_last_page();
+	int16_t last_page = find_last_page();
 	StartRead(last_page);
 	return GetFileNumber();
 }
 
 // This function finds the last page of the last file
-int DataFlash_Class::find_last_page(void)
+int16_t DataFlash_Class::find_last_page(void)
 {
     uint16_t look;
     uint16_t bottom = 1;
@@ -375,7 +375,7 @@ int DataFlash_Class::find_last_page(void)
 }
 
 // This function finds the last page of a particular log file
-int DataFlash_Class::find_last_page_of_log(uint16_t log_number)
+int16_t DataFlash_Class::find_last_page_of_log(uint16_t log_number)
 {
     uint16_t look;
     uint16_t bottom;
