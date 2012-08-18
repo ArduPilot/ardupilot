@@ -553,6 +553,12 @@ AP_AHRS_DCM::drift_correction(float deltat)
     // convert the error term to body frame
     error = _dcm_matrix.mul_transpose(error);
 
+    if (error.is_nan() || error.is_inf()) {
+	    // don't allow bad values
+	    check_matrix();
+	    return;
+    }
+
     _error_rp_sum += error.length();
     _error_rp_count++;
 
