@@ -25,7 +25,6 @@ public:
 	int32_t get_raw_pressure();
 	int32_t get_raw_temp();
 	void setHIL(float Temp, float Press);
-    void calibrate(void (*callback)(unsigned long t));
 };
 
 #endif //  __AP_BARO_BMP085_HIL_H__
