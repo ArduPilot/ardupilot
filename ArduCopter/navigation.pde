@@ -183,8 +183,6 @@ static void calc_nav_rate(int16_t max_speed)
 	update_crosstrack();
 
 	int16_t cross_speed = crosstrack_error * -g.crosstrack_gain; // scale down crosstrack_error in cm
-	// XXX replace above with crosstrack gain.
-
 	cross_speed	= constrain(cross_speed, -150, 150);
 
 	// rotate by 90 to deal with trig functions
