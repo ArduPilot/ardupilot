@@ -192,6 +192,9 @@ static void init_disarm_motors()
 static void
 set_servos_4()
 {
+	// temp fix for bad attitude
+	g.rc_3.servo_out = min(g.rc_3.servo_out, 800);
+
 	motors.output();
 }
 
