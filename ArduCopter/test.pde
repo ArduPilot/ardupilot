@@ -1105,7 +1105,6 @@ test_mag(uint8_t argc, const Menu::arg *argv)
 				delay(100);
 				if (compass.read()) {
 					float heading = compass.calculate_heading(ahrs.get_dcm_matrix());
-					Vector3f maggy = compass.get_offsets();
 					Serial.printf_P(PSTR("Heading: %ld, XYZ: %d, %d, %d\n"),
 									(wrap_360(ToDeg(heading) * 100)) /100,
 									compass.mag_x,
