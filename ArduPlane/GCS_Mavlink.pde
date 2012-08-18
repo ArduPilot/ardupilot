@@ -474,7 +474,7 @@ static void NOINLINE send_statustext(mavlink_channel_t chan)
 // try to send a message, return false if it won't fit in the serial tx buffer
 static bool mavlink_try_send_message(mavlink_channel_t chan, enum ap_message id, uint16_t packet_drops)
 {
-    int payload_space = comm_get_txspace(chan) - MAVLINK_NUM_NON_PAYLOAD_BYTES;
+    int16_t payload_space = comm_get_txspace(chan) - MAVLINK_NUM_NON_PAYLOAD_BYTES;
 
     if (chan == MAVLINK_COMM_1 && millis() < MAVLINK_TELEMETRY_PORT_DELAY) {
         // defer any messages on the telemetry port for 1 second after
@@ -946,7 +946,7 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
 			if (mavlink_check_target(packet.target_system, packet.target_component))
 				break;
 
-            int freq = 0; // packet frequency
+            int16_t freq = 0; // packet frequency
 
 			if (packet.start_stop == 0)
 				freq = 0; // stop sending
@@ -1963,10 +1963,10 @@ GCS_MAVLINK::queued_waypoint_send()
  MAVLink to process packets while waiting for the initialisation to
  complete
 */
-static void mavlink_delay(unsigned long t)
+static void mavlink_delay(uint32_t t)
 {
-    unsigned long tstart;
-    static unsigned long last_1hz, last_50hz, last_5s;
+    uint32_t tstart;
+    static uint32_t last_1hz, last_50hz, last_5s;
 
     if (in_mavlink_delay) {
         // this should never happen, but let's not tempt fate by
@@ -1979,7 +1979,7 @@ static void mavlink_delay(unsigned long t)
 
     tstart = millis();
     do {
-        unsigned long tnow = millis();
+        uint32_t tnow = millis();
         if (tnow - last_1hz > 1000) {
             last_1hz = tnow;
             gcs_send_message(MSG_HEARTBEAT);

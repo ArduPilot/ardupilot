@@ -631,7 +631,7 @@ static float G_Dt						= 0.02;
 // Timer used to accrue data and trigger recording of the performanc monitoring log message
 static int32_t 	perf_mon_timer;
 // The maximum main loop execution time recorded in the current performance monitoring interval
-static int 	G_Dt_max = 0;
+static int16_t 	G_Dt_max = 0;
 // The number of gps fixes recorded in the current performance monitoring interval
 static int16_t 	gps_fix_count = 0;
 // A variable used by developers to track performanc metrics.

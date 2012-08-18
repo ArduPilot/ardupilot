@@ -40,10 +40,10 @@ static void reload_commands_airstart()
 
 // Getters
 // -------
-static struct Location get_cmd_with_index(int i)
+static struct Location get_cmd_with_index(int16_t i)
 {
 	struct Location temp;
-	long mem;
+	int32_t mem;
 
 	// Find out proper location in memory by using the start_byte position + the index
 	// --------------------------------------------------------------------------------
@@ -83,7 +83,7 @@ static struct Location get_cmd_with_index(int i)
 
 // Setters
 // -------
-static void set_cmd_with_index(struct Location temp, int i)
+static void set_cmd_with_index(struct Location temp, int16_t i)
 {
 	i = constrain(i, 0, g.command_total.get());
 	intptr_t mem = WP_START_BYTE + (i * WP_SIZE);
@@ -121,7 +121,7 @@ static void decrement_cmd_index()
     }
 }
 
-static long read_alt_to_hold()
+static int32_t read_alt_to_hold()
 {
 	if (g.RTL_altitude_cm < 0) {
 		return current_loc.alt;
