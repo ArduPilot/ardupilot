@@ -36,11 +36,11 @@ class DataFlash_Class
 	virtual unsigned char BufferRead (unsigned char BufferNum, uint16_t IntPageAdr) = 0;
 	virtual void PageErase(uint16_t PageAdr) = 0;
 	virtual void BlockErase(uint16_t BlockAdr) = 0;
-	virtual void ChipErase(void (*delay_cb)(unsigned long)) = 0;
+	virtual void ChipErase(void (*delay_cb)(uint32_t)) = 0;
 
 	// internal high level functions
-	int find_last_page(void);
-	int find_last_page_of_log(uint16_t log_number);
+	int16_t find_last_page(void);
+	int16_t find_last_page_of_log(uint16_t log_number);
 	bool check_wrapped(void);
 
   public:
@@ -83,7 +83,7 @@ class DataFlash_Class
 	uint16_t df_NumPages;
 
 	// high level interface
-	int find_last_log(void);
+	int16_t find_last_log(void);
 	void get_log_boundaries(uint8_t log_num, int16_t & start_page, int16_t & end_page);
 	uint8_t get_num_logs(void);
 	void start_new_log(void);
