@@ -30,8 +30,8 @@ const AP_Param::Info var_info[] PROGMEM = {
 	// @Param: ALT_HOLD_RTL
 	// @DisplayName: RTL Altitude
 	// @Description: This is the altitude the model will move to before Returning to Launch.  Set to zero to return at current altitude.
-	// @Units: Meters
-	// @Range: 0 400
+	// @Units: centimeters
+	// @Range: 0 4000
 	// @Increment: 1
 	// @User: Standard
 	GSCALAR(RTL_altitude,	"ALT_HOLD_RTL",     RTL_HOLD_ALT),
@@ -92,9 +92,9 @@ const AP_Param::Info var_info[] PROGMEM = {
 	// @Param: APPROACH_ALT
 	// @DisplayName: RTL Approach Altitude
 	// @Description: This is the altitude the vehicle will move to as the final stage of Returning to Launch.  Set to zero to land.
-	// @Units: Meters
-	// @Range: 1 10
-	// @Increment: .1
+	// @Units: centimeters
+	// @Range: 1 1000
+	// @Increment: 1
 	// @User: Standard
 	GSCALAR(rtl_approach_alt,	"APPROACH_ALT", RTL_APPROACH_ALT),
 
