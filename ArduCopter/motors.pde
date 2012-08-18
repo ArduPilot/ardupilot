@@ -158,6 +158,10 @@ static void init_arm_motors()
 	// temp hack
 	motor_light = true;
 	digitalWrite(A_LED_PIN, LED_ON);
+
+	// revert back to user default
+	ahrs._kp.load();
+	ahrs._kp_yaw.load();
 }
 
 
