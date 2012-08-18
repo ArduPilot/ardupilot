@@ -394,7 +394,7 @@ void DataFlash_APM2::BlockErase(uint16_t BlockAdr)
 }
 
 
-void DataFlash_APM2::ChipErase(void (*delay_cb)(unsigned long))
+void DataFlash_APM2::ChipErase(void (*delay_cb)(uint32_t))
 {
 	//serialDebug("Chip Erase\n");
 
