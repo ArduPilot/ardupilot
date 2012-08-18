@@ -1824,12 +1824,16 @@ void update_throttle_mode(void)
 				break;
 			}
 
+			// allow 1 second of slow down after pilot moves throttle back into deadzone
 			if(reset_throttle_counter > 0){
 				reset_throttle_counter--;
+				// if 1 second has passed set the target altitude to the current altitude
 				if(reset_throttle_counter == 0){
 					force_new_altitude(max(current_loc.alt, 100));
 				}else{
 					nav_throttle 		= get_throttle_rate(0);
+					g.rc_3.servo_out 	= g.throttle_cruise + nav_throttle + angle_boost;
+					break;
 				}
 			}
 
