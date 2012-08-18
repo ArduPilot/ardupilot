@@ -87,7 +87,7 @@ public:
 	/// @param  latitude             GPS Latitude.
 	/// @param  longitude            GPS Longitude.
 	///
-	void set_initial_location(long latitude, long longitude);
+	void set_initial_location(int32_t latitude, int32_t longitude);
 
 	/// Program new offset values.
 	///
