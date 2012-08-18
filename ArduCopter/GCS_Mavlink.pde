@@ -1955,7 +1955,7 @@ GCS_MAVLINK::queued_waypoint_send()
  MAVLink to process packets while waiting for the initialisation to
  complete
 */
-static void mavlink_delay(uint32_t t)
+static void mavlink_delay(unsigned long t)
 {
     uint32_t tstart;
     static uint32_t last_1hz, last_50hz, last_5s;
