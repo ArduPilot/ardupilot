@@ -1768,6 +1768,15 @@ void update_throttle_mode(void)
 	static float throttle_avg = 0;  // this is initialised to g.throttle_cruise later
 	#endif
 
+	#if FRAME_CONFIG != HELI_FRAME
+	// calculate angle boost
+	if(throttle_mode ==  THROTTLE_MANUAL){
+		angle_boost = get_angle_boost(g.rc_3.control_in);
+	}else{
+		angle_boost = get_angle_boost(g.throttle_cruise);
+	}
+	#endif
+
 	switch(throttle_mode){
 		case THROTTLE_MANUAL:
 			if (g.rc_3.control_in > 0){
@@ -1777,7 +1786,6 @@ void update_throttle_mode(void)
 					if (control_mode == ACRO){
 						g.rc_3.servo_out 	= g.rc_3.control_in;
 					}else{
-						angle_boost 		= get_angle_boost(g.rc_3.control_in);
 						g.rc_3.servo_out 	= g.rc_3.control_in + angle_boost;
 					}
 				#endif
@@ -1813,7 +1821,7 @@ void update_throttle_mode(void)
 		case THROTTLE_HOLD:
 			// allow interactive changing of atitude
 			if(g.rc_3.control_in < 200){
-				reset_throttle_counter = 50;
+				reset_throttle_counter = 150;
 				nav_throttle 		= get_throttle_rate(-120);
 				g.rc_3.servo_out 	= g.throttle_cruise + nav_throttle + angle_boost;
 				break;
@@ -1840,8 +1848,6 @@ void update_throttle_mode(void)
 			// else fall through
 
 		case THROTTLE_AUTO:
-			// calculate angle boost
-			angle_boost = get_angle_boost(g.throttle_cruise);
 
 			if(motors.auto_armed() == true){
 
