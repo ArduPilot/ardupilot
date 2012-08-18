@@ -601,20 +601,8 @@ static void Log_Write_Nav_Tuning()
 	DataFlash.WriteInt(nav_lat);							// 6
 	DataFlash.WriteInt(x_actual_speed);						// 7
 	DataFlash.WriteInt(y_actual_speed);					    // 8
-	DataFlash.WriteInt(g.pid_nav_lon.get_integrator());	// 9
-	DataFlash.WriteInt(g.pid_nav_lat.get_integrator());	// 10
-
-	/*DataFlash.WriteInt(wp_distance);						// 1
-	DataFlash.WriteInt(nav_bearing/100);					// 2
-	DataFlash.WriteInt(my_max_speed);						// 3
-	DataFlash.WriteInt(long_error);							// 4
-	DataFlash.WriteInt(x_actual_speed);						// 5
-	DataFlash.WriteInt(target_x_rate);						// 6
-	DataFlash.WriteInt(x_rate_error);						// 7
-	DataFlash.WriteInt(nav_lon_p);							// 8
-	DataFlash.WriteInt(g.pi_loiter_lon.get_integrator());	// 9
-	DataFlash.WriteInt(nav_lon);							// 10
-	*/
+	DataFlash.WriteInt(g.pid_nav_lon.get_integrator());		// 9
+	DataFlash.WriteInt(g.pid_nav_lat.get_integrator());		// 10
 
 	DataFlash.WriteByte(END_BYTE);
 }
@@ -754,13 +742,15 @@ static void Log_Write_Attitude()
 	DataFlash.WriteByte(HEAD_BYTE2);
 	DataFlash.WriteByte(LOG_ATTITUDE_MSG);
 
-	DataFlash.WriteInt(g.rc_1.control_in);			// 1
-	DataFlash.WriteInt((int)ahrs.roll_sensor);		// 2
-	DataFlash.WriteInt(g.rc_2.control_in);			// 3
-	DataFlash.WriteInt((int)ahrs.pitch_sensor);		// 4
-	DataFlash.WriteInt(g.rc_4.control_in);			// 5
-	DataFlash.WriteInt((uint16_t)ahrs.yaw_sensor);	// 6
-	DataFlash.WriteInt((uint16_t)nav_yaw);			// 7 (this used to be compass.heading)
+	DataFlash.WriteInt(control_roll);									// 1
+	DataFlash.WriteInt((int16_t)ahrs.roll_sensor);						// 2
+	DataFlash.WriteInt(control_pitch);									// 3
+	DataFlash.WriteInt((int16_t)ahrs.pitch_sensor);						// 4
+	DataFlash.WriteInt(g.rc_4.control_in);								// 5
+	DataFlash.WriteInt((uint16_t)ahrs.yaw_sensor);						// 6
+	DataFlash.WriteInt((uint16_t)nav_yaw);								// 7 (this used to be compass.heading)
+	DataFlash.WriteInt((int16_t)g.pi_stabilize_roll.get_integrator());	// 8
+	DataFlash.WriteInt((int16_t)g.pi_stabilize_pitch.get_integrator());	// 9
 	DataFlash.WriteByte(END_BYTE);
 }
 
@@ -774,16 +764,20 @@ static void Log_Read_Attitude()
 	int16_t temp5 	= DataFlash.ReadInt();
 	uint16_t temp6 	= DataFlash.ReadInt();
 	uint16_t temp7 	= DataFlash.ReadInt();
+	int16_t temp8 	= DataFlash.ReadInt();
+	int16_t temp9 	= DataFlash.ReadInt();
 
-							// 1   2   3    4   5   6  7
-	Serial.printf_P(PSTR("ATT, %d, %d, %d, %d, %d, %u, %u\n"),
+							// 1   2   3    4   5   6  7    8   9
+	Serial.printf_P(PSTR("ATT, %d, %d, %d, %d, %d, %u, %u, %d, %d\n"),
 		temp1,
 		temp2,
 		temp3,
 		temp4,
 		temp5,
 		temp6,
-		temp7);
+		temp7,
+		temp8,
+		temp9);
 }
 
 // Write a mode packet. Total length : 7 bytes
@@ -909,6 +903,14 @@ static void Log_Read(int16_t start_page, int16_t end_page)
 	Serial.printf_P(PSTR("\n" THISFIRMWARE
 						 "\nFree RAM: %u\n"),
                     memcheck_available_memory());
+
+#if CONFIG_APM_HARDWARE == APM_HARDWARE_APM2
+	Serial.printf_P(PSTR("APM 2\n");
+#elif  CONFIG_APM_HARDWARE == APM2_BETA_HARDWARE
+	Serial.printf_P(PSTR("APM 2Beta\n");
+#else
+	Serial.printf_P(PSTR("APM 1\n");
+#endif
 
     if(start_page > end_page){
     	packet_count = Log_Read_Process(start_page, DataFlash.df_NumPages);
