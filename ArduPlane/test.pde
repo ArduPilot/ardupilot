@@ -109,14 +109,14 @@ test_radio_pwm(uint8_t argc, const Menu::arg *argv)
 		read_radio();
 
 		Serial.printf_P(PSTR("IN:\t1: %d\t2: %d\t3: %d\t4: %d\t5: %d\t6: %d\t7: %d\t8: %d\n"),
-							g.channel_roll.radio_in,
-							g.channel_pitch.radio_in,
-							g.channel_throttle.radio_in,
-							g.channel_rudder.radio_in,
-							g.rc_5.radio_in,
-							g.rc_6.radio_in,
-							g.rc_7.radio_in,
-							g.rc_8.radio_in);
+							(int)g.channel_roll.radio_in,
+							(int)g.channel_pitch.radio_in,
+							(int)g.channel_throttle.radio_in,
+							(int)g.channel_rudder.radio_in,
+							(int)g.rc_5.radio_in,
+							(int)g.rc_6.radio_in,
+							(int)g.rc_7.radio_in,
+							(int)g.rc_8.radio_in);
 
 		if(Serial.available() > 0){
 			return (0);
@@ -175,14 +175,14 @@ test_radio(uint8_t argc, const Menu::arg *argv)
 		set_servos();
 
 		Serial.printf_P(PSTR("IN 1: %d\t2: %d\t3: %d\t4: %d\t5: %d\t6: %d\t7: %d\t8: %d\n"),
-							g.channel_roll.control_in,
-							g.channel_pitch.control_in,
-							g.channel_throttle.control_in,
-							g.channel_rudder.control_in,
-							g.rc_5.control_in,
-							g.rc_6.control_in,
-							g.rc_7.control_in,
-							g.rc_8.control_in);
+							(int)g.channel_roll.control_in,
+							(int)g.channel_pitch.control_in,
+							(int)g.channel_throttle.control_in,
+							(int)g.channel_rudder.control_in,
+							(int)g.rc_5.control_in,
+							(int)g.rc_6.control_in,
+							(int)g.rc_7.control_in,
+							(int)g.rc_8.control_in);
 
 		if(Serial.available() > 0){
 			return (0);
@@ -217,7 +217,7 @@ test_failsafe(uint8_t argc, const Menu::arg *argv)
 		read_radio();
 
 		if(g.channel_throttle.control_in > 0){
-			Serial.printf_P(PSTR("THROTTLE CHANGED %d \n"), g.channel_throttle.control_in);
+			Serial.printf_P(PSTR("THROTTLE CHANGED %d \n"), (int)g.channel_throttle.control_in);
 			fail_test++;
 		}
 
@@ -228,7 +228,7 @@ test_failsafe(uint8_t argc, const Menu::arg *argv)
 		}
 
 		if(g.throttle_fs_enabled && g.channel_throttle.get_failsafe()){
-			Serial.printf_P(PSTR("THROTTLE FAILSAFE ACTIVATED: %d, "), g.channel_throttle.radio_in);
+			Serial.printf_P(PSTR("THROTTLE FAILSAFE ACTIVATED: %d, "), (int)g.channel_throttle.radio_in);
 			Serial.println(flight_mode_strings[readSwitch()]);
 			fail_test++;
 		}
@@ -336,9 +336,9 @@ test_wp_print(struct Location *cmd, byte wp_index)
 		(int)cmd->id,
 		(int)cmd->options,
 		(int)cmd->p1,
-		cmd->alt,
-		cmd->lat,
-		cmd->lng);
+		(long)cmd->alt,
+		(long)cmd->lat,
+		(long)cmd->lng);
 }
 
 static int8_t
@@ -374,7 +374,7 @@ test_modeswitch(uint8_t argc, const Menu::arg *argv)
 		delay(20);
 		byte switchPosition = readSwitch();
 		if (oldSwitchPosition != switchPosition){
-			Serial.printf_P(PSTR("Position %d\n"),  switchPosition);
+			Serial.printf_P(PSTR("Position %d\n"),  (int)switchPosition);
 			oldSwitchPosition = switchPosition;
 		}
 		if(Serial.available() > 0){
@@ -450,10 +450,10 @@ test_gps(uint8_t argc, const Menu::arg *argv)
 
 		if (g_gps->new_data){
 			Serial.printf_P(PSTR("Lat: %ld, Lon %ld, Alt: %ldm, #sats: %d\n"),
-					g_gps->latitude,
-					g_gps->longitude,
-					g_gps->altitude/100,
-					g_gps->num_sats);
+					(long)g_gps->latitude,
+					(long)g_gps->longitude,
+					(long)g_gps->altitude/100,
+					(int)g_gps->num_sats);
 		}else{
 			Serial.printf_P(PSTR("."));
 		}
