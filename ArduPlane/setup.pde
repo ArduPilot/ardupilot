@@ -217,7 +217,7 @@ setup_flightmodes(uint8_t argc, const Menu::arg *argv)
 		}
 
 		// look for stick input
-		int radioInputSwitch = radio_input_switch();
+		int16_t radioInputSwitch = radio_input_switch();
 
 		if (radioInputSwitch != 0){
 
@@ -480,7 +480,7 @@ static void report_flight_modes()
 	Serial.printf_P(PSTR("Flight modes\n"));
 	print_divider();
 
-	for(int i = 0; i < 6; i++ ){
+	for(int16_t i = 0; i < 6; i++ ){
 		print_switch(i, flight_modes[i]);
 	}
 	print_blanks(2);
@@ -528,7 +528,7 @@ print_done()
 }
 
 static void
-print_blanks(int num)
+print_blanks(int16_t num)
 {
 	while(num > 0){
 		num--;
@@ -539,7 +539,7 @@ print_blanks(int num)
 static void
 print_divider(void)
 {
-	for (int i = 0; i < 40; i++) {
+	for (int16_t i = 0; i < 40; i++) {
 		Serial.printf_P(PSTR("-"));
 	}
 	Serial.println("");

@@ -137,7 +137,7 @@ test_passthru(uint8_t argc, const Menu::arg *argv)
         // New radio frame? (we could use also if((millis()- timer) > 20)
         if (APM_RC.GetState() == 1){
             Serial.print("CH:");
-            for(int i = 0; i < 8; i++){
+            for(int16_t i = 0; i < 8; i++){
                 Serial.print(APM_RC.InputCh(i));	// Print channel values
                 Serial.print(",");
                 APM_RC.OutputCh(i, APM_RC.InputCh(i)); // Copy input to Servos
@@ -195,7 +195,7 @@ test_failsafe(uint8_t argc, const Menu::arg *argv)
 {
 	byte fail_test;
 	print_hit_enter();
-	for(int i = 0; i < 50; i++){
+	for(int16_t i = 0; i < 50; i++){
 		delay(20);
 		read_radio();
 	}
@@ -423,7 +423,7 @@ test_adc(uint8_t argc, const Menu::arg *argv)
 	delay(1000);
 
 	while(1){
-		for (int i=0;i<9;i++) Serial.printf_P(PSTR("%.1f\t"),adc.Ch(i));
+		for (int16_t i=0;i<9;i++) Serial.printf_P(PSTR("%.1f\t"),adc.Ch(i));
 		Serial.println();
 		delay(100);
 		if(Serial.available() > 0){
@@ -531,7 +531,7 @@ test_mag(uint8_t argc, const Menu::arg *argv)
 	imu.init(IMU::COLD_START, delay, flash_leds, &timer_scheduler);
     ahrs.reset();
 
-	int counter = 0;
+	int16_t counter = 0;
     float heading = 0;
 
 		//Serial.printf_P(PSTR("MAG_ORIENTATION: %d\n"), MAG_ORIENTATION);

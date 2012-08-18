@@ -32,7 +32,7 @@ planner_gcs(uint8_t argc, const Menu::arg *argv)
   gcs3.init(&Serial3);
 #endif
 
-  int loopcount = 0;
+  int16_t loopcount = 0;
   while (1) {
     if (millis()-fast_loopTimer_ms > 19) {
       fast_loopTimer_ms      = millis();

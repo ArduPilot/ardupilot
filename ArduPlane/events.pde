@@ -1,7 +1,7 @@
 // -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 
 
-static void failsafe_short_on_event(int fstype)
+static void failsafe_short_on_event(int16_t fstype)
 {
 	// This is how to handle a short loss of control signal failsafe.
 	failsafe = fstype;
@@ -32,7 +32,7 @@ static void failsafe_short_on_event(int fstype)
     gcs_send_text_fmt(PSTR("flight mode = %u"), (unsigned)control_mode);
 }
 
-static void failsafe_long_on_event(int fstype)
+static void failsafe_long_on_event(int16_t fstype)
 {
 	// This is how to handle a long loss of control signal failsafe.
 	gcs_send_text_P(SEVERITY_LOW, PSTR("Failsafe - Long event on, "));
