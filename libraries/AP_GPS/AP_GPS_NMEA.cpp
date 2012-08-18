@@ -115,7 +115,7 @@ void AP_GPS_NMEA::init(enum GPS_Engine_Setting nav_setting)
 
 bool AP_GPS_NMEA::read(void)
 {
-    int numc;
+    int16_t numc;
     bool parsed = false;
 
     numc = _port->available();
@@ -167,7 +167,7 @@ bool AP_GPS_NMEA::_decode(char c)
 //
 // internal utilities
 //
-int AP_GPS_NMEA::_from_hex(char a)
+int16_t AP_GPS_NMEA::_from_hex(char a)
 {
     if (a >= 'A' && a <= 'F')
         return a - 'A' + 10;
@@ -197,7 +197,7 @@ uint32_t AP_GPS_NMEA::_parse_degrees()
 {
     char *p, *q;
     uint8_t deg = 0, min = 0;
-    unsigned int frac_min = 0;
+    uint16_t frac_min = 0;
 	int32_t ret = 0;
 
     // scan for decimal point or end of field
@@ -224,7 +224,7 @@ uint32_t AP_GPS_NMEA::_parse_degrees()
     // ten-thousandths of a minute
     if (*p == '.') {
         q = p + 1;
-        for (int i = 0; i < 5; i++) {
+        for (int16_t i = 0; i < 5; i++) {
             frac_min = (int32_t)(frac_min * 10);
             if (isdigit(*q))
                 frac_min += *q++ - '0';

@@ -59,11 +59,11 @@ bool
 AP_GPS_MTK16::read(void)
 {
     uint8_t 	data;
-    int 		numc;
+    int16_t		numc;
     bool		parsed = false;
 
     numc = _port->available();
-    for (int i = 0; i < numc; i++) {	// Process bytes received
+    for (int16_t i = 0; i < numc; i++) {	// Process bytes received
 
         // read the next byte
         data = _port->read();
@@ -136,8 +136,8 @@ restart:
             date			= _buffer.msg.utc_date;
 
             // time from gps is UTC, but convert here to msToD
-            long time_utc	= _buffer.msg.utc_time;
-            long temp = (time_utc/10000000);
+            int32_t time_utc	= _buffer.msg.utc_time;
+            int32_t temp = (time_utc/10000000);
             time_utc -= temp*10000000;
             time = temp * 3600000;
             temp = (time_utc/100000);
@@ -157,11 +157,11 @@ restart:
 
             /*	Waiting on clarification of MAVLink protocol!
             if(!_offset_calculated && parsed) {
-            	long tempd1 = date;
-            	long day 	= tempd1/10000;
+				int32_t tempd1 = date;
+				int32_t day 	= tempd1/10000;
             	tempd1 		-= day * 10000;
-            	long month	= tempd1/100;
-            	long year	= tempd1 - month * 100;
+				int32_t month	= tempd1/100;
+				int32_t year	= tempd1 - month * 100;
             	_time_offset = _calc_epoch_offset(day, month, year);
             	_epoch = UNIX_EPOCH;
             	_offset_calculated = TRUE;

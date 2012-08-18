@@ -56,7 +56,7 @@ bool
 AP_GPS_SIRF::read(void)
 {
     uint8_t		data;
-    int 		numc;
+    int16_t		numc;
     bool		parsed = false;
 
     numc = _port->available();

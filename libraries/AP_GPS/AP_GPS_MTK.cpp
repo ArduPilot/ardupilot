@@ -52,11 +52,11 @@ bool
 AP_GPS_MTK::read(void)
 {
     uint8_t	data;
-    int		numc;
+    int16_t	numc;
     bool	parsed = false;
 
     numc = _port->available();
-    for (int i = 0; i < numc; i++) {	// Process bytes received
+    for (int16_t i = 0; i < numc; i++) {	// Process bytes received
 
         // read the next byte
         data = _port->read();
@@ -138,8 +138,8 @@ restart:
             num_sats		= _buffer.msg.satellites;
 
             // time from gps is UTC, but convert here to msToD
-            long time_utc	= _swapl(&_buffer.msg.utc_time);
-            long temp = (time_utc/10000000);
+            int32_t time_utc	= _swapl(&_buffer.msg.utc_time);
+            int32_t temp = (time_utc/10000000);
             time_utc -= temp*10000000;
             time = temp * 3600000;
             temp = (time_utc/100000);

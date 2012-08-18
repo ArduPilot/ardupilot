@@ -17,11 +17,11 @@
                 update() : Call this funcion as often as you want to ensure you read the incomming gps data
 
         Properties:
-                lattitude : lattitude * 10000000 (long value)
-                longitude : longitude * 10000000 (long value)
-                altitude :      altitude * 100 (meters) (long value)
-                ground_speed : Speed (m/s) * 100 (long value)
-                ground_course : Course (degrees) * 100 (long value)
+                lattitude : lattitude * 10000000 (int32_t value)
+                longitude : longitude * 10000000 (int32_t value)
+                altitude :      altitude * 100 (meters) (int32_t value)
+                ground_speed : Speed (m/s) * 100 (int32_t value)
+                ground_course : Course (degrees) * 100 (int32_t value)
                 new_data : 1 when a new data is received.
                                                         You need to write a 0 to new_data when you read the data
                 fix : 1: GPS NO fix, 2: 2D fix, 3: 3D fix.
@@ -56,12 +56,12 @@ bool
 AP_GPS_IMU::read(void)
 {
     byte data;
-    int numc = 0;
+    int16_t numc = 0;
 
     numc = _port->available();
 
     if (numc > 0) {
-        for (int i=0; i<numc; i++) {    // Process bytes received
+        for (int16_t i=0; i<numc; i++) {    // Process bytes received
 
             data = _port->read();
 
@@ -169,30 +169,30 @@ void AP_GPS_IMU::join_data(void)
     //In this case all the message im using are in class 1, to know more about classes check PAGE 60 of DataSheet.
 
     //Storing IMU roll
-    roll_sensor = *(int *)&buffer[0];
+    roll_sensor = *(int16_t *)&buffer[0];
 
     //Storing IMU pitch
-    pitch_sensor = *(int *)&buffer[2];
+    pitch_sensor = *(int16_t *)&buffer[2];
 
     //Storing IMU heading (yaw)
-    ground_course = *(int *)&buffer[4];
+    ground_course = *(int16_t *)&buffer[4];
     imu_ok = true;
 }
 
 void AP_GPS_IMU::join_data_xplane()
 {
     //Storing IMU roll
-    roll_sensor = *(int *)&buffer[0];
+    roll_sensor = *(int16_t *)&buffer[0];
 
 
     //Storing IMU pitch
-    pitch_sensor = *(int *)&buffer[2];
+    pitch_sensor = *(int16_t *)&buffer[2];
 
     //Storing IMU heading (yaw)
-    ground_course = *(unsigned int *)&buffer[4];
+    ground_course = *(uint16_t *)&buffer[4];
 
     //Storing airspeed
-    airspeed = *(int *)&buffer[6];
+    airspeed = *(int16_t *)&buffer[6];
 
     imu_ok = true;
 
@@ -200,17 +200,17 @@ void AP_GPS_IMU::join_data_xplane()
 
 void AP_GPS_IMU::GPS_join_data(void)
 {
-    longitude = *(long *)&buffer[0];        // degrees * 10e7
-    latitude  = *(long *)&buffer[4];
+    longitude = *(int32_t *)&buffer[0];        // degrees * 10e7
+    latitude  = *(int32_t *)&buffer[4];
 
     //Storing GPS Height above the sea level
-    altitude = (long)*(int *)&buffer[8] * 10;
+    altitude = (int32_t)*(int16_t *)&buffer[8] * 10;
 
     //Storing Speed
-    speed_3d = ground_speed = (float)*(int *)&buffer[10];
+    speed_3d = ground_speed = (float)*(int16_t *)&buffer[10];
 
     //We skip the gps ground course because we use yaw value from the IMU for ground course
-    time = *(long *)&buffer[14];
+    time = *(int32_t *)&buffer[14];
 
     imu_health = buffer[15];
 
@@ -234,5 +234,5 @@ void AP_GPS_IMU::checksum(unsigned char  data)
 /****************************************************************
  * Unused
  ****************************************************************/
-void AP_GPS_IMU::setHIL(long _time, float _latitude, float _longitude, float _altitude,
+void AP_GPS_IMU::setHIL(uint32_t _time, float _latitude, float _longitude, float _altitude,
                         float _ground_speed, float _ground_course, float _speed_3d, uint8_t _num_sats) {};

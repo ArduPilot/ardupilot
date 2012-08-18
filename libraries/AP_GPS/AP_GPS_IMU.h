@@ -15,14 +15,14 @@ public:
     virtual bool read(void);
 
     // Properties
-    long    roll_sensor;            // how much we're turning in deg * 100
-    long    pitch_sensor;           // our angle of attack in deg * 100
-    int     airspeed;
+    int32_t roll_sensor;            // how much we're turning in deg * 100
+    int32_t pitch_sensor;           // our angle of attack in deg * 100
+    int16_t airspeed;
     float   imu_health;
     uint8_t imu_ok;
 
     // Unused
-    virtual void setHIL(long time, float latitude, float longitude, float altitude,
+    virtual void setHIL(uint32_t time, float latitude, float longitude, float altitude,
                         float ground_speed, float ground_course, float speed_3d, uint8_t num_sats);
 
 private:

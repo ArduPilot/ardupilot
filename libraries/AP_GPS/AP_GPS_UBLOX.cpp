@@ -63,11 +63,11 @@ bool
 AP_GPS_UBLOX::read(void)
 {
     uint8_t		data;
-    int 		numc;
+    int16_t		numc;
     bool		parsed = false;
 
     numc = _port->available();
-    for (int i = 0; i < numc; i++) {	// Process bytes received
+    for (int16_t i = 0; i < numc; i++) {	// Process bytes received
 
         // read the next byte
         data = _port->read();
