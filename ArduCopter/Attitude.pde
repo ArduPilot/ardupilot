@@ -134,6 +134,7 @@ get_acro_yaw(int32_t target_rate)
 	return get_rate_yaw(target_rate);
 }
 
+/*
 static int16_t
 get_acro_yaw2(int32_t target_rate)
 {
@@ -205,6 +206,7 @@ get_acro_yaw2(int32_t target_rate)
 
 	return output;
 }
+*/
 
 static int16_t
 get_rate_roll(int32_t target_rate)
