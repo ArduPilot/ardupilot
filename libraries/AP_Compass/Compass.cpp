@@ -55,7 +55,7 @@ Compass::get_offsets()
 }
 
 void
-Compass::set_initial_location(long latitude, long longitude)
+Compass::set_initial_location(int32_t latitude, int32_t longitude)
 {
     // if automatic declination is configured, then compute
     // the declination based on the initial GPS fix
