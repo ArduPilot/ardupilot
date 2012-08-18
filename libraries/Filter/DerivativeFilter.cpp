@@ -92,6 +92,11 @@ float DerivativeFilter<T,FILTER_SIZE>::slope(void)
         break;
     }
 
+    // cope with numerical errors
+    if (isnan(result) || isinf(result)) {
+        result = 0;
+    }
+
     _new_data = false;
     _last_slope = result;
 
