@@ -25,7 +25,7 @@ public:
     ///
     void			update(void);
 
-    void (*callback)(unsigned long t);
+    void (*callback)(uint32_t t);
 
     /// GPS status codes
     ///
@@ -161,7 +161,7 @@ protected:
     ///						long in the wrong byte order
     /// @returns			endian-swapped value
     ///
-    long			_swapl(const void *bytes);
+    int32_t				_swapl(const void *bytes);
 
     /// perform an endian swap on an int
     ///
@@ -215,12 +215,12 @@ private:
 	float _velocity_east;
 };
 
-inline long
+inline int32_t
 GPS::_swapl(const void *bytes)
 {
     const uint8_t	*b = (const uint8_t *)bytes;
     union {
-        long	v;
+        int32_t	v;
         uint8_t b[4];
     } u;
 

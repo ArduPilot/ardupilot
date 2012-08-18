@@ -45,11 +45,11 @@ AP_GPS_406::_configure_gps(void)
     const uint8_t gps_checksum[] 	= {0xA8, 0xAA, 0xAD, 0xAF, 0xC1};
     const uint8_t gps_ender[]		= {0xB0, 0xB3};
 
-    for(int z = 0; z < 2; z++) {
-        for(int x = 0; x < 5; x++) {
+    for(int16_t z = 0; z < 2; z++) {
+        for(int16_t x = 0; x < 5; x++) {
             _port->write(gps_header, sizeof(gps_header));	// Prints the msg header, is the same header for all msg..
             _port->write(gps_payload[x]);					// Prints the payload, is not the same for every msg
-            for(int y = 0; y < 6; y++)						// Prints 6 zeros
+            for(int16_t y = 0; y < 6; y++)						// Prints 6 zeros
                 _port->write((uint8_t)0);
             _port->write(gps_checksum[x]);					// Print the Checksum
             _port->write(gps_ender[0]);						// Print the Ender of the string, is same on all msg's.

@@ -88,7 +88,7 @@ private:
     /// @param	a		The character to be converted
     /// @returns		The value of the character as a hex digit
     ///
-    int 			_from_hex(char a);
+    int16_t 			_from_hex(char a);
 
     /// Parses the current term as a NMEA-style decimal number with
     /// up to two decimal digits.
@@ -129,14 +129,14 @@ private:
     // The result of parsing terms within a message is stored temporarily until
     // the message is completely processed and the checksum validated.
     // This avoids the need to buffer the entire message.
-    long 			_new_time;				///< time parsed from a term
-    long 			_new_date;				///< date parsed from a term
-    long 			_new_latitude;			///< latitude parsed from a term
-    long 			_new_longitude;			///< longitude parsed from a term
-    long 			_new_altitude;			///< altitude parsed from a term
-    long			_new_speed;				///< speed parsed from a term
-    long			_new_course;			///< course parsed from a term
-    int 			_new_hdop;				///< HDOP parsed from a term
+    int32_t			_new_time;				///< time parsed from a term
+    int32_t 			_new_date;				///< date parsed from a term
+    int32_t 			_new_latitude;			///< latitude parsed from a term
+    int32_t 			_new_longitude;			///< longitude parsed from a term
+    int32_t 			_new_altitude;			///< altitude parsed from a term
+    int32_t			_new_speed;				///< speed parsed from a term
+    int32_t			_new_course;			///< course parsed from a term
+    int16_t 			_new_hdop;				///< HDOP parsed from a term
     uint8_t			_new_satellite_count;	///< satellite count parsed from a term
 
     /// @name	Init strings
