@@ -905,11 +905,11 @@ static void Log_Read(int16_t start_page, int16_t end_page)
                     memcheck_available_memory());
 
 #if CONFIG_APM_HARDWARE == APM_HARDWARE_APM2
-	Serial.printf_P(PSTR("APM 2\n");
+	Serial.printf_P(PSTR("APM 2\n"));
 #elif  CONFIG_APM_HARDWARE == APM2_BETA_HARDWARE
-	Serial.printf_P(PSTR("APM 2Beta\n");
+	Serial.printf_P(PSTR("APM 2Beta\n"));
 #else
-	Serial.printf_P(PSTR("APM 1\n");
+	Serial.printf_P(PSTR("APM 1\n"));
 #endif
 
     if(start_page > end_page){
