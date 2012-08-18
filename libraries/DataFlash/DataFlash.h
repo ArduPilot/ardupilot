@@ -58,7 +58,7 @@ class DataFlash_Class
 	int16_t GetWritePage(void);
 
 	// erase handling
-	void EraseAll(void (*delay_cb)(unsigned long));
+	void EraseAll(void (*delay_cb)(uint32_t));
 	bool NeedErase(void);
 
 	// Write methods

@@ -187,7 +187,7 @@ uint16_t DataFlash_Class::GetFilePage()
 	return df_FilePage;
 }
 
-void DataFlash_Class::EraseAll(void (*delay_cb)(unsigned long))
+void DataFlash_Class::EraseAll(void (*delay_cb)(uint32_t))
 {
 	for(uint16_t j = 1; j <= (df_NumPages+1)/8; j++) {
 		BlockErase(j);
@@ -344,12 +344,12 @@ int16_t DataFlash_Class::find_last_page(void)
     uint32_t top_hash;
 
     StartRead(bottom);
-    bottom_hash = ((long)GetFileNumber()<<16) | GetFilePage();
+    bottom_hash = ((int32_t)GetFileNumber()<<16) | GetFilePage();
 
     while(top-bottom > 1) {
         look = (top+bottom)/2;
         StartRead(look);
-        look_hash = (long)GetFileNumber()<<16 | GetFilePage();
+        look_hash = (int32_t)GetFileNumber()<<16 | GetFilePage();
         if (look_hash >= 0xFFFF0000) look_hash = 0;
 
         if(look_hash < bottom_hash) {
@@ -363,7 +363,7 @@ int16_t DataFlash_Class::find_last_page(void)
     }
 
     StartRead(top);
-    top_hash = ((long)GetFileNumber()<<16) | GetFilePage();
+    top_hash = ((int32_t)GetFileNumber()<<16) | GetFilePage();
     if (top_hash >= 0xFFFF0000) {
         top_hash = 0;
     }
@@ -400,13 +400,13 @@ int16_t DataFlash_Class::find_last_page_of_log(uint16_t log_number)
 		top = find_last_page();
 	}
 
-	check_hash = (long)log_number<<16 | 0xFFFF;
+	check_hash = (int32_t)log_number<<16 | 0xFFFF;
 
 	while(top-bottom > 1)
 	{
 		look = (top+bottom)/2;
 		StartRead(look);
-		look_hash = (long)GetFileNumber()<<16 | GetFilePage();
+		look_hash = (int32_t)GetFileNumber()<<16 | GetFilePage();
 		if (look_hash >= 0xFFFF0000) look_hash = 0;
 
 		if(look_hash > check_hash) {
