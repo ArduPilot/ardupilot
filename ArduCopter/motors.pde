@@ -17,7 +17,7 @@ static void arm_motors()
 		return;
 	}
 
-	if ((control_mode > ACRO) && ((control_mode != TOY_A) || (control_mode != TOY_M))){
+	if ((control_mode > ACRO) && ((control_mode != TOY_A) && (control_mode != TOY_M))){
 		arming_counter = 0;
 		return;
 	}
