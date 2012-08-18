@@ -657,7 +657,7 @@ static void init_z_damper()
 
 // calculate modified roll/pitch depending upon optical flow calculated position
 static int32_t
-get_of_roll(int32_t control_roll)
+get_of_roll(int32_t input_roll)
 {
 #ifdef OPTFLOW_ENABLED
 	static float tot_x_cm = 0;  // total distance from target
@@ -673,7 +673,7 @@ get_of_roll(int32_t control_roll)
 		tot_x_cm += optflow.x_cm;
 
 		// only stop roll if caller isn't modifying roll
-		if( control_roll == 0 && current_loc.alt < 1500) {
+		if( input_roll == 0 && current_loc.alt < 1500) {
 			p = g.pid_optflow_roll.get_p(-tot_x_cm);
 			i = g.pid_optflow_roll.get_i(-tot_x_cm,1.0);  // we could use the last update time to calculate the time change
 			d = g.pid_optflow_roll.get_d(-tot_x_cm,1.0);
@@ -704,14 +704,14 @@ get_of_roll(int32_t control_roll)
 	// limit max angle
     of_roll = constrain(of_roll, -1000, 1000);
 
-    return control_roll+of_roll;
+    return input_roll+of_roll;
 #else
-    return control_roll;
+    return input_roll;
 #endif
 }
 
 static int32_t
-get_of_pitch(int32_t control_pitch)
+get_of_pitch(int32_t input_pitch)
 {
 #ifdef OPTFLOW_ENABLED
     static float tot_y_cm = 0;  // total distance from target
@@ -727,7 +727,7 @@ get_of_pitch(int32_t control_pitch)
 		tot_y_cm += optflow.y_cm;
 
 		// only stop roll if caller isn't modifying pitch
-		if( control_pitch == 0 && current_loc.alt < 1500 ) {
+		if( input_pitch == 0 && current_loc.alt < 1500 ) {
 			p = g.pid_optflow_pitch.get_p(tot_y_cm);
 			i = g.pid_optflow_pitch.get_i(tot_y_cm, 1.0);  // we could use the last update time to calculate the time change
 			d = g.pid_optflow_pitch.get_d(tot_y_cm, 1.0);
@@ -759,8 +759,8 @@ get_of_pitch(int32_t control_pitch)
 	// limit max angle
 	of_pitch = constrain(of_pitch, -1000, 1000);
 
-    return control_pitch+of_pitch;
+    return input_pitch+of_pitch;
 #else
-    return control_pitch;
+    return input_pitch;
 #endif
 }
