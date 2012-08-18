@@ -504,7 +504,7 @@ static long
 static int16_t get_angle_boost(int16_t value)
 {
 	float temp = cos_pitch_x * cos_roll_x;
-	temp = constrain(temp, .5, 1.0);
+	temp = constrain(temp, .75, 1.0);
 	return ((float)(g.throttle_cruise + 80) / temp) - (g.throttle_cruise + 80);
 }
 
