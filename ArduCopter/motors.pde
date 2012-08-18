@@ -158,10 +158,6 @@ static void init_arm_motors()
 	// temp hack
 	motor_light = true;
 	digitalWrite(A_LED_PIN, LED_ON);
-
-	// revert back to user default
-	ahrs._kp.load();
-	ahrs._kp_yaw.load();
 }
 
 
@@ -176,9 +172,6 @@ static void init_disarm_motors()
 	compass.save_offsets();
 
 	g.throttle_cruise.save();
-
-	ahrs._kp.set(0.8);
-	ahrs._kp_yaw.set(0.8);
 
 	// we are not in the air
 	takeoff_complete = false;
