@@ -16,11 +16,6 @@ bool AP_Baro_BMP085_HIL::init(AP_PeriodicProcess * scheduler)
 	return true;
 }
 
-void AP_Baro_BMP085_HIL::calibrate(void (*callback)(unsigned long t))
-{
-    // nothing to do
-}
-
 // Read the sensor. This is a state machine
 // We read one time Temperature (state = 1) and then 4 times Pressure (states 2-5)
 uint8_t AP_Baro_BMP085_HIL::read()
