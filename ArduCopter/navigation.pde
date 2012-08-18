@@ -202,7 +202,7 @@ static void calc_nav_rate(int16_t max_speed)
 	x_rate_error 	= x_target_speed - x_actual_speed;
 	#endif
 
-	x_rate_error 	= constrain(x_rate_error, -1000, 1000);
+	x_rate_error 	= constrain(x_rate_error, -500, 500);
 	nav_lon			= g.pid_nav_lon.get_pid(x_rate_error, dTnav);
 	int32_t tilt	= (x_target_speed * x_target_speed * (int32_t)g.tilt_comp) / 10000;
 
@@ -219,7 +219,7 @@ static void calc_nav_rate(int16_t max_speed)
 	y_rate_error 	= y_target_speed - y_actual_speed;
 	#endif
 
-	y_rate_error 	= constrain(y_rate_error, -1000, 1000);	// added a rate error limit to keep pitching down to a minimum
+	y_rate_error 	= constrain(y_rate_error, -500, 500);	// added a rate error limit to keep pitching down to a minimum
 	nav_lat			= g.pid_nav_lat.get_pid(y_rate_error, dTnav);
 	tilt			= (y_target_speed * y_target_speed * (int32_t)g.tilt_comp) / 10000;
 
