@@ -99,7 +99,7 @@ print_log_menu(void)
             int16_t last_log_start = log_start, last_log_end = log_end;
 			temp = last_log_num-i+1;
 			DataFlash.get_log_boundaries(temp, log_start, log_end);
-			Serial.printf_P(PSTR("Log %d,    start %d,   end %d\n"), temp, log_start, log_end);
+			Serial.printf_P(PSTR("Log %d,    start %d,   end %d\n"), (int)temp, (int)log_start, (int)log_end);
             if (last_log_start == log_start && last_log_end == log_end) {
                 // we are printing bogus logs
                 break;
@@ -116,7 +116,7 @@ dump_log(uint8_t argc, const Menu::arg *argv)
 	int16_t dump_log;
 	int16_t dump_log_start;
 	int16_t dump_log_end;
-	byte last_log_num;
+	int16_t last_log_num;
 
 	// check that the requested log number can be read
 	dump_log = argv[1].i;
@@ -125,9 +125,9 @@ dump_log(uint8_t argc, const Menu::arg *argv)
 	if (dump_log == -2) {
 		for(uint16_t count=1; count<=DataFlash.df_NumPages; count++) {
 			DataFlash.StartRead(count);
-			Serial.printf_P(PSTR("DF page, log file #, log page: %d,\t"), count);
-			Serial.printf_P(PSTR("%d,\t"), DataFlash.GetFileNumber());
-			Serial.printf_P(PSTR("%d\n"), DataFlash.GetFilePage());
+			Serial.printf_P(PSTR("DF page, log file #, log page: %d,\t"), (int)count);
+			Serial.printf_P(PSTR("%d,\t"), (int)DataFlash.GetFileNumber());
+			Serial.printf_P(PSTR("%d\n"), (int)DataFlash.GetFilePage());
 		}
 		return(-1);
 	} else if (dump_log <= 0) {
@@ -275,16 +275,16 @@ static void Log_Read_GPS()
 
 							//  1   2    3      4     5      6      7    8
 	Serial.printf_P(PSTR("GPS, %ld, %d, "),
-							temp1,		// 1 time
-							temp2);		// 2 sats
+							(long)temp1,		// 1 time
+							(int)temp2);		// 2 sats
 	print_latlon(&Serial, temp3);
 	Serial.print_P(PSTR(", "));
 	print_latlon(&Serial, temp4);
 	Serial.printf_P(PSTR(", %4.4f, %4.4f, %d, %ld\n"),
 							temp5,		// 5 gps alt
 							temp6,		// 6 sensor alt
-							temp7,		// 7 ground speed
-							temp8);		// 8 ground course
+							(int)temp7,		// 7 ground speed
+							(long)temp8);		// 8 ground course
 }
 
 #if INERTIAL_NAV == ENABLED
@@ -333,11 +333,11 @@ static void Log_Read_Raw()
 
 	Serial.printf_P(PSTR("RAW, %1.4f, %d, %1.4f, %d, %1.4f, %d\n"),
 							vx,
-							sx,
+							(int)sx,
 							vy,
-							sy,
+							(int)sy,
 							vz,
-							sz);
+							(int)sz);
 
 }
 #else
@@ -403,11 +403,11 @@ static void Log_Read_Current()
 
 							//  1    2    3      4      5
 	Serial.printf_P(PSTR("CURR, %d, %ld, %4.4f, %4.4f, %d\n"),
-		temp1,
-		temp2,
+		(int)temp1,
+		(long)temp2,
 		temp3,
 		temp4,
-		temp5);
+		(int)temp5);
 }
 
 // Write an Motors packet. Total length : 12 ~ 20 bytes
@@ -481,12 +481,12 @@ static void Log_Read_Motors()
 	int16_t temp6 = DataFlash.ReadInt();			// 6
 							  // 1  2   3   4   5   6
 	Serial.printf_P(PSTR("MOT, %d, %d, %d, %d, %d, %d\n"),
-			temp1,	//1
-			temp2,	//2
-			temp3,	//3
-			temp4,	//4
-			temp5,	//5
-			temp6);	//6
+			(int)temp1,	//1
+			(int)temp2,	//2
+			(int)temp3,	//3
+			(int)temp4,	//4
+			(int)temp5,	//5
+			(int)temp6);	//6
 
 	#elif FRAME_CONFIG == OCTA_FRAME || FRAME_CONFIG == OCTA_QUAD_FRAME
 	int16_t temp1 = DataFlash.ReadInt();			// 1
@@ -499,14 +499,14 @@ static void Log_Read_Motors()
 	int16_t temp8 = DataFlash.ReadInt();			// 8
 							 // 1   2   3   4   5   6   7   8
 	Serial.printf_P(PSTR("MOT, %d, %d, %d, %d, %d, %d, %d, %d\n"),
-			temp1,	//1
-			temp2,	//2
-			temp3,	//3
-			temp4,	//4
-			temp5,	//5
-			temp6,	//6
-			temp7,	//7
-			temp8);	//8
+			(int)temp1,	//1
+			(int)temp2,	//2
+			(int)temp3,	//3
+			(int)temp4,	//4
+			(int)temp5,	//5
+			(int)temp6,	//6
+			(int)temp7,	//7
+			(int)temp8);	//8
 
 	#elif FRAME_CONFIG == HELI_FRAME
 	int16_t temp1 = DataFlash.ReadInt();			// 1
@@ -516,11 +516,11 @@ static void Log_Read_Motors()
 	int16_t temp5 = DataFlash.ReadInt();			// 5
 							 // 1   2   3   4   5
 	Serial.printf_P(PSTR("MOT, %d, %d, %d, %d, %d\n"),
-			temp1,	//1
-			temp2,	//2
-			temp3,	//3
-			temp4,	//4
-			temp5);	//5
+			(int)temp1,	//1
+			(int)temp2,	//2
+			(int)temp3,	//3
+			(int)temp4,	//4
+			(int)temp5);	//5
 
 	#else // quads, TRIs
 	int16_t temp1 = DataFlash.ReadInt();			// 1
@@ -530,10 +530,10 @@ static void Log_Read_Motors()
 
 							 // 1   2   3   4
 	Serial.printf_P(PSTR("MOT, %d, %d, %d, %d\n"),
-			temp1, 	//1
-			temp2, 	//2
-			temp3, 	//3
-			temp4); //4;
+			(int)temp1, 	//1
+			(int)temp2, 	//2
+			(int)temp3, 	//3
+			(int)temp4); //4;
 	#endif
 }
 
@@ -571,16 +571,16 @@ static void Log_Read_Optflow()
 	int32_t temp8 	= DataFlash.ReadLong();			// 8
 	int32_t temp9 	= DataFlash.ReadLong();			// 9
 
-	Serial.printf_P(PSTR("OF, %d, %d, %d, %d, %d, %4.7f, %4.7f, %d, %d\n"),
-			temp1,
-			temp2,
-			temp3,
-			temp4,
-			temp5,
+	Serial.printf_P(PSTR("OF, %d, %d, %d, %d, %d, %4.7f, %4.7f, %ld, %ld\n"),
+			(int)temp1,
+			(int)temp2,
+			(int)temp3,
+			(int)temp4,
+			(int)temp5,
 			temp6,
 			temp7,
-			temp8,
-			temp9);
+			(long)temp8,
+			(long)temp9);
 	#endif
 }
 
@@ -616,11 +616,11 @@ static void Log_Read_Nav_Tuning()
 
 	for(int8_t i = 1; i < 10; i++ ){
 		temp = DataFlash.ReadInt();
-		Serial.printf("%d, ", temp);
+		Serial.printf("%d, ", (int)temp);
 	}
 	// read 10
 	temp = DataFlash.ReadInt();
-	Serial.printf("%d\n", temp);
+	Serial.printf("%d\n", (int)temp);
 }
 
 
@@ -725,14 +725,14 @@ static void Log_Read_Cmd()
 
 							//  1   2    3   4   5   6   7    8
 	Serial.printf_P(PSTR( "CMD, %d, %d, %d, %d, %d, %ld, %ld, %ld\n"),
-                    temp1,
-                    temp2,
-                    temp3,
-                    temp4,
-                    temp5,
-                    temp6,
-                    temp7,
-                    temp8);
+                    (int)temp1,
+                    (int)temp2,
+                    (int)temp3,
+                    (int)temp4,
+                    (int)temp5,
+                    (long)temp6,
+                    (long)temp7,
+                    (long)temp8);
 }
 
 // Write an attitude packet. Total length : 16 bytes
@@ -769,15 +769,15 @@ static void Log_Read_Attitude()
 
 							// 1   2   3    4   5   6  7    8   9
 	Serial.printf_P(PSTR("ATT, %d, %d, %d, %d, %d, %u, %u, %d, %d\n"),
-		temp1,
-		temp2,
-		temp3,
-		temp4,
-		temp5,
-		temp6,
-		temp7,
-		temp8,
-		temp9);
+		(int)temp1,
+		(int)temp2,
+		(int)temp3,
+		(int)temp4,
+		(int)temp5,
+		(unsigned)temp6,
+		(unsigned)temp7,
+		(int)temp8,
+		(int)temp9);
 }
 
 // Write a mode packet. Total length : 7 bytes
@@ -796,7 +796,7 @@ static void Log_Read_Mode()
 {
 	Serial.printf_P(PSTR("MOD:"));
 	Serial.print(flight_mode_strings[DataFlash.ReadByte()]);
-	Serial.printf_P(PSTR(", %d\n"),DataFlash.ReadInt());
+	Serial.printf_P(PSTR(", %d\n"),(int)DataFlash.ReadInt());
 }
 
 // Write Startup packet. Total length : 4 bytes
@@ -844,10 +844,10 @@ static void Log_Read_Data()
 
 	if(temp2 == 1){
 		float temp3 = get_float(DataFlash.ReadLong());
-		Serial.printf_P(PSTR("DATA: %d, %1.6f\n"), temp1, temp3);
+		Serial.printf_P(PSTR("DATA: %d, %1.6f\n"), (int)temp1, temp3);
 	}else{
 		int32_t temp3 = DataFlash.ReadLong();
-		Serial.printf_P(PSTR("DATA: %d, %ld\n"), temp1, temp3);
+		Serial.printf_P(PSTR("DATA: %d, %ld\n"), (int)temp1, (long)temp3);
 	}
 }
 
@@ -882,12 +882,12 @@ static void Log_Read_PID()
 
 						   //  1    2    3    4    5    6      7
 	Serial.printf_P(PSTR("PID-%d, %ld, %ld, %ld, %ld, %ld, %4.4f\n"),
-                    temp1,		// pid id
-                    temp2,		// error
-                    temp3,		// p
-                    temp4,		// i
-                    temp5,		// d
-                    temp6,		// output
+                    (int)temp1,		// pid id
+                    (long)temp2,		// error
+                    (long)temp3,		// p
+                    (long)temp4,		// i
+                    (long)temp5,		// d
+                    (long)temp6,		// output
                     temp7);		// gain
 }
 
@@ -902,7 +902,7 @@ static void Log_Read(int16_t start_page, int16_t end_page)
 
 	Serial.printf_P(PSTR("\n" THISFIRMWARE
 						 "\nFree RAM: %u\n"),
-                    memcheck_available_memory());
+                    (unsigned)memcheck_available_memory());
 
 #if CONFIG_APM_HARDWARE == APM_HARDWARE_APM2
 	Serial.printf_P(PSTR("APM 2\n"));
@@ -919,7 +919,7 @@ static void Log_Read(int16_t start_page, int16_t end_page)
     	packet_count = Log_Read_Process(start_page, end_page);
     }
 
-	//Serial.printf_P(PSTR("Number of packets read: %d\n"), packet_count);
+	//Serial.printf_P(PSTR("Number of packets read: %d\n"), (int)packet_count);
 }
 
 // Read the DataFlash log memory : Packet Parser
