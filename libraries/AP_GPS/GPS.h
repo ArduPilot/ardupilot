@@ -25,7 +25,7 @@ public:
     ///
     void			update(void);
 
-    void (*callback)(uint32_t t);
+    void (*callback)(unsigned long t);
 
     /// GPS status codes
     ///
