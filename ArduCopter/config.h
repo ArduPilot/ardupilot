@@ -1076,4 +1076,8 @@
 # define ALTERNATIVE_YAW_MODE DISABLED
 #endif
 
+// Inertia based contollers.  disabled by default, work in progress
+#define ACCEL_ALT_HOLD 0
+#define INERTIAL_NAV DISABLED
+
 #endif // __ARDUCOPTER_CONFIG_H__

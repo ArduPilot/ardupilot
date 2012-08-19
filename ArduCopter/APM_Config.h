@@ -46,9 +46,9 @@
 //#define TOY_EDF	ENABLED
 //#define TOY_MIXER TOY_LOOKUP_TABLE
 
-
-#define ACCEL_ALT_HOLD 0		// disabled by default, work in progress
-#define INERTIAL_NAV DISABLED
+// Inertia based contollers.  disabled by default, work in progress
+//#define ACCEL_ALT_HOLD 0
+//#define INERTIAL_NAV DISABLED
 
 
 #if INERTIAL_NAV == ENABLED
@@ -91,7 +91,7 @@
 
 // to enable, set to 1
 // to disable, set to 0
-#define AUTO_THROTTLE_HOLD 1
+// #define AUTO_THROTTLE_HOLD 1
 
 //#define LOGGING_ENABLED		DISABLED
 
