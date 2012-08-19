@@ -84,7 +84,7 @@ def loiter(mavproxy, mav, holdtime=60, maxaltchange=20):
     print("Loiter FAILED")
     return False
 
-def change_alt(mavproxy, mav, alt_min, climb_throttle=1920, descend_throttle=1120):
+def change_alt(mavproxy, mav, alt_min, climb_throttle=1920, descend_throttle=1080):
     '''change altitude'''
     m = mav.recv_match(type='VFR_HUD', blocking=True)
     if(m.alt < alt_min):
