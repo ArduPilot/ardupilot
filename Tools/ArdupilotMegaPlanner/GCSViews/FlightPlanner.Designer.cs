@@ -591,6 +591,7 @@
             this.comboBoxMapType.FormattingEnabled = true;
             this.comboBoxMapType.Name = "comboBoxMapType";
             this.toolTip1.SetToolTip(this.comboBoxMapType, resources.GetString("comboBoxMapType.ToolTip"));
+            this.comboBoxMapType.SelectedIndexChanged += new System.EventHandler(this.comboBoxMapType_SelectedValueChanged);
             // 
             // panelMap
             // 

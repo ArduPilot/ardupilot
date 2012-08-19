@@ -377,7 +377,7 @@ namespace ArdupilotMega
                     if (DateTime.Now.Second != lastwindcalc.Second)
                     {
                         lastwindcalc = DateTime.Now;
-                        dowindcalc();
+                       // dowindcalc();
                     }
 
                     if (mavinterface.packets[MAVLink.MAVLINK_MSG_ID_STATUSTEXT] != null) // status text 
@@ -444,6 +444,17 @@ namespace ArdupilotMega
                         i2cerrors = hwstatus.I2Cerr;
 
                         //MAVLink.packets[MAVLink.MAVLINK_MSG_ID_HWSTATUS] = null;
+                    }
+
+                    bytearray = mavinterface.packets[ArdupilotMega.MAVLink.MAVLINK_MSG_ID_WIND];
+                    if (bytearray != null)
+                    {
+                        var wind = bytearray.ByteArrayToStructure<MAVLink.mavlink_wind_t>(6);
+
+                        wind_dir = wind.direction;
+                        wind_vel = wind.speed;
+
+                        //MAVLink.packets[ArdupilotMega.MAVLink.MAVLINK_MSG_ID_SYS_STATUS] = null;
                     }
 
 #if MAVLINK10
@@ -950,6 +961,8 @@ namespace ArdupilotMega
                         airspeed = vfr.airspeed;
 
                         alt = vfr.alt; // this might include baro
+
+                        //Console.WriteLine(alt);
 
                         //climbrate = vfr.climb;
 

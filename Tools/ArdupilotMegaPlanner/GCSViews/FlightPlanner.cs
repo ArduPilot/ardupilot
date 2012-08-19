@@ -3221,8 +3221,8 @@ namespace ArdupilotMega.GCSViews
                 string distance = (50 * MainV2.cs.multiplierdist).ToString("0");
                 Common.InputBox("Distance", "Distance between lines", ref distance);
 
-                //string overshoot = (30 * MainV2.cs.multiplierdist).ToString("0");
-                //Common.InputBox("Overshoot", "Enter of line overshoot amount", ref overshoot);
+                string wpevery = (40 * MainV2.cs.multiplierdist).ToString("0");
+                Common.InputBox("Every", "Put a WP every x distance (-1 for none)", ref wpevery);
 
                 string angle = (90).ToString("0");
                 Common.InputBox("Angle", "Enter the line direction (0-180)", ref angle);
@@ -3242,6 +3242,11 @@ namespace ArdupilotMega.GCSViews
                 if (!double.TryParse(distance, out tryme))
                 {
                     CustomMessageBox.Show("Invalid Distance");
+                    return;
+                }
+                if (!double.TryParse(wpevery, out tryme))
+                {
+                    CustomMessageBox.Show("Invalid Waypoint spacing");
                     return;
                 }
 
@@ -3274,12 +3279,18 @@ namespace ArdupilotMega.GCSViews
 
                 int count = 0;
 
-                double x = bottomleft.Lat - Math.Abs(fulllatdiff);
-                double y = bottomleft.Lng - Math.Abs(fulllngdiff);
+                double x = bottomleft.Lat - Math.Abs(fulllatdiff) - latlngdiff * 0.5;
+                double y = bottomleft.Lng - Math.Abs(fulllngdiff) - latlngdiff * 0.5;
+
+                //callMe(x, y, 0);
+
+                //callMe(topright.Lat + Math.Abs(latlngdiff),topright.Lng + Math.Abs(latlngdiff), 0);
+
+                //return;
 
                 log.InfoFormat("{0} < {1} {2} < {3}", x, (topright.Lat), y, (topright.Lng));
 
-                while (x < (topright.Lat + Math.Abs(fulllatdiff)) && y < (topright.Lng + Math.Abs(fulllngdiff)))
+                while (x < (topright.Lat + Math.Abs(latlngdiff)) && y < (topright.Lng + Math.Abs(latlngdiff)))
                 {
                     if (double.Parse(angle) < 45)
                     {
@@ -3348,9 +3359,24 @@ namespace ArdupilotMega.GCSViews
                         }
 
                         if (!farestlatlong.IsZero)
+                        {
                             callMe(farestlatlong.Lat, farestlatlong.Lng, altitude);
+                        }
+                        if (!closestlatlong.IsZero && !farestlatlong.IsZero && double.Parse(wpevery) > 0)
+                        {
+                            for (int d = (int)double.Parse(wpevery); d < (MainMap.Manager.GetDistance(farestlatlong, closestlatlong) * 1000); d += (int)double.Parse(wpevery))
+                            {
+                                ax = farestlatlong.Lat;
+                                ay = farestlatlong.Lng;
+
+                                newpos(ref ax, ref ay, double.Parse(angle), -d);
+                                callMe(ax, ay, altitude);
+                            }
+                        }
                         if (!closestlatlong.IsZero)
+                        {
                             callMe(closestlatlong.Lat, closestlatlong.Lng - overshootdistlng, altitude);
+                        }
 
                         //callMe(x, topright.Lng, altitude);
                         //callMe(x, bottomleft.Lng - overshootdistlng, altitude);
@@ -3389,9 +3415,24 @@ namespace ArdupilotMega.GCSViews
                             }
                         }
                         if (!closestlatlong.IsZero)
+                        {
                             callMe(closestlatlong.Lat, closestlatlong.Lng, altitude);
+                        }
+                        if (!closestlatlong.IsZero && !farestlatlong.IsZero && double.Parse(wpevery) > 0)
+                        {
+                            for (int d = (int)double.Parse(wpevery); d < (MainMap.Manager.GetDistance(farestlatlong, closestlatlong) * 1000); d += (int)double.Parse(wpevery))
+                            {
+                                ax = closestlatlong.Lat;
+                                ay = closestlatlong.Lng;
+
+                                newpos(ref ax, ref ay, double.Parse(angle), d);
+                                callMe(ax, ay, altitude);
+                            }
+                        }
                         if (!farestlatlong.IsZero)
+                        {
                             callMe(farestlatlong.Lat, farestlatlong.Lng + overshootdistlng, altitude);
+                        }
                         //callMe(x, bottomleft.Lng, altitude);
                         //callMe(x, topright.Lng + overshootdistlng, altitude);
                     }
@@ -3412,6 +3453,38 @@ namespace ArdupilotMega.GCSViews
                 MainMap.Refresh();
 
             }
+        }
+
+        void newpos(ref double lat, ref double lon, double bearing, double distance)
+        {
+            // '''extrapolate latitude/longitude given a heading and distance 
+            //   thanks to http://www.movable-type.co.uk/scripts/latlong.html
+            //  '''
+            // from math import sin, asin, cos, atan2, radians, degrees
+            double radius_of_earth = 6378100.0;//# in meters
+
+            double lat1 = radians(lat);
+            double lon1 = radians(lon);
+            double brng = radians(bearing);
+            double dr = distance / radius_of_earth;
+
+            double lat2 = Math.Asin(Math.Sin(lat1) * Math.Cos(dr) +
+                        Math.Cos(lat1) * Math.Sin(dr) * Math.Cos(brng));
+            double lon2 = lon1 + Math.Atan2(Math.Sin(brng) * Math.Sin(dr) * Math.Cos(lat1),
+                                Math.Cos(dr) - Math.Sin(lat1) * Math.Sin(lat2));
+
+            lat = degrees(lat2);
+            lon = degrees(lon2);
+            //return (degrees(lat2), degrees(lon2));
+        }
+
+        public static double radians(double val)
+        {
+            return val * deg2rad;
+        }
+        public static double degrees(double val)
+        {
+            return val * rad2deg;
         }
 
         private void zoomToToolStripMenuItem_Click(object sender, EventArgs e)

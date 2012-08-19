@@ -2071,11 +2071,11 @@ namespace ArdupilotMega
                 frm.Show();
                 return true;
             }
-            if (keyData == (Keys.Control | Keys.S)) // screenshot
+            /*if (keyData == (Keys.Control | Keys.S)) // screenshot
             {
                 ScreenShot();
                 return true;
-            }
+            }*/
             if (keyData == (Keys.Control | Keys.G)) // nmea out
             {
                 Form frm = new SerialOutput();
