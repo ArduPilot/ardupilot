@@ -138,7 +138,6 @@ steps = [
     'defaults.ArduPlane',
     'fly.ArduPlane',
     'logs.ArduPlane',
-    'build1280.ArduCopter',
     'build2560.ArduCopter',
     'build.ArduCopter',
     'defaults.ArduCopter',
