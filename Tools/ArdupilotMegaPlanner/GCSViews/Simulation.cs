@@ -1022,7 +1022,7 @@ namespace ArdupilotMega.GCSViews
          //   Console.WriteLine(hilstate.alt);
 
             hilstate.pitch = (float)sitldata.pitchDeg * deg2rad; // (rad)
-            hilstate.pitchspeed = (float)sitldata.pitchRate * rad2deg; // (rad/s)
+            hilstate.pitchspeed = (float)sitldata.pitchRate * deg2rad; // (rad/s)
             hilstate.roll = (float)sitldata.rollDeg * deg2rad; // (rad)
             hilstate.rollspeed = (float)sitldata.rollRate * deg2rad; // (rad/s)
             hilstate.yaw = (float)sitldata.yawDeg * deg2rad; // (rad)
@@ -1266,7 +1266,10 @@ namespace ArdupilotMega.GCSViews
 
                     if (RAD_aerosimrc.Checked)
                     {
-                        updateScreenDisplay(aeroin.Model_fLatitude * deg2rad, aeroin.Model_fLongitude * deg2rad, aeroin.Model_fPosZ, aeroin.Model_fRoll, aeroin.Model_fPitch, aeroin.Model_fHeading, aeroin.Model_fHeading, roll_out, pitch_out, rudder_out, throttle_out);
+                        if (heli)
+                            updateScreenDisplay(aeroin.Model_fLatitude * deg2rad, aeroin.Model_fLongitude * deg2rad, aeroin.Model_fPosZ, aeroin.Model_fRoll, aeroin.Model_fPitch, aeroin.Model_fHeading, aeroin.Model_fHeading, roll_out, pitch_out, rudder_out, collective_out);
+                        else 
+                            updateScreenDisplay(aeroin.Model_fLatitude * deg2rad, aeroin.Model_fLongitude * deg2rad, aeroin.Model_fPosZ, aeroin.Model_fRoll, aeroin.Model_fPitch, aeroin.Model_fHeading, aeroin.Model_fHeading, roll_out, pitch_out, rudder_out, throttle_out);
                     }
                 }
             }

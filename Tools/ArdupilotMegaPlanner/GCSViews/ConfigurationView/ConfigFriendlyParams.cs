@@ -365,7 +365,7 @@ namespace ArdupilotMega.GCSViews.ConfigurationView
                 for (int i = 0; i < descriptionParts.Length; i++)
                 {
                     returnDescription.Append(String.Format("{0} ", descriptionParts[i]));
-                    if (i != 0 && i % 10 == 0) returnDescription.Append(Environment.NewLine);
+                    if (i != 0 && i % 12 == 0) returnDescription.Append(Environment.NewLine);
                 }
             }
 

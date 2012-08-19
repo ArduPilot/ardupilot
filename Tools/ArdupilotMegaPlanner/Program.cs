@@ -67,11 +67,11 @@ namespace ArdupilotMega
             {
                 Thread.CurrentThread.Name = "Base Thread";
 
-                Application.Run(new MainV2());             
+                Application.Run(new MainV2());
             }
             catch (Exception ex)
             {
-                log.Fatal("Fatal app exception",ex);
+                log.Fatal("Fatal app exception", ex);
                 Console.WriteLine(ex.ToString());
 
                 Console.ReadLine();
@@ -99,10 +99,12 @@ namespace ArdupilotMega
 
             log.Debug(ex.ToString());
 
-            if (ex.Message == "Requested registry access is not allowed.") {
+            if (ex.Message == "Requested registry access is not allowed.")
+            {
                 return;
             }
-            if (ex.Message == "The port is closed.") {
+            if (ex.Message == "The port is closed.")
+            {
                 CustomMessageBox.Show("Serial connection has been lost");
                 return;
             }
@@ -122,10 +124,10 @@ namespace ArdupilotMega
             }
             if (e.Exception.GetType() == typeof(FileNotFoundException) || e.Exception.GetType() == typeof(BadImageFormatException)) // i get alot of error from people who click the exe from inside a zip file.
             {
-                CustomMessageBox.Show("You are missing some DLL's. Please extract the zip file somewhere. OR Use the update feature from the menu " + e.Exception.ToString() );
-               // return;
+                CustomMessageBox.Show("You are missing some DLL's. Please extract the zip file somewhere. OR Use the update feature from the menu " + e.Exception.ToString());
+                // return;
             }
-            DialogResult dr = CustomMessageBox.Show("An error has occurred\n"+ex.ToString() + "\n\nReport this Error???", "Send Error", MessageBoxButtons.YesNo);
+            DialogResult dr = CustomMessageBox.Show("An error has occurred\n" + ex.ToString() + "\n\nReport this Error???", "Send Error", MessageBoxButtons.YesNo);
             if (DialogResult.Yes == dr)
             {
                 try
