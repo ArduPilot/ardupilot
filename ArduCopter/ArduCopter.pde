@@ -677,7 +677,7 @@ static int32_t		baro_alt;
 // The climb_rate as reported by Baro in cm/s
 static int16_t		baro_rate;
 // used to switch out of Manual Boost
-static int8_t 		reset_throttle_counter;
+static uint8_t 		reset_throttle_counter;
 // used to track when to read sensors vs estimate alt
 static boolean 		alt_sensor_flag;
 static int16_t 		saved_toy_throttle;
