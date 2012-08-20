@@ -34,13 +34,10 @@
 #define AP_MOTORS_HELI_SWASH_CCPM	0
 #define AP_MOTORS_HELI_SWASH_H1		1
 
-// ext ESC definitions
-#define AP_MOTORS_HELI_EXT_ESC CH_8
-#define AP_MOTORS_ESC_MODE_PASSTHROUGH  1
-#define AP_MOTORS_ESC_MODE_EXT_GOV		2
-#define AP_MOTORS_EXT_ESC_RAMP_UP		1000 					//Temporary until we can make this a parameter
-#define AP_MOTORS_EXT_ESC_ACTIVE AP_MOTORS_ESC_MODE_PASSTHROUGH	//Temporary until we can make this a parameter
-
+// ext RSC definitions
+#define AP_MOTORS_HELI_EXT_RSC CH_8
+#define AP_MOTORSHELI_RSC_MODE_CH8_PASSTHROUGH  1
+#define AP_MOTORSHELI_RSC_MODE_EXT_GOV			2
 
 
 class AP_HeliControls;
@@ -96,6 +93,9 @@ public:
 	AP_Int16	collective_yaw_effect;
 	AP_Int8		servo_manual;		// used to trigger swash reset from mission planner	
 	AP_Int16	ext_gov_setpoint;	// maximum output to the motor governor
+	AP_Int8		rsc_mode;			// sets the mode for rotor speed controller
+	AP_Int16	rsc_ramp_up_rate;	// sets the time in 100th seconds the RSC takes to ramp up to speed
+	AP_Int8		acro_mode;			// selects FBL Acro Mode, or Flybarred Acro Mode
 	int16_t 	throttle_mid;		// throttle mid point in pwm form (i.e. 0 ~ 1000)
 
 	
@@ -137,7 +137,7 @@ protected:
 	
 	void output_disarmed();
 	
-	void ext_esc_control();
+	void rsc_control();
 	
 	float _rollFactor[AP_MOTORS_HELI_NUM_SWASHPLATE_SERVOS];
 	float _pitchFactor[AP_MOTORS_HELI_NUM_SWASHPLATE_SERVOS];
@@ -151,8 +151,8 @@ protected:
 	float _pitch_scaler;			// scaler to convert pitch input from radio (i.e. -4500 ~ 4500) to max pitch range
 	float _collective_scalar;		// throttle scalar to convert pwm form (i.e. 0 ~ 1000) passed in to actual servo range (i.e 1250~1750 would be 500)
 	bool _swash_initialised;		// true if swash has been initialised
-	int16_t 	ext_esc_output;		// final output to the external motor governor 1000-2000
-	int16_t 	ext_esc_ramp;		// current state of ramping
+	int16_t 	rsc_output;			// final output to the external motor governor 1000-2000
+	int16_t 	rsc_ramp;			// current state of ramping
 	
 
 }; 
