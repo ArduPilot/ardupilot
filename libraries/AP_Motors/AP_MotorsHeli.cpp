@@ -138,6 +138,28 @@ const AP_Param::GroupInfo AP_MotorsHeli::var_info[] PROGMEM = {
 	// @User: Standard
 	AP_GROUPINFO("GOV_SETPOINT", 15, AP_MotorsHeli, ext_gov_setpoint, 1500),
 	
+	// @Param: RSC_MODE
+	// @DisplayName: Rotor Speed Control Mode
+	// @Description: This sets which ESC control mode is active.
+	// @Range: 1 3
+	// @User: Standard
+	AP_GROUPINFO("RSC_MODE", 16, AP_MotorsHeli, rsc_mode, 1),
+	
+	// @Param: RSC_RATE
+	// @DisplayName: RSC Ramp Rate
+	// @Description: This sets the time the RSC takes to ramp up to full speed (Soft Start).
+	// @Range: 0 6000
+	// @Units: Seconds
+	// @User: Standard
+	AP_GROUPINFO("RSC_RATE", 17, AP_MotorsHeli, rsc_ramp_up_rate, 1000),
+	
+	// @Param: ACRO_MODE
+	// @DisplayName: Acro Mode Selector
+	// @Description: This sets which acro mode is active. (1) is Flybarless (2) is Flybarred Pass-Through
+	// @Range: 1 2
+	// @User: Standard
+	AP_GROUPINFO("ACRO_MODE", 18, AP_MotorsHeli, acro_mode, 1),
+	
     AP_GROUPEND
 };
 
@@ -169,7 +191,7 @@ void AP_MotorsHeli::enable()
 	_rc->enable_out(_motor_to_channel_map[AP_MOTORS_MOT_3]);	// swash servo 3
 	_rc->enable_out(_motor_to_channel_map[AP_MOTORS_MOT_4]);	// yaw
 	_rc->enable_out(AP_MOTORS_HELI_EXT_GYRO);	// for external gyro
-	_rc->enable_out(AP_MOTORS_HELI_EXT_ESC);	// for external ESC
+	_rc->enable_out(AP_MOTORS_HELI_EXT_RSC);	// for external RSC
 }
 
 // output_min - sends minimum values out to the motors
@@ -198,7 +220,7 @@ void AP_MotorsHeli::output_armed()
 
 	move_swash( _rc_roll->servo_out, _rc_pitch->servo_out, _rc_throttle->servo_out, _rc_yaw->servo_out );
 	
-	ext_esc_control();
+	rsc_control();
 }
 
 // output_disarmed - sends commands to the motors
@@ -484,42 +506,42 @@ void AP_MotorsHeli::move_swash(int16_t roll_out, int16_t pitch_out, int16_t coll
 	}
 }
 
-void AP_MotorsHeli::ext_esc_control()
+void AP_MotorsHeli::rsc_control()
 
 {
-	switch ( AP_MOTORS_EXT_ESC_ACTIVE ) {
+	switch ( rsc_mode ) {
 
-		case AP_MOTORS_ESC_MODE_PASSTHROUGH: 																	
+		case AP_MOTORSHELI_RSC_MODE_CH8_PASSTHROUGH: 																	
 			if( armed() && _rc_8->control_in > 10 ){
-				if (ext_esc_ramp < AP_MOTORS_EXT_ESC_RAMP_UP){
-					ext_esc_ramp++;
-					ext_esc_output = map(ext_esc_ramp, 0, AP_MOTORS_EXT_ESC_RAMP_UP, 1000, _rc_8->control_in);
+				if (rsc_ramp < rsc_ramp_up_rate){
+					rsc_ramp++;
+					rsc_output = map(rsc_ramp, 0, rsc_ramp_up_rate, 1000, _rc_8->control_in);
 				} else {
-					ext_esc_output = _rc_8->control_in;
+					rsc_output = _rc_8->control_in;
 				}	
 			} else if( !armed() ) {
-				_rc->OutputCh(AP_MOTORS_HELI_EXT_ESC, _rc_8->radio_min);
-				ext_esc_ramp = 0;	//Return ESC Ramp to 0
+				_rc->OutputCh(AP_MOTORS_HELI_EXT_RSC, _rc_8->radio_min);
+				rsc_ramp = 0;	//Return RSC Ramp to 0
 			}
 		break;
 		
-		case AP_MOTORS_ESC_MODE_EXT_GOV:																		
+		case AP_MOTORSHELI_RSC_MODE_EXT_GOV:																		
 				
 			if( armed() && _rc_throttle->control_in > 10){
-				if (ext_esc_ramp < AP_MOTORS_EXT_ESC_RAMP_UP){
-					ext_esc_ramp++;
-					ext_esc_output = map(ext_esc_ramp, 0, AP_MOTORS_EXT_ESC_RAMP_UP, 1000, ext_gov_setpoint);
+				if (rsc_ramp < rsc_ramp_up_rate){
+					rsc_ramp++;
+					rsc_output = map(rsc_ramp, 0, rsc_ramp_up_rate, 1000, ext_gov_setpoint);
 				} else {
-					ext_esc_output = ext_gov_setpoint;
+					rsc_output = ext_gov_setpoint;
 				}
 			} else {
-				ext_esc_ramp--;	//Return ESC Ramp to 0
-				if (ext_esc_ramp < 0){
-					ext_esc_ramp = 0;
+				rsc_ramp--;				//Return RSC Ramp to 0 slowly, allowing for "warm restart"
+				if (rsc_ramp < 0){
+					rsc_ramp = 0;
 				}
-				ext_esc_output = 1000; //Just to be sure ESC output is 0
+				rsc_output = 1000; 		//Just to be sure RSC output is 0
 			}
-			_rc->OutputCh(AP_MOTORS_HELI_EXT_ESC, ext_esc_output);
+			_rc->OutputCh(AP_MOTORS_HELI_EXT_RSC, rsc_output);
 		break;
 		
 		//	case 3:																		// Open Loop ESC Control
