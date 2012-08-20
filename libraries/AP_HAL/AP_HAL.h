@@ -16,6 +16,10 @@
 #include "PPMInput.h"
 #include "PWMOutput.h"
 
+#include "utility/Print.h"
+#include "utility/Stream.h"
+#include "utility/BetterStream.h"
+
 /* HAL Class definition */
 #include "HAL.h"
 

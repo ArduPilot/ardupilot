@@ -34,6 +34,11 @@ namespace AP_HAL {
     class APM2PPMInput;
     class APM1PWMOutput;
     class APM2PWMOutput;
+
+    /* Utility Classes */
+    class Print;
+    class Stream;
+    class BetterStream;
 }
 
 

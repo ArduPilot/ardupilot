@@ -1,4 +1,5 @@
 
+#include <AP_Common.h>
 #include <AP_HAL.h>
 #include <AP_HAL_AVR.h>
 

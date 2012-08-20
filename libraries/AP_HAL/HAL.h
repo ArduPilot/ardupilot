@@ -49,11 +49,9 @@ public:
     AP_HAL::UARTDriver* uart1;
     AP_HAL::UARTDriver* uart2;
     AP_HAL::UARTDriver* uart3;
-
     AP_HAL::I2CDriver*  i2c;
     AP_HAL::SPIDriver*  spi;
     AP_HAL::AnalogIn*   analogIn;
-
     AP_HAL::Storage*    storage;
     AP_HAL::Log*        log;
     AP_HAL::Console*    console;

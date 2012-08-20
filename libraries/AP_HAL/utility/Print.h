@@ -20,6 +20,8 @@
 #ifndef __AP_HAL_UTILITY_PRINT_H__
 #define __AP_HAL_UTILITY_PRINT_H__
 
+#include "../AP_HAL_Namespace.h"
+
 #include <inttypes.h>
 #include <string.h>
 
@@ -28,7 +30,6 @@
  * - Removed methods for class String or _FlashStringHelper
  * - printFloat takes a float, not a double. (double === float on AVR, but
  *   not on other platforms)
- * - Integers use stdint names
  */
 
 #define DEC 10
@@ -55,7 +56,7 @@ class AP_HAL::Print {
     size_t print(unsigned int, int = DEC);
     size_t print(long, int = DEC);
     size_t print(unsigned long, int = DEC);
-    size_t print(double, int = 2);
+    size_t print(float , int = 2);
 
     size_t println(const char[]);
     size_t println(char);
@@ -64,7 +65,7 @@ class AP_HAL::Print {
     size_t println(unsigned int, int = DEC);
     size_t println(long, int = DEC);
     size_t println(unsigned long, int = DEC);
-    size_t println(double, int = 2);
+    size_t println(float , int = 2);
     size_t println(void);
 
 };

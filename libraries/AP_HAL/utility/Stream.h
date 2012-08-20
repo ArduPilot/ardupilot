@@ -2,6 +2,7 @@
 #ifndef __AP_HAL_UTILITY_STREAM_H__
 #define __AP_HAL_UTILITY_STREAM_H__
 
+#include "../AP_HAL_Namespace.h"
 #include "Print.h"
 
 /* A simple Stream library modeled after the bits we actually use
