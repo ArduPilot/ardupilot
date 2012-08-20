@@ -7,6 +7,7 @@
 
 #include <FastSerial.h>
 #include <AP_Common.h>          // ArduPilot Mega Common Library
+#include <AP_Param.h>
 #include <Arduino_Mega_ISR_Registry.h>
 #include <AP_Math.h>        // ArduPilot Mega Vector/Matrix math Library
 #include <AP_LeadFilter.h>      // GPS Lead filter

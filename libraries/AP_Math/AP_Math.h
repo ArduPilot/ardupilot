@@ -6,6 +6,7 @@
 // Assorted useful math operations for ArduPilot(Mega)
 
 #include <AP_Common.h>
+#include <AP_Param.h>
 #include <math.h>
 #include <stdint.h>
 #include "rotations.h"

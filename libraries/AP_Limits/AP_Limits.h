@@ -13,8 +13,8 @@
 #endif
 
 #include <stdint.h>
+#include <AP_Param.h>
 #include <AP_Limit_Module.h>
-#include <AP_Common.h>
 
 // MAVLink messages, trying to pull into library
 //#include "../GCS_MAVLink/include/mavlink/v1.0/protocol.h"

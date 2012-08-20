@@ -12,6 +12,7 @@
 */
 
 #include <AP_Common.h>
+#include <AP_Param.h>
 #include <inttypes.h>
 
 

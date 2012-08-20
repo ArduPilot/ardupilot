@@ -7,6 +7,7 @@
 #define AC_PID_h
 
 #include <AP_Common.h>
+#include <AP_Param.h>
 #include <math.h>               // for fabs()
 
 /// @class	AC_PID

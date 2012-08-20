@@ -38,13 +38,6 @@ typedef struct {
 //#include "AP_Vector.h"
 //#include "AP_Loop.h"
 
-// default to AP_Param system, unless USE_AP_VAR is defined
-#ifdef USE_AP_VAR
- #include "AP_Var.h"
-#else
- #include "AP_Param.h"
-#endif
-
 ////////////////////////////////////////////////////////////////////////////////
 /// @name	Warning control
 //@{

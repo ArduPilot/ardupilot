@@ -7,6 +7,7 @@
 
 #include <FastSerial.h>
 #include <AP_Common.h>          // ArduPilot Mega Common Library
+#include <AP_Param.h>
 #include <Arduino_Mega_ISR_Registry.h>
 #include <AP_Math.h>        // ArduPilot Mega Vector/Matrix math Library
 #include <APM_RC.h>             // ArduPilot Mega RC Library
@@ -145,46 +146,65 @@ print_radio_values()
 void
 setup_radio()
 {
-    Serial.println("\n\nRadio Setup:");
-
-    for (byte i = 0; i < 100; i++) {
-        delay(20);
-        read_radio();
-    }
-
-    for (byte i=0; i<8; i++) {
-	    rc[i].radio_min = rc[i].radio_in;
-	    rc[i].radio_max = rc[i].radio_in;
-    }
-
-    rc_1.radio_trim = rc_1.radio_in;
-    rc_2.radio_trim = rc_2.radio_in;
-    rc_4.radio_trim = rc_4.radio_in;
-    // 3 is not trimed
-    rc_5.radio_trim = 1500;
-    rc_6.radio_trim = 1500;
-    rc_7.radio_trim = 1500;
-    rc_8.radio_trim = 1500;
-
-    Serial.println("\nMove all controls to each extreme. Hit Enter to save:");
-    while(1) {
-
-        delay(20);
-        // Filters radio input - adjust filters in the radio.pde file
-        // ----------------------------------------------------------
-        read_radio();
-
-	for (byte i=0; i<8; i++) {
-		rc[i].update_min_max();
+	Serial.println("\n\nRadio Setup:");
+	uint8_t i;
+	
+	for(i = 0; i < 100;i++){
+		delay(20);
+		read_radio();
 	}
+		
+	rc_1.radio_min = rc_1.radio_in;
+	rc_2.radio_min = rc_2.radio_in;
+	rc_3.radio_min = rc_3.radio_in;
+	rc_4.radio_min = rc_4.radio_in;
+	rc_5.radio_min = rc_5.radio_in;
+	rc_6.radio_min = rc_6.radio_in;
+	rc_7.radio_min = rc_7.radio_in;
+	rc_8.radio_min = rc_8.radio_in;
 
-        if(Serial.available() > 0) {
-            //rc_3.radio_max += 250;
-            Serial.flush();
+	rc_1.radio_max = rc_1.radio_in;
+	rc_2.radio_max = rc_2.radio_in;
+	rc_3.radio_max = rc_3.radio_in;
+	rc_4.radio_max = rc_4.radio_in;
+	rc_5.radio_max = rc_5.radio_in;
+	rc_6.radio_max = rc_6.radio_in;
+	rc_7.radio_max = rc_7.radio_in;
+	rc_8.radio_max = rc_8.radio_in;
 
-            Serial.println("Radio calibrated, Showing control values:");
-            break;
-        }
-    }
-    return;
+	rc_1.radio_trim = rc_1.radio_in;
+	rc_2.radio_trim = rc_2.radio_in;
+	rc_4.radio_trim = rc_4.radio_in;
+	// 3 is not trimed
+	rc_5.radio_trim = 1500;
+	rc_6.radio_trim = 1500;
+	rc_7.radio_trim = 1500;
+	rc_8.radio_trim = 1500;
+			
+	Serial.println("\nMove all controls to each extreme. Hit Enter to save:");
+	while(1){
+		
+		delay(20);
+		// Filters radio input - adjust filters in the radio.pde file
+		// ----------------------------------------------------------
+		read_radio();
+
+		rc_1.update_min_max();
+		rc_2.update_min_max();
+		rc_3.update_min_max();
+		rc_4.update_min_max();
+		rc_5.update_min_max();
+		rc_6.update_min_max();
+		rc_7.update_min_max();
+		rc_8.update_min_max();
+		
+		if(Serial.available() > 0){
+			//rc_3.radio_max += 250;
+			Serial.flush();
+			
+			Serial.println("Radio calibrated, Showing control values:");
+			break;
+		}
+	}
+	return;
 }

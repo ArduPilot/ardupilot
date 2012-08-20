@@ -2,6 +2,7 @@
 #include <stdint.h>
 #include <FastSerial.h>
 #include <AP_Common.h>
+#include <AP_Param.h>
 #include <AP_Math.h>            // ArduPilot Mega Vector/Matrix math Library
 #include <I2C.h>
 #include <SPI.h>

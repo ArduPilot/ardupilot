@@ -5,6 +5,7 @@
 
 #include <FastSerial.h>
 #include <AP_Common.h>
+#include <AP_Param.h>
 #include <AP_Math.h>
 
 FastSerialPort(Serial, 0);

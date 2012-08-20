@@ -8,6 +8,7 @@
 #include <FastSerial.h>
 #include <AP_Common.h>
 #include <AP_Math.h>
+#include <AP_Param.h>
 #include <APM_RC.h> // ArduPilot RC Library
 #include <AC_PID.h> // ArduPilot Mega RC Library
 

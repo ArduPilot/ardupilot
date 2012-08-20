@@ -12,6 +12,7 @@
 #include <AP_InertialSensor.h>
 #include <AP_Math.h>
 #include <AP_Common.h>
+#include <AP_Param.h>
 
 #define APM_HARDWARE_APM1 1
 #define APM_HARDWARE_APM2 2

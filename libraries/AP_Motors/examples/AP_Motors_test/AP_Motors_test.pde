@@ -12,6 +12,7 @@
 // Libraries
 #include <FastSerial.h>
 #include <AP_Common.h>
+#include <AP_Param.h>
 #include <Arduino_Mega_ISR_Registry.h>
 #include <AP_Math.h>        // ArduPilot Mega Vector/Matrix math Library
 #include <RC_Channel.h>     // RC Channel Library

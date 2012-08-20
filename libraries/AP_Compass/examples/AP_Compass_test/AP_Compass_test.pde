@@ -5,6 +5,7 @@
 
 #include <FastSerial.h>
 #include <AP_Common.h>
+#include <AP_Param.h>
 #include <AP_Compass.h> // Compass Library
 #include <AP_Math.h>            // ArduPilot Mega Vector/Matrix math Library
 #include <I2C.h>

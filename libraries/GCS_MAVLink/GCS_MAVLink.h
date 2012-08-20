@@ -6,6 +6,7 @@
 #ifndef GCS_MAVLink_h
 #define GCS_MAVLink_h
 
+#include <AP_Param.h>
 #include <BetterStream.h>
 
 // we have separate helpers disabled to make it possible

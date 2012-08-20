@@ -8,7 +8,7 @@
 #ifndef AP_AUTOPILOT_H_
 #define AP_AUTOPILOT_H_
 
-#include "../AP_Common/AP_Loop.h"
+#include "AP_Loop.h"
 
 /**
  * ArduPilotOne namespace to protect variables

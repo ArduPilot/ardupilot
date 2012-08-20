@@ -7,6 +7,7 @@
 #define APM_PI_h
 
 #include <AP_Common.h>
+#include <AP_Param.h>
 //#include <math.h>		// for fabs()
 
 /// @class	APM_PI

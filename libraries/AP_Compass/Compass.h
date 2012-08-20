@@ -3,9 +3,10 @@
 #define Compass_h
 
 #include <inttypes.h>
-#include "../AP_Common/AP_Common.h"
-#include "../AP_Math/AP_Math.h"
-#include "../AP_Declination/AP_Declination.h" // ArduPilot Mega Declination Helper Library
+#include <AP_Common.h>
+#include <AP_Param.h>
+#include <AP_Math.h>
+#include <AP_Declination.h> // ArduPilot Mega Declination Helper Library
 
 // compass product id
 #define AP_COMPASS_TYPE_UNKNOWN  0x00

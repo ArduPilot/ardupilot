@@ -16,6 +16,7 @@
 #include <AP_GPS.h>
 #include <AP_InertialSensor.h>
 #include <AP_Baro.h>
+#include <AP_Param.h>
 
 #if defined(ARDUINO) && ARDUINO >= 100
  #include "Arduino.h"

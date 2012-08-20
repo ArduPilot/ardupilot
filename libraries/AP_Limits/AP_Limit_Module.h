@@ -10,6 +10,7 @@
 #define AP_LIMIT_MODULE_H_
 
 #include <AP_Common.h>
+#include <AP_Param.h>
 
 // The module IDs are defined as powers of 2, to make a bit-field
 enum moduleid {

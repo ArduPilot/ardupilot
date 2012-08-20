@@ -28,6 +28,7 @@
 #include <FastSerial.h>
 #include <AP_Common.h>
 #include <AP_Menu.h>
+#include <AP_Param.h>
 #include <Arduino_Mega_ISR_Registry.h>
 #include <APM_RC.h>         // ArduPilot Mega RC Library
 #include <AP_GPS.h>         // ArduPilot GPS library

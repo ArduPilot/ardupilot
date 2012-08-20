@@ -5,6 +5,7 @@
 
 #include <FastSerial.h>
 #include <AP_Common.h>
+#include <AP_Param.h>
 #include <AP_Math.h>            // ArduPilot Mega Vector/Matrix math Library
 #include <Filter.h>                     // Filter library
 #include <LowPassFilter.h>      // LowPassFilter class (inherits from Filter class)

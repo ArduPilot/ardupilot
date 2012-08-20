@@ -3,6 +3,7 @@
 // AVR runtime
 #include <FastSerial.h>
 #include <AP_Common.h>
+#include <AP_Param.h>
 #include <AP_Math.h>
 #include <AP_Declination.h>
 #include <Filter.h>
