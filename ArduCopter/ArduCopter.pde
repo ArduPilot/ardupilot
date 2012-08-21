@@ -1641,7 +1641,7 @@ void update_roll_pitch_mode(void)
 			}else{
 				// ACRO does not get SIMPLE mode ability
 				#if FRAME_CONFIG == HELI_FRAME
-				if (motors.flyarbar_mode == 1){
+				if (motors.flybar_mode == 1){
 					g.rc_1.servo_out = g.rc_1.control_in;
 					g.rc_2.servo_out = g.rc_2.control_in;
 				} else {
