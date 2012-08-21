@@ -17,7 +17,7 @@ popd
 
 echo "Testing ArduCopter build"
 pushd ArduCopter
-for b in all apm2 apm2beta hil sitl heli; do
+for b in all apm2 apm2beta hil sitl heli dmp; do
     pwd
     make clean
     make $b
