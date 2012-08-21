@@ -31,19 +31,7 @@
 
 // table of user settable parameters
 const AP_Param::GroupInfo AP_AHRS_DCM::var_info[] PROGMEM = {
-    // @Param: YAW_P
-    // @DisplayName: Yaw P
-    // @Description: This controls the weight the compass has on the overall heading
-    // @Range: 0 .4
-    // @Increment: .01
-    AP_GROUPINFO("YAW_P", 0, AP_AHRS_DCM, _kp_yaw, 0.4),
-
-    // @Param: RP_P
-    // @DisplayName: AHRS RP_P
-    // @Description: This controls how fast the accelerometers correct the attitude
-    // @Range: 0 .4
-    // @Increment: .01
-    AP_GROUPINFO("RP_P",  1, AP_AHRS_DCM, _kp, 0.4),
+	// index 0 and 1 are for old parameters that are no longer used
 
     // @Param: GPS_GAIN
     // @DisplayName: AHRS GPS gain
@@ -57,6 +45,20 @@ const AP_Param::GroupInfo AP_AHRS_DCM::var_info[] PROGMEM = {
     // @Description: This controls how how much to use the GPS to correct the attitude. This is for testing the dead-reckoning code
     // @User: Advanced
     AP_GROUPINFO("GPS_USE",  3, AP_AHRS_DCM, _gps_use, 1),
+
+    // @Param: YAW_P
+    // @DisplayName: Yaw P
+    // @Description: This controls the weight the compass has on the overall heading
+    // @Range: 0 .4
+    // @Increment: .01
+    AP_GROUPINFO("YAW_P", 4, AP_AHRS_DCM, _kp_yaw, 0.4),
+
+    // @Param: RP_P
+    // @DisplayName: AHRS RP_P
+    // @Description: This controls how fast the accelerometers correct the attitude
+    // @Range: 0 .4
+    // @Increment: .01
+    AP_GROUPINFO("RP_P",  5, AP_AHRS_DCM, _kp, 0.4),
 
     AP_GROUPEND
 };
@@ -375,7 +377,10 @@ AP_AHRS_DCM::drift_correction_yaw(void)
 	// that depends on the spin rate. See the fastRotations.pdf
 	// paper from Bill Premerlani
 
-	_omega_yaw_P.z = error.z * _P_gain(spin_rate) * _kp_yaw.get();
+	_omega_yaw_P.z = error.z * _P_gain(spin_rate) * _kp_yaw;
+	if (_fast_ground_gains) {
+		_omega_yaw_P.z *= 8;
+	}
 
 	// don't update the drift term if we lost the yaw reference
 	// for more than 2 seconds
@@ -569,6 +574,9 @@ AP_AHRS_DCM::drift_correction(float deltat)
     // _omega_P value is what drags us quickly to the
     // accelerometer reading.
     _omega_P = error * _P_gain(spin_rate) * _kp;
+    if (_fast_ground_gains) {
+	    _omega_P *= 8;
+    }
 
     // accumulate some integrator error
     if (spin_rate < ToRad(SPIN_RATE_LIMIT)) {
