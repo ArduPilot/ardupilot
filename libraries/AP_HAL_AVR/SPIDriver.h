@@ -4,7 +4,7 @@
 
 #include <AP_HAL.h>
 
-class AP_HAL::ArduinoSPIDriver : public AP_HAL::SPIDriver {
+class AP_HAL_AVR::ArduinoSPIDriver : public AP_HAL::SPIDriver {
 public:
     ArduinoSPIDriver() : _init(0) {}
     void init() { _init = 1; }

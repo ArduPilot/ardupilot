@@ -3,9 +3,10 @@
 #define __AP_HAL_AVR_CONSOLE_H__
 
 #include <AP_HAL.h>
+#include "AP_HAL_AVR_Namespace.h"
 #include "UARTDriver.h"
 
-class AP_HAL::AVRUARTConsole : public AP_HAL::Console {
+class AP_HAL_AVR::AVRUARTConsole : public AP_HAL::Console {
 public:
     AVRUARTConsole( AVRUARTDriver* driver ) : _driver(driver), _init(0) {}
     void init(int machtnicht) { _init = 1; }

@@ -3,8 +3,9 @@
 #define __AP_HAL_AVR_I2C_DRIVER_H__
 
 #include <AP_HAL.h>
+#include "AP_HAL_AVR_Namespace.h"
 
-class AP_HAL::AVRI2CDriver : public AP_HAL::I2CDriver {
+class AP_HAL_AVR::AVRI2CDriver : public AP_HAL::I2CDriver {
 public:
     AVRI2CDriver(): _init(0) {}
     void init() { _init = 1; } 

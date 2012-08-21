@@ -11,12 +11,15 @@
 class AP_HAL::UARTDriver : public AP_HAL::BetterStream {
 public:
     UARTDriver() {}
-    virtual void   begin(long baud) = 0;
-    virtual void   begin(long baud,
-                     unsigned int rxSpace,
-                     unsigned int txSpace) = 0;
-    virtual void   end() = 0;
-    virtual void   flush() = 0;
+    virtual void begin(long baud) = 0;
+    virtual void begin(long baud,
+                    unsigned int rxSpace,
+                    unsigned int txSpace) = 0;
+    virtual void end() = 0;
+    virtual void flush() = 0;
+    virtual bool is_initialized() = 0;
+    virtual void set_blocking_writes(bool blocking) = 0;
+    virtual bool tx_pending() = 0;
 };
 
 /* Concrete EmptyUARTDriver class provided for convenience */
@@ -28,12 +31,15 @@ public:
     void begin(long b, unsigned int rxS, unsigned int txS) {}
     void end() {}
     void flush() {}
+    bool is_initialized() { return false; }
+    void set_blocking_writes(bool blocking) {}
+    bool tx_pending() { return false; }
 
     /* Empty implementations of BetterStream virtual methods */
     void print_P(const prog_char_t *pstr) {}
     void println_P(const prog_char_t *pstr) {}
     void printf(const char *pstr, ...) {}
-    void _printf_P(const prog_char_t *pstr, ...) {}
+    void _printf_P(const prog_char *pstr, ...) {}
     int txspace() { return 1; }
 
     /* Empty implementations of Stream virtual methods */

@@ -15,11 +15,17 @@
 #include "PWMOutput.h"
 
 using namespace AP_HAL;
+using namespace AP_HAL_AVR;
 
-static AVRUARTDriver    avrUart0Driver( 0 );
-static AVRUARTDriver    avrUart1Driver( 1 );
-static AVRUARTDriver    avrUart2Driver( 2 );
-static AVRUARTDriver    avrUart3Driver( 3 );
+AVRUARTDriverISRs(0);
+AVRUARTDriverISRs(1);
+AVRUARTDriverISRs(3);
+
+static AVRUARTDriverInstance(avrUart0Driver, 0);
+static AVRUARTDriverInstance(avrUart1Driver, 1);
+static EmptyUARTDriver  avrUart2Driver;
+static AVRUARTDriverInstance(avrUart3Driver, 3);
+
 static AVRI2CDriver     avrI2CDriver;
 static ArduinoSPIDriver arduinoSPIDriver;
 static ArduinoAnalogIn  arduinoAnalogIn;
@@ -34,10 +40,10 @@ static APM1PWMOutput    apm1PWMOutput;
 static APM2PWMOutput    apm2PWMOutput;
 
 const HAL AP_HAL_AVR_APM1(
-        &avrUart0Driver,
-        &avrUart1Driver,
-        &avrUart2Driver,
-        &avrUart3Driver,
+        (UARTDriver*) &avrUart0Driver,
+        (UARTDriver*) &avrUart1Driver,
+        (UARTDriver*) &avrUart2Driver,
+        (UARTDriver*) &avrUart3Driver,
         &avrI2CDriver,
         &arduinoSPIDriver,
         &arduinoAnalogIn,
@@ -49,10 +55,10 @@ const HAL AP_HAL_AVR_APM1(
         &apm1PWMOutput );
 
 const HAL AP_HAL_AVR_APM2(
-        &avrUart0Driver,
-        &avrUart1Driver,
-        &avrUart2Driver,
-        &avrUart3Driver,
+        (UARTDriver*) &avrUart0Driver,
+        (UARTDriver*) &avrUart1Driver,
+        (UARTDriver*) &avrUart2Driver,
+        (UARTDriver*) &avrUart3Driver,
         &avrI2CDriver,
         &arduinoSPIDriver,
         &arduinoAnalogIn,

@@ -17,9 +17,12 @@
 #include <AP_Common.h>
 #include <avr/pgmspace.h>
 
-/* AP_HAL::BetterStream is derived from Michael Smith's FastSerial library for
- * Arduino. Mike's library has an implementation of _vprintf() for AVR.
- * Please provide your own platform-specic implementation for this library.
+/* AP_HAL::BetterStream is a pure virtual interface. It resembles
+ * Michael Smith's BetterStream library for Arduino.
+ * The Michael Smith BetterStream provided some implementations for AVR based
+ * on _vprintf(). 
+ * Please provide your own platform-specic implementation of vprintf, sprintf,
+ * etc. to implement the printf functions.
  *
  * TODO: Segregate prog_char_t dependent functions to be available on AVR
  * platform only, with default implementations elsewhere.
@@ -30,21 +33,16 @@ public:
     BetterStream(void) {}
 
     // Stream extensions
-    virtual void print_P(const prog_char_t *);
-    virtual void println_P(const prog_char_t *);
-    virtual void printf(const char *, ...)
-                        __attribute__ ((format(__printf__, 2, 3)));
-    virtual void _printf_P(const prog_char *, ...)
-                        __attribute__ ((format(__printf__, 2, 3)));
+    virtual int txspace(void) = 0;
 
-    virtual int txspace(void);
+    virtual void print_P(const prog_char_t *) = 0; 
+    virtual void println_P(const prog_char_t *) = 0;
+    virtual void printf(const char *, ...)
+                        __attribute__ ((format(__printf__, 2, 3))) = 0;
+    virtual void _printf_P(const prog_char *, ...)
+                        __attribute__ ((format(__printf__, 2, 3))) = 0;
 
 #define printf_P(fmt, ...) _printf_P((const prog_char *)fmt, ## __VA_ARGS__)
-
-private:
-    virtual void _vprintf(unsigned char, const char *, va_list)
-                __attribute__ ((format(__printf__, 3, 0)));
-
 
 };
 

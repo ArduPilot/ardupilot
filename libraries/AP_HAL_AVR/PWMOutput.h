@@ -4,7 +4,7 @@
 
 #include <AP_HAL.h>
 
-class AP_HAL::APM1PWMOutput : public AP_HAL::PWMOutput {
+class AP_HAL_AVR::APM1PWMOutput : public AP_HAL::PWMOutput {
 public:
     APM1PWMOutput() : _init(0) {}
     void init(int machtnicht) { _init = 1; }
@@ -12,7 +12,7 @@ private:
     int _init;
 };
 
-class AP_HAL::APM2PWMOutput : public AP_HAL::PWMOutput {
+class AP_HAL_AVR::APM2PWMOutput : public AP_HAL::PWMOutput {
 public:
     APM2PWMOutput() : _init(0) {}
     void init(int machtnicht) { _init = 2; }
