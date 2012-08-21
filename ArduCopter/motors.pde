@@ -158,6 +158,9 @@ static void init_arm_motors()
 	// temp hack
 	motor_light = true;
 	digitalWrite(A_LED_PIN, LED_ON);
+
+    // go back to normal AHRS gains
+    ahrs.set_fast_gains(false);
 }
 
 
@@ -181,6 +184,9 @@ static void init_disarm_motors()
 		piezo_beep();
 	}
 	#endif
+
+    // setup fast AHRS gains to get right attitude
+    ahrs.set_fast_gains(true);
 }
 
 /*****************************************

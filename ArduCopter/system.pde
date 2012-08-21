@@ -385,9 +385,13 @@ static void startup_ground(void)
 		#if CLI_ENABLED == ENABLED
 			report_imu();
 		#endif
-		// initialise ahrs (may push imu calibration into the mpu6000 if using that device).
-		ahrs.init();
 	#endif
+
+    // initialise ahrs (may push imu calibration into the mpu6000 if using that device).
+    ahrs.init();
+
+    // setup fast AHRS gains to get right attitude
+    ahrs.set_fast_gains(true);
 
 	// reset the leds
 	// ---------------------------
