@@ -95,7 +95,7 @@ public:
 	AP_Int16	ext_gov_setpoint;	// maximum output to the motor governor
 	AP_Int8		rsc_mode;			// sets the mode for rotor speed controller
 	AP_Int16	rsc_ramp_up_rate;	// sets the time in 100th seconds the RSC takes to ramp up to speed
-	AP_Int8		acro_mode;			// selects FBL Acro Mode, or Flybarred Acro Mode
+	AP_Int8		flybar_mode;		// selects FBL Acro Mode, or Flybarred Acro Mode
 	int16_t 	throttle_mid;		// throttle mid point in pwm form (i.e. 0 ~ 1000)
 
 	
