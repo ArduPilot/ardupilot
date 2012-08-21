@@ -27,24 +27,6 @@
 // http://gentlenav.googlecode.com/files/fastRotations.pdf
 #define SPIN_RATE_LIMIT 20
 
-// table of user settable parameters
-const AP_Param::GroupInfo AP_AHRS_MPU6000::var_info[] PROGMEM = {
-    // @Param: AHRS_YAW_P
-    // @DisplayName: Yaw P
-    // @Description: This controls the weight the compass has on the overall heading
-    // @Range: 0 .4
-    // @Increment: .01
-    AP_GROUPINFO("YAW_P", 0, AP_AHRS_MPU6000, _kp_yaw, 0.4),
-
-    // @Param: AHRS_RP_P
-    // @DisplayName: AHRS RP_P
-    // @Description: This controls how fast the accelerometers correct the attitude
-    // @Range: 0 .4
-    // @Increment: .01
-    AP_GROUPINFO("RP_P",  1, AP_AHRS_MPU6000, _kp, 0.4),
-    AP_GROUPEND
-};
-
 void
 AP_AHRS_MPU6000::init()
 {

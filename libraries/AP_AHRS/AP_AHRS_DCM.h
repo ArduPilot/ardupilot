@@ -22,9 +22,6 @@ public:
 		// with large drift levels
 		_ki = 0.0087;
 		_ki_yaw = 0.01;
-		_kp.set(0.4);
-		_kp_yaw.set(0.4);
-		gps_gain.set(1.0);
 	}
 
 	// return the smoothed gyro vector corrected for drift
@@ -45,11 +42,6 @@ public:
 	float		get_error_rp(void);
 	float		get_error_yaw(void);
 
-	// settable parameters
-	AP_Float	_kp_yaw;
-	AP_Float	_kp;
-	AP_Float	gps_gain;
-
 	// allow for runtime disabling of GPS usage for position
 	AP_Int8		_gps_use;
 
@@ -57,9 +49,6 @@ public:
 	Vector3f wind_estimate(void) {
 		return _wind;
 	}
-
-	// for holding parameters
-	static const struct AP_Param::GroupInfo var_info[];
 
 private:
 	float		_ki;

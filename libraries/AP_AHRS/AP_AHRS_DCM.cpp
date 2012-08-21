@@ -29,39 +29,6 @@
 // http://gentlenav.googlecode.com/files/fastRotations.pdf
 #define SPIN_RATE_LIMIT 20
 
-// table of user settable parameters
-const AP_Param::GroupInfo AP_AHRS_DCM::var_info[] PROGMEM = {
-	// index 0 and 1 are for old parameters that are no longer used
-
-    // @Param: GPS_GAIN
-    // @DisplayName: AHRS GPS gain
-    // @Description: This controls how how much to use the GPS to correct the attitude
-    // @Range: 0.0 1.0
-    // @Increment: .01
-    AP_GROUPINFO("GPS_GAIN",  2, AP_AHRS_DCM, gps_gain, 1.0),
-
-    // @Param: GPS_USE
-    // @DisplayName: enable/disable use of GPS for position estimation
-    // @Description: This controls how how much to use the GPS to correct the attitude. This is for testing the dead-reckoning code
-    // @User: Advanced
-    AP_GROUPINFO("GPS_USE",  3, AP_AHRS_DCM, _gps_use, 1),
-
-    // @Param: YAW_P
-    // @DisplayName: Yaw P
-    // @Description: This controls the weight the compass has on the overall heading
-    // @Range: 0 .4
-    // @Increment: .01
-    AP_GROUPINFO("YAW_P", 4, AP_AHRS_DCM, _kp_yaw, 0.4),
-
-    // @Param: RP_P
-    // @DisplayName: AHRS RP_P
-    // @Description: This controls how fast the accelerometers correct the attitude
-    // @Range: 0 .4
-    // @Increment: .01
-    AP_GROUPINFO("RP_P",  5, AP_AHRS_DCM, _kp, 0.4),
-
-    AP_GROUPEND
-};
 
 // run a full DCM update round
 void
