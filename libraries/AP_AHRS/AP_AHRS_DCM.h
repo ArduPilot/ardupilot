@@ -42,9 +42,6 @@ public:
 	float		get_error_rp(void);
 	float		get_error_yaw(void);
 
-	// allow for runtime disabling of GPS usage for position
-	AP_Int8		_gps_use;
-
 	// return a wind estimation vector, in m/s
 	Vector3f wind_estimate(void) {
 		return _wind;
