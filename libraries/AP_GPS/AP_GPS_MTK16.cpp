@@ -34,9 +34,15 @@ AP_GPS_MTK16::init(enum GPS_Engine_Setting nav_setting)
     // XXX should assume binary, let GPS_AUTO handle dynamic config?
     _port->print(MTK_SET_BINARY);
 
-    // set 4Hz update rate
-    _port->print(MTK_OUTPUT_4HZ);
+    // set 5Hz update rate
+    _port->print(MTK_OUTPUT_5HZ);
 
+	// set SBAS on
+	_port->print(SBAS_ON);
+	
+	// set WAAS on
+	_port->print(WAAS_ON);
+	
     // set initial epoch code
     _epoch = TIME_OF_DAY;
     _time_offset = 0;
@@ -125,7 +131,7 @@ restart:
                 break;
             }
 
-            fix				= _buffer.msg.fix_type == FIX_3D;
+            fix				= ((_buffer.msg.fix_type == FIX_3D) || (_buffer.msg.fix_type == FIX_3D_SBAS);
             latitude		= _buffer.msg.latitude  * 10;	// XXX doc says *10e7 but device says otherwise
             longitude		= _buffer.msg.longitude * 10;	// XXX doc says *10e7 but device says otherwise
             altitude		= _buffer.msg.altitude;
