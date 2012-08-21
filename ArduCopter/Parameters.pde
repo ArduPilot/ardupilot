@@ -313,12 +313,8 @@ const AP_Param::Info var_info[] PROGMEM = {
 	GOBJECT(imu,			"IMU_",     IMU),
 
 	// @Group: AHRS_
-	// @Path: ../libraries/AP_AHRS/AP_AHRS_DCM.cpp, ../libraries/AP_AHRS/AP_AHRS_Quaternion.cpp
-	#if DMP_ENABLED == ENABLED && CONFIG_APM_HARDWARE == APM_HARDWARE_APM2
-	GOBJECT(ahrs,			"AHRS_",    AP_AHRS_MPU6000),
-	#else
-	GOBJECT(ahrs,			"AHRS_",    AP_AHRS_DCM),
-	#endif
+	// @Path: ../libraries/AP_AHRS/AP_AHRS.cpp
+	GOBJECT(ahrs,			"AHRS_",    AP_AHRS),
 
 #if MOUNT == ENABLED
 	// @Group: MNT_
