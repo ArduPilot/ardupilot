@@ -153,12 +153,12 @@ const AP_Param::GroupInfo AP_MotorsHeli::var_info[] PROGMEM = {
 	// @User: Standard
 	AP_GROUPINFO("RSC_RATE", 17, AP_MotorsHeli, rsc_ramp_up_rate, 1000),
 	
-	// @Param: ACRO_MODE
-	// @DisplayName: Acro Mode Selector
-	// @Description: This sets which acro mode is active. (1) is Flybarless (2) is Flybarred Pass-Through
-	// @Range: 1 2
+	// @Param: FLYBAR_MODE
+	// @DisplayName: Flybar Mode Selector
+	// @Description: This sets which acro mode is active. (0) is Flybarless (1) is Mechanical Flybar
+	// @Range: 0 1
 	// @User: Standard
-	AP_GROUPINFO("ACRO_MODE", 18, AP_MotorsHeli, acro_mode, 1),
+	AP_GROUPINFO("FLYBAR_MODE", 18, AP_MotorsHeli, flybar_mode, 0),
 	
     AP_GROUPEND
 };
