@@ -39,6 +39,10 @@
 #define AP_MOTORSHELI_RSC_MODE_CH8_PASSTHROUGH  1
 #define AP_MOTORSHELI_RSC_MODE_EXT_GOV			2
 
+// head definitions
+#define FLYBARLESS_HEAD 0
+#define FLYBAR_HEAD 1
+
 
 class AP_HeliControls;
 
