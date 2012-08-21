@@ -56,14 +56,6 @@ public:
 	float		get_error_rp(void);
 	float		get_error_yaw(void);
 
-	// settable parameters
-	AP_Float	_kp_yaw;
-	AP_Float	_kp;
-	AP_Float	gps_gain;	// not currently supported
-
-	// for holding parameters
-	static const struct AP_Param::GroupInfo var_info[];
-
 private:
 	float		_ki;
 	float		_ki_yaw;
