@@ -273,6 +273,7 @@ static void reset_I(void)
 	g.pidNavPitchAirspeed.reset_I();
 	g.pidNavPitchAltitude.reset_I();
 	g.pidTeThrottle.reset_I();
+    g.pidWheelSteer.reset_I();
 //	g.pidAltitudeThrottle.reset_I();
 }
 
