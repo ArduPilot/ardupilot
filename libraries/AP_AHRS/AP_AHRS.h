@@ -112,6 +112,11 @@ public:
 		return _have_initial_yaw;
 	}
 
+	// set the fast gains flag
+	void set_fast_gains(bool setting) {
+		_fast_ground_gains = setting;
+	}
+
 protected:
 	// whether the yaw value has been intialised with a reference
 	bool		_have_initial_yaw;
@@ -130,6 +135,10 @@ protected:
 	IMU 		*_imu;
 	GPS 		*&_gps;
 	AP_Baro		*_barometer;
+
+	// should we raise the gain on the accelerometers for faster
+	// convergence, used when disarmed for ArduCopter
+	bool		_fast_ground_gains;
 
 	// true if we can assume the aircraft will be flying forward
 	// on its X axis
