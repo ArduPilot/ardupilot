@@ -42,9 +42,6 @@ sitl-hexa:
 sitl-y6:
 	make -f ../libraries/Desktop/Makefile.desktop y6
 
-sitl-quaternion:
-	make -f ../libraries/Desktop/Makefile.desktop EXTRAFLAGS="-DQUATERNION_ENABLE=ENABLED"
-
 etags:
 	cd .. && etags -f ArduCopter/TAGS --langmap=C++:.pde.cpp.h $$(git ls-files ArduCopter libraries)
 

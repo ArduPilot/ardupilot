@@ -38,10 +38,6 @@ apm_option("LOGGING_ENABLED" TYPE BOOL
     DESCRIPTION "Enable logging?" 
     DEFAULT OFF)
 
-apm_option("QUATERNION_ENABLE" TYPE BOOL ADVANCED
-    DESCRIPTION "Enable quaterion navigation?" 
-    DEFAULT OFF)
-
 apm_option("GPS_PROTOCOL" TYPE STRING
     DESCRIPTION "GPS protocol?"
     DEFAULT "GPS_PROTOCOL_AUTO" 
