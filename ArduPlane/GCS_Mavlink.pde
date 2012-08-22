@@ -286,7 +286,6 @@ static void NOINLINE send_gps_raw(mavlink_channel_t chan)
 
 static void NOINLINE send_servo_out(mavlink_channel_t chan)
 {
-    const uint8_t rssi = 1;
     // normalized values scaled to -10000 to 10000
     // This is used for HIL.  Do not change without discussing with
     // HIL maintainers
@@ -302,7 +301,7 @@ static void NOINLINE send_servo_out(mavlink_channel_t chan)
         0,
         0,
         0,
-        rssi);
+        receiver_rssi());
 }
 
 static void NOINLINE send_radio_in(mavlink_channel_t chan)
