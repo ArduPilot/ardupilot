@@ -48,3 +48,6 @@ obc:
 
 obc-sitl:
 	make -f ../libraries/Desktop/Makefile.desktop EXTRAFLAGS="-DOBC_FAILSAFE=ENABLED"
+
+sitl-newcontrollers:
+	make -f ../libraries/Desktop/Makefile.desktop EXTRAFLAGS="-DAPM_CONTROL=ENABLED"

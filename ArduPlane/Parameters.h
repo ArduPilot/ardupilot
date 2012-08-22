@@ -191,6 +191,9 @@ public:
         // other objects
         k_param_sitl = 230,
         k_param_obc,
+        k_param_rollController,
+        k_param_pitchController,
+        k_param_yawController,
 
         //
         // 240: PID Controllers
@@ -343,14 +346,21 @@ public:
 
     // PID controllers
     //
-    PID pidNavRoll;
-    PID pidServoRoll;
-    PID pidServoPitch;
-    PID pidNavPitchAirspeed;
-    PID pidServoRudder;
-    PID pidTeThrottle;
-    PID pidNavPitchAltitude;
-    PID pidWheelSteer;
+#if APM_CONTROL == DISABLED
+    PID         pidServoRoll;
+    PID         pidServoPitch;
+    PID         pidServoRudder;
+#else
+    AP_RollController  rollController;
+    AP_PitchController pitchController;
+    AP_YawController   yawController;
+#endif
+
+    PID         pidNavRoll;
+    PID         pidNavPitchAirspeed;
+    PID         pidTeThrottle;
+    PID         pidNavPitchAltitude;
+    PID         pidWheelSteer;
 
     Parameters() :
         // variable				default
@@ -371,16 +381,20 @@ public:
 
         // PID controller    initial P        initial I        initial D        initial imax
         //-----------------------------------------------------------------------------------
-        pidNavRoll          (NAV_ROLL_P,      NAV_ROLL_I,      NAV_ROLL_D,      NAV_ROLL_INT_MAX_CENTIDEGREE),
+
+#if APM_CONTROL == DISABLED
         pidServoRoll        (SERVO_ROLL_P,    SERVO_ROLL_I,    SERVO_ROLL_D,    SERVO_ROLL_INT_MAX_CENTIDEGREE),
         pidServoPitch       (SERVO_PITCH_P,   SERVO_PITCH_I,   SERVO_PITCH_D,   SERVO_PITCH_INT_MAX_CENTIDEGREE),
-        pidNavPitchAirspeed (NAV_PITCH_ASP_P, NAV_PITCH_ASP_I, NAV_PITCH_ASP_D, NAV_PITCH_ASP_INT_MAX_CMSEC),
         pidServoRudder      (SERVO_YAW_P,     SERVO_YAW_I,     SERVO_YAW_D,     SERVO_YAW_INT_MAX),
+#endif
+
+        pidNavRoll          (NAV_ROLL_P,      NAV_ROLL_I,      NAV_ROLL_D,      NAV_ROLL_INT_MAX_CENTIDEGREE),
+        pidNavPitchAirspeed (NAV_PITCH_ASP_P, NAV_PITCH_ASP_I, NAV_PITCH_ASP_D, NAV_PITCH_ASP_INT_MAX_CMSEC),
         pidTeThrottle       (THROTTLE_TE_P,   THROTTLE_TE_I,   THROTTLE_TE_D,   THROTTLE_TE_INT_MAX),
         pidNavPitchAltitude (NAV_PITCH_ALT_P, NAV_PITCH_ALT_I, NAV_PITCH_ALT_D, NAV_PITCH_ALT_INT_MAX_CM),
         pidWheelSteer         (0, 0, 0, 0)
-    {
-    }
+
+        {}
 };
 
 extern const AP_Param::Info var_info[];
