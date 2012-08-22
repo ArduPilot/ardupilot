@@ -11,25 +11,25 @@ class Parameters {
 public:
 
     /*
-      The value of k_format_version determines whether the existing
-      eeprom data is considered valid. You should only change this
-      value under the following circumstances:
-
-     1) the meaning of an existing eeprom parameter changes
-
-     2) the value of an existing k_param_* enum value changes
-
-     Adding a new parameter should _not_ require a change to
-     k_format_version except under special circumstances. If you
-     change it anyway then all ArduPlane users will need to reload all
-     their parameters. We want that to be an extremely rare
-     thing. Please do not just change it "just in case".
-
-     To determine if a k_param_* value has changed, use the rules of
-     C++ enums to work out the value of the neighboring enum
-     values. If you don't know the C++ enum rules then please ask for
-     help.
-    */
+     *  The value of k_format_version determines whether the existing
+     *  eeprom data is considered valid. You should only change this
+     *  value under the following circumstances:
+     *
+     *  1) the meaning of an existing eeprom parameter changes
+     *
+     *  2) the value of an existing k_param_* enum value changes
+     *
+     *  Adding a new parameter should _not_ require a change to
+     *  k_format_version except under special circumstances. If you
+     *  change it anyway then all ArduPlane users will need to reload all
+     *  their parameters. We want that to be an extremely rare
+     *  thing. Please do not just change it "just in case".
+     *
+     *  To determine if a k_param_* value has changed, use the rules of
+     *  C++ enums to work out the value of the neighboring enum
+     *  values. If you don't know the C++ enum rules then please ask for
+     *  help.
+     */
 
     //////////////////////////////////////////////////////////////////
     // STOP!!! DO NOT CHANGE THIS VALUE UNTIL YOU FULLY UNDERSTAND THE
@@ -38,18 +38,18 @@ public:
     //////////////////////////////////////////////////////////////////
 
 
-	// The parameter software_type is set up solely for ground station use
-	// and identifies the software type (eg ArduPilotMega versus ArduCopterMega)
-	// GCS will interpret values 0-9 as ArduPilotMega.  Developers may use
-	// values within that range to identify different branches.
-	//
-    static const uint16_t k_software_type = 0;		// 0 for APM trunk
+    // The parameter software_type is set up solely for ground station use
+    // and identifies the software type (eg ArduPilotMega versus ArduCopterMega)
+    // GCS will interpret values 0-9 as ArduPilotMega.  Developers may use
+    // values within that range to identify different branches.
+    //
+    static const uint16_t k_software_type = 0;          // 0 for APM trunk
 
     enum {
         // Layout version number, always key zero.
         //
         k_param_format_version = 0,
-		k_param_software_type,
+        k_param_software_type,
         k_param_num_resets,
 
         // Misc
@@ -67,19 +67,19 @@ public:
         k_param_flap_2_speed,
         k_param_reset_switch_chan,
         k_param_manual_level,
-		k_param_land_pitch_cd,
-		k_param_ins,
+        k_param_land_pitch_cd,
+        k_param_ins,
         k_param_stick_mixing,
         k_param_reset_mission_chan,
-		k_param_land_flare_alt,
-		k_param_land_flare_sec,
+        k_param_land_flare_alt,
+        k_param_land_flare_sec,
 
-		// 110: Telemetry control
-		//
-		k_param_gcs0 = 110, // stream rates for port0
-		k_param_gcs3,       // stream rates for port3
-		k_param_sysid_this_mav,
-		k_param_sysid_my_gcs,
+        // 110: Telemetry control
+        //
+        k_param_gcs0 = 110,         // stream rates for port0
+        k_param_gcs3,               // stream rates for port3
+        k_param_sysid_this_mav,
+        k_param_sysid_my_gcs,
         k_param_serial3_baud,
 
         // 120: Fly-by-wire control
@@ -95,14 +95,14 @@ public:
         k_param_imu = 130,  // sensor calibration
         k_param_altitude_mix,
 
-		k_param_compass_enabled,
-		k_param_compass,
-		k_param_battery_monitoring,
-		k_param_volt_div_ratio,
-		k_param_curr_amp_per_volt,
-		k_param_input_voltage,
-		k_param_pack_capacity,
-		k_param_sonar_enabled,
+        k_param_compass_enabled,
+        k_param_compass,
+        k_param_battery_monitoring,
+        k_param_volt_div_ratio,
+        k_param_curr_amp_per_volt,
+        k_param_input_voltage,
+        k_param_pack_capacity,
+        k_param_sonar_enabled,
         k_param_ahrs,  // AHRS group
         k_param_barometer,   // barometer ground calibration
         k_param_airspeed,  // AP_Airspeed parameters
@@ -151,7 +151,7 @@ public:
 
         k_param_short_fs_action,
         k_param_long_fs_action,
-		k_param_gcs_heartbeat_fs_enabled,
+        k_param_gcs_heartbeat_fs_enabled,
         k_param_throttle_slewrate,
 
         //
@@ -206,167 +206,167 @@ public:
         // 254,255: reserved
     };
 
-    AP_Int16    format_version;
-	AP_Int8		software_type;
+    AP_Int16 format_version;
+    AP_Int8 software_type;
 
-	// Telemetry control
-	//
-	AP_Int16		sysid_this_mav;
-	AP_Int16		sysid_my_gcs;
-    AP_Int8			serial3_baud;
+    // Telemetry control
+    //
+    AP_Int16 sysid_this_mav;
+    AP_Int16 sysid_my_gcs;
+    AP_Int8 serial3_baud;
 
     // Feed-forward gains
     //
-    AP_Float    kff_pitch_compensation;
-    AP_Float    kff_rudder_mix;
-    AP_Float    kff_pitch_to_throttle;
-    AP_Float    kff_throttle_to_pitch;
+    AP_Float kff_pitch_compensation;
+    AP_Float kff_rudder_mix;
+    AP_Float kff_pitch_to_throttle;
+    AP_Float kff_throttle_to_pitch;
 
     // speed used for speed scaling
-    AP_Float    scaling_speed;
+    AP_Float scaling_speed;
 
     // Crosstrack navigation
     //
-    AP_Float    crosstrack_gain;
-    AP_Int16    crosstrack_entry_angle;
+    AP_Float crosstrack_gain;
+    AP_Int16 crosstrack_entry_angle;
 
     // Estimation
     //
-    AP_Float    altitude_mix;
+    AP_Float altitude_mix;
 
     // Waypoints
     //
-    AP_Int8     waypoint_mode;
-    AP_Int8     command_total;
-    AP_Int8     command_index;
-    AP_Int16    waypoint_radius;
-    AP_Int16    loiter_radius;
+    AP_Int8 waypoint_mode;
+    AP_Int8 command_total;
+    AP_Int8 command_index;
+    AP_Int16 waypoint_radius;
+    AP_Int16 loiter_radius;
 
 #if GEOFENCE_ENABLED == ENABLED
-    AP_Int8     fence_action;
-    AP_Int8     fence_total;
-    AP_Int8     fence_channel;
-    AP_Int16    fence_minalt; // meters
-    AP_Int16    fence_maxalt; // meters
+    AP_Int8 fence_action;
+    AP_Int8 fence_total;
+    AP_Int8 fence_channel;
+    AP_Int16 fence_minalt;    // meters
+    AP_Int16 fence_maxalt;    // meters
 #endif
 
     // Fly-by-wire
     //
-    AP_Int16    flybywire_airspeed_min;
-    AP_Int16    flybywire_airspeed_max;
-    AP_Int8	    flybywire_elev_reverse;
+    AP_Int16 flybywire_airspeed_min;
+    AP_Int16 flybywire_airspeed_max;
+    AP_Int8 flybywire_elev_reverse;
 
     // Throttle
     //
-    AP_Int8     throttle_min;
-    AP_Int8     throttle_max;
-    AP_Int8     throttle_slewrate;
-	AP_Int8     throttle_fs_enabled;
-    AP_Int16    throttle_fs_value;
-    AP_Int8     throttle_cruise;
+    AP_Int8 throttle_min;
+    AP_Int8 throttle_max;
+    AP_Int8 throttle_slewrate;
+    AP_Int8 throttle_fs_enabled;
+    AP_Int16 throttle_fs_value;
+    AP_Int8 throttle_cruise;
 
-	// Failsafe
-    AP_Int8     short_fs_action;
-    AP_Int8     long_fs_action;
-	AP_Int8		gcs_heartbeat_fs_enabled;
+    // Failsafe
+    AP_Int8 short_fs_action;
+    AP_Int8 long_fs_action;
+    AP_Int8 gcs_heartbeat_fs_enabled;
 
     // Flight modes
     //
-    AP_Int8     flight_mode_channel;
-    AP_Int8     flight_mode1;
-    AP_Int8     flight_mode2;
-    AP_Int8     flight_mode3;
-    AP_Int8     flight_mode4;
-    AP_Int8     flight_mode5;
-    AP_Int8     flight_mode6;
+    AP_Int8 flight_mode_channel;
+    AP_Int8 flight_mode1;
+    AP_Int8 flight_mode2;
+    AP_Int8 flight_mode3;
+    AP_Int8 flight_mode4;
+    AP_Int8 flight_mode5;
+    AP_Int8 flight_mode6;
 
     // Navigational maneuvering limits
     //
-    AP_Int16    roll_limit_cd;
-    AP_Int16    pitch_limit_max_cd;
-    AP_Int16    pitch_limit_min_cd;
+    AP_Int16 roll_limit_cd;
+    AP_Int16 pitch_limit_max_cd;
+    AP_Int16 pitch_limit_min_cd;
 
     // Misc
     //
-    AP_Int8     auto_trim;
-    AP_Int8     mix_mode;
-    AP_Int8     reverse_elevons;
-    AP_Int8     reverse_ch1_elevon;
-    AP_Int8     reverse_ch2_elevon;
-    AP_Int16    num_resets;
-    AP_Int16    log_bitmask;
-    AP_Int8		reset_switch_chan;
-    AP_Int8		reset_mission_chan;
-    AP_Int8		manual_level;
-    AP_Int32    airspeed_cruise_cm;
-    AP_Int32    RTL_altitude_cm;
-	AP_Int16	land_pitch_cd;
-	AP_Float	land_flare_alt;
-	AP_Float	land_flare_sec;
-    AP_Int32    min_gndspeed_cm;
-    AP_Int16    pitch_trim_cd;
-    AP_Int16    FBWB_min_altitude_cm;
+    AP_Int8 auto_trim;
+    AP_Int8 mix_mode;
+    AP_Int8 reverse_elevons;
+    AP_Int8 reverse_ch1_elevon;
+    AP_Int8 reverse_ch2_elevon;
+    AP_Int16 num_resets;
+    AP_Int16 log_bitmask;
+    AP_Int8 reset_switch_chan;
+    AP_Int8 reset_mission_chan;
+    AP_Int8 manual_level;
+    AP_Int32 airspeed_cruise_cm;
+    AP_Int32 RTL_altitude_cm;
+    AP_Int16 land_pitch_cd;
+    AP_Float land_flare_alt;
+    AP_Float land_flare_sec;
+    AP_Int32 min_gndspeed_cm;
+    AP_Int16 pitch_trim_cd;
+    AP_Int16 FBWB_min_altitude_cm;
 
-    AP_Int8		compass_enabled;
-    AP_Int8		battery_monitoring;	// 0=disabled, 3=voltage only, 4=voltage and current
-    AP_Int8		flap_1_percent;
-    AP_Int8		flap_1_speed;
-    AP_Int8		flap_2_percent;
-    AP_Int8		flap_2_speed;
-    AP_Float	volt_div_ratio;
-    AP_Float	curr_amp_per_volt;
-    AP_Float	input_voltage;
-	AP_Int32	pack_capacity;		// Battery pack capacity less reserve
-    AP_Int8		inverted_flight_ch; // 0=disabled, 1-8 is channel for inverted flight trigger
-    AP_Int8		sonar_enabled;
-    AP_Int8		stick_mixing;
+    AP_Int8 compass_enabled;
+    AP_Int8 battery_monitoring;                 // 0=disabled, 3=voltage only, 4=voltage and current
+    AP_Int8 flap_1_percent;
+    AP_Int8 flap_1_speed;
+    AP_Int8 flap_2_percent;
+    AP_Int8 flap_2_speed;
+    AP_Float volt_div_ratio;
+    AP_Float curr_amp_per_volt;
+    AP_Float input_voltage;
+    AP_Int32 pack_capacity;                     // Battery pack capacity less reserve
+    AP_Int8 inverted_flight_ch;             // 0=disabled, 1-8 is channel for inverted flight trigger
+    AP_Int8 sonar_enabled;
+    AP_Int8 stick_mixing;
 
-	// Camera
+    // Camera
 #if CAMERA == ENABLED
-    AP_Camera		camera;
+    AP_Camera camera;
 #endif
 
     // RC channels
-    RC_Channel  channel_roll;
-    RC_Channel  channel_pitch;
-    RC_Channel  channel_throttle;
-    RC_Channel  channel_rudder;
-	RC_Channel_aux	rc_5;
-	RC_Channel_aux	rc_6;
-	RC_Channel_aux	rc_7;
-	RC_Channel_aux	rc_8;
+    RC_Channel channel_roll;
+    RC_Channel channel_pitch;
+    RC_Channel channel_throttle;
+    RC_Channel channel_rudder;
+    RC_Channel_aux rc_5;
+    RC_Channel_aux rc_6;
+    RC_Channel_aux rc_7;
+    RC_Channel_aux rc_8;
 #if CONFIG_APM_HARDWARE == APM_HARDWARE_APM2
-	RC_Channel_aux	rc_9;
-	RC_Channel_aux	rc_10;
-	RC_Channel_aux	rc_11;
+    RC_Channel_aux rc_9;
+    RC_Channel_aux rc_10;
+    RC_Channel_aux rc_11;
 #endif
 
     // PID controllers
     //
-    PID         pidNavRoll;
-    PID         pidServoRoll;
-    PID         pidServoPitch;
-    PID         pidNavPitchAirspeed;
-    PID         pidServoRudder;
-    PID         pidTeThrottle;
-    PID         pidNavPitchAltitude;
-    PID         pidWheelSteer;
+    PID pidNavRoll;
+    PID pidServoRoll;
+    PID pidServoPitch;
+    PID pidNavPitchAirspeed;
+    PID pidServoRudder;
+    PID pidTeThrottle;
+    PID pidNavPitchAltitude;
+    PID pidWheelSteer;
 
     Parameters() :
-	// variable				default
-	//----------------------------------------
-        channel_roll			(CH_1),
-        channel_pitch			(CH_2),
-        channel_throttle		(CH_3),
-        channel_rudder			(CH_4),
-        rc_5					(CH_5),
-        rc_6					(CH_6),
-        rc_7					(CH_7),
-        rc_8					(CH_8),
+        // variable				default
+        //----------------------------------------
+        channel_roll                    (CH_1),
+        channel_pitch                   (CH_2),
+        channel_throttle                (CH_3),
+        channel_rudder                  (CH_4),
+        rc_5                                    (CH_5),
+        rc_6                                    (CH_6),
+        rc_7                                    (CH_7),
+        rc_8                                    (CH_8),
 #if CONFIG_APM_HARDWARE == APM_HARDWARE_APM2
-        rc_9					(CH_9),
-        rc_10					(CH_10),
-        rc_11					(CH_11),
+        rc_9                                    (CH_9),
+        rc_10                                   (CH_10),
+        rc_11                                   (CH_11),
 #endif
 
         // PID controller    initial P        initial I        initial D        initial imax
@@ -379,7 +379,8 @@ public:
         pidTeThrottle       (THROTTLE_TE_P,   THROTTLE_TE_I,   THROTTLE_TE_D,   THROTTLE_TE_INT_MAX),
         pidNavPitchAltitude (NAV_PITCH_ALT_P, NAV_PITCH_ALT_I, NAV_PITCH_ALT_D, NAV_PITCH_ALT_INT_MAX_CM),
         pidWheelSteer         (0, 0, 0, 0)
-        {}
+    {
+    }
 };
 
 extern const AP_Param::Info var_info[];
