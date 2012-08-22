@@ -18,7 +18,7 @@
 //
 // XXX the bytes show up on the wire, but at least my test unit (EM-411) seems to ignore them.
 //
-static uint8_t	init_messages[] = {
+static uint8_t init_messages[] = {
     0xa0, 0xa2, 0x00, 0x08, 0xa6, 0x02, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xa8, 0xb0, 0xb3,
     0xa0, 0xa2, 0x00, 0x08, 0xa6, 0x00, 0x29, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0xd0, 0xb0, 0xb3
 };
@@ -55,9 +55,9 @@ AP_GPS_SIRF::init(enum GPS_Engine_Setting nav_setting)
 bool
 AP_GPS_SIRF::read(void)
 {
-    uint8_t		data;
-    int16_t		numc;
-    bool		parsed = false;
+    uint8_t data;
+    int16_t numc;
+    bool parsed = false;
 
     numc = _port->available();
     while(numc--) {
@@ -67,32 +67,32 @@ AP_GPS_SIRF::read(void)
 
         switch(_step) {
 
-            // Message preamble detection
-            //
-            // If we fail to match any of the expected bytes, we reset
-            // the state machine and re-consider the failed byte as
-            // the first byte of the preamble.  This improves our
-            // chances of recovering from a mismatch and makes it less
-            // likely that we will be fooled by the preamble appearing
-            // as data in some other message.
-            //
+        // Message preamble detection
+        //
+        // If we fail to match any of the expected bytes, we reset
+        // the state machine and re-consider the failed byte as
+        // the first byte of the preamble.  This improves our
+        // chances of recovering from a mismatch and makes it less
+        // likely that we will be fooled by the preamble appearing
+        // as data in some other message.
+        //
         case 1:
             if (PREAMBLE2 == data) {
                 _step++;
                 break;
             }
             _step = 0;
-            // FALLTHROUGH
+        // FALLTHROUGH
         case 0:
             if(PREAMBLE1 == data)
                 _step++;
             break;
 
-            // Message length
-            //
-            // We always collect the length so that we can avoid being
-            // fooled by preamble bytes in messages.
-            //
+        // Message length
+        //
+        // We always collect the length so that we can avoid being
+        // fooled by preamble bytes in messages.
+        //
         case 2:
             _step++;
             _payload_length = (uint16_t)data << 8;
@@ -104,11 +104,11 @@ AP_GPS_SIRF::read(void)
             _checksum = 0;
             break;
 
-            // Message header processing
-            //
-            // We sniff the message ID to determine whether we are going
-            // to gather the message bytes or just discard them.
-            //
+        // Message header processing
+        //
+        // We sniff the message ID to determine whether we are going
+        // to gather the message bytes or just discard them.
+        //
         case 4:
             _step++;
             _accumulate(data);
@@ -124,17 +124,17 @@ AP_GPS_SIRF::read(void)
             }
             break;
 
-            // Receive message data
-            //
-            // Note that we are effectively guaranteed by the protocol
-            // that the checksum and postamble cannot be mistaken for
-            // the preamble, so if we are discarding bytes in this
-            // message when the payload is done we return directly
-            // to the preamble detector rather than bothering with
-            // the checksum logic.
-            //
+        // Receive message data
+        //
+        // Note that we are effectively guaranteed by the protocol
+        // that the checksum and postamble cannot be mistaken for
+        // the preamble, so if we are discarding bytes in this
+        // message when the payload is done we return directly
+        // to the preamble detector rather than bothering with
+        // the checksum logic.
+        //
         case 5:
-            if (_gather) {						// gather data if requested
+            if (_gather) {                                              // gather data if requested
                 _accumulate(data);
                 _buffer.bytes[_payload_counter] = data;
                 if (++_payload_counter == _payload_length)
@@ -145,8 +145,8 @@ AP_GPS_SIRF::read(void)
             }
             break;
 
-            // Checksum and message processing
-            //
+        // Checksum and message processing
+        //
         case 6:
             _step++;
             if ((_checksum >> 8) != data) {
@@ -161,7 +161,7 @@ AP_GPS_SIRF::read(void)
                 break;
             }
             if (_gather) {
-                parsed = _parse_gps();					 // Parse the new GPS packet
+                parsed = _parse_gps();                                   // Parse the new GPS packet
             }
         }
     }
@@ -173,17 +173,17 @@ AP_GPS_SIRF::_parse_gps(void)
 {
     switch(_msg_id) {
     case MSG_GEONAV:
-        time			= _swapl(&_buffer.nav.time);
+        time                    = _swapl(&_buffer.nav.time);
         //fix				= (0 == _buffer.nav.fix_invalid) && (FIX_3D == (_buffer.nav.fix_type & FIX_MASK));
-        fix				= (0 == _buffer.nav.fix_invalid);
-        latitude		= _swapl(&_buffer.nav.latitude);
-        longitude		= _swapl(&_buffer.nav.longitude);
-        altitude		= _swapl(&_buffer.nav.altitude_msl);
-        ground_speed	= _swapi(&_buffer.nav.ground_speed);
+        fix                             = (0 == _buffer.nav.fix_invalid);
+        latitude                = _swapl(&_buffer.nav.latitude);
+        longitude               = _swapl(&_buffer.nav.longitude);
+        altitude                = _swapl(&_buffer.nav.altitude_msl);
+        ground_speed    = _swapi(&_buffer.nav.ground_speed);
         // at low speeds, ground course wanders wildly; suppress changes if we are not moving
         if (ground_speed > 50)
-            ground_course	= _swapi(&_buffer.nav.ground_course);
-        num_sats		= _buffer.nav.satellites;
+            ground_course       = _swapi(&_buffer.nav.ground_course);
+        num_sats                = _buffer.nav.satellites;
 
         return true;
     }
