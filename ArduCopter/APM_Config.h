@@ -12,36 +12,36 @@
 //#define DMP_ENABLED ENABLED
 
 //#define FRAME_CONFIG QUAD_FRAME
-	/*
-	options:
-	QUAD_FRAME
-	TRI_FRAME
-	HEXA_FRAME
-	Y6_FRAME
-	OCTA_FRAME
-	OCTA_QUAD_FRAME
-	HELI_FRAME
-	*/
+/*
+ *  options:
+ *  QUAD_FRAME
+ *  TRI_FRAME
+ *  HEXA_FRAME
+ *  Y6_FRAME
+ *  OCTA_FRAME
+ *  OCTA_QUAD_FRAME
+ *  HELI_FRAME
+ */
 
 //#define FRAME_ORIENTATION X_FRAME
-	/*
-	PLUS_FRAME
-	X_FRAME
-	V_FRAME
-	*/
+/*
+ *  PLUS_FRAME
+ *  X_FRAME
+ *  V_FRAME
+ */
 
 //#define CH7_OPTION		CH7_SAVE_WP
-	/*
-	CH7_DO_NOTHING
-	CH7_SET_HOVER
-	CH7_FLIP
-	CH7_SIMPLE_MODE
-	CH7_RTL
-	CH7_AUTO_TRIM
-	CH7_ADC_FILTER (experimental)
-	CH7_SAVE_WP
-	CH7_MULTI_MODE
-	*/
+/*
+ *  CH7_DO_NOTHING
+ *  CH7_SET_HOVER
+ *  CH7_FLIP
+ *  CH7_SIMPLE_MODE
+ *  CH7_RTL
+ *  CH7_AUTO_TRIM
+ *  CH7_ADC_FILTER (experimental)
+ *  CH7_SAVE_WP
+ *  CH7_MULTI_MODE
+ */
 
 //#define TOY_EDF	ENABLED
 //#define TOY_MIXER TOY_LOOKUP_TABLE
@@ -52,24 +52,24 @@
 
 
 #if INERTIAL_NAV == ENABLED
-	#define ALT_HOLD_P			3
-	#define ALT_HOLD_I			0
-	#define ALT_HOLD_IMAX		300
+ #define ALT_HOLD_P                      3
+ #define ALT_HOLD_I                      0
+ #define ALT_HOLD_IMAX           300
 
-	// RATE control
-	#define THROTTLE_P			5		//
-	#define THROTTLE_I			0.4		//
-	#define THROTTLE_D			0.0		//
+// RATE control
+ #define THROTTLE_P                      5                      //
+ #define THROTTLE_I                      0.4                    //
+ #define THROTTLE_D                      0.0                    //
 
-	#define LOITER_P			0.50
-	#define LOITER_I			0.0
-	#define LOITER_RATE_P		5		//
-	#define LOITER_RATE_I		0.1		// Wind control
-	#define LOITER_RATE_D		0.0		// try 2 or 3 for LOITER_RATE 1
+ #define LOITER_P                        0.50
+ #define LOITER_I                        0.0
+ #define LOITER_RATE_P           5                      //
+ #define LOITER_RATE_I           0.1                    // Wind control
+ #define LOITER_RATE_D           0.0                    // try 2 or 3 for LOITER_RATE 1
 #endif
 
 
-//#define RATE_ROLL_I 	0.18
+//#define RATE_ROLL_I   0.18
 //#define RATE_PITCH_I	0.18
 //#define MOTORS_JD880
 //#define MOTORS_JD850
