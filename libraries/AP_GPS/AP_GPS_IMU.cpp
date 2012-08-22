@@ -1,37 +1,37 @@
 // -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: t -*-
 /*
-        GPS_MTK.cpp - Ublox GPS library for Arduino
-        Code by Jordi Mu�oz and Jose Julio. DIYDrones.com
-        This code works with boards based on ATMega168/328 and ATMega1280 (Serial port 1)
-
-        This library is free software; you can redistribute it and/or
-                modify it under the terms of the GNU Lesser General Public
-                License as published by the Free Software Foundation; either
-                version 2.1 of the License, or (at your option) any later version.
-
-        GPS configuration : Costum protocol
-        Baud rate : 38400
-
-        Methods:
-                init() : GPS initialization
-                update() : Call this funcion as often as you want to ensure you read the incomming gps data
-
-        Properties:
-                lattitude : lattitude * 10000000 (int32_t value)
-                longitude : longitude * 10000000 (int32_t value)
-                altitude :      altitude * 100 (meters) (int32_t value)
-                ground_speed : Speed (m/s) * 100 (int32_t value)
-                ground_course : Course (degrees) * 100 (int32_t value)
-                new_data : 1 when a new data is received.
-                                                        You need to write a 0 to new_data when you read the data
-                fix : 1: GPS NO fix, 2: 2D fix, 3: 3D fix.
-
-*/
+ *       GPS_MTK.cpp - Ublox GPS library for Arduino
+ *       Code by Jordi Mu�oz and Jose Julio. DIYDrones.com
+ *       This code works with boards based on ATMega168/328 and ATMega1280 (Serial port 1)
+ *
+ *       This library is free software; you can redistribute it and/or
+ *               modify it under the terms of the GNU Lesser General Public
+ *               License as published by the Free Software Foundation; either
+ *               version 2.1 of the License, or (at your option) any later version.
+ *
+ *       GPS configuration : Costum protocol
+ *       Baud rate : 38400
+ *
+ *       Methods:
+ *               init() : GPS initialization
+ *               update() : Call this funcion as often as you want to ensure you read the incomming gps data
+ *
+ *       Properties:
+ *               lattitude : lattitude * 10000000 (int32_t value)
+ *               longitude : longitude * 10000000 (int32_t value)
+ *               altitude :      altitude * 100 (meters) (int32_t value)
+ *               ground_speed : Speed (m/s) * 100 (int32_t value)
+ *               ground_course : Course (degrees) * 100 (int32_t value)
+ *               new_data : 1 when a new data is received.
+ *                                                       You need to write a 0 to new_data when you read the data
+ *               fix : 1: GPS NO fix, 2: 2D fix, 3: 3D fix.
+ *
+ */
 #include "AP_GPS_IMU.h"
 #if defined(ARDUINO) && ARDUINO >= 100
-	#include "Arduino.h"
+ #include "Arduino.h"
 #else
-	#include "WProgram.h"
+ #include "WProgram.h"
 #endif
 
 
@@ -154,14 +154,14 @@ AP_GPS_IMU::read(void)
                 ck_b = 0;
                 break;
             }
-        }// End for...
+        } // End for...
     }
     return true;
 }
 
 /****************************************************************
- *
- ****************************************************************/
+*
+****************************************************************/
 
 void AP_GPS_IMU::join_data(void)
 {
@@ -221,10 +221,10 @@ void AP_GPS_IMU::GPS_join_data(void)
 
 
 /****************************************************************
- *
- ****************************************************************/
+*
+****************************************************************/
 // checksum algorithm
-void AP_GPS_IMU::checksum(unsigned char  data)
+void AP_GPS_IMU::checksum(unsigned char data)
 {
     ck_a += data;
     ck_b += ck_a;
@@ -232,7 +232,8 @@ void AP_GPS_IMU::checksum(unsigned char  data)
 
 
 /****************************************************************
- * Unused
- ****************************************************************/
+* Unused
+****************************************************************/
 void AP_GPS_IMU::setHIL(uint32_t _time, float _latitude, float _longitude, float _altitude,
-                        float _ground_speed, float _ground_course, float _speed_3d, uint8_t _num_sats) {};
+                        float _ground_speed, float _ground_course, float _speed_3d, uint8_t _num_sats) {
+};
