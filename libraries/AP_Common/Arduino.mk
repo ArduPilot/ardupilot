@@ -333,6 +333,8 @@ LIBOBJS			:=	$(SKETCHLIBOBJS) $(ARDUINOLIBOBJS)
 # *duino core
 #
 
+EXCLUDE_CORE := $(wildcard $(SRCROOT)/nocore.inoflag)
+
 # Pull the Arduino version
 ARDUINO_VERS	:=	$(shell $(SKETCHBOOK)/Tools/scripts/arduino_version.sh $(ARDUINO))
 
@@ -369,6 +371,7 @@ ifeq ($(MCU),)
 $(error ERROR: Could not locate board $(BOARD) in $(BOARDFILE))
 endif
 
+ifeq ($(EXCLUDE_CORE),) # an empty exclude_core is false
 # Hardware source files
 CORESRC_DIR		=	$(HARDWARE_DIR)/cores/$(HARDWARE_CORE)
 CORESRC_PATTERNS	=	$(foreach suffix,/*.cpp /*.c /*.S,$(addsuffix $(suffix),$(CORESRC_DIR)))
@@ -380,6 +383,11 @@ COREINCLUDES		=	-I$(CORESRC_DIR) -I$(HARDWARE_DIR)/variants/mega
 # Hardware object files
 CORELIBOBJS		:=	$(subst $(CORESRC_DIR),$(BUILDROOT)/$(HARDWARE),$(CORESRCS))
 CORELIBOBJS		:=	$(addsuffix .o,$(basename $(CORELIBOBJS)))
+else
+#if EXCLUDE_CORE is nonempty (true), set COREINCLUDES and CORELIBOBJS to empty
+COREINCLUDES =
+CORELIBOBJS := 
+endif
 
 ################################################################################
 # Built products
