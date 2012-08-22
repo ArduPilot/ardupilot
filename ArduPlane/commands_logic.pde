@@ -8,8 +8,15 @@ handle_process_nav_cmd()
 {
     // reset navigation integrators
     // -------------------------
-    land_complete = false;
     reset_I();
+
+
+    // set land_complete to false to stop us zeroing the throttle
+    land_complete = false;
+
+    // set takeoff_complete to true so we don't add extra evevator
+    // except in a takeoff 
+    takeoff_complete = true;
 
     gcs_send_text_fmt(PSTR("Executing nav command ID #%i"),next_nav_command.id);
     switch(next_nav_command.id) {
