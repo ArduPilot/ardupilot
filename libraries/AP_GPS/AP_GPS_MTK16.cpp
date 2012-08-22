@@ -14,9 +14,9 @@
 #include "AP_GPS_MTK16.h"
 #include <stdint.h>
 #if defined(ARDUINO) && ARDUINO >= 100
-	#include "Arduino.h"
+ #include "Arduino.h"
 #else
-	#include <wiring.h>
+ #include <wiring.h>
 #endif
 
 // Constructors ////////////////////////////////////////////////////////////////
@@ -37,12 +37,12 @@ AP_GPS_MTK16::init(enum GPS_Engine_Setting nav_setting)
     // set 5Hz update rate
     _port->print(MTK_OUTPUT_5HZ);
 
-	// set SBAS on
-	_port->print(SBAS_ON);
-	
-	// set WAAS on
-	_port->print(WAAS_ON);
-	
+    // set SBAS on
+    _port->print(SBAS_ON);
+
+    // set WAAS on
+    _port->print(WAAS_ON);
+
     // set initial epoch code
     _epoch = TIME_OF_DAY;
     _time_offset = 0;
@@ -64,12 +64,12 @@ AP_GPS_MTK16::init(enum GPS_Engine_Setting nav_setting)
 bool
 AP_GPS_MTK16::read(void)
 {
-    uint8_t 	data;
-    int16_t		numc;
-    bool		parsed = false;
+    uint8_t data;
+    int16_t numc;
+    bool parsed = false;
 
     numc = _port->available();
-    for (int16_t i = 0; i < numc; i++) {	// Process bytes received
+    for (int16_t i = 0; i < numc; i++) {        // Process bytes received
 
         // read the next byte
         data = _port->read();
@@ -77,15 +77,15 @@ AP_GPS_MTK16::read(void)
 restart:
         switch(_step) {
 
-            // Message preamble, class, ID detection
-            //
-            // If we fail to match any of the expected bytes, we
-            // reset the state machine and re-consider the failed
-            // byte as the first byte of the preamble.  This
-            // improves our chances of recovering from a mismatch
-            // and makes it less likely that we will be fooled by
-            // the preamble appearing as data in some other message.
-            //
+        // Message preamble, class, ID detection
+        //
+        // If we fail to match any of the expected bytes, we
+        // reset the state machine and re-consider the failed
+        // byte as the first byte of the preamble.  This
+        // improves our chances of recovering from a mismatch
+        // and makes it less likely that we will be fooled by
+        // the preamble appearing as data in some other message.
+        //
         case 0:
             if(PREAMBLE1 == data)
                 _step++;
@@ -100,16 +100,16 @@ restart:
         case 2:
             if (sizeof(_buffer) == data) {
                 _step++;
-                _ck_b = _ck_a = data;				// reset the checksum accumulators
+                _ck_b = _ck_a = data;                           // reset the checksum accumulators
                 _payload_counter = 0;
             } else {
-                _step = 0;							// reset and wait for a message of the right class
+                _step = 0;                                                      // reset and wait for a message of the right class
                 goto restart;
             }
             break;
 
-            // Receive message data
-            //
+        // Receive message data
+        //
         case 3:
             _buffer.bytes[_payload_counter++] = data;
             _ck_b += (_ck_a += data);
@@ -117,8 +117,8 @@ restart:
                 _step++;
             break;
 
-            // Checksum and message processing
-            //
+        // Checksum and message processing
+        //
         case 4:
             _step++;
             if (_ck_a != data) {
@@ -131,19 +131,19 @@ restart:
                 break;
             }
 
-            fix				= ((_buffer.msg.fix_type == FIX_3D) || 
-							   (_buffer.msg.fix_type == FIX_3D_SBAS));
-            latitude		= _buffer.msg.latitude  * 10;	// XXX doc says *10e7 but device says otherwise
-            longitude		= _buffer.msg.longitude * 10;	// XXX doc says *10e7 but device says otherwise
-            altitude		= _buffer.msg.altitude;
-            ground_speed	= _buffer.msg.ground_speed;
-            ground_course	= _buffer.msg.ground_course;
-            num_sats		= _buffer.msg.satellites;
-            hdop			= _buffer.msg.hdop;
-            date			= _buffer.msg.utc_date;
+            fix                         = ((_buffer.msg.fix_type == FIX_3D) ||
+                                           (_buffer.msg.fix_type == FIX_3D_SBAS));
+            latitude            = _buffer.msg.latitude  * 10;   // XXX doc says *10e7 but device says otherwise
+            longitude           = _buffer.msg.longitude * 10;   // XXX doc says *10e7 but device says otherwise
+            altitude            = _buffer.msg.altitude;
+            ground_speed        = _buffer.msg.ground_speed;
+            ground_course       = _buffer.msg.ground_course;
+            num_sats            = _buffer.msg.satellites;
+            hdop                        = _buffer.msg.hdop;
+            date                        = _buffer.msg.utc_date;
 
             // time from gps is UTC, but convert here to msToD
-            int32_t time_utc	= _buffer.msg.utc_time;
+            int32_t time_utc    = _buffer.msg.utc_time;
             int32_t temp = (time_utc/10000000);
             time_utc -= temp*10000000;
             time = temp * 3600000;
@@ -154,26 +154,26 @@ restart:
             parsed = true;
 
 #ifdef FAKE_GPS_LOCK_TIME
-			if (millis() > FAKE_GPS_LOCK_TIME*1000) {
-				fix				= true;
-				latitude		= -35000000UL;
-				longitude		= 149000000UL;
-				altitude		= 584;
-			}
+            if (millis() > FAKE_GPS_LOCK_TIME*1000) {
+                fix                             = true;
+                latitude                = -35000000UL;
+                longitude               = 149000000UL;
+                altitude                = 584;
+            }
 #endif
 
             /*	Waiting on clarification of MAVLink protocol!
-            if(!_offset_calculated && parsed) {
-				int32_t tempd1 = date;
-				int32_t day 	= tempd1/10000;
-            	tempd1 		-= day * 10000;
-				int32_t month	= tempd1/100;
-				int32_t year	= tempd1 - month * 100;
-            	_time_offset = _calc_epoch_offset(day, month, year);
-            	_epoch = UNIX_EPOCH;
-            	_offset_calculated = TRUE;
-            }
-            */
+             *  if(!_offset_calculated && parsed) {
+             *                   int32_t tempd1 = date;
+             *                   int32_t day    = tempd1/10000;
+             *   tempd1         -= day * 10000;
+             *                   int32_t month	= tempd1/100;
+             *                   int32_t year	= tempd1 - month * 100;
+             *   _time_offset = _calc_epoch_offset(day, month, year);
+             *   _epoch = UNIX_EPOCH;
+             *   _offset_calculated = TRUE;
+             *  }
+             */
 
         }
     }
