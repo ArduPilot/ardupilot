@@ -531,16 +531,23 @@ const AP_Param::Info var_info[] PROGMEM = {
     GGROUP(rc_11,                    "RC11_", RC_Channel_aux),
 #endif
 
-    GGROUP(pidNavRoll,              "HDNG2RLL_",  PID),
-    GGROUP(pidServoRoll,            "RLL2SRV_",   PID),
-    GGROUP(pidServoPitch,           "PTCH2SRV_",  PID),
-    GGROUP(pidNavPitchAirspeed,     "ARSP2PTCH_", PID),
-    GGROUP(pidServoRudder,          "YW2SRV_",    PID),
-    GGROUP(pidTeThrottle,           "ENRGY2THR_", PID),
-    GGROUP(pidNavPitchAltitude,     "ALT2PTCH_",  PID),
-    GGROUP(pidWheelSteer,           "WHEELSTEER_",PID),
+	GGROUP(pidNavRoll,              "HDNG2RLL_",  PID),
+	GGROUP(pidNavPitchAirspeed,     "ARSP2PTCH_", PID),
+	GGROUP(pidTeThrottle,           "ENRGY2THR_", PID),
+	GGROUP(pidNavPitchAltitude,     "ALT2PTCH_",  PID),
+	GGROUP(pidWheelSteer,           "WHEELSTEER_",PID),
 
-    // variables not in the g class which contain EEPROM saved variables
+#if APM_CONTROL == DISABLED
+	GGROUP(pidServoRoll,            "RLL2SRV_",   PID),
+	GGROUP(pidServoPitch,           "PTCH2SRV_",  PID),
+	GGROUP(pidServoRudder,          "YW2SRV_",    PID),
+#else
+	GGROUP(rollController,          "RLL_",       AP_RollController),
+	GGROUP(pitchController,         "PTCH_",      AP_PitchController),
+	GGROUP(yawController,           "YWCTL_",     AP_YawController),
+#endif
+
+	// variables not in the g class which contain EEPROM saved variables
 
     // @Group: COMPASS_
     // @Path: ../libraries/AP_Compass/Compass.cpp

@@ -182,8 +182,15 @@ static void init_ardupilot()
     // give AHRS the airspeed sensor
     ahrs.set_airspeed(&airspeed);
 
-    // Do GPS init
-    g_gps = &g_gps_driver;
+#if APM_CONTROL == ENABLED
+    // the axis controllers need access to the AHRS system
+    g.rollController.set_ahrs(&ahrs);
+    g.pitchController.set_ahrs(&ahrs);
+    g.yawController.set_ahrs(&ahrs);
+#endif
+
+	// Do GPS init
+	g_gps = &g_gps_driver;
     // GPS Initialization
     g_gps->init(GPS::GPS_ENGINE_AIRBORNE_4G);
     g_gps->callback = mavlink_delay;

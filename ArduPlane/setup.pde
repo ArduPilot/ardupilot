@@ -369,14 +369,16 @@ static void report_gains()
     Serial.printf_P(PSTR("Gains\n"));
     print_divider();
 
-    Serial.printf_P(PSTR("servo roll:\n"));
-    print_PID(&g.pidServoRoll);
+#if APM_CONTROL == DISABLED
+	Serial.printf_P(PSTR("servo roll:\n"));
+	print_PID(&g.pidServoRoll);
 
     Serial.printf_P(PSTR("servo pitch:\n"));
     print_PID(&g.pidServoPitch);
 
-    Serial.printf_P(PSTR("servo rudder:\n"));
-    print_PID(&g.pidServoRudder);
+	Serial.printf_P(PSTR("servo rudder:\n"));
+	print_PID(&g.pidServoRudder);
+#endif
 
     Serial.printf_P(PSTR("nav roll:\n"));
     print_PID(&g.pidNavRoll);
