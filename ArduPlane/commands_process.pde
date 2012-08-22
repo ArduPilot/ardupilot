@@ -50,12 +50,11 @@ static void process_next_command()
     // and loads conditional or immediate commands if applicable
 
     struct Location temp;
-    byte old_index = 0;
+    byte old_index = nav_command_index;
 
     // these are Navigation/Must commands
     // ---------------------------------
     if (nav_command_ID == NO_COMMAND) {    // no current navigation command loaded
-        old_index = nav_command_index;
         temp.id = MAV_CMD_NAV_LAST;
         while(temp.id >= MAV_CMD_NAV_LAST && nav_command_index <= g.command_total) {
             nav_command_index++;

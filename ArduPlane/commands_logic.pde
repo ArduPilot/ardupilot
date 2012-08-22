@@ -11,7 +11,7 @@ handle_process_nav_cmd()
     land_complete = false;
     reset_I();
 
-    gcs_send_text_fmt(PSTR("Executing command ID #%i"),next_nav_command.id);
+    gcs_send_text_fmt(PSTR("Executing nav command ID #%i"),next_nav_command.id);
     switch(next_nav_command.id) {
 
     case MAV_CMD_NAV_TAKEOFF:
@@ -491,33 +491,48 @@ static void do_loiter_at_location()
 
 static void do_jump()
 {
+    if (next_nonnav_command.lat == 0) {
+        // the jump counter has reached zero - ignore
+        gcs_send_text_fmt(PSTR("Jumps left: 0 - skipping"));
+        return;
+    }
+    if (next_nonnav_command.p1 >= g.command_total) {
+        gcs_send_text_fmt(PSTR("Skipping invalid jump to %i"), next_nonnav_command.p1);
+        return;        
+    }
+
     struct Location temp;
+    temp = get_cmd_with_index(g.command_index);
+
     gcs_send_text_fmt(PSTR("Jump to WP %u. Jumps left: %d"),
                       (unsigned)next_nonnav_command.p1,
                       (int)next_nonnav_command.lat);
     if (next_nonnav_command.lat > 0) {
-        nav_command_ID          = NO_COMMAND;
-        next_nav_command.id = NO_COMMAND;
-        non_nav_command_ID      = NO_COMMAND;
-
-        temp                            = get_cmd_with_index(g.command_index);
-        temp.lat                        = next_nonnav_command.lat - 1;                                          // Decrement repeat counter
-
+        // Decrement repeat counter
+        temp.lat                        = next_nonnav_command.lat - 1;                                          
         set_cmd_with_index(temp, g.command_index);
-        gcs_send_text_fmt(PSTR("setting command index: %i"),next_nonnav_command.p1 - 1);
-        g.command_index.set_and_save(next_nonnav_command.p1 - 1);
-        nav_command_index       = next_nonnav_command.p1 - 1;
-        next_WP = prev_WP;                      // Need to back "next_WP" up as it was set to the next waypoint following the jump
-        process_next_command();
-    } else if (next_nonnav_command.lat == -1) {                                                                 // A repeat count of -1 = repeat forever
-        nav_command_ID  = NO_COMMAND;
-        non_nav_command_ID      = NO_COMMAND;
-        gcs_send_text_fmt(PSTR("setting command index: %i"),next_nonnav_command.p1 - 1);
-        g.command_index.set_and_save(next_nonnav_command.p1 - 1);
-        nav_command_index       = next_nonnav_command.p1 - 1;
-        next_WP = prev_WP;                      // Need to back "next_WP" up as it was set to the next waypoint following the jump
-        process_next_command();
     }
+
+    nav_command_ID          = NO_COMMAND;
+    next_nav_command.id     = NO_COMMAND;
+    non_nav_command_ID      = NO_COMMAND;
+
+    gcs_send_text_fmt(PSTR("setting command index: %i"), next_nonnav_command.p1 - 1);
+    g.command_index.set_and_save(next_nonnav_command.p1 - 1);
+    nav_command_index       = next_nonnav_command.p1 - 1;
+    next_WP = prev_WP;                      // Need to back "next_WP" up as it was set to the next waypoint following the jump
+
+    temp = get_cmd_with_index(g.command_index);
+
+    next_nav_command = temp;
+    nav_command_ID = next_nav_command.id;
+    non_nav_command_index = g.command_index;
+    non_nav_command_ID = WAIT_COMMAND;
+
+    if (g.log_bitmask & MASK_LOG_CMD) {
+        Log_Write_Cmd(g.command_index, &next_nav_command);
+    }
+    process_nav_cmd();
 }
 
 static void do_change_speed()
