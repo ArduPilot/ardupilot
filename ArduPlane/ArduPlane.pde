@@ -1075,13 +1075,12 @@ static void update_current_flight_mode(void)
                 if (nav_pitch_cd < takeoff_pitch_cd)
                     nav_pitch_cd = takeoff_pitch_cd;
             } else {
-                nav_pitch_cd = (float)g_gps->ground_speed / (float)g.airspeed_cruise_cm * (float)takeoff_pitch_cd * 0.5;
+                nav_pitch_cd = (g_gps->ground_speed / (float)g.airspeed_cruise_cm) * takeoff_pitch_cd;
                 nav_pitch_cd = constrain(nav_pitch_cd, 500, takeoff_pitch_cd);
             }
 
-            g.channel_throttle.servo_out = g.throttle_max;                     //TODO: Replace with THROTTLE_TAKEOFF or other method of controlling throttle
-            //  What is the case for doing something else?  Why wouldn't you want max throttle for TO?
-            // ******************************
+            // max throttle for takeoff
+            g.channel_throttle.servo_out = g.throttle_max;
 
             break;
 
