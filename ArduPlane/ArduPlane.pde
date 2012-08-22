@@ -280,6 +280,10 @@ AP_RangeFinder_MaxsonarXL sonar(&pitot_analog_source, &sonar_mode_filter);
 AP_RangeFinder_MaxsonarXL sonar(&pitot_analog_source, &sonar_mode_filter);
 #endif
 
+#if RECEIVER_RSSI_PIN != -1
+AP_AnalogSource_Arduino RSSI_pin(RECEIVER_RSSI_PIN, 0.25);
+#endif
+
 AP_Relay relay;
 
 
