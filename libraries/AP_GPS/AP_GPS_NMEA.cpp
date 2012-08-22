@@ -41,16 +41,16 @@
 // the autodetection process.
 //
 const prog_char AP_GPS_NMEA::_SiRF_init_string[] PROGMEM =
-    "$PSRF103,0,0,1,1*25\r\n"	// GGA @ 1Hz
-    "$PSRF103,1,0,0,1*25\r\n"	// GLL off
-    "$PSRF103,2,0,0,1*26\r\n"	// GSA off
-    "$PSRF103,3,0,0,1*27\r\n"	// GSV off
-    "$PSRF103,4,0,1,1*20\r\n"	// RMC off
-    "$PSRF103,5,0,1,1*20\r\n"	// VTG @ 1Hz
-    "$PSRF103,6,0,0,1*22\r\n"	// MSS off
-    "$PSRF103,8,0,0,1*2C\r\n"	// ZDA off
-    "$PSRF151,1*3F\r\n"			// WAAS on (not always supported)
-    "$PSRF106,21*0F\r\n"		// datum = WGS84
+    "$PSRF103,0,0,1,1*25\r\n"   // GGA @ 1Hz
+    "$PSRF103,1,0,0,1*25\r\n"   // GLL off
+    "$PSRF103,2,0,0,1*26\r\n"   // GSA off
+    "$PSRF103,3,0,0,1*27\r\n"   // GSV off
+    "$PSRF103,4,0,1,1*20\r\n"   // RMC off
+    "$PSRF103,5,0,1,1*20\r\n"   // VTG @ 1Hz
+    "$PSRF103,6,0,0,1*22\r\n"   // MSS off
+    "$PSRF103,8,0,0,1*2C\r\n"   // ZDA off
+    "$PSRF151,1*3F\r\n"                 // WAAS on (not always supported)
+    "$PSRF106,21*0F\r\n"                // datum = WGS84
     "";
 
 // MediaTek init messages //////////////////////////////////////////////////////
@@ -59,10 +59,10 @@ const prog_char AP_GPS_NMEA::_SiRF_init_string[] PROGMEM =
 // MediaTek-based GPS.
 //
 const prog_char AP_GPS_NMEA::_MTK_init_string[] PROGMEM =
-    "$PMTK314,0,0,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0*28\r\n"	// GGA & VTG once every fix
-    "$PMTK330,0*2E\r\n"										// datum = WGS84
-    "$PMTK313,1*2E\r\n"									// SBAS on
-    "$PMTK301,2*2E\r\n"									// use SBAS data for DGPS
+    "$PMTK314,0,0,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0*28\r\n" // GGA & VTG once every fix
+    "$PMTK330,0*2E\r\n"                                                                         // datum = WGS84
+    "$PMTK313,1*2E\r\n"                                                                 // SBAS on
+    "$PMTK301,2*2E\r\n"                                                                 // use SBAS data for DGPS
     "";
 
 // ublox init messages /////////////////////////////////////////////////////////
@@ -75,9 +75,9 @@ const prog_char AP_GPS_NMEA::_MTK_init_string[] PROGMEM =
 // and we don't know the baudrate.
 //
 const prog_char AP_GPS_NMEA::_ublox_init_string[] PROGMEM =
-    "$PUBX,40,gga,0,1,0,0,0,0*7B\r\n"	// GGA on at one per fix
-    "$PUBX,40,vtg,0,1,0,0,0,0*7F\r\n"	// VTG on at one per fix
-    "$PUBX,40,rmc,0,0,0,0,0,0*67\r\n"	// RMC off (XXX suppress other message types?)
+    "$PUBX,40,gga,0,1,0,0,0,0*7B\r\n"   // GGA on at one per fix
+    "$PUBX,40,vtg,0,1,0,0,0,0*7F\r\n"   // VTG on at one per fix
+    "$PUBX,40,rmc,0,0,0,0,0,0*67\r\n"   // RMC off (XXX suppress other message types?)
     "";
 
 // NMEA message identifiers ////////////////////////////////////////////////////
@@ -88,7 +88,7 @@ const char AP_GPS_NMEA::_gpvtg_string[] PROGMEM = "GPVTG";
 
 // Convenience macros //////////////////////////////////////////////////////////
 //
-#define DIGIT_TO_VAL(_x)	(_x - '0')
+#define DIGIT_TO_VAL(_x)        (_x - '0')
 
 // Constructors ////////////////////////////////////////////////////////////////
 AP_GPS_NMEA::AP_GPS_NMEA(Stream *s) :
@@ -99,7 +99,7 @@ AP_GPS_NMEA::AP_GPS_NMEA(Stream *s) :
 // Public Methods //////////////////////////////////////////////////////////////
 void AP_GPS_NMEA::init(enum GPS_Engine_Setting nav_setting)
 {
-    BetterStream	*bs = (BetterStream *)_port;
+    BetterStream        *bs = (BetterStream *)_port;
 
     // send the SiRF init strings
     bs->print_P((const prog_char_t *)_SiRF_init_string);
@@ -198,7 +198,7 @@ uint32_t AP_GPS_NMEA::_parse_degrees()
     char *p, *q;
     uint8_t deg = 0, min = 0;
     uint16_t frac_min = 0;
-	int32_t ret = 0;
+    int32_t ret = 0;
 
     // scan for decimal point or end of field
     for (p = _term; isdigit(*p); p++)
@@ -230,7 +230,7 @@ uint32_t AP_GPS_NMEA::_parse_degrees()
                 frac_min += *q++ - '0';
         }
     }
-	ret = (int32_t)deg * (int32_t)1000000UL + (int32_t)((min * 100000UL + frac_min) / 6UL);
+    ret = (int32_t)deg * (int32_t)1000000UL + (int32_t)((min * 100000UL + frac_min) / 6UL);
     return ret;
 }
 
@@ -245,26 +245,26 @@ bool AP_GPS_NMEA::_term_complete()
             if (_gps_data_good) {
                 switch (_sentence_type) {
                 case _GPS_SENTENCE_GPRMC:
-                    time			= _new_time;
-                    date			= _new_date;
-                    latitude		= _new_latitude * 10;	// degrees*10e5 -> 10e7
-                    longitude		= _new_longitude * 10;	// degrees*10e5 -> 10e7
-                    ground_speed	= _new_speed;
-                    ground_course	= _new_course;
-                    fix				= true;
+                    time                        = _new_time;
+                    date                        = _new_date;
+                    latitude            = _new_latitude * 10;   // degrees*10e5 -> 10e7
+                    longitude           = _new_longitude * 10;  // degrees*10e5 -> 10e7
+                    ground_speed        = _new_speed;
+                    ground_course       = _new_course;
+                    fix                         = true;
                     break;
                 case _GPS_SENTENCE_GPGGA:
-                    altitude		= _new_altitude;
-                    time			= _new_time;
-                    latitude		= _new_latitude * 10;	// degrees*10e5 -> 10e7
-                    longitude		= _new_longitude * 10;	// degrees*10e5 -> 10e7
-                    num_sats		= _new_satellite_count;
-                    hdop			= _new_hdop;
-                    fix				= true;
+                    altitude            = _new_altitude;
+                    time                        = _new_time;
+                    latitude            = _new_latitude * 10;   // degrees*10e5 -> 10e7
+                    longitude           = _new_longitude * 10;  // degrees*10e5 -> 10e7
+                    num_sats            = _new_satellite_count;
+                    hdop                        = _new_hdop;
+                    fix                         = true;
                     break;
                 case _GPS_SENTENCE_GPVTG:
-                    ground_speed	= _new_speed;
-                    ground_course	= _new_course;
+                    ground_speed        = _new_speed;
+                    ground_course       = _new_course;
                     // VTG has no fix indicator, can't change fix status
                     break;
                 }
@@ -304,8 +304,8 @@ bool AP_GPS_NMEA::_term_complete()
     // 32 = RMC, 64 = GGA, 96 = VTG
     if (_sentence_type != _GPS_SENTENCE_OTHER && _term[0]) {
         switch (_sentence_type + _term_number) {
-            // operational status
-            //
+        // operational status
+        //
         case _GPS_SENTENCE_GPRMC + 2: // validity (RMC)
             _gps_data_good = _term[0] == 'A';
             break;
@@ -322,8 +322,8 @@ bool AP_GPS_NMEA::_term_complete()
             _new_hdop = _parse_decimal();
             break;
 
-            // time and date
-            //
+        // time and date
+        //
         case _GPS_SENTENCE_GPRMC + 1: // Time (RMC)
         case _GPS_SENTENCE_GPGGA + 1: // Time (GGA)
             _new_time = _parse_decimal();
@@ -332,8 +332,8 @@ bool AP_GPS_NMEA::_term_complete()
             _new_date = atol(_term);
             break;
 
-            // location
-            //
+        // location
+        //
         case _GPS_SENTENCE_GPRMC + 3: // Latitude
         case _GPS_SENTENCE_GPGGA + 2:
             _new_latitude = _parse_degrees();
@@ -356,11 +356,11 @@ bool AP_GPS_NMEA::_term_complete()
             _new_altitude = _parse_decimal();
             break;
 
-            // course and speed
-            //
+        // course and speed
+        //
         case _GPS_SENTENCE_GPRMC + 7: // Speed (GPRMC)
         case _GPS_SENTENCE_GPVTG + 5: // Speed (VTG)
-            _new_speed = (_parse_decimal() * 514) / 1000; 	// knots-> m/sec, approximiates * 0.514
+            _new_speed = (_parse_decimal() * 514) / 1000;       // knots-> m/sec, approximiates * 0.514
             break;
         case _GPS_SENTENCE_GPRMC + 8: // Course (GPRMC)
         case _GPS_SENTENCE_GPVTG + 1: // Course (VTG)
