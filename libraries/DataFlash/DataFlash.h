@@ -17,76 +17,77 @@
 
 class DataFlash_Class
 {
-  private:
-	// DataFlash Log variables...
-	unsigned char df_BufferNum;
-	unsigned char df_Read_BufferNum;
-	uint16_t df_BufferIdx;
-	uint16_t df_Read_BufferIdx;
-	uint16_t df_PageAdr;
-	uint16_t df_Read_PageAdr;
-	unsigned char df_Stop_Write;
-	uint16_t df_FileNumber;
-	uint16_t df_FilePage;
+private:
+    // DataFlash Log variables...
+    unsigned char df_BufferNum;
+    unsigned char df_Read_BufferNum;
+    uint16_t df_BufferIdx;
+    uint16_t df_Read_BufferIdx;
+    uint16_t df_PageAdr;
+    uint16_t df_Read_PageAdr;
+    unsigned char df_Stop_Write;
+    uint16_t df_FileNumber;
+    uint16_t df_FilePage;
 
-	virtual void WaitReady() = 0;
-	virtual void BufferWrite (unsigned char BufferNum, uint16_t IntPageAdr, unsigned char Data) = 0;
-	virtual void BufferToPage (unsigned char BufferNum, uint16_t PageAdr, unsigned char wait) = 0;
-	virtual void PageToBuffer(unsigned char BufferNum, uint16_t PageAdr) = 0;
-	virtual unsigned char BufferRead (unsigned char BufferNum, uint16_t IntPageAdr) = 0;
-	virtual void PageErase(uint16_t PageAdr) = 0;
-	virtual void BlockErase(uint16_t BlockAdr) = 0;
-	virtual void ChipErase(void (*delay_cb)(unsigned long)) = 0;
+    virtual void WaitReady() = 0;
+    virtual void BufferWrite (unsigned char BufferNum, uint16_t IntPageAdr, unsigned char Data) = 0;
+    virtual void BufferToPage (unsigned char BufferNum, uint16_t PageAdr, unsigned char wait) = 0;
+    virtual void PageToBuffer(unsigned char BufferNum, uint16_t PageAdr) = 0;
+    virtual unsigned char BufferRead (unsigned char BufferNum, uint16_t IntPageAdr) = 0;
+    virtual void PageErase(uint16_t PageAdr) = 0;
+    virtual void BlockErase(uint16_t BlockAdr) = 0;
+    virtual void ChipErase(void (*delay_cb)(unsigned long)) = 0;
 
-	// internal high level functions
-	int16_t find_last_page(void);
-	int16_t find_last_page_of_log(uint16_t log_number);
-	bool check_wrapped(void);
+    // internal high level functions
+    int16_t find_last_page(void);
+    int16_t find_last_page_of_log(uint16_t log_number);
+    bool check_wrapped(void);
 
-  public:
-	unsigned char df_manufacturer;
-	uint16_t df_device;
-	uint16_t df_PageSize;
+public:
+    unsigned char df_manufacturer;
+    uint16_t df_device;
+    uint16_t df_PageSize;
 
-	DataFlash_Class() {} // Constructor
+    DataFlash_Class() {
+    }                        // Constructor
 
-	virtual void Init(void) = 0;
-	virtual void ReadManufacturerID() = 0;
-	virtual bool CardInserted(void) = 0;
+    virtual void Init(void) = 0;
+    virtual void ReadManufacturerID() = 0;
+    virtual bool CardInserted(void) = 0;
 
-	int16_t GetPage(void);
-	int16_t GetWritePage(void);
+    int16_t GetPage(void);
+    int16_t GetWritePage(void);
 
-	// erase handling
-	void EraseAll(void (*delay_cb)(unsigned long));
-	bool NeedErase(void);
+    // erase handling
+    void EraseAll(void (*delay_cb)(unsigned long));
+    bool NeedErase(void);
 
-	// Write methods
-	void StartWrite(int16_t PageAdr);
-	void FinishWrite(void);
-	void WriteByte(unsigned char data);
-	void WriteInt(int16_t data);
-	void WriteLong(int32_t data);
+    // Write methods
+    void StartWrite(int16_t PageAdr);
+    void FinishWrite(void);
+    void WriteByte(unsigned char data);
+    void WriteInt(int16_t data);
+    void WriteLong(int32_t data);
 
-	// Read methods
-	void StartRead(int16_t PageAdr);
-	unsigned char ReadByte();
-	int16_t ReadInt();
-	int32_t ReadLong();
+    // Read methods
+    void StartRead(int16_t PageAdr);
+    unsigned char ReadByte();
+    int16_t ReadInt();
+    int32_t ReadLong();
 
-	// file numbers
-	void SetFileNumber(uint16_t FileNumber);
-	uint16_t GetFileNumber();
-	uint16_t GetFilePage();
+    // file numbers
+    void SetFileNumber(uint16_t FileNumber);
+    uint16_t GetFileNumber();
+    uint16_t GetFilePage();
 
-	// page handling
-	uint16_t df_NumPages;
+    // page handling
+    uint16_t df_NumPages;
 
-	// high level interface
-	int16_t find_last_log(void);
-	void get_log_boundaries(uint8_t log_num, int16_t & start_page, int16_t & end_page);
-	uint8_t get_num_logs(void);
-	void start_new_log(void);
+    // high level interface
+    int16_t find_last_log(void);
+    void get_log_boundaries(uint8_t log_num, int16_t & start_page, int16_t & end_page);
+    uint8_t get_num_logs(void);
+    void start_new_log(void);
 
 };
 
