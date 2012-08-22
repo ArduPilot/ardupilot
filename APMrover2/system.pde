@@ -107,9 +107,6 @@ static void init_ardupilot()
 						 "\n\nFree RAM: %u\n"),
                     memcheck_available_memory());
                     
-#if QUATERNION_ENABLE == ENABLED
-    Serial.printf_P(PSTR("Quaternion test\n"));
-#endif
 	//
 	// Initialize Wire and SPI libraries
 	//

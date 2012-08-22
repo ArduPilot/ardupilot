@@ -214,14 +214,10 @@ AP_GPS_None     g_gps_driver(NULL);
 #endif // CONFIG_IMU_TYPE
 AP_IMU_INS imu( &ins );
 
-#if QUATERNION_ENABLE == ENABLED
-  AP_AHRS_Quaternion ahrs(&imu, g_gps);
+#if DMP_ENABLED == ENABLED && CONFIG_APM_HARDWARE == APM_HARDWARE_APM2
+ AP_AHRS_MPU6000 ahrs(&imu, g_gps, &ins);		// only works with APM2
 #else
- #if DMP_ENABLED == ENABLED && CONFIG_APM_HARDWARE == APM_HARDWARE_APM2
-  AP_AHRS_MPU6000 ahrs(&imu, g_gps, &ins);		// only works with APM2
- #else
-  AP_AHRS_DCM ahrs(&imu, g_gps);
- #endif
+ AP_AHRS_DCM ahrs(&imu, g_gps);
 #endif
 
 #elif HIL_MODE == HIL_MODE_SENSORS

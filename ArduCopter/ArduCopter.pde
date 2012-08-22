@@ -268,14 +268,10 @@ AP_IMU_INS  imu(&ins);
 // a NULL GPS object pointer
 static GPS         *g_gps_null;
 
-#if QUATERNION_ENABLE == ENABLED
- AP_AHRS_Quaternion ahrs(&imu, g_gps_null);
-#else
- #if DMP_ENABLED == ENABLED && CONFIG_APM_HARDWARE == APM_HARDWARE_APM2
+#if DMP_ENABLED == ENABLED && CONFIG_APM_HARDWARE == APM_HARDWARE_APM2
   AP_AHRS_MPU6000  ahrs(&imu, g_gps, &ins);		// only works with APM2
- #else
+#else
   AP_AHRS_DCM ahrs(&imu, g_gps);
- #endif
 #endif
 
 AP_TimerProcess timer_scheduler;

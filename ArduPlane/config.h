@@ -834,11 +834,6 @@
 # define RESET_SWITCH_CHAN_PWM 1750
 #endif
 
-// experimental quaternion code
-#ifndef QUATERNION_ENABLE
-# define QUATERNION_ENABLE DISABLED
-#endif
-
 // experimental mpu6000 DMP code
 #ifndef DMP_ENABLED
 # define DMP_ENABLED DISABLED

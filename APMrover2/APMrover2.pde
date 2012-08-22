@@ -254,11 +254,7 @@ AP_GPS_None     g_gps_driver(NULL);
 #endif // CONFIG_IMU_TYPE
 AP_IMU_INS imu( &ins );
 
-#if QUATERNION_ENABLE == ENABLED
-  AP_AHRS_Quaternion ahrs(&imu, g_gps);
-#else
-  AP_AHRS_DCM  ahrs(&imu, g_gps);
-#endif
+AP_AHRS_DCM  ahrs(&imu, g_gps);
 
 #elif HIL_MODE == HIL_MODE_SENSORS
 // sensor emulators
