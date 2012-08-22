@@ -135,7 +135,8 @@ restart:
                 break;
             }
 
-            fix				= ((_buffer.msg.fix_type == FIX_3D) || (_buffer.msg.fix_type == FIX_3D_SBAS);
+            fix				= ((_buffer.msg.fix_type == FIX_3D) || 
+							   (_buffer.msg.fix_type == FIX_3D_SBAS));
             latitude		= _swapl(&_buffer.msg.latitude)  * 10;
             longitude		= _swapl(&_buffer.msg.longitude) * 10;
             altitude		= _swapl(&_buffer.msg.altitude);

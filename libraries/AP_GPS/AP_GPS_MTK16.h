@@ -40,7 +40,8 @@ private:
     enum diyd_mtk_fix_type {
         FIX_NONE = 1,
         FIX_2D = 2,
-        FIX_3D = 3
+        FIX_3D = 3,
+        FIX_3D_SBAS = 7
     };
 
     enum diyd_mtk_protocol_bytes {
