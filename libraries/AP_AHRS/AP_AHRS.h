@@ -58,6 +58,10 @@ public:
         _airspeed = airspeed;
     }
 
+    IMU*            get_imu() { 
+	    return _imu; 
+    }
+
     // Methods
     virtual void update(void) = 0;
 
@@ -70,6 +74,15 @@ public:
     int32_t roll_sensor;
     int32_t pitch_sensor;
     int32_t yaw_sensor;
+
+    float get_pitch_rate_earth(void) {
+	    Vector3f omega = get_gyro();
+	    return cos(roll) * omega.y - sin(roll) * omega.z;
+    }
+    float get_roll_rate_earth(void)  {
+	    Vector3f omega = get_gyro();
+	    return omega.x + tan(pitch)*(omega.y*sin(roll) + omega.z*cos(roll));
+    }
 
     // return a smoothed and corrected gyro vector
     virtual Vector3f get_gyro(void) = 0;
