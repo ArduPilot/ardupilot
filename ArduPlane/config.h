@@ -834,11 +834,6 @@
 # define RESET_SWITCH_CHAN_PWM 1750
 #endif
 
-// experimental mpu6000 DMP code
-#ifndef DMP_ENABLED
-# define DMP_ENABLED DISABLED
-#endif
-
 // OBC Failsafe enable
 #ifndef OBC_FAILSAFE
 # define OBC_FAILSAFE DISABLED
