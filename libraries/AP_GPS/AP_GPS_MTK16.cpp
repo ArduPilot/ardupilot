@@ -131,7 +131,8 @@ restart:
                 break;
             }
 
-            fix				= ((_buffer.msg.fix_type == FIX_3D) || (_buffer.msg.fix_type == FIX_3D_SBAS);
+            fix				= ((_buffer.msg.fix_type == FIX_3D) || 
+							   (_buffer.msg.fix_type == FIX_3D_SBAS));
             latitude		= _buffer.msg.latitude  * 10;	// XXX doc says *10e7 but device says otherwise
             longitude		= _buffer.msg.longitude * 10;	// XXX doc says *10e7 but device says otherwise
             altitude		= _buffer.msg.altitude;
