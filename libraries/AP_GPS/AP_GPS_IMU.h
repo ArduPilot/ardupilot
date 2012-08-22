@@ -18,7 +18,7 @@ public:
     int32_t roll_sensor;            // how much we're turning in deg * 100
     int32_t pitch_sensor;           // our angle of attack in deg * 100
     int16_t airspeed;
-    float   imu_health;
+    float imu_health;
     uint8_t imu_ok;
 
     // Unused
