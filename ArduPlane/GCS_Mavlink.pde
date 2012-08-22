@@ -301,7 +301,7 @@ static void NOINLINE send_servo_out(mavlink_channel_t chan)
         0,
         0,
         0,
-        receiver_rssi());
+        receiver_rssi);
 }
 
 static void NOINLINE send_radio_in(mavlink_channel_t chan)
@@ -318,7 +318,7 @@ static void NOINLINE send_radio_in(mavlink_channel_t chan)
         g.rc_6.radio_in,
         g.rc_7.radio_in,
         g.rc_8.radio_in,
-        receiver_rssi());
+        receiver_rssi);
 }
 
 static void NOINLINE send_radio_out(mavlink_channel_t chan)

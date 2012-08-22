@@ -462,6 +462,10 @@ static int16_t airspeed_nudge_cm;
 // 0-(throttle_max - throttle_cruise) : throttle nudge in Auto mode using top 1/2 of throttle stick travel
 static int16_t throttle_nudge = 0;
 
+// receiver RSSI
+static uint8_t receiver_rssi;
+
+
 ////////////////////////////////////////////////////////////////////////////////
 // Ground speed
 ////////////////////////////////////////////////////////////////////////////////
@@ -879,6 +883,8 @@ static void medium_loop()
             read_airspeed();
         }
 #endif
+
+        read_receiver_rssi();
 
         // Read altitude from sensors
         // ------------------
