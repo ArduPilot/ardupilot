@@ -52,6 +52,11 @@
 #include <AP_Airspeed.h>
 #include <memcheck.h>
 
+// optional new controller library
+#if APM_CONTROL == ENABLED
+#include <APM_Control.h>
+#endif
+
 // Configuration
 #include "config.h"
 
