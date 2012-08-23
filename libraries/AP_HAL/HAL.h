@@ -28,7 +28,8 @@ public:
         AP_HAL::Console*    _console,
         AP_HAL::GPIO*       _gpio,
         AP_HAL::PPMInput*   _ppmin,
-        AP_HAL::PWMOutput*  _pwmout)
+        AP_HAL::PWMOutput*  _pwmout,
+        AP_HAL::Scheduler*  _scheduler)
         :
         uart0(_uart0),
         uart1(_uart1),
@@ -42,7 +43,8 @@ public:
         console(_console),
         gpio(_gpio),
         ppmin(_ppmin),
-        pwmout(_pwmout)
+        pwmout(_pwmout),
+        scheduler(_scheduler)
     {}
 
     virtual void init(void* opts) const = 0;
@@ -60,6 +62,7 @@ public:
     AP_HAL::GPIO*       gpio;
     AP_HAL::PPMInput*   ppmin;
     AP_HAL::PWMOutput*  pwmout;
+    AP_HAL::Scheduler*  scheduler;
 };
 
 #endif // __AP_HAL_HAL_H__

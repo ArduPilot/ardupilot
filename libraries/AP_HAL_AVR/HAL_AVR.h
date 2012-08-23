@@ -24,10 +24,12 @@ public:
         AP_HAL::Console*    _console,
         AP_HAL::GPIO*       _gpio,
         AP_HAL::PPMInput*   _ppmin,
-        AP_HAL::PWMOutput*  _pwmout)
+        AP_HAL::PWMOutput*  _pwmout,
+        AP_HAL::Scheduler*  _scheduler)
         : AP_HAL::HAL(  _uart0, _uart1, _uart2, _uart3,
                         _i2c, _spi, _analogIn, _storage,
-                        _log, _console, _gpio, _ppmin, _pwmout) {}
+                        _log, _console, _gpio, _ppmin,
+                        _pwmout, _scheduler) {}
 
     void init(void* opts) const;
 };

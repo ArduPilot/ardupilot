@@ -15,6 +15,7 @@
 #include "GPIO.h"
 #include "PPMInput.h"
 #include "PWMOutput.h"
+#include "Scheduler.h"
 
 #include "utility/Print.h"
 #include "utility/Stream.h"

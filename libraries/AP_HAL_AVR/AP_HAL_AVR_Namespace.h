@@ -18,6 +18,7 @@ namespace AP_HAL_AVR {
     class APM2PPMInput;
     class APM1PWMOutput;
     class APM2PWMOutput;
+    class ArduinoScheduler;
 }
 
 #endif //__AP_HAL_AVR_NAMESPACE_H__

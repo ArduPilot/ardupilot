@@ -14,6 +14,7 @@
 #include "GPIO.h"
 #include "PPMInput.h"
 #include "PWMOutput.h"
+#include "Scheduler.h"
 
 using namespace AP_HAL;
 using namespace AP_HAL_AVR;
@@ -39,6 +40,7 @@ static APM1PPMInput     apm1PPMInput;
 static APM2PPMInput     apm2PPMInput;
 static APM1PWMOutput    apm1PWMOutput;
 static APM2PWMOutput    apm2PWMOutput;
+static ArduinoScheduler arduinoScheduler;
 
 const HAL_AVR AP_HAL_AVR_APM1(
         (UARTDriver*) &avrUart0Driver,
@@ -53,7 +55,8 @@ const HAL_AVR AP_HAL_AVR_APM1(
         &avrUartConsole,
         &arduinoGPIO,
         &apm1PPMInput,
-        &apm1PWMOutput );
+        &apm1PWMOutput,
+        &arduinoScheduler );
 
 const HAL_AVR AP_HAL_AVR_APM2(
         (UARTDriver*) &avrUart0Driver,
@@ -68,5 +71,6 @@ const HAL_AVR AP_HAL_AVR_APM2(
         &avrUartConsole,
         &arduinoGPIO,
         &apm2PPMInput,
-        &apm2PWMOutput );
+        &apm2PWMOutput,
+        &arduinoScheduler );
 

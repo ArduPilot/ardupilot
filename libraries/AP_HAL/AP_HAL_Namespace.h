@@ -18,6 +18,7 @@ namespace AP_HAL {
     class GPIO;
     class PPMInput;
     class PWMOutput;
+    class Scheduler;
 
     class EmptyUARTDriver;
 
