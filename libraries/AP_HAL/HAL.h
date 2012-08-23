@@ -45,6 +45,8 @@ public:
         pwmout(_pwmout)
     {}
 
+    virtual void init(void* opts) const = 0;
+
     AP_HAL::UARTDriver* uart0;
     AP_HAL::UARTDriver* uart1;
     AP_HAL::UARTDriver* uart2;
