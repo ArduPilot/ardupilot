@@ -1,0 +1,7 @@
+
+This is a quick test app based on the Arduino LiquidCrystal library,
+modified to use an AP_HAL instead of the Arduino core.
+
+I tested it with a Freetronics 16x2 LCD shield v2 on an Arduino Mega 2560.
+
+Pat Hickey, 23 Aug 2012
