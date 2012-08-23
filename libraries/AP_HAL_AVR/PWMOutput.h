@@ -3,6 +3,7 @@
 #define __AP_HAL_AVR_PWM_OUTPUT_H__
 
 #include <AP_HAL.h>
+#include "AP_HAL_AVR_Namespace.h"
 
 class AP_HAL_AVR::APM1PWMOutput : public AP_HAL::PWMOutput {
 public:

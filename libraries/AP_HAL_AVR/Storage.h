@@ -4,6 +4,7 @@
 #define __AP_HAL_AVR_STORAGE_H__
 
 #include <AP_HAL.h>
+#include "AP_HAL_AVR_Namespace.h"
 
 class AP_HAL_AVR::AVREEPROMStorage : public AP_HAL::Storage {
 public:

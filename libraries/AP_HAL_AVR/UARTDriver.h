@@ -3,6 +3,9 @@
 #define __AP_HAL_AVR_UART_DRIVER_H__
 
 #include <stdint.h>
+#include <stdarg.h>
+
+#include <avr/interrupt.h>
 
 #include <AP_Common.h>
 #include <AP_HAL.h>
