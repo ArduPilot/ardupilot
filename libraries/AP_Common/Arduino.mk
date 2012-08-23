@@ -228,7 +228,7 @@ endif
 #
 # Tool options
 #
-DEFINES			=	-DF_CPU=$(F_CPU) -DARDUINO=$(ARDUINO_VERS) $(EXTRAFLAGS)
+DEFINES			=	-DF_CPU=$(F_CPU) -DARDUINO=$(ARDUINO_VERS) $(EXTRAFLAGS) 
 OPTFLAGS		=	-Os -Wformat -Wall -Wshadow -Wpointer-arith -Wcast-align -Wwrite-strings -Wformat=2 -Wno-reorder
 DEPFLAGS		=	-MD -MT $@
 
@@ -385,8 +385,9 @@ CORELIBOBJS		:=	$(subst $(CORESRC_DIR),$(BUILDROOT)/$(HARDWARE),$(CORESRCS))
 CORELIBOBJS		:=	$(addsuffix .o,$(basename $(CORELIBOBJS)))
 else
 #if EXCLUDE_CORE is nonempty (true), set COREINCLUDES and CORELIBOBJS to empty
-COREINCLUDES =
+COREINCLUDES :=
 CORELIBOBJS := 
+EXTRAFLAGS := -DEXCLUDECORE
 endif
 
 ################################################################################
