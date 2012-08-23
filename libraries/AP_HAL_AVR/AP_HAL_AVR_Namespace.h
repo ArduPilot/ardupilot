@@ -3,6 +3,8 @@
 #define __AP_HAL_AVR_NAMESPACE_H__
 
 namespace AP_HAL_AVR {
+    class HAL_AVR;
+
     class AVRUARTDriver;
     class AVRI2CDriver;
     class ArduinoSPIDriver;

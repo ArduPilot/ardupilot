@@ -3,6 +3,7 @@
 #include "AP_HAL_AVR.h"
 
 /* Include AVR-specific implementations of the HAL classes */
+#include "HAL_AVR.h"
 #include "UARTDriver.h"
 #include "I2CDriver.h"
 #include "SPIDriver.h"
@@ -39,7 +40,7 @@ static APM2PPMInput     apm2PPMInput;
 static APM1PWMOutput    apm1PWMOutput;
 static APM2PWMOutput    apm2PWMOutput;
 
-const HAL AP_HAL_AVR_APM1(
+const HAL_AVR AP_HAL_AVR_APM1(
         (UARTDriver*) &avrUart0Driver,
         (UARTDriver*) &avrUart1Driver,
         (UARTDriver*) &avrUart2Driver,
@@ -54,7 +55,7 @@ const HAL AP_HAL_AVR_APM1(
         &apm1PPMInput,
         &apm1PWMOutput );
 
-const HAL AP_HAL_AVR_APM2(
+const HAL_AVR AP_HAL_AVR_APM2(
         (UARTDriver*) &avrUart0Driver,
         (UARTDriver*) &avrUart1Driver,
         (UARTDriver*) &avrUart2Driver,

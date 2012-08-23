@@ -3,6 +3,7 @@
 #define __AP_HAL_AVR_H__
 
 #include <AP_HAL.h>
+#include "HAL_AVR.h"
 
 /**
  * This module exports AP_HAL instances only.
@@ -10,8 +11,8 @@
  * and not expose implementation details.
  */
 
-extern const AP_HAL::HAL AP_HAL_AVR_APM1;
-extern const AP_HAL::HAL AP_HAL_AVR_APM2;
+extern const AP_HAL_AVR::HAL_AVR AP_HAL_AVR_APM1;
+extern const AP_HAL_AVR::HAL_AVR AP_HAL_AVR_APM2;
 
 #endif // __AP_HAL_AVR_H__
 
