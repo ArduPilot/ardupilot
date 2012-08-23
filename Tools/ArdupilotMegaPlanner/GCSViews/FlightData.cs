@@ -2020,6 +2020,8 @@ print 'Roll complete'
 
                 MainV2.config["mjpeg_url"] = url;
 
+                Utilities.CaptureMJPEG.Stop();
+
                 Utilities.CaptureMJPEG.URL = url;
 
                 Utilities.CaptureMJPEG.OnNewImage += new EventHandler(CaptureMJPEG_OnNewImage);

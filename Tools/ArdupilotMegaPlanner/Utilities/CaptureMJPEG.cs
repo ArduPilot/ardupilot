@@ -26,7 +26,7 @@ namespace ArdupilotMega.Utilities
 
         public static void runAsync()
         {
-            while (running && asyncthread != null && asyncthread.IsAlive)
+            while (asyncthread != null && asyncthread.IsAlive)
             {
                 running = false;
             }
@@ -44,6 +44,22 @@ namespace ArdupilotMega.Utilities
         public static void Stop()
         {
             running = false;
+        }
+
+        public static string ReadLine(BinaryReader br)
+        {
+            StringBuilder sb = new StringBuilder();
+
+            while (true) {
+                byte by = br.ReadByte();
+                sb.Append((char)by);
+                if (by == '\n')
+                    break;
+            }
+
+            sb = sb.Replace("\r\n", "");
+
+            return sb.ToString();
         }
 
         static void getUrl()
@@ -69,21 +85,37 @@ namespace ArdupilotMega.Utilities
             // Get the stream containing content returned by the server.
             Stream dataStream = response.GetResponseStream();
 
-            StreamReader sr = new StreamReader(dataStream);
+            BinaryReader br = new BinaryReader(dataStream);
 
             // get boundary header
+            
             string mpheader = response.Headers["Content-Type"];
-            int startboundary = mpheader.IndexOf("boundary=") + 9;
-            int endboundary = mpheader.Length;
+            if (mpheader.IndexOf("boundary=") == -1) {
+                ReadLine(br); // this is a blank line
+                string line = "proxyline";
+                while (line.Length > 2)
+                {
+                    line = ReadLine(br);
+                    if (line.StartsWith("--")) {
+                        mpheader = line;
+                        break;
+                    }
+                }
+            }
+            else
+            {
+                int startboundary = mpheader.IndexOf("boundary=") + 9;
+                int endboundary = mpheader.Length;
 
-            mpheader = mpheader.Substring(startboundary, endboundary - startboundary);
+                mpheader = mpheader.Substring(startboundary, endboundary - startboundary);
+            }
 
             while (running)
             {
                 try
                 {
                     // get the multipart start header
-                    int length = int.Parse(getHeader(sr)["Content-Length"]);
+                    int length = int.Parse(getHeader(br)["Content-Length"]);
 
                     // read boundary header
                     if (length > 0)
@@ -95,13 +127,26 @@ namespace ArdupilotMega.Utilities
                         int offset = 0;
                         int len = 0;
 
-                        while ((len = dataStream.Read(buf1, offset, length)) > 0)
+                        while ((len = br.Read(buf1, offset, length)) > 0)
                         {
                             offset += len;
                             length -= len;
+                        
                         }
+                        /*
+                        BinaryWriter sw = new BinaryWriter(File.OpenWrite("test.jpg"));
 
-                        frame = new Bitmap(new MemoryStream(buf1));
+                        sw.Write(buf1,0,buf1.Length);
+
+                        sw.Close();
+                        */
+                        try
+                        {
+
+                            frame = new Bitmap(new MemoryStream(buf1));
+
+                        }
+                        catch {  }
 
                         fps++;
 
@@ -117,7 +162,7 @@ namespace ArdupilotMega.Utilities
                     }
 
                     // blank line at end of data
-                    sr.ReadLine();
+                    ReadLine(br);
                 }
                 catch (Exception ex) { log.Info(ex); break; }
             }
@@ -138,7 +183,7 @@ namespace ArdupilotMega.Utilities
         
         }
 
-        static Dictionary<string, string> getHeader(StreamReader stream)
+        static Dictionary<string, string> getHeader(BinaryReader stream)
         {
             Dictionary<string, string> answer = new Dictionary<string, string>();
 
@@ -146,7 +191,7 @@ namespace ArdupilotMega.Utilities
 
             do
             {
-                line = stream.ReadLine();
+                line = ReadLine(stream);
 
                 string[] items = line.Split(new char[] { ':' }, StringSplitOptions.RemoveEmptyEntries);
 
