@@ -8,11 +8,15 @@
 //
 
 #include <stdlib.h>
+#include <stdint.h>
 #include "c++.h"
+
+#ifndef EXCLUDECORE
 #if defined(ARDUINO) && ARDUINO >= 100
  #include "Arduino.h"
 #else
  #include "WProgram.h"
+#endif
 #endif
 
 void * operator new(size_t size)
@@ -32,8 +36,10 @@ extern "C" void __cxa_pure_virtual()
 {
     while (1)
     {
+#ifndef EXCLUDECORE
         Serial.println("Error: pure virtual call");
         delay(1000);
+#endif
     }
 }
 
@@ -74,8 +80,10 @@ void displayMemory()
     static int minMemFree=0;
     if (minMemFree<=0 || freeMemory()<minMemFree) {
         minMemFree = freeMemory();
+#ifndef EXCLUDECORE
         Serial.print("bytes free: ");
         Serial.println(minMemFree);
+#endif
     }
 }
 

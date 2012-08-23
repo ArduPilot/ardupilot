@@ -15,6 +15,10 @@
 #ifndef _AP_COMMON_H
 #define _AP_COMMON_H
 
+#include <string.h>
+#include <avr/pgmspace.h>
+
+#ifndef EXCLUDECORE
 // Get the common arduino functions
 #if defined(ARDUINO) && ARDUINO >= 100
  #include "Arduino.h"
@@ -24,6 +28,7 @@
 // ... and remove some of their stupid macros
 #undef round
 #undef abs
+#endif
 
 // prog_char_t is used as a wrapper type for prog_char, which is
 // a character stored in flash. By using this wrapper type we can
