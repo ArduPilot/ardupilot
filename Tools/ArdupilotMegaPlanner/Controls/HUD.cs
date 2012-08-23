@@ -286,7 +286,9 @@ namespace ArdupilotMega.Controls
             //GL.Enable(EnableCap.AlphaTest)
 
            // Console.WriteLine("hud paint");
-            
+
+           // Console.WriteLine("ms " + (DateTime.Now.Millisecond));
+
             if (!started)
                 return;
 

@@ -122,6 +122,7 @@
             this.autoWPToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.createWpCircleToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.gridToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.gridV2ToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.mapToolToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.ContextMeasure = new System.Windows.Forms.ToolStripMenuItem();
             this.rotateMapToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
@@ -591,7 +592,6 @@
             this.comboBoxMapType.FormattingEnabled = true;
             this.comboBoxMapType.Name = "comboBoxMapType";
             this.toolTip1.SetToolTip(this.comboBoxMapType, resources.GetString("comboBoxMapType.ToolTip"));
-            this.comboBoxMapType.SelectedIndexChanged += new System.EventHandler(this.comboBoxMapType_SelectedValueChanged);
             // 
             // panelMap
             // 
@@ -836,7 +836,8 @@
             // 
             this.autoWPToolStripMenuItem.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] {
             this.createWpCircleToolStripMenuItem,
-            this.gridToolStripMenuItem});
+            this.gridToolStripMenuItem,
+            this.gridV2ToolStripMenuItem});
             this.autoWPToolStripMenuItem.Name = "autoWPToolStripMenuItem";
             resources.ApplyResources(this.autoWPToolStripMenuItem, "autoWPToolStripMenuItem");
             // 
@@ -851,6 +852,12 @@
             this.gridToolStripMenuItem.Name = "gridToolStripMenuItem";
             resources.ApplyResources(this.gridToolStripMenuItem, "gridToolStripMenuItem");
             this.gridToolStripMenuItem.Click += new System.EventHandler(this.gridToolStripMenuItem_Click);
+            // 
+            // gridV2ToolStripMenuItem
+            // 
+            this.gridV2ToolStripMenuItem.Name = "gridV2ToolStripMenuItem";
+            resources.ApplyResources(this.gridV2ToolStripMenuItem, "gridV2ToolStripMenuItem");
+            this.gridV2ToolStripMenuItem.Click += new System.EventHandler(this.gridV2ToolStripMenuItem_Click);
             // 
             // mapToolToolStripMenuItem
             // 
@@ -1105,5 +1112,6 @@
         private System.Windows.Forms.ToolStripMenuItem saveWPFileToolStripMenuItem;
         private System.Windows.Forms.ToolStripMenuItem trackerHomeToolStripMenuItem;
         private System.Windows.Forms.ToolStripMenuItem flyToHereToolStripMenuItem;
+        private System.Windows.Forms.ToolStripMenuItem gridV2ToolStripMenuItem;
     }
 }

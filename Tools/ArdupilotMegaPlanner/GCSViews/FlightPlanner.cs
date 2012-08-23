@@ -343,9 +343,8 @@ namespace ArdupilotMega.GCSViews
             }
             // creating a WP
 
-            Commands.Rows.Add();
-            selectedrow = Commands.RowCount - 1;
-            Commands.CurrentCell = Commands.Rows[selectedrow].Cells[Param1.Index];
+            selectedrow = Commands.Rows.Add();
+         //   Commands.CurrentCell = Commands.Rows[selectedrow].Cells[Param1.Index];
 
             setfromGE(lat, lng, alt);
         }
@@ -568,14 +567,14 @@ namespace ArdupilotMega.GCSViews
 
             if (Commands.RowCount <= 1)
             {
-                Commands.Rows.Add();
+                selectedrow = Commands.Rows.Add();
             }
             else
             {
                 if (Commands.RowCount == selectedrow + 1)
                 {
                     DataGridViewRow temp = Commands.Rows[selectedrow];
-                    Commands.Rows.Add();
+                    selectedrow = Commands.Rows.Add();
                 }
                 else
                 {
@@ -1425,7 +1424,7 @@ namespace ArdupilotMega.GCSViews
                     break;
                 if (i + 1 >= Commands.Rows.Count)
                 {
-                    Commands.Rows.Add();
+                    selectedrow = Commands.Rows.Add();
                 }
                 //if (i == 0 && temp.alt == 0) // skip 0 home
                   //  continue;
@@ -2236,7 +2235,13 @@ namespace ArdupilotMega.GCSViews
 
         private void comboBoxMapType_SelectedValueChanged(object sender, EventArgs e)
         {
-
+            try
+            {
+                MainMap.MapType = (MapType)comboBoxMapType.SelectedItem;
+                FlightData.mymap.MapType = (MapType)comboBoxMapType.SelectedItem;
+                MainV2.config["MapType"] = comboBoxMapType.Text;
+            }
+            catch { CustomMessageBox.Show("Map change failed. try zomming out first."); }
         }
 
         private void Commands_EditingControlShowing(object sender, DataGridViewEditingControlShowingEventArgs e)
@@ -2554,9 +2559,12 @@ namespace ArdupilotMega.GCSViews
 
         private void clearMissionToolStripMenuItem_Click(object sender, EventArgs e)
         {
+            quickadd = true;
+
             while (Commands.Rows.Count > 0)
                 Commands.Rows.RemoveAt(0);
             selectedrow = 0;
+            quickadd = false;
             writeKML();
         }
 
@@ -2578,13 +2586,13 @@ namespace ArdupilotMega.GCSViews
             string repeat = "5";
             Common.InputBox("Jump repeat", "Number of times to Repeat", ref repeat);
 
-            int row = Commands.Rows.Add();
+            selectedrow = Commands.Rows.Add();
 
-            Commands.Rows[row].Cells[Command.Index].Value = MAVLink.MAV_CMD.DO_JUMP.ToString();
+            Commands.Rows[selectedrow].Cells[Command.Index].Value = MAVLink.MAV_CMD.DO_JUMP.ToString();
 
-            Commands.Rows[row].Cells[Param1.Index].Value = 1;
+            Commands.Rows[selectedrow].Cells[Param1.Index].Value = 1;
 
-            Commands.Rows[row].Cells[Param2.Index].Value = repeat;
+            Commands.Rows[selectedrow].Cells[Param2.Index].Value = repeat;
 
             writeKML();
         }
@@ -2596,13 +2604,13 @@ namespace ArdupilotMega.GCSViews
             string repeat = "5";
             Common.InputBox("Jump repeat", "Number of times to Repeat", ref repeat);
 
-            int row = Commands.Rows.Add();
+            selectedrow = Commands.Rows.Add();
 
-            Commands.Rows[row].Cells[Command.Index].Value = MAVLink.MAV_CMD.DO_JUMP.ToString();
+            Commands.Rows[selectedrow].Cells[Command.Index].Value = MAVLink.MAV_CMD.DO_JUMP.ToString();
 
-            Commands.Rows[row].Cells[Param1.Index].Value = wp;
+            Commands.Rows[selectedrow].Cells[Param1.Index].Value = wp;
 
-            Commands.Rows[row].Cells[Param2.Index].Value = repeat;
+            Commands.Rows[selectedrow].Cells[Param2.Index].Value = repeat;
 
             writeKML();
         }
@@ -3184,6 +3192,382 @@ namespace ArdupilotMega.GCSViews
             writeKML();
         }
 
+        public struct linelatlng
+        {
+            public PointLatLng p1;
+            public PointLatLng p2;
+            // used as a base for grid along line
+            public PointLatLng basepnt;
+        }
+
+        private void gridv2()
+        {
+            polygongridmode = false;
+
+            if (drawnpolygon == null || drawnpolygon.Points.Count == 0)
+            {
+                CustomMessageBox.Show("Right click the map to draw a polygon", "Area", MessageBoxButtons.OK, MessageBoxIcon.Exclamation);
+                return;
+            }
+
+            // ensure points/latlong are current
+            MainMap.Zoom = (int)MainMap.Zoom;
+
+            MainMap.Refresh();
+
+            GMapPolygon area = drawnpolygon;
+            if (area.Points[0] != area.Points[area.Points.Count - 1])
+                area.Points.Add(area.Points[0]); // make a full loop
+            RectLatLng arearect = getPolyMinMax(area);
+            if (area.Distance > 0)
+            {
+
+                PointLatLng topright = new PointLatLng(arearect.LocationTopLeft.Lat, arearect.LocationRightBottom.Lng);
+                PointLatLng bottomleft = new PointLatLng(arearect.LocationRightBottom.Lat, arearect.LocationTopLeft.Lng);
+
+                double diagdist = MainMap.Manager.GetDistance(arearect.LocationTopLeft, arearect.LocationRightBottom) * 1000;
+                double heightdist = MainMap.Manager.GetDistance(arearect.LocationTopLeft, bottomleft) * 1000;
+                double widthdist = MainMap.Manager.GetDistance(arearect.LocationTopLeft, topright) * 1000;
+
+                string alt = (100 * MainV2.cs.multiplierdist).ToString("0");
+                Common.InputBox("Altitude", "Relative Altitude", ref alt);
+
+                string distance = (50 * MainV2.cs.multiplierdist).ToString("0");
+                Common.InputBox("Distance", "Distance between lines", ref distance);
+
+                string wpevery = (40 * MainV2.cs.multiplierdist).ToString("0");
+                Common.InputBox("Every", "Put a WP every x distance (-1 for none)", ref wpevery);
+
+                string angle = (90).ToString("0");
+                Common.InputBox("Angle", "Enter the line direction (0-90)", ref angle);
+
+                double tryme = 0;
+
+                if (!double.TryParse(angle, out tryme))
+                {
+                    CustomMessageBox.Show("Invalid Angle");
+                    return;
+                }
+                if (!double.TryParse(alt, out tryme))
+                {
+                    CustomMessageBox.Show("Invalid Alt");
+                    return;
+                }
+                if (!double.TryParse(distance, out tryme))
+                {
+                    CustomMessageBox.Show("Invalid Distance");
+                    return;
+                }
+                if (!double.TryParse(wpevery, out tryme))
+                {
+                    CustomMessageBox.Show("Invalid Waypoint spacing");
+                    return;
+                }
+
+                // get x y components
+                double y1 = Math.Cos((double.Parse(angle)) * deg2rad); // needs to mod for long scale
+                double x1 = Math.Sin((double.Parse(angle)) * deg2rad);
+
+                // get x y step amount in lat lng from m
+                double latdiff = arearect.HeightLat / ((heightdist / (double.Parse(distance) * (x1) / MainV2.cs.multiplierdist)));
+                double lngdiff = arearect.WidthLng / ((widthdist / (double.Parse(distance) * (y1) / MainV2.cs.multiplierdist)));
+
+                double latlngdiff = Math.Sqrt(latdiff * latdiff + lngdiff * lngdiff);
+
+                double latlngdiff2 = Math.Sqrt(arearect.HeightLat * arearect.HeightLat + arearect.WidthLng * arearect.WidthLng);
+
+                double fulllatdiff = arearect.HeightLat * x1 * 2;
+                double fulllngdiff = arearect.WidthLng * y1 * 2;
+
+                int altitude = (int)(double.Parse(alt) / MainV2.cs.multiplierdist);
+
+                // draw a grid
+                double x = bottomleft.Lng - 0.00001;
+                double y = bottomleft.Lat;
+
+                newpos(ref y, ref x, double.Parse(angle) - 90, diagdist);
+
+
+                List<linelatlng> grid = new List<linelatlng>();
+
+                int lines = 0;
+
+                y1 = Math.Cos((double.Parse(angle) + 90) * deg2rad); // needs to mod for long scale
+                x1 = Math.Sin((double.Parse(angle) + 90) * deg2rad);
+
+                // get x y step amount in lat lng from m
+                latdiff = arearect.HeightLat / ((heightdist / (double.Parse(distance) * (y1) / MainV2.cs.multiplierdist)));
+                lngdiff = arearect.WidthLng / ((widthdist / (double.Parse(distance) * (x1) / MainV2.cs.multiplierdist)));
+
+                quickadd = true;
+
+                while (lines * double.Parse(distance) < diagdist * 3) //x < topright.Lat && y < topright.Lng)
+                {
+                    //callMe(y, x, 0);
+                    double nx = x;
+                    double ny = y;
+                    newpos(ref ny, ref nx, double.Parse(angle), diagdist);
+
+                    //callMe(ny, nx, 0);
+
+                    linelatlng line = new linelatlng();
+                    line.p1 = new PointLatLng(y, x);
+                    line.p2 = new PointLatLng(ny, nx);
+                    line.basepnt = new PointLatLng(y, x);
+                    grid.Add(line);
+
+                    x += lngdiff;
+                    y += latdiff;
+                    lines++;
+                }
+
+               // callMe(x, y, 0);
+
+                quickadd = false;
+
+               // return;
+
+                // find intersections
+                List<linelatlng> remove = new List<linelatlng>();
+
+                int gridno = grid.Count;
+
+                for (int a = 0; a < gridno; a++)
+                {
+                    double noc = double.MaxValue;
+                    double nof = double.MinValue;
+
+                    PointLatLng closestlatlong = PointLatLng.Zero;
+                    PointLatLng farestlatlong = PointLatLng.Zero;
+
+                    List<PointLatLng> matchs = new List<PointLatLng>();
+                    
+                    int b = -1;
+                    int crosses = 0;
+                    PointLatLng newlatlong = PointLatLng.Zero;
+                    foreach (PointLatLng pnt in area.Points)
+                    {
+                        b++;
+                        if (b == 0)
+                        {
+                            continue;
+                        }
+                        newlatlong = FindLineIntersection(area.Points[b - 1], area.Points[b], grid[a].p1, grid[a].p2);
+                        if (!newlatlong.IsZero)
+                        {
+                            crosses++;
+                            matchs.Add(newlatlong);
+                            if (noc > MainMap.Manager.GetDistance(grid[a].p1, newlatlong))
+                            {
+                                closestlatlong.Lat = newlatlong.Lat;
+                                closestlatlong.Lng = newlatlong.Lng;
+                                noc = MainMap.Manager.GetDistance(grid[a].p1, newlatlong);
+                            }
+                            if (nof < MainMap.Manager.GetDistance(grid[a].p1, newlatlong))
+                            {
+                                farestlatlong.Lat = newlatlong.Lat;
+                                farestlatlong.Lng = newlatlong.Lng;
+                                nof = MainMap.Manager.GetDistance(grid[a].p1, newlatlong);
+                            }
+                        }
+                    }
+                    if (crosses == 0)
+                    {
+                        if (!PointInPolygon(grid[a].p1, area.Points) && !PointInPolygon(grid[a].p2, area.Points))
+                            remove.Add(grid[a]);
+                    }
+                    else if (crosses == 1)
+                    {
+
+                    }
+                    else if (crosses == 2)
+                    {
+                        linelatlng line = grid[a];
+                        line.p1 = closestlatlong;
+                        line.p2 = farestlatlong;
+                        grid[a] = line;
+                    }/*
+                    else if (crosses == 4)
+                    {
+                        linelatlng line = grid[a];
+                        line.p1 = closestlatlong;
+
+                        PointLatLng far = farestlatlong;
+
+                        matchs.Remove(closestlatlong);
+                        matchs.Remove(farestlatlong);
+
+                        farestlatlong = findClosestPoint(line.p1, matchs);
+
+                        matchs.Remove(farestlatlong);
+
+                        line.p2 = farestlatlong;
+                        grid[a] = line;
+
+                        grid.Add(new linelatlng() { p1 = matchs[0], p2 = far, basepnt = line.basepnt });
+
+                    }*/
+                    else
+                    {
+                        linelatlng line = grid[a];
+                        remove.Add(line);
+                        /*
+                        // set new start point
+                        line.p1 = findClosestPoint(line.basepnt, matchs); ;
+                        matchs.Remove(line.p1);
+
+                        line.p2 = findClosestPoint(line.basepnt, matchs);
+                        matchs.Remove(line.p2);
+
+                        grid[a] = line;
+
+                        callMe(line.basepnt.Lat, line.basepnt.Lng, altitude);
+                        callMe(line.p1.Lat, line.p1.Lng, altitude);
+                        callMe(line.p2.Lat, line.p2.Lng, altitude);
+
+                        continue;
+                        */
+
+                        while (matchs.Count > 1)
+                        {
+                            linelatlng newline = new linelatlng();
+
+                            closestlatlong = findClosestPoint(closestlatlong, matchs);
+                            newline.p1 = closestlatlong;
+                            matchs.Remove(closestlatlong);
+
+                            closestlatlong = findClosestPoint(closestlatlong, matchs);
+                            newline.p2 = closestlatlong;
+                            matchs.Remove(closestlatlong);
+
+                            newline.basepnt = line.basepnt;
+
+                            grid.Add(newline);
+                        }
+                        if (a > 150)
+                            break;
+                    }
+                }
+
+               // return;
+
+                foreach (linelatlng line in remove)
+                {
+                     grid.Remove(line);
+                }
+
+                quickadd = true;
+
+                linelatlng closest = findClosestLine(MainV2.cs.HomeLocation.Point(),grid);
+
+                PointLatLng lastpnt = closest.p1;
+
+                while (grid.Count > 0)
+                {
+                    if (MainMap.Manager.GetDistance(closest.p1, lastpnt) < MainMap.Manager.GetDistance(closest.p2, lastpnt))
+                    {
+                        callMe(closest.p1.Lat, closest.p1.Lng, altitude);
+
+                        if (double.Parse(wpevery) > 0)
+                        {
+                            for (int d = (int)(double.Parse(wpevery) - ((MainMap.Manager.GetDistance(closest.basepnt, closest.p1) * 1000) % double.Parse(wpevery))); d < (MainMap.Manager.GetDistance(closest.p1, closest.p2) * 1000); d += (int)double.Parse(wpevery))
+                            {
+                                double ax = closest.p1.Lat;
+                                double ay = closest.p1.Lng;
+
+                                newpos(ref ax, ref ay, double.Parse(angle), d);
+                                callMe(ax, ay, altitude);
+                            }
+                        }
+
+                        callMe(closest.p2.Lat, closest.p2.Lng, altitude);
+
+                        lastpnt = closest.p2;
+
+                        grid.Remove(closest);
+                        if (grid.Count == 0)
+                            break;
+                        closest = findClosestLine(closest.p2, grid);
+                    }
+                    else
+                    {
+                        callMe(closest.p2.Lat, closest.p2.Lng, altitude);
+
+                        if (double.Parse(wpevery) > 0)
+                        {
+                            for (int d = (int)((MainMap.Manager.GetDistance(closest.basepnt, closest.p2) * 1000) % double.Parse(wpevery)); d < (MainMap.Manager.GetDistance(closest.p1, closest.p2) * 1000); d += (int)double.Parse(wpevery))
+                            {
+                                double ax = closest.p2.Lat;
+                                double ay = closest.p2.Lng;
+
+                                newpos(ref ax, ref ay, double.Parse(angle), -d);
+                                callMe(ax, ay, altitude);
+                            }
+                        }
+
+                        callMe(closest.p1.Lat, closest.p1.Lng, altitude);
+
+                        lastpnt = closest.p1;
+
+                        grid.Remove(closest);
+                        if (grid.Count == 0)
+                            break;
+                        closest = findClosestLine(closest.p1, grid);
+                    }
+                } 
+
+                foreach (linelatlng line in grid)
+                {
+                  //  callMe(line.p1.Lat, line.p1.Lng, 0);
+                  //  callMe(line.p2.Lat, line.p2.Lng, 0);
+                }
+
+                quickadd = false;
+
+                writeKML();
+            }
+        }
+
+        PointLatLng findClosestPoint(PointLatLng start, List<PointLatLng> list)
+        {
+            PointLatLng answer = PointLatLng.Zero;
+            double currentbest = double.MaxValue;
+
+            foreach (PointLatLng pnt in list)
+            {
+                double dist1 = MainMap.Manager.GetDistance(start, pnt);
+
+                if (dist1 < currentbest)
+                {
+                    answer = pnt;
+                    currentbest = dist1;
+                }
+            }
+
+            return answer;
+        }
+
+        linelatlng findClosestLine(PointLatLng start, List<linelatlng> list)
+        {
+            linelatlng answer = list[0];
+            double shortest = double.MaxValue;
+
+            foreach (linelatlng line in list)
+            {
+                double ans1 = MainMap.Manager.GetDistance(start, line.p1);
+                double ans2 = MainMap.Manager.GetDistance(start, line.p2);
+                PointLatLng shorterpnt = ans1 < ans2 ? line.p1 : line.p2;
+
+                if (shortest > MainMap.Manager.GetDistance(start, shorterpnt))
+                {
+                    answer = line;
+                    shortest = MainMap.Manager.GetDistance(start, shorterpnt);
+                }
+            }
+
+            return answer;
+        }
+
         private void gridToolStripMenuItem_Click(object sender, EventArgs e)
         {
             polygongridmode = false;
@@ -3289,6 +3673,8 @@ namespace ArdupilotMega.GCSViews
                 //return;
 
                 log.InfoFormat("{0} < {1} {2} < {3}", x, (topright.Lat), y, (topright.Lng));
+
+                quickadd = true;
 
                 while (x < (topright.Lat + Math.Abs(latlngdiff)) && y < (topright.Lng + Math.Abs(latlngdiff)))
                 {
@@ -3450,10 +3836,54 @@ namespace ArdupilotMega.GCSViews
 
                 //drawnpolygon.Points.Clear();
                 //drawnpolygons.Markers.Clear();
+                quickadd = false;
+                writeKML();
                 MainMap.Refresh();
 
             }
+
         }
+
+        bool PointInPolygon(PointLatLng p, List<PointLatLng> poly)
+        {
+            PointLatLng p1, p2;
+            bool inside = false;
+
+            if (poly.Count < 3)
+            {
+                return inside;
+            }
+            PointLatLng oldPoint = new PointLatLng(
+
+            poly[poly.Count - 1].Lat, poly[poly.Count - 1].Lng);
+
+            for (int i = 0; i < poly.Count; i++)
+            {
+
+                PointLatLng newPoint = new PointLatLng(poly[i].Lat, poly[i].Lng);
+
+                if (newPoint.Lat > oldPoint.Lat)
+                {
+                    p1 = oldPoint;
+                    p2 = newPoint;
+                }
+                else
+                {
+                    p1 = newPoint;
+                    p2 = oldPoint;
+                }
+
+                if ((newPoint.Lat < p.Lat) == (p.Lat <= oldPoint.Lat)
+                    && ((double)p.Lng - (double)p1.Lng) * (double)(p2.Lat - p1.Lat)
+                    < ((double)p2.Lng - (double)p1.Lng) * (double)(p.Lat - p1.Lat))
+                {
+                    inside = !inside;
+                }
+                oldPoint = newPoint;
+            }
+            return inside;
+        }
+
 
         void newpos(ref double lat, ref double lon, double bearing, double distance)
         {
@@ -3691,6 +4121,11 @@ namespace ArdupilotMega.GCSViews
         private void trackerHomeToolStripMenuItem_Click(object sender, EventArgs e)
         {
             MainV2.cs.TrackerLocation = new PointLatLngAlt(end) { Alt = MainV2.cs.HomeAlt };
+        }
+
+        private void gridV2ToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            gridv2();
         }
     }
 }
