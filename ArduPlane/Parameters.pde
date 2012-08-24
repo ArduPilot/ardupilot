@@ -112,6 +112,13 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @User: Standard
     GSCALAR(crosstrack_entry_angle, "XTRK_ANGLE_CD",  XTRACK_ENTRY_ANGLE_CENTIDEGREE),
 
+    // @Param: XTRK_USE_WIND
+    // @DisplayName: Crosstrack Wind correction
+    // @Description: If enabled, use wind estimation for navigation crosstrack when using a compass for yaw
+    // @Values: 0:Disabled,1:Enabled
+    // @User: Standard
+    GSCALAR(crosstrack_use_wind, "XTRK_USE_WIND",  1),
+
     // @Param: ALT_MIX
     // @DisplayName: Gps to Baro Mix
     // @Description: The percent of mixing between gps altitude and baro altitude. 0 = 100% gps, 1 = 100% baro

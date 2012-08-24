@@ -355,9 +355,9 @@ static bool verify_land()
         nav_bearing_cd = hold_course;
         // recalc bearing error
         calc_bearing_error();
+    } else {
+        update_crosstrack();
     }
-
-    update_crosstrack();
     return false;
 }
 

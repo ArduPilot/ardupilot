@@ -119,6 +119,7 @@ public:
         k_param_RTL_altitude_cm,
         k_param_inverted_flight_ch,
         k_param_min_gndspeed_cm,
+        k_param_crosstrack_use_wind,
 
 
         //
@@ -232,6 +233,7 @@ public:
     //
     AP_Float crosstrack_gain;
     AP_Int16 crosstrack_entry_angle;
+    AP_Int8  crosstrack_use_wind;
 
     // Estimation
     //
