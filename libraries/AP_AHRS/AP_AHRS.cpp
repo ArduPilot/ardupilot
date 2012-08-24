@@ -43,3 +43,26 @@ const AP_Param::GroupInfo AP_AHRS::var_info[] PROGMEM = {
 
     AP_GROUPEND
 };
+
+// get pitch rate in earth frame, in radians/s
+float AP_AHRS::get_pitch_rate_earth(void) 
+{
+	Vector3f omega = get_gyro();
+	return cos(roll) * omega.y - sin(roll) * omega.z;
+}
+
+// get roll rate in earth frame, in radians/s
+float AP_AHRS::get_roll_rate_earth(void)  {
+	Vector3f omega = get_gyro();
+	return omega.x + tan(pitch)*(omega.y*sin(roll) + omega.z*cos(roll));
+}
+
+// return airspeed estimate if available
+bool AP_AHRS::airspeed_estimate(float *airspeed_ret)
+{
+	if (_airspeed && _airspeed->use()) {
+		*airspeed_ret = _airspeed->get_airspeed();
+		return true;
+	}
+	return false;
+}

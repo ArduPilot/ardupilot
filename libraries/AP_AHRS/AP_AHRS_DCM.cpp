@@ -696,3 +696,19 @@ bool AP_AHRS_DCM::get_position(struct Location *loc)
     return true;
 }
 
+// return an airspeed estimate if available
+bool AP_AHRS_DCM::airspeed_estimate(float *airspeed_ret)
+{
+	if (_airspeed && _airspeed->use()) {
+		*airspeed_ret = _airspeed->get_airspeed();
+		return true;
+	}
+
+	// estimate it via GPS speed and wind
+	if (have_gps()) {
+		*airspeed_ret = _last_airspeed;
+		return true;
+	}
+
+	return false;
+}

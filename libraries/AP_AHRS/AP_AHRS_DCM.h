@@ -53,6 +53,10 @@ public:
         return _wind;
     }
 
+    // return an airspeed estimate if available. return true
+    // if we have an estimate
+    bool airspeed_estimate(float *airspeed_ret);
+
 private:
     float _ki;
     float _ki_yaw;
