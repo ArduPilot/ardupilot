@@ -25,36 +25,22 @@ public:
 		const uint8_t portEnableBits, const uint8_t portTxBits);
 
     /* Implementations of UARTDriver virtual methods */
-    void begin(long b) {}
-	/// Extended port open method
-	///
-	/// Allows for both opening with specified buffer sizes, and re-opening
-	/// to adjust a subset of the port's settings.
-	///
-	/// @note	Buffer sizes greater than ::_max_buffer_size will be rounded
-	///			down.
-	///
-	/// @param	baud		Selects the speed that the port will be
-	///						configured to.  If zero, the port speed is left
-	///						unchanged.
-	/// @param rxSpace		Sets the receive buffer size for the port.  If zero
-	///						then the buffer size is left unchanged if the port
-	///						is open, or set to ::_default_rx_buffer_size if it is
-	///						currently closed.
-	/// @param txSpace		Sets the transmit buffer size for the port.  If zero
-	///						then the buffer size is left unchanged if the port
-	///						is open, or set to ::_default_tx_buffer_size if it
-	///						is currently closed.
-	///
-    void begin(long b, unsigned int rxS, unsigned int txS) {}
-    void end() {}
-    void flush() {}
+    void begin(long b) { begin(b, 0, 0); }
+    void begin(long b, unsigned int rxS, unsigned int txS);
+    void end();
+    void flush();
     bool is_initialized() { return _initialized; }
-    void set_blocking_writes(bool blocking) {}
-    bool tx_pending() { return false; }
+
+	void set_blocking_writes(bool blocking) {
+		_nonblocking_writes = !blocking;
+	}
+
+    bool tx_pending() {
+        return (_txBuffer->head != _txBuffer->tail);
+    }
 
     /* Implementations of BetterStream virtual methods */
-    int txspace() { return 10; }
+    int txspace();
     void print_P(const prog_char_t *s);
     void println_P(const prog_char_t *s);
     void printf(const char *s, ...)
@@ -63,12 +49,12 @@ public:
             __attribute__ ((format(__printf__, 2, 3)));
 
     /* Implementations of Stream virtual methods */
-    int available() { return 0; }
-    int read() { return -1; }
-    int peek() { return -1; }
+    int available();
+    int read();
+    int peek();
 
     /* Implementations of Print virtual methods */
-    size_t write(uint8_t c) { return 0; }
+    size_t write(uint8_t c);
 
 	/// Transmit/receive buffer descriptor.
 	///

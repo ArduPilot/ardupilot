@@ -4,21 +4,39 @@
 #include <AP_HAL_AVR.h>
 
 const AP_HAL::HAL& hal = AP_HAL_AVR_APM1;
-const AP_HAL::HAL& hal2 = AP_HAL_AVR_APM2;
 
 void loop (void) {
-
+    hal.uart0->println(".");
+    hal.gpio->write(3, 0);
+    hal.scheduler->delay(1000);
+    hal.gpio->write(3, 1);
 }
 
 void setup (void) {
-    hal.uart0->begin(9600);
-    hal2.uart0->begin(9600);
-    hal.uart1->begin(9600);
-    hal2.uart1->begin(9600);
-    hal.uart2->begin(9600);
-    hal2.uart2->begin(9600);
-    hal.uart3->begin(9600);
-    hal2.uart3->begin(9600);
+    hal.gpio->pinMode(1, GPIO_OUTPUT);
+    hal.gpio->pinMode(2, GPIO_OUTPUT);
+    hal.gpio->pinMode(3, GPIO_OUTPUT);
+    hal.gpio->pinMode(13, GPIO_OUTPUT);
+
+    hal.gpio->write(1, 1);
+    hal.gpio->write(2, 1);
+    hal.gpio->write(3, 1);
+    hal.gpio->write(13, 1);
+    
+    hal.scheduler->delay(1000);
+
+    hal.gpio->write(1, 0);
+    hal.gpio->write(2, 0);
+    hal.gpio->write(13, 0);
+    
+    hal.scheduler->delay(1000);
+
+    hal.gpio->write(13, 1);
+
+    hal.uart0->begin(115200);
+    hal.gpio->write(1, 0);
+    hal.uart0->println("Hello World");
+    hal.gpio->write(2, 0);
 }
 
 
