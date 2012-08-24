@@ -27,16 +27,6 @@ struct sitl_fdm {
 class SITL
 {
 public:
-	SITL() {
-		baro_noise  = 3;   // Pascals
-		gyro_noise  = 30;   // degrees/s
-		accel_noise = 3;    // m/s/s
-		mag_noise   = 10;   // mag units
-		aspd_noise  = 2;    // m/s
-		drift_speed = 0.2;  // dps/min
-		drift_time  = 5;    // minutes
-        gps_delay   = 4;    // 0.8 seconds
-	}
 	struct sitl_fdm state;
 
 	static const struct AP_Param::GroupInfo var_info[];
@@ -54,6 +44,11 @@ public:
 	AP_Int8  gps_disable; // disable simulated GPS
 	AP_Int8  gps_delay;   // delay in samples
 
+    // wind control
+    AP_Float wind_speed;
+    AP_Float wind_direction;
+    AP_Float wind_turbulance;
+    
 	void simstate_send(mavlink_channel_t chan);
 
 	// convert a set of roll rates from earth frame to body frame

@@ -56,17 +56,28 @@ def sim_send(m, a):
 def sim_recv(m):
     '''receive control information from SITL'''
     try:
-        buf = sim_in.recv(22)
+        buf = sim_in.recv(28)
     except socket.error as e:
         if not e.errno in [ errno.EAGAIN, errno.EWOULDBLOCK ]:
             raise
         return
         
-    if len(buf) != 22:
+    if len(buf) != 28:
         return
-    pwm = list(struct.unpack('<11H', buf))
+    control = list(struct.unpack('<14H', buf))
+    pwm = control[0:11]
+
+    # update motors
     for i in range(11):
         m[i] = (pwm[i]-1000)/1000.0
+
+    # update wind
+    global a
+    (speed, direction, turbulance) = control[11:]
+    a.wind.speed = speed*0.01
+    a.wind.direction = direction*0.01
+    a.wind.turbulance = turbulance*0.01
+    
 
 
 def interpret_address(addrstr):

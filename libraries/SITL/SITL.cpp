@@ -24,6 +24,9 @@ const AP_Param::GroupInfo SITL::var_info[] PROGMEM = {
     AP_GROUPINFO("DRIFT_TIME", 6, SITL,  drift_time,  5),
     AP_GROUPINFO("GPS_DELAY",  7, SITL,  gps_delay,   4),
     AP_GROUPINFO("ENGINE_MUL", 8, SITL,  engine_mul,  1),
+    AP_GROUPINFO("WIND_SPD",   9, SITL,  wind_speed,  5),
+    AP_GROUPINFO("WIND_DIR",  10, SITL,  wind_direction,  180),
+    AP_GROUPINFO("WIND_TURB", 11, SITL,  wind_turbulance,  0.2),
     AP_GROUPEND
 };
 
