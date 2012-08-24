@@ -1053,6 +1053,31 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
             result = MAV_RESULT_ACCEPTED;
             break;
 
+        case MAV_CMD_DO_SET_MODE:
+            switch ((uint16_t)packet.param1) {
+            case MAV_MODE_MANUAL_ARMED:
+            case MAV_MODE_MANUAL_DISARMED:
+                set_mode(MANUAL);
+                result = MAV_RESULT_ACCEPTED;
+                break;
+
+            case MAV_MODE_AUTO_ARMED:
+            case MAV_MODE_AUTO_DISARMED:
+                set_mode(AUTO);
+                result = MAV_RESULT_ACCEPTED;
+                break;
+
+            case MAV_MODE_STABILIZE_DISARMED:
+            case MAV_MODE_STABILIZE_ARMED:
+                set_mode(FLY_BY_WIRE_A);
+                result = MAV_RESULT_ACCEPTED;
+                break;
+
+            default:
+                result = MAV_RESULT_UNSUPPORTED;
+            }
+            break;
+
 
         default:
             result = MAV_RESULT_UNSUPPORTED;
