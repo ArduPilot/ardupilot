@@ -89,6 +89,10 @@ static void geofence_load(void)
         }
     }
 
+    if (g.fence_total < 0) {
+        g.fence_total.set(0);
+    }
+
     for (i=0; i<g.fence_total; i++) {
         geofence_state->boundary[i] = get_fence_point_with_index(i);
     }
