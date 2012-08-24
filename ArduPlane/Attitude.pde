@@ -10,9 +10,9 @@ static void stabilize()
     float ch2_inf = 1.0;
     float ch4_inf = 1.0;
     float speed_scaler;
+    float aspeed;
 
-    if (airspeed.use()) {
-        float aspeed = airspeed.get_airspeed();
+    if (ahrs.airspeed_estimate(&aspeed)) {
         if (aspeed > 0) {
             speed_scaler = g.scaling_speed / aspeed;
         } else {
@@ -26,7 +26,8 @@ static void stabilize()
         }else{
             speed_scaler = 1.67;
         }
-        speed_scaler = constrain(speed_scaler, 0.6, 1.67);                      // This case is constrained tighter as we don't have real speed info
+        // This case is constrained tighter as we don't have real speed info
+        speed_scaler = constrain(speed_scaler, 0.6, 1.67);
     }
 
     if(crash_timer > 0) {
