@@ -53,7 +53,15 @@ def setup_template(home):
 
 def process_sitl_input(buf):
     '''process control changes from SITL sim'''
-    pwm = list(struct.unpack('<11H', buf))
+    control = list(struct.unpack('<14H', buf))
+    pwm = control[:11]
+    (speed, direction, turbulance) = control[11:]
+
+    global wind
+    wind.speed      = speed*0.01
+    wind.direction  = direction*0.01
+    wind.turbulance = turbulance*0.01
+    
     aileron  = (pwm[0]-1500)/500.0
     elevator = (pwm[1]-1500)/500.0
     throttle = (pwm[2]-1000)/1000.0
@@ -237,7 +245,7 @@ def main_loop():
             frame_count += 1
 
         if sim_in.fileno() in rin:
-            simbuf = sim_in.recv(22)
+            simbuf = sim_in.recv(28)
             process_sitl_input(simbuf)
             last_sim_input = tnow
 

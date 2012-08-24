@@ -153,7 +153,10 @@ float sitl_motor_speed[4] = {0,0,0,0};
 static void sitl_simulator_output(void)
 {
 	static uint32_t last_update;
-	uint16_t pwm[11];
+	struct {
+		uint16_t pwm[11];
+		uint16_t speed, direction, turbulance;
+	} control;
 	/* this maps the registers used for PWM outputs. The RC
 	 * driver updates these whenever it wants the channel output
 	 * to change */
@@ -180,29 +183,38 @@ static void sitl_simulator_output(void)
 
 	for (i=0; i<11; i++) {
 		if (*reg[i] == 0xFFFF) {
-			pwm[i] = 0;
+			control.pwm[i] = 0;
 		} else {
-			pwm[i] = (*reg[i])/2;
+			control.pwm[i] = (*reg[i])/2;
 		}
 	}
 
 	if (!desktop_state.quadcopter) {
 		// add in engine multiplier
-		if (pwm[2] > 1000) {
-			pwm[2] = ((pwm[2]-1000) * sitl.engine_mul) + 1000;
-			if (pwm[2] > 2000) pwm[2] = 2000;
+		if (control.pwm[2] > 1000) {
+			control.pwm[2] = ((control.pwm[2]-1000) * sitl.engine_mul) + 1000;
+			if (control.pwm[2] > 2000) control.pwm[2] = 2000;
 		}
 
 		// 400kV motor, 16V
-		sitl_motor_speed[0] = ((pwm[2]-1000)/1000.0) * 400 * 16 / 60.0;
+		sitl_motor_speed[0] = ((control.pwm[2]-1000)/1000.0) * 400 * 16 / 60.0;
 	} else {
 		// 850kV motor, 16V
 		for (i=0; i<4; i++) {
-			sitl_motor_speed[i] = ((pwm[i]-1000)/1000.0) * 850 * 12 / 60.0;
+			sitl_motor_speed[i] = ((control.pwm[i]-1000)/1000.0) * 850 * 12 / 60.0;
 		}
 	}
 
-	sendto(sitl_fd, (void*)pwm, sizeof(pwm), MSG_DONTWAIT, (const sockaddr *)&rcout_addr, sizeof(rcout_addr));
+	// setup wind control
+	control.speed      = sitl.wind_speed * 100;
+	float direction = sitl.wind_direction;
+	if (direction < 0) {
+		direction += 360;
+	}
+	control.direction  = direction * 100;
+	control.turbulance = sitl.wind_turbulance * 100;
+
+	sendto(sitl_fd, (void*)&control, sizeof(control), MSG_DONTWAIT, (const sockaddr *)&rcout_addr, sizeof(rcout_addr));
 }
 
 /*
