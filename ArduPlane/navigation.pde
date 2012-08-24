@@ -173,14 +173,29 @@ static void update_loiter()
 
 static void update_crosstrack(void)
 {
+    // if we are using a compass for navigation, then adjust the
+    // heading to account for wind
+    if (g.crosstrack_use_wind && compass.use_for_yaw()) {
+        Vector3f wind = ahrs.wind_estimate();
+        Vector2f wind2d = Vector2f(wind.x, wind.y);
+        float speed;
+        if (ahrs.airspeed_estimate(&speed)) {
+            Vector2f nav_vector = Vector2f(cos(radians(nav_bearing_cd*0.01)), sin(radians(nav_bearing_cd*0.01))) * speed;
+            Vector2f nav_adjusted = nav_vector - wind2d;
+            nav_bearing_cd = degrees(atan2(nav_adjusted.y, nav_adjusted.x)) * 100;
+        }
+    }
+
     // Crosstrack Error
     // ----------------
     // If we are too far off or too close we don't do track following
     if (abs(wrap_180_cd(target_bearing_cd - crosstrack_bearing_cd)) < 4500) {
-        crosstrack_error = sin(radians((target_bearing_cd - crosstrack_bearing_cd) * 0.01)) * wp_distance;               // Meters we are off track line
+        // Meters we are off track line
+        crosstrack_error = sin(radians((target_bearing_cd - crosstrack_bearing_cd) * 0.01)) * wp_distance;               
         nav_bearing_cd += constrain(crosstrack_error * g.crosstrack_gain, -g.crosstrack_entry_angle.get(), g.crosstrack_entry_angle.get());
         nav_bearing_cd = wrap_360_cd(nav_bearing_cd);
     }
+
 }
 
 static void reset_crosstrack()
