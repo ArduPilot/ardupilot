@@ -75,14 +75,9 @@ public:
     int32_t pitch_sensor;
     int32_t yaw_sensor;
 
-    float get_pitch_rate_earth(void) {
-	    Vector3f omega = get_gyro();
-	    return cos(roll) * omega.y - sin(roll) * omega.z;
-    }
-    float get_roll_rate_earth(void)  {
-	    Vector3f omega = get_gyro();
-	    return omega.x + tan(pitch)*(omega.y*sin(roll) + omega.z*cos(roll));
-    }
+    // roll and pitch rates in earth frame, in radians/s
+    float get_pitch_rate_earth(void);
+    float get_roll_rate_earth(void);
 
     // return a smoothed and corrected gyro vector
     virtual Vector3f get_gyro(void) = 0;
@@ -128,6 +123,10 @@ public:
     Vector3f wind_estimate(void) {
         return Vector3f(0,0,0);
     }
+
+    // return an airspeed estimate if available. return true
+    // if we have an estimate
+    bool airspeed_estimate(float *airspeed_ret);
 
     // return true if yaw has been initialised
     bool yaw_initialised(void) {
