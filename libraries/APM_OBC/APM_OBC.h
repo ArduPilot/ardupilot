@@ -34,12 +34,8 @@ public:
 	// Constructor
 	APM_OBC(void)
 	{
-		if (_heartbeat_pin != -1) {
-			pinMode(_heartbeat_pin, OUTPUT);
-		}
-		if (_manual_pin != -1) {
-			pinMode(_manual_pin,    OUTPUT);
-		}
+		_last_heartbeat_pin = -1;
+		_last_manual_pin = -1;
 		_state = STATE_PREFLIGHT;
 		_terminate.set(0);
 
@@ -63,6 +59,10 @@ private:
 	AP_Int8 _heartbeat_pin;
 	AP_Int8 _manual_pin;
 	AP_Int8 _terminate;
+
+	// last pins to cope with changing at runtime
+	int8_t _last_heartbeat_pin;
+	int8_t _last_manual_pin;
 
 	// waypoint numbers to jump to on failsafe conditions
 	AP_Int8 _wp_comms_hold;

@@ -74,6 +74,10 @@ APM_OBC::check(APM_OBC::control_mode mode,
 	// mode. This tells it to pass through controls from the
 	// receiver
 	if (_manual_pin != -1) {
+		if (_manual_pin != _last_manual_pin) {
+			pinMode(_manual_pin, OUTPUT);
+			_last_manual_pin = _manual_pin;
+		}
 		digitalWrite(_manual_pin, mode==OBC_MANUAL);
 	}
 
@@ -146,6 +150,10 @@ APM_OBC::check(APM_OBC::control_mode mode,
 
 	// if we are not terminating then toggle the heartbeat pin at 10Hz
 	if (!_terminate && _heartbeat_pin != -1) {
+		if (_heartbeat_pin != _last_heartbeat_pin) {
+			pinMode(_heartbeat_pin, OUTPUT);
+			_last_heartbeat_pin = _heartbeat_pin;
+		}
 		_heartbeat_pin_value = !_heartbeat_pin_value;
 		digitalWrite(_heartbeat_pin, _heartbeat_pin_value);
 	}	
