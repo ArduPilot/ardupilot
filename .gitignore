@@ -31,3 +31,7 @@ status.txt
 *.dll
 *.obj
 *.zip
+
+/Tools/ArdupilotMegaPlanner/3DRRadio/bin
+/Tools/ArdupilotMegaPlanner/3DRRadio/obj
+/Tools/ArdupilotMegaPlanner/bin
