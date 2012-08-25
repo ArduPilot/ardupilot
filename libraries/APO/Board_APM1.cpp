@@ -49,11 +49,6 @@ Board_APM1::Board_APM1(mode_e mode, MAV_TYPE vehicle, options_t options) : AP_Bo
     debug = &Serial;
     debug->println_P(PSTR("initialized debug port"));
 
-    // gcs
-    Serial3.begin(telemBaud, 128, 128);
-    gcsPort = &Serial3;
-    gcsPort->println_P(PSTR("initialized gcs port"));
-
     // hil
     Serial1.begin(hilBaud, 128, 128);
     hilPort = &Serial1;
@@ -179,6 +174,11 @@ Board_APM1::Board_APM1(mode_e mode, MAV_TYPE vehicle, options_t options) : AP_Bo
     imu = new AP_IMU_INS(ins, k_sensorCalib); 
     imu->init(IMU::WARM_START,delay,scheduler);
     debug->println_P(PSTR("setup completed"));
+	
+	// gcs
+    Serial3.begin(telemBaud, 128, 128);
+    gcsPort = &Serial3;
+    gcsPort->println_P(PSTR("initialized gcs port"));
 }
 
 } // namespace apo
