@@ -747,6 +747,15 @@ void loop()
         }
 
         fast_loopTimeStamp_ms = millis();
+    } else {
+        // less than 20ms has passed. We have at least one millisecond
+        // of free time. The most useful thing to do with that time is
+        // to accumulate some sensor readings, specifically the
+        // compass, which is often very noisy but is not interrupt
+        // driven, so it can't accumulate readings by itself
+        if (g.compass_enabled) {
+            compass.accumulate();
+        }
     }
 }
 
