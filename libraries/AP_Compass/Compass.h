@@ -38,6 +38,10 @@ public:
     ///
     virtual bool read(void) = 0;
 
+    /// use spare CPU cycles to accumulate values from the compass if
+    /// possible
+    virtual void accumulate(void) = 0;
+
     /// Calculate the tilt-compensated heading_ variables.
     ///
     /// @param  roll                The current airframe roll angle.

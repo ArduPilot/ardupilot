@@ -30,3 +30,8 @@ void AP_Compass_HIL::setHIL(float _mag_x, float _mag_y, float _mag_z)
     mag_z = _mag_z + ofs.z;
     healthy = true;
 }
+
+void AP_Compass_HIL::accumulate(void)
+{
+	// nothing to do
+}

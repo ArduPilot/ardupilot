@@ -11,6 +11,7 @@ public:
         product_id = AP_COMPASS_TYPE_HIL;
     }
     bool        read(void);
+    void        accumulate(void);
     void        setHIL(float Mag_X, float Mag_Y, float Mag_Z);
 };
 
