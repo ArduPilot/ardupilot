@@ -981,6 +981,7 @@ void setup() {
 void loop()
 {
     uint32_t timer                  = micros();
+    bool spare_time = true;
 
     // We want this to execute fast
     // ----------------------------
@@ -996,6 +997,7 @@ void loop()
         // Execute the fast loop
         // ---------------------
         fast_loop();
+        spare_time = false;
     } else {
 #ifdef DESKTOP_BUILD
         usleep(1000);
@@ -1053,6 +1055,11 @@ void loop()
             perf_mon_counter        = 0;
         }
         //PORTK &= B10111111;
+        spare_time = false;
+    }
+
+    if (spare_time && g.compass_enabled) {
+        compass.accumulate();
     }
 }
 //  PORTK |= B01000000;
