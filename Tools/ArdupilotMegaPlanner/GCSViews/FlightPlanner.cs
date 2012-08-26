@@ -227,7 +227,9 @@ namespace ArdupilotMega.GCSViews
                     if (pass == false)
                     {
                         CustomMessageBox.Show("You must have a home altitude");
-                        return;
+                        string homealt = "100";
+                        Common.InputBox("Home Alt", "Home Altitude", ref homealt);
+                        TXT_homealt.Text = homealt;
                     }
                     int results1;
                     if (!int.TryParse(TXT_DefaultAlt.Text, out results1))
@@ -3119,8 +3121,12 @@ namespace ArdupilotMega.GCSViews
             string Pointsin = "20";
             Common.InputBox("Points", "Number of points to generate Circle", ref Pointsin);
 
+            string Directionin = "1";
+            Common.InputBox("Points", "Direction of circle (-1 or 1)", ref Directionin);
+
             int Points = 0;
             int Radius = 0;
+            int Direction = 1;
 
             if (!int.TryParse(RadiusIn, out Radius))
             {
@@ -3134,9 +3140,23 @@ namespace ArdupilotMega.GCSViews
                 return;
             }
 
+            if (!int.TryParse(Directionin, out Direction) )
+            {
+                CustomMessageBox.Show("Bad Direction value");
+                return;
+            }
 
+            double a = 0;
+            double step = 360.0f / Points;
+            if (Direction == -1)
+            {
+                a = 360;
+                step *= -1;
+            }
 
-            for (double a = 0; a <= 360; a += 360.0f / Points)
+            quickadd = true;
+
+            for (; a <= 360 && a >= 0; a += step)
             {
 
                 selectedrow = Commands.Rows.Add();
@@ -3159,12 +3179,24 @@ namespace ArdupilotMega.GCSViews
 
             }
 
+            quickadd = false;
+            writeKML();
+
             //drawnpolygon.Points.Add(new PointLatLng(start.Lat, start.Lng));
         }
 
         public void Activate()
         {
             timer1.Start();
+
+            if (MainV2.cs.firmware == MainV2.Firmwares.ArduCopter2)
+            {
+                CHK_altmode.Visible = false;
+            }
+            else
+            {
+                CHK_altmode.Visible = true;
+            }
         }
 
         public void Deactivate()
@@ -3282,11 +3314,10 @@ namespace ArdupilotMega.GCSViews
                 int altitude = (int)(double.Parse(alt) / MainV2.cs.multiplierdist);
 
                 // draw a grid
-                double x = bottomleft.Lng - 0.00001;
-                double y = bottomleft.Lat;
+                double x = arearect.LocationMiddle.Lng;
+                double y = arearect.LocationMiddle.Lat;
 
-                newpos(ref y, ref x, double.Parse(angle) - 90, diagdist);
-
+                newpos(ref y, ref x, double.Parse(angle) - 135, diagdist);
 
                 List<linelatlng> grid = new List<linelatlng>();
 
@@ -3301,12 +3332,12 @@ namespace ArdupilotMega.GCSViews
 
                 quickadd = true;
 
-                while (lines * double.Parse(distance) < diagdist * 3) //x < topright.Lat && y < topright.Lng)
+                while (lines * double.Parse(distance) < diagdist * 1.5) //x < topright.Lat && y < topright.Lng)
                 {
-                    //callMe(y, x, 0);
+                   // callMe(y, x, 0);
                     double nx = x;
                     double ny = y;
-                    newpos(ref ny, ref nx, double.Parse(angle), diagdist);
+                    newpos(ref ny, ref nx, double.Parse(angle), diagdist * 1.5);
 
                     //callMe(ny, nx, 0);
 
@@ -3324,6 +3355,8 @@ namespace ArdupilotMega.GCSViews
                // callMe(x, y, 0);
 
                 quickadd = false;
+
+               // writeKML();
 
                // return;
 
@@ -3386,27 +3419,7 @@ namespace ArdupilotMega.GCSViews
                         line.p1 = closestlatlong;
                         line.p2 = farestlatlong;
                         grid[a] = line;
-                    }/*
-                    else if (crosses == 4)
-                    {
-                        linelatlng line = grid[a];
-                        line.p1 = closestlatlong;
-
-                        PointLatLng far = farestlatlong;
-
-                        matchs.Remove(closestlatlong);
-                        matchs.Remove(farestlatlong);
-
-                        farestlatlong = findClosestPoint(line.p1, matchs);
-
-                        matchs.Remove(farestlatlong);
-
-                        line.p2 = farestlatlong;
-                        grid[a] = line;
-
-                        grid.Add(new linelatlng() { p1 = matchs[0], p2 = far, basepnt = line.basepnt });
-
-                    }*/
+                    }
                     else
                     {
                         linelatlng line = grid[a];
@@ -3456,11 +3469,29 @@ namespace ArdupilotMega.GCSViews
                      grid.Remove(line);
                 }
 
+               // int fixme;
+
+               // foreach (PointLatLng pnt in PathFind.FindPath(MainV2.cs.HomeLocation.Point(),grid))
+               // {
+               //     callMe(pnt.Lat, pnt.Lng, altitude);
+               // }
+
+               // return;
+                
                 quickadd = true;
 
                 linelatlng closest = findClosestLine(MainV2.cs.HomeLocation.Point(),grid);
 
-                PointLatLng lastpnt = closest.p1;
+                PointLatLng lastpnt;
+
+                if (MainMap.Manager.GetDistance(closest.p1, MainV2.cs.HomeLocation.Point()) < MainMap.Manager.GetDistance(closest.p2, MainV2.cs.HomeLocation.Point()))
+                {
+                    lastpnt = closest.p1;
+                }
+                else
+                {
+                    lastpnt = closest.p2;
+                }
 
                 while (grid.Count > 0)
                 {
@@ -3527,6 +3558,7 @@ namespace ArdupilotMega.GCSViews
                 writeKML();
             }
         }
+
 
         PointLatLng findClosestPoint(PointLatLng start, List<PointLatLng> list)
         {
@@ -4126,6 +4158,27 @@ namespace ArdupilotMega.GCSViews
         private void gridV2ToolStripMenuItem_Click(object sender, EventArgs e)
         {
             gridv2();
+        }
+
+        private void reverseWPsToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            DataGridViewRowCollection rows = Commands.Rows;
+            //Commands.Rows.Clear();
+
+            int count = rows.Count;
+
+            quickadd = true;
+
+            for (int a = count; a > 0; a--)
+            {
+                DataGridViewRow row = Commands.Rows[a-1];
+                Commands.Rows.Remove(row);
+                Commands.Rows.Add(row);
+            }
+
+            quickadd = false;
+
+                writeKML();
         }
     }
 }

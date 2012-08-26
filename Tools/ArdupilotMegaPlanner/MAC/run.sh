@@ -3,14 +3,16 @@
 DIR=$(cd "$(dirname "$0")"; pwd)
  
 #change these values to match your app
-EXE_PATH="$DIR/ArdupilotMegaPlanner.exe"
-PROCESS_NAME=ArdupilotMegaPlanner
-APPNAME="ArdupilotMegaPlanner"
+EXE_PATH="$DIR/ArdupilotMegaPlanner10.exe"
+PROCESS_NAME=ArdupilotMegaPlanner10
+APPNAME="ArdupilotMegaPlanner10"
  
 #set up environment
 MONO_FRAMEWORK_PATH=/Library/Frameworks/Mono.framework/Versions/Current
 export DYLD_FALLBACK_LIBRARY_PATH="$DIR:$MONO_FRAMEWORK_PATH/lib:/lib:/usr/lib"
 export PATH="$MONO_FRAMEWORK_PATH/bin:$PATH"
+
+#export MONO_MWF_MAC_FORCE_X11=true
  
 #mono version check
 REQUIRED_MAJOR=2

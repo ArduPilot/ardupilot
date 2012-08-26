@@ -127,27 +127,33 @@ namespace ArdupilotMega.GCSViews.ConfigurationView
         void updatePitch()
         {
             // pitch
+            if (mavlinkComboBoxTilt.Text == "")
+                return;
+
             if (mavlinkComboBoxTilt.Text != "Disable")
             {
                 MainV2.comPort.setParam(mavlinkComboBoxTilt.Text + "_FUNCTION", 7);
-                MainV2.comPort.setParam("MNT_STAB_PITCH", 1);
+                MainV2.comPort.setParam("MNT_STAB_TILT", 1);
             }
             else
             {
-                MainV2.comPort.setParam("MNT_STAB_PITCH", 0);
+                MainV2.comPort.setParam("MNT_STAB_TILT", 0);
                 ensureDisabled(mavlinkComboBoxTilt,7);
             }
 
             mavlinkNumericUpDownTSM.setup(800, 2200, 1, 1, mavlinkComboBoxTilt.Text +"_MIN", MainV2.comPort.param);
             mavlinkNumericUpDownTSMX.setup(800, 2200, 1, 1, mavlinkComboBoxTilt.Text + "_MAX", MainV2.comPort.param);
-            mavlinkNumericUpDownTAM.setup(-90, 0, 100, 1, mavlinkComboBoxTilt.Text + "_ANGLE_MIN", MainV2.comPort.param);
-            mavlinkNumericUpDownTAMX.setup(0, 90, 100, 1, mavlinkComboBoxTilt.Text + "_ANGLE_MAX", MainV2.comPort.param);
+            mavlinkNumericUpDownTAM.setup(-90, 0, 100, 1, "MNT_ANGMIN_TIL", MainV2.comPort.param);
+            mavlinkNumericUpDownTAMX.setup(0, 90, 100, 1, "MNT_ANGMAX_TIL", MainV2.comPort.param);
             mavlinkCheckBoxTR.setup(-1, 1, mavlinkComboBoxTilt.Text + "_REV", MainV2.comPort.param);
         }
 
         void updateRoll()
         {
             // roll
+            if (mavlinkComboBoxRoll.Text == "")
+                return;
+
             if (mavlinkComboBoxRoll.Text != "Disable")
             {
                 MainV2.comPort.setParam(mavlinkComboBoxRoll.Text + "_FUNCTION", 8);
@@ -161,29 +167,32 @@ namespace ArdupilotMega.GCSViews.ConfigurationView
 
             mavlinkNumericUpDownRSM.setup(800, 2200, 1, 1, mavlinkComboBoxRoll.Text +"_MIN", MainV2.comPort.param);
             mavlinkNumericUpDownRSMX.setup(800, 2200, 1, 1, mavlinkComboBoxRoll.Text + "_MAX", MainV2.comPort.param);
-            mavlinkNumericUpDownRAM.setup(-90, 0, 100, 1, mavlinkComboBoxRoll.Text + "_ANGLE_MIN", MainV2.comPort.param);
-            mavlinkNumericUpDownRAMX.setup(0, 90, 100, 1, mavlinkComboBoxRoll.Text + "_ANGLE_MAX", MainV2.comPort.param);
+            mavlinkNumericUpDownRAM.setup(-90, 0, 100, 1, "MNT_ANGMIN_ROL", MainV2.comPort.param);
+            mavlinkNumericUpDownRAMX.setup(0, 90, 100, 1, "MNT_ANGMAX_ROL", MainV2.comPort.param);
             mavlinkCheckBoxRR.setup(-1, 1, mavlinkComboBoxRoll.Text + "_REV", MainV2.comPort.param);
         }
 
         void updateYaw()
         {
             // yaw
+            if (mavlinkComboBoxPan.Text == "")
+                return;
+
             if (mavlinkComboBoxPan.Text != "Disable")
             {
                 MainV2.comPort.setParam(mavlinkComboBoxPan.Text + "_FUNCTION", 6);
-                MainV2.comPort.setParam("MNT_STAB_YAW", 1);
+                MainV2.comPort.setParam("MNT_STAB_PAN", 1);
             }
             else
             {
-                MainV2.comPort.setParam("MNT_STAB_YAW", 0);
+                MainV2.comPort.setParam("MNT_STAB_PAN", 0);
                 ensureDisabled(mavlinkComboBoxPan,6);
             }
 
             mavlinkNumericUpDownPSM.setup(800, 2200, 1, 1, mavlinkComboBoxPan.Text + "_MIN", MainV2.comPort.param);
             mavlinkNumericUpDownPSMX.setup(800, 2200, 1, 1, mavlinkComboBoxPan.Text + "_MAX", MainV2.comPort.param);
-            mavlinkNumericUpDownPAM.setup(-90, 0, 100, 1, mavlinkComboBoxPan.Text + "_ANGLE_MIN", MainV2.comPort.param);
-            mavlinkNumericUpDownPAMX.setup(0, 90, 100, 1, mavlinkComboBoxPan.Text + "_ANGLE_MAX", MainV2.comPort.param);
+            mavlinkNumericUpDownPAM.setup(-90, 0, 100, 1, "MNT_ANGMIN_PAN", MainV2.comPort.param);
+            mavlinkNumericUpDownPAMX.setup(0, 90, 100, 1, "MNT_ANGMAX_PAN", MainV2.comPort.param);
             mavlinkCheckBoxPR.setup(-1, 1, mavlinkComboBoxPan.Text + "_REV", MainV2.comPort.param);
         }
 

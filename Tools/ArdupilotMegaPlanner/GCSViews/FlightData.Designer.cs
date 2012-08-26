@@ -554,7 +554,7 @@
         ""};
             this.Gvspeed.CapText = "VSI";
             this.Gvspeed.Center = new System.Drawing.Point(75, 75);
-            this.Gvspeed.DataBindings.Add(new System.Windows.Forms.Binding("Value0", this.bindingSource1, "climbrate", true));
+            this.Gvspeed.DataBindings.Add(new System.Windows.Forms.Binding("Value0", this.bindingSource1, "verticalspeed", true));
             this.Gvspeed.MaxValue = 10F;
             this.Gvspeed.MinValue = -10F;
             this.Gvspeed.Name = "Gvspeed";

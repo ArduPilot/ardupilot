@@ -28,6 +28,8 @@ namespace ArdupilotMega
         /// time over target in seconds
         /// </summary>
         public int tot { get { if (groundspeed <= 0) return 0; return (int)(wp_dist / groundspeed); } }
+        public float distTraveled { get; set; }
+        public float timeInAir { get; set; }
 
         // speeds
         public float airspeed { get { return _airspeed * multiplierspeed; } set { _airspeed = value; } }
@@ -35,7 +37,7 @@ namespace ArdupilotMega
         float _airspeed;
         float _groundspeed;
         float _verticalspeed;
-        public float verticalspeed { get { if (float.IsNaN(_verticalspeed)) _verticalspeed = 0; return _verticalspeed; } set { _verticalspeed = _verticalspeed * 0.8f + value * 0.2f; } }
+        public float verticalspeed { get { if (float.IsNaN(_verticalspeed)) _verticalspeed = 0; return _verticalspeed; } set { _verticalspeed = _verticalspeed * 0.4f + value * 0.6f; } }
         public float wind_dir { get; set; }
         public float wind_vel { get; set; }
         /// <summary>
@@ -108,6 +110,8 @@ namespace ArdupilotMega
         {
             get
             {
+                if (_ch3percent != -1)
+                    return _ch3percent;
                 try
                 {
                     if (MainV2.comPort.param.ContainsKey("RC3_MIN"))
@@ -116,7 +120,7 @@ namespace ArdupilotMega
                     }
                     else
                     {
-                        return 0;
+                        return (int)((ch3out - 1100) / (1900 - 1100) * 100);
                     }
                 }
                 catch
@@ -124,7 +128,11 @@ namespace ArdupilotMega
                     return 0;
                 }
             }
+
+            set { _ch3percent = value; }
         }
+
+        float _ch3percent = -1;
 
         //nav state
         public float nav_roll { get; set; }
@@ -334,6 +342,7 @@ namespace ArdupilotMega
 
         private object locker = new object();
         bool useLocation = false;
+        bool gotwind = false;
 
         public CurrentState()
         {
@@ -352,7 +361,8 @@ namespace ArdupilotMega
 
         private DateTime lastupdate = DateTime.Now;
 
-        private DateTime lastwindcalc = DateTime.Now;
+        private DateTime lastsecondcounter = DateTime.Now;
+        private PointLatLngAlt lastpos = new PointLatLngAlt();
 
         public void UpdateCurrentSettings(System.Windows.Forms.BindingSource bs)
         {
@@ -372,12 +382,29 @@ namespace ArdupilotMega
                 {
                     lastupdate = DateTime.Now;
 
-
-
-                    if (DateTime.Now.Second != lastwindcalc.Second)
+                    if (DateTime.Now.Second != lastsecondcounter.Second)
                     {
-                        lastwindcalc = DateTime.Now;
-                       // dowindcalc();
+                        lastsecondcounter = DateTime.Now;
+
+                        if (lastpos.Lat != 0 && lastpos.Lng != 0)
+                        {
+                            if (!MainV2.comPort.BaseStream.IsOpen && !MainV2.comPort.logreadmode)
+                                distTraveled = 0;
+
+                            distTraveled += (float)lastpos.GetDistance(new PointLatLngAlt(lat, lng, 0, "")) * multiplierdist;
+                            lastpos = new PointLatLngAlt(lat, lng, 0, "");
+                        }
+                        else
+                        {
+                            lastpos = new PointLatLngAlt(lat, lng, 0, "");
+                        }
+
+                        // cant use gs, cant use alt, 
+                        if (ch3percent > 12) 
+                            timeInAir++;
+
+                        if (!gotwind)
+                            dowindcalc();
                     }
 
                     if (mavinterface.packets[MAVLink.MAVLINK_MSG_ID_STATUSTEXT] != null) // status text 
@@ -450,6 +477,8 @@ namespace ArdupilotMega
                     if (bytearray != null)
                     {
                         var wind = bytearray.ByteArrayToStructure<MAVLink.mavlink_wind_t>(6);
+
+                        gotwind = true;
 
                         wind_dir = wind.direction;
                         wind_vel = wind.speed;
@@ -810,6 +839,8 @@ namespace ArdupilotMega
 
                         useLocation = true;
 
+                        
+
                         //alt = loc.alt / 1000.0f;
                         lat = loc.lat / 10000000.0f;
                         lng = loc.lon / 10000000.0f;
@@ -961,6 +992,8 @@ namespace ArdupilotMega
                         airspeed = vfr.airspeed;
 
                         alt = vfr.alt; // this might include baro
+
+                        ch3percent = vfr.throttle;
 
                         //Console.WriteLine(alt);
 
