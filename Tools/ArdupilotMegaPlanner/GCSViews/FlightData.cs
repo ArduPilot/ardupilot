@@ -219,12 +219,15 @@ namespace ArdupilotMega.GCSViews
             if (CB_tuning.Checked)
                 ZedGraphTimer.Start();
 
-            if (!hud1.Visible)
-                hud1.Visible = true;
-            if (!hud1.Enabled)
-                hud1.Enabled = true;
+            if (MainV2.MONO)
+            {
+                if (!hud1.Visible)
+                    hud1.Visible = true;
+                if (!hud1.Enabled)
+                    hud1.Enabled = true;
 
-            hud1.Dock = DockStyle.Fill;
+                hud1.Dock = DockStyle.Fill;
+            }
 
             foreach (Control ctl in splitContainer1.Panel2.Controls)
             {
@@ -234,11 +237,13 @@ namespace ArdupilotMega.GCSViews
 
         public void Deactivate()
         {
-
-            hud1.Dock = DockStyle.None;
-            hud1.Size = new System.Drawing.Size(5,5);
-            hud1.Enabled = false;
-            hud1.Visible = false;
+            if (MainV2.MONO)
+            {
+                hud1.Dock = DockStyle.None;
+                hud1.Size = new System.Drawing.Size(5, 5);
+                hud1.Enabled = false;
+                hud1.Visible = false;
+            }
            //     hud1.Location = new Point(-1000,-1000);
 
             ZedGraphTimer.Stop();
@@ -315,7 +320,7 @@ namespace ArdupilotMega.GCSViews
 
                 if (MainV2.giveComport == true)
                 {
-                    System.Threading.Thread.Sleep(100);
+                    System.Threading.Thread.Sleep(50);
                     continue;
                 }
                 if (!comPort.BaseStream.IsOpen)
@@ -957,7 +962,7 @@ namespace ArdupilotMega.GCSViews
             {
                 ((Button)sender).Enabled = false;
 #if MAVLINK10
-                comPort.doCommand((MAVLink.MAV_CMD)Enum.Parse(typeof(MAVLink.MAV_CMD), CMB_action.Text),1,0,0,0,0,0,0);
+                comPort.doCommand((MAVLink.MAV_CMD)Enum.Parse(typeof(MAVLink.MAV_CMD), CMB_action.Text),1,1,1,0,0,0,0);
 #else
                 comPort.doAction((MAVLink.MAV_ACTION)Enum.Parse(typeof(MAVLink.MAV_ACTION), "MAV_ACTION_" + CMB_action.Text));
 #endif

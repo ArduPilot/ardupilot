@@ -169,6 +169,8 @@ SizeConst = 4)]
     static int nframes;
     static uint totalsize;
     System.IO.BufferedStream fd;
+    DateTime start = DateTime.MinValue;
+    int targetfps = 10;
 
     public void avi_close()
     {
@@ -187,13 +189,15 @@ SizeConst = 4)]
 
         nframes = 0;
         totalsize = 0;
+        start = DateTime.Now;
     }
 
 
     /* add a jpeg frame to an AVI file */
     public void avi_add(u8[] buf, uint size)
     {
-        Console.WriteLine(DateTime.Now.Millisecond + "avi frame");
+        uint osize = size;
+        Console.WriteLine(DateTime.Now.Millisecond + " avi frame");
         db_head db = new db_head { db = "00dc".ToCharArray(), size = size };
         fd.Write(StructureToByteArray(db), 0, Marshal.SizeOf(db));
         fd.Write(buf, 0, (int)size);
@@ -204,6 +208,12 @@ SizeConst = 4)]
         }
         nframes++;
         totalsize += size;
+
+        if (((DateTime.Now - start).TotalSeconds * targetfps) > nframes)
+        {
+            avi_add(buf, osize);
+            Console.WriteLine("Extra frame");
+        }
     }
 
     void strcpy(ref char[] to,string orig)
@@ -214,6 +224,8 @@ SizeConst = 4)]
     /* finish writing the AVI file - filling in the header */
     public void avi_end(int width, int height, int fps)
     {
+        targetfps = fps;
+
         riff_head rh = new riff_head { riff = "RIFF".ToCharArray(), size = 0, avistr = "AVI ".ToCharArray() };
         list_head lh1 = new list_head { list = "LIST".ToCharArray(), size = 0, type = "hdrl".ToCharArray() };
         avi_head ah = new avi_head();

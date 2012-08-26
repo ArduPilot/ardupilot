@@ -74,6 +74,7 @@ namespace ArdupilotMega.GCSViews
             this.pictureBoxOcta = new ArdupilotMega.Controls.ImageLabel();
             this.pictureBoxOctav = new ArdupilotMega.Controls.ImageLabel();
             this.label1 = new System.Windows.Forms.Label();
+            this.CMB_history = new System.Windows.Forms.ComboBox();
             ((System.ComponentModel.ISupportInitialize)(this.pictureBoxHilimage)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.pictureBoxAPHil)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.pictureBoxACHil)).BeginInit();
@@ -214,10 +215,19 @@ namespace ArdupilotMega.GCSViews
             resources.ApplyResources(this.label1, "label1");
             this.label1.Name = "label1";
             // 
+            // CMB_history
+            // 
+            this.CMB_history.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
+            this.CMB_history.FormattingEnabled = true;
+            resources.ApplyResources(this.CMB_history, "CMB_history");
+            this.CMB_history.Name = "CMB_history";
+            this.CMB_history.SelectedIndexChanged += new System.EventHandler(this.CMB_history_SelectedIndexChanged);
+            // 
             // Firmware
             // 
             resources.ApplyResources(this, "$this");
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
+            this.Controls.Add(this.CMB_history);
             this.Controls.Add(this.label1);
             this.Controls.Add(this.BUT_setup);
             this.Controls.Add(this.label2);
@@ -246,6 +256,8 @@ namespace ArdupilotMega.GCSViews
             this.PerformLayout();
 
         }
+
+        private ComboBox CMB_history;
 
     }
 }

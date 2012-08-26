@@ -124,7 +124,7 @@ namespace ArdupilotMega.Controls
             this.Controls.Add(this.btnCancel);
             this.Controls.Add(this.lblProgressMessage);
             this.Controls.Add(this.progressBar1);
-            this.FormBorderStyle = System.Windows.Forms.FormBorderStyle.FixedSingle;
+            this.FormBorderStyle = System.Windows.Forms.FormBorderStyle.FixedDialog;
             this.MaximizeBox = false;
             this.MinimizeBox = false;
             this.Name = "ProgressReporterDialogue";

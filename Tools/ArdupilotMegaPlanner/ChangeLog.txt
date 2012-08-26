@@ -1,4 +1,72 @@
-﻿* Mission Planner 1.2
+﻿* Mission Planner 1.2.8
+fix mjpeg stream from VLC.
+add grid mode V2
+fix hdop scaling
+
+
+* Mission Planner 1.2.7
+add wind from ap
+add wp every x m in grid mode
+fix hil problem
+fix control-s
+update mavlink format
+
+* Mission Planner 1.2.6
+add tracker location option.
+fix current sensor screen
+add more right click flight planner options.
+make some connecting error messages more detailed.
+add partial microdrones protocol output
+
+* Mission Planner 1.2.5
+add experimental antenna tracker find
+add new apparam eeprom reader
+add ground alt display to hud
+mod stats
+modify guided mode alt selection.
+test flight planner tab on flight data tab
+move some functions to the right click menu
+add xplanes data in/out setup to be automatic.
+add better mission upload handeling.
+
+* Mission Planner 1.2.4
+remove geofence tab
+add guided alt remeber
+change wp upload retry to 200 ms
+
+
+* Mission Planner 1.2.3
+hud font move
+add progress bar lock
+add quickview mono fix
+fix centi-degree/degree units
+fix mnt config camera tab
+fix some meters/feet scaling issues
+
+
+* Mission Planner 1.2.2
+add DegreeTracker
+fix popout tab on config page
+add remember last config tab
+fix bytes send count
+fix deactivate bug
+fix ap_limits bug
+fix ap_mount bug
+
+
+* Mission Planner 1.2.1
+add enable/disable to mavlinkcheckbox
+modify my button to curved
+add delay to progress reporter dialog. to ensure correct parent
+Fix Mount screen for AP
+Fix Hardware screen Text
+display roi difrently
+modify HIL/Quad Hil
+update dataflashlog format (thanks randy)
+update mavcmd format for roi
+
+
+* Mission Planner 1.2
 Enable Mount config screen
 Add Quick View (double click to change)
 fix mono updater issue

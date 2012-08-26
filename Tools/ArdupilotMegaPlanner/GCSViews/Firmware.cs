@@ -9,12 +9,15 @@ using System.Net;
 using log4net;
 using ArdupilotMega.Arduino;
 using ArdupilotMega.Utilities;
+using System.Text.RegularExpressions;
 
 namespace ArdupilotMega.GCSViews
 {
     partial class Firmware : MyUserControl
     {
         private static readonly ILog log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
+
+        string firmwareurl = "http://ardupilot-mega.googlecode.com/git/Tools/ArdupilotMegaPlanner/Firmware/firmware2.xml";
 
         protected override bool ProcessCmdKey(ref Message msg, Keys keyData)
         {
@@ -35,8 +38,25 @@ namespace ArdupilotMega.GCSViews
                 return true;
             }
 
+            if (keyData == (Keys.Control | Keys.O))
+            {
+                CMB_history.Enabled = false;
+
+                CMB_history.DataSource = oldurls;
+
+                CMB_history.Enabled = true;
+                CMB_history.Visible = true;
+            }
+
             return base.ProcessCmdKey(ref msg, keyData);
         }
+
+        // ap 2.5 - ac 2.7
+        //"https://meee146-planner.googlecode.com/git-history/dfc5737c5efc1e7b78e908829a097624c273d9d7/Tools/ArdupilotMegaPlanner/Firmware/firmware2.xml";
+        //"http://meee146-planner.googlecode.com/git/Tools/ArdupilotMegaPlanner/Firmware/AC2-Y6-1280.hex"
+        readonly string oldurl = ("https://meee146-planner.googlecode.com/git-history/!Hash!/Tools/ArdupilotMegaPlanner/Firmware/firmware2.xml");
+        readonly string oldfirmwareurl = ("https://meee146-planner.googlecode.com/git-history/!Hash!/Tools/ArdupilotMegaPlanner/Firmware/!Firmware!");
+        string[] oldurls = new string[] { "26305d5790333f730cd396afcd08c165cde33ed7", "bc1f26ca40b076e3d06f173adad772fb25aa6512", "dfc5737c5efc1e7b78e908829a097624c273d9d7", "682065db449b6c79d89717908ed8beea1ed6a03a", "b21116847d35472b9ab770408cbeb88ed2ed0a95", "511e00bc89a554aea8768a274bff28af532cd335", "1da56714aa1ed88dcdb078a90d33bcef4eb4315f", "8aa4c7a1ed07648f31335926cc6bcc06c87dc536" };
 
         List<software> softwares = new List<software>();
         bool flashing = false;
@@ -90,7 +110,7 @@ namespace ArdupilotMega.GCSViews
             try
             {
 
-                using (XmlTextReader xmlreader = new XmlTextReader("http://ardupilot-mega.googlecode.com/git/Tools/ArdupilotMegaPlanner/Firmware/firmware2.xml"))
+                using (XmlTextReader xmlreader = new XmlTextReader(firmwareurl))
                 {
                     while (xmlreader.Read())
                     {
@@ -346,6 +366,14 @@ namespace ArdupilotMega.GCSViews
                 {
                     CustomMessageBox.Show("Invalid Board Type");
                     return;
+                }
+
+                // use the git-history url
+                if (CMB_history.Visible == true)
+                {
+                    string fn = Path.GetFileName(baseurl);
+                    baseurl = oldfirmwareurl.Replace("!Hash!", CMB_history.Text);
+                    baseurl = baseurl.Replace("!Firmware!", fn);
                 }
 
                 log.Info("Using " + baseurl);
@@ -727,6 +755,13 @@ namespace ArdupilotMega.GCSViews
         private void pictureBoxAPHil_MouseLeave(object sender, EventArgs e)
         {
 
+        }
+
+        private void CMB_history_SelectedIndexChanged(object sender, EventArgs e)
+        {
+            firmwareurl = oldurl.Replace("!Hash!", CMB_history.Text);
+
+            Firmware_Load(null, null);
         }
     }
 }
