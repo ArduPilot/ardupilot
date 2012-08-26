@@ -26,7 +26,7 @@ void setup()
     I2c.begin();
     I2c.timeOut(20);
 
-    // I2c.setSpeed(true);
+    I2c.setSpeed(true);
 
     if (!compass.init()) {
         Serial.println("compass initialisation failed!");
@@ -61,6 +61,8 @@ void loop()
 {
     static float min[3], max[3], offset[3];
 
+    compass.accumulate();
+
     if((micros()- timer) > 100000L)
     {
         timer = micros();
@@ -73,6 +75,7 @@ void loop()
             return;
         }
         heading = compass.calculate_heading(0,0); // roll = 0, pitch = 0 for this example
+	compass.null_offsets();
 
         // capture min
         if( compass.mag_x < min[0] )

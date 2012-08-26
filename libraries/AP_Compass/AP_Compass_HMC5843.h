@@ -56,12 +56,22 @@ private:
     bool                write_register(uint8_t address, byte value);
     uint32_t            _retry_time; // when unhealthy the millis() value to retry at
 
+    int16_t			    _mag_x;
+    int16_t			    _mag_y;
+    int16_t			    _mag_z;
+    int16_t             _mag_x_accum;
+    int16_t             _mag_y_accum;
+    int16_t             _mag_z_accum;
+    uint8_t			    _accum_count;
+    uint32_t            _last_accum_time;
+
 public:
     AP_Compass_HMC5843() : Compass() {
     }
-    virtual bool        init(void);
-    virtual bool        read(void);
-    virtual void        set_orientation(enum Rotation rotation);
+    bool        init(void);
+    bool        read(void);
+    void        accumulate(void);
+    void        set_orientation(enum Rotation rotation);
 
 };
 #endif

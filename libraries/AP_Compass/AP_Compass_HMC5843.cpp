@@ -95,13 +95,41 @@ bool AP_Compass_HMC5843::read_raw()
         return false;
     }
 
-    mag_x = -rx;
-    mag_y = ry;
-    mag_z = -rz;
+    _mag_x = -rx;
+    _mag_y =  ry;
+    _mag_z = -rz;
 
     return true;
 }
 
+
+// accumulate a reading from the magnetometer
+void AP_Compass_HMC5843::accumulate(void)
+{
+   uint32_t tnow = micros();
+   if (healthy && _accum_count != 0 && (tnow - _last_accum_time) < 13333) {
+	  // the compass gets new data at 75Hz
+	  return;
+   }
+   if (read_raw()) {
+	  // the _mag_N values are in the range -2048 to 2047, so we can
+	  // accumulate up to 15 of them in an int16_t. Let's make it 14
+	  // for ease of calculation. We expect to do reads at 10Hz, and
+	  // we get new data at most 75Hz, so we don't expect to
+	  // accumulate more than 8 before a read
+	  _mag_x_accum += _mag_x;
+	  _mag_y_accum += _mag_y;
+	  _mag_z_accum += _mag_z;
+	  _accum_count++;
+	  if (_accum_count == 14) {
+		 _mag_x_accum /= 2;
+		 _mag_y_accum /= 2;
+		 _mag_z_accum /= 2;
+		 _accum_count = 7;
+	  }
+	  _last_accum_time = tnow;
+   }
+}
 
 
 /*
@@ -178,9 +206,9 @@ AP_Compass_HMC5843::init()
 
         float cal[3];
 
-        cal[0] = fabs(expected_x / (float)mag_x);
-        cal[1] = fabs(expected_yz / (float)mag_y);
-        cal[2] = fabs(expected_yz / (float)mag_z);
+        cal[0] = fabs(expected_x / (float)_mag_x);
+        cal[1] = fabs(expected_yz / (float)_mag_y);
+        cal[2] = fabs(expected_yz / (float)_mag_z);
 
         if (cal[0] > 0.7 && cal[0] < 1.3 &&
             cal[1] > 0.7 && cal[1] < 1.3 &&
@@ -194,11 +222,11 @@ AP_Compass_HMC5843::init()
 #if 0
         /* useful for debugging */
         Serial.print("mag_x: ");
-        Serial.print(mag_x);
+        Serial.print(_mag_x);
         Serial.print(" mag_y: ");
-        Serial.print(mag_y);
+        Serial.print(_mag_y);
         Serial.print(" mag_z: ");
-        Serial.println(mag_z);
+        Serial.println(_mag_z);
         Serial.print("CalX: ");
         Serial.print(calibration[0]/good_count);
         Serial.print(" CalY: ");
@@ -227,6 +255,10 @@ AP_Compass_HMC5843::init()
 
     _initialised = true;
 
+	// perform an initial read
+	healthy = true;
+	read();
+
     return success;
 }
 
@@ -249,16 +281,21 @@ bool AP_Compass_HMC5843::read()
         }
     }
 
-    if (!read_raw()) {
-        // try again in 1 second, and set I2c clock speed slower
-        _retry_time = millis() + 1000;
-        I2c.setSpeed(false);
-        return false;
-    }
+	if (_accum_count == 0) {
+	   accumulate();
+	   if (!healthy || _accum_count == 0) {
+		  // try again in 1 second, and set I2c clock speed slower
+		  _retry_time = millis() + 1000;
+		  I2c.setSpeed(false);
+		  return false;
+	   }
+	}
 
-    mag_x *= calibration[0];
-    mag_y *= calibration[1];
-    mag_z *= calibration[2];
+	mag_x = _mag_x_accum * calibration[0] / _accum_count;
+	mag_y = _mag_y_accum * calibration[1] / _accum_count;
+	mag_z = _mag_z_accum * calibration[2] / _accum_count;
+	_accum_count = 0;
+	_mag_x_accum = _mag_y_accum = _mag_z_accum = 0;
 
     last_update = micros(); // record time of update
 
