@@ -438,6 +438,7 @@
 //////////////////////////////////////////////////////////////////////////////
 // CAMERA TRIGGER AND CONTROL
 //
+// uses 1182 bytes of memory
 #ifndef CAMERA
  # define CAMERA         ENABLED
 #endif
@@ -815,7 +816,7 @@
  # define MAVLINK_TELEMETRY_PORT_DELAY 2000
 #endif
 
-// use this to disable gen-fencing
+// use this to disable geo-fencing
 #ifndef GEOFENCE_ENABLED
  # define GEOFENCE_ENABLED ENABLED
 #endif

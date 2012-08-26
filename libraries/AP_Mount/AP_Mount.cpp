@@ -422,14 +422,14 @@ void AP_Mount::status_msg(mavlink_message_t *msg)
     case MAV_MOUNT_MODE_NEUTRAL:                        // neutral position (Roll,Pitch,Yaw) from EEPROM
     case MAV_MOUNT_MODE_MAVLINK_TARGETING:      // neutral position and start MAVLink Roll,Pitch,Yaw control with stabilization
     case MAV_MOUNT_MODE_RC_TARGETING:                   // neutral position and start RC Roll,Pitch,Yaw control with stabilization
-        packet.pointing_b = _roll_angle*100;            ///< degrees*100
-        packet.pointing_a = _tilt_angle*100;            ///< degrees*100
-        packet.pointing_c = _pan_angle*100;                     ///< degrees*100
+        packet.pointing_b = _roll_angle*100;            // degrees*100
+        packet.pointing_a = _tilt_angle*100;            // degrees*100
+        packet.pointing_c = _pan_angle*100;             // degrees*100
         break;
     case MAV_MOUNT_MODE_GPS_POINT:             // neutral position and start to point to Lat,Lon,Alt
-        packet.pointing_a = _target_GPS_location.lat;           ///< latitude
-        packet.pointing_b = _target_GPS_location.lng;           ///< longitude
-        packet.pointing_c = _target_GPS_location.alt;           ///< altitude
+        packet.pointing_a = _target_GPS_location.lat;   // latitude
+        packet.pointing_b = _target_GPS_location.lng;   // longitude
+        packet.pointing_c = _target_GPS_location.alt;   // altitude
         break;
     case MAV_MOUNT_MODE_ENUM_END:
         break;
