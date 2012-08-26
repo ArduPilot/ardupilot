@@ -446,10 +446,13 @@
 //////////////////////////////////////////////////////////////////////////////
 // MOUNT (ANTENNA OR CAMERA)
 //
+// uses 4174 bytes of memory on 1280 chips (MNT_JSTICK_SPD_OPTION, MNT_RETRACT_OPTION, MNT_STABILIZE_OPTION and MNT_MOUNT2_OPTION disabled)
+// uses 7726 bytes of memory on 2560 chips (all options are enabled)
 #ifndef MOUNT
  # define MOUNT          ENABLED
 #endif
 
+// second mount, can for example be used to keep an antenna pointed at the home position
 #ifndef MOUNT2
  # define MOUNT2         DISABLED
 #endif
@@ -470,6 +473,8 @@
   #  define GPS_PROTOCOL GPS_PROTOCOL_MTK
  # endif
 
+ # undef  CAMERA
+ # define CAMERA         DISABLED
 #endif
 
 
