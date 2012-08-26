@@ -15,7 +15,7 @@
 * Usage:	Use in main code to control	mounts attached to	*
 *			vehicle.										*
 *															*
-**Comments:  All angles in degrees * 100, distances in meters*
+* Comments: All angles in degrees * 100, distances in meters*
 *			unless otherwise stated.						*
 ************************************************************/
 #ifndef AP_Mount_H
@@ -37,9 +37,9 @@ public:
 
     //enums
     enum MountType {
-        k_unknown = 0,                          ///< unknown type
-        k_pan_tilt = 1,                         ///< yaw-pitch
-        k_tilt_roll = 2,                        ///< pitch-roll
+        k_unknown = 0,                  ///< unknown type
+        k_pan_tilt = 1,                 ///< yaw-pitch
+        k_tilt_roll = 2,                ///< pitch-roll
         k_pan_tilt_roll = 3,            ///< yaw-pitch-roll
     };
 
@@ -54,7 +54,7 @@ public:
     // should be called periodically
     void                    update_mount_position();
     void                    update_mount_type(); ///< Auto-detect the mount gimbal type depending on the functions assigned to the servos
-    void                    debug_output();     ///< For testing and development. Called in the medium loop.
+    void                    debug_output();      ///< For testing and development. Called in the medium loop.
     // Accessors
     enum MountType          get_mount_type() {
         return _mount_type;
@@ -89,21 +89,21 @@ private:
 
     uint8_t                         _roll_idx; ///< RC_Channel_aux mount roll function index
     uint8_t                         _tilt_idx; ///< RC_Channel_aux mount tilt function index
-    uint8_t                         _pan_idx; ///< RC_Channel_aux mount pan  function index
+    uint8_t                         _pan_idx;  ///< RC_Channel_aux mount pan  function index
     uint8_t                         _open_idx; ///< RC_Channel_aux mount open function index
 
     float                           _roll_control_angle; ///< radians
     float                           _tilt_control_angle; ///< radians
-    float                           _pan_control_angle; ///< radians
+    float                           _pan_control_angle;  ///< radians
 
     float                           _roll_angle; ///< degrees
     float                           _tilt_angle; ///< degrees
-    float                           _pan_angle; ///< degrees
+    float                           _pan_angle;  ///< degrees
 
     // EEPROM parameters
     AP_Int8                         _stab_roll; ///< (1 = yes, 0 = no)
     AP_Int8                         _stab_tilt; ///< (1 = yes, 0 = no)
-    AP_Int8                         _stab_pan; ///< (1 = yes, 0 = no)
+    AP_Int8                         _stab_pan;  ///< (1 = yes, 0 = no)
 
     AP_Int8                         _mount_mode;
     // RC_Channel for providing direct angular input from pilot
@@ -115,8 +115,8 @@ private:
     AP_Int16                        _roll_angle_max; ///< max angle limit of actuated surface in 0.01 degree units
     AP_Int16                        _tilt_angle_min; ///< min angle limit of actuated surface in 0.01 degree units
     AP_Int16                        _tilt_angle_max; ///< max angle limit of actuated surface in 0.01 degree units
-    AP_Int16                        _pan_angle_min; ///< min angle limit of actuated surface in 0.01 degree units
-    AP_Int16                        _pan_angle_max; ///< max angle limit of actuated surface in 0.01 degree units
+    AP_Int16                        _pan_angle_min;  ///< min angle limit of actuated surface in 0.01 degree units
+    AP_Int16                        _pan_angle_max;  ///< max angle limit of actuated surface in 0.01 degree units
 
     AP_Int8                         _joystick_speed;
 
