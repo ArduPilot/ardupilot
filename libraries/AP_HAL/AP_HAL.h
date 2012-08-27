@@ -13,8 +13,8 @@
 #include "Log.h"
 #include "Console.h"
 #include "GPIO.h"
-#include "PPMInput.h"
-#include "PWMOutput.h"
+#include "RCInput.h"
+#include "RCOutput.h"
 #include "Scheduler.h"
 
 #include "utility/Print.h"

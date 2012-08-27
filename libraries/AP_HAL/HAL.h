@@ -11,8 +11,8 @@
 #include "../AP_HAL/Log.h"
 #include "../AP_HAL/Console.h"
 #include "../AP_HAL/GPIO.h"
-#include "../AP_HAL/PPMInput.h"
-#include "../AP_HAL/PWMOutput.h"
+#include "../AP_HAL/RCInput.h"
+#include "../AP_HAL/RCOutput.h"
 
 class AP_HAL::HAL {
 public:
@@ -27,8 +27,8 @@ public:
         AP_HAL::Log*        _log,
         AP_HAL::Console*    _console,
         AP_HAL::GPIO*       _gpio,
-        AP_HAL::PPMInput*   _ppmin,
-        AP_HAL::PWMOutput*  _pwmout,
+        AP_HAL::RCInput*    _rcin,
+        AP_HAL::RCOutput*   _rcout,
         AP_HAL::Scheduler*  _scheduler)
         :
         uart0(_uart0),
@@ -42,8 +42,8 @@ public:
         log(_log),
         console(_console),
         gpio(_gpio),
-        ppmin(_ppmin),
-        pwmout(_pwmout),
+        rcin(_rcin),
+        rcout(_rcout),
         scheduler(_scheduler)
     {}
 
@@ -60,8 +60,8 @@ public:
     AP_HAL::Log*        log;
     AP_HAL::Console*    console;
     AP_HAL::GPIO*       gpio;
-    AP_HAL::PPMInput*   ppmin;
-    AP_HAL::PWMOutput*  pwmout;
+    AP_HAL::RCInput*    rcin;
+    AP_HAL::RCOutput*   rcout;
     AP_HAL::Scheduler*  scheduler;
 };
 

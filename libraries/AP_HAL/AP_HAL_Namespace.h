@@ -16,8 +16,8 @@ namespace AP_HAL {
     class Log;
     class Console;
     class GPIO;
-    class PPMInput;
-    class PWMOutput;
+    class RCInput;
+    class RCOutput;
     class Scheduler;
 
     class EmptyUARTDriver;

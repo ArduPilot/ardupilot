@@ -14,10 +14,10 @@ namespace AP_HAL_AVR {
     class DataFlashAPM2Log;
     class AVRUARTConsole;
     class ArduinoGPIO;
-    class APM1PPMInput;
-    class APM2PPMInput;
-    class APM1PWMOutput;
-    class APM2PWMOutput;
+    class APM1RCInput;
+    class APM2RCInput;
+    class APM1RCOutput;
+    class APM2RCOutput;
     class ArduinoScheduler;
 }
 

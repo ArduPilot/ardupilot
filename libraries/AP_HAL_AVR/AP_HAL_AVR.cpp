@@ -12,8 +12,8 @@
 #include "Log.h"
 #include "Console.h"
 #include "GPIO.h"
-#include "PPMInput.h"
-#include "PWMOutput.h"
+#include "RCInput.h"
+#include "RCOutput.h"
 #include "Scheduler.h"
 
 using namespace AP_HAL;
@@ -36,10 +36,10 @@ static DataFlashAPM1Log apm1DataFlashLog;
 static DataFlashAPM2Log apm2DataFlashLog;
 static AVRUARTConsole   avrUartConsole(&avrUart0Driver);
 static ArduinoGPIO      arduinoGPIO;
-static APM1PPMInput     apm1PPMInput;
-static APM2PPMInput     apm2PPMInput;
-static APM1PWMOutput    apm1PWMOutput;
-static APM2PWMOutput    apm2PWMOutput;
+static APM1RCInput      apm1RCInput;
+static APM2RCInput      apm2RCInput;
+static APM1RCOutput     apm1RCOutput;
+static APM2RCOutput     apm2RCOutput;
 static ArduinoScheduler arduinoScheduler;
 
 const HAL_AVR AP_HAL_AVR_APM1(
@@ -54,8 +54,8 @@ const HAL_AVR AP_HAL_AVR_APM1(
         &apm1DataFlashLog,
         &avrUartConsole,
         &arduinoGPIO,
-        &apm1PPMInput,
-        &apm1PWMOutput,
+        &apm1RCInput,
+        &apm1RCOutput,
         &arduinoScheduler );
 
 const HAL_AVR AP_HAL_AVR_APM2(
@@ -70,7 +70,7 @@ const HAL_AVR AP_HAL_AVR_APM2(
         &apm2DataFlashLog,
         &avrUartConsole,
         &arduinoGPIO,
-        &apm2PPMInput,
-        &apm2PWMOutput,
+        &apm2RCInput,
+        &apm2RCOutput,
         &arduinoScheduler );
 
