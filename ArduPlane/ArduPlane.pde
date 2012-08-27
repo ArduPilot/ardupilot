@@ -524,6 +524,9 @@ static int32_t takeoff_altitude;
 // Minimum pitch to hold during takeoff command execution.  Hundredths of a degree
 static int16_t takeoff_pitch_cd;
 
+// this controls throttle suppression in auto modes
+static bool throttle_suppressed;
+
 ////////////////////////////////////////////////////////////////////////////////
 // Loiter management
 ////////////////////////////////////////////////////////////////////////////////
