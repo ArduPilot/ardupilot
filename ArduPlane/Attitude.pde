@@ -161,7 +161,7 @@ static void calc_throttle()
         g.channel_throttle.servo_out += (g.channel_pitch.servo_out * g.kff_pitch_to_throttle);
 
         g.channel_throttle.servo_out = constrain(g.channel_throttle.servo_out,
-                                                 g.throttle_min.get(), g.throttle_max.get()); // TODO - resolve why "saved" is used here versus "current"
+                                                 g.throttle_min.get(), g.throttle_max.get());
     }
 
 }
@@ -285,6 +285,53 @@ static void reset_I(void)
 //	g.pidAltitudeThrottle.reset_I();
 }
 
+/* We want to supress the throttle if we think we are on the ground and in an autopilot controlled throttle mode.
+
+   Disable throttle if following conditions are met:
+   *       1 - We are in Circle mode (which we use for short term failsafe), or in FBW-B or higher
+   *       AND
+   *       2 - Our reported altitude is within 10 meters of the home altitude.
+   *       3 - Our reported speed is under 5 meters per second.
+   *       4 - We are not performing a takeoff in Auto mode
+   *       OR
+   *       5 - Home location is not set
+*/
+static bool suppress_throttle(void)
+{
+    if (!throttle_suppressed) {
+        // we've previously met a condition for unsupressing the throttle
+        return false;
+    }
+    if (control_mode != CIRCLE && control_mode <= FLY_BY_WIRE_A) {
+        // the user controls the throttle
+        throttle_suppressed = false;
+        return false;
+    }
+
+    if (control_mode==AUTO && takeoff_complete == false) {
+        // we're in auto takeoff 
+        throttle_suppressed = false;
+        return false;
+    }
+    
+    if (labs(home.alt - current_loc.alt) >= 1000) {
+        // we're more than 10m from the home altitude
+        throttle_suppressed = false;
+        return false;
+    }
+
+    if (g_gps != NULL && 
+        g_gps->status() == GPS::GPS_OK && 
+        g_gps->ground_speed >= 500) {
+        // we're moving at more than 5 m/s
+        throttle_suppressed = false;
+        return false;        
+    }
+
+    // throttle remains suppressed
+    return true;
+}
+
 /*****************************************
 * Set the flight control servos based on the current calculated values
 *****************************************/
@@ -355,22 +402,7 @@ static void set_servos(void)
         // convert 0 to 100% into PWM
         g.channel_throttle.servo_out = constrain(g.channel_throttle.servo_out, g.throttle_min.get(), g.throttle_max.get());
 
-        // We want to supress the throttle if we think we are on the ground and in an autopilot controlled throttle mode.
-        /* Disable throttle if following conditions are met:
-         *       1 - We are in Circle mode (which we use for short term failsafe), or in FBW-B or higher
-         *       AND
-         *       2 - Our reported altitude is within 10 meters of the home altitude.
-         *       3 - Our reported speed is under 5 meters per second.
-         *       4 - We are not performing a takeoff in Auto mode
-         *       OR
-         *       5 - Home location is not set
-         */
-        if (
-            (control_mode == CIRCLE || control_mode >= FLY_BY_WIRE_B) &&
-            (labs(home.alt - current_loc.alt) < 1000) &&
-            ((airspeed.use() ? airspeed.get_airspeed_cm() : g_gps->ground_speed) < 500 ) &&
-            !(control_mode==AUTO && takeoff_complete == false)
-            ) {
+        if (suppress_throttle()) {
             g.channel_throttle.servo_out = 0;
             g.channel_throttle.calc_pwm();
         }

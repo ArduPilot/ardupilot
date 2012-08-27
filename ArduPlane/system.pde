@@ -379,6 +379,12 @@ static void set_mode(byte mode)
         break;
     }
 
+    // if in an auto-throttle mode, start with throttle suppressed for
+    // safety. suppress_throttle() will unsupress it when appropriate
+    if (control_mode == CIRCLE || control_mode >= FLY_BY_WIRE_B) {
+        throttle_suppressed = true;
+    }
+
     if (g.log_bitmask & MASK_LOG_MODE)
         Log_Write_Mode(control_mode);
 }
