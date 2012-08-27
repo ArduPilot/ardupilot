@@ -33,10 +33,6 @@ static void read_control_switch()
 
         oldSwitchPosition = switchPosition;
         prev_WP = current_loc;
-
-        // reset navigation integrators
-        // -------------------------
-        reset_I();
     }
 
     if (g.reset_mission_chan != 0 &&

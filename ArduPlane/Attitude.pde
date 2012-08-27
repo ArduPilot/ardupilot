@@ -273,18 +273,6 @@ static void throttle_slew_limit()
 }
 
 
-// Zeros out navigation Integrators if we are changing mode, have passed a waypoint, etc.
-// Keeps outdated data out of our calculations
-static void reset_I(void)
-{
-    g.pidNavRoll.reset_I();
-    g.pidNavPitchAirspeed.reset_I();
-    g.pidNavPitchAltitude.reset_I();
-    g.pidTeThrottle.reset_I();
-    g.pidWheelSteer.reset_I();
-//	g.pidAltitudeThrottle.reset_I();
-}
-
 /* We want to supress the throttle if we think we are on the ground and in an autopilot controlled throttle mode.
 
    Disable throttle if following conditions are met:

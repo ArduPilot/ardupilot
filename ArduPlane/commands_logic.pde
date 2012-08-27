@@ -6,11 +6,6 @@
 static void
 handle_process_nav_cmd()
 {
-    // reset navigation integrators
-    // -------------------------
-    reset_I();
-
-
     // set land_complete to false to stop us zeroing the throttle
     land_complete = false;
 
