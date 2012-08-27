@@ -75,10 +75,6 @@ static void failsafe_short_off_event()
         (g.short_fs_action == 1 && control_mode == RTL)) {
         reset_control_switch();
     }
-
-    // Reset control integrators
-    // ---------------------
-    reset_I();
 }
 
 #if BATTERY_EVENT == ENABLED

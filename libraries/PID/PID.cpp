@@ -25,6 +25,12 @@ PID::get_pid(int32_t error, float scaler)
 
     if (_last_t == 0 || dt > 1000) {
         dt = 0;
+
+		// if this PID hasn't been used for a full second then zero
+		// the intergator term. This prevents I buildup from a
+		// previous fight mode from causing a massive return before
+		// the integrator gets a chance to correct itself
+		_integrator = 0;
     }
     _last_t = tnow;
 
