@@ -268,7 +268,7 @@ def main_loop():
 
         # only simulate wind above 5 meters, to prevent crashes while
         # waiting for takeoff
-        if tnow - last_wind_update > 0.1 and fdm.get('agl', units='meters') > 2:
+        if tnow - last_wind_update > 0.1:
             update_wind(wind)
             last_wind_update = tnow
 
