@@ -93,9 +93,9 @@ def fly_LOITER(mavproxy, mav, num_circles=4):
     mavproxy.send('loiter\n')
     wait_mode(mav, 'LOITER')
     while num_circles > 0:
-        if not wait_heading(mav, 0, accuracy=10):
+        if not wait_heading(mav, 0, accuracy=10, timeout=60):
             return False
-        if not wait_heading(mav, 180, accuracy=10):
+        if not wait_heading(mav, 180, accuracy=10, timeout=60):
             return False
         num_circles -= 1
         print("Loiter %u circles left" % num_circles)
