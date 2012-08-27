@@ -179,7 +179,7 @@ def inside_loop(mavproxy, mav, count=1):
     while count > 0:
         print("Starting loop")
         mavproxy.send('rc 2 1000\n')
-        if not wait_pitch(mav, 80, accuracy=20):
+        if not wait_pitch(mav, -60, accuracy=20):
             return False
         if not wait_pitch(mav, 0, accuracy=20):
             return False
@@ -228,7 +228,7 @@ def fly_ArduPlane(viewerip=None):
     '''
     global homeloc
 
-    options = '--sitl=127.0.0.1:5501 --out=127.0.0.1:19550 --streamrate=5'
+    options = '--sitl=127.0.0.1:5501 --out=127.0.0.1:19550 --streamrate=10'
     if viewerip:
         options += " --out=%s:14550" % viewerip
 
