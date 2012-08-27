@@ -4,6 +4,7 @@
 
 #include <AP_HAL.h>
 #include "AP_HAL_AVR_Namespace.h"
+#include "utility/ISRRegistry.h"
 
 /**
  * HAL_AVR class derives from HAL but provides an AVR-specific
@@ -33,6 +34,7 @@ public:
                         _rcout, _scheduler) {}
 
     void init(void* opts) const;
+    AP_HAL_AVR::ISRRegistry isr_registry;
 };
 #endif // __AP_HAL_AVR_HAL_AVR_H__
 

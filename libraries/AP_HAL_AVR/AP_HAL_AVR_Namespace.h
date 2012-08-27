@@ -19,6 +19,7 @@ namespace AP_HAL_AVR {
     class APM1RCOutput;
     class APM2RCOutput;
     class ArduinoScheduler;
+    class ISRRegistry;
 }
 
 #endif //__AP_HAL_AVR_NAMESPACE_H__
