@@ -214,6 +214,11 @@ static void sitl_simulator_output(void)
 	control.direction  = direction * 100;
 	control.turbulance = sitl.wind_turbulance * 100;
 
+	// zero the wind for the first 15s to allow pitot calibration
+	if (millis() < 15000) {
+		control.speed = 0;
+	}
+
 	sendto(sitl_fd, (void*)&control, sizeof(control), MSG_DONTWAIT, (const sockaddr *)&rcout_addr, sizeof(rcout_addr));
 }
 
