@@ -461,9 +461,6 @@ void AP_InertialSensor_MPU6000::hardware_init()
     delay(1);
 
     attachInterrupt(6,data_interrupt,RISING);
-
-    // initialise DMP.  Should we only do this when we know we want to use the DMP for attitude sensing as well?
-    dmp_init();
 }
 
 float AP_InertialSensor_MPU6000::_temp_to_celsius ( uint16_t regval )
@@ -574,6 +571,7 @@ void AP_InertialSensor_MPU6000::dmp_register_write(uint8_t bank, uint8_t address
 }
 
 // MPU6000 DMP initialization
+// this should be called after hardware_init if you wish to enable the dmp
 void AP_InertialSensor_MPU6000::dmp_init()
 {
     uint8_t regs[4];    // for writing to dmp
