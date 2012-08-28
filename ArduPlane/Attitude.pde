@@ -366,8 +366,6 @@ static void set_servos(void)
         }
     } else {
         if (g.mix_mode == 0) {
-            g.channel_roll.calc_pwm();
-            g.channel_pitch.calc_pwm();
             if (g_rc_function[RC_Channel_aux::k_aileron]) {
                 g_rc_function[RC_Channel_aux::k_aileron]->servo_out = g.channel_roll.servo_out;
                 g_rc_function[RC_Channel_aux::k_aileron]->calc_pwm();
@@ -382,7 +380,6 @@ static void set_servos(void)
             g.channel_roll.radio_out =      elevon1_trim + (BOOL_TO_SIGN(g.reverse_ch1_elevon) * (ch1 * 500.0/ SERVO_MAX));
             g.channel_pitch.radio_out =     elevon2_trim + (BOOL_TO_SIGN(g.reverse_ch2_elevon) * (ch2 * 500.0/ SERVO_MAX));
         }
-        g.channel_rudder.calc_pwm();
 
 #if THROTTLE_OUT == 0
         g.channel_throttle.servo_out = 0;
@@ -392,18 +389,35 @@ static void set_servos(void)
 
         if (suppress_throttle()) {
             g.channel_throttle.servo_out = 0;
-            g.channel_throttle.calc_pwm();
         }
 
 #endif
 
-        g.channel_throttle.calc_pwm();
 
         if (control_mode >= FLY_BY_WIRE_B) {
             /* only do throttle slew limiting in modes where throttle
              *  control is automatic */
             throttle_slew_limit();
         }
+
+#if OBC_FAILSAFE == ENABLED
+        // this is to allow the failsafe module to deliberately crash 
+        // the plane. Only used in extreme circumstances to meet the
+        // OBC rules
+        if (obc.crash_plane()) {
+            g.channel_roll.servo_out = -4500;
+            g.channel_pitch.servo_out = -4500;
+            g.channel_rudder.servo_out = -4500;
+            g.channel_throttle.servo_out = 0;
+        }
+#endif
+        
+
+        // push out the PWM values
+        g.channel_roll.calc_pwm();
+        g.channel_pitch.calc_pwm();
+        g.channel_throttle.calc_pwm();
+        g.channel_rudder.calc_pwm();
     }
 
     // Auto flap deployment

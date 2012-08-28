@@ -50,6 +50,12 @@ public:
 		   uint32_t last_heartbeat_ms,
 		   uint32_t last_gps_fix_ms);
 
+	// should we crash the plane? Only possible with
+	// FS_TERM_ACTTION set to 43
+	bool crash_plane(void) {
+		return _terminate && _terminate_action == 42;
+	}
+
 	// for holding parameters
 	static const struct AP_Param::GroupInfo var_info[];
 
@@ -60,6 +66,7 @@ private:
 	AP_Int8 _heartbeat_pin;
 	AP_Int8 _manual_pin;
 	AP_Int8 _terminate;
+	AP_Int8 _terminate_action;
 
 	// last pins to cope with changing at runtime
 	int8_t _last_heartbeat_pin;

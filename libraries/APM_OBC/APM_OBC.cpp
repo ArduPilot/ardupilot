@@ -43,6 +43,12 @@ const AP_Param::GroupInfo APM_OBC::var_info[] PROGMEM = {
     // @User: Advanced
     AP_GROUPINFO("TERMINATE",   5, APM_OBC, _terminate, 0),
 
+    // @Param: TERM_ACTION
+    // @DisplayName: Terminate action
+    // @Description: This can be used to force an action on flight termination. Normally this is handled by an external failsafe board, but you can setup APM to handle it here. If set to 0 (which is the default) then no extra action is taken. If set to the magic value 42 then the plane will deliberately crash itself by setting maximum throws on all surfaces, and zero throttle
+    // @User: Advanced
+    AP_GROUPINFO("TERM_ACTION", 6, APM_OBC, _terminate_action, 0),
+
     AP_GROUPEND
 };
 
