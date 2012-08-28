@@ -43,6 +43,7 @@ public:
 		// auto mission when a failsafe condition is resolved
 		enum ap_var_type var_type;
 		_command_index = (AP_Int8 *)AP_Param::find("CMD_INDEX", &var_type);
+		_saved_wp = 0;
 	}
 
 	void check(enum control_mode control_mode,
