@@ -130,7 +130,10 @@ APM_OBC::check(APM_OBC::control_mode mode,
 		} else if (gcs_link_ok) {
 			_state = STATE_AUTO;
 			gcs_send_text_fmt(PSTR("GCS OK"));
-			change_command(_saved_wp);			
+			if (_saved_wp != 0) {
+				change_command(_saved_wp);			
+				_saved_wp = 0;
+			}
 		}
 		break;
 
@@ -143,7 +146,10 @@ APM_OBC::check(APM_OBC::control_mode mode,
 		} else if (gps_lock_ok) {
 			gcs_send_text_fmt(PSTR("GPS OK"));
 			_state = STATE_AUTO;
-			change_command(_saved_wp);			
+			if (_saved_wp != 0) {
+				change_command(_saved_wp);			
+				_saved_wp = 0;
+			}
 		}
 		break;
 	}
