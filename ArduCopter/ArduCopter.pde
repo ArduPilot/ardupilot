@@ -985,7 +985,9 @@ void loop()
     // We want this to execute fast
     // ----------------------------
     if ((timer - fast_loopTimer) >= 10000 && imu.new_data_available()) {
-        //Log_Write_Data(13, (int32_t)(timer - fast_loopTimer));
+		#if DEBUG_FAST_LOOP == ENABLED
+        Log_Write_Data(50, (int32_t)(timer - fast_loopTimer));
+        #endif
 
         //PORTK |= B00010000;
         G_Dt                            = (float)(timer - fast_loopTimer) / 1000000.f;                  // used by PI Loops
@@ -1004,6 +1006,11 @@ void loop()
     //PORTK &= B11101111;
 
     if ((timer - fiftyhz_loopTimer) >= 20000) {
+
+		#if DEBUG_MED_LOOP == ENABLED
+    	Log_Write_Data(51, (int32_t)(timer - fiftyhz_loopTimer));
+        #endif
+
         // store the micros for the 50 hz timer
         fiftyhz_loopTimer               = timer;
 
