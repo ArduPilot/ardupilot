@@ -89,8 +89,9 @@ static void geofence_load(void)
         }
     }
 
-    if (g.fence_total < 0) {
+    if (g.fence_total <= 0) {
         g.fence_total.set(0);
+        return;
     }
 
     for (i=0; i<g.fence_total; i++) {
@@ -125,6 +126,7 @@ failed:
 static bool geofence_enabled(void)
 {
     if (g.fence_action == FENCE_ACTION_NONE ||
+        g.fence_total < 5 ||
         (g.fence_action != FENCE_ACTION_REPORT &&
          (g.fence_channel == 0 ||
           APM_RC.InputCh(g.fence_channel-1) < FENCE_ENABLE_PWM))) {
