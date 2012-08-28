@@ -36,8 +36,9 @@ void APM2RCInput::_timer5_capt_cb(void) {
         if (channel_ctr < AVR_RC_INPUT_NUM_CHANNELS) {
             _pulse_capt[channel_ctr] = pulse_width;
             channel_ctr++;
-        } else {
-            _valid = AVR_RC_INPUT_NUM_CHANNELS;
+            if (channel_ctr == AVR_RC_INPUT_NUM_CHANNELS) {
+                _valid = AVR_RC_INPUT_NUM_CHANNELS;
+            }
         }
     }
     icr5_prev = icr5_current;
@@ -71,24 +72,35 @@ void APM2RCInput::init(void* _isrregistry) {
 
 uint8_t APM2RCInput::valid() { return _valid; }
 
-#define constrain(amt,low,high) ((amt)<(low)?(low):((amt)>(high)?(high):(amt)))
+/* constrain captured pulse to be between min and max pulsewidth. */
+static inline uint16_t constrain_pulse(uint16_t p) {
+    if (p > RC_INPUT_MAX_PULSEWIDTH) return RC_INPUT_MAX_PULSEWIDTH;
+    if (p < RC_INPUT_MIN_PULSEWIDTH) return RC_INPUT_MIN_PULSEWIDTH;
+    return p;
+}
+
 
 uint16_t APM2RCInput::read(uint8_t ch) {
     cli();
     uint16_t capt = _pulse_capt[ch];
     sei();
-    uint16_t capt_usec = capt >> 1;
     _valid = 0;
-    return constrain(capt_usec,
-            RC_INPUT_MIN_PULSEWIDTH, RC_INPUT_MAX_PULSEWIDTH);
+    /* scale _pulse_capt from 0.5us units to 1us units. */
+    return constrain_pulse(capt >> 1);
 }
 
 uint8_t APM2RCInput::read(uint16_t* periods, uint8_t len) {
     cli();
     for (int i = 0; i < len; i++) {
-        periods[i] = _pulse_capt[i] >> 1;
+        periods[i] = _pulse_capt[i];
     }
     sei();
+    /* Outside of critical section, do the math (in place) to scale and
+     * constrain the pulse. */
+    for (int i = 0; i < len; i++) {
+        /* scale _pulse_capt from 0.5us units to 1us units. */
+        periods[i] = constrain_pulse(periods[i] >> 1);
+    }
     uint8_t v = _valid;
     _valid = 0;
     return v;
