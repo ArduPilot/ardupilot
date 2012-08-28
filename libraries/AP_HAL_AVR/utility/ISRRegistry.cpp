@@ -6,13 +6,7 @@
 
 using namespace AP_HAL_AVR;
 
-proc_ptr ISRRegistry::_registry[ISR_REGISTRY_NUM_SLOTS];
-
-void ISRRegistry::init() {
-    for(int i = 0; i < ISR_REGISTRY_NUM_SLOTS; i++) {
-        _registry[i] = NULL;
-    }
-}
+proc_ptr ISRRegistry::_registry[ISR_REGISTRY_NUM_SLOTS] = {NULL};
 
 int ISRRegistry::register_signal(int signal, proc_ptr proc)
 {

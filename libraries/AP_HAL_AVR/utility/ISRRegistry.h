@@ -14,7 +14,6 @@ typedef void (*proc_ptr)(void);
 
 class AP_HAL_AVR::ISRRegistry {
 public:
-    void init();
     int register_signal(int isr_number, proc_ptr proc);
     int unregister_signal(int isr_number);
     
