@@ -76,7 +76,7 @@ static void process_next_command()
             if (g.log_bitmask & MASK_LOG_CMD) {
                 Log_Write_Cmd(g.command_index, &next_nav_command);
             }
-            process_nav_cmd();
+            handle_process_nav_cmd();
         }
     }
 
@@ -92,19 +92,24 @@ static void process_next_command()
     //gcs_send_text_fmt(PSTR("Nav command index #%i"),nav_command_index);
     //gcs_send_text_fmt(PSTR("Non-Nav command index #%i"),non_nav_command_index);
     //gcs_send_text_fmt(PSTR("Non-Nav command ID #%i"),non_nav_command_ID);
-    if(nav_command_index <= (int)g.command_total && non_nav_command_ID == NO_COMMAND) {
+    if (nav_command_index <= (int)g.command_total && non_nav_command_ID == NO_COMMAND) {
         temp = get_cmd_with_index(non_nav_command_index);
-        if(temp.id <= MAV_CMD_NAV_LAST) {                       // The next command is a nav command.  No non-nav commands to do
+        if (temp.id <= MAV_CMD_NAV_LAST) {                       
+            // The next command is a nav command.  No non-nav commands to do
             g.command_index.set_and_save(nav_command_index);
             non_nav_command_index = nav_command_index;
             non_nav_command_ID = WAIT_COMMAND;
-            gcs_send_text_fmt(PSTR("Non-Nav command ID updated to #%i"),non_nav_command_ID);
+            gcs_send_text_fmt(PSTR("Non-Nav command ID updated to #%i idx=%u"),
+                              (unsigned)non_nav_command_ID, 
+                              (unsigned)non_nav_command_index);
 
-        } else {                                                                        // The next command is a non-nav command.  Prepare to execute it.
+        } else {                                                                        
+            // The next command is a non-nav command.  Prepare to execute it.
             g.command_index.set_and_save(non_nav_command_index);
             next_nonnav_command = temp;
             non_nav_command_ID = next_nonnav_command.id;
-            gcs_send_text_fmt(PSTR("Non-Nav command ID updated to #%i"),non_nav_command_ID);
+            gcs_send_text_fmt(PSTR("(2) Non-Nav command ID updated to #%i idx=%u"),
+                              (unsigned)non_nav_command_ID, (unsigned)non_nav_command_index);
 
             if (g.log_bitmask & MASK_LOG_CMD) {
                 Log_Write_Cmd(g.command_index, &next_nonnav_command);
@@ -112,7 +117,6 @@ static void process_next_command()
 
             process_non_nav_command();
         }
-
     }
 }
 
@@ -122,13 +126,7 @@ static void process_next_command()
 static void process_nav_cmd()
 {
     //gcs_send_text_P(SEVERITY_LOW,PSTR("New nav command loaded"));
-
-    // clear non-nav command ID and index
-    non_nav_command_index   = NO_COMMAND;               // Redundant - remove?
-    non_nav_command_ID              = NO_COMMAND;               // Redundant - remove?
-
     handle_process_nav_cmd();
-
 }
 
 static void process_non_nav_command()
@@ -141,6 +139,8 @@ static void process_non_nav_command()
         handle_process_do_command();
         // flag command ID so a new one is loaded
         // -----------------------------------------
-        non_nav_command_ID = NO_COMMAND;
+        if (non_nav_command_ID != WAIT_COMMAND) {
+            non_nav_command_ID = NO_COMMAND;
+        }
     }
 }

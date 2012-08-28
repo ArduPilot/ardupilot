@@ -519,10 +519,11 @@ static void do_jump()
     next_nav_command.id     = NO_COMMAND;
     non_nav_command_ID      = NO_COMMAND;
 
-    gcs_send_text_fmt(PSTR("setting command index: %i"), next_nonnav_command.p1 - 1);
-    g.command_index.set_and_save(next_nonnav_command.p1 - 1);
-    nav_command_index       = next_nonnav_command.p1 - 1;
-    next_WP = prev_WP;                      // Need to back "next_WP" up as it was set to the next waypoint following the jump
+    gcs_send_text_fmt(PSTR("setting command index: %i"), next_nonnav_command.p1);
+    g.command_index.set_and_save(next_nonnav_command.p1);
+    nav_command_index       = next_nonnav_command.p1;
+    // Need to back "next_WP" up as it was set to the next waypoint following the jump
+    next_WP = prev_WP;
 
     temp = get_cmd_with_index(g.command_index);
 
@@ -534,7 +535,7 @@ static void do_jump()
     if (g.log_bitmask & MASK_LOG_CMD) {
         Log_Write_Cmd(g.command_index, &next_nav_command);
     }
-    process_nav_cmd();
+    handle_process_nav_cmd();
 }
 
 static void do_change_speed()
