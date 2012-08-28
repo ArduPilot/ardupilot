@@ -255,4 +255,11 @@ enum gcs_severity {
 #define AP_BARO_BMP085   1
 #define AP_BARO_MS5611   2
 
+// altitude control algorithms
+enum {
+    ALT_CONTROL_DEFAULT=0,
+    ALT_CONTROL_NON_AIRSPEED=1
+};
+
+
 #endif // _DEFINES_H

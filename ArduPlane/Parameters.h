@@ -88,6 +88,7 @@ public:
         k_param_flybywire_airspeed_max,
         k_param_FBWB_min_altitude_cm,  // 0=disabled, minimum value for altitude in cm (for first time try 30 meters = 3000 cm)
         k_param_flybywire_elev_reverse,
+        k_param_alt_control_algorithm,
 
         //
         // 130: Sensor parameters
@@ -238,6 +239,7 @@ public:
     // Estimation
     //
     AP_Float altitude_mix;
+    AP_Int8  alt_control_algorithm;
 
     // Waypoints
     //

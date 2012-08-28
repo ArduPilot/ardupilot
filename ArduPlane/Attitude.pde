@@ -134,7 +134,7 @@ static void crash_checker()
 
 static void calc_throttle()
 {
-    if (!airspeed.use()) {
+    if (!alt_control_airspeed()) {
         int16_t throttle_target = g.throttle_cruise + throttle_nudge;
 
         // TODO: think up an elegant way to bump throttle when
@@ -200,7 +200,7 @@ static void calc_nav_pitch()
 {
     // Calculate the Pitch of the plane
     // --------------------------------
-    if (airspeed.use()) {
+    if (alt_control_airspeed()) {
         nav_pitch_cd = -g.pidNavPitchAirspeed.get_pid(airspeed_error_cm);
     } else {
         nav_pitch_cd = g.pidNavPitchAltitude.get_pid(altitude_error_cm);
@@ -469,4 +469,10 @@ static void demo_servos(byte i) {
         mavlink_delay(400);
         i--;
     }
+}
+
+// return true if we should use airspeed for altitude/throttle control
+static bool alt_control_airspeed(void)
+{
+    return airspeed.use() && g.alt_control_algorithm == ALT_CONTROL_DEFAULT;
 }

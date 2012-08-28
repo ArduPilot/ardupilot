@@ -1073,7 +1073,7 @@ static void update_current_flight_mode(void)
                 nav_roll_cd = 0;
             }
 
-            if(airspeed.use()) {
+            if (alt_control_airspeed()) {
                 calc_nav_pitch();
                 if (nav_pitch_cd < takeoff_pitch_cd)
                     nav_pitch_cd = takeoff_pitch_cd;
@@ -1092,7 +1092,7 @@ static void update_current_flight_mode(void)
 
             calc_nav_pitch();
             calc_throttle();
-            if (!airspeed.use() || land_complete) {
+            if (!alt_control_airspeed() || land_complete) {
                 // hold pitch constant in final approach
                 nav_pitch_cd = g.land_pitch_cd;
             }
