@@ -152,9 +152,9 @@ dump_log(uint8_t argc, const Menu::arg *argv)
 
 static void do_erase_logs(void)
 {
-    gcs_send_text_P(SEVERITY_LOW, PSTR("Erasing logs"));
+	gcs_send_text_P(SEVERITY_LOW, PSTR("Erasing logs\n"));
     DataFlash.EraseAll(mavlink_delay);
-    gcs_send_text_P(SEVERITY_LOW, PSTR("Log erase complete"));
+	gcs_send_text_P(SEVERITY_LOW, PSTR("Log erase complete\n"));
 }
 
 static int8_t
@@ -359,6 +359,16 @@ static void Log_Write_Raw()
     DataFlash.WriteLong(get_int(accel.z));
 
     DataFlash.WriteByte(END_BYTE);
+
+	/*
+	DataFlash.WriteByte(HEAD_BYTE1);
+	DataFlash.WriteByte(HEAD_BYTE2);
+	DataFlash.WriteByte(LOG_RAW_MSG);
+	DataFlash.WriteLong(get_int(ahrs._omega_I.x));
+	DataFlash.WriteLong(get_int(ahrs._omega_I.y));
+
+    DataFlash.WriteByte(END_BYTE);
+	*/
 }
 
 // Read a raw accel/gyro packet
@@ -372,6 +382,15 @@ static void Log_Read_Raw()
         Serial.print(", ");
     }
     Serial.println(" ");
+
+	/*
+	float temp1 = get_float(DataFlash.ReadLong());
+	float temp2 = get_float(DataFlash.ReadLong());
+
+	Serial.printf_P(PSTR("RAW, %4.4f, %4.4f\n"),
+			temp1,
+			temp2);
+	*/
 }
  #endif
 
@@ -593,16 +612,16 @@ static void Log_Write_Nav_Tuning()
     DataFlash.WriteByte(HEAD_BYTE2);
     DataFlash.WriteByte(LOG_NAV_TUNING_MSG);
 
-    DataFlash.WriteInt(wp_distance);                                                    // 1
-    DataFlash.WriteInt(target_bearing/100);                                     // 2
-    DataFlash.WriteInt(long_error);                                                     // 3
-    DataFlash.WriteInt(lat_error);                                                      // 4
-    DataFlash.WriteInt(nav_lon);                                                        // 5
-    DataFlash.WriteInt(nav_lat);                                                        // 6
-    DataFlash.WriteInt(x_actual_speed);                                                 // 7
-    DataFlash.WriteInt(y_actual_speed);                                             // 8
-    DataFlash.WriteInt(g.pid_nav_lon.get_integrator());                 // 9
-    DataFlash.WriteInt(g.pid_nav_lat.get_integrator());                 // 10
+	DataFlash.WriteInt(wp_distance);                                                    // 1
+	DataFlash.WriteInt(target_bearing/100);                                     // 2
+	DataFlash.WriteInt(long_error);                                                     // 3
+	DataFlash.WriteInt(lat_error);                                                      // 4
+	DataFlash.WriteInt(nav_pitch);                                                        // 5
+	DataFlash.WriteInt(nav_roll);                                                        // 6
+	DataFlash.WriteInt(x_actual_speed);                                                 // 7
+	DataFlash.WriteInt(y_actual_speed);                                             // 8
+	DataFlash.WriteInt(g.pid_nav_lon.get_integrator());                 // 9
+	DataFlash.WriteInt(g.pid_nav_lat.get_integrator());                 // 10
 
     DataFlash.WriteByte(END_BYTE);
 }
