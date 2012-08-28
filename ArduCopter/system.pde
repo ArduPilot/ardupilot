@@ -309,6 +309,9 @@ static void init_ardupilot()
 
     startup_ground();
 
+    // now that initialisation of IMU has occurred increase SPI to 2MHz
+    SPI.setClockDivider(SPI_CLOCK_DIV8); // 2MHZ SPI rate
+
 #if LOGGING_ENABLED == ENABLED
     Log_Write_Startup();
     Log_Write_Data(10, (float)g.pi_stabilize_roll.kP());
