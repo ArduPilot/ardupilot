@@ -128,6 +128,13 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @User: Advanced
     GSCALAR(altitude_mix,           "ALT_MIX",        ALTITUDE_MIX),
 
+    // @Param: ALT_CTRL_ALG
+    // @DisplayName: Altitude control algorithm
+    // @Description: This sets what algorithm will be used for altitude control. The default is to select the algorithm based on whether airspeed is enabled. If you set it to 1, then the airspeed based algorithm won't be used for altitude control, but airspeed can be used for other flight control functions
+    // @Values: 0:Default Method,1:non-airspeed
+    // @User: Advanced
+    GSCALAR(alt_control_algorithm, "ALT_CTRL_ALG",    ALT_CONTROL_DEFAULT),
+
     GSCALAR(command_total,          "CMD_TOTAL",      0),
     GSCALAR(command_index,          "CMD_INDEX",      0),
 
