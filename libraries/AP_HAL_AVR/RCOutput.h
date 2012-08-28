@@ -30,6 +30,9 @@ public:
      * array of channels. */
     uint16_t read(uint8_t ch);
     void     read(uint16_t* period_ms, uint8_t len);
+
+private:
+    uint16_t _timer_period(uint16_t speed_hz);
 };
 
 class AP_HAL_AVR::APM2RCOutput : public AP_HAL::RCOutput {
@@ -50,13 +53,16 @@ public:
     void     disable_mask(uint32_t chmask);
 
     /* Output, either single channel or bulk array of channels */
-    void     write(uint8_t ch, uint16_t period_ms);
-    void     write(uint8_t ch, uint16_t* period_ms, uint8_t len);
+    void     write(uint8_t ch, uint16_t period_us);
+    void     write(uint8_t ch, uint16_t* period_us, uint8_t len);
 
     /* Read back current output state, as either single channel or
      * array of channels starting at 0. */
     uint16_t read(uint8_t ch);
-    void     read(uint16_t* period_ms, uint8_t len);
+    void     read(uint16_t* period_us, uint8_t len);
+
+private:
+    uint16_t _timer_period(uint16_t speed_hz);
 };
 
 #endif // __AP_HAL_AVR_RC_OUTPUT_H__

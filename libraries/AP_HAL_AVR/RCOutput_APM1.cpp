@@ -1,13 +1,16 @@
 
 #include <avr/interrupt.h>
 
+#include <AP_HAL.h>
 #include <AP_HAL_AVR.h>
 #include "RCOutput.h"
+using namespace AP_HAL;
 using namespace AP_HAL_AVR;
+
+extern const HAL& hal;
 
 /* No init argument required */
 void APM1RCOutput::init(void* machtnicht) {
-
 }
 
 /* Output freq (1/period) control */
@@ -57,3 +60,6 @@ void APM1RCOutput::read(uint16_t* period_ms, uint8_t len) {
 
 }
 
+uint16_t APM1RCOutput::_timer_period(uint16_t speed_hz) {
+    return 2000000UL / speed_hz;
+}
