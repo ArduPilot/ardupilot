@@ -1679,8 +1679,8 @@ void update_roll_pitch_mode(void)
             update_simple_mode();
         }
         // mix in user control with Nav control
-        nav_roll                        += constrain(wrap_180(auto_roll  - nav_roll),  -g.auto_slew_rate.get(), g.auto_slew_rate.get());                 // 40 deg a second
-        nav_pitch                       += constrain(wrap_180(auto_pitch - nav_pitch), -g.auto_slew_rate.get(), g.auto_slew_rate.get());                 // 40 deg a second
+        nav_roll                += constrain(wrap_180(auto_roll  - nav_roll),  -g.auto_slew_rate.get(), g.auto_slew_rate.get());                 // 40 deg a second
+        nav_pitch               += constrain(wrap_180(auto_pitch - nav_pitch), -g.auto_slew_rate.get(), g.auto_slew_rate.get());                 // 40 deg a second
 
         control_roll            = g.rc_1.control_mix(nav_roll);
         control_pitch           = g.rc_2.control_mix(nav_pitch);
@@ -1699,8 +1699,8 @@ void update_roll_pitch_mode(void)
         control_pitch           = g.rc_2.control_in;
 
         // mix in user control with optical flow
-        g.rc_1.servo_out = get_stabilize_roll(get_of_roll(control_roll));
-        g.rc_2.servo_out = get_stabilize_pitch(get_of_pitch(control_pitch));
+        g.rc_1.servo_out 		= get_stabilize_roll(get_of_roll(control_roll));
+        g.rc_2.servo_out 		= get_stabilize_pitch(get_of_pitch(control_pitch));
         break;
 
     // THOR
@@ -1834,6 +1834,7 @@ void update_throttle_mode(void)
 
     case THROTTLE_HOLD:
         // allow interactive changing of atitude
+        /*
         if(g.rc_3.control_in < 200) {
             reset_throttle_counter = 150;
             nav_throttle            = get_throttle_rate(-120);
@@ -1845,6 +1846,22 @@ void update_throttle_mode(void)
             g.rc_3.servo_out        = g.throttle_cruise + nav_throttle + angle_boost;
             break;
         }
+        */
+
+        if(g.rc_3.radio_in < (g.rc_3.radio_min + 200)){
+            int16_t _rate = 120 - (((g.rc_3.radio_in - g.rc_3.radio_min) * 12) / 20);
+            reset_throttle_counter = 150;
+            nav_throttle        = get_throttle_rate(-_rate);
+            g.rc_3.servo_out    = g.throttle_cruise + nav_throttle + angle_boost;
+            break;
+        }else if(g.rc_3.radio_in > (g.rc_3.radio_max - 200)){
+            int16_t _rate = 180 - ((g.rc_3.radio_max -  g.rc_3.radio_in) * 18) / 20;
+            reset_throttle_counter = 150;
+            nav_throttle        = get_throttle_rate(_rate);
+            g.rc_3.servo_out    = g.throttle_cruise + nav_throttle + angle_boost;
+            break;
+        }
+
 
         // allow 1 second of slow down after pilot moves throttle back into deadzone
         if(reset_throttle_counter > 0) {
