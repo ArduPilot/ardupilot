@@ -13,6 +13,7 @@
 #include <errno.h>
 #include <AP_Math.h>
 #include <AP_Compass.h>
+#include <AP_Declination.h>
 #include <SITL.h>
 #include "desktop.h"
 #include "util.h"
@@ -20,9 +21,6 @@
 #define MAG_OFS_X 5.0
 #define MAG_OFS_Y 13.0
 #define MAG_OFS_Z -18.0
-
-// declination in Canberra (degrees)
-#define MAG_DECLINATION 12.1
 
 // inclination in Canberra (degrees)
 #define MAG_INCLINATION -66
@@ -43,11 +41,12 @@ static Vector3f heading_to_mag(float roll, float pitch, float yaw)
 {
 	Vector3f Bearth, m;
 	Matrix3f R;
+	float declination = AP_Declination::get_declination(sitl.state.latitude, sitl.state.longitude);
 
 	// Bearth is the magnetic field in Canberra. We need to adjust
 	// it for inclination and declination
 	Bearth(MAG_FIELD_STRENGTH, 0, 0);
-	R.from_euler(0, -ToRad(MAG_INCLINATION), ToRad(MAG_DECLINATION));
+	R.from_euler(0, -ToRad(MAG_INCLINATION), ToRad(declination));
 	Bearth = R * Bearth;
 
 	// create a rotation matrix for the given attitude
