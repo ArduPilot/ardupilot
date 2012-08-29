@@ -616,6 +616,7 @@ static void Log_Write_Nav_Tuning()
 	DataFlash.WriteInt(target_bearing/100);                                     // 2
 	DataFlash.WriteInt(long_error);                                                     // 3
 	DataFlash.WriteInt(lat_error);                                                      // 4
+
 	DataFlash.WriteInt(nav_pitch);                                                        // 5
 	DataFlash.WriteInt(nav_roll);                                                        // 6
 	DataFlash.WriteInt(x_actual_speed);                                                 // 7
@@ -650,15 +651,15 @@ static void Log_Write_Control_Tuning()
     DataFlash.WriteByte(HEAD_BYTE2);
     DataFlash.WriteByte(LOG_CONTROL_TUNING_MSG);
 
-    DataFlash.WriteInt(g.rc_3.control_in);                              // 1
-    DataFlash.WriteInt(sonar_alt);                                              // 2
-    DataFlash.WriteInt(baro_alt);                                               // 3
-    DataFlash.WriteInt(next_WP.alt);                                            // 4
-    DataFlash.WriteInt(nav_throttle);                                           // 5
-    DataFlash.WriteInt(angle_boost);                                            // 6
-    DataFlash.WriteInt(climb_rate_actual);                              // 7
-    DataFlash.WriteInt(g.rc_3.servo_out);                               // 8
-    DataFlash.WriteInt(g.pi_alt_hold.get_integrator());         // 9
+    DataFlash.WriteInt(g.rc_3.control_in);                 	// 1
+    DataFlash.WriteInt(sonar_alt);                          // 2
+    DataFlash.WriteInt(baro_alt);                           // 3
+    DataFlash.WriteInt(next_WP.alt);                        // 4
+    DataFlash.WriteInt(nav_throttle);                       // 5
+    DataFlash.WriteInt(angle_boost);                        // 6
+    DataFlash.WriteInt(climb_rate_actual);                 	// 7
+    DataFlash.WriteInt(g.rc_3.servo_out);                  	// 8
+    DataFlash.WriteInt(g.pi_alt_hold.get_integrator());     // 9
     DataFlash.WriteInt(g.pid_throttle.get_integrator());    // 10
 
     DataFlash.WriteByte(END_BYTE);
@@ -761,15 +762,17 @@ static void Log_Write_Attitude()
     DataFlash.WriteByte(HEAD_BYTE2);
     DataFlash.WriteByte(LOG_ATTITUDE_MSG);
 
-    DataFlash.WriteInt(control_roll);                                                                           // 1
-    DataFlash.WriteInt((int16_t)ahrs.roll_sensor);                                              // 2
-    DataFlash.WriteInt(control_pitch);                                                                          // 3
-    DataFlash.WriteInt((int16_t)ahrs.pitch_sensor);                                             // 4
-    DataFlash.WriteInt(g.rc_4.control_in);                                                              // 5
-    DataFlash.WriteInt((uint16_t)ahrs.yaw_sensor);                                              // 6
-    DataFlash.WriteInt((uint16_t)nav_yaw);                                                              // 7 (this used to be compass.heading)
-    DataFlash.WriteInt((int16_t)g.pi_stabilize_roll.get_integrator());          // 8
-    DataFlash.WriteInt((int16_t)g.pi_stabilize_pitch.get_integrator());         // 9
+    DataFlash.WriteInt(control_roll);										// 1
+    DataFlash.WriteInt((int16_t)ahrs.roll_sensor);                          // 2
+    DataFlash.WriteInt(control_pitch);                                      // 3
+    DataFlash.WriteInt((int16_t)ahrs.pitch_sensor);                         // 4
+    DataFlash.WriteInt(g.rc_4.control_in);                                  // 5
+    DataFlash.WriteInt((uint16_t)ahrs.yaw_sensor);                          // 6
+
+    DataFlash.WriteInt((uint16_t)nav_yaw);                                  // 7 (this used to be compass.heading)
+    DataFlash.WriteInt((int16_t)g.pi_stabilize_roll.get_integrator());      // 8
+    DataFlash.WriteInt((int16_t)g.pi_stabilize_pitch.get_integrator());     // 9
+
     DataFlash.WriteByte(END_BYTE);
 }
 
