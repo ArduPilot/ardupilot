@@ -474,15 +474,38 @@ static void NOINLINE send_statustext(mavlink_channel_t chan)
         pending_status.text);
 }
 
+// are we still delaying telemetry to try to avoid Xbee bricking?
+static bool telemetry_delayed(mavlink_channel_t chan)
+{
+    uint32_t tnow = millis() >> 10;
+    if (tnow > g.telem_delay) {
+        return false;
+    }
+#if USB_MUX_PIN > 0
+    if (chan == MAVLINK_COMM_0 && usb_connected) {
+        // this is an APM2 with USB telemetry
+        return false;
+    }
+    // we're either on the 2nd UART, or no USB cable is connected
+    // we need to delay telemetry
+    return true;
+#else
+    if (chan == MAVLINK_COMM_0) {
+        // we're on the USB port
+        return false;
+    }
+    // don't send telemetry yet
+    return true;
+#endif
+}
+
 
 // try to send a message, return false if it won't fit in the serial tx buffer
 static bool mavlink_try_send_message(mavlink_channel_t chan, enum ap_message id, uint16_t packet_drops)
 {
     int16_t payload_space = comm_get_txspace(chan) - MAVLINK_NUM_NON_PAYLOAD_BYTES;
 
-    if (chan == MAVLINK_COMM_1 && millis() < MAVLINK_TELEMETRY_PORT_DELAY) {
-        // defer any messages on the telemetry port for 1 second after
-        // bootup, to try to prevent bricking of Xbees
+    if (telemetry_delayed(chan)) {
         return false;
     }
 
@@ -693,9 +716,7 @@ static void mavlink_send_message(mavlink_channel_t chan, enum ap_message id, uin
 
 void mavlink_send_text(mavlink_channel_t chan, gcs_severity severity, const char *str)
 {
-    if (chan == MAVLINK_COMM_1 && millis() < MAVLINK_TELEMETRY_PORT_DELAY) {
-        // don't send status MAVLink messages for 2 seconds after
-        // bootup, to try to prevent Xbee bricking
+    if (telemetry_delayed(chan)) {
         return;
     }
 
