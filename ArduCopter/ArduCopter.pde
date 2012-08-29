@@ -2134,15 +2134,15 @@ static void update_trig(void){
 static void update_altitude()
 {
     static int16_t old_sonar_alt   = 0;
+    static int32_t old_baro_alt    = 0;
 
 #if HIL_MODE == HIL_MODE_ATTITUDE
-    static int32_t old_baro_alt    = 0;
     // we are in the SIM, fake out the baro and Sonar
     int16_t fake_relative_alt = g_gps->altitude - gps_base_alt;
-    baro_alt                        = fake_relative_alt;
-    sonar_alt                       = fake_relative_alt;
+    baro_alt                = fake_relative_alt;
+    sonar_alt               = fake_relative_alt;
 
-    baro_rate                       = (baro_alt - old_baro_alt) * 5;             // 5hz
+    baro_rate               = (baro_alt - old_baro_alt) * 5;             // 5hz
     old_baro_alt            = baro_alt;
 
 #else
@@ -2156,18 +2156,19 @@ static void update_altitude()
     baro_alt                        = read_barometer();
 
     // calc the vertical accel rate
-    /*
-     *  // 2.6 way
-     *  int16_t temp			= (baro_alt - old_baro_alt) * 10;
-     *  baro_rate           = (temp + baro_rate) >> 1;
-     *  baro_rate			= constrain(baro_rate, -300, 300);
-     *  old_baro_alt		= baro_alt;
-     */
+
+     // 2.6 way
+     int16_t temp		= (baro_alt - old_baro_alt) * 10;
+     baro_rate          = (temp + baro_rate) >> 1;
+     baro_rate			= constrain(baro_rate, -300, 300);
+     old_baro_alt		= baro_alt;
 
     // Using Tridge's new clamb rate calc
+    /*
     int16_t temp                    = barometer.get_climb_rate() * 100;
     baro_rate                       = (temp + baro_rate) >> 1;
     baro_rate                       = constrain(baro_rate, -300, 300);
+    */
  #endif
 
     // Note: sonar_alt is calculated in a faster loop and filtered with a mode filter
