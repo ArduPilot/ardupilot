@@ -1058,7 +1058,7 @@
 
 // delay to prevent Xbee bricking, in milliseconds
 #ifndef MAVLINK_TELEMETRY_PORT_DELAY
- # define MAVLINK_TELEMETRY_PORT_DELAY 2000
+ # define MAVLINK_TELEMETRY_PORT_DELAY 6000
 #endif
 
 

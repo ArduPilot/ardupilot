@@ -186,7 +186,7 @@
 #endif
 
 #ifndef SONAR_TYPE
-# define SONAR_TYPE             MAX_SONAR_LV	// MAX_SONAR_XL,  
+# define SONAR_TYPE             MAX_SONAR_LV	// MAX_SONAR_XL,
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
@@ -223,7 +223,7 @@
 #endif
 
 #ifndef SONAR_TRIGGER
-# define SONAR_TRIGGER       60        // trigger distance in cm 
+# define SONAR_TRIGGER       60        // trigger distance in cm
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
@@ -236,7 +236,7 @@
 #if HIL_MODE != HIL_MODE_DISABLED	// we are in HIL mode
  # undef GPS_PROTOCOL
  # define GPS_PROTOCOL GPS_PROTOCOL_NONE
- 
+
   #undef CONFIG_SONAR
  #define CONFIG_SONAR DISABLED
 #endif
@@ -892,7 +892,7 @@
 
 // delay to prevent Xbee bricking, in milliseconds
 #ifndef MAVLINK_TELEMETRY_PORT_DELAY
-# define MAVLINK_TELEMETRY_PORT_DELAY 2000
+# define MAVLINK_TELEMETRY_PORT_DELAY 6000
 #endif
 
 // use this to disable gen-fencing
