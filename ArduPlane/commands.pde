@@ -235,6 +235,10 @@ void init_home()
     // -----------------------------
     while (!g_gps->new_data || !g_gps->fix) {
         g_gps->update();
+#if HIL_MODE != HIL_MODE_DISABLED
+    // update hil gps so we have new_data
+    gcs_update();
+#endif
     }
 
     home.id         = MAV_CMD_NAV_WAYPOINT;
