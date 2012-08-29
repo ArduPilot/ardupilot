@@ -8,7 +8,7 @@ import mavutil, random
 testdir=os.path.dirname(os.path.realpath(__file__))
 
 
-HOME_LOCATION='-35.362938,149.165085,584,270'
+HOME_LOCATION='-35.362938,149.165085,585,354'
 WIND="0,180,0.2" # speed,direction,variance
 
 homeloc = None
