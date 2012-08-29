@@ -94,6 +94,7 @@ public:
         k_param_sysid_this_mav,
         k_param_sysid_my_gcs,
         k_param_serial3_baud,
+        k_param_telem_delay,
 
         //
         // 140: Sensor parameters
@@ -218,7 +219,7 @@ public:
     AP_Int16        sysid_this_mav;
     AP_Int16        sysid_my_gcs;
     AP_Int8         serial3_baud;
-
+    AP_Int8         telem_delay;
 
     AP_Int16        RTL_altitude;
     AP_Int8         sonar_enabled;
