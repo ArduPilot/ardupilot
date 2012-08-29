@@ -41,8 +41,8 @@ void APM1RCOutput::init(void* machtnichts) {
     //--------------- TIMER4: CH_6 and CH_5  ----------------------------
     // NB TIMER4 is shared with PPM input from RCInput_APM1.cpp
     // The TIMER4 registers are assumed to be setup already.
-    hal.gpio->pinMode(2,GPIO_OUTPUT); // CH_5 (PE4/OC3B)
-    hal.gpio->pinMode(3,GPIO_OUTPUT); // CH_6 (PE5/OC3C)
+    hal.gpio->pinMode(7,GPIO_OUTPUT); // CH_5 (PH4/OC4B)
+    hal.gpio->pinMode(8,GPIO_OUTPUT); // CH_6 (PH5/OC4C)
 
 
     //--------------- TIMER5: CH_1, CH_2 and CH_9 -----------------------
