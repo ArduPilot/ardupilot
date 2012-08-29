@@ -27,6 +27,15 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @User: Standard
     GSCALAR(serial3_baud,   "SERIAL3_BAUD",     SERIAL3_BAUD/1000),
 
+    // @Param: TELEM_DELAY
+    // @DisplayName: Telemetry startup delay 
+    // @Description: The amount of time (in seconds) to delay radio telemetry to prevent an Xbee bricking on power up
+    // @User: Standard
+    // @Units: seconds
+    // @Range: 0 10
+    // @Increment: 1
+    GSCALAR(telem_delay,            "TELEM_DELAY",     0),
+
     // @Param: ALT_HOLD_RTL
     // @DisplayName: RTL Altitude
     // @Description: This is the altitude the model will move to before Returning to Launch.  Set to zero to return at current altitude.
