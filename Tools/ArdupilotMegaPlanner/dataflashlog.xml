@@ -19,31 +19,33 @@
       <F4>Pitch</F4>
       <F5>Yaw IN</F5>
       <F6>Yaw</F6>
-      <F7>Mag Heading</F7>
+      <F7>Nav Yaw</F7>
+      <F8>Roll I</F8>
+      <F9>Pitch I</F9>
     </ATT>
     <NTUN>
       <F1>WP Dist</F1>
       <F2>Target Bear</F2>
       <F3>Long Err</F3>
       <F4>Lat Err</F4>
-      <F5>nav lon</F5>
-      <F6>nav lat</F6>
+      <F5>Nav Pitch</F5>
+      <F6>Nav Roll</F6>
       <F7>X Speed</F7>
       <F8>Y Speed</F8>
-      <F9>nav lon I</F9>
-      <F10>nav lat I</F10>
+      <F9>Nav Lon I</F9>
+      <F10>Nav Lat I</F10>
     </NTUN>
     <CTUN>
-      <F1>Thr IN</F1>
+      <F1>Thr in</F1>
       <F2>Sonar Alt</F2>
       <F3>Baro Alt</F3>
       <F4>WP Alt</F4>
       <F5>Nav Throttle</F5>
-      <F6>Angle boost</F6>
+      <F6>Angle Boost</F6>
       <F7>Climb Rate</F7>
-      <F8>rc3 servo out</F8>
-      <F9>alt hold int</F9>
-      <F10>Thr int</F10>
+      <F8>Throttle  Out</F8>
+      <F9>Alt Hold Int</F9>
+      <F10>Thr iInt</F10>
     </CTUN>
     <PM>
       <F1>Gyro Saturation</F1>
