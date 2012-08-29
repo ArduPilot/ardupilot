@@ -31,11 +31,15 @@ void individualread(AP_HAL::RCInput* in, uint16_t* channels) {
 
 void multiwrite(AP_HAL::RCOutput* out, uint16_t* channels) {
     out->write(0, channels, 8);
+    /* Upper channels duplicate lower channels*/
+    out->write(8, channels, 8);
 }
 
 void individualwrite(AP_HAL::RCOutput* out, uint16_t* channels) {
     for (int ch = 0; ch < 8; ch++) {
         out->write(ch, channels[ch]); 
+        /* Upper channels duplicate lower channels*/
+        out->write(ch+8, channels[ch]);
     }
 }
 
