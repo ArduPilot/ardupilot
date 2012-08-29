@@ -19,6 +19,7 @@ const AP_Param::Info var_info[] PROGMEM = {
 	GSCALAR(sysid_this_mav,         "SYSID_THISMAV",    MAV_SYSTEM_ID),
 	GSCALAR(sysid_my_gcs,           "SYSID_MYGCS",      255),
 	GSCALAR(serial3_baud,           "SERIAL3_BAUD",     SERIAL3_BAUD/1000),
+    GSCALAR(telem_delay,            "TELEM_DELAY",     0),
 	GSCALAR(kff_pitch_compensation, "KFF_PTCHCOMP",     PITCH_COMP),
 	GSCALAR(kff_rudder_mix,         "KFF_RDDRMIX",      RUDDER_MIX),
 	GSCALAR(kff_pitch_to_throttle,  "KFF_PTCH2THR",     P_TO_T),
