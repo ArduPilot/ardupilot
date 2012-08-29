@@ -9,10 +9,10 @@ using namespace AP_HAL_AVR;
 extern const AP_HAL::HAL& hal;
 
 /* No init argument required */
-void APM2RCOutput::init(void* machtnicht) {
-    // --------------------- TIMER1: OUT1 and OUT2 -----------------------
-    hal.gpio->pinMode(12,GPIO_OUTPUT); // OUT1 (PB6/OC1B)
-    hal.gpio->pinMode(11,GPIO_OUTPUT); // OUT2 (PB5/OC1A)
+void APM2RCOutput::init(void* machtnichts) {
+    // --------------------- TIMER1: CH_1 and CH_2 -----------------------
+    hal.gpio->pinMode(12,GPIO_OUTPUT); // CH_1 (PB6/OC1B)
+    hal.gpio->pinMode(11,GPIO_OUTPUT); // CH_2 (PB5/OC1A)
 
     // WGM: 1 1 1 0. Clear Timer on Compare, TOP is ICR1.
     // CS11: prescale by 8 => 0.5us tick
@@ -22,10 +22,10 @@ void APM2RCOutput::init(void* machtnicht) {
     OCR1A = 0xFFFF; // Init OCR registers to nil output signal
     OCR1B = 0xFFFF;
 
-    // --------------- TIMER4: OUT3, OUT4, and OUT5 ---------------------
-    hal.gpio->pinMode(8,GPIO_OUTPUT); // OUT3 (PH5/OC4C)
-    hal.gpio->pinMode(7,GPIO_OUTPUT); // OUT4 (PH4/OC4B)
-    hal.gpio->pinMode(6,GPIO_OUTPUT); // OUT5 (PH3/OC4A)
+    // --------------- TIMER4: CH_3, CH_4, and CH_5 ---------------------
+    hal.gpio->pinMode(8,GPIO_OUTPUT); // CH_3 (PH5/OC4C)
+    hal.gpio->pinMode(7,GPIO_OUTPUT); // CH_4 (PH4/OC4B)
+    hal.gpio->pinMode(6,GPIO_OUTPUT); // CH_5 (PH3/OC4A)
 
     // WGM: 1 1 1 0. Clear Timer on Compare, TOP is ICR4.
     // CS41: prescale by 8 => 0.5us tick
@@ -36,10 +36,10 @@ void APM2RCOutput::init(void* machtnicht) {
     OCR4C = 0xFFFF;
     ICR4 = 40000; // 0.5us tick => 50hz freq
 
-    //--------------- TIMER3: OUT6, OUT7, and OUT8 ----------------------
-    hal.gpio->pinMode(3,GPIO_OUTPUT); // OUT6 (PE5/OC3C)
-    hal.gpio->pinMode(2,GPIO_OUTPUT); // OUT7 (PE4/OC3B)
-    hal.gpio->pinMode(5,GPIO_OUTPUT); // OUT8 (PE3/OC3A)
+    //--------------- TIMER3: CH_6, CH_7, and CH_8 ----------------------
+    hal.gpio->pinMode(3,GPIO_OUTPUT); // CH_6 (PE5/OC3C)
+    hal.gpio->pinMode(2,GPIO_OUTPUT); // CH_7 (PE4/OC3B)
+    hal.gpio->pinMode(5,GPIO_OUTPUT); // CH_8 (PE3/OC3A)
 
     // WGM: 1 1 1 0. Clear timer on Compare, TOP is ICR3
     // CS31: prescale by 8 => 0.5us tick
@@ -50,11 +50,11 @@ void APM2RCOutput::init(void* machtnicht) {
     OCR3C = 0xFFFF;
     ICR3 = 40000; // 0.5us tick => 50hz freq
 
-    //--------------- TIMER5: OUT10, and OUT11 ---------------
-    // NB TIMER5 is shared with PPM input from RCInput_APM1.cpp
+    //--------------- TIMER5: CH_10, and CH_11 ---------------
+    // NB TIMER5 is shared with PPM input from RCInput_APM2.cpp
     // The TIMER5 registers are assumed to be setup already.
-    hal.gpio->pinMode(45, GPIO_OUTPUT); // OUT10 (PL4/OC5B)
-    hal.gpio->pinMode(44, GPIO_OUTPUT); // OUT11 (PL5/OC5C)
+    hal.gpio->pinMode(45, GPIO_OUTPUT); // CH_10 (PL4/OC5B)
+    hal.gpio->pinMode(44, GPIO_OUTPUT); // CH_11 (PL5/OC5C)
 }
 
 /* Output freq (1/period) control */
@@ -91,10 +91,15 @@ uint16_t APM2RCOutput::get_freq(uint8_t ch) {
         case CH_8:
             icr = ICR3;
             break;
+        case CH_10:
+        case CH_11:
+            icr = ICR5;
+            break;
         default:
             return 0;
     }
-    return (2000000UL / icr); /* inverse of _time_period(icr) */
+    /* transform to period by inverse of _time_period(icr). */
+    return (2000000UL / icr);
 }
 
 /* Output active/highZ control, either by single channel at a time

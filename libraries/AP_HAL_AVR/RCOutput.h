@@ -8,7 +8,7 @@
 class AP_HAL_AVR::APM1RCOutput : public AP_HAL::RCOutput {
 public:
     /* No init argument required */
-    void     init(void* machtnicht);
+    void     init(void* machtnichts);
 
     /* Output freq (1/period) control */
     void     set_freq(uint32_t chmask, uint16_t freq_hz);
@@ -38,7 +38,7 @@ private:
 class AP_HAL_AVR::APM2RCOutput : public AP_HAL::RCOutput {
 public:
     /* No init argument required */
-    void     init(void* machtnicht);
+    void     init(void* machtnichts);
 
     /* Output freq (1/period) control */
     void     set_freq(uint32_t chmask, uint16_t freq_hz);
