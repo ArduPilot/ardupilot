@@ -91,9 +91,11 @@ uint16_t APM2RCOutput::get_freq(uint8_t ch) {
         case CH_8:
             icr = ICR3;
             break;
+        /* CH_10 and CH_11 share TIMER5 with input capture.
+         * The period is specified in OCR5A rater than the ICR. */
         case CH_10:
         case CH_11:
-            icr = ICR5;
+            icr = OCR5A;
             break;
         default:
             return 0;
