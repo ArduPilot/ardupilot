@@ -271,11 +271,11 @@ void APM_RC_APM1::SetFastOutputChannels(uint32_t chmask, uint16_t speed_hz)
     uint16_t icr = _map_speed(speed_hz);
 
     if ((chmask & ( _BV(CH_1) | _BV(CH_2) | _BV(CH_9))) != 0) {
-        ICR1 = icr;
+        ICR5 = icr;
     }
 
     if ((chmask & ( _BV(CH_3) | _BV(CH_4) | _BV(CH_10))) != 0) {
-        ICR5 = icr;
+        ICR1 = icr;
     }
 
  #if 0
