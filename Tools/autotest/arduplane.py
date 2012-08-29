@@ -25,10 +25,6 @@ def takeoff(mavproxy, mav):
     mavproxy.send('rc 2 1200\n')
 
     # get it moving a bit first
-    mavproxy.send('rc 3 1150\n')
-    mav.recv_match(condition='VFR_HUD.groundspeed>2', blocking=True)
-
-    # a bit faster
     mavproxy.send('rc 3 1300\n')
     mav.recv_match(condition='VFR_HUD.groundspeed>6', blocking=True)
 
