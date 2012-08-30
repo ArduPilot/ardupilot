@@ -41,6 +41,11 @@ bool IMU::new_data_available(void) {
     return true;
 }
 
+uint16_t IMU::num_samples_available(void)
+{
+    return 0;
+}
+
 float IMU::gx(void) {
     return 0.0;
 }

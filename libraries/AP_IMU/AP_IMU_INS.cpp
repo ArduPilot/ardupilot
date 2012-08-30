@@ -257,3 +257,9 @@ float AP_IMU_INS::get_gyro_drift_rate(void)
 {
     return _ins->get_gyro_drift_rate();
 }
+
+/// Get number of samples read from the sensors
+uint16_t AP_IMU_INS::num_samples_available(void)
+{
+    return _ins->num_samples_available();
+}

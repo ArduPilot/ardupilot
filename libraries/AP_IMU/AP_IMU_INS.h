@@ -55,6 +55,9 @@ public:
     virtual bool            update(void);
     virtual bool            new_data_available(void);
 
+    /// Get number of samples read from the sensors
+    virtual uint16_t        num_samples_available(void);
+
     // for jason
     virtual float           gx()                            {
         return _sensor_cal[0];
@@ -94,7 +97,6 @@ public:
         _sensor_cal[5] = v;
     }
     virtual float           get_gyro_drift_rate(void);
-
 
 private:
     AP_InertialSensor *         _ins;   ///< INS provides an axis and unit correct sensor source.
