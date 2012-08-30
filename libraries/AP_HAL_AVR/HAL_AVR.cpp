@@ -9,7 +9,7 @@ void HAL_AVR::init(void* opts) const {
     /* The AVR RCInput drivers take an AP_HAL_AVR::ISRRegistry*
      * as the init argument */
     rcin->init((void*)&isr_registry);
-
     rcout->init(NULL);
+    spi->init(NULL);
 };
 
