@@ -98,6 +98,17 @@
  # endif
 #endif
 
+#if CONFIG_IMU_TYPE == CONFIG_IMU_OILPAN
+ # define NUM_IMU_SAMPLES_FOR_200HZ 5
+ # define NUM_IMU_SAMPLES_FOR_100HZ 10
+ # define NUM_IMU_SAMPLES_FOR_50HZ  20
+#endif
+
+#if CONFIG_IMU_TYPE == CONFIG_IMU_MPU6000
+ # define NUM_IMU_SAMPLES_FOR_200HZ 1
+ # define NUM_IMU_SAMPLES_FOR_100HZ 2
+ # define NUM_IMU_SAMPLES_FOR_50HZ  4
+#endif
 
 //////////////////////////////////////////////////////////////////////////////
 // ADC Enable - used to eliminate for systems which don't have ADC.
