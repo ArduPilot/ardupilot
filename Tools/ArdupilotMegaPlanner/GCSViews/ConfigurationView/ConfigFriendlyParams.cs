@@ -208,7 +208,7 @@ namespace ArdupilotMega.GCSViews.ConfigurationView
                 {
                     bool controlAdded = false;
 
-                    string value = ((float)MainV2.comPort.param[x.Key]).ToString("0.###");
+                    string value = ((float)MainV2.comPort.param[x.Key]).ToString("0.###", CultureInfo.InvariantCulture);
                     string description = _parameterMetaDataRepository.GetParameterMetaData(x.Key, ParameterMetaDataConstants.Description);
                     string displayName = x.Value + " (" + x.Key + ")";
                     string units = _parameterMetaDataRepository.GetParameterMetaData(x.Key, ParameterMetaDataConstants.Units);

@@ -36,22 +36,24 @@
             // 
             // labelWithPseudoOpacity1
             // 
+            this.labelWithPseudoOpacity1.AutoSize = true;
             this.labelWithPseudoOpacity1.Dock = System.Windows.Forms.DockStyle.Fill;
             this.labelWithPseudoOpacity1.Font = new System.Drawing.Font("Microsoft Sans Serif", 18F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.labelWithPseudoOpacity1.Location = new System.Drawing.Point(3, 0);
             this.labelWithPseudoOpacity1.Name = "labelWithPseudoOpacity1";
-            this.labelWithPseudoOpacity1.Size = new System.Drawing.Size(161, 55);
+            this.labelWithPseudoOpacity1.Size = new System.Drawing.Size(161, 50);
             this.labelWithPseudoOpacity1.TabIndex = 0;
             this.labelWithPseudoOpacity1.Text = "Altitude:";
             this.labelWithPseudoOpacity1.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
             // 
             // labelWithPseudoOpacity2
             // 
+            this.labelWithPseudoOpacity2.AutoSize = true;
             this.labelWithPseudoOpacity2.Dock = System.Windows.Forms.DockStyle.Fill;
             this.labelWithPseudoOpacity2.Font = new System.Drawing.Font("Microsoft Sans Serif", 36F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.labelWithPseudoOpacity2.Location = new System.Drawing.Point(170, 0);
             this.labelWithPseudoOpacity2.Name = "labelWithPseudoOpacity2";
-            this.labelWithPseudoOpacity2.Size = new System.Drawing.Size(162, 55);
+            this.labelWithPseudoOpacity2.Size = new System.Drawing.Size(162, 50);
             this.labelWithPseudoOpacity2.TabIndex = 1;
             this.labelWithPseudoOpacity2.Text = "0.0";
             this.labelWithPseudoOpacity2.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
@@ -68,7 +70,7 @@
             this.tableLayoutPanel1.Name = "tableLayoutPanel1";
             this.tableLayoutPanel1.RowCount = 1;
             this.tableLayoutPanel1.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 100F));
-            this.tableLayoutPanel1.Size = new System.Drawing.Size(335, 55);
+            this.tableLayoutPanel1.Size = new System.Drawing.Size(335, 50);
             this.tableLayoutPanel1.TabIndex = 2;
             // 
             // QuickView
@@ -76,9 +78,11 @@
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.Controls.Add(this.tableLayoutPanel1);
+            this.MinimumSize = new System.Drawing.Size(100, 27);
             this.Name = "QuickView";
-            this.Size = new System.Drawing.Size(335, 55);
+            this.Size = new System.Drawing.Size(335, 50);
             this.tableLayoutPanel1.ResumeLayout(false);
+            this.tableLayoutPanel1.PerformLayout();
             this.ResumeLayout(false);
 
         }

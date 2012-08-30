@@ -903,8 +903,6 @@ namespace ArdupilotMega
         private void myButton1_Click(object sender, EventArgs e)
         {
             new SerialOutput2().Show();
-        }
-
-     
+        }     
     }
 }

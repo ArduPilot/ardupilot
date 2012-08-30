@@ -149,6 +149,8 @@ namespace ArdupilotMega
 
         public MainV2()
         {
+            log.Info("Mainv2 ctor");
+
             Form splash = new Splash();
             splash.Show();
 
@@ -1010,7 +1012,7 @@ namespace ArdupilotMega
         /// speech voltage - custom - alt warning - data lost
         /// heartbeat packet sending
         /// 
-        /// and cant fall out
+        /// and can't fall out
         /// </summary>
         private void SerialReader()
         {
@@ -1018,10 +1020,7 @@ namespace ArdupilotMega
                 return;
             serialThread = true;
 
-            int minbytes = 10;
-
-            //  if (MONO)
-            //      minbytes = 0;
+            int minbytes = 0;
 
             DateTime speechcustomtime = DateTime.Now;
 
@@ -1033,8 +1032,10 @@ namespace ArdupilotMega
                 {
                     Thread.Sleep(5);
 
+                    // update connect/disconnect button and info stats
                     UpdateConnectIcon();
 
+                    // 30 seconds interval speech options
                     if (speechEnable && speechEngine != null && (DateTime.Now - speechcustomtime).TotalSeconds > 30 && MainV2.cs.lat != 0 && (MainV2.comPort.logreadmode || comPort.BaseStream.IsOpen))
                     {
                         //speechbatteryvolt
@@ -1054,6 +1055,7 @@ namespace ArdupilotMega
                         speechcustomtime = DateTime.Now;
                     }
 
+                    // speech altitude warning.
                     if (speechEnable && speechEngine != null && (MainV2.comPort.logreadmode || comPort.BaseStream.IsOpen))
                     {
                         float warnalt = float.MaxValue;
@@ -1069,17 +1071,20 @@ namespace ArdupilotMega
                         catch { } // silent fail
                     }
 
+                    // if not connected or busy, sleep and loop
                     if (!comPort.BaseStream.IsOpen || giveComport == true)
                     {
                         System.Threading.Thread.Sleep(100);
                         continue;
                     }
 
+                    // make sure we attenuate the link quality if we dont see any valid packets
                     if ((DateTime.Now - comPort.lastvalidpacket).TotalSeconds > 10)
                     {
                         MainV2.cs.linkqualitygcs = 0;
                     }
 
+                    // attenuate the link qualty over time
                     if ((DateTime.Now - comPort.lastvalidpacket).TotalSeconds >= 1)
                     {
                         if (linkqualitytime.Second != DateTime.Now.Second)
@@ -1087,25 +1092,20 @@ namespace ArdupilotMega
                             MainV2.cs.linkqualitygcs = (ushort)(MainV2.cs.linkqualitygcs * 0.8f);
                             linkqualitytime = DateTime.Now;
 
+                            int checkthis;
                             GCSViews.FlightData.myhud.Invalidate();
                         }
                     }
 
+                    // send a hb every seconds from gcs to ap
                     if (heatbeatSend.Second != DateTime.Now.Second)
                     {
-                        //                        Console.WriteLine("remote lost {0}", cs.packetdropremote);
-
-                        MAVLink.mavlink_heartbeat_t htb = new MAVLink.mavlink_heartbeat_t();
-
-#if MAVLINK10
-                        htb.type = (byte)MAVLink.MAV_TYPE.GCS;
-                        htb.autopilot = (byte)MAVLink.MAV_AUTOPILOT.ARDUPILOTMEGA;
-                        htb.mavlink_version = 3;
-#else
-                        htb.type = (byte)MAVLink.MAV_TYPE.MAV_GENERIC;
-                        htb.autopilot = (byte)MAVLink.MAV_AUTOPILOT_TYPE.MAV_AUTOPILOT_ARDUPILOTMEGA;
-                        htb.mavlink_version = 2;
-#endif
+                        MAVLink.mavlink_heartbeat_t htb = new MAVLink.mavlink_heartbeat_t()
+                        {
+                            type = (byte)MAVLink.MAV_TYPE.GCS,
+                            autopilot = (byte)MAVLink.MAV_AUTOPILOT.ARDUPILOTMEGA,
+                            mavlink_version = 3
+                        };
 
                         comPort.sendPacket(htb);
                         heatbeatSend = DateTime.Now;
@@ -1121,15 +1121,11 @@ namespace ArdupilotMega
                         }
                     }
 
-                 //   Console.WriteLine(DateTime.Now.Millisecond + " " + comPort.BaseStream.BytesToRead);
-
+                    // actauly read the packets
                     while (comPort.BaseStream.BytesToRead > minbytes && giveComport == false)
                     {
-                        //Console.WriteLine(DateTime.Now.Millisecond + " SR1 " + comPort.BaseStream.BytesToRead );
                         comPort.readPacket();
-                        //Console.WriteLine(DateTime.Now.Millisecond + " SR2 " + comPort.BaseStream.BytesToRead);
                     }
-                  //  Console.WriteLine("SR left");
                 }
                 catch (Exception e)
                 {
@@ -1245,7 +1241,12 @@ namespace ArdupilotMega
             {
                 if (!System.Diagnostics.Debugger.IsAttached)
                 {
-                    CheckForUpdate();
+                    // single update check per day
+                    if (getConfig("update_check") != DateTime.Now.ToShortDateString())
+                    {
+                        CheckForUpdate();
+                        config["update_check"] = DateTime.Now.ToShortDateString();
+                    }
                 }
             }
             catch (Exception ex)

@@ -50,7 +50,7 @@ namespace WebCamService
         IntPtr ip = IntPtr.Zero;
 
         public event CamImage camimage;
-        System.Windows.Forms.Timer timer1 = new System.Windows.Forms.Timer();
+        Thread timer1;
 
         #endregion
 
@@ -88,8 +88,12 @@ namespace WebCamService
                 m_bGotOne = true;
                 m_bRunning = false;
 
-                timer1.Interval = 1000 / 15; // 15 fps
-                timer1.Tick += new EventHandler(timer1_Tick);
+                //timer1.Interval = 1000 / 15; // 15 fps
+                //timer1.Tick += new EventHandler(timer1_Tick);
+                //timer1.Start();
+
+                timer1 = new Thread(timer);
+                timer1.IsBackground = true;
                 timer1.Start();
 
             }
@@ -99,10 +103,37 @@ namespace WebCamService
                 throw;
             }
         }
+
+        void timer()
+        {
+            DateTime last = DateTime.Now;
+
+            while (true)
+            {
+                try
+                {
+                    System.Threading.Thread.Sleep(1000/25); // 25 fps
+
+                    timer1_Tick(this, null);
+
+                }
+                catch (ThreadAbortException)
+                {
+                    break;
+                }
+                catch
+                {
+
+                }
+            }
+        }
+
         /// <summary> release everything. </summary>
         public void Dispose()
         {
-            timer1.Stop();
+            if (timer1 != null)
+                timer1.Abort();
+
             if (camimage != null)
             {
                 camimage(null); // clear last pic
@@ -159,7 +190,7 @@ namespace WebCamService
                 // Start waiting
                 if ( ! m_PictureReady.WaitOne(5000, false) )
                 {
-                    throw new Exception("Timeout waiting to get picture");
+                    //throw new Exception("Timeout waiting to get picture");
                 }
                 //Pause(); //- we are effectivly pulling at 15 fps, so no need to pause
             }
@@ -224,8 +255,8 @@ namespace WebCamService
                 {
                     camimage(image);
                 }
-            }
-            catch { Console.WriteLine("Grab bmp failed"); timer1.Enabled = false; this.CloseInterfaces(); System.Windows.Forms.CustomMessageBox.Show("Problem with capture device, grabbing frame took longer than 5 sec"); }
+            }//System.Windows.Forms.CustomMessageBox.Show("Problem with capture device, grabbing frame took longer than 5 sec");
+            catch { Console.WriteLine("Grab bmp failed"); }
         }
 
         /// <summary> build the capture graph for grabber. </summary>
@@ -404,8 +435,14 @@ namespace WebCamService
             }           
 
             // Set the new format
-            hr = videoStreamConfig.SetFormat( media );
-            DsError.ThrowExceptionForHR( hr );
+            try
+            {
+                hr = videoStreamConfig.SetFormat(media);
+            }
+            catch { }
+
+                DsError.ThrowExceptionForHR(hr);
+
 
             DsUtils.FreeAMMediaType(media);
             media = null;

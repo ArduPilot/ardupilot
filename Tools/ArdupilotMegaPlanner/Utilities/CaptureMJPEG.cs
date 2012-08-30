@@ -110,6 +110,9 @@ namespace ArdupilotMega.Utilities
                 mpheader = mpheader.Substring(startboundary, endboundary - startboundary);
             }
 
+            dataStream.ReadTimeout = 30000; // 30 seconds
+            br.BaseStream.ReadTimeout = 30000;
+
             while (running)
             {
                 try

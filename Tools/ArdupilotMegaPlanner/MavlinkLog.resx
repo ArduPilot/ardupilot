@@ -123,10 +123,10 @@
   </data>
   <assembly alias="System.Drawing" name="System.Drawing, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a" />
   <data name="BUT_redokml.Location" type="System.Drawing.Point, System.Drawing">
-    <value>93, 12</value>
+    <value>10, 6</value>
   </data>
   <data name="BUT_redokml.Size" type="System.Drawing.Size, System.Drawing">
-    <value>116, 23</value>
+    <value>68, 30</value>
   </data>
   <assembly alias="mscorlib" name="mscorlib, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089" />
   <data name="BUT_redokml.TabIndex" type="System.Int32, mscorlib">
@@ -139,13 +139,13 @@
     <value>BUT_redokml</value>
   </data>
   <data name="&gt;&gt;BUT_redokml.Type" xml:space="preserve">
-    <value>ArdupilotMega.Controls.MyButton, ArdupilotMegaPlanner, Version=1.1.4515.21878, Culture=neutral, PublicKeyToken=null</value>
+    <value>ArdupilotMega.Controls.MyButton, ArdupilotMegaPlanner10, Version=1.1.4622.30215, Culture=neutral, PublicKeyToken=null</value>
   </data>
   <data name="&gt;&gt;BUT_redokml.Parent" xml:space="preserve">
     <value>$this</value>
   </data>
   <data name="&gt;&gt;BUT_redokml.ZOrder" xml:space="preserve">
-    <value>5</value>
+    <value>7</value>
   </data>
   <data name="progressBar1.Anchor" type="System.Windows.Forms.AnchorStyles, System.Windows.Forms">
     <value>Top, Left, Right</value>
@@ -169,7 +169,7 @@
     <value>$this</value>
   </data>
   <data name="&gt;&gt;progressBar1.ZOrder" xml:space="preserve">
-    <value>4</value>
+    <value>6</value>
   </data>
   <data name="BUT_humanreadable.Anchor" type="System.Windows.Forms.AnchorStyles, System.Windows.Forms">
     <value>Top</value>
@@ -178,10 +178,10 @@
     <value>NoControl</value>
   </data>
   <data name="BUT_humanreadable.Location" type="System.Drawing.Point, System.Drawing">
-    <value>215, 12</value>
+    <value>84, 6</value>
   </data>
   <data name="BUT_humanreadable.Size" type="System.Drawing.Size, System.Drawing">
-    <value>116, 23</value>
+    <value>68, 30</value>
   </data>
   <data name="BUT_humanreadable.TabIndex" type="System.Int32, mscorlib">
     <value>10</value>
@@ -193,13 +193,13 @@
     <value>BUT_humanreadable</value>
   </data>
   <data name="&gt;&gt;BUT_humanreadable.Type" xml:space="preserve">
-    <value>ArdupilotMega.Controls.MyButton, ArdupilotMegaPlanner, Version=1.1.4515.21878, Culture=neutral, PublicKeyToken=null</value>
+    <value>ArdupilotMega.Controls.MyButton, ArdupilotMegaPlanner10, Version=1.1.4622.30215, Culture=neutral, PublicKeyToken=null</value>
   </data>
   <data name="&gt;&gt;BUT_humanreadable.Parent" xml:space="preserve">
     <value>$this</value>
   </data>
   <data name="&gt;&gt;BUT_humanreadable.ZOrder" xml:space="preserve">
-    <value>3</value>
+    <value>5</value>
   </data>
   <data name="BUT_graphmavlog.Anchor" type="System.Windows.Forms.AnchorStyles, System.Windows.Forms">
     <value>Top</value>
@@ -208,10 +208,10 @@
     <value>NoControl</value>
   </data>
   <data name="BUT_graphmavlog.Location" type="System.Drawing.Point, System.Drawing">
-    <value>459, 12</value>
+    <value>232, 6</value>
   </data>
   <data name="BUT_graphmavlog.Size" type="System.Drawing.Size, System.Drawing">
-    <value>116, 23</value>
+    <value>68, 30</value>
   </data>
   <data name="BUT_graphmavlog.TabIndex" type="System.Int32, mscorlib">
     <value>11</value>
@@ -223,13 +223,13 @@
     <value>BUT_graphmavlog</value>
   </data>
   <data name="&gt;&gt;BUT_graphmavlog.Type" xml:space="preserve">
-    <value>ArdupilotMega.Controls.MyButton, ArdupilotMegaPlanner, Version=1.1.4515.21878, Culture=neutral, PublicKeyToken=null</value>
+    <value>ArdupilotMega.Controls.MyButton, ArdupilotMegaPlanner10, Version=1.1.4622.30215, Culture=neutral, PublicKeyToken=null</value>
   </data>
   <data name="&gt;&gt;BUT_graphmavlog.Parent" xml:space="preserve">
     <value>$this</value>
   </data>
   <data name="&gt;&gt;BUT_graphmavlog.ZOrder" xml:space="preserve">
-    <value>2</value>
+    <value>4</value>
   </data>
   <data name="zg1.Anchor" type="System.Windows.Forms.AnchorStyles, System.Windows.Forms">
     <value>Top, Bottom, Left, Right</value>
@@ -253,7 +253,7 @@
     <value>$this</value>
   </data>
   <data name="&gt;&gt;zg1.ZOrder" xml:space="preserve">
-    <value>1</value>
+    <value>3</value>
   </data>
   <data name="BUT_convertcsv.Anchor" type="System.Windows.Forms.AnchorStyles, System.Windows.Forms">
     <value>Top</value>
@@ -262,10 +262,10 @@
     <value>NoControl</value>
   </data>
   <data name="BUT_convertcsv.Location" type="System.Drawing.Point, System.Drawing">
-    <value>337, 12</value>
+    <value>158, 6</value>
   </data>
   <data name="BUT_convertcsv.Size" type="System.Drawing.Size, System.Drawing">
-    <value>116, 23</value>
+    <value>68, 30</value>
   </data>
   <data name="BUT_convertcsv.TabIndex" type="System.Int32, mscorlib">
     <value>13</value>
@@ -277,12 +277,72 @@
     <value>BUT_convertcsv</value>
   </data>
   <data name="&gt;&gt;BUT_convertcsv.Type" xml:space="preserve">
-    <value>ArdupilotMega.Controls.MyButton, ArdupilotMegaPlanner, Version=1.1.4515.21878, Culture=neutral, PublicKeyToken=null</value>
+    <value>ArdupilotMega.Controls.MyButton, ArdupilotMegaPlanner10, Version=1.1.4622.30215, Culture=neutral, PublicKeyToken=null</value>
   </data>
   <data name="&gt;&gt;BUT_convertcsv.Parent" xml:space="preserve">
     <value>$this</value>
   </data>
   <data name="&gt;&gt;BUT_convertcsv.ZOrder" xml:space="preserve">
+    <value>2</value>
+  </data>
+  <data name="BUT_paramsfromlog.Anchor" type="System.Windows.Forms.AnchorStyles, System.Windows.Forms">
+    <value>Top</value>
+  </data>
+  <data name="BUT_paramsfromlog.ImeMode" type="System.Windows.Forms.ImeMode, System.Windows.Forms">
+    <value>NoControl</value>
+  </data>
+  <data name="BUT_paramsfromlog.Location" type="System.Drawing.Point, System.Drawing">
+    <value>306, 6</value>
+  </data>
+  <data name="BUT_paramsfromlog.Size" type="System.Drawing.Size, System.Drawing">
+    <value>68, 30</value>
+  </data>
+  <data name="BUT_paramsfromlog.TabIndex" type="System.Int32, mscorlib">
+    <value>14</value>
+  </data>
+  <data name="BUT_paramsfromlog.Text" xml:space="preserve">
+    <value>Extract Params</value>
+  </data>
+  <data name="&gt;&gt;BUT_paramsfromlog.Name" xml:space="preserve">
+    <value>BUT_paramsfromlog</value>
+  </data>
+  <data name="&gt;&gt;BUT_paramsfromlog.Type" xml:space="preserve">
+    <value>ArdupilotMega.Controls.MyButton, ArdupilotMegaPlanner10, Version=1.1.4622.30215, Culture=neutral, PublicKeyToken=null</value>
+  </data>
+  <data name="&gt;&gt;BUT_paramsfromlog.Parent" xml:space="preserve">
+    <value>$this</value>
+  </data>
+  <data name="&gt;&gt;BUT_paramsfromlog.ZOrder" xml:space="preserve">
+    <value>1</value>
+  </data>
+  <data name="BUT_getwpsfromlog.Anchor" type="System.Windows.Forms.AnchorStyles, System.Windows.Forms">
+    <value>Top</value>
+  </data>
+  <data name="BUT_getwpsfromlog.ImeMode" type="System.Windows.Forms.ImeMode, System.Windows.Forms">
+    <value>NoControl</value>
+  </data>
+  <data name="BUT_getwpsfromlog.Location" type="System.Drawing.Point, System.Drawing">
+    <value>380, 6</value>
+  </data>
+  <data name="BUT_getwpsfromlog.Size" type="System.Drawing.Size, System.Drawing">
+    <value>68, 30</value>
+  </data>
+  <data name="BUT_getwpsfromlog.TabIndex" type="System.Int32, mscorlib">
+    <value>15</value>
+  </data>
+  <data name="BUT_getwpsfromlog.Text" xml:space="preserve">
+    <value>Extract WPs</value>
+  </data>
+  <data name="&gt;&gt;BUT_getwpsfromlog.Name" xml:space="preserve">
+    <value>BUT_getwpsfromlog</value>
+  </data>
+  <data name="&gt;&gt;BUT_getwpsfromlog.Type" xml:space="preserve">
+    <value>ArdupilotMega.Controls.MyButton, ArdupilotMegaPlanner10, Version=1.1.4622.30215, Culture=neutral, PublicKeyToken=null</value>
+  </data>
+  <data name="&gt;&gt;BUT_getwpsfromlog.Parent" xml:space="preserve">
+    <value>$this</value>
+  </data>
+  <data name="&gt;&gt;BUT_getwpsfromlog.ZOrder" xml:space="preserve">
     <value>0</value>
   </data>
   <metadata name="$this.Localizable" type="System.Boolean, mscorlib, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089">

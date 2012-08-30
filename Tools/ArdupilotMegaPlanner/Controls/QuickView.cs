@@ -12,11 +12,11 @@ namespace ArdupilotMega.Controls
     public partial class QuickView : UserControl
     {
         [System.ComponentModel.Browsable(true)]
-        public string desc { get { return labelWithPseudoOpacity1.Text; } set { labelWithPseudoOpacity1.Text = value; } }
+        public string desc { get { return labelWithPseudoOpacity1.Text; } set { if (labelWithPseudoOpacity1.Text == value) return; labelWithPseudoOpacity1.Text = value; } }
         [System.ComponentModel.Browsable(true)]
-        public string number { get { return labelWithPseudoOpacity2.Text; } set { labelWithPseudoOpacity2.Text = value; } }
+        public string number { get { return labelWithPseudoOpacity2.Text; } set { if (labelWithPseudoOpacity2.Text == value) return; labelWithPseudoOpacity2.Text = value; } }
         [System.ComponentModel.Browsable(true)]
-        public Color numberColor { get { return labelWithPseudoOpacity2.ForeColor; } set { labelWithPseudoOpacity2.ForeColor = value; } }
+        public Color numberColor { get { return labelWithPseudoOpacity2.ForeColor; } set { if (labelWithPseudoOpacity2.ForeColor == value) return; labelWithPseudoOpacity2.ForeColor = value; } }
 
         public QuickView()
         {
@@ -54,5 +54,12 @@ namespace ArdupilotMega.Controls
                 base.OnPaint(e);
         }
 
+        protected override void OnResize(EventArgs e)
+        {
+            if (this.Height > 20)
+                labelWithPseudoOpacity2.Font = new Font(labelWithPseudoOpacity2.Font.FontFamily, this.Height * 0.7f);
+
+            base.OnResize(e);
+        }
     }
 }

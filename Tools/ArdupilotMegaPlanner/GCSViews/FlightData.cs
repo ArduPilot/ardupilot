@@ -312,6 +312,12 @@ namespace ArdupilotMega.GCSViews
 
             DateTime waypoints = DateTime.Now.AddSeconds(0);
 
+            DateTime updatescreen = DateTime.Now;
+
+            DateTime tsreal = DateTime.Now;
+            double taketime = 0;
+            double timeerror = 0;
+
             //comPort.stopall(true);
 
             while (threadrun == 1)
@@ -370,14 +376,24 @@ namespace ArdupilotMega.GCSViews
                 {
                     if (threadrun == 0) { return; }
 
-                    updatePlayPauseButton(true);
-
                     if (comPort.BaseStream.IsOpen)
                     {
                         MainV2.comPort.logreadmode = false;
                         MainV2.comPort.logplaybackfile.Close();
                         MainV2.comPort.logplaybackfile = null;
                     }
+
+
+                    //Console.WriteLine(DateTime.Now.Millisecond);
+
+                    if (updatescreen.AddMilliseconds(300) < DateTime.Now)
+                    {
+                        updatePlayPauseButton(true);
+                        updateLogPlayPosition();
+                        updatescreen = DateTime.Now;
+                    }
+
+                    //Console.WriteLine(DateTime.Now.Millisecond + " done ");
 
                     DateTime logplayback = MainV2.comPort.lastlogread;
                     try
@@ -386,23 +402,45 @@ namespace ArdupilotMega.GCSViews
                     }
                     catch { }
 
-                    updateLogPlayPosition();
-
-                    int act = (int)(MainV2.comPort.lastlogread - logplayback).TotalMilliseconds;
+                    double act = (MainV2.comPort.lastlogread - logplayback).TotalMilliseconds;
 
                     if (act > 9999 || act < 0)
                         act = 0;
 
-                    int ts = 0;
+                    double ts = 0;
                     if (LogPlayBackSpeed == 0)
                         LogPlayBackSpeed = 0.01;
                     try
                     {
-                        ts = (int) Math.Min((act / LogPlayBackSpeed),1000);
+                        ts = Math.Min((act / LogPlayBackSpeed),1000);
                     }
                     catch { }
-                    if (ts > 0)
-                        System.Threading.Thread.Sleep(ts);
+
+                    double timetook = (DateTime.Now - tsreal).TotalMilliseconds;
+                    if (timetook != 0)
+                    {
+                        //Console.WriteLine("took: " + timetook + "=" + taketime + " " + (taketime - timetook) + " " + ts);
+                        //Console.WriteLine(MainV2.comPort.lastlogread.Second + " " + DateTime.Now.Second + " " + (MainV2.comPort.lastlogread.Second - DateTime.Now.Second));
+                        //if ((taketime - timetook) < 0)
+                        {
+                            timeerror += (taketime - timetook);
+                            if (ts != 0)
+                            {
+                                ts += timeerror;
+                                timeerror = 0;
+                            }
+                        }
+                        if (ts > 1000)
+                            ts = 1000;
+                    }
+
+                    taketime = ts;
+                    tsreal = DateTime.Now;
+
+                    if (ts > 0 && ts < 1000)
+                        System.Threading.Thread.Sleep((int)ts);
+
+
 
                     if (threadrun == 0) { return; }
 
@@ -414,6 +452,8 @@ namespace ArdupilotMega.GCSViews
                         tracklast = DateTime.Now;
                         tunning = DateTime.Now;
                     }
+
+                    
 
                     if (MainV2.comPort.logplaybackfile != null && MainV2.comPort.logplaybackfile.BaseStream.Position == MainV2.comPort.logplaybackfile.BaseStream.Length)
                     {
@@ -437,9 +477,9 @@ namespace ArdupilotMega.GCSViews
 
                 try
                 {
-                    //Console.WriteLine(DateTime.Now.Millisecond);
+                   // Console.WriteLine(DateTime.Now.Millisecond);
                     updateBindingSource();
-                    //Console.WriteLine(DateTime.Now.Millisecond + " done ");
+                   // Console.WriteLine(DateTime.Now.Millisecond + " done ");
 
                     if (ArdupilotMega.Controls.OpenGLtest.instance != null)
                     {
@@ -700,7 +740,7 @@ namespace ArdupilotMega.GCSViews
                 try
                 {
                     gMapControl1.Position = currentloc;
-                    hud1.Refresh();
+                    //hud1.Refresh();
                 }
                 catch { }
             });
@@ -1548,6 +1588,17 @@ namespace ArdupilotMega.GCSViews
                   //  temp.Dispose();
                   //  tabStatus.Controls.Remove(temp);
                 }
+
+                if (tabControl1.SelectedTab == tabQuick)
+                {
+                    int height = tabQuick.Height / 6;
+                    quickView1.Size = new System.Drawing.Size(tabQuick.Width, height);
+                    quickView2.Size = new System.Drawing.Size(tabQuick.Width, height);
+                    quickView3.Size = new System.Drawing.Size(tabQuick.Width, height);
+                    quickView4.Size = new System.Drawing.Size(tabQuick.Width, height);
+                    quickView5.Size = new System.Drawing.Size(tabQuick.Width, height);
+                    quickView6.Size = new System.Drawing.Size(tabQuick.Width, height);
+                }
             }
         }
 
@@ -1691,6 +1742,103 @@ namespace ArdupilotMega.GCSViews
             }
             ThemeManager.ApplyThemeTo(selectform);
             selectform.Show();
+        }
+
+        private void hud_UserItem(object sender, EventArgs e)
+        {
+
+            Form selectform = new Form()
+            {
+                Name = "select",
+                Width = 50,
+                Height = 250,
+                Text = "Display This"
+            };
+
+            int x = 10;
+            int y = 10;
+
+            object thisBoxed = MainV2.cs;
+            Type test = thisBoxed.GetType();
+
+            foreach (var field in test.GetProperties())
+            {
+                // field.Name has the field's name.
+                object fieldValue;
+                try
+                {
+                    fieldValue = field.GetValue(thisBoxed, null); // Get value
+                }
+                catch { continue; }
+
+                // Get the TypeCode enumeration. Multiple types get mapped to a common typecode.
+                TypeCode typeCode = Type.GetTypeCode(fieldValue.GetType());
+
+                if (!(typeCode == TypeCode.Single))
+                    continue;
+
+                CheckBox chk_box = new CheckBox();
+
+                chk_box.Text = field.Name;
+                chk_box.Name = field.Name;
+                chk_box.Tag = (sender);
+                chk_box.Location = new Point(x, y);
+                chk_box.Size = new System.Drawing.Size(100, 20);
+                if (hud1.CustomItems.ContainsKey(field.Name))
+                {
+                    chk_box.Checked = true;
+                }
+
+                chk_box.CheckedChanged += chk_box_hud_UserItem_CheckedChanged;
+
+                selectform.Controls.Add(chk_box);
+
+                Application.DoEvents();
+
+                x += 0;
+                y += 20;
+
+                if (y > selectform.Height - 50)
+                {
+                    x += 100;
+                    y = 10;
+
+                    selectform.Width = x + 100;
+                }
+            }
+            ThemeManager.ApplyThemeTo(selectform);
+            selectform.Show();
+        }
+
+        void chk_box_hud_UserItem_CheckedChanged(object sender, EventArgs e)
+        {
+            if (((CheckBox)sender).Checked)
+            {
+                HUD.Custom cust = new HUD.Custom();
+
+                string prefix = ((CheckBox)sender).Name +": ";
+                if (MainV2.config["hud1_useritem_" + ((CheckBox)sender).Name] != null)
+                    prefix = (string)MainV2.config["hud1_useritem_" + ((CheckBox)sender).Name];
+
+                Common.InputBox("Header", "Please enter your item prefix", ref prefix);
+
+                MainV2.config["hud1_useritem_" + ((CheckBox)sender).Name] = prefix;
+
+                cust.Header = prefix;
+                setupPropertyInfo(ref cust.Item, ((CheckBox)sender).Name, MainV2.cs);
+
+                hud1.CustomItems.Add(((CheckBox)sender).Name, cust);
+
+                hud1.Invalidate();
+            }
+            else
+            {
+                if (hud1.CustomItems.ContainsKey(((CheckBox)sender).Name))
+                {
+                    hud1.CustomItems.Remove(((CheckBox)sender).Name);
+                }
+                hud1.Invalidate();
+            }
         }
 
         void chk_log_CheckedChanged(object sender, EventArgs e)
@@ -1974,7 +2122,7 @@ print 'Roll complete'
 
 ";
 
-            CustomMessageBox.Show("This is Very ALPHA");
+          //  CustomMessageBox.Show("This is Very ALPHA");
 
             Form scriptedit = new Form();
 
@@ -2230,6 +2378,11 @@ print 'Roll complete'
             {
                 ctl.Visible = true;
             }
+        }
+
+        private void tabQuick_Resize(object sender, EventArgs e)
+        {
+            tabControl1_SelectedIndexChanged(null, null);
         }
     }
 }

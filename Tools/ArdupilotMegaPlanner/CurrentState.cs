@@ -780,7 +780,7 @@ namespace ArdupilotMega
                         gpsstatus = gps.fix_type;
                         //                    Console.WriteLine("gpsfix {0}",gpsstatus);
 
-                        gpshdop = (float)Math.Round((double)gps.eph / 10.0,2);
+                        gpshdop = (float)Math.Round((double)gps.eph / 100.0,2);
 
                         satcount = gps.satellites_visible;
 
