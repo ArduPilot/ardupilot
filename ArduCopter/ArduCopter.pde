@@ -899,7 +899,7 @@ static byte gps_watchdog;
 // Time in microseconds of main control loop
 static uint32_t fast_loopTimer;
 // Time in microseconds of 50hz control loop
-static uint32_t fiftyhz_loopTimer;
+static uint32_t fiftyhz_loopTimer = 0;
 // Counters for branching from 10 hz control loop
 static byte medium_loopCounter;
 // Counters for branching from 3 1/3hz control loop
@@ -981,11 +981,12 @@ void setup() {
 void loop()
 {
     uint32_t timer                  = micros();
-    bool spare_time = true;
+    static bool run_50hz_loop = false;
 
     // We want this to execute fast
     // ----------------------------
-    if ((timer - fast_loopTimer) >= 10000 && imu.new_data_available()) {
+    if( imu.num_samples_available() >= NUM_IMU_SAMPLES_FOR_100HZ ) {
+
 		#if DEBUG_FAST_LOOP == ENABLED
         Log_Write_Data(50, (int32_t)(timer - fast_loopTimer));
         #endif
@@ -996,8 +997,60 @@ void loop()
 
         // Execute the fast loop
         // ---------------------
-        fast_loop();
-        spare_time = false;
+        fast_loop();////
+
+        // run the 50hz loop 1/2 the time
+        run_50hz_loop = !run_50hz_loop;
+
+        if( run_50hz_loop ) {
+
+            #if DEBUG_MED_LOOP == ENABLED
+            Log_Write_Data(51, (int32_t)(timer - fiftyhz_loopTimer));
+            #endif
+
+            // store the micros for the 50 hz timer
+            fiftyhz_loopTimer               = timer;
+
+            // port manipulation for external timing of main loops
+            //PORTK |= B01000000;
+
+            // reads all of the necessary trig functions for cameras, throttle, etc.
+            // --------------------------------------------------------------------
+            update_trig();
+
+            // Rotate the Nav_lon and nav_lat vectors based on Yaw
+            // ---------------------------------------------------
+            calc_loiter_pitch_roll();
+
+            // check for new GPS messages
+            // --------------------------
+            update_GPS();
+
+            // perform 10hz tasks
+            // ------------------
+            medium_loop();
+
+            // Stuff to run at full 50hz, but after the med loops
+            // --------------------------------------------------
+            fifty_hz_loop();
+
+            counter_one_herz++;
+
+            // trgger our 1 hz loop
+            if(counter_one_herz >= 50) {
+                super_slow_loop();
+                counter_one_herz = 0;
+            }
+            perf_mon_counter++;
+            if (perf_mon_counter > 600 ) {
+                if (g.log_bitmask & MASK_LOG_PM)
+                    Log_Write_Performance();
+
+                gps_fix_count           = 0;
+                perf_mon_counter        = 0;
+            }
+            //PORTK &= B10111111;
+        }
     } else {
 #ifdef DESKTOP_BUILD
         usleep(1000);
@@ -1007,60 +1060,6 @@ void loop()
     // port manipulation for external timing of main loops
     //PORTK &= B11101111;
 
-    if ((timer - fiftyhz_loopTimer) >= 20000) {
-
-		#if DEBUG_MED_LOOP == ENABLED
-    	Log_Write_Data(51, (int32_t)(timer - fiftyhz_loopTimer));
-        #endif
-
-        // store the micros for the 50 hz timer
-        fiftyhz_loopTimer               = timer;
-
-        // port manipulation for external timing of main loops
-        //PORTK |= B01000000;
-
-        // reads all of the necessary trig functions for cameras, throttle, etc.
-        // --------------------------------------------------------------------
-        update_trig();
-
-        // Rotate the Nav_lon and nav_lat vectors based on Yaw
-        // ---------------------------------------------------
-        calc_loiter_pitch_roll();
-
-        // check for new GPS messages
-        // --------------------------
-        update_GPS();
-
-        // perform 10hz tasks
-        // ------------------
-        medium_loop();
-
-        // Stuff to run at full 50hz, but after the med loops
-        // --------------------------------------------------
-        fifty_hz_loop();
-
-        counter_one_herz++;
-
-        // trgger our 1 hz loop
-        if(counter_one_herz >= 50) {
-            super_slow_loop();
-            counter_one_herz = 0;
-        }
-        perf_mon_counter++;
-        if (perf_mon_counter > 600 ) {
-            if (g.log_bitmask & MASK_LOG_PM)
-                Log_Write_Performance();
-
-            gps_fix_count           = 0;
-            perf_mon_counter        = 0;
-        }
-        //PORTK &= B10111111;
-        spare_time = false;
-    }
-
-    if (spare_time && g.compass_enabled) {
-        compass.accumulate();
-    }
 }
 //  PORTK |= B01000000;
 //	PORTK &= B10111111;
