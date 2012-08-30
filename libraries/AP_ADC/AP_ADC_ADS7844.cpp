@@ -246,3 +246,18 @@ uint32_t AP_ADC_ADS7844::Ch6(const uint8_t *channel_numbers, float *result)
     // return number of microseconds since last call
     return ret;
 }
+
+/// Get minimum number of samples read from the sensors
+uint16_t AP_ADC_ADS7844::num_samples_available(const uint8_t *channel_numbers)
+{
+    // get count of first channel as a base
+    uint16_t min_count = _count[channel_numbers[0]];
+
+    // reduce to minimum count of all other channels
+    for (uint8_t i=1; i<6; i++) {
+        if (_count[channel_numbers[i]] < min_count) {
+            min_count = _count[channel_numbers[i]];
+        }
+    }
+    return min_count;
+}
