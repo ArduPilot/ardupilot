@@ -53,15 +53,17 @@ public:
     /* Temperature, in degrees celsius, of the gyro. */
     virtual float           temperature() = 0;
 
-    /* sample_time returns the delta in microseconds since the
-     * last call to reset_sample_time.
+    /* sample_time returns the time period in microseconds
+     * overwhich the sensor data was collected
      */
     virtual uint32_t        sample_time() = 0;
-    virtual void            reset_sample_time() = 0;
 
     // return the maximum gyro drift rate in radians/s/s. This
     // depends on what gyro chips are being used
     virtual float        get_gyro_drift_rate(void) = 0;
+
+    // get number of samples read from the sensors
+    virtual uint16_t     num_samples_available() = 0;
 
 };
 

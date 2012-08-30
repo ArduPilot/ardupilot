@@ -31,8 +31,10 @@ public:
     void            get_sensors( float * );
     float           temperature();
     uint32_t        sample_time();
-    void            reset_sample_time();
     float           get_gyro_drift_rate();
+
+    // get number of samples read from the sensors
+    uint16_t        num_samples_available();
 
     static const struct AP_Param::GroupInfo        var_info[];
 

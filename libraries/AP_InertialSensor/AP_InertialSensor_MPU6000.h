@@ -39,7 +39,6 @@ public:
     void                get_sensors( float * );
     float               temperature();
     uint32_t            sample_time();
-    void                reset_sample_time();
     float               get_gyro_drift_rate();
 
     // set_gyro_offsets - updates gyro offsets in mpu6000 registers
@@ -50,9 +49,15 @@ public:
     static void         set_accel_offsets_scaled(float offX, float offY, float offZ);
     static void         set_accel_offsets(int16_t offsetX, int16_t offsetY, int16_t offsetZ);
 
+    // get number of samples read from the sensors
+    uint16_t     num_samples_available();
+
+    // get time (in microseconds) that last sample was captured
+    uint32_t     last_sample_time();
+
 private:
 
-    static void                 read(uint32_t);
+    static void                 read();
     static void                 data_interrupt(void);
     static uint8_t              register_read( uint8_t reg );
     static void                 register_write( uint8_t reg, uint8_t val );
@@ -61,8 +66,6 @@ private:
     Vector3f                    _gyro;
     Vector3f                    _accel;
     float                       _temp;
-
-    uint32_t                    _last_sample_micros;
 
     float                       _temp_to_celsius( uint16_t );
 
@@ -76,6 +79,8 @@ private:
     static const int8_t         _accel_data_sign[3];
 
     static const uint8_t        _temp_data_index;
+
+    static AP_PeriodicProcess*  _scheduler;             // pointer to scheduler so that we can suspend/resume scheduler when we pull data from the MPU6000
 
     /* TODO deprecate _cs_pin */
     static uint8_t              _cs_pin;
