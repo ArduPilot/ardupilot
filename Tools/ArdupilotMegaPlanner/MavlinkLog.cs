@@ -1245,5 +1245,149 @@ namespace ArdupilotMega
                 }
             }
         }
+
+        private void BUT_paramsfromlog_Click(object sender, EventArgs e)
+        {
+            OpenFileDialog openFileDialog1 = new OpenFileDialog();
+            openFileDialog1.Filter = "*.tlog|*.tlog";
+            openFileDialog1.FilterIndex = 2;
+            openFileDialog1.RestoreDirectory = true;
+            openFileDialog1.Multiselect = true;
+            try
+            {
+                openFileDialog1.InitialDirectory = Path.GetDirectoryName(Application.ExecutablePath) + Path.DirectorySeparatorChar + @"logs" + Path.DirectorySeparatorChar;
+            }
+            catch { } // incase dir doesnt exist
+
+            if (openFileDialog1.ShowDialog() == DialogResult.OK)
+            {
+                if (MainV2.comPort.logplaybackfile != null)
+                {
+                    MainV2.comPort.logreadmode = false;
+                    MainV2.comPort.logplaybackfile.Close();
+                }
+
+                foreach (string logfile in openFileDialog1.FileNames)
+                {
+
+                    MAVLink mine = new MAVLink();
+                    try
+                    {
+                        mine.logplaybackfile = new BinaryReader(File.Open(logfile, FileMode.Open, FileAccess.Read, FileShare.Read));
+                    }
+                    catch (Exception ex) { log.Debug(ex.ToString()); CustomMessageBox.Show("Log Can not be opened. Are you still connected?"); return; }
+
+                    mine.logreadmode = true;
+
+                    mine.packets.Initialize(); // clear
+
+                    StreamWriter sw = new StreamWriter(Path.GetDirectoryName(logfile) + Path.DirectorySeparatorChar + Path.GetFileNameWithoutExtension(logfile) + ".param");
+
+                        // bar moves to 100 % in this step
+                        progressBar1.Value = (int)((float)mine.logplaybackfile.BaseStream.Position / (float)mine.logplaybackfile.BaseStream.Length * 100.0f / 1.0f);
+
+                        progressBar1.Refresh();
+                        //Application.DoEvents();
+
+                        mine.getParamList();
+
+                        foreach (string item in mine.param.Keys)
+                        {
+                            sw.WriteLine(item + "\t" + mine.param[item]);
+                        }
+
+                    sw.Close();
+
+                    progressBar1.Value = 100;
+
+                    mine.logreadmode = false;
+                    mine.logplaybackfile.Close();
+                    mine.logplaybackfile = null;
+
+                    CustomMessageBox.Show("File Saved with log file");
+                }
+            }
+        }
+
+        private void BUT_getwpsfromlog_Click(object sender, EventArgs e)
+        {
+            OpenFileDialog openFileDialog1 = new OpenFileDialog();
+            openFileDialog1.Filter = "*.tlog|*.tlog";
+            openFileDialog1.FilterIndex = 2;
+            openFileDialog1.RestoreDirectory = true;
+            openFileDialog1.Multiselect = true;
+            try
+            {
+                openFileDialog1.InitialDirectory = Path.GetDirectoryName(Application.ExecutablePath) + Path.DirectorySeparatorChar + @"logs" + Path.DirectorySeparatorChar;
+            }
+            catch { } // incase dir doesnt exist
+
+            if (openFileDialog1.ShowDialog() == DialogResult.OK)
+            {
+                if (MainV2.comPort.logplaybackfile != null)
+                {
+                    MainV2.comPort.logreadmode = false;
+                    MainV2.comPort.logplaybackfile.Close();
+                }
+
+                foreach (string logfile in openFileDialog1.FileNames)
+                {
+
+                    MAVLink mine = new MAVLink();
+                    try
+                    {
+                        mine.logplaybackfile = new BinaryReader(File.Open(logfile, FileMode.Open, FileAccess.Read, FileShare.Read));
+                    }
+                    catch (Exception ex) { log.Debug(ex.ToString()); CustomMessageBox.Show("Log Can not be opened. Are you still connected?"); return; }
+
+                    mine.logreadmode = true;
+
+                    mine.packets.Initialize(); // clear
+
+                    StreamWriter sw = new StreamWriter(Path.GetDirectoryName(logfile) + Path.DirectorySeparatorChar + Path.GetFileNameWithoutExtension(logfile) + ".txt");
+
+                    // bar moves to 100 % in this step
+                    progressBar1.Value = (int)((float)mine.logplaybackfile.BaseStream.Position / (float)mine.logplaybackfile.BaseStream.Length * 100.0f / 1.0f);
+
+                    progressBar1.Refresh();
+                    //Application.DoEvents();
+
+                    sw.WriteLine("QGC WPL 110");
+
+                        byte count = mine.getWPCount();
+                        for (ushort a = 0; a < count; a++)
+                        {
+                            Locationwp wp = mine.getWP(a);
+                            //sw.WriteLine(item + "\t" + mine.param[item]);
+                            byte mode = (byte)wp.id;
+
+                            sw.Write((a + 1)); // seq
+                            sw.Write("\t" + 0); // current
+                            sw.Write("\t" + (byte)MAVLink.MAV_FRAME.GLOBAL_RELATIVE_ALT); //frame 
+                            sw.Write("\t" + mode);
+                            sw.Write("\t" + wp.p1.ToString("0.000000", new System.Globalization.CultureInfo("en-US")));
+                            sw.Write("\t" + wp.p2.ToString("0.000000", new System.Globalization.CultureInfo("en-US")));
+                            sw.Write("\t" + wp.p3.ToString("0.000000", new System.Globalization.CultureInfo("en-US")));
+                            sw.Write("\t" + wp.p4.ToString("0.000000", new System.Globalization.CultureInfo("en-US")));
+                            sw.Write("\t" + wp.lat.ToString("0.000000", new System.Globalization.CultureInfo("en-US")));
+                            sw.Write("\t" + wp.lng.ToString("0.000000", new System.Globalization.CultureInfo("en-US")));
+                            sw.Write("\t" + (wp.alt / MainV2.cs.multiplierdist).ToString("0.000000", new System.Globalization.CultureInfo("en-US")));
+                            sw.Write("\t" + 1);
+                            sw.WriteLine("");
+                        }
+                    
+                    sw.Close();
+
+                    progressBar1.Value = 100;
+
+                    mine.logreadmode = false;
+                    mine.logplaybackfile.Close();
+                    mine.logplaybackfile = null;
+
+                    CustomMessageBox.Show("File Saved with log file");
+
+                }
+            }
+        }
     }
 }

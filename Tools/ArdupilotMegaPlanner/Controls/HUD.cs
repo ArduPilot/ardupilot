@@ -7,7 +7,7 @@ using System.Text;
 using System.Windows.Forms;
 using System.IO;
 using System.Drawing.Imaging;
-
+using System.Collections;
 using System.Threading;
  
 using System.Drawing.Drawing2D;
@@ -88,6 +88,7 @@ namespace ArdupilotMega.Controls
         float _airspeed = 0;
         float _targetspeed = 0;
         float _batterylevel = 0;
+        float _current = 0;
         float _batteryremaining = 0;
         float _gpsfix = 0;
         float _gpshdop = 0;
@@ -128,6 +129,8 @@ namespace ArdupilotMega.Controls
         [System.ComponentModel.Browsable(true), System.ComponentModel.Category("Values")]
         public float batteryremaining { get { return _batteryremaining; } set { if (_batteryremaining != value) { _batteryremaining = value; this.Invalidate(); } } }
         [System.ComponentModel.Browsable(true), System.ComponentModel.Category("Values")]
+        public float current { get { return _current; } set { if (_current != value) { _current = value; this.Invalidate(); } } }
+        [System.ComponentModel.Browsable(true), System.ComponentModel.Category("Values")]
         public float gpsfix { get { return _gpsfix; } set { if (_gpsfix != value) { _gpsfix = value; this.Invalidate(); } } }
         [System.ComponentModel.Browsable(true), System.ComponentModel.Category("Values")]
         public float gpshdop { get { return _gpshdop; } set { if (_gpshdop != value) { _gpshdop = value; this.Invalidate(); } } }
@@ -155,6 +158,17 @@ namespace ArdupilotMega.Controls
 
         [System.ComponentModel.Browsable(true), System.ComponentModel.Category("Values")]
         public int status { get; set; }
+
+        public struct Custom
+        {
+            //public Point Position;
+            //public float FontSize;
+            public string Header;
+            public System.Reflection.PropertyInfo Item;
+            public float GetValue { get { return (float)Item.GetValue((object)MainV2.cs, null); } }
+        }
+
+        public Hashtable CustomItems = new Hashtable();
         
         int statuslast = 0;
         DateTime armedtimer = DateTime.MinValue;
@@ -353,8 +367,8 @@ namespace ArdupilotMega.Controls
             {
                 countdate = DateTime.Now;
                 Console.WriteLine("HUD " + count + " hz drawtime " + (huddrawtime / count) + " gl " + opengl);
-                if ((huddrawtime / count) > 1000)
-                    opengl = false;
+              //  if ((huddrawtime / count) > 1000)
+                  //  opengl = false;
 
                 count = 0;
                 huddrawtime = 0;
@@ -1373,7 +1387,7 @@ namespace ArdupilotMega.Controls
 
                     drawstring(graphicsObject, "Bat", font, fontsize + 2, whiteBrush, fontsize, this.Height - 30 - fontoffset);
                     drawstring(graphicsObject, _batterylevel.ToString("0.00v"), font, fontsize + 2, whiteBrush, fontsize * 4, this.Height - 30 - fontoffset);
-                    drawstring(graphicsObject, _batteryremaining.ToString("0%"), font, fontsize + 2, whiteBrush, fontsize * 9, this.Height - 30 - fontoffset);
+                    drawstring(graphicsObject, _current.ToString("0 A"), font, fontsize + 2, whiteBrush, fontsize * 9, this.Height - 30 - fontoffset);
                 }
                 // gps
 
@@ -1402,6 +1416,21 @@ namespace ArdupilotMega.Controls
                 if (isNaN)
                     drawstring(graphicsObject, "NaN Error " + DateTime.Now, font, this.Height / 30 + 10, Brushes.Red, 50, 50);
 
+                // custom user items
+                graphicsObject.ResetTransform();
+                int height = this.Height - 30 - fontoffset - fontsize - 8;
+                foreach (string key in CustomItems.Keys)
+                {
+                    try
+                    {
+                        Custom item = (Custom)CustomItems[key];
+                        drawstring(graphicsObject, item.Header + item.GetValue.ToString("0.##"), font, fontsize + 2, whiteBrush, this.Width / 8, height);
+                        height -= fontsize+5;
+                    }
+                    catch { }
+
+                }
+                
 
                 if (!opengl)
                 {

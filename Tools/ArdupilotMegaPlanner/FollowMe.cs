@@ -7,6 +7,7 @@ using System.Linq;
 using System.Text;
 using System.Windows.Forms;
 using System.IO.Ports;
+using System.Globalization;
 
 namespace ArdupilotMega
 {
@@ -113,14 +114,14 @@ namespace ArdupilotMega
                             continue;
                         }
 
-                        gotolocation.Lat = double.Parse(items[2]) / 100.0;
+                        gotolocation.Lat = double.Parse(items[2], CultureInfo.InvariantCulture) / 100.0;
 
                         gotolocation.Lat = (int)gotolocation.Lat + ((gotolocation.Lat - (int)gotolocation.Lat) / 0.60);
 
                         if (items[3] == "S")
                             gotolocation.Lat *= -1;
 
-                        gotolocation.Lng = double.Parse(items[4]) / 100.0;
+                        gotolocation.Lng = double.Parse(items[4], CultureInfo.InvariantCulture) / 100.0;
 
                         gotolocation.Lng = (int)gotolocation.Lng + ((gotolocation.Lng - (int)gotolocation.Lng) / 0.60);
 

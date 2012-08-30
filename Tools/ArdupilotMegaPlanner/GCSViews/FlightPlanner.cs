@@ -348,6 +348,8 @@ namespace ArdupilotMega.GCSViews
             selectedrow = Commands.Rows.Add();
          //   Commands.CurrentCell = Commands.Rows[selectedrow].Cells[Param1.Index];
 
+            ChangeColumnHeader(MAVLink.MAV_CMD.WAYPOINT.ToString());
+
             setfromGE(lat, lng, alt);
         }
 
@@ -1362,7 +1364,9 @@ namespace ArdupilotMega.GCSViews
                     temp.p4 = (float)(double.Parse(Commands.Rows[a].Cells[Param4.Index].Value.ToString()));
 
                     MAVLink.MAV_MISSION_RESULT ans = port.setWP(temp, (ushort)(a + 1), frame, 0);
-                    if (ans != MAVLink.MAV_MISSION_RESULT.MAV_MISSION_ACCEPTED)
+                    // invalid sequence can only occur if we failed to see a responce from the apm when we sent the request.
+                    // therefore it did see the request and has moved on that step, and so do we.
+                    if (ans != MAVLink.MAV_MISSION_RESULT.MAV_MISSION_ACCEPTED && ans != MAVLink.MAV_MISSION_RESULT.MAV_MISSION_INVALID_SEQUENCE)
                     {
                         throw new Exception("Upload WPs Failed " + Commands.Rows[a].Cells[Command.Index].Value.ToString() + " " + Enum.Parse(typeof(MAVLink.MAV_MISSION_RESULT), ans.ToString()));
                     }
@@ -1509,7 +1513,10 @@ namespace ArdupilotMega.GCSViews
                 CHK_holdalt.Checked = Convert.ToBoolean((float)param["ALT_HOLD_RTL"] > 0);
                 log.Info("param ALT_HOLD_RTL " + CHK_holdalt.Checked.ToString());
 
+            }
+            catch (Exception ex) { log.Error(ex); }
 
+            try {
 
                 DataGridViewTextBoxCell cellhome;
                 cellhome = Commands.Rows[0].Cells[Lat.Index] as DataGridViewTextBoxCell;
@@ -1530,7 +1537,7 @@ namespace ArdupilotMega.GCSViews
                     }
                 }
             }
-            catch (Exception ex) { log.Info(ex.ToString()); } // if there is no valid home
+            catch (Exception ex) { log.Error(ex.ToString()); } // if there is no valid home
 
             if (Commands.RowCount > 0)
             {

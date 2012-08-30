@@ -1345,7 +1345,7 @@ namespace ArdupilotMega
                     }
                     else
                     {
-                        log.Info(DateTime.Now + " PC wpcount " + buffer[5] + " need " + MAVLINK_MSG_ID_MISSION_COUNT + " " + this.BaseStream.BytesToRead);
+                        log.Info(DateTime.Now + " PC wpcount " + buffer[5] + " need " + MAVLINK_MSG_ID_MISSION_COUNT);
                     }
                 }
             }
@@ -1919,21 +1919,13 @@ namespace ArdupilotMega
 #if MAVLINK10
                     if (buffer[5] == MAVLINK_MSG_ID_MISSION_ACK)
                     {
-
-
                         var ans = buffer.ByteArrayToStructure<mavlink_mission_ack_t>(6);
-
-
                         log.Info("set wp " + index + " ACK 47 : " + buffer[5] + " ans " + Enum.Parse(typeof(MAV_MISSION_RESULT), ans.type.ToString()));
                         return (MAV_MISSION_RESULT)ans.type;
                     }
                     else if (buffer[5] == MAVLINK_MSG_ID_MISSION_REQUEST)
                     {
                         var ans = buffer.ByteArrayToStructure<mavlink_mission_request_t>(6);
-
-
-
-
                         if (ans.seq == (index + 1))
                         {
                             log.Info("set wp doing " + index + " req " + ans.seq + " REQ 40 : " + buffer[5]);

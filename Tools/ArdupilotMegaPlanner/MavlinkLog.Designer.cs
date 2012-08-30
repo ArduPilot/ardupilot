@@ -35,6 +35,8 @@
             this.BUT_graphmavlog = new ArdupilotMega.Controls.MyButton();
             this.zg1 = new ZedGraph.ZedGraphControl();
             this.BUT_convertcsv = new ArdupilotMega.Controls.MyButton();
+            this.BUT_paramsfromlog = new ArdupilotMega.Controls.MyButton();
+            this.BUT_getwpsfromlog = new ArdupilotMega.Controls.MyButton();
             this.SuspendLayout();
             // 
             // BUT_redokml
@@ -82,10 +84,26 @@
             this.BUT_convertcsv.UseVisualStyleBackColor = true;
             this.BUT_convertcsv.Click += new System.EventHandler(this.BUT_convertcsv_Click);
             // 
+            // BUT_paramsfromlog
+            // 
+            resources.ApplyResources(this.BUT_paramsfromlog, "BUT_paramsfromlog");
+            this.BUT_paramsfromlog.Name = "BUT_paramsfromlog";
+            this.BUT_paramsfromlog.UseVisualStyleBackColor = true;
+            this.BUT_paramsfromlog.Click += new System.EventHandler(this.BUT_paramsfromlog_Click);
+            // 
+            // BUT_getwpsfromlog
+            // 
+            resources.ApplyResources(this.BUT_getwpsfromlog, "BUT_getwpsfromlog");
+            this.BUT_getwpsfromlog.Name = "BUT_getwpsfromlog";
+            this.BUT_getwpsfromlog.UseVisualStyleBackColor = true;
+            this.BUT_getwpsfromlog.Click += new System.EventHandler(this.BUT_getwpsfromlog_Click);
+            // 
             // MavlinkLog
             // 
             resources.ApplyResources(this, "$this");
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
+            this.Controls.Add(this.BUT_getwpsfromlog);
+            this.Controls.Add(this.BUT_paramsfromlog);
             this.Controls.Add(this.BUT_convertcsv);
             this.Controls.Add(this.zg1);
             this.Controls.Add(this.BUT_graphmavlog);
@@ -106,5 +124,7 @@
         private ArdupilotMega.Controls.MyButton BUT_graphmavlog;
         private ZedGraph.ZedGraphControl zg1;
         private Controls.MyButton BUT_convertcsv;
+        private Controls.MyButton BUT_paramsfromlog;
+        private Controls.MyButton BUT_getwpsfromlog;
     }
 }
