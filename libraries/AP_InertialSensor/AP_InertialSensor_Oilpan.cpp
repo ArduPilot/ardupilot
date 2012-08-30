@@ -167,8 +167,6 @@ float AP_InertialSensor_Oilpan::temperature() {
 uint32_t AP_InertialSensor_Oilpan::sample_time() {
     return _sample_time;
 }
-void AP_InertialSensor_Oilpan::reset_sample_time() {
-}
 
 /* ------ Private functions -------------------------------------------*/
 
@@ -189,4 +187,10 @@ float AP_InertialSensor_Oilpan::get_gyro_drift_rate(void)
 {
     // 3.0 degrees/second/minute
     return ToRad(3.0/60);
+}
+
+// get number of samples read from the sensors
+uint16_t AP_InertialSensor_Oilpan::num_samples_available()
+{
+    return _adc->num_samples_available(_sensors);
 }

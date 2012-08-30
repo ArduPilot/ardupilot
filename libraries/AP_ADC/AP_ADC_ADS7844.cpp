@@ -67,7 +67,9 @@ static volatile uint32_t _sum[8];
 // how many values we've accumulated since last read
 static volatile uint16_t _count[8];
 
-static uint32_t last_ch6_micros;
+// variables to calculate time period over which a group of samples were collected
+static volatile uint32_t _ch6_delta_time_start_micros = 0;  // time we start collecting sample (reset on update)
+static volatile uint32_t _ch6_last_sample_time_micros = 0;  // time latest sample was collected
 
 // TCNT2 values for various interrupt rates,
 // assuming 256 prescaler. Note that these values
@@ -122,6 +124,8 @@ void AP_ADC_ADS7844::read(uint32_t tnow)
 
     bit_set(PORTC, 4);                                          // Disable Chip Select (PIN PC4)
 
+    // record time of this sample
+    _ch6_last_sample_time_micros = micros();
 }
 
 
@@ -158,7 +162,7 @@ void AP_ADC_ADS7844::Init( AP_PeriodicProcess * scheduler )
         _sum[i]   = adc_tmp;
     }
 
-    last_ch6_micros = micros();
+    _ch6_last_sample_time_micros = micros();
 
     scheduler->resume_timer();
     scheduler->register_process( AP_ADC_ADS7844::read );
@@ -223,6 +227,12 @@ uint32_t AP_ADC_ADS7844::Ch6(const uint8_t *channel_numbers, float *result)
         _count[channel_numbers[i]] = 0;
         _sum[channel_numbers[i]]   = 0;
     }
+
+    // calculate the delta time.
+    // we do this before re-enabling interrupts because another sensor read could fire immediately and change the _last_sensor_time value
+    uint32_t ret = _ch6_last_sample_time_micros - _ch6_delta_time_start_micros;
+    _ch6_delta_time_start_micros = _ch6_last_sample_time_micros;
+
     sei();
 
     // calculate averages. We keep this out of the cli region
@@ -234,8 +244,5 @@ uint32_t AP_ADC_ADS7844::Ch6(const uint8_t *channel_numbers, float *result)
     }
 
     // return number of microseconds since last call
-    uint32_t us = micros();
-    uint32_t ret = us - last_ch6_micros;
-    last_ch6_micros = us;
     return ret;
 }

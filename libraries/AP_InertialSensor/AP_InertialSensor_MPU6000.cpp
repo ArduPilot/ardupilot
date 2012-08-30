@@ -190,7 +190,10 @@ const int8_t AP_InertialSensor_MPU6000::_accel_data_sign[3]  = { 1, 1, -1 };
 
 const uint8_t AP_InertialSensor_MPU6000::_temp_data_index = 3;
 
-static volatile uint8_t _new_data;
+// variables to calculate time period over which a group of samples were collected
+static volatile uint32_t _delta_time_micros = 1;   // time period overwhich samples were collected (initialise to non-zero number but will be overwritten on 2nd read in any case)
+static volatile uint32_t _delta_time_start_micros = 0;  // time we start collecting sample (reset on update)
+static volatile uint32_t _last_sample_time_micros = 0;  // time latest sample was collected
 
 static uint8_t _product_id;
 
@@ -200,6 +203,7 @@ uint8_t AP_InertialSensor_MPU6000::_received_packet[DMP_FIFO_BUFFER_SIZE];    //
 uint8_t AP_InertialSensor_MPU6000::_fifoCountH;                 // high byte of number of elements in fifo buffer
 uint8_t AP_InertialSensor_MPU6000::_fifoCountL;                 // low byte of number of elements in fifo buffer
 Quaternion AP_InertialSensor_MPU6000::quaternion;                       // holds the 4 quaternions representing attitude taken directly from the DMP
+AP_PeriodicProcess*  AP_InertialSensor_MPU6000::_scheduler = NULL;
 
 AP_InertialSensor_MPU6000::AP_InertialSensor_MPU6000( uint8_t cs_pin )
 {
@@ -219,10 +223,10 @@ uint16_t AP_InertialSensor_MPU6000::init( AP_PeriodicProcess * scheduler )
 {
     if (_initialised) return _product_id;
     _initialised = true;
+    _scheduler = scheduler;     // store pointer to scheduler so that we can suspend/resume scheduler when we pull data from the MPU6000
     scheduler->suspend_timer();
     hardware_init();
     scheduler->resume_timer();
-    scheduler->register_process( &AP_InertialSensor_MPU6000::read );
     return _product_id;
 }
 
@@ -253,6 +257,10 @@ bool AP_InertialSensor_MPU6000::update( void )
     }
     count = _count;
     _count = 0;
+
+    // record sample time
+    _delta_time_micros = _last_sample_time_micros - _delta_time_start_micros;
+    _delta_time_start_micros = _last_sample_time_micros;
     sei();
 
     count_scale = 1.0 / count;
@@ -325,15 +333,7 @@ float AP_InertialSensor_MPU6000::temperature() {
 
 uint32_t AP_InertialSensor_MPU6000::sample_time()
 {
-    uint32_t us = micros();
-    uint32_t delta = us - _last_sample_micros;
-    reset_sample_time();
-    return delta;
-}
-
-void AP_InertialSensor_MPU6000::reset_sample_time()
-{
-    _last_sample_micros = micros();
+    return _delta_time_micros;
 }
 
 /*================ HARDWARE FUNCTIONS ==================== */
@@ -347,16 +347,16 @@ static int16_t spi_transfer_16(void)
 }
 
 /*
- *  this is called from a timer interrupt to read data from the MPU6000
+ *  this is called from the data_interrupt which fires when the MPU6000 has new sensor data available
  *  and add it to _sum[]
+ *  Note: it is critical that no other devices on the same SPI bus attempt to read at the same time
+ *        to ensure this is the case, these other devices must perform their SPI reads after being
+ *        called by the AP_TimerProcess.
  */
-void AP_InertialSensor_MPU6000::read(uint32_t )
+void AP_InertialSensor_MPU6000::read()
 {
-    if (_new_data == 0) {
-        // no new data is ready from the MPU6000
-        return;
-    }
-    _new_data = 0;
+    // record time that data was available
+    _last_sample_time_micros = micros();
 
     // now read the data
     digitalWrite(_cs_pin, LOW);
@@ -365,14 +365,13 @@ void AP_InertialSensor_MPU6000::read(uint32_t )
     for (uint8_t i=0; i<7; i++) {
         _sum[i] += spi_transfer_16();
     }
+    digitalWrite(_cs_pin, HIGH);
 
     _count++;
     if (_count == 0) {
         // rollover - v unlikely
         memset((void*)_sum, 0, sizeof(_sum));
     }
-
-    digitalWrite(_cs_pin, HIGH);
 
     // should also read FIFO data if enabled
     if( _dmp_initialised ) {
@@ -408,8 +407,17 @@ void AP_InertialSensor_MPU6000::register_write(uint8_t reg, uint8_t val)
 // MPU6000 new data interrupt on INT6
 void AP_InertialSensor_MPU6000::data_interrupt(void)
 {
-    // tell the timer routine that there is data to be read
-    _new_data = 1;
+    // stop the timer firing, to prevent SPI bus accesses by other drivers
+    _scheduler->suspend_timer();
+
+    // re-enable interrupts
+    sei();
+
+    // read in samples from the MPU6000's data registers
+    read();
+
+    // resume the timer
+    _scheduler->resume_timer();
 }
 
 void AP_InertialSensor_MPU6000::hardware_init()
@@ -475,6 +483,18 @@ float AP_InertialSensor_MPU6000::get_gyro_drift_rate(void)
 {
     // 0.5 degrees/second/minute
     return ToRad(0.5/60);
+}
+
+// get number of samples read from the sensors
+uint16_t AP_InertialSensor_MPU6000::num_samples_available()
+{
+    return _count;
+}
+
+// get time (in microseconds) that last sample was captured
+uint32_t AP_InertialSensor_MPU6000::last_sample_time()
+{
+    return _last_sample_time_micros;
 }
 
 // Update gyro offsets with new values.  Offsets provided in as scaled deg/sec values
@@ -662,7 +682,6 @@ void AP_InertialSensor_MPU6000::FIFO_reset()
     temp = register_read(MPUREG_USER_CTRL);
     temp = temp | BIT_USER_CTRL_FIFO_RESET;             // FIFO RESET BIT
     register_write(MPUREG_USER_CTRL, temp);
-    _new_data = 0;                                                              // clear new data flag
 }
 
 // FIFO_getPacket - read an attitude packet from FIFO buffer
