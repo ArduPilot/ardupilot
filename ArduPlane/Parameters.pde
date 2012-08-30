@@ -370,7 +370,7 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @DisplayName: Minimum Pitch Angle
     // @Description: The minimum commanded pitch down angle
     // @Units: centi-Degrees
-    // @Range: 0 9000
+    // @Range: -9000 0
     // @Increment: 1
     // @User: Standard
     GSCALAR(pitch_limit_min_cd,     "LIM_PITCH_MIN",  PITCH_MIN_CENTIDEGREE),
