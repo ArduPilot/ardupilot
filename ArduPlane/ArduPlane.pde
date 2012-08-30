@@ -1137,16 +1137,21 @@ static void update_current_flight_mode(void)
             calc_throttle();
             break;
 
-        case FLY_BY_WIRE_A:
+        case FLY_BY_WIRE_A: {
             // set nav_roll and nav_pitch using sticks
             nav_roll_cd  = g.channel_roll.norm_input() * g.roll_limit_cd;
-            nav_pitch_cd = g.channel_pitch.norm_input() * (-1) * g.pitch_limit_min_cd;
-            // We use pitch_min above because it is usually greater magnitude then pitch_max.  -1 is to compensate for its sign.
-            nav_pitch_cd = constrain(nav_pitch_cd, -3000, 3000);                        // trying to give more pitch authority
+            float pitch_input = g.channel_pitch.norm_input();
+            if (pitch_input > 0) {
+                nav_pitch_cd = pitch_input * g.pitch_limit_max_cd;
+            } else {
+                nav_pitch_cd = -(pitch_input * g.pitch_limit_min_cd);
+            }
+            nav_pitch_cd = constrain(nav_pitch_cd, g.pitch_limit_min_cd.get(), g.pitch_limit_max_cd.get());
             if (inverted_flight) {
                 nav_pitch_cd = -nav_pitch_cd;
             }
             break;
+        }
 
         case FLY_BY_WIRE_B:
             // Substitute stick inputs for Navigation control output
