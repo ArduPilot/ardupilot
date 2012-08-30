@@ -62,8 +62,17 @@ public:
     ///
     virtual bool        update(void);
 
-    // true if new data is available from the sensors
+    /// Check if new sensor data is available
+    ///
+    /// @returns    true if new data is available from the sensors
+    ///
     virtual bool        new_data_available(void);
+
+    /// Get number of samples read from the sensors
+    ///
+    /// @returns    number of samples read from the sensors
+    ///
+    virtual uint16_t     num_samples_available(void);
 
     /// Fetch the current gyro values
     ///
