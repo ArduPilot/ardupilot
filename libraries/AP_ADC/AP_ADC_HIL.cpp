@@ -88,3 +88,9 @@ bool AP_ADC_HIL::new_data_available(const uint8_t *channel_numbers)
 {
     return true;
 }
+
+// Get minimum number of samples read from the sensors
+uint16_t AP_ADC_HIL::num_samples_available(const uint8_t *channel_numbers)
+{
+    return 1;
+}

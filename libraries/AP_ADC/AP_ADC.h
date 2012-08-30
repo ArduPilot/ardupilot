@@ -44,6 +44,8 @@ public:
     // check if Ch6() can return new data
     virtual bool            new_data_available(const uint8_t *channel_numbers) = 0;
 
+    virtual uint16_t        num_samples_available(const uint8_t *channel_numbers) = 0;
+
 private:
 };
 

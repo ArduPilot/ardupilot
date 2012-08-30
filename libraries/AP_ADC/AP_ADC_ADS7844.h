@@ -33,6 +33,9 @@ public:
     // check if Ch6 would block
     bool                new_data_available(const uint8_t *channel_numbers);
 
+    // Get minimum number of samples read from the sensors
+    uint16_t            num_samples_available(const uint8_t *channel_numbers);
+
 private:
     static void         read(uint32_t);
 
