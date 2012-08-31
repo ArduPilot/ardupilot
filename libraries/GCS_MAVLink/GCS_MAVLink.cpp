@@ -15,6 +15,10 @@ version 2.1 of the License, or (at your option) any later version.
 #include <AP_Common.h>
 #include <GCS_MAVLink.h>
 
+#ifdef MAVLINK_SEPARATE_HELPERS
+#include "include/mavlink/v1.0/mavlink_helpers.h"
+#endif
+
 
 BetterStream	*mavlink_comm_0_port;
 BetterStream	*mavlink_comm_1_port;
