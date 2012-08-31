@@ -73,6 +73,7 @@ public:
         k_param_reset_mission_chan,
         k_param_land_flare_alt,
         k_param_land_flare_sec,
+        k_param_crosstrack_min_distance,
 
         // 110: Telemetry control
         //
@@ -237,6 +238,7 @@ public:
     AP_Float crosstrack_gain;
     AP_Int16 crosstrack_entry_angle;
     AP_Int8  crosstrack_use_wind;
+    AP_Int16 crosstrack_min_distance;
 
     // Estimation
     //
