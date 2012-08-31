@@ -8,7 +8,7 @@
 #include "../AP_HAL/SPIDriver.h"
 #include "../AP_HAL/AnalogIn.h"
 #include "../AP_HAL/Storage.h"
-#include "../AP_HAL/Log.h"
+#include "../AP_HAL/Dataflash.h"
 #include "../AP_HAL/GPIO.h"
 #include "../AP_HAL/RCInput.h"
 #include "../AP_HAL/RCOutput.h"
@@ -23,7 +23,7 @@ public:
         AP_HAL::SPIDriver*  _spi,
         AP_HAL::AnalogIn*   _analogIn,
         AP_HAL::Storage*    _storage,
-        AP_HAL::Log*        _log,
+        AP_HAL::Dataflash*  _dataflash,
         AP_HAL::BetterStream* _console,
         AP_HAL::GPIO*       _gpio,
         AP_HAL::RCInput*    _rcin,
@@ -38,7 +38,7 @@ public:
         spi(_spi),
         analogIn(_analogIn),
         storage(_storage),
-        log(_log),
+        dataflash(_dataflash),
         console(_console),
         gpio(_gpio),
         rcin(_rcin),
@@ -56,7 +56,7 @@ public:
     AP_HAL::SPIDriver*  spi;
     AP_HAL::AnalogIn*   analogIn;
     AP_HAL::Storage*    storage;
-    AP_HAL::Log*        log;
+    AP_HAL::Dataflash*  dataflash;
     AP_HAL::BetterStream* console;
     AP_HAL::GPIO*       gpio;
     AP_HAL::RCInput*    rcin;

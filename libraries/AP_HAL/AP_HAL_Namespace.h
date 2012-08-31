@@ -13,7 +13,7 @@ namespace AP_HAL {
     class SPIDriver;
     class AnalogIn;
     class Storage;
-    class Log;
+    class Dataflash;
     class GPIO;
     class RCInput;
     class RCOutput;

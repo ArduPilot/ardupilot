@@ -10,7 +10,7 @@
 #include "SPIDriver.h"
 #include "AnalogIn.h"
 #include "Storage.h"
-#include "Log.h"
+#include "Dataflash.h"
 #include "GPIO.h"
 #include "RCInput.h"
 #include "RCOutput.h"

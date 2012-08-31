@@ -9,7 +9,7 @@
 #include "SPIDriver.h"
 #include "AnalogIn.h"
 #include "Storage.h"
-#include "Log.h"
+#include "Dataflash.h"
 #include "GPIO.h"
 #include "RCInput.h"
 #include "RCOutput.h"
@@ -31,8 +31,8 @@ static AVRI2CDriver     avrI2CDriver;
 static ArduinoSPIDriver arduinoSPIDriver;
 static ArduinoAnalogIn  arduinoAnalogIn;
 static AVREEPROMStorage avrEEPROMStorage;
-static DataFlashAPM1Log apm1DataFlashLog;
-static DataFlashAPM2Log apm2DataFlashLog;
+static APM1Dataflash    apm1Dataflash;
+static APM2Dataflash    apm2Dataflash;
 static ArduinoGPIO      arduinoGPIO;
 static APM1RCInput      apm1RCInput;
 static APM2RCInput      apm2RCInput;
@@ -49,7 +49,7 @@ const HAL_AVR AP_HAL_AVR_APM1(
         &arduinoSPIDriver,
         &arduinoAnalogIn,
         &avrEEPROMStorage,
-        &apm1DataFlashLog,
+        &apm1Dataflash,
         (BetterStream*) &avrUart0Driver,
         &arduinoGPIO,
         &apm1RCInput,
@@ -65,7 +65,7 @@ const HAL_AVR AP_HAL_AVR_APM2(
         &arduinoSPIDriver,
         &arduinoAnalogIn,
         &avrEEPROMStorage,
-        &apm2DataFlashLog,
+        &apm2Dataflash,
         (BetterStream *) &avrUart0Driver,
         &arduinoGPIO,
         &apm2RCInput,

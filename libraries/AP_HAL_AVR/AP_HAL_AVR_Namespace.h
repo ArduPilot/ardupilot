@@ -10,8 +10,8 @@ namespace AP_HAL_AVR {
     class ArduinoSPIDriver;
     class ArduinoAnalogIn;
     class AVREEPROMStorage;
-    class DataFlashAPM1Log;
-    class DataFlashAPM2Log;
+    class APM1Dataflash;
+    class APM2Dataflash;
     class ArduinoGPIO;
     class APM1RCInput;
     class APM2RCInput;
