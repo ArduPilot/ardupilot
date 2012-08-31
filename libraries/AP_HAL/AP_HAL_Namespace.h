@@ -14,7 +14,6 @@ namespace AP_HAL {
     class AnalogIn;
     class Storage;
     class Log;
-    class Console;
     class GPIO;
     class RCInput;
     class RCOutput;

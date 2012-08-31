@@ -10,7 +10,6 @@
 #include "AnalogIn.h"
 #include "Storage.h"
 #include "Log.h"
-#include "Console.h"
 #include "GPIO.h"
 #include "RCInput.h"
 #include "RCOutput.h"
@@ -34,7 +33,6 @@ static ArduinoAnalogIn  arduinoAnalogIn;
 static AVREEPROMStorage avrEEPROMStorage;
 static DataFlashAPM1Log apm1DataFlashLog;
 static DataFlashAPM2Log apm2DataFlashLog;
-static AVRUARTConsole   avrUartConsole(&avrUart0Driver);
 static ArduinoGPIO      arduinoGPIO;
 static APM1RCInput      apm1RCInput;
 static APM2RCInput      apm2RCInput;
@@ -52,7 +50,7 @@ const HAL_AVR AP_HAL_AVR_APM1(
         &arduinoAnalogIn,
         &avrEEPROMStorage,
         &apm1DataFlashLog,
-        &avrUartConsole,
+        (BetterStream*) &avrUart0Driver,
         &arduinoGPIO,
         &apm1RCInput,
         &apm1RCOutput,
@@ -68,7 +66,7 @@ const HAL_AVR AP_HAL_AVR_APM2(
         &arduinoAnalogIn,
         &avrEEPROMStorage,
         &apm2DataFlashLog,
-        &avrUartConsole,
+        (BetterStream *) &avrUart0Driver,
         &arduinoGPIO,
         &apm2RCInput,
         &apm2RCOutput,

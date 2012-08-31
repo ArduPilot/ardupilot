@@ -12,7 +12,6 @@ namespace AP_HAL_AVR {
     class AVREEPROMStorage;
     class DataFlashAPM1Log;
     class DataFlashAPM2Log;
-    class AVRUARTConsole;
     class ArduinoGPIO;
     class APM1RCInput;
     class APM2RCInput;

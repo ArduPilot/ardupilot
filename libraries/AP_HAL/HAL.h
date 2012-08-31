@@ -9,7 +9,6 @@
 #include "../AP_HAL/AnalogIn.h"
 #include "../AP_HAL/Storage.h"
 #include "../AP_HAL/Log.h"
-#include "../AP_HAL/Console.h"
 #include "../AP_HAL/GPIO.h"
 #include "../AP_HAL/RCInput.h"
 #include "../AP_HAL/RCOutput.h"
@@ -25,7 +24,7 @@ public:
         AP_HAL::AnalogIn*   _analogIn,
         AP_HAL::Storage*    _storage,
         AP_HAL::Log*        _log,
-        AP_HAL::Console*    _console,
+        AP_HAL::BetterStream* _console,
         AP_HAL::GPIO*       _gpio,
         AP_HAL::RCInput*    _rcin,
         AP_HAL::RCOutput*   _rcout,
@@ -58,7 +57,7 @@ public:
     AP_HAL::AnalogIn*   analogIn;
     AP_HAL::Storage*    storage;
     AP_HAL::Log*        log;
-    AP_HAL::Console*    console;
+    AP_HAL::BetterStream* console;
     AP_HAL::GPIO*       gpio;
     AP_HAL::RCInput*    rcin;
     AP_HAL::RCOutput*   rcout;
