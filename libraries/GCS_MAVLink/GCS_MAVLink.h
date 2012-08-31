@@ -10,7 +10,7 @@
 
 // we have separate helpers disabled to make it possible
 // to select MAVLink 1.0 in the arduino GUI build
-//#define MAVLINK_SEPARATE_HELPERS
+#define MAVLINK_SEPARATE_HELPERS
 
 #include "include/mavlink/v1.0/ardupilotmega/version.h"
 
