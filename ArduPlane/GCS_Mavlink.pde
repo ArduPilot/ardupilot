@@ -1937,6 +1937,18 @@ mission_failed:
         break;
     }
 
+    default:
+        // forward unknown messages to the other link if there is one
+        if ((chan == MAVLINK_COMM_1 && gcs0.initialised) ||
+            (chan == MAVLINK_COMM_0 && gcs3.initialised)) {
+            mavlink_channel_t out_chan = (mavlink_channel_t)(((uint8_t)chan)^1);
+            // only forward if it would fit in our transmit buffer
+            if (comm_get_txspace(out_chan) > msg->len + MAVLINK_NUM_NON_PAYLOAD_BYTES) {
+                _mavlink_resend_uart(out_chan, msg);
+            }
+        }
+        break;
+
     } // end switch
 } // end handle mavlink
 
