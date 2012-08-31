@@ -849,3 +849,7 @@
 #ifndef APM_CONTROL
 # define APM_CONTROL DISABLED
 #endif
+
+#ifndef SERIAL_BUFSIZE
+# define SERIAL_BUFSIZE 256
+#endif
