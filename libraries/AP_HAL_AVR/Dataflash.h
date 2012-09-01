@@ -14,9 +14,11 @@ public:
     virtual void init(void *implspecific) = 0;
     virtual void read_mfg_id() = 0;
     virtual bool media_present() = 0;
-    virtual uint16_t num_pages() = 0;
 
     /* Concrete public methods: */
+    uint16_t num_pages() { return _num_pages; }
+    uint8_t  mfg_id() { return _mfg; }
+    uint16_t device_id() { return _device; }
     uint16_t get_page() { return _read_page_addr - 1; }
     uint16_t get_write_page() { return _page_addr; }
 
@@ -48,20 +50,38 @@ protected:
     /* Implementation-specific private methods: */
     virtual void _wait_ready() = 0;
     virtual void _page_to_buffer(uint8_t buffer_num, uint16_t page_addr) = 0;
+    virtual void _buffer_to_page(uint8_t buffer_num, uint16_t page_addr,
+                                    bool wait) = 0;
+    virtual void _page_erase(uint16_t page_addr) = 0;
+    virtual void _block_erase(uint16_t block_addr) = 0;
+    virtual void _chip_erase() = 0;
+    
+    virtual void _buffer_write(uint8_t buffer_num, uint16_t page_addr,
+                                uint8_t data) = 0;
+    virtual uint8_t  _buffer_read(uint8_t buffer_num, uint16_t page_addr) = 0;
 
+    /* Concrete private methods: */
+
+    int16_t _find_last_page();
+    int16_t _find_last_page_of_log(uint16_t log_num);
+    bool _check_wrapped();
+
+    /* Instance variables: */
     uint8_t _buffer_num;
     uint8_t _read_buffer_num;
     uint16_t _buffer_idx;
     uint16_t _read_buffer_idx;
     uint16_t _page_addr;
     uint16_t _read_page_addr;
-    uint8_t _stop_write;
+    bool _stop_write;
     uint16_t _file_num;
     uint16_t _file_page;
 
+    /* Instance variables which should be initialized by the child class: */
     uint8_t _mfg;
     uint16_t _device;
     uint16_t _page_size;
+    uint16_t _num_pages;
 };
 
 /* APM1Dataflash and APM2Dataflash: fully concrete classes implementing
@@ -72,10 +92,24 @@ public:
     void init(void* machtnichts);
     void read_mfg_id();
     bool media_present();
-    uint16_t num_pages();
 private:
     void _wait_ready();
+
     void _page_to_buffer(uint8_t buffer_num, uint16_t page_addr);
+    void _buffer_to_page(uint8_t buffer_num, uint16_t page_addr, bool wait);
+
+    void _page_erase(uint16_t page_addr);
+    void _block_erase(uint16_t block_addr);
+    void _chip_erase();
+
+    void _buffer_write(uint8_t buffer_num, uint16_t page_addr, uint8_t data);
+    uint8_t  _buffer_read(uint8_t buffer_num, uint16_t page_addr);
+
+    uint8_t _read_status_reg();
+    uint8_t _read_status();
+
+    void _cs_active();
+    void _cs_inactive();
 };
 
 class AP_HAL_AVR::APM2Dataflash : public AP_HAL_AVR::CommonDataflash {
@@ -83,10 +117,25 @@ public:
     void init(void* machtnichts);
     void read_mfg_id();
     bool media_present();
-    uint16_t num_pages();
 private:
     void _wait_ready();
+
     void _page_to_buffer(uint8_t buffer_num, uint16_t page_addr);
+    void _buffer_to_page(uint8_t buffer_num, uint16_t page_addr, bool wait);
+
+    void _page_erase(uint16_t page_addr);
+    void _block_erase(uint16_t block_addr);
+    void _chip_erase();
+
+    void _buffer_write(uint8_t buffer_num, uint16_t page_addr, uint8_t data);
+    uint8_t  _buffer_read(uint8_t buffer_num, uint16_t page_addr);
+    
+    uint8_t _read_status_reg();
+    uint8_t _read_status();
+    
+    void _cs_active();
+    void _cs_inactive();
+    uint8_t _transfer(uint8_t data);
 };
 
 #endif // __AP_HAL_AVR_DATAFLASH_H__

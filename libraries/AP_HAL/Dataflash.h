@@ -19,6 +19,8 @@ public:
     virtual void read_mfg_id() = 0;
     virtual bool media_present() = 0;
     virtual uint16_t num_pages() = 0;
+    virtual uint8_t  mfg_id() = 0;
+    virtual uint16_t device_id() = 0;
 
     virtual uint16_t get_page() = 0;
     virtual uint16_t get_write_page() = 0;
