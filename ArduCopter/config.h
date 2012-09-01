@@ -698,7 +698,7 @@
 // Stabilize Rate Control
 //
 #ifndef RATE_ROLL_P
- # define RATE_ROLL_P        0.165
+ # define RATE_ROLL_P        0.175
 #endif
 #ifndef RATE_ROLL_I
  # define RATE_ROLL_I        0.0
@@ -711,7 +711,7 @@
 #endif
 
 #ifndef RATE_PITCH_P
- # define RATE_PITCH_P       0.165
+ # define RATE_PITCH_P       0.175
 #endif
 #ifndef RATE_PITCH_I
  # define RATE_PITCH_I           0.0
