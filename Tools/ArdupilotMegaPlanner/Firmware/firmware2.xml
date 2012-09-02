@@ -134,7 +134,7 @@
     <url>http://meee146-planner.googlecode.com/git/Tools/ArdupilotMegaPlanner/Firmware/AC2-Heli-1280.hex</url>
     <url2560>http://meee146-planner.googlecode.com/git/Tools/ArdupilotMegaPlanner/Firmware/AC2-Heli-2560.hex</url2560>
     <url2560-2>http://meee146-planner.googlecode.com/git/Tools/ArdupilotMegaPlanner/Firmware/AC2-Heli-2560-2.hex</url2560-2>
-    <name>ArduCopter V2.7.1 Heli (2560 only)</name>
+    <name>ArduCopter V2.7.3 Heli (2560 only)</name>
     <desc>
 #define AUTO_RESET_LOITER 0
 #define FRAME_CONFIG HELI_FRAME
@@ -175,7 +175,7 @@
 #define NAV_LOITER_IMAX  10
 
 </desc>
-    <format_version>118</format_version>
+    <format_version>0</format_version>
   </Firmware>
   <Firmware>
     <url>http://meee146-planner.googlecode.com/git/Tools/ArdupilotMegaPlanner/Firmware/AC2-QUADHIL-1280.hex</url>
@@ -197,7 +197,7 @@
     <url>http://meee146-planner.googlecode.com/git/Tools/ArdupilotMegaPlanner/Firmware/AC2-HELHIL-1280.hex</url>
     <url2560>http://meee146-planner.googlecode.com/git/Tools/ArdupilotMegaPlanner/Firmware/AC2-HELHIL-2560.hex</url2560>
     <url2560-2>http://meee146-planner.googlecode.com/git/Tools/ArdupilotMegaPlanner/Firmware/AC2-HELHIL-2560-2.hex</url2560-2>
-    <name>ArduCopter V2.7.1 Heli Hil</name>
+    <name>ArduCopter V2.7.3 Heli Hil</name>
     <desc>
 
 #define HIL_MODE            HIL_MODE_ATTITUDE
@@ -243,6 +243,6 @@
 
 
 </desc>
-    <format_version>118</format_version>
+    <format_version>0</format_version>
   </Firmware>
 </options>
