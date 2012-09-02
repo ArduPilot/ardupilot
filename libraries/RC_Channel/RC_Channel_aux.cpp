@@ -88,9 +88,9 @@ void update_aux_servo_function( RC_Channel_aux* rc_a,
     if( rc_b != NULL ) { g_rc_function[aux_servo_function[1]] = rc_b; }
     if( rc_c != NULL ) { g_rc_function[aux_servo_function[2]] = rc_c; }
     if( rc_d != NULL ) { g_rc_function[aux_servo_function[3]] = rc_d; }
-    if( rc_e != NULL ) { g_rc_function[aux_servo_function[3]] = rc_e; }
-    if( rc_f != NULL ) { g_rc_function[aux_servo_function[3]] = rc_f; }
-    if( rc_g != NULL ) { g_rc_function[aux_servo_function[3]] = rc_g; }
+    if( rc_e != NULL ) { g_rc_function[aux_servo_function[4]] = rc_e; }
+    if( rc_f != NULL ) { g_rc_function[aux_servo_function[5]] = rc_f; }
+    if( rc_g != NULL ) { g_rc_function[aux_servo_function[6]] = rc_g; }
 
     //set auxiliary ranges
     G_RC_AUX(k_flap)->set_range(0,100);
