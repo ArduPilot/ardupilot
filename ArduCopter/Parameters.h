@@ -17,7 +17,7 @@ public:
     // The increment will prevent old parameters from being used incorrectly
     // by newer code.
     //
-    static const uint16_t        k_format_version = 118;
+    static const uint16_t        k_format_version = 119;
 
     // The parameter software_type is set up solely for ground station use
     // and identifies the software type (eg ArduPilotMega versus
@@ -147,8 +147,8 @@ public:
         k_param_rc_6,
         k_param_rc_7,
         k_param_rc_8,
-        k_param_rc_9,
         k_param_rc_10,
+        k_param_rc_11,
         k_param_throttle_min,
         k_param_throttle_max,
         k_param_throttle_fs_enabled,
@@ -160,7 +160,6 @@ public:
         k_param_radio_tuning_high,
         k_param_radio_tuning_low,
         k_param_rc_speed = 192,
-        k_param_rc_11 = 193,
 
         //
         // 200: flight modes
@@ -317,13 +316,12 @@ public:
     RC_Channel              rc_2;
     RC_Channel              rc_3;
     RC_Channel              rc_4;
-    RC_Channel              rc_5;
-    RC_Channel              rc_6;
-    RC_Channel              rc_7;
-    RC_Channel              rc_8;
+    RC_Channel_aux          rc_5;
+    RC_Channel_aux          rc_6;
+    RC_Channel_aux          rc_7;
+    RC_Channel_aux          rc_8;
 
 #if MOUNT == ENABLED
-    RC_Channel_aux          rc_9;
     RC_Channel_aux          rc_10;
     RC_Channel_aux          rc_11;
 #endif
@@ -375,7 +373,6 @@ public:
         rc_7                                        (CH_7),
         rc_8                                        (CH_8),
 #if MOUNT == ENABLED
-        rc_9                                        (CH_9),
         rc_10                                       (CH_10),
         rc_11                                       (CH_11),
 #endif
