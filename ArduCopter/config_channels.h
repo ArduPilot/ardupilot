@@ -19,19 +19,4 @@
 #include "config.h"     // Parent Config File
 #include "APM_Config.h" // User Overrides
 
-//
-//
-// Output CH mapping for Aux channels
-//
-//
-#if CONFIG_APM_HARDWARE == APM_HARDWARE_APM2
- # define CH_CAM_PITCH CH_11
- # define CH_CAM_ROLL  CH_10
- # define CH_CAM_YAW   CH_8
-#elif CONFIG_APM_HARDWARE == APM_HARDWARE_APM1
- # define CH_CAM_PITCH CH_5
- # define CH_CAM_ROLL  CH_6
- # define CH_CAM_YAW   CH_11
-#endif
-
 #endif // __ARDUCOPTER_CONFIG_MOTORS_H__
