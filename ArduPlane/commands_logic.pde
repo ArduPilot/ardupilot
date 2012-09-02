@@ -304,6 +304,7 @@ static bool verify_takeoff()
     if (current_loc.alt > takeoff_altitude)  {
         hold_course = -1;
         takeoff_complete = true;
+        next_WP = current_loc;
         return true;
     } else {
         return false;
