@@ -1002,7 +1002,7 @@ namespace ArdupilotMega.GCSViews
             {
                 ((Button)sender).Enabled = false;
 #if MAVLINK10
-                comPort.doCommand((MAVLink.MAV_CMD)Enum.Parse(typeof(MAVLink.MAV_CMD), CMB_action.Text),1,1,1,0,0,0,0);
+                comPort.doCommand((MAVLink.MAV_CMD)Enum.Parse(typeof(MAVLink.MAV_CMD), CMB_action.Text),1,0,1,0,0,0,0);
 #else
                 comPort.doAction((MAVLink.MAV_ACTION)Enum.Parse(typeof(MAVLink.MAV_ACTION), "MAV_ACTION_" + CMB_action.Text));
 #endif

@@ -1406,11 +1406,11 @@ namespace ArdupilotMega.GCSViews
         /// <summary>
         /// Processes a loaded EEPROM to the map and datagrid
         /// </summary>
-        void processToScreen(List<Locationwp> cmds)
+        void processToScreen(List<Locationwp> cmds, bool append = false)
         {
             quickadd = true;
 
-            while (Commands.Rows.Count > 0)
+            while (Commands.Rows.Count > 0 && !append)
                 Commands.Rows.RemoveAt(0);
 
             if (cmds.Count == 0)
@@ -1770,7 +1770,7 @@ namespace ArdupilotMega.GCSViews
             }
         }
 
-        void readQGC110wpfile(string file)
+        void readQGC110wpfile(string file, bool append = false)
         {
             int wp_count = 0;
             bool error = false;
@@ -1841,7 +1841,7 @@ namespace ArdupilotMega.GCSViews
 
                 sr.Close();
 
-                processToScreen(cmds);
+                processToScreen(cmds, append);
 
                 writeKML();
 
@@ -2570,8 +2570,12 @@ namespace ArdupilotMega.GCSViews
         {
             quickadd = true;
 
-            while (Commands.Rows.Count > 0)
-                Commands.Rows.RemoveAt(0);
+            try
+            {
+                Commands.Rows.Clear();
+            }
+            catch { } // this fails on mono - Exception System.ArgumentOutOfRangeException: Index is less than 0 or more than or equal to the list count. Parameter name: index
+
             selectedrow = 0;
             quickadd = false;
             writeKML();
@@ -4186,6 +4190,19 @@ namespace ArdupilotMega.GCSViews
             quickadd = false;
 
                 writeKML();
+        }
+
+        private void loadAndAppendToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            OpenFileDialog fd = new OpenFileDialog();
+            fd.Filter = "Ardupilot Mission (*.txt)|*.*";
+            fd.DefaultExt = ".txt";
+            DialogResult result = fd.ShowDialog();
+            string file = fd.FileName;
+            if (file != "")
+            {
+                readQGC110wpfile(file, true);
+            }
         }
     }
 }

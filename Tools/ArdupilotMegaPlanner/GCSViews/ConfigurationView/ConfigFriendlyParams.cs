@@ -238,6 +238,21 @@ namespace ArdupilotMega.GCSViews.ConfigurationView
                                 rangeRaw = (lowerRange / 100) + " " + (upperRange / 100);
                             }
                         }
+                        else if (units.ToLower() == "centimeters")
+                        {
+                            units = "Meters";
+                            incrementRaw = "0.1";
+                            string[] rangeParts = rangeRaw.Split(new[] { ' ' });
+                            if (rangeParts.Count() == 2)
+                            {
+                                float lowerRange;
+                                float.TryParse(rangeParts[0], out lowerRange);
+                                float upperRange;
+                                float.TryParse(rangeParts[1], out upperRange);
+
+                                rangeRaw = (lowerRange / 100) + " " + (upperRange / 100);
+                            }
+                        }
                         else
                         {
                             units += " / " + (int)(1 / test);

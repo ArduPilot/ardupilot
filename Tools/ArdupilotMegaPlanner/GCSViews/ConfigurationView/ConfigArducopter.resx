@@ -135,7 +135,7 @@
     <value>myLabel3</value>
   </data>
   <data name="&gt;&gt;myLabel3.Type" xml:space="preserve">
-    <value>ArdupilotMega.Controls.MyLabel, ArdupilotMegaPlanner10, Version=1.1.4607.22021, Culture=neutral, PublicKeyToken=null</value>
+    <value>ArdupilotMega.Controls.MyLabel, ArdupilotMegaPlanner10, Version=1.1.4629.11875, Culture=neutral, PublicKeyToken=null</value>
   </data>
   <data name="&gt;&gt;myLabel3.Parent" xml:space="preserve">
     <value>$this</value>
@@ -201,7 +201,7 @@
     <value>myLabel2</value>
   </data>
   <data name="&gt;&gt;myLabel2.Type" xml:space="preserve">
-    <value>ArdupilotMega.Controls.MyLabel, ArdupilotMegaPlanner10, Version=1.1.4607.22021, Culture=neutral, PublicKeyToken=null</value>
+    <value>ArdupilotMega.Controls.MyLabel, ArdupilotMegaPlanner10, Version=1.1.4629.11875, Culture=neutral, PublicKeyToken=null</value>
   </data>
   <data name="&gt;&gt;myLabel2.Parent" xml:space="preserve">
     <value>$this</value>
@@ -312,7 +312,7 @@
     <value>myLabel1</value>
   </data>
   <data name="&gt;&gt;myLabel1.Type" xml:space="preserve">
-    <value>ArdupilotMega.Controls.MyLabel, ArdupilotMegaPlanner10, Version=1.1.4607.22021, Culture=neutral, PublicKeyToken=null</value>
+    <value>ArdupilotMega.Controls.MyLabel, ArdupilotMegaPlanner10, Version=1.1.4629.11875, Culture=neutral, PublicKeyToken=null</value>
   </data>
   <data name="&gt;&gt;myLabel1.Parent" xml:space="preserve">
     <value>$this</value>
@@ -876,25 +876,25 @@
   <data name="&gt;&gt;groupBox4.ZOrder" xml:space="preserve">
     <value>12</value>
   </data>
-  <data name="XTRK_GAIN_SC1.Location" type="System.Drawing.Point, System.Drawing">
+  <data name="XTRK_GAIN_SC.Location" type="System.Drawing.Point, System.Drawing">
     <value>80, 13</value>
   </data>
-  <data name="XTRK_GAIN_SC1.Size" type="System.Drawing.Size, System.Drawing">
+  <data name="XTRK_GAIN_SC.Size" type="System.Drawing.Size, System.Drawing">
     <value>78, 20</value>
   </data>
-  <data name="XTRK_GAIN_SC1.TabIndex" type="System.Int32, mscorlib">
+  <data name="XTRK_GAIN_SC.TabIndex" type="System.Int32, mscorlib">
     <value>5</value>
   </data>
-  <data name="&gt;&gt;XTRK_GAIN_SC1.Name" xml:space="preserve">
-    <value>XTRK_GAIN_SC1</value>
+  <data name="&gt;&gt;XTRK_GAIN_SC.Name" xml:space="preserve">
+    <value>XTRK_GAIN_SC</value>
   </data>
-  <data name="&gt;&gt;XTRK_GAIN_SC1.Type" xml:space="preserve">
+  <data name="&gt;&gt;XTRK_GAIN_SC.Type" xml:space="preserve">
     <value>System.Windows.Forms.NumericUpDown, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </data>
-  <data name="&gt;&gt;XTRK_GAIN_SC1.Parent" xml:space="preserve">
+  <data name="&gt;&gt;XTRK_GAIN_SC.Parent" xml:space="preserve">
     <value>groupBox6</value>
   </data>
-  <data name="&gt;&gt;XTRK_GAIN_SC1.ZOrder" xml:space="preserve">
+  <data name="&gt;&gt;XTRK_GAIN_SC.ZOrder" xml:space="preserve">
     <value>0</value>
   </data>
   <data name="label18.ImeMode" type="System.Windows.Forms.ImeMode, System.Windows.Forms">
@@ -2506,7 +2506,7 @@
     <value>BUT_writePIDS</value>
   </data>
   <data name="&gt;&gt;BUT_writePIDS.Type" xml:space="preserve">
-    <value>ArdupilotMega.Controls.MyButton, ArdupilotMegaPlanner10, Version=1.1.4607.22021, Culture=neutral, PublicKeyToken=null</value>
+    <value>ArdupilotMega.Controls.MyButton, ArdupilotMegaPlanner10, Version=1.1.4629.11875, Culture=neutral, PublicKeyToken=null</value>
   </data>
   <data name="&gt;&gt;BUT_writePIDS.Parent" xml:space="preserve">
     <value>$this</value>
@@ -2536,7 +2536,7 @@
     <value>BUT_rerequestparams</value>
   </data>
   <data name="&gt;&gt;BUT_rerequestparams.Type" xml:space="preserve">
-    <value>ArdupilotMega.Controls.MyButton, ArdupilotMegaPlanner10, Version=1.1.4607.22021, Culture=neutral, PublicKeyToken=null</value>
+    <value>ArdupilotMega.Controls.MyButton, ArdupilotMegaPlanner10, Version=1.1.4629.11875, Culture=neutral, PublicKeyToken=null</value>
   </data>
   <data name="&gt;&gt;BUT_rerequestparams.Parent" xml:space="preserve">
     <value>$this</value>

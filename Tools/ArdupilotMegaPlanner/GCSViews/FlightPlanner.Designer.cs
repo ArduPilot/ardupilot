@@ -131,6 +131,7 @@
             this.kMLOverlayToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.elevationGraphToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.cameraToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.reverseWPsToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.fileLoadSaveToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.loadWPFileToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.saveWPFileToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
@@ -141,7 +142,7 @@
             this.panelBASE = new System.Windows.Forms.Panel();
             this.toolTip1 = new System.Windows.Forms.ToolTip(this.components);
             this.timer1 = new System.Windows.Forms.Timer(this.components);
-            this.reverseWPsToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.loadAndAppendToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             ((System.ComponentModel.ISupportInitialize)(this.Commands)).BeginInit();
             this.panel5.SuspendLayout();
             this.panel1.SuspendLayout();
@@ -916,10 +917,17 @@
             resources.ApplyResources(this.cameraToolStripMenuItem, "cameraToolStripMenuItem");
             this.cameraToolStripMenuItem.Click += new System.EventHandler(this.cameraToolStripMenuItem_Click);
             // 
+            // reverseWPsToolStripMenuItem
+            // 
+            this.reverseWPsToolStripMenuItem.Name = "reverseWPsToolStripMenuItem";
+            resources.ApplyResources(this.reverseWPsToolStripMenuItem, "reverseWPsToolStripMenuItem");
+            this.reverseWPsToolStripMenuItem.Click += new System.EventHandler(this.reverseWPsToolStripMenuItem_Click);
+            // 
             // fileLoadSaveToolStripMenuItem
             // 
             this.fileLoadSaveToolStripMenuItem.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] {
             this.loadWPFileToolStripMenuItem,
+            this.loadAndAppendToolStripMenuItem,
             this.saveWPFileToolStripMenuItem});
             this.fileLoadSaveToolStripMenuItem.Name = "fileLoadSaveToolStripMenuItem";
             resources.ApplyResources(this.fileLoadSaveToolStripMenuItem, "fileLoadSaveToolStripMenuItem");
@@ -982,11 +990,11 @@
             this.timer1.Interval = 1000;
             this.timer1.Tick += new System.EventHandler(this.timer1_Tick);
             // 
-            // reverseWPsToolStripMenuItem
+            // loadAndAppendToolStripMenuItem
             // 
-            this.reverseWPsToolStripMenuItem.Name = "reverseWPsToolStripMenuItem";
-            resources.ApplyResources(this.reverseWPsToolStripMenuItem, "reverseWPsToolStripMenuItem");
-            this.reverseWPsToolStripMenuItem.Click += new System.EventHandler(this.reverseWPsToolStripMenuItem_Click);
+            this.loadAndAppendToolStripMenuItem.Name = "loadAndAppendToolStripMenuItem";
+            resources.ApplyResources(this.loadAndAppendToolStripMenuItem, "loadAndAppendToolStripMenuItem");
+            this.loadAndAppendToolStripMenuItem.Click += new System.EventHandler(this.loadAndAppendToolStripMenuItem_Click);
             // 
             // FlightPlanner
             // 
@@ -1122,5 +1130,6 @@
         private System.Windows.Forms.ToolStripMenuItem flyToHereToolStripMenuItem;
         private System.Windows.Forms.ToolStripMenuItem gridV2ToolStripMenuItem;
         private System.Windows.Forms.ToolStripMenuItem reverseWPsToolStripMenuItem;
+        private System.Windows.Forms.ToolStripMenuItem loadAndAppendToolStripMenuItem;
     }
 }
