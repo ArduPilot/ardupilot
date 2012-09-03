@@ -30,7 +30,7 @@
         {
             System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(ConfigAP_Limits));
             this.LNK_wiki = new System.Windows.Forms.LinkLabel();
-            this.LIM_ENABLED = new System.Windows.Forms.CheckBox();
+            this.LIM_ENABLED = new Controls.MavlinkCheckBox();
             this.groupBox1 = new System.Windows.Forms.GroupBox();
             this.textBox1 = new System.Windows.Forms.TextBox();
             this.groupBox5 = new System.Windows.Forms.GroupBox();
@@ -43,7 +43,7 @@
             this.LIM_CHANNEL = new System.Windows.Forms.NumericUpDown();
             this.myLabel3 = new ArdupilotMega.Controls.MyLabel();
             this.LIM_FNC_RAD = new System.Windows.Forms.NumericUpDown();
-            this.LIM_FNC_SMPL = new System.Windows.Forms.CheckBox();
+            this.LIM_FNC_SMPL = new Controls.MavlinkCheckBox();
             this.groupBox3 = new System.Windows.Forms.GroupBox();
             this.LIM_GPSLCK_ON = new System.Windows.Forms.CheckBox();
             this.groupBox2 = new System.Windows.Forms.GroupBox();
@@ -281,7 +281,7 @@
         #endregion
 
         private System.Windows.Forms.LinkLabel LNK_wiki;
-        private System.Windows.Forms.CheckBox LIM_ENABLED;
+        private Controls.MavlinkCheckBox LIM_ENABLED;
         private System.Windows.Forms.GroupBox groupBox1;
         private Controls.MyLabel myLabel2;
         private Controls.MyLabel myLabel1;
@@ -294,7 +294,7 @@
         private System.Windows.Forms.GroupBox groupBox4;
         private Controls.MyLabel myLabel3;
         private System.Windows.Forms.NumericUpDown LIM_FNC_RAD;
-        private System.Windows.Forms.CheckBox LIM_FNC_SMPL;
+        private Controls.MavlinkCheckBox LIM_FNC_SMPL;
         private Controls.MyLabel myLabel4;
         private System.Windows.Forms.NumericUpDown LIM_CHANNEL;
         private System.Windows.Forms.CheckBox LIM_REQUIRED;

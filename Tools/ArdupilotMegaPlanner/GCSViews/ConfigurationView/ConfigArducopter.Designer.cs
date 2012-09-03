@@ -59,7 +59,7 @@
             this.NAV_LAT_P = new System.Windows.Forms.NumericUpDown();
             this.label16 = new System.Windows.Forms.Label();
             this.groupBox6 = new System.Windows.Forms.GroupBox();
-            this.XTRK_GAIN_SC1 = new System.Windows.Forms.NumericUpDown();
+            this.XTRK_GAIN_SC = new System.Windows.Forms.NumericUpDown();
             this.label18 = new System.Windows.Forms.Label();
             this.groupBox7 = new System.Windows.Forms.GroupBox();
             this.THR_ALT_IMAX = new System.Windows.Forms.NumericUpDown();
@@ -151,7 +151,7 @@
             ((System.ComponentModel.ISupportInitialize)(this.NAV_LAT_I)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.NAV_LAT_P)).BeginInit();
             this.groupBox6.SuspendLayout();
-            ((System.ComponentModel.ISupportInitialize)(this.XTRK_GAIN_SC1)).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)(this.XTRK_GAIN_SC)).BeginInit();
             this.groupBox7.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.THR_ALT_IMAX)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.THR_ALT_I)).BeginInit();
@@ -406,16 +406,16 @@
             // 
             // groupBox6
             // 
-            this.groupBox6.Controls.Add(this.XTRK_GAIN_SC1);
+            this.groupBox6.Controls.Add(this.XTRK_GAIN_SC);
             this.groupBox6.Controls.Add(this.label18);
             resources.ApplyResources(this.groupBox6, "groupBox6");
             this.groupBox6.Name = "groupBox6";
             this.groupBox6.TabStop = false;
             // 
-            // XTRK_GAIN_SC1
+            // XTRK_GAIN_SC
             // 
-            resources.ApplyResources(this.XTRK_GAIN_SC1, "XTRK_GAIN_SC1");
-            this.XTRK_GAIN_SC1.Name = "XTRK_GAIN_SC1";
+            resources.ApplyResources(this.XTRK_GAIN_SC, "XTRK_GAIN_SC");
+            this.XTRK_GAIN_SC.Name = "XTRK_GAIN_SC";
             // 
             // label18
             // 
@@ -915,7 +915,7 @@
             ((System.ComponentModel.ISupportInitialize)(this.NAV_LAT_I)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.NAV_LAT_P)).EndInit();
             this.groupBox6.ResumeLayout(false);
-            ((System.ComponentModel.ISupportInitialize)(this.XTRK_GAIN_SC1)).EndInit();
+            ((System.ComponentModel.ISupportInitialize)(this.XTRK_GAIN_SC)).EndInit();
             this.groupBox7.ResumeLayout(false);
             ((System.ComponentModel.ISupportInitialize)(this.THR_ALT_IMAX)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.THR_ALT_I)).EndInit();
@@ -993,7 +993,7 @@
         private System.Windows.Forms.NumericUpDown NAV_LAT_P;
         private System.Windows.Forms.Label label16;
         private System.Windows.Forms.GroupBox groupBox6;
-        private System.Windows.Forms.NumericUpDown XTRK_GAIN_SC1;
+        private System.Windows.Forms.NumericUpDown XTRK_GAIN_SC;
         private System.Windows.Forms.Label label18;
         private System.Windows.Forms.GroupBox groupBox7;
         private System.Windows.Forms.NumericUpDown THR_ALT_IMAX;

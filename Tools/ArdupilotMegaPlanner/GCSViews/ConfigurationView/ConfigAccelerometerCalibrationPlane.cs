@@ -67,7 +67,7 @@ namespace ArdupilotMega.GCSViews.ConfigurationView
             try
             {
 #if MAVLINK10              
-                            MainV2.comPort.doCommand(MAVLink.MAV_CMD.PREFLIGHT_CALIBRATION,1,1,1,0,0,0,0);
+                            MainV2.comPort.doCommand(MAVLink.MAV_CMD.PREFLIGHT_CALIBRATION,1,0,1,0,0,0,0);
 #else
                 MainV2.comPort.doAction(MAVLink.MAV_ACTION.MAV_ACTION_CALIBRATE_ACC);
 #endif

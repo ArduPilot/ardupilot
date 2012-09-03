@@ -79,6 +79,12 @@ namespace ArdupilotMega.GCSViews.ConfigurationView
             this.mavlinkComboBoxTilt = new System.Windows.Forms.ComboBox();
             this.mavlinkComboBoxRoll = new System.Windows.Forms.ComboBox();
             this.mavlinkComboBoxPan = new System.Windows.Forms.ComboBox();
+            this.CMB_inputch_tilt = new MavlinkComboBox();
+            this.label22 = new System.Windows.Forms.Label();
+            this.label23 = new System.Windows.Forms.Label();
+            this.CMB_inputch_roll = new MavlinkComboBox();
+            this.label24 = new System.Windows.Forms.Label();
+            this.CMB_inputch_pan = new MavlinkComboBox();
             ((System.ComponentModel.ISupportInitialize)(this.pictureBox1)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.pictureBox2)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.PBOX_WarningIcon)).BeginInit();
@@ -856,9 +862,72 @@ namespace ArdupilotMega.GCSViews.ConfigurationView
             this.mavlinkComboBoxPan.TabIndex = 130;
             this.mavlinkComboBoxPan.SelectedIndexChanged += new System.EventHandler(this.mavlinkComboBox_SelectedIndexChanged);
             // 
+            // CMB_inputch_tilt
+            // 
+            this.CMB_inputch_tilt.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
+            this.CMB_inputch_tilt.FormattingEnabled = true;
+            this.CMB_inputch_tilt.Location = new System.Drawing.Point(450, 54);
+            this.CMB_inputch_tilt.Name = "CMB_inputch_tilt";
+            this.CMB_inputch_tilt.Size = new System.Drawing.Size(83, 21);
+            this.CMB_inputch_tilt.TabIndex = 131;
+            // 
+            // label22
+            // 
+            this.label22.AutoSize = true;
+            this.label22.Font = new System.Drawing.Font("Microsoft Sans Serif", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.label22.Location = new System.Drawing.Point(453, 31);
+            this.label22.Name = "label22";
+            this.label22.Size = new System.Drawing.Size(70, 20);
+            this.label22.TabIndex = 132;
+            this.label22.Text = "Input Ch";
+            // 
+            // label23
+            // 
+            this.label23.AutoSize = true;
+            this.label23.Font = new System.Drawing.Font("Microsoft Sans Serif", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.label23.Location = new System.Drawing.Point(453, 158);
+            this.label23.Name = "label23";
+            this.label23.Size = new System.Drawing.Size(70, 20);
+            this.label23.TabIndex = 134;
+            this.label23.Text = "Input Ch";
+            // 
+            // CMB_inputch_roll
+            // 
+            this.CMB_inputch_roll.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
+            this.CMB_inputch_roll.FormattingEnabled = true;
+            this.CMB_inputch_roll.Location = new System.Drawing.Point(450, 181);
+            this.CMB_inputch_roll.Name = "CMB_inputch_roll";
+            this.CMB_inputch_roll.Size = new System.Drawing.Size(83, 21);
+            this.CMB_inputch_roll.TabIndex = 133;
+            // 
+            // label24
+            // 
+            this.label24.AutoSize = true;
+            this.label24.Font = new System.Drawing.Font("Microsoft Sans Serif", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.label24.Location = new System.Drawing.Point(453, 282);
+            this.label24.Name = "label24";
+            this.label24.Size = new System.Drawing.Size(70, 20);
+            this.label24.TabIndex = 136;
+            this.label24.Text = "Input Ch";
+            // 
+            // CMB_inputch_pan
+            // 
+            this.CMB_inputch_pan.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
+            this.CMB_inputch_pan.FormattingEnabled = true;
+            this.CMB_inputch_pan.Location = new System.Drawing.Point(450, 305);
+            this.CMB_inputch_pan.Name = "CMB_inputch_pan";
+            this.CMB_inputch_pan.Size = new System.Drawing.Size(83, 21);
+            this.CMB_inputch_pan.TabIndex = 135;
+            // 
             // ConfigMount
             // 
             this.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(38)))), ((int)(((byte)(39)))), ((int)(((byte)(40)))));
+            this.Controls.Add(this.label24);
+            this.Controls.Add(this.CMB_inputch_pan);
+            this.Controls.Add(this.label23);
+            this.Controls.Add(this.CMB_inputch_roll);
+            this.Controls.Add(this.label22);
+            this.Controls.Add(this.CMB_inputch_tilt);
             this.Controls.Add(this.mavlinkComboBoxPan);
             this.Controls.Add(this.mavlinkComboBoxRoll);
             this.Controls.Add(this.mavlinkComboBoxTilt);
@@ -980,6 +1049,12 @@ namespace ArdupilotMega.GCSViews.ConfigurationView
         private System.Windows.Forms.ComboBox mavlinkComboBoxTilt;
         private System.Windows.Forms.ComboBox mavlinkComboBoxRoll;
         private System.Windows.Forms.ComboBox mavlinkComboBoxPan;
+        private MavlinkComboBox CMB_inputch_tilt;
+        private System.Windows.Forms.Label label22;
+        private System.Windows.Forms.Label label23;
+        private MavlinkComboBox CMB_inputch_roll;
+        private System.Windows.Forms.Label label24;
+        private MavlinkComboBox CMB_inputch_pan;
 
     }
 }

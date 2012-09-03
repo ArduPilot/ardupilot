@@ -213,6 +213,23 @@ namespace ArdupilotMega.GCSViews
             e.Handled = true;*/
         }
 
+        private void waitandsleep(int time)
+        {
+            DateTime start = DateTime.Now;
+
+            while ((DateTime.Now - start).TotalMilliseconds < time)
+            {
+                try
+                {
+                    if (comPort.BytesToRead > 0)
+                    {
+                        return;
+                    }
+                }
+                catch { threadrun = false; return; }
+            }
+        }
+
         private void readandsleep(int time)
         {
              DateTime start = DateTime.Now;
@@ -247,12 +264,17 @@ namespace ArdupilotMega.GCSViews
 
                 comPort.toggleDTR();
 
+                comPort.DiscardInBuffer();
+
                 System.Threading.Thread t11 = new System.Threading.Thread(delegate()
                 {
                     threadrun = true;
 
-                    // 2 secs
-                    readandsleep(2000);
+                    // 10 sec
+                    waitandsleep(10000);
+
+                    // 100 ms
+                    readandsleep(100);
                     try
                     {
                         comPort.Write("\n\n\n");

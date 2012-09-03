@@ -56,7 +56,7 @@ namespace ArdupilotMega.GCSViews
         //"http://meee146-planner.googlecode.com/git/Tools/ArdupilotMegaPlanner/Firmware/AC2-Y6-1280.hex"
         readonly string oldurl = ("https://meee146-planner.googlecode.com/git-history/!Hash!/Tools/ArdupilotMegaPlanner/Firmware/firmware2.xml");
         readonly string oldfirmwareurl = ("https://meee146-planner.googlecode.com/git-history/!Hash!/Tools/ArdupilotMegaPlanner/Firmware/!Firmware!");
-        string[] oldurls = new string[] { "26305d5790333f730cd396afcd08c165cde33ed7", "bc1f26ca40b076e3d06f173adad772fb25aa6512", "dfc5737c5efc1e7b78e908829a097624c273d9d7", "682065db449b6c79d89717908ed8beea1ed6a03a", "b21116847d35472b9ab770408cbeb88ed2ed0a95", "511e00bc89a554aea8768a274bff28af532cd335", "1da56714aa1ed88dcdb078a90d33bcef4eb4315f", "8aa4c7a1ed07648f31335926cc6bcc06c87dc536" };
+        string[] oldurls = new string[] {"abe930ce723267697542388ef181328f00371f40", "26305d5790333f730cd396afcd08c165cde33ed7", "bc1f26ca40b076e3d06f173adad772fb25aa6512", "dfc5737c5efc1e7b78e908829a097624c273d9d7", "682065db449b6c79d89717908ed8beea1ed6a03a", "b21116847d35472b9ab770408cbeb88ed2ed0a95", "511e00bc89a554aea8768a274bff28af532cd335", "1da56714aa1ed88dcdb078a90d33bcef4eb4315f", "8aa4c7a1ed07648f31335926cc6bcc06c87dc536" };
 
         List<software> softwares = new List<software>();
         bool flashing = false;
