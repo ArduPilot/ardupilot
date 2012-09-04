@@ -81,7 +81,7 @@ static void init_ardupilot()
     // The console port buffers are defined to be sufficiently large to support
     // the MAVLink protocol efficiently
     //
-    Serial.begin(SERIAL0_BAUD, 128, SERIAL_BUFSIZE);
+    Serial.begin(SERIAL0_BAUD, 256, SERIAL_BUFSIZE);
 
     // GPS serial port.
     //
