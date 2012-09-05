@@ -3,7 +3,6 @@
  *       DataFlash.cpp - DataFlash log library generic code
  */
 
-#include <FastSerial.h>
 #include <stdint.h>
 #include "DataFlash.h"
 

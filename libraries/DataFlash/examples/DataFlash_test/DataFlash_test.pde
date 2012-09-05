@@ -52,7 +52,7 @@ void setup()
     Serial.println("After testing perform erase before using DataFlash for logging!");
     Serial.println("");
     Serial.println("Writing to flash... wait...");
-    for (int i = 0; i < 1000; i++) {     // Write 1000 packets...
+    for (int i = 0; i < 40; i++) {     // Write 1000 packets...
         // We write packets of binary data... (without worry about nothing more)
         DataFlash.WriteByte(HEAD_BYTE1);
         DataFlash.WriteByte(HEAD_BYTE2);
@@ -79,7 +79,7 @@ void loop()
 
     DataFlash.StartRead(1);      // We start reading from page 1
 
-    for (i = 0; i < 200; i++) {          // Read 200 packets...
+    for (i = 0; i < 40; i++) {          // Read 200 packets...
 
         tmp_byte1 = DataFlash.ReadByte();
         tmp_byte2 = DataFlash.ReadByte();
