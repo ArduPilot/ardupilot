@@ -4,14 +4,13 @@
 // you wish to change any of the setup parameters from their default
 // values, place the appropriate #define statements here.
 
+//#define CONFIG_APM_HARDWARE APM_HARDWARE_APM2
 
-// the following 2 defines control which APM board you have. The
-// 'BETA' board is only if you are developer who received a
-// pre-release APM2 board with the older barometer on it.
-
-// # define CONFIG_APM_HARDWARE APM_HARDWARE_APM2
-// # define APM2_BETA_HARDWARE
-
+// Ordinary users should please ignore the following define.
+// APM2_BETA_HARDWARE is used to support early (September-October 2011) APM2
+// hardware which had the BMP085 barometer onboard. Only a handful of
+// developers have these boards.
+//#define APM2_BETA_HARDWARE
 
 // The following are the recommended settings for Xplane
 // simulation. Remove the leading "/* and trailing "*/" to enable:
