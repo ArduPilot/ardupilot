@@ -20,14 +20,13 @@ void ArduinoSPIDriver::init(void* machtnichts) {
     SPCR |= _BV(MSTR);
     SPCR |= _BV(SPE);
 
- //   set_freq(10000000);
- //   dbg: set_freq is broken
- //   lets just set SPR0 (div/16)
-    SPCR |= _BV(SPR0);
+    set_freq( 1000000);
 }
 
 void ArduinoSPIDriver::set_freq(uint32_t freq_hz) {
-    int div = F_CPU / freq_hz;
+    const uint16_t freq_khz = (uint16_t)(freq_hz / 1000UL);
+    const uint16_t fcpu_khz = (uint16_t)(F_CPU / 1000UL);
+    const int16_t div = fcpu_khz / freq_khz;
     /* can't divide clock by more than 128. */
     uint8_t b = _divider_bits( div > 128 ? 128 : ((uint8_t) div));
     _set_clock_divider_bits(b);
