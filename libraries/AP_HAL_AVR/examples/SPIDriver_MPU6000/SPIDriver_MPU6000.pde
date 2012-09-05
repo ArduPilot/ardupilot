@@ -17,6 +17,7 @@
 const AP_HAL_AVR::HAL_AVR& hal = AP_HAL_AVR_APM2;
 
 const uint8_t _cs_pin = 53;
+const uint8_t _baro_cs_pin = 40;
 
 static void register_write(uint8_t reg, uint8_t val) {
     hal.gpio->write(_cs_pin, 0);
@@ -49,6 +50,8 @@ static void mpu6k_init(void) {
     hal.scheduler->delay(100);
     // Wake up device and select GyroZ clock (better performance)
     register_write(MPUREG_PWR_MGMT_1, MPU_CLK_SEL_PLLGYROZ);
+    hal.scheduler->delay(1);
+    register_write(MPUREG_PWR_MGMT_2, 0);
     hal.scheduler->delay(1);
     // Disable I2C bus (recommended on datasheet)
     register_write(MPUREG_USER_CTRL, BIT_I2C_IF_DIS);
@@ -102,6 +105,10 @@ static void mpu6k_read(int16_t* data) {
 static void setup() {
     hal.uart0->begin(115200);
     hal.uart0->printf_P(PSTR("Initializing MPU6000\r\n"));
+
+    /* Setup the barometer cs to stop it from holding the bus */
+    hal.gpio->pinMode(_baro_cs_pin, GPIO_OUTPUT);
+    hal.gpio->write(_baro_cs_pin, 1);
 
     /* Setup CS pin hardware */
     hal.gpio->pinMode(_cs_pin, GPIO_OUTPUT);
