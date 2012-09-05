@@ -4,14 +4,16 @@
 
 #include "AP_HAL_Namespace.h"
 
+#include <stdint.h>
+
 class AP_HAL::Scheduler {
 public:
-    Scheduler() {}
-    virtual void          init() = 0;
-    virtual void          delay(unsigned long ms) = 0;
-    virtual unsigned long millis() = 0;
-    virtual unsigned long micros() = 0;
-    virtual void          delayMicroseconds(unsigned int us) = 0;
+    Scheduler( AP_HAL::Periodic ) {}
+    virtual void     init() = 0;
+    virtual void     delay(uint32_t ms) = 0;
+    virtual uint32_t millis() = 0;
+    virtual uint32_t micros() = 0;
+    virtual void     delay_microseconds(uint16_t us) = 0;
 };
 
 #endif // __AP_HAL_SCHEDULER_H__
