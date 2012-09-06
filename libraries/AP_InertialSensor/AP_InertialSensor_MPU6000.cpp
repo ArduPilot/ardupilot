@@ -353,7 +353,7 @@ static int16_t spi_transfer_16(void)
  *        to ensure this is the case, these other devices must perform their SPI reads after being
  *        called by the AP_TimerProcess.
  */
-void AP_InertialSensor_MPU6000::read()
+void AP_InertialSensor_MPU6000::read(uint32_t)
 {
     // record time that data was available
     _last_sample_time_micros = micros();
@@ -407,17 +407,11 @@ void AP_InertialSensor_MPU6000::register_write(uint8_t reg, uint8_t val)
 // MPU6000 new data interrupt on INT6
 void AP_InertialSensor_MPU6000::data_interrupt(void)
 {
-    // stop the timer firing, to prevent SPI bus accesses by other drivers
-    _scheduler->suspend_timer();
-
     // re-enable interrupts
     sei();
 
-    // read in samples from the MPU6000's data registers
-    read();
-
-    // resume the timer
-    _scheduler->resume_timer();
+    // queue our read process to run after any currently running timed processes complete
+    _scheduler->queue_process( AP_InertialSensor_MPU6000::read );
 }
 
 void AP_InertialSensor_MPU6000::hardware_init()
