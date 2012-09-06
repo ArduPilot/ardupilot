@@ -10,9 +10,9 @@ using namespace AP_HAL_AVR;
 #define cbi(sfr, bit) (_SFR_BYTE(sfr) &= ~_BV(bit))
 #define sbi(sfr, bit) (_SFR_BYTE(sfr) |= _BV(bit))
 
-static volatile unsigned long timer0_overflow_count = 0;
-static volatile unsigned long timer0_millis = 0;
-static unsigned char timer0_fract = 0;
+static volatile uint32_t timer0_overflow_count = 0;
+static volatile uint32_t timer0_millis = 0;
+static uint8_t timer0_fract = 0;
 
 void ArduinoScheduler::init() {
     // this needs to be called before setup() or some functions won't
@@ -92,8 +92,8 @@ SIGNAL(TIMER0_OVF_vect)
 {
 	// copy these to local variables so they can be stored in registers
 	// (volatile variables must be read from memory on every access)
-	unsigned long m = timer0_millis;
-	unsigned char f = timer0_fract;
+	uint32_t m = timer0_millis;
+	uint8_t f = timer0_fract;
 
 	m += MILLIS_INC;
 	f += FRACT_INC;
@@ -107,9 +107,9 @@ SIGNAL(TIMER0_OVF_vect)
 	timer0_overflow_count++;
 }
 
-unsigned long ArduinoScheduler::millis()
+uint32_t ArduinoScheduler::millis()
 {
-	unsigned long m;
+	uint32_t m;
 	uint8_t oldSREG = SREG;
 
 	// disable interrupts while we read timer0_millis or we might get an
@@ -121,8 +121,8 @@ unsigned long ArduinoScheduler::millis()
 	return m;
 }
 
-unsigned long ArduinoScheduler::micros() {
-	unsigned long m;
+uint32_t ArduinoScheduler::micros() {
+	uint32_t m;
 	uint8_t oldSREG = SREG, t;
 	
 	cli();
@@ -137,7 +137,7 @@ unsigned long ArduinoScheduler::micros() {
 	return ((m << 8) + t) * (64 / clockCyclesPerMicrosecond());
 }
 
-void ArduinoScheduler::delay(unsigned long ms)
+void ArduinoScheduler::delay(uint32_t ms)
 {
 	uint16_t start = (uint16_t)micros();
 
@@ -150,7 +150,7 @@ void ArduinoScheduler::delay(unsigned long ms)
 }
 
 /* Delay for the given number of microseconds.  Assumes a 8 or 16 MHz clock. */
-void ArduinoScheduler::delayMicroseconds(unsigned int us)
+void ArduinoScheduler::delay_microseconds(uint16_t us)
 {
 	// calling avrlib's delay_us() function with low values (e.g. 1 or
 	// 2 microseconds) gives delays longer than desired.
@@ -178,3 +178,6 @@ void ArduinoScheduler::delayMicroseconds(unsigned int us)
 	);
 }
 
+void ArduinoScheduler::register_delay_callback(void(*cb)(void)) {
+    /* XXX need to implement */
+}

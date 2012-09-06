@@ -8,7 +8,7 @@
 
 class AP_HAL::Scheduler {
 public:
-    Scheduler( AP_HAL::Periodic ) {}
+    Scheduler() {}
     virtual void     init() = 0;
     virtual void     delay(uint32_t ms) = 0;
     virtual uint32_t millis() = 0;
