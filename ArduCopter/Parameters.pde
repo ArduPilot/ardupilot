@@ -102,7 +102,7 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @DisplayName: RTL Approach Altitude
     // @Description: This is the altitude the vehicle will move to as the final stage of Returning to Launch.  Set to zero to land.
     // @Units: centimeters
-    // @Range: 1 1000
+    // @Range: 0 1000
     // @Increment: 1
     // @User: Standard
     GSCALAR(rtl_approach_alt,       "APPROACH_ALT", RTL_APPROACH_ALT),
