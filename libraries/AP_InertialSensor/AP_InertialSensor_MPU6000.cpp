@@ -355,9 +355,6 @@ static int16_t spi_transfer_16(void)
  */
 void AP_InertialSensor_MPU6000::read(uint32_t)
 {
-    // record time that data was available
-    _last_sample_time_micros = micros();
-
     // now read the data
     digitalWrite(_cs_pin, LOW);
     byte addr = MPUREG_ACCEL_XOUT_H | 0x80;
@@ -407,6 +404,9 @@ void AP_InertialSensor_MPU6000::register_write(uint8_t reg, uint8_t val)
 // MPU6000 new data interrupt on INT6
 void AP_InertialSensor_MPU6000::data_interrupt(void)
 {
+    // record time that data was available
+    _last_sample_time_micros = micros();
+
     // re-enable interrupts
     sei();
 
