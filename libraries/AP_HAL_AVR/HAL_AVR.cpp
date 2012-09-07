@@ -4,7 +4,7 @@ using namespace AP_HAL_AVR;
 
 void HAL_AVR::init(void* opts) const {
 
-    scheduler->init();
+    scheduler->init((void*)&isr_registry);
    
     /* uart0 is the serial port used for the console, so lets make sure
      * it is initialized at boot */
