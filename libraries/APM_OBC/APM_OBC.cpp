@@ -166,8 +166,9 @@ APM_OBC::check(APM_OBC::control_mode mode,
 		break;
 	}
 
-	// if we are not terminating then toggle the heartbeat pin at 10Hz
-	if (!_terminate && _heartbeat_pin != -1) {
+	// if we are not terminating or if there is a separate terminate
+	// pin configured then toggle the heartbeat pin at 10Hz
+	if (_heartbeat_pin != -1 && (_terminate_pin != -1 || !_terminate)) {
 		if (_heartbeat_pin != _last_heartbeat_pin) {
 			pinMode(_heartbeat_pin, OUTPUT);
 			_last_heartbeat_pin = _heartbeat_pin;
