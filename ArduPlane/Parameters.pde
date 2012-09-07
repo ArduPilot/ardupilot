@@ -81,6 +81,13 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @User: Advanced
     GSCALAR(stick_mixing,           "STICK_MIXING",   1),
 
+    // @Param: RUDDER_STEER
+    // @DisplayName: Rudder steering on takeoff and landing
+    // @Description: When enabled, only rudder will be used for steering during takeoff and landing, with the ailerons used to hold the plane level
+    // @Values: 0:Disabled,1:Enabled
+    // @User: User
+    GSCALAR(rudder_steer,           "RUDDER_STEER",   0),
+
     // @Param: land_pitch_cd
     // @DisplayName: Landing Pitch
     // @Description: Used in autoland for planes without airspeed sensors in hundredths of a degree

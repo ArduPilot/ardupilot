@@ -74,6 +74,7 @@ public:
         k_param_land_flare_alt,
         k_param_land_flare_sec,
         k_param_crosstrack_min_distance,
+        k_param_rudder_steer,
 
         // 110: Telemetry control
         //
@@ -331,6 +332,7 @@ public:
     AP_Int8 inverted_flight_ch;             // 0=disabled, 1-8 is channel for inverted flight trigger
     AP_Int8 sonar_enabled;
     AP_Int8 stick_mixing;
+    AP_Int8 rudder_steer;
 
     // Camera
 #if CAMERA == ENABLED
