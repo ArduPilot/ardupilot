@@ -6,9 +6,9 @@
 
 using namespace AP_HAL_AVR;
 
-proc_ptr ISRRegistry::_registry[ISR_REGISTRY_NUM_SLOTS] = {NULL};
+AP_HAL::Proc ISRRegistry::_registry[ISR_REGISTRY_NUM_SLOTS] = {NULL};
 
-int ISRRegistry::register_signal(int signal, proc_ptr proc)
+int ISRRegistry::register_signal(int signal, AP_HAL::Proc proc)
 {
     if (signal >= 0 && signal < ISR_REGISTRY_NUM_SLOTS) {
         _registry[signal] = proc;
