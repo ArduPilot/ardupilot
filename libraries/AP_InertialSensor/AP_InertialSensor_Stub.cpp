@@ -55,3 +55,7 @@ void AP_InertialSensor_Stub::reset_sample_time() {
 float AP_InertialSensor_Stub::get_gyro_drift_rate(void) {
     return 0.0;
 }
+uint16_t AP_InertialSensor_Stub::num_samples_available()
+{
+    return 1;
+}
