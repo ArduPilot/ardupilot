@@ -49,6 +49,12 @@ const AP_Param::GroupInfo APM_OBC::var_info[] PROGMEM = {
     // @User: Advanced
     AP_GROUPINFO("TERM_ACTION", 6, APM_OBC, _terminate_action, 0),
 
+    // @Param: TERM_PIN
+    // @DisplayName: Terminate Pin
+    // @Description: This sets a digital output pin to set high on flight termination
+    // @User: Advanced
+    AP_GROUPINFO("TERM_PIN",    7, APM_OBC, _terminate_pin,    -1),
+
     AP_GROUPEND
 };
 
@@ -168,5 +174,14 @@ APM_OBC::check(APM_OBC::control_mode mode,
 		}
 		_heartbeat_pin_value = !_heartbeat_pin_value;
 		digitalWrite(_heartbeat_pin, _heartbeat_pin_value);
+	}	
+
+	// set the terminate pin
+	if (_terminate_pin != -1) {
+		if (_terminate_pin != _last_terminate_pin) {
+			pinMode(_terminate_pin, OUTPUT);
+			_last_terminate_pin = _terminate_pin;
+		}
+		digitalWrite(_terminate_pin, _terminate?HIGH:LOW);
 	}	
 }
