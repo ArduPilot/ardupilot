@@ -34,6 +34,7 @@ public:
     uint32_t        sample_time();
     void            reset_sample_time();
     float           get_gyro_drift_rate();
+    uint16_t        num_samples_available();
 };
 
 #endif // __AP_INERTIAL_SENSOR_STUB_H__
