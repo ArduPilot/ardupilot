@@ -65,12 +65,14 @@ private:
 	// digital output pins for communicating with the failsafe board
 	AP_Int8 _heartbeat_pin;
 	AP_Int8 _manual_pin;
+	AP_Int8 _terminate_pin;
 	AP_Int8 _terminate;
 	AP_Int8 _terminate_action;
 
 	// last pins to cope with changing at runtime
 	int8_t _last_heartbeat_pin;
 	int8_t _last_manual_pin;
+	int8_t _last_terminate_pin;
 
 	// waypoint numbers to jump to on failsafe conditions
 	AP_Int8 _wp_comms_hold;
