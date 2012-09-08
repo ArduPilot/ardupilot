@@ -982,10 +982,12 @@ void loop()
 {
     uint32_t timer                  = micros();
     static bool run_50hz_loop = false;
+    uint16_t num_samples;
 
     // We want this to execute fast
     // ----------------------------
-    if( imu.num_samples_available() >= NUM_IMU_SAMPLES_FOR_100HZ ) {
+    num_samples = imu.num_samples_available();
+    if (num_samples >= NUM_IMU_SAMPLES_FOR_100HZ) {
 
 		#if DEBUG_FAST_LOOP == ENABLED
         Log_Write_Data(50, (int32_t)(timer - fast_loopTimer));
@@ -1055,6 +1057,17 @@ void loop()
 #ifdef DESKTOP_BUILD
         usleep(1000);
 #endif
+        if (num_samples < NUM_IMU_SAMPLES_FOR_100HZ-1) {
+            // we have some spare cycles available
+            // less than 20ms has passed. We have at least one millisecond
+            // of free time. The most useful thing to do with that time is
+            // to accumulate some sensor readings, specifically the
+            // compass, which is often very noisy but is not interrupt
+            // driven, so it can't accumulate readings by itself
+            if (g.compass_enabled) {
+                compass.accumulate();
+            }        
+        }
     }
 
     // port manipulation for external timing of main loops
