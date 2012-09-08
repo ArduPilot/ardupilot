@@ -171,7 +171,6 @@ const AP_Param::GroupInfo AP_Mount::var_info[] PROGMEM = {
     AP_GROUPEND
 };
 
-extern RC_Channel_aux* g_rc_function[RC_Channel_aux::k_nr_aux_servo_functions]; // the aux. servo ch. assigned to each function
 extern RC_Channel* rc_ch[NUM_CHANNELS];
 
 AP_Mount::AP_Mount(const struct Location *current_loc, GPS *&gps, AP_AHRS *ahrs, uint8_t id) :
@@ -209,16 +208,20 @@ AP_Mount::AP_Mount(const struct Location *current_loc, GPS *&gps, AP_AHRS *ahrs,
 void
 AP_Mount::update_mount_type()
 {
-    if ((g_rc_function[_roll_idx] == NULL) && (g_rc_function[_tilt_idx] != NULL) && (g_rc_function[_pan_idx] != NULL))
-    {
+	bool have_roll, have_tilt, have_pan;
+	have_roll = RC_Channel_aux::function_assigned(RC_Channel_aux::k_mount_roll) ||
+		RC_Channel_aux::function_assigned(RC_Channel_aux::k_mount2_roll);
+	have_tilt = RC_Channel_aux::function_assigned(RC_Channel_aux::k_mount_tilt) ||
+		RC_Channel_aux::function_assigned(RC_Channel_aux::k_mount2_tilt);
+	have_pan = RC_Channel_aux::function_assigned(RC_Channel_aux::k_mount_pan) ||
+		RC_Channel_aux::function_assigned(RC_Channel_aux::k_mount2_pan);
+    if (have_pan && have_tilt && !have_roll) {
         _mount_type = k_pan_tilt;
     }
-    if ((g_rc_function[_roll_idx] != NULL) && (g_rc_function[_tilt_idx] != NULL) && (g_rc_function[_pan_idx] == NULL))
-    {
+    if (!have_pan && have_tilt && have_roll) {
         _mount_type = k_tilt_roll;
     }
-    if ((g_rc_function[_roll_idx] != NULL) && (g_rc_function[_tilt_idx] != NULL) && (g_rc_function[_pan_idx] != NULL))
-    {
+    if (have_pan && have_tilt && have_roll) {
         _mount_type = k_pan_tilt_roll;
     }
 }
@@ -349,19 +352,17 @@ void AP_Mount::update_mount_position()
 
 #if MNT_RETRACT_OPTION == ENABLED
     // move mount to a "retracted position" into the fuselage with a fourth servo
-    if (g_rc_function[_open_idx]) {
-        bool mount_open_new = (enum MAV_MOUNT_MODE)_mount_mode.get()==MAV_MOUNT_MODE_RETRACT ? 0 : 1;
-        if (mount_open != mount_open_new) {
-            mount_open = mount_open_new;
-            move_servo(g_rc_function[_open_idx], mount_open_new, 0, 1);
-        }
+	bool mount_open_new = (enum MAV_MOUNT_MODE)_mount_mode.get()==MAV_MOUNT_MODE_RETRACT ? 0 : 1;
+	if (mount_open != mount_open_new) {
+		mount_open = mount_open_new;
+		move_servo(_open_idx, mount_open_new, 0, 1);
     }
 #endif
 
     // write the results to the servos
-    move_servo(g_rc_function[_roll_idx], _roll_angle*10, _roll_angle_min*0.1, _roll_angle_max*0.1);
-    move_servo(g_rc_function[_tilt_idx], _tilt_angle*10, _tilt_angle_min*0.1, _tilt_angle_max*0.1);
-    move_servo(g_rc_function[_pan_idx ],  _pan_angle*10,  _pan_angle_min*0.1,  _pan_angle_max*0.1);
+    move_servo(_roll_idx, _roll_angle*10, _roll_angle_min*0.1, _roll_angle_max*0.1);
+    move_servo(_tilt_idx, _tilt_angle*10, _tilt_angle_min*0.1, _tilt_angle_max*0.1);
+    move_servo(_pan_idx,  _pan_angle*10,  _pan_angle_min*0.1,  _pan_angle_max*0.1);
 }
 
 void AP_Mount::set_mode(enum MAV_MOUNT_MODE mode)
@@ -650,15 +651,9 @@ AP_Mount::closest_limit(int16_t angle, int16_t* angle_min, int16_t* angle_max)
 
 /// all angles are degrees * 10 units
 void
-AP_Mount::move_servo(RC_Channel* rc, int16_t angle, int16_t angle_min, int16_t angle_max)
+AP_Mount::move_servo(uint8_t function_idx, int16_t angle, int16_t angle_min, int16_t angle_max)
 {
-    if (rc) {
-        // saturate to the closest angle limit if outside of [min max] angle interval
-        rc->servo_out  = closest_limit(angle, &angle_min, &angle_max);
-        // This is done every time because the user might change the min, max values on the fly
-        rc->set_range(angle_min, angle_max);
-        // convert angle to PWM using a linear transformation (ignores trimming because the servo limits might not be symmetric)
-        rc->calc_pwm();
-        rc->output();
-    }
+	// saturate to the closest angle limit if outside of [min max] angle interval
+	int16_t servo_out = closest_limit(angle, &angle_min, &angle_max);
+	RC_Channel_aux::move_servo((RC_Channel_aux::Aux_servo_function_t)function_idx, servo_out, angle_min, angle_max);
 }

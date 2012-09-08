@@ -76,7 +76,7 @@ private:
     void                            calc_GPS_target_angle(struct Location *target);
     void                            stabilize();
     int16_t                         closest_limit(int16_t angle, int16_t* angle_min, int16_t* angle_max);
-    void                            move_servo(RC_Channel* rc, int16_t angle, int16_t angle_min, int16_t angle_max);
+    void                            move_servo(uint8_t rc, int16_t angle, int16_t angle_min, int16_t angle_max);
     int32_t                         angle_input(RC_Channel* rc, int16_t angle_min, int16_t angle_max);
     float                           angle_input_rad(RC_Channel* rc, int16_t angle_min, int16_t angle_max);
 
