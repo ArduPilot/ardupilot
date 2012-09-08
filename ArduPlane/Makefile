@@ -21,6 +21,12 @@ nocli:
 ublox:
 	make -f Makefile EXTRAFLAGS="-DGPS_PROTOCOL=GPS_PROTOCOL_UBLOX"
 
+mtk:
+	make -f Makefile EXTRAFLAGS="-DGPS_PROTOCOL=GPS_PROTOCOL_MTK"
+
+mtk16:
+	make -f Makefile EXTRAFLAGS="-DGPS_PROTOCOL=GPS_PROTOCOL_MTK16"
+
 heli:
 	make -f Makefile EXTRAFLAGS="-DFRAME_CONFIG=HELI_FRAME"
 
@@ -51,3 +57,4 @@ obc-sitl:
 
 sitl-newcontrollers:
 	make -f ../libraries/Desktop/Makefile.desktop EXTRAFLAGS="-DAPM_CONTROL=ENABLED"
+
