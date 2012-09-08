@@ -41,6 +41,14 @@ const AP_Param::GroupInfo AP_AHRS::var_info[] PROGMEM = {
     // @Increment: .01
     AP_GROUPINFO("RP_P",  5,    AP_AHRS, _kp, 0.4),
 
+    // @Param: WIND_MAX
+    // @DisplayName: Maximum wind
+    // @Description: This sets the maximum allowable difference between ground speed and airspeed. This allows the plane to cope with a failing airspeed sensor. A value of zero means to use the airspeed as is.
+    // @Range: 0 127
+    // QUnits: m/s
+    // @Increment: 1
+    AP_GROUPINFO("WIND_MAX",  6,    AP_AHRS, _wind_max, 0.0),
+
     AP_GROUPEND
 };
 
@@ -62,6 +70,13 @@ bool AP_AHRS::airspeed_estimate(float *airspeed_ret)
 {
 	if (_airspeed && _airspeed->use()) {
 		*airspeed_ret = _airspeed->get_airspeed();
+		if (_wind_max > 0 && _gps && _gps->status() == GPS::GPS_OK) {
+			// constrain the airspeed by the ground speed
+			// and AHRS_WIND_MAX
+			*airspeed_ret = constrain(*airspeed_ret, 
+						  _gps->ground_speed*0.01 - _wind_max, 
+						  _gps->ground_speed*0.01 + _wind_max);
+		}
 		return true;
 	}
 	return false;

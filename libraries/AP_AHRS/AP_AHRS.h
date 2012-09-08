@@ -143,6 +143,7 @@ public:
     AP_Float _kp;
     AP_Float gps_gain;
     AP_Int8 _gps_use;
+    AP_Int8 _wind_max;
 
     // for holding parameters
     static const struct AP_Param::GroupInfo var_info[];

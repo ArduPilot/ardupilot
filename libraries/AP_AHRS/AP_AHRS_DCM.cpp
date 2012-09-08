@@ -632,8 +632,7 @@ void AP_AHRS_DCM::estimate_wind(Vector3f &velocity)
         Vector3f airspeed = _dcm_matrix.colx() * _airspeed->get_airspeed();
         Vector3f wind = velocity - airspeed;
         _wind = _wind * 0.92 + wind * 0.08;
-    }
-
+    }    
 }
 
 
@@ -699,16 +698,24 @@ bool AP_AHRS_DCM::get_position(struct Location *loc)
 // return an airspeed estimate if available
 bool AP_AHRS_DCM::airspeed_estimate(float *airspeed_ret)
 {
+	bool ret = false;
 	if (_airspeed && _airspeed->use()) {
 		*airspeed_ret = _airspeed->get_airspeed();
-		return true;
+		ret = true;
 	}
 
 	// estimate it via GPS speed and wind
 	if (have_gps()) {
 		*airspeed_ret = _last_airspeed;
-		return true;
+		ret = true;
 	}
 
-	return false;
+	if (ret && _wind_max > 0 && _gps && _gps->status() == GPS::GPS_OK) {
+		// constrain the airspeed by the ground speed
+		// and AHRS_WIND_MAX
+		*airspeed_ret = constrain(*airspeed_ret, 
+					  _gps->ground_speed*0.01 - _wind_max, 
+					  _gps->ground_speed*0.01 + _wind_max);
+	}
+	return ret;
 }
