@@ -9,9 +9,6 @@
 
 #include "RC_Channel.h"
 
-// Macro to simplify accessing the auxiliary servos
-#define G_RC_AUX(_t)   if (g_rc_function[RC_Channel_aux::_t]) g_rc_function[RC_Channel_aux::_t]
-
 /// @class	RC_Channel_aux
 /// @brief	Object managing one aux. RC channel (CH5-8), with information about its function
 class RC_Channel_aux : public RC_Channel {
@@ -53,11 +50,35 @@ public:
 
     void            output_ch(unsigned char ch_nr);
 
+	// set and save the trim for a function channel to radio_in
+	static void set_radio_trim(Aux_servo_function_t function);
+
+	// set radio_out to radio_min
+	static void set_radio_to_min(Aux_servo_function_t function);
+
+	// set radio_out to radio_max
+	static void set_radio_to_max(Aux_servo_function_t function);
+
+	// copy radio_in to radio_out
+	static void copy_radio_in_out(Aux_servo_function_t function);
+
+	// set servo_out
+	static void set_servo_out(Aux_servo_function_t function, int16_t value);
+
+	// return true if a function is assigned to a channel
+	static bool function_assigned(Aux_servo_function_t function);
+
+	// set a servo_out value, and angle range, then calc_pwm
+	static void move_servo(Aux_servo_function_t function,
+						   int16_t value, int16_t angle_min, int16_t angle_max);
+
     static const struct AP_Param::GroupInfo        var_info[];
 };
 
-void                            update_aux_servo_function(RC_Channel_aux* rc_a = NULL, RC_Channel_aux* rc_b = NULL, RC_Channel_aux* rc_c = NULL, RC_Channel_aux* rc_d = NULL, RC_Channel_aux* rc_e = NULL, RC_Channel_aux* rc_f = NULL, RC_Channel_aux* rc_g = NULL);
-void                            enable_aux_servos();
-extern RC_Channel_aux*          g_rc_function[RC_Channel_aux::k_nr_aux_servo_functions]; // the aux. servo ch. assigned to each function
+void update_aux_servo_function(RC_Channel_aux* rc_a = NULL, RC_Channel_aux* rc_b = NULL, 
+							   RC_Channel_aux* rc_c = NULL, RC_Channel_aux* rc_d = NULL, 
+							   RC_Channel_aux* rc_e = NULL, RC_Channel_aux* rc_f = NULL, 
+							   RC_Channel_aux* rc_g = NULL);
+void enable_aux_servos();
 
 #endif /* RC_CHANNEL_AUX_H_ */
