@@ -16,8 +16,7 @@ const AP_Param::GroupInfo RC_Channel_aux::var_info[] PROGMEM = {
     AP_GROUPEND
 };
 
-/// Global pointer array, indexed by a "RC function enum" and points to the RC channel output assigned to that function/operation
-RC_Channel_aux* g_rc_function[RC_Channel_aux::k_nr_aux_servo_functions];
+static RC_Channel_aux *_aux_channels[7];
 
 /// enable_out_ch - enable the channel through APM_RC
 void
@@ -46,7 +45,7 @@ RC_Channel_aux::output_ch(unsigned char ch_nr)
     _apm_rc->OutputCh(ch_nr, radio_out);
 }
 
-/// Update the g_rc_function array of pointers to rc_x channels
+/// Update the _aux_channels array of pointers to rc_x channels
 /// This is to be done before rc_init so that the channels get correctly initialized.
 /// It also should be called periodically because the user might change the configuration and
 /// expects the changes to take effect instantly
@@ -61,68 +60,148 @@ void update_aux_servo_function( RC_Channel_aux* rc_a,
                                 RC_Channel_aux* rc_f,
                                 RC_Channel_aux* rc_g)
 {
-    RC_Channel_aux::Aux_servo_function_t aux_servo_function[7];
-    aux_servo_function[0] = (rc_a == NULL) ? RC_Channel_aux::k_none : (RC_Channel_aux::Aux_servo_function_t)rc_a->function.get();
-    aux_servo_function[1] = (rc_b == NULL) ? RC_Channel_aux::k_none : (RC_Channel_aux::Aux_servo_function_t)rc_b->function.get();
-    aux_servo_function[2] = (rc_c == NULL) ? RC_Channel_aux::k_none : (RC_Channel_aux::Aux_servo_function_t)rc_c->function.get();
-    aux_servo_function[3] = (rc_d == NULL) ? RC_Channel_aux::k_none : (RC_Channel_aux::Aux_servo_function_t)rc_d->function.get();
-    aux_servo_function[4] = (rc_e == NULL) ? RC_Channel_aux::k_none : (RC_Channel_aux::Aux_servo_function_t)rc_e->function.get();
-    aux_servo_function[5] = (rc_f == NULL) ? RC_Channel_aux::k_none : (RC_Channel_aux::Aux_servo_function_t)rc_f->function.get();
-    aux_servo_function[6] = (rc_g == NULL) ? RC_Channel_aux::k_none : (RC_Channel_aux::Aux_servo_function_t)rc_g->function.get();
+	_aux_channels[0] = rc_a;
+	_aux_channels[1] = rc_b;
+	_aux_channels[2] = rc_c;
+	_aux_channels[3] = rc_d;
+	_aux_channels[4] = rc_e;
+	_aux_channels[5] = rc_f;
+	_aux_channels[6] = rc_g;
 
+    // set auxiliary ranges
     for (uint8_t i = 0; i < 7; i++) {
-        if (aux_servo_function[i] >= RC_Channel_aux::k_nr_aux_servo_functions) {
-            // invalid setting
-            aux_servo_function[i] = RC_Channel_aux::k_none;
-        }
-    }
-
-    // Assume that no auxiliary function is used
-    for (uint8_t i = 0; i < RC_Channel_aux::k_nr_aux_servo_functions; i++)
-    {
-        g_rc_function[i] = NULL;
-    }
-
-    // assign the RC channel to each function
-    if( rc_a != NULL ) { g_rc_function[aux_servo_function[0]] = rc_a; }
-    if( rc_b != NULL ) { g_rc_function[aux_servo_function[1]] = rc_b; }
-    if( rc_c != NULL ) { g_rc_function[aux_servo_function[2]] = rc_c; }
-    if( rc_d != NULL ) { g_rc_function[aux_servo_function[3]] = rc_d; }
-    if( rc_e != NULL ) { g_rc_function[aux_servo_function[4]] = rc_e; }
-    if( rc_f != NULL ) { g_rc_function[aux_servo_function[5]] = rc_f; }
-    if( rc_g != NULL ) { g_rc_function[aux_servo_function[6]] = rc_g; }
-
-    //set auxiliary ranges
-    G_RC_AUX(k_flap)->set_range(0,100);
-    G_RC_AUX(k_flap_auto)->set_range(0,100);
-    G_RC_AUX(k_aileron)->set_angle(4500);
-    G_RC_AUX(k_flaperon)->set_range(0,100);
-/*
- *       G_RC_AUX(k_mount_pan)->set_range(
- *                               g_rc_function[RC_Channel_aux::k_mount_pan]->angle_min / 10,
- *                               g_rc_function[RC_Channel_aux::k_mount_pan]->angle_max / 10);
- *       G_RC_AUX(k_mount_tilt)->set_range(
- *                               g_rc_function[RC_Channel_aux::k_mount_tilt]->angle_min / 10,
- *                               g_rc_function[RC_Channel_aux::k_mount_tilt]->angle_max / 10);
- *       G_RC_AUX(k_mount_roll)->set_range(
- *                               g_rc_function[RC_Channel_aux::k_mount_roll]->angle_min / 10,
- *                               g_rc_function[RC_Channel_aux::k_mount_roll]->angle_max / 10);
- *       G_RC_AUX(k_mount_open)->set_range(0,100);
- *       G_RC_AUX(k_cam_trigger)->set_range(
- *                               g_rc_function[RC_Channel_aux::k_cam_trigger]->angle_min / 10,
- *                               g_rc_function[RC_Channel_aux::k_cam_trigger]->angle_max / 10);
- */
-    G_RC_AUX(k_egg_drop)->set_range(0,100);
+        if (_aux_channels[i] == NULL) continue;
+		RC_Channel_aux::Aux_servo_function_t function = (RC_Channel_aux::Aux_servo_function_t)_aux_channels[i]->function.get();
+		switch (function) {
+		case RC_Channel_aux::k_flap:
+		case RC_Channel_aux::k_flap_auto:
+		case RC_Channel_aux::k_flaperon:
+		case RC_Channel_aux::k_egg_drop:
+			_aux_channels[i]->set_range(0,100);
+			break;
+		case RC_Channel_aux::k_aileron:
+			_aux_channels[i]->set_angle(4500);
+			break;
+		default:
+			break;
+		}
+	}
 }
 
 /// Should be called after the the servo functions have been initialized
 void
 enable_aux_servos()
 {
-    // cycle thru all functions except k_none and k_nr_aux_servo_functions
-    for (uint8_t i = 1; i < RC_Channel_aux::k_nr_aux_servo_functions; i++)
-    {
-        if (g_rc_function[i]) g_rc_function[i]->enable_out();
+    // enable all channels that are not set to k_none or k_nr_aux_servo_functions
+    for (uint8_t i = 0; i < 7; i++) {
+        if (_aux_channels[i]) {
+			RC_Channel_aux::Aux_servo_function_t function = (RC_Channel_aux::Aux_servo_function_t)_aux_channels[i]->function.get();
+			// see if it is a valid function
+			if (function > RC_Channel_aux::k_none && function < RC_Channel_aux::k_nr_aux_servo_functions) {
+				_aux_channels[i]->enable_out();
+			}
+		}
+	}
+}
+
+
+/*
+  set and save the trim value to radio_in for all channels matching
+  the given function type
+ */
+void
+RC_Channel_aux::set_radio_trim(RC_Channel_aux::Aux_servo_function_t function)
+{
+    for (uint8_t i = 0; i < 7; i++) {
+        if (_aux_channels[i] && _aux_channels[i]->function.get() == function) {
+			_aux_channels[i]->radio_trim = _aux_channels[i]->radio_in;
+			_aux_channels[i]->radio_trim.save();
+		}
+    }
+
+}
+
+/*
+  set the radio_out value for any channel with the given function to radio_min
+ */
+void
+RC_Channel_aux::set_radio_to_min(RC_Channel_aux::Aux_servo_function_t function)
+{
+    for (uint8_t i = 0; i < 7; i++) {
+        if (_aux_channels[i] && _aux_channels[i]->function.get() == function) {
+			_aux_channels[i]->radio_out = _aux_channels[i]->radio_min;
+		}
     }
 }
 
+/*
+  set the radio_out value for any channel with the given function to radio_max
+ */
+void
+RC_Channel_aux::set_radio_to_max(RC_Channel_aux::Aux_servo_function_t function)
+{
+    for (uint8_t i = 0; i < 7; i++) {
+        if (_aux_channels[i] && _aux_channels[i]->function.get() == function) {
+			_aux_channels[i]->radio_out = _aux_channels[i]->radio_max;
+		}
+    }
+}
+
+/*
+  copy radio_in to radio_out for a given function
+ */
+void
+RC_Channel_aux::copy_radio_in_out(RC_Channel_aux::Aux_servo_function_t function)
+{
+    for (uint8_t i = 0; i < 7; i++) {
+        if (_aux_channels[i] && _aux_channels[i]->function.get() == function) {
+			_aux_channels[i]->radio_out = _aux_channels[i]->radio_in;
+		}
+    }
+}
+
+/*
+  set servo_out and call calc_pwm() for a given function
+ */
+void
+RC_Channel_aux::set_servo_out(RC_Channel_aux::Aux_servo_function_t function, int16_t value)
+{
+    for (uint8_t i = 0; i < 7; i++) {
+        if (_aux_channels[i] && _aux_channels[i]->function.get() == function) {
+			_aux_channels[i]->servo_out = value;
+			_aux_channels[i]->calc_pwm();
+		}
+    }
+}
+
+/*
+  return true if a particular function is assigned to at least one RC channel
+ */
+bool
+RC_Channel_aux::function_assigned(RC_Channel_aux::Aux_servo_function_t function)
+{
+    for (uint8_t i = 0; i < 7; i++) {
+        if (_aux_channels[i] && _aux_channels[i]->function.get() == function) {
+			return true;
+		}
+	}
+	return false;
+}
+
+/*
+  set servo_out and angle_min/max, then calc_pwm and output a
+  value. This is used to move a AP_Mount servo
+ */
+void
+RC_Channel_aux::move_servo(RC_Channel_aux::Aux_servo_function_t function,
+						   int16_t value, int16_t angle_min, int16_t angle_max)
+{
+    for (uint8_t i = 0; i < 7; i++) {
+        if (_aux_channels[i] && _aux_channels[i]->function.get() == function) {
+			_aux_channels[i]->servo_out = value;
+			_aux_channels[i]->set_range(angle_min, angle_max);
+			_aux_channels[i]->calc_pwm();
+			_aux_channels[i]->output();
+		}
+	}
+}
