@@ -1091,12 +1091,15 @@ static void update_current_flight_mode(void)
                 nav_pitch_cd = constrain(nav_pitch_cd, 500, takeoff_pitch_cd);
             }
 
-            // don't use a pitch/roll integrators during takeoff if we are
-            // below minimum speed
 #if APM_CONTROL == DISABLED
-            if (airspeed.use() && airspeed.get_airspeed() < g.flybywire_airspeed_min) {
-                g.pidServoPitch.reset_I();
-                g.pidServoRoll.reset_I();
+            float aspeed;
+            if (ahrs.airspeed_estimate(&aspeed)) {
+                // don't use a pitch/roll integrators during takeoff if we are
+                // below minimum speed
+                if (aspeed < g.flybywire_airspeed_min) {
+                    g.pidServoPitch.reset_I();
+                    g.pidServoRoll.reset_I();
+                }
             }
 #endif
 
