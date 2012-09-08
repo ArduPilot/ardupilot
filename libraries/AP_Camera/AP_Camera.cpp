@@ -4,7 +4,6 @@
 #include <AP_Relay.h>
 #include <../RC_Channel/RC_Channel_aux.h>
 
-extern RC_Channel_aux* g_rc_function[RC_Channel_aux::k_nr_aux_servo_functions]; // the aux. servo ch. assigned to each function
 extern int32_t wp_distance;
 extern AP_Relay relay;
 
@@ -26,11 +25,9 @@ const AP_Param::GroupInfo AP_Camera::var_info[] PROGMEM = {
 void
 AP_Camera::servo_pic()
 {
-    if (g_rc_function[RC_Channel_aux::k_cam_trigger])
-    {
-        g_rc_function[RC_Channel_aux::k_cam_trigger]->radio_out = g_rc_function[RC_Channel_aux::k_cam_trigger]->radio_max;
-        keep_cam_trigg_active_cycles = 2;               // leave a message that it should be active for two event loop cycles
-    }
+	RC_Channel_aux::set_radio_to_max(RC_Channel_aux::k_cam_trigger);
+	// leave a message that it should be active for two event loop cycles
+	keep_cam_trigg_active_cycles = 2;
 }
 
 /// basic relay activation
@@ -115,7 +112,7 @@ AP_Camera::trigger_pic_cleanup()
         case 0:
         case 2:
         case 3:
-            G_RC_AUX(k_cam_trigger)->radio_out = g_rc_function[RC_Channel_aux::k_cam_trigger]->radio_min;
+			RC_Channel_aux::set_radio_to_min(RC_Channel_aux::k_cam_trigger);
             break;
         case 1:
             relay.off();
