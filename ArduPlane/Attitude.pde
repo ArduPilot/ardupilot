@@ -220,9 +220,7 @@ static void calc_nav_roll()
 
     // Use airspeed_cruise as an analogue for airspeed if we don't have airspeed.
     float speed;
-    if(airspeed.use()) {
-        speed = airspeed.get_airspeed();
-    } else {
+    if (!ahrs.airspeed_estimate(&speed)) {
         speed = g.airspeed_cruise_cm*0.01;
 
         // Floor the speed so that the user can't enter a bad value
