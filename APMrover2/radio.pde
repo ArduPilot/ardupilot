@@ -176,13 +176,12 @@ static void trim_control_surfaces()
 		g.channel_roll.radio_trim = g.channel_roll.radio_max + g.channel_roll.radio_min - g.channel_roll.radio_in;
 		g.channel_pitch.radio_trim = g.channel_pitch.radio_max + g.channel_pitch.radio_min - g.channel_pitch.radio_in;
 		g.channel_rudder.radio_trim = g.channel_rudder.radio_max + g.channel_rudder.radio_min - g.channel_rudder.radio_in;
-		G_RC_AUX(k_aileron)->radio_trim = g_rc_function[RC_Channel_aux::k_aileron]->radio_in;			// Second aileron channel
+        RC_Channel_aux::set_radio_trim(RC_Channel_aux::k_aileron);
                 } else {
 		g.channel_roll.radio_trim 		= 1500;    // case of HIL test without receiver active
 		g.channel_pitch.radio_trim 		= 1500;
                 g.channel_rudder.radio_trim             = 1500;
                 g.channel_throttle.radio_trim 	        = 1000;
-                G_RC_AUX(k_aileron)->radio_trim         = 1500;
                 }
 
 	}else{
@@ -200,7 +199,6 @@ static void trim_control_surfaces()
 	g.channel_pitch.save_eeprom();
 	//g.channel_throttle.save_eeprom();
 	g.channel_rudder.save_eeprom();
-	G_RC_AUX(k_aileron)->save_eeprom();
 }
 
 static void trim_radio()
@@ -217,13 +215,12 @@ static void trim_radio()
 		g.channel_pitch.radio_trim 		= g.channel_pitch.radio_in;
 		//g.channel_throttle.radio_trim 	= g.channel_throttle.radio_in;
 		g.channel_rudder.radio_trim 	= g.channel_rudder.radio_in;
-		G_RC_AUX(k_aileron)->radio_trim = g_rc_function[RC_Channel_aux::k_aileron]->radio_in;			// Second aileron channel
+        RC_Channel_aux::set_radio_trim(RC_Channel_aux::k_aileron);
                 } else {
 		g.channel_roll.radio_trim 		= 1500;    // case of HIL test without receiver active
 		g.channel_pitch.radio_trim 		= 1500;
                 g.channel_rudder.radio_trim             = 1500;
                 g.channel_throttle.radio_trim 	        = 1000;
-                G_RC_AUX(k_aileron)->radio_trim         = 1500;
                 }
 
 	} else {
@@ -240,5 +237,4 @@ static void trim_radio()
 	g.channel_pitch.save_eeprom();
 	//g.channel_throttle.save_eeprom();
 	g.channel_rudder.save_eeprom();
-	G_RC_AUX(k_aileron)->save_eeprom();
 }
