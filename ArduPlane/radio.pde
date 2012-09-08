@@ -167,9 +167,8 @@ static void trim_control_surfaces()
     if(g.mix_mode == 0) {
         g.channel_roll.radio_trim = g.channel_roll.radio_in;
         g.channel_pitch.radio_trim = g.channel_pitch.radio_in;
-        G_RC_AUX(k_aileron)->radio_trim = g_rc_function[RC_Channel_aux::k_aileron]->radio_in;                           // Second aileron channel
-
-    }else{
+        RC_Channel_aux::set_radio_trim(RC_Channel_aux::k_aileron);
+    } else{
         elevon1_trim = ch1_temp;
         elevon2_trim = ch2_temp;
         //Recompute values here using new values for elevon1_trim and elevon2_trim
@@ -185,7 +184,6 @@ static void trim_control_surfaces()
     g.channel_pitch.save_eeprom();
     g.channel_throttle.save_eeprom();
     g.channel_rudder.save_eeprom();
-    G_RC_AUX(k_aileron)->save_eeprom();
 }
 
 static void trim_radio()
@@ -200,8 +198,7 @@ static void trim_radio()
         g.channel_roll.radio_trim               = g.channel_roll.radio_in;
         g.channel_pitch.radio_trim              = g.channel_pitch.radio_in;
         //g.channel_throttle.radio_trim     = g.channel_throttle.radio_in;
-        G_RC_AUX(k_aileron)->radio_trim = g_rc_function[RC_Channel_aux::k_aileron]->radio_in;                           // Second aileron channel
-
+        RC_Channel_aux::set_radio_trim(RC_Channel_aux::k_aileron);
     } else {
         elevon1_trim = ch1_temp;
         elevon2_trim = ch2_temp;
@@ -216,5 +213,4 @@ static void trim_radio()
     g.channel_pitch.save_eeprom();
     //g.channel_throttle.save_eeprom();
     g.channel_rudder.save_eeprom();
-    G_RC_AUX(k_aileron)->save_eeprom();
 }

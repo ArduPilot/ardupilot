@@ -325,17 +325,6 @@ static void set_servos(void)
 {
     int16_t flapSpeedSource = 0;
 
-    // vectorize the rc channels
-    RC_Channel_aux* rc_array[NUM_CHANNELS];
-    rc_array[CH_1] = NULL;
-    rc_array[CH_2] = NULL;
-    rc_array[CH_3] = NULL;
-    rc_array[CH_4] = NULL;
-    rc_array[CH_5] = &g.rc_5;
-    rc_array[CH_6] = &g.rc_6;
-    rc_array[CH_7] = &g.rc_7;
-    rc_array[CH_8] = &g.rc_8;
-
     if(control_mode == MANUAL) {
         // do a direct pass through of radio values
         if (g.mix_mode == 0) {
@@ -349,26 +338,11 @@ static void set_servos(void)
         g.channel_rudder.radio_out              = g.channel_rudder.radio_in;
         // FIXME To me it does not make sense to control the aileron using radio_in in manual mode
         // Doug could you please take a look at this ?
-        if (g_rc_function[RC_Channel_aux::k_aileron]) {
-            if (g_rc_function[RC_Channel_aux::k_aileron] != rc_array[g.flight_mode_channel-1]) {
-                g_rc_function[RC_Channel_aux::k_aileron]->radio_out     = g_rc_function[RC_Channel_aux::k_aileron]->radio_in;
-            }
-        }
-        // only use radio_in if the channel is not used as flight_mode_channel
-        if (g_rc_function[RC_Channel_aux::k_flap_auto]) {
-            if (g_rc_function[RC_Channel_aux::k_flap_auto] != rc_array[g.flight_mode_channel-1]) {
-                g_rc_function[RC_Channel_aux::k_flap_auto]->radio_out   = g_rc_function[RC_Channel_aux::k_flap_auto]->radio_in;
-            } else {
-                g_rc_function[RC_Channel_aux::k_flap_auto]->radio_out   = g_rc_function[RC_Channel_aux::k_flap_auto]->radio_trim;
-            }
-        }
+        RC_Channel_aux::copy_radio_in_out(RC_Channel_aux::k_aileron);
+        RC_Channel_aux::copy_radio_in_out(RC_Channel_aux::k_flap_auto);
     } else {
         if (g.mix_mode == 0) {
-            if (g_rc_function[RC_Channel_aux::k_aileron]) {
-                g_rc_function[RC_Channel_aux::k_aileron]->servo_out = g.channel_roll.servo_out;
-                g_rc_function[RC_Channel_aux::k_aileron]->calc_pwm();
-            }
-
+            RC_Channel_aux::set_servo_out(RC_Channel_aux::k_aileron, g.channel_roll.servo_out);
         }else{
             /*Elevon mode*/
             float ch1;
@@ -419,31 +393,24 @@ static void set_servos(void)
     }
 
     // Auto flap deployment
-    if (g_rc_function[RC_Channel_aux::k_flap_auto] != NULL) {
-        if(control_mode < FLY_BY_WIRE_B) {
-            // only use radio_in if the channel is not used as flight_mode_channel
-            if (g_rc_function[RC_Channel_aux::k_flap_auto] != rc_array[g.flight_mode_channel-1]) {
-                g_rc_function[RC_Channel_aux::k_flap_auto]->radio_out = g_rc_function[RC_Channel_aux::k_flap_auto]->radio_in;
-            } else {
-                g_rc_function[RC_Channel_aux::k_flap_auto]->radio_out = g_rc_function[RC_Channel_aux::k_flap_auto]->radio_trim;
-            }
-        } else if (control_mode >= FLY_BY_WIRE_B) {
-            // FIXME: use target_airspeed in both FBW_B and g.airspeed_enabled cases - Doug?
-            if (control_mode == FLY_BY_WIRE_B) {
-                flapSpeedSource = target_airspeed_cm * 0.01;
-            } else if (airspeed.use()) {
-                flapSpeedSource = g.airspeed_cruise_cm * 0.01;
-            } else {
-                flapSpeedSource = g.throttle_cruise;
-            }
-            if ( g.flap_1_speed != 0 && flapSpeedSource > g.flap_1_speed) {
-                g_rc_function[RC_Channel_aux::k_flap_auto]->servo_out = 0;
-            } else if (g.flap_2_speed != 0 && flapSpeedSource > g.flap_2_speed) {
-                g_rc_function[RC_Channel_aux::k_flap_auto]->servo_out = g.flap_1_percent;
-            } else {
-                g_rc_function[RC_Channel_aux::k_flap_auto]->servo_out = g.flap_2_percent;
-            }
-            g_rc_function[RC_Channel_aux::k_flap_auto]->calc_pwm();
+    if(control_mode < FLY_BY_WIRE_B) {
+        // only use radio_in if the channel is not used as flight_mode_channel
+        RC_Channel_aux::copy_radio_in_out(RC_Channel_aux::k_flap_auto);
+    } else if (control_mode >= FLY_BY_WIRE_B) {
+        // FIXME: use target_airspeed in both FBW_B and g.airspeed_enabled cases - Doug?
+        if (control_mode == FLY_BY_WIRE_B) {
+            flapSpeedSource = target_airspeed_cm * 0.01;
+        } else if (airspeed.use()) {
+            flapSpeedSource = g.airspeed_cruise_cm * 0.01;
+        } else {
+            flapSpeedSource = g.throttle_cruise;
+        }
+        if ( g.flap_1_speed != 0 && flapSpeedSource > g.flap_1_speed) {
+            RC_Channel_aux::set_servo_out(RC_Channel_aux::k_flap_auto, 0);
+        } else if (g.flap_2_speed != 0 && flapSpeedSource > g.flap_2_speed) {
+            RC_Channel_aux::set_servo_out(RC_Channel_aux::k_flap_auto, g.flap_1_percent);
+        } else {
+            RC_Channel_aux::set_servo_out(RC_Channel_aux::k_flap_auto, g.flap_2_percent);
         }
     }
 
