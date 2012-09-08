@@ -43,7 +43,7 @@ static void reload_commands_airstart()
 static struct Location get_cmd_with_index(int16_t i)
 {
     struct Location temp;
-    int32_t mem;
+    uint16_t mem;
 
     // Find out proper location in memory by using the start_byte position + the index
     // --------------------------------------------------------------------------------
@@ -53,22 +53,22 @@ static struct Location get_cmd_with_index(int16_t i)
     }else{
         // read WP position
         mem = (WP_START_BYTE) + (i * WP_SIZE);
-        temp.id = eeprom_read_byte((uint8_t*)mem);
+        temp.id = eeprom_read_byte((uint8_t*)(uintptr_t)mem);
 
         mem++;
-        temp.options = eeprom_read_byte((uint8_t*)mem);
+        temp.options = eeprom_read_byte((uint8_t*)(uintptr_t)mem);
 
         mem++;
-        temp.p1 = eeprom_read_byte((uint8_t*)mem);
+        temp.p1 = eeprom_read_byte((uint8_t*)(uintptr_t)mem);
 
         mem++;
-        temp.alt = (long)eeprom_read_dword((uint32_t*)mem);
+        temp.alt = (long)eeprom_read_dword((uint32_t*)(uintptr_t)mem);
 
         mem += 4;
-        temp.lat = (long)eeprom_read_dword((uint32_t*)mem);
+        temp.lat = (long)eeprom_read_dword((uint32_t*)(uintptr_t)mem);
 
         mem += 4;
-        temp.lng = (long)eeprom_read_dword((uint32_t*)mem);
+        temp.lng = (long)eeprom_read_dword((uint32_t*)(uintptr_t)mem);
     }
 
     // Add on home altitude if we are a nav command (or other command with altitude) and stored alt is relative
