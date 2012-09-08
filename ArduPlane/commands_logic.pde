@@ -576,6 +576,7 @@ static void do_set_home()
 
 static void do_set_servo()
 {
+    APM_RC.enable_out(next_nonnav_command.p1 - 1);
     APM_RC.OutputCh(next_nonnav_command.p1 - 1, next_nonnav_command.alt);
 }
 

@@ -1106,6 +1106,7 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
             break;
 
         case MAV_CMD_DO_SET_SERVO:
+            APM_RC.enable_out(packet.param1 - 1);
             APM_RC.OutputCh(packet.param1 - 1, packet.param2);
             result = MAV_RESULT_ACCEPTED;
             break;
