@@ -1218,7 +1218,7 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
             // command needs scaling
             x = tell_command.lat/1.0e7;     // local (x), global (latitude)
             y = tell_command.lng/1.0e7;     // local (y), global (longitude)
-            if (tell_command.options & MASK_OPTIONS_RELATIVE_ALT && tell_command.id != MAV_CMD_NAV_TAKEOFF) {
+            if ((tell_command.options & MASK_OPTIONS_RELATIVE_ALT) && tell_command.id != MAV_CMD_NAV_TAKEOFF) {
                 z = (tell_command.alt - home.alt) / 1.0e2;     // because tell_command.alt already includes a += home.alt
             } else {
                 z = tell_command.alt/1.0e2;     // local (z), global/relative (altitude)
