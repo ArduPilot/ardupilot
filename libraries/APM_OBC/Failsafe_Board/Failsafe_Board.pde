@@ -121,7 +121,7 @@ static void set_servos_terminate(uint8_t obc_mode)
 {
 	set_mux_mode(MUX_MODE_MICRO);
 	if (obc_mode) {
-		set_servos(2000, 2000, 1000, 2000);
+		set_servos(1000, 2000, 1000, 1000);
 	} else {
 		set_servos(1500, 1500, 1200, 1500);
 	}
@@ -161,6 +161,9 @@ void loop()
 	static uint8_t led_state;
 	static bool has_terminated = false;
 	static uint8_t termination_counter;
+	static uint16_t loop_counter;
+
+	loop_counter++;
 
 	// check for heartbeat
 	update_heartbeat();
@@ -188,8 +191,10 @@ void loop()
 		Serial.print(" TERM1:"); Serial.print(terminate_primary);
 		Serial.print(" TERM2:"); Serial.print(terminate_backup);
 		Serial.print(" TERMINATED:"); Serial.print(has_terminated);
+		Serial.print(" LOOP:"); Serial.print(loop_counter);
 		Serial.println();
 		delayMicroseconds(5000);
+		loop_counter = 0;
 		// flash LED once a second so we know failsafe board
 		// is working
 		led_state = !led_state;
