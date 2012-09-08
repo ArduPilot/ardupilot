@@ -120,15 +120,6 @@ static void process_next_command()
     }
 }
 
-/**************************************************/
-//  These functions implement the commands.
-/**************************************************/
-static void process_nav_cmd()
-{
-    //gcs_send_text_P(SEVERITY_LOW,PSTR("New nav command loaded"));
-    handle_process_nav_cmd();
-}
-
 static void process_non_nav_command()
 {
     //gcs_send_text_P(SEVERITY_LOW,PSTR("new non-nav command loaded"));
