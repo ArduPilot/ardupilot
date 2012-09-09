@@ -38,9 +38,10 @@ static void reload_commands_airstart()
     decrement_cmd_index();
 }
 
-// Getters
-// -------
-static struct Location get_cmd_with_index(int16_t i)
+/*
+  fetch a mission item from EEPROM
+*/
+static struct Location get_cmd_with_index_raw(int16_t i)
 {
     struct Location temp;
     uint16_t mem;
@@ -71,6 +72,18 @@ static struct Location get_cmd_with_index(int16_t i)
         temp.lng = (long)eeprom_read_dword((uint32_t*)(uintptr_t)mem);
     }
 
+    return temp;
+}
+
+/*
+  fetch a mission item from EEPROM. Adjust altitude to be absolute
+*/
+static struct Location get_cmd_with_index(int16_t i)
+{
+    struct Location temp;
+
+    temp = get_cmd_with_index_raw(i);
+
     // Add on home altitude if we are a nav command (or other command with altitude) and stored alt is relative
     if ((temp.id < MAV_CMD_NAV_LAST || temp.id == MAV_CMD_CONDITION_CHANGE_ALT) &&
         (temp.options & MASK_OPTIONS_RELATIVE_ALT) &&
@@ -90,7 +103,7 @@ static void set_cmd_with_index(struct Location temp, int16_t i)
 
     // Set altitude options bitmask
     // XXX What is this trying to do?
-    if (temp.options & MASK_OPTIONS_RELATIVE_ALT && i != 0) {
+    if ((temp.options & MASK_OPTIONS_RELATIVE_ALT) && i != 0) {
         temp.options = MASK_OPTIONS_RELATIVE_ALT;
     } else {
         temp.options = 0;
