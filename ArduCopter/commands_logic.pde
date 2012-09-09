@@ -710,7 +710,7 @@ static bool verify_nav_roi()
 {
 #if MOUNT == ENABLED
     // check if mount type requires us to rotate the quad
-    if( camera_mount.get_mount_type() == AP_Mount::k_tilt_roll ) {
+    if( camera_mount.get_mount_type() != AP_Mount::k_pan_tilt && camera_mount.get_mount_type() != AP_Mount::k_pan_tilt_roll ) {
         // ensure yaw has gotten to within 2 degrees of the target
         if( labs(wrap_180(ahrs.yaw_sensor-auto_yaw)) <= 200 ) {
             nav_yaw = auto_yaw;                 // ensure target yaw for YAW_HOLD is our desired yaw
