@@ -75,6 +75,7 @@ public:
         k_param_land_flare_sec,
         k_param_crosstrack_min_distance,
         k_param_rudder_steer,
+        k_param_throttle_nudge,
 
         // 110: Telemetry control
         //
@@ -276,6 +277,7 @@ public:
     AP_Int8 throttle_fs_enabled;
     AP_Int16 throttle_fs_value;
     AP_Int8 throttle_cruise;
+    AP_Int8 throttle_nudge;
 
     // Failsafe
     AP_Int8 short_fs_action;
