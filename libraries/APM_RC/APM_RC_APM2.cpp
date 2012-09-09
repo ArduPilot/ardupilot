@@ -81,8 +81,12 @@ APM_RC_APM2::APM_RC_APM2()
 void APM_RC_APM2::Init( Arduino_Mega_ISR_Registry * isr_reg )
 {
     // --------------------- TIMER1: OUT1 and OUT2 -----------------------
+    digitalWrite(12,HIGH);  // pulling high before changing to output avoids a momentary drop of the pin to low because the ESCs have a pull-down resistor it seems
+    digitalWrite(11,HIGH);
     pinMode(12,OUTPUT); // OUT1 (PB6/OC1B)
     pinMode(11,OUTPUT); // OUT2 (PB5/OC1A)
+    digitalWrite(12,HIGH);  // pulling high before changing to output avoids a momentary drop of the pin to low because the ESCs have a pull-down resistor it seems
+    digitalWrite(11,HIGH);
 
     // WGM: 1 1 1 0. Clear Timer on Compare, TOP is ICR1.
     // CS11: prescale by 8 => 0.5us tick
@@ -93,9 +97,15 @@ void APM_RC_APM2::Init( Arduino_Mega_ISR_Registry * isr_reg )
     OCR1B = 0xFFFF;
 
     // --------------- TIMER4: OUT3, OUT4, and OUT5 ---------------------
+    digitalWrite(8,HIGH);
+    digitalWrite(7,HIGH);
+    digitalWrite(6,HIGH);
     pinMode(8,OUTPUT); // OUT3 (PH5/OC4C)
     pinMode(7,OUTPUT); // OUT4 (PH4/OC4B)
     pinMode(6,OUTPUT); // OUT5 (PH3/OC4A)
+    digitalWrite(8,HIGH);
+    digitalWrite(7,HIGH);
+    digitalWrite(6,HIGH);
 
     // WGM: 1 1 1 0. Clear Timer on Compare, TOP is ICR4.
     // CS41: prescale by 8 => 0.5us tick
@@ -107,9 +117,15 @@ void APM_RC_APM2::Init( Arduino_Mega_ISR_Registry * isr_reg )
     ICR4 = 40000; // 0.5us tick => 50hz freq
 
     //--------------- TIMER3: OUT6, OUT7, and OUT8 ----------------------
+    digitalWrite(3,HIGH);
+    digitalWrite(2,HIGH);
+    digitalWrite(5,HIGH);
     pinMode(3,OUTPUT); // OUT6 (PE5/OC3C)
     pinMode(2,OUTPUT); // OUT7 (PE4/OC3B)
     pinMode(5,OUTPUT); // OUT8 (PE3/OC3A)
+    digitalWrite(3,HIGH);
+    digitalWrite(2,HIGH);
+    digitalWrite(5,HIGH);
 
     // WGM: 1 1 1 0. Clear timer on Compare, TOP is ICR3
     // CS31: prescale by 8 => 0.5us tick
@@ -123,8 +139,13 @@ void APM_RC_APM2::Init( Arduino_Mega_ISR_Registry * isr_reg )
     //--------------- TIMER5: PPM INPUT, OUT10, and OUT11 ---------------
     // Init PPM input on Timer 5
     pinMode(48, INPUT); // PPM Input (PL1/ICP5)
+
+    digitalWrite(45,HIGH);
+    digitalWrite(44,HIGH);
     pinMode(45, OUTPUT); // OUT10 (PL4/OC5B)
     pinMode(44, OUTPUT); // OUT11 (PL5/OC5C)
+    digitalWrite(45,HIGH);
+    digitalWrite(44,HIGH);
 
     // WGM: 1 1 1 1. Fast PWM, TOP is OCR5A
     // COM all disabled.
