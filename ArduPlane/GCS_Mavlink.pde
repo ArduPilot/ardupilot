@@ -1191,7 +1191,7 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
             break;
 
         // send waypoint
-        tell_command = get_cmd_with_index(packet.seq);
+        tell_command = get_cmd_with_index_raw(packet.seq);
 
         // set frame of waypoint
         uint8_t frame;
@@ -1218,11 +1218,7 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
             // command needs scaling
             x = tell_command.lat/1.0e7;     // local (x), global (latitude)
             y = tell_command.lng/1.0e7;     // local (y), global (longitude)
-            if ((tell_command.options & MASK_OPTIONS_RELATIVE_ALT) && tell_command.id != MAV_CMD_NAV_TAKEOFF) {
-                z = (tell_command.alt - home.alt) / 1.0e2;     // because tell_command.alt already includes a += home.alt
-            } else {
-                z = tell_command.alt/1.0e2;     // local (z), global/relative (altitude)
-            }
+            z = tell_command.alt/1.0e2;
         }
 
         switch (tell_command.id) {                                              // Switch to map APM command fields inot MAVLink command fields
