@@ -183,35 +183,14 @@ static void trim_control_surfaces()
     // save to eeprom
     g.channel_roll.save_eeprom();
     g.channel_pitch.save_eeprom();
-    g.channel_throttle.save_eeprom();
     g.channel_rudder.save_eeprom();
 }
 
 static void trim_radio()
 {
-    for (int y = 0; y < 30; y++) {
+    for (uint8_t y = 0; y < 30; y++) {
         read_radio();
     }
 
-    // Store the trim values
-    // ---------------------
-    if(g.mix_mode == 0) {
-        g.channel_roll.radio_trim               = g.channel_roll.radio_in;
-        g.channel_pitch.radio_trim              = g.channel_pitch.radio_in;
-        //g.channel_throttle.radio_trim     = g.channel_throttle.radio_in;
-        RC_Channel_aux::set_radio_trim(RC_Channel_aux::k_aileron);
-    } else {
-        elevon1_trim = ch1_temp;
-        elevon2_trim = ch2_temp;
-        uint16_t center = 1500;
-        g.channel_roll.radio_trim       = center;
-        g.channel_pitch.radio_trim      = center;
-    }
-    g.channel_rudder.radio_trim = g.channel_rudder.radio_in;
-
-    // save to eeprom
-    g.channel_roll.save_eeprom();
-    g.channel_pitch.save_eeprom();
-    //g.channel_throttle.save_eeprom();
-    g.channel_rudder.save_eeprom();
+    trim_control_surfaces();
 }
