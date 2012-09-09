@@ -295,6 +295,14 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @User: Standard
     GSCALAR(throttle_cruise,        "TRIM_THROTTLE",  THROTTLE_CRUISE),
 
+    // @Param: THROTTLE_NUDGE
+    // @DisplayName: Throttle nudge enable
+    // @Description: When enabled, this uses the throttle input in auto-throttle modes to 'nudge' the throttle to higher or lower values
+    // @Values: 0:Disabled,1:Enabled
+    // @User: Standard
+    // @User: Standard
+    GSCALAR(throttle_nudge,         "THROTTLE_NUDGE",  1),
+
     // @Param: FS_SHORT_ACTN
     // @DisplayName: Short failsafe action
     // @Description: The action to take on a short (1 second) failsafe event
