@@ -570,3 +570,17 @@ uint16_t board_voltage(void)
     return vcc.read_vcc();
 }
 
+
+/*
+  force a software reset of the APM
+ */
+static void reboot_apm(void)
+{
+    Serial.println_P(PSTR("REBOOTING"));
+    delay(100);
+    // see http://www.arduino.cc/cgi-bin/yabb2/YaBB.pl?num=1250663814/
+    // for the method
+    cli();
+    wdt_enable(WDTO_15MS);
+    while (1);
+}
