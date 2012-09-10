@@ -1042,7 +1042,7 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
         mavlink_msg_command_long_decode(msg, &packet);
         if (mavlink_check_target(packet.target_system, packet.target_component)) break;
 
-        uint8_t result;
+        uint8_t result = MAV_RESULT_UNSUPPORTED;
 
         // do command
         send_text(SEVERITY_LOW,PSTR("command received: "));
@@ -1110,8 +1110,14 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
             result = MAV_RESULT_ACCEPTED;
             break;
 
+        case MAV_CMD_PREFLIGHT_REBOOT_SHUTDOWN:
+            if (packet.param1 == 1) {
+                reboot_apm();
+                result = MAV_RESULT_ACCEPTED;
+            }
+            break;
+
         default:
-            result = MAV_RESULT_UNSUPPORTED;
             break;
         }
 
