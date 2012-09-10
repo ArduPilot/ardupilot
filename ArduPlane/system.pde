@@ -571,6 +571,7 @@ uint16_t board_voltage(void)
 }
 
 
+#if CONFIG_APM_HARDWARE == APM_HARDWARE_APM2
 /*
   force a software reset of the APM
  */
@@ -584,3 +585,4 @@ static void reboot_apm(void)
     wdt_enable(WDTO_15MS);
     while (1);
 }
+#endif

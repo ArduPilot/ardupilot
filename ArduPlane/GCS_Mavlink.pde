@@ -1112,8 +1112,10 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
 
         case MAV_CMD_PREFLIGHT_REBOOT_SHUTDOWN:
             if (packet.param1 == 1) {
+#if CONFIG_APM_HARDWARE == APM_HARDWARE_APM2
                 reboot_apm();
                 result = MAV_RESULT_ACCEPTED;
+#endif
             }
             break;
 
