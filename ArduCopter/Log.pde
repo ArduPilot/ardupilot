@@ -86,6 +86,7 @@ print_log_menu(void)
         if (g.log_bitmask & MASK_LOG_MOTORS) Serial.printf_P(PSTR(" MOTORS"));
         if (g.log_bitmask & MASK_LOG_OPTFLOW) Serial.printf_P(PSTR(" OPTFLOW"));
         if (g.log_bitmask & MASK_LOG_PID) Serial.printf_P(PSTR(" PID"));
+        if (g.log_bitmask & MASK_LOG_PID) Serial.printf_P(PSTR(" ITERM"));
     }
 
     Serial.println();
@@ -201,6 +202,7 @@ select_logs(uint8_t argc, const Menu::arg *argv)
         TARG(MOTORS);
         TARG(OPTFLOW);
         TARG(PID);
+        TARG(ITERM);
  #undef TARG
     }
 
@@ -612,17 +614,15 @@ static void Log_Write_Nav_Tuning()
     DataFlash.WriteByte(HEAD_BYTE2);
     DataFlash.WriteByte(LOG_NAV_TUNING_MSG);
 
-	DataFlash.WriteInt(wp_distance);                                                    // 1
-	DataFlash.WriteInt(target_bearing/100);                                     // 2
-	DataFlash.WriteInt(long_error);                                                     // 3
-	DataFlash.WriteInt(lat_error);                                                      // 4
+	DataFlash.WriteInt(wp_distance);                        // 1
+	DataFlash.WriteInt(target_bearing/100);                 // 2
+	DataFlash.WriteInt(long_error);                         // 3
+	DataFlash.WriteInt(lat_error);                          // 4
 
-	DataFlash.WriteInt(nav_pitch);                                                        // 5
-	DataFlash.WriteInt(nav_roll);                                                        // 6
-	DataFlash.WriteInt(x_actual_speed);                                                 // 7
-	DataFlash.WriteInt(y_actual_speed);                                             // 8
-	DataFlash.WriteInt(g.pid_nav_lon.get_integrator());                 // 9
-	DataFlash.WriteInt(g.pid_nav_lat.get_integrator());                 // 10
+	DataFlash.WriteInt(nav_pitch);                          // 5
+	DataFlash.WriteInt(nav_roll);                           // 6
+	DataFlash.WriteInt(x_actual_speed);                     // 7
+	DataFlash.WriteInt(y_actual_speed);                     // 8
 
     DataFlash.WriteByte(END_BYTE);
 }
@@ -634,11 +634,11 @@ static void Log_Read_Nav_Tuning()
 
     Serial.printf_P(PSTR("NTUN, "));
 
-    for(int8_t i = 1; i < 10; i++ ) {
+    for(int8_t i = 1; i < 8; i++ ) {
         temp = DataFlash.ReadInt();
         Serial.printf("%d, ", (int)temp);
     }
-    // read 10
+    // read 8
     temp = DataFlash.ReadInt();
     Serial.printf("%d\n", (int)temp);
 }
@@ -659,8 +659,6 @@ static void Log_Write_Control_Tuning()
     DataFlash.WriteInt(angle_boost);                        // 6
     DataFlash.WriteInt(climb_rate_actual);                 	// 7
     DataFlash.WriteInt(g.rc_3.servo_out);                  	// 8
-    DataFlash.WriteInt(g.pi_alt_hold.get_integrator());     // 9
-    DataFlash.WriteInt(g.pid_throttle.get_integrator());    // 10
 
     DataFlash.WriteByte(END_BYTE);
 }
@@ -672,14 +670,53 @@ static void Log_Read_Control_Tuning()
 
     Serial.printf_P(PSTR("CTUN, "));
 
-    for(uint8_t i = 1; i < 10; i++ ) {
+    for(uint8_t i = 1; i < 8; i++ ) {
         temp = DataFlash.ReadInt();
         Serial.printf("%d, ", (int)temp);
     }
-    // read 11
+    // read 8
     temp = DataFlash.ReadInt();
     Serial.printf("%d\n", (int)temp);
 }
+
+static void Log_Write_Iterm()
+{
+    DataFlash.WriteByte(HEAD_BYTE1);
+    DataFlash.WriteByte(HEAD_BYTE2);
+    DataFlash.WriteByte(LOG_ITERM_MSG);
+
+    DataFlash.WriteInt((int16_t)g.pi_stabilize_roll.get_integrator());   	// 1
+    DataFlash.WriteInt((int16_t)g.pi_stabilize_pitch.get_integrator());  	// 2
+    DataFlash.WriteInt((int16_t)g.pi_stabilize_yaw.get_integrator());    	// 3
+    DataFlash.WriteInt((int16_t)g.pid_rate_roll.get_integrator());     		// 4
+    DataFlash.WriteInt((int16_t)g.pid_rate_pitch.get_integrator());    	 	// 5
+    DataFlash.WriteInt((int16_t)g.pid_rate_yaw.get_integrator());    	 	// 6
+	DataFlash.WriteInt((int16_t)g.pid_nav_lat.get_integrator());         	// 7
+	DataFlash.WriteInt((int16_t)g.pid_nav_lon.get_integrator());         	// 8
+	DataFlash.WriteInt((int16_t)g.pid_loiter_rate_lat.get_integrator()); 	// 9
+	DataFlash.WriteInt((int16_t)g.pid_loiter_rate_lon.get_integrator()); 	// 10
+	DataFlash.WriteInt((int16_t)g.pid_throttle.get_integrator()); 			// 11
+	DataFlash.WriteInt(g.throttle_cruise); 									// 12
+
+    DataFlash.WriteByte(END_BYTE);
+}
+
+// Read an control tuning packet
+static void Log_Read_Iterm()
+{
+    int16_t temp;
+
+    Serial.printf_P(PSTR("IT, "));
+
+    for(uint8_t i = 1; i < 12; i++ ) {
+        temp = DataFlash.ReadInt();
+        Serial.printf("%d, ", (int)temp);
+    }
+    // read 12
+    temp = DataFlash.ReadInt();
+    Serial.printf("%d\n", (int)temp);
+}
+
 
 // Write a performance monitoring packet. Total length : 9 bytes
 static void Log_Write_Performance()
@@ -768,11 +805,7 @@ static void Log_Write_Attitude()
     DataFlash.WriteInt((int16_t)ahrs.pitch_sensor);                         // 4
     DataFlash.WriteInt(g.rc_4.control_in);                                  // 5
     DataFlash.WriteInt((uint16_t)ahrs.yaw_sensor);                          // 6
-
     DataFlash.WriteInt((uint16_t)nav_yaw);                                  // 7 (this used to be compass.heading)
-    DataFlash.WriteInt((int16_t)g.pi_stabilize_roll.get_integrator());      // 8
-    DataFlash.WriteInt((int16_t)g.pi_stabilize_pitch.get_integrator());     // 9
-
     DataFlash.WriteByte(END_BYTE);
 }
 
@@ -786,8 +819,6 @@ static void Log_Read_Attitude()
     int16_t temp5   = DataFlash.ReadInt();
     uint16_t temp6  = DataFlash.ReadInt();
     uint16_t temp7  = DataFlash.ReadInt();
-    int16_t temp8   = DataFlash.ReadInt();
-    int16_t temp9   = DataFlash.ReadInt();
 
     // 1   2   3    4   5   6  7    8   9
     Serial.printf_P(PSTR("ATT, %d, %d, %d, %d, %d, %u, %u, %d, %d\n"),
@@ -797,9 +828,7 @@ static void Log_Read_Attitude()
                     (int)temp4,
                     (int)temp5,
                     (unsigned)temp6,
-                    (unsigned)temp7,
-                    (int)temp8,
-                    (int)temp9);
+                    (unsigned)temp7);
 }
 
 // Write a mode packet. Total length : 7 bytes
@@ -954,98 +983,102 @@ static int16_t Log_Read_Process(int16_t start_page, int16_t end_page)
 
     DataFlash.StartRead(start_page);
 
-                        while (page < end_page && page != -1) {
+	while(page < end_page && page != -1){
 
-                            data = DataFlash.ReadByte();
+		data = DataFlash.ReadByte();
 
-                            // This is a state machine to read the packets
-                            switch(log_step) {
-                            case 0:
-                                if(data == HEAD_BYTE1)  // Head byte 1
-                                    log_step++;
-                                break;
+		// This is a state machine to read the packets
+		switch(log_step) {
+			case 0:
+				if(data == HEAD_BYTE1)  // Head byte 1
+					log_step++;
+				break;
 
-                            case 1:
-                                if(data == HEAD_BYTE2)  // Head byte 2
-                                    log_step++;
-                                else{
-                                    log_step = 0;
-                                    Serial.println(".");
-                                }
-                                break;
+			case 1:
+				if(data == HEAD_BYTE2)  // Head byte 2
+					log_step++;
+				else{
+					log_step = 0;
+					Serial.println(".");
+				}
+				break;
 
-                            case 2:
-                                log_step = 0;
-                                switch(data) {
-                                case LOG_ATTITUDE_MSG:
-                                    Log_Read_Attitude();
-                                    break;
+			case 2:
+				log_step = 0;
+				switch(data) {
+					case LOG_ATTITUDE_MSG:
+						Log_Read_Attitude();
+						break;
 
-                                case LOG_MODE_MSG:
-                                    Log_Read_Mode();
-                                    break;
+					case LOG_MODE_MSG:
+						Log_Read_Mode();
+						break;
 
-                                case LOG_CONTROL_TUNING_MSG:
-                                    Log_Read_Control_Tuning();
-                                    break;
+					case LOG_CONTROL_TUNING_MSG:
+						Log_Read_Control_Tuning();
+						break;
 
-                                case LOG_NAV_TUNING_MSG:
-                                    Log_Read_Nav_Tuning();
-                                    break;
+					case LOG_NAV_TUNING_MSG:
+						Log_Read_Nav_Tuning();
+						break;
 
-                                case LOG_PERFORMANCE_MSG:
-                                    Log_Read_Performance();
-                                    break;
+					case LOG_PERFORMANCE_MSG:
+						Log_Read_Performance();
+						break;
 
-                                case LOG_RAW_MSG:
-                                    Log_Read_Raw();
-                                    break;
+					case LOG_RAW_MSG:
+						Log_Read_Raw();
+						break;
 
-                                case LOG_CMD_MSG:
-                                    Log_Read_Cmd();
-                                    break;
+					case LOG_CMD_MSG:
+						Log_Read_Cmd();
+						break;
 
-                                case LOG_CURRENT_MSG:
-                                    Log_Read_Current();
-                                    break;
+					case LOG_CURRENT_MSG:
+						Log_Read_Current();
+						break;
 
-                                case LOG_STARTUP_MSG:
-                                    Log_Read_Startup();
-                                    break;
+					case LOG_STARTUP_MSG:
+						Log_Read_Startup();
+						break;
 
-                                case LOG_MOTORS_MSG:
-                                    Log_Read_Motors();
-                                    break;
+					case LOG_MOTORS_MSG:
+						Log_Read_Motors();
+						break;
 
-                                case LOG_OPTFLOW_MSG:
-                                    Log_Read_Optflow();
-                                    break;
+					case LOG_OPTFLOW_MSG:
+						Log_Read_Optflow();
+						break;
 
-                                case LOG_GPS_MSG:
-                                    Log_Read_GPS();
-                                    break;
+					case LOG_GPS_MSG:
+						Log_Read_GPS();
+						break;
 
-                                case LOG_DATA_MSG:
-                                    Log_Read_Data();
-                                    break;
+					case LOG_DATA_MSG:
+						Log_Read_Data();
+						break;
 
-                                case LOG_PID_MSG:
-                                    Log_Read_PID();
-                                    break;
-                                }
-                                break;
-                            case 3:
-                                if(data == END_BYTE) {
-                                    packet_count++;
-                                }else{
-                                    Serial.printf_P(PSTR("Error Reading END_BYTE: %d\n"),data);
-                                }
-                                log_step = 0;                   // Restart sequence: new packet...
-                                break;
-                            }
-                            page = DataFlash.GetPage();
-                        }
-                        return packet_count;
+					case LOG_PID_MSG:
+						Log_Read_PID();
+						break;
+
+					case LOG_ITERM_MSG:
+						Log_Read_Iterm();
+						break;
+				}
+				break;
+		case 3:
+			if(data == END_BYTE){
+				packet_count++;
+			}else{
+				Serial.printf_P(PSTR("Error Reading END_BYTE: %d\n"),data);
+			}
+			log_step = 0;                   // Restart sequence: new packet...
+			break;
+		}
+		page = DataFlash.GetPage();
+	}
+	return packet_count;
 }
 
 
@@ -1066,6 +1099,8 @@ static void Log_Write_Raw() {
 static void Log_Write_GPS() {
 }
 static void Log_Write_Current() {
+}
+static void Log_Write_Iterm() {
 }
 static void Log_Write_Attitude() {
 }
