@@ -963,6 +963,10 @@ static void Log_Read(int16_t start_page, int16_t end_page)
     Serial.printf_P(PSTR("APM 1\n"));
  #endif
 
+#if CLI_ENABLED == ENABLED
+	setup_show(NULL, NULL);
+#enduf
+
     if(start_page > end_page) {
         packet_count = Log_Read_Process(start_page, DataFlash.df_NumPages);
         packet_count += Log_Read_Process(1, end_page);
