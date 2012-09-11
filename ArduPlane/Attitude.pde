@@ -4,14 +4,15 @@
 // Function that controls aileron/rudder, elevator, rudder (if 4 channel control) and throttle to produce desired attitude and airspeed.
 //****************************************************************
 
-static void stabilize()
-{
-    float ch1_inf = 1.0;
-    float ch2_inf = 1.0;
-    float ch4_inf = 1.0;
-    float speed_scaler;
-    float aspeed;
 
+/*
+  get a speed scaling number for control surfaces. This is applied to
+  PIDs to change the scaling of the PID with speed. At high speed we
+  move the surfaces less, and at low speeds we move them more.
+ */
+static float get_speed_scaler(void)
+{
+    float aspeed, speed_scaler;
     if (ahrs.airspeed_estimate(&aspeed)) {
         if (aspeed > 0) {
             speed_scaler = g.scaling_speed / aspeed;
@@ -29,6 +30,16 @@ static void stabilize()
         // This case is constrained tighter as we don't have real speed info
         speed_scaler = constrain(speed_scaler, 0.6, 1.67);
     }
+    return speed_scaler;
+}
+
+
+static void stabilize()
+{
+    float ch1_inf = 1.0;
+    float ch2_inf = 1.0;
+    float ch4_inf = 1.0;
+    float speed_scaler = get_speed_scaler();
 
     if(crash_timer > 0) {
         nav_roll_cd = 0;
@@ -176,7 +187,8 @@ static void calc_nav_yaw(float speed_scaler, float ch4_inf)
 {
     if (hold_course != -1) {
         // steering on or close to ground
-        g.channel_rudder.servo_out = g.pidWheelSteer.get_pid(bearing_error_cd) + g.kff_rudder_mix * g.channel_roll.servo_out;
+        g.channel_rudder.servo_out = g.pidWheelSteer.get_pid(bearing_error_cd, speed_scaler) + 
+            g.kff_rudder_mix * g.channel_roll.servo_out;
         return;
     }
 
