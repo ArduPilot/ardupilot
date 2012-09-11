@@ -19,7 +19,7 @@ static int8_t   setup_range                             (uint8_t argc, const Men
 //static int8_t	setup_mag_offset		(uint8_t argc, const Menu::arg *argv);
 static int8_t   setup_declination               (uint8_t argc, const Menu::arg *argv);
 static int8_t   setup_optflow                   (uint8_t argc, const Menu::arg *argv);
-static int8_t   setup_show                              (uint8_t argc, const Menu::arg *argv);
+
 
  #if FRAME_CONFIG == HELI_FRAME
 static int8_t   setup_heli                              (uint8_t argc, const Menu::arg *argv);
