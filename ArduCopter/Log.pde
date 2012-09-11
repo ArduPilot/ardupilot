@@ -965,7 +965,7 @@ static void Log_Read(int16_t start_page, int16_t end_page)
 
 #if CLI_ENABLED == ENABLED
 	setup_show(NULL, NULL);
-#enduf
+#endif
 
     if(start_page > end_page) {
         packet_count = Log_Read_Process(start_page, DataFlash.df_NumPages);
