@@ -468,7 +468,7 @@ static void NOINLINE send_statustext(mavlink_channel_t chan)
 static bool telemetry_delayed(mavlink_channel_t chan)
 {
     uint32_t tnow = millis() >> 10;
-    if (tnow > g.telem_delay) {
+    if (tnow > (uint8_t)g.telem_delay) {
         return false;
     }
 #if USB_MUX_PIN > 0
