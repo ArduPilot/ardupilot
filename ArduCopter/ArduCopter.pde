@@ -1066,7 +1066,7 @@ void loop()
             // driven, so it can't accumulate readings by itself
             if (g.compass_enabled) {
                 compass.accumulate();
-            }        
+            }
         }
     }
 
@@ -1343,8 +1343,12 @@ static void slow_loop()
 #endif
         }
 
-        // check the user hasn't updated the frame orientation
-        if( !motors.armed() ) {
+
+        if(motors.armed()) {
+            if (g.log_bitmask & MASK_LOG_ITERM)
+                Log_Write_Iterm();
+        }else{
+            // check the user hasn't updated the frame orientation
             motors.set_frame_orientation(g.frame_orientation);
         }
 
