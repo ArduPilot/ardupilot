@@ -937,7 +937,7 @@ static bool usb_connected;
 
 #if CLI_ENABLED == ENABLED
     static int8_t   setup_show (uint8_t argc, const Menu::arg *argv);
-#enduf
+#endif
 
 // Camera/Antenna mount tracking and stabilisation stuff
 // --------------------------------------
