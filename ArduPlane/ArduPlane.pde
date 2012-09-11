@@ -1105,7 +1105,7 @@ static void update_current_flight_mode(void)
             break;
 
         case MAV_CMD_NAV_LAND:
-            if (g.rudder_steer == 0) {
+            if (g.rudder_steer == 0 || !land_complete) {
                 calc_nav_roll();
             } else {
                 nav_roll_cd = 0;
