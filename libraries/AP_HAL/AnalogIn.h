@@ -4,10 +4,15 @@
 
 #include "AP_HAL_Namespace.h"
 
+class AP_HAL::AnalogSource {
+public:
+    virtual float read() = 0;
+};
+
 class AP_HAL::AnalogIn {
 public:
-    AnalogIn() {}
-    virtual void init(int machtnicht) = 0;
+    virtual void init(void* implspecific) = 0;
+    virtual AP_HAL::AnalogSource* channel(int n) = 0;
 };
 
 #endif // __AP_HAL_ANALOG_IN_H__

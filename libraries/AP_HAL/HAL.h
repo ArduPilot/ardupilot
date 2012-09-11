@@ -21,7 +21,7 @@ public:
         AP_HAL::UARTDriver* _uart3,
         AP_HAL::I2CDriver*  _i2c,
         AP_HAL::SPIDriver*  _spi,
-        AP_HAL::AnalogIn*   _analogIn,
+        AP_HAL::AnalogIn*   _analogin,
         AP_HAL::Storage*    _storage,
         AP_HAL::Dataflash*  _dataflash,
         AP_HAL::BetterStream* _console,
@@ -36,7 +36,7 @@ public:
         uart3(_uart3),
         i2c(_i2c),
         spi(_spi),
-        analogIn(_analogIn),
+        analogin(_analogin),
         storage(_storage),
         dataflash(_dataflash),
         console(_console),
@@ -54,7 +54,7 @@ public:
     AP_HAL::UARTDriver* uart3;
     AP_HAL::I2CDriver*  i2c;
     AP_HAL::SPIDriver*  spi;
-    AP_HAL::AnalogIn*   analogIn;
+    AP_HAL::AnalogIn*   analogin;
     AP_HAL::Storage*    storage;
     AP_HAL::Dataflash*  dataflash;
     AP_HAL::BetterStream* console;

@@ -13,6 +13,7 @@ namespace AP_HAL {
     class UARTDriver;
     class I2CDriver;
     class SPIDriver;
+    class AnalogSource;
     class AnalogIn;
     class Storage;
     class Dataflash;
