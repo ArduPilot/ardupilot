@@ -249,9 +249,7 @@ static void init_ardupilot()
             old_pulse = APM_RC.InputCh(g.flight_mode_channel);
             delay(25);
         }
-        GPS_enabled = false;
         g_gps->update();
-        if (g_gps->status() != 0 || HIL_MODE != HIL_MODE_DISABLED) GPS_enabled = true;
 
         if (g.log_bitmask & MASK_LOG_CMD)
             Log_Write_Startup(TYPE_AIRSTART_MSG);
@@ -305,21 +303,6 @@ static void startup_ground(void)
     // initialize commands
     // -------------------
     init_commands();
-
-    // Read in the GPS - see if one is connected
-    GPS_enabled = false;
-    for (byte counter = 0;; counter++) {
-        g_gps->update();
-        if (g_gps->status() != 0 || HIL_MODE != HIL_MODE_DISABLED) {
-            GPS_enabled = true;
-            break;
-        }
-
-        if (counter >= 2) {
-            GPS_enabled = false;
-            break;
-        }
-    }
 
     // Makes the servos wiggle - 3 times signals ready to fly
     // -----------------------
