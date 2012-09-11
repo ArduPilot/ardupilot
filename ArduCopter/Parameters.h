@@ -358,53 +358,53 @@ public:
     Parameters() :
 
 #if FRAME_CONFIG ==     HELI_FRAME
-        heli_servo_1                        (CH_1),
-        heli_servo_2                        (CH_2),
-        heli_servo_3                        (CH_3),
-        heli_servo_4                        (CH_4),
+        heli_servo_1        (CH_1),
+        heli_servo_2        (CH_2),
+        heli_servo_3        (CH_3),
+        heli_servo_4        (CH_4),
 #endif
 
-        rc_1                                        (CH_1),
-        rc_2                                        (CH_2),
-        rc_3                                        (CH_3),
-        rc_4                                        (CH_4),
-        rc_5                                        (CH_5),
-        rc_6                                        (CH_6),
-        rc_7                                        (CH_7),
-        rc_8                                        (CH_8),
+        rc_1                (CH_1),
+        rc_2                (CH_2),
+        rc_3                (CH_3),
+        rc_4                (CH_4),
+        rc_5                (CH_5),
+        rc_6                (CH_6),
+        rc_7                (CH_7),
+        rc_8                (CH_8),
 #if MOUNT == ENABLED
-        rc_10                                       (CH_10),
-        rc_11                                       (CH_11),
+        rc_10               (CH_10),
+        rc_11               (CH_11),
 #endif
 
         // PID controller	initial P	        initial I		    initial D
         //          initial imax
         //-----------------------------------------------------------------------------------------------------
-        pid_rate_roll       (RATE_ROLL_P,       RATE_ROLL_I,        RATE_ROLL_D,        RATE_ROLL_IMAX * 100),
-        pid_rate_pitch      (RATE_PITCH_P,      RATE_PITCH_I,       RATE_PITCH_D,       RATE_PITCH_IMAX * 100),
-        pid_rate_yaw        (RATE_YAW_P,        RATE_YAW_I,         RATE_YAW_D,         RATE_YAW_IMAX * 100),
+        pid_rate_roll           (RATE_ROLL_P,           RATE_ROLL_I,            RATE_ROLL_D,            RATE_ROLL_IMAX * 100),
+        pid_rate_pitch          (RATE_PITCH_P,          RATE_PITCH_I,           RATE_PITCH_D,           RATE_PITCH_IMAX * 100),
+        pid_rate_yaw            (RATE_YAW_P,            RATE_YAW_I,             RATE_YAW_D,             RATE_YAW_IMAX * 100),
 
         pid_loiter_rate_lat     (LOITER_RATE_P,         LOITER_RATE_I,          LOITER_RATE_D,          LOITER_RATE_IMAX * 100),
         pid_loiter_rate_lon     (LOITER_RATE_P,         LOITER_RATE_I,          LOITER_RATE_D,          LOITER_RATE_IMAX * 100),
 
-        pid_nav_lat                     (NAV_P,                         NAV_I,                          NAV_D,                          NAV_IMAX * 100),
-        pid_nav_lon                     (NAV_P,                         NAV_I,                          NAV_D,                          NAV_IMAX * 100),
+        pid_nav_lat             (NAV_P,                 NAV_I,                  NAV_D,                  NAV_IMAX * 100),
+        pid_nav_lon             (NAV_P,                 NAV_I,                  NAV_D,                  NAV_IMAX * 100),
 
-        pid_throttle            (THROTTLE_P,            THROTTLE_I,                     THROTTLE_D,                     THROTTLE_IMAX),
+        pid_throttle            (THROTTLE_P,            THROTTLE_I,             THROTTLE_D,             THROTTLE_IMAX),
         pid_optflow_roll        (OPTFLOW_ROLL_P,        OPTFLOW_ROLL_I,         OPTFLOW_ROLL_D,         OPTFLOW_IMAX * 100),
         pid_optflow_pitch       (OPTFLOW_PITCH_P,       OPTFLOW_PITCH_I,        OPTFLOW_PITCH_D,        OPTFLOW_IMAX * 100),
 
         // PI controller	initial P			initial I			initial
         // imax
         //----------------------------------------------------------------------
-        pi_loiter_lat           (LOITER_P,                      LOITER_I,                       LOITER_IMAX * 100),
-        pi_loiter_lon           (LOITER_P,                      LOITER_I,                       LOITER_IMAX * 100),
+        pi_loiter_lat           (LOITER_P,              LOITER_I,               LOITER_IMAX * 100),
+        pi_loiter_lon           (LOITER_P,              LOITER_I,               LOITER_IMAX * 100),
 
         pi_stabilize_roll       (STABILIZE_ROLL_P,      STABILIZE_ROLL_I,       STABILIZE_ROLL_IMAX * 100),
         pi_stabilize_pitch      (STABILIZE_PITCH_P,     STABILIZE_PITCH_I,      STABILIZE_PITCH_IMAX * 100),
         pi_stabilize_yaw        (STABILIZE_YAW_P,       STABILIZE_YAW_I,        STABILIZE_YAW_IMAX * 100),
 
-        pi_alt_hold                     (ALT_HOLD_P,            ALT_HOLD_I,                     ALT_HOLD_IMAX)
+        pi_alt_hold             (ALT_HOLD_P,            ALT_HOLD_I,             ALT_HOLD_IMAX)
     {
     }
 };
