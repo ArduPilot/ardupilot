@@ -709,9 +709,9 @@ void setup() {
 
 void loop()
 {
-    // We want this to execute at 50Hz if possible
-    // -------------------------------------------
-    if (millis() - fast_loopTimer_ms > 19) {
+    // We want this to execute at 50Hz, but synchronised with the gyro/accel
+    uint16_t num_samples = imu.num_samples_available();
+    if (num_samples >= NUM_IMU_SAMPLES_FOR_50HZ) {
         delta_ms_fast_loop      = millis() - fast_loopTimer_ms;
         load                = (float)(fast_loopTimeStamp_ms - fast_loopTimer_ms)/delta_ms_fast_loop;
         G_Dt                = (float)delta_ms_fast_loop / 1000.f;
@@ -745,7 +745,7 @@ void loop()
         }
 
         fast_loopTimeStamp_ms = millis();
-    } else {
+    } else if (num_samples < NUM_IMU_SAMPLES_FOR_50HZ-1) {
         // less than 20ms has passed. We have at least one millisecond
         // of free time. The most useful thing to do with that time is
         // to accumulate some sensor readings, specifically the
