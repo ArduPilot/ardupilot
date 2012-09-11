@@ -15,5 +15,6 @@ void HAL_AVR::init(void* opts) const {
     rcin->init((void*)&isr_registry);
     rcout->init(NULL);
     spi->init(NULL);
+    analogin->init(NULL);
 };
 

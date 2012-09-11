@@ -20,7 +20,7 @@ public:
         AP_HAL::UARTDriver* _uart3,
         AP_HAL::I2CDriver*  _i2c,
         AP_HAL::SPIDriver*  _spi,
-        AP_HAL::AnalogIn*   _analogIn,
+        AP_HAL::AnalogIn*   _analogin,
         AP_HAL::Storage*    _storage,
         AP_HAL::Dataflash*  _dataflash,
         AP_HAL::BetterStream* _console,
@@ -29,7 +29,7 @@ public:
         AP_HAL::RCOutput*   _rcout,
         AP_HAL::Scheduler*  _scheduler)
         : AP_HAL::HAL(  _uart0, _uart1, _uart2, _uart3,
-                        _i2c, _spi, _analogIn, _storage,
+                        _i2c, _spi, _analogin, _storage,
                         _dataflash, _console, _gpio, _rcin,
                         _rcout, _scheduler) {}
 
