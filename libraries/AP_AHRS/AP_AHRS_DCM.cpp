@@ -446,18 +446,15 @@ AP_AHRS_DCM::drift_correction(float deltat)
         _last_airspeed = airspeed.length();
     }
 
-#define USE_BAROMETER_FOR_VERTICAL_VELOCITY 1
-#if USE_BAROMETER_FOR_VERTICAL_VELOCITY
     /*
      *  The barometer for vertical velocity is only enabled if we got
      *  at least 5 pressure samples for the reading. This ensures we
      *  don't use very noisy climb rate data
      */
-    if (_barometer != NULL && _barometer->get_pressure_samples() >= 5) {
+    if (_baro_use && _barometer != NULL && _barometer->get_pressure_samples() >= 5) {
         // Z velocity is down
         velocity.z = -_barometer->get_climb_rate();
     }
-#endif
 
     // see if this is our first time through - in which case we
     // just setup the start times and return
