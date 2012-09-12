@@ -197,7 +197,7 @@ uint32_t AP_GPS_NMEA::_parse_degrees()
 {
     char *p, *q;
     uint8_t deg = 0, min = 0;
-    uint16_t frac_min = 0;
+    uint32_t frac_min = 0;
     int32_t ret = 0;
 
     // scan for decimal point or end of field
