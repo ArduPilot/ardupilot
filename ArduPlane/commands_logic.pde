@@ -550,12 +550,15 @@ static void do_change_speed()
         }
         break;
     case 1:             // Ground speed
+        gcs_send_text_fmt(PSTR("Set groundspeed %u"), (unsigned)next_nonnav_command.alt);
         g.min_gndspeed_cm.set(next_nonnav_command.alt * 100);
         break;
     }
 
-    if(next_nonnav_command.lat > 0)
+    if (next_nonnav_command.lat > 0) {
+        gcs_send_text_fmt(PSTR("Set throttle %u"), (unsigned)next_nonnav_command.lat);
         g.throttle_cruise.set(next_nonnav_command.lat);
+    }
 }
 
 static void do_set_home()
