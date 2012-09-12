@@ -22,7 +22,7 @@ const AP_Param::GroupInfo AP_AHRS::var_info[] PROGMEM = {
     AP_GROUPINFO("GPS_GAIN",  2, AP_AHRS, gps_gain, 1.0),
 
     // @Param: GPS_USE
-    // @DisplayName: enable/disable use of GPS for position estimation
+    // @DisplayName: AHRS use GPS
     // @Description: This controls how how much to use the GPS to correct the attitude. This is for testing the dead-reckoning code
     // @User: Advanced
     AP_GROUPINFO("GPS_USE",  3, AP_AHRS, _gps_use, 1),
@@ -48,6 +48,13 @@ const AP_Param::GroupInfo AP_AHRS::var_info[] PROGMEM = {
     // QUnits: m/s
     // @Increment: 1
     AP_GROUPINFO("WIND_MAX",  6,    AP_AHRS, _wind_max, 0.0),
+
+    // @Param: BARO_USE
+    // @DisplayName: AHRS Use Barometer
+    // @Description: This controls the use of the barometer for vertical acceleration compensation in AHRS
+    // @Values: 0:Disabled,1:Enabled
+    // @User: Advanced
+    AP_GROUPINFO("BARO_USE",  7,    AP_AHRS, _baro_use, 1),
 
     AP_GROUPEND
 };
