@@ -1111,11 +1111,16 @@ static void update_current_flight_mode(void)
                 nav_roll_cd = 0;
             }
 
-            if (!alt_control_airspeed() || land_complete) {
+            if (land_complete) {
                 // hold pitch constant in final approach
                 nav_pitch_cd = g.land_pitch_cd;
             } else {
                 calc_nav_pitch();
+                if (!alt_control_airspeed()) {
+                    // when not under airspeed control, don't allow
+                    // down pitch in landing
+                    nav_pitch_cd = constrain(nav_pitch_cd, 0, nav_pitch_cd);
+                }
             }
             calc_throttle();
 
