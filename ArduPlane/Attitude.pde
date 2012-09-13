@@ -361,7 +361,7 @@ static void set_servos(void)
             float ch2;
             ch1 = g.channel_pitch.servo_out - (BOOL_TO_SIGN(g.reverse_elevons) * g.channel_roll.servo_out);
             ch2 = g.channel_pitch.servo_out + (BOOL_TO_SIGN(g.reverse_elevons) * g.channel_roll.servo_out);
-            g.channel_roll.radio_out =      elevon1_trim + (BOOL_TO_SIGN(g.reverse_ch1_elevon) * (ch1 * 500.0/ SERVO_MAX));
+            g.channel_roll.radio_out  =     elevon1_trim + (BOOL_TO_SIGN(g.reverse_ch1_elevon) * (ch1 * 500.0/ SERVO_MAX));
             g.channel_pitch.radio_out =     elevon2_trim + (BOOL_TO_SIGN(g.reverse_ch2_elevon) * (ch2 * 500.0/ SERVO_MAX));
         }
 
@@ -398,8 +398,10 @@ static void set_servos(void)
         
 
         // push out the PWM values
-        g.channel_roll.calc_pwm();
-        g.channel_pitch.calc_pwm();
+        if (g.mix_mode == 0) {
+            g.channel_roll.calc_pwm();
+            g.channel_pitch.calc_pwm();
+        }
         g.channel_throttle.calc_pwm();
         g.channel_rudder.calc_pwm();
     }
