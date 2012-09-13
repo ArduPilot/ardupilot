@@ -1209,9 +1209,19 @@ init_esc()
 
 static void print_wp(struct Location *cmd, byte index)
 {
-    float t1 = (float)cmd->lat / t7;
-    float t2 = (float)cmd->lng / t7;
+   	//float t1 = (float)cmd->lat / t7;
+    //float t2 = (float)cmd->lng / t7;
 
+    Serial.printf_P(PSTR("cmd#: %d | %d, %d, %d, %ld, %ld, %ld\n"),
+                    index,
+                    cmd->id,
+                    cmd->options,
+                    cmd->p1,
+                    cmd->alt,
+                    cmd->lat,
+                    cmd->lng);
+
+	/*
     Serial.printf_P(PSTR("cmd#: %d id:%d op:%d p1:%d p2:%ld p3:%4.7f p4:%4.7f \n"),
                     (int)index,
                     (int)cmd->id,
@@ -1220,6 +1230,7 @@ static void print_wp(struct Location *cmd, byte index)
                     (long)cmd->alt,
                     t1,
                     t2);
+	*/
 }
 
 static void report_gps()
