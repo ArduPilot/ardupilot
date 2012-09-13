@@ -15,8 +15,11 @@
 #include <AP_GPS.h>
 #include <AP_AHRS.h>
 #include <AP_Math.h>
+#include <AP_AnalogSource.h>
+#include <AP_AnalogSource_Arduino.h>
 #include <AP_Common.h>
 #include <AP_Compass.h>
+#include <AP_Airspeed.h>
 #include <AP_Baro.h>
 #include <DataFlash.h>
 #include <APM_RC.h>
