@@ -148,11 +148,50 @@
   <data name="label4.Text" xml:space="preserve">
     <value>网络ID</value>
   </data>
+  <data name="S3.ToolTip" xml:space="preserve">
+    <value>NETID 是 16位“网络ID”。它用作调频序列的种子，并识别正确电台的数据包。确保你用的 NETID 与本地区其他相同电台的 NETID 都不同。</value>
+  </data>
   <data name="label5.Size" type="System.Drawing.Size, System.Drawing">
     <value>55, 13</value>
   </data>
   <data name="label5.Text" xml:space="preserve">
     <value>发射功率</value>
+  </data>
+  <data name="S4.ToolTip" xml:space="preserve">
+    <value>TXPOWER 是发射功率，单位 dBm。20dBm 就是 100mW。短距离测试时将其设为较低的水平。</value>
+  </data>
+  <data name="label6.Size" type="System.Drawing.Size, System.Drawing">
+    <value>55, 13</value>
+  </data>
+  <data name="label6.Text" xml:space="preserve">
+    <value>ECC 校验</value>
+  </data>
+  <data name="S5.ToolTip" xml:space="preserve">
+    <value>ECC 启动/禁用格雷纠错码。默认值是关闭。如果启用，数据包大小将翻倍，因此将损失一半的带宽。但它能纠正每 12 位数据中的 3 位错误。在长距离时启用该选项，并降低空中数据传输率。格雷解码需 20 微秒/传输字节（40微秒/用户数据字节），这意味着 CPU 限制了最高空中数据传输率。开启时通常使用 128kbps 或更低。</value>
+  </data>
+  <data name="S6.ToolTip" xml:space="preserve">
+    <value>MAVLINK 启用/禁用 MAVLink 数据包组帧。它将尝试把电台数据包与 MAVLink 数据包边界对其。它对丢失数据包时 MAVLink 流的行为有重要影响。</value>
+  </data>
+  <data name="label8.Size" type="System.Drawing.Size, System.Drawing">
+    <value>55, 13</value>
+  </data>
+  <data name="label8.Text" xml:space="preserve">
+    <value>条件重发</value>
+  </data>
+  <data name="RS7.ToolTip" xml:space="preserve">
+    <value>OPPRESEND 启用/禁用“条件性重发”。当启动时，当输入缓冲含有少于256字节时电台将两次发送同一个数据包。第二遍将标记为重发，接收电台在正确收到第一个包时会忽略重发的包。这对链路质量，特别是上行命令有很大的影响。</value>
+  </data>
+  <data name="RS6.ToolTip" xml:space="preserve">
+    <value>MAVLINK 启用/禁用 MAVLink 数据包组帧。它将尝试把电台数据包与 MAVLink 数据包边界对其。它对丢失数据包时 MAVLink 流的行为有重要影响。</value>
+  </data>
+  <data name="RS5.ToolTip" xml:space="preserve">
+    <value>ECC 启动/禁用格雷纠错码。默认值是关闭。如果启用，数据包大小将翻倍，因此将损失一半的带宽。但它能纠正每 12 位数据中的 3 位错误。在长距离时启用该选项，并降低空中数据传输率。格雷解码需 20 微秒/传输字节（40微秒/用户数据字节），这意味着 CPU 限制了最高空中数据传输率。开启时通常使用 128kbps 或更低。</value>
+  </data>
+  <data name="RS4.ToolTip" xml:space="preserve">
+    <value>TXPOWER 是发射功率，单位 dBm。20dBm 就是 100mW。短距离测试时将其设为较低的水平。</value>
+  </data>
+  <data name="RS3.ToolTip" xml:space="preserve">
+    <value>NETID 是 16位“网络ID”。它用作调频序列的种子，并识别正确电台的数据包。确保你用的 NETID 与本地区其他相同电台的 NETID 都不同。</value>
   </data>
   <data name="RS2.ToolTip" xml:space="preserve">
     <value>空速是取整的数传之间数据传输率(kbps)。所以128就是128kbps。最大值为192，最小值为2。不建议低于16，否则调频和时分复用同步时间太长。</value>
@@ -168,17 +207,49 @@ stx: 串口发送溢出数量
 rrx: 串口接收溢出数量
 ecc: 格雷码成功纠正的12位字数量</value>
   </data>
-  <data name="label9.Size" type="System.Drawing.Size, System.Drawing">
-    <value>31, 13</value>
+  <data name="S10.ToolTip" xml:space="preserve">
+    <value>调频信道数量</value>
   </data>
-  <data name="label9.Text" xml:space="preserve">
-    <value>本地</value>
+  <data name="S11.ToolTip" xml:space="preserve">
+    <value>允许发射的时间比例</value>
   </data>
-  <data name="label10.Size" type="System.Drawing.Size, System.Drawing">
-    <value>31, 13</value>
+  <data name="S12.ToolTip" xml:space="preserve">
+    <value>载波侦听阈值</value>
   </data>
-  <data name="label10.Text" xml:space="preserve">
-    <value>远程</value>
+  <data name="RS12.ToolTip" xml:space="preserve">
+    <value>载波侦听阈值</value>
+  </data>
+  <data name="RS11.ToolTip" xml:space="preserve">
+    <value>允许发射的时间比例</value>
+  </data>
+  <data name="RS10.ToolTip" xml:space="preserve">
+    <value>调频信道数量</value>
+  </data>
+  <data name="S9.ToolTip" xml:space="preserve">
+    <value>最高频率，单位 kHz</value>
+  </data>
+  <data name="S8.ToolTip" xml:space="preserve">
+    <value>最低频率，单位 kHz</value>
+  </data>
+  <data name="RS8.ToolTip" xml:space="preserve">
+    <value>最低频率，单位 kHz</value>
+  </data>
+  <data name="RS9.ToolTip" xml:space="preserve">
+    <value>最高频率，单位 kHz</value>
+  </data>
+  <data name="linkLabel1.Size" type="System.Drawing.Size, System.Drawing">
+    <value>67, 13</value>
+  </data>
+  <data name="linkLabel1.Text" xml:space="preserve">
+    <value>状态指示灯</value>
+  </data>
+  <data name="linkLabel1.ToolTip" xml:space="preserve">
+    <value>3DR 电台有2个状态指示灯，一个红色，另一个绿色
+绿色灯闪烁 - 搜索另一个电台
+绿色灯常亮 - 与另一电台的链路已经建立
+红色灯闪烁 - 传输数据
+红色灯常亮 - 固件更新模式
+</value>
   </data>
   <data name="label11.Size" type="System.Drawing.Size, System.Drawing">
     <value>47, 13</value>
@@ -199,19 +270,19 @@ ecc: 格雷码成功纠正的12位字数量</value>
     <value>55, 13</value>
   </data>
   <data name="label13.Text" xml:space="preserve">
-    <value>最小频率</value>
+    <value>最低频率</value>
   </data>
   <data name="label14.Size" type="System.Drawing.Size, System.Drawing">
     <value>55, 13</value>
   </data>
   <data name="label14.Text" xml:space="preserve">
-    <value>最大频率</value>
+    <value>最高频率</value>
   </data>
   <data name="label15.Size" type="System.Drawing.Size, System.Drawing">
-    <value>47, 13</value>
+    <value>55, 13</value>
   </data>
   <data name="label15.Text" xml:space="preserve">
-    <value>信　　道</value>
+    <value>信道数量</value>
   </data>
   <data name="label16.Size" type="System.Drawing.Size, System.Drawing">
     <value>49, 13</value>
@@ -226,22 +297,34 @@ ecc: 格雷码成功纠正的12位字数量</value>
     <value>占 空 比</value>
   </data>
   <data name="label22.Size" type="System.Drawing.Size, System.Drawing">
-    <value>47, 13</value>
+    <value>55, 13</value>
   </data>
   <data name="label22.Text" xml:space="preserve">
-    <value>信　　道</value>
+    <value>信道数量</value>
   </data>
   <data name="label23.Size" type="System.Drawing.Size, System.Drawing">
     <value>55, 13</value>
   </data>
   <data name="label23.Text" xml:space="preserve">
-    <value>最大频率</value>
+    <value>最高频率</value>
   </data>
   <data name="label24.Size" type="System.Drawing.Size, System.Drawing">
     <value>55, 13</value>
   </data>
   <data name="label24.Text" xml:space="preserve">
-    <value>最小频率</value>
+    <value>最低频率</value>
+  </data>
+  <data name="label25.Size" type="System.Drawing.Size, System.Drawing">
+    <value>55, 13</value>
+  </data>
+  <data name="label25.Text" xml:space="preserve">
+    <value>条件重发</value>
+  </data>
+  <data name="label27.Size" type="System.Drawing.Size, System.Drawing">
+    <value>55, 13</value>
+  </data>
+  <data name="label27.Text" xml:space="preserve">
+    <value>ECC 校验</value>
   </data>
   <data name="label28.Size" type="System.Drawing.Size, System.Drawing">
     <value>55, 13</value>
@@ -272,5 +355,32 @@ ecc: 格雷码成功纠正的12位字数量</value>
   </data>
   <data name="label32.Text" xml:space="preserve">
     <value>波 特 率</value>
+  </data>
+  <data name="CHK_advanced.Size" type="System.Drawing.Size, System.Drawing">
+    <value>74, 17</value>
+  </data>
+  <data name="CHK_advanced.Text" xml:space="preserve">
+    <value>高级选项</value>
+  </data>
+  <data name="BUT_Syncoptions.Text" xml:space="preserve">
+    <value>复制到远程</value>
+  </data>
+  <data name="groupBox1.Text" xml:space="preserve">
+    <value>本地</value>
+  </data>
+  <data name="groupBox2.Text" xml:space="preserve">
+    <value>远程</value>
+  </data>
+  <data name="label9.Size" type="System.Drawing.Size, System.Drawing">
+    <value>37, 13</value>
+  </data>
+  <data name="label9.Text" xml:space="preserve">
+    <value>版  本</value>
+  </data>
+  <data name="label10.Size" type="System.Drawing.Size, System.Drawing">
+    <value>31, 13</value>
+  </data>
+  <data name="label10.Text" xml:space="preserve">
+    <value>远程</value>
   </data>
 </root>
