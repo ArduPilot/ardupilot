@@ -65,10 +65,6 @@ public:
 		uint8_t *bytes;					///< pointer to allocated buffer
 	};
 private:
-    /* Helper function _vprintf for implementing BetterStream's printfs */
-    void _vprintf(unsigned char, const char *, va_list)
-            __attribute__((format(__printf__,3,0)));
-
     /* Instance Variables */
     bool _initialized;
 

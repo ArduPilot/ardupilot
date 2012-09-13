@@ -10,12 +10,14 @@
 
 #include <limits.h>
 #include <stdlib.h>
+#include <stdarg.h>
 
 #include <avr/pgmspace.h>
 
 #include <AP_Common.h>
 #include <AP_HAL.h>
 
+#include "vprintf.h"
 #include "UARTDriver.h"
 using namespace AP_HAL_AVR;
 
@@ -268,13 +270,13 @@ void AVRUARTDriver::println_P(const prog_char_t *s) {
 void AVRUARTDriver::printf(const char *fmt, ...) {
         va_list ap;
         va_start(ap, fmt);
-        _vprintf(0, fmt, ap);
+        vprintf((AP_HAL::Print*)this, 0, fmt, ap);
         va_end(ap);
 }
 
 void AVRUARTDriver::_printf_P(const prog_char *fmt, ...) {
         va_list ap;
         va_start(ap, fmt);
-        _vprintf(1, fmt, ap);
+        vprintf((AP_HAL::Print*)this, 1, fmt, ap);
         va_end(ap);
 }

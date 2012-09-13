@@ -41,15 +41,14 @@
 #include <avr/pgmspace.h>
 #include <stdarg.h>
 #include <string.h>
+
 extern "C" {
 #include "ftoa_engine.h"
 #include "ntz.h"
 #include "xtoa_fast.h"
 }
 
-#include <AP_HAL.h>
-#include "../UARTDriver.h"
-using namespace AP_HAL_AVR;
+#include "vprintf.h"
 
 // workaround for GCC bug c++/34734
 #undef PROGMEM 
@@ -94,8 +93,7 @@ using namespace AP_HAL_AVR;
 #define FL_FLTEXP	FL_PREC
 #define	FL_FLTFIX	FL_LONG
 
-void
-AVRUARTDriver::_vprintf (unsigned char in_progmem, const char *fmt, va_list ap)
+void vprintf (AP_HAL::Print *s, unsigned char in_progmem, const char *fmt, va_list ap)
 {
         unsigned char c;        /* holds a char from the format string */
         unsigned char flags;
@@ -117,8 +115,8 @@ AVRUARTDriver::_vprintf (unsigned char in_progmem, const char *fmt, va_list ap)
                         }
                         /* emit cr before lf to make most terminals happy */
                         if (c == '\n')
-                                write('\r');
-                        write(c);
+                                s->write('\r');
+                        s->write(c);
                 }
 
                 flags = 0;
@@ -232,21 +230,21 @@ AVRUARTDriver::_vprintf (unsigned char in_progmem, const char *fmt, va_list ap)
                                         width -= ndigs;
                                         if (!(flags & FL_LPAD)) {
                                                 do {
-                                                        write(' ');
+                                                        s->write(' ');
                                                 } while (--width);
                                         }
                                 } else {
                                         width = 0;
                                 }
                                 if (sign)
-                                        write(sign);
+                                        s->write(sign);
                                 p = PSTR("inf");
                                 if (vtype & FTOA_NAN)
                                         p = PSTR("nan");
                                 while ( (ndigs = pgm_read_byte((const prog_char *)p)) != 0) {
                                         if (flags & FL_FLTUPP)
                                                 ndigs += 'I' - 'i';
-                                        write(ndigs);
+                                        s->write(ndigs);
                                         p++;
                                 }
                                 goto tail;
@@ -285,14 +283,14 @@ AVRUARTDriver::_vprintf (unsigned char in_progmem, const char *fmt, va_list ap)
                         /* Output before first digit    */
                         if (!(flags & (FL_LPAD | FL_ZFILL))) {
                                 while (width) {
-                                        write(' ');
+                                        s->write(' ');
                                         width--;
                                 }
                         }
-                        if (sign) write(sign);
+                        if (sign) s->write(sign);
                         if (!(flags & FL_LPAD)) {
                                 while (width) {
-                                        write('0');
+                                        s->write('0');
                                         width--;
                                 }
                         }
@@ -302,12 +300,12 @@ AVRUARTDriver::_vprintf (unsigned char in_progmem, const char *fmt, va_list ap)
                                 n = exp > 0 ? exp : 0;          /* exponent of left digit */
                                 do {
                                         if (n == -1)
-                                                write('.');
+                                                s->write('.');
                                         flags = (n <= exp && n > exp - ndigs)
                                                 ? buf[exp - n + 1] : '0';
                                         if (--n < -prec)
                                                 break;
-                                        write(flags);
+                                        s->write(flags);
                                 } while (1);
                                 if (n == exp
                                     && (buf[1] > '5'
@@ -315,34 +313,34 @@ AVRUARTDriver::_vprintf (unsigned char in_progmem, const char *fmt, va_list ap)
                                         {
                                                 flags = '1';
                                         }
-                                write(flags);
+                                s->write(flags);
         
                         } else {                                /* 'e(E)' format        */
 
                                 /* mantissa     */
                                 if (buf[1] != '1')
                                         vtype &= ~FTOA_CARRY;
-                                write(buf[1]);
+                                s->write(buf[1]);
                                 if (prec) {
-                                        write('.');
+                                        s->write('.');
                                         sign = 2;
                                         do {
-                                                write(buf[sign++]);
+                                                s->write(buf[sign++]);
                                         } while (--prec);
                                 }
 
                                 /* exponent     */
-                                write(flags & FL_FLTUPP ? 'E' : 'e');
+                                s->write(flags & FL_FLTUPP ? 'E' : 'e');
                                 ndigs = '+';
                                 if (exp < 0 || (exp == 0 && (vtype & FTOA_CARRY) != 0)) {
                                         exp = -exp;
                                         ndigs = '-';
                                 }
-                                write(ndigs);
+                                s->write(ndigs);
                                 for (ndigs = '0'; exp >= 10; exp -= 10)
                                         ndigs += 1;
-                                write(ndigs);
-                                write('0' + exp);
+                                s->write(ndigs);
+                                s->write('0' + exp);
                         }
 
                         goto tail;
@@ -379,12 +377,12 @@ AVRUARTDriver::_vprintf (unsigned char in_progmem, const char *fmt, va_list ap)
                         str_lpad:
                                 if (!(flags & FL_LPAD)) {
                                         while (size < width) {
-                                                write(' ');
+                                                s->write(' ');
                                                 width--;
                                         }
                                 }
                                 while (size) {
-                                        write(GETBYTE (flags, FL_PGMSTRING, pnt));
+                                        s->write(GETBYTE (flags, FL_PGMSTRING, pnt));
                                         if (width) width -= 1;
                                         size -= 1;
                                 }
@@ -480,7 +478,7 @@ AVRUARTDriver::_vprintf (unsigned char in_progmem, const char *fmt, va_list ap)
                                         }
                                 }
                                 while (len < width) {
-                                        write(' ');
+                                        s->write(' ');
                                         len++;
                                 }
                         }
@@ -488,30 +486,30 @@ AVRUARTDriver::_vprintf (unsigned char in_progmem, const char *fmt, va_list ap)
                         width =  (len < width) ? width - len : 0;
 
                         if (flags & FL_ALT) {
-                                write('0');
+                                s->write('0');
                                 if (flags & FL_ALTHEX)
-                                        write(flags & FL_ALTUPP ? 'X' : 'x');
+                                        s->write(flags & FL_ALTUPP ? 'X' : 'x');
                         } else if (flags & (FL_NEGATIVE | FL_PLUS | FL_SPACE)) {
                                 unsigned char z = ' ';
                                 if (flags & FL_PLUS) z = '+';
                                 if (flags & FL_NEGATIVE) z = '-';
-                                write(z);
+                                s->write(z);
                         }
                 
                         while (prec > c) {
-                                write('0');
+                                s->write('0');
                                 prec--;
                         }
         
                         do {
-                                write(buf[--c]);
+                                s->write(buf[--c]);
                         } while (c);
                 }
         
         tail:
                 /* Tail is possible.    */
                 while (width) {
-                        write(' ');
+                        s->write(' ');
                         width--;
                 }
         } /* for (;;) */
