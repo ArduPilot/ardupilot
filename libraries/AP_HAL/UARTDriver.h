@@ -60,10 +60,10 @@ public:
     void println_P(const prog_char_t *pstr) {}
     void printf(const char *pstr, ...) {}
     void _printf_P(const prog_char *pstr, ...) {}
-    int txspace() { return 1; }
 
     /* Empty implementations of Stream virtual methods */
     int available() { return 0; }
+    int txspace() { return 1; }
     int read() { return -1; }
     int peek() { return -1; }
 

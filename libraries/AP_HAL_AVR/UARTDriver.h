@@ -40,7 +40,6 @@ public:
     }
 
     /* Implementations of BetterStream virtual methods */
-    int txspace();
     void print_P(const prog_char_t *s);
     void println_P(const prog_char_t *s);
     void printf(const char *s, ...)
@@ -50,6 +49,7 @@ public:
 
     /* Implementations of Stream virtual methods */
     int available();
+    int txspace();
     int read();
     int peek();
 

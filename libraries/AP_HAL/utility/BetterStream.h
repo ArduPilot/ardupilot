@@ -32,9 +32,6 @@ class AP_HAL::BetterStream : public AP_HAL::Stream {
 public:
     BetterStream(void) {}
 
-    // Stream extensions
-    virtual int txspace(void) = 0;
-
     virtual void print_P(const prog_char_t *) = 0; 
     virtual void println_P(const prog_char_t *) = 0;
     virtual void printf(const char *, ...)
