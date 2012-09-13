@@ -310,14 +310,14 @@ static void NOINLINE send_radio_in(mavlink_channel_t chan)
         chan,
         millis(),
         0, // port
-        g.channel_roll.radio_in,
-        g.channel_pitch.radio_in,
-        g.channel_throttle.radio_in,
-        g.channel_rudder.radio_in,
-        g.rc_5.radio_in,       // XXX currently only 4 RC channels defined
-        g.rc_6.radio_in,
-        g.rc_7.radio_in,
-        g.rc_8.radio_in,
+        APM_RC.InputCh(CH_1),
+        APM_RC.InputCh(CH_2),
+        APM_RC.InputCh(CH_3),
+        APM_RC.InputCh(CH_4),
+        APM_RC.InputCh(CH_5),
+        APM_RC.InputCh(CH_6),
+        APM_RC.InputCh(CH_7),
+        APM_RC.InputCh(CH_8),
         receiver_rssi);
 }
 
