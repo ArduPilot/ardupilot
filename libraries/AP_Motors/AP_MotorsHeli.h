@@ -106,7 +106,7 @@ public:
     // init
     void Init();
 
-    // set update rate to motors - a value in hertz or AP_MOTORS_SPEED_INSTANT_PWM for instant pwm
+    // set update rate to motors - a value in hertz
     // you must have setup_motors before calling this
     void set_update_rate( uint16_t speed_hz );
 

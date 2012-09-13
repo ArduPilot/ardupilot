@@ -64,12 +64,7 @@ static void init_rc_out()
 {
     APM_RC.Init( &isr_registry );               // APM Radio initialization
 
-#if INSTANT_PWM == 1
-    motors.set_update_rate(AP_MOTORS_SPEED_INSTANT_PWM);
-#else
     motors.set_update_rate(g.rc_speed);
-#endif
-
     motors.set_frame_orientation(g.frame_orientation);
     motors.Init();                                              // motor initialisation
     motors.set_min_throttle(g.throttle_min);

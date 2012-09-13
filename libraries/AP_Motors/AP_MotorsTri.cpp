@@ -17,16 +17,14 @@ void AP_MotorsTri::Init()
     set_update_rate(_speed_hz);
 }
 
-// set update rate to motors - a value in hertz or AP_MOTORS_SPEED_INSTANT_PWM for instant pwm
+// set update rate to motors - a value in hertz
 void AP_MotorsTri::set_update_rate( uint16_t speed_hz )
 {
     // record requested speed
     _speed_hz = speed_hz;
 
     // set update rate for the 3 motors (but not the servo on channel 7)
-    if( _speed_hz != AP_MOTORS_SPEED_INSTANT_PWM ) {
-        _rc->SetFastOutputChannels(_BV(_motor_to_channel_map[AP_MOTORS_MOT_1]) | _BV(_motor_to_channel_map[AP_MOTORS_MOT_2]) | _BV(_motor_to_channel_map[AP_MOTORS_MOT_4]), _speed_hz);
-    }
+    _rc->SetFastOutputChannels(_BV(_motor_to_channel_map[AP_MOTORS_MOT_1]) | _BV(_motor_to_channel_map[AP_MOTORS_MOT_2]) | _BV(_motor_to_channel_map[AP_MOTORS_MOT_4]), _speed_hz);
 }
 
 // enable - starts allowing signals to be sent to motors
@@ -52,12 +50,6 @@ void AP_MotorsTri::output_min()
     _rc->OutputCh(_motor_to_channel_map[AP_MOTORS_MOT_2], _rc_throttle->radio_min);
     _rc->OutputCh(_motor_to_channel_map[AP_MOTORS_MOT_4], _rc_throttle->radio_min);
     _rc->OutputCh(_motor_to_channel_map[AP_MOTORS_CH_TRI_YAW], _rc_yaw->radio_trim);
-
-    // InstantPWM
-    if( _speed_hz == AP_MOTORS_SPEED_INSTANT_PWM ) {
-        _rc->Force_Out0_Out1();
-        _rc->Force_Out2_Out3();
-    }
 }
 
 // output_armed - sends commands to the motors
@@ -134,12 +126,6 @@ void AP_MotorsTri::output_armed()
         _rc->OutputCh(AP_MOTORS_CH_TRI_YAW, _rc_yaw->radio_trim - (_rc_yaw->radio_out - _rc_yaw->radio_trim));
     }else{
         _rc->OutputCh(AP_MOTORS_CH_TRI_YAW, _rc_yaw->radio_out);
-    }
-
-    // InstantPWM
-    if( _speed_hz == AP_MOTORS_SPEED_INSTANT_PWM ) {
-        _rc->Force_Out0_Out1();
-        _rc->Force_Out2_Out3();
     }
 }
 
