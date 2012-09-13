@@ -133,6 +133,9 @@
   <data name="contextMenuStrip2.Size" type="System.Drawing.Size, System.Drawing">
     <value>129, 48</value>
   </data>
+  <data name="tabQuick.Text" xml:space="preserve">
+    <value>快捷</value>
+  </data>
   <data name="BUT_script.Text" xml:space="preserve">
     <value>脚本</value>
   </data>
@@ -4191,6 +4194,9 @@
   <data name="tabStatus.Text" xml:space="preserve">
     <value>状态</value>
   </data>
+  <data name="BUT_log2kml.Text" xml:space="preserve">
+    <value>Tlog &gt; Kml 或图表</value>
+  </data>
   <data name="BUT_playlog.Text" xml:space="preserve">
     <value>播放/暂停</value>
   </data>
@@ -4199,6 +4205,9 @@
   </data>
   <data name="tabTLogs.Text" xml:space="preserve">
     <value>遥测记录</value>
+  </data>
+  <data name="goHereToolStripMenuItem.Text" xml:space="preserve">
+    <value>飞到这里</value>
   </data>
   <data name="lbl_winddir.Size" type="System.Drawing.Size, System.Drawing">
     <value>43, 13</value>
@@ -4217,9 +4226,6 @@
   </data>
   <data name="lbl_windvel.ToolTip" xml:space="preserve">
     <value>估计的风速</value>
-  </data>
-  <data name="goHereToolStripMenuItem.Text" xml:space="preserve">
-    <value>飞到这里</value>
   </data>
   <data name="gMapControl1.streamjpg" mimetype="application/x-microsoft.net.object.binary.base64">
     <value>
