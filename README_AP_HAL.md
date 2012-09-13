@@ -122,19 +122,17 @@ pinMode, digitalRead, and digitalWrite.
 
 When using the coreless Arduino IDE to build for AVR, you will need the
 following three libraries included in the top level of your sketch:
-    ```
+
     #include <AP_Common.h>
     #include <AP_HAL.h>
     #include <AP_HAL_AVR.h>
-    ```
+
 and then declare one of the following hal lines depending on your platform:
-    ```
+
     const AP_HAL::HAL& hal = AP_HAL_AVR_APM1;
-    ```
-    or
-    ```
+or
+
     const AP_HAL::HAL& hal = AP_HAL_AVR_APM2;
-    ```
 
 -----------------------
 AP\_HAL Library Contents
