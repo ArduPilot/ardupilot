@@ -29,7 +29,7 @@ public:
     // init
     virtual void            Init();
 
-    // set update rate to motors - a value in hertz or AP_MOTORS_SPEED_INSTANT_PWM for instant pwm
+    // set update rate to motors - a value in hertz
     void                    set_update_rate( uint16_t speed_hz );
 
     // enable - starts allowing signals to be sent to motors

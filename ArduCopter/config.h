@@ -123,12 +123,7 @@
 
 //////////////////////////////////////////////////////////////////////////////
 // PWM control
-//
-#ifndef INSTANT_PWM
- # define INSTANT_PWM    DISABLED
-#endif
-
-// default RC speed in Hz if INSTANT_PWM is not used
+// default RC speed in Hz
 #ifndef RC_FAST_SPEED
  # if FRAME_CONFIG == HELI_FRAME
   #   define RC_FAST_SPEED 125

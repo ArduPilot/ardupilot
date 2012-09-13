@@ -170,16 +170,14 @@ void AP_MotorsHeli::Init()
     set_update_rate(_speed_hz);
 }
 
-// set update rate to motors - a value in hertz or AP_MOTORS_SPEED_INSTANT_PWM for instant pwm
+// set update rate to motors - a value in hertz
 void AP_MotorsHeli::set_update_rate( uint16_t speed_hz )
 {
     // record requested speed
     _speed_hz = speed_hz;
 
     // setup fast channels
-    if( _speed_hz != AP_MOTORS_SPEED_INSTANT_PWM ) {
-        _rc->SetFastOutputChannels(_BV(_motor_to_channel_map[AP_MOTORS_MOT_1]) | _BV(_motor_to_channel_map[AP_MOTORS_MOT_2]) | _BV(_motor_to_channel_map[AP_MOTORS_MOT_3]) | _BV(_motor_to_channel_map[AP_MOTORS_MOT_4]), _speed_hz);
-    }
+    _rc->SetFastOutputChannels(_BV(_motor_to_channel_map[AP_MOTORS_MOT_1]) | _BV(_motor_to_channel_map[AP_MOTORS_MOT_2]) | _BV(_motor_to_channel_map[AP_MOTORS_MOT_3]) | _BV(_motor_to_channel_map[AP_MOTORS_MOT_4]), _speed_hz);
 }
 
 // enable - starts allowing signals to be sent to motors
@@ -497,12 +495,6 @@ void AP_MotorsHeli::move_swash(int16_t roll_out, int16_t pitch_out, int16_t coll
     // output gyro value
     if( ext_gyro_enabled ) {
         _rc->OutputCh(AP_MOTORS_HELI_EXT_GYRO, ext_gyro_gain);
-    }
-
-    // InstantPWM
-    if( _speed_hz == AP_MOTORS_SPEED_INSTANT_PWM ) {
-        _rc->Force_Out0_Out1();
-        _rc->Force_Out2_Out3();
     }
 }
 

@@ -39,9 +39,8 @@
 #define AP_MOTORS_X_FRAME 1
 #define AP_MOTORS_V_FRAME 2
 
-// motor update rates
+// motor update rate
 #define AP_MOTORS_SPEED_DEFAULT 490
-#define AP_MOTORS_SPEED_INSTANT_PWM 0
 
 // top-bottom ratio (for Y6)
 #define AP_MOTORS_TOP_BOTTOM_RATIO      1.0
@@ -69,7 +68,7 @@ public:
         _motor_to_channel_map[AP_MOTORS_MOT_8] = mot_8;
     }
 
-    // set update rate to motors - a value in hertz or AP_MOTORS_SPEED_INSTANT_PWM for instant pwm
+    // set update rate to motors - a value in hertz
     virtual void        set_update_rate( uint16_t speed_hz ) {
         _speed_hz = speed_hz;
     };

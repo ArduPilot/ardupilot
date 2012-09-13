@@ -433,23 +433,11 @@ static byte oldSwitchPosition;
 #endif
 
 #if FRAME_CONFIG ==     HELI_FRAME  // helicopter constructor requires more arguments
- #if INSTANT_PWM == 1
-MOTOR_CLASS     motors(CONFIG_APM_HARDWARE, &APM_RC, &g.rc_1, &g.rc_2, &g.rc_3, &g.rc_4, &g.rc_8, &g.heli_servo_1, &g.heli_servo_2, &g.heli_servo_3, &g.heli_servo_4, AP_MOTORS_SPEED_INSTANT_PWM);                   // this hardware definition is slightly bad because it assumes APM_HARDWARE_APM2 == AP_MOTORS_APM2
- #else
 MOTOR_CLASS     motors(CONFIG_APM_HARDWARE, &APM_RC, &g.rc_1, &g.rc_2, &g.rc_3, &g.rc_4, &g.rc_8, &g.heli_servo_1, &g.heli_servo_2, &g.heli_servo_3, &g.heli_servo_4);
- #endif
 #elif FRAME_CONFIG == TRI_FRAME  // tri constructor requires additional rc_7 argument to allow tail servo reversing
- #if INSTANT_PWM == 1
-MOTOR_CLASS     motors(CONFIG_APM_HARDWARE, &APM_RC, &g.rc_1, &g.rc_2, &g.rc_3, &g.rc_4, &g.rc_7, AP_MOTORS_SPEED_INSTANT_PWM);                   // this hardware definition is slightly bad because it assumes APM_HARDWARE_APM2 == AP_MOTORS_APM2
- #else
 MOTOR_CLASS     motors(CONFIG_APM_HARDWARE, &APM_RC, &g.rc_1, &g.rc_2, &g.rc_3, &g.rc_4, &g.rc_7);
- #endif
 #else
- #if INSTANT_PWM == 1
-MOTOR_CLASS     motors(CONFIG_APM_HARDWARE, &APM_RC, &g.rc_1, &g.rc_2, &g.rc_3, &g.rc_4, AP_MOTORS_SPEED_INSTANT_PWM);                   // this hardware definition is slightly bad because it assumes APM_HARDWARE_APM2 == AP_MOTORS_APM2
- #else
 MOTOR_CLASS     motors(CONFIG_APM_HARDWARE, &APM_RC, &g.rc_1, &g.rc_2, &g.rc_3, &g.rc_4);
- #endif
 #endif
 
 ////////////////////////////////////////////////////////////////////////////////

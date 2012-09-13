@@ -26,16 +26,13 @@ public:
     /// Constructor
     AP_MotorsMatrix( uint8_t APM_version, APM_RC_Class* rc_out, RC_Channel* rc_roll, RC_Channel* rc_pitch, RC_Channel* rc_throttle, RC_Channel* rc_yaw, uint16_t speed_hz = AP_MOTORS_SPEED_DEFAULT) :
         AP_Motors(APM_version, rc_out, rc_roll, rc_pitch, rc_throttle, rc_yaw, speed_hz),
-        instant_pwm_force01(false),
-        instant_pwm_force23(false),
-        instant_pwm_force67(false),
         _num_motors(0) {
     };
 
     // init
     virtual void        Init();
 
-    // set update rate to motors - a value in hertz or AP_MOTORS_SPEED_INSTANT_PWM for instant pwm
+    // set update rate to motors - a value in hertz
     // you must have setup_motors before calling this
     virtual void            set_update_rate( uint16_t speed_hz );
 
@@ -73,11 +70,6 @@ public:
     // matrix
     AP_Int8         opposite_motor[AP_MOTORS_MAX_NUM_MOTORS];           // motor number of the opposite motor
     AP_Int8         test_order[AP_MOTORS_MAX_NUM_MOTORS];               // order of the motors in the test sequence
-
-    // used for instant_pwm only
-    bool            instant_pwm_force01;
-    bool            instant_pwm_force23;
-    bool            instant_pwm_force67;
 
 protected:
     // output - sends commands to the motors

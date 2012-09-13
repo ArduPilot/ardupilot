@@ -28,7 +28,7 @@ void AP_MotorsMatrix::Init()
     set_update_rate(_speed_hz);
 }
 
-// set update rate to motors - a value in hertz or AP_MOTORS_SPEED_INSTANT_PWM for instant pwm
+// set update rate to motors - a value in hertz
 void AP_MotorsMatrix::set_update_rate( uint16_t speed_hz )
 {
     uint32_t fast_channel_mask = 0;
@@ -37,31 +37,16 @@ void AP_MotorsMatrix::set_update_rate( uint16_t speed_hz )
     // record requested speed
     _speed_hz = speed_hz;
 
-    // initialise instant_pwm booleans.  they will be set again below
-    instant_pwm_force01 = false;
-    instant_pwm_force23 = false;
-    instant_pwm_force67 = false;
-
     // check each enabled motor
     for( i=0; i<AP_MOTORS_MAX_NUM_MOTORS; i++ ) {
         if( motor_enabled[i] ) {
             // set-up fast channel mask
             fast_channel_mask |= _BV(_motor_to_channel_map[i]);                 // add to fast channel map
-
-            // and instant pwm
-            if( _motor_to_channel_map[i] == 0 || _motor_to_channel_map[i] == 1 )
-                instant_pwm_force01 = true;
-            if( _motor_to_channel_map[i] == 2 || _motor_to_channel_map[i] == 3 )
-                instant_pwm_force23 = true;
-            if( _motor_to_channel_map[i] == 6 || _motor_to_channel_map[i] == 7 )
-                instant_pwm_force67 = true;
         }
     }
 
     // enable fast channels
-    if( _speed_hz != AP_MOTORS_SPEED_INSTANT_PWM ) {
-        _rc->SetFastOutputChannels(fast_channel_mask, _speed_hz);
-    }
+    _rc->SetFastOutputChannels(fast_channel_mask, _speed_hz);
 }
 
 // set frame orientation (normally + or X)
@@ -106,16 +91,6 @@ void AP_MotorsMatrix::output_min()
             motor_out[i] = _rc_throttle->radio_min;
             _rc->OutputCh(_motor_to_channel_map[i], motor_out[i]);
         }
-    }
-
-    // Force output if instant pwm
-    if( _speed_hz == AP_MOTORS_SPEED_INSTANT_PWM ) {
-        if( instant_pwm_force01 )
-            _rc->Force_Out0_Out1();
-        if( instant_pwm_force23 )
-            _rc->Force_Out2_Out3();
-        if( instant_pwm_force67 )
-            _rc->Force_Out6_Out7();
     }
 }
 
@@ -188,16 +163,6 @@ void AP_MotorsMatrix::output_armed()
         if( motor_enabled[i] ) {
             _rc->OutputCh(_motor_to_channel_map[i], motor_out[i]);
         }
-    }
-
-    // InstantPWM
-    if( _speed_hz == AP_MOTORS_SPEED_INSTANT_PWM ) {
-        if( instant_pwm_force01 )
-            _rc->Force_Out0_Out1();
-        if( instant_pwm_force23 )
-            _rc->Force_Out2_Out3();
-        if( instant_pwm_force67 )
-            _rc->Force_Out6_Out7();
     }
 }
 
