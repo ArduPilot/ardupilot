@@ -189,7 +189,7 @@ static void verify_commands(void)
 static int16_t find_next_nav_index(int16_t search_index)
 {
     Location tmp;
-    while(search_index < g.command_total - 1) {
+    while(search_index < g.command_total) {
         tmp = get_cmd_with_index(search_index);
         if(tmp.id <= MAV_CMD_NAV_LAST) {
             return search_index;
@@ -199,7 +199,6 @@ static int16_t find_next_nav_index(int16_t search_index)
     }
     return -1;
 }
-
 
 static void exit_mission()
 {
