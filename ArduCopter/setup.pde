@@ -1243,7 +1243,7 @@ static void report_gps()
 
 static void report_version()
 {
-    Serial.printf_P(PSTR("FW Ver: %d\n"),(int)g.format_version.get());
+    Serial.printf_P(PSTR("FW Ver: %d\n"),(int)g.k_format_version);
     print_divider();
     print_blanks(2);
 }

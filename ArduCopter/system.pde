@@ -109,7 +109,7 @@ static void init_ardupilot()
     isr_registry.init();
 
     //
-    // Check the EEPROM format version before loading any parameters from EEPROM.
+    // Report firmware version code expect on console (check of actual EEPROM format version is done in load_parameters function)
     //
     report_version();
 
