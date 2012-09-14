@@ -8,7 +8,7 @@
 // default to 1kHz timer interrupt
 #define TIMERPROCESS_PER_DEFAULT (256-62) // 1kHz
 
-#define AP_TIMERPROCESS_MAX_PROCS 4
+#define AP_TIMERPROCESS_MAX_PROCS 5
 
 class AP_TimerProcess : public AP_PeriodicProcess
 {
