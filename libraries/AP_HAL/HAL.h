@@ -9,6 +9,7 @@
 #include "../AP_HAL/AnalogIn.h"
 #include "../AP_HAL/Storage.h"
 #include "../AP_HAL/Dataflash.h"
+#include "../AP_HAL/Console.h"
 #include "../AP_HAL/GPIO.h"
 #include "../AP_HAL/RCInput.h"
 #include "../AP_HAL/RCOutput.h"
@@ -24,7 +25,7 @@ public:
         AP_HAL::AnalogIn*   _analogin,
         AP_HAL::Storage*    _storage,
         AP_HAL::Dataflash*  _dataflash,
-        AP_HAL::BetterStream* _console,
+        AP_HAL::ConsoleDriver* _console,
         AP_HAL::GPIO*       _gpio,
         AP_HAL::RCInput*    _rcin,
         AP_HAL::RCOutput*   _rcout,
@@ -57,7 +58,7 @@ public:
     AP_HAL::AnalogIn*   analogin;
     AP_HAL::Storage*    storage;
     AP_HAL::Dataflash*  dataflash;
-    AP_HAL::BetterStream* console;
+    AP_HAL::ConsoleDriver* console;
     AP_HAL::GPIO*       gpio;
     AP_HAL::RCInput*    rcin;
     AP_HAL::RCOutput*   rcout;

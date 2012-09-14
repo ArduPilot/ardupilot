@@ -11,6 +11,7 @@
 #include "AnalogIn.h"
 #include "Storage.h"
 #include "Dataflash.h"
+#include "Console.h"
 #include "GPIO.h"
 #include "RCInput.h"
 #include "RCOutput.h"
