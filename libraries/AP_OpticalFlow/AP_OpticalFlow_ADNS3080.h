@@ -74,62 +74,70 @@
 #define ADNS3080_FRAME_RATE_MAX         6469
 #define ADNS3080_FRAME_RATE_MIN         2000
 
+// SPI bus definitions
+#define ADNS3080_SPI_UNKNOWN         0
+#define ADNS3080_SPIBUS_1            1  // standard SPI bus
+#define ADNS3080_SPIBUS_3            3  // SPI3
+
 class AP_OpticalFlow_ADNS3080 : public AP_OpticalFlow
 {
-private:
-    // bytes to store SPI settings
-    byte        orig_spi_settings_spcr;
-    byte        orig_spi_settings_spsr;
-
-    // save and restore SPI settings
-    byte        backup_spi_settings();
-    byte        restore_spi_settings();
-
 public:
-    int         _cs_pin; // pin used for chip select
-    int         _reset_pin; // pin used for chip reset
-    bool        _motion; // true if there has been motion
-    bool        _overflow; // true if the x or y data buffers overflowed
-
-public:
-    AP_OpticalFlow_ADNS3080(int cs_pin = ADNS3080_CHIP_SELECT, int reset_pin = ADNS3080_RESET);
-    bool        init(bool initCommAPI = true); // parameter controls whether I2C/SPI interface is initialised (set to false if other devices are on the I2C/SPI bus and have already initialised the interface)
-    byte        read_register(byte address);
-    void        write_register(byte address, byte value);
+    AP_OpticalFlow_ADNS3080(int16_t cs_pin = ADNS3080_CHIP_SELECT, int16_t reset_pin = ADNS3080_RESET);
+    bool        init(bool initCommAPI, AP_PeriodicProcess *scheduler); // parameter controls whether I2C/SPI interface is initialised (set to false if other devices are on the I2C/SPI bus and have already initialised the interface)
+    uint8_t     read_register(uint8_t address);
+    void        write_register(uint8_t address, uint8_t value);
     void        reset();      // reset sensor by holding a pin high (or is it low?) for 10us.
-    bool        update();     // read latest values from sensor and fill in x,y and totals, return true on successful read
+    void        update(uint32_t now);     // read latest values from sensor and fill in x,y and totals, return true on successful read
 
     // ADNS3080 specific features
-    bool        motion() {
-        if( _motion ) { _motion = false; return true; }else{ return false; }
-    }                                                                                                           // return true if there has been motion since the last time this was called
+
+    // return true if there has been motion since the last time this was called
+    bool                motion() { if( _motion ) { _motion = false; return true; }else{ return false; } }                                                                       
+
+    bool                overflow() { return _overflow; }    // true if there has been an overflow
 
     void                disable_serial_pullup();
 
     bool                get_led_always_on();         // returns true if LED is always on, false if only on when required
     void                set_led_always_on( bool alwaysOn ); // set parameter to true if you want LED always on, otherwise false for only when required
 
-    int                 get_resolution();                                       // returns resolution (either 400 or 1600 counts per inch)
-    void                set_resolution(int resolution); // set parameter to 400 or 1600 counts per inch
+    int16_t             get_resolution();                                       // returns resolution (either 400 or 1600 counts per inch)
+    void                set_resolution(uint16_t resolution); // set parameter to 400 or 1600 counts per inch
 
     bool                get_frame_rate_auto();           // get_frame_rate_auto - return true if frame rate is set to "auto", false if manual
     void                set_frame_rate_auto(bool auto_frame_rate); // set_frame_rate_auto(bool) - set frame rate to auto (true), or manual (false)
 
-    unsigned int        get_frame_period();                                     // get_frame_period -
-    void                set_frame_period(unsigned int period);
+    uint16_t            get_frame_period();                                     // get_frame_period
+    void                set_frame_period(uint16_t period);
 
-    unsigned int        get_frame_rate();
-    void                set_frame_rate(unsigned int rate);
+    uint16_t            get_frame_rate();
+    void                set_frame_rate(uint16_t rate);
 
     bool                get_shutter_speed_auto();                       // get_shutter_speed_auto - returns true if shutter speed is adjusted automatically, false if manual
     void                set_shutter_speed_auto(bool auto_shutter_speed); // set_shutter_speed_auto - set shutter speed to auto (true), or manual (false)
 
-    unsigned int        get_shutter_speed();
-    void                set_shutter_speed(unsigned int shutter_speed);
+    uint16_t            get_shutter_speed();
+    void                set_shutter_speed(uint16_t shutter_speed);
 
     void                clear_motion(); // will cause the x,y, dx, dy, and the sensor's motion registers to be cleared
 
     void                print_pixel_data(Stream *serPort); // dumps a 30x30 image to the Serial port
+
+private:
+    // bytes to store SPI settings
+    uint8_t     orig_spi_settings_spcr;     // spi1's mode
+    uint8_t     orig_spi3_settings_ucsr3c;  // spi3's mode
+    uint8_t     orig_spi3_settings_ubrr3;   // spi3's speed
+
+    // save and restore SPI settings
+    void        backup_spi_settings();
+    void        restore_spi_settings();
+
+    int16_t     _cs_pin; // pin used for chip select
+    int16_t     _reset_pin; // pin used for chip reset
+    bool        _motion; // true if there has been motion
+    bool        _overflow; // true if the x or y data buffers overflowed
+    uint8_t     _spi_bus;   // 0 = unknown, 1 = using SPI, 3 = using SPI3
 };
 
 #endif
