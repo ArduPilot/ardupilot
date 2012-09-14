@@ -13,10 +13,11 @@
 #define FORTYFIVE_DEGREES 0.78539816
 
 AP_OpticalFlow* AP_OpticalFlow::_sensor = NULL;  // pointer to the last instantiated optical flow sensor.  Will be turned into a table if we ever add support for more than one sensor
+uint8_t AP_OpticalFlow::_num_calls; // number of times we have been called by 1khz timer process.  We use this to throttle read down to 20hz
 
 // init - initCommAPI parameter controls whether I2C/SPI interface is initialised (set to false if other devices are on the I2C/SPI bus and have already initialised the interface)
 bool
-AP_OpticalFlow::init(bool initCommAPI)
+AP_OpticalFlow::init(bool initCommAPI, AP_PeriodicProcess *scheduler)
 {
     _orientation = ROTATION_NONE;
     update_conversion_factors();
@@ -30,11 +31,26 @@ AP_OpticalFlow::set_orientation(enum Rotation rotation)
     _orientation = rotation;
 }
 
-// read value from the sensor.  Should be overridden by derived class
-bool
-AP_OpticalFlow::update()
+// parent method called at 1khz by periodic process
+// this is slowed down to 20hz and each instance's update function is called (only one instance is supported at the moment)
+void
+AP_OpticalFlow::read(uint32_t now)
 {
-    return true;
+    _num_calls++;
+
+    if( _num_calls >= AP_OPTICALFLOW_NUM_CALLS_FOR_20HZ ) {
+        _num_calls = 0;
+        // call to update all attached sensors
+        if( _sensor != NULL ) {
+            _sensor->update(now);
+        }
+    }
+};
+
+// read value from the sensor.  Should be overridden by derived class
+void
+AP_OpticalFlow::update(uint32_t now)
+{
 }
 
 // reads a value from the sensor (will be sensor specific)
