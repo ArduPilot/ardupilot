@@ -23,7 +23,7 @@ public:
         AP_HAL::AnalogIn*   _analogin,
         AP_HAL::Storage*    _storage,
         AP_HAL::Dataflash*  _dataflash,
-        AP_HAL::BetterStream* _console,
+        AP_HAL::ConsoleDriver* _console,
         AP_HAL::GPIO*       _gpio,
         AP_HAL::RCInput*    _rcin,
         AP_HAL::RCOutput*   _rcout,
