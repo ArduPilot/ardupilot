@@ -20,6 +20,11 @@
 #include <FastSerial.h>
 #include <AP_Math.h>
 #include <AP_Common.h>
+#include <AP_PeriodicProcess.h>
+
+#define AP_OPTICALFLOW_NUM_CALLS_FOR_10HZ     100         // timer process runs at 1khz.  100 iterations = 10hz
+#define AP_OPTICALFLOW_NUM_CALLS_FOR_20HZ     50          // timer process runs at 1khz.  50 iterations = 20hz
+#define AP_OPTICALFLOW_NUM_CALLS_FOR_50HZ     20          // timer process runs at 1khz.  20 iterations = 50hz
 
 class AP_OpticalFlow
 {
@@ -44,17 +49,13 @@ public:
     ~AP_OpticalFlow() {
         _sensor = NULL;
     };
-    virtual bool                    init(bool initCommAPI = true); // parameter controls whether I2C/SPI interface is initialised (set to false if other devices are on the I2C/SPI bus and have already initialised the interface)
+    virtual bool                    init(bool initCommAPI, AP_PeriodicProcess *scheduler); // parameter controls whether I2C/SPI interface is initialised (set to false if other devices are on the I2C/SPI bus and have already initialised the interface)
     virtual byte                    read_register(byte address);
     virtual void                    write_register(byte address, byte value);
     virtual void                    set_orientation(enum Rotation rotation); // Rotation vector to transform sensor readings to the body frame.
-    virtual void                    set_field_of_view(const float fov) {
-        field_of_view = fov; update_conversion_factors();
-    };                                                                                                          // sets field of view of sensor
-    static void                     read(uint32_t ) {
-        if( _sensor != NULL ) _sensor->update();
-    };                                                                        // call to update all attached sensors
-    virtual bool                    update(); // read latest values from sensor and fill in x,y and totals.  returns true on success
+    virtual void                    set_field_of_view(const float fov) { field_of_view = fov; update_conversion_factors(); };   // sets field of view of sensor
+    static void                     read(uint32_t now);   // called by timer process to read sensor data from all attached sensors
+    virtual void                    update(uint32_t now); // read latest values from sensor and fill in x,y and totals.
     virtual void                    update_position(float roll, float pitch, float cos_yaw_x, float sin_yaw_y, float altitude); // updates internal lon and lat with estimation based on optical flow
 
 protected:
@@ -65,9 +66,11 @@ protected:
     float                           _last_roll, _last_pitch, _last_altitude;
     virtual void                    apply_orientation_matrix(); // rotate raw values to arrive at final x,y,dx and dy values
     virtual void                    update_conversion_factors();
+
+private:
+    static uint8_t                         _num_calls; // number of times we have been called by 1khz timer process.  We use this to throttle read down to 20hz
 };
 
 #include "AP_OpticalFlow_ADNS3080.h"
-#include "AP_OpticalFlow_ADNS3080_APM2.h"
 
 #endif
