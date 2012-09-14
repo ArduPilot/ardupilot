@@ -7,6 +7,9 @@
 #include <AP_Common.h>
 #include <AP_Math.h>            // ArduPilot Mega Vector/Matrix math Library
 #include <SPI.h>                // Arduino SPI library
+#include <SPI3.h>               // SPI3 library
+#include <Arduino_Mega_ISR_Registry.h>
+#include <AP_PeriodicProcess.h>
 #include "AP_OpticalFlow.h" // ArduCopter OpticalFlow Library
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -19,8 +22,14 @@
 //
 FastSerialPort0(Serial);        // FTDI/console
 
-AP_OpticalFlow_ADNS3080 flowSensor;             // for APM1
-//AP_OpticalFlow_ADNS3080_APM2 flowSensor(A3);  // override chip select pin to use A3 if using APM2
+#define MS5611_CS   40          // barometer chip select pin
+#define CONFIG_MPU6000_CHIP_SELECT_PIN 53   // MPU600 chip select pin
+
+//AP_OpticalFlow_ADNS3080 flowSensor;             // for APM1
+AP_OpticalFlow_ADNS3080 flowSensor(A3);  // override chip select pin to use A3 if using APM2 or APM2.5
+
+Arduino_Mega_ISR_Registry isr_registry;
+AP_TimerProcess scheduler;
 
 void setup()
 {
@@ -29,8 +38,18 @@ void setup()
 
     delay(1000);
 
+    // disable other devices on this bus
+    pinMode(MS5611_CS,OUTPUT);
+    pinMode(CONFIG_MPU6000_CHIP_SELECT_PIN,OUTPUT);
+    digitalWrite(MS5611_CS, HIGH);
+    digitalWrite(CONFIG_MPU6000_CHIP_SELECT_PIN, HIGH);
+
+    // initialise timer
+    isr_registry.init();
+    scheduler.init(&isr_registry);
+
     // flowSensor initialization
-    if( flowSensor.init(true) == false ) {
+    if( flowSensor.init(true, &scheduler) == false ) {
         Serial.print("Failed to initialise ADNS3080 ");
     }
 
@@ -306,11 +325,11 @@ void display_motion()
     delay(1000);
 
     while( !Serial.available() ) {
-        flowSensor.update();
+        //flowSensor.update();
         flowSensor.update_position(0,0,0,1,100);
 
         // check for errors
-        if( flowSensor._overflow )
+        if( flowSensor.overflow() )
             Serial.println("overflow!!");
 
         // x,y,squal
