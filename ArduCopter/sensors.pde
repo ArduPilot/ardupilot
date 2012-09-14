@@ -48,16 +48,20 @@ static void init_compass()
 static void init_optflow()
 {
 #ifdef OPTFLOW_ENABLED
-    if( optflow.init(false) == false ) {
+    if( optflow.init(false, &timer_scheduler) == false ) {
         g.optflow_enabled = false;
         SendDebug("\nFailed to Init OptFlow ");
     }
+    // suspend timer while we set-up SPI communication
+    timer_scheduler.suspend_timer();
+
     optflow.set_orientation(OPTFLOW_ORIENTATION);                       // set optical flow sensor's orientation on aircraft
     optflow.set_frame_rate(2000);                                                       // set minimum update rate (which should lead to maximum low light performance
     optflow.set_resolution(OPTFLOW_RESOLUTION);                                 // set optical flow sensor's resolution
     optflow.set_field_of_view(OPTFLOW_FOV);                                     // set optical flow sensor's field of view
-    // setup timed read of sensor
-    //timer_scheduler.register_process(&AP_OpticalFlow::read);
+
+    // resume timer
+    timer_scheduler.resume_timer();
 #endif
 }
 
