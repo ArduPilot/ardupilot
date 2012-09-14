@@ -67,6 +67,7 @@
 #include <AP_GPS.h>         // ArduPilot GPS library
 #include <I2C.h>                        // Arduino I2C lib
 #include <SPI.h>                        // Arduino SPI lib
+#include <SPI3.h>               // SPI3 library
 #include <DataFlash.h>      // ArduPilot Mega Flash Memory Library
 #include <AP_ADC.h>         // ArduPilot Mega Analog to Digital Converter Library
 #include <AP_AnalogSource.h>
@@ -223,11 +224,7 @@ AP_Compass_HMC5843 compass;
  #endif
 
  #ifdef OPTFLOW_ENABLED
-  #if CONFIG_APM_HARDWARE == APM_HARDWARE_APM2
-AP_OpticalFlow_ADNS3080_APM2 optflow(OPTFLOW_CS_PIN);
-  #else
 AP_OpticalFlow_ADNS3080 optflow(OPTFLOW_CS_PIN);
-  #endif
  #else
 AP_OpticalFlow optflow;
  #endif
@@ -1085,6 +1082,14 @@ static void fast_loop()
     calc_inertia();
 #endif
 
+    // optical flow
+    // --------------------
+#ifdef OPTFLOW_ENABLED
+    if(g.optflow_enabled) {
+        update_optical_flow();
+    }
+#endif
+
     // custom code/exceptions for flight modes
     // ---------------------------------------
     update_yaw_mode();
@@ -1258,14 +1263,6 @@ static void fifty_hz_loop()
     edf_toy();
 #endif
 
-    // syncronise optical flow reads with altitude reads
-#ifdef OPTFLOW_ENABLED
-    if(g.optflow_enabled) {
-        update_optical_flow();
-    }
-#endif
-
-
 #ifdef USERHOOK_50HZLOOP
     USERHOOK_50HZLOOP
 #endif
@@ -1438,42 +1435,27 @@ static void super_slow_loop()
      */
 }
 
-// updated at 10 Hz
+// called at 100hz but data from sensor only arrives at 20 Hz
 #ifdef OPTFLOW_ENABLED
 static void update_optical_flow(void)
 {
+    static uint32_t last_of_update = 0;
     static int log_counter = 0;
 
-    optflow.update();
-    optflow.update_position(ahrs.roll, ahrs.pitch, cos_yaw_x, sin_yaw_y, current_loc.alt);      // updates internal lon and lat with estimation based on optical flow
+    // if new data has arrived, process it
+    if( optflow.last_update != last_of_update ) {
+        last_of_update = optflow.last_update;
+        optflow.update_position(ahrs.roll, ahrs.pitch, cos_yaw_x, sin_yaw_y, current_loc.alt);      // updates internal lon and lat with estimation based on optical flow
 
-    // write to log
-    log_counter++;
-    if( log_counter >= 5 ) {
-        log_counter = 0;
-        if (g.log_bitmask & MASK_LOG_OPTFLOW) {
-            Log_Write_Optflow();
+        // write to log at 5hz
+        log_counter++;
+        if( log_counter >= 4 ) {
+            log_counter = 0;
+            if (g.log_bitmask & MASK_LOG_OPTFLOW) {
+                Log_Write_Optflow();
+            }
         }
     }
-
-    /*if(g.optflow_enabled && current_loc.alt < 500){
-     *       if(GPS_enabled){
-     *               // if we have a GPS, we add some detail to the GPS
-     *               // XXX this may not ne right
-     *               current_loc.lng += optflow.vlon;
-     *               current_loc.lat += optflow.vlat;
-     *
-     *               // some sort of error correction routine
-     *               //current_loc.lng -= ERR_GAIN * (float)(current_loc.lng - x_GPS_speed); // error correction
-     *               //current_loc.lng -= ERR_GAIN * (float)(current_loc.lng - x_GPS_speed); // error correction
-     *       }else{
-     *               // if we do not have a GPS, use relative from 0 for lat and lon
-     *               current_loc.lng = optflow.vlon;
-     *               current_loc.lat = optflow.vlat;
-     *       }
-     *       // OK to run the nav routines
-     *       nav_ok = true;
-     *  }*/
 }
 #endif
 
