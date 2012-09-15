@@ -2,6 +2,8 @@
 #ifndef __AP_HAL_AVR_CONSOLE_DRIVER_H__
 #define __AP_HAL_AVR_CONSOLE_DRIVER_H__
 
+#include <stdlib.h>
+
 #include <AP_Common.h>
 #include <AP_HAL.h>
 #include "AP_HAL_AVR_Namespace.h"
@@ -32,6 +34,20 @@ public:
     /* Implementations of Print virtual methods */
     size_t write(uint8_t c);
 private:
+    struct Buffer {
+        /* public methods:*/
+        bool allocate(int size);
+        bool push(uint8_t b);
+        int pop();
+    private:
+        uint16_t _head, _tail; /* Head and tail indicies */
+        uint16_t _mask;       /* Buffer size mask for index wrap */
+        uint8_t *_bytes;      /* Pointer to allocated buffer */
+    };
+
+    Buffer _txbuf;
+    Buffer _rxbuf;
+
     AP_HAL::UARTDriver* _base_uart;
     bool _user_backend;
 };
