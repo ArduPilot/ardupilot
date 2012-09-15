@@ -26,7 +26,9 @@ public:
                              void                   (*callback)(unsigned long t) = delay,
                              void                   (*flash_leds_cb)(bool on) = NULL,
                              AP_PeriodicProcess *   scheduler = NULL) {
-                                scheduler->register_process( AP_IMU_Shim::read );
+        if( scheduler != NULL ) {
+            scheduler->register_process( AP_IMU_Shim::read );
+        }
     };
     virtual void        init_accel(void (*callback)(unsigned long t) = delay,
                                    void (*flash_leds_cb)(bool on) = NULL) {

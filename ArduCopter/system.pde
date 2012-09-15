@@ -381,14 +381,12 @@ static void startup_ground(void)
 {
     gcs_send_text_P(SEVERITY_LOW,PSTR("GROUND START"));
 
-#if HIL_MODE != HIL_MODE_ATTITUDE
     // Warm up and read Gyro offsets
     // -----------------------------
     imu.init(IMU::COLD_START, mavlink_delay, flash_leds, &timer_scheduler);
  #if CLI_ENABLED == ENABLED
     report_imu();
  #endif
-#endif
 
     // initialise ahrs (may push imu calibration into the mpu6000 if using that device).
     ahrs.init();
