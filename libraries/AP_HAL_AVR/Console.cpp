@@ -80,8 +80,7 @@ void AVRConsoleDriver::_printf_P(const prog_char *fmt, ...) {
 // Stream method implementations /////////////////////////////////////////
 int AVRConsoleDriver::available(void) {
     if (_user_backend) {
-        // XXX TODO
-        return INT_MAX;
+        return _rxbuf.bytes_used();
     } else {
         return _base_uart->available();
     }
@@ -89,8 +88,7 @@ int AVRConsoleDriver::available(void) {
 
 int AVRConsoleDriver::txspace(void) {
     if (_user_backend) {
-        // XXX TODO
-        return INT_MAX;
+        return _rxbuf.bytes_free();
     } else {
         return _base_uart->txspace();
     }
@@ -106,8 +104,7 @@ int AVRConsoleDriver::read() {
 
 int AVRConsoleDriver::peek() {
     if (_user_backend) {
-        // XXX TODO
-        return -1;
+        return _rxbuf.peek();
     } else {
         return _base_uart->peek();
     }
@@ -167,5 +164,21 @@ int AVRConsoleDriver::Buffer::pop() {
     uint8_t b = _bytes[_tail];
     _tail = ( _tail + 1 ) & _mask;
     return (int) b;
+}
+
+int AVRConsoleDriver::Buffer::peek() {
+    if ( _tail == _head ) {
+        return -1;
+    }
+    uint8_t b = _bytes[_tail];
+    return (int) b;
+}
+
+uint16_t AVRConsoleDriver::Buffer::bytes_free() {
+    return ((_head - _tail) & _mask);
+}
+
+uint16_t AVRConsoleDriver::Buffer::bytes_used() {
+    return ((_mask+1) - ((_head - _tail) & _mask));
 }
 

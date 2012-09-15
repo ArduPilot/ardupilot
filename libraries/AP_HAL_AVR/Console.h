@@ -38,7 +38,11 @@ private:
         /* public methods:*/
         bool allocate(int size);
         bool push(uint8_t b);
-        int pop();
+        int  pop();
+        int  peek();
+
+        uint16_t bytes_free();
+        uint16_t bytes_used();
     private:
         uint16_t _head, _tail; /* Head and tail indicies */
         uint16_t _mask;       /* Buffer size mask for index wrap */
