@@ -414,7 +414,6 @@ static void check_short_failsafe()
 
 static void startup_IMU_ground(bool force_accel_level)
 {
-#if HIL_MODE != HIL_MODE_ATTITUDE
     gcs_send_text_P(SEVERITY_MEDIUM, PSTR("Warming up ADC..."));
     mavlink_delay(500);
 
@@ -434,6 +433,7 @@ static void startup_IMU_ground(bool force_accel_level)
     ahrs.set_fly_forward(true);
     ahrs.reset();
 
+#if HIL_MODE != HIL_MODE_ATTITUDE
     // read Baro pressure at ground
     //-----------------------------
     init_barometer();
@@ -446,8 +446,7 @@ static void startup_IMU_ground(bool force_accel_level)
         gcs_send_text_P(SEVERITY_LOW,PSTR("NO airspeed"));
     }
 
-#endif // HIL_MODE_ATTITUDE
-
+#endif
     digitalWrite(B_LED_PIN, LED_ON);                    // Set LED B high to indicate IMU ready
     digitalWrite(A_LED_PIN, LED_OFF);
     digitalWrite(C_LED_PIN, LED_OFF);

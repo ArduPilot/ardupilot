@@ -22,7 +22,9 @@ public:
 
     // Methods
     void            update(void) {
+        _imu->update();
     }
+    
     void            setHil(float roll, float pitch, float yaw,
                            float rollRate, float pitchRate, float yawRate);
 
