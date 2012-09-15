@@ -274,7 +274,6 @@ AP_AHRS_MPU6000  ahrs(&imu, g_gps, &ins);               // only works with APM2
 AP_AHRS_DCM ahrs(&imu, g_gps);
  #endif
 
-AP_TimerProcess timer_scheduler;
 #elif HIL_MODE == HIL_MODE_SENSORS
 // sensor emulators
 AP_ADC_HIL adc;
@@ -283,20 +282,18 @@ AP_Compass_HIL compass;
 AP_GPS_HIL              g_gps_driver(NULL);
 AP_IMU_Shim imu;
 AP_AHRS_DCM                         ahrs(&imu, g_gps);
-AP_PeriodicProcessStub timer_scheduler;
 AP_InertialSensor_Stub ins;
 
 static int32_t gps_base_alt;
 
 #elif HIL_MODE == HIL_MODE_ATTITUDE
 AP_ADC_HIL adc;
-AP_IMU_Shim imu;                     // never used
+AP_IMU_Shim imu;
 AP_AHRS_HIL             ahrs(&imu, g_gps);
 AP_GPS_HIL              g_gps_driver(NULL);
 AP_Compass_HIL compass;                  // never used
 AP_Baro_BMP085_HIL barometer;
 AP_InertialSensor_Stub ins;
-AP_PeriodicProcessStub timer_scheduler;
  #ifdef OPTFLOW_ENABLED
 AP_OpticalFlow_ADNS3080 optflow(OPTFLOW_CS_PIN);
  #endif
@@ -309,7 +306,8 @@ static int32_t gps_base_alt;
  #error Unrecognised HIL_MODE setting.
 #endif // HIL MODE
 
-
+// we always have a timer scheduler
+AP_TimerProcess timer_scheduler;
 
 ////////////////////////////////////////////////////////////////////////////////
 // GCS selection
