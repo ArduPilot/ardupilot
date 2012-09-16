@@ -53,7 +53,8 @@ static void init_rc_out()
     APM_RC.enable_out(CH_4);
     enable_aux_servos();
 
-    APM_RC.OutputCh(CH_1,   g.channel_roll.radio_trim);                                         // Initialization of servo outputs
+    // Initialization of servo outputs
+    APM_RC.OutputCh(CH_1,   g.channel_roll.radio_trim);
     APM_RC.OutputCh(CH_2,   g.channel_pitch.radio_trim);
     APM_RC.OutputCh(CH_3,   g.channel_throttle.radio_min);
     APM_RC.OutputCh(CH_4,   g.channel_rudder.radio_trim);
