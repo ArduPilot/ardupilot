@@ -98,7 +98,8 @@ static void handle_process_do_command()
         break;
 
     case MAV_CMD_DO_REPEAT_SERVO:
-        do_repeat_servo();
+        do_repeat_servo(next_nonnav_command.p1, next_nonnav_command.alt,
+                        next_nonnav_command.lat, next_nonnav_command.lng);
         break;
 
     case MAV_CMD_DO_REPEAT_RELAY:
@@ -591,40 +592,32 @@ static void do_set_relay()
     }
 }
 
-static void do_repeat_servo()
+static void do_repeat_servo(uint8_t channel, uint16_t servo_value,
+                            int16_t repeat, uint8_t delay_time)
 {
-    event_id = next_nonnav_command.p1 - 1;
-
-    if(next_nonnav_command.p1 >= CH_5 + 1 && next_nonnav_command.p1 <= CH_8 + 1) {
-
-        event_timer_ms  = 0;
-        event_delay_ms  = next_nonnav_command.lng * 500.0;              // /2 (half cycle time) * 1000 (convert to milliseconds)
-        event_repeat    = next_nonnav_command.lat * 2;
-        event_value     = next_nonnav_command.alt;
-
-        switch(next_nonnav_command.p1) {
-        case CH_5:
-            event_undo_value = g.rc_5.radio_trim;
-            break;
-        case CH_6:
-            event_undo_value = g.rc_6.radio_trim;
-            break;
-        case CH_7:
-            event_undo_value = g.rc_7.radio_trim;
-            break;
-        case CH_8:
-            event_undo_value = g.rc_8.radio_trim;
-            break;
-        }
-        update_events();
+    extern RC_Channel *rc_ch[NUM_CHANNELS];
+    channel = channel - 1;
+    if (channel < 5 || channel > 8) {
+        // not allowed
+        return;
     }
+    event_state.rc_channel = channel;
+    event_state.type = EVENT_TYPE_SERVO;
+
+    event_state.start_time_ms  = 0;
+    event_state.delay_ms    = delay_time * 500UL;
+    event_state.repeat      = repeat * 2;
+    event_state.servo_value = servo_value;
+    event_state.undo_value  = rc_ch[channel]->radio_trim;
+    update_events();
 }
 
 static void do_repeat_relay()
 {
-    event_id                = RELAY_TOGGLE;
-    event_timer_ms  = 0;
-    event_delay_ms  = next_nonnav_command.lat * 500.0;          // /2 (half cycle time) * 1000 (convert to milliseconds)
-    event_repeat    = next_nonnav_command.alt * 2;
+    event_state.type = EVENT_TYPE_RELAY;
+    event_state.start_time_ms  = 0;
+    // /2 (half cycle time) * 1000 (convert to milliseconds)
+    event_state.delay_ms        = next_nonnav_command.lat * 500.0;
+    event_state.repeat          = next_nonnav_command.alt * 2;
     update_events();
 }

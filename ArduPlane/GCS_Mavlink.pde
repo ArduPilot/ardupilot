@@ -1111,6 +1111,11 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
             result = MAV_RESULT_ACCEPTED;
             break;
 
+        case MAV_CMD_DO_REPEAT_SERVO:
+            do_repeat_servo(packet.param1, packet.param2, packet.param3, packet.param4);
+            result = MAV_RESULT_ACCEPTED;
+            break;
+
         case MAV_CMD_PREFLIGHT_REBOOT_SHUTDOWN:
             if (packet.param1 == 1) {
 #if CONFIG_APM_HARDWARE == APM_HARDWARE_APM2
