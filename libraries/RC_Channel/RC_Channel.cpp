@@ -288,6 +288,10 @@ RC_Channel::pwm_to_range()
 {
     int16_t r_in = constrain(radio_in, radio_min.get(), radio_max.get());
 
+    if (_reverse == -1) {
+	    r_in = radio_max.get() - (r_in - radio_min.get());
+    }
+
     int16_t radio_trim_low  = radio_min + _dead_zone;
 
     if(r_in > radio_trim_low)
@@ -320,11 +324,15 @@ float
 RC_Channel::norm_output()
 {
     int16_t mid = (radio_max + radio_min) / 2;
-
+    float ret;
     if(radio_out < mid)
-        return (float)(radio_out - mid) / (float)(mid - radio_min);
+        ret = (float)(radio_out - mid) / (float)(mid - radio_min);
     else
-        return (float)(radio_out - mid) / (float)(radio_max  - mid);
+        ret = (float)(radio_out - mid) / (float)(radio_max  - mid);
+    if (_reverse == -1) {
+	    ret = -ret;
+    }
+    return ret;
 }
 
 void RC_Channel::set_apm_rc( APM_RC_Class * apm_rc )
