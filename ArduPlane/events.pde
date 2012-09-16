@@ -86,28 +86,39 @@ void low_battery_event(void)
 }
 #endif
 
-static void update_events(void) // Used for MAV_CMD_DO_REPEAT_SERVO and MAV_CMD_DO_REPEAT_RELAY
-{
-    if(event_repeat == 0 || (millis() - event_timer_ms) < event_delay_ms)
-        return;
+////////////////////////////////////////////////////////////////////////////////
+// repeating event control
 
-    if (event_repeat > 0) {
-        event_repeat--;
+/*
+  update state for MAV_CMD_DO_REPEAT_SERVO and MAV_CMD_DO_REPEAT_RELAY
+*/
+static void update_events(void)
+{
+    if (event_state.repeat == 0 || (millis() - event_state.start_time_ms) < event_state.delay_ms) {
+        return;
     }
 
-    if(event_repeat != 0) {             // event_repeat = -1 means repeat forever
-        event_timer_ms = millis();
+    // event_repeat = -1 means repeat forever
+    if (event_state.repeat != 0) {
+        event_state.start_time_ms = millis();
 
-        if (event_id >= CH_5 && event_id <= CH_8) {
-            if(event_repeat%2) {
-                APM_RC.OutputCh(event_id, event_value);                 // send to Servos
+        switch (event_state.type) {
+        case EVENT_TYPE_SERVO:
+            APM_RC.enable_out(event_state.rc_channel);
+            if (event_state.repeat & 1) {
+                APM_RC.OutputCh(event_state.rc_channel, event_state.undo_value);                 
             } else {
-                APM_RC.OutputCh(event_id, event_undo_value);
+                APM_RC.OutputCh(event_state.rc_channel, event_state.servo_value);                 
             }
+            break;
+
+        case EVENT_TYPE_RELAY:
+            relay.toggle();
+            break;
         }
 
-        if  (event_id == RELAY_TOGGLE) {
-            relay.toggle();
+        if (event_state.repeat > 0) {
+            event_state.repeat--;
         }
     }
 }
