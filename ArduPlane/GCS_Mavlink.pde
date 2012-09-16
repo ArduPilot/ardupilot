@@ -1407,7 +1407,7 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
         if (mavlink_check_target(packet.target_system,packet.target_component)) break;
 
         // start waypoint receiving
-        if (packet.start_index >= g.command_total ||
+        if (packet.start_index > g.command_total ||
             packet.end_index > g.command_total ||
             packet.end_index < packet.start_index) {
             send_text(SEVERITY_LOW,PSTR("flight plan update rejected"));
