@@ -46,8 +46,6 @@ public:
 
     AP_Int8         function;           ///< see Aux_servo_function_t enum
 
-    void            enable_out_ch(unsigned char ch_nr);
-
     void            output_ch(unsigned char ch_nr);
 
 	// set and save the trim for a function channel to radio_in

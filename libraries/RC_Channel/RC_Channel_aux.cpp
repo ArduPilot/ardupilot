@@ -18,26 +18,15 @@ const AP_Param::GroupInfo RC_Channel_aux::var_info[] PROGMEM = {
 
 static RC_Channel_aux *_aux_channels[7];
 
-/// enable_out_ch - enable the channel through APM_RC
-void
-RC_Channel_aux::enable_out_ch(unsigned char ch_nr)
-{
-    // enable_out this channel if it assigned to a function
-    if( function != k_none ) {
-        _apm_rc->enable_out(ch_nr);
-    }
-}
-
 /// map a function to a servo channel and output it
 void
 RC_Channel_aux::output_ch(unsigned char ch_nr)
 {
-    // take care or two corner cases
+    // take care of two corner cases
     switch(function)
     {
     case k_none:                // disabled
         return;
-        break;
     case k_manual:              // manual
         radio_out = radio_in;
         break;
@@ -97,7 +86,8 @@ enable_aux_servos()
         if (_aux_channels[i]) {
 			RC_Channel_aux::Aux_servo_function_t function = (RC_Channel_aux::Aux_servo_function_t)_aux_channels[i]->function.get();
 			// see if it is a valid function
-			if (function > RC_Channel_aux::k_none && function < RC_Channel_aux::k_nr_aux_servo_functions) {
+			if (function < RC_Channel_aux::k_nr_aux_servo_functions) {
+				_aux_channels[i]->radio_out = _aux_channels[i]->radio_trim;
 				_aux_channels[i]->enable_out();
 			}
 		}
@@ -118,7 +108,6 @@ RC_Channel_aux::set_radio_trim(RC_Channel_aux::Aux_servo_function_t function)
 			_aux_channels[i]->radio_trim.save();
 		}
     }
-
 }
 
 /*
