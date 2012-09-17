@@ -158,3 +158,62 @@ restart:
     }
     return parsed;
 }
+
+/*
+  detect a MTK GPS
+ */
+bool
+AP_GPS_MTK::_detect(uint8_t data)
+{
+	static uint8_t payload_counter;
+	static uint8_t step;
+	static uint8_t ck_a, ck_b;
+
+	switch(step) {
+        case 1:
+            if (PREAMBLE2 == data) {
+                step++;
+                break;
+            }
+            step = 0;
+        case 0:
+			ck_b = ck_a = payload_counter = 0;
+            if(PREAMBLE1 == data)
+                step++;
+            break;
+        case 2:
+            if (MESSAGE_CLASS == data) {
+                step++;
+                ck_b = ck_a = data;
+            } else {
+                step = 0;
+            }
+            break;
+        case 3:
+            if (MESSAGE_ID == data) {
+                step++;
+                ck_b += (ck_a += data);
+                payload_counter = 0;
+            } else {
+                step = 0;
+            }
+            break;
+        case 4:
+            ck_b += (ck_a += data);
+            if (++payload_counter == sizeof(struct diyd_mtk_msg))
+                step++;
+            break;
+        case 5:
+            step++;
+            if (ck_a != data) {
+                step = 0;
+            }
+            break;
+        case 6:
+            step = 0;
+            if (ck_b == data) {
+				return true;
+            }
+	}
+    return false;
+}

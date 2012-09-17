@@ -195,3 +195,57 @@ AP_GPS_SIRF::_accumulate(uint8_t val)
 {
     _checksum = (_checksum + val) & 0x7fff;
 }
+
+
+
+/*
+  detect a SIRF GPS
+ */
+bool
+AP_GPS_SIRF::_detect(uint8_t data)
+{
+	uint16_t checksum;
+	uint8_t step, payload_length, payload_counter;
+
+	switch (step) {
+	case 1:
+		if (PREAMBLE2 == data) {
+			step++;
+			break;
+		}
+		step = 0;
+	case 0:
+		payload_length = payload_counter = checksum = 0;
+		if (PREAMBLE1 == data)
+			step++;
+		break;
+	case 2:
+		step++;
+		if (data != 0) {
+			// only look for short messages
+			step = 0;
+		}
+		break;
+	case 3:
+		step++;
+		payload_length = data;
+		break;
+	case 4:
+		checksum = (checksum + data) & 0x7fff;
+		if (++payload_counter == payload_length)
+			step++;
+		break;
+	case 5:
+		step++;
+		if ((checksum >> 8) != data) {
+			step = 0;
+		}
+		break;
+	case 6:
+		step = 0;
+		if ((checksum & 0xff) == data) {
+			return true;
+		}
+    }
+    return false;
+}

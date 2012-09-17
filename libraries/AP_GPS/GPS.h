@@ -25,8 +25,6 @@ public:
     ///
     void                        update(void);
 
-    void (*callback)(unsigned long t);
-
     /// GPS status codes
     ///
     /// \note Non-intuitive ordering for legacy reasons
