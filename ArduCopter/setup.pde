@@ -1233,14 +1233,6 @@ static void print_wp(struct Location *cmd, byte index)
 	*/
 }
 
-static void report_gps()
-{
-    Serial.printf_P(PSTR("\nGPS\n"));
-    print_divider();
-    print_enabled(GPS_enabled);
-    print_blanks(2);
-}
-
 static void report_version()
 {
     Serial.printf_P(PSTR("FW Ver: %d\n"),(int)g.k_format_version);
