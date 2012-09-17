@@ -37,7 +37,7 @@ static uint8_t gps_delay;
 // state of GPS emulation
 static struct {
 	/* pipe emulating UBLOX GPS serial stream */
-	int gps_fd;
+	int gps_fd, client_fd;
 	uint32_t last_update; // milliseconds
 } gps_state;
 
@@ -55,12 +55,16 @@ ssize_t sitl_gps_read(int fd, void *buf, size_t count)
 int sitl_gps_pipe(void)
 {
 	int fd[2];
+	if (gps_state.client_fd != 0) {
+		return gps_state.client_fd;
+	}
 	pipe(fd);
-	gps_state.gps_fd = fd[1];
+	gps_state.gps_fd    = fd[1];
+	gps_state.client_fd = fd[0];
 	gps_state.last_update = millis();
 	set_nonblocking(gps_state.gps_fd);
 	set_nonblocking(fd[0]);
-	return fd[0];
+	return gps_state.client_fd;
 }
 
 
