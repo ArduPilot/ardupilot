@@ -355,3 +355,65 @@ AP_GPS_UBLOX::_configure_gps(void)
     // ask for the current navigation settings
     _send_message(CLASS_CFG, MSG_CFG_NAV_SETTINGS, NULL, 0);
 }
+
+
+/*
+  detect a Ublox GPS. Adds one byte, and returns true if the stream
+  matches a UBlox
+ */
+bool
+AP_GPS_UBLOX::_detect(uint8_t data)
+{
+	static uint8_t payload_length, payload_counter;
+	static uint8_t step;
+	static uint8_t ck_a, ck_b;
+
+	switch (step) {
+        case 1:
+            if (PREAMBLE2 == data) {
+                step++;
+                break;
+            }
+            step = 0;
+        case 0:
+            if (PREAMBLE1 == data)
+                step++;
+            break;
+        case 2:
+            step++;
+            ck_b = ck_a = data;
+            break;
+        case 3:
+            step++;
+            ck_b += (ck_a += data);
+            break;
+        case 4:
+            step++;
+            ck_b += (ck_a += data);
+            payload_length = data;
+            break;
+        case 5:
+            step++;
+            ck_b += (ck_a += data);
+            payload_counter = 0;
+            break;
+        case 6:
+            ck_b += (ck_a += data);
+            if (++payload_counter == payload_length)
+                step++;
+            break;
+        case 7:
+            step++;
+            if (ck_a != data) {
+                step = 0;
+            }
+            break;
+        case 8:
+            step = 0;
+			if (ck_b == data) {
+				// a valid UBlox packet
+				return true;
+			}
+    }
+    return false;
+}

@@ -371,3 +371,46 @@ bool AP_GPS_NMEA::_term_complete()
 
     return false;
 }
+
+#define hexdigit(x) ((x)>9?'A'+(x):'0'+(x))
+
+/*
+  detect a NMEA GPS. Adds one byte, and returns true if the stream
+  matches a NMEA string
+ */
+bool
+AP_GPS_NMEA::_detect(uint8_t data)
+{
+	static uint8_t step;
+	static uint8_t ck;
+
+	switch (step) {
+	case 0:
+		ck = 0;
+		if ('$' == data) {
+			step++;
+		}
+		break;
+	case 1:
+		if ('*' == data) {
+			step++;
+		} else {
+			ck ^= data;
+		}
+		break;
+	case 2:
+		if (hexdigit(ck>>4) == data) {
+			step++;
+		} else {
+			step = 0;
+		}
+		break;
+	case 3:
+		if (hexdigit(ck&0xF) == data) {
+			return true;
+		}
+		step = 0;
+		break;
+    }
+    return false;
+}

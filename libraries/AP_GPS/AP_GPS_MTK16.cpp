@@ -11,6 +11,7 @@
 //	GPS configuration : Custom protocol per "DIYDrones Custom Binary Sentence Specification V1.1"
 //
 
+#include <FastSerial.h>
 #include "AP_GPS_MTK16.h"
 #include <stdint.h>
 #if defined(ARDUINO) && ARDUINO >= 100
@@ -180,3 +181,56 @@ restart:
     return parsed;
 }
 
+
+/*
+  detect a MTK16 GPS
+ */
+bool
+AP_GPS_MTK16::_detect(uint8_t data)
+{
+	static uint8_t payload_counter;
+	static uint8_t step;
+	static uint8_t ck_a, ck_b;
+
+	switch (step) {
+        case 1:
+            if (PREAMBLE2 == data) {
+                step++;
+                break;
+            }
+            step = 0;
+        case 0:
+			ck_b = ck_a = payload_counter = 0;
+            if (PREAMBLE1 == data)
+                step++;
+			break;
+        case 2:
+            if (data == sizeof(struct diyd_mtk_msg)) {
+                step++;
+                ck_b = ck_a = data;
+            } else {
+                step = 0;
+            }
+            break;
+        case 3:
+            ck_b += (ck_a += data);
+            if (++payload_counter == sizeof(struct diyd_mtk_msg))
+                step++;
+            break;
+        case 4:
+            step++;
+            if (ck_a != data) {
+				Serial.printf("wrong ck_a\n");
+                step = 0;
+            }
+            break;
+        case 5:
+            step = 0;
+            if (ck_b == data) {
+				return true;
+            }
+			Serial.printf("wrong ck_b\n");
+			break;
+	}
+    return false;
+}

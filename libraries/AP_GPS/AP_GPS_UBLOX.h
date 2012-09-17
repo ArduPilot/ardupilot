@@ -20,6 +20,7 @@
  *  for the NAV_SOL message. The setup of NAV_SOL is to cope with
  *  configurations where all UBX binary message types are disabled.
  */
+
 #define UBLOX_SET_BINARY "$PUBX,41,1,0003,0001,38400,0*26\n\265\142\006\001\003\000\001\006\001\022\117"
 
 class AP_GPS_UBLOX : public GPS
@@ -29,6 +30,7 @@ public:
     AP_GPS_UBLOX(Stream *s);
     virtual void                    init(enum GPS_Engine_Setting nav_setting = GPS_ENGINE_NONE);
     virtual bool                    read();
+    static bool _detect(uint8_t );
 
     static const prog_char          _ublox_set_binary[];
     static const uint8_t            _ublox_set_binary_size;

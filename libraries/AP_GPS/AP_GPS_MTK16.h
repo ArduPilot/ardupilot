@@ -21,6 +21,7 @@ public:
     AP_GPS_MTK16(Stream *s);
     virtual void        init(enum GPS_Engine_Setting nav_setting = GPS_ENGINE_NONE);
     virtual bool        read(void);
+    static bool _detect(uint8_t );
 
 private:
 // XXX this is being ignored by the compiler #pragma pack(1)

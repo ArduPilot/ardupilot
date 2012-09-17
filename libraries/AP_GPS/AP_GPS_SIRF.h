@@ -21,6 +21,7 @@ public:
 
     virtual void        init(enum GPS_Engine_Setting nav_setting = GPS_ENGINE_NONE);
     virtual bool        read();
+	static bool         _detect(uint8_t data);
 
 private:
 // XXX this is being ignored by the compiler #pragma pack(1)
