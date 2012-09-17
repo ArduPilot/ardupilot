@@ -821,7 +821,7 @@ static void Log_Read_Attitude()
     uint16_t temp7  = DataFlash.ReadInt();
 
     // 1   2   3    4   5   6  7    8   9
-    Serial.printf_P(PSTR("ATT, %d, %d, %d, %d, %d, %u, %u, %d, %d\n"),
+    Serial.printf_P(PSTR("ATT, %d, %d, %d, %d, %d, %u, %u\n"),
                     (int)temp1,
                     (int)temp2,
                     (int)temp3,
