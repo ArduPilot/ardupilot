@@ -461,7 +461,7 @@ static void do_change_speed()
 
 static void do_set_home()
 {
-	if(next_nonnav_command.p1 == 1 && GPS_enabled) {
+	if(next_nonnav_command.p1 == 1 && g_gps->status() == GPS::GPS_OK) {
 		init_home();
 	} else {
 		home.id 	= MAV_CMD_NAV_WAYPOINT;

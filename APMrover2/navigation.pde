@@ -71,8 +71,10 @@ void calc_distance_error()
 
 static void calc_gndspeed_undershoot()
 {
-    // Function is overkill, but here in case we want to add filtering later
-    groundspeed_undershoot = (g.min_gndspeed > 0) ? (g.min_gndspeed - ground_speed) : 0;
+    if (g_gps->status() == GPS::GPS_OK) {
+        // Function is overkill, but here in case we want to add filtering later
+        groundspeed_undershoot = (g.min_gndspeed > 0) ? (g.min_gndspeed - ground_speed) : 0;
+    }
 }
 
 static void calc_bearing_error()

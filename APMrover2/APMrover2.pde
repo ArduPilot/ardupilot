@@ -444,9 +444,6 @@ static byte 	ground_start_count	= 5;
 // on the ground or in the air.  Used to decide if a ground start is appropriate if we
 // booted with an air start.
 static int     ground_start_avg;
-// Tracks if GPS is enabled based on statup routine
-// If we do not detect GPS at startup, we stop trying and assume GPS is not connected	
-static bool	GPS_enabled 	= false;	
 static int32_t          gps_base_alt;		
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -885,10 +882,8 @@ static void medium_loop()
 		//-------------------------------
 		case 0:
 			medium_loopCounter++;
-			if(GPS_enabled){
-                update_GPS();
-                calc_gndspeed_undershoot();
-            }
+            update_GPS();
+            calc_gndspeed_undershoot();
             
 //#if LITE == DISABLED
 			#if HIL_MODE != HIL_MODE_ATTITUDE

@@ -235,7 +235,6 @@ static void init_ardupilot()
 	g_gps = &g_gps_driver;
     // GPS initialisation
 	g_gps->init(GPS::GPS_ENGINE_AUTOMOTIVE);
-    g_gps->callback = mavlink_delay;
 
 	//mavlink_system.sysid = MAV_SYSTEM_ID;				// Using g.sysid_this_mav
 	mavlink_system.compid = 1;	//MAV_COMP_ID_IMU;   // We do not check for comp id
@@ -347,21 +346,6 @@ static void startup_ground(void)
 	// initialize commands
 	// -------------------
 	init_commands();
-
-    // Read in the GPS - see if one is connected
-    GPS_enabled = false;
-	for (byte counter = 0; ; counter++) {
-		g_gps->update();
-		if (g_gps->status() != 0 || HIL_MODE != HIL_MODE_DISABLED){
-			GPS_enabled = true;
-			break;
-		}
-
-		if (counter >= 2) {
-			GPS_enabled = false;
-			break;
-	    }
-	}
 
 	// Makes the servos wiggle - 3 times signals ready to fly
 	// -----------------------
