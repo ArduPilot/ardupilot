@@ -221,7 +221,6 @@ static void init_ardupilot()
     g_gps = &g_gps_driver;
     // GPS Initialization
     g_gps->init(GPS::GPS_ENGINE_AIRBORNE_1G);
-    g_gps->callback = mavlink_delay;
 
     if(g.compass_enabled)
         init_compass();
@@ -252,34 +251,6 @@ static void init_ardupilot()
 #else
     Serial.printf_P(PSTR("\nPress ENTER 3 times for CLI\n\n"));
 #endif // CLI_ENABLED
-
-    GPS_enabled = false;
-
-#if HIL_MODE == HIL_MODE_DISABLED
-    // Read in the GPS
-    for (byte counter = 0;; counter++) {
-        g_gps->update();
-        if (g_gps->status() != 0) {
-            GPS_enabled = true;
-            break;
-        }
-
-        if (counter >= 2) {
-            GPS_enabled = false;
-            break;
-        }
-    }
-#else
-    GPS_enabled = true;
-#endif
-
-    // lengthen the idle timeout for gps Auto_detect
-    // ---------------------------------------------
-    g_gps->idleTimeout = 20000;
-
-    // print the GPS status
-    // --------------------
-    report_gps();
 
 #if HIL_MODE != HIL_MODE_ATTITUDE
     // read Baro pressure at ground
@@ -433,7 +404,7 @@ static void set_mode(byte mode)
     }
 
     // nothing but OF_LOITER for OptFlow only
-    if (g.optflow_enabled && GPS_enabled == false) {
+    if (g.optflow_enabled && g_gps->status() != GPS::GPS_OK) {
         if (mode > ALT_HOLD && mode != OF_LOITER)
             mode = STABILIZE;
     }
