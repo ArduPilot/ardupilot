@@ -11,7 +11,7 @@ License as published by the Free Software Foundation; either
 version 2.1 of the License, or (at your option) any later version.
 */
 
-#include <FastSerial.h>
+#include <AP_HAL.h>
 #include <AP_Common.h>
 #include <GCS_MAVLink.h>
 
@@ -20,8 +20,8 @@ version 2.1 of the License, or (at your option) any later version.
 #endif
 
 
-BetterStream	*mavlink_comm_0_port;
-BetterStream	*mavlink_comm_1_port;
+AP_HAL::BetterStream	*mavlink_comm_0_port;
+AP_HAL::BetterStream	*mavlink_comm_1_port;
 
 mavlink_system_t mavlink_system = {7,1,0,0};
 

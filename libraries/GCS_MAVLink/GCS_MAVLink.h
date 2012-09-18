@@ -6,8 +6,8 @@
 #ifndef GCS_MAVLink_h
 #define GCS_MAVLink_h
 
+#include <AP_HAL.h>
 #include <AP_Param.h>
-#include <BetterStream.h>
 
 // we have separate helpers disabled to make it possible
 // to select MAVLink 1.0 in the arduino GUI build
@@ -24,10 +24,10 @@
 #include "include/mavlink/v1.0/mavlink_types.h"
 
 /// MAVLink stream used for HIL interaction
-extern BetterStream	*mavlink_comm_0_port;
+extern AP_HAL::BetterStream	*mavlink_comm_0_port;
 
 /// MAVLink stream used for ground control communication
-extern BetterStream	*mavlink_comm_1_port;
+extern AP_HAL::BetterStream	*mavlink_comm_1_port;
 
 /// MAVLink system definition
 extern mavlink_system_t mavlink_system;
