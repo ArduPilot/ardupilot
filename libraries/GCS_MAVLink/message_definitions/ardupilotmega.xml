@@ -310,6 +310,20 @@
             <field type="float" name="speed">wind speed in ground plane (m/s)</field>
             <field type="float" name="speed_z">vertical wind speed (m/s)</field>
 	  </message>
-	 
+
+      <message name="DATA16" id="169">
+        <description>Data packet, size 16</description>
+        <field type="uint8_t" name="type">data type</field>
+        <field type="uint8_t" name="len">data length</field>
+        <field type="uint8_t[16]" name="data">raw data</field>
+      </message>
+
+      <message name="DATA32" id="170">
+        <description>Data packet, size 32</description>
+        <field type="uint8_t" name="type">data type</field>
+        <field type="uint8_t" name="len">data length</field>
+        <field type="uint8_t[32]" name="data">raw data</field>
+      </message>
+
      </messages>
 </mavlink>
