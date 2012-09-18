@@ -161,6 +161,12 @@ static void auto_trim()
         //g.rc_2.dead_zone = 60;
 
         auto_level_counter--;
+
+        if( motors.armed() ) {
+            // set high AHRS gains to force accelerometers to impact attitude estimate
+            ahrs.set_fast_gains(true);
+        }
+
         trim_accel();
         led_mode = AUTO_TRIM_LEDS;
         do_simple = false;
@@ -173,6 +179,11 @@ static void auto_trim()
             imu.save();
 
             reset_control_switch();
+
+            // go back to normal AHRS gains
+            if( motors.armed() ) {
+                ahrs.set_fast_gains(false);
+            }
 
             //Serial.println("Done");
             auto_level_counter = 0;
