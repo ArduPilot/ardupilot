@@ -9,8 +9,17 @@
 #define MAVLINK_HELPER
 #endif
 
+/**
+ * Reset the status of a channel
+ */
+MAVLINK_HELPER void mavlink_reset_channel_status(uint8_t chan);
+{
+	mavlink_status_t *status = mavlink_get_channel_status(chan);
+	status->parse_state = MAVLINK_PARSE_STATE_IDLE;
+}
+
 /*
-  internal function to give access to the channel status for each channel
+ * Internal function to give access to the channel status for each channel
  */
 MAVLINK_HELPER mavlink_status_t* mavlink_get_channel_status(uint8_t chan)
 {
@@ -19,7 +28,7 @@ MAVLINK_HELPER mavlink_status_t* mavlink_get_channel_status(uint8_t chan)
 }
 
 /*
- internal function to give access to the channel buffer for each channel
+ * Internal function to give access to the channel buffer for each channel
  */
 MAVLINK_HELPER mavlink_message_t* mavlink_get_channel_buffer(uint8_t chan)
 {
@@ -229,6 +238,19 @@ MAVLINK_HELPER uint8_t mavlink_parse_char(uint8_t chan, uint8_t c, mavlink_messa
 #endif
 #endif
 
+/* Enable this option to check the length of each message.
+ This allows invalid messages to be caught much sooner. Use if the transmission
+ medium is prone to missing (or extra) characters (e.g. a radio that fades in
+ and out). Only use if the channel will only contain messages types listed in
+ the headers.
+*/
+#if MAVLINK_CHECK_MESSAGE_LENGTH
+#ifndef MAVLINK_MESSAGE_LENGTH
+	static const uint8_t mavlink_message_lengths[256] = MAVLINK_MESSAGE_LENGTHS;
+#define MAVLINK_MESSAGE_LENGTH(msgid) mavlink_message_lengths[msgid]
+#endif
+#endif
+
 	mavlink_message_t* rxmsg = mavlink_get_channel_buffer(chan); ///< The currently decoded message
 	mavlink_status_t* status = mavlink_get_channel_status(chan); ///< The current decode status
 	int bufferIndex = 0;
@@ -291,6 +313,19 @@ MAVLINK_HELPER uint8_t mavlink_parse_char(uint8_t chan, uint8_t c, mavlink_messa
 		break;
 
 	case MAVLINK_PARSE_STATE_GOT_COMPID:
+#if MAVLINK_CHECK_MESSAGE_LENGTH
+	        if (rxmsg->len != MAVLINK_MESSAGE_LENGTH(c))
+		{
+			status->parse_error++;
+			status->parse_state = MAVLINK_PARSE_STATE_IDLE;
+			break;
+			if (c == MAVLINK_STX)
+			{
+				status->parse_state = MAVLINK_PARSE_STATE_GOT_STX;
+				mavlink_start_checksum(rxmsg);
+			}
+	        }
+#endif
 		rxmsg->msgid = c;
 		mavlink_update_checksum(rxmsg, c);
 		if (rxmsg->len == 0)

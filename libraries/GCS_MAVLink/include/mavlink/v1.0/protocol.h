@@ -43,6 +43,7 @@
 
 /* always include the prototypes to ensure we don't get out of sync */
 MAVLINK_HELPER mavlink_status_t* mavlink_get_channel_status(uint8_t chan);
+MAVLINK_HELPER void mavlink_reset_channel_status(uint8_t chan);
 #if MAVLINK_CRC_EXTRA
 MAVLINK_HELPER uint16_t mavlink_finalize_message_chan(mavlink_message_t* msg, uint8_t system_id, uint8_t component_id, 
 						      uint8_t chan, uint8_t length, uint8_t crc_extra);
