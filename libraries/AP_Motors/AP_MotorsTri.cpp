@@ -13,6 +13,9 @@
 // init
 void AP_MotorsTri::Init()
 {
+    // call parent Init function to set-up throttle curve
+    AP_Motors::Init();
+
     // set update rate for the 3 motors (but not the servo on channel 7)
     set_update_rate(_speed_hz);
 }
@@ -97,6 +100,13 @@ void AP_MotorsTri::output_armed()
         motor_out[AP_MOTORS_MOT_1] -= (motor_out[AP_MOTORS_MOT_4] - out_max) >> 1;
         motor_out[AP_MOTORS_MOT_2] -= (motor_out[AP_MOTORS_MOT_4] - out_max) >> 1;
         motor_out[AP_MOTORS_MOT_4] = out_max;
+    }
+
+    // adjust for throttle curve
+    if( _throttle_curve_enabled ) {
+        motor_out[AP_MOTORS_MOT_1] = _throttle_curve.get_y(motor_out[AP_MOTORS_MOT_1]);
+        motor_out[AP_MOTORS_MOT_2] = _throttle_curve.get_y(motor_out[AP_MOTORS_MOT_2]);
+        motor_out[AP_MOTORS_MOT_4] = _throttle_curve.get_y(motor_out[AP_MOTORS_MOT_4]);
     }
 
     // ensure motors don't drop below a minimum value and stop

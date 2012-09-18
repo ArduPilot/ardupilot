@@ -15,6 +15,9 @@ void AP_MotorsMatrix::Init()
 {
     int8_t i;
 
+    // call parent Init function to set-up throttle curve
+    AP_Motors::Init();
+
     // setup the motors
     setup_motors();
 
@@ -137,6 +140,15 @@ void AP_MotorsMatrix::output_armed()
                 motor_out[opposite_motor[i]] -= motor_out[i] - out_max;
             }
             motor_out[i] = out_max;
+        }
+    }
+
+    // adjust for throttle curve
+    if( _throttle_curve_enabled ) {
+        for( i=0; i<AP_MOTORS_MAX_NUM_MOTORS; i++ ) {
+            if( motor_enabled[i] ) {
+                motor_out[i] = _throttle_curve.get_y(motor_out[i]);
+            }
         }
     }
 
