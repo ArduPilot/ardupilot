@@ -9,15 +9,6 @@
 #define MAVLINK_HELPER
 #endif
 
-/**
- * Reset the status of a channel
- */
-MAVLINK_HELPER void mavlink_reset_channel_status(uint8_t chan);
-{
-	mavlink_status_t *status = mavlink_get_channel_status(chan);
-	status->parse_state = MAVLINK_PARSE_STATE_IDLE;
-}
-
 /*
  * Internal function to give access to the channel status for each channel
  */
@@ -25,6 +16,15 @@ MAVLINK_HELPER mavlink_status_t* mavlink_get_channel_status(uint8_t chan)
 {
 	static mavlink_status_t m_mavlink_status[MAVLINK_COMM_NUM_BUFFERS];
 	return &m_mavlink_status[chan];
+}
+
+/**
+ * Reset the status of a channel
+ */
+MAVLINK_HELPER void mavlink_reset_channel_status(uint8_t chan)
+{
+	mavlink_status_t *status = mavlink_get_channel_status(chan);
+	status->parse_state = MAVLINK_PARSE_STATE_IDLE;
 }
 
 /*
