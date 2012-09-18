@@ -499,7 +499,7 @@ static void Log_Read_Attitude()
 static void Log_Read_Mode()
 {
     Serial.printf_P(PSTR("MOD:"));
-    Serial.println(flight_mode_strings[DataFlash.ReadByte()]);
+    print_flight_mode(DataFlash.ReadByte());
 }
 
 // Read a GPS packet

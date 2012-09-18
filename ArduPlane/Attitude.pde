@@ -408,7 +408,6 @@ static void set_servos(void)
 
     // Auto flap deployment
     if(control_mode < FLY_BY_WIRE_B) {
-        // only use radio_in if the channel is not used as flight_mode_channel
         RC_Channel_aux::copy_radio_in_out(RC_Channel_aux::k_flap_auto);
     } else if (control_mode >= FLY_BY_WIRE_B) {
         // FIXME: use target_airspeed in both FBW_B and g.airspeed_enabled cases - Doug?
