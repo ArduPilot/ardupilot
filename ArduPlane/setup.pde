@@ -520,7 +520,7 @@ static void
 print_switch(byte p, byte m)
 {
     Serial.printf_P(PSTR("Pos %d: "),p);
-    Serial.println(flight_mode_strings[m]);
+    print_flight_mode(m);
 }
 
 static void

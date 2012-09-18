@@ -300,24 +300,6 @@ static bool usb_connected;
 
 static const char *comma = ",";
 
-static const char* flight_mode_strings[] = {
-    "Manual",
-    "Circle",
-    "Stabilize",
-    "",
-    "",
-    "FBW_A",
-    "FBW_B",
-    "",
-    "",
-    "",
-    "Auto",
-    "RTL",
-    "Loiter",
-    "Takeoff",
-    "Land"
-};
-
 
 /* Radio values
  *               Channel assignments

@@ -567,3 +567,38 @@ static void reboot_apm(void)
     while (1);
 }
 #endif
+
+
+static void
+print_flight_mode(uint8_t mode)
+{
+    switch (mode) {
+    case MANUAL:
+        Serial.println_P(PSTR("Manual"));
+        break;
+    case CIRCLE:
+        Serial.println_P(PSTR("Circle"));
+        break;
+    case STABILIZE:
+        Serial.println_P(PSTR("Stabilize"));
+        break;
+    case FLY_BY_WIRE_A:
+        Serial.println_P(PSTR("FBW_A"));
+        break;
+    case FLY_BY_WIRE_B:
+        Serial.println_P(PSTR("FBW_B"));
+        break;
+    case AUTO:
+        Serial.println_P(PSTR("AUTO"));
+        break;
+    case RTL:
+        Serial.println_P(PSTR("RTL"));
+        break;
+    case LOITER:
+        Serial.println_P(PSTR("Loiter"));
+        break;
+    default:
+        Serial.println_P(PSTR("---"));
+        break;
+    }
+}
