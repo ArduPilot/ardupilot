@@ -3,36 +3,13 @@
 // Unit tests for the AP_Math polygon code
 //
 
-#include <FastSerial.h>
 #include <AP_Common.h>
 #include <AP_Param.h>
+#include <AP_HAL.h>
 #include <AP_Math.h>
 
-#ifdef DESKTOP_BUILD
-// all of this is needed to build with SITL
- #include <SPI.h>
- #include <I2C.h>
- #include <DataFlash.h>
- #include <APM_RC.h>
- #include <GCS_MAVLink.h>
- #include <Arduino_Mega_ISR_Registry.h>
- #include <AP_PeriodicProcess.h>
- #include <AP_ADC.h>
- #include <AP_Baro.h>
- #include <AP_Compass.h>
- #include <AP_GPS.h>
- #include <AP_Declination.h>
- #include <AP_Semaphore.h>
- #include <Filter.h>
- #include <AP_Buffer.h>
- #include <SITL.h>
-Arduino_Mega_ISR_Registry isr_registry;
-AP_Baro_BMP085_HIL barometer;
-AP_Compass_HIL compass;
-SITL sitl;
-#endif
-
-FastSerialPort(Serial, 0);
+#include <AP_HAL_AVR.h>
+const AP_HAL::HAL& hal = AP_HAL_AVR_APM2;
 
 static const struct {
     Vector2f wp1, wp2, location;
@@ -73,17 +50,17 @@ static struct Location location_from_point(Vector2f pt)
 
 static void test_passed_waypoint(void)
 {
-    Serial.println("waypoint tests starting");
+    hal.console->println("waypoint tests starting");
     for (uint8_t i=0; i<ARRAY_LENGTH(test_points); i++) {
         struct Location loc = location_from_point(test_points[i].location);
         struct Location wp1 = location_from_point(test_points[i].wp1);
         struct Location wp2 = location_from_point(test_points[i].wp2);
         if (location_passed_point(loc, wp1, wp2) != test_points[i].passed) {
-            Serial.printf("Failed waypoint test %u\n", (unsigned)i);
+            hal.console->printf("Failed waypoint test %u\n", (unsigned)i);
             return;
         }
     }
-    Serial.println("waypoint tests OK");
+    hal.console->println("waypoint tests OK");
 }
 
 static void test_one_offset(struct Location &loc,
@@ -94,10 +71,10 @@ static void test_one_offset(struct Location &loc,
     float dist2, bearing2;
 
     loc2 = loc;
-    uint32_t t1 = micros();
+    uint32_t t1 = hal.scheduler->micros();
     location_offset(&loc2, ofs_north, ofs_east);
-    Serial.printf("location_offset took %u usec\n",
-                  micros() - t1);
+    hal.console->printf("location_offset took %u usec\n",
+                  hal.scheduler->micros() - t1);
     dist2 = get_distance(&loc, &loc2);
     bearing2 = get_bearing_cd(&loc, &loc2) * 0.01;
     float brg_error = bearing2-bearing;
@@ -109,7 +86,7 @@ static void test_one_offset(struct Location &loc,
 
     if (fabs(dist - dist2) > 1.0 ||
         brg_error > 1.0) {
-        Serial.printf("Failed offset test brg_error=%f dist_error=%f\n",
+        hal.console->printf("Failed offset test brg_error=%f dist_error=%f\n",
                       brg_error, dist-dist2);
     }
 }
@@ -144,12 +121,10 @@ static void test_offset(void)
  */
 void setup(void)
 {
-    Serial.begin(115200);
     test_passed_waypoint();
     test_offset();
 }
 
-void
-loop(void)
-{
-}
+void loop(void){}
+
+AP_HAL_MAIN();

@@ -16,6 +16,12 @@
 #include "quaternion.h"
 #include "polygon.h"
 
+#ifndef PI
+#define PI 3.141592653589793
+#endif
+#define DEG_TO_RAD 0.017453292519943295769236907684886
+#define RAD_TO_DEG 57.295779513082320876798154814105
+
 // define AP_Param types AP_Vector3f and Ap_Matrix3f
 AP_PARAMDEFV(Matrix3f, Matrix3f, AP_PARAM_MATRIX3F);
 AP_PARAMDEFV(Vector3f, Vector3f, AP_PARAM_VECTOR3F);
@@ -54,6 +60,18 @@ void        location_update(struct Location *loc, float bearing, float distance)
 
 // extrapolate latitude/longitude given distances north and east
 void        location_offset(struct Location *loc, float ofs_north, float ofs_east);
+
+#ifdef radians
+#error "You need to add empty nocore.inoflag and Arduino.h files to your sketch"
+#endif
+
+/* The following three functions used to be arduino core macros */
+#define radians(deg) ((deg) * DEG_TO_RAD)
+#define degrees(rad) ((rad) * RAD_TO_DEG)
+#define sq(x) ((x)*(x))
+#define max(a,b) ((a)>(b)?(a):(b))
+#define min(a,b) ((a)<(b)?(a):(b))
+#define constrain(amt,low,high) ((amt)<(low)?(low):((amt)>(high)?(high):(amt)))
 
 #endif // AP_MATH_H
 
