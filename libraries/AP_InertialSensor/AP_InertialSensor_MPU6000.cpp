@@ -199,7 +199,6 @@ static uint8_t _product_id;
 
 // DMP related static variables
 bool AP_InertialSensor_MPU6000::_dmp_initialised = false;
-uint8_t AP_InertialSensor_MPU6000::_received_packet[DMP_FIFO_BUFFER_SIZE];    // FIFO packet buffer
 uint8_t AP_InertialSensor_MPU6000::_fifoCountH;                 // high byte of number of elements in fifo buffer
 uint8_t AP_InertialSensor_MPU6000::_fifoCountL;                 // low byte of number of elements in fifo buffer
 Quaternion AP_InertialSensor_MPU6000::quaternion;                       // holds the 4 quaternions representing attitude taken directly from the DMP
@@ -685,18 +684,19 @@ void AP_InertialSensor_MPU6000::FIFO_getPacket()
     uint8_t i;
     int16_t q_long[4];
     uint8_t addr = MPUREG_FIFO_R_W | 0x80;      // Set most significant bit to indicate a read
+    uint8_t received_packet[DMP_FIFO_BUFFER_SIZE];    // FIFO packet buffer
     digitalWrite(_cs_pin, LOW);                                 // enable the device
     SPI.transfer(addr);                                 // send address we want to read from
     for(i = 0; i < _fifoCountL; i++) {
-        _received_packet[i] = SPI.transfer(0);          // request value
+        received_packet[i] = SPI.transfer(0);          // request value
     }
     digitalWrite(_cs_pin, HIGH);                                // disable device
 
     // we are using 16 bits resolution
-    q_long[0] = (int16_t) ((((uint16_t) _received_packet[0]) << 8) + ((uint16_t) _received_packet[1]));
-    q_long[1] = (int16_t) ((((uint16_t) _received_packet[4]) << 8) + ((uint16_t) _received_packet[5]));
-    q_long[2] = (int16_t) ((((uint16_t) _received_packet[8]) << 8) + ((uint16_t) _received_packet[9]));
-    q_long[3] = (int16_t) ((((uint16_t) _received_packet[12]) << 8) + ((uint16_t) _received_packet[13]));
+    q_long[0] = (int16_t) ((((uint16_t) received_packet[0]) << 8) + ((uint16_t) received_packet[1]));
+    q_long[1] = (int16_t) ((((uint16_t) received_packet[4]) << 8) + ((uint16_t) received_packet[5]));
+    q_long[2] = (int16_t) ((((uint16_t) received_packet[8]) << 8) + ((uint16_t) received_packet[9]));
+    q_long[3] = (int16_t) ((((uint16_t) received_packet[12]) << 8) + ((uint16_t) received_packet[13]));
     // Take care of sign
     for (i = 0; i < 4; i++ ) {
         if(q_long[i] > 32767) {
