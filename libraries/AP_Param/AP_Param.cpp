@@ -13,17 +13,19 @@
 /// @brief  The AP variable store.
 
 
-#include <FastSerial.h>
+#include <AP_HAL.h>
 #include <AP_Common.h>
 #include <AP_Math.h>
 
 #include <math.h>
 #include <string.h>
 
+extern const AP_HAL::HAL &hal;
+
 // #define ENABLE_FASTSERIAL_DEBUG
 
 #ifdef ENABLE_FASTSERIAL_DEBUG
- # define serialDebug(fmt, args ...)  if (FastSerial::getInitialized(0)) do {Serial.printf("%s:%d: " fmt "\n", __FUNCTION__, __LINE__, ## args); delay(0); } while(0)
+ # define serialDebug(fmt, args ...)  do {hal.console->printf("%s:%d: " fmt "\n", __FUNCTION__, __LINE__, ## args); delay(0); } while(0)
 #else
  # define serialDebug(fmt, args ...)
 #endif
@@ -987,16 +989,16 @@ void AP_Param::show_all(void)
 
         switch (type) {
         case AP_PARAM_INT8:
-            Serial.printf_P(PSTR("%s: %d\n"), s, (int)((AP_Int8 *)ap)->get());
+            hal.console->printf_P(PSTR("%s: %d\n"), s, (int)((AP_Int8 *)ap)->get());
             break;
         case AP_PARAM_INT16:
-            Serial.printf_P(PSTR("%s: %d\n"), s, (int)((AP_Int16 *)ap)->get());
+            hal.console->printf_P(PSTR("%s: %d\n"), s, (int)((AP_Int16 *)ap)->get());
             break;
         case AP_PARAM_INT32:
-            Serial.printf_P(PSTR("%s: %ld\n"), s, (long)((AP_Int32 *)ap)->get());
+            hal.console->printf_P(PSTR("%s: %ld\n"), s, (long)((AP_Int32 *)ap)->get());
             break;
         case AP_PARAM_FLOAT:
-            Serial.printf_P(PSTR("%s: %f\n"), s, ((AP_Float *)ap)->get());
+            hal.console->printf_P(PSTR("%s: %f\n"), s, ((AP_Float *)ap)->get());
             break;
         default:
             break;
