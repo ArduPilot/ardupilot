@@ -602,3 +602,8 @@ print_flight_mode(uint8_t mode)
         break;
     }
 }
+
+static void print_comma(void)
+{
+    Serial.print_P(PSTR(","));
+}

@@ -136,10 +136,10 @@ test_passthru(uint8_t argc, const Menu::arg *argv)
 
         // New radio frame? (we could use also if((millis()- timer) > 20)
         if (APM_RC.GetState() == 1) {
-            Serial.print("CH:");
+            Serial.print_P(PSTR("CH:"));
             for(int16_t i = 0; i < 8; i++) {
                 Serial.print(APM_RC.InputCh(i));        // Print channel values
-                Serial.print(",");
+                print_comma();
                 APM_RC.OutputCh(i, APM_RC.InputCh(i)); // Copy input to Servos
             }
             Serial.println();
