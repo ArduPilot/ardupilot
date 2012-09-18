@@ -73,6 +73,7 @@
 #include <AP_Baro.h>
 #include <AP_Compass.h>     // ArduPilot Mega Magnetometer Library
 #include <AP_Math.h>        // ArduPilot Mega Vector/Matrix math Library
+#include <AP_Curve.h>       // Curve used to linearlise throttle pwm to thrust
 #include <AP_InertialSensor.h> // ArduPilot Mega Inertial Sensor (accel & gyro) Library
 #include <AP_IMU.h>         // ArduPilot Mega IMU Library
 #include <AP_PeriodicProcess.h>         // Parent header of Timer

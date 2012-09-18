@@ -9,6 +9,7 @@
 #include <FastSerial.h>
 #include <AP_Common.h>
 #include <AP_Math.h>        // ArduPilot Mega Vector/Matrix math Library
+#include <AP_Curve.h>       // Curve used to linearlise throttle pwm to thrust
 #include <RC_Channel.h>     // RC Channel Library
 #include <APM_RC.h>         // ArduPilot Mega RC Library
 
@@ -45,6 +46,10 @@
 // top-bottom ratio (for Y6)
 #define AP_MOTORS_TOP_BOTTOM_RATIO      1.0
 
+#define THROTTLE_CURVE_ENABLED      0   // throttle curve disabled by default
+#define THROTTLE_CURVE_MID_THRUST   52  // throttle which produces 1/2 the maximum thrust.  expressed as a percentage of the full throttle range (i.e 0 ~ 100)
+#define THROTTLE_CURVE_MAX_THRUST   93  // throttle which produces the maximum thrust.  expressed as a percentage of the full throttle range (i.e 0 ~ 100)
+
 /// @class      AP_Motors
 class AP_Motors {
 public:
@@ -53,8 +58,7 @@ public:
     AP_Motors( uint8_t APM_version, APM_RC_Class* rc_out, RC_Channel* rc_roll, RC_Channel* rc_pitch, RC_Channel* rc_throttle, RC_Channel* rc_yaw, uint16_t speed_hz = AP_MOTORS_SPEED_DEFAULT);
 
     // init
-    virtual void        Init() {
-    };
+    virtual void        Init();
 
     // set mapping from motor number to RC channel
     virtual void        set_motor_to_channel_map( uint8_t mot_1, uint8_t mot_2, uint8_t mot_3, uint8_t mot_4, uint8_t mot_5, uint8_t mot_6, uint8_t mot_7, uint8_t mot_8 ) {
@@ -128,6 +132,10 @@ public:
     // throttle_pass_through - passes throttle through to motors - dangerous but required for initialising ESCs
     virtual void        throttle_pass_through();
 
+	// setup_throttle_curve - used to linearlise thrust output by motors
+    //      returns true if curve is created successfully
+	virtual bool setup_throttle_curve();
+
     // 1 if motor is enabled, 0 otherwise
     AP_Int8             motor_enabled[AP_MOTORS_MAX_NUM_MOTORS];
 
@@ -157,6 +165,10 @@ protected:
     uint8_t             _frame_orientation;     // PLUS_FRAME 0, X_FRAME 1, V_FRAME 2
     int16_t             _min_throttle;          // the minimum throttle to be sent to the engines when they're on (prevents issues with some motors on while other off at very low throttle)
     int16_t             _max_throttle;          // the minimum throttle to be sent to the engines when they're on (prevents issues with some motors on while other off at very low throttle)
+    AP_CurveInt16_Size4 _throttle_curve;                // curve used to linearize the pwm->thrust
+    AP_Int8             _throttle_curve_enabled;        // enable throttle curve
+    AP_Int8             _throttle_curve_mid;  // throttle which produces 1/2 the maximum thrust.  expressed as a percentage (i.e. 0 ~ 100 ) of the full throttle range
+    AP_Int8             _throttle_curve_max;  // throttle which produces the maximum thrust.  expressed as a percentage (i.e. 0 ~ 100 ) of the full throttle range
 };
 
 #endif  // AP_MOTORS
