@@ -355,6 +355,7 @@ get_rate_yaw(int32_t target_rate)
 static int16_t
 get_throttle_rate(int16_t z_target_speed)
 {
+    int32_t p,i,d;      // used to capture pid values for logging
     int16_t z_rate_error, output;
 
     // calculate rate error
@@ -370,8 +371,26 @@ get_throttle_rate(int16_t z_target_speed)
 
     output                  = constrain(tmp, -3200, 3200);
 
+    // separately calculate p, i, d values for logging
+    p = g.pid_throttle.get_p(z_rate_error);
+    i = g.pid_throttle.get_i(z_rate_error, .02);
+    d = g.pid_throttle.get_d(z_rate_error, .02);
+
+    //
     // limit the rate
-    output +=  constrain(g.pid_throttle.get_pid(z_rate_error, .02), -80, 120);
+    output +=  constrain(p+i+d, -80, 120);
+
+#if LOGGING_ENABLED == ENABLED
+    static int8_t log_counter = 0;                                      // used to slow down logging of PID values to dataflash
+    // log output if PID loggins is on and we are tuning the yaw
+    if( g.log_bitmask & MASK_LOG_PID && g.radio_tuning == CH6_THROTTLE_KP ) {
+        log_counter++;
+        if( log_counter >= 10 ) {               // (update rate / desired output rate) = (50hz / 10hz) = 5hz
+            log_counter = 0;
+            Log_Write_PID(CH6_THROTTLE_KP, z_rate_error, p, i, d, output, tuning_value);
+        }
+    }
+#endif
 
     return output;
 }
@@ -502,7 +521,7 @@ static int16_t get_angle_boost(int16_t value)
 {
     float temp = cos_pitch_x * cos_roll_x;
     temp = constrain(temp, .75, 1.0);
-    return ((float)(g.throttle_cruise + 80) / temp) - (g.throttle_cruise + 80);
+    return ((float)(value + 80) / temp) - (value + 80);
 }
 
 #if FRAME_CONFIG == HELI_FRAME
