@@ -303,10 +303,10 @@ static const char *comma = ",";
 
 /* Radio values
  *               Channel assignments
- *                       1   Ailerons (rudder if no ailerons)
+ *                       1   Ailerons
  *                       2   Elevator
  *                       3   Throttle
- *                       4   Rudder (if we have ailerons)
+ *                       4   Rudder
  *                       5   Aux5
  *                       6   Aux6
  *                       7   Aux7
