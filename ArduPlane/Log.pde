@@ -405,9 +405,9 @@ static void Log_Read_Control_Tuning()
         if(y < 8) logvar        = logvar/100.f;
         if(y == 9) logvar       = logvar/10000.f;
         Serial.print(logvar);
-        Serial.print(comma);
+        print_comma();
     }
-    Serial.println(" ");
+    Serial.println();
 }
 
 // Read a nav tuning packet
@@ -436,7 +436,7 @@ static void Log_Read_Performance()
     Serial.printf_P(PSTR("PM:"));
     pm_time = DataFlash.ReadLong();
     Serial.print(pm_time);
-    Serial.print(comma);
+    print_comma();
     for (int16_t y = 1; y <= 12; y++) {
         if(y < 3 || y > 7) {
             logvar = DataFlash.ReadInt();
@@ -444,9 +444,9 @@ static void Log_Read_Performance()
             logvar = DataFlash.ReadByte();
         }
         Serial.print(logvar);
-        Serial.print(comma);
+        print_comma();
     }
-    Serial.println(" ");
+    Serial.println();
 }
 
 // Read a command processing packet
@@ -459,14 +459,14 @@ static void Log_Read_Cmd()
     for(int16_t i = 1; i < 4; i++) {
         logvarb = DataFlash.ReadByte();
         Serial.print(logvarb, DEC);
-        Serial.print(comma);
+        print_comma();
     }
     for(int16_t i = 1; i < 4; i++) {
         logvarl = DataFlash.ReadLong();
         Serial.print(logvarl, DEC);
-        Serial.print(comma);
+        print_comma();
     }
-    Serial.println(" ");
+    Serial.println();
 }
 
 static void Log_Read_Startup()
@@ -533,9 +533,9 @@ static void Log_Read_Raw()
     for (int16_t y = 0; y < 6; y++) {
         logvar = (float)DataFlash.ReadLong() / t7;
         Serial.print(logvar);
-        Serial.print(comma);
+        print_comma();
     }
-    Serial.println(" ");
+    Serial.println();
 }
 
 // Read the DataFlash log memory : Packet Parser

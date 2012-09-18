@@ -298,9 +298,6 @@ AP_Relay relay;
 static bool usb_connected;
 #endif
 
-static const char *comma = ",";
-
-
 /* Radio values
  *               Channel assignments
  *                       1   Ailerons
