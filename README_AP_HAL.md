@@ -4,7 +4,7 @@ Pat Hickey
 
 Galois Inc
 
-11 Sept 2011
+17 Sept 2011
 
 --------
 Overview
@@ -175,7 +175,7 @@ the `AP_HAL` namespace, left off for brevity.)
     driver
 *  `Dataflash*  dataflash` : Corresponds to ArduPilot `/libraries/DataFlash`
     driver
-*  `BetterStream* console` : New utility for warning and error reporting
+*  `ConsoleDriver* console` : New utility for warning and error reporting
 *  `GPIO*       gpio` : Corresponds to Arduino core `pinMode`,
     `digitalRead`, and `digitalWrite` functionality
 *  `RCInput*    rcin` : Corresponds to PPM input side of ArduPilot
@@ -337,7 +337,9 @@ in a threaded environment.
 AP\_HAL::ConsoleDriver
 ----------------------
 
-The `AP_HAL::ConsoleDriver` class is pure virtual and can be found in `/libraries/AP_HAL/Console.h` . It is derived from the `AP_HAL::BetterStream` class.
+The `AP_HAL::ConsoleDriver` class is pure virtual and can be found in
+`/libraries/AP_HAL/Console.h` . It is derived from the `AP_HAL::BetterStream`
+class.
 
 In the existing ArduPilot code, there is no unified way to send debugging
 messages, warnings, and errors to the user. A dedicated Console driver,  is
@@ -352,8 +354,13 @@ but right now I'm leaving it open ended.)
 the UARTDrivers, but before all other drivers, in `AP_HAL::HAL::init`.
 * `void backend_open()`  : Start buffering reads and writes to user backend
 * `void backend_close()` : Stop buffering reads and writes to user backend
-* `int backend_read(uint8_t *data, int len)` : Read from user backend buffer. Data sent by `write` through the `BetterStream` interface will be available to `backend_read`, modulo oveflowing the internal buffers (undefined behavior).
-* `int backend_write(const uint8_t *data, int len)` : Write to user backend buffer. Written data will be available by `read` through the `BetterStream` interface, modulo overflowing the internal buffers (undefined behavior).
+* `int backend_read(uint8_t *data, int len)` : Read from user backend buffer.
+   Data sent by `write` through the `BetterStream` interface will be available
+   to `backend_read`, modulo oveflowing the internal buffers (undefined
+   behavior).
+* `int backend_write(const uint8_t *data, int len)` : Write to user backend
+   buffer. Written data will be available by `read` through the `BetterStream`
+   interface, modulo overflowing the internal buffers (undefined behavior).
 
 A few implementation guidelines:
 * This is a low assurance data interface: it is more important to maintain the
@@ -418,13 +425,19 @@ The following methods are exposed by the `AP_HAL::Scheduler` interface:
     delay callback, if registered.
 * `uint32_t millis()` : Duplicates Arduino core `millis`
 * `uint32_t micros()` : Duplicates Arduino core `micros`
-* `void     delay_microseconds(uint16_t us)` : Duplicates Arduino core `delayMicros`
-* `void     register_delay_callback(AP_HAL::Proc)` : Register a callback to be
-    used during calls to `delay`. Callback will be called at a 1ms period.
-* `void     register_timer_process(AP_HAL::TimedProc, uint32_t period_us, uint16_t phase)` : Duplicates `AP_PeriodicProcess::register_process`
-* `void     register_timer_failsafe(AP_HAL::TimedProc, uint32_t period_us)` : Duplicates `AP_PeriodicProcess::set_failsafe`
-* `void     suspend_timer_procs()` : Duplicates `AP_PeriodicProcess::suspend_timer`
-* `void     resume_timer_procs()` : Duplicates `AP_PeriodicProcess:resume_timer`
+* `void     delay_microseconds(uint16_t us)` : Duplicates Arduino core
+  `delayMicros`
+* `void     register_delay_callback(AP_HAL::Proc)` : Register a callback
+   to be used during calls to `delay`. Callback will be called at a 1ms
+   period.
+* `void     register_timer_process(AP_HAL::TimedProc, uint32_t period_us,
+   uint16_t phase)` : Duplicates `AP_PeriodicProcess::register_process`
+* `void     register_timer_failsafe(AP_HAL::TimedProc,
+   uint32_t period_us)` : Duplicates `AP_PeriodicProcess::set_failsafe`
+* `void     suspend_timer_procs()` : Duplicates
+  `AP_PeriodicProcess::suspend_timer`
+* `void     resume_timer_procs()` : Duplicates
+  `AP_PeriodicProcess:resume_timer`
 
 
 Remaining ArduPilot AVR dependencies
