@@ -302,7 +302,7 @@ static bool verify_takeoff()
         calc_bearing_error();
     }
 
-    if (current_loc.alt > takeoff_altitude)  {
+    if (adjusted_altitude_cm() > takeoff_altitude)  {
         hold_course = -1;
         takeoff_complete = true;
         next_WP = current_loc;
@@ -322,7 +322,7 @@ static bool verify_land()
     // Set land_complete if we are within 2 seconds distance or within
     // 3 meters altitude of the landing point
     if (((wp_distance > 0) && (wp_distance <= (g.land_flare_sec*g_gps->ground_speed*0.01)))
-        || (current_loc.alt <= next_WP.alt + g.land_flare_alt*100)) {
+        || (adjusted_altitude_cm() <= next_WP.alt + g.land_flare_alt*100)) {
 
         land_complete = true;
 
@@ -441,8 +441,10 @@ static void do_change_alt()
 {
     condition_rate          = labs((int)next_nonnav_command.lat);
     condition_value         = next_nonnav_command.alt;
-    if(condition_value < current_loc.alt) condition_rate = -condition_rate;
-    target_altitude_cm      = current_loc.alt + (condition_rate / 10);                  // Divide by ten for 10Hz update
+    if (condition_value < adjusted_altitude_cm()) {
+        condition_rate = -condition_rate;
+    }
+    target_altitude_cm      = adjusted_altitude_cm() + (condition_rate / 10);                  // Divide by ten for 10Hz update
     next_WP.alt             = condition_value;                                                                  // For future nav calculations
     offset_altitude_cm      = 0;                                                                                        // For future nav calculations
 }
@@ -467,7 +469,8 @@ static bool verify_wait_delay()
 
 static bool verify_change_alt()
 {
-    if( (condition_rate>=0 && current_loc.alt >= condition_value) || (condition_rate<=0 && current_loc.alt <= condition_value)) {
+    if( (condition_rate>=0 && adjusted_altitude_cm() >= condition_value) || 
+        (condition_rate<=0 && adjusted_altitude_cm() <= condition_value)) {
         condition_value = 0;
         return true;
     }

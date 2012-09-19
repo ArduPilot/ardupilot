@@ -128,7 +128,7 @@ static void calc_altitude_error()
         target_altitude_cm = next_WP.alt;
     }
 
-    altitude_error_cm       = target_altitude_cm - current_loc.alt;
+    altitude_error_cm       = target_altitude_cm - adjusted_altitude_cm();
 }
 
 static int32_t wrap_360_cd(int32_t error)

@@ -1175,10 +1175,10 @@ static void update_current_flight_mode(void)
             if (g.flybywire_elev_reverse) {
                 elevator_input = -elevator_input;
             }
-            if ((current_loc.alt >= home.alt+g.FBWB_min_altitude_cm) || (g.FBWB_min_altitude_cm == 0)) {
+            if ((adjusted_altitude_cm() >= home.alt+g.FBWB_min_altitude_cm) || (g.FBWB_min_altitude_cm == 0)) {
                 altitude_error_cm = elevator_input * g.pitch_limit_min_cd;
             } else {
-                altitude_error_cm = (home.alt + g.FBWB_min_altitude_cm) - current_loc.alt;
+                altitude_error_cm = (home.alt + g.FBWB_min_altitude_cm) - adjusted_altitude_cm();
                 if (elevator_input < 0) {
                     altitude_error_cm += elevator_input * g.pitch_limit_min_cd;
                 }
