@@ -6,8 +6,6 @@
 #include <AP_Common.h>
 #include <AP_Param.h>
 #include <AP_AnalogSource.h>
-#include <Filter.h>
-#include <AverageFilter.h>
 
 class AP_Airspeed
 {
