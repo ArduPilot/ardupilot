@@ -153,6 +153,7 @@ private:
     uint16_t                    _queued_parameter_count; ///< saved count of
                                                          // parameters for
                                                          // queued send
+    uint32_t                    _queued_parameter_send_time_ms;
 
     /// Count the number of reportable parameters.
     ///
