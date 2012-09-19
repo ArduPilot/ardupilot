@@ -13,6 +13,7 @@
 #include <AP_Param.h>
 #include <AP_Math.h>
 #include <GCS_MAVLink.h>
+#include <GCS_Console.h>
 
 #include "simplegcs.h"
 
@@ -24,6 +25,19 @@ void flush_console_to_statustext() {
     if (n > 0) {
         try_send_statustext(MAVLINK_COMM_0, (char*) data, n);
     }
+}
+
+void console_loopback() {
+    int a = hal.console->available();
+    if (a > 0) {
+        hal.console->print("Console loopback:");
+        int r = hal.console->read();
+        while (r > 0) {
+            hal.console->write( (uint8_t) r );
+            r = hal.console->read();
+        }
+        hal.console->println();
+    }   
 }
 
 void setup(void) {
@@ -44,8 +58,11 @@ int i = 0;
 void loop(void) {
     try_send_message(MAVLINK_COMM_0, MAVLINK_MSG_ID_HEARTBEAT);
     simplegcs_update(MAVLINK_COMM_0);
-    flush_console_to_statustext();
-    hal.scheduler->delay(500);
+    // flush_console_to_statustext();
+    gcs_console_send(MAVLINK_COMM_0);
+
+    console_loopback();
+    hal.scheduler->delay(100);
 }
 
 AP_HAL_MAIN();

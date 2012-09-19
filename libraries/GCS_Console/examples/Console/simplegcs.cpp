@@ -3,6 +3,7 @@
 extern const AP_HAL::HAL& hal;
 
 #include <GCS_MAVLink.h>
+#include <GCS_Console.h>
 #include "simplegcs.h"
 
 void send_heartbeat(mavlink_channel_t chan) {
@@ -73,7 +74,7 @@ void handle_message(mavlink_channel_t chan, mavlink_message_t* msg) {
     hal.console->printf_P(PSTR("SimpleGCS Handle Message %d\r\n"), msg->msgid);
     switch (msg->msgid) {
         case MAVLINK_MSG_ID_PARAM_REQUEST_LIST:
-            {
+        {
             char param_name[16] = "NOPARAMS";
 
             /* Send a single parameter.*/
@@ -85,7 +86,13 @@ void handle_message(mavlink_channel_t chan, mavlink_message_t* msg) {
                     1,                  /* _queued_parameter_count */
                     0);                 /* _queued_parameter_index */
             break;
-            }
+        }
+        case MAVLINK_MSG_ID_DATA16:
+            gcs_console_handle_data16(msg); 
+            break;
+        case MAVLINK_MSG_ID_DATA32:
+            gcs_console_handle_data32(msg); 
+            break;
     }
 }
 
