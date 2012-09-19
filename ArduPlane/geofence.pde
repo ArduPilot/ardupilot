@@ -153,7 +153,7 @@ static bool geofence_check_minalt(void)
     if (g.fence_minalt == 0) {
         return false;
     }
-    return (current_loc.alt < (g.fence_minalt*100.0) + home.alt);
+    return (adjusted_altitude_cm() < (g.fence_minalt*100.0) + home.alt);
 }
 
 /*
@@ -167,7 +167,7 @@ static bool geofence_check_maxalt(void)
     if (g.fence_maxalt == 0) {
         return false;
     }
-    return (current_loc.alt > (g.fence_maxalt*100.0) + home.alt);
+    return (adjusted_altitude_cm() > (g.fence_maxalt*100.0) + home.alt);
 }
 
 

@@ -160,6 +160,15 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @User: Advanced
     GSCALAR(alt_control_algorithm, "ALT_CTRL_ALG",    ALT_CONTROL_DEFAULT),
 
+    // @Param: ALT_OFFSET
+    // @DisplayName: Altitude offset
+    // @Description: This is added to the target altitude in automatic flight. It can be used to add a global altitude offset to a mission, or to adjust for barometric pressure changes
+    // @Units: Meters
+    // @Range: -32767 32767
+    // @Increment: 1
+    // @User: Advanced
+    GSCALAR(alt_offset, "ALT_OFFSET",                 0),
+
     GSCALAR(command_total,          "CMD_TOTAL",      0),
     GSCALAR(command_index,          "CMD_INDEX",      0),
 
