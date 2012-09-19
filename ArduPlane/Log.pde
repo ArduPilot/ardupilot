@@ -341,7 +341,7 @@ static void Log_Write_GPS(      int32_t log_Time, int32_t log_Lattitude, int32_t
     DataFlash.WriteByte(log_NumSats);
     DataFlash.WriteLong(log_Lattitude);
     DataFlash.WriteLong(log_Longitude);
-    DataFlash.WriteInt(sonar_alt);                              // This one is just temporary for testing out sonar in fixed wing
+    DataFlash.WriteInt(0); // was sonar_alt
     DataFlash.WriteLong(log_mix_alt);
     DataFlash.WriteLong(log_gps_alt);
     DataFlash.WriteLong(log_Ground_Speed);
