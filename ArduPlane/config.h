@@ -70,7 +70,6 @@
  # define CONFIG_IMU_TYPE   CONFIG_IMU_MPU6000
  # define CONFIG_RELAY      DISABLED
  # define MAG_ORIENTATION   AP_COMPASS_APM2_SHIELD
- # define CONFIG_SONAR_SOURCE SONAR_SOURCE_ANALOG_PIN
  # define CONFIG_PITOT_SOURCE PITOT_SOURCE_ANALOG_PIN
  # define MAGNETOMETER ENABLED
  # ifdef APM2_BETA_HARDWARE
@@ -152,14 +151,6 @@
  # define CONFIG_BARO AP_BARO_BMP085
 #endif
 
-//////////////////////////////////////////////////////////////////////////////
-// Pitot
-//
-
-#ifndef PITOT_ENABLED
- # define PITOT_ENABLED          DISABLED
-#endif
-
 #ifndef CONFIG_PITOT_SOURCE
  # define CONFIG_PITOT_SOURCE PITOT_SOURCE_ADC
 #endif
@@ -173,17 +164,7 @@
   #  define CONFIG_PITOT_SOURCE_ANALOG_PIN 0
  # endif
 #else
- # warning Invalid value for CONFIG_PITOT_SOURCE, disabling airspeed
- # undef PITOT_ENABLED
- # define PITOT_ENABLED DISABLED
-#endif
-
-#ifndef SONAR_TYPE
- # define SONAR_TYPE             MAX_SONAR_LV   // MAX_SONAR_XL,
-#endif
-
-#ifndef SONAR_ENABLED
- #define SONAR_ENABLED DISABLED
+ # warning Invalid value for CONFIG_PITOT_SOURCE
 #endif
 
 //////////////////////////////////////////////////////////////////////////////

@@ -334,7 +334,6 @@ public:
     AP_Float input_voltage;
     AP_Int32 pack_capacity;                     // Battery pack capacity less reserve
     AP_Int8 inverted_flight_ch;             // 0=disabled, 1-8 is channel for inverted flight trigger
-    AP_Int8 sonar_enabled;
     AP_Int8 stick_mixing;
     AP_Int8 rudder_steer;
 

@@ -207,10 +207,6 @@ enum gcs_severity {
 #define RELAY_PIN 47
 
 
-// sonar
-#define MAX_SONAR_XL 0
-#define MAX_SONAR_LV 1
-#define SonarToCm(x) (x*1.26)   // Sonar raw value to centimeters
 #define AN4                     4
 #define AN5                     5
 
