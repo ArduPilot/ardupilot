@@ -95,6 +95,20 @@ namespace ArdupilotMega.Properties {
             }
         }
         
+        public static System.Drawing.Bitmap APM_rover_firmware {
+            get {
+                object obj = ResourceManager.GetObject("APM_rover_firmware", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        public static System.Drawing.Icon apm2 {
+            get {
+                object obj = ResourceManager.GetObject("apm2", resourceCulture);
+                return ((System.Drawing.Icon)(obj));
+            }
+        }
+        
         public static System.Drawing.Bitmap attocurrent {
             get {
                 object obj = ResourceManager.GetObject("attocurrent", resourceCulture);

@@ -10,7 +10,7 @@ using log4net;
 
 namespace ArdupilotMega.Arduino
 {
-    class ArduinoSTKv2 : SerialPort,ArduinoComms
+    public class ArduinoSTKv2 : SerialPort,ArduinoComms
     {
         private static readonly ILog log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
         public event ProgressEventHandler Progress;
@@ -366,6 +366,39 @@ namespace ArdupilotMega.Arduino
                 }
             }
             return true;
+        }
+
+        public Chip getChipType()
+        {
+            byte sig1 = 0x00;
+            byte sig2 = 0x00;
+            byte sig3 = 0x00;
+
+            byte[] command = new byte[] { (byte)0x1b, 0, 0, 0, 0 };
+            command = this.genstkv2packet(command);
+
+            sig1 = command[2];
+
+            command = new byte[] { (byte)0x1b, 0, 0, 0, 1 };
+            command = this.genstkv2packet(command);
+
+            sig2 = command[2];
+
+            command = new byte[] { (byte)0x1b, 0, 0, 0, 2 };
+            command = this.genstkv2packet(command);
+
+            sig3 = command[2];
+
+            foreach (Chip item in Arduino.Chip.chips)
+            {
+                if (item.Equals(new Chip("", sig1, sig2, sig3, 0)))
+                {
+                    log.Debug("Match " + item.ToString());
+                    return item;
+                }
+            }
+
+            return null;
         }
 
         public new bool Close() {

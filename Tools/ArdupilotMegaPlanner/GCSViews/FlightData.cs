@@ -19,6 +19,9 @@ using System.Drawing.Drawing2D;
 using ArdupilotMega.Controls;
 using ArdupilotMega.Utilities;
 using ArdupilotMega.Controls.BackstageView;
+using Crom.Controls.Docking;
+
+using System.Reflection;
 
 // written by michael oborne
 namespace ArdupilotMega.GCSViews
@@ -65,8 +68,13 @@ namespace ArdupilotMega.GCSViews
         internal static GMapOverlay kmlpolygons;
         internal static GMapOverlay geofence;
 
+        Dictionary<Guid, Form> formguids = new Dictionary<Guid,Form>();
+
         bool huddropout = false;
         bool huddropoutresize = false;
+
+        private DockStateSerializer _serializer = null;
+        DockableFormInfo dockhud;
 
         List<PointLatLng> trackPoints = new List<PointLatLng>();
 
@@ -90,7 +98,9 @@ namespace ArdupilotMega.GCSViews
         {
             threadrun = 0;
             MainV2.comPort.logreadmode = false;
-            MainV2.config["FlightSplitter"] = MainH.SplitterDistance.ToString();
+            MainV2.config["FlightSplitter"] = hud1.Width;
+            _serializer.Save();
+            SaveWindowLayout();
             System.Threading.Thread.Sleep(100);
             base.Dispose(disposing);
         }
@@ -100,6 +110,9 @@ namespace ArdupilotMega.GCSViews
             InitializeComponent();
 
             instance = this;
+            _serializer = new DockStateSerializer(dockContainer1);
+            _serializer.SavePath = Application.StartupPath + Path.DirectorySeparatorChar + "FDscreen.xml";
+            dockContainer1.PreviewRenderer = new PreviewRenderer();
 
             mymap = gMapControl1;
             myhud = hud1;
@@ -123,7 +136,7 @@ namespace ArdupilotMega.GCSViews
                 chk_box_CheckedChanged((object)(new CheckBox() { Name = "nav_pitch", Checked = true }), new EventArgs());
             }
 
-            for (int f = 1; f < 10; f++ )
+            for (int f = 1; f < 10; f++)
             {
                 // load settings
                 if (MainV2.config["quickView" + f] != null)
@@ -141,32 +154,36 @@ namespace ArdupilotMega.GCSViews
                 }
             }
 
+            foreach (string item in MainV2.config.Keys)
+            {
+                if (item.StartsWith("hud1_useritem_"))
+                {
+                    string selection = item.Replace("hud1_useritem_", "");
+
+                    CheckBox chk = new CheckBox();
+                    chk.Name = selection;
+                    chk.Checked = true;
+
+                    HUD.Custom cust = new HUD.Custom();
+                    cust.Header = MainV2.config[item].ToString();
+
+                    addHudUserItem(ref cust, chk);
+                }
+            }
+
 
             List<string> list = new List<string>();
 
-            //foreach (object obj in Enum.GetValues(typeof(MAVLink09.MAV_ACTION)))
-#if MAVLINK10
             {
                 list.Add("LOITER_UNLIM");
                 list.Add("RETURN_TO_LAUNCH");
                 list.Add("PREFLIGHT_CALIBRATION");
+                list.Add("MISSION_START");
+                list.Add("PREFLIGHT_REBOOT_SHUTDOWN");
+                //DO_SET_SERVO
+                //DO_REPEAT_SERVO
             }
-#else
-            {
-                list.Add("RETURN");
-                list.Add("HALT");
-                list.Add("CONTINUE");
-                list.Add("SET_MANUAL");
-                list.Add("SET_AUTO");
-                list.Add("STORAGE_READ");
-                list.Add("STORAGE_WRITE");
-                list.Add("CALIBRATE_RC");
-                list.Add("NAVIGATE");
-                list.Add("LOITER");
-                list.Add("TAKEOFF");
-                list.Add("CALIBRATE_GYRO");
-            }
-#endif
+
 
             CMB_action.DataSource = list;
 
@@ -212,6 +229,295 @@ namespace ArdupilotMega.GCSViews
                 }
             }
             catch { }
+
+            SetupDocking();
+
+            if (File.Exists(_serializer.SavePath) == true)
+            {
+                try
+                {
+                    _serializer.Load(true, GetFormFromGuid);
+                }
+                catch { }
+            }
+
+            cleanupDocks();
+        }
+
+        void SetupDocking()
+        {
+            this.SuspendLayout();
+
+            dockhud = CreateFormAndGuid(dockContainer1, hud1, "fd_hud_guid");
+            DockableFormInfo dockmap = CreateFormAndGuid(dockContainer1, tableMap, "fd_map_guid");
+            DockableFormInfo dockquick = CreateFormAndGuid(dockContainer1, tabQuick, "fd_quick_guid");
+            DockableFormInfo dockactions = CreateFormAndGuid(dockContainer1, tabActions, "fd_actions_guid");
+            DockableFormInfo dockguages = CreateFormAndGuid(dockContainer1, tabGauges, "fd_guages_guid");
+            DockableFormInfo dockstatus = CreateFormAndGuid(dockContainer1, tabStatus, "fd_status_guid");
+            DockableFormInfo docktlogs = CreateFormAndGuid(dockContainer1, tabTLogs, "fd_tlogs_guid");
+
+
+            dockContainer1.DockForm(dockmap, DockStyle.Fill, zDockMode.Outer);
+            dockContainer1.DockForm(dockquick, DockStyle.Right, zDockMode.Outer);
+            dockContainer1.DockForm(dockhud, DockStyle.Left, zDockMode.Outer);
+
+            dockContainer1.DockForm(dockactions, dockhud, DockStyle.Bottom, zDockMode.Outer);
+            dockContainer1.DockForm(dockguages, dockactions, DockStyle.Fill, zDockMode.Inner);
+            dockContainer1.DockForm(dockstatus, dockactions, DockStyle.Fill, zDockMode.Inner);
+            dockContainer1.DockForm(docktlogs, dockactions, DockStyle.Fill, zDockMode.Inner);
+
+            dockactions.IsSelected = true;
+
+            if (MainV2.config["FlightSplitter"] != null)
+            {
+                dockContainer1.SetWidth(dockhud, int.Parse(MainV2.config["FlightSplitter"].ToString()));
+            }
+
+            dockContainer1.SetHeight(dockhud, hud1.Height);
+
+            this.ResumeLayout();
+        }
+
+        void cleanupDocks()
+        {
+            // cleanup from load
+            for (int a = 0; a < dockContainer1.Count; a++)
+            {
+                DockableFormInfo info = dockContainer1.GetFormInfoAt(a);
+
+                info.ShowCloseButton = false;
+
+                info.ShowContextMenuButton = false;
+            }
+            dockContainer1.Invalidate();
+        }
+
+        void SaveWindowLayout()
+        {
+            XmlTextWriter xmlwriter = new XmlTextWriter(Path.GetDirectoryName(Application.ExecutablePath) + Path.DirectorySeparatorChar + @"FDLayout.xml", Encoding.ASCII);
+            xmlwriter.Formatting = Formatting.Indented;
+
+            xmlwriter.WriteStartDocument();
+
+            xmlwriter.WriteStartElement("ScreenLayout");
+
+            //xmlwriter.WriteElementString("comport", comPortName);
+
+
+            for (int a = 0; a < dockContainer1.Count; a++)
+            {
+                DockableFormInfo info = dockContainer1.GetFormInfoAt(a);
+
+                xmlwriter.WriteStartElement("Form");
+
+                object thisBoxed = info;
+                Type test = thisBoxed.GetType();
+
+                foreach (var field in test.GetProperties())
+                {
+                    // field.Name has the field's name.
+                    object fieldValue;
+                    try
+                    {
+                        fieldValue = field.GetValue(thisBoxed,null); // Get value
+                    }
+                    catch { continue; }
+
+                    // Get the TypeCode enumeration. Multiple types get mapped to a common typecode.
+                    TypeCode typeCode = Type.GetTypeCode(fieldValue.GetType());
+
+                    xmlwriter.WriteElementString(field.Name, fieldValue.ToString());
+                }
+
+               // DockableContainer dockcont = info as DockableContainer;
+
+               // dockContainer1.
+               
+                xmlwriter.WriteEndElement();
+            }
+
+            xmlwriter.WriteEndElement();
+
+            xmlwriter.WriteEndDocument();
+            xmlwriter.Close();
+        }
+
+        DockableFormInfo CreateFormAndGuid(DockContainer dock, Control ctl, string configguidref) 
+        {
+            Guid gu = GetOrCreateGuid(configguidref);
+            Form frm;
+            if (formguids.ContainsKey(gu))
+            {
+                frm = formguids[gu];
+            }
+            else
+            {
+                frm = CreateFormFromControl(ctl);
+                frm.AutoScroll = true;
+                formguids[gu] = frm;
+            }           
+
+            return dock.Add(frm, Crom.Controls.Docking.zAllowedDock.All, gu);
+        }
+
+        Guid GetOrCreateGuid(string configname)
+        {
+            if (!MainV2.config.ContainsKey(configname))
+            {
+                MainV2.config[configname] = Guid.NewGuid().ToString();
+            }
+
+            return new Guid(MainV2.config[configname].ToString()); 
+        }
+
+        Form GetFormFromGuid(Guid id)
+        {
+            return formguids[id];
+        }
+
+        Form CreateFormFromControl(Control ctl)
+        {
+            ctl.Dock = DockStyle.Fill;
+            Form newform = new Form();
+            System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(MainV2));
+            newform.Icon = ((System.Drawing.Icon)(resources.GetObject("$this.Icon")));
+            try
+            {
+                if (ctl is TabPage)
+                {
+                    TabPage tp = ctl as TabPage;
+                    newform.Text = ctl.Text;
+                    while (tp.Controls.Count > 0)
+                    {
+                        newform.Controls.Add(tp.Controls[0]);
+                    }
+                    if (tp == tabQuick)
+                    {
+                        newform.Resize += tabQuick_Resize;
+                    }
+                    if (tp == tabStatus)
+                    {
+                        newform.Resize += tabStatus_Resize;
+                        newform.Load += tabStatus_Resize;
+                        //newform.Resize += tab1
+                    }
+                    if (tp == tabGauges)
+                    {
+                        newform.Resize += tabPage1_Resize;
+                    }
+                }
+                else if (ctl is Form)
+                {
+                    return (Form)ctl;
+                }
+                else
+                {
+                    newform.Text = ctl.Text;
+                    newform.Controls.Add(ctl);
+                    if (ctl is HUD)
+                    {
+                        newform.Text = "Hud";
+                    }
+                    if (ctl is myGMAP) 
+                    {
+                        newform.Text = "Map";
+                    }
+                }
+            }
+            catch { }
+            return newform;
+        }
+
+        void tabStatus_Resize(object sender, EventArgs e)
+        {
+            // localise it
+            Control tabStatus = sender as Control;
+
+          //  tabStatus.SuspendLayout();
+
+            //foreach (Control temp in tabStatus.Controls)
+            {
+                //  temp.DataBindings.Clear();
+                //temp.Dispose();
+            }
+            //tabStatus.Controls.Clear();
+
+            int x = 10;
+            int y = 10;
+
+            object thisBoxed = MainV2.cs;
+            Type test = thisBoxed.GetType();
+
+            foreach (var field in test.GetProperties())
+            {
+                // field.Name has the field's name.
+                object fieldValue;
+                try
+                {
+                    fieldValue = field.GetValue(thisBoxed, null); // Get value
+                }
+                catch { continue; }
+
+                // Get the TypeCode enumeration. Multiple types get mapped to a common typecode.
+                TypeCode typeCode = Type.GetTypeCode(fieldValue.GetType());
+
+                bool add = true;
+
+                MyLabel lbl1 = new MyLabel();
+                MyLabel lbl2 = new MyLabel();
+                try
+                {
+                    lbl1 = (MyLabel)tabStatus.Controls.Find(field.Name, false)[0];
+
+                    lbl2 = (MyLabel)tabStatus.Controls.Find(field.Name + "value", false)[0];
+
+                    add = false;
+                }
+                catch { }
+
+                if (add)
+                {
+
+                    lbl1.Location = new Point(x, y);
+                    lbl1.Size = new System.Drawing.Size(75, 13);
+                    lbl1.Text = field.Name;
+                    lbl1.Name = field.Name;
+                    lbl1.Visible = true;
+                    lbl2.AutoSize = false;
+
+                    lbl2.Location = new Point(lbl1.Right + 5, y);
+                    lbl2.Size = new System.Drawing.Size(50, 13);
+                    //if (lbl2.Name == "")
+                    lbl2.DataBindings.Add(new System.Windows.Forms.Binding("Text", this.bindingSource1, field.Name, false, System.Windows.Forms.DataSourceUpdateMode.OnValidation, "0"));
+                    lbl2.Name = field.Name + "value";
+                    lbl2.Visible = true;
+                    //lbl2.Text = fieldValue.ToString();
+
+
+                    tabStatus.Controls.Add(lbl1);
+                    tabStatus.Controls.Add(lbl2);
+                }
+                else
+                {
+                    lbl1.Location = new Point(x, y);
+                    lbl2.Location = new Point(lbl1.Right + 5, y);
+                }
+
+                //Application.DoEvents();
+
+                x += 0;
+                y += 15;
+
+                if (y > tabStatus.Height - 30)
+                {
+                    x += 140;
+                    y = 10;
+                }
+            }
+
+            tabStatus.Width = x;
+
+         //   tabStatus.ResumeLayout();
         }
 
         public void Activate()
@@ -1054,13 +1360,6 @@ namespace ArdupilotMega.GCSViews
             }
         }
 
-        private void SubMainHT_Panel1_Resize(object sender, EventArgs e)
-        {
-            hud1.Width = MainH.SplitterDistance;
-
-            SubMainLeft.SplitterDistance = hud1.Height + 2;
-        }
-
         private void BUT_RAWSensor_Click(object sender, EventArgs e)
         {
             Form temp = new RAW_Sensor();
@@ -1266,21 +1565,12 @@ namespace ArdupilotMega.GCSViews
             catch { } // ignore any invalid 
         }
 
-        bool loaded = false;
-
-        private void MainH_SplitterMoved(object sender, SplitterEventArgs e)
-        {
-            if (loaded == true)
-            { // startup check
-                MainV2.config["FlightSplitter"] = MainH.SplitterDistance.ToString();
-            }
-            loaded = true;
-            hud1.Width = MainH.Panel1.Width;
-        }
-
         private void tabPage1_Resize(object sender, EventArgs e)
         {
             int mywidth, myheight;
+
+            // localize it
+            Control tabGauges = sender as Control;
 
             float scale = tabGauges.Width / (float)tabGauges.Height;
 
@@ -1444,10 +1734,8 @@ namespace ArdupilotMega.GCSViews
             if (huddropout)
                 return;
 
-            SubMainLeft.Panel1Collapsed = true;
             Form dropout = new Form();
             dropout.Size = new System.Drawing.Size(hud1.Width, hud1.Height + 20);
-            SubMainLeft.Panel1.Controls.Remove(hud1);
             dropout.Controls.Add(hud1);
             dropout.Resize += new EventHandler(dropout_Resize);
             dropout.FormClosed += new FormClosedEventHandler(dropout_FormClosed);
@@ -1457,8 +1745,7 @@ namespace ArdupilotMega.GCSViews
 
         void dropout_FormClosed(object sender, FormClosedEventArgs e)
         {
-            SubMainLeft.Panel1.Controls.Add(hud1);
-            SubMainLeft.Panel1Collapsed = false;
+            dockhud.DockableForm.Controls.Add(hud1);
             huddropout = false;
         }
 
@@ -1492,93 +1779,10 @@ namespace ArdupilotMega.GCSViews
 
         private void tabControl1_SelectedIndexChanged(object sender, EventArgs e)
         {
+            /*
             if (tabControl1.SelectedTab == tabStatus)
             {
-                tabControl1.SuspendLayout();
-
-                foreach (Control temp in tabStatus.Controls)
-                {
-                  //  temp.DataBindings.Clear();
-                    //temp.Dispose();
-                }
-                //tabStatus.Controls.Clear();
-
-                int x = 10;
-                int y = 10;
-
-                object thisBoxed = MainV2.cs;
-                Type test = thisBoxed.GetType();
-
-                foreach (var field in test.GetProperties())
-                {
-                    // field.Name has the field's name.
-                    object fieldValue;
-                    try
-                    {
-                        fieldValue = field.GetValue(thisBoxed, null); // Get value
-                    }
-                    catch { continue; }
-
-                    // Get the TypeCode enumeration. Multiple types get mapped to a common typecode.
-                    TypeCode typeCode = Type.GetTypeCode(fieldValue.GetType());
-
-                    bool add = true;
-
-                    MyLabel lbl1 = new MyLabel();
-                    MyLabel lbl2 = new MyLabel();
-                    try
-                    {
-                        lbl1 = (MyLabel)tabStatus.Controls.Find(field.Name, false)[0];
-
-                        lbl2 = (MyLabel)tabStatus.Controls.Find(field.Name + "value", false)[0];
-
-                        add = false;
-                    }
-                    catch { }
-
-                    if (add)
-                    {
-
-                        lbl1.Location = new Point(x, y);
-                        lbl1.Size = new System.Drawing.Size(75, 13);
-                        lbl1.Text = field.Name;
-                        lbl1.Name = field.Name;
-                        lbl1.Visible = true;
-                        lbl2.AutoSize = false;
-
-                        lbl2.Location = new Point(lbl1.Right + 5, y);
-                        lbl2.Size = new System.Drawing.Size(50, 13);
-                        //if (lbl2.Name == "")
-                        lbl2.DataBindings.Add(new System.Windows.Forms.Binding("Text", this.bindingSource1, field.Name, false, System.Windows.Forms.DataSourceUpdateMode.OnValidation, "0"));
-                        lbl2.Name = field.Name + "value";
-                        lbl2.Visible = true;
-                        //lbl2.Text = fieldValue.ToString();
-
-
-                        tabStatus.Controls.Add(lbl1);
-                        tabStatus.Controls.Add(lbl2);
-                    }
-                    else
-                    {
-                        lbl1.Location = new Point(x, y);
-                        lbl2.Location = new Point(lbl1.Right + 5, y);
-                    }
-
-                    //Application.DoEvents();
-
-                    x += 0;
-                    y += 15;
-
-                    if (y > tabStatus.Height - 30)
-                    {
-                        x += 140;
-                        y = 10;
-                    }
-                }
-
-                tabStatus.Width = x;
-
-                tabControl1.ResumeLayout();
+                
             }
             else
             {
@@ -1591,15 +1795,10 @@ namespace ArdupilotMega.GCSViews
 
                 if (tabControl1.SelectedTab == tabQuick)
                 {
-                    int height = tabQuick.Height / 6;
-                    quickView1.Size = new System.Drawing.Size(tabQuick.Width, height);
-                    quickView2.Size = new System.Drawing.Size(tabQuick.Width, height);
-                    quickView3.Size = new System.Drawing.Size(tabQuick.Width, height);
-                    quickView4.Size = new System.Drawing.Size(tabQuick.Width, height);
-                    quickView5.Size = new System.Drawing.Size(tabQuick.Width, height);
-                    quickView6.Size = new System.Drawing.Size(tabQuick.Width, height);
+
                 }
             }
+             */
         }
 
         private void Gspeed_DoubleClick(object sender, EventArgs e)
@@ -1810,6 +2009,15 @@ namespace ArdupilotMega.GCSViews
             selectform.Show();
         }
 
+        void addHudUserItem(ref HUD.Custom cust, CheckBox sender)
+        {
+            setupPropertyInfo(ref cust.Item, (sender).Name, MainV2.cs);
+
+            hud1.CustomItems.Add((sender).Name, cust);
+
+            hud1.Invalidate();
+        }
+
         void chk_box_hud_UserItem_CheckedChanged(object sender, EventArgs e)
         {
             if (((CheckBox)sender).Checked)
@@ -1825,11 +2033,8 @@ namespace ArdupilotMega.GCSViews
                 MainV2.config["hud1_useritem_" + ((CheckBox)sender).Name] = prefix;
 
                 cust.Header = prefix;
-                setupPropertyInfo(ref cust.Item, ((CheckBox)sender).Name, MainV2.cs);
 
-                hud1.CustomItems.Add(((CheckBox)sender).Name, cust);
-
-                hud1.Invalidate();
+                addHudUserItem(ref cust, (CheckBox)sender);
             }
             else
             {
@@ -1837,6 +2042,7 @@ namespace ArdupilotMega.GCSViews
                 {
                     hud1.CustomItems.Remove(((CheckBox)sender).Name);
                 }
+                MainV2.config.Remove("hud1_useritem_" + ((CheckBox)sender).Name);
                 hud1.Invalidate();
             }
         }
@@ -2195,8 +2401,7 @@ print 'Roll complete'
         private void setAspectRatioToolStripMenuItem_Click(object sender, EventArgs e)
         {
             hud1.SixteenXNine = !hud1.SixteenXNine;
-            // force a redraw
-            SubMainHT_Panel1_Resize(null, null);
+            hud1.Invalidate();
         }
 
         private void displayBatteryInfoToolStripMenuItem_Click(object sender, EventArgs e)
@@ -2382,7 +2587,32 @@ print 'Roll complete'
 
         private void tabQuick_Resize(object sender, EventArgs e)
         {
-            tabControl1_SelectedIndexChanged(null, null);
+            int height = ((Control)sender).Height / 6;
+            quickView1.Size = new System.Drawing.Size(tabQuick.Width, height);
+            quickView2.Size = new System.Drawing.Size(tabQuick.Width, height);
+            quickView3.Size = new System.Drawing.Size(tabQuick.Width, height);
+            quickView4.Size = new System.Drawing.Size(tabQuick.Width, height);
+            quickView5.Size = new System.Drawing.Size(tabQuick.Width, height);
+            quickView6.Size = new System.Drawing.Size(tabQuick.Width, height);
+        }
+
+        private void hud1_Resize(object sender, EventArgs e)
+        {
+            Console.WriteLine("HUD resize "+ hud1.Width + " " + hud1.Height);
+
+            try
+            {
+              //  dockContainer1.SetHeight(dockhud, hud1.Height);
+            }
+            catch { }
+        }
+
+        private void resetToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            dockContainer1.Clear();
+            SetupDocking();
+            cleanupDocks();
+            this.Refresh();
         }
     }
 }

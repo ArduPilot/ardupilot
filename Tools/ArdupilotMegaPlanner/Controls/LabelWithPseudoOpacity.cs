@@ -44,5 +44,17 @@ namespace ArdupilotMega.Controls
             base.OnPaint(pe);
             this.CoverWithRect(pe.Graphics, Opacity);
         }
+
+        public new bool DoubleBuffered
+        {
+            get
+            {
+                return base.DoubleBuffered;
+            }
+            set
+            {
+                base.DoubleBuffered = value;
+            }
+        }
     }
 }

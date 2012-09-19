@@ -21,33 +21,9 @@ namespace ArdupilotMega.GCSViews
 
         protected override bool ProcessCmdKey(ref Message msg, Keys keyData)
         {
-            if (keyData == (Keys.Control | Keys.C))
-            {
-                var fd = new OpenFileDialog {Filter = "Firmware (*.hex)|*.hex"};
-                fd.ShowDialog();
-                if (File.Exists(fd.FileName))
-                {
-                    UploadFlash(fd.FileName, ArduinoDetect.DetectBoard(MainV2.comPortName));
-                }
-                return true;
-            }
-
-            if (keyData == (Keys.Control | Keys.R))
-            {
-                findfirmware("AR2");
-                return true;
-            }
-
-            if (keyData == (Keys.Control | Keys.O))
-            {
-                CMB_history.Enabled = false;
-
-                CMB_history.DataSource = oldurls;
-
-                CMB_history.Enabled = true;
-                CMB_history.Visible = true;
-            }
-
+            //CTRL+R moved to pictureBoxRover_Click
+            //CTRL+O moved to CMB_history_label_Click
+            //CTRL+C moved to Custom_firmware_label_Click
             return base.ProcessCmdKey(ref msg, keyData);
         }
 
@@ -78,6 +54,7 @@ namespace ArdupilotMega.GCSViews
             WebRequest.DefaultWebProxy.Credentials = System.Net.CredentialCache.DefaultCredentials;
 
             this.pictureBoxAPM.Image = ArdupilotMega.Properties.Resources.APM_airframes_001;
+            this.pictureBoxRover.Image = ArdupilotMega.Properties.Resources.APM_rover_firmware;
             this.pictureBoxQuad.Image = ArdupilotMega.Properties.Resources.quad;
             this.pictureBoxHexa.Image = ArdupilotMega.Properties.Resources.hexa;
             this.pictureBoxTri.Image = ArdupilotMega.Properties.Resources.tri;
@@ -178,6 +155,10 @@ namespace ArdupilotMega.GCSViews
 
         void updateDisplayName(software temp)
         {
+            if (temp.url.ToLower().Contains("AR2".ToLower()))
+            {
+                pictureBoxRover.Text = temp.name;
+            }
             if (temp.url.ToLower().Contains("firmware/AP-1".ToLower()))
             {
                 pictureBoxAPM.Text = temp.name;
@@ -259,6 +240,10 @@ namespace ArdupilotMega.GCSViews
             }
         }
 
+        private void pictureBoxRover_Click(object sender, EventArgs e)
+        {
+            findfirmware("AR2");
+        }
         private void pictureBoxAPM_Click(object sender, EventArgs e)
         {
             findfirmware("firmware/AP-1");
@@ -710,7 +695,7 @@ namespace ArdupilotMega.GCSViews
         private void BUT_setup_Click(object sender, EventArgs e)
         {
             Form temp = new Form();
-            MyUserControl configview = new GCSViews.ConfigurationView.Setup();
+            MyUserControl configview = new GCSViews.ConfigurationView.SetupFresh();
             temp.Controls.Add(configview);
             ThemeManager.ApplyThemeTo(temp);
             // fix title
@@ -747,21 +732,34 @@ namespace ArdupilotMega.GCSViews
             findfirmware("AC2-HELHIL-");
         }
 
-        private void pictureBoxAPHil_MouseEnter(object sender, EventArgs e)
-        {
-
-        }
-
-        private void pictureBoxAPHil_MouseLeave(object sender, EventArgs e)
-        {
-
-        }
-
         private void CMB_history_SelectedIndexChanged(object sender, EventArgs e)
         {
             firmwareurl = oldurl.Replace("!Hash!", CMB_history.Text);
 
             Firmware_Load(null, null);
+        }
+
+        //Show list of previous firmware versions (old CTRL+O shortcut)
+        private void CMB_history_label_Click(object sender, EventArgs e)
+        {
+            CMB_history.Enabled = false;
+
+            CMB_history.DataSource = oldurls;
+
+            CMB_history.Enabled = true;
+            CMB_history.Visible = true;
+            CMB_history_label.Visible = false;
+        }
+
+        //Load custom firmware (old CTRL+C shortcut)
+        private void Custom_firmware_label_Click(object sender, EventArgs e)
+        {
+            var fd = new OpenFileDialog { Filter = "Firmware (*.hex)|*.hex" };
+            fd.ShowDialog();
+            if (File.Exists(fd.FileName))
+            {
+                UploadFlash(fd.FileName, ArduinoDetect.DetectBoard(MainV2.comPortName));
+            }
         }
     }
 }

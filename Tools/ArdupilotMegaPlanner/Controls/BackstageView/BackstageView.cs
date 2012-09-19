@@ -145,9 +145,9 @@ namespace ArdupilotMega.Controls.BackstageView
         /// <summary>
         /// Add a page (tab) to this backstage view. Will be added at the end/bottom
         /// </summary>
-        public void AddPage(UserControl userControl, string headerText)
+        public BackstageViewPage AddPage(UserControl userControl, string headerText, BackstageViewPage Parent)
         {
-            var page = new BackstageViewPage(userControl, headerText)
+            var page = new BackstageViewPage(userControl, headerText, Parent)
                            {
                                Page =
                                    {
@@ -171,6 +171,8 @@ namespace ArdupilotMega.Controls.BackstageView
 
                 ActivatePage(page);
             }
+
+            return page;
         }
 
         /// <summary>
@@ -196,7 +198,8 @@ namespace ArdupilotMega.Controls.BackstageView
                                     SelectedTextColor = _selectedTextColor,
                                     UnSelectedTextColor = _unSelectedTextColor,
                                     HighlightColor1 = _highlightColor1,
-                                    HighlightColor2 = _highlightColor2
+                                    HighlightColor2 = _highlightColor2,
+                                   // Dock = DockStyle.Bottom
                                 };
 
             pnlMenu.Controls.Add(lnkButton);
@@ -322,6 +325,9 @@ namespace ArdupilotMega.Controls.BackstageView
                 if (popoutPage != null && popoutPage == page)
                     continue;
 
+                if (page is BackstageViewSpacer)
+                    continue;
+
                 if (((BackstageViewPage)page).Page is IDeactivate)
                 {
                     ((IDeactivate)((BackstageViewPage)(page)).Page).Deactivate();
@@ -335,7 +341,7 @@ namespace ArdupilotMega.Controls.BackstageView
 
         public abstract class BackstageViewItem
         {
-            public abstract int Spacing { get; }
+            public abstract int Spacing { get; set; }
         }
 
         /// <summary>
@@ -355,6 +361,7 @@ namespace ArdupilotMega.Controls.BackstageView
             public override int Spacing
             {
                 get { return _spacing; }
+                set { _spacing = value; }
             }
         }
 
@@ -363,11 +370,12 @@ namespace ArdupilotMega.Controls.BackstageView
         /// Data structure to hold information about a 'tab' in the <see cref="BackstageView"/>
         /// </summary>
         public class BackstageViewPage : BackstageViewItem
-        {            
-            public BackstageViewPage(UserControl page, string linkText)
+        {
+            public BackstageViewPage(UserControl page, string linkText, BackstageViewPage parent)
             {
                 Page = page;
                 LinkText = linkText;
+                Parent = parent;
             }
 
             /// <summary>
@@ -380,9 +388,14 @@ namespace ArdupilotMega.Controls.BackstageView
             /// </summary>
             public string LinkText { get; set; }
 
+            public BackstageViewPage Parent { get; internal set; }
+
+            private int _spaceoverride = -1;
+
             public override int Spacing
             {
-                get { return ButtonSpacing; }
+                get { if (_spaceoverride != -1) return _spaceoverride; return ButtonSpacing; }
+                set { _spaceoverride = value; }
             }
         }
     }

@@ -73,8 +73,11 @@ namespace ArdupilotMega.GCSViews
             this.pictureBoxACHHil = new System.Windows.Forms.PictureBox();
             this.pictureBoxOcta = new ArdupilotMega.Controls.ImageLabel();
             this.pictureBoxOctav = new ArdupilotMega.Controls.ImageLabel();
+            this.pictureBoxRover = new ArdupilotMega.Controls.ImageLabel();
             this.label1 = new System.Windows.Forms.Label();
             this.CMB_history = new System.Windows.Forms.ComboBox();
+            this.CMB_history_label = new System.Windows.Forms.Label();
+            this.Custom_firmware_label = new System.Windows.Forms.Label();
             ((System.ComponentModel.ISupportInitialize)(this.pictureBoxHilimage)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.pictureBoxAPHil)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.pictureBoxACHil)).BeginInit();
@@ -173,8 +176,6 @@ namespace ArdupilotMega.GCSViews
             this.pictureBoxAPHil.Name = "pictureBoxAPHil";
             this.pictureBoxAPHil.TabStop = false;
             this.pictureBoxAPHil.Click += new System.EventHandler(this.pictureBoxAPHil_Click);
-            this.pictureBoxAPHil.MouseEnter += new System.EventHandler(this.pictureBoxAPHil_MouseEnter);
-            this.pictureBoxAPHil.MouseLeave += new System.EventHandler(this.pictureBoxAPHil_MouseLeave);
             // 
             // pictureBoxACHil
             // 
@@ -210,6 +211,15 @@ namespace ArdupilotMega.GCSViews
             this.pictureBoxOctav.TabStop = false;
             this.pictureBoxOctav.Click += new System.EventHandler(this.pictureBoxOctav_Click);
             // 
+            // pictureBoxRover
+            // 
+            this.pictureBoxRover.Cursor = System.Windows.Forms.Cursors.Hand;
+            this.pictureBoxRover.Image = null;
+            resources.ApplyResources(this.pictureBoxRover, "pictureBoxRover");
+            this.pictureBoxRover.Name = "pictureBoxRover";
+            this.pictureBoxRover.TabStop = false;
+            this.pictureBoxRover.Click += new System.EventHandler(this.pictureBoxRover_Click);
+            // 
             // label1
             // 
             resources.ApplyResources(this.label1, "label1");
@@ -223,10 +233,27 @@ namespace ArdupilotMega.GCSViews
             this.CMB_history.Name = "CMB_history";
             this.CMB_history.SelectedIndexChanged += new System.EventHandler(this.CMB_history_SelectedIndexChanged);
             // 
+            // CMB_history_label
+            // 
+            resources.ApplyResources(this.CMB_history_label, "CMB_history_label");
+            this.CMB_history_label.Cursor = System.Windows.Forms.Cursors.Hand;
+            this.CMB_history_label.Name = "CMB_history_label";
+            this.CMB_history_label.Click += new System.EventHandler(this.CMB_history_label_Click);
+            // 
+            // Custom_firmware_label
+            // 
+            resources.ApplyResources(this.Custom_firmware_label, "Custom_firmware_label");
+            this.Custom_firmware_label.Cursor = System.Windows.Forms.Cursors.Hand;
+            this.Custom_firmware_label.Name = "Custom_firmware_label";
+            this.Custom_firmware_label.Click += new System.EventHandler(this.Custom_firmware_label_Click);
+            // 
             // Firmware
             // 
             resources.ApplyResources(this, "$this");
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
+            this.Controls.Add(this.Custom_firmware_label);
+            this.Controls.Add(this.CMB_history_label);
+            this.Controls.Add(this.pictureBoxRover);
             this.Controls.Add(this.CMB_history);
             this.Controls.Add(this.label1);
             this.Controls.Add(this.BUT_setup);
@@ -258,6 +285,9 @@ namespace ArdupilotMega.GCSViews
         }
 
         private ComboBox CMB_history;
+        private Controls.ImageLabel pictureBoxRover;
+        private Label CMB_history_label;
+        private Label Custom_firmware_label;
 
     }
 }

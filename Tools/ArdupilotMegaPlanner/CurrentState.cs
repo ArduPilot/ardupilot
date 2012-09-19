@@ -480,7 +480,7 @@ namespace ArdupilotMega
 
                         gotwind = true;
 
-                        wind_dir = wind.direction;
+                        wind_dir = (wind.direction + 360) % 360;
                         wind_vel = wind.speed;
 
                         //MAVLink.packets[ArdupilotMega.MAVLink.MAVLINK_MSG_ID_SYS_STATUS] = null;

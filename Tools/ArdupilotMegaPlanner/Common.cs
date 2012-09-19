@@ -1112,6 +1112,7 @@ System.ComponentModel.Description("Text under Bar")]
         int _min = 0;
         int _max = 0;
         int _value = 0;
+        bool ctladded = false;
         System.Windows.Forms.Label lbl1 = new System.Windows.Forms.Label();
         System.Windows.Forms.Label lbl = new System.Windows.Forms.Label();
 
@@ -1144,6 +1145,13 @@ System.ComponentModel.Description("Text under Bar")]
                 drawlbl();
                 base.Value = ans;
                 drawlbl();
+
+                if (this.Parent != null && ctladded == false)
+                {
+                    this.Parent.Controls.Add(lbl);
+                    this.Parent.Controls.Add(lbl1);
+                    ctladded = true;
+                }
             }
         }
 
@@ -1164,10 +1172,11 @@ System.ComponentModel.Description("Text under Bar")]
 
                 if (this.DesignMode) return;
 
-                if (this.Parent != null)
+                if (this.Parent != null && ctladded == false)
                 {
                     this.Parent.Controls.Add(lbl);
                     this.Parent.Controls.Add(lbl1);
+                    ctladded = true;
                 }
             }
         }

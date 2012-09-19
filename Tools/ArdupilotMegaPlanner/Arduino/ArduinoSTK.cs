@@ -11,7 +11,7 @@ using ArdupilotMega.Comms;
 
 namespace ArdupilotMega.Arduino
 {
-    class ArduinoSTK : SerialPort, ArduinoComms
+    public class ArduinoSTK : SerialPort, ArduinoComms
     {
         private static readonly ILog log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
         public event ProgressEventHandler Progress;
@@ -45,14 +45,14 @@ namespace ArdupilotMega.Arduino
                 return false;
             }
             int a = 0;
-            while (a < 50)
+            while (a < 50) // 50 tries at 50 ms = 2.5sec
             {
                 this.DiscardInBuffer();
                 this.Write(new byte[] { (byte)'0', (byte)' ' }, 0, 2);
                 a++;
                 Thread.Sleep(50);
 
-                log.InfoFormat("btr {0}", this.BytesToRead);
+                log.InfoFormat("connectap btr {0}", this.BytesToRead);
                 if (this.BytesToRead >= 2)
                 {
                     byte b1 = (byte)this.ReadByte();
@@ -315,30 +315,39 @@ namespace ArdupilotMega.Arduino
             return true;
         }
 
-        public byte getChipType(byte part = 0)
+        public Chip getChipType()
         {
-            byte answer = 0x00;
+            byte sig1 = 0x00;
+            byte sig2 = 0x00;
+            byte sig3 = 0x00;
 
-            byte[] command = new byte[] { (byte)'V', 0x30, 0x01, part, 0x01, (byte)' ' };
+            byte[] command = new byte[] { (byte)'u', (byte)' ' };
             this.Write(command, 0, command.Length);
 
-            byte[] chr = new byte[1];
+            System.Threading.Thread.Sleep(20);
 
-            this.Read(chr, 0, 1);
+            byte[] chr = new byte[5];
 
-            if (chr[0] == 0x14)
+            int count = this.Read(chr, 0, 5);
+            log.Debug("getChipType read " + count);
+
+            if (chr[0] == 0x14 && chr[4] == 0x10)
             {
-                this.Read(chr, 0, 1);
-                answer = (byte)chr[0];
+                sig1 = (byte)chr[1];
+                sig2 = (byte)chr[2];
+                sig3 = (byte)chr[3];
+            }
 
-                this.Read(chr, 0, 1);
-                if (chr[0] == 0x10)
+            foreach (Chip item in Arduino.Chip.chips)
+            {
+                if (item.Equals(new Chip("", sig1, sig2, sig3, 0)))
                 {
-                    return answer;
+                    log.Debug("Match "+item.ToString());
+                    return item;
                 }
             }
 
-            return answer;
+            return null;
         }
 
         public new bool Close()

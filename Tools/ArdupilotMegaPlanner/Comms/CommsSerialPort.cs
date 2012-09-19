@@ -11,6 +11,9 @@ namespace ArdupilotMega.Comms
     {
         public new void Open()
         {
+            // 500ms write timeout - win32 api default
+            this.WriteTimeout = 500;
+
             if (base.IsOpen)
                 return;
 

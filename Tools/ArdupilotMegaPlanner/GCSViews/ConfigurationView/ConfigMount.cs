@@ -85,8 +85,10 @@ namespace ArdupilotMega.GCSViews.ConfigurationView
         enum Channelinput
         {
             Disable = 0,
+            RC5 = 5,
             RC6 = 6,
-            RC7 = 7
+            RC7 = 7,
+            RC8 = 8
         }
 
         public void Activate()

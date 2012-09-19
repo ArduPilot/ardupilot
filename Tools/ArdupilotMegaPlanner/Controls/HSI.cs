@@ -36,6 +36,8 @@ namespace ArdupilotMega.Controls
         /// </summary>
         public new void Invalidate()
         {
+            if (Disposing)
+                return;
             if (!ThisReallyVisible())
             {
                 return;
@@ -50,8 +52,8 @@ namespace ArdupilotMega.Controls
         /// <returns></returns>
         public bool ThisReallyVisible()
         {
-            Control ctl = Control.FromHandle(this.Handle);
-            return ctl.Visible;
+            //Control ctl = Control.FromHandle(this.Handle);
+            return this.Visible;
         } 
 
         public HSI()

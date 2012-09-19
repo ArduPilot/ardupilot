@@ -14,7 +14,7 @@ namespace ArdupilotMega.Controls
     public partial class MainSwitcher : UserControl
     {
         public List<Screen> screens = new List<Screen>();
-        Screen current;
+        public Screen current;
 
         public MainSwitcher()
         {
