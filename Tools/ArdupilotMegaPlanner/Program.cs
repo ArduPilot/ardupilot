@@ -28,6 +28,8 @@ namespace ArdupilotMega
 
             Application.ThreadException += Application_ThreadException;
 
+            AppDomain.CurrentDomain.UnhandledException += new UnhandledExceptionEventHandler(CurrentDomain_UnhandledException);
+
             Application.Idle += Application_Idle;
 
             //MagCalib.ProcessLog();
@@ -38,29 +40,80 @@ namespace ArdupilotMega
 
             //Console.WriteLine(srtm.getAltitude(-35.115676879882812, 117.94178754638671,20));
             /*
-            Arduino.ArduinoSTK comport = new Arduino.ArduinoSTK();
+            Arduino.ArduinoSTKv2 comport = new Arduino.ArduinoSTKv2();
 
-            comport.PortName = "com4";
+            comport.PortName = "com8";
 
-            comport.BaudRate = 57600;
+            comport.BaudRate = 115200;
 
             comport.Open();
 
-            comport.connectAP();
+            Arduino.Chip.Populate();
 
-            comport.sync();
-
-            comport.sync();
-
-            Console.WriteLine( comport.getChipType(0));
-            
-            Console.WriteLine(comport.getChipType(1));
-
-            Console.WriteLine(comport.getChipType(2));
-
+            if (comport.connectAP())
+            {
+                Arduino.Chip chip = comport.getChipType();
+                Console.WriteLine(chip);
+            }
             Console.ReadLine();
 
             return;
+            */
+            /*
+            Comms.SerialPort sp = new Comms.SerialPort();
+
+            sp.PortName = "com8";
+            sp.BaudRate = 115200;
+
+            CurrentState cs = new CurrentState();
+
+            MAVLink mav = new MAVLink();
+
+            mav.BaseStream = sp;
+
+            mav.Open();
+
+            HIL.XPlane xp = new HIL.XPlane();
+
+            xp.SetupSockets(49005, 49000, "127.0.0.1");
+
+            HIL.Hil.sitl_fdm data = new HIL.Hil.sitl_fdm();
+
+            while (true)
+            {
+                while (mav.BaseStream.BytesToRead > 0)
+                    mav.readPacket();
+
+                // update all stats
+                cs.UpdateCurrentSettings(null);
+
+                xp.GetFromSim(ref data);
+                xp.GetFromAP(); // no function
+
+                xp.SendToAP(data);
+                xp.SendToSim();
+
+                MAVLink.mavlink_rc_channels_override_t rc = new MAVLink.mavlink_rc_channels_override_t();
+
+                rc.chan3_raw = 1500;
+
+                mav.sendPacket(rc);
+                
+            }       */
+            /*
+            MAVLink mav = new MAVLink();
+
+            mav.BaseStream = new Comms.CommsFile() { PortName = @"C:\Users\hog\Documents\Visual Studio 2010\Projects\ArdupilotMega\ArdupilotMega\bin\Debug\logs\2012-09-09 15-07-25.tlog" };
+
+            mav.Open(true);
+
+            while (mav.BaseStream.BytesToRead > 0)
+            {
+
+                byte[] packet = mav.readPacket();
+
+                mav.DebugPacket(packet, true);
+            }
             */
 
             try
@@ -71,11 +124,21 @@ namespace ArdupilotMega
             }
             catch (Exception ex)
             {
+                if (ex.GetType() == typeof(FileNotFoundException))
+                {
+                    Console.WriteLine("If your error is about Microsoft.DirectX.DirectInput, please install the latest directx redist from here http://www.microsoft.com/en-us/download/details.aspx?id=35 \n\n");
+                }
+
                 log.Fatal("Fatal app exception", ex);
                 Console.WriteLine(ex.ToString());
 
                 Console.ReadLine();
             }
+        }
+
+        static void CurrentDomain_UnhandledException(object sender, UnhandledExceptionEventArgs e)
+        {
+            handleException((Exception)e.ExceptionObject);
         }
 
         static DateTime lastidle = DateTime.Now;
@@ -93,10 +156,8 @@ namespace ArdupilotMega
             System.Threading.Thread.Sleep(1);
         }
 
-        static void Application_ThreadException(object sender, System.Threading.ThreadExceptionEventArgs e)
+        static void handleException(Exception ex)
         {
-            Exception ex = e.Exception;
-
             log.Debug(ex.ToString());
 
             if (ex.Message == "Requested registry access is not allowed.")
@@ -113,18 +174,18 @@ namespace ArdupilotMega
                 CustomMessageBox.Show("Serial connection has been lost");
                 return;
             }
-            if (e.Exception.GetType() == typeof(MissingMethodException))
+            if (ex.GetType() == typeof(MissingMethodException))
             {
-                CustomMessageBox.Show("Please Update - Some older library dlls are causing problems\n" + e.Exception.Message);
+                CustomMessageBox.Show("Please Update - Some older library dlls are causing problems\n" + ex.Message);
                 return;
             }
-            if (e.Exception.GetType() == typeof(ObjectDisposedException) || e.Exception.GetType() == typeof(InvalidOperationException)) // something is trying to update while the form, is closing.
+            if (ex.GetType() == typeof(ObjectDisposedException) || ex.GetType() == typeof(InvalidOperationException)) // something is trying to update while the form, is closing.
             {
                 return; // ignore
             }
-            if (e.Exception.GetType() == typeof(FileNotFoundException) || e.Exception.GetType() == typeof(BadImageFormatException)) // i get alot of error from people who click the exe from inside a zip file.
+            if (ex.GetType() == typeof(FileNotFoundException) || ex.GetType() == typeof(BadImageFormatException)) // i get alot of error from people who click the exe from inside a zip file.
             {
-                CustomMessageBox.Show("You are missing some DLL's. Please extract the zip file somewhere. OR Use the update feature from the menu " + e.Exception.ToString());
+                CustomMessageBox.Show("You are missing some DLL's. Please extract the zip file somewhere. OR Use the update feature from the menu " + ex.ToString());
                 // return;
             }
             DialogResult dr = CustomMessageBox.Show("An error has occurred\n" + ex.ToString() + "\n\nReport this Error???", "Send Error", MessageBoxButtons.YesNo);
@@ -172,6 +233,13 @@ namespace ArdupilotMega
                     CustomMessageBox.Show("Error sending Error report!! Youre most likerly are not on the internet");
                 }
             }
+        }
+
+        static void Application_ThreadException(object sender, System.Threading.ThreadExceptionEventArgs e)
+        {
+            Exception ex = e.Exception;
+
+            handleException(ex);
         }
     }
 }

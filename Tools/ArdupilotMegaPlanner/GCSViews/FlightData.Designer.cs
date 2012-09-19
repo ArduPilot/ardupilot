@@ -10,10 +10,15 @@
             System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(FlightData));
             System.Windows.Forms.DataGridViewCellStyle dataGridViewCellStyle1 = new System.Windows.Forms.DataGridViewCellStyle();
             System.Windows.Forms.DataGridViewCellStyle dataGridViewCellStyle2 = new System.Windows.Forms.DataGridViewCellStyle();
+            this.contextMenuStripMap = new System.Windows.Forms.ContextMenuStrip(this.components);
+            this.goHereToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.flyToHereAltToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.pointCameraHereToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.flightPlannerToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.MainH = new System.Windows.Forms.SplitContainer();
             this.SubMainLeft = new System.Windows.Forms.SplitContainer();
             this.hud1 = new ArdupilotMega.Controls.HUD();
-            this.contextMenuStrip2 = new System.Windows.Forms.ContextMenuStrip(this.components);
+            this.contextMenuStripHud = new System.Windows.Forms.ContextMenuStrip(this.components);
             this.recordHudToAVIToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.stopRecordToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.setMJPEGSourceToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
@@ -62,11 +67,6 @@
             this.tableMap = new System.Windows.Forms.TableLayoutPanel();
             this.splitContainer1 = new System.Windows.Forms.SplitContainer();
             this.zg1 = new ZedGraph.ZedGraphControl();
-            this.contextMenuStrip1 = new System.Windows.Forms.ContextMenuStrip(this.components);
-            this.goHereToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
-            this.flyToHereAltToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
-            this.pointCameraHereToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
-            this.flightPlannerToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.lbl_winddir = new ArdupilotMega.Controls.MyLabel();
             this.lbl_windvel = new ArdupilotMega.Controls.MyLabel();
             this.lbl_hdop = new ArdupilotMega.Controls.MyLabel();
@@ -84,14 +84,17 @@
             this.dataGridViewImageColumn2 = new System.Windows.Forms.DataGridViewImageColumn();
             this.ZedGraphTimer = new System.Windows.Forms.Timer(this.components);
             this.toolTip1 = new System.Windows.Forms.ToolTip(this.components);
-            this.label6 = new ArdupilotMega.Controls.MyLabel();
+            this.dockContainer1 = new Crom.Controls.Docking.DockContainer();
+            this.contextMenuStripDockContainer = new System.Windows.Forms.ContextMenuStrip(this.components);
+            this.resetToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.contextMenuStripMap.SuspendLayout();
             this.MainH.Panel1.SuspendLayout();
             this.MainH.Panel2.SuspendLayout();
             this.MainH.SuspendLayout();
             this.SubMainLeft.Panel1.SuspendLayout();
             this.SubMainLeft.Panel2.SuspendLayout();
             this.SubMainLeft.SuspendLayout();
-            this.contextMenuStrip2.SuspendLayout();
+            this.contextMenuStripHud.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.bindingSource1)).BeginInit();
             this.tabControl1.SuspendLayout();
             this.tabQuick.SuspendLayout();
@@ -104,10 +107,44 @@
             this.splitContainer1.Panel1.SuspendLayout();
             this.splitContainer1.Panel2.SuspendLayout();
             this.splitContainer1.SuspendLayout();
-            this.contextMenuStrip1.SuspendLayout();
             this.panel1.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.Zoomlevel)).BeginInit();
+            this.contextMenuStripDockContainer.SuspendLayout();
             this.SuspendLayout();
+            // 
+            // contextMenuStripMap
+            // 
+            this.contextMenuStripMap.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {
+            this.goHereToolStripMenuItem,
+            this.flyToHereAltToolStripMenuItem,
+            this.pointCameraHereToolStripMenuItem,
+            this.flightPlannerToolStripMenuItem});
+            this.contextMenuStripMap.Name = "contextMenuStrip1";
+            resources.ApplyResources(this.contextMenuStripMap, "contextMenuStripMap");
+            // 
+            // goHereToolStripMenuItem
+            // 
+            this.goHereToolStripMenuItem.Name = "goHereToolStripMenuItem";
+            resources.ApplyResources(this.goHereToolStripMenuItem, "goHereToolStripMenuItem");
+            this.goHereToolStripMenuItem.Click += new System.EventHandler(this.goHereToolStripMenuItem_Click);
+            // 
+            // flyToHereAltToolStripMenuItem
+            // 
+            this.flyToHereAltToolStripMenuItem.Name = "flyToHereAltToolStripMenuItem";
+            resources.ApplyResources(this.flyToHereAltToolStripMenuItem, "flyToHereAltToolStripMenuItem");
+            this.flyToHereAltToolStripMenuItem.Click += new System.EventHandler(this.flyToHereAltToolStripMenuItem_Click);
+            // 
+            // pointCameraHereToolStripMenuItem
+            // 
+            this.pointCameraHereToolStripMenuItem.Name = "pointCameraHereToolStripMenuItem";
+            resources.ApplyResources(this.pointCameraHereToolStripMenuItem, "pointCameraHereToolStripMenuItem");
+            this.pointCameraHereToolStripMenuItem.Click += new System.EventHandler(this.pointCameraHereToolStripMenuItem_Click);
+            // 
+            // flightPlannerToolStripMenuItem
+            // 
+            this.flightPlannerToolStripMenuItem.Name = "flightPlannerToolStripMenuItem";
+            resources.ApplyResources(this.flightPlannerToolStripMenuItem, "flightPlannerToolStripMenuItem");
+            this.flightPlannerToolStripMenuItem.Click += new System.EventHandler(this.flightPlannerToolStripMenuItem_Click);
             // 
             // MainH
             // 
@@ -122,7 +159,6 @@
             // MainH.Panel2
             // 
             this.MainH.Panel2.Controls.Add(this.tableMap);
-            this.MainH.SplitterMoved += new System.Windows.Forms.SplitterEventHandler(this.MainH_SplitterMoved);
             // 
             // SubMainLeft
             // 
@@ -133,7 +169,6 @@
             // SubMainLeft.Panel1
             // 
             this.SubMainLeft.Panel1.Controls.Add(this.hud1);
-            this.SubMainLeft.Panel1.Resize += new System.EventHandler(this.SubMainHT_Panel1_Resize);
             // 
             // SubMainLeft.Panel2
             // 
@@ -147,7 +182,7 @@
             this.hud1.BackColor = System.Drawing.Color.Transparent;
             this.hud1.batterylevel = 0F;
             this.hud1.batteryremaining = 0F;
-            this.hud1.ContextMenuStrip = this.contextMenuStrip2;
+            this.hud1.ContextMenuStrip = this.contextMenuStripHud;
             this.hud1.current = 0F;
             this.hud1.DataBindings.Add(new System.Windows.Forms.Binding("airspeed", this.bindingSource1, "airspeed", true));
             this.hud1.DataBindings.Add(new System.Windows.Forms.Binding("alt", this.bindingSource1, "alt", true));
@@ -205,18 +240,19 @@
             this.hud1.wpno = 0;
             this.hud1.xtrack_error = 0F;
             this.hud1.DoubleClick += new System.EventHandler(this.hud1_DoubleClick);
+            this.hud1.Resize += new System.EventHandler(this.hud1_Resize);
             // 
-            // contextMenuStrip2
+            // contextMenuStripHud
             // 
-            this.contextMenuStrip2.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {
+            this.contextMenuStripHud.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {
             this.recordHudToAVIToolStripMenuItem,
             this.stopRecordToolStripMenuItem,
             this.setMJPEGSourceToolStripMenuItem,
             this.setAspectRatioToolStripMenuItem,
             this.displayBatteryInfoToolStripMenuItem,
             this.userItemsToolStripMenuItem});
-            this.contextMenuStrip2.Name = "contextMenuStrip2";
-            resources.ApplyResources(this.contextMenuStrip2, "contextMenuStrip2");
+            this.contextMenuStripHud.Name = "contextMenuStrip2";
+            resources.ApplyResources(this.contextMenuStripHud, "contextMenuStripHud");
             // 
             // recordHudToAVIToolStripMenuItem
             // 
@@ -291,7 +327,7 @@
             resources.ApplyResources(this.quickView6, "quickView6");
             this.quickView6.MinimumSize = new System.Drawing.Size(100, 27);
             this.quickView6.Name = "quickView6";
-            this.quickView6.number = "0.0";
+            this.quickView6.number = 0D;
             this.quickView6.numberColor = System.Drawing.Color.FromArgb(((int)(((byte)(0)))), ((int)(((byte)(255)))), ((int)(((byte)(252)))));
             this.quickView6.DoubleClick += new System.EventHandler(this.quickView_DoubleClick);
             // 
@@ -302,7 +338,7 @@
             resources.ApplyResources(this.quickView5, "quickView5");
             this.quickView5.MinimumSize = new System.Drawing.Size(100, 27);
             this.quickView5.Name = "quickView5";
-            this.quickView5.number = "0.0";
+            this.quickView5.number = 0D;
             this.quickView5.numberColor = System.Drawing.Color.FromArgb(((int)(((byte)(254)))), ((int)(((byte)(254)))), ((int)(((byte)(86)))));
             this.quickView5.DoubleClick += new System.EventHandler(this.quickView_DoubleClick);
             // 
@@ -313,7 +349,7 @@
             resources.ApplyResources(this.quickView4, "quickView4");
             this.quickView4.MinimumSize = new System.Drawing.Size(100, 27);
             this.quickView4.Name = "quickView4";
-            this.quickView4.number = "0.0";
+            this.quickView4.number = 0D;
             this.quickView4.numberColor = System.Drawing.Color.FromArgb(((int)(((byte)(0)))), ((int)(((byte)(255)))), ((int)(((byte)(83)))));
             this.quickView4.DoubleClick += new System.EventHandler(this.quickView_DoubleClick);
             // 
@@ -324,7 +360,7 @@
             resources.ApplyResources(this.quickView3, "quickView3");
             this.quickView3.MinimumSize = new System.Drawing.Size(100, 27);
             this.quickView3.Name = "quickView3";
-            this.quickView3.number = "0.0";
+            this.quickView3.number = 0D;
             this.quickView3.numberColor = System.Drawing.Color.FromArgb(((int)(((byte)(255)))), ((int)(((byte)(96)))), ((int)(((byte)(91)))));
             this.quickView3.DoubleClick += new System.EventHandler(this.quickView_DoubleClick);
             // 
@@ -335,7 +371,7 @@
             resources.ApplyResources(this.quickView2, "quickView2");
             this.quickView2.MinimumSize = new System.Drawing.Size(100, 27);
             this.quickView2.Name = "quickView2";
-            this.quickView2.number = "0.0";
+            this.quickView2.number = 0D;
             this.quickView2.numberColor = System.Drawing.Color.FromArgb(((int)(((byte)(254)))), ((int)(((byte)(132)))), ((int)(((byte)(46)))));
             this.quickView2.DoubleClick += new System.EventHandler(this.quickView_DoubleClick);
             // 
@@ -346,7 +382,7 @@
             resources.ApplyResources(this.quickView1, "quickView1");
             this.quickView1.MinimumSize = new System.Drawing.Size(100, 27);
             this.quickView1.Name = "quickView1";
-            this.quickView1.number = "0.0";
+            this.quickView1.number = 0D;
             this.quickView1.numberColor = System.Drawing.Color.FromArgb(((int)(((byte)(209)))), ((int)(((byte)(151)))), ((int)(((byte)(248)))));
             this.quickView1.DoubleClick += new System.EventHandler(this.quickView_DoubleClick);
             // 
@@ -985,10 +1021,12 @@
             // NUM_playbackspeed
             // 
             resources.ApplyResources(this.NUM_playbackspeed, "NUM_playbackspeed");
-            this.NUM_playbackspeed.LargeChange = 1;
+            this.NUM_playbackspeed.LargeChange = 10;
             this.NUM_playbackspeed.Maximum = 10D;
             this.NUM_playbackspeed.Minimum = 0.01D;
             this.NUM_playbackspeed.Name = "NUM_playbackspeed";
+            this.NUM_playbackspeed.SmallChange = 10;
+            this.NUM_playbackspeed.TickFrequency = 100;
             this.toolTip1.SetToolTip(this.NUM_playbackspeed, resources.GetString("NUM_playbackspeed.ToolTip"));
             this.NUM_playbackspeed.Value = 1D;
             this.NUM_playbackspeed.Scroll += new System.EventHandler(this.NUM_playbackspeed_Scroll);
@@ -1041,7 +1079,7 @@
             // 
             // splitContainer1.Panel2
             // 
-            this.splitContainer1.Panel2.ContextMenuStrip = this.contextMenuStrip1;
+            this.splitContainer1.Panel2.ContextMenuStrip = this.contextMenuStripMap;
             this.splitContainer1.Panel2.Controls.Add(this.lbl_winddir);
             this.splitContainer1.Panel2.Controls.Add(this.lbl_windvel);
             this.splitContainer1.Panel2.Controls.Add(this.lbl_hdop);
@@ -1060,40 +1098,6 @@
             this.zg1.ScrollMinY = 0D;
             this.zg1.ScrollMinY2 = 0D;
             this.zg1.DoubleClick += new System.EventHandler(this.zg1_DoubleClick);
-            // 
-            // contextMenuStrip1
-            // 
-            this.contextMenuStrip1.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {
-            this.goHereToolStripMenuItem,
-            this.flyToHereAltToolStripMenuItem,
-            this.pointCameraHereToolStripMenuItem,
-            this.flightPlannerToolStripMenuItem});
-            this.contextMenuStrip1.Name = "contextMenuStrip1";
-            resources.ApplyResources(this.contextMenuStrip1, "contextMenuStrip1");
-            // 
-            // goHereToolStripMenuItem
-            // 
-            this.goHereToolStripMenuItem.Name = "goHereToolStripMenuItem";
-            resources.ApplyResources(this.goHereToolStripMenuItem, "goHereToolStripMenuItem");
-            this.goHereToolStripMenuItem.Click += new System.EventHandler(this.goHereToolStripMenuItem_Click);
-            // 
-            // flyToHereAltToolStripMenuItem
-            // 
-            this.flyToHereAltToolStripMenuItem.Name = "flyToHereAltToolStripMenuItem";
-            resources.ApplyResources(this.flyToHereAltToolStripMenuItem, "flyToHereAltToolStripMenuItem");
-            this.flyToHereAltToolStripMenuItem.Click += new System.EventHandler(this.flyToHereAltToolStripMenuItem_Click);
-            // 
-            // pointCameraHereToolStripMenuItem
-            // 
-            this.pointCameraHereToolStripMenuItem.Name = "pointCameraHereToolStripMenuItem";
-            resources.ApplyResources(this.pointCameraHereToolStripMenuItem, "pointCameraHereToolStripMenuItem");
-            this.pointCameraHereToolStripMenuItem.Click += new System.EventHandler(this.pointCameraHereToolStripMenuItem_Click);
-            // 
-            // flightPlannerToolStripMenuItem
-            // 
-            this.flightPlannerToolStripMenuItem.Name = "flightPlannerToolStripMenuItem";
-            resources.ApplyResources(this.flightPlannerToolStripMenuItem, "flightPlannerToolStripMenuItem");
-            this.flightPlannerToolStripMenuItem.Click += new System.EventHandler(this.flightPlannerToolStripMenuItem_Click);
             // 
             // lbl_winddir
             // 
@@ -1114,7 +1118,7 @@
             // lbl_hdop
             // 
             resources.ApplyResources(this.lbl_hdop, "lbl_hdop");
-            this.lbl_hdop.DataBindings.Add(new System.Windows.Forms.Binding("Text", this.bindingSource1, "gpshdop", true, System.Windows.Forms.DataSourceUpdateMode.OnValidation, null, "hdop: 0"));
+            this.lbl_hdop.DataBindings.Add(new System.Windows.Forms.Binding("Text", this.bindingSource1, "gpshdop", true, System.Windows.Forms.DataSourceUpdateMode.OnValidation, null, "hdop: 0.0"));
             this.lbl_hdop.Name = "lbl_hdop";
             this.lbl_hdop.resize = true;
             this.toolTip1.SetToolTip(this.lbl_hdop, resources.GetString("lbl_hdop.ToolTip"));
@@ -1132,7 +1136,7 @@
             this.gMapControl1.BackColor = System.Drawing.Color.Transparent;
             this.gMapControl1.Bearing = 0F;
             this.gMapControl1.CanDragMap = true;
-            this.gMapControl1.ContextMenuStrip = this.contextMenuStrip1;
+            this.gMapControl1.ContextMenuStrip = this.contextMenuStripMap;
             resources.ApplyResources(this.gMapControl1, "gMapControl1");
             this.gMapControl1.GrayScaleMode = false;
             this.gMapControl1.LevelsKeepInMemmory = 5;
@@ -1264,31 +1268,52 @@
             this.toolTip1.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(205)))), ((int)(((byte)(226)))), ((int)(((byte)(150)))));
             this.toolTip1.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(121)))), ((int)(((byte)(148)))), ((int)(((byte)(41)))));
             // 
-            // label6
+            // dockContainer1
             // 
-            resources.ApplyResources(this.label6, "label6");
-            this.label6.Name = "label6";
-            this.label6.resize = false;
+            this.dockContainer1.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(118)))), ((int)(((byte)(118)))), ((int)(((byte)(118)))));
+            this.dockContainer1.CanMoveByMouseFilledForms = true;
+            this.dockContainer1.ContextMenuStrip = this.contextMenuStripDockContainer;
+            resources.ApplyResources(this.dockContainer1, "dockContainer1");
+            this.dockContainer1.Name = "dockContainer1";
+            this.dockContainer1.TitleBarGradientColor1 = System.Drawing.Color.FromArgb(((int)(((byte)(148)))), ((int)(((byte)(193)))), ((int)(((byte)(31)))));
+            this.dockContainer1.TitleBarGradientColor2 = System.Drawing.Color.FromArgb(((int)(((byte)(205)))), ((int)(((byte)(226)))), ((int)(((byte)(150)))));
+            this.dockContainer1.TitleBarGradientSelectedColor1 = System.Drawing.Color.DarkGray;
+            this.dockContainer1.TitleBarGradientSelectedColor2 = System.Drawing.Color.White;
+            this.dockContainer1.TitleBarTextColor = System.Drawing.Color.FromArgb(((int)(((byte)(64)))), ((int)(((byte)(87)))), ((int)(((byte)(4)))));
+            // 
+            // contextMenuStripDockContainer
+            // 
+            this.contextMenuStripDockContainer.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {
+            this.resetToolStripMenuItem});
+            this.contextMenuStripDockContainer.Name = "contextMenuStripDockContainer";
+            resources.ApplyResources(this.contextMenuStripDockContainer, "contextMenuStripDockContainer");
+            // 
+            // resetToolStripMenuItem
+            // 
+            this.resetToolStripMenuItem.Name = "resetToolStripMenuItem";
+            resources.ApplyResources(this.resetToolStripMenuItem, "resetToolStripMenuItem");
+            this.resetToolStripMenuItem.Click += new System.EventHandler(this.resetToolStripMenuItem_Click);
             // 
             // FlightData
             // 
             resources.ApplyResources(this, "$this");
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.Controls.Add(this.MainH);
-            this.Controls.Add(this.label6);
+            this.Controls.Add(this.dockContainer1);
             this.MinimumSize = new System.Drawing.Size(1008, 461);
             this.Name = "FlightData";
             this.FormClosing += new System.Windows.Forms.FormClosingEventHandler(this.FlightData_FormClosing);
             this.Load += new System.EventHandler(this.FlightData_Load);
             this.Resize += new System.EventHandler(this.FlightData_Resize);
             this.ParentChanged += new System.EventHandler(this.FlightData_ParentChanged);
+            this.contextMenuStripMap.ResumeLayout(false);
             this.MainH.Panel1.ResumeLayout(false);
             this.MainH.Panel2.ResumeLayout(false);
             this.MainH.ResumeLayout(false);
             this.SubMainLeft.Panel1.ResumeLayout(false);
             this.SubMainLeft.Panel2.ResumeLayout(false);
             this.SubMainLeft.ResumeLayout(false);
-            this.contextMenuStrip2.ResumeLayout(false);
+            this.contextMenuStripHud.ResumeLayout(false);
             ((System.ComponentModel.ISupportInitialize)(this.bindingSource1)).EndInit();
             this.tabControl1.ResumeLayout(false);
             this.tabQuick.ResumeLayout(false);
@@ -1302,22 +1327,21 @@
             this.splitContainer1.Panel1.ResumeLayout(false);
             this.splitContainer1.Panel2.ResumeLayout(false);
             this.splitContainer1.ResumeLayout(false);
-            this.contextMenuStrip1.ResumeLayout(false);
             this.panel1.ResumeLayout(false);
             this.panel1.PerformLayout();
             ((System.ComponentModel.ISupportInitialize)(this.Zoomlevel)).EndInit();
+            this.contextMenuStripDockContainer.ResumeLayout(false);
             this.ResumeLayout(false);
 
         }
 
         private System.Windows.Forms.DataGridViewImageColumn dataGridViewImageColumn1;
         private System.Windows.Forms.DataGridViewImageColumn dataGridViewImageColumn2;
-        private ArdupilotMega.Controls.MyLabel label6;
         private System.Windows.Forms.BindingSource bindingSource1;
         private System.Windows.Forms.Timer ZedGraphTimer;
         private System.Windows.Forms.SplitContainer MainH;
         private System.Windows.Forms.SplitContainer SubMainLeft;
-        private System.Windows.Forms.ContextMenuStrip contextMenuStrip1;
+        private System.Windows.Forms.ContextMenuStrip contextMenuStripMap;
         private System.Windows.Forms.ToolStripMenuItem goHereToolStripMenuItem;
         private ArdupilotMega.Controls.HUD hud1;
         private ArdupilotMega.Controls.MyButton BUT_clear_track;
@@ -1361,7 +1385,7 @@
         private ArdupilotMega.Controls.MyButton BUT_joystick;
         private System.Windows.Forms.ToolTip toolTip1;
         private ArdupilotMega.Controls.MyTrackBar NUM_playbackspeed;
-        private System.Windows.Forms.ContextMenuStrip contextMenuStrip2;
+        private System.Windows.Forms.ContextMenuStrip contextMenuStripHud;
         private System.Windows.Forms.ToolStripMenuItem recordHudToAVIToolStripMenuItem;
         private System.Windows.Forms.ToolStripMenuItem stopRecordToolStripMenuItem;
         private ArdupilotMega.Controls.MyLabel lbl_logpercent;
@@ -1385,5 +1409,8 @@
         private System.Windows.Forms.ToolStripMenuItem flyToHereAltToolStripMenuItem;
         private System.Windows.Forms.ToolStripMenuItem flightPlannerToolStripMenuItem;
         private System.Windows.Forms.ToolStripMenuItem userItemsToolStripMenuItem;
+        private Crom.Controls.Docking.DockContainer dockContainer1;
+        private System.Windows.Forms.ContextMenuStrip contextMenuStripDockContainer;
+        private System.Windows.Forms.ToolStripMenuItem resetToolStripMenuItem;
     }
 }

@@ -10,7 +10,7 @@ using ArdupilotMega.Utilities;
 
 namespace ArdupilotMega.Arduino
 {
-    class ArduinoDetect
+    public class ArduinoDetect
     {
         private static readonly ILog log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
         /// <summary>
@@ -203,7 +203,7 @@ namespace ArdupilotMega.Arduino
                         }
                         else
                         {
-                            if (DialogResult.Yes == CustomMessageBox.Show("Is this a APM 2?", "APM 2", MessageBoxButtons.YesNo))
+                            if (DialogResult.Yes == CustomMessageBox.Show("Is this a APM 2+?", "APM 2+", MessageBoxButtons.YesNo))
                             {
                                 return "2560-2";
                             }

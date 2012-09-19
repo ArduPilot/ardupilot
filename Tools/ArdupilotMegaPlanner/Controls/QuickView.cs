@@ -14,7 +14,15 @@ namespace ArdupilotMega.Controls
         [System.ComponentModel.Browsable(true)]
         public string desc { get { return labelWithPseudoOpacity1.Text; } set { if (labelWithPseudoOpacity1.Text == value) return; labelWithPseudoOpacity1.Text = value; } }
         [System.ComponentModel.Browsable(true)]
-        public string number { get { return labelWithPseudoOpacity2.Text; } set { if (labelWithPseudoOpacity2.Text == value) return; labelWithPseudoOpacity2.Text = value; } }
+        public double number { get { return double.Parse(labelWithPseudoOpacity2.Text); } 
+            set { 
+                string ans = (value).ToString("0.00");
+                if (labelWithPseudoOpacity2.Text == ans) 
+                    return;
+                labelWithPseudoOpacity2.Text = ans;
+                GetFontSize();
+            }
+        }
         [System.ComponentModel.Browsable(true)]
         public Color numberColor { get { return labelWithPseudoOpacity2.ForeColor; } set { if (labelWithPseudoOpacity2.ForeColor == value) return; labelWithPseudoOpacity2.ForeColor = value; } }
 
@@ -24,6 +32,8 @@ namespace ArdupilotMega.Controls
 
             labelWithPseudoOpacity1.DoubleClick += new EventHandler(labelWithPseudoOpacity1_DoubleClick);
             labelWithPseudoOpacity2.DoubleClick += new EventHandler(labelWithPseudoOpacity2_DoubleClick);
+
+            labelWithPseudoOpacity2.DoubleBuffered = true;
         }
 
         void labelWithPseudoOpacity2_DoubleClick(object sender, EventArgs e)
@@ -54,10 +64,32 @@ namespace ArdupilotMega.Controls
                 base.OnPaint(e);
         }
 
+        void GetFontSize()
+        {
+
+            Size extent = TextRenderer.MeasureText(labelWithPseudoOpacity2.Text, this.Font);
+
+            float hRatio = (this.Height) / (float)extent.Height;
+            float wRatio = this.Width / (float)extent.Width;
+            float ratio = (hRatio < wRatio) ? hRatio : wRatio;
+
+            float newSize = this.Font.Size * ratio;
+
+            if (newSize < 8)
+                newSize = 8;
+
+            //return newSize;
+
+            labelWithPseudoOpacity2.Font = new Font(labelWithPseudoOpacity2.Font.FontFamily, newSize - 2, labelWithPseudoOpacity2.Font.Style);
+
+            extent = TextRenderer.MeasureText(labelWithPseudoOpacity2.Text, labelWithPseudoOpacity2.Font);
+        }
+
         protected override void OnResize(EventArgs e)
         {
-            if (this.Height > 20)
-                labelWithPseudoOpacity2.Font = new Font(labelWithPseudoOpacity2.Font.FontFamily, this.Height * 0.7f);
+            this.ResizeRedraw = true;
+
+            GetFontSize();
 
             base.OnResize(e);
         }

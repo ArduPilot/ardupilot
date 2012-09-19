@@ -12,6 +12,14 @@ namespace ArdupilotMega.Controls
     {
         public bool inOnPaint = false;
         string otherthread = "";
+        int lastx = 0;
+        int lasty = 0;
+
+        public myGMAP()
+            : base()
+        {
+            this.Text = "Map";
+        }
 
         protected override void OnPaint(System.Windows.Forms.PaintEventArgs e)
         {
@@ -38,6 +46,12 @@ namespace ArdupilotMega.Controls
         {
             try
             {
+                if (e.X == lastx && e.Y == lasty)
+                    return;
+
+                lastx = e.X;
+                lasty = e.Y;
+
                 base.OnMouseMove(e);
             }
             catch (Exception ex) { Console.WriteLine(ex.ToString()); }

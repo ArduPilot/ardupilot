@@ -83,7 +83,7 @@ namespace ArdupilotMega.GCSViews.ConfigurationView
                 CHK_revch3.Checked = MainV2.comPort.param["RC3_REV"].ToString() == "-1";
                 CHK_revch4.Checked = MainV2.comPort.param["RC4_REV"].ToString() == "-1";
             }
-            catch (Exception ex) { CustomMessageBox.Show("Missing RC rev Param " + ex.ToString()); }
+            catch (Exception ex) { /*CustomMessageBox.Show("Missing RC rev Param " + ex.ToString());*/ }
             startup = false;
         }
 

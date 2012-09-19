@@ -32,14 +32,14 @@
             this.BUT_MagCalibrationLive = new ArdupilotMega.Controls.MyButton();
             this.label27 = new System.Windows.Forms.Label();
             this.CMB_sonartype = new System.Windows.Forms.ComboBox();
-            this.CHK_enableoptflow = new System.Windows.Forms.CheckBox();
+            this.CHK_enableoptflow = new ArdupilotMega.Controls.MavlinkCheckBox();
             this.pictureBox2 = new System.Windows.Forms.PictureBox();
             this.linkLabelmagdec = new System.Windows.Forms.LinkLabel();
             this.label100 = new System.Windows.Forms.Label();
             this.TXT_declination = new System.Windows.Forms.TextBox();
-            this.CHK_enableairspeed = new System.Windows.Forms.CheckBox();
-            this.CHK_enablesonar = new System.Windows.Forms.CheckBox();
-            this.CHK_enablecompass = new System.Windows.Forms.CheckBox();
+            this.CHK_enableairspeed = new ArdupilotMega.Controls.MavlinkCheckBox();
+            this.CHK_enablesonar = new ArdupilotMega.Controls.MavlinkCheckBox();
+            this.CHK_enablecompass = new ArdupilotMega.Controls.MavlinkCheckBox();
             this.pictureBox4 = new System.Windows.Forms.PictureBox();
             this.pictureBox3 = new System.Windows.Forms.PictureBox();
             this.pictureBox1 = new System.Windows.Forms.PictureBox();
@@ -53,6 +53,7 @@
             this.groupBox3 = new System.Windows.Forms.GroupBox();
             this.label3 = new System.Windows.Forms.Label();
             this.groupBox4 = new System.Windows.Forms.GroupBox();
+            this.CHK_airspeeduse = new ArdupilotMega.Controls.MavlinkCheckBox();
             ((System.ComponentModel.ISupportInitialize)(this.pictureBox2)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.pictureBox4)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.pictureBox3)).BeginInit();
@@ -87,6 +88,10 @@
             // 
             resources.ApplyResources(this.CHK_enableoptflow, "CHK_enableoptflow");
             this.CHK_enableoptflow.Name = "CHK_enableoptflow";
+            this.CHK_enableoptflow.OffValue = 0F;
+            this.CHK_enableoptflow.OnValue = 1F;
+            this.CHK_enableoptflow.param = null;
+            this.CHK_enableoptflow.ParamName = null;
             this.CHK_enableoptflow.UseVisualStyleBackColor = true;
             this.CHK_enableoptflow.CheckedChanged += new System.EventHandler(this.CHK_enableoptflow_CheckedChanged);
             // 
@@ -121,6 +126,10 @@
             // 
             resources.ApplyResources(this.CHK_enableairspeed, "CHK_enableairspeed");
             this.CHK_enableairspeed.Name = "CHK_enableairspeed";
+            this.CHK_enableairspeed.OffValue = 0F;
+            this.CHK_enableairspeed.OnValue = 1F;
+            this.CHK_enableairspeed.param = null;
+            this.CHK_enableairspeed.ParamName = null;
             this.CHK_enableairspeed.UseVisualStyleBackColor = true;
             this.CHK_enableairspeed.CheckedChanged += new System.EventHandler(this.CHK_enableairspeed_CheckedChanged);
             // 
@@ -128,6 +137,10 @@
             // 
             resources.ApplyResources(this.CHK_enablesonar, "CHK_enablesonar");
             this.CHK_enablesonar.Name = "CHK_enablesonar";
+            this.CHK_enablesonar.OffValue = 0F;
+            this.CHK_enablesonar.OnValue = 1F;
+            this.CHK_enablesonar.param = null;
+            this.CHK_enablesonar.ParamName = null;
             this.CHK_enablesonar.UseVisualStyleBackColor = true;
             this.CHK_enablesonar.CheckedChanged += new System.EventHandler(this.CHK_enablesonar_CheckedChanged);
             // 
@@ -135,6 +148,10 @@
             // 
             resources.ApplyResources(this.CHK_enablecompass, "CHK_enablecompass");
             this.CHK_enablecompass.Name = "CHK_enablecompass";
+            this.CHK_enablecompass.OffValue = 0F;
+            this.CHK_enablecompass.OnValue = 1F;
+            this.CHK_enablecompass.param = null;
+            this.CHK_enablecompass.ParamName = null;
             this.CHK_enablecompass.UseVisualStyleBackColor = true;
             this.CHK_enablecompass.CheckedChanged += new System.EventHandler(this.CHK_enablecompass_CheckedChanged);
             // 
@@ -222,10 +239,21 @@
             this.groupBox4.Name = "groupBox4";
             this.groupBox4.TabStop = false;
             // 
+            // CHK_airspeeduse
+            // 
+            resources.ApplyResources(this.CHK_airspeeduse, "CHK_airspeeduse");
+            this.CHK_airspeeduse.Name = "CHK_airspeeduse";
+            this.CHK_airspeeduse.OffValue = 0F;
+            this.CHK_airspeeduse.OnValue = 1F;
+            this.CHK_airspeeduse.param = null;
+            this.CHK_airspeeduse.ParamName = null;
+            this.CHK_airspeeduse.UseVisualStyleBackColor = true;
+            // 
             // ConfigHardwareOptions
             // 
             resources.ApplyResources(this, "$this");
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
+            this.Controls.Add(this.CHK_airspeeduse);
             this.Controls.Add(this.CHK_enableoptflow);
             this.Controls.Add(this.label3);
             this.Controls.Add(this.groupBox4);
@@ -265,14 +293,14 @@
         private ArdupilotMega.Controls.MyButton BUT_MagCalibrationLive;
         private System.Windows.Forms.Label label27;
         private System.Windows.Forms.ComboBox CMB_sonartype;
-        private System.Windows.Forms.CheckBox CHK_enableoptflow;
+        private ArdupilotMega.Controls.MavlinkCheckBox CHK_enableoptflow;
         private System.Windows.Forms.PictureBox pictureBox2;
         private System.Windows.Forms.LinkLabel linkLabelmagdec;
         private System.Windows.Forms.Label label100;
         private System.Windows.Forms.TextBox TXT_declination;
-        private System.Windows.Forms.CheckBox CHK_enableairspeed;
-        private System.Windows.Forms.CheckBox CHK_enablesonar;
-        private System.Windows.Forms.CheckBox CHK_enablecompass;
+        private ArdupilotMega.Controls.MavlinkCheckBox CHK_enableairspeed;
+        private ArdupilotMega.Controls.MavlinkCheckBox CHK_enablesonar;
+        private ArdupilotMega.Controls.MavlinkCheckBox CHK_enablecompass;
         private System.Windows.Forms.PictureBox pictureBox4;
         private System.Windows.Forms.PictureBox pictureBox3;
         private System.Windows.Forms.PictureBox pictureBox1;
@@ -286,5 +314,6 @@
         private System.Windows.Forms.GroupBox groupBox3;
         private System.Windows.Forms.Label label3;
         private System.Windows.Forms.GroupBox groupBox4;
+        private Controls.MavlinkCheckBox CHK_airspeeduse;
     }
 }

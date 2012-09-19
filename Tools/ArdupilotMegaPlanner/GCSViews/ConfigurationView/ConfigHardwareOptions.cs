@@ -247,21 +247,12 @@ namespace ArdupilotMega.GCSViews.ConfigurationView
 
             startup = true;
 
-            if (MainV2.comPort.param["ARSPD_ENABLE"] != null)
-            {
-                CHK_enableairspeed.Checked = MainV2.comPort.param["ARSPD_ENABLE"].ToString() == "1" ? true : false;
-                CHK_enableairspeed.Enabled = true;
-            }
-            if (MainV2.comPort.param["SONAR_ENABLE"] != null)
-            {
-                CHK_enablesonar.Checked = MainV2.comPort.param["SONAR_ENABLE"].ToString() == "1" ? true : false;
-                CHK_enablesonar.Enabled = true;
-            }
-            if (MainV2.comPort.param["MAG_ENABLE"] != null)
-            {
-                CHK_enablecompass.Checked = MainV2.comPort.param["MAG_ENABLE"].ToString() == "1" ? true : false;
-                CHK_enablecompass.Enabled = true;
-            }
+            CHK_airspeeduse.setup(1, 0, "ARSPD_USE", MainV2.comPort.param);
+            CHK_enableairspeed.setup(1, 0, "ARSPD_ENABLE", MainV2.comPort.param);
+            CHK_enablecompass.setup(1, 0, "MAG_ENABLE", MainV2.comPort.param, TXT_declination);
+            CHK_enableoptflow.setup(1,0,"FLOW_ENABLE", MainV2.comPort.param);
+            CHK_enablesonar.setup(1, 0, "SONAR_ENABLE", MainV2.comPort.param, CMB_sonartype);
+
             if (MainV2.comPort.param["COMPASS_DEC"] != null)
             {
                 TXT_declination.Text = (float.Parse(MainV2.comPort.param["COMPASS_DEC"].ToString()) * rad2deg).ToString();
@@ -269,11 +260,6 @@ namespace ArdupilotMega.GCSViews.ConfigurationView
             if (MainV2.comPort.param["SONAR_TYPE"] != null)
             {
                 CMB_sonartype.SelectedIndex = int.Parse(MainV2.comPort.param["SONAR_TYPE"].ToString());
-            }
-            if (MainV2.comPort.param["FLOW_ENABLE"] != null)
-            {
-                CHK_enableoptflow.Checked = MainV2.comPort.param["FLOW_ENABLE"].ToString() == "1" ? true : false;
-                CHK_enableoptflow.Enabled = true;
             }
             if (MainV2.comPort.param["COMPASS_AUTODEC"] != null)
             {

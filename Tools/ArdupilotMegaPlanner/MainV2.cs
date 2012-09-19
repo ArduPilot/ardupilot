@@ -260,7 +260,15 @@ namespace ArdupilotMega
                 // preload
                 Python.CreateEngine();
             }
-            catch (Exception e) { CustomMessageBox.Show("A Major error has occured : " + e.ToString()); this.Close(); }
+                catch (ArgumentException e) {
+                    //http://www.microsoft.com/en-us/download/details.aspx?id=16083
+                    //System.ArgumentException: Font 'Arial' does not support style 'Regular'.
+
+                    log.Fatal(e);
+                    CustomMessageBox.Show(e.ToString() + "\n\n Please install this http://www.microsoft.com/en-us/download/details.aspx?id=16083");
+                    this.Close();
+                }
+            catch (Exception e) { log.Fatal(e); CustomMessageBox.Show("A Major error has occured : " + e.ToString()); this.Close(); }
 
             if (MainV2.config["CHK_GDIPlus"] != null)
                 GCSViews.FlightData.myhud.UseOpenGL = !bool.Parse(MainV2.config["CHK_GDIPlus"].ToString());
@@ -294,7 +302,7 @@ namespace ArdupilotMega
 
                 if (config["CMB_rateattitude"] != null)
                     MainV2.cs.rateattitude = byte.Parse(config["CMB_rateattitude"].ToString());
-                if (config["rateposition"] != null)
+                if (config["CMB_rateposition"] != null)
                     MainV2.cs.rateposition = byte.Parse(config["CMB_rateposition"].ToString());
                 if (config["CMB_ratestatus"] != null)
                     MainV2.cs.ratestatus = byte.Parse(config["CMB_ratestatus"].ToString());
@@ -434,12 +442,6 @@ namespace ArdupilotMega
         private void MenuFlightData_Click(object sender, EventArgs e)
         {
             MyView.ShowScreen("FlightData");
-
-            if (MainV2.config["FlightSplitter"] != null)
-            {
-                FlightData.MainHcopy.SplitterDistance = int.Parse(MainV2.config["FlightSplitter"].ToString()) - 1;
-                FlightData.MainHcopy.SplitterDistance = int.Parse(MainV2.config["FlightSplitter"].ToString());
-            }
         }
 
         private void MenuFlightPlanner_Click(object sender, EventArgs e)
@@ -571,17 +573,22 @@ namespace ArdupilotMega
                     comPort.BaseStream.DtrEnable = false;
                     comPort.BaseStream.RtsEnable = false;
 
+                    // prevent serialreader from doing anything
+                    giveComport = true;
+
                     // reset on connect logic.
                     if (config["CHK_resetapmonconnect"] == null || bool.Parse(config["CHK_resetapmonconnect"].ToString()) == true)
                         comPort.BaseStream.toggleDTR();
+
+                    giveComport = false;
 
                     // setup to record new logs
                     try
                     {
                         Directory.CreateDirectory(Path.GetDirectoryName(Application.ExecutablePath) + Path.DirectorySeparatorChar + @"logs");
-                        comPort.logfile = new BinaryWriter(File.Open(Path.GetDirectoryName(Application.ExecutablePath) + Path.DirectorySeparatorChar + @"logs" + Path.DirectorySeparatorChar + DateTime.Now.ToString("yyyy-MM-dd HH-mm-ss") + ".tlog", FileMode.CreateNew, FileAccess.ReadWrite, FileShare.Read));
+                        comPort.logfile = new BinaryWriter(File.Open(Path.GetDirectoryName(Application.ExecutablePath) + Path.DirectorySeparatorChar + @"logs" + Path.DirectorySeparatorChar + DateTime.Now.ToString("yyyy-MM-dd HH-mm-ss") + ".tlog", FileMode.CreateNew, FileAccess.ReadWrite, FileShare.None));
 
-                        comPort.rawlogfile = new BinaryWriter(File.Open(Path.GetDirectoryName(Application.ExecutablePath) + Path.DirectorySeparatorChar + @"logs" + Path.DirectorySeparatorChar + DateTime.Now.ToString("yyyy-MM-dd HH-mm-ss") + ".rlog", FileMode.CreateNew, FileAccess.ReadWrite, FileShare.Read));
+                        comPort.rawlogfile = new BinaryWriter(File.Open(Path.GetDirectoryName(Application.ExecutablePath) + Path.DirectorySeparatorChar + @"logs" + Path.DirectorySeparatorChar + DateTime.Now.ToString("yyyy-MM-dd HH-mm-ss") + ".rlog", FileMode.CreateNew, FileAccess.ReadWrite, FileShare.None));
                     }
                     catch (Exception exp2) { log.Error(exp2); CustomMessageBox.Show("Failed to create log - wont log this session"); } // soft fail
 
@@ -610,6 +617,13 @@ namespace ArdupilotMega
 
                     // save the baudrate for this port
                     config[_connectionControl.CMB_serialport.Text + "_BAUD"] = _connectionControl.CMB_baudrate.Text;
+
+                    // refresh config window if needed
+                    if (MyView.current != null && MyView.current.Name == "Config")
+                    {
+                        MyView.ShowScreen("Config");
+                    }
+
 
                     // load wps on connect option.
                     if (config["loadwpsonconnect"] != null && bool.Parse(config["loadwpsonconnect"].ToString()) == true)
@@ -671,7 +685,7 @@ namespace ArdupilotMega
                         }
                     }
                     catch (Exception exp3) { log.Error(exp3); }
-                    //MessageBox.Show("Can not establish a connection\n\n" + ex.ToString());
+                    MessageBox.Show("Can not establish a connection\n\n" + ex.Message);
                     return;
                 }
             }
@@ -1124,7 +1138,11 @@ namespace ArdupilotMega
                     // actauly read the packets
                     while (comPort.BaseStream.BytesToRead > minbytes && giveComport == false)
                     {
-                        comPort.readPacket();
+                        try
+                        {
+                            comPort.readPacket();
+                        }
+                        catch { }
                     }
                 }
                 catch (Exception e)

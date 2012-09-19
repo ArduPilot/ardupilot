@@ -69,113 +69,121 @@ namespace ArdupilotMega.Utilities
 
             Bitmap frame = new Bitmap(640, 480);
 
-            // Create a request using a URL that can receive a post. 
-            WebRequest request = HttpWebRequest.Create(URL);
-            // Set the Method property of the request to POST.
-            request.Method = "GET";
-
-            ((HttpWebRequest)request).AutomaticDecompression = DecompressionMethods.GZip | DecompressionMethods.Deflate;
-
-            request.Headers.Add("Accept-Encoding", "gzip,deflate");
-
-            // Get the response.
-            WebResponse response = request.GetResponse();
-            // Display the status.
-            log.Debug(((HttpWebResponse)response).StatusDescription);
-            // Get the stream containing content returned by the server.
-            Stream dataStream = response.GetResponseStream();
-
-            BinaryReader br = new BinaryReader(dataStream);
-
-            // get boundary header
-            
-            string mpheader = response.Headers["Content-Type"];
-            if (mpheader.IndexOf("boundary=") == -1) {
-                ReadLine(br); // this is a blank line
-                string line = "proxyline";
-                while (line.Length > 2)
-                {
-                    line = ReadLine(br);
-                    if (line.StartsWith("--")) {
-                        mpheader = line;
-                        break;
-                    }
-                }
-            }
-            else
+            try
             {
-                int startboundary = mpheader.IndexOf("boundary=") + 9;
-                int endboundary = mpheader.Length;
 
-                mpheader = mpheader.Substring(startboundary, endboundary - startboundary);
-            }
+                // Create a request using a URL that can receive a post. 
+                WebRequest request = HttpWebRequest.Create(URL);
+                // Set the Method property of the request to POST.
+                request.Method = "GET";
 
-            dataStream.ReadTimeout = 30000; // 30 seconds
-            br.BaseStream.ReadTimeout = 30000;
+                ((HttpWebRequest)request).AutomaticDecompression = DecompressionMethods.GZip | DecompressionMethods.Deflate;
 
-            while (running)
-            {
-                try
+                request.Headers.Add("Accept-Encoding", "gzip,deflate");
+
+                // Get the response.
+                WebResponse response = request.GetResponse();
+                // Display the status.
+                log.Debug(((HttpWebResponse)response).StatusDescription);
+                // Get the stream containing content returned by the server.
+                Stream dataStream = response.GetResponseStream();
+
+                BinaryReader br = new BinaryReader(dataStream);
+
+                // get boundary header
+
+                string mpheader = response.Headers["Content-Type"];
+                if (mpheader.IndexOf("boundary=") == -1)
                 {
-                    // get the multipart start header
-                    int length = int.Parse(getHeader(br)["Content-Length"]);
-
-                    // read boundary header
-                    if (length > 0)
+                    ReadLine(br); // this is a blank line
+                    string line = "proxyline";
+                    do
                     {
-                        byte[] buf1 = new byte[length];
-
-                        dataStream.ReadTimeout = 3000;
-
-                        int offset = 0;
-                        int len = 0;
-
-                        while ((len = br.Read(buf1, offset, length)) > 0)
+                        line = ReadLine(br);
+                        if (line.StartsWith("--"))
                         {
-                            offset += len;
-                            length -= len;
-                        
+                            mpheader = line;
+                            break;
                         }
-                        /*
-                        BinaryWriter sw = new BinaryWriter(File.OpenWrite("test.jpg"));
-
-                        sw.Write(buf1,0,buf1.Length);
-
-                        sw.Close();
-                        */
-                        try
-                        {
-
-                            frame = new Bitmap(new MemoryStream(buf1));
-
-                        }
-                        catch {  }
-
-                        fps++;
-
-                        if (lastimage.Second != DateTime.Now.Second)
-                        {
-                            Console.WriteLine("MJPEG " + fps);
-                            fps = 0;
-                            lastimage = DateTime.Now;
-                        }
-
-                        if (OnNewImage != null)
-                            OnNewImage(frame, new EventArgs());
-                    }
-
-                    // blank line at end of data
-                    ReadLine(br);
+                    } while (line.Length > 2);
                 }
-                catch (Exception ex) { log.Info(ex); break; }
+                else
+                {
+                    int startboundary = mpheader.IndexOf("boundary=") + 9;
+                    int endboundary = mpheader.Length;
+
+                    mpheader = mpheader.Substring(startboundary, endboundary - startboundary);
+                }
+
+                dataStream.ReadTimeout = 30000; // 30 seconds
+                br.BaseStream.ReadTimeout = 30000;
+
+                while (running)
+                {
+                    try
+                    {
+                        // get the multipart start header
+                        int length = int.Parse(getHeader(br)["Content-Length"]);
+
+                        // read boundary header
+                        if (length > 0)
+                        {
+                            byte[] buf1 = new byte[length];
+
+                            dataStream.ReadTimeout = 3000;
+
+                            int offset = 0;
+                            int len = 0;
+
+                            while ((len = br.Read(buf1, offset, length)) > 0)
+                            {
+                                offset += len;
+                                length -= len;
+
+                            }
+                            /*
+                            BinaryWriter sw = new BinaryWriter(File.OpenWrite("test.jpg"));
+
+                            sw.Write(buf1,0,buf1.Length);
+
+                            sw.Close();
+                            */
+                            try
+                            {
+
+                                frame = new Bitmap(new MemoryStream(buf1));
+
+                            }
+                            catch { }
+
+                            fps++;
+
+                            if (lastimage.Second != DateTime.Now.Second)
+                            {
+                                Console.WriteLine("MJPEG " + fps);
+                                fps = 0;
+                                lastimage = DateTime.Now;
+                            }
+
+                            if (OnNewImage != null)
+                                OnNewImage(frame, new EventArgs());
+                        }
+
+                        // blank line at end of data
+                        ReadLine(br);
+                    }
+                    catch (Exception ex) { log.Info(ex); break; }
+                }
+
+                // clear last image
+                if (OnNewImage != null)
+                    OnNewImage(null, new EventArgs());
+
+                dataStream.Close();
+                response.Close();
+
             }
-
-            // clear last image
-            if (OnNewImage != null)
-                OnNewImage(null, new EventArgs());
-
-            dataStream.Close();
-            response.Close();
+            catch (Exception ex) { log.Error(ex); }
 
             running = false;
         }

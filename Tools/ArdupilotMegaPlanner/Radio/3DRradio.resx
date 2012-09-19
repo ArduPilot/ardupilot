@@ -117,177 +117,43 @@
   <resheader name="writer">
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
-  <data name="S11.Items8" xml:space="preserve">
-    <value>90</value>
-  </data>
-  <data name="S12.Items1" xml:space="preserve">
-    <value>25</value>
-  </data>
   <assembly alias="System.Drawing" name="System.Drawing, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a" />
-  <data name="S6.Location" type="System.Drawing.Point, System.Drawing">
-    <value>81, 164</value>
+  <data name="Progressbar.Location" type="System.Drawing.Point, System.Drawing">
+    <value>12, 389</value>
   </data>
-  <data name="&gt;&gt;lbl_status.ZOrder" xml:space="preserve">
-    <value>8</value>
+  <data name="Progressbar.Size" type="System.Drawing.Size, System.Drawing">
+    <value>755, 36</value>
   </data>
   <assembly alias="mscorlib" name="mscorlib, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089" />
-  <data name="groupBox1.TabIndex" type="System.Int32, mscorlib">
-    <value>80</value>
+  <data name="Progressbar.TabIndex" type="System.Int32, mscorlib">
+    <value>2</value>
   </data>
-  <data name="&gt;&gt;SPLIT_remote.Panel1.ZOrder" xml:space="preserve">
-    <value>0</value>
+  <data name="&gt;&gt;Progressbar.Name" xml:space="preserve">
+    <value>Progressbar</value>
   </data>
-  <data name="RS10.Items8" xml:space="preserve">
-    <value>13</value>
+  <data name="&gt;&gt;Progressbar.Type" xml:space="preserve">
+    <value>System.Windows.Forms.ProgressBar, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </data>
-  <data name="&gt;&gt;BUT_getcurrent.ZOrder" xml:space="preserve">
-    <value>7</value>
+  <data name="&gt;&gt;Progressbar.Parent" xml:space="preserve">
+    <value>$this</value>
   </data>
-  <data name="&gt;&gt;lbl_status.Type" xml:space="preserve">
-    <value>System.Windows.Forms.Label, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  <data name="&gt;&gt;Progressbar.ZOrder" xml:space="preserve">
+    <value>9</value>
   </data>
-  <data name="label29.Location" type="System.Drawing.Point, System.Drawing">
-    <value>6, 91</value>
-  </data>
-  <data name="&gt;&gt;label27.ZOrder" xml:space="preserve">
-    <value>8</value>
-  </data>
-  <data name="label7.Size" type="System.Drawing.Size, System.Drawing">
-    <value>44, 13</value>
-  </data>
-  <data name="&gt;&gt;label20.Name" xml:space="preserve">
-    <value>label20</value>
-  </data>
-  <data name="&gt;&gt;label26.Name" xml:space="preserve">
-    <value>label26</value>
-  </data>
-  <data name="RS10.Items2" xml:space="preserve">
-    <value>7</value>
-  </data>
-  <data name="RS3.Items15" xml:space="preserve">
-    <value>16</value>
-  </data>
-  <data name="S3.Items15" xml:space="preserve">
-    <value>16</value>
-  </data>
-  <data name="S3.Items25" xml:space="preserve">
-    <value>26</value>
-  </data>
-  <data name="RS9.ToolTip" xml:space="preserve">
-    <value>maximum frequency in kHz </value>
-  </data>
-  <data name="&gt;&gt;RTI.Name" xml:space="preserve">
-    <value>RTI</value>
-  </data>
-  <data name="RS9.Items8" xml:space="preserve">
-    <value>435000</value>
-  </data>
-  <data name="&gt;&gt;S5.Type" xml:space="preserve">
-    <value>System.Windows.Forms.CheckBox, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
-  </data>
-  <data name="RS11.ToolTip" xml:space="preserve">
-    <value>the percentage of time to allow transmit</value>
-  </data>
-  <data name="RSSI.Location" type="System.Drawing.Point, System.Drawing">
-    <value>82, 38</value>
-  </data>
-  <data name="S10.Items1" xml:space="preserve">
-    <value>6</value>
-  </data>
+  <metadata name="toolTip1.TrayLocation" type="System.Drawing.Point, System.Drawing, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a">
+    <value>17, 17</value>
+  </metadata>
   <data name="S1.Items" xml:space="preserve">
     <value>115</value>
   </data>
-  <data name="label11.Text" xml:space="preserve">
-    <value>Version</value>
+  <data name="S1.Items1" xml:space="preserve">
+    <value>111</value>
   </data>
-  <assembly alias="System.Windows.Forms" name="System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089" />
-  <data name="label31.ImeMode" type="System.Windows.Forms.ImeMode, System.Windows.Forms">
-    <value>NoControl</value>
+  <data name="S1.Items2" xml:space="preserve">
+    <value>57</value>
   </data>
-  <data name="&gt;&gt;label27.Name" xml:space="preserve">
-    <value>label27</value>
-  </data>
-  <data name="RS2.Items1" xml:space="preserve">
-    <value>192</value>
-  </data>
-  <data name="label6.Text" xml:space="preserve">
-    <value>ECC</value>
-  </data>
-  <data name="&gt;&gt;S8.Parent" xml:space="preserve">
-    <value>SPLIT_local.Panel2</value>
-  </data>
-  <data name="S8.TabIndex" type="System.Int32, mscorlib">
-    <value>46</value>
-  </data>
-  <data name="S9.Items4" xml:space="preserve">
-    <value>928000</value>
-  </data>
-  <data name="S9.Items5" xml:space="preserve">
-    <value>433050</value>
-  </data>
-  <data name="S9.Items6" xml:space="preserve">
-    <value>434040</value>
-  </data>
-  <data name="S10.Items16" xml:space="preserve">
-    <value>30</value>
-  </data>
-  <data name="&gt;&gt;label24.Type" xml:space="preserve">
-    <value>System.Windows.Forms.Label, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
-  </data>
-  <data name="S9.Items2" xml:space="preserve">
-    <value>915000</value>
-  </data>
-  <data name="S9.Items3" xml:space="preserve">
-    <value>921000</value>
-  </data>
-  <data name="S2.Items" xml:space="preserve">
-    <value>250</value>
-  </data>
-  <data name="label26.Location" type="System.Drawing.Point, System.Drawing">
-    <value>6, 172</value>
-  </data>
-  <data name="RS7.ToolTip" xml:space="preserve">
-    <value>OPPRESEND enables/disables "opportunistic resend". When enabled the radio will send a packet twice if the serial input buffer has less than 256 bytes in it. The 2nd send is marked as a resend and discarded by the receiving radio if it got the first packet OK. This makes a big difference to the link quality, especially for uplink commands. 
-</value>
-  </data>
-  <data name="S9.Items8" xml:space="preserve">
-    <value>435000</value>
-  </data>
-  <data name="&gt;&gt;label12.Type" xml:space="preserve">
-    <value>System.Windows.Forms.Label, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
-  </data>
-  <data name="RS7.Size" type="System.Drawing.Size, System.Drawing">
-    <value>80, 20</value>
-  </data>
-  <data name="&gt;&gt;ATI.Type" xml:space="preserve">
-    <value>System.Windows.Forms.TextBox, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
-  </data>
-  <data name="label5.Text" xml:space="preserve">
-    <value>Tx Power</value>
-  </data>
-  <data name="&gt;&gt;label21.ZOrder" xml:space="preserve">
-    <value>8</value>
-  </data>
-  <data name="&gt;&gt;RS10.ZOrder" xml:space="preserve">
-    <value>2</value>
-  </data>
-  <data name="linkLabel1.Location" type="System.Drawing.Point, System.Drawing">
-    <value>689, 11</value>
-  </data>
-  <data name="RS1.Items6" xml:space="preserve">
-    <value>4</value>
-  </data>
-  <data name="&gt;&gt;linkLabel1.Name" xml:space="preserve">
-    <value>linkLabel1</value>
-  </data>
-  <data name="RS2.Items12" xml:space="preserve">
-    <value>2</value>
-  </data>
-  <data name="&gt;&gt;label7.Parent" xml:space="preserve">
-    <value>SPLIT_local.Panel1</value>
-  </data>
-  <data name="&gt;&gt;label25.Type" xml:space="preserve">
-    <value>System.Windows.Forms.Label, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  <data name="S1.Items3" xml:space="preserve">
+    <value>38</value>
   </data>
   <data name="S1.Items4" xml:space="preserve">
     <value>19</value>
@@ -301,1481 +167,138 @@
   <data name="S1.Items7" xml:space="preserve">
     <value>2</value>
   </data>
-  <data name="&gt;&gt;RS4.Parent" xml:space="preserve">
-    <value>SPLIT_remote.Panel1</value>
-  </data>
-  <data name="S1.Items1" xml:space="preserve">
-    <value>111</value>
-  </data>
-  <data name="S1.Items2" xml:space="preserve">
-    <value>57</value>
-  </data>
-  <data name="S1.Items3" xml:space="preserve">
-    <value>38</value>
-  </data>
-  <data name="&gt;&gt;S9.Parent" xml:space="preserve">
-    <value>SPLIT_local.Panel2</value>
-  </data>
   <data name="S1.Items8" xml:space="preserve">
     <value>1</value>
   </data>
-  <data name="&gt;&gt;label22.ZOrder" xml:space="preserve">
-    <value>7</value>
-  </data>
-  <data name="RS11.Items4" xml:space="preserve">
-    <value>50</value>
-  </data>
-  <data name="&gt;&gt;SPLIT_remote.Panel1.Type" xml:space="preserve">
-    <value>System.Windows.Forms.SplitterPanel, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
-  </data>
-  <data name="label2.TabIndex" type="System.Int32, mscorlib">
-    <value>8</value>
-  </data>
-  <data name="ATI.Size" type="System.Drawing.Size, System.Drawing">
-    <value>102, 20</value>
-  </data>
-  <data name="S3.Items16" xml:space="preserve">
-    <value>17</value>
-  </data>
-  <data name="lbl_status.TabIndex" type="System.Int32, mscorlib">
-    <value>3</value>
-  </data>
-  <data name="&gt;&gt;S11.ZOrder" xml:space="preserve">
-    <value>3</value>
-  </data>
-  <data name="&gt;&gt;label23.ZOrder" xml:space="preserve">
-    <value>6</value>
-  </data>
-  <data name="&gt;&gt;label30.Parent" xml:space="preserve">
-    <value>SPLIT_remote.Panel1</value>
-  </data>
-  <data name="&gt;&gt;S12.Name" xml:space="preserve">
-    <value>S12</value>
-  </data>
-  <data name="RTI.Size" type="System.Drawing.Size, System.Drawing">
-    <value>102, 20</value>
-  </data>
-  <data name="&gt;&gt;label9.ZOrder" xml:space="preserve">
-    <value>0</value>
-  </data>
-  <data name="S11.Items7" xml:space="preserve">
-    <value>80</value>
-  </data>
-  <data name="label23.TabIndex" type="System.Int32, mscorlib">
-    <value>60</value>
-  </data>
-  <data name="&gt;&gt;groupBox1.ZOrder" xml:space="preserve">
-    <value>3</value>
-  </data>
-  <data name="S10.TabIndex" type="System.Int32, mscorlib">
-    <value>42</value>
-  </data>
-  <data name="label8.Text" xml:space="preserve">
-    <value>Op Resend</value>
-  </data>
-  <data name="&gt;&gt;S2.Parent" xml:space="preserve">
-    <value>SPLIT_local.Panel1</value>
-  </data>
-  <data name="S0.Location" type="System.Drawing.Point, System.Drawing">
-    <value>81, 3</value>
-  </data>
-  <data name="&gt;&gt;RS2.Parent" xml:space="preserve">
-    <value>SPLIT_remote.Panel1</value>
-  </data>
-  <data name="&gt;&gt;label23.Name" xml:space="preserve">
-    <value>label23</value>
-  </data>
-  <data name="&gt;&gt;toolTip1.Name" xml:space="preserve">
-    <value>toolTip1</value>
-  </data>
-  <data name="RS11.Items8" xml:space="preserve">
-    <value>90</value>
-  </data>
-  <data name="label2.Text" xml:space="preserve">
-    <value>Format</value>
-  </data>
-  <data name="label6.ToolTip" xml:space="preserve">
-    <value />
-  </data>
-  <data name="RS4.ToolTip" xml:space="preserve">
-    <value>TXPOWER is the transmit power in dBm. 20dBm is 100mW. It is useful to set this to lower levels for short range testing.
-</value>
-  </data>
-  <data name="RS11.Items2" xml:space="preserve">
-    <value>30</value>
-  </data>
-  <data name="&gt;&gt;SPLIT_local.Panel2.ZOrder" xml:space="preserve">
-    <value>1</value>
-  </data>
-  <data name="&gt;&gt;label28.Name" xml:space="preserve">
-    <value>label28</value>
-  </data>
-  <data name="&gt;&gt;label20.Type" xml:space="preserve">
-    <value>System.Windows.Forms.Label, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
-  </data>
-  <data name="&gt;&gt;RS1.Parent" xml:space="preserve">
-    <value>SPLIT_remote.Panel1</value>
-  </data>
-  <data name="label5.Location" type="System.Drawing.Point, System.Drawing">
-    <value>6, 118</value>
-  </data>
-  <data name="label2.ToolTip" xml:space="preserve">
-    <value />
-  </data>
-  <data name="S9.ToolTip" xml:space="preserve">
-    <value>maximum frequency in kHz </value>
-  </data>
-  <data name="label10.Size" type="System.Drawing.Size, System.Drawing">
-    <value>0, 13</value>
-  </data>
-  <data name="&gt;&gt;S7.Type" xml:space="preserve">
-    <value>System.Windows.Forms.CheckBox, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
-  </data>
-  <data name="&gt;&gt;label22.Name" xml:space="preserve">
-    <value>label22</value>
-  </data>
-  <data name="label3.Location" type="System.Drawing.Point, System.Drawing">
-    <value>6, 64</value>
-  </data>
-  <data name="RS1.Items7" xml:space="preserve">
-    <value>2</value>
-  </data>
-  <data name="label9.TabIndex" type="System.Int32, mscorlib">
-    <value>37</value>
-  </data>
-  <data name="&gt;&gt;BUT_getcurrent.Name" xml:space="preserve">
-    <value>BUT_getcurrent</value>
-  </data>
-  <data name="&gt;&gt;label29.ZOrder" xml:space="preserve">
-    <value>12</value>
-  </data>
-  <data name="&gt;&gt;label7.Type" xml:space="preserve">
-    <value>System.Windows.Forms.Label, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
-  </data>
-  <data name="label8.Location" type="System.Drawing.Point, System.Drawing">
-    <value>6, 199</value>
-  </data>
-  <data name="label27.ToolTip" xml:space="preserve">
-    <value />
-  </data>
-  <data name="&gt;&gt;label29.Name" xml:space="preserve">
-    <value>label29</value>
-  </data>
-  <data name="&gt;&gt;label21.Type" xml:space="preserve">
-    <value>System.Windows.Forms.Label, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
-  </data>
-  <data name="&gt;&gt;label14.ZOrder" xml:space="preserve">
-    <value>9</value>
-  </data>
-  <data name="S7.TabIndex" type="System.Int32, mscorlib">
-    <value>19</value>
-  </data>
-  <data name="&gt;&gt;RS8.Parent" xml:space="preserve">
-    <value>SPLIT_remote.Panel2</value>
-  </data>
-  <data name="&gt;&gt;S7.Name" xml:space="preserve">
-    <value>S7</value>
-  </data>
-  <data name="&gt;&gt;Progressbar.Type" xml:space="preserve">
-    <value>System.Windows.Forms.ProgressBar, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
-  </data>
-  <data name="&gt;&gt;linkLabel1.Parent" xml:space="preserve">
-    <value>$this</value>
-  </data>
-  <data name="S12.Items" xml:space="preserve">
-    <value>0</value>
-  </data>
-  <data name="RS0.Size" type="System.Drawing.Size, System.Drawing">
-    <value>80, 20</value>
-  </data>
-  <data name="RS9.Location" type="System.Drawing.Point, System.Drawing">
-    <value>97, 28</value>
-  </data>
-  <data name="&gt;&gt;groupBox2.ZOrder" xml:space="preserve">
-    <value>2</value>
-  </data>
-  <data name="S3.Items27" xml:space="preserve">
-    <value>28</value>
-  </data>
-  <data name="label1.Text" xml:space="preserve">
-    <value>Baud</value>
-  </data>
-  <data name="RS9.Items6" xml:space="preserve">
-    <value>434040</value>
-  </data>
-  <data name="&gt;&gt;label26.Type" xml:space="preserve">
-    <value>System.Windows.Forms.Label, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
-  </data>
-  <data name="&gt;&gt;$this.Name" xml:space="preserve">
-    <value>_3DRradio</value>
-  </data>
-  <data name="&gt;&gt;label15.ZOrder" xml:space="preserve">
-    <value>8</value>
-  </data>
-  <data name="&gt;&gt;RS3.Parent" xml:space="preserve">
-    <value>SPLIT_remote.Panel1</value>
-  </data>
-  <data name="S11.Items6" xml:space="preserve">
-    <value>70</value>
-  </data>
-  <data name="RS10.Items6" xml:space="preserve">
-    <value>11</value>
-  </data>
-  <data name="S3.Location" type="System.Drawing.Point, System.Drawing">
-    <value>81, 83</value>
-  </data>
-  <data name="&gt;&gt;groupBox2.Type" xml:space="preserve">
-    <value>System.Windows.Forms.GroupBox, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
-  </data>
-  <data name="SPLIT_remote.Size" type="System.Drawing.Size, System.Drawing">
-    <value>357, 221</value>
+  <data name="S1.Location" type="System.Drawing.Point, System.Drawing">
+    <value>81, 29</value>
   </data>
   <data name="S1.Size" type="System.Drawing.Size, System.Drawing">
     <value>80, 21</value>
   </data>
-  <data name="label21.ToolTip" xml:space="preserve">
-    <value />
-  </data>
-  <data name="label20.ImeMode" type="System.Windows.Forms.ImeMode, System.Windows.Forms">
-    <value>NoControl</value>
-  </data>
-  <data name="BUT_savesettings.TabIndex" type="System.Int32, mscorlib">
-    <value>21</value>
-  </data>
-  <data name="S11.Location" type="System.Drawing.Point, System.Drawing">
-    <value>96, 82</value>
-  </data>
-  <data name="label4.Text" xml:space="preserve">
-    <value>Net ID</value>
-  </data>
-  <data name="&gt;&gt;label27.Type" xml:space="preserve">
-    <value>System.Windows.Forms.Label, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
-  </data>
-  <data name="S9.Items" xml:space="preserve">
-    <value>902000</value>
-  </data>
-  <data name="RS3.Items11" xml:space="preserve">
-    <value>12</value>
-  </data>
-  <data name="RS3.Items21" xml:space="preserve">
-    <value>22</value>
-  </data>
-  <data name="S11.ToolTip" xml:space="preserve">
-    <value>the percentage of time to allow transmit</value>
-  </data>
-  <data name="&gt;&gt;RS6.Parent" xml:space="preserve">
-    <value>SPLIT_remote.Panel1</value>
-  </data>
-  <data name="RS10.Items10" xml:space="preserve">
-    <value>15</value>
-  </data>
-  <data name="label10.AutoSize" type="System.Boolean, mscorlib">
-    <value>True</value>
-  </data>
-  <data name="S5.TabIndex" type="System.Int32, mscorlib">
-    <value>15</value>
-  </data>
-  <data name="label29.TabIndex" type="System.Int32, mscorlib">
-    <value>68</value>
-  </data>
-  <data name="RS3.Items8" xml:space="preserve">
-    <value>9</value>
-  </data>
-  <data name="label27.TabIndex" type="System.Int32, mscorlib">
-    <value>70</value>
-  </data>
-  <data name="label29.ImeMode" type="System.Windows.Forms.ImeMode, System.Windows.Forms">
-    <value>NoControl</value>
-  </data>
-  <data name="RS6.TabIndex" type="System.Int32, mscorlib">
-    <value>28</value>
-  </data>
-  <data name="S9.Size" type="System.Drawing.Size, System.Drawing">
-    <value>80, 21</value>
-  </data>
-  <data name="&gt;&gt;S8.Name" xml:space="preserve">
-    <value>S8</value>
-  </data>
-  <data name="label13.Text" xml:space="preserve">
-    <value>Min Freq</value>
-  </data>
-  <data name="RS1.Items4" xml:space="preserve">
-    <value>19</value>
-  </data>
-  <data name="&gt;&gt;S12.ZOrder" xml:space="preserve">
-    <value>5</value>
-  </data>
-  <data name="&gt;&gt;RS5.Parent" xml:space="preserve">
-    <value>SPLIT_remote.Panel1</value>
-  </data>
-  <data name="RS10.Location" type="System.Drawing.Point, System.Drawing">
-    <value>97, 55</value>
-  </data>
-  <data name="SPLIT_local.SplitterDistance" type="System.Int32, mscorlib">
-    <value>172</value>
-  </data>
-  <data name="&gt;&gt;label32.Parent" xml:space="preserve">
-    <value>SPLIT_remote.Panel1</value>
-  </data>
-  <data name="label17.TabIndex" type="System.Int32, mscorlib">
-    <value>51</value>
-  </data>
-  <data name="&gt;&gt;RS12.Name" xml:space="preserve">
-    <value>RS12</value>
-  </data>
-  <data name="label1.TabIndex" type="System.Int32, mscorlib">
-    <value>5</value>
-  </data>
-  <data name="label30.ImeMode" type="System.Windows.Forms.ImeMode, System.Windows.Forms">
-    <value>NoControl</value>
-  </data>
-  <data name="BUT_upload.Text" xml:space="preserve">
-    <value>Upload Firmware (Local)</value>
-  </data>
-  <data name="RS3.Items27" xml:space="preserve">
-    <value>28</value>
-  </data>
-  <data name="&gt;&gt;label10.ZOrder" xml:space="preserve">
-    <value>1</value>
-  </data>
-  <data name="label3.AutoSize" type="System.Boolean, mscorlib">
-    <value>True</value>
-  </data>
-  <data name="S3.Items10" xml:space="preserve">
-    <value>11</value>
-  </data>
-  <data name="label13.ToolTip" xml:space="preserve">
-    <value />
-  </data>
-  <data name="Progressbar.ToolTip" xml:space="preserve">
-    <value />
-  </data>
-  <data name="&gt;&gt;RS12.ZOrder" xml:space="preserve">
+  <data name="S1.TabIndex" type="System.Int32, mscorlib">
     <value>4</value>
-  </data>
-  <data name="label32.TabIndex" type="System.Int32, mscorlib">
-    <value>65</value>
-  </data>
-  <data name="&gt;&gt;RS11.Name" xml:space="preserve">
-    <value>RS11</value>
-  </data>
-  <data name="RS9.Items7" xml:space="preserve">
-    <value>434790</value>
-  </data>
-  <data name="label28.ImeMode" type="System.Windows.Forms.ImeMode, System.Windows.Forms">
-    <value>NoControl</value>
-  </data>
-  <data name="label4.TabIndex" type="System.Int32, mscorlib">
-    <value>12</value>
-  </data>
-  <data name="BUT_savesettings.Text" xml:space="preserve">
-    <value>Save Settings</value>
-  </data>
-  <data name="&gt;&gt;label4.Parent" xml:space="preserve">
-    <value>SPLIT_local.Panel1</value>
-  </data>
-  <data name="&gt;&gt;label31.Parent" xml:space="preserve">
-    <value>SPLIT_remote.Panel1</value>
-  </data>
-  <data name="label22.ImeMode" type="System.Windows.Forms.ImeMode, System.Windows.Forms">
-    <value>NoControl</value>
-  </data>
-  <data name="BUT_Syncoptions.TabIndex" type="System.Int32, mscorlib">
-    <value>78</value>
-  </data>
-  <data name="SPLIT_local.Size" type="System.Drawing.Size, System.Drawing">
-    <value>374, 221</value>
-  </data>
-  <data name="label26.Text" xml:space="preserve">
-    <value>Mavlink</value>
-  </data>
-  <data name="&gt;&gt;label10.Name" xml:space="preserve">
-    <value>label10</value>
-  </data>
-  <data name="&gt;&gt;label11.ZOrder" xml:space="preserve">
-    <value>2</value>
-  </data>
-  <data name="RS1.TabIndex" type="System.Int32, mscorlib">
-    <value>22</value>
-  </data>
-  <data name="&gt;&gt;RS7.Parent" xml:space="preserve">
-    <value>SPLIT_remote.Panel1</value>
-  </data>
-  <data name="BUT_upload.Location" type="System.Drawing.Point, System.Drawing">
-    <value>419, 3</value>
-  </data>
-  <data name="S3.Items4" xml:space="preserve">
-    <value>5</value>
-  </data>
-  <data name="RTI.TabIndex" type="System.Int32, mscorlib">
-    <value>33</value>
-  </data>
-  <data name="S3.Items6" xml:space="preserve">
-    <value>7</value>
-  </data>
-  <data name="S3.Items7" xml:space="preserve">
-    <value>8</value>
-  </data>
-  <data name="RS0.ToolTip" xml:space="preserve">
-    <value />
-  </data>
-  <data name="&gt;&gt;S4.Parent" xml:space="preserve">
-    <value>SPLIT_local.Panel1</value>
-  </data>
-  <data name="S3.Items2" xml:space="preserve">
-    <value>3</value>
-  </data>
-  <data name="S3.Items3" xml:space="preserve">
-    <value>4</value>
-  </data>
-  <data name="label10.Location" type="System.Drawing.Point, System.Drawing">
-    <value>9, 11</value>
-  </data>
-  <data name="label3.TabIndex" type="System.Int32, mscorlib">
-    <value>10</value>
-  </data>
-  <data name="S3.Items9" xml:space="preserve">
-    <value>10</value>
-  </data>
-  <data name="label30.TabIndex" type="System.Int32, mscorlib">
-    <value>67</value>
-  </data>
-  <data name="label9.AutoSize" type="System.Boolean, mscorlib">
-    <value>True</value>
-  </data>
-  <data name="&gt;&gt;label11.Name" xml:space="preserve">
-    <value>label11</value>
-  </data>
-  <data name="label7.ToolTip" xml:space="preserve">
-    <value />
-  </data>
-  <data name="label11.TabIndex" type="System.Int32, mscorlib">
-    <value>36</value>
-  </data>
-  <data name="label1.AutoSize" type="System.Boolean, mscorlib">
-    <value>True</value>
-  </data>
-  <data name="RS3.Items9" xml:space="preserve">
-    <value>10</value>
-  </data>
-  <data name="&gt;&gt;label16.ZOrder" xml:space="preserve">
-    <value>6</value>
-  </data>
-  <data name="label30.Location" type="System.Drawing.Point, System.Drawing">
-    <value>6, 64</value>
-  </data>
-  <data name="&gt;&gt;label14.Parent" xml:space="preserve">
-    <value>SPLIT_local.Panel2</value>
-  </data>
-  <data name="label23.AutoSize" type="System.Boolean, mscorlib">
-    <value>True</value>
-  </data>
-  <data name="label2.Location" type="System.Drawing.Point, System.Drawing">
-    <value>6, 10</value>
-  </data>
-  <data name="label8.TabIndex" type="System.Int32, mscorlib">
-    <value>20</value>
-  </data>
-  <data name="label17.Text" xml:space="preserve">
-    <value>LBT Rssi</value>
-  </data>
-  <data name="RS1.Items5" xml:space="preserve">
-    <value>9</value>
-  </data>
-  <data name="&gt;&gt;label5.Type" xml:space="preserve">
-    <value>System.Windows.Forms.Label, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
-  </data>
-  <data name="&gt;&gt;label31.ZOrder" xml:space="preserve">
-    <value>15</value>
-  </data>
-  <data name="S3.Items8" xml:space="preserve">
-    <value>9</value>
-  </data>
-  <data name="&gt;&gt;label17.ZOrder" xml:space="preserve">
-    <value>4</value>
-  </data>
-  <data name="&gt;&gt;label16.Name" xml:space="preserve">
-    <value>label16</value>
-  </data>
-  <data name="linkLabel1.ToolTip" xml:space="preserve">
-    <value>The 3DR Radios have 2 status LEDs, one red and one green.
-green LED blinking - searching for another radio 
-green LED solid - link is established with another radio 
-red LED flashing - transmitting data 
-red LED solid - in firmware update mode</value>
-  </data>
-  <data name="&gt;&gt;label28.Type" xml:space="preserve">
-    <value>System.Windows.Forms.Label, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
-  </data>
-  <data name="SPLIT_local.Panel2.ToolTip" xml:space="preserve">
-    <value />
-  </data>
-  <data name="&gt;&gt;groupBox1.Name" xml:space="preserve">
-    <value>groupBox1</value>
-  </data>
-  <data name="&gt;&gt;label28.ZOrder" xml:space="preserve">
-    <value>10</value>
-  </data>
-  <data name="S7.ToolTip" xml:space="preserve">
-    <value>OPPRESEND enables/disables "opportunistic resend". When enabled the radio will send a packet twice if the serial input buffer has less than 256 bytes in it. The 2nd send is marked as a resend and discarded by the receiving radio if it got the first packet OK. This makes a big difference to the link quality, especially for uplink commands. 
-</value>
-  </data>
-  <data name="label27.Location" type="System.Drawing.Point, System.Drawing">
-    <value>6, 145</value>
-  </data>
-  <data name="$this.AutoScaleDimensions" type="System.Drawing.SizeF, System.Drawing">
-    <value>6, 13</value>
-  </data>
-  <data name="&gt;&gt;label15.Parent" xml:space="preserve">
-    <value>SPLIT_local.Panel2</value>
-  </data>
-  <data name="&gt;&gt;label3.ZOrder" xml:space="preserve">
-    <value>5</value>
-  </data>
-  <data name="label20.TabIndex" type="System.Int32, mscorlib">
-    <value>63</value>
-  </data>
-  <data name="label26.ToolTip" xml:space="preserve">
-    <value />
-  </data>
-  <data name="RS10.Size" type="System.Drawing.Size, System.Drawing">
-    <value>80, 21</value>
-  </data>
-  <data name="RSSI.TabIndex" type="System.Int32, mscorlib">
-    <value>34</value>
-  </data>
-  <data name="label5.AutoSize" type="System.Boolean, mscorlib">
-    <value>True</value>
-  </data>
-  <data name="S3.Items11" xml:space="preserve">
-    <value>12</value>
-  </data>
-  <data name="S3.Items21" xml:space="preserve">
-    <value>22</value>
-  </data>
-  <data name="S3.Items20" xml:space="preserve">
-    <value>21</value>
-  </data>
-  <data name="&gt;&gt;label29.Type" xml:space="preserve">
-    <value>System.Windows.Forms.Label, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
-  </data>
-  <data name="RS9.Items4" xml:space="preserve">
-    <value>928000</value>
-  </data>
-  <data name="S3.ToolTip" xml:space="preserve">
-    <value>NETID is a 16 bit 'network ID'. This is used to seed the frequency hopping sequence and to identify packets as coming from the right radio. Make sure you use a different NETID from anyone else running the same sort of radio in the area. </value>
-  </data>
-  <data name="&gt;&gt;$this.Type" xml:space="preserve">
-    <value>System.Windows.Forms.UserControl, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
-  </data>
-  <data name="&gt;&gt;BUT_upload.Name" xml:space="preserve">
-    <value>BUT_upload</value>
-  </data>
-  <data name="S11.Items4" xml:space="preserve">
-    <value>50</value>
-  </data>
-  <data name="&gt;&gt;ATI.Name" xml:space="preserve">
-    <value>ATI</value>
-  </data>
-  <data name="S10.Items13" xml:space="preserve">
-    <value>18</value>
-  </data>
-  <data name="&gt;&gt;S0.Name" xml:space="preserve">
-    <value>S0</value>
-  </data>
-  <data name="SPLIT_local.TabIndex" type="System.Int32, mscorlib">
-    <value>0</value>
-  </data>
-  <data name="label32.ToolTip" xml:space="preserve">
-    <value />
-  </data>
-  <data name="S0.TabIndex" type="System.Int32, mscorlib">
-    <value>7</value>
-  </data>
-  <data name="&gt;&gt;label24.Parent" xml:space="preserve">
-    <value>SPLIT_remote.Panel2</value>
-  </data>
-  <data name="&gt;&gt;S4.Name" xml:space="preserve">
-    <value>S4</value>
-  </data>
-  <data name="label7.Text" xml:space="preserve">
-    <value>Mavlink</value>
-  </data>
-  <data name="label27.AutoSize" type="System.Boolean, mscorlib">
-    <value>True</value>
-  </data>
-  <data name="&gt;&gt;BUT_upload.Parent" xml:space="preserve">
-    <value>$this</value>
-  </data>
-  <data name="RS10.Items16" xml:space="preserve">
-    <value>30</value>
-  </data>
-  <data name="label7.AutoSize" type="System.Boolean, mscorlib">
-    <value>True</value>
-  </data>
-  <data name="&gt;&gt;ATI3.Name" xml:space="preserve">
-    <value>ATI3</value>
-  </data>
-  <data name="RS3.Items6" xml:space="preserve">
-    <value>7</value>
-  </data>
-  <data name="label28.ToolTip" xml:space="preserve">
-    <value />
-  </data>
-  <data name="RS3.Items24" xml:space="preserve">
-    <value>25</value>
-  </data>
-  <data name="&gt;&gt;S2.Type" xml:space="preserve">
-    <value>System.Windows.Forms.ComboBox, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
-  </data>
-  <data name="label12.Location" type="System.Drawing.Point, System.Drawing">
-    <value>18, 50</value>
-  </data>
-  <data name="&gt;&gt;label12.ZOrder" xml:space="preserve">
-    <value>5</value>
-  </data>
-  <data name="RS1.Items2" xml:space="preserve">
-    <value>57</value>
-  </data>
-  <data name="&gt;&gt;label25.Parent" xml:space="preserve">
-    <value>SPLIT_remote.Panel1</value>
-  </data>
-  <data name="&gt;&gt;label10.Parent" xml:space="preserve">
-    <value>$this</value>
-  </data>
-  <data name="BUT_Syncoptions.ImeMode" type="System.Windows.Forms.ImeMode, System.Windows.Forms">
-    <value>NoControl</value>
-  </data>
-  <data name="S3.Items" xml:space="preserve">
-    <value>1</value>
-  </data>
-  <data name="label12.AutoSize" type="System.Boolean, mscorlib">
-    <value>True</value>
-  </data>
-  <data name="label9.Size" type="System.Drawing.Size, System.Drawing">
-    <value>42, 13</value>
-  </data>
-  <data name="&gt;&gt;S3.ZOrder" xml:space="preserve">
-    <value>6</value>
-  </data>
-  <data name="&gt;&gt;label12.Name" xml:space="preserve">
-    <value>label12</value>
-  </data>
-  <data name="&gt;&gt;label2.Type" xml:space="preserve">
-    <value>System.Windows.Forms.Label, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
-  </data>
-  <data name="&gt;&gt;S2.ZOrder" xml:space="preserve">
-    <value>4</value>
-  </data>
-  <data name="&gt;&gt;label13.ZOrder" xml:space="preserve">
-    <value>0</value>
-  </data>
-  <data name="RS9.Size" type="System.Drawing.Size, System.Drawing">
-    <value>80, 21</value>
-  </data>
-  <data name="RS10.ToolTip" xml:space="preserve">
-    <value>number of frequency hopping channels </value>
-  </data>
-  <data name="&gt;&gt;label2.Name" xml:space="preserve">
-    <value>label2</value>
-  </data>
-  <data name="&gt;&gt;SPLIT_local.Name" xml:space="preserve">
-    <value>SPLIT_local</value>
-  </data>
-  <data name="RTI.ToolTip" xml:space="preserve">
-    <value />
-  </data>
-  <data name="S10.Items8" xml:space="preserve">
-    <value>13</value>
-  </data>
-  <data name="&gt;&gt;label6.Name" xml:space="preserve">
-    <value>label6</value>
-  </data>
-  <data name="S4.Items" xml:space="preserve">
-    <value>1</value>
-  </data>
-  <data name="S3.Items12" xml:space="preserve">
-    <value>13</value>
-  </data>
-  <data name="S3.Items22" xml:space="preserve">
-    <value>23</value>
-  </data>
-  <data name="&gt;&gt;label8.Parent" xml:space="preserve">
-    <value>SPLIT_local.Panel1</value>
-  </data>
-  <data name="label21.Location" type="System.Drawing.Point, System.Drawing">
-    <value>5, 85</value>
-  </data>
-  <data name="&gt;&gt;RS9.Parent" xml:space="preserve">
-    <value>SPLIT_remote.Panel2</value>
-  </data>
-  <data name="&gt;&gt;SPLIT_local.Panel2.Type" xml:space="preserve">
-    <value>System.Windows.Forms.SplitterPanel, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
-  </data>
-  <data name="&gt;&gt;label32.ZOrder" xml:space="preserve">
-    <value>13</value>
-  </data>
-  <data name="RS9.Items5" xml:space="preserve">
-    <value>433050</value>
-  </data>
-  <data name="label30.Size" type="System.Drawing.Size, System.Drawing">
-    <value>53, 13</value>
-  </data>
-  <data name="RS3.Items23" xml:space="preserve">
-    <value>24</value>
-  </data>
-  <data name="RS2.TabIndex" type="System.Int32, mscorlib">
-    <value>24</value>
-  </data>
-  <data name="label28.Size" type="System.Drawing.Size, System.Drawing">
-    <value>52, 13</value>
-  </data>
-  <data name="RS3.Size" type="System.Drawing.Size, System.Drawing">
-    <value>80, 21</value>
-  </data>
-  <data name="&gt;&gt;SPLIT_local.Panel1.ZOrder" xml:space="preserve">
-    <value>0</value>
-  </data>
-  <data name="RS2.Location" type="System.Drawing.Point, System.Drawing">
-    <value>83, 56</value>
-  </data>
-  <data name="&gt;&gt;RS10.Name" xml:space="preserve">
-    <value>RS10</value>
-  </data>
-  <data name="S11.Items3" xml:space="preserve">
-    <value>40</value>
-  </data>
-  <data name="S10.Items6" xml:space="preserve">
-    <value>11</value>
-  </data>
-  <data name="label26.Size" type="System.Drawing.Size, System.Drawing">
-    <value>44, 13</value>
-  </data>
-  <data name="&gt;&gt;CHK_advanced.ZOrder" xml:space="preserve">
-    <value>5</value>
-  </data>
-  <data name="BUT_savesettings.ToolTip" xml:space="preserve">
-    <value />
-  </data>
-  <data name="RS8.Items8" xml:space="preserve">
-    <value>435000</value>
-  </data>
-  <data name="&gt;&gt;linkLabel1.ZOrder" xml:space="preserve">
-    <value>0</value>
-  </data>
-  <data name="&gt;&gt;label16.Parent" xml:space="preserve">
-    <value>SPLIT_local.Panel2</value>
-  </data>
-  <data name="RS11.Items9" xml:space="preserve">
-    <value>100</value>
-  </data>
-  <data name="RS6.Location" type="System.Drawing.Point, System.Drawing">
-    <value>83, 164</value>
-  </data>
-  <data name="label30.Text" xml:space="preserve">
-    <value>Air Speed</value>
-  </data>
-  <data name="label27.ImeMode" type="System.Windows.Forms.ImeMode, System.Windows.Forms">
-    <value>NoControl</value>
-  </data>
-  <data name="label28.Text" xml:space="preserve">
-    <value>Tx Power</value>
-  </data>
-  <data name="&gt;&gt;label30.Name" xml:space="preserve">
-    <value>label30</value>
-  </data>
-  <data name="RS10.TabIndex" type="System.Int32, mscorlib">
-    <value>54</value>
-  </data>
-  <data name="&gt;&gt;S0.Parent" xml:space="preserve">
-    <value>SPLIT_local.Panel1</value>
-  </data>
-  <data name="&gt;&gt;label17.Parent" xml:space="preserve">
-    <value>SPLIT_local.Panel2</value>
-  </data>
-  <data name="&gt;&gt;S8.ZOrder" xml:space="preserve">
-    <value>7</value>
-  </data>
-  <data name="label3.Text" xml:space="preserve">
-    <value>Air Speed</value>
-  </data>
-  <data name="RS3.Items7" xml:space="preserve">
-    <value>8</value>
-  </data>
-  <data name="&gt;&gt;SPLIT_local.Panel1.Type" xml:space="preserve">
-    <value>System.Windows.Forms.SplitterPanel, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
-  </data>
-  <data name="ATI.ToolTip" xml:space="preserve">
-    <value />
-  </data>
-  <data name="ATI.TabIndex" type="System.Int32, mscorlib">
-    <value>32</value>
-  </data>
-  <data name="RS7.TabIndex" type="System.Int32, mscorlib">
-    <value>29</value>
-  </data>
-  <data name="label14.Text" xml:space="preserve">
-    <value>Max Freq</value>
-  </data>
-  <data name="RS4.Items6" xml:space="preserve">
-    <value>17</value>
-  </data>
-  <data name="RS1.Items3" xml:space="preserve">
-    <value>38</value>
-  </data>
-  <data name="&gt;&gt;SPLIT_local.Panel1.Name" xml:space="preserve">
-    <value>SPLIT_local.Panel1</value>
-  </data>
-  <data name="label15.ToolTip" xml:space="preserve">
-    <value />
-  </data>
-  <data name="&gt;&gt;ATI3.Type" xml:space="preserve">
-    <value>System.Windows.Forms.TextBox, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
-  </data>
-  <data name="RS9.TabIndex" type="System.Int32, mscorlib">
-    <value>53</value>
-  </data>
-  <data name="label15.AutoSize" type="System.Boolean, mscorlib">
-    <value>True</value>
-  </data>
-  <data name="&gt;&gt;label21.Parent" xml:space="preserve">
-    <value>SPLIT_remote.Panel2</value>
-  </data>
-  <data name="&gt;&gt;RTI.Parent" xml:space="preserve">
-    <value>groupBox2</value>
-  </data>
-  <data name="label6.Location" type="System.Drawing.Point, System.Drawing">
-    <value>6, 145</value>
-  </data>
-  <data name="SPLIT_local.Panel1.ToolTip" xml:space="preserve">
-    <value />
-  </data>
-  <data name="label5.Size" type="System.Drawing.Size, System.Drawing">
-    <value>52, 13</value>
-  </data>
-  <data name="S5.ToolTip" xml:space="preserve">
-    <value>ECC is to enable/disable the golay error correcting code. It defaults to off. If you enable it then you packets take twice as many bytes to send, so you lose half your air bandwidth, but it can correct up to 3 bit errors per 12 bits of data. Use this for long range, usually in combination with a lower air data rate. The golay decode takes 20 microsecond per transmitted byte (40 microseconds per user data byte) which means you will also be a bit CPU constrained at the highest air data rates. So you usually use golay at 128kbps or less. 
-</value>
-  </data>
-  <data name="&gt;&gt;S1.Parent" xml:space="preserve">
-    <value>SPLIT_local.Panel1</value>
-  </data>
-  <data name="RS4.Items" xml:space="preserve">
-    <value>1</value>
-  </data>
-  <data name="label1.ToolTip" xml:space="preserve">
-    <value />
-  </data>
-  <data name="&gt;&gt;S9.ZOrder" xml:space="preserve">
-    <value>1</value>
-  </data>
-  <data name="RS2.Size" type="System.Drawing.Size, System.Drawing">
-    <value>80, 21</value>
-  </data>
-  <data name="label14.Location" type="System.Drawing.Point, System.Drawing">
-    <value>4, 31</value>
-  </data>
-  <data name="&gt;&gt;ATI3.Parent" xml:space="preserve">
-    <value>groupBox1</value>
-  </data>
-  <data name="S3.Items13" xml:space="preserve">
-    <value>14</value>
-  </data>
-  <data name="S3.Items23" xml:space="preserve">
-    <value>24</value>
-  </data>
-  <data name="RS3.Items20" xml:space="preserve">
-    <value>21</value>
-  </data>
-  <data name="&gt;&gt;ATI3.ZOrder" xml:space="preserve">
-    <value>1</value>
-  </data>
-  <data name="&gt;&gt;RS11.Parent" xml:space="preserve">
-    <value>SPLIT_remote.Panel2</value>
-  </data>
-  <data name="label20.ToolTip" xml:space="preserve">
-    <value />
-  </data>
-  <data name="S8.Location" type="System.Drawing.Point, System.Drawing">
-    <value>96, 3</value>
-  </data>
-  <data name="RS9.Items2" xml:space="preserve">
-    <value>915000</value>
-  </data>
-  <data name="&gt;&gt;label2.Parent" xml:space="preserve">
-    <value>SPLIT_local.Panel1</value>
-  </data>
-  <data name="label26.AutoSize" type="System.Boolean, mscorlib">
-    <value>True</value>
-  </data>
-  <data name="&gt;&gt;label8.ZOrder" xml:space="preserve">
-    <value>12</value>
-  </data>
-  <data name="RS12.TabIndex" type="System.Int32, mscorlib">
-    <value>56</value>
-  </data>
-  <data name="S11.Items2" xml:space="preserve">
-    <value>30</value>
-  </data>
-  <data name="groupBox1.Location" type="System.Drawing.Point, System.Drawing">
-    <value>12, 48</value>
-  </data>
-  <data name="label8.AutoSize" type="System.Boolean, mscorlib">
-    <value>True</value>
-  </data>
-  <data name="label25.ImeMode" type="System.Windows.Forms.ImeMode, System.Windows.Forms">
-    <value>NoControl</value>
-  </data>
-  <data name="S4.Location" type="System.Drawing.Point, System.Drawing">
-    <value>81, 110</value>
-  </data>
-  <data name="label27.Size" type="System.Drawing.Size, System.Drawing">
-    <value>28, 13</value>
-  </data>
-  <data name="RS12.ToolTip" xml:space="preserve">
-    <value>Listen Before Talk threshold</value>
-  </data>
-  <data name="label6.TabIndex" type="System.Int32, mscorlib">
-    <value>16</value>
-  </data>
-  <data name="S10.Items7" xml:space="preserve">
-    <value>12</value>
-  </data>
-  <data name="&gt;&gt;label12.Parent" xml:space="preserve">
-    <value>groupBox1</value>
-  </data>
-  <data name="S10.Items17" xml:space="preserve">
-    <value>40</value>
-  </data>
-  <data name="&gt;&gt;label1.Parent" xml:space="preserve">
-    <value>SPLIT_local.Panel1</value>
-  </data>
-  <data name="label24.TabIndex" type="System.Int32, mscorlib">
-    <value>59</value>
-  </data>
-  <data name="label27.Text" xml:space="preserve">
-    <value>ECC</value>
-  </data>
-  <data name="label23.Location" type="System.Drawing.Point, System.Drawing">
-    <value>5, 31</value>
-  </data>
-  <data name="RS3.Items4" xml:space="preserve">
-    <value>5</value>
-  </data>
-  <data name="label8.Size" type="System.Drawing.Size, System.Drawing">
-    <value>61, 13</value>
-  </data>
-  <data name="RS8.Items3" xml:space="preserve">
-    <value>921000</value>
-  </data>
-  <data name="label12.Size" type="System.Drawing.Size, System.Drawing">
-    <value>32, 13</value>
-  </data>
-  <data name="groupBox1.Text" xml:space="preserve">
-    <value>Local</value>
-  </data>
-  <data name="&gt;&gt;SPLIT_local.Panel1.Parent" xml:space="preserve">
-    <value>SPLIT_local</value>
-  </data>
-  <data name="&gt;&gt;ATI.Parent" xml:space="preserve">
-    <value>groupBox1</value>
-  </data>
-  <data name="RS10.Items11" xml:space="preserve">
-    <value>16</value>
-  </data>
-  <data name="label14.ToolTip" xml:space="preserve">
-    <value />
-  </data>
-  <data name="RS4.Location" type="System.Drawing.Point, System.Drawing">
-    <value>83, 110</value>
-  </data>
-  <data name="&gt;&gt;RS10.Type" xml:space="preserve">
-    <value>System.Windows.Forms.ComboBox, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
-  </data>
-  <data name="S4.TabIndex" type="System.Int32, mscorlib">
-    <value>13</value>
-  </data>
-  <data name="label5.TabIndex" type="System.Int32, mscorlib">
-    <value>14</value>
-  </data>
-  <data name="RS4.Items7" xml:space="preserve">
-    <value>20</value>
-  </data>
-  <data name="label28.AutoSize" type="System.Boolean, mscorlib">
-    <value>True</value>
-  </data>
-  <data name="label21.AutoSize" type="System.Boolean, mscorlib">
-    <value>True</value>
-  </data>
-  <data name="label28.Location" type="System.Drawing.Point, System.Drawing">
-    <value>6, 118</value>
   </data>
   <data name="S1.ToolTip" xml:space="preserve">
     <value>Serial baud rate in rounded kbps. So 57 means 57600. 
 </value>
   </data>
-  <data name="RS10.Items15" xml:space="preserve">
-    <value>20</value>
+  <data name="&gt;&gt;S1.Name" xml:space="preserve">
+    <value>S1</value>
   </data>
-  <data name="&gt;&gt;RS0.ZOrder" xml:space="preserve">
-    <value>0</value>
+  <data name="&gt;&gt;S1.Type" xml:space="preserve">
+    <value>System.Windows.Forms.ComboBox, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </data>
-  <data name="label14.AutoSize" type="System.Boolean, mscorlib">
+  <data name="&gt;&gt;S1.Parent" xml:space="preserve">
+    <value>SPLIT_local.Panel1</value>
+  </data>
+  <data name="&gt;&gt;S1.ZOrder" xml:space="preserve">
+    <value>1</value>
+  </data>
+  <data name="label1.AutoSize" type="System.Boolean, mscorlib">
     <value>True</value>
   </data>
-  <data name="&gt;&gt;label24.Name" xml:space="preserve">
-    <value>label24</value>
-  </data>
-  <data name="groupBox2.Text" xml:space="preserve">
-    <value>Remote</value>
-  </data>
-  <data name="ATI3.Size" type="System.Drawing.Size, System.Drawing">
-    <value>102, 20</value>
-  </data>
-  <data name="ATI3.Location" type="System.Drawing.Point, System.Drawing">
-    <value>210, 12</value>
-  </data>
-  <data name="&gt;&gt;label9.Type" xml:space="preserve">
-    <value>System.Windows.Forms.Label, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
-  </data>
-  <data name="&gt;&gt;RSSI.Parent" xml:space="preserve">
-    <value>groupBox1</value>
-  </data>
-  <data name="RS11.Items" xml:space="preserve">
-    <value>10</value>
-  </data>
-  <data name="&gt;&gt;S11.Name" xml:space="preserve">
-    <value>S11</value>
-  </data>
-  <data name="&gt;&gt;CHK_advanced.Name" xml:space="preserve">
-    <value>CHK_advanced</value>
-  </data>
-  <data name="CHK_advanced.Size" type="System.Drawing.Size, System.Drawing">
-    <value>114, 17</value>
-  </data>
-  <data name="RS9.Items3" xml:space="preserve">
-    <value>921000</value>
-  </data>
-  <data name="label22.Size" type="System.Drawing.Size, System.Drawing">
-    <value>73, 13</value>
-  </data>
-  <data name="SPLIT_remote.ToolTip" xml:space="preserve">
-    <value />
-  </data>
-  <data name="&gt;&gt;SPLIT_remote.Panel2.Type" xml:space="preserve">
-    <value>System.Windows.Forms.SplitterPanel, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
-  </data>
-  <data name="RS3.Items29" xml:space="preserve">
-    <value>30</value>
-  </data>
-  <data name="label13.TabIndex" type="System.Int32, mscorlib">
-    <value>47</value>
-  </data>
-  <data name="S7.Location" type="System.Drawing.Point, System.Drawing">
-    <value>81, 191</value>
-  </data>
-  <data name="label16.Location" type="System.Drawing.Point, System.Drawing">
-    <value>4, 85</value>
-  </data>
-  <data name="&gt;&gt;label26.Parent" xml:space="preserve">
-    <value>SPLIT_remote.Panel1</value>
-  </data>
-  <data name="label26.TabIndex" type="System.Int32, mscorlib">
-    <value>71</value>
-  </data>
-  <data name="label22.ToolTip" xml:space="preserve">
-    <value />
-  </data>
-  <data name="$this.Size" type="System.Drawing.Size, System.Drawing">
-    <value>781, 433</value>
-  </data>
-  <data name="RS8.Items6" xml:space="preserve">
-    <value>434040</value>
-  </data>
-  <data name="S4.Size" type="System.Drawing.Size, System.Drawing">
-    <value>80, 21</value>
-  </data>
-  <data name="&gt;&gt;RSSI.Name" xml:space="preserve">
-    <value>RSSI</value>
+  <data name="label1.Location" type="System.Drawing.Point, System.Drawing">
+    <value>6, 37</value>
   </data>
   <data name="label1.Size" type="System.Drawing.Size, System.Drawing">
     <value>32, 13</value>
   </data>
-  <data name="BUT_savesettings.Enabled" type="System.Boolean, mscorlib">
-    <value>False</value>
+  <data name="label1.TabIndex" type="System.Int32, mscorlib">
+    <value>5</value>
   </data>
-  <data name="S2.Items12" xml:space="preserve">
-    <value>2</value>
+  <data name="label1.Text" xml:space="preserve">
+    <value>Baud</value>
   </data>
-  <data name="label24.ImeMode" type="System.Windows.Forms.ImeMode, System.Windows.Forms">
-    <value>NoControl</value>
+  <data name="&gt;&gt;label1.Name" xml:space="preserve">
+    <value>label1</value>
   </data>
-  <data name="S10.ToolTip" xml:space="preserve">
-    <value>number of frequency hopping channels </value>
+  <data name="&gt;&gt;label1.Type" xml:space="preserve">
+    <value>System.Windows.Forms.Label, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </data>
-  <data name="RS5.TabIndex" type="System.Int32, mscorlib">
-    <value>27</value>
-  </data>
-  <data name="&gt;&gt;label23.Parent" xml:space="preserve">
-    <value>SPLIT_remote.Panel2</value>
-  </data>
-  <data name="&gt;&gt;label27.Parent" xml:space="preserve">
-    <value>SPLIT_remote.Panel1</value>
-  </data>
-  <data name="label13.Size" type="System.Drawing.Size, System.Drawing">
-    <value>48, 13</value>
-  </data>
-  <data name="S8.Items4" xml:space="preserve">
-    <value>928000</value>
-  </data>
-  <data name="RS3.Items5" xml:space="preserve">
-    <value>6</value>
-  </data>
-  <data name="S7.Size" type="System.Drawing.Size, System.Drawing">
-    <value>80, 20</value>
-  </data>
-  <data name="&gt;&gt;BUT_Syncoptions.Type" xml:space="preserve">
-    <value>ArdupilotMega.Controls.MyButton, ArdupilotMegaPlanner10, Version=1.1.4639.25747, Culture=neutral, PublicKeyToken=null</value>
+  <data name="&gt;&gt;label1.Parent" xml:space="preserve">
+    <value>SPLIT_local.Panel1</value>
   </data>
   <data name="&gt;&gt;label1.ZOrder" xml:space="preserve">
     <value>2</value>
   </data>
-  <data name="RS3.Items14" xml:space="preserve">
-    <value>15</value>
-  </data>
-  <data name="label25.Location" type="System.Drawing.Point, System.Drawing">
-    <value>6, 199</value>
-  </data>
-  <data name="label4.Size" type="System.Drawing.Size, System.Drawing">
-    <value>38, 13</value>
-  </data>
-  <data name="S11.Size" type="System.Drawing.Size, System.Drawing">
-    <value>80, 21</value>
-  </data>
-  <data name="label23.ImeMode" type="System.Windows.Forms.ImeMode, System.Windows.Forms">
-    <value>NoControl</value>
-  </data>
-  <data name="RS4.Items4" xml:space="preserve">
-    <value>11</value>
-  </data>
-  <data name="RS1.Items1" xml:space="preserve">
-    <value>111</value>
-  </data>
-  <data name="RS2.Items8" xml:space="preserve">
-    <value>19</value>
-  </data>
-  <data name="SPLIT_remote.TabIndex" type="System.Int32, mscorlib">
-    <value>0</value>
-  </data>
-  <data name="RS9.Items" xml:space="preserve">
-    <value>902000</value>
-  </data>
-  <data name="&gt;&gt;BUT_savesettings.Parent" xml:space="preserve">
-    <value>$this</value>
-  </data>
-  <data name="&gt;&gt;label28.Parent" xml:space="preserve">
-    <value>SPLIT_remote.Panel1</value>
-  </data>
-  <data name="&gt;&gt;label30.ZOrder" xml:space="preserve">
-    <value>14</value>
-  </data>
-  <data name="label32.Location" type="System.Drawing.Point, System.Drawing">
-    <value>6, 37</value>
-  </data>
-  <data name="RS6.Size" type="System.Drawing.Size, System.Drawing">
-    <value>80, 20</value>
-  </data>
-  <data name="label16.Size" type="System.Drawing.Size, System.Drawing">
-    <value>58, 13</value>
-  </data>
-  <data name="SPLIT_remote.Panel1.ToolTip" xml:space="preserve">
-    <value />
-  </data>
-  <data name="S2.TabIndex" type="System.Int32, mscorlib">
-    <value>9</value>
-  </data>
-  <data name="&gt;&gt;RS4.ZOrder" xml:space="preserve">
-    <value>5</value>
-  </data>
-  <data name="label21.Size" type="System.Drawing.Size, System.Drawing">
-    <value>58, 13</value>
-  </data>
-  <data name="&gt;&gt;RS3.ZOrder" xml:space="preserve">
-    <value>3</value>
-  </data>
-  <data name="label4.AutoSize" type="System.Boolean, mscorlib">
-    <value>True</value>
-  </data>
-  <data name="&gt;&gt;S3.Name" xml:space="preserve">
-    <value>S3</value>
-  </data>
-  <data name="&gt;&gt;label29.Parent" xml:space="preserve">
-    <value>SPLIT_remote.Panel1</value>
-  </data>
-  <data name="&gt;&gt;groupBox1.Parent" xml:space="preserve">
-    <value>$this</value>
-  </data>
-  <data name="&gt;&gt;S5.ZOrder" xml:space="preserve">
-    <value>10</value>
-  </data>
-  <data name="RS3.Items13" xml:space="preserve">
-    <value>14</value>
-  </data>
-  <data name="label22.Text" xml:space="preserve">
-    <value># of Channels</value>
-  </data>
-  <data name="RS3.TabIndex" type="System.Int32, mscorlib">
-    <value>25</value>
-  </data>
-  <data name="label23.Size" type="System.Drawing.Size, System.Drawing">
-    <value>51, 13</value>
-  </data>
-  <data name="&gt;&gt;label6.Type" xml:space="preserve">
-    <value>System.Windows.Forms.Label, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
-  </data>
-  <data name="RS3.Items19" xml:space="preserve">
-    <value>20</value>
-  </data>
-  <data name="label32.Size" type="System.Drawing.Size, System.Drawing">
-    <value>32, 13</value>
-  </data>
-  <data name="RS10.Items1" xml:space="preserve">
-    <value>6</value>
-  </data>
-  <data name="&gt;&gt;SPLIT_local.ZOrder" xml:space="preserve">
-    <value>0</value>
-  </data>
-  <data name="&gt;&gt;BUT_getcurrent.Parent" xml:space="preserve">
-    <value>$this</value>
-  </data>
-  <data name="RS8.Items7" xml:space="preserve">
-    <value>434790</value>
-  </data>
-  <data name="S12.TabIndex" type="System.Int32, mscorlib">
-    <value>44</value>
-  </data>
-  <data name="&gt;&gt;label7.ZOrder" xml:space="preserve">
-    <value>15</value>
-  </data>
-  <data name="RS1.ToolTip" xml:space="preserve">
-    <value>Serial baud rate in rounded kbps. So 57 means 57600. 
-</value>
-  </data>
-  <data name="S10.Items5" xml:space="preserve">
-    <value>10</value>
+  <data name="S0.Location" type="System.Drawing.Point, System.Drawing">
+    <value>81, 3</value>
   </data>
   <data name="S0.Size" type="System.Drawing.Size, System.Drawing">
     <value>80, 20</value>
   </data>
-  <data name="S2.Items11" xml:space="preserve">
-    <value>4</value>
+  <data name="S0.TabIndex" type="System.Int32, mscorlib">
+    <value>7</value>
   </data>
-  <data name="label23.Text" xml:space="preserve">
-    <value>Max Freq</value>
+  <data name="&gt;&gt;S0.Name" xml:space="preserve">
+    <value>S0</value>
   </data>
-  <data name="RS2.Items5" xml:space="preserve">
-    <value>48</value>
+  <data name="&gt;&gt;S0.Type" xml:space="preserve">
+    <value>System.Windows.Forms.TextBox, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </data>
-  <data name="label10.ImeMode" type="System.Windows.Forms.ImeMode, System.Windows.Forms">
-    <value>NoControl</value>
+  <data name="&gt;&gt;S0.Parent" xml:space="preserve">
+    <value>SPLIT_local.Panel1</value>
   </data>
-  <data name="&gt;&gt;RS2.ZOrder" xml:space="preserve">
-    <value>2</value>
-  </data>
-  <data name="&gt;&gt;label31.Name" xml:space="preserve">
-    <value>label31</value>
-  </data>
-  <data name="label10.TabIndex" type="System.Int32, mscorlib">
-    <value>82</value>
-  </data>
-  <data name="RS3.Items2" xml:space="preserve">
+  <data name="&gt;&gt;S0.ZOrder" xml:space="preserve">
     <value>3</value>
   </data>
-  <data name="S10.Items9" xml:space="preserve">
-    <value>14</value>
+  <data name="label2.AutoSize" type="System.Boolean, mscorlib">
+    <value>True</value>
   </data>
-  <data name="&gt;&gt;CHK_advanced.Type" xml:space="preserve">
-    <value>System.Windows.Forms.CheckBox, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  <data name="label2.Location" type="System.Drawing.Point, System.Drawing">
+    <value>6, 10</value>
   </data>
-  <data name="RS10.Items18" xml:space="preserve">
-    <value>50</value>
+  <data name="label2.Size" type="System.Drawing.Size, System.Drawing">
+    <value>39, 13</value>
   </data>
-  <data name="S10.Items11" xml:space="preserve">
-    <value>16</value>
+  <data name="label2.TabIndex" type="System.Int32, mscorlib">
+    <value>8</value>
   </data>
-  <data name="groupBox2.TabIndex" type="System.Int32, mscorlib">
-    <value>81</value>
+  <data name="label2.Text" xml:space="preserve">
+    <value>Format</value>
   </data>
-  <data name="RS10.Items17" xml:space="preserve">
-    <value>40</value>
+  <data name="&gt;&gt;label2.Name" xml:space="preserve">
+    <value>label2</value>
   </data>
-  <data name="RS12.Items1" xml:space="preserve">
-    <value>25</value>
+  <data name="&gt;&gt;label2.Type" xml:space="preserve">
+    <value>System.Windows.Forms.Label, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </data>
-  <data name="SPLIT_remote.Location" type="System.Drawing.Point, System.Drawing">
-    <value>4, 81</value>
+  <data name="&gt;&gt;label2.Parent" xml:space="preserve">
+    <value>SPLIT_local.Panel1</value>
   </data>
-  <data name="BUT_upload.ToolTip" xml:space="preserve">
-    <value />
+  <data name="&gt;&gt;label2.ZOrder" xml:space="preserve">
+    <value>0</value>
   </data>
-  <data name="RS4.Items5" xml:space="preserve">
-    <value>14</value>
+  <data name="label3.AutoSize" type="System.Boolean, mscorlib">
+    <value>True</value>
   </data>
-  <data name="RS2.ToolTip" xml:space="preserve">
-    <value>AIR_SPEED is the inter-radio data rate in rounded kbps. So 128 means 128kbps. Max is 192, min is 2. I would not recommend values below 16 as the frequency hopping and tdm sync times get too long. </value>
+  <data name="label3.Location" type="System.Drawing.Point, System.Drawing">
+    <value>6, 64</value>
   </data>
-  <data name="RS2.Items9" xml:space="preserve">
-    <value>16</value>
+  <data name="label3.Size" type="System.Drawing.Size, System.Drawing">
+    <value>53, 13</value>
   </data>
-  <data name="&gt;&gt;RS1.ZOrder" xml:space="preserve">
-    <value>1</value>
+  <data name="label3.TabIndex" type="System.Int32, mscorlib">
+    <value>10</value>
   </data>
-  <data name="label7.TabIndex" type="System.Int32, mscorlib">
-    <value>18</value>
+  <data name="label3.Text" xml:space="preserve">
+    <value>Air Speed</value>
   </data>
-  <data name="RS10.Items4" xml:space="preserve">
-    <value>9</value>
-  </data>
-  <data name="SPLIT_remote.Panel2.ToolTip" xml:space="preserve">
-    <value />
-  </data>
-  <data name="&gt;&gt;SPLIT_remote.Panel1.Parent" xml:space="preserve">
-    <value>SPLIT_remote</value>
-  </data>
-  <data name="&gt;&gt;label20.Parent" xml:space="preserve">
-    <value>SPLIT_remote.Panel2</value>
-  </data>
-  <data name="RS2.Items11" xml:space="preserve">
-    <value>4</value>
-  </data>
-  <data name="label9.ImeMode" type="System.Windows.Forms.ImeMode, System.Windows.Forms">
-    <value>NoControl</value>
-  </data>
-  <data name="&gt;&gt;S12.Parent" xml:space="preserve">
-    <value>SPLIT_local.Panel2</value>
-  </data>
-  <data name="&gt;&gt;groupBox2.Parent" xml:space="preserve">
-    <value>$this</value>
-  </data>
-  <data name="label17.Size" type="System.Drawing.Size, System.Drawing">
-    <value>50, 13</value>
-  </data>
-  <data name="label24.ToolTip" xml:space="preserve">
-    <value />
-  </data>
-  <data name="lbl_status.ToolTip" xml:space="preserve">
-    <value />
+  <data name="&gt;&gt;label3.Name" xml:space="preserve">
+    <value>label3</value>
   </data>
   <data name="&gt;&gt;label3.Type" xml:space="preserve">
     <value>System.Windows.Forms.Label, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </data>
-  <data name="&gt;&gt;groupBox2.Name" xml:space="preserve">
-    <value>groupBox2</value>
-  </data>
-  <data name="label11.ToolTip" xml:space="preserve">
-    <value />
-  </data>
-  <data name="S3.Size" type="System.Drawing.Size, System.Drawing">
-    <value>80, 21</value>
-  </data>
-  <data name="S9.Items7" xml:space="preserve">
-    <value>434790</value>
-  </data>
-  <data name="S12.Size" type="System.Drawing.Size, System.Drawing">
-    <value>80, 21</value>
-  </data>
-  <data name="S9.Items1" xml:space="preserve">
-    <value>907500</value>
-  </data>
-  <data name="&gt;&gt;RS8.ZOrder" xml:space="preserve">
-    <value>5</value>
-  </data>
-  <data name="label32.AutoSize" type="System.Boolean, mscorlib">
-    <value>True</value>
-  </data>
-  <data name="RS8.Location" type="System.Drawing.Point, System.Drawing">
-    <value>97, 3</value>
-  </data>
-  <data name="RS9.Items1" xml:space="preserve">
-    <value>907500</value>
-  </data>
-  <data name="SPLIT_remote.SplitterDistance" type="System.Int32, mscorlib">
-    <value>170</value>
-  </data>
-  <data name="&gt;&gt;label8.Type" xml:space="preserve">
-    <value>System.Windows.Forms.Label, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
-  </data>
-  <data name="&gt;&gt;S11.Parent" xml:space="preserve">
-    <value>SPLIT_local.Panel2</value>
-  </data>
-  <data name="RS0.Location" type="System.Drawing.Point, System.Drawing">
-    <value>83, 3</value>
-  </data>
-  <data name="RS8.Items4" xml:space="preserve">
-    <value>928000</value>
-  </data>
-  <data name="S11.Items" xml:space="preserve">
-    <value>10</value>
-  </data>
-  <data name="&gt;&gt;RS7.ZOrder" xml:space="preserve">
-    <value>11</value>
-  </data>
-  <data name="&gt;&gt;S7.Parent" xml:space="preserve">
+  <data name="&gt;&gt;label3.Parent" xml:space="preserve">
     <value>SPLIT_local.Panel1</value>
   </data>
-  <data name="S8.Items" xml:space="preserve">
-    <value>902000</value>
-  </data>
-  <data name="S10.Items4" xml:space="preserve">
-    <value>9</value>
-  </data>
-  <data name="&gt;&gt;toolTip1.Type" xml:space="preserve">
-    <value>System.Windows.Forms.ToolTip, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
-  </data>
-  <data name="S2.Items10" xml:space="preserve">
-    <value>8</value>
-  </data>
-  <data name="&gt;&gt;label4.Type" xml:space="preserve">
-    <value>System.Windows.Forms.Label, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
-  </data>
-  <data name="BUT_getcurrent.TabIndex" type="System.Int32, mscorlib">
-    <value>6</value>
-  </data>
-  <data name="&gt;&gt;label22.Parent" xml:space="preserve">
-    <value>SPLIT_remote.Panel2</value>
-  </data>
-  <data name="RS3.Items3" xml:space="preserve">
-    <value>4</value>
-  </data>
-  <data name="RS12.Items" xml:space="preserve">
-    <value>0</value>
-  </data>
-  <data name="&gt;&gt;RS6.ZOrder" xml:space="preserve">
-    <value>9</value>
-  </data>
-  <data name="label6.Size" type="System.Drawing.Size, System.Drawing">
-    <value>28, 13</value>
-  </data>
-  <data name="label7.Location" type="System.Drawing.Point, System.Drawing">
-    <value>6, 172</value>
-  </data>
-  <data name="RS1.Location" type="System.Drawing.Point, System.Drawing">
-    <value>83, 29</value>
-  </data>
-  <data name="RS4.Items2" xml:space="preserve">
+  <data name="&gt;&gt;label3.ZOrder" xml:space="preserve">
     <value>5</value>
   </data>
-  <data name="RS2.Items6" xml:space="preserve">
-    <value>32</value>
-  </data>
-  <data name="S2.Items5" xml:space="preserve">
-    <value>48</value>
-  </data>
-  <data name="S2.Items6" xml:space="preserve">
-    <value>32</value>
-  </data>
-  <data name="RS11.Items1" xml:space="preserve">
-    <value>20</value>
+  <data name="S2.Items" xml:space="preserve">
+    <value>250</value>
   </data>
   <data name="S2.Items1" xml:space="preserve">
     <value>192</value>
@@ -1783,394 +306,800 @@ red LED solid - in firmware update mode</value>
   <data name="S2.Items2" xml:space="preserve">
     <value>128</value>
   </data>
-  <data name="&gt;&gt;RS0.Type" xml:space="preserve">
-    <value>System.Windows.Forms.TextBox, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  <data name="S2.Items3" xml:space="preserve">
+    <value>96</value>
   </data>
-  <data name="&gt;&gt;S10.Type" xml:space="preserve">
-    <value>System.Windows.Forms.ComboBox, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  <data name="S2.Items4" xml:space="preserve">
+    <value>64</value>
+  </data>
+  <data name="S2.Items5" xml:space="preserve">
+    <value>48</value>
+  </data>
+  <data name="S2.Items6" xml:space="preserve">
+    <value>32</value>
+  </data>
+  <data name="S2.Items7" xml:space="preserve">
+    <value>24</value>
   </data>
   <data name="S2.Items8" xml:space="preserve">
     <value>19</value>
   </data>
-  <data name="RS3.Items10" xml:space="preserve">
-    <value>11</value>
+  <data name="S2.Items9" xml:space="preserve">
+    <value>16</value>
   </data>
-  <data name="&gt;&gt;label32.Name" xml:space="preserve">
-    <value>label32</value>
-  </data>
-  <data name="&gt;&gt;S0.Type" xml:space="preserve">
-    <value>System.Windows.Forms.TextBox, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
-  </data>
-  <data name="label29.AutoSize" type="System.Boolean, mscorlib">
-    <value>True</value>
-  </data>
-  <data name="&gt;&gt;RS5.ZOrder" xml:space="preserve">
-    <value>7</value>
-  </data>
-  <data name="BUT_upload.TabIndex" type="System.Int32, mscorlib">
-    <value>0</value>
-  </data>
-  <data name="label10.ToolTip" xml:space="preserve">
-    <value />
-  </data>
-  <data name="&gt;&gt;linkLabel1.Type" xml:space="preserve">
-    <value>System.Windows.Forms.LinkLabel, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
-  </data>
-  <data name="&gt;&gt;SPLIT_remote.Type" xml:space="preserve">
-    <value>System.Windows.Forms.SplitContainer, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
-  </data>
-  <data name="CHK_advanced.TabIndex" type="System.Int32, mscorlib">
-    <value>77</value>
-  </data>
-  <data name="CHK_advanced.ToolTip" xml:space="preserve">
-    <value />
-  </data>
-  <data name="linkLabel1.Text" xml:space="preserve">
-    <value>Status Leds</value>
-  </data>
-  <data name="BUT_Syncoptions.Size" type="System.Drawing.Size, System.Drawing">
-    <value>102, 29</value>
-  </data>
-  <data name="RS10.Items3" xml:space="preserve">
+  <data name="S2.Items10" xml:space="preserve">
     <value>8</value>
   </data>
-  <data name="&gt;&gt;label4.Name" xml:space="preserve">
-    <value>label4</value>
+  <data name="S2.Items11" xml:space="preserve">
+    <value>4</value>
   </data>
-  <data name="S11.Items5" xml:space="preserve">
-    <value>60</value>
-  </data>
-  <data name="&gt;&gt;label8.Name" xml:space="preserve">
-    <value>label8</value>
-  </data>
-  <data name="&gt;&gt;Progressbar.Parent" xml:space="preserve">
-    <value>$this</value>
-  </data>
-  <data name="RS3.Items" xml:space="preserve">
-    <value>1</value>
-  </data>
-  <data name="&gt;&gt;label17.Name" xml:space="preserve">
-    <value>label17</value>
-  </data>
-  <data name="CHK_advanced.Text" xml:space="preserve">
-    <value>Advanced Options</value>
-  </data>
-  <data name="RS8.Items5" xml:space="preserve">
-    <value>433050</value>
-  </data>
-  <data name="RS10.Items9" xml:space="preserve">
-    <value>14</value>
-  </data>
-  <data name="RS10.Items14" xml:space="preserve">
-    <value>19</value>
-  </data>
-  <data name="&gt;&gt;S1.Type" xml:space="preserve">
-    <value>System.Windows.Forms.ComboBox, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
-  </data>
-  <data name="&gt;&gt;label30.Type" xml:space="preserve">
-    <value>System.Windows.Forms.Label, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
-  </data>
-  <data name="label31.TabIndex" type="System.Int32, mscorlib">
-    <value>66</value>
-  </data>
-  <data name="Progressbar.Location" type="System.Drawing.Point, System.Drawing">
-    <value>12, 389</value>
-  </data>
-  <data name="RS11.TabIndex" type="System.Int32, mscorlib">
-    <value>55</value>
-  </data>
-  <data name="label13.Location" type="System.Drawing.Point, System.Drawing">
-    <value>4, 6</value>
-  </data>
-  <data name="ATI3.ToolTip" xml:space="preserve">
-    <value />
-  </data>
-  <data name="RS10.Items5" xml:space="preserve">
-    <value>10</value>
-  </data>
-  <data name="&gt;&gt;label6.Parent" xml:space="preserve">
-    <value>SPLIT_local.Panel1</value>
-  </data>
-  <data name="label25.Text" xml:space="preserve">
-    <value>Op Resend</value>
-  </data>
-  <data name="RS10.Items13" xml:space="preserve">
-    <value>18</value>
-  </data>
-  <data name="label17.Location" type="System.Drawing.Point, System.Drawing">
-    <value>4, 112</value>
-  </data>
-  <data name="label11.Size" type="System.Drawing.Size, System.Drawing">
-    <value>42, 13</value>
-  </data>
-  <data name="&gt;&gt;label4.ZOrder" xml:space="preserve">
-    <value>7</value>
-  </data>
-  <data name="&gt;&gt;label31.Type" xml:space="preserve">
-    <value>System.Windows.Forms.Label, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
-  </data>
-  <data name="&gt;&gt;S0.ZOrder" xml:space="preserve">
-    <value>3</value>
-  </data>
-  <data name="label16.ToolTip" xml:space="preserve">
-    <value />
-  </data>
-  <data name="RS4.Items3" xml:space="preserve">
-    <value>8</value>
-  </data>
-  <data name="label13.AutoSize" type="System.Boolean, mscorlib">
-    <value>True</value>
-  </data>
-  <data name="RS2.Items7" xml:space="preserve">
-    <value>24</value>
-  </data>
-  <data name="$this.ToolTip" xml:space="preserve">
-    <value />
-  </data>
-  <data name="label2.Size" type="System.Drawing.Size, System.Drawing">
-    <value>39, 13</value>
-  </data>
-  <data name="S11.TabIndex" type="System.Int32, mscorlib">
-    <value>43</value>
-  </data>
-  <data name="RS10.Items12" xml:space="preserve">
-    <value>17</value>
-  </data>
-  <data name="&gt;&gt;S6.Type" xml:space="preserve">
-    <value>System.Windows.Forms.CheckBox, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
-  </data>
-  <data name="S10.Items15" xml:space="preserve">
-    <value>20</value>
-  </data>
-  <data name="&gt;&gt;RS0.Name" xml:space="preserve">
-    <value>RS0</value>
-  </data>
-  <data name="&gt;&gt;S10.Name" xml:space="preserve">
-    <value>S10</value>
-  </data>
-  <data name="&gt;&gt;label5.Parent" xml:space="preserve">
-    <value>SPLIT_local.Panel1</value>
-  </data>
-  <data name="&gt;&gt;RS4.Type" xml:space="preserve">
-    <value>System.Windows.Forms.ComboBox, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
-  </data>
-  <data name="&gt;&gt;S7.ZOrder" xml:space="preserve">
-    <value>14</value>
-  </data>
-  <data name="S8.Size" type="System.Drawing.Size, System.Drawing">
-    <value>80, 21</value>
-  </data>
-  <data name="&gt;&gt;S6.ZOrder" xml:space="preserve">
-    <value>13</value>
-  </data>
-  <data name="&gt;&gt;label22.Type" xml:space="preserve">
-    <value>System.Windows.Forms.Label, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
-  </data>
-  <data name="&gt;&gt;RS9.ZOrder" xml:space="preserve">
-    <value>1</value>
-  </data>
-  <data name="RS1.Size" type="System.Drawing.Size, System.Drawing">
-    <value>80, 21</value>
-  </data>
-  <data name="&gt;&gt;S1.ZOrder" xml:space="preserve">
-    <value>1</value>
-  </data>
-  <data name="&gt;&gt;RS11.Type" xml:space="preserve">
-    <value>System.Windows.Forms.ComboBox, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
-  </data>
-  <data name="label24.Size" type="System.Drawing.Size, System.Drawing">
-    <value>48, 13</value>
-  </data>
-  <data name="&gt;&gt;RS3.Type" xml:space="preserve">
-    <value>System.Windows.Forms.ComboBox, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
-  </data>
-  <data name="S4.Items6" xml:space="preserve">
-    <value>17</value>
-  </data>
-  <data name="BUT_savesettings.Size" type="System.Drawing.Size, System.Drawing">
-    <value>69, 39</value>
-  </data>
-  <data name="&gt;&gt;BUT_upload.ZOrder" xml:space="preserve">
-    <value>10</value>
-  </data>
-  <data name="RS3.Items28" xml:space="preserve">
-    <value>29</value>
-  </data>
-  <data name="label32.Text" xml:space="preserve">
-    <value>Baud</value>
-  </data>
-  <data name="&gt;&gt;S9.Name" xml:space="preserve">
-    <value>S9</value>
+  <data name="S2.Items12" xml:space="preserve">
+    <value>2</value>
   </data>
   <data name="S2.Location" type="System.Drawing.Point, System.Drawing">
     <value>81, 56</value>
   </data>
-  <data name="BUT_Syncoptions.Enabled" type="System.Boolean, mscorlib">
-    <value>False</value>
+  <data name="S2.Size" type="System.Drawing.Size, System.Drawing">
+    <value>80, 21</value>
   </data>
-  <data name="label24.Text" xml:space="preserve">
-    <value>Min Freq</value>
+  <data name="S2.TabIndex" type="System.Int32, mscorlib">
+    <value>9</value>
   </data>
-  <data name="S10.Items2" xml:space="preserve">
+  <data name="S2.ToolTip" xml:space="preserve">
+    <value>AIR_SPEED is the inter-radio data rate in rounded kbps. So 128 means 128kbps. Max is 192, min is 2. I would not recommend values below 16 as the frequency hopping and tdm sync times get too long. </value>
+  </data>
+  <data name="&gt;&gt;S2.Name" xml:space="preserve">
+    <value>S2</value>
+  </data>
+  <data name="&gt;&gt;S2.Type" xml:space="preserve">
+    <value>System.Windows.Forms.ComboBox, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </data>
+  <data name="&gt;&gt;S2.Parent" xml:space="preserve">
+    <value>SPLIT_local.Panel1</value>
+  </data>
+  <data name="&gt;&gt;S2.ZOrder" xml:space="preserve">
+    <value>4</value>
+  </data>
+  <data name="label4.AutoSize" type="System.Boolean, mscorlib">
+    <value>True</value>
+  </data>
+  <data name="label4.Location" type="System.Drawing.Point, System.Drawing">
+    <value>6, 91</value>
+  </data>
+  <data name="label4.Size" type="System.Drawing.Size, System.Drawing">
+    <value>38, 13</value>
+  </data>
+  <data name="label4.TabIndex" type="System.Int32, mscorlib">
+    <value>12</value>
+  </data>
+  <data name="label4.Text" xml:space="preserve">
+    <value>Net ID</value>
+  </data>
+  <data name="&gt;&gt;label4.Name" xml:space="preserve">
+    <value>label4</value>
+  </data>
+  <data name="&gt;&gt;label4.Type" xml:space="preserve">
+    <value>System.Windows.Forms.Label, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </data>
+  <data name="&gt;&gt;label4.Parent" xml:space="preserve">
+    <value>SPLIT_local.Panel1</value>
+  </data>
+  <data name="&gt;&gt;label4.ZOrder" xml:space="preserve">
     <value>7</value>
   </data>
-  <data name="S12.Location" type="System.Drawing.Point, System.Drawing">
-    <value>96, 109</value>
+  <data name="S3.Items" xml:space="preserve">
+    <value>1</value>
   </data>
-  <data name="label26.ImeMode" type="System.Windows.Forms.ImeMode, System.Windows.Forms">
-    <value>NoControl</value>
-  </data>
-  <data name="&gt;&gt;RS2.Type" xml:space="preserve">
-    <value>System.Windows.Forms.ComboBox, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
-  </data>
-  <data name="S3.Items18" xml:space="preserve">
-    <value>19</value>
-  </data>
-  <data name="S3.Items28" xml:space="preserve">
-    <value>29</value>
-  </data>
-  <data name="BUT_getcurrent.Text" xml:space="preserve">
-    <value>Load Settings</value>
-  </data>
-  <data name="&gt;&gt;SPLIT_local.Type" xml:space="preserve">
-    <value>System.Windows.Forms.SplitContainer, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
-  </data>
-  <data name="&gt;&gt;SPLIT_remote.Name" xml:space="preserve">
-    <value>SPLIT_remote</value>
-  </data>
-  <data name="label25.AutoSize" type="System.Boolean, mscorlib">
-    <value>True</value>
-  </data>
-  <data name="BUT_getcurrent.ToolTip" xml:space="preserve">
-    <value />
-  </data>
-  <data name="label17.ImeMode" type="System.Windows.Forms.ImeMode, System.Windows.Forms">
-    <value>NoControl</value>
-  </data>
-  <data name="label17.AutoSize" type="System.Boolean, mscorlib">
-    <value>True</value>
-  </data>
-  <data name="RS3.Items1" xml:space="preserve">
+  <data name="S3.Items1" xml:space="preserve">
     <value>2</value>
   </data>
-  <data name="&gt;&gt;RS10.Parent" xml:space="preserve">
-    <value>SPLIT_remote.Panel2</value>
+  <data name="S3.Items2" xml:space="preserve">
+    <value>3</value>
   </data>
-  <data name="label9.Location" type="System.Drawing.Point, System.Drawing">
-    <value>12, 15</value>
+  <data name="S3.Items3" xml:space="preserve">
+    <value>4</value>
   </data>
-  <data name="&gt;&gt;RS1.Type" xml:space="preserve">
-    <value>System.Windows.Forms.ComboBox, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
-  </data>
-  <data name="&gt;&gt;S11.Type" xml:space="preserve">
-    <value>System.Windows.Forms.ComboBox, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
-  </data>
-  <data name="Progressbar.TabIndex" type="System.Int32, mscorlib">
-    <value>2</value>
-  </data>
-  <data name="&gt;&gt;S6.Name" xml:space="preserve">
-    <value>S6</value>
-  </data>
-  <data name="RS2.Items4" xml:space="preserve">
-    <value>64</value>
+  <data name="S3.Items4" xml:space="preserve">
+    <value>5</value>
   </data>
   <data name="S3.Items5" xml:space="preserve">
     <value>6</value>
   </data>
+  <data name="S3.Items6" xml:space="preserve">
+    <value>7</value>
+  </data>
+  <data name="S3.Items7" xml:space="preserve">
+    <value>8</value>
+  </data>
+  <data name="S3.Items8" xml:space="preserve">
+    <value>9</value>
+  </data>
+  <data name="S3.Items9" xml:space="preserve">
+    <value>10</value>
+  </data>
+  <data name="S3.Items10" xml:space="preserve">
+    <value>11</value>
+  </data>
+  <data name="S3.Items11" xml:space="preserve">
+    <value>12</value>
+  </data>
+  <data name="S3.Items12" xml:space="preserve">
+    <value>13</value>
+  </data>
+  <data name="S3.Items13" xml:space="preserve">
+    <value>14</value>
+  </data>
+  <data name="S3.Items14" xml:space="preserve">
+    <value>15</value>
+  </data>
+  <data name="S3.Items15" xml:space="preserve">
+    <value>16</value>
+  </data>
+  <data name="S3.Items16" xml:space="preserve">
+    <value>17</value>
+  </data>
   <data name="S3.Items17" xml:space="preserve">
     <value>18</value>
+  </data>
+  <data name="S3.Items18" xml:space="preserve">
+    <value>19</value>
+  </data>
+  <data name="S3.Items19" xml:space="preserve">
+    <value>20</value>
+  </data>
+  <data name="S3.Items20" xml:space="preserve">
+    <value>21</value>
+  </data>
+  <data name="S3.Items21" xml:space="preserve">
+    <value>22</value>
+  </data>
+  <data name="S3.Items22" xml:space="preserve">
+    <value>23</value>
+  </data>
+  <data name="S3.Items23" xml:space="preserve">
+    <value>24</value>
+  </data>
+  <data name="S3.Items24" xml:space="preserve">
+    <value>25</value>
+  </data>
+  <data name="S3.Items25" xml:space="preserve">
+    <value>26</value>
   </data>
   <data name="S3.Items26" xml:space="preserve">
     <value>27</value>
   </data>
-  <data name="label11.Location" type="System.Drawing.Point, System.Drawing">
-    <value>14, 15</value>
+  <data name="S3.Items27" xml:space="preserve">
+    <value>28</value>
   </data>
-  <data name="label15.Text" xml:space="preserve">
-    <value># of Channels</value>
+  <data name="S3.Items28" xml:space="preserve">
+    <value>29</value>
   </data>
-  <data name="&gt;&gt;SPLIT_local.Parent" xml:space="preserve">
-    <value>groupBox1</value>
+  <data name="S3.Items29" xml:space="preserve">
+    <value>30</value>
   </data>
-  <data name="label20.AutoSize" type="System.Boolean, mscorlib">
+  <data name="S3.Location" type="System.Drawing.Point, System.Drawing">
+    <value>81, 83</value>
+  </data>
+  <data name="S3.Size" type="System.Drawing.Size, System.Drawing">
+    <value>80, 21</value>
+  </data>
+  <data name="S3.TabIndex" type="System.Int32, mscorlib">
+    <value>11</value>
+  </data>
+  <data name="S3.ToolTip" xml:space="preserve">
+    <value>NETID is a 16 bit 'network ID'. This is used to seed the frequency hopping sequence and to identify packets as coming from the right radio. Make sure you use a different NETID from anyone else running the same sort of radio in the area. </value>
+  </data>
+  <data name="&gt;&gt;S3.Name" xml:space="preserve">
+    <value>S3</value>
+  </data>
+  <data name="&gt;&gt;S3.Type" xml:space="preserve">
+    <value>System.Windows.Forms.ComboBox, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </data>
+  <data name="&gt;&gt;S3.Parent" xml:space="preserve">
+    <value>SPLIT_local.Panel1</value>
+  </data>
+  <data name="&gt;&gt;S3.ZOrder" xml:space="preserve">
+    <value>6</value>
+  </data>
+  <data name="label5.AutoSize" type="System.Boolean, mscorlib">
     <value>True</value>
   </data>
-  <data name="label29.ToolTip" xml:space="preserve">
-    <value />
+  <data name="label5.Location" type="System.Drawing.Point, System.Drawing">
+    <value>6, 118</value>
   </data>
-  <data name="RS11.Items3" xml:space="preserve">
-    <value>40</value>
+  <data name="label5.Size" type="System.Drawing.Size, System.Drawing">
+    <value>52, 13</value>
   </data>
-  <data name="&gt;&gt;label14.Name" xml:space="preserve">
-    <value>label14</value>
+  <data name="label5.TabIndex" type="System.Int32, mscorlib">
+    <value>14</value>
   </data>
-  <data name="&gt;&gt;RS4.Name" xml:space="preserve">
-    <value>RS4</value>
+  <data name="label5.Text" xml:space="preserve">
+    <value>Tx Power</value>
   </data>
-  <data name="RS7.Location" type="System.Drawing.Point, System.Drawing">
-    <value>83, 191</value>
+  <data name="&gt;&gt;label5.Name" xml:space="preserve">
+    <value>label5</value>
   </data>
-  <data name="RS11.Items5" xml:space="preserve">
-    <value>60</value>
+  <data name="&gt;&gt;label5.Type" xml:space="preserve">
+    <value>System.Windows.Forms.Label, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </data>
-  <data name="RS3.Items16" xml:space="preserve">
+  <data name="&gt;&gt;label5.Parent" xml:space="preserve">
+    <value>SPLIT_local.Panel1</value>
+  </data>
+  <data name="&gt;&gt;label5.ZOrder" xml:space="preserve">
+    <value>9</value>
+  </data>
+  <data name="S4.Items" xml:space="preserve">
+    <value>1</value>
+  </data>
+  <data name="S4.Items1" xml:space="preserve">
+    <value>2</value>
+  </data>
+  <data name="S4.Items2" xml:space="preserve">
+    <value>5</value>
+  </data>
+  <data name="S4.Items3" xml:space="preserve">
+    <value>8</value>
+  </data>
+  <data name="S4.Items4" xml:space="preserve">
+    <value>11</value>
+  </data>
+  <data name="S4.Items5" xml:space="preserve">
+    <value>14</value>
+  </data>
+  <data name="S4.Items6" xml:space="preserve">
     <value>17</value>
+  </data>
+  <data name="S4.Items7" xml:space="preserve">
+    <value>20</value>
+  </data>
+  <data name="S4.Location" type="System.Drawing.Point, System.Drawing">
+    <value>81, 110</value>
+  </data>
+  <data name="S4.Size" type="System.Drawing.Size, System.Drawing">
+    <value>80, 21</value>
+  </data>
+  <data name="S4.TabIndex" type="System.Int32, mscorlib">
+    <value>13</value>
+  </data>
+  <data name="S4.ToolTip" xml:space="preserve">
+    <value>TXPOWER is the transmit power in dBm. 20dBm is 100mW. It is useful to set this to lower levels for short range testing.
+</value>
+  </data>
+  <data name="&gt;&gt;S4.Name" xml:space="preserve">
+    <value>S4</value>
+  </data>
+  <data name="&gt;&gt;S4.Type" xml:space="preserve">
+    <value>System.Windows.Forms.ComboBox, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </data>
+  <data name="&gt;&gt;S4.Parent" xml:space="preserve">
+    <value>SPLIT_local.Panel1</value>
+  </data>
+  <data name="&gt;&gt;S4.ZOrder" xml:space="preserve">
+    <value>8</value>
   </data>
   <data name="label6.AutoSize" type="System.Boolean, mscorlib">
     <value>True</value>
+  </data>
+  <data name="label6.Location" type="System.Drawing.Point, System.Drawing">
+    <value>6, 145</value>
+  </data>
+  <data name="label6.Size" type="System.Drawing.Size, System.Drawing">
+    <value>28, 13</value>
+  </data>
+  <data name="label6.TabIndex" type="System.Int32, mscorlib">
+    <value>16</value>
+  </data>
+  <data name="label6.Text" xml:space="preserve">
+    <value>ECC</value>
+  </data>
+  <data name="&gt;&gt;label6.Name" xml:space="preserve">
+    <value>label6</value>
+  </data>
+  <data name="&gt;&gt;label6.Type" xml:space="preserve">
+    <value>System.Windows.Forms.Label, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </data>
+  <data name="&gt;&gt;label6.Parent" xml:space="preserve">
+    <value>SPLIT_local.Panel1</value>
+  </data>
+  <data name="&gt;&gt;label6.ZOrder" xml:space="preserve">
+    <value>11</value>
+  </data>
+  <data name="S5.Location" type="System.Drawing.Point, System.Drawing">
+    <value>81, 137</value>
+  </data>
+  <data name="S5.Size" type="System.Drawing.Size, System.Drawing">
+    <value>80, 20</value>
+  </data>
+  <data name="S5.TabIndex" type="System.Int32, mscorlib">
+    <value>15</value>
+  </data>
+  <data name="S5.ToolTip" xml:space="preserve">
+    <value>ECC is to enable/disable the golay error correcting code. It defaults to off. If you enable it then you packets take twice as many bytes to send, so you lose half your air bandwidth, but it can correct up to 3 bit errors per 12 bits of data. Use this for long range, usually in combination with a lower air data rate. The golay decode takes 20 microsecond per transmitted byte (40 microseconds per user data byte) which means you will also be a bit CPU constrained at the highest air data rates. So you usually use golay at 128kbps or less. 
+</value>
+  </data>
+  <data name="&gt;&gt;S5.Name" xml:space="preserve">
+    <value>S5</value>
+  </data>
+  <data name="&gt;&gt;S5.Type" xml:space="preserve">
+    <value>System.Windows.Forms.CheckBox, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </data>
+  <data name="&gt;&gt;S5.Parent" xml:space="preserve">
+    <value>SPLIT_local.Panel1</value>
+  </data>
+  <data name="&gt;&gt;S5.ZOrder" xml:space="preserve">
+    <value>10</value>
+  </data>
+  <data name="label7.AutoSize" type="System.Boolean, mscorlib">
+    <value>True</value>
+  </data>
+  <data name="label7.Location" type="System.Drawing.Point, System.Drawing">
+    <value>6, 172</value>
+  </data>
+  <data name="label7.Size" type="System.Drawing.Size, System.Drawing">
+    <value>44, 13</value>
+  </data>
+  <data name="label7.TabIndex" type="System.Int32, mscorlib">
+    <value>18</value>
+  </data>
+  <data name="label7.Text" xml:space="preserve">
+    <value>Mavlink</value>
+  </data>
+  <data name="&gt;&gt;label7.Name" xml:space="preserve">
+    <value>label7</value>
+  </data>
+  <data name="&gt;&gt;label7.Type" xml:space="preserve">
+    <value>System.Windows.Forms.Label, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </data>
+  <data name="&gt;&gt;label7.Parent" xml:space="preserve">
+    <value>SPLIT_local.Panel1</value>
+  </data>
+  <data name="&gt;&gt;label7.ZOrder" xml:space="preserve">
+    <value>15</value>
+  </data>
+  <data name="S6.Location" type="System.Drawing.Point, System.Drawing">
+    <value>81, 164</value>
+  </data>
+  <data name="S6.Size" type="System.Drawing.Size, System.Drawing">
+    <value>80, 20</value>
+  </data>
+  <data name="S6.TabIndex" type="System.Int32, mscorlib">
+    <value>17</value>
   </data>
   <data name="S6.ToolTip" xml:space="preserve">
     <value>MAVLINK enables/disables MAVLink packet framing. This tries to align radio packets to MAVLink packet boundaries, which makes a big difference to what happens to the MAVLink stream when you lose a packet.
 </value>
   </data>
+  <data name="&gt;&gt;S6.Name" xml:space="preserve">
+    <value>S6</value>
+  </data>
+  <data name="&gt;&gt;S6.Type" xml:space="preserve">
+    <value>System.Windows.Forms.CheckBox, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </data>
+  <data name="&gt;&gt;S6.Parent" xml:space="preserve">
+    <value>SPLIT_local.Panel1</value>
+  </data>
+  <data name="&gt;&gt;S6.ZOrder" xml:space="preserve">
+    <value>13</value>
+  </data>
+  <data name="label8.AutoSize" type="System.Boolean, mscorlib">
+    <value>True</value>
+  </data>
+  <data name="label8.Location" type="System.Drawing.Point, System.Drawing">
+    <value>6, 199</value>
+  </data>
+  <data name="label8.Size" type="System.Drawing.Size, System.Drawing">
+    <value>61, 13</value>
+  </data>
+  <data name="label8.TabIndex" type="System.Int32, mscorlib">
+    <value>20</value>
+  </data>
+  <data name="label8.Text" xml:space="preserve">
+    <value>Op Resend</value>
+  </data>
+  <data name="&gt;&gt;label8.Name" xml:space="preserve">
+    <value>label8</value>
+  </data>
+  <data name="&gt;&gt;label8.Type" xml:space="preserve">
+    <value>System.Windows.Forms.Label, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </data>
+  <data name="&gt;&gt;label8.Parent" xml:space="preserve">
+    <value>SPLIT_local.Panel1</value>
+  </data>
+  <data name="&gt;&gt;label8.ZOrder" xml:space="preserve">
+    <value>12</value>
+  </data>
+  <data name="S7.Location" type="System.Drawing.Point, System.Drawing">
+    <value>81, 191</value>
+  </data>
+  <data name="S7.Size" type="System.Drawing.Size, System.Drawing">
+    <value>80, 20</value>
+  </data>
+  <data name="S7.TabIndex" type="System.Int32, mscorlib">
+    <value>19</value>
+  </data>
+  <data name="S7.ToolTip" xml:space="preserve">
+    <value>OPPRESEND enables/disables "opportunistic resend". When enabled the radio will send a packet twice if the serial input buffer has less than 256 bytes in it. The 2nd send is marked as a resend and discarded by the receiving radio if it got the first packet OK. This makes a big difference to the link quality, especially for uplink commands. 
+</value>
+  </data>
+  <data name="&gt;&gt;S7.Name" xml:space="preserve">
+    <value>S7</value>
+  </data>
+  <data name="&gt;&gt;S7.Type" xml:space="preserve">
+    <value>System.Windows.Forms.CheckBox, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </data>
+  <data name="&gt;&gt;S7.Parent" xml:space="preserve">
+    <value>SPLIT_local.Panel1</value>
+  </data>
+  <data name="&gt;&gt;S7.ZOrder" xml:space="preserve">
+    <value>14</value>
+  </data>
+  <metadata name="toolTip1.TrayLocation" type="System.Drawing.Point, System.Drawing, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a">
+    <value>17, 17</value>
+  </metadata>
+  <data name="RS7.Location" type="System.Drawing.Point, System.Drawing">
+    <value>83, 191</value>
+  </data>
+  <data name="RS7.Size" type="System.Drawing.Size, System.Drawing">
+    <value>80, 20</value>
+  </data>
+  <data name="RS7.TabIndex" type="System.Int32, mscorlib">
+    <value>29</value>
+  </data>
+  <data name="RS7.ToolTip" xml:space="preserve">
+    <value>OPPRESEND enables/disables "opportunistic resend". When enabled the radio will send a packet twice if the serial input buffer has less than 256 bytes in it. The 2nd send is marked as a resend and discarded by the receiving radio if it got the first packet OK. This makes a big difference to the link quality, especially for uplink commands. 
+</value>
+  </data>
+  <data name="&gt;&gt;RS7.Name" xml:space="preserve">
+    <value>RS7</value>
+  </data>
+  <data name="&gt;&gt;RS7.Type" xml:space="preserve">
+    <value>System.Windows.Forms.CheckBox, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </data>
+  <data name="&gt;&gt;RS7.Parent" xml:space="preserve">
+    <value>SPLIT_remote.Panel1</value>
+  </data>
+  <data name="&gt;&gt;RS7.ZOrder" xml:space="preserve">
+    <value>11</value>
+  </data>
+  <data name="RS6.Location" type="System.Drawing.Point, System.Drawing">
+    <value>83, 164</value>
+  </data>
+  <data name="RS6.Size" type="System.Drawing.Size, System.Drawing">
+    <value>80, 20</value>
+  </data>
+  <data name="RS6.TabIndex" type="System.Int32, mscorlib">
+    <value>28</value>
+  </data>
   <data name="RS6.ToolTip" xml:space="preserve">
     <value>MAVLINK enables/disables MAVLink packet framing. This tries to align radio packets to MAVLink packet boundaries, which makes a big difference to what happens to the MAVLink stream when you lose a packet.
 </value>
   </data>
-  <data name="&gt;&gt;BUT_Syncoptions.Name" xml:space="preserve">
-    <value>BUT_Syncoptions</value>
+  <data name="&gt;&gt;RS6.Name" xml:space="preserve">
+    <value>RS6</value>
   </data>
-  <data name="&gt;&gt;RS8.Type" xml:space="preserve">
-    <value>System.Windows.Forms.ComboBox, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  <data name="&gt;&gt;RS6.Type" xml:space="preserve">
+    <value>System.Windows.Forms.CheckBox, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </data>
-  <data name="&gt;&gt;label32.Type" xml:space="preserve">
-    <value>System.Windows.Forms.Label, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  <data name="&gt;&gt;RS6.Parent" xml:space="preserve">
+    <value>SPLIT_remote.Panel1</value>
   </data>
-  <data name="&gt;&gt;BUT_savesettings.Type" xml:space="preserve">
-    <value>ArdupilotMega.Controls.MyButton, ArdupilotMegaPlanner10, Version=1.1.4639.25747, Culture=neutral, PublicKeyToken=null</value>
+  <data name="&gt;&gt;RS6.ZOrder" xml:space="preserve">
+    <value>9</value>
   </data>
-  <data name="S3.Items1" xml:space="preserve">
+  <data name="RS5.Location" type="System.Drawing.Point, System.Drawing">
+    <value>83, 137</value>
+  </data>
+  <data name="RS5.Size" type="System.Drawing.Size, System.Drawing">
+    <value>80, 20</value>
+  </data>
+  <data name="RS5.TabIndex" type="System.Int32, mscorlib">
+    <value>27</value>
+  </data>
+  <data name="RS5.ToolTip" xml:space="preserve">
+    <value>ECC is to enable/disable the golay error correcting code. It defaults to off. If you enable it then you packets take twice as many bytes to send, so you lose half your air bandwidth, but it can correct up to 3 bit errors per 12 bits of data. Use this for long range, usually in combination with a lower air data rate. The golay decode takes 20 microsecond per transmitted byte (40 microseconds per user data byte) which means you will also be a bit CPU constrained at the highest air data rates. So you usually use golay at 128kbps or less. 
+</value>
+  </data>
+  <data name="&gt;&gt;RS5.Name" xml:space="preserve">
+    <value>RS5</value>
+  </data>
+  <data name="&gt;&gt;RS5.Type" xml:space="preserve">
+    <value>System.Windows.Forms.CheckBox, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </data>
+  <data name="&gt;&gt;RS5.Parent" xml:space="preserve">
+    <value>SPLIT_remote.Panel1</value>
+  </data>
+  <data name="&gt;&gt;RS5.ZOrder" xml:space="preserve">
+    <value>7</value>
+  </data>
+  <data name="RS4.Items" xml:space="preserve">
+    <value>1</value>
+  </data>
+  <data name="RS4.Items1" xml:space="preserve">
     <value>2</value>
   </data>
-  <data name="label31.Text" xml:space="preserve">
-    <value>Format</value>
+  <data name="RS4.Items2" xml:space="preserve">
+    <value>5</value>
   </data>
-  <data name="label29.Text" xml:space="preserve">
-    <value>Net ID</value>
+  <data name="RS4.Items3" xml:space="preserve">
+    <value>8</value>
   </data>
-  <data name="SPLIT_local.Location" type="System.Drawing.Point, System.Drawing">
-    <value>4, 81</value>
+  <data name="RS4.Items4" xml:space="preserve">
+    <value>11</value>
   </data>
-  <data name="&gt;&gt;label15.Name" xml:space="preserve">
-    <value>label15</value>
+  <data name="RS4.Items5" xml:space="preserve">
+    <value>14</value>
   </data>
-  <data name="&gt;&gt;S5.Name" xml:space="preserve">
-    <value>S5</value>
+  <data name="RS4.Items6" xml:space="preserve">
+    <value>17</value>
+  </data>
+  <data name="RS4.Items7" xml:space="preserve">
+    <value>20</value>
+  </data>
+  <data name="RS4.Location" type="System.Drawing.Point, System.Drawing">
+    <value>83, 110</value>
+  </data>
+  <data name="RS4.Size" type="System.Drawing.Size, System.Drawing">
+    <value>80, 21</value>
+  </data>
+  <data name="RS4.TabIndex" type="System.Int32, mscorlib">
+    <value>26</value>
+  </data>
+  <data name="RS4.ToolTip" xml:space="preserve">
+    <value>TXPOWER is the transmit power in dBm. 20dBm is 100mW. It is useful to set this to lower levels for short range testing.
+</value>
+  </data>
+  <data name="&gt;&gt;RS4.Name" xml:space="preserve">
+    <value>RS4</value>
+  </data>
+  <data name="&gt;&gt;RS4.Type" xml:space="preserve">
+    <value>System.Windows.Forms.ComboBox, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </data>
+  <data name="&gt;&gt;RS4.Parent" xml:space="preserve">
+    <value>SPLIT_remote.Panel1</value>
+  </data>
+  <data name="&gt;&gt;RS4.ZOrder" xml:space="preserve">
+    <value>5</value>
+  </data>
+  <data name="RS3.Items" xml:space="preserve">
+    <value>1</value>
+  </data>
+  <data name="RS3.Items1" xml:space="preserve">
+    <value>2</value>
+  </data>
+  <data name="RS3.Items2" xml:space="preserve">
+    <value>3</value>
+  </data>
+  <data name="RS3.Items3" xml:space="preserve">
+    <value>4</value>
+  </data>
+  <data name="RS3.Items4" xml:space="preserve">
+    <value>5</value>
+  </data>
+  <data name="RS3.Items5" xml:space="preserve">
+    <value>6</value>
+  </data>
+  <data name="RS3.Items6" xml:space="preserve">
+    <value>7</value>
+  </data>
+  <data name="RS3.Items7" xml:space="preserve">
+    <value>8</value>
+  </data>
+  <data name="RS3.Items8" xml:space="preserve">
+    <value>9</value>
+  </data>
+  <data name="RS3.Items9" xml:space="preserve">
+    <value>10</value>
+  </data>
+  <data name="RS3.Items10" xml:space="preserve">
+    <value>11</value>
+  </data>
+  <data name="RS3.Items11" xml:space="preserve">
+    <value>12</value>
+  </data>
+  <data name="RS3.Items12" xml:space="preserve">
+    <value>13</value>
+  </data>
+  <data name="RS3.Items13" xml:space="preserve">
+    <value>14</value>
+  </data>
+  <data name="RS3.Items14" xml:space="preserve">
+    <value>15</value>
+  </data>
+  <data name="RS3.Items15" xml:space="preserve">
+    <value>16</value>
+  </data>
+  <data name="RS3.Items16" xml:space="preserve">
+    <value>17</value>
+  </data>
+  <data name="RS3.Items17" xml:space="preserve">
+    <value>18</value>
+  </data>
+  <data name="RS3.Items18" xml:space="preserve">
+    <value>19</value>
+  </data>
+  <data name="RS3.Items19" xml:space="preserve">
+    <value>20</value>
+  </data>
+  <data name="RS3.Items20" xml:space="preserve">
+    <value>21</value>
+  </data>
+  <data name="RS3.Items21" xml:space="preserve">
+    <value>22</value>
+  </data>
+  <data name="RS3.Items22" xml:space="preserve">
+    <value>23</value>
+  </data>
+  <data name="RS3.Items23" xml:space="preserve">
+    <value>24</value>
+  </data>
+  <data name="RS3.Items24" xml:space="preserve">
+    <value>25</value>
+  </data>
+  <data name="RS3.Items25" xml:space="preserve">
+    <value>26</value>
+  </data>
+  <data name="RS3.Items26" xml:space="preserve">
+    <value>27</value>
+  </data>
+  <data name="RS3.Items27" xml:space="preserve">
+    <value>28</value>
+  </data>
+  <data name="RS3.Items28" xml:space="preserve">
+    <value>29</value>
+  </data>
+  <data name="RS3.Items29" xml:space="preserve">
+    <value>30</value>
+  </data>
+  <data name="RS3.Location" type="System.Drawing.Point, System.Drawing">
+    <value>83, 83</value>
+  </data>
+  <data name="RS3.Size" type="System.Drawing.Size, System.Drawing">
+    <value>80, 21</value>
+  </data>
+  <data name="RS3.TabIndex" type="System.Int32, mscorlib">
+    <value>25</value>
+  </data>
+  <data name="RS3.ToolTip" xml:space="preserve">
+    <value>NETID is a 16 bit 'network ID'. This is used to seed the frequency hopping sequence and to identify packets as coming from the right radio. Make sure you use a different NETID from anyone else running the same sort of radio in the area. </value>
   </data>
   <data name="&gt;&gt;RS3.Name" xml:space="preserve">
     <value>RS3</value>
   </data>
-  <data name="BUT_savesettings.Location" type="System.Drawing.Point, System.Drawing">
-    <value>344, 3</value>
+  <data name="&gt;&gt;RS3.Type" xml:space="preserve">
+    <value>System.Windows.Forms.ComboBox, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </data>
-  <data name="RS8.Size" type="System.Drawing.Size, System.Drawing">
+  <data name="&gt;&gt;RS3.Parent" xml:space="preserve">
+    <value>SPLIT_remote.Panel1</value>
+  </data>
+  <data name="&gt;&gt;RS3.ZOrder" xml:space="preserve">
+    <value>3</value>
+  </data>
+  <data name="RS2.Items" xml:space="preserve">
+    <value>250</value>
+  </data>
+  <data name="RS2.Items1" xml:space="preserve">
+    <value>192</value>
+  </data>
+  <data name="RS2.Items2" xml:space="preserve">
+    <value>128</value>
+  </data>
+  <data name="RS2.Items3" xml:space="preserve">
+    <value>96</value>
+  </data>
+  <data name="RS2.Items4" xml:space="preserve">
+    <value>64</value>
+  </data>
+  <data name="RS2.Items5" xml:space="preserve">
+    <value>48</value>
+  </data>
+  <data name="RS2.Items6" xml:space="preserve">
+    <value>32</value>
+  </data>
+  <data name="RS2.Items7" xml:space="preserve">
+    <value>24</value>
+  </data>
+  <data name="RS2.Items8" xml:space="preserve">
+    <value>19</value>
+  </data>
+  <data name="RS2.Items9" xml:space="preserve">
+    <value>16</value>
+  </data>
+  <data name="RS2.Items10" xml:space="preserve">
+    <value>8</value>
+  </data>
+  <data name="RS2.Items11" xml:space="preserve">
+    <value>4</value>
+  </data>
+  <data name="RS2.Items12" xml:space="preserve">
+    <value>2</value>
+  </data>
+  <data name="RS2.Location" type="System.Drawing.Point, System.Drawing">
+    <value>83, 56</value>
+  </data>
+  <data name="RS2.Size" type="System.Drawing.Size, System.Drawing">
     <value>80, 21</value>
   </data>
-  <data name="label31.ToolTip" xml:space="preserve">
-    <value />
+  <data name="RS2.TabIndex" type="System.Int32, mscorlib">
+    <value>24</value>
   </data>
-  <data name="BUT_getcurrent.Size" type="System.Drawing.Size, System.Drawing">
-    <value>69, 39</value>
+  <data name="RS2.ToolTip" xml:space="preserve">
+    <value>AIR_SPEED is the inter-radio data rate in rounded kbps. So 128 means 128kbps. Max is 192, min is 2. I would not recommend values below 16 as the frequency hopping and tdm sync times get too long. </value>
+  </data>
+  <data name="&gt;&gt;RS2.Name" xml:space="preserve">
+    <value>RS2</value>
+  </data>
+  <data name="&gt;&gt;RS2.Type" xml:space="preserve">
+    <value>System.Windows.Forms.ComboBox, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </data>
+  <data name="&gt;&gt;RS2.Parent" xml:space="preserve">
+    <value>SPLIT_remote.Panel1</value>
+  </data>
+  <data name="&gt;&gt;RS2.ZOrder" xml:space="preserve">
+    <value>2</value>
+  </data>
+  <data name="RS1.Items" xml:space="preserve">
+    <value>115</value>
+  </data>
+  <data name="RS1.Items1" xml:space="preserve">
+    <value>111</value>
+  </data>
+  <data name="RS1.Items2" xml:space="preserve">
+    <value>57</value>
+  </data>
+  <data name="RS1.Items3" xml:space="preserve">
+    <value>38</value>
+  </data>
+  <data name="RS1.Items4" xml:space="preserve">
+    <value>19</value>
+  </data>
+  <data name="RS1.Items5" xml:space="preserve">
+    <value>9</value>
+  </data>
+  <data name="RS1.Items6" xml:space="preserve">
+    <value>4</value>
+  </data>
+  <data name="RS1.Items7" xml:space="preserve">
+    <value>2</value>
+  </data>
+  <data name="RS1.Items8" xml:space="preserve">
+    <value>1</value>
+  </data>
+  <data name="RS1.Location" type="System.Drawing.Point, System.Drawing">
+    <value>83, 29</value>
+  </data>
+  <data name="RS1.Size" type="System.Drawing.Size, System.Drawing">
+    <value>80, 21</value>
+  </data>
+  <data name="RS1.TabIndex" type="System.Int32, mscorlib">
+    <value>22</value>
+  </data>
+  <data name="RS1.ToolTip" xml:space="preserve">
+    <value>Serial baud rate in rounded kbps. So 57 means 57600. 
+</value>
+  </data>
+  <data name="&gt;&gt;RS1.Name" xml:space="preserve">
+    <value>RS1</value>
+  </data>
+  <data name="&gt;&gt;RS1.Type" xml:space="preserve">
+    <value>System.Windows.Forms.ComboBox, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </data>
+  <data name="&gt;&gt;RS1.Parent" xml:space="preserve">
+    <value>SPLIT_remote.Panel1</value>
+  </data>
+  <data name="&gt;&gt;RS1.ZOrder" xml:space="preserve">
+    <value>1</value>
+  </data>
+  <data name="RSSI.Location" type="System.Drawing.Point, System.Drawing">
+    <value>82, 38</value>
+  </data>
+  <data name="RSSI.Multiline" type="System.Boolean, mscorlib">
+    <value>True</value>
+  </data>
+  <data name="RSSI.Size" type="System.Drawing.Size, System.Drawing">
+    <value>250, 39</value>
+  </data>
+  <data name="RSSI.TabIndex" type="System.Int32, mscorlib">
+    <value>34</value>
   </data>
   <data name="RSSI.ToolTip" xml:space="preserve">
     <value>see the spec for a RSSI to dBm graph. The numbers at the end are: 
@@ -2182,159 +1111,401 @@ ecc: number of 12 bit words successfully corrected by the golay code
 which result in a valid packet CRC 
 </value>
   </data>
-  <data name="&gt;&gt;RS7.Type" xml:space="preserve">
-    <value>System.Windows.Forms.CheckBox, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  <data name="&gt;&gt;RSSI.Name" xml:space="preserve">
+    <value>RSSI</value>
   </data>
-  <data name="linkLabel1.Size" type="System.Drawing.Size, System.Drawing">
-    <value>63, 13</value>
+  <data name="&gt;&gt;RSSI.Type" xml:space="preserve">
+    <value>System.Windows.Forms.TextBox, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </data>
-  <data name="RS3.Items17" xml:space="preserve">
-    <value>18</value>
+  <data name="&gt;&gt;RSSI.Parent" xml:space="preserve">
+    <value>groupBox1</value>
   </data>
-  <data name="S8.Items11" xml:space="preserve">
-    <value />
+  <data name="&gt;&gt;RSSI.ZOrder" xml:space="preserve">
+    <value>4</value>
   </data>
-  <data name="S4.Items4" xml:space="preserve">
-    <value>11</value>
-  </data>
-  <data name="S4.Items5" xml:space="preserve">
-    <value>14</value>
-  </data>
-  <data name="S2.Items4" xml:space="preserve">
-    <value>64</value>
-  </data>
-  <data name="S4.Items7" xml:space="preserve">
-    <value>20</value>
-  </data>
-  <data name="S4.Items1" xml:space="preserve">
-    <value>2</value>
-  </data>
-  <data name="S4.Items2" xml:space="preserve">
+  <data name="S10.Items" xml:space="preserve">
     <value>5</value>
   </data>
-  <data name="S4.Items3" xml:space="preserve">
+  <data name="S10.Items1" xml:space="preserve">
+    <value>6</value>
+  </data>
+  <data name="S10.Items2" xml:space="preserve">
+    <value>7</value>
+  </data>
+  <data name="S10.Items3" xml:space="preserve">
     <value>8</value>
   </data>
-  <data name="&gt;&gt;SPLIT_remote.Panel2.Name" xml:space="preserve">
-    <value>SPLIT_remote.Panel2</value>
+  <data name="S10.Items4" xml:space="preserve">
+    <value>9</value>
   </data>
-  <data name="&gt;&gt;RS2.Name" xml:space="preserve">
-    <value>RS2</value>
+  <data name="S10.Items5" xml:space="preserve">
+    <value>10</value>
   </data>
-  <data name="label15.ImeMode" type="System.Windows.Forms.ImeMode, System.Windows.Forms">
-    <value>NoControl</value>
+  <data name="S10.Items6" xml:space="preserve">
+    <value>11</value>
   </data>
-  <data name="S3.Items19" xml:space="preserve">
-    <value>20</value>
+  <data name="S10.Items7" xml:space="preserve">
+    <value>12</value>
   </data>
-  <data name="S3.Items29" xml:space="preserve">
-    <value>30</value>
+  <data name="S10.Items8" xml:space="preserve">
+    <value>13</value>
   </data>
-  <data name="&gt;&gt;BUT_getcurrent.Type" xml:space="preserve">
-    <value>ArdupilotMega.Controls.MyButton, ArdupilotMegaPlanner10, Version=1.1.4639.25747, Culture=neutral, PublicKeyToken=null</value>
-  </data>
-  <data name="S2.Items9" xml:space="preserve">
-    <value>16</value>
-  </data>
-  <data name="label2.AutoSize" type="System.Boolean, mscorlib">
-    <value>True</value>
+  <data name="S10.Items9" xml:space="preserve">
+    <value>14</value>
   </data>
   <data name="S10.Items10" xml:space="preserve">
     <value>15</value>
   </data>
-  <data name="RS11.Location" type="System.Drawing.Point, System.Drawing">
-    <value>97, 82</value>
+  <data name="S10.Items11" xml:space="preserve">
+    <value>16</value>
   </data>
-  <data name="CHK_advanced.AutoSize" type="System.Boolean, mscorlib">
-    <value>True</value>
+  <data name="S10.Items12" xml:space="preserve">
+    <value>17</value>
   </data>
-  <data name="label25.Size" type="System.Drawing.Size, System.Drawing">
-    <value>61, 13</value>
+  <data name="S10.Items13" xml:space="preserve">
+    <value>18</value>
   </data>
-  <data name="&gt;&gt;RS6.Type" xml:space="preserve">
-    <value>System.Windows.Forms.CheckBox, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  <data name="S10.Items14" xml:space="preserve">
+    <value>19</value>
   </data>
-  <data name="label15.TabIndex" type="System.Int32, mscorlib">
-    <value>49</value>
+  <data name="S10.Items15" xml:space="preserve">
+    <value>20</value>
   </data>
-  <data name="&gt;&gt;label1.Name" xml:space="preserve">
-    <value>label1</value>
+  <data name="S10.Items16" xml:space="preserve">
+    <value>30</value>
   </data>
-  <data name="RS10.Items7" xml:space="preserve">
-    <value>12</value>
+  <data name="S10.Items17" xml:space="preserve">
+    <value>40</value>
   </data>
-  <data name="RS1.Items" xml:space="preserve">
-    <value>115</value>
+  <data name="S10.Items18" xml:space="preserve">
+    <value>50</value>
   </data>
-  <data name="&gt;&gt;label11.Parent" xml:space="preserve">
-    <value>groupBox1</value>
+  <data name="S10.Location" type="System.Drawing.Point, System.Drawing">
+    <value>96, 55</value>
   </data>
-  <data name="linkLabel1.AutoSize" type="System.Boolean, mscorlib">
-    <value>True</value>
+  <data name="S10.Size" type="System.Drawing.Size, System.Drawing">
+    <value>80, 21</value>
   </data>
-  <data name="label31.AutoSize" type="System.Boolean, mscorlib">
-    <value>True</value>
+  <data name="S10.TabIndex" type="System.Int32, mscorlib">
+    <value>42</value>
   </data>
-  <data name="&gt;&gt;label5.Name" xml:space="preserve">
-    <value>label5</value>
+  <data name="S10.ToolTip" xml:space="preserve">
+    <value>number of frequency hopping channels </value>
   </data>
-  <data name="RS8.TabIndex" type="System.Int32, mscorlib">
-    <value>58</value>
+  <data name="&gt;&gt;S10.Name" xml:space="preserve">
+    <value>S10</value>
   </data>
-  <data name="&gt;&gt;RS1.Name" xml:space="preserve">
-    <value>RS1</value>
-  </data>
-  <data name="RS4.Items1" xml:space="preserve">
-    <value>2</value>
-  </data>
-  <data name="S12.ToolTip" xml:space="preserve">
-    <value>Listen Before Talk threshold</value>
-  </data>
-  <data name="&gt;&gt;label3.Parent" xml:space="preserve">
-    <value>SPLIT_local.Panel1</value>
-  </data>
-  <data name="label23.ToolTip" xml:space="preserve">
-    <value />
-  </data>
-  <data name="&gt;&gt;S12.Type" xml:space="preserve">
+  <data name="&gt;&gt;S10.Type" xml:space="preserve">
     <value>System.Windows.Forms.ComboBox, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
-  </data>
-  <data name="RS3.Items26" xml:space="preserve">
-    <value>27</value>
-  </data>
-  <data name="&gt;&gt;Progressbar.ZOrder" xml:space="preserve">
-    <value>9</value>
-  </data>
-  <data name="&gt;&gt;RS12.Type" xml:space="preserve">
-    <value>System.Windows.Forms.ComboBox, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
-  </data>
-  <data name="S2.ToolTip" xml:space="preserve">
-    <value>AIR_SPEED is the inter-radio data rate in rounded kbps. So 128 means 128kbps. Max is 192, min is 2. I would not recommend values below 16 as the frequency hopping and tdm sync times get too long. </value>
   </data>
   <data name="&gt;&gt;S10.Parent" xml:space="preserve">
     <value>SPLIT_local.Panel2</value>
   </data>
-  <data name="RS8.ToolTip" xml:space="preserve">
-    <value>minimum frequency in kHz </value>
+  <data name="&gt;&gt;S10.ZOrder" xml:space="preserve">
+    <value>2</value>
   </data>
-  <data name="RS5.ToolTip" xml:space="preserve">
-    <value>ECC is to enable/disable the golay error correcting code. It defaults to off. If you enable it then you packets take twice as many bytes to send, so you lose half your air bandwidth, but it can correct up to 3 bit errors per 12 bits of data. Use this for long range, usually in combination with a lower air data rate. The golay decode takes 20 microsecond per transmitted byte (40 microseconds per user data byte) which means you will also be a bit CPU constrained at the highest air data rates. So you usually use golay at 128kbps or less. 
-</value>
+  <data name="S11.Items" xml:space="preserve">
+    <value>10</value>
   </data>
-  <data name="RS8.Items" xml:space="preserve">
+  <data name="S11.Items1" xml:space="preserve">
+    <value>20</value>
+  </data>
+  <data name="S11.Items2" xml:space="preserve">
+    <value>30</value>
+  </data>
+  <data name="S11.Items3" xml:space="preserve">
+    <value>40</value>
+  </data>
+  <data name="S11.Items4" xml:space="preserve">
+    <value>50</value>
+  </data>
+  <data name="S11.Items5" xml:space="preserve">
+    <value>60</value>
+  </data>
+  <data name="S11.Items6" xml:space="preserve">
+    <value>70</value>
+  </data>
+  <data name="S11.Items7" xml:space="preserve">
+    <value>80</value>
+  </data>
+  <data name="S11.Items8" xml:space="preserve">
+    <value>90</value>
+  </data>
+  <data name="S11.Items9" xml:space="preserve">
+    <value>100</value>
+  </data>
+  <data name="S11.Location" type="System.Drawing.Point, System.Drawing">
+    <value>96, 82</value>
+  </data>
+  <data name="S11.Size" type="System.Drawing.Size, System.Drawing">
+    <value>80, 21</value>
+  </data>
+  <data name="S11.TabIndex" type="System.Int32, mscorlib">
+    <value>43</value>
+  </data>
+  <data name="S11.ToolTip" xml:space="preserve">
+    <value>the percentage of time to allow transmit</value>
+  </data>
+  <data name="&gt;&gt;S11.Name" xml:space="preserve">
+    <value>S11</value>
+  </data>
+  <data name="&gt;&gt;S11.Type" xml:space="preserve">
+    <value>System.Windows.Forms.ComboBox, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </data>
+  <data name="&gt;&gt;S11.Parent" xml:space="preserve">
+    <value>SPLIT_local.Panel2</value>
+  </data>
+  <data name="&gt;&gt;S11.ZOrder" xml:space="preserve">
+    <value>3</value>
+  </data>
+  <data name="S12.Items" xml:space="preserve">
+    <value>0</value>
+  </data>
+  <data name="S12.Items1" xml:space="preserve">
+    <value>25</value>
+  </data>
+  <data name="S12.Location" type="System.Drawing.Point, System.Drawing">
+    <value>96, 109</value>
+  </data>
+  <data name="S12.Size" type="System.Drawing.Size, System.Drawing">
+    <value>80, 21</value>
+  </data>
+  <data name="S12.TabIndex" type="System.Int32, mscorlib">
+    <value>44</value>
+  </data>
+  <data name="S12.ToolTip" xml:space="preserve">
+    <value>Listen Before Talk threshold</value>
+  </data>
+  <data name="&gt;&gt;S12.Name" xml:space="preserve">
+    <value>S12</value>
+  </data>
+  <data name="&gt;&gt;S12.Type" xml:space="preserve">
+    <value>System.Windows.Forms.ComboBox, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </data>
+  <data name="&gt;&gt;S12.Parent" xml:space="preserve">
+    <value>SPLIT_local.Panel2</value>
+  </data>
+  <data name="&gt;&gt;S12.ZOrder" xml:space="preserve">
+    <value>5</value>
+  </data>
+  <data name="RS12.Items" xml:space="preserve">
+    <value>0</value>
+  </data>
+  <data name="RS12.Items1" xml:space="preserve">
+    <value>25</value>
+  </data>
+  <data name="RS12.Location" type="System.Drawing.Point, System.Drawing">
+    <value>97, 109</value>
+  </data>
+  <data name="RS12.Size" type="System.Drawing.Size, System.Drawing">
+    <value>80, 21</value>
+  </data>
+  <data name="RS12.TabIndex" type="System.Int32, mscorlib">
+    <value>56</value>
+  </data>
+  <data name="RS12.ToolTip" xml:space="preserve">
+    <value>Listen Before Talk threshold</value>
+  </data>
+  <data name="&gt;&gt;RS12.Name" xml:space="preserve">
+    <value>RS12</value>
+  </data>
+  <data name="&gt;&gt;RS12.Type" xml:space="preserve">
+    <value>System.Windows.Forms.ComboBox, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </data>
+  <data name="&gt;&gt;RS12.Parent" xml:space="preserve">
+    <value>SPLIT_remote.Panel2</value>
+  </data>
+  <data name="&gt;&gt;RS12.ZOrder" xml:space="preserve">
+    <value>4</value>
+  </data>
+  <data name="RS11.Items" xml:space="preserve">
+    <value>10</value>
+  </data>
+  <data name="RS11.Items1" xml:space="preserve">
+    <value>20</value>
+  </data>
+  <data name="RS11.Items2" xml:space="preserve">
+    <value>30</value>
+  </data>
+  <data name="RS11.Items3" xml:space="preserve">
+    <value>40</value>
+  </data>
+  <data name="RS11.Items4" xml:space="preserve">
+    <value>50</value>
+  </data>
+  <data name="RS11.Items5" xml:space="preserve">
+    <value>60</value>
+  </data>
+  <data name="RS11.Items6" xml:space="preserve">
+    <value>70</value>
+  </data>
+  <data name="RS11.Items7" xml:space="preserve">
+    <value>80</value>
+  </data>
+  <data name="RS11.Items8" xml:space="preserve">
+    <value>90</value>
+  </data>
+  <data name="RS11.Items9" xml:space="preserve">
+    <value>100</value>
+  </data>
+  <data name="RS11.Location" type="System.Drawing.Point, System.Drawing">
+    <value>97, 82</value>
+  </data>
+  <data name="RS11.Size" type="System.Drawing.Size, System.Drawing">
+    <value>80, 21</value>
+  </data>
+  <data name="RS11.TabIndex" type="System.Int32, mscorlib">
+    <value>55</value>
+  </data>
+  <data name="RS11.ToolTip" xml:space="preserve">
+    <value>the percentage of time to allow transmit</value>
+  </data>
+  <data name="&gt;&gt;RS11.Name" xml:space="preserve">
+    <value>RS11</value>
+  </data>
+  <data name="&gt;&gt;RS11.Type" xml:space="preserve">
+    <value>System.Windows.Forms.ComboBox, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </data>
+  <data name="&gt;&gt;RS11.Parent" xml:space="preserve">
+    <value>SPLIT_remote.Panel2</value>
+  </data>
+  <data name="&gt;&gt;RS11.ZOrder" xml:space="preserve">
+    <value>3</value>
+  </data>
+  <data name="RS10.Items" xml:space="preserve">
+    <value>5</value>
+  </data>
+  <data name="RS10.Items1" xml:space="preserve">
+    <value>6</value>
+  </data>
+  <data name="RS10.Items2" xml:space="preserve">
+    <value>7</value>
+  </data>
+  <data name="RS10.Items3" xml:space="preserve">
+    <value>8</value>
+  </data>
+  <data name="RS10.Items4" xml:space="preserve">
+    <value>9</value>
+  </data>
+  <data name="RS10.Items5" xml:space="preserve">
+    <value>10</value>
+  </data>
+  <data name="RS10.Items6" xml:space="preserve">
+    <value>11</value>
+  </data>
+  <data name="RS10.Items7" xml:space="preserve">
+    <value>12</value>
+  </data>
+  <data name="RS10.Items8" xml:space="preserve">
+    <value>13</value>
+  </data>
+  <data name="RS10.Items9" xml:space="preserve">
+    <value>14</value>
+  </data>
+  <data name="RS10.Items10" xml:space="preserve">
+    <value>15</value>
+  </data>
+  <data name="RS10.Items11" xml:space="preserve">
+    <value>16</value>
+  </data>
+  <data name="RS10.Items12" xml:space="preserve">
+    <value>17</value>
+  </data>
+  <data name="RS10.Items13" xml:space="preserve">
+    <value>18</value>
+  </data>
+  <data name="RS10.Items14" xml:space="preserve">
+    <value>19</value>
+  </data>
+  <data name="RS10.Items15" xml:space="preserve">
+    <value>20</value>
+  </data>
+  <data name="RS10.Items16" xml:space="preserve">
+    <value>30</value>
+  </data>
+  <data name="RS10.Items17" xml:space="preserve">
+    <value>40</value>
+  </data>
+  <data name="RS10.Items18" xml:space="preserve">
+    <value>50</value>
+  </data>
+  <data name="RS10.Location" type="System.Drawing.Point, System.Drawing">
+    <value>97, 55</value>
+  </data>
+  <data name="RS10.Size" type="System.Drawing.Size, System.Drawing">
+    <value>80, 21</value>
+  </data>
+  <data name="RS10.TabIndex" type="System.Int32, mscorlib">
+    <value>54</value>
+  </data>
+  <data name="RS10.ToolTip" xml:space="preserve">
+    <value>number of frequency hopping channels </value>
+  </data>
+  <data name="&gt;&gt;RS10.Name" xml:space="preserve">
+    <value>RS10</value>
+  </data>
+  <data name="&gt;&gt;RS10.Type" xml:space="preserve">
+    <value>System.Windows.Forms.ComboBox, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </data>
+  <data name="&gt;&gt;RS10.Parent" xml:space="preserve">
+    <value>SPLIT_remote.Panel2</value>
+  </data>
+  <data name="&gt;&gt;RS10.ZOrder" xml:space="preserve">
+    <value>2</value>
+  </data>
+  <data name="S9.Items" xml:space="preserve">
     <value>902000</value>
   </data>
-  <data name="S8.Items5" xml:space="preserve">
+  <data name="S9.Items1" xml:space="preserve">
+    <value>907500</value>
+  </data>
+  <data name="S9.Items2" xml:space="preserve">
+    <value>915000</value>
+  </data>
+  <data name="S9.Items3" xml:space="preserve">
+    <value>921000</value>
+  </data>
+  <data name="S9.Items4" xml:space="preserve">
+    <value>928000</value>
+  </data>
+  <data name="S9.Items5" xml:space="preserve">
     <value>433050</value>
   </data>
-  <data name="S8.Items6" xml:space="preserve">
+  <data name="S9.Items6" xml:space="preserve">
     <value>434040</value>
   </data>
-  <data name="S8.Items7" xml:space="preserve">
+  <data name="S9.Items7" xml:space="preserve">
     <value>434790</value>
   </data>
-  <data name="S6.TabIndex" type="System.Int32, mscorlib">
-    <value>17</value>
+  <data name="S9.Items8" xml:space="preserve">
+    <value>435000</value>
+  </data>
+  <data name="S9.Location" type="System.Drawing.Point, System.Drawing">
+    <value>96, 28</value>
+  </data>
+  <data name="S9.Size" type="System.Drawing.Size, System.Drawing">
+    <value>80, 21</value>
+  </data>
+  <data name="S9.TabIndex" type="System.Int32, mscorlib">
+    <value>41</value>
+  </data>
+  <data name="S9.ToolTip" xml:space="preserve">
+    <value>maximum frequency in kHz </value>
+  </data>
+  <data name="&gt;&gt;S9.Name" xml:space="preserve">
+    <value>S9</value>
+  </data>
+  <data name="&gt;&gt;S9.Type" xml:space="preserve">
+    <value>System.Windows.Forms.ComboBox, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </data>
+  <data name="&gt;&gt;S9.Parent" xml:space="preserve">
+    <value>SPLIT_local.Panel2</value>
+  </data>
+  <data name="&gt;&gt;S9.ZOrder" xml:space="preserve">
+    <value>1</value>
+  </data>
+  <data name="S8.Items" xml:space="preserve">
+    <value>902000</value>
   </data>
   <data name="S8.Items1" xml:space="preserve">
     <value>907500</value>
@@ -2345,8 +1516,17 @@ which result in a valid packet CRC
   <data name="S8.Items3" xml:space="preserve">
     <value>921000</value>
   </data>
-  <data name="&gt;&gt;S1.Name" xml:space="preserve">
-    <value>S1</value>
+  <data name="S8.Items4" xml:space="preserve">
+    <value>928000</value>
+  </data>
+  <data name="S8.Items5" xml:space="preserve">
+    <value>433050</value>
+  </data>
+  <data name="S8.Items6" xml:space="preserve">
+    <value>434040</value>
+  </data>
+  <data name="S8.Items7" xml:space="preserve">
+    <value>434790</value>
   </data>
   <data name="S8.Items8" xml:space="preserve">
     <value>435000</value>
@@ -2354,566 +1534,1248 @@ which result in a valid packet CRC
   <data name="S8.Items9" xml:space="preserve">
     <value />
   </data>
-  <data name="&gt;&gt;label13.Type" xml:space="preserve">
-    <value>System.Windows.Forms.Label, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
-  </data>
-  <data name="label12.TabIndex" type="System.Int32, mscorlib">
-    <value>37</value>
-  </data>
-  <data name="label28.TabIndex" type="System.Int32, mscorlib">
-    <value>69</value>
-  </data>
-  <data name="label1.Location" type="System.Drawing.Point, System.Drawing">
-    <value>6, 37</value>
-  </data>
-  <data name="linkLabel1.TabIndex" type="System.Int32, mscorlib">
-    <value>83</value>
-  </data>
-  <data name="BUT_Syncoptions.Text" xml:space="preserve">
-    <value>Copy Required Items to Remote</value>
-  </data>
-  <data name="groupBox1.Size" type="System.Drawing.Size, System.Drawing">
-    <value>382, 306</value>
-  </data>
-  <data name="label30.ToolTip" xml:space="preserve">
-    <value />
-  </data>
-  <data name="label20.Location" type="System.Drawing.Point, System.Drawing">
-    <value>5, 112</value>
-  </data>
-  <data name="&gt;&gt;SPLIT_remote.Parent" xml:space="preserve">
-    <value>groupBox2</value>
-  </data>
-  <data name="label16.AutoSize" type="System.Boolean, mscorlib">
-    <value>True</value>
-  </data>
-  <data name="BUT_getcurrent.Location" type="System.Drawing.Point, System.Drawing">
-    <value>269, 3</value>
-  </data>
-  <data name="&gt;&gt;RS7.Name" xml:space="preserve">
-    <value>RS7</value>
-  </data>
-  <data name="label4.Location" type="System.Drawing.Point, System.Drawing">
-    <value>6, 91</value>
-  </data>
-  <data name="&gt;&gt;Progressbar.Name" xml:space="preserve">
-    <value>Progressbar</value>
-  </data>
-  <data name="S3.TabIndex" type="System.Int32, mscorlib">
-    <value>11</value>
-  </data>
   <data name="S8.Items10" xml:space="preserve">
     <value />
   </data>
-  <data name="label21.TabIndex" type="System.Int32, mscorlib">
-    <value>62</value>
-  </data>
-  <data name="label9.ToolTip" xml:space="preserve">
+  <data name="S8.Items11" xml:space="preserve">
     <value />
   </data>
-  <data name="groupBox2.Size" type="System.Drawing.Size, System.Drawing">
-    <value>367, 306</value>
+  <data name="S8.Location" type="System.Drawing.Point, System.Drawing">
+    <value>96, 3</value>
   </data>
-  <data name="&gt;&gt;S4.ZOrder" xml:space="preserve">
-    <value>8</value>
+  <data name="S8.Size" type="System.Drawing.Size, System.Drawing">
+    <value>80, 21</value>
   </data>
-  <data name="&gt;&gt;RS6.Name" xml:space="preserve">
-    <value>RS6</value>
-  </data>
-  <data name="RTI.Location" type="System.Drawing.Point, System.Drawing">
-    <value>138, 12</value>
-  </data>
-  <data name="RS2.Items10" xml:space="preserve">
-    <value>8</value>
-  </data>
-  <data name="RS11.Items6" xml:space="preserve">
-    <value>70</value>
-  </data>
-  <data name="label14.ImeMode" type="System.Windows.Forms.ImeMode, System.Windows.Forms">
-    <value>NoControl</value>
-  </data>
-  <data name="label13.ImeMode" type="System.Windows.Forms.ImeMode, System.Windows.Forms">
-    <value>NoControl</value>
-  </data>
-  <data name="label21.Text" xml:space="preserve">
-    <value>Duty Cycle</value>
+  <data name="S8.TabIndex" type="System.Int32, mscorlib">
+    <value>46</value>
   </data>
   <data name="S8.ToolTip" xml:space="preserve">
     <value>minimum frequency in kHz </value>
   </data>
-  <data name="RSSI.Size" type="System.Drawing.Size, System.Drawing">
-    <value>250, 39</value>
-  </data>
-  <data name="RS3.ToolTip" xml:space="preserve">
-    <value>NETID is a 16 bit 'network ID'. This is used to seed the frequency hopping sequence and to identify packets as coming from the right radio. Make sure you use a different NETID from anyone else running the same sort of radio in the area. </value>
-  </data>
-  <data name="label32.ImeMode" type="System.Windows.Forms.ImeMode, System.Windows.Forms">
-    <value>NoControl</value>
-  </data>
-  <data name="&gt;&gt;BUT_savesettings.Name" xml:space="preserve">
-    <value>BUT_savesettings</value>
-  </data>
-  <data name="S6.Size" type="System.Drawing.Size, System.Drawing">
-    <value>80, 20</value>
-  </data>
-  <data name="&gt;&gt;label2.ZOrder" xml:space="preserve">
-    <value>0</value>
-  </data>
-  <data name="RS2.Items2" xml:space="preserve">
-    <value>128</value>
-  </data>
-  <data name="&gt;&gt;SPLIT_remote.Panel1.Name" xml:space="preserve">
-    <value>SPLIT_remote.Panel1</value>
-  </data>
-  <data name="&gt;&gt;RS5.Name" xml:space="preserve">
-    <value>RS5</value>
-  </data>
-  <data name="&gt;&gt;label3.Name" xml:space="preserve">
-    <value>label3</value>
-  </data>
-  <data name="SPLIT_remote.IsSplitterFixed" type="System.Boolean, mscorlib">
-    <value>True</value>
-  </data>
-  <data name="label14.Size" type="System.Drawing.Size, System.Drawing">
-    <value>51, 13</value>
-  </data>
-  <data name="&gt;&gt;label7.Name" xml:space="preserve">
-    <value>label7</value>
-  </data>
-  <data name="&gt;&gt;SPLIT_local.Panel2.Name" xml:space="preserve">
-    <value>SPLIT_local.Panel2</value>
-  </data>
-  <data name="label11.AutoSize" type="System.Boolean, mscorlib">
-    <value>True</value>
-  </data>
-  <data name="S1.Location" type="System.Drawing.Point, System.Drawing">
-    <value>81, 29</value>
-  </data>
-  <data name="S1.TabIndex" type="System.Int32, mscorlib">
-    <value>4</value>
-  </data>
-  <data name="label16.Text" xml:space="preserve">
-    <value>Duty Cycle</value>
-  </data>
-  <data name="&gt;&gt;RS9.Type" xml:space="preserve">
-    <value>System.Windows.Forms.ComboBox, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
-  </data>
-  <data name="&gt;&gt;label1.Type" xml:space="preserve">
-    <value>System.Windows.Forms.Label, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
-  </data>
-  <data name="SPLIT_remote.SplitterWidth" type="System.Int32, mscorlib">
-    <value>1</value>
-  </data>
-  <data name="label12.ToolTip" xml:space="preserve">
-    <value />
-  </data>
-  <data name="label3.ToolTip" xml:space="preserve">
-    <value />
-  </data>
-  <data name="&gt;&gt;RS12.Parent" xml:space="preserve">
-    <value>SPLIT_remote.Panel2</value>
-  </data>
-  <data name="label31.Size" type="System.Drawing.Size, System.Drawing">
-    <value>39, 13</value>
-  </data>
-  <data name="RS11.Items7" xml:space="preserve">
-    <value>80</value>
-  </data>
-  <data name="&gt;&gt;ATI.ZOrder" xml:space="preserve">
-    <value>3</value>
-  </data>
-  <data name="label29.Size" type="System.Drawing.Size, System.Drawing">
-    <value>38, 13</value>
-  </data>
-  <data name="label25.TabIndex" type="System.Int32, mscorlib">
-    <value>72</value>
-  </data>
-  <data name="label22.AutoSize" type="System.Boolean, mscorlib">
-    <value>True</value>
-  </data>
-  <data name="RS3.Items12" xml:space="preserve">
-    <value>13</value>
-  </data>
-  <data name="&gt;&gt;label14.Type" xml:space="preserve">
-    <value>System.Windows.Forms.Label, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
-  </data>
-  <data name="&gt;&gt;CHK_advanced.Parent" xml:space="preserve">
-    <value>$this</value>
-  </data>
-  <data name="RS3.Items18" xml:space="preserve">
-    <value>19</value>
-  </data>
-  <data name="RSSI.Multiline" type="System.Boolean, mscorlib">
-    <value>True</value>
-  </data>
-  <data name="RS8.Items1" xml:space="preserve">
-    <value>907500</value>
-  </data>
-  <data name="RS4.TabIndex" type="System.Int32, mscorlib">
-    <value>26</value>
-  </data>
-  <data name="&gt;&gt;BUT_Syncoptions.ZOrder" xml:space="preserve">
-    <value>4</value>
-  </data>
-  <data name="label15.Location" type="System.Drawing.Point, System.Drawing">
-    <value>4, 58</value>
-  </data>
-  <data name="label22.Location" type="System.Drawing.Point, System.Drawing">
-    <value>5, 58</value>
-  </data>
-  <data name="groupBox2.Location" type="System.Drawing.Point, System.Drawing">
-    <value>400, 48</value>
-  </data>
-  <data name="S4.ToolTip" xml:space="preserve">
-    <value>TXPOWER is the transmit power in dBm. 20dBm is 100mW. It is useful to set this to lower levels for short range testing.
-</value>
-  </data>
-  <data name="&gt;&gt;BUT_upload.Type" xml:space="preserve">
-    <value>ArdupilotMega.Controls.MyButton, ArdupilotMegaPlanner10, Version=1.1.4639.25747, Culture=neutral, PublicKeyToken=null</value>
-  </data>
-  <data name="&gt;&gt;label9.Name" xml:space="preserve">
-    <value>label9</value>
-  </data>
-  <data name="&gt;&gt;label15.Type" xml:space="preserve">
-    <value>System.Windows.Forms.Label, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
-  </data>
-  <data name="&gt;&gt;label24.ZOrder" xml:space="preserve">
-    <value>0</value>
-  </data>
-  <data name="RS3.Location" type="System.Drawing.Point, System.Drawing">
-    <value>83, 83</value>
-  </data>
-  <data name="S10.Items" xml:space="preserve">
-    <value>5</value>
-  </data>
-  <data name="S9.Location" type="System.Drawing.Point, System.Drawing">
-    <value>96, 28</value>
-  </data>
-  <data name="S10.Items3" xml:space="preserve">
-    <value>8</value>
-  </data>
-  <data name="label8.ToolTip" xml:space="preserve">
-    <value>OPPRESEND 启用/禁用“条件性重发”。当启动时，当输入缓冲含有少于256字节时电台将两次发送同一个数据包。第二遍将标记为重发，接收电台在正确收到第一个包时会忽略重发的包。这对链路质量，特别是上行命令有很大的影响。</value>
-  </data>
-  <data name="&gt;&gt;label5.ZOrder" xml:space="preserve">
-    <value>9</value>
-  </data>
-  <data name="ATI.Location" type="System.Drawing.Point, System.Drawing">
-    <value>102, 12</value>
-  </data>
-  <data name="S0.ToolTip" xml:space="preserve">
-    <value />
-  </data>
-  <data name="S10.Items18" xml:space="preserve">
-    <value>50</value>
-  </data>
-  <data name="&gt;&gt;label6.ZOrder" xml:space="preserve">
-    <value>11</value>
-  </data>
-  <data name="BUT_Syncoptions.ToolTip" xml:space="preserve">
-    <value />
-  </data>
-  <data name="RS11.Size" type="System.Drawing.Size, System.Drawing">
-    <value>80, 21</value>
-  </data>
-  <data name="S10.Items12" xml:space="preserve">
-    <value>17</value>
-  </data>
-  <data name="groupBox2.ToolTip" xml:space="preserve">
-    <value />
-  </data>
-  <data name="&gt;&gt;label13.Parent" xml:space="preserve">
-    <value>SPLIT_local.Panel2</value>
-  </data>
-  <data name="&gt;&gt;groupBox1.Type" xml:space="preserve">
-    <value>System.Windows.Forms.GroupBox, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
-  </data>
-  <data name="S10.Items14" xml:space="preserve">
-    <value>19</value>
-  </data>
-  <data name="RS2.Items3" xml:space="preserve">
-    <value>96</value>
-  </data>
-  <data name="&gt;&gt;S6.Parent" xml:space="preserve">
-    <value>SPLIT_local.Panel1</value>
-  </data>
-  <data name="&gt;&gt;label25.ZOrder" xml:space="preserve">
-    <value>4</value>
-  </data>
-  <data name="S2.Size" type="System.Drawing.Size, System.Drawing">
-    <value>80, 21</value>
-  </data>
-  <data name="&gt;&gt;RS9.Name" xml:space="preserve">
-    <value>RS9</value>
-  </data>
-  <data name="BUT_Syncoptions.Location" type="System.Drawing.Point, System.Drawing">
-    <value>346, 355</value>
-  </data>
-  <data name="RS10.Items" xml:space="preserve">
-    <value>5</value>
-  </data>
-  <data name="RS12.Location" type="System.Drawing.Point, System.Drawing">
-    <value>97, 109</value>
-  </data>
-  <data name="label5.ToolTip" xml:space="preserve">
-    <value />
-  </data>
-  <data name="label3.Size" type="System.Drawing.Size, System.Drawing">
-    <value>53, 13</value>
-  </data>
-  <data name="RS0.TabIndex" type="System.Int32, mscorlib">
-    <value>23</value>
-  </data>
-  <data name="groupBox1.ToolTip" xml:space="preserve">
-    <value />
-  </data>
-  <data name="S11.Items1" xml:space="preserve">
-    <value>20</value>
-  </data>
-  <data name="label14.TabIndex" type="System.Int32, mscorlib">
-    <value>48</value>
-  </data>
-  <data name="label17.ToolTip" xml:space="preserve">
-    <value />
-  </data>
-  <data name="&gt;&gt;label13.Name" xml:space="preserve">
-    <value>label13</value>
-  </data>
-  <data name="&gt;&gt;SPLIT_remote.Panel2.ZOrder" xml:space="preserve">
-    <value>1</value>
-  </data>
-  <data name="S10.Size" type="System.Drawing.Size, System.Drawing">
-    <value>80, 21</value>
-  </data>
-  <data name="RS3.Items25" xml:space="preserve">
-    <value>26</value>
-  </data>
-  <data name="&gt;&gt;RS11.ZOrder" xml:space="preserve">
-    <value>3</value>
-  </data>
-  <data name="label31.Location" type="System.Drawing.Point, System.Drawing">
-    <value>6, 10</value>
-  </data>
-  <data name="S2.Items7" xml:space="preserve">
-    <value>24</value>
-  </data>
-  <data name="&gt;&gt;SPLIT_local.Panel2.Parent" xml:space="preserve">
-    <value>SPLIT_local</value>
-  </data>
-  <data name="S2.Items3" xml:space="preserve">
-    <value>96</value>
-  </data>
-  <data name="&gt;&gt;label25.Name" xml:space="preserve">
-    <value>label25</value>
-  </data>
-  <data name="RS1.Items8" xml:space="preserve">
-    <value>1</value>
-  </data>
-  <data name="SPLIT_local.SplitterWidth" type="System.Int32, mscorlib">
-    <value>1</value>
-  </data>
-  <data name="RS3.Items22" xml:space="preserve">
-    <value>23</value>
-  </data>
-  <data name="&gt;&gt;label23.Type" xml:space="preserve">
-    <value>System.Windows.Forms.Label, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
-  </data>
-  <data name="label15.Size" type="System.Drawing.Size, System.Drawing">
-    <value>73, 13</value>
-  </data>
-  <data name="BUT_upload.Size" type="System.Drawing.Size, System.Drawing">
-    <value>121, 39</value>
-  </data>
-  <data name="&gt;&gt;BUT_savesettings.ZOrder" xml:space="preserve">
-    <value>6</value>
-  </data>
-  <data name="&gt;&gt;RTI.ZOrder" xml:space="preserve">
-    <value>2</value>
-  </data>
-  <data name="S11.Items9" xml:space="preserve">
-    <value>100</value>
-  </data>
-  <data name="&gt;&gt;RS8.Name" xml:space="preserve">
-    <value>RS8</value>
-  </data>
-  <data name="&gt;&gt;label9.Parent" xml:space="preserve">
-    <value>groupBox2</value>
-  </data>
-  <data name="&gt;&gt;S3.Type" xml:space="preserve">
-    <value>System.Windows.Forms.ComboBox, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
-  </data>
-  <data name="label30.AutoSize" type="System.Boolean, mscorlib">
-    <value>True</value>
-  </data>
-  <data name="&gt;&gt;label10.Type" xml:space="preserve">
-    <value>System.Windows.Forms.Label, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
-  </data>
-  <data name="RS5.Size" type="System.Drawing.Size, System.Drawing">
-    <value>80, 20</value>
-  </data>
-  <data name="RS12.Size" type="System.Drawing.Size, System.Drawing">
-    <value>80, 21</value>
-  </data>
-  <data name="RS2.Items" xml:space="preserve">
-    <value>250</value>
-  </data>
-  <data name="SPLIT_local.IsSplitterFixed" type="System.Boolean, mscorlib">
-    <value>True</value>
-  </data>
-  <data name="S10.Location" type="System.Drawing.Point, System.Drawing">
-    <value>96, 55</value>
-  </data>
-  <data name="label20.Size" type="System.Drawing.Size, System.Drawing">
-    <value>50, 13</value>
-  </data>
-  <data name="S5.Size" type="System.Drawing.Size, System.Drawing">
-    <value>80, 20</value>
-  </data>
-  <data name="SPLIT_local.ToolTip" xml:space="preserve">
-    <value />
-  </data>
-  <data name="label25.ToolTip" xml:space="preserve">
-    <value />
-  </data>
-  <data name="S3.Items14" xml:space="preserve">
-    <value>15</value>
-  </data>
-  <data name="S3.Items24" xml:space="preserve">
-    <value>25</value>
-  </data>
-  <data name="label4.ToolTip" xml:space="preserve">
-    <value />
+  <data name="&gt;&gt;S8.Name" xml:space="preserve">
+    <value>S8</value>
   </data>
   <data name="&gt;&gt;S8.Type" xml:space="preserve">
     <value>System.Windows.Forms.ComboBox, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </data>
-  <data name="Progressbar.Size" type="System.Drawing.Size, System.Drawing">
-    <value>755, 36</value>
+  <data name="&gt;&gt;S8.Parent" xml:space="preserve">
+    <value>SPLIT_local.Panel2</value>
   </data>
-  <data name="&gt;&gt;S10.ZOrder" xml:space="preserve">
-    <value>2</value>
+  <data name="&gt;&gt;S8.ZOrder" xml:space="preserve">
+    <value>7</value>
   </data>
-  <data name="&gt;&gt;S2.Name" xml:space="preserve">
-    <value>S2</value>
+  <data name="RS8.Items" xml:space="preserve">
+    <value>902000</value>
   </data>
-  <data name="&gt;&gt;label11.Type" xml:space="preserve">
-    <value>System.Windows.Forms.Label, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
-  </data>
-  <data name="&gt;&gt;label20.ZOrder" xml:space="preserve">
-    <value>9</value>
-  </data>
-  <data name="label16.TabIndex" type="System.Int32, mscorlib">
-    <value>50</value>
-  </data>
-  <data name="label22.TabIndex" type="System.Int32, mscorlib">
-    <value>61</value>
-  </data>
-  <data name="RS4.Size" type="System.Drawing.Size, System.Drawing">
-    <value>80, 21</value>
-  </data>
-  <data name="label20.Text" xml:space="preserve">
-    <value>LBT Rssi</value>
-  </data>
-  <data name="&gt;&gt;BUT_Syncoptions.Parent" xml:space="preserve">
-    <value>$this</value>
-  </data>
-  <data name="S9.TabIndex" type="System.Int32, mscorlib">
-    <value>41</value>
-  </data>
-  <data name="&gt;&gt;RSSI.Type" xml:space="preserve">
-    <value>System.Windows.Forms.TextBox, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
-  </data>
-  <data name="&gt;&gt;SPLIT_remote.Panel2.Parent" xml:space="preserve">
-    <value>SPLIT_remote</value>
-  </data>
-  <data name="label24.Location" type="System.Drawing.Point, System.Drawing">
-    <value>5, 6</value>
-  </data>
-  <data name="CHK_advanced.Location" type="System.Drawing.Point, System.Drawing">
-    <value>653, 366</value>
-  </data>
-  <data name="&gt;&gt;RSSI.ZOrder" xml:space="preserve">
-    <value>4</value>
-  </data>
-  <data name="label12.Text" xml:space="preserve">
-    <value>RSSI</value>
-  </data>
-  <data name="&gt;&gt;lbl_status.Parent" xml:space="preserve">
-    <value>$this</value>
-  </data>
-  <data name="&gt;&gt;label16.Type" xml:space="preserve">
-    <value>System.Windows.Forms.Label, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  <data name="RS8.Items1" xml:space="preserve">
+    <value>907500</value>
   </data>
   <data name="RS8.Items2" xml:space="preserve">
     <value>915000</value>
   </data>
-  <data name="label16.ImeMode" type="System.Windows.Forms.ImeMode, System.Windows.Forms">
-    <value>NoControl</value>
+  <data name="RS8.Items3" xml:space="preserve">
+    <value>921000</value>
   </data>
-  <data name="&gt;&gt;S5.Parent" xml:space="preserve">
-    <value>SPLIT_local.Panel1</value>
+  <data name="RS8.Items4" xml:space="preserve">
+    <value>928000</value>
   </data>
-  <data name="&gt;&gt;RTI.Type" xml:space="preserve">
+  <data name="RS8.Items5" xml:space="preserve">
+    <value>433050</value>
+  </data>
+  <data name="RS8.Items6" xml:space="preserve">
+    <value>434040</value>
+  </data>
+  <data name="RS8.Items7" xml:space="preserve">
+    <value>434790</value>
+  </data>
+  <data name="RS8.Items8" xml:space="preserve">
+    <value>435000</value>
+  </data>
+  <data name="RS8.Location" type="System.Drawing.Point, System.Drawing">
+    <value>97, 3</value>
+  </data>
+  <data name="RS8.Size" type="System.Drawing.Size, System.Drawing">
+    <value>80, 21</value>
+  </data>
+  <data name="RS8.TabIndex" type="System.Int32, mscorlib">
+    <value>58</value>
+  </data>
+  <data name="RS8.ToolTip" xml:space="preserve">
+    <value>minimum frequency in kHz </value>
+  </data>
+  <data name="&gt;&gt;RS8.Name" xml:space="preserve">
+    <value>RS8</value>
+  </data>
+  <data name="&gt;&gt;RS8.Type" xml:space="preserve">
+    <value>System.Windows.Forms.ComboBox, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </data>
+  <data name="&gt;&gt;RS8.Parent" xml:space="preserve">
+    <value>SPLIT_remote.Panel2</value>
+  </data>
+  <data name="&gt;&gt;RS8.ZOrder" xml:space="preserve">
+    <value>5</value>
+  </data>
+  <data name="RS9.Items" xml:space="preserve">
+    <value>902000</value>
+  </data>
+  <data name="RS9.Items1" xml:space="preserve">
+    <value>907500</value>
+  </data>
+  <data name="RS9.Items2" xml:space="preserve">
+    <value>915000</value>
+  </data>
+  <data name="RS9.Items3" xml:space="preserve">
+    <value>921000</value>
+  </data>
+  <data name="RS9.Items4" xml:space="preserve">
+    <value>928000</value>
+  </data>
+  <data name="RS9.Items5" xml:space="preserve">
+    <value>433050</value>
+  </data>
+  <data name="RS9.Items6" xml:space="preserve">
+    <value>434040</value>
+  </data>
+  <data name="RS9.Items7" xml:space="preserve">
+    <value>434790</value>
+  </data>
+  <data name="RS9.Items8" xml:space="preserve">
+    <value>435000</value>
+  </data>
+  <data name="RS9.Location" type="System.Drawing.Point, System.Drawing">
+    <value>97, 28</value>
+  </data>
+  <data name="RS9.Size" type="System.Drawing.Size, System.Drawing">
+    <value>80, 21</value>
+  </data>
+  <data name="RS9.TabIndex" type="System.Int32, mscorlib">
+    <value>53</value>
+  </data>
+  <data name="RS9.ToolTip" xml:space="preserve">
+    <value>maximum frequency in kHz </value>
+  </data>
+  <data name="&gt;&gt;RS9.Name" xml:space="preserve">
+    <value>RS9</value>
+  </data>
+  <data name="&gt;&gt;RS9.Type" xml:space="preserve">
+    <value>System.Windows.Forms.ComboBox, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </data>
+  <data name="&gt;&gt;RS9.Parent" xml:space="preserve">
+    <value>SPLIT_remote.Panel2</value>
+  </data>
+  <data name="&gt;&gt;RS9.ZOrder" xml:space="preserve">
+    <value>1</value>
+  </data>
+  <data name="RS0.Location" type="System.Drawing.Point, System.Drawing">
+    <value>83, 3</value>
+  </data>
+  <data name="RS0.Size" type="System.Drawing.Size, System.Drawing">
+    <value>80, 20</value>
+  </data>
+  <data name="RS0.TabIndex" type="System.Int32, mscorlib">
+    <value>23</value>
+  </data>
+  <data name="&gt;&gt;RS0.Name" xml:space="preserve">
+    <value>RS0</value>
+  </data>
+  <data name="&gt;&gt;RS0.Type" xml:space="preserve">
     <value>System.Windows.Forms.TextBox, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
-  </data>
-  <data name="RS5.Location" type="System.Drawing.Point, System.Drawing">
-    <value>83, 137</value>
-  </data>
-  <data name="&gt;&gt;lbl_status.Name" xml:space="preserve">
-    <value>lbl_status</value>
-  </data>
-  <data name="label9.Text" xml:space="preserve">
-    <value>Version</value>
-  </data>
-  <data name="&gt;&gt;S9.Type" xml:space="preserve">
-    <value>System.Windows.Forms.ComboBox, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
-  </data>
-  <data name="&gt;&gt;S4.Type" xml:space="preserve">
-    <value>System.Windows.Forms.ComboBox, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
-  </data>
-  <data name="ATI3.TabIndex" type="System.Int32, mscorlib">
-    <value>79</value>
-  </data>
-  <data name="label21.ImeMode" type="System.Windows.Forms.ImeMode, System.Windows.Forms">
-    <value>NoControl</value>
-  </data>
-  <data name="lbl_status.Location" type="System.Drawing.Point, System.Drawing">
-    <value>12, 361</value>
   </data>
   <data name="&gt;&gt;RS0.Parent" xml:space="preserve">
     <value>SPLIT_remote.Panel1</value>
   </data>
+  <data name="&gt;&gt;RS0.ZOrder" xml:space="preserve">
+    <value>0</value>
+  </data>
+  <data name="RTI.Location" type="System.Drawing.Point, System.Drawing">
+    <value>138, 12</value>
+  </data>
+  <data name="RTI.Size" type="System.Drawing.Size, System.Drawing">
+    <value>102, 20</value>
+  </data>
+  <data name="RTI.TabIndex" type="System.Int32, mscorlib">
+    <value>33</value>
+  </data>
+  <data name="&gt;&gt;RTI.Name" xml:space="preserve">
+    <value>RTI</value>
+  </data>
+  <data name="&gt;&gt;RTI.Type" xml:space="preserve">
+    <value>System.Windows.Forms.TextBox, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </data>
+  <data name="&gt;&gt;RTI.Parent" xml:space="preserve">
+    <value>groupBox2</value>
+  </data>
+  <data name="&gt;&gt;RTI.ZOrder" xml:space="preserve">
+    <value>2</value>
+  </data>
+  <data name="ATI.Location" type="System.Drawing.Point, System.Drawing">
+    <value>102, 12</value>
+  </data>
+  <data name="ATI.Size" type="System.Drawing.Size, System.Drawing">
+    <value>102, 20</value>
+  </data>
+  <data name="ATI.TabIndex" type="System.Int32, mscorlib">
+    <value>32</value>
+  </data>
+  <data name="&gt;&gt;ATI.Name" xml:space="preserve">
+    <value>ATI</value>
+  </data>
+  <data name="&gt;&gt;ATI.Type" xml:space="preserve">
+    <value>System.Windows.Forms.TextBox, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </data>
+  <data name="&gt;&gt;ATI.Parent" xml:space="preserve">
+    <value>groupBox1</value>
+  </data>
+  <data name="&gt;&gt;ATI.ZOrder" xml:space="preserve">
+    <value>3</value>
+  </data>
+  <data name="label11.AutoSize" type="System.Boolean, mscorlib">
+    <value>True</value>
+  </data>
+  <data name="label11.Location" type="System.Drawing.Point, System.Drawing">
+    <value>14, 15</value>
+  </data>
+  <data name="label11.Size" type="System.Drawing.Size, System.Drawing">
+    <value>42, 13</value>
+  </data>
+  <data name="label11.TabIndex" type="System.Int32, mscorlib">
+    <value>36</value>
+  </data>
+  <data name="label11.Text" xml:space="preserve">
+    <value>Version</value>
+  </data>
+  <data name="&gt;&gt;label11.Name" xml:space="preserve">
+    <value>label11</value>
+  </data>
+  <data name="&gt;&gt;label11.Type" xml:space="preserve">
+    <value>System.Windows.Forms.Label, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </data>
+  <data name="&gt;&gt;label11.Parent" xml:space="preserve">
+    <value>groupBox1</value>
+  </data>
+  <data name="&gt;&gt;label11.ZOrder" xml:space="preserve">
+    <value>2</value>
+  </data>
+  <data name="label12.AutoSize" type="System.Boolean, mscorlib">
+    <value>True</value>
+  </data>
+  <data name="label12.Location" type="System.Drawing.Point, System.Drawing">
+    <value>18, 50</value>
+  </data>
+  <data name="label12.Size" type="System.Drawing.Size, System.Drawing">
+    <value>32, 13</value>
+  </data>
+  <data name="label12.TabIndex" type="System.Int32, mscorlib">
+    <value>37</value>
+  </data>
+  <data name="label12.Text" xml:space="preserve">
+    <value>RSSI</value>
+  </data>
+  <data name="&gt;&gt;label12.Name" xml:space="preserve">
+    <value>label12</value>
+  </data>
+  <data name="&gt;&gt;label12.Type" xml:space="preserve">
+    <value>System.Windows.Forms.Label, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </data>
+  <data name="&gt;&gt;label12.Parent" xml:space="preserve">
+    <value>groupBox1</value>
+  </data>
+  <data name="&gt;&gt;label12.ZOrder" xml:space="preserve">
+    <value>5</value>
+  </data>
+  <data name="BUT_savesettings.Enabled" type="System.Boolean, mscorlib">
+    <value>False</value>
+  </data>
+  <data name="BUT_savesettings.Location" type="System.Drawing.Point, System.Drawing">
+    <value>344, 3</value>
+  </data>
+  <data name="BUT_savesettings.Size" type="System.Drawing.Size, System.Drawing">
+    <value>69, 39</value>
+  </data>
+  <data name="BUT_savesettings.TabIndex" type="System.Int32, mscorlib">
+    <value>21</value>
+  </data>
+  <data name="BUT_savesettings.Text" xml:space="preserve">
+    <value>Save Settings</value>
+  </data>
+  <data name="&gt;&gt;BUT_savesettings.Name" xml:space="preserve">
+    <value>BUT_savesettings</value>
+  </data>
+  <data name="&gt;&gt;BUT_savesettings.Type" xml:space="preserve">
+    <value>ArdupilotMega.Controls.MyButton, ArdupilotMegaPlanner10, Version=1.1.4585.14832, Culture=neutral, PublicKeyToken=null</value>
+  </data>
+  <data name="&gt;&gt;BUT_savesettings.Parent" xml:space="preserve">
+    <value>$this</value>
+  </data>
+  <data name="&gt;&gt;BUT_savesettings.ZOrder" xml:space="preserve">
+    <value>6</value>
+  </data>
+  <data name="BUT_getcurrent.Location" type="System.Drawing.Point, System.Drawing">
+    <value>269, 3</value>
+  </data>
+  <data name="BUT_getcurrent.Size" type="System.Drawing.Size, System.Drawing">
+    <value>69, 39</value>
+  </data>
+  <data name="BUT_getcurrent.TabIndex" type="System.Int32, mscorlib">
+    <value>6</value>
+  </data>
+  <data name="BUT_getcurrent.Text" xml:space="preserve">
+    <value>Load Settings</value>
+  </data>
+  <data name="&gt;&gt;BUT_getcurrent.Name" xml:space="preserve">
+    <value>BUT_getcurrent</value>
+  </data>
+  <data name="&gt;&gt;BUT_getcurrent.Type" xml:space="preserve">
+    <value>ArdupilotMega.Controls.MyButton, ArdupilotMegaPlanner10, Version=1.1.4585.14832, Culture=neutral, PublicKeyToken=null</value>
+  </data>
+  <data name="&gt;&gt;BUT_getcurrent.Parent" xml:space="preserve">
+    <value>$this</value>
+  </data>
+  <data name="&gt;&gt;BUT_getcurrent.ZOrder" xml:space="preserve">
+    <value>7</value>
+  </data>
+  <data name="lbl_status.Location" type="System.Drawing.Point, System.Drawing">
+    <value>12, 361</value>
+  </data>
   <data name="lbl_status.Size" type="System.Drawing.Size, System.Drawing">
     <value>310, 22</value>
   </data>
-  <data name="&gt;&gt;S3.Parent" xml:space="preserve">
-    <value>SPLIT_local.Panel1</value>
+  <data name="lbl_status.TabIndex" type="System.Int32, mscorlib">
+    <value>3</value>
+  </data>
+  <data name="&gt;&gt;lbl_status.Name" xml:space="preserve">
+    <value>lbl_status</value>
+  </data>
+  <data name="&gt;&gt;lbl_status.Type" xml:space="preserve">
+    <value>System.Windows.Forms.Label, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </data>
+  <data name="&gt;&gt;lbl_status.Parent" xml:space="preserve">
+    <value>$this</value>
+  </data>
+  <data name="&gt;&gt;lbl_status.ZOrder" xml:space="preserve">
+    <value>8</value>
+  </data>
+  <data name="BUT_upload.Location" type="System.Drawing.Point, System.Drawing">
+    <value>419, 3</value>
+  </data>
+  <data name="BUT_upload.Size" type="System.Drawing.Size, System.Drawing">
+    <value>121, 39</value>
+  </data>
+  <data name="BUT_upload.TabIndex" type="System.Int32, mscorlib">
+    <value>0</value>
+  </data>
+  <data name="BUT_upload.Text" xml:space="preserve">
+    <value>Upload Firmware (Local)</value>
+  </data>
+  <data name="&gt;&gt;BUT_upload.Name" xml:space="preserve">
+    <value>BUT_upload</value>
+  </data>
+  <data name="&gt;&gt;BUT_upload.Type" xml:space="preserve">
+    <value>ArdupilotMega.Controls.MyButton, ArdupilotMegaPlanner10, Version=1.1.4585.14832, Culture=neutral, PublicKeyToken=null</value>
+  </data>
+  <data name="&gt;&gt;BUT_upload.Parent" xml:space="preserve">
+    <value>$this</value>
+  </data>
+  <data name="&gt;&gt;BUT_upload.ZOrder" xml:space="preserve">
+    <value>10</value>
+  </data>
+  <data name="label13.AutoSize" type="System.Boolean, mscorlib">
+    <value>True</value>
+  </data>
+  <assembly alias="System.Windows.Forms" name="System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089" />
+  <data name="label13.ImeMode" type="System.Windows.Forms.ImeMode, System.Windows.Forms">
+    <value>NoControl</value>
+  </data>
+  <data name="label13.Location" type="System.Drawing.Point, System.Drawing">
+    <value>4, 6</value>
+  </data>
+  <data name="label13.Size" type="System.Drawing.Size, System.Drawing">
+    <value>48, 13</value>
+  </data>
+  <data name="label13.TabIndex" type="System.Int32, mscorlib">
+    <value>47</value>
+  </data>
+  <data name="label13.Text" xml:space="preserve">
+    <value>Min Freq</value>
+  </data>
+  <data name="&gt;&gt;label13.Name" xml:space="preserve">
+    <value>label13</value>
+  </data>
+  <data name="&gt;&gt;label13.Type" xml:space="preserve">
+    <value>System.Windows.Forms.Label, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </data>
+  <data name="&gt;&gt;label13.Parent" xml:space="preserve">
+    <value>SPLIT_local.Panel2</value>
+  </data>
+  <data name="&gt;&gt;label13.ZOrder" xml:space="preserve">
+    <value>0</value>
+  </data>
+  <data name="label14.AutoSize" type="System.Boolean, mscorlib">
+    <value>True</value>
+  </data>
+  <data name="label14.ImeMode" type="System.Windows.Forms.ImeMode, System.Windows.Forms">
+    <value>NoControl</value>
+  </data>
+  <data name="label14.Location" type="System.Drawing.Point, System.Drawing">
+    <value>4, 31</value>
+  </data>
+  <data name="label14.Size" type="System.Drawing.Size, System.Drawing">
+    <value>51, 13</value>
+  </data>
+  <data name="label14.TabIndex" type="System.Int32, mscorlib">
+    <value>48</value>
+  </data>
+  <data name="label14.Text" xml:space="preserve">
+    <value>Max Freq</value>
+  </data>
+  <data name="&gt;&gt;label14.Name" xml:space="preserve">
+    <value>label14</value>
+  </data>
+  <data name="&gt;&gt;label14.Type" xml:space="preserve">
+    <value>System.Windows.Forms.Label, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </data>
+  <data name="&gt;&gt;label14.Parent" xml:space="preserve">
+    <value>SPLIT_local.Panel2</value>
+  </data>
+  <data name="&gt;&gt;label14.ZOrder" xml:space="preserve">
+    <value>9</value>
+  </data>
+  <data name="label15.AutoSize" type="System.Boolean, mscorlib">
+    <value>True</value>
+  </data>
+  <data name="label15.ImeMode" type="System.Windows.Forms.ImeMode, System.Windows.Forms">
+    <value>NoControl</value>
+  </data>
+  <data name="label15.Location" type="System.Drawing.Point, System.Drawing">
+    <value>4, 58</value>
+  </data>
+  <data name="label15.Size" type="System.Drawing.Size, System.Drawing">
+    <value>73, 13</value>
+  </data>
+  <data name="label15.TabIndex" type="System.Int32, mscorlib">
+    <value>49</value>
+  </data>
+  <data name="label15.Text" xml:space="preserve">
+    <value># of Channels</value>
+  </data>
+  <data name="&gt;&gt;label15.Name" xml:space="preserve">
+    <value>label15</value>
+  </data>
+  <data name="&gt;&gt;label15.Type" xml:space="preserve">
+    <value>System.Windows.Forms.Label, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </data>
+  <data name="&gt;&gt;label15.Parent" xml:space="preserve">
+    <value>SPLIT_local.Panel2</value>
+  </data>
+  <data name="&gt;&gt;label15.ZOrder" xml:space="preserve">
+    <value>8</value>
+  </data>
+  <data name="label16.AutoSize" type="System.Boolean, mscorlib">
+    <value>True</value>
+  </data>
+  <data name="label16.ImeMode" type="System.Windows.Forms.ImeMode, System.Windows.Forms">
+    <value>NoControl</value>
+  </data>
+  <data name="label16.Location" type="System.Drawing.Point, System.Drawing">
+    <value>4, 85</value>
+  </data>
+  <data name="label16.Size" type="System.Drawing.Size, System.Drawing">
+    <value>58, 13</value>
+  </data>
+  <data name="label16.TabIndex" type="System.Int32, mscorlib">
+    <value>50</value>
+  </data>
+  <data name="label16.Text" xml:space="preserve">
+    <value>Duty Cycle</value>
+  </data>
+  <data name="&gt;&gt;label16.Name" xml:space="preserve">
+    <value>label16</value>
+  </data>
+  <data name="&gt;&gt;label16.Type" xml:space="preserve">
+    <value>System.Windows.Forms.Label, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </data>
+  <data name="&gt;&gt;label16.Parent" xml:space="preserve">
+    <value>SPLIT_local.Panel2</value>
+  </data>
+  <data name="&gt;&gt;label16.ZOrder" xml:space="preserve">
+    <value>6</value>
+  </data>
+  <data name="label17.AutoSize" type="System.Boolean, mscorlib">
+    <value>True</value>
+  </data>
+  <data name="label17.ImeMode" type="System.Windows.Forms.ImeMode, System.Windows.Forms">
+    <value>NoControl</value>
+  </data>
+  <data name="label17.Location" type="System.Drawing.Point, System.Drawing">
+    <value>4, 112</value>
+  </data>
+  <data name="label17.Size" type="System.Drawing.Size, System.Drawing">
+    <value>50, 13</value>
+  </data>
+  <data name="label17.TabIndex" type="System.Int32, mscorlib">
+    <value>51</value>
+  </data>
+  <data name="label17.Text" xml:space="preserve">
+    <value>LBT Rssi</value>
+  </data>
+  <data name="&gt;&gt;label17.Name" xml:space="preserve">
+    <value>label17</value>
   </data>
   <data name="&gt;&gt;label17.Type" xml:space="preserve">
     <value>System.Windows.Forms.Label, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </data>
+  <data name="&gt;&gt;label17.Parent" xml:space="preserve">
+    <value>SPLIT_local.Panel2</value>
+  </data>
+  <data name="&gt;&gt;label17.ZOrder" xml:space="preserve">
+    <value>4</value>
+  </data>
+  <data name="label20.AutoSize" type="System.Boolean, mscorlib">
+    <value>True</value>
+  </data>
+  <data name="label20.ImeMode" type="System.Windows.Forms.ImeMode, System.Windows.Forms">
+    <value>NoControl</value>
+  </data>
+  <data name="label20.Location" type="System.Drawing.Point, System.Drawing">
+    <value>5, 112</value>
+  </data>
+  <data name="label20.Size" type="System.Drawing.Size, System.Drawing">
+    <value>50, 13</value>
+  </data>
+  <data name="label20.TabIndex" type="System.Int32, mscorlib">
+    <value>63</value>
+  </data>
+  <data name="label20.Text" xml:space="preserve">
+    <value>LBT Rssi</value>
+  </data>
+  <data name="&gt;&gt;label20.Name" xml:space="preserve">
+    <value>label20</value>
+  </data>
+  <data name="&gt;&gt;label20.Type" xml:space="preserve">
+    <value>System.Windows.Forms.Label, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </data>
+  <data name="&gt;&gt;label20.Parent" xml:space="preserve">
+    <value>SPLIT_remote.Panel2</value>
+  </data>
+  <data name="&gt;&gt;label20.ZOrder" xml:space="preserve">
+    <value>9</value>
+  </data>
+  <data name="label21.AutoSize" type="System.Boolean, mscorlib">
+    <value>True</value>
+  </data>
+  <data name="label21.ImeMode" type="System.Windows.Forms.ImeMode, System.Windows.Forms">
+    <value>NoControl</value>
+  </data>
+  <data name="label21.Location" type="System.Drawing.Point, System.Drawing">
+    <value>5, 85</value>
+  </data>
+  <data name="label21.Size" type="System.Drawing.Size, System.Drawing">
+    <value>58, 13</value>
+  </data>
+  <data name="label21.TabIndex" type="System.Int32, mscorlib">
+    <value>62</value>
+  </data>
+  <data name="label21.Text" xml:space="preserve">
+    <value>Duty Cycle</value>
+  </data>
   <data name="&gt;&gt;label21.Name" xml:space="preserve">
     <value>label21</value>
   </data>
-  <data name="&gt;&gt;RS5.Type" xml:space="preserve">
-    <value>System.Windows.Forms.CheckBox, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  <data name="&gt;&gt;label21.Type" xml:space="preserve">
+    <value>System.Windows.Forms.Label, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </data>
+  <data name="&gt;&gt;label21.Parent" xml:space="preserve">
+    <value>SPLIT_remote.Panel2</value>
+  </data>
+  <data name="&gt;&gt;label21.ZOrder" xml:space="preserve">
+    <value>8</value>
+  </data>
+  <data name="label22.AutoSize" type="System.Boolean, mscorlib">
+    <value>True</value>
+  </data>
+  <data name="label22.ImeMode" type="System.Windows.Forms.ImeMode, System.Windows.Forms">
+    <value>NoControl</value>
+  </data>
+  <data name="label22.Location" type="System.Drawing.Point, System.Drawing">
+    <value>5, 58</value>
+  </data>
+  <data name="label22.Size" type="System.Drawing.Size, System.Drawing">
+    <value>73, 13</value>
+  </data>
+  <data name="label22.TabIndex" type="System.Int32, mscorlib">
+    <value>61</value>
+  </data>
+  <data name="label22.Text" xml:space="preserve">
+    <value># of Channels</value>
+  </data>
+  <data name="&gt;&gt;label22.Name" xml:space="preserve">
+    <value>label22</value>
+  </data>
+  <data name="&gt;&gt;label22.Type" xml:space="preserve">
+    <value>System.Windows.Forms.Label, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </data>
+  <data name="&gt;&gt;label22.Parent" xml:space="preserve">
+    <value>SPLIT_remote.Panel2</value>
+  </data>
+  <data name="&gt;&gt;label22.ZOrder" xml:space="preserve">
+    <value>7</value>
+  </data>
+  <data name="label23.AutoSize" type="System.Boolean, mscorlib">
+    <value>True</value>
+  </data>
+  <data name="label23.ImeMode" type="System.Windows.Forms.ImeMode, System.Windows.Forms">
+    <value>NoControl</value>
+  </data>
+  <data name="label23.Location" type="System.Drawing.Point, System.Drawing">
+    <value>5, 31</value>
+  </data>
+  <data name="label23.Size" type="System.Drawing.Size, System.Drawing">
+    <value>51, 13</value>
+  </data>
+  <data name="label23.TabIndex" type="System.Int32, mscorlib">
+    <value>60</value>
+  </data>
+  <data name="label23.Text" xml:space="preserve">
+    <value>Max Freq</value>
+  </data>
+  <data name="&gt;&gt;label23.Name" xml:space="preserve">
+    <value>label23</value>
+  </data>
+  <data name="&gt;&gt;label23.Type" xml:space="preserve">
+    <value>System.Windows.Forms.Label, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </data>
+  <data name="&gt;&gt;label23.Parent" xml:space="preserve">
+    <value>SPLIT_remote.Panel2</value>
+  </data>
+  <data name="&gt;&gt;label23.ZOrder" xml:space="preserve">
+    <value>6</value>
   </data>
   <data name="label24.AutoSize" type="System.Boolean, mscorlib">
     <value>True</value>
   </data>
+  <data name="label24.ImeMode" type="System.Windows.Forms.ImeMode, System.Windows.Forms">
+    <value>NoControl</value>
+  </data>
+  <data name="label24.Location" type="System.Drawing.Point, System.Drawing">
+    <value>5, 6</value>
+  </data>
+  <data name="label24.Size" type="System.Drawing.Size, System.Drawing">
+    <value>48, 13</value>
+  </data>
+  <data name="label24.TabIndex" type="System.Int32, mscorlib">
+    <value>59</value>
+  </data>
+  <data name="label24.Text" xml:space="preserve">
+    <value>Min Freq</value>
+  </data>
+  <data name="&gt;&gt;label24.Name" xml:space="preserve">
+    <value>label24</value>
+  </data>
+  <data name="&gt;&gt;label24.Type" xml:space="preserve">
+    <value>System.Windows.Forms.Label, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </data>
+  <data name="&gt;&gt;label24.Parent" xml:space="preserve">
+    <value>SPLIT_remote.Panel2</value>
+  </data>
+  <data name="&gt;&gt;label24.ZOrder" xml:space="preserve">
+    <value>0</value>
+  </data>
+  <data name="label25.AutoSize" type="System.Boolean, mscorlib">
+    <value>True</value>
+  </data>
+  <data name="label25.ImeMode" type="System.Windows.Forms.ImeMode, System.Windows.Forms">
+    <value>NoControl</value>
+  </data>
+  <data name="label25.Location" type="System.Drawing.Point, System.Drawing">
+    <value>6, 199</value>
+  </data>
+  <data name="label25.Size" type="System.Drawing.Size, System.Drawing">
+    <value>61, 13</value>
+  </data>
+  <data name="label25.TabIndex" type="System.Int32, mscorlib">
+    <value>72</value>
+  </data>
+  <data name="label25.Text" xml:space="preserve">
+    <value>Op Resend</value>
+  </data>
+  <data name="&gt;&gt;label25.Name" xml:space="preserve">
+    <value>label25</value>
+  </data>
+  <data name="&gt;&gt;label25.Type" xml:space="preserve">
+    <value>System.Windows.Forms.Label, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </data>
+  <data name="&gt;&gt;label25.Parent" xml:space="preserve">
+    <value>SPLIT_remote.Panel1</value>
+  </data>
+  <data name="&gt;&gt;label25.ZOrder" xml:space="preserve">
+    <value>4</value>
+  </data>
+  <data name="label26.AutoSize" type="System.Boolean, mscorlib">
+    <value>True</value>
+  </data>
+  <data name="label26.ImeMode" type="System.Windows.Forms.ImeMode, System.Windows.Forms">
+    <value>NoControl</value>
+  </data>
+  <data name="label26.Location" type="System.Drawing.Point, System.Drawing">
+    <value>6, 172</value>
+  </data>
+  <data name="label26.Size" type="System.Drawing.Size, System.Drawing">
+    <value>44, 13</value>
+  </data>
+  <data name="label26.TabIndex" type="System.Int32, mscorlib">
+    <value>71</value>
+  </data>
+  <data name="label26.Text" xml:space="preserve">
+    <value>Mavlink</value>
+  </data>
+  <data name="&gt;&gt;label26.Name" xml:space="preserve">
+    <value>label26</value>
+  </data>
+  <data name="&gt;&gt;label26.Type" xml:space="preserve">
+    <value>System.Windows.Forms.Label, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </data>
+  <data name="&gt;&gt;label26.Parent" xml:space="preserve">
+    <value>SPLIT_remote.Panel1</value>
+  </data>
   <data name="&gt;&gt;label26.ZOrder" xml:space="preserve">
     <value>6</value>
   </data>
-  <data name="S5.Location" type="System.Drawing.Point, System.Drawing">
-    <value>81, 137</value>
+  <data name="label27.AutoSize" type="System.Boolean, mscorlib">
+    <value>True</value>
+  </data>
+  <data name="label27.ImeMode" type="System.Windows.Forms.ImeMode, System.Windows.Forms">
+    <value>NoControl</value>
+  </data>
+  <data name="label27.Location" type="System.Drawing.Point, System.Drawing">
+    <value>6, 145</value>
+  </data>
+  <data name="label27.Size" type="System.Drawing.Size, System.Drawing">
+    <value>28, 13</value>
+  </data>
+  <data name="label27.TabIndex" type="System.Int32, mscorlib">
+    <value>70</value>
+  </data>
+  <data name="label27.Text" xml:space="preserve">
+    <value>ECC</value>
+  </data>
+  <data name="&gt;&gt;label27.Name" xml:space="preserve">
+    <value>label27</value>
+  </data>
+  <data name="&gt;&gt;label27.Type" xml:space="preserve">
+    <value>System.Windows.Forms.Label, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </data>
+  <data name="&gt;&gt;label27.Parent" xml:space="preserve">
+    <value>SPLIT_remote.Panel1</value>
+  </data>
+  <data name="&gt;&gt;label27.ZOrder" xml:space="preserve">
+    <value>8</value>
+  </data>
+  <data name="label28.AutoSize" type="System.Boolean, mscorlib">
+    <value>True</value>
+  </data>
+  <data name="label28.ImeMode" type="System.Windows.Forms.ImeMode, System.Windows.Forms">
+    <value>NoControl</value>
+  </data>
+  <data name="label28.Location" type="System.Drawing.Point, System.Drawing">
+    <value>6, 118</value>
+  </data>
+  <data name="label28.Size" type="System.Drawing.Size, System.Drawing">
+    <value>52, 13</value>
+  </data>
+  <data name="label28.TabIndex" type="System.Int32, mscorlib">
+    <value>69</value>
+  </data>
+  <data name="label28.Text" xml:space="preserve">
+    <value>Tx Power</value>
+  </data>
+  <data name="&gt;&gt;label28.Name" xml:space="preserve">
+    <value>label28</value>
+  </data>
+  <data name="&gt;&gt;label28.Type" xml:space="preserve">
+    <value>System.Windows.Forms.Label, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </data>
+  <data name="&gt;&gt;label28.Parent" xml:space="preserve">
+    <value>SPLIT_remote.Panel1</value>
+  </data>
+  <data name="&gt;&gt;label28.ZOrder" xml:space="preserve">
+    <value>10</value>
+  </data>
+  <data name="label29.AutoSize" type="System.Boolean, mscorlib">
+    <value>True</value>
+  </data>
+  <data name="label29.ImeMode" type="System.Windows.Forms.ImeMode, System.Windows.Forms">
+    <value>NoControl</value>
+  </data>
+  <data name="label29.Location" type="System.Drawing.Point, System.Drawing">
+    <value>6, 91</value>
+  </data>
+  <data name="label29.Size" type="System.Drawing.Size, System.Drawing">
+    <value>38, 13</value>
+  </data>
+  <data name="label29.TabIndex" type="System.Int32, mscorlib">
+    <value>68</value>
+  </data>
+  <data name="label29.Text" xml:space="preserve">
+    <value>Net ID</value>
+  </data>
+  <data name="&gt;&gt;label29.Name" xml:space="preserve">
+    <value>label29</value>
+  </data>
+  <data name="&gt;&gt;label29.Type" xml:space="preserve">
+    <value>System.Windows.Forms.Label, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </data>
+  <data name="&gt;&gt;label29.Parent" xml:space="preserve">
+    <value>SPLIT_remote.Panel1</value>
+  </data>
+  <data name="&gt;&gt;label29.ZOrder" xml:space="preserve">
+    <value>12</value>
+  </data>
+  <data name="label30.AutoSize" type="System.Boolean, mscorlib">
+    <value>True</value>
+  </data>
+  <data name="label30.ImeMode" type="System.Windows.Forms.ImeMode, System.Windows.Forms">
+    <value>NoControl</value>
+  </data>
+  <data name="label30.Location" type="System.Drawing.Point, System.Drawing">
+    <value>6, 64</value>
+  </data>
+  <data name="label30.Size" type="System.Drawing.Size, System.Drawing">
+    <value>53, 13</value>
+  </data>
+  <data name="label30.TabIndex" type="System.Int32, mscorlib">
+    <value>67</value>
+  </data>
+  <data name="label30.Text" xml:space="preserve">
+    <value>Air Speed</value>
+  </data>
+  <data name="&gt;&gt;label30.Name" xml:space="preserve">
+    <value>label30</value>
+  </data>
+  <data name="&gt;&gt;label30.Type" xml:space="preserve">
+    <value>System.Windows.Forms.Label, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </data>
+  <data name="&gt;&gt;label30.Parent" xml:space="preserve">
+    <value>SPLIT_remote.Panel1</value>
+  </data>
+  <data name="&gt;&gt;label30.ZOrder" xml:space="preserve">
+    <value>14</value>
+  </data>
+  <data name="label31.AutoSize" type="System.Boolean, mscorlib">
+    <value>True</value>
+  </data>
+  <data name="label31.ImeMode" type="System.Windows.Forms.ImeMode, System.Windows.Forms">
+    <value>NoControl</value>
+  </data>
+  <data name="label31.Location" type="System.Drawing.Point, System.Drawing">
+    <value>6, 10</value>
+  </data>
+  <data name="label31.Size" type="System.Drawing.Size, System.Drawing">
+    <value>39, 13</value>
+  </data>
+  <data name="label31.TabIndex" type="System.Int32, mscorlib">
+    <value>66</value>
+  </data>
+  <data name="label31.Text" xml:space="preserve">
+    <value>Format</value>
+  </data>
+  <data name="&gt;&gt;label31.Name" xml:space="preserve">
+    <value>label31</value>
+  </data>
+  <data name="&gt;&gt;label31.Type" xml:space="preserve">
+    <value>System.Windows.Forms.Label, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </data>
+  <data name="&gt;&gt;label31.Parent" xml:space="preserve">
+    <value>SPLIT_remote.Panel1</value>
+  </data>
+  <data name="&gt;&gt;label31.ZOrder" xml:space="preserve">
+    <value>15</value>
+  </data>
+  <data name="label32.AutoSize" type="System.Boolean, mscorlib">
+    <value>True</value>
+  </data>
+  <data name="label32.ImeMode" type="System.Windows.Forms.ImeMode, System.Windows.Forms">
+    <value>NoControl</value>
+  </data>
+  <data name="label32.Location" type="System.Drawing.Point, System.Drawing">
+    <value>6, 37</value>
+  </data>
+  <data name="label32.Size" type="System.Drawing.Size, System.Drawing">
+    <value>32, 13</value>
+  </data>
+  <data name="label32.TabIndex" type="System.Int32, mscorlib">
+    <value>65</value>
+  </data>
+  <data name="label32.Text" xml:space="preserve">
+    <value>Baud</value>
+  </data>
+  <data name="&gt;&gt;label32.Name" xml:space="preserve">
+    <value>label32</value>
+  </data>
+  <data name="&gt;&gt;label32.Type" xml:space="preserve">
+    <value>System.Windows.Forms.Label, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </data>
+  <data name="&gt;&gt;label32.Parent" xml:space="preserve">
+    <value>SPLIT_remote.Panel1</value>
+  </data>
+  <data name="&gt;&gt;label32.ZOrder" xml:space="preserve">
+    <value>13</value>
+  </data>
+  <data name="SPLIT_local.IsSplitterFixed" type="System.Boolean, mscorlib">
+    <value>True</value>
+  </data>
+  <data name="SPLIT_local.Location" type="System.Drawing.Point, System.Drawing">
+    <value>4, 81</value>
+  </data>
+  <data name="&gt;&gt;SPLIT_local.Panel1.Name" xml:space="preserve">
+    <value>SPLIT_local.Panel1</value>
+  </data>
+  <data name="&gt;&gt;SPLIT_local.Panel1.Type" xml:space="preserve">
+    <value>System.Windows.Forms.SplitterPanel, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </data>
+  <data name="&gt;&gt;SPLIT_local.Panel1.Parent" xml:space="preserve">
+    <value>SPLIT_local</value>
+  </data>
+  <data name="&gt;&gt;SPLIT_local.Panel1.ZOrder" xml:space="preserve">
+    <value>0</value>
+  </data>
+  <data name="&gt;&gt;SPLIT_local.Panel2.Name" xml:space="preserve">
+    <value>SPLIT_local.Panel2</value>
+  </data>
+  <data name="&gt;&gt;SPLIT_local.Panel2.Type" xml:space="preserve">
+    <value>System.Windows.Forms.SplitterPanel, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </data>
+  <data name="&gt;&gt;SPLIT_local.Panel2.Parent" xml:space="preserve">
+    <value>SPLIT_local</value>
+  </data>
+  <data name="&gt;&gt;SPLIT_local.Panel2.ZOrder" xml:space="preserve">
+    <value>1</value>
+  </data>
+  <data name="SPLIT_local.Size" type="System.Drawing.Size, System.Drawing">
+    <value>374, 221</value>
+  </data>
+  <data name="SPLIT_local.SplitterDistance" type="System.Int32, mscorlib">
+    <value>172</value>
+  </data>
+  <data name="SPLIT_local.SplitterWidth" type="System.Int32, mscorlib">
+    <value>1</value>
+  </data>
+  <data name="SPLIT_local.TabIndex" type="System.Int32, mscorlib">
+    <value>0</value>
+  </data>
+  <data name="&gt;&gt;SPLIT_local.Name" xml:space="preserve">
+    <value>SPLIT_local</value>
+  </data>
+  <data name="&gt;&gt;SPLIT_local.Type" xml:space="preserve">
+    <value>System.Windows.Forms.SplitContainer, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </data>
+  <data name="&gt;&gt;SPLIT_local.Parent" xml:space="preserve">
+    <value>groupBox1</value>
+  </data>
+  <data name="&gt;&gt;SPLIT_local.ZOrder" xml:space="preserve">
+    <value>0</value>
+  </data>
+  <data name="SPLIT_remote.IsSplitterFixed" type="System.Boolean, mscorlib">
+    <value>True</value>
+  </data>
+  <data name="SPLIT_remote.Location" type="System.Drawing.Point, System.Drawing">
+    <value>4, 81</value>
+  </data>
+  <data name="&gt;&gt;SPLIT_remote.Panel1.Name" xml:space="preserve">
+    <value>SPLIT_remote.Panel1</value>
+  </data>
+  <data name="&gt;&gt;SPLIT_remote.Panel1.Type" xml:space="preserve">
+    <value>System.Windows.Forms.SplitterPanel, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </data>
+  <data name="&gt;&gt;SPLIT_remote.Panel1.Parent" xml:space="preserve">
+    <value>SPLIT_remote</value>
+  </data>
+  <data name="&gt;&gt;SPLIT_remote.Panel1.ZOrder" xml:space="preserve">
+    <value>0</value>
+  </data>
+  <data name="&gt;&gt;SPLIT_remote.Panel2.Name" xml:space="preserve">
+    <value>SPLIT_remote.Panel2</value>
+  </data>
+  <data name="&gt;&gt;SPLIT_remote.Panel2.Type" xml:space="preserve">
+    <value>System.Windows.Forms.SplitterPanel, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </data>
+  <data name="&gt;&gt;SPLIT_remote.Panel2.Parent" xml:space="preserve">
+    <value>SPLIT_remote</value>
+  </data>
+  <data name="&gt;&gt;SPLIT_remote.Panel2.ZOrder" xml:space="preserve">
+    <value>1</value>
+  </data>
+  <data name="SPLIT_remote.Size" type="System.Drawing.Size, System.Drawing">
+    <value>357, 221</value>
+  </data>
+  <data name="SPLIT_remote.SplitterDistance" type="System.Int32, mscorlib">
+    <value>170</value>
+  </data>
+  <data name="SPLIT_remote.SplitterWidth" type="System.Int32, mscorlib">
+    <value>1</value>
+  </data>
+  <data name="SPLIT_remote.TabIndex" type="System.Int32, mscorlib">
+    <value>0</value>
+  </data>
+  <data name="&gt;&gt;SPLIT_remote.Name" xml:space="preserve">
+    <value>SPLIT_remote</value>
+  </data>
+  <data name="&gt;&gt;SPLIT_remote.Type" xml:space="preserve">
+    <value>System.Windows.Forms.SplitContainer, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </data>
+  <data name="&gt;&gt;SPLIT_remote.Parent" xml:space="preserve">
+    <value>groupBox2</value>
   </data>
   <data name="&gt;&gt;SPLIT_remote.ZOrder" xml:space="preserve">
     <value>1</value>
   </data>
-  <metadata name="toolTip1.TrayLocation" type="System.Drawing.Point, System.Drawing, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a">
-    <value>17, 17</value>
-  </metadata>
+  <data name="CHK_advanced.AutoSize" type="System.Boolean, mscorlib">
+    <value>True</value>
+  </data>
+  <data name="CHK_advanced.Location" type="System.Drawing.Point, System.Drawing">
+    <value>653, 366</value>
+  </data>
+  <data name="CHK_advanced.Size" type="System.Drawing.Size, System.Drawing">
+    <value>114, 17</value>
+  </data>
+  <data name="CHK_advanced.TabIndex" type="System.Int32, mscorlib">
+    <value>77</value>
+  </data>
+  <data name="CHK_advanced.Text" xml:space="preserve">
+    <value>Advanced Options</value>
+  </data>
+  <data name="&gt;&gt;CHK_advanced.Name" xml:space="preserve">
+    <value>CHK_advanced</value>
+  </data>
+  <data name="&gt;&gt;CHK_advanced.Type" xml:space="preserve">
+    <value>System.Windows.Forms.CheckBox, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </data>
+  <data name="&gt;&gt;CHK_advanced.Parent" xml:space="preserve">
+    <value>$this</value>
+  </data>
+  <data name="&gt;&gt;CHK_advanced.ZOrder" xml:space="preserve">
+    <value>5</value>
+  </data>
+  <data name="BUT_Syncoptions.Enabled" type="System.Boolean, mscorlib">
+    <value>False</value>
+  </data>
+  <data name="BUT_Syncoptions.ImeMode" type="System.Windows.Forms.ImeMode, System.Windows.Forms">
+    <value>NoControl</value>
+  </data>
+  <data name="BUT_Syncoptions.Location" type="System.Drawing.Point, System.Drawing">
+    <value>346, 355</value>
+  </data>
+  <data name="BUT_Syncoptions.Size" type="System.Drawing.Size, System.Drawing">
+    <value>102, 29</value>
+  </data>
+  <data name="BUT_Syncoptions.TabIndex" type="System.Int32, mscorlib">
+    <value>78</value>
+  </data>
+  <data name="BUT_Syncoptions.Text" xml:space="preserve">
+    <value>Copy Required Items to Remote</value>
+  </data>
+  <data name="&gt;&gt;BUT_Syncoptions.Name" xml:space="preserve">
+    <value>BUT_Syncoptions</value>
+  </data>
+  <data name="&gt;&gt;BUT_Syncoptions.Type" xml:space="preserve">
+    <value>ArdupilotMega.Controls.MyButton, ArdupilotMegaPlanner10, Version=1.1.4585.14832, Culture=neutral, PublicKeyToken=null</value>
+  </data>
+  <data name="&gt;&gt;BUT_Syncoptions.Parent" xml:space="preserve">
+    <value>$this</value>
+  </data>
+  <data name="&gt;&gt;BUT_Syncoptions.ZOrder" xml:space="preserve">
+    <value>4</value>
+  </data>
+  <data name="ATI3.Location" type="System.Drawing.Point, System.Drawing">
+    <value>210, 12</value>
+  </data>
+  <data name="ATI3.Size" type="System.Drawing.Size, System.Drawing">
+    <value>102, 20</value>
+  </data>
+  <data name="ATI3.TabIndex" type="System.Int32, mscorlib">
+    <value>79</value>
+  </data>
+  <data name="&gt;&gt;ATI3.Name" xml:space="preserve">
+    <value>ATI3</value>
+  </data>
+  <data name="&gt;&gt;ATI3.Type" xml:space="preserve">
+    <value>System.Windows.Forms.TextBox, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </data>
+  <data name="&gt;&gt;ATI3.Parent" xml:space="preserve">
+    <value>groupBox1</value>
+  </data>
+  <data name="&gt;&gt;ATI3.ZOrder" xml:space="preserve">
+    <value>1</value>
+  </data>
+  <data name="groupBox1.Location" type="System.Drawing.Point, System.Drawing">
+    <value>12, 48</value>
+  </data>
+  <data name="groupBox1.Size" type="System.Drawing.Size, System.Drawing">
+    <value>382, 306</value>
+  </data>
+  <data name="groupBox1.TabIndex" type="System.Int32, mscorlib">
+    <value>80</value>
+  </data>
+  <data name="groupBox1.Text" xml:space="preserve">
+    <value>Local</value>
+  </data>
+  <data name="&gt;&gt;groupBox1.Name" xml:space="preserve">
+    <value>groupBox1</value>
+  </data>
+  <data name="&gt;&gt;groupBox1.Type" xml:space="preserve">
+    <value>System.Windows.Forms.GroupBox, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </data>
+  <data name="&gt;&gt;groupBox1.Parent" xml:space="preserve">
+    <value>$this</value>
+  </data>
+  <data name="&gt;&gt;groupBox1.ZOrder" xml:space="preserve">
+    <value>3</value>
+  </data>
+  <data name="&gt;&gt;label9.Name" xml:space="preserve">
+    <value>label9</value>
+  </data>
+  <data name="&gt;&gt;label9.Type" xml:space="preserve">
+    <value>System.Windows.Forms.Label, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </data>
+  <data name="&gt;&gt;label9.Parent" xml:space="preserve">
+    <value>groupBox2</value>
+  </data>
+  <data name="&gt;&gt;label9.ZOrder" xml:space="preserve">
+    <value>0</value>
+  </data>
+  <data name="groupBox2.Location" type="System.Drawing.Point, System.Drawing">
+    <value>400, 48</value>
+  </data>
+  <data name="groupBox2.Size" type="System.Drawing.Size, System.Drawing">
+    <value>367, 306</value>
+  </data>
+  <data name="groupBox2.TabIndex" type="System.Int32, mscorlib">
+    <value>81</value>
+  </data>
+  <data name="groupBox2.Text" xml:space="preserve">
+    <value>Remote</value>
+  </data>
+  <data name="&gt;&gt;groupBox2.Name" xml:space="preserve">
+    <value>groupBox2</value>
+  </data>
+  <data name="&gt;&gt;groupBox2.Type" xml:space="preserve">
+    <value>System.Windows.Forms.GroupBox, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </data>
+  <data name="&gt;&gt;groupBox2.Parent" xml:space="preserve">
+    <value>$this</value>
+  </data>
+  <data name="&gt;&gt;groupBox2.ZOrder" xml:space="preserve">
+    <value>2</value>
+  </data>
+  <data name="label9.AutoSize" type="System.Boolean, mscorlib">
+    <value>True</value>
+  </data>
+  <data name="label9.ImeMode" type="System.Windows.Forms.ImeMode, System.Windows.Forms">
+    <value>NoControl</value>
+  </data>
+  <data name="label9.Location" type="System.Drawing.Point, System.Drawing">
+    <value>12, 15</value>
+  </data>
+  <data name="label9.Size" type="System.Drawing.Size, System.Drawing">
+    <value>42, 13</value>
+  </data>
+  <data name="label9.TabIndex" type="System.Int32, mscorlib">
+    <value>37</value>
+  </data>
+  <data name="label9.Text" xml:space="preserve">
+    <value>Version</value>
+  </data>
+  <data name="&gt;&gt;label9.Name" xml:space="preserve">
+    <value>label9</value>
+  </data>
+  <data name="&gt;&gt;label9.Type" xml:space="preserve">
+    <value>System.Windows.Forms.Label, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </data>
+  <data name="&gt;&gt;label9.Parent" xml:space="preserve">
+    <value>groupBox2</value>
+  </data>
+  <data name="&gt;&gt;label9.ZOrder" xml:space="preserve">
+    <value>0</value>
+  </data>
+  <data name="label10.AutoSize" type="System.Boolean, mscorlib">
+    <value>True</value>
+  </data>
+  <data name="label10.ImeMode" type="System.Windows.Forms.ImeMode, System.Windows.Forms">
+    <value>NoControl</value>
+  </data>
+  <data name="label10.Location" type="System.Drawing.Point, System.Drawing">
+    <value>9, 11</value>
+  </data>
+  <data name="label10.Size" type="System.Drawing.Size, System.Drawing">
+    <value>0, 13</value>
+  </data>
+  <data name="label10.TabIndex" type="System.Int32, mscorlib">
+    <value>82</value>
+  </data>
+  <data name="&gt;&gt;label10.Name" xml:space="preserve">
+    <value>label10</value>
+  </data>
+  <data name="&gt;&gt;label10.Type" xml:space="preserve">
+    <value>System.Windows.Forms.Label, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </data>
+  <data name="&gt;&gt;label10.Parent" xml:space="preserve">
+    <value>$this</value>
+  </data>
+  <data name="&gt;&gt;label10.ZOrder" xml:space="preserve">
+    <value>1</value>
+  </data>
+  <data name="linkLabel1.AutoSize" type="System.Boolean, mscorlib">
+    <value>True</value>
+  </data>
+  <data name="linkLabel1.Location" type="System.Drawing.Point, System.Drawing">
+    <value>689, 11</value>
+  </data>
+  <data name="linkLabel1.Size" type="System.Drawing.Size, System.Drawing">
+    <value>63, 13</value>
+  </data>
+  <data name="linkLabel1.TabIndex" type="System.Int32, mscorlib">
+    <value>83</value>
+  </data>
+  <data name="linkLabel1.Text" xml:space="preserve">
+    <value>Status Leds</value>
+  </data>
+  <data name="linkLabel1.ToolTip" xml:space="preserve">
+    <value>The 3DR Radios have 2 status LEDs, one red and one green.
+green LED blinking - searching for another radio 
+green LED solid - link is established with another radio 
+red LED flashing - transmitting data 
+red LED solid - in firmware update mode</value>
+  </data>
+  <data name="&gt;&gt;linkLabel1.Name" xml:space="preserve">
+    <value>linkLabel1</value>
+  </data>
+  <data name="&gt;&gt;linkLabel1.Type" xml:space="preserve">
+    <value>System.Windows.Forms.LinkLabel, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </data>
+  <data name="&gt;&gt;linkLabel1.Parent" xml:space="preserve">
+    <value>$this</value>
+  </data>
+  <data name="&gt;&gt;linkLabel1.ZOrder" xml:space="preserve">
+    <value>0</value>
+  </data>
   <metadata name="$this.Localizable" type="System.Boolean, mscorlib, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089">
     <value>True</value>
   </metadata>
+  <data name="$this.AutoScaleDimensions" type="System.Drawing.SizeF, System.Drawing">
+    <value>6, 13</value>
+  </data>
+  <data name="$this.Size" type="System.Drawing.Size, System.Drawing">
+    <value>781, 433</value>
+  </data>
+  <data name="&gt;&gt;toolTip1.Name" xml:space="preserve">
+    <value>toolTip1</value>
+  </data>
+  <data name="&gt;&gt;toolTip1.Type" xml:space="preserve">
+    <value>System.Windows.Forms.ToolTip, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </data>
+  <data name="&gt;&gt;$this.Name" xml:space="preserve">
+    <value>_3DRradio</value>
+  </data>
+  <data name="&gt;&gt;$this.Type" xml:space="preserve">
+    <value>System.Windows.Forms.UserControl, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </data>
 </root>

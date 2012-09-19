@@ -56,6 +56,8 @@ namespace ArdupilotMega.Controls
                 //return;
             }
 
+            this.Name = "Hud";
+
             //InitializeComponent();
 
             graphicsObject = this;
@@ -367,8 +369,8 @@ namespace ArdupilotMega.Controls
             {
                 countdate = DateTime.Now;
                 Console.WriteLine("HUD " + count + " hz drawtime " + (huddrawtime / count) + " gl " + opengl);
-              //  if ((huddrawtime / count) > 1000)
-                  //  opengl = false;
+                if ((huddrawtime / count) > 1000)
+                    opengl = false;
 
                 count = 0;
                 huddrawtime = 0;
@@ -1754,12 +1756,16 @@ namespace ArdupilotMega.Controls
            
             if (SixteenXNine)
             {
-                this.Height = (int)(this.Width / 1.777f);
+                int ht = (int)(this.Width / 1.777f);
+                if (ht != this.Height)
+                    this.Height = ht;
             }
             else
             {
                 // 4x3
-                this.Height = (int)(this.Width / 1.333f);
+                int ht = (int)(this.Width / 1.333f);
+                if (ht != this.Height)
+                    this.Height = ht;
             }
 
             base.OnResize(e);
@@ -1799,7 +1805,8 @@ namespace ArdupilotMega.Controls
                 }
             }
             catch { }
-             
+
+            Refresh();
         }
     }
 }

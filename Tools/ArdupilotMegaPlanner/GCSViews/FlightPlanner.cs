@@ -1419,7 +1419,7 @@ namespace ArdupilotMega.GCSViews
                 return;
             }
 
-            int i = -1;
+            int i = Commands.Rows.Count - 1;
             foreach (Locationwp temp in cmds)
             {
                 i++;
@@ -1920,9 +1920,37 @@ namespace ArdupilotMega.GCSViews
                     rc.Pen.Color = Color.Red;
                     MainMap.Invalidate(false);
 
+                    int answer;
+                    if (int.TryParse(item.Tag.ToString(), out answer))
+                    {
+                        try
+                        {
+                            Commands.CurrentCell = Commands[0, answer - 1];
+                            item.ToolTipText = "Alt: " + Commands[Alt.Index, answer - 1].Value.ToString();
+                            item.ToolTipMode = MarkerTooltipMode.OnMouseOver;
+                        }
+                        catch { }
+                    }
+     
                     CurentRectMarker = rc;
                 }
             }
+        }
+
+        // click on some marker
+        void MainMap_OnMarkerClick(GMapMarker item, MouseEventArgs e)
+        {
+            int answer;
+            try // when dragging item can sometimes be null
+            {
+                if (int.TryParse(item.Tag.ToString(), out answer))
+                {
+
+                    Commands.CurrentCell = Commands[0, answer - 1];
+                }
+            }
+            catch { }
+            return;
         }
 
         void MainMap_OnMapTypeChanged(MapType type)
@@ -1948,6 +1976,8 @@ namespace ArdupilotMega.GCSViews
         void MainMap_MouseUp(object sender, MouseEventArgs e)
         {
             end = MainMap.FromLocalToLatLng(e.X, e.Y);
+
+           // Console.WriteLine("MainMap MU");
 
             if (e.Button == MouseButtons.Right) // ignore right clicks
             {
@@ -2001,6 +2031,8 @@ namespace ArdupilotMega.GCSViews
         {
             start = MainMap.FromLocalToLatLng(e.X, e.Y);
 
+         //   Console.WriteLine("MainMap MD");
+
             if (e.Button == MouseButtons.Left && Control.ModifierKeys != Keys.Alt)
             {
                 isMouseDown = true;
@@ -2017,6 +2049,11 @@ namespace ArdupilotMega.GCSViews
         void MainMap_MouseMove(object sender, MouseEventArgs e)
         {
             PointLatLng point = MainMap.FromLocalToLatLng(e.X, e.Y);
+
+            if (start == point)
+                return;
+
+          //  Console.WriteLine("MainMap MM " + point);
 
             currentMarker.Position = point;
 
@@ -2108,22 +2145,7 @@ namespace ArdupilotMega.GCSViews
             }
         }
 
-        // click on some marker
-        void MainMap_OnMarkerClick(GMapMarker item, MouseEventArgs e)
-        {
-            int answer;
-            try // when dragging item can sometimes be null
-            {
-                if (int.TryParse(item.Tag.ToString(), out answer))
-                {
 
-                    Commands.CurrentCell = Commands[0, answer - 1];
-
-                }
-            }
-            catch { }
-            return;
-        }
 
         // loader start loading tiles
         void MainMap_OnTileLoadStart()
@@ -4202,6 +4224,90 @@ namespace ArdupilotMega.GCSViews
             if (file != "")
             {
                 readQGC110wpfile(file, true);
+            }
+        }
+
+        private void savePolygonToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            if (drawnpolygon.Points.Count == 0)
+            {
+                return;
+            }
+
+
+            SaveFileDialog sf = new SaveFileDialog();
+            sf.Filter = "Polygon (*.poly)|*.poly";
+            sf.ShowDialog();
+            if (sf.FileName != "")
+            {
+                try
+                {
+                    StreamWriter sw = new StreamWriter(sf.OpenFile());
+
+                    sw.WriteLine("#saved by APM Planner " + Application.ProductVersion);
+
+                    if (drawnpolygon.Points.Count > 0)
+                    {
+                        foreach (var pll in drawnpolygon.Points)
+                        {
+                            sw.WriteLine(pll.Lat + " " + pll.Lng);
+                        }
+
+                        PointLatLng pll2 = drawnpolygon.Points[0];
+
+                        sw.WriteLine(pll2.Lat + " " + pll2.Lng);
+                    }
+
+                    sw.Close();
+                }
+                catch { CustomMessageBox.Show("Failed to write fence file"); }
+            }
+        }
+
+        private void loadPolygonToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            OpenFileDialog fd = new OpenFileDialog();
+            fd.Filter = "Polygon (*.poly)|*.poly";
+            fd.ShowDialog();
+            if (File.Exists(fd.FileName))
+            {
+                StreamReader sr = new StreamReader(fd.OpenFile());
+
+                drawnpolygons.Markers.Clear();
+                drawnpolygons.Polygons.Clear();
+                drawnpolygon.Points.Clear();
+
+                int a = 0;
+
+                while (!sr.EndOfStream)
+                {
+                    string line = sr.ReadLine();
+                    if (line.StartsWith("#"))
+                    {
+                        continue;
+                    }
+                    else
+                    {
+                        string[] items = line.Split(new char[] { ' ', '\t' }, StringSplitOptions.RemoveEmptyEntries);
+                        
+                            drawnpolygon.Points.Add(new PointLatLng(double.Parse(items[0]), double.Parse(items[1])));
+                            addpolygonmarkergrid(drawnpolygon.Points.Count.ToString(), double.Parse(items[1]), double.Parse(items[0]), 0);
+                        
+                        a++;
+                    }
+                }
+
+                // remove loop close
+                if (drawnpolygon.Points[0] == drawnpolygon.Points[drawnpolygon.Points.Count - 1])
+                {
+                    drawnpolygon.Points.RemoveAt(drawnpolygon.Points.Count - 1);
+                }
+
+                drawnpolygons.Polygons.Add(drawnpolygon);
+
+                MainMap.UpdatePolygonLocalPosition(drawnpolygon);
+
+                MainMap.Invalidate();
             }
         }
     }
