@@ -174,11 +174,11 @@ int AVRConsoleDriver::Buffer::peek() {
     return (int) b;
 }
 
-uint16_t AVRConsoleDriver::Buffer::bytes_free() {
+uint16_t AVRConsoleDriver::Buffer::bytes_used() {
     return ((_head - _tail) & _mask);
 }
 
-uint16_t AVRConsoleDriver::Buffer::bytes_used() {
+uint16_t AVRConsoleDriver::Buffer::bytes_free() {
     return ((_mask+1) - ((_head - _tail) & _mask));
 }
 
