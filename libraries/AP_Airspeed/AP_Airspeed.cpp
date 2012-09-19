@@ -11,7 +11,6 @@
 #include <FastSerial.h>
 #include <AP_Common.h>
 #include <AP_Airspeed.h>
-#include <LowPassFilter.h>
 
 // table of user settable parameters
 const AP_Param::GroupInfo AP_Airspeed::var_info[] PROGMEM = {
@@ -71,5 +70,5 @@ void AP_Airspeed::read(void)
     }
     _airspeed_raw           = _source->read();
     airspeed_pressure       = max((_airspeed_raw - _offset), 0);
-    _airspeed               = sqrt(airspeed_pressure * _ratio);
+    _airspeed               = 0.7 * _airspeed + 0.3 * sqrt(airspeed_pressure * _ratio);
 }
