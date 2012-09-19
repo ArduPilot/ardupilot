@@ -95,6 +95,8 @@ AP_GPS_Auto::_detect(void)
 			Serial.print_P(PSTR(" MTK "));
 			return new AP_GPS_MTK(_port);
 		}
+#if !defined( __AVR_ATmega1280__ )
+		// save a bit of code space on a 1280
 		if (AP_GPS_SIRF::_detect(data)) {
 			Serial.print_P(PSTR(" SIRF "));
 			return new AP_GPS_SIRF(_port);
@@ -107,6 +109,7 @@ AP_GPS_Auto::_detect(void)
 				return new AP_GPS_NMEA(_port);
 			}
 		}
+#endif
 	}
 
 	return NULL;
