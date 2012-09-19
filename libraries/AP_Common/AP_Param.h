@@ -132,6 +132,15 @@ public:
     ///
     static AP_Param * find(const char *name, enum ap_var_type *ptype);
 
+    /// Find a variable by index.
+    ///
+    ///
+    /// @param  idx             The index of the variable
+    /// @return                 A pointer to the variable, or NULL if
+    ///                         it does not exist.
+    ///
+    static AP_Param * find_by_index(uint16_t idx, enum ap_var_type *ptype);
+
     /// Save the current value of the variable to EEPROM.
     ///
     /// @return                True if the variable was saved successfully.

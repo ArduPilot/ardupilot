@@ -579,6 +579,22 @@ AP_Param::find(const char *name, enum ap_var_type *ptype)
     return NULL;
 }
 
+// Find a variable by index. Note that this is quite slow.
+//
+AP_Param *
+AP_Param::find_by_index(uint16_t idx, enum ap_var_type *ptype)
+{
+    ParamToken token;
+    AP_Param *ap;
+    uint16_t count=0;
+    for (ap=AP_Param::first(&token, ptype);
+         ap && count < idx;
+         ap=AP_Param::next_scalar(&token, ptype)) {
+        count++;
+    }
+    return ap;    
+}
+
 // Save the variable to EEPROM, if supported
 //
 bool AP_Param::save(void)
