@@ -16,17 +16,15 @@ public:
     ///
     ///
     AP_LeadFilter() :
-        _last_velocity(0), _lag(1.0) {
+        _last_velocity(0) {
     }
 
     // setup min and max radio values in CLI
-    int32_t         get_position(int32_t pos, int16_t vel);
-    void            set_lag(float delay_in_seconds) { _lag = delay_in_seconds; }
+    int32_t         get_position(int32_t pos, int16_t vel, float lag_in_seconds = 1.0);
     void            clear() { _last_velocity = 0; }
 
 private:
     int16_t         _last_velocity;
-    float           _lag;
 
 };
 

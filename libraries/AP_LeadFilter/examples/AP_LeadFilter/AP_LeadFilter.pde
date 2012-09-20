@@ -38,14 +38,17 @@ void setup()
 
 void loop()
 {
-    int16_t velocity = 0;
-    int32_t position = 0;
+    int16_t velocity;
+    int32_t position;
     int32_t new_position;
     int16_t i;
 
+    position = 0;
+    velocity = 0;
+    xLeadFilter.clear();
+
     Serial.printf("------------------\n");
     Serial.printf("start position = 0, lag of 1sec.\n");
-    xLeadFilter.set_lag(1.0);
     for( i = 0; i < 10; i++ ) {
         // get updated position
         new_position = xLeadFilter.get_position(position, velocity);     // new position with velocity of 1 m/s
@@ -57,13 +60,12 @@ void loop()
     position = 0;
     velocity = 0;
     xLeadFilter.clear();
-    xLeadFilter.set_lag(0.200);
 
     Serial.printf("------------------\n");
     Serial.printf("start position = 0, lag of 200ms\n");
     for( i = 0; i < 10; i++ ) {
         // get updated position
-        new_position = xLeadFilter.get_position(position, velocity);     // new position with velocity of 1 m/s
+        new_position = xLeadFilter.get_position(position, velocity, 0.200);     // new position with velocity of 1 m/s
         Serial.printf("start pos: %ld, start vel: %d, end pos: %ld\n", (long int)position, (int)velocity, (long int)new_position);
         position = new_position;
         velocity += 100;
