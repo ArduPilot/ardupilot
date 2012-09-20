@@ -103,6 +103,9 @@ void AP_MotorsMatrix::output_armed()
     int8_t i;
     int16_t out_min = _rc_throttle->radio_min;
     int16_t out_max = _rc_throttle->radio_max;
+	int16_t max_motor = 1000;
+	int16_t min_motor = 2000;
+	
     //int16_t yaw_contribution = 0;
 
     // Throttle is 0 to 1000 only
@@ -134,14 +137,27 @@ void AP_MotorsMatrix::output_armed()
     }
 
     // stability patch
+	
     for( i=0; i<AP_MOTORS_MAX_NUM_MOTORS; i++ ) {
-        if( motor_enabled[i] && motor_out[i] > out_max ) {
-            if( opposite_motor[i] != AP_MOTORS_MATRIX_MOTOR_UNDEFINED ) {
-                motor_out[opposite_motor[i]] -= motor_out[i] - out_max;
-            }
-            motor_out[i] = out_max;
+        if( motor_enabled[i] && motor_out[i] > max_motor ) {
+            max_motor = motor_out[i];
         }
     }
+	if ( max_motor > out_max ){
+		for( i=0; i<AP_MOTORS_MAX_NUM_MOTORS; i++ ) {
+			motor_out[i] -= (max_motor - out_max);
+		}
+	}	
+	for( i=0; i<AP_MOTORS_MAX_NUM_MOTORS; i++ ) {
+        if( motor_enabled[i] && motor_out[i] < min_motor ) {
+            min_motor = motor_out[i];
+        }
+    }
+	if ( min_motor < out_min ){
+		for( i=0; i<AP_MOTORS_MAX_NUM_MOTORS; i++ ) {
+			motor_out[i] -= (min_motor - out_min);
+		}
+	}
 
     // adjust for throttle curve
     if( _throttle_curve_enabled ) {
