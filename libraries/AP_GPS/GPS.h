@@ -135,6 +135,8 @@ public:
         return _last_ground_speed_cm * 0.01;
     }
 
+    // the expected lag (in seconds) in the position and velocity readings from the gps
+    virtual float get_lag() { return 1.0; }
 
     // the time we got our last fix in system milliseconds
     uint32_t last_fix_time;
