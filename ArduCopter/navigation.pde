@@ -63,8 +63,8 @@ static void calc_XY_velocity(){
     filtered_loc.lng = xLeadFilter.get_position(g_gps->longitude, accels_velocity.x);
     filtered_loc.lat = yLeadFilter.get_position(g_gps->latitude,  accels_velocity.y);
 #else
-    filtered_loc.lng = xLeadFilter.get_position(g_gps->longitude, x_actual_speed);
-    filtered_loc.lat = yLeadFilter.get_position(g_gps->latitude,  y_actual_speed);
+    filtered_loc.lng = xLeadFilter.get_position(g_gps->longitude, x_actual_speed, g_gps->get_lag());
+    filtered_loc.lat = yLeadFilter.get_position(g_gps->latitude,  y_actual_speed, g_gps->get_lag());
 #endif
 }
 
