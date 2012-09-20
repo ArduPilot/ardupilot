@@ -87,7 +87,6 @@ enable_aux_servos()
 			RC_Channel_aux::Aux_servo_function_t function = (RC_Channel_aux::Aux_servo_function_t)_aux_channels[i]->function.get();
 			// see if it is a valid function
 			if (function < RC_Channel_aux::k_nr_aux_servo_functions) {
-				_aux_channels[i]->radio_out = _aux_channels[i]->radio_trim;
 				_aux_channels[i]->enable_out();
 			}
 		}
