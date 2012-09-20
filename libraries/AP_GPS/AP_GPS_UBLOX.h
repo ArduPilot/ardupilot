@@ -35,6 +35,8 @@ public:
     static const prog_char          _ublox_set_binary[];
     static const uint8_t            _ublox_set_binary_size;
 
+    float       get_lag() { return 0.5; }   // ublox lag is lower than the default 1second
+
 private:
     // u-blox UBX protocol essentials
 // XXX this is being ignored by the compiler #pragma pack(1)
