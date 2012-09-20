@@ -968,9 +968,15 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
             break;
 
         case MAV_DATA_STREAM_RAW_SENSORS:
-            streamRateRawSensors = freq;                        // We do not set and save this one so that if HIL is shut down incorrectly
-            // we will not continue to broadcast raw sensor data at 50Hz.
+            if (freq <= 5) {
+                streamRateRawSensors.set_and_save_ifchanged(freq);
+            } else {
+                // We do not set and save this one so that if HIL is shut down incorrectly
+                // we will not continue to broadcast raw sensor data at 50Hz.
+                streamRateRawSensors = freq;
+            }
             break;
+
         case MAV_DATA_STREAM_EXTENDED_STATUS:
             streamRateExtendedStatus.set_and_save_ifchanged(freq);
             break;
@@ -982,10 +988,6 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
         case MAV_DATA_STREAM_RAW_CONTROLLER:
             streamRateRawController.set_and_save_ifchanged(freq);
             break;
-
-        //case MAV_DATA_STREAM_RAW_SENSOR_FUSION:
-        //    streamRateRawSensorFusion.set_and_save(freq);
-        //    break;
 
         case MAV_DATA_STREAM_POSITION:
             streamRatePosition.set_and_save_ifchanged(freq);
