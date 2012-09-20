@@ -100,7 +100,7 @@ void LiquidCrystal::begin(uint8_t cols, uint8_t lines, uint8_t dotsize) {
   // SEE PAGE 45/46 FOR INITIALIZATION SPECIFICATION!
   // according to datasheet, we need at least 40ms after power rises above 2.7V
   // before sending commands. Arduino can turn on way befer 4.5V so we'll wait 50
-  hal.scheduler->delayMicroseconds(50000); 
+  hal.scheduler->delay_microseconds(50000); 
   // Now we pull both RS and R/W low to begin commands
   hal.gpio->write(_rs_pin, 0);
   hal.gpio->write(_enable_pin, 0);
@@ -115,15 +115,15 @@ void LiquidCrystal::begin(uint8_t cols, uint8_t lines, uint8_t dotsize) {
 
     // we start in 8bit mode, try to set 4 bit mode
     write4bits(0x03);
-    hal.scheduler->delayMicroseconds(4500); // wait min 4.1ms
+    hal.scheduler->delay_microseconds(4500); // wait min 4.1ms
 
     // second try
     write4bits(0x03);
-    hal.scheduler->delayMicroseconds(4500); // wait min 4.1ms
+    hal.scheduler->delay_microseconds(4500); // wait min 4.1ms
     
     // third go!
     write4bits(0x03); 
-    hal.scheduler->delayMicroseconds(150);
+    hal.scheduler->delay_microseconds(150);
 
     // finally, set to 4-bit interface
     write4bits(0x02); 
@@ -133,11 +133,11 @@ void LiquidCrystal::begin(uint8_t cols, uint8_t lines, uint8_t dotsize) {
 
     // Send function set command sequence
     command(LCD_FUNCTIONSET | _displayfunction);
-    hal.scheduler->delayMicroseconds(4500);  // wait more than 4.1ms
+    hal.scheduler->delay_microseconds(4500);  // wait more than 4.1ms
 
     // second try
     command(LCD_FUNCTIONSET | _displayfunction);
-    hal.scheduler->delayMicroseconds(150);
+    hal.scheduler->delay_microseconds(150);
 
     // third go
     command(LCD_FUNCTIONSET | _displayfunction);
@@ -164,13 +164,13 @@ void LiquidCrystal::begin(uint8_t cols, uint8_t lines, uint8_t dotsize) {
 void LiquidCrystal::clear()
 {
   command(LCD_CLEARDISPLAY);  // clear display, set cursor position to zero
-  hal.scheduler->delayMicroseconds(2000);  // this command takes a long time!
+  hal.scheduler->delay_microseconds(2000);  // this command takes a long time!
 }
 
 void LiquidCrystal::home()
 {
   command(LCD_RETURNHOME);  // set cursor position to zero
-  hal.scheduler->delayMicroseconds(2000);  // this command takes a long time!
+  hal.scheduler->delay_microseconds(2000);  // this command takes a long time!
 }
 
 void LiquidCrystal::setCursor(uint8_t col, uint8_t row)
@@ -287,11 +287,11 @@ void LiquidCrystal::send(uint8_t value, uint8_t mode) {
 
 void LiquidCrystal::pulseEnable(void) {
   hal.gpio->write(_enable_pin, 0);
-  hal.scheduler->delayMicroseconds(1);    
+  hal.scheduler->delay_microseconds(1);    
   hal.gpio->write(_enable_pin, 1);
-  hal.scheduler->delayMicroseconds(1);    // enable pulse must be >450ns
+  hal.scheduler->delay_microseconds(1);    // enable pulse must be >450ns
   hal.gpio->write(_enable_pin, 0);
-  hal.scheduler->delayMicroseconds(100);   // commands need > 37us to settle
+  hal.scheduler->delay_microseconds(100);   // commands need > 37us to settle
 }
 
 void LiquidCrystal::write4bits(uint8_t value) {
