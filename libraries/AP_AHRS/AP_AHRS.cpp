@@ -54,7 +54,7 @@ const AP_Param::GroupInfo AP_AHRS::var_info[] PROGMEM = {
     // @Description: This controls the use of the barometer for vertical acceleration compensation in AHRS
     // @Values: 0:Disabled,1:Enabled
     // @User: Advanced
-    AP_GROUPINFO("BARO_USE",  7,    AP_AHRS, _baro_use, 1),
+    AP_GROUPINFO("BARO_USE",  7,    AP_AHRS, _baro_use, 0),
 
     AP_GROUPEND
 };
