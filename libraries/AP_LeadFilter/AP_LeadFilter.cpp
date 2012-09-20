@@ -34,7 +34,11 @@ int32_t
 AP_LeadFilter::get_position(int32_t pos, int16_t vel)
 {
     // assumes a 1 second delay in the GPS
-    int16_t acc = vel - _last_velocity;
+    int16_t accel_contribution = (vel - _last_velocity) * _lag * _lag;
+    int16_t vel_contribution = vel * _lag;
+
+    // store velocity for next iteration
     _last_velocity = vel;
-    return pos + vel + acc;
+
+    return pos + vel + accel_contribution;
 }
