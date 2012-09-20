@@ -40,5 +40,5 @@ AP_LeadFilter::get_position(int32_t pos, int16_t vel)
     // store velocity for next iteration
     _last_velocity = vel;
 
-    return pos + vel + accel_contribution;
+    return pos + vel_contribution + accel_contribution;
 }
