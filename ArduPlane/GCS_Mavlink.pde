@@ -447,18 +447,6 @@ static void NOINLINE send_wind(mavlink_channel_t chan)
         wind.z);
 }
 
-static void NOINLINE send_gps_status(mavlink_channel_t chan)
-{
-    mavlink_msg_gps_status_send(
-        chan,
-        g_gps->num_sats,
-        NULL,
-        NULL,
-        NULL,
-        NULL,
-        NULL);
-}
-
 static void NOINLINE send_current_waypoint(mavlink_channel_t chan)
 {
     mavlink_msg_mission_current_send(
@@ -583,11 +571,6 @@ static bool mavlink_try_send_message(mavlink_channel_t chan, enum ap_message id,
         send_raw_imu3(chan);
         break;
 #endif // HIL_MODE != HIL_MODE_ATTITUDE
-
-    case MSG_GPS_STATUS:
-        CHECK_PAYLOAD_SIZE(GPS_STATUS);
-        send_gps_status(chan);
-        break;
 
     case MSG_CURRENT_WAYPOINT:
         CHECK_PAYLOAD_SIZE(MISSION_CURRENT);
@@ -889,15 +872,6 @@ GCS_MAVLINK::data_stream_send(void)
         send_message(MSG_GPS_RAW);            // TODO - remove this message after location message is working
         send_message(MSG_NAV_CONTROLLER_OUTPUT);
         send_message(MSG_FENCE_STATUS);
-
-        if (last_gps_satellites != g_gps->num_sats) {
-            // this message is mostly a huge waste of bandwidth,
-            // except it is the only message that gives the number
-            // of visible satellites. So only send it when that
-            // changes.
-            send_message(MSG_GPS_STATUS);
-            last_gps_satellites = g_gps->num_sats;
-        }
     }
 
     if (stream_trigger(STREAM_POSITION)) {
