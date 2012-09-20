@@ -58,7 +58,6 @@ uint8_t volatile AP_Baro_MS5611::_d1_count;
 uint8_t volatile AP_Baro_MS5611::_d2_count;
 uint8_t AP_Baro_MS5611::_state;
 uint32_t AP_Baro_MS5611::_timer;
-bool AP_Baro_MS5611::_sync_access;
 bool volatile AP_Baro_MS5611::_updated;
 
 uint8_t AP_Baro_MS5611::_spi_read(uint8_t reg)
@@ -160,8 +159,6 @@ bool AP_Baro_MS5611::init( AP_PeriodicProcess *scheduler )
 // temperature does not change so quickly...
 void AP_Baro_MS5611::_update(uint32_t tnow)
 {
-    if (_sync_access) return;
-
     // Throttle read rate to 100hz maximum.
     // note we use 9500us here not 10000us
     // the read rate will end up at exactly 100hz because the Periodic Timer fires at 1khz
@@ -206,7 +203,6 @@ void AP_Baro_MS5611::_update(uint32_t tnow)
 
 uint8_t AP_Baro_MS5611::read()
 {
-    _sync_access = true;
     bool updated = _updated;
     if (updated) {
         uint32_t sD1, sD2;
@@ -230,7 +226,6 @@ uint8_t AP_Baro_MS5611::read()
         _raw_press = D1;
         _raw_temp = D2;
     }
-    _sync_access = false;
     _calculate();
     if (updated) {
         _last_update = millis();
