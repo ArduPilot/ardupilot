@@ -11,10 +11,6 @@
 #include <AP_Math.h>        // ArduPilot Mega Vector/Matrix math Library
 #include <AP_LeadFilter.h>      // GPS Lead filter
 
-// define APM1 or APM2
-#define APM_HARDWARE_APM1       1
-#define APM_HARDWARE_APM2       2
-
 // set your hardware type here
 #define CONFIG_APM_HARDWARE APM_HARDWARE_APM2
 
@@ -29,33 +25,51 @@ Arduino_Mega_ISR_Registry isr_registry;
 // use.
 //
 FastSerialPort0(Serial);        // FTDI/console
-FastSerialPort1(Serial1);       // GPS port
-FastSerialPort3(Serial3);       // Telemetry port
-
-////////////////////////////////////////////
-// RC Hardware
-////////////////////////////////////////////
-#if CONFIG_APM_HARDWARE == APM_HARDWARE_APM2
-APM_RC_APM2 APM_RC;
-#else
-APM_RC_APM1 APM_RC;
-#endif
 
 AP_LeadFilter xLeadFilter;      // GPS lag filter
 
 void setup()
 {
     Serial.begin(115200);
-    Serial.println("ArduPilot RC Channel test");
+    Serial.println("AP_LeadFilter test ver 1.0");
 
     delay(500);
-
-    int32_t temp = xLeadFilter.get_position(0, 100);
-    Serial.printf("temp %ld \n", temp);
 }
 
 void loop()
 {
+    int16_t velocity = 0;
+    int32_t position = 0;
+    int32_t new_position;
+    int16_t i;
+
+    Serial.printf("------------------\n");
+    Serial.printf("start position = 0, lag of 1sec.\n");
+    xLeadFilter.set_lag(1.0);
+    for( i = 0; i < 10; i++ ) {
+        // get updated position
+        new_position = xLeadFilter.get_position(position, velocity);     // new position with velocity of 1 m/s
+        Serial.printf("start pos: %ld, start vel: %d, end pos: %ld\n", (long int)position, (int)velocity, (long int)new_position);
+        position = new_position;
+        velocity += 100;
+    }
+
+    position = 0;
+    velocity = 0;
+    xLeadFilter.clear();
+    xLeadFilter.set_lag(0.200);
+
+    Serial.printf("------------------\n");
+    Serial.printf("start position = 0, lag of 200ms\n");
+    for( i = 0; i < 10; i++ ) {
+        // get updated position
+        new_position = xLeadFilter.get_position(position, velocity);     // new position with velocity of 1 m/s
+        Serial.printf("start pos: %ld, start vel: %d, end pos: %ld\n", (long int)position, (int)velocity, (long int)new_position);
+        position = new_position;
+        velocity += 100;
+    }
+
+    delay(10000);
 }
 
 
