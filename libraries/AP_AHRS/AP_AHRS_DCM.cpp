@@ -467,9 +467,12 @@ AP_AHRS_DCM::drift_correction(float deltat)
     // equation 9: get the corrected acceleration vector in earth frame. Units
     // are m/s/s
     Vector3f GA_e;
-    float v_scale = 1.0/(_ra_deltat*_gravity);
-    v_scale *= gps_gain;
-    GA_e = Vector3f(0, 0, -1.0) + ((velocity - _last_velocity) * v_scale);
+    float v_scale = gps_gain.get()/(_ra_deltat*_gravity);
+    Vector3f vdelta = (velocity - _last_velocity) * v_scale;
+    // limit vertical acceleration correction to 0.5 gravities. The
+    // barometer sometimes gives crazy acceleration changes. 
+    vdelta.z = constrain(vdelta.z, -0.5, 0.5);
+    GA_e = Vector3f(0, 0, -1.0) + vdelta;
     GA_e.normalize();
     if (GA_e.is_inf()) {
         // wait for some non-zero acceleration information
