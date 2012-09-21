@@ -1,4 +1,0 @@
-AP_RC	KEYWORD1
-init KEYWORD2
-set_ch_pwm	KEYWORD2
-read_pwm	KEYWORD2

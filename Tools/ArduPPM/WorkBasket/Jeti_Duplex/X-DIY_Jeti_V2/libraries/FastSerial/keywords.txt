@@ -1,7 +1,0 @@
-FastSerial	KEYWORD1
-begin		KEYWORD2
-end		KEYWORD2
-available	KEYWORD2
-read		KEYWORD2
-flush		KEYWORD2
-write		KEYWORD2

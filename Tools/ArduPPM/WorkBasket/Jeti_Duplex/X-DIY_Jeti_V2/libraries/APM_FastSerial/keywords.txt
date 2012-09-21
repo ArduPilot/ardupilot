@@ -1,2 +1,0 @@
-APM_FastSerial	KEYWORD1
-APM_FastSerial3	KEYWORD1
