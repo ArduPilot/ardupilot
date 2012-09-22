@@ -365,19 +365,6 @@ static void set_servos(void)
             g.channel_pitch.radio_out =     elevon2_trim + (BOOL_TO_SIGN(g.reverse_ch2_elevon) * (ch2 * 500.0/ SERVO_MAX));
         }
 
-#if THROTTLE_OUT == 0
-        g.channel_throttle.servo_out = 0;
-#else
-        // convert 0 to 100% into PWM
-        g.channel_throttle.servo_out = constrain(g.channel_throttle.servo_out, g.throttle_min.get(), g.throttle_max.get());
-
-        if (suppress_throttle()) {
-            g.channel_throttle.servo_out = 0;
-        }
-
-#endif
-
-
         if (control_mode >= FLY_BY_WIRE_B) {
             /* only do throttle slew limiting in modes where throttle
              *  control is automatic */
@@ -402,8 +389,28 @@ static void set_servos(void)
             g.channel_roll.calc_pwm();
             g.channel_pitch.calc_pwm();
         }
-        g.channel_throttle.calc_pwm();
         g.channel_rudder.calc_pwm();
+
+#if THROTTLE_OUT == 0
+        g.channel_throttle.servo_out = 0;
+#else
+        // convert 0 to 100% into PWM
+        g.channel_throttle.servo_out = constrain(g.channel_throttle.servo_out, 
+                                                 g.throttle_min.get(), 
+                                                 g.throttle_max.get());
+
+        if (suppress_throttle()) {
+            g.channel_throttle.servo_out = 0;
+            if (g.throttle_suppress_manual) {
+                // manual pass through of throttle while throttle is suppressed
+                g.channel_throttle.radio_out = g.channel_throttle.radio_in;
+            } else {
+                g.channel_throttle.calc_pwm();                
+            }
+        } else {
+            g.channel_throttle.calc_pwm();
+        }
+#endif
     }
 
     // Auto flap deployment
