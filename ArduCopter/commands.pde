@@ -208,9 +208,6 @@ static void init_home()
     // Save prev loc this makes the calcs look better before commands are loaded
     prev_WP = home;
 
-    // in case we RTL
-    next_WP = home;
-
     // Load home for a default guided_WP
     // -------------
     guided_WP = home;
