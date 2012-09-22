@@ -1328,7 +1328,8 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
             param_name,
             value,
             mav_var_type(p_type),
-            -1, -1);
+            _count_parameters(),
+            packet.param_index);
         break;
     }
 
