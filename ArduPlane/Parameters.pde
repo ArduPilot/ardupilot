@@ -281,6 +281,13 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @User: Standard
     GSCALAR(throttle_slewrate,      "THR_SLEWRATE",   THROTTLE_SLEW_LIMIT),
 
+    // @Param: THR_SUPP_MAN
+    // @DisplayName: Throttle suppress manual passthru
+    // @Description: When throttle is supressed in auto mode it is normally forced to zero. If you enable this option, then while suppressed it will be manual throttle. This is useful on petrol engines to hold the idle throttle manually while waiting for takeoff
+	// @Values: 0:Disabled,1:Enabled
+    // @User: Advanced
+    GSCALAR(throttle_suppress_manual,"THR_SUPP_MAN",   0),
+
     // @Param: THR_FAILSAFE
     // @DisplayName: Throttle Failsafe Enable
     // @Description: The throttle failsafe allows you to configure a software failsafe activated by a setting on the throttle input channel
