@@ -9,6 +9,7 @@ static void init_commands()
     nav_command_ID  = NO_COMMAND;
     non_nav_command_ID      = NO_COMMAND;
     next_nav_command.id     = CMD_BLANK;
+    nav_command_index = 0;
 }
 
 static void update_auto()

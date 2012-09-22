@@ -4,7 +4,15 @@
 //----------------------------------------
 void change_command(uint8_t cmd_index)
 {
-    struct Location temp = get_cmd_with_index(cmd_index);
+    struct Location temp;
+
+    if (cmd_index == 0) {
+        init_commands();
+        gcs_send_text_fmt(PSTR("Received Request - reset mission"));
+        return;
+    }
+
+    temp = get_cmd_with_index(cmd_index);
 
     if (temp.id > MAV_CMD_NAV_LAST ) {
         gcs_send_text_P(SEVERITY_LOW,PSTR("Bad Request - cannot change to non-Nav cmd"));
