@@ -24,7 +24,7 @@ AP_TimerProcess scheduler;
 FastSerialPort0(Serial);
 
 AP_AnalogSource_Arduino pin0(0);
-AP_Airspeed airspeed(&pin0, 1.9936, true);
+AP_Airspeed airspeed(&pin0);
 
 void setup()
 {
