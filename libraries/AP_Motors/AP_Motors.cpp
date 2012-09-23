@@ -78,9 +78,6 @@ bool AP_Motors::setup_throttle_curve()
     int16_t max_thrust_pwm = min_pwm + (float)(max_pwm - min_pwm) * ((float)_throttle_curve_max/100.0);
     bool retval = true;
 
-    Serial.printf_P(PSTR("AP_Motors: setup_throttle_curve"));
-    Serial.printf_P(PSTR("mid:%d\tmax:%d\n"),(int)mid_thrust_pwm,(int)max_thrust_pwm);
-
     // some basic checks that the curve is valid
     if( mid_thrust_pwm >= (min_pwm+_min_throttle) && mid_thrust_pwm <= max_pwm && max_thrust_pwm >= mid_thrust_pwm && max_thrust_pwm <= max_pwm ) {
         // clear curve
