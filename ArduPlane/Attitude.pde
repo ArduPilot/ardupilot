@@ -38,22 +38,19 @@ static float get_speed_scaler(void)
  */
 static bool stick_mixing_enabled(void)
 {
-    if (control_mode == CIRCLE && failsafe != FAILSAFE_NONE) {
-        // we are in short failsafe
-        return false;
+    if (control_mode == CIRCLE || control_mode > FLY_BY_WIRE_B) {
+        // we're in an auto mode. Check the stick mixing flag
+        if (g.stick_mixing &&
+            geofence_stickmixing() &&
+            failsafe == FAILSAFE_NONE) {
+            // we're in an auto mode, and haven't triggered failsafe
+            return true;
+        } else {
+            return false;
+        }
     }
-    if (control_mode < FLY_BY_WIRE_A) {
-        // pilot has control, always mix in pilot controls
-        return true;
-    }
-    if (g.stick_mixing &&
-        geofence_stickmixing() &&
-        failsafe == FAILSAFE_NONE) {
-        // we're in an auto mode, and haven't triggered failsafe
-        return true;
-    }
-    // we should not do stick mixing
-    return false;
+    // non-auto mode. Always do stick mixing
+    return true;
 }
 
 
@@ -100,8 +97,9 @@ static void stabilize()
     // Mix Stick input to allow users to override control surfaces
     // -----------------------------------------------------------
     if (stick_mixing_enabled()) {
-        if (control_mode > FLY_BY_WIRE_B) {
-            // do stick mixing in auto modes
+        if (control_mode < FLY_BY_WIRE_A || control_mode > FLY_BY_WIRE_C) {
+            // do stick mixing on aileron/elevator if not in a fly by
+            // wire mode
             ch1_inf = (float)g.channel_roll.radio_in - (float)g.channel_roll.radio_trim;
             ch1_inf = fabs(ch1_inf);
             ch1_inf = min(ch1_inf, 400.0);
@@ -116,22 +114,20 @@ static void stabilize()
             // -----------------------------------------------
             g.channel_roll.servo_out *= ch1_inf;
             g.channel_pitch.servo_out *= ch2_inf;
-
+            
             // Mix in stick inputs
             // -------------------
             g.channel_roll.servo_out +=     g.channel_roll.pwm_to_angle();
             g.channel_pitch.servo_out +=    g.channel_pitch.pwm_to_angle();
         }
 
-        if (control_mode >= FLY_BY_WIRE_A) {
-            // stick mixing performed for rudder for all cases including FBW unless disabled for higher modes
-            // important for steering on the ground during landing
-            // -----------------------------------------------
-            ch4_inf = (float)g.channel_rudder.radio_in - (float)g.channel_rudder.radio_trim;
-            ch4_inf = fabs(ch4_inf);
-            ch4_inf = min(ch4_inf, 400.0);
-            ch4_inf = ((400.0 - ch4_inf) /400.0);
-        }
+        // stick mixing performed for rudder for all cases including FBW
+        // important for steering on the ground during landing
+        // -----------------------------------------------
+        ch4_inf = (float)g.channel_rudder.radio_in - (float)g.channel_rudder.radio_trim;
+        ch4_inf = fabs(ch4_inf);
+        ch4_inf = min(ch4_inf, 400.0);
+        ch4_inf = ((400.0 - ch4_inf) /400.0);
     }
 
 	// Apply output to Rudder
