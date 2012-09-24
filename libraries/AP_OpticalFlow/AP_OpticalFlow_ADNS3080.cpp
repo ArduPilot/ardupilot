@@ -372,7 +372,7 @@ AP_OpticalFlow_ADNS3080::get_frame_period()
 
 // set frame period
 void
-AP_OpticalFlow_ADNS3080::set_frame_period(unsigned int period)
+AP_OpticalFlow_ADNS3080::set_frame_period(uint16_t period)
 {
     NumericIntType aNum;
     aNum.uintValue = period;
@@ -454,7 +454,7 @@ AP_OpticalFlow_ADNS3080::get_shutter_speed()
 
 // set_shutter_speed_auto - set shutter speed to auto (true), or manual (false)
 void
-AP_OpticalFlow_ADNS3080::set_shutter_speed(unsigned int shutter_speed)
+AP_OpticalFlow_ADNS3080::set_shutter_speed(uint16_t shutter_speed)
 {
     NumericIntType aNum;
     aNum.uintValue = shutter_speed;
