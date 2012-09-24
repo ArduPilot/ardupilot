@@ -516,7 +516,7 @@ static bool telemetry_delayed(mavlink_channel_t chan)
 // try to send a message, return false if it won't fit in the serial tx buffer
 static bool mavlink_try_send_message(mavlink_channel_t chan, enum ap_message id, uint16_t packet_drops)
 {
-    int payload_space = comm_get_txspace(chan) - MAVLINK_NUM_NON_PAYLOAD_BYTES;
+    int16_t payload_space = comm_get_txspace(chan) - MAVLINK_NUM_NON_PAYLOAD_BYTES;
 
     if (telemetry_delayed(chan)) {
         return false;
