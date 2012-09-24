@@ -94,20 +94,24 @@ static inline uint16_t comm_get_available(mavlink_channel_t chan)
 /// Check for available transmit space on the nominated MAVLink channel
 ///
 /// @param chan		Channel to check
-/// @returns		Number of bytes available, -1 for error
-static inline int comm_get_txspace(mavlink_channel_t chan)
+/// @returns		Number of bytes available
+static inline uint16_t comm_get_txspace(mavlink_channel_t chan)
 {
+	int16_t ret = 0;
     switch(chan) {
 	case MAVLINK_COMM_0:
-		return mavlink_comm_0_port->txspace();
+		ret = mavlink_comm_0_port->txspace();
 		break;
 	case MAVLINK_COMM_1:
-		return mavlink_comm_1_port->txspace();
+		ret = mavlink_comm_1_port->txspace();
 		break;
 	default:
 		break;
 	}
-    return -1;
+	if (ret < 0) {
+		ret = 0;
+	}
+    return (uint16_t)ret;
 }
 
 #define MAVLINK_USE_CONVENIENCE_FUNCTIONS
