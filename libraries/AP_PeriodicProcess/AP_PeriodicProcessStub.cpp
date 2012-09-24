@@ -9,6 +9,7 @@ void AP_PeriodicProcessStub::register_process(ap_procedure proc) {
 void AP_PeriodicProcessStub::set_failsafe(ap_procedure proc) {
 }
 bool AP_PeriodicProcessStub::queue_process(ap_procedure proc) {
+	return true;
 }
 void AP_PeriodicProcessStub::suspend_timer(void) {
 }
