@@ -133,6 +133,10 @@ public:
     // see if we should send a stream now. Called at 50Hz
     bool        stream_trigger(enum streams stream_num);
 
+	// this costs us 51 bytes per instance, but means that low priority
+	// messages don't block the CPU
+    mavlink_statustext_t pending_status;
+
 private:
     void        handleMessage(mavlink_message_t * msg);
 
