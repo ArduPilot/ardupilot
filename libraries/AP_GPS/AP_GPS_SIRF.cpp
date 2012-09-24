@@ -204,8 +204,8 @@ AP_GPS_SIRF::_accumulate(uint8_t val)
 bool
 AP_GPS_SIRF::_detect(uint8_t data)
 {
-	uint16_t checksum;
-	uint8_t step, payload_length, payload_counter;
+	static uint16_t checksum;
+	static uint8_t step, payload_length, payload_counter;
 
 	switch (step) {
 	case 1:
