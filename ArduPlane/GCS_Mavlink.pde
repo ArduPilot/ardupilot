@@ -1920,7 +1920,7 @@ mission_failed:
             (chan == MAVLINK_COMM_0 && gcs3.initialised)) {
             mavlink_channel_t out_chan = (mavlink_channel_t)(((uint8_t)chan)^1);
             // only forward if it would fit in our transmit buffer
-            if (comm_get_txspace(out_chan) > msg->len + MAVLINK_NUM_NON_PAYLOAD_BYTES) {
+            if (comm_get_txspace(out_chan) > ((uint16_t)msg->len) + MAVLINK_NUM_NON_PAYLOAD_BYTES) {
                 _mavlink_resend_uart(out_chan, msg);
             }
         }
