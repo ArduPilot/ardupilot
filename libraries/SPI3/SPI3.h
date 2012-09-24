@@ -12,8 +12,7 @@
 #ifndef _SPI3_H_INCLUDED
 #define _SPI3_H_INCLUDED
 
-#include <stdio.h>
-#include <Arduino.h>
+#include <FastSerial.h>
 #include <avr/pgmspace.h>
 
 // SPI3's standard pins on Atmega2560
