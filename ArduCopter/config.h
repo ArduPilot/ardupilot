@@ -768,7 +768,7 @@
 // Loiter Navigation control gains
 //
 #ifndef LOITER_RATE_P
- # define LOITER_RATE_P          2.4                    //
+ # define LOITER_RATE_P          5.0            //
 #endif
 #ifndef LOITER_RATE_I
  # define LOITER_RATE_I          0.08           // Wind control
