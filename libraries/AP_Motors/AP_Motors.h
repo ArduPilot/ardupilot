@@ -46,7 +46,7 @@
 // top-bottom ratio (for Y6)
 #define AP_MOTORS_TOP_BOTTOM_RATIO      1.0
 
-#define THROTTLE_CURVE_ENABLED      0   // throttle curve disabled by default
+#define THROTTLE_CURVE_ENABLED      1   // throttle curve disabled by default
 #define THROTTLE_CURVE_MID_THRUST   52  // throttle which produces 1/2 the maximum thrust.  expressed as a percentage of the full throttle range (i.e 0 ~ 100)
 #define THROTTLE_CURVE_MAX_THRUST   93  // throttle which produces the maximum thrust.  expressed as a percentage of the full throttle range (i.e 0 ~ 100)
 
