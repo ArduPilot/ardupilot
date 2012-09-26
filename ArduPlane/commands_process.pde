@@ -15,7 +15,7 @@ void change_command(uint8_t cmd_index)
     temp = get_cmd_with_index(cmd_index);
 
     if (temp.id > MAV_CMD_NAV_LAST ) {
-        gcs_send_text_P(SEVERITY_LOW,PSTR("Bad Request - cannot change to non-Nav cmd"));
+        gcs_send_text_fmt(PSTR("Cannot change to non-Nav cmd %u"), (unsigned)cmd_index);
     } else {
         gcs_send_text_fmt(PSTR("Received Request - jump to command #%i"),cmd_index);
 
