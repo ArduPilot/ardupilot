@@ -125,7 +125,7 @@ APM_OBC::check(APM_OBC::control_mode mode,
 			_state = STATE_GPS_LOSS;
 			if (_wp_gps_loss) {
 				if (_command_index != NULL) {
-					_saved_wp = _command_index->get() + 1;
+					_saved_wp = _command_index->get();
 				}
 				change_command(_wp_gps_loss);
 			}
