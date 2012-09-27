@@ -165,30 +165,30 @@ void AP_GPS_IMU::join_data(void)
     //In this case all the message im using are in class 1, to know more about classes check PAGE 60 of DataSheet.
 
     //Storing IMU roll
-    roll_sensor = *(int16_t *)&buffer[0];
+    memcpy(&roll_sensor, &buffer[0], sizeof(roll_sensor));
 
     //Storing IMU pitch
-    pitch_sensor = *(int16_t *)&buffer[2];
+    memcpy(&pitch_sensor, &buffer[2], sizeof(pitch_sensor));
 
     //Storing IMU heading (yaw)
-    ground_course = *(int16_t *)&buffer[4];
+    memcpy(&ground_course, &buffer[4], sizeof(ground_course));
     imu_ok = true;
 }
 
 void AP_GPS_IMU::join_data_xplane()
 {
     //Storing IMU roll
-    roll_sensor = *(int16_t *)&buffer[0];
+    memcpy(&roll_sensor, &buffer[0], sizeof(roll_sensor));
 
 
     //Storing IMU pitch
-    pitch_sensor = *(int16_t *)&buffer[2];
+    memcpy(&pitch_sensor, &buffer[2], sizeof(pitch_sensor));
 
     //Storing IMU heading (yaw)
-    ground_course = *(uint16_t *)&buffer[4];
+    memcpy(&ground_course, &buffer[4], sizeof(ground_course));
 
     //Storing airspeed
-    airspeed = *(int16_t *)&buffer[6];
+    memcpy(&airspeed, &buffer[6], sizeof(airspeed));
 
     imu_ok = true;
 
@@ -196,17 +196,22 @@ void AP_GPS_IMU::join_data_xplane()
 
 void AP_GPS_IMU::GPS_join_data(void)
 {
-    longitude = *(int32_t *)&buffer[0];        // degrees * 10e7
+    memcpy(&longitude, &buffer[0], sizeof(longitude));// degrees * 10e7
     latitude  = *(int32_t *)&buffer[4];
 
     //Storing GPS Height above the sea level
-    altitude = (int32_t)*(int16_t *)&buffer[8] * 10;
+    int16_t tmp_altitude;
+    memcpy(&tmp_altitude, &buffer[8], sizeof(tmp_altitude));
+    altitude = (int32_t) tmp_altitude * 10;
 
     //Storing Speed
-    speed_3d = ground_speed = (float)*(int16_t *)&buffer[10];
+    int16_t tmp_speed;
+    memcpy(&tmp_speed, &buffer[10], sizeof(tmp_speed));
+    ground_speed = (float)tmp_speed;
+    speed_3d = ground_speed;
 
     //We skip the gps ground course because we use yaw value from the IMU for ground course
-    time = *(int32_t *)&buffer[14];
+    memcpy(&time, &buffer[14], sizeof(time));
 
     imu_health = buffer[15];
 
