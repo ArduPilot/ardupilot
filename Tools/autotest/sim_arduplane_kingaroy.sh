@@ -2,6 +2,7 @@
 
 set -x
 
+killall -q JSBSim
 killall -q ArduPlane.elf
 pkill -f runsim.py
 set -e
@@ -20,4 +21,5 @@ rm -f $tfile
 gnome-terminal -e '../Tools/autotest/jsbsim/runsim.py --home=-26.582218,151.840113,440.3,169'
 sleep 2
 popd
-mavproxy.py --aircraft=test --master tcp:127.0.0.1:5760 --sitl 127.0.0.1:5501 --out 127.0.0.1:14550 --out 127.0.0.1:14551
+mavproxy.py --aircraft=test --master tcp:127.0.0.1:5760 --sitl 127.0.0.1:5501 --out 127.0.0.1:14550 --out 127.0.0.1:14551 "$@"
+
