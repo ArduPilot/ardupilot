@@ -11,11 +11,14 @@
 //	GPS configuration : Custom protocol per "DIYDrones Custom Binary Sentence Specification V1.1"
 //
 
-#include "AP_GPS_MTK.h"
 #include <stdint.h>
 
+#include <AP_HAL.h>
+
+#include "AP_GPS_MTK.h"
+
 // Constructors ////////////////////////////////////////////////////////////////
-AP_GPS_MTK::AP_GPS_MTK(Stream *s) : GPS(s)
+AP_GPS_MTK::AP_GPS_MTK(AP_HAL::UARTDriver *s) : GPS(s)
 {
 }
 

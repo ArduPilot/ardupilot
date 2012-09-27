@@ -24,7 +24,7 @@ static uint8_t init_messages[] = {
 };
 
 // Constructors ////////////////////////////////////////////////////////////////
-AP_GPS_SIRF::AP_GPS_SIRF(Stream *s) : GPS(s)
+AP_GPS_SIRF::AP_GPS_SIRF(AP_HAL::UARTDriver *s) : GPS(s)
 {
 }
 

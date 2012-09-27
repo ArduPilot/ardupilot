@@ -11,15 +11,11 @@
 //	GPS configuration : Custom protocol per "DIYDrones Custom Binary Sentence Specification V1.1"
 //
 
+#include <AP_HAL.h>
 #include "AP_GPS_HIL.h"
-#if defined(ARDUINO) && ARDUINO >= 100
- #include "Arduino.h"
-#else
- #include "WProgram.h"
-#endif
 
 // Constructors ////////////////////////////////////////////////////////////////
-AP_GPS_HIL::AP_GPS_HIL(Stream *s) : GPS(s)
+AP_GPS_HIL::AP_GPS_HIL(AP_HAL::UARTDriver* s) : GPS(s)
 {
 }
 

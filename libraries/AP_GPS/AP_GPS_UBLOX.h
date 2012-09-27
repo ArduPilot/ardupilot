@@ -8,9 +8,10 @@
 //	License as published by the Free Software Foundation; either
 //	version 2.1 of the License, or (at your option) any later version.
 //
-#ifndef AP_GPS_UBLOX_h
-#define AP_GPS_UBLOX_h
+#ifndef __AP_GPS_UBLOX_H__
+#define __AP_GPS_UBLOX_H__
 
+#include <AP_HAL.h>
 #include "GPS.h"
 
 /*
@@ -27,7 +28,7 @@ class AP_GPS_UBLOX : public GPS
 {
 public:
     // Methods
-    AP_GPS_UBLOX(Stream *s);
+    AP_GPS_UBLOX(AP_HAL::UARTDriver *s);
     virtual void                    init(enum GPS_Engine_Setting nav_setting = GPS_ENGINE_NONE);
     virtual bool                    read();
     static bool _detect(uint8_t );
@@ -201,4 +202,4 @@ private:
 
 };
 
-#endif
+#endif // __AP_GPS_UBLOX_H__

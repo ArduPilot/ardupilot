@@ -3,24 +3,26 @@
 // Test for AP_GPS_AUTO
 //
 
-#include <FastSerial.h>
+#include <stdlib.h>
+
 #include <AP_Common.h>
 #include <AP_Param.h>
+#include <AP_HAL.h>
+#include <AP_HAL_AVR.h>
 #include <AP_GPS.h>
 #include <AP_Math.h>
 
-FastSerialPort0(Serial);
-FastSerialPort1(Serial1);
+const AP_HAL::HAL& hal = AP_HAL_AVR_APM2;
 
 GPS         *gps;
-AP_GPS_Auto GPS(&Serial1, &gps);
+AP_GPS_Auto GPS(hal.uart1, &gps);
 
 #define T6 1000000
 #define T7 10000000
 
 // print_latlon - prints an latitude or longitude value held in an int32_t
 // probably this should be moved to AP_Common
-void print_latlon(BetterStream *s, int32_t lat_or_lon)
+void print_latlon(AP_HAL::BetterStream *s, int32_t lat_or_lon)
 {
     int32_t dec_portion, frac_portion;
     int32_t abs_lat_or_lon = labs(lat_or_lon);
@@ -40,10 +42,10 @@ void print_latlon(BetterStream *s, int32_t lat_or_lon)
 
 void setup()
 {
-    Serial.begin(115200);
-    Serial1.begin(38400);
+    hal.uart0->begin(115200);
+    hal.uart1->begin(38400);
 
-    Serial.println("GPS AUTO library test");
+    hal.uart0->println("GPS AUTO library test");
     gps = &GPS;
     gps->init(GPS::GPS_ENGINE_AIRBORNE_2G);
 }
@@ -53,11 +55,11 @@ void loop()
     gps->update();
     if (gps->new_data) {
         if (gps->fix) {
-            Serial.print("Lat: ");
-            print_latlon(&Serial,gps->latitude);
-            Serial.print(" Lon: ");
-            print_latlon(&Serial,gps->longitude);
-            Serial.printf(" Alt: %.2fm GSP: %.2fm/s CoG: %d SAT: %d TIM: %lu STATUS: %u\n",
+            hal.uart0->print("Lat: ");
+            print_latlon(hal.uart0,gps->latitude);
+            hal.uart0->print(" Lon: ");
+            print_latlon(hal.uart0,gps->longitude);
+            hal.uart0->printf(" Alt: %.2fm GSP: %.2fm/s CoG: %d SAT: %d TIM: %lu STATUS: %u\n",
                           (float)gps->altitude / 100.0,
                           (float)gps->ground_speed / 100.0,
                           (int)gps->ground_course / 100,
@@ -65,9 +67,10 @@ void loop()
                           gps->time,
                           gps->status());
         } else {
-            Serial.println("No fix");
+            hal.uart0->println("No fix");
         }
         gps->new_data = false;
     }
 }
 
+AP_HAL_MAIN();

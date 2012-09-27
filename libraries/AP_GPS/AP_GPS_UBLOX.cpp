@@ -8,10 +8,12 @@
 //	License as published by the Free Software Foundation; either
 //	version 2.1 of the License, or (at your option) any later version.
 //
+#include <stdint.h>
+
+#include <AP_HAL.h>
 
 #define UBLOX_DEBUGGING 0
 
-#include <FastSerial.h>
 
 #if UBLOX_DEBUGGING
  # define Debug(fmt, args ...)  do {Serial.printf("%s:%d: " fmt "\n", __FUNCTION__, __LINE__, ## args); delay(0); } while(0)
@@ -20,14 +22,15 @@
 #endif
 
 #include "AP_GPS_UBLOX.h"
-#include <stdint.h>
+
+extern const AP_HAL::HAL& hal;
 
 const prog_char AP_GPS_UBLOX::_ublox_set_binary[] PROGMEM = UBLOX_SET_BINARY;
 const uint8_t AP_GPS_UBLOX::_ublox_set_binary_size = sizeof(AP_GPS_UBLOX::_ublox_set_binary);
 
 // Constructors ////////////////////////////////////////////////////////////////
 
-AP_GPS_UBLOX::AP_GPS_UBLOX(Stream *s) : GPS(s)
+AP_GPS_UBLOX::AP_GPS_UBLOX(AP_HAL::UARTDriver *s) : GPS(s)
 {
 }
 
@@ -338,16 +341,17 @@ AP_GPS_UBLOX::_configure_gps(void)
 {
     struct ubx_cfg_nav_rate msg;
     const unsigned baudrates[4] = {9600U, 19200U, 38400U, 57600U};
-    FastSerial *_fs = (FastSerial *)_port;
 
     // the GPS may be setup for a different baud rate. This ensures
     // it gets configured correctly
     for (uint8_t i=0; i<4; i++) {
-        _fs->begin(baudrates[i]);
-        _write_progstr_block(_fs, _ublox_set_binary, _ublox_set_binary_size);
-        while (_fs->tx_pending()) delay(1);
+        _port->begin(baudrates[i]);
+        _write_progstr_block(_port, _ublox_set_binary, _ublox_set_binary_size);
+        while (_port->tx_pending()) {
+          hal.scheduler->delay(1);
+        }
     }
-    _fs->begin(38400U);
+    _port->begin(38400U);
 
     // ask for navigation solutions every 200ms
     msg.measure_rate_ms = 200;

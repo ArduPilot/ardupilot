@@ -10,15 +10,16 @@
 //
 //	GPS configuration : Custom protocol per "Customize Function Specification, 3D Robotics, v1.6"
 //
-#ifndef AP_GPS_MTK16_h
-#define AP_GPS_MTK16_h
+#ifndef __AP_GPS_MTK16_H__
+#define __AP_GPS_MTK16_H__
 
+#include <AP_HAL.h>
 #include "GPS.h"
 #include "AP_GPS_MTK_Common.h"
 
 class AP_GPS_MTK16 : public GPS {
 public:
-    AP_GPS_MTK16(Stream *s);
+    AP_GPS_MTK16(AP_HAL::UARTDriver *s);
     virtual void        init(enum GPS_Engine_Setting nav_setting = GPS_ENGINE_NONE);
     virtual bool        read(void);
     static bool _detect(uint8_t );
@@ -69,4 +70,4 @@ private:
     } _buffer;
 };
 
-#endif  // AP_GPS_MTK16_H
+#endif  // __AP_GPS_MTK16_H__

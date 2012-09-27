@@ -9,18 +9,16 @@
 //  License as published by the Free Software Foundation; either
 //  version 2.1 of the License, or (at your option) any later version.
 
-#include "../FastSerial/FastSerial.h"   // because we need to change baud rates... ugh.
+#include <AP_HAL.h>
+
 #include "AP_GPS_406.h"
-#if defined(ARDUINO) && ARDUINO >= 100
- #include "Arduino.h"
-#else
- #include "WProgram.h"
-#endif
+
+extern const AP_HAL::HAL& hal;
 
 static const char init_str[] = "$PSRF100,0,57600,8,1,0*37";
 
 // Constructors ////////////////////////////////////////////////////////////////
-AP_GPS_406::AP_GPS_406(Stream *s) : AP_GPS_SIRF(s)
+AP_GPS_406::AP_GPS_406(AP_HAL::UARTDriver *s) : AP_GPS_SIRF(s)
 {
 }
 
@@ -67,21 +65,22 @@ AP_GPS_406::_configure_gps(void)
 void
 AP_GPS_406::_change_to_sirf_protocol(void)
 {
-    FastSerial  *fs = (FastSerial *)_port;      // this is a bit grody...
+    // this is a bit grody...
+    AP_HAL::UARTDriver *fs = (AP_HAL::UARTDriver*)_port;
 
     fs->begin(4800);
-    delay(300);
+    hal.scheduler->delay(300);
     _port->print(init_str);
-    delay(300);
+    hal.scheduler->delay(300);
 
     fs->begin(9600);
-    delay(300);
+    hal.scheduler->delay(300);
     _port->print(init_str);
-    delay(300);
+    hal.scheduler->delay(300);
 
     fs->begin(GPS_406_BITRATE);
-    delay(300);
+    hal.scheduler->delay(300);
     _port->print(init_str);
-    delay(300);
+    hal.scheduler->delay(300);
 }
 

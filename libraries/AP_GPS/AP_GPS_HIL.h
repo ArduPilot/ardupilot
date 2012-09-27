@@ -9,14 +9,15 @@
 //	version 2.1 of the License, or (at your option) any later version.
 //
 //
-#ifndef AP_GPS_HIL_h
-#define AP_GPS_HIL_h
+#ifndef __AP_GPS_HIL_H__
+#define __AP_GPS_HIL_H__
 
+#include <AP_HAL.h>
 #include "GPS.h"
 
 class AP_GPS_HIL : public GPS {
 public:
-    AP_GPS_HIL(Stream *s);
+    AP_GPS_HIL(AP_HAL::UARTDriver *s);
     virtual void        init(enum GPS_Engine_Setting nav_setting = GPS_ENGINE_NONE);
     virtual bool        read(void);
 
@@ -37,4 +38,4 @@ private:
     bool        _updated;
 };
 
-#endif  // AP_GPS_HIL_H
+#endif  // __AP_GPS_HIL_H__

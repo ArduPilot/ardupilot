@@ -39,9 +39,10 @@
 ///
 
 
-#ifndef AP_GPS_NMEA_h
-#define AP_GPS_NMEA_h
+#ifndef __AP_GPS_NMEA_H__
+#define __AP_GPS_NMEA_H__
 
+#include <AP_HAL.h>
 #include "GPS.h"
 #include <avr/pgmspace.h>
 
@@ -53,7 +54,7 @@ class AP_GPS_NMEA : public GPS
 public:
     /// Constructor
     ///
-    AP_GPS_NMEA(Stream *s);
+    AP_GPS_NMEA(AP_HAL::UARTDriver* s);
 
     /// Perform a (re)initialisation of the GPS; sends the
     /// protocol configuration messages.
@@ -159,4 +160,4 @@ private:
     //@}
 };
 
-#endif
+#endif // __AP_GPS_NMEA_H__

@@ -27,16 +27,12 @@
  *               fix : 1: GPS NO fix, 2: 2D fix, 3: 3D fix.
  *
  */
-#include "AP_GPS_IMU.h"
-#if defined(ARDUINO) && ARDUINO >= 100
- #include "Arduino.h"
-#else
- #include "WProgram.h"
-#endif
 
+#include <AP_HAL.h>
+#include "AP_GPS_IMU.h"
 
 // Constructors ////////////////////////////////////////////////////////////////
-AP_GPS_IMU::AP_GPS_IMU(Stream *s) : GPS(s)
+AP_GPS_IMU::AP_GPS_IMU(AP_HAL::UARTDriver *s) : GPS(s)
 {
 }
 
@@ -55,7 +51,7 @@ AP_GPS_IMU::init(enum GPS_Engine_Setting nav_setting)
 bool
 AP_GPS_IMU::read(void)
 {
-    byte data;
+    uint8_t data;
     int16_t numc = 0;
 
     numc = _port->available();

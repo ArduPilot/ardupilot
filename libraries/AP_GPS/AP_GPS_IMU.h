@@ -1,8 +1,9 @@
 
 // -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: t -*-
-#ifndef AP_GPS_IMU_h
-#define AP_GPS_IMU_h
+#ifndef __AP_GPS_IMU_H__
+#define __AP_GPS_IMU_H__
 
+#include <AP_HAL.h>
 #include "GPS.h"
 #define MAXPAYLOAD 32
 
@@ -10,7 +11,7 @@ class AP_GPS_IMU : public GPS {
 public:
 
     // Methods
-    AP_GPS_IMU(Stream *s);
+    AP_GPS_IMU(AP_HAL::UARTDriver *s);
     virtual void init(enum GPS_Engine_Setting nav_setting);
     virtual bool read(void);
 
@@ -45,4 +46,4 @@ private:
     void checksum(unsigned char data);
 };
 
-#endif
+#endif // __AP_GPS_IMU_H__
