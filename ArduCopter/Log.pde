@@ -86,7 +86,7 @@ print_log_menu(void)
         if (g.log_bitmask & MASK_LOG_MOTORS) Serial.printf_P(PSTR(" MOTORS"));
         if (g.log_bitmask & MASK_LOG_OPTFLOW) Serial.printf_P(PSTR(" OPTFLOW"));
         if (g.log_bitmask & MASK_LOG_PID) Serial.printf_P(PSTR(" PID"));
-        if (g.log_bitmask & MASK_LOG_PID) Serial.printf_P(PSTR(" ITERM"));
+        if (g.log_bitmask & MASK_LOG_ITERM) Serial.printf_P(PSTR(" ITERM"));
     }
 
     Serial.println();
@@ -706,7 +706,7 @@ static void Log_Read_Iterm()
 {
     int16_t temp;
 
-    Serial.printf_P(PSTR("IT, "));
+    Serial.printf_P(PSTR("ITERM, "));
 
     for(uint8_t i = 1; i < 12; i++ ) {
         temp = DataFlash.ReadInt();
