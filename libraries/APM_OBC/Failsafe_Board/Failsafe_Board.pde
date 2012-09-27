@@ -28,6 +28,10 @@
 // set to 1 if backup autopilot is installed
 #define BACKUP_AUTOPILOT_INSTALLED 0
 
+#define AUTO_MODE_FAIL_LOW    1230
+#define AUTO_MODE_FAIL_HIGH   1360
+
+
 enum mux_mode {
 	MUX_MODE_RC      = 1,
 	MUX_MODE_MICRO   = 2,
@@ -172,7 +176,22 @@ void loop()
 	// pulseIn is not very accurate. The +90 brings us much closer
 	// to the real pulse width
 	uint16_t mode_pwm = pulseIn(MODE_PWM_PIN, HIGH, 25000) + 90;
-	uint16_t manual_mode = (mode_pwm > 1750 && mode_pwm < 2100);
+	uint8_t manual_mode = (mode_pwm > 1750 && mode_pwm < 2100);
+	uint8_t receiver_fail = (mode_pwm == 90);
+
+	if (mode_pwm > AUTO_MODE_FAIL_LOW && mode_pwm < AUTO_MODE_FAIL_HIGH) {
+		receiver_fail = true;
+	}
+	static uint8_t last_mode_manual;
+	if (!receiver_fail) {
+		if (manual_mode) {
+			if (last_mode_manual < 255) {
+				last_mode_manual++;
+			}
+		} else {
+			last_mode_manual = 0;
+		}
+	}
 
 	// check the state of the terminate pins
 	uint8_t terminate_primary = digitalRead(TERMINATE_PRIMARY_PIN);
@@ -190,6 +209,7 @@ void loop()
 		Serial.print(" HB2:"); Serial.print(heartbeat_backup_ok);
 		Serial.print(" TERM1:"); Serial.print(terminate_primary);
 		Serial.print(" TERM2:"); Serial.print(terminate_backup);
+		Serial.print(" RFAIL:"); Serial.print(receiver_fail);
 		Serial.print(" TERMINATED:"); Serial.print(has_terminated);
 		Serial.print(" LOOP:"); Serial.print(loop_counter);
 		Serial.println();
@@ -208,6 +228,7 @@ void loop()
 			Serial.println("RESET BOARD");
 			has_terminated = false;
 			termination_counter = 0;
+			last_mode_manual = 0;
 		}
 	}
 
@@ -232,13 +253,17 @@ void loop()
 		// if in OBC mode and neither autopilot is OK, then
 		// terminate
 		termination_counter++;
+	} else if (obc_mode && receiver_fail && last_mode_manual > 20) {
+		// if in OBC mode we were in manual, and receiver fails
+		// terminate
+		termination_counter++;
 	} else {
 		termination_counter = 0;
 	}
 
 	// use the termination counter to debounce the termination
 	// pins
-	if (termination_counter > 10) {
+	if (termination_counter > 25) {
 		termination_counter = 0;
 		has_terminated = true;
 	}
