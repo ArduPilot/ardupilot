@@ -128,12 +128,12 @@ void
 AP_OpticalFlow_ADNS3080::backup_spi_settings()
 {
     if( _spi_bus == ADNS3080_SPIBUS_1 ) {
-        // store current spi mode
-        orig_spi_settings_spcr = SPCR & (CPOL | CPHA);
+        // store current spi mode and data rate
+        orig_spi_settings_spcr = SPCR & (CPOL | CPHA | SPR1 | SPR0);
 
         // set to our required values
         SPI.setDataMode(SPI_MODE3);
-        // we do not set speed to 2Mhz because we assume it is that already no more than 2Mhz
+        SPI.setClockDivider(SPI_CLOCK_DIV8); // 2MHZ SPI rate
 
     }else if( _spi_bus == ADNS3080_SPIBUS_3 ) {
         /* Wait for empty transmit buffer */
@@ -157,7 +157,7 @@ AP_OpticalFlow_ADNS3080::restore_spi_settings()
 
     if( _spi_bus == ADNS3080_SPIBUS_1 ) {
         // split off the two bits we need to write
-        temp = SPCR & ~(CPOL | CPHA);
+        temp = SPCR & ~(CPOL | CPHA | SPR1 | SPR0);
         temp |= orig_spi_settings_spcr;
 
         // write back the bits
