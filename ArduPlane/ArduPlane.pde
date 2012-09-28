@@ -214,7 +214,7 @@ AP_GPS_None     g_gps_driver(NULL);
  #endif // GPS PROTOCOL
 
  # if CONFIG_IMU_TYPE == CONFIG_IMU_MPU6000
-AP_InertialSensor_MPU6000 ins( CONFIG_MPU6000_CHIP_SELECT_PIN );
+AP_InertialSensor_MPU6000 ins;
  # else
 AP_InertialSensor_Oilpan ins( &adc );
  #endif // CONFIG_IMU_TYPE

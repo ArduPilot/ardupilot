@@ -161,9 +161,6 @@
 #define GYRO_BIAS_FROM_GRAVITY_RATE 4  // Rate of the gyro bias from gravity correction (200Hz/4) => 50Hz
 #define DEFAULT_ACCEL_FUSION_GAIN       0x80    // Default gain for accel fusion (with gyros)
 
-
-uint8_t AP_InertialSensor_MPU6000::_cs_pin;
-
 /*
  *  RS-MPU-6000A-00.pdf, page 33, section 4.25 lists LSB sensitivity of
  *  gyro as 16.4 LSB/DPS at scale factor of +/- 2000dps (FS_SEL==3)
@@ -204,9 +201,8 @@ uint8_t AP_InertialSensor_MPU6000::_fifoCountL;                 // low byte of n
 Quaternion AP_InertialSensor_MPU6000::quaternion;                       // holds the 4 quaternions representing attitude taken directly from the DMP
 AP_PeriodicProcess*  AP_InertialSensor_MPU6000::_scheduler = NULL;
 
-AP_InertialSensor_MPU6000::AP_InertialSensor_MPU6000( uint8_t cs_pin )
+AP_InertialSensor_MPU6000::AP_InertialSensor_MPU6000()
 {
-    _cs_pin = cs_pin; /* can't use initializer list,  is static */
     _gyro.x = 0;
     _gyro.y = 0;
     _gyro.z = 0;
@@ -355,13 +351,13 @@ static int16_t spi_transfer_16(void)
 void AP_InertialSensor_MPU6000::read(uint32_t)
 {
     // now read the data
-    digitalWrite(_cs_pin, LOW);
+    digitalWrite(MPU6000_CS_PIN, LOW);
     byte addr = MPUREG_ACCEL_XOUT_H | 0x80;
     SPI.transfer(addr);
     for (uint8_t i=0; i<7; i++) {
         _sum[i] += spi_transfer_16();
     }
-    digitalWrite(_cs_pin, HIGH);
+    digitalWrite(MPU6000_CS_PIN, HIGH);
 
     _count++;
     if (_count == 0) {
@@ -382,22 +378,22 @@ uint8_t AP_InertialSensor_MPU6000::register_read( uint8_t reg )
     uint8_t return_value;
     uint8_t addr = reg | 0x80; // Set most significant bit
 
-    digitalWrite(_cs_pin, LOW);
+    digitalWrite(MPU6000_CS_PIN, LOW);
 
     SPI.transfer(addr);
     return_value = SPI.transfer(0);
 
-    digitalWrite(_cs_pin, HIGH);
+    digitalWrite(MPU6000_CS_PIN, HIGH);
 
     return return_value;
 }
 
 void AP_InertialSensor_MPU6000::register_write(uint8_t reg, uint8_t val)
 {
-    digitalWrite(_cs_pin, LOW);
+    digitalWrite(MPU6000_CS_PIN, LOW);
     SPI.transfer(reg);
     SPI.transfer(val);
-    digitalWrite(_cs_pin, HIGH);
+    digitalWrite(MPU6000_CS_PIN, HIGH);
 }
 
 // MPU6000 new data interrupt on INT6
@@ -416,8 +412,8 @@ void AP_InertialSensor_MPU6000::data_interrupt(void)
 void AP_InertialSensor_MPU6000::hardware_init()
 {
     // MPU6000 chip select setup
-    pinMode(_cs_pin, OUTPUT);
-    digitalWrite(_cs_pin, HIGH);
+    pinMode(MPU6000_CS_PIN, OUTPUT);
+    digitalWrite(MPU6000_CS_PIN, HIGH);
     delay(1);
 
     // Chip reset
@@ -575,12 +571,12 @@ void AP_InertialSensor_MPU6000::dmp_register_write(uint8_t bank, uint8_t address
 {
     register_write(MPUREG_BANK_SEL,bank);
     register_write(MPUREG_MEM_START_ADDR,address);
-    digitalWrite(_cs_pin, LOW);
+    digitalWrite(MPU6000_CS_PIN, LOW);
     SPI.transfer(MPUREG_MEM_R_W);
     for (uint8_t i=0; i<num_bytes; i++) {
         SPI.transfer(data[i]);
     }
-    digitalWrite(_cs_pin, HIGH);
+    digitalWrite(MPU6000_CS_PIN, HIGH);
 }
 
 // MPU6000 DMP initialization
@@ -695,12 +691,12 @@ void AP_InertialSensor_MPU6000::FIFO_getPacket()
     int16_t q_long[4];
     uint8_t addr = MPUREG_FIFO_R_W | 0x80;      // Set most significant bit to indicate a read
     uint8_t received_packet[DMP_FIFO_BUFFER_SIZE];    // FIFO packet buffer
-    digitalWrite(_cs_pin, LOW);                                 // enable the device
+    digitalWrite(MPU6000_CS_PIN, LOW);                                 // enable the device
     SPI.transfer(addr);                                 // send address we want to read from
     for(i = 0; i < _fifoCountL; i++) {
         received_packet[i] = SPI.transfer(0);          // request value
     }
-    digitalWrite(_cs_pin, HIGH);                                // disable device
+    digitalWrite(MPU6000_CS_PIN, HIGH);                                // disable device
 
     // we are using 16 bits resolution
     q_long[0] = (int16_t) ((((uint16_t) received_packet[0]) << 8) + ((uint16_t) received_packet[1]));
@@ -887,13 +883,13 @@ void AP_InertialSensor_MPU6000::dmp_set_sensor_fusion_accel_gain(uint8_t gain)
     //inv_key_0_96
     register_write(MPUREG_BANK_SEL,0x00);
     register_write(MPUREG_MEM_START_ADDR, 0x60);
-    digitalWrite(_cs_pin, LOW);
+    digitalWrite(MPU6000_CS_PIN, LOW);
     SPI.transfer(MPUREG_MEM_R_W);
     SPI.transfer(0x00);
     SPI.transfer(gain);      // Original : 0x80    To test: 0x40,  0x20 (too less)
     SPI.transfer(0x00);
     SPI.transfer(0x00);
-    digitalWrite(_cs_pin, HIGH);
+    digitalWrite(MPU6000_CS_PIN, HIGH);
 }
 
 // Load initial memory values into DMP memory banks
@@ -905,13 +901,13 @@ void AP_InertialSensor_MPU6000::dmp_load_mem()
         for(uint8_t j = 0; j < 16; j++) {
             uint8_t start_addy = j * 0x10;
             register_write(MPUREG_MEM_START_ADDR,start_addy);
-            digitalWrite(_cs_pin, LOW);
+            digitalWrite(MPU6000_CS_PIN, LOW);
             SPI.transfer(MPUREG_MEM_R_W);
             for(int k = 0; k < 16; k++) {
                 uint8_t byteToSend = pgm_read_byte((const prog_char *)&(dmpMem[i][j][k]));
                 SPI.transfer((uint8_t) byteToSend);
             }
-            digitalWrite(_cs_pin, HIGH);
+            digitalWrite(MPU6000_CS_PIN, HIGH);
         }
     }
 
@@ -919,23 +915,23 @@ void AP_InertialSensor_MPU6000::dmp_load_mem()
     for(uint8_t j = 0; j < 8; j++) {
         uint8_t start_addy = j * 0x10;
         register_write(MPUREG_MEM_START_ADDR,start_addy);
-        digitalWrite(_cs_pin, LOW);
+        digitalWrite(MPU6000_CS_PIN, LOW);
         SPI.transfer(MPUREG_MEM_R_W);
         for(int k = 0; k < 16; k++) {
             uint8_t byteToSend = pgm_read_byte((const prog_char *)&(dmpMem[7][j][k]));
             SPI.transfer((uint8_t) byteToSend);
         }
-        digitalWrite(_cs_pin, HIGH);
+        digitalWrite(MPU6000_CS_PIN, HIGH);
     }
 
     register_write(MPUREG_MEM_START_ADDR,0x80);
-    digitalWrite(_cs_pin, LOW);
+    digitalWrite(MPU6000_CS_PIN, LOW);
     SPI.transfer(MPUREG_MEM_R_W);
     for(int k = 0; k < 9; k++) {
         uint8_t byteToSend = pgm_read_byte((const prog_char *)&(dmpMem[7][8][k]));
         SPI.transfer((uint8_t) byteToSend);
     }
-    digitalWrite(_cs_pin, HIGH);
+    digitalWrite(MPU6000_CS_PIN, HIGH);
 }
 
 // ========= DMP MEMORY ================================

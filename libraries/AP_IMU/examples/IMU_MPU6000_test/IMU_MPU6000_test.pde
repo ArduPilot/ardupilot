@@ -18,7 +18,7 @@ FastSerialPort(Serial, 0);
 Arduino_Mega_ISR_Registry isr_registry;
 AP_TimerProcess mpu_scheduler;
 
-AP_InertialSensor_MPU6000 mpu6000( 53 ); /* chip select is pin 53 */
+AP_InertialSensor_MPU6000 mpu6000;
 AP_IMU_INS imu(&mpu6000, 0); /* second arg is for Parameters. Can we leave it null?*/
 
 #define A_LED_PIN        27
