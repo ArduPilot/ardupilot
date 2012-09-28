@@ -44,7 +44,7 @@ AP_Compass_HMC5843 compass;
 #endif
 
 #ifdef APM2_HARDWARE
-AP_InertialSensor_MPU6000 ins( 53 );
+AP_InertialSensor_MPU6000 ins;
 # else
 AP_ADC_ADS7844 adc;
 AP_InertialSensor_Oilpan ins( &adc );

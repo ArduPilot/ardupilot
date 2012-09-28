@@ -10,6 +10,7 @@
 #include "../AP_Math/AP_Math.h"
 #include "AP_InertialSensor.h"
 
+#define MPU6000_CS_PIN       53        // APM pin connected to mpu6000's chip select pin
 #define DMP_FIFO_BUFFER_SIZE 72        // DMP FIFO buffer size
 
 // DMP memory
@@ -19,7 +20,7 @@ class AP_InertialSensor_MPU6000 : public AP_InertialSensor
 {
 public:
 
-    AP_InertialSensor_MPU6000( uint8_t cs_pin );
+    AP_InertialSensor_MPU6000();
 
     uint16_t            init( AP_PeriodicProcess * scheduler );
     static void         dmp_init(); // Initialise MPU6000's DMP
@@ -81,9 +82,6 @@ private:
     static const uint8_t        _temp_data_index;
 
     static AP_PeriodicProcess*  _scheduler;             // pointer to scheduler so that we can suspend/resume scheduler when we pull data from the MPU6000
-
-    /* TODO deprecate _cs_pin */
-    static uint8_t              _cs_pin;
 
     // ensure we can't initialise twice
     bool                        _initialised;

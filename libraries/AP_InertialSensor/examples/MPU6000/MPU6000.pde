@@ -16,7 +16,7 @@ FastSerialPort(Serial, 0);
 
 Arduino_Mega_ISR_Registry isr_registry;
 AP_TimerProcess scheduler;
-AP_InertialSensor_MPU6000 ins( 53 ); /* chip select is pin 53 */
+AP_InertialSensor_MPU6000 ins;
 
 void setup(void)
 {
