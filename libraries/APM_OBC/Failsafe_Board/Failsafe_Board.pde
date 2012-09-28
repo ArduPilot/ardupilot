@@ -125,7 +125,7 @@ static void set_servos_terminate(uint8_t obc_mode)
 {
 	set_mux_mode(MUX_MODE_MICRO);
 	if (obc_mode) {
-		set_servos(1000, 2000, 1000, 1000);
+		set_servos(1100, 1824, 1040, 1131);
 	} else {
 		set_servos(1500, 1500, 1200, 1500);
 	}
@@ -165,6 +165,7 @@ void loop()
 	static uint8_t led_state;
 	static bool has_terminated = false;
 	static uint8_t termination_counter;
+	static uint8_t max_termination_counter;
 	static uint16_t loop_counter;
 
 	loop_counter++;
@@ -185,11 +186,11 @@ void loop()
 	static uint8_t last_mode_manual;
 	if (!receiver_fail) {
 		if (manual_mode) {
-			if (last_mode_manual < 255) {
+			if (last_mode_manual < 32) {
 				last_mode_manual++;
 			}
-		} else {
-			last_mode_manual = 0;
+		} else if (last_mode_manual > 0) {
+			last_mode_manual--;
 		}
 	}
 
@@ -210,6 +211,9 @@ void loop()
 		Serial.print(" TERM1:"); Serial.print(terminate_primary);
 		Serial.print(" TERM2:"); Serial.print(terminate_backup);
 		Serial.print(" RFAIL:"); Serial.print(receiver_fail);
+		Serial.print(" TC:"); Serial.print(termination_counter);
+		Serial.print(" MTC:"); Serial.print(max_termination_counter);
+		Serial.print(" LMM:"); Serial.print(last_mode_manual);
 		Serial.print(" TERMINATED:"); Serial.print(has_terminated);
 		Serial.print(" LOOP:"); Serial.print(loop_counter);
 		Serial.println();
@@ -229,6 +233,7 @@ void loop()
 			has_terminated = false;
 			termination_counter = 0;
 			last_mode_manual = 0;
+			max_termination_counter = 0;
 		}
 	}
 
@@ -259,6 +264,9 @@ void loop()
 		termination_counter++;
 	} else {
 		termination_counter = 0;
+	}
+	if (termination_counter > max_termination_counter) {
+		max_termination_counter = termination_counter;
 	}
 
 	// use the termination counter to debounce the termination
