@@ -594,6 +594,11 @@ void AP_InertialSensor_MPU6000::dmp_init()
         return;
     }
 
+    // suspend timer
+    if( _scheduler != NULL ) {
+        _scheduler->suspend_timer();
+    }
+
     // load initial values into DMP memory
     dmp_load_mem();
 
@@ -640,6 +645,11 @@ void AP_InertialSensor_MPU6000::dmp_init()
 
     // dmp initialisation complete
     _dmp_initialised = true;
+
+    // resume timer
+    if( _scheduler != NULL ) {
+        _scheduler->resume_timer();
+    }
 }
 
 // dmp_reset - reset dmp (required for changes in gains or offsets to take effect)
