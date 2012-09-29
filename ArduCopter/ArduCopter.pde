@@ -272,6 +272,11 @@ AP_AHRS_MPU6000  ahrs(&imu, g_gps, &ins);               // only works with APM2
 AP_AHRS_DCM ahrs(&imu, g_gps);
  #endif
 
+// ahrs2 object is the secondary ahrs to allow running DMP in parallel with DCM
+  #if SECONDARY_DMP_ENABLED == ENABLED && CONFIG_APM_HARDWARE == APM_HARDWARE_APM2
+AP_AHRS_MPU6000  ahrs2(&imu, g_gps, &ins);               // only works with APM2
+  #endif
+
 #elif HIL_MODE == HIL_MODE_SENSORS
 // sensor emulators
 AP_ADC_HIL adc;
@@ -1187,8 +1192,12 @@ static void medium_loop()
         }
 
         if(motors.armed()) {
-            if (g.log_bitmask & MASK_LOG_ATTITUDE_MED)
+            if (g.log_bitmask & MASK_LOG_ATTITUDE_MED) {
                 Log_Write_Attitude();
+#if SECONDARY_DMP_ENABLED == ENABLED
+                Log_Write_DMP();
+#endif
+            }
 
             if (g.log_bitmask & MASK_LOG_MOTORS)
                 Log_Write_Motors();
@@ -1288,8 +1297,12 @@ static void fifty_hz_loop()
 #endif
 
 # if HIL_MODE == HIL_MODE_DISABLED
-    if (g.log_bitmask & MASK_LOG_ATTITUDE_FAST && motors.armed())
+    if (g.log_bitmask & MASK_LOG_ATTITUDE_FAST && motors.armed()) {
         Log_Write_Attitude();
+#if SECONDARY_DMP_ENABLED == ENABLED
+        Log_Write_DMP();
+#endif
+    }
 
     if (g.log_bitmask & MASK_LOG_RAW && motors.armed())
         Log_Write_Raw();
@@ -2089,6 +2102,10 @@ static void read_AHRS(void)
 
     ahrs.update();
     omega = imu.get_gyro();
+
+#if SECONDARY_DMP_ENABLED == ENABLED
+    ahrs2.update();
+#endif
 }
 
 static void update_trig(void){

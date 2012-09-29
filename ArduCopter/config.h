@@ -1061,6 +1061,11 @@
  # define DMP_ENABLED DISABLED
 #endif
 
+// experimental mpu6000 DMP code
+#ifndef SECONDARY_DMP_ENABLED
+ # define SECONDARY_DMP_ENABLED DISABLED
+#endif
+
 #ifndef ALTERNATIVE_YAW_MODE
  # define ALTERNATIVE_YAW_MODE DISABLED
 #endif

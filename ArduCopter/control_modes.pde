@@ -165,6 +165,9 @@ static void auto_trim()
         if( motors.armed() ) {
             // set high AHRS gains to force accelerometers to impact attitude estimate
             ahrs.set_fast_gains(true);
+#if SECONDARY_DMP_ENABLED == ENABLED
+            ahrs2.set_fast_gains(true);
+#endif
         }
 
         trim_accel();
@@ -183,6 +186,9 @@ static void auto_trim()
             // go back to normal AHRS gains
             if( motors.armed() ) {
                 ahrs.set_fast_gains(false);
+#if SECONDARY_DMP_ENABLED == ENABLED
+                ahrs2.set_fast_gains(false);
+#endif
             }
 
             //Serial.println("Done");

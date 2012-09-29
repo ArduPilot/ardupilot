@@ -373,6 +373,15 @@ static void load_parameters(void)
         ahrs._kp_yaw.set_and_save(0.1);
     }
 
+#if SECONDARY_DMP_ENABLED == ENABLED
+    if (!ahrs2._kp.load()) {
+        ahrs2._kp.set(0.1);
+    }
+    if (!ahrs2._kp_yaw.load()) {
+        ahrs2._kp_yaw.set(0.1);
+    }
+#endif
+
 
     if (!g.format_version.load() ||
         g.format_version != Parameters::k_format_version) {
