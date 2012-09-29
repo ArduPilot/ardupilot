@@ -16,6 +16,7 @@ public:
     bool                    queue_process(ap_procedure proc);   // queue process to run as soon as possible after any currently running ap_processes complete.  returns true if it ran immediately
     void                    suspend_timer(void);
     void                    resume_timer(void);
+    bool                    running();
     static void             run(void);
 protected:
     static uint8_t          _period;
