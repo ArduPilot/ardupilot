@@ -54,8 +54,10 @@ AP_AHRS_MPU6000::update(void)
 {
     float delta_t;
 
-    // tell the IMU to grab some data.  is this necessary?
-    _imu->update();
+    // tell the IMU to grab some data.
+    if( !_secondary_ahrs ) {
+        _imu->update();
+    }
 
     // ask the IMU how much time this sensor reading represents
     delta_t = _imu->get_delta_time();
@@ -224,60 +226,59 @@ AP_AHRS_MPU6000::yaw_error_compass(void)
 
 //
 // drift_correction_yaw - yaw drift correction using the compass
+//    we have no way to update the dmp with it's actual heading from our compass
+//    instead we use the yaw_corrected variable to hold what we think is the real heading
+//    we also record what the dmp said it's last heading was in the yaw_last_uncorrected variable so that on the next iteration we can add the change in yaw to our estimate
 //
 void
 AP_AHRS_MPU6000::drift_correction_yaw(void)
 {
-    static float yaw_last_uncorrected = HEADING_UNKNOWN;
     static float yaw_corrected = HEADING_UNKNOWN;
-    float yaw_delta = 0;
-    bool new_value = false;
-    float yaw_error;
+    static float last_dmp_yaw = HEADING_UNKNOWN;
+    float dmp_roll, dmp_pitch, dmp_yaw; // roll pitch and yaw values from dmp
+    float yaw_delta;                    // change in yaw according to dmp
+    float yaw_error;                    // difference between heading and corrected yaw
     static float heading;
 
-    // we assume the DCM matrix is completely uncorrect for yaw
-    // retrieve how much heading has changed according to non-corrected dcm
-    if( yaw_last_uncorrected != HEADING_UNKNOWN ) {
-        yaw_delta = wrap_PI(yaw - yaw_last_uncorrected);                // the change in heading according to the gyros only since the last interation
-        yaw_last_uncorrected = yaw;
+    // get uncorrected yaw values from dmp
+    _mpu6000->quaternion.to_euler(&dmp_roll, &dmp_pitch, &dmp_yaw);
+
+    // initialise headings on first iteration
+    if( yaw_corrected == HEADING_UNKNOWN ) {
+        yaw_corrected = dmp_yaw;
+        last_dmp_yaw = dmp_yaw;
     }
 
-    // initialise yaw_corrected (if necessary)
-    if( yaw_corrected != HEADING_UNKNOWN ) {
-        yaw_corrected = yaw;
-    }else{
-        yaw_corrected = wrap_PI(yaw_corrected + yaw_delta);             // best guess of current yaw is previous iterations corrected yaw + yaw change from gyro
-        _dcm_matrix.from_euler(roll, pitch, yaw_corrected);                     // rebuild dcm matrix with best guess at current yaw
-    }
+    // change in yaw according to dmp
+    yaw_delta = wrap_PI(dmp_yaw - last_dmp_yaw);
+    yaw_corrected = wrap_PI(yaw_corrected + yaw_delta);
+    last_dmp_yaw = dmp_yaw;
+
+    // rebuild dcm matrix
+    _dcm_matrix.from_euler(dmp_roll, dmp_pitch, yaw_corrected);
 
     // if we have new compass data
-    if( _compass && _compass->use_for_yaw() ) {
-        if (_compass->last_update != _compass_last_update) {
+    if(_compass && _compass->use_for_yaw() ) {
+        if(_compass->last_update != _compass_last_update) {
             _compass_last_update = _compass->last_update;
             heading = _compass->calculate_heading(_dcm_matrix);
+
+            // if this is the first good compass reading then set yaw to this heading
             if( !_have_initial_yaw ) {
-                yaw_corrected = heading;
                 _have_initial_yaw = true;
-                _dcm_matrix.from_euler(roll, pitch, yaw_corrected);                             // rebuild dcm matrix with best guess at current yaw
+                yaw_corrected = wrap_PI(heading);
             }
-            new_value = true;
+
+            // yaw correction based on compass
+            //yaw_error = yaw_error_compass();
+            yaw_error = wrap_PI(heading - yaw_corrected);
+
+            // shift the corrected yaw towards the compass heading a bit
+            yaw_corrected += wrap_PI(yaw_error * _kp_yaw.get() * 0.1);
+
+            // rebuild the dcm matrix yet again
+            _dcm_matrix.from_euler(dmp_roll, dmp_pitch, yaw_corrected);
         }
-    }
-
-    // perform the yaw correction
-    if( new_value ) {
-        yaw_error = yaw_error_compass();
-        // the yaw error is a vector in earth frame
-        //Vector3f error = Vector3f(0,0, yaw_error);
-
-        // convert the error vector to body frame
-        //error = _dcm_matrix.mul_transpose(error);
-
-        // Update the differential component to reduce the error (it´s like a P control)
-        yaw_corrected += wrap_PI(yaw_error * _kp_yaw.get());                    // probably completely wrong
-
-        // rebuild the dcm matrix yet again
-        _dcm_matrix.from_euler(roll, pitch, yaw_corrected);
     }
 }
 
