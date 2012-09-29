@@ -942,6 +942,44 @@ static void Log_Read_PID()
                     temp7);             // gain
 }
 
+// Write a DMP attitude packet. Total length : 16 bytes
+static void Log_Write_DMP()
+{
+#if SECONDARY_DMP_ENABLED == ENABLED
+    DataFlash.WriteByte(HEAD_BYTE1);
+    DataFlash.WriteByte(HEAD_BYTE2);
+    DataFlash.WriteByte(LOG_DMP_MSG);
+
+    DataFlash.WriteInt((int16_t)ahrs.roll_sensor);                          // 1
+    DataFlash.WriteInt((int16_t)ahrs2.roll_sensor);                         // 2
+    DataFlash.WriteInt((int16_t)ahrs.pitch_sensor);                         // 3
+    DataFlash.WriteInt((int16_t)ahrs2.pitch_sensor);                        // 4
+    DataFlash.WriteInt((uint16_t)ahrs.yaw_sensor);                          // 5
+    DataFlash.WriteInt((uint16_t)ahrs2.yaw_sensor);                         // 6
+    DataFlash.WriteByte(END_BYTE);
+#endif
+}
+
+// Read an attitude packet
+static void Log_Read_DMP()
+{
+    int16_t temp1   = DataFlash.ReadInt();
+    int16_t temp2   = DataFlash.ReadInt();
+    int16_t temp3   = DataFlash.ReadInt();
+    int16_t temp4   = DataFlash.ReadInt();
+    uint16_t temp5   = DataFlash.ReadInt();
+    uint16_t temp6  = DataFlash.ReadInt();
+
+                             // 1   2   3   4   5   6
+    Serial.printf_P(PSTR("DMP, %d, %d, %d, %d, %u, %u\n"),
+                    (int)temp1,
+                    (int)temp2,
+                    (int)temp3,
+                    (int)temp4,
+                    (unsigned)temp5,
+                    (unsigned)temp6);
+}
+
 // Read the DataFlash log memory
 static void Log_Read(int16_t start_page, int16_t end_page)
 {
@@ -1069,6 +1107,10 @@ static int16_t Log_Read_Process(int16_t start_page, int16_t end_page)
 					case LOG_ITERM_MSG:
 						Log_Read_Iterm();
 						break;
+
+					case LOG_DMP_MSG:
+						Log_Read_DMP();
+						break;
 				}
 				break;
 		case 3:
@@ -1122,7 +1164,9 @@ static void Log_Write_Motors() {
 }
 static void Log_Write_Performance() {
 }
-static void Log_Write_PID() {
+static void Log_Write_PID(int8_t pid_id, int32_t error, int32_t p, int32_t i, int32_t d, int32_t output, float gain) {
+}
+static void Log_Write_DMP() {
 }
 static int8_t process_logs(uint8_t argc, const Menu::arg *argv) {
     return 0;
