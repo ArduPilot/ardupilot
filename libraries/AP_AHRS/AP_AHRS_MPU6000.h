@@ -62,6 +62,9 @@ public:
     float           get_error_rp(void);
     float           get_error_yaw(void);
 
+    // set_as_secondary - avoid running some steps twice (imu updates) if this is a secondary ahrs
+    void            set_as_secondary(bool set_as_secondary) { _secondary_ahrs = set_as_secondary; }
+
 private:
     float _ki;
     float _ki_yaw;
@@ -97,6 +100,8 @@ private:
     float _error_yaw_sum;
     uint16_t _error_yaw_count;
     float _error_yaw_last;
+
+    bool _secondary_ahrs;
 };
 
 #endif // AP_AHRS_MPU6000_H
