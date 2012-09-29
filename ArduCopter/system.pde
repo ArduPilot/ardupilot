@@ -362,7 +362,7 @@ static void startup_ground(void)
  #endif
 
     // initialise ahrs (may push imu calibration into the mpu6000 if using that device).
-    ahrs.init();
+    ahrs.init(&timer_scheduler);
 
     // setup fast AHRS gains to get right attitude
     ahrs.set_fast_gains(true);

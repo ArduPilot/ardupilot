@@ -41,7 +41,7 @@ public:
     }
 
     // empty init
-    virtual void init() {
+    virtual void init( AP_PeriodicProcess * scheduler = NULL ) {
     };
 
     // Accessors

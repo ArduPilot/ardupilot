@@ -235,7 +235,7 @@ static void init_ardupilot()
         imu.init(IMU::WARM_START, mavlink_delay, flash_leds, &timer_scheduler);
 
         // initialise ahrs (may push imu calibration into the mpu6000 if using that device).
-        ahrs.init();
+        ahrs.init(&timer_scheduler);
         ahrs.set_fly_forward(true);
 #endif
 

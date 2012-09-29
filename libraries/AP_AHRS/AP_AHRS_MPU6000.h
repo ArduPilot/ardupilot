@@ -35,7 +35,7 @@ public:
     }
 
     // initialisation routine to start MPU6000's dmp
-    void init();
+    void init( AP_PeriodicProcess * scheduler = NULL );
 
     // return the smoothed gyro vector corrected for drift
     Vector3f        get_gyro(void) {

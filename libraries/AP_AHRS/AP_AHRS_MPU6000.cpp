@@ -28,11 +28,24 @@
 #define SPIN_RATE_LIMIT 20
 
 void
-AP_AHRS_MPU6000::init()
+AP_AHRS_MPU6000::init( AP_PeriodicProcess * scheduler )
 {
+    bool timer_running = false;
+
+    // suspend timer so interrupts on spi bus do not interfere with communication to mpu6000
+    if( scheduler != NULL ) {
+        timer_running = scheduler->running();
+        scheduler->suspend_timer();
+    }
+
     _mpu6000->dmp_init();
     push_gains_to_dmp();
     push_offsets_to_ins();
+
+    // restart timer
+    if( timer_running ) {
+        scheduler->resume_timer();
+    }
 };
 
 // run a full MPU6000 update round
