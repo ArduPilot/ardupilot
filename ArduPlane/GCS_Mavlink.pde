@@ -1541,6 +1541,22 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
                 msg->compid,
                 0);
 
+        } else if(packet.current == 3) {                                               //current = 3 is a flag to tell us this is a alt change only
+
+            // add home alt if needed
+            if (tell_command.options & MASK_OPTIONS_RELATIVE_ALT) {
+                tell_command.alt += home.alt;
+            }
+
+            next_WP.alt = tell_command.alt;
+
+            // verify we recevied the command
+            mavlink_msg_mission_ack_send(
+                chan,
+                msg->sysid,
+                msg->compid,
+                0);
+
         } else {
             // Check if receiving waypoints (mission upload expected)
             if (!waypoint_receiving) {
