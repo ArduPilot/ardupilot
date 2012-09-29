@@ -15,5 +15,8 @@ void AP_PeriodicProcessStub::suspend_timer(void) {
 }
 void AP_PeriodicProcessStub::resume_timer(void) {
 }
+bool AP_PeriodicProcessStub::running(void) {
+    return !_suspended;
+}
 void AP_PeriodicProcessStub::run(void) {
 }

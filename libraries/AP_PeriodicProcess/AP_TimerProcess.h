@@ -20,6 +20,7 @@ public:
     void                        set_failsafe(ap_procedure proc);
     void                        suspend_timer(void);
     void                        resume_timer(void);
+    bool                        running();
     static void                 run(void);
 protected:
     static uint8_t              _period;

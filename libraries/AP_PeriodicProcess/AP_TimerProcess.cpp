@@ -96,6 +96,10 @@ void AP_TimerProcess::resume_timer(void)
     _suspended = false;
 }
 
+bool AP_TimerProcess::running(void) {
+    return !_suspended;
+}
+
 void AP_TimerProcess::run(void)
 {
     // we enable the interrupt again immediately and also enable
