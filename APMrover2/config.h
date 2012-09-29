@@ -134,12 +134,6 @@
 # define CONFIG_IMU_TYPE CONFIG_IMU_OILPAN
 #endif
 
-#if CONFIG_IMU_TYPE == CONFIG_IMU_MPU6000
-# ifndef CONFIG_MPU6000_CHIP_SELECT_PIN
-#  define CONFIG_MPU6000_CHIP_SELECT_PIN 53
-# endif
-#endif
-
 //////////////////////////////////////////////////////////////////////////////
 // ADC Enable - used to eliminate for systems which don't have ADC.
 //
