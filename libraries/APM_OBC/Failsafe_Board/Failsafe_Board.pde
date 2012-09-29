@@ -125,7 +125,7 @@ static void set_servos_terminate(uint8_t obc_mode)
 {
 	set_mux_mode(MUX_MODE_MICRO);
 	if (obc_mode) {
-		set_servos(1100, 1824, 1040, 1131);
+		set_servos(1260, 1730, 1040, 1400);
 	} else {
 		set_servos(1500, 1500, 1200, 1500);
 	}
@@ -254,7 +254,7 @@ void loop()
 		termination_counter++;
 	} else if (heartbeat_backup_ok && terminate_backup) {
 		termination_counter++;
-	} else if (obc_mode && !heartbeat_primary_ok && !heartbeat_backup_ok) {
+	} else if (obc_mode && !heartbeat_primary_ok && !heartbeat_backup_ok && !manual_mode) {
 		// if in OBC mode and neither autopilot is OK, then
 		// terminate
 		termination_counter++;
