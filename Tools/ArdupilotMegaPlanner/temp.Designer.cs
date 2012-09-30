@@ -249,7 +249,7 @@
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(685, 285);
+            this.ClientSize = new System.Drawing.Size(685, 507);
             this.Controls.Add(this.myButton1);
             this.Controls.Add(this.BUT_paramgen);
             this.Controls.Add(this.BUT_follow_me);

@@ -12,7 +12,7 @@ using System.Drawing.Drawing2D;
 
 namespace ArdupilotMega.Controls
 {
-    class MyButton : Button
+    public class MyButton : Button
     {
         bool mouseover = false;
         bool mousedown = false;

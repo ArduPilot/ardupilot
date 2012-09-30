@@ -253,6 +253,8 @@ namespace ArdupilotMega.Controls
 
             sw.Start();
 
+            zoom = 11;
+
             getImage();
 
             sw.Stop();
@@ -261,7 +263,7 @@ namespace ArdupilotMega.Controls
 
             sw.Start();
 
-           double increment = step * 1;
+           double increment = step * 5;
 
             double cleanup = area.Bottom % increment;
             double cleanup2 = area.Left % increment;
@@ -274,12 +276,12 @@ namespace ArdupilotMega.Controls
                 {
                     int heightl = srtm.getAltitude(z, area.Right + area.Left - x, 20);
 
-                 //   Console.WriteLine(x + " " + z);
+                  //  Console.WriteLine(x + " " + z);
 
                     GL.Color3(Color.White);
 
 
-                   // int heightl = 0;
+                  //  int heightl = 0;
 
                     double scale2 = (Math.Abs(x - area.Left) / area.WidthLng);// / (float)_terrain.Width;
 

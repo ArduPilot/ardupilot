@@ -27,19 +27,21 @@ namespace ArdupilotMega
 
         static Hashtable filecache = new Hashtable();
 
+        static Dictionary<string, short[,]> cache = new Dictionary<string, short[,]>();
+
         public static int getAltitude(double lat, double lng, double zoom)
         {
             short alt = 0;
 
-            lat += 1 / 1199.0;
+            //lat += 1 / 1199.0;
             //lng -= 1 / 1201f;
 
             // 		lat	-35.115676879882812	double
             //		lng	117.94178754638671	double
             // 		alt	70	short
 
-            int x = (int)Math.Floor(lng);
-            int y = (int)Math.Floor(lat);
+            int x = (lng < 0) ? (int)(lng-1) : (int)lng;//(int)Math.Floor(lng);
+            int y = (lat < 0) ? (int)(lat - 1) : (int)lat; ;//(int)Math.Floor(lat);
 
             string ns;
             if (y > 0)
@@ -63,47 +65,65 @@ namespace ArdupilotMega
             try
             {
 
-                if (filecache.ContainsKey(datadirectory + Path.DirectorySeparatorChar + filename) || File.Exists(datadirectory + Path.DirectorySeparatorChar + filename))
+                if (cache.ContainsKey(filename) || File.Exists(datadirectory + Path.DirectorySeparatorChar + filename))
                 { // srtm hgt files
-                    //FileStream fs = new FileStream(datadirectory + Path.DirectorySeparatorChar + filename, FileMode.Open, FileAccess.Read, FileShare.Read);
 
-                    MemoryStream fs = readFile(datadirectory + Path.DirectorySeparatorChar + filename);
+                    int size = -1;
+
+                    if (!cache.ContainsKey(filename))
+                    {
+                        FileStream fs = new FileStream(datadirectory + Path.DirectorySeparatorChar + filename, FileMode.Open, FileAccess.Read, FileShare.Read);
+
+                        if (fs.Length == (1201 * 1201 * 2))
+                        {
+                            size = 1201;
+                        }
+                        else
+                        {
+                            size = 3601;
+                        }
+
+                        byte[] altbytes = new byte[2];
+                        short[,] altdata = new short[size, size];
+
+
+                        int altlat = 0;
+                        int altlng = 0;
+
+                        while (fs.Read(altbytes, 0, 2) != 0)
+                        {
+                            altdata[altlat, altlng] = (short)((altbytes[0] << 8) + altbytes[1]);
+
+                            altlat++;
+                            if (altlat >= size)
+                            {
+                                altlng++;
+                                altlat = 0;
+                            }
+                        }
+
+                        fs.Close();
+
+                        cache[filename] = altdata;
+                    }
+
+                    if (cache[filename].Length == (1201 * 1201))
+                    {
+                        size = 1201;
+                    }
+                    else
+                    {
+                        size = 3601;
+                    }
 
                     int posx = 0;
                     int row = 0;
 
-                    if (fs.Length <= (1201 * 1201 * 2))
-                    {
-                        posx = (int)(((float)(lng - x)) * (1201 * 2));
-                        row = (int)(((float)(lat - y)) * 1201) * (1201 * 2);
-                        row = (1201 * 1201 * 2) - row;
-                    }
-                    else
-                    {
-                        posx = (int)(((float)(lng - x)) * (3601 * 2));
-                        row = (int)(((float)(lat - y)) * 3601) * (3601 * 2);
-                        row = (3601 * 3601 * 2) - row;
-                    }
+                    posx = (int)(((float)(lng - x)) * (size * 1));
+                    row = (int)(((float)(lat - y)) * (size * 1));
+                    row = size - row;
 
-                    if (posx % 2 == 1)
-                    {
-                        posx--;
-                    }
-
-                    //Console.WriteLine(filename + " row " + row + " posx" + posx);
-
-                    byte[] data = new byte[2];
-
-                    fs.Seek((int)(row + posx), SeekOrigin.Begin);
-                    fs.Read(data, 0, data.Length);
-
-                    //fs.Close();
-
-                    //Array.Reverse(data);
-
-                    alt = (short)((data[0] << 8) + data[1]) ;//BitConverter.ToInt16(data, 0);
-
-                    return alt;
+                    return cache[filename][posx, row];
                 }
 
                 string filename2 = "srtm_" + Math.Round((lng + 2.5 + 180) / 5, 0).ToString("00") + "_" + Math.Round((60 - lat + 2.5) / 5, 0).ToString("00") + ".asc";

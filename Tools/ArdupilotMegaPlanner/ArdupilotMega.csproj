@@ -376,6 +376,12 @@
     <Compile Include="Controls\ToolStripConnectionControl.cs">
       <SubType>Component</SubType>
     </Compile>
+    <Compile Include="Controls\ModifyandSet.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="Controls\ModifyandSet.Designer.cs">
+      <DependentUpon>ModifyandSet.cs</DependentUpon>
+    </Compile>
     <Compile Include="Controls\ValuesControl.cs">
       <SubType>UserControl</SubType>
     </Compile>
@@ -635,7 +641,6 @@
       <DependentUpon>Simulation.cs</DependentUpon>
     </Compile>
     <Compile Include="CurrentState.cs" />
-    <Compile Include="Mavlink\MAVLinkTypes0.9.cs" />
     <Compile Include="ElevationProfile.cs">
       <SubType>Form</SubType>
     </Compile>
@@ -727,6 +732,9 @@
     </EmbeddedResource>
     <EmbeddedResource Include="Controls\RangeControl.resx">
       <DependentUpon>RangeControl.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Controls\ModifyandSet.resx">
+      <DependentUpon>ModifyandSet.cs</DependentUpon>
     </EmbeddedResource>
     <EmbeddedResource Include="Controls\ValuesControl.resx">
       <DependentUpon>ValuesControl.cs</DependentUpon>

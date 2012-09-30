@@ -31,11 +31,11 @@ namespace ArdupilotMega
 
             if (System.Diagnostics.Debugger.IsAttached) {
 
-              //  ArdupilotMega.Controls.OpenGLtest ogl = new Controls.OpenGLtest();
+                ArdupilotMega.Controls.OpenGLtest ogl = new Controls.OpenGLtest();
 
-              //  this.Controls.Add(ogl);
+                this.Controls.Add(ogl);
 
-               // ogl.Dock = DockStyle.Fill;
+                ogl.Dock = DockStyle.Fill;
             }
         }
 

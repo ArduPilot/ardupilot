@@ -20,8 +20,6 @@
       <F5>Yaw IN</F5>
       <F6>Yaw</F6>
       <F7>Nav Yaw</F7>
-      <F8>Roll I</F8>
-      <F9>Pitch I</F9>
     </ATT>
     <NTUN>
       <F1>WP Dist</F1>
@@ -32,20 +30,16 @@
       <F6>Nav Roll</F6>
       <F7>X Speed</F7>
       <F8>Y Speed</F8>
-      <F9>Nav Lon I</F9>
-      <F10>Nav Lat I</F10>
     </NTUN>
     <CTUN>
-      <F1>Thr in</F1>
+      <F1>Thr IN</F1>
       <F2>Sonar Alt</F2>
       <F3>Baro Alt</F3>
       <F4>WP Alt</F4>
       <F5>Nav Throttle</F5>
-      <F6>Angle Boost</F6>
+      <F6>Angle boost</F6>
       <F7>Climb Rate</F7>
       <F8>Throttle  Out</F8>
-      <F9>Alt Hold Int</F9>
-      <F10>Thr iInt</F10>
     </CTUN>
     <PM>
       <F1>Gyro Saturation</F1>

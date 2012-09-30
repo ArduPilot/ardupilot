@@ -38,7 +38,7 @@ namespace ArdupilotMega.GCSViews
         bool polygongridmode = false;
         Hashtable param = new Hashtable();
 
-        public static List<PointLatLngAlt> pointlist = new List<PointLatLngAlt>(); // used to calc distance
+        List<PointLatLngAlt> pointlist = new List<PointLatLngAlt>(); // used to calc distance
         static public Object thisLock = new Object();
         private ComponentResourceManager rm = new ComponentResourceManager(typeof(FlightPlanner));
 
@@ -925,7 +925,7 @@ namespace ArdupilotMega.GCSViews
 
             // this is to share the current mission with the data tab
             pointlist = new List<PointLatLngAlt>();
-
+			
             System.Diagnostics.Debug.WriteLine(DateTime.Now);
             try
             {
@@ -1921,7 +1921,7 @@ namespace ArdupilotMega.GCSViews
                     MainMap.Invalidate(false);
 
                     int answer;
-                    if (int.TryParse(item.Tag.ToString(), out answer))
+                    if (item.Tag != null && int.TryParse(item.Tag.ToString(), out answer))
                     {
                         try
                         {
@@ -2782,9 +2782,9 @@ namespace ArdupilotMega.GCSViews
                     routes.Markers.Add(new GMapMarkerQuad(currentloc, MainV2.cs.yaw, MainV2.cs.groundcourse, MainV2.cs.nav_bearing));
                 }
 
-                if (MainV2.cs.mode.ToLower() == "guided" && MainV2.cs.GuidedModeWP != null && MainV2.cs.GuidedModeWP.Lat != 0)
+                if (MainV2.cs.mode.ToLower() == "guided" && MainV2.comPort.GuidedMode.x != 0)
                 {
-                    addpolygonmarker("Guided Mode", MainV2.cs.GuidedModeWP.Lng, MainV2.cs.GuidedModeWP.Lat, (int)MainV2.cs.GuidedModeWP.Alt, Color.Red, routes);
+                    addpolygonmarker("Guided Mode", MainV2.comPort.GuidedMode.y, MainV2.comPort.GuidedMode.x, (int)MainV2.comPort.GuidedMode.z, Color.Blue, routes);
                 }
 
 

@@ -1,8 +1,50 @@
-﻿* Mission Planner 1.2.8
+﻿* Mission Planner 1.2.12
+add arduino chip detect
+fix apm2,2.5 dialog test
+add write timeout. this will stop planner hangs on bad serial devices.
+change quickview decimal places to 0.00
+fix map clicking issue.
+fix wind direction wrapping
+add airspeed use
+modify firmware screen from Marooned
+major flightdata tab change.
+add save/load polygon from file
+add some error handling dialogs
+
+
+* Mission Planner 1.2.11
+Fix ac crosstrack display
+tweak ap_mount
+speed up Terminal
+
+
+* Mission Planner 1.2.10
+add useritems to HUD
+change hdop scale
+fix posible follow me bug (, vs .)
+fix posible friendly params bug (, vs .)
+tweak flightdata log playback timming
+fix gridv2 bug. if no waypoint had been done, the grid wold fail
+tweak some mission upload potential issues
+add ability to get param list from a log (from startup)
+add ability to get the first wp list in a log, if wps where received in that log.
+tweak video capture library timing
+
+
+* Mission Planner 1.2.9
+add est distance traveled
+add est flight time
+AP_Mount now updated
+add expermental firmware options.
+fix hud avi record framerate
+add 2 direction wp circle
+tweak gridv2
+
+
+* Mission Planner 1.2.8
 fix mjpeg stream from VLC.
 add grid mode V2
 fix hdop scaling
-
 
 * Mission Planner 1.2.7
 add wind from ap
@@ -11,12 +53,14 @@ fix hil problem
 fix control-s
 update mavlink format
 
+
 * Mission Planner 1.2.6
 add tracker location option.
 fix current sensor screen
 add more right click flight planner options.
 make some connecting error messages more detailed.
 add partial microdrones protocol output
+
 
 * Mission Planner 1.2.5
 add experimental antenna tracker find
@@ -28,6 +72,7 @@ test flight planner tab on flight data tab
 move some functions to the right click menu
 add xplanes data in/out setup to be automatic.
 add better mission upload handeling.
+
 
 * Mission Planner 1.2.4
 remove geofence tab

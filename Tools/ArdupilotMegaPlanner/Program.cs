@@ -38,7 +38,10 @@ namespace ArdupilotMega
 
             //Common.linearRegression();
 
-            //Console.WriteLine(srtm.getAltitude(-35.115676879882812, 117.94178754638671,20));
+            Console.WriteLine(srtm.getAltitude(-35.115676879882812, 117.94178754638671,20));
+
+           // Console.ReadLine();
+           // return;
             /*
             Arduino.ArduinoSTKv2 comport = new Arduino.ArduinoSTKv2();
 

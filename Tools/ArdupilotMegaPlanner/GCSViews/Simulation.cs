@@ -565,10 +565,8 @@ namespace ArdupilotMega.GCSViews
 
             DateTime lastdata = DateTime.MinValue;
 
-            #if MAVLINK10
             // set enable hil status flag - sends base_mode = 0
             MainV2.comPort.setMode(new MAVLink.mavlink_set_mode_t() { target_system = MainV2.comPort.sysid }, MAVLink.MAV_MODE_FLAG.HIL_ENABLED);
-#endif
 
             while (threadrun == 1)
             {

@@ -1106,7 +1106,6 @@ namespace ArdupilotMega
                             MainV2.cs.linkqualitygcs = (ushort)(MainV2.cs.linkqualitygcs * 0.8f);
                             linkqualitytime = DateTime.Now;
 
-                            int checkthis;
                             GCSViews.FlightData.myhud.Invalidate();
                         }
                     }
@@ -1118,7 +1117,7 @@ namespace ArdupilotMega
                         {
                             type = (byte)MAVLink.MAV_TYPE.GCS,
                             autopilot = (byte)MAVLink.MAV_AUTOPILOT.ARDUPILOTMEGA,
-                            mavlink_version = 3
+                            mavlink_version = 3,
                         };
 
                         comPort.sendPacket(htb);
@@ -1474,11 +1473,9 @@ namespace ArdupilotMega
 
                         SharpKml.Dom.CoordinateCollection coords = new SharpKml.Dom.CoordinateCollection();
 
-                        foreach (var point in GCSViews.FlightPlanner.pointlist)
+                        foreach (var point in MainV2.comPort.wps.Values)
                         {
-                            if (point != null)
-                                coords.Add(new SharpKml.Base.Vector(point.Lat, point.Lng, point.Alt));
-
+                                coords.Add(new SharpKml.Base.Vector(point.x, point.y, point.z));
                         }
 
                         SharpKml.Dom.LineString ls = new SharpKml.Dom.LineString();
@@ -1716,8 +1713,8 @@ namespace ArdupilotMega
             {
                 var fi = new FileInfo(path);
 
-                string LocalVersion = "";
-                string WebVersion = "";
+                Version LocalVersion = new Version();
+                Version WebVersion = new Version();
 
                 if (File.Exists(path))
                 {
@@ -1725,7 +1722,7 @@ namespace ArdupilotMega
                     {
                         using (StreamReader sr = new StreamReader(fs))
                         {
-                            LocalVersion = sr.ReadLine();
+                            LocalVersion = new Version(sr.ReadLine());
                             sr.Close();
                         }
                         fs.Close();
@@ -1734,7 +1731,7 @@ namespace ArdupilotMega
 
                 using (StreamReader sr = new StreamReader(response.GetResponseStream()))
                 {
-                    WebVersion = sr.ReadLine();
+                    WebVersion = new Version(sr.ReadLine());
 
                     sr.Close();
                 }
@@ -1743,7 +1740,7 @@ namespace ArdupilotMega
 
                 log.Info("New file Check: local " + LocalVersion + " vs Remote " + WebVersion);
 
-                if (LocalVersion != WebVersion)
+                if (LocalVersion < WebVersion)
                 {
                     updateFound = true;
                 }

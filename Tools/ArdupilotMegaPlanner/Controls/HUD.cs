@@ -159,7 +159,9 @@ namespace ArdupilotMega.Controls
         public float groundalt { get; set; }
 
         [System.ComponentModel.Browsable(true), System.ComponentModel.Category("Values")]
-        public int status { get; set; }
+        public bool status { get; set; }
+        bool statuslast = false;
+        DateTime armedtimer = DateTime.MinValue;
 
         public struct Custom
         {
@@ -172,8 +174,7 @@ namespace ArdupilotMega.Controls
 
         public Hashtable CustomItems = new Hashtable();
         
-        int statuslast = 0;
-        DateTime armedtimer = DateTime.MinValue;
+
 
         public bool bgon = true;
         public bool hudon = true;
@@ -852,7 +853,7 @@ namespace ArdupilotMega.Controls
                     armedtimer = DateTime.Now;
                 }
 
-                if (status == 3) // not armed
+                if (status == false) // not armed
                 {
                     //if ((armedtimer.AddSeconds(8) > DateTime.Now))
                     {
@@ -860,7 +861,7 @@ namespace ArdupilotMega.Controls
                         statuslast = status;
                     }
                 }
-                else if (status == 4) // armed
+                else if (status == true) // armed
                 {
                     if ((armedtimer.AddSeconds(8) > DateTime.Now))
                     {
