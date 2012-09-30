@@ -217,8 +217,6 @@ namespace ArdupilotMega
         PointLatLngAlt _trackerloc = new PointLatLngAlt();
         internal PointLatLngAlt TrackerLocation { get { if (_trackerloc.Lng != 0) return _trackerloc; return HomeLocation; } set { _trackerloc = value; } }
 
-        internal PointLatLngAlt GuidedModeWP = new PointLatLngAlt();
-
         public float DistToMAV
         {
             get
@@ -279,7 +277,7 @@ namespace ArdupilotMega
         public MainV2.Firmwares firmware = MainV2.Firmwares.ArduPlane;
         public float freemem { get; set; }
         public float brklevel { get; set; }
-        public int armed { get; set; }
+        public bool armed { get; set; }
 
         // 3dr radio
         public float rssi { get; set; }
@@ -494,7 +492,7 @@ namespace ArdupilotMega
                     {
                         var hb = bytearray.ByteArrayToStructure<MAVLink.mavlink_heartbeat_t>(6);
 
-                        armed = (hb.base_mode & (byte)MAVLink.MAV_MODE_FLAG.SAFETY_ARMED) == (byte)MAVLink.MAV_MODE_FLAG.SAFETY_ARMED ? 4 : 3;
+                        armed = (hb.base_mode & (byte)MAVLink.MAV_MODE_FLAG.SAFETY_ARMED) == (byte)MAVLink.MAV_MODE_FLAG.SAFETY_ARMED;
 
                         string oldmode = mode;
 
@@ -764,7 +762,6 @@ namespace ArdupilotMega
 
                         //MAVLink.packets[MAVLink.MAVLINK_MSG_ID_ATTITUDE] = null;
                     }
-#if MAVLINK10
                     bytearray = mavinterface.packets[MAVLink.MAVLINK_MSG_ID_GPS_RAW_INT];
                     if (bytearray != null)
                     {
@@ -789,28 +786,6 @@ namespace ArdupilotMega
 
                         //MAVLink.packets[MAVLink.MAVLINK_MSG_ID_GPS_RAW] = null;
                     }
-#else
-
-                bytearray = mavinterface.packets[MAVLink.MAVLINK_MSG_ID_GPS_RAW];
-                if (bytearray != null)
-                {
-                    var gps = bytearray.ByteArrayToStructure<MAVLink.mavlink_gps_raw_t>(6);
-
-                    lat = gps.lat;
-                    lng = gps.lon;
-                    //                alt = gps.alt; // using vfr as includes baro calc
-
-                    gpsstatus = gps.fix_type;
-                    //                    Console.WriteLine("gpsfix {0}",gpsstatus);
-
-                    gpshdop = gps.eph;
-
-                    groundspeed = gps.v;
-                    groundcourse = gps.hdg;
-
-                    //MAVLink.packets[MAVLink.MAVLINK_MSG_ID_GPS_RAW] = null;
-                }
-#endif
 
                     bytearray = mavinterface.packets[MAVLink.MAVLINK_MSG_ID_GPS_STATUS];
                     if (bytearray != null)
@@ -845,7 +820,7 @@ namespace ArdupilotMega
                         lat = loc.lat / 10000000.0f;
                         lng = loc.lon / 10000000.0f;
                     }
-#if MAVLINK10
+
                     bytearray = mavinterface.packets[MAVLink.MAVLINK_MSG_ID_MISSION_CURRENT];
                     if (bytearray != null)
                     {
@@ -862,36 +837,6 @@ namespace ArdupilotMega
 
                         //MAVLink.packets[ArdupilotMega.MAVLink.MAVLINK_MSG_ID_WAYPOINT_CURRENT] = null;
                     }
-#else
-
-                bytearray = mavinterface.packets[MAVLink.MAVLINK_MSG_ID_GLOBAL_POSITION];
-                if (bytearray != null)
-                {
-                    var loc = bytearray.ByteArrayToStructure<MAVLink.mavlink_global_position_t>(6);
-                    alt = loc.alt;
-                    lat = loc.lat;
-                    lng = loc.lon;
-                }
-
-                bytearray = mavinterface.packets[MAVLink.MAVLINK_MSG_ID_WAYPOINT_CURRENT];
-                if (bytearray != null)
-                {
-                    var wpcur = bytearray.ByteArrayToStructure<MAVLink.mavlink_waypoint_current_t>(6);
-
-                    int oldwp = (int)wpno;
-
-                    wpno = wpcur.seq;
-
-                    if (oldwp != wpno && MainV2.speechEnable && MainV2.speechEngine != null && MainV2.getConfig("speechwaypointenabled") == "True")
-                    {
-                        MainV2.speechEngine.SpeakAsync(Common.speechConversion(MainV2.getConfig("speechwaypoint")));
-                    }
-
-                    //MAVLink.packets[ArdupilotMega.MAVLink.MAVLINK_MSG_ID_WAYPOINT_CURRENT] = null;
-                }
-
-#endif
-
 
                     bytearray = mavinterface.packets[MAVLink.MAVLINK_MSG_ID_NAV_CONTROLLER_OUTPUT];
 

@@ -383,6 +383,16 @@ namespace ArdupilotMega.GCSViews.ConfigurationView
             timer.Interval = 100;
             timer.Start();
 
+            mavlinkNumericUpDown1min.setup(800,1400,1,1,"HS1_MIN",MainV2.comPort.param);
+            mavlinkNumericUpDown1max.setup(1600,2200,1,1,"HS1_MAX",MainV2.comPort.param);
+            mavlinkNumericUpDown2min.setup(800, 1400, 1, 1, "HS2_MIN", MainV2.comPort.param);
+            mavlinkNumericUpDown2max.setup(1600, 2200, 1, 1, "HS2_MAX", MainV2.comPort.param);
+            mavlinkNumericUpDown3min.setup(800, 1400, 1, 1, "HS3_MIN", MainV2.comPort.param);
+            mavlinkNumericUpDown3max.setup(1600, 2200, 1, 1, "HS3_MAX", MainV2.comPort.param);
+
+            mavlinkNumericUpDownpitchmax.setup(10, 65, 100, 1, "H_PIT_MAX", MainV2.comPort.param);
+            mavlinkNumericUpDownrollmax.setup(10, 65, 100, 1, "H_ROL_MAX", MainV2.comPort.param);
+
             startup = true;
             try
             {

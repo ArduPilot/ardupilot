@@ -468,6 +468,9 @@
   <data name="CMB_batmonsensortype.Items3" xml:space="preserve">
     <value>3: AttoPilot 180A</value>
   </data>
+  <data name="CMB_batmonsensortype.Items4" xml:space="preserve">
+    <value>4: 3DR IV Sensor</value>
+  </data>
   <data name="CMB_batmonsensortype.Location" type="System.Drawing.Point, System.Drawing">
     <value>160, 68</value>
   </data>

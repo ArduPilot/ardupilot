@@ -50,10 +50,19 @@
             this.horizontalProgressBar2 = new ArdupilotMega.HorizontalProgressBar();
             this.horizontalProgressBar1 = new ArdupilotMega.HorizontalProgressBar();
             this.lbl_currentmode = new System.Windows.Forms.Label();
-            this.mavlinkCheckBox1 = new ArdupilotMega.Controls.MavlinkCheckBox();
-            this.mavlinkNumericUpDown1 = new ArdupilotMega.Controls.MavlinkNumericUpDown();
+            this.mavlinkCheckBoxthr_fs = new ArdupilotMega.Controls.MavlinkCheckBox();
+            this.mavlinkNumericUpDownthr_fs_value = new ArdupilotMega.Controls.MavlinkNumericUpDown();
+            this.LNK_wiki = new System.Windows.Forms.LinkLabel();
+            this.mavlinkCheckBoxgcs_fs = new ArdupilotMega.Controls.MavlinkCheckBox();
+            this.toolTip1 = new System.Windows.Forms.ToolTip(this.components);
+            this.mavlinkCheckBoxshort_fs = new ArdupilotMega.Controls.MavlinkCheckBox();
+            this.mavlinkCheckBoxlong_fs = new ArdupilotMega.Controls.MavlinkCheckBox();
+            this.mavlinkCheckBoxthr_fs_action = new ArdupilotMega.Controls.MavlinkCheckBox();
+            this.groupBox1 = new System.Windows.Forms.GroupBox();
+            this.label3 = new System.Windows.Forms.Label();
             ((System.ComponentModel.ISupportInitialize)(this.currentStateBindingSource)).BeginInit();
-            ((System.ComponentModel.ISupportInitialize)(this.mavlinkNumericUpDown1)).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)(this.mavlinkNumericUpDownthr_fs_value)).BeginInit();
+            this.groupBox1.SuspendLayout();
             this.SuspendLayout();
             // 
             // currentStateBindingSource
@@ -300,31 +309,110 @@
             resources.ApplyResources(this.lbl_currentmode, "lbl_currentmode");
             this.lbl_currentmode.Name = "lbl_currentmode";
             // 
-            // mavlinkCheckBox1
+            // mavlinkCheckBoxthr_fs
             // 
-            resources.ApplyResources(this.mavlinkCheckBox1, "mavlinkCheckBox1");
-            this.mavlinkCheckBox1.Name = "mavlinkCheckBox1";
-            this.mavlinkCheckBox1.OffValue = 0F;
-            this.mavlinkCheckBox1.OnValue = 1F;
-            this.mavlinkCheckBox1.param = null;
-            this.mavlinkCheckBox1.ParamName = null;
-            this.mavlinkCheckBox1.UseVisualStyleBackColor = true;
+            resources.ApplyResources(this.mavlinkCheckBoxthr_fs, "mavlinkCheckBoxthr_fs");
+            this.mavlinkCheckBoxthr_fs.Name = "mavlinkCheckBoxthr_fs";
+            this.mavlinkCheckBoxthr_fs.OffValue = 0F;
+            this.mavlinkCheckBoxthr_fs.OnValue = 1F;
+            this.mavlinkCheckBoxthr_fs.param = null;
+            this.mavlinkCheckBoxthr_fs.ParamName = null;
+            this.toolTip1.SetToolTip(this.mavlinkCheckBoxthr_fs, resources.GetString("mavlinkCheckBoxthr_fs.ToolTip"));
+            this.mavlinkCheckBoxthr_fs.UseVisualStyleBackColor = true;
             // 
-            // mavlinkNumericUpDown1
+            // mavlinkNumericUpDownthr_fs_value
             // 
-            resources.ApplyResources(this.mavlinkNumericUpDown1, "mavlinkNumericUpDown1");
-            this.mavlinkNumericUpDown1.Max = 1F;
-            this.mavlinkNumericUpDown1.Min = 0F;
-            this.mavlinkNumericUpDown1.Name = "mavlinkNumericUpDown1";
-            this.mavlinkNumericUpDown1.param = null;
-            this.mavlinkNumericUpDown1.ParamName = null;
+            resources.ApplyResources(this.mavlinkNumericUpDownthr_fs_value, "mavlinkNumericUpDownthr_fs_value");
+            this.mavlinkNumericUpDownthr_fs_value.Max = 1F;
+            this.mavlinkNumericUpDownthr_fs_value.Min = 0F;
+            this.mavlinkNumericUpDownthr_fs_value.Name = "mavlinkNumericUpDownthr_fs_value";
+            this.mavlinkNumericUpDownthr_fs_value.param = null;
+            this.mavlinkNumericUpDownthr_fs_value.ParamName = null;
+            this.toolTip1.SetToolTip(this.mavlinkNumericUpDownthr_fs_value, resources.GetString("mavlinkNumericUpDownthr_fs_value.ToolTip"));
+            // 
+            // LNK_wiki
+            // 
+            resources.ApplyResources(this.LNK_wiki, "LNK_wiki");
+            this.LNK_wiki.LinkBehavior = System.Windows.Forms.LinkBehavior.HoverUnderline;
+            this.LNK_wiki.LinkColor = System.Drawing.Color.CornflowerBlue;
+            this.LNK_wiki.Name = "LNK_wiki";
+            this.LNK_wiki.TabStop = true;
+            this.LNK_wiki.LinkClicked += new System.Windows.Forms.LinkLabelLinkClickedEventHandler(this.LNK_wiki_LinkClicked);
+            // 
+            // mavlinkCheckBoxgcs_fs
+            // 
+            resources.ApplyResources(this.mavlinkCheckBoxgcs_fs, "mavlinkCheckBoxgcs_fs");
+            this.mavlinkCheckBoxgcs_fs.Name = "mavlinkCheckBoxgcs_fs";
+            this.mavlinkCheckBoxgcs_fs.OffValue = 0F;
+            this.mavlinkCheckBoxgcs_fs.OnValue = 1F;
+            this.mavlinkCheckBoxgcs_fs.param = null;
+            this.mavlinkCheckBoxgcs_fs.ParamName = null;
+            this.toolTip1.SetToolTip(this.mavlinkCheckBoxgcs_fs, resources.GetString("mavlinkCheckBoxgcs_fs.ToolTip"));
+            this.mavlinkCheckBoxgcs_fs.UseVisualStyleBackColor = true;
+            // 
+            // toolTip1
+            // 
+            this.toolTip1.AutoPopDelay = 20000;
+            this.toolTip1.InitialDelay = 500;
+            this.toolTip1.ReshowDelay = 100;
+            // 
+            // mavlinkCheckBoxshort_fs
+            // 
+            resources.ApplyResources(this.mavlinkCheckBoxshort_fs, "mavlinkCheckBoxshort_fs");
+            this.mavlinkCheckBoxshort_fs.Name = "mavlinkCheckBoxshort_fs";
+            this.mavlinkCheckBoxshort_fs.OffValue = 0F;
+            this.mavlinkCheckBoxshort_fs.OnValue = 1F;
+            this.mavlinkCheckBoxshort_fs.param = null;
+            this.mavlinkCheckBoxshort_fs.ParamName = null;
+            this.toolTip1.SetToolTip(this.mavlinkCheckBoxshort_fs, resources.GetString("mavlinkCheckBoxshort_fs.ToolTip"));
+            this.mavlinkCheckBoxshort_fs.UseVisualStyleBackColor = true;
+            // 
+            // mavlinkCheckBoxlong_fs
+            // 
+            resources.ApplyResources(this.mavlinkCheckBoxlong_fs, "mavlinkCheckBoxlong_fs");
+            this.mavlinkCheckBoxlong_fs.Name = "mavlinkCheckBoxlong_fs";
+            this.mavlinkCheckBoxlong_fs.OffValue = 0F;
+            this.mavlinkCheckBoxlong_fs.OnValue = 1F;
+            this.mavlinkCheckBoxlong_fs.param = null;
+            this.mavlinkCheckBoxlong_fs.ParamName = null;
+            this.toolTip1.SetToolTip(this.mavlinkCheckBoxlong_fs, resources.GetString("mavlinkCheckBoxlong_fs.ToolTip"));
+            this.mavlinkCheckBoxlong_fs.UseVisualStyleBackColor = true;
+            // 
+            // mavlinkCheckBoxthr_fs_action
+            // 
+            resources.ApplyResources(this.mavlinkCheckBoxthr_fs_action, "mavlinkCheckBoxthr_fs_action");
+            this.mavlinkCheckBoxthr_fs_action.Name = "mavlinkCheckBoxthr_fs_action";
+            this.mavlinkCheckBoxthr_fs_action.OffValue = 0F;
+            this.mavlinkCheckBoxthr_fs_action.OnValue = 1F;
+            this.mavlinkCheckBoxthr_fs_action.param = null;
+            this.mavlinkCheckBoxthr_fs_action.ParamName = null;
+            this.toolTip1.SetToolTip(this.mavlinkCheckBoxthr_fs_action, resources.GetString("mavlinkCheckBoxthr_fs_action.ToolTip"));
+            this.mavlinkCheckBoxthr_fs_action.UseVisualStyleBackColor = true;
+            // 
+            // groupBox1
+            // 
+            this.groupBox1.Controls.Add(this.label3);
+            this.groupBox1.Controls.Add(this.mavlinkCheckBoxthr_fs);
+            this.groupBox1.Controls.Add(this.mavlinkCheckBoxthr_fs_action);
+            this.groupBox1.Controls.Add(this.mavlinkNumericUpDownthr_fs_value);
+            this.groupBox1.Controls.Add(this.mavlinkCheckBoxlong_fs);
+            this.groupBox1.Controls.Add(this.mavlinkCheckBoxgcs_fs);
+            this.groupBox1.Controls.Add(this.mavlinkCheckBoxshort_fs);
+            resources.ApplyResources(this.groupBox1, "groupBox1");
+            this.groupBox1.Name = "groupBox1";
+            this.groupBox1.TabStop = false;
+            // 
+            // label3
+            // 
+            resources.ApplyResources(this.label3, "label3");
+            this.label3.Name = "label3";
             // 
             // ConfigFailSafe
             // 
             resources.ApplyResources(this, "$this");
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.Controls.Add(this.mavlinkNumericUpDown1);
-            this.Controls.Add(this.mavlinkCheckBox1);
+            this.Controls.Add(this.groupBox1);
+            this.Controls.Add(this.LNK_wiki);
             this.Controls.Add(this.lbl_currentmode);
             this.Controls.Add(this.label2);
             this.Controls.Add(this.label1);
@@ -346,7 +434,9 @@
             this.Controls.Add(this.horizontalProgressBar1);
             this.Name = "ConfigFailSafe";
             ((System.ComponentModel.ISupportInitialize)(this.currentStateBindingSource)).EndInit();
-            ((System.ComponentModel.ISupportInitialize)(this.mavlinkNumericUpDown1)).EndInit();
+            ((System.ComponentModel.ISupportInitialize)(this.mavlinkNumericUpDownthr_fs_value)).EndInit();
+            this.groupBox1.ResumeLayout(false);
+            this.groupBox1.PerformLayout();
             this.ResumeLayout(false);
             this.PerformLayout();
 
@@ -374,7 +464,15 @@
         private HorizontalProgressBar horizontalProgressBar2;
         private HorizontalProgressBar horizontalProgressBar1;
         private System.Windows.Forms.Label lbl_currentmode;
-        private Controls.MavlinkCheckBox mavlinkCheckBox1;
-        private Controls.MavlinkNumericUpDown mavlinkNumericUpDown1;
+        private Controls.MavlinkCheckBox mavlinkCheckBoxthr_fs;
+        private Controls.MavlinkNumericUpDown mavlinkNumericUpDownthr_fs_value;
+        private System.Windows.Forms.LinkLabel LNK_wiki;
+        private Controls.MavlinkCheckBox mavlinkCheckBoxgcs_fs;
+        private System.Windows.Forms.ToolTip toolTip1;
+        private Controls.MavlinkCheckBox mavlinkCheckBoxshort_fs;
+        private Controls.MavlinkCheckBox mavlinkCheckBoxlong_fs;
+        private Controls.MavlinkCheckBox mavlinkCheckBoxthr_fs_action;
+        private System.Windows.Forms.GroupBox groupBox1;
+        private System.Windows.Forms.Label label3;
     }
 }

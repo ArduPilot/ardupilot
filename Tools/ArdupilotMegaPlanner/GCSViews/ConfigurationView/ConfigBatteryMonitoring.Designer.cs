@@ -137,7 +137,8 @@
             resources.GetString("CMB_batmonsensortype.Items"),
             resources.GetString("CMB_batmonsensortype.Items1"),
             resources.GetString("CMB_batmonsensortype.Items2"),
-            resources.GetString("CMB_batmonsensortype.Items3")});
+            resources.GetString("CMB_batmonsensortype.Items3"),
+            resources.GetString("CMB_batmonsensortype.Items4")});
             resources.ApplyResources(this.CMB_batmonsensortype, "CMB_batmonsensortype");
             this.CMB_batmonsensortype.Name = "CMB_batmonsensortype";
             this.CMB_batmonsensortype.SelectedIndexChanged += new System.EventHandler(this.CMB_batmonsensortype_SelectedIndexChanged);

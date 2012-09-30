@@ -68,13 +68,12 @@ namespace ArdupilotMega.GCSViews
         internal static GMapOverlay kmlpolygons;
         internal static GMapOverlay geofence;
 
-        Dictionary<Guid, Form> formguids = new Dictionary<Guid,Form>();
+        Dictionary<Guid, Form> formguids = new Dictionary<Guid, Form>();
 
         bool huddropout = false;
         bool huddropoutresize = false;
 
         private DockStateSerializer _serializer = null;
-        DockableFormInfo dockhud;
 
         List<PointLatLng> trackPoints = new List<PointLatLng>();
 
@@ -99,8 +98,11 @@ namespace ArdupilotMega.GCSViews
             threadrun = 0;
             MainV2.comPort.logreadmode = false;
             MainV2.config["FlightSplitter"] = hud1.Width;
-            _serializer.Save();
-            SaveWindowLayout();
+            if (!MainV2.MONO)
+            {
+                _serializer.Save();
+                SaveWindowLayout();
+            }
             System.Threading.Thread.Sleep(100);
             base.Dispose(disposing);
         }
@@ -230,32 +232,37 @@ namespace ArdupilotMega.GCSViews
             }
             catch { }
 
-            SetupDocking();
-
-            if (File.Exists(_serializer.SavePath) == true)
+            if (MainV2.MONO)
             {
-                try
-                {
-                    _serializer.Load(true, GetFormFromGuid);
-                }
-                catch { }
+                MainH.Dock = DockStyle.Fill;
+                MainH.Visible = true;
             }
+            else
+            {
+                SetupDocking();
 
-            cleanupDocks();
+                if (File.Exists(_serializer.SavePath) == true)
+                {
+                    try
+                    {
+                        _serializer.Load(true, GetFormFromGuid);
+                    }
+                    catch { }
+                }
+            }
         }
 
         void SetupDocking()
         {
             this.SuspendLayout();
 
-            dockhud = CreateFormAndGuid(dockContainer1, hud1, "fd_hud_guid");
+            DockableFormInfo dockhud = CreateFormAndGuid(dockContainer1, hud1, "fd_hud_guid");
             DockableFormInfo dockmap = CreateFormAndGuid(dockContainer1, tableMap, "fd_map_guid");
             DockableFormInfo dockquick = CreateFormAndGuid(dockContainer1, tabQuick, "fd_quick_guid");
             DockableFormInfo dockactions = CreateFormAndGuid(dockContainer1, tabActions, "fd_actions_guid");
             DockableFormInfo dockguages = CreateFormAndGuid(dockContainer1, tabGauges, "fd_guages_guid");
             DockableFormInfo dockstatus = CreateFormAndGuid(dockContainer1, tabStatus, "fd_status_guid");
             DockableFormInfo docktlogs = CreateFormAndGuid(dockContainer1, tabTLogs, "fd_tlogs_guid");
-
 
             dockContainer1.DockForm(dockmap, DockStyle.Fill, zDockMode.Outer);
             dockContainer1.DockForm(dockquick, DockStyle.Right, zDockMode.Outer);
@@ -275,6 +282,8 @@ namespace ArdupilotMega.GCSViews
 
             dockContainer1.SetHeight(dockhud, hud1.Height);
 
+            dockContainer1.SetWidth(dockguages, 110);
+
             this.ResumeLayout();
         }
 
@@ -289,7 +298,6 @@ namespace ArdupilotMega.GCSViews
 
                 info.ShowContextMenuButton = false;
             }
-            dockContainer1.Invalidate();
         }
 
         void SaveWindowLayout()
@@ -319,7 +327,7 @@ namespace ArdupilotMega.GCSViews
                     object fieldValue;
                     try
                     {
-                        fieldValue = field.GetValue(thisBoxed,null); // Get value
+                        fieldValue = field.GetValue(thisBoxed, null); // Get value
                     }
                     catch { continue; }
 
@@ -329,10 +337,30 @@ namespace ArdupilotMega.GCSViews
                     xmlwriter.WriteElementString(field.Name, fieldValue.ToString());
                 }
 
-               // DockableContainer dockcont = info as DockableContainer;
+                thisBoxed = info.DockableForm;
+                test = thisBoxed.GetType();
 
-               // dockContainer1.
-               
+                foreach (var field in test.GetProperties())
+                {
+                    // field.Name has the field's name.
+                    object fieldValue;
+                    try
+                    {
+                        fieldValue = field.GetValue(thisBoxed, null); // Get value
+
+
+                        // Get the TypeCode enumeration. Multiple types get mapped to a common typecode.
+                        TypeCode typeCode = Type.GetTypeCode(fieldValue.GetType());
+
+                        xmlwriter.WriteElementString(field.Name, fieldValue.ToString());
+                    }
+                    catch { continue; }
+                }
+
+                // DockableContainer dockcont = info as DockableContainer;
+
+                // dockContainer1.
+
                 xmlwriter.WriteEndElement();
             }
 
@@ -342,11 +370,12 @@ namespace ArdupilotMega.GCSViews
             xmlwriter.Close();
         }
 
-        DockableFormInfo CreateFormAndGuid(DockContainer dock, Control ctl, string configguidref) 
+        DockableFormInfo CreateFormAndGuid(DockContainer dock, Control ctl, string configguidref)
         {
             Guid gu = GetOrCreateGuid(configguidref);
             Form frm;
-            if (formguids.ContainsKey(gu))
+
+            if (formguids.ContainsKey(gu) && !formguids[gu].IsDisposed)
             {
                 frm = formguids[gu];
             }
@@ -355,9 +384,18 @@ namespace ArdupilotMega.GCSViews
                 frm = CreateFormFromControl(ctl);
                 frm.AutoScroll = true;
                 formguids[gu] = frm;
-            }           
+            }
 
-            return dock.Add(frm, Crom.Controls.Docking.zAllowedDock.All, gu);
+            frm.FormBorderStyle = FormBorderStyle.SizableToolWindow;
+            frm.TopLevel = false;
+
+            DockableFormInfo answer = dock.Add(frm, Crom.Controls.Docking.zAllowedDock.All, gu);
+
+            answer.ShowCloseButton = false;
+
+            answer.ShowContextMenuButton = false;
+
+            return answer;
         }
 
         Guid GetOrCreateGuid(string configname)
@@ -367,7 +405,7 @@ namespace ArdupilotMega.GCSViews
                 MainV2.config[configname] = Guid.NewGuid().ToString();
             }
 
-            return new Guid(MainV2.config[configname].ToString()); 
+            return new Guid(MainV2.config[configname].ToString());
         }
 
         Form GetFormFromGuid(Guid id)
@@ -418,7 +456,7 @@ namespace ArdupilotMega.GCSViews
                     {
                         newform.Text = "Hud";
                     }
-                    if (ctl is myGMAP) 
+                    if (ctl is myGMAP)
                     {
                         newform.Text = "Map";
                     }
@@ -433,7 +471,7 @@ namespace ArdupilotMega.GCSViews
             // localise it
             Control tabStatus = sender as Control;
 
-          //  tabStatus.SuspendLayout();
+            //  tabStatus.SuspendLayout();
 
             //foreach (Control temp in tabStatus.Controls)
             {
@@ -517,7 +555,7 @@ namespace ArdupilotMega.GCSViews
 
             tabStatus.Width = x;
 
-         //   tabStatus.ResumeLayout();
+            //   tabStatus.ResumeLayout();
         }
 
         public void Activate()
@@ -550,7 +588,7 @@ namespace ArdupilotMega.GCSViews
                 hud1.Enabled = false;
                 hud1.Visible = false;
             }
-           //     hud1.Location = new Point(-1000,-1000);
+            //     hud1.Location = new Point(-1000,-1000);
 
             ZedGraphTimer.Stop();
         }
@@ -718,7 +756,7 @@ namespace ArdupilotMega.GCSViews
                         LogPlayBackSpeed = 0.01;
                     try
                     {
-                        ts = Math.Min((act / LogPlayBackSpeed),1000);
+                        ts = Math.Min((act / LogPlayBackSpeed), 1000);
                     }
                     catch { }
 
@@ -759,7 +797,7 @@ namespace ArdupilotMega.GCSViews
                         tunning = DateTime.Now;
                     }
 
-                    
+
 
                     if (MainV2.comPort.logplaybackfile != null && MainV2.comPort.logplaybackfile.BaseStream.Position == MainV2.comPort.logplaybackfile.BaseStream.Length)
                     {
@@ -779,18 +817,18 @@ namespace ArdupilotMega.GCSViews
                     }
                 }
 
-                
+
 
                 try
                 {
-                   // Console.WriteLine(DateTime.Now.Millisecond);
+                    // Console.WriteLine(DateTime.Now.Millisecond);
                     updateBindingSource();
-                   // Console.WriteLine(DateTime.Now.Millisecond + " done ");
+                    // Console.WriteLine(DateTime.Now.Millisecond + " done ");
 
                     if (ArdupilotMega.Controls.OpenGLtest.instance != null)
                     {
-                        ArdupilotMega.Controls.OpenGLtest.instance.rpy = new OpenTK.Vector3(MainV2.cs.roll,MainV2.cs.pitch,MainV2.cs.yaw);
-                        ArdupilotMega.Controls.OpenGLtest.instance.LocationCenter = new PointLatLngAlt(MainV2.cs.lat,MainV2.cs.lng,MainV2.cs.alt,"here");
+                        ArdupilotMega.Controls.OpenGLtest.instance.rpy = new OpenTK.Vector3(MainV2.cs.roll, MainV2.cs.pitch, MainV2.cs.yaw);
+                        ArdupilotMega.Controls.OpenGLtest.instance.LocationCenter = new PointLatLngAlt(MainV2.cs.lat, MainV2.cs.lng, MainV2.cs.alt, "here");
                     }
 
                     if (tunning.AddMilliseconds(50) < DateTime.Now && CB_tuning.Checked == true)
@@ -847,12 +885,12 @@ namespace ArdupilotMega.GCSViews
 
                         if (route.Points.Count > int.Parse(MainV2.config["NUM_tracklength"].ToString()))
                         {
-                          //  trackPoints.RemoveRange(0, trackPoints.Count - int.Parse(MainV2.config["NUM_tracklength"].ToString()));
+                            //  trackPoints.RemoveRange(0, trackPoints.Count - int.Parse(MainV2.config["NUM_tracklength"].ToString()));
                             route.Points.RemoveRange(0, route.Points.Count - int.Parse(MainV2.config["NUM_tracklength"].ToString()));
                         }
                         if (MainV2.cs.lat != 0)
                         {
-                           // trackPoints.Add(currentloc);
+                            // trackPoints.Add(currentloc);
                             route.Points.Add(currentloc);
                         }
 
@@ -880,26 +918,28 @@ namespace ArdupilotMega.GCSViews
                                 //Console.WriteLine("Doing FD WP's");
                                 updateMissionRouteMarkers();
 
-                                if (MainV2.comPort.logreadmode && MainV2.comPort.logplaybackfile != null)
+                                foreach (MAVLink.mavlink_mission_item_t plla in MainV2.comPort.wps.Values)
                                 {
-                                        FlightPlanner.pointlist.Clear();
-                                        FlightPlanner.pointlist.AddRange(MainV2.comPort.wps);
-                                }
-
-                                foreach (PointLatLngAlt plla in FlightPlanner.pointlist)
-                                {
-                                    if (plla == null)
-                                        break;
-                                    if (plla.Lng == 0 || plla.Lat == 0)
+                                    if (plla.x == 0 || plla.y == 0)
                                         continue;
 
-                                    if (plla.Tag.StartsWith("ROI"))
+                                    if (plla.command == (byte)MAVLink.MAV_CMD.ROI)
                                     {
-                                        addpolygonmarkerred(plla.Tag, plla.Lng, plla.Lat, (int)plla.Alt, plla.color, routes);
+                                        addpolygonmarkerred(plla.seq.ToString(), plla.y, plla.x, (int)plla.z, Color.Red, routes);
                                         continue;
                                     }
 
-                                    addpolygonmarker(plla.Tag, plla.Lng, plla.Lat, (int)plla.Alt,plla.color,polygons);
+                                    string tag = plla.seq.ToString();
+                                    if (plla.seq == 0 && plla.current != 2)
+                                    {
+                                        tag = "Home";
+                                    }
+                                    if (plla.current == 2)
+                                    {
+                                        continue;
+                                    }
+
+                                    addpolygonmarker(tag, plla.y, plla.x, (int)plla.z, Color.White, polygons);
                                 }
 
                                 RegeneratePolygon();
@@ -915,12 +955,12 @@ namespace ArdupilotMega.GCSViews
                                 if (routes.Markers.Count != 1)
                                 {
                                     routes.Markers.Clear();
-                                    routes.Markers.Add( new GMapMarkerCross(currentloc));
+                                    routes.Markers.Add(new GMapMarkerCross(currentloc));
                                 }
 
-                                if (MainV2.cs.mode.ToLower() == "guided" && MainV2.cs.GuidedModeWP != null && MainV2.cs.GuidedModeWP.Lat != 0)
+                                if (MainV2.cs.mode.ToLower() == "guided" && MainV2.comPort.GuidedMode.x != 0)
                                 {
-                                    addpolygonmarker("Guided Mode", MainV2.cs.GuidedModeWP.Lng, MainV2.cs.GuidedModeWP.Lat, (int)MainV2.cs.GuidedModeWP.Alt, Color.Blue, routes);
+                                    addpolygonmarker("Guided Mode", MainV2.comPort.GuidedMode.y, MainV2.comPort.GuidedMode.x, (int)MainV2.comPort.GuidedMode.z, Color.Blue, routes);
                                 }
 
                                 if (MainV2.cs.firmware == MainV2.Firmwares.ArduPlane)
@@ -999,7 +1039,7 @@ namespace ArdupilotMega.GCSViews
         {
             if (playing)
             {
-                if (BUT_playlog.Text == "Pause") 
+                if (BUT_playlog.Text == "Pause")
                     return;
 
                 this.BeginInvoke((System.Windows.Forms.MethodInvoker)delegate()
@@ -1091,18 +1131,18 @@ namespace ArdupilotMega.GCSViews
 
                 GMapMarkerRect mBorders = new GMapMarkerRect(point);
                 {
-                    
-                        mBorders.InnerMarker = m;
-                        try
-                        {
-                            mBorders.wprad = (int)(float.Parse(ArdupilotMega.MainV2.config["TXT_WPRad"].ToString()) / MainV2.cs.multiplierdist);
-                        }
-                        catch { }
-                        mBorders.MainMap = gMapControl1;
-                        if (color.HasValue)
-                        {
-                            mBorders.Color = color.Value;
-                        }
+
+                    mBorders.InnerMarker = m;
+                    try
+                    {
+                        mBorders.wprad = (int)(float.Parse(ArdupilotMega.MainV2.config["TXT_WPRad"].ToString()) / MainV2.cs.multiplierdist);
+                    }
+                    catch { }
+                    mBorders.MainMap = gMapControl1;
+                    if (color.HasValue)
+                    {
+                        mBorders.Color = color.Value;
+                    }
                 }
 
                 overlay.Markers.Add(m);
@@ -1284,7 +1324,7 @@ namespace ArdupilotMega.GCSViews
 
         private void BUT_clear_track_Click(object sender, EventArgs e)
         {
-            if (route !=null)
+            if (route != null)
                 route.Points.Clear();
         }
 
@@ -1308,7 +1348,7 @@ namespace ArdupilotMega.GCSViews
             {
                 ((Button)sender).Enabled = false;
 #if MAVLINK10
-                comPort.doCommand((MAVLink.MAV_CMD)Enum.Parse(typeof(MAVLink.MAV_CMD), CMB_action.Text),1,0,1,0,0,0,0);
+                comPort.doCommand((MAVLink.MAV_CMD)Enum.Parse(typeof(MAVLink.MAV_CMD), CMB_action.Text), 1, 0, 1, 0, 0, 0, 0);
 #else
                 comPort.doAction((MAVLink.MAV_ACTION)Enum.Parse(typeof(MAVLink.MAV_ACTION), "MAV_ACTION_" + CMB_action.Text));
 #endif
@@ -1387,11 +1427,11 @@ namespace ArdupilotMega.GCSViews
                 return;
             }
 
-            if (MainV2.cs.GuidedModeWP.Alt == 0)
+            if (MainV2.comPort.GuidedMode.z == 0)
             {
                 flyToHereAltToolStripMenuItem_Click(null, null);
 
-                if (MainV2.cs.GuidedModeWP.Alt == 0) 
+                if (MainV2.comPort.GuidedMode.z == 0)
                     return;
             }
 
@@ -1404,15 +1444,13 @@ namespace ArdupilotMega.GCSViews
             Locationwp gotohere = new Locationwp();
 
             gotohere.id = (byte)MAVLink.MAV_CMD.WAYPOINT;
-            gotohere.alt = (float)(MainV2.cs.GuidedModeWP.Alt); // back to m
+            gotohere.alt = (float)(MainV2.comPort.GuidedMode.z); // back to m
             gotohere.lat = (float)(gotolocation.Lat);
             gotohere.lng = (float)(gotolocation.Lng);
 
             try
             {
                 MainV2.comPort.setGuidedModeWP(gotohere);
-
-                MainV2.cs.GuidedModeWP = new PointLatLngAlt(gotohere.lat, gotohere.lng, gotohere.alt, "Guided Mode");
             }
             catch (Exception ex) { MainV2.giveComport = false; CustomMessageBox.Show("Error sending command : " + ex.Message); }
 
@@ -1450,8 +1488,8 @@ namespace ArdupilotMega.GCSViews
                 catch { }
             }
         }
-		
-		        private void FlightData_ParentChanged(object sender, EventArgs e)
+
+        private void FlightData_ParentChanged(object sender, EventArgs e)
         {
             if (MainV2.cam != null)
             {
@@ -1528,7 +1566,7 @@ namespace ArdupilotMega.GCSViews
             }
             else
             {
-               // BUT_clear_track_Click(sender, e);
+                // BUT_clear_track_Click(sender, e);
                 MainV2.comPort.logreadmode = true;
                 list1.Clear();
                 list2.Clear();
@@ -1665,11 +1703,7 @@ namespace ArdupilotMega.GCSViews
             try
             {
                 ((Button)sender).Enabled = false;
-#if MAVLINK10
-				MainV2.comPort.setMode("Auto");
-#else
-                comPort.doAction(MAVLink.MAV_ACTION.MAV_ACTION_SET_AUTO);
-#endif
+                MainV2.comPort.setMode("Auto");
             }
             catch { CustomMessageBox.Show("The Command failed to execute"); }
             ((Button)sender).Enabled = true;
@@ -1680,11 +1714,7 @@ namespace ArdupilotMega.GCSViews
             try
             {
                 ((Button)sender).Enabled = false;
-#if MAVLINK10
-				MainV2.comPort.setMode("RTL");
-#else
-                comPort.doAction(MAVLink.MAV_ACTION.MAV_ACTION_RETURN);
-#endif
+                MainV2.comPort.setMode("RTL");
             }
             catch { CustomMessageBox.Show("The Command failed to execute"); }
             ((Button)sender).Enabled = true;
@@ -1695,14 +1725,11 @@ namespace ArdupilotMega.GCSViews
             try
             {
                 ((Button)sender).Enabled = false;
-#if MAVLINK10
                 if (MainV2.cs.firmware == MainV2.Firmwares.ArduPlane)
-				    MainV2.comPort.setMode("Manual");
+                    MainV2.comPort.setMode("Manual");
                 if (MainV2.cs.firmware == MainV2.Firmwares.ArduCopter2)
                     MainV2.comPort.setMode("Stabilize");
-#else
-                comPort.doAction(MAVLink.MAV_ACTION.MAV_ACTION_SET_MANUAL);
-#endif
+
             }
             catch { CustomMessageBox.Show("The Command failed to execute"); }
             ((Button)sender).Enabled = true;
@@ -1745,7 +1772,7 @@ namespace ArdupilotMega.GCSViews
 
         void dropout_FormClosed(object sender, FormClosedEventArgs e)
         {
-            dockhud.DockableForm.Controls.Add(hud1);
+            GetFormFromGuid(GetOrCreateGuid("fd_hud_guid")).Controls.Add(hud1);
             huddropout = false;
         }
 
@@ -2024,7 +2051,7 @@ namespace ArdupilotMega.GCSViews
             {
                 HUD.Custom cust = new HUD.Custom();
 
-                string prefix = ((CheckBox)sender).Name +": ";
+                string prefix = ((CheckBox)sender).Name + ": ";
                 if (MainV2.config["hud1_useritem_" + ((CheckBox)sender).Name] != null)
                     prefix = (string)MainV2.config["hud1_useritem_" + ((CheckBox)sender).Name];
 
@@ -2328,11 +2355,11 @@ print 'Roll complete'
 
 ";
 
-          //  CustomMessageBox.Show("This is Very ALPHA");
+            //  CustomMessageBox.Show("This is Very ALPHA");
 
             Form scriptedit = new Form();
 
-            scriptedit.Size = new System.Drawing.Size(500,500);
+            scriptedit.Size = new System.Drawing.Size(500, 500);
 
             TextBox tb = new TextBox();
 
@@ -2341,8 +2368,8 @@ print 'Roll complete'
             tb.ScrollBars = ScrollBars.Both;
             tb.Multiline = true;
 
-            tb.Location = new Point(0,0);
-            tb.Size = new System.Drawing.Size(scriptedit.Size.Width-30,scriptedit.Size.Height-30);
+            tb.Location = new Point(0, 0);
+            tb.Size = new System.Drawing.Size(scriptedit.Size.Width - 30, scriptedit.Size.Height - 30);
 
             scriptedit.Controls.Add(tb);
 
@@ -2485,7 +2512,7 @@ print 'Roll complete'
 
                 // set databinding for value
                 ((QuickView)((CheckBox)sender).Tag).DataBindings.Clear();
-                ((QuickView)((CheckBox)sender).Tag).DataBindings.Add(new System.Windows.Forms.Binding("number",this.bindingSource1, ((CheckBox)sender).Name, true));
+                ((QuickView)((CheckBox)sender).Tag).DataBindings.Add(new System.Windows.Forms.Binding("number", this.bindingSource1, ((CheckBox)sender).Name, true));
 
                 // close selection form
                 ((Form)((CheckBox)sender).Parent).Close();
@@ -2520,11 +2547,11 @@ print 'Roll complete'
                 return;
             }
 
-            MainV2.cs.GuidedModeWP.Alt = intalt;
+            MainV2.comPort.GuidedMode.z = intalt;
 
             if (MainV2.cs.mode == "Guided")
             {
-                MainV2.comPort.setGuidedModeWP(new Locationwp() { alt = (float)MainV2.cs.GuidedModeWP.Alt, lat = (float)MainV2.cs.GuidedModeWP.Lat, lng = (float)MainV2.cs.GuidedModeWP.Lng });
+                MainV2.comPort.setGuidedModeWP(new Locationwp() { alt = (float)MainV2.comPort.GuidedMode.z, lat = (float)MainV2.comPort.GuidedMode.x, lng = (float)MainV2.comPort.GuidedMode.y });
             }
         }
 
@@ -2545,7 +2572,7 @@ print 'Roll complete'
                     splitContainer1.Panel2.Controls.Add(but);
                     splitContainer1.Panel2.Controls.Add(sc.Control);
                     ThemeManager.ApplyThemeTo(sc.Control);
-                    
+
                     sc.Control.Dock = DockStyle.Fill;
                     sc.Control.Visible = true;
 
@@ -2598,11 +2625,11 @@ print 'Roll complete'
 
         private void hud1_Resize(object sender, EventArgs e)
         {
-            Console.WriteLine("HUD resize "+ hud1.Width + " " + hud1.Height);
+            //Console.WriteLine("HUD resize "+ hud1.Width + " " + hud1.Height);
 
             try
             {
-              //  dockContainer1.SetHeight(dockhud, hud1.Height);
+                //  dockContainer1.SetHeight(dockhud, hud1.Height);
             }
             catch { }
         }
@@ -2611,8 +2638,25 @@ print 'Roll complete'
         {
             dockContainer1.Clear();
             SetupDocking();
-            cleanupDocks();
             this.Refresh();
+        }
+
+        private void BUT_ARM_Click(object sender, EventArgs e)
+        {
+            if (!MainV2.comPort.BaseStream.IsOpen)
+                return;
+
+            // arm the MAV
+            MainV2.comPort.doARM(MainV2.cs.armed);
+        }
+
+        private void modifyandSetAlt_Click(object sender, EventArgs e)
+        {
+            int newalt = (int)modifyandSetAlt.Value;
+
+            MainV2.comPort.setNewWPAlt(new Locationwp() { alt = newalt });
+
+            //MainV2.comPort.setNextWPTargetAlt((ushort)MainV2.cs.wpno, newalt);
         }
     }
 }

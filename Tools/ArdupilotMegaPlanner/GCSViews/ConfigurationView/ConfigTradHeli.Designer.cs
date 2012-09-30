@@ -33,14 +33,12 @@
             this.groupBox5 = new System.Windows.Forms.GroupBox();
             this.H_SWASH_TYPE = new System.Windows.Forms.RadioButton();
             this.CCPM = new System.Windows.Forms.RadioButton();
-            this.BUT_swash_manual = new ArdupilotMega.Controls.MyButton();
             this.label41 = new System.Windows.Forms.Label();
             this.groupBox3 = new System.Windows.Forms.GroupBox();
             this.label46 = new System.Windows.Forms.Label();
             this.label45 = new System.Windows.Forms.Label();
             this.H_GYR_ENABLE = new System.Windows.Forms.CheckBox();
             this.H_GYR_GAIN = new System.Windows.Forms.TextBox();
-            this.BUT_HS4save = new ArdupilotMega.Controls.MyButton();
             this.label21 = new System.Windows.Forms.Label();
             this.H_COL_MIN = new System.Windows.Forms.TextBox();
             this.groupBox1 = new System.Windows.Forms.GroupBox();
@@ -60,9 +58,7 @@
             this.label37 = new System.Windows.Forms.Label();
             this.label36 = new System.Windows.Forms.Label();
             this.label26 = new System.Windows.Forms.Label();
-            this.H_PIT_MAX = new System.Windows.Forms.TextBox();
             this.label25 = new System.Windows.Forms.Label();
-            this.H_ROL_MAX = new System.Windows.Forms.TextBox();
             this.label23 = new System.Windows.Forms.Label();
             this.label22 = new System.Windows.Forms.Label();
             this.label20 = new System.Windows.Forms.Label();
@@ -75,15 +71,27 @@
             this.HS2_REV = new System.Windows.Forms.CheckBox();
             this.HS1_REV = new System.Windows.Forms.CheckBox();
             this.label17 = new System.Windows.Forms.Label();
-            this.HS4 = new ArdupilotMega.HorizontalProgressBar2();
-            this.currentStateBindingSource = new System.Windows.Forms.BindingSource(this.components);
-            this.HS3 = new ArdupilotMega.VerticalProgressBar2();
-            this.Gservoloc = new AGaugeApp.AGauge();
             this.label44 = new System.Windows.Forms.Label();
             this.label43 = new System.Windows.Forms.Label();
             this.label42 = new System.Windows.Forms.Label();
             this.HS4_TRIM = new System.Windows.Forms.NumericUpDown();
             this.HS4_REV = new System.Windows.Forms.CheckBox();
+            this.label1 = new System.Windows.Forms.Label();
+            this.label2 = new System.Windows.Forms.Label();
+            this.mavlinkNumericUpDown3max = new ArdupilotMega.Controls.MavlinkNumericUpDown();
+            this.mavlinkNumericUpDown3min = new ArdupilotMega.Controls.MavlinkNumericUpDown();
+            this.mavlinkNumericUpDown2max = new ArdupilotMega.Controls.MavlinkNumericUpDown();
+            this.mavlinkNumericUpDown2min = new ArdupilotMega.Controls.MavlinkNumericUpDown();
+            this.mavlinkNumericUpDown1max = new ArdupilotMega.Controls.MavlinkNumericUpDown();
+            this.mavlinkNumericUpDown1min = new ArdupilotMega.Controls.MavlinkNumericUpDown();
+            this.BUT_swash_manual = new ArdupilotMega.Controls.MyButton();
+            this.BUT_HS4save = new ArdupilotMega.Controls.MyButton();
+            this.HS4 = new ArdupilotMega.HorizontalProgressBar2();
+            this.currentStateBindingSource = new System.Windows.Forms.BindingSource(this.components);
+            this.HS3 = new ArdupilotMega.VerticalProgressBar2();
+            this.Gservoloc = new AGaugeApp.AGauge();
+            this.mavlinkNumericUpDownrollmax = new ArdupilotMega.Controls.MavlinkNumericUpDown();
+            this.mavlinkNumericUpDownpitchmax = new ArdupilotMega.Controls.MavlinkNumericUpDown();
             this.groupBox5.SuspendLayout();
             this.groupBox3.SuspendLayout();
             this.groupBox1.SuspendLayout();
@@ -91,8 +99,16 @@
             ((System.ComponentModel.ISupportInitialize)(this.HS3_TRIM)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.HS2_TRIM)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.HS1_TRIM)).BeginInit();
-            ((System.ComponentModel.ISupportInitialize)(this.currentStateBindingSource)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.HS4_TRIM)).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)(this.mavlinkNumericUpDown3max)).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)(this.mavlinkNumericUpDown3min)).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)(this.mavlinkNumericUpDown2max)).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)(this.mavlinkNumericUpDown2min)).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)(this.mavlinkNumericUpDown1max)).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)(this.mavlinkNumericUpDown1min)).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)(this.currentStateBindingSource)).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)(this.mavlinkNumericUpDownrollmax)).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)(this.mavlinkNumericUpDownpitchmax)).BeginInit();
             this.SuspendLayout();
             // 
             // groupBox5
@@ -117,13 +133,6 @@
             this.CCPM.Name = "CCPM";
             this.CCPM.TabStop = true;
             this.CCPM.UseVisualStyleBackColor = true;
-            // 
-            // BUT_swash_manual
-            // 
-            resources.ApplyResources(this.BUT_swash_manual, "BUT_swash_manual");
-            this.BUT_swash_manual.Name = "BUT_swash_manual";
-            this.BUT_swash_manual.UseVisualStyleBackColor = true;
-            this.BUT_swash_manual.Click += new System.EventHandler(this.BUT_swash_manual_Click);
             // 
             // label41
             // 
@@ -162,13 +171,6 @@
             resources.ApplyResources(this.H_GYR_GAIN, "H_GYR_GAIN");
             this.H_GYR_GAIN.Name = "H_GYR_GAIN";
             this.H_GYR_GAIN.Validating += new System.ComponentModel.CancelEventHandler(this.GYR_GAIN__Validating);
-            // 
-            // BUT_HS4save
-            // 
-            resources.ApplyResources(this.BUT_HS4save, "BUT_HS4save");
-            this.BUT_HS4save.Name = "BUT_HS4save";
-            this.BUT_HS4save.UseVisualStyleBackColor = true;
-            this.BUT_HS4save.Click += new System.EventHandler(this.BUT_HS4save_Click);
             // 
             // label21
             // 
@@ -335,22 +337,10 @@
             resources.ApplyResources(this.label26, "label26");
             this.label26.Name = "label26";
             // 
-            // H_PIT_MAX
-            // 
-            resources.ApplyResources(this.H_PIT_MAX, "H_PIT_MAX");
-            this.H_PIT_MAX.Name = "H_PIT_MAX";
-            this.H_PIT_MAX.Validating += new System.ComponentModel.CancelEventHandler(this.PIT_MAX__Validating);
-            // 
             // label25
             // 
             resources.ApplyResources(this.label25, "label25");
             this.label25.Name = "label25";
-            // 
-            // H_ROL_MAX
-            // 
-            resources.ApplyResources(this.H_ROL_MAX, "H_ROL_MAX");
-            this.H_ROL_MAX.Name = "H_ROL_MAX";
-            this.H_ROL_MAX.Validating += new System.ComponentModel.CancelEventHandler(this.ROL_MAX__Validating);
             // 
             // label23
             // 
@@ -420,6 +410,127 @@
             // 
             resources.ApplyResources(this.label17, "label17");
             this.label17.Name = "label17";
+            // 
+            // label44
+            // 
+            resources.ApplyResources(this.label44, "label44");
+            this.label44.Name = "label44";
+            // 
+            // label43
+            // 
+            resources.ApplyResources(this.label43, "label43");
+            this.label43.Name = "label43";
+            // 
+            // label42
+            // 
+            resources.ApplyResources(this.label42, "label42");
+            this.label42.Name = "label42";
+            // 
+            // HS4_TRIM
+            // 
+            resources.ApplyResources(this.HS4_TRIM, "HS4_TRIM");
+            this.HS4_TRIM.Maximum = new decimal(new int[] {
+            2000,
+            0,
+            0,
+            0});
+            this.HS4_TRIM.Minimum = new decimal(new int[] {
+            1000,
+            0,
+            0,
+            0});
+            this.HS4_TRIM.Name = "HS4_TRIM";
+            this.HS4_TRIM.Value = new decimal(new int[] {
+            1500,
+            0,
+            0,
+            0});
+            this.HS4_TRIM.ValueChanged += new System.EventHandler(this.HS4_TRIM_ValueChanged);
+            // 
+            // HS4_REV
+            // 
+            resources.ApplyResources(this.HS4_REV, "HS4_REV");
+            this.HS4_REV.Name = "HS4_REV";
+            this.HS4_REV.UseVisualStyleBackColor = true;
+            this.HS4_REV.CheckedChanged += new System.EventHandler(this.HS4_REV_CheckedChanged);
+            // 
+            // label1
+            // 
+            resources.ApplyResources(this.label1, "label1");
+            this.label1.Name = "label1";
+            // 
+            // label2
+            // 
+            resources.ApplyResources(this.label2, "label2");
+            this.label2.Name = "label2";
+            // 
+            // mavlinkNumericUpDown3max
+            // 
+            resources.ApplyResources(this.mavlinkNumericUpDown3max, "mavlinkNumericUpDown3max");
+            this.mavlinkNumericUpDown3max.Max = 1F;
+            this.mavlinkNumericUpDown3max.Min = 0F;
+            this.mavlinkNumericUpDown3max.Name = "mavlinkNumericUpDown3max";
+            this.mavlinkNumericUpDown3max.param = null;
+            this.mavlinkNumericUpDown3max.ParamName = null;
+            // 
+            // mavlinkNumericUpDown3min
+            // 
+            resources.ApplyResources(this.mavlinkNumericUpDown3min, "mavlinkNumericUpDown3min");
+            this.mavlinkNumericUpDown3min.Max = 1F;
+            this.mavlinkNumericUpDown3min.Min = 0F;
+            this.mavlinkNumericUpDown3min.Name = "mavlinkNumericUpDown3min";
+            this.mavlinkNumericUpDown3min.param = null;
+            this.mavlinkNumericUpDown3min.ParamName = null;
+            // 
+            // mavlinkNumericUpDown2max
+            // 
+            resources.ApplyResources(this.mavlinkNumericUpDown2max, "mavlinkNumericUpDown2max");
+            this.mavlinkNumericUpDown2max.Max = 1F;
+            this.mavlinkNumericUpDown2max.Min = 0F;
+            this.mavlinkNumericUpDown2max.Name = "mavlinkNumericUpDown2max";
+            this.mavlinkNumericUpDown2max.param = null;
+            this.mavlinkNumericUpDown2max.ParamName = null;
+            // 
+            // mavlinkNumericUpDown2min
+            // 
+            resources.ApplyResources(this.mavlinkNumericUpDown2min, "mavlinkNumericUpDown2min");
+            this.mavlinkNumericUpDown2min.Max = 1F;
+            this.mavlinkNumericUpDown2min.Min = 0F;
+            this.mavlinkNumericUpDown2min.Name = "mavlinkNumericUpDown2min";
+            this.mavlinkNumericUpDown2min.param = null;
+            this.mavlinkNumericUpDown2min.ParamName = null;
+            // 
+            // mavlinkNumericUpDown1max
+            // 
+            resources.ApplyResources(this.mavlinkNumericUpDown1max, "mavlinkNumericUpDown1max");
+            this.mavlinkNumericUpDown1max.Max = 1F;
+            this.mavlinkNumericUpDown1max.Min = 0F;
+            this.mavlinkNumericUpDown1max.Name = "mavlinkNumericUpDown1max";
+            this.mavlinkNumericUpDown1max.param = null;
+            this.mavlinkNumericUpDown1max.ParamName = null;
+            // 
+            // mavlinkNumericUpDown1min
+            // 
+            resources.ApplyResources(this.mavlinkNumericUpDown1min, "mavlinkNumericUpDown1min");
+            this.mavlinkNumericUpDown1min.Max = 1F;
+            this.mavlinkNumericUpDown1min.Min = 0F;
+            this.mavlinkNumericUpDown1min.Name = "mavlinkNumericUpDown1min";
+            this.mavlinkNumericUpDown1min.param = null;
+            this.mavlinkNumericUpDown1min.ParamName = null;
+            // 
+            // BUT_swash_manual
+            // 
+            resources.ApplyResources(this.BUT_swash_manual, "BUT_swash_manual");
+            this.BUT_swash_manual.Name = "BUT_swash_manual";
+            this.BUT_swash_manual.UseVisualStyleBackColor = true;
+            this.BUT_swash_manual.Click += new System.EventHandler(this.BUT_swash_manual_Click);
+            // 
+            // BUT_HS4save
+            // 
+            resources.ApplyResources(this.BUT_HS4save, "BUT_HS4save");
+            this.BUT_HS4save.Name = "BUT_HS4save";
+            this.BUT_HS4save.UseVisualStyleBackColor = true;
+            this.BUT_HS4save.Click += new System.EventHandler(this.BUT_HS4save_Click);
             // 
             // HS4
             // 
@@ -600,53 +711,38 @@
             this.Gservoloc.Value2 = 180F;
             this.Gservoloc.Value3 = 0F;
             // 
-            // label44
+            // mavlinkNumericUpDownrollmax
             // 
-            resources.ApplyResources(this.label44, "label44");
-            this.label44.Name = "label44";
+            resources.ApplyResources(this.mavlinkNumericUpDownrollmax, "mavlinkNumericUpDownrollmax");
+            this.mavlinkNumericUpDownrollmax.Max = 1F;
+            this.mavlinkNumericUpDownrollmax.Min = 0F;
+            this.mavlinkNumericUpDownrollmax.Name = "mavlinkNumericUpDownrollmax";
+            this.mavlinkNumericUpDownrollmax.param = null;
+            this.mavlinkNumericUpDownrollmax.ParamName = null;
             // 
-            // label43
+            // mavlinkNumericUpDownpitchmax
             // 
-            resources.ApplyResources(this.label43, "label43");
-            this.label43.Name = "label43";
-            // 
-            // label42
-            // 
-            resources.ApplyResources(this.label42, "label42");
-            this.label42.Name = "label42";
-            // 
-            // HS4_TRIM
-            // 
-            resources.ApplyResources(this.HS4_TRIM, "HS4_TRIM");
-            this.HS4_TRIM.Maximum = new decimal(new int[] {
-            2000,
-            0,
-            0,
-            0});
-            this.HS4_TRIM.Minimum = new decimal(new int[] {
-            1000,
-            0,
-            0,
-            0});
-            this.HS4_TRIM.Name = "HS4_TRIM";
-            this.HS4_TRIM.Value = new decimal(new int[] {
-            1500,
-            0,
-            0,
-            0});
-            this.HS4_TRIM.ValueChanged += new System.EventHandler(this.HS4_TRIM_ValueChanged);
-            // 
-            // HS4_REV
-            // 
-            resources.ApplyResources(this.HS4_REV, "HS4_REV");
-            this.HS4_REV.Name = "HS4_REV";
-            this.HS4_REV.UseVisualStyleBackColor = true;
-            this.HS4_REV.CheckedChanged += new System.EventHandler(this.HS4_REV_CheckedChanged);
+            resources.ApplyResources(this.mavlinkNumericUpDownpitchmax, "mavlinkNumericUpDownpitchmax");
+            this.mavlinkNumericUpDownpitchmax.Max = 1F;
+            this.mavlinkNumericUpDownpitchmax.Min = 0F;
+            this.mavlinkNumericUpDownpitchmax.Name = "mavlinkNumericUpDownpitchmax";
+            this.mavlinkNumericUpDownpitchmax.param = null;
+            this.mavlinkNumericUpDownpitchmax.ParamName = null;
             // 
             // ConfigTradHeli
             // 
             resources.ApplyResources(this, "$this");
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
+            this.Controls.Add(this.mavlinkNumericUpDownpitchmax);
+            this.Controls.Add(this.mavlinkNumericUpDownrollmax);
+            this.Controls.Add(this.label2);
+            this.Controls.Add(this.label1);
+            this.Controls.Add(this.mavlinkNumericUpDown3max);
+            this.Controls.Add(this.mavlinkNumericUpDown3min);
+            this.Controls.Add(this.mavlinkNumericUpDown2max);
+            this.Controls.Add(this.mavlinkNumericUpDown2min);
+            this.Controls.Add(this.mavlinkNumericUpDown1max);
+            this.Controls.Add(this.mavlinkNumericUpDown1min);
             this.Controls.Add(this.label44);
             this.Controls.Add(this.label43);
             this.Controls.Add(this.label42);
@@ -666,9 +762,7 @@
             this.Controls.Add(this.label37);
             this.Controls.Add(this.label36);
             this.Controls.Add(this.label26);
-            this.Controls.Add(this.H_PIT_MAX);
             this.Controls.Add(this.label25);
-            this.Controls.Add(this.H_ROL_MAX);
             this.Controls.Add(this.label23);
             this.Controls.Add(this.label22);
             this.Controls.Add(this.label20);
@@ -696,8 +790,16 @@
             ((System.ComponentModel.ISupportInitialize)(this.HS3_TRIM)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.HS2_TRIM)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.HS1_TRIM)).EndInit();
-            ((System.ComponentModel.ISupportInitialize)(this.currentStateBindingSource)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.HS4_TRIM)).EndInit();
+            ((System.ComponentModel.ISupportInitialize)(this.mavlinkNumericUpDown3max)).EndInit();
+            ((System.ComponentModel.ISupportInitialize)(this.mavlinkNumericUpDown3min)).EndInit();
+            ((System.ComponentModel.ISupportInitialize)(this.mavlinkNumericUpDown2max)).EndInit();
+            ((System.ComponentModel.ISupportInitialize)(this.mavlinkNumericUpDown2min)).EndInit();
+            ((System.ComponentModel.ISupportInitialize)(this.mavlinkNumericUpDown1max)).EndInit();
+            ((System.ComponentModel.ISupportInitialize)(this.mavlinkNumericUpDown1min)).EndInit();
+            ((System.ComponentModel.ISupportInitialize)(this.currentStateBindingSource)).EndInit();
+            ((System.ComponentModel.ISupportInitialize)(this.mavlinkNumericUpDownrollmax)).EndInit();
+            ((System.ComponentModel.ISupportInitialize)(this.mavlinkNumericUpDownpitchmax)).EndInit();
             this.ResumeLayout(false);
             this.PerformLayout();
 
@@ -735,9 +837,7 @@
         private System.Windows.Forms.Label label37;
         private System.Windows.Forms.Label label36;
         private System.Windows.Forms.Label label26;
-        private System.Windows.Forms.TextBox H_PIT_MAX;
         private System.Windows.Forms.Label label25;
-        private System.Windows.Forms.TextBox H_ROL_MAX;
         private System.Windows.Forms.Label label23;
         private System.Windows.Forms.Label label22;
         private System.Windows.Forms.Label label20;
@@ -759,5 +859,15 @@
         private System.Windows.Forms.Label label42;
         private System.Windows.Forms.NumericUpDown HS4_TRIM;
         private System.Windows.Forms.CheckBox HS4_REV;
+        private Controls.MavlinkNumericUpDown mavlinkNumericUpDown1min;
+        private Controls.MavlinkNumericUpDown mavlinkNumericUpDown1max;
+        private Controls.MavlinkNumericUpDown mavlinkNumericUpDown2max;
+        private Controls.MavlinkNumericUpDown mavlinkNumericUpDown2min;
+        private Controls.MavlinkNumericUpDown mavlinkNumericUpDown3max;
+        private Controls.MavlinkNumericUpDown mavlinkNumericUpDown3min;
+        private System.Windows.Forms.Label label1;
+        private System.Windows.Forms.Label label2;
+        private Controls.MavlinkNumericUpDown mavlinkNumericUpDownrollmax;
+        private Controls.MavlinkNumericUpDown mavlinkNumericUpDownpitchmax;
     }
 }

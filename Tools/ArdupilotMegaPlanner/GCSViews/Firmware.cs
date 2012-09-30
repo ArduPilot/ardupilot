@@ -10,6 +10,8 @@ using log4net;
 using ArdupilotMega.Arduino;
 using ArdupilotMega.Utilities;
 using System.Text.RegularExpressions;
+using System.Net.Security;
+using System.Security.Cryptography.X509Certificates;
 
 namespace ArdupilotMega.GCSViews
 {
@@ -84,9 +86,13 @@ namespace ArdupilotMega.GCSViews
 
             software temp = new software();
 
+            // this is for mono to a ssl server
+            //ServicePointManager.CertificatePolicy = new NoCheckCertificatePolicy(); 
+            ServicePointManager.ServerCertificateValidationCallback = new System.Net.Security.RemoteCertificateValidationCallback((sender1, certificate, chain, policyErrors) => { return true; });
+
             try
             {
-
+                log.Info("url: "+firmwareurl);
                 using (XmlTextReader xmlreader = new XmlTextReader(firmwareurl))
                 {
                     while (xmlreader.Read())
@@ -147,6 +153,7 @@ namespace ArdupilotMega.GCSViews
             }
             catch (Exception ex)
             {
+                log.Error(ex);
                 CustomMessageBox.Show("Failed to get Firmware List : " + ex.Message);
             }
             log.Info("FW load done");

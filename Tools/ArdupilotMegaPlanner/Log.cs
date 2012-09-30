@@ -62,6 +62,23 @@ namespace ArdupilotMega
             InitializeComponent();
         }
 
+        private void waitandsleep(int time)
+        {
+            DateTime start = DateTime.Now;
+
+            while ((DateTime.Now - start).TotalMilliseconds < time)
+            {
+                try
+                {
+                    if (comPort.BytesToRead > 0)
+                    {
+                        return;
+                    }
+                }
+                catch { threadrun = false; return; }
+            }
+        }
+
         private void readandsleep(int time)
         {
             DateTime start = DateTime.Now;
@@ -85,12 +102,15 @@ namespace ArdupilotMega
 
             comPort = MainV2.comPort.BaseStream;
 
-            //comPort.ReceivedBytesThreshold = 50;
-            //comPort.ReadBufferSize = 1024 * 1024;
             try
             {
+
                 comPort.toggleDTR();
-                //comPort.Open();
+
+                comPort.DiscardInBuffer();
+
+                // 10 sec
+                waitandsleep(10000);
             }
             catch (Exception ex)
             {
@@ -104,7 +124,7 @@ namespace ArdupilotMega
 
                 threadrun = true;
 
-                readandsleep(2500);
+                readandsleep(100);
 
                 try
                 {

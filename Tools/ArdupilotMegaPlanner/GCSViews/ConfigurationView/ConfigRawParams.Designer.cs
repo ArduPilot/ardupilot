@@ -140,6 +140,12 @@
             resources.ApplyResources(this.RawValue, "RawValue");
             this.RawValue.Name = "RawValue";
             // 
+            // toolTip1
+            // 
+            this.toolTip1.AutoPopDelay = 20000;
+            this.toolTip1.InitialDelay = 500;
+            this.toolTip1.ReshowDelay = 100;
+            // 
             // ConfigRawParams
             // 
             resources.ApplyResources(this, "$this");

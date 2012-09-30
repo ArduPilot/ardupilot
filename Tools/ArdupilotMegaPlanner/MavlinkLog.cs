@@ -1333,6 +1333,8 @@ namespace ArdupilotMega
                 foreach (string logfile in openFileDialog1.FileNames)
                 {
 
+                    int wplists = 0;
+
                     MAVLink mine = new MAVLink();
                     try
                     {
@@ -1344,17 +1346,28 @@ namespace ArdupilotMega
 
                     mine.packets.Initialize(); // clear
 
-                    StreamWriter sw = new StreamWriter(Path.GetDirectoryName(logfile) + Path.DirectorySeparatorChar + Path.GetFileNameWithoutExtension(logfile) + ".txt");
+                    while (mine.logplaybackfile.BaseStream.Position < mine.logplaybackfile.BaseStream.Length)
+                    {
+                        // bar moves to 100 % in this step
+                        progressBar1.Value = (int)((float)mine.logplaybackfile.BaseStream.Position / (float)mine.logplaybackfile.BaseStream.Length * 100.0f / 1.0f);
 
-                    // bar moves to 100 % in this step
-                    progressBar1.Value = (int)((float)mine.logplaybackfile.BaseStream.Position / (float)mine.logplaybackfile.BaseStream.Length * 100.0f / 1.0f);
+                        progressBar1.Refresh();
+                        //Application.DoEvents();
+                        byte count = 0;
+                        try
+                        {
+                            count = mine.getWPCount();
+                        }
+                        catch { }
 
-                    progressBar1.Refresh();
-                    //Application.DoEvents();
+                        if (count == 0)
+                        {
+                            continue;
+                        }
 
-                    sw.WriteLine("QGC WPL 110");
+                        StreamWriter sw = new StreamWriter(Path.GetDirectoryName(logfile) + Path.DirectorySeparatorChar + Path.GetFileNameWithoutExtension(logfile) + "-" + wplists + ".txt");
 
-                        byte count = mine.getWPCount();
+                        sw.WriteLine("QGC WPL 110");
                         for (ushort a = 0; a < count; a++)
                         {
                             Locationwp wp = mine.getWP(a);
@@ -1375,8 +1388,10 @@ namespace ArdupilotMega
                             sw.Write("\t" + 1);
                             sw.WriteLine("");
                         }
-                    
-                    sw.Close();
+
+                        sw.Close();
+                        wplists++;
+                    }
 
                     progressBar1.Value = 100;
 
