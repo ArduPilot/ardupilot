@@ -109,12 +109,12 @@ void roll_pitch_toy()
     int16_t yaw_rate = g.rc_1.control_in / g.toy_yaw_rate;
 
     if(g.rc_1.control_in != 0) {    // roll
-        g.rc_4.servo_out = get_acro_yaw(yaw_rate/2);
+        get_acro_yaw(yaw_rate/2);
         yaw_stopped = false;
         yaw_timer = 150;
 
     }else if (!yaw_stopped) {
-        g.rc_4.servo_out = get_acro_yaw(0);
+        get_acro_yaw(0);
         yaw_timer--;
 
         if((yaw_timer == 0) || (fabs(omega.z) < .17)) {
@@ -125,7 +125,7 @@ void roll_pitch_toy()
         if(motors.armed() == false || g.rc_3.control_in == 0)
             nav_yaw = ahrs.yaw_sensor;
 
-        g.rc_4.servo_out = get_stabilize_yaw(nav_yaw);
+        get_stabilize_yaw(nav_yaw);
     }
 #endif
 
@@ -167,13 +167,17 @@ void roll_pitch_toy()
 
 #if TOY_EDF == ENABLED
     // Output the attitude
-    g.rc_1.servo_out = get_stabilize_roll(roll_rate);
-    g.rc_2.servo_out = get_stabilize_pitch(g.rc_6.control_in);             // use CH6 to trim pitch
+    //g.rc_1.servo_out = get_stabilize_roll(roll_rate);
+    //g.rc_2.servo_out = get_stabilize_pitch(g.rc_6.control_in);             // use CH6 to trim pitch
+    get_stabilize_roll(roll_rate);
+    get_stabilize_pitch(g.rc_6.control_in);             // use CH6 to trim pitch
 
 #else
     // Output the attitude
-    g.rc_1.servo_out = get_stabilize_roll(roll_rate);
-    g.rc_2.servo_out = get_stabilize_pitch(g.rc_2.control_in);
+    //g.rc_1.servo_out = get_stabilize_roll(roll_rate);
+    //g.rc_2.servo_out = get_stabilize_pitch(g.rc_2.control_in);
+    get_stabilize_roll(roll_rate);
+    get_stabilize_pitch(g.rc_2.control_in);
 #endif
 
 }

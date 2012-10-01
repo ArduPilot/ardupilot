@@ -27,7 +27,8 @@ void init_flip()
 void roll_flip()
 {
     // Pitch
-    g.rc_2.servo_out = get_stabilize_pitch(g.rc_2.control_in);
+    //g.rc_2.servo_out = get_stabilize_pitch(g.rc_2.control_in);
+    get_stabilize_pitch(g.rc_2.control_in);
 
     int32_t roll = ahrs.roll_sensor * flip_dir;
 
@@ -55,7 +56,8 @@ void roll_flip()
 
     case 2:
         if (flip_timer < 100) {
-            g.rc_1.servo_out = get_stabilize_roll(g.rc_1.control_in);
+            //g.rc_1.servo_out = get_stabilize_roll(g.rc_1.control_in);
+            get_stabilize_roll(g.rc_1.control_in);
             g.rc_3.servo_out = g.rc_3.control_in + AAP_THR_INC;
             flip_timer++;
         }else{
