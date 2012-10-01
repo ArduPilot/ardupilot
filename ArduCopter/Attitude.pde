@@ -1,6 +1,6 @@
 /// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 
-static int16_t
+static void
 get_stabilize_roll(int32_t target_angle)
 {
     // angle error
@@ -29,11 +29,13 @@ get_stabilize_roll(int32_t target_angle)
         i_stab                          = g.pi_stabilize_roll.get_integrator();
     }
 
-    return get_rate_roll(target_rate) + i_stab;
+    // set targets for rate controller
+    roll_rate_target_ef = target_rate;
+    roll_rate_trim_ef = i_stab;
 #endif
 }
 
-static int16_t
+static void
 get_stabilize_pitch(int32_t target_angle)
 {
     // angle error
@@ -60,17 +62,20 @@ get_stabilize_pitch(int32_t target_angle)
     }else{
         i_stab                          = g.pi_stabilize_pitch.get_integrator();
     }
-    return get_rate_pitch(target_rate) + i_stab;
+
+    // set targets for rate controller
+    pitch_rate_target_ef = target_rate;
+    pitch_rate_trim_ef = i_stab;
 
 #endif
 }
 
-static int16_t
+static void
 get_stabilize_yaw(int32_t target_angle)
 {
     int32_t target_rate,i_term;
     int32_t angle_error;
-    int32_t output;
+    int32_t output = 0;
 
     // angle error
     angle_error             = wrap_180(target_angle - ahrs.yaw_sensor);
@@ -89,12 +94,12 @@ get_stabilize_yaw(int32_t target_angle)
     // do not use rate controllers for helicotpers with external gyros
 #if FRAME_CONFIG == HELI_FRAME
     if(!motors.ext_gyro_enabled) {
-        output = get_rate_yaw(target_rate) + i_term;
+        yaw_rate_target_ef = target_rate;
+        yaw_rate_trim_ef = i_term;
     }else{
+        // TO-DO: fix this for helicopters which don't use rate controller
         output = constrain((target_rate + i_term), -4500, 4500);
     }
-#else
-    output = get_rate_yaw(target_rate) + i_term;
 #endif
 
 #if LOGGING_ENABLED == ENABLED
@@ -109,29 +114,39 @@ get_stabilize_yaw(int32_t target_angle)
     }
 #endif
 
-    // ensure output does not go beyond barries of what an int16_t can hold
-    return constrain(output,-32000,32000);
+    // set targets for rate controller
+    yaw_rate_target_ef = target_rate;
+    yaw_rate_trim_ef = i_term;
 }
 
-static int16_t
+static void
 get_acro_roll(int32_t target_rate)
 {
     target_rate = target_rate * g.acro_p;
-    return get_rate_roll(target_rate);
+
+    // set targets for rate controller
+    roll_rate_target_ef = target_rate;
+    roll_rate_trim_ef = 0;
 }
 
-static int16_t
+static void
 get_acro_pitch(int32_t target_rate)
 {
     target_rate = target_rate * g.acro_p;
-    return get_rate_pitch(target_rate);
+
+    // set targets for rate controller
+    pitch_rate_target_ef = target_rate;
+    pitch_rate_trim_ef = 0;
 }
 
-static int16_t
+static void
 get_acro_yaw(int32_t target_rate)
 {
     target_rate = g.pi_stabilize_yaw.get_p(target_rate);
-    return get_rate_yaw(target_rate);
+
+    // set targets for rate controller
+    yaw_rate_target_ef = target_rate;
+    yaw_rate_trim_ef = 0;
 }
 
 /*
@@ -207,6 +222,35 @@ get_acro_yaw(int32_t target_rate)
  *       return output;
  *  }
  */
+
+ // update_rate_contoller_targets - converts earth frame rates to body frame rates for rate controllers
+ void
+ update_rate_contoller_targets()
+ {
+    static int16_t counter = 0;
+    // convert earth frame rates to body frame rates
+    roll_rate_target_bf = roll_rate_target_ef + sin_pitch * yaw_rate_target_ef;
+    pitch_rate_target_bf = cos_roll_x * pitch_rate_target_ef + sin_roll * yaw_rate_target_ef;
+    yaw_rate_target_bf = cos_pitch_x * cos_roll_x * yaw_rate_target_ef + sin_roll * pitch_rate_target_ef;
+
+    //counter++;
+    if( counter >= 100 ) {
+        counter = 0;
+        Serial.printf_P(PSTR("\nr:%ld\tp:%ld\ty:%ld\t"),ahrs.roll_sensor, ahrs.pitch_sensor, ahrs.yaw_sensor);
+        Serial.printf_P(PSTR("Rrate:%ld/%ld\tPrate:%ld/%ld\tYrate:%ld/%ld\n"),roll_rate_target_ef, roll_rate_target_bf, pitch_rate_target_ef, pitch_rate_target_bf, yaw_rate_target_ef, yaw_rate_target_bf);
+    }
+ }
+ 
+// run roll, pitch and yaw rate controllers and send output to motors
+// targets for these controllers comes from stabilize controllers
+void
+run_rate_controllers()
+{
+    // call rate controllers
+    g.rc_1.servo_out = get_rate_roll(roll_rate_target_bf) + roll_rate_trim_ef;
+    g.rc_2.servo_out = get_rate_pitch(pitch_rate_target_bf) + pitch_rate_trim_ef;
+    g.rc_4.servo_out = get_rate_yaw(yaw_rate_target_bf) + yaw_rate_trim_ef;
+}
 
 static int16_t
 get_rate_roll(int32_t target_rate)
@@ -346,6 +390,7 @@ get_rate_yaw(int32_t target_rate)
 #else
     // output control:
     int16_t yaw_limit = 2200 + abs(g.rc_4.control_in);
+
     // smoother Yaw control:
     return constrain(output, -yaw_limit, yaw_limit);
 #endif

@@ -567,6 +567,8 @@ static float cos_roll_x         = 1;
 static float cos_pitch_x        = 1;
 static float cos_yaw_x          = 1;
 static float sin_yaw_y;
+static float sin_roll;
+static float sin_pitch;
 
 ////////////////////////////////////////////////////////////////////////////////
 // SIMPLE Mode
@@ -574,6 +576,19 @@ static float sin_yaw_y;
 // Used to track the orientation of the copter for Simple mode. This value is reset at each arming
 // or in SuperSimple mode when the copter leaves a 20m radius from home.
 static int32_t initial_simple_bearing;
+
+////////////////////////////////////////////////////////////////////////////////
+// Rate contoller targets
+////////////////////////////////////////////////////////////////////////////////
+static int32_t roll_rate_target_ef = 0;
+static int32_t roll_rate_trim_ef = 0;      // normally i term from stabilize controller
+static int32_t pitch_rate_target_ef = 0;
+static int32_t pitch_rate_trim_ef = 0;      // normally i term from stabilize controller
+static int32_t yaw_rate_target_ef = 0;
+static int32_t yaw_rate_trim_ef = 0;      // normally i term from stabilize controller
+static int32_t roll_rate_target_bf = 0;     // body frame roll rate target
+static int32_t pitch_rate_target_bf = 0;    // body frame pitch rate target
+static int32_t yaw_rate_target_bf = 0;      // body frame yaw rate target
 
 ////////////////////////////////////////////////////////////////////////////////
 // ACRO Mode
@@ -1073,6 +1088,13 @@ static void fast_loop()
     // some space available
     gcs_send_message(MSG_RETRY_DEFERRED);
 
+    // run low level rate controllers that only require IMU data
+    run_rate_controllers();
+
+    // write out the servo PWM values
+    // ------------------------------
+    set_servos_4();
+
     // Read radio
     // ----------
     read_radio();
@@ -1100,9 +1122,8 @@ static void fast_loop()
     update_yaw_mode();
     update_roll_pitch_mode();
 
-    // write out the servo PWM values
-    // ------------------------------
-    set_servos_4();
+    // update targets to rate controllers
+    update_rate_contoller_targets();
 
     // agmatthews - USERHOOKS
 #ifdef USERHOOK_FASTLOOP
@@ -1564,7 +1585,7 @@ void update_yaw_mode(void)
 {
     switch(yaw_mode) {
     case YAW_ACRO:
-        g.rc_4.servo_out = get_acro_yaw(g.rc_4.control_in);
+        get_acro_yaw(g.rc_4.control_in);
         return;
         break;
 
@@ -1575,12 +1596,12 @@ void update_yaw_mode(void)
 
     case YAW_HOLD:
         if(g.rc_4.control_in != 0) {
-            g.rc_4.servo_out = get_acro_yaw(g.rc_4.control_in);
+            get_acro_yaw(g.rc_4.control_in);
             yaw_stopped = false;
             yaw_timer = 150;
 
         }else if (!yaw_stopped) {
-            g.rc_4.servo_out = get_acro_yaw(0);
+            get_acro_yaw(0);
             yaw_timer--;
 
             if((yaw_timer == 0) || (fabs(omega.z) < .17)) {
@@ -1593,21 +1614,21 @@ void update_yaw_mode(void)
             if(motors.armed() == false || ((g.rc_3.control_in == 0) && (control_mode <= ACRO) && !failsafe))
                 nav_yaw = ahrs.yaw_sensor;
 
-            g.rc_4.servo_out = get_stabilize_yaw(nav_yaw);
+            get_stabilize_yaw(nav_yaw);
         }
         return;
         break;
 
     case YAW_LOOK_AT_HOME:
         //nav_yaw updated in update_navigation()
-        g.rc_4.servo_out = get_stabilize_yaw(nav_yaw);
+        get_stabilize_yaw(nav_yaw);
         break;
 
     case YAW_AUTO:
         nav_yaw += constrain(wrap_180(auto_yaw - nav_yaw), -60, 60);                 // 40 deg a second
         //Serial.printf("nav_yaw %d ", nav_yaw);
         nav_yaw  = wrap_360(nav_yaw);
-        g.rc_4.servo_out = get_stabilize_yaw(nav_yaw);
+        get_stabilize_yaw(nav_yaw);
         break;
     }
 }
@@ -1634,8 +1655,8 @@ void update_roll_pitch_mode(void)
             pitch_axis = wrap_360(pitch_axis);
 
             // in this mode, nav_roll and nav_pitch = the iterm
-            g.rc_1.servo_out = get_stabilize_roll(roll_axis);
-            g.rc_2.servo_out = get_stabilize_pitch(pitch_axis);
+            get_stabilize_roll(roll_axis);
+            get_stabilize_pitch(pitch_axis);
 
             if (g.rc_3.control_in == 0) {
                 roll_axis = 0;
@@ -1649,12 +1670,12 @@ void update_roll_pitch_mode(void)
                 g.rc_1.servo_out = g.rc_1.control_in;
                 g.rc_2.servo_out = g.rc_2.control_in;
             } else {
-                g.rc_1.servo_out = get_acro_roll(g.rc_1.control_in);
-                g.rc_2.servo_out = get_acro_pitch(g.rc_2.control_in);
+                get_acro_roll(g.rc_1.control_in);
+                get_acro_pitch(g.rc_2.control_in);
             }
 #else
-            g.rc_1.servo_out = get_acro_roll(g.rc_1.control_in);
-            g.rc_2.servo_out = get_acro_pitch(g.rc_2.control_in);
+            get_acro_roll(g.rc_1.control_in);
+            get_acro_pitch(g.rc_2.control_in);
 #endif
         }
         break;
@@ -1669,8 +1690,9 @@ void update_roll_pitch_mode(void)
         control_pitch           = g.rc_2.control_in;
 
         // in this mode, nav_roll and nav_pitch = the iterm
-        g.rc_1.servo_out = get_stabilize_roll(control_roll);
-        g.rc_2.servo_out = get_stabilize_pitch(control_pitch);
+        get_stabilize_roll(control_roll);
+        get_stabilize_pitch(control_pitch);
+
         break;
 
     case ROLL_PITCH_AUTO:
@@ -1685,8 +1707,8 @@ void update_roll_pitch_mode(void)
         control_roll            = g.rc_1.control_mix(nav_roll);
         control_pitch           = g.rc_2.control_mix(nav_pitch);
 
-        g.rc_1.servo_out        = get_stabilize_roll(control_roll);
-        g.rc_2.servo_out        = get_stabilize_pitch(control_pitch);
+        get_stabilize_roll(control_roll);
+        get_stabilize_pitch(control_pitch);
         break;
 
     case ROLL_PITCH_STABLE_OF:
@@ -1699,8 +1721,8 @@ void update_roll_pitch_mode(void)
         control_pitch           = g.rc_2.control_in;
 
         // mix in user control with optical flow
-        g.rc_1.servo_out 		= get_stabilize_roll(get_of_roll(control_roll));
-        g.rc_2.servo_out 		= get_stabilize_pitch(get_of_pitch(control_pitch));
+        get_stabilize_roll(get_of_roll(control_roll));
+        get_stabilize_pitch(get_of_pitch(control_pitch));
         break;
 
     // THOR
@@ -2126,6 +2148,10 @@ static void update_trig(void){
 
     sin_yaw_y               = yawvector.x;                                              // 1y = north
     cos_yaw_x               = yawvector.y;                                              // 0x = north
+
+    // added to convert earth frame to body frame for rate controllers
+    sin_roll = sin(ahrs.roll);
+    sin_pitch = sin(ahrs.pitch);
 
     //flat:
     // 0 ° = cos_yaw:  0.00, sin_yaw:  1.00,
