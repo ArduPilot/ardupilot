@@ -114,8 +114,9 @@ public:
         k_param_ch7_option,
         k_param_auto_slew_rate,
         k_param_sonar_type,
-        k_param_super_simple = 155,
-        k_param_axis_enabled = 157,
+        k_param_super_simple,
+        k_param_battery_pin,
+        k_param_axis_enabled,
         k_param_copter_leds_mode,
         k_param_ahrs, // AHRS group
 
@@ -236,6 +237,7 @@ public:
     AP_Int8         optflow_enabled;
     AP_Float        low_voltage;
     AP_Int8         super_simple;
+    AP_Int8         battery_pin;
     AP_Int16        rtl_approach_alt;
     AP_Int8         tilt_comp;
     AP_Int8         axis_enabled;
