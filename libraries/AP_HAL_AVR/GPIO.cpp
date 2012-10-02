@@ -6,6 +6,7 @@
 #include "GPIO.h"
 using namespace AP_HAL_AVR;
 
+ArduinoGPIO* ArduinoDigitalSource::parent;
 
 // Get the bit location within the hardware port of the given virtual pin.
 // This comes from the pins_*.c file for the active board configuration.
@@ -81,3 +82,21 @@ void ArduinoGPIO::write(uint8_t pin, uint8_t value) {
     SREG = oldSREG;
 }
 
+AP_HAL::DigitalSource* ArduinoGPIO::channel(int n) {
+  if (ArduinoDigitalSource::parent == NULL) {
+    ArduinoDigitalSource::parent = this;
+  }
+  return new ArduinoDigitalSource(n);
+}
+
+void ArduinoDigitalSource::mode(uint8_t output) {
+  parent->pinMode(_pin, output);
+}
+
+uint8_t ArduinoDigitalSource::read() {
+  return parent->read(_pin);
+}
+
+void ArduinoDigitalSource::write(uint8_t value) {
+  parent->write(_pin, value);
+}

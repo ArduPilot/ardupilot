@@ -18,6 +18,7 @@ namespace AP_HAL_AVR {
     class APM2Dataflash;
     class AVRConsoleDriver;
     class ArduinoGPIO;
+    class ArduinoDigitalSource;
     class APM1RCInput;
     class APM2RCInput;
     class APM1RCOutput;
