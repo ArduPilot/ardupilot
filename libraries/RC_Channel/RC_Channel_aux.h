@@ -41,6 +41,8 @@ public:
         k_mount2_tilt   = 13,           ///< mount2 pitch (tilt)
         k_mount2_roll   = 14,           ///< mount2 roll
         k_mount2_open   = 15,           ///< mount2 open (deploy) / close (retract)
+		k_dspoiler1     = 16,           ///< differential spoiler 1 (left wing)
+		k_dspoiler2     = 17,           ///< differential spoiler 2 (right wing)
         k_nr_aux_servo_functions         ///< This must be the last enum value (only add new values _before_ this one)
     } Aux_servo_function_t;
 

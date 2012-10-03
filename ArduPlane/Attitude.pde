@@ -362,6 +362,8 @@ static void set_servos(void)
         // Doug could you please take a look at this ?
         RC_Channel_aux::copy_radio_in_out(RC_Channel_aux::k_aileron);
         RC_Channel_aux::copy_radio_in_out(RC_Channel_aux::k_flap_auto);
+		//RC_Channel_aux::copy_radio_in_out(RC_Channel_aux::k_dspoiler1);
+		//RC_Channel_aux::copy_radio_in_out(RC_Channel_aux::k_dspoiler2);
     } else {
         if (g.mix_mode == 0) {
             RC_Channel_aux::set_servo_out(RC_Channel_aux::k_aileron, g.channel_roll.servo_out);
@@ -371,6 +373,20 @@ static void set_servos(void)
             float ch2;
             ch1 = g.channel_pitch.servo_out - (BOOL_TO_SIGN(g.reverse_elevons) * g.channel_roll.servo_out);
             ch2 = g.channel_pitch.servo_out + (BOOL_TO_SIGN(g.reverse_elevons) * g.channel_roll.servo_out);
+			/*Differntial Spoilers*/
+			if(RC_Channel_aux::function_assigned(RC_Channel_aux::k_dspoiler1) && RC_Channel_aux::function_assigned(RC_Channel_aux::k_dspoiler2)) {
+				float ch3 = ch1;
+				float ch4 = ch2;
+				if( BOOL_TO_SIGN(g.reverse_elevons) * g.channel_rudder.servo_out < 0) {
+				    ch1 += abs(g.channel_rudder.servo_out);
+				    ch3 -= abs(g.channel_rudder.servo_out);
+				} else {
+					ch2 += abs(g.channel_rudder.servo_out);
+				    ch4 -= abs(g.channel_rudder.servo_out);
+				}
+				RC_Channel_aux::set_servo_out(RC_Channel_aux::k_dspoiler1, ch3);
+				RC_Channel_aux::set_servo_out(RC_Channel_aux::k_dspoiler2, ch4);
+			} // spoiler deployed
             g.channel_roll.radio_out  =     elevon1_trim + (BOOL_TO_SIGN(g.reverse_ch1_elevon) * (ch1 * 500.0/ SERVO_MAX));
             g.channel_pitch.radio_out =     elevon2_trim + (BOOL_TO_SIGN(g.reverse_ch2_elevon) * (ch2 * 500.0/ SERVO_MAX));
         }
