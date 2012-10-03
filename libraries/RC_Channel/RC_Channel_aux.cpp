@@ -71,6 +71,12 @@ void update_aux_servo_function( RC_Channel_aux* rc_a,
 		case RC_Channel_aux::k_aileron:
 			_aux_channels[i]->set_angle(4500);
 			break;
+		case RC_Channel_aux::k_dspoiler1:
+		    _aux_channels[i]->set_angle(4500);
+			break;
+		case RC_Channel_aux::k_dspoiler2:
+		    _aux_channels[i]->set_angle(4500);
+			break;
 		default:
 			break;
 		}
