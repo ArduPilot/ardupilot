@@ -682,7 +682,7 @@
 #endif
 
 #ifndef  STABILIZE_YAW_P
- # define STABILIZE_YAW_P                7.0            // increase for more aggressive Yaw Hold, decrease if it's bouncy
+ # define STABILIZE_YAW_P                4.5            // increase for more aggressive Yaw Hold, decrease if it's bouncy
 #endif
 #ifndef  STABILIZE_YAW_I
  # define STABILIZE_YAW_I                0.02
