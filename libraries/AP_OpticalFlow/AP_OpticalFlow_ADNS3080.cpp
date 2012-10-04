@@ -12,6 +12,8 @@
 #include "AP_OpticalFlow_ADNS3080.h"
 #include "SPI.h"
 #include "SPI3.h"
+#include "AP_Semaphore.h"
+
 #if defined(ARDUINO) && ARDUINO >= 100
  #include "Arduino.h"
 #else
@@ -179,6 +181,14 @@ AP_OpticalFlow_ADNS3080::read_register(byte address)
     uint8_t result = 0;
     uint8_t junk = 0;
 
+    // get spi3 semaphore if required
+    if( _spi_bus == ADNS3080_SPIBUS_3 ) {
+        // if failed to get semaphore then just quietly fail
+        if( !AP_Semaphore_spi3.get(this) ) {
+            return 0;
+        }
+    }
+
     backup_spi_settings();
 
     // take the chip select low to select the device
@@ -199,6 +209,11 @@ AP_OpticalFlow_ADNS3080::read_register(byte address)
 
     restore_spi_settings();
 
+    // get spi3 semaphore if required
+    if( _spi_bus == ADNS3080_SPIBUS_3 ) {
+        AP_Semaphore_spi3.release(this);
+    }
+
     return result;
 }
 
@@ -207,6 +222,15 @@ void
 AP_OpticalFlow_ADNS3080::write_register(byte address, byte value)
 {
     byte junk = 0;
+
+    // get spi3 semaphore if required
+    if( _spi_bus == ADNS3080_SPIBUS_3 ) {
+        // if failed to get semaphore then just quietly fail
+        if( !AP_Semaphore_spi3.get(this) ) {
+            Serial.println("Optflow: failed to get spi3 semaphore!");
+            return;
+        }
+    }
 
     backup_spi_settings();
 
@@ -227,6 +251,11 @@ AP_OpticalFlow_ADNS3080::write_register(byte address, byte value)
     digitalWrite(_cs_pin, HIGH);
 
     restore_spi_settings();
+
+    // get spi3 semaphore if required
+    if( _spi_bus == ADNS3080_SPIBUS_3 ) {
+        AP_Semaphore_spi3.release(this);
+    }
 }
 
 // reset sensor by holding a pin high (or is it low?) for 10us.
