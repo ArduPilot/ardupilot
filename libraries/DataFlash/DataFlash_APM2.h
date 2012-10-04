@@ -4,6 +4,7 @@
 #ifndef __DATAFLASH_APM2_H__
 #define __DATAFLASH_APM2_H__
 
+#include <AP_Semaphore.h>       // for removing conflict with dataflash on SPI3 bus
 #include "DataFlash.h"
 
 class DataFlash_APM2 : public DataFlash_Class

@@ -37,8 +37,7 @@ extern "C" {
 #include <inttypes.h>
 #include <avr/interrupt.h>
 }
-//#include <FastSerial.h>
-//#include <AP_Common.h>
+#include <FastSerial.h>
 
 #if defined(ARDUINO) && ARDUINO >= 100
  #include "Arduino.h"
@@ -46,6 +45,7 @@ extern "C" {
  #include "WConstants.h"
 #endif
 
+#include <AP_Semaphore.h>               // for removing conflict with optical flow sensor on SPI3 bus
 #include "DataFlash_APM2.h"
 /*
  * #define ENABLE_FASTSERIAL_DEBUG
@@ -93,6 +93,13 @@ extern "C" {
 // *** INTERNAL FUNCTIONS ***
 unsigned char DataFlash_APM2::SPI_transfer(unsigned char data)
 {
+    unsigned char retval;
+
+    // get spi3 semaphore if required.  if failed to get semaphore then just quietly fail
+    if( !AP_Semaphore_spi3.get(this) ) {
+        return 0;
+    }
+
     /* Wait for empty transmit buffer */
     while ( !( UCSR3A & (1<<UDRE3)) ) ;
     /* Put data into buffer, sends the data */
@@ -100,7 +107,12 @@ unsigned char DataFlash_APM2::SPI_transfer(unsigned char data)
     /* Wait for data to be received */
     while ( !(UCSR3A & (1<<RXC3)) ) ;
     /* Get and return received data from buffer */
-    return UDR3;
+    retval = UDR3;
+
+    // release spi3 semaphore
+    AP_Semaphore_spi3.release(this);
+
+    return retval;
 }
 
 // disable device
