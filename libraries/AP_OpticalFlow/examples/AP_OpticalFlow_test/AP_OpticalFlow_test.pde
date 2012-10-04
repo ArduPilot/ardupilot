@@ -10,6 +10,7 @@
 #include <SPI3.h>               // SPI3 library
 #include <Arduino_Mega_ISR_Registry.h>
 #include <AP_PeriodicProcess.h>
+#include <AP_Semaphore.h>       // for removing conflict with dataflash on SPI3 bus
 #include "AP_OpticalFlow.h" // ArduCopter OpticalFlow Library
 
 ////////////////////////////////////////////////////////////////////////////////
