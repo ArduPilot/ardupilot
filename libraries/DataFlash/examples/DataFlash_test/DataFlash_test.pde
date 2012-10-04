@@ -4,8 +4,22 @@
  */
 
 // Libraries
+#include <FastSerial.h>
+#include <AP_Common.h>
+#include <AP_Math.h>            // ArduPilot Mega Vector/Matrix math Library
 #include <SPI.h>                        // Arduino SPI lib
+#include <AP_Semaphore.h>               // for removing conflict with dataflash on SPI3 bus
 #include <DataFlash.h>
+
+////////////////////////////////////////////////////////////////////////////////
+// Serial ports
+////////////////////////////////////////////////////////////////////////////////
+//
+// Note that FastSerial port buffers are allocated at ::begin time,
+// so there is not much of a penalty to defining ports that we don't
+// use.
+//
+FastSerialPort0(Serial);        // FTDI/console
 
 #define HEAD_BYTE1 0xA3
 #define HEAD_BYTE2 0x95
