@@ -2788,6 +2788,8 @@ namespace ArdupilotMega
                         case (int)Common.ac2modes.ALT_HOLD:
                         case (int)Common.ac2modes.CIRCLE:
                         case (int)Common.ac2modes.POSITION:
+                        case (int)Common.ac2modes.LAND:
+                        case (int)Common.ac2modes.OF_LOITER:
                             mode.base_mode = (byte)MAVLink.MAV_MODE_FLAG.CUSTOM_MODE_ENABLED;
                             mode.custom_mode = (uint)EnumTranslator.GetValue<Common.ac2modes>(modein);
                             break;

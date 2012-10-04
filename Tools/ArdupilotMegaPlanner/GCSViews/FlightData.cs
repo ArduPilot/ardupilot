@@ -20,7 +20,7 @@ using ArdupilotMega.Controls;
 using ArdupilotMega.Utilities;
 using ArdupilotMega.Controls.BackstageView;
 using Crom.Controls.Docking;
-
+using log4net;
 using System.Reflection;
 
 // written by michael oborne
@@ -28,6 +28,8 @@ namespace ArdupilotMega.GCSViews
 {
     partial class FlightData : MyUserControl, IActivate, IDeactivate
     {
+        private static readonly ILog log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
+
         ArdupilotMega.MAVLink comPort = MainV2.comPort;
         public static int threadrun = 0;
         StreamWriter swlog;
@@ -100,7 +102,12 @@ namespace ArdupilotMega.GCSViews
             MainV2.config["FlightSplitter"] = hud1.Width;
             if (!MainV2.MONO)
             {
-                _serializer.Save();
+                try
+                {
+                    log.Info("Saving Screen Layout");
+                    _serializer.Save();
+                }
+                catch (Exception ex) { log.Error(ex); }
                 SaveWindowLayout();
             }
             System.Threading.Thread.Sleep(100);
@@ -239,16 +246,35 @@ namespace ArdupilotMega.GCSViews
             }
             else
             {
+                log.Info("1-"+ DateTime.Now);
                 SetupDocking();
-
-                if (File.Exists(_serializer.SavePath) == true)
+                log.Info("2-" + DateTime.Now);
+                if (File.Exists(_serializer.SavePath) == true )
                 {
-                    try
+                    FileInfo fi = new FileInfo(_serializer.SavePath);
+
+                    if (fi.Length > 500)
                     {
-                        _serializer.Load(true, GetFormFromGuid);
+                        try
+                        {
+                            _serializer.Load(true, GetFormFromGuid);
+                            log.Info("3-" + DateTime.Now);
+                        }
+                        catch (Exception ex)
+                        {
+                            log.Info(ex);
+                            try
+                            {
+                                SetupDocking();
+                            }
+                            catch (Exception ex2)
+                            {
+                                log.Info(ex2);
+                            }
+                        }
                     }
-                    catch { }
                 }
+                log.Info("D-" + DateTime.Now);
             }
         }
 

@@ -1652,13 +1652,15 @@ namespace ArdupilotMega
                 log.Info("Quitting existing process");
                 try
                 {
+                    // clean close
                     MainV2.instance.BeginInvoke((MethodInvoker)delegate()
                     {
-                        Application.Exit();
+                        MainV2.instance.Close();
                     });
                 }
-                catch
+                catch (Exception ex)
                 {
+                    log.Error(ex);
                     Application.Exit();
                 }
             }

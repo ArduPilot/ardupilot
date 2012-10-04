@@ -308,7 +308,9 @@ namespace ArdupilotMega
             // check file doesnt already exist
             if (File.Exists(datadirectory + Path.DirectorySeparatorChar + (string)name))
             {
-                return;
+                FileInfo fi = new FileInfo(datadirectory + Path.DirectorySeparatorChar + (string)name);
+                if (fi.Length != 0)
+                    return;
             }
 
             List<string> list = getListing(baseurl);
