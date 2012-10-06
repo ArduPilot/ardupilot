@@ -14,8 +14,8 @@ get_stabilize_roll(int32_t target_angle)
     // convert to desired Rate:
     target_angle            = g.pi_stabilize_roll.get_pi(target_angle, G_Dt);
 
-    // output control:
-    return constrain(target_angle, -4500, 4500);
+    // output control - we do not use rate controllers for helicopters so send directly to servos
+    g.rc_1.servo_out = constrain(target_angle, -4500, 4500);
 #else
 
     // convert to desired Rate:
@@ -48,8 +48,8 @@ get_stabilize_pitch(int32_t target_angle)
     // convert to desired Rate:
     target_angle            = g.pi_stabilize_pitch.get_pi(target_angle, G_Dt);
 
-    // output control:
-    return constrain(target_angle, -4500, 4500);
+    // output control - we do not use rate controllers for helicopters so send directly to servos
+    g.rc_2.servo_out = constrain(target_angle, -4500, 4500);
 #else
 
     // convert to desired Rate:
@@ -93,12 +93,8 @@ get_stabilize_yaw(int32_t target_angle)
 
     // do not use rate controllers for helicotpers with external gyros
 #if FRAME_CONFIG == HELI_FRAME
-    if(!motors.ext_gyro_enabled) {
-        yaw_rate_target_ef = target_rate;
-        yaw_rate_trim_ef = i_term;
-    }else{
-        // TO-DO: fix this for helicopters which don't use rate controller
-        output = constrain((target_rate + i_term), -4500, 4500);
+    if(motors.ext_gyro_enabled) {
+        g.rc_4.servo_out = constrain((target_rate + i_term), -4500, 4500);
     }
 #endif
 
@@ -227,18 +223,10 @@ get_acro_yaw(int32_t target_rate)
  void
  update_rate_contoller_targets()
  {
-    static int16_t counter = 0;
     // convert earth frame rates to body frame rates
     roll_rate_target_bf = roll_rate_target_ef + sin_pitch * yaw_rate_target_ef;
     pitch_rate_target_bf = cos_roll_x * pitch_rate_target_ef + sin_roll * yaw_rate_target_ef;
     yaw_rate_target_bf = cos_pitch_x * cos_roll_x * yaw_rate_target_ef + sin_roll * pitch_rate_target_ef;
-
-    //counter++;
-    if( counter >= 100 ) {
-        counter = 0;
-        Serial.printf_P(PSTR("\nr:%ld\tp:%ld\ty:%ld\t"),ahrs.roll_sensor, ahrs.pitch_sensor, ahrs.yaw_sensor);
-        Serial.printf_P(PSTR("Rrate:%ld/%ld\tPrate:%ld/%ld\tYrate:%ld/%ld\n"),roll_rate_target_ef, roll_rate_target_bf, pitch_rate_target_ef, pitch_rate_target_bf, yaw_rate_target_ef, yaw_rate_target_bf);
-    }
  }
  
 // run roll, pitch and yaw rate controllers and send output to motors
@@ -246,10 +234,16 @@ get_acro_yaw(int32_t target_rate)
 void
 run_rate_controllers()
 {
+#if FRAME_CONFIG == HELI_FRAME          // helicopters only use rate controllers for yaw and only when not using an external gyro
+    if(!motors.ext_gyro_enabled) {
+        g.rc_4.servo_out = get_rate_yaw(yaw_rate_target_bf) + yaw_rate_trim_ef;
+    }
+#else
     // call rate controllers
     g.rc_1.servo_out = get_rate_roll(roll_rate_target_bf) + roll_rate_trim_ef;
     g.rc_2.servo_out = get_rate_pitch(pitch_rate_target_bf) + pitch_rate_trim_ef;
     g.rc_4.servo_out = get_rate_yaw(yaw_rate_target_bf) + yaw_rate_trim_ef;
+#endif
 }
 
 static int16_t
