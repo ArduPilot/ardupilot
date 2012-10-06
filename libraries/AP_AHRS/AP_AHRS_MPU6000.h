@@ -63,7 +63,7 @@ public:
     float           get_error_yaw(void);
 
     // set_as_secondary - avoid running some steps twice (imu updates) if this is a secondary ahrs
-    void            set_as_secondary(bool set_as_secondary) { _secondary_ahrs = set_as_secondary; }
+    void            set_as_secondary(bool secondary) { _secondary_ahrs = secondary; }
 
 private:
     float _ki;
