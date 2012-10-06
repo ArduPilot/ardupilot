@@ -32,6 +32,7 @@
 #include <AP_GPS.h>         // ArduPilot GPS library
 #include <I2C.h>                        // Wayne Truchsess I2C lib
 #include <SPI.h>                        // Arduino SPI lib
+#include <AP_Semaphore.h>   // for removing conflict between optical flow and dataflash on SPI3 bus
 #include <DataFlash.h>      // ArduPilot Mega Flash Memory Library
 #include <AP_ADC.h>         // ArduPilot Mega Analog to Digital Converter Library
 #include <AP_AnalogSource.h> // ArduPilot Mega polymorphic analog getter
