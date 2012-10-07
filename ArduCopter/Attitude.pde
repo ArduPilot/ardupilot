@@ -224,7 +224,7 @@ get_acro_yaw(int32_t target_rate)
  update_rate_contoller_targets()
  {
     // convert earth frame rates to body frame rates
-    roll_rate_target_bf = roll_rate_target_ef + sin_pitch * yaw_rate_target_ef;
+    roll_rate_target_bf = roll_rate_target_ef - sin_pitch * yaw_rate_target_ef;
     pitch_rate_target_bf = cos_roll_x * pitch_rate_target_ef + sin_roll * yaw_rate_target_ef;
     yaw_rate_target_bf = cos_pitch_x * cos_roll_x * yaw_rate_target_ef + sin_roll * pitch_rate_target_ef;
  }
