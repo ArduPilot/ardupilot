@@ -867,7 +867,7 @@ static void do_nav_roi()
 #if MOUNT == ENABLED
 
     // check if mount type requires us to rotate the quad
-    if( camera_mount.get_mount_type() == AP_Mount::k_tilt_roll ) {
+    if( camera_mount.get_mount_type() != AP_Mount::k_pan_tilt && camera_mount.get_mount_type() != AP_Mount::k_pan_tilt_roll ) {
         yaw_tracking = MAV_ROI_LOCATION;
         target_WP = command_nav_queue;
         auto_yaw = get_bearing_cd(&current_loc, &target_WP);
