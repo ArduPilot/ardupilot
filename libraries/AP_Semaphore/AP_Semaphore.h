@@ -3,8 +3,8 @@
 /// @file	AP_Semaphore.h
 /// @brief	class to ensure conflicts over shared resources are avoided
 
-#ifndef AP_SEMAPHORE
-#define AP_SEMAPHORE
+#ifndef __AP_SEMAPHORE_H__
+#define __AP_SEMAPHORE_H__
 
 #include <FastSerial.h>
 #include <AP_Common.h>
@@ -36,4 +36,4 @@ protected:
     ap_semaphore_callback     _waiting_callback;       // call back procedure of process waiting for sempahore
 };
 
-#endif  // AP_SEMAPHORE
+#endif  // __AP_SEMAPHORE_H__
