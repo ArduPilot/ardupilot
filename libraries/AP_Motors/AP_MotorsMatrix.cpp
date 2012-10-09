@@ -103,10 +103,11 @@ void AP_MotorsMatrix::output_armed()
     int8_t i;
     int16_t out_min = _rc_throttle->radio_min;
     int16_t out_max = _rc_throttle->radio_max;
-	int16_t max_motor = 1000;
-	int16_t min_motor = 2000;
-	
-    //int16_t yaw_contribution = 0;
+    int16_t rc_yaw_constrained_pwm;
+    int16_t rc_yaw_excess;
+    int16_t upper_margin, lower_margin;
+    int16_t motor_adjustment = 0;
+    int16_t yaw_to_execute = 0;
 
     // Throttle is 0 to 1000 only
     _rc_throttle->servo_out = constrain(_rc_throttle->servo_out, 0, _max_throttle);
@@ -120,44 +121,112 @@ void AP_MotorsMatrix::output_armed()
     _rc_throttle->calc_pwm();
     _rc_yaw->calc_pwm();
 
-    // mix roll, pitch, yaw, throttle into output for each motor
+    // initialise rc_yaw_contrained_pwm that we will certainly output and rc_yaw_excess that we will do on best-efforts basis.
+    // Note: these calculations and many others below depend upon _yaw_factors always being 0, -1 or 1.
+    if( _rc_yaw->pwm_out < -AP_MOTORS_MATRIX_YAW_LOWER_LIMIT_PWM ) {
+        rc_yaw_constrained_pwm = -AP_MOTORS_MATRIX_YAW_LOWER_LIMIT_PWM;
+        rc_yaw_excess = _rc_yaw->pwm_out+AP_MOTORS_MATRIX_YAW_LOWER_LIMIT_PWM;
+    }else if( _rc_yaw->pwm_out > AP_MOTORS_MATRIX_YAW_LOWER_LIMIT_PWM ) {
+        rc_yaw_constrained_pwm = AP_MOTORS_MATRIX_YAW_LOWER_LIMIT_PWM;
+        rc_yaw_excess = _rc_yaw->pwm_out-AP_MOTORS_MATRIX_YAW_LOWER_LIMIT_PWM;
+    }else{
+        rc_yaw_constrained_pwm = _rc_yaw->pwm_out;
+        rc_yaw_excess = 0;
+    }
+
+    // initialise upper and lower margins
+    upper_margin = lower_margin = out_max - out_min;
+
+    // add roll, pitch, throttle and constrained yaw for each motor
     for( i=0; i<AP_MOTORS_MAX_NUM_MOTORS; i++ ) {
         if( motor_enabled[i] ) {
-            /*yaw_contribution = _rc_yaw->pwm_out*_yaw_factor[i];
-             *  if (yaw_contribution > 0 ){
-             *       yaw_contribution *= 0.7;
-             *  }else{
-             *       yaw_contribution *= 1.42;
-             *  }*/
             motor_out[i] = _rc_throttle->radio_out +
                            _rc_roll->pwm_out * _roll_factor[i] +
                            _rc_pitch->pwm_out * _pitch_factor[i] +
-                           _rc_yaw->pwm_out*_yaw_factor[i];
+                           rc_yaw_constrained_pwm * _yaw_factor[i];
+
+            // calculate remaining room between fastest running motor and top of pwm range
+            if( out_max - motor_out[i] < upper_margin) {
+                upper_margin = out_max - motor_out[i];
+            }
+            // calculate remaining room between slowest running motor and bottom of pwm range
+            if( motor_out[i] - out_min < lower_margin ) {
+                lower_margin = motor_out[i] - out_min;
+            }
         }
     }
 
-    // stability patch
-	
-    for( i=0; i<AP_MOTORS_MAX_NUM_MOTORS; i++ ) {
-        if( motor_enabled[i] && motor_out[i] > max_motor ) {
-            max_motor = motor_out[i];
+    // if motors are running too fast and we have enough room below, lower overall throttle
+    if( upper_margin < 0 || lower_margin < 0 ) {
+
+        // calculate throttle adjustment that equalizes upper and lower margins.  We will never push the throttle beyond this point
+        motor_adjustment = (upper_margin - lower_margin) / 2;      // i.e. if overflowed by 20 on top, 30 on bottom, upper_margin = -20, lower_margin = -30.  will adjust motors -5.
+
+        // if we have overflowed on the top, reduce but no more than to the mid point
+        if( upper_margin < 0 ) {
+            motor_adjustment = max(upper_margin, motor_adjustment);
+        }
+
+        // if we have underflowed on the bottom, increase throttle but no more than to the mid point
+        if( lower_margin < 0 ) {
+            motor_adjustment = min(-lower_margin, motor_adjustment);
         }
     }
-	if ( max_motor > out_max ){
-		for( i=0; i<AP_MOTORS_MAX_NUM_MOTORS; i++ ) {
-			motor_out[i] -= (max_motor - out_max);
-		}
-	}	
-	for( i=0; i<AP_MOTORS_MAX_NUM_MOTORS; i++ ) {
-        if( motor_enabled[i] && motor_out[i] < min_motor ) {
-            min_motor = motor_out[i];
+
+    // move throttle up or down to to pull within tolerance
+    if( motor_adjustment != 0 ) {
+        for( i=0; i<AP_MOTORS_MAX_NUM_MOTORS; i++ ) {
+            if( motor_enabled[i] ) {
+                motor_out[i] += motor_adjustment;
+            }
         }
     }
-	if ( min_motor < out_min ){
-		for( i=0; i<AP_MOTORS_MAX_NUM_MOTORS; i++ ) {
-			motor_out[i] -= (min_motor - out_min);
-		}
-	}
+
+    // if we didn't give all the yaw requested, calculate how much additional yaw we can add
+    if( rc_yaw_excess != 0 ) {
+
+        // try for everything
+        yaw_to_execute = rc_yaw_excess;
+
+        // loop through motors and reduce as necessary
+        for( i=0; i<AP_MOTORS_MAX_NUM_MOTORS; i++ ) {
+            if( motor_enabled[i] && _yaw_factor[i] != 0 ) {
+
+                // calculate upper and lower margins for this motor
+                upper_margin = max(0,out_max - motor_out[i]);
+                lower_margin = max(0,motor_out[i] - out_min);
+
+                // motor is increasing, check upper limit
+                if( rc_yaw_excess > 0 && _yaw_factor[i] > 0 ) {
+                    yaw_to_execute = min(yaw_to_execute, upper_margin);
+                }
+
+                // motor is decreasing, check lower limit
+                if( rc_yaw_excess > 0 && _yaw_factor[i] < 0 ) {
+                    yaw_to_execute = min(yaw_to_execute, lower_margin);
+                }
+
+                // motor is decreasing, check lower limit
+                if( rc_yaw_excess < 0 && _yaw_factor[i] > 0 ) {
+                    yaw_to_execute = max(yaw_to_execute, -lower_margin);
+                }
+
+                // motor is increasing, check upper limit
+                if( rc_yaw_excess < 0 && _yaw_factor[i] < 0 ) {
+                    yaw_to_execute = max(yaw_to_execute, -upper_margin);
+                }
+            }
+        }
+        // check yaw_to_execute is reasonable
+        if( yaw_to_execute != 0 && ((yaw_to_execute>0 && rc_yaw_excess>0) || (yaw_to_execute<0 && rc_yaw_excess<0)) ) {
+            // add the additional yaw
+            for( i=0; i<AP_MOTORS_MAX_NUM_MOTORS; i++ ) {
+                if( motor_enabled[i] ) {
+                    motor_out[i] += _yaw_factor[i] * yaw_to_execute;
+                }
+            }
+        }
+    }
 
     // adjust for throttle curve
     if( _throttle_curve_enabled ) {
@@ -168,10 +237,10 @@ void AP_MotorsMatrix::output_armed()
         }
     }
 
-    // ensure motors are not below the minimum
-    for( i=0; i<AP_MOTORS_MAX_NUM_MOTORS; i++ ) {
+    // clip motor output if required (shouldn't be)
+	for( i=0; i<AP_MOTORS_MAX_NUM_MOTORS; i++ ) {
         if( motor_enabled[i] ) {
-            motor_out[i] = max(motor_out[i], out_min);
+            motor_out[i] = constrain(motor_out[i], out_min, out_max);
         }
     }
 

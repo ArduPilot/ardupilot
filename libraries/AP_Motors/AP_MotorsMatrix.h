@@ -19,6 +19,8 @@
 #define AP_MOTORS_MATRIX_MOTOR_CW -1
 #define AP_MOTORS_MATRIX_MOTOR_CCW 1
 
+#define AP_MOTORS_MATRIX_YAW_LOWER_LIMIT_PWM    100
+
 /// @class      AP_MotorsMatrix
 class AP_MotorsMatrix : public AP_Motors {
 public:
