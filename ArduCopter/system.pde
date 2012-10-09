@@ -206,6 +206,12 @@ static void init_ardupilot()
 
     timer_scheduler.init( &isr_registry );
 
+    /*
+     *  setup the 'main loop is dead' check. Note that this relies on
+     *  the RC library being initialised.
+     */
+    timer_scheduler.set_failsafe(failsafe_check);
+
     // initialise the analog port reader
     AP_AnalogSource_Arduino::init_timer(&timer_scheduler);
 

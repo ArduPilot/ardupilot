@@ -106,6 +106,9 @@ static void init_arm_motors()
     // which calibrates the IMU
     static bool did_ground_start = false;
 
+    // disable failsafe because initialising everything takes a while
+    failsafe_disable();
+
     //Serial.printf("\nARM\n");
 #if HIL_MODE != HIL_MODE_DISABLED || defined(DESKTOP_BUILD)
     gcs_send_text_P(SEVERITY_HIGH, PSTR("ARMING MOTORS"));
@@ -118,7 +121,6 @@ static void init_arm_motors()
     if (gcs3.initialised) {
         Serial3.set_blocking_writes(false);
     }
-    motors.armed(true);
 
 #if COPTER_LEDS == ENABLED
     if ( bitRead(g.copter_leds_mode, 3) ) {
@@ -164,6 +166,12 @@ static void init_arm_motors()
 #if SECONDARY_DMP_ENABLED == ENABLED
     ahrs2.set_fast_gains(false);
 #endif
+
+    // finally actually arm the motors
+    motors.armed(true);
+
+    // reenable failsafe
+    failsafe_enable();
 }
 
 
