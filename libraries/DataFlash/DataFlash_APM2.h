@@ -4,7 +4,7 @@
 #ifndef __DATAFLASH_APM2_H__
 #define __DATAFLASH_APM2_H__
 
-#include <AP_Semaphore.h>       // for removing conflict with dataflash on SPI3 bus
+#include <AP_Semaphore.h>
 #include "DataFlash.h"
 
 class DataFlash_APM2 : public DataFlash_Class
@@ -27,8 +27,10 @@ private:
     void                    BlockErase (uint16_t BlockAdr);
     void                    ChipErase(void (*delay_cb)(unsigned long));
 
+    AP_Semaphore* _semaphore;
 public:
-    DataFlash_APM2();     // Constructor
+    DataFlash_APM2(AP_Semaphore* semaphore = NULL) : _semaphore(semaphore) {}
+
     void        Init();
     void        ReadManufacturerID();
     bool        CardInserted();

@@ -95,9 +95,12 @@ unsigned char DataFlash_APM2::SPI_transfer(unsigned char data)
 {
     unsigned char retval;
 
-    // get spi3 semaphore if required.  if failed to get semaphore then just quietly fail
-    if( !AP_Semaphore_spi3.get(this) ) {
-        return 0;
+    // get spi3 semaphore if required.  if failed to get semaphore then
+    // just quietly fail
+    if ( _semaphore != NULL) {
+        if( !_semaphore->get(this) ) {
+            return 0;
+        }
     }
 
     /* Wait for empty transmit buffer */
@@ -110,7 +113,9 @@ unsigned char DataFlash_APM2::SPI_transfer(unsigned char data)
     retval = UDR3;
 
     // release spi3 semaphore
-    AP_Semaphore_spi3.release(this);
+    if ( _semaphore != NULL) {
+        _semaphore->release(this);
+    }
 
     return retval;
 }
@@ -125,11 +130,6 @@ void DataFlash_APM2::CS_inactive()
 void DataFlash_APM2::CS_active()
 {
     digitalWrite(DF_SLAVESELECT,LOW);
-}
-
-// Constructors ////////////////////////////////////////////////////////////////
-DataFlash_APM2::DataFlash_APM2()
-{
 }
 
 // Public Methods //////////////////////////////////////////////////////////////
