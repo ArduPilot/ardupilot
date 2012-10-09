@@ -911,6 +911,8 @@ static byte medium_loopCounter;
 static byte slow_loopCounter;
 // Counters for branching at 1 hz
 static byte counter_one_herz;
+// Counter of main loop executions.  Used for performance monitoring and failsafe processing
+static uint16_t mainLoop_count;
 // used to track the elapsed time between GPS reads
 static uint32_t nav_loopTimer;
 // Delta Time in milliseconds for navigation computations, updated with every good GPS read
@@ -1001,6 +1003,9 @@ void loop()
         //PORTK |= B00010000;
         G_Dt                            = (float)(timer - fast_loopTimer) / 1000000.f;                  // used by PI Loops
         fast_loopTimer          = timer;
+
+        // for mainloop failure monitoring
+        mainLoop_count++;
 
         // Execute the fast loop
         // ---------------------
