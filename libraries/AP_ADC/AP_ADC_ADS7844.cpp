@@ -44,22 +44,20 @@
  *       Channel 7 : Differential pressure sensor port
  *
  */
+
+#include <AP_Progmem.h>
+#include <AP_Common.h>
+#include <AP_HAL.h>
+
 #include "AP_ADC_ADS7844.h"
 
-extern "C" {
-// AVR LibC Includes
-#include <inttypes.h>
-#include <stdint.h>
-#include <avr/interrupt.h>
-}
-#if defined(ARDUINO) && ARDUINO >= 100
- #include "Arduino.h"
-#else
- #include "WConstants.h"
-#endif
+extern const AP_HAL::HAL& hal;
 
+// DO NOT CHANGE FROM 8!!
+#define ADC_ACCEL_FILTER_SIZE 8
 // Commands for reading ADC channels on ADS7844
-static const unsigned char adc_cmd[9]              = { 0x87, 0xC7, 0x97, 0xD7, 0xA7, 0xE7, 0xB7, 0xF7, 0x00 };
+static const unsigned char adc_cmd[9] =
+    { 0x87, 0xC7, 0x97, 0xD7, 0xA7, 0xE7, 0xB7, 0xF7, 0x00 };
 
 // the sum of the values since last read
 static volatile uint32_t _sum[8];
@@ -67,41 +65,36 @@ static volatile uint32_t _sum[8];
 // how many values we've accumulated since last read
 static volatile uint16_t _count[8];
 
-// variables to calculate time period over which a group of samples were collected
-static volatile uint32_t _ch6_delta_time_start_micros = 0;  // time we start collecting sample (reset on update)
-static volatile uint32_t _ch6_last_sample_time_micros = 0;  // time latest sample was collected
+// variables to calculate time period over which a group of samples were
+// collected
+// time we start collecting sample (reset on update)
+static volatile uint32_t _ch6_delta_time_start_micros = 0;
+// time latest sample was collected
+static volatile uint32_t _ch6_last_sample_time_micros = 0;
 
-// TCNT2 values for various interrupt rates,
-// assuming 256 prescaler. Note that these values
-// assume a zero-time ISR. The actual rate will be a
-// bit lower than this
-#define TCNT2_781_HZ   (256-80)
-#define TCNT2_1008_HZ  (256-62)
-#define TCNT2_1302_HZ  (256-48)
-
-static inline unsigned char ADC_SPI_transfer(unsigned char data)
-{
-    /* Put data into buffer, sends the data */
-    UDR2 = data;
-    /* Wait for data to be received */
-    while ( !(UCSR2A & (1 << RXC2)) ) ;
-    /* Get and return received data from buffer */
-    return UDR2;
-}
-
+AP_HAL::SPIDeviceDriver* AP_ADC_ADS7844::_spi = NULL;
+AP_HAL::Semaphore* AP_ADC_ADS7844::_spi_sem = NULL;
 
 void AP_ADC_ADS7844::read(uint32_t tnow)
 {
     uint8_t ch;
 
-    bit_clear(PORTC, 4);                                                        // Enable Chip Select (PIN PC4)
-    ADC_SPI_transfer(adc_cmd[0]);                                               // Command to read the first channel
+    if (_spi_sem) {
+        bool got = _spi_sem->get((void*)&_spi_sem);
+        if (!got) return;
+    }
+
+    _spi->cs_assert();
+    // Command to read the first channel
+    _spi->transfer(adc_cmd[0]);
 
     for (ch = 0; ch < 8; ch++) {
         uint16_t v;
 
-        v = ADC_SPI_transfer(0) << 8;                    // Read first byte
-        v |= ADC_SPI_transfer(adc_cmd[ch + 1]);          // Read second byte and send next command
+        // Read first byte
+        v = _spi->transfer(0) << 8;
+        // Read second byte and send next command
+        v |= _spi->transfer(adc_cmd[ch + 1]);
 
         if (v & 0x8007) {
             // this is a 12-bit ADC, shifted by 3 bits.
@@ -122,50 +115,55 @@ void AP_ADC_ADS7844::read(uint32_t tnow)
         _sum[ch] += (v >> 3);
     }
 
-    bit_set(PORTC, 4);                                          // Disable Chip Select (PIN PC4)
+    _spi->cs_release();
+
+    if (_spi_sem) {
+        _spi_sem->release((void*)&_spi_sem);
+    }
 
     // record time of this sample
-    _ch6_last_sample_time_micros = micros();
+    _ch6_last_sample_time_micros = hal.scheduler->micros();
 }
 
 
 // Constructors ////////////////////////////////////////////////////////////////
-AP_ADC_ADS7844::AP_ADC_ADS7844()
-{
-}
+AP_ADC_ADS7844::AP_ADC_ADS7844() { }
 
 // Public Methods //////////////////////////////////////////////////////////////
-void AP_ADC_ADS7844::Init( AP_PeriodicProcess * scheduler )
+void AP_ADC_ADS7844::Init()
 {
-    scheduler->suspend_timer();
-    pinMode(ADC_CHIP_SELECT, OUTPUT);
-
-    digitalWrite(ADC_CHIP_SELECT, HIGH);      // Disable device (Chip select is active low)
-
-    // Setup Serial Port2 in SPI mode
-    UBRR2 = 0;
-    DDRH |= (1 << PH2);         // SPI clock XCK2 (PH2) as output. This enable SPI Master mode
-    // Set MSPI mode of operation and SPI data mode 0.
-    UCSR2C = (1 << UMSEL21) | (1 << UMSEL20);     // |(0 << UCPHA2) | (0 << UCPOL2);
-    // Enable receiver and transmitter.
-    UCSR2B = (1 << RXEN2) | (1 << TXEN2);
-    // Set Baud rate
-    UBRR2 = 2;          // SPI clock running at 2.6MHz
-
+    hal.scheduler->suspend_timer_procs();
+    _spi = hal.spi->device(AP_HAL::SPIDevice_ADS7844);
+    if (_spi == NULL) {
+        hal.console->printf_P(PSTR("PANIC: AP_ADC_ADS7844 missing SPI device driver\n"));
+    }
+    _spi_sem = _spi->get_semaphore();
+    
+    if (_spi_sem) {
+        while (!_spi_sem->get((void*)&_spi_sem));
+    }
+    
+    _spi->cs_assert();
     // get an initial value for each channel. This ensures
     // _count[] is never zero
     for (uint8_t i=0; i<8; i++) {
         uint16_t adc_tmp;
-        adc_tmp  = ADC_SPI_transfer(0) << 8;
-        adc_tmp |= ADC_SPI_transfer(adc_cmd[i + 1]);
+        adc_tmp  = _spi->transfer(0) << 8;
+        adc_tmp |= _spi->transfer(adc_cmd[i + 1]);
         _count[i] = 1;
         _sum[i]   = adc_tmp;
     }
+    
+    _spi->cs_release();
 
-    _ch6_last_sample_time_micros = micros();
+    if (_spi_sem) {
+        _spi_sem->release((void*)&_spi_sem);
+    }
 
-    scheduler->resume_timer();
-    scheduler->register_process( AP_ADC_ADS7844::read );
+    _ch6_last_sample_time_micros = hal.scheduler->micros();
+
+    hal.scheduler->resume_timer_procs();
+    hal.scheduler->register_timer_process( AP_ADC_ADS7844::read, 1, 0);
 
 }
 
@@ -179,14 +177,12 @@ float AP_ADC_ADS7844::Ch(uint8_t ch_num)
     while (_count[ch_num] == 0) /* noop */;
 
     // grab the value with interrupts disabled, and clear the count
-    uint8_t oldSREG = SREG;
-    cli();
+    hal.scheduler->begin_atomic();
     count = _count[ch_num];
     sum   = _sum[ch_num];
     _count[ch_num] = 0;
     _sum[ch_num]   = 0;
-
-    SREG = oldSREG;
+    hal.scheduler->end_atomic();
 
     return ((float)sum)/count;
 }
@@ -222,8 +218,7 @@ uint32_t AP_ADC_ADS7844::Ch6(const uint8_t *channel_numbers, float *result)
     }
 
     // grab the values with interrupts disabled, and clear the counts
-    uint8_t oldSREG = SREG;
-    cli();
+    hal.scheduler->begin_atomic();
     for (i=0; i<6; i++) {
         count[i] = _count[channel_numbers[i]];
         sum[i]   = _sum[channel_numbers[i]];
@@ -236,7 +231,7 @@ uint32_t AP_ADC_ADS7844::Ch6(const uint8_t *channel_numbers, float *result)
     uint32_t ret = _ch6_last_sample_time_micros - _ch6_delta_time_start_micros;
     _ch6_delta_time_start_micros = _ch6_last_sample_time_micros;
 
-    SREG = oldSREG;
+    hal.scheduler->end_atomic();
 
     // calculate averages. We keep this out of the cli region
     // to prevent us stalling the ISR while doing the

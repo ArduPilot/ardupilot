@@ -28,7 +28,7 @@ public:
 
     ///
     // Initializes sensor, part of public AP_ADC interface
-    void        Init(AP_PeriodicProcess*);
+    void        Init();
 
     ///
     // Read the sensor, part of public AP_ADC interface

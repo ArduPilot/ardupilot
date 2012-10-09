@@ -1,28 +1,17 @@
 /// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
-#ifndef AP_ADC_ADS7844_H
-#define AP_ADC_ADS7844_H
+#ifndef __AP_ADC_ADS7844_H__
+#define __AP_ADC_ADS7844_H__
 
-#define bit_set(p,m)   ((p) |= ( 1<<m))
-#define bit_clear(p,m) ((p) &= ~(1<<m))
 
-// We use Serial Port 2 in SPI Mode
-#define ADC_DATAOUT     51    // MOSI
-#define ADC_DATAIN      50    // MISO
-#define ADC_SPICLOCK    52    // SCK
-#define ADC_CHIP_SELECT 33    // PC4   9 // PH6  Puerto:0x08 Bit mask : 0x40
-
-// DO NOT CHANGE FROM 8!!
-#define ADC_ACCEL_FILTER_SIZE 8
-
-#include "AP_ADC.h"
-#include "../AP_PeriodicProcess/AP_PeriodicProcess.h"
 #include <inttypes.h>
+#include "AP_ADC.h"
+#include <AP_HAL.h>
 
 class AP_ADC_ADS7844 : public AP_ADC
 {
 public:
     AP_ADC_ADS7844();      // Constructor
-    void                Init( AP_PeriodicProcess * scheduler );
+    void                Init();
 
     // Read 1 sensor value
     float               Ch(unsigned char ch_num);
@@ -38,6 +27,8 @@ public:
 
 private:
     static void         read(uint32_t);
+    static AP_HAL::SPIDeviceDriver *_spi;
+    static AP_HAL::Semaphore  *_spi_sem;
 
 };
 

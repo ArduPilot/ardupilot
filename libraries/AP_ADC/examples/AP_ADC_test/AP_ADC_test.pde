@@ -5,32 +5,30 @@
  */
 
 #include <math.h>
-#include <FastSerial.h>
-#include <Arduino_Mega_ISR_Registry.h>
-#include <AP_PeriodicProcess.h>
-#include <AP_ADC.h> // ArduPilot Mega ADC Library
 
-FastSerialPort0(Serial);        // FTDI/console
+#include <AP_Common.h>
+#include <AP_Param.h>
+#include <AP_Math.h>
+#include <AP_HAL.h>
+#include <AP_HAL_AVR.h>
 
-Arduino_Mega_ISR_Registry isr_registry;
-AP_TimerProcess adc_scheduler;
+#include <AP_ADC.h>
 
+const AP_HAL::HAL& hal = AP_HAL_AVR_APM1;
 
-unsigned long timer;
 AP_ADC_ADS7844 adc;
+uint32_t timer;
 
 void setup()
 {
-    Serial.begin(115200, 128, 128);
-    Serial.println("ArduPilot Mega ADC library test");
-    delay(1000);
+    hal.uart0->begin(115200, 128, 128);
+    hal.console->println("ArduPilot Mega ADC library test");
+    hal.scheduler->delay(1000);
 
-    isr_registry.init();
-    adc_scheduler.init(&isr_registry);
+    adc.Init();       // APM ADC initialization
 
-    adc.Init(&adc_scheduler);       // APM ADC initialization
-    delay(1000);
-    timer = millis();
+    hal.scheduler->delay(1000);
+    timer = hal.scheduler->millis();
 }
 
 static const uint8_t channel_map[6] = { 1, 2, 0, 4, 5, 6};
@@ -40,11 +38,11 @@ uint32_t last_usec = 0;
 static void show_timing()
 {
     uint32_t mint = (uint32_t)-1, maxt = 0, totalt=0;
-    uint32_t start_time = millis();
+    uint32_t start_time = hal.scheduler->millis();
     float result[6];
     uint32_t count = 0;
 
-    Serial.println("Starting timing test");
+    hal.console->println("Starting timing test");
 
     adc.Ch6(channel_map, result);
 
@@ -54,9 +52,9 @@ static void show_timing()
         if (deltat < mint) mint = deltat;
         totalt += deltat;
         count++;
-    } while ((millis() - start_time) < 5000);
+    } while ((hal.scheduler->millis() - start_time) < 5000);
 
-    Serial.printf("timing: mint=%lu maxt=%lu avg=%lu\n", mint, maxt, totalt/count);
+    hal.console->printf("timing: mint=%lu maxt=%lu avg=%lu\n", mint, maxt, totalt/count);
 }
 
 static void show_data()
@@ -81,13 +79,13 @@ static void show_data()
             if (result[i] < min[i]) min[i] = result[i];
             if (result[i] > max[i]) max[i] = result[i];
             if (fabs(result[i]) > 0x8000) {
-                Serial.printf("result[%u]=%f\n", (unsigned)i, result[i]);
+                hal.console->printf("result[%u]=%f\n", (unsigned)i, result[i]);
             }
         }
-    } while ((millis() - timer) < 200);
+    } while ((hal.scheduler->millis() - timer) < 200);
 
-    timer = millis();
-    Serial.printf("g=(%f,%f,%f) a=(%f,%f,%f) +/-(%u,%u,%u,%u,%u,%u) gt=%u dt=%u\n",
+    timer = hal.scheduler->millis();
+    hal.console->printf("g=(%f,%f,%f) a=(%f,%f,%f) +/-(%u,%u,%u,%u,%u,%u) gt=%u dt=%u\n",
                   result[0], result[1], result[2],
                   result[3], result[4], result[5],
                   (max[0]-min[0]), (max[1]-min[1]), (max[2]-min[2]),
@@ -98,9 +96,11 @@ static void show_data()
 
 void loop()
 {
-    if (millis() < 5000) {
+    if (hal.scheduler->millis() < 5000) {
         show_timing();
     } else {
         show_data();
     }
 }
+
+AP_HAL_MAIN();

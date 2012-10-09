@@ -1,9 +1,7 @@
+
 #include "AP_ADC_HIL.h"
-#if defined(ARDUINO) && ARDUINO >= 100
- #include "Arduino.h"
-#else
- #include "WProgram.h"
-#endif
+#include <AP_HAL.h>
+extern const AP_HAL::HAL& hal;
 
 /*
  *       AP_ADC_HIL.cpp
@@ -42,12 +40,12 @@ AP_ADC_HIL::AP_ADC_HIL()
     setGyroTemp(0);
     setPressure(0);
 
-    last_hil_time = millis();
+    last_hil_time = hal.scheduler->millis();
 }
 
-void AP_ADC_HIL::Init( AP_PeriodicProcess * scheduler )
+void AP_ADC_HIL::Init()
 {
-    scheduler->register_process( AP_ADC_HIL::read );
+    hal.scheduler->register_timer_process( AP_ADC_HIL::read );
 }
 
 // Read one channel value
@@ -64,7 +62,7 @@ uint32_t AP_ADC_HIL::Ch6(const uint8_t *channel_numbers, float *result)
     for (uint8_t i=0; i<6; i++) {
         result[i] = Ch(channel_numbers[i]);
     }
-    return ((millis() - last_hil_time)*2)/5;
+    return ((hal.scheduler->millis() - last_hil_time)*2)/5;
 }
 
 // Set one channel value
