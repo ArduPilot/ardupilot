@@ -3,11 +3,12 @@
 /// @file	AC_PID.h
 /// @brief	Generic PID algorithm, with EEPROM-backed storage of constants.
 
-#ifndef AC_PID_h
-#define AC_PID_h
+#ifndef __AC_PID_H__
+#define __AC_PID_H__
 
 #include <AP_Common.h>
 #include <AP_Param.h>
+#include <stdlib.h>
 #include <math.h>               // for fabs()
 
 /// @class	AC_PID
@@ -140,4 +141,4 @@ private:
     // f_cut = 30 Hz -> _filter =  5.3052e-3
 };
 
-#endif
+#endif // __AC_PID_H__
