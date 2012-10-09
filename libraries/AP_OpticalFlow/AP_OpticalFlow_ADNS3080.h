@@ -1,6 +1,7 @@
-#ifndef AP_OPTICALFLOW_ADNS3080_H
-#define AP_OPTICALFLOW_ADNS3080_H
+#ifndef __AP_OPTICALFLOW_ADNS3080_H__
+#define __AP_OPTICALFLOW_ADNS3080_H__
 
+#include <AP_Semaphore.h>
 #include "AP_OpticalFlow.h"
 
 // default pin settings
@@ -82,7 +83,7 @@
 class AP_OpticalFlow_ADNS3080 : public AP_OpticalFlow
 {
 public:
-    AP_OpticalFlow_ADNS3080(int16_t cs_pin = ADNS3080_CHIP_SELECT, int16_t reset_pin = ADNS3080_RESET);
+    AP_OpticalFlow_ADNS3080(AP_Semaphore* semaphore, int16_t cs_pin = ADNS3080_CHIP_SELECT, int16_t reset_pin = ADNS3080_RESET);
     bool        init(bool initCommAPI, AP_PeriodicProcess *scheduler); // parameter controls whether I2C/SPI interface is initialised (set to false if other devices are on the I2C/SPI bus and have already initialised the interface)
     uint8_t     read_register(uint8_t address);
     void        write_register(uint8_t address, uint8_t value);
@@ -138,6 +139,7 @@ private:
     bool        _motion; // true if there has been motion
     bool        _overflow; // true if the x or y data buffers overflowed
     uint8_t     _spi_bus;   // 0 = unknown, 1 = using SPI, 3 = using SPI3
+    AP_Semaphore* _semaphore;
 };
 
 #endif

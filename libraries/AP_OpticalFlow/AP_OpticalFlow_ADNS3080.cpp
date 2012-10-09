@@ -41,7 +41,8 @@ union NumericIntType
 };
 
 // Constructors ////////////////////////////////////////////////////////////////
-AP_OpticalFlow_ADNS3080::AP_OpticalFlow_ADNS3080(int16_t cs_pin, int16_t reset_pin) :
+AP_OpticalFlow_ADNS3080::AP_OpticalFlow_ADNS3080(AP_Semaphore* semaphore, int16_t cs_pin, int16_t reset_pin) :
+    _semaphore(semaphore),
     _cs_pin(cs_pin),
     _reset_pin(reset_pin),
     _spi_bus(ADNS3080_SPI_UNKNOWN)
@@ -181,10 +182,10 @@ AP_OpticalFlow_ADNS3080::read_register(byte address)
     uint8_t result = 0;
     uint8_t junk = 0;
 
-    // get spi3 semaphore if required
-    if( _spi_bus == ADNS3080_SPIBUS_3 ) {
+    // get spi semaphore if required
+    if( _semaphore != NULL) {
         // if failed to get semaphore then just quietly fail
-        if( !AP_Semaphore_spi3.get(this) ) {
+        if( !_semaphore->get(this) ) {
             return 0;
         }
     }
@@ -209,9 +210,9 @@ AP_OpticalFlow_ADNS3080::read_register(byte address)
 
     restore_spi_settings();
 
-    // get spi3 semaphore if required
-    if( _spi_bus == ADNS3080_SPIBUS_3 ) {
-        AP_Semaphore_spi3.release(this);
+    // get spi semaphore if required
+    if( _semaphore != NULL) {
+        _semaphore->release(this);
     }
 
     return result;
@@ -223,10 +224,10 @@ AP_OpticalFlow_ADNS3080::write_register(byte address, byte value)
 {
     byte junk = 0;
 
-    // get spi3 semaphore if required
-    if( _spi_bus == ADNS3080_SPIBUS_3 ) {
+    // get spi semaphore if required
+    if( _semaphore != NULL) {
         // if failed to get semaphore then just quietly fail
-        if( !AP_Semaphore_spi3.get(this) ) {
+        if( !_semaphore->get(this) ) {
             Serial.println("Optflow: failed to get spi3 semaphore!");
             return;
         }
@@ -253,8 +254,8 @@ AP_OpticalFlow_ADNS3080::write_register(byte address, byte value)
     restore_spi_settings();
 
     // get spi3 semaphore if required
-    if( _spi_bus == ADNS3080_SPIBUS_3 ) {
-        AP_Semaphore_spi3.release(this);
+    if( _semaphore != NULL) {
+        _semaphore->release(this);
     }
 }
 
