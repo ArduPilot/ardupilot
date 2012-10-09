@@ -42,7 +42,7 @@ void loop(void)
     bool ret;
 
     // quick test of spi semaphore
-    ret = AP_Semaphore_spi.get(&dummy3);
+    ret = AP_Semaphore_spi3.get(&dummy3);
     Serial.print("dummy3 gets SPI semaphore: ");
     print_true_false(ret);
 
