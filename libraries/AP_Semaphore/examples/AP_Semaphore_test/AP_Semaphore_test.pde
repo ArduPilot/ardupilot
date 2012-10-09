@@ -7,6 +7,7 @@
 FastSerialPort0(Serial);
 
 AP_Semaphore my_semaphore;
+AP_Semaphore AP_Semaphore_spi3;
 
 int16_t dummy1, dummy2, dummy3; // used to provide points to semaphore library
 
