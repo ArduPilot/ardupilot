@@ -36,7 +36,4 @@ protected:
     ap_semaphore_callback     _waiting_callback;       // call back procedure of process waiting for sempahore
 };
 
-// some global semaphores
-extern AP_Semaphore AP_Semaphore_spi3;
-
 #endif  // AP_SEMAPHORE
