@@ -4,6 +4,7 @@
  *  Code by Jordi Muñoz and Jose Julio. DIYDrones.com
  */
 
+#include <math.h>
 #include <FastSerial.h>
 #include <Arduino_Mega_ISR_Registry.h>
 #include <AP_PeriodicProcess.h>
@@ -40,7 +41,7 @@ static void show_timing()
 {
     uint32_t mint = (uint32_t)-1, maxt = 0, totalt=0;
     uint32_t start_time = millis();
-    uint16_t result[6];
+    float result[6];
     uint32_t count = 0;
 
     Serial.println("Starting timing test");
@@ -60,15 +61,16 @@ static void show_timing()
 
 static void show_data()
 {
-    uint16_t result[6];
+    float result[6];
     uint32_t deltat = 0;
     uint16_t ch3;
-    uint16_t min[6], max[6];
+    float min[6], max[6];
     uint8_t i;
 
     for (i=0; i<6; i++) {
-        min[i] = 0xFFFF;
-        max[i] = 0;
+        /* clearly out of bounds values: */
+        min[i] = 99999999.0f;
+        max[i] = -88888888.0f;
     }
 
 
@@ -78,14 +80,14 @@ static void show_data()
         for (i=0; i<6; i++) {
             if (result[i] < min[i]) min[i] = result[i];
             if (result[i] > max[i]) max[i] = result[i];
-            if (result[i] & 0x8000) {
-                Serial.printf("result[%u]=0x%04x\n", (unsigned)i, result[i]);
+            if (fabs(result[i]) > 0x8000) {
+                Serial.printf("result[%u]=%f\n", (unsigned)i, result[i]);
             }
         }
     } while ((millis() - timer) < 200);
 
     timer = millis();
-    Serial.printf("g=(%u,%u,%u) a=(%u,%u,%u) +/-(%u,%u,%u,%u,%u,%u) gt=%u dt=%u\n",
+    Serial.printf("g=(%f,%f,%f) a=(%f,%f,%f) +/-(%u,%u,%u,%u,%u,%u) gt=%u dt=%u\n",
                   result[0], result[1], result[2],
                   result[3], result[4], result[5],
                   (max[0]-min[0]), (max[1]-min[1]), (max[2]-min[2]),
