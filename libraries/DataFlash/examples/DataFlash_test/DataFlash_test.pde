@@ -8,7 +8,7 @@
 #include <AP_Common.h>
 #include <AP_Math.h>            // ArduPilot Mega Vector/Matrix math Library
 #include <SPI.h>                        // Arduino SPI lib
-#include <AP_Semaphore.h>               // for removing conflict with dataflash on SPI3 bus
+#include <AP_Semaphore.h> // Required by DataFlash library
 #include <DataFlash.h>
 
 ////////////////////////////////////////////////////////////////////////////////
