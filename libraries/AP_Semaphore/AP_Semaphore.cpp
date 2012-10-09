@@ -13,9 +13,6 @@ extern "C" {
  #include "WConstants.h"
 #endif
 
-// include some global constants
-AP_Semaphore AP_Semaphore_spi3;
-
 // Constructor
 AP_Semaphore::AP_Semaphore()
 {
