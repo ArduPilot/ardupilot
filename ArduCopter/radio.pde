@@ -90,14 +90,15 @@ static void init_rc_out()
             g.esc_calibrate.set_and_save(1);
             // send miinimum throttle out to ESC
             motors.output_min();
+            // display message on console
+            Serial.printf_P(PSTR("Entering ESC Calibration: please restart APM.\n"));
             // block until we restart
             while(1) {
-                //Serial.println("esc");
                 delay(200);
                 dancing_light();
             }
         }else{
-            //Serial.println("esc init");
+            Serial.printf_P(PSTR("ESC Calibration active: passing throttle through to ESCs.\n"));
             // clear esc flag
             g.esc_calibrate.set_and_save(0);
             // block until we restart
