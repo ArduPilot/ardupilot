@@ -50,6 +50,12 @@
 #define THROTTLE_CURVE_MID_THRUST   52  // throttle which produces 1/2 the maximum thrust.  expressed as a percentage of the full throttle range (i.e 0 ~ 100)
 #define THROTTLE_CURVE_MAX_THRUST   93  // throttle which produces the maximum thrust.  expressed as a percentage of the full throttle range (i.e 0 ~ 100)
 
+// bit mask for recording which limits we have reached when outputting to motors
+#define AP_MOTOR_NO_LIMITS_REACHED  0x00
+#define AP_MOTOR_ROLLPITCH_LIMIT    0x01
+#define AP_MOTOR_YAW_LIMIT          0x02
+#define AP_MOTOR_THROTTLE_LIMIT     0x04
+
 /// @class      AP_Motors
 class AP_Motors {
 public:
@@ -120,6 +126,11 @@ public:
     virtual void        output_min() {
     };
 
+    // reached_limits - return whether we hit the limits of the motors
+    virtual uint8_t     reached_limit( uint8_t which_limit = 0x00 ) {
+        return _reached_limit & which_limit;
+    }
+
     // get basic information about the platform
     virtual uint8_t        get_num_motors() {
         return 0;
@@ -169,6 +180,7 @@ protected:
     AP_Int8             _throttle_curve_enabled;        // enable throttle curve
     AP_Int8             _throttle_curve_mid;  // throttle which produces 1/2 the maximum thrust.  expressed as a percentage (i.e. 0 ~ 100 ) of the full throttle range
     AP_Int8             _throttle_curve_max;  // throttle which produces the maximum thrust.  expressed as a percentage (i.e. 0 ~ 100 ) of the full throttle range
+    uint8_t             _reached_limit;                // bit mask to record which motor limits we hit (if any) during most recent output.  Used to provide feedback to attitude controllers
 };
 
 #endif  // AP_MOTORS
