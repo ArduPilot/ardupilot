@@ -11,11 +11,11 @@
 ///         the downside being that it's a little slower as it internally uses a float
 ///         and it consumes an extra 4 bytes of memory to hold the constant gain
 
-#ifndef LowPassFilter_h
-#define LowPassFilter_h
+#ifndef __LOW_PASS_FILTER_H__
+#define __LOW_PASS_FILTER_H__
 
-#include <inttypes.h>
-#include <Filter.h>
+#include <AP_Math.h>
+#include "FilterClass.h"
 
 // 1st parameter <T> is the type of data being filtered.
 template <class T>
@@ -106,4 +106,4 @@ T LowPassFilter<T>::apply(T sample)
     return (T)_base_value;
 }
 
-#endif
+#endif // __LOW_PASS_FILTER_H__

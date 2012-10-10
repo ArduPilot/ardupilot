@@ -12,12 +12,10 @@
 ///         restrictions caused by the use of templates which makes different sizes essentially
 ///         completely different classes
 
-#ifndef FilterWithBuffer_h
-#define FilterWithBuffer_h
+#ifndef __FILTER_WITH_BUFFER_H__
+#define __FILTER_WITH_BUFFER_H__
 
-#include <inttypes.h>
-#include <AP_Common.h>
-#include <Filter.h>
+#include "FilterClass.h"
 
 template <class T, uint8_t FILTER_SIZE>
 class FilterWithBuffer : public Filter<T>
@@ -27,13 +25,13 @@ public:
     FilterWithBuffer();
 
     // apply - Add a new raw value to the filter, retrieve the filtered result
-    virtual T        apply(T sample);
+    T apply(T sample);
 
     // reset - clear the filter
-    virtual void        reset();
+    void reset();
 
     // get filter size
-    virtual uint8_t        get_filter_size() {
+    uint8_t get_filter_size() {
         return FILTER_SIZE;
     };
 
@@ -76,7 +74,6 @@ typedef FilterWithBuffer<uint32_t,7> FilterWithBufferUInt32_Size7;
 // Constructor
 template <class T, uint8_t FILTER_SIZE>
 FilterWithBuffer<T,FILTER_SIZE>::FilterWithBuffer() :
-    Filter<T>(),
     sample_index(0)
 {
     // clear sample buffer
@@ -85,11 +82,8 @@ FilterWithBuffer<T,FILTER_SIZE>::FilterWithBuffer() :
 
 // reset - clear all samples from the buffer
 template <class T, uint8_t FILTER_SIZE>
-void FilterWithBuffer<T,FILTER_SIZE>::        reset()
+void FilterWithBuffer<T,FILTER_SIZE>::reset()
 {
-    // call base class reset
-    Filter<T>::reset();
-
     // clear samples buffer
     for( int8_t i=0; i<FILTER_SIZE; i++ ) {
         samples[i] = 0;
