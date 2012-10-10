@@ -8,46 +8,37 @@
  *   of the License, or (at your option) any later version.
  */
 
-#include <FastSerial.h>
 #include <AP_Common.h>
 #include <AP_Param.h>
 #include <AP_Math.h>
-#include <AP_AnalogSource.h>
-#include <AP_AnalogSource_Arduino.h>
-#include <Arduino_Mega_ISR_Registry.h>
-#include <AP_PeriodicProcess.h>
+#include <AP_HAL.h>
+#include <AP_HAL_AVR.h>
+
 #include <Filter.h>
 #include <AP_Buffer.h>
 #include <AP_Airspeed.h>
 
-Arduino_Mega_ISR_Registry isr_registry;
-AP_TimerProcess scheduler;
+const AP_HAL::HAL& hal = AP_HAL_AVR_APM2;
 
-FastSerialPort0(Serial);
-
-AP_AnalogSource_Arduino pin0(0);
-AP_Airspeed airspeed(&pin0);
+AP_Airspeed airspeed;
 
 void setup()
 {
-    Serial.begin(115200, 128, 128);
-    Serial.println("ArduPilot Airspeed library test");
+    hal.uart0->begin(115200, 128, 128);
+    hal.console->println("ArduPilot Airspeed library test");
 
-    isr_registry.init();
-    scheduler.init(&isr_registry);
-    AP_AnalogSource_Arduino::init_timer(&scheduler);
-
-    pinMode(0, INPUT);
-
-    airspeed.calibrate(delay);
+    airspeed.init(hal.analogin->channel(0));
+    airspeed.calibrate();
 }
 
 void loop(void)
 {
     static uint32_t timer;
-    if((millis() - timer) > 100) {
-        timer = millis();
+    if((hal.scheduler->millis() - timer) > 100) {
+        timer = hal.scheduler->millis();
         airspeed.read();
-        Serial.printf("airspeed %.2f\n", airspeed.get_airspeed());
+        hal.console->printf("airspeed %.2f\n", airspeed.get_airspeed());
     }
 }
+
+AP_HAL_MAIN();

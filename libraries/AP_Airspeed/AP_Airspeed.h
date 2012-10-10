@@ -4,24 +4,25 @@
 #define __AP_AIRSPEED_H__
 
 #include <AP_Common.h>
+#include <AP_HAL.h>
 #include <AP_Param.h>
-#include <AP_AnalogSource.h>
 
 class AP_Airspeed
 {
 public:
     // constructor
-    AP_Airspeed(AP_AnalogSource *source) {
+    AP_Airspeed() {};
+
+    void        init(AP_HAL::AnalogSource *source) {
         _source = source;
     }
-
     // read the analog source and update _airspeed
     void        read(void);
 
     // calibrate the airspeed. This must be called on startup if the
     // altitude/climb_rate/acceleration interfaces are ever used
     // the callback is a delay() like routine
-    void            calibrate(void (*callback)(unsigned long t));
+    void            calibrate();
 
     // return the current airspeed in m/s
     float           get_airspeed(void) {
@@ -48,10 +49,10 @@ public:
         _airspeed = airspeed;
     }
 
-    static const struct AP_Param::GroupInfo         var_info[];
+    static const struct AP_Param::GroupInfo var_info[];
 
 private:
-    AP_AnalogSource *                               _source;
+    AP_HAL::AnalogSource *_source;
     AP_Float        _offset;
     AP_Float        _ratio;
     AP_Int8         _use;

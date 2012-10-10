@@ -8,9 +8,13 @@
  *   of the License, or (at your option) any later version.
  */
 
-#include <FastSerial.h>
+#include <math.h>
+
 #include <AP_Common.h>
+#include <AP_HAL.h>
 #include <AP_Airspeed.h>
+
+extern const AP_HAL::HAL& hal;
 
 // table of user settable parameters
 const AP_Param::GroupInfo AP_Airspeed::var_info[] PROGMEM = {
@@ -44,7 +48,7 @@ const AP_Param::GroupInfo AP_Airspeed::var_info[] PROGMEM = {
 
 // calibrate the airspeed. This must be called at least once before
 // the get_airspeed() interface can be used
-void AP_Airspeed::calibrate(void (*callback)(unsigned long t))
+void AP_Airspeed::calibrate()
 {
     float sum = 0;
     uint8_t c;
@@ -53,7 +57,7 @@ void AP_Airspeed::calibrate(void (*callback)(unsigned long t))
     }
     _source->read();
     for (c = 0; c < 10; c++) {
-        callback(100);
+        hal.scheduler->delay(100);
         sum += _source->read();
     }
     _airspeed_raw = sum/c;
@@ -69,6 +73,8 @@ void AP_Airspeed::read(void)
         return;
     }
     _airspeed_raw           = _source->read();
-    airspeed_pressure       = max((_airspeed_raw - _offset), 0);
-    _airspeed               = 0.7 * _airspeed + 0.3 * sqrt(airspeed_pressure * _ratio);
+    airspeed_pressure       = ((_airspeed_raw - _offset) < 0) ?
+                                (_airspeed_raw - _offset) : 0;
+    _airspeed               = 0.7 * _airspeed +
+                              0.3 * sqrt(airspeed_pressure * _ratio);
 }
