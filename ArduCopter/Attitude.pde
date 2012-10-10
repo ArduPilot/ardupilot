@@ -269,7 +269,12 @@ get_rate_roll(int32_t target_rate)
     // call pid controller
     rate_error      = target_rate - current_rate;
     p                       = g.pid_rate_roll.get_p(rate_error);
-    i                       = g.pid_rate_roll.get_i(rate_error, G_Dt);
+    // freeze I term if we've breached roll-pitch limits
+    if( motors.reached_limit(AP_MOTOR_ROLLPITCH_LIMIT) ) {
+        i                       = g.pid_rate_roll.get_integrator();
+    }else{
+        i                       = g.pid_rate_roll.get_i(rate_error, G_Dt);
+    }
     d                       = g.pid_rate_roll.get_d(rate_error, G_Dt);
     output          = p + i + d;
 
@@ -320,7 +325,12 @@ get_rate_pitch(int32_t target_rate)
     // call pid controller
     rate_error      = target_rate - current_rate;
     p                       = g.pid_rate_pitch.get_p(rate_error);
-    i                       = g.pid_rate_pitch.get_i(rate_error, G_Dt);
+    // freeze I term if we've breached roll-pitch limits
+    if( motors.reached_limit(AP_MOTOR_ROLLPITCH_LIMIT) ) {
+        i                       = g.pid_rate_pitch.get_integrator();
+    }else{
+        i                       = g.pid_rate_pitch.get_i(rate_error, G_Dt);
+    }
     d                       = g.pid_rate_pitch.get_d(rate_error, G_Dt);
     output          = p + i + d;
 
@@ -360,7 +370,12 @@ get_rate_yaw(int32_t target_rate)
 
     // separately calculate p, i, d values for logging
     p = g.pid_rate_yaw.get_p(rate_error);
-    i = g.pid_rate_yaw.get_i(rate_error, G_Dt);
+    // freeze I term if we've breached yaw limits
+    if( motors.reached_limit(AP_MOTOR_YAW_LIMIT) ) {
+        i = g.pid_rate_yaw.get_integrator();
+    }else{
+        i = g.pid_rate_yaw.get_i(rate_error, G_Dt);
+    }
     d = g.pid_rate_yaw.get_d(rate_error, G_Dt);
 
     output  = p+i+d;
@@ -412,7 +427,12 @@ get_throttle_rate(int16_t z_target_speed)
 
     // separately calculate p, i, d values for logging
     p = g.pid_throttle.get_p(z_rate_error);
-    i = g.pid_throttle.get_i(z_rate_error, .02);
+    // freeze I term if we've breached throttle limits
+    if( motors.reached_limit(AP_MOTOR_THROTTLE_LIMIT) ) {
+        i = g.pid_throttle.get_integrator();
+    }else{
+        i = g.pid_throttle.get_i(z_rate_error, .02);
+    }
     d = g.pid_throttle.get_d(z_rate_error, .02);
 
     //
