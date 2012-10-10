@@ -665,7 +665,7 @@
  # define STABILIZE_ROLL_P               4.5
 #endif
 #ifndef STABILIZE_ROLL_I
- # define STABILIZE_ROLL_I               0.05
+ # define STABILIZE_ROLL_I               0.0
 #endif
 #ifndef STABILIZE_ROLL_IMAX
  # define STABILIZE_ROLL_IMAX    8.0            // degrees
@@ -675,7 +675,7 @@
  # define STABILIZE_PITCH_P              4.5
 #endif
 #ifndef STABILIZE_PITCH_I
- # define STABILIZE_PITCH_I              0.05
+ # define STABILIZE_PITCH_I              0.0
 #endif
 #ifndef STABILIZE_PITCH_IMAX
  # define STABILIZE_PITCH_IMAX   8.0            // degrees
@@ -685,7 +685,7 @@
  # define STABILIZE_YAW_P                4.5            // increase for more aggressive Yaw Hold, decrease if it's bouncy
 #endif
 #ifndef  STABILIZE_YAW_I
- # define STABILIZE_YAW_I                0.02
+ # define STABILIZE_YAW_I                0.0
 #endif
 #ifndef  STABILIZE_YAW_IMAX
  # define STABILIZE_YAW_IMAX             8.0            // degrees * 100
@@ -699,7 +699,7 @@
  # define RATE_ROLL_P        0.175
 #endif
 #ifndef RATE_ROLL_I
- # define RATE_ROLL_I        0.0
+ # define RATE_ROLL_I        0.02
 #endif
 #ifndef RATE_ROLL_D
  # define RATE_ROLL_D        0.004
@@ -712,7 +712,7 @@
  # define RATE_PITCH_P       0.175
 #endif
 #ifndef RATE_PITCH_I
- # define RATE_PITCH_I           0.0
+ # define RATE_PITCH_I           0.02
 #endif
 #ifndef RATE_PITCH_D
  # define RATE_PITCH_D       0.004
@@ -984,10 +984,6 @@
 
 #ifndef USE_CURRENT_ALT
  # define USE_CURRENT_ALT FALSE
-#endif
-
-#ifndef CUT_MOTORS
- # define CUT_MOTORS             1              // do we cut the motors with no throttle?
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
