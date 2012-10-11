@@ -16,18 +16,10 @@ public:
     void setTimeout(uint16_t ms) { _timeoutDelay = ms; }
     void setHighSpeed(bool active);
 
-    uint8_t writeRegister(uint8_t addr, uint8_t reg, uint8_t val) {
-        /* Sometimes avr-gcc fails at dereferencing a uint8_t arg. */
-        uint8_t data[1];
-        data[0] = val;
-        return writeRegisters(addr, reg, 1, data);
-    }
-
+    uint8_t writeRegister(uint8_t addr, uint8_t reg, uint8_t val);
     uint8_t writeRegisters(uint8_t addr, uint8_t reg,
                            uint8_t len, uint8_t* data);
-    uint8_t readRegister(uint8_t addr, uint8_t reg, uint8_t* data) {
-        return readRegisters(addr, reg, 1, data);
-    }
+    uint8_t readRegister(uint8_t addr, uint8_t reg, uint8_t* data);
     uint8_t readRegisters(uint8_t addr, uint8_t reg,
                           uint8_t len, uint8_t* data);
     uint8_t lockup_count() { return _lockup_count; }

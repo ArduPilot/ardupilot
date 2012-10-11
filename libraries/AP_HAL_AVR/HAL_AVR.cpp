@@ -8,7 +8,6 @@ void HAL_AVR::init(void* opts) const {
    
     /* uart0 is the serial port used for the console, so lets make sure
      * it is initialized at boot */
-    // XXX maybe this should be 57600?
     uart0->begin(115200);
     console->init((void*)uart0);
     /* The AVR RCInput drivers take an AP_HAL_AVR::ISRRegistry*
@@ -16,6 +15,8 @@ void HAL_AVR::init(void* opts) const {
     rcin->init((void*)&isr_registry);
     rcout->init(NULL);
     spi->init(NULL);
+    i2c->begin();
+    i2c->setTimeout(100);
     analogin->init(NULL);
 };
 

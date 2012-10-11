@@ -106,6 +106,13 @@ uint8_t AVRI2CDriver::writeRegisters(uint8_t addr, uint8_t reg,
     return stat;
 }
 
+uint8_t AVRI2CDriver::writeRegister(uint8_t addr, uint8_t reg, uint8_t val) {
+        /* Sometimes avr-gcc fails at dereferencing a uint8_t arg. */
+        uint8_t data[1];
+        data[0] = val;
+        return writeRegisters(addr, reg, 1, data);
+}
+
 uint8_t AVRI2CDriver::readRegisters(uint8_t addr, uint8_t reg,
                                     uint8_t len, uint8_t* data){
     uint8_t stat;
@@ -135,6 +142,10 @@ uint8_t AVRI2CDriver::readRegisters(uint8_t addr, uint8_t reg,
     }
     stat = _stop();
     return stat;
+}
+
+uint8_t AVRI2CDriver::readRegister(uint8_t addr, uint8_t reg, uint8_t* data) {
+    return readRegisters(addr, reg, 1, data);
 }
 
 uint8_t AVRI2CDriver::_start() {

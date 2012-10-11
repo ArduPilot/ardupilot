@@ -17,9 +17,6 @@ void setup() {
     hal.uart0->printf_P(PSTR("Initializing HMC5883L at address %x\r\n"),
                                 HMC5883L);
 
-    // configure device for continuous mode
-    hal.i2c->begin();
-    hal.i2c->setTimeout(100);
 
     uint8_t stat = hal.i2c->writeRegister(HMC5883L,0x02,0x00);
     if (stat == 0) {
