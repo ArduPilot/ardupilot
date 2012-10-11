@@ -103,8 +103,7 @@ static void mpu6k_read(int16_t* data) {
 }
 
 static void setup() {
-    hal.uart0->begin(115200);
-    hal.uart0->printf_P(PSTR("Initializing MPU6000\r\n"));
+    hal.console->printf_P(PSTR("Initializing MPU6000\r\n"));
 
     /* Setup the barometer cs to stop it from holding the bus */
     hal.gpio->pinMode(_baro_cs_pin, GPIO_OUTPUT);
@@ -117,7 +116,8 @@ static void setup() {
 
     uint8_t spcr = SPCR;
     uint8_t spsr = SPSR;
-    hal.uart0->printf_P(PSTR("SPCR 0x%x, SPSR 0x%x\r\n"), (int)spcr, (int)spsr);
+    hal.console->printf_P(PSTR("SPCR 0x%x, SPSR 0x%x\r\n"),
+            (int)spcr, (int)spsr);
 
     mpu6k_init();
 }
@@ -125,7 +125,7 @@ static void setup() {
 static void loop() {
     int16_t sensors[7];
     mpu6k_read(sensors);
-    hal.uart0->printf_P(PSTR("mpu6k: %d %d %d %d %d %d %d\r\n"),
+    hal.console->printf_P(PSTR("mpu6k: %d %d %d %d %d %d %d\r\n"),
         sensors[0], sensors[1], sensors[2],
         sensors[3], sensors[4], sensors[5], sensors[6]);
     hal.scheduler->delay(10);

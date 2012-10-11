@@ -10,7 +10,8 @@ void multiread(AP_HAL::RCInput* in) {
     uint16_t channels[8];
     uint8_t valid;
     valid = in->read(channels, 8);
-    hal.uart0->printf_P(PSTR("multi      read %d: %d %d %d %d %d %d %d %d\r\n"),
+    hal.console->printf_P(
+            PSTR("multi      read %d: %d %d %d %d %d %d %d %d\r\n"),
             (int) valid, 
             channels[0], channels[1], channels[2], channels[3],
             channels[4], channels[5], channels[6], channels[7]);
@@ -24,7 +25,8 @@ void individualread(AP_HAL::RCInput* in) {
     for (int i = 0; i < 8; i++) {
         channels[i] = in->read(i);
     }
-    hal.uart0->printf_P(PSTR("individual read %d: %d %d %d %d %d %d %d %d\r\n"),
+    hal.console->printf_P(
+            PSTR("individual read %d: %d %d %d %d %d %d %d %d\r\n"),
             (int) valid, 
             channels[0], channels[1], channels[2], channels[3],
             channels[4], channels[5], channels[6], channels[7]);
@@ -50,8 +52,7 @@ void loop (void) {
 }
 
 void setup (void) {
-    hal.uart0->begin(115200);
-    hal.uart0->printf_P(PSTR("reading rc in:"));
+    hal.console->printf_P(PSTR("reading rc in:"));
     hal.gpio->pinMode(27, GPIO_OUTPUT);
     hal.gpio->write(27, 0);
 }

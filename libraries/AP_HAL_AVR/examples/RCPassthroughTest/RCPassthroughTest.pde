@@ -9,7 +9,8 @@ void multiread(AP_HAL::RCInput* in, uint16_t* channels) {
     /* Multi-channel read method: */
     uint8_t valid;
     valid = in->read(channels, 8);
-    hal.uart0->printf_P(PSTR("multi      read %d: %d %d %d %d %d %d %d %d\r\n"),
+    hal.console->printf_P(
+            PSTR("multi      read %d: %d %d %d %d %d %d %d %d\r\n"),
             (int) valid, 
             channels[0], channels[1], channels[2], channels[3],
             channels[4], channels[5], channels[6], channels[7]);
@@ -22,7 +23,8 @@ void individualread(AP_HAL::RCInput* in, uint16_t* channels) {
     for (int i = 0; i < 8; i++) {
         channels[i] = in->read(i);
     }
-    hal.uart0->printf_P(PSTR("individual read %d: %d %d %d %d %d %d %d %d\r\n"),
+    hal.console->printf_P(
+            PSTR("individual read %d: %d %d %d %d %d %d %d %d\r\n"),
             (int) valid, 
             channels[0], channels[1], channels[2], channels[3],
             channels[4], channels[5], channels[6], channels[7]);
@@ -71,7 +73,6 @@ void loop (void) {
 }
 
 void setup (void) {
-    hal.uart0->begin(115200);
     hal.gpio->pinMode(27, GPIO_OUTPUT);
     hal.gpio->write(27, 0);
     hal.rcout->enable_mask(0x000000FF);
@@ -79,7 +80,7 @@ void setup (void) {
     /* Bottom 4 channels at 400hz (like on a quad) */
     hal.rcout->set_freq(0x0000000F, 400);
     for(int i = 0; i < 12; i++) {
-        hal.uart0->printf_P(PSTR("rcout ch %d has frequency %d\r\n"),
+        hal.console->printf_P(PSTR("rcout ch %d has frequency %d\r\n"),
                 i, hal.rcout->get_freq(i));
     }
     /* Delay to let the user see the above printouts on the terminal */

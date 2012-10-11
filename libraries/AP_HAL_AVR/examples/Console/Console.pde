@@ -71,10 +71,6 @@ void stream_console_loopback(AP_HAL::Stream* s, AP_HAL::ConsoleDriver* c,
 void setup(void)
 {
         //
-        // Set the speed for our replacement serial port.
-        //
-	hal.uart0->begin(115200);
-        //
         // Test printing things
         //
     hal.console->print("test");

@@ -6,7 +6,7 @@
 const AP_HAL::HAL& hal = AP_HAL_AVR_APM1;
 
 void loop (void) {
-    hal.uart0->println(".");
+    hal.console->println(".");
     hal.gpio->write(3, 0);
     hal.scheduler->delay(1000);
     hal.gpio->write(3, 1);
@@ -33,9 +33,8 @@ void setup (void) {
 
     hal.gpio->write(13, 1);
 
-    hal.uart0->begin(115200);
     hal.gpio->write(1, 0);
-    hal.uart0->println("Hello World");
+    hal.console->println("Hello World");
     hal.gpio->write(2, 0);
 }
 

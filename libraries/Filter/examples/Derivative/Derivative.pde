@@ -22,11 +22,7 @@ const AP_HAL::HAL& hal = AP_HAL_AVR_APM2;
 DerivativeFilter<float,11> derivative;
 
 // setup routine
-void setup()
-{
-    // Open up a serial connection
-    hal.uart0->begin(115200);
-}
+void setup(){}
 
 static float noise(void)
 {

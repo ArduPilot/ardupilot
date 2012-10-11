@@ -42,7 +42,6 @@ void print_latlon(AP_HAL::BetterStream *s, int32_t lat_or_lon)
 
 void setup()
 {
-    hal.uart0->begin(115200);
     hal.uart1->begin(38400);
 
     hal.uart0->println("GPS AUTO library test");

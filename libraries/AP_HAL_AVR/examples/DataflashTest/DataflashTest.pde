@@ -159,7 +159,6 @@ void longtest_readback()
 
 void setup()
 {
-    hal.uart0->begin(115200);
     hal.dataflash->init(NULL);
 
     hal.uart0->println("Dataflash Log Test 1.0");

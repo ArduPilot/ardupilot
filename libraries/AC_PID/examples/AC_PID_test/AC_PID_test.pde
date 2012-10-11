@@ -22,7 +22,6 @@ const AP_HAL::HAL& hal = AP_HAL_AVR_APM2;
 // setup function
 void setup()
 {
-    hal.uart0->begin(115200);
     hal.console->println("ArduPilot Mega AC_PID library test");
 
     hal.scheduler->delay(1000);

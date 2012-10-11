@@ -15,9 +15,9 @@ const AP_HAL::HAL& hal = AP_HAL_AVR_APM1;
 void setup(void)
 {
         //
-        // Set the speed for our replacement serial port.
+        // HAL will start serial port at 115200.
         //
-	hal.uart0->begin(115200);
+
         //
         // Test printing things
         //

@@ -26,9 +26,6 @@ AverageFilterUInt16_Size4 _temp_filter;
 
 void setup()
 {
-    // Open up a serial connection
-    hal.uart0->begin(115200);
-
     // introduction
     hal.console->printf("ArduPilot ModeFilter library test ver 1.0\n\n");
 
