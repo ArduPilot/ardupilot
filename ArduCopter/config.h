@@ -699,7 +699,7 @@
  # define RATE_ROLL_P        0.175
 #endif
 #ifndef RATE_ROLL_I
- # define RATE_ROLL_I        0.02
+ # define RATE_ROLL_I        0.010
 #endif
 #ifndef RATE_ROLL_D
  # define RATE_ROLL_D        0.004
@@ -712,7 +712,7 @@
  # define RATE_PITCH_P       0.175
 #endif
 #ifndef RATE_PITCH_I
- # define RATE_PITCH_I           0.02
+ # define RATE_PITCH_I       0.010
 #endif
 #ifndef RATE_PITCH_D
  # define RATE_PITCH_D       0.004
@@ -725,7 +725,7 @@
  # define RATE_YAW_P              .25
 #endif
 #ifndef RATE_YAW_I
- # define RATE_YAW_I              0.02
+ # define RATE_YAW_I              0.015
 #endif
 #ifndef RATE_YAW_D
  # define RATE_YAW_D              0.000
