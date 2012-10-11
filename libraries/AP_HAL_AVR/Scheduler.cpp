@@ -21,6 +21,7 @@ static uint8_t timer0_fract = 0;
 AP_HAL::TimedProc ArduinoScheduler::_failsafe = NULL;
 volatile bool ArduinoScheduler::_timer_suspended = false;
 AP_HAL::TimedProc ArduinoScheduler::_timer_proc[AVR_SCHEDULER_MAX_TIMER_PROCS] = {NULL};
+AP_HAL::TimedProc ArduinoScheduler::_defered_timer_proc = NULL;
 uint8_t ArduinoScheduler::_num_timer_procs = 0;
 bool ArduinoScheduler::_in_timer_proc = false;
 
@@ -235,6 +236,18 @@ void ArduinoScheduler::register_timer_process(
 
 }
 
+bool ArduinoScheduler::defer_timer_process(AP_HAL::TimedProc proc) {
+    if ( _in_timer_proc || _timer_suspended ) {
+        _defered_timer_proc = proc;
+        return false;
+    } else {
+        _timer_suspended = true;
+        proc(micros());
+        _timer_suspended = false;
+        return true;
+    }
+}
+
 void ArduinoScheduler::register_timer_failsafe(
         AP_HAL::TimedProc failsafe, uint32_t period_us) {
     /* XXX Assert period_us == 1000 */
@@ -286,6 +299,18 @@ void ArduinoScheduler::_timer_event() {
                 _timer_proc[i](tnow);
             }
         }
+    }
+
+    /* Run any defered procedures, if they exist.*/
+    cli();
+    /* Atomic read and clear: */
+    AP_HAL::TimedProc defered = _defered_timer_proc;
+    _defered_timer_proc = NULL;
+    sei();
+    if (defered != NULL) {
+        _timer_suspended = true;
+        defered(tnow);
+        _timer_suspended = false;
     }
 
     // and the failsafe, if one is setup
