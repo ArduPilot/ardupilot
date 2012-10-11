@@ -8,11 +8,10 @@
 class AP_Baro_MS5611 : public AP_Baro
 {
 public:
-    AP_Baro_MS5611() {
-    }                  // Constructor
+    AP_Baro_MS5611() {}
 
     /* AP_Baro public interface: */
-    bool            init(AP_PeriodicProcess *scheduler);
+    bool            init();
     uint8_t         read();
     float           get_pressure(); // in mbar*100 units
     float           get_temperature(); // in celsius degrees * 100 units

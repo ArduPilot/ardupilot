@@ -32,10 +32,11 @@
  *
  */
 
-#include <FastSerial.h>
-#include <SPI.h>
+#include <avr/interrupt.h>
+#include <AP_HAL.h>
 #include "AP_Baro_MS5611.h"
 
+extern const AP_HAL::HAL& hal;
 
 /* on APM v.24 MS5661_CS is PG1 (Arduino pin 40) */
 #define MS5611_CS 40
@@ -64,10 +65,10 @@ uint8_t AP_Baro_MS5611::_spi_read(uint8_t reg)
 {
     uint8_t return_value;
     uint8_t addr = reg; // | 0x80; // Set most significant bit
-    digitalWrite(MS5611_CS, LOW);
-    SPI.transfer(addr); // discarded
-    return_value = SPI.transfer(0);
-    digitalWrite(MS5611_CS, HIGH);
+    hal.gpio->write(MS5611_CS, 0);
+    hal.spi->transfer(addr); // discarded
+    return_value = hal.spi->transfer(0);
+    hal.gpio->write(MS5611_CS, 1);
     return return_value;
 }
 
@@ -76,11 +77,11 @@ uint16_t AP_Baro_MS5611::_spi_read_16bits(uint8_t reg)
     uint8_t byteH, byteL;
     uint16_t return_value;
     uint8_t addr = reg; // | 0x80; // Set most significant bit
-    digitalWrite(MS5611_CS, LOW);
-    SPI.transfer(addr); // discarded
-    byteH = SPI.transfer(0);
-    byteL = SPI.transfer(0);
-    digitalWrite(MS5611_CS, HIGH);
+    hal.gpio->write(MS5611_CS, 0);
+    hal.spi->transfer(addr); // discarded
+    byteH = hal.spi->transfer(0);
+    byteL = hal.spi->transfer(0);
+    hal.gpio->write(MS5611_CS, 1);
     return_value = ((uint16_t)byteH<<8) | (byteL);
     return return_value;
 }
@@ -90,12 +91,12 @@ uint32_t AP_Baro_MS5611::_spi_read_adc()
     uint8_t byteH,byteM,byteL;
     uint32_t return_value;
     uint8_t addr = 0x00;
-    digitalWrite(MS5611_CS, LOW);
-    SPI.transfer(addr); // discarded
-    byteH = SPI.transfer(0);
-    byteM = SPI.transfer(0);
-    byteL = SPI.transfer(0);
-    digitalWrite(MS5611_CS, HIGH);
+    hal.gpio->write(MS5611_CS, 0);
+    hal.spi->transfer(addr); // discarded
+    byteH = hal.spi->transfer(0);
+    byteM = hal.spi->transfer(0);
+    byteL = hal.spi->transfer(0);
+    hal.gpio->write(MS5611_CS, 1);
     return_value = (((uint32_t)byteH)<<16) | (((uint32_t)byteM)<<8) | (byteL);
     return return_value;
 }
@@ -103,23 +104,23 @@ uint32_t AP_Baro_MS5611::_spi_read_adc()
 
 void AP_Baro_MS5611::_spi_write(uint8_t reg)
 {
-    digitalWrite(MS5611_CS, LOW);
-    SPI.transfer(reg); // discarded
-    digitalWrite(MS5611_CS, HIGH);
+    hal.gpio->write(MS5611_CS, 0);
+    hal.spi->transfer(reg); // discarded
+    hal.gpio->write(MS5611_CS, 1);
 }
 
 // Public Methods //////////////////////////////////////////////////////////////
 // SPI should be initialized externally
-bool AP_Baro_MS5611::init( AP_PeriodicProcess *scheduler )
+bool AP_Baro_MS5611::init()
 {
-    scheduler->suspend_timer();
+    hal.scheduler->suspend_timer_procs();
 
-    pinMode(MS5611_CS, OUTPUT);          // Chip select Pin
-    digitalWrite(MS5611_CS, HIGH);
-    delay(1);
+    hal.gpio->pinMode(MS5611_CS, GPIO_OUTPUT);          // Chip select Pin
+    hal.gpio->write(MS5611_CS, 1);
+    hal.scheduler->delay(1);
 
     _spi_write(CMD_MS5611_RESET);
-    delay(4);
+    hal.scheduler->delay(4);
 
     // We read the factory calibration
     // The on-chip CRC is not used
@@ -133,7 +134,7 @@ bool AP_Baro_MS5611::init( AP_PeriodicProcess *scheduler )
 
     //Send a command to read Temp first
     _spi_write(CMD_CONVERT_D2_OSR4096);
-    _timer = micros();
+    _timer = hal.scheduler->micros();
     _state = 0;
     Temp=0;
     Press=0;
@@ -143,8 +144,8 @@ bool AP_Baro_MS5611::init( AP_PeriodicProcess *scheduler )
     _d1_count = 0;
     _d2_count = 0;
 
-    scheduler->resume_timer();
-    scheduler->register_process( AP_Baro_MS5611::_update );
+    hal.scheduler->register_timer_process( AP_Baro_MS5611::_update, 1, 0);
+    hal.scheduler->resume_timer_procs();
 
     // wait for at least one value to be read
     while (!_updated) ;
@@ -229,7 +230,7 @@ uint8_t AP_Baro_MS5611::read()
     }
     _calculate();
     if (updated) {
-        _last_update = millis();
+        _last_update = hal.scheduler->millis();
     }
     return updated ? 1 : 0;
 }

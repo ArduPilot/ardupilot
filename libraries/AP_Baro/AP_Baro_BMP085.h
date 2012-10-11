@@ -4,7 +4,7 @@
 
 #define PRESS_FILTER_SIZE 2
 
-#include "AP_Baro.h"
+#include <AP_Baro.h>
 #include <AverageFilter.h>
 
 class AP_Baro_BMP085 : public AP_Baro
@@ -17,7 +17,7 @@ public:
 
 
     /* AP_Baro public interface: */
-    bool            init(AP_PeriodicProcess * scheduler);
+    bool            init();
     uint8_t         read();
     float           get_pressure();
     float           get_temperature();

@@ -4,6 +4,7 @@
  */
 
 #include <FastSerial.h>
+#include <AP_Common.h>
 #include <I2C.h>
 #include <SPI.h>
 #include <Filter.h>
@@ -11,71 +12,67 @@
 #include <Arduino_Mega_ISR_Registry.h>
 #include <AP_PeriodicProcess.h>
 #include <AP_InertialSensor.h>
-#include <AP_Math.h>
-#include <AP_Common.h>
 #include <AP_Param.h>
-#include <AverageFilter.h>
-#include <AP_Buffer.h>
+#include <AP_Math.h>
+#include <AP_HAL.h>
+#include <Filter.h>
+#include <AP_Baro.h>
 
-#ifndef APM2_HARDWARE
- # define APM2_HARDWARE 0
-#endif
+#include <AP_HAL_AVR.h>
 
-AP_Baro_BMP085 APM_BMP085(APM2_HARDWARE);
+const AP_HAL::HAL& hal = AP_HAL_AVR_APM1;
 
-unsigned long timer;
+AP_Baro_BMP085 bmp085(0);
 
-FastSerialPort0(Serial);
-
-
-Arduino_Mega_ISR_Registry isr_registry;
-AP_TimerProcess scheduler;
+uint32_t timer;
 
 void setup()
 {
-    Serial.begin(115200);
-    Serial.println("ArduPilot Mega BMP085 library test");
-    Serial.println("Initialising barometer..."); delay(100);
+    hal.console->println("ArduPilot Mega BMP085 library test");
+    hal.console->println("Initialising barometer...");
 
-    I2c.begin();
-    I2c.timeOut(20);
+    hal.scheduler->delay(100);
 
-    //I2c.setSpeed(true);
-
-    isr_registry.init();
-    scheduler.init(&isr_registry);
-
-    if (!APM_BMP085.init(&scheduler)) {
-        Serial.println("Barometer initialisation FAILED\n");
+    if (!bmp085.init()) {
+        hal.console->println("Barometer initialisation FAILED\n");
     }
-    Serial.println("initialisation complete."); delay(100);
-    delay(1000);
-    timer = micros();
+    hal.console->println("initialisation complete.");
+    hal.scheduler->delay(1000);
+    timer = hal.scheduler->micros();
 }
 
 void loop()
 {
     float tmp_float;
-    float Altitude;
 
-    if((micros()- timer) > 50000L) {
-        timer = micros();
-        APM_BMP085.read();
-        unsigned long read_time = micros() - timer;
-        if (!APM_BMP085.healthy) {
-            Serial.println("not healthy");
+    if((hal.scheduler->micros()- timer) > 50000L) {
+        timer = hal.scheduler->micros();
+        bmp085.read();
+        uint32_t read_time = hal.scheduler->micros() - timer;
+        if (! bmp085.healthy) {
+            hal.console->println("not healthy");
             return;
         }
-        Serial.print("Pressure:");
-        Serial.print(APM_BMP085.get_pressure());
-        Serial.print(" Temperature:");
-        Serial.print(APM_BMP085.get_temperature());
-        Serial.print(" Altitude:");
-        tmp_float = (APM_BMP085.get_pressure() / 101325.0);
+        hal.console->print("Pressure:");
+        hal.console->print( bmp085.get_pressure());
+        hal.console->print(" Temperature:");
+        hal.console->print( bmp085.get_temperature());
+        hal.console->print(" Altitude:");
+        tmp_float = ( bmp085.get_pressure() / 101325.0);
         tmp_float = pow(tmp_float, 0.190295);
-        Altitude = 44330.0 * (1.0 - tmp_float);
-        Serial.print(Altitude);
-        Serial.printf(" t=%u", (unsigned)read_time);
-        Serial.println();
+        float alt = 44330.0 * (1.0 - tmp_float);
+        hal.console->print(alt);
+        hal.console->printf(" t=%lu", read_time);
+        hal.console->println();
     }
 }
+
+extern "C" {
+int main (void) {
+    hal.init(NULL);
+    setup();
+    for(;;) loop();
+    return 0;
+}
+}
+

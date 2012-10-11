@@ -8,9 +8,12 @@
  *   of the License, or (at your option) any later version.
  */
 
-#include <FastSerial.h>
+#include <math.h>
 #include <AP_Common.h>
 #include <AP_Baro.h>
+#include <AP_HAL.h>
+
+extern const AP_HAL::HAL& hal;
 
 // table of user settable parameters
 const AP_Param::GroupInfo AP_Baro::var_info[] PROGMEM = {
@@ -33,7 +36,7 @@ const AP_Param::GroupInfo AP_Baro::var_info[] PROGMEM = {
 
 // calibrate the barometer. This must be called at least once before
 // the altitude() or climb_rate() interfaces can be used
-void AP_Baro::calibrate(void (*callback)(unsigned long t))
+void AP_Baro::calibrate()
 {
     float ground_pressure = 0;
     float ground_temperature = 0;
@@ -42,7 +45,7 @@ void AP_Baro::calibrate(void (*callback)(unsigned long t))
         read();         // Get initial data from absolute pressure sensor
         ground_pressure         = get_pressure();
         ground_temperature      = get_temperature();
-        callback(20);
+        hal.scheduler->delay(20);
     }
     // let the barometer settle for a full second after startup
     // the MS5611 reads quite a long way off for the first second,
@@ -53,7 +56,7 @@ void AP_Baro::calibrate(void (*callback)(unsigned long t))
         } while (!healthy);
         ground_pressure         = get_pressure();
         ground_temperature      = get_temperature();
-        callback(100);
+        hal.scheduler->delay(100);
     }
 
     // now average over 5 values for the ground pressure and
@@ -64,7 +67,7 @@ void AP_Baro::calibrate(void (*callback)(unsigned long t))
         } while (!healthy);
         ground_pressure         = ground_pressure * 0.8     + get_pressure() * 0.2;
         ground_temperature      = ground_temperature * 0.8  + get_temperature() * 0.2;
-        callback(100);
+        hal.scheduler->delay(100);
     }
 
     _ground_pressure.set_and_save(ground_pressure);

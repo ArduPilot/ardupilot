@@ -18,7 +18,7 @@ private:
 public:
     AP_Baro_BMP085_HIL();  // Constructor
 
-    bool init(AP_PeriodicProcess * scheduler);
+    bool init();
     uint8_t read();
     float get_pressure();
     float get_temperature();

@@ -1,16 +1,15 @@
 /// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 
-#include <FastSerial.h>
 #include <AP_Baro.h>
 #include "AP_Baro_BMP085_hil.h"
+#include <AP_HAL.h>
+extern const AP_HAL::HAL& hal;
 
 // Constructors ////////////////////////////////////////////////////////////////
-AP_Baro_BMP085_HIL::AP_Baro_BMP085_HIL()
-{
-}
+AP_Baro_BMP085_HIL::AP_Baro_BMP085_HIL(){}
 
 // Public Methods //////////////////////////////////////////////////////////////
-bool AP_Baro_BMP085_HIL::init(AP_PeriodicProcess * scheduler)
+bool AP_Baro_BMP085_HIL::init()
 {
     BMP085_State=1;
     return true;
@@ -50,7 +49,7 @@ void AP_Baro_BMP085_HIL::setHIL(float _Temp, float _Press)
     }
 
     healthy = true;
-    _last_update = millis();
+    _last_update = hal.scheduler->millis();
 }
 
 float AP_Baro_BMP085_HIL::get_pressure() {
