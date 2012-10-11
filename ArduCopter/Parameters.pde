@@ -114,7 +114,21 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @User: Standard
     GSCALAR(rtl_approach_alt,       "APPROACH_ALT", RTL_APPROACH_ALT),
 
-    GSCALAR(tilt_comp,      "TILT",                 54),
+	// @Param: TILT
+    // @DisplayName: Auto Tilt Compensation
+    // @Description: This is a feed-forward compensation which helps the aircraft achieve target waypoint speed.
+    // @Range: 0 100
+    // @Increment: 1
+    // @User: Advanced
+	#if FRAME_CONFIG ==     HELI_FRAME
+	GSCALAR(tilt_comp,      "TILT",                 5),
+	#else
+	GSCALAR(tilt_comp,      "TILT",                 54),
+	#endif
+	
+	
+	
+    
 
     GSCALAR(waypoint_mode,  "WP_MODE",          0),
     GSCALAR(command_total,  "WP_TOTAL",         0),
