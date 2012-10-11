@@ -1258,12 +1258,6 @@ static void medium_loop()
         // -----------------------
         arm_motors();
 
-        // Do an extra baro read for Temp sensing
-        // ---------------------------------------
-#if HIL_MODE != HIL_MODE_ATTITUDE
-        barometer.read();
-#endif
-
         // agmatthews - USERHOOKS
 #ifdef USERHOOK_MEDIUMLOOP
         USERHOOK_MEDIUMLOOP
