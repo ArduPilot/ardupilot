@@ -2165,8 +2165,8 @@ static void update_trig(void){
     cos_yaw_x               = yawvector.y;                                              // 0x = north
 
     // added to convert earth frame to body frame for rate controllers
-    sin_roll = sin(ahrs.roll);
-    sin_pitch = sin(ahrs.pitch);
+    sin_pitch = -temp.c.x;
+    sin_roll = temp.c.y / cos_pitch_x;
 
     //flat:
     // 0 ° = cos_yaw:  0.00, sin_yaw:  1.00,
