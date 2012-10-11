@@ -14,12 +14,12 @@
  * of the License, or (at your option) any later version.
  */
 
-#include <FastSerial.h>
 #include <AP_Common.h>
+#include <AP_Progmem.h>
+#include <AP_Math.h>
 #include <AP_Declination.h>
 #include <avr/pgmspace.h>
 #include <math.h>
-
 
 // 1 byte - 4 bits for value + 1 bit for sign + 3 bits for repeats => 8 bits
 struct row_value {
