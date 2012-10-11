@@ -14,6 +14,7 @@
 #include <AP_Compass.h>     // ArduPilot Mega Magnetometer Library
 #include <SPI.h>			// Arduino SPI lib
 #include <I2C.h>
+#include <AP_Semaphore.h>   // for removing conflict between optical flow and dataflash on SPI3 bus
 #include <DataFlash.h>
 #include <AP_AHRS.h>
 #include <AP_ADC.h>
