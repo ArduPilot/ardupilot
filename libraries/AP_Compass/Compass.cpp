@@ -1,4 +1,5 @@
 /// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
+#include <AP_Progmem.h>
 #include "Compass.h"
 
 const AP_Param::GroupInfo Compass::var_info[] PROGMEM = {
@@ -61,7 +62,10 @@ Compass::set_initial_location(int32_t latitude, int32_t longitude)
     // the declination based on the initial GPS fix
     if (_auto_declination) {
         // Set the declination based on the lat/lng from GPS
-        _declination.set(radians(AP_Declination::get_declination((float)latitude / 10000000, (float)longitude / 10000000)));
+        _declination.set(radians(
+                AP_Declination::get_declination(
+                    (float)latitude / 10000000,
+                    (float)longitude / 10000000)));
     }
 }
 

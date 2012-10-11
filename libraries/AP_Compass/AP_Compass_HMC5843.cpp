@@ -15,15 +15,11 @@
 
 // AVR LibC Includes
 #include <math.h>
-#include <FastSerial.h>
-#if defined(ARDUINO) && ARDUINO >= 100
- #include "Arduino.h"
-#else
- #include "WConstants.h"
-#endif
+#include <AP_HAL.h>
 
-#include <I2C.h>
 #include "AP_Compass_HMC5843.h"
+
+extern const AP_HAL::HAL& hal;
 
 #define COMPASS_ADDRESS       0x1E
 #define ConfigRegA           0x00
@@ -54,7 +50,7 @@
 // read_register - read a register value
 bool AP_Compass_HMC5843::read_register(uint8_t address, uint8_t *value)
 {
-    if (I2c.read((uint8_t)COMPASS_ADDRESS, address, 1, value) != 0) {
+    if (hal.i2c->readRegister((uint8_t)COMPASS_ADDRESS, address, value) != 0) {
         healthy = false;
         return false;
     }
@@ -62,9 +58,9 @@ bool AP_Compass_HMC5843::read_register(uint8_t address, uint8_t *value)
 }
 
 // write_register - update a register value
-bool AP_Compass_HMC5843::write_register(uint8_t address, byte value)
+bool AP_Compass_HMC5843::write_register(uint8_t address, uint8_t value)
 {
-    if (I2c.write((uint8_t)COMPASS_ADDRESS, address, value) != 0) {
+    if (hal.i2c->writeRegister((uint8_t)COMPASS_ADDRESS, address, value) != 0) {
         healthy = false;
         return false;
     }
@@ -76,10 +72,7 @@ bool AP_Compass_HMC5843::read_raw()
 {
     uint8_t buff[6];
 
-    if (I2c.read(COMPASS_ADDRESS, 0x03, 6, buff) != 0) {
-        if (healthy) {
-            I2c.setSpeed(false);
-        }
+    if (hal.i2c->readRegisters(COMPASS_ADDRESS, 0x03, 6, buff) != 0) {
         healthy = false;
         return false;
     }
@@ -109,7 +102,7 @@ bool AP_Compass_HMC5843::read_raw()
 // accumulate a reading from the magnetometer
 void AP_Compass_HMC5843::accumulate(void)
 {
-   uint32_t tnow = micros();
+   uint32_t tnow = hal.scheduler->micros();
    if (healthy && _accum_count != 0 && (tnow - _last_accum_time) < 13333) {
 	  // the compass gets new data at 75Hz
 	  return;
@@ -154,12 +147,12 @@ AP_Compass_HMC5843::init()
 {
     int numAttempts = 0, good_count = 0;
     bool success = false;
-    byte calibration_gain = 0x20;
+    uint8_t calibration_gain = 0x20;
     uint16_t expected_x = 715;
     uint16_t expected_yz = 715;
     float gain_multiple = 1.0;
 
-    delay(10);
+    hal.scheduler->delay(10);
 
     // determine if we are using 5843 or 5883L
     if (!write_register(ConfigRegA, SampleAveraging_8<<5 | DataOutputRate_75HZ<<2 | NormalOperation) ||
@@ -193,7 +186,7 @@ AP_Compass_HMC5843::init()
         // force positiveBias (compass should return 715 for all channels)
         if (!write_register(ConfigRegA, PositiveBiasConfig))
             continue;      // compass not responding on the bus
-        delay(50);
+        hal.scheduler->delay(50);
 
         // set gains
         if (!write_register(ConfigRegB, calibration_gain) ||
@@ -201,11 +194,11 @@ AP_Compass_HMC5843::init()
             continue;
 
         // read values from the compass
-        delay(50);
+        hal.scheduler->delay(50);
         if (!read_raw())
             continue;      // we didn't read valid values
 
-        delay(10);
+        hal.scheduler->delay(10);
 
         float cal[3];
 
@@ -275,12 +268,12 @@ bool AP_Compass_HMC5843::read()
         return false;
     }
     if (!healthy) {
-        if (millis() < _retry_time) {
+        if (hal.scheduler->millis() < _retry_time) {
             return false;
         }
         if (!re_initialise()) {
-            _retry_time = millis() + 1000;
-			I2c.setSpeed(false);
+            _retry_time = hal.scheduler->millis() + 1000;
+			hal.i2c->setHighSpeed(false);
             return false;
         }
     }
@@ -289,8 +282,8 @@ bool AP_Compass_HMC5843::read()
 	   accumulate();
 	   if (!healthy || _accum_count == 0) {
 		  // try again in 1 second, and set I2c clock speed slower
-		  _retry_time = millis() + 1000;
-		  I2c.setSpeed(false);
+		  _retry_time = hal.scheduler->millis() + 1000;
+		  hal.i2c->setHighSpeed(false);
 		  return false;
 	   }
 	}
@@ -301,7 +294,7 @@ bool AP_Compass_HMC5843::read()
 	_accum_count = 0;
 	_mag_x_accum = _mag_y_accum = _mag_z_accum = 0;
 
-    last_update = micros(); // record time of update
+    last_update = hal.scheduler->micros(); // record time of update
 
     // rotate to the desired orientation
     Vector3f rot_mag = Vector3f(mag_x,mag_y,mag_z);

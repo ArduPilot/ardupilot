@@ -9,14 +9,17 @@
  */
 
 
+#include <AP_HAL.h>
 #include "AP_Compass_HIL.h"
+
+extern const AP_HAL::HAL& hal;
 
 // Public Methods //////////////////////////////////////////////////////////////
 
 bool AP_Compass_HIL::read()
 {
     // values set by setHIL function
-    last_update = micros();      // record time of update
+    last_update = hal.scheduler->micros();      // record time of update
     return true;
 }
 

@@ -53,7 +53,7 @@ private:
     uint8_t             _base_config;
     virtual bool        re_initialise(void);
     bool                read_register(uint8_t address, uint8_t *value);
-    bool                write_register(uint8_t address, byte value);
+    bool                write_register(uint8_t address, uint8_t value);
     uint32_t            _retry_time; // when unhealthy the millis() value to retry at
 
     int16_t			    _mag_x;
