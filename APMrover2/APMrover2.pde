@@ -83,6 +83,7 @@ version 2.1 of the License, or (at your option) any later version.
 #include <AP_GPS.h>         // ArduPilot GPS library
 #include <I2C.h>			// Wayne Truchsess I2C lib
 #include <SPI.h>			// Arduino SPI lib
+#include <AP_Semaphore.h>   // for removing conflict between optical flow and dataflash on SPI3 bus
 #include <DataFlash.h>      // ArduPilot Mega Flash Memory Library
 #include <AP_ADC.h>         // ArduPilot Mega Analog to Digital Converter Library
 #include <AP_AnalogSource.h>// ArduPilot Mega polymorphic analog getter
@@ -157,9 +158,10 @@ Arduino_Mega_ISR_Registry isr_registry;
 // Dataflash
 ////////////////////////////////////////////////////////////////////////////////
 #if CONFIG_APM_HARDWARE == APM_HARDWARE_APM2
-    DataFlash_APM2 DataFlash;
+AP_Semaphore spi3_semaphore;
+DataFlash_APM2 DataFlash(&spi3_semaphore);
 #else
-    DataFlash_APM1   DataFlash;
+DataFlash_APM1 DataFlash;
 #endif
 
 
