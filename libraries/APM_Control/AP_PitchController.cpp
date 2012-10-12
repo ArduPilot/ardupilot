@@ -8,7 +8,10 @@
 //	version 2.1 of the License, or (at your option) any later version.
 
 #include <math.h>
+#include <AP_HAL.h>
 #include "AP_PitchController.h"
+
+extern const AP_HAL::HAL& hal;
 
 const AP_Param::GroupInfo AP_PitchController::var_info[] PROGMEM = {
 	AP_GROUPINFO("AP",        0, AP_PitchController, _kp_angle,       1.0),
@@ -24,7 +27,7 @@ const AP_Param::GroupInfo AP_PitchController::var_info[] PROGMEM = {
 
 int32_t AP_PitchController::get_servo_out(int32_t angle, float scaler, bool stabilize)
 {
-	uint32_t tnow = millis();
+	uint32_t tnow = hal.scheduler->millis();
 	uint32_t dt = tnow - _last_t;
 	
 	if (_last_t == 0 || dt > 1000) {
@@ -52,8 +55,11 @@ int32_t AP_PitchController::get_servo_out(int32_t angle, float scaler, bool stab
 	
 	int32_t desired_rate = angle_err * _kp_angle;
 	
-	if (_max_rate_neg && desired_rate < -_max_rate_neg) desired_rate = -_max_rate_neg;
-	else if (_max_rate_pos && desired_rate > _max_rate_pos) desired_rate = _max_rate_pos;
+	if (_max_rate_neg && desired_rate < -_max_rate_neg) {
+        desired_rate = -_max_rate_neg;
+    } else if (_max_rate_pos && desired_rate > _max_rate_pos) {
+        desired_rate = _max_rate_pos;
+    }
 	
 	desired_rate *= roll_scaler;
 	

@@ -1,9 +1,8 @@
 // -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: t -*-
 
-#ifndef AP_YawController_h
-#define AP_YawController_h
+#ifndef __AP_YAW_CONTROLLER_H__
+#define __AP_YAW_CONTROLLER_H__
 
-#include <FastSerial.h>
 #include <AP_AHRS.h>
 #include <AP_Common.h>
 #include <math.h> // for fabs()
@@ -42,4 +41,4 @@ private:
 	static const float _fCut = FCUT(.5);
 };
 
-#endif
+#endif // __AP_YAW_CONTROLLER_H__

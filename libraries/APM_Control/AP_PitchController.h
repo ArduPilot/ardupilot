@@ -1,9 +1,8 @@
 // -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: t -*-
 
-#ifndef AP_PitchController_h
-#define AP_PitchController_h
+#ifndef __AP_PITCH_CONTROLLER_H__
+#define __AP_PITCH_CONTROLLER_H__
 
-#include <FastSerial.h>
 #include <AP_AHRS.h>
 #include <AP_Common.h>
 #include <math.h> // for fabs()
@@ -42,4 +41,4 @@ private:
 	static const uint8_t _fCut = 20;
 };
 
-#endif
+#endif // __AP_PITCH_CONTROLLER_H__
