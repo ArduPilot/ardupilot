@@ -25,6 +25,9 @@ public:
     uint8_t read(uint8_t pin);
     void    write(uint8_t pin, uint8_t value);
     AP_HAL::DigitalSource* channel(int);
+    bool    attach_interrupt(int interrupt_num, AP_HAL::Proc proc, int mode);
+/* private-ish: only to be used from the appropriate interrupt */
+    static AP_HAL::Proc _interrupt_6;
 };
 
 #endif // __AP_HAL_AVR_GPIO_H__

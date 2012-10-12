@@ -1,12 +1,22 @@
 
 #include <avr/interrupt.h>
+#include <avr/io.h>
 
 #include "pins_arduino_mega.h"
 
 #include "GPIO.h"
 using namespace AP_HAL_AVR;
 
+
 ArduinoGPIO* ArduinoDigitalSource::parent;
+
+AP_HAL::Proc ArduinoGPIO::_interrupt_6 = NULL;
+
+SIGNAL(INT6_vect) {
+    if (ArduinoGPIO::_interrupt_6) {
+        ArduinoGPIO::_interrupt_6();
+    }
+}   
 
 // Get the bit location within the hardware port of the given virtual pin.
 // This comes from the pins_*.c file for the active board configuration.
@@ -82,6 +92,20 @@ void ArduinoGPIO::write(uint8_t pin, uint8_t value) {
     SREG = oldSREG;
 }
 
+/* Implement GPIO Interrupt 6, used for MPU6000 data ready on APM2. */
+bool ArduinoGPIO::attach_interrupt(
+        int interrupt_num, AP_HAL::Proc proc, int mode) {
+    if (interrupt_num == 6) {
+        _interrupt_6 = proc;
+        EICRB = (EICRB & ~((1 << ISC60) | (1 << ISC61))) | (mode << ISC60);
+        EIMSK |= (1 << INT6);
+        return true;
+    } else {
+        return false;
+    }
+}
+
+
 AP_HAL::DigitalSource* ArduinoGPIO::channel(int n) {
   if (ArduinoDigitalSource::parent == NULL) {
     ArduinoDigitalSource::parent = this;
@@ -100,3 +124,5 @@ uint8_t ArduinoDigitalSource::read() {
 void ArduinoDigitalSource::write(uint8_t value) {
   parent->write(_pin, value);
 }
+
+
