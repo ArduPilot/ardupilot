@@ -1,0 +1,67 @@
+// -------------------------------------------------------------
+// PPM ENCODER V3.0.0 (12-10-2012)
+// -------------------------------------------------------------
+// Improved servo to ppm for ArduPilot MEGA v1.x (ATmega328p),
+// PhoneDrone and APM2.x (ATmega32u2)
+
+// By John Arne Birkeland - 2012
+// By Olivier ADLER : PPM redundancy mode - APM v1.x adaptation and "difficult" receiver testing - 2012
+// -------------------------------------------------------------
+// Changelog:
+
+// 01-08-2011
+// V2.2.3 - Changed back to BLOCKING interrupts.
+//          Assembly PPM compare interrupt can be switch back to non-blocking, but not recommended.
+// V2.2.3 - Implemented 0.5us cut filter to remove servo input capture jitter.
+
+// 04-08-2011
+// V2.2.4 - Implemented PPM passtrough funtion.
+//          Shorting channel 2&3 enabled ppm passtrough on channel 1.
+
+// 04-08-2011
+// V2.2.5 - Implemented simple average filter to smooth servo input capture jitter.
+//          Takes fewer clocks to execute and has better performance then cut filter.
+
+// 05-08-2011
+// V2.2.51 - Minor bug fixes.
+
+// 06-08-2011
+// V2.2.6 - PPM passtrough failsafe implemented.
+//          The PPM generator will be activated and output failsafe values while ppm passtrough signal is missing.
+
+// 01-09-2011
+// V2.2.61 - Temporary MUX pin always high patch for APM beta board
+
+// 22-09-2011
+// V2.2.62 - ATmegaXXU2 USB connection status pin (PC2) for APM UART MUX selection (removed temporary high patch)
+//         - Removed assembly optimized PPM generator (not usable for production release)
+
+// 23-09-2011
+// V2.2.63 - Average filter disabled
+
+// 24-09-2011
+// V2.2.64 - Added distincts Power on / Failsafe PPM values
+//         - Changed CH5 (mode selection) PPM Power on and Failsafe values to 1555 (Flight mode 4)
+//         - Added brownout detection : Failsafe values are copied after a brownout reset instead of power on values
+
+// 25-09-2011
+// V2.2.65 - Implemented PPM output delay until input signal is detected (PWM and PPM pass-trough mode)
+//         - Changed brownout detection and FailSafe handling to work with XXU2 chips
+//         - Minor variable and define naming changes to enhance readability
+
+// 15-03-2012
+// V2.2.66  - Added APM2 (ATmega32U2) support for using TX and RX status leds to indicate PWM and PPM traffic 
+//			- <RX>: <OFF> = no pwm input detected, <TOGGLE> = speed of toggle indicate how many channel are active, <ON> = input lost (failsafe)
+//			- <TX>: <OFF> = ppm output not started, <FAST TOGGLE> = normal PWM->PPM output or PPM passtrough failsafe, <SLOW TOGGLE> = PPM passtrough
+
+// 03-06-2012
+// V2.2.67 - Implemented detection and failsafe (throttle = 900us) for missing throttle signal. 
+
+// 04-06-2012
+// V2.2.68 - Fixed possible logic flaw in throttle failsafe reset if  _JITTER_FILTER_ is enabled
+
+// 12-10-2012
+// V3.0.0 - Added dual input PPM redundancy mode with auto switchover. This is mainly for dual PPM receivers setup.
+// This mode Can be used as well if a PPM conversion is needed (Futaba 16 channels 760us mode to APM mode)
+
+// -------------------------------------------------------------

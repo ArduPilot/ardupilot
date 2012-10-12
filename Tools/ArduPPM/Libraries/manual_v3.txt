@@ -1,0 +1,145 @@
+
+
+ArduPPM is a 8 channels ppm encoder firmware for the APM project.
+
+It is compatible with APM v1.x board (ATMEGA 328p), APM 2.x, Phonedrone (using ATmega32u2) and futur boards.
+
+Emphasis has been put on code simplicity, performance and reliability.
+
+
+
+--------------------------------------------------------------------------------------------------
+	Manual
+--------------------------------------------------------------------------------------------------
+
+--------------------------------------------------
+	Warning
+--------------------------------------------------
+
+
+Carefully check that your RC radio system is working perfectly before you fly.
+
+
+On APM 1.4, If you see the blue status LED blinking very fast very often, this is an indication that something is wrong in the decoding. Rare decoding errors do not hurt.
+
+
+If you have problems, please report the problem and what brand/modell receiver you are using.
+
+
+------------------------------------------
+	Normal mode
+------------------------------------------
+
+Normal mode :
+
+Blue status LED is used for status reports :
+
+- slow to fast blinking according to throttle channel position
+
+- very fast blinking if missing receiver servo signals, or if the servo signals are wrong (invalid pulse widths)
+
+
+------------------------------------------
+	Radio Passthrough mode (mux) 
+------------------------------------------
+
+This mode is described as hardware failsafe in Arduplane terminology.
+
+Radio Passthrough mode is trigged by channel 8 > 1800 us. 
+
+Blue status LED has different behavior in passthrough mode :
+
+- If throttle position < 1200 us, status LED is off
+
+- If throttle position > 1200 us, status LED is on
+
+------------------------------------------
+	Failsafe mode
+------------------------------------------
+
+If a receiver servo channel is lost, the last know channel position is used.
+If all contact with the receiver is lost, an internal failsafe is trigged after 250ms.
+
+Default failsafe values are :
+
+Throttle channel low (channel 3 = 900 us)
+
+Mode Channel set to flight mode 4 (channel 5 = 1555 us)
+
+All other channels set to midstick (1500 us)
+
+------------------------------------------
+	PPM passtrough mode
+------------------------------------------
+
+If your receiver has a PPM sum signal output, it is now possible to pass on the PPM signal from servo channel 1 to the PPM pin (APM atmega1280/2560 PPM decoder). 
+To enable PPM passtrough, short the servo input channel 2 & 3 signal pins together using a jumper strap and use the channel 1 signal pin as PPM input.
+Please note that the PPM sum signal must be standard 8 channel PPM to work with the APM PPM decoder.
+
+In this mode, the blue LED will blink like this  : Long - Short - short
+
+
+------------------------------------------
+	PPM redundancy mode
+------------------------------------------
+
+This mode is designed for dual PPM receiver setups, effectively enhancing reliability.
+
+It is possible to use it for teacher / student use. In this case, each receiver needs to be paired with a separate transmitter.
+
+To enable this mode, short the servo input channel 3 & 4 signal pins together using a jumper strap and use the channels 1 and 2 signal pins as PPM inputs.
+
+- Channel 1 is for the primary receiver
+
+- Channel 2 is for the secondary receiver
+
+
+In this mode, the blue LED will blink like this on the APM 1.4  : Long - Short - short - short
+
+
+How redundancy does work :
+
+
+- If channel 1 receiver has a valid PPM signal and no failsafe indication, then it will be selected regardless channel 2 status
+
+- If channel 1 receiver has a corrupted PPM signal or failsafe indication, and channel 2 receiver has a valid PPM signal, then channel 2 will be selected.
+
+
+It is recommended to use the more reliable receiver on channel 1 (the one with reliable error detection on it like most 2.4 Ghz RC radio systems).
+
+The channel 1 receiver failsafe needs to be set on channel 8 or 16 at max PWM value (1900 us). This will be used for safely switching to channel 2.
+
+Another solution is to program your receiver 1 to have no output signal in failsafe condition. In this case ch8 and 16 stay free for other uses (disabling CH8 / 16 failsafe needs a recompilation).
+
+
+
+Note :
+
+Each receiver needs to output a standard 8 channels PPM sum signal at 50 Hz :
+
+Technically this translate to this PPM frame design : 
+
+- 1520 us central point
+- +/- 400 us PWM range (1100 us - 1900 us)
+- 20 ms frame period
+
+
+It is possible to use non standard receivers using those PPM frames formats :
+
+
+- Futaba PPMv2 mode 16 channels : 760 us +/- 250 us 20 ms period
+
+- Jeti PPMv3 mode 16 channels : 1050 us +/- 250 us 25 ms period
+
+- Hitec PPM mode 9 channels : 1520 us +/- 400 us 23 ms period
+
+
+
+The PPM encoder will translate the input format so that it can be understood by the APM PPM decoder.
+
+
+Using one of those alternate frame formats ask for a firmware recompilation.
+
+
+
+--------------------------------------------------------------------------------------------------
