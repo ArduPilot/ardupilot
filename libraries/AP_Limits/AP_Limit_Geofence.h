@@ -6,21 +6,16 @@
 /// @author Andrew Tridgell
 ///         Andreas Antonopoulos
 
-#include <AP_Limits.h>
-#include <AP_Limit_Module.h>
-#include <AP_Common.h>
+#ifndef __AP_LIMIT_GEOFENCE_H__
+#define __AP_LIMIT_GEOFENCE_H__
+
+#include "AP_Limits.h"
+#include "AP_Limit_Module.h"
 #include <AP_Math.h>
 #include <AP_Param.h>
+#include <GPS.h>
 
-#ifndef AP_Limit_Geofence_H
- #define  AP_Limit_Geofence_H
-#endif  // AP_Limit_Geofence_H
-
-#ifndef GPS_h
- #include <GPS.h>
-#endif
-
-#define MAX_FENCEPOINTS 6       // Fence points reduced from 20 to 6 to save memory
+#define MAX_FENCEPOINTS 6
 
 class AP_Limit_Geofence : public AP_Limit_Module {
 
@@ -68,3 +63,4 @@ private:
 // Helper functions
 uint32_t        get_distance_meters(struct Location *loc1, struct Location *loc2); // distance in meters between two locations
 
+#endif // __AP_LIMIT_GEOFENCE_H__

@@ -6,15 +6,12 @@
 /// @author Andrew Tridgell
 ///         Andreas Antonopoulos
 
-#include <AP_Limits.h>
-#include <AP_Limit_Module.h>
-#include <AP_Common.h>
-#include <AP_Math.h>
-#include <AP_Param.h>
+#ifndef __AP_LIMIT_ALTITUDE_H__
+#define __AP_LIMIT_ALTITUDE_H__
 
-#ifndef AP_Limit_Altitude_H
- #define  AP_Limit_Altitude_H
-#endif  // AP_Limit_Altitude_H
+#include "AP_Limits.h"
+#include "AP_Limit_Module.h"
+#include <AP_Param.h>
 
 class AP_Limit_Altitude : public AP_Limit_Module {
 
@@ -36,3 +33,5 @@ protected:
 
 
 };
+
+#endif // __AP_LIMIT_ALTITUDE_H__
