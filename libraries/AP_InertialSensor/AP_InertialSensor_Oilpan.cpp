@@ -41,9 +41,9 @@ AP_InertialSensor_Oilpan::AP_InertialSensor_Oilpan( AP_ADC * adc ) :
 {
 }
 
-uint16_t AP_InertialSensor_Oilpan::_init_sensor( AP_PeriodicProcess * scheduler, Sample_rate sample_rate)
+uint16_t AP_InertialSensor_Oilpan::_init_sensor( Sample_rate sample_rate)
 {
-    _adc->Init(scheduler);
+    _adc->Init();
 
     switch (sample_rate) {
     case RATE_50HZ:

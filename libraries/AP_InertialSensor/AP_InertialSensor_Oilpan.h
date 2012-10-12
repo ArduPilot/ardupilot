@@ -3,11 +3,10 @@
 #ifndef __AP_INERTIAL_SENSOR_OILPAN_H__
 #define __AP_INERTIAL_SENSOR_OILPAN_H__
 
-#include <string.h>
 #include <stdint.h>
 
-#include "../AP_ADC/AP_ADC.h"
-#include "../AP_Math/AP_Math.h"
+#include <AP_ADC.h>
+#include <AP_Math.h>
 #include "AP_InertialSensor.h"
 
 class AP_InertialSensor_Oilpan : public AP_InertialSensor
@@ -28,7 +27,7 @@ public:
     uint16_t        num_samples_available();
 
 protected:
-    uint16_t        _init_sensor(AP_PeriodicProcess * scheduler, Sample_rate sample_rate);
+    uint16_t        _init_sensor(Sample_rate sample_rate);
 
 private:
 
