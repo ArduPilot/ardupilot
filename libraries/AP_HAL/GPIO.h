@@ -8,6 +8,8 @@
 
 #define GPIO_INPUT  0
 #define GPIO_OUTPUT 1
+#define GPIO_FALLING 2
+#define GPIO_RISING 3
 
 class AP_HAL::DigitalSource {
 public:
@@ -25,6 +27,10 @@ public:
     virtual void    write(uint8_t pin, uint8_t value) = 0;
     /* Alternative interface: */
     virtual AP_HAL::DigitalSource* channel(int n) = 0;
+
+    /* Interrupt interface: */
+    virtual bool    attach_interrupt(
+                        int interrupt_num, AP_HAL::Proc p, int mode) = 0;
 };
 
 #endif // __AP_HAL_GPIO_H__
