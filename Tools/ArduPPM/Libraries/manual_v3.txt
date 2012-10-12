@@ -119,6 +119,7 @@ Each receiver needs to output a standard 8 channels PPM sum signal at 50 Hz :
 
 Technically this translate to this PPM frame design : 
 
+- positive shift
 - 1520 us central point
 - +/- 400 us PWM range (1100 us - 1900 us)
 - 20 ms frame period
