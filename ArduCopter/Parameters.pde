@@ -120,11 +120,8 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @Range: 0 100
     // @Increment: 1
     // @User: Advanced
-	#if FRAME_CONFIG ==     HELI_FRAME
-	GSCALAR(tilt_comp,      "TILT",                 5),
-	#else
-	GSCALAR(tilt_comp,      "TILT",                 54),
-	#endif
+	GSCALAR(tilt_comp,      "TILT",     TILT_COMPENSATION),
+	
 	
 	
 	
@@ -152,7 +149,15 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @Increment: 1
     // @User: Standard
     GSCALAR(loiter_radius,  "WP_LOITER_RAD",    LOITER_RADIUS),
+	
+	// @Param: WP_SPEED_MAX
+    // @DisplayName: Waypoint Max Speed Target
+    // @Description: Defines the speed which the aircraft will attempt to maintain during a WP mission.
+    // @Units: Centimeters/Second
+    // @Increment: 100
+    // @User: Standard
     GSCALAR(waypoint_speed_max,     "WP_SPEED_MAX", WAYPOINT_SPEED_MAX),
+	
     GSCALAR(crosstrack_gain,        "XTRK_GAIN_SC", CROSSTRACK_GAIN),
     GSCALAR(auto_land_timeout,      "AUTO_LAND",    AUTO_LAND_TIME*1000),
 

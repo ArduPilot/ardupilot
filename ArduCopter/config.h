@@ -801,6 +801,15 @@
  # define WAYPOINT_SPEED_MIN             150                    // 1m/s
 #endif
 
+#ifndef TILT_COMPENSATION
+ # if FRAME_CONFIG == HELI_FRAME
+  #   define TILT_COMPENSATION 5
+ # else
+  #   define TILT_COMPENSATION 54
+ # endif 
+#endif
+
+
 
 //////////////////////////////////////////////////////////////////////////////
 // Throttle control gains
