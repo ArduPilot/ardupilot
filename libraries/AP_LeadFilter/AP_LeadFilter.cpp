@@ -8,13 +8,6 @@
  *               version 2.1 of the License, or (at your option) any later version.
  *
  */
-
-#if defined(ARDUINO) && ARDUINO >= 100
- #include "Arduino.h"
-#else
- #include "WProgram.h"
-#endif
-
 #include "AP_LeadFilter.h"
 
 // setup the control preferences
