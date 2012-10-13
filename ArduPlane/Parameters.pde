@@ -530,6 +530,20 @@ const AP_Param::Info var_info[] PROGMEM = {
     GSCALAR(curr_amp_per_volt,      "AMP_PER_VOLT",   CURR_AMP_PER_VOLT),
     GSCALAR(input_voltage,          "INPUT_VOLTS",    INPUT_VOLTAGE),
     GSCALAR(pack_capacity,          "BATT_CAPACITY",  HIGH_DISCHARGE),
+
+    // @Param: BATT_VOLT_PIN
+    // @DisplayName: Battery Voltage sensing pin
+    // @Description: Setting this to 0 ~ 13 will enable battery current sensing on pins A0 ~ A13.
+    // @Values: 99:Disabled, 0:A0, 1:A1, 13:A13
+    // @User: Standard
+    GSCALAR(battery_volt_pin,    "BATT_VOLT_PIN",    BATTERY_VOLT_PIN),
+
+    // @Param: BATT_CURR_PIN
+    // @DisplayName: Battery Current sensing pin
+    // @Description: Setting this to 0 ~ 13 will enable battery current sensing on pins A0 ~ A13.
+    // @Values: 99:Disabled, 1:A1, 2:A2, 12:A12
+    // @User: Standard
+    GSCALAR(battery_curr_pin,    "BATT_CURR_PIN",    BATTERY_CURR_PIN),
     GSCALAR(inverted_flight_ch,     "INVERTEDFLT_CH", 0),
 
     // barometer ground calibration. The GND_ prefix is chosen for

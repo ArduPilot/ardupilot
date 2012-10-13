@@ -136,6 +136,12 @@ public:
         k_param_camera_mount2,
 
         //
+        // Batery monitoring parameters
+        //
+        k_param_battery_volt_pin = 168,
+        k_param_battery_curr_pin,   // 169
+
+        //
         // 170: Radio settings
         //
         k_param_channel_roll = 170,
@@ -335,6 +341,8 @@ public:
     AP_Float curr_amp_per_volt;
     AP_Float input_voltage;
     AP_Int32 pack_capacity;                     // Battery pack capacity less reserve
+    AP_Int8 battery_volt_pin;
+    AP_Int8 battery_curr_pin;
     AP_Int8 inverted_flight_ch;             // 0=disabled, 1-8 is channel for inverted flight trigger
     AP_Int8 stick_mixing;
     AP_Int8 rudder_steer;
