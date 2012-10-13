@@ -40,12 +40,12 @@ static void read_battery(void)
     }
 
     if(g.battery_monitoring == 3 || g.battery_monitoring == 4) {
-        static AP_AnalogSource_Arduino bat_pin(BATTERY_PIN_1);
-        battery_voltage1 = BATTERY_VOLTAGE(bat_pin.read_average());
+        static AP_AnalogSource_Arduino batt_volt_pin(g.battery_volt_pin);
+        battery_voltage1 = BATTERY_VOLTAGE(batt_volt_pin.read_average());
     }
     if(g.battery_monitoring == 4) {
-        static AP_AnalogSource_Arduino current_pin(CURRENT_PIN_1);
-        current_amps1    = CURRENT_AMPS(current_pin.read_average());
+        static AP_AnalogSource_Arduino batt_curr_pin(g.battery_curr_pin);
+        current_amps1    = CURRENT_AMPS(batt_curr_pin.read_average());
         current_total1   += current_amps1 * (float)delta_ms_medium_loop * 0.0002778;                                    // .0002778 is 1/3600 (conversion to hours)
     }
 
