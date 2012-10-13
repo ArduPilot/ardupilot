@@ -50,9 +50,9 @@
 
 #define JUMPER_SELECT_MODE    0    // Default - PPM passtrough mode selected if input pins 2&3 shorted. Normal servo input (pwm) if not shorted.
 #define SERVO_PWM_MODE        1    // Normal 8 channel servo (pwm) input
-#define PPM_PASSTROUGH_MODE   2    // PPM signal passtrough on channel 1
+#define PPM_PASSTROUGH_MODE   2    // PPM signal passtrough on channel 1 if input pins 2&3 shorted
 #define PPM_REDUNDANCY_MODE   3    // PPM redundancy on channels 1 and 2 if input pins 3&4 shorted
-#define SPEKTRUM_MODE         4    // Spektrum satelitte on channel 1 (reserved but not implemented yet)
+#define SPEKTRUM_MODE         4    // Spektrum satelitte on channel 1 (reserved - not yet implemented)
 
 volatile uint8_t servo_input_mode = JUMPER_SELECT_MODE;
 
@@ -63,18 +63,17 @@ volatile uint8_t servo_input_mode = JUMPER_SELECT_MODE;
 #define SWITCHOVER_CHANNEL_A		8	// Receiver 1 PPM channel to force receiver 2. Use 0 for no switchover channel
 #define SWITCHOVER_CHANNEL_B		16	// Alternative receiver 1 PPM channel to force receiver 2. Use 0 for no switchover channel
 
-#define RECEIVER_1_FRAME_FORMAT		0	// 0 for standard PPM, 1 for PPMv2 (Futaba 760 us 16 Channels), 2 for PPMv3 (Jeti 1050 us 16 channels), 3 for Hitec 9 channels
-#define RECEIVER_2_FRAME_FORMAT		0	// See manual for details
-
 #define SWITCHOVER_1_to_2_DELAY_MS		50	// Delay for switching to receiver 2
 #define SWITCHOVER_2_to_1_DELAY_MS		200	// Delay for switching back to receiver 1
 
+
+// 0 for standard PPM, 1 for PPMv2 (Futaba 760 us 16 Channels), 2 for PPMv3 (Jeti 1050 us 16 channels), 3 for Hitec 9 channels
 // PPM input frame mode receiver 1
 // -------------------------------------------------------------
-#define PPM_CH1_STANDARD
-//#define PPM_CH1_STANDARD_EXTENDED	// used on Hitec 9 channels hardware
-//#define PPM_CH1_V2				// used initialy on Futaba hardware to allow more than 8 channels
-//#define PPM_CH1_V3				// used on old hardware to allow for 16 channels with long framesync symbol
+#define PPM_CH1_STANDARD			// Standard PPM : 1500 us +/- 600 us - 8 channels - 20 ms frame period
+//#define PPM_CH1_STANDARD_EXTENDED	// Hitec 9 channels hardware : 1500 us +/- 600 us - 9 channels - 22.1 ms slower frame period
+//#define PPM_CH1_V2				// PPMv2 used initialy at Futaba - 760 us +/- 300 us - 16 Channels - normal 20 ms frame period
+//#define PPM_CH1_V3				// PPMv3 to allow for 16 channels with long sync symbol for hardware compatibility : 1050 us +/- 300 us - 25 ms frame period
 
 // PPM input frame mode receiver 2
 // -------------------------------------------------------------
@@ -155,8 +154,8 @@ volatile uint8_t servo_input_mode = JUMPER_SELECT_MODE;
 //#define SHIFT_CH1_NEGATIVE // Some receivers may use negative shift (zero volt part of the signal carry the PWM information instead of the positive part)
 
 // PPM channels minimum and maximum values
-#define PPM_CH1_VAL_MIN         TICKS_FOR_ONE_US * 800
-#define PPM_CH1_VAL_MAX         TICKS_FOR_ONE_US * 1300
+#define PPM_CH1_VAL_MIN         TICKS_FOR_ONE_US * 750
+#define PPM_CH1_VAL_MAX         TICKS_FOR_ONE_US * 1350
 #define PPM_CH1_VAL_CENTER      TICKS_FOR_ONE_US * 1050
 
 // PPM channel pre pulse lenght
@@ -240,8 +239,8 @@ volatile uint8_t servo_input_mode = JUMPER_SELECT_MODE;
 //#define SHIFT_CH2_NEGATIVE // Some receivers may use negative shift (zero volt part of the signal carry the PWM information instead of the positive part)
 
 // PPM channels minimum and maximum values
-#define PPM_CH2_VAL_MIN         TICKS_FOR_ONE_US * 800
-#define PPM_CH2_VAL_MAX         TICKS_FOR_ONE_US * 1300
+#define PPM_CH2_VAL_MIN         TICKS_FOR_ONE_US * 750
+#define PPM_CH2_VAL_MAX         TICKS_FOR_ONE_US * 1350
 #define PPM_CH2_VAL_CENTER      TICKS_FOR_ONE_US * 1050
 
 // PPM channel pre pulse lenght
@@ -584,6 +583,19 @@ ISR( SERVO_INT_VECTOR )
 	// Frame sync flag
 	static bool sync_ch1 = false;
 	static bool sync_ch2 = false;
+	
+	// Last channels flags
+	static bool last_channel_ch1 = false;
+	static bool last_channel_ch2 = false;
+	
+	// Channel error flags
+	static bool channel_error_ch1 = true;
+	static bool channel_error_ch2 = true;
+	
+	// Sync error flags
+	static bool sync_error_ch1 = true;
+	static bool sync_error_ch2 = true;
+	
 	 
 	// Missing throttle signal failsafe
 	static uint8_t throttle_timeout = 0;
@@ -616,8 +628,7 @@ CHECK_START: // Start of PPM inputs check
     // Set initial PPM channels
     uint8_t ppm1_channel = 0; // Channel 0 = sync symbol
 	uint8_t ppm2_channel = 0; // Channel 0 = sync symbol
-			
-
+	
 CHECK_LOOP: // Input PPM pins check loop
 
     // Check if we have a pin change on PPM channel 1
@@ -631,7 +642,7 @@ CHECK_LOOP: // Input PPM pins check loop
         {
             if(sync_ch1 == true) // Are we synchronized ?
 			{
-				//We could add a test here for channel pre pulse lenght validity
+				//We could add a test here for channel pre pulse lenght check
 				
 				// We have a new channel start, update channel counter
 				ppm1_channel++;
@@ -640,8 +651,14 @@ CHECK_LOOP: // Input PPM pins check loop
 			else if( ppm1_width > PPM_CH1_MIN_SYNC_LENGHT ) || ( ppm1_width < PPM_CH1_MAX_SYNC_LENGHT )
 			{
 				// We have a valid sync symbol
-				sync_ch1 = true;	// Enable sync flag
-				ppm1_channel = 1;		// Set PPM1 channel counter to first channel
+				sync_error_ch1 = false; 	// Reset sync error flag
+				sync_ch1 = true;			// Set sync flag
+				last_channel_ch1 = false;	// Reset last channel flag
+				ppm1_channel = 1;			// Set PPM1 channel counter to first channel
+			}
+			else // We did not find a sync symbol
+			{
+			sync_error_ch1 = true; 	// Set sync error flag
 			}
 			
 		}
@@ -653,20 +670,24 @@ CHECK_LOOP: // Input PPM pins check loop
 				// Check if channel pulse lenght is valid
 				if( ppm1_width > ( PPM_CH1_VAL_MAX - PPM_CH1_CHANNEL_PREPULSE_LENGHT ) ) || ( ppm1_width < ( PPM_CH1_VAL_MIN - PPM_CH1_CHANNEL_PREPULSE_LENGHT ) )
 				{
-					if( ppm1_channel <=  PPM_CH1_CHANNELS ) // Check for channel count validity
-					{
-					// propose copy of PPM1 input channel to PPM output
+					// Reset channel error flag
+					channel_error_ch1 = false;
 					
-					}
-					else	// We do not have a valid channel count
+					// todo : copy of PPM1 input channel to PPM output
+					
+					if( ppm1_channel =  PPM_CH1_CHANNELS ) // Check for last channel
 					{
+						last_channel_ch1 = true;					
 						// Reset PPM channel count and sync flag
 						sync_ch1 = false;
 						ppm1_channel = 0;
 					}
+					
 				}
 				else	// We do not have a valid channel lenght
 				{
+					// Set channel error flag
+					channel_error_ch1 = true;
 					// Reset PPM channel count and sync flag
 					sync_ch1 = false;
 					ppm1_channel = 0;
@@ -677,34 +698,31 @@ CHECK_LOOP: // Input PPM pins check loop
         }
 		ppm1_start[ ppm1_channel ] = servo_time; // Update start time for PPM1 input
     }
-	
-	
-	// Todo : duplicate code for PPM channel 2
 
-	// Todo : rework code to end of redundancy mode
-	// Todo : try to sync between input and output PPM
-	// Todo : switchover algorythm
 	
-    
+//----------------------------------------------------------------------------------------------------------------------	
+	// Todo : duplicate decoder code for PPM channel 2
+	// Todo : Conversion to PPM output format
+	// Todo : rework code from here to end of redundancy mode
+	// Todo : channel count auto detection
+	// Todo : try to sync between PPM input and output after switchover
+	// Todo : switchover
+//----------------------------------------------------------------------------------------------------------------------
+
 UPDATE_PPM_OUTPUT: // Update PPM output according to frame validity
 		
 	// Update PPM output channel from PPM input 1
-            ppm[ ppm1_channel ] = ppm1_width;
+    //        ppm[ ppm1_channel ] = ppm1_width;
 	// Update PPM output channel from PPM input 2
-            ppm[ ppm2_channel ] = ppm2_width;
+    //        ppm[ ppm2_channel ] = ppm2_width;
 			
 	//Reset throttle failsafe timeout
 	if( ppm1_channel == 5 ) throttle_timeout = 0;
-	if( ppm2_channel == 5 ) throttle_timeout = 0;
-	
-
+	//if( ppm2_channel == 5 ) throttle_timeout = 0;
 
 
 CHECK_ERROR:
-    
-    // Used to indicate invalid servo input signals
-    servo_input_errors++;
-	
+
 	#if defined (__AVR_ATmega16U2__) || defined (__AVR_ATmega32U2__)
 	// Delay LED toggle
 	led_delay = 0;
