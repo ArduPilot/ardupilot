@@ -98,13 +98,6 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @User: Standard
     GSCALAR(super_simple,   "SUPER_SIMPLE",     SUPER_SIMPLE),
 
-    // @Param: BATT_PIN
-    // @DisplayName: Battery Voltage sending pin
-    // @Description: Setting this to 0 ~ 11 will enable battery voltage sending on pins A0 ~ A11.  Current will be measured on this pin + 1
-    // @Values: 99:Disabled, 0:A0, 1:A1, 10:A10
-    // @User: Standard
-    GSCALAR(battery_pin,    "BATT_PIN",         BATTERY_PIN_1),
-
     // @Param: APPROACH_ALT
     // @DisplayName: RTL Approach Altitude
     // @Description: This is the altitude the vehicle will move to as the final stage of Returning to Launch.  Set to zero to land.
@@ -122,10 +115,19 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @User: Advanced
 	GSCALAR(tilt_comp,      "TILT",     TILT_COMPENSATION),
 	
-	
-	
-	
-    
+    // @Param: BATT_VOLT_PIN
+    // @DisplayName: Battery Voltage sending pin
+    // @Description: Setting this to 0 ~ 11 will enable battery voltage sending on pins A0 ~ A11.  Current will be measured on this pin + 1
+    // @Values: 99:Disabled, 0:A0, 1:A1, 10:A13
+    // @User: Standard
+    GSCALAR(battery_volt_pin,    "BATT_VOLT_PIN",    BATTERY_VOLT_PIN),
+
+    // @Param: BATT_CURR_PIN
+    // @DisplayName: Battery Voltage sending pin
+    // @Description: Setting this to 0 ~ 11 will enable battery voltage sending on pins A0 ~ A11.  Current will be measured on this pin + 1
+    // @Values: 99:Disabled, 0:A0, 1:A1, 10:A12
+    // @User: Standard
+    GSCALAR(battery_curr_pin,    "BATT_CURR_PIN",    BATTERY_CURR_PIN),
 
     GSCALAR(waypoint_mode,  "WP_MODE",          0),
     GSCALAR(command_total,  "WP_TOTAL",         0),
