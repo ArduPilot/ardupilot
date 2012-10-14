@@ -2,6 +2,12 @@
 
 ArduPPM is a 8 channels ppm encoder firmware for the APM project.
 
+The new PPM redundancy mode accept 16 channels.
+
+This mode with two PPM sum inputs can be used for a single input, if a format conversion or missing signal failsafe is needed.
+
+
+
 It is compatible with APM v1.x board (ATMEGA 328p), APM 2.x, Phonedrone (using ATmega32u2) and futur boards.
 
 Emphasis has been put on code simplicity, performance and reliability.
@@ -85,7 +91,13 @@ In this mode, the blue LED will blink like this  : Long - Short - short
 
 This mode is designed for dual PPM receiver setups, effectively enhancing reliability.
 
+It does accept 16 channels.
+
+This mode with two PPM sum inputs can be used for a single input, if a format conversion or missing signal failsafe is needed.
+
 It is possible to use it for teacher / student use. In this case, each receiver needs to be paired with a separate transmitter.
+
+
 
 To enable this mode, short the servo input channel 3 & 4 signal pins together using a jumper strap and use the channels 1 and 2 signal pins as PPM inputs.
 
@@ -94,7 +106,7 @@ To enable this mode, short the servo input channel 3 & 4 signal pins together us
 - Channel 2 is for the secondary receiver
 
 
-In this mode, the blue LED will blink like this on the APM 1.4  : Long - Short - short - short
+When this mode is active, the blue LED will blink like this on the APM 1.4  : Long - Short - short - short
 
 
 How redundancy does work :
@@ -105,34 +117,47 @@ How redundancy does work :
 - If channel 1 receiver has a corrupted PPM signal or failsafe indication, and channel 2 receiver has a valid PPM signal, then channel 2 will be selected.
 
 
+------------------
+ Best practice
+------------------
+
 It is recommended to use the more reliable receiver on channel 1 (the one with reliable error detection on it like most 2.4 Ghz RC radio systems).
+-
 
-The channel 1 receiver failsafe needs to be set on channel 8 or 16 at max PWM value (1900 us). This will be used for safely switching to channel 2.
+The primary receiver failsafe needs to be set on channel 9 at 100% PWM value. This will be used for safely switching to channel 2.
 
-Another solution is to program your receiver 1 to have no output signal in failsafe condition. In this case ch8 and 16 stay free for other uses (disabling CH8 / 16 failsafe needs a recompilation).
+If your primary receiver does not have a programmable failsafe, then it should fully cut its PPM sum output during lost signal condition so that the ArduPPM decoder can reliabily switch to the secondary receiver.
+
+
+It is possible to change the channel used for switching to the secondary receiver by recompilation.
 
 
 
 Note :
 
-Each receiver needs to output a standard 8 channels PPM sum signal at 50 Hz :
+Each receiver needs to output a standard PPM sum signal :
 
 Technically this translate to this PPM frame design : 
 
 - positive shift
 - 1520 us central point
 - +/- 400 us PWM range (1100 us - 1900 us)
-- 20 ms frame period
+- around 20 ms frame period
+- max channel count : 9 channels
+
+The channel count is automatically detected during power one. Then the decoder keep this setting until power off.
 
 
 It is possible to use non standard receivers using those PPM frames formats :
+
 
 
 - Futaba PPMv2 mode 16 channels : 760 us +/- 250 us 20 ms period
 
 - Jeti PPMv3 mode 16 channels : 1050 us +/- 250 us 25 ms period
 
-- Hitec PPM mode 9 channels : 1520 us +/- 400 us 23 ms period
+
+In those modes, channel count is extended to 16 channels.
 
 
 

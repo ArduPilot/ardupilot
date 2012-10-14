@@ -60,8 +60,10 @@ volatile uint8_t servo_input_mode = JUMPER_SELECT_MODE;
 // PPM REDUNDANCY MODE SETTINGS
 // -------------------------------------------------------------
 
-#define SWITCHOVER_CHANNEL_A		8	// Receiver 1 PPM channel to force receiver 2. Use 0 for no switchover channel
-#define SWITCHOVER_CHANNEL_B		16	// Alternative receiver 1 PPM channel to force receiver 2. Use 0 for no switchover channel
+#define SWITCHOVER_CHANNEL_A		9	// Receiver 1 PPM channel to force receiver 2. Use 0 for no switchover channel
+										// Must be selected from 6 to 16. Preferabily from 9 to 16 so that APM can use
+										// channels 1 or 8.
+
 
 #define SWITCHOVER_1_to_2_DELAY_MS		50	// Delay for switching to receiver 2
 #define SWITCHOVER_2_to_1_DELAY_MS		200	// Delay for switching back to receiver 1
@@ -109,6 +111,7 @@ volatile uint8_t servo_input_mode = JUMPER_SELECT_MODE;
 #define PPM_CH1_VAL_MIN         TICKS_FOR_ONE_US * 900
 #define PPM_CH1_VAL_MAX         TICKS_FOR_ONE_US * 2100
 #define PPM_CH1_VAL_CENTER      TICKS_FOR_ONE_US * 1500
+#define PPM_CH1_FORCE_VAL_MIN	1800
 
 // PPM channel pre pulse lenght
 #define PPM_CH1_CHANNEL_PREPULSE_LENGHT		400
@@ -133,6 +136,7 @@ volatile uint8_t servo_input_mode = JUMPER_SELECT_MODE;
 #define PPM_CH1_VAL_MIN         TICKS_FOR_ONE_US * 450
 #define PPM_CH1_VAL_MAX         TICKS_FOR_ONE_US * 1050
 #define PPM_CH1_VAL_CENTER      TICKS_FOR_ONE_US * 750
+#define PPM_CH1_FORCE_VAL_MIN	900
 
 // PPM channel pre pulse lenght
 #define PPM_CH1_CHANNEL_PREPULSE_LENGHT		200
@@ -157,6 +161,7 @@ volatile uint8_t servo_input_mode = JUMPER_SELECT_MODE;
 #define PPM_CH1_VAL_MIN         TICKS_FOR_ONE_US * 750
 #define PPM_CH1_VAL_MAX         TICKS_FOR_ONE_US * 1350
 #define PPM_CH1_VAL_CENTER      TICKS_FOR_ONE_US * 1050
+#define PPM_CH1_FORCE_VAL_MIN	1260
 
 // PPM channel pre pulse lenght
 #define PPM_CH1_CHANNEL_PREPULSE_LENGHT		400
@@ -194,6 +199,7 @@ volatile uint8_t servo_input_mode = JUMPER_SELECT_MODE;
 #define PPM_CH2_VAL_MIN         TICKS_FOR_ONE_US * 900
 #define PPM_CH2_VAL_MAX         TICKS_FOR_ONE_US * 2100
 #define PPM_CH2_VAL_CENTER      TICKS_FOR_ONE_US * 1500
+#define PPM_CH1_FORCE_VAL_MIN	1800
 
 // PPM channel pre pulse lenght
 #define PPM_CH1_CHANNEL_PREPULSE_LENGHT		400
@@ -218,6 +224,7 @@ volatile uint8_t servo_input_mode = JUMPER_SELECT_MODE;
 #define PPM_CH2_VAL_MIN         TICKS_FOR_ONE_US * 450
 #define PPM_CH2_VAL_MAX         TICKS_FOR_ONE_US * 1050
 #define PPM_CH2_VAL_CENTER      TICKS_FOR_ONE_US * 750
+#define PPM_CH1_FORCE_VAL_MIN	900
 
 // PPM channel pre pulse lenght
 #define PPM_CH1_CHANNEL_PREPULSE_LENGHT		200
@@ -242,6 +249,7 @@ volatile uint8_t servo_input_mode = JUMPER_SELECT_MODE;
 #define PPM_CH2_VAL_MIN         TICKS_FOR_ONE_US * 750
 #define PPM_CH2_VAL_MAX         TICKS_FOR_ONE_US * 1350
 #define PPM_CH2_VAL_CENTER      TICKS_FOR_ONE_US * 1050
+#define PPM_CH1_FORCE_VAL_MIN	1260
 
 // PPM channel pre pulse lenght
 #define PPM_CH1_CHANNEL_PREPULSE_LENGHT		400
@@ -570,15 +578,45 @@ ISR( SERVO_INT_VECTOR )
 	
 	// Servo input pin storage 
     static uint8_t servo_pins_old = 0;
+			
+	// PWM Mode pulse start time
+	static uint16_t servo_start[ servo_channel ] = { 0, 0, 0, 0, 0, 0, 0, 0 };
+		
+	// Missing throttle signal failsafe
+	static uint8_t throttle_timeout = 0;
+	
+	#if defined (__AVR_ATmega16U2__) || defined (__AVR_ATmega32U2__)
+	// Toggle LED delay
+	static uint8_t led_delay = 0;
+	#endif
+  
+    // Read current servo timer
+    uint16_t servo_time = SERVO_TIMER_CNT;
+
+	
+    // ------------------------------------------------------------------------------
+    // PPM redundancy mode
+    // ------------------------------------------------------------------------------
+	
+	if( servo_input_mode == PPM_REDUNDANCY_MODE )
+    {
+	// -------------------------------------
+	// PPM redundancy mode - variables Init
+	// -------------------------------------
 	
 	// PPM1 pulse start time
     static uint16_t ppm1_start[ 16 ] = { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
-	
 	// PPM2 pulse start time
     static uint16_t ppm2_start[ 16 ] = { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
 	
-	// PWM Mode pulse start time
-	static uint16_t servo_start[ servo_channel ] = { 0, 0, 0, 0, 0, 0, 0, 0 };
+	// PPM1 pulse lenght
+	static uint16_t ppm1_width[ 16 ] = { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
+	// PPM2 pulse lenght
+	static uint16_t ppm2_width[ 16 ] = { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
+	
+	// Reset PPM channels ( 0 = Sync Symbol )
+    static uint8_t ppm1_channel = 0; // Channel 0 = sync symbol
+	static uint8_t ppm2_channel = 0; // Channel 0 = sync symbol
 	
 	// Frame sync flag
 	static bool sync_ch1 = false;
@@ -596,26 +634,12 @@ ISR( SERVO_INT_VECTOR )
 	static bool sync_error_ch1 = true;
 	static bool sync_error_ch2 = true;
 	
-	 
-	// Missing throttle signal failsafe
-	static uint8_t throttle_timeout = 0;
+	// ch2 switchover flag
+	static bool switchover_ch2 = false;
 	
-	#if defined (__AVR_ATmega16U2__) || defined (__AVR_ATmega32U2__)
-	// Toggle LED delay
-	static uint8_t led_delay = 0;
-	#endif
- 
- 
-    // Read current servo timer
-    uint16_t servo_time = SERVO_TIMER_CNT;
-
-	
-    // ------------------------------------------------------------------------------
-    // PPM redundancy mode
-    // ------------------------------------------------------------------------------
-	
-	if( servo_input_mode == PPM_REDUNDANCY_MODE )
-    {
+	// -----------------------------------
+	// PPM redundancy - decoder
+	// -----------------------------------
 	
 CHECK_START: // Start of PPM inputs check
 
@@ -624,18 +648,18 @@ CHECK_START: // Start of PPM inputs check
 
     // Calculate servo input pin change mask
     uint8_t servo_change = servo_pins ^ servo_pins_old;
-
-    // Set initial PPM channels
-    uint8_t ppm1_channel = 0; // Channel 0 = sync symbol
-	uint8_t ppm2_channel = 0; // Channel 0 = sync symbol
+    
+	// -----------------------------------
+	// PPM redundancy - Ch1 decoding
+	// -----------------------------------
 	
 CHECK_LOOP: // Input PPM pins check loop
 
     // Check if we have a pin change on PPM channel 1
     if( servo_change & 1 )
 	{
-		// Check for elapsed time since last check
-		uint16_t ppm1_width = servo_time - ppm1_start[ ppm1_channel ];
+		// Check for elapsed time since last check (pulse lenght or sync symbol lenght)
+		ppm1_width[ ppm1_channel ] = servo_time - ppm1_start[ ppm1_channel ];
         
 		// Check if we've got a high level (raising edge, channel start or sync symbol end)
         if( servo_pins & 1 )
@@ -701,14 +725,86 @@ CHECK_LOOP: // Input PPM pins check loop
 
 	
 //----------------------------------------------------------------------------------------------------------------------	
-	// Todo : duplicate decoder code for PPM channel 2
 	// Todo : Conversion to PPM output format
-	// Todo : rework code from here to end of redundancy mode
-	// Todo : channel count auto detection
-	// Todo : try to sync between PPM input and output after switchover
-	// Todo : switchover
+	// Todo : rework code from line 830 to end of redundancy mode
+	// Todo : channel count reliable auto detection - remove PPM standard extended frame format.
+	// Todo : replace channel count defines with max channels count.
+	// Todo : sync between PPM input and output after switchover
+	// Todo : Add delay inside switchover algo
+	// Todo : Add LED code for APM 1.4
 //----------------------------------------------------------------------------------------------------------------------
 
+	// -----------------------------------
+	// PPM redundancy - Ch2 decoding
+	// -----------------------------------
+
+	// Todo : duplicate decoder code for PPM channel 2
+	
+	// -----------------------------------
+	// PPM redundancy - Post processing
+	// -----------------------------------
+	
+	// Could be eventually run in the main loop for performances improvements if necessary
+	// sync mode between input and ouptput should clear performance problems
+	
+	// Check for PPM1 validity
+	if ( sync_error_ch1 == false ) && ( channel_error_ch1 == false) // PPM1 is valid
+	{
+		// check for PPM2 forcing (through PPM1 force channel)
+		if ( ppm1_width [ SWITCHOVER_CHANNEL ] > PPM_CH1_FORCE_VAL_MIN )	// Force channel active
+		{
+			// Check for PPM2 validity
+			if ( sync_error_ch2 == false ) && ( channel_error_ch2 == false) // PPM2	is valid
+			{
+				// Check PPM2 selected
+				if ( switchover_ch2 == true ) // PPM2 is selected
+				{
+					// Do nothing
+				}
+				else
+				{
+					// Switch to PPM2
+					switchover_ch2 == true; // Switch to PPM2
+				}
+			}
+		}
+		else // Check for PPM1 selected
+		{
+			if ( switchover_ch2 == false ) // PPM1 is selected
+			{
+				//Do Nothing
+			}
+			else // PPM1 is not selected
+			{
+				// Delay switchover 2 to 1 here
+				switchover_ch2 == false; // Switch to PPM1
+			}
+		}
+	}
+	else // PPM1 is not valid
+	{
+		// Check for ppm2 validity
+		if ( sync_error_ch2 == false ) && ( channel_error_ch2 == false) // PPM2 is valid
+		{
+			// Check PPM2 selected
+			if ( switchover_ch2 == true ) // PPM2 is selected
+			{
+				// Do nothing
+			}
+			else // Switch to PPM2
+			{
+				// Delay switchover 1 to 2 here
+				switchover_ch2 == true; // Switch to PPM2
+			}
+			
+		}
+		else // PPM2 is not valid
+		{
+			// load PPM output with failsafe values
+		}
+	}
+	
+	
 UPDATE_PPM_OUTPUT: // Update PPM output according to frame validity
 		
 	// Update PPM output channel from PPM input 1
@@ -716,10 +812,13 @@ UPDATE_PPM_OUTPUT: // Update PPM output according to frame validity
 	// Update PPM output channel from PPM input 2
     //        ppm[ ppm2_channel ] = ppm2_width;
 			
+	/*
+	
 	//Reset throttle failsafe timeout
 	if( ppm1_channel == 5 ) throttle_timeout = 0;
 	//if( ppm2_channel == 5 ) throttle_timeout = 0;
-
+	
+	
 
 CHECK_ERROR:
 
@@ -727,7 +826,8 @@ CHECK_ERROR:
 	// Delay LED toggle
 	led_delay = 0;
 	#endif
-
+	
+	*/
 
 CHECK_DONE:
     
@@ -743,6 +843,7 @@ CHECK_DONE:
     // Start PPM generator if not already running
     if( ppm_generator_active == false ) ppm_start();
 
+	/*
 
 	#if defined (__AVR_ATmega16U2__) || defined (__AVR_ATmega32U2__)
 	// Toggle RX LED when finished receiving servo pulses
@@ -762,8 +863,11 @@ CHECK_DONE:
 		ppm[ 5 ] = PPM_THROTTLE_FAILSAFE;
 	}
 	
+		
     //Has servo input changed while processing pins, if so we need to re-check pins
     if( servo_pins != SERVO_INPUT ) goto CHECK_START;
+	
+	*/
 
     // Clear interrupt event from already processed pin changes
     PCIFR |= (1 << SERVO_INT_CLEAR_FLAG);
@@ -772,9 +876,9 @@ CHECK_DONE:
         return;
 	
     }
-	// ------------------------------------------------------------------------------
+	// -------------------------
 	// PPM redundancy mode END
-	// ------------------------------------------------------------------------------
+	// -------------------------
 
 	// ------------------------------------------------------------------------------
     // PPM passtrough mode ( signal passtrough from channel 1 to ppm output pin)
