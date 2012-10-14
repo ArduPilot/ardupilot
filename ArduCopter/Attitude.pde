@@ -147,6 +147,37 @@ get_acro_yaw(int32_t target_rate)
     set_yaw_rate_target(target_rate, BODY_FRAME);
 }
 
+// Yaw with rate input and stabilized in the earth frame
+static void
+get_yaw_rate_stabilized_ef(int32_t stick_angle)
+{
+
+    int32_t angle_error = 0;
+
+    // convert the input to the desired yaw rate
+    int32_t target_rate = stick_angle * g.acro_p;
+
+    // convert the input to the desired yaw rate
+    nav_yaw += target_rate * G_Dt;
+    nav_yaw = wrap_360(nav_yaw);
+
+    // angle error with maximum of +- max_angle_overshoot
+    angle_error = wrap_180(nav_yaw - ahrs.yaw_sensor);
+
+    // this limits the maximum overshoot
+    angle_error	= constrain(angle_error, -MAX_ANGLE_OVERSHOOT, MAX_ANGLE_OVERSHOOT);
+
+    if (motors.armed() == false || ((g.rc_3.control_in == 0) && !failsafe)) {
+    	angle_error = 0;
+    }
+
+    // update nav_yaw to be within max_angle_overshoot of our current heading
+    nav_yaw = angle_error + ahrs.yaw_sensor;
+
+    // set earth frame targets for rate controller
+	set_yaw_rate_target(g.pi_stabilize_yaw.get_p(angle_error)+target_rate, EARTH_FRAME);
+}
+
 /*
  *  static int16_t
  *  get_acro_yaw2(int32_t target_rate)
@@ -262,7 +293,7 @@ update_rate_contoller_targets()
         yaw_rate_target_bf = cos_pitch_x * cos_roll_x * yaw_rate_target_ef + sin_roll * pitch_rate_target_ef;
     }
 }
- 
+
 // run roll, pitch and yaw rate controllers and send output to motors
 // targets for these controllers comes from stabilize controllers
 void
