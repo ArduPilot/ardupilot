@@ -659,7 +659,7 @@
 
 
 #ifndef AXIS_LOCK_ENABLED
- # define AXIS_LOCK_ENABLED      DISABLED
+ # define AXIS_LOCK_ENABLED      ENABLED
 #endif
 
 #ifndef AXIS_LOCK_P
