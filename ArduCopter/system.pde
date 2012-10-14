@@ -456,9 +456,15 @@ static void set_mode(byte mode)
     switch(control_mode)
     {
     case ACRO:
-        yaw_mode                = YAW_HOLD;
+        yaw_mode                = YAW_ACRO;
         roll_pitch_mode = ROLL_PITCH_ACRO;
         throttle_mode   = THROTTLE_MANUAL;
+        // reset acro axis targets to current attitude
+        if( g.axis_enabled ) {
+            roll_axis = ahrs.roll_sensor;
+            pitch_axis = ahrs.pitch_sensor;
+            nav_yaw = ahrs.yaw_sensor;
+        }
         break;
 
     case STABILIZE:

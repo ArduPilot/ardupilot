@@ -30,8 +30,7 @@ get_stabilize_roll(int32_t target_angle)
     }
 
     // set targets for rate controller
-    roll_rate_target_ef = target_rate;
-    roll_rate_trim_ef = i_stab;
+    set_roll_rate_target(target_rate+i_stab, EARTH_FRAME);
 #endif
 }
 
@@ -64,9 +63,7 @@ get_stabilize_pitch(int32_t target_angle)
     }
 
     // set targets for rate controller
-    pitch_rate_target_ef = target_rate;
-    pitch_rate_trim_ef = i_stab;
-
+    set_pitch_rate_target(target_rate + i_stab, EARTH_FRAME);
 #endif
 }
 
@@ -111,8 +108,16 @@ get_stabilize_yaw(int32_t target_angle)
 #endif
 
     // set targets for rate controller
-    yaw_rate_target_ef = target_rate;
-    yaw_rate_trim_ef = i_term;
+    set_yaw_rate_target(target_rate+i_term, EARTH_FRAME);
+}
+
+static void
+get_stabilize_rate_yaw(int32_t target_rate)
+{
+    target_rate = g.pi_stabilize_yaw.get_p(target_rate);
+
+    // set targets for rate controller
+    set_yaw_rate_target(target_rate, EARTH_FRAME);
 }
 
 static void
@@ -121,8 +126,7 @@ get_acro_roll(int32_t target_rate)
     target_rate = target_rate * g.acro_p;
 
     // set targets for rate controller
-    roll_rate_target_ef = target_rate;
-    roll_rate_trim_ef = 0;
+    set_roll_rate_target(target_rate, BODY_FRAME);
 }
 
 static void
@@ -131,18 +135,16 @@ get_acro_pitch(int32_t target_rate)
     target_rate = target_rate * g.acro_p;
 
     // set targets for rate controller
-    pitch_rate_target_ef = target_rate;
-    pitch_rate_trim_ef = 0;
+    set_pitch_rate_target(target_rate, BODY_FRAME);
 }
 
 static void
 get_acro_yaw(int32_t target_rate)
 {
-    target_rate = g.pi_stabilize_yaw.get_p(target_rate);
+    target_rate = target_rate * g.acro_p;
 
     // set targets for rate controller
-    yaw_rate_target_ef = target_rate;
-    yaw_rate_trim_ef = 0;
+    set_yaw_rate_target(target_rate, BODY_FRAME);
 }
 
 /*
@@ -219,15 +221,47 @@ get_acro_yaw(int32_t target_rate)
  *  }
  */
 
- // update_rate_contoller_targets - converts earth frame rates to body frame rates for rate controllers
- void
- update_rate_contoller_targets()
- {
-    // convert earth frame rates to body frame rates
-    roll_rate_target_bf = roll_rate_target_ef - sin_pitch * yaw_rate_target_ef;
-    pitch_rate_target_bf = cos_roll_x * pitch_rate_target_ef + sin_roll * yaw_rate_target_ef;
-    yaw_rate_target_bf = cos_pitch_x * cos_roll_x * yaw_rate_target_ef + sin_roll * pitch_rate_target_ef;
- }
+// set_roll_rate_target - to be called by upper controllers to set roll rate targets in the earth frame
+void set_roll_rate_target( int32_t desired_rate, uint8_t earth_or_body_frame ) {
+    rate_targets_frame = earth_or_body_frame;
+    if( earth_or_body_frame == BODY_FRAME ) {
+        roll_rate_target_bf = desired_rate;
+    }else{
+        roll_rate_target_ef = desired_rate;
+    }
+}
+
+// set_pitch_rate_target - to be called by upper controllers to set pitch rate targets in the earth frame
+void set_pitch_rate_target( int32_t desired_rate, uint8_t earth_or_body_frame ) {
+    rate_targets_frame = earth_or_body_frame;
+    if( earth_or_body_frame == BODY_FRAME ) {
+        pitch_rate_target_bf = desired_rate;
+    }else{
+        pitch_rate_target_ef = desired_rate;
+    }
+}
+
+// set_yaw_rate_target - to be called by upper controllers to set yaw rate targets in the earth frame
+void set_yaw_rate_target( int32_t desired_rate, uint8_t earth_or_body_frame ) {
+    rate_targets_frame = earth_or_body_frame;
+    if( earth_or_body_frame == BODY_FRAME ) {
+        yaw_rate_target_bf = desired_rate;
+    }else{
+        yaw_rate_target_ef = desired_rate;
+    }
+}
+
+// update_rate_contoller_targets - converts earth frame rates to body frame rates for rate controllers
+void
+update_rate_contoller_targets()
+{
+    if( rate_targets_frame == EARTH_FRAME ) {
+        // convert earth frame rates to body frame rates
+        roll_rate_target_bf = roll_rate_target_ef - sin_pitch * yaw_rate_target_ef;
+        pitch_rate_target_bf = cos_roll_x * pitch_rate_target_ef + sin_roll * yaw_rate_target_ef;
+        yaw_rate_target_bf = cos_pitch_x * cos_roll_x * yaw_rate_target_ef + sin_roll * pitch_rate_target_ef;
+    }
+}
  
 // run roll, pitch and yaw rate controllers and send output to motors
 // targets for these controllers comes from stabilize controllers
@@ -236,13 +270,13 @@ run_rate_controllers()
 {
 #if FRAME_CONFIG == HELI_FRAME          // helicopters only use rate controllers for yaw and only when not using an external gyro
     if(!motors.ext_gyro_enabled) {
-        g.rc_4.servo_out = get_rate_yaw(yaw_rate_target_bf) + yaw_rate_trim_ef;
+        g.rc_4.servo_out = get_rate_yaw(yaw_rate_target_bf);
     }
 #else
     // call rate controllers
-    g.rc_1.servo_out = get_rate_roll(roll_rate_target_bf) + roll_rate_trim_ef;
-    g.rc_2.servo_out = get_rate_pitch(pitch_rate_target_bf) + pitch_rate_trim_ef;
-    g.rc_4.servo_out = get_rate_yaw(yaw_rate_target_bf) + yaw_rate_trim_ef;
+    g.rc_1.servo_out = get_rate_roll(roll_rate_target_bf);
+    g.rc_2.servo_out = get_rate_pitch(pitch_rate_target_bf);
+    g.rc_4.servo_out = get_rate_yaw(yaw_rate_target_bf);
 #endif
 }
 
