@@ -526,6 +526,11 @@
 // Attitude Control
 //
 
+// definitions for earth frame and body frame
+// used to specify frame to rate controllers
+#define EARTH_FRAME     0
+#define BODY_FRAME      1
+
 // Alt Hold Mode
 #ifndef ALT_HOLD_YAW
  # define ALT_HOLD_YAW           YAW_HOLD

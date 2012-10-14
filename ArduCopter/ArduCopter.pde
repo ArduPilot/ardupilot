@@ -590,12 +590,10 @@ static int32_t initial_simple_bearing;
 ////////////////////////////////////////////////////////////////////////////////
 // Rate contoller targets
 ////////////////////////////////////////////////////////////////////////////////
+static uint8_t rate_targets_frame = EARTH_FRAME;    // indicates whether rate targets provided in earth or body frame
 static int32_t roll_rate_target_ef = 0;
-static int32_t roll_rate_trim_ef = 0;      // normally i term from stabilize controller
 static int32_t pitch_rate_target_ef = 0;
-static int32_t pitch_rate_trim_ef = 0;      // normally i term from stabilize controller
 static int32_t yaw_rate_target_ef = 0;
-static int32_t yaw_rate_trim_ef = 0;      // normally i term from stabilize controller
 static int32_t roll_rate_target_bf = 0;     // body frame roll rate target
 static int32_t pitch_rate_target_bf = 0;    // body frame pitch rate target
 static int32_t yaw_rate_target_bf = 0;      // body frame yaw rate target
@@ -1594,7 +1592,16 @@ void update_yaw_mode(void)
 {
     switch(yaw_mode) {
     case YAW_ACRO:
-        get_acro_yaw(g.rc_4.control_in);
+        if(g.axis_enabled) {
+            nav_yaw    += (float)g.rc_4.control_in * g.axis_lock_p;
+            nav_yaw = wrap_360(nav_yaw);
+            if (g.rc_3.control_in == 0) {
+                nav_yaw = ahrs.yaw_sensor;
+            }
+            get_stabilize_yaw(nav_yaw);
+        }else{
+            get_acro_yaw(g.rc_4.control_in);
+        }
         return;
         break;
 
@@ -1605,12 +1612,12 @@ void update_yaw_mode(void)
 
     case YAW_HOLD:
         if(g.rc_4.control_in != 0) {
-            get_acro_yaw(g.rc_4.control_in);
+            get_stabilize_rate_yaw(g.rc_4.control_in);
             yaw_stopped = false;
             yaw_timer = 150;
 
         }else if (!yaw_stopped) {
-            get_acro_yaw(0);
+            get_stabilize_rate_yaw(0);
             yaw_timer--;
 
             if((yaw_timer == 0) || (fabs(omega.z) < .17)) {
@@ -1660,18 +1667,17 @@ void update_roll_pitch_mode(void)
             roll_axis       += (float)g.rc_1.control_in * g.axis_lock_p;
             pitch_axis      += (float)g.rc_2.control_in * g.axis_lock_p;
 
-            roll_axis = wrap_360(roll_axis);
-            pitch_axis = wrap_360(pitch_axis);
-
-            // in this mode, nav_roll and nav_pitch = the iterm
-            get_stabilize_roll(roll_axis);
-            get_stabilize_pitch(pitch_axis);
+            roll_axis = wrap_180(roll_axis);
+            pitch_axis = wrap_180(pitch_axis);
 
             if (g.rc_3.control_in == 0) {
                 roll_axis = 0;
                 pitch_axis = 0;
             }
 
+            // in this mode, nav_roll and nav_pitch = the iterm
+            get_stabilize_roll(roll_axis);
+            get_stabilize_pitch(pitch_axis);
         }else{
             // ACRO does not get SIMPLE mode ability
 #if FRAME_CONFIG == HELI_FRAME
