@@ -1611,28 +1611,7 @@ void update_yaw_mode(void)
 #endif
 
     case YAW_HOLD:
-        if(g.rc_4.control_in != 0) {
-            get_stabilize_rate_yaw(g.rc_4.control_in);
-            yaw_stopped = false;
-            yaw_timer = 150;
-
-        }else if (!yaw_stopped) {
-            get_stabilize_rate_yaw(0);
-            yaw_timer--;
-
-            if((yaw_timer == 0) || (fabs(omega.z) < .17)) {
-                yaw_stopped = true;
-                nav_yaw = ahrs.yaw_sensor;
-            }
-        }else{
-            // reset target yaw to current yaw if the motors are disarmed or throttle is zero
-            // Note: we do not want to reset yaw if failsafe has been triggered even though throttle maybe zero (in fact, normally throttle is zero in failsafe)
-            if(motors.armed() == false || ((g.rc_3.control_in == 0) && (control_mode <= ACRO) && !failsafe))
-                nav_yaw = ahrs.yaw_sensor;
-
-            get_stabilize_yaw(nav_yaw);
-        }
-        return;
+    	get_yaw_rate_stabilized_ef(g.rc_4.control_in);
         break;
 
     case YAW_LOOK_AT_HOME:
