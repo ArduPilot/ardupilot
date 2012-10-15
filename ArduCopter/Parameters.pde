@@ -160,6 +160,11 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @User: Standard
     GSCALAR(waypoint_speed_max,     "WP_SPEED_MAX", WAYPOINT_SPEED_MAX),
 	
+	// @Param: XTRK_GAIN_SC
+    // @DisplayName: Cross-Track Gain
+    // @Description: This controls the rate that the Auto Controller will attempt to return original track
+    // @Units: Dimensionless
+	// @User: Standard
     GSCALAR(crosstrack_gain,        "XTRK_GAIN_SC", CROSSTRACK_GAIN),
     GSCALAR(auto_land_timeout,      "AUTO_LAND",    AUTO_LAND_TIME*1000),
 
@@ -222,6 +227,14 @@ const AP_Param::Info var_info[] PROGMEM = {
     GSCALAR(radio_tuning_high, "TUNE_HIGH",         1000),
     GSCALAR(frame_orientation, "FRAME",             FRAME_ORIENTATION),
     GSCALAR(ch7_option, "CH7_OPT",                  CH7_OPTION),
+	
+	// @Param: AUTO_SLEW
+    // @DisplayName: Auto Slew Rate
+    // @Description: This restricts the rate of change of the attitude allowed by the Auto Controller
+    // @Units: Degrees/Second
+	// @Range: 1 45
+    // @Increment: 1
+    // @User: Advanced
     GSCALAR(auto_slew_rate, "AUTO_SLEW",            AUTO_SLEW_RATE),
 
 #if FRAME_CONFIG ==     HELI_FRAME
