@@ -61,8 +61,8 @@ volatile uint8_t servo_input_mode = JUMPER_SELECT_MODE;
 // -------------------------------------------------------------
 
 #define SWITCHOVER_CHANNEL_A		9	// Receiver 1 PPM channel to force receiver 2. Use 0 for no switchover channel
-										// Must be selected from 6 to 16. Preferabily from 9 to 16 so that APM can use
-										// channels 1 or 8.
+										// Must be choosed between 6 to 16. Preferabily from 9 to 16 so that APM can use
+										// channels 1 to 8.
 
 
 #define SWITCHOVER_1_to_2_DELAY_MS		50	// Delay for switching to receiver 2
@@ -90,15 +90,15 @@ volatile uint8_t servo_input_mode = JUMPER_SELECT_MODE;
  
 #ifdef PPM_CH1_STANDARD_EXTENDED
  
-// Number of input PPM channels
-#define PPM_CH1_CHANNELS        9
+// Max input PPM channels
+#define PPM_CH1_MAX_CHANNELS        9
 // Frame period
 #define PPM_CH1_FRAME_PERIOD	22100	// frame period (microseconds)
 
 #else
 
-// Number of input PPM channels
-#define PPM_CH1_CHANNELS        8
+// Max input PPM channels
+#define PPM_CH1_MAX_CHANNELS        8
 // Frame period
 #define PPM_CH1_FRAME_PERIOD	20000	// frame period (microseconds)
 
@@ -117,15 +117,15 @@ volatile uint8_t servo_input_mode = JUMPER_SELECT_MODE;
 #define PPM_CH1_CHANNEL_PREPULSE_LENGHT		400
 
 // PPM frame sync symbol minimum and maximum laps
-#define PPM_CH1_MIN_SYNC_LENGHT		PPM_CH1_FRAME_PERIOD - ( PPM_CH1_CHANNELS * PPM_CH1_VAL_MAX ) // Sync symbol detection
-#define PPM_CH1_MAX_SYNC_LENGHT		PPM_CH1_FRAME_PERIOD - ( PPM_CH1_CHANNELS * PPM_CH1_VAL_MIN ) // Sync timeout
+#define PPM_CH1_MIN_SYNC_LENGHT		PPM_CH1_FRAME_PERIOD - ( PPM_CH1_MAX_CHANNELS * PPM_CH1_VAL_MAX ) // Sync symbol detection
+#define PPM_CH1_MAX_SYNC_LENGHT		PPM_CH1_FRAME_PERIOD - ( PPM_CH1_MAX_CHANNELS * PPM_CH1_VAL_MIN ) // Sync timeout
 
 #endif
 
 #ifdef PPM_CH1_V2 (PPMv2 is a 50 Hz 16 channels mode, used initialy on Futaba and later on other manufacturers modules)
   
-// Number of input PPM channels
-#define PPM_CH1_CHANNELS        16
+// Max input PPM channels
+#define PPM_CH1_MAX_CHANNELS        16
 // Frame period
 #define PPM_CH1_FRAME_PERIOD	20000	// frame period (microseconds)
 
@@ -142,15 +142,15 @@ volatile uint8_t servo_input_mode = JUMPER_SELECT_MODE;
 #define PPM_CH1_CHANNEL_PREPULSE_LENGHT		200
 
 // PPM frame sync symbol minimum and maximum laps
-#define PPM_CH1_MIN_SYNC_LENGHT		PPM_CH1_FRAME_PERIOD - ( PPM_CH1_CHANNELS * PPM_CH1_VAL_MAX ) // Sync symbol detection
-#define PPM_CH1_MAX_SYNC_LENGHT		PPM_CH1_FRAME_PERIOD - ( PPM_CH1_CHANNELS * PPM_CH1_VAL_MIN ) // Sync timeout
+#define PPM_CH1_MIN_SYNC_LENGHT		PPM_CH1_FRAME_PERIOD - ( PPM_CH1_MAX_CHANNELS * PPM_CH1_VAL_MAX ) // Sync symbol detection
+#define PPM_CH1_MAX_SYNC_LENGHT		PPM_CH1_FRAME_PERIOD - ( PPM_CH1_MAX_CHANNELS * PPM_CH1_VAL_MIN ) // Sync timeout
 
 #endif
 
 #ifdef PPM_CH1_V3 (PPMv3 is a 40 Hz slower refresh frequency 16 channels mode to allow 16 channels with older transmitter modules)
   
-// Number of input PPM channels
-#define PPM_CH1_CHANNELS        16
+// Max input PPM channels
+#define PPM_CH1_MAX_CHANNELS        16
 // Frame period
 #define PPM_CH1_FRAME_PERIOD	25000	// frame period (microseconds)
 
@@ -167,8 +167,8 @@ volatile uint8_t servo_input_mode = JUMPER_SELECT_MODE;
 #define PPM_CH1_CHANNEL_PREPULSE_LENGHT		400
 
 // PPM frame sync symbol minimum and maximum laps
-#define PPM_CH1_MIN_SYNC_LENGHT		PPM_CH1_FRAME_PERIOD - ( PPM_CH1_CHANNELS * PPM_CH1_VAL_MAX ) // Sync symbol detection
-#define PPM_CH1_MAX_SYNC_LENGHT		PPM_CH1_FRAME_PERIOD - ( PPM_CH1_CHANNELS * PPM_CH1_VAL_MIN ) // Sync timeout
+#define PPM_CH1_MIN_SYNC_LENGHT		PPM_CH1_FRAME_PERIOD - ( PPM_CH1_MAX_CHANNELS * PPM_CH1_VAL_MAX ) // Sync symbol detection
+#define PPM_CH1_MAX_SYNC_LENGHT		PPM_CH1_FRAME_PERIOD - ( PPM_CH1_MAX_CHANNELS * PPM_CH1_VAL_MIN ) // Sync timeout
 
 #endif
 
@@ -178,14 +178,14 @@ volatile uint8_t servo_input_mode = JUMPER_SELECT_MODE;
  
 #ifdef PPM_CH2_STANDARD_EXTENDED
  
-// Number of input PPM channels
+// Max input PPM channels
 #define PPM_CH2_CHANNELS        9
 // Frame period
 #define PPM_CH2_FRAME_PERIOD	22100	// frame period (microseconds)
 
 #else
 
-// Number of input PPM channels
+// Max input PPM channels
 #define PPM_CH2_CHANNELS        8
 // Frame period
 #define PPM_CH2_FRAME_PERIOD	20000	// frame period (microseconds)
@@ -199,7 +199,6 @@ volatile uint8_t servo_input_mode = JUMPER_SELECT_MODE;
 #define PPM_CH2_VAL_MIN         TICKS_FOR_ONE_US * 900
 #define PPM_CH2_VAL_MAX         TICKS_FOR_ONE_US * 2100
 #define PPM_CH2_VAL_CENTER      TICKS_FOR_ONE_US * 1500
-#define PPM_CH1_FORCE_VAL_MIN	1800
 
 // PPM channel pre pulse lenght
 #define PPM_CH1_CHANNEL_PREPULSE_LENGHT		400
@@ -212,7 +211,7 @@ volatile uint8_t servo_input_mode = JUMPER_SELECT_MODE;
 
 #ifdef PPM_CH2_V2 (PPMv2 is a 50 Hz 16 channels mode, used initialy on Futaba and later on other manufacturers modules)
   
-// Number of input PPM channels
+// Max input PPM channels
 #define PPM_CH2_CHANNELS        16
 // Frame period
 #define PPM_CH2_FRAME_PERIOD	20000	// frame period (microseconds)
@@ -224,7 +223,6 @@ volatile uint8_t servo_input_mode = JUMPER_SELECT_MODE;
 #define PPM_CH2_VAL_MIN         TICKS_FOR_ONE_US * 450
 #define PPM_CH2_VAL_MAX         TICKS_FOR_ONE_US * 1050
 #define PPM_CH2_VAL_CENTER      TICKS_FOR_ONE_US * 750
-#define PPM_CH1_FORCE_VAL_MIN	900
 
 // PPM channel pre pulse lenght
 #define PPM_CH1_CHANNEL_PREPULSE_LENGHT		200
@@ -237,7 +235,7 @@ volatile uint8_t servo_input_mode = JUMPER_SELECT_MODE;
 
 #ifdef PPM_CH2_V3 (PPMv3 is a 40 Hz slower refresh frequency 16 channels mode to allow 16 channels with older transmitter modules)
   
-// Number of input PPM channels
+// Max input PPM channels
 #define PPM_CH2_CHANNELS        16
 // Frame period
 #define PPM_CH2_FRAME_PERIOD	25000	// frame period (microseconds)
@@ -249,7 +247,6 @@ volatile uint8_t servo_input_mode = JUMPER_SELECT_MODE;
 #define PPM_CH2_VAL_MIN         TICKS_FOR_ONE_US * 750
 #define PPM_CH2_VAL_MAX         TICKS_FOR_ONE_US * 1350
 #define PPM_CH2_VAL_CENTER      TICKS_FOR_ONE_US * 1050
-#define PPM_CH1_FORCE_VAL_MIN	1260
 
 // PPM channel pre pulse lenght
 #define PPM_CH1_CHANNEL_PREPULSE_LENGHT		400
@@ -637,6 +634,19 @@ ISR( SERVO_INT_VECTOR )
 	// ch2 switchover flag
 	static bool switchover_ch2 = false;
 	
+	// Channel count detection ready flag
+	static bool channel_count_ready_ch1 = false;
+	static bool channel_count_ready_ch2 = false;
+	
+	// Channel count detected flag
+	static bool channel_count_detected_ch1 = false;
+	static bool channel_count_detected_ch2 = false;
+	
+	// Detected Channel count
+	static uint8_t channel_count_ch1 = PPM_CH1_MAX_CHANNELS;
+	static uint8_t channel_count_ch2 = PPM_CH2_MAX_CHANNELS;
+	
+		
 	// -----------------------------------
 	// PPM redundancy - decoder
 	// -----------------------------------
@@ -666,13 +676,33 @@ CHECK_LOOP: // Input PPM pins check loop
         {
             if(sync_ch1 == true) // Are we synchronized ?
 			{
-				//We could add a test here for channel pre pulse lenght check
+				// Ckeck for sync symbol
+				if( ppm1_width[ ppm1_channel ] > PPM_CH1_MIN_SYNC_LENGHT ) || ( ppm1_width[ ppm1_channel ] < PPM_CH1_MAX_SYNC_LENGHT )
+				{
+					// Ckeck for channel count detected flag
+					if( channel_count_detected_ch1 == false ) // We do not have channel count detected yet
+					{
+						channel_count_ch1 = ppm1_channel; // Store PPM1 channel count
+						channel_count_ready_ch1 = true; // Set PPM1 channel count detection ready flag
+					}
+					else	// Channel count has been detected
+					{
+						//We should not have a sync symbol here
+						sync_error_ch1 = true; 	// Set sync error flag
+						ppm1_channel = 0; // Reset PPM channel counter
+					}
+				}
+				else // We have a new channel start (after channel 1)
+				{
+					//Todo: We could add a test here for channel pre pulse lenght check
+					
+					// Update channel counter
+					ppm1_channel++;
+				}
 				
-				// We have a new channel start, update channel counter
-				ppm1_channel++;
 			}
-			// If not yet synchronized check for sync symbol end
-			else if( ppm1_width > PPM_CH1_MIN_SYNC_LENGHT ) || ( ppm1_width < PPM_CH1_MAX_SYNC_LENGHT )
+			// If not yet synchronized check for sync symbol
+			else if( ppm1_width[ ppm1_channel ] > PPM_CH1_MIN_SYNC_LENGHT ) || ( ppm1_width[ ppm1_channel ] < PPM_CH1_MAX_SYNC_LENGHT )
 			{
 				// We have a valid sync symbol
 				sync_error_ch1 = false; 	// Reset sync error flag
@@ -683,6 +713,7 @@ CHECK_LOOP: // Input PPM pins check loop
 			else // We did not find a sync symbol
 			{
 			sync_error_ch1 = true; 	// Set sync error flag
+			ppm1_channel = 0; // Reset PPM channel counter
 			}
 			
 		}
@@ -692,29 +723,25 @@ CHECK_LOOP: // Input PPM pins check loop
             if(sync_ch1 == true) // Are we synchronized ?
 			{
 				// Check if channel pulse lenght is valid
-				if( ppm1_width > ( PPM_CH1_VAL_MAX - PPM_CH1_CHANNEL_PREPULSE_LENGHT ) ) || ( ppm1_width < ( PPM_CH1_VAL_MIN - PPM_CH1_CHANNEL_PREPULSE_LENGHT ) )
+				if( ppm1_width[ ppm1_channel ] > ( PPM_CH1_VAL_MAX - PPM_CH1_CHANNEL_PREPULSE_LENGHT ) ) || ( ppm1_width[ ppm1_channel ] < ( PPM_CH1_VAL_MIN - PPM_CH1_CHANNEL_PREPULSE_LENGHT ) )
 				{
 					// Reset channel error flag
 					channel_error_ch1 = false;
-					
-					// todo : copy of PPM1 input channel to PPM output
-					
-					if( ppm1_channel =  PPM_CH1_CHANNELS ) // Check for last channel
+									
+					if( ppm1_channel ==  channel_count_ch1 ) // Check for last channel
 					{
-						last_channel_ch1 = true;					
-						// Reset PPM channel count and sync flag
-						sync_ch1 = false;
-						ppm1_channel = 0;
+						// We are at latest PPM channel
+						last_channel_ch1 = true; // Set last channel flag					
+						sync_ch1 = false; // Reset sync flag
+						ppm1_channel = 0; // Reset PPM channel counter
 					}
 					
 				}
 				else	// We do not have a valid channel lenght
 				{
-					// Set channel error flag
-					channel_error_ch1 = true;
-					// Reset PPM channel count and sync flag
-					sync_ch1 = false;
-					ppm1_channel = 0;
+					channel_error_ch1 = true; // Set channel error flag
+					sync_ch1 = false; // Reset sync flag
+					ppm1_channel = 0; // Reset PPM channel counter
 				}
 												
 			}				
@@ -727,11 +754,12 @@ CHECK_LOOP: // Input PPM pins check loop
 //----------------------------------------------------------------------------------------------------------------------	
 	// Todo : Conversion to PPM output format
 	// Todo : rework code from line 830 to end of redundancy mode
-	// Todo : channel count reliable auto detection - remove PPM standard extended frame format.
-	// Todo : replace channel count defines with max channels count.
+	// Todo : channel count auto detection : write post processing
+	
 	// Todo : sync between PPM input and output after switchover
 	// Todo : Add delay inside switchover algo
 	// Todo : Add LED code for APM 1.4
+	
 //----------------------------------------------------------------------------------------------------------------------
 
 	// -----------------------------------
