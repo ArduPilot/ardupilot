@@ -1,6 +1,6 @@
 /// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 
-#define THISFIRMWARE "ArduCopter V2.7.4-Beta"
+#define THISFIRMWARE "ArduCopter V2.7.4-Gamma"
 /*
  *  ArduCopter Version 2.7.4
  *  Lead author:	Jason Short
