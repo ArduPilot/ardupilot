@@ -37,23 +37,28 @@ void setup(void)
         Serial2.begin(115200);
         Serial3.begin(115200);
 
-        //
-        // Test printing things
-        //
-        Serial.print("test");
-        Serial.println(" begin");
-        Serial.println(1000);
-        Serial.println(1000, 8);
-        Serial.println(1000, 10);
-        Serial.println(1000, 16);
-        Serial.println_P(PSTR("progmem"));
-        Serial.printf("printf %d %u %#x %p %f %S\n", -1000, 1000, 1000, 1000, 1.2345, PSTR("progmem"));
-        Serial.printf_P(PSTR("printf_P %d %u %#x %p %f %S\n"), -1000, 1000, 1000, 1000, 1.2345, PSTR("progmem"));
-        Serial.println("done");
+        do {
+          Serial.print("hello serial0 millis: ");
+          Serial.println(millis(), DEC);
+        } while (millis() < 1000);
         
-        Serial1.println("hello serial1");
-        Serial2.println("hello serial2");
-        Serial3.println("hello serial3");
+        do {
+          Serial1.println("hello serial1");
+          Serial.print("hello serial0 millis: ");
+          Serial.println(millis(), DEC);
+        } while (millis() < 2000);
+
+        do {
+          Serial2.println("hello serial2");
+          Serial.print("hello serial0 millis: ");
+          Serial.println(millis(), DEC);
+        } while (millis() < 3000);
+
+        do {
+          Serial3.println("hello serial3");
+          Serial.print("hello serial0 millis: ");
+          Serial.println(millis(), DEC);
+        } while (millis() < 4000);
 
 }
 
