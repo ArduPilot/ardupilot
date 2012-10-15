@@ -42,15 +42,6 @@ APM_RC_APM2 APM_RC;
 APM_RC_APM1 APM_RC;
 #endif
 
-RC_Channel rc_1;
-RC_Channel rc_2;
-RC_Channel rc_3;
-RC_Channel rc_4;
-RC_Channel rc_5;
-RC_Channel rc_6;
-RC_Channel rc_7;
-RC_Channel rc_8;
-
 #define CH_1 0
 #define CH_2 1
 #define CH_3 2
@@ -59,6 +50,16 @@ RC_Channel rc_8;
 #define CH_6 5
 #define CH_7 6
 #define CH_8 7
+
+
+RC_Channel rc_1(CH_1);
+RC_Channel rc_2(CH_2);
+RC_Channel rc_3(CH_3);
+RC_Channel rc_4(CH_4);
+RC_Channel rc_5(CH_5);
+RC_Channel rc_6(CH_6);
+RC_Channel rc_7(CH_7);
+RC_Channel rc_8(CH_8);
 
 void setup()
 {
