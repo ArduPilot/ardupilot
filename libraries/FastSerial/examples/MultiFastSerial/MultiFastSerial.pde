@@ -17,6 +17,19 @@
 /* Not required by this sketch, but required by AP_Common */
 #include <AP_Math.h>
 
+
+#if __GNUC__ == 4 && __GNUC_MINOR__ == 5
+#warning avr-gcc 4.5.x is known to have a bug with FastSerialPort2 and 3
+/* avr-gcc 4.5.3 will leave off the USART2 and USART3 vectors from the vector
+ * table. It will crash this example sketch at millis == 2000.
+ * See http://gcc.gnu.org/bugzilla/show_bug.cgi?id=47696 for info.
+ * Known to work:
+ * avr-gcc 4.3.2 as shipped by Arduino IDE on Windows.
+ * avr-gcc 4.4.2 does not have this bug (unknown status otherwise)
+ * avr-gcc 4.6.2 has other issues that need to be worked out
+ *  -pch 15 October 2012
+ */
+#endif
 //
 // Create a FastSerial driver that looks just like the stock Arduino
 // driver, on each serial port.
