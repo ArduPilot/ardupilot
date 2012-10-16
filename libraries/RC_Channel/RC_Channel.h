@@ -23,6 +23,9 @@ public:
         _filter(false),
         _high(1),
         _ch_out(ch_out) {
+		if (_reverse == 0) {
+			_reverse = 1;
+		}
     }
 
     // setup min and max radio values in CLI
