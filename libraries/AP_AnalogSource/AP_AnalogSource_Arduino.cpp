@@ -131,17 +131,9 @@ float AP_AnalogSource_Arduino::read(void)
 }
 
 
-// assign a slot in the pins_watched
-void AP_AnalogSource_Arduino::assign_pin_index(uint8_t pin)
+// remap pin numbers to physical pin
+uint8_t AP_AnalogSource_Arduino::_remap_pin(uint8_t pin)
 {
-    // ensure we don't try to read from too many analog pins
-    if (num_pins_watched == MAX_PIN_SOURCES) {
-        while (true) {
-            Serial.printf_P(PSTR("MAX_PIN_SOURCES REACHED\n"));
-            delay(1000);
-        }
-    }
-
     if (pin != ANALOG_PIN_VCC) {
         // allow pin to be a channel (i.e. "A0") or an actual pin
 #if defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__)
@@ -154,7 +146,21 @@ void AP_AnalogSource_Arduino::assign_pin_index(uint8_t pin)
         if (pin >= 14) pin -= 14;
 #endif
     }
+    return pin;
+}
 
+// assign a slot in the pins_watched
+void AP_AnalogSource_Arduino::_assign_pin_index(uint8_t pin)
+{
+    // ensure we don't try to read from too many analog pins
+    if (num_pins_watched == MAX_PIN_SOURCES) {
+        while (true) {
+            Serial.printf_P(PSTR("MAX_PIN_SOURCES REACHED\n"));
+            delay(1000);
+        }
+    }
+
+    pin = _remap_pin(pin);
     _pin_index = num_pins_watched;
     pins[_pin_index].pin = pin;
     num_pins_watched++;
@@ -162,5 +168,18 @@ void AP_AnalogSource_Arduino::assign_pin_index(uint8_t pin)
         // enable the ADC
         PRR0 &= ~_BV(PRADC);
         ADCSRA |= _BV(ADEN);
+    }
+}
+
+// change which pin to read
+void AP_AnalogSource_Arduino::set_pin(uint8_t pin)
+{
+    pin = _remap_pin(pin);
+    if (pins[_pin_index].pin != pin) {
+        cli();
+        pins[_pin_index].pin = pin;
+        pins[_pin_index].sum = 0;
+        pins[_pin_index].sum_count = 0;
+        sei();        
     }
 }
