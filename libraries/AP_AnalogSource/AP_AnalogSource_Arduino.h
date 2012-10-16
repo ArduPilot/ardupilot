@@ -15,7 +15,7 @@ class AP_AnalogSource_Arduino : public AP_AnalogSource
 public:
     AP_AnalogSource_Arduino( uint8_t pin, float prescale = 1.0 ) :
         _prescale(prescale) {
-        assign_pin_index(pin);
+        _assign_pin_index(pin);
     }
 
     // setup the timer callback
@@ -34,11 +34,16 @@ public:
     // we last called read_average().
     float           read_average(void);
 
+    // set the pin to be used for this source. This allows for the pin
+    // to be changed at runtime
+    void set_pin(uint8_t pin);
+
 private:
     uint8_t         _pin_index;
     float           _prescale;
 
-    void            assign_pin_index(uint8_t pin);
+    uint8_t         _remap_pin(uint8_t pin);
+    void            _assign_pin_index(uint8_t pin);
 };
 
 #endif // __AP_ANALOG_SOURCE_ARDUINO_H__
