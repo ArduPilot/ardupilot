@@ -235,13 +235,13 @@ DEPFLAGS		=	-MD -MT $@
 # XXX warning options TBD
 CXXOPTS			= 	-mcall-prologues -ffunction-sections -fdata-sections -fno-exceptions
 COPTS			=	-mcall-prologues -ffunction-sections -fdata-sections
-ASOPTS			=	-assembler-with-cpp 
+ASOPTS			=	-x assembler-with-cpp 
 LISTOPTS		=	-adhlns=$(@:.o=.lst)
 
 CXXFLAGS		=	-g -mmcu=$(MCU) $(DEFINES) -Wa,$(LISTOPTS) $(OPTFLAGS) $(DEPFLAGS) $(CXXOPTS)
 CFLAGS			=	-g -mmcu=$(MCU) $(DEFINES) -Wa,$(LISTOPTS) $(OPTFLAGS) $(DEPFLAGS) $(COPTS)
-ASFLAGS			=	-g -mmcu=$(MCU) $(DEFINES)     $(LISTOPTS) $(DEPFLAGS) $(ASOPTS)
-LDFLAGS			=	-g -mmcu=$(MCU) $(OPTFLAGS) -Wl,--relax,--gc-sections -Wl,-Map -Wl,$(SKETCHMAP)
+ASFLAGS			=	-g -mmcu=$(MCU) $(DEFINES) -Wa,$(LISTOPTS) $(DEPFLAGS) $(ASOPTS)
+LDFLAGS			=	-g -mmcu=$(MCU) $(OPTFLAGS) -Wl,--relax,--gc-sections -Wl,-Map -Wl,$(SKETCHMAP) -Wl,-m,avr6
 
 ifeq ($(BOARD),mega)
   LDFLAGS		=	-g -mmcu=$(MCU) $(OPTFLAGS) -Wl,--gc-sections -Wl,-Map -Wl,$(SKETCHMAP)
