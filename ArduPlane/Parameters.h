@@ -136,7 +136,7 @@ public:
         k_param_camera_mount2,
 
         //
-        // Batery monitoring parameters
+        // Battery monitoring parameters
         //
         k_param_battery_volt_pin = 168,
         k_param_battery_curr_pin,   // 169
