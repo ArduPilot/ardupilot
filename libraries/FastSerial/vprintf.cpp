@@ -52,7 +52,12 @@ extern "C" {
 #undef PROGMEM 
 #define PROGMEM __attribute__(( section(".progmem.data") )) 
 #undef PSTR 
+  /* Need const type for progmem - new for avr-gcc 4.6 */
+ #if __GNUC__ == 4 && __GNUC_MINOR__ > 5
+#define PSTR(s) (__extension__({static const prog_char __c[] PROGMEM = (s); &__c[0];})) 
+ #else
 #define PSTR(s) (__extension__({static prog_char __c[] PROGMEM = (s); &__c[0];})) 
+ #endif
 
 #ifdef GETBYTE
 #undef GETBYTE
