@@ -601,6 +601,16 @@ ISR( SERVO_INT_VECTOR )
 	// PPM redundancy mode - variables Init
 	// -------------------------------------
 	
+	// PPM1 prepulse start
+	static uint16_t ppm1_prepulse_start;
+	// PPM2 prepulse start
+	static uint16_t ppm2_prepulse_start;
+	
+	// PPM1 prepulse width
+	static uint16_t ppm1_prepulse_width;
+	// PPM2 prepulse width
+	static uint16_t ppm2_prepulse_width;
+	
 	// PPM1 pulse start time
     static uint16_t ppm1_start[ 16 ] = { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
 	// PPM2 pulse start time
@@ -610,7 +620,7 @@ ISR( SERVO_INT_VECTOR )
 	static uint16_t ppm1_width[ 16 ] = { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
 	// PPM2 pulse lenght
 	static uint16_t ppm2_width[ 16 ] = { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
-	
+			
 	// Reset PPM channels ( 0 = Sync Symbol )
     static uint8_t ppm1_channel = 0; // Channel 0 = sync symbol
 	static uint8_t ppm2_channel = 0; // Channel 0 = sync symbol
@@ -668,86 +678,103 @@ CHECK_LOOP: // Input PPM pins check loop
     // Check if we have a pin change on PPM channel 1
     if( servo_change & 1 )
 	{
-		// Check for elapsed time since last check (pulse lenght or sync symbol lenght)
-		ppm1_width[ ppm1_channel ] = servo_time - ppm1_start[ ppm1_channel ];
-        
+		// -----------------------------------------------------------------------------------------------------------------------
 		// Check if we've got a high level (raising edge, channel start or sync symbol end)
         if( servo_pins & 1 )
         {
-            if(sync_ch1 == true) // Are we synchronized ?
+            // Check for pre pulse lenght
+			ppm1_prepulse_width = servo_time - ppm1_prepulse_start;
+			if ( true ) //Todo optionnal: We could add a test here for channel pre pulse lenght check
 			{
-				// Ckeck for sync symbol
-				if( ppm1_width[ ppm1_channel ] > PPM_CH1_MIN_SYNC_LENGHT ) || ( ppm1_width[ ppm1_channel ] < PPM_CH1_MAX_SYNC_LENGHT )
-				{
-					// Ckeck for channel count detected flag
-					if( channel_count_detected_ch1 == false ) // We do not have channel count detected yet
-					{
-						channel_count_ch1 = ppm1_channel; // Store PPM1 channel count
-						channel_count_ready_ch1 = true; // Set PPM1 channel count detection ready flag
-					}
-					else	// Channel count has been detected
-					{
-						//We should not have a sync symbol here
-						sync_error_ch1 = true; 	// Set sync error flag
-						ppm1_channel = 0; // Reset PPM channel counter
-					}
-				}
-				else // We have a new channel start (after channel 1)
-				{
-					//Todo: We could add a test here for channel pre pulse lenght check
-					
-					// Update channel counter
-					ppm1_channel++;
-				}
-				
+				//We have a valid pre pulse
 			}
-			// If not yet synchronized check for sync symbol
-			else if( ppm1_width[ ppm1_channel ] > PPM_CH1_MIN_SYNC_LENGHT ) || ( ppm1_width[ ppm1_channel ] < PPM_CH1_MAX_SYNC_LENGHT )
+			else
 			{
-				// We have a valid sync symbol
-				sync_error_ch1 = false; 	// Reset sync error flag
-				sync_ch1 = true;			// Set sync flag
+				//We do not have a valid pre pulse
+				sync_error_ch1 = true;	 	// Set sync error flag
+				sync_ch1 = false;			// Reset sync flag
+				ppm1_channel = 0; 			// Reset PPM channel counter
 				last_channel_ch1 = false;	// Reset last channel flag
-				ppm1_channel = 1;			// Set PPM1 channel counter to first channel
 			}
-			else // We did not find a sync symbol
-			{
-			sync_error_ch1 = true; 	// Set sync error flag
-			ppm1_channel = 0; // Reset PPM channel counter
-			}
-			
+			ppm1_start[ ppm1_channel ] = servo_time; // Store pulse start time for PPM1 input
 		}
-        else
-		// We've got a low level (falling edge, channel end or sync symbol start)
-        {
-            if(sync_ch1 == true) // Are we synchronized ?
+		// -----------------------------------------------------------------------------------------------------------------------
+		else // We've got a low level (falling edge, channel end or sync symbol start)
+		{
+            ppm1_width[ ppm1_channel ] = servo_time - ppm1_start[ ppm1_channel ]; // Calculate channel pulse lenght, or sync symbol lenght
+			if(sync_ch1 == true) // Are we synchronized ?
 			{
-				// Check if channel pulse lenght is valid
-				if( ppm1_width[ ppm1_channel ] > ( PPM_CH1_VAL_MAX - PPM_CH1_CHANNEL_PREPULSE_LENGHT ) ) || ( ppm1_width[ ppm1_channel ] < ( PPM_CH1_VAL_MIN - PPM_CH1_CHANNEL_PREPULSE_LENGHT ) )
+				// Check channel pulse lenght validity
+				if( ppm1_width[ ppm1_channel ] > ( PPM_CH1_VAL_MAX - PPM_CH1_CHANNEL_PREPULSE_LENGHT ) ) || ( ppm1_width[ ppm1_channel ] < ( PPM_CH1_VAL_MIN - PPM_CH1_CHANNEL_PREPULSE_LENGHT ) ) // If we have a valid pulse lenght
 				{
 					// Reset channel error flag
 					channel_error_ch1 = false;
-									
+					
 					if( ppm1_channel ==  channel_count_ch1 ) // Check for last channel
 					{
 						// We are at latest PPM channel
-						last_channel_ch1 = true; // Set last channel flag					
-						sync_ch1 = false; // Reset sync flag
-						ppm1_channel = 0; // Reset PPM channel counter
+						last_channel_ch1 = true; // Set last channel flag		
+						sync_ch1 = false; 		// Reset sync flag
+						ppm1_channel = 0; 		// Reset PPM channel counter						
 					}
-					
+					else // We do not have yet reached the last channel
+					{
+						// Increment channel counter
+						ppm1_channel++;
+					}
 				}
 				else	// We do not have a valid channel lenght
 				{
-					channel_error_ch1 = true; // Set channel error flag
-					sync_ch1 = false; // Reset sync flag
-					ppm1_channel = 0; // Reset PPM channel counter
+					if( ppm1_width[ ppm1_channel ] > PPM_CH1_MIN_SYNC_LENGHT ) || ( ppm1_width[ ppm1_channel ] < PPM_CH1_MAX_SYNC_LENGHT ) //Check for sync symbol
+					{
+						// We have a valid sync symbol
+						if( channel_count_detected_ch1 == false ) // Check if do not have yet channel count detected
+						{
+							// We have detected channels count
+							channel_count_ch1 = ppm1_channel; // Store PPM1 channel count
+							channel_count_ready_ch1 = true; // Set PPM1 channel count detection ready flag
+							
+							sync_error_ch1 = false; 	// Reset sync error flag
+							sync_ch1 = true;			// Set sync flag
+							ppm1_channel = 0; // Reset PPM channel counter
+							last_channel_ch1 = false;	// Reset last channel flag
+						}
+						else	// Channel count had been detected before
+						{
+							//We should not have a sync symbol here
+							sync_error_ch1 = true; 	// Set sync error flag
+							last_channel_ch1 = false;	// Reset last channel flag
+							sync_ch1 = false;			// Reset sync flag
+							ppm1_channel = 0; 			// Reset PPM channel counter
+						}
+					}
+					else // We do not have a valid sync symbol
+					{
+						channel_error_ch1 = true;	// Set channel error flag
+					}
 				}
 												
-			}				
-								
-        }
-		ppm1_start[ ppm1_channel ] = servo_time; // Update start time for PPM1 input
+			}
+			// ------------------------------------------------------------------------------
+			else // We are not yet synchronized
+			{
+				if( ppm1_width[ ppm1_channel ] > PPM_CH1_MIN_SYNC_LENGHT ) || ( ppm1_width[ ppm1_channel ] < PPM_CH1_MAX_SYNC_LENGHT ) //Check for sync symbol
+				{
+					// We have a valid sync symbol
+					sync_error_ch1 = false; 	// Reset sync error flag
+					sync_ch1 = true;			// Set sync flag
+				}
+				else // We did not find a valid sync symbol
+				{
+				sync_error_ch1 = true; 	// Set sync error flag
+				sync_ch1 = false;			// Reset sync flag
+				}
+				ppm1_channel = 0; // Reset PPM channel counter
+				last_channel_ch1 = false;	// Reset last channel flag
+			}			
+		}
+		ppm1_prepulse_start = servo_time; // Store prepulse start time
+		// -----------------------------------------------------------------------------------------------------------------------
     }
 
 	
@@ -898,7 +925,7 @@ CHECK_DONE:
 	*/
 
     // Clear interrupt event from already processed pin changes
-    PCIFR |= (1 << SERVO_INT_CLEAR_FLAG);
+    // PCIFR |= (1 << SERVO_INT_CLEAR_FLAG);
 	
 	// Leave interrupt
         return;
