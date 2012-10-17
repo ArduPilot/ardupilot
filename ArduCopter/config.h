@@ -367,7 +367,7 @@
  #define OPTFLOW_ROLL_P 2.5
 #endif
 #ifndef OPTFLOW_ROLL_I
- #define OPTFLOW_ROLL_I 3.2
+ #define OPTFLOW_ROLL_I 0.5
 #endif
 #ifndef OPTFLOW_ROLL_D
  #define OPTFLOW_ROLL_D 0.12
@@ -376,13 +376,13 @@
  #define OPTFLOW_PITCH_P 2.5
 #endif
 #ifndef OPTFLOW_PITCH_I
- #define OPTFLOW_PITCH_I 3.2
+ #define OPTFLOW_PITCH_I 0.5
 #endif
 #ifndef OPTFLOW_PITCH_D
  #define OPTFLOW_PITCH_D 0.12
 #endif
 #ifndef OPTFLOW_IMAX
- #define OPTFLOW_IMAX 4
+ #define OPTFLOW_IMAX 1
 #endif
 
 
