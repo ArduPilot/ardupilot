@@ -1850,20 +1850,6 @@ void update_throttle_mode(void)
 
     case THROTTLE_HOLD:
         // allow interactive changing of atitude
-        /*
-        if(g.rc_3.control_in < 200) {
-            reset_throttle_counter = 150;
-            nav_throttle            = get_throttle_rate(-120);
-            g.rc_3.servo_out        = g.throttle_cruise + nav_throttle + angle_boost;
-            break;
-        }else if (g.rc_3.control_in > 800) {
-            reset_throttle_counter = 50;
-            nav_throttle            = get_throttle_rate(180);
-            g.rc_3.servo_out        = g.throttle_cruise + nav_throttle + angle_boost;
-            break;
-        }
-        */
-
         if(g.rc_3.radio_in < (g.rc_3.radio_min + 200)){
             int16_t _rate = 120 - (((g.rc_3.radio_in - g.rc_3.radio_min) * 12) / 20);
             reset_throttle_counter = 150;
@@ -2275,27 +2261,6 @@ static void update_altitude_est()
     //Serial.printf(" %d, %d, %d, %d\n", climb_rate_actual, climb_rate_error, climb_rate, current_loc.alt);
 }
 
-/*
- * #define THROTTLE_ADJUST 225
- *  static void
- *  adjust_altitude()
- *  {
- *       if(g.rc_3.control_in <= (g.throttle_min + THROTTLE_ADJUST)){
- *               // we remove 0 to 100 PWM from hover
- *               manual_boost = (g.rc_3.control_in - g.throttle_min) - THROTTLE_ADJUST;
- *               manual_boost = max(-THROTTLE_ADJUST, manual_boost);
- *
- *       }else if  (g.rc_3.control_in >= (g.throttle_max - THROTTLE_ADJUST)){
- *               // we add 0 to 100 PWM to hover
- *               manual_boost = g.rc_3.control_in - (g.throttle_max - THROTTLE_ADJUST);
- *               manual_boost = min(THROTTLE_ADJUST, manual_boost);
- *
- *       }else {
- *               manual_boost = 0;
- *       }
- *  }
- */
-
 static void tuning(){
     tuning_value = (float)g.rc_6.control_in / 1000.0;
     g.rc_6.set_range(g.radio_tuning_low,g.radio_tuning_high);                   // 0 to 1
@@ -2539,11 +2504,3 @@ static void update_auto_yaw()
         auto_yaw = original_target_bearing;
     }
 }
-/*
- *       MAV_ROI_NONE=0,  No region of interest. |
- *       MAV_ROI_WPNEXT=1,  Point toward next MISSION. |
- *       MAV_ROI_WPINDEX=2,  Point toward given MISSION. |
- *       MAV_ROI_LOCATION=3,  Point toward fixed location. |
- *       MAV_ROI_TARGET=4,  Point toward of given id.
- *       MAV_ROI_ENUM_END=5,
- */
