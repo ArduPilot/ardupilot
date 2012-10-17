@@ -157,22 +157,22 @@ get_yaw_rate_stabilized_ef(int32_t stick_angle)
     // convert the input to the desired yaw rate
     int32_t target_rate = stick_angle * g.acro_p;
 
-    // convert the input to the desired yaw rate
+    // update current target heading using pilot's desired rate of turn
     nav_yaw += target_rate * G_Dt;
     nav_yaw = wrap_360(nav_yaw);
 
-    // angle error with maximum of +- max_angle_overshoot
+    // calculate difference between desired heading and current heading
     angle_error = wrap_180(nav_yaw - ahrs.yaw_sensor);
 
-    // this limits the maximum overshoot
+    // limit the maximum overshoot
     angle_error	= constrain(angle_error, -MAX_ANGLE_OVERSHOOT, MAX_ANGLE_OVERSHOOT);
 
     if (motors.armed() == false || ((g.rc_3.control_in == 0) && !failsafe)) {
     	angle_error = 0;
     }
 
-    // update nav_yaw to be within max_angle_overshoot of our current heading
-    nav_yaw = angle_error + ahrs.yaw_sensor;
+    // set nav_yaw to our desired heading
+    nav_yaw = wrap_360(angle_error + ahrs.yaw_sensor);
 
     // set earth frame targets for rate controller
 	set_yaw_rate_target(g.pi_stabilize_yaw.get_p(angle_error)+target_rate, EARTH_FRAME);
