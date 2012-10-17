@@ -50,13 +50,6 @@ static void calc_XY_velocity(){
     last_longitude  = g_gps->longitude;
     last_latitude   = g_gps->latitude;
 
-    /*if(g_gps->ground_speed > 150){
-     *       float temp = radians((float)g_gps->ground_course/100.0);
-     *       x_actual_speed = (float)g_gps->ground_speed * sin(temp);
-     *       y_actual_speed = (float)g_gps->ground_speed * cos(temp);
-     *  }*/
-
-
 #if INERTIAL_NAV == ENABLED
     // inertial_nav
     xy_error_correction();
