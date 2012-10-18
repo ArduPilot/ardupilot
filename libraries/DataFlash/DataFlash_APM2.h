@@ -27,9 +27,9 @@ private:
     void                    BlockErase (uint16_t BlockAdr);
     void                    ChipErase(void (*delay_cb)(unsigned long));
 
-    AP_Semaphore* _semaphore;
+    AP_Semaphore*           _spi3_semaphore;
 public:
-    DataFlash_APM2(AP_Semaphore* semaphore = NULL) : _semaphore(semaphore) {}
+    DataFlash_APM2(AP_Semaphore* spi3_semaphore = NULL) : _spi3_semaphore(spi3_semaphore) {}
 
     void        Init();
     void        ReadManufacturerID();
