@@ -1666,8 +1666,7 @@ void update_roll_pitch_mode(void)
 
         control_roll            = g.rc_1.control_in;
         control_pitch           = g.rc_2.control_in;
-
-        // in this mode, nav_roll and nav_pitch = the iterm
+     
         get_stabilize_roll(control_roll);
         get_stabilize_pitch(control_pitch);
 
@@ -2043,7 +2042,6 @@ static void update_navigation()
 
     if(yaw_mode == YAW_LOOK_AT_HOME) {
         if(home_is_set) {
-            //nav_yaw = point_at_home_yaw();
             nav_yaw = get_bearing_cd(&current_loc, &home);
         } else {
             nav_yaw = 0;
@@ -2058,7 +2056,7 @@ static void update_nav_RTL()
         // if loiter_timer value > 0, we are set to trigger auto_land or approach
         set_mode(LOITER);
 
-        // just un case we arrive and we aren't at the lower RTL alt yet.
+        // just in case we arrive and we aren't at the lower RTL alt yet.
         set_new_altitude(get_RTL_alt());
 
         // force loitering above home
