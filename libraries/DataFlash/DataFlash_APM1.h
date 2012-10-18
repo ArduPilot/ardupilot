@@ -4,6 +4,7 @@
 #ifndef __DATAFLASH_APM1_H__
 #define __DATAFLASH_APM1_H__
 
+#include <AP_Semaphore.h>
 #include "DataFlash.h"
 
 class DataFlash_APM1 : public DataFlash_Class
@@ -22,9 +23,11 @@ private:
     void                    BlockErase (uint16_t BlockAdr);
     void                    ChipErase(void (*delay_cb)(unsigned long));
 
+    unsigned char           SPI_transfer(unsigned char data);
+    AP_Semaphore*           _spi_semaphore;
 public:
 
-    DataFlash_APM1();     // Constructor
+    DataFlash_APM1(AP_Semaphore* spi_semaphore = NULL) : _spi_semaphore(spi_semaphore) {}
     void        Init();
     void        ReadManufacturerID();
     bool        CardInserted(void);
