@@ -41,11 +41,11 @@ union NumericIntType
 };
 
 // Constructors ////////////////////////////////////////////////////////////////
-AP_OpticalFlow_ADNS3080::AP_OpticalFlow_ADNS3080(AP_Semaphore* semaphore, int16_t cs_pin, int16_t reset_pin) :
-    _semaphore(semaphore),
+AP_OpticalFlow_ADNS3080::AP_OpticalFlow_ADNS3080(int16_t cs_pin, int16_t reset_pin) :
     _cs_pin(cs_pin),
     _reset_pin(reset_pin),
-    _spi_bus(ADNS3080_SPI_UNKNOWN)
+    _spi_bus(ADNS3080_SPI_UNKNOWN),
+    _spi_semaphore(NULL)
 {
     num_pixels = ADNS3080_PIXELS_X;
     field_of_view = AP_OPTICALFLOW_ADNS3080_08_FOV;
@@ -56,7 +56,7 @@ AP_OpticalFlow_ADNS3080::AP_OpticalFlow_ADNS3080(AP_Semaphore* semaphore, int16_
 // init - initialise sensor
 // assumes SPI bus has been initialised but will attempt to initialise nonstandard SPI3 bus if required
 bool
-AP_OpticalFlow_ADNS3080::init(bool initCommAPI, AP_PeriodicProcess *scheduler)
+AP_OpticalFlow_ADNS3080::init(bool initCommAPI, AP_PeriodicProcess *scheduler, AP_Semaphore* spi_semaphore, AP_Semaphore* spi3_semaphore)
 {
     int8_t retry = 0;
     bool retvalue = false;
@@ -84,6 +84,7 @@ AP_OpticalFlow_ADNS3080::init(bool initCommAPI, AP_PeriodicProcess *scheduler)
 
     // check 3 times for the sensor on standard SPI bus
     _spi_bus = ADNS3080_SPIBUS_1;
+    _spi_semaphore = spi_semaphore;
     while( retvalue == false && retry < 3 ) {
         if( read_register(ADNS3080_PRODUCT_ID) == 0x17 ) {
             retvalue = true;
@@ -102,6 +103,7 @@ AP_OpticalFlow_ADNS3080::init(bool initCommAPI, AP_PeriodicProcess *scheduler)
         }
 
         _spi_bus = ADNS3080_SPIBUS_3;
+        _spi_semaphore = spi3_semaphore;
         retry = 0;
         while( retvalue == false && retry < 3 ) {
             if( read_register(ADNS3080_PRODUCT_ID) == 0x17 ) {
@@ -183,9 +185,9 @@ AP_OpticalFlow_ADNS3080::read_register(byte address)
     uint8_t junk = 0;
 
     // get spi semaphore if required
-    if( _semaphore != NULL) {
+    if( _spi_semaphore != NULL ) {
         // if failed to get semaphore then just quietly fail
-        if( !_semaphore->get(this) ) {
+        if( !_spi_semaphore->get(this) ) {
             return 0;
         }
     }
@@ -211,8 +213,8 @@ AP_OpticalFlow_ADNS3080::read_register(byte address)
     restore_spi_settings();
 
     // get spi semaphore if required
-    if( _semaphore != NULL) {
-        _semaphore->release(this);
+    if( _spi_semaphore != NULL ) {
+        _spi_semaphore->release(this);
     }
 
     return result;
@@ -225,10 +227,9 @@ AP_OpticalFlow_ADNS3080::write_register(byte address, byte value)
     byte junk = 0;
 
     // get spi semaphore if required
-    if( _semaphore != NULL) {
+    if( _spi_semaphore != NULL ) {
         // if failed to get semaphore then just quietly fail
-        if( !_semaphore->get(this) ) {
-            Serial.println("Optflow: failed to get spi3 semaphore!");
+        if( !_spi_semaphore->get(this) ) {
             return;
         }
     }
@@ -254,8 +255,8 @@ AP_OpticalFlow_ADNS3080::write_register(byte address, byte value)
     restore_spi_settings();
 
     // get spi3 semaphore if required
-    if( _semaphore != NULL) {
-        _semaphore->release(this);
+    if( _spi_semaphore != NULL ) {
+        _spi_semaphore->release(this);
     }
 }
 
