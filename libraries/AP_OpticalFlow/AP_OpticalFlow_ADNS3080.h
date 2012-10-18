@@ -83,8 +83,8 @@
 class AP_OpticalFlow_ADNS3080 : public AP_OpticalFlow
 {
 public:
-    AP_OpticalFlow_ADNS3080(AP_Semaphore* semaphore, int16_t cs_pin = ADNS3080_CHIP_SELECT, int16_t reset_pin = ADNS3080_RESET);
-    bool        init(bool initCommAPI, AP_PeriodicProcess *scheduler); // parameter controls whether I2C/SPI interface is initialised (set to false if other devices are on the I2C/SPI bus and have already initialised the interface)
+    AP_OpticalFlow_ADNS3080(int16_t cs_pin = ADNS3080_CHIP_SELECT, int16_t reset_pin = ADNS3080_RESET);
+    bool        init(bool initCommAPI, AP_PeriodicProcess *scheduler, AP_Semaphore* spi_semaphore = NULL, AP_Semaphore* spi3_semaphore = NULL); // parameter controls whether SPI interface is initialised (set to false if other devices are on the I2C/SPI bus and have already initialised the interface)
     uint8_t     read_register(uint8_t address);
     void        write_register(uint8_t address, uint8_t value);
     void        reset();      // reset sensor by holding a pin high (or is it low?) for 10us.
@@ -139,7 +139,7 @@ private:
     bool        _motion; // true if there has been motion
     bool        _overflow; // true if the x or y data buffers overflowed
     uint8_t     _spi_bus;   // 0 = unknown, 1 = using SPI, 3 = using SPI3
-    AP_Semaphore* _semaphore;
+    AP_Semaphore* _spi_semaphore;
 };
 
 #endif

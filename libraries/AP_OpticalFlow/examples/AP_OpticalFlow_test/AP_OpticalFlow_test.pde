@@ -27,7 +27,7 @@ FastSerialPort0(Serial);        // FTDI/console
 #define CONFIG_MPU6000_CHIP_SELECT_PIN 53   // MPU600 chip select pin
 
 //AP_OpticalFlow_ADNS3080 flowSensor;             // for APM1
-AP_OpticalFlow_ADNS3080 flowSensor(NULL,A3);  // override chip select pin to use A3 if using APM2 or APM2.5
+AP_OpticalFlow_ADNS3080 flowSensor(A3);  // override chip select pin to use A3 if using APM2 or APM2.5
 
 Arduino_Mega_ISR_Registry isr_registry;
 AP_TimerProcess scheduler;

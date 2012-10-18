@@ -17,7 +17,7 @@ uint8_t AP_OpticalFlow::_num_calls; // number of times we have been called by 1k
 
 // init - initCommAPI parameter controls whether I2C/SPI interface is initialised (set to false if other devices are on the I2C/SPI bus and have already initialised the interface)
 bool
-AP_OpticalFlow::init(bool initCommAPI, AP_PeriodicProcess *scheduler)
+AP_OpticalFlow::init(bool initCommAPI, AP_PeriodicProcess *scheduler, AP_Semaphore* spi_semaphore, AP_Semaphore* spi3_semaphore)
 {
     _orientation = ROTATION_NONE;
     update_conversion_factors();

@@ -21,6 +21,7 @@
 #include <AP_Math.h>
 #include <AP_Common.h>
 #include <AP_PeriodicProcess.h>
+#include <AP_Semaphore.h>
 
 #define AP_OPTICALFLOW_NUM_CALLS_FOR_10HZ     100         // timer process runs at 1khz.  100 iterations = 10hz
 #define AP_OPTICALFLOW_NUM_CALLS_FOR_20HZ     50          // timer process runs at 1khz.  50 iterations = 20hz
@@ -49,7 +50,7 @@ public:
     ~AP_OpticalFlow() {
         _sensor = NULL;
     };
-    virtual bool                    init(bool initCommAPI, AP_PeriodicProcess *scheduler); // parameter controls whether I2C/SPI interface is initialised (set to false if other devices are on the I2C/SPI bus and have already initialised the interface)
+    virtual bool                    init(bool initCommAPI, AP_PeriodicProcess *scheduler, AP_Semaphore* spi_semaphore = NULL, AP_Semaphore* spi3_semaphore = NULL); // parameter controls whether I2C/SPI interface is initialised (set to false if other devices are on the I2C/SPI bus and have already initialised the interface)
     virtual byte                    read_register(byte address);
     virtual void                    write_register(byte address, byte value);
     virtual void                    set_orientation(enum Rotation rotation); // Rotation vector to transform sensor readings to the body frame.
