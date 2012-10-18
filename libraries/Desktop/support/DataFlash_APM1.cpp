@@ -10,6 +10,7 @@
 #include <stdint.h>
 #include "DataFlash.h"
 #include <SPI.h>
+#include <AP_Semaphore.h>
 
 #define DF_PAGE_SIZE 512
 #define DF_NUM_PAGES 4096
