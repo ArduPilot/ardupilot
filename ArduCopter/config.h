@@ -755,8 +755,24 @@
 // Rate controlled stabilized variables
 //
 
-#ifndef MAX_ANGLE_OVERSHOOT
- #define MAX_ANGLE_OVERSHOOT	1000
+#ifndef MAX_ROLL_OVERSHOOT
+ #define MAX_ROLL_OVERSHOOT	3000
+#endif
+
+#ifndef MAX_PITCH_OVERSHOOT
+ #define MAX_PITCH_OVERSHOOT	3000
+#endif
+
+#ifndef MAX_YAW_OVERSHOOT
+ #define MAX_YAW_OVERSHOOT	1000
+#endif
+
+#ifndef ACRO_ROLL_STABILISE
+ #define ACRO_ROLL_STABILISE	100
+#endif
+
+#ifndef ACRO_PITCH_STABILISE
+ #define ACRO_PITCH_STABILISE	0
 #endif
 
 //////////////////////////////////////////////////////////////////////////////

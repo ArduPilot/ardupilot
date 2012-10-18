@@ -1594,12 +1594,7 @@ void update_yaw_mode(void)
     switch(yaw_mode) {
     case YAW_ACRO:
         if(g.axis_enabled) {
-            nav_yaw    += (float)g.rc_4.control_in * g.axis_lock_p;
-            nav_yaw = wrap_360(nav_yaw);
-            if (g.rc_3.control_in == 0) {
-                nav_yaw = ahrs.yaw_sensor;
-            }
-            get_stabilize_yaw(nav_yaw);
+            get_yaw_rate_stabilized_ef(g.rc_4.control_in);
         }else{
             get_acro_yaw(g.rc_4.control_in);
         }
@@ -1644,20 +1639,8 @@ void update_roll_pitch_mode(void)
     switch(roll_pitch_mode) {
     case ROLL_PITCH_ACRO:
         if(g.axis_enabled) {
-            roll_axis       += (float)g.rc_1.control_in * g.axis_lock_p;
-            pitch_axis      += (float)g.rc_2.control_in * g.axis_lock_p;
-
-            roll_axis = wrap_180(roll_axis);
-            pitch_axis = wrap_180(pitch_axis);
-
-            if (g.rc_3.control_in == 0) {
-                roll_axis = 0;
-                pitch_axis = 0;
-            }
-
-            // in this mode, nav_roll and nav_pitch = the iterm
-            get_stabilize_roll(roll_axis);
-            get_stabilize_pitch(pitch_axis);
+            get_roll_rate_stabilized_ef(g.rc_1.control_in);
+            get_pitch_rate_stabilized_ef(g.rc_2.control_in);
         }else{
             // ACRO does not get SIMPLE mode ability
 #if FRAME_CONFIG == HELI_FRAME
