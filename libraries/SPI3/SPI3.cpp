@@ -49,7 +49,12 @@ void SPI3Class::begin() {
 // Note: this is untested
 void SPI3Class::end() {
     uint8_t temp = UCSR3C;
-    
+
+    // check spi bus has been initialised
+    if( !_initialised ) {
+        return;
+    }
+
     // put UART3 into ASync UART mode
     temp = (temp & ~SPI3_USART_MASK) | SPI3_USART_ASYNC_UART;
     UCSR3C = temp;
@@ -59,6 +64,11 @@ void SPI3Class::end() {
 }
 
 uint8_t SPI3Class::transfer(uint8_t data) {
+    // check spi bus has been initialised
+    if( !_initialised ) {
+        return 0;
+    }
+
     /* Wait for empty transmit buffer */
     while ( !( UCSR3A & (1<<UDRE3)) ) ;
 
@@ -74,20 +84,29 @@ uint8_t SPI3Class::transfer(uint8_t data) {
 
 void SPI3Class::setBitOrder(uint8_t bitOrder)
 {
-  if(bitOrder == SPI3_LSBFIRST) {
-    UCSR3C |= _BV(2);
-  } else {
-    UCSR3C &= ~(_BV(2));
-  }
+    // check spi bus has been initialised
+    if( !_initialised ) {
+        return;
+    }
+
+    if(bitOrder == SPI3_LSBFIRST) {
+        UCSR3C |= _BV(2);
+    } else {
+        UCSR3C &= ~(_BV(2));
+    }
 }
 
 void SPI3Class::setDataMode(uint8_t mode)
 {
-  UCSR3C = (UCSR3C & ~SPI3_MODE_MASK) | mode;
+    if( _initialised ) {
+        UCSR3C = (UCSR3C & ~SPI3_MODE_MASK) | mode;
+    }
 }
 
 void SPI3Class::setSpeed(uint8_t rate)
 {
-  UBRR3 = rate;
+    if( _initialised ) {
+        UBRR3 = rate;
+    }
 }
 
