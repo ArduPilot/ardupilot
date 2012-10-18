@@ -392,22 +392,6 @@ static void startup_ground(void)
     reset_I_all();
 }
 
-/*
- * #define YAW_HOLD             0
- * #define YAW_ACRO             1
- * #define YAW_AUTO             2
- * #define YAW_LOOK_AT_HOME     3
- *
- * #define ROLL_PITCH_STABLE    0
- * #define ROLL_PITCH_ACRO  1
- * #define ROLL_PITCH_AUTO		2
- *
- * #define THROTTLE_MANUAL  0
- * #define THROTTLE_HOLD        1
- * #define THROTTLE_AUTO		2
- *
- */
-
 static void set_mode(byte mode)
 {
     // if we don't have GPS lock

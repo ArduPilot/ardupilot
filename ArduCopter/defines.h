@@ -16,7 +16,7 @@
 #define YAW_HOLD                        0
 #define YAW_ACRO                        1
 #define YAW_AUTO                        2
-#define YAW_LOOK_AT_HOME        3
+#define YAW_LOOK_AT_HOME    		    3
 #define YAW_TOY                         4       // THOR This is the Yaw mode
 
 
