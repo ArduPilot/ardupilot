@@ -171,11 +171,12 @@ APM_RC_APM1 APM_RC;
 ////////////////////////////////////////////////////////////////////////////////
 // Dataflash
 ////////////////////////////////////////////////////////////////////////////////
-#if CONFIG_APM_HARDWARE == APM_HARDWARE_APM2
+AP_Semaphore spi_semaphore;
 AP_Semaphore spi3_semaphore;
+#if CONFIG_APM_HARDWARE == APM_HARDWARE_APM2
 DataFlash_APM2 DataFlash(&spi3_semaphore);
 #else
-DataFlash_APM1 DataFlash;
+DataFlash_APM1 DataFlash(&spi_semaphore);
 #endif
 
 
@@ -227,9 +228,9 @@ AP_Compass_HMC5843 compass;
 
  #ifdef OPTFLOW_ENABLED
   #if CONFIG_APM_HARDWARE == APM_HARDWARE_APM2
-AP_OpticalFlow_ADNS3080 optflow(&spi3_semaphore,OPTFLOW_CS_PIN);
+AP_OpticalFlow_ADNS3080 optflow(OPTFLOW_CS_PIN);
   #else
-AP_OpticalFlow_ADNS3080 optflow(NULL,OPTFLOW_CS_PIN);
+AP_OpticalFlow_ADNS3080 optflow(OPTFLOW_CS_PIN);
   #endif
  #else
 AP_OpticalFlow optflow;
