@@ -195,6 +195,8 @@ protected:
     enum GPS_Engine_Setting _nav_setting;
 
     void _write_progstr_block(Stream *_fs, const prog_char *pstr, uint8_t size);
+    void _send_progstr(Stream *_fs, const prog_char *pstr, uint8_t size);
+    void _update_progstr(void);
 
     // velocities in cm/s if available from the GPS
     int32_t _vel_north;

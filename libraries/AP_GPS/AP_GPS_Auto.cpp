@@ -54,10 +54,12 @@ AP_GPS_Auto::read(void)
 			last_baud = 0;
 		}
 		// write config strings for the types of GPS we support
-		_write_progstr_block(_fs, _mtk_set_binary, sizeof(_mtk_set_binary));
-		_write_progstr_block(_fs, AP_GPS_UBLOX::_ublox_set_binary, AP_GPS_UBLOX::_ublox_set_binary_size);
-		_write_progstr_block(_fs, _sirf_set_binary, sizeof(_sirf_set_binary));
+		_send_progstr(_fs, _mtk_set_binary, sizeof(_mtk_set_binary));
+		_send_progstr(_fs, AP_GPS_UBLOX::_ublox_set_binary, AP_GPS_UBLOX::_ublox_set_binary_size);
+		_send_progstr(_fs, _sirf_set_binary, sizeof(_sirf_set_binary));
 	}
+
+	_update_progstr();
 
 	if (NULL != (gps = _detect())) {
 		// configure the detected GPS
@@ -114,4 +116,7 @@ AP_GPS_Auto::_detect(void)
 
 	return NULL;
 }
+
+
+
 
