@@ -546,11 +546,7 @@
 
 // AUTO Mode
 #ifndef AUTO_YAW
- #if FRAME_CONFIG == HELI_FRAME
-  # define AUTO_YAW                       YAW_LOOK_AT_HOME
- #else
-  # define AUTO_YAW                       YAW_AUTO
- #endif
+ # define AUTO_YAW                       YAW_AUTO
 #endif
 
 #ifndef AUTO_RP
@@ -590,7 +586,11 @@
 
 // RTL Mode
 #ifndef RTL_YAW
- # define RTL_YAW                        YAW_HOLD
+ #if FRAME_CONFIG == HELI_FRAME
+  # define RTL_YAW                    	  YAW_LOOK_AT_HOME
+ #else
+  # define RTL_YAW                        YAW_HOLD
+ #endif
 #endif
 
 #ifndef RTL_RP
