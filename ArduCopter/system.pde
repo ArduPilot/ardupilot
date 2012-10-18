@@ -103,8 +103,12 @@ static void init_ardupilot()
 #endif
     SPI.begin();
     SPI.setClockDivider(SPI_CLOCK_DIV16); // 1MHZ SPI rate
+
+#if CONFIG_APM_HARDWARE == APM_HARDWARE_APM2
     SPI3.begin();
     SPI3.setSpeed(SPI3_SPEED_2MHZ);
+#endif
+
     //
     // Initialize the isr_registry.
     //
