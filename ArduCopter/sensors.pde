@@ -51,7 +51,7 @@ static void init_compass()
 static void init_optflow()
 {
 #ifdef OPTFLOW_ENABLED
-    if( optflow.init(false, &timer_scheduler) == false ) {
+    if( optflow.init(false, &timer_scheduler, &spi_semaphore, &spi3_semaphore) == false ) {
         g.optflow_enabled = false;
         SendDebug("\nFailed to Init OptFlow ");
     }
