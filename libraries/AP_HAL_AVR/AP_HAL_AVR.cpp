@@ -21,12 +21,14 @@ using namespace AP_HAL_AVR;
 
 AVRUARTDriverISRs(0);
 AVRUARTDriverISRs(1);
+AVRUARTDriverISRs(2);
 AVRUARTDriverISRs(3);
 
 static AVRUARTDriverInstance(avrUart0Driver, 0);
 static AVRUARTDriverInstance(avrUart1Driver, 1);
-static EmptyUARTDriver  avrUart2Driver;
+static AVRUARTDriverInstance(avrUart2Driver, 2);
 static AVRUARTDriverInstance(avrUart3Driver, 3);
+static EmptyUARTDriver  emptyUartDriver;
 
 static AVRI2CDriver     avrI2CDriver;
 static ArduinoSPIDriver arduinoSPIDriver;
@@ -46,7 +48,7 @@ static ArduinoScheduler arduinoScheduler;
 const HAL_AVR AP_HAL_AVR_APM1(
         (UARTDriver*) &avrUart0Driver,
         (UARTDriver*) &avrUart1Driver,
-        (UARTDriver*) &avrUart2Driver,
+        (UARTDriver*) &emptyUartDriver,
         (UARTDriver*) &avrUart3Driver,
         &avrI2CDriver,
         &arduinoSPIDriver,
@@ -63,7 +65,7 @@ const HAL_AVR AP_HAL_AVR_APM2(
         (UARTDriver*) &avrUart0Driver,
         (UARTDriver*) &avrUart1Driver,
         (UARTDriver*) &avrUart2Driver,
-        (UARTDriver*) &avrUart3Driver,
+        (UARTDriver*) &emptyUartDriver,
         &avrI2CDriver,
         &arduinoSPIDriver,
         &apm2AnalogIn,
