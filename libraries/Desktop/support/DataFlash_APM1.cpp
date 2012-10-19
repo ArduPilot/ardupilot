@@ -122,5 +122,4 @@ void DataFlash_APM1::ChipErase(void (*delay_cb)(unsigned long))
 	}
 }
 
-// make one instance for the user to use
-DataFlash_APM1::DataFlash_APM1(AP_Semaphore* spi_semaphore) {}
+
