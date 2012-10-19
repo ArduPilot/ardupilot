@@ -11,7 +11,7 @@
 #include <string.h>
 #include <avr/pgmspace.h>
 
-#include "include/menu.h"
+#include "AP_Menu.h"
 
 // statics
 char Menu::_inbuf[MENU_COMMANDLINE_MAX];
