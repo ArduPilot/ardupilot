@@ -34,7 +34,6 @@ typedef struct {
 } prog_char_t;
 
 #include <stdint.h>
-#include "include/menu.h"               /// simple menu subsystem
 #include "c++.h" // c++ additions
 //#include "AP_Vector.h"
 //#include "AP_Loop.h"

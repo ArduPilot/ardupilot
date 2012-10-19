@@ -13,8 +13,8 @@
 /// Arguments passed to the handler function are pre-converted to both
 /// long and float for convenience.
 
-#ifndef __AP_COMMON_MENU_H
-#define __AP_COMMON_MENU_H
+#ifndef __AP_MENU_H__
+#define __AP_MENU_H__
 
 #include <inttypes.h>
 
@@ -140,4 +140,4 @@ private:
     static const char __menu_name__ ## name[] PROGMEM = prompt;      \
     static Menu name(__menu_name__ ## name, commands, sizeof(commands) / sizeof(commands[0]), preprompt)
 
-#endif
+#endif // __AP_COMMON_MENU_H__
