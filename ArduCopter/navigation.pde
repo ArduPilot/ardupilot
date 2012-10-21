@@ -258,7 +258,7 @@ static int16_t get_desired_speed(int16_t max_speed)
     return max_speed;
 }
 
-static int16_t reset_desired_speed()
+static void reset_desired_speed()
 {
     max_speed_old = 0;
 }
