@@ -227,10 +227,6 @@ static void do_RTL(void)
     // --------------------
     set_next_WP(&temp);
 
-
-    // We want to come home and stop on a dime
-    slow_wp = true;
-
     // output control mode to the ground station
     // -----------------------------------------
     gcs_send_message(MSG_HEARTBEAT);
@@ -260,7 +256,6 @@ static void do_takeoff()
 static void do_nav_wp()
 {
     wp_control = WP_MODE;
-    slow_wp = false;
 
     set_next_WP(&command_nav_queue);
 
@@ -449,7 +444,7 @@ static bool verify_nav_wp()
     }
 
     // Did we pass the WP?	// Distance checking
-    if((wp_distance <= (waypoint_radius * 100)) || check_missed_wp()) {
+    if((wp_distance <= (g.waypoint_radius * 100)) || check_missed_wp()) {
 
         // if we have a distance calc error, wp_distance may be less than 0
         if(wp_distance > 0) {

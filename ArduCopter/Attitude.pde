@@ -536,14 +536,8 @@ static void reset_nav_params(void)
     long_error                              = 0;
     lat_error                               = 0;
 
-    // We want to by default pass WPs
-    slow_wp = false;
-
     // make sure we stick to Nav yaw on takeoff
     auto_yaw = nav_yaw;
-
-    // revert to smaller radius set in params
-    waypoint_radius = g.waypoint_radius;
 }
 
 /*

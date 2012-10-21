@@ -10,6 +10,7 @@ static void init_commands()
     command_nav_queue.id    = NO_COMMAND;
 
     fast_corner                     = false;
+	reset_desired_speed();
 
     // default Yaw tracking
     yaw_tracking                    = MAV_ROI_WPNEXT;
@@ -176,10 +177,6 @@ static void set_next_WP(struct Location *wp)
     // to check if we have missed the WP
     // ---------------------------------
     original_target_bearing = target_bearing;
-
-    // reset speed governer
-    // --------------------
-    waypoint_speed_gov = g_gps->ground_speed;
 }
 
 

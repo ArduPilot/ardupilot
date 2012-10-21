@@ -184,6 +184,24 @@ test_radio_pwm(uint8_t argc, const Menu::arg *argv)
  *  }*/
 
 
+/*
+//static int8_t
+//test_toy(uint8_t argc, const Menu::arg *argv)
+{
+	wp_distance = 0;
+	int16_t max_speed = 0;
+
+ 	for(int16_t i = 0; i < 200; i++){
+	 	int32_t temp = 2 * 100 * (wp_distance - g.waypoint_radius * 100);
+		max_speed = sqrt((float)temp);
+		max_speed = min(max_speed, g.waypoint_speed_max);
+		Serial.printf("Zspeed: %ld, %d, %ld\n", temp, max_speed, wp_distance);
+	 	wp_distance += 100;
+	}
+ 	return 0;
+}
+//*/
+
 /*static int8_t
  *  //test_toy(uint8_t argc, const Menu::arg *argv)
  *  {
