@@ -246,7 +246,7 @@ static int16_t get_desired_speed(int16_t max_speed)
     }else{
         if(wp_distance < 15000){
             // go slower
-    	 	int32_t temp = 2 * 100 * (wp_distance - g.waypoint_radius * 100);
+    	 	int32_t temp = 2 * 100 * (int32_t)(wp_distance - g.waypoint_radius * 100);
     		max_speed = sqrt((float)temp);
             max_speed = min(max_speed, g.waypoint_speed_max);
         }
