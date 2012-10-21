@@ -83,7 +83,14 @@ static void update_commands()
                     temp = wrap_180(temp);
                     fast_corner = labs(temp) < 6000;
                 }
+
+                // If we try and stop at a corner, lets reset our desired speed to prevent
+                // too much jerkyness.
+				if(false == fast_corner){
+					reset_desired_speed();
+				}
             }
+
         }else{
             // we are out of commands
             exit_mission();

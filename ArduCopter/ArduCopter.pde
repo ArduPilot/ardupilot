@@ -1,6 +1,6 @@
 /// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 
-#define THISFIRMWARE "ArduCopter V2.8"
+#define THISFIRMWARE "ArduCopter V2.8.1a"
 /*
  *  ArduCopter Version 2.8
  *  Lead author:	Jason Short
@@ -557,13 +557,12 @@ static uint8_t command_cond_index;
 // NAV_DELAY    - have we waited at the waypoint the desired time?
 static uint8_t wp_verify_byte;                                                  // used for tracking state of navigating waypoints
 // used to limit the speed ramp up of WP navigation
-// Acceleration is limited to .5m/s/s
-static int16_t waypoint_speed_gov;
+// Acceleration is limited to 1m/s/s
+static int16_t max_speed_old;
 // Used to track how many cm we are from the "next_WP" location
 static int32_t long_error, lat_error;
 // Are we navigating while holding a positon? This is set to false once the speed drops below 1m/s
 static boolean loiter_override;
-static int16_t waypoint_radius;
 
 static int16_t control_roll;
 static int16_t control_pitch;
@@ -795,7 +794,6 @@ static int16_t nav_lon;
 static int32_t of_roll;
 // The Commanded pitch from the autopilot based on optical flow sensor. negative Pitch means go forward.
 static int32_t of_pitch;
-static bool slow_wp = false;
 
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -1667,7 +1665,7 @@ void update_roll_pitch_mode(void)
 
         control_roll            = g.rc_1.control_in;
         control_pitch           = g.rc_2.control_in;
-     
+
         get_stabilize_roll(control_roll);
         get_stabilize_pitch(control_pitch);
 
@@ -2072,8 +2070,6 @@ static void update_nav_RTL()
         else
             loiter_timer = 0;
     }
-
-    slow_wp = true;
 }
 
 static void read_AHRS(void)
@@ -2434,7 +2430,7 @@ static void update_nav_wp()
         // nav_lon, nav_lat is calculated
 
         if(wp_distance > 400) {
-            calc_nav_rate(get_desired_speed(g.waypoint_speed_max, true));
+            calc_nav_rate(get_desired_speed(g.waypoint_speed_max));
         }else{
             // calc the lat and long error to the target
             calc_location_error(&next_WP);
@@ -2454,7 +2450,7 @@ static void update_nav_wp()
         // calc error to target
         calc_location_error(&next_WP);
 
-        int16_t speed = get_desired_speed(g.waypoint_speed_max, slow_wp);
+        int16_t speed = get_desired_speed(g.waypoint_speed_max);
         // use error as the desired rate towards the target
         calc_nav_rate(speed);
 

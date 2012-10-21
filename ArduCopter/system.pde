@@ -424,9 +424,6 @@ static void set_mode(byte mode)
     // clearing value used to force the copter down in landing mode
     landing_boost = 0;
 
-    // do we want to come to a stop or pass a WP?
-    slow_wp = false;
-
     // do not auto_land if we are leaving RTL
     loiter_timer = 0;
 

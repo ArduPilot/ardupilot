@@ -239,34 +239,28 @@ static void calc_loiter_pitch_roll()
     auto_pitch = -auto_pitch;
 }
 
-static int16_t get_desired_speed(int16_t max_speed, bool _slow)
+static int16_t get_desired_speed(int16_t max_speed)
 {
-    /*
-     * |< WP Radius
-     *  0  1   2   3   4   5   6   7   8m
-     *  ...|...|...|...|...|...|...|...|
-     *         100  |  200	  300	  400cm/s
-     |                              +|+
-     ||< we should slow to 1.5 m/s as we hit the target
-     */
-
     if(fast_corner) {
-        waypoint_radius = g.waypoint_radius * 2;
-        //max_speed         = max_speed;
+        // don't slow down
     }else{
-        waypoint_radius = g.waypoint_radius;
-        max_speed               = min(max_speed, (wp_distance - g.waypoint_radius) / 3);
-        max_speed               = max(max_speed, WAYPOINT_SPEED_MIN);           // go at least 100cm/s
+        if(wp_distance < 15000){
+            // go slower
+    	 	int32_t temp = 2 * 100 * (wp_distance - g.waypoint_radius * 100);
+    		max_speed = sqrt((float)temp);
+            max_speed = min(max_speed, g.waypoint_speed_max);
+        }
     }
 
-    // limit the ramp up of the speed
-    // waypoint_speed_gov is reset to 0 at each new WP command
-    if(max_speed > waypoint_speed_gov) {
-        waypoint_speed_gov += (int)(100.0 * dTnav);         // increase at .5/ms
-        max_speed = waypoint_speed_gov;
-    }
-
+    max_speed 		= min(max_speed, max_speed_old + (100 * dTnav));// limit going faster
+    max_speed 		= max(max_speed, WAYPOINT_SPEED_MIN); 	// don't go too slow
+    max_speed_old 	= max_speed;
     return max_speed;
+}
+
+static int16_t reset_desired_speed()
+{
+    max_speed_old = 0;
 }
 
 static int16_t get_desired_climb_rate()

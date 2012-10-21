@@ -28,7 +28,7 @@ const AP_Param::Info var_info[] PROGMEM = {
     GSCALAR(serial3_baud,   "SERIAL3_BAUD",     SERIAL3_BAUD/1000),
 
     // @Param: TELEM_DELAY
-    // @DisplayName: Telemetry startup delay 
+    // @DisplayName: Telemetry startup delay
     // @Description: The amount of time (in seconds) to delay radio telemetry to prevent an Xbee bricking on power up
     // @User: Standard
     // @Units: seconds
@@ -114,7 +114,7 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @Increment: 1
     // @User: Advanced
 	GSCALAR(tilt_comp,      "TILT",     TILT_COMPENSATION),
-	
+
     // @Param: BATT_VOLT_PIN
     // @DisplayName: Battery Voltage sensing pin
     // @Description: Setting this to 0 ~ 13 will enable battery current sensing on pins A0 ~ A13.
@@ -151,7 +151,7 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @Increment: 1
     // @User: Standard
     GSCALAR(loiter_radius,  "WP_LOITER_RAD",    LOITER_RADIUS),
-	
+
 	// @Param: WP_SPEED_MAX
     // @DisplayName: Waypoint Max Speed Target
     // @Description: Defines the speed which the aircraft will attempt to maintain during a WP mission.
@@ -159,7 +159,7 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @Increment: 100
     // @User: Standard
     GSCALAR(waypoint_speed_max,     "WP_SPEED_MAX", WAYPOINT_SPEED_MAX),
-	
+
 	// @Param: XTRK_GAIN_SC
     // @DisplayName: Cross-Track Gain
     // @Description: This controls the rate that the Auto Controller will attempt to return original track
@@ -227,7 +227,7 @@ const AP_Param::Info var_info[] PROGMEM = {
     GSCALAR(radio_tuning_high, "TUNE_HIGH",         1000),
     GSCALAR(frame_orientation, "FRAME",             FRAME_ORIENTATION),
     GSCALAR(ch7_option, "CH7_OPT",                  CH7_OPTION),
-	
+
 	// @Param: AUTO_SLEW
     // @DisplayName: Auto Slew Rate
     // @Description: This restricts the rate of change of the attitude allowed by the Auto Controller
@@ -402,7 +402,7 @@ static void load_parameters(void)
     // change the default for the AHRS_GPS_GAIN for ArduCopter
     // if it hasn't been set by the user
     if (!ahrs.gps_gain.load()) {
-        ahrs.gps_gain.set_and_save(0.0);
+        ahrs.gps_gain.set_and_save(1.0);
     }
 
     // setup different AHRS gains for ArduCopter than the default
