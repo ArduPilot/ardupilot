@@ -68,6 +68,8 @@ volatile uint8_t servo_input_mode = JUMPER_SELECT_MODE;
 #define SWITCHOVER_1_to_2_DELAY_MS		50	// Delay for switching to receiver 2
 #define SWITCHOVER_2_to_1_DELAY_MS		200	// Delay for switching back to receiver 1
 
+#define CHANNEL_COUNT_DETECTION_THRESHOLD	10 // Valid frames detected before channel count validation
+
 
 // 0 for standard PPM, 1 for PPMv2 (Futaba 760 us 16 Channels), 2 for PPMv3 (Jeti 1050 us 16 channels), 3 for Hitec 9 channels
 // PPM input frame mode receiver 1
@@ -595,6 +597,16 @@ ISR( SERVO_INT_VECTOR )
     // PPM redundancy mode
     // ------------------------------------------------------------------------------
 	
+	//---------------------------------------------------------------------
+	// Todo : Conversion to PPM output format
+	// Todo : sync between PPM input and output after switchover
+	
+	// Todo : rework code from line 950 to end of redundancy mode
+			
+	// Todo : Add delay inside switchover algo
+	// Todo : Add LED code for APM 1.4
+//-------------------------------------------------------------------------
+	
 	if( servo_input_mode == PPM_REDUNDANCY_MODE )
     {
 	// -------------------------------------
@@ -641,8 +653,12 @@ ISR( SERVO_INT_VECTOR )
 	static bool sync_error_ch1 = true;
 	static bool sync_error_ch2 = true;
 	
+	//---------------------------------------------------------
+	
 	// ch2 switchover flag
 	static bool switchover_ch2 = false;
+	
+	//---------------------------------------------------------
 	
 	// Channel count detection ready flag
 	static bool channel_count_ready_ch1 = false;
@@ -655,6 +671,14 @@ ISR( SERVO_INT_VECTOR )
 	// Detected Channel count
 	static uint8_t channel_count_ch1 = PPM_CH1_MAX_CHANNELS;
 	static uint8_t channel_count_ch2 = PPM_CH2_MAX_CHANNELS;
+	
+	// Detected Channel count previous value
+	static uint8_t previous_channel_count_ch1 = 0;
+	static uint8_t previous_channel_count_ch2 = 0;
+	
+	// Channel count detection counter
+	static uint8_t channel_count_detection_counter_ch1 = 0;
+	static uint8_t channel_count_detection_counter_ch1 = 0;
 	
 		
 	// -----------------------------------
@@ -777,23 +801,111 @@ CHECK_LOOP: // Input PPM pins check loop
 		// -----------------------------------------------------------------------------------------------------------------------
     }
 
-	
-//----------------------------------------------------------------------------------------------------------------------	
-	// Todo : Conversion to PPM output format
-	// Todo : rework code from line 830 to end of redundancy mode
-	// Todo : channel count auto detection : write post processing
-	
-	// Todo : sync between PPM input and output after switchover
-	// Todo : Add delay inside switchover algo
-	// Todo : Add LED code for APM 1.4
-	
-//----------------------------------------------------------------------------------------------------------------------
-
 	// -----------------------------------
 	// PPM redundancy - Ch2 decoding
 	// -----------------------------------
 
-	// Todo : duplicate decoder code for PPM channel 2
+	// Check if we have a pin change on PPM channel 2
+    if( servo_change & 2 )
+	{
+		// -----------------------------------------------------------------------------------------------------------------------
+		// Check if we've got a high level (raising edge, channel start or sync symbol end)
+        if( servo_pins & 2 )
+        {
+            // Check for pre pulse lenght
+			ppm2_prepulse_width = servo_time - ppm2_prepulse_start;
+			if ( true ) //Todo optionnal: We could add a test here for channel pre pulse lenght check
+			{
+				//We have a valid pre pulse
+			}
+			else
+			{
+				//We do not have a valid pre pulse
+				sync_error_ch2 = true;	 	// Set sync error flag
+				sync_ch2 = false;			// Reset sync flag
+				ppm2_channel = 0; 			// Reset PPM channel counter
+				last_channel_ch2 = false;	// Reset last channel flag
+			}
+			ppm2_start[ ppm2_channel ] = servo_time; // Store pulse start time for PPM2 input
+		}
+		// -----------------------------------------------------------------------------------------------------------------------
+		else // We've got a low level (falling edge, channel end or sync symbol start)
+		{
+            ppm2_width[ ppm2_channel ] = servo_time - ppm2_start[ ppm2_channel ]; // Calculate channel pulse lenght, or sync symbol lenght
+			if(sync_ch2 == true) // Are we synchronized ?
+			{
+				// Check channel pulse lenght validity
+				if( ppm2_width[ ppm2_channel ] > ( PPM_CH2_VAL_MAX - PPM_CH2_CHANNEL_PREPULSE_LENGHT ) ) || ( ppm2_width[ ppm2_channel ] < ( PPM_CH2_VAL_MIN - PPM_CH2_CHANNEL_PREPULSE_LENGHT ) ) // If we have a valid pulse lenght
+				{
+					// Reset channel error flag
+					channel_error_ch2 = false;
+					
+					if( ppm2_channel ==  channel_count_ch2 ) // Check for last channel
+					{
+						// We are at latest PPM channel
+						last_channel_ch2 = true; // Set last channel flag		
+						sync_ch2 = false; 		// Reset sync flag
+						ppm2_channel = 0; 		// Reset PPM channel counter						
+					}
+					else // We do not have yet reached the last channel
+					{
+						// Increment channel counter
+						ppm2_channel++;
+					}
+				}
+				else	// We do not have a valid channel lenght
+				{
+					if( ppm2_width[ ppm2_channel ] > PPM_CH2_MIN_SYNC_LENGHT ) || ( ppm2_width[ ppm2_channel ] < PPM_CH2_MAX_SYNC_LENGHT ) //Check for sync symbol
+					{
+						// We have a valid sync symbol
+						if( channel_count_detected_ch2 == false ) // Check if do not have yet channel count detected
+						{
+							// We have detected channels count
+							channel_count_ch2 = ppm2_channel; // Store PPM2 channel count
+							channel_count_ready_ch2 = true; // Set PPM2 channel count detection ready flag
+							
+							sync_error_ch2 = false; 	// Reset sync error flag
+							sync_ch2 = true;			// Set sync flag
+							ppm2_channel = 0; // Reset PPM channel counter
+							last_channel_ch2 = false;	// Reset last channel flag
+						}
+						else	// Channel count had been detected before
+						{
+							//We should not have a sync symbol here
+							sync_error_ch2 = true; 	// Set sync error flag
+							last_channel_ch2 = false;	// Reset last channel flag
+							sync_ch2 = false;			// Reset sync flag
+							ppm2_channel = 0; 			// Reset PPM channel counter
+						}
+					}
+					else // We do not have a valid sync symbol
+					{
+						channel_error_ch2 = true;	// Set channel error flag
+					}
+				}
+												
+			}
+			// ------------------------------------------------------------------------------
+			else // We are not yet synchronized
+			{
+				if( ppm2_width[ ppm2_channel ] > PPM_CH2_MIN_SYNC_LENGHT ) || ( ppm2_width[ ppm2_channel ] < PPM_CH2_MAX_SYNC_LENGHT ) //Check for sync symbol
+				{
+					// We have a valid sync symbol
+					sync_error_ch2 = false; 	// Reset sync error flag
+					sync_ch2 = true;			// Set sync flag
+				}
+				else // We did not find a valid sync symbol
+				{
+				sync_error_ch2 = true; 	// Set sync error flag
+				sync_ch2 = false;			// Reset sync flag
+				}
+				ppm2_channel = 0; // Reset PPM channel counter
+				last_channel_ch2 = false;	// Reset last channel flag
+			}			
+		}
+		ppm2_prepulse_start = servo_time; // Store prepulse start time
+		// -----------------------------------------------------------------------------------------------------------------------
+    }
 	
 	// -----------------------------------
 	// PPM redundancy - Post processing
@@ -802,16 +914,20 @@ CHECK_LOOP: // Input PPM pins check loop
 	// Could be eventually run in the main loop for performances improvements if necessary
 	// sync mode between input and ouptput should clear performance problems
 	
+	// -----------------
+	// Switchover code
+	// -----------------
+	
 	// Check for PPM1 validity
 	if ( sync_error_ch1 == false ) && ( channel_error_ch1 == false) // PPM1 is valid
 	{
 		// check for PPM2 forcing (through PPM1 force channel)
-		if ( ppm1_width [ SWITCHOVER_CHANNEL ] > PPM_CH1_FORCE_VAL_MIN )	// Force channel active
+		if ( ppm1_width [ SWITCHOVER_CHANNEL ] > PPM_CH1_FORCE_VAL_MIN )	// Channel 2 forcing is alive
 		{
 			// Check for PPM2 validity
 			if ( sync_error_ch2 == false ) && ( channel_error_ch2 == false) // PPM2	is valid
 			{
-				// Check PPM2 selected
+				// Check for PPM2 selected
 				if ( switchover_ch2 == true ) // PPM2 is selected
 				{
 					// Do nothing
@@ -827,7 +943,8 @@ CHECK_LOOP: // Input PPM pins check loop
 		{
 			if ( switchover_ch2 == false ) // PPM1 is selected
 			{
-				//Do Nothing
+				// Load PPM Output with PPM1
+				ppm[ ppm1_channel ] = ppm1_width;
 			}
 			else // PPM1 is not selected
 			{
@@ -844,7 +961,8 @@ CHECK_LOOP: // Input PPM pins check loop
 			// Check PPM2 selected
 			if ( switchover_ch2 == true ) // PPM2 is selected
 			{
-				// Do nothing
+				// Load PPM Output with PPM2
+				ppm[ ppm2_channel ] = ppm2_width;
 			}
 			else // Switch to PPM2
 			{
@@ -859,22 +977,80 @@ CHECK_LOOP: // Input PPM pins check loop
 		}
 	}
 	
+	// -----------------------------------
+	// Channel count post processing code
+	// -----------------------------------
 	
-UPDATE_PPM_OUTPUT: // Update PPM output according to frame validity
+	// To enhance: possible global detection flag to avoid 2 channel_count_detected tests
+	
+	// Ch1
+	
+	if ( channel_count_detected_ch1 == true ) // Channel count for Ch1 was detected
+	{
+		// Do nothing
+	}
+	else // Do we have a channel count detection ready ?
+	{
+		if ( channel_count_ready_ch1 == true ) // If channel count is ready
+		{
+			// Check for detection counter
+			if ( channel_count_detection_counter_ch1 < CHANNEL_COUNT_DETECTION_THRESHOLD )	// Detection counter < Threshold
+			{
+				// Compare channel count with previous value
+				if ( channel_count_ch1 == previous_channel_count_ch1 )	// We have the same value
+				{
+					channel_count_detection_counter_ch1++;	// Increment detection counter
+				}
+				else	// We do not have the same value
+				{
+					channel_count_detection_counter_ch1 = 0;	// Reset detection counter
+				}
+				previous_channel_count_ch1 = channel_count_ch1; // Load previous channel count with channel count
+			}
+			else	// Detection counter >= Threshold
+			{
+				channel_count_detected_ch1 = true; // Channel count is now detected
+			}
+			channel_count_ready_ch1 = false; // Reset channel count detection ready flag
+		}
+	}
+	
+	// Ch2
+	
+	if ( channel_count_detected_ch2 == true ) // Channel count for ch2 was detected
+	{
+		// Do nothing
+	}
+	else // Do we have a channel count detection ready ?
+	{
+		if ( channel_count_ready_ch2 == true ) // If channel count is ready
+		{
+			// Check for detection counter
+			if ( channel_count_detection_counter_ch2 < CHANNEL_COUNT_DETECTION_THRESHOLD )	// Detection counter < Threshold
+			{
+				// Compare channel count with previous value
+				if ( channel_count_ch2 == previous_channel_count_ch2 )	// We have the same value
+				{
+					channel_count_detection_counter_ch2++;	// Increment detection counter
+				}
+				else	// We do not have the same value
+				{
+					channel_count_detection_counter_ch2 = 0;	// Reset detection counter
+				}
+				previous_channel_count_ch2 = channel_count_ch2; // Load previous channel count with channel count
+			}
+			else	// Detection counter >= Threshold
+			{
+				channel_count_detected_ch2 = true; // Channel count is now detected
+			}
+			channel_count_ready_ch2 = false; // Reset channel count detection ready flag
+		}
+	}
 		
-	// Update PPM output channel from PPM input 1
-    //        ppm[ ppm1_channel ] = ppm1_width;
-	// Update PPM output channel from PPM input 2
-    //        ppm[ ppm2_channel ] = ppm2_width;
-			
 	/*
-	
 	//Reset throttle failsafe timeout
 	if( ppm1_channel == 5 ) throttle_timeout = 0;
-	//if( ppm2_channel == 5 ) throttle_timeout = 0;
 	
-	
-
 CHECK_ERROR:
 
 	#if defined (__AVR_ATmega16U2__) || defined (__AVR_ATmega32U2__)
