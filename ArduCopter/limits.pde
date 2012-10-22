@@ -136,7 +136,7 @@ static void limits_loop() {
         if (motors.armed() && limits.enabled() && !limits.mods_triggered) {
 
             // All clear.
-            if (limits.debug()) gcs_send_text(SEVERITY_LOW, "Limits - All Clear");
+	    if (limits.debug()) gcs_send_text_P(SEVERITY_LOW, PSTR("Limits - All Clear"));
             limits.last_clear = millis();
         }
 
@@ -156,9 +156,9 @@ static void limits_loop() {
 #endif
 
         if (limits.debug()) {
-            if (limits.mods_triggered & LIMIT_GPSLOCK) gcs_send_text(SEVERITY_LOW, "!GPSLock");
-            if (limits.mods_triggered & LIMIT_GEOFENCE) gcs_send_text(SEVERITY_LOW, "!Geofence");
-            if (limits.mods_triggered & LIMIT_ALTITUDE) gcs_send_text(SEVERITY_LOW, "!Altitude");
+		if (limits.mods_triggered & LIMIT_GPSLOCK) gcs_send_text_P(SEVERITY_LOW, PSTR("!GPSLock"));
+		if (limits.mods_triggered & LIMIT_GEOFENCE) gcs_send_text_P(SEVERITY_LOW, PSTR("!Geofence"));
+		if (limits.mods_triggered & LIMIT_ALTITUDE) gcs_send_text_P(SEVERITY_LOW, PSTR("!Altitude"));
         }
 
         // If the motors are not armed, we have triggered pre-arm checks. Do nothing
