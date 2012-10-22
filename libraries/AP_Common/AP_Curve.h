@@ -129,13 +129,13 @@ T AP_Curve<T,SIZE>::get_y( T x )
 template <class T, uint8_t SIZE>
 void AP_Curve<T,SIZE>::dump_curve()
 {
-	Serial.println("Curve:");
+	Serial.println_P(PSTR("Curve:"));
 	for( uint8_t i = 0; i<_num_points; i++ ){
-		Serial.print("x:");
+		Serial.print_P(PSTR("x:"));
 		Serial.print(_x[i]);
-		Serial.print("\ty:");
+		Serial.print_P(PSTR("\ty:"));
 		Serial.print(_y[i]);
-		Serial.print("\tslope:");
+		Serial.print_P(PSTR("\tslope:"));
 		Serial.print(_slope[i],4);
 		Serial.println();
 	}
