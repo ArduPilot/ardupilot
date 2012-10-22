@@ -144,7 +144,7 @@ setup_factory(uint8_t argc, const Menu::arg *argv)
 static int8_t
 setup_radio(uint8_t argc, const Menu::arg *argv)
 {
-    Serial.println("\n\nRadio Setup:");
+    Serial.println_P(PSTR("\n\nRadio Setup:"));
     uint8_t i;
 
     for(i = 0; i < 100; i++) {
@@ -1000,7 +1000,7 @@ static void
 print_switch(byte p, byte m, bool b)
 {
     Serial.printf_P(PSTR("Pos %d:\t"),p);
-    Serial.print(flight_mode_strings[m]);
+    print_flight_mode(m);
     Serial.printf_P(PSTR(",\t\tSimple: "));
     if(b)
         Serial.printf_P(PSTR("ON\n"));
@@ -1115,18 +1115,18 @@ static void
 print_divider(void)
 {
     for (int i = 0; i < 40; i++) {
-        Serial.print("-");
+        Serial.print_P(PSTR("-"));
     }
-    Serial.println("");
+    Serial.println();
 }
 
 static void print_enabled(boolean b)
 {
     if(b)
-        Serial.printf_P(PSTR("en"));
+        Serial.print_P(PSTR("en"));
     else
-        Serial.printf_P(PSTR("dis"));
-    Serial.printf_P(PSTR("abled\n"));
+        Serial.print_P(PSTR("dis"));
+    Serial.print_P(PSTR("abled\n"));
 }
 
 

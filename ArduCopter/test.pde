@@ -764,7 +764,7 @@ test_gps(uint8_t argc, const Menu::arg *argv)
                             g_gps->num_sats);
             g_gps->new_data = false;
         }else{
-            Serial.print(".");
+            Serial.print_P(PSTR("."));
         }
         if(Serial.available() > 0) {
             return (0);
@@ -1264,7 +1264,7 @@ test_wp_nav(uint8_t argc, const Menu::arg *argv)
 
     // got 23506;, should be 22800
     navigate();
-    Serial.printf("bear: %ld\n", target_bearing);
+    Serial.printf_P(PSTR("bear: %ld\n"), target_bearing);
     return 0;
 }
 

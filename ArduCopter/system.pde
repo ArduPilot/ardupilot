@@ -353,7 +353,7 @@ static void init_ardupilot()
 
 #endif
 
-    SendDebug("\nReady to FLY ");
+    Serial.print_P(PSTR("\nReady to FLY "));
 }
 
 
@@ -684,3 +684,55 @@ uint16_t board_voltage(void)
     return vcc.read_vcc();
 }
 #endif
+
+//
+// print_flight_mode - prints flight mode to serial port.
+//
+static void
+print_flight_mode(uint8_t mode)
+{
+    switch (mode) {
+    case STABILIZE:
+        Serial.print_P(PSTR("STABILIZE"));
+        break;
+    case ACRO:
+        Serial.print_P(PSTR("ACRO"));
+        break;
+    case ALT_HOLD:
+        Serial.print_P(PSTR("ALT_HOLD"));
+        break;
+    case AUTO:
+        Serial.print_P(PSTR("AUTO"));
+        break;
+    case GUIDED:
+        Serial.print_P(PSTR("GUIDED"));
+        break;
+    case LOITER:
+        Serial.print_P(PSTR("LOITER"));
+        break;
+    case RTL:
+        Serial.print_P(PSTR("RTL"));
+        break;
+    case CIRCLE:
+        Serial.print_P(PSTR("CIRCLE"));
+        break;
+    case POSITION:
+        Serial.print_P(PSTR("POSITION"));
+        break;
+    case LAND:
+        Serial.print_P(PSTR("LAND"));
+        break;
+    case OF_LOITER:
+        Serial.print_P(PSTR("OF_LOITER"));
+        break;
+    case TOY_M:
+        Serial.print_P(PSTR("TOY_M"));
+        break;
+    case TOY_A:
+        Serial.print_P(PSTR("TOY_A"));
+        break;
+    default:
+        Serial.print_P(PSTR("---"));
+        break;
+    }
+}
