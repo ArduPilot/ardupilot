@@ -636,11 +636,11 @@ static void Log_Read_Nav_Tuning()
 
     for(int8_t i = 1; i < 8; i++ ) {
         temp = DataFlash.ReadInt();
-        Serial.printf("%d, ", (int)temp);
+        Serial.printf_P(PSTR("%d, "), (int)temp);
     }
     // read 8
     temp = DataFlash.ReadInt();
-    Serial.printf("%d\n", (int)temp);
+    Serial.printf_P(PSTR("%d\n"), (int)temp);
 }
 
 
@@ -672,11 +672,11 @@ static void Log_Read_Control_Tuning()
 
     for(uint8_t i = 1; i < 8; i++ ) {
         temp = DataFlash.ReadInt();
-        Serial.printf("%d, ", (int)temp);
+        Serial.printf_P(PSTR("%d, "), (int)temp);
     }
     // read 8
     temp = DataFlash.ReadInt();
-    Serial.printf("%d\n", (int)temp);
+    Serial.printf_P(PSTR("%d\n"), (int)temp);
 }
 
 static void Log_Write_Iterm()
@@ -710,7 +710,7 @@ static void Log_Read_Iterm()
 
     for(uint8_t i = 1; i < 12; i++ ) {
         temp = DataFlash.ReadInt();
-        Serial.printf("%d, ", (int)temp);
+        Serial.printf_P(PSTR("%d, "), (int)temp);
     }
     // read 12
     temp = DataFlash.ReadInt();
@@ -1002,7 +1002,7 @@ static void Log_Read(int16_t start_page, int16_t end_page)
  #endif
 
 #if CLI_ENABLED == ENABLED
-	setup_show(NULL, NULL);
+	setup_show(0, NULL);
 #endif
 
     if(start_page > end_page) {

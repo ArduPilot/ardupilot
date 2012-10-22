@@ -406,7 +406,7 @@ enum gcs_severity {
 #define ONBOARD_PARAM_NAME_LENGTH 15
 
 // fence points are stored at the end of the EEPROM
-#define MAX_FENCEPOINTS 20
+#define MAX_FENCEPOINTS 6
 #define FENCE_WP_SIZE sizeof(Vector2l)
 #define FENCE_START_BYTE (EEPROM_MAX_ADDR-(MAX_FENCEPOINTS*FENCE_WP_SIZE))
 
