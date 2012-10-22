@@ -528,7 +528,7 @@ AP_OpticalFlow_ADNS3080::clear_motion()
 
 // get_pixel_data - captures an image from the sensor and stores it to the pixe_data array
 void
-AP_OpticalFlow_ADNS3080::print_pixel_data(Stream *serPort)
+AP_OpticalFlow_ADNS3080::print_pixel_data()
 {
     int16_t i,j;
     bool isFirstPixel = true;
@@ -546,16 +546,16 @@ AP_OpticalFlow_ADNS3080::print_pixel_data(Stream *serPort)
         for( j=0; j<ADNS3080_PIXELS_X; j++ ) {
             regValue = read_register(ADNS3080_FRAME_CAPTURE);
             if( isFirstPixel && (regValue & 0x40) == 0 ) {
-                serPort->println("failed to find first pixel");
+                Serial.print_P(PSTR("failed to find first pixel"));
             }
             isFirstPixel = false;
             pixelValue = ( regValue << 2);
-            serPort->print(pixelValue,DEC);
+            Serial.print(pixelValue,DEC);
             if( j!= ADNS3080_PIXELS_X-1 )
-                serPort->print(",");
+                Serial.print_P(PSTR(","));
             delayMicroseconds(50);
         }
-        serPort->println();
+        Serial.println();
     }
 
     // hardware reset to restore sensor to normal operation
