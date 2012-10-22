@@ -53,7 +53,7 @@ static void init_optflow()
 #ifdef OPTFLOW_ENABLED
     if( optflow.init(false, &timer_scheduler, &spi_semaphore, &spi3_semaphore) == false ) {
         g.optflow_enabled = false;
-        SendDebug("\nFailed to Init OptFlow ");
+        Serial.print_P(PSTR("\nFailed to Init OptFlow "));
     }
     // suspend timer while we set-up SPI communication
     timer_scheduler.suspend_timer();

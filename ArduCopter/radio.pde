@@ -168,8 +168,8 @@ static void throttle_failsafe(uint16_t pwm)
             // home distance is in meters
             // This is to prevent accidental RTL
             if(motors.armed() && takeoff_complete) {
-                SendDebug("MSG FS ON ");
-                SendDebugln(pwm, DEC);
+                Serial.print_P(PSTR("MSG FS ON "));
+                Serial.println(pwm, DEC);
                 set_failsafe(true);
             }
         }else if (failsafeCounter > FS_COUNTER) {
@@ -184,8 +184,8 @@ static void throttle_failsafe(uint16_t pwm)
             failsafeCounter = 3;
         }
         if (failsafeCounter == 1) {
-            SendDebug("MSG FS OFF ");
-            SendDebugln(pwm, DEC);
+            Serial.print_P(PSTR("MSG FS OFF "));
+            Serial.println(pwm, DEC);
         }else if(failsafeCounter == 0) {
             set_failsafe(false);
         }else if (failsafeCounter <0) {

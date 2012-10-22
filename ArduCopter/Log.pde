@@ -381,9 +381,9 @@ static void Log_Read_Raw()
     for (int16_t y = 0; y < 6; y++) {
         logvar = get_float(DataFlash.ReadLong());
         Serial.print(logvar);
-        Serial.print(", ");
+        Serial.print_P(PSTR(", "));
     }
-    Serial.println(" ");
+    Serial.println_P(PSTR(" "));
 
 	/*
 	float temp1 = get_float(DataFlash.ReadLong());
@@ -714,7 +714,7 @@ static void Log_Read_Iterm()
     }
     // read 12
     temp = DataFlash.ReadInt();
-    Serial.printf("%d\n", (int)temp);
+    Serial.println((int)temp);
 }
 
 
@@ -846,7 +846,7 @@ static void Log_Write_Mode(byte mode)
 static void Log_Read_Mode()
 {
     Serial.printf_P(PSTR("MOD:"));
-    Serial.print(flight_mode_strings[DataFlash.ReadByte()]);
+    print_flight_mode(DataFlash.ReadByte());
     Serial.printf_P(PSTR(", %d\n"),(int)DataFlash.ReadInt());
 }
 
@@ -1041,7 +1041,7 @@ static int16_t Log_Read_Process(int16_t start_page, int16_t end_page)
 					log_step++;
 				else{
 					log_step = 0;
-					Serial.println(".");
+					Serial.println_P(PSTR("."));
 				}
 				break;
 

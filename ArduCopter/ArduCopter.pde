@@ -356,22 +356,6 @@ AP_RangeFinder_MaxsonarXL sonar(&sonar_analog_source, &sonar_mode_filter);
 // Global variables
 ////////////////////////////////////////////////////////////////////////////////
 
-static const char* flight_mode_strings[] = {
-    "STABILIZE",        // 0
-    "ACRO",                     // 1
-    "ALT_HOLD",                 // 2
-    "AUTO",                     // 3
-    "GUIDED",                   // 4
-    "LOITER",                   // 5
-    "RTL",                      // 6
-    "CIRCLE",                   // 7
-    "POSITION",                 // 8
-    "LAND",                     // 9
-    "OF_LOITER",        // 10
-    "TOY_M",                    // 11
-    "TOY_A"
-};                              // 12	THOR Added for additional Fligt mode
-
 /* Radio values
  *               Channel assignments
  *                       1	Ailerons (rudder if no ailerons)
