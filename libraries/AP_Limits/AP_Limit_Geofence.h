@@ -20,8 +20,7 @@
  #include <GPS.h>
 #endif
 
-
-#define MAX_FENCEPOINTS 20
+#define MAX_FENCEPOINTS 6       // Fence points reduced from 20 to 6 to save memory
 
 class AP_Limit_Geofence : public AP_Limit_Module {
 
