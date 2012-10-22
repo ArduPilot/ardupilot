@@ -122,7 +122,7 @@ public:
 
     void                clear_motion(); // will cause the x,y, dx, dy, and the sensor's motion registers to be cleared
 
-    void                print_pixel_data(Stream *serPort); // dumps a 30x30 image to the Serial port
+    void                print_pixel_data(); // dumps a 30x30 image to the Serial port
 
 private:
     // bytes to store SPI settings
