@@ -186,7 +186,7 @@ void set_frame_rate()
 void display_image()
 {
     Serial.println("image data --------------");
-    flowSensor.print_pixel_data(&Serial);
+    flowSensor.print_pixel_data();
     Serial.println("-------------------------");
 }
 
