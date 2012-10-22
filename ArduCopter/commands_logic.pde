@@ -472,9 +472,7 @@ static bool verify_nav_wp()
 
     if(wp_verify_byte >= 7) {
         //if(wp_verify_byte & NAV_LOCATION){
-        char message[30];
-        sprintf(message,"Reached Command #%i",command_nav_index);
-        gcs_send_text(SEVERITY_LOW,message);
+        gcs_send_text_fmt(PSTR("Reached Command #%i"),command_nav_index);
         wp_verify_byte = 0;
         copter_leds_nav_blink = 15;             // Cause the CopterLEDs to blink three times to indicate waypoint reached
         return true;
