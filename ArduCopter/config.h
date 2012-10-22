@@ -990,32 +990,6 @@
 //	#define LOG_ATTITUDE_MED        DISABLED
 //#endif
 
-#ifndef DEBUG_PORT
- # define DEBUG_PORT 0
-#endif
-
-#if DEBUG_PORT == 0
- # define SendDebug_P(a) Serial.print_P(PSTR(a))
- # define SendDebugln_P(a) Serial.println_P(PSTR(a))
- # define SendDebug Serial.print
- # define SendDebugln Serial.println
-#elif DEBUG_PORT == 1
- # define SendDebug_P(a) Serial1.print_P(PSTR(a))
- # define SendDebugln_P(a) Serial1.println_P(PSTR(a))
- # define SendDebug Serial1.print
- # define SendDebugln Serial1.println
-#elif DEBUG_PORT == 2
- # define SendDebug_P(a) Serial2.print_P(PSTR(a))
- # define SendDebugln_P(a) Serial2.println_P(PSTR(a))
- # define SendDebug Serial2.print
- # define SendDebugln Serial2.println
-#elif DEBUG_PORT == 3
- # define SendDebug_P(a) Serial3.print_P(PSTR(a))
- # define SendDebugln_P(a) Serial3.println_P(PSTR(a))
- # define SendDebug Serial3.print
- # define SendDebugln Serial3.println
-#endif
-
 //////////////////////////////////////////////////////////////////////////////
 // Navigation defaults
 //
