@@ -307,10 +307,27 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @User: Advanced
     GSCALAR(stabilize_d_schedule, "STAB_D_S",  STABILIZE_D_SCHEDULE),
 
-    GSCALAR(acro_p,                         "ACRO_P",      ACRO_P),
-    GSCALAR(axis_lock_p,            "AXIS_P",      AXIS_LOCK_P),
-    GSCALAR(axis_enabled,           "AXIS_ENABLE", AXIS_LOCK_ENABLED),
-    GSCALAR(copter_leds_mode,       "LED_MODE",    9),
+    // Acro parameters
+    GSCALAR(acro_p,                 "ACRO_P",           ACRO_P),
+    GSCALAR(axis_lock_p,            "AXIS_P",           AXIS_LOCK_P),
+    GSCALAR(axis_enabled,           "AXIS_ENABLE",      AXIS_LOCK_ENABLED),
+    // @Param: ACRO_BAL_ROLL
+    // @DisplayName: Acro Balance Roll
+    // @Description: rate at which roll angle returns to level in acro mode
+    // @Range: 0 300
+    // @Increment: 1
+    // @User: Advanced
+    GSCALAR(acro_balance_roll,      "ACRO_BAL_ROLL",    ACRO_BALANCE_ROLL),
+
+    // @Param: ACRO_BAL_PITCH
+    // @DisplayName: Acro Balance Pitch
+    // @Description: rate at which pitch angle returns to level in acro mode
+    // @Range: 0 300
+    // @Increment: 1
+    // @User: Advanced
+    GSCALAR(acro_balance_pitch,     "ACRO_BAL_PITCH",   ACRO_BALANCE_PITCH),
+
+    GSCALAR(copter_leds_mode,       "LED_MODE",         9),
 
     // PID controller
     //---------------

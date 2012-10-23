@@ -154,7 +154,7 @@ get_roll_rate_stabilized_ef(int32_t stick_angle)
     int32_t angle_error = 0;
 
     // convert the input to the desired roll rate
-    int32_t target_rate = stick_angle * g.acro_p - (roll_axis * ACRO_ROLL_STABILISE)/100;
+    int32_t target_rate = stick_angle * g.acro_p - (roll_axis * g.acro_balance_roll)/100;
 
     // convert the input to the desired roll rate
     roll_axis += target_rate * G_Dt;
@@ -190,7 +190,7 @@ get_pitch_rate_stabilized_ef(int32_t stick_angle)
     int32_t angle_error = 0;
 
     // convert the input to the desired pitch rate
-    int32_t target_rate = stick_angle * g.acro_p - (pitch_axis * ACRO_PITCH_STABILISE)/100;
+    int32_t target_rate = stick_angle * g.acro_p - (pitch_axis * g.acro_balance_pitch)/100;
 
     // convert the input to the desired pitch rate
     pitch_axis += target_rate * G_Dt;
