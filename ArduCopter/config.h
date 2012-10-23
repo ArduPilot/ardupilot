@@ -771,12 +771,12 @@
  #define MAX_YAW_OVERSHOOT	1000
 #endif
 
-#ifndef ACRO_ROLL_STABILISE
- #define ACRO_ROLL_STABILISE	100
+#ifndef ACRO_BALANCE_ROLL
+ #define ACRO_BALANCE_ROLL	200
 #endif
 
-#ifndef ACRO_PITCH_STABILISE
- #define ACRO_PITCH_STABILISE	0
+#ifndef ACRO_BALANCE_PITCH
+ #define ACRO_BALANCE_PITCH	200
 #endif
 
 //////////////////////////////////////////////////////////////////////////////

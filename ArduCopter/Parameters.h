@@ -212,6 +212,8 @@ public:
         k_param_pid_throttle,
         k_param_pid_optflow_roll,
         k_param_pid_optflow_pitch,
+        k_param_acro_balance_roll,
+        k_param_acro_balance_pitch,
 
         // 254,255: reserved
     };
@@ -337,10 +339,13 @@ public:
     AP_Float                stabilize_d;
     AP_Float                stabilize_d_schedule;
 
-    // PI/D controllers
+    // Acro parameters
     AP_Float                acro_p;
     AP_Float                axis_lock_p;
+    AP_Int16                acro_balance_roll;
+    AP_Int16                acro_balance_pitch;
 
+    // PI/D controllers
     AC_PID                  pid_rate_roll;
     AC_PID                  pid_rate_pitch;
     AC_PID                  pid_rate_yaw;
