@@ -117,7 +117,7 @@ static void calc_loiter(int16_t x_error, int16_t y_error)
     }
 
     output                  = p + i + d;
-    nav_lon                 = constrain(output, -3200, 3200);
+    nav_lon                 = constrain(output, -32000, 32000); // constraint to remove chance of overflow when adding int32_t to int16_t
 
 #if LOGGING_ENABLED == ENABLED
     // log output if PID logging is on and we are tuning the yaw
@@ -154,7 +154,7 @@ static void calc_loiter(int16_t x_error, int16_t y_error)
     }
 
     output                  = p + i + d;
-    nav_lat                 = constrain(output, -3200, 3200);
+    nav_lat                 = constrain(output, -32000, 32000); // constraint to remove chance of overflow when adding int32_t to int16_t
 
 #if LOGGING_ENABLED == ENABLED
     // log output if PID logging is on and we are tuning the yaw
@@ -201,7 +201,6 @@ static void calc_nav_rate(int16_t max_speed)
 
     if(x_target_speed < 0) tilt = -tilt;
     nav_lon                 += tilt;
-    nav_lon                 = constrain(nav_lon, -3200, 3200);
 
 
     // North / South
@@ -218,7 +217,6 @@ static void calc_nav_rate(int16_t max_speed)
 
     if(y_target_speed < 0) tilt = -tilt;
     nav_lat                 += tilt;
-    nav_lat                 = constrain(nav_lat, -3200, 3200);
 
     // copy over I term to Loiter_Rate
     g.pid_loiter_rate_lon.set_integrator(g.pid_nav_lon.get_integrator());
