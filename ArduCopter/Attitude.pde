@@ -484,7 +484,7 @@ get_throttle_rate(int16_t z_target_speed)
 
     if(z_target_speed < 0) tmp = -tmp;
 
-    output                  = constrain(tmp, -3200, 3200);
+    output                  = constrain(tmp, -32000, 32000);    // constraint to remove chance of overflow when adding int32_t to int16_t
 
     // separately calculate p, i, d values for logging
     p = g.pid_throttle.get_p(z_rate_error);
