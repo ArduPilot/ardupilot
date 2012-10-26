@@ -6,7 +6,7 @@
 set -e
 set -x
 
-HAL_AVR_TESTS="I2CDriver_HMC5883L"
+HAL_AVR_TESTS="I2CDriver_HMC5883L AnalogIn APM1 Blink Console DataflashTest FastSerial LCDTest RCInputTest RCPassthroughTest Scheduler SPIDriver_MPU6000 Storage"
 LIBRARIES_TESTS="AP_ADC/examples/AP_ADC_test AP_Baro/examples/AP_Baro_MS5611_test"
 
 echo "building AP_HAL examples"
