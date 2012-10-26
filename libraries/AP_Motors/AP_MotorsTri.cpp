@@ -7,8 +7,11 @@
  *   License as published by the Free Software Foundation; either
  *   version 2.1 of the License, or (at your option) any later version.
  */
-
+#include <AP_HAL.h>
+#include <AP_Math.h>
 #include "AP_MotorsTri.h"
+
+extern const AP_HAL::HAL& hal;
 
 // init
 void AP_MotorsTri::Init()
@@ -27,17 +30,19 @@ void AP_MotorsTri::set_update_rate( uint16_t speed_hz )
     _speed_hz = speed_hz;
 
     // set update rate for the 3 motors (but not the servo on channel 7)
-    _rc->SetFastOutputChannels(_BV(_motor_to_channel_map[AP_MOTORS_MOT_1]) | _BV(_motor_to_channel_map[AP_MOTORS_MOT_2]) | _BV(_motor_to_channel_map[AP_MOTORS_MOT_4]), _speed_hz);
+    hal.rcout->set_freq(_motor_to_channel_map[AP_MOTORS_MOT_1], _speed_hz);
+    hal.rcout->set_freq(_motor_to_channel_map[AP_MOTORS_MOT_2], _speed_hz);
+    hal.rcout->set_freq(_motor_to_channel_map[AP_MOTORS_MOT_4], _speed_hz);
 }
 
 // enable - starts allowing signals to be sent to motors
 void AP_MotorsTri::enable()
 {
     // enable output channels
-    _rc->enable_out(_motor_to_channel_map[AP_MOTORS_MOT_1]);
-    _rc->enable_out(_motor_to_channel_map[AP_MOTORS_MOT_2]);
-    _rc->enable_out(_motor_to_channel_map[AP_MOTORS_MOT_4]);
-    _rc->enable_out(AP_MOTORS_CH_TRI_YAW);
+    hal.rcout->enable_ch(_motor_to_channel_map[AP_MOTORS_MOT_1]);
+    hal.rcout->enable_ch(_motor_to_channel_map[AP_MOTORS_MOT_2]);
+    hal.rcout->enable_ch(_motor_to_channel_map[AP_MOTORS_MOT_4]);
+    hal.rcout->enable_ch(AP_MOTORS_CH_TRI_YAW);
 }
 
 // output_min - sends minimum values out to the motors
@@ -49,10 +54,10 @@ void AP_MotorsTri::output_min()
     motor_out[AP_MOTORS_MOT_4] = _rc_throttle->radio_min;
 
     // send minimum value to each motor
-    _rc->OutputCh(_motor_to_channel_map[AP_MOTORS_MOT_1], _rc_throttle->radio_min);
-    _rc->OutputCh(_motor_to_channel_map[AP_MOTORS_MOT_2], _rc_throttle->radio_min);
-    _rc->OutputCh(_motor_to_channel_map[AP_MOTORS_MOT_4], _rc_throttle->radio_min);
-    _rc->OutputCh(_motor_to_channel_map[AP_MOTORS_CH_TRI_YAW], _rc_yaw->radio_trim);
+    hal.rcout->write(_motor_to_channel_map[AP_MOTORS_MOT_1], _rc_throttle->radio_min);
+    hal.rcout->write(_motor_to_channel_map[AP_MOTORS_MOT_2], _rc_throttle->radio_min);
+    hal.rcout->write(_motor_to_channel_map[AP_MOTORS_MOT_4], _rc_throttle->radio_min);
+    hal.rcout->write(_motor_to_channel_map[AP_MOTORS_CH_TRI_YAW], _rc_yaw->radio_trim);
 }
 
 // output_armed - sends commands to the motors
@@ -124,18 +129,18 @@ void AP_MotorsTri::output_armed()
 #endif
 
     // send output to each motor
-    _rc->OutputCh(_motor_to_channel_map[AP_MOTORS_MOT_1], motor_out[AP_MOTORS_MOT_1]);
-    _rc->OutputCh(_motor_to_channel_map[AP_MOTORS_MOT_2], motor_out[AP_MOTORS_MOT_2]);
-    _rc->OutputCh(_motor_to_channel_map[AP_MOTORS_MOT_4], motor_out[AP_MOTORS_MOT_4]);
+    hal.rcout->write(_motor_to_channel_map[AP_MOTORS_MOT_1], motor_out[AP_MOTORS_MOT_1]);
+    hal.rcout->write(_motor_to_channel_map[AP_MOTORS_MOT_2], motor_out[AP_MOTORS_MOT_2]);
+    hal.rcout->write(_motor_to_channel_map[AP_MOTORS_MOT_4], motor_out[AP_MOTORS_MOT_4]);
 
     // also send out to tail command (we rely on any auto pilot to have updated the rc_yaw->radio_out to the correct value)
     // note we do not save the radio_out to the motor_out array so it may not appear in the ch7out in the status screen of the mission planner
     // note: we use _rc_tail's (aka channel 7's) REV parameter to control whether the servo is reversed or not but this is a bit nonsensical.
     //       a separate servo object (including min, max settings etc) would be better or at least a separate parameter to specify the direction of the tail servo
     if( _rc_tail->get_reverse() == true ) {
-        _rc->OutputCh(AP_MOTORS_CH_TRI_YAW, _rc_yaw->radio_trim - (_rc_yaw->radio_out - _rc_yaw->radio_trim));
+        hal.rcout->write(AP_MOTORS_CH_TRI_YAW, _rc_yaw->radio_trim - (_rc_yaw->radio_out - _rc_yaw->radio_trim));
     }else{
-        _rc->OutputCh(AP_MOTORS_CH_TRI_YAW, _rc_yaw->radio_out);
+        hal.rcout->write(AP_MOTORS_CH_TRI_YAW, _rc_yaw->radio_out);
     }
 }
 
@@ -163,22 +168,22 @@ void AP_MotorsTri::output_test()
     // Send minimum values to all motors
     output_min();
 
-    _rc->OutputCh(_motor_to_channel_map[AP_MOTORS_MOT_2], _rc_throttle->radio_min);
-    delay(4000);
-    _rc->OutputCh(_motor_to_channel_map[AP_MOTORS_MOT_1], _rc_throttle->radio_min + 100);
-    delay(300);
+    hal.rcout->write(_motor_to_channel_map[AP_MOTORS_MOT_2], _rc_throttle->radio_min);
+    hal.scheduler->delay(4000);
+    hal.rcout->write(_motor_to_channel_map[AP_MOTORS_MOT_1], _rc_throttle->radio_min + 100);
+    hal.scheduler->delay(300);
 
-    _rc->OutputCh(_motor_to_channel_map[AP_MOTORS_MOT_1], _rc_throttle->radio_min);
-    delay(2000);
-    _rc->OutputCh(_motor_to_channel_map[AP_MOTORS_MOT_4], _rc_throttle->radio_min + 100);
-    delay(300);
+    hal.rcout->write(_motor_to_channel_map[AP_MOTORS_MOT_1], _rc_throttle->radio_min);
+    hal.scheduler->delay(2000);
+    hal.rcout->write(_motor_to_channel_map[AP_MOTORS_MOT_4], _rc_throttle->radio_min + 100);
+    hal.scheduler->delay(300);
 
-    _rc->OutputCh(_motor_to_channel_map[AP_MOTORS_MOT_4], _rc_throttle->radio_min);
-    delay(2000);
-    _rc->OutputCh(_motor_to_channel_map[AP_MOTORS_MOT_2], _rc_throttle->radio_min + 100);
-    delay(300);
+    hal.rcout->write(_motor_to_channel_map[AP_MOTORS_MOT_4], _rc_throttle->radio_min);
+    hal.scheduler->delay(2000);
+    hal.rcout->write(_motor_to_channel_map[AP_MOTORS_MOT_2], _rc_throttle->radio_min + 100);
+    hal.scheduler->delay(300);
 
-    _rc->OutputCh(_motor_to_channel_map[AP_MOTORS_MOT_1], motor_out[AP_MOTORS_MOT_1]);
-    _rc->OutputCh(_motor_to_channel_map[AP_MOTORS_MOT_2], motor_out[AP_MOTORS_MOT_2]);
-    _rc->OutputCh(_motor_to_channel_map[AP_MOTORS_MOT_4], motor_out[AP_MOTORS_MOT_4]);
+    hal.rcout->write(_motor_to_channel_map[AP_MOTORS_MOT_1], motor_out[AP_MOTORS_MOT_1]);
+    hal.rcout->write(_motor_to_channel_map[AP_MOTORS_MOT_2], motor_out[AP_MOTORS_MOT_2]);
+    hal.rcout->write(_motor_to_channel_map[AP_MOTORS_MOT_4], motor_out[AP_MOTORS_MOT_4]);
 }

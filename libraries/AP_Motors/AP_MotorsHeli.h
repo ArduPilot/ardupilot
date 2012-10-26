@@ -3,23 +3,14 @@
 /// @file	AP_MotorsHeli.h
 /// @brief	Motor control class for Traditional Heli
 
-#ifndef AP_MOTORSHELI
-#define AP_MOTORSHELI
+#ifndef __AP_MOTORS_HELI_H__
+#define __AP_MOTORS_HELI_H__
 
 #include <inttypes.h>
-#include <FastSerial.h>
 #include <AP_Common.h>
 #include <AP_Math.h>        // ArduPilot Mega Vector/Matrix math Library
 #include <RC_Channel.h>     // RC Channel Library
-#include <APM_RC.h>         // ArduPilot Mega RC Library
-#include <AP_Motors.h>
-
-// below is required to make "map" function available to this library
-#if defined(ARDUINO) && ARDUINO >= 100
- #include "Arduino.h"
-#else
- #include "WProgram.h"
-#endif
+#include "AP_Motors.h"
 
 #define AP_MOTORS_HELI_SPEED_DEFAULT 125        // default servo update rate for helicopters
 #define AP_MOTORS_HELI_SPEED_DIGITAL_SERVOS 125 // update rate for digital servos
@@ -52,7 +43,6 @@ public:
 
     /// Constructor
     AP_MotorsHeli( uint8_t          APM_version,
-                   APM_RC_Class*    rc_out,
                    RC_Channel*      rc_roll,
                    RC_Channel*      rc_pitch,
                    RC_Channel*      rc_throttle,
@@ -63,7 +53,7 @@ public:
                    RC_Channel*      swash_servo_3,
                    RC_Channel*      yaw_servo,
                    uint16_t         speed_hz = AP_MOTORS_HELI_SPEED_DEFAULT) :
-        AP_Motors(APM_version, rc_out, rc_roll, rc_pitch, rc_throttle, rc_yaw, speed_hz),
+        AP_Motors(APM_version, rc_roll, rc_pitch, rc_throttle, rc_yaw, speed_hz),
         _servo_1(swash_servo_1),
         _servo_2(swash_servo_2),
         _servo_3(swash_servo_3),

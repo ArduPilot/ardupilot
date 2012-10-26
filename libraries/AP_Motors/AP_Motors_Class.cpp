@@ -8,7 +8,9 @@
  *   version 2.1 of the License, or (at your option) any later version.
  */
 
-#include "AP_Motors.h"
+#include "AP_Motors_Class.h"
+#include <AP_HAL.h>
+extern const AP_HAL::HAL& hal;
 
 // parameters for the motor class
 const AP_Param::GroupInfo AP_Motors::var_info[] PROGMEM = {
@@ -39,8 +41,7 @@ const AP_Param::GroupInfo AP_Motors::var_info[] PROGMEM = {
 };
 
 // Constructor
-AP_Motors::AP_Motors( uint8_t APM_version, APM_RC_Class* rc_out, RC_Channel* rc_roll, RC_Channel* rc_pitch, RC_Channel* rc_throttle, RC_Channel* rc_yaw, uint16_t speed_hz ) :
-    _rc(rc_out),
+AP_Motors::AP_Motors( uint8_t APM_version, RC_Channel* rc_roll, RC_Channel* rc_pitch, RC_Channel* rc_throttle, RC_Channel* rc_yaw, uint16_t speed_hz ) :
     _rc_roll(rc_roll),
     _rc_pitch(rc_pitch),
     _rc_throttle(rc_throttle),
@@ -80,8 +81,9 @@ void AP_Motors::Init()
 void AP_Motors::throttle_pass_through()
 {
     if( armed() ) {
+        // XXX
         for( int16_t i=0; i < AP_MOTORS_MAX_NUM_MOTORS; i++ ) {
-            _rc->OutputCh(_motor_to_channel_map[i], _rc_throttle->radio_in);
+            hal.rcout->write(_motor_to_channel_map[i], _rc_throttle->radio_in);
         }
     }
 }
@@ -117,7 +119,7 @@ bool AP_Motors::setup_throttle_curve()
     // disable throttle curve if not set-up corrrectly
     if( !retval ) {
         _throttle_curve_enabled = false;
-        Serial.printf_P(PSTR("AP_Motors: failed to create throttle curve"));
+        hal.console->println_P(PSTR("AP_Motors: failed to create throttle curve"));
     }
 
     return retval;

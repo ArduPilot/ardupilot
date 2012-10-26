@@ -3,15 +3,13 @@
 /// @file	AP_MotorsTri.h
 /// @brief	Motor control class for Tricopters
 
-#ifndef AP_MOTORSTRI
-#define AP_MOTORSTRI
+#ifndef __AP_MOTORS_TRI_H__
+#define __AP_MOTORS_TRI_H__
 
-#include <FastSerial.h>
 #include <AP_Common.h>
 #include <AP_Math.h>        // ArduPilot Mega Vector/Matrix math Library
 #include <RC_Channel.h>     // RC Channel Library
-#include <APM_RC.h>         // ArduPilot Mega RC Library
-#include <AP_Motors.h>
+#include "AP_Motors.h"
 
 // tail servo uses channel 7
 #define AP_MOTORS_CH_TRI_YAW    CH_7
@@ -21,8 +19,8 @@ class AP_MotorsTri : public AP_Motors {
 public:
 
     /// Constructor
-    AP_MotorsTri( uint8_t APM_version, APM_RC_Class* rc_out, RC_Channel* rc_roll, RC_Channel* rc_pitch, RC_Channel* rc_throttle, RC_Channel* rc_yaw, RC_Channel* rc_tail, uint16_t speed_hz = AP_MOTORS_SPEED_DEFAULT) :
-        AP_Motors(APM_version, rc_out, rc_roll, rc_pitch, rc_throttle, rc_yaw, speed_hz),
+    AP_MotorsTri( uint8_t APM_version, RC_Channel* rc_roll, RC_Channel* rc_pitch, RC_Channel* rc_throttle, RC_Channel* rc_yaw, RC_Channel* rc_tail, uint16_t speed_hz = AP_MOTORS_SPEED_DEFAULT) :
+        AP_Motors(APM_version, rc_roll, rc_pitch, rc_throttle, rc_yaw, speed_hz),
         _rc_tail(rc_tail) {
     };
 

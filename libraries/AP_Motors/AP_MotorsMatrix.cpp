@@ -7,8 +7,10 @@
  *   License as published by the Free Software Foundation; either
  *   version 2.1 of the License, or (at your option) any later version.
  */
-
+#include <AP_HAL.h>
 #include "AP_MotorsMatrix.h"
+
+extern const AP_HAL::HAL& hal;
 
 // Init
 void AP_MotorsMatrix::Init()
@@ -34,7 +36,6 @@ void AP_MotorsMatrix::Init()
 // set update rate to motors - a value in hertz
 void AP_MotorsMatrix::set_update_rate( uint16_t speed_hz )
 {
-    uint32_t fast_channel_mask = 0;
     int8_t i;
 
     // record requested speed
@@ -43,13 +44,9 @@ void AP_MotorsMatrix::set_update_rate( uint16_t speed_hz )
     // check each enabled motor
     for( i=0; i<AP_MOTORS_MAX_NUM_MOTORS; i++ ) {
         if( motor_enabled[i] ) {
-            // set-up fast channel mask
-            fast_channel_mask |= _BV(_motor_to_channel_map[i]);                 // add to fast channel map
+            hal.rcout->set_freq( _motor_to_channel_map[i], _speed_hz );
         }
     }
-
-    // enable fast channels
-    _rc->SetFastOutputChannels(fast_channel_mask, _speed_hz);
 }
 
 // set frame orientation (normally + or X)
@@ -78,7 +75,7 @@ void AP_MotorsMatrix::enable()
     // enable output channels
     for( i=0; i<AP_MOTORS_MAX_NUM_MOTORS; i++ ) {
         if( motor_enabled[i] ) {
-            _rc->enable_out(_motor_to_channel_map[i]);
+            hal.rcout->enable_ch(_motor_to_channel_map[i]);
         }
     }
 }
@@ -92,7 +89,7 @@ void AP_MotorsMatrix::output_min()
     for( i=0; i<AP_MOTORS_MAX_NUM_MOTORS; i++ ) {
         if( motor_enabled[i] ) {
             motor_out[i] = _rc_throttle->radio_min;
-            _rc->OutputCh(_motor_to_channel_map[i], motor_out[i]);
+            hal.rcout->write(_motor_to_channel_map[i], motor_out[i]);
         }
     }
 }
@@ -273,7 +270,7 @@ void AP_MotorsMatrix::output_armed()
     // send output to each motor
     for( i=0; i<AP_MOTORS_MAX_NUM_MOTORS; i++ ) {
         if( motor_enabled[i] ) {
-            _rc->OutputCh(_motor_to_channel_map[i], motor_out[i]);
+            hal.rcout->write(_motor_to_channel_map[i], motor_out[i]);
         }
     }
 }
@@ -311,17 +308,17 @@ void AP_MotorsMatrix::output_test()
     output_min();
 
     // first delay is longer
-    delay(4000);
+    hal.scheduler->delay(4000);
 
     // loop through all the possible orders spinning any motors that match that description
     for( i=min_order; i<=max_order; i++ ) {
         for( j=0; j<AP_MOTORS_MAX_NUM_MOTORS; j++ ) {
             if( motor_enabled[j] && test_order[j] == i ) {
                 // turn on this motor and wait 1/3rd of a second
-                _rc->OutputCh(_motor_to_channel_map[j], _rc_throttle->radio_min + 100);
-                delay(300);
-                _rc->OutputCh(_motor_to_channel_map[j], _rc_throttle->radio_min);
-                delay(2000);
+                hal.rcout->write(_motor_to_channel_map[j], _rc_throttle->radio_min + 100);
+                hal.scheduler->delay(300);
+                hal.rcout->write(_motor_to_channel_map[j], _rc_throttle->radio_min);
+                hal.scheduler->delay(2000);
             }
         }
     }

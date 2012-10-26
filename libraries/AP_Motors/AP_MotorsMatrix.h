@@ -3,15 +3,13 @@
 /// @file	AP_MotorsMatrix.h
 /// @brief	Motor control class for Matrixcopters
 
-#ifndef AP_MOTORSMATRIX
-#define AP_MOTORSMATRIX
+#ifndef __AP_MOTORS_MATRIX_H__
+#define __AP_MOTORS_MATRIX_H__
 
-#include <FastSerial.h>
 #include <AP_Common.h>
 #include <AP_Math.h>        // ArduPilot Mega Vector/Matrix math Library
 #include <RC_Channel.h>     // RC Channel Library
-#include <APM_RC.h>         // ArduPilot Mega RC Library
-#include <AP_Motors.h>
+#include "AP_Motors_Class.h"
 
 #define AP_MOTORS_MATRIX_MOTOR_UNDEFINED -1
 #define AP_MOTORS_MATRIX_ORDER_UNDEFINED -1
@@ -26,8 +24,8 @@ class AP_MotorsMatrix : public AP_Motors {
 public:
 
     /// Constructor
-    AP_MotorsMatrix( uint8_t APM_version, APM_RC_Class* rc_out, RC_Channel* rc_roll, RC_Channel* rc_pitch, RC_Channel* rc_throttle, RC_Channel* rc_yaw, uint16_t speed_hz = AP_MOTORS_SPEED_DEFAULT) :
-        AP_Motors(APM_version, rc_out, rc_roll, rc_pitch, rc_throttle, rc_yaw, speed_hz),
+    AP_MotorsMatrix( uint8_t APM_version, RC_Channel* rc_roll, RC_Channel* rc_pitch, RC_Channel* rc_throttle, RC_Channel* rc_yaw, uint16_t speed_hz = AP_MOTORS_SPEED_DEFAULT) :
+        AP_Motors(APM_version, rc_roll, rc_pitch, rc_throttle, rc_yaw, speed_hz),
         _num_motors(0) {
     };
 
