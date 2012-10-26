@@ -91,6 +91,14 @@ size_t Print::print(float n, int digits)
   return printFloat(n, digits);
 }
 
+// the compiler promotes to double if we do arithmetic in the
+// argument, but we only actually want float precision, so just wrap
+// it with a double method
+size_t Print::print(double n, int digits)
+{
+	return print((float)n, digits);
+}
+
 size_t Print::println(void)
 {
   size_t n = print('\r');
@@ -152,6 +160,14 @@ size_t Print::println(float num, int digits)
   size_t n = print(num, digits);
   n += println();
   return n;
+}
+
+// the compiler promotes to double if we do arithmetic in the
+// argument, but we only actually want float precision, so just wrap
+// it with a double method
+size_t Print::println(double num, int digits)
+{
+  return println((float)num, digits);
 }
 
 // Private Methods /////////////////////////////////////////////////////////////
