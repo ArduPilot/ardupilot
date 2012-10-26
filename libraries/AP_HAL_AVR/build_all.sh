@@ -6,8 +6,12 @@
 set -e
 set -x
 
+export PATH=/usr/lib/ccache:$PATH
+
 HAL_AVR_TESTS="I2CDriver_HMC5883L AnalogIn APM1 Blink Console DataflashTest FastSerial LCDTest RCInputTest RCPassthroughTest Scheduler SPIDriver_MPU6000 Storage"
-LIBRARIES_TESTS="AP_ADC/examples/AP_ADC_test AP_Baro/examples/AP_Baro_MS5611_test"
+#HAL_AVR_TESTS=""
+
+LIBRARIES_TESTS="AP_ADC/examples/AP_ADC_test AP_Baro/examples/AP_Baro_MS5611_test AP_GPS/examples/GPS_AUTO_test AP_GPS/examples/GPS_UBLOX_test AP_GPS/examples/GPS_MTK_test"
 
 echo "building AP_HAL examples"
 pushd libraries/AP_HAL_AVR
