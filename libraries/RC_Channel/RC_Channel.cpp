@@ -10,20 +10,21 @@
  *
  */
 
+#include <stdlib.h>
 #include <math.h>
-#include <avr/eeprom.h>
-#if defined(ARDUINO) && ARDUINO >= 100
- #include "Arduino.h"
-#else
- #include "WProgram.h"
-#endif
+
+#include <AP_HAL.h>
+extern const AP_HAL::HAL& hal;
+
+#include <AP_Math.h>
+
 #include "RC_Channel.h"
 
-/// global array with pointers to all APM RC channels, will be used by AP_Mount and AP_Camera classes
-/// It points to RC input channels, both APM1 and APM2 only have 8 input channels.
+#define NUM_CHANNELS 8
+/// global array with pointers to all APM RC channels, will be used by AP_Mount
+/// and AP_Camera classes / It points to RC input channels, both APM1 and APM2
+/// only have 8 input channels.
 RC_Channel* rc_ch[NUM_CHANNELS];
-
-APM_RC_Class *RC_Channel::_apm_rc;
 
 const AP_Param::GroupInfo RC_Channel::var_info[] PROGMEM = {
     // @Param: MIN
@@ -310,25 +311,19 @@ RC_Channel::norm_output()
     return ret;
 }
 
-void RC_Channel::set_apm_rc( APM_RC_Class * apm_rc )
+void RC_Channel::output()
 {
-    _apm_rc = apm_rc;
-}
-
-void
-RC_Channel::output()
-{
-    _apm_rc->OutputCh(_ch_out, radio_out);
+    hal.rcout->write(_ch_out, radio_out);
 }
 
 void
 RC_Channel::input()
 {
-    radio_in = _apm_rc->InputCh(_ch_out);
+    radio_in = hal.rcin->read(_ch_out);
 }
 
 void
 RC_Channel::enable_out()
 {
-    _apm_rc->enable_out(_ch_out);
+    hal.rcout->enable_ch(_ch_out);
 }

@@ -4,8 +4,8 @@
 /// @brief	RC_Channel manager for auxiliary channels (5..8), with EEPROM-backed storage of constants.
 /// @author Amilcar Lucas
 
-#ifndef RC_CHANNEL_AUX_H_
-#define RC_CHANNEL_AUX_H_
+#ifndef __RC_CHANNEL_AUX_H__
+#define __RC_CHANNEL_AUX_H__
 
 #include "RC_Channel.h"
 

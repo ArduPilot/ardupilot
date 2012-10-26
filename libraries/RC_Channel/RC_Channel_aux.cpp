@@ -1,7 +1,10 @@
 // -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: t -*-
 
-#include <APM_RC.h>
 #include "RC_Channel_aux.h"
+
+#include <AP_Math.h>
+#include <AP_HAL.h>
+extern const AP_HAL::HAL& hal;
 
 const AP_Param::GroupInfo RC_Channel_aux::var_info[] PROGMEM = {
     AP_NESTEDGROUPINFO(RC_Channel, 0),
@@ -31,7 +34,7 @@ RC_Channel_aux::output_ch(unsigned char ch_nr)
         radio_out = radio_in;
         break;
     }
-    _apm_rc->OutputCh(ch_nr, radio_out);
+    hal.rcout->write(ch_nr, radio_out);
 }
 
 /// Update the _aux_channels array of pointers to rc_x channels
