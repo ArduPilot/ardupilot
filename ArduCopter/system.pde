@@ -549,7 +549,7 @@ static void set_mode(byte mode)
         yaw_mode                = YAW_TOY;
         roll_pitch_mode = ROLL_PITCH_TOY;
         wp_control              = NO_NAV_MODE;
-        throttle_mode   = THROTTLE_MANUAL;
+        throttle_mode           = THROTTLE_HOLD;
         break;
 
     default:
