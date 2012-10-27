@@ -239,14 +239,23 @@ static void calc_loiter_pitch_roll()
 
 static int16_t get_desired_speed(int16_t max_speed)
 {
+    /*
+    Based on Equation by Bill Premerlani & Robert Lefebvre
+    	(sq(V2)-sq(V1))/2 = A(X2-X1)
+        derives to:
+        V1 = sqrt(sq(V2) - 2*A*(X2-X1))
+     */
+
     if(fast_corner) {
         // don't slow down
     }else{
-        if(wp_distance < 15000){
+        if(wp_distance < 20000){ // limit the size of numbers we're dealing with to avoide overflow
             // go slower
-    	 	int32_t temp = 2 * 100 * (int32_t)(wp_distance - g.waypoint_radius * 100);
-    		max_speed = sqrt((float)temp);
-            max_speed = min(max_speed, g.waypoint_speed_max);
+    	 	int32_t temp 	= 2 * 100 * (int32_t)(wp_distance - g.waypoint_radius * 100);
+    	 	int32_t s_min 	= WAYPOINT_SPEED_MIN;
+    	 	temp 			+= s_min * s_min;
+    		max_speed 		= sqrt((float)temp);
+            max_speed 		= min(max_speed, g.waypoint_speed_max);
         }
     }
 
