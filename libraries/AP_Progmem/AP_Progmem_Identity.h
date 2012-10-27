@@ -6,9 +6,10 @@
 
 #define SITL_debug(fmt, args ...)
 
-typedef prog_char_t char;
+typedef char prog_char_t;
+typedef char prog_char;
 
-#define PSTR(s) s;
+#define PSTR(s) s
 
 static inline int strcasecmp_P(const char *str1, const prog_char_t *pstr)
 {
@@ -40,7 +41,7 @@ static inline char *strncpy_P(char *buffer, const prog_char_t *pstr, size_t buff
 // read something the size of a pointer. This makes the menu code more
 // portable
 static inline uintptr_t pgm_read_pointer(const void *s) {
-    return &((uintptr_t*)s)
+	return *(const uintptr_t *)s;
 }
 
 #endif // __AP_PROGMEM_IDENTITY__
