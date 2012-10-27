@@ -9,6 +9,8 @@
 
 #include <stdlib.h>
 
+#ifndef PX4FMU_BUILD
+
 void * operator new(size_t size)
 {
     return(calloc(size, 1));
@@ -46,4 +48,6 @@ void __cxa_guard_release (__guard *g){
 
 void __cxa_guard_abort (__guard *) {
 };
+
+#endif // PX4FMU_BUILD
 
