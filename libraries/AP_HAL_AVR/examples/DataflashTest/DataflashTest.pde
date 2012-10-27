@@ -10,14 +10,14 @@ const AP_HAL::HAL& hal = AP_HAL_AVR_APM2;
 bool dbg = true;
 
 void erase() {
-    hal.uart0->println("Erasing dataflash");
+    hal.console->println("Erasing dataflash");
     hal.dataflash->erase_all();
 }
 
 void readback_page(int i);
 void single_page_readwrite() {
     
-    hal.uart0->println("Writing simple sequence to page 1");
+    hal.console->println("Writing simple sequence to page 1");
     hal.dataflash->start_write(1);
     hal.dataflash->write_byte(1);
     hal.dataflash->write_byte(2);
@@ -34,7 +34,7 @@ void single_page_readwrite() {
 }
 
 void readback_page(int i) {
-    hal.uart0->printf_P(PSTR("Reading back sequence from page %d\r\n"), i);
+    hal.console->printf_P(PSTR("Reading back sequence from page %d\r\n"), i);
     hal.dataflash->start_read(i);
     uint8_t v1 = hal.dataflash->read_byte();
     uint8_t v2 = hal.dataflash->read_byte();
@@ -43,12 +43,12 @@ void readback_page(int i) {
     uint8_t v5 = hal.dataflash->read_byte();
     uint8_t v6 = hal.dataflash->read_byte();
     uint8_t v7 = hal.dataflash->read_byte();
-    hal.uart0->printf_P(PSTR("vals on page %d: %d %d %d %d %d 0x%x 0x%x\r\n"),
+    hal.console->printf_P(PSTR("vals on page %d: %d %d %d %d %d 0x%x 0x%x\r\n"),
             i, (int) v1, (int) v2, (int) v3, (int) v4, (int) v5,
             (int) v6, (int) v7);
 }
 void two_page_readwrite() {
-    hal.uart0->println("Writing simple sequence to page 1");
+    hal.console->println("Writing simple sequence to page 1");
     hal.dataflash->start_write(1);
     hal.dataflash->write_byte(1);
     hal.dataflash->write_byte(2);
@@ -64,7 +64,7 @@ void two_page_readwrite() {
     hal.scheduler->delay(100);
     readback_page(1);
 
-    hal.uart0->println("Writing simple sequence to page 2");
+    hal.console->println("Writing simple sequence to page 2");
     hal.dataflash->start_write(2);
     hal.dataflash->write_byte(21);
     hal.dataflash->write_byte(22);
@@ -99,9 +99,9 @@ void two_page_readwrite() {
 void longtest_write() { 
     // We start to write some info (sequentialy) starting from page 1
     // This is similar to what we will do...
-    hal.uart0->println("After testing perform erase before using hal.dataflash->for logging!");
-    hal.uart0->println("");
-    hal.uart0->println("Writing to flash... wait...");
+    hal.console->println("After testing perform erase before using hal.dataflash->for logging!");
+    hal.console->println("");
+    hal.console->println("Writing to flash... wait...");
     hal.dataflash->start_write(1);
     for (int i = 0; i < 40; i++) {
         // Write 1000 packets...
@@ -126,7 +126,7 @@ void longtest_readback()
     uint8_t tmp_byte1, tmp_byte2;
     long tmp_long;
 
-    hal.uart0->println("Start reading page 1...");
+    hal.console->println("Start reading page 1...");
 
     hal.dataflash->start_read(1);      // We start reading from page 1
     for (int i = 0; i < 40; i++) {          // Read 200 packets...
@@ -148,7 +148,7 @@ void longtest_readback()
         int8_t cs1 = hal.dataflash->read_byte();
         int8_t cs2 = hal.dataflash->read_byte();
 
-        hal.uart0->printf_P(PSTR("sync 0x%x 0x%x ints %d %d %d %d, "
+        hal.console->printf_P(PSTR("sync 0x%x 0x%x ints %d %d %d %d, "
                 "longs %d %d, cksm %d %d\r\n"),
                 (int) sync1, (int) sync2,
                 w1, w2, w3, w4,
@@ -163,14 +163,14 @@ void setup()
 {
     hal.dataflash->init(NULL);
 
-    hal.uart0->println("Dataflash Log Test 1.0");
+    hal.console->println("Dataflash Log Test 1.0");
 
     hal.scheduler->delay(20);
-    hal.uart0->print("Manufacturer:");
-    hal.uart0->print((int)hal.dataflash->mfg_id());
-    hal.uart0->print(",");
-    hal.uart0->print((int)hal.dataflash->device_id());
-    hal.uart0->println();
+    hal.console->print("Manufacturer:");
+    hal.console->print((int)hal.dataflash->mfg_id());
+    hal.console->print(",");
+    hal.console->print((int)hal.dataflash->device_id());
+    hal.console->println();
 
     erase();
 

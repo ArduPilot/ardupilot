@@ -44,7 +44,7 @@ void setup()
 {
     hal.uart1->begin(38400);
 
-    hal.uart0->println("GPS AUTO library test");
+    hal.console->println("GPS AUTO library test");
     gps = &GPS;
     gps->init(GPS::GPS_ENGINE_AIRBORNE_2G);
 }
@@ -54,11 +54,11 @@ void loop()
     gps->update();
     if (gps->new_data) {
         if (gps->fix) {
-            hal.uart0->print("Lat: ");
+            hal.console->print("Lat: ");
             print_latlon(hal.uart0,gps->latitude);
-            hal.uart0->print(" Lon: ");
+            hal.console->print(" Lon: ");
             print_latlon(hal.uart0,gps->longitude);
-            hal.uart0->printf(" Alt: %.2fm GSP: %.2fm/s CoG: %d SAT: %d TIM: %lu STATUS: %u\n",
+            hal.console->printf(" Alt: %.2fm GSP: %.2fm/s CoG: %d SAT: %d TIM: %lu STATUS: %u\n",
                           (float)gps->altitude / 100.0,
                           (float)gps->ground_speed / 100.0,
                           (int)gps->ground_course / 100,
@@ -66,7 +66,7 @@ void loop()
                           gps->time,
                           gps->status());
         } else {
-            hal.uart0->println("No fix");
+            hal.console->println("No fix");
         }
         gps->new_data = false;
     }
