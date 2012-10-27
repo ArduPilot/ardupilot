@@ -6,6 +6,7 @@
 #include <AP_HAL_PX4_Namespace.h>
 
 class AP_HAL_PX4::PX4ConsoleDriver : public AP_HAL::ConsoleDriver {
+public:
     PX4ConsoleDriver();
     void init(void*);
     void backend_open();
