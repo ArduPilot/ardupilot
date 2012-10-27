@@ -14,7 +14,7 @@ APM1AnalogIn::APM1AnalogIn () :
 
 void APM1AnalogIn::init(void* machtnichts) {
     /* Register AVRAnalogIn::_timer_event with the scheduler. */
-    hal.scheduler->register_timer_process(_timer_event, 1000, 0);
+    hal.scheduler->register_timer_process(_timer_event);
     /* Register each private channel with AVRAnalogIn. */
     _register_channel(&_bat_voltage);
     _register_channel(&_bat_current);

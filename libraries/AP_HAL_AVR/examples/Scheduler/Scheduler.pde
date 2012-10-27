@@ -71,7 +71,7 @@ void setup (void) {
                 "Pin %d should toggle at 1khz:\r\n"),
             (int) DELAY_TOGGLE_PIN);
 
-    hal.scheduler->register_delay_callback(delay_toggle);
+    hal.scheduler->register_delay_callback(delay_toggle,0);
 
     hal.scheduler->delay(100);
 
@@ -89,8 +89,8 @@ void setup (void) {
     hal.console->printf_P(PSTR("Pin %d should toggle at 1khz.\r\n"),
             (int) SCHEDULED_TOGGLE_PIN_2);
 
-    hal.scheduler->register_timer_process(schedule_toggle_1, 1000, 0);
-    hal.scheduler->register_timer_process(schedule_toggle_2, 1000, 0);
+    hal.scheduler->register_timer_process(schedule_toggle_1);
+    hal.scheduler->register_timer_process(schedule_toggle_2);
 
     hal.scheduler->delay(100);
 
@@ -99,7 +99,7 @@ void setup (void) {
                 "dominates the processor."));
     hal.console->printf_P(PSTR("Pin %d should toggle then go high forever.\r\n"),
             (int) SCHEDULED_TOGGLE_PIN_2);
-    hal.scheduler->register_timer_process(schedule_toggle_hang, 1000, 0);
+    hal.scheduler->register_timer_process(schedule_toggle_hang);
 }
 
 void loop (void) { }

@@ -19,9 +19,8 @@ public:
     uint32_t millis();
     uint32_t micros();
     void     delay_microseconds(uint16_t us);
-    void     register_delay_callback(AP_HAL::Proc);
-    void     register_timer_process(AP_HAL::TimedProc,
-                uint32_t period_us, uint16_t phase);
+    void     register_delay_callback(AP_HAL::Proc, uint16_t min_time_ms);
+    void     register_timer_process(AP_HAL::TimedProc);
     bool     defer_timer_process(AP_HAL::TimedProc);
     void     register_timer_failsafe(AP_HAL::TimedProc, uint32_t period_us);
     void     suspend_timer_procs();
@@ -39,6 +38,7 @@ private:
     static uint32_t _micros();
 
     AP_HAL::Proc _delay_cb;
+    uint16_t _min_delay_cb_ms;
     static AP_HAL::TimedProc _failsafe;
 
     static volatile bool _timer_suspended;

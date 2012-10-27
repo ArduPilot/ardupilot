@@ -173,16 +173,18 @@ uint32_t ArduinoScheduler::_micros() {
 void ArduinoScheduler::delay(uint32_t ms)
 {
 	uint16_t start = (uint16_t)micros();
-
-	while (ms > 0) {
-		if (((uint16_t)micros() - start) >= 1000) {
-			ms--;
-			start += 1000;
-            if (_delay_cb) {
-                _delay_cb();
+    
+    while (ms > 0) {
+        if (((uint16_t)micros() - start) >= 1000) {
+            ms--;
+            start += 1000;
+            if (_min_delay_cb_ms >= ms) {
+                if (_delay_cb) {
+                    _delay_cb();
+                }
             }
-		}
-	}
+        }
+    }
 }
 
 /* Delay for the given number of microseconds.  Assumes a 16 MHz clock. */
@@ -209,14 +211,13 @@ void ArduinoScheduler::delay_microseconds(uint16_t us)
 	);
 }
 
-void ArduinoScheduler::register_delay_callback(AP_HAL::Proc proc) {
+void ArduinoScheduler::register_delay_callback(AP_HAL::Proc proc,
+        uint16_t min_time_ms) {
     _delay_cb = proc;
+    _min_delay_cb_ms = min_time_ms;
 }
 
-void ArduinoScheduler::register_timer_process(
-        AP_HAL::TimedProc proc, uint32_t period_us, uint16_t phase) {
-    /* XXX Assert period_us == 1000 */
-    /* XXX phase meaningless */
+void ArduinoScheduler::register_timer_process(AP_HAL::TimedProc proc) {
     for (int i = 0; i < _num_timer_procs; i++) {
         if (_timer_proc[i] == proc) {
             return;

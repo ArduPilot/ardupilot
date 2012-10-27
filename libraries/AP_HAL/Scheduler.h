@@ -14,9 +14,9 @@ public:
     virtual uint32_t millis() = 0;
     virtual uint32_t micros() = 0;
     virtual void     delay_microseconds(uint16_t us) = 0;
-    virtual void     register_delay_callback(AP_HAL::Proc) = 0;
-    virtual void     register_timer_process(AP_HAL::TimedProc,
-                        uint32_t period_us, uint16_t phase) = 0;
+    virtual void     register_delay_callback(AP_HAL::Proc,
+                        uint16_t min_time_ms) = 0;
+    virtual void     register_timer_process(AP_HAL::TimedProc) = 0;
     virtual bool     defer_timer_process(AP_HAL::TimedProc) = 0;
     virtual void     register_timer_failsafe(AP_HAL::TimedProc,
                         uint32_t period_us) = 0;
