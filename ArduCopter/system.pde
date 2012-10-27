@@ -320,6 +320,7 @@ static void init_ardupilot()
 #endif
 
 
+
 ///////////////////////////////////////////////////////////////////////////////
 // Experimental AP_Limits library - set constraints, limits, fences, minima, maxima on various parameters
 ////////////////////////////////////////////////////////////////////////////////
@@ -394,6 +395,8 @@ static void startup_ground(void)
 
 static void set_mode(byte mode)
 {
+    Log_Write_Data(31, initial_simple_bearing);
+
     // if we don't have GPS lock
     if(home_is_set == false) {
         // THOR
@@ -575,6 +578,7 @@ static void set_mode(byte mode)
     }
 
     Log_Write_Mode(control_mode);
+    Log_Write_Data(32, initial_simple_bearing);
 }
 
 static void set_failsafe(boolean mode)

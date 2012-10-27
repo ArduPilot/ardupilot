@@ -1356,6 +1356,7 @@ static void slow_loop()
         if(motors.armed()) {
             if (g.log_bitmask & MASK_LOG_ITERM)
                 Log_Write_Iterm();
+            Log_Write_Data(30, initial_simple_bearing);
         }else{
             // check the user hasn't updated the frame orientation
             motors.set_frame_orientation(g.frame_orientation);
