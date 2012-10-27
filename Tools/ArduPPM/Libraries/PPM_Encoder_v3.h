@@ -918,8 +918,11 @@ ISR( SERVO_INT_VECTOR )
 					}
 					else
 					{
-						// Switch to PPM2
-						switchover_ch2 == true; // Switch to PPM2
+						// Switch to PPM2 without delay
+						if ( ppm2_channel == channel_count_ch2 )	// Check for last PPM2 channel before switching
+						{
+							switchover_ch2 == true; // Switch to PPM2
+						}
 					}
 				}
 			}
@@ -932,8 +935,11 @@ ISR( SERVO_INT_VECTOR )
 				}
 				else // PPM1 is not selected
 				{
-					// Delay switchover 2 to 1 here
-					switchover_ch2 == false; // Switch to PPM1
+					// To Enhance : Optional switchover delay 2 to 1 here
+					if ( ppm1_channel == channel_count_ch1 )	// Check for last PPM1 channel before switching
+					{
+						switchover_ch2 == false; // Switch to PPM1
+					}
 				}
 			}
 		}
@@ -950,8 +956,11 @@ ISR( SERVO_INT_VECTOR )
 				}
 				else // Switch to PPM2
 				{
-					// Delay switchover 1 to 2 here
-					switchover_ch2 == true; // Switch to PPM2
+					// To Enhance : Optional switchover delay 1 to 2 here
+					if ( ppm2_channel == channel_count_ch2 )	// Check for last PPM2 channel before switching
+					{
+						switchover_ch2 == true; // Switch to PPM2
+					}
 				}
 				
 			}
