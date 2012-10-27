@@ -14,8 +14,7 @@
 #include "Stream.h"
 
 /* prog_char_t: */
-#include <AP_Common.h>
-#include <avr/pgmspace.h>
+#include <AP_Progmem.h>
 
 /* AP_HAL::BetterStream is a pure virtual interface. It resembles
  * Michael Smith's BetterStream library for Arduino.
