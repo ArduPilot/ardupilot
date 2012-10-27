@@ -6,9 +6,7 @@
 
 #define SITL_debug(fmt, args ...)
 
-typedef struct {
-    char c;
-} prog_char_t;
+typedef prog_char_t char;
 
 #define PSTR(s) s;
 
