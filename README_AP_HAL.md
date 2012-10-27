@@ -427,11 +427,12 @@ The following methods are exposed by the `AP_HAL::Scheduler` interface:
 * `uint32_t micros()` : Duplicates Arduino core `micros`
 * `void     delay_microseconds(uint16_t us)` : Duplicates Arduino core
   `delayMicros`
-* `void     register_delay_callback(AP_HAL::Proc)` : Register a callback
-   to be used during calls to `delay`. Callback will be called at a 1ms
-   period.
-* `void     register_timer_process(AP_HAL::TimedProc, uint32_t period_us,
-   uint16_t phase)` : Duplicates `AP_PeriodicProcess::register_process`
+* `void     register_delay_callback(AP_HAL::Proc, uint16_t min_ms)`: Register
+   a callback to be used during calls to `delay`. Callback will be called at
+   a 1ms period. Second argument is the minimum length of time expected to
+   delay - set this to the ceiling of the runtime for the callback.
+* `void     register_timer_process(AP_HAL::TimedProc)` : Duplicates
+  `AP_PeriodicProcess::register_process`
 * `void     register_timer_failsafe(AP_HAL::TimedProc,
    uint32_t period_us)` : Duplicates `AP_PeriodicProcess::set_failsafe`
 * `void     suspend_timer_procs()` : Duplicates
