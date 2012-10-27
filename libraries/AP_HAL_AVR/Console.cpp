@@ -155,6 +155,7 @@ bool AVRConsoleDriver::Buffer::push(uint8_t b) {
     }
     _bytes[_head] = b;
     _head = next;
+    return true;
 }
 
 int AVRConsoleDriver::Buffer::pop() {
