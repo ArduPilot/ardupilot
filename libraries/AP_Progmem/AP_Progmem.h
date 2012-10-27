@@ -6,6 +6,8 @@
 #include "AP_Progmem_AVR.h"
 #elif defined(DESKTOP_BUILD)
 #include "AP_Progmem_DesktopBuild.h"
+#else
+#include "AP_Progmem_Identity.h"
 #endif
 
 #define PROGMEM_STRING(_v, _s)  static const char _v[] PROGMEM = _s
