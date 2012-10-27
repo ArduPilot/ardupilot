@@ -144,7 +144,7 @@ bool AP_Baro_MS5611::init()
     _d1_count = 0;
     _d2_count = 0;
 
-    hal.scheduler->register_timer_process( AP_Baro_MS5611::_update, 1, 0);
+    hal.scheduler->register_timer_process( AP_Baro_MS5611::_update );
     hal.scheduler->resume_timer_procs();
 
     // wait for at least one value to be read

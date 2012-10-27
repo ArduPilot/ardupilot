@@ -163,7 +163,7 @@ void AP_ADC_ADS7844::Init()
     _ch6_last_sample_time_micros = hal.scheduler->micros();
 
     hal.scheduler->resume_timer_procs();
-    hal.scheduler->register_timer_process( AP_ADC_ADS7844::read, 1, 0);
+    hal.scheduler->register_timer_process( AP_ADC_ADS7844::read );
 
 }
 
