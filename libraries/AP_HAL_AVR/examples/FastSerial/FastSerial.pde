@@ -41,9 +41,9 @@ void loop(void)
     //
     // Perform a simple loopback operation.
     //
-    c = hal.uart0->read();
+    c = hal.console->read();
     if (-1 != c)
-        hal.uart0->write(c);
+        hal.console->write(c);
 }
 
 

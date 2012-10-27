@@ -35,7 +35,7 @@ extern const AP_HAL::HAL& hal;
 #define DF_CHIP_ERASE_3   0x9A
 
 #ifdef DEBUG
-#define LOGD(format, ...) do { hal.uart0->printf_P(PSTR("DBG/Dataflash: "format), __VA_ARGS__); } while (0)
+#define LOGD(format, ...) do { hal.console->printf_P(PSTR("DBG/Dataflash: "format), __VA_ARGS__); } while (0)
 #else
 #define LOGD(format, ...) do {} while(0)
 #endif

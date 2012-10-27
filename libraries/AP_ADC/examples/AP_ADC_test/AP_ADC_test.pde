@@ -21,7 +21,6 @@ uint32_t timer;
 
 void setup()
 {
-    hal.uart0->begin(115200, 128, 128);
     hal.console->println("ArduPilot Mega ADC library test");
     hal.scheduler->delay(1000);
 

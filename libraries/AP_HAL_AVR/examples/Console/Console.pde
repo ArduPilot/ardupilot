@@ -97,7 +97,7 @@ void setup(void)
     hal.console->backend_write((const uint8_t*)hello, strlen(hello));
 
     hal.console->println("loopback for 10sec:");
-    stream_console_loopback(hal.uart0, hal.console, 10000);
+    stream_console_loopback(hal.console, hal.console, 10000);
     hal.console->println("loopback done");
 
     hal.console->backend_close();

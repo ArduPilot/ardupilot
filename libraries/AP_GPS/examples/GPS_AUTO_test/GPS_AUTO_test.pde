@@ -55,9 +55,9 @@ void loop()
     if (gps->new_data) {
         if (gps->fix) {
             hal.console->print("Lat: ");
-            print_latlon(hal.uart0,gps->latitude);
+            print_latlon(hal.console,gps->latitude);
             hal.console->print(" Lon: ");
-            print_latlon(hal.uart0,gps->longitude);
+            print_latlon(hal.console,gps->longitude);
             hal.console->printf(" Alt: %.2fm GSP: %.2fm/s CoG: %d SAT: %d TIM: %lu STATUS: %u\n",
                           (float)gps->altitude / 100.0,
                           (float)gps->ground_speed / 100.0,

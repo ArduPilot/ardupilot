@@ -24,7 +24,6 @@ AP_Airspeed airspeed;
 
 void setup()
 {
-    hal.uart0->begin(115200, 128, 128);
     hal.console->println("ArduPilot Airspeed library test");
 
     airspeed.init(hal.analogin->channel(0));
