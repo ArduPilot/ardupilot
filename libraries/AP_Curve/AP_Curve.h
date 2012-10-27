@@ -3,12 +3,12 @@
 /// @file	AP_Curve.h
 /// @brief	used to transforms a pwm value to account for the non-linear pwm->thrust values of normal ESC+motors
 
-#ifndef AP_CURVE
-#define AP_CURVE
+#ifndef __AP_CURVE_H__
+#define __AP_CURVE_H__
 
-#include <FastSerial.h>
 #include <AP_Common.h>
 #include <AP_Math.h>        // ArduPilot Mega Vector/Matrix math Library
+#include <AP_HAL.h>
 
 /// @class      AP_Curve
 template <class T, uint8_t SIZE>
@@ -28,7 +28,7 @@ public:
     virtual T get_y( T x );
 
     // displays the contents of the curve (for debugging)
-    virtual void dump_curve();
+    virtual void dump_curve(AP_HAL::BetterStream*);
 
 protected:
     uint8_t     _num_points;						// number of points in the cruve
@@ -127,18 +127,18 @@ T AP_Curve<T,SIZE>::get_y( T x )
 
 // displays the contents of the curve (for debugging)
 template <class T, uint8_t SIZE>
-void AP_Curve<T,SIZE>::dump_curve()
+void AP_Curve<T,SIZE>::dump_curve(AP_HAL::BetterStream* s)
 {
-	Serial.println_P(PSTR("Curve:"));
+	s->println_P(PSTR("Curve:"));
 	for( uint8_t i = 0; i<_num_points; i++ ){
-		Serial.print_P(PSTR("x:"));
-		Serial.print(_x[i]);
-		Serial.print_P(PSTR("\ty:"));
-		Serial.print(_y[i]);
-		Serial.print_P(PSTR("\tslope:"));
-		Serial.print(_slope[i],4);
-		Serial.println();
+		s->print_P(PSTR("x:"));
+		s->print(_x[i]);
+		s->print_P(PSTR("\ty:"));
+		s->print(_y[i]);
+		s->print_P(PSTR("\tslope:"));
+		s->print(_slope[i],4);
+		s->println();
 	}
 }
 
-#endif  // AP_CURVE
+#endif  // __AP_CURVE_H__
