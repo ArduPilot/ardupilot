@@ -9,6 +9,7 @@
  */
 
 #include <AP_Common.h>
+#include <AP_Progmem.h>
 #include <AP_Param.h>
 #include <AP_Math.h>
 #include <AP_HAL.h>

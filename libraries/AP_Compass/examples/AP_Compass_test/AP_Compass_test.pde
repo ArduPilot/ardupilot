@@ -4,6 +4,7 @@
  */
 
 #include <AP_Common.h>
+#include <AP_Progmem.h>
 #include <AP_Param.h>
 #include <AP_HAL.h>
 #include <AP_HAL_AVR.h>
@@ -11,9 +12,6 @@
 #include <AP_Math.h>    // ArduPilot Mega Vector/Matrix math Library
 #include <AP_Declination.h>
 #include <AP_Compass.h> // Compass Library
-
-#define ToRad(x) (x*0.01745329252)  // *pi/180
-#define ToDeg(x) (x*57.2957795131)  // *180/pi
 
 const AP_HAL::HAL& hal = AP_HAL_AVR_APM2;
 

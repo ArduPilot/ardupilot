@@ -3,6 +3,7 @@
  *       Code by Jordi MuÒoz and Jose Julio. DIYDrones.com
  */
 
+
 #include <FastSerial.h>
 #include <AP_Common.h>
 #include <I2C.h>
@@ -12,6 +13,8 @@
 #include <Arduino_Mega_ISR_Registry.h>
 #include <AP_PeriodicProcess.h>
 #include <AP_InertialSensor.h>
+#include <math.h>
+#include <AP_Progmem.h>
 #include <AP_Param.h>
 #include <AP_Math.h>
 #include <AP_HAL.h>

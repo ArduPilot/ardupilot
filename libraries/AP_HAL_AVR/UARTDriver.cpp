@@ -14,7 +14,6 @@
 
 #include <avr/pgmspace.h>
 
-#include <AP_Common.h>
 #include <AP_HAL.h>
 
 #include "vprintf.h"

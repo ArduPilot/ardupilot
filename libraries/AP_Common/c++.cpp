@@ -8,8 +8,6 @@
 //
 
 #include <stdlib.h>
-#include <stdint.h>
-#include "c++.h"
 
 void * operator new(size_t size)
 {

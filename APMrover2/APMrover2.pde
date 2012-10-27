@@ -78,6 +78,7 @@ version 2.1 of the License, or (at your option) any later version.
 // Libraries
 #include <FastSerial.h>
 #include <AP_Common.h>
+#include <AP_Progmem.h>
 #include <AP_Menu.h>
 #include <AP_Param.h>
 #include <Arduino_Mega_ISR_Registry.h>
