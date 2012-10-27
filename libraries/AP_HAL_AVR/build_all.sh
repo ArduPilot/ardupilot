@@ -8,7 +8,7 @@ set -x
 
 export PATH=/usr/lib/ccache:$PATH
 
-TESTS=$(find libraries -name '*.pde' | xargs grep -l include..AP_HAL.h | xargs -i dirname '{}')
+TESTS=$(find libraries -name '*.pde' | xargs grep -l include..AP_HAL.h | grep -v PX4 | xargs -i dirname '{}')
 
 for b in $TESTS; do
     echo "TESTING $b"
