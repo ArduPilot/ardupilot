@@ -12,7 +12,7 @@ static void navigate()
 
     // target_bearing is where we should be heading
     // --------------------------------------------
-    target_bearing                  = get_bearing_cd(&filtered_loc, &next_WP);
+    target_bearing          = get_bearing_cd(&filtered_loc, &next_WP);
     home_to_copter_bearing  = get_bearing_cd(&home, &current_loc);
 }
 
@@ -37,8 +37,8 @@ static void calc_XY_velocity(){
 
     // initialise last_longitude and last_latitude
     if( last_longitude == 0 && last_latitude == 0 ) {
-        last_longitude = g_gps->longitude;
-        last_latitude = g_gps->latitude;
+        last_longitude 	= g_gps->longitude;
+        last_latitude 	= g_gps->latitude;
     }
 
     // this speed is ~ in cm because we are using 10^7 numbers from GPS
@@ -196,7 +196,7 @@ static void calc_nav_rate(int16_t max_speed)
 #endif
 
     x_rate_error    = constrain(x_rate_error, -500, 500);
-    nav_lon                 = g.pid_nav_lon.get_pid(x_rate_error, dTnav);
+    nav_lon         = g.pid_nav_lon.get_pid(x_rate_error, dTnav);
     int32_t tilt    = (x_target_speed * x_target_speed * (int32_t)g.tilt_comp) / 10000;
 
     if(x_target_speed < 0) tilt = -tilt;
@@ -212,8 +212,8 @@ static void calc_nav_rate(int16_t max_speed)
 #endif
 
     y_rate_error    = constrain(y_rate_error, -500, 500);       // added a rate error limit to keep pitching down to a minimum
-    nav_lat                 = g.pid_nav_lat.get_pid(y_rate_error, dTnav);
-    tilt                    = (y_target_speed * y_target_speed * (int32_t)g.tilt_comp) / 10000;
+    nav_lat         = g.pid_nav_lat.get_pid(y_rate_error, dTnav);
+    tilt            = (y_target_speed * y_target_speed * (int32_t)g.tilt_comp) / 10000;
 
     if(y_target_speed < 0) tilt = -tilt;
     nav_lat                 += tilt;
