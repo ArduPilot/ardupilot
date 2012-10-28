@@ -284,9 +284,9 @@ update_rate_contoller_targets()
 {
     if( rate_targets_frame == EARTH_FRAME ) {
         // convert earth frame rates to body frame rates
-        roll_rate_target_bf = roll_rate_target_ef - sin_pitch * yaw_rate_target_ef;
-        pitch_rate_target_bf = cos_roll_x * pitch_rate_target_ef + sin_roll * cos_pitch_x * yaw_rate_target_ef;
-        yaw_rate_target_bf = cos_pitch_x * cos_roll_x * yaw_rate_target_ef - sin_roll * pitch_rate_target_ef;
+        roll_rate_target_bf 	= roll_rate_target_ef - sin_pitch * yaw_rate_target_ef;
+        pitch_rate_target_bf 	= cos_roll_x  * pitch_rate_target_ef + sin_roll * cos_pitch_x * yaw_rate_target_ef;
+        yaw_rate_target_bf 		= cos_pitch_x * cos_roll_x * yaw_rate_target_ef - sin_roll * pitch_rate_target_ef;
     }
 }
 
@@ -310,34 +310,36 @@ run_rate_controllers()
 static int16_t
 get_rate_roll(int32_t target_rate)
 {
-    static int32_t last_rate = 0;                                       // previous iterations rate
-    int32_t p,i,d;                                                                      // used to capture pid values for logging
-    int32_t current_rate;                                                       // this iteration's rate
-    int32_t rate_error;                                                                 // simply target_rate - current_rate
-    int32_t rate_d;                                                                     // roll's acceleration
-    int32_t output;                                                                     // output from pid controller
-    int32_t rate_d_dampener;                                                    // value to dampen output based on acceleration
+    static int32_t last_rate = 0;   // previous iterations rate
+    int32_t p,i,d;                  // used to capture pid values for logging
+    int32_t current_rate;           // this iteration's rate
+    int32_t rate_error;             // simply target_rate - current_rate
+    int32_t rate_d;                 // roll's acceleration
+    int32_t output;                 // output from pid controller
+    int32_t rate_d_dampener;        // value to dampen output based on acceleration
 
     // get current rate
     current_rate    = (omega.x * DEGX100);
 
     // calculate and filter the acceleration
-    rate_d                  = roll_rate_d_filter.apply(current_rate - last_rate);
+    rate_d      = roll_rate_d_filter.apply(current_rate - last_rate);
 
     // store rate for next iteration
-    last_rate               = current_rate;
+    last_rate   = current_rate;
 
     // call pid controller
-    rate_error      = target_rate - current_rate;
-    p                       = g.pid_rate_roll.get_p(rate_error);
+    rate_error  = target_rate - current_rate;
+    p           = g.pid_rate_roll.get_p(rate_error);
+
     // freeze I term if we've breached roll-pitch limits
     if( motors.reached_limit(AP_MOTOR_ROLLPITCH_LIMIT) ) {
-        i                       = g.pid_rate_roll.get_integrator();
+        i	= g.pid_rate_roll.get_integrator();
     }else{
-        i                       = g.pid_rate_roll.get_i(rate_error, G_Dt);
+        i   = g.pid_rate_roll.get_i(rate_error, G_Dt);
     }
-    d                       = g.pid_rate_roll.get_d(rate_error, G_Dt);
-    output          = p + i + d;
+
+    d = g.pid_rate_roll.get_d(rate_error, G_Dt);
+    output = p + i + d;
 
     // Dampening output with D term
     rate_d_dampener = rate_d * roll_scale_d;
@@ -348,7 +350,8 @@ get_rate_roll(int32_t target_rate)
     output = constrain(output, -5000, 5000);
 
 #if LOGGING_ENABLED == ENABLED
-    static int8_t log_counter = 0;                                      // used to slow down logging of PID values to dataflash
+    static int8_t log_counter = 0; // used to slow down logging of PID values to dataflash
+
     // log output if PID logging is on and we are tuning the rate P, I or D gains
     if( g.log_bitmask & MASK_LOG_PID && (g.radio_tuning == CH6_RATE_KP || g.radio_tuning == CH6_RATE_KI || g.radio_tuning == CH6_RATE_KD) ) {
         log_counter++;
@@ -378,22 +381,22 @@ get_rate_pitch(int32_t target_rate)
     current_rate    = (omega.y * DEGX100);
 
     // calculate and filter the acceleration
-    rate_d                  = pitch_rate_d_filter.apply(current_rate - last_rate);
+    rate_d          = pitch_rate_d_filter.apply(current_rate - last_rate);
 
     // store rate for next iteration
-    last_rate               = current_rate;
+    last_rate       = current_rate;
 
     // call pid controller
     rate_error      = target_rate - current_rate;
-    p                       = g.pid_rate_pitch.get_p(rate_error);
+    p               = g.pid_rate_pitch.get_p(rate_error);
     // freeze I term if we've breached roll-pitch limits
     if( motors.reached_limit(AP_MOTOR_ROLLPITCH_LIMIT) ) {
-        i                       = g.pid_rate_pitch.get_integrator();
+        i = g.pid_rate_pitch.get_integrator();
     }else{
-        i                       = g.pid_rate_pitch.get_i(rate_error, G_Dt);
+        i = g.pid_rate_pitch.get_i(rate_error, G_Dt);
     }
-    d                       = g.pid_rate_pitch.get_d(rate_error, G_Dt);
-    output          = p + i + d;
+    d = g.pid_rate_pitch.get_d(rate_error, G_Dt);
+    output = p + i + d;
 
     // Dampening output with D term
     rate_d_dampener = rate_d * pitch_scale_d;
