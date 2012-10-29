@@ -119,8 +119,8 @@ volatile uint8_t servo_input_mode = JUMPER_SELECT_MODE;
 #define PPM_CH1_CHANNEL_PREPULSE_LENGHT		400
 
 // PPM frame sync symbol limits
-#define PPM_CH1_MIN_SYNC_LENGHT		PPM_CH1_FRAME_PERIOD - ( PPM_CH1_MAX_CHANNELS * PPM_CH1_VAL_MAX ) // Sync symbol detection
-#define PPM_CH1_MAX_SYNC_LENGHT		PPM_CH1_FRAME_PERIOD - ( PPM_CH1_MIN_CHANNELS * PPM_CH1_VAL_MIN ) // Sync timeout
+#define PPM_CH1_MIN_SYNC_LENGHT		PPM_CH1_FRAME_PERIOD - ( PPM_CH1_MAX_CHANNELS * PPM_CH1_VAL_MAX ) - PPM_CH1_CHANNEL_PREPULSE_LENGHT // Sync symbol detection
+#define PPM_CH1_MAX_SYNC_LENGHT		PPM_CH1_FRAME_PERIOD - ( PPM_CH1_MIN_CHANNELS * PPM_CH1_VAL_MIN ) - PPM_CH1_CHANNEL_PREPULSE_LENGHT // Sync timeout
 
 #endif
 
@@ -142,8 +142,8 @@ volatile uint8_t servo_input_mode = JUMPER_SELECT_MODE;
 #define PPM_CH1_CHANNEL_PREPULSE_LENGHT		200
 
 // PPM frame sync symbol limits
-#define PPM_CH1_MIN_SYNC_LENGHT		PPM_CH1_FRAME_PERIOD - ( PPM_CH1_MAX_CHANNELS * PPM_CH1_VAL_MAX ) // Sync symbol detection
-#define PPM_CH1_MAX_SYNC_LENGHT		PPM_CH1_FRAME_PERIOD - ( PPM_CH1_MIN_CHANNELS * PPM_CH1_VAL_MIN ) // Sync timeout
+#define PPM_CH1_MIN_SYNC_LENGHT		PPM_CH1_FRAME_PERIOD - ( PPM_CH1_MAX_CHANNELS * PPM_CH1_VAL_MAX ) - PPM_CH1_CHANNEL_PREPULSE_LENGHT // Sync symbol detection
+#define PPM_CH1_MAX_SYNC_LENGHT		PPM_CH1_FRAME_PERIOD - ( PPM_CH1_MIN_CHANNELS * PPM_CH1_VAL_MIN ) - PPM_CH1_CHANNEL_PREPULSE_LENGHT // Sync timeout
 
 #endif
 
@@ -165,8 +165,8 @@ volatile uint8_t servo_input_mode = JUMPER_SELECT_MODE;
 #define PPM_CH1_CHANNEL_PREPULSE_LENGHT		400
 
 // PPM frame sync symbol limits
-#define PPM_CH1_MIN_SYNC_LENGHT		PPM_CH1_FRAME_PERIOD - ( PPM_CH1_MAX_CHANNELS * PPM_CH1_VAL_MAX ) // Sync symbol detection
-#define PPM_CH1_MAX_SYNC_LENGHT		PPM_CH1_FRAME_PERIOD - ( PPM_CH1_MIN_CHANNELS * PPM_CH1_VAL_MIN ) // Sync timeout
+#define PPM_CH1_MIN_SYNC_LENGHT		PPM_CH1_FRAME_PERIOD - ( PPM_CH1_MAX_CHANNELS * PPM_CH1_VAL_MAX ) - PPM_CH1_CHANNEL_PREPULSE_LENGHT // Sync symbol detection
+#define PPM_CH1_MAX_SYNC_LENGHT		PPM_CH1_FRAME_PERIOD - ( PPM_CH1_MIN_CHANNELS * PPM_CH1_VAL_MIN ) - PPM_CH1_CHANNEL_PREPULSE_LENGHT // Sync timeout
 
 #endif
 
@@ -201,8 +201,8 @@ volatile uint8_t servo_input_mode = JUMPER_SELECT_MODE;
 #define PPM_CH1_CHANNEL_PREPULSE_LENGHT		400
 
 // PPM frame sync symbol limits
-#define PPM_CH2_MIN_SYNC_LENGHT		PPM_CH2_FRAME_PERIOD - ( PPM_CH2_MAX_CHANNELS * PPM_CH2_VAL_MAX ) // Sync symbol detection
-#define PPM_CH2_MAX_SYNC_LENGHT		PPM_CH2_FRAME_PERIOD - ( PPM_CH2_MIN_CHANNELS * PPM_CH2_VAL_MIN ) // Sync timeout
+#define PPM_CH2_MIN_SYNC_LENGHT		PPM_CH2_FRAME_PERIOD - ( PPM_CH2_MAX_CHANNELS * PPM_CH2_VAL_MAX ) - PPM_CH2_CHANNEL_PREPULSE_LENGHT // Sync symbol detection
+#define PPM_CH2_MAX_SYNC_LENGHT		PPM_CH2_FRAME_PERIOD - ( PPM_CH2_MIN_CHANNELS * PPM_CH2_VAL_MIN ) - PPM_CH2_CHANNEL_PREPULSE_LENGHT // Sync timeout
 
 #endif
 
@@ -223,8 +223,8 @@ volatile uint8_t servo_input_mode = JUMPER_SELECT_MODE;
 #define PPM_CH1_CHANNEL_PREPULSE_LENGHT		200
 
 // PPM sync symbol limits
-#define PPM_CH2_MIN_SYNC_LENGHT		PPM_CH2_FRAME_PERIOD - ( PPM_CH2_MAX_CHANNELS * PPM_CH2_VAL_MAX ) // Sync symbol detection
-#define PPM_CH2_MAX_SYNC_LENGHT		PPM_CH2_FRAME_PERIOD - ( PPM_CH2_MIN_CHANNELS * PPM_CH2_VAL_MIN ) // Sync timeout
+#define PPM_CH2_MIN_SYNC_LENGHT		PPM_CH2_FRAME_PERIOD - ( PPM_CH2_MAX_CHANNELS * PPM_CH2_VAL_MAX ) - PPM_CH2_CHANNEL_PREPULSE_LENGHT // Sync symbol detection
+#define PPM_CH2_MAX_SYNC_LENGHT		PPM_CH2_FRAME_PERIOD - ( PPM_CH2_MIN_CHANNELS * PPM_CH2_VAL_MIN ) - PPM_CH2_CHANNEL_PREPULSE_LENGHT // Sync timeout
 
 #endif
 
@@ -245,8 +245,8 @@ volatile uint8_t servo_input_mode = JUMPER_SELECT_MODE;
 #define PPM_CH1_CHANNEL_PREPULSE_LENGHT		400
 
 // PPM sync symbol limits
-#define PPM_CH2_MIN_SYNC_LENGHT		PPM_CH2_FRAME_PERIOD - ( PPM_CH2_MAX_CHANNELS * PPM_CH2_VAL_MAX ) // Sync symbol detection
-#define PPM_CH2_MAX_SYNC_LENGHT		PPM_CH2_FRAME_PERIOD - ( PPM_CH2_MIN_CHANNELS * PPM_CH2_VAL_MIN ) // Sync timeout
+#define PPM_CH2_MIN_SYNC_LENGHT		PPM_CH2_FRAME_PERIOD - ( PPM_CH2_MAX_CHANNELS * PPM_CH2_VAL_MAX ) - PPM_CH2_CHANNEL_PREPULSE_LENGHT // Sync symbol detection
+#define PPM_CH2_MAX_SYNC_LENGHT		PPM_CH2_FRAME_PERIOD - ( PPM_CH2_MIN_CHANNELS * PPM_CH2_VAL_MIN ) - PPM_CH2_CHANNEL_PREPULSE_LENGHT // Sync timeout
 
 #endif
 
@@ -589,12 +589,13 @@ ISR( SERVO_INT_VECTOR )
     // ------------------------------------------------------------------------------
 	
 	//---------------------------------------------------------------------
-	// Todo : Conversion to PPM output format
+	// Todo : Refine sync symbol limits after channel count detection
+	// Todo : Conversion to PPM output format (would be better if the main APM could follow format changes)
 	// Todo : sync between PPM input and output after switchover
 	
 	// Todo : rework code from line 950 to end of redundancy mode
 			
-	// Todo : Add delay inside switchover algo
+	// Todo : Add optional delay inside switchover algo
 	// Todo : Add LED code for APM 1.4
 //-------------------------------------------------------------------------
 	
