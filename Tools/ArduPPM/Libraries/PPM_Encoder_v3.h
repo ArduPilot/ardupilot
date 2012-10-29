@@ -10,7 +10,7 @@
 //
 // 12-10-2012
 // V3.0.0 - Added dual input PPM redundancy mode with auto switchover. This is mainly for dual PPM receivers setup.
-//			This mode Can be used as well if a PPM conversion is needed (Futaba 16 channels 760us mode to APM mode)
+//			
 // -------------------------------------------------------------
 
 // Not for production - Work in progress
@@ -73,13 +73,12 @@ volatile uint8_t servo_input_mode = JUMPER_SELECT_MODE;
 #define CHANNEL_COUNT_DETECTION_THRESHOLD	10 // Valid frames detected before channel count validation
 
 
-// 0 for standard PPM, 1 for PPMv2 (Futaba 760 us 16 Channels), 2 for PPMv3 (Jeti 1050 us 16 channels), 3 for Hitec 9 channels
 // PPM input frame mode receiver 1
 // -------------------------------------------------------------
-#define PPM_CH1_STANDARD			// Standard PPM : 1500 us +/- 600 us - 8 channels - 20 ms frame period
-//#define PPM_CH1_STANDARD_EXTENDED	// Hitec 9 channels hardware : 1500 us +/- 600 us - 9 channels - 22.1 ms slower frame period
-//#define PPM_CH1_V2				// PPMv2 used initialy at Futaba - 760 us +/- 300 us - 16 Channels - normal 20 ms frame period
-//#define PPM_CH1_V3				// PPMv3 to allow for 16 channels with long sync symbol for hardware compatibility : 1050 us +/- 300 us - 25 ms frame period
+#define PPM_CH1_STANDARD			// Standard PPM : 1520 us +/- 600 us - 8 channels - 20 ms frame period
+//#define PPM_CH1_STANDARD_EXTENDED	// 9 channels : 1520 us +/- 600 us - 9 channels - 22.1 ms slower frame period
+//#define PPM_CH1_V2				// PPMv2 : 760 us +/- 300 us - 16 Channels - normal 20 ms frame period
+//#define PPM_CH1_V3				// PPMv3 16 channels with long sync symbol : 1050 us +/- 300 us - 25 ms frame period
 
 // PPM input frame mode receiver 2
 // -------------------------------------------------------------
@@ -88,80 +87,75 @@ volatile uint8_t servo_input_mode = JUMPER_SELECT_MODE;
 //#define PPM_CH2_V2
 //#define PPM_CH2_V3
 
-// PPM input frame definitions receiver 1
+// PPM1 input : frame formats definitions
 // -------------------------------------------------------------
 #if defined (PPM_CH1_STANDARD) || defined (PPM_CH1_STANDARD_EXTENDED)
  
 #ifdef PPM_CH1_STANDARD_EXTENDED
  
-// Max input PPM channels
+// PPM channel count limits
+#define PPM_CH1_MIN_CHANNELS        4
 #define PPM_CH1_MAX_CHANNELS        9
 // Frame period
-#define PPM_CH1_FRAME_PERIOD	22100	// frame period (microseconds)
+#define PPM_CH1_FRAME_PERIOD	22120	// frame period (microseconds)
 
 #else
 
-// Max input PPM channels
+// PPM channel count limits
+#define PPM_CH1_MIN_CHANNELS        4
 #define PPM_CH1_MAX_CHANNELS        8
 // Frame period
 #define PPM_CH1_FRAME_PERIOD	20000	// frame period (microseconds)
 
 #endif
 
-// Negative Shift
-//#define SHIFT_CH1_NEGATIVE // Some receivers may use negative shift (zero volt part of the signal carry the PWM information instead of the positive part)
-
-// PPM channels minimum and maximum values
-#define PPM_CH1_VAL_MIN         TICKS_FOR_ONE_US * 900
-#define PPM_CH1_VAL_MAX         TICKS_FOR_ONE_US * 2100
-#define PPM_CH1_VAL_CENTER      TICKS_FOR_ONE_US * 1500
+// PPM channels limits
+#define PPM_CH1_VAL_MIN         TICKS_FOR_ONE_US * 920
+#define PPM_CH1_VAL_MAX         TICKS_FOR_ONE_US * 2120
+#define PPM_CH1_VAL_CENTER      TICKS_FOR_ONE_US * 1520
 #define PPM_CH1_FORCE_VAL_MIN	1800
 
 // PPM channel pre pulse lenght
 #define PPM_CH1_CHANNEL_PREPULSE_LENGHT		400
 
-// PPM frame sync symbol minimum and maximum laps
+// PPM frame sync symbol limits
 #define PPM_CH1_MIN_SYNC_LENGHT		PPM_CH1_FRAME_PERIOD - ( PPM_CH1_MAX_CHANNELS * PPM_CH1_VAL_MAX ) // Sync symbol detection
-#define PPM_CH1_MAX_SYNC_LENGHT		PPM_CH1_FRAME_PERIOD - ( PPM_CH1_MAX_CHANNELS * PPM_CH1_VAL_MIN ) // Sync timeout
+#define PPM_CH1_MAX_SYNC_LENGHT		PPM_CH1_FRAME_PERIOD - ( PPM_CH1_MIN_CHANNELS * PPM_CH1_VAL_MIN ) // Sync timeout
 
 #endif
 
-#ifdef PPM_CH1_V2 (PPMv2 is a 50 Hz 16 channels mode, used initialy on Futaba and later on other manufacturers modules)
+#ifdef PPM_CH1_V2 (PPMv2 is a 50 Hz 16 channels mode)
   
-// Max input PPM channels
+// PPM channel count limits
+#define PPM_CH1_MIN_CHANNELS        4
 #define PPM_CH1_MAX_CHANNELS        16
 // Frame period
 #define PPM_CH1_FRAME_PERIOD	20000	// frame period (microseconds)
 
-// Negative Shift
-//#define SHIFT_CH1_NEGATIVE // Some receivers may use negative shift (zero volt part of the signal carry the PWM information instead of the positive part)
-
-// PPM channels minimum and maximum values
-#define PPM_CH1_VAL_MIN         TICKS_FOR_ONE_US * 450
-#define PPM_CH1_VAL_MAX         TICKS_FOR_ONE_US * 1050
-#define PPM_CH1_VAL_CENTER      TICKS_FOR_ONE_US * 750
+// PPM channels limits
+#define PPM_CH1_VAL_MIN         TICKS_FOR_ONE_US * 460
+#define PPM_CH1_VAL_MAX         TICKS_FOR_ONE_US * 1060
+#define PPM_CH1_VAL_CENTER      TICKS_FOR_ONE_US * 760
 #define PPM_CH1_FORCE_VAL_MIN	900
 
 // PPM channel pre pulse lenght
 #define PPM_CH1_CHANNEL_PREPULSE_LENGHT		200
 
-// PPM frame sync symbol minimum and maximum laps
+// PPM frame sync symbol limits
 #define PPM_CH1_MIN_SYNC_LENGHT		PPM_CH1_FRAME_PERIOD - ( PPM_CH1_MAX_CHANNELS * PPM_CH1_VAL_MAX ) // Sync symbol detection
-#define PPM_CH1_MAX_SYNC_LENGHT		PPM_CH1_FRAME_PERIOD - ( PPM_CH1_MAX_CHANNELS * PPM_CH1_VAL_MIN ) // Sync timeout
+#define PPM_CH1_MAX_SYNC_LENGHT		PPM_CH1_FRAME_PERIOD - ( PPM_CH1_MIN_CHANNELS * PPM_CH1_VAL_MIN ) // Sync timeout
 
 #endif
 
-#ifdef PPM_CH1_V3 (PPMv3 is a 40 Hz slower refresh frequency 16 channels mode to allow 16 channels with older transmitter modules)
+#ifdef PPM_CH1_V3 (PPMv3 is a 40 Hz slower refresh rate 16 channels mode)
   
-// Max input PPM channels
+// PPM channel count limits
+#define PPM_CH1_MIN_CHANNELS        4
 #define PPM_CH1_MAX_CHANNELS        16
 // Frame period
 #define PPM_CH1_FRAME_PERIOD	25000	// frame period (microseconds)
 
-// Negative Shift
-//#define SHIFT_CH1_NEGATIVE // Some receivers may use negative shift (zero volt part of the signal carry the PWM information instead of the positive part)
-
-// PPM channels minimum and maximum values
+// PPM channels limits
 #define PPM_CH1_VAL_MIN         TICKS_FOR_ONE_US * 750
 #define PPM_CH1_VAL_MAX         TICKS_FOR_ONE_US * 1350
 #define PPM_CH1_VAL_CENTER      TICKS_FOR_ONE_US * 1050
@@ -170,84 +164,79 @@ volatile uint8_t servo_input_mode = JUMPER_SELECT_MODE;
 // PPM channel pre pulse lenght
 #define PPM_CH1_CHANNEL_PREPULSE_LENGHT		400
 
-// PPM frame sync symbol minimum and maximum laps
+// PPM frame sync symbol limits
 #define PPM_CH1_MIN_SYNC_LENGHT		PPM_CH1_FRAME_PERIOD - ( PPM_CH1_MAX_CHANNELS * PPM_CH1_VAL_MAX ) // Sync symbol detection
-#define PPM_CH1_MAX_SYNC_LENGHT		PPM_CH1_FRAME_PERIOD - ( PPM_CH1_MAX_CHANNELS * PPM_CH1_VAL_MIN ) // Sync timeout
+#define PPM_CH1_MAX_SYNC_LENGHT		PPM_CH1_FRAME_PERIOD - ( PPM_CH1_MIN_CHANNELS * PPM_CH1_VAL_MIN ) // Sync timeout
 
 #endif
 
-// PPM input frame definitions receiver 2
+// PPM2 input : frame format definitions
 // -------------------------------------------------------------
 #if defined (PPM_CH2_STANDARD) || defined (PPM_CH2_STANDARD_EXTENDED)
  
 #ifdef PPM_CH2_STANDARD_EXTENDED
  
-// Max input PPM channels
-#define PPM_CH2_CHANNELS        9
+// PPM channel count limits
+#define PPM_CH1_MIN_CHANNELS        4
+#define PPM_CH1_MAX_CHANNELS        9
 // Frame period
-#define PPM_CH2_FRAME_PERIOD	22100	// frame period (microseconds)
+#define PPM_CH2_FRAME_PERIOD	22120	// frame period (microseconds)
 
 #else
 
-// Max input PPM channels
-#define PPM_CH2_CHANNELS        8
+// PPM channel count limits
+#define PPM_CH1_MIN_CHANNELS        4
+#define PPM_CH1_MAX_CHANNELS        8
 // Frame period
 #define PPM_CH2_FRAME_PERIOD	20000	// frame period (microseconds)
 
 #endif
 
-// Negative Shift
-//#define SHIFT_CH2_NEGATIVE // Some receivers may use negative shift (zero volt part of the signal carry the PWM information instead of the positive part)
-
-// PPM channels minimum and maximum values
-#define PPM_CH2_VAL_MIN         TICKS_FOR_ONE_US * 900
-#define PPM_CH2_VAL_MAX         TICKS_FOR_ONE_US * 2100
-#define PPM_CH2_VAL_CENTER      TICKS_FOR_ONE_US * 1500
+// PPM channels limits
+#define PPM_CH2_VAL_MIN         TICKS_FOR_ONE_US * 920
+#define PPM_CH2_VAL_MAX         TICKS_FOR_ONE_US * 2120
+#define PPM_CH2_VAL_CENTER      TICKS_FOR_ONE_US * 1520
 
 // PPM channel pre pulse lenght
 #define PPM_CH1_CHANNEL_PREPULSE_LENGHT		400
 
-// PPM frame sync symbol minimum and maximum laps
-#define PPM_CH2_MIN_SYNC_LENGHT		PPM_CH2_FRAME_PERIOD - ( PPM_CH2_CHANNELS * PPM_CH2_VAL_MAX ) // Sync symbol detection
-#define PPM_CH2_MAX_SYNC_LENGHT		PPM_CH2_FRAME_PERIOD - ( PPM_CH2_CHANNELS * PPM_CH2_VAL_MIN ) // Sync timeout
+// PPM frame sync symbol limits
+#define PPM_CH2_MIN_SYNC_LENGHT		PPM_CH2_FRAME_PERIOD - ( PPM_CH2_MAX_CHANNELS * PPM_CH2_VAL_MAX ) // Sync symbol detection
+#define PPM_CH2_MAX_SYNC_LENGHT		PPM_CH2_FRAME_PERIOD - ( PPM_CH2_MIN_CHANNELS * PPM_CH2_VAL_MIN ) // Sync timeout
 
 #endif
 
-#ifdef PPM_CH2_V2 (PPMv2 is a 50 Hz 16 channels mode, used initialy on Futaba and later on other manufacturers modules)
+#ifdef PPM_CH2_V2 (PPMv2 is a 50 Hz 16 channels mode)
   
-// Max input PPM channels
-#define PPM_CH2_CHANNELS        16
+// PPM channel count limits
+#define PPM_CH1_MIN_CHANNELS        4
+#define PPM_CH1_MAX_CHANNELS        16
 // Frame period
 #define PPM_CH2_FRAME_PERIOD	20000	// frame period (microseconds)
 
-// Negative Shift
-//#define SHIFT_CH2_NEGATIVE // Some receivers may use negative shift (zero volt part of the signal carry the PWM information instead of the positive part)
-
-// PPM channels minimum and maximum values
-#define PPM_CH2_VAL_MIN         TICKS_FOR_ONE_US * 450
-#define PPM_CH2_VAL_MAX         TICKS_FOR_ONE_US * 1050
-#define PPM_CH2_VAL_CENTER      TICKS_FOR_ONE_US * 750
+// PPM channels limits
+#define PPM_CH2_VAL_MIN         TICKS_FOR_ONE_US * 460
+#define PPM_CH2_VAL_MAX         TICKS_FOR_ONE_US * 1060
+#define PPM_CH2_VAL_CENTER      TICKS_FOR_ONE_US * 760
 
 // PPM channel pre pulse lenght
 #define PPM_CH1_CHANNEL_PREPULSE_LENGHT		200
 
-// PPM frame sync symbol minimum and maximum laps
-#define PPM_CH2_MIN_SYNC_LENGHT		PPM_CH2_FRAME_PERIOD - ( PPM_CH2_CHANNELS * PPM_CH2_VAL_MAX ) // Sync symbol detection
-#define PPM_CH2_MAX_SYNC_LENGHT		PPM_CH2_FRAME_PERIOD - ( PPM_CH2_CHANNELS * PPM_CH2_VAL_MIN ) // Sync timeout
+// PPM sync symbol limits
+#define PPM_CH2_MIN_SYNC_LENGHT		PPM_CH2_FRAME_PERIOD - ( PPM_CH2_MAX_CHANNELS * PPM_CH2_VAL_MAX ) // Sync symbol detection
+#define PPM_CH2_MAX_SYNC_LENGHT		PPM_CH2_FRAME_PERIOD - ( PPM_CH2_MIN_CHANNELS * PPM_CH2_VAL_MIN ) // Sync timeout
 
 #endif
 
-#ifdef PPM_CH2_V3 (PPMv3 is a 40 Hz slower refresh frequency 16 channels mode to allow 16 channels with older transmitter modules)
+#ifdef PPM_CH2_V3 (PPMv3 is a 40 Hz slower refresh rate 16 channels mode)
   
-// Max input PPM channels
-#define PPM_CH2_CHANNELS        16
+// PPM channel count limits
+#define PPM_CH1_MIN_CHANNELS        4
+#define PPM_CH1_MAX_CHANNELS        16
 // Frame period
 #define PPM_CH2_FRAME_PERIOD	25000	// frame period (microseconds)
 
-// Negative Shift
-//#define SHIFT_CH2_NEGATIVE // Some receivers may use negative shift (zero volt part of the signal carry the PWM information instead of the positive part)
-
-// PPM channels minimum and maximum values
+// PPM channels limits
 #define PPM_CH2_VAL_MIN         TICKS_FOR_ONE_US * 750
 #define PPM_CH2_VAL_MAX         TICKS_FOR_ONE_US * 1350
 #define PPM_CH2_VAL_CENTER      TICKS_FOR_ONE_US * 1050
@@ -255,9 +244,9 @@ volatile uint8_t servo_input_mode = JUMPER_SELECT_MODE;
 // PPM channel pre pulse lenght
 #define PPM_CH1_CHANNEL_PREPULSE_LENGHT		400
 
-// PPM frame sync symbol minimum and maximum laps
-#define PPM_CH2_MIN_SYNC_LENGHT		PPM_CH2_FRAME_PERIOD - ( PPM_CH2_CHANNELS * PPM_CH2_VAL_MAX ) // Sync symbol detection
-#define PPM_CH2_MAX_SYNC_LENGHT		PPM_CH2_FRAME_PERIOD - ( PPM_CH2_CHANNELS * PPM_CH2_VAL_MIN ) // Sync timeout
+// PPM sync symbol limits
+#define PPM_CH2_MIN_SYNC_LENGHT		PPM_CH2_FRAME_PERIOD - ( PPM_CH2_MAX_CHANNELS * PPM_CH2_VAL_MAX ) // Sync symbol detection
+#define PPM_CH2_MAX_SYNC_LENGHT		PPM_CH2_FRAME_PERIOD - ( PPM_CH2_MIN_CHANNELS * PPM_CH2_VAL_MIN ) // Sync timeout
 
 #endif
 
@@ -270,10 +259,10 @@ volatile uint8_t servo_input_mode = JUMPER_SELECT_MODE;
 #define PWM_CHANNELS        8
 
 // PWM channels minimum values
-#define PWM_VAL_MIN         TICKS_FOR_ONE_US * 900 - PPM_PRE_PULSE
+#define PWM_VAL_MIN         TICKS_FOR_ONE_US * 920 - PPM_PRE_PULSE
 
 // PWM channels maximum values
-#define PWM_VAL_MAX         TICKS_FOR_ONE_US * 2100 - PPM_PRE_PULSE
+#define PWM_VAL_MAX         TICKS_FOR_ONE_US * 2120 - PPM_PRE_PULSE
 
 // PWM input filters
 // Using both filters is not recommended and may reduce servo input resolution
@@ -292,10 +281,10 @@ volatile uint8_t servo_input_mode = JUMPER_SELECT_MODE;
 #define PPM_PRE_PULSE         TICKS_FOR_ONE_US * 400
 
 // PPM channels center positions
-#define PPM_VAL_CENTER      TICKS_FOR_ONE_US * 1500 - PPM_PRE_PULSE
+#define PPM_VAL_CENTER      TICKS_FOR_ONE_US * 1520 - PPM_PRE_PULSE
 
 // PPM period 18.5ms - 26.5ms (54hz - 37Hz) 
-#define PPM_PERIOD            TICKS_FOR_ONE_US * ( 22500 - ( PPM_CHANNELS * 1500 ) )
+#define PPM_PERIOD            TICKS_FOR_ONE_US * ( 22500 - ( PPM_CHANNELS * 1520 ) )
 
 // Size of ppm[..] data array
 #define PPM_ARRAY_MAX         PPM_CHANNELS * 2 + 2
@@ -308,7 +297,7 @@ volatile uint8_t servo_input_mode = JUMPER_SELECT_MODE;
 #define PPM_THROTTLE_DEFAULT  TICKS_FOR_ONE_US * 1100 - PPM_PRE_PULSE
 
 // Throttle during failsafe
-#define PPM_THROTTLE_FAILSAFE TICKS_FOR_ONE_US * 900 - PPM_PRE_PULSE
+#define PPM_THROTTLE_FAILSAFE TICKS_FOR_ONE_US * 920 - PPM_PRE_PULSE
 
 // CH5 power on values (mode selection channel)
 #define PPM_CH5_MODE_4        TICKS_FOR_ONE_US * 1555 - PPM_PRE_PULSE
