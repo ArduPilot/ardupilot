@@ -141,8 +141,9 @@ class MultiCopter(Aircraft):
         accel_earth = self.dcm * accel_body
         accel_earth += Vector3(0, 0, self.gravity)
         accel_earth += air_resistance
-        # add in some wind
-        accel_earth += self.wind.accel(self.velocity)
+
+        # add in some wind (turn force into accel by dividing by mass).
+        accel_earth += self.wind.drag(self.velocity) / self.mass
 
         # if we're on the ground, then our vertical acceleration is limited
         # to zero. This effectively adds the force of the ground on the aircraft
