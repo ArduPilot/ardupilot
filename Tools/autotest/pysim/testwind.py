@@ -2,8 +2,9 @@
 # simple test of wind generation code
 
 import util, time, random
+from rotmat import Vector3
 
-wind = util.Wind('3,90,0.1')
+wind = util.Wind('7,90,0.1')
 
 t0 = time.time()
 velocity = Vector3(0,0,0)
@@ -12,5 +13,5 @@ t = 0
 deltat = 0.01
 
 while t < 60:
-    print("%.4f %f" % (t, wind.accel(velocity, deltat=deltat).magnitude()))
+    print("%.4f %f" % (t, wind.drag(velocity, deltat=deltat).length()))
     t += deltat
