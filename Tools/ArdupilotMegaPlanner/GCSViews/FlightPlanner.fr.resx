@@ -117,8 +117,11 @@
   <resheader name="writer">
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
-  <data name="BUT_Camera.ToolTip" xml:space="preserve">
-    <value>Charger param. du camera pour superpos.</value>
+  <data name="elevationGraphToolStripMenuItem.Text" xml:space="preserve">
+    <value>Elevation Graph</value>
+  </data>
+  <data name="flyToHereToolStripMenuItem.Text" xml:space="preserve">
+    <value>Fly To Here</value>
   </data>
   <data name="CHK_geheight.Text" xml:space="preserve">
     <value>Valider hauteur</value>
@@ -126,8 +129,11 @@
   <data name="lbl_homedist.Text" xml:space="preserve">
     <value>Origine</value>
   </data>
-  <data name="BUT_grid.Text" xml:space="preserve">
-    <value>Carreaux</value>
+  <data name="gridToolStripMenuItem.Text" xml:space="preserve">
+    <value>Grid</value>
+  </data>
+  <data name="trackerHomeToolStripMenuItem.Text" xml:space="preserve">
+    <value>Tracker Home</value>
   </data>
   <data name="label10.Text" xml:space="preserve">
     <value>Lat</value>
@@ -137,6 +143,9 @@
   </data>
   <data name="lbl_prevdist.Text" xml:space="preserve">
     <value>Préced.</value>
+  </data>
+  <data name="loadAndAppendToolStripMenuItem.Text" xml:space="preserve">
+    <value>Load and Append</value>
   </data>
   <data name="label11.Text" xml:space="preserve">
     <value>Zoom</value>
@@ -156,29 +165,26 @@
   <data name="CHK_altmode.Text" xml:space="preserve">
     <value>Alt absolue</value>
   </data>
-  <data name="BUT_loadkml.ToolTip" xml:space="preserve">
-    <value>Charger Param. du camera pour superpos.</value>
-  </data>
   <data name="LBL_defalutalt.Text" xml:space="preserve">
     <value>Alt par défaut</value>
   </data>
   <data name="Param2.HeaderText" xml:space="preserve">
     <value>P2</value>
   </data>
+  <data name="cameraToolStripMenuItem.Text" xml:space="preserve">
+    <value>Camera</value>
+  </data>
   <data name="rotateMapToolStripMenuItem.Text" xml:space="preserve">
     <value>Pivoter carte</value>
+  </data>
+  <data name="kMLOverlayToolStripMenuItem.Text" xml:space="preserve">
+    <value>KML Overlay</value>
   </data>
   <data name="Lat.HeaderText" xml:space="preserve">
     <value>Lat</value>
   </data>
-  <data name="textBox1.Text" xml:space="preserve">
-    <value>1. Connecter
-2. Charger plan au besoin.
-3. Assurez-vous que le point d'origine et ALTsont défini
-4. Cliquez sur la cartepour definir des points de navig</value>
-  </data>
-  <data name="SaveFile.Text" xml:space="preserve">
-    <value>Enreg. plan de vol</value>
+  <data name="autoWPToolStripMenuItem.Text" xml:space="preserve">
+    <value>Auto WP</value>
   </data>
   <data name="label2.Text" xml:space="preserve">
     <value>Long</value>
@@ -186,11 +192,17 @@
   <data name="label3.Text" xml:space="preserve">
     <value>Alt (abs)</value>
   </data>
+  <data name="mapToolToolStripMenuItem.Text" xml:space="preserve">
+    <value>Map Tool</value>
+  </data>
   <data name="loiterForeverToolStripMenuItem.Text" xml:space="preserve">
     <value>Sans cesse</value>
   </data>
   <data name="Alt.HeaderText" xml:space="preserve">
     <value>Alt</value>
+  </data>
+  <data name="setROIToolStripMenuItem.Text" xml:space="preserve">
+    <value>Set ROI</value>
   </data>
   <data name="label7.Text" xml:space="preserve">
     <value>Endroit du pointeur</value>
@@ -201,17 +213,23 @@
   <data name="label4.Text" xml:space="preserve">
     <value>Point d'origine</value>
   </data>
-  <data name="BUT_loadwpfile.Text" xml:space="preserve">
-    <value>Charger plan de vol</value>
-  </data>
   <data name="label5.Text" xml:space="preserve">
     <value>Rad. musarder</value>
+  </data>
+  <data name="loadWPFileToolStripMenuItem.Text" xml:space="preserve">
+    <value>Load WP File</value>
   </data>
   <data name="jumpstartToolStripMenuItem.Text" xml:space="preserve">
     <value>Démarrer</value>
   </data>
   <data name="BUT_read.Text" xml:space="preserve">
     <value>Lecture PNs</value>
+  </data>
+  <data name="loadPolygonToolStripMenuItem.Text" xml:space="preserve">
+    <value>Load Polygon</value>
+  </data>
+  <data name="prefetchToolStripMenuItem.Text" xml:space="preserve">
+    <value>Prefetch</value>
   </data>
   <data name="GeoFenceuploadToolStripMenuItem.Text" xml:space="preserve">
     <value>Téléchager vers</value>
@@ -221,6 +239,9 @@
   </data>
   <data name="LBL_WPRad.Text" xml:space="preserve">
     <value>Radius PNs</value>
+  </data>
+  <data name="zoomToToolStripMenuItem.Text" xml:space="preserve">
+    <value>Zoom To</value>
   </data>
   <data name="label9.Text" xml:space="preserve">
     <value>Long</value>
@@ -249,17 +270,11 @@
   <data name="Param1.HeaderText" xml:space="preserve">
     <value>P1</value>
   </data>
-  <data name="button1.ToolTip" xml:space="preserve">
-    <value>Tracer le plan courant vs. google earth</value>
-  </data>
-  <data name="BUT_Prefetch.ToolTip" xml:space="preserve">
-    <value>Tamponner la selection de la carte </value>
-  </data>
   <data name="Delete.ToolTipText" xml:space="preserve">
     <value>Effacer la rangée</value>
   </data>
-  <data name="BUT_zoomto.ToolTip" xml:space="preserve">
-    <value>Charger les param du camera pour superpos.</value>
+  <data name="takeoffToolStripMenuItem.Text" xml:space="preserve">
+    <value>Takeoff</value>
   </data>
   <data name="addPolygonPointToolStripMenuItem.Text" xml:space="preserve">
     <value>Ajouter point au Polygon</value>
@@ -282,9 +297,6 @@
   <data name="BUT_write.Text" xml:space="preserve">
     <value>Écrire PNs</value>
   </data>
-  <data name="BUT_loadkml.Text" xml:space="preserve">
-    <value>Superpos. KML</value>
-  </data>
   <data name="dataGridViewImageColumn2.HeaderText" xml:space="preserve">
     <value>Bas</value>
   </data>
@@ -294,14 +306,26 @@
   <data name="polygonToolStripMenuItem.Text" xml:space="preserve">
     <value>Dessiner Polygon</value>
   </data>
+  <data name="gridV2ToolStripMenuItem.Text" xml:space="preserve">
+    <value>GridV2</value>
+  </data>
   <data name="jumpToolStripMenuItem.Text" xml:space="preserve">
     <value>Saut</value>
+  </data>
+  <data name="landToolStripMenuItem.Text" xml:space="preserve">
+    <value>Land</value>
+  </data>
+  <data name="fileLoadSaveToolStripMenuItem.Text" xml:space="preserve">
+    <value>File Load/Save</value>
   </data>
   <data name="TXT_DefaultAlt.Text" xml:space="preserve">
     <value>100</value>
   </data>
   <data name="geoFenceToolStripMenuItem.Text" xml:space="preserve">
     <value>Limite distance</value>
+  </data>
+  <data name="saveWPFileToolStripMenuItem.Text" xml:space="preserve">
+    <value>Save WP File</value>
   </data>
   <data name="saveToFileToolStripMenuItem.Text" xml:space="preserve">
     <value>Enreg. sur disque</value>
@@ -330,20 +354,14 @@
   <data name="panelWaypoints.Text" xml:space="preserve">
     <value>Points de navig.</value>
   </data>
-  <data name="BUT_grid.ToolTip" xml:space="preserve">
-    <value>Dessine une grille sur la zone défini, avec espacement fourni</value>
-  </data>
-  <data name="BUT_zoomto.Text" xml:space="preserve">
-    <value>Zoom à</value>
-  </data>
   <data name="loadFromFileToolStripMenuItem.Text" xml:space="preserve">
     <value>Charger le fichier</value>
   </data>
+  <data name="rTLToolStripMenuItem.Text" xml:space="preserve">
+    <value>RTL</value>
+  </data>
   <data name="CHK_holdalt.Text" xml:space="preserve">
     <value>Maintenir ALT par défaut</value>
-  </data>
-  <data name="button1.Text" xml:space="preserve">
-    <value>Graphique d'elevation</value>
   </data>
   <data name="clearMissionToolStripMenuItem.Text" xml:space="preserve">
     <value>Effacer plan</value>
@@ -354,16 +372,22 @@
   <data name="Param3.HeaderText" xml:space="preserve">
     <value>P3</value>
   </data>
-  <data name="BUT_Prefetch.Text" xml:space="preserve">
-    <value>Tamponner</value>
+  <data name="toolStripMenuItem1.Text" xml:space="preserve">
+    <value>Complex</value>
+  </data>
+  <data name="savePolygonToolStripMenuItem.Text" xml:space="preserve">
+    <value>Save Polygon</value>
+  </data>
+  <data name="createWpCircleToolStripMenuItem.Text" xml:space="preserve">
+    <value>Create Wp Circle</value>
   </data>
   <data name="ContextMeasure.Text" xml:space="preserve">
     <value>Measure Distance</value>
   </data>
-  <data name="BUT_Camera.Text" xml:space="preserve">
-    <value>Camera</value>
-  </data>
   <data name="Down.HeaderText" xml:space="preserve">
     <value>Bas</value>
+  </data>
+  <data name="reverseWPsToolStripMenuItem.Text" xml:space="preserve">
+    <value>Reverse WPs</value>
   </data>
 </root>

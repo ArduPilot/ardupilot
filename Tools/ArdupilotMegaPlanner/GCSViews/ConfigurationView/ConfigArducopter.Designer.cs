@@ -806,6 +806,12 @@
             resources.ApplyResources(this.label91, "label91");
             this.label91.Name = "label91";
             // 
+            // toolTip1
+            // 
+            this.toolTip1.AutoPopDelay = 20000;
+            this.toolTip1.InitialDelay = 500;
+            this.toolTip1.ReshowDelay = 100;
+            // 
             // BUT_writePIDS
             // 
             resources.ApplyResources(this.BUT_writePIDS, "BUT_writePIDS");

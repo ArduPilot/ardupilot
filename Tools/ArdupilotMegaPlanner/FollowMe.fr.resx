@@ -117,22 +117,15 @@
   <resheader name="writer">
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
-  <data name="label2.Text" xml:space="preserve">
-    <value>"+"</value>
-  </data>
-  <data name="label3.Text" xml:space="preserve">
-    <value>"X"</value>
-  </data>
-  <data name="label1.Text" xml:space="preserve">
-    <value>Configuration Chassis</value>
-  </data>
-  <data name="label4.Text" xml:space="preserve">
-    <value>Mettre l'appareil de niveau avant de calibrer</value>
-  </data>
-  <data name="label5.Text" xml:space="preserve">
-    <value>Calibration des accéléromètres</value>
-  </data>
-  <data name="BUT_levelac2.Text" xml:space="preserve">
-    <value>Calibrer</value>
+  <data name="textBox1.Text" xml:space="preserve">
+    <value>What this does.
+1. gets the current gps coords from a nmea gps.
+2. sends a guided mode WP to the AP every 2 seconds.
+
+How to use it
+1. connect to ap.
+2. take off, test guided mode is working.
+3. open this and pick your comport, and baud rate for your nmea gps.
+4. it should now be following you.</value>
   </data>
 </root>

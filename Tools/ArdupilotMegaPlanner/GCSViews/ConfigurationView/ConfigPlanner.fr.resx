@@ -117,22 +117,110 @@
   <resheader name="writer">
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
-  <data name="label2.Text" xml:space="preserve">
-    <value>"+"</value>
+  <data name="CHK_maprotation.Text" xml:space="preserve">
+    <value>Map is rotated to follow the plane</value>
   </data>
-  <data name="label3.Text" xml:space="preserve">
-    <value>"X"</value>
+  <data name="CHK_speechaltwarning.Text" xml:space="preserve">
+    <value>Alt Warning</value>
+  </data>
+  <data name="label12.Text" xml:space="preserve">
+    <value>HUD</value>
+  </data>
+  <data name="BUT_videostop.Text" xml:space="preserve">
+    <value>Stop</value>
+  </data>
+  <data name="CHK_speechbattery.Text" xml:space="preserve">
+    <value>Battery Warning</value>
+  </data>
+  <data name="CHK_enablespeech.Text" xml:space="preserve">
+    <value>Enable Speech</value>
+  </data>
+  <data name="label23.Text" xml:space="preserve">
+    <value>Track Length</value>
+  </data>
+  <data name="label24.Text" xml:space="preserve">
+    <value>Waypoints</value>
+  </data>
+  <data name="CHK_speechcustom.Text" xml:space="preserve">
+    <value>Time Interval</value>
+  </data>
+  <data name="label26.Text" xml:space="preserve">
+    <value>Video Format</value>
+  </data>
+  <data name="label103.Text" xml:space="preserve">
+    <value>Position</value>
+  </data>
+  <data name="label102.Text" xml:space="preserve">
+    <value>Attitude</value>
   </data>
   <data name="label1.Text" xml:space="preserve">
-    <value>Configuration Chassis</value>
+    <value>Map Follow</value>
   </data>
-  <data name="label4.Text" xml:space="preserve">
-    <value>Mettre l'appareil de niveau avant de calibrer</value>
+  <data name="label101.Text" xml:space="preserve">
+    <value>Telemetry Rates</value>
   </data>
-  <data name="label5.Text" xml:space="preserve">
-    <value>Calibration des accéléromètres</value>
+  <data name="label107.Text" xml:space="preserve">
+    <value>RC</value>
   </data>
-  <data name="BUT_levelac2.Text" xml:space="preserve">
-    <value>Calibrer</value>
+  <data name="label104.Text" xml:space="preserve">
+    <value>Mode/Status</value>
+  </data>
+  <data name="CHK_hudshow.Text" xml:space="preserve">
+    <value>Enable HUD Overlay</value>
+  </data>
+  <data name="label108.Text" xml:space="preserve">
+    <value>APM Reset</value>
+  </data>
+  <data name="CHK_loadwponconnect.Text" xml:space="preserve">
+    <value>Load Waypoints on connect?</value>
+  </data>
+  <data name="label98.Text" xml:space="preserve">
+    <value>Speed Units</value>
+  </data>
+  <data name="CHK_speechwaypoint.Text" xml:space="preserve">
+    <value>Waypoint</value>
+  </data>
+  <data name="label99.Text" xml:space="preserve">
+    <value>NOTE: The Configuration Tab will NOT display these units, as those are raw values.
+</value>
+  </data>
+  <data name="label92.Text" xml:space="preserve">
+    <value>Video Device</value>
+  </data>
+  <data name="label93.Text" xml:space="preserve">
+    <value>UI Language</value>
+  </data>
+  <data name="label96.Text" xml:space="preserve">
+    <value>Joystick</value>
+  </data>
+  <data name="CHK_GDIPlus.Text" xml:space="preserve">
+    <value>GDI+ (old type)</value>
+  </data>
+  <data name="label94.Text" xml:space="preserve">
+    <value>OSD Color</value>
+  </data>
+  <data name="label33.Text" xml:space="preserve">
+    <value>Sensor</value>
+  </data>
+  <data name="label97.Text" xml:space="preserve">
+    <value>Dist Units</value>
+  </data>
+  <data name="label95.Text" xml:space="preserve">
+    <value>Speech</value>
+  </data>
+  <data name="BUT_Joystick.Text" xml:space="preserve">
+    <value>Joystick Setup</value>
+  </data>
+  <data name="CHK_mavdebug.Text" xml:space="preserve">
+    <value>Mavlink Message Debug</value>
+  </data>
+  <data name="CHK_resetapmonconnect.Text" xml:space="preserve">
+    <value>Reset APM on USB Connect</value>
+  </data>
+  <data name="CHK_speechmode.Text" xml:space="preserve">
+    <value>Mode </value>
+  </data>
+  <data name="BUT_videostart.Text" xml:space="preserve">
+    <value>Start</value>
   </data>
 </root>

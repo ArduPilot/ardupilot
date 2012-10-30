@@ -117,196 +117,34 @@
   <resheader name="writer">
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
-  <data name="SV3_POS_.Text" xml:space="preserve">
-    <value>180</value>
-  </data>
-  <data name="BUT_HS4save.Text" xml:space="preserve">
-    <value>Manuel</value>
-  </data>
-  <data name="label12.Text" xml:space="preserve">
-    <value>PWM 0 - 1230</value>
-  </data>
-  <data name="label10.Text" xml:space="preserve">
-    <value>PWM 1621 - 1749</value>
-  </data>
-  <data name="label13.Text" xml:space="preserve">
-    <value>Mode Courant:</value>
-  </data>
-  <data name="CHK_enableoptflow.Text" xml:space="preserve">
-    <value>Activ. capteur optique</value>
-  </data>
-  <data name="label16.Text" xml:space="preserve">
-    <value>NOTE: images pou presentation uniquement. Fonctionnel pour Hex, Octo etc...</value>
-  </data>
-  <data name="CB_simple5.Text" xml:space="preserve">
-    <value>Mode Simple</value>
-  </data>
-  <data name="label11.Text" xml:space="preserve">
-    <value>PWM 1750 +</value>
-  </data>
   <data name="CHK_elevonch1rev.Text" xml:space="preserve">
     <value>Elevons CH1 Rev</value>
-  </data>
-  <data name="label14.Text" xml:space="preserve">
-    <value>PWM Actuel:</value>
-  </data>
-  <data name="$this.Text" xml:space="preserve">
-    <value>APMSetup</value>
-  </data>
-  <data name="label17.Text" xml:space="preserve">
-    <value>Swash-Servo position</value>
-  </data>
-  <data name="CHK_enablecompass.Text" xml:space="preserve">
-    <value>Activ. Boussole</value>
-  </data>
-  <data name="CB_simple4.Text" xml:space="preserve">
-    <value>Mode Simple</value>
-  </data>
-  <data name="tabArducopter.Text" xml:space="preserve">
-    <value>ArduCopter2</value>
-  </data>
-  <data name="CB_simple1.Text" xml:space="preserve">
-    <value>Mode Simple</value>
-  </data>
-  <data name="label15.Text" xml:space="preserve">
-    <value>type de châssis (+ ou x)</value>
-  </data>
-  <data name="SV2_POS_.Text" xml:space="preserve">
-    <value>60</value>
-  </data>
-  <data name="label18.Text" xml:space="preserve">
-    <value>1</value>
-  </data>
-  <data name="CB_simple6.Text" xml:space="preserve">
-    <value>Mode Simple</value>
-  </data>
-  <data name="CB_simple3.Text" xml:space="preserve">
-    <value>Mode Simple</value>
-  </data>
-  <data name="label19.Text" xml:space="preserve">
-    <value>2</value>
-  </data>
-  <data name="tabModes.Text" xml:space="preserve">
-    <value>Modes</value>
-  </data>
-  <data name="CB_simple2.Text" xml:space="preserve">
-    <value>Mode Simple</value>
-  </data>
-  <data name="label20.Text" xml:space="preserve">
-    <value>3</value>
-  </data>
-  <data name="tabReset.Text" xml:space="preserve">
-    <value>Réinit.</value>
-  </data>
-  <data name="SV1_POS_.Text" xml:space="preserve">
-    <value>-60</value>
-  </data>
-  <data name="label21.Text" xml:space="preserve">
-    <value>Haut</value>
-  </data>
-  <data name="label22.Text" xml:space="preserve">
-    <value>Mouvement Swash</value>
-  </data>
-  <data name="lbl_currentmode.Text" xml:space="preserve">
-    <value>Manuel</value>
-  </data>
-  <data name="label23.Text" xml:space="preserve">
-    <value>Deplac. du Gouvernail</value>
-  </data>
-  <data name="textBox3.Text" xml:space="preserve">
-    <value>Calibration du capteur de Voltage.1. Mesurer le voltage sur APM et inscrivez-le dans la boite ci-bas.2. Mesurer le voltage de la batterie et inscrivez-le dans la boite ci-bas.3. Inscrire les ampères par volt de la documentation du capteur de courant ci-bas</value>
   </data>
   <data name="BUT_Calibrateradio.Text" xml:space="preserve">
     <value>Calibrer Radio</value>
   </data>
-  <data name="label24.Text" xml:space="preserve">
-    <value>Max</value>
+  <data name="CHK_elevonch2rev.Text" xml:space="preserve">
+    <value>Elevons CH2 Rev</value>
   </data>
-  <data name="label2.Text" xml:space="preserve">
-    <value>Mode de vol 2</value>
+  <data name="groupBoxElevons.Text" xml:space="preserve">
+    <value>Elevon Config</value>
   </data>
-  <data name="label25.Text" xml:space="preserve">
-    <value>Roulis Max</value>
+  <data name="CHK_elevonrev.Text" xml:space="preserve">
+    <value>Elevons Rev</value>
   </data>
-  <data name="label3.Text" xml:space="preserve">
-    <value>Mode de vol 2</value>
+  <data name="CHK_mixmode.Text" xml:space="preserve">
+    <value>Elevons</value>
   </data>
-  <data name="label26.Text" xml:space="preserve">
-    <value>Tangage Max</value>
+  <data name="CHK_revch1.Text" xml:space="preserve">
+    <value>Reverse</value>
   </data>
-  <data name="label27.Text" xml:space="preserve">
-    <value>en degrés eg 2° 3' W est -2.3</value>
+  <data name="CHK_revch3.Text" xml:space="preserve">
+    <value>Reverse</value>
   </data>
-  <data name="label1.Text" xml:space="preserve">
-    <value>Mode de vol 1</value>
+  <data name="CHK_revch2.Text" xml:space="preserve">
+    <value>Reverse</value>
   </data>
-  <data name="label28.Text" xml:space="preserve">
-    <value>Niveler l'apareil pour copensation des accels</value>
-  </data>
-  <data name="label6.Text" xml:space="preserve">
-    <value>Mode de vol 6</value>
-  </data>
-  <data name="label29.Text" xml:space="preserve">
-    <value>Capacité</value>
-  </data>
-  <data name="label100.Text" xml:space="preserve">
-    <value>Déclination</value>
-  </data>
-  <data name="CHK_enablesonar.Text" xml:space="preserve">
-    <value>Activer Sonar</value>
-  </data>
-  <data name="label7.Text" xml:space="preserve">
-    <value>PWM 1231 - 1360</value>
-  </data>
-  <data name="tabRadioIn.Text" xml:space="preserve">
-    <value>Entrée Radio</value>
-  </data>
-  <data name="HS4_MIN.Text" xml:space="preserve">
-    <value>1500</value>
-  </data>
-  <data name="label4.Text" xml:space="preserve">
-    <value>Mode de vol 4</value>
-  </data>
-  <data name="label5.Text" xml:space="preserve">
-    <value>Mode de vol 5</value>
-  </data>
-  <data name="groupBox3.Text" xml:space="preserve">
-    <value>Gyro</value>
-  </data>
-  <data name="label8.Text" xml:space="preserve">
-    <value>PWM 1361 - 1490</value>
-  </data>
-  <data name="tabHardware.Text" xml:space="preserve">
-    <value>Matériel</value>
-  </data>
-  <data name="label9.Text" xml:space="preserve">
-    <value>PWM 1491 - 1620</value>
-  </data>
-  <data name="linkLabelmagdec.Text" xml:space="preserve">
-    <value>Site Web Déclination</value>
-  </data>
-  <data name="HS4_MAX.Text" xml:space="preserve">
-    <value>1500</value>
-  </data>
-  <data name="tabBattery.Text" xml:space="preserve">
-    <value>Batterie</value>
-  </data>
-  <data name="BUT_0collective.Text" xml:space="preserve">
-    <value>Zéro</value>
-  </data>
-  <data name="CHK_enableairspeed.Text" xml:space="preserve">
-    <value>Activ. Airspeed</value>
-  </data>
-  <data name="PIT_MAX_.Text" xml:space="preserve">
-    <value>4500</value>
-  </data>
-  <data name="BUT_reset.Text" xml:space="preserve">
-    <value>RàZ tout parametres du APM</value>
-  </data>
-  <data name="GYR_GAIN_.Text" xml:space="preserve">
-    <value>1000</value>
-  </data>
-  <data name="label30.Text" xml:space="preserve">
-    <value>Moniteur</value>
+  <data name="CHK_revch4.Text" xml:space="preserve">
+    <value>Reverse</value>
   </data>
 </root>

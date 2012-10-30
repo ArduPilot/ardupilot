@@ -117,22 +117,184 @@
   <resheader name="writer">
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
+  <data name="label10.Text" xml:space="preserve">
+    <value>D</value>
+  </data>
+  <data name="label13.Text" xml:space="preserve">
+    <value>IMAX</value>
+  </data>
+  <data name="label16.Text" xml:space="preserve">
+    <value>P</value>
+  </data>
+  <data name="label11.Text" xml:space="preserve">
+    <value>D</value>
+  </data>
+  <data name="label14.Text" xml:space="preserve">
+    <value>IMAX</value>
+  </data>
+  <data name="label17.Text" xml:space="preserve">
+    <value>D</value>
+  </data>
+  <data name="label88.Text" xml:space="preserve">
+    <value>IMAX</value>
+  </data>
+  <data name="label15.Text" xml:space="preserve">
+    <value>I</value>
+  </data>
+  <data name="label18.Text" xml:space="preserve">
+    <value>Gain</value>
+  </data>
+  <data name="label19.Text" xml:space="preserve">
+    <value>IMAX</value>
+  </data>
+  <data name="label82.Text" xml:space="preserve">
+    <value>P</value>
+  </data>
+  <data name="label20.Text" xml:space="preserve">
+    <value>I</value>
+  </data>
+  <data name="label21.Text" xml:space="preserve">
+    <value>I</value>
+  </data>
+  <data name="label22.Text" xml:space="preserve">
+    <value>P</value>
+  </data>
+  <data name="label86.Text" xml:space="preserve">
+    <value>I</value>
+  </data>
+  <data name="label87.Text" xml:space="preserve">
+    <value>P</value>
+  </data>
+  <data name="label84.Text" xml:space="preserve">
+    <value>IMAX</value>
+  </data>
   <data name="label2.Text" xml:space="preserve">
-    <value>"+"</value>
+    <value>IMAX</value>
+  </data>
+  <data name="label25.Text" xml:space="preserve">
+    <value>P</value>
+  </data>
+  <data name="myLabel2.Text" xml:space="preserve">
+    <value>Ch6 Opt</value>
   </data>
   <data name="label3.Text" xml:space="preserve">
-    <value>"X"</value>
+    <value>I</value>
+  </data>
+  <data name="myLabel3.Text" xml:space="preserve">
+    <value>Min</value>
+  </data>
+  <data name="label27.Text" xml:space="preserve">
+    <value>D</value>
   </data>
   <data name="label1.Text" xml:space="preserve">
-    <value>Configuration Chassis</value>
+    <value>D</value>
+  </data>
+  <data name="label28.Text" xml:space="preserve">
+    <value>IMAX</value>
+  </data>
+  <data name="groupBox6.Text" xml:space="preserve">
+    <value>Crosstrack Correction</value>
+  </data>
+  <data name="myLabel1.Text" xml:space="preserve">
+    <value>Ch7 Opt</value>
+  </data>
+  <data name="label29.Text" xml:space="preserve">
+    <value>D</value>
+  </data>
+  <data name="groupBox7.Text" xml:space="preserve">
+    <value>Altitude Hold</value>
+  </data>
+  <data name="groupBox4.Text" xml:space="preserve">
+    <value>Nav WP</value>
   </data>
   <data name="label4.Text" xml:space="preserve">
-    <value>Mettre l'appareil de niveau avant de calibrer</value>
+    <value>P</value>
   </data>
-  <data name="label5.Text" xml:space="preserve">
-    <value>Calibration des accéléromètres</value>
+  <data name="groupBox5.Text" xml:space="preserve">
+    <value>Throttle Rate</value>
   </data>
-  <data name="BUT_levelac2.Text" xml:space="preserve">
-    <value>Calibrer</value>
+  <data name="groupBox1.Text" xml:space="preserve">
+    <value>Rate Loiter</value>
+  </data>
+  <data name="label9.Text" xml:space="preserve">
+    <value>m/s</value>
+  </data>
+  <data name="groupBox19.Text" xml:space="preserve">
+    <value>Loiter Speed</value>
+  </data>
+  <data name="label30.Text" xml:space="preserve">
+    <value>I</value>
+  </data>
+  <data name="label90.Text" xml:space="preserve">
+    <value>I</value>
+  </data>
+  <data name="label32.Text" xml:space="preserve">
+    <value>IMAX </value>
+  </data>
+  <data name="label31.Text" xml:space="preserve">
+    <value>P</value>
+  </data>
+  <data name="label91.Text" xml:space="preserve">
+    <value>P</value>
+  </data>
+  <data name="label34.Text" xml:space="preserve">
+    <value>I</value>
+  </data>
+  <data name="label36.Text" xml:space="preserve">
+    <value>IMAX</value>
+  </data>
+  <data name="label35.Text" xml:space="preserve">
+    <value>P</value>
+  </data>
+  <data name="groupBox24.Text" xml:space="preserve">
+    <value>Rate Pitch</value>
+  </data>
+  <data name="groupBox25.Text" xml:space="preserve">
+    <value>Rate Roll</value>
+  </data>
+  <data name="groupBox20.Text" xml:space="preserve">
+    <value>Stabilize Yaw</value>
+  </data>
+  <data name="groupBox21.Text" xml:space="preserve">
+    <value>Stabilize Pitch</value>
+  </data>
+  <data name="groupBox22.Text" xml:space="preserve">
+    <value>Stabilize Roll</value>
+  </data>
+  <data name="groupBox23.Text" xml:space="preserve">
+    <value>Rate Yaw</value>
+  </data>
+  <data name="lblSTAB_D.Text" xml:space="preserve">
+    <value>Stabilize D</value>
+  </data>
+  <data name="label77.Text" xml:space="preserve">
+    <value>I</value>
+  </data>
+  <data name="CHK_lockrollpitch.Text" xml:space="preserve">
+    <value>Lock Pitch and Roll Values</value>
+  </data>
+  <data name="BUT_writePIDS.Text" xml:space="preserve">
+    <value>Write Params</value>
+  </data>
+  <data name="label46.Text" xml:space="preserve">
+    <value>P</value>
+  </data>
+  <data name="label47.Text" xml:space="preserve">
+    <value>IMAX</value>
+  </data>
+  <data name="label45.Text" xml:space="preserve">
+    <value>I</value>
+  </data>
+  <data name="label42.Text" xml:space="preserve">
+    <value>P</value>
+  </data>
+  <data name="label43.Text" xml:space="preserve">
+    <value>IMAX</value>
+  </data>
+  <data name="label41.Text" xml:space="preserve">
+    <value>I</value>
+  </data>
+  <data name="BUT_rerequestparams.Text" xml:space="preserve">
+    <value>Refresh Params</value>
   </data>
 </root>

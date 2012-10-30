@@ -189,7 +189,7 @@ namespace ArdupilotMega.Controls
             }
             catch { return;  }
 
-            double heightscale = (step / 90.0) * 4;
+            double heightscale = (step / 90.0) * 1;
 
             float scale = 1.0f;
 
@@ -263,10 +263,12 @@ namespace ArdupilotMega.Controls
 
             sw.Start();
 
-           double increment = step * 5;
+           double increment = step *5;
 
             double cleanup = area.Bottom % increment;
             double cleanup2 = area.Left % increment;
+
+            
 
             for (double z = (area.Bottom - cleanup); z < area.Top - step; z += increment)
             {
@@ -294,7 +296,7 @@ namespace ArdupilotMega.Controls
                     //GL.Color3(_terrain.GetPixel(imgx, imgy));
                     GL.TexCoord2(imgx,imgy);
                     GL.Vertex3(x, heightl * heightscale, z); //  _terrain.GetPixel(x, z).R
-            
+
                     try
                     {
                         heightl = srtm.getAltitude(z + increment, area.Right + area.Left - x, 20);

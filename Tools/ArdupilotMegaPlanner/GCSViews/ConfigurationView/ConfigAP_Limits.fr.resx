@@ -117,22 +117,59 @@
   <resheader name="writer">
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
-  <data name="label2.Text" xml:space="preserve">
-    <value>"+"</value>
+  <data name="LIM_ALT_ON.Text" xml:space="preserve">
+    <value>On</value>
   </data>
-  <data name="label3.Text" xml:space="preserve">
-    <value>"X"</value>
+  <data name="LIM_REQUIRED.Text" xml:space="preserve">
+    <value>Enable Required Limits</value>
   </data>
-  <data name="label1.Text" xml:space="preserve">
-    <value>Configuration Chassis</value>
+  <data name="textBox1.Text" xml:space="preserve">
+    <value>Enable a simple Fixed Radius from home GeoFence, with the ability to specify Heights and fence arming options
+</value>
   </data>
-  <data name="label4.Text" xml:space="preserve">
-    <value>Mettre l'appareil de niveau avant de calibrer</value>
+  <data name="myLabel4.Text" xml:space="preserve">
+    <value>RC Channel</value>
   </data>
-  <data name="label5.Text" xml:space="preserve">
-    <value>Calibration des accéléromètres</value>
+  <data name="LIM_FNC_REQ.Text" xml:space="preserve">
+    <value>Require Inside Fence</value>
   </data>
-  <data name="BUT_levelac2.Text" xml:space="preserve">
-    <value>Calibrer</value>
+  <data name="myLabel2.Text" xml:space="preserve">
+    <value>Max Alt</value>
+  </data>
+  <data name="myLabel3.Text" xml:space="preserve">
+    <value>Radius</value>
+  </data>
+  <data name="myLabel1.Text" xml:space="preserve">
+    <value>Min Alt</value>
+  </data>
+  <data name="LIM_FNC_SMPL.Text" xml:space="preserve">
+    <value>On</value>
+  </data>
+  <data name="groupBox4.Text" xml:space="preserve">
+    <value>Simple Fence</value>
+  </data>
+  <data name="groupBox5.Text" xml:space="preserve">
+    <value>Required Limits - Before Arming</value>
+  </data>
+  <data name="groupBox2.Text" xml:space="preserve">
+    <value>Alt Limits</value>
+  </data>
+  <data name="groupBox3.Text" xml:space="preserve">
+    <value>GPS Lock Limits</value>
+  </data>
+  <data name="LIM_GPSLCK_REQ.Text" xml:space="preserve">
+    <value>GPS Lock Required</value>
+  </data>
+  <data name="LIM_ENABLED.Text" xml:space="preserve">
+    <value>Enable GeoFence</value>
+  </data>
+  <data name="LIM_ALT_REQ.Text" xml:space="preserve">
+    <value>Require Within Alt</value>
+  </data>
+  <data name="LNK_wiki.Text" xml:space="preserve">
+    <value>Wiki</value>
+  </data>
+  <data name="LIM_GPSLCK_ON.Text" xml:space="preserve">
+    <value>On</value>
   </data>
 </root>

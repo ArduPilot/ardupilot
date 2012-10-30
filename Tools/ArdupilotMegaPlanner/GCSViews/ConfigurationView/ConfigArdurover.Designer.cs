@@ -82,6 +82,8 @@
             this.BUT_writePIDS = new ArdupilotMega.Controls.MyButton();
             this.BUT_rerequestparams = new ArdupilotMega.Controls.MyButton();
             this.groupBox4 = new System.Windows.Forms.GroupBox();
+            this.ROV_SONAR_TRIG = new System.Windows.Forms.NumericUpDown();
+            this.label13 = new System.Windows.Forms.Label();
             this.ROV_GAIN = new System.Windows.Forms.NumericUpDown();
             this.label9 = new System.Windows.Forms.Label();
             this.ROV_CL_NAV = new System.Windows.Forms.NumericUpDown();
@@ -90,8 +92,6 @@
             this.label11 = new System.Windows.Forms.Label();
             this.ROV_AWPR_NAV = new System.Windows.Forms.NumericUpDown();
             this.label12 = new System.Windows.Forms.Label();
-            this.ROV_SONAR_TRIG = new System.Windows.Forms.NumericUpDown();
-            this.label13 = new System.Windows.Forms.Label();
             this.groupBox3.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.THR_FS_VALUE)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.THR_MAX)).BeginInit();
@@ -120,11 +120,11 @@
             ((System.ComponentModel.ISupportInitialize)(this.HDNG2RLL_I)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.HDNG2RLL_P)).BeginInit();
             this.groupBox4.SuspendLayout();
+            ((System.ComponentModel.ISupportInitialize)(this.ROV_SONAR_TRIG)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.ROV_GAIN)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.ROV_CL_NAV)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.ROV_BOOSTER)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.ROV_AWPR_NAV)).BeginInit();
-            ((System.ComponentModel.ISupportInitialize)(this.ROV_SONAR_TRIG)).BeginInit();
             this.SuspendLayout();
             // 
             // groupBox3
@@ -415,6 +415,12 @@
             resources.ApplyResources(this.label64, "label64");
             this.label64.Name = "label64";
             // 
+            // toolTip1
+            // 
+            this.toolTip1.AutoPopDelay = 20000;
+            this.toolTip1.InitialDelay = 500;
+            this.toolTip1.ReshowDelay = 100;
+            // 
             // BUT_writePIDS
             // 
             resources.ApplyResources(this.BUT_writePIDS, "BUT_writePIDS");
@@ -444,6 +450,16 @@
             resources.ApplyResources(this.groupBox4, "groupBox4");
             this.groupBox4.Name = "groupBox4";
             this.groupBox4.TabStop = false;
+            // 
+            // ROV_SONAR_TRIG
+            // 
+            resources.ApplyResources(this.ROV_SONAR_TRIG, "ROV_SONAR_TRIG");
+            this.ROV_SONAR_TRIG.Name = "ROV_SONAR_TRIG";
+            // 
+            // label13
+            // 
+            resources.ApplyResources(this.label13, "label13");
+            this.label13.Name = "label13";
             // 
             // ROV_GAIN
             // 
@@ -484,16 +500,6 @@
             // 
             resources.ApplyResources(this.label12, "label12");
             this.label12.Name = "label12";
-            // 
-            // ROV_SONAR_TRIG
-            // 
-            resources.ApplyResources(this.ROV_SONAR_TRIG, "ROV_SONAR_TRIG");
-            this.ROV_SONAR_TRIG.Name = "ROV_SONAR_TRIG";
-            // 
-            // label13
-            // 
-            resources.ApplyResources(this.label13, "label13");
-            this.label13.Name = "label13";
             // 
             // ConfigArdurover
             // 
@@ -537,11 +543,11 @@
             ((System.ComponentModel.ISupportInitialize)(this.HDNG2RLL_I)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.HDNG2RLL_P)).EndInit();
             this.groupBox4.ResumeLayout(false);
+            ((System.ComponentModel.ISupportInitialize)(this.ROV_SONAR_TRIG)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.ROV_GAIN)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.ROV_CL_NAV)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.ROV_BOOSTER)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.ROV_AWPR_NAV)).EndInit();
-            ((System.ComponentModel.ISupportInitialize)(this.ROV_SONAR_TRIG)).EndInit();
             this.ResumeLayout(false);
 
         }

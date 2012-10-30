@@ -117,22 +117,91 @@
   <resheader name="writer">
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
+  <data name="label12.Text" xml:space="preserve">
+    <value>Min</value>
+  </data>
+  <data name="label10.Text" xml:space="preserve">
+    <value>Servo Limits</value>
+  </data>
+  <data name="label13.Text" xml:space="preserve">
+    <value>Max</value>
+  </data>
+  <data name="label16.Text" xml:space="preserve">
+    <value>Angle Limits</value>
+  </data>
+  <data name="label11.Text" xml:space="preserve">
+    <value>Max</value>
+  </data>
+  <data name="label14.Text" xml:space="preserve">
+    <value>Min</value>
+  </data>
+  <data name="label17.Text" xml:space="preserve">
+    <value>Servo Limits</value>
+  </data>
+  <data name="LBL_Error.Text" xml:space="preserve">
+    <value>Error Message of some kind</value>
+  </data>
+  <data name="label15.Text" xml:space="preserve">
+    <value>Pan</value>
+  </data>
+  <data name="label18.Text" xml:space="preserve">
+    <value>Max</value>
+  </data>
+  <data name="label19.Text" xml:space="preserve">
+    <value>Min</value>
+  </data>
+  <data name="label20.Text" xml:space="preserve">
+    <value>Max</value>
+  </data>
+  <data name="label21.Text" xml:space="preserve">
+    <value>Min</value>
+  </data>
+  <data name="label22.Text" xml:space="preserve">
+    <value>Input Ch</value>
+  </data>
+  <data name="label23.Text" xml:space="preserve">
+    <value>Input Ch</value>
+  </data>
+  <data name="label24.Text" xml:space="preserve">
+    <value>Input Ch</value>
+  </data>
   <data name="label2.Text" xml:space="preserve">
-    <value>"+"</value>
+    <value>Servo Limits</value>
   </data>
   <data name="label3.Text" xml:space="preserve">
-    <value>"X"</value>
+    <value>Max</value>
   </data>
   <data name="label1.Text" xml:space="preserve">
-    <value>Configuration Chassis</value>
+    <value>Angle Limits</value>
+  </data>
+  <data name="label6.Text" xml:space="preserve">
+    <value>Roll</value>
+  </data>
+  <data name="label7.Text" xml:space="preserve">
+    <value>Max</value>
   </data>
   <data name="label4.Text" xml:space="preserve">
-    <value>Mettre l'appareil de niveau avant de calibrer</value>
+    <value>Min</value>
   </data>
   <data name="label5.Text" xml:space="preserve">
-    <value>Calibration des accéléromètres</value>
+    <value>Tilt</value>
   </data>
-  <data name="BUT_levelac2.Text" xml:space="preserve">
-    <value>Calibrer</value>
+  <data name="label8.Text" xml:space="preserve">
+    <value>Min</value>
+  </data>
+  <data name="label9.Text" xml:space="preserve">
+    <value>Angle Limits</value>
+  </data>
+  <data name="mavlinkCheckBoxRR.Text" xml:space="preserve">
+    <value>Reverse</value>
+  </data>
+  <data name="mavlinkCheckBoxTR.Text" xml:space="preserve">
+    <value>Reverse</value>
+  </data>
+  <data name="mavlinkCheckBoxPR.Text" xml:space="preserve">
+    <value>Reverse</value>
+  </data>
+  <data name="LNK_wiki.Text" xml:space="preserve">
+    <value>Wiki</value>
   </data>
 </root>

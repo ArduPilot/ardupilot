@@ -1388,9 +1388,7 @@ namespace ArdupilotMega.Controls
                 {
                     graphicsObject.ResetTransform();
 
-                    drawstring(graphicsObject, "Bat", font, fontsize + 2, whiteBrush, fontsize, this.Height - 30 - fontoffset);
-                    drawstring(graphicsObject, _batterylevel.ToString("0.00v"), font, fontsize + 2, whiteBrush, fontsize * 4, this.Height - 30 - fontoffset);
-                    drawstring(graphicsObject, _current.ToString("0 A"), font, fontsize + 2, whiteBrush, fontsize * 9, this.Height - 30 - fontoffset);
+                    drawstring(graphicsObject, "Bat "+_batterylevel.ToString("0.00v") +" "+ _current.ToString("0 A"), font, fontsize + 2, whiteBrush, fontsize, this.Height - 30 - fontoffset);
                 }
                 // gps
 
@@ -1754,22 +1752,30 @@ namespace ArdupilotMega.Controls
             if (DesignMode || !started)
                 return;
 
-           
+            base.OnResize(e);
+
+
             if (SixteenXNine)
             {
                 int ht = (int)(this.Width / 1.777f);
                 if (ht != this.Height)
+                {
                     this.Height = ht;
+                    return;
+                }
             }
             else
             {
                 // 4x3
                 int ht = (int)(this.Width / 1.333f);
                 if (ht != this.Height)
+                {
                     this.Height = ht;
+                    return;
+                }
             }
 
-            base.OnResize(e);
+ 
 
             graphicsObjectGDIP = Graphics.FromImage(objBitmap);
 

@@ -32,8 +32,8 @@ namespace ArdupilotMega
             InitializeComponent();
 
             // hide advanced view
-            SPLIT_local.Panel2Collapsed = true;
-            SPLIT_remote.Panel2Collapsed = true;
+            //SPLIT_local.Panel2Collapsed = true;
+            //SPLIT_remote.Panel2Collapsed = true;
 
             // setup netid
             S3.DataSource = Enumerable.Range(0, 500).ToArray();
@@ -731,6 +731,60 @@ green LED blinking - searching for another radio
 green LED solid - link is established with another radio 
 red LED flashing - transmitting data 
 red LED solid - in firmware update mode");
+        }
+
+        private void BUT_resettodefault_Click(object sender, EventArgs e)
+        {
+             ArdupilotMega.Comms.ICommsSerial comPort = new SerialPort();
+
+            try
+            {
+                comPort.PortName = MainV2.comPort.BaseStream.PortName;
+                comPort.BaudRate = MainV2.comPort.BaseStream.BaudRate;
+
+                comPort.ReadTimeout = 4000;
+
+                comPort.Open();
+
+
+            }
+            catch { CustomMessageBox.Show("Invalid ComPort or in use"); return; }
+
+            lbl_status.Text = "Connecting";
+
+            if (doConnect(comPort))
+            {
+                // cleanup
+                doCommand(comPort, "AT&T");
+
+                comPort.DiscardInBuffer();
+
+                lbl_status.Text = "Doing Command ATI & AT&F";
+
+                doCommand(comPort, "AT&F");
+
+                doCommand(comPort, "AT&W");
+
+                lbl_status.Text = "Reset";
+
+                doCommand(comPort, "ATZ");
+
+                comPort.Close();
+
+                BUT_getcurrent_Click(sender, e);
+            }
+            else
+            {
+
+                // off hook
+                doCommand(comPort, "ATO");
+
+                lbl_status.Text = "Fail";
+                CustomMessageBox.Show("Failed to enter command mode");
+            }
+
+            if (comPort.IsOpen)
+                comPort.Close();
         }
     }
 }

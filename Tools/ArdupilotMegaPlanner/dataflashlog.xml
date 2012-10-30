@@ -20,6 +20,8 @@
       <F5>Yaw IN</F5>
       <F6>Yaw</F6>
       <F7>Nav Yaw</F7>
+      <F8>Roll I</F8>
+      <F9>Pitch I</F9>
     </ATT>
     <NTUN>
       <F1>WP Dist</F1>
@@ -30,6 +32,8 @@
       <F6>Nav Roll</F6>
       <F7>X Speed</F7>
       <F8>Y Speed</F8>
+      <F9>nav lon I</F9>
+      <F10>nav lat I</F10>
     </NTUN>
     <CTUN>
       <F1>Thr IN</F1>
@@ -40,6 +44,8 @@
       <F6>Angle boost</F6>
       <F7>Climb Rate</F7>
       <F8>Throttle  Out</F8>
+      <F9>alt hold int</F9>
+      <F10>Thr iInt</F10>
     </CTUN>
     <PM>
       <F1>Gyro Saturation</F1>
@@ -88,6 +94,20 @@
       <F1>FlightMode</F1>
       <F2>Thr Cruise</F2>
     </MOD>
+    <ITERM>
+      <F1>Stab Roll</F1>
+      <F2>Stab Pitch</F2>
+      <F3>Stab Yaw</F3>
+      <F4>Rate Roll</F4>
+      <F5>Rate Pitch</F5>
+      <F6>Rate Yaw</F6>
+      <F7>Nav Lat</F7>
+      <F8>Nav Lon</F8>
+      <F9>Loit Rate Lat</F9>
+      <F10>Loit Rate Lon</F10>
+      <F11>Thr</F11>
+      <F12>Thr Cruise</F12>
+    </ITERM>
     <PID-1>
       <F1>Err</F1>
       <F2>P</F2>

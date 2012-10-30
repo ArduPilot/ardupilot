@@ -66,6 +66,7 @@
             this.S8 = new System.Windows.Forms.ComboBox();
             this.RS8 = new System.Windows.Forms.ComboBox();
             this.RS9 = new System.Windows.Forms.ComboBox();
+            this.linkLabel1 = new System.Windows.Forms.LinkLabel();
             this.RS0 = new System.Windows.Forms.TextBox();
             this.RTI = new System.Windows.Forms.TextBox();
             this.ATI = new System.Windows.Forms.TextBox();
@@ -102,7 +103,7 @@
             this.groupBox2 = new System.Windows.Forms.GroupBox();
             this.label9 = new System.Windows.Forms.Label();
             this.label10 = new System.Windows.Forms.Label();
-            this.linkLabel1 = new System.Windows.Forms.LinkLabel();
+            this.BUT_resettodefault = new ArdupilotMega.Controls.MyButton();
             this.SPLIT_local.Panel1.SuspendLayout();
             this.SPLIT_local.Panel2.SuspendLayout();
             this.SPLIT_local.SuspendLayout();
@@ -572,6 +573,14 @@
             this.RS9.Name = "RS9";
             this.toolTip1.SetToolTip(this.RS9, resources.GetString("RS9.ToolTip"));
             // 
+            // linkLabel1
+            // 
+            resources.ApplyResources(this.linkLabel1, "linkLabel1");
+            this.linkLabel1.Name = "linkLabel1";
+            this.linkLabel1.TabStop = true;
+            this.toolTip1.SetToolTip(this.linkLabel1, resources.GetString("linkLabel1.ToolTip"));
+            this.linkLabel1.LinkClicked += new System.Windows.Forms.LinkLabelLinkClickedEventHandler(this.linkLabel1_LinkClicked);
+            // 
             // RS0
             // 
             resources.ApplyResources(this.RS0, "RS0");
@@ -842,18 +851,18 @@
             resources.ApplyResources(this.label10, "label10");
             this.label10.Name = "label10";
             // 
-            // linkLabel1
+            // BUT_resettodefault
             // 
-            resources.ApplyResources(this.linkLabel1, "linkLabel1");
-            this.linkLabel1.Name = "linkLabel1";
-            this.linkLabel1.TabStop = true;
-            this.toolTip1.SetToolTip(this.linkLabel1, resources.GetString("linkLabel1.ToolTip"));
-            this.linkLabel1.LinkClicked += new System.Windows.Forms.LinkLabelLinkClickedEventHandler(this.linkLabel1_LinkClicked);
+            resources.ApplyResources(this.BUT_resettodefault, "BUT_resettodefault");
+            this.BUT_resettodefault.Name = "BUT_resettodefault";
+            this.BUT_resettodefault.UseVisualStyleBackColor = true;
+            this.BUT_resettodefault.Click += new System.EventHandler(this.BUT_resettodefault_Click);
             // 
             // _3DRradio
             // 
             resources.ApplyResources(this, "$this");
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
+            this.Controls.Add(this.BUT_resettodefault);
             this.Controls.Add(this.linkLabel1);
             this.Controls.Add(this.label10);
             this.Controls.Add(this.groupBox2);
@@ -961,5 +970,6 @@
         private System.Windows.Forms.Label label9;
         private System.Windows.Forms.Label label10;
         private System.Windows.Forms.LinkLabel linkLabel1;
+        private Controls.MyButton BUT_resettodefault;
     }
 }
