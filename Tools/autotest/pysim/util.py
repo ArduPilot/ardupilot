@@ -1,4 +1,5 @@
 import math
+from math import sqrt, acos, cos, pi, sin, atan2
 import os, pexpect, sys, time, random
 from rotmat import Vector3, Matrix3
 from subprocess import call, check_call,Popen, PIPE
@@ -309,27 +310,90 @@ class Wind(object):
         speed = self.speed * math.fabs(self.turbulance_mul)
         return (speed, self.direction)
 
-    def accel(self, velocity, deltat=None):
-        '''return current wind acceleration in ground frame.  The
-           velocity is a Vector3 of the current velocity of the aircraft
-           in earth frame, m/s'''
+
+    # Calculate drag.
+    def drag(self, velocity, deltat=None, testing=None):
+        '''return current wind force in Earth frame.  The velocity parameter is
+           a Vector3 of the current velocity of the aircraft in earth frame, m/s'''
         from math import radians
 
+        # (m/s, degrees) : wind vector as a magnitude and angle.
         (speed, direction) = self.current(deltat=deltat)
+        # speed = self.speed
+        # direction = self.direction
 
-        # wind vector
-        v = Vector3(speed, 0, 0)
-        m = Matrix3()
-        m.from_euler(0, 0, radians(direction))
-        wind = m.transposed() * v
+        # Get the wind vector.
+        w = toVec(speed, radians(direction))
 
-        # relative wind vector
-        relwind = wind - velocity
+        obj_speed = velocity.length()
 
-        # add in cross-section effect
-        a = relwind * self.cross_section
+        # Compute the angle between the object vector and wind vector by taking
+        # the dot product and dividing by the magnitudes.
+        d = w.length() * obj_speed
+        if d == 0: 
+            alpha = 0
+        else: 
+            alpha = acos((w * velocity) / d)
 
-        return a
+        # Get the relative wind speed and angle from the object.  Note that the
+        # relative wind speed includes the velocity of the object; i.e., there
+        # is a headwind equivalent to the object's speed even if there is no
+        # absolute wind.
+        (rel_speed, beta) = apparent_wind(speed, obj_speed, alpha)
+
+        # Return the vector of the relative wind, relative to the coordinate
+        # system.
+        relWindVec = toVec(rel_speed, beta + atan2(velocity.y, velocity.x))
+
+        # Combine them to get the acceleration vector.
+        return Vector3( acc(relWindVec.x, drag_force(self, relWindVec.x))
+                      , acc(relWindVec.y, drag_force(self, relWindVec.y))
+                      , 0 )
+
+# http://en.wikipedia.org/wiki/Apparent_wind
+#
+# Returns apparent wind speed and angle of apparent wind.  Alpha is the angle
+# between the object and the true wind.  alpha of 0 rads is a headwind; pi a
+# tailwind.  Speeds should always be positive.
+def apparent_wind(wind_sp, obj_speed, alpha):
+    delta = wind_sp * cos(alpha)
+    x = wind_sp**2 + obj_speed**2 + 2 * obj_speed * delta
+    rel_speed = sqrt(x)
+    if rel_speed == 0:
+        beta = pi
+    else:
+        beta = acos((delta + obj_speed) / rel_speed)
+
+    return (rel_speed, beta)
+
+# See http://en.wikipedia.org/wiki/Drag_equation
+#
+# Drag equation is F(a) = cl * p/2 * v^2 * a, where cl : drag coefficient
+# (let's assume it's low, .e.g., 0.2), p : density of air (assume about 1
+# kg/m^3, the density just over 1500m elevation), v : relative speed of wind
+# (to the body), a : area acted on (this is captured by the cross_section
+# paramter).
+# 
+# So then we have 
+# F(a) = 0.2 * 1/2 * v^2 * cross_section = 0.1 * v^2 * cross_section
+def drag_force(wind, sp): 
+    return (sp**2.0) * 0.1 * wind.cross_section
+
+# Function to make the force vector.  relWindVec is the direction the apparent
+# wind comes *from*.  We want to compute the accleration vector in the direction
+# the wind blows to.
+def acc(val, mag):
+    if val == 0:
+        return mag
+    else:
+        return (val / abs(val)) * (0 - mag)
+
+# Converts a magnitude and angle (radians) to a vector in the xy plane.
+def toVec(magnitude, angle):
+    v = Vector3(magnitude, 0, 0)
+    m = Matrix3()
+    m.from_euler(0, 0, angle)
+    return m.transposed() * v
 
 
 if __name__ == "__main__":
