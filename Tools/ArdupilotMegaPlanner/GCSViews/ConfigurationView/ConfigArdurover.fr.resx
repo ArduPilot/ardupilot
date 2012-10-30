@@ -117,22 +117,109 @@
   <resheader name="writer">
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
+  <data name="label12.Text" xml:space="preserve">
+    <value>Auto WP Rad</value>
+  </data>
+  <data name="label10.Text" xml:space="preserve">
+    <value>Closed Loop Nav</value>
+  </data>
+  <data name="label13.Text" xml:space="preserve">
+    <value>Sonar Trigger Dist</value>
+  </data>
+  <data name="label11.Text" xml:space="preserve">
+    <value>Booster</value>
+  </data>
+  <data name="label80.Text" xml:space="preserve">
+    <value>Gain (cm)</value>
+  </data>
   <data name="label2.Text" xml:space="preserve">
-    <value>"+"</value>
+    <value>FBW max</value>
   </data>
   <data name="label3.Text" xml:space="preserve">
-    <value>"X"</value>
+    <value>FBW min</value>
   </data>
   <data name="label1.Text" xml:space="preserve">
-    <value>Configuration Chassis</value>
+    <value>Ratio</value>
+  </data>
+  <data name="label6.Text" xml:space="preserve">
+    <value>Max</value>
+  </data>
+  <data name="label7.Text" xml:space="preserve">
+    <value>Min</value>
+  </data>
+  <data name="groupBox4.Text" xml:space="preserve">
+    <value>Rover</value>
   </data>
   <data name="label4.Text" xml:space="preserve">
-    <value>Mettre l'appareil de niveau avant de calibrer</value>
+    <value>Cruise</value>
   </data>
   <data name="label5.Text" xml:space="preserve">
-    <value>Calibration des accéléromètres</value>
+    <value>FS Value</value>
   </data>
-  <data name="BUT_levelac2.Text" xml:space="preserve">
-    <value>Calibrer</value>
+  <data name="groupBox2.Text" xml:space="preserve">
+    <value>Navigation Angles</value>
+  </data>
+  <data name="groupBox3.Text" xml:space="preserve">
+    <value>Throttle 0-100%</value>
+  </data>
+  <data name="label8.Text" xml:space="preserve">
+    <value>Cruise</value>
+  </data>
+  <data name="groupBox1.Text" xml:space="preserve">
+    <value>speed m/s</value>
+  </data>
+  <data name="label9.Text" xml:space="preserve">
+    <value>Turn Gain</value>
+  </data>
+  <data name="label64.Text" xml:space="preserve">
+    <value>P</value>
+  </data>
+  <data name="label61.Text" xml:space="preserve">
+    <value>INT_MAX</value>
+  </data>
+  <data name="label62.Text" xml:space="preserve">
+    <value>D</value>
+  </data>
+  <data name="label63.Text" xml:space="preserve">
+    <value>I</value>
+  </data>
+  <data name="groupBox14.Text" xml:space="preserve">
+    <value>Energy/Alt Pid</value>
+  </data>
+  <data name="groupBox15.Text" xml:space="preserve">
+    <value>Xtrack Pids</value>
+  </data>
+  <data name="groupBox11.Text" xml:space="preserve">
+    <value>Nav Roll Pid</value>
+  </data>
+  <data name="label38.Text" xml:space="preserve">
+    <value>Pitch Max</value>
+  </data>
+  <data name="label37.Text" xml:space="preserve">
+    <value>Bank Max</value>
+  </data>
+  <data name="label39.Text" xml:space="preserve">
+    <value>Pitch Min</value>
+  </data>
+  <data name="label74.Text" xml:space="preserve">
+    <value>D</value>
+  </data>
+  <data name="label76.Text" xml:space="preserve">
+    <value>P</value>
+  </data>
+  <data name="label75.Text" xml:space="preserve">
+    <value>I</value>
+  </data>
+  <data name="label73.Text" xml:space="preserve">
+    <value>INT_MAX</value>
+  </data>
+  <data name="BUT_writePIDS.Text" xml:space="preserve">
+    <value>Write Params</value>
+  </data>
+  <data name="label79.Text" xml:space="preserve">
+    <value>Entry Angle</value>
+  </data>
+  <data name="BUT_rerequestparams.Text" xml:space="preserve">
+    <value>Refresh Params</value>
   </data>
 </root>

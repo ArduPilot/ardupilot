@@ -89,6 +89,8 @@ namespace ArdupilotMega.GCSViews
         bool playingLog = false;
         double LogPlayBackSpeed = 1.0;
 
+        GMapMarker marker;
+
         AviWriter aviwriter;
 
         public SplitContainer MainHcopy = null;
@@ -100,7 +102,7 @@ namespace ArdupilotMega.GCSViews
             threadrun = 0;
             MainV2.comPort.logreadmode = false;
             MainV2.config["FlightSplitter"] = hud1.Width;
-            if (!MainV2.MONO)
+            if (false || !MainV2.MONO)
             {
                 try
                 {
@@ -239,10 +241,10 @@ namespace ArdupilotMega.GCSViews
             }
             catch { }
 
-            if (MainV2.MONO)
+            if (true || MainV2.MONO)
             {
-                MainH.Dock = DockStyle.Fill;
-                MainH.Visible = true;
+              //  MainH.Dock = DockStyle.Fill;
+              //  MainH.Visible = true;
             }
             else
             {
@@ -495,7 +497,7 @@ namespace ArdupilotMega.GCSViews
         void tabStatus_Resize(object sender, EventArgs e)
         {
             // localise it
-            Control tabStatus = sender as Control;
+            //Control tabStatus = sender as Control;
 
             //  tabStatus.SuspendLayout();
 
@@ -661,6 +663,13 @@ namespace ArdupilotMega.GCSViews
 
             if (MainV2.config["CHK_autopan"] != null)
                 CHK_autopan.Checked = bool.Parse(MainV2.config["CHK_autopan"].ToString());
+
+            if (MainV2.config.Contains("FlightSplitter"))
+            {
+              //  hud1.Width = int.Parse(MainV2.config["FlightSplitter"].ToString());
+              //  MainH.PerformLayout();
+                MainH.SplitterDistance = int.Parse(MainV2.config["FlightSplitter"].ToString());
+            }
         }
 
         private void mainloop()
@@ -1513,6 +1522,22 @@ namespace ArdupilotMega.GCSViews
                 }
                 catch { }
             }
+            else
+            {
+                // setup a ballon with home distance
+                if (marker != null)
+                {
+                    if (routes.Markers.Contains(marker))
+                        routes.Markers.Remove(marker);
+                }
+
+                marker = new GMapMarkerRect(point);
+                marker.ToolTip = new GMapToolTip(marker);
+                marker.ToolTipMode = MarkerTooltipMode.Always;
+                marker.ToolTipText = "Home: "+((gMapControl1.Manager.GetDistance(point, MainV2.cs.HomeLocation.Point()) * 1000) * MainV2.cs.multiplierdist).ToString("0");
+
+                routes.Markers.Add(marker);
+            }
         }
 
         private void FlightData_ParentChanged(object sender, EventArgs e)
@@ -1832,10 +1857,12 @@ namespace ArdupilotMega.GCSViews
 
         private void tabControl1_SelectedIndexChanged(object sender, EventArgs e)
         {
-            /*
+            
+
+            
             if (tabControl1.SelectedTab == tabStatus)
             {
-                
+                tabStatus_Resize(sender, e);
             }
             else
             {
@@ -1851,7 +1878,7 @@ namespace ArdupilotMega.GCSViews
 
                 }
             }
-             */
+             
         }
 
         private void Gspeed_DoubleClick(object sender, EventArgs e)
@@ -2651,7 +2678,9 @@ print 'Roll complete'
 
         private void hud1_Resize(object sender, EventArgs e)
         {
-            //Console.WriteLine("HUD resize "+ hud1.Width + " " + hud1.Height);
+            Console.WriteLine("HUD resize "+ hud1.Width + " " + hud1.Height);
+
+            SubMainLeft.SplitterDistance = hud1.Height;
 
             try
             {
@@ -2683,6 +2712,15 @@ print 'Roll complete'
             MainV2.comPort.setNewWPAlt(new Locationwp() { alt = newalt });
 
             //MainV2.comPort.setNextWPTargetAlt((ushort)MainV2.cs.wpno, newalt);
+        }
+
+        private void gMapControl1_MouseLeave(object sender, EventArgs e)
+        {
+            if (marker != null)
+            {
+                if (routes.Markers.Contains(marker))
+                    routes.Markers.Remove(marker);
+            }
         }
     }
 }

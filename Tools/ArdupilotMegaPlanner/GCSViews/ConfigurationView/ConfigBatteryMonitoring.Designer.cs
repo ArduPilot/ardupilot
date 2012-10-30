@@ -50,6 +50,8 @@
             this.CMB_batmontype = new System.Windows.Forms.ComboBox();
             this.pictureBox5 = new System.Windows.Forms.PictureBox();
             this.timer1 = new System.Windows.Forms.Timer(this.components);
+            this.CMB_apmversion = new System.Windows.Forms.ComboBox();
+            this.label1 = new System.Windows.Forms.Label();
             this.groupBox4.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.pictureBox5)).BeginInit();
             this.SuspendLayout();
@@ -190,10 +192,28 @@
             this.timer1.Interval = 1000;
             this.timer1.Tick += new System.EventHandler(this.timer1_Tick);
             // 
+            // CMB_apmversion
+            // 
+            this.CMB_apmversion.FormattingEnabled = true;
+            this.CMB_apmversion.Items.AddRange(new object[] {
+            resources.GetString("CMB_apmversion.Items"),
+            resources.GetString("CMB_apmversion.Items1"),
+            resources.GetString("CMB_apmversion.Items2")});
+            resources.ApplyResources(this.CMB_apmversion, "CMB_apmversion");
+            this.CMB_apmversion.Name = "CMB_apmversion";
+            this.CMB_apmversion.SelectedIndexChanged += new System.EventHandler(this.CMB_apmversion_SelectedIndexChanged);
+            // 
+            // label1
+            // 
+            resources.ApplyResources(this.label1, "label1");
+            this.label1.Name = "label1";
+            // 
             // ConfigBatteryMonitoring
             // 
             resources.ApplyResources(this, "$this");
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
+            this.Controls.Add(this.label1);
+            this.Controls.Add(this.CMB_apmversion);
             this.Controls.Add(this.groupBox4);
             this.Controls.Add(this.label47);
             this.Controls.Add(this.CMB_batmonsensortype);
@@ -234,5 +254,7 @@
         private System.Windows.Forms.ComboBox CMB_batmontype;
         private System.Windows.Forms.PictureBox pictureBox5;
         private System.Windows.Forms.Timer timer1;
+        private System.Windows.Forms.ComboBox CMB_apmversion;
+        private System.Windows.Forms.Label label1;
     }
 }

@@ -63,6 +63,7 @@ namespace ArdupilotMega.Controls
 
             nextscreen.Control.Location = new Point(0, 0);
 
+            nextscreen.Control.SuspendLayout();
             nextscreen.Control.Dock = DockStyle.Fill;
 
             nextscreen.Control.Size = this.Size;
@@ -75,6 +76,8 @@ namespace ArdupilotMega.Controls
             }
 
             this.Controls.Add(nextscreen.Control);
+
+            nextscreen.Control.ResumeLayout();
 
             ThemeManager.ApplyThemeTo(nextscreen.Control);
 

@@ -138,6 +138,9 @@
   <data name="goHereToolStripMenuItem.Text" xml:space="preserve">
     <value>Nagiguez ici</value>
   </data>
+  <data name="quickView1.ToolTip" xml:space="preserve">
+    <value>Double Click me to change</value>
+  </data>
   <data name="lbl_windvel.ToolTip" xml:space="preserve">
     <value>Vitesse actuel du vent</value>
   </data>
@@ -165,6 +168,15 @@
   <data name="TXT_long.Text" xml:space="preserve">
     <value>0</value>
   </data>
+  <data name="displayBatteryInfoToolStripMenuItem.Text" xml:space="preserve">
+    <value>Display Battery Info</value>
+  </data>
+  <data name="lbl_hdop.Text" xml:space="preserve">
+    <value>hdop: 0</value>
+  </data>
+  <data name="BUT_ARM.ToolTip" xml:space="preserve">
+    <value>Arm the Mav</value>
+  </data>
   <data name="BUT_log2kml.Text" xml:space="preserve">
     <value>Journal &gt; KML</value>
   </data>
@@ -174,8 +186,14 @@
   <data name="BUT_clear_track.Text" xml:space="preserve">
     <value>Efface Trajet</value>
   </data>
+  <data name="BUT_ARM.Text" xml:space="preserve">
+    <value>Arm/ Disarm</value>
+  </data>
   <data name="dataGridViewImageColumn1.HeaderText" xml:space="preserve">
     <value>Monter</value>
+  </data>
+  <data name="userItemsToolStripMenuItem.Text" xml:space="preserve">
+    <value>User Items</value>
   </data>
   <data name="CHK_autopan.ToolTip" xml:space="preserve">
     <value>Centrer automatiquement sur la position actuel</value>
@@ -192,17 +210,26 @@
   <data name="CHK_autopan.Text" xml:space="preserve">
     <value>Centré</value>
   </data>
+  <data name="setMJPEGSourceToolStripMenuItem.Text" xml:space="preserve">
+    <value>Set MJPEG source</value>
+  </data>
   <data name="BUT_joystick.Text" xml:space="preserve">
     <value>Manette</value>
   </data>
   <data name="Zoomlevel.ToolTip" xml:space="preserve">
     <value>Change niveau du Zoom</value>
   </data>
+  <data name="resetToolStripMenuItem.Text" xml:space="preserve">
+    <value>Reset</value>
+  </data>
   <data name="CB_tuning.Text" xml:space="preserve">
     <value>M.à point</value>
   </data>
   <data name="dataGridViewImageColumn2.HeaderText" xml:space="preserve">
     <value>Bas</value>
+  </data>
+  <data name="lbl_sats.Text" xml:space="preserve">
+    <value>Sats: 0</value>
   </data>
   <data name="BUTactiondo.Text" xml:space="preserve">
     <value>Effectuer</value>
@@ -215,6 +242,9 @@
   </data>
   <data name="BUT_RAWSensor.ToolTip" xml:space="preserve">
     <value>Affiche valeurs brut Gyro et Accel, aussi entrée/sorti du Radio</value>
+  </data>
+  <data name="setAspectRatioToolStripMenuItem.Text" xml:space="preserve">
+    <value>Set Aspect Ratio</value>
   </data>
   <data name="Gspeed.ToolTip" xml:space="preserve">
     <value>Double click pour changer Max</value>
@@ -230,6 +260,9 @@
   </data>
   <data name="BUT_Homealt.Text" xml:space="preserve">
     <value>Definir alt. d'origine</value>
+  </data>
+  <data name="tabQuick.Text" xml:space="preserve">
+    <value>Quick</value>
   </data>
   <data name="lbl_winddir.Text" xml:space="preserve">
     <value>Dir: 0</value>
@@ -261,8 +294,14 @@
   <data name="lbl_logpercent.Text" xml:space="preserve">
     <value>0.00 %</value>
   </data>
+  <data name="flightPlannerToolStripMenuItem.Text" xml:space="preserve">
+    <value>Flight Planner</value>
+  </data>
   <data name="BUT_setmode.Text" xml:space="preserve">
     <value>Déf. Mode</value>
+  </data>
+  <data name="lbl_playbackspeed.Text" xml:space="preserve">
+    <value>x 1.0</value>
   </data>
   <data name="NUM_playbackspeed.ToolTip" xml:space="preserve">
     <value>Vitesse lecture</value>
@@ -272,5 +311,14 @@
   </data>
   <data name="BUT_quickrtl.Text" xml:space="preserve">
     <value>&amp;RTL</value>
+  </data>
+  <data name="flyToHereAltToolStripMenuItem.Text" xml:space="preserve">
+    <value>Fly To Here Alt</value>
+  </data>
+  <data name="lbl_sats.ToolTip" xml:space="preserve">
+    <value>Satallite Count</value>
+  </data>
+  <data name="lbl_hdop.ToolTip" xml:space="preserve">
+    <value>gps hdop</value>
   </data>
 </root>

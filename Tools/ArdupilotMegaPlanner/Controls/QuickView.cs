@@ -69,7 +69,7 @@ namespace ArdupilotMega.Controls
 
             Size extent = TextRenderer.MeasureText(labelWithPseudoOpacity2.Text, this.Font);
 
-            float hRatio = (this.Height) / (float)extent.Height;
+            float hRatio = (labelWithPseudoOpacity2.Height) / (float)(extent.Height);
             float wRatio = this.Width / (float)extent.Width;
             float ratio = (hRatio < wRatio) ? hRatio : wRatio;
 

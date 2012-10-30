@@ -135,4 +135,7 @@
   <data name="BUT_firstperson.Text" xml:space="preserve">
     <value>KML Première personne</value>
   </data>
+  <data name="BUT_dumpdf.Text" xml:space="preserve">
+    <value>(adv) Dump All DF</value>
+  </data>
 </root>

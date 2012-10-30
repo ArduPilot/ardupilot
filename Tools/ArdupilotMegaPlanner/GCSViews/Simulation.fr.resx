@@ -264,6 +264,9 @@
   <data name="CHKgraphthrottle.Text" xml:space="preserve">
     <value>Affiche vitesse</value>
   </data>
+  <data name="CHK_xplane10.Text" xml:space="preserve">
+    <value>Xplane 10</value>
+  </data>
   <data name="RAD_aerosimrc.Text" xml:space="preserve">
     <value>AeroSimRC</value>
   </data>

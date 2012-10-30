@@ -117,22 +117,73 @@
   <resheader name="writer">
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
+  <data name="label12.Text" xml:space="preserve">
+    <value>Miss using this interface can cause servo damage, use with caution!!!</value>
+  </data>
+  <data name="label10.Text" xml:space="preserve">
+    <value>Angle</value>
+  </data>
+  <data name="label11.Text" xml:space="preserve">
+    <value>Angle</value>
+  </data>
+  <data name="BUT_find.Text" xml:space="preserve">
+    <value>Find Trim (3DR Radio)</value>
+  </data>
+  <data name="LBL_tilttrim.Text" xml:space="preserve">
+    <value>Angle</value>
+  </data>
+  <data name="LBL_pantrim.Text" xml:space="preserve">
+    <value>Angle</value>
+  </data>
   <data name="label2.Text" xml:space="preserve">
-    <value>"+"</value>
+    <value>Pan</value>
   </data>
   <data name="label3.Text" xml:space="preserve">
-    <value>"X"</value>
+    <value>Trim</value>
   </data>
   <data name="label1.Text" xml:space="preserve">
-    <value>Configuration Chassis</value>
+    <value>Interface</value>
+  </data>
+  <data name="label6.Text" xml:space="preserve">
+    <value>Trim</value>
+  </data>
+  <data name="label7.Text" xml:space="preserve">
+    <value>Tilt</value>
   </data>
   <data name="label4.Text" xml:space="preserve">
-    <value>Mettre l'appareil de niveau avant de calibrer</value>
+    <value>Range</value>
   </data>
   <data name="label5.Text" xml:space="preserve">
-    <value>Calibration des accéléromètres</value>
+    <value>Range</value>
   </data>
-  <data name="BUT_levelac2.Text" xml:space="preserve">
-    <value>Calibrer</value>
+  <data name="CMB_interface.Text" xml:space="preserve">
+    <value>Maestro</value>
+  </data>
+  <data name="label8.Text" xml:space="preserve">
+    <value>PWM</value>
+  </data>
+  <data name="label9.Text" xml:space="preserve">
+    <value>PWM</value>
+  </data>
+  <data name="CHK_revtilt.Text" xml:space="preserve">
+    <value>Rev</value>
+  </data>
+  <data name="TXT_pwmrangepan.Text" xml:space="preserve">
+    <value>1000</value>
+  </data>
+  <data name="CHK_revpan.Text" xml:space="preserve">
+    <value>Rev</value>
+  </data>
+  <data name="TXT_panrange.Text" xml:space="preserve">
+    <value>360</value>
+  </data>
+  <data name="BUT_connect.Text" xml:space="preserve">
+    <value>Connect</value>
+  </data>
+  <data name="TXT_pwmrangetilt.Text" xml:space="preserve">
+    <value>1000</value>
+  </data>
+  <data name="TXT_tiltrange.Text" xml:space="preserve">
+    <value>90</value>
   </data>
 </root>

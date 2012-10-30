@@ -251,6 +251,19 @@ namespace ArdupilotMega.GCSViews.ConfigurationView
                 TXT_divider.Text = (maxvolt / topvolt).ToString();
                 TXT_ampspervolt.Text = (maxamps / topamps).ToString();
             }
+            else if (selection == 4) // 3dr iv
+            {
+                float maxvolt = 50f;
+                float maxamps = 90f;
+                float mvpervolt = 100f;
+                float mvperamp = 55.55f;
+
+                float topvolt = (maxvolt * mvpervolt) / 1000;
+                float topamps = (maxamps * mvperamp) / 1000;
+
+                TXT_divider.Text = (maxvolt / topvolt).ToString();
+                TXT_ampspervolt.Text = (maxamps / topamps).ToString();
+            }
 
             // enable to update
             TXT_divider.Enabled = true;
@@ -333,9 +346,36 @@ namespace ArdupilotMega.GCSViews.ConfigurationView
             {
                 CMB_batmonsensortype.SelectedIndex = 3;
             }
+            else if (TXT_ampspervolt.Text == (18.0018).ToString())
+            {
+                CMB_batmonsensortype.SelectedIndex = 4;
+            }
             else
             {
                 CMB_batmonsensortype.SelectedIndex = 0;
+            }
+
+            if (MainV2.comPort.param["BATT_VOLT_PIN"] != null)
+            {
+                CMB_apmversion.Enabled = true;
+
+                float value = (float)MainV2.comPort.param["BATT_VOLT_PIN"];
+                if (value == 0) // apm1
+                {
+                    CMB_apmversion.SelectedIndex = 0;
+                }
+                else if (value == 1) // apm2
+                {
+                    CMB_apmversion.SelectedIndex = 1;
+                }
+                else if (value == 2) // apm2.5
+                {
+                    CMB_apmversion.SelectedIndex = 2;
+                }
+            }
+            else
+            {
+                CMB_apmversion.Enabled = false;
             }
 
             startup = false;
@@ -359,6 +399,33 @@ namespace ArdupilotMega.GCSViews.ConfigurationView
         private void timer1_Tick(object sender, EventArgs e)
         {
             TXT_voltage.Text = MainV2.cs.battery_voltage.ToString();
-        }  
+        }
+
+        private void CMB_apmversion_SelectedIndexChanged(object sender, EventArgs e)
+        {
+            if (startup)
+                return;
+
+            int selection = int.Parse(CMB_batmonsensortype.Text.Substring(0, 1));
+
+            if (selection == 0)
+            {
+                // apm1
+                MainV2.comPort.setParam("BATT_VOLT_PIN", 0);
+                MainV2.comPort.setParam("BATT_CURR_PIN", 1);
+            }
+            else if (selection == 1)
+            {
+                // apm2
+                MainV2.comPort.setParam("BATT_VOLT_PIN", 1);
+                MainV2.comPort.setParam("BATT_CURR_PIN", 2);
+            }
+            else if (selection == 2)
+            {
+                //apm2.5
+                MainV2.comPort.setParam("BATT_VOLT_PIN", 13);
+                MainV2.comPort.setParam("BATT_CURR_PIN", 12);
+            }
+        }
     }
 }

@@ -117,22 +117,70 @@
   <resheader name="writer">
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
+  <data name="label12.Text" xml:space="preserve">
+    <value>CM/Pixel</value>
+  </data>
+  <data name="label10.Text" xml:space="preserve">
+    <value>FOV V (m)</value>
+  </data>
+  <data name="label13.Text" xml:space="preserve">
+    <value>Pixel Width</value>
+  </data>
+  <data name="label11.Text" xml:space="preserve">
+    <value>Flight line distance</value>
+  </data>
+  <data name="label14.Text" xml:space="preserve">
+    <value>Pixel Height</value>
+  </data>
+  <data name="$this.Text" xml:space="preserve">
+    <value>Camera</value>
+  </data>
+  <data name="label15.Text" xml:space="preserve">
+    <value>Sidelap</value>
+  </data>
   <data name="label2.Text" xml:space="preserve">
-    <value>"+"</value>
+    <value>Height m (agl)</value>
   </data>
   <data name="label3.Text" xml:space="preserve">
-    <value>"X"</value>
+    <value>Sensor Height</value>
   </data>
   <data name="label1.Text" xml:space="preserve">
-    <value>Configuration Chassis</value>
+    <value>Focal Length</value>
+  </data>
+  <data name="label6.Text" xml:space="preserve">
+    <value>FOV H (m)</value>
+  </data>
+  <data name="label7.Text" xml:space="preserve">
+    <value>Angle H</value>
   </data>
   <data name="label4.Text" xml:space="preserve">
-    <value>Mettre l'appareil de niveau avant de calibrer</value>
+    <value>Sensor Width</value>
+  </data>
+  <data name="TXT_imgwidth.Text" xml:space="preserve">
+    <value>4608</value>
   </data>
   <data name="label5.Text" xml:space="preserve">
-    <value>Calibration des accéléromètres</value>
+    <value>Overlap</value>
   </data>
-  <data name="BUT_levelac2.Text" xml:space="preserve">
-    <value>Calibrer</value>
+  <data name="label8.Text" xml:space="preserve">
+    <value>Angle V</value>
+  </data>
+  <data name="label9.Text" xml:space="preserve">
+    <value>Across Flight line</value>
+  </data>
+  <data name="TXT_senswidth.Text" xml:space="preserve">
+    <value>6.16</value>
+  </data>
+  <data name="TXT_sensheight.Text" xml:space="preserve">
+    <value>4.62</value>
+  </data>
+  <data name="BUT_save.Text" xml:space="preserve">
+    <value>Save</value>
+  </data>
+  <data name="TXT_imgheight.Text" xml:space="preserve">
+    <value>3456</value>
+  </data>
+  <data name="CHK_camdirection.Text" xml:space="preserve">
+    <value>Camera top facing forward</value>
   </data>
 </root>

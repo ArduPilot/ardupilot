@@ -229,7 +229,7 @@ namespace ArdupilotMega
                 //DST to Home
                 double dstlat = Math.Abs(TrackerLocation.Lat - lat) * 111319.5;
                 double dstlon = Math.Abs(TrackerLocation.Lng - lng) * 111319.5 * scaleLongDown;
-                return (float)Math.Sqrt((dstlat * dstlat) + (dstlon * dstlon));
+                return (float)Math.Sqrt((dstlat * dstlat) + (dstlon * dstlon)) * multiplierdist;
             }
         }
 
@@ -237,7 +237,7 @@ namespace ArdupilotMega
         {
             get
             {
-                float dist = DistToMAV;
+                float dist = DistToMAV / multiplierdist;
 
                 if (dist < 5)
                     return 0;
@@ -267,7 +267,9 @@ namespace ArdupilotMega
                 //bearing = bearing - 180;//absolut return direction
                 //if (bearing < 0) bearing += 360;//normalization
 
-                if (DistToMAV < 5)
+                float dist = DistToMAV / multiplierdist;
+
+                if (dist < 5)
                     return 0;
 
                 return (float)bearing;
@@ -315,7 +317,9 @@ namespace ArdupilotMega
                 }
 
                 {
-                    work = DistToMAV * (float)Math.Pow(2.0, work / 6.0);
+                    float dist = DistToMAV / multiplierdist;
+
+                    work = dist * (float)Math.Pow(2.0, work / 6.0);
                 }
 
                 return work;
