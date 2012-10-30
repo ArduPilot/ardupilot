@@ -185,7 +185,7 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @DisplayName: Waypoint Loiter Radius
     // @Description: Defines the distance from the waypoint center, the plane will maintain during a loiter
     // @Units: Meters
-    // @Range: 1 127
+    // @Range: 1 32767
     // @Increment: 1
     // @User: Standard
     GSCALAR(loiter_radius,          "WP_LOITER_RAD",  LOITER_RADIUS_DEFAULT),
