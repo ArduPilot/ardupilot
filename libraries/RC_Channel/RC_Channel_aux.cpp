@@ -99,6 +99,19 @@ enable_aux_servos()
 	}
 }
 
+/*
+  set radio_out for all channels matching the given function type
+ */
+void
+RC_Channel_aux::set_radio(RC_Channel_aux::Aux_servo_function_t function, int16_t value)
+{
+    for (uint8_t i = 0; i < 7; i++) {
+        if (_aux_channels[i] && _aux_channels[i]->function.get() == function) {
+			_aux_channels[i]->radio_out = value;
+		}
+    }
+}
+
 
 /*
   set and save the trim value to radio_in for all channels matching
@@ -137,6 +150,19 @@ RC_Channel_aux::set_radio_to_max(RC_Channel_aux::Aux_servo_function_t function)
     for (uint8_t i = 0; i < 7; i++) {
         if (_aux_channels[i] && _aux_channels[i]->function.get() == function) {
 			_aux_channels[i]->radio_out = _aux_channels[i]->radio_max;
+		}
+    }
+}
+
+/*
+  set the radio_out value for any channel with the given function to radio_trim
+ */
+void
+RC_Channel_aux::set_radio_to_trim(RC_Channel_aux::Aux_servo_function_t function)
+{
+    for (uint8_t i = 0; i < 7; i++) {
+        if (_aux_channels[i] && _aux_channels[i]->function.get() == function) {
+			_aux_channels[i]->radio_out = _aux_channels[i]->radio_trim;
 		}
     }
 }
