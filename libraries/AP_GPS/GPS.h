@@ -128,6 +128,9 @@ public:
     float velocity_east(void)  {
         return _status == GPS_OK ? _velocity_east  : 0;
     }
+    float velocity_down(void)  {
+        return _status == GPS_OK ? _velocity_down  : 0;
+    }
 
     // last ground speed in m/s. This can be used when we have no GPS
     // lock to return the last ground speed we had with lock
@@ -140,6 +143,9 @@ public:
 
     // the time we got our last fix in system milliseconds
     uint32_t last_fix_time;
+
+	// return true if the GPS supports raw velocity values
+
 
 protected:
     Stream      *_port;                 ///< port the GPS is attached to
@@ -222,6 +228,7 @@ private:
     // components of the velocity, in m/s
     float _velocity_north;
     float _velocity_east;
+    float _velocity_down;
 };
 
 inline int32_t
