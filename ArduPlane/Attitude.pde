@@ -358,9 +358,9 @@ static void set_servos(void)
         }
         g.channel_throttle.radio_out    = g.channel_throttle.radio_in;
         g.channel_rudder.radio_out              = g.channel_rudder.radio_in;
-        // FIXME To me it does not make sense to control the aileron using radio_in in manual mode
-        // Doug could you please take a look at this ?
-        RC_Channel_aux::copy_radio_in_out(RC_Channel_aux::k_aileron);
+
+        // ensure flaps and extra aileron channels are updated
+        RC_Channel_aux::set_radio(RC_Channel_aux::k_aileron, g.channel_roll.radio_out);
         RC_Channel_aux::copy_radio_in_out(RC_Channel_aux::k_flap_auto);
 		//RC_Channel_aux::copy_radio_in_out(RC_Channel_aux::k_dspoiler1);
 		//RC_Channel_aux::copy_radio_in_out(RC_Channel_aux::k_dspoiler2);
