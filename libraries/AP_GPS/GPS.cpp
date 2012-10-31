@@ -59,6 +59,7 @@ GPS::update(void)
                 // the GPS is able to give us velocity numbers directly
                 _velocity_north = _vel_north * 0.01;
                 _velocity_east  = _vel_east * 0.01;
+                _velocity_down  = _vel_down * 0.01;
             } else {
                 float gps_heading = ToRad(ground_course * 0.01);
                 float gps_speed   = ground_speed * 0.01;
@@ -69,6 +70,9 @@ GPS::update(void)
 
                 _velocity_north = gps_speed * cos_heading;
                 _velocity_east  = gps_speed * sin_heading;
+
+				// no good way to get descent rate
+				_velocity_down  = 0;
             }
         }
     }
