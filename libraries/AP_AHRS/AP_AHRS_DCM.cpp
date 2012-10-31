@@ -1,3 +1,4 @@
+/// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 /*
  *       APM_AHRS_DCM.cpp
  *
@@ -421,7 +422,7 @@ AP_AHRS_DCM::drift_correction(float deltat)
             // we don't have a new GPS fix - nothing more to do
             return;
         }
-        velocity = Vector3f(_gps->velocity_north(), _gps->velocity_east(), 0);
+        velocity = Vector3f(_gps->velocity_north(), _gps->velocity_east(), _gps->velocity_down());
         last_correction_time = _gps->last_fix_time;
         if (_have_gps_lock == false) {
             // if we didn't have GPS lock in the last drift
