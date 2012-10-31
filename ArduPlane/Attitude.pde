@@ -362,8 +362,13 @@ static void set_servos(void)
         // ensure flaps and extra aileron channels are updated
         RC_Channel_aux::set_radio(RC_Channel_aux::k_aileron, g.channel_roll.radio_out);
         RC_Channel_aux::copy_radio_in_out(RC_Channel_aux::k_flap_auto);
-		//RC_Channel_aux::copy_radio_in_out(RC_Channel_aux::k_dspoiler1);
-		//RC_Channel_aux::copy_radio_in_out(RC_Channel_aux::k_dspoiler2);
+
+        if (g.mix_mode != 0) {
+            // set any differential spoilers to follow the elevons in
+            // manual mode. 
+            RC_Channel_aux::set_radio(RC_Channel_aux::k_dspoiler1, g.channel_roll.radio_out);
+            RC_Channel_aux::set_radio(RC_Channel_aux::k_dspoiler2, g.channel_pitch.radio_out);
+        }
     } else {
         if (g.mix_mode == 0) {
             RC_Channel_aux::set_servo_out(RC_Channel_aux::k_aileron, g.channel_roll.servo_out);
@@ -373,11 +378,17 @@ static void set_servos(void)
             float ch2;
             ch1 = g.channel_pitch.servo_out - (BOOL_TO_SIGN(g.reverse_elevons) * g.channel_roll.servo_out);
             ch2 = g.channel_pitch.servo_out + (BOOL_TO_SIGN(g.reverse_elevons) * g.channel_roll.servo_out);
-			/*Differntial Spoilers*/
-			if(RC_Channel_aux::function_assigned(RC_Channel_aux::k_dspoiler1) && RC_Channel_aux::function_assigned(RC_Channel_aux::k_dspoiler2)) {
+
+			/* Differential Spoilers
+               If differential spoilers are setup, then we translate
+               rudder control into splitting of the two ailerons on
+               the side of the aircraft where we want to induce
+               additional drag.
+             */
+			if (RC_Channel_aux::function_assigned(RC_Channel_aux::k_dspoiler1) && RC_Channel_aux::function_assigned(RC_Channel_aux::k_dspoiler2)) {
 				float ch3 = ch1;
 				float ch4 = ch2;
-				if( BOOL_TO_SIGN(g.reverse_elevons) * g.channel_rudder.servo_out < 0) {
+				if ( BOOL_TO_SIGN(g.reverse_elevons) * g.channel_rudder.servo_out < 0) {
 				    ch1 += abs(g.channel_rudder.servo_out);
 				    ch3 -= abs(g.channel_rudder.servo_out);
 				} else {
@@ -386,7 +397,9 @@ static void set_servos(void)
 				}
 				RC_Channel_aux::set_servo_out(RC_Channel_aux::k_dspoiler1, ch3);
 				RC_Channel_aux::set_servo_out(RC_Channel_aux::k_dspoiler2, ch4);
-			} // spoiler deployed
+			}
+
+            // directly set the radio_out values for elevon mode
             g.channel_roll.radio_out  =     elevon1_trim + (BOOL_TO_SIGN(g.reverse_ch1_elevon) * (ch1 * 500.0/ SERVO_MAX));
             g.channel_pitch.radio_out =     elevon2_trim + (BOOL_TO_SIGN(g.reverse_ch2_elevon) * (ch2 * 500.0/ SERVO_MAX));
         }
