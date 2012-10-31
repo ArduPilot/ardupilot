@@ -55,6 +55,7 @@
 #define AP_MOTOR_ROLLPITCH_LIMIT    0x01
 #define AP_MOTOR_YAW_LIMIT          0x02
 #define AP_MOTOR_THROTTLE_LIMIT     0x04
+#define AP_MOTOR_ANY_LIMIT          0xFF
 
 /// @class      AP_Motors
 class AP_Motors {
@@ -127,7 +128,7 @@ public:
     };
 
     // reached_limits - return whether we hit the limits of the motors
-    virtual uint8_t     reached_limit( uint8_t which_limit = 0x00 ) {
+    virtual uint8_t     reached_limit( uint8_t which_limit = AP_MOTOR_ANY_LIMIT ) {
         return _reached_limit & which_limit;
     }
 
