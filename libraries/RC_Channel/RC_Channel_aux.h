@@ -50,6 +50,9 @@ public:
 
     void            output_ch(unsigned char ch_nr);
 
+	// set radio_out for a function channel
+	static void set_radio(Aux_servo_function_t function, int16_t value);
+
 	// set and save the trim for a function channel to radio_in
 	static void set_radio_trim(Aux_servo_function_t function);
 
@@ -58,6 +61,9 @@ public:
 
 	// set radio_out to radio_max
 	static void set_radio_to_max(Aux_servo_function_t function);
+
+	// set radio_out to radio_trim
+	static void set_radio_to_trim(Aux_servo_function_t function);
 
 	// copy radio_in to radio_out
 	static void copy_radio_in_out(Aux_servo_function_t function);
