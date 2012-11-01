@@ -549,6 +549,8 @@ namespace ArdupilotMega.GCSViews.ConfigurationView
             SetCheckboxFromConfig("CHK_GDIPlus", CHK_GDIPlus);
             SetCheckboxFromConfig("CHK_maprotation", CHK_maprotation);
 
+            SetCheckboxFromConfig("CHK_disttohomeflightdata", CHK_disttohomeflightdata);
+
             //set hud color state
             string hudcolor = (string)MainV2.config["hudcolor"];
             int index = CMB_osdcolor.Items.IndexOf(hudcolor ?? "White");
@@ -567,6 +569,11 @@ namespace ArdupilotMega.GCSViews.ConfigurationView
         {
             if (MainV2.config[configKey] != null)
                 chk.Checked = bool.Parse(MainV2.config[configKey].ToString());
+        }
+
+        private void CHK_disttohomeflightdata_CheckedChanged(object sender, EventArgs e)
+        {
+            MainV2.config["CHK_disttohomeflightdata"] = CHK_disttohomeflightdata.Checked.ToString();
         }
     }
 }

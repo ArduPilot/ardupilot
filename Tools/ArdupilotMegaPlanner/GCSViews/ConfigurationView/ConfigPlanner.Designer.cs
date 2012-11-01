@@ -71,11 +71,13 @@
             this.CHK_hudshow = new System.Windows.Forms.CheckBox();
             this.label92 = new System.Windows.Forms.Label();
             this.CMB_videosources = new System.Windows.Forms.ComboBox();
+            this.label1 = new System.Windows.Forms.Label();
+            this.CHK_maprotation = new System.Windows.Forms.CheckBox();
+            this.label2 = new System.Windows.Forms.Label();
+            this.CHK_disttohomeflightdata = new System.Windows.Forms.CheckBox();
             this.BUT_Joystick = new ArdupilotMega.Controls.MyButton();
             this.BUT_videostop = new ArdupilotMega.Controls.MyButton();
             this.BUT_videostart = new ArdupilotMega.Controls.MyButton();
-            this.label1 = new System.Windows.Forms.Label();
-            this.CHK_maprotation = new System.Windows.Forms.CheckBox();
             ((System.ComponentModel.ISupportInitialize)(this.NUM_tracklength)).BeginInit();
             this.SuspendLayout();
             // 
@@ -432,6 +434,32 @@
             this.CMB_videosources.SelectedIndexChanged += new System.EventHandler(this.CMB_videosources_SelectedIndexChanged);
             this.CMB_videosources.Click += new System.EventHandler(this.CMB_videosources_Click);
             // 
+            // label1
+            // 
+            resources.ApplyResources(this.label1, "label1");
+            this.label1.Name = "label1";
+            // 
+            // CHK_maprotation
+            // 
+            resources.ApplyResources(this.CHK_maprotation, "CHK_maprotation");
+            this.CHK_maprotation.Name = "CHK_maprotation";
+            this.CHK_maprotation.UseVisualStyleBackColor = true;
+            this.CHK_maprotation.CheckedChanged += new System.EventHandler(this.CHK_maprotation_CheckedChanged);
+            // 
+            // label2
+            // 
+            resources.ApplyResources(this.label2, "label2");
+            this.label2.Name = "label2";
+            // 
+            // CHK_disttohomeflightdata
+            // 
+            this.CHK_disttohomeflightdata.Checked = true;
+            this.CHK_disttohomeflightdata.CheckState = System.Windows.Forms.CheckState.Checked;
+            resources.ApplyResources(this.CHK_disttohomeflightdata, "CHK_disttohomeflightdata");
+            this.CHK_disttohomeflightdata.Name = "CHK_disttohomeflightdata";
+            this.CHK_disttohomeflightdata.UseVisualStyleBackColor = true;
+            this.CHK_disttohomeflightdata.CheckedChanged += new System.EventHandler(this.CHK_disttohomeflightdata_CheckedChanged);
+            // 
             // BUT_Joystick
             // 
             resources.ApplyResources(this.BUT_Joystick, "BUT_Joystick");
@@ -453,22 +481,12 @@
             this.BUT_videostart.UseVisualStyleBackColor = true;
             this.BUT_videostart.Click += new System.EventHandler(this.BUT_videostart_Click);
             // 
-            // label1
-            // 
-            resources.ApplyResources(this.label1, "label1");
-            this.label1.Name = "label1";
-            // 
-            // CHK_maprotation
-            // 
-            resources.ApplyResources(this.CHK_maprotation, "CHK_maprotation");
-            this.CHK_maprotation.Name = "CHK_maprotation";
-            this.CHK_maprotation.UseVisualStyleBackColor = true;
-            this.CHK_maprotation.CheckedChanged += new System.EventHandler(this.CHK_maprotation_CheckedChanged);
-            // 
             // ConfigPlanner
             // 
             resources.ApplyResources(this, "$this");
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
+            this.Controls.Add(this.label2);
+            this.Controls.Add(this.CHK_disttohomeflightdata);
             this.Controls.Add(this.label1);
             this.Controls.Add(this.CHK_maprotation);
             this.Controls.Add(this.label33);
@@ -572,5 +590,7 @@
         private ArdupilotMega.Controls.MyButton BUT_videostart;
         private System.Windows.Forms.Label label1;
         private System.Windows.Forms.CheckBox CHK_maprotation;
+        private System.Windows.Forms.Label label2;
+        private System.Windows.Forms.CheckBox CHK_disttohomeflightdata;
     }
 }

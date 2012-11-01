@@ -35,6 +35,7 @@
             this.quickView2 = new ArdupilotMega.Controls.QuickView();
             this.quickView1 = new ArdupilotMega.Controls.QuickView();
             this.tabActions = new System.Windows.Forms.TabPage();
+            this.modifyandSetSpeed = new ArdupilotMega.Controls.ModifyandSet();
             this.modifyandSetAlt = new ArdupilotMega.Controls.ModifyandSet();
             this.BUT_ARM = new ArdupilotMega.Controls.MyButton();
             this.BUT_script = new ArdupilotMega.Controls.MyButton();
@@ -86,7 +87,6 @@
             this.dataGridViewImageColumn2 = new System.Windows.Forms.DataGridViewImageColumn();
             this.ZedGraphTimer = new System.Windows.Forms.Timer(this.components);
             this.toolTip1 = new System.Windows.Forms.ToolTip(this.components);
-            this.dockContainer1 = new Crom.Controls.Docking.DockContainer();
             this.contextMenuStripDockContainer = new System.Windows.Forms.ContextMenuStrip(this.components);
             this.resetToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.contextMenuStripMap.SuspendLayout();
@@ -392,6 +392,7 @@
             // 
             // tabActions
             // 
+            this.tabActions.Controls.Add(this.modifyandSetSpeed);
             this.tabActions.Controls.Add(this.modifyandSetAlt);
             this.tabActions.Controls.Add(this.BUT_ARM);
             this.tabActions.Controls.Add(this.BUT_script);
@@ -412,6 +413,18 @@
             resources.ApplyResources(this.tabActions, "tabActions");
             this.tabActions.Name = "tabActions";
             this.tabActions.UseVisualStyleBackColor = true;
+            // 
+            // modifyandSetSpeed
+            // 
+            this.modifyandSetSpeed.ButtonText = "Change Speed";
+            resources.ApplyResources(this.modifyandSetSpeed, "modifyandSetSpeed");
+            this.modifyandSetSpeed.Name = "modifyandSetSpeed";
+            this.modifyandSetSpeed.Value = new decimal(new int[] {
+            100,
+            0,
+            0,
+            0});
+            this.modifyandSetSpeed.Click += new System.EventHandler(this.modifyandSetSpeed_Click);
             // 
             // modifyandSetAlt
             // 
@@ -1295,19 +1308,6 @@
             this.toolTip1.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(205)))), ((int)(((byte)(226)))), ((int)(((byte)(150)))));
             this.toolTip1.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(121)))), ((int)(((byte)(148)))), ((int)(((byte)(41)))));
             // 
-            // dockContainer1
-            // 
-            this.dockContainer1.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(118)))), ((int)(((byte)(118)))), ((int)(((byte)(118)))));
-            this.dockContainer1.CanMoveByMouseFilledForms = true;
-            this.dockContainer1.ContextMenuStrip = this.contextMenuStripDockContainer;
-            resources.ApplyResources(this.dockContainer1, "dockContainer1");
-            this.dockContainer1.Name = "dockContainer1";
-            this.dockContainer1.TitleBarGradientColor1 = System.Drawing.Color.FromArgb(((int)(((byte)(148)))), ((int)(((byte)(193)))), ((int)(((byte)(31)))));
-            this.dockContainer1.TitleBarGradientColor2 = System.Drawing.Color.FromArgb(((int)(((byte)(205)))), ((int)(((byte)(226)))), ((int)(((byte)(150)))));
-            this.dockContainer1.TitleBarGradientSelectedColor1 = System.Drawing.Color.DarkGray;
-            this.dockContainer1.TitleBarGradientSelectedColor2 = System.Drawing.Color.White;
-            this.dockContainer1.TitleBarTextColor = System.Drawing.Color.FromArgb(((int)(((byte)(64)))), ((int)(((byte)(87)))), ((int)(((byte)(4)))));
-            // 
             // contextMenuStripDockContainer
             // 
             this.contextMenuStripDockContainer.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {
@@ -1326,7 +1326,6 @@
             resources.ApplyResources(this, "$this");
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.Controls.Add(this.MainH);
-            this.Controls.Add(this.dockContainer1);
             this.MinimumSize = new System.Drawing.Size(1008, 461);
             this.Name = "FlightData";
             this.FormClosing += new System.Windows.Forms.FormClosingEventHandler(this.FlightData_FormClosing);
@@ -1436,11 +1435,12 @@
         private System.Windows.Forms.ToolStripMenuItem flyToHereAltToolStripMenuItem;
         private System.Windows.Forms.ToolStripMenuItem flightPlannerToolStripMenuItem;
         private System.Windows.Forms.ToolStripMenuItem userItemsToolStripMenuItem;
-        private Crom.Controls.Docking.DockContainer dockContainer1;
+        //private Crom.Controls.Docking.DockContainer dockContainer1;
         private System.Windows.Forms.ContextMenuStrip contextMenuStripDockContainer;
         private System.Windows.Forms.ToolStripMenuItem resetToolStripMenuItem;
         private Controls.MyButton BUT_ARM;
         private Controls.ModifyandSet modifyandSetAlt;
+        private Controls.ModifyandSet modifyandSetSpeed;
 
     }
 }

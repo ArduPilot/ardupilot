@@ -6,11 +6,11 @@ using System.Resources;
 // General Information about an assembly is controlled through the following 
 // set of attributes. Change these attribute values to modify the information
 // associated with an assembly.
-[assembly: AssemblyTitle("ArdupilotMega Planner")]
-[assembly: AssemblyDescription("Ardupilot Mega Planner (APM Planner)")]
+[assembly: AssemblyTitle("Mission Planner")]
+[assembly: AssemblyDescription("Mission Planner")]
 [assembly: AssemblyConfiguration("")]
 [assembly: AssemblyCompany("Michael Oborne")]
-[assembly: AssemblyProduct("ArdupilotMega Planner")]
+[assembly: AssemblyProduct("Mission Planner")]
 [assembly: AssemblyCopyright("Copyright © Michael Oborne 2010-2012")]
 [assembly: AssemblyTrademark("")]
 [assembly: AssemblyCulture("")]
@@ -34,5 +34,5 @@ using System.Resources;
 // by using the '*' as shown below:
 // [assembly: AssemblyVersion("1.0.*")]
 [assembly: AssemblyVersion("1.1.*")]
-[assembly: AssemblyFileVersion("1.2.15")]
+[assembly: AssemblyFileVersion("1.2.16")]
 [assembly: NeutralResourcesLanguageAttribute("")]

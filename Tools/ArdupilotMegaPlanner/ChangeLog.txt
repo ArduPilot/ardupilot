@@ -1,4 +1,35 @@
-﻿* Mission Planner 1.2.12
+﻿* Mission Planner 1.2.15
+fix hud battery text overlaying
+tweak hud resize
+tweak main switcher
+fix quickview text scaleing
+fix dist to mav.
+added french translation thanks oliver
+change tooltip time
+add 3dr iv
+add distance to home
+dataflashlog update
+
+* Mission Planner 1.2.14
+fix update/blank flightdata screen
+add srtm blank file check
+add Land to modes
+
+* Mission Planner 1.2.13
+remove some mavlink 0.9 code
+add arm/disarm button. Not yet implemented AC and AP Side.
+modify heli setup screen
+modify failsafe screen
+fix old firmware under mono
+workaround mono crash.
+modify planner wp storage
+tweak log dl screen
+add change alt button
+modify tlog wp extractor, multiple extractions
+speed up srtm reading
+fix lang edit.
+
+* Mission Planner 1.2.12
 add arduino chip detect
 fix apm2,2.5 dialog test
 add write timeout. this will stop planner hangs on bad serial devices.

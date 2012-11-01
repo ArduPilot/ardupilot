@@ -1025,7 +1025,7 @@ namespace ArdupilotMega
 
         public bool doARM(bool armit)
         {
-            return doCommand(MAV_CMD.COMPONENT_ARM_DISARM, armit ? 1 : 0, 0, 0, 0, 0, 0, 0);
+            return doCommand(MAV_CMD.COMPONENT_ARM_DISARM, armit ? 0 : 1, 0, 0, 0, 0, 0, 0);
         }
 
         public bool doCommand(MAV_CMD actionid, float p1, float p2, float p3, float p4, float p5, float p6, float p7)

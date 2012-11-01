@@ -1747,6 +1747,11 @@ namespace ArdupilotMega.Controls
             catch (Exception ex) { log.Info(ex.ToString()); opengl = false; }
         }
 
+        public void doResize()
+        {
+            OnResize(new EventArgs());
+        }
+
         protected override void OnResize(EventArgs e)
         {
             if (DesignMode || !started)

@@ -126,16 +126,9 @@
     <Reference Include="alglibnet2, Version=0.0.0.0, Culture=neutral, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
     </Reference>
-    <Reference Include="AStar">
-      <HintPath>..\..\..\..\..\Desktop\DIYDrones\myquadgit\astar\AStar\bin\Release\AStar.dll</HintPath>
-    </Reference>
     <Reference Include="BSE.Windows.Forms">
     </Reference>
     <Reference Include="Core">
-    </Reference>
-    <Reference Include="Crom.Controls, Version=2.0.5.21, Culture=neutral, processorArchitecture=MSIL">
-      <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\..\..\..\..\Desktop\DIYDrones\crom.controls.dock\src\Crom.Controls\bin\Debug\Crom.Controls.dll</HintPath>
     </Reference>
     <Reference Include="DirectShowLib-2005">
     </Reference>
@@ -669,7 +662,7 @@
     <Compile Include="SerialOutput.Designer.cs">
       <DependentUpon>SerialOutput.cs</DependentUpon>
     </Compile>
-    <Compile Include="Utilities\PathFind.cs" />
+    <None Include="Utilities\PathFind.cs" />
     <Compile Include="Utilities\Speech.cs" />
     <Compile Include="Splash.cs">
       <SubType>Form</SubType>
