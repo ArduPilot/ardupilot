@@ -19,7 +19,7 @@ using System.Drawing.Drawing2D;
 using ArdupilotMega.Controls;
 using ArdupilotMega.Utilities;
 using ArdupilotMega.Controls.BackstageView;
-using Crom.Controls.Docking;
+//using Crom.Controls.Docking;
 using log4net;
 using System.Reflection;
 
@@ -75,7 +75,7 @@ namespace ArdupilotMega.GCSViews
         bool huddropout = false;
         bool huddropoutresize = false;
 
-        private DockStateSerializer _serializer = null;
+        //      private DockStateSerializer _serializer = null;
 
         List<PointLatLng> trackPoints = new List<PointLatLng>();
 
@@ -107,10 +107,10 @@ namespace ArdupilotMega.GCSViews
                 try
                 {
                     log.Info("Saving Screen Layout");
-                    _serializer.Save();
+                    //_serializer.Save();
                 }
                 catch (Exception ex) { log.Error(ex); }
-                SaveWindowLayout();
+                //SaveWindowLayout();
             }
             System.Threading.Thread.Sleep(100);
             base.Dispose(disposing);
@@ -121,10 +121,10 @@ namespace ArdupilotMega.GCSViews
             InitializeComponent();
 
             instance = this;
-            _serializer = new DockStateSerializer(dockContainer1);
-            _serializer.SavePath = Application.StartupPath + Path.DirectorySeparatorChar + "FDscreen.xml";
-            dockContainer1.PreviewRenderer = new PreviewRenderer();
-
+            //    _serializer = new DockStateSerializer(dockContainer1);
+            //    _serializer.SavePath = Application.StartupPath + Path.DirectorySeparatorChar + "FDscreen.xml";
+            //    dockContainer1.PreviewRenderer = new PreviewRenderer();
+            //
             mymap = gMapControl1;
             myhud = hud1;
             MainHcopy = MainH;
@@ -243,43 +243,44 @@ namespace ArdupilotMega.GCSViews
 
             if (true || MainV2.MONO)
             {
-              //  MainH.Dock = DockStyle.Fill;
-              //  MainH.Visible = true;
+                //  MainH.Dock = DockStyle.Fill;
+                //  MainH.Visible = true;
             }
             else
             {
-                log.Info("1-"+ DateTime.Now);
-                SetupDocking();
-                log.Info("2-" + DateTime.Now);
-                if (File.Exists(_serializer.SavePath) == true )
-                {
-                    FileInfo fi = new FileInfo(_serializer.SavePath);
+                /*     log.Info("1-"+ DateTime.Now);
+                     //SetupDocking();
+                     log.Info("2-" + DateTime.Now);
+                     if (File.Exists(_serializer.SavePath) == true )
+                     {
+                         FileInfo fi = new FileInfo(_serializer.SavePath);
 
-                    if (fi.Length > 500)
-                    {
-                        try
-                        {
-                            _serializer.Load(true, GetFormFromGuid);
-                            log.Info("3-" + DateTime.Now);
-                        }
-                        catch (Exception ex)
-                        {
-                            log.Info(ex);
-                            try
-                            {
-                                SetupDocking();
-                            }
-                            catch (Exception ex2)
-                            {
-                                log.Info(ex2);
-                            }
-                        }
-                    }
-                }
-                log.Info("D-" + DateTime.Now);
+                         if (fi.Length > 500)
+                         {
+                             try
+                             {
+                                 _serializer.Load(true, GetFormFromGuid);
+                                 log.Info("3-" + DateTime.Now);
+                             }
+                             catch (Exception ex)
+                             {
+                                 log.Info(ex);
+                                 try
+                                 {
+                                     //SetupDocking();
+                                 }
+                                 catch (Exception ex2)
+                                 {
+                                     log.Info(ex2);
+                                 }
+                             }
+                         }
+                     }
+                     log.Info("D-" + DateTime.Now);
+                 * */
             }
         }
-
+        /*
         void SetupDocking()
         {
             this.SuspendLayout();
@@ -425,6 +426,7 @@ namespace ArdupilotMega.GCSViews
 
             return answer;
         }
+     
 
         Guid GetOrCreateGuid(string configname)
         {
@@ -493,7 +495,7 @@ namespace ArdupilotMega.GCSViews
             catch { }
             return newform;
         }
-
+        */
         void tabStatus_Resize(object sender, EventArgs e)
         {
             // localise it
@@ -666,8 +668,8 @@ namespace ArdupilotMega.GCSViews
 
             if (MainV2.config.Contains("FlightSplitter"))
             {
-              //  hud1.Width = int.Parse(MainV2.config["FlightSplitter"].ToString());
-              //  MainH.PerformLayout();
+                //  hud1.Width = int.Parse(MainV2.config["FlightSplitter"].ToString());
+                //  MainH.PerformLayout();
                 MainH.SplitterDistance = int.Parse(MainV2.config["FlightSplitter"].ToString());
             }
         }
@@ -1531,12 +1533,15 @@ namespace ArdupilotMega.GCSViews
                         routes.Markers.Remove(marker);
                 }
 
-                marker = new GMapMarkerRect(point);
-                marker.ToolTip = new GMapToolTip(marker);
-                marker.ToolTipMode = MarkerTooltipMode.Always;
-                marker.ToolTipText = "Home: "+((gMapControl1.Manager.GetDistance(point, MainV2.cs.HomeLocation.Point()) * 1000) * MainV2.cs.multiplierdist).ToString("0");
+                if (MainV2.getConfig("CHK_disttohomeflightdata") != false.ToString())
+                {
+                    marker = new GMapMarkerRect(point);
+                    marker.ToolTip = new GMapToolTip(marker);
+                    marker.ToolTipMode = MarkerTooltipMode.Always;
+                    marker.ToolTipText = "Home: " + ((gMapControl1.Manager.GetDistance(point, MainV2.cs.HomeLocation.Point()) * 1000) * MainV2.cs.multiplierdist).ToString("0");
 
-                routes.Markers.Add(marker);
+                    routes.Markers.Add(marker);
+                }
             }
         }
 
@@ -1812,8 +1817,10 @@ namespace ArdupilotMega.GCSViews
             if (huddropout)
                 return;
 
+            SubMainLeft.Panel1Collapsed = true;
             Form dropout = new Form();
             dropout.Size = new System.Drawing.Size(hud1.Width, hud1.Height + 20);
+            SubMainLeft.Panel1.Controls.Remove(hud1);
             dropout.Controls.Add(hud1);
             dropout.Resize += new EventHandler(dropout_Resize);
             dropout.FormClosed += new FormClosedEventHandler(dropout_FormClosed);
@@ -1823,7 +1830,9 @@ namespace ArdupilotMega.GCSViews
 
         void dropout_FormClosed(object sender, FormClosedEventArgs e)
         {
-            GetFormFromGuid(GetOrCreateGuid("fd_hud_guid")).Controls.Add(hud1);
+            //GetFormFromGuid(GetOrCreateGuid("fd_hud_guid")).Controls.Add(hud1);
+            SubMainLeft.Panel1.Controls.Add(hud1);
+            SubMainLeft.Panel1Collapsed = false;
             huddropout = false;
         }
 
@@ -1857,9 +1866,9 @@ namespace ArdupilotMega.GCSViews
 
         private void tabControl1_SelectedIndexChanged(object sender, EventArgs e)
         {
-            
 
-            
+
+
             if (tabControl1.SelectedTab == tabStatus)
             {
                 tabStatus_Resize(sender, e);
@@ -1868,9 +1877,9 @@ namespace ArdupilotMega.GCSViews
             {
                 foreach (Control temp in tabStatus.Controls)
                 {
-                 //   temp.DataBindings.Clear();
-                  //  temp.Dispose();
-                  //  tabStatus.Controls.Remove(temp);
+                    //   temp.DataBindings.Clear();
+                    //  temp.Dispose();
+                    //  tabStatus.Controls.Remove(temp);
                 }
 
                 if (tabControl1.SelectedTab == tabQuick)
@@ -1878,7 +1887,7 @@ namespace ArdupilotMega.GCSViews
 
                 }
             }
-             
+
         }
 
         private void Gspeed_DoubleClick(object sender, EventArgs e)
@@ -2481,12 +2490,13 @@ print 'Roll complete'
         private void setAspectRatioToolStripMenuItem_Click(object sender, EventArgs e)
         {
             hud1.SixteenXNine = !hud1.SixteenXNine;
-            hud1.Invalidate();
+            hud1.doResize();
         }
 
         private void displayBatteryInfoToolStripMenuItem_Click(object sender, EventArgs e)
         {
             hud1.batteryon = !hud1.batteryon;
+            hud1.Refresh();
         }
 
         private void quickView_DoubleClick(object sender, EventArgs e)
@@ -2678,7 +2688,7 @@ print 'Roll complete'
 
         private void hud1_Resize(object sender, EventArgs e)
         {
-            Console.WriteLine("HUD resize "+ hud1.Width + " " + hud1.Height);
+            Console.WriteLine("HUD resize " + hud1.Width + " " + hud1.Height);
 
             SubMainLeft.SplitterDistance = hud1.Height;
 
@@ -2691,8 +2701,8 @@ print 'Roll complete'
 
         private void resetToolStripMenuItem_Click(object sender, EventArgs e)
         {
-            dockContainer1.Clear();
-            SetupDocking();
+            //dockContainer1.Clear();
+            //SetupDocking();
             this.Refresh();
         }
 
@@ -2702,7 +2712,8 @@ print 'Roll complete'
                 return;
 
             // arm the MAV
-            MainV2.comPort.doARM(MainV2.cs.armed);
+            bool ans = MainV2.comPort.doARM(MainV2.cs.armed);
+
         }
 
         private void modifyandSetAlt_Click(object sender, EventArgs e)
@@ -2720,6 +2731,26 @@ print 'Roll complete'
             {
                 if (routes.Markers.Contains(marker))
                     routes.Markers.Remove(marker);
+            }
+        }
+
+        private void modifyandSetSpeed_Click(object sender, EventArgs e)
+        {
+            // QUAD
+            if (MainV2.comPort.param.ContainsKey("WP_SPEED_MAX"))
+            {
+                MainV2.comPort.setParam("WP_SPEED_MAX", (float)modifyandSetSpeed.Value);
+            } // plane with airspeed
+            else if (MainV2.comPort.param.ContainsKey("TRIM_ARSPD_CM") && MainV2.comPort.param.ContainsKey("ARSPD_ENABLE")
+                && MainV2.comPort.param.ContainsKey("ARSPD_USE") && (float)MainV2.comPort.param["ARSPD_ENABLE"] == 1
+                && (float)MainV2.comPort.param["ARSPD_USE"] == 1)
+            {
+                MainV2.comPort.setParam("TRIM_ARSPD_CM", (float)modifyandSetSpeed.Value);
+            } // plane without airspeed
+            else if (MainV2.comPort.param.ContainsKey("TRIM_THROTTLE") && MainV2.comPort.param.ContainsKey("ARSPD_USE")
+                && (float)MainV2.comPort.param["ARSPD_USE"] == 0)
+            {
+                MainV2.comPort.setParam("TRIM_THROTTLE", (float)modifyandSetSpeed.Value);
             }
         }
     }

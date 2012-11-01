@@ -406,7 +406,7 @@ namespace ArdupilotMega.GCSViews.ConfigurationView
             if (startup)
                 return;
 
-            int selection = int.Parse(CMB_batmonsensortype.Text.Substring(0, 1));
+            int selection = int.Parse(CMB_apmversion.Text.Substring(0, 1));
 
             if (selection == 0)
             {

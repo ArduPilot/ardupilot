@@ -816,13 +816,19 @@ namespace ArdupilotMega
                     {
                         var loc = bytearray.ByteArrayToStructure<MAVLink.mavlink_global_position_int_t>(6);
 
+                        // the new arhs deadreckoning may send 0 alt and 0 long. check for and undo
+
                         useLocation = true;
-
-                        
-
-                        //alt = loc.alt / 1000.0f;
-                        lat = loc.lat / 10000000.0f;
-                        lng = loc.lon / 10000000.0f;
+                        if (loc.lat == 0 && loc.lon == 0)
+                        {
+                            useLocation = false;
+                        }
+                        else
+                        {
+                            //alt = loc.alt / 1000.0f;
+                            lat = loc.lat / 10000000.0f;
+                            lng = loc.lon / 10000000.0f;
+                        }
                     }
 
                     bytearray = mavinterface.packets[MAVLink.MAVLINK_MSG_ID_MISSION_CURRENT];
