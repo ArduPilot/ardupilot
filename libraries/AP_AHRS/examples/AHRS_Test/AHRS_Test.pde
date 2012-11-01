@@ -21,6 +21,7 @@
 #include <AP_Compass.h>
 #include <AP_Airspeed.h>
 #include <AP_Baro.h>
+#include <AP_Semaphore.h>
 #include <DataFlash.h>
 #include <APM_RC.h>
 #include <GCS_MAVLink.h>
