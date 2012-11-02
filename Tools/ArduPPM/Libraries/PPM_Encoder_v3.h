@@ -97,7 +97,7 @@ volatile uint8_t servo_input_mode = JUMPER_SELECT_MODE;
 #define PPM_CH1_MIN_CHANNELS        4
 #define PPM_CH1_MAX_CHANNELS        9
 // Frame period
-#define PPM_CH1_FRAME_PERIOD	22120	// frame period (microseconds)
+#define PPM_CH1_FRAME_PERIOD	22500	// frame period (microseconds)
 
 #else
 
@@ -180,7 +180,7 @@ volatile uint8_t servo_input_mode = JUMPER_SELECT_MODE;
 #define PPM_CH1_MIN_CHANNELS        4
 #define PPM_CH1_MAX_CHANNELS        9
 // Frame period
-#define PPM_CH2_FRAME_PERIOD	22120	// frame period (microseconds)
+#define PPM_CH2_FRAME_PERIOD	22500	// frame period (microseconds)
 
 #else
 
