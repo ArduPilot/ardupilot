@@ -259,6 +259,7 @@ const uint16_t failsafe_ppm[ PPM_ARRAY_MAX ] =
 #define PPM_COMPARE           OCR1A
 #define PPM_COMPARE_FLAG      COM1A0
 #define PPM_COMPARE_ENABLE    OCIE1A
+#define PPM_COMPARE_FORCE_MATCH    FOC1A
 
 #define    USB_DDR            DDRC
 #define USB_PORT              PORTC
@@ -312,6 +313,7 @@ void EVENT_USB_Device_Disconnect(void)
 #define PPM_COMPARE           OCR1B
 #define PPM_COMPARE_FLAG      COM1B0
 #define PPM_COMPARE_ENABLE    OCIE1B
+#define PPM_COMPARE_FORCE_MATCH    FOC1B
 
 #else
 #error NO SUPPORTED DEVICE FOUND! (ATmega16u2 / ATmega32u2 / ATmega328p)
@@ -343,13 +345,8 @@ void ppm_start( void )
         // Stop interrupts
         cli();
 
-		#if defined (_POSITIVE_PPM_FRAME_)
-		// Make sure initial output state is high
-        PPM_PORT |= (1 << PPM_OUTPUT_PIN);
-		#else
 		// Make sure initial output state is low
         PPM_PORT &= ~(1 << PPM_OUTPUT_PIN);
-		#endif
         
         // Wait for output pin to settle
         //_delay_us( 1 );
@@ -363,6 +360,11 @@ void ppm_start( void )
 
         // Set TIMER1 8x prescaler
         TCCR1B = ( 1 << CS11 );
+		
+		#if defined (_POSITIVE_PPM_FRAME_)
+        // Force output compare to reverse polarity
+        TCCR1C |= (1 << PPM_COMPARE_FORCE_MATCH);
+        #endif
 
         // Enable output compare interrupt
         TIMSK1 |= (1 << PPM_COMPARE_ENABLE);
