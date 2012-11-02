@@ -1,5 +1,5 @@
 // -------------------------------------------------------------
-// PPM ENCODER V2.2.68 (04-06-2012)
+// PPM ENCODER V2.2.69 (02-11-2012)
 // -------------------------------------------------------------
 // Improved servo to ppm for ArduPilot MEGA v1.x (ATmega328p),
 // PhoneDrone and APM2 (ATmega32u2)
@@ -60,6 +60,10 @@
 // 04-06-2012
 // V2.2.68 - Fixed possible logic flaw in throttle failsafe reset if  _JITTER_FILTER_ is enabled
 
+// 02-11-2012
+// V2.2.69 - Added PPM output positive polarity - mainly for standalone PPM encoder board use
+
+
 // -------------------------------------------------------------
 
 #ifndef _PPM_ENCODER_H_
@@ -72,6 +76,7 @@
 #include <avr/interrupt.h>
 #include <avr/wdt.h>
 #include <util/delay.h>
+
 
 // -------------------------------------------------------------
 // SERVO INPUT FILTERS
@@ -99,14 +104,14 @@
 #endif
 
 // -------------------------------------------------------------
-// SERVO INPUT MODE - !EXPERIMENTAL!
+// INPUT MODE
 // -------------------------------------------------------------
 
 #define JUMPER_SELECT_MODE    0    // Default - PPM passtrough mode selected if channel 2&3 shorted. Normal servo input (pwm) if not shorted.
 #define SERVO_PWM_MODE        1    // Normal 8 channel servo (pwm) input
 #define PPM_PASSTROUGH_MODE   2    // PPM signal passtrough on channel 1
-#define JETI_MODE             3    // JETI on channel 1 (reserved but not implemented yet)
-#define SPEKTRUM_MODE         4    // Spektrum satelitte on channel 1 (reserved but not implemented yet)
+#define JETI_MODE             3    // Reserved
+#define SPEKTRUM_MODE         4    // Reserved for Spektrum satelitte on channel 1
 
 // Servo input mode (jumper (default), pwm, ppm, jeti or spektrum)
 volatile uint8_t servo_input_mode = JUMPER_SELECT_MODE;
@@ -117,6 +122,7 @@ volatile uint8_t servo_input_mode = JUMPER_SELECT_MODE;
 
 // 400us PPM pre pulse
 #define PPM_PRE_PULSE         ONE_US * 400
+
 
 // -------------------------------------------------------------
 // SERVO LIMIT VALUES
@@ -174,6 +180,11 @@ volatile uint16_t ppm[ PPM_ARRAY_MAX ] =
     PPM_PRE_PULSE,
     PPM_PERIOD
 };
+
+// -------------------------------------------------------------
+// PPM OUTPUT SETTINGS
+// -------------------------------------------------------------
+// #define _POSITIVE_PPM_FRAME_	// Switch to positive PPM frame (the positive part of the signal carry the channels timing informations)
 
 // -------------------------------------------------------------
 // SERVO POWER ON VALUES
@@ -332,10 +343,14 @@ void ppm_start( void )
         // Stop interrupts
         cli();
 
-
-        // Make sure initial output state is low
+		#if defined (_POSITIVE_PPM_FRAME_)
+		// Make sure initial output state is high
+        PPM_PORT |= (1 << PPM_OUTPUT_PIN);
+		#else
+		// Make sure initial output state is low
         PPM_PORT &= ~(1 << PPM_OUTPUT_PIN);
-
+		#endif
+        
         // Wait for output pin to settle
         //_delay_us( 1 );
 
