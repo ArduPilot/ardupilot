@@ -39,7 +39,7 @@
 // PREPROCESSOR DIRECTIVES
 // ------------------------------------------------------------------------------------------------------------------------------------------------------------
 
-#include "..\Libraries\ppm_encoder.h"
+#include "..\Libraries\PPM_Encoder.h"
 #include <util/delay.h>
 
 
