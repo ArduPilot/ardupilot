@@ -184,7 +184,9 @@ volatile uint16_t ppm[ PPM_ARRAY_MAX ] =
 // -------------------------------------------------------------
 // PPM OUTPUT SETTINGS
 // -------------------------------------------------------------
-// #define _POSITIVE_PPM_FRAME_	// Switch to positive PPM frame (the positive part of the signal carry the channels timing informations)
+// #define _POSITIVE_PPM_FRAME_	// Switch to positive pulse PPM
+// (the actual timing is encoded in the length of the low between two pulses)
+
 
 // -------------------------------------------------------------
 // SERVO POWER ON VALUES
