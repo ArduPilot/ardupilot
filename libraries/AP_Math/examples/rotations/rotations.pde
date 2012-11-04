@@ -190,6 +190,37 @@ static void test_combinations(void)
     }
 }
 
+// test rotation method accuracy
+static void test_rotation_accuracy(void)
+{
+    Matrix3f attitude;
+    Vector3f small_rotation;
+    float roll, pitch, yaw;
+    int16_t i;
+    float rot_angle;
+
+    Serial.println("\nRotation method accuracy:");
+
+    for( i=0; i<90; i++ ) {
+
+        // reset initial attitude
+        attitude.from_euler(0,0,0);
+
+        // calculate small rotation vector
+        rot_angle = ToRad(i);
+        small_rotation = Vector3f(0,0,rot_angle);
+
+        // apply small rotation
+        attitude.rotate(small_rotation);
+
+        // get resulting attitude's euler angles
+        attitude.to_euler(&roll, &pitch, &yaw);
+
+        // display results
+        Serial.printf_P(PSTR("actual angle: %d\tcalculated angle:%4.2f\n"),(int)i,ToDeg(yaw));
+    }
+}
+
 /*
  *  rotation tests
  */
@@ -200,6 +231,7 @@ void setup(void)
     test_matrices();
     test_vectors();
     test_combinations();
+    test_rotation_accuracy();
     Serial.println("rotation unit tests done\n");
 }
 
