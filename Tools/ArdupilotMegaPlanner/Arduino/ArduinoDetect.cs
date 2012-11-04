@@ -177,14 +177,14 @@ namespace ArdupilotMega.Arduino
 
                                 // all apm 1-1.4 use a ftdi on the imu board.
 
-                            /*    obj2.Properties.ForEach(x =>
+                                obj2.Properties.ForEach(x =>
                                 {
                                     try
                                     {
                                         log.Info(((PropertyData)x).Name.ToString() + " = " + ((PropertyData)x).Value.ToString());
                                     }
                                     catch { }
-                                });*/
+                                });
 
                                 // check vid and pid
                                 if (obj2.Properties["PNPDeviceID"].Value.ToString().Contains(@"USB\VID_2341&PID_0010"))

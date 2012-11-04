@@ -843,15 +843,18 @@ namespace ArdupilotMega
                 {
                     TXT_seriallog.AppendText("\n\nProcessing " + logfile + "\n");
                     this.Refresh();
-
-                    TextReader tr = new StreamReader(logfile);
-
-                    while (tr.Peek() != -1)
+                    try
                     {
-                        processLine(tr.ReadLine());
-                    }
+                        TextReader tr = new StreamReader(logfile);
 
-                    tr.Close();
+                        while (tr.Peek() != -1)
+                        {
+                            processLine(tr.ReadLine());
+                        }
+
+                        tr.Close();
+                    }
+                    catch (Exception ex) { CustomMessageBox.Show("Error processing file. Make sure the file is not in use.\n"+ex.ToString()); }
 
                     writeKML(logfile + ".kml");
 

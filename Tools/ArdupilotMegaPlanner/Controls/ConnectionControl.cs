@@ -49,5 +49,31 @@ namespace ArdupilotMega.Controls
             }
         }
 
+        private void cmb_Connection_DrawItem(object sender, DrawItemEventArgs e)
+        {
+            if (e.Index < 0)
+                return;
+
+            ComboBox combo = sender as ComboBox;
+            if ((e.State & DrawItemState.Selected) == DrawItemState.Selected)
+                e.Graphics.FillRectangle(new SolidBrush(SystemColors.Highlight),
+                                         e.Bounds);
+            else
+                e.Graphics.FillRectangle(new SolidBrush(combo.BackColor),
+                                         e.Bounds);
+
+            string text = combo.Items[e.Index].ToString();
+            if (!MainV2.MONO)
+            {
+                text = text + " "+ ArdupilotMega.Comms.SerialPort.GetNiceName(text);
+            }
+
+            e.Graphics.DrawString(text, e.Font,
+                                  new SolidBrush(combo.ForeColor),
+                                  new Point(e.Bounds.X, e.Bounds.Y));
+
+            e.DrawFocusRectangle();
+        }
+
     }
 }

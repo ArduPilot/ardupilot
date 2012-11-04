@@ -4,6 +4,8 @@ using System.Text;
 using System.IO.Ports;
 using System.IO;
 using System.Linq;
+using System.Management;
+using ArdupilotMega.Utilities;
 
 namespace ArdupilotMega.Comms
 {
@@ -64,6 +66,22 @@ namespace ArdupilotMega.Comms
             return allPorts.ToArray();
         }
 
+        internal static string GetNiceName(string port)
+        {
+            try
+            {
+                ObjectQuery query = new ObjectQuery("SELECT * FROM Win32_SerialPort"); // Win32_USBControllerDevice
+                ManagementObjectSearcher searcher = new ManagementObjectSearcher(query);
+                foreach (ManagementObject obj2 in searcher.Get())
+                {
+                    //DeviceID
+                    if (obj2.Properties["DeviceID"].Value.ToString().ToUpper() == port.ToUpper())
+                        return obj2.Properties["Name"].Value.ToString();
+                }
+            }
+            catch { }
+            return "";
+        }
 
         // .NET bug: sometimes bluetooth ports are enumerated with bogus characters 
         // eg 'COM10' becomes 'COM10c' - one workaround is to remove the non numeric  

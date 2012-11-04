@@ -67,10 +67,13 @@ namespace ArdupilotMega.Controls
 
         void MavlinkNumericUpDown_ValueChanged(object sender, EventArgs e)
         {
-            if (!MainV2.comPort.setParam(ParamName, (float)this.Value * _scale))
+            try
             {
-                CustomMessageBox.Show("Set " + ParamName + " Failed!");
+                bool ans = MainV2.comPort.setParam(ParamName, (float)this.Value * _scale);
+                if (ans == false)
+                    CustomMessageBox.Show("Set " + ParamName + " Failed 1!");
             }
+            catch { CustomMessageBox.Show("Set " + ParamName + " Failed 2!"); }
         }
 
     }

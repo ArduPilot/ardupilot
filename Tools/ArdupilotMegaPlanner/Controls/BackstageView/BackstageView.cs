@@ -35,6 +35,8 @@ namespace ArdupilotMega.Controls.BackstageView
 
         private BackstageViewPage popoutPage = null;
 
+        private int ButtonTopPos = 0;
+
         public BackstageView()
         {
             InitializeComponent();
@@ -159,7 +161,8 @@ namespace ArdupilotMega.Controls.BackstageView
 
             _items.Add(page);
          
-            CreateLinkButton(page);
+            //CreateLinkButton(page);
+            DrawMenu(page);
 
             page.Page.Visible = false;
             
@@ -184,13 +187,25 @@ namespace ArdupilotMega.Controls.BackstageView
             _items.Add(new BackstageViewSpacer(spacerheight));
         }
 
-        private void CreateLinkButton(BackstageViewPage page)
+        private void CreateLinkButton(BackstageViewPage page,bool haschild = false, bool child = false)
         {
+            string label = page.LinkText;
+
+            if (haschild)
+            {
+                label = "> " + label;
+            }
+            if (child)
+            {
+                label = "+ " + label;
+            }
+
             var lnkButton = new BackstageViewButton
                                 {
-                                    Text = page.LinkText,
+                                    Text = label,
                                     Tag = page,
-                        Top = _items.TakeWhile(i => i != page).Sum(i => i.Spacing),
+                                    Top = ButtonTopPos,
+                       // Top = _items.TakeWhile(i => i != page).Sum(i => i.Spacing),
                                     Width = this.pnlMenu.Width,
                                     Height = ButtonHeight,
                                     ContentPageColor = this.BackColor,
@@ -199,12 +214,86 @@ namespace ArdupilotMega.Controls.BackstageView
                                     UnSelectedTextColor = _unSelectedTextColor,
                                     HighlightColor1 = _highlightColor1,
                                     HighlightColor2 = _highlightColor2,
-                                   // Dock = DockStyle.Bottom
+                                    //Dock = DockStyle.Bottom
                                 };
 
             pnlMenu.Controls.Add(lnkButton);
             lnkButton.Click += this.ButtonClick;
             lnkButton.DoubleClick += lnkButton_DoubleClick;
+
+            ButtonTopPos += lnkButton.Height;
+        }
+
+        private void DrawMenu(BackstageViewPage CurrentPage)
+        {
+            pnlMenu.Visible = false;
+            pnlMenu.SuspendLayout();
+
+            pnlMenu.Controls.Clear();
+
+            // reset back to 0
+            ButtonTopPos = 0;
+
+            foreach (BackstageViewItem page in _items) 
+            {
+                if (page.GetType() == typeof(BackstageViewPage))
+                {
+                    // its a base item. we want it
+                    if (((BackstageViewPage)page).Parent == null)
+                    {
+                        bool children = PageHasChildren(page);
+
+                        CreateLinkButton((BackstageViewPage)page, children);
+
+                        // check for children
+                        foreach (BackstageViewItem parentpage in _items)
+                        {
+                            if (parentpage.GetType() == typeof(BackstageViewPage))
+                            {
+                                if (((BackstageViewPage)parentpage).Parent == ((BackstageViewPage)page))
+                                {
+                                    // draw all the siblings
+                                    if (((BackstageViewPage)parentpage).Parent == CurrentPage)
+                                    {
+                                        CreateLinkButton((BackstageViewPage)parentpage,false,true);
+                                    }
+                                    if (((BackstageViewPage)parentpage).Parent == CurrentPage.Parent)
+                                    {
+                                        CreateLinkButton((BackstageViewPage)parentpage,false,true);
+                                    }
+                                }
+                            }
+                        }
+                        continue;
+                    }
+
+                }
+                else
+                {
+                    ButtonTopPos += page.Spacing;
+                }
+            }
+
+            pnlMenu.ResumeLayout(false);
+            pnlMenu.PerformLayout();
+            pnlMenu.Visible = true;
+        }
+
+        private bool PageHasChildren(BackstageViewItem parent)
+        {
+            // check for children
+            foreach (BackstageViewItem child in _items)
+            {
+                if (child.GetType() == typeof(BackstageViewPage))
+                {
+                    if (((BackstageViewPage)child).Parent == parent)
+                    {
+                        return true;
+                    }
+                }
+            }
+
+            return false;
         }
 
         private void UpdateButtonAppearance()
@@ -282,6 +371,8 @@ namespace ArdupilotMega.Controls.BackstageView
 
         public void ActivatePage(BackstageViewPage associatedPage)
         {
+            DrawMenu(associatedPage);
+
             // Deactivate old page
             if (_activePage.Page is IDeactivate)
             {
@@ -296,8 +387,12 @@ namespace ArdupilotMega.Controls.BackstageView
 
             // deactivate button
             _activePage.Page.Visible = false;
-            var oldButton = this.pnlMenu.Controls.OfType<BackstageViewButton>().Single(b => b.Tag == _activePage);
-            oldButton.IsSelected = false;
+            try
+            { // if the button was on an expanded tab. when we leave it no longer exits
+                var oldButton = this.pnlMenu.Controls.OfType<BackstageViewButton>().Single(b => b.Tag == _activePage);
+                oldButton.IsSelected = false;
+            }
+            catch { }            
 
             // ensure fields have been init - obsolete way of notifying activation
             //associatedPage.Page.DoLoad(new EventArgs());

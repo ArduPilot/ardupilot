@@ -306,8 +306,11 @@ namespace ArdupilotMega.GCSViews
                     threadrun = false;
 
                     comPort.DtrEnable = false;
-
-                    comPort.Close();
+                    try
+                    {
+                        comPort.Close();
+                    }
+                    catch { }
 
                     Console.WriteLine("Comport thread close");
                 });

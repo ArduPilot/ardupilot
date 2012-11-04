@@ -391,12 +391,6 @@
     <Compile Include="GCSViews\ConfigurationView\ConfigFailSafe.Designer.cs">
       <DependentUpon>ConfigFailSafe.cs</DependentUpon>
     </Compile>
-    <Compile Include="GCSViews\ConfigurationView\SetupFresh.cs">
-      <SubType>UserControl</SubType>
-    </Compile>
-    <Compile Include="GCSViews\ConfigurationView\SetupFresh.Designer.cs">
-      <DependentUpon>SetupFresh.cs</DependentUpon>
-    </Compile>
     <Compile Include="HIL\Hil.cs" />
     <None Include="HIL\JSBSim.cs" />
     <Compile Include="HIL\XPlane.cs" />
@@ -785,9 +779,6 @@
     </EmbeddedResource>
     <EmbeddedResource Include="GCSViews\ConfigurationView\ConfigRawParams.fr.resx">
       <DependentUpon>ConfigRawParams.cs</DependentUpon>
-    </EmbeddedResource>
-    <EmbeddedResource Include="GCSViews\ConfigurationView\SetupFresh.resx">
-      <DependentUpon>SetupFresh.cs</DependentUpon>
     </EmbeddedResource>
     <EmbeddedResource Include="MavlinkLog.zh-Hans.resx">
       <DependentUpon>MavlinkLog.cs</DependentUpon>

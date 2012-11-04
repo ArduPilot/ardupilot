@@ -85,18 +85,24 @@ namespace ArdupilotMega.Controls
             if (this.Checked)
             {
                 enableControl(true);
-                if (!MainV2.comPort.setParam(ParamName, OnValue))
+                try
                 {
-                    CustomMessageBox.Show("Set "+ParamName + " Failed!");
+                    bool ans = MainV2.comPort.setParam(ParamName, OnValue);
+                    if (ans == false)
+                        CustomMessageBox.Show("Set " + ParamName + " Failed 1!");
                 }
+                catch { CustomMessageBox.Show("Set " + ParamName + " Failed 2!"); }
             }
             else
             {
                 enableControl(false);
-                if (!MainV2.comPort.setParam(ParamName, OffValue))
+                try
                 {
-                    CustomMessageBox.Show("Set " + ParamName + " Failed!");
+                    bool ans = MainV2.comPort.setParam(ParamName, OffValue);
+                    if (ans == false)
+                        CustomMessageBox.Show("Set " + ParamName + " Failed 1!");
                 }
+                catch { CustomMessageBox.Show("Set " + ParamName + " Failed 2!"); }
             }
         }
 
