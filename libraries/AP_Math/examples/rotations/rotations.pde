@@ -11,6 +11,8 @@ FastSerialPort(Serial, 0);
 
 #ifdef DESKTOP_BUILD
 // all of this is needed to build with SITL
+ #include <SPI.h>
+ #include <I2C.h>
  #include <DataFlash.h>
  #include <APM_RC.h>
  #include <GCS_MAVLink.h>
@@ -20,12 +22,14 @@ FastSerialPort(Serial, 0);
  #include <AP_Baro.h>
  #include <AP_Compass.h>
  #include <AP_GPS.h>
+ #include <AP_Declination.h> // ArduPilot Mega Declination Helper Library
+ #include <AP_Semaphore.h>
+ #include <Filter.h>
+ #include <SITL.h>
 Arduino_Mega_ISR_Registry isr_registry;
 AP_Baro_BMP085_HIL barometer;
 AP_Compass_HIL compass;
 #endif
-
-#include <AP_Declination.h> // ArduPilot Mega Declination Helper Library
 
 
 // standard rotation matrices (these are the originals from the old code)
