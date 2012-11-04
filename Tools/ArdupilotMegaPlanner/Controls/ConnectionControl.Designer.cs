@@ -62,11 +62,14 @@
             // 
             // cmb_Connection
             // 
+            this.cmb_Connection.DrawMode = System.Windows.Forms.DrawMode.OwnerDrawFixed;
+            this.cmb_Connection.DropDownWidth = 200;
             this.cmb_Connection.FormattingEnabled = true;
             this.cmb_Connection.Location = new System.Drawing.Point(3, 4);
             this.cmb_Connection.Name = "cmb_Connection";
             this.cmb_Connection.Size = new System.Drawing.Size(121, 21);
             this.cmb_Connection.TabIndex = 2;
+            this.cmb_Connection.DrawItem += new System.Windows.Forms.DrawItemEventHandler(this.cmb_Connection_DrawItem);
             // 
             // linkLabel1
             // 

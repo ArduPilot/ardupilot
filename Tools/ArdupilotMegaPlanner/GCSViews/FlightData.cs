@@ -241,261 +241,8 @@ namespace ArdupilotMega.GCSViews
             }
             catch { }
 
-            if (true || MainV2.MONO)
-            {
-                //  MainH.Dock = DockStyle.Fill;
-                //  MainH.Visible = true;
-            }
-            else
-            {
-                /*     log.Info("1-"+ DateTime.Now);
-                     //SetupDocking();
-                     log.Info("2-" + DateTime.Now);
-                     if (File.Exists(_serializer.SavePath) == true )
-                     {
-                         FileInfo fi = new FileInfo(_serializer.SavePath);
-
-                         if (fi.Length > 500)
-                         {
-                             try
-                             {
-                                 _serializer.Load(true, GetFormFromGuid);
-                                 log.Info("3-" + DateTime.Now);
-                             }
-                             catch (Exception ex)
-                             {
-                                 log.Info(ex);
-                                 try
-                                 {
-                                     //SetupDocking();
-                                 }
-                                 catch (Exception ex2)
-                                 {
-                                     log.Info(ex2);
-                                 }
-                             }
-                         }
-                     }
-                     log.Info("D-" + DateTime.Now);
-                 * */
-            }
         }
-        /*
-        void SetupDocking()
-        {
-            this.SuspendLayout();
-
-            DockableFormInfo dockhud = CreateFormAndGuid(dockContainer1, hud1, "fd_hud_guid");
-            DockableFormInfo dockmap = CreateFormAndGuid(dockContainer1, tableMap, "fd_map_guid");
-            DockableFormInfo dockquick = CreateFormAndGuid(dockContainer1, tabQuick, "fd_quick_guid");
-            DockableFormInfo dockactions = CreateFormAndGuid(dockContainer1, tabActions, "fd_actions_guid");
-            DockableFormInfo dockguages = CreateFormAndGuid(dockContainer1, tabGauges, "fd_guages_guid");
-            DockableFormInfo dockstatus = CreateFormAndGuid(dockContainer1, tabStatus, "fd_status_guid");
-            DockableFormInfo docktlogs = CreateFormAndGuid(dockContainer1, tabTLogs, "fd_tlogs_guid");
-
-            dockContainer1.DockForm(dockmap, DockStyle.Fill, zDockMode.Outer);
-            dockContainer1.DockForm(dockquick, DockStyle.Right, zDockMode.Outer);
-            dockContainer1.DockForm(dockhud, DockStyle.Left, zDockMode.Outer);
-
-            dockContainer1.DockForm(dockactions, dockhud, DockStyle.Bottom, zDockMode.Outer);
-            dockContainer1.DockForm(dockguages, dockactions, DockStyle.Fill, zDockMode.Inner);
-            dockContainer1.DockForm(dockstatus, dockactions, DockStyle.Fill, zDockMode.Inner);
-            dockContainer1.DockForm(docktlogs, dockactions, DockStyle.Fill, zDockMode.Inner);
-
-            dockactions.IsSelected = true;
-
-            if (MainV2.config["FlightSplitter"] != null)
-            {
-                dockContainer1.SetWidth(dockhud, int.Parse(MainV2.config["FlightSplitter"].ToString()));
-            }
-
-            dockContainer1.SetHeight(dockhud, hud1.Height);
-
-            dockContainer1.SetWidth(dockguages, 110);
-
-            this.ResumeLayout();
-        }
-
-        void cleanupDocks()
-        {
-            // cleanup from load
-            for (int a = 0; a < dockContainer1.Count; a++)
-            {
-                DockableFormInfo info = dockContainer1.GetFormInfoAt(a);
-
-                info.ShowCloseButton = false;
-
-                info.ShowContextMenuButton = false;
-            }
-        }
-
-        void SaveWindowLayout()
-        {
-            XmlTextWriter xmlwriter = new XmlTextWriter(Path.GetDirectoryName(Application.ExecutablePath) + Path.DirectorySeparatorChar + @"FDLayout.xml", Encoding.ASCII);
-            xmlwriter.Formatting = Formatting.Indented;
-
-            xmlwriter.WriteStartDocument();
-
-            xmlwriter.WriteStartElement("ScreenLayout");
-
-            //xmlwriter.WriteElementString("comport", comPortName);
-
-
-            for (int a = 0; a < dockContainer1.Count; a++)
-            {
-                DockableFormInfo info = dockContainer1.GetFormInfoAt(a);
-
-                xmlwriter.WriteStartElement("Form");
-
-                object thisBoxed = info;
-                Type test = thisBoxed.GetType();
-
-                foreach (var field in test.GetProperties())
-                {
-                    // field.Name has the field's name.
-                    object fieldValue;
-                    try
-                    {
-                        fieldValue = field.GetValue(thisBoxed, null); // Get value
-                    }
-                    catch { continue; }
-
-                    // Get the TypeCode enumeration. Multiple types get mapped to a common typecode.
-                    TypeCode typeCode = Type.GetTypeCode(fieldValue.GetType());
-
-                    xmlwriter.WriteElementString(field.Name, fieldValue.ToString());
-                }
-
-                thisBoxed = info.DockableForm;
-                test = thisBoxed.GetType();
-
-                foreach (var field in test.GetProperties())
-                {
-                    // field.Name has the field's name.
-                    object fieldValue;
-                    try
-                    {
-                        fieldValue = field.GetValue(thisBoxed, null); // Get value
-
-
-                        // Get the TypeCode enumeration. Multiple types get mapped to a common typecode.
-                        TypeCode typeCode = Type.GetTypeCode(fieldValue.GetType());
-
-                        xmlwriter.WriteElementString(field.Name, fieldValue.ToString());
-                    }
-                    catch { continue; }
-                }
-
-                // DockableContainer dockcont = info as DockableContainer;
-
-                // dockContainer1.
-
-                xmlwriter.WriteEndElement();
-            }
-
-            xmlwriter.WriteEndElement();
-
-            xmlwriter.WriteEndDocument();
-            xmlwriter.Close();
-        }
-
-        DockableFormInfo CreateFormAndGuid(DockContainer dock, Control ctl, string configguidref)
-        {
-            Guid gu = GetOrCreateGuid(configguidref);
-            Form frm;
-
-            if (formguids.ContainsKey(gu) && !formguids[gu].IsDisposed)
-            {
-                frm = formguids[gu];
-            }
-            else
-            {
-                frm = CreateFormFromControl(ctl);
-                frm.AutoScroll = true;
-                formguids[gu] = frm;
-            }
-
-            frm.FormBorderStyle = FormBorderStyle.SizableToolWindow;
-            frm.TopLevel = false;
-
-            DockableFormInfo answer = dock.Add(frm, Crom.Controls.Docking.zAllowedDock.All, gu);
-
-            answer.ShowCloseButton = false;
-
-            answer.ShowContextMenuButton = false;
-
-            return answer;
-        }
-     
-
-        Guid GetOrCreateGuid(string configname)
-        {
-            if (!MainV2.config.ContainsKey(configname))
-            {
-                MainV2.config[configname] = Guid.NewGuid().ToString();
-            }
-
-            return new Guid(MainV2.config[configname].ToString());
-        }
-
-        Form GetFormFromGuid(Guid id)
-        {
-            return formguids[id];
-        }
-
-        Form CreateFormFromControl(Control ctl)
-        {
-            ctl.Dock = DockStyle.Fill;
-            Form newform = new Form();
-            System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(MainV2));
-            newform.Icon = ((System.Drawing.Icon)(resources.GetObject("$this.Icon")));
-            try
-            {
-                if (ctl is TabPage)
-                {
-                    TabPage tp = ctl as TabPage;
-                    newform.Text = ctl.Text;
-                    while (tp.Controls.Count > 0)
-                    {
-                        newform.Controls.Add(tp.Controls[0]);
-                    }
-                    if (tp == tabQuick)
-                    {
-                        newform.Resize += tabQuick_Resize;
-                    }
-                    if (tp == tabStatus)
-                    {
-                        newform.Resize += tabStatus_Resize;
-                        newform.Load += tabStatus_Resize;
-                        //newform.Resize += tab1
-                    }
-                    if (tp == tabGauges)
-                    {
-                        newform.Resize += tabPage1_Resize;
-                    }
-                }
-                else if (ctl is Form)
-                {
-                    return (Form)ctl;
-                }
-                else
-                {
-                    newform.Text = ctl.Text;
-                    newform.Controls.Add(ctl);
-                    if (ctl is HUD)
-                    {
-                        newform.Text = "Hud";
-                    }
-                    if (ctl is myGMAP)
-                    {
-                        newform.Text = "Map";
-                    }
-                }
-            }
-            catch { }
-            return newform;
-        }
-        */
+   
         void tabStatus_Resize(object sender, EventArgs e)
         {
             // localise it
@@ -760,7 +507,11 @@ namespace ArdupilotMega.GCSViews
                     if (comPort.BaseStream.IsOpen)
                     {
                         MainV2.comPort.logreadmode = false;
-                        MainV2.comPort.logplaybackfile.Close();
+                        try
+                        {
+                            MainV2.comPort.logplaybackfile.Close();
+                        }
+                        catch { }
                         MainV2.comPort.logplaybackfile = null;
                     }
 
@@ -1551,6 +1302,25 @@ namespace ArdupilotMega.GCSViews
             {
                 MainV2.cam.camimage += new WebCamService.CamImage(cam_camimage);
             }
+
+            // QUAD
+            if (MainV2.comPort.param.ContainsKey("WP_SPEED_MAX"))
+            {
+                modifyandSetSpeed.Value = (decimal)(float)MainV2.comPort.param["WP_SPEED_MAX"];
+            } // plane with airspeed
+            else if (MainV2.comPort.param.ContainsKey("TRIM_ARSPD_CM") && MainV2.comPort.param.ContainsKey("ARSPD_ENABLE")
+                && MainV2.comPort.param.ContainsKey("ARSPD_USE") && (float)MainV2.comPort.param["ARSPD_ENABLE"] == 1
+                && (float)MainV2.comPort.param["ARSPD_USE"] == 1)
+            {
+                modifyandSetSpeed.Value = (decimal)(float)MainV2.comPort.param["TRIM_ARSPD_CM"];
+            } // plane without airspeed
+            else if (MainV2.comPort.param.ContainsKey("TRIM_THROTTLE") && MainV2.comPort.param.ContainsKey("ARSPD_USE")
+                && (float)MainV2.comPort.param["ARSPD_USE"] == 0)
+            {
+                modifyandSetSpeed.Value = (decimal)(float)MainV2.comPort.param["TRIM_THROTTLE"];
+            }
+
+            comPort.ParamListChanged += FlightData_ParentChanged;
         }
 
         void cam_camimage(Image camimage)
@@ -2712,7 +2482,14 @@ print 'Roll complete'
                 return;
 
             // arm the MAV
-            bool ans = MainV2.comPort.doARM(MainV2.cs.armed);
+            try
+            {
+                bool ans = MainV2.comPort.doARM(MainV2.cs.armed);
+                if (ans == false)
+                    CustomMessageBox.Show("Error: Arm message rejected by MAV");
+            }
+            catch { CustomMessageBox.Show("Error: No responce from MAV"); }
+
 
         }
 
@@ -2752,6 +2529,11 @@ print 'Roll complete'
             {
                 MainV2.comPort.setParam("TRIM_THROTTLE", (float)modifyandSetSpeed.Value);
             }
+        }
+
+        private void modifyandSetSpeed_ParentChanged(object sender, EventArgs e)
+        {
+
         }
     }
 }

@@ -228,6 +228,11 @@ namespace ArdupilotMega
             ThemeManager.ApplyThemeTo(frmProgressReporter);
 
             frmProgressReporter.RunBackgroundOperationAsync();
+
+            if (ParamListChanged != null)
+            {
+                ParamListChanged(this,null);
+            }
         }
 
         void FrmProgressReporterDoWorkAndParams(object sender, ProgressWorkerEventArgs e)
@@ -381,7 +386,9 @@ namespace ArdupilotMega
                 frmProgressReporter.UpdateProgressAndStatus(0, "Getting Params.. (sysid " + sysid + " compid " + compid + ") ");
 
                 if (getparams)
+                {
                     getParamListBG();
+                }
 
                 if (frmProgressReporter.doWorkArgs.CancelAcknowledged == true)
                 {
