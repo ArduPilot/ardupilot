@@ -14,7 +14,7 @@ class AP_AHRS_DCM : public AP_AHRS
 {
 public:
     // Constructors
-    AP_AHRS_DCM(IMU *imu, GPS *&gps) : AP_AHRS(imu, gps)
+    AP_AHRS_DCM(AP_InertialSensor *ins, GPS *&gps) : AP_AHRS(ins, gps)
     {
         _dcm_matrix.identity();
 

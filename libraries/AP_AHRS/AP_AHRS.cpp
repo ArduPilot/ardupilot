@@ -56,6 +56,12 @@ const AP_Param::GroupInfo AP_AHRS::var_info[] PROGMEM = {
     // @User: Advanced
     AP_GROUPINFO("BARO_USE",  7,    AP_AHRS, _baro_use, 0),
 
+    // @Param: TRIM
+    // @DisplayName: AHRS Trim
+    // @Description: Compensates for the difference between the control board and the frame
+    // @User: Advanced
+    AP_GROUPINFO("TRIM", 8, AP_AHRS, _trim, 0),
+
     AP_GROUPEND
 };
 
@@ -87,4 +93,23 @@ bool AP_AHRS::airspeed_estimate(float *airspeed_ret)
 		return true;
 	}
 	return false;
+}
+
+// add_trim - adjust the roll and pitch trim up to a total of 10 degrees
+void AP_AHRS::add_trim(float roll_in_radians, float pitch_in_radians)
+{
+    Vector3f trim = _trim.get();
+
+    // debug -- remove me!
+    Serial.printf_P(PSTR("\nadd_trim before R:%4.2f P:%4.2f\n"),ToDeg(trim.x),ToDeg(trim.y));
+
+    // add new trim
+    trim.x = constrain(trim.x + roll_in_radians, ToRad(-10.0), ToRad(10.0));
+    trim.y = constrain(trim.y + pitch_in_radians, ToRad(-10.0), ToRad(10.0));
+
+    // set and save new trim values
+    _trim.set_and_save(trim);
+
+    // debug -- remove me!
+    Serial.printf_P(PSTR("add_trim after R:%4.2f P:%4.2f\n"),ToDeg(trim.x),ToDeg(trim.y));
 }
