@@ -97,7 +97,7 @@ setup_show(uint8_t argc, const Menu::arg *argv)
     //report_xtrack();
     //report_throttle();
     report_flight_modes();
-    report_imu();
+    report_ins();
     report_compass();
     report_optflow();
 
@@ -247,10 +247,9 @@ setup_motors(uint8_t argc, const Menu::arg *argv)
 static int8_t
 setup_accel(uint8_t argc, const Menu::arg *argv)
 {
-    imu.init(IMU::COLD_START, delay, flash_leds, &timer_scheduler);
-    imu.init_accel(delay, flash_leds);
-    print_accel_offsets();
-    report_imu();
+    ins.init(AP_InertialSensor::COLD_START, delay, flash_leds, &timer_scheduler);
+    ins.init_accel(delay, flash_leds);
+    report_ins();
     return(0);
 }
 
@@ -258,69 +257,10 @@ setup_accel(uint8_t argc, const Menu::arg *argv)
 static int8_t
 setup_accel_scale(uint8_t argc, const Menu::arg *argv)
 {
- #if CONFIG_ADC == ENABLED && HIL_MODE == HIL_MODE_DISABLED
-    int8_t accel_num;
-    float accel_avg = 0;
-
-    if (!strcmp_P(argv[1].str, PSTR("x"))) {
-        accel_num = 4;
-    }else if (!strcmp_P(argv[1].str, PSTR("y"))) {
-        accel_num = 5;
-    }else if (!strcmp_P(argv[1].str, PSTR("z"))) {
-        accel_num = 6;
-    }else{
-        Serial.printf_P(PSTR("x, y, or z\n"));
-        return 0;
-    }
-    print_hit_enter();
-    Serial.printf_P(PSTR("ADC\n"));
-
-    adc.Init(&timer_scheduler);                           // APM ADC library initialization
-
-    int16_t low, high;
-
-    delay(1000);
-    accel_avg = adc.Ch(accel_num);
-    low = high = accel_avg;
-
-    while(1) {
-        delay(50);
-        accel_avg = accel_avg * .95 + adc.Ch(accel_num) * .05;
-
-        if(accel_avg > high)
-            high = ceil(accel_avg);
-
-        if(accel_avg < low)
-            low = floor(accel_avg);
-
-        Serial.printf_P(PSTR("%1.2f, %d, %d\n"), accel_avg, low, high);
-
-        if(Serial.available() > 0) {
-            if(wait_for_yes()) {
-                if(accel_num == 4) {
-                    ins._x_high     = high;
-                    ins._x_low              = low;
-                    ins._x_high.save();
-                    ins._x_low.save();
-                }else if(accel_num == 5) {
-                    ins._y_high     = high;
-                    ins._y_low              = low;
-                    ins._y_high.save();
-                    ins._y_low.save();
-                }else{
-                    ins._z_high     = high;
-                    ins._z_low              = low;
-                    ins._z_high.save();
-                    ins._z_low.save();
-                }
-                print_done();
-            }
-            return (0);
-        }
-    }
- #else
-    return 0;
- #endif        // CONFIG_ADC
+    ins.init(AP_InertialSensor::COLD_START, delay, flash_leds, &timer_scheduler);
+    ins.calibrate_accel(delay, flash_leds);
+    report_ins();
+    return(0);
 }
 
 static int8_t
@@ -873,13 +813,13 @@ static void report_radio()
     print_blanks(2);
 }
 
-static void report_imu()
+static void report_ins()
 {
-    Serial.printf_P(PSTR("IMU\n"));
+    Serial.printf_P(PSTR("INS\n"));
     print_divider();
 
     print_gyro_offsets();
-    print_accel_offsets();
+    print_accel_offsets_and_scaling();
     print_blanks(2);
 }
 
@@ -1029,21 +969,27 @@ static void zero_eeprom(void)
 }
 
 static void
-print_accel_offsets(void)
+print_accel_offsets_and_scaling(void)
 {
-    Serial.printf_P(PSTR("A_off: %4.2f, %4.2f, %4.2f\n"),
-                    (float)imu.ax(),                                    // Pitch
-                    (float)imu.ay(),                                    // Roll
-                    (float)imu.az());                                   // YAW
+    Vector3f accel_offsets = ins.get_accel_offsets();
+    Vector3f accel_scale = ins.get_accel_scale();
+    Serial.printf_P(PSTR("A_off: %4.2f, %4.2f, %4.2f\tA_scale: %4.2f, %4.2f, %4.2f\n"),
+                    (float)accel_offsets.x,                           // Pitch
+                    (float)accel_offsets.y,                           // Roll
+                    (float)accel_offsets.z,                           // YAW
+                    (float)accel_scale.x,                             // Pitch
+                    (float)accel_scale.y,                             // Roll
+                    (float)accel_scale.z);                            // YAW
 }
 
 static void
 print_gyro_offsets(void)
 {
+    Vector3f gyro_offsets = ins.get_gyro_offsets();
     Serial.printf_P(PSTR("G_off: %4.2f, %4.2f, %4.2f\n"),
-                    (float)imu.gx(),
-                    (float)imu.gy(),
-                    (float)imu.gz());
+                    (float)gyro_offsets.x,
+                    (float)gyro_offsets.y,
+                    (float)gyro_offsets.z);
 }
 
  #if FRAME_CONFIG == HELI_FRAME

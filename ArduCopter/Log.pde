@@ -292,7 +292,8 @@ static void Log_Read_GPS()
  #if INERTIAL_NAV == ENABLED
 static void Log_Write_Raw()
 {
-    Vector3f accel = imu.get_accel();
+    Vector3f gyro = ins.get_gyro();
+    Vector3f accel = ins.get_accel();
 
     DataFlash.WriteByte(HEAD_BYTE1);
     DataFlash.WriteByte(HEAD_BYTE2);
@@ -345,8 +346,8 @@ static void Log_Read_Raw()
  #else
 static void Log_Write_Raw()
 {
-    Vector3f gyro = imu.get_gyro();
-    Vector3f accel = imu.get_accel();
+    Vector3f gyro = ins.get_gyro();
+    Vector3f accel = ins.get_accel();
 
     DataFlash.WriteByte(HEAD_BYTE1);
     DataFlash.WriteByte(HEAD_BYTE2);
@@ -724,7 +725,7 @@ static void Log_Write_Performance()
     DataFlash.WriteByte(HEAD_BYTE1);
     DataFlash.WriteByte(HEAD_BYTE2);
     DataFlash.WriteByte(LOG_PERFORMANCE_MSG);
-    DataFlash.WriteByte(    imu.adc_constraints);                               //1
+    DataFlash.WriteByte(    0);                                                 //1 - was adc_constraints
     DataFlash.WriteByte(    ahrs.renorm_range_count);                           //2
     DataFlash.WriteByte(    ahrs.renorm_blowup_count);                          //3
     DataFlash.WriteByte(    gps_fix_count);                                             //4

@@ -647,7 +647,7 @@ static int16_t get_z_damping()
 
 float get_world_Z_accel()
 {
-    accels_rot = ahrs.get_dcm_matrix() * imu.get_accel();
+    accels_rot = ahrs.get_dcm_matrix() * ins.get_accel();
     //Serial.printf("z %1.4f\n", accels_rot.z);
     return accels_rot.z;
 }
@@ -695,7 +695,7 @@ static float fullDampP = 0.100;
 
 float get_world_Z_accel()
 {
-    accels_rot = ahrs.get_dcm_matrix() * imu.get_accel();
+    accels_rot = ahrs.get_dcm_matrix() * ins.get_accel();
     return accels_rot.z;
 }
 

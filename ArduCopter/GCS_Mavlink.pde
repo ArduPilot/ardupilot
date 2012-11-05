@@ -395,8 +395,8 @@ static void NOINLINE send_vfr_hud(mavlink_channel_t chan)
 
 static void NOINLINE send_raw_imu1(mavlink_channel_t chan)
 {
-    Vector3f accel = imu.get_accel();
-    Vector3f gyro = imu.get_gyro();
+    Vector3f accel = ins.get_accel();
+    Vector3f gyro = ins.get_gyro();
     mavlink_msg_raw_imu_send(
         chan,
         micros(),
@@ -432,8 +432,8 @@ static void NOINLINE send_raw_imu3(mavlink_channel_t chan)
                                     compass.get_declination(),
                                     barometer.get_raw_pressure(),
                                     barometer.get_raw_temp(),
-                                    imu.gx(), imu.gy(), imu.gz(),
-                                    imu.ax(), imu.ay(), imu.az());
+                                    ins.gx(), ins.gy(), ins.gz(),
+                                    ins.ax(), ins.ay(), ins.az());
 }
 
 static void NOINLINE send_gps_status(mavlink_channel_t chan)
@@ -1065,7 +1065,7 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
             if (packet.param1 == 1 ||
                 packet.param2 == 1 ||
                 packet.param3 == 1) {
-                imu.init_accel(mavlink_delay, flash_leds);
+                ins.init_accel(mavlink_delay, flash_leds);
             }
             if (packet.param4 == 1) {
                 trim_radio();
@@ -1748,9 +1748,9 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
         accels.y = (float)packet.yacc / 1000.0;
         accels.z = (float)packet.zacc / 1000.0;
 
-        imu.set_gyro(gyros);
+        ins.set_gyro_offsets(gyros);
 
-        imu.set_accel(accels);
+        ins.set_accel_offsets(accels);
 
 
         // set AHRS hil sensor
@@ -1814,9 +1814,9 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
         accels.y = (float)packet.yacc / 1000.0;
         accels.z = (float)packet.zacc / 1000.0;
 
-        imu.set_gyro(gyros);
+        ins.set_gyro_offsets(gyros);
 
-        imu.set_accel(accels);
+        ins.set_accel_offsets(accels);
 
         compass.setHIL(packet.xmag,packet.ymag,packet.zmag);
         break;

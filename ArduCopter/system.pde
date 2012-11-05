@@ -367,9 +367,9 @@ static void startup_ground(void)
 
     // Warm up and read Gyro offsets
     // -----------------------------
-    imu.init(IMU::COLD_START, mavlink_delay, flash_leds, &timer_scheduler);
+    ins.init(AP_InertialSensor::COLD_START, mavlink_delay, flash_leds, &timer_scheduler);
  #if CLI_ENABLED == ENABLED
-    report_imu();
+    report_ins();
  #endif
 
     // initialise ahrs (may push imu calibration into the mpu6000 if using that device).

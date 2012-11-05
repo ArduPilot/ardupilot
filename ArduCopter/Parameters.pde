@@ -363,17 +363,13 @@ const AP_Param::Info var_info[] PROGMEM = {
     GOBJECT(compass,        "COMPASS_", Compass),
 
     // @Group: INS_
-    // @Path: ../libraries/AP_InertialSensor/AP_InertialSensor_Oilpan.cpp
-#if HIL_MODE == HIL_MODE_DISABLED && CONFIG_APM_HARDWARE == APM_HARDWARE_APM1
-    GOBJECT(ins,            "INS_", AP_InertialSensor_Oilpan),
+    // @Path: ../libraries/AP_InertialSensor/AP_InertialSensor.cpp
+#if HIL_MODE == HIL_MODE_DISABLED
+    GOBJECT(ins,            "INS_", AP_InertialSensor),
 #endif
 
     GOBJECT(gcs0,                   "SR0_",     GCS_MAVLINK),
     GOBJECT(gcs3,                   "SR3_",     GCS_MAVLINK),
-
-    // @Group: IMU_
-    // @Path: ../libraries/AP_IMU/IMU.cpp
-    GOBJECT(imu,                    "IMU_",     IMU),
 
     // @Group: AHRS_
     // @Path: ../libraries/AP_AHRS/AP_AHRS.cpp
