@@ -38,14 +38,14 @@ AP_AHRS_DCM::update(void)
     float delta_t;
 
     // tell the IMU to grab some data
-    _imu->update();
+    _ins->update();
 
     // ask the IMU how much time this sensor reading represents
-    delta_t = _imu->get_delta_time();
+    delta_t = _ins->get_delta_time();
 
     // Get current values for gyros
-    _gyro_vector  = _imu->get_gyro();
-    _accel_vector = _imu->get_accel();
+    _gyro_vector  = _ins->get_gyro();
+    _accel_vector = _ins->get_accel();
 
     // Integrate the DCM matrix using gyro inputs
     matrix_update(delta_t);
@@ -376,6 +376,7 @@ AP_AHRS_DCM::drift_correction_yaw(void)
 void
 AP_AHRS_DCM::drift_correction(float deltat)
 {
+    Matrix3f temp_dcm = _dcm_matrix;
     Vector3f velocity;
     uint32_t last_correction_time;
 
@@ -383,8 +384,11 @@ AP_AHRS_DCM::drift_correction(float deltat)
     // vector
     drift_correction_yaw();
 
+    // apply trim
+    temp_dcm.rotate(_trim);
+
     // integrate the accel vector in the earth frame between GPS readings
-    _ra_sum += _dcm_matrix * (_accel_vector * deltat);
+    _ra_sum += temp_dcm * (_accel_vector * deltat);
 
     // keep a sum of the deltat values, so we know how much time
     // we have integrated over

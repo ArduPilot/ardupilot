@@ -20,7 +20,7 @@ class AP_AHRS_MPU6000 : public AP_AHRS
 {
 public:
     // Constructors
-    AP_AHRS_MPU6000(AP_IMU_INS *imu, GPS *&gps, AP_InertialSensor_MPU6000 *mpu6000) : AP_AHRS(imu, gps), _mpu6000(mpu6000)
+    AP_AHRS_MPU6000(AP_InertialSensor_MPU6000 *mpu6000, GPS *&gps) : AP_AHRS(mpu6000, gps), _mpu6000(mpu6000)
     {
         _dcm_matrix.identity();
 
@@ -39,7 +39,7 @@ public:
 
     // return the smoothed gyro vector corrected for drift
     Vector3f        get_gyro(void) {
-        return _imu->get_gyro();
+        return _ins->get_gyro();
     }
     Matrix3f        get_dcm_matrix(void) {
         return _dcm_matrix;

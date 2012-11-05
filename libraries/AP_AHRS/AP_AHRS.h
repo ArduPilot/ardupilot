@@ -14,7 +14,7 @@
 #include <AP_Compass.h>
 #include <AP_Airspeed.h>
 #include <AP_GPS.h>
-#include <AP_IMU.h>
+#include <AP_InertialSensor.h>
 #include <AP_Baro.h>
 
 #if defined(ARDUINO) && ARDUINO >= 100
@@ -27,8 +27,8 @@ class AP_AHRS
 {
 public:
     // Constructor
-    AP_AHRS(IMU *imu, GPS *&gps) :
-        _imu(imu),
+    AP_AHRS(AP_InertialSensor *ins, GPS *&gps) :
+        _ins(ins),
         _gps(gps),
         _barometer(NULL)
     {
@@ -37,7 +37,7 @@ public:
         // prone than the APM1, so we should have a lower ki,
         // which will make us less prone to increasing omegaI
         // incorrectly due to sensor noise
-        _gyro_drift_limit = imu->get_gyro_drift_rate();
+        _gyro_drift_limit = ins->get_gyro_drift_rate();
     }
 
     // empty init
@@ -58,8 +58,8 @@ public:
         _airspeed = airspeed;
     }
 
-    IMU*            get_imu() { 
-	    return _imu; 
+    AP_InertialSensor*            get_ins() {
+	    return _ins;
     }
 
     // Methods
@@ -138,6 +138,15 @@ public:
         _fast_ground_gains = setting;
     }
 
+    // get strim
+    Vector3f                get_trim() { return _trim; }
+
+    // set_trim
+    virtual void            set_trim(Vector3f new_trim) { _trim.set(new_trim); }
+
+    // add_trim - adjust the roll and pitch trim up to a total of 10 degrees
+    virtual void            add_trim(float roll_in_radians, float pitch_in_radians);
+
     // settable parameters
     AP_Float _kp_yaw;
     AP_Float _kp;
@@ -164,9 +173,12 @@ protected:
 
     // note: we use ref-to-pointer here so that our caller can change the GPS without our noticing
     //       IMU under us without our noticing.
-    IMU             *_imu;
-    GPS             *&_gps;
-    AP_Baro         *_barometer;
+    AP_InertialSensor   *_ins;
+    GPS                 *&_gps;
+    AP_Baro             *_barometer;
+
+    // a vector to capture the difference between the controller and body frames
+    AP_Vector3f         _trim;
 
     // should we raise the gain on the accelerometers for faster
     // convergence, used when disarmed for ArduCopter
@@ -182,6 +194,7 @@ protected:
 
     // acceleration due to gravity in m/s/s
     static const float _gravity = 9.80665;
+
 };
 
 #include <AP_AHRS_DCM.h>

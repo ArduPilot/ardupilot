@@ -40,7 +40,7 @@ AP_AHRS_MPU6000::init( AP_PeriodicProcess * scheduler )
 
     _mpu6000->dmp_init();
     push_gains_to_dmp();
-    push_offsets_to_ins();
+    _mpu6000->push_gyro_offsets_to_dmp();
 
     // restart timer
     if( timer_running ) {
@@ -56,11 +56,11 @@ AP_AHRS_MPU6000::update(void)
 
     // tell the IMU to grab some data.
     if( !_secondary_ahrs ) {
-        _imu->update();
+        _ins->update();
     }
 
     // ask the IMU how much time this sensor reading represents
-    delta_t = _imu->get_delta_time();
+    delta_t = _ins->get_delta_time();
 
     // convert the quaternions into a DCM matrix
     _mpu6000->quaternion.rotation_matrix(_dcm_matrix);
@@ -95,7 +95,7 @@ void AP_AHRS_MPU6000::drift_correction( float deltat )
     float errorRollPitch[2];
 
     // Get current values for gyros
-    _accel_vector = _imu->get_accel();
+    _accel_vector = _ins->get_accel();
 
     // We take the accelerometer readings and cumulate to average them and obtain the gravity vector
     _accel_filtered += _accel_vector;
@@ -172,16 +172,10 @@ void
 AP_AHRS_MPU6000::push_offsets_to_ins()
 {
     // push down gyro offsets (TO-DO: why are x and y offsets are reversed?!)
-    _mpu6000->set_gyro_offsets_scaled(((AP_IMU_INS*)_imu)->gy(),((AP_IMU_INS*)_imu)->gx(),((AP_IMU_INS*)_imu)->gz());
-    ((AP_IMU_INS*)_imu)->gx(0);
-    ((AP_IMU_INS*)_imu)->gy(0);
-    ((AP_IMU_INS*)_imu)->gz(0);
+    _mpu6000->push_gyro_offsets_to_dmp();
 
     // push down accelerometer offsets (TO-DO: why are x and y offsets are reversed?!)
-    _mpu6000->set_accel_offsets_scaled(((AP_IMU_INS*)_imu)->ay(), ((AP_IMU_INS*)_imu)->ax(), ((AP_IMU_INS*)_imu)->az());
-    //((AP_IMU_INS*)_imu)->ax(0);
-    //((AP_IMU_INS*)_imu)->ay(0);
-    //((AP_IMU_INS*)_imu)->az(0);
+    _mpu6000->push_accel_offsets_to_dmp();
 }
 
 void
