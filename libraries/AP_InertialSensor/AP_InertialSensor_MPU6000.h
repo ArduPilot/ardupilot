@@ -22,7 +22,7 @@ public:
 
     AP_InertialSensor_MPU6000();
 
-    uint16_t            init( AP_PeriodicProcess * scheduler );
+    uint16_t            _init( AP_PeriodicProcess * scheduler );
     static void         dmp_init(); // Initialise MPU6000's DMP
     static void         dmp_reset();    // Reset the DMP (required for changes in gains or offsets to take effect)
 
@@ -32,29 +32,25 @@ public:
     float               gx();
     float               gy();
     float               gz();
-    void                get_gyros( float * );
     float               ax();
     float               ay();
     float               az();
-    void                get_accels( float * );
-    void                get_sensors( float * );
     float               temperature();
-    uint32_t            sample_time();
     float               get_gyro_drift_rate();
 
-    // set_gyro_offsets - updates gyro offsets in mpu6000 registers
-    static void         set_gyro_offsets_scaled(float offX, float offY, float offZ);
-    static void         set_gyro_offsets(int16_t offsetX, int16_t offsetY, int16_t offsetZ);
+    // push_gyro_offsets_to_dmp - updates gyro offsets in mpu6000 registers
+    void                push_gyro_offsets_to_dmp();
+    void                set_dmp_gyro_offsets(int16_t offsetX, int16_t offsetY, int16_t offsetZ);
 
-    // set_accel_offsets - updates accel offsets in DMP registers
-    static void         set_accel_offsets_scaled(float offX, float offY, float offZ);
-    static void         set_accel_offsets(int16_t offsetX, int16_t offsetY, int16_t offsetZ);
+    // push_accel_offsets_to_dmp - updates accel offsets in DMP registers
+    void                push_accel_offsets_to_dmp();
+    void                set_dmp_accel_offsets(int16_t offsetX, int16_t offsetY, int16_t offsetZ);
 
-    // get number of samples read from the sensors
-    uint16_t     num_samples_available();
+    // num_samples_available - get number of samples read from the sensors
+    uint16_t            num_samples_available();
 
-    // get time (in microseconds) that last sample was captured
-    uint32_t     last_sample_time();
+    // get_delta_time returns the time period in seconds overwhich the sensor data was collected
+    uint32_t            get_delta_time_micros();
 
 private:
 
@@ -64,13 +60,10 @@ private:
     static void                 register_write( uint8_t reg, uint8_t val );
     static void                 hardware_init();
 
-    Vector3f                    _gyro;
-    Vector3f                    _accel;
     float                       _temp;
 
     float                       _temp_to_celsius( uint16_t );
 
-    static const float          _accel_scale;
     static const float          _gyro_scale;
 
     static const uint8_t        _gyro_data_index[3];
@@ -85,6 +78,7 @@ private:
 
     // ensure we can't initialise twice
     bool                        _initialised;
+    static int16_t              _mpu6000_product_id;
 
     // dmp related methods and parameters
     static void                 dmp_register_write(uint8_t bank, uint8_t address, uint8_t num_bytes, uint8_t data[]); // Method to write multiple bytes into dmp registers.  Requires a "bank"

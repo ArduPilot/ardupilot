@@ -10,6 +10,9 @@
  #include <wiring.h>
 #endif
 
+// MPU6000 accelerometer scaling
+#define MPU6000_ACCEL_SCALE_1G    (GRAVITY / 4096.0)
+
 // MPU 6000 registers
 #define MPUREG_XG_OFFS_TC                               0x00
 #define MPUREG_YG_OFFS_TC                               0x01
@@ -167,15 +170,6 @@
  */
 const float AP_InertialSensor_MPU6000::_gyro_scale = (0.0174532 / 16.4);
 
-/*
- *  RS-MPU-6000A-00.pdf, page 31, section 4.23 lists LSB sensitivity of
- *  accel as 4096 LSB/mg at scale factor of +/- 8g (AFS_SEL==2)
- *
- *  See note below about accel scaling of engineering sample MPU6k
- *  variants however
- */
-const float AP_InertialSensor_MPU6000::_accel_scale = 9.81 / 4096.0;
-
 /* pch: I believe the accel and gyro indicies are correct
  *      but somone else should please confirm.
  */
@@ -187,12 +181,12 @@ const int8_t AP_InertialSensor_MPU6000::_accel_data_sign[3]  = { 1, 1, -1 };
 
 const uint8_t AP_InertialSensor_MPU6000::_temp_data_index = 3;
 
+int16_t AP_InertialSensor_MPU6000::_mpu6000_product_id = AP_PRODUCT_ID_NONE;
+
 // variables to calculate time period over which a group of samples were collected
 static volatile uint32_t _delta_time_micros = 1;   // time period overwhich samples were collected (initialise to non-zero number but will be overwritten on 2nd read in any case)
 static volatile uint32_t _delta_time_start_micros = 0;  // time we start collecting sample (reset on update)
 static volatile uint32_t _last_sample_time_micros = 0;  // time latest sample was collected
-
-static uint8_t _product_id;
 
 // DMP related static variables
 bool AP_InertialSensor_MPU6000::_dmp_initialised = false;
@@ -201,28 +195,30 @@ uint8_t AP_InertialSensor_MPU6000::_fifoCountL;                 // low byte of n
 Quaternion AP_InertialSensor_MPU6000::quaternion;                       // holds the 4 quaternions representing attitude taken directly from the DMP
 AP_PeriodicProcess*  AP_InertialSensor_MPU6000::_scheduler = NULL;
 
+/*
+ *  RS-MPU-6000A-00.pdf, page 31, section 4.23 lists LSB sensitivity of
+ *  accel as 4096 LSB/mg at scale factor of +/- 8g (AFS_SEL==2)
+ *
+ *  See note below about accel scaling of engineering sample MPU6k
+ *  variants however
+ */
+
 AP_InertialSensor_MPU6000::AP_InertialSensor_MPU6000()
 {
-    _gyro.x = 0;
-    _gyro.y = 0;
-    _gyro.z = 0;
-    _accel.x = 0;
-    _accel.y = 0;
-    _accel.z = 0;
     _temp = 0;
     _initialised = false;
     _dmp_initialised = false;
 }
 
-uint16_t AP_InertialSensor_MPU6000::init( AP_PeriodicProcess * scheduler )
+uint16_t AP_InertialSensor_MPU6000::_init( AP_PeriodicProcess * scheduler )
 {
-    if (_initialised) return _product_id;
+    if (_initialised) return _mpu6000_product_id;
     _initialised = true;
     _scheduler = scheduler;     // store pointer to scheduler so that we can suspend/resume scheduler when we pull data from the MPU6000
     scheduler->suspend_timer();
     hardware_init();
     scheduler->resume_timer();
-    return _product_id;
+    return _mpu6000_product_id;
 }
 
 // accumulation in ISR - must be read with interrupts disabled
@@ -232,7 +228,6 @@ static volatile int32_t _sum[7];
 // how many values we've accumulated since last read
 static volatile uint16_t _count;
 
-
 /*================ AP_INERTIALSENSOR PUBLIC INTERFACE ==================== */
 
 bool AP_InertialSensor_MPU6000::update( void )
@@ -240,6 +235,9 @@ bool AP_InertialSensor_MPU6000::update( void )
     int32_t sum[7];
     uint16_t count;
     float count_scale;
+    Vector3f gyro_offset = _gyro_offset.get();
+    Vector3f accel_scale = _accel_scale.get();
+    Vector3f accel_offset = _accel_offset.get();
 
     // wait for at least 1 sample
     while (_count == 0) /* nop */;
@@ -260,13 +258,13 @@ bool AP_InertialSensor_MPU6000::update( void )
 
     count_scale = 1.0 / count;
 
-    _gyro.x = _gyro_scale * _gyro_data_sign[0] * sum[_gyro_data_index[0]] * count_scale;
-    _gyro.y = _gyro_scale * _gyro_data_sign[1] * sum[_gyro_data_index[1]] * count_scale;
-    _gyro.z = _gyro_scale * _gyro_data_sign[2] * sum[_gyro_data_index[2]] * count_scale;
+    _gyro.x = _gyro_scale * _gyro_data_sign[0] * sum[_gyro_data_index[0]] * count_scale - gyro_offset.x;
+    _gyro.y = _gyro_scale * _gyro_data_sign[1] * sum[_gyro_data_index[1]] * count_scale - gyro_offset.y;
+    _gyro.z = _gyro_scale * _gyro_data_sign[2] * sum[_gyro_data_index[2]] * count_scale - gyro_offset.z;
 
-    _accel.x = _accel_scale * _accel_data_sign[0] * sum[_accel_data_index[0]] * count_scale;
-    _accel.y = _accel_scale * _accel_data_sign[1] * sum[_accel_data_index[1]] * count_scale;
-    _accel.z = _accel_scale * _accel_data_sign[2] * sum[_accel_data_index[2]] * count_scale;
+    _accel.x = accel_scale.x * _accel_data_sign[0] * sum[_accel_data_index[0]] * count_scale * MPU6000_ACCEL_SCALE_1G - accel_offset.x;
+    _accel.y = accel_scale.y * _accel_data_sign[1] * sum[_accel_data_index[1]] * count_scale * MPU6000_ACCEL_SCALE_1G - accel_offset.y;
+    _accel.z = accel_scale.z * _accel_data_sign[2] * sum[_accel_data_index[2]] * count_scale * MPU6000_ACCEL_SCALE_1G - accel_offset.z;
 
     _temp    = _temp_to_celsius(sum[_temp_data_index] * count_scale);
 
@@ -288,13 +286,6 @@ float AP_InertialSensor_MPU6000::gz() {
     return _gyro.z;
 }
 
-void AP_InertialSensor_MPU6000::get_gyros( float * g )
-{
-    g[0] = _gyro.x;
-    g[1] = _gyro.y;
-    g[2] = _gyro.z;
-}
-
 float AP_InertialSensor_MPU6000::ax() {
     return _accel.x;
 }
@@ -305,30 +296,8 @@ float AP_InertialSensor_MPU6000::az() {
     return _accel.z;
 }
 
-void AP_InertialSensor_MPU6000::get_accels( float * a )
-{
-    a[0] = _accel.x;
-    a[1] = _accel.y;
-    a[2] = _accel.z;
-}
-
-void AP_InertialSensor_MPU6000::get_sensors( float * sensors )
-{
-    sensors[0] = _gyro.x;
-    sensors[1] = _gyro.y;
-    sensors[2] = _gyro.z;
-    sensors[3] = _accel.x;
-    sensors[4] = _accel.y;
-    sensors[5] = _accel.z;
-}
-
 float AP_InertialSensor_MPU6000::temperature() {
     return _temp;
-}
-
-uint32_t AP_InertialSensor_MPU6000::sample_time()
-{
-    return _delta_time_micros;
 }
 
 /*================ HARDWARE FUNCTIONS ==================== */
@@ -438,11 +407,11 @@ void AP_InertialSensor_MPU6000::hardware_init()
     register_write(MPUREG_GYRO_CONFIG, BITS_GYRO_FS_2000DPS);  // Gyro scale 2000º/s
     delay(1);
 
-    _product_id = register_read(MPUREG_PRODUCT_ID);     // read the product ID rev c has 1/2 the sensitivity of rev d
-    //Serial.printf("Product_ID= 0x%x\n", (unsigned) _product_id);
+    _mpu6000_product_id = register_read(MPUREG_PRODUCT_ID);     // read the product ID rev c has 1/2 the sensitivity of rev d
+    //Serial.printf("Product_ID= 0x%x\n", (unsigned) _mpu6000_product_id);
 
-    if ((_product_id == MPU6000ES_REV_C4) || (_product_id == MPU6000ES_REV_C5) ||
-        (_product_id == MPU6000_REV_C4)   || (_product_id == MPU6000_REV_C5)) {
+    if ((_mpu6000_product_id == MPU6000ES_REV_C4) || (_mpu6000_product_id == MPU6000ES_REV_C5) ||
+        (_mpu6000_product_id == MPU6000_REV_C4)   || (_mpu6000_product_id == MPU6000_REV_C5)) {
         // Accel scale 8g (4096 LSB/g)
         // Rev C has different scaling than rev D
         register_write(MPUREG_ACCEL_CONFIG,1<<3);
@@ -480,25 +449,33 @@ uint16_t AP_InertialSensor_MPU6000::num_samples_available()
     return _count;
 }
 
-// get time (in microseconds) that last sample was captured
-uint32_t AP_InertialSensor_MPU6000::last_sample_time()
+// get_delta_time returns the time period in seconds overwhich the sensor data was collected
+uint32_t AP_InertialSensor_MPU6000::get_delta_time_micros() 
 {
-    return _last_sample_time_micros;
+    return _delta_time_micros;
 }
 
 // Update gyro offsets with new values.  Offsets provided in as scaled deg/sec values
-void AP_InertialSensor_MPU6000::set_gyro_offsets_scaled(float offX, float offY, float offZ)
+void AP_InertialSensor_MPU6000::push_gyro_offsets_to_dmp()
 {
-    int16_t offsetX = offX / _gyro_scale * _gyro_data_sign[0];
-    int16_t offsetY = offY / _gyro_scale * _gyro_data_sign[1];
-    int16_t offsetZ = offZ / _gyro_scale * _gyro_data_sign[2];
+    Vector3f gyro_offsets = _gyro_offset.get();
 
-    set_gyro_offsets(offsetX, offsetY, offsetZ);
+    int16_t offsetX = gyro_offsets.x / _gyro_scale * _gyro_data_sign[0];
+    int16_t offsetY = gyro_offsets.y / _gyro_scale * _gyro_data_sign[1];
+    int16_t offsetZ = gyro_offsets.z / _gyro_scale * _gyro_data_sign[2];
+
+    set_dmp_gyro_offsets(offsetX, offsetY, offsetZ);
+
+    // remove ins level offsets to avoid double counting
+    gyro_offsets.x = 0;
+    gyro_offsets.y = 0;
+    gyro_offsets.z = 0;
+    _gyro_offset = gyro_offsets;
 }
 
 // Update gyro offsets with new values. New offset values are substracted to actual offset values.
 // offset values in gyro LSB units (as read from registers)
-void AP_InertialSensor_MPU6000::set_gyro_offsets(int16_t offsetX, int16_t offsetY, int16_t offsetZ)
+void AP_InertialSensor_MPU6000::set_dmp_gyro_offsets(int16_t offsetX, int16_t offsetY, int16_t offsetZ)
 {
     int16_t aux_int;
 
@@ -526,21 +503,24 @@ void AP_InertialSensor_MPU6000::set_gyro_offsets(int16_t offsetX, int16_t offset
     }
 }
 
-// Update accel offsets with new values.  Offsets provided in as scaled values (Gs?)
-void AP_InertialSensor_MPU6000::set_accel_offsets_scaled(float offX, float offY, float offZ)
+// Update accel offsets with new values.  Offsets provided in as scaled values (1G)
+void AP_InertialSensor_MPU6000::push_accel_offsets_to_dmp()
 {
-    int16_t offsetX = offX / _accel_scale * _accel_data_sign[0];
-    int16_t offsetY = offY / _accel_scale * _accel_data_sign[1];
-    int16_t offsetZ = offZ / _accel_scale * _accel_data_sign[2];
+    Vector3f accel_offset = _accel_offset.get();
+    Vector3f accel_scale = _accel_scale.get();
+    int16_t offsetX = accel_offset.x / (accel_scale.x * _accel_data_sign[0] * MPU6000_ACCEL_SCALE_1G);
+    int16_t offsetY = accel_offset.y / (accel_scale.y * _accel_data_sign[1] * MPU6000_ACCEL_SCALE_1G);
+    int16_t offsetZ = accel_offset.z / (accel_scale.z * _accel_data_sign[2] * MPU6000_ACCEL_SCALE_1G);
 
-    set_accel_offsets(offsetX, offsetY, offsetZ);
+    // strangely x and y are reversed
+    set_dmp_accel_offsets(offsetY, offsetX, offsetZ);
 }
 
 // set_accel_offsets - adds an offset to acceleromter readings
 // This is useful for dynamic acceleration correction (for example centripetal force correction)
 // and for the initial offset calibration
 // Input, accel offsets for X,Y and Z in LSB units (as read from raw values)
-void AP_InertialSensor_MPU6000::set_accel_offsets(int16_t offsetX, int16_t offsetY, int16_t offsetZ)
+void AP_InertialSensor_MPU6000::set_dmp_accel_offsets(int16_t offsetX, int16_t offsetY, int16_t offsetZ)
 {
     int aux_int;
     uint8_t regs[2];

@@ -20,14 +20,11 @@ const float AP_InertialSensor_Oilpan::_adc_constraint = 900;
 // ADXL335 Sensitivity(from datasheet) => 330mV/g,
 // 0.8mV/ADC step => 330/0.8 = 412
 // Tested value : 418
-// 1G in the raw data coming from the accelerometer
-// Value based on actual sample data from 20 boards
-const float AP_InertialSensor_Oilpan::_gravity = 423.8;
 
-///< would like to use _gravity here, but cannot
-//const float AP_InertialSensor_Oilpan::_accel_x_scale = 9.80665 / 413.195;
-//const float AP_InertialSensor_Oilpan::_accel_y_scale = 9.80665 / 412.985;
-//const float AP_InertialSensor_Oilpan::_accel_z_scale = 9.80665 / 403.69;
+// Oilpan accelerometer scaling & offsets
+#define OILPAN_ACCEL_SCALE_1G   (GRAVITY * 2.0 / (2465.0 - 1617.0))
+#define OILPAN_RAW_ACCEL_OFFSET ((2465.0 - 1617.0) / 2)
+#define OILPAN_RAW_GYRO_OFFSET  1658.0
 
 #define ToRad(x) (x*0.01745329252)  // *pi/180
 // IDG500 Sensitivity (from datasheet) => 2.0mV/degree/s,
@@ -37,41 +34,16 @@ const float AP_InertialSensor_Oilpan::_gyro_gain_x = ToRad(0.4);
 const float AP_InertialSensor_Oilpan::_gyro_gain_y = ToRad(0.41);
 const float AP_InertialSensor_Oilpan::_gyro_gain_z = ToRad(0.41);
 
-const AP_Param::GroupInfo AP_InertialSensor_Oilpan::var_info[] PROGMEM = {
-    // index 0 was used for the old orientation matrix
-    AP_GROUPINFO("XH",          0, AP_InertialSensor_Oilpan, _x_high, 2465),
-    AP_GROUPINFO("XL",          1, AP_InertialSensor_Oilpan, _x_low,  1617),
-    AP_GROUPINFO("YH",          2, AP_InertialSensor_Oilpan, _y_high, 2465),
-    AP_GROUPINFO("YL",          3, AP_InertialSensor_Oilpan, _y_low,  1617),
-    AP_GROUPINFO("ZH",          4, AP_InertialSensor_Oilpan, _z_high, 2465),
-    AP_GROUPINFO("ZL",          5, AP_InertialSensor_Oilpan, _z_low,  1617),
-    AP_GROUPEND
-};
-
-
 /* ------ Public functions -------------------------------------------*/
 
 AP_InertialSensor_Oilpan::AP_InertialSensor_Oilpan( AP_ADC * adc ) :
     _adc(adc)
 {
-    _gyro.x = 0;
-    _gyro.y = 0;
-    _gyro.z = 0;
-    _accel.x = 0;
-    _accel.y = 0;
-    _accel.z = 0;
 }
 
-uint16_t AP_InertialSensor_Oilpan::init( AP_PeriodicProcess * scheduler)
+uint16_t AP_InertialSensor_Oilpan::_init( AP_PeriodicProcess * scheduler)
 {
     _adc->Init(scheduler);
-
-    _accel_mid.x    = (_x_high + _x_low) / 2;
-    _accel_mid.y    = (_y_high + _y_low) / 2;
-    _accel_mid.z    = (_z_high + _z_low) / 2;
-    _accel_scale.x  = 9.80665 / ((float)_x_high - _accel_mid.x);
-    _accel_scale.y  = 9.80665 / ((float)_y_high - _accel_mid.y);
-    _accel_scale.z  = 9.80665 / ((float)_z_high - _accel_mid.z);
 
 #if defined(DESKTOP_BUILD)
     return AP_PRODUCT_ID_SITL;
@@ -85,22 +57,20 @@ uint16_t AP_InertialSensor_Oilpan::init( AP_PeriodicProcess * scheduler)
 bool AP_InertialSensor_Oilpan::update()
 {
     float adc_values[6];
+    Vector3f gyro_offset = _gyro_offset.get();
+    Vector3f accel_scale = _accel_scale.get();
+    Vector3f accel_offset = _accel_offset.get();
 
-    _sample_time = _adc->Ch6(_sensors, adc_values);
+    _delta_time_micros = _adc->Ch6(_sensors, adc_values);
     _temp = _adc->Ch(_gyro_temp_ch);
 
-    _gyro.x = _gyro_gain_x * _sensor_signs[0] * _gyro_apply_std_offset( adc_values[0] );
-    _gyro.y = _gyro_gain_y * _sensor_signs[1] * _gyro_apply_std_offset( adc_values[1] );
-    _gyro.z = _gyro_gain_z * _sensor_signs[2] * _gyro_apply_std_offset( adc_values[2] );
+    _gyro.x = _gyro_gain_x * _sensor_signs[0] * ( adc_values[0] - OILPAN_RAW_GYRO_OFFSET ) - gyro_offset.x;
+    _gyro.y = _gyro_gain_y * _sensor_signs[1] * ( adc_values[1] - OILPAN_RAW_GYRO_OFFSET ) - gyro_offset.y;
+    _gyro.z = _gyro_gain_z * _sensor_signs[2] * ( adc_values[2] - OILPAN_RAW_GYRO_OFFSET ) - gyro_offset.z;
 
-    // _accel.x = _accel_x_scale * _sensor_signs[3] * _accel_apply_std_offset( adc_values[3] );
-    // _accel.y = _accel_y_scale * _sensor_signs[4] * _accel_apply_std_offset( adc_values[4] );
-    // _accel.z = _accel_z_scale * _sensor_signs[5] * _accel_apply_std_offset( adc_values[5] );
-
-    _accel.x = _accel_scale.x * _sensor_signs[3] * (adc_values[3] - _accel_mid.x);
-    _accel.y = _accel_scale.y * _sensor_signs[4] * (adc_values[4] - _accel_mid.y);
-    _accel.z = _accel_scale.z * _sensor_signs[5] * (adc_values[5] - _accel_mid.z);
-
+    _accel.x = accel_scale.x * _sensor_signs[3] * (adc_values[3] - OILPAN_RAW_ACCEL_OFFSET) * OILPAN_ACCEL_SCALE_1G - accel_offset.x;
+    _accel.y = accel_scale.y * _sensor_signs[4] * (adc_values[4] - OILPAN_RAW_ACCEL_OFFSET) * OILPAN_ACCEL_SCALE_1G - accel_offset.y;
+    _accel.z = accel_scale.z * _sensor_signs[5] * (adc_values[5] - OILPAN_RAW_ACCEL_OFFSET) * OILPAN_ACCEL_SCALE_1G - accel_offset.z;
 
 /*
  *  X  = 1619.30 to 2445.69
@@ -126,13 +96,6 @@ float AP_InertialSensor_Oilpan::gz() {
     return _gyro.z;
 }
 
-void AP_InertialSensor_Oilpan::get_gyros( float * g )
-{
-    g[0] = _gyro.x;
-    g[1] = _gyro.y;
-    g[2] = _gyro.z;
-}
-
 float AP_InertialSensor_Oilpan::ax() {
     return _accel.x;
 }
@@ -143,44 +106,16 @@ float AP_InertialSensor_Oilpan::az() {
     return _accel.z;
 }
 
-void AP_InertialSensor_Oilpan::get_accels( float * a )
-{
-    a[0] = _accel.x;
-    a[1] = _accel.y;
-    a[2] = _accel.z;
-}
-
-void AP_InertialSensor_Oilpan::get_sensors( float * sensors )
-{
-    sensors[0] = _gyro.x;
-    sensors[1] = _gyro.y;
-    sensors[2] = _gyro.z;
-    sensors[3] = _accel.x;
-    sensors[4] = _accel.y;
-    sensors[5] = _accel.z;
-}
 
 float AP_InertialSensor_Oilpan::temperature() {
     return _temp;
 }
 
-uint32_t AP_InertialSensor_Oilpan::sample_time() {
-    return _sample_time;
+uint32_t AP_InertialSensor_Oilpan::get_delta_time_micros() {
+    return _delta_time_micros;
 }
 
 /* ------ Private functions -------------------------------------------*/
-
-float AP_InertialSensor_Oilpan::_gyro_apply_std_offset( float adc_value )
-{
-    /* Magic number from AP_ADC_Oilpan.h */
-    return ((float) adc_value ) - 1658.0f;
-}
-
-float AP_InertialSensor_Oilpan::_accel_apply_std_offset( float adc_value )
-{
-    /* Magic number from AP_ADC_Oilpan.h */
-    return ((float) adc_value ) - 2041.0f;
-}
 
 // return the oilpan gyro drift rate in radian/s/s
 float AP_InertialSensor_Oilpan::get_gyro_drift_rate(void)
