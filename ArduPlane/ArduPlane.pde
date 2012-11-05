@@ -41,13 +41,13 @@
 #include <AP_Baro.h>        // ArduPilot barometer library
 #include <AP_Compass.h>     // ArduPilot Mega Magnetometer Library
 #include <AP_Math.h>        // ArduPilot Mega Vector/Matrix math Library
-#include <AP_InertialSensor.h> // Inertial Sensor (uncalibrated IMU) Library
-#include <AP_IMU.h>         // ArduPilot Mega IMU Library
+#include <AP_InertialSensor.h> // Inertial Sensor Library
 #include <AP_AHRS.h>         // ArduPilot Mega DCM Library
 #include <PID.h>            // PID library
 #include <RC_Channel.h>     // RC Channel Library
 #include <AP_RangeFinder.h>     // Range finder library
 #include <Filter.h>                     // Filter library
+#include <AP_Buffer.h>      // APM FIFO Buffer
 #include <ModeFilter.h>         // Mode Filter from Filter library
 #include <LowPassFilter.h>      // LowPassFilter class (inherits from Filter class)
 #include <AP_Relay.h>       // APM relay
@@ -215,14 +215,13 @@ AP_GPS_None     g_gps_driver(NULL);
   #error Unrecognised GPS_PROTOCOL setting.
  #endif // GPS PROTOCOL
 
- # if CONFIG_IMU_TYPE == CONFIG_IMU_MPU6000
+ # if CONFIG_INS_TYPE == CONFIG_INS_MPU6000
 AP_InertialSensor_MPU6000 ins;
  # else
 AP_InertialSensor_Oilpan ins( &adc );
- #endif // CONFIG_IMU_TYPE
-AP_IMU_INS imu( &ins );
+ #endif // CONFIG_INS_TYPE
 
-AP_AHRS_DCM ahrs(&imu, g_gps);
+AP_AHRS_DCM ahrs(&ins, g_gps);
 
 #elif HIL_MODE == HIL_MODE_SENSORS
 // sensor emulators
@@ -231,13 +230,11 @@ AP_Baro_BMP085_HIL barometer;
 AP_Compass_HIL compass;
 AP_GPS_HIL              g_gps_driver(NULL);
 AP_InertialSensor_Oilpan ins( &adc );
-AP_IMU_Shim imu;
-AP_AHRS_DCM  ahrs(&imu, g_gps);
+AP_AHRS_DCM  ahrs(&ins, g_gps);
 
 #elif HIL_MODE == HIL_MODE_ATTITUDE
 AP_ADC_HIL adc;
-AP_IMU_Shim imu;             // never used
-AP_AHRS_HIL             ahrs(&imu, g_gps);
+AP_AHRS_HIL             ahrs(&ins, g_gps);
 AP_GPS_HIL              g_gps_driver(NULL);
 AP_Compass_HIL compass;          // never used
 AP_Baro_BMP085_HIL barometer;
@@ -480,7 +477,7 @@ AP_Airspeed airspeed(&pitot_analog_source);
 ////////////////////////////////////////////////////////////////////////////////
 // flight mode specific
 ////////////////////////////////////////////////////////////////////////////////
-// Flag for using gps ground course instead of IMU yaw.  Set false when takeoff command in process.
+// Flag for using gps ground course instead of INS yaw.  Set false when takeoff command in process.
 static bool takeoff_complete    = true;
 // Flag to indicate if we have landed.
 //Set land_complete if we are within 2 seconds distance or within 3 meters altitude of touchdown
@@ -605,7 +602,7 @@ static int32_t target_altitude_cm;
 static int32_t offset_altitude_cm;
 
 ////////////////////////////////////////////////////////////////////////////////
-// IMU variables
+// INS variables
 ////////////////////////////////////////////////////////////////////////////////
 // The main loop execution time.  Seconds
 //This is the time between calls to the DCM algorithm and is the Integration time for the gyros.
@@ -689,8 +686,8 @@ void setup() {
 void loop()
 {
     // We want this to execute at 50Hz, but synchronised with the gyro/accel
-    uint16_t num_samples = imu.num_samples_available();
-    if (num_samples >= NUM_IMU_SAMPLES_FOR_50HZ) {
+    uint16_t num_samples = ins.num_samples_available();
+    if (num_samples >= NUM_INS_SAMPLES_FOR_50HZ) {
         delta_ms_fast_loop      = millis() - fast_loopTimer_ms;
         load                = (float)(fast_loopTimeStamp_ms - fast_loopTimer_ms)/delta_ms_fast_loop;
         G_Dt                = (float)delta_ms_fast_loop / 1000.f;
@@ -724,7 +721,7 @@ void loop()
         }
 
         fast_loopTimeStamp_ms = millis();
-    } else if (num_samples < NUM_IMU_SAMPLES_FOR_50HZ-1) {
+    } else if (num_samples < NUM_INS_SAMPLES_FOR_50HZ-1) {
         // less than 20ms has passed. We have at least one millisecond
         // of free time. The most useful thing to do with that time is
         // to accumulate some sensor readings, specifically the
@@ -835,7 +832,7 @@ static void medium_loop()
  *  Serial.print(ahrs.roll_sensor, DEC);	Serial.printf_P(PSTR("\t"));
  *  Serial.print(ahrs.pitch_sensor, DEC);	Serial.printf_P(PSTR("\t"));
  *  Serial.print(ahrs.yaw_sensor, DEC);	Serial.printf_P(PSTR("\t"));
- *  Vector3f tempaccel = imu.get_accel();
+ *  Vector3f tempaccel = ins.get_accel();
  *  Serial.print(tempaccel.x, DEC);	Serial.printf_P(PSTR("\t"));
  *  Serial.print(tempaccel.y, DEC);	Serial.printf_P(PSTR("\t"));
  *  Serial.println(tempaccel.z, DEC);

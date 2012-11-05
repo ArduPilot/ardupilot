@@ -193,7 +193,7 @@ endforeach()
 #set(THROTTLE_OUT "ENABLED" CACHE STRING "Disabled throttle output? (useful for debugging)?")
 #set_property(CACHE THROTTLE_OUT PROPERTY STRINGS ENABLED DISABLED) 
 
-#set(GROUND_START_DELAY "0" CACHE STRING "Delay between power-up and IMU calibration (s)?")
+#set(GROUND_START_DELAY "0" CACHE STRING "Delay between power-up and INS calibration (s)?")
 
 #set(ENABLE_AIR_START "DISABLED" CACHE STRING "Enable in-air restart?")
 #set_property(CACHE ENABLE_AIR_START PROPERTY STRINGS ENABLED DISABLED) 

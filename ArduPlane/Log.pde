@@ -232,7 +232,7 @@ static void Log_Write_Performance()
     DataFlash.WriteInt((int16_t)mainLoop_count);
     DataFlash.WriteInt(G_Dt_max);
     DataFlash.WriteByte(0);
-    DataFlash.WriteByte(imu.adc_constraints);
+    DataFlash.WriteByte(0);
     DataFlash.WriteByte(ahrs.renorm_range_count);
     DataFlash.WriteByte(ahrs.renorm_blowup_count);
     DataFlash.WriteByte(gps_fix_count);
@@ -285,7 +285,7 @@ static void Log_Write_Startup(byte type)
  #if HIL_MODE != HIL_MODE_ATTITUDE
 static void Log_Write_Control_Tuning()
 {
-    Vector3f accel = imu.get_accel();
+    Vector3f accel = ins.get_accel();
 
     DataFlash.WriteByte(HEAD_BYTE1);
     DataFlash.WriteByte(HEAD_BYTE2);
@@ -353,8 +353,8 @@ static void Log_Write_GPS(      int32_t log_Time, int32_t log_Lattitude, int32_t
  #if HIL_MODE != HIL_MODE_ATTITUDE
 static void Log_Write_Raw()
 {
-    Vector3f gyro = imu.get_gyro();
-    Vector3f accel = imu.get_accel();
+    Vector3f gyro = ins.get_gyro();
+    Vector3f accel = ins.get_accel();
     gyro *= t7;                                                                 // Scale up for storage as long integers
     accel *= t7;
     DataFlash.WriteByte(HEAD_BYTE1);
