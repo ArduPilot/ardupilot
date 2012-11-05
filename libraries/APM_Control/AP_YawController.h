@@ -12,7 +12,7 @@ class AP_YawController {
 public:                      
 	void set_ahrs(AP_AHRS *ahrs) { 
 		_ahrs = ahrs; 
-		_imu = _ahrs->get_imu();
+		_ins = _ahrs->get_ins();
 	}
 
 	int32_t get_servo_out(float scaler = 1.0, bool stick_movement = false);
@@ -34,7 +34,7 @@ private:
 	uint32_t _freeze_start_time;
 
 	AP_AHRS *_ahrs;
-	IMU *_imu;
+	AP_InertialSensor *_ins;
 
 	// Low pass filter cut frequency for derivative calculation.
 	// FCUT macro computes a frequency cut based on an acceptable delay.
