@@ -67,7 +67,7 @@
 
 // LED output
 #define NORMAL_LEDS 0
-#define AUTO_TRIM_LEDS 1
+#define SAVE_TRIM_LEDS 1
 
 
 #define CH_7_PWM_TRIGGER 1800

@@ -6,7 +6,7 @@ static void update_lights()
         update_GPS_light();
         break;
 
-    case AUTO_TRIM_LEDS:
+    case SAVE_TRIM_LEDS:
         dancing_light();
         break;
     }

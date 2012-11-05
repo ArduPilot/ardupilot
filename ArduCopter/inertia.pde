@@ -6,7 +6,7 @@ void calc_inertia()
 {
     // rotate accels based on DCM
     // --------------------------
-    accels_rotated          = ahrs.get_dcm_matrix() * imu.get_accel();
+    accels_rotated          = ahrs.get_dcm_matrix() * ins.get_accel();
     //accels_rotated		+= accels_offset;						// skew accels to account for long term error using calibration
     accels_rotated.z        += 9.805;                                                                   // remove influence of gravity
 

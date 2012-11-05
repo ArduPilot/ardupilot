@@ -78,7 +78,6 @@
 #include <AP_Math.h>        // ArduPilot Mega Vector/Matrix math Library
 #include <AP_Curve.h>       // Curve used to linearlise throttle pwm to thrust
 #include <AP_InertialSensor.h> // ArduPilot Mega Inertial Sensor (accel & gyro) Library
-#include <AP_IMU.h>         // ArduPilot Mega IMU Library
 #include <AP_PeriodicProcess.h>         // Parent header of Timer
                                         // (only included for makefile libpath to work)
 #include <AP_TimerProcess.h>            // TimerProcess is the scheduler for MPU6000 reads.
@@ -98,6 +97,7 @@
 #include <AP_RangeFinder.h>     // Range finder library
 #include <AP_OpticalFlow.h> // Optical Flow library
 #include <Filter.h>                     // Filter library
+#include <AP_Buffer.h>      // APM FIFO Buffer
 #include <ModeFilter.h>         // Mode Filter from Filter library
 #include <AverageFilter.h>      // Mode Filter from Filter library
 #include <AP_LeadFilter.h>      // GPS Lead filter
@@ -268,21 +268,20 @@ AP_InertialSensor_MPU6000 ins;
  #else
 AP_InertialSensor_Oilpan ins(&adc);
  #endif
-AP_IMU_INS  imu(&ins);
 
 // we don't want to use gps for yaw correction on ArduCopter, so pass
 // a NULL GPS object pointer
 static GPS         *g_gps_null;
 
  #if DMP_ENABLED == ENABLED && CONFIG_APM_HARDWARE == APM_HARDWARE_APM2
-AP_AHRS_MPU6000  ahrs(&imu, g_gps, &ins);               // only works with APM2
+AP_AHRS_MPU6000  ahrs(&ins, g_gps);               // only works with APM2
  #else
-AP_AHRS_DCM ahrs(&imu, g_gps);
+AP_AHRS_DCM ahrs(&ins, g_gps);
  #endif
 
 // ahrs2 object is the secondary ahrs to allow running DMP in parallel with DCM
   #if SECONDARY_DMP_ENABLED == ENABLED && CONFIG_APM_HARDWARE == APM_HARDWARE_APM2
-AP_AHRS_MPU6000  ahrs2(&imu, g_gps, &ins);               // only works with APM2
+AP_AHRS_MPU6000  ahrs2(&ins, g_gps);               // only works with APM2
   #endif
 
 #elif HIL_MODE == HIL_MODE_SENSORS
@@ -291,20 +290,19 @@ AP_ADC_HIL adc;
 AP_Baro_BMP085_HIL barometer;
 AP_Compass_HIL compass;
 AP_GPS_HIL              g_gps_driver(NULL);
-AP_IMU_Shim imu;
-AP_AHRS_DCM                         ahrs(&imu, g_gps);
 AP_InertialSensor_Stub ins;
+AP_AHRS_DCM                         ahrs(&ins, g_gps);
+
 
 static int32_t gps_base_alt;
 
 #elif HIL_MODE == HIL_MODE_ATTITUDE
 AP_ADC_HIL adc;
-AP_IMU_Shim imu;
-AP_AHRS_HIL             ahrs(&imu, g_gps);
+AP_InertialSensor_Stub ins;
+AP_AHRS_HIL             ahrs(&ins, g_gps);
 AP_GPS_HIL              g_gps_driver(NULL);
 AP_Compass_HIL compass;                  // never used
 AP_Baro_BMP085_HIL barometer;
-AP_InertialSensor_Stub ins;
 #ifdef OPTFLOW_ENABLED
 #if CONFIG_APM_HARDWARE == APM_HARDWARE_APM2
 AP_OpticalFlow_ADNS3080 optflow(&spi3_semaphore,OPTFLOW_CS_PIN);
@@ -919,8 +917,8 @@ static uint32_t last_gps_time;
 
 // Set true if we have new PWM data to act on from the Radio
 static bool new_radio_frame;
-// Used to auto exit the in-flight leveler
-static int16_t auto_level_counter;
+// Used to auto exit the roll_pitch_trim saving function
+static uint8_t save_trim_counter;
 
 // Reference to the AP relay object - APM1 only
 AP_Relay relay;
@@ -984,7 +982,7 @@ void loop()
 
     // We want this to execute fast
     // ----------------------------
-    num_samples = imu.num_samples_available();
+    num_samples = ins.num_samples_available();
     if (num_samples >= NUM_IMU_SAMPLES_FOR_100HZ) {
 
 		#if DEBUG_FAST_LOOP == ENABLED
@@ -1148,8 +1146,8 @@ static void medium_loop()
         }
 #endif
 
-        // auto_trim, uses an auto_level algorithm
-        auto_trim();
+        // save_trim - stores roll and pitch radio inputs to ahrs
+        save_trim();
 
         // record throttle output
         // ------------------------------
@@ -2067,7 +2065,7 @@ static void read_AHRS(void)
 #endif
 
     ahrs.update();
-    omega = imu.get_gyro();
+    omega = ins.get_gyro();
 
 #if SECONDARY_DMP_ENABLED == ENABLED
     ahrs2.update();

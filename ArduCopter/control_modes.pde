@@ -148,102 +148,38 @@ static void read_trim_switch()
             }
         }
     }else if (option == CH7_AUTO_TRIM) {
-        if (g.rc_7.radio_in > CH_7_PWM_TRIGGER) {
-            auto_level_counter = 10;
+        if(g.rc_7.radio_in > CH_7_PWM_TRIGGER && control_mode <= ACRO && g.rc_3.control_in == 0) {
+            save_trim_counter = 15;
         }
     }
 }
 
-static void auto_trim()
+// save_trim - adds roll and pitch trims from the radio to ahrs
+static void save_trim()
 {
-    if(auto_level_counter > 0) {
-        //g.rc_1.dead_zone = 60;		// 60 = .6 degrees
-        //g.rc_2.dead_zone = 60;
+    float roll_trim, pitch_trim;
 
-        auto_level_counter--;
+    if(save_trim_counter > 0) {
+        save_trim_counter--;
 
-        if( motors.armed() ) {
-            // set high AHRS gains to force accelerometers to impact attitude estimate
-            ahrs.set_fast_gains(true);
-#if SECONDARY_DMP_ENABLED == ENABLED
-            ahrs2.set_fast_gains(true);
-#endif
-        }
+        // first few iterations we simply flash the leds
+        led_mode = SAVE_TRIM_LEDS;
 
-        trim_accel();
-        led_mode = AUTO_TRIM_LEDS;
-        do_simple = false;
-
-        if(auto_level_counter == 1) {
-            //g.rc_1.dead_zone = 0;		// 60 = .6 degrees
-            //g.rc_2.dead_zone = 0;
-            led_mode = NORMAL_LEDS;
-            clear_leds();
-            imu.save();
+        if(save_trim_counter == 1) {
+            // save roll trim
+            roll_trim = ToRad((float)g.rc_1.control_in/100.0);
+            pitch_trim = ToRad((float)g.rc_2.control_in/100.0);
+            ahrs.add_trim(roll_trim, pitch_trim);
+            Serial.printf_P(PSTR("\nTrim Roll:%4.2f Pitch:%4.2f\n"),ToDeg(roll_trim), ToDeg(pitch_trim));
 
             reset_control_switch();
 
-            // go back to normal AHRS gains
-            if( motors.armed() ) {
-                ahrs.set_fast_gains(false);
-#if SECONDARY_DMP_ENABLED == ENABLED
-                ahrs2.set_fast_gains(false);
-#endif
-            }
+            // switch back leds to normal
+            led_mode = NORMAL_LEDS;
 
-            //Serial.println("Done");
-            auto_level_counter = 0;
+            save_trim_counter = 0;
         }
     }
 }
 
-
-/*
- *  How this works:
- *  Level Example:
- *  A_off: -14.00, -20.59, -30.80
- *
- *  Right roll Example:
- *  A_off: -6.73, 89.05, -46.02
- *
- *  Left Roll Example:
- *  A_off: -18.11, -160.31, -56.42
- *
- *  Pitch Forward:
- *  A_off: -127.00, -22.16, -50.09
- *
- *  Pitch Back:
- *  A_off: 201.95, -24.00, -88.56
- */
-
-static void trim_accel()
-{
-    reset_stability_I();
-
-    float trim_roll  = (float)g.rc_1.control_in / 30000.0;
-    float trim_pitch = (float)g.rc_2.control_in / 30000.0;
-
-    trim_roll       = constrain(trim_roll, -1.5, 1.5);
-    trim_pitch      = constrain(trim_pitch, -1.5, 1.5);
-
-    if(g.rc_1.control_in > 200) {    // Roll Right
-        imu.ay(imu.ay() - trim_roll);
-    }else if (g.rc_1.control_in < -200) {
-        imu.ay(imu.ay() - trim_roll);
-    }
-
-    if(g.rc_2.control_in > 200) {    // Pitch Back
-        imu.ax(imu.ax() + trim_pitch);
-    }else if (g.rc_2.control_in < -200) {
-        imu.ax(imu.ax() + trim_pitch);
-    }
-
-    /*
-     *  Serial.printf_P(PSTR("r:%1.2f  %1.2f \t| p:%1.2f  %1.2f\n"),
-     *                                               trim_roll,
-     *                                               (float)imu.ay(),
-     *                                               trim_pitch,
-     *                                               (float)imu.ax());
-     *  //*/
-}
 
