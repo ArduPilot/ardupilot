@@ -390,10 +390,14 @@ AP_AHRS_DCM::drift_correction(float deltat)
     // we have integrated over
     _ra_deltat += deltat;
 
-    if (!have_gps()) {
-        // no GPS, or no lock. We assume zero velocity. This at
-        // least means we can cope with gyro drift while sitting
-        // on a bench with no GPS lock
+    if (!have_gps() || _gps->num_sats < 6) {
+        // no GPS, or not a good lock. From experience we need at
+        // least 6 satellites to get a really reliable velocity number
+        // from the GPS.
+        //
+        // As a fallback we use the fixed wing acceleration correction
+        // if we have an airspeed estimate (which we only have if
+        // _fly_forward is set), otherwise no correction
         if (_ra_deltat < 0.2) {
             // not enough time has accumulated
             return;
