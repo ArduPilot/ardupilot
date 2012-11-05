@@ -27,7 +27,7 @@ int32_t AP_YawController::get_servo_out(float scaler, bool stick_movement)
 	}
 	_last_t = tnow;
 	
-	if(_imu == NULL) { // can't control without a reference
+	if(_ins == NULL) { // can't control without a reference
 		return 0; 
 	}
 	
@@ -44,7 +44,7 @@ int32_t AP_YawController::get_servo_out(float scaler, bool stick_movement)
 	}
 	_stick_movement = stick_movement;
 
-	Vector3f accels = _imu->get_accel();
+	Vector3f accels = _ins->get_accel();
 	
 	// I didn't pull 512 out of a hat - it is a (very) loose approximation of 100*ToDeg(asin(-accels.y/9.81))
 	// which, with a P of 1.0, would mean that your rudder angle would be equal to your roll angle when
