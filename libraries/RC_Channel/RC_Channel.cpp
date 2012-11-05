@@ -217,13 +217,15 @@ RC_Channel::update_min_max()
     radio_max = max(radio_max.get(), radio_in);
 }
 
-// ------------------------------------------
-
+/*
+  return an "angle in centidegrees" (normally -4500 to 4500) from
+  the current radio_in value using the specified dead_zone
+ */
 int16_t
-RC_Channel::pwm_to_angle()
+RC_Channel::pwm_to_angle_dz(int16_t dead_zone)
 {
-    int16_t radio_trim_high = radio_trim + _dead_zone;
-    int16_t radio_trim_low  = radio_trim - _dead_zone;
+    int16_t radio_trim_high = radio_trim + dead_zone;
+    int16_t radio_trim_low  = radio_trim - dead_zone;
 
     // prevent div by 0
     if ((radio_trim_low - radio_min) == 0 || (radio_max - radio_trim_high) == 0)
@@ -235,6 +237,16 @@ RC_Channel::pwm_to_angle()
         return _reverse * ((long)_high * (long)(radio_in - radio_trim_low)) / (long)(radio_trim_low - radio_min);
     }else
         return 0;
+}
+
+/*
+  return an "angle in centidegrees" (normally -4500 to 4500) from
+  the current radio_in value
+ */
+int16_t
+RC_Channel::pwm_to_angle()
+{
+	return pwm_to_angle_dz(_dead_zone);
 }
 
 

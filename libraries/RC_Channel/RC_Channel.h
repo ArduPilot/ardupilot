@@ -78,6 +78,7 @@ public:
     // includes offset from PWM
     //int16_t   get_radio_out(void);
 
+    int16_t                                         pwm_to_angle_dz(int16_t dead_zone);
     int16_t                                         pwm_to_angle();
     float                                           norm_input();
     float                                           norm_output();
