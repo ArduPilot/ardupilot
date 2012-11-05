@@ -45,7 +45,5 @@ private:
 
     static const prog_char          _mtk_set_binary[];
     static const prog_char          _sirf_set_binary[];
-
-    enum GPS_Engine_Setting         _nav_setting;
 };
 #endif
