@@ -79,7 +79,7 @@ AP_GPS_Auto::_detect(void)
 {
 	static uint32_t detect_started_ms;
 
-	if (detect_started_ms == 0) {
+	if (detect_started_ms == 0 && _port->available() > 0) {
 		detect_started_ms = millis();
 	}
 
