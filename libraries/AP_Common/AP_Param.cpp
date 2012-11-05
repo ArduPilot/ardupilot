@@ -34,12 +34,12 @@
 #define PGM_FLOAT(addr) pgm_read_float((const float *)addr)
 #define PGM_POINTER(addr) pgm_read_pointer((const void *)addr)
 
-// the 'GROUP_ID' of a element of a group is the 8 bit identifier used
-// to distinguish between this element of the group and other elements
-// of the same group. It is calculated using a bit shift per level of
-// nesting, so the first level of nesting gets 4 bits, and the next
-// level gets the next 4 bits. This limits groups to having at most 16
-// elements.
+// the 'GROUP_ID' of a element of a group is the 18 bit identifier
+// used to distinguish between this element of the group and other
+// elements of the same group. It is calculated using a bit shift per
+// level of nesting, so the first level of nesting gets 6 bits the 2nd
+// level gets the next 6 bits, and the 3rd level gets the last 6
+// bits. This limits groups to having at most 64 elements.
 #define GROUP_ID(grpinfo, base, i, shift) ((base)+(((uint16_t)PGM_UINT8(&grpinfo[i].idx))<<(shift)))
 
 // Note about AP_Vector3f handling.
@@ -313,7 +313,7 @@ const struct AP_Param::Info *AP_Param::find_var_info_group(const struct GroupInf
                                                            uint8_t                  vindex,
                                                            uint8_t                  group_base,
                                                            uint8_t                  group_shift,
-                                                           uint8_t *                group_element,
+                                                           uint32_t *               group_element,
                                                            const struct GroupInfo **group_ret,
                                                            uint8_t *                idx)
 {
@@ -364,7 +364,7 @@ const struct AP_Param::Info *AP_Param::find_var_info_group(const struct GroupInf
 }
 
 // find the info structure for a variable
-const struct AP_Param::Info *AP_Param::find_var_info(uint8_t *                  group_element,
+const struct AP_Param::Info *AP_Param::find_var_info(uint32_t *                 group_element,
                                                      const struct GroupInfo **  group_ret,
                                                      uint8_t *                  idx)
 {
@@ -481,7 +481,7 @@ void AP_Param::add_vector3f_suffix(char *buffer, size_t buffer_size, uint8_t idx
 //
 void AP_Param::copy_name(char *buffer, size_t buffer_size, bool force_scalar)
 {
-    uint8_t group_element;
+    uint32_t group_element;
     const struct GroupInfo *ginfo;
     uint8_t idx;
     const struct AP_Param::Info *info = find_var_info(&group_element, &ginfo, &idx);
@@ -599,7 +599,7 @@ AP_Param::find_by_index(uint16_t idx, enum ap_var_type *ptype)
 //
 bool AP_Param::save(void)
 {
-    uint8_t group_element = 0;
+    uint32_t group_element = 0;
     const struct GroupInfo *ginfo;
     uint8_t idx;
     const struct AP_Param::Info *info = find_var_info(&group_element, &ginfo, &idx);
@@ -677,7 +677,7 @@ bool AP_Param::save(void)
 //
 bool AP_Param::load(void)
 {
-    uint8_t group_element = 0;
+    uint32_t group_element = 0;
     const struct GroupInfo *ginfo;
     uint8_t idx;
     const struct AP_Param::Info *info = find_var_info(&group_element, &ginfo, &idx);

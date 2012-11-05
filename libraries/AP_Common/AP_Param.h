@@ -243,11 +243,11 @@ private:
                                     uint8_t                     vindex,
                                     uint8_t                     group_base,
                                     uint8_t                     group_shift,
-                                    uint8_t *                   group_element,
+                                    uint32_t *                  group_element,
                                     const struct GroupInfo **   group_ret,
                                     uint8_t *                   idx);
     const struct Info *         find_var_info(
-                                    uint8_t *                 group_element,
+                                    uint32_t *                group_element,
                                     const struct GroupInfo ** group_ret,
                                     uint8_t *                 idx);
     static const struct Info *  find_by_header_group(
