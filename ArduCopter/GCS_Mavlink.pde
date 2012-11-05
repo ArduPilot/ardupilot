@@ -193,7 +193,6 @@ static void NOINLINE send_meminfo(mavlink_channel_t chan)
 
 static void NOINLINE send_location(mavlink_channel_t chan)
 {
-    Matrix3f rot = ahrs.get_dcm_matrix(); // neglecting angle of attack for now
     mavlink_msg_global_position_int_send(
         chan,
         millis(),
@@ -201,9 +200,9 @@ static void NOINLINE send_location(mavlink_channel_t chan)
         current_loc.lng,                // in 1E7 degrees
         g_gps->altitude * 10,             // millimeters above sea level
         (current_loc.alt - home.alt) * 10,           // millimeters above ground
-        g_gps->ground_speed * rot.a.x,  // X speed cm/s
-        g_gps->ground_speed * rot.b.x,  // Y speed cm/s
-        g_gps->ground_speed * rot.c.x,
+        g_gps->velocity_north() * 100,  // X speed cm/s (+ve North)
+        g_gps->velocity_east()  * 100,  // Y speed cm/s (+ve East)
+        g_gps->velocity_down()  * -100, // Z speed cm/s (+ve up)
         g_gps->ground_course);          // course in 1/100 degree
 }
 
