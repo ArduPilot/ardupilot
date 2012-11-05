@@ -12,7 +12,7 @@ static int8_t   test_gps(uint8_t argc,                  const Menu::arg *argv);
 #if CONFIG_ADC == ENABLED
 static int8_t   test_adc(uint8_t argc,                  const Menu::arg *argv);
 #endif
-static int8_t   test_imu(uint8_t argc,                  const Menu::arg *argv);
+static int8_t   test_ins(uint8_t argc,                  const Menu::arg *argv);
 static int8_t   test_battery(uint8_t argc,              const Menu::arg *argv);
 static int8_t   test_relay(uint8_t argc,                const Menu::arg *argv);
 static int8_t   test_wp(uint8_t argc,                   const Menu::arg *argv);
@@ -49,14 +49,14 @@ static const struct Menu::command test_menu_commands[] PROGMEM = {
  #endif
     {"gps",                 test_gps},
     {"rawgps",              test_rawgps},
-    {"imu",                 test_imu},
+    {"ins",                 test_ins},
     {"airspeed",    test_airspeed},
     {"airpressure", test_pressure},
     {"compass",             test_mag},
 #elif HIL_MODE == HIL_MODE_SENSORS
     {"adc",                 test_adc},
     {"gps",                 test_gps},
-    {"imu",                 test_imu},
+    {"ins",                 test_ins},
     {"compass",             test_mag},
 #elif HIL_MODE == HIL_MODE_ATTITUDE
 #endif
@@ -464,10 +464,10 @@ test_gps(uint8_t argc, const Menu::arg *argv)
 }
 
 static int8_t
-test_imu(uint8_t argc, const Menu::arg *argv)
+test_ins(uint8_t argc, const Menu::arg *argv)
 {
     //Serial.printf_P(PSTR("Calibrating."));
-    imu.init(IMU::COLD_START, delay, flash_leds, &timer_scheduler);
+    ins.init(AP_InertialSensor::COLD_START, delay, flash_leds, &timer_scheduler);
     ahrs.reset();
 
     print_hit_enter();
@@ -480,7 +480,7 @@ test_imu(uint8_t argc, const Menu::arg *argv)
             G_Dt                            = (float)delta_ms_fast_loop / 1000.f;                       // used by DCM integrator
             fast_loopTimer_ms       = millis();
 
-            // IMU
+            // INS
             // ---
             ahrs.update();
 
@@ -492,10 +492,10 @@ test_imu(uint8_t argc, const Menu::arg *argv)
                 }
             }
 
-            // We are using the IMU
+            // We are using the INS
             // ---------------------
-            Vector3f gyros      = imu.get_gyro();
-            Vector3f accels = imu.get_accel();
+            Vector3f gyros  = ins.get_gyro();
+            Vector3f accels = ins.get_accel();
             Serial.printf_P(PSTR("r:%4d  p:%4d  y:%3d  g=(%5.1f %5.1f %5.1f)  a=(%5.1f %5.1f %5.1f)\n"),
                             (int)ahrs.roll_sensor / 100,
                             (int)ahrs.pitch_sensor / 100,
@@ -528,7 +528,7 @@ test_mag(uint8_t argc, const Menu::arg *argv)
     report_compass();
 
     // we need the AHRS initialised for this test
-    imu.init(IMU::COLD_START, delay, flash_leds, &timer_scheduler);
+    ins.init(AP_InertialSensor::COLD_START, delay, flash_leds, &timer_scheduler);
     ahrs.reset();
 
     int16_t counter = 0;
@@ -545,7 +545,7 @@ test_mag(uint8_t argc, const Menu::arg *argv)
             G_Dt                            = (float)delta_ms_fast_loop / 1000.f;                       // used by DCM integrator
             fast_loopTimer_ms       = millis();
 
-            // IMU
+            // INS
             // ---
             ahrs.update();
 

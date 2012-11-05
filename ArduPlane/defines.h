@@ -241,8 +241,8 @@ enum gcs_severity {
 // mark a function as not to be inlined
 #define NOINLINE __attribute__((noinline))
 
-#define CONFIG_IMU_OILPAN 1
-#define CONFIG_IMU_MPU6000 2
+#define CONFIG_INS_OILPAN 1
+#define CONFIG_INS_MPU6000 2
 
 #define APM_HARDWARE_APM1  1
 #define APM_HARDWARE_APM2 2

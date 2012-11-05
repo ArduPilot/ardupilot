@@ -87,7 +87,7 @@
 //
 
 #if CONFIG_APM_HARDWARE == APM_HARDWARE_APM2
- # define CONFIG_IMU_TYPE   CONFIG_IMU_MPU6000
+ # define CONFIG_INS_TYPE   CONFIG_INS_MPU6000
  # define CONFIG_RELAY      DISABLED
  # define MAG_ORIENTATION   AP_COMPASS_APM2_SHIELD
  # define CONFIG_PITOT_SOURCE PITOT_SOURCE_ANALOG_PIN
@@ -135,17 +135,17 @@
 
 
 //////////////////////////////////////////////////////////////////////////////
-// IMU Selection
+// INS Selection
 //
-#ifndef CONFIG_IMU_TYPE
- # define CONFIG_IMU_TYPE CONFIG_IMU_OILPAN
+#ifndef CONFIG_INS_TYPE
+ # define CONFIG_INS_TYPE CONFIG_INS_OILPAN
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
 // ADC Enable - used to eliminate for systems which don't have ADC.
 //
 #ifndef CONFIG_ADC
- # if CONFIG_IMU_TYPE == CONFIG_IMU_OILPAN
+ # if CONFIG_INS_TYPE == CONFIG_INS_OILPAN
   #   define CONFIG_ADC ENABLED
  # else
   #   define CONFIG_ADC DISABLED
@@ -823,14 +823,14 @@
 # define SERIAL_BUFSIZE 256
 #endif
 
-#if CONFIG_IMU_TYPE == CONFIG_IMU_OILPAN
- # define NUM_IMU_SAMPLES_FOR_200HZ 5
- # define NUM_IMU_SAMPLES_FOR_100HZ 10
- # define NUM_IMU_SAMPLES_FOR_50HZ  20
+#if CONFIG_INS_TYPE == CONFIG_INS_OILPAN
+ # define NUM_INS_SAMPLES_FOR_200HZ 5
+ # define NUM_INS_SAMPLES_FOR_100HZ 10
+ # define NUM_INS_SAMPLES_FOR_50HZ  20
 #endif
 
-#if CONFIG_IMU_TYPE == CONFIG_IMU_MPU6000
- # define NUM_IMU_SAMPLES_FOR_200HZ 1
- # define NUM_IMU_SAMPLES_FOR_100HZ 2
- # define NUM_IMU_SAMPLES_FOR_50HZ  4
+#if CONFIG_INS_TYPE == CONFIG_INS_MPU6000
+ # define NUM_INS_SAMPLES_FOR_200HZ 1
+ # define NUM_INS_SAMPLES_FOR_100HZ 2
+ # define NUM_INS_SAMPLES_FOR_50HZ  4
 #endif

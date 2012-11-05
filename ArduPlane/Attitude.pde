@@ -207,7 +207,7 @@ static void calc_nav_yaw(float speed_scaler, float ch4_inf)
     g.channel_rudder.servo_out = g.kff_rudder_mix * g.channel_roll.servo_out;
 
     // a PID to coordinate the turn (drive y axis accel to zero)
-    Vector3f temp = imu.get_accel();
+    Vector3f temp = ins.get_accel();
     int32_t error = -temp.y*100.0;
 
     g.channel_rudder.servo_out += g.pidServoRudder.get_pid(error, speed_scaler);

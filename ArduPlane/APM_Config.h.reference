@@ -449,13 +449,13 @@
 //////////////////////////////////////////////////////////////////////////////
 // GROUND_START_DELAY                       OPTIONAL
 //
-// If configured, inserts a delay between power-up and the beginning of IMU
+// If configured, inserts a delay between power-up and the beginning of INS
 // calibration during a ground start.
 //
 // Use this setting to give you time to position the aircraft horizontally
-// for the IMU calibration.
+// for the INS calibration.
 //
-// The default is to begin IMU calibration immediately at startup.
+// The default is to begin INS calibration immediately at startup.
 //
 //#define GROUND_START_DELAY  0
 //
@@ -463,7 +463,7 @@
 //////////////////////////////////////////////////////////////////////////////
 // ENABLE_AIR_START                         OPTIONAL
 //
-// If air start is disabled then you will get a ground start (including IMU
+// If air start is disabled then you will get a ground start (including INS
 // calibration) every time the AP is powered up. This means that if you get
 // a power glitch or reboot for some reason in the air, you will probably
 // crash, but it prevents a lot of problems on the ground like unintentional
@@ -863,7 +863,7 @@
 //
 // LOG_PM                                   OPTIONAL
 //
-// Logs IMU performance monitoring info every 20 seconds.
+// Logs INS performance monitoring info every 20 seconds.
 // Defaults to DISABLED.
 //
 // LOG_CTUN                                 OPTIONAL
