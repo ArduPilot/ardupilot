@@ -164,6 +164,10 @@ private:
     uint16_t        _payload_length;
     uint16_t        _payload_counter;
 
+	// 8 bit count of fix messages processed, used for periodic
+	// processing
+    uint8_t			_fix_count;
+
     uint8_t         _class;
 
     // do we have new position information?
