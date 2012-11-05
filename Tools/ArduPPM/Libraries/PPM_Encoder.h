@@ -63,6 +63,9 @@
 // 02-11-2012
 // V2.2.69 - Added PPM output positive polarity - mainly for standalone PPM encoder board use
 
+// 03-11-2012
+// V2.3.0 - Implemented single channel fail-safe detection for all inputs
+
 
 // -------------------------------------------------------------
 
@@ -102,6 +105,9 @@
 #ifndef bool
 #define bool                _Bool
 #endif
+
+// Version stamp for firmware hex file ( decode hex file using <avr-objdump -s file.hex> and look for "ArduPPM" string )
+const char ver[13] = "ArduPPMv2.3.0"; 
 
 // -------------------------------------------------------------
 // INPUT MODE
@@ -147,6 +153,10 @@ volatile uint8_t servo_input_mode = JUMPER_SELECT_MODE;
 #define PPM_CH5_MODE_4        ONE_US * 1555 - PPM_PRE_PULSE
 
 // -------------------------------------------------------------
+// PPM OUTPUT SETTINGS
+// -------------------------------------------------------------
+// #define _POSITIVE_PPM_FRAME_	// Switch to positive pulse PPM
+// (the actual timing is encoded in the length of the low between two pulses)
 
 // Number of servo input channels
 #define SERVO_CHANNELS        8
@@ -156,65 +166,6 @@ volatile uint8_t servo_input_mode = JUMPER_SELECT_MODE;
 
 // Size of ppm[..] data array ( servo channels * 2 + 2)
 #define PPM_ARRAY_MAX         18
-
-
-// Data array for storing ppm (8 channels) pulse widths.
-volatile uint16_t ppm[ PPM_ARRAY_MAX ] =                                
-{
-    PPM_PRE_PULSE,
-    PPM_SERVO_CENTER,         // Channel 1 
-    PPM_PRE_PULSE,
-    PPM_SERVO_CENTER,         // Channel 2
-    PPM_PRE_PULSE,
-    PPM_THROTTLE_DEFAULT,     // Channel 3 (throttle)
-    PPM_PRE_PULSE,
-    PPM_SERVO_CENTER,         // Channel 4
-    PPM_PRE_PULSE,
-    PPM_CH5_MODE_4,           // Channel 5
-    PPM_PRE_PULSE,
-    PPM_SERVO_CENTER,         // Channel 6
-    PPM_PRE_PULSE,
-    PPM_SERVO_CENTER,         // Channel 7
-    PPM_PRE_PULSE,
-    PPM_SERVO_CENTER,         // Channel 8
-    PPM_PRE_PULSE,
-    PPM_PERIOD
-};
-
-// -------------------------------------------------------------
-// PPM OUTPUT SETTINGS
-// -------------------------------------------------------------
-// #define _POSITIVE_PPM_FRAME_	// Switch to positive pulse PPM
-// (the actual timing is encoded in the length of the low between two pulses)
-
-
-// -------------------------------------------------------------
-// SERVO POWER ON VALUES
-// -------------------------------------------------------------
-/*
-const uint16_t power_on_ppm[ PPM_ARRAY_MAX ] =                               
-{
-    PPM_PRE_PULSE,
-    PPM_SERVO_CENTER,          // Channel 1
-    PPM_PRE_PULSE,
-    PPM_SERVO_CENTER,          // Channel 2
-    PPM_PRE_PULSE,
-    PPM_THROTTLE_DEFAULT,      // Channel 3 (throttle)
-    PPM_PRE_PULSE,
-    PPM_SERVO_CENTER,          // Channel 4
-    PPM_PRE_PULSE,
-    PPM_CH5_MODE_4,            // Channel 5
-    PPM_PRE_PULSE,
-    PPM_SERVO_CENTER,          // Channel 6
-    PPM_PRE_PULSE,
-    PPM_SERVO_CENTER,          // Channel 7
-    PPM_PRE_PULSE,
-    PPM_SERVO_CENTER,          // Channel 8
-    PPM_PRE_PULSE,
-    PPM_PERIOD
-};
-*/
-// -------------------------------------------------------------
 
 // -------------------------------------------------------------
 // SERVO FAILSAFE VALUES
@@ -240,7 +191,38 @@ const uint16_t failsafe_ppm[ PPM_ARRAY_MAX ] =
     PPM_PRE_PULSE,
     PPM_PERIOD
 };
+
 // -------------------------------------------------------------
+// Data array for storing ppm (8 channels) pulse widths.
+// -------------------------------------------------------------
+volatile uint16_t ppm[ PPM_ARRAY_MAX ] =                                
+{
+    PPM_PRE_PULSE,
+    PPM_SERVO_CENTER,         // Channel 1 
+    PPM_PRE_PULSE,
+    PPM_SERVO_CENTER,         // Channel 2
+    PPM_PRE_PULSE,
+    PPM_THROTTLE_DEFAULT,     // Channel 3 (throttle)
+    PPM_PRE_PULSE,
+    PPM_SERVO_CENTER,         // Channel 4
+    PPM_PRE_PULSE,
+    PPM_CH5_MODE_4,           // Channel 5
+    PPM_PRE_PULSE,
+    PPM_SERVO_CENTER,         // Channel 6
+    PPM_PRE_PULSE,
+    PPM_SERVO_CENTER,         // Channel 7
+    PPM_PRE_PULSE,
+    PPM_SERVO_CENTER,         // Channel 8
+    PPM_PRE_PULSE,
+    PPM_PERIOD
+};
+
+// -------------------------------------------------------------
+// Data arraw for storing ppm timeout (missing channel detection)
+// -------------------------------------------------------------
+#define PPM_TIMEOUT_VALUE 40 // ~1sec before triggering missing channel detection
+volatile uint8_t ppm_timeout[ PPM_ARRAY_MAX ];
+
 
 // AVR parameters for PhoneDrone and APM2 boards using ATmega32u2
 #if defined (__AVR_ATmega16U2__) || defined (__AVR_ATmega32U2__)
@@ -464,9 +446,6 @@ ISR( SERVO_INT_VECTOR )
 	static uint8_t led_delay = 0;
 	#endif
  
-	// Missing throttle signal failsafe
-	static uint8_t throttle_timeout = 0;
- 
 	// Servo input pin storage 
     static uint8_t servo_pins_old = 0;
 
@@ -559,8 +538,8 @@ CHECK_PINS_LOOP: // Input servo pin check loop
             // Calculate servo channel position in ppm[..]
             uint8_t _ppm_channel = ( servo_channel << 1 ) + 1;
 
-			//Reset throttle failsafe timeout
-			if( _ppm_channel == 5 ) throttle_timeout = 0;
+            //Reset ppm single channel fail-safe timeout
+            ppm_timeout[ _ppm_channel ] = 0;
 
         #ifdef _AVERAGE_FILTER_
             // Average filter to smooth input jitter
@@ -621,7 +600,6 @@ CHECK_PINS_DONE:
     // Start PPM generator if not already running
     if( ppm_generator_active == false ) ppm_start();
 
-
 	#if defined (__AVR_ATmega16U2__) || defined (__AVR_ATmega32U2__)
 	// Toggle RX LED when finished receiving servo pulses
 	if( ++led_delay > 64 ) // Toggle led every 64th time
@@ -630,15 +608,6 @@ CHECK_PINS_DONE:
 		led_delay = 0;
 	}
 	#endif	
-	
-	// Throttle failsafe
-	if( throttle_timeout++ >= 128 )
-	{
-		// Reset throttle timeout
-		throttle_timeout = 0;
-		// Set throttle failsafe value
-		ppm[ 5 ] = PPM_THROTTLE_FAILSAFE;
-	}
 	
     //Has servo input changed while processing pins, if so we need to re-check pins
     if( servo_pins != SERVO_INPUT ) goto CHECK_PINS_START;
@@ -657,9 +626,21 @@ ISR( PPM_INT_VECTOR )
     // Current active ppm channel
     static uint8_t ppm_channel = PPM_ARRAY_MAX - 1;
 
-    // Update timing for next compare toggle
-    PPM_COMPARE += ppm[ ppm_channel ];
-
+// Update timing for next compare toggle with either current ppm input value, or fail-safe value if there is a channel timeout.
+    if( ppm_timeout[ ppm_channel ] > PPM_TIMEOUT_VALUE )
+    {
+        // Use ppm fail-safe value
+        PPM_COMPARE += failsafe_ppm[ ppm_channel ]; 
+    }
+    else
+    {
+        // Use latest ppm input value
+        PPM_COMPARE += ppm[ ppm_channel ];  
+        
+        // Increment channel timeout (reset to zero in input interrupt each time a valid signal is detected)
+        ppm_timeout[ ppm_channel ] ++;
+    }
+    
     // Select the next ppm channel
     if( ++ppm_channel >= PPM_ARRAY_MAX ) 
 	{
