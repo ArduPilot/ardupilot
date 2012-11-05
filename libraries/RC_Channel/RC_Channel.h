@@ -19,8 +19,6 @@ public:
     /// @param name     Optional name for the group.
     ///
     RC_Channel(uint8_t ch_out) :
-        scale_output(1.0),
-        _filter(false),
         _high(1),
         _ch_out(ch_out) {
 		if (_reverse == 0) {
@@ -36,7 +34,6 @@ public:
     void        load_eeprom(void);
     void        save_eeprom(void);
     void        save_trim(void);
-    void        set_filter(bool filter);
     void        set_type(uint8_t t);
 
     // setup the control preferences
@@ -88,7 +85,6 @@ public:
     int16_t                                         pwm_to_range();
     int16_t                                         range_to_pwm();
 
-    float                                           scale_output;
     static void                                     set_apm_rc(APM_RC_Class * apm_rc);
     void                                            output();
     void                                            enable_out();
@@ -97,7 +93,6 @@ public:
     static const struct AP_Param::GroupInfo         var_info[];
 
 private:
-    bool            _filter;
     AP_Int8         _reverse;
     AP_Int16        _dead_zone;
     uint8_t         _type;
