@@ -2,7 +2,7 @@
 
 #include "AP_InertialSensor_Stub.h"
 
-uint16_t AP_InertialSensor_Stub::init( AP_PeriodicProcess * scheduler ) {
+uint16_t AP_InertialSensor_Stub::_init( AP_PeriodicProcess * scheduler ) {
     return AP_PRODUCT_ID_NONE;
 }
 
@@ -26,9 +26,6 @@ float AP_InertialSensor_Stub::gz() {
     return 0.0f;
 }
 
-void AP_InertialSensor_Stub::get_gyros( float * g ) {
-}
-
 float AP_InertialSensor_Stub::ax() {
     return 0.0f;
 }
@@ -39,18 +36,14 @@ float AP_InertialSensor_Stub::az() {
     return 0.0f;
 }
 
-void AP_InertialSensor_Stub::get_accels( float * a ) {
-}
-void AP_InertialSensor_Stub::get_sensors( float * sensors ) {
-}
-
 float AP_InertialSensor_Stub::temperature() {
     return 0.0;
 }
-uint32_t AP_InertialSensor_Stub::sample_time() {
+uint32_t AP_InertialSensor_Stub::get_delta_time_micros() {
     return 0;
 }
-void AP_InertialSensor_Stub::reset_sample_time() {
+uint32_t AP_InertialSensor_Stub::get_last_sample_time_micros() {
+    return 0;
 }
 float AP_InertialSensor_Stub::get_gyro_drift_rate(void) {
     return 0.0;
