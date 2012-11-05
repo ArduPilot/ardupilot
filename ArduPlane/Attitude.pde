@@ -359,8 +359,16 @@ static void set_servos(void)
         g.channel_throttle.radio_out    = g.channel_throttle.radio_in;
         g.channel_rudder.radio_out              = g.channel_rudder.radio_in;
 
-        // ensure flaps and extra aileron channels are updated
-        RC_Channel_aux::set_radio(RC_Channel_aux::k_aileron, g.channel_roll.radio_out);
+        // setup extra aileron channel. We want this to come from the
+        // main aileron input channel, but using the 2nd channels dead
+        // zone, reverse and min/max settings. We need to use
+        // pwm_to_angle_dz() to ensure we don't trim the value for the
+        // deadzone of the main aileron channel, otherwise the 2nd
+        // aileron won't quite follow the first one
+        int16_t aileron_in = g.channel_roll.pwm_to_angle_dz(0);
+        RC_Channel_aux::set_servo_out(RC_Channel_aux::k_aileron, aileron_in);
+
+        // copy flap control from transmitter
         RC_Channel_aux::copy_radio_in_out(RC_Channel_aux::k_flap_auto);
 
         if (g.mix_mode != 0) {
