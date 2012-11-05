@@ -117,12 +117,6 @@ RC_Channel::get_reverse(void)
 }
 
 void
-RC_Channel::set_filter(bool filter)
-{
-    _filter = filter;
-}
-
-void
 RC_Channel::set_type(uint8_t t)
 {
     _type = t;
@@ -139,16 +133,6 @@ RC_Channel::trim()
 void
 RC_Channel::set_pwm(int16_t pwm)
 {
-
-    /*if(_filter){
-     *       if(radio_in == 0)
-     *               radio_in = pwm;
-     *       else
-     *               radio_in = (pwm + radio_in) >> 1;		// Small filtering
-     *  }else{
-     *       radio_in = pwm;
-     *  }*/
-
     radio_in = pwm;
 
     if(_type == RC_CHANNEL_RANGE) {
@@ -157,27 +141,9 @@ RC_Channel::set_pwm(int16_t pwm)
         //control_in = min(control_in, _high);
         control_in = (control_in < _dead_zone) ? 0 : control_in;
 
-        if (fabs(scale_output) != 1) {
-            control_in *= scale_output;
-        }
-
-    }else{
-
+    } else {
         //RC_CHANNEL_ANGLE, RC_CHANNEL_ANGLE_RAW
         control_in = pwm_to_angle();
-
-
-        if (fabs(scale_output) != 1) {
-            control_in *= scale_output;
-        }
-
-        /*
-         *  // coming soon ??
-         *  if(expo) {
-         *       long temp = control_in;
-         *       temp = (temp * temp) / (long)_high;
-         *       control_in = (int16_t)((control_in >= 0) ? temp : -temp);
-         *  }*/
     }
 }
 

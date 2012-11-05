@@ -87,7 +87,6 @@ void setup()
     rc_2.dead_zone = 80;
     rc_3.set_range(0,1000);
     rc_3.dead_zone = 20;
-    rc_3.scale_output = .8;     // gives more dynamic range to quads
     rc_4.set_angle(6000);
     rc_4.dead_zone = 500;
     rc_5.set_range(0,1000);
