@@ -8,7 +8,8 @@
 
 // special pin number which is interpreted as a
 // internal Vcc voltage read
-#define ANALOG_PIN_VCC 255
+#define ANALOG_PIN_VCC 254
+#define ANALOG_PIN_NONE 255
 
 class AP_AnalogSource_Arduino : public AP_AnalogSource
 {

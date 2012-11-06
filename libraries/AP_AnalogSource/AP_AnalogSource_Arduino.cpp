@@ -27,6 +27,10 @@ static volatile struct {
 // each conversion takes about 125 microseconds
 static void adc_timer(uint32_t t)
 {
+    if (pins[next_pin_index].pin == ANALOG_PIN_NONE) {
+        goto next_pin;
+    }
+
     if (bit_is_set(ADCSRA, ADSC) || num_pins_watched == 0) {
         // conversion is still running. This should be
         // very rare, as we are called at 1kHz
@@ -42,9 +46,11 @@ static void adc_timer(uint32_t t)
     }
 
     // remember the value we got
-    uint8_t low  = ADCL;
-    uint8_t high = ADCH;
-    pins[next_pin_index].output = low | (high<<8);
+    {
+        uint8_t low  = ADCL;
+        uint8_t high = ADCH;
+        pins[next_pin_index].output = low | (high<<8);
+    }
     pins[next_pin_index].sum += pins[next_pin_index].output;
     if (pins[next_pin_index].sum_count >= 63) {
         // we risk overflowing the 16 bit sum
@@ -54,23 +60,32 @@ static void adc_timer(uint32_t t)
         pins[next_pin_index].sum_count++;
     }
 
+next_pin:
     next_pin_count = 0;
     if (num_pins_watched != 0) {
         next_pin_index = (next_pin_index+1) % num_pins_watched;
     }
     uint8_t pin = pins[next_pin_index].pin;
 
-    if (pin == ANALOG_PIN_VCC) {
+    if (pin == ANALOG_PIN_NONE) {
+        // setup for returning 0
+        pins[next_pin_index].output = 0;
+        pins[next_pin_index].sum = 0;
+        pins[next_pin_index].sum_count = 1;
+    } else if (pin == ANALOG_PIN_VCC) {
         // we're reading the board voltage
         ADMUX = _BV(REFS0)|_BV(MUX4)|_BV(MUX3)|_BV(MUX2)|_BV(MUX1);
+
+        // start the next conversion
+        ADCSRA |= _BV(ADSC);
     } else {
         // we're reading an external pin
         ADCSRB = (ADCSRB & ~(1 << MUX5)) | (((pin >> 3) & 0x01) << MUX5);
         ADMUX = _BV(REFS0) | (pin & 0x07);
-    }
 
-    // start the next conversion
-    ADCSRA |= _BV(ADSC);
+        // start the next conversion
+        ADCSRA |= _BV(ADSC);
+    }
 }
 
 // setup the timer process. This must be called before any analog
@@ -134,7 +149,7 @@ float AP_AnalogSource_Arduino::read(void)
 // remap pin numbers to physical pin
 uint8_t AP_AnalogSource_Arduino::_remap_pin(uint8_t pin)
 {
-    if (pin != ANALOG_PIN_VCC) {
+    if (pin != ANALOG_PIN_VCC && pin != ANALOG_PIN_NONE) {
         // allow pin to be a channel (i.e. "A0") or an actual pin
 #if defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__)
         if (pin >= 54) pin -= 54;
