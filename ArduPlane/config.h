@@ -134,11 +134,6 @@
 #endif
 
 
-// pin for receiver RSSI
-#ifndef RECEIVER_RSSI_PIN
-# define RECEIVER_RSSI_PIN -1
-#endif
-
 //////////////////////////////////////////////////////////////////////////////
 // IMU Selection
 //

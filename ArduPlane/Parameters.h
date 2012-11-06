@@ -138,7 +138,8 @@ public:
         //
         // Battery monitoring parameters
         //
-        k_param_battery_volt_pin = 168,
+        k_param_rssi_pin = 167,
+        k_param_battery_volt_pin,
         k_param_battery_curr_pin,   // 169
 
         //
@@ -341,6 +342,7 @@ public:
     AP_Float curr_amp_per_volt;
     AP_Float input_voltage;
     AP_Int32 pack_capacity;                     // Battery pack capacity less reserve
+    AP_Int8 rssi_pin;
     AP_Int8 battery_volt_pin;
     AP_Int8 battery_curr_pin;
     AP_Int8 inverted_flight_ch;             // 0=disabled, 1-8 is channel for inverted flight trigger
