@@ -274,9 +274,9 @@ AP_AnalogSource_ADC pitot_analog_source( &adc,
 AP_AnalogSource_Arduino pitot_analog_source(CONFIG_PITOT_SOURCE_ANALOG_PIN, 4.0);
 #endif
 
-#if RECEIVER_RSSI_PIN != -1
-AP_AnalogSource_Arduino RSSI_pin(RECEIVER_RSSI_PIN, 0.25);
-#endif
+// a pin for reading the receiver RSSI voltage. The scaling by 0.25 
+// is to take the 0 to 1024 range down to an 8 bit range for MAVLink
+AP_AnalogSource_Arduino RSSI_pin(-1, 0.25);
 
 AP_Relay relay;
 

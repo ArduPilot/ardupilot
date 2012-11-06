@@ -64,10 +64,9 @@ static void read_battery(void)
 // RC_CHANNELS_SCALED message
 void read_receiver_rssi(void)
 {
-#if RECEIVER_RSSI_PIN != -1
+    RSSI_pin.set_pin(g.rssi_pin);
     float ret = RSSI_pin.read();
     receiver_rssi = constrain(ret, 0, 255);
-#endif
 }
 
 
