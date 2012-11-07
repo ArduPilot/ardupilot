@@ -307,9 +307,9 @@ AP_Compass_HIL compass;                  // never used
 AP_Baro_BMP085_HIL barometer;
 #ifdef OPTFLOW_ENABLED
 #if CONFIG_APM_HARDWARE == APM_HARDWARE_APM2
-AP_OpticalFlow_ADNS3080 optflow(&spi3_semaphore,OPTFLOW_CS_PIN);
+AP_OpticalFlow_ADNS3080 optflow(OPTFLOW_CS_PIN);
 #else
-AP_OpticalFlow_ADNS3080 optflow(NULL,OPTFLOW_CS_PIN);
+AP_OpticalFlow_ADNS3080 optflow(OPTFLOW_CS_PIN);
 #endif
 #endif
  #ifdef DESKTOP_BUILD
