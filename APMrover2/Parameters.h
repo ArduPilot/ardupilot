@@ -49,7 +49,8 @@ public:
         k_param_num_resets,
         k_param_log_last_filenumber,		// *** Deprecated - remove with next eeprom number change
         k_param_reset_switch_chan,
-        k_param_manual_level,		
+        k_param_manual_level,
+        k_param_ins,                        // libraries/AP_InertialSensor variables        
 
 
 	// 110: Telemetry control
@@ -70,8 +71,8 @@ public:
         //
         // 130: Sensor parameters
         //
-        k_param_imu = 130,  // sensor calibration
-        k_param_altitude_mix,
+        k_param_imu = 130,  
+        k_param_altitude_mix,   // sensor calibration
         k_param_airspeed_ratio,
         k_param_ground_temperature,
         k_param_ground_pressure,

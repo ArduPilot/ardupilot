@@ -72,7 +72,7 @@
 //
 
 #if CONFIG_APM_HARDWARE == APM_HARDWARE_APM2
-# define CONFIG_IMU_TYPE   CONFIG_IMU_MPU6000
+# define CONFIG_INS_TYPE   CONFIG_INS_MPU6000
 # define CONFIG_PUSHBUTTON DISABLED
 # define CONFIG_RELAY      DISABLED
 # define MAG_ORIENTATION   AP_COMPASS_APM2_SHIELD
@@ -130,15 +130,15 @@
 //////////////////////////////////////////////////////////////////////////////
 // IMU Selection
 //
-#ifndef CONFIG_IMU_TYPE
-# define CONFIG_IMU_TYPE CONFIG_IMU_OILPAN
+#ifndef CONFIG_INS_TYPE
+# define CONFIG_INS_TYPE CONFIG_INS_OILPAN
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
 // ADC Enable - used to eliminate for systems which don't have ADC.
 //
 #ifndef CONFIG_ADC
-# if CONFIG_IMU_TYPE == CONFIG_IMU_OILPAN
+# if CONFIG_INS_TYPE == CONFIG_INS_OILPAN
 #   define CONFIG_ADC ENABLED
 # else
 #   define CONFIG_ADC DISABLED

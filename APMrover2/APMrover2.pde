@@ -93,12 +93,12 @@ version 2.1 of the License, or (at your option) any later version.
 #include <AP_Compass.h>     // ArduPilot Mega Magnetometer Library
 #include <AP_Math.h>        // ArduPilot Mega Vector/Matrix math Library
 #include <AP_InertialSensor.h> // Inertial Sensor (uncalibated IMU) Library
-#include <AP_IMU.h>         // ArduPilot Mega IMU Library
 #include <AP_AHRS.h>         // ArduPilot Mega DCM Library
 #include <PID.h>            // PID library
 #include <RC_Channel.h>     // RC Channel Library
 #include <AP_RangeFinder.h>	// Range finder library
 #include <Filter.h>			// Filter library
+#include <AP_Buffer.h>      // FIFO buffer library
 #include <ModeFilter.h>		// Mode Filter from Filter library
 #include <AverageFilter.h>	// Mode Filter from Filter library
 #include <AP_Relay.h>       // APM relay
@@ -250,14 +250,13 @@ AP_GPS_None     g_gps_driver(NULL);
  #error Unrecognised GPS_PROTOCOL setting.
 #endif // GPS PROTOCOL
 
-# if CONFIG_IMU_TYPE == CONFIG_IMU_MPU6000
+# if CONFIG_INS_TYPE == CONFIG_INS_MPU6000
   AP_InertialSensor_MPU6000 ins;
 # else
   AP_InertialSensor_Oilpan ins( &adc );
-#endif // CONFIG_IMU_TYPE
-AP_IMU_INS imu( &ins );
+#endif // CONFIG_INS_TYPE
 
-AP_AHRS_DCM  ahrs(&imu, g_gps);
+AP_AHRS_DCM  ahrs(&ins, g_gps);
 
 #elif HIL_MODE == HIL_MODE_SENSORS
 // sensor emulators
@@ -266,13 +265,11 @@ AP_Baro_BMP085_HIL      barometer;
 AP_Compass_HIL          compass;
 AP_GPS_HIL              g_gps_driver(NULL);
 AP_InertialSensor_Oilpan ins( &adc );
-AP_IMU_Shim imu;
-AP_AHRS_DCM  ahrs(&imu, g_gps);
+AP_AHRS_DCM  ahrs(&ins, g_gps);
 
 #elif HIL_MODE == HIL_MODE_ATTITUDE
 AP_ADC_HIL              adc;
-AP_IMU_Shim             imu; // never used
-AP_AHRS_HIL             ahrs(&imu, g_gps);
+AP_AHRS_HIL             ahrs(&ins, g_gps);
 AP_GPS_HIL              g_gps_driver(NULL);
 AP_Compass_HIL          compass; // never used
 AP_Baro_BMP085_HIL      barometer;
@@ -903,7 +900,7 @@ static void medium_loop()
 Serial.print(ahrs.roll_sensor, DEC);	Serial.printf_P(PSTR("\t"));
 Serial.print(ahrs.pitch_sensor, DEC);	Serial.printf_P(PSTR("\t"));
 Serial.print(ahrs.yaw_sensor, DEC);	Serial.printf_P(PSTR("\t"));
-Vector3f tempaccel = imu.get_accel();
+Vector3f tempaccel = ins.get_accel();
 Serial.print(tempaccel.x, DEC);	Serial.printf_P(PSTR("\t"));
 Serial.print(tempaccel.y, DEC);	Serial.printf_P(PSTR("\t"));
 Serial.println(tempaccel.z, DEC);
