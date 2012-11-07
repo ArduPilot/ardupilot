@@ -234,6 +234,7 @@ AP_AHRS_DCM  ahrs(&ins, g_gps);
 
 #elif HIL_MODE == HIL_MODE_ATTITUDE
 AP_ADC_HIL adc;
+AP_InertialSensor_Oilpan ins( &adc );
 AP_AHRS_HIL             ahrs(&ins, g_gps);
 AP_GPS_HIL              g_gps_driver(NULL);
 AP_Compass_HIL compass;          // never used
@@ -241,7 +242,6 @@ AP_Baro_BMP085_HIL barometer;
  #ifdef DESKTOP_BUILD
   #include <SITL.h>
 SITL sitl;
-AP_InertialSensor_Oilpan ins( &adc );
  #endif
 
 #else
