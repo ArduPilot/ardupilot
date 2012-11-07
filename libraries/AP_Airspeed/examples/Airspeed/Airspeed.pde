@@ -16,6 +16,7 @@
 #include <Arduino_Mega_ISR_Registry.h>
 #include <AP_PeriodicProcess.h>
 #include <Filter.h>
+#include <AP_Buffer.h>
 #include <AP_Airspeed.h>
 
 Arduino_Mega_ISR_Registry isr_registry;

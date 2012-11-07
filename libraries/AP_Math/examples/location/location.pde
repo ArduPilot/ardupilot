@@ -23,6 +23,7 @@
  #include <AP_Declination.h>
  #include <AP_Semaphore.h>
  #include <Filter.h>
+ #include <AP_Buffer.h>
  #include <SITL.h>
 Arduino_Mega_ISR_Registry isr_registry;
 AP_Baro_BMP085_HIL barometer;

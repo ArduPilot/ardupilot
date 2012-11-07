@@ -6,12 +6,14 @@
 #include <AP_Math.h>
 #include <AP_Declination.h>
 #include <Filter.h>
+#include <AP_Buffer.h>
 #include <I2C.h>
 #include <SPI.h>
 
 #ifdef DESKTOP_BUILD
 // all of this is needed to build with SITL
  #include <DataFlash.h>
+ #include <AP_Semaphore.h>
  #include <APM_RC.h>
  #include <GCS_MAVLink.h>
  #include <Arduino_Mega_ISR_Registry.h>

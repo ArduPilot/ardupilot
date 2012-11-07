@@ -11,7 +11,6 @@
 #include <AP_PeriodicProcess.h>
 #include <AP_InertialSensor.h>
 #include <AP_ADC.h>
-#include <AP_IMU.h>
 #include <AP_GPS.h>
 #include <AP_AHRS.h>
 #include <AP_Math.h>
@@ -26,6 +25,7 @@
 #include <APM_RC.h>
 #include <GCS_MAVLink.h>
 #include <Filter.h>
+#include <AP_Buffer.h>
 
 // uncomment this for a APM2 board
 #define APM2_HARDWARE
@@ -55,12 +55,9 @@ static GPS         *g_gps;
 
 AP_GPS_Auto     g_gps_driver(&Serial1, &g_gps);
 
-AP_IMU_INS imu(&ins);
-
 // choose which AHRS system to use
-AP_AHRS_DCM  ahrs(&imu, g_gps);
-//AP_AHRS_Quaternion  ahrs(&imu, g_gps);
-//AP_AHRS_MPU6000  ahrs(&imu, g_gps, &ins);		// only works with APM2
+AP_AHRS_DCM  ahrs(&ins, g_gps);
+//AP_AHRS_MPU6000  ahrs(&ins, g_gps);		// only works with APM2
 
 AP_Baro_BMP085_HIL barometer;
 
@@ -109,8 +106,8 @@ void setup(void)
     isr_registry.init();
     scheduler.init(&isr_registry);
 
-    imu.init(IMU::COLD_START, delay, flash_leds, &scheduler);
-    imu.init_accel(delay, flash_leds);
+    ins.init(AP_InertialSensor::COLD_START, delay, flash_leds, &scheduler);
+    ins.init_accel(delay, flash_leds);
 
     compass.set_orientation(MAG_ORIENTATION);
     ahrs.init();
