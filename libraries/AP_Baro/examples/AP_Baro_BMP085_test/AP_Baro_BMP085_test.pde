@@ -13,6 +13,7 @@
 #include <AP_Math.h>
 #include <AP_Common.h>
 #include <AverageFilter.h>
+#include <AP_Buffer.h>
 
 #ifndef APM2_HARDWARE
  # define APM2_HARDWARE 0
