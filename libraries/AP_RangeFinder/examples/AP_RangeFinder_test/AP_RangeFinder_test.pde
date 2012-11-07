@@ -13,6 +13,7 @@
 #include <AP_ADC.h>                             // ArduPilot Mega Analog to Digital Converter Library
 #include <AP_AnalogSource.h>
 #include <ModeFilter.h>                 // mode filter
+#include <AP_Buffer.h>
 
 ////////////////////////////////////////////////////////////////////////////////
 // Serial ports
@@ -57,7 +58,6 @@ void setup()
     timer_scheduler.init(&isr_registry);
 
 #ifdef USE_ADC_ADS7844
-    adc.filter_result = true;
     adc.Init(&timer_scheduler);   // APM ADC initialization
     aRF.calculate_scaler(SONAR_TYPE,3.3);   // setup scaling for sonar
 #else

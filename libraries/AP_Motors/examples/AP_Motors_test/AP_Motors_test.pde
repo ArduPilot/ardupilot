@@ -42,7 +42,7 @@ Arduino_Mega_ISR_Registry isr_registry;
 //APM_RC_APM1 APM_RC;
 APM_RC_APM2 APM_RC;
 
-RC_Channel rc1, rc2, rc3, rc4;
+RC_Channel rc1(CH_1), rc2(CH_2), rc3(CH_3), rc4(CH_4);
 
 // uncomment the row below depending upon what frame you are using
 //AP_MotorsTri	motors(AP_MOTORS_APM1, &APM_RC, &rc1, &rc2, &rc3, &rc4);

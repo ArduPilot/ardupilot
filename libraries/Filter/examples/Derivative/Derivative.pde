@@ -7,6 +7,7 @@
 #include <AP_Math.h>
 #include <Filter.h>
 #include <DerivativeFilter.h>
+#include <AP_Buffer.h>
 
 #ifdef DESKTOP_BUILD
 // all of this is needed to build with SITL
@@ -24,6 +25,7 @@
  #include <I2C.h>
  #include <SPI.h>
  #include <AP_Declination.h>
+ #include <AP_Semaphore.h>
 Arduino_Mega_ISR_Registry isr_registry;
 AP_Baro_BMP085_HIL barometer;
 AP_Compass_HIL compass;
