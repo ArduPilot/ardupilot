@@ -14,7 +14,7 @@
 #define __THIRDORDERCOMPFILTER3D_H__
 
 #include <inttypes.h>
-#include <Math.h>               // Math library for matrix and vector math
+#include <AP_Math.h>               // Math library for matrix and vector math
 #include <AP_Buffer.h>          // ArduPilot general purpose FIFO buffer
 
 // #defines to control how often historical accel based positions are saved
