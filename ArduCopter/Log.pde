@@ -87,6 +87,7 @@ print_log_menu(void)
         if (g.log_bitmask & MASK_LOG_OPTFLOW) Serial.printf_P(PSTR(" OPTFLOW"));
         if (g.log_bitmask & MASK_LOG_PID) Serial.printf_P(PSTR(" PID"));
         if (g.log_bitmask & MASK_LOG_ITERM) Serial.printf_P(PSTR(" ITERM"));
+        if (g.log_bitmask & MASK_LOG_INAV) Serial.printf_P(PSTR(" INAV"));
     }
 
     Serial.println();
@@ -203,6 +204,7 @@ select_logs(uint8_t argc, const Menu::arg *argv)
         TARG(OPTFLOW);
         TARG(PID);
         TARG(ITERM);
+        TARG(INAV);
  #undef TARG
     }
 
@@ -289,61 +291,6 @@ static void Log_Read_GPS()
                     (long)temp8);                                               // 8 ground course
 }
 
- #if INERTIAL_NAV == ENABLED
-static void Log_Write_Raw()
-{
-    Vector3f gyro = ins.get_gyro();
-    Vector3f accel = ins.get_accel();
-
-    DataFlash.WriteByte(HEAD_BYTE1);
-    DataFlash.WriteByte(HEAD_BYTE2);
-    DataFlash.WriteByte(LOG_RAW_MSG);
-
-    DataFlash.WriteLong(get_int(accels_velocity.x));
-    DataFlash.WriteInt(x_actual_speed);
-    DataFlash.WriteLong(get_int(accels_velocity.y));
-    DataFlash.WriteInt(y_actual_speed);
-    DataFlash.WriteLong(get_int(accels_velocity.z));
-    DataFlash.WriteInt(climb_rate_actual);
-
-    //DataFlash.WriteLong(get_int(accel.x));
-    //DataFlash.WriteLong(get_int(accel.y));
-    //DataFlash.WriteLong(get_int(accel.z));
-
-    DataFlash.WriteByte(END_BYTE);
-}
-
-// Read a raw accel/gyro packet
-static void Log_Read_Raw()
-{
-    /*
-     *  float logvar;
-     *  Serial.printf_P(PSTR("RAW,"));
-     *  for (int16_t y = 0; y < 9; y++) {
-     *       logvar = get_float(DataFlash.ReadLong());
-     *       Serial.print(logvar);
-     *       Serial.print(", ");
-     *  }
-     *  Serial.println(" ");
-     */
-
-    float vx        = get_float(DataFlash.ReadLong());
-    int16_t sx      = DataFlash.ReadInt();
-    float vy        = get_float(DataFlash.ReadLong());
-    int16_t sy      = DataFlash.ReadInt();
-    float vz        = get_float(DataFlash.ReadLong());
-    int16_t sz      = DataFlash.ReadInt();
-
-    Serial.printf_P(PSTR("RAW, %1.4f, %d, %1.4f, %d, %1.4f, %d\n"),
-                    vx,
-                    (int)sx,
-                    vy,
-                    (int)sy,
-                    vz,
-                    (int)sz);
-
-}
- #else
 static void Log_Write_Raw()
 {
     Vector3f gyro = ins.get_gyro();
@@ -395,7 +342,6 @@ static void Log_Read_Raw()
 			temp2);
 	*/
 }
- #endif
 
 
 // Write an Current data packet. Total length : 16 bytes
@@ -622,8 +568,8 @@ static void Log_Write_Nav_Tuning()
 
 	DataFlash.WriteInt(nav_pitch);                          // 5
 	DataFlash.WriteInt(nav_roll);                           // 6
-	DataFlash.WriteInt(x_actual_speed);                     // 7
-	DataFlash.WriteInt(y_actual_speed);                     // 8
+	DataFlash.WriteInt(lon_speed);                          // 7
+	DataFlash.WriteInt(lat_speed);                          // 8
 
     DataFlash.WriteByte(END_BYTE);
 }
@@ -830,6 +776,80 @@ static void Log_Read_Attitude()
                     (int)temp5,
                     (unsigned)temp6,
                     (unsigned)temp7);
+}
+
+// Write an INAV packet. Total length : 36 Bytes
+static void Log_Write_INAV(float delta_t)
+{
+#if INERTIAL_NAV == ENABLED
+    DataFlash.WriteByte(HEAD_BYTE1);
+    DataFlash.WriteByte(HEAD_BYTE2);
+    DataFlash.WriteByte(LOG_INAV_MSG);
+
+    DataFlash.WriteInt((int16_t)baro_alt);                                  // 1 barometer altitude
+    DataFlash.WriteInt((int16_t)inertial_nav._position.z);                  // 2 accel + baro filtered altitude
+    DataFlash.WriteInt((int16_t)climb_rate_actual);                         // 3 barometer based climb rate
+    DataFlash.WriteInt((int16_t)inertial_nav._velocity.z);                  // 4 accel + baro based climb rate
+    DataFlash.WriteLong(get_int(inertial_nav._comp_filter3D._comp_k1o.x));  // 5 accel correction x-axis
+    DataFlash.WriteLong(get_int(inertial_nav._comp_filter3D._comp_k1o.y));  // 6 accel correction y-axis
+    DataFlash.WriteLong(get_int(inertial_nav._comp_filter3D._comp_k1o.z));  // 7 accel correction z-axis
+    DataFlash.WriteLong(get_int(inertial_nav._comp_filter3D.comp_k1o_ef.z));// 8 accel correction earth frame
+    DataFlash.WriteLong(get_int(inertial_nav._accel_ef.x));                 // 9 accel earth frame x-axis
+    DataFlash.WriteLong(get_int(inertial_nav._accel_ef.y));                 // 10 accel earth frame y-axis
+    DataFlash.WriteLong(get_int(inertial_nav._accel_ef.z));                 // 11 accel earth frame z-axis
+    DataFlash.WriteLong(get_int(delta_t));                                  // 12 time delta of samples
+    DataFlash.WriteLong(g_gps->latitude-home.lat);                          // 13 lat from home
+    DataFlash.WriteLong(g_gps->longitude-home.lng);                         // 14 lon from home
+    DataFlash.WriteLong(get_int(inertial_nav.get_latitude_diff()));         // 15 accel based lat from home
+    DataFlash.WriteLong(get_int(inertial_nav.get_longitude_diff()));        // 16 accel based lon from home
+    DataFlash.WriteLong(get_int(inertial_nav.get_latitude_velocity()));     // 17 accel based lat velocity
+    DataFlash.WriteLong(get_int(inertial_nav.get_longitude_velocity()));    // 18 accel based lon velocity
+    
+    DataFlash.WriteByte(END_BYTE);
+#endif
+}
+
+// Read an INAV packet
+static void Log_Read_INAV()
+{
+    int16_t temp1   = DataFlash.ReadInt();              // 1 barometer altitude
+    int16_t temp2   = DataFlash.ReadInt();              // 2 accel + baro filtered altitude
+    int16_t temp3   = DataFlash.ReadInt();              // 3 barometer based climb rate
+    int16_t temp4   = DataFlash.ReadInt();              // 4 accel + baro based climb rate
+    float temp5     = get_float(DataFlash.ReadLong());  // 5 accel correction x-axis
+    float temp6     = get_float(DataFlash.ReadLong());  // 6 accel correction y-axis
+    float temp7     = get_float(DataFlash.ReadLong());  // 7 accel correction z-axis
+    float temp8     = get_float(DataFlash.ReadLong());  // 8 accel correction earth frame
+    float temp9     = get_float(DataFlash.ReadLong());  // 9 accel earth frame x-axis
+    float temp10    = get_float(DataFlash.ReadLong());  // 10 accel earth frame y-axis
+    float temp11    = get_float(DataFlash.ReadLong());  // 11 accel earth frame z-axis
+    float temp12    = get_float(DataFlash.ReadLong());  // 12 time delta of samples
+    int32_t temp13  = DataFlash.ReadLong();             // 13 lat from home
+    int32_t temp14  = DataFlash.ReadLong();             // 14 lon from home
+    float temp15    = get_float(DataFlash.ReadLong());  // 15 accel based lat from home
+    float temp16    = get_float(DataFlash.ReadLong());  // 16 accel based lon from home
+    float temp17    = get_float(DataFlash.ReadLong());  // 17 accel based lat velocity
+    float temp18    = get_float(DataFlash.ReadLong());  // 18 accel based lon velocity
+                              // 1   2   3   4      5      6      7      8      9     10     11     12   13   14   15       16     17     18
+    Serial.printf_P(PSTR("INAV, %d, %d, %d, %d, %6.4f, %6.4f, %6.4f, %6.4f, %6.4f, %6.4f, %6.4f, %6.4f, %ld, %ld, %6.4f, %6.4f, %6.4f, %6.4f\n"),
+                    (int)temp1,
+                    (int)temp2,
+                    (int)temp3,
+                    (int)temp4,
+                    temp5,
+                    temp6,
+                    temp7,
+                    temp8,
+                    temp9,
+                    temp10,
+                    temp11,
+                    temp12,
+                    temp13,
+                    temp14,
+                    temp15,
+                    temp16,
+                    temp17,
+                    temp18);
 }
 
 // Write a mode packet. Total length : 7 bytes
@@ -1111,6 +1131,10 @@ static int16_t Log_Read_Process(int16_t start_page, int16_t end_page)
 
 					case LOG_DMP_MSG:
 						Log_Read_DMP();
+						break;
+
+					case LOG_INAV_MSG:
+						Log_Read_INAV();
 						break;
 				}
 				break;

@@ -88,6 +88,11 @@ public:
         //
         k_param_motors = 90,
 
+        //
+        // 100: Inertial Nav
+        //
+        k_param_inertial_nav = 100,
+
         // 110: Telemetry control
         //
         k_param_gcs0 = 110,

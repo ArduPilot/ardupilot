@@ -192,6 +192,8 @@
 #define CH6_AHRS_YAW_KP 30
 #define CH6_AHRS_KP             31
 
+// Inertial Nav
+#define CH6_INAV_TC     32
 
 // nav byte mask
 // -------------
@@ -297,6 +299,7 @@ enum gcs_severity {
 #define LOG_PID_MSG                     0x0E
 #define LOG_ITERM_MSG                   0x0F
 #define LOG_DMP_MSG                     0x10
+#define LOG_INAV_MSG                    0x11
 #define LOG_INDEX_MSG                   0xF0
 #define MAX_NUM_LOGS                    50
 
@@ -314,6 +317,7 @@ enum gcs_severity {
 #define MASK_LOG_OPTFLOW                (1<<11)
 #define MASK_LOG_PID                    (1<<12)
 #define MASK_LOG_ITERM                  (1<<13)
+#define MASK_LOG_INAV                   (1<<14)
 
 
 // Waypoint Modes

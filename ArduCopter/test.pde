@@ -1006,7 +1006,7 @@ test_wp_nav(uint8_t argc, const Menu::arg *argv)
     next_WP.lng = -1199541248;
 
     // got 23506;, should be 22800
-    navigate();
+    update_navigation();
     Serial.printf_P(PSTR("bear: %ld\n"), target_bearing);
     return 0;
 }

@@ -968,6 +968,9 @@
 #ifndef LOG_ITERM
  # define LOG_ITERM                     ENABLED
 #endif
+#ifndef LOG_INAV
+ # define LOG_INAV                              DISABLED
+#endif
 
 // calculate the default log_bitmask
 #define LOGBIT(_s)     (LOG_ ## _s ? MASK_LOG_ ## _s : 0)
@@ -985,7 +988,9 @@
     LOGBIT(CUR)                             | \
     LOGBIT(MOTORS)                  | \
     LOGBIT(OPTFLOW)                 | \
-    LOGBIT(PID)
+    LOGBIT(PID)                     | \
+    LOGBIT(ITERM)                   | \
+    LOGBIT(INAV)
 
 // if we are using fast, Disable Medium
 //#if LOG_ATTITUDE_FAST == ENABLED
@@ -1087,7 +1092,8 @@
 #endif
 
 // Inertia based contollers.  disabled by default, work in progress
-#define ACCEL_ALT_HOLD 0
-#define INERTIAL_NAV DISABLED
+#ifndef INERTIAL_NAV
+ # define INERTIAL_NAV DISABLED
+#endif
 
 #endif // __ARDUCOPTER_CONFIG_H__
