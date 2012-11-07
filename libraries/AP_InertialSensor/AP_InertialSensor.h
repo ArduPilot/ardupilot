@@ -47,10 +47,12 @@ public:
     /// @note This should not be called unless ::init has previously
     ///       been called, as ::init may perform other work.
     ///
-    virtual void        init_accel(void (*callback)(unsigned long t), void (*flash_leds_cb)(bool on));
+    virtual void        init_accel(void (*delay_cb)(unsigned long t), void (*flash_leds_cb)(bool on));
 
     // perform accelerometer calibration including providing user instructions and feedback
-    virtual void        calibrate_accel(void (*callback)(unsigned long t), void (*flash_leds_cb)(bool on));
+    virtual void        calibrate_accel(void (*delay_cb)(unsigned long t),
+                                        void (*flash_leds_cb)(bool on) = NULL,
+                                        void (*send_msg)(const prog_char_t *, ...) = NULL);
 
     /// Perform cold-start initialisation for just the gyros.
     ///
@@ -81,10 +83,6 @@ public:
 
     // get accel scale
     Vector3f            get_accel_scale() { return _accel_scale; }
-
-    // sensor specific init to be overwritten by descendant classes
-    // To-Do: should be combined with init above?
-    virtual uint16_t        _init( AP_PeriodicProcess * scheduler ) = 0;
 
     /* Update the sensor data, so that getters are nonblocking.
      * Returns a bool of whether data was updated or not.
@@ -133,6 +131,9 @@ public:
 
 protected:
 
+    // sensor specific init to be overwritten by descendant classes
+    virtual uint16_t        _init_sensor( AP_PeriodicProcess * scheduler ) = 0;
+
     // no-save implementations of accel and gyro initialisation routines
     virtual void            _init_accel(void    (*delay_cb)(unsigned long t),
                                         void    (*flash_leds_cb)(bool on) = NULL);
@@ -140,16 +141,13 @@ protected:
                                        void (*flash_leds_cb)(bool on) = NULL);
 
     // _calibrate_accel - perform low level accel calibration
-    virtual bool            _calibrate_accel(Vector3f accel_sample[6], Vector3f& accel_offsets, Vector3f& accel_scale );
+    virtual bool            _calibrate_accel(Vector3f accel_sample[6], Vector3f& accel_offsets, Vector3f& accel_scale);
     virtual void            _calibrate_update_matrices(float dS[6], float JS[6][6], float beta[6], float data[3]);
     virtual void            _calibrate_reset_matrices(float dS[6], float JS[6][6]);
     virtual void            _calibrate_find_delta(float dS[6], float JS[6][6], float delta[6]);
 
-    // load parameters from eeprom
-    void                    load_parameters();
-
     // save parameters to eeprom
-    void                    save_parameters();
+    void                    _save_parameters();
 
     // Most recent accelerometer reading obtained by ::update
     Vector3f                _accel;

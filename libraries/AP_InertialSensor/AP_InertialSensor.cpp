@@ -4,11 +4,7 @@
 #include "AP_InertialSensor.h"
 
 #include <SPI.h>
-#if defined(ARDUINO) && ARDUINO >= 100
- #include "Arduino.h"
-#else
- #include <wiring.h>
-#endif
+#include <AP_Common.h>
 
 #define FLASH_LEDS(on) do { if (flash_leds_cb != NULL) flash_leds_cb(on); } while (0)
 
@@ -17,9 +13,9 @@
 // Class level parameters
 const AP_Param::GroupInfo AP_InertialSensor::var_info[] PROGMEM = {
     AP_GROUPINFO("PRODUCT_ID",  0, AP_InertialSensor, _product_id,   0),
-    AP_GROUPINFO("ACCSCA",      1, AP_InertialSensor, _accel_scale,  0),
-    AP_GROUPINFO("ACCOFF",      2, AP_InertialSensor, _accel_offset, 0),
-    AP_GROUPINFO("GYROFF",      3, AP_InertialSensor, _gyro_offset,  0),
+    AP_GROUPINFO("ACCSCAL",     1, AP_InertialSensor, _accel_scale,  0),
+    AP_GROUPINFO("ACCOFFS",     2, AP_InertialSensor, _accel_offset, 0),
+    AP_GROUPINFO("GYROFFS",     3, AP_InertialSensor, _gyro_offset,  0),
     AP_GROUPEND
 };
 
@@ -33,7 +29,7 @@ AP_InertialSensor::init( Start_style style,
                          void (*flash_leds_cb)(bool on),
                          AP_PeriodicProcess *  scheduler )
 {
-    _product_id = _init(scheduler);
+    _product_id = _init_sensor(scheduler);
 
     // check scaling
     Vector3f accel_scale = _accel_scale.get();
@@ -42,33 +38,19 @@ AP_InertialSensor::init( Start_style style,
         _accel_scale.set(accel_scale);
     }
 
-    // if we are warm-starting, load the calibration data from EEPROM and go
-    if (WARM_START == style) {
-        load_parameters();
-    } else {
-
-        // do cold-start calibration for both accel and gyro
+    if (WARM_START != style) {
+        // do cold-start calibration for gyro only
         _init_gyro(delay_cb, flash_leds_cb);
-
-        // save calibration
-        save_parameters();
     }
 }
 
 // save parameters to eeprom
-void AP_InertialSensor::load_parameters()
-{
-    _product_id.load();
-    _accel_scale.load();
-    _accel_offset.load();
-}
-
-// save parameters to eeprom
-void AP_InertialSensor::save_parameters()
+void AP_InertialSensor::_save_parameters()
 {
     _product_id.save();
     _accel_scale.save();
     _accel_offset.save();
+    _gyro_offset.save();
 }
 
 void
@@ -77,7 +59,7 @@ AP_InertialSensor::init_gyro(void (*delay_cb)(unsigned long t), void (*flash_led
     _init_gyro(delay_cb, flash_leds_cb);
 
     // save calibration
-    save_parameters();
+    _save_parameters();
 }
 
 void
@@ -170,13 +152,13 @@ AP_InertialSensor::init_accel(void (*delay_cb)(unsigned long t), void (*flash_le
     _init_accel(delay_cb, flash_leds_cb);
 
     // save calibration
-    save_parameters();
+    _save_parameters();
 }
 
 void
 AP_InertialSensor::_init_accel(void (*delay_cb)(unsigned long t), void (*flash_leds_cb)(bool on))
 {
-    int16_t flashcount = 0;
+    int8_t flashcount = 0;
     Vector3f ins_accel;
     Vector3f prev;
     Vector3f accel_offset;
@@ -184,7 +166,7 @@ AP_InertialSensor::_init_accel(void (*delay_cb)(unsigned long t), void (*flash_l
     float max_offset;
 
     // cold start
-    delay_cb(500);
+    delay_cb(100);
 
     Serial.printf_P(PSTR("Init Accel"));
 
@@ -209,7 +191,7 @@ AP_InertialSensor::_init_accel(void (*delay_cb)(unsigned long t), void (*flash_l
         accel_offset = ins_accel;
 
         // We take some readings...
-        for(int16_t i = 0; i < 50; i++) {
+        for(int8_t i = 0; i < 50; i++) {
 
             delay_cb(20);
             update();
@@ -250,49 +232,56 @@ AP_InertialSensor::_init_accel(void (*delay_cb)(unsigned long t), void (*flash_l
 }
 
 // perform accelerometer calibration including providing user instructions and feedback
-void AP_InertialSensor::calibrate_accel(void (*callback)(unsigned long t), void (*flash_leds_cb)(bool on))
+void AP_InertialSensor::calibrate_accel(void (*delay_cb)(unsigned long t), void (*flash_leds_cb)(bool on), void (*send_msg)(const prog_char_t *, ...))
 {
     Vector3f samples[6];
     Vector3f new_offsets;
     Vector3f new_scaling;
+    Vector3f orig_offset;
+    Vector3f orig_scale;
+
+    // backup original offsets and scaling
+    orig_offset = _accel_offset.get();
+    orig_scale = _accel_scale.get();
 
     // clear accelerometer offsets and scaling
     _accel_offset = Vector3f(0,0,0);
     _accel_scale = Vector3f(1,1,1);
 
     // capture data from 6 positions
-    for(int16_t i=0; i<6; i++ ) {
+    for (int8_t i=0; i<6; i++) {
+        const prog_char_t *msg;
 
         // display message to user
-        Serial.print_P(PSTR("Place APM "));
-        switch( i ) {
+        switch ( i ) {
             case 0:
-                Serial.print_P(PSTR("level"));
+                msg = PSTR("level");
                 break;
             case 1:
-                Serial.print_P(PSTR("on it's left side"));
+                msg = PSTR("on it's left side");
                 break;
             case 2:
-                Serial.print_P(PSTR("on it's right side"));
+                msg = PSTR("on it's right side");
                 break;
             case 3:
-                Serial.print_P(PSTR("nose down"));
+                msg = PSTR("nose down");
                 break;
             case 4:
-                Serial.print_P(PSTR("nose up"));
+                msg = PSTR("nose up");
                 break;
             case 5:
-                Serial.print_P(PSTR("on it's back"));
-                break;
-            default:
-                // should never happen
+                msg = PSTR("on it's back");
                 break;
         }
-        Serial.print_P(PSTR(" and press any key.\n"));
+        if (send_msg == NULL) {
+            Serial.printf_P(PSTR("USER: Place APM %S and press any key.\n"), msg);
+        }else{
+            send_msg(PSTR("USER: Place APM %S and press any key.\n"), msg);
+        }
 
         // wait for user input
         while( !Serial.available() ) {
-            delay(20);
+            delay_cb(20);
         }
         // clear unput buffer
         while( Serial.available() ) {
@@ -304,7 +293,7 @@ void AP_InertialSensor::calibrate_accel(void (*callback)(unsigned long t), void 
 
         // wait until we have 32 samples
         while( num_samples_available() < 32 * SAMPLE_UNIT ) {
-            delay(1);
+            delay_cb(1);
         }
 
         // read samples from ins
@@ -312,20 +301,33 @@ void AP_InertialSensor::calibrate_accel(void (*callback)(unsigned long t), void 
 
         // capture sample
         samples[i] = get_accel();
-
-        // display sample
-        Serial.printf_P(PSTR("Acc X:%4.2f\tY:%4.2f\tZ:%4.2f\n"),samples[i].x,samples[i].y,samples[i].z);
     }
 
     // run the calibration routine
     if( _calibrate_accel(samples, new_offsets, new_scaling) ) {
+
+        if (send_msg == NULL) {
+            Serial.printf_P(PSTR("Calibration successful\n"));
+        }else{
+            send_msg(PSTR("Calibration successful\n"));
+        }
+
+        // set and save calibration
         _accel_offset.set(new_offsets);
         _accel_scale.set(new_scaling);
-        // save calibration
-        save_parameters();
+        _save_parameters();
     }else{
-        Serial.printf_P(PSTR("Accel calibration failed"));
+        if (send_msg == NULL) {
+            Serial.printf_P(PSTR("Calibration failed\n"));
+        }else{
+            send_msg(PSTR("Calibration failed\n"));
+        }
+
+        // restore original scaling and offsets
+        _accel_offset.set(orig_offset);
+        _accel_scale.set(orig_scale);
     }
+    delay_cb(100);
 }
 
 // _calibrate_model - perform low level accel calibration
@@ -344,6 +346,7 @@ bool AP_InertialSensor::_calibrate_accel( Vector3f accel_sample[6], Vector3f& ac
     float delta[6];
     float ds[6];
     float JS[6][6];
+    bool success = true;
 
     // reset
     beta[0] = beta[1] = beta[2] = 0;
@@ -384,8 +387,17 @@ bool AP_InertialSensor::_calibrate_accel( Vector3f accel_sample[6], Vector3f& ac
     accel_offsets.y = beta[1] * accel_scale.y;
     accel_offsets.z = beta[2] * accel_scale.z;
 
-    // always return success
-    return true;
+    // sanity check scale
+    if( accel_scale.is_nan() || fabs(accel_scale.x-1.0) > 0.1 || fabs(accel_scale.y-1.0) > 1.1 || fabs(accel_scale.z-1.0) > 1.1 ) {
+        success = false;
+    }
+    // sanity check offsets (2.0 is roughly 2/10th of a G, 5.0 is roughly half a G)
+    if( accel_offsets.is_nan() || fabs(accel_offsets.x) > 2.0 || fabs(accel_offsets.y) > 2.0 || fabs(accel_offsets.z) > 5.0 ) {
+        success = false;
+    }
+
+    // return success or failure
+    return success;
 }
 
 void AP_InertialSensor::_calibrate_update_matrices(float dS[6], float JS[6][6], float beta[6], float data[3])

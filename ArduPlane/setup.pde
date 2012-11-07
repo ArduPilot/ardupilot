@@ -303,7 +303,7 @@ static int8_t
 setup_accel_scale(uint8_t argc, const Menu::arg *argv)
 {
     ins.init(AP_InertialSensor::COLD_START, delay, flash_leds, &timer_scheduler);
-    ins.calibrate_accel(delay, flash_leds);
+    ins.calibrate_accel(delay, flash_leds, gcs_send_text_fmt);
     report_ins();
     return(0);
 }

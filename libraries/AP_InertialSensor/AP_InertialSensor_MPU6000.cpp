@@ -210,7 +210,7 @@ AP_InertialSensor_MPU6000::AP_InertialSensor_MPU6000()
     _dmp_initialised = false;
 }
 
-uint16_t AP_InertialSensor_MPU6000::_init( AP_PeriodicProcess * scheduler )
+uint16_t AP_InertialSensor_MPU6000::_init_sensor( AP_PeriodicProcess * scheduler )
 {
     if (_initialised) return _mpu6000_product_id;
     _initialised = true;
