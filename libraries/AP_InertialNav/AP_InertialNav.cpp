@@ -1,6 +1,6 @@
 /// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 #include <FastSerial.h>
-#include <AP_InertialNav3D.h>
+#include <AP_InertialNav.h>
 
 #if defined(ARDUINO) && ARDUINO >= 100
  #include "Arduino.h"
@@ -9,36 +9,36 @@
 #endif
 
 // table of user settable parameters
-const AP_Param::GroupInfo AP_InertialNav3D::var_info[] PROGMEM = {
+const AP_Param::GroupInfo AP_InertialNav::var_info[] PROGMEM = {
 	// index 0 and 1 are for old parameters that are no longer used
 
     // @Param: ACORR
     // @DisplayName: Inertial Nav calculated accelerometer corrections
     // @Description: calculated accelerometer corrections
     // @Increment: 1
-    AP_GROUPINFO("ACORR",   0, AP_InertialNav3D, _accel_correction, 0),
+    AP_GROUPINFO("ACORR",   0, AP_InertialNav, _accel_correction, 0),
 
     // @Param: TC_XY
     // @DisplayName: Horizontal Time Constant
     // @Description: Time constnat for GPS and accel mixing. Higher TC increases GPS impact on position
     // @Range: 0 10
     // @Increment: 0.1
-    AP_GROUPINFO("TC_XY",   1, AP_InertialNav3D, _time_constant_xy, AP_INTERTIALNAV_TC_XY),
+    AP_GROUPINFO("TC_XY",   1, AP_InertialNav, _time_constant_xy, AP_INTERTIALNAV_TC_XY),
 
     // @Param: TC_Z
     // @DisplayName: Vertical Time Constant
     // @Description: Time constnat for baro and accel mixing. Higher TC increases barometers impact on altitude
     // @Range: 0 10
     // @Increment: 0.1
-    AP_GROUPINFO("TC_Z",    2, AP_InertialNav3D, _time_constant_z, AP_INTERTIALNAV_TC_Z),
+    AP_GROUPINFO("TC_Z",    2, AP_InertialNav, _time_constant_z, AP_INTERTIALNAV_TC_Z),
 
     AP_GROUPEND
 };
 
 // save_params - save all parameters to eeprom
-void AP_InertialNav3D::save_params()
+void AP_InertialNav::save_params()
 {
-    Vector3f accel_corr = _comp_filter3D.get_1st_order_correction();
+    Vector3f accel_corr = _comp_filter.get_1st_order_correction();
     accel_corr.x = constrain(accel_corr.x,-200,200);
     accel_corr.y = constrain(accel_corr.y,-200,200);
     accel_corr.z = constrain(accel_corr.z,-200,200);
@@ -46,27 +46,27 @@ void AP_InertialNav3D::save_params()
 }
 
 // set time constant - set timeconstant used by complementary filter
-void AP_InertialNav3D::set_time_constant_xy( float time_constant_in_seconds )
+void AP_InertialNav::set_time_constant_xy( float time_constant_in_seconds )
 {
     // ensure it's a reasonable value
     if( time_constant_in_seconds > 0 && time_constant_in_seconds < 30 ) {
         _time_constant_xy = time_constant_in_seconds;
-        _comp_filter3D.update_gains(_time_constant_xy, _time_constant_z);
+        _comp_filter.update_gains(_time_constant_xy, _time_constant_z);
     }
 }
 
 // set time constant - set timeconstant used by complementary filter
-void AP_InertialNav3D::set_time_constant_z( float time_constant_in_seconds )
+void AP_InertialNav::set_time_constant_z( float time_constant_in_seconds )
 {
     // ensure it's a reasonable value
     if( time_constant_in_seconds > 0 && time_constant_in_seconds < 30 ) {
         _time_constant_z = time_constant_in_seconds;
-        _comp_filter3D.update_gains(_time_constant_xy, _time_constant_z);
+        _comp_filter.update_gains(_time_constant_xy, _time_constant_z);
     }
 }
 
 // check_baro - check if new baro readings have arrived and use them to correct vertical accelerometer offsets
-void AP_InertialNav3D::check_baro()
+void AP_InertialNav::check_baro()
 {
     uint32_t baro_update_time;
 
@@ -85,7 +85,7 @@ void AP_InertialNav3D::check_baro()
 
 
 // correct_with_baro - modifies accelerometer offsets using barometer.  dt is time since last baro reading
-void AP_InertialNav3D::correct_with_baro(float baro_alt, float dt)
+void AP_InertialNav::correct_with_baro(float baro_alt, float dt)
 {
     static uint8_t first_reads = 0;
 
@@ -96,8 +96,8 @@ void AP_InertialNav3D::correct_with_baro(float baro_alt, float dt)
 
     // discard first 10 reads but perform some initialisation
     if( first_reads <= 10 ) {
-        _comp_filter3D.set_3rd_order_z(baro_alt);
-        //_comp_filter3D.set_2nd_order_z(climb_rate);
+        _comp_filter.set_3rd_order_z(baro_alt);
+        //_comp_filter.set_2nd_order_z(climb_rate);
         first_reads++;
     }
 
@@ -105,11 +105,11 @@ void AP_InertialNav3D::correct_with_baro(float baro_alt, float dt)
     Matrix3f dcm = _ahrs->get_dcm_matrix();
 
     // provide baro alt to filter
-    _comp_filter3D.correct_3rd_order_z(baro_alt, dcm, dt);
+    _comp_filter.correct_3rd_order_z(baro_alt, dcm, dt);
 }
 
 // set_current_position - all internal calculations are recorded as the distances from this point
-void AP_InertialNav3D::set_current_position(int32_t lon, int32_t lat)
+void AP_InertialNav::set_current_position(int32_t lon, int32_t lat)
 {
     // set base location
     _base_lon = lon;
@@ -120,14 +120,14 @@ void AP_InertialNav3D::set_current_position(int32_t lon, int32_t lat)
     _lon_to_m_scaling = cos((fabs((float)lat)/10000000.0) * 0.0174532925);
 
     // set estimated position to this position
-    _comp_filter3D.set_3rd_order_xy(0,0);
+    _comp_filter.set_3rd_order_xy(0,0);
 
     // set xy as enabled
     _xy_enabled = true;
 }
 
 // check_gps - check if new gps readings have arrived and use them to correct position estimates
-void AP_InertialNav3D::check_gps()
+void AP_InertialNav::check_gps()
 {
     uint32_t gps_time;
     uint32_t now;
@@ -155,7 +155,7 @@ void AP_InertialNav3D::check_gps()
 }
 
 // correct_with_gps - modifies accelerometer offsets using gps.  dt is time since last gps update
-void AP_InertialNav3D::correct_with_gps(int32_t lon, int32_t lat, float dt)
+void AP_InertialNav::correct_with_gps(int32_t lon, int32_t lat, float dt)
 {
     float x,y;
 
@@ -174,12 +174,12 @@ void AP_InertialNav3D::correct_with_gps(int32_t lon, int32_t lat, float dt)
     Matrix3f dcm = _ahrs->get_dcm_matrix();
 
     // call comp filter's correct xy
-    _comp_filter3D.correct_3rd_order_xy(-x, -y, dcm, dt);
+    _comp_filter.correct_3rd_order_xy(-x, -y, dcm, dt);
     //Notes: with +x above, accel lat comes out reversed
 }
 
 // update - updates velocities and positions using latest info from ahrs, ins and barometer if new data is available;
-void AP_InertialNav3D::update(float dt)
+void AP_InertialNav::update(float dt)
 {
     // discard samples where dt is too large
     if( dt > 0.1 ) {
@@ -210,24 +210,24 @@ void AP_InertialNav3D::update(float dt)
     }
 
     // provide accelerometer values to filter
-    _comp_filter3D.add_1st_order_sample(_accel_ef);
+    _comp_filter.add_1st_order_sample(_accel_ef);
 
     // recalculate estimates
-    _comp_filter3D.calculate(dt, dcm);
+    _comp_filter.calculate(dt, dcm);
     
     // get position and velocity estimates
-    _position = _comp_filter3D.get_3rd_order_estimate();
-    _velocity = _comp_filter3D.get_2nd_order_estimate();
+    _position = _comp_filter.get_3rd_order_estimate();
+    _velocity = _comp_filter.get_2nd_order_estimate();
 }
 
 // position_ok - return true if position has been initialised and have received gps data within 3 seconds
-bool AP_InertialNav3D::position_ok()
+bool AP_InertialNav::position_ok()
 {
     return _xy_enabled && (millis() - _gps_last_update < 3000);
 }
 
 // get accel based latitude
-int32_t AP_InertialNav3D::get_latitude()
+int32_t AP_InertialNav::get_latitude()
 {
     // make sure we've been initialised
     if( !_xy_enabled ) {
@@ -239,7 +239,7 @@ int32_t AP_InertialNav3D::get_latitude()
 }
 
 // get accel based longitude
-int32_t AP_InertialNav3D::get_longitude()
+int32_t AP_InertialNav::get_longitude()
 {
     // make sure we've been initialised
     if( !_xy_enabled ) {
@@ -251,7 +251,7 @@ int32_t AP_InertialNav3D::get_longitude()
 }
 
 // get accel based latitude
-float AP_InertialNav3D::get_latitude_diff()
+float AP_InertialNav::get_latitude_diff()
 {
     // make sure we've been initialised
     if( !_xy_enabled ) {
@@ -264,7 +264,7 @@ float AP_InertialNav3D::get_latitude_diff()
 }
 
 // get accel based longitude
-float AP_InertialNav3D::get_longitude_diff()
+float AP_InertialNav::get_longitude_diff()
 {
     // make sure we've been initialised
     if( !_xy_enabled ) {
@@ -277,7 +277,7 @@ float AP_InertialNav3D::get_longitude_diff()
 }
 
 // get velocity in latitude & longitude directions
-float AP_InertialNav3D::get_latitude_velocity()
+float AP_InertialNav::get_latitude_velocity()
 {
     // make sure we've been initialised
     if( !_xy_enabled ) {
@@ -288,7 +288,7 @@ float AP_InertialNav3D::get_latitude_velocity()
     // Note: is +_velocity.x the output velocity in logs is in reverse direction from accel lat
 }
 
-float AP_InertialNav3D::get_longitude_velocity()
+float AP_InertialNav::get_longitude_velocity()
 {
     // make sure we've been initialised
     if( !_xy_enabled ) {

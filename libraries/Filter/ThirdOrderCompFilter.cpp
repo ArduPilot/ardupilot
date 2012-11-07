@@ -1,6 +1,6 @@
 /// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 #include <FastSerial.h>
-#include <ThirdOrderCompFilter3D.h>
+#include <ThirdOrderCompFilter.h>
 
 #if defined(ARDUINO) && ARDUINO >= 100
  #include "Arduino.h"
@@ -11,7 +11,7 @@
 // Public Methods //////////////////////////////////////////////////////////////
 
 // update_gains - update gains from time constant (given in seconds)
-void ThirdOrderCompFilter3D::update_gains(float time_constant_seconds_xy, float time_constant_seconds_z)
+void ThirdOrderCompFilter::update_gains(float time_constant_seconds_xy, float time_constant_seconds_z)
 {
     static float last_time_constant_xy = 0;
     static float last_time_constant_z = 0;
@@ -42,7 +42,7 @@ void ThirdOrderCompFilter3D::update_gains(float time_constant_seconds_xy, float 
 }
 
 // set_3rd_order - resets the first order value (i.e. position)
-void ThirdOrderCompFilter3D::set_3rd_order_xy(float x, float y)
+void ThirdOrderCompFilter::set_3rd_order_xy(float x, float y)
 {
     _comp_h.x = x;
     _comp_h.y = y;
@@ -55,27 +55,27 @@ void ThirdOrderCompFilter3D::set_3rd_order_xy(float x, float y)
 }
 
 // set_3rd_order - resets the first order value (i.e. position)
-void ThirdOrderCompFilter3D::set_3rd_order_z(float z )
+void ThirdOrderCompFilter::set_3rd_order_z(float z )
 {
     _comp_h.z = z;
     _comp_h_correction.z = 0;
 }
 
 // set_2nd_order - resets the second order value (i.e. velocity)
-void ThirdOrderCompFilter3D::set_2nd_order_xy(float x, float y)
+void ThirdOrderCompFilter::set_2nd_order_xy(float x, float y)
 {
     _comp_v.x = x;
     _comp_v.y = y;
 }
 
 // set_2nd_order - resets the second order value (i.e. velocity)
-void ThirdOrderCompFilter3D::set_2nd_order_z(float z )
+void ThirdOrderCompFilter::set_2nd_order_z(float z )
 {
     _comp_v.z = z;
 }
 
 // correct_3rd_order_z - correct accelerometer offsets using barometer or gps
-void ThirdOrderCompFilter3D::correct_3rd_order_xy(float x, float y, Matrix3f& dcm_matrix, float deltat)
+void ThirdOrderCompFilter::correct_3rd_order_xy(float x, float y, Matrix3f& dcm_matrix, float deltat)
 {
     float hist_comp_h_x, hist_comp_h_y;
     
@@ -106,7 +106,7 @@ void ThirdOrderCompFilter3D::correct_3rd_order_xy(float x, float y, Matrix3f& dc
 }
 
 // correct_3rd_order_z - correct accelerometer offsets using barometer or gps
-void ThirdOrderCompFilter3D::correct_3rd_order_z(float third_order_sample, Matrix3f& dcm_matrix, float deltat)
+void ThirdOrderCompFilter::correct_3rd_order_z(float third_order_sample, Matrix3f& dcm_matrix, float deltat)
 {
     float hist_comp_h_z;
     
@@ -133,7 +133,7 @@ void ThirdOrderCompFilter3D::correct_3rd_order_z(float third_order_sample, Matri
 }
 
 // recalculate the 2nd and 3rd order estimates
-void ThirdOrderCompFilter3D::calculate(float deltat, Matrix3f& dcm_matrix)
+void ThirdOrderCompFilter::calculate(float deltat, Matrix3f& dcm_matrix)
 {
     // get earth frame accelerometer correction
     comp_k1o_ef = dcm_matrix * _comp_k1o;

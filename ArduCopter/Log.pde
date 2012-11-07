@@ -790,10 +790,10 @@ static void Log_Write_INAV(float delta_t)
     DataFlash.WriteInt((int16_t)inertial_nav._position.z);                  // 2 accel + baro filtered altitude
     DataFlash.WriteInt((int16_t)climb_rate_actual);                         // 3 barometer based climb rate
     DataFlash.WriteInt((int16_t)inertial_nav._velocity.z);                  // 4 accel + baro based climb rate
-    DataFlash.WriteLong(get_int(inertial_nav._comp_filter3D._comp_k1o.x));  // 5 accel correction x-axis
-    DataFlash.WriteLong(get_int(inertial_nav._comp_filter3D._comp_k1o.y));  // 6 accel correction y-axis
-    DataFlash.WriteLong(get_int(inertial_nav._comp_filter3D._comp_k1o.z));  // 7 accel correction z-axis
-    DataFlash.WriteLong(get_int(inertial_nav._comp_filter3D.comp_k1o_ef.z));// 8 accel correction earth frame
+    DataFlash.WriteLong(get_int(inertial_nav._comp_filter._comp_k1o.x));  // 5 accel correction x-axis
+    DataFlash.WriteLong(get_int(inertial_nav._comp_filter._comp_k1o.y));  // 6 accel correction y-axis
+    DataFlash.WriteLong(get_int(inertial_nav._comp_filter._comp_k1o.z));  // 7 accel correction z-axis
+    DataFlash.WriteLong(get_int(inertial_nav._comp_filter.comp_k1o_ef.z));// 8 accel correction earth frame
     DataFlash.WriteLong(get_int(inertial_nav._accel_ef.x));                 // 9 accel earth frame x-axis
     DataFlash.WriteLong(get_int(inertial_nav._accel_ef.y));                 // 10 accel earth frame y-axis
     DataFlash.WriteLong(get_int(inertial_nav._accel_ef.z));                 // 11 accel earth frame z-axis

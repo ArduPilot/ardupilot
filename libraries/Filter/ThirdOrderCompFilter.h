@@ -6,12 +6,12 @@
 // your option) any later version.
 //
 
-/// @file	ThirdOrderCompFilter3D.h
+/// @file	ThirdOrderCompFilter.h
 /// @brief	A class to implement third order complementary filter (for combining barometer and GPS with accelerometer data)
 /// math provided by Jonathan Challenger
 
-#ifndef __THIRDORDERCOMPFILTER3D_H__
-#define __THIRDORDERCOMPFILTER3D_H__
+#ifndef __THIRD_ORDER_COMP_FILTER_H__
+#define __THIRD_ORDER_COMP_FILTER_H__
 
 #include <inttypes.h>
 #include <AP_Math.h>               // Math library for matrix and vector math
@@ -24,11 +24,11 @@
 
 #define THIRD_ORDER_COMP_FILTER_HISTORIC_XY_SAVE_COUNTER_DEFAULT THIRD_ORDER_SAVE_POS_10HZ
 
-class ThirdOrderCompFilter3D
+class ThirdOrderCompFilter
 {
 public:
     // constructor
-    ThirdOrderCompFilter3D(float time_constant_seconds_xy, float time_constant_seconds_z)
+    ThirdOrderCompFilter(float time_constant_seconds_xy, float time_constant_seconds_z)
         {
             update_gains(time_constant_seconds_xy, time_constant_seconds_z);
         };
@@ -86,4 +86,4 @@ public:
     Vector3f        comp_k1o_ef;                            // accelerometer correction in earth frame (only z element is used).  here for debug purposes
 };
 
-#endif // __THIRDORDERCOMPFILTER3D_H__
+#endif // __THIRD_ORDER_COMP_FILTER_H__
