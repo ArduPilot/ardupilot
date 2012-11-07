@@ -253,7 +253,9 @@ void AP_Mount::set_GPS_target_location(Location targetGPSLocation)
 /// This one should be called periodically
 void AP_Mount::update_mount_position()
 {
+#if MNT_RETRACT_OPTION == ENABLED
     static bool mount_open = 0;     // 0 is closed
+#endif
 
     switch((enum MAV_MOUNT_MODE)_mount_mode.get())
     {
