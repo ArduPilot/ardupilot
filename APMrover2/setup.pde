@@ -7,6 +7,7 @@ static int8_t	setup_radio			(uint8_t argc, const Menu::arg *argv);
 static int8_t	setup_show			(uint8_t argc, const Menu::arg *argv);
 static int8_t	setup_factory		(uint8_t argc, const Menu::arg *argv);
 static int8_t	setup_flightmodes	(uint8_t argc, const Menu::arg *argv);
+static int8_t   setup_accel_scale                       (uint8_t argc, const Menu::arg *argv);
 static int8_t	setup_erase			(uint8_t argc, const Menu::arg *argv);
 static int8_t	setup_compass			(uint8_t argc, const Menu::arg *argv);
 static int8_t	setup_declination		(uint8_t argc, const Menu::arg *argv);
@@ -19,6 +20,7 @@ static const struct Menu::command setup_menu_commands[] PROGMEM = {
 	{"reset", 			setup_factory},
 	{"radio",			setup_radio},
 	{"modes",			setup_flightmodes},
+    {"accel",           setup_accel_scale},
 	{"compass",			setup_compass},
 	{"declination",		setup_declination},
 	{"battery",			setup_batt_monitor},
@@ -60,7 +62,7 @@ setup_show(uint8_t argc, const Menu::arg *argv)
 	report_xtrack();
 	report_throttle();
 	report_flight_modes();
-	report_imu();
+	report_ins();
 	report_compass();
 
 	Serial.printf_P(PSTR("Raw Values\n"));
@@ -289,6 +291,15 @@ setup_erase(uint8_t argc, const Menu::arg *argv)
 }
 
 static int8_t
+setup_accel_scale(uint8_t argc, const Menu::arg *argv)
+{
+    ins.init(AP_InertialSensor::COLD_START, delay, flash_leds, &timer_scheduler);
+    ins.calibrate_accel(delay, flash_leds, gcs_send_text_fmt);
+    report_ins();
+    return(0);
+}
+
+static int8_t
 setup_compass(uint8_t argc, const Menu::arg *argv)
 {
 	if (!strcmp_P(argv[1].str, PSTR("on"))) {
@@ -416,15 +427,15 @@ static void report_throttle()
 	print_blanks(2);
 }
 
-static void report_imu()
+static void report_ins()
 {
-	//print_blanks(2);
-	Serial.printf_P(PSTR("IMU\n"));
-	print_divider();
+    //print_blanks(2);
+    Serial.printf_P(PSTR("INS\n"));
+    print_divider();
 
-	print_gyro_offsets();
-	print_accel_offsets();
-	print_blanks(2);
+    print_gyro_offsets();
+    print_accel_offsets_and_scaling();
+    print_blanks(2);
 }
 
 static void report_compass()
@@ -583,21 +594,26 @@ static void print_enabled(bool b)
 }
 
 static void
-print_accel_offsets(void)
+print_accel_offsets_and_scaling(void)
 {
-	Serial.printf_P(PSTR("Accel offsets: %4.2f, %4.2f, %4.2f\n"),
-						(float)imu.ax(),
-						(float)imu.ay(),
-						(float)imu.az());
+    Vector3f accel_offsets = ins.get_accel_offsets();
+    Vector3f accel_scale = ins.get_accel_scale();
+    Serial.printf_P(PSTR("Accel offsets: %4.2f, %4.2f, %4.2f\tscale: %4.2f, %4.2f, %4.2f\n"),
+                    (float)accel_offsets.x,                           // Pitch
+                    (float)accel_offsets.y,                           // Roll
+                    (float)accel_offsets.z,                           // YAW
+                    (float)accel_scale.x,                             // Pitch
+                    (float)accel_scale.y,                             // Roll
+                    (float)accel_scale.z);                            // YAW
 }
 
 static void
 print_gyro_offsets(void)
 {
 	Serial.printf_P(PSTR("Gyro offsets: %4.2f, %4.2f, %4.2f\n"),
-						(float)imu.gx(),
-						(float)imu.gy(),
-						(float)imu.gz());
+						(float)ins.gx(),
+						(float)ins.gy(),
+						(float)ins.gz());
 }
 
 

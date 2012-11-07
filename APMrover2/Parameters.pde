@@ -150,7 +150,12 @@ const AP_Param::Info var_info[] PROGMEM = {
 	GOBJECT(compass,                "COMPASS_",	Compass),
 	GOBJECT(gcs0,					"SR0_",     GCS_MAVLINK),
 	GOBJECT(gcs3,					"SR3_",     GCS_MAVLINK),
-	GOBJECT(imu,					"IMU_",     IMU),
+
+#if HIL_MODE == HIL_MODE_DISABLED
+    // @Group: INS_
+    // @Path: ../libraries/AP_InertialSensor/AP_InertialSensor.cpp
+    GOBJECT(ins,                            "INS_", AP_InertialSensor),
+#endif
 
 	AP_VAREND
 };

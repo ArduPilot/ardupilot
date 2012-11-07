@@ -333,7 +333,7 @@ static void startup_ground(void)
 	//------------------------
     //
 
-	startup_IMU_ground(false);
+	startup_INS_ground(false);
 #endif
 	// read the radio to set trims
 	// ---------------------------
@@ -447,24 +447,24 @@ static void check_short_failsafe()
 }
 
 #if LITE == DISABLED
-static void startup_IMU_ground(bool force_accel_level)
+static void startup_INS_ground(bool force_accel_level)
 {
 #if HIL_MODE != HIL_MODE_ATTITUDE
     gcs_send_text_P(SEVERITY_MEDIUM, PSTR("Warming up ADC..."));
  	mavlink_delay(500);
 
-	// Makes the servos wiggle twice - about to begin IMU calibration - HOLD LEVEL AND STILL!!
+	// Makes the servos wiggle twice - about to begin INS calibration - HOLD LEVEL AND STILL!!
 	// -----------------------
 	demo_servos(2);
-    gcs_send_text_P(SEVERITY_MEDIUM, PSTR("Beginning IMU calibration; do not move plane"));
+    gcs_send_text_P(SEVERITY_MEDIUM, PSTR("Beginning INS calibration; do not move plane"));
 	mavlink_delay(1000);
 
-	imu.init(IMU::COLD_START, mavlink_delay, flash_leds, &timer_scheduler);
+	ins.init(AP_InertialSensor::COLD_START, mavlink_delay, flash_leds, &timer_scheduler);
     if (force_accel_level || g.manual_level == 0) {
         // when MANUAL_LEVEL is set to 1 we don't do accelerometer
         // levelling on each boot, and instead rely on the user to do
         // it once via the ground station	
-	imu.init_accel(mavlink_delay, flash_leds);
+	ins.init_accel(mavlink_delay, flash_leds);
 	}
 	ahrs.set_fly_forward(true);
     ahrs.reset();
@@ -484,7 +484,7 @@ static void startup_IMU_ground(bool force_accel_level)
 
 #endif // HIL_MODE_ATTITUDE
 
-	digitalWrite(B_LED_PIN, LED_ON);		// Set LED B high to indicate IMU ready
+	digitalWrite(B_LED_PIN, LED_ON);		// Set LED B high to indicate INS ready
 	digitalWrite(A_LED_PIN, LED_OFF);
 	digitalWrite(C_LED_PIN, LED_OFF);
 }
@@ -521,7 +521,6 @@ static void update_GPS_light(void)
 static void resetPerfData(void) {
 	mainLoop_count 			= 0;
 	G_Dt_max 				= 0;
-	imu.adc_constraints 	= 0;
 	ahrs.renorm_range_count 	= 0;
 	ahrs.renorm_blowup_count = 0;
 	gps_fix_count 			= 0;
