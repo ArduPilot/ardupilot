@@ -52,7 +52,8 @@ public:
         //
         k_param_format_version = 0,
         k_param_software_type,
-        k_param_ins,
+        k_param_ins_old,                        // *** Deprecated, remove with next eeprom number change
+        k_param_ins,                            // libraries/AP_InertialSensor variables
 
         // simulation
         k_param_sitl = 10,

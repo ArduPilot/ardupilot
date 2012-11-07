@@ -68,7 +68,7 @@ public:
         k_param_reset_switch_chan,
         k_param_manual_level,
         k_param_land_pitch_cd,
-        k_param_ins,
+        k_param_ins_old,            // *** Deprecated, remove with next eeprom number change
         k_param_stick_mixing,
         k_param_reset_mission_chan,
         k_param_land_flare_alt,
@@ -77,6 +77,7 @@ public:
         k_param_rudder_steer,
         k_param_throttle_nudge,
         k_param_alt_offset,
+        k_param_ins,                // libraries/AP_InertialSensor variables
 
         // 110: Telemetry control
         //

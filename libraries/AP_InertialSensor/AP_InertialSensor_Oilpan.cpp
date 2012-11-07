@@ -41,7 +41,7 @@ AP_InertialSensor_Oilpan::AP_InertialSensor_Oilpan( AP_ADC * adc ) :
 {
 }
 
-uint16_t AP_InertialSensor_Oilpan::_init( AP_PeriodicProcess * scheduler)
+uint16_t AP_InertialSensor_Oilpan::_init_sensor( AP_PeriodicProcess * scheduler)
 {
     _adc->Init(scheduler);
 

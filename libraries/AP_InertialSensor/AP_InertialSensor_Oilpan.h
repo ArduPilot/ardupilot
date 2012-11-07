@@ -17,7 +17,6 @@ public:
     AP_InertialSensor_Oilpan( AP_ADC * adc );
 
     /* Concrete implementation of AP_InertialSensor functions: */
-    uint16_t        _init(AP_PeriodicProcess * scheduler);
     bool            update();
     bool            new_data_available();
     float           gx();
@@ -33,6 +32,9 @@ public:
 
     // get number of samples read from the sensors
     uint16_t        num_samples_available();
+
+protected:
+    uint16_t        _init_sensor(AP_PeriodicProcess * scheduler);
 
 private:
 

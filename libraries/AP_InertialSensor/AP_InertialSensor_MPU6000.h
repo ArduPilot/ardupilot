@@ -22,7 +22,6 @@ public:
 
     AP_InertialSensor_MPU6000();
 
-    uint16_t            _init( AP_PeriodicProcess * scheduler );
     static void         dmp_init(); // Initialise MPU6000's DMP
     static void         dmp_reset();    // Reset the DMP (required for changes in gains or offsets to take effect)
 
@@ -51,6 +50,9 @@ public:
 
     // get_delta_time returns the time period in seconds overwhich the sensor data was collected
     uint32_t            get_delta_time_micros();
+
+protected:
+    uint16_t                    _init_sensor( AP_PeriodicProcess * scheduler );
 
 private:
 
