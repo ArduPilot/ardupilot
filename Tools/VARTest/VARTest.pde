@@ -20,24 +20,25 @@
 #include <AP_ADC.h>
 #include <AP_Baro.h>
 #include <Filter.h>
+#include <AP_Buffer.h>
 #include <GCS_MAVLink.h>
 #include <AP_PeriodicProcess.h>
 #include <AP_InertialSensor.h> // Inertial Sensor (uncalibated IMU) Library
-#include <AP_IMU.h>         // ArduPilot Mega IMU Library
 #include <AP_GPS.h>
 #include <AP_Math.h>
 #include <SITL.h>
 #include <GCS_MAVLink.h>
-#include <config.h>
-#include <Parameters.h>
 #include <AP_Declination.h>
 #include <AP_AnalogSource.h>
 #include <AP_Airspeed.h>
+#include "config.h"
+#include "Parameters.h"
 
 // this sets up the parameter table, and sets the default values. This
 // must be the first AP_Param variable declared to ensure its
 // constructor runs before the constructors of the other AP_Param
 // variables
+extern const AP_Param::Info var_info[];
 AP_Param param_loader(var_info, WP_START_BYTE);
 
 static Parameters g;
@@ -50,8 +51,7 @@ AP_GPS_Auto     g_gps_driver(&Serial1, &g_gps);
 # else
   AP_InertialSensor_Oilpan ins( &adc );
 #endif // CONFIG_IMU_TYPE
-AP_IMU_INS imu( &ins );
-AP_AHRS_DCM  ahrs(&imu, g_gps);
+AP_AHRS_DCM  ahrs(&ins, g_gps);
 
 Arduino_Mega_ISR_Registry isr_registry;
 #ifdef DESKTOP_BUILD
