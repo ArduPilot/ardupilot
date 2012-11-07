@@ -112,15 +112,6 @@ get_stabilize_yaw(int32_t target_angle)
 }
 
 static void
-get_stabilize_rate_yaw(int32_t target_rate)
-{
-    target_rate = g.pi_stabilize_yaw.get_p(target_rate);
-
-    // set targets for rate controller
-    set_yaw_rate_target(target_rate, EARTH_FRAME);
-}
-
-static void
 get_acro_roll(int32_t target_rate)
 {
     target_rate = target_rate * g.acro_p;
