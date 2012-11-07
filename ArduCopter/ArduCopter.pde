@@ -105,8 +105,8 @@
 #include <AP_Camera.h>          // Photo or video camera
 #include <AP_Mount.h>           // Camera/Antenna mount
 #include <AP_Airspeed.h>    // needed for AHRS build
-#include <AP_InertialNav3D.h>     // ArduPilot Mega inertial navigation library
-#include <ThirdOrderCompFilter3D.h>   // Complementary filter for combining barometer altitude with accelerometers
+#include <AP_InertialNav.h>     // ArduPilot Mega inertial navigation library
+#include <ThirdOrderCompFilter.h>   // Complementary filter for combining barometer altitude with accelerometers
 #include <memcheck.h>
 
 // Configuration
@@ -857,7 +857,7 @@ static float G_Dt               = 0.02;
 // Inertial Navigation
 ////////////////////////////////////////////////////////////////////////////////
 #if INERTIAL_NAV == ENABLED
-AP_InertialNav3D  inertial_nav(&ahrs, &ins, &barometer, &g_gps);
+AP_InertialNav  inertial_nav(&ahrs, &ins, &barometer, &g_gps);
 #endif
 
 ////////////////////////////////////////////////////////////////////////////////

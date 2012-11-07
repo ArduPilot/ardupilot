@@ -1,26 +1,26 @@
 /// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 
-#ifndef __AP_INERTIALNAV3D_H__
-#define __AP_INERTIALNAV3D_H__
+#ifndef __AP_INERTIALNAV_H__
+#define __AP_INERTIALNAV_H__
 
 #include <AP_AHRS.h>
 #include <AP_InertialSensor.h>          // ArduPilot Mega IMU Library
 #include <AP_Baro.h>                    // ArduPilot Mega Barometer Library
-#include <ThirdOrderCompFilter3D.h>     // Complementary filter for combining barometer altitude with accelerometers
+#include <ThirdOrderCompFilter.h>     // Complementary filter for combining barometer altitude with accelerometers
 
 #define AP_INTERTIALNAV_GRAVITY 9.80665
 #define AP_INTERTIALNAV_TC_XY   3.0 // default time constant for complementary filter's X & Y axis
 #define AP_INTERTIALNAV_TC_Z    1.5 // default time constant for complementary filter's Z axis
 
 /*
- * AP_InertialNav3D is an attempt to use accelerometers to augment other sensors to improve altitud e position hold
+ * AP_InertialNav is an attempt to use accelerometers to augment other sensors to improve altitud e position hold
  */
-class AP_InertialNav3D
+class AP_InertialNav
 {
 public:
 
     // Constructor
-    AP_InertialNav3D( AP_AHRS* ahrs, AP_InertialSensor* ins, AP_Baro* baro, GPS** gps_ptr ) :
+    AP_InertialNav( AP_AHRS* ahrs, AP_InertialSensor* ins, AP_Baro* baro, GPS** gps_ptr ) :
         _ahrs(ahrs),
         _ins(ins),
         _baro(baro),
@@ -28,7 +28,7 @@ public:
         _baro_last_update(0),
         _gps_last_update(0),
         _xy_enabled(false),
-        _comp_filter3D(AP_INTERTIALNAV_TC_XY, AP_INTERTIALNAV_TC_Z)
+        _comp_filter(AP_INTERTIALNAV_TC_XY, AP_INTERTIALNAV_TC_Z)
         {}
 
     // Initialisation
@@ -70,11 +70,11 @@ public:
 
     // get_altitude - get latest altitude estimate in cm
     virtual float       get_altitude() { return _position.z; }
-    virtual void        set_altitude( int32_t new_altitude) { _comp_filter3D.set_3rd_order_z(new_altitude); }
+    virtual void        set_altitude( int32_t new_altitude) { _comp_filter.set_3rd_order_z(new_altitude); }
 
     // get_velocity_z - get latest climb rate (in cm/s)
     virtual float       get_velocity_z() { return _velocity.z; }
-    virtual void        set_velocity_z( int32_t new_velocity ) { _comp_filter3D.set_2nd_order_z(new_velocity); }
+    virtual void        set_velocity_z( int32_t new_velocity ) { _comp_filter.set_2nd_order_z(new_velocity); }
 
     // get latitude & longitude positions
     virtual int32_t     get_latitude();
@@ -114,8 +114,8 @@ public:
     int32_t         _base_lon;              // base longitude
     float           _lon_to_m_scaling;      // conversion of longitude to meters
 
-    ThirdOrderCompFilter3D   _comp_filter3D;   // 3rd order complementary filter for combining baro readings with accelerometers
+    ThirdOrderCompFilter   _comp_filter;   // 3rd order complementary filter for combining baro readings with accelerometers
 
 };
 
-#endif // __AP_INERTIALNAV3D_H__
+#endif // __AP_INERTIALNAV_H__
