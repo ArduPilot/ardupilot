@@ -283,12 +283,6 @@ static void init_ardupilot()
     // ---------------------------
     reset_control_switch();
 
-    // init the Z damopener
-    // --------------------
-#if ACCEL_ALT_HOLD != 0
-    init_z_damper();
-#endif
-
 
     startup_ground();
 

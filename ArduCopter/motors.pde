@@ -120,8 +120,6 @@ static void init_arm_motors()
     // --------------------
     init_simple_bearing();
 
-    init_z_damper();
-
     // Reset home position
     // -------------------
     if(home_is_set)
@@ -172,6 +170,10 @@ static void init_disarm_motors()
     compass.save_offsets();
 
     g.throttle_cruise.save();
+
+#if INERTIAL_NAV == ENABLED
+    inertial_nav.save_params();
+#endif
 
     // we are not in the air
     takeoff_complete = false;

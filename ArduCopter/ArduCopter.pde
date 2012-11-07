@@ -105,6 +105,8 @@
 #include <AP_Camera.h>          // Photo or video camera
 #include <AP_Mount.h>           // Camera/Antenna mount
 #include <AP_Airspeed.h>    // needed for AHRS build
+#include <AP_InertialNav3D.h>     // ArduPilot Mega inertial navigation library
+#include <ThirdOrderCompFilter3D.h>   // Complementary filter for combining barometer altitude with accelerometers
 #include <memcheck.h>
 
 // Configuration
@@ -371,10 +373,10 @@ AP_RangeFinder_MaxsonarXL sonar(&sonar_analog_source, &sonar_mode_filter);
 //Documentation of GLobals:
 
 ////////////////////////////////////////////////////////////////////////////////
-// The GPS based velocity calculated by offsetting the Latitude and Longitude
+// velocity in lon and lat directions calculated from GPS position and accelerometer data
 // updated after GPS read - 5-10hz
-static int16_t x_actual_speed;
-static int16_t y_actual_speed;
+static int16_t lon_speed;       // expressed in cm/s.  positive numbers mean moving east
+static int16_t lat_speed;       // expressed in cm/s.  positive numbers when moving north
 
 
 // The difference between the desired rate of travel and the actual rate of travel
@@ -505,7 +507,7 @@ static float scaleLongDown           = 1;
 // Used by Mavlink for unknow reasons
 static const float radius_of_earth      = 6378100;              // meters
 // Used by Mavlink for unknow reasons
-static const float gravity                      = 9.81;                 // meters/ sec^2
+static const float gravity              = 9.80665;              // meters/ sec^2
 
 // Unions for getting byte values
 union float_int {
@@ -517,9 +519,6 @@ union float_int {
 ////////////////////////////////////////////////////////////////////////////////
 // Location & Navigation
 ////////////////////////////////////////////////////////////////////////////////
-// Status flag indicating we have data that can be used to navigate
-// Set by a GPS read with 3D fix, or an optical flow read
-static bool nav_ok;
 // This is the angle from the copter to the "next_WP" location in degrees * 100
 static int32_t target_bearing;
 // Status of the Waypoint tracking mode. Options include:
@@ -730,8 +729,6 @@ static struct   Location home;
 static boolean home_is_set;
 // Current location of the copter
 static struct   Location current_loc;
-// lead filtered loc
-static struct   Location filtered_loc;
 // Next WP is the desired location of the copter - the next waypoint or loiter location
 static struct   Location next_WP;
 // Prev WP is used to get the optimum path from one WP to the next
@@ -860,21 +857,7 @@ static float G_Dt               = 0.02;
 // Inertial Navigation
 ////////////////////////////////////////////////////////////////////////////////
 #if INERTIAL_NAV == ENABLED
-// The rotated accelerometer values
-static Vector3f accels_velocity;
-static Vector3f accels_position;
-
-// accels rotated to world frame
-static Vector3f accels_rotated;
-//static Vector3f position_error;
-
-// error correction
-static Vector3f speed_error;
-
-// Manage accel drift
-//static float z_offset;
-//static Vector3f accels_scale;
-
+AP_InertialNav3D  inertial_nav(&ahrs, &ins, &barometer, &g_gps);
 #endif
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -884,9 +867,6 @@ static Vector3f speed_error;
 static int16_t perf_mon_counter;
 // The number of GPS fixes we have had
 static int16_t gps_fix_count;
-// gps_watchdog checks for bad reads and if we miss 12 in a row, we stop navigating
-// by lowering nav_lat and navlon to 0 gradually
-static byte gps_watchdog;
 
 // System Timers
 // --------------
@@ -902,8 +882,6 @@ static byte slow_loopCounter;
 static byte counter_one_herz;
 // Counter of main loop executions.  Used for performance monitoring and failsafe processing
 static uint16_t mainLoop_count;
-// used to track the elapsed time between GPS reads
-static uint32_t nav_loopTimer;
 // Delta Time in milliseconds for navigation computations, updated with every good GPS read
 static float dTnav;
 // Counters for branching from 4 minute control loop used to save Compass offsets
@@ -998,7 +976,7 @@ void loop()
 
         // Execute the fast loop
         // ---------------------
-        fast_loop();////
+        fast_loop();
 
         // run the 50hz loop 1/2 the time
         run_50hz_loop = !run_50hz_loop;
@@ -1015,17 +993,12 @@ void loop()
             // port manipulation for external timing of main loops
             //PORTK |= B01000000;
 
-            // reads all of the necessary trig functions for cameras, throttle, etc.
-            // --------------------------------------------------------------------
-            update_trig();
-
-            // Rotate the Nav_lon and nav_lat vectors based on Yaw
-            // ---------------------------------------------------
-            calc_loiter_pitch_roll();
-
             // check for new GPS messages
             // --------------------------
             update_GPS();
+
+            // run navigation routines
+            update_navigation();
 
             // perform 10hz tasks
             // ------------------
@@ -1098,11 +1071,13 @@ static void fast_loop()
     // --------------------
     read_AHRS();
 
+    // reads all of the necessary trig functions for cameras, throttle, etc.
+    // --------------------------------------------------------------------
+    update_trig();
+
     // Inertial Nav
     // --------------------
-#if INERTIAL_NAV == ENABLED
-    calc_inertia();
-#endif
+    read_inertia();
 
     // optical flow
     // --------------------
@@ -1159,23 +1134,6 @@ static void medium_loop()
     case 1:
         medium_loopCounter++;
 
-        // calculate the copter's desired bearing and WP distance
-        // ------------------------------------------------------
-        if(nav_ok) {
-            // clear nav flag
-            nav_ok = false;
-
-            // calculate distance, angles to target
-            navigate();
-
-            // update flight control system
-            update_navigation();
-
-            // update log
-            if (g.log_bitmask & MASK_LOG_NTUN && motors.armed()) {
-                Log_Write_Nav_Tuning();
-            }
-        }
         break;
 
     // command processing
@@ -1492,15 +1450,6 @@ static void update_GPS(void)
     g_gps->update();
     update_GPS_light();
 
-    if (gps_watchdog < 30) {
-        gps_watchdog++;
-    }else{
-        // after 12 reads we guess we may have lost GPS signal, stop navigating
-        // we have lost GPS signal for a moment. Reduce our error to avoid flyaways
-        auto_roll  >>= 1;
-        auto_pitch >>= 1;
-    }
-
     if (g_gps->new_data && g_gps->fix) {
         // clear new data flag
         g_gps->new_data = false;
@@ -1508,26 +1457,9 @@ static void update_GPS(void)
         // check for duiplicate GPS messages
         if(last_gps_time != g_gps->time) {
 
-            // look for broken GPS
-            // ---------------
-            gps_watchdog = 0;
-
-            // OK to run the nav routines
-            // ---------------
-            nav_ok = true;
-
             // for performance monitoring
             // --------------------------
             gps_fix_count++;
-
-            // used to calculate speed in X and Y, iterms
-            // ------------------------------------------
-            dTnav                           = (float)(millis() - nav_loopTimer)/ 1000.0;
-            nav_loopTimer           = millis();
-
-            // prevent runup from bad GPS
-            // --------------------------
-            dTnav = min(dTnav, 1.0);
 
             if(ground_start_count > 1) {
                 ground_start_count--;
@@ -1550,11 +1482,6 @@ static void update_GPS(void)
                     ground_start_count = 0;
                 }
             }
-
-            current_loc.lng = g_gps->longitude;                 // Lon * 10^7
-            current_loc.lat = g_gps->latitude;                  // Lat * 10^7
-
-            calc_XY_velocity();
 
             if (g.log_bitmask & MASK_LOG_GPS && motors.armed()) {
                 Log_Write_GPS();
@@ -1880,181 +1807,6 @@ void update_throttle_mode(void)
     }
 }
 
-// called after a GPS read
-static void update_navigation()
-{
-    // wp_distance is in CM
-    // --------------------
-    switch(control_mode) {
-    case AUTO:
-        // note: wp_control is handled by commands_logic
-        verify_commands();
-
-        // calculates desired Yaw
-        update_auto_yaw();
-
-        // calculates the desired Roll and Pitch
-        update_nav_wp();
-        break;
-
-    case GUIDED:
-        wp_control = WP_MODE;
-        // check if we are close to point > loiter
-        wp_verify_byte = 0;
-        verify_nav_wp();
-
-        if (wp_control == WP_MODE) {
-            update_auto_yaw();
-        } else {
-            set_mode(LOITER);
-        }
-        update_nav_wp();
-        break;
-
-    case RTL:
-        // have we reached the desired Altitude?
-        if(alt_change_flag <= REACHED_ALT) {                // we are at or above the target alt
-            if(rtl_reached_alt == false) {
-                rtl_reached_alt = true;
-                do_RTL();
-            }
-            wp_control = WP_MODE;
-            // checks if we have made it to home
-            update_nav_RTL();
-        } else{
-            // we need to loiter until we are ready to come home
-            wp_control = LOITER_MODE;
-        }
-
-        // calculates desired Yaw
-#if FRAME_CONFIG ==     HELI_FRAME
-        update_auto_yaw();
-#endif
-
-        // calculates the desired Roll and Pitch
-        update_nav_wp();
-        break;
-
-    // switch passthrough to LOITER
-    case LOITER:
-    case POSITION:
-        // This feature allows us to reposition the quad when the user lets
-        // go of the sticks
-
-        if((abs(g.rc_2.control_in) + abs(g.rc_1.control_in)) > 500) {
-            if(wp_distance > 500)
-                loiter_override         = true;
-        }
-
-        // Allow the user to take control temporarily,
-        if(loiter_override) {
-            // this sets the copter to not try and nav while we control it
-            wp_control      = NO_NAV_MODE;
-
-            // reset LOITER to current position
-            next_WP.lat = current_loc.lat;
-            next_WP.lng = current_loc.lng;
-
-            if(g.rc_2.control_in == 0 && g.rc_1.control_in == 0) {
-                loiter_override         = false;
-                wp_control                      = LOITER_MODE;
-            }
-        }else{
-            wp_control = LOITER_MODE;
-        }
-
-        if(loiter_timer != 0) {
-            // If we have a safe approach alt set and we have been loitering for 20 seconds(default), begin approach
-            if((millis() - loiter_timer) > (uint32_t)g.auto_land_timeout.get()) {
-                // just to make sure we clear the timer
-                loiter_timer = 0;
-                if(g.rtl_approach_alt == 0) {
-                    set_mode(LAND);
-                    if(home_distance < 300) {
-                        next_WP.lat = home.lat;
-                        next_WP.lng = home.lng;
-                    }
-                }else{
-                    if(g.rtl_approach_alt < current_loc.alt) {
-                        set_new_altitude(g.rtl_approach_alt);
-                    }
-                }
-            }
-        }
-
-        // calculates the desired Roll and Pitch
-        update_nav_wp();
-        break;
-
-    case LAND:
-        if(g.sonar_enabled)
-            verify_land_sonar();
-        else
-            verify_land_baro();
-
-        // calculates the desired Roll and Pitch
-        update_nav_wp();
-        break;
-
-    case CIRCLE:
-        wp_control              = CIRCLE_MODE;
-
-        // calculates desired Yaw
-        update_auto_yaw();
-        update_nav_wp();
-        break;
-
-    case STABILIZE:
-    case TOY_A:
-    case TOY_M:
-        wp_control = NO_NAV_MODE;
-        update_nav_wp();
-        break;
-    }
-
-    // are we in SIMPLE mode?
-    if(do_simple && g.super_simple) {
-        // get distance to home
-        if(home_distance > SUPER_SIMPLE_RADIUS) {        // 10m from home
-            // we reset the angular offset to be a vector from home to the quad
-            initial_simple_bearing = home_to_copter_bearing;
-            //Serial.printf("ISB: %d\n", initial_simple_bearing);
-        }
-    }
-
-    if(yaw_mode == YAW_LOOK_AT_HOME) {
-        if(home_is_set) {
-            nav_yaw = get_bearing_cd(&current_loc, &home);
-        } else {
-            nav_yaw = 0;
-        }
-    }
-}
-
-static void update_nav_RTL()
-{
-    // Have we have reached Home?
-    if(wp_distance <= 200 || check_missed_wp()) {
-        // if loiter_timer value > 0, we are set to trigger auto_land or approach
-        set_mode(LOITER);
-
-        // just in case we arrive and we aren't at the lower RTL alt yet.
-        set_new_altitude(get_RTL_alt());
-
-        // force loitering above home
-        next_WP.lat = home.lat;
-        next_WP.lng = home.lng;
-
-        // If failsafe OR auto approach altitude is set
-        // we will go into automatic land, (g.rtl_approach_alt) is the lowest point
-        // -1 means disable feature
-        if(failsafe || g.rtl_approach_alt >= 0)
-            loiter_timer = millis();
-        else
-            loiter_timer = 0;
-    }
-}
-
 static void read_AHRS(void)
 {
     // Perform IMU calculations and get attitude info
@@ -2120,10 +1872,6 @@ static void update_altitude()
 #else
     // This is real life
 
- #if INERTIAL_NAV == ENABLED
-    baro_rate                       = accels_velocity.z;
-
- #else
     // read in Actual Baro Altitude
     baro_alt                        = read_barometer();
 
@@ -2141,7 +1889,6 @@ static void update_altitude()
     baro_rate                       = (temp + baro_rate) >> 1;
     baro_rate                       = constrain(baro_rate, -300, 300);
     */
- #endif
 
     // Note: sonar_alt is calculated in a faster loop and filtered with a mode filter
 #endif
@@ -2198,11 +1945,6 @@ static void update_altitude()
 
     // calc error
     climb_rate_error = (climb_rate_actual - climb_rate) / 5;
-
-#if INERTIAL_NAV == ENABLED
-    // inertial_nav
-    z_error_correction();
-#endif
 }
 
 static void update_altitude_est()
@@ -2366,6 +2108,12 @@ static void tuning(){
         break;
 #endif
 
+#if INERTIAL_NAV == ENABLED
+    case CH6_INAV_TC:
+        inertial_nav.set_time_constant_xy(tuning_value);
+        inertial_nav.set_time_constant_z(tuning_value);
+        break;
+#endif
     }
 }
 

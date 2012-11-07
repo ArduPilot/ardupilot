@@ -368,6 +368,12 @@ const AP_Param::Info var_info[] PROGMEM = {
     GOBJECT(ins,            "INS_", AP_InertialSensor),
 #endif
 
+#if INERTIAL_NAV == ENABLED
+    // @Group: INAV_
+    // @Path: ../libraries/AP_InertialNav/AP_InertialNav.cpp
+    GOBJECT(inertial_nav,           "INAV_",    AP_InertialNav3D),
+#endif
+
     GOBJECT(gcs0,                   "SR0_",     GCS_MAVLINK),
     GOBJECT(gcs3,                   "SR3_",     GCS_MAVLINK),
 
