@@ -58,20 +58,20 @@
 
 
 #if INERTIAL_NAV == ENABLED
- #define ALT_HOLD_P                      3
- #define ALT_HOLD_I                      0
- #define ALT_HOLD_IMAX           300
+ //#define ALT_HOLD_P                      3
+ //#define ALT_HOLD_I                      0
+ //#define ALT_HOLD_IMAX                  300
 
 // RATE control
- #define THROTTLE_P                      5                      //
- #define THROTTLE_I                      0.4                    //
- #define THROTTLE_D                      0.0                    //
+ //#define THROTTLE_P                      2.0
+ //#define THROTTLE_I                      0.4
+ //#define THROTTLE_D                      0.0
 
- #define LOITER_P                        0.50
- #define LOITER_I                        0.0
- #define LOITER_RATE_P           5                      //
- #define LOITER_RATE_I           0.1                    // Wind control
- #define LOITER_RATE_D           0.0                    // try 2 or 3 for LOITER_RATE 1
+ //#define LOITER_P                        0.50
+ //#define LOITER_I                        0.0
+ //#define LOITER_RATE_P           5                      //
+ //#define LOITER_RATE_I           0.1                    // Wind control
+ //#define LOITER_RATE_D           0.0                    // try 2 or 3 for LOITER_RATE 1
 #endif
 
 
