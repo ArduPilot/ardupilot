@@ -87,6 +87,7 @@ namespace ArdupilotMega
         // turn radius
         public float radius { get { if (groundspeed <= 1) return 0; return ((groundspeed * groundspeed)/(float)(9.8f*Math.Tan(roll * deg2rad))); } }
 
+        public float rxrssi { get; set; }
         //radio
         public float ch1in { get; set; }
         public float ch2in { get; set; }
@@ -879,6 +880,9 @@ namespace ArdupilotMega
                         ch6in = rcin.chan6_raw;
                         ch7in = rcin.chan7_raw;
                         ch8in = rcin.chan8_raw;
+
+                        //percent
+                        rxrssi = (float)((rcin.rssi / 255.0) * 100.0);
 
                         //MAVLink.packets[MAVLink.MAVLINK_MSG_ID_RC_CHANNELS_RAW] = null;
                     }

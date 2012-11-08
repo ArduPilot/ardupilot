@@ -179,9 +179,9 @@ namespace wix
 <Wix xmlns=""http://schemas.microsoft.com/wix/2006/wi"" xmlns:netfx=""http://schemas.microsoft.com/wix/NetFxExtension"" xmlns:difx=""http://schemas.microsoft.com/wix/DifxAppExtension"">
 
 
-    <Product Id=""" + newid + @""" Name=""APM Planner"" Language=""1033"" Version="""+version+@""" Manufacturer=""Michael Oborne"" UpgradeCode=""{625389D7-EB3C-4d77-A5F6-A285CF99437D}"">
+    <Product Id=""" + newid + @""" Name=""Mission Planner"" Language=""1033"" Version=""" + version + @""" Manufacturer=""Michael Oborne"" UpgradeCode=""{625389D7-EB3C-4d77-A5F6-A285CF99437D}"">
 
-        <Package Description=""APM Planner Installer"" Comments=""Apm Planner Installer"" Manufacturer=""Michael Oborne"" InstallerVersion=""200"" Compressed=""yes"" />
+        <Package Description=""Mission Planner Installer"" Comments=""Mission Planner Installer"" Manufacturer=""Michael Oborne"" InstallerVersion=""200"" Compressed=""yes"" />
 
 
 <Upgrade Id=""{625389D7-EB3C-4d77-A5F6-A285CF99437D}"">
@@ -210,10 +210,12 @@ namespace wix
         {
             string data = @"
                     
-                    <Directory Id=""drivers"" Name=""Drivers"">
+                    <Directory Id=""driver"" Name=""Drivers"">
                         <Component Id=""MyDriver"" Guid=""{6AC8226E-A005-437e-A3CD-0FC32D9A346F}"">
                             <File Id=""apm2inf""  Source=""..\Driver\Arduino MEGA 2560.inf"" />
-                            <difx:Driver AddRemovePrograms='no' Legacy=""yes"" PlugAndPlayPrompt=""no"" />
+                            <File Id=""dpixml""  Source=""..\Driver\dpinst.xml"" />
+                            <File Id=""dpix64""  Source=""..\Driver\DPInstx64.exe"" />
+                            <File Id=""dpix86""  Source=""..\Driver\DPInstx86.exe"" />
                         </Component>
                     </Directory>
                 </Directory>
@@ -224,23 +226,26 @@ namespace wix
             </Directory>
 
         </Directory>
+  
+  <CustomAction  Id='Install_Unsigned_Driver86' Execute='deferred' 
+  Directory='driver'  ExeCommand='""[driver]DPInstx86.exe""' Return='ignore' />
+  <CustomAction  Id='Install_Unsigned_Driver64' Execute='deferred' 
+  Directory='driver'  ExeCommand='""[driver]DPInstx64.exe""' Return='ignore' />
+
+ <InstallExecuteSequence>
+    <Custom Action=""Install_Unsigned_Driver86""  After=""InstallFiles"">NOT 
+	Installed AND NOT VersionNT64</Custom>
+    <Custom Action=""Install_Unsigned_Driver64""  After=""InstallFiles"">NOT 
+	Installed AND VersionNT64</Custom>
+  </InstallExecuteSequence>
+
 
         <DirectoryRef Id=""ApplicationProgramsFolder"">
             <Component Id=""ApplicationShortcut"" Guid=""{8BC628BA-08A0-43d6-88C8-D4C007AC4607}"">
-                <Shortcut Id=""ApplicationStartMenuShortcut"" Name=""APM Planner Mav 0.9"" Description=""Ardupilot Mega Planner"" Target=""[APMPlanner]ArdupilotMegaPlanner.exe"" WorkingDirectory=""APMPlanner"" />
-
-                <Shortcut Id=""ApplicationStartMenuShortcut10"" Name=""APM Planner Mav 1.0"" Description=""Ardupilot Mega Planner"" Target=""[APMPlanner]ArdupilotMegaPlanner10.exe"" WorkingDirectory=""APMPlanner"" />
+                <Shortcut Id=""ApplicationStartMenuShortcut10"" Name=""Mission Planner Mav 1.0"" Description=""Ardupilot Mega Planner"" Target=""[APMPlanner]ArdupilotMegaPlanner10.exe"" WorkingDirectory=""APMPlanner"" />
                 <RemoveFolder Id=""ApplicationProgramsFolder"" On=""uninstall"" />
-
-                <Shortcut Id=""UninstallProduct"" Name=""Uninstall APM Planner"" Description=""Uninstalls My Application"" Target=""[System64Folder]msiexec.exe"" Arguments=""/x [ProductCode]"" />
-
-
-
+                <Shortcut Id=""UninstallProduct"" Name=""Uninstall Mission Planner"" Description=""Uninstalls My Application"" Target=""[System64Folder]msiexec.exe"" Arguments=""/x [ProductCode]"" />
                 <RegistryValue Root=""HKCU"" Key=""Software\MichaelOborne\APMPlanner"" Name=""installed"" Type=""integer"" Value=""1"" KeyPath=""yes"" />
-
-
-
-
             </Component>
         </DirectoryRef>
 
@@ -260,7 +265,6 @@ data = @"
             <ComponentRef Id=""ApplicationShortcut"" />
             <ComponentRef Id=""MyDriver"" />
         </Feature>
-
         
             <!-- Step 2: Add UI to your installer / Step 4: Trigger the custom action -->
     <Property Id=""WIXUI_INSTALLDIR"" Value=""APMPlanner"" />
@@ -272,7 +276,7 @@ data = @"
             Event=""DoAction"" 
             Value=""LaunchApplication"">WIXUI_EXITDIALOGOPTIONALCHECKBOX = 1 and NOT Installed</Publish>
     </UI>
-    <Property Id=""WIXUI_EXITDIALOGOPTIONALCHECKBOXTEXT"" Value=""Launch APM Planner"" />
+    <Property Id=""WIXUI_EXITDIALOGOPTIONALCHECKBOXTEXT"" Value=""Launch Mission Planner"" />
 
     <!-- Step 3: Include the custom action -->
     <Property Id=""WixShellExecTarget"" Value=""[#" + mainexeid + @"]"" />
@@ -310,7 +314,7 @@ data = @"
                 no++;
                 
 
-                if (filepath.EndsWith("ArdupilotMegaPlanner.exe")) {
+                if (filepath.EndsWith("ArdupilotMegaPlanner10.exe")) {
                     mainexeid = "_" + no;
 
                     sw.WriteLine("<File Id=\"_" + no + "\" Source=\"" + filepath + "\" ><netfx:NativeImage Id=\"ngen_ArdupilotMegaPlannerexe\"/> </File>");

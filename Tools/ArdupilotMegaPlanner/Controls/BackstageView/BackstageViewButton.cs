@@ -62,7 +62,10 @@ namespace ArdupilotMega.Controls.BackstageView
 
         protected override void OnPaint(PaintEventArgs pevent)
         {
-           ((BackStageViewMenuPanel)this.Parent).PaintBackground(pevent);
+            if (this.Parent != null)
+            {
+                ((BackStageViewMenuPanel)this.Parent).PaintBackground(pevent);
+            }
 
            Graphics g = pevent.Graphics;
          

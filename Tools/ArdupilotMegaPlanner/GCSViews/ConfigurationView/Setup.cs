@@ -78,6 +78,8 @@ If you are just setting up 3DR radios, you may continue without connecting.");
             AddBackstageViewPage(new ConfigFriendlyParams { ParameterMode = ParameterMetaDataConstants.Advanced }, "Advanced Params", tunningpage);
             AddBackstageViewPage(new ConfigRawParams(), "Adv Parameter List", tunningpage);
 
+         //   AddBackstageViewPage(new ConfigParamParams() { ParameterMode = ParameterMetaDataConstants.Standard }, "Camera Gimbal Adv");
+
             /******************************HELI **************************/
             if (MainV2.comPort.param["H_GYR_ENABLE"] != null) // heli
             {

@@ -121,6 +121,9 @@
   <data name="pictureBox1.BackgroundImageLayout" type="System.Windows.Forms.ImageLayout, System.Windows.Forms">
     <value>Zoom</value>
   </data>
+  <data name="pictureBox1.ImeMode" type="System.Windows.Forms.ImeMode, System.Windows.Forms">
+    <value>NoControl</value>
+  </data>
   <assembly alias="System.Drawing" name="System.Drawing, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a" />
   <data name="pictureBox1.Location" type="System.Drawing.Point, System.Drawing">
     <value>33, 16</value>
@@ -151,7 +154,7 @@
     <value>17, 150</value>
   </data>
   <data name="groupBox1.Size" type="System.Drawing.Size, System.Drawing">
-    <value>635, 5</value>
+    <value>516, 5</value>
   </data>
   <data name="groupBox1.TabIndex" type="System.Int32, mscorlib">
     <value>52</value>
@@ -170,6 +173,9 @@
   </data>
   <data name="pictureBox2.BackgroundImageLayout" type="System.Windows.Forms.ImageLayout, System.Windows.Forms">
     <value>Zoom</value>
+  </data>
+  <data name="pictureBox2.ImeMode" type="System.Windows.Forms.ImeMode, System.Windows.Forms">
+    <value>NoControl</value>
   </data>
   <data name="pictureBox2.Location" type="System.Drawing.Point, System.Drawing">
     <value>33, 141</value>
@@ -199,7 +205,7 @@
     <value>17, 23</value>
   </data>
   <data name="groupBox2.Size" type="System.Drawing.Size, System.Drawing">
-    <value>635, 5</value>
+    <value>516, 5</value>
   </data>
   <data name="groupBox2.TabIndex" type="System.Int32, mscorlib">
     <value>59</value>
@@ -221,6 +227,9 @@
   </data>
   <data name="label5.Font" type="System.Drawing.Font, System.Drawing">
     <value>Microsoft Sans Serif, 12pt</value>
+  </data>
+  <data name="label5.ImeMode" type="System.Windows.Forms.ImeMode, System.Windows.Forms">
+    <value>NoControl</value>
   </data>
   <data name="label5.Location" type="System.Drawing.Point, System.Drawing">
     <value>21, 4</value>
@@ -252,6 +261,9 @@
   <data name="label6.Font" type="System.Drawing.Font, System.Drawing">
     <value>Microsoft Sans Serif, 12pt</value>
   </data>
+  <data name="label6.ImeMode" type="System.Windows.Forms.ImeMode, System.Windows.Forms">
+    <value>NoControl</value>
+  </data>
   <data name="label6.Location" type="System.Drawing.Point, System.Drawing">
     <value>20, 132</value>
   </data>
@@ -276,65 +288,14 @@
   <data name="&gt;&gt;label6.ZOrder" xml:space="preserve">
     <value>48</value>
   </data>
-  <data name="PBOX_WarningIcon.Anchor" type="System.Windows.Forms.AnchorStyles, System.Windows.Forms">
-    <value>Bottom, Left, Right</value>
-  </data>
-  <data name="PBOX_WarningIcon.Location" type="System.Drawing.Point, System.Drawing">
-    <value>264, 389</value>
-  </data>
-  <data name="PBOX_WarningIcon.Size" type="System.Drawing.Size, System.Drawing">
-    <value>32, 32</value>
-  </data>
-  <data name="PBOX_WarningIcon.TabIndex" type="System.Int32, mscorlib">
-    <value>75</value>
-  </data>
-  <data name="&gt;&gt;PBOX_WarningIcon.Name" xml:space="preserve">
-    <value>PBOX_WarningIcon</value>
-  </data>
-  <data name="&gt;&gt;PBOX_WarningIcon.Type" xml:space="preserve">
-    <value>ArdupilotMega.Controls.PictureBoxWithPseudoOpacity, ArdupilotMegaPlanner10, Version=1.1.4638.35097, Culture=neutral, PublicKeyToken=null</value>
-  </data>
-  <data name="&gt;&gt;PBOX_WarningIcon.Parent" xml:space="preserve">
-    <value>$this</value>
-  </data>
-  <data name="&gt;&gt;PBOX_WarningIcon.ZOrder" xml:space="preserve">
-    <value>47</value>
-  </data>
-  <data name="LBL_Error.Anchor" type="System.Windows.Forms.AnchorStyles, System.Windows.Forms">
-    <value>Bottom, Left, Right</value>
-  </data>
-  <data name="LBL_Error.AutoSize" type="System.Boolean, mscorlib">
-    <value>True</value>
-  </data>
-  <data name="LBL_Error.Location" type="System.Drawing.Point, System.Drawing">
-    <value>303, 402</value>
-  </data>
-  <data name="LBL_Error.Size" type="System.Drawing.Size, System.Drawing">
-    <value>138, 13</value>
-  </data>
-  <data name="LBL_Error.TabIndex" type="System.Int32, mscorlib">
-    <value>76</value>
-  </data>
-  <data name="LBL_Error.Text" xml:space="preserve">
-    <value>Error Message of some kind</value>
-  </data>
-  <data name="&gt;&gt;LBL_Error.Name" xml:space="preserve">
-    <value>LBL_Error</value>
-  </data>
-  <data name="&gt;&gt;LBL_Error.Type" xml:space="preserve">
-    <value>ArdupilotMega.Controls.LabelWithPseudoOpacity, ArdupilotMegaPlanner10, Version=1.1.4638.35097, Culture=neutral, PublicKeyToken=null</value>
-  </data>
-  <data name="&gt;&gt;LBL_Error.Parent" xml:space="preserve">
-    <value>$this</value>
-  </data>
-  <data name="&gt;&gt;LBL_Error.ZOrder" xml:space="preserve">
-    <value>46</value>
-  </data>
   <data name="LNK_wiki.Anchor" type="System.Windows.Forms.AnchorStyles, System.Windows.Forms">
     <value>Top, Right</value>
   </data>
   <data name="LNK_wiki.AutoSize" type="System.Boolean, mscorlib">
     <value>True</value>
+  </data>
+  <data name="LNK_wiki.ImeMode" type="System.Windows.Forms.ImeMode, System.Windows.Forms">
+    <value>NoControl</value>
   </data>
   <data name="LNK_wiki.Location" type="System.Drawing.Point, System.Drawing">
     <value>624, 9</value>
@@ -365,6 +326,9 @@
   </data>
   <data name="label15.Font" type="System.Drawing.Font, System.Drawing">
     <value>Microsoft Sans Serif, 12pt</value>
+  </data>
+  <data name="label15.ImeMode" type="System.Windows.Forms.ImeMode, System.Windows.Forms">
+    <value>NoControl</value>
   </data>
   <data name="label15.Location" type="System.Drawing.Point, System.Drawing">
     <value>20, 256</value>
@@ -397,7 +361,7 @@
     <value>17, 274</value>
   </data>
   <data name="groupBox3.Size" type="System.Drawing.Size, System.Drawing">
-    <value>635, 5</value>
+    <value>516, 5</value>
   </data>
   <data name="groupBox3.TabIndex" type="System.Int32, mscorlib">
     <value>78</value>
@@ -416,6 +380,9 @@
   </data>
   <data name="pictureBox3.BackgroundImageLayout" type="System.Windows.Forms.ImageLayout, System.Windows.Forms">
     <value>Zoom</value>
+  </data>
+  <data name="pictureBox3.ImeMode" type="System.Windows.Forms.ImeMode, System.Windows.Forms">
+    <value>NoControl</value>
   </data>
   <data name="pictureBox3.Location" type="System.Drawing.Point, System.Drawing">
     <value>33, 265</value>
@@ -443,6 +410,9 @@
   </data>
   <data name="label9.Font" type="System.Drawing.Font, System.Drawing">
     <value>Microsoft Sans Serif, 12pt</value>
+  </data>
+  <data name="label9.ImeMode" type="System.Windows.Forms.ImeMode, System.Windows.Forms">
+    <value>NoControl</value>
   </data>
   <data name="label9.Location" type="System.Drawing.Point, System.Drawing">
     <value>352, 158</value>
@@ -474,6 +444,9 @@
   <data name="label10.Font" type="System.Drawing.Font, System.Drawing">
     <value>Microsoft Sans Serif, 12pt</value>
   </data>
+  <data name="label10.ImeMode" type="System.Windows.Forms.ImeMode, System.Windows.Forms">
+    <value>NoControl</value>
+  </data>
   <data name="label10.Location" type="System.Drawing.Point, System.Drawing">
     <value>251, 158</value>
   </data>
@@ -500,6 +473,9 @@
   </data>
   <data name="label11.AutoSize" type="System.Boolean, mscorlib">
     <value>True</value>
+  </data>
+  <data name="label11.ImeMode" type="System.Windows.Forms.ImeMode, System.Windows.Forms">
+    <value>NoControl</value>
   </data>
   <data name="label11.Location" type="System.Drawing.Point, System.Drawing">
     <value>355, 211</value>
@@ -528,6 +504,9 @@
   <data name="label12.AutoSize" type="System.Boolean, mscorlib">
     <value>True</value>
   </data>
+  <data name="label12.ImeMode" type="System.Windows.Forms.ImeMode, System.Windows.Forms">
+    <value>NoControl</value>
+  </data>
   <data name="label12.Location" type="System.Drawing.Point, System.Drawing">
     <value>355, 183</value>
   </data>
@@ -552,56 +531,11 @@
   <data name="&gt;&gt;label12.ZOrder" xml:space="preserve">
     <value>34</value>
   </data>
-  <data name="mavlinkNumericUpDownRAM.Enabled" type="System.Boolean, mscorlib">
-    <value>False</value>
-  </data>
-  <data name="mavlinkNumericUpDownRAM.Location" type="System.Drawing.Point, System.Drawing">
-    <value>385, 181</value>
-  </data>
-  <data name="mavlinkNumericUpDownRAM.Size" type="System.Drawing.Size, System.Drawing">
-    <value>59, 20</value>
-  </data>
-  <data name="mavlinkNumericUpDownRAM.TabIndex" type="System.Int32, mscorlib">
-    <value>101</value>
-  </data>
-  <data name="&gt;&gt;mavlinkNumericUpDownRAM.Name" xml:space="preserve">
-    <value>mavlinkNumericUpDownRAM</value>
-  </data>
-  <data name="&gt;&gt;mavlinkNumericUpDownRAM.Type" xml:space="preserve">
-    <value>ArdupilotMega.Controls.MavlinkNumericUpDown, ArdupilotMegaPlanner10, Version=1.1.4638.35097, Culture=neutral, PublicKeyToken=null</value>
-  </data>
-  <data name="&gt;&gt;mavlinkNumericUpDownRAM.Parent" xml:space="preserve">
-    <value>$this</value>
-  </data>
-  <data name="&gt;&gt;mavlinkNumericUpDownRAM.ZOrder" xml:space="preserve">
-    <value>35</value>
-  </data>
-  <data name="mavlinkNumericUpDownRAMX.Enabled" type="System.Boolean, mscorlib">
-    <value>False</value>
-  </data>
-  <data name="mavlinkNumericUpDownRAMX.Location" type="System.Drawing.Point, System.Drawing">
-    <value>385, 207</value>
-  </data>
-  <data name="mavlinkNumericUpDownRAMX.Size" type="System.Drawing.Size, System.Drawing">
-    <value>59, 20</value>
-  </data>
-  <data name="mavlinkNumericUpDownRAMX.TabIndex" type="System.Int32, mscorlib">
-    <value>100</value>
-  </data>
-  <data name="&gt;&gt;mavlinkNumericUpDownRAMX.Name" xml:space="preserve">
-    <value>mavlinkNumericUpDownRAMX</value>
-  </data>
-  <data name="&gt;&gt;mavlinkNumericUpDownRAMX.Type" xml:space="preserve">
-    <value>ArdupilotMega.Controls.MavlinkNumericUpDown, ArdupilotMegaPlanner10, Version=1.1.4638.35097, Culture=neutral, PublicKeyToken=null</value>
-  </data>
-  <data name="&gt;&gt;mavlinkNumericUpDownRAMX.Parent" xml:space="preserve">
-    <value>$this</value>
-  </data>
-  <data name="&gt;&gt;mavlinkNumericUpDownRAMX.ZOrder" xml:space="preserve">
-    <value>36</value>
-  </data>
   <data name="label13.AutoSize" type="System.Boolean, mscorlib">
     <value>True</value>
+  </data>
+  <data name="label13.ImeMode" type="System.Windows.Forms.ImeMode, System.Windows.Forms">
+    <value>NoControl</value>
   </data>
   <data name="label13.Location" type="System.Drawing.Point, System.Drawing">
     <value>246, 211</value>
@@ -630,6 +564,9 @@
   <data name="label14.AutoSize" type="System.Boolean, mscorlib">
     <value>True</value>
   </data>
+  <data name="label14.ImeMode" type="System.Windows.Forms.ImeMode, System.Windows.Forms">
+    <value>NoControl</value>
+  </data>
   <data name="label14.Location" type="System.Drawing.Point, System.Drawing">
     <value>246, 183</value>
   </data>
@@ -654,89 +591,14 @@
   <data name="&gt;&gt;label14.ZOrder" xml:space="preserve">
     <value>38</value>
   </data>
-  <data name="mavlinkNumericUpDownRSM.Enabled" type="System.Boolean, mscorlib">
-    <value>False</value>
-  </data>
-  <data name="mavlinkNumericUpDownRSM.Location" type="System.Drawing.Point, System.Drawing">
-    <value>276, 181</value>
-  </data>
-  <data name="mavlinkNumericUpDownRSM.Size" type="System.Drawing.Size, System.Drawing">
-    <value>59, 20</value>
-  </data>
-  <data name="mavlinkNumericUpDownRSM.TabIndex" type="System.Int32, mscorlib">
-    <value>97</value>
-  </data>
-  <data name="&gt;&gt;mavlinkNumericUpDownRSM.Name" xml:space="preserve">
-    <value>mavlinkNumericUpDownRSM</value>
-  </data>
-  <data name="&gt;&gt;mavlinkNumericUpDownRSM.Type" xml:space="preserve">
-    <value>ArdupilotMega.Controls.MavlinkNumericUpDown, ArdupilotMegaPlanner10, Version=1.1.4638.35097, Culture=neutral, PublicKeyToken=null</value>
-  </data>
-  <data name="&gt;&gt;mavlinkNumericUpDownRSM.Parent" xml:space="preserve">
-    <value>$this</value>
-  </data>
-  <data name="&gt;&gt;mavlinkNumericUpDownRSM.ZOrder" xml:space="preserve">
-    <value>39</value>
-  </data>
-  <data name="mavlinkNumericUpDownRSMX.Enabled" type="System.Boolean, mscorlib">
-    <value>False</value>
-  </data>
-  <data name="mavlinkNumericUpDownRSMX.Location" type="System.Drawing.Point, System.Drawing">
-    <value>276, 207</value>
-  </data>
-  <data name="mavlinkNumericUpDownRSMX.Size" type="System.Drawing.Size, System.Drawing">
-    <value>59, 20</value>
-  </data>
-  <data name="mavlinkNumericUpDownRSMX.TabIndex" type="System.Int32, mscorlib">
-    <value>96</value>
-  </data>
-  <data name="&gt;&gt;mavlinkNumericUpDownRSMX.Name" xml:space="preserve">
-    <value>mavlinkNumericUpDownRSMX</value>
-  </data>
-  <data name="&gt;&gt;mavlinkNumericUpDownRSMX.Type" xml:space="preserve">
-    <value>ArdupilotMega.Controls.MavlinkNumericUpDown, ArdupilotMegaPlanner10, Version=1.1.4638.35097, Culture=neutral, PublicKeyToken=null</value>
-  </data>
-  <data name="&gt;&gt;mavlinkNumericUpDownRSMX.Parent" xml:space="preserve">
-    <value>$this</value>
-  </data>
-  <data name="&gt;&gt;mavlinkNumericUpDownRSMX.ZOrder" xml:space="preserve">
-    <value>40</value>
-  </data>
-  <data name="mavlinkCheckBoxRR.AutoSize" type="System.Boolean, mscorlib">
-    <value>True</value>
-  </data>
-  <data name="mavlinkCheckBoxRR.Enabled" type="System.Boolean, mscorlib">
-    <value>False</value>
-  </data>
-  <data name="mavlinkCheckBoxRR.Location" type="System.Drawing.Point, System.Drawing">
-    <value>267, 233</value>
-  </data>
-  <data name="mavlinkCheckBoxRR.Size" type="System.Drawing.Size, System.Drawing">
-    <value>66, 17</value>
-  </data>
-  <data name="mavlinkCheckBoxRR.TabIndex" type="System.Int32, mscorlib">
-    <value>95</value>
-  </data>
-  <data name="mavlinkCheckBoxRR.Text" xml:space="preserve">
-    <value>Reverse</value>
-  </data>
-  <data name="&gt;&gt;mavlinkCheckBoxRR.Name" xml:space="preserve">
-    <value>mavlinkCheckBoxRR</value>
-  </data>
-  <data name="&gt;&gt;mavlinkCheckBoxRR.Type" xml:space="preserve">
-    <value>ArdupilotMega.Controls.MavlinkCheckBox, ArdupilotMegaPlanner10, Version=1.1.4638.35097, Culture=neutral, PublicKeyToken=null</value>
-  </data>
-  <data name="&gt;&gt;mavlinkCheckBoxRR.Parent" xml:space="preserve">
-    <value>$this</value>
-  </data>
-  <data name="&gt;&gt;mavlinkCheckBoxRR.ZOrder" xml:space="preserve">
-    <value>41</value>
-  </data>
   <data name="label16.AutoSize" type="System.Boolean, mscorlib">
     <value>True</value>
   </data>
   <data name="label16.Font" type="System.Drawing.Font, System.Drawing">
     <value>Microsoft Sans Serif, 12pt</value>
+  </data>
+  <data name="label16.ImeMode" type="System.Windows.Forms.ImeMode, System.Windows.Forms">
+    <value>NoControl</value>
   </data>
   <data name="label16.Location" type="System.Drawing.Point, System.Drawing">
     <value>352, 282</value>
@@ -768,6 +630,9 @@
   <data name="label17.Font" type="System.Drawing.Font, System.Drawing">
     <value>Microsoft Sans Serif, 12pt</value>
   </data>
+  <data name="label17.ImeMode" type="System.Windows.Forms.ImeMode, System.Windows.Forms">
+    <value>NoControl</value>
+  </data>
   <data name="label17.Location" type="System.Drawing.Point, System.Drawing">
     <value>251, 282</value>
   </data>
@@ -794,6 +659,9 @@
   </data>
   <data name="label18.AutoSize" type="System.Boolean, mscorlib">
     <value>True</value>
+  </data>
+  <data name="label18.ImeMode" type="System.Windows.Forms.ImeMode, System.Windows.Forms">
+    <value>NoControl</value>
   </data>
   <data name="label18.Location" type="System.Drawing.Point, System.Drawing">
     <value>355, 335</value>
@@ -822,6 +690,9 @@
   <data name="label19.AutoSize" type="System.Boolean, mscorlib">
     <value>True</value>
   </data>
+  <data name="label19.ImeMode" type="System.Windows.Forms.ImeMode, System.Windows.Forms">
+    <value>NoControl</value>
+  </data>
   <data name="label19.Location" type="System.Drawing.Point, System.Drawing">
     <value>355, 307</value>
   </data>
@@ -846,56 +717,11 @@
   <data name="&gt;&gt;label19.ZOrder" xml:space="preserve">
     <value>23</value>
   </data>
-  <data name="mavlinkNumericUpDownPAM.Enabled" type="System.Boolean, mscorlib">
-    <value>False</value>
-  </data>
-  <data name="mavlinkNumericUpDownPAM.Location" type="System.Drawing.Point, System.Drawing">
-    <value>385, 305</value>
-  </data>
-  <data name="mavlinkNumericUpDownPAM.Size" type="System.Drawing.Size, System.Drawing">
-    <value>59, 20</value>
-  </data>
-  <data name="mavlinkNumericUpDownPAM.TabIndex" type="System.Int32, mscorlib">
-    <value>112</value>
-  </data>
-  <data name="&gt;&gt;mavlinkNumericUpDownPAM.Name" xml:space="preserve">
-    <value>mavlinkNumericUpDownPAM</value>
-  </data>
-  <data name="&gt;&gt;mavlinkNumericUpDownPAM.Type" xml:space="preserve">
-    <value>ArdupilotMega.Controls.MavlinkNumericUpDown, ArdupilotMegaPlanner10, Version=1.1.4638.35097, Culture=neutral, PublicKeyToken=null</value>
-  </data>
-  <data name="&gt;&gt;mavlinkNumericUpDownPAM.Parent" xml:space="preserve">
-    <value>$this</value>
-  </data>
-  <data name="&gt;&gt;mavlinkNumericUpDownPAM.ZOrder" xml:space="preserve">
-    <value>24</value>
-  </data>
-  <data name="mavlinkNumericUpDownPAMX.Enabled" type="System.Boolean, mscorlib">
-    <value>False</value>
-  </data>
-  <data name="mavlinkNumericUpDownPAMX.Location" type="System.Drawing.Point, System.Drawing">
-    <value>385, 331</value>
-  </data>
-  <data name="mavlinkNumericUpDownPAMX.Size" type="System.Drawing.Size, System.Drawing">
-    <value>59, 20</value>
-  </data>
-  <data name="mavlinkNumericUpDownPAMX.TabIndex" type="System.Int32, mscorlib">
-    <value>111</value>
-  </data>
-  <data name="&gt;&gt;mavlinkNumericUpDownPAMX.Name" xml:space="preserve">
-    <value>mavlinkNumericUpDownPAMX</value>
-  </data>
-  <data name="&gt;&gt;mavlinkNumericUpDownPAMX.Type" xml:space="preserve">
-    <value>ArdupilotMega.Controls.MavlinkNumericUpDown, ArdupilotMegaPlanner10, Version=1.1.4638.35097, Culture=neutral, PublicKeyToken=null</value>
-  </data>
-  <data name="&gt;&gt;mavlinkNumericUpDownPAMX.Parent" xml:space="preserve">
-    <value>$this</value>
-  </data>
-  <data name="&gt;&gt;mavlinkNumericUpDownPAMX.ZOrder" xml:space="preserve">
-    <value>25</value>
-  </data>
   <data name="label20.AutoSize" type="System.Boolean, mscorlib">
     <value>True</value>
+  </data>
+  <data name="label20.ImeMode" type="System.Windows.Forms.ImeMode, System.Windows.Forms">
+    <value>NoControl</value>
   </data>
   <data name="label20.Location" type="System.Drawing.Point, System.Drawing">
     <value>246, 335</value>
@@ -924,6 +750,9 @@
   <data name="label21.AutoSize" type="System.Boolean, mscorlib">
     <value>True</value>
   </data>
+  <data name="label21.ImeMode" type="System.Windows.Forms.ImeMode, System.Windows.Forms">
+    <value>NoControl</value>
+  </data>
   <data name="label21.Location" type="System.Drawing.Point, System.Drawing">
     <value>246, 307</value>
   </data>
@@ -948,89 +777,14 @@
   <data name="&gt;&gt;label21.ZOrder" xml:space="preserve">
     <value>27</value>
   </data>
-  <data name="mavlinkNumericUpDownPSM.Enabled" type="System.Boolean, mscorlib">
-    <value>False</value>
-  </data>
-  <data name="mavlinkNumericUpDownPSM.Location" type="System.Drawing.Point, System.Drawing">
-    <value>276, 305</value>
-  </data>
-  <data name="mavlinkNumericUpDownPSM.Size" type="System.Drawing.Size, System.Drawing">
-    <value>59, 20</value>
-  </data>
-  <data name="mavlinkNumericUpDownPSM.TabIndex" type="System.Int32, mscorlib">
-    <value>108</value>
-  </data>
-  <data name="&gt;&gt;mavlinkNumericUpDownPSM.Name" xml:space="preserve">
-    <value>mavlinkNumericUpDownPSM</value>
-  </data>
-  <data name="&gt;&gt;mavlinkNumericUpDownPSM.Type" xml:space="preserve">
-    <value>ArdupilotMega.Controls.MavlinkNumericUpDown, ArdupilotMegaPlanner10, Version=1.1.4638.35097, Culture=neutral, PublicKeyToken=null</value>
-  </data>
-  <data name="&gt;&gt;mavlinkNumericUpDownPSM.Parent" xml:space="preserve">
-    <value>$this</value>
-  </data>
-  <data name="&gt;&gt;mavlinkNumericUpDownPSM.ZOrder" xml:space="preserve">
-    <value>28</value>
-  </data>
-  <data name="mavlinkNumericUpDownPSMX.Enabled" type="System.Boolean, mscorlib">
-    <value>False</value>
-  </data>
-  <data name="mavlinkNumericUpDownPSMX.Location" type="System.Drawing.Point, System.Drawing">
-    <value>276, 331</value>
-  </data>
-  <data name="mavlinkNumericUpDownPSMX.Size" type="System.Drawing.Size, System.Drawing">
-    <value>59, 20</value>
-  </data>
-  <data name="mavlinkNumericUpDownPSMX.TabIndex" type="System.Int32, mscorlib">
-    <value>107</value>
-  </data>
-  <data name="&gt;&gt;mavlinkNumericUpDownPSMX.Name" xml:space="preserve">
-    <value>mavlinkNumericUpDownPSMX</value>
-  </data>
-  <data name="&gt;&gt;mavlinkNumericUpDownPSMX.Type" xml:space="preserve">
-    <value>ArdupilotMega.Controls.MavlinkNumericUpDown, ArdupilotMegaPlanner10, Version=1.1.4638.35097, Culture=neutral, PublicKeyToken=null</value>
-  </data>
-  <data name="&gt;&gt;mavlinkNumericUpDownPSMX.Parent" xml:space="preserve">
-    <value>$this</value>
-  </data>
-  <data name="&gt;&gt;mavlinkNumericUpDownPSMX.ZOrder" xml:space="preserve">
-    <value>29</value>
-  </data>
-  <data name="mavlinkCheckBoxPR.AutoSize" type="System.Boolean, mscorlib">
-    <value>True</value>
-  </data>
-  <data name="mavlinkCheckBoxPR.Enabled" type="System.Boolean, mscorlib">
-    <value>False</value>
-  </data>
-  <data name="mavlinkCheckBoxPR.Location" type="System.Drawing.Point, System.Drawing">
-    <value>267, 357</value>
-  </data>
-  <data name="mavlinkCheckBoxPR.Size" type="System.Drawing.Size, System.Drawing">
-    <value>66, 17</value>
-  </data>
-  <data name="mavlinkCheckBoxPR.TabIndex" type="System.Int32, mscorlib">
-    <value>106</value>
-  </data>
-  <data name="mavlinkCheckBoxPR.Text" xml:space="preserve">
-    <value>Reverse</value>
-  </data>
-  <data name="&gt;&gt;mavlinkCheckBoxPR.Name" xml:space="preserve">
-    <value>mavlinkCheckBoxPR</value>
-  </data>
-  <data name="&gt;&gt;mavlinkCheckBoxPR.Type" xml:space="preserve">
-    <value>ArdupilotMega.Controls.MavlinkCheckBox, ArdupilotMegaPlanner10, Version=1.1.4638.35097, Culture=neutral, PublicKeyToken=null</value>
-  </data>
-  <data name="&gt;&gt;mavlinkCheckBoxPR.Parent" xml:space="preserve">
-    <value>$this</value>
-  </data>
-  <data name="&gt;&gt;mavlinkCheckBoxPR.ZOrder" xml:space="preserve">
-    <value>30</value>
-  </data>
   <data name="label1.AutoSize" type="System.Boolean, mscorlib">
     <value>True</value>
   </data>
   <data name="label1.Font" type="System.Drawing.Font, System.Drawing">
     <value>Microsoft Sans Serif, 12pt</value>
+  </data>
+  <data name="label1.ImeMode" type="System.Windows.Forms.ImeMode, System.Windows.Forms">
+    <value>NoControl</value>
   </data>
   <data name="label1.Location" type="System.Drawing.Point, System.Drawing">
     <value>352, 31</value>
@@ -1062,6 +816,9 @@
   <data name="label2.Font" type="System.Drawing.Font, System.Drawing">
     <value>Microsoft Sans Serif, 12pt</value>
   </data>
+  <data name="label2.ImeMode" type="System.Windows.Forms.ImeMode, System.Windows.Forms">
+    <value>NoControl</value>
+  </data>
   <data name="label2.Location" type="System.Drawing.Point, System.Drawing">
     <value>251, 31</value>
   </data>
@@ -1088,6 +845,9 @@
   </data>
   <data name="label3.AutoSize" type="System.Boolean, mscorlib">
     <value>True</value>
+  </data>
+  <data name="label3.ImeMode" type="System.Windows.Forms.ImeMode, System.Windows.Forms">
+    <value>NoControl</value>
   </data>
   <data name="label3.Location" type="System.Drawing.Point, System.Drawing">
     <value>355, 84</value>
@@ -1116,6 +876,9 @@
   <data name="label4.AutoSize" type="System.Boolean, mscorlib">
     <value>True</value>
   </data>
+  <data name="label4.ImeMode" type="System.Windows.Forms.ImeMode, System.Windows.Forms">
+    <value>NoControl</value>
+  </data>
   <data name="label4.Location" type="System.Drawing.Point, System.Drawing">
     <value>355, 56</value>
   </data>
@@ -1140,56 +903,11 @@
   <data name="&gt;&gt;label4.ZOrder" xml:space="preserve">
     <value>12</value>
   </data>
-  <data name="mavlinkNumericUpDownTAM.Enabled" type="System.Boolean, mscorlib">
-    <value>False</value>
-  </data>
-  <data name="mavlinkNumericUpDownTAM.Location" type="System.Drawing.Point, System.Drawing">
-    <value>385, 54</value>
-  </data>
-  <data name="mavlinkNumericUpDownTAM.Size" type="System.Drawing.Size, System.Drawing">
-    <value>59, 20</value>
-  </data>
-  <data name="mavlinkNumericUpDownTAM.TabIndex" type="System.Int32, mscorlib">
-    <value>123</value>
-  </data>
-  <data name="&gt;&gt;mavlinkNumericUpDownTAM.Name" xml:space="preserve">
-    <value>mavlinkNumericUpDownTAM</value>
-  </data>
-  <data name="&gt;&gt;mavlinkNumericUpDownTAM.Type" xml:space="preserve">
-    <value>ArdupilotMega.Controls.MavlinkNumericUpDown, ArdupilotMegaPlanner10, Version=1.1.4638.35097, Culture=neutral, PublicKeyToken=null</value>
-  </data>
-  <data name="&gt;&gt;mavlinkNumericUpDownTAM.Parent" xml:space="preserve">
-    <value>$this</value>
-  </data>
-  <data name="&gt;&gt;mavlinkNumericUpDownTAM.ZOrder" xml:space="preserve">
-    <value>13</value>
-  </data>
-  <data name="mavlinkNumericUpDownTAMX.Enabled" type="System.Boolean, mscorlib">
-    <value>False</value>
-  </data>
-  <data name="mavlinkNumericUpDownTAMX.Location" type="System.Drawing.Point, System.Drawing">
-    <value>385, 80</value>
-  </data>
-  <data name="mavlinkNumericUpDownTAMX.Size" type="System.Drawing.Size, System.Drawing">
-    <value>59, 20</value>
-  </data>
-  <data name="mavlinkNumericUpDownTAMX.TabIndex" type="System.Int32, mscorlib">
-    <value>122</value>
-  </data>
-  <data name="&gt;&gt;mavlinkNumericUpDownTAMX.Name" xml:space="preserve">
-    <value>mavlinkNumericUpDownTAMX</value>
-  </data>
-  <data name="&gt;&gt;mavlinkNumericUpDownTAMX.Type" xml:space="preserve">
-    <value>ArdupilotMega.Controls.MavlinkNumericUpDown, ArdupilotMegaPlanner10, Version=1.1.4638.35097, Culture=neutral, PublicKeyToken=null</value>
-  </data>
-  <data name="&gt;&gt;mavlinkNumericUpDownTAMX.Parent" xml:space="preserve">
-    <value>$this</value>
-  </data>
-  <data name="&gt;&gt;mavlinkNumericUpDownTAMX.ZOrder" xml:space="preserve">
-    <value>14</value>
-  </data>
   <data name="label7.AutoSize" type="System.Boolean, mscorlib">
     <value>True</value>
+  </data>
+  <data name="label7.ImeMode" type="System.Windows.Forms.ImeMode, System.Windows.Forms">
+    <value>NoControl</value>
   </data>
   <data name="label7.Location" type="System.Drawing.Point, System.Drawing">
     <value>246, 84</value>
@@ -1218,6 +936,9 @@
   <data name="label8.AutoSize" type="System.Boolean, mscorlib">
     <value>True</value>
   </data>
+  <data name="label8.ImeMode" type="System.Windows.Forms.ImeMode, System.Windows.Forms">
+    <value>NoControl</value>
+  </data>
   <data name="label8.Location" type="System.Drawing.Point, System.Drawing">
     <value>246, 56</value>
   </data>
@@ -1241,84 +962,6 @@
   </data>
   <data name="&gt;&gt;label8.ZOrder" xml:space="preserve">
     <value>16</value>
-  </data>
-  <data name="mavlinkNumericUpDownTSM.Enabled" type="System.Boolean, mscorlib">
-    <value>False</value>
-  </data>
-  <data name="mavlinkNumericUpDownTSM.Location" type="System.Drawing.Point, System.Drawing">
-    <value>276, 54</value>
-  </data>
-  <data name="mavlinkNumericUpDownTSM.Size" type="System.Drawing.Size, System.Drawing">
-    <value>59, 20</value>
-  </data>
-  <data name="mavlinkNumericUpDownTSM.TabIndex" type="System.Int32, mscorlib">
-    <value>119</value>
-  </data>
-  <data name="&gt;&gt;mavlinkNumericUpDownTSM.Name" xml:space="preserve">
-    <value>mavlinkNumericUpDownTSM</value>
-  </data>
-  <data name="&gt;&gt;mavlinkNumericUpDownTSM.Type" xml:space="preserve">
-    <value>ArdupilotMega.Controls.MavlinkNumericUpDown, ArdupilotMegaPlanner10, Version=1.1.4638.35097, Culture=neutral, PublicKeyToken=null</value>
-  </data>
-  <data name="&gt;&gt;mavlinkNumericUpDownTSM.Parent" xml:space="preserve">
-    <value>$this</value>
-  </data>
-  <data name="&gt;&gt;mavlinkNumericUpDownTSM.ZOrder" xml:space="preserve">
-    <value>17</value>
-  </data>
-  <data name="mavlinkNumericUpDownTSMX.Enabled" type="System.Boolean, mscorlib">
-    <value>False</value>
-  </data>
-  <data name="mavlinkNumericUpDownTSMX.Location" type="System.Drawing.Point, System.Drawing">
-    <value>276, 80</value>
-  </data>
-  <data name="mavlinkNumericUpDownTSMX.Size" type="System.Drawing.Size, System.Drawing">
-    <value>59, 20</value>
-  </data>
-  <data name="mavlinkNumericUpDownTSMX.TabIndex" type="System.Int32, mscorlib">
-    <value>118</value>
-  </data>
-  <data name="&gt;&gt;mavlinkNumericUpDownTSMX.Name" xml:space="preserve">
-    <value>mavlinkNumericUpDownTSMX</value>
-  </data>
-  <data name="&gt;&gt;mavlinkNumericUpDownTSMX.Type" xml:space="preserve">
-    <value>ArdupilotMega.Controls.MavlinkNumericUpDown, ArdupilotMegaPlanner10, Version=1.1.4638.35097, Culture=neutral, PublicKeyToken=null</value>
-  </data>
-  <data name="&gt;&gt;mavlinkNumericUpDownTSMX.Parent" xml:space="preserve">
-    <value>$this</value>
-  </data>
-  <data name="&gt;&gt;mavlinkNumericUpDownTSMX.ZOrder" xml:space="preserve">
-    <value>18</value>
-  </data>
-  <data name="mavlinkCheckBoxTR.AutoSize" type="System.Boolean, mscorlib">
-    <value>True</value>
-  </data>
-  <data name="mavlinkCheckBoxTR.Enabled" type="System.Boolean, mscorlib">
-    <value>False</value>
-  </data>
-  <data name="mavlinkCheckBoxTR.Location" type="System.Drawing.Point, System.Drawing">
-    <value>267, 106</value>
-  </data>
-  <data name="mavlinkCheckBoxTR.Size" type="System.Drawing.Size, System.Drawing">
-    <value>66, 17</value>
-  </data>
-  <data name="mavlinkCheckBoxTR.TabIndex" type="System.Int32, mscorlib">
-    <value>117</value>
-  </data>
-  <data name="mavlinkCheckBoxTR.Text" xml:space="preserve">
-    <value>Reverse</value>
-  </data>
-  <data name="&gt;&gt;mavlinkCheckBoxTR.Name" xml:space="preserve">
-    <value>mavlinkCheckBoxTR</value>
-  </data>
-  <data name="&gt;&gt;mavlinkCheckBoxTR.Type" xml:space="preserve">
-    <value>ArdupilotMega.Controls.MavlinkCheckBox, ArdupilotMegaPlanner10, Version=1.1.4638.35097, Culture=neutral, PublicKeyToken=null</value>
-  </data>
-  <data name="&gt;&gt;mavlinkCheckBoxTR.Parent" xml:space="preserve">
-    <value>$this</value>
-  </data>
-  <data name="&gt;&gt;mavlinkCheckBoxTR.ZOrder" xml:space="preserve">
-    <value>19</value>
   </data>
   <data name="mavlinkComboBoxTilt.Location" type="System.Drawing.Point, System.Drawing">
     <value>71, 3</value>
@@ -1383,35 +1026,14 @@
   <data name="&gt;&gt;mavlinkComboBoxPan.ZOrder" xml:space="preserve">
     <value>6</value>
   </data>
-  <data name="CMB_inputch_tilt.Enabled" type="System.Boolean, mscorlib">
-    <value>False</value>
-  </data>
-  <data name="CMB_inputch_tilt.Location" type="System.Drawing.Point, System.Drawing">
-    <value>450, 54</value>
-  </data>
-  <data name="CMB_inputch_tilt.Size" type="System.Drawing.Size, System.Drawing">
-    <value>83, 21</value>
-  </data>
-  <data name="CMB_inputch_tilt.TabIndex" type="System.Int32, mscorlib">
-    <value>131</value>
-  </data>
-  <data name="&gt;&gt;CMB_inputch_tilt.Name" xml:space="preserve">
-    <value>CMB_inputch_tilt</value>
-  </data>
-  <data name="&gt;&gt;CMB_inputch_tilt.Type" xml:space="preserve">
-    <value>ArdupilotMega.Controls.MavlinkComboBox, ArdupilotMegaPlanner10, Version=1.1.4638.35097, Culture=neutral, PublicKeyToken=null</value>
-  </data>
-  <data name="&gt;&gt;CMB_inputch_tilt.Parent" xml:space="preserve">
-    <value>$this</value>
-  </data>
-  <data name="&gt;&gt;CMB_inputch_tilt.ZOrder" xml:space="preserve">
-    <value>5</value>
-  </data>
   <data name="label22.AutoSize" type="System.Boolean, mscorlib">
     <value>True</value>
   </data>
   <data name="label22.Font" type="System.Drawing.Font, System.Drawing">
     <value>Microsoft Sans Serif, 12pt</value>
+  </data>
+  <data name="label22.ImeMode" type="System.Windows.Forms.ImeMode, System.Windows.Forms">
+    <value>NoControl</value>
   </data>
   <data name="label22.Location" type="System.Drawing.Point, System.Drawing">
     <value>453, 31</value>
@@ -1443,6 +1065,9 @@
   <data name="label23.Font" type="System.Drawing.Font, System.Drawing">
     <value>Microsoft Sans Serif, 12pt</value>
   </data>
+  <data name="label23.ImeMode" type="System.Windows.Forms.ImeMode, System.Windows.Forms">
+    <value>NoControl</value>
+  </data>
   <data name="label23.Location" type="System.Drawing.Point, System.Drawing">
     <value>453, 158</value>
   </data>
@@ -1467,35 +1092,14 @@
   <data name="&gt;&gt;label23.ZOrder" xml:space="preserve">
     <value>2</value>
   </data>
-  <data name="CMB_inputch_roll.Enabled" type="System.Boolean, mscorlib">
-    <value>False</value>
-  </data>
-  <data name="CMB_inputch_roll.Location" type="System.Drawing.Point, System.Drawing">
-    <value>450, 181</value>
-  </data>
-  <data name="CMB_inputch_roll.Size" type="System.Drawing.Size, System.Drawing">
-    <value>83, 21</value>
-  </data>
-  <data name="CMB_inputch_roll.TabIndex" type="System.Int32, mscorlib">
-    <value>133</value>
-  </data>
-  <data name="&gt;&gt;CMB_inputch_roll.Name" xml:space="preserve">
-    <value>CMB_inputch_roll</value>
-  </data>
-  <data name="&gt;&gt;CMB_inputch_roll.Type" xml:space="preserve">
-    <value>ArdupilotMega.Controls.MavlinkComboBox, ArdupilotMegaPlanner10, Version=1.1.4638.35097, Culture=neutral, PublicKeyToken=null</value>
-  </data>
-  <data name="&gt;&gt;CMB_inputch_roll.Parent" xml:space="preserve">
-    <value>$this</value>
-  </data>
-  <data name="&gt;&gt;CMB_inputch_roll.ZOrder" xml:space="preserve">
-    <value>3</value>
-  </data>
   <data name="label24.AutoSize" type="System.Boolean, mscorlib">
     <value>True</value>
   </data>
   <data name="label24.Font" type="System.Drawing.Font, System.Drawing">
     <value>Microsoft Sans Serif, 12pt</value>
+  </data>
+  <data name="label24.ImeMode" type="System.Windows.Forms.ImeMode, System.Windows.Forms">
+    <value>NoControl</value>
   </data>
   <data name="label24.Location" type="System.Drawing.Point, System.Drawing">
     <value>453, 282</value>
@@ -1537,13 +1141,508 @@
     <value>CMB_inputch_pan</value>
   </data>
   <data name="&gt;&gt;CMB_inputch_pan.Type" xml:space="preserve">
-    <value>ArdupilotMega.Controls.MavlinkComboBox, ArdupilotMegaPlanner10, Version=1.1.4638.35097, Culture=neutral, PublicKeyToken=null</value>
+    <value>ArdupilotMega.Controls.MavlinkComboBox, ArdupilotMegaPlanner10, Version=1.1.4695.13950, Culture=neutral, PublicKeyToken=null</value>
   </data>
   <data name="&gt;&gt;CMB_inputch_pan.Parent" xml:space="preserve">
     <value>$this</value>
   </data>
   <data name="&gt;&gt;CMB_inputch_pan.ZOrder" xml:space="preserve">
     <value>1</value>
+  </data>
+  <data name="CMB_inputch_roll.Enabled" type="System.Boolean, mscorlib">
+    <value>False</value>
+  </data>
+  <data name="CMB_inputch_roll.Location" type="System.Drawing.Point, System.Drawing">
+    <value>450, 181</value>
+  </data>
+  <data name="CMB_inputch_roll.Size" type="System.Drawing.Size, System.Drawing">
+    <value>83, 21</value>
+  </data>
+  <data name="CMB_inputch_roll.TabIndex" type="System.Int32, mscorlib">
+    <value>133</value>
+  </data>
+  <data name="&gt;&gt;CMB_inputch_roll.Name" xml:space="preserve">
+    <value>CMB_inputch_roll</value>
+  </data>
+  <data name="&gt;&gt;CMB_inputch_roll.Type" xml:space="preserve">
+    <value>ArdupilotMega.Controls.MavlinkComboBox, ArdupilotMegaPlanner10, Version=1.1.4695.13950, Culture=neutral, PublicKeyToken=null</value>
+  </data>
+  <data name="&gt;&gt;CMB_inputch_roll.Parent" xml:space="preserve">
+    <value>$this</value>
+  </data>
+  <data name="&gt;&gt;CMB_inputch_roll.ZOrder" xml:space="preserve">
+    <value>3</value>
+  </data>
+  <data name="CMB_inputch_tilt.Enabled" type="System.Boolean, mscorlib">
+    <value>False</value>
+  </data>
+  <data name="CMB_inputch_tilt.Location" type="System.Drawing.Point, System.Drawing">
+    <value>450, 54</value>
+  </data>
+  <data name="CMB_inputch_tilt.Size" type="System.Drawing.Size, System.Drawing">
+    <value>83, 21</value>
+  </data>
+  <data name="CMB_inputch_tilt.TabIndex" type="System.Int32, mscorlib">
+    <value>131</value>
+  </data>
+  <data name="&gt;&gt;CMB_inputch_tilt.Name" xml:space="preserve">
+    <value>CMB_inputch_tilt</value>
+  </data>
+  <data name="&gt;&gt;CMB_inputch_tilt.Type" xml:space="preserve">
+    <value>ArdupilotMega.Controls.MavlinkComboBox, ArdupilotMegaPlanner10, Version=1.1.4695.13950, Culture=neutral, PublicKeyToken=null</value>
+  </data>
+  <data name="&gt;&gt;CMB_inputch_tilt.Parent" xml:space="preserve">
+    <value>$this</value>
+  </data>
+  <data name="&gt;&gt;CMB_inputch_tilt.ZOrder" xml:space="preserve">
+    <value>5</value>
+  </data>
+  <data name="mavlinkNumericUpDownTAM.Enabled" type="System.Boolean, mscorlib">
+    <value>False</value>
+  </data>
+  <data name="mavlinkNumericUpDownTAM.Location" type="System.Drawing.Point, System.Drawing">
+    <value>385, 54</value>
+  </data>
+  <data name="mavlinkNumericUpDownTAM.Size" type="System.Drawing.Size, System.Drawing">
+    <value>59, 20</value>
+  </data>
+  <data name="mavlinkNumericUpDownTAM.TabIndex" type="System.Int32, mscorlib">
+    <value>123</value>
+  </data>
+  <data name="&gt;&gt;mavlinkNumericUpDownTAM.Name" xml:space="preserve">
+    <value>mavlinkNumericUpDownTAM</value>
+  </data>
+  <data name="&gt;&gt;mavlinkNumericUpDownTAM.Type" xml:space="preserve">
+    <value>ArdupilotMega.Controls.MavlinkNumericUpDown, ArdupilotMegaPlanner10, Version=1.1.4695.13950, Culture=neutral, PublicKeyToken=null</value>
+  </data>
+  <data name="&gt;&gt;mavlinkNumericUpDownTAM.Parent" xml:space="preserve">
+    <value>$this</value>
+  </data>
+  <data name="&gt;&gt;mavlinkNumericUpDownTAM.ZOrder" xml:space="preserve">
+    <value>13</value>
+  </data>
+  <data name="mavlinkNumericUpDownTAMX.Enabled" type="System.Boolean, mscorlib">
+    <value>False</value>
+  </data>
+  <data name="mavlinkNumericUpDownTAMX.Location" type="System.Drawing.Point, System.Drawing">
+    <value>385, 80</value>
+  </data>
+  <data name="mavlinkNumericUpDownTAMX.Size" type="System.Drawing.Size, System.Drawing">
+    <value>59, 20</value>
+  </data>
+  <data name="mavlinkNumericUpDownTAMX.TabIndex" type="System.Int32, mscorlib">
+    <value>122</value>
+  </data>
+  <data name="&gt;&gt;mavlinkNumericUpDownTAMX.Name" xml:space="preserve">
+    <value>mavlinkNumericUpDownTAMX</value>
+  </data>
+  <data name="&gt;&gt;mavlinkNumericUpDownTAMX.Type" xml:space="preserve">
+    <value>ArdupilotMega.Controls.MavlinkNumericUpDown, ArdupilotMegaPlanner10, Version=1.1.4695.13950, Culture=neutral, PublicKeyToken=null</value>
+  </data>
+  <data name="&gt;&gt;mavlinkNumericUpDownTAMX.Parent" xml:space="preserve">
+    <value>$this</value>
+  </data>
+  <data name="&gt;&gt;mavlinkNumericUpDownTAMX.ZOrder" xml:space="preserve">
+    <value>14</value>
+  </data>
+  <data name="mavlinkNumericUpDownTSM.Enabled" type="System.Boolean, mscorlib">
+    <value>False</value>
+  </data>
+  <data name="mavlinkNumericUpDownTSM.Location" type="System.Drawing.Point, System.Drawing">
+    <value>276, 54</value>
+  </data>
+  <data name="mavlinkNumericUpDownTSM.Size" type="System.Drawing.Size, System.Drawing">
+    <value>59, 20</value>
+  </data>
+  <data name="mavlinkNumericUpDownTSM.TabIndex" type="System.Int32, mscorlib">
+    <value>119</value>
+  </data>
+  <data name="&gt;&gt;mavlinkNumericUpDownTSM.Name" xml:space="preserve">
+    <value>mavlinkNumericUpDownTSM</value>
+  </data>
+  <data name="&gt;&gt;mavlinkNumericUpDownTSM.Type" xml:space="preserve">
+    <value>ArdupilotMega.Controls.MavlinkNumericUpDown, ArdupilotMegaPlanner10, Version=1.1.4695.13950, Culture=neutral, PublicKeyToken=null</value>
+  </data>
+  <data name="&gt;&gt;mavlinkNumericUpDownTSM.Parent" xml:space="preserve">
+    <value>$this</value>
+  </data>
+  <data name="&gt;&gt;mavlinkNumericUpDownTSM.ZOrder" xml:space="preserve">
+    <value>17</value>
+  </data>
+  <data name="mavlinkNumericUpDownTSMX.Enabled" type="System.Boolean, mscorlib">
+    <value>False</value>
+  </data>
+  <data name="mavlinkNumericUpDownTSMX.Location" type="System.Drawing.Point, System.Drawing">
+    <value>276, 80</value>
+  </data>
+  <data name="mavlinkNumericUpDownTSMX.Size" type="System.Drawing.Size, System.Drawing">
+    <value>59, 20</value>
+  </data>
+  <data name="mavlinkNumericUpDownTSMX.TabIndex" type="System.Int32, mscorlib">
+    <value>118</value>
+  </data>
+  <data name="&gt;&gt;mavlinkNumericUpDownTSMX.Name" xml:space="preserve">
+    <value>mavlinkNumericUpDownTSMX</value>
+  </data>
+  <data name="&gt;&gt;mavlinkNumericUpDownTSMX.Type" xml:space="preserve">
+    <value>ArdupilotMega.Controls.MavlinkNumericUpDown, ArdupilotMegaPlanner10, Version=1.1.4695.13950, Culture=neutral, PublicKeyToken=null</value>
+  </data>
+  <data name="&gt;&gt;mavlinkNumericUpDownTSMX.Parent" xml:space="preserve">
+    <value>$this</value>
+  </data>
+  <data name="&gt;&gt;mavlinkNumericUpDownTSMX.ZOrder" xml:space="preserve">
+    <value>18</value>
+  </data>
+  <data name="mavlinkCheckBoxTR.AutoSize" type="System.Boolean, mscorlib">
+    <value>True</value>
+  </data>
+  <data name="mavlinkCheckBoxTR.Enabled" type="System.Boolean, mscorlib">
+    <value>False</value>
+  </data>
+  <data name="mavlinkCheckBoxTR.ImeMode" type="System.Windows.Forms.ImeMode, System.Windows.Forms">
+    <value>NoControl</value>
+  </data>
+  <data name="mavlinkCheckBoxTR.Location" type="System.Drawing.Point, System.Drawing">
+    <value>267, 106</value>
+  </data>
+  <data name="mavlinkCheckBoxTR.Size" type="System.Drawing.Size, System.Drawing">
+    <value>66, 17</value>
+  </data>
+  <data name="mavlinkCheckBoxTR.TabIndex" type="System.Int32, mscorlib">
+    <value>117</value>
+  </data>
+  <data name="mavlinkCheckBoxTR.Text" xml:space="preserve">
+    <value>Reverse</value>
+  </data>
+  <data name="&gt;&gt;mavlinkCheckBoxTR.Name" xml:space="preserve">
+    <value>mavlinkCheckBoxTR</value>
+  </data>
+  <data name="&gt;&gt;mavlinkCheckBoxTR.Type" xml:space="preserve">
+    <value>ArdupilotMega.Controls.MavlinkCheckBox, ArdupilotMegaPlanner10, Version=1.1.4695.13950, Culture=neutral, PublicKeyToken=null</value>
+  </data>
+  <data name="&gt;&gt;mavlinkCheckBoxTR.Parent" xml:space="preserve">
+    <value>$this</value>
+  </data>
+  <data name="&gt;&gt;mavlinkCheckBoxTR.ZOrder" xml:space="preserve">
+    <value>19</value>
+  </data>
+  <data name="mavlinkNumericUpDownPAM.Enabled" type="System.Boolean, mscorlib">
+    <value>False</value>
+  </data>
+  <data name="mavlinkNumericUpDownPAM.Location" type="System.Drawing.Point, System.Drawing">
+    <value>385, 305</value>
+  </data>
+  <data name="mavlinkNumericUpDownPAM.Size" type="System.Drawing.Size, System.Drawing">
+    <value>59, 20</value>
+  </data>
+  <data name="mavlinkNumericUpDownPAM.TabIndex" type="System.Int32, mscorlib">
+    <value>112</value>
+  </data>
+  <data name="&gt;&gt;mavlinkNumericUpDownPAM.Name" xml:space="preserve">
+    <value>mavlinkNumericUpDownPAM</value>
+  </data>
+  <data name="&gt;&gt;mavlinkNumericUpDownPAM.Type" xml:space="preserve">
+    <value>ArdupilotMega.Controls.MavlinkNumericUpDown, ArdupilotMegaPlanner10, Version=1.1.4695.13950, Culture=neutral, PublicKeyToken=null</value>
+  </data>
+  <data name="&gt;&gt;mavlinkNumericUpDownPAM.Parent" xml:space="preserve">
+    <value>$this</value>
+  </data>
+  <data name="&gt;&gt;mavlinkNumericUpDownPAM.ZOrder" xml:space="preserve">
+    <value>24</value>
+  </data>
+  <data name="mavlinkNumericUpDownPAMX.Enabled" type="System.Boolean, mscorlib">
+    <value>False</value>
+  </data>
+  <data name="mavlinkNumericUpDownPAMX.Location" type="System.Drawing.Point, System.Drawing">
+    <value>385, 331</value>
+  </data>
+  <data name="mavlinkNumericUpDownPAMX.Size" type="System.Drawing.Size, System.Drawing">
+    <value>59, 20</value>
+  </data>
+  <data name="mavlinkNumericUpDownPAMX.TabIndex" type="System.Int32, mscorlib">
+    <value>111</value>
+  </data>
+  <data name="&gt;&gt;mavlinkNumericUpDownPAMX.Name" xml:space="preserve">
+    <value>mavlinkNumericUpDownPAMX</value>
+  </data>
+  <data name="&gt;&gt;mavlinkNumericUpDownPAMX.Type" xml:space="preserve">
+    <value>ArdupilotMega.Controls.MavlinkNumericUpDown, ArdupilotMegaPlanner10, Version=1.1.4695.13950, Culture=neutral, PublicKeyToken=null</value>
+  </data>
+  <data name="&gt;&gt;mavlinkNumericUpDownPAMX.Parent" xml:space="preserve">
+    <value>$this</value>
+  </data>
+  <data name="&gt;&gt;mavlinkNumericUpDownPAMX.ZOrder" xml:space="preserve">
+    <value>25</value>
+  </data>
+  <data name="mavlinkNumericUpDownPSM.Enabled" type="System.Boolean, mscorlib">
+    <value>False</value>
+  </data>
+  <data name="mavlinkNumericUpDownPSM.Location" type="System.Drawing.Point, System.Drawing">
+    <value>276, 305</value>
+  </data>
+  <data name="mavlinkNumericUpDownPSM.Size" type="System.Drawing.Size, System.Drawing">
+    <value>59, 20</value>
+  </data>
+  <data name="mavlinkNumericUpDownPSM.TabIndex" type="System.Int32, mscorlib">
+    <value>108</value>
+  </data>
+  <data name="&gt;&gt;mavlinkNumericUpDownPSM.Name" xml:space="preserve">
+    <value>mavlinkNumericUpDownPSM</value>
+  </data>
+  <data name="&gt;&gt;mavlinkNumericUpDownPSM.Type" xml:space="preserve">
+    <value>ArdupilotMega.Controls.MavlinkNumericUpDown, ArdupilotMegaPlanner10, Version=1.1.4695.13950, Culture=neutral, PublicKeyToken=null</value>
+  </data>
+  <data name="&gt;&gt;mavlinkNumericUpDownPSM.Parent" xml:space="preserve">
+    <value>$this</value>
+  </data>
+  <data name="&gt;&gt;mavlinkNumericUpDownPSM.ZOrder" xml:space="preserve">
+    <value>28</value>
+  </data>
+  <data name="mavlinkNumericUpDownPSMX.Enabled" type="System.Boolean, mscorlib">
+    <value>False</value>
+  </data>
+  <data name="mavlinkNumericUpDownPSMX.Location" type="System.Drawing.Point, System.Drawing">
+    <value>276, 331</value>
+  </data>
+  <data name="mavlinkNumericUpDownPSMX.Size" type="System.Drawing.Size, System.Drawing">
+    <value>59, 20</value>
+  </data>
+  <data name="mavlinkNumericUpDownPSMX.TabIndex" type="System.Int32, mscorlib">
+    <value>107</value>
+  </data>
+  <data name="&gt;&gt;mavlinkNumericUpDownPSMX.Name" xml:space="preserve">
+    <value>mavlinkNumericUpDownPSMX</value>
+  </data>
+  <data name="&gt;&gt;mavlinkNumericUpDownPSMX.Type" xml:space="preserve">
+    <value>ArdupilotMega.Controls.MavlinkNumericUpDown, ArdupilotMegaPlanner10, Version=1.1.4695.13950, Culture=neutral, PublicKeyToken=null</value>
+  </data>
+  <data name="&gt;&gt;mavlinkNumericUpDownPSMX.Parent" xml:space="preserve">
+    <value>$this</value>
+  </data>
+  <data name="&gt;&gt;mavlinkNumericUpDownPSMX.ZOrder" xml:space="preserve">
+    <value>29</value>
+  </data>
+  <data name="mavlinkCheckBoxPR.AutoSize" type="System.Boolean, mscorlib">
+    <value>True</value>
+  </data>
+  <data name="mavlinkCheckBoxPR.Enabled" type="System.Boolean, mscorlib">
+    <value>False</value>
+  </data>
+  <data name="mavlinkCheckBoxPR.ImeMode" type="System.Windows.Forms.ImeMode, System.Windows.Forms">
+    <value>NoControl</value>
+  </data>
+  <data name="mavlinkCheckBoxPR.Location" type="System.Drawing.Point, System.Drawing">
+    <value>267, 357</value>
+  </data>
+  <data name="mavlinkCheckBoxPR.Size" type="System.Drawing.Size, System.Drawing">
+    <value>66, 17</value>
+  </data>
+  <data name="mavlinkCheckBoxPR.TabIndex" type="System.Int32, mscorlib">
+    <value>106</value>
+  </data>
+  <data name="mavlinkCheckBoxPR.Text" xml:space="preserve">
+    <value>Reverse</value>
+  </data>
+  <data name="&gt;&gt;mavlinkCheckBoxPR.Name" xml:space="preserve">
+    <value>mavlinkCheckBoxPR</value>
+  </data>
+  <data name="&gt;&gt;mavlinkCheckBoxPR.Type" xml:space="preserve">
+    <value>ArdupilotMega.Controls.MavlinkCheckBox, ArdupilotMegaPlanner10, Version=1.1.4695.13950, Culture=neutral, PublicKeyToken=null</value>
+  </data>
+  <data name="&gt;&gt;mavlinkCheckBoxPR.Parent" xml:space="preserve">
+    <value>$this</value>
+  </data>
+  <data name="&gt;&gt;mavlinkCheckBoxPR.ZOrder" xml:space="preserve">
+    <value>30</value>
+  </data>
+  <data name="mavlinkNumericUpDownRAM.Enabled" type="System.Boolean, mscorlib">
+    <value>False</value>
+  </data>
+  <data name="mavlinkNumericUpDownRAM.Location" type="System.Drawing.Point, System.Drawing">
+    <value>385, 181</value>
+  </data>
+  <data name="mavlinkNumericUpDownRAM.Size" type="System.Drawing.Size, System.Drawing">
+    <value>59, 20</value>
+  </data>
+  <data name="mavlinkNumericUpDownRAM.TabIndex" type="System.Int32, mscorlib">
+    <value>101</value>
+  </data>
+  <data name="&gt;&gt;mavlinkNumericUpDownRAM.Name" xml:space="preserve">
+    <value>mavlinkNumericUpDownRAM</value>
+  </data>
+  <data name="&gt;&gt;mavlinkNumericUpDownRAM.Type" xml:space="preserve">
+    <value>ArdupilotMega.Controls.MavlinkNumericUpDown, ArdupilotMegaPlanner10, Version=1.1.4695.13950, Culture=neutral, PublicKeyToken=null</value>
+  </data>
+  <data name="&gt;&gt;mavlinkNumericUpDownRAM.Parent" xml:space="preserve">
+    <value>$this</value>
+  </data>
+  <data name="&gt;&gt;mavlinkNumericUpDownRAM.ZOrder" xml:space="preserve">
+    <value>35</value>
+  </data>
+  <data name="mavlinkNumericUpDownRAMX.Enabled" type="System.Boolean, mscorlib">
+    <value>False</value>
+  </data>
+  <data name="mavlinkNumericUpDownRAMX.Location" type="System.Drawing.Point, System.Drawing">
+    <value>385, 207</value>
+  </data>
+  <data name="mavlinkNumericUpDownRAMX.Size" type="System.Drawing.Size, System.Drawing">
+    <value>59, 20</value>
+  </data>
+  <data name="mavlinkNumericUpDownRAMX.TabIndex" type="System.Int32, mscorlib">
+    <value>100</value>
+  </data>
+  <data name="&gt;&gt;mavlinkNumericUpDownRAMX.Name" xml:space="preserve">
+    <value>mavlinkNumericUpDownRAMX</value>
+  </data>
+  <data name="&gt;&gt;mavlinkNumericUpDownRAMX.Type" xml:space="preserve">
+    <value>ArdupilotMega.Controls.MavlinkNumericUpDown, ArdupilotMegaPlanner10, Version=1.1.4695.13950, Culture=neutral, PublicKeyToken=null</value>
+  </data>
+  <data name="&gt;&gt;mavlinkNumericUpDownRAMX.Parent" xml:space="preserve">
+    <value>$this</value>
+  </data>
+  <data name="&gt;&gt;mavlinkNumericUpDownRAMX.ZOrder" xml:space="preserve">
+    <value>36</value>
+  </data>
+  <data name="mavlinkNumericUpDownRSM.Enabled" type="System.Boolean, mscorlib">
+    <value>False</value>
+  </data>
+  <data name="mavlinkNumericUpDownRSM.Location" type="System.Drawing.Point, System.Drawing">
+    <value>276, 181</value>
+  </data>
+  <data name="mavlinkNumericUpDownRSM.Size" type="System.Drawing.Size, System.Drawing">
+    <value>59, 20</value>
+  </data>
+  <data name="mavlinkNumericUpDownRSM.TabIndex" type="System.Int32, mscorlib">
+    <value>97</value>
+  </data>
+  <data name="&gt;&gt;mavlinkNumericUpDownRSM.Name" xml:space="preserve">
+    <value>mavlinkNumericUpDownRSM</value>
+  </data>
+  <data name="&gt;&gt;mavlinkNumericUpDownRSM.Type" xml:space="preserve">
+    <value>ArdupilotMega.Controls.MavlinkNumericUpDown, ArdupilotMegaPlanner10, Version=1.1.4695.13950, Culture=neutral, PublicKeyToken=null</value>
+  </data>
+  <data name="&gt;&gt;mavlinkNumericUpDownRSM.Parent" xml:space="preserve">
+    <value>$this</value>
+  </data>
+  <data name="&gt;&gt;mavlinkNumericUpDownRSM.ZOrder" xml:space="preserve">
+    <value>39</value>
+  </data>
+  <data name="mavlinkNumericUpDownRSMX.Enabled" type="System.Boolean, mscorlib">
+    <value>False</value>
+  </data>
+  <data name="mavlinkNumericUpDownRSMX.Location" type="System.Drawing.Point, System.Drawing">
+    <value>276, 207</value>
+  </data>
+  <data name="mavlinkNumericUpDownRSMX.Size" type="System.Drawing.Size, System.Drawing">
+    <value>59, 20</value>
+  </data>
+  <data name="mavlinkNumericUpDownRSMX.TabIndex" type="System.Int32, mscorlib">
+    <value>96</value>
+  </data>
+  <data name="&gt;&gt;mavlinkNumericUpDownRSMX.Name" xml:space="preserve">
+    <value>mavlinkNumericUpDownRSMX</value>
+  </data>
+  <data name="&gt;&gt;mavlinkNumericUpDownRSMX.Type" xml:space="preserve">
+    <value>ArdupilotMega.Controls.MavlinkNumericUpDown, ArdupilotMegaPlanner10, Version=1.1.4695.13950, Culture=neutral, PublicKeyToken=null</value>
+  </data>
+  <data name="&gt;&gt;mavlinkNumericUpDownRSMX.Parent" xml:space="preserve">
+    <value>$this</value>
+  </data>
+  <data name="&gt;&gt;mavlinkNumericUpDownRSMX.ZOrder" xml:space="preserve">
+    <value>40</value>
+  </data>
+  <data name="mavlinkCheckBoxRR.AutoSize" type="System.Boolean, mscorlib">
+    <value>True</value>
+  </data>
+  <data name="mavlinkCheckBoxRR.Enabled" type="System.Boolean, mscorlib">
+    <value>False</value>
+  </data>
+  <data name="mavlinkCheckBoxRR.ImeMode" type="System.Windows.Forms.ImeMode, System.Windows.Forms">
+    <value>NoControl</value>
+  </data>
+  <data name="mavlinkCheckBoxRR.Location" type="System.Drawing.Point, System.Drawing">
+    <value>267, 233</value>
+  </data>
+  <data name="mavlinkCheckBoxRR.Size" type="System.Drawing.Size, System.Drawing">
+    <value>66, 17</value>
+  </data>
+  <data name="mavlinkCheckBoxRR.TabIndex" type="System.Int32, mscorlib">
+    <value>95</value>
+  </data>
+  <data name="mavlinkCheckBoxRR.Text" xml:space="preserve">
+    <value>Reverse</value>
+  </data>
+  <data name="&gt;&gt;mavlinkCheckBoxRR.Name" xml:space="preserve">
+    <value>mavlinkCheckBoxRR</value>
+  </data>
+  <data name="&gt;&gt;mavlinkCheckBoxRR.Type" xml:space="preserve">
+    <value>ArdupilotMega.Controls.MavlinkCheckBox, ArdupilotMegaPlanner10, Version=1.1.4695.13950, Culture=neutral, PublicKeyToken=null</value>
+  </data>
+  <data name="&gt;&gt;mavlinkCheckBoxRR.Parent" xml:space="preserve">
+    <value>$this</value>
+  </data>
+  <data name="&gt;&gt;mavlinkCheckBoxRR.ZOrder" xml:space="preserve">
+    <value>41</value>
+  </data>
+  <data name="LBL_Error.Anchor" type="System.Windows.Forms.AnchorStyles, System.Windows.Forms">
+    <value>Bottom, Left, Right</value>
+  </data>
+  <data name="LBL_Error.AutoSize" type="System.Boolean, mscorlib">
+    <value>True</value>
+  </data>
+  <data name="LBL_Error.ImeMode" type="System.Windows.Forms.ImeMode, System.Windows.Forms">
+    <value>NoControl</value>
+  </data>
+  <data name="LBL_Error.Location" type="System.Drawing.Point, System.Drawing">
+    <value>303, 402</value>
+  </data>
+  <data name="LBL_Error.Size" type="System.Drawing.Size, System.Drawing">
+    <value>138, 13</value>
+  </data>
+  <data name="LBL_Error.TabIndex" type="System.Int32, mscorlib">
+    <value>76</value>
+  </data>
+  <data name="LBL_Error.Text" xml:space="preserve">
+    <value>Error Message of some kind</value>
+  </data>
+  <data name="&gt;&gt;LBL_Error.Name" xml:space="preserve">
+    <value>LBL_Error</value>
+  </data>
+  <data name="&gt;&gt;LBL_Error.Type" xml:space="preserve">
+    <value>ArdupilotMega.Controls.LabelWithPseudoOpacity, ArdupilotMegaPlanner10, Version=1.1.4695.13950, Culture=neutral, PublicKeyToken=null</value>
+  </data>
+  <data name="&gt;&gt;LBL_Error.Parent" xml:space="preserve">
+    <value>$this</value>
+  </data>
+  <data name="&gt;&gt;LBL_Error.ZOrder" xml:space="preserve">
+    <value>46</value>
+  </data>
+  <data name="PBOX_WarningIcon.Anchor" type="System.Windows.Forms.AnchorStyles, System.Windows.Forms">
+    <value>Bottom, Left, Right</value>
+  </data>
+  <data name="PBOX_WarningIcon.ImeMode" type="System.Windows.Forms.ImeMode, System.Windows.Forms">
+    <value>NoControl</value>
+  </data>
+  <data name="PBOX_WarningIcon.Location" type="System.Drawing.Point, System.Drawing">
+    <value>264, 389</value>
+  </data>
+  <data name="PBOX_WarningIcon.Size" type="System.Drawing.Size, System.Drawing">
+    <value>32, 32</value>
+  </data>
+  <data name="PBOX_WarningIcon.TabIndex" type="System.Int32, mscorlib">
+    <value>75</value>
+  </data>
+  <data name="&gt;&gt;PBOX_WarningIcon.Name" xml:space="preserve">
+    <value>PBOX_WarningIcon</value>
+  </data>
+  <data name="&gt;&gt;PBOX_WarningIcon.Type" xml:space="preserve">
+    <value>ArdupilotMega.Controls.PictureBoxWithPseudoOpacity, ArdupilotMegaPlanner10, Version=1.1.4695.13950, Culture=neutral, PublicKeyToken=null</value>
+  </data>
+  <data name="&gt;&gt;PBOX_WarningIcon.Parent" xml:space="preserve">
+    <value>$this</value>
+  </data>
+  <data name="&gt;&gt;PBOX_WarningIcon.ZOrder" xml:space="preserve">
+    <value>47</value>
   </data>
   <metadata name="$this.Localizable" type="System.Boolean, mscorlib, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089">
     <value>True</value>

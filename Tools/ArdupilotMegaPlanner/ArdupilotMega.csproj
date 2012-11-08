@@ -391,6 +391,12 @@
     <Compile Include="GCSViews\ConfigurationView\ConfigFailSafe.Designer.cs">
       <DependentUpon>ConfigFailSafe.cs</DependentUpon>
     </Compile>
+    <Compile Include="GCSViews\ConfigurationView\ConfigCameraParams.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="GCSViews\ConfigurationView\ConfigCameraParams.Designer.cs">
+      <DependentUpon>ConfigCameraParams.cs</DependentUpon>
+    </Compile>
     <Compile Include="HIL\Hil.cs" />
     <None Include="HIL\JSBSim.cs" />
     <Compile Include="HIL\XPlane.cs" />
@@ -779,6 +785,9 @@
     </EmbeddedResource>
     <EmbeddedResource Include="GCSViews\ConfigurationView\ConfigRawParams.fr.resx">
       <DependentUpon>ConfigRawParams.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="GCSViews\ConfigurationView\ConfigCameraParams.resx">
+      <DependentUpon>ConfigCameraParams.cs</DependentUpon>
     </EmbeddedResource>
     <EmbeddedResource Include="MavlinkLog.zh-Hans.resx">
       <DependentUpon>MavlinkLog.cs</DependentUpon>
@@ -1304,9 +1313,10 @@
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
     <Content Include="ChangeLog.txt" />
-    <Content Include="Driver\Arduino MEGA 2560.inf">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </Content>
+    <Content Include="Driver\Arduino MEGA 2560.inf" />
+    <Content Include="Driver\dpinst.xml" />
+    <Content Include="Driver\DPInstx64.exe" />
+    <Content Include="Driver\DPInstx86.exe" />
     <Content Include="hud.html">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
       <SubType>Designer</SubType>
