@@ -610,25 +610,3 @@ static int32_t wrap_180(int32_t error)
     if (error < -18000) error += 36000;
     return error;
 }
-
-static float wrap_360f(float angle_in_degrees)
-{
-    if (angle_in_degrees > 36000) angle_in_degrees -= 36000;
-    if (angle_in_degrees < 0) angle_in_degrees += 36000;
-    return angle_in_degrees;
-}
-
-static float wrap_180f(float angle_in_degrees)
-{
-    if (angle_in_degrees > 18000) angle_in_degrees -= 36000;
-    if (angle_in_degrees < -18000) angle_in_degrees += 36000;
-    return angle_in_degrees;
-}
-
-static float wrap_PI(float angle_in_radians)
-{
-    if (angle_in_radians > M_PI) angle_in_radians -= 2.0*M_PI;
-    if (angle_in_radians < -M_PI) angle_in_radians += 2.0*M_PI;
-    return angle_in_radians;
-}
-
