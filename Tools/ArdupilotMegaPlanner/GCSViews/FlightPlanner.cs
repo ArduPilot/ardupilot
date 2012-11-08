@@ -1921,7 +1921,7 @@ namespace ArdupilotMega.GCSViews
                     MainMap.Invalidate(false);
 
                     int answer;
-                    if (item.Tag != null && int.TryParse(item.Tag.ToString(), out answer))
+                    if (item.Tag != null && rc.InnerMarker != null && int.TryParse(rc.InnerMarker.Tag.ToString(), out answer))
                     {
                         try
                         {

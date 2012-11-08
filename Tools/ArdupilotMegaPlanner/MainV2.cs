@@ -260,14 +260,15 @@ namespace ArdupilotMega
                 // preload
                 Python.CreateEngine();
             }
-                catch (ArgumentException e) {
-                    //http://www.microsoft.com/en-us/download/details.aspx?id=16083
-                    //System.ArgumentException: Font 'Arial' does not support style 'Regular'.
+            catch (ArgumentException e)
+            {
+                //http://www.microsoft.com/en-us/download/details.aspx?id=16083
+                //System.ArgumentException: Font 'Arial' does not support style 'Regular'.
 
-                    log.Fatal(e);
-                    CustomMessageBox.Show(e.ToString() + "\n\n Please install this http://www.microsoft.com/en-us/download/details.aspx?id=16083");
-                    this.Close();
-                }
+                log.Fatal(e);
+                CustomMessageBox.Show(e.ToString() + "\n\n Please install this http://www.microsoft.com/en-us/download/details.aspx?id=16083");
+                this.Close();
+            }
             catch (Exception e) { log.Fatal(e); CustomMessageBox.Show("A Major error has occured : " + e.ToString()); this.Close(); }
 
             if (MainV2.config["CHK_GDIPlus"] != null)
@@ -388,14 +389,14 @@ namespace ArdupilotMega
             {
                 // If the form has been closed, or never shown before, we need all new stuff
                 this.connectionStatsForm = new Form
-                                               {
-                                                   Width = 430,
-                                                   Height = 180,
-                                                   MaximizeBox = false,
-                                                   MinimizeBox = false,
-                                                   FormBorderStyle = FormBorderStyle.FixedDialog,
-                                                   Text = "Link Stats"
-                                               };
+                {
+                    Width = 430,
+                    Height = 180,
+                    MaximizeBox = false,
+                    MinimizeBox = false,
+                    FormBorderStyle = FormBorderStyle.FixedDialog,
+                    Text = "Link Stats"
+                };
                 // Change the connection stats control, so that when/if the connection stats form is showing,
                 // there will be something to see
                 this.connectionStatsForm.Controls.Clear();
@@ -685,7 +686,7 @@ namespace ArdupilotMega
                         }
                     }
                     catch (Exception exp3) { log.Error(exp3); }
-                    MessageBox.Show("Can not establish a connection\n\n" + ex.Message);
+                    CustomMessageBox.Show("Can not establish a connection\n\n" + ex.Message);
                     return;
                 }
             }
@@ -1475,7 +1476,7 @@ namespace ArdupilotMega
 
                         foreach (var point in MainV2.comPort.wps.Values)
                         {
-                                coords.Add(new SharpKml.Base.Vector(point.x, point.y, point.z));
+                            coords.Add(new SharpKml.Base.Vector(point.x, point.y, point.z));
                         }
 
                         SharpKml.Dom.LineString ls = new SharpKml.Dom.LineString();
@@ -2005,7 +2006,7 @@ namespace ArdupilotMega
                             }
                         }
                         catch { }
-                    //    log.Debug(file + " " + bytes);
+                        //    log.Debug(file + " " + bytes);
                         int len = dataStream.Read(buf1, 0, 1024);
                         if (len == 0)
                             break;
@@ -2292,8 +2293,8 @@ namespace ArdupilotMega
 
         private void MainV2_MouseMove(object sender, MouseEventArgs e)
         {
-           // if (e.Y < 50)
-           //     MainMenu.Visible = true;
+            // if (e.Y < 50)
+            //     MainMenu.Visible = true;
         }
     }
 }

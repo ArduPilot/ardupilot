@@ -476,7 +476,7 @@ namespace ArdupilotMega.GCSViews
                         comPort.requestDatastream((byte)ArdupilotMega.MAVLink.MAV_DATA_STREAM.RAW_SENSORS, MainV2.cs.ratesensors); // request raw sensor
                         comPort.requestDatastream((byte)ArdupilotMega.MAVLink.MAV_DATA_STREAM.RC_CHANNELS, MainV2.cs.raterc); // request rc info
                     }
-                    catch { }
+                    catch { log.Error("Failed to request rates"); }
                     lastdata = DateTime.Now.AddSeconds(120); // prevent flooding
                 }
 
@@ -498,7 +498,7 @@ namespace ArdupilotMega.GCSViews
                         aviwriter.avi_end(hud1.Width, hud1.Height, 10);
                     }
                 }
-                catch { }
+                catch { log.Error("Failed to write avi"); }
 
                 if (MainV2.comPort.logreadmode && MainV2.comPort.logplaybackfile != null)
                 {
@@ -511,7 +511,7 @@ namespace ArdupilotMega.GCSViews
                         {
                             MainV2.comPort.logplaybackfile.Close();
                         }
-                        catch { }
+                        catch { log.Error("Failed to close logfile"); }
                         MainV2.comPort.logplaybackfile = null;
                     }
 
@@ -520,8 +520,12 @@ namespace ArdupilotMega.GCSViews
 
                     if (updatescreen.AddMilliseconds(300) < DateTime.Now)
                     {
-                        updatePlayPauseButton(true);
-                        updateLogPlayPosition();
+                        try
+                        {
+                            updatePlayPauseButton(true);
+                            updateLogPlayPosition();
+                        }
+                        catch { log.Error("Failed to update log playback pos"); }
                         updatescreen = DateTime.Now;
                     }
 
@@ -532,7 +536,7 @@ namespace ArdupilotMega.GCSViews
                     {
                         MainV2.comPort.readPacket();
                     }
-                    catch { }
+                    catch { log.Error("Failed to read log packet"); }
 
                     double act = (MainV2.comPort.lastlogread - logplayback).TotalMilliseconds;
 
@@ -2534,6 +2538,15 @@ print 'Roll complete'
         private void modifyandSetSpeed_ParentChanged(object sender, EventArgs e)
         {
 
+        }
+
+        private void triggerCameraToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            try
+            {
+                MainV2.comPort.setDigicamControl(true);
+            }
+            catch { CustomMessageBox.Show("Error sending command"); }
         }
     }
 }

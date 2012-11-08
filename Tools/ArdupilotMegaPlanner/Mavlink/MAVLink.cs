@@ -2068,6 +2068,24 @@ namespace ArdupilotMega
             MainV2.giveComport = false;
         }
 
+        public void setDigicamConfigure()
+        {
+            // not implmented
+        }
+
+        public void setDigicamControl(bool shot)
+        {
+            mavlink_digicam_control_t req = new mavlink_digicam_control_t();
+
+            req.target_system = sysid;
+            req.target_component = compid;
+            req.shot = (shot == true) ? (byte)1 : (byte)0;
+
+            generatePacket(MAVLINK_MSG_ID_DIGICAM_CONTROL, req);
+            System.Threading.Thread.Sleep(20);
+            generatePacket(MAVLINK_MSG_ID_DIGICAM_CONTROL, req);
+        }
+
         public void setMountConfigure(MAV_MOUNT_MODE mountmode, bool stabroll, bool stabpitch, bool stabyaw)
         {
             mavlink_mount_configure_t req = new mavlink_mount_configure_t();
