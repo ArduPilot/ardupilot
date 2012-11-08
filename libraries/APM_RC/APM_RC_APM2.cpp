@@ -240,11 +240,16 @@ uint16_t APM_RC_APM2::InputCh(unsigned char ch)
         return _HIL_override[ch];
     }
 
-    // we need to block interrupts during the read of a 16 bit
+    // We need to block ICP5 interrupts during the read of 16 bit PWM values
+    uint8_t _timsk5 = TIMSK5;
+    TIMSK5 &= ~(1<<ICIE5);
+
     // value
-    cli();
     result = _PWM_RAW[ch];
-    sei();
+
+    // Enable ICP5 interrupt if previously active
+    TIMSK5 = _timsk5;
+    
     // Because timer runs at 0.5us we need to do value/2
     result >>= 1;
 
