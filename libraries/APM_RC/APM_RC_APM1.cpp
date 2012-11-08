@@ -218,10 +218,15 @@ uint16_t APM_RC_APM1::InputCh(uint8_t ch)
         return _HIL_override[ch];
     }
 
-    // we need to stop interrupts to be sure we get a correct 16 bit value
-    cli();
+    // We need to block ICP4 interrupts during the read of 16 bit PWM values
+    uint8_t _timsk4 = TIMSK4;
+    TIMSK4 &= ~(1<<ICIE4);
+
+    // value
     result = _PWM_RAW[ch];
-    sei();
+
+   // Enable ICP4 interrupt if previously active
+    TIMSK4 = _timsk4;
 
     // Because timer runs at 0.5us we need to do value/2
     result >>= 1;
