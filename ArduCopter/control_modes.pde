@@ -172,7 +172,6 @@ static void save_trim()
             roll_trim = ToRad((float)g.rc_1.control_in/100.0);
             pitch_trim = ToRad((float)g.rc_2.control_in/100.0);
             ahrs.add_trim(roll_trim, pitch_trim);
-            Serial.printf_P(PSTR("\nTrim Roll:%4.2f Pitch:%4.2f\n"),ToDeg(roll_trim), ToDeg(pitch_trim));
 
             reset_control_switch();
 
