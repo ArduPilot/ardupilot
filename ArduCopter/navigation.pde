@@ -524,7 +524,7 @@ static void reset_desired_speed()
 #define DECEL_CLIMB_RATE 30
 
 
-static int16_t get_desired_climb_rate()
+static int16_t get_desired_climb_rate_new()
 {
     static int16_t climb_old = 0;
 
@@ -555,7 +555,7 @@ static int16_t get_desired_climb_rate()
     return climb;
 }
 
-static int16_t get_desired_climb_rate_old()
+static int16_t get_desired_climb_rate()
 {
     if(alt_change_flag == ASCENDING) {
         return constrain(altitude_error / 4, 100, 180);         // 180cm /s up, minimum is 100cm/s
