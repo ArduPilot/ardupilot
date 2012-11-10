@@ -64,27 +64,27 @@
 #include <AP_Common.h>
 #include <AP_Menu.h>
 #include <Arduino_Mega_ISR_Registry.h>
-#include <APM_RC.h>         // ArduPilot Mega RC Library
-#include <AP_GPS.h>         // ArduPilot GPS library
-#include <I2C.h>                        // Arduino I2C lib
-#include <SPI.h>                        // Arduino SPI lib
+#include <APM_RC.h>             // ArduPilot Mega RC Library
+#include <AP_GPS.h>             // ArduPilot GPS library
+#include <I2C.h>                // Arduino I2C lib
+#include <SPI.h>                // Arduino SPI lib
 #include <SPI3.h>               // SPI3 library
-#include <AP_Semaphore.h>   // for removing conflict between optical flow and dataflash on SPI3 bus
-#include <DataFlash.h>      // ArduPilot Mega Flash Memory Library
-#include <AP_ADC.h>         // ArduPilot Mega Analog to Digital Converter Library
+#include <AP_Semaphore.h>       // for removing conflict between optical flow and dataflash on SPI3 bus
+#include <DataFlash.h>          // ArduPilot Mega Flash Memory Library
+#include <AP_ADC.h>             // ArduPilot Mega Analog to Digital Converter Library
 #include <AP_AnalogSource.h>
 #include <AP_Baro.h>
-#include <AP_Compass.h>     // ArduPilot Mega Magnetometer Library
-#include <AP_Math.h>        // ArduPilot Mega Vector/Matrix math Library
-#include <AP_Curve.h>       // Curve used to linearlise throttle pwm to thrust
-#include <AP_InertialSensor.h> // ArduPilot Mega Inertial Sensor (accel & gyro) Library
-#include <AP_PeriodicProcess.h>         // Parent header of Timer
-                                        // (only included for makefile libpath to work)
-#include <AP_TimerProcess.h>            // TimerProcess is the scheduler for MPU6000 reads.
+#include <AP_Compass.h>         // ArduPilot Mega Magnetometer Library
+#include <AP_Math.h>            // ArduPilot Mega Vector/Matrix math Library
+#include <AP_Curve.h>           // Curve used to linearlise throttle pwm to thrust
+#include <AP_InertialSensor.h>  // ArduPilot Mega Inertial Sensor (accel & gyro) Library
+#include <AP_PeriodicProcess.h> // Parent header of Timer
+                                // (only included for makefile libpath to work)
+#include <AP_TimerProcess.h>    // TimerProcess is the scheduler for MPU6000 reads.
 #include <AP_AHRS.h>
 #include <APM_PI.h>             // PI library
-#include <AC_PID.h>            // PID library
-#include <RC_Channel.h>     // RC Channel Library
+#include <AC_PID.h>             // PID library
+#include <RC_Channel.h>         // RC Channel Library
 #include <AP_Motors.h>          // AP Motors library
 #include <AP_MotorsQuad.h>      // AP Motors library for Quad
 #include <AP_MotorsTri.h>       // AP Motors library for Tri
@@ -95,16 +95,16 @@
 #include <AP_MotorsHeli.h>      // AP Motors library for Heli
 #include <AP_MotorsMatrix.h>    // AP Motors library for Heli
 #include <AP_RangeFinder.h>     // Range finder library
-#include <AP_OpticalFlow.h> // Optical Flow library
-#include <Filter.h>                     // Filter library
-#include <AP_Buffer.h>      // APM FIFO Buffer
+#include <AP_OpticalFlow.h>     // Optical Flow library
+#include <Filter.h>             // Filter library
+#include <AP_Buffer.h>          // APM FIFO Buffer
 #include <ModeFilter.h>         // Mode Filter from Filter library
 #include <AverageFilter.h>      // Mode Filter from Filter library
 #include <AP_LeadFilter.h>      // GPS Lead filter
 #include <AP_Relay.h>           // APM relay
 #include <AP_Camera.h>          // Photo or video camera
 #include <AP_Mount.h>           // Camera/Antenna mount
-#include <AP_Airspeed.h>    // needed for AHRS build
+#include <AP_Airspeed.h>        // needed for AHRS build
 #include <AP_InertialNav.h>     // ArduPilot Mega inertial navigation library
 #include <ThirdOrderCompFilter.h>   // Complementary filter for combining barometer altitude with accelerometers
 #include <memcheck.h>
@@ -114,19 +114,19 @@
 #include "config.h"
 #include "config_channels.h"
 
-#include <GCS_MAVLink.h>    // MAVLink GCS definitions
+#include <GCS_MAVLink.h>        // MAVLink GCS definitions
 
 // Local modules
 #include "Parameters.h"
 #include "GCS.h"
 
-#include <AP_Declination.h> // ArduPilot Mega Declination Helper Library
+#include <AP_Declination.h>     // ArduPilot Mega Declination Helper Library
 
 // Limits library - Puts limits on the vehicle, and takes recovery actions
 #include <AP_Limits.h>
-#include <AP_Limit_GPSLock.h> // a limits library module
-#include <AP_Limit_Geofence.h> // a limits library module
-#include <AP_Limit_Altitude.h> // a limits library module
+#include <AP_Limit_GPSLock.h>   // a limits library module
+#include <AP_Limit_Geofence.h>  // a limits library module
+#include <AP_Limit_Altitude.h>  // a limits library module
 
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -189,10 +189,10 @@ DataFlash_APM1 DataFlash(&spi_semaphore);
 //
 // There are three basic options related to flight sensor selection.
 //
-// - Normal flight mode.  Real sensors are used.
-// - HIL Attitude mode.  Most sensors are disabled, as the HIL
+// - Normal flight mode. Real sensors are used.
+// - HIL Attitude mode. Most sensors are disabled, as the HIL
 //   protocol supplies attitude information directly.
-// - HIL Sensors mode.  Synthetic sensors are configured that
+// - HIL Sensors mode. Synthetic sensors are configured that
 //   supply data from the simulation.
 //
 
@@ -288,23 +288,24 @@ AP_AHRS_MPU6000  ahrs2(&ins, g_gps);               // only works with APM2
 
 #elif HIL_MODE == HIL_MODE_SENSORS
 // sensor emulators
-AP_ADC_HIL adc;
-AP_Baro_BMP085_HIL barometer;
-AP_Compass_HIL compass;
+AP_ADC_HIL              adc;
+AP_Baro_BMP085_HIL      barometer;
+AP_Compass_HIL          compass;
 AP_GPS_HIL              g_gps_driver(NULL);
-AP_InertialSensor_Stub ins;
-AP_AHRS_DCM                         ahrs(&ins, g_gps);
+AP_InertialSensor_Stub  ins;
+AP_AHRS_DCM             ahrs(&ins, g_gps);
 
 
 static int32_t gps_base_alt;
 
 #elif HIL_MODE == HIL_MODE_ATTITUDE
-AP_ADC_HIL adc;
-AP_InertialSensor_Stub ins;
+AP_ADC_HIL              adc;
+AP_InertialSensor_Stub  ins;
 AP_AHRS_HIL             ahrs(&ins, g_gps);
 AP_GPS_HIL              g_gps_driver(NULL);
-AP_Compass_HIL compass;                  // never used
-AP_Baro_BMP085_HIL barometer;
+AP_Compass_HIL          compass;                  // never used
+AP_Baro_BMP085_HIL      barometer;
+
 #ifdef OPTFLOW_ENABLED
 #if CONFIG_APM_HARDWARE == APM_HARDWARE_APM2
 AP_OpticalFlow_ADNS3080 optflow(OPTFLOW_CS_PIN);
@@ -407,34 +408,34 @@ static byte oldSwitchPosition;
 // This was added to try and deal with biger motors
 //static int16_t  motor_filtered[11];
 
-#if FRAME_CONFIG ==     QUAD_FRAME
+#if FRAME_CONFIG == QUAD_FRAME
  #define MOTOR_CLASS AP_MotorsQuad
 #endif
-#if FRAME_CONFIG ==     TRI_FRAME
+#if FRAME_CONFIG == TRI_FRAME
  #define MOTOR_CLASS AP_MotorsTri
 #endif
-#if FRAME_CONFIG ==     HEXA_FRAME
+#if FRAME_CONFIG == HEXA_FRAME
  #define MOTOR_CLASS AP_MotorsHexa
 #endif
-#if FRAME_CONFIG ==     Y6_FRAME
+#if FRAME_CONFIG == Y6_FRAME
  #define MOTOR_CLASS AP_MotorsY6
 #endif
-#if FRAME_CONFIG ==     OCTA_FRAME
+#if FRAME_CONFIG == OCTA_FRAME
  #define MOTOR_CLASS AP_MotorsOcta
 #endif
-#if FRAME_CONFIG ==     OCTA_QUAD_FRAME
+#if FRAME_CONFIG == OCTA_QUAD_FRAME
  #define MOTOR_CLASS AP_MotorsOctaQuad
 #endif
-#if FRAME_CONFIG ==     HELI_FRAME
+#if FRAME_CONFIG == HELI_FRAME
  #define MOTOR_CLASS AP_MotorsHeli
 #endif
 
-#if FRAME_CONFIG ==     HELI_FRAME  // helicopter constructor requires more arguments
-MOTOR_CLASS     motors(CONFIG_APM_HARDWARE, &APM_RC, &g.rc_1, &g.rc_2, &g.rc_3, &g.rc_4, &g.rc_8, &g.heli_servo_1, &g.heli_servo_2, &g.heli_servo_3, &g.heli_servo_4);
+#if FRAME_CONFIG == HELI_FRAME  // helicopter constructor requires more arguments
+MOTOR_CLASS motors(CONFIG_APM_HARDWARE, &APM_RC, &g.rc_1, &g.rc_2, &g.rc_3, &g.rc_4, &g.rc_8, &g.heli_servo_1, &g.heli_servo_2, &g.heli_servo_3, &g.heli_servo_4);
 #elif FRAME_CONFIG == TRI_FRAME  // tri constructor requires additional rc_7 argument to allow tail servo reversing
-MOTOR_CLASS     motors(CONFIG_APM_HARDWARE, &APM_RC, &g.rc_1, &g.rc_2, &g.rc_3, &g.rc_4, &g.rc_7);
+MOTOR_CLASS motors(CONFIG_APM_HARDWARE, &APM_RC, &g.rc_1, &g.rc_2, &g.rc_3, &g.rc_4, &g.rc_7);
 #else
-MOTOR_CLASS     motors(CONFIG_APM_HARDWARE, &APM_RC, &g.rc_1, &g.rc_2, &g.rc_3, &g.rc_4);
+MOTOR_CLASS motors(CONFIG_APM_HARDWARE, &APM_RC, &g.rc_1, &g.rc_2, &g.rc_3, &g.rc_4);
 #endif
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -492,22 +493,22 @@ static int8_t copter_leds_nav_blink = 0;
 // This is used to scale GPS values for EEPROM storage
 // 10^7 times Decimal GPS means 1 == 1cm
 // This approximation makes calculations integer and it's easy to read
-static const float t7                        = 10000000.0;
+static const float t7 = 10000000.0;
 // We use atan2 and other trig techniques to calaculate angles
 // We need to scale the longitude up to make these calcs work
 // to account for decreasing distance between lines of longitude away from the equator
-static float scaleLongUp                     = 1;
+static float scaleLongUp = 1;
 // Sometimes we need to remove the scaling for distance calcs
-static float scaleLongDown           = 1;
+static float scaleLongDown = 1;
 
 
 ////////////////////////////////////////////////////////////////////////////////
 // Mavlink specific
 ////////////////////////////////////////////////////////////////////////////////
 // Used by Mavlink for unknow reasons
-static const float radius_of_earth      = 6378100;              // meters
+static const float radius_of_earth = 6378100;   // meters
 // Used by Mavlink for unknow reasons
-static const float gravity              = 9.80665;              // meters/ sec^2
+static const float gravity = 9.80665;           // meters/ sec^2
 
 // Unions for getting byte values
 union float_int {
@@ -932,15 +933,10 @@ AP_Mount camera_mount2(&current_loc, g_gps, &ahrs, 1);
 // Experimental AP_Limits library - set constraints, limits, fences, minima, maxima on various parameters
 ////////////////////////////////////////////////////////////////////////////////
 #ifdef AP_LIMITS
-
-AP_Limits limits;
-
+AP_Limits               limits;
 AP_Limit_GPSLock        gpslock_limit(g_gps);
-
 AP_Limit_Geofence       geofence_limit(FENCE_START_BYTE, FENCE_WP_SIZE, MAX_FENCEPOINTS, g_gps, &home, &current_loc);
-
 AP_Limit_Altitude       altitude_limit(&current_loc);
-
 #endif
 
 ////////////////////////////////////////////////////////////////////////////////
