@@ -1066,7 +1066,7 @@ print_divider(void)
     Serial.println();
 }
 
-static void print_enabled(boolean b)
+static void print_enabled(bool b)
 {
     if(b)
         Serial.print_P(PSTR("en"));
