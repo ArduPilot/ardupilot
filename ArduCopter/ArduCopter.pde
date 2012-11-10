@@ -592,11 +592,11 @@ int32_t pitch_axis;
 AP_LeadFilter xLeadFilter;      // Long GPS lag filter
 AP_LeadFilter yLeadFilter;      // Lat  GPS lag filter
 
-AverageFilterInt32_Size3 roll_rate_d_filter;    // filtered acceleration
-AverageFilterInt32_Size3 pitch_rate_d_filter;   // filtered pitch acceleration
+//AverageFilterInt32_Size3 roll_rate_d_filter;    // filtered acceleration
+//AverageFilterInt32_Size3 pitch_rate_d_filter;   // filtered pitch acceleration
 
 // Barometer filter
-AverageFilterInt32_Size5 baro_filter;   // filtered pitch acceleration
+AverageFilterInt32_Size5 baro_filter;
 
 ////////////////////////////////////////////////////////////////////////////////
 // Circle Mode / Loiter control
@@ -1631,6 +1631,7 @@ void update_roll_pitch_mode(void)
 
         // These values can be used to scale the PID gains
         // This allows for a simple gain scheduling implementation
+        /*
         roll_scale_d    = g.stabilize_d_schedule * (float)abs(g.rc_1.control_in);
         roll_scale_d    = (1 - (roll_scale_d / 4500.0));
         roll_scale_d    = constrain(roll_scale_d, 0, 1) * g.stabilize_d;
@@ -1638,6 +1639,7 @@ void update_roll_pitch_mode(void)
         pitch_scale_d   = g.stabilize_d_schedule * (float)abs(g.rc_2.control_in);
         pitch_scale_d   = (1 - (pitch_scale_d / 4500.0));
         pitch_scale_d   = constrain(pitch_scale_d, 0, 1) * g.stabilize_d;
+        */
     }
 }
 
@@ -1982,10 +1984,10 @@ static void tuning(){
         g.pi_stabilize_pitch.kI(tuning_value);
         break;
 
-    case CH6_DAMP:
-    case CH6_STABILIZE_KD:
-        g.stabilize_d = tuning_value;
-        break;
+    //case CH6_DAMP:
+    //case CH6_STABILIZE_KD:
+        //g.stabilize_d = tuning_value;
+        //break;
 
     case CH6_ACRO_KP:
         g.acro_p = tuning_value;
