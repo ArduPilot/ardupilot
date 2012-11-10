@@ -804,7 +804,7 @@ static void Log_Write_INAV(float delta_t)
     DataFlash.WriteLong(get_int(inertial_nav.get_longitude_diff()));        // 16 accel based lon from home
     DataFlash.WriteLong(get_int(inertial_nav.get_latitude_velocity()));     // 17 accel based lat velocity
     DataFlash.WriteLong(get_int(inertial_nav.get_longitude_velocity()));    // 18 accel based lon velocity
-    
+
     DataFlash.WriteByte(END_BYTE);
 #endif
 }
@@ -886,40 +886,91 @@ static void Log_Read_Startup()
     Serial.printf_P(PSTR("START UP\n"));
 }
 
-static void Log_Write_Data(int8_t _type, float _data)
+#define DATA_INT32 0
+#define DATA_FLOAT 1
+#define DATA_INT16 2
+#define DATA_UINT16 3
+#define DATA_EVENT 4
+
+static void Log_Write_Data(uint8_t _index, int32_t _data)
 {
     DataFlash.WriteByte(HEAD_BYTE1);
     DataFlash.WriteByte(HEAD_BYTE2);
     DataFlash.WriteByte(LOG_DATA_MSG);
-    DataFlash.WriteByte(_type);
-    DataFlash.WriteByte(1);
+    DataFlash.WriteByte(_index);
+    DataFlash.WriteByte(DATA_INT32);
+    DataFlash.WriteLong(_data);
+    DataFlash.WriteByte(END_BYTE);
+}
+
+static void Log_Write_Data(uint8_t _index, float _data)
+{
+    DataFlash.WriteByte(HEAD_BYTE1);
+    DataFlash.WriteByte(HEAD_BYTE2);
+    DataFlash.WriteByte(LOG_DATA_MSG);
+    DataFlash.WriteByte(_index);
+    DataFlash.WriteByte(DATA_FLOAT);
     DataFlash.WriteLong(get_int(_data));
     DataFlash.WriteByte(END_BYTE);
 }
 
-static void Log_Write_Data(int8_t _type, int32_t _data)
+static void Log_Write_Data(uint8_t _index, int16_t _data)
 {
     DataFlash.WriteByte(HEAD_BYTE1);
     DataFlash.WriteByte(HEAD_BYTE2);
     DataFlash.WriteByte(LOG_DATA_MSG);
-    DataFlash.WriteByte(_type);
-    DataFlash.WriteByte(0);
-    DataFlash.WriteLong(_data);
+    DataFlash.WriteByte(_index);
+    DataFlash.WriteByte(DATA_INT16);
+    DataFlash.WriteInt(_data);
+    DataFlash.WriteByte(END_BYTE);
+}
+
+static void Log_Write_Data(uint8_t _index, uint16_t _data)
+{
+    DataFlash.WriteByte(HEAD_BYTE1);
+    DataFlash.WriteByte(HEAD_BYTE2);
+    DataFlash.WriteByte(LOG_DATA_MSG);
+    DataFlash.WriteByte(_index);
+    DataFlash.WriteByte(DATA_UINT16);
+    DataFlash.WriteInt(_data);
+    DataFlash.WriteByte(END_BYTE);
+}
+
+
+static void Log_Write_Event(uint8_t _index)
+{
+    DataFlash.WriteByte(HEAD_BYTE1);
+    DataFlash.WriteByte(HEAD_BYTE2);
+    DataFlash.WriteByte(LOG_DATA_MSG);
+    DataFlash.WriteByte(_index);
+    DataFlash.WriteByte(DATA_EVENT);
     DataFlash.WriteByte(END_BYTE);
 }
 
 // Read a mode packet
 static void Log_Read_Data()
 {
-    int8_t temp1 = DataFlash.ReadByte();
-    int8_t temp2 = DataFlash.ReadByte();
+    int8_t _index = DataFlash.ReadByte();
+    int8_t _type = DataFlash.ReadByte();
 
-    if(temp2 == 1) {
-        float temp3 = get_float(DataFlash.ReadLong());
-        Serial.printf_P(PSTR("DATA: %d, %1.6f\n"), (int)temp1, temp3);
-    }else{
-        int32_t temp3 = DataFlash.ReadLong();
-        Serial.printf_P(PSTR("DATA: %d, %ld\n"), (int)temp1, (long)temp3);
+    if(_type == DATA_EVENT) {
+        Serial.printf_P(PSTR("EV: %u\n"), _index);
+
+    }else if(_type == DATA_FLOAT) {
+        float _value = get_float(DataFlash.ReadLong());
+        Serial.printf_P(PSTR("DATA: %u, %1.6f\n"), _index, _value);
+
+    }else if(_type == DATA_INT16) {
+        int16_t _value = DataFlash.ReadInt();
+        Serial.printf_P(PSTR("DATA: %u, %d\n"), _index, _value);
+
+    }else if(_type == DATA_UINT16) {
+        uint16_t _value = DataFlash.ReadInt();
+        Serial.printf_P(PSTR("DATA: %u, %u\n"), _index, _value);
+
+    }else if(_type == DATA_INT32) {
+        int32_t _value = DataFlash.ReadLong();
+        Serial.printf_P(PSTR("DATA: %u, %ld\n"), _index, _value);
     }
 }
 
@@ -1175,9 +1226,15 @@ static void Log_Write_Iterm() {
 }
 static void Log_Write_Attitude() {
 }
-static void Log_Write_Data(int8_t _type, float _data){
+static void Log_Write_Data(uint8_t _index, float _data){
 }
-static void Log_Write_Data(int8_t _type, int32_t _data){
+static void Log_Write_Data(uint8_t _index, int32_t _data){
+}
+static void Log_Write_Data(uint8_t _index, int16_t _data){
+}
+static void Log_Write_Data(uint8_t _index, uint16_t _data){
+}
+static void Log_Write_Event(uint8_t _index){
 }
 static void Log_Write_Optflow() {
 }
