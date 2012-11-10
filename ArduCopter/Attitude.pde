@@ -527,8 +527,14 @@ static void reset_nav_params(void)
     wp_distance                     = 0;
 
     // Will be set by new command, used by loiter
-    long_error                              = 0;
-    lat_error                               = 0;
+    long_error                      = 0;
+    lat_error                       = 0;
+    nav_lon 						= 0;
+    nav_lat 						= 0;
+    nav_roll 						= 0;
+    nav_pitch 						= 0;
+    auto_roll 						= 0;
+    auto_pitch 						= 0;
 
     // make sure we stick to Nav yaw on takeoff
     auto_yaw = nav_yaw;
