@@ -671,10 +671,10 @@ static void Log_Write_Performance()
     DataFlash.WriteByte(HEAD_BYTE1);
     DataFlash.WriteByte(HEAD_BYTE2);
     DataFlash.WriteByte(LOG_PERFORMANCE_MSG);
-    DataFlash.WriteByte(    0);                                                 //1 - was adc_constraints
-    DataFlash.WriteByte(    ahrs.renorm_range_count);                           //2
-    DataFlash.WriteByte(    ahrs.renorm_blowup_count);                          //3
-    DataFlash.WriteByte(    gps_fix_count);                                             //4
+    DataFlash.WriteByte(0);                             //1 - was adc_constraints
+    DataFlash.WriteByte(ahrs.renorm_range_count);       //2
+    DataFlash.WriteByte(ahrs.renorm_blowup_count);      //3
+    DataFlash.WriteByte(gps_fix_count);                 //4
     DataFlash.WriteByte(END_BYTE);
 }
 
