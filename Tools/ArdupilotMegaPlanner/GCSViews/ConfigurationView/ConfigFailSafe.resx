@@ -117,9 +117,6 @@
   <resheader name="writer">
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
-  <metadata name="currentStateBindingSource.TrayLocation" type="System.Drawing.Point, System.Drawing, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a">
-    <value>17, 17</value>
-  </metadata>
   <assembly alias="mscorlib" name="mscorlib, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089" />
   <data name="label2.AutoSize" type="System.Boolean, mscorlib">
     <value>True</value>
@@ -151,7 +148,7 @@
     <value>$this</value>
   </data>
   <data name="&gt;&gt;label2.ZOrder" xml:space="preserve">
-    <value>3</value>
+    <value>5</value>
   </data>
   <data name="label1.AutoSize" type="System.Boolean, mscorlib">
     <value>True</value>
@@ -181,392 +178,11 @@
     <value>$this</value>
   </data>
   <data name="&gt;&gt;label1.ZOrder" xml:space="preserve">
-    <value>4</value>
-  </data>
-  <data name="horizontalProgressBar9.ImeMode" type="System.Windows.Forms.ImeMode, System.Windows.Forms">
-    <value>NoControl</value>
-  </data>
-  <data name="horizontalProgressBar9.Location" type="System.Drawing.Point, System.Drawing">
-    <value>297, 406</value>
-  </data>
-  <data name="horizontalProgressBar9.Size" type="System.Drawing.Size, System.Drawing">
-    <value>170, 25</value>
-  </data>
-  <data name="horizontalProgressBar9.TabIndex" type="System.Int32, mscorlib">
-    <value>102</value>
-  </data>
-  <data name="&gt;&gt;horizontalProgressBar9.Name" xml:space="preserve">
-    <value>horizontalProgressBar9</value>
-  </data>
-  <data name="&gt;&gt;horizontalProgressBar9.Type" xml:space="preserve">
-    <value>ArdupilotMega.HorizontalProgressBar, ArdupilotMegaPlanner10, Version=1.1.4646.37607, Culture=neutral, PublicKeyToken=null</value>
-  </data>
-  <data name="&gt;&gt;horizontalProgressBar9.Parent" xml:space="preserve">
-    <value>$this</value>
-  </data>
-  <data name="&gt;&gt;horizontalProgressBar9.ZOrder" xml:space="preserve">
-    <value>5</value>
-  </data>
-  <data name="horizontalProgressBar10.ImeMode" type="System.Windows.Forms.ImeMode, System.Windows.Forms">
-    <value>NoControl</value>
-  </data>
-  <data name="horizontalProgressBar10.Location" type="System.Drawing.Point, System.Drawing">
-    <value>297, 351</value>
-  </data>
-  <data name="horizontalProgressBar10.Size" type="System.Drawing.Size, System.Drawing">
-    <value>170, 25</value>
-  </data>
-  <data name="horizontalProgressBar10.TabIndex" type="System.Int32, mscorlib">
-    <value>101</value>
-  </data>
-  <data name="&gt;&gt;horizontalProgressBar10.Name" xml:space="preserve">
-    <value>horizontalProgressBar10</value>
-  </data>
-  <data name="&gt;&gt;horizontalProgressBar10.Type" xml:space="preserve">
-    <value>ArdupilotMega.HorizontalProgressBar, ArdupilotMegaPlanner10, Version=1.1.4646.37607, Culture=neutral, PublicKeyToken=null</value>
-  </data>
-  <data name="&gt;&gt;horizontalProgressBar10.Parent" xml:space="preserve">
-    <value>$this</value>
-  </data>
-  <data name="&gt;&gt;horizontalProgressBar10.ZOrder" xml:space="preserve">
     <value>6</value>
   </data>
-  <data name="horizontalProgressBar11.ImeMode" type="System.Windows.Forms.ImeMode, System.Windows.Forms">
-    <value>NoControl</value>
-  </data>
-  <data name="horizontalProgressBar11.Location" type="System.Drawing.Point, System.Drawing">
-    <value>297, 296</value>
-  </data>
-  <data name="horizontalProgressBar11.Size" type="System.Drawing.Size, System.Drawing">
-    <value>170, 25</value>
-  </data>
-  <data name="horizontalProgressBar11.TabIndex" type="System.Int32, mscorlib">
-    <value>100</value>
-  </data>
-  <data name="&gt;&gt;horizontalProgressBar11.Name" xml:space="preserve">
-    <value>horizontalProgressBar11</value>
-  </data>
-  <data name="&gt;&gt;horizontalProgressBar11.Type" xml:space="preserve">
-    <value>ArdupilotMega.HorizontalProgressBar, ArdupilotMegaPlanner10, Version=1.1.4646.37607, Culture=neutral, PublicKeyToken=null</value>
-  </data>
-  <data name="&gt;&gt;horizontalProgressBar11.Parent" xml:space="preserve">
-    <value>$this</value>
-  </data>
-  <data name="&gt;&gt;horizontalProgressBar11.ZOrder" xml:space="preserve">
-    <value>7</value>
-  </data>
-  <data name="horizontalProgressBar12.ImeMode" type="System.Windows.Forms.ImeMode, System.Windows.Forms">
-    <value>NoControl</value>
-  </data>
-  <data name="horizontalProgressBar12.Location" type="System.Drawing.Point, System.Drawing">
-    <value>297, 241</value>
-  </data>
-  <data name="horizontalProgressBar12.Size" type="System.Drawing.Size, System.Drawing">
-    <value>170, 25</value>
-  </data>
-  <data name="horizontalProgressBar12.TabIndex" type="System.Int32, mscorlib">
-    <value>99</value>
-  </data>
-  <data name="&gt;&gt;horizontalProgressBar12.Name" xml:space="preserve">
-    <value>horizontalProgressBar12</value>
-  </data>
-  <data name="&gt;&gt;horizontalProgressBar12.Type" xml:space="preserve">
-    <value>ArdupilotMega.HorizontalProgressBar, ArdupilotMegaPlanner10, Version=1.1.4646.37607, Culture=neutral, PublicKeyToken=null</value>
-  </data>
-  <data name="&gt;&gt;horizontalProgressBar12.Parent" xml:space="preserve">
-    <value>$this</value>
-  </data>
-  <data name="&gt;&gt;horizontalProgressBar12.ZOrder" xml:space="preserve">
-    <value>8</value>
-  </data>
-  <data name="horizontalProgressBar13.ImeMode" type="System.Windows.Forms.ImeMode, System.Windows.Forms">
-    <value>NoControl</value>
-  </data>
-  <data name="horizontalProgressBar13.Location" type="System.Drawing.Point, System.Drawing">
-    <value>297, 186</value>
-  </data>
-  <data name="horizontalProgressBar13.Size" type="System.Drawing.Size, System.Drawing">
-    <value>170, 25</value>
-  </data>
-  <data name="horizontalProgressBar13.TabIndex" type="System.Int32, mscorlib">
-    <value>98</value>
-  </data>
-  <data name="&gt;&gt;horizontalProgressBar13.Name" xml:space="preserve">
-    <value>horizontalProgressBar13</value>
-  </data>
-  <data name="&gt;&gt;horizontalProgressBar13.Type" xml:space="preserve">
-    <value>ArdupilotMega.HorizontalProgressBar, ArdupilotMegaPlanner10, Version=1.1.4646.37607, Culture=neutral, PublicKeyToken=null</value>
-  </data>
-  <data name="&gt;&gt;horizontalProgressBar13.Parent" xml:space="preserve">
-    <value>$this</value>
-  </data>
-  <data name="&gt;&gt;horizontalProgressBar13.ZOrder" xml:space="preserve">
-    <value>9</value>
-  </data>
-  <data name="horizontalProgressBar14.ImeMode" type="System.Windows.Forms.ImeMode, System.Windows.Forms">
-    <value>NoControl</value>
-  </data>
-  <data name="horizontalProgressBar14.Location" type="System.Drawing.Point, System.Drawing">
-    <value>297, 131</value>
-  </data>
-  <data name="horizontalProgressBar14.Size" type="System.Drawing.Size, System.Drawing">
-    <value>170, 25</value>
-  </data>
-  <data name="horizontalProgressBar14.TabIndex" type="System.Int32, mscorlib">
-    <value>97</value>
-  </data>
-  <data name="&gt;&gt;horizontalProgressBar14.Name" xml:space="preserve">
-    <value>horizontalProgressBar14</value>
-  </data>
-  <data name="&gt;&gt;horizontalProgressBar14.Type" xml:space="preserve">
-    <value>ArdupilotMega.HorizontalProgressBar, ArdupilotMegaPlanner10, Version=1.1.4646.37607, Culture=neutral, PublicKeyToken=null</value>
-  </data>
-  <data name="&gt;&gt;horizontalProgressBar14.Parent" xml:space="preserve">
-    <value>$this</value>
-  </data>
-  <data name="&gt;&gt;horizontalProgressBar14.ZOrder" xml:space="preserve">
-    <value>10</value>
-  </data>
-  <data name="horizontalProgressBar15.ImeMode" type="System.Windows.Forms.ImeMode, System.Windows.Forms">
-    <value>NoControl</value>
-  </data>
-  <data name="horizontalProgressBar15.Location" type="System.Drawing.Point, System.Drawing">
-    <value>297, 21</value>
-  </data>
-  <data name="horizontalProgressBar15.Size" type="System.Drawing.Size, System.Drawing">
-    <value>170, 25</value>
-  </data>
-  <data name="horizontalProgressBar15.TabIndex" type="System.Int32, mscorlib">
-    <value>96</value>
-  </data>
-  <data name="&gt;&gt;horizontalProgressBar15.Name" xml:space="preserve">
-    <value>horizontalProgressBar15</value>
-  </data>
-  <data name="&gt;&gt;horizontalProgressBar15.Type" xml:space="preserve">
-    <value>ArdupilotMega.HorizontalProgressBar, ArdupilotMegaPlanner10, Version=1.1.4646.37607, Culture=neutral, PublicKeyToken=null</value>
-  </data>
-  <data name="&gt;&gt;horizontalProgressBar15.Parent" xml:space="preserve">
-    <value>$this</value>
-  </data>
-  <data name="&gt;&gt;horizontalProgressBar15.ZOrder" xml:space="preserve">
-    <value>11</value>
-  </data>
-  <data name="horizontalProgressBar16.ImeMode" type="System.Windows.Forms.ImeMode, System.Windows.Forms">
-    <value>NoControl</value>
-  </data>
-  <data name="horizontalProgressBar16.Location" type="System.Drawing.Point, System.Drawing">
-    <value>297, 76</value>
-  </data>
-  <data name="horizontalProgressBar16.Size" type="System.Drawing.Size, System.Drawing">
-    <value>170, 25</value>
-  </data>
-  <data name="horizontalProgressBar16.TabIndex" type="System.Int32, mscorlib">
-    <value>95</value>
-  </data>
-  <data name="&gt;&gt;horizontalProgressBar16.Name" xml:space="preserve">
-    <value>horizontalProgressBar16</value>
-  </data>
-  <data name="&gt;&gt;horizontalProgressBar16.Type" xml:space="preserve">
-    <value>ArdupilotMega.HorizontalProgressBar, ArdupilotMegaPlanner10, Version=1.1.4646.37607, Culture=neutral, PublicKeyToken=null</value>
-  </data>
-  <data name="&gt;&gt;horizontalProgressBar16.Parent" xml:space="preserve">
-    <value>$this</value>
-  </data>
-  <data name="&gt;&gt;horizontalProgressBar16.ZOrder" xml:space="preserve">
-    <value>12</value>
-  </data>
-  <data name="horizontalProgressBar8.ImeMode" type="System.Windows.Forms.ImeMode, System.Windows.Forms">
-    <value>NoControl</value>
-  </data>
-  <data name="horizontalProgressBar8.Location" type="System.Drawing.Point, System.Drawing">
-    <value>15, 406</value>
-  </data>
-  <data name="horizontalProgressBar8.Size" type="System.Drawing.Size, System.Drawing">
-    <value>170, 25</value>
-  </data>
-  <data name="horizontalProgressBar8.TabIndex" type="System.Int32, mscorlib">
-    <value>94</value>
-  </data>
-  <data name="&gt;&gt;horizontalProgressBar8.Name" xml:space="preserve">
-    <value>horizontalProgressBar8</value>
-  </data>
-  <data name="&gt;&gt;horizontalProgressBar8.Type" xml:space="preserve">
-    <value>ArdupilotMega.HorizontalProgressBar, ArdupilotMegaPlanner10, Version=1.1.4646.37607, Culture=neutral, PublicKeyToken=null</value>
-  </data>
-  <data name="&gt;&gt;horizontalProgressBar8.Parent" xml:space="preserve">
-    <value>$this</value>
-  </data>
-  <data name="&gt;&gt;horizontalProgressBar8.ZOrder" xml:space="preserve">
-    <value>13</value>
-  </data>
-  <data name="horizontalProgressBar7.ImeMode" type="System.Windows.Forms.ImeMode, System.Windows.Forms">
-    <value>NoControl</value>
-  </data>
-  <data name="horizontalProgressBar7.Location" type="System.Drawing.Point, System.Drawing">
-    <value>15, 351</value>
-  </data>
-  <data name="horizontalProgressBar7.Size" type="System.Drawing.Size, System.Drawing">
-    <value>170, 25</value>
-  </data>
-  <data name="horizontalProgressBar7.TabIndex" type="System.Int32, mscorlib">
-    <value>93</value>
-  </data>
-  <data name="&gt;&gt;horizontalProgressBar7.Name" xml:space="preserve">
-    <value>horizontalProgressBar7</value>
-  </data>
-  <data name="&gt;&gt;horizontalProgressBar7.Type" xml:space="preserve">
-    <value>ArdupilotMega.HorizontalProgressBar, ArdupilotMegaPlanner10, Version=1.1.4646.37607, Culture=neutral, PublicKeyToken=null</value>
-  </data>
-  <data name="&gt;&gt;horizontalProgressBar7.Parent" xml:space="preserve">
-    <value>$this</value>
-  </data>
-  <data name="&gt;&gt;horizontalProgressBar7.ZOrder" xml:space="preserve">
-    <value>14</value>
-  </data>
-  <data name="horizontalProgressBar6.ImeMode" type="System.Windows.Forms.ImeMode, System.Windows.Forms">
-    <value>NoControl</value>
-  </data>
-  <data name="horizontalProgressBar6.Location" type="System.Drawing.Point, System.Drawing">
-    <value>15, 296</value>
-  </data>
-  <data name="horizontalProgressBar6.Size" type="System.Drawing.Size, System.Drawing">
-    <value>170, 25</value>
-  </data>
-  <data name="horizontalProgressBar6.TabIndex" type="System.Int32, mscorlib">
-    <value>92</value>
-  </data>
-  <data name="&gt;&gt;horizontalProgressBar6.Name" xml:space="preserve">
-    <value>horizontalProgressBar6</value>
-  </data>
-  <data name="&gt;&gt;horizontalProgressBar6.Type" xml:space="preserve">
-    <value>ArdupilotMega.HorizontalProgressBar, ArdupilotMegaPlanner10, Version=1.1.4646.37607, Culture=neutral, PublicKeyToken=null</value>
-  </data>
-  <data name="&gt;&gt;horizontalProgressBar6.Parent" xml:space="preserve">
-    <value>$this</value>
-  </data>
-  <data name="&gt;&gt;horizontalProgressBar6.ZOrder" xml:space="preserve">
-    <value>15</value>
-  </data>
-  <data name="horizontalProgressBar5.ImeMode" type="System.Windows.Forms.ImeMode, System.Windows.Forms">
-    <value>NoControl</value>
-  </data>
-  <data name="horizontalProgressBar5.Location" type="System.Drawing.Point, System.Drawing">
-    <value>15, 241</value>
-  </data>
-  <data name="horizontalProgressBar5.Size" type="System.Drawing.Size, System.Drawing">
-    <value>170, 25</value>
-  </data>
-  <data name="horizontalProgressBar5.TabIndex" type="System.Int32, mscorlib">
-    <value>91</value>
-  </data>
-  <data name="&gt;&gt;horizontalProgressBar5.Name" xml:space="preserve">
-    <value>horizontalProgressBar5</value>
-  </data>
-  <data name="&gt;&gt;horizontalProgressBar5.Type" xml:space="preserve">
-    <value>ArdupilotMega.HorizontalProgressBar, ArdupilotMegaPlanner10, Version=1.1.4646.37607, Culture=neutral, PublicKeyToken=null</value>
-  </data>
-  <data name="&gt;&gt;horizontalProgressBar5.Parent" xml:space="preserve">
-    <value>$this</value>
-  </data>
-  <data name="&gt;&gt;horizontalProgressBar5.ZOrder" xml:space="preserve">
-    <value>16</value>
-  </data>
-  <data name="horizontalProgressBar4.ImeMode" type="System.Windows.Forms.ImeMode, System.Windows.Forms">
-    <value>NoControl</value>
-  </data>
-  <data name="horizontalProgressBar4.Location" type="System.Drawing.Point, System.Drawing">
-    <value>15, 186</value>
-  </data>
-  <data name="horizontalProgressBar4.Size" type="System.Drawing.Size, System.Drawing">
-    <value>170, 25</value>
-  </data>
-  <data name="horizontalProgressBar4.TabIndex" type="System.Int32, mscorlib">
-    <value>90</value>
-  </data>
-  <data name="&gt;&gt;horizontalProgressBar4.Name" xml:space="preserve">
-    <value>horizontalProgressBar4</value>
-  </data>
-  <data name="&gt;&gt;horizontalProgressBar4.Type" xml:space="preserve">
-    <value>ArdupilotMega.HorizontalProgressBar, ArdupilotMegaPlanner10, Version=1.1.4646.37607, Culture=neutral, PublicKeyToken=null</value>
-  </data>
-  <data name="&gt;&gt;horizontalProgressBar4.Parent" xml:space="preserve">
-    <value>$this</value>
-  </data>
-  <data name="&gt;&gt;horizontalProgressBar4.ZOrder" xml:space="preserve">
-    <value>17</value>
-  </data>
-  <data name="horizontalProgressBar3.ImeMode" type="System.Windows.Forms.ImeMode, System.Windows.Forms">
-    <value>NoControl</value>
-  </data>
-  <data name="horizontalProgressBar3.Location" type="System.Drawing.Point, System.Drawing">
-    <value>15, 131</value>
-  </data>
-  <data name="horizontalProgressBar3.Size" type="System.Drawing.Size, System.Drawing">
-    <value>170, 25</value>
-  </data>
-  <data name="horizontalProgressBar3.TabIndex" type="System.Int32, mscorlib">
-    <value>89</value>
-  </data>
-  <data name="&gt;&gt;horizontalProgressBar3.Name" xml:space="preserve">
-    <value>horizontalProgressBar3</value>
-  </data>
-  <data name="&gt;&gt;horizontalProgressBar3.Type" xml:space="preserve">
-    <value>ArdupilotMega.HorizontalProgressBar, ArdupilotMegaPlanner10, Version=1.1.4646.37607, Culture=neutral, PublicKeyToken=null</value>
-  </data>
-  <data name="&gt;&gt;horizontalProgressBar3.Parent" xml:space="preserve">
-    <value>$this</value>
-  </data>
-  <data name="&gt;&gt;horizontalProgressBar3.ZOrder" xml:space="preserve">
-    <value>18</value>
-  </data>
-  <data name="horizontalProgressBar2.ImeMode" type="System.Windows.Forms.ImeMode, System.Windows.Forms">
-    <value>NoControl</value>
-  </data>
-  <data name="horizontalProgressBar2.Location" type="System.Drawing.Point, System.Drawing">
-    <value>15, 21</value>
-  </data>
-  <data name="horizontalProgressBar2.Size" type="System.Drawing.Size, System.Drawing">
-    <value>170, 25</value>
-  </data>
-  <data name="horizontalProgressBar2.TabIndex" type="System.Int32, mscorlib">
-    <value>88</value>
-  </data>
-  <data name="&gt;&gt;horizontalProgressBar2.Name" xml:space="preserve">
-    <value>horizontalProgressBar2</value>
-  </data>
-  <data name="&gt;&gt;horizontalProgressBar2.Type" xml:space="preserve">
-    <value>ArdupilotMega.HorizontalProgressBar, ArdupilotMegaPlanner10, Version=1.1.4646.37607, Culture=neutral, PublicKeyToken=null</value>
-  </data>
-  <data name="&gt;&gt;horizontalProgressBar2.Parent" xml:space="preserve">
-    <value>$this</value>
-  </data>
-  <data name="&gt;&gt;horizontalProgressBar2.ZOrder" xml:space="preserve">
-    <value>19</value>
-  </data>
-  <data name="horizontalProgressBar1.ImeMode" type="System.Windows.Forms.ImeMode, System.Windows.Forms">
-    <value>NoControl</value>
-  </data>
-  <data name="horizontalProgressBar1.Location" type="System.Drawing.Point, System.Drawing">
-    <value>15, 76</value>
-  </data>
-  <data name="horizontalProgressBar1.Size" type="System.Drawing.Size, System.Drawing">
-    <value>170, 25</value>
-  </data>
-  <data name="horizontalProgressBar1.TabIndex" type="System.Int32, mscorlib">
-    <value>87</value>
-  </data>
-  <data name="&gt;&gt;horizontalProgressBar1.Name" xml:space="preserve">
-    <value>horizontalProgressBar1</value>
-  </data>
-  <data name="&gt;&gt;horizontalProgressBar1.Type" xml:space="preserve">
-    <value>ArdupilotMega.HorizontalProgressBar, ArdupilotMegaPlanner10, Version=1.1.4646.37607, Culture=neutral, PublicKeyToken=null</value>
-  </data>
-  <data name="&gt;&gt;horizontalProgressBar1.Parent" xml:space="preserve">
-    <value>$this</value>
-  </data>
-  <data name="&gt;&gt;horizontalProgressBar1.ZOrder" xml:space="preserve">
-    <value>20</value>
-  </data>
+  <metadata name="currentStateBindingSource.TrayLocation" type="System.Drawing.Point, System.Drawing, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a">
+    <value>17, 17</value>
+  </metadata>
   <data name="lbl_currentmode.Font" type="System.Drawing.Font, System.Drawing">
     <value>Microsoft Sans Serif, 26.25pt</value>
   </data>
@@ -598,76 +214,16 @@
     <value>$this</value>
   </data>
   <data name="&gt;&gt;lbl_currentmode.ZOrder" xml:space="preserve">
-    <value>2</value>
-  </data>
-  <data name="mavlinkCheckBoxthr_fs.AutoSize" type="System.Boolean, mscorlib">
-    <value>True</value>
-  </data>
-  <data name="mavlinkCheckBoxthr_fs.Enabled" type="System.Boolean, mscorlib">
-    <value>False</value>
-  </data>
-  <data name="mavlinkCheckBoxthr_fs.Location" type="System.Drawing.Point, System.Drawing">
-    <value>6, 19</value>
-  </data>
-  <data name="mavlinkCheckBoxthr_fs.Size" type="System.Drawing.Size, System.Drawing">
-    <value>103, 17</value>
-  </data>
-  <data name="mavlinkCheckBoxthr_fs.TabIndex" type="System.Int32, mscorlib">
-    <value>141</value>
-  </data>
-  <data name="mavlinkCheckBoxthr_fs.Text" xml:space="preserve">
-    <value>Throttle FailSafe</value>
-  </data>
-  <metadata name="toolTip1.TrayLocation" type="System.Drawing.Point, System.Drawing, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a">
-    <value>214, 17</value>
-  </metadata>
-  <data name="mavlinkCheckBoxthr_fs.ToolTip" xml:space="preserve">
-    <value>Enable Failsafe on low throttle pwm</value>
-  </data>
-  <data name="&gt;&gt;mavlinkCheckBoxthr_fs.Name" xml:space="preserve">
-    <value>mavlinkCheckBoxthr_fs</value>
-  </data>
-  <data name="&gt;&gt;mavlinkCheckBoxthr_fs.Type" xml:space="preserve">
-    <value>ArdupilotMega.Controls.MavlinkCheckBox, ArdupilotMegaPlanner10, Version=1.1.4646.37607, Culture=neutral, PublicKeyToken=null</value>
-  </data>
-  <data name="&gt;&gt;mavlinkCheckBoxthr_fs.Parent" xml:space="preserve">
-    <value>groupBox1</value>
-  </data>
-  <data name="&gt;&gt;mavlinkCheckBoxthr_fs.ZOrder" xml:space="preserve">
-    <value>1</value>
-  </data>
-  <data name="mavlinkNumericUpDownthr_fs_value.Enabled" type="System.Boolean, mscorlib">
-    <value>False</value>
-  </data>
-  <data name="mavlinkNumericUpDownthr_fs_value.Location" type="System.Drawing.Point, System.Drawing">
-    <value>42, 42</value>
-  </data>
-  <data name="mavlinkNumericUpDownthr_fs_value.Size" type="System.Drawing.Size, System.Drawing">
-    <value>103, 20</value>
-  </data>
-  <data name="mavlinkNumericUpDownthr_fs_value.TabIndex" type="System.Int32, mscorlib">
-    <value>142</value>
-  </data>
-  <data name="mavlinkNumericUpDownthr_fs_value.ToolTip" xml:space="preserve">
-    <value>Trigger Throttle Pwm</value>
-  </data>
-  <data name="&gt;&gt;mavlinkNumericUpDownthr_fs_value.Name" xml:space="preserve">
-    <value>mavlinkNumericUpDownthr_fs_value</value>
-  </data>
-  <data name="&gt;&gt;mavlinkNumericUpDownthr_fs_value.Type" xml:space="preserve">
-    <value>ArdupilotMega.Controls.MavlinkNumericUpDown, ArdupilotMegaPlanner10, Version=1.1.4646.37607, Culture=neutral, PublicKeyToken=null</value>
-  </data>
-  <data name="&gt;&gt;mavlinkNumericUpDownthr_fs_value.Parent" xml:space="preserve">
-    <value>groupBox1</value>
-  </data>
-  <data name="&gt;&gt;mavlinkNumericUpDownthr_fs_value.ZOrder" xml:space="preserve">
-    <value>3</value>
+    <value>4</value>
   </data>
   <data name="LNK_wiki.Anchor" type="System.Windows.Forms.AnchorStyles, System.Windows.Forms">
     <value>Top, Right</value>
   </data>
   <data name="LNK_wiki.AutoSize" type="System.Boolean, mscorlib">
     <value>True</value>
+  </data>
+  <data name="LNK_wiki.ImeMode" type="System.Windows.Forms.ImeMode, System.Windows.Forms">
+    <value>NoControl</value>
   </data>
   <data name="LNK_wiki.Location" type="System.Drawing.Point, System.Drawing">
     <value>657, 5</value>
@@ -691,7 +247,146 @@
     <value>$this</value>
   </data>
   <data name="&gt;&gt;LNK_wiki.ZOrder" xml:space="preserve">
+    <value>3</value>
+  </data>
+  <metadata name="toolTip1.TrayLocation" type="System.Drawing.Point, System.Drawing, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a">
+    <value>214, 17</value>
+  </metadata>
+  <data name="mavlinkCheckBoxthr_fs.AutoSize" type="System.Boolean, mscorlib">
+    <value>True</value>
+  </data>
+  <data name="mavlinkCheckBoxthr_fs.Enabled" type="System.Boolean, mscorlib">
+    <value>False</value>
+  </data>
+  <data name="mavlinkCheckBoxthr_fs.ImeMode" type="System.Windows.Forms.ImeMode, System.Windows.Forms">
+    <value>NoControl</value>
+  </data>
+  <data name="mavlinkCheckBoxthr_fs.Location" type="System.Drawing.Point, System.Drawing">
+    <value>6, 19</value>
+  </data>
+  <data name="mavlinkCheckBoxthr_fs.Size" type="System.Drawing.Size, System.Drawing">
+    <value>103, 17</value>
+  </data>
+  <data name="mavlinkCheckBoxthr_fs.TabIndex" type="System.Int32, mscorlib">
+    <value>141</value>
+  </data>
+  <data name="mavlinkCheckBoxthr_fs.Text" xml:space="preserve">
+    <value>Throttle FailSafe</value>
+  </data>
+  <data name="mavlinkCheckBoxthr_fs.ToolTip" xml:space="preserve">
+    <value>Enable Failsafe on low throttle pwm</value>
+  </data>
+  <data name="&gt;&gt;mavlinkCheckBoxthr_fs.Name" xml:space="preserve">
+    <value>mavlinkCheckBoxthr_fs</value>
+  </data>
+  <data name="&gt;&gt;mavlinkCheckBoxthr_fs.Type" xml:space="preserve">
+    <value>ArdupilotMega.Controls.MavlinkCheckBox, ArdupilotMegaPlanner10, Version=1.1.4696.32711, Culture=neutral, PublicKeyToken=null</value>
+  </data>
+  <data name="&gt;&gt;mavlinkCheckBoxthr_fs.Parent" xml:space="preserve">
+    <value>groupBox1</value>
+  </data>
+  <data name="&gt;&gt;mavlinkCheckBoxthr_fs.ZOrder" xml:space="preserve">
     <value>1</value>
+  </data>
+  <data name="mavlinkCheckBoxthr_fs_action.AutoSize" type="System.Boolean, mscorlib">
+    <value>True</value>
+  </data>
+  <data name="mavlinkCheckBoxthr_fs_action.Enabled" type="System.Boolean, mscorlib">
+    <value>False</value>
+  </data>
+  <data name="mavlinkCheckBoxthr_fs_action.ImeMode" type="System.Windows.Forms.ImeMode, System.Windows.Forms">
+    <value>NoControl</value>
+  </data>
+  <data name="mavlinkCheckBoxthr_fs_action.Location" type="System.Drawing.Point, System.Drawing">
+    <value>6, 69</value>
+  </data>
+  <data name="mavlinkCheckBoxthr_fs_action.Size" type="System.Drawing.Size, System.Drawing">
+    <value>134, 17</value>
+  </data>
+  <data name="mavlinkCheckBoxthr_fs_action.TabIndex" type="System.Int32, mscorlib">
+    <value>147</value>
+  </data>
+  <data name="mavlinkCheckBoxthr_fs_action.Text" xml:space="preserve">
+    <value>Throttle Failsafe Action</value>
+  </data>
+  <data name="mavlinkCheckBoxthr_fs_action.ToolTip" xml:space="preserve">
+    <value>Arducopter Auto: Off, no Action, On, RTL
+Arducopter Other: if have gps, RTL, Otherwise Land</value>
+  </data>
+  <data name="&gt;&gt;mavlinkCheckBoxthr_fs_action.Name" xml:space="preserve">
+    <value>mavlinkCheckBoxthr_fs_action</value>
+  </data>
+  <data name="&gt;&gt;mavlinkCheckBoxthr_fs_action.Type" xml:space="preserve">
+    <value>ArdupilotMega.Controls.MavlinkCheckBox, ArdupilotMegaPlanner10, Version=1.1.4696.32711, Culture=neutral, PublicKeyToken=null</value>
+  </data>
+  <data name="&gt;&gt;mavlinkCheckBoxthr_fs_action.Parent" xml:space="preserve">
+    <value>groupBox1</value>
+  </data>
+  <data name="&gt;&gt;mavlinkCheckBoxthr_fs_action.ZOrder" xml:space="preserve">
+    <value>2</value>
+  </data>
+  <data name="mavlinkNumericUpDownthr_fs_value.Enabled" type="System.Boolean, mscorlib">
+    <value>False</value>
+  </data>
+  <data name="mavlinkNumericUpDownthr_fs_value.Location" type="System.Drawing.Point, System.Drawing">
+    <value>42, 42</value>
+  </data>
+  <data name="mavlinkNumericUpDownthr_fs_value.Size" type="System.Drawing.Size, System.Drawing">
+    <value>103, 20</value>
+  </data>
+  <data name="mavlinkNumericUpDownthr_fs_value.TabIndex" type="System.Int32, mscorlib">
+    <value>142</value>
+  </data>
+  <data name="mavlinkNumericUpDownthr_fs_value.ToolTip" xml:space="preserve">
+    <value>Trigger Throttle Pwm</value>
+  </data>
+  <data name="&gt;&gt;mavlinkNumericUpDownthr_fs_value.Name" xml:space="preserve">
+    <value>mavlinkNumericUpDownthr_fs_value</value>
+  </data>
+  <data name="&gt;&gt;mavlinkNumericUpDownthr_fs_value.Type" xml:space="preserve">
+    <value>ArdupilotMega.Controls.MavlinkNumericUpDown, ArdupilotMegaPlanner10, Version=1.1.4696.32711, Culture=neutral, PublicKeyToken=null</value>
+  </data>
+  <data name="&gt;&gt;mavlinkNumericUpDownthr_fs_value.Parent" xml:space="preserve">
+    <value>groupBox1</value>
+  </data>
+  <data name="&gt;&gt;mavlinkNumericUpDownthr_fs_value.ZOrder" xml:space="preserve">
+    <value>3</value>
+  </data>
+  <data name="mavlinkCheckBoxlong_fs.AutoSize" type="System.Boolean, mscorlib">
+    <value>True</value>
+  </data>
+  <data name="mavlinkCheckBoxlong_fs.Enabled" type="System.Boolean, mscorlib">
+    <value>False</value>
+  </data>
+  <data name="mavlinkCheckBoxlong_fs.ImeMode" type="System.Windows.Forms.ImeMode, System.Windows.Forms">
+    <value>NoControl</value>
+  </data>
+  <data name="mavlinkCheckBoxlong_fs.Location" type="System.Drawing.Point, System.Drawing">
+    <value>6, 138</value>
+  </data>
+  <data name="mavlinkCheckBoxlong_fs.Size" type="System.Drawing.Size, System.Drawing">
+    <value>132, 17</value>
+  </data>
+  <data name="mavlinkCheckBoxlong_fs.TabIndex" type="System.Int32, mscorlib">
+    <value>146</value>
+  </data>
+  <data name="mavlinkCheckBoxlong_fs.Text" xml:space="preserve">
+    <value>FailSafe Long (20 sec)</value>
+  </data>
+  <data name="mavlinkCheckBoxlong_fs.ToolTip" xml:space="preserve">
+    <value>Off, no Action, On, RTL</value>
+  </data>
+  <data name="&gt;&gt;mavlinkCheckBoxlong_fs.Name" xml:space="preserve">
+    <value>mavlinkCheckBoxlong_fs</value>
+  </data>
+  <data name="&gt;&gt;mavlinkCheckBoxlong_fs.Type" xml:space="preserve">
+    <value>ArdupilotMega.Controls.MavlinkCheckBox, ArdupilotMegaPlanner10, Version=1.1.4696.32711, Culture=neutral, PublicKeyToken=null</value>
+  </data>
+  <data name="&gt;&gt;mavlinkCheckBoxlong_fs.Parent" xml:space="preserve">
+    <value>groupBox1</value>
+  </data>
+  <data name="&gt;&gt;mavlinkCheckBoxlong_fs.ZOrder" xml:space="preserve">
+    <value>4</value>
   </data>
   <data name="mavlinkCheckBoxgcs_fs.AutoSize" type="System.Boolean, mscorlib">
     <value>True</value>
@@ -721,7 +416,7 @@
     <value>mavlinkCheckBoxgcs_fs</value>
   </data>
   <data name="&gt;&gt;mavlinkCheckBoxgcs_fs.Type" xml:space="preserve">
-    <value>ArdupilotMega.Controls.MavlinkCheckBox, ArdupilotMegaPlanner10, Version=1.1.4646.37607, Culture=neutral, PublicKeyToken=null</value>
+    <value>ArdupilotMega.Controls.MavlinkCheckBox, ArdupilotMegaPlanner10, Version=1.1.4696.32711, Culture=neutral, PublicKeyToken=null</value>
   </data>
   <data name="&gt;&gt;mavlinkCheckBoxgcs_fs.Parent" xml:space="preserve">
     <value>groupBox1</value>
@@ -757,7 +452,7 @@
     <value>mavlinkCheckBoxshort_fs</value>
   </data>
   <data name="&gt;&gt;mavlinkCheckBoxshort_fs.Type" xml:space="preserve">
-    <value>ArdupilotMega.Controls.MavlinkCheckBox, ArdupilotMegaPlanner10, Version=1.1.4646.37607, Culture=neutral, PublicKeyToken=null</value>
+    <value>ArdupilotMega.Controls.MavlinkCheckBox, ArdupilotMegaPlanner10, Version=1.1.4696.32711, Culture=neutral, PublicKeyToken=null</value>
   </data>
   <data name="&gt;&gt;mavlinkCheckBoxshort_fs.Parent" xml:space="preserve">
     <value>groupBox1</value>
@@ -765,81 +460,11 @@
   <data name="&gt;&gt;mavlinkCheckBoxshort_fs.ZOrder" xml:space="preserve">
     <value>6</value>
   </data>
-  <data name="mavlinkCheckBoxlong_fs.AutoSize" type="System.Boolean, mscorlib">
-    <value>True</value>
-  </data>
-  <data name="mavlinkCheckBoxlong_fs.Enabled" type="System.Boolean, mscorlib">
-    <value>False</value>
-  </data>
-  <data name="mavlinkCheckBoxlong_fs.ImeMode" type="System.Windows.Forms.ImeMode, System.Windows.Forms">
-    <value>NoControl</value>
-  </data>
-  <data name="mavlinkCheckBoxlong_fs.Location" type="System.Drawing.Point, System.Drawing">
-    <value>6, 138</value>
-  </data>
-  <data name="mavlinkCheckBoxlong_fs.Size" type="System.Drawing.Size, System.Drawing">
-    <value>132, 17</value>
-  </data>
-  <data name="mavlinkCheckBoxlong_fs.TabIndex" type="System.Int32, mscorlib">
-    <value>146</value>
-  </data>
-  <data name="mavlinkCheckBoxlong_fs.Text" xml:space="preserve">
-    <value>FailSafe Long (20 sec)</value>
-  </data>
-  <data name="mavlinkCheckBoxlong_fs.ToolTip" xml:space="preserve">
-    <value>Off, no Action, On, RTL</value>
-  </data>
-  <data name="&gt;&gt;mavlinkCheckBoxlong_fs.Name" xml:space="preserve">
-    <value>mavlinkCheckBoxlong_fs</value>
-  </data>
-  <data name="&gt;&gt;mavlinkCheckBoxlong_fs.Type" xml:space="preserve">
-    <value>ArdupilotMega.Controls.MavlinkCheckBox, ArdupilotMegaPlanner10, Version=1.1.4646.37607, Culture=neutral, PublicKeyToken=null</value>
-  </data>
-  <data name="&gt;&gt;mavlinkCheckBoxlong_fs.Parent" xml:space="preserve">
-    <value>groupBox1</value>
-  </data>
-  <data name="&gt;&gt;mavlinkCheckBoxlong_fs.ZOrder" xml:space="preserve">
-    <value>4</value>
-  </data>
-  <data name="mavlinkCheckBoxthr_fs_action.AutoSize" type="System.Boolean, mscorlib">
-    <value>True</value>
-  </data>
-  <data name="mavlinkCheckBoxthr_fs_action.Enabled" type="System.Boolean, mscorlib">
-    <value>False</value>
-  </data>
-  <data name="mavlinkCheckBoxthr_fs_action.ImeMode" type="System.Windows.Forms.ImeMode, System.Windows.Forms">
-    <value>NoControl</value>
-  </data>
-  <data name="mavlinkCheckBoxthr_fs_action.Location" type="System.Drawing.Point, System.Drawing">
-    <value>6, 69</value>
-  </data>
-  <data name="mavlinkCheckBoxthr_fs_action.Size" type="System.Drawing.Size, System.Drawing">
-    <value>134, 17</value>
-  </data>
-  <data name="mavlinkCheckBoxthr_fs_action.TabIndex" type="System.Int32, mscorlib">
-    <value>147</value>
-  </data>
-  <data name="mavlinkCheckBoxthr_fs_action.Text" xml:space="preserve">
-    <value>Throttle Failsafe Action</value>
-  </data>
-  <data name="mavlinkCheckBoxthr_fs_action.ToolTip" xml:space="preserve">
-    <value>Arducopter Auto: Off, no Action, On, RTL
-Arducopter Other: if have gps, RTL, Otherwise Land</value>
-  </data>
-  <data name="&gt;&gt;mavlinkCheckBoxthr_fs_action.Name" xml:space="preserve">
-    <value>mavlinkCheckBoxthr_fs_action</value>
-  </data>
-  <data name="&gt;&gt;mavlinkCheckBoxthr_fs_action.Type" xml:space="preserve">
-    <value>ArdupilotMega.Controls.MavlinkCheckBox, ArdupilotMegaPlanner10, Version=1.1.4646.37607, Culture=neutral, PublicKeyToken=null</value>
-  </data>
-  <data name="&gt;&gt;mavlinkCheckBoxthr_fs_action.Parent" xml:space="preserve">
-    <value>groupBox1</value>
-  </data>
-  <data name="&gt;&gt;mavlinkCheckBoxthr_fs_action.ZOrder" xml:space="preserve">
-    <value>2</value>
-  </data>
   <data name="label3.AutoSize" type="System.Boolean, mscorlib">
     <value>True</value>
+  </data>
+  <data name="label3.ImeMode" type="System.Windows.Forms.ImeMode, System.Windows.Forms">
+    <value>NoControl</value>
   </data>
   <data name="label3.Location" type="System.Drawing.Point, System.Drawing">
     <value>6, 48</value>
@@ -866,7 +491,7 @@ Arducopter Other: if have gps, RTL, Otherwise Land</value>
     <value>0</value>
   </data>
   <data name="groupBox1.Location" type="System.Drawing.Point, System.Drawing">
-    <value>495, 76</value>
+    <value>495, 209</value>
   </data>
   <data name="groupBox1.Size" type="System.Drawing.Size, System.Drawing">
     <value>170, 167</value>
@@ -887,7 +512,457 @@ Arducopter Other: if have gps, RTL, Otherwise Land</value>
     <value>$this</value>
   </data>
   <data name="&gt;&gt;groupBox1.ZOrder" xml:space="preserve">
+    <value>2</value>
+  </data>
+  <data name="lbl_armed.Font" type="System.Drawing.Font, System.Drawing">
+    <value>Microsoft Sans Serif, 26.25pt</value>
+  </data>
+  <data name="lbl_armed.ImeMode" type="System.Windows.Forms.ImeMode, System.Windows.Forms">
+    <value>NoControl</value>
+  </data>
+  <data name="lbl_armed.Location" type="System.Drawing.Point, System.Drawing">
+    <value>473, 71</value>
+  </data>
+  <data name="lbl_armed.Size" type="System.Drawing.Size, System.Drawing">
+    <value>215, 50</value>
+  </data>
+  <data name="lbl_armed.TabIndex" type="System.Int32, mscorlib">
+    <value>149</value>
+  </data>
+  <data name="lbl_armed.Text" xml:space="preserve">
+    <value>Dissarmed</value>
+  </data>
+  <data name="lbl_armed.TextAlign" type="System.Drawing.ContentAlignment, System.Drawing">
+    <value>MiddleCenter</value>
+  </data>
+  <data name="&gt;&gt;lbl_armed.Name" xml:space="preserve">
+    <value>lbl_armed</value>
+  </data>
+  <data name="&gt;&gt;lbl_armed.Type" xml:space="preserve">
+    <value>System.Windows.Forms.Label, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </data>
+  <data name="&gt;&gt;lbl_armed.Parent" xml:space="preserve">
+    <value>$this</value>
+  </data>
+  <data name="&gt;&gt;lbl_armed.ZOrder" xml:space="preserve">
+    <value>1</value>
+  </data>
+  <data name="lbl_gpslock.Font" type="System.Drawing.Font, System.Drawing">
+    <value>Microsoft Sans Serif, 26.25pt</value>
+  </data>
+  <data name="lbl_gpslock.ImeMode" type="System.Windows.Forms.ImeMode, System.Windows.Forms">
+    <value>NoControl</value>
+  </data>
+  <data name="lbl_gpslock.Location" type="System.Drawing.Point, System.Drawing">
+    <value>473, 121</value>
+  </data>
+  <data name="lbl_gpslock.Size" type="System.Drawing.Size, System.Drawing">
+    <value>215, 50</value>
+  </data>
+  <data name="lbl_gpslock.TabIndex" type="System.Int32, mscorlib">
+    <value>150</value>
+  </data>
+  <data name="lbl_gpslock.Text" xml:space="preserve">
+    <value>No Lock</value>
+  </data>
+  <data name="lbl_gpslock.TextAlign" type="System.Drawing.ContentAlignment, System.Drawing">
+    <value>MiddleCenter</value>
+  </data>
+  <data name="&gt;&gt;lbl_gpslock.Name" xml:space="preserve">
+    <value>lbl_gpslock</value>
+  </data>
+  <data name="&gt;&gt;lbl_gpslock.Type" xml:space="preserve">
+    <value>System.Windows.Forms.Label, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </data>
+  <data name="&gt;&gt;lbl_gpslock.Parent" xml:space="preserve">
+    <value>$this</value>
+  </data>
+  <data name="&gt;&gt;lbl_gpslock.ZOrder" xml:space="preserve">
     <value>0</value>
+  </data>
+  <data name="horizontalProgressBar9.ImeMode" type="System.Windows.Forms.ImeMode, System.Windows.Forms">
+    <value>NoControl</value>
+  </data>
+  <data name="horizontalProgressBar9.Location" type="System.Drawing.Point, System.Drawing">
+    <value>297, 406</value>
+  </data>
+  <data name="horizontalProgressBar9.Size" type="System.Drawing.Size, System.Drawing">
+    <value>170, 25</value>
+  </data>
+  <data name="horizontalProgressBar9.TabIndex" type="System.Int32, mscorlib">
+    <value>102</value>
+  </data>
+  <data name="&gt;&gt;horizontalProgressBar9.Name" xml:space="preserve">
+    <value>horizontalProgressBar9</value>
+  </data>
+  <data name="&gt;&gt;horizontalProgressBar9.Type" xml:space="preserve">
+    <value>ArdupilotMega.HorizontalProgressBar, ArdupilotMegaPlanner10, Version=1.1.4696.32711, Culture=neutral, PublicKeyToken=null</value>
+  </data>
+  <data name="&gt;&gt;horizontalProgressBar9.Parent" xml:space="preserve">
+    <value>$this</value>
+  </data>
+  <data name="&gt;&gt;horizontalProgressBar9.ZOrder" xml:space="preserve">
+    <value>7</value>
+  </data>
+  <data name="horizontalProgressBar10.ImeMode" type="System.Windows.Forms.ImeMode, System.Windows.Forms">
+    <value>NoControl</value>
+  </data>
+  <data name="horizontalProgressBar10.Location" type="System.Drawing.Point, System.Drawing">
+    <value>297, 351</value>
+  </data>
+  <data name="horizontalProgressBar10.Size" type="System.Drawing.Size, System.Drawing">
+    <value>170, 25</value>
+  </data>
+  <data name="horizontalProgressBar10.TabIndex" type="System.Int32, mscorlib">
+    <value>101</value>
+  </data>
+  <data name="&gt;&gt;horizontalProgressBar10.Name" xml:space="preserve">
+    <value>horizontalProgressBar10</value>
+  </data>
+  <data name="&gt;&gt;horizontalProgressBar10.Type" xml:space="preserve">
+    <value>ArdupilotMega.HorizontalProgressBar, ArdupilotMegaPlanner10, Version=1.1.4696.32711, Culture=neutral, PublicKeyToken=null</value>
+  </data>
+  <data name="&gt;&gt;horizontalProgressBar10.Parent" xml:space="preserve">
+    <value>$this</value>
+  </data>
+  <data name="&gt;&gt;horizontalProgressBar10.ZOrder" xml:space="preserve">
+    <value>8</value>
+  </data>
+  <data name="horizontalProgressBar11.ImeMode" type="System.Windows.Forms.ImeMode, System.Windows.Forms">
+    <value>NoControl</value>
+  </data>
+  <data name="horizontalProgressBar11.Location" type="System.Drawing.Point, System.Drawing">
+    <value>297, 296</value>
+  </data>
+  <data name="horizontalProgressBar11.Size" type="System.Drawing.Size, System.Drawing">
+    <value>170, 25</value>
+  </data>
+  <data name="horizontalProgressBar11.TabIndex" type="System.Int32, mscorlib">
+    <value>100</value>
+  </data>
+  <data name="&gt;&gt;horizontalProgressBar11.Name" xml:space="preserve">
+    <value>horizontalProgressBar11</value>
+  </data>
+  <data name="&gt;&gt;horizontalProgressBar11.Type" xml:space="preserve">
+    <value>ArdupilotMega.HorizontalProgressBar, ArdupilotMegaPlanner10, Version=1.1.4696.32711, Culture=neutral, PublicKeyToken=null</value>
+  </data>
+  <data name="&gt;&gt;horizontalProgressBar11.Parent" xml:space="preserve">
+    <value>$this</value>
+  </data>
+  <data name="&gt;&gt;horizontalProgressBar11.ZOrder" xml:space="preserve">
+    <value>9</value>
+  </data>
+  <data name="horizontalProgressBar12.ImeMode" type="System.Windows.Forms.ImeMode, System.Windows.Forms">
+    <value>NoControl</value>
+  </data>
+  <data name="horizontalProgressBar12.Location" type="System.Drawing.Point, System.Drawing">
+    <value>297, 241</value>
+  </data>
+  <data name="horizontalProgressBar12.Size" type="System.Drawing.Size, System.Drawing">
+    <value>170, 25</value>
+  </data>
+  <data name="horizontalProgressBar12.TabIndex" type="System.Int32, mscorlib">
+    <value>99</value>
+  </data>
+  <data name="&gt;&gt;horizontalProgressBar12.Name" xml:space="preserve">
+    <value>horizontalProgressBar12</value>
+  </data>
+  <data name="&gt;&gt;horizontalProgressBar12.Type" xml:space="preserve">
+    <value>ArdupilotMega.HorizontalProgressBar, ArdupilotMegaPlanner10, Version=1.1.4696.32711, Culture=neutral, PublicKeyToken=null</value>
+  </data>
+  <data name="&gt;&gt;horizontalProgressBar12.Parent" xml:space="preserve">
+    <value>$this</value>
+  </data>
+  <data name="&gt;&gt;horizontalProgressBar12.ZOrder" xml:space="preserve">
+    <value>10</value>
+  </data>
+  <data name="horizontalProgressBar13.ImeMode" type="System.Windows.Forms.ImeMode, System.Windows.Forms">
+    <value>NoControl</value>
+  </data>
+  <data name="horizontalProgressBar13.Location" type="System.Drawing.Point, System.Drawing">
+    <value>297, 186</value>
+  </data>
+  <data name="horizontalProgressBar13.Size" type="System.Drawing.Size, System.Drawing">
+    <value>170, 25</value>
+  </data>
+  <data name="horizontalProgressBar13.TabIndex" type="System.Int32, mscorlib">
+    <value>98</value>
+  </data>
+  <data name="&gt;&gt;horizontalProgressBar13.Name" xml:space="preserve">
+    <value>horizontalProgressBar13</value>
+  </data>
+  <data name="&gt;&gt;horizontalProgressBar13.Type" xml:space="preserve">
+    <value>ArdupilotMega.HorizontalProgressBar, ArdupilotMegaPlanner10, Version=1.1.4696.32711, Culture=neutral, PublicKeyToken=null</value>
+  </data>
+  <data name="&gt;&gt;horizontalProgressBar13.Parent" xml:space="preserve">
+    <value>$this</value>
+  </data>
+  <data name="&gt;&gt;horizontalProgressBar13.ZOrder" xml:space="preserve">
+    <value>11</value>
+  </data>
+  <data name="horizontalProgressBar14.ImeMode" type="System.Windows.Forms.ImeMode, System.Windows.Forms">
+    <value>NoControl</value>
+  </data>
+  <data name="horizontalProgressBar14.Location" type="System.Drawing.Point, System.Drawing">
+    <value>297, 131</value>
+  </data>
+  <data name="horizontalProgressBar14.Size" type="System.Drawing.Size, System.Drawing">
+    <value>170, 25</value>
+  </data>
+  <data name="horizontalProgressBar14.TabIndex" type="System.Int32, mscorlib">
+    <value>97</value>
+  </data>
+  <data name="&gt;&gt;horizontalProgressBar14.Name" xml:space="preserve">
+    <value>horizontalProgressBar14</value>
+  </data>
+  <data name="&gt;&gt;horizontalProgressBar14.Type" xml:space="preserve">
+    <value>ArdupilotMega.HorizontalProgressBar, ArdupilotMegaPlanner10, Version=1.1.4696.32711, Culture=neutral, PublicKeyToken=null</value>
+  </data>
+  <data name="&gt;&gt;horizontalProgressBar14.Parent" xml:space="preserve">
+    <value>$this</value>
+  </data>
+  <data name="&gt;&gt;horizontalProgressBar14.ZOrder" xml:space="preserve">
+    <value>12</value>
+  </data>
+  <data name="horizontalProgressBar15.ImeMode" type="System.Windows.Forms.ImeMode, System.Windows.Forms">
+    <value>NoControl</value>
+  </data>
+  <data name="horizontalProgressBar15.Location" type="System.Drawing.Point, System.Drawing">
+    <value>297, 21</value>
+  </data>
+  <data name="horizontalProgressBar15.Size" type="System.Drawing.Size, System.Drawing">
+    <value>170, 25</value>
+  </data>
+  <data name="horizontalProgressBar15.TabIndex" type="System.Int32, mscorlib">
+    <value>96</value>
+  </data>
+  <data name="&gt;&gt;horizontalProgressBar15.Name" xml:space="preserve">
+    <value>horizontalProgressBar15</value>
+  </data>
+  <data name="&gt;&gt;horizontalProgressBar15.Type" xml:space="preserve">
+    <value>ArdupilotMega.HorizontalProgressBar, ArdupilotMegaPlanner10, Version=1.1.4696.32711, Culture=neutral, PublicKeyToken=null</value>
+  </data>
+  <data name="&gt;&gt;horizontalProgressBar15.Parent" xml:space="preserve">
+    <value>$this</value>
+  </data>
+  <data name="&gt;&gt;horizontalProgressBar15.ZOrder" xml:space="preserve">
+    <value>13</value>
+  </data>
+  <data name="horizontalProgressBar16.ImeMode" type="System.Windows.Forms.ImeMode, System.Windows.Forms">
+    <value>NoControl</value>
+  </data>
+  <data name="horizontalProgressBar16.Location" type="System.Drawing.Point, System.Drawing">
+    <value>297, 76</value>
+  </data>
+  <data name="horizontalProgressBar16.Size" type="System.Drawing.Size, System.Drawing">
+    <value>170, 25</value>
+  </data>
+  <data name="horizontalProgressBar16.TabIndex" type="System.Int32, mscorlib">
+    <value>95</value>
+  </data>
+  <data name="&gt;&gt;horizontalProgressBar16.Name" xml:space="preserve">
+    <value>horizontalProgressBar16</value>
+  </data>
+  <data name="&gt;&gt;horizontalProgressBar16.Type" xml:space="preserve">
+    <value>ArdupilotMega.HorizontalProgressBar, ArdupilotMegaPlanner10, Version=1.1.4696.32711, Culture=neutral, PublicKeyToken=null</value>
+  </data>
+  <data name="&gt;&gt;horizontalProgressBar16.Parent" xml:space="preserve">
+    <value>$this</value>
+  </data>
+  <data name="&gt;&gt;horizontalProgressBar16.ZOrder" xml:space="preserve">
+    <value>14</value>
+  </data>
+  <data name="horizontalProgressBar8.ImeMode" type="System.Windows.Forms.ImeMode, System.Windows.Forms">
+    <value>NoControl</value>
+  </data>
+  <data name="horizontalProgressBar8.Location" type="System.Drawing.Point, System.Drawing">
+    <value>15, 406</value>
+  </data>
+  <data name="horizontalProgressBar8.Size" type="System.Drawing.Size, System.Drawing">
+    <value>170, 25</value>
+  </data>
+  <data name="horizontalProgressBar8.TabIndex" type="System.Int32, mscorlib">
+    <value>94</value>
+  </data>
+  <data name="&gt;&gt;horizontalProgressBar8.Name" xml:space="preserve">
+    <value>horizontalProgressBar8</value>
+  </data>
+  <data name="&gt;&gt;horizontalProgressBar8.Type" xml:space="preserve">
+    <value>ArdupilotMega.HorizontalProgressBar, ArdupilotMegaPlanner10, Version=1.1.4696.32711, Culture=neutral, PublicKeyToken=null</value>
+  </data>
+  <data name="&gt;&gt;horizontalProgressBar8.Parent" xml:space="preserve">
+    <value>$this</value>
+  </data>
+  <data name="&gt;&gt;horizontalProgressBar8.ZOrder" xml:space="preserve">
+    <value>15</value>
+  </data>
+  <data name="horizontalProgressBar7.ImeMode" type="System.Windows.Forms.ImeMode, System.Windows.Forms">
+    <value>NoControl</value>
+  </data>
+  <data name="horizontalProgressBar7.Location" type="System.Drawing.Point, System.Drawing">
+    <value>15, 351</value>
+  </data>
+  <data name="horizontalProgressBar7.Size" type="System.Drawing.Size, System.Drawing">
+    <value>170, 25</value>
+  </data>
+  <data name="horizontalProgressBar7.TabIndex" type="System.Int32, mscorlib">
+    <value>93</value>
+  </data>
+  <data name="&gt;&gt;horizontalProgressBar7.Name" xml:space="preserve">
+    <value>horizontalProgressBar7</value>
+  </data>
+  <data name="&gt;&gt;horizontalProgressBar7.Type" xml:space="preserve">
+    <value>ArdupilotMega.HorizontalProgressBar, ArdupilotMegaPlanner10, Version=1.1.4696.32711, Culture=neutral, PublicKeyToken=null</value>
+  </data>
+  <data name="&gt;&gt;horizontalProgressBar7.Parent" xml:space="preserve">
+    <value>$this</value>
+  </data>
+  <data name="&gt;&gt;horizontalProgressBar7.ZOrder" xml:space="preserve">
+    <value>16</value>
+  </data>
+  <data name="horizontalProgressBar6.ImeMode" type="System.Windows.Forms.ImeMode, System.Windows.Forms">
+    <value>NoControl</value>
+  </data>
+  <data name="horizontalProgressBar6.Location" type="System.Drawing.Point, System.Drawing">
+    <value>15, 296</value>
+  </data>
+  <data name="horizontalProgressBar6.Size" type="System.Drawing.Size, System.Drawing">
+    <value>170, 25</value>
+  </data>
+  <data name="horizontalProgressBar6.TabIndex" type="System.Int32, mscorlib">
+    <value>92</value>
+  </data>
+  <data name="&gt;&gt;horizontalProgressBar6.Name" xml:space="preserve">
+    <value>horizontalProgressBar6</value>
+  </data>
+  <data name="&gt;&gt;horizontalProgressBar6.Type" xml:space="preserve">
+    <value>ArdupilotMega.HorizontalProgressBar, ArdupilotMegaPlanner10, Version=1.1.4696.32711, Culture=neutral, PublicKeyToken=null</value>
+  </data>
+  <data name="&gt;&gt;horizontalProgressBar6.Parent" xml:space="preserve">
+    <value>$this</value>
+  </data>
+  <data name="&gt;&gt;horizontalProgressBar6.ZOrder" xml:space="preserve">
+    <value>17</value>
+  </data>
+  <data name="horizontalProgressBar5.ImeMode" type="System.Windows.Forms.ImeMode, System.Windows.Forms">
+    <value>NoControl</value>
+  </data>
+  <data name="horizontalProgressBar5.Location" type="System.Drawing.Point, System.Drawing">
+    <value>15, 241</value>
+  </data>
+  <data name="horizontalProgressBar5.Size" type="System.Drawing.Size, System.Drawing">
+    <value>170, 25</value>
+  </data>
+  <data name="horizontalProgressBar5.TabIndex" type="System.Int32, mscorlib">
+    <value>91</value>
+  </data>
+  <data name="&gt;&gt;horizontalProgressBar5.Name" xml:space="preserve">
+    <value>horizontalProgressBar5</value>
+  </data>
+  <data name="&gt;&gt;horizontalProgressBar5.Type" xml:space="preserve">
+    <value>ArdupilotMega.HorizontalProgressBar, ArdupilotMegaPlanner10, Version=1.1.4696.32711, Culture=neutral, PublicKeyToken=null</value>
+  </data>
+  <data name="&gt;&gt;horizontalProgressBar5.Parent" xml:space="preserve">
+    <value>$this</value>
+  </data>
+  <data name="&gt;&gt;horizontalProgressBar5.ZOrder" xml:space="preserve">
+    <value>18</value>
+  </data>
+  <data name="horizontalProgressBar4.ImeMode" type="System.Windows.Forms.ImeMode, System.Windows.Forms">
+    <value>NoControl</value>
+  </data>
+  <data name="horizontalProgressBar4.Location" type="System.Drawing.Point, System.Drawing">
+    <value>15, 186</value>
+  </data>
+  <data name="horizontalProgressBar4.Size" type="System.Drawing.Size, System.Drawing">
+    <value>170, 25</value>
+  </data>
+  <data name="horizontalProgressBar4.TabIndex" type="System.Int32, mscorlib">
+    <value>90</value>
+  </data>
+  <data name="&gt;&gt;horizontalProgressBar4.Name" xml:space="preserve">
+    <value>horizontalProgressBar4</value>
+  </data>
+  <data name="&gt;&gt;horizontalProgressBar4.Type" xml:space="preserve">
+    <value>ArdupilotMega.HorizontalProgressBar, ArdupilotMegaPlanner10, Version=1.1.4696.32711, Culture=neutral, PublicKeyToken=null</value>
+  </data>
+  <data name="&gt;&gt;horizontalProgressBar4.Parent" xml:space="preserve">
+    <value>$this</value>
+  </data>
+  <data name="&gt;&gt;horizontalProgressBar4.ZOrder" xml:space="preserve">
+    <value>19</value>
+  </data>
+  <data name="horizontalProgressBar3.ImeMode" type="System.Windows.Forms.ImeMode, System.Windows.Forms">
+    <value>NoControl</value>
+  </data>
+  <data name="horizontalProgressBar3.Location" type="System.Drawing.Point, System.Drawing">
+    <value>15, 131</value>
+  </data>
+  <data name="horizontalProgressBar3.Size" type="System.Drawing.Size, System.Drawing">
+    <value>170, 25</value>
+  </data>
+  <data name="horizontalProgressBar3.TabIndex" type="System.Int32, mscorlib">
+    <value>89</value>
+  </data>
+  <data name="&gt;&gt;horizontalProgressBar3.Name" xml:space="preserve">
+    <value>horizontalProgressBar3</value>
+  </data>
+  <data name="&gt;&gt;horizontalProgressBar3.Type" xml:space="preserve">
+    <value>ArdupilotMega.HorizontalProgressBar, ArdupilotMegaPlanner10, Version=1.1.4696.32711, Culture=neutral, PublicKeyToken=null</value>
+  </data>
+  <data name="&gt;&gt;horizontalProgressBar3.Parent" xml:space="preserve">
+    <value>$this</value>
+  </data>
+  <data name="&gt;&gt;horizontalProgressBar3.ZOrder" xml:space="preserve">
+    <value>20</value>
+  </data>
+  <data name="horizontalProgressBar2.ImeMode" type="System.Windows.Forms.ImeMode, System.Windows.Forms">
+    <value>NoControl</value>
+  </data>
+  <data name="horizontalProgressBar2.Location" type="System.Drawing.Point, System.Drawing">
+    <value>15, 21</value>
+  </data>
+  <data name="horizontalProgressBar2.Size" type="System.Drawing.Size, System.Drawing">
+    <value>170, 25</value>
+  </data>
+  <data name="horizontalProgressBar2.TabIndex" type="System.Int32, mscorlib">
+    <value>88</value>
+  </data>
+  <data name="&gt;&gt;horizontalProgressBar2.Name" xml:space="preserve">
+    <value>horizontalProgressBar2</value>
+  </data>
+  <data name="&gt;&gt;horizontalProgressBar2.Type" xml:space="preserve">
+    <value>ArdupilotMega.HorizontalProgressBar, ArdupilotMegaPlanner10, Version=1.1.4696.32711, Culture=neutral, PublicKeyToken=null</value>
+  </data>
+  <data name="&gt;&gt;horizontalProgressBar2.Parent" xml:space="preserve">
+    <value>$this</value>
+  </data>
+  <data name="&gt;&gt;horizontalProgressBar2.ZOrder" xml:space="preserve">
+    <value>21</value>
+  </data>
+  <data name="horizontalProgressBar1.ImeMode" type="System.Windows.Forms.ImeMode, System.Windows.Forms">
+    <value>NoControl</value>
+  </data>
+  <data name="horizontalProgressBar1.Location" type="System.Drawing.Point, System.Drawing">
+    <value>15, 76</value>
+  </data>
+  <data name="horizontalProgressBar1.Size" type="System.Drawing.Size, System.Drawing">
+    <value>170, 25</value>
+  </data>
+  <data name="horizontalProgressBar1.TabIndex" type="System.Int32, mscorlib">
+    <value>87</value>
+  </data>
+  <data name="&gt;&gt;horizontalProgressBar1.Name" xml:space="preserve">
+    <value>horizontalProgressBar1</value>
+  </data>
+  <data name="&gt;&gt;horizontalProgressBar1.Type" xml:space="preserve">
+    <value>ArdupilotMega.HorizontalProgressBar, ArdupilotMegaPlanner10, Version=1.1.4696.32711, Culture=neutral, PublicKeyToken=null</value>
+  </data>
+  <data name="&gt;&gt;horizontalProgressBar1.Parent" xml:space="preserve">
+    <value>$this</value>
+  </data>
+  <data name="&gt;&gt;horizontalProgressBar1.ZOrder" xml:space="preserve">
+    <value>22</value>
   </data>
   <metadata name="$this.Localizable" type="System.Boolean, mscorlib, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089">
     <value>True</value>

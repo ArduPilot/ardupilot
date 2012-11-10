@@ -613,7 +613,7 @@ namespace ArdupilotMega.GCSViews
 
                 try
                 {
-                    // Console.WriteLine(DateTime.Now.Millisecond);
+                     //Console.WriteLine(DateTime.Now.Millisecond);
                     updateBindingSource();
                     // Console.WriteLine(DateTime.Now.Millisecond + " done ");
 

@@ -60,5 +60,47 @@ namespace ArdupilotMega.GCSViews.ConfigurationView
         {
             Process.Start(new ProcessStartInfo("http://code.google.com/p/ardupilot-mega/wiki/APM2xFailsafe"));
         }
+
+        private void lbl_armed_Paint(object sender, PaintEventArgs e)
+        {
+            if (lbl_armed.Text == "True")
+            {
+                lbl_armed.Text = "Armed";
+            }
+            else if (lbl_armed.Text == "False")
+            {
+                lbl_armed.Text = "Disarmed";
+            }
+        }
+
+        private void lbl_gpslock_Paint(object sender, PaintEventArgs e)
+        {
+            int _gpsfix = 0;
+            try
+            {
+                _gpsfix = int.Parse(lbl_gpslock.Text);
+            }
+            catch { return; }
+            string gps = "";
+
+            if (_gpsfix == 0)
+            {
+                gps = ("GPS: No GPS");
+            }
+            else if (_gpsfix == 1)
+            {
+                gps = ("GPS: No Fix");
+            }
+            else if (_gpsfix == 2)
+            {
+                gps = ("GPS: 3D Fix");
+            }
+            else if (_gpsfix == 3)
+            {
+                gps = ("GPS: 3D Fix");
+            }
+
+            lbl_gpslock.Text = gps;
+        }
     }
 }
