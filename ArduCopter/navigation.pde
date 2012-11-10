@@ -194,9 +194,10 @@ static void run_navigation_contollers()
 
     case RTL:
         // have we reached the desired Altitude?
-        if(alt_change_flag <= REACHED_ALT) {                // we are at or above the target alt
-            if(rtl_reached_alt == false) {
-                rtl_reached_alt = true;
+        if(alt_change_flag == REACHED_ALT || alt_change_flag == DESCENDING) {
+            // we are at or above the target alt
+            if(false == ap.rtl_reached_alt) {
+                set_rtl_reached_alt(true);
                 do_RTL();
             }
             wp_control = WP_MODE;
@@ -223,12 +224,13 @@ static void run_navigation_contollers()
         // go of the sticks
 
         if((abs(g.rc_2.control_in) + abs(g.rc_1.control_in)) > 500) {
-            if(wp_distance > 500)
-                loiter_override         = true;
+            if(wp_distance > 500){
+                ap.loiter_override = true;
+            }
         }
 
         // Allow the user to take control temporarily,
-        if(loiter_override) {
+        if(ap.loiter_override) {
             // this sets the copter to not try and nav while we control it
             wp_control      = NO_NAV_MODE;
 
@@ -237,8 +239,8 @@ static void run_navigation_contollers()
             next_WP.lng = current_loc.lng;
 
             if(g.rc_2.control_in == 0 && g.rc_1.control_in == 0) {
-                loiter_override         = false;
-                wp_control                      = LOITER_MODE;
+                wp_control          = LOITER_MODE;
+                ap.loiter_override  = false;
             }
         }else{
             wp_control = LOITER_MODE;
@@ -294,7 +296,7 @@ static void run_navigation_contollers()
     }
 
     // are we in SIMPLE mode?
-    if(do_simple && g.super_simple) {
+    if(ap.simple_mode && g.super_simple) {
         // get distance to home
         if(home_distance > SUPER_SIMPLE_RADIUS) {        // 10m from home
             // we reset the angular offset to be a vector from home to the quad
@@ -304,7 +306,7 @@ static void run_navigation_contollers()
     }
 
     if(yaw_mode == YAW_LOOK_AT_HOME) {
-        if(home_is_set) {
+        if(ap.home_is_set) {
             nav_yaw = get_bearing_cd(&current_loc, &home);
         } else {
             nav_yaw = 0;
@@ -329,7 +331,7 @@ static void update_nav_RTL()
         // If failsafe OR auto approach altitude is set
         // we will go into automatic land, (g.rtl_approach_alt) is the lowest point
         // -1 means disable feature
-        if(failsafe || g.rtl_approach_alt >= 0)
+        if(ap.failsafe || g.rtl_approach_alt >= 0)
             loiter_timer = millis();
         else
             loiter_timer = 0;
@@ -493,10 +495,10 @@ static int16_t get_desired_speed(int16_t max_speed)
         V1 = sqrt(sq(V2) - 2*A*(X2-X1))
      */
 
-    if(fast_corner) {
+    if(ap.fast_corner) {
         // don't slow down
     }else{
-        if(wp_distance < 20000){ // limit the size of numbers we're dealing with to avoide overflow
+        if(wp_distance < 20000){ // limit the size of numbers we're dealing with to avoid overflow
             // go slower
     	 	int32_t temp 	= 2 * 100 * (int32_t)(wp_distance - g.waypoint_radius * 100);
     	 	int32_t s_min 	= WAYPOINT_SPEED_MIN;
@@ -517,7 +519,43 @@ static void reset_desired_speed()
     max_speed_old = 0;
 }
 
+#define MAX_CLIMB_RATE 200
+#define MIN_CLIMB_RATE 50
+#define DECEL_CLIMB_RATE 30
+
+
 static int16_t get_desired_climb_rate()
+{
+    static int16_t climb_old = 0;
+
+    if(alt_change_flag == REACHED_ALT) {
+        climb_old = 0;
+        return 0;
+    }
+
+    int16_t climb = 0;
+    int32_t dist = labs(altitude_error);
+
+    if(dist < 20000){ // limit the size of numbers we're dealing with to avoid overflow
+        dist        -= 300; // give ourselves 3 meter buffer to the desired alt
+        float temp 	= 2 * DECEL_CLIMB_RATE * dist + (MIN_CLIMB_RATE * MIN_CLIMB_RATE);   // 50cm minium climb_rate;
+        climb 		= sqrt(temp);
+        climb 		= min(climb, MAX_CLIMB_RATE);	// don't go to fast
+    }else{
+        climb       = MAX_CLIMB_RATE;				// no need to calc speed, just go the max
+    }
+
+    //climb 		= min(climb, climb_old + (100 * .02));// limit going faster
+    climb 		= max(climb, MIN_CLIMB_RATE); 	// don't go too slow
+    climb_old 	= climb;
+
+    if(alt_change_flag == DESCENDING){
+        climb = -climb;
+    }
+    return climb;
+}
+
+static int16_t get_desired_climb_rate_old()
 {
     if(alt_change_flag == ASCENDING) {
         return constrain(altitude_error / 4, 100, 180);         // 180cm /s up, minimum is 100cm/s
@@ -534,9 +572,15 @@ static void update_crosstrack(void)
 {
     // Crosstrack Error
     // ----------------
-    // If we are too far off or too close we don't do track following
-    float temp = (target_bearing - original_target_bearing) * RADX100;
-    crosstrack_error = sin(temp) * wp_distance;          // Meters we are off track line
+    if (wp_distance >= (g.crosstrack_min_distance * 100) &&
+        abs(wrap_180(target_bearing - original_target_bearing)) < 4500) {
+
+	    float temp = (target_bearing - original_target_bearing) * RADX100;
+    	crosstrack_error = sin(temp) * wp_distance;          // Meters we are off track line
+    }else{
+        // fade out crosstrack
+        crosstrack_error >>= 1;
+    }
 }
 
 static int32_t get_altitude_error()
@@ -555,30 +599,30 @@ static int32_t get_altitude_error()
 
 static void clear_new_altitude()
 {
-    alt_change_flag = REACHED_ALT;
+    set_alt_change(REACHED_ALT);
 }
 
 static void force_new_altitude(int32_t new_alt)
 {
     next_WP.alt     = new_alt;
-    alt_change_flag = REACHED_ALT;
+    set_alt_change(REACHED_ALT);
 }
 
 static void set_new_altitude(int32_t new_alt)
 {
     next_WP.alt     = new_alt;
 
-    if(next_WP.alt > current_loc.alt + 20) {
+    if(next_WP.alt > (current_loc.alt + 80)) {
         // we are below, going up
-        alt_change_flag = ASCENDING;
+        set_alt_change(ASCENDING);
 
-    }else if(next_WP.alt < current_loc.alt - 20) {
+    }else if(next_WP.alt < (current_loc.alt - 80)) {
         // we are above, going down
-        alt_change_flag = DESCENDING;
+        set_alt_change(DESCENDING);
 
     }else{
         // No Change
-        alt_change_flag = REACHED_ALT;
+        set_alt_change(REACHED_ALT);
     }
 }
 
@@ -587,12 +631,13 @@ static void verify_altitude()
     if(alt_change_flag == ASCENDING) {
         // we are below, going up
         if(current_loc.alt >  next_WP.alt - 50) {
-            alt_change_flag = REACHED_ALT;
+        	set_alt_change(REACHED_ALT);
         }
     }else if (alt_change_flag == DESCENDING) {
         // we are above, going down
-        if(current_loc.alt <=  next_WP.alt + 50)
-            alt_change_flag = REACHED_ALT;
+        if(current_loc.alt <=  next_WP.alt + 50){
+        	set_alt_change(REACHED_ALT);
+        }
     }
 }
 

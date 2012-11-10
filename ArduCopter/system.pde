@@ -62,8 +62,8 @@ static void init_ardupilot()
     // USB_MUX_PIN
     pinMode(USB_MUX_PIN, INPUT);
 
-    usb_connected = !digitalRead(USB_MUX_PIN);
-    if (!usb_connected) {
+    system.usb_connected = !digitalRead(USB_MUX_PIN);
+    if (!system.usb_connected) {
         // USB is not connected, this means UART0 may be a Xbee, with
         // its darned bricking problem. We can't write to it for at
         // least one second after powering up. Simplest solution for
@@ -163,7 +163,7 @@ static void init_ardupilot()
     gcs0.init(&Serial);
 
 #if USB_MUX_PIN > 0
-    if (!usb_connected) {
+    if (!system.usb_connected) {
         // we are not connected via USB, re-init UART0 with right
         // baud rate
         Serial.begin(map_baudrate(g.serial3_baud, SERIAL3_BAUD));
@@ -192,12 +192,14 @@ static void init_ardupilot()
     }
 #endif
 
+/*
 #ifdef RADIO_OVERRIDE_DEFAULTS
     {
         int16_t rc_override[8] = RADIO_OVERRIDE_DEFAULTS;
         APM_RC.setHIL(rc_override);
     }
 #endif
+*/
 
 #if FRAME_CONFIG == HELI_FRAME
     motors.servo_manual = false;
@@ -291,26 +293,6 @@ static void init_ardupilot()
 
 #if LOGGING_ENABLED == ENABLED
     Log_Write_Startup();
-    Log_Write_Data(10, (float)g.pi_stabilize_roll.kP());
-    Log_Write_Data(11, (float)g.pi_stabilize_roll.kI());
-
-    Log_Write_Data(12, (float)g.pid_rate_roll.kP());
-    Log_Write_Data(13, (float)g.pid_rate_roll.kI());
-    Log_Write_Data(14, (float)g.pid_rate_roll.kD());
-    Log_Write_Data(15, (float)g.stabilize_d.get());
-
-    Log_Write_Data(16, (float)g.pi_loiter_lon.kP());
-    Log_Write_Data(17, (float)g.pi_loiter_lon.kI());
-
-    Log_Write_Data(18, (float)g.pid_nav_lon.kP());
-    Log_Write_Data(19, (float)g.pid_nav_lon.kI());
-    Log_Write_Data(20, (float)g.pid_nav_lon.kD());
-
-    Log_Write_Data(21, (int32_t)g.auto_slew_rate.get());
-
-    Log_Write_Data(22, (float)g.pid_loiter_rate_lon.kP());
-    Log_Write_Data(23, (float)g.pid_loiter_rate_lon.kI());
-    Log_Write_Data(24, (float)g.pid_loiter_rate_lon.kD());
 #endif
 
 
@@ -389,10 +371,8 @@ static void startup_ground(void)
 
 static void set_mode(byte mode)
 {
-    Log_Write_Data(31, initial_simple_bearing);
-
     // if we don't have GPS lock
-    if(home_is_set == false) {
+    if(false == ap.home_is_set) {
         // THOR
         // We don't care about Home if we don't have lock yet in Toy mode
         if(mode == TOY_A || mode == TOY_M || mode == OF_LOITER) {
@@ -414,6 +394,7 @@ static void set_mode(byte mode)
     // used to stop fly_aways
     // set to false if we have low throttle
     motors.auto_armed(g.rc_3.control_in > 0);
+    set_auto_armed(g.rc_3.control_in > 0);
 
     // clearing value used in interactive alt hold
     reset_throttle_counter = 0;
@@ -425,12 +406,14 @@ static void set_mode(byte mode)
     loiter_timer = 0;
 
     // if we change modes, we must clear landed flag
-    land_complete   = false;
+    set_land_complete(false);
 
-    // have we acheived the proper altitude before RTL is enabled
-    rtl_reached_alt = false;
+    // have we achieved the proper altitude before RTL is enabled
+    set_rtl_reached_alt(false);
     // debug to Serial terminal
     //Serial.println(flight_mode_strings[control_mode]);
+
+    ap.loiter_override  = false;
 
     // report the GPS and Motor arming status
     led_mode = NORMAL_LEDS;
@@ -438,11 +421,13 @@ static void set_mode(byte mode)
     switch(control_mode)
     {
     case ACRO:
+    	ap.manual_throttle = true;
+    	ap.manual_attitude = true;
         yaw_mode        = YAW_ACRO;
         roll_pitch_mode = ROLL_PITCH_ACRO;
         throttle_mode   = THROTTLE_MANUAL;
         // reset acro axis targets to current attitude
-        if( g.axis_enabled ) {
+		if(g.axis_enabled){
             roll_axis 	= ahrs.roll_sensor;
             pitch_axis 	= ahrs.pitch_sensor;
             nav_yaw 	= ahrs.yaw_sensor;
@@ -450,20 +435,25 @@ static void set_mode(byte mode)
         break;
 
     case STABILIZE:
+    	ap.manual_throttle = true;
+    	ap.manual_attitude = true;
         yaw_mode        = YAW_HOLD;
         roll_pitch_mode = ROLL_PITCH_STABLE;
         throttle_mode   = THROTTLE_MANUAL;
         break;
 
     case ALT_HOLD:
+    	ap.manual_throttle = false;
+    	ap.manual_attitude = true;
         yaw_mode        = ALT_HOLD_YAW;
         roll_pitch_mode = ALT_HOLD_RP;
         throttle_mode   = ALT_HOLD_THR;
-
         force_new_altitude(max(current_loc.alt, 100));
         break;
 
     case AUTO:
+    	ap.manual_throttle = false;
+    	ap.manual_attitude = false;
         yaw_mode        = AUTO_YAW;
         roll_pitch_mode = AUTO_RP;
         throttle_mode   = AUTO_THR;
@@ -473,6 +463,8 @@ static void set_mode(byte mode)
         break;
 
     case CIRCLE:
+    	ap.manual_throttle = false;
+    	ap.manual_attitude = false;
         yaw_mode        = CIRCLE_YAW;
         roll_pitch_mode = CIRCLE_RP;
         throttle_mode   = CIRCLE_THR;
@@ -482,6 +474,8 @@ static void set_mode(byte mode)
         break;
 
     case LOITER:
+    	ap.manual_throttle = false;
+    	ap.manual_attitude = false;
         yaw_mode        = LOITER_YAW;
         roll_pitch_mode = LOITER_RP;
         throttle_mode   = LOITER_THR;
@@ -489,6 +483,8 @@ static void set_mode(byte mode)
         break;
 
     case POSITION:
+    	ap.manual_throttle = true;
+    	ap.manual_attitude = false;
         yaw_mode        = YAW_HOLD;
         roll_pitch_mode = ROLL_PITCH_AUTO;
         throttle_mode   = THROTTLE_MANUAL;
@@ -496,6 +492,8 @@ static void set_mode(byte mode)
         break;
 
     case GUIDED:
+    	ap.manual_throttle = false;
+    	ap.manual_attitude = false;
         yaw_mode        = YAW_AUTO;
         roll_pitch_mode = ROLL_PITCH_AUTO;
         throttle_mode   = THROTTLE_AUTO;
@@ -504,6 +502,8 @@ static void set_mode(byte mode)
         break;
 
     case LAND:
+    	ap.manual_throttle = false;
+    	ap.manual_attitude = false;
         yaw_mode        = LOITER_YAW;
         roll_pitch_mode = LOITER_RP;
         throttle_mode   = THROTTLE_AUTO;
@@ -511,15 +511,19 @@ static void set_mode(byte mode)
         break;
 
     case RTL:
+    	ap.manual_throttle = false;
+    	ap.manual_attitude = false;
         yaw_mode        = RTL_YAW;
         roll_pitch_mode = RTL_RP;
         throttle_mode   = RTL_THR;
-        rtl_reached_alt = false;
+        set_rtl_reached_alt(false);
         set_next_WP(&current_loc);
         set_new_altitude(get_RTL_alt());
         break;
 
     case OF_LOITER:
+    	ap.manual_throttle = false;
+    	ap.manual_attitude = false;
         yaw_mode        = OF_LOITER_YAW;
         roll_pitch_mode = OF_LOITER_RP;
         throttle_mode   = OF_LOITER_THR;
@@ -530,10 +534,12 @@ static void set_mode(byte mode)
     // These are the flight modes for Toy mode
     // See the defines for the enumerated values
     case TOY_A:
-        yaw_mode                = YAW_TOY;
+    	ap.manual_throttle = false;
+    	ap.manual_attitude = true;
+        yaw_mode        = YAW_TOY;
         roll_pitch_mode = ROLL_PITCH_TOY;
         throttle_mode   = THROTTLE_AUTO;
-        wp_control              = NO_NAV_MODE;
+        wp_control      = NO_NAV_MODE;
 
         // save throttle for fast exit of Alt hold
         saved_toy_throttle = g.rc_3.control_in;
@@ -543,25 +549,34 @@ static void set_mode(byte mode)
         break;
 
     case TOY_M:
-        yaw_mode                = YAW_TOY;
-        roll_pitch_mode = ROLL_PITCH_TOY;
-        wp_control              = NO_NAV_MODE;
-        throttle_mode           = THROTTLE_HOLD;
+    	ap.manual_throttle = false;
+    	ap.manual_attitude = true;
+        yaw_mode            = YAW_TOY;
+        roll_pitch_mode 	= ROLL_PITCH_TOY;
+        wp_control          = NO_NAV_MODE;
+        throttle_mode       = THROTTLE_HOLD;
         break;
 
     default:
         break;
     }
 
-    if(failsafe) {
+    if(ap.failsafe) {
         // this is to allow us to fly home without interactive throttle control
         throttle_mode = THROTTLE_AUTO;
+    	ap.manual_throttle = false;
+
         // does not wait for us to be in high throttle, since the
         // Receiver will be outputting low throttle
         motors.auto_armed(true);
+    	set_auto_armed(true);
     }
 
-    if(roll_pitch_mode <= ROLL_PITCH_ACRO) {
+    if(ap.manual_throttle) {
+		desired_climb_rate = 0;
+	}
+
+    if(ap.manual_attitude) {
         // We are under manual attitude control
         // remove the navigation from roll and pitch command
         reset_nav_params();
@@ -572,36 +587,13 @@ static void set_mode(byte mode)
     }
 
     Log_Write_Mode(control_mode);
-    Log_Write_Data(32, initial_simple_bearing);
-}
-
-static void set_failsafe(boolean mode)
-{
-    // only act on changes
-    // -------------------
-    if(failsafe != mode) {
-
-        // store the value so we don't trip the gate twice
-        // -----------------------------------------------
-        failsafe = mode;
-
-        if (failsafe == false) {
-            // We've regained radio contact
-            // ----------------------------
-            failsafe_off_event();
-
-        }else{
-            // We've lost radio contact
-            // ------------------------
-            failsafe_on_event();
-        }
-    }
 }
 
 static void
 init_simple_bearing()
 {
     initial_simple_bearing = ahrs.yaw_sensor;
+    Log_Write_Data(DATA_INIT_SIMPLE_BEARING, initial_simple_bearing);
 }
 
 static void update_throttle_cruise(int16_t tmp)
@@ -648,13 +640,13 @@ static uint32_t map_baudrate(int8_t rate, uint32_t default_baud)
 static void check_usb_mux(void)
 {
     bool usb_check = !digitalRead(USB_MUX_PIN);
-    if (usb_check == usb_connected) {
+    if (usb_check == system.usb_connected) {
         return;
     }
 
     // the user has switched to/from the telemetry port
-    usb_connected = usb_check;
-    if (usb_connected) {
+    system.usb_connected = usb_check;
+    if (system.usb_connected) {
         Serial.begin(SERIAL0_BAUD);
     } else {
         Serial.begin(map_baudrate(g.serial3_baud, SERIAL3_BAUD));

@@ -129,7 +129,7 @@ void output_min()
 static void read_radio()
 {
     if (APM_RC.GetState() == 1) {
-        new_radio_frame = true;
+        system.new_radio_frame = true;
         g.rc_1.set_pwm(APM_RC.InputCh(CH_1));
         g.rc_2.set_pwm(APM_RC.InputCh(CH_2));
         g.rc_3.set_pwm(APM_RC.InputCh(CH_3));
@@ -167,7 +167,7 @@ static void throttle_failsafe(uint16_t pwm)
             // Don't enter Failsafe if we are not armed
             // home distance is in meters
             // This is to prevent accidental RTL
-            if(motors.armed() && takeoff_complete) {
+            if(motors.armed() && ap.takeoff_complete) {
                 Serial.print_P(PSTR("MSG FS ON "));
                 Serial.println(pwm, DEC);
                 set_failsafe(true);

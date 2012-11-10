@@ -187,7 +187,15 @@ test_radio_pwm(uint8_t argc, const Menu::arg *argv)
 //static int8_t
 //test_toy(uint8_t argc, const Menu::arg *argv)
 {
-	wp_distance = 0;
+	set_alt_change(ASCENDING)
+
+ 	for(altitude_error = 2000; altitude_error > -100; altitude_error--){
+ 		int16_t temp = get_desired_climb_rate();
+		Serial.printf("%ld, %d\n", altitude_error, temp);
+	}
+ 	return 0;
+}
+{	wp_distance = 0;
 	int16_t max_speed = 0;
 
  	for(int16_t i = 0; i < 200; i++){
@@ -198,7 +206,7 @@ test_radio_pwm(uint8_t argc, const Menu::arg *argv)
 	 	wp_distance += 100;
 	}
  	return 0;
-}
+ }
 //*/
 
 /*static int8_t
@@ -516,42 +524,6 @@ test_gps(uint8_t argc, const Menu::arg *argv)
     return 0;
 #endif
 }
-
-// used to test the gain scheduler for Stab_D
-/*
- *  static int8_t
- *  test_stab_d(uint8_t argc, const Menu::arg *argv)
- *  {
- *       int16_t i = 0;
- *       g.stabilize_d = 1;
- *
- *       g.stabilize_d_schedule = 1
- *       for (i = -4600; i < 4600; i+=10) {
- *               new_radio_frame = true;
- *               g.rc_1.control_in = i;
- *               g.rc_2.control_in = i;
- *               update_roll_pitch_mode();
- *       Serial.printf("rin:%d, d:%1.6f \tpin:%d, d:%1.6f\n",g.rc_1.control_in, roll_scale_d, g.rc_2.control_in, pitch_scale_d);
- *   }
- *       g.stabilize_d_schedule = .5
- *       for (i = -4600; i < 4600; i+=10) {
- *               new_radio_frame = true;
- *               g.rc_1.control_in = i;
- *               g.rc_2.control_in = i;
- *               update_roll_pitch_mode();
- *       Serial.printf("rin:%d, d:%1.6f \tpin:%d, d:%1.6f\n",g.rc_1.control_in, roll_scale_d, g.rc_2.control_in, pitch_scale_d);
- *   }
- *
- *       g.stabilize_d_schedule = 0
- *       for (i = -4600; i < 4600; i+=10) {
- *               new_radio_frame = true;
- *               g.rc_1.control_in = i;
- *               g.rc_2.control_in = i;
- *               update_roll_pitch_mode();
- *       Serial.printf("rin:%d, d:%1.6f \tpin:%d, d:%1.6f\n",g.rc_1.control_in, roll_scale_d, g.rc_2.control_in, pitch_scale_d);
- *   }
- *
- *  }*/
 
 /*
  *  //static int8_t

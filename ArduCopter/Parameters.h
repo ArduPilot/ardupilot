@@ -69,6 +69,8 @@ public:
                                                         // Yaw Rate 1 = fast,
                                                         // 2 = med, 3 = slow
 
+        k_param_crosstrack_min_distance,
+
         // 65: AP_Limits Library
         k_param_limits = 65,
         k_param_gpslock_limit,
@@ -198,9 +200,9 @@ public:
         //
         // 220: PI/D Controllers
         //
-        k_param_stabilize_d_schedule = 219,
-        k_param_stabilize_d = 220,
-        k_param_acro_p,
+        //k_param_stabilize_d_schedule = 219,
+        //k_param_stabilize_d = 220,
+        k_param_acro_p = 221,
         k_param_axis_lock_p,
         k_param_pid_rate_roll,
         k_param_pid_rate_pitch,
@@ -269,6 +271,7 @@ public:
     AP_Int16        loiter_radius;
     AP_Int16        waypoint_speed_max;
     AP_Float        crosstrack_gain;
+    AP_Int16 		crosstrack_min_distance;
     AP_Int32        auto_land_timeout;
 
 
@@ -342,8 +345,8 @@ public:
 #endif
     AP_Int16                rc_speed; // speed of fast RC Channels in Hz
 
-    AP_Float                stabilize_d;
-    AP_Float                stabilize_d_schedule;
+    //AP_Float                stabilize_d;
+    //AP_Float                stabilize_d_schedule;
 
     // Acro parameters
     AP_Float                acro_p;

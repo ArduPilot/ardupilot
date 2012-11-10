@@ -22,7 +22,7 @@ static void failsafe_on_event()
         break;
 
     default:
-        if(home_is_set == true) {
+        if(ap.home_is_set) {
             // same as above ^
             // do_rtl sets the altitude to the current altitude by default
             set_mode(RTL);
@@ -73,8 +73,7 @@ static void low_battery_event(void)
         last_low_battery_message = tnow;
     }
 
-    low_batt = true;
-
+    set_low_battery(true);
     // if we are in Auto mode, come home
     if(control_mode >= AUTO)
         set_mode(RTL);

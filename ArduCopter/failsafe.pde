@@ -27,7 +27,7 @@ void failsafe_disable()
 {
     failsafe_enabled = false;
 }
- 
+
 //
 //  failsafe_check - this function is called from the core timer interrupt at 1kHz.
 //
@@ -42,7 +42,7 @@ void failsafe_check(uint32_t tnow)
     }
 
     if (failsafe_enabled && tnow - failsafe_last_timestamp > 2000000) {
-        // motors are running but we have gone 2 second since the 
+        // motors are running but we have gone 2 second since the
         // main loop ran. That means we're in trouble and should
         // disarm the motors.
         in_failsafe = true;
@@ -51,8 +51,9 @@ void failsafe_check(uint32_t tnow)
     if (in_failsafe && tnow - failsafe_last_timestamp > 1000000) {
         // disarm motors every second
         failsafe_last_timestamp = tnow;
-        if( motors.armed() ) {
+        if(motors.armed()) {
             motors.armed(false);
+        	set_armed(true);
             motors.output();
         }
     }
