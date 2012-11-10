@@ -692,6 +692,9 @@ namespace ArdupilotMega
 
                     byte[] packet = MavlinkInterface.readPacket();
 
+                    if (packet.Length > 5 && packet[3] == 0xff)
+                        continue;
+
                     cs.datetime = MavlinkInterface.lastlogread;
 
                     cs.UpdateCurrentSettings(null, true, MavlinkInterface);
@@ -766,17 +769,34 @@ namespace ArdupilotMega
                             {
                                 list.Add(time, (byte)field.GetValue(data));
                             }
+                            else if (value.GetType() == typeof(sbyte))
+                            {
+                                list.Add(time, (sbyte)field.GetValue(data));
+                            }
                             else if (value.GetType() == typeof(Int32))
                             {
                                 list.Add(time, (Int32)field.GetValue(data));
+                            }
+                            else if (value.GetType() == typeof(UInt32))
+                            {
+                                list.Add(time, (UInt32)field.GetValue(data));
                             }
                             else if (value.GetType() == typeof(ulong))
                             {
                                 list.Add(time, (ulong)field.GetValue(data));
                             }
+                            else if (value.GetType() == typeof(long))
+                            {
+                                list.Add(time, (long)field.GetValue(data));
+                            }
+                            else if (value.GetType() == typeof(double))
+                            {
+                                list.Add(time, (double)field.GetValue(data));
+                            }
+
                             else
                             {
-
+                                Console.WriteLine("Unknown data type");
                             }
                         }
                     }

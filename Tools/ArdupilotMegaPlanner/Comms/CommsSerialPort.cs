@@ -11,6 +11,8 @@ namespace ArdupilotMega.Comms
 {
     public class SerialPort : System.IO.Ports.SerialPort,ICommsSerial
     {
+        static bool serialportproblem = false;
+
         public new void Open()
         {
             // 500ms write timeout - win32 api default
@@ -68,18 +70,30 @@ namespace ArdupilotMega.Comms
 
         internal static string GetNiceName(string port)
         {
+            if (serialportproblem)
+                return "";
+
+            DateTime start = DateTime.Now;
             try
             {
                 ObjectQuery query = new ObjectQuery("SELECT * FROM Win32_SerialPort"); // Win32_USBControllerDevice
                 ManagementObjectSearcher searcher = new ManagementObjectSearcher(query);
                 foreach (ManagementObject obj2 in searcher.Get())
                 {
-                    //DeviceID
+                    //DeviceID                     
                     if (obj2.Properties["DeviceID"].Value.ToString().ToUpper() == port.ToUpper())
+                    {
+                        DateTime end = DateTime.Now;
+
+                        if ((end - start).TotalSeconds > 5)
+                            serialportproblem = true;
+
                         return obj2.Properties["Name"].Value.ToString();
+                    }
                 }
             }
             catch { }
+
             return "";
         }
 
