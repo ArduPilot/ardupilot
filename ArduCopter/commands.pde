@@ -111,9 +111,9 @@ static void set_cmd_with_index(struct Location temp, int i)
 static int32_t get_RTL_alt()
 {
     if(g.RTL_altitude <= 0) {
-        return current_loc.alt;
+		return min(current_loc.alt, MAXIMUM_RTL_ALT);
     }else if (g.RTL_altitude < current_loc.alt) {
-        return current_loc.alt;
+		return min(current_loc.alt, MAXIMUM_RTL_ALT);
     }else{
         return g.RTL_altitude;
     }
