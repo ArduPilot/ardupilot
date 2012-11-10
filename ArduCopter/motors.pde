@@ -163,9 +163,6 @@ static void init_arm_motors()
 
 static void init_disarm_motors()
 {
-	// disarming marker
-
-    //Serial.printf("\nDISARM\n");
 #if HIL_MODE != HIL_MODE_DISABLED || defined(DESKTOP_BUILD)
     gcs_send_text_P(SEVERITY_HIGH, PSTR("DISARMING MOTORS"));
 #endif
