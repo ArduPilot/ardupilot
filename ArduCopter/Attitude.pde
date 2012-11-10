@@ -305,15 +305,15 @@ get_rate_roll(int32_t target_rate)
     int32_t p,i,d;                  // used to capture pid values for logging
     int32_t current_rate;           // this iteration's rate
     int32_t rate_error;             // simply target_rate - current_rate
-    int32_t rate_d;                 // roll's acceleration
+    //int32_t rate_d;                 // roll's acceleration
     int32_t output;                 // output from pid controller
-    int32_t rate_d_dampener;        // value to dampen output based on acceleration
+    //int32_t rate_d_dampener;        // value to dampen output based on acceleration
 
     // get current rate
     current_rate    = (omega.x * DEGX100);
 
     // calculate and filter the acceleration
-    rate_d      = roll_rate_d_filter.apply(current_rate - last_rate);
+    //rate_d      = roll_rate_d_filter.apply(current_rate - last_rate);
 
     // store rate for next iteration
     last_rate   = current_rate;
@@ -333,9 +333,9 @@ get_rate_roll(int32_t target_rate)
     output = p + i + d;
 
     // Dampening output with D term
-    rate_d_dampener = rate_d * roll_scale_d;
-    rate_d_dampener = constrain(rate_d_dampener, -400, 400);
-    output -= rate_d_dampener;
+    //rate_d_dampener = rate_d * roll_scale_d;
+    //rate_d_dampener = constrain(rate_d_dampener, -400, 400);
+    //output -= rate_d_dampener;
 
     // constrain output
     output = constrain(output, -5000, 5000);
@@ -348,7 +348,7 @@ get_rate_roll(int32_t target_rate)
         log_counter++;
         if( log_counter >= 10 ) {               // (update rate / desired output rate) = (100hz / 10hz) = 10
             log_counter = 0;
-            Log_Write_PID(CH6_RATE_KP, rate_error, p, i, d-rate_d_dampener, output, tuning_value);
+            Log_Write_PID(CH6_RATE_KP, rate_error, p, i, d /*-rate_d_dampener*/, output, tuning_value);
         }
     }
 #endif
@@ -364,15 +364,15 @@ get_rate_pitch(int32_t target_rate)
     int32_t p,i,d;                                                                      // used to capture pid values for logging
     int32_t current_rate;                                                       // this iteration's rate
     int32_t rate_error;                                                                 // simply target_rate - current_rate
-    int32_t rate_d;                                                                     // roll's acceleration
+    //int32_t rate_d;                                                                     // roll's acceleration
     int32_t output;                                                                     // output from pid controller
-    int32_t rate_d_dampener;                                                    // value to dampen output based on acceleration
+    //int32_t rate_d_dampener;                                                    // value to dampen output based on acceleration
 
     // get current rate
     current_rate    = (omega.y * DEGX100);
 
     // calculate and filter the acceleration
-    rate_d          = pitch_rate_d_filter.apply(current_rate - last_rate);
+    //rate_d          = pitch_rate_d_filter.apply(current_rate - last_rate);
 
     // store rate for next iteration
     last_rate       = current_rate;
@@ -390,9 +390,9 @@ get_rate_pitch(int32_t target_rate)
     output = p + i + d;
 
     // Dampening output with D term
-    rate_d_dampener = rate_d * pitch_scale_d;
-    rate_d_dampener = constrain(rate_d_dampener, -400, 400);
-    output -= rate_d_dampener;
+    //rate_d_dampener = rate_d * pitch_scale_d;
+    //rate_d_dampener = constrain(rate_d_dampener, -400, 400);
+    //output -= rate_d_dampener;
 
     // constrain output
     output = constrain(output, -5000, 5000);
@@ -404,7 +404,7 @@ get_rate_pitch(int32_t target_rate)
         log_counter++;
         if( log_counter >= 10 ) {               // (update rate / desired output rate) = (100hz / 10hz) = 10
             log_counter = 0;
-            Log_Write_PID(CH6_RATE_KP+100, rate_error, p, i, d-rate_d_dampener, output, tuning_value);
+            Log_Write_PID(CH6_RATE_KP+100, rate_error, p, i, d/*-rate_d_dampener*/, output, tuning_value);
         }
     }
 #endif
@@ -465,7 +465,7 @@ static int16_t
 get_throttle_rate(int16_t z_target_speed)
 {
     int32_t p,i,d;      // used to capture pid values for logging
-    int16_t z_rate_error, output;
+    int16_t z_rate_error, output = 0;
 
     // calculate rate error
 #if INERTIAL_NAV == ENABLED
