@@ -905,11 +905,6 @@ static uint8_t save_trim_counter;
 // Reference to the AP relay object - APM1 only
 AP_Relay relay;
 
-// APM2 only
-//#if USB_MUX_PIN > 0
-//static bool usb_connected;
-//#endif
-
 #if CLI_ENABLED == ENABLED
     static int8_t   setup_show (uint8_t argc, const Menu::arg *argv);
 #endif
