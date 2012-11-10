@@ -615,8 +615,13 @@
 #endif
 
 #ifndef RTL_HOLD_ALT
- # define RTL_HOLD_ALT 1500             // height to return to Home in CM, 0 = Maintain current altitude
+ # define RTL_HOLD_ALT 				1500    // height to return to Home in CM, 0 = Maintain current altitude
 #endif
+
+#ifndef MAXIMUM_RTL_ALT
+ # define MAXIMUM_RTL_ALT 			8000    // Max height to return to Home in CM
+#endif
+
 
 
 // LOITER Mode
