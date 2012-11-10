@@ -2,14 +2,14 @@
 
 static void init_commands()
 {
-    g.command_index             = NO_COMMAND;
-    command_nav_index               = NO_COMMAND;
-    command_cond_index              = NO_COMMAND;
-    prev_nav_index                  = NO_COMMAND;
+    g.command_index         = NO_COMMAND;
+    command_nav_index       = NO_COMMAND;
+    command_cond_index      = NO_COMMAND;
+    prev_nav_index          = NO_COMMAND;
     command_cond_queue.id   = NO_COMMAND;
     command_nav_queue.id    = NO_COMMAND;
 
-    fast_corner                     = false;
+    ap.fast_corner          = false;
 	reset_desired_speed();
 
     // default Yaw tracking
@@ -162,7 +162,7 @@ static void set_next_WP(struct Location *wp)
     set_new_altitude(next_WP.alt);
 
     // this is used to offset the shrinking longitude as we go towards the poles
-    float rads                      = (fabs((float)next_WP.lat)/t7) * 0.0174532925;
+    float rads              = (fabs((float)next_WP.lat)/t7) * 0.0174532925;
     scaleLongDown           = cos(rads);
     scaleLongUp             = 1.0f/cos(rads);
 
@@ -184,7 +184,7 @@ static void set_next_WP(struct Location *wp)
 // -------------------------------
 static void init_home()
 {
-    home_is_set = true;
+    set_home_is_set(true);
     home.id         = MAV_CMD_NAV_WAYPOINT;
     home.lng        = g_gps->longitude;                                 // Lon * 10**7
     home.lat        = g_gps->latitude;                                  // Lat * 10**7

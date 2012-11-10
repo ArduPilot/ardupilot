@@ -110,15 +110,15 @@ void roll_pitch_toy()
 
     if(g.rc_1.control_in != 0) {    // roll
         get_acro_yaw(yaw_rate/2);
-        yaw_stopped = false;
+        system.yaw_stopped = false;
         yaw_timer = 150;
 
-    }else if (!yaw_stopped) {
+    }else if (!system.yaw_stopped) {
         get_acro_yaw(0);
         yaw_timer--;
 
         if((yaw_timer == 0) || (fabs(omega.z) < .17)) {
-            yaw_stopped = true;
+            system.yaw_stopped = true;
             nav_yaw = ahrs.yaw_sensor;
         }
     }else{

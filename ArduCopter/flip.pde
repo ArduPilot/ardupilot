@@ -17,10 +17,11 @@ static int8_t flip_dir;
 
 void init_flip()
 {
-    if(do_flip == false) {
-        do_flip = true;
+    if(false == ap.do_flip) {
+        ap.do_flip = true;
         flip_state = 0;
         flip_dir = (ahrs.roll_sensor >= 0) ? 1 : -1;
+		Log_Write_Event(DATA_BEGIN_FLIP);
     }
 }
 
@@ -61,7 +62,8 @@ void roll_flip()
             g.rc_3.servo_out = g.rc_3.control_in + AAP_THR_INC;
             flip_timer++;
         }else{
-            do_flip = false;
+        	Log_Write_Event(DATA_END_FLIP);
+            ap.do_flip = false;
             flip_state = 0;
         }
         break;

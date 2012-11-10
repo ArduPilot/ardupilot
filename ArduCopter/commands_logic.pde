@@ -278,7 +278,7 @@ static void do_land()
     wp_control = LOITER_MODE;
 
     // just to make sure
-    land_complete           = false;
+    set_land_complete(false);
 
     // landing boost lowers the main throttle to mimmick
     // the effect of a user's hand
@@ -385,7 +385,7 @@ static bool verify_land_sonar()
             if(ground_detector < 30) {
                 ground_detector++;
             }else if (ground_detector == 30) {
-                land_complete = true;
+                set_land_complete(true);
                 if(g.rc_3.control_in == 0) {
                     ground_detector++;
                     init_disarm_motors();
@@ -419,7 +419,7 @@ static bool verify_land_baro()
             if(ground_detector < 30) {
                 ground_detector++;
             }else if (ground_detector == 30) {
-                land_complete = true;
+                set_land_complete(true);
                 if(g.rc_3.control_in == 0) {
                     ground_detector++;
                     init_disarm_motors();
@@ -792,7 +792,8 @@ static void do_set_home()
         home.lng        = command_cond_queue.lng;                                       // Lon * 10**7
         home.lat        = command_cond_queue.lat;                                       // Lat * 10**7
         home.alt        = 0;
-        home_is_set = true;
+        //home_is_set 	= true;
+        set_home_is_set(true);
     }
 }
 

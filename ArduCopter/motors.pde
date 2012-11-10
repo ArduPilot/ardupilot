@@ -87,6 +87,7 @@ static void arm_motors()
 
 static void init_arm_motors()
 {
+	// arming marker
     // Flag used to track if we have armed the motors the first time.
     // This is used to decide if we should run the ground_start routine
     // which calibrates the IMU
@@ -122,7 +123,7 @@ static void init_arm_motors()
 
     // Reset home position
     // -------------------
-    if(home_is_set)
+    if(ap.home_is_set)
         init_home();
 
     // all I terms are invalid
@@ -142,7 +143,7 @@ static void init_arm_motors()
 #endif
 
     // temp hack
-    motor_light = true;
+    system.motor_light = true;
     digitalWrite(A_LED_PIN, LED_ON);
 
     // go back to normal AHRS gains
@@ -153,6 +154,7 @@ static void init_arm_motors()
 
     // finally actually arm the motors
     motors.armed(true);
+    set_armed(true);
 
     // reenable failsafe
     failsafe_enable();
@@ -161,12 +163,19 @@ static void init_arm_motors()
 
 static void init_disarm_motors()
 {
+	// disarming marker
+
     //Serial.printf("\nDISARM\n");
 #if HIL_MODE != HIL_MODE_DISABLED || defined(DESKTOP_BUILD)
     gcs_send_text_P(SEVERITY_HIGH, PSTR("DISARMING MOTORS"));
 #endif
 
     motors.armed(false);
+    set_armed(false);
+
+    motors.auto_armed(false);
+    set_auto_armed(false);
+
     compass.save_offsets();
 
     g.throttle_cruise.save();
@@ -176,7 +185,7 @@ static void init_disarm_motors()
 #endif
 
     // we are not in the air
-    takeoff_complete = false;
+    set_takeoff_complete(false);
 
 #if COPTER_LEDS == ENABLED
     if ( bitRead(g.copter_leds_mode, 3) ) {

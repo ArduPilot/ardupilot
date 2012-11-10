@@ -111,13 +111,13 @@
 #define RC_CHANNEL_ANGLE_RAW 2
 
 // HIL enumerations
-#define HIL_MODE_DISABLED                       0
-#define HIL_MODE_ATTITUDE                       1
-#define HIL_MODE_SENSORS                        2
+#define HIL_MODE_DISABLED               0
+#define HIL_MODE_ATTITUDE               1
+#define HIL_MODE_SENSORS                2
 
-#define ASCENDING                       1
-#define DESCENDING                      -1
 #define REACHED_ALT                     0
+#define DESCENDING                      1
+#define ASCENDING                       2
 
 // Auto Pilot modes
 // ----------------
@@ -131,10 +131,10 @@
 #define CIRCLE 7                        // AUTO control
 #define POSITION 8                      // AUTO control
 #define LAND 9                          // AUTO control
-#define OF_LOITER 10            // Hold a single location using optical flow
-                                // sensor
-#define TOY_A 11                                // THOR Enum for Toy mode
-#define TOY_M 12                                // THOR Enum for Toy mode
+#define OF_LOITER 10                    // Hold a single location using optical flow
+                                        // sensor
+#define TOY_A 11                        // THOR Enum for Toy mode
+#define TOY_M 12                        // THOR Enum for Toy mode
 #define NUM_MODES 13
 
 #define SIMPLE_1 1
@@ -225,12 +225,12 @@
 // Waypoint options
 #define MASK_OPTIONS_RELATIVE_ALT               1
 #define WP_OPTION_ALT_CHANGE                    2
-#define WP_OPTION_YAW                                   4
+#define WP_OPTION_YAW                           4
 #define WP_OPTION_ALT_REQUIRED                  8
-#define WP_OPTION_RELATIVE                              16
+#define WP_OPTION_RELATIVE                      16
 //#define WP_OPTION_					32
 //#define WP_OPTION_					64
-#define WP_OPTION_NEXT_CMD                              128
+#define WP_OPTION_NEXT_CMD                      128
 
 //repeating events
 #define NO_REPEAT 0
@@ -303,8 +303,8 @@ enum gcs_severity {
 #define LOG_INDEX_MSG                   0xF0
 #define MAX_NUM_LOGS                    50
 
-#define MASK_LOG_ATTITUDE_FAST  (1<<0)
-#define MASK_LOG_ATTITUDE_MED   (1<<1)
+#define MASK_LOG_ATTITUDE_FAST          (1<<0)
+#define MASK_LOG_ATTITUDE_MED           (1<<1)
 #define MASK_LOG_GPS                    (1<<2)
 #define MASK_LOG_PM                     (1<<3)
 #define MASK_LOG_CTUN                   (1<<4)
@@ -318,6 +318,52 @@ enum gcs_severity {
 #define MASK_LOG_PID                    (1<<12)
 #define MASK_LOG_ITERM                  (1<<13)
 #define MASK_LOG_INAV                   (1<<14)
+
+
+#define MASK_LOG_CTUN                   (1<<4)
+#define MASK_LOG_NTUN                   (1<<5)
+#define MASK_LOG_MODE                   (1<<6)
+#define MASK_LOG_RAW                    (1<<7)
+#define MASK_LOG_CMD                    (1<<8)
+#define MASK_LOG_CUR                    (1<<9)
+#define MASK_LOG_MOTORS                 (1<<10)
+#define MASK_LOG_OPTFLOW                (1<<11)
+#define MASK_LOG_PID                    (1<<12)
+#define MASK_LOG_ITERM                  (1<<13)
+
+
+// DATA - event logging
+#define DATA_MAVLINK_FLOAT              1
+#define DATA_MAVLINK_INT32              2
+#define DATA_MAVLINK_INT16              3
+#define DATA_MAVLINK_INT8               4
+#define DATA_FAST_LOOP                  5
+#define DATA_MED_LOOP                   6
+#define DATA_AP_STATE                   7
+#define DATA_SIMPLE_BEARING             8
+#define DATA_INIT_SIMPLE_BEARING        9
+#define DATA_ARMED                      10
+#define DATA_DISARMED                   11
+#define DATA_FAILSAFE_ON                12
+#define DATA_FAILSAFE_OFF               13
+#define DATA_LOW_BATTERY                14
+#define DATA_AUTO_ARMED                 15
+#define DATA_TAKEOFF                    16
+#define DATA_DID_REACH_ALT              17
+#define DATA_LAND_COMPLETE              18
+#define DATA_LOST_GPS                   19
+#define DATA_LOST_COMPASS               20
+#define DATA_BEGIN_FLIP                 21
+#define DATA_END_FLIP                   22
+#define DATA_EXIT_FLIP                  23
+#define DATA_FLIP_ABORTED               24
+#define DATA_SET_HOME                   25
+#define DATA_SET_SIMPLE_ON              26
+#define DATA_SET_SIMPLE_OFF             27
+#define DATA_REACHED_ALT                28
+#define DATA_ASCENDING                  29
+#define DATA_DESCENDING                 30
+#define DATA_RTL_REACHED_ALT            31
 
 
 // Waypoint Modes

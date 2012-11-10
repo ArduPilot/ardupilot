@@ -166,6 +166,16 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @Units: Dimensionless
 	// @User: Standard
     GSCALAR(crosstrack_gain,        "XTRK_GAIN_SC", CROSSTRACK_GAIN),
+
+    // @Param: XTRK_MIN_DIST
+    // @DisplayName: Crosstrack mininum distance
+    // @Description: Minimum distance in meters between waypoints to do crosstrack correction.
+    // @Units: Meters
+    // @Range: 0 32767
+    // @Increment: 1
+    // @User: Standard
+    GSCALAR(crosstrack_min_distance, "XTRK_MIN_DIST",  CROSSTRACK_MIN_DISTANCE),
+
     GSCALAR(auto_land_timeout,      "AUTO_LAND",    AUTO_LAND_TIME*1000),
 
     // @Param: THR_MIN
@@ -297,7 +307,7 @@ const AP_Param::Info var_info[] PROGMEM = {
 
     // variable
     //---------
-    GSCALAR(stabilize_d,                    "STAB_D",  STABILIZE_D),
+    //GSCALAR(stabilize_d,                    "STAB_D",  STABILIZE_D),
 
     // @Param: STAB_D_S
     // @DisplayName: Stabilize D Schedule
@@ -305,7 +315,7 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @Range: 0 1
     // @Increment: .01
     // @User: Advanced
-    GSCALAR(stabilize_d_schedule, "STAB_D_S",  STABILIZE_D_SCHEDULE),
+    //GSCALAR(stabilize_d_schedule, "STAB_D_S",  STABILIZE_D_SCHEDULE),
 
     // Acro parameters
     GSCALAR(acro_p,                 "ACRO_P",           ACRO_P),
