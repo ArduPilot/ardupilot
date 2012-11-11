@@ -403,12 +403,12 @@ static struct AP_System{
     uint8_t new_radio_frame         : 1; // 3   // Set true if we have new PWM data to act on from the Radio
     uint8_t nav_ok                  : 1; // 4   // deprecated
     uint8_t CH7_flag                : 1; // 5   // manages state of the ch7 toggle switch
-    uint8_t usb_connected           : 1; // 6   // manages state of the ch7 toggle switch
+    uint8_t usb_connected           : 1; // 6   // true if APM is powered from USB connection
     uint8_t run_50hz_loop           : 1; // 7   // toggles the 100hz loop for 50hz
     uint8_t alt_sensor_flag         : 1; // 8   // used to track when to read sensors vs estimate alt
     uint8_t yaw_stopped             : 1; // 9   // Used to manage the Yaw hold capabilities
 
-}system;
+} ap_system;
 
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -972,9 +972,9 @@ void loop()
         fast_loop();
 
         // run the 50hz loop 1/2 the time
-        system.run_50hz_loop = !system.run_50hz_loop;
+        ap_system.run_50hz_loop = !ap_system.run_50hz_loop;
 
-        if(system.run_50hz_loop) {
+        if(ap_system.run_50hz_loop) {
 
             #if DEBUG_MED_LOOP == ENABLED
             Log_Write_Data(DATA_MED_LOOP, (int32_t)(timer - fiftyhz_loopTimer));
@@ -1143,7 +1143,7 @@ static void medium_loop()
             }
         }
 
-        system.alt_sensor_flag = true;
+        ap_system.alt_sensor_flag = true;
         break;
 
     // This case deals with sending high rate telemetry
@@ -1491,7 +1491,7 @@ static void update_GPS(void)
 
 #if HIL_MODE == HIL_MODE_ATTITUDE                                                               // only execute in HIL mode
             //update_altitude();
-            system.alt_sensor_flag = true;
+            ap_system.alt_sensor_flag = true;
 #endif
         }
 
@@ -1572,7 +1572,7 @@ void update_roll_pitch_mode(void)
 
     case ROLL_PITCH_STABLE:
         // apply SIMPLE mode transform
-        if(ap.simple_mode && system.new_radio_frame) {
+        if(ap.simple_mode && ap_system.new_radio_frame) {
             update_simple_mode();
         }
 
@@ -1586,7 +1586,7 @@ void update_roll_pitch_mode(void)
 
     case ROLL_PITCH_AUTO:
         // apply SIMPLE mode transform
-        if(ap.simple_mode && system.new_radio_frame) {
+        if(ap.simple_mode && ap_system.new_radio_frame) {
             update_simple_mode();
         }
         // mix in user control with Nav control
@@ -1602,7 +1602,7 @@ void update_roll_pitch_mode(void)
 
     case ROLL_PITCH_STABLE_OF:
         // apply SIMPLE mode transform
-        if(ap.simple_mode && system.new_radio_frame) {
+        if(ap.simple_mode && ap_system.new_radio_frame) {
             update_simple_mode();
         }
 
@@ -1632,9 +1632,9 @@ void update_roll_pitch_mode(void)
     //reset_stability_I();
     //}
 
-    if(system.new_radio_frame) {
+    if(ap_system.new_radio_frame) {
         // clear new radio frame info
-        system.new_radio_frame = false;
+        ap_system.new_radio_frame = false;
 
         // These values can be used to scale the PID gains
         // This allows for a simple gain scheduling implementation
@@ -1954,9 +1954,9 @@ static void update_altitude()
 
 static void update_altitude_est()
 {
-    if(system.alt_sensor_flag) {
+    if(ap_system.alt_sensor_flag) {
         update_altitude();
-        system.alt_sensor_flag = false;
+        ap_system.alt_sensor_flag = false;
 
         if(g.log_bitmask & MASK_LOG_CTUN && motors.armed()) {
             Log_Write_Control_Tuning();
