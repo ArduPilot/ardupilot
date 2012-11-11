@@ -7,59 +7,53 @@
 static void failsafe_on_event()
 {
     // This is how to handle a failsafe.
-    switch(control_mode)
-    {
-    case AUTO:
-        if (g.throttle_fs_action == 1) {
-            // do_rtl sets the altitude to the current altitude by default
-            set_mode(RTL);
-            // We add an additional 10m to the current altitude
-            //next_WP.alt += 1000;
-            set_new_altitude(next_WP.alt + 1000);
-        }
-        //if (g.throttle_fs_action == 2)
-        //  Stay in AUTO and ignore failsafe
-        break;
-
-    default:
-        if(ap.home_is_set) {
-            // same as above ^
-            // do_rtl sets the altitude to the current altitude by default
-            set_mode(RTL);
-            // We add an additional 10m to the current altitude
-            //next_WP.alt += 1000;
-            set_new_altitude(next_WP.alt + 1000);
-        }else{
-            // We have no GPS so we must land
-            set_mode(LAND);
-        }
-        break;
+    switch(control_mode) {
+        case STABILIZE:
+        case ACRO:
+            // if throttle is zero disarm motors
+            if (g.rc_3.control_in == 0) {
+                init_disarm_motors();
+            }else if(ap.home_is_set == true) {
+                set_mode(RTL);
+            }else{
+                // We have no GPS so we will crash land in alt hold mode
+                // the low throttle will bring us down at the maximum
+                // the low throttle will bring us down at the maximum descent speed
+                // To-Do: make LAND a throttle mode so it can operate without GPS
+                set_mode(ALT_HOLD);
+                set_new_altitude(0);
+            }
+            break;
+        case AUTO:
+            // throttle_fs_action is 1 do RTL, everything else means continue with the mission
+            if (g.throttle_fs_action == THROTTLE_FAILSAFE_ACTION_ALWAYS_RTL) {
+                set_mode(RTL);
+            }
+            // if throttle_fs_action is 2 (i.e. THROTTLE_FAILSAFE_ACTION_CONTINUE_MISSION) no need to do anything
+            break;
+        default:
+            if(ap.home_is_set == true) {
+                // same as above ^
+                // do_rtl sets the altitude to the current altitude by default
+                set_mode(RTL);
+            }else{
+                // We have no GPS so we will crash land in alt hold mode
+                // the low throttle will bring us down at the maximum descent speed
+                // To-Do: make LAND a throttle mode so it can operate without GPS
+                set_mode(ALT_HOLD);
+                set_new_altitude(0);
+            }
+            break;
     }
 }
 
+// failsafe_off_event - respond to radio contact being regained
+// we must be in AUTO, LAND or RTL modes
+// or Stabilize or ACRO mode but with motors disarmed
 static void failsafe_off_event()
 {
-    // If we are in AUTO, no need to do anything
-    if(control_mode == AUTO)
-        return;
-
-    if (g.throttle_fs_action == 2) {
-        // We're back in radio contact
-        // return to AP
-        // ---------------------------
-
-        // re-read the switch so we can return to our preferred mode
-        // --------------------------------------------------------
-        reset_control_switch();
-
-
-    }else if (g.throttle_fs_action == 1) {
-        // We're back in radio contact
-        // return to Home
-        // we should already be in RTL and throttle set to cruise
-        // ------------------------------------------------------
-        set_mode(RTL);
-    }
+    // no need to do anything
+    // user can now override roll, pitch, yaw and throttle and even use flight mode switch to restore previous flight mode
 }
 
 static void low_battery_event(void)
