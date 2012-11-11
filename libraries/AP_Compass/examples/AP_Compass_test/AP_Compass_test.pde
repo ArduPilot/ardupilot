@@ -99,11 +99,12 @@ void loop()
         offset[2] = -(max[2]+min[2])/2;
 
         // display all to user
-        Serial.printf("Heading: %.2f (%3u,%3u,%3u) ",
+        Serial.printf("Heading: %.2f (%3u,%3u,%3u) I2cerr=%u ",
                       ToDeg(heading),
                       compass.mag_x,
                       compass.mag_y,
-                      compass.mag_z);
+                      compass.mag_z, 
+		      I2c.lockup_count());
 
         // display offsets
         Serial.printf("\t offsets(%.2f, %.2f, %.2f)",
