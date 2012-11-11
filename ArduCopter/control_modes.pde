@@ -65,26 +65,26 @@ static void read_trim_switch()
         set_simple_mode(g.rc_7.radio_in > CH_7_PWM_TRIGGER);
 
     }else if (option == CH7_FLIP) {
-        if (system.CH7_flag == false && g.rc_7.radio_in > CH_7_PWM_TRIGGER) {
-            system.CH7_flag = true;
+        if (ap_system.CH7_flag == false && g.rc_7.radio_in > CH_7_PWM_TRIGGER) {
+            ap_system.CH7_flag = true;
 
             // don't flip if we accidentally engaged flip, but didn't notice and tried to takeoff
             if(g.rc_3.control_in != 0 && ap.takeoff_complete) {
                 init_flip();
             }
         }
-        if (system.CH7_flag == true && g.rc_7.control_in < 800) {
-            system.CH7_flag = false;
+        if (ap_system.CH7_flag == true && g.rc_7.control_in < 800) {
+            ap_system.CH7_flag = false;
         }
 
     }else if (option == CH7_RTL) {
-        if (system.CH7_flag == false && g.rc_7.radio_in > CH_7_PWM_TRIGGER) {
-            system.CH7_flag = true;
+        if (ap_system.CH7_flag == false && g.rc_7.radio_in > CH_7_PWM_TRIGGER) {
+            ap_system.CH7_flag = true;
             set_mode(RTL);
         }
 
-        if (system.CH7_flag == true && g.rc_7.control_in < 800) {
-            system.CH7_flag = false;
+        if (ap_system.CH7_flag == true && g.rc_7.control_in < 800) {
+            ap_system.CH7_flag = false;
             if (control_mode == RTL || control_mode == LOITER) {
                 reset_control_switch();
             }
@@ -92,11 +92,11 @@ static void read_trim_switch()
 
     }else if (option == CH7_SAVE_WP) {
         if (g.rc_7.radio_in > CH_7_PWM_TRIGGER) {        // switch is engaged
-            system.CH7_flag = true;
+            ap_system.CH7_flag = true;
 
         }else{         // switch is disengaged
-            if(system.CH7_flag) {
-                system.CH7_flag = false;
+            if(ap_system.CH7_flag) {
+                ap_system.CH7_flag = false;
 
                 if(control_mode == AUTO) {
                     // reset the mission

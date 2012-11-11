@@ -62,8 +62,8 @@ static void init_ardupilot()
     // USB_MUX_PIN
     pinMode(USB_MUX_PIN, INPUT);
 
-    system.usb_connected = !digitalRead(USB_MUX_PIN);
-    if (!system.usb_connected) {
+    ap_system.usb_connected = !digitalRead(USB_MUX_PIN);
+    if (!ap_system.usb_connected) {
         // USB is not connected, this means UART0 may be a Xbee, with
         // its darned bricking problem. We can't write to it for at
         // least one second after powering up. Simplest solution for
@@ -163,7 +163,7 @@ static void init_ardupilot()
     gcs0.init(&Serial);
 
 #if USB_MUX_PIN > 0
-    if (!system.usb_connected) {
+    if (!ap_system.usb_connected) {
         // we are not connected via USB, re-init UART0 with right
         // baud rate
         Serial.begin(map_baudrate(g.serial3_baud, SERIAL3_BAUD));
@@ -640,13 +640,13 @@ static uint32_t map_baudrate(int8_t rate, uint32_t default_baud)
 static void check_usb_mux(void)
 {
     bool usb_check = !digitalRead(USB_MUX_PIN);
-    if (usb_check == system.usb_connected) {
+    if (usb_check == ap_system.usb_connected) {
         return;
     }
 
     // the user has switched to/from the telemetry port
-    system.usb_connected = usb_check;
-    if (system.usb_connected) {
+    ap_system.usb_connected = usb_check;
+    if (ap_system.usb_connected) {
         Serial.begin(SERIAL0_BAUD);
     } else {
         Serial.begin(map_baudrate(g.serial3_baud, SERIAL3_BAUD));

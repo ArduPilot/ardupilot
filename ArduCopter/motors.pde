@@ -143,7 +143,7 @@ static void init_arm_motors()
 #endif
 
     // temp hack
-    system.motor_light = true;
+    ap_system.motor_light = true;
     digitalWrite(A_LED_PIN, LED_ON);
 
     // go back to normal AHRS gains

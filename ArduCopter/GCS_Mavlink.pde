@@ -471,7 +471,7 @@ static bool telemetry_delayed(mavlink_channel_t chan)
         return false;
     }
 #if USB_MUX_PIN > 0
-    if (chan == MAVLINK_COMM_0 && system.usb_connected) {
+    if (chan == MAVLINK_COMM_0 && ap_system.usb_connected) {
         // this is an APM2 with USB telemetry
         return false;
     }

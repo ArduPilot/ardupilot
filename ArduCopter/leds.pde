@@ -28,8 +28,8 @@ static void update_GPS_light(void)
 
     case (1):
         if (g_gps->valid_read == true) {
-            system.GPS_light = !system.GPS_light;                     // Toggle light on and off to indicate gps messages being received, but no GPS fix lock
-            if (system.GPS_light) {
+            ap_system.GPS_light = !ap_system.GPS_light;                     // Toggle light on and off to indicate gps messages being received, but no GPS fix lock
+            if (ap_system.GPS_light) {
                 digitalWrite(C_LED_PIN, LED_OFF);
             }else{
                 digitalWrite(C_LED_PIN, LED_ON);
@@ -47,17 +47,17 @@ static void update_GPS_light(void)
 static void update_motor_light(void)
 {
     if(motors.armed() == false) {
-        system.motor_light = !system.motor_light;
+        ap_system.motor_light = !ap_system.motor_light;
 
         // blink
-        if(system.motor_light) {
+        if(ap_system.motor_light) {
             digitalWrite(A_LED_PIN, LED_ON);
         }else{
             digitalWrite(A_LED_PIN, LED_OFF);
         }
     }else{
-        if(!system.motor_light) {
-            system.motor_light = true;
+        if(!ap_system.motor_light) {
+            ap_system.motor_light = true;
             digitalWrite(A_LED_PIN, LED_ON);
         }
     }
@@ -93,7 +93,7 @@ static void clear_leds()
     digitalWrite(A_LED_PIN, LED_OFF);
     digitalWrite(B_LED_PIN, LED_OFF);
     digitalWrite(C_LED_PIN, LED_OFF);
-    system.motor_light = false;
+    ap_system.motor_light = false;
     led_mode = NORMAL_LEDS;
 }
 
