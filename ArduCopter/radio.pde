@@ -1,9 +1,7 @@
 // -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 
-//Function that will read the radio data, limit servos and trigger a failsafe
+// Function that will read the radio data, limit servos and trigger a failsafe
 // ----------------------------------------------------------------------------
-static int8_t failsafeCounter = 0;              // we wait a second to take over the throttle and send the plane circling
-
 
 extern RC_Channel* rc_ch[NUM_CHANNELS];
 
@@ -132,7 +130,9 @@ static void read_radio()
         system.new_radio_frame = true;
         g.rc_1.set_pwm(APM_RC.InputCh(CH_1));
         g.rc_2.set_pwm(APM_RC.InputCh(CH_2));
-        g.rc_3.set_pwm(APM_RC.InputCh(CH_3));
+
+        set_throttle_and_failsafe(APM_RC.InputCh(CH_3));
+
         g.rc_4.set_pwm(APM_RC.InputCh(CH_4));
         g.rc_5.set_pwm(APM_RC.InputCh(CH_5));
         g.rc_6.set_pwm(APM_RC.InputCh(CH_6));
@@ -143,54 +143,50 @@ static void read_radio()
         // limit our input to 800 so we can still pitch and roll
         g.rc_3.control_in = min(g.rc_3.control_in, MAXIMUM_THROTTLE);
 #endif
-
-        throttle_failsafe(g.rc_3.radio_in);
     }
 }
+
 #define FS_COUNTER 3
-static void throttle_failsafe(uint16_t pwm)
+static void set_throttle_and_failsafe(uint16_t throttle_pwm)
 {
-    // Don't enter Failsafe if not enabled by user
-    if(g.throttle_fs_enabled == 0)
+    static int8_t failsafe_counter = 0;
+
+    // if failsafe not enabled pass through throttle and exit
+    if(g.throttle_fs_enabled == 0) {
+        g.rc_3.set_pwm(throttle_pwm);
         return;
+    }
 
-    //check for failsafe and debounce funky reads
-    // ------------------------------------------
-    if (pwm < (unsigned)g.throttle_fs_value) {
-        // we detect a failsafe from radio
-        // throttle has dropped below the mark
-        failsafeCounter++;
-        if (failsafeCounter == FS_COUNTER-1) {
-            // called right before trigger
-            // do nothing
-        }else if(failsafeCounter == FS_COUNTER) {
-            // Don't enter Failsafe if we are not armed
-            // home distance is in meters
-            // This is to prevent accidental RTL
-            if(motors.armed() && ap.takeoff_complete) {
-                Serial.print_P(PSTR("MSG FS ON "));
-                Serial.println(pwm, DEC);
-                set_failsafe(true);
+    //check for low throttle value
+    if (throttle_pwm < (uint16_t)g.throttle_fs_value) {
+
+        // if we are already in failsafe or motors not armed pass through throttle and exit
+        if (ap.failsafe || !motors.armed()) {
+            g.rc_3.set_pwm(throttle_pwm);
+            return;
+        }
+
+        // check for 3 low throttle values
+        // Note: we do not pass through the low throttle until 3 low throttle values are recieved
+        failsafe_counter++;
+        if( failsafe_counter >= FS_COUNTER ) {
+            failsafe_counter = FS_COUNTER;  // check to ensure we don't overflow the counter
+            set_failsafe(true);
+            g.rc_3.set_pwm(throttle_pwm);   // pass through failsafe throttle
+        }
+    }else{
+        // we have a good throttle so reduce failsafe counter
+        failsafe_counter--;
+        if( failsafe_counter <= 0 ) {
+            failsafe_counter = 0;   // check to ensure we don't underflow the counter
+
+            // disengage failsafe after three (nearly) consecutive valid throttle values
+            if (ap.failsafe) {
+                set_failsafe(false);
             }
-        }else if (failsafeCounter > FS_COUNTER) {
-            failsafeCounter = FS_COUNTER+1;
         }
-
-    }else if(failsafeCounter > 0) {
-        // we are no longer in failsafe condition
-        // but we need to recover quickly
-        failsafeCounter--;
-        if (failsafeCounter > 3) {
-            failsafeCounter = 3;
-        }
-        if (failsafeCounter == 1) {
-            Serial.print_P(PSTR("MSG FS OFF "));
-            Serial.println(pwm, DEC);
-        }else if(failsafeCounter == 0) {
-            set_failsafe(false);
-        }else if (failsafeCounter <0) {
-            failsafeCounter = -1;
-        }
+        // pass through throttle
+        g.rc_3.set_pwm(throttle_pwm);
     }
 }
 
