@@ -519,17 +519,18 @@ static void reset_desired_speed()
     max_speed_old = 0;
 }
 
-#define MAX_CLIMB_RATE 200
+#define MAX_CLIMB_RATE_UP 300
+#define MAX_CLIMB_RATE_DOWN 200
 #define MIN_CLIMB_RATE 50
 #define DECEL_CLIMB_RATE 30
 
 
-static int16_t get_desired_climb_rate_new()
+static int16_t get_desired_climb_rate()
 {
-    static int16_t climb_old = 0;
+    //static int16_t climb_old = 0;
 
     if(alt_change_flag == REACHED_ALT) {
-        climb_old = 0;
+        //climb_old = 0;
         return 0;
     }
 
@@ -540,14 +541,25 @@ static int16_t get_desired_climb_rate_new()
         dist        -= 300; // give ourselves 3 meter buffer to the desired alt
         float temp 	= 2 * DECEL_CLIMB_RATE * dist + (MIN_CLIMB_RATE * MIN_CLIMB_RATE);   // 50cm minium climb_rate;
         climb 		= sqrt(temp);
-        climb 		= min(climb, MAX_CLIMB_RATE);	// don't go to fast
+
+        if(alt_change_flag == ASCENDING){
+        	climb		= constrain(climb, 200, MAX_CLIMB_RATE_UP);
+        }else{
+        	// Descending
+        	climb		= constrain(climb, MIN_CLIMB_RATE, MAX_CLIMB_RATE_DOWN);
+        	//climb 		= min(climb, MAX_CLIMB_RATE_DOWN);	// don't go to fast
+        }
+
     }else{
-        climb       = MAX_CLIMB_RATE;				// no need to calc speed, just go the max
+        if(alt_change_flag == ASCENDING){
+        	climb 		= MAX_CLIMB_RATE_UP;	// don't go to fast
+        }else{
+        	climb 		= MAX_CLIMB_RATE_DOWN;	// don't go to fast
+        }
     }
 
-    //climb 		= min(climb, climb_old + (100 * .02));// limit going faster
-    climb 		= max(climb, MIN_CLIMB_RATE); 	// don't go too slow
-    climb_old 	= climb;
+    //climb 		= min(climb, climb_old + (100 * .02));// limit acceleration
+    //climb_old 	= climb;
 
     if(alt_change_flag == DESCENDING){
         climb = -climb;
@@ -555,7 +567,7 @@ static int16_t get_desired_climb_rate_new()
     return climb;
 }
 
-static int16_t get_desired_climb_rate()
+static int16_t get_desired_climb_rate_old()
 {
     if(alt_change_flag == ASCENDING) {
         return constrain(altitude_error / 4, 100, 180);         // 180cm /s up, minimum is 100cm/s
