@@ -153,6 +153,13 @@ static NOINLINE void send_extended_status1(mavlink_channel_t chan, uint16_t pack
     // at the moment all sensors/controllers are assumed healthy
     control_sensors_health = control_sensors_present;
 
+    if (!compass.healthy) {
+        control_sensors_health &= ~(1<<2); // compass
+    }
+    if (!compass.use_for_yaw()) {
+        control_sensors_enabled &= ~(1<<2); // compass
+    }
+
     uint16_t battery_current = -1;
     uint8_t battery_remaining = -1;
 
