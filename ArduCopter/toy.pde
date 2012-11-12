@@ -2,7 +2,6 @@
 // Toy Mode - THOR
 ////////////////////////////////////////////////////////////////////////////////
 static boolean CH7_toy_flag;
-//static boolean CH6_toy_flag;
 
 #if TOY_MIXER == TOY_LOOKUP_TABLE
 static const int16_t toy_lookup[] = {
