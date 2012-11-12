@@ -4,35 +4,35 @@
 #include "Storage.h"
 using namespace AP_HAL_AVR;
 
-uint8_t AVREEPROMStorage::read_byte(const uint8_t   *p) {
-    return eeprom_read_byte(p);
+uint8_t AVREEPROMStorage::read_byte(uint16_t loc) {
+    return eeprom_read_byte((uint8_t*)loc);
 }
 
-uint16_t AVREEPROMStorage::read_word(const uint16_t  *p) {
-    return eeprom_read_word(p);
+uint16_t AVREEPROMStorage::read_word(uint16_t loc) {
+    return eeprom_read_word((uint16_t*)loc);
 }
 
-uint32_t AVREEPROMStorage::read_dword(const uint32_t *p) {
-    return eeprom_read_dword(p);
+uint32_t AVREEPROMStorage::read_dword(uint16_t loc) {
+    return eeprom_read_dword((uint32_t*)loc);
 }
 
-void AVREEPROMStorage::read_block(void *dst, const void *src, size_t n) {
-    eeprom_read_block(dst,src,n);
+void AVREEPROMStorage::read_block(void *dst, uint16_t src, size_t n) {
+    eeprom_read_block(dst,(const void*)src,n);
 }
 
-void AVREEPROMStorage::write_byte(uint8_t   *p, uint8_t value) {
-    eeprom_write_byte(p,value);
+void AVREEPROMStorage::write_byte(uint16_t loc, uint8_t value) {
+    eeprom_write_byte((uint8_t*)loc,value);
 }
 
-void AVREEPROMStorage::write_word(uint16_t  *p, uint16_t value) {
-    eeprom_write_word(p,value);
+void AVREEPROMStorage::write_word(uint16_t loc, uint16_t value) {
+    eeprom_write_word((uint16_t*)loc,value);
 }
 
-void AVREEPROMStorage::write_dword(uint32_t *p, uint32_t value) {
-    eeprom_write_dword(p,value);
+void AVREEPROMStorage::write_dword(uint16_t loc, uint32_t value) {
+    eeprom_write_dword((uint32_t*)loc,value);
 }
 
-void AVREEPROMStorage::write_block(void *src, void *dst, size_t n) {
-    eeprom_write_block(src,dst,n);
+void AVREEPROMStorage::write_block(uint16_t dst, void *src, size_t n) {
+    eeprom_write_block(src,(void*)dst,n);
 }
 
