@@ -1013,7 +1013,6 @@ void loop()
                 if (g.log_bitmask & MASK_LOG_PM)
                     Log_Write_Performance();
 
-                Log_Write_Data(DATA_AP_STATE, ap.value);
                 gps_fix_count           = 0;
                 perf_mon_counter        = 0;
             }
@@ -1309,7 +1308,6 @@ static void slow_loop()
         if(motors.armed()) {
             if (g.log_bitmask & MASK_LOG_ITERM)
                 Log_Write_Iterm();
-            Log_Write_Data(DATA_SIMPLE_BEARING, initial_simple_bearing);
         }else{
             // check the user hasn't updated the frame orientation
             motors.set_frame_orientation(g.frame_orientation);
@@ -1369,6 +1367,8 @@ static void slow_loop()
 // 1Hz loop
 static void super_slow_loop()
 {
+    Log_Write_Data(DATA_AP_STATE, ap.value);
+
     if (g.log_bitmask & MASK_LOG_CUR && motors.armed())
         Log_Write_Current();
 
