@@ -527,10 +527,7 @@ static void reset_desired_speed()
 
 static int16_t get_desired_climb_rate()
 {
-    //static int16_t climb_old = 0;
-
     if(alt_change_flag == REACHED_ALT) {
-        //climb_old = 0;
         return 0;
     }
 
@@ -547,7 +544,6 @@ static int16_t get_desired_climb_rate()
         }else{
         	// Descending
         	climb		= constrain(climb, MIN_CLIMB_RATE, MAX_CLIMB_RATE_DOWN);
-        	//climb 		= min(climb, MAX_CLIMB_RATE_DOWN);	// don't go to fast
         }
 
     }else{
@@ -557,9 +553,6 @@ static int16_t get_desired_climb_rate()
         	climb 		= MAX_CLIMB_RATE_DOWN;	// don't go to fast
         }
     }
-
-    //climb 		= min(climb, climb_old + (100 * .02));// limit acceleration
-    //climb_old 	= climb;
 
     if(alt_change_flag == DESCENDING){
         climb = -climb;

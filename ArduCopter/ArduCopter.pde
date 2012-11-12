@@ -438,12 +438,6 @@ static byte oldSwitchPosition;
 ////////////////////////////////////////////////////////////////////////////////
 // Motor Output
 ////////////////////////////////////////////////////////////////////////////////
-// This is the array of PWM values being sent to the motors
-//static int16_t  motor_out[11];
-// This is the array of PWM values being sent to the motors that has been lightly filtered with a simple LPF
-// This was added to try and deal with biger motors
-//static int16_t  motor_filtered[11];
-
 #if FRAME_CONFIG == QUAD_FRAME
  #define MOTOR_CLASS AP_MotorsQuad
 #endif
@@ -698,12 +692,6 @@ static byte throttle_mode;
 ////////////////////////////////////////////////////////////////////////////////
 // flight specific
 ////////////////////////////////////////////////////////////////////////////////
-// Flag for monitoring the status of flight
-// We must be in the air with throttle for 5 seconds before this flag is true
-// This flag is reset when we are in a manual throttle mode with 0 throttle or disarmed
-//static bool takeoff_complete;
-// Used to see if we have landed and if we should shut our engines - not fully implemented
-//static bool land_complete = true;
 // An additional throttle added to keep the copter at the same altitude when banking
 static int16_t angle_boost;
 // Push copter down for clean landing
@@ -711,8 +699,6 @@ static int16_t landing_boost;
 // for controlling the landing throttle curve
 //verifies landings
 static int16_t ground_detector;
-// have we reached our desired altitude brefore heading home?
-//static bool rtl_reached_alt;
 
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -732,8 +718,6 @@ int32_t wp_distance;
 // home location is stored when we have a good GPS lock and arm the copter
 // Can be reset each the copter is re-armed
 static struct   Location home;
-// Flag for if we have g_gps lock and have set the home location
-//static bool     home_is_set;
 // Current location of the copter
 static struct   Location current_loc;
 // Next WP is the desired location of the copter - the next waypoint or loiter location
