@@ -17,6 +17,7 @@
 #define __AP_MENU_H__
 
 #include <inttypes.h>
+#include <AP_HAL.h>
 
 #define MENU_COMMANDLINE_MAX    32      ///< maximum input line length
 #define MENU_ARGS_MAX                   4       ///< maximum number of arguments
@@ -56,7 +57,7 @@ public:
     ///
     typedef int8_t (*func)(uint8_t argc, const struct arg *argv);
 
-	static void set_port(FastSerial *port) {
+	static void set_port(AP_HAL::BetterStream *port) {
 		_port = port;
 	}
 
@@ -126,7 +127,7 @@ private:
     static arg              _argv[MENU_ARGS_MAX + 1];                   ///< arguments
 
 	// port to run on
-	static FastSerial       *_port;
+	static AP_HAL::BetterStream  *_port;
 };
 
 /// Macros used to define a menu.
