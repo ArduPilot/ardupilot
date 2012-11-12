@@ -23,6 +23,7 @@
 
 // AVR LibC Includes
 #include <AP_Common.h>
+#include <I2C.h>                // Arduino I2C lib
 #include "AP_RangeFinder_MaxsonarI2CXL.h"
 
 // Constructor //////////////////////////////////////////////////////////////
@@ -55,16 +56,16 @@ bool AP_RangeFinder_MaxsonarI2CXL::take_reading()
 int AP_RangeFinder_MaxsonarI2CXL::read()
 {
     uint8_t buff[2];
-    int16_t distance = 0;
+    int16_t ret_value = 0;
 
     // take range reading and read back results
     if (I2c.read(_addr, 2, buff) != 0) {
         healthy = false;
     }else{
         // combine results into distance
-        distance = buff[0] << 8 | buff[1];
+        ret_value = buff[0] << 8 | buff[1];
         healthy = true;
     }
 
-    return distance;
+    return ret_value;
 }
