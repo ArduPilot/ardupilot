@@ -611,9 +611,6 @@ int32_t pitch_axis;
 AP_LeadFilter xLeadFilter;      // Long GPS lag filter
 AP_LeadFilter yLeadFilter;      // Lat  GPS lag filter
 
-//AverageFilterInt32_Size3 roll_rate_d_filter;    // filtered acceleration
-//AverageFilterInt32_Size3 pitch_rate_d_filter;   // filtered pitch acceleration
-
 // Barometer filter
 AverageFilterInt32_Size5 baro_filter;
 
