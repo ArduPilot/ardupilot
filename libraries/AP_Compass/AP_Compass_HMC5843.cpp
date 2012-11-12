@@ -1,4 +1,4 @@
-// -*- tab-width: 4; Mode: C++; c-basic-offset: 3; indent-tabs-mode: t -*-
+/// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 /*
  *       AP_Compass_HMC5843.cpp - Arduino Library for HMC5843 I2C magnetometer
  *       Code by Jordi Muñoz and Jose Julio. DIYDrones.com
@@ -77,6 +77,9 @@ bool AP_Compass_HMC5843::read_raw()
     uint8_t buff[6];
 
     if (I2c.read(COMPASS_ADDRESS, 0x03, 6, buff) != 0) {
+        if (healthy) {
+            I2c.setSpeed(false);
+        }
         healthy = false;
         return false;
     }
@@ -277,6 +280,7 @@ bool AP_Compass_HMC5843::read()
         }
         if (!re_initialise()) {
             _retry_time = millis() + 1000;
+			I2c.setSpeed(false);
             return false;
         }
     }
