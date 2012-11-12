@@ -4,7 +4,6 @@
 #define __AP_RANGEFINDER_MAXSONARI2CXL_H__
 
 #include "RangeFinder.h"
-#include <I2C.h>                        // Arduino I2C lib
 
 #define AP_RANGE_FINDER_MAXSONARI2CXL_DEFAULT_ADDR   0x70
 
