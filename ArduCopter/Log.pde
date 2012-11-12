@@ -251,16 +251,16 @@ static void Log_Write_GPS()
     DataFlash.WriteByte(HEAD_BYTE2);
     DataFlash.WriteByte(LOG_GPS_MSG);
 
-    DataFlash.WriteLong(g_gps->time);                                                   // 1
-    DataFlash.WriteByte(g_gps->num_sats);                                       // 2
+    DataFlash.WriteLong(g_gps->time);           		 // 1
+    DataFlash.WriteByte(g_gps->num_sats);       		 // 2
 
-    DataFlash.WriteLong(current_loc.lat);                                       // 3
-    DataFlash.WriteLong(current_loc.lng);                                       // 4
-    DataFlash.WriteLong(current_loc.alt);                                       // 5
-    DataFlash.WriteLong(g_gps->altitude);                                       // 6
+    DataFlash.WriteLong(current_loc.lat);       		 // 3
+    DataFlash.WriteLong(current_loc.lng);       		 // 4
+    DataFlash.WriteLong(current_loc.alt);       		 // 5
+    DataFlash.WriteLong(g_gps->altitude);       		 // 6
 
-    DataFlash.WriteInt(g_gps->ground_speed);                                    // 7
-    DataFlash.WriteLong(g_gps->ground_course);                  // 8
+    DataFlash.WriteInt(g_gps->ground_speed);    		 // 7
+    DataFlash.WriteLong(g_gps->ground_course);  		 // 8
 
     DataFlash.WriteByte(END_BYTE);
 }
@@ -268,27 +268,27 @@ static void Log_Write_GPS()
 // Read a GPS packet
 static void Log_Read_GPS()
 {
-    int32_t temp1   = DataFlash.ReadLong();                     // 1 time
-    int8_t temp2    = DataFlash.ReadByte();                     // 2 sats
-    int32_t temp3   = DataFlash.ReadLong();                     // 3 lat
-    int32_t temp4   = DataFlash.ReadLong();                     // 4 lon
-    float temp5     = DataFlash.ReadLong() / 100.0;     // 5 sensor alt
-    float temp6     = DataFlash.ReadLong() / 100.0;     // 6 gps alt
-    int16_t temp7   = DataFlash.ReadInt();                      // 7 ground speed
-    int32_t temp8   = DataFlash.ReadLong();                     // 8 ground course
+    int32_t temp1   = DataFlash.ReadLong();           // 1 time
+    int8_t temp2    = DataFlash.ReadByte();           // 2 sats
+    int32_t temp3   = DataFlash.ReadLong();           // 3 lat
+    int32_t temp4   = DataFlash.ReadLong();           // 4 lon
+    float temp5     = DataFlash.ReadLong() / 100.0;   // 5 sensor alt
+    float temp6     = DataFlash.ReadLong() / 100.0;   // 6 gps alt
+    int16_t temp7   = DataFlash.ReadInt();            // 7 ground speed
+    int32_t temp8   = DataFlash.ReadLong();           // 8 ground course
 
     //  1   2    3      4     5      6      7    8
     Serial.printf_P(PSTR("GPS, %ld, %d, "),
-                    (long)temp1,                                                // 1 time
-                    (int)temp2);                                                // 2 sats
+                    (long)temp1,                          // 1 time
+                    (int)temp2);                          // 2 sats
     print_latlon(&Serial, temp3);
     Serial.print_P(PSTR(", "));
     print_latlon(&Serial, temp4);
     Serial.printf_P(PSTR(", %4.4f, %4.4f, %d, %ld\n"),
-                    temp5,                                              // 5 gps alt
-                    temp6,                                              // 6 sensor alt
-                    (int)temp7,                                                 // 7 ground speed
-                    (long)temp8);                                               // 8 ground course
+                    temp5,                                // 5 gps alt
+                    temp6,                                // 6 sensor alt
+                    (int)temp7,                           // 7 ground speed
+                    (long)temp8);                         // 8 ground course
 }
 
 static void Log_Write_Raw()
@@ -606,6 +606,8 @@ static void Log_Write_Control_Tuning()
     DataFlash.WriteInt(angle_boost);                        // 6
     DataFlash.WriteInt(climb_rate_actual);                 	// 7
     DataFlash.WriteInt(g.rc_3.servo_out);                  	// 8
+    DataFlash.WriteInt(desired_climb_rate);                  // 9
+
 
     DataFlash.WriteByte(END_BYTE);
 }
@@ -617,11 +619,11 @@ static void Log_Read_Control_Tuning()
 
     Serial.printf_P(PSTR("CTUN, "));
 
-    for(uint8_t i = 1; i < 8; i++ ) {
+    for(uint8_t i = 1; i < 9; i++ ) {
         temp = DataFlash.ReadInt();
         Serial.printf_P(PSTR("%d, "), (int)temp);
     }
-    // read 8
+    // read 9
     temp = DataFlash.ReadInt();
     Serial.printf_P(PSTR("%d\n"), (int)temp);
 }
