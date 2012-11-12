@@ -474,16 +474,16 @@ get_throttle_rate(int16_t z_target_speed)
     z_rate_error    = z_target_speed - climb_rate;              // calc the speed error
 #endif
 
-    int32_t tmp     = (z_target_speed * z_target_speed * (int32_t)g.throttle_cruise) / 200000;
+	int16_t tmp     = ((int32_t)z_target_speed * (int32_t)g.throttle_cruise) / 280;
+	tmp 			= min(tmp, 500);
 
     if(z_target_speed < 0) tmp = -tmp;
 
-    output                  = constrain(tmp, -32000, 32000);    // constraint to remove chance of overflow when adding int32_t to int16_t
-
     // separately calculate p, i, d values for logging
     p = g.pid_throttle.get_p(z_rate_error);
+
     // freeze I term if we've breached throttle limits
-    if( motors.reached_limit(AP_MOTOR_THROTTLE_LIMIT) ) {
+    if(motors.reached_limit(AP_MOTOR_THROTTLE_LIMIT)) {
         i = g.pid_throttle.get_integrator();
     }else{
         i = g.pid_throttle.get_i(z_rate_error, .02);
@@ -492,7 +492,7 @@ get_throttle_rate(int16_t z_target_speed)
 
     //
     // limit the rate
-    output +=  constrain(p+i+d, -80, 120);
+    output +=  constrain(p+i+d, -150, 200);
 
 #if LOGGING_ENABLED == ENABLED
     static int8_t log_counter = 0;                                      // used to slow down logging of PID values to dataflash
