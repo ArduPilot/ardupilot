@@ -120,3 +120,8 @@
 // #define MOT_6 CH_4
 // #define MOT_7 CH_7
 // #define MOT_8 CH_8
+
+
+// Used to set the max roll and pitch angles in Degrees * 100
+//#define MAX_INPUT_ROLL_ANGLE      8000
+//#define MAX_INPUT_PITCH_ANGLE     8000
