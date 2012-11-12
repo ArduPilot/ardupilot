@@ -1723,7 +1723,7 @@ void update_throttle_mode(void)
                 throttle_avg = g.throttle_cruise;
             }
             // calc average throttle
-            if ((g.rc_3.control_in > g.throttle_min) && abs(climb_rate) < 60) {
+            if ((g.rc_3.control_in > g.throttle_min) && (abs(climb_rate) < 60) && (g_gps->ground_speed < 200)) {
                 throttle_avg = throttle_avg * .99 + (float)g.rc_3.control_in * .01;
                 g.throttle_cruise = throttle_avg;
             }
@@ -1748,13 +1748,13 @@ void update_throttle_mode(void)
     case THROTTLE_HOLD:
         // allow interactive changing of atitude
         if(g.rc_3.radio_in < (g.rc_3.radio_min + 200)){
-            int16_t _rate = 120 - (((g.rc_3.radio_in - g.rc_3.radio_min) * 12) / 20);
+            int16_t _rate = 180 - (((g.rc_3.radio_in - g.rc_3.radio_min) * 12) / 20);
             reset_throttle_counter = 150;
             nav_throttle        = get_throttle_rate(-_rate);
             g.rc_3.servo_out    = g.throttle_cruise + nav_throttle + angle_boost;
             break;
         }else if(g.rc_3.radio_in > (g.rc_3.radio_max - 200)){
-            int16_t _rate = 180 - ((g.rc_3.radio_max -  g.rc_3.radio_in) * 18) / 20;
+            int16_t _rate = 300 - ((g.rc_3.radio_max -  g.rc_3.radio_in) * 18) / 20;
             reset_throttle_counter = 150;
             nav_throttle        = get_throttle_rate(_rate);
             g.rc_3.servo_out    = g.throttle_cruise + nav_throttle + angle_boost;
@@ -1885,7 +1885,7 @@ static void update_altitude()
      // 2.6 way
      int16_t temp		= (baro_alt - old_baro_alt) * 10;
      baro_rate          = (temp + baro_rate) >> 1;
-     baro_rate			= constrain(baro_rate, -300, 300);
+     baro_rate			= constrain(baro_rate, -500, 500);
      old_baro_alt		= baro_alt;
 
     // Using Tridge's new clamb rate calc
