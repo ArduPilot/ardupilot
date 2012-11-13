@@ -49,10 +49,14 @@ public:
     virtual void            Force_Out2_Out3(void) = 0;
     virtual void            Force_Out6_Out7(void) = 0;
 
+    // get the time of the last radio update
+    virtual uint32_t        get_last_update() { return _last_update; };
+
 protected:
     uint16_t                _map_speed(uint16_t speed_hz) {
         return 2000000UL / speed_hz;
     }
+    static uint32_t         _last_update;
 
 };
 

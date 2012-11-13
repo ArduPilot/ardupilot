@@ -124,6 +124,8 @@ void output_min()
     motors.enable();
     motors.output_min();
 }
+
+#define RADIO_FS_TIMEOUT_MS 2000       // 2 seconds
 static void read_radio()
 {
     if (APM_RC.GetState() == 1) {
@@ -143,6 +145,11 @@ static void read_radio()
         // limit our input to 800 so we can still pitch and roll
         g.rc_3.control_in = min(g.rc_3.control_in, MAXIMUM_THROTTLE);
 #endif
+    }else{
+        // turn on throttle failsafe if no update from ppm encoder for 2 seconds
+        if ((millis() - APM_RC.get_last_update() >= RADIO_FS_TIMEOUT_MS) && g.throttle_fs_enabled && motors.armed() && !ap.failsafe) {
+            set_failsafe(true);
+        }
     }
 }
 

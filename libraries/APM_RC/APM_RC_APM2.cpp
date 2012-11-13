@@ -63,6 +63,7 @@ void APM_RC_APM2::_timer5_capt_cb(void)
             // If this is the last pulse in a frame, set _radio_status.
             if (frame_idx >= NUM_CHANNELS) {
                 _radio_status = 1;
+                _last_update = millis();
             }
         }
     }
@@ -308,12 +309,13 @@ bool APM_RC_APM2::setHIL(int16_t v[NUM_CHANNELS])
             sum++;
         }
     }
+    _radio_status = 1;
+    _last_update = millis();
     if (sum == 0) {
         return 0;
     } else {
         return 1;
     }
-    _radio_status = 1;
 }
 
 void APM_RC_APM2::clearOverride(void)

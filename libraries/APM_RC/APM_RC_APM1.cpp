@@ -63,6 +63,7 @@ void APM_RC_APM1::_timer4_capt_cb(void)
 
             if (PPM_Counter >= NUM_CHANNELS) {
                 _radio_status = 1;
+                _last_update = millis();
             }
         }
     }
@@ -316,6 +317,7 @@ bool APM_RC_APM1::setHIL(int16_t v[NUM_CHANNELS])
         }
     }
     _radio_status = 1;
+    _last_update = millis();
     if (sum == 0) {
         return 0;
     } else {
