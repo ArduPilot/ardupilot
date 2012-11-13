@@ -303,9 +303,6 @@
 //////////////////////////////////////////////////////////////////////////////
 // Battery monitoring
 //
-#ifndef BATTERY_EVENT
- # define BATTERY_EVENT                  DISABLED
-#endif
 #ifndef LOW_VOLTAGE
  # define LOW_VOLTAGE                    9.6
 #endif
@@ -323,7 +320,10 @@
  # define HIGH_DISCHARGE                 1760
 #endif
 
-
+// Battery failsafe
+#ifndef BATTERY_FAILSAFE
+ # define BATTERY_FAILSAFE              DISABLED
+#endif
 
 
 
