@@ -53,7 +53,15 @@ const AP_Param::Info var_info[] PROGMEM = {
     GSCALAR(sonar_enabled,  "SONAR_ENABLE",     DISABLED),
 
     GSCALAR(sonar_type,     "SONAR_TYPE",           AP_RANGEFINDER_MAXSONARXL),
+
     GSCALAR(battery_monitoring, "BATT_MONITOR", DISABLED),
+
+    // @Param: BATT_FAILSAFE
+    // @DisplayName: Battery Failsafe Enable
+    // @Description: Controls whether failsafe will be invoked when battery voltage or current runs low
+    // @Values: 0:Disabled,1:Enabled
+    // @User: Standard
+    GSCALAR(battery_fs_enabled, "BATT_FAILSAFE", BATTERY_FAILSAFE),
 
     // @Param: VOLT_DIVIDER
     // @DisplayName: Voltage Divider

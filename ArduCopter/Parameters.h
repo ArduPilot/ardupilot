@@ -174,6 +174,7 @@ public:
         k_param_radio_tuning_high,
         k_param_radio_tuning_low,
         k_param_rc_speed = 192,
+        k_param_battery_fs_enabled, // 193
 
         //
         // 200: flight modes
@@ -246,8 +247,9 @@ public:
     AP_Float        volt_div_ratio;
     AP_Float        curr_amp_per_volt;
     AP_Float        input_voltage;
-    AP_Int16        pack_capacity;              // Battery pack capacity less
-                                                // reserve
+    AP_Int16        pack_capacity;              // Battery pack capacity less reserve
+    AP_Int8         battery_fs_enabled;         // battery failsafe enabled
+
     AP_Int8         compass_enabled;
     AP_Int8         optflow_enabled;
     AP_Float        low_voltage;
