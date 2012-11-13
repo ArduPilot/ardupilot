@@ -1,27 +1,33 @@
 /// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 
+#define CONTROL_SWITCH_COUNTER  5      // 5 iterations (1/10th of a second) at a new switch position will cause flight mode change
 static void read_control_switch()
 {
-    static bool switch_debouncer = false;
+    static uint8_t switch_counter = 0;
 
     byte switchPosition = readSwitch();
 
     if (oldSwitchPosition != switchPosition) {
-        if(switch_debouncer) {
+        switch_counter++;
+        if(switch_counter >= CONTROL_SWITCH_COUNTER) {
             oldSwitchPosition       = switchPosition;
-            switch_debouncer        = false;
+            switch_counter          = 0;
 
-            set_mode(flight_modes[switchPosition]);
+            // ignore flight mode changes if in failsafe
+            if( !ap.failsafe ) {
+                set_mode(flight_modes[switchPosition]);
 
-            if(g.ch7_option != CH7_SIMPLE_MODE) {
-                // set Simple mode using stored paramters from Mission planner
-                // rather than by the control switch
-                //ap.simple_mode = (g.simple_modes & (1 << switchPosition));
-                set_simple_mode(g.simple_modes & (1 << switchPosition));
+                if(g.ch7_option != CH7_SIMPLE_MODE) {
+                    // set Simple mode using stored paramters from Mission planner
+                    // rather than by the control switch
+                    set_simple_mode(g.simple_modes & (1 << switchPosition));
+                }
             }
-        }else{
-            switch_debouncer        = true;
         }
+    }else{
+        // reset switch_counter if there's been no change
+        // we don't want 10 intermittant blips causing a flight mode change
+        switch_counter = 0;
     }
 }
 
@@ -31,8 +37,8 @@ static byte readSwitch(void){
     if (pulsewidth > 1230 && pulsewidth <= 1360) return 1;
     if (pulsewidth > 1360 && pulsewidth <= 1490) return 2;
     if (pulsewidth > 1490 && pulsewidth <= 1620) return 3;
-    if (pulsewidth > 1620 && pulsewidth <= 1749) return 4;              // Software Manual
-    if (pulsewidth >= 1750) return 5;                                                           // Hardware Manual
+    if (pulsewidth > 1620 && pulsewidth <= 1749) return 4;
+    if (pulsewidth >= 1750) return 5;
     return 0;
 }
 

@@ -51,7 +51,6 @@ static void set_failsafe(bool mode)
 
         // store the value so we don't trip the gate twice
         // -----------------------------------------------
-        //failsafe = mode;
         ap.failsafe = mode;
 
         if (ap.failsafe == false) {

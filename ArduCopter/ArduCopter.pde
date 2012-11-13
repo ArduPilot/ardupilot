@@ -1037,10 +1037,6 @@ static void fast_loop()
     // ------------------------------
     set_servos_4();
 
-    // Read radio
-    // ----------
-    read_radio();
-
     // IMU DCM Algorithm
     // --------------------
     read_AHRS();
@@ -1060,6 +1056,11 @@ static void fast_loop()
         update_optical_flow();
     }
 #endif
+
+    // Read radio and 3-position switch on radio
+    // -----------------------------------------
+    read_radio();
+    read_control_switch();
 
     // custom code/exceptions for flight modes
     // ---------------------------------------
@@ -1298,10 +1299,6 @@ static void slow_loop()
 
     case 1:
         slow_loopCounter++;
-
-        // Read 3-position switch on radio
-        // -------------------------------
-        read_control_switch();
 
 #if MOUNT == ENABLED
         update_aux_servo_function(&g.rc_5, &g.rc_6, &g.rc_7, &g.rc_8, &g.rc_10, &g.rc_11);
