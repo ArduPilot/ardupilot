@@ -185,7 +185,7 @@ else
 endif
 
 # these are library objects we don't want in the desktop build (maybe we'll add them later)
-NODESKTOP		:= I2C/I2C.cpp DataFlash/DataFlash_APM1.cpp FastSerial/FastSerial.cpp AP_Compass/AP_Compass_HMC5843.cpp AP_Baro/AP_Baro_BMP085.cpp
+NODESKTOP		:= I2C/I2C.cpp DataFlash/DataFlash_APM1.cpp FastSerial/FastSerial.cpp AP_Compass/AP_Compass_HMC5843.cpp AP_Baro/AP_Baro_BMP085.cpp AP_RangeFinder/AP_RangeFinder_MaxsonarI2CXL.cpp
 
 #
 # Find sketchbook libraries referenced by the sketch.
