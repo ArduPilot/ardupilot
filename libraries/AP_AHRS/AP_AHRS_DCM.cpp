@@ -13,8 +13,12 @@
  *       as published by the Free Software Foundation; either version 2.1
  *       of the License, or (at your option) any later version.
  */
-#include <FastSerial.h>
 #include <AP_AHRS.h>
+#include <AP_HAL.h>
+
+extern const AP_HAL::HAL& hal;
+
+#define constrain(amt,low,high) ((amt)<(low)?(low):((amt)>(high)?(high):(amt)))
 
 // this is the speed in cm/s above which we first get a yaw lock with
 // the GPS
@@ -428,7 +432,7 @@ AP_AHRS_DCM::drift_correction(float deltat)
         // add in wind estimate
         velocity += _wind;
 
-        last_correction_time = millis();
+        last_correction_time = hal.scheduler->millis();
         _have_gps_lock = false;
 
         // update position delta for get_position()
@@ -606,7 +610,7 @@ void AP_AHRS_DCM::estimate_wind(Vector3f &velocity)
     // See http://gentlenav.googlecode.com/files/WindEstimation.pdf
     Vector3f fuselageDirection = _dcm_matrix.colx();
     Vector3f fuselageDirectionDiff = fuselageDirection - _last_fuse;
-    uint32_t now = millis();
+    uint32_t now = hal.scheduler->millis();
 
     // scrap our data and start over if we're taking too long to get a direction change
     if (now - _last_wind_time > 10000) {

@@ -1,13 +1,11 @@
-#ifndef AP_AHRS_HIL_H
-#define AP_AHRS_HIL_H
+#ifndef __AP_AHRS_HIL_H__
+#define __AP_AHRS_HIL_H__
 
 class AP_AHRS_HIL : public AP_AHRS
 {
 public:
     // Constructors
-    AP_AHRS_HIL(AP_InertialSensor *ins, GPS *&gps) : AP_AHRS(ins, gps)
-    {
-    }
+    AP_AHRS_HIL(AP_InertialSensor *ins, GPS *&gps) : AP_AHRS(ins, gps) {}
 
     // Accessors
     Vector3f get_gyro(void) {
@@ -21,12 +19,12 @@ public:
     }
 
     // Methods
-    void            update(void) {
+    void update(void) {
         _ins->update();
     }
     
-    void            setHil(float roll, float pitch, float yaw,
-                           float rollRate, float pitchRate, float yawRate);
+    void setHil(float roll, float pitch, float yaw,
+                float rollRate, float pitchRate, float yawRate);
 
     // return the current estimate of the gyro drift
     Vector3f get_gyro_drift(void) {
@@ -48,4 +46,4 @@ private:
     Vector3f _omega;
 };
 
-#endif
+#endif // __AP_AHRS_HIL_H__

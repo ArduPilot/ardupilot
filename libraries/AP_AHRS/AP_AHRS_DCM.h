@@ -1,5 +1,5 @@
-#ifndef AP_AHRS_DCM_H
-#define AP_AHRS_DCM_H
+#ifndef __AP_AHRS_DCM_H__
+#define __AP_AHRS_DCM_H__
 /*
  *  DCM based AHRS (Attitude Heading Reference System) interface for
  *  ArduPilot
@@ -136,4 +136,4 @@ private:
     Vector3f _wind;
 };
 
-#endif // AP_AHRS_DCM_H
+#endif // __AP_AHRS_DCM_H__

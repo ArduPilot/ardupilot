@@ -6,9 +6,9 @@
 	as published by the Free Software Foundation; either version 2.1
 	of the License, or (at your option) any later version.
 */
-#include <FastSerial.h>
 #include <AP_AHRS.h>
-
+#include <AP_HAL.h>
+extern const AP_HAL::HAL& hal;
 
 // table of user settable parameters
 const AP_Param::GroupInfo AP_AHRS::var_info[] PROGMEM = {
@@ -87,6 +87,7 @@ bool AP_AHRS::airspeed_estimate(float *airspeed_ret)
 		if (_wind_max > 0 && _gps && _gps->status() == GPS::GPS_OK) {
 			// constrain the airspeed by the ground speed
 			// and AHRS_WIND_MAX
+#define constrain(amt,low,high) ((amt)<(low)?(low):((amt)>(high)?(high):(amt)))
 			*airspeed_ret = constrain(*airspeed_ret, 
 						  _gps->ground_speed*0.01 - _wind_max, 
 						  _gps->ground_speed*0.01 + _wind_max);
@@ -102,7 +103,8 @@ void AP_AHRS::add_trim(float roll_in_radians, float pitch_in_radians)
     Vector3f trim = _trim.get();
 
     // debug -- remove me!
-    Serial.printf_P(PSTR("\nadd_trim before R:%4.2f P:%4.2f\n"),ToDeg(trim.x),ToDeg(trim.y));
+    hal.console->printf_P(PSTR("\nadd_trim before R:%4.2f P:%4.2f\n"),
+            ToDeg(trim.x),ToDeg(trim.y));
 
     // add new trim
     trim.x = constrain(trim.x + roll_in_radians, ToRad(-10.0), ToRad(10.0));
@@ -112,5 +114,6 @@ void AP_AHRS::add_trim(float roll_in_radians, float pitch_in_radians)
     _trim.set_and_save(trim);
 
     // debug -- remove me!
-    Serial.printf_P(PSTR("add_trim after R:%4.2f P:%4.2f\n"),ToDeg(trim.x),ToDeg(trim.y));
+    hal.console->printf_P(PSTR("add_trim after R:%4.2f P:%4.2f\n"),
+            ToDeg(trim.x),ToDeg(trim.y));
 }
