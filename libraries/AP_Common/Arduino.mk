@@ -235,19 +235,26 @@ DEPFLAGS		=	-MD -MT $@
 # XXX warning options TBD
 CXXOPTS			= 	-mcall-prologues -ffunction-sections -fdata-sections -fno-exceptions
 COPTS			=	-mcall-prologues -ffunction-sections -fdata-sections
+
 ASOPTS			=	-x assembler-with-cpp 
 LISTOPTS		=	-adhlns=$(@:.o=.lst)
 
 CXXFLAGS		=	-g -mmcu=$(MCU) $(DEFINES) -Wa,$(LISTOPTS) $(OPTFLAGS) $(DEPFLAGS) $(CXXOPTS)
 CFLAGS			=	-g -mmcu=$(MCU) $(DEFINES) -Wa,$(LISTOPTS) $(OPTFLAGS) $(DEPFLAGS) $(COPTS)
 ASFLAGS			=	-g -mmcu=$(MCU) $(DEFINES) -Wa,$(LISTOPTS) $(DEPFLAGS) $(ASOPTS)
-LDFLAGS			=	-g -mmcu=$(MCU) $(OPTFLAGS) -Wl,--relax,--gc-sections -Wl,-Map -Wl,$(SKETCHMAP) -Wl,-m,avr6
+LDFLAGS			=	-g -mmcu=$(MCU) $(OPTFLAGS) -Wl,--gc-sections -Wl,-Map -Wl,$(SKETCHMAP) -Wl,-m,avr6
 
 ifeq ($(BOARD),mega)
   LDFLAGS		=	-g -mmcu=$(MCU) $(OPTFLAGS) -Wl,--gc-sections -Wl,-Map -Wl,$(SKETCHMAP)
 endif
 
-
+# under certain situations with certain avr-gcc versions the --relax flag causes
+# a bug. Give the user a way to disable this flag per-sketch.
+# I know this is a rotten hack but we're really close to sunset on AVR.
+EXCLUDE_RELAX := $(wildcard $(SRCROOT)/norelax.inoflag)
+ifeq ($(EXCLUDE_RELAX),)
+	LDFLAGS    +=   -Wl,--relax
+endif
 
 LIBS			=	-lm
 
