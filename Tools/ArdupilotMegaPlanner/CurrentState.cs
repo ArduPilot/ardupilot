@@ -143,7 +143,7 @@ namespace ArdupilotMega
         public float wp_dist { get { return (_wpdist * multiplierdist); } set { _wpdist = value; } }
         public float alt_error { get { return _alt_error * multiplierdist; } set { if (_alt_error == value) return; _alt_error = value; _targetalt = _targetalt * 0.5f + (float)Math.Round(alt + alt_error, 0) * 0.5f; } }
         public float ber_error { get { return (target_bearing - yaw); } set { } }
-        public float aspd_error { get { return _aspd_error * multiplierspeed; } set { if (_aspd_error == value) return; _aspd_error = value; _targetairspeed = _targetairspeed * 0.5f + (float)Math.Round(airspeed + aspd_error / 100, 0) * 0.5f; } }
+        public float aspd_error { get { return _aspd_error * multiplierspeed; } set { if (_aspd_error == value) return; _aspd_error = value; _targetairspeed = _targetairspeed * 0.5f + (float)Math.Round(airspeed + aspd_error, 0) * 0.5f; } }
         public float xtrack_error { get; set; }
         public float wpno { get; set; }
         public string mode { get; set; }
@@ -861,7 +861,7 @@ namespace ArdupilotMega
                         target_bearing = nav.target_bearing;
                         wp_dist = nav.wp_dist;
                         alt_error = nav.alt_error;
-                        aspd_error = nav.aspd_error;
+                        aspd_error = nav.aspd_error / 100.0f;
                         xtrack_error = nav.xtrack_error;
 
                         //MAVLink.packets[MAVLink.MAVLINK_MSG_ID_NAV_CONTROLLER_OUTPUT] = null;

@@ -2,7 +2,7 @@
 <dpInst>
 	<enableNotListedLanguages/>
 	<suppressAddRemovePrograms/>
-	<suppressWizard/>
+	<crapasuppressWizard/>
 	<quietInstallStrict/>
 	<forceIfDriverIsNotBetter/>
 	<search>

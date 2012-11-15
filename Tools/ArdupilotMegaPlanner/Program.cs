@@ -196,13 +196,23 @@ namespace ArdupilotMega
             {
                 try
                 {
+                    string data = "";
+                        foreach (System.Collections.DictionaryEntry de in ex.Data)
+                            data += String.Format("-> {0}: {1}", de.Key, de.Value);
+              
+
                     // Create a request using a URL that can receive a post. 
                     WebRequest request = WebRequest.Create("http://vps.oborne.me/mail.php");
                     request.Timeout = 10000; // 10 sec
                     // Set the Method property of the request to POST.
                     request.Method = "POST";
                     // Create POST data and convert it to a byte array.
-                    string postData = "message=" + Environment.OSVersion.VersionString + " " + System.Reflection.Assembly.GetExecutingAssembly().GetName().Version.ToString() + " " + Application.ProductVersion + " Exception " + ex.ToString().Replace('&', ' ').Replace('=', ' ') + " Stack: " + ex.StackTrace.ToString().Replace('&', ' ').Replace('=', ' ');
+                    string postData = "message=" + Environment.OSVersion.VersionString + " " + System.Reflection.Assembly.GetExecutingAssembly().GetName().Version.ToString() 
+                        + " " + Application.ProductVersion 
+                        + "\nException " + ex.ToString().Replace('&', ' ').Replace('=', ' ') 
+                        + "\nStack: " + ex.StackTrace.ToString().Replace('&', ' ').Replace('=', ' ') 
+                        + "\nTargetSite " + ex.TargetSite + " " + ex.TargetSite.DeclaringType
+                        + "\ndata " + data;
                     byte[] byteArray = Encoding.ASCII.GetBytes(postData);
                     // Set the ContentType property of the WebRequest.
                     request.ContentType = "application/x-www-form-urlencoded";

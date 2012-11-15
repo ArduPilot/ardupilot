@@ -205,7 +205,7 @@ namespace ArdupilotMega.Utilities
                     ctl.BackColor = BGColor;
                     ctl.ForeColor = TextColor;
                     CheckBox CHK = (CheckBox)ctl;
-                    CHK.FlatStyle = FlatStyle.Flat;
+                   // CHK.FlatStyle = FlatStyle.Flat;
                 }
                 else if (ctl.GetType() == typeof(ComboBox) || ctl.GetType() == typeof(MavlinkComboBox))
                 {

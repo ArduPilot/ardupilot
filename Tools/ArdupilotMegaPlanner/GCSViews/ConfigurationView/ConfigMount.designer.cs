@@ -86,6 +86,30 @@ namespace ArdupilotMega.GCSViews.ConfigurationView
             this.mavlinkCheckBoxRR = new ArdupilotMega.Controls.MavlinkCheckBox();
             this.LBL_Error = new ArdupilotMega.Controls.LabelWithPseudoOpacity();
             this.PBOX_WarningIcon = new ArdupilotMega.Controls.PictureBoxWithPseudoOpacity();
+            this.groupBox4 = new System.Windows.Forms.GroupBox();
+            this.label27 = new System.Windows.Forms.Label();
+            this.NUD_RETRACT_z = new ArdupilotMega.Controls.MavlinkNumericUpDown();
+            this.label26 = new System.Windows.Forms.Label();
+            this.NUD_RETRACT_y = new ArdupilotMega.Controls.MavlinkNumericUpDown();
+            this.label25 = new System.Windows.Forms.Label();
+            this.NUD_RETRACT_x = new ArdupilotMega.Controls.MavlinkNumericUpDown();
+            this.groupBox5 = new System.Windows.Forms.GroupBox();
+            this.label28 = new System.Windows.Forms.Label();
+            this.NUD_NEUTRAL_z = new ArdupilotMega.Controls.MavlinkNumericUpDown();
+            this.label29 = new System.Windows.Forms.Label();
+            this.NUD_NEUTRAL_y = new ArdupilotMega.Controls.MavlinkNumericUpDown();
+            this.label30 = new System.Windows.Forms.Label();
+            this.NUD_NEUTRAL_x = new ArdupilotMega.Controls.MavlinkNumericUpDown();
+            this.groupBox6 = new System.Windows.Forms.GroupBox();
+            this.label31 = new System.Windows.Forms.Label();
+            this.NUD_CONTROL_z = new ArdupilotMega.Controls.MavlinkNumericUpDown();
+            this.label32 = new System.Windows.Forms.Label();
+            this.NUD_CONTROL_y = new ArdupilotMega.Controls.MavlinkNumericUpDown();
+            this.label33 = new System.Windows.Forms.Label();
+            this.NUD_CONTROL_x = new ArdupilotMega.Controls.MavlinkNumericUpDown();
+            this.CHK_stab_tilt = new ArdupilotMega.Controls.MavlinkCheckBox();
+            this.CHK_stab_roll = new ArdupilotMega.Controls.MavlinkCheckBox();
+            this.CHK_stab_pan = new ArdupilotMega.Controls.MavlinkCheckBox();
             ((System.ComponentModel.ISupportInitialize)(this.pictureBox1)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.pictureBox2)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.pictureBox3)).BeginInit();
@@ -102,6 +126,18 @@ namespace ArdupilotMega.GCSViews.ConfigurationView
             ((System.ComponentModel.ISupportInitialize)(this.mavlinkNumericUpDownRSM)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.mavlinkNumericUpDownRSMX)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.PBOX_WarningIcon)).BeginInit();
+            this.groupBox4.SuspendLayout();
+            ((System.ComponentModel.ISupportInitialize)(this.NUD_RETRACT_z)).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)(this.NUD_RETRACT_y)).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)(this.NUD_RETRACT_x)).BeginInit();
+            this.groupBox5.SuspendLayout();
+            ((System.ComponentModel.ISupportInitialize)(this.NUD_NEUTRAL_z)).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)(this.NUD_NEUTRAL_y)).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)(this.NUD_NEUTRAL_x)).BeginInit();
+            this.groupBox6.SuspendLayout();
+            ((System.ComponentModel.ISupportInitialize)(this.NUD_CONTROL_z)).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)(this.NUD_CONTROL_y)).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)(this.NUD_CONTROL_x)).BeginInit();
             this.SuspendLayout();
             // 
             // pictureBox1
@@ -720,9 +756,342 @@ namespace ArdupilotMega.GCSViews.ConfigurationView
             this.PBOX_WarningIcon.Opacity = 0.5F;
             this.PBOX_WarningIcon.TabStop = false;
             // 
+            // groupBox4
+            // 
+            this.groupBox4.Controls.Add(this.label27);
+            this.groupBox4.Controls.Add(this.NUD_RETRACT_z);
+            this.groupBox4.Controls.Add(this.label26);
+            this.groupBox4.Controls.Add(this.NUD_RETRACT_y);
+            this.groupBox4.Controls.Add(this.label25);
+            this.groupBox4.Controls.Add(this.NUD_RETRACT_x);
+            resources.ApplyResources(this.groupBox4, "groupBox4");
+            this.groupBox4.Name = "groupBox4";
+            this.groupBox4.TabStop = false;
+            // 
+            // label27
+            // 
+            resources.ApplyResources(this.label27, "label27");
+            this.label27.Name = "label27";
+            // 
+            // NUD_RETRACT_z
+            // 
+            resources.ApplyResources(this.NUD_RETRACT_z, "NUD_RETRACT_z");
+            this.NUD_RETRACT_z.Increment = new decimal(new int[] {
+            10,
+            0,
+            0,
+            0});
+            this.NUD_RETRACT_z.Max = 1F;
+            this.NUD_RETRACT_z.Maximum = new decimal(new int[] {
+            2200,
+            0,
+            0,
+            0});
+            this.NUD_RETRACT_z.Min = 0F;
+            this.NUD_RETRACT_z.Name = "NUD_RETRACT_z";
+            this.NUD_RETRACT_z.param = null;
+            this.NUD_RETRACT_z.ParamName = null;
+            this.NUD_RETRACT_z.Value = new decimal(new int[] {
+            1000,
+            0,
+            0,
+            0});
+            // 
+            // label26
+            // 
+            resources.ApplyResources(this.label26, "label26");
+            this.label26.Name = "label26";
+            // 
+            // NUD_RETRACT_y
+            // 
+            resources.ApplyResources(this.NUD_RETRACT_y, "NUD_RETRACT_y");
+            this.NUD_RETRACT_y.Increment = new decimal(new int[] {
+            10,
+            0,
+            0,
+            0});
+            this.NUD_RETRACT_y.Max = 1F;
+            this.NUD_RETRACT_y.Maximum = new decimal(new int[] {
+            2200,
+            0,
+            0,
+            0});
+            this.NUD_RETRACT_y.Min = 0F;
+            this.NUD_RETRACT_y.Name = "NUD_RETRACT_y";
+            this.NUD_RETRACT_y.param = null;
+            this.NUD_RETRACT_y.ParamName = null;
+            this.NUD_RETRACT_y.Value = new decimal(new int[] {
+            1000,
+            0,
+            0,
+            0});
+            // 
+            // label25
+            // 
+            resources.ApplyResources(this.label25, "label25");
+            this.label25.Name = "label25";
+            // 
+            // NUD_RETRACT_x
+            // 
+            resources.ApplyResources(this.NUD_RETRACT_x, "NUD_RETRACT_x");
+            this.NUD_RETRACT_x.Increment = new decimal(new int[] {
+            10,
+            0,
+            0,
+            0});
+            this.NUD_RETRACT_x.Max = 1F;
+            this.NUD_RETRACT_x.Maximum = new decimal(new int[] {
+            2200,
+            0,
+            0,
+            0});
+            this.NUD_RETRACT_x.Min = 0F;
+            this.NUD_RETRACT_x.Name = "NUD_RETRACT_x";
+            this.NUD_RETRACT_x.param = null;
+            this.NUD_RETRACT_x.ParamName = null;
+            this.NUD_RETRACT_x.Value = new decimal(new int[] {
+            1000,
+            0,
+            0,
+            0});
+            // 
+            // groupBox5
+            // 
+            this.groupBox5.Controls.Add(this.label28);
+            this.groupBox5.Controls.Add(this.NUD_NEUTRAL_z);
+            this.groupBox5.Controls.Add(this.label29);
+            this.groupBox5.Controls.Add(this.NUD_NEUTRAL_y);
+            this.groupBox5.Controls.Add(this.label30);
+            this.groupBox5.Controls.Add(this.NUD_NEUTRAL_x);
+            resources.ApplyResources(this.groupBox5, "groupBox5");
+            this.groupBox5.Name = "groupBox5";
+            this.groupBox5.TabStop = false;
+            // 
+            // label28
+            // 
+            resources.ApplyResources(this.label28, "label28");
+            this.label28.Name = "label28";
+            // 
+            // NUD_NEUTRAL_z
+            // 
+            resources.ApplyResources(this.NUD_NEUTRAL_z, "NUD_NEUTRAL_z");
+            this.NUD_NEUTRAL_z.Increment = new decimal(new int[] {
+            10,
+            0,
+            0,
+            0});
+            this.NUD_NEUTRAL_z.Max = 1F;
+            this.NUD_NEUTRAL_z.Maximum = new decimal(new int[] {
+            2200,
+            0,
+            0,
+            0});
+            this.NUD_NEUTRAL_z.Min = 0F;
+            this.NUD_NEUTRAL_z.Name = "NUD_NEUTRAL_z";
+            this.NUD_NEUTRAL_z.param = null;
+            this.NUD_NEUTRAL_z.ParamName = null;
+            this.NUD_NEUTRAL_z.Value = new decimal(new int[] {
+            1000,
+            0,
+            0,
+            0});
+            // 
+            // label29
+            // 
+            resources.ApplyResources(this.label29, "label29");
+            this.label29.Name = "label29";
+            // 
+            // NUD_NEUTRAL_y
+            // 
+            resources.ApplyResources(this.NUD_NEUTRAL_y, "NUD_NEUTRAL_y");
+            this.NUD_NEUTRAL_y.Increment = new decimal(new int[] {
+            10,
+            0,
+            0,
+            0});
+            this.NUD_NEUTRAL_y.Max = 1F;
+            this.NUD_NEUTRAL_y.Maximum = new decimal(new int[] {
+            2200,
+            0,
+            0,
+            0});
+            this.NUD_NEUTRAL_y.Min = 0F;
+            this.NUD_NEUTRAL_y.Name = "NUD_NEUTRAL_y";
+            this.NUD_NEUTRAL_y.param = null;
+            this.NUD_NEUTRAL_y.ParamName = null;
+            this.NUD_NEUTRAL_y.Value = new decimal(new int[] {
+            1000,
+            0,
+            0,
+            0});
+            // 
+            // label30
+            // 
+            resources.ApplyResources(this.label30, "label30");
+            this.label30.Name = "label30";
+            // 
+            // NUD_NEUTRAL_x
+            // 
+            resources.ApplyResources(this.NUD_NEUTRAL_x, "NUD_NEUTRAL_x");
+            this.NUD_NEUTRAL_x.Increment = new decimal(new int[] {
+            10,
+            0,
+            0,
+            0});
+            this.NUD_NEUTRAL_x.Max = 1F;
+            this.NUD_NEUTRAL_x.Maximum = new decimal(new int[] {
+            2200,
+            0,
+            0,
+            0});
+            this.NUD_NEUTRAL_x.Min = 0F;
+            this.NUD_NEUTRAL_x.Name = "NUD_NEUTRAL_x";
+            this.NUD_NEUTRAL_x.param = null;
+            this.NUD_NEUTRAL_x.ParamName = null;
+            this.NUD_NEUTRAL_x.Value = new decimal(new int[] {
+            1000,
+            0,
+            0,
+            0});
+            // 
+            // groupBox6
+            // 
+            this.groupBox6.Controls.Add(this.label31);
+            this.groupBox6.Controls.Add(this.NUD_CONTROL_z);
+            this.groupBox6.Controls.Add(this.label32);
+            this.groupBox6.Controls.Add(this.NUD_CONTROL_y);
+            this.groupBox6.Controls.Add(this.label33);
+            this.groupBox6.Controls.Add(this.NUD_CONTROL_x);
+            resources.ApplyResources(this.groupBox6, "groupBox6");
+            this.groupBox6.Name = "groupBox6";
+            this.groupBox6.TabStop = false;
+            // 
+            // label31
+            // 
+            resources.ApplyResources(this.label31, "label31");
+            this.label31.Name = "label31";
+            // 
+            // NUD_CONTROL_z
+            // 
+            resources.ApplyResources(this.NUD_CONTROL_z, "NUD_CONTROL_z");
+            this.NUD_CONTROL_z.Increment = new decimal(new int[] {
+            10,
+            0,
+            0,
+            0});
+            this.NUD_CONTROL_z.Max = 1F;
+            this.NUD_CONTROL_z.Maximum = new decimal(new int[] {
+            2200,
+            0,
+            0,
+            0});
+            this.NUD_CONTROL_z.Min = 0F;
+            this.NUD_CONTROL_z.Name = "NUD_CONTROL_z";
+            this.NUD_CONTROL_z.param = null;
+            this.NUD_CONTROL_z.ParamName = null;
+            this.NUD_CONTROL_z.Value = new decimal(new int[] {
+            1000,
+            0,
+            0,
+            0});
+            // 
+            // label32
+            // 
+            resources.ApplyResources(this.label32, "label32");
+            this.label32.Name = "label32";
+            // 
+            // NUD_CONTROL_y
+            // 
+            resources.ApplyResources(this.NUD_CONTROL_y, "NUD_CONTROL_y");
+            this.NUD_CONTROL_y.Increment = new decimal(new int[] {
+            10,
+            0,
+            0,
+            0});
+            this.NUD_CONTROL_y.Max = 1F;
+            this.NUD_CONTROL_y.Maximum = new decimal(new int[] {
+            2200,
+            0,
+            0,
+            0});
+            this.NUD_CONTROL_y.Min = 0F;
+            this.NUD_CONTROL_y.Name = "NUD_CONTROL_y";
+            this.NUD_CONTROL_y.param = null;
+            this.NUD_CONTROL_y.ParamName = null;
+            this.NUD_CONTROL_y.Value = new decimal(new int[] {
+            1000,
+            0,
+            0,
+            0});
+            // 
+            // label33
+            // 
+            resources.ApplyResources(this.label33, "label33");
+            this.label33.Name = "label33";
+            // 
+            // NUD_CONTROL_x
+            // 
+            resources.ApplyResources(this.NUD_CONTROL_x, "NUD_CONTROL_x");
+            this.NUD_CONTROL_x.Increment = new decimal(new int[] {
+            10,
+            0,
+            0,
+            0});
+            this.NUD_CONTROL_x.Max = 1F;
+            this.NUD_CONTROL_x.Maximum = new decimal(new int[] {
+            2200,
+            0,
+            0,
+            0});
+            this.NUD_CONTROL_x.Min = 0F;
+            this.NUD_CONTROL_x.Name = "NUD_CONTROL_x";
+            this.NUD_CONTROL_x.param = null;
+            this.NUD_CONTROL_x.ParamName = null;
+            this.NUD_CONTROL_x.Value = new decimal(new int[] {
+            1000,
+            0,
+            0,
+            0});
+            // 
+            // CHK_stab_tilt
+            // 
+            resources.ApplyResources(this.CHK_stab_tilt, "CHK_stab_tilt");
+            this.CHK_stab_tilt.Name = "CHK_stab_tilt";
+            this.CHK_stab_tilt.OffValue = 0F;
+            this.CHK_stab_tilt.OnValue = 1F;
+            this.CHK_stab_tilt.param = null;
+            this.CHK_stab_tilt.ParamName = null;
+            this.CHK_stab_tilt.UseVisualStyleBackColor = true;
+            // 
+            // CHK_stab_roll
+            // 
+            resources.ApplyResources(this.CHK_stab_roll, "CHK_stab_roll");
+            this.CHK_stab_roll.Name = "CHK_stab_roll";
+            this.CHK_stab_roll.OffValue = 0F;
+            this.CHK_stab_roll.OnValue = 1F;
+            this.CHK_stab_roll.param = null;
+            this.CHK_stab_roll.ParamName = null;
+            this.CHK_stab_roll.UseVisualStyleBackColor = true;
+            // 
+            // CHK_stab_pan
+            // 
+            resources.ApplyResources(this.CHK_stab_pan, "CHK_stab_pan");
+            this.CHK_stab_pan.Name = "CHK_stab_pan";
+            this.CHK_stab_pan.OffValue = 0F;
+            this.CHK_stab_pan.OnValue = 1F;
+            this.CHK_stab_pan.param = null;
+            this.CHK_stab_pan.ParamName = null;
+            this.CHK_stab_pan.UseVisualStyleBackColor = true;
+            // 
             // ConfigMount
             // 
-            this.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(38)))), ((int)(((byte)(39)))), ((int)(((byte)(40)))));
+            this.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(43)))), ((int)(((byte)(44)))), ((int)(((byte)(45)))));
+            this.Controls.Add(this.CHK_stab_pan);
+            this.Controls.Add(this.CHK_stab_roll);
+            this.Controls.Add(this.CHK_stab_tilt);
+            this.Controls.Add(this.groupBox6);
+            this.Controls.Add(this.groupBox5);
+            this.Controls.Add(this.groupBox4);
             this.Controls.Add(this.label24);
             this.Controls.Add(this.CMB_inputch_pan);
             this.Controls.Add(this.label23);
@@ -795,6 +1164,21 @@ namespace ArdupilotMega.GCSViews.ConfigurationView
             ((System.ComponentModel.ISupportInitialize)(this.mavlinkNumericUpDownRSM)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.mavlinkNumericUpDownRSMX)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.PBOX_WarningIcon)).EndInit();
+            this.groupBox4.ResumeLayout(false);
+            this.groupBox4.PerformLayout();
+            ((System.ComponentModel.ISupportInitialize)(this.NUD_RETRACT_z)).EndInit();
+            ((System.ComponentModel.ISupportInitialize)(this.NUD_RETRACT_y)).EndInit();
+            ((System.ComponentModel.ISupportInitialize)(this.NUD_RETRACT_x)).EndInit();
+            this.groupBox5.ResumeLayout(false);
+            this.groupBox5.PerformLayout();
+            ((System.ComponentModel.ISupportInitialize)(this.NUD_NEUTRAL_z)).EndInit();
+            ((System.ComponentModel.ISupportInitialize)(this.NUD_NEUTRAL_y)).EndInit();
+            ((System.ComponentModel.ISupportInitialize)(this.NUD_NEUTRAL_x)).EndInit();
+            this.groupBox6.ResumeLayout(false);
+            this.groupBox6.PerformLayout();
+            ((System.ComponentModel.ISupportInitialize)(this.NUD_CONTROL_z)).EndInit();
+            ((System.ComponentModel.ISupportInitialize)(this.NUD_CONTROL_y)).EndInit();
+            ((System.ComponentModel.ISupportInitialize)(this.NUD_CONTROL_x)).EndInit();
             this.ResumeLayout(false);
             this.PerformLayout();
 
@@ -856,6 +1240,30 @@ namespace ArdupilotMega.GCSViews.ConfigurationView
         private MavlinkComboBox CMB_inputch_roll;
         private System.Windows.Forms.Label label24;
         private MavlinkComboBox CMB_inputch_pan;
+        private System.Windows.Forms.GroupBox groupBox4;
+        private System.Windows.Forms.Label label27;
+        private MavlinkNumericUpDown NUD_RETRACT_z;
+        private System.Windows.Forms.Label label26;
+        private MavlinkNumericUpDown NUD_RETRACT_y;
+        private System.Windows.Forms.Label label25;
+        private MavlinkNumericUpDown NUD_RETRACT_x;
+        private System.Windows.Forms.GroupBox groupBox5;
+        private System.Windows.Forms.Label label28;
+        private MavlinkNumericUpDown NUD_NEUTRAL_z;
+        private System.Windows.Forms.Label label29;
+        private MavlinkNumericUpDown NUD_NEUTRAL_y;
+        private System.Windows.Forms.Label label30;
+        private MavlinkNumericUpDown NUD_NEUTRAL_x;
+        private System.Windows.Forms.GroupBox groupBox6;
+        private System.Windows.Forms.Label label31;
+        private MavlinkNumericUpDown NUD_CONTROL_z;
+        private System.Windows.Forms.Label label32;
+        private MavlinkNumericUpDown NUD_CONTROL_y;
+        private System.Windows.Forms.Label label33;
+        private MavlinkNumericUpDown NUD_CONTROL_x;
+        private MavlinkCheckBox CHK_stab_tilt;
+        private MavlinkCheckBox CHK_stab_roll;
+        private MavlinkCheckBox CHK_stab_pan;
 
     }
 }

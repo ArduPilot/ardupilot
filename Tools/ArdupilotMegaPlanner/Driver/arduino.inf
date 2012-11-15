@@ -1,0 +1,81 @@
+
+; Windows USB CDC ACM Setup File
+; Copyright (c) 2000 Microsoft Corporation
+
+
+[Version]
+Signature="$Windows NT$"
+Class=Ports
+ClassGuid={4D36E978-E325-11CE-BFC1-08002BE10318}
+Provider=%MFGNAME%
+DriverVer=01/01/2012,1.0.0.0
+CatalogFile=arduino.cat
+
+[Manufacturer]
+%MFGNAME%=DeviceList,NTamd64
+
+[DestinationDirs]
+FakeModemCopyFileSection=12
+DefaultDestDir=12
+
+[DriverInstall]
+include=mdmcpq.inf
+CopyFiles=FakeModemCopyFileSection
+
+[DriverInstall.HW]
+include=mdmcpq.inf
+AddReg=LowerFilterAddReg
+
+[DriverInstall.Services]
+include = mdmcpq.inf
+AddService=usbser, 0x00000002, LowerFilter_Service_Inst
+
+;------------------------------------------------------------------------------
+;  Vendor and Product ID Definitions
+;------------------------------------------------------------------------------
+; When developing your USB device, the VID and PID used in the PC side
+; application program and the firmware on the microcontroller must match.
+; Modify the below line to use your VID and PID.  Use the format as shown below.
+; Note: One INF file can be used for multiple devices with different VID and PIDs.
+; For each supported device, append ",USB\VID_xxxx&PID_yyyy" to the end of the line.
+;------------------------------------------------------------------------------
+[DeviceList]
+%DESCRIPTION_UNO%=DriverInstall, USB\VID_2341&PID_0001
+%DESCRIPTION_MEGA%=DriverInstall, USB\VID_2341&PID_0010
+%DESCRIPTION_LEO%=DriverInstall, USB\VID_2341&PID_0032
+%DESCRIPTION_LEO%=DriverInstall, USB\VID_2341&PID_0034&MI_00
+%DESCRIPTION_MICRO%=DriverInstall, USB\VID_2341&PID_0035&MI_00
+%DESCRIPTION_MEGA_ADK%=DriverInstall, USB\VID_2341&PID_003F
+%DESCRIPTION_MEGA_R3%=DriverInstall, USB\VID_2341&PID_0042
+%DESCRIPTION_UNO_R3%=DriverInstall, USB\VID_2341&PID_0043
+%DESCRIPTION_MEGA_ADK_R3%=DriverInstall, USB\VID_2341&PID_0044
+
+
+
+[DeviceList.NTamd64] 
+%DESCRIPTION_UNO%=DriverInstall, USB\VID_2341&PID_0001
+%DESCRIPTION_MEGA%=DriverInstall, USB\VID_2341&PID_0010
+%DESCRIPTION_LEO%=DriverInstall, USB\VID_2341&PID_0032
+%DESCRIPTION_LEO%=DriverInstall, USB\VID_2341&PID_0034&MI_00
+%DESCRIPTION_MICRO%=DriverInstall, USB\VID_2341&PID_0035&MI_00
+%DESCRIPTION_MEGA_ADK%=DriverInstall, USB\VID_2341&PID_003F
+%DESCRIPTION_MEGA_R3%=DriverInstall, USB\VID_2341&PID_0042
+%DESCRIPTION_UNO_R3%=DriverInstall, USB\VID_2341&PID_0043
+%DESCRIPTION_MEGA_ADK_R3%=DriverInstall, USB\VID_2341&PID_0044
+
+
+;------------------------------------------------------------------------------
+;  String Definitions
+;------------------------------------------------------------------------------
+;Modify these strings to customize your device
+;------------------------------------------------------------------------------
+[Strings]
+MFGNAME="http://www.arduino.cc"
+DESCRIPTION_UNO="Arduino UNO"
+DESCRIPTION_MEGA="Arduino Mega 2560"
+DESCRIPTION_LEO="Arduino Leonardo"
+DESCRIPTION_MICRO="Arduino Micro"
+DESCRIPTION_MEGA_ADK="Arduino Mega ADK"
+DESCRIPTION_MEGA_R3="Arduino Mega 2560 R3"
+DESCRIPTION_UNO_R3="Arduino UNO R3"
+DESCRIPTION_MEGA_ADK_R3="Arduino Mega ADK R3"

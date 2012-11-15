@@ -492,7 +492,7 @@ namespace ArdupilotMega.GCSViews.ConfigurationView
             CMB_speedunits.DataSource = Enum.GetNames(typeof(Common.speeds));
 
             // setup language selection
-            var cultureCodes = new[] { "en-US", "zh-Hans", "zh-TW", "ru-RU", "Fr", "Pl", "it-IT", "es-ES" };
+            var cultureCodes = new[] { "en-US", "zh-Hans", "zh-TW", "ru-RU", "Fr", "Pl", "it-IT", "es-ES","de-DE" };
 
             _languages = cultureCodes
                 .Select(CultureInfoEx.GetCultureInfo)
