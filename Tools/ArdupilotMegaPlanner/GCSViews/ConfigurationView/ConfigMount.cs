@@ -17,6 +17,8 @@ namespace ArdupilotMega.GCSViews.ConfigurationView
         private Transition _NoErrorTransition;
         bool startup = true;
 
+        public string ParamHead = "MNT_";
+
         public ConfigMount()
         {
             InitializeComponent();
@@ -123,6 +125,22 @@ namespace ArdupilotMega.GCSViews.ConfigurationView
                 updatePitch();
                 updateRoll();
                 updateYaw();
+
+                CHK_stab_tilt.setup(1, 0, ParamHead+"STAB_TILT", MainV2.comPort.param);
+                CHK_stab_roll.setup(1, 0, ParamHead+"STAB_ROLL", MainV2.comPort.param);
+                CHK_stab_pan.setup(1, 0, ParamHead+"STAB_PAN", MainV2.comPort.param);
+
+                NUD_CONTROL_x.setup(-180, 180, 100, 1, ParamHead+"CONTROL_X",MainV2.comPort.param);
+                NUD_CONTROL_y.setup(-180, 180, 100, 1, ParamHead+"CONTROL_Y", MainV2.comPort.param);
+                NUD_CONTROL_z.setup(-180, 180, 100, 1, ParamHead+"CONTROL_Z", MainV2.comPort.param);
+
+                NUD_NEUTRAL_x.setup(-180, 180, 100, 1, ParamHead+"NEUTRAL_X", MainV2.comPort.param);
+                NUD_NEUTRAL_y.setup(-180, 180, 100, 1, ParamHead+"NEUTRAL_Y", MainV2.comPort.param);
+                NUD_NEUTRAL_z.setup(-180, 180, 100, 1, ParamHead+"NEUTRAL_Z", MainV2.comPort.param);
+
+                NUD_RETRACT_x.setup(-180, 180, 100, 1, ParamHead+"RETRACT_X", MainV2.comPort.param);
+                NUD_RETRACT_y.setup(-180, 180, 100, 1, ParamHead+"RETRACT_Y", MainV2.comPort.param);
+                NUD_RETRACT_z.setup(-180, 180, 100, 1, ParamHead+"RETRACT_Z", MainV2.comPort.param);
             }
             catch (Exception ex) { CustomMessageBox.Show("Failed to set Param\n" + ex.ToString()); this.Enabled = false; return; }
         }
@@ -154,21 +172,21 @@ namespace ArdupilotMega.GCSViews.ConfigurationView
             if (mavlinkComboBoxTilt.Text != "Disable")
             {
                 MainV2.comPort.setParam(mavlinkComboBoxTilt.Text + "_FUNCTION", 7);
-                MainV2.comPort.setParam("MNT_STAB_TILT", 1);
+                //MainV2.MainV2.comPort.setParam(ParamHead+"STAB_TILT", 1);
             }
             else
             {
-                MainV2.comPort.setParam("MNT_STAB_TILT", 0);
+                //MainV2.comPort.setParam(ParamHead+"STAB_TILT", 0);
                 ensureDisabled(mavlinkComboBoxTilt, 7);    
             }
             
 
             mavlinkNumericUpDownTSM.setup(800, 2200, 1, 1, mavlinkComboBoxTilt.Text +"_MIN", MainV2.comPort.param);
             mavlinkNumericUpDownTSMX.setup(800, 2200, 1, 1, mavlinkComboBoxTilt.Text + "_MAX", MainV2.comPort.param);
-            mavlinkNumericUpDownTAM.setup(-90, 0, 100, 1, "MNT_ANGMIN_TIL", MainV2.comPort.param);
-            mavlinkNumericUpDownTAMX.setup(0, 90, 100, 1, "MNT_ANGMAX_TIL", MainV2.comPort.param);
+            mavlinkNumericUpDownTAM.setup(-90, 0, 100, 1, ParamHead+"ANGMIN_TIL", MainV2.comPort.param);
+            mavlinkNumericUpDownTAMX.setup(0, 90, 100, 1, ParamHead+"ANGMAX_TIL", MainV2.comPort.param);
             mavlinkCheckBoxTR.setup(-1, 1, mavlinkComboBoxTilt.Text + "_REV", MainV2.comPort.param);
-            CMB_inputch_tilt.setup(typeof(Channelinput), "MNT_RC_IN_TILT", MainV2.comPort.param);
+            CMB_inputch_tilt.setup(typeof(Channelinput), ParamHead+"RC_IN_TILT", MainV2.comPort.param);
         }
 
         void updateRoll()
@@ -180,20 +198,20 @@ namespace ArdupilotMega.GCSViews.ConfigurationView
             if (mavlinkComboBoxRoll.Text != "Disable")
             {
                 MainV2.comPort.setParam(mavlinkComboBoxRoll.Text + "_FUNCTION", 8);
-                MainV2.comPort.setParam("MNT_STAB_ROLL", 1);
+                //MainV2.comPort.setParam(ParamHead+"STAB_ROLL", 1);
             }
             else
             {
-                MainV2.comPort.setParam("MNT_STAB_ROLL", 0);
+                //MainV2.comPort.setParam(ParamHead+"STAB_ROLL", 0);
                 ensureDisabled(mavlinkComboBoxRoll,8);
             }
 
             mavlinkNumericUpDownRSM.setup(800, 2200, 1, 1, mavlinkComboBoxRoll.Text +"_MIN", MainV2.comPort.param);
             mavlinkNumericUpDownRSMX.setup(800, 2200, 1, 1, mavlinkComboBoxRoll.Text + "_MAX", MainV2.comPort.param);
-            mavlinkNumericUpDownRAM.setup(-90, 0, 100, 1, "MNT_ANGMIN_ROL", MainV2.comPort.param);
-            mavlinkNumericUpDownRAMX.setup(0, 90, 100, 1, "MNT_ANGMAX_ROL", MainV2.comPort.param);
+            mavlinkNumericUpDownRAM.setup(-90, 0, 100, 1, ParamHead+"ANGMIN_ROL", MainV2.comPort.param);
+            mavlinkNumericUpDownRAMX.setup(0, 90, 100, 1, ParamHead+"ANGMAX_ROL", MainV2.comPort.param);
             mavlinkCheckBoxRR.setup(-1, 1, mavlinkComboBoxRoll.Text + "_REV", MainV2.comPort.param);
-            CMB_inputch_roll.setup(typeof(Channelinput), "MNT_RC_IN_ROLL", MainV2.comPort.param);
+            CMB_inputch_roll.setup(typeof(Channelinput), ParamHead+"RC_IN_ROLL", MainV2.comPort.param);
         }
 
         void updateYaw()
@@ -205,20 +223,20 @@ namespace ArdupilotMega.GCSViews.ConfigurationView
             if (mavlinkComboBoxPan.Text != "Disable")
             {
                 MainV2.comPort.setParam(mavlinkComboBoxPan.Text + "_FUNCTION", 6);
-                MainV2.comPort.setParam("MNT_STAB_PAN", 1);
+                //MainV2.comPort.setParam(ParamHead+"STAB_PAN", 1);
             }
             else
             {
-                MainV2.comPort.setParam("MNT_STAB_PAN", 0);
+                //MainV2.comPort.setParam(ParamHead+"STAB_PAN", 0);
                 ensureDisabled(mavlinkComboBoxPan,6);
             }
 
             mavlinkNumericUpDownPSM.setup(800, 2200, 1, 1, mavlinkComboBoxPan.Text + "_MIN", MainV2.comPort.param);
             mavlinkNumericUpDownPSMX.setup(800, 2200, 1, 1, mavlinkComboBoxPan.Text + "_MAX", MainV2.comPort.param);
-            mavlinkNumericUpDownPAM.setup(-90, 0, 100, 1, "MNT_ANGMIN_PAN", MainV2.comPort.param);
-            mavlinkNumericUpDownPAMX.setup(0, 90, 100, 1, "MNT_ANGMAX_PAN", MainV2.comPort.param);
+            mavlinkNumericUpDownPAM.setup(-90, 0, 100, 1, ParamHead+"ANGMIN_PAN", MainV2.comPort.param);
+            mavlinkNumericUpDownPAMX.setup(0, 90, 100, 1, ParamHead+"ANGMAX_PAN", MainV2.comPort.param);
             mavlinkCheckBoxPR.setup(-1, 1, mavlinkComboBoxPan.Text + "_REV", MainV2.comPort.param);
-            CMB_inputch_pan.setup(typeof(Channelinput), "MNT_RC_IN_PAN", MainV2.comPort.param);
+            CMB_inputch_pan.setup(typeof(Channelinput), ParamHead+"RC_IN_PAN", MainV2.comPort.param);
         }
 
         private void SetErrorMessageOpacity()
@@ -293,8 +311,8 @@ namespace ArdupilotMega.GCSViews.ConfigurationView
                 ensureDisabled(cmb, 8, mavlinkComboBoxRoll.Text);
 
                 // enable 3 axis stabilize
-                if (MainV2.comPort.param.ContainsKey("MNT_MODE"))
-                    MainV2.comPort.setParam("MNT_MODE", 3);
+                if (MainV2.comPort.param.ContainsKey(ParamHead+"MODE"))
+                    MainV2.comPort.setParam(ParamHead+"MODE", 3);
 
                 updatePitch();
                 updateRoll();

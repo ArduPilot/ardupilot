@@ -145,7 +145,7 @@ namespace ArdupilotMega
         /// Otiginally seperate controls, each hosted in a toolstip sqaure, combined into this custom
         /// control for layout reasons.
         /// </summary>
-        private readonly ConnectionControl _connectionControl;
+        static internal ConnectionControl _connectionControl;
 
         public MainV2()
         {
@@ -545,7 +545,7 @@ namespace ArdupilotMega
                 }
 
                 // Tell the connection UI that we are now connected.
-                this._connectionControl.IsConnected(true);
+                _connectionControl.IsConnected(true);
 
                 // Here we want to reset the connection stats counter etc.
                 this.ResetConnectionStats();

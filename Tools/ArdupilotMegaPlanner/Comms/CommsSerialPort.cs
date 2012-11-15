@@ -13,6 +13,15 @@ namespace ArdupilotMega.Comms
     {
         static bool serialportproblem = false;
 
+        protected override void Dispose(bool disposing)
+        {
+            try
+            {
+                base.Dispose(disposing);
+            }
+            catch { }
+        }
+
         public new void Open()
         {
             // 500ms write timeout - win32 api default

@@ -260,6 +260,8 @@ namespace ArdupilotMega.GCSViews
 
                 comPort.PortName = MainV2.comPortName;
 
+                comPort.BaudRate = int.Parse(MainV2._connectionControl.CMB_baudrate.Text);
+
                 comPort.Open();
 
                 comPort.toggleDTR();

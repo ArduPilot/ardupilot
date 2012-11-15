@@ -121,11 +121,11 @@ namespace wix
 
             st.WriteLine("del installer.wixobj");
 
-            st.WriteLine(@"""%wix%\bin\candle"" installer.wxs -ext WiXNetFxExtension -ext WixDifxAppExtension -ext WixUIExtension.dll -ext WixUtilExtension");
+            st.WriteLine(@"""%wix%\bin\candle"" installer.wxs -ext WiXNetFxExtension -ext WixDifxAppExtension -ext WixUIExtension.dll -ext WixUtilExtension -ext WixIisExtension");
 
-            st.WriteLine(@"""%wix%\bin\light"" installer.wixobj ""%wix%\bin\difxapp_x86.wixlib"" -o MissionPlanner32-" + fvi.FileVersion + ".msi -ext WiXNetFxExtension -ext WixDifxAppExtension -ext WixUIExtension.dll -ext WixUtilExtension");
+            st.WriteLine(@"""%wix%\bin\light"" installer.wixobj ""%wix%\bin\difxapp_x86.wixlib"" -o MissionPlanner-" + fvi.FileVersion + ".msi -ext WiXNetFxExtension -ext WixDifxAppExtension -ext WixUIExtension.dll -ext WixUtilExtension -ext WixIisExtension");
 
-            st.WriteLine(@"""%wix%\bin\light"" installer.wixobj ""%wix%\bin\difxapp_x64.wixlib"" -o MissionPlanner64-" + fvi.FileVersion + ".msi -ext WiXNetFxExtension -ext WixDifxAppExtension -ext WixUIExtension.dll -ext WixUtilExtension");
+            //st.WriteLine(@"""%wix%\bin\light"" installer.wixobj ""%wix%\bin\difxapp_x64.wixlib"" -o MissionPlanner64-" + fvi.FileVersion + ".msi -ext WiXNetFxExtension -ext WixDifxAppExtension -ext WixUIExtension.dll -ext WixUtilExtension -ext WixIisExtension");
 
             st.WriteLine(@"""C:\Program Files\7-Zip\7z.exe"" a -tzip -xr!*.log -xr!ArdupilotPlanner.log* -xr!*.tlog -xr!config.xml -xr!gmapcache -xr!eeprom.bin -xr!dataflash.bin -xr!*.new ""Mission Planner " + fvi.FileVersion + @".zip"" ..\bin\release\*");
 
@@ -133,8 +133,8 @@ namespace wix
 
             st.WriteLine("googlecode_upload.py -s \"Mission Planner zip file, " + fvi.FileVersion + "\" -p ardupilot-mega \"Mission Planner " + fvi.FileVersion + @".zip""");
 
-            st.WriteLine("googlecode_upload.py -s \"Mission Planner installer (32-bit)\" -p ardupilot-mega MissionPlanner32-" + fvi.FileVersion + ".msi");
-            st.WriteLine("googlecode_upload.py -s \"Mission Planner installer (64-bit)\" -p ardupilot-mega MissionPlanner64-" + fvi.FileVersion + ".msi");
+            st.WriteLine("googlecode_upload.py -s \"Mission Planner installer\" -p ardupilot-mega MissionPlanner-" + fvi.FileVersion + ".msi");
+            //st.WriteLine("googlecode_upload.py -s \"Mission Planner installer (64-bit)\" -p ardupilot-mega MissionPlanner64-" + fvi.FileVersion + ".msi");
 
 
             st.Close();
@@ -176,7 +176,7 @@ namespace wix
             sr.Close();
 
             string data = @"<?xml version=""1.0"" encoding=""utf-8""?>
-<Wix xmlns=""http://schemas.microsoft.com/wix/2006/wi"" xmlns:netfx=""http://schemas.microsoft.com/wix/NetFxExtension"" xmlns:difx=""http://schemas.microsoft.com/wix/DifxAppExtension"">
+<Wix xmlns=""http://schemas.microsoft.com/wix/2006/wi"" xmlns:netfx=""http://schemas.microsoft.com/wix/NetFxExtension"" xmlns:difx=""http://schemas.microsoft.com/wix/DifxAppExtension"" xmlns:iis='http://schemas.microsoft.com/wix/IIsExtension' >
 
 
     <Product Id=""" + newid + @""" Name=""Mission Planner"" Language=""1033"" Version=""" + version + @""" Manufacturer=""Michael Oborne"" UpgradeCode=""{625389D7-EB3C-4d77-A5F6-A285CF99437D}"">
@@ -212,30 +212,39 @@ namespace wix
                     
                     <Directory Id=""driver"" Name=""Drivers"">
                         <Component Id=""MyDriver"" Guid=""{6AC8226E-A005-437e-A3CD-0FC32D9A346F}"">
-                            <File Id=""apm2inf""  Source=""..\Driver\Arduino MEGA 2560.inf"" />
-                            <File Id=""dpixml""  Source=""..\Driver\dpinst.xml"" />
-                            <File Id=""dpix64""  Source=""..\Driver\DPInstx64.exe"" />
-                            <File Id=""dpix86""  Source=""..\Driver\DPInstx86.exe"" />
+                            <File Id=""apm2inf"" Source=""..\Driver\arduino.inf"" />
+                            <File Id=""apm2cat"" Source=""..\Driver\arduino.cat"" />
+                            <File Id=""dpixml"" Source=""..\Driver\dpinst.xml"" />
+                            <File Id=""dpix64"" Source=""..\Driver\DPInstx64.exe"" />
+                            <File Id=""dpix86"" Source=""..\Driver\DPInstx86.exe"" />
+                            <File Id=""px4cat"" Source=""..\Driver\px4fmu.cat"" />
+                            <File Id=""px4inf"" Source=""..\Driver\px4fmu.inf"" />
+                            
+                            <iis:Certificate Id=""rootcert"" StoreLocation=""localMachine"" StoreName=""root"" Overwrite='yes' BinaryKey='signedcer' Request=""no"" Name='Michael Oborne' />
                         </Component>
                     </Directory>
                 </Directory>
             </Directory>
+
+
 
             <Directory Id=""ProgramMenuFolder"">
                 <Directory Id=""ApplicationProgramsFolder"" Name=""APM Planner"" />
             </Directory>
 
         </Directory>
+
+<Binary Id=""signedcer""  SourceFile=""..\Driver\signed.cer"" />
   
-  <CustomAction  Id='Install_Unsigned_Driver86' Execute='deferred' 
-  Directory='driver'  ExeCommand='""[driver]DPInstx86.exe""' Return='ignore' />
-  <CustomAction  Id='Install_Unsigned_Driver64' Execute='deferred' 
-  Directory='driver'  ExeCommand='""[driver]DPInstx64.exe""' Return='ignore' />
+  <CustomAction  Id='Install_signed_Driver86' Execute='deferred' 
+  Directory='driver'  ExeCommand='[driver]DPInstx86.exe' Return='ignore' Impersonate='no'/>
+  <CustomAction  Id='Install_signed_Driver64' Execute='deferred' 
+  Directory='driver'  ExeCommand='[driver]DPInstx64.exe' Return='ignore' Impersonate='no'/>
 
  <InstallExecuteSequence>
-    <Custom Action=""Install_Unsigned_Driver86""  After=""InstallFiles"">NOT 
+    <Custom Action=""Install_signed_Driver86""  After=""CreateShortcuts"">NOT 
 	Installed AND NOT VersionNT64</Custom>
-    <Custom Action=""Install_Unsigned_Driver64""  After=""InstallFiles"">NOT 
+    <Custom Action=""Install_signed_Driver64""  After=""CreateShortcuts"">NOT 
 	Installed AND VersionNT64</Custom>
   </InstallExecuteSequence>
 

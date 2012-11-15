@@ -30,7 +30,6 @@ namespace ArdupilotMega.GCSViews
     {
         private static readonly ILog log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
 
-        ArdupilotMega.MAVLink comPort = MainV2.comPort;
         public static int threadrun = 0;
         StreamWriter swlog;
         int tickStart = 0;
@@ -457,10 +456,10 @@ namespace ArdupilotMega.GCSViews
                     System.Threading.Thread.Sleep(50);
                     continue;
                 }
-                if (!comPort.BaseStream.IsOpen)
+                if (!MainV2.comPort.BaseStream.IsOpen)
                     lastdata = DateTime.Now;
                 // re-request servo data
-                if (!(lastdata.AddSeconds(8) > DateTime.Now) && comPort.BaseStream.IsOpen)
+                if (!(lastdata.AddSeconds(8) > DateTime.Now) && MainV2.comPort.BaseStream.IsOpen)
                 {
                     //Console.WriteLine("REQ streams - flightdata");
                     try
@@ -468,13 +467,13 @@ namespace ArdupilotMega.GCSViews
                         //System.Threading.Thread.Sleep(1000);
 
                         //comPort.requestDatastream((byte)ArdupilotMega.MAVLink09.MAV_DATA_STREAM.RAW_CONTROLLER, 0); // request servoout
-                        comPort.requestDatastream((byte)ArdupilotMega.MAVLink.MAV_DATA_STREAM.EXTENDED_STATUS, MainV2.cs.ratestatus); // mode
-                        comPort.requestDatastream((byte)ArdupilotMega.MAVLink.MAV_DATA_STREAM.POSITION, MainV2.cs.rateposition); // request gps
-                        comPort.requestDatastream((byte)ArdupilotMega.MAVLink.MAV_DATA_STREAM.EXTRA1, MainV2.cs.rateattitude); // request attitude
-                        comPort.requestDatastream((byte)ArdupilotMega.MAVLink.MAV_DATA_STREAM.EXTRA2, MainV2.cs.rateattitude); // request vfr
-                        comPort.requestDatastream((byte)ArdupilotMega.MAVLink.MAV_DATA_STREAM.EXTRA3, MainV2.cs.ratesensors); // request extra stuff - tridge
-                        comPort.requestDatastream((byte)ArdupilotMega.MAVLink.MAV_DATA_STREAM.RAW_SENSORS, MainV2.cs.ratesensors); // request raw sensor
-                        comPort.requestDatastream((byte)ArdupilotMega.MAVLink.MAV_DATA_STREAM.RC_CHANNELS, MainV2.cs.raterc); // request rc info
+                        MainV2.comPort.requestDatastream((byte)ArdupilotMega.MAVLink.MAV_DATA_STREAM.EXTENDED_STATUS, MainV2.cs.ratestatus); // mode
+                        MainV2.comPort.requestDatastream((byte)ArdupilotMega.MAVLink.MAV_DATA_STREAM.POSITION, MainV2.cs.rateposition); // request gps
+                        MainV2.comPort.requestDatastream((byte)ArdupilotMega.MAVLink.MAV_DATA_STREAM.EXTRA1, MainV2.cs.rateattitude); // request attitude
+                        MainV2.comPort.requestDatastream((byte)ArdupilotMega.MAVLink.MAV_DATA_STREAM.EXTRA2, MainV2.cs.rateattitude); // request vfr
+                        MainV2.comPort.requestDatastream((byte)ArdupilotMega.MAVLink.MAV_DATA_STREAM.EXTRA3, MainV2.cs.ratesensors); // request extra stuff - tridge
+                        MainV2.comPort.requestDatastream((byte)ArdupilotMega.MAVLink.MAV_DATA_STREAM.RAW_SENSORS, MainV2.cs.ratesensors); // request raw sensor
+                        MainV2.comPort.requestDatastream((byte)ArdupilotMega.MAVLink.MAV_DATA_STREAM.RC_CHANNELS, MainV2.cs.raterc); // request rc info
                     }
                     catch { log.Error("Failed to request rates"); }
                     lastdata = DateTime.Now.AddSeconds(120); // prevent flooding
@@ -504,7 +503,7 @@ namespace ArdupilotMega.GCSViews
                 {
                     if (threadrun == 0) { return; }
 
-                    if (comPort.BaseStream.IsOpen)
+                    if (MainV2.comPort.BaseStream.IsOpen)
                     {
                         MainV2.comPort.logreadmode = false;
                         try
@@ -589,12 +588,14 @@ namespace ArdupilotMega.GCSViews
                         tunning = DateTime.Now;
                     }
 
-
-
-                    if (MainV2.comPort.logplaybackfile != null && MainV2.comPort.logplaybackfile.BaseStream.Position == MainV2.comPort.logplaybackfile.BaseStream.Length)
+                    try
                     {
-                        MainV2.comPort.logreadmode = false;
+                        if (MainV2.comPort.logplaybackfile != null && MainV2.comPort.logplaybackfile.BaseStream.Position == MainV2.comPort.logplaybackfile.BaseStream.Length)
+                        {
+                            MainV2.comPort.logreadmode = false;
+                        }
                     }
+                    catch { }
                 }
                 else
                 {
@@ -1106,9 +1107,9 @@ namespace ArdupilotMega.GCSViews
             threadrun = 0;
             try
             {
-                if (comPort.BaseStream.IsOpen)
+                if (MainV2.comPort.BaseStream.IsOpen)
                 {
-                    comPort.Close();
+                    MainV2.comPort.Close();
                 }
             }
             catch { }
@@ -1140,7 +1141,7 @@ namespace ArdupilotMega.GCSViews
             {
                 ((Button)sender).Enabled = false;
 #if MAVLINK10
-                comPort.doCommand((MAVLink.MAV_CMD)Enum.Parse(typeof(MAVLink.MAV_CMD), CMB_action.Text), 1, 0, 1, 0, 0, 0, 0);
+                MainV2.comPort.doCommand((MAVLink.MAV_CMD)Enum.Parse(typeof(MAVLink.MAV_CMD), CMB_action.Text), 1, 0, 1, 0, 0, 0, 0);
 #else
                 comPort.doAction((MAVLink.MAV_ACTION)Enum.Parse(typeof(MAVLink.MAV_ACTION), "MAV_ACTION_" + CMB_action.Text));
 #endif
@@ -1157,7 +1158,7 @@ namespace ArdupilotMega.GCSViews
 
                 //comPort.doAction(MAVLink09.MAV_ACTION.MAV_ACTION_RETURN); // set nav from
                 //System.Threading.Thread.Sleep(100);
-                comPort.setWPCurrent(1); // set nav to
+                MainV2.comPort.setWPCurrent(1); // set nav to
                 //System.Threading.Thread.Sleep(100);
                 //comPort.doAction(MAVLink09.MAV_ACTION.MAV_ACTION_SET_AUTO); // set auto
             }
@@ -1324,7 +1325,7 @@ namespace ArdupilotMega.GCSViews
                 modifyandSetSpeed.Value = (decimal)(float)MainV2.comPort.param["TRIM_THROTTLE"];
             }
 
-            comPort.ParamListChanged += FlightData_ParentChanged;
+            MainV2.comPort.ParamListChanged += FlightData_ParentChanged;
         }
 
         void cam_camimage(Image camimage)
@@ -1506,7 +1507,7 @@ namespace ArdupilotMega.GCSViews
             try
             {
                 ((Button)sender).Enabled = false;
-                comPort.setWPCurrent((ushort)CMB_setwp.SelectedIndex); // set nav to
+                MainV2.comPort.setWPCurrent((ushort)CMB_setwp.SelectedIndex); // set nav to
             }
             catch { CustomMessageBox.Show("The command failed to execute"); }
             ((Button)sender).Enabled = true;
