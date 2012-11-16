@@ -5,5 +5,5 @@
  */
 #include "APM_RC.h"
 
-uint32_t APM_RC_Class::_last_update;
+volatile uint32_t APM_RC_Class::_last_update;
 
