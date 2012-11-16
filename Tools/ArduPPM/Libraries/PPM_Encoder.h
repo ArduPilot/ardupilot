@@ -66,6 +66,8 @@
 // 03-11-2012
 // V2.3.0 - Implemented single channel fail-safe detection for all inputs
 
+// 16-11-2012
+// V2.3.1 - Improved watchdog timer reset, so that only valid input signals will prevent the watchdog timer from triggering
 
 // -------------------------------------------------------------
 
@@ -535,6 +537,9 @@ CHECK_PINS_LOOP: // Input servo pin check loop
             if( servo_width > PPM_SERVO_MAX ) goto CHECK_PINS_ERROR;
             if( servo_width < PPM_SERVO_MIN ) goto CHECK_PINS_ERROR;
 
+			// Reset Watchdog Timer
+			wdt_reset(); 
+
             // Calculate servo channel position in ppm[..]
             uint8_t _ppm_channel = ( servo_channel << 1 ) + 1;
 
@@ -587,9 +592,6 @@ CHECK_PINS_ERROR:
     // All servo input pins has now been processed
 
 CHECK_PINS_DONE:
-    
-    // Reset Watchdog Timer
-    wdt_reset(); 
 
     // Set servo input missing flag false to indicate that we have received servo input signals
     servo_input_missing = false;
