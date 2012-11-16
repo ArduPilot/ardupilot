@@ -55,16 +55,16 @@ void APM_RC_APM1::_timer4_capt_cb(void)
     }
 
     if (Pulse_Width>8000) {                   // SYNC pulse?
+        // pass through values if at least a minimum number of channels received
+        if( PPM_Counter >= MIN_CHANNELS ) {
+            _radio_status = 1;
+            _last_update = millis();
+        }
         PPM_Counter=0;
     }
     else {
         if (PPM_Counter < NUM_CHANNELS) {     // Valid pulse channel?
             _PWM_RAW[PPM_Counter++]=Pulse_Width;   // Saving pulse.
-
-            if (PPM_Counter >= NUM_CHANNELS) {
-                _radio_status = 1;
-                _last_update = millis();
-            }
         }
     }
     ICR4_old = Pulse;

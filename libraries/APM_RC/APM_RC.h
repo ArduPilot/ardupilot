@@ -23,6 +23,7 @@
 
 
 #define NUM_CHANNELS 8
+#define MIN_CHANNELS 5      // for ppm sum we allow less than 8 channels to make up a valid packet
 
 
 
