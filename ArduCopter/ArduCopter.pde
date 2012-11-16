@@ -41,6 +41,7 @@
  *  Robert Lefebvre		:Heli Support & LEDs
  *  Amilcar Lucas		:mount and camera configuration
  *  Gregory Fletcher	:mount orientation math
+ *	Leonard Hall 		:Flight Dynamics
  *
  *  And much more so PLEASE PM me on DIYDRONES to add your contribution to the List
  *
