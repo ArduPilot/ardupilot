@@ -55,16 +55,16 @@ void APM_RC_APM2::_timer5_capt_cb(void)
 
     // Was it a sync pulse? If so, reset frame.
     if ( pwidth > 8000 ) {
+        // pass through values if at least a minimum number of channels received
+        if( frame_idx >= MIN_CHANNELS ) {
+            _radio_status = 1;
+            _last_update = millis();
+        }
         frame_idx=0;
     } else {
         // Save pulse into _PWM_RAW array.
         if ( frame_idx < NUM_CHANNELS ) {
             _PWM_RAW[ frame_idx++ ] = pwidth;
-            // If this is the last pulse in a frame, set _radio_status.
-            if (frame_idx >= NUM_CHANNELS) {
-                _radio_status = 1;
-                _last_update = millis();
-            }
         }
     }
     // Save icr for next call.
