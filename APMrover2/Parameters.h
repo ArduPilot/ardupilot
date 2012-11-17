@@ -323,7 +323,6 @@ public:
         AP_Float    curr_amp_per_volt;
         AP_Float    input_voltage;
 	AP_Int16    pack_capacity;		// Battery pack capacity less reserve
-        AP_Int8	    inverted_flight_ch; // 0=disabled, 1-8 is channel for inverted flight trigger
 #if HIL_MODE != HIL_MODE_ATTITUDE
 #if CONFIG_SONAR == ENABLED     
         AP_Int8	    sonar_enabled;
