@@ -70,9 +70,6 @@ static void init_rc_out()
 
 static void read_radio()
 {
-      static uint16_t aileron1;
-      static uint16_t aileron2;   
-      
 	ch1_temp = APM_RC.InputCh(CH_ROLL);
 	ch2_temp = APM_RC.InputCh(CH_PITCH);
 
@@ -101,14 +98,8 @@ static void read_radio()
 	g.channel_throttle.servo_out = g.channel_throttle.control_in;
 
 	if (g.channel_throttle.servo_out > 50) {
-		if(g.airspeed_enabled == true) {
-			airspeed_nudge = (g.flybywire_airspeed_max * 100 - g.airspeed_cruise) * ((g.channel_throttle.norm_input()-0.5) / 0.5);
-                        airspeed_nudge = NUDGE_OFFSET + airspeed_nudge;
-        } else {
-			throttle_nudge = (g.throttle_max - g.throttle_cruise) * ((g.channel_throttle.norm_input()-0.5) / 0.5);
-		}
+        throttle_nudge = (g.throttle_max - g.throttle_cruise) * ((g.channel_throttle.norm_input()-0.5) / 0.5);
 	} else {
-		airspeed_nudge = NUDGE_OFFSET;
 		throttle_nudge = 0;
 	}
 

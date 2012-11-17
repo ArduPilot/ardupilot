@@ -79,7 +79,7 @@ static void calc_gndspeed_undershoot()
 
 static void calc_bearing_error()
 {    
-	bearing_error = nav_bearing - ground_course;
+	bearing_error = nav_bearing - ahrs.yaw_sensor;
 	bearing_error = wrap_180(bearing_error);
 }
 

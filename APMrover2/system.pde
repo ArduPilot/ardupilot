@@ -179,8 +179,6 @@ static void init_ardupilot()
 #endif
 
 #if LITE == DISABLED
-	barometer.init(&timer_scheduler);
-
 	if (g.compass_enabled==true) {
         compass.set_orientation(MAG_ORIENTATION);							// set compass's orientation on aircraft
 		if (!compass.init()|| !compass.read()) {
@@ -259,11 +257,6 @@ static void init_ardupilot()
 	DDRL |= B00000100;					// Set Port L, pin 2 to output for the relay
 #endif
 
-#if FENCE_TRIGGERED_PIN > 0
-    pinMode(FENCE_TRIGGERED_PIN, OUTPUT);
-    digitalWrite(FENCE_TRIGGERED_PIN, LOW);
-#endif
-
     /*
       setup the 'main loop is dead' check. Note that this relies on
       the RC library being initialised.
@@ -302,7 +295,8 @@ static void init_ardupilot()
 	if (g.log_bitmask & MASK_LOG_CMD)
 			Log_Write_Startup(TYPE_GROUNDSTART_MSG);
 #endif
-        set_mode(MANUAL);
+
+    set_mode(MANUAL);
 
 	// set the correct flight mode
 	// ---------------------------
@@ -335,13 +329,10 @@ static void startup_ground(void)
 
 	startup_INS_ground(false);
 #endif
+
 	// read the radio to set trims
 	// ---------------------------
-	trim_radio();		// This was commented out as a HACK.  Why?  I don't find a problem.
-
-	// Save the settings for in-air restart
-	// ------------------------------------
-	//save_EEPROM_groundstart();
+	trim_radio();
 
 	// initialize commands
 	// -------------------
@@ -351,11 +342,11 @@ static void startup_ground(void)
 	// -----------------------
 	demo_servos(3);
 
-	gcs_send_text_P(SEVERITY_LOW,PSTR("\n\n Ready to FLY."));
+	gcs_send_text_P(SEVERITY_LOW,PSTR("\n\n Ready to drive."));
 }
 
 static void set_mode(byte mode)
-{       struct Location temp;
+{       
 
 	if(control_mode == mode){
 		// don't switch modes if we are already in the correct mode.
@@ -468,19 +459,6 @@ static void startup_INS_ground(bool force_accel_level)
 	}
 	ahrs.set_fly_forward(true);
     ahrs.reset();
-
-	// read Baro pressure at ground
-	//-----------------------------
-	init_barometer();
-
-    if (g.airspeed_enabled == true) {
-        // initialize airspeed sensor
-        // --------------------------
-        zero_airspeed();
-        gcs_send_text_P(SEVERITY_LOW,PSTR("<startup_ground> zero airspeed calibrated"));
-    } else {
-        gcs_send_text_P(SEVERITY_LOW,PSTR("<startup_ground> NO airspeed"));
-    }
 
 #endif // HIL_MODE_ATTITUDE
 

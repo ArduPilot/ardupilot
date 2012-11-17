@@ -578,7 +578,7 @@ static void zero_eeprom(void)
 {
 	byte b = 0;
 	Serial.printf_P(PSTR("\nErasing EEPROM\n"));
-	for (int i = 0; i < EEPROM_MAX_ADDR; i++) {
+	for (intptr_t i = 0; i < EEPROM_MAX_ADDR; i++) {
 		eeprom_write_byte((uint8_t *) i, b);
 	}
 	Serial.printf_P(PSTR("done\n"));

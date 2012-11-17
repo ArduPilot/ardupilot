@@ -8,9 +8,9 @@
 //#define SERIAL3_BAUD        38400
 //#define GCS_PROTOCOL        GCS_PROTOCOL_NONE
 
-#define CONFIG_APM_HARDWARE APM_HARDWARE_APM2
+//#define CONFIG_APM_HARDWARE APM_HARDWARE_APM2
 
-#define LITE  ENABLED    // if LITE is ENABLED, you may use an APM1280 or APM2560 CPU only (IMU less) with a GPS MT3329
+#define LITE  DISABLED    // if LITE is ENABLED, you may use an APM1280 or APM2560 CPU only (IMU less) with a GPS MT3329
                           // if LITE is DISABLED, this is for a full APM v1 (Oilpan + GPS MT3329 + Magnetometer HMC5883L) or APM v2
 
 #define CLI_ENABLED         ENABLED
@@ -18,10 +18,16 @@
 #define CLOSED_LOOP_NAV     ENABLED
 #define AUTO_WP_RADIUS      DISABLED
 
-#define TRACE               ENABLED
+#define TRACE               DISABLED
+
+// sonar is currently broken - it causes an APM1 to crash
+// after a few seconds
+#define CONFIG_SONAR DISABLED
+
+//#define LOGGING_ENABLED DISABLED
 
 //#include "APM_Config_HILmode.h"  // for test in HIL mode with AeroSIM Rc 3.83
-#include "APM_Config_Rover.h"      // to be used with the real Traxxas model Monster Jam Grinder
+//#include "APM_Config_Rover.h"      // to be used with the real Traxxas model Monster Jam Grinder
 
 // Radio setup:
 // APM INPUT (Rec = receiver)

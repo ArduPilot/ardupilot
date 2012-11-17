@@ -50,10 +50,10 @@ MENU2(log_menu, "Log", log_menu_commands, print_log_menu);
 static bool
 print_log_menu(void)
 {
-	int log_start;
-	int log_end;
-	int temp;	
-	int last_log_num = DataFlash.find_last_log();
+	int16_t log_start;
+	int16_t log_end;
+	int16_t temp;	
+	int16_t last_log_num = DataFlash.find_last_log();
 	
 	uint16_t num_logs = DataFlash.get_num_logs();
 
@@ -105,9 +105,9 @@ print_log_menu(void)
 static int8_t
 dump_log(uint8_t argc, const Menu::arg *argv)
 {
-	int dump_log;
-	int dump_log_start;
-	int dump_log_end;
+	int16_t dump_log;
+	int16_t dump_log_start;
+	int16_t dump_log_end;
 	byte last_log_num;
 
 	// check that the requested log number can be read
@@ -324,7 +324,7 @@ static void Log_Write_Nav_Tuning()
 	DataFlash.WriteInt((uint16_t)target_bearing);
 	DataFlash.WriteInt((uint16_t)nav_bearing);
 	DataFlash.WriteInt(altitude_error);
-	DataFlash.WriteInt((int)airspeed);
+	DataFlash.WriteInt(0);
 	DataFlash.WriteInt((int)(nav_gain_scaler*1000));
 	DataFlash.WriteByte(END_BYTE);
 }
@@ -358,7 +358,7 @@ static void Log_Write_GPS(	int32_t log_Time, int32_t log_Lattitude, int32_t log_
 	DataFlash.WriteLong(log_Ground_Course);
 	DataFlash.WriteInt(0);
 	DataFlash.WriteInt(0);
-	DataFlash.WriteInt((int)airspeed);
+	DataFlash.WriteInt(0);
 	DataFlash.WriteByte(END_BYTE);
 }
 
@@ -525,13 +525,13 @@ static void Log_Read_GPS()
 {
     int32_t l[7];
     byte b[2];
-    int16_t i,j,k,m;
+    int16_t j,k,m;
     l[0] = DataFlash.ReadLong();
     b[0] = DataFlash.ReadByte();
     b[1] = DataFlash.ReadByte();
     l[1] = DataFlash.ReadLong();
     l[2] = DataFlash.ReadLong();
-    i = DataFlash.ReadInt();
+    DataFlash.ReadInt();
     l[3] = DataFlash.ReadLong();
     l[4] = DataFlash.ReadLong();
     l[5] = DataFlash.ReadLong();

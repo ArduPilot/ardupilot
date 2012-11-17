@@ -15,43 +15,32 @@ static void learning()
 }
 
 
-static void crash_checker()
-{
-	if(ahrs.pitch_sensor < -4500){
-		crash_timer = 255;
-	}
-	if(crash_timer > 0)
-		crash_timer--;
-}
-
 static void calc_throttle()
 {  int rov_speed;
     
    int throttle_target = g.throttle_cruise + throttle_nudge + 50;   
    
-        target_airspeed = g.airspeed_cruise;    
+   rov_speed = g.airspeed_cruise;    
      
-   if(speed_boost)
-     rov_speed = g.booster * target_airspeed;
-   else 
-     rov_speed = target_airspeed;   
+   if (speed_boost)
+       rov_speed *= g.booster;
         
-        groundspeed_error = rov_speed - (float)ground_speed; 
+   groundspeed_error = rov_speed - (float)ground_speed; 
         
-        int throttle_req = (throttle_target + g.pidTeThrottle.get_pid(groundspeed_error)) * 10;
+   int throttle_req = (throttle_target + g.pidTeThrottle.get_pid(groundspeed_error)) * 10;
         
-        if(g.throttle_slewrate > 0)
-        { if (throttle_req > throttle_last) 
-	      throttle = throttle + g.throttle_slewrate;
-          else if (throttle_req  < throttle_last) {
-	      throttle = throttle - g.throttle_slewrate;   
-          }
-    	  throttle =  constrain(throttle, 500, throttle_req);
-          throttle_last = throttle;
-        } else {
-          throttle = throttle_req;
-        }
-        g.channel_throttle.servo_out = constrain(((float)throttle / 10.0f), 0, g.throttle_max.get());
+   if(g.throttle_slewrate > 0) { 
+       if (throttle_req > throttle_last) 
+           throttle = throttle + g.throttle_slewrate;
+       else if (throttle_req  < throttle_last) {
+           throttle = throttle - g.throttle_slewrate;   
+       }
+       throttle =  constrain(throttle, 500, throttle_req);
+       throttle_last = throttle;
+   } else {
+       throttle = throttle_req;
+   }
+   g.channel_throttle.servo_out = constrain(((float)throttle / 10.0f), 0, g.throttle_max.get());
 }
 
 /*****************************************
@@ -95,19 +84,6 @@ static void reset_I(void)
 *****************************************/
 static void set_servos(void)
 {
-	int flapSpeedSource = 0;
-
-	// vectorize the rc channels
-	RC_Channel_aux* rc_array[NUM_CHANNELS];
-	rc_array[CH_1] = NULL;
-	rc_array[CH_2] = NULL;
-	rc_array[CH_3] = NULL;
-	rc_array[CH_4] = NULL;
-	rc_array[CH_5] = &g.rc_5;
-	rc_array[CH_6] = &g.rc_6;
-	rc_array[CH_7] = &g.rc_7;
-	rc_array[CH_8] = &g.rc_8;
-
 	if((control_mode == MANUAL) || (control_mode == LEARNING)){
 		// do a direct pass through of radio values
 		g.channel_roll.radio_out 		= g.channel_roll.radio_in;

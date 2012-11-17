@@ -21,10 +21,6 @@ handle_process_nav_cmd()
 			do_nav_wp();
 			break;
 
-		case MAV_CMD_NAV_LAND:	// LAND to Waypoint
-			do_land();
-			break;
-
 		case MAV_CMD_NAV_LOITER_UNLIM:	// Loiter indefinitely
 			do_loiter_unlimited();
 			break;
@@ -127,7 +123,6 @@ static void handle_no_commands()
 {      
 	gcs_send_text_fmt(PSTR("Returning to Home"));
 	next_nav_command = home;
-	next_nav_command.alt = read_alt_to_hold();
 	next_nav_command.id = MAV_CMD_NAV_LOITER_UNLIM;
 	nav_command_ID = MAV_CMD_NAV_LOITER_UNLIM;
 	non_nav_command_ID = WAIT_COMMAND;
@@ -144,10 +139,6 @@ static bool verify_nav_command()	// Returns true if command complete
 
 		case MAV_CMD_NAV_TAKEOFF:
 			return verify_takeoff();
-			break;
-
-		case MAV_CMD_NAV_LAND:
-			return verify_land();
 			break;
 
 		case MAV_CMD_NAV_WAYPOINT:
@@ -217,11 +208,6 @@ static void do_RTL(void)
 	control_mode 	= RTL;
 	crash_timer 	= 0;
 	next_WP 		= home;
-
-	// Altitude to hold over home
-	// Set by configuration tool
-	// -------------------------
-	next_WP.alt = read_alt_to_hold();
 }
 
 static void do_takeoff()
@@ -230,11 +216,6 @@ static void do_takeoff()
 }
 
 static void do_nav_wp()
-{
-	set_next_WP(&next_nav_command);
-}
-
-static void do_land()
 {
 	set_next_WP(&next_nav_command);
 }
@@ -262,10 +243,6 @@ static void do_loiter_time()
 /********************************************************************************/
 static bool verify_takeoff()
 {  return true;
-}
-
-static bool verify_land()
-{
 }
 
 static void calc_turn_radius(void)    // JLN update - adjut automaticaly the wp_radius Vs the speed and the turn angle
@@ -361,9 +338,7 @@ static void do_change_alt()
 	condition_rate		= abs((int)next_nonnav_command.lat);
 	condition_value 	= next_nonnav_command.alt;
 	if(condition_value < current_loc.alt) condition_rate = -condition_rate;
-	target_altitude		= current_loc.alt + (condition_rate / 10);		// Divide by ten for 10Hz update
 	next_WP.alt 		= condition_value;								// For future nav calculations
-	offset_altitude 	= 0;											// For future nav calculations
 }
 
 static void do_within_distance()
@@ -390,7 +365,6 @@ static bool verify_change_alt()
 		condition_value = 0;
 		return true;
 	}
-	target_altitude += condition_rate / 10;
 	return false;
 }
 

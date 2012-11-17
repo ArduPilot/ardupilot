@@ -147,7 +147,6 @@ enum ap_message {
     MSG_RADIO_OUT,
     MSG_RADIO_IN,
     MSG_RAW_IMU1,
-    MSG_RAW_IMU2,
     MSG_RAW_IMU3,
     MSG_GPS_STATUS,
     MSG_GPS_RAW,
@@ -155,7 +154,6 @@ enum ap_message {
     MSG_NEXT_WAYPOINT,
     MSG_NEXT_PARAM,
     MSG_STATUSTEXT,
-    MSG_FENCE_STATUS,
     MSG_AHRS,
     MSG_SIMSTATE,
     MSG_HWSTATUS,
@@ -237,15 +235,10 @@ enum gcs_severity {
 // EEPROM addresses
 #define EEPROM_MAX_ADDR		4096
 // parameters get the first 1KiB of EEPROM, remainder is for waypoints
-#define WP_START_BYTE 0x400 // where in memory home WP is stored + all other WP
+#define WP_START_BYTE 0x500 // where in memory home WP is stored + all other WP
 #define WP_SIZE 15
 
-// fence points are stored at the end of the EEPROM
-#define MAX_FENCEPOINTS 20
-#define FENCE_WP_SIZE sizeof(Vector2l)
-#define FENCE_START_BYTE (EEPROM_MAX_ADDR-(MAX_FENCEPOINTS*FENCE_WP_SIZE))
-
-#define MAX_WAYPOINTS  ((FENCE_START_BYTE - WP_START_BYTE) / WP_SIZE) - 1 // - 1 to be safe
+#define MAX_WAYPOINTS  ((EEPROM_MAX_ADDR - WP_START_BYTE) / WP_SIZE) - 1 // - 1 to be safe
 
 #define ONBOARD_PARAM_NAME_LENGTH 15
 

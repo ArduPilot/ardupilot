@@ -16,8 +16,6 @@ static int8_t	test_ins(uint8_t argc, 			const Menu::arg *argv);
 static int8_t	test_battery(uint8_t argc, 		const Menu::arg *argv);
 static int8_t	test_relay(uint8_t argc,	 	const Menu::arg *argv);
 static int8_t	test_wp(uint8_t argc, 			const Menu::arg *argv);
-static int8_t	test_airspeed(uint8_t argc, 	const Menu::arg *argv);
-static int8_t	test_pressure(uint8_t argc, 	const Menu::arg *argv);
 #if CONFIG_SONAR == ENABLED
 static int8_t	test_sonar(uint8_t argc, 	const Menu::arg *argv);
 #endif
@@ -59,8 +57,6 @@ static const struct Menu::command test_menu_commands[] PROGMEM = {
 	{"gps",			test_gps},
 	{"rawgps",		test_rawgps},
 	{"ins",			test_ins},
-	{"airspeed",	test_airspeed},
-	{"airpressure",	test_pressure},
 #if CONFIG_SONAR == ENABLED
 	{"sonartest",	test_sonar},
 #endif
@@ -95,7 +91,7 @@ static void print_hit_enter()
 static int8_t
 test_eedump(uint8_t argc, const Menu::arg *argv)
 {
-	int		i, j;
+	intptr_t i, j;
 
 	// hexdump the EEPROM
 	for (i = 0; i < EEPROM_MAX_ADDR; i += 16) {
@@ -329,13 +325,6 @@ static int8_t
 test_wp(uint8_t argc, const Menu::arg *argv)
 {
 	delay(1000);
-
-	// save the alitude above home option
-	if(g.RTL_altitude < 0){
-		Serial.printf_P(PSTR("Hold current altitude\n"));
-	}else{
-		Serial.printf_P(PSTR("Hold altitude of %dm\n"), (int)g.RTL_altitude/100);
-	}
 
 	Serial.printf_P(PSTR("%d waypoints\n"), (int)g.command_total);
 	Serial.printf_P(PSTR("Hit radius: %d\n"), (int)g.waypoint_radius);
@@ -651,19 +640,6 @@ test_mag(uint8_t argc, const Menu::arg *argv)
 // real sensors that have not been simulated yet go here
 
 #if HIL_MODE == HIL_MODE_DISABLED
-
-static int8_t
-test_airspeed(uint8_t argc, const Menu::arg *argv)
-{
-
-}
-
-
-static int8_t
-test_pressure(uint8_t argc, const Menu::arg *argv)
-{
-
-}
 
 static int8_t
 test_rawgps(uint8_t argc, const Menu::arg *argv)
