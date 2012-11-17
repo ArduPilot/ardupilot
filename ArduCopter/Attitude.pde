@@ -449,8 +449,6 @@ get_throttle_rate(int16_t z_target_speed)
 	int16_t tmp     = ((int32_t)z_target_speed * (int32_t)g.throttle_cruise) / 280;
 	tmp 			= min(tmp, 500);
 
-    if(z_target_speed < 0) tmp = -tmp;
-
     // separately calculate p, i, d values for logging
     p = g.pid_throttle.get_p(z_rate_error);
 
