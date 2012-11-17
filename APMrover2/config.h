@@ -781,10 +781,6 @@
 # define USE_CURRENT_ALT FALSE
 #endif
 
-#ifndef INVERTED_FLIGHT_PWM
-# define INVERTED_FLIGHT_PWM 1750
-#endif
-
 //////////////////////////////////////////////////////////////////////////////
 // Developer Items
 //

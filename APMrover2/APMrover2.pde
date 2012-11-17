@@ -375,8 +375,6 @@ byte    control_mode        = INITIALISING;
 // Used to maintain the state of the previous control switch position
 // This is set to -1 when we need to re-read the switch
 byte 	oldSwitchPosition;
-// This is used to enable the inverted flight feature
-bool    inverted_flight     = false;
 // These are trim values used for elevon control
 // For elevons radio_in[CH_ROLL] and radio_in[CH_PITCH] are equivalent aileron and elevator, not left and right elevon
 static uint16_t elevon1_trim  = 1500; 	

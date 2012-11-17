@@ -85,7 +85,6 @@ const AP_Param::Info var_info[] PROGMEM = {
 	GSCALAR(curr_amp_per_volt,      "AMP_PER_VOLT",     CURR_AMP_PER_VOLT),
 	GSCALAR(input_voltage,          "INPUT_VOLTS",      INPUT_VOLTAGE),
 	GSCALAR(pack_capacity,          "BATT_CAPACITY",    HIGH_DISCHARGE),
-	GSCALAR(inverted_flight_ch,     "INVERTEDFLT_CH",   0),
 #if HIL_MODE != HIL_MODE_ATTITUDE
 #if CONFIG_SONAR == ENABLED     
 	// @Param: SONAR_ENABLE
