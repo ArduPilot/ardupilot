@@ -98,21 +98,12 @@ static NOINLINE void send_attitude(mavlink_channel_t chan)
         chan,
         micros(),
         ahrs.roll,
-        ahrs.pitch - radians(g.pitch_trim*0.01),
-        ToRad(ground_course/100.0),
-        //ahrs.yaw,
+        ahrs.pitch,
+        ahrs.yaw,
         omega.x,
         omega.y,
         omega.z);
 }
-
-#if GEOFENCE_ENABLED == ENABLED
-static NOINLINE void send_fence_status(mavlink_channel_t chan)
-{
-    geofence_send_status(chan);
-}
-#endif
-
 
 static NOINLINE void send_extended_status1(mavlink_channel_t chan, uint16_t packet_drops)
 {
@@ -356,9 +347,9 @@ static void NOINLINE send_vfr_hud(mavlink_channel_t chan)
 {
     mavlink_msg_vfr_hud_send(
         chan,
-        (float)airspeed / 100.0,
         (float)g_gps->ground_speed / 100.0,
-        ground_course,
+        (float)g_gps->ground_speed / 100.0,
+        (ahrs.yaw_sensor / 100) % 360,
         (uint16_t)(100 * (g.channel_throttle.norm_output() / 2.0 + 0.5)), // scale -1,1 to 0-100
         current_loc.alt / 100.0,
         0);
@@ -382,17 +373,6 @@ static void NOINLINE send_raw_imu1(mavlink_channel_t chan)
         compass.mag_x,
         compass.mag_y,
         compass.mag_z);
-}
-
-static void NOINLINE send_raw_imu2(mavlink_channel_t chan)
-{
-    int32_t pressure = 0;
-    mavlink_msg_scaled_pressure_send(
-        chan,
-        micros(),
-        pressure/100.0,
-        (pressure - g.ground_pressure)/100.0,
-        0);
 }
 
 static void NOINLINE send_raw_imu3(mavlink_channel_t chan)
@@ -427,26 +407,10 @@ static void NOINLINE send_ahrs(mavlink_channel_t chan)
 #endif // HIL_MODE != HIL_MODE_ATTITUDE
 
 #ifdef DESKTOP_BUILD
-void mavlink_simstate_send(uint8_t chan,
-                           float roll,
-                           float pitch,
-                           float yaw,
-                           float xAcc,
-                           float yAcc,
-                           float zAcc,
-                           float p,
-                           float q,
-                           float r)
-{
-    mavlink_msg_simstate_send((mavlink_channel_t)chan,
-                              roll, pitch, yaw, xAcc, yAcc, zAcc, p, q, r);
-}
-
 // report simulator state
 static void NOINLINE send_simstate(mavlink_channel_t chan)
 {
-    extern void sitl_simstate_send(uint8_t chan);
-    sitl_simstate_send((uint8_t)chan);
+    sitl.simstate_send(chan);
 }
 #endif
 
@@ -586,11 +550,6 @@ static bool mavlink_try_send_message(mavlink_channel_t chan, enum ap_message id,
         send_raw_imu1(chan);
         break;
 
-    case MSG_RAW_IMU2:
-        CHECK_PAYLOAD_SIZE(SCALED_PRESSURE);
-        send_raw_imu2(chan);
-        break;
-
     case MSG_RAW_IMU3:
         CHECK_PAYLOAD_SIZE(SENSOR_OFFSETS);
         send_raw_imu3(chan);
@@ -629,13 +588,6 @@ static bool mavlink_try_send_message(mavlink_channel_t chan, enum ap_message id,
         CHECK_PAYLOAD_SIZE(STATUSTEXT);
         send_statustext(chan);
         break;
-
-#if GEOFENCE_ENABLED == ENABLED
-    case MSG_FENCE_STATUS:
-        CHECK_PAYLOAD_SIZE(FENCE_STATUS);
-        send_fence_status(chan);
-        break;
-#endif
 
     case MSG_AHRS:
 #if HIL_MODE != HIL_MODE_ATTITUDE
@@ -883,7 +835,6 @@ GCS_MAVLINK::data_stream_send(void)
 
     if (stream_trigger(STREAM_RAW_SENSORS)) {
         send_message(MSG_RAW_IMU1);
-        send_message(MSG_RAW_IMU2);
         send_message(MSG_RAW_IMU3);
     }
 
@@ -893,7 +844,6 @@ GCS_MAVLINK::data_stream_send(void)
         send_message(MSG_CURRENT_WAYPOINT);
         send_message(MSG_GPS_RAW);            // TODO - remove this message after location message is working
         send_message(MSG_NAV_CONTROLLER_OUTPUT);
-        send_message(MSG_FENCE_STATUS);
 
         if (last_gps_satellites != g_gps->num_sats) {
             // this message is mostly a huge waste of bandwidth,
@@ -963,7 +913,6 @@ GCS_MAVLINK::send_text(gcs_severity severity, const prog_char_t *str)
 void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
 {
     struct Location tell_command = {};                // command for telemetry
-	static uint8_t mav_nav=255;							// For setting mode (some require receipt of 2 messages...)
 
     switch (msg->msgid) {
 
@@ -1074,7 +1023,7 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
                     packet.param2 == 1 ||
                     packet.param3 == 1) {
             #if LITE == DISABLED                      
-                    startup_IMU_ground(true);
+                    startup_INS_ground(true);
             #endif
                 }
                 if (packet.param4 == 1) {
@@ -1422,7 +1371,6 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
             case MAV_CMD_NAV_WAYPOINT:
             case MAV_CMD_NAV_LOITER_UNLIM:
             case MAV_CMD_NAV_RETURN_TO_LAUNCH:
-            case MAV_CMD_NAV_LAND:
                 break;
 
             case MAV_CMD_NAV_LOITER_TURNS:
@@ -1537,42 +1485,6 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
             break;
         }
 
-#if GEOFENCE_ENABLED == ENABLED
-	// receive a fence point from GCS and store in EEPROM
-    case MAVLINK_MSG_ID_FENCE_POINT: {
-        mavlink_fence_point_t packet;
-        mavlink_msg_fence_point_decode(msg, &packet);
-        if (mavlink_check_target(packet.target_system, packet.target_component))
-            break;
-        if (g.fence_action != FENCE_ACTION_NONE) {
-            send_text(SEVERITY_LOW,PSTR("fencing must be disabled"));
-        } else if (packet.count != g.fence_total) {
-            send_text(SEVERITY_LOW,PSTR("bad fence point"));
-        } else {
-            Vector2l point;
-            point.x = packet.lat*1.0e7;
-            point.y = packet.lng*1.0e7;
-            set_fence_point_with_index(point, packet.idx);
-        }
-        break;
-    }
-
-	// send a fence point to GCS
-    case MAVLINK_MSG_ID_FENCE_FETCH_POINT: {
-        mavlink_fence_fetch_point_t packet;
-        mavlink_msg_fence_fetch_point_decode(msg, &packet);
-        if (mavlink_check_target(packet.target_system, packet.target_component))
-            break;
-        if (packet.idx >= g.fence_total) {
-            send_text(SEVERITY_LOW,PSTR("bad fence point"));
-        } else {
-            Vector2l point = get_fence_point_with_index(packet.idx);
-            mavlink_msg_fence_point_send(chan, 0, 0, packet.idx, g.fence_total,
-                                         point.x*1.0e-7, point.y*1.0e-7);
-        }
-        break;
-    }
-#endif // GEOFENCE_ENABLED
 
     case MAVLINK_MSG_ID_PARAM_SET:
         {
@@ -1793,18 +1705,6 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
             break;
         }
 
-    case MAVLINK_MSG_ID_RAW_PRESSURE:
-        {
-            // decode
-            mavlink_raw_pressure_t packet;
-            mavlink_msg_raw_pressure_decode(msg, &packet);
-
-            // set pressure hil sensor
-            // TODO: check scaling
-            float temp = 70;
-            barometer.setHIL(temp,packet.press_diff1 + 101325);
-            break;
-        }
 #endif // HIL_MODE
 
 #if MOUNT == ENABLED

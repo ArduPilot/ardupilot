@@ -43,8 +43,6 @@
 #define FLIGHT_MODE_5         MANUAL       // pos 4
 #define FLIGHT_MODE_6         MANUAL       // pos 5 ---
 
-#define ENABLE_AIR_START      DISABLED
-
 #define MANUAL_LEVEL	      DISABLED
 
 #define TURN_GAIN		5
@@ -138,8 +136,6 @@ This feature works only if the ROV_AWPR_NAV is set to 0
 //
 #define AUTO_TRIM           ENABLED
 #define THROTTLE_FAILSAFE   DISABLED
-
-//#define ENABLE_AIR_START    0
 
 //////////////////////////////////////////////////////////////////////////////
 // Autopilot control limits

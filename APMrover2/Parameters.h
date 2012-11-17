@@ -17,7 +17,7 @@ public:
     // The increment will prevent old parameters from being used incorrectly
     // by newer code.
     //
-    static const uint16_t k_format_version = 13;
+    static const uint16_t k_format_version = 14;
 
 	// The parameter software_type is set up solely for ground station use
 	// and identifies the software type (eg ArduPilotMega versus ArduCopterMega)
@@ -37,7 +37,6 @@ public:
         k_param_auto_trim,
         k_param_switch_enable,
         k_param_log_bitmask,
-        k_param_pitch_trim,
         k_param_mix_mode,
         k_param_reverse_elevons,
         k_param_reverse_ch1_elevon,
@@ -90,7 +89,7 @@ public:
  	k_param_sonar_type,
 #endif
 #endif
-	k_param_airspeed_enabled,
+        k_param_ahrs,  // AHRS group
         
         //
         // 150: Navigation parameters
@@ -101,8 +100,6 @@ public:
         k_param_pitch_limit_max,
         k_param_pitch_limit_min,
         k_param_airspeed_cruise,
-        k_param_RTL_altitude,
-        k_param_inverted_flight_ch,
         k_param_min_gndspeed,
         k_param_ch7_option,
         //
@@ -263,13 +260,6 @@ public:
         AP_Int8     command_index;
         AP_Int8     waypoint_radius;
         AP_Int8     loiter_radius;
-    #if GEOFENCE_ENABLED == ENABLED
-        AP_Int8     fence_action;
-        AP_Int8     fence_total;
-        AP_Int8     fence_channel;
-        AP_Int16    fence_minalt; // meters
-        AP_Int16    fence_maxalt; // meters
-    #endif
     
         // Fly-by-wire
         //
@@ -324,8 +314,6 @@ public:
         AP_Int16    min_gndspeed;
         AP_Int8	    ch7_option;
         
-        AP_Int16    pitch_trim;
-        AP_Int16    RTL_altitude;
         AP_Int16    ground_temperature;
         AP_Int32    ground_pressure;
         AP_Int8	    compass_enabled;
@@ -344,7 +332,6 @@ public:
 				  // 3 = HRLV 
 #endif
 #endif
-        AP_Int8	    airspeed_enabled;
         AP_Int8	    flap_1_percent;
         AP_Int8	    flap_1_speed;
         AP_Int8	    flap_2_percent;

@@ -116,18 +116,6 @@
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
-// AIRSPEED_SENSOR
-// AIRSPEED_RATIO
-//
-#ifndef AIRSPEED_SENSOR
-# define AIRSPEED_SENSOR		DISABLED
-#endif
-
-#ifndef AIRSPEED_RATIO
-# define AIRSPEED_RATIO			1.9936		// Note - this varies from the value in ArduPilot due to the difference in ADC resolution
-#endif
-
-//////////////////////////////////////////////////////////////////////////////
 // IMU Selection
 //
 #ifndef CONFIG_INS_TYPE
@@ -143,40 +131,6 @@
 # else
 #   define CONFIG_ADC DISABLED
 # endif
-#endif
-
-//////////////////////////////////////////////////////////////////////////////
-// Barometer
-//
-
-#ifndef CONFIG_BARO
-# define CONFIG_BARO AP_BARO_BMP085
-#endif
-
-//////////////////////////////////////////////////////////////////////////////
-// Pitot
-//
-
-#ifndef PITOT_ENABLED
-# define PITOT_ENABLED         	DISABLED
-#endif
-
-#ifndef CONFIG_PITOT_SOURCE
-# define CONFIG_PITOT_SOURCE PITOT_SOURCE_ADC
-#endif
-
-#if CONFIG_PITOT_SOURCE == PITOT_SOURCE_ADC
-# ifndef CONFIG_PITOT_SOURCE_ADC_CHANNEL
-#  define CONFIG_PITOT_SOURCE_ADC_CHANNEL 7
-# endif
-#elif CONFIG_PITOT_SOURCE == PITOT_SOURCE_ANALOG_PIN
-# ifndef CONFIG_PITOT_SOURCE_ANALOG_PIN
-#  define CONFIG_PITOT_SOURCE_ANALOG_PIN 0
-# endif
-#else
-# warning Invalid value for CONFIG_PITOT_SOURCE, disabling airspeed
-# undef PITOT_ENABLED
-# define PITOT_ENABLED DISABLED
 #endif
 
 #ifndef SONAR_TYPE
@@ -472,13 +426,6 @@
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
-// ENABLE_AIR_START
-//
-#ifndef ENABLE_AIR_START
-# define ENABLE_AIR_START		DISABLED
-#endif
-
-//////////////////////////////////////////////////////////////////////////////
 // ENABLE REVERSE_SWITCH
 //
 #ifndef REVERSE_SWITCH
@@ -569,23 +516,6 @@
 # define MIN_GNDSPEED			0 // m/s (0 disables)
 #endif
 #define MIN_GNDSPEED_CM MIN_GNDSPEED*100
-
-//////////////////////////////////////////////////////////////////////////////
-// FLY_BY_WIRE_B airspeed control
-//
-#ifndef AIRSPEED_FBW_MIN
-# define AIRSPEED_FBW_MIN		6
-#endif
-#ifndef AIRSPEED_FBW_MAX
-# define AIRSPEED_FBW_MAX		22
-#endif
-
-#ifndef ALT_HOLD_FBW
-# define ALT_HOLD_FBW 0
-#endif
-#define ALT_HOLD_FBW_CM ALT_HOLD_FBW*100
-
-
 
 /*  The following parmaeters have no corresponding control implementation
 #ifndef THROTTLE_ALT_P
@@ -884,22 +814,6 @@
 # define CLI_SLIDER_ENABLED ENABLED
 #endif
 
-// use this to disable gen-fencing
-#ifndef GEOFENCE_ENABLED
-# define GEOFENCE_ENABLED ENABLED
-#endif
-
-// pwm value on FENCE_CHANNEL to use to enable fenced mode
-#ifndef FENCE_ENABLE_PWM
-# define FENCE_ENABLE_PWM 1750
-#endif
-
-// a digital pin to set high when the geo-fence triggers. Defaults
-// to -1, which means don't activate a pin
-#ifndef FENCE_TRIGGERED_PIN
-# define FENCE_TRIGGERED_PIN -1
-#endif
-
 // if RESET_SWITCH_CH is not zero, then this is the PWM value on
 // that channel where we reset the control mode to the current switch
 // position (to for example return to switched mode after failsafe or
@@ -908,3 +822,10 @@
 # define RESET_SWITCH_CHAN_PWM 1750
 #endif
 
+#ifndef BOOSTER
+# define BOOSTER              2    // booster factor x1 = 1 or x2 = 2
+#endif
+
+#ifndef SONAR_ENABLED
+# define SONAR_ENABLED       DISABLED
+#endif

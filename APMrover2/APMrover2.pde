@@ -89,7 +89,7 @@ version 2.1 of the License, or (at your option) any later version.
 #include <AP_ADC.h>         // ArduPilot Mega Analog to Digital Converter Library
 #include <AP_AnalogSource.h>// ArduPilot Mega polymorphic analog getter
 #include <AP_PeriodicProcess.h> // ArduPilot Mega TimerProcess
-#include <AP_Baro.h>        // ArduPilot barometer library
+#include <AP_Baro.h>
 #include <AP_Compass.h>     // ArduPilot Mega Magnetometer Library
 #include <AP_Math.h>        // ArduPilot Mega Vector/Matrix math Library
 #include <AP_InertialSensor.h> // Inertial Sensor (uncalibated IMU) Library
@@ -207,20 +207,11 @@ static AP_ADC_ADS7844          adc;
 #endif
 
 #ifdef DESKTOP_BUILD
-AP_Baro_BMP085_HIL      barometer;
-AP_Compass_HIL          compass;
+AP_Baro_BMP085_HIL barometer;
+AP_Compass_HIL compass;
+#include <SITL.h>
+SITL sitl;
 #else
-
-#if CONFIG_BARO == AP_BARO_BMP085
-# if CONFIG_APM_HARDWARE == APM_HARDWARE_APM2
-static AP_Baro_BMP085          barometer(true);
-# else
-static AP_Baro_BMP085          barometer(false);
-# endif
-#elif CONFIG_BARO == AP_BARO_MS5611
-static AP_Baro_MS5611          barometer;
-#endif
-
 static AP_Compass_HMC5843      compass;
 #endif
 
@@ -261,7 +252,6 @@ AP_AHRS_DCM  ahrs(&ins, g_gps);
 #elif HIL_MODE == HIL_MODE_SENSORS
 // sensor emulators
 AP_ADC_HIL              adc;
-AP_Baro_BMP085_HIL      barometer;
 AP_Compass_HIL          compass;
 AP_GPS_HIL              g_gps_driver(NULL);
 AP_InertialSensor_Oilpan ins( &adc );
@@ -272,7 +262,6 @@ AP_ADC_HIL              adc;
 AP_AHRS_HIL             ahrs(&ins, g_gps);
 AP_GPS_HIL              g_gps_driver(NULL);
 AP_Compass_HIL          compass; // never used
-AP_Baro_BMP085_HIL      barometer;
 #else
  #error Unrecognised HIL_MODE setting.
 #endif // HIL MODE
@@ -477,26 +466,7 @@ static byte	non_nav_command_index;
 static byte	nav_command_ID		= NO_COMMAND;	
 static byte	non_nav_command_ID	= NO_COMMAND;	
 
-////////////////////////////////////////////////////////////////////////////////
-// Airspeed
-////////////////////////////////////////////////////////////////////////////////
-// The current airspeed estimate/measurement in centimeters per second
-static int		airspeed;
-// The calculated airspeed to use in FBW-B.  Also used in higher modes for insuring min ground speed is met.
-// Also used for flap deployment criteria.  Centimeters per second.static long		target_airspeed;	
-static long		target_airspeed;
-// The difference between current and desired airspeed.  Used in the pitch controller.  Centimeters per second.
-static float	airspeed_error;	
 static float	groundspeed_error;	
-// The calculated total energy error (kinetic (altitude) plus potential (airspeed)).  
-// Used by the throttle controller
-static long 	energy_error;
-// kinetic portion of energy error (m^2/s^2)
-static long		airspeed_energy_error;
-// An amount that the airspeed should be increased in auto modes based on the user positioning the 
-// throttle stick in the top half of the range.  Centimeters per second.
-static int		airspeed_nudge;
-// Similar to airspeed_nudge, but used when no airspeed sensor.
 // 0-(throttle_max - throttle_cruise) : throttle nudge in Auto mode using top 1/2 of throttle stick travel
 static int     throttle_nudge = 0;
 // The distance as reported by Sonar in cm – Values are 20 to 700 generally.
@@ -549,45 +519,8 @@ static float	current_total1;
 //static float	current_amps2;									// Current (Amperes) draw from battery 2
 //static float	current_total2;									// Totalized current (Amp-hours) from battery 2
 
-////////////////////////////////////////////////////////////////////////////////
-// Airspeed Sensors
-////////////////////////////////////////////////////////////////////////////////
-// Raw differential pressure measurement (filtered).  ADC units
-static float   airspeed_raw; 
-// Raw differential pressure less the zero pressure offset.  ADC units
-static float   airspeed_pressure;
-// The pressure at home location - calibrated at arming
-static int32_t 	ground_pressure;
-// The ground temperature at home location - calibrated at arming
-static int16_t 	ground_temperature;
-////////////////////////////////////////////////////////////////////////////////
-// Altitude Sensor variables
-////////////////////////////////////////////////////////////////////////////////
-// Raw absolute pressure measurement (filtered).  ADC units
-static unsigned long 	abs_pressure;
-
-// The altitude as reported by Baro in cm – Values can be quite high
-static int32_t		baro_alt;
-
-////////////////////////////////////////////////////////////////////////////////
-// flight mode specific
-////////////////////////////////////////////////////////////////////////////////
-// Flag for using gps ground course instead of IMU yaw.  Set false when takeoff command in process.
-static bool takeoff_complete    = true;   
-// Flag to indicate if we have landed.
-//Set land_complete if we are within 2 seconds distance or within 3 meters altitude of touchdown
-static bool	land_complete;
-// Altitude threshold to complete a takeoff command in autonomous modes.  Centimeters
-static long	takeoff_altitude;
-// Pitch to hold during landing command in the no airspeed sensor case.  Hundredths of a degree
-static int			landing_pitch;
-// Minimum pitch to hold during takeoff command execution.  Hundredths of a degree
-static int			takeoff_pitch;
-static bool  final = false;
-
 // JLN Update
 unsigned long  timesw                  = 0;
-static long 	ground_course = 0;		      // deg * 100 dir of plane
 static bool speed_boost = false;
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -615,8 +548,6 @@ static long	nav_roll;
 static long	nav_pitch;
 // Calculated radius for the wp turn based on ground speed and max turn angle
 static long    wp_radius;
-static long	toff_yaw;			// deg * 100 : yaw angle for takeoff
-static long	altitude_estimate = 0;		// for smoothing GPS output
 
 ////////////////////////////////////////////////////////////////////////////////
 // Waypoint distances
@@ -625,8 +556,6 @@ static long	altitude_estimate = 0;		// for smoothing GPS output
 static long	wp_distance;
 // Distance between previous and next waypoint.  Meters
 static long	wp_totalDistance;
-
-static long	max_dist_set;    // used for HEADALT (LEO)
 
 ////////////////////////////////////////////////////////////////////////////////
 // repeating event control
@@ -677,14 +606,6 @@ static struct  	Location guided_WP;
 static struct 	Location next_nav_command;	
 // The location structure information from the Non-Nav command being processed
 static struct 	Location next_nonnav_command;
-
-////////////////////////////////////////////////////////////////////////////////
-// Altitude / Climb rate control
-////////////////////////////////////////////////////////////////////////////////
-// The current desired altitude.  Altitude is linearly ramped between waypoints.  Centimeters
-static long 	target_altitude;
-// Altitude difference between previous and current waypoint.  Centimeters
-static long 	offset_altitude;
 
 ////////////////////////////////////////////////////////////////////////////////
 // IMU variables
@@ -1025,10 +946,10 @@ static void slow_loop()
 
 #if TRACE == ENABLED
          //     Serial.printf_P(PSTR("NAV->gnd_crs=%3.0f, nav_brg=%3.0f, tgt_brg=%3.0f, brg_err=%3.0f, nav_rll=%3.1f rsvo=%3.1f\n"), 
-         //           (float)ground_course/100, (float)nav_bearing/100, (float)target_bearing/100, (float)bearing_error/100, (float)nav_roll/100, (float)g.channel_roll.servo_out/100);           
+         //           ahrs.yaw_sensor*0.01, (float)nav_bearing/100, (float)target_bearing/100, (float)bearing_error/100, (float)nav_roll/100, (float)g.channel_roll.servo_out/100);           
              // Serial.printf_P(PSTR("WPL->g.command_total=%d, g.command_index=%d, nav_command_index=%d\n"), 
                 //    g.command_total, g.command_index, nav_command_index);      
-    	   Serial.printf_P(PSTR("NAV->gnd_crs=%3.0f,  sonar_dist = %d    obstacle = %d\n"), (float)ground_course/100, (int)sonar_dist, obstacle);                
+    	   Serial.printf_P(PSTR("NAV->gnd_crs=%3.0f,  sonar_dist = %d    obstacle = %d\n"), ahrs.yaw_sensor*0.01, (int)sonar_dist, obstacle);                
 #endif                          
 			break;
 	}
@@ -1045,8 +966,7 @@ static void one_second_loop()
 }
 
 static void update_GPS(void)
-{      static uint16_t hdg;
-  
+{        
 	g_gps->update();
 	update_GPS_light();
 
@@ -1067,22 +987,11 @@ static void update_GPS(void)
 				ground_start_count = 5;
 
 			} else {
-				if(ENABLE_AIR_START == 1 && (ground_start_avg / 5) < SPEEDFILT){
-					startup_ground();
-#if LITE == DISABLED
-					if (g.log_bitmask & MASK_LOG_CMD)
-						Log_Write_Startup(TYPE_GROUNDSTART_MSG);
-#endif
-					init_home();
-				} else if (ENABLE_AIR_START == 0) {
-					init_home();
-				}
-//#if LITE == DISABLED
+                init_home();
 				if (g.compass_enabled) {
 					// Set compass declination automatically
 					compass.set_initial_location(g_gps->latitude, g_gps->longitude);
 				}
-//#endif
 				ground_start_count = 0;
 			}
 		}
@@ -1090,31 +999,17 @@ static void update_GPS(void)
 
 		current_loc.lng = g_gps->longitude;    // Lon * 10**7
 		current_loc.lat = g_gps->latitude;     // Lat * 10**7
-                current_loc.alt = max((g_gps->altitude - home.alt),0);
-                ground_speed   = g_gps->ground_speed;
-#if LITE == DISABLED                
-                if (g.compass_enabled) {
-                  hdg=(ahrs.yaw_sensor / 100) % 360;
-                  ground_course = hdg * 100;
-                  ground_course = ahrs.yaw_sensor;
-                } else {
-#endif                
-    ground_course = ToDeg(ahrs.yaw) * 100;
-#if LITE == DISABLED                  
-                }
-#endif
-        // see if we've breached the geo-fence
-        geofence_check(false);
+        current_loc.alt = max((g_gps->altitude - home.alt),0);
+        ground_speed   = g_gps->ground_speed;
 	}
 }
 
 static void update_current_flight_mode(void)
-{ int AOAstart;
+{ 
 	if(control_mode == AUTO){
 
 		switch(nav_command_ID){
 			case MAV_CMD_NAV_TAKEOFF:
-			case MAV_CMD_NAV_LAND:
 				break;
 			default:
 				hold_course = -1;

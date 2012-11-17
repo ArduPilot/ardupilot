@@ -30,24 +30,11 @@ const AP_Param::Info var_info[] PROGMEM = {
 	GSCALAR(crosstrack_entry_angle, "XTRK_ANGLE_CD",    XTRACK_ENTRY_ANGLE_CENTIDEGREE),
 
 	GSCALAR(altitude_mix,           "ALT_MIX",          ALTITUDE_MIX),
-	GSCALAR(airspeed_ratio,         "ARSPD_RATIO",      AIRSPEED_RATIO),
-	GSCALAR(airspeed_offset,        "ARSPD_OFFSET",     0),
 
 	GSCALAR(command_total,          "CMD_TOTAL",        0),
 	GSCALAR(command_index,          "CMD_INDEX",        0),
 	GSCALAR(waypoint_radius,        "WP_RADIUS",        WP_RADIUS_DEFAULT),
 	GSCALAR(loiter_radius,          "WP_LOITER_RAD",    LOITER_RADIUS_DEFAULT),
-
-#if GEOFENCE_ENABLED == ENABLED
-	GSCALAR(fence_action,           "FENCE_ACTION",     0),
-	GSCALAR(fence_total,            "FENCE_TOTAL",      0),
-	GSCALAR(fence_channel,          "FENCE_CHANNEL",    0),
-	GSCALAR(fence_minalt,           "FENCE_MINALT",     0),
-	GSCALAR(fence_maxalt,           "FENCE_MAXALT",     0),
-#endif
-
-	GSCALAR(flybywire_airspeed_min, "ARSPD_FBW_MIN",    AIRSPEED_FBW_MIN),
-	GSCALAR(flybywire_airspeed_max, "ARSPD_FBW_MAX",    AIRSPEED_FBW_MAX),
 
 	GSCALAR(throttle_min,           "THR_MIN",          THROTTLE_MIN),
 	GSCALAR(throttle_max,           "THR_MAX",          THROTTLE_MAX),
@@ -86,12 +73,6 @@ const AP_Param::Info var_info[] PROGMEM = {
 	GSCALAR(min_gndspeed,           "MIN_GNDSPD_CM",    MIN_GNDSPEED_CM),
 	GSCALAR(ch7_option,             "CH7_OPT",          CH7_OPTION),
 
-	GSCALAR(pitch_trim,             "TRIM_PITCH_CD",    0),
-	GSCALAR(RTL_altitude,           "ALT_HOLD_RTL",     ALT_HOLD_HOME_CM),
-	GSCALAR(FBWB_min_altitude,      "ALT_HOLD_FBWCM",   ALT_HOLD_FBW_CM),
-
-	GSCALAR(ground_temperature,     "GND_TEMP",         0),
-	GSCALAR(ground_pressure,        "GND_ABS_PRESS",    0),
 	GSCALAR(compass_enabled,        "MAG_ENABLE",       MAGNETOMETER),
 	GSCALAR(flap_1_percent,         "FLAP_1_PERCNT",    FLAP_1_PERCENT),
 	GSCALAR(flap_1_speed,           "FLAP_1_SPEED",     FLAP_2_SPEED),
@@ -116,7 +97,6 @@ const AP_Param::Info var_info[] PROGMEM = {
 	GSCALAR(sonar_type,	        "SONAR_TYPE",           AP_RANGEFINDER_MAXSONARXL),
 #endif	
 #endif
-	GSCALAR(airspeed_enabled,       "ARSPD_ENABLE",     AIRSPEED_SENSOR),
 
  // ************************************************************
         // APMrover parameters - JLN update
@@ -156,6 +136,10 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @Path: ../libraries/AP_InertialSensor/AP_InertialSensor.cpp
     GOBJECT(ins,                            "INS_", AP_InertialSensor),
 #endif
+
+    // @Group: AHRS_
+    // @Path: ../libraries/AP_AHRS/AP_AHRS.cpp
+    GOBJECT(ahrs,                   "AHRS_",    AP_AHRS),
 
 	AP_VAREND
 };

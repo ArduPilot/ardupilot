@@ -2,8 +2,6 @@
 
 /* Functions in this file:
 	void init_commands()
-	void update_auto()
-	void reload_commands()
 	struct Location get_cmd_with_index(int i)
 	void set_cmd_with_index(struct Location temp, int i)
 	void increment_cmd_index()
@@ -22,34 +20,6 @@ static void init_commands()
 	nav_command_ID	= NO_COMMAND;
 	non_nav_command_ID	= NO_COMMAND;
 	next_nav_command.id 	= CMD_BLANK;
-}
-
-static void update_auto()
-{
-	if (g.command_index >= g.command_total) {
-		handle_no_commands();
-		if(g.command_total == 0) {
-			next_WP.lat 		= home.lat + 1000;	// so we don't have bad calcs
-			next_WP.lng 		= home.lng + 1000;	// so we don't have bad calcs
-		}
-	} else {
-    	if(g.command_index != 0) {
-    		g.command_index = nav_command_index;
-    		nav_command_index--;
-    	}
-		nav_command_ID	= NO_COMMAND;
-		non_nav_command_ID	= NO_COMMAND;
-		next_nav_command.id 	= CMD_BLANK;
-		process_next_command();
-	}
-}
-
-// Reload all the wp
-static void reload_commands()
-{
-	init_commands();
-	g.command_index.load();        // XXX can we assume it's been loaded already by ::load_all?
-	decrement_cmd_index();
 }
 
 // Getters
@@ -98,7 +68,7 @@ static struct Location get_cmd_with_index(int i)
 static void set_cmd_with_index(struct Location temp, int i)
 {
 	i = constrain(i, 0, g.command_total.get());
-	uint32_t mem = WP_START_BYTE + (i * WP_SIZE);
+	intptr_t mem = WP_START_BYTE + (i * WP_SIZE);
 
 	// Set altitude options bitmask
 	// XXX What is this trying to do?
@@ -126,29 +96,6 @@ static void set_cmd_with_index(struct Location temp, int i)
 	eeprom_write_dword((uint32_t *)	mem, temp.lng);
 }
 
-static void increment_cmd_index()
-{
-    if (g.command_index <= g.command_total) {
-      g.command_index.set_and_save(g.command_index + 1);
-   }
-}
-
-static void decrement_cmd_index()
-{
-    if (g.command_index > 0) {
-        g.command_index.set_and_save(g.command_index - 1);
-    }
-}
-
-static long read_alt_to_hold()
-{
-	if(g.RTL_altitude < 0)
-		return current_loc.alt;
-	else
-		return g.RTL_altitude + home.alt;
-}
-
-
 /*
 This function stores waypoint commands
 It looks to see what the next command type is and finds the last command.
@@ -162,15 +109,6 @@ static void set_next_WP(struct Location *wp)
 	// Load the next_WP slot
 	// ---------------------
 	next_WP = *wp;
-
-	// used to control FBW and limit the rate of climb
-	// -----------------------------------------------
-	target_altitude = current_loc.alt;
-
-	if(prev_WP.id != MAV_CMD_NAV_TAKEOFF && prev_WP.alt != home.alt && (next_WP.id == MAV_CMD_NAV_WAYPOINT || next_WP.id == MAV_CMD_NAV_LAND))
-		offset_altitude = next_WP.alt - prev_WP.alt;
-	else
-		offset_altitude = 0;
 
 	// zero out our loiter vals to watch for missed waypoints
 	loiter_delta 		= 0;
@@ -205,11 +143,6 @@ static void set_guided_WP(void)
 	// Load the next_WP slot
 	// ---------------------
 	next_WP = guided_WP;
-
-	// used to control FBW and limit the rate of climb
-	// -----------------------------------------------
-	target_altitude = current_loc.alt;
-	offset_altitude = next_WP.alt - prev_WP.alt;
 
 	// this is used to offset the shrinking longitude as we go towards the poles
 	float rads 		= (abs(next_WP.lat)/t7) * 0.0174532925;
@@ -279,8 +212,6 @@ void init_home()
 	// Load home for a default guided_WP
 	// -------------
 	guided_WP = home;
-	guided_WP.alt += g.RTL_altitude;
-
 }
 
 static void restart_nav()
