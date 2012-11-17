@@ -129,6 +129,9 @@ static void init_ardupilot()
 
     timer_scheduler.init( & isr_registry );
 
+    // initialise the analog port reader
+    AP_AnalogSource_Arduino::init_timer(&timer_scheduler);
+
 	//
 	// Check the EEPROM format version before loading any parameters from EEPROM.
 	//

@@ -20,10 +20,6 @@
 
 #define TRACE               DISABLED
 
-// sonar is currently broken - it causes an APM1 to crash
-// after a few seconds
-#define CONFIG_SONAR DISABLED
-
 //#define LOGGING_ENABLED DISABLED
 
 //#include "APM_Config_HILmode.h"  // for test in HIL mode with AeroSIM Rc 3.83
