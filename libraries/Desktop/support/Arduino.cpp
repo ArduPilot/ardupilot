@@ -11,6 +11,7 @@
 extern "C" {
 
 volatile uint8_t __iomem[1024];
+volatile uint8_t SREG = 0x80;
 
 unsigned __brkval = 0x2000;
 unsigned __bss_end = 0x1000;
@@ -18,19 +19,13 @@ unsigned __bss_end = 0x1000;
 // disable interrupts
 void cli(void)
 {
-	sigset_t set;
-        sigemptyset(&set);
-        sigaddset(&set, SIGALRM);
-        sigprocmask(SIG_BLOCK,&set,NULL);
+	SREG &= ~0x80;
 }
 
 // enable interrupts
 void sei(void)
 {
-	sigset_t set;
-        sigemptyset(&set);
-        sigaddset(&set, SIGALRM);
-        sigprocmask(SIG_UNBLOCK,&set,NULL);
+	SREG |= 0x80;
 }
 
 void pinMode(uint8_t pin, uint8_t mode)
