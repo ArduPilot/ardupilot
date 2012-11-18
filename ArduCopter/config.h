@@ -83,6 +83,10 @@
  # define TOY_MIXER      TOY_LINEAR_MIXER
 #endif
 
+// optical flow doesn't work in SITL yet
+#ifdef DESKTOP_BUILD
+# define OPTFLOW DISABLED
+#endif
 
 
 //////////////////////////////////////////////////////////////////////////////
