@@ -182,7 +182,6 @@ byte
 AP_OpticalFlow_ADNS3080::read_register(byte address)
 {
     uint8_t result = 0;
-    uint8_t junk = 0;
 
     // get spi semaphore if required
     if( _spi_semaphore != NULL ) {
@@ -198,11 +197,11 @@ AP_OpticalFlow_ADNS3080::read_register(byte address)
     digitalWrite(_cs_pin, LOW);
 
     if( _spi_bus == ADNS3080_SPIBUS_1 ) {
-        junk = SPI.transfer(address);   // send the device the register you want to read:
+        SPI.transfer(address);   // send the device the register you want to read:
         delayMicroseconds(50);          // small delay
         result = SPI.transfer(0x00);    // send a value of 0 to read the first byte returned:
     }else if( _spi_bus == ADNS3080_SPIBUS_3 ) {
-        junk = SPI3.transfer(address);   // send the device the register you want to read:
+        SPI3.transfer(address);   // send the device the register you want to read:
         delayMicroseconds(50);          // small delay
         result = SPI3.transfer(0x00);    // send a value of 0 to read the first byte returned:
     }
@@ -224,8 +223,6 @@ AP_OpticalFlow_ADNS3080::read_register(byte address)
 void
 AP_OpticalFlow_ADNS3080::write_register(byte address, byte value)
 {
-    byte junk = 0;
-
     // get spi semaphore if required
     if( _spi_semaphore != NULL ) {
         // if failed to get semaphore then just quietly fail
@@ -240,13 +237,13 @@ AP_OpticalFlow_ADNS3080::write_register(byte address, byte value)
     digitalWrite(_cs_pin, LOW);
 
     if( _spi_bus == ADNS3080_SPIBUS_1 ) {
-        junk = SPI.transfer(address | 0x80 );   // send register address
+        SPI.transfer(address | 0x80 );   // send register address
         delayMicroseconds(50);                  // small delay
-        junk = SPI.transfer(value);             // send data
+        SPI.transfer(value);             // send data
     }else if( _spi_bus == ADNS3080_SPIBUS_3 ) {
-        junk = SPI3.transfer(address | 0x80 );   // send register address
+        SPI3.transfer(address | 0x80 );   // send register address
         delayMicroseconds(50);                  // small delay
-        junk = SPI3.transfer(value);             // send data
+        SPI3.transfer(value);             // send data
     }
 
     // take the chip select high to de-select:
