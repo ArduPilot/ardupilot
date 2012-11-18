@@ -254,31 +254,40 @@ static void calc_turn_radius(void)    // JLN update - adjut automaticaly the wp_
 
 static bool verify_nav_wp()
 {
-	hold_course = -1;
-	update_crosstrack();
+    hold_course = -1;
+    update_crosstrack();
 
-        if(g.auto_wp_radius) 
-        { 
-            calc_turn_radius();  // JLN update - auto-adap the wp_radius Vs the gspeed and max roll angle
+    if ((wp_distance > 0) && (wp_distance <= g.waypoint_radius)) {
+        gcs_send_text_fmt(PSTR("Reached Waypoint #%i dist %um"),
+                          (unsigned)nav_command_index,
+                          (unsigned)get_distance(&current_loc, &next_WP));
+        return true;
+    }
 
-          if ((wp_distance > 0) && (wp_distance <= wp_radius)) {
-		gcs_send_text_fmt(PSTR("Reached Waypoint #%i"),nav_command_index);
-		return true;
-	  }
-        } else {
-	  if ((wp_distance > 0) && (wp_distance <= g.waypoint_radius)) {
-		gcs_send_text_fmt(PSTR("Reached Waypoint #%i"),nav_command_index);
-		return true;
-	  }
+    if(g.auto_wp_radius) { 
+        calc_turn_radius();  // JLN update - auto-adap the wp_radius Vs the gspeed and max roll angle
+
+        if ((wp_distance > 0) && (wp_distance <= wp_radius)) {
+            gcs_send_text_fmt(PSTR("Reached Waypoint #%i"),nav_command_index);
+            return true;
         }
-       
-	// add in a more complex case
-	// Doug to do
-	if(loiter_sum > 300){
-		gcs_send_text_P(SEVERITY_MEDIUM,PSTR("Missed WP"));
-		return true;
-	}
-	return false;
+    }
+
+    // have we circled around the waypoint?
+    if (loiter_sum > 300) {
+        gcs_send_text_P(SEVERITY_MEDIUM,PSTR("Missed WP"));
+        return true;
+    }
+
+    // have we flown past the waypoint?
+    if (location_passed_point(current_loc, prev_WP, next_WP)) {
+        gcs_send_text_fmt(PSTR("Passed Waypoint #%i dist %um"),
+                          (unsigned)nav_command_index,
+                          (unsigned)get_distance(&current_loc, &next_WP));
+        return true;
+    }
+
+    return false;
 }
 
 static bool verify_loiter_unlim()

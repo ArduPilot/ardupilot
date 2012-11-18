@@ -419,11 +419,7 @@ static bool GPS_light;
 // This approximation makes calculations integer and it's easy to read
 static const 	float t7			= 10000000.0;	
 // We use atan2 and other trig techniques to calaculate angles
-// We need to scale the longitude up to make these calcs work
-// to account for decreasing distance between lines of longitude away from the equator
-static float 	scaleLongUp			= 1;			
-// Sometimes we need to remove the scaling for distance calcs
-static float 	scaleLongDown 		= 1;		
+
 // A counter used to count down valid gps fixes to allow the gps estimate to settle
 // before recording our home position (and executing a ground start if we booted with an air start)
 static byte 	ground_start_count	= 5;

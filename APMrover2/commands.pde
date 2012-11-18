@@ -110,15 +110,21 @@ static void set_next_WP(struct Location *wp)
 	// ---------------------
 	next_WP = *wp;
 
+    // are we already past the waypoint? This happens when we jump
+    // waypoints, and it can cause us to skip a waypoint. If we are
+    // past the waypoint when we start on a leg, then use the current
+    // location as the previous waypoint, to prevent immediately
+    // considering the waypoint complete
+    if (location_passed_point(current_loc, prev_WP, next_WP)) {
+        gcs_send_text_P(SEVERITY_LOW, PSTR("Resetting prev_WP"));
+        prev_WP = current_loc;
+    }
+
 	// zero out our loiter vals to watch for missed waypoints
 	loiter_delta 		= 0;
 	loiter_sum 			= 0;
 	loiter_total 		= 0;
 
-	// this is used to offset the shrinking longitude as we go towards the poles
-	float rads 			= (fabs((float)next_WP.lat)/t7) * 0.0174532925;
-	scaleLongDown 		= cos(rads);
-	scaleLongUp 		= 1.0f/cos(rads);	
 	// this is handy for the groundstation
 	wp_totalDistance 	= get_distance(&current_loc, &next_WP);
 	wp_distance 		= wp_totalDistance;
@@ -143,11 +149,6 @@ static void set_guided_WP(void)
 	// Load the next_WP slot
 	// ---------------------
 	next_WP = guided_WP;
-
-	// this is used to offset the shrinking longitude as we go towards the poles
-	float rads 		= (abs(next_WP.lat)/t7) * 0.0174532925;
-	scaleLongDown 		= cos(rads);
-	scaleLongUp 		= 1.0f/cos(rads);
 
 	// this is handy for the groundstation
 	wp_totalDistance 	= get_distance(&current_loc, &next_WP);
