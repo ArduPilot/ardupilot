@@ -715,7 +715,7 @@ static void clear_offsets()
 static int8_t
 setup_optflow(uint8_t argc, const Menu::arg *argv)
 {
- #ifdef OPTFLOW_ENABLED
+ #if OPTFLOW == ENABLED
     if (!strcmp_P(argv[1].str, PSTR("on"))) {
         g.optflow_enabled = true;
         init_optflow();
@@ -731,7 +731,7 @@ setup_optflow(uint8_t argc, const Menu::arg *argv)
 
     g.optflow_enabled.save();
     report_optflow();
- #endif
+ #endif     // OPTFLOW == ENABLED
     return 0;
 }
 
@@ -857,7 +857,7 @@ static void report_flight_modes()
 
 void report_optflow()
 {
- #ifdef OPTFLOW_ENABLED
+ #if OPTFLOW == ENABLED
     Serial.printf_P(PSTR("OptFlow\n"));
     print_divider();
 
@@ -868,7 +868,7 @@ void report_optflow()
     //						degrees(g.optflow_fov));
 
     print_blanks(2);
- #endif
+ #endif     // OPTFLOW == ENABLED
 }
 
  #if FRAME_CONFIG == HELI_FRAME

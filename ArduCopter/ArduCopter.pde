@@ -108,6 +108,7 @@
 #include <AP_Airspeed.h>        // needed for AHRS build
 #include <AP_InertialNav.h>     // ArduPilot Mega inertial navigation library
 #include <ThirdOrderCompFilter.h>   // Complementary filter for combining barometer altitude with accelerometers
+#include <DigitalWriteFast.h>   // faster digital write for LEDs
 #include <memcheck.h>
 
 // Configuration
@@ -230,7 +231,7 @@ AP_Baro_MS5611 barometer;
 AP_Compass_HMC5843 compass;
  #endif
 
- #ifdef OPTFLOW_ENABLED
+ #if OPTFLOW == ENABLED
   #if CONFIG_APM_HARDWARE == APM_HARDWARE_APM2
 AP_OpticalFlow_ADNS3080 optflow(OPTFLOW_CS_PIN);
   #else
@@ -307,17 +308,18 @@ AP_GPS_HIL              g_gps_driver(NULL);
 AP_Compass_HIL          compass;                  // never used
 AP_Baro_BMP085_HIL      barometer;
 
-#ifdef OPTFLOW_ENABLED
-#if CONFIG_APM_HARDWARE == APM_HARDWARE_APM2
+ #if OPTFLOW == ENABLED
+  #if CONFIG_APM_HARDWARE == APM_HARDWARE_APM2
 AP_OpticalFlow_ADNS3080 optflow(OPTFLOW_CS_PIN);
-#else
+  #else
 AP_OpticalFlow_ADNS3080 optflow(OPTFLOW_CS_PIN);
-#endif
-#endif
+  #endif    // CONFIG_APM_HARDWARE == APM_HARDWARE_APM2
+ #endif     // OPTFLOW == ENABLED
+
  #ifdef DESKTOP_BUILD
   #include <SITL.h>
 SITL sitl;
- #endif
+ #endif     // DESKTOP_BUILD
 static int32_t gps_base_alt;
 #else
  #error Unrecognised HIL_MODE setting.
@@ -942,7 +944,9 @@ void loop()
         Log_Write_Data(DATA_FAST_LOOP, (int32_t)(timer - fast_loopTimer));
         #endif
 
-        //PORTK |= B00010000;
+        // check loop time
+        perf_info_check_loop_time(timer - fast_loopTimer);
+
         G_Dt                            = (float)(timer - fast_loopTimer) / 1000000.f;                  // used by PI Loops
         fast_loopTimer          = timer;
 
@@ -964,9 +968,6 @@ void loop()
 
             // store the micros for the 50 hz timer
             fiftyhz_loopTimer               = timer;
-
-            // port manipulation for external timing of main loops
-            //PORTK |= B01000000;
 
             // check for new GPS messages
             // --------------------------
@@ -991,14 +992,13 @@ void loop()
                 counter_one_herz = 0;
             }
             perf_mon_counter++;
-            if (perf_mon_counter > 600 ) {
+            if (perf_mon_counter >= 500 ) {     // 500 iterations at 50hz = 10 seconds
                 if (g.log_bitmask & MASK_LOG_PM)
                     Log_Write_Performance();
-
+                perf_info_reset();
                 gps_fix_count           = 0;
                 perf_mon_counter        = 0;
             }
-            //PORTK &= B10111111;
         }
     } else {
 #ifdef DESKTOP_BUILD
@@ -1017,12 +1017,7 @@ void loop()
         }
     }
 
-    // port manipulation for external timing of main loops
-    //PORTK &= B11101111;
-
 }
-//  PORTK |= B01000000;
-//	PORTK &= B10111111;
 
 // Main loop - 100hz
 static void fast_loop()
@@ -1052,11 +1047,11 @@ static void fast_loop()
 
     // optical flow
     // --------------------
-#ifdef OPTFLOW_ENABLED
+#if OPTFLOW == ENABLED
     if(g.optflow_enabled) {
         update_optical_flow();
     }
-#endif
+#endif  // OPTFLOW == ENABLED
 
     // Read radio and 3-position switch on radio
     // -----------------------------------------
@@ -1397,7 +1392,7 @@ static void super_slow_loop()
 }
 
 // called at 100hz but data from sensor only arrives at 20 Hz
-#ifdef OPTFLOW_ENABLED
+#if OPTFLOW == ENABLED
 static void update_optical_flow(void)
 {
     static uint32_t last_of_update = 0;
@@ -1418,7 +1413,7 @@ static void update_optical_flow(void)
         }
     }
 }
-#endif
+#endif  // OPTFLOW == ENABLED
 
 // called at 50hz
 static void update_GPS(void)
