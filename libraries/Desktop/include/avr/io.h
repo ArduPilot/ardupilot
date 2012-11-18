@@ -15,6 +15,10 @@ extern "C" volatile uint8_t __iomem[1024];
 
 #define _SFR_IO8(addr)  __iomem[addr]
 
+extern "C" volatile uint8_t SREG;
+
+#define _interrupts_are_blocked() ((SREG&0x80)==0)
+
 #define __ATmegaxx0__
 #include "iom2560.h"
 

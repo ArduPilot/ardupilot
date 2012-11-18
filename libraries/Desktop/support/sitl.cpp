@@ -228,12 +228,10 @@ static void sitl_simulator_output(void)
 static void timer_handler(int signum)
 {
 	static uint32_t last_update_count;
-	static bool running;
 
-	if (running) {
+	if (_interrupts_are_blocked()) {
 		return;
 	}
-	running = true;
 	cli();
 
 #ifndef __CYGWIN__
@@ -271,13 +269,11 @@ static void timer_handler(int signum)
 	if (update_count == 0) {
 		sitl_update_gps(0, 0, 0, 0, 0, false);
 		sei();
-		running = false;
 		return;
 	}
 
 	if (update_count == last_update_count) {
 		sei();
-		running = false;
 		return;
 	}
 	last_update_count = update_count;
@@ -297,7 +293,6 @@ static void timer_handler(int signum)
 	ADCSRA &= ~_BV(ADSC);
 
 	sei();
-	running = false;
 }
 
 
