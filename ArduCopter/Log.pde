@@ -508,7 +508,7 @@ static void Log_Read_Motors()
 // Write an optical flow packet. Total length : 30 bytes
 static void Log_Write_Optflow()
 {
- #ifdef OPTFLOW_ENABLED
+ #if OPTFLOW == ENABLED
     DataFlash.WriteByte(HEAD_BYTE1);
     DataFlash.WriteByte(HEAD_BYTE2);
     DataFlash.WriteByte(LOG_OPTFLOW_MSG);
@@ -522,13 +522,12 @@ static void Log_Write_Optflow()
     DataFlash.WriteLong(of_roll);
     DataFlash.WriteLong(of_pitch);
     DataFlash.WriteByte(END_BYTE);
- #endif
+ #endif     // OPTFLOW == ENABLED
 }
 
 // Read an optical flow packet.
 static void Log_Read_Optflow()
 {
- #ifdef OPTFLOW_ENABLED
     int16_t temp1   = DataFlash.ReadInt();                      // 1
     int16_t temp2   = DataFlash.ReadInt();                      // 2
     int16_t temp3   = DataFlash.ReadInt();                      // 3
@@ -549,7 +548,6 @@ static void Log_Read_Optflow()
                     temp7,
                     (long)temp8,
                     (long)temp9);
- #endif
 }
 
 // Write an Nav Tuning packet. Total length : 24 bytes
@@ -673,10 +671,13 @@ static void Log_Write_Performance()
     DataFlash.WriteByte(HEAD_BYTE1);
     DataFlash.WriteByte(HEAD_BYTE2);
     DataFlash.WriteByte(LOG_PERFORMANCE_MSG);
-    DataFlash.WriteByte(0);                             //1 - was adc_constraints
+    DataFlash.WriteByte(0);                             //1
     DataFlash.WriteByte(ahrs.renorm_range_count);       //2
     DataFlash.WriteByte(ahrs.renorm_blowup_count);      //3
     DataFlash.WriteByte(gps_fix_count);                 //4
+    DataFlash.WriteInt(perf_info_get_num_long_running());   //5  - number of long running loops
+    DataFlash.WriteLong(perf_info_get_num_loops());         //6  - total number of loops
+    DataFlash.WriteLong(perf_info_get_max_time());          //7  - time of longest running loop
     DataFlash.WriteByte(END_BYTE);
 }
 
@@ -687,13 +688,19 @@ static void Log_Read_Performance()
     int8_t temp2    = DataFlash.ReadByte();
     int8_t temp3    = DataFlash.ReadByte();
     int8_t temp4    = DataFlash.ReadByte();
+    uint16_t temp5  = DataFlash.ReadInt();
+    uint32_t temp6   = DataFlash.ReadLong();
+    uint32_t temp7  = DataFlash.ReadLong();
 
-    //1   2   3   4
-    Serial.printf_P(PSTR("PM, %d, %d, %d, %d\n"),
+    //                         1   2   3   4   5    6    7
+    Serial.printf_P(PSTR("PM, %d, %d, %d, %d, %u, %lu, %lu\n"),
                     (int)temp1,
                     (int)temp2,
                     (int)temp3,
-                    (int)temp4);
+                    (int)temp4,
+                    temp5,
+                    temp6,
+                    temp7);
 }
 
 // Write a command processing packet.  Total length : 21 bytes

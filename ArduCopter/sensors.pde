@@ -50,7 +50,7 @@ static void init_compass()
 
 static void init_optflow()
 {
-#ifdef OPTFLOW_ENABLED
+#if OPTFLOW == ENABLED
     if( optflow.init(false, &timer_scheduler, &spi_semaphore, &spi3_semaphore) == false ) {
         g.optflow_enabled = false;
         Serial.print_P(PSTR("\nFailed to Init OptFlow "));
@@ -65,7 +65,7 @@ static void init_optflow()
 
     // resume timer
     timer_scheduler.resume_timer();
-#endif
+#endif      // OPTFLOW == ENABLED
 }
 
 // read_battery - check battery voltage and current and invoke failsafe if necessary
