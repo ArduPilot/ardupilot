@@ -118,7 +118,7 @@
 
 
 #define __atomicWrite__(A,P,V) \
-if ( (int)(A) < 0x40) { bitWrite(*(A), __digitalPinToBit(P), (V) );}  \
+if ( (intptr_t)(A) < 0x40) { bitWrite(*(A), __digitalPinToBit(P), (V) );}  \
 else {                                                         \
 uint8_t register saveSreg = SREG;                          \
 cli();                                                     \
@@ -152,7 +152,7 @@ else pinMode((P), (V)); \
 
 
 #ifndef digitalReadFast
-	#define digitalReadFast(P) ( (int) _digitalReadFast_((P)) )
+	#define digitalReadFast(P) ( (intptr_t) _digitalReadFast_((P)) )
 	#define _digitalReadFast_(P ) \
 	(__builtin_constant_p(P) ) ? ( \
 	( BIT_READ(*digitalPinToPINReg(P), __digitalPinToBit(P))) ) : \
