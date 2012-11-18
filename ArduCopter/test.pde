@@ -104,7 +104,7 @@ test_mode(uint8_t argc, const Menu::arg *argv)
 static int8_t
 test_eedump(uint8_t argc, const Menu::arg *argv)
 {
-    int i, j;
+    uintptr_t i, j;
 
     // hexdump the EEPROM
     for (i = 0; i < EEPROM_MAX_ADDR; i += 16) {
