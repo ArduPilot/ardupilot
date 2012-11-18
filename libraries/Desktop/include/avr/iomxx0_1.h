@@ -48,7 +48,7 @@
 #  error "Attempt to include more than one <avr/ioXXX.h> file."
 #endif 
 
-#if defined(__AVR_ATmega640__) || defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__)
+#if defined(__AVR_ATmega640__) || defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__) || defined(DESKTOP_BUILD)
 # define __ATmegaxx0__
 #elif defined(__AVR_ATmega1281__) || defined(__AVR_ATmega2561__)
 # define __ATmegaxx1__

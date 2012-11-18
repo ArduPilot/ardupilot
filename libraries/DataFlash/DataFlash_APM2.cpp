@@ -58,7 +58,7 @@ extern "C" {
  #  //*/
 
 // DataFlash is connected to Serial Port 3 (we will use SPI mode)
-#if defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__)
+#if defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__) || defined(DESKTOP_BUILD)
  #define DF_DATAOUT 14               // MOSI
  #define DF_DATAIN  15               // MISO
  #define DF_SPICLOCK  PJ2            // SCK

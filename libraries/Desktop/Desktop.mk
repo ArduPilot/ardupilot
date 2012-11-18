@@ -121,7 +121,7 @@ OPTFLAGS		=	-g -Wformat -Wall -Wshadow -Wpointer-arith -Wcast-align -Wwrite-stri
 DEPFLAGS		=	-MD -MT $@
 
 # XXX warning options TBD
-CXXOPTS			= 	-fno-exceptions -D__AVR_ATmega2560__ -I$(SKETCHBOOK)/libraries/Desktop/include -DDESKTOP_BUILD=1
+CXXOPTS			= 	-fno-exceptions -I$(SKETCHBOOK)/libraries/Desktop/include -DDESKTOP_BUILD=1
 COPTS			=	-I$(SKETCHBOOK)/libraries/Desktop/include -DDESKTOP_BUILD=1
 ASOPTS			=	-assembler-with-cpp
 
