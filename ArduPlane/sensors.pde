@@ -1,15 +1,19 @@
 // -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 
+// filter altitude from the barometer with a low pass filter
+static LowPassFilterInt32 altitude_filter;
+
+
 static void init_barometer(void)
 {
     barometer.calibrate(mavlink_delay);
+
+    // filter at 100ms sampling, with 0.7Hz cutoff frequency
+    altitude_filter.set_cutoff_frequency(0.1, 0.7);
+
     ahrs.set_barometer(&barometer);
     gcs_send_text_P(SEVERITY_LOW, PSTR("barometer calibration complete"));
 }
-
-// filter altitude from the barometer with a 0.3 low pass
-// filter
-static LowPassFilterInt32 altitude_filter(0.3);
 
 // read the barometer and return the updated altitude in centimeters
 // above the calibration altitude
