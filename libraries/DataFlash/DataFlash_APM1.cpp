@@ -64,7 +64,7 @@ extern "C" {
 #define DF_LAST_PAGE 4096
 
 // arduino mega SPI pins
-#if defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__)
+#if defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__) || defined(DESKTOP_BUILD)
  #define DF_DATAOUT 51              // MOSI
  #define DF_DATAIN  50              // MISO
  #define DF_SPICLOCK  52            // SCK
@@ -145,7 +145,7 @@ void DataFlash_APM1::Init(void)
     pinMode(DF_DATAIN, INPUT);
     pinMode(DF_SPICLOCK,OUTPUT);
     pinMode(DF_SLAVESELECT,OUTPUT);
-#if defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__)
+#if defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__) || defined(DESKTOP_BUILD)
     pinMode(DF_RESET,OUTPUT);
     // Reset the chip
     digitalWrite(DF_RESET,LOW);

@@ -27,7 +27,7 @@
  #include "WProgram.h"
 #endif
 
-#if !defined(__AVR_ATmega1280__) && !defined(__AVR_ATmega2560__)
+#if !defined(__AVR_ATmega1280__) && !defined(__AVR_ATmega2560__) && !defined(DESKTOP_BUILD)
  # error Please check the Tools/Board menu to ensure you have selected Arduino Mega as your target.
 #else
 
