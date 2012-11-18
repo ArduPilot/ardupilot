@@ -144,7 +144,7 @@ AP_Int8 AP_Limit_Geofence::fence_total() {
 // save a fence point
 void AP_Limit_Geofence::set_fence_point_with_index(Vector2l &point, uint8_t i)
 {
-    uint32_t mem;
+    uintptr_t mem;
 
     if (i >= (unsigned)fence_total()) {
         // not allowed
@@ -165,7 +165,7 @@ void AP_Limit_Geofence::set_fence_point_with_index(Vector2l &point, uint8_t i)
  */
 Vector2l AP_Limit_Geofence::get_fence_point_with_index(uint8_t i)
 {
-    uint32_t mem;
+    uintptr_t mem;
     Vector2l ret;
 
     if (i > (unsigned) fence_total()) {
