@@ -455,7 +455,8 @@ static void NOINLINE send_wind(mavlink_channel_t chan)
     Vector3f wind = ahrs.wind_estimate();
     mavlink_msg_wind_send(
         chan,
-        degrees(atan2(wind.y, wind.x)),
+        degrees(atan2(-wind.y, -wind.x)), // use negative, to give
+                                          // direction wind is coming from
         sqrt(sq(wind.x)+sq(wind.y)),
         wind.z);
 }
