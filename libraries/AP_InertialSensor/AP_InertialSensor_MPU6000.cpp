@@ -165,7 +165,7 @@
 #define DEFAULT_ACCEL_FUSION_GAIN       0x80    // Default gain for accel fusion (with gyros)
 
 /*
- *  RS-MPU-6000A-00.pdf, page 33, section 4.25 lists LSB sensitivity of
+ *  RM-MPU-6000A-00.pdf, page 33, section 4.25 lists LSB sensitivity of
  *  gyro as 16.4 LSB/DPS at scale factor of +/- 2000dps (FS_SEL==3)
  */
 const float AP_InertialSensor_MPU6000::_gyro_scale = (0.0174532 / 16.4);
@@ -196,7 +196,7 @@ Quaternion AP_InertialSensor_MPU6000::quaternion;                       // holds
 AP_PeriodicProcess*  AP_InertialSensor_MPU6000::_scheduler = NULL;
 
 /*
- *  RS-MPU-6000A-00.pdf, page 31, section 4.23 lists LSB sensitivity of
+ *  RM-MPU-6000A-00.pdf, page 31, section 4.23 lists LSB sensitivity of
  *  accel as 4096 LSB/mg at scale factor of +/- 8g (AFS_SEL==2)
  *
  *  See note below about accel scaling of engineering sample MPU6k
