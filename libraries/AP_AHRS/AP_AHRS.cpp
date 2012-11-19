@@ -29,15 +29,15 @@ const AP_Param::GroupInfo AP_AHRS::var_info[] PROGMEM = {
 
     // @Param: YAW_P
     // @DisplayName: Yaw P
-    // @Description: This controls the weight the compass has on the overall heading
-    // @Range: 0 .4
+    // @Description: This controls the weight the compass or GPS has on the heading. A higher value means the heading will track the yaw source (GPS or compass) more rapidly.
+    // @Range: 0.1 0.4
     // @Increment: .01
     AP_GROUPINFO("YAW_P", 4,    AP_AHRS, _kp_yaw, 0.4),
 
     // @Param: RP_P
     // @DisplayName: AHRS RP_P
     // @Description: This controls how fast the accelerometers correct the attitude
-    // @Range: 0 .4
+    // @Range: 0.1 0.4
     // @Increment: .01
     AP_GROUPINFO("RP_P",  5,    AP_AHRS, _kp, 0.4),
 
