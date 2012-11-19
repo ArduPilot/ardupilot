@@ -289,8 +289,10 @@ def fly_ArduPlane(viewerip=None):
         print("Setting up RC parameters")
         setup_rc(mavproxy)
         print("Waiting for GPS fix")
-        mav.recv_match(condition='VFR_HUD.alt>0', blocking=True)
+        mav.recv_match(condition='VFR_HUD.alt>10', blocking=True)
         mav.wait_gps_fix()
+        while mav.location().alt < 10:
+            mav.wait_gps_fix()
         homeloc = mav.location()
         print("Home location: %s" % homeloc)
         if not takeoff(mavproxy, mav):
