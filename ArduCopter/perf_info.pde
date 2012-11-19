@@ -32,7 +32,7 @@ void perf_info_check_loop_time(uint32_t time_in_micros)
 }
 
 // perf_info_get_long_running_percentage - get number of long running loops as a percentage of the total number of loops
-uint32_t perf_info_get_num_loops()
+uint16_t perf_info_get_num_loops()
 {
     return perf_info_loop_count;
 }
@@ -44,7 +44,7 @@ uint32_t perf_info_get_max_time()
 }
 
 // perf_info_get_num_long_running - get number of long running loops
-uint32_t perf_info_get_num_long_running()
+uint16_t perf_info_get_num_long_running()
 {
     return perf_info_long_running;
 }
