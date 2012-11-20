@@ -22,13 +22,14 @@ AP_Semaphore::AP_Semaphore()
 bool AP_Semaphore::get(void* caller)
 {
     bool result = false;
+    uint8_t oldSREG = SREG;
     cli();
     if( !_taken ) {
         _taken = true;
         _owner = caller;
         result = true;
     }
-    sei();
+    SREG = oldSREG;
     return result;
 }
 
@@ -67,12 +68,13 @@ bool AP_Semaphore::release(void* caller)
 bool AP_Semaphore::call_on_release(void* caller, ap_semaphore_callback callback_fn)
 {
     bool result = false;
+    uint8_t oldSREG = SREG;
     cli();
     if( _waiting_owner == NULL ) {
         _waiting_owner = caller;
         _waiting_callback = callback_fn;
         result = true;
     }
-    sei();
+    SREG = oldSREG;
     return result;
 }
