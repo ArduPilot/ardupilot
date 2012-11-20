@@ -1,17 +1,9 @@
 /// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 
+#include <AP_HAL.h>
 #include "AP_Semaphore.h"
 
-extern "C" {
-#include <inttypes.h>
-#include <stdint.h>
-#include <avr/interrupt.h>
-}
-#if defined(ARDUINO) && ARDUINO >= 100
- #include "Arduino.h"
-#else
- #include "WConstants.h"
-#endif
+extern const AP_HAL::HAL& hal;
 
 // Constructor
 AP_Semaphore::AP_Semaphore()
@@ -22,14 +14,13 @@ AP_Semaphore::AP_Semaphore()
 bool AP_Semaphore::get(void* caller)
 {
     bool result = false;
-    uint8_t oldSREG = SREG;
-    cli();
+    hal.scheduler->begin_atomic();
     if( !_taken ) {
         _taken = true;
         _owner = caller;
         result = true;
     }
-    SREG = oldSREG;
+    hal.scheduler->end_atomic();
     return result;
 }
 
@@ -37,26 +28,25 @@ bool AP_Semaphore::get(void* caller)
 // returns true if successfully released
 bool AP_Semaphore::release(void* caller)
 {
-    ap_semaphore_callback callback_fn;
 
     // check legitimacy of release call
     if( caller != _owner ) {
         return false;
     }
 
-    // if another process is waiting immediately call it's call back function
-    if( _waiting_callback != NULL ) {
+    // if another process is waiting immediately call the provided kontinuation
+    if( _waiting_k != NULL ) {
 
         // give ownership to waiting process
         _owner = _waiting_owner;
-        callback_fn = _waiting_callback;
+        AP_HAL::Proc k = _waiting_k;
 
         // clear waiting process
-        _waiting_callback = NULL;
+        _waiting_k = NULL;
         _waiting_owner = NULL;
 
         // callback
-        callback_fn();
+        k();
     }
 
     // give up the semaphore
@@ -64,17 +54,17 @@ bool AP_Semaphore::release(void* caller)
     return true;
 }
 
-// call_on_release - returns true if caller successfully added to the queue to be called back
-bool AP_Semaphore::call_on_release(void* caller, ap_semaphore_callback callback_fn)
+// call_on_release - returns true if caller successfully added to the queue to
+// be called back
+bool AP_Semaphore::call_on_release(void* caller, AP_HAL::Proc k)
 {
     bool result = false;
-    uint8_t oldSREG = SREG;
-    cli();
+    hal.scheduler->begin_atomic();
     if( _waiting_owner == NULL ) {
         _waiting_owner = caller;
-        _waiting_callback = callback_fn;
+        _waiting_k = k;
         result = true;
     }
-    SREG = oldSREG;
+    hal.scheduler->end_atomic();
     return result;
 }
