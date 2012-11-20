@@ -22,6 +22,9 @@ public:
                         uint32_t period_us) = 0;
     virtual void     suspend_timer_procs() = 0;
     virtual void     resume_timer_procs() = 0;
+
+    virtual void     begin_atomic() = 0;
+    virtual void     end_atomic() = 0;
 };
 
 #endif // __AP_HAL_SCHEDULER_H__

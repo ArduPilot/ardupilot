@@ -25,6 +25,8 @@ public:
     void     register_timer_failsafe(AP_HAL::TimedProc, uint32_t period_us);
     void     suspend_timer_procs();
     void     resume_timer_procs();
+    void     begin_atomic();
+    void     end_atomic();
 
 private:
     /* Implementation specific methods: */

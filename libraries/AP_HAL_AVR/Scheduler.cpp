@@ -321,3 +321,11 @@ void ArduinoScheduler::_timer_event() {
 
     _in_timer_proc = false;
 }
+
+void ArduinoScheduler::begin_atomic() {
+    cli();
+}
+
+void ArduinoScheduler::end_atomic() {
+    sei();
+}
