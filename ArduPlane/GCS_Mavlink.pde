@@ -405,6 +405,8 @@ static void NOINLINE send_raw_imu2(mavlink_channel_t chan)
 static void NOINLINE send_raw_imu3(mavlink_channel_t chan)
 {
     Vector3f mag_offsets = compass.get_offsets();
+    Vector3f accel_offsets = ins.get_accel_offsets();
+    Vector3f gyro_offsets = ins.get_gyro_offsets();
 
     mavlink_msg_sensor_offsets_send(chan,
                                     mag_offsets.x,
@@ -413,8 +415,12 @@ static void NOINLINE send_raw_imu3(mavlink_channel_t chan)
                                     compass.get_declination(),
                                     barometer.get_raw_pressure(),
                                     barometer.get_raw_temp(),
-                                    ins.gx(), ins.gy(), ins.gz(),
-                                    ins.ax(), ins.ay(), ins.az());
+                                    gyro_offsets.x,
+                                    gyro_offsets.y,
+                                    gyro_offsets.z,
+                                    accel_offsets.x,
+                                    accel_offsets.y,
+                                    accel_offsets.z);
 }
 
 static void NOINLINE send_ahrs(mavlink_channel_t chan)
