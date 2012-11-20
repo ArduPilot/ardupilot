@@ -240,8 +240,6 @@ enum gcs_severity {
 
 #define MAX_WAYPOINTS  ((EEPROM_MAX_ADDR - WP_START_BYTE) / WP_SIZE) - 1 // - 1 to be safe
 
-#define ONBOARD_PARAM_NAME_LENGTH 15
-
 // convert a boolean (0 or 1) to a sign for multiplying (0 maps to 1, 1 maps to -1)
 #define BOOL_TO_SIGN(bvalue) ((bvalue)?-1:1)
 
