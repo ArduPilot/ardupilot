@@ -460,7 +460,7 @@ bool AP_Param::scan(const AP_Param::Param_header *target, uint16_t *pofs)
 void AP_Param::add_vector3f_suffix(char *buffer, size_t buffer_size, uint8_t idx)
 {
     uint8_t len = strnlen(buffer, buffer_size);
-    if ((size_t)(len+3) >= buffer_size) {
+    if ((size_t)(len+2) > buffer_size) {
         // the suffix doesn't fit
         return;
     }
@@ -472,7 +472,9 @@ void AP_Param::add_vector3f_suffix(char *buffer, size_t buffer_size, uint8_t idx
     } else if (idx == 2) {
         buffer[len+1] = 'Z';
     }
-    buffer[len+2] = 0;
+    if ((size_t)(len+2) < buffer_size) {
+        buffer[len+2] = 0;
+    }
 }
 
 // Copy the variable's whole name to the supplied buffer.
@@ -528,11 +530,12 @@ AP_Param::find_group(const char *name, uint8_t vindex, const struct GroupInfo *g
             return (AP_Param *)(p + PGM_POINTER(&group_info[i].offset));
         } else if (type == AP_PARAM_VECTOR3F) {
             // special case for finding Vector3f elements
-            uint8_t suffix_len = strlen_P(group_info[i].name);
+            uint8_t suffix_len = strnlen_P(group_info[i].name, AP_MAX_NAME_SIZE);
             if (strncmp_P(name, group_info[i].name, suffix_len) == 0 &&
                 name[suffix_len] == '_' &&
-                name[suffix_len+1] != 0 &&
-                name[suffix_len+2] == 0) {
+                (name[suffix_len+1] == 'X' ||
+                 name[suffix_len+1] == 'Y' ||
+                 name[suffix_len+1] == 'Z')) {
                 uintptr_t p = PGM_POINTER(&_var_info[vindex].ptr);
                 AP_Float *v = (AP_Float *)(p + PGM_POINTER(&group_info[i].offset));
                 *ptype = AP_PARAM_FLOAT;
