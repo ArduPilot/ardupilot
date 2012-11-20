@@ -189,8 +189,8 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @Param: THR_MIN
     // @DisplayName: Minimum Throttle
     // @Description: The minimum throttle which the autopilot will apply.
-    // @Units: Percent
-    // @Range: 0 100
+    // @Units: ms
+    // @Range: 0 1000
     // @Increment: 1
     // @User: Standard
     GSCALAR(throttle_min,   "THR_MIN",          MINIMUM_THROTTLE),
@@ -198,8 +198,8 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @Param: THR_MAX
     // @DisplayName: Maximum Throttle
     // @Description: The maximum throttle which the autopilot will apply.
-    // @Units: Percent
-    // @Range: 0 100
+    // @Units: ms
+    // @Range: 0 1000
     // @Increment: 1
     // @User: Standard
     GSCALAR(throttle_max,   "THR_MAX",          MAXIMUM_THROTTLE),
