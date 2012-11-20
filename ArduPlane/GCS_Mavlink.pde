@@ -1326,11 +1326,11 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
         } else {
             vp = AP_Param::find(packet.param_id, &p_type);
             if (vp == NULL) {
-                gcs_send_text_fmt(PSTR("Unknown parameter /%s"), packet.param_id);
+                gcs_send_text_fmt(PSTR("Unknown parameter %.16s"), packet.param_id);
                 break;
             }
         }
-        char param_name[ONBOARD_PARAM_NAME_LENGTH];
+        char param_name[AP_MAX_NAME_SIZE];
         vp->copy_name(param_name, sizeof(param_name), true);
 
         float value = vp->cast_to_float(p_type);
@@ -1680,9 +1680,9 @@ mission_failed:
 
         // set parameter
 
-        char key[ONBOARD_PARAM_NAME_LENGTH+1];
-        strncpy(key, (char *)packet.param_id, ONBOARD_PARAM_NAME_LENGTH);
-        key[ONBOARD_PARAM_NAME_LENGTH] = 0;
+        char key[AP_MAX_NAME_SIZE+1];
+        strncpy(key, (char *)packet.param_id, AP_MAX_NAME_SIZE);
+        key[AP_MAX_NAME_SIZE] = 0;
 
         // find the requested parameter
         vp = AP_Param::find(key, &var_type);
@@ -2021,7 +2021,7 @@ GCS_MAVLINK::queued_param_send()
         // if the parameter can be cast to float, report it here and break out of the loop
         value = vp->cast_to_float(_queued_parameter_type);
 
-        char param_name[ONBOARD_PARAM_NAME_LENGTH];
+        char param_name[AP_MAX_NAME_SIZE];
         vp->copy_name(param_name, sizeof(param_name), true);
 
         mavlink_msg_param_value_send(
