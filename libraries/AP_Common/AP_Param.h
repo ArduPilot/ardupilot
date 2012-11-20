@@ -19,7 +19,7 @@
 #include <avr/pgmspace.h>
 #include <avr/eeprom.h>
 
-#define AP_MAX_NAME_SIZE 15
+#define AP_MAX_NAME_SIZE 16
 #define AP_NESTED_GROUPS_ENABLED
 
 // a variant of offsetof() to work around C++ restrictions.
@@ -66,7 +66,7 @@ public:
     struct GroupInfo {
         uint8_t type; // AP_PARAM_*
         uint8_t idx;  // identifier within the group
-        const char name[AP_MAX_NAME_SIZE];
+        const char name[AP_MAX_NAME_SIZE+1];
         uintptr_t offset; // offset within the object
         union {
             const struct GroupInfo *group_info;
@@ -75,7 +75,7 @@ public:
     };
     struct Info {
         uint8_t type; // AP_PARAM_*
-        const char name[AP_MAX_NAME_SIZE];
+        const char name[AP_MAX_NAME_SIZE+1];
         uint8_t key; // k_param_*
         void *ptr;    // pointer to the variable in memory
         union {
