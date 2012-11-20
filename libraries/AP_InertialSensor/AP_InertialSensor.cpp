@@ -231,6 +231,7 @@ AP_InertialSensor::_init_accel(void (*delay_cb)(unsigned long t), void (*flash_l
 
 }
 
+#if !defined( __AVR_ATmega1280__ )
 // perform accelerometer calibration including providing user instructions and feedback
 bool AP_InertialSensor::calibrate_accel(void (*delay_cb)(unsigned long t), void (*flash_leds_cb)(bool on), void (*send_msg)(const prog_char_t *, ...))
 {
@@ -472,3 +473,6 @@ void AP_InertialSensor::_calibrate_find_delta(float dS[6], float JS[6][6], float
         delta[i] = dS[i];
     }
 }
+
+#endif // __AVR_ATmega1280__
+

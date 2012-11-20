@@ -49,10 +49,12 @@ public:
     ///
     virtual void        init_accel(void (*delay_cb)(unsigned long t), void (*flash_leds_cb)(bool on));
 
+#if !defined( __AVR_ATmega1280__ )
     // perform accelerometer calibration including providing user instructions and feedback
     virtual bool        calibrate_accel(void (*delay_cb)(unsigned long t),
                                         void (*flash_leds_cb)(bool on) = NULL,
                                         void (*send_msg)(const prog_char_t *, ...) = NULL);
+#endif
 
     /// Perform cold-start initialisation for just the gyros.
     ///
@@ -140,11 +142,13 @@ protected:
     virtual void            _init_gyro(void (*delay_cb)(unsigned long t),
                                        void (*flash_leds_cb)(bool on) = NULL);
 
+#if !defined( __AVR_ATmega1280__ )
     // _calibrate_accel - perform low level accel calibration
     virtual bool            _calibrate_accel(Vector3f accel_sample[6], Vector3f& accel_offsets, Vector3f& accel_scale);
     virtual void            _calibrate_update_matrices(float dS[6], float JS[6][6], float beta[6], float data[3]);
     virtual void            _calibrate_reset_matrices(float dS[6], float JS[6][6]);
     virtual void            _calibrate_find_delta(float dS[6], float JS[6][6], float delta[6]);
+#endif
 
     // save parameters to eeprom
     void                    _save_parameters();
