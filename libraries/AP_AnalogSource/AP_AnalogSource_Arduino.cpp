@@ -99,9 +99,10 @@ void AP_AnalogSource_Arduino::init_timer(AP_PeriodicProcess * scheduler)
 uint16_t AP_AnalogSource_Arduino::read_raw(void)
 {
     uint16_t ret;
+    uint8_t oldSREG = SREG;
     cli();
     ret = pins[_pin_index].output;
-    sei();
+    SREG = oldSREG;
     return ret;
 }
 
@@ -128,12 +129,13 @@ float AP_AnalogSource_Arduino::read_average(void)
     // you call read_average() very frequently
     while (pins[_pin_index].sum_count == 0) ;
 
+    uint8_t oldSREG = SREG;
     cli();
     sum = pins[_pin_index].sum;
     sum_count = pins[_pin_index].sum_count;
     pins[_pin_index].sum = 0;
     pins[_pin_index].sum_count = 0;
-    sei();
+    SREG = oldSREG;
     return sum / (float)sum_count;
 }
 
@@ -191,10 +193,11 @@ void AP_AnalogSource_Arduino::set_pin(uint8_t pin)
 {
     pin = _remap_pin(pin);
     if (pins[_pin_index].pin != pin) {
+        uint8_t oldSREG = SREG;
         cli();
         pins[_pin_index].pin = pin;
         pins[_pin_index].sum = 0;
         pins[_pin_index].sum_count = 0;
-        sei();        
+        SREG = oldSREG;
     }
 }
