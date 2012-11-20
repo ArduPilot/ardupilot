@@ -453,8 +453,6 @@ enum gcs_severity {
                             // WP
 #define WP_SIZE 15
 
-#define ONBOARD_PARAM_NAME_LENGTH 15
-
 // fence points are stored at the end of the EEPROM
 #define MAX_FENCEPOINTS 6
 #define FENCE_WP_SIZE sizeof(Vector2l)
