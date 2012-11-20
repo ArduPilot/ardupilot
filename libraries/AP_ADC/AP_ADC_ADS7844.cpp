@@ -179,12 +179,14 @@ float AP_ADC_ADS7844::Ch(uint8_t ch_num)
     while (_count[ch_num] == 0) /* noop */;
 
     // grab the value with interrupts disabled, and clear the count
+    uint8_t oldSREG = SREG;
     cli();
     count = _count[ch_num];
     sum   = _sum[ch_num];
     _count[ch_num] = 0;
     _sum[ch_num]   = 0;
-    sei();
+
+    SREG = oldSREG;
 
     return ((float)sum)/count;
 }
@@ -220,6 +222,7 @@ uint32_t AP_ADC_ADS7844::Ch6(const uint8_t *channel_numbers, float *result)
     }
 
     // grab the values with interrupts disabled, and clear the counts
+    uint8_t oldSREG = SREG;
     cli();
     for (i=0; i<6; i++) {
         count[i] = _count[channel_numbers[i]];
@@ -233,7 +236,7 @@ uint32_t AP_ADC_ADS7844::Ch6(const uint8_t *channel_numbers, float *result)
     uint32_t ret = _ch6_last_sample_time_micros - _ch6_delta_time_start_micros;
     _ch6_delta_time_start_micros = _ch6_last_sample_time_micros;
 
-    sei();
+    SREG = oldSREG;
 
     // calculate averages. We keep this out of the cli region
     // to prevent us stalling the ISR while doing the
