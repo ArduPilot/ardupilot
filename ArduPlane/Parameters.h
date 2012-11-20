@@ -99,7 +99,7 @@ public:
         //
         // 130: Sensor parameters
         //
-        k_param_imu = 130,  // sensor calibration
+        k_param_imu = 130,  // unused
         k_param_altitude_mix,
 
         k_param_compass_enabled,
