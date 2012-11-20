@@ -50,7 +50,7 @@ public:
     virtual void        init_accel(void (*delay_cb)(unsigned long t), void (*flash_leds_cb)(bool on));
 
     // perform accelerometer calibration including providing user instructions and feedback
-    virtual void        calibrate_accel(void (*delay_cb)(unsigned long t),
+    virtual bool        calibrate_accel(void (*delay_cb)(unsigned long t),
                                         void (*flash_leds_cb)(bool on) = NULL,
                                         void (*send_msg)(const prog_char_t *, ...) = NULL);
 
