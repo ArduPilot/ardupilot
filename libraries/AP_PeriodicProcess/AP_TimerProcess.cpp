@@ -56,10 +56,11 @@ void AP_TimerProcess::register_process(ap_procedure proc)
     for (uint8_t i=0; i<_pidx; i++) {
         if (_proc[i] == proc) return;
     }
+    uint8_t oldSREG = SREG;
     cli();
     if (_pidx < AP_TIMERPROCESS_MAX_PROCS)
         _proc[_pidx++] = proc;
-    sei();
+    SREG = oldSREG;
 }
 
 void AP_TimerProcess::set_failsafe(ap_procedure proc)
@@ -140,10 +141,11 @@ void AP_TimerProcess::run(void)
         }
 
         // run any queued processes
+        uint8_t oldSREG = SREG;
         cli();
         ap_procedure qp = _queued_proc;
         _queued_proc = NULL;
-        sei();
+        SREG = oldSREG;
         if( qp != NULL ) {
             _suspended = true;
             qp(tnow);
