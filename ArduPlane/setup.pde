@@ -306,7 +306,12 @@ static int8_t
 setup_accel_scale(uint8_t argc, const Menu::arg *argv)
 {
     ins.init(AP_InertialSensor::COLD_START, delay, flash_leds, &timer_scheduler);
-    ins.calibrate_accel(delay, flash_leds, NULL);
+    if (ins.calibrate_accel(delay, flash_leds, NULL)) {
+        if (g.manual_level == 0) {
+            Serial.println_P(PSTR("Setting MANUAL_LEVEL to 1"));
+            g.manual_level.set_and_save(1);
+        }
+    }
     report_ins();
     return(0);
 }
