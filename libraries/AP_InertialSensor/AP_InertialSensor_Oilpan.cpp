@@ -23,7 +23,7 @@ const float AP_InertialSensor_Oilpan::_adc_constraint = 900;
 
 // Oilpan accelerometer scaling & offsets
 #define OILPAN_ACCEL_SCALE_1G   (GRAVITY * 2.0 / (2465.0 - 1617.0))
-#define OILPAN_RAW_ACCEL_OFFSET ((2465.0 - 1617.0) / 2)
+#define OILPAN_RAW_ACCEL_OFFSET ((2465.0 + 1617.0) * 0.5)
 #define OILPAN_RAW_GYRO_OFFSET  1658.0
 
 #define ToRad(x) (x*0.01745329252)  // *pi/180
