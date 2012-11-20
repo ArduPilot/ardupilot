@@ -126,14 +126,14 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @Param: BATT_VOLT_PIN
     // @DisplayName: Battery Voltage sensing pin
     // @Description: Setting this to 0 ~ 13 will enable battery current sensing on pins A0 ~ A13.
-    // @Values: 99:Disabled, 0:A0, 1:A1, 13:A13
+    // @Values: -1:Disabled, 0:A0, 1:A1, 13:A13
     // @User: Standard
     GSCALAR(battery_volt_pin,    "BATT_VOLT_PIN",    BATTERY_VOLT_PIN),
 
     // @Param: BATT_CURR_PIN
     // @DisplayName: Battery Current sensing pin
     // @Description: Setting this to 0 ~ 13 will enable battery current sensing on pins A0 ~ A13.
-    // @Values: 99:Disabled, 1:A1, 2:A2, 12:A12
+    // @Values: -1:Disabled, 1:A1, 2:A2, 13:A13
     // @User: Standard
     GSCALAR(battery_curr_pin,    "BATT_CURR_PIN",    BATTERY_CURR_PIN),
 
