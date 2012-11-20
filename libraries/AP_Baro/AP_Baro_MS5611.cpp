@@ -209,13 +209,14 @@ uint8_t AP_Baro_MS5611::read()
         uint8_t d1count, d2count;
         // we need to disable interrupts to access
         // _s_D1 and _s_D2 as they are not atomic
+        uint8_t oldSREG = SREG;
         cli();
         sD1 = _s_D1; _s_D1 = 0;
         sD2 = _s_D2; _s_D2 = 0;
         d1count = _d1_count; _d1_count = 0;
         d2count = _d2_count; _d2_count = 0;
         _updated = false;
-        sei();
+        SREG = oldSREG;
         if (d1count != 0) {
             D1 = ((float)sD1) / d1count;
         }
