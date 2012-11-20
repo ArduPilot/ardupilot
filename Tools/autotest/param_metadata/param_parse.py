@@ -61,6 +61,7 @@ def wiki_parameters(g, f):
 
 apm_path = os.path.join(os.path.dirname(os.path.realpath(__file__)), '../../../')
 vehicle_paths = glob.glob(apm_path + "*/Parameters.pde")
+vehicle_paths.sort(reverse=True)
 
 vehicles = []
 libraries = []
