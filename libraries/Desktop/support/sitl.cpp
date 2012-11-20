@@ -228,12 +228,15 @@ static void sitl_simulator_output(void)
 static void timer_handler(int signum)
 {
 	static uint32_t last_update_count;
+	static bool in_timer;
 
-	if (_interrupts_are_blocked()) {
+	if (in_timer || _interrupts_are_blocked()) {
 		return;
 	}
 	uint8_t oldSREG = SREG;
 	cli();
+
+	in_timer = true;
 
 #ifndef __CYGWIN__
 	/* make sure we die if our parent dies */
@@ -242,15 +245,15 @@ static void timer_handler(int signum)
 	}
 #else
     
-    static uint16_t count = 0;
-    static uint32_t last_report;
+	static uint16_t count = 0;
+	static uint32_t last_report;
         
     	count++;
-		if (millis() - last_report > 1000) {
-			printf("TH %u cps\n", count);
-			count = 0;
-			last_report = millis();
-		}
+	if (millis() - last_report > 1000) {
+		printf("TH %u cps\n", count);
+		count = 0;
+		last_report = millis();
+	}
 #endif
 
 	/* check for packet from flight sim */
@@ -267,11 +270,13 @@ static void timer_handler(int signum)
 	if (update_count == 0) {
 		sitl_update_gps(0, 0, 0, 0, 0, false);
 		SREG = oldSREG;
+		in_timer = false;
 		return;
 	}
 
 	if (update_count == last_update_count) {
 		SREG = oldSREG;
+		in_timer = false;
 		return;
 	}
 	last_update_count = update_count;
@@ -295,6 +300,7 @@ static void timer_handler(int signum)
 	timer_scheduler.run();
 
 	SREG = oldSREG;
+	in_timer = false;
 }
 
 
