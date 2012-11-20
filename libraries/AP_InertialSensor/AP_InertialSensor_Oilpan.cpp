@@ -61,16 +61,19 @@ bool AP_InertialSensor_Oilpan::update()
     Vector3f accel_scale = _accel_scale.get();
     Vector3f accel_offset = _accel_offset.get();
 
+
     _delta_time_micros = _adc->Ch6(_sensors, adc_values);
     _temp = _adc->Ch(_gyro_temp_ch);
 
-    _gyro.x = _gyro_gain_x * _sensor_signs[0] * ( adc_values[0] - OILPAN_RAW_GYRO_OFFSET ) - gyro_offset.x;
-    _gyro.y = _gyro_gain_y * _sensor_signs[1] * ( adc_values[1] - OILPAN_RAW_GYRO_OFFSET ) - gyro_offset.y;
-    _gyro.z = _gyro_gain_z * _sensor_signs[2] * ( adc_values[2] - OILPAN_RAW_GYRO_OFFSET ) - gyro_offset.z;
+    _gyro.x = _gyro_gain_x * _sensor_signs[0] * ( adc_values[0] - OILPAN_RAW_GYRO_OFFSET );
+    _gyro.y = _gyro_gain_y * _sensor_signs[1] * ( adc_values[1] - OILPAN_RAW_GYRO_OFFSET );
+    _gyro.z = _gyro_gain_z * _sensor_signs[2] * ( adc_values[2] - OILPAN_RAW_GYRO_OFFSET );
+    _gyro -= gyro_offset;
 
-    _accel.x = accel_scale.x * _sensor_signs[3] * (adc_values[3] - OILPAN_RAW_ACCEL_OFFSET) * OILPAN_ACCEL_SCALE_1G - accel_offset.x;
-    _accel.y = accel_scale.y * _sensor_signs[4] * (adc_values[4] - OILPAN_RAW_ACCEL_OFFSET) * OILPAN_ACCEL_SCALE_1G - accel_offset.y;
-    _accel.z = accel_scale.z * _sensor_signs[5] * (adc_values[5] - OILPAN_RAW_ACCEL_OFFSET) * OILPAN_ACCEL_SCALE_1G - accel_offset.z;
+    _accel.x = accel_scale.x * _sensor_signs[3] * (adc_values[3] - OILPAN_RAW_ACCEL_OFFSET) * OILPAN_ACCEL_SCALE_1G;
+    _accel.y = accel_scale.y * _sensor_signs[4] * (adc_values[4] - OILPAN_RAW_ACCEL_OFFSET) * OILPAN_ACCEL_SCALE_1G;
+    _accel.z = accel_scale.z * _sensor_signs[5] * (adc_values[5] - OILPAN_RAW_ACCEL_OFFSET) * OILPAN_ACCEL_SCALE_1G;
+    _accel -= accel_offset;
 
 /*
  *  X  = 1619.30 to 2445.69
