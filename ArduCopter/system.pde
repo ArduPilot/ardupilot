@@ -11,7 +11,6 @@
 static int8_t   process_logs(uint8_t argc, const Menu::arg *argv);      // in Log.pde
 static int8_t   setup_mode(uint8_t argc, const Menu::arg *argv);        // in setup.pde
 static int8_t   test_mode(uint8_t argc, const Menu::arg *argv);         // in test.cpp
-static int8_t   planner_mode(uint8_t argc, const Menu::arg *argv);      // in planner.pde
 
 // This is the help function
 // PSTR is an AVR macro to read strings from flash memory
@@ -37,7 +36,6 @@ const struct Menu::command main_menu_commands[] PROGMEM = {
     {"setup",               setup_mode},
     {"test",                test_mode},
     {"help",                main_menu_help},
-    {"planner",             planner_mode}
 };
 
 // Create the top-level menu object.
