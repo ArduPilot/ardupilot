@@ -232,7 +232,7 @@ AP_InertialSensor::_init_accel(void (*delay_cb)(unsigned long t), void (*flash_l
 }
 
 // perform accelerometer calibration including providing user instructions and feedback
-void AP_InertialSensor::calibrate_accel(void (*delay_cb)(unsigned long t), void (*flash_leds_cb)(bool on), void (*send_msg)(const prog_char_t *, ...))
+bool AP_InertialSensor::calibrate_accel(void (*delay_cb)(unsigned long t), void (*flash_leds_cb)(bool on), void (*send_msg)(const prog_char_t *, ...))
 {
     Vector3f samples[6];
     Vector3f new_offsets;
@@ -274,9 +274,9 @@ void AP_InertialSensor::calibrate_accel(void (*delay_cb)(unsigned long t), void 
                 break;
         }
         if (send_msg == NULL) {
-            Serial.printf_P(PSTR("USER: Place APM %S and press any key.\n"), msg);
-        }else{
             send_msg(PSTR("USER: Place APM %S and press any key.\n"), msg);
+        }else{
+            Serial.printf_P(PSTR("USER: Place APM %S and press any key.\n"), msg);
         }
 
         // wait for user input
@@ -305,29 +305,28 @@ void AP_InertialSensor::calibrate_accel(void (*delay_cb)(unsigned long t), void 
 
     // run the calibration routine
     if( _calibrate_accel(samples, new_offsets, new_scaling) ) {
-
         if (send_msg == NULL) {
-            Serial.printf_P(PSTR("Calibration successful\n"));
-        }else{
             send_msg(PSTR("Calibration successful\n"));
+        }else{
+            Serial.printf_P(PSTR("Calibration successful\n"));
         }
 
         // set and save calibration
         _accel_offset.set(new_offsets);
         _accel_scale.set(new_scaling);
         _save_parameters();
-    }else{
-        if (send_msg == NULL) {
-            Serial.printf_P(PSTR("Calibration failed\n"));
-        }else{
-            send_msg(PSTR("Calibration failed\n"));
-        }
-
-        // restore original scaling and offsets
-        _accel_offset.set(orig_offset);
-        _accel_scale.set(orig_scale);
+        return true;
     }
-    delay_cb(100);
+
+    if (send_msg == NULL) {
+        send_msg(PSTR("Calibration failed\n"));
+    } else {
+        Serial.printf_P(PSTR("Calibration failed\n"));
+    }
+    // restore original scaling and offsets
+    _accel_offset.set(orig_offset);
+    _accel_scale.set(orig_scale);
+    return false;
 }
 
 // _calibrate_model - perform low level accel calibration
