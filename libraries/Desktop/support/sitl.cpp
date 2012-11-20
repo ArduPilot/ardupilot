@@ -232,6 +232,7 @@ static void timer_handler(int signum)
 	if (_interrupts_are_blocked()) {
 		return;
 	}
+	uint8_t oldSREG = SREG;
 	cli();
 
 #ifndef __CYGWIN__
@@ -255,9 +256,6 @@ static void timer_handler(int signum)
 	/* check for packet from flight sim */
 	sitl_fdm_input();
 
-	// trigger all timers
-	timer_scheduler.run();
-
 	// trigger RC input
 	if (isr_registry._registry[ISR_REGISTRY_TIMER4_CAPT]) {
 		isr_registry._registry[ISR_REGISTRY_TIMER4_CAPT]();
@@ -268,12 +266,12 @@ static void timer_handler(int signum)
 
 	if (update_count == 0) {
 		sitl_update_gps(0, 0, 0, 0, 0, false);
-		sei();
+		SREG = oldSREG;
 		return;
 	}
 
 	if (update_count == last_update_count) {
-		sei();
+		SREG = oldSREG;
 		return;
 	}
 	last_update_count = update_count;
@@ -292,7 +290,11 @@ static void timer_handler(int signum)
 	// so the ADC code doesn't get stuck
 	ADCSRA &= ~_BV(ADSC);
 
-	sei();
+	// trigger all APM timers. We do this last as it can re-enable
+	// interrupts, which can lead to recursion
+	timer_scheduler.run();
+
+	SREG = oldSREG;
 }
 
 
