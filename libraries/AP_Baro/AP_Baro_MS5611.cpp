@@ -32,7 +32,6 @@
  *
  */
 
-#include <avr/interrupt.h>
 #include <AP_HAL.h>
 #include "AP_Baro_MS5611.h"
 
@@ -61,14 +60,17 @@ uint8_t AP_Baro_MS5611::_state;
 uint32_t AP_Baro_MS5611::_timer;
 bool volatile AP_Baro_MS5611::_updated;
 
+AP_HAL::SPIDeviceDriver* AP_Baro_MS5611::_spi = NULL;
+AP_HAL::Semaphore* AP_Baro_MS5611::_spi_sem = NULL;
+
 uint8_t AP_Baro_MS5611::_spi_read(uint8_t reg)
 {
     uint8_t return_value;
     uint8_t addr = reg; // | 0x80; // Set most significant bit
-    hal.gpio->write(MS5611_CS, 0);
-    hal.spi->transfer(addr); // discarded
-    return_value = hal.spi->transfer(0);
-    hal.gpio->write(MS5611_CS, 1);
+    _spi->cs_assert();
+    _spi->transfer(addr); // discarded
+    return_value = _spi->transfer(0);
+    _spi->cs_release();
     return return_value;
 }
 
@@ -77,11 +79,11 @@ uint16_t AP_Baro_MS5611::_spi_read_16bits(uint8_t reg)
     uint8_t byteH, byteL;
     uint16_t return_value;
     uint8_t addr = reg; // | 0x80; // Set most significant bit
-    hal.gpio->write(MS5611_CS, 0);
-    hal.spi->transfer(addr); // discarded
-    byteH = hal.spi->transfer(0);
-    byteL = hal.spi->transfer(0);
-    hal.gpio->write(MS5611_CS, 1);
+    _spi->cs_assert();
+    _spi->transfer(addr); // discarded
+    byteH = _spi->transfer(0);
+    byteL = _spi->transfer(0);
+    _spi->cs_release();
     return_value = ((uint16_t)byteH<<8) | (byteL);
     return return_value;
 }
@@ -91,12 +93,12 @@ uint32_t AP_Baro_MS5611::_spi_read_adc()
     uint8_t byteH,byteM,byteL;
     uint32_t return_value;
     uint8_t addr = 0x00;
-    hal.gpio->write(MS5611_CS, 0);
-    hal.spi->transfer(addr); // discarded
-    byteH = hal.spi->transfer(0);
-    byteM = hal.spi->transfer(0);
-    byteL = hal.spi->transfer(0);
-    hal.gpio->write(MS5611_CS, 1);
+    _spi->cs_assert();
+    _spi->transfer(addr); // discarded
+    byteH = _spi->transfer(0);
+    byteM = _spi->transfer(0);
+    byteL = _spi->transfer(0);
+    _spi->cs_release();
     return_value = (((uint32_t)byteH)<<16) | (((uint32_t)byteM)<<8) | (byteL);
     return return_value;
 }
@@ -104,9 +106,9 @@ uint32_t AP_Baro_MS5611::_spi_read_adc()
 
 void AP_Baro_MS5611::_spi_write(uint8_t reg)
 {
-    hal.gpio->write(MS5611_CS, 0);
-    hal.spi->transfer(reg); // discarded
-    hal.gpio->write(MS5611_CS, 1);
+    _spi->cs_assert();
+    _spi->transfer(reg); // discarded
+    _spi->cs_release();
 }
 
 // Public Methods //////////////////////////////////////////////////////////////
@@ -114,10 +116,8 @@ void AP_Baro_MS5611::_spi_write(uint8_t reg)
 bool AP_Baro_MS5611::init()
 {
     hal.scheduler->suspend_timer_procs();
-
-    hal.gpio->pinMode(MS5611_CS, GPIO_OUTPUT);          // Chip select Pin
-    hal.gpio->write(MS5611_CS, 1);
-    hal.scheduler->delay(1);
+    _spi = hal.spi->device(AP_HAL::SPIDevice_MS5611);
+    _spi_sem = _spi->get_semaphore();
 
     _spi_write(CMD_MS5611_RESET);
     hal.scheduler->delay(4);
@@ -167,6 +167,11 @@ void AP_Baro_MS5611::_update(uint32_t tnow)
         return;
     }
 
+    if (_spi_sem) {
+        bool got = _spi_sem->get((void*)&_spi_sem);
+        if (!got) return;
+    }
+
     _timer = tnow;
 
     if (_state == 0) {
@@ -200,6 +205,10 @@ void AP_Baro_MS5611::_update(uint32_t tnow)
             _spi_write(CMD_CONVERT_D1_OSR4096); // Command to read pressure
         }
     }
+
+    if (_spi_sem) {
+        _spi_sem->release((void*)&_spi_sem);
+    }
 }
 
 uint8_t AP_Baro_MS5611::read()
@@ -210,14 +219,13 @@ uint8_t AP_Baro_MS5611::read()
         uint8_t d1count, d2count;
         // we need to disable interrupts to access
         // _s_D1 and _s_D2 as they are not atomic
-        uint8_t oldSREG = SREG;
-        cli();
+        hal.scheduler->begin_atomic();
         sD1 = _s_D1; _s_D1 = 0;
         sD2 = _s_D2; _s_D2 = 0;
         d1count = _d1_count; _d1_count = 0;
         d2count = _d2_count; _d2_count = 0;
         _updated = false;
-        SREG = oldSREG;
+        hal.scheduler->end_atomic();
         if (d1count != 0) {
             D1 = ((float)sD1) / d1count;
         }

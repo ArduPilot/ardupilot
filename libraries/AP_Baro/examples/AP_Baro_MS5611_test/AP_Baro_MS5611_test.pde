@@ -8,6 +8,7 @@
 
 const AP_HAL::HAL& hal = AP_HAL_AVR_APM2;
 
+#include <AP_Buffer.h>
 #include <Filter.h>
 #include <AP_Baro.h>
 
@@ -54,12 +55,4 @@ void loop()
     }
 }
 
-extern "C" {
-int main (void) {
-    hal.init(NULL);
-    setup();
-    for(;;) loop();
-    return 0;
-}
-}
-
+AP_HAL_MAIN();

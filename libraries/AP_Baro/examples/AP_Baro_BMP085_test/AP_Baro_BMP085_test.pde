@@ -4,20 +4,15 @@
  */
 
 
-#include <FastSerial.h>
 #include <AP_Common.h>
-#include <I2C.h>
-#include <SPI.h>
-#include <Filter.h>
-#include <AP_Baro.h> // ArduPilot Mega BMP085 Library
-#include <Arduino_Mega_ISR_Registry.h>
-#include <AP_PeriodicProcess.h>
+#include <AP_ADC.h>
 #include <AP_InertialSensor.h>
 #include <math.h>
 #include <AP_Progmem.h>
 #include <AP_Param.h>
 #include <AP_Math.h>
 #include <AP_HAL.h>
+#include <AP_Buffer.h>
 #include <Filter.h>
 #include <AP_Baro.h>
 
@@ -70,12 +65,4 @@ void loop()
     }
 }
 
-extern "C" {
-int main (void) {
-    hal.init(NULL);
-    setup();
-    for(;;) loop();
-    return 0;
-}
-}
-
+AP_HAL_MAIN();
