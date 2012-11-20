@@ -358,12 +358,15 @@ static void NOINLINE send_vfr_hud(mavlink_channel_t chan)
     } else if (!ahrs.airspeed_estimate(&aspeed)) {
         aspeed = 0;
     }
+    float throttle_norm = g.channel_throttle.norm_output() * 100;
+    throttle_norm = constrain(throttle_norm, -100, 100);
+    uint16_t throttle = ((uint16_t)(throttle_norm + 100)) / 2;
     mavlink_msg_vfr_hud_send(
         chan,
         aspeed,
         (float)g_gps->ground_speed * 0.01,
         (ahrs.yaw_sensor / 100) % 360,
-        (uint16_t)(100 * (g.channel_throttle.norm_output() / 2.0 + 0.5)), // scale -1,1 to 0-100
+        throttle,
         current_loc.alt / 100.0,
         barometer.get_climb_rate());
 }
