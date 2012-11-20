@@ -275,9 +275,9 @@ bool AP_InertialSensor::calibrate_accel(void (*delay_cb)(unsigned long t), void 
                 break;
         }
         if (send_msg == NULL) {
-            send_msg(PSTR("USER: Place APM %S and press any key.\n"), msg);
-        }else{
             Serial.printf_P(PSTR("USER: Place APM %S and press any key.\n"), msg);
+        }else{
+            send_msg(PSTR("USER: Place APM %S and press any key.\n"), msg);
         }
 
         // wait for user input
@@ -307,9 +307,9 @@ bool AP_InertialSensor::calibrate_accel(void (*delay_cb)(unsigned long t), void 
     // run the calibration routine
     if( _calibrate_accel(samples, new_offsets, new_scaling) ) {
         if (send_msg == NULL) {
-            send_msg(PSTR("Calibration successful\n"));
-        }else{
             Serial.printf_P(PSTR("Calibration successful\n"));
+        }else{
+            send_msg(PSTR("Calibration successful\n"));
         }
 
         // set and save calibration
@@ -320,9 +320,9 @@ bool AP_InertialSensor::calibrate_accel(void (*delay_cb)(unsigned long t), void 
     }
 
     if (send_msg == NULL) {
-        send_msg(PSTR("Calibration failed\n"));
-    } else {
         Serial.printf_P(PSTR("Calibration failed\n"));
+    } else {
+        send_msg(PSTR("Calibration failed\n"));
     }
     // restore original scaling and offsets
     _accel_offset.set(orig_offset);
