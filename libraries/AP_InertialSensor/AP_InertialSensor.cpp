@@ -320,9 +320,13 @@ bool AP_InertialSensor::calibrate_accel(void (*delay_cb)(unsigned long t), void 
     }
 
     if (send_msg == NULL) {
-        Serial.printf_P(PSTR("Calibration failed\n"));
+        Serial.printf_P(PSTR("Calibration failed (%.1f %.1f %.1f %.1f %.1f %.1f)\n"),
+                        new_offsets.x, new_offsets.y, new_offsets.z,
+                        new_scaling.x, new_scaling.y, new_scaling.z);
     } else {
-        send_msg(PSTR("Calibration failed\n"));
+        send_msg(PSTR("Calibration failed (%.1f %.1f %.1f %.1f %.1f %.1f)\n"),
+                 new_offsets.x, new_offsets.y, new_offsets.z,
+                 new_scaling.x, new_scaling.y, new_scaling.z);
     }
     // restore original scaling and offsets
     _accel_offset.set(orig_offset);
