@@ -43,6 +43,7 @@ public:
         k_mount2_open   = 15,           ///< mount2 open (deploy) / close (retract)
 		k_dspoiler1     = 16,           ///< differential spoiler 1 (left wing)
 		k_dspoiler2     = 17,           ///< differential spoiler 2 (right wing)
+        k_aileron_with_input    = 18,            ///< aileron, with rc input
         k_nr_aux_servo_functions         ///< This must be the last enum value (only add new values _before_ this one)
     } Aux_servo_function_t;
 

@@ -9,7 +9,7 @@ const AP_Param::GroupInfo RC_Channel_aux::var_info[] PROGMEM = {
     // @Param: FUNCTION
     // @DisplayName: Servo out function
     // @Description: Setting this to Disabled(0) will disable this output, any other value will enable the corresponding function
-    // @Values: 0:Disabled,1:Manual,2:Flap,3:Flap_auto,4:Aileron,5:flaperon,6:mount_pan,7:mount_tilt,8:mount_roll,9:mount_open,10:camera_trigger,11:release
+    // @Values: 0:Disabled,1:Manual,2:Flap,3:Flap_auto,4:Aileron,5:flaperon,6:mount_pan,7:mount_tilt,8:mount_roll,9:mount_open,10:camera_trigger,11:release,12:mount2_pan,13:mount2_tilt,14:mount2_roll,15:mount2_open,16:DifferentialSpoiler1,17:DifferentialSpoiler2,18:AileronWithInput
     // @User: Standard
     AP_GROUPINFO("FUNCTION",       1, RC_Channel_aux, function, 0),
 
@@ -69,6 +69,7 @@ void update_aux_servo_function( RC_Channel_aux* rc_a,
 			_aux_channels[i]->set_range(0,100);
 			break;
 		case RC_Channel_aux::k_aileron:
+		case RC_Channel_aux::k_aileron_with_input:
 			_aux_channels[i]->set_angle(4500);
 			break;
 		case RC_Channel_aux::k_dspoiler1:
