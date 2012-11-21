@@ -233,7 +233,9 @@ AP_InertialSensor::_init_accel(void (*delay_cb)(unsigned long t), void (*flash_l
 
 #if !defined( __AVR_ATmega1280__ )
 // perform accelerometer calibration including providing user instructions and feedback
-bool AP_InertialSensor::calibrate_accel(void (*delay_cb)(unsigned long t), void (*flash_leds_cb)(bool on), void (*send_msg)(const prog_char_t *, ...))
+bool AP_InertialSensor::calibrate_accel(void (*delay_cb)(unsigned long t), void (*flash_leds_cb)(bool on), 
+                                        void (*send_msg)(const prog_char_t *, ...),
+                                        void (*wait_key)(void))
 {
     Vector3f samples[6];
     Vector3f new_offsets;
@@ -274,20 +276,9 @@ bool AP_InertialSensor::calibrate_accel(void (*delay_cb)(unsigned long t), void 
                 msg = PSTR("on it's back");
                 break;
         }
-        if (send_msg == NULL) {
-            Serial.printf_P(PSTR("USER: Place APM %S and press any key.\n"), msg);
-        }else{
-            send_msg(PSTR("USER: Place APM %S and press any key.\n"), msg);
-        }
+        send_msg(PSTR("USER: Place APM %S and press any key.\n"), msg);
 
-        // wait for user input
-        while( !Serial.available() ) {
-            delay_cb(20);
-        }
-        // clear unput buffer
-        while( Serial.available() ) {
-            Serial.read();
-        }
+        wait_key();
 
         // clear out any existing samples from ins
         update();
@@ -306,11 +297,7 @@ bool AP_InertialSensor::calibrate_accel(void (*delay_cb)(unsigned long t), void 
 
     // run the calibration routine
     if( _calibrate_accel(samples, new_offsets, new_scaling) ) {
-        if (send_msg == NULL) {
-            Serial.printf_P(PSTR("Calibration successful\n"));
-        }else{
-            send_msg(PSTR("Calibration successful\n"));
-        }
+        send_msg(PSTR("Calibration successful\n"));
 
         // set and save calibration
         _accel_offset.set(new_offsets);
@@ -319,15 +306,9 @@ bool AP_InertialSensor::calibrate_accel(void (*delay_cb)(unsigned long t), void 
         return true;
     }
 
-    if (send_msg == NULL) {
-        Serial.printf_P(PSTR("Calibration failed (%.1f %.1f %.1f %.1f %.1f %.1f)\n"),
-                        new_offsets.x, new_offsets.y, new_offsets.z,
-                        new_scaling.x, new_scaling.y, new_scaling.z);
-    } else {
-        send_msg(PSTR("Calibration failed (%.1f %.1f %.1f %.1f %.1f %.1f)\n"),
-                 new_offsets.x, new_offsets.y, new_offsets.z,
-                 new_scaling.x, new_scaling.y, new_scaling.z);
-    }
+    send_msg(PSTR("Calibration failed (%.1f %.1f %.1f %.1f %.1f %.1f)\n"),
+             new_offsets.x, new_offsets.y, new_offsets.z,
+             new_scaling.x, new_scaling.y, new_scaling.z);
     // restore original scaling and offsets
     _accel_offset.set(orig_offset);
     _accel_scale.set(orig_scale);
