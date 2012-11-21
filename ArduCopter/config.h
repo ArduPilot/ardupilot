@@ -902,6 +902,16 @@
  # define THROTTLE_IMAX         300
 #endif
 
+#ifndef THROTTLE_RATE_CONSTRAIN_POSITIVE
+ # define THROTTLE_RATE_CONSTRAIN_POSITIVE         200
+#endif
+
+#ifndef THROTTLE_RATE_CONSTRAIN_NEGATIVE
+ # define THROTTLE_RATE_CONSTRAIN_NEGATIVE        -150
+#endif
+
+
+
 
 //////////////////////////////////////////////////////////////////////////////
 // Crosstrack compensation
