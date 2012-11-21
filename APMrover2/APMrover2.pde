@@ -134,6 +134,8 @@ FastSerialPort1(Serial1);       // GPS port
  FastSerialPort3(Serial3);       // Telemetry port for APM1
 #endif
 
+static FastSerial *cliSerial = &Serial3;
+
 // this sets up the parameter table, and sets the default values. This
 // must be the first AP_Param variable declared to ensure its
 // constructor runs before the constructors of the other AP_Param
@@ -812,13 +814,13 @@ static void medium_loop()
 			#endif
 //#endif
 /*{
-Serial.print(ahrs.roll_sensor, DEC);	Serial.printf_P(PSTR("\t"));
-Serial.print(ahrs.pitch_sensor, DEC);	Serial.printf_P(PSTR("\t"));
-Serial.print(ahrs.yaw_sensor, DEC);	Serial.printf_P(PSTR("\t"));
+cliSerial->print(ahrs.roll_sensor, DEC);	cliSerial->printf_P(PSTR("\t"));
+cliSerial->print(ahrs.pitch_sensor, DEC);	cliSerial->printf_P(PSTR("\t"));
+cliSerial->print(ahrs.yaw_sensor, DEC);	cliSerial->printf_P(PSTR("\t"));
 Vector3f tempaccel = ins.get_accel();
-Serial.print(tempaccel.x, DEC);	Serial.printf_P(PSTR("\t"));
-Serial.print(tempaccel.y, DEC);	Serial.printf_P(PSTR("\t"));
-Serial.println(tempaccel.z, DEC);
+cliSerial->print(tempaccel.x, DEC);	cliSerial->printf_P(PSTR("\t"));
+cliSerial->print(tempaccel.y, DEC);	cliSerial->printf_P(PSTR("\t"));
+cliSerial->println(tempaccel.z, DEC);
 }*/
 
 			break;
@@ -939,11 +941,11 @@ static void slow_loop()
 #endif
 
 #if TRACE == ENABLED
-         //     Serial.printf_P(PSTR("NAV->gnd_crs=%3.0f, nav_brg=%3.0f, tgt_brg=%3.0f, brg_err=%3.0f, nav_rll=%3.1f rsvo=%3.1f\n"), 
+         //     cliSerial->printf_P(PSTR("NAV->gnd_crs=%3.0f, nav_brg=%3.0f, tgt_brg=%3.0f, brg_err=%3.0f, nav_rll=%3.1f rsvo=%3.1f\n"), 
          //           ahrs.yaw_sensor*0.01, (float)nav_bearing/100, (float)target_bearing/100, (float)bearing_error/100, (float)nav_roll/100, (float)g.channel_roll.servo_out/100);           
-             // Serial.printf_P(PSTR("WPL->g.command_total=%d, g.command_index=%d, nav_command_index=%d\n"), 
+             // cliSerial->printf_P(PSTR("WPL->g.command_total=%d, g.command_index=%d, nav_command_index=%d\n"), 
                 //    g.command_total, g.command_index, nav_command_index);      
-    	   Serial.printf_P(PSTR("NAV->gnd_crs=%3.0f,  sonar_dist = %d    obstacle = %d\n"), ahrs.yaw_sensor*0.01, (int)sonar_dist, obstacle);                
+    	   cliSerial->printf_P(PSTR("NAV->gnd_crs=%3.0f,  sonar_dist = %d    obstacle = %d\n"), ahrs.yaw_sensor*0.01, (int)sonar_dist, obstacle);                
 #endif                          
 			break;
 	}

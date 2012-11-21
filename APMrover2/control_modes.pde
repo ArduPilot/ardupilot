@@ -73,7 +73,7 @@ if (g.ch7_option == CH7_SAVE_WP){         // set to 1
                                         if(g.channel_roll.control_in > 3000) // if roll is full right store the current location as home
                                             ground_start_count = 5;
                                         #if X_PLANE == ENABLED
-                                                Serial.printf_P(PSTR("*** RESET the FPL\n"));
+                                                cliSerial->printf_P(PSTR("*** RESET the FPL\n"));
                                         #endif
                                         CH7_wp_index = 1;                    
 					return;
@@ -94,7 +94,7 @@ if (g.ch7_option == CH7_SAVE_WP){         // set to 1
         			  set_cmd_with_index(current_loc, CH7_wp_index);
                                                                              
                                   #if X_PLANE == ENABLED
-                                     Serial.printf_P(PSTR("*** Store WP #%d\n"),CH7_wp_index);
+                                     cliSerial->printf_P(PSTR("*** Store WP #%d\n"),CH7_wp_index);
                                   #endif 
                                   
                                     // increment index
