@@ -1358,16 +1358,20 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
         mavlink_param_request_read_t packet;
         mavlink_msg_param_request_read_decode(msg, &packet);
         if (mavlink_check_target(packet.target_system,packet.target_component)) break;
-        if (packet.param_index != -1) {
-            gcs_send_text_P(SEVERITY_LOW, PSTR("Param by index not supported"));
-            break;
-        }
-
         enum ap_var_type p_type;
-        AP_Param *vp = AP_Param::find(packet.param_id, &p_type);
-        if (vp == NULL) {
-            gcs_send_text_fmt(PSTR("Unknown parameter %s"), packet.param_id);
-            break;
+        AP_Param *vp;
+        if (packet.param_index != -1) {
+            vp = AP_Param::find_by_index(packet.param_index, &p_type);
+            if (vp == NULL) {
+                gcs_send_text_fmt(PSTR("Unknown parameter index %d"), packet.param_index);
+                break;
+            }
+        } else {
+            vp = AP_Param::find(packet.param_id, &p_type);
+            if (vp == NULL) {
+                gcs_send_text_fmt(PSTR("Unknown parameter %.16s"), packet.param_id);
+                break;
+            }
         }
         char param_name[AP_MAX_NAME_SIZE];
         vp->copy_name(param_name, sizeof(param_name), true);
@@ -1378,7 +1382,8 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
             param_name,
             value,
             mav_var_type(p_type),
-            -1, -1);
+            _count_parameters(),
+            packet.param_index);
         break;
     }
 
