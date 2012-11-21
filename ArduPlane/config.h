@@ -234,13 +234,6 @@
 //# define CURR_AMP_PER_VOLT	13.66	// This is the proper value for the AttoPilot 13.6V/45A sensor
 #endif
 
-#ifndef CURR_AMPS_OFFSET
- # define CURR_AMPS_OFFSET               0.0
-#endif
-#ifndef HIGH_DISCHARGE
- # define HIGH_DISCHARGE         1760
-#endif
-
 //////////////////////////////////////////////////////////////////////////////
 // INPUT_VOLTAGE
 //

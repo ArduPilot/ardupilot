@@ -527,9 +527,29 @@ const AP_Param::Info var_info[] PROGMEM = {
 
     GSCALAR(battery_monitoring,     "BATT_MONITOR",   0),
     GSCALAR(volt_div_ratio,         "VOLT_DIVIDER",   VOLT_DIV_RATIO),
+
+    // @Param: APM_PER_VOLT
+    // @DisplayName: Apms per volt
+    // @Description: Number of amps that a 1V reading on the current sensor corresponds to
+    // @Units: A/V
+    // @User: Standard
     GSCALAR(curr_amp_per_volt,      "AMP_PER_VOLT",   CURR_AMP_PER_VOLT),
+
+    // @Param: AMP_OFFSET
+    // @DisplayName: AMP offset
+    // @Description: Voltage offset at zero current on current sensor
+    // @Units: Volts
+    // @User: Standard
+    GSCALAR(curr_amp_offset,        "AMP_OFFSET",     0),
+
     GSCALAR(input_voltage,          "INPUT_VOLTS",    INPUT_VOLTAGE),
-    GSCALAR(pack_capacity,          "BATT_CAPACITY",  HIGH_DISCHARGE),
+
+    // @Param: BATT_CAPACITY
+    // @DisplayName: Battery capacity
+    // @Description: Capacity of the battery in mAh when full
+    // @Units: mAh
+    // @User: Standard
+    GSCALAR(pack_capacity,          "BATT_CAPACITY",  1760),
 
     // @Param: BATT_VOLT_PIN
     // @DisplayName: Battery Voltage sensing pin

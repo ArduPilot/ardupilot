@@ -113,6 +113,7 @@ public:
         k_param_ahrs,  // AHRS group
         k_param_barometer,   // barometer ground calibration
         k_param_airspeed,  // AP_Airspeed parameters
+        k_param_curr_amp_offset,
 
         //
         // 150: Navigation parameters
@@ -341,6 +342,7 @@ public:
     AP_Int8 flap_2_speed;
     AP_Float volt_div_ratio;
     AP_Float curr_amp_per_volt;
+    AP_Float curr_amp_offset;
     AP_Float input_voltage;
     AP_Int32 pack_capacity;                     // Battery pack capacity less reserve
     AP_Int8 rssi_pin;
