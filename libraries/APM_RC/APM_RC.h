@@ -50,29 +50,20 @@ public:
     virtual void            Force_Out2_Out3(void) = 0;
     virtual void            Force_Out6_Out7(void) = 0;
 
-    // get the approximate time of the last radio ppm update
-	// - resolution of the return time in ms is defined by how often get_last_update() is called
-	// - _ppm_count is modified by interrupt, but type is volatile uint8_t making it atomic for reading and writting outside the interrupt
+    // get the time of the last radio update (_last_update modified by interrupt, so reading of variable must be interrupt safe)
     virtual uint32_t        get_last_update() {
-        static uint32_t _last_update_time = millis(); // Initialize with current time to prevent false trigger
+        
+        uint32_t _tmp = _last_update;
+        while( _tmp != _last_update ) _tmp = _last_update;
 
-		// PPM refresh?
-		if( _ppm_count > 0) {
-			// Reset _ppm_count
-			_ppm_count = 0;
-
-			// Approximate time (very much so)  of last update
-			_last_update_time = millis();
-		}
-		
-        return _last_update_time;
+        return _tmp;
     };
 
 protected:
     uint16_t                _map_speed(uint16_t speed_hz) {
         return 2000000UL / speed_hz;
     }
-    static volatile uint8_t         _ppm_count; // Modified by interrupt
+    static volatile uint32_t         _last_update; // Modified by interrupt
 
 };
 
