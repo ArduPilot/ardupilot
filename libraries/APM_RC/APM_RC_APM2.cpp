@@ -58,7 +58,7 @@ void APM_RC_APM2::_timer5_capt_cb(void)
         // pass through values if at least a minimum number of channels received
         if( frame_idx >= MIN_CHANNELS ) {
             _radio_status = 1;
-            _last_update = millis();
+            _ppm_count++;
         }
         frame_idx=0;
     } else {
