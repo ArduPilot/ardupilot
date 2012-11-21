@@ -169,7 +169,11 @@ static void trim_control_surfaces()
     if(g.mix_mode == 0) {
         g.channel_roll.radio_trim = g.channel_roll.radio_in;
         g.channel_pitch.radio_trim = g.channel_pitch.radio_in;
-        RC_Channel_aux::set_radio_trim(RC_Channel_aux::k_aileron);
+
+        // the secondary aileron is trimmed only if it has a
+        // corresponding transmitter input channel, which k_aileron
+        // doesn't have
+        RC_Channel_aux::set_radio_trim(RC_Channel_aux::k_aileron_with_input);
     } else{
         elevon1_trim = ch1_temp;
         elevon2_trim = ch2_temp;
