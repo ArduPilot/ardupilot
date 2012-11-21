@@ -143,6 +143,9 @@ FastSerialPort0(Serial);        // FTDI/console
 FastSerialPort1(Serial1);       // GPS port
 FastSerialPort3(Serial3);       // Telemetry port
 
+// port to use for command line interface
+static FastSerial *cliSerial = &Serial;
+
 // this sets up the parameter table, and sets the default values. This
 // must be the first AP_Param variable declared to ensure its
 // constructor runs before the constructors of the other AP_Param
@@ -1375,7 +1378,7 @@ static void super_slow_loop()
 #endif
 
     /*
-     *  //Serial.printf("alt %d, next.alt %d, alt_err: %d, cruise: %d, Alt_I:%1.2f, wp_dist %d, tar_bear %d, home_d %d, homebear %d\n",
+     *  //cliSerial->printf("alt %d, next.alt %d, alt_err: %d, cruise: %d, Alt_I:%1.2f, wp_dist %d, tar_bear %d, home_d %d, homebear %d\n",
      *                               current_loc.alt,
      *                               next_WP.alt,
      *                               altitude_error,
@@ -1502,7 +1505,7 @@ void update_yaw_mode(void)
 
     case YAW_AUTO:
         nav_yaw += constrain(wrap_180(auto_yaw - nav_yaw), -60, 60);                 // 40 deg a second
-        //Serial.printf("nav_yaw %d ", nav_yaw);
+        //cliSerial->printf("nav_yaw %d ", nav_yaw);
         nav_yaw  = wrap_360(nav_yaw);
         get_stabilize_yaw(nav_yaw);
         break;
@@ -1941,7 +1944,7 @@ static void update_altitude_est()
         climb_rate += climb_rate_error;
         current_loc.alt += (climb_rate / 50);
     }
-    //Serial.printf(" %d, %d, %d, %d\n", climb_rate_actual, climb_rate_error, climb_rate, current_loc.alt);
+    //cliSerial->printf(" %d, %d, %d, %d\n", climb_rate_actual, climb_rate_error, climb_rate, current_loc.alt);
 }
 
 static void tuning(){
@@ -2154,7 +2157,7 @@ static void update_nav_wp()
         //int16_t angleTest = degrees(circle_angle);
         //int16_t nroll = nav_roll;
         //int16_t npitch = nav_pitch;
-        //Serial.printf("CIRCLE: angle:%d, dist:%d, X:%d, Y:%d, P:%d, R:%d  \n", angleTest, (int)wp_distance , (int)long_error, (int)lat_error, npitch, nroll);
+        //cliSerial->printf("CIRCLE: angle:%d, dist:%d, X:%d, Y:%d, P:%d, R:%d  \n", angleTest, (int)wp_distance , (int)long_error, (int)lat_error, npitch, nroll);
 
     }else if(wp_control == WP_MODE) {
         // calc error to target

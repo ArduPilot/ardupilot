@@ -17,7 +17,7 @@ static int8_t   test_mode(uint8_t argc, const Menu::arg *argv);         // in te
 // printf_P is a version of print_f that reads from flash memory
 static int8_t   main_menu_help(uint8_t argc, const Menu::arg *argv)
 {
-    Serial.printf_P(PSTR("Commands:\n"
+    cliSerial->printf_P(PSTR("Commands:\n"
                          "  logs\n"
                          "  setup\n"
                          "  test\n"
@@ -42,8 +42,12 @@ const struct Menu::command main_menu_commands[] PROGMEM = {
 MENU(main_menu, THISFIRMWARE, main_menu_commands);
 
 // the user wants the CLI. It never exits
-static void run_cli(void)
+static void run_cli(FastSerial *port)
 {
+    cliSerial = port;
+    Menu::set_port(port);
+    port->set_blocking_writes(true);
+
     while (1) {
         main_menu.run();
     }
@@ -76,7 +80,7 @@ static void init_ardupilot()
     // The console port buffers are defined to be sufficiently large to support
     // the MAVLink protocol efficiently
     //
-    Serial.begin(SERIAL0_BAUD, 128, 256);
+    cliSerial->begin(SERIAL0_BAUD, 128, 256);
 
     // GPS serial port.
     //
@@ -86,7 +90,7 @@ static void init_ardupilot()
     Serial1.begin(38400, 256, 16);
 #endif
 
-    Serial.printf_P(PSTR("\n\nInit " THISFIRMWARE
+    cliSerial->printf_P(PSTR("\n\nInit " THISFIRMWARE
                          "\n\nFree RAM: %u\n"),
                     memcheck_available_memory());
 
@@ -164,7 +168,7 @@ static void init_ardupilot()
     if (!ap_system.usb_connected) {
         // we are not connected via USB, re-init UART0 with right
         // baud rate
-        Serial.begin(map_baudrate(g.serial3_baud, SERIAL3_BAUD));
+        cliSerial->begin(map_baudrate(g.serial3_baud, SERIAL3_BAUD));
     }
 #else
     // we have a 2nd serial port for telemetry
@@ -257,11 +261,15 @@ static void init_ardupilot()
     //
     if (check_startup_for_CLI()) {
         digitalWrite(A_LED_PIN, LED_ON);                        // turn on setup-mode LED
-        Serial.printf_P(PSTR("\nCLI:\n\n"));
-        run_cli();
+        cliSerial->printf_P(PSTR("\nCLI:\n\n"));
+        run_cli(cliSerial);
     }
 #else
-    Serial.printf_P(PSTR("\nPress ENTER 3 times for CLI\n\n"));
+    const prog_char_t *msg = PSTR("\nPress ENTER 3 times to start interactive setup\n");
+    cliSerial->println_P(msg);
+#if USB_MUX_PIN == 0
+    Serial3.println_P(msg);
+#endif
 #endif // CLI_ENABLED
 
 #if HIL_MODE != HIL_MODE_ATTITUDE
@@ -328,7 +336,7 @@ static void init_ardupilot()
 
 #endif
 
-    Serial.print_P(PSTR("\nReady to FLY "));
+    cliSerial->print_P(PSTR("\nReady to FLY "));
 }
 
 
@@ -409,7 +417,7 @@ static void set_mode(byte mode)
     // have we achieved the proper altitude before RTL is enabled
     set_rtl_reached_alt(false);
     // debug to Serial terminal
-    //Serial.println(flight_mode_strings[control_mode]);
+    //cliSerial->println(flight_mode_strings[control_mode]);
 
     ap.loiter_override  = false;
 
@@ -603,7 +611,7 @@ static void update_throttle_cruise(int16_t tmp)
 
     // recalc kp
     //g.pid_throttle.kP((float)g.throttle_cruise.get() / 981.0);
-    //Serial.printf("kp:%1.4f\n",kp);
+    //cliSerial->printf("kp:%1.4f\n",kp);
 }
 
 #if CLI_SLIDER_ENABLED == ENABLED && CLI_ENABLED == ENABLED
@@ -630,7 +638,7 @@ static uint32_t map_baudrate(int8_t rate, uint32_t default_baud)
     case 111:  return 111100;
     case 115:  return 115200;
     }
-    //Serial.println_P(PSTR("Invalid SERIAL3_BAUD"));
+    //cliSerial->println_P(PSTR("Invalid SERIAL3_BAUD"));
     return default_baud;
 }
 
@@ -645,9 +653,9 @@ static void check_usb_mux(void)
     // the user has switched to/from the telemetry port
     ap_system.usb_connected = usb_check;
     if (ap_system.usb_connected) {
-        Serial.begin(SERIAL0_BAUD);
+        cliSerial->begin(SERIAL0_BAUD);
     } else {
-        Serial.begin(map_baudrate(g.serial3_baud, SERIAL3_BAUD));
+        cliSerial->begin(map_baudrate(g.serial3_baud, SERIAL3_BAUD));
     }
 }
 #endif
@@ -681,46 +689,46 @@ print_flight_mode(uint8_t mode)
 {
     switch (mode) {
     case STABILIZE:
-        Serial.print_P(PSTR("STABILIZE"));
+        cliSerial->print_P(PSTR("STABILIZE"));
         break;
     case ACRO:
-        Serial.print_P(PSTR("ACRO"));
+        cliSerial->print_P(PSTR("ACRO"));
         break;
     case ALT_HOLD:
-        Serial.print_P(PSTR("ALT_HOLD"));
+        cliSerial->print_P(PSTR("ALT_HOLD"));
         break;
     case AUTO:
-        Serial.print_P(PSTR("AUTO"));
+        cliSerial->print_P(PSTR("AUTO"));
         break;
     case GUIDED:
-        Serial.print_P(PSTR("GUIDED"));
+        cliSerial->print_P(PSTR("GUIDED"));
         break;
     case LOITER:
-        Serial.print_P(PSTR("LOITER"));
+        cliSerial->print_P(PSTR("LOITER"));
         break;
     case RTL:
-        Serial.print_P(PSTR("RTL"));
+        cliSerial->print_P(PSTR("RTL"));
         break;
     case CIRCLE:
-        Serial.print_P(PSTR("CIRCLE"));
+        cliSerial->print_P(PSTR("CIRCLE"));
         break;
     case POSITION:
-        Serial.print_P(PSTR("POSITION"));
+        cliSerial->print_P(PSTR("POSITION"));
         break;
     case LAND:
-        Serial.print_P(PSTR("LAND"));
+        cliSerial->print_P(PSTR("LAND"));
         break;
     case OF_LOITER:
-        Serial.print_P(PSTR("OF_LOITER"));
+        cliSerial->print_P(PSTR("OF_LOITER"));
         break;
     case TOY_M:
-        Serial.print_P(PSTR("TOY_M"));
+        cliSerial->print_P(PSTR("TOY_M"));
         break;
     case TOY_A:
-        Serial.print_P(PSTR("TOY_A"));
+        cliSerial->print_P(PSTR("TOY_A"));
         break;
     default:
-        Serial.print_P(PSTR("---"));
+        cliSerial->print_P(PSTR("---"));
         break;
     }
 }

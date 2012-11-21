@@ -96,7 +96,7 @@ static void init_arm_motors()
     // disable failsafe because initialising everything takes a while
     failsafe_disable();
 
-    //Serial.printf("\nARM\n");
+    //cliSerial->printf("\nARM\n");
 #if HIL_MODE != HIL_MODE_DISABLED || defined(DESKTOP_BUILD)
     gcs_send_text_P(SEVERITY_HIGH, PSTR("ARMING MOTORS"));
 #endif
@@ -104,7 +104,7 @@ static void init_arm_motors()
     // we don't want writes to the serial port to cause us to pause
     // mid-flight, so set the serial ports non-blocking once we arm
     // the motors
-    Serial.set_blocking_writes(false);
+    cliSerial->set_blocking_writes(false);
     if (gcs3.initialised) {
         Serial3.set_blocking_writes(false);
     }
