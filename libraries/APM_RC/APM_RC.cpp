@@ -5,5 +5,5 @@
  */
 #include "APM_RC.h"
 
-volatile uint32_t APM_RC_Class::_last_update;
+volatile uint8_t APM_RC_Class::_ppm_count;
 
