@@ -799,7 +799,7 @@ GCS_MAVLINK::update(void)
                 crlf_count = 0;
             }
             if (crlf_count == 3) {
-                run_cli();
+                run_cli(_port);
             }
         }
 #endif
@@ -894,7 +894,7 @@ GCS_MAVLINK::data_stream_send(void)
         send_message(MSG_RAW_IMU1);
         send_message(MSG_RAW_IMU2);
         send_message(MSG_RAW_IMU3);
-        //Serial.printf("mav1 %d\n", (int)streamRateRawSensors.get());
+        //cliSerial->printf("mav1 %d\n", (int)streamRateRawSensors.get());
     }
 
     if (stream_trigger(STREAM_EXTENDED_STATUS)) {
@@ -918,29 +918,29 @@ GCS_MAVLINK::data_stream_send(void)
 
     if (stream_trigger(STREAM_POSITION)) {
         // sent with GPS read
-        //Serial.printf("mav3 %d\n", (int)streamRatePosition.get());
+        //cliSerial->printf("mav3 %d\n", (int)streamRatePosition.get());
     }
 
     if (stream_trigger(STREAM_RAW_CONTROLLER)) {
         send_message(MSG_SERVO_OUT);
-        //Serial.printf("mav4 %d\n", (int)streamRateRawController.get());
+        //cliSerial->printf("mav4 %d\n", (int)streamRateRawController.get());
     }
 
     if (stream_trigger(STREAM_RC_CHANNELS)) {
         send_message(MSG_RADIO_OUT);
         send_message(MSG_RADIO_IN);
-        //Serial.printf("mav5 %d\n", (int)streamRateRCChannels.get());
+        //cliSerial->printf("mav5 %d\n", (int)streamRateRCChannels.get());
     }
 
     if (stream_trigger(STREAM_EXTRA1)) {
         send_message(MSG_ATTITUDE);
         send_message(MSG_SIMSTATE);
-        //Serial.printf("mav6 %d\n", (int)streamRateExtra1.get());
+        //cliSerial->printf("mav6 %d\n", (int)streamRateExtra1.get());
     }
 
     if (stream_trigger(STREAM_EXTRA2)) {
         send_message(MSG_VFR_HUD);
-        //Serial.printf("mav7 %d\n", (int)streamRateExtra2.get());
+        //cliSerial->printf("mav7 %d\n", (int)streamRateExtra2.get());
     }
 
     if (stream_trigger(STREAM_EXTRA3)) {
@@ -1604,7 +1604,7 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
             if (!waypoint_receiving) break;
 
 
-            //Serial.printf("req: %d, seq: %d, total: %d\n", waypoint_request_i,packet.seq, g.command_total.get());
+            //cliSerial->printf("req: %d, seq: %d, total: %d\n", waypoint_request_i,packet.seq, g.command_total.get());
 
             // check if this is the requested waypoint
             if (packet.seq != waypoint_request_i)
@@ -1828,8 +1828,8 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
         // TODO: check scaling for temp/absPress
         float temp = 70;
         float absPress = 1;
-        //      Serial.printf_P(PSTR("accel:\t%d\t%d\t%d\n"), packet.xacc, packet.yacc, packet.zacc);
-        //      Serial.printf_P(PSTR("gyro:\t%d\t%d\t%d\n"), packet.xgyro, packet.ygyro, packet.zgyro);
+        //      cliSerial->printf_P(PSTR("accel:\t%d\t%d\t%d\n"), packet.xacc, packet.yacc, packet.zacc);
+        //      cliSerial->printf_P(PSTR("gyro:\t%d\t%d\t%d\n"), packet.xgyro, packet.ygyro, packet.zgyro);
 
         // rad/sec
         Vector3f gyros;

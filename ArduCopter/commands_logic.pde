@@ -298,7 +298,7 @@ static void do_loiter_unlimited()
 {
     wp_control = LOITER_MODE;
 
-    //Serial.println("dloi ");
+    //cliSerial->println("dloi ");
     if(command_nav_queue.lat == 0) {
         set_next_WP(&current_loc);
         wp_control = LOITER_MODE;
@@ -466,7 +466,7 @@ static bool verify_nav_wp()
         if ((millis() - loiter_time) > loiter_time_max) {
             wp_verify_byte |= NAV_DELAY;
             //gcs_send_text_P(SEVERITY_LOW,PSTR("verify_must: LOITER time complete"));
-            //Serial.println("vlt done");
+            //cliSerial->println("vlt done");
         }
     }
 
@@ -508,7 +508,7 @@ static bool verify_loiter_time()
 
 static bool verify_loiter_turns()
 {
-    //Serial.printf("loiter_sum: %d \n", loiter_sum);
+    //cliSerial->printf("loiter_sum: %d \n", loiter_sum);
     // have we rotated around the center enough times?
     // -----------------------------------------------
     if(abs(loiter_sum) > loiter_total) {
@@ -542,10 +542,10 @@ static bool verify_RTL()
 
 static void do_wait_delay()
 {
-    //Serial.print("dwd ");
+    //cliSerial->print("dwd ");
     condition_start = millis();
     condition_value = command_cond_queue.lat * 1000;     // convert to milliseconds
-    //Serial.println(condition_value,DEC);
+    //cliSerial->println(condition_value,DEC);
 }
 
 static void do_change_alt()
@@ -564,7 +564,7 @@ static void do_within_distance()
 
 static void do_yaw()
 {
-    //Serial.println("dyaw ");
+    //cliSerial->println("dyaw ");
     yaw_tracking = MAV_ROI_NONE;
 
     // target angle in degrees
@@ -624,19 +624,19 @@ static void do_yaw()
 
 static bool verify_wait_delay()
 {
-    //Serial.print("vwd");
+    //cliSerial->print("vwd");
     if ((unsigned)(millis() - condition_start) > (unsigned)condition_value) {
-        //Serial.println("y");
+        //cliSerial->println("y");
         condition_value = 0;
         return true;
     }
-    //Serial.println("n");
+    //cliSerial->println("n");
     return false;
 }
 
 static bool verify_change_alt()
 {
-    //Serial.printf("change_alt, ca:%d, na:%d\n", (int)current_loc.alt, (int)next_WP.alt);
+    //cliSerial->printf("change_alt, ca:%d, na:%d\n", (int)current_loc.alt, (int)next_WP.alt);
     if ((int32_t)condition_start < next_WP.alt) {
         // we are going higer
         if(current_loc.alt > next_WP.alt) {
@@ -653,7 +653,7 @@ static bool verify_change_alt()
 
 static bool verify_within_distance()
 {
-    //Serial.printf("cond dist :%d\n", (int)condition_value);
+    //cliSerial->printf("cond dist :%d\n", (int)condition_value);
     if (wp_distance < condition_value) {
         condition_value = 0;
         return true;
@@ -663,7 +663,7 @@ static bool verify_within_distance()
 
 static bool verify_yaw()
 {
-    //Serial.printf("vyaw %d\n", (int)(nav_yaw/100));
+    //cliSerial->printf("vyaw %d\n", (int)(nav_yaw/100));
 
     if((millis() - command_yaw_start_time) > command_yaw_time) {
         // time out
@@ -674,7 +674,7 @@ static bool verify_yaw()
         // TO-DO: there's still a problem with Condition_yaw, it will do it two times(probably more) sometimes, if it hasn't reached the next waypoint yet.
         // it should only do it one time so there should be code here to prevent another Condition_Yaw.
 
-        //Serial.println("Y");
+        //cliSerial->println("Y");
         return true;
 
     }else{
@@ -689,7 +689,7 @@ static bool verify_yaw()
         }
         nav_yaw         = wrap_360(nav_yaw);
         auto_yaw        = nav_yaw;
-        //Serial.printf("ny %ld\n",nav_yaw);
+        //cliSerial->printf("ny %ld\n",nav_yaw);
         return false;
     }
 }
@@ -757,27 +757,27 @@ static void do_jump()
     // when in use, it contains the current remaining jumps
     static int8_t jump = -10;                                                                   // used to track loops in jump command
 
-    //Serial.printf("do Jump: %d\n", jump);
+    //cliSerial->printf("do Jump: %d\n", jump);
 
     if(jump == -10) {
-        //Serial.printf("Fresh Jump\n");
+        //cliSerial->printf("Fresh Jump\n");
         // we use a locally stored index for jump
         jump = command_cond_queue.lat;
     }
-    //Serial.printf("Jumps left: %d\n",jump);
+    //cliSerial->printf("Jumps left: %d\n",jump);
 
     if(jump > 0) {
-        //Serial.printf("Do Jump to %d\n",command_cond_queue.p1);
+        //cliSerial->printf("Do Jump to %d\n",command_cond_queue.p1);
         jump--;
         change_command(command_cond_queue.p1);
 
     } else if (jump == 0) {
-        //Serial.printf("Did last jump\n");
+        //cliSerial->printf("Did last jump\n");
         // we're done, move along
         jump = -11;
 
     } else if (jump == -1) {
-        //Serial.printf("jumpForever\n");
+        //cliSerial->printf("jumpForever\n");
         // repeat forever
         change_command(command_cond_queue.p1);
     }

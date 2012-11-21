@@ -75,7 +75,7 @@ static void set_cmd_with_index(struct Location temp, int i)
 {
 
     i = constrain(i, 0, g.command_total.get());
-    //Serial.printf("set_command: %d with id: %d\n", i, temp.id);
+    //cliSerial->printf("set_command: %d with id: %d\n", i, temp.id);
 
     // store home as 0 altitude!!!
     // Home is always a MAV_CMD_NAV_WAYPOINT (16)
@@ -146,7 +146,7 @@ static void set_next_WP(struct Location *wp)
             prev_WP = current_loc;
     }
 
-    //Serial.printf("set_next_WP #%d, ", command_nav_index);
+    //cliSerial->printf("set_next_WP #%d, ", command_nav_index);
     //print_wp(&prev_WP, command_nav_index -1);
 
     // Load the next_WP slot

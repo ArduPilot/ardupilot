@@ -301,7 +301,7 @@ static void run_navigation_contollers()
         if(home_distance > SUPER_SIMPLE_RADIUS) {        // 10m from home
             // we reset the angular offset to be a vector from home to the quad
             initial_simple_bearing = home_to_copter_bearing;
-            //Serial.printf("ISB: %d\n", initial_simple_bearing);
+            //cliSerial->printf("ISB: %d\n", initial_simple_bearing);
         }
     }
 
@@ -477,7 +477,7 @@ static void calc_nav_rate(int16_t max_speed)
 // We use the DCM's matrix to precalculate these trig values at 50hz
 static void calc_nav_pitch_roll()
 {
-    //Serial.printf("ys %ld, cx %1.4f, _cx %1.4f | sy %1.4f, _sy %1.4f\n", dcm.yaw_sensor, cos_yaw_x, _cos_yaw_x, sin_yaw_y, _sin_yaw_y);
+    //cliSerial->printf("ys %ld, cx %1.4f, _cx %1.4f | sy %1.4f, _sy %1.4f\n", dcm.yaw_sensor, cos_yaw_x, _cos_yaw_x, sin_yaw_y, _sin_yaw_y);
     // rotate the vector
     auto_roll       = (float)nav_lon * sin_yaw_y - (float)nav_lat * cos_yaw_x;
     auto_pitch      = (float)nav_lon * cos_yaw_x + (float)nav_lat * sin_yaw_y;

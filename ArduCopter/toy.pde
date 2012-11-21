@@ -156,7 +156,7 @@ void roll_pitch_toy()
 
 #elif TOY_MIXER == TOY_LINEAR_MIXER
     roll_rate = -((int32_t)g.rc_2.control_in * (yaw_rate/100)) /30;
-    //Serial.printf("roll_rate: %d\n",roll_rate);
+    //cliSerial->printf("roll_rate: %d\n",roll_rate);
     roll_rate = constrain(roll_rate, -2000, 2000);
 
 #elif TOY_MIXER == TOY_EXTERNAL_MIXER
