@@ -56,6 +56,10 @@ public:
     ///
     typedef int8_t (*func)(uint8_t argc, const struct arg *argv);
 
+	static void set_port(FastSerial *port) {
+		_port = port;
+	}
+
     /// menu pre-prompt function
     ///
     /// Called immediately before waiting for the user to type a command; can be
@@ -120,6 +124,9 @@ private:
 
     static char             _inbuf[MENU_COMMANDLINE_MAX];       ///< input buffer
     static arg              _argv[MENU_ARGS_MAX + 1];                   ///< arguments
+
+	// port to run on
+	static FastSerial       *_port;
 };
 
 /// Macros used to define a menu.

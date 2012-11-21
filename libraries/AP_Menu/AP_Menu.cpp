@@ -16,6 +16,8 @@
 // statics
 char Menu::_inbuf[MENU_COMMANDLINE_MAX];
 Menu::arg Menu::_argv[MENU_ARGS_MAX + 1];
+FastSerial *Menu::_port;
+
 
 // constructor
 Menu::Menu(const prog_char *prompt, const Menu::command *commands, uint8_t entries, preprompt ppfunc) :
@@ -36,6 +38,11 @@ Menu::run(void)
     int c;
     char                *s;
 
+	if (_port == NULL) {
+		// default to main serial port
+		_port = &Serial;
+	}
+
     // loop performing commands
     for (;; ) {
 
@@ -45,32 +52,32 @@ Menu::run(void)
 
         // loop reading characters from the input
         len = 0;
-        Serial.printf("%S] ", FPSTR(_prompt));
+        _port->printf_P(PSTR("%S] "), FPSTR(_prompt));
         for (;; ) {
-            c = Serial.read();
+            c = _port->read();
             if (-1 == c)
                 continue;
             // carriage return -> process command
             if ('\r' == c) {
                 _inbuf[len] = '\0';
-                Serial.write('\r');
-                Serial.write('\n');
+                _port->write('\r');
+                _port->write('\n');
                 break;
             }
             // backspace
             if ('\b' == c) {
                 if (len > 0) {
                     len--;
-                    Serial.write('\b');
-                    Serial.write(' ');
-                    Serial.write('\b');
+                    _port->write('\b');
+                    _port->write(' ');
+                    _port->write('\b');
                     continue;
                 }
             }
             // printable character
             if (isprint(c) && (len < (MENU_COMMANDLINE_MAX - 1))) {
                 _inbuf[len++] = c;
-                Serial.write((char)c);
+                _port->write((char)c);
                 continue;
             }
         }
@@ -127,7 +134,7 @@ Menu::run(void)
 
         if (cmd_found==false)
         {
-            Serial.println("Invalid command, type 'help'");
+            _port->println_P(PSTR("Invalid command, type 'help'"));
         }
 
     }
@@ -139,9 +146,11 @@ Menu::_help(void)
 {
     int i;
 
-    Serial.println("Commands:");
-    for (i = 0; i < _entries; i++)
-        Serial.printf("  %S\n", FPSTR(_commands[i].command));
+    _port->println_P(PSTR("Commands:"));
+    for (i = 0; i < _entries; i++) {
+		delay(10);
+        _port->printf_P(PSTR("  %S\n"), FPSTR(_commands[i].command));
+	}
 }
 
 // run the n'th command in the menu
