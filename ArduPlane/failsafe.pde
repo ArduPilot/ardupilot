@@ -39,7 +39,11 @@ void failsafe_check(uint32_t tnow)
         // pass RC inputs to outputs every 20ms
         last_timestamp = tnow;
         APM_RC.clearOverride();
-        for (uint8_t ch=0; ch<4; ch++) {
+        uint8_t start_ch = 0;
+        if (demoing_servos) {
+            start_ch = 1;
+        }
+        for (uint8_t ch=start_ch; ch<4; ch++) {
             APM_RC.OutputCh(ch, APM_RC.InputCh(ch));
         }
         RC_Channel_aux::copy_radio_in_out(RC_Channel_aux::k_manual);
