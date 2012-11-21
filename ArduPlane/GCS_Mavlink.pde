@@ -797,7 +797,7 @@ GCS_MAVLINK::update(void)
                 crlf_count = 0;
             }
             if (crlf_count == 3) {
-                run_cli();
+                run_cli(_port);
             }
         }
 #endif
@@ -1868,8 +1868,6 @@ mission_failed:
         // TODO: check scaling for temp/absPress
         //float temp = 70;
         //float absPress = 1;
-        //Serial.printf_P(PSTR("accel: %d %d %d\n"), packet.xacc, packet.yacc, packet.zacc);
-        //Serial.printf_P(PSTR("gyro: %d %d %d\n"), packet.xgyro, packet.ygyro, packet.zgyro);
 
         // rad/sec
         Vector3f gyros;

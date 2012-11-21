@@ -108,7 +108,7 @@ static void read_radio()
     }
 
     /*
-     *  Serial.printf_P(PSTR("OUT 1: %d\t2: %d\t3: %d\t4: %d \n"),
+     *  cliSerial->printf_P(PSTR("OUT 1: %d\t2: %d\t3: %d\t4: %d \n"),
      *                       (int)g.rc_1.control_in,
      *                       (int)g.rc_2.control_in,
      *                       (int)g.rc_3.control_in,

@@ -18,7 +18,7 @@ static int8_t   test_mode(uint8_t argc, const Menu::arg *argv);         // in te
 // printf_P is a version of print_f that reads from flash memory
 static int8_t   main_menu_help(uint8_t argc, const Menu::arg *argv)
 {
-    Serial.printf_P(PSTR("Commands:\n"
+    cliSerial->printf_P(PSTR("Commands:\n"
                          "  logs        log readback/setup mode\n"
                          "  setup       setup mode\n"
                          "  test        test mode\n"
@@ -42,10 +42,14 @@ static const struct Menu::command main_menu_commands[] PROGMEM = {
 MENU(main_menu, THISFIRMWARE, main_menu_commands);
 
 // the user wants the CLI. It never exits
-static void run_cli(void)
+static void run_cli(FastSerial *port)
 {
     // disable the failsafe code in the CLI
     timer_scheduler.set_failsafe(NULL);
+
+    cliSerial = port;
+    Menu::set_port(port);
+    port->set_blocking_writes(true);
 
     while (1) {
         main_menu.run();
@@ -86,7 +90,7 @@ static void init_ardupilot()
     // standard gps running
     Serial1.begin(38400, 256, 16);
 
-    Serial.printf_P(PSTR("\n\nInit " THISFIRMWARE
+    cliSerial->printf_P(PSTR("\n\nInit " THISFIRMWARE
                          "\n\nFree RAM: %u\n"),
                     memcheck_available_memory());
 
@@ -169,7 +173,7 @@ static void init_ardupilot()
     if (g.compass_enabled==true) {
         compass.set_orientation(MAG_ORIENTATION);                                                       // set compass's orientation on aircraft
         if (!compass.init() || !compass.read()) {
-            Serial.println_P(PSTR("Compass initialisation failed!"));
+            cliSerial->println_P(PSTR("Compass initialisation failed!"));
             g.compass_enabled = false;
         } else {
             ahrs.set_compass(&compass);
@@ -220,7 +224,11 @@ static void init_ardupilot()
      */
     timer_scheduler.set_failsafe(failsafe_check);
 
-    Serial.printf_P(PSTR("\nPress ENTER 3 times to start interactive setup\n\n"));
+    const prog_char_t *msg = PSTR("\nPress ENTER 3 times to start interactive setup\n");
+    cliSerial->println_P(msg);
+#if USB_MUX_PIN == 0
+    Serial3.println_P(msg);
+#endif
 
     if (ENABLE_AIR_START == 1) {
         // Perform an air start and get back to flying
@@ -504,7 +512,7 @@ static uint32_t map_baudrate(int8_t rate, uint32_t default_baud)
     case 111:  return 111100;
     case 115:  return 115200;
     }
-    Serial.println_P(PSTR("Invalid SERIAL3_BAUD"));
+    cliSerial->println_P(PSTR("Invalid SERIAL3_BAUD"));
     return default_baud;
 }
 
@@ -554,7 +562,7 @@ uint16_t board_voltage(void)
  */
 static void reboot_apm(void)
 {
-    Serial.println_P(PSTR("REBOOTING"));
+    cliSerial->println_P(PSTR("REBOOTING"));
     delay(100);
     // see http://www.arduino.cc/cgi-bin/yabb2/YaBB.pl?num=1250663814/
     // for the method
@@ -570,36 +578,36 @@ print_flight_mode(uint8_t mode)
 {
     switch (mode) {
     case MANUAL:
-        Serial.println_P(PSTR("Manual"));
+        cliSerial->println_P(PSTR("Manual"));
         break;
     case CIRCLE:
-        Serial.println_P(PSTR("Circle"));
+        cliSerial->println_P(PSTR("Circle"));
         break;
     case STABILIZE:
-        Serial.println_P(PSTR("Stabilize"));
+        cliSerial->println_P(PSTR("Stabilize"));
         break;
     case FLY_BY_WIRE_A:
-        Serial.println_P(PSTR("FBW_A"));
+        cliSerial->println_P(PSTR("FBW_A"));
         break;
     case FLY_BY_WIRE_B:
-        Serial.println_P(PSTR("FBW_B"));
+        cliSerial->println_P(PSTR("FBW_B"));
         break;
     case AUTO:
-        Serial.println_P(PSTR("AUTO"));
+        cliSerial->println_P(PSTR("AUTO"));
         break;
     case RTL:
-        Serial.println_P(PSTR("RTL"));
+        cliSerial->println_P(PSTR("RTL"));
         break;
     case LOITER:
-        Serial.println_P(PSTR("Loiter"));
+        cliSerial->println_P(PSTR("Loiter"));
         break;
     default:
-        Serial.println_P(PSTR("---"));
+        cliSerial->println_P(PSTR("---"));
         break;
     }
 }
 
 static void print_comma(void)
 {
-    Serial.print_P(PSTR(","));
+    cliSerial->print_P(PSTR(","));
 }

@@ -244,10 +244,7 @@ static void do_takeoff()
     set_next_WP(&next_nav_command);
     // pitch in deg, airspeed  m/s, throttle %, track WP 1 or 0
     takeoff_pitch_cd                = (int)next_nav_command.p1 * 100;
-    //Serial.printf_P(PSTR("TO pitch:"));	Serial.println(takeoff_pitch);
-    //Serial.printf_P(PSTR("home.alt:"));	Serial.println(home.alt);
     takeoff_altitude        = next_nav_command.alt;
-    //Serial.printf_P(PSTR("takeoff_altitude:"));	Serial.println(takeoff_altitude);
     next_WP.lat             = home.lat + 1000;          // so we don't have bad calcs
     next_WP.lng             = home.lng + 1000;          // so we don't have bad calcs
     takeoff_complete        = false;                            // set flag to use gps ground course during TO.  IMU will be doing yaw drift correction
