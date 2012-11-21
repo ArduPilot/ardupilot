@@ -446,8 +446,11 @@ get_throttle_rate(int16_t z_target_speed)
     z_rate_error    = z_target_speed - climb_rate;              // calc the speed error
 #endif
 
-	int16_t tmp     = ((int32_t)z_target_speed * (int32_t)g.throttle_cruise) / 280;
-	tmp 			= min(tmp, 500);
+////////////////////////////////////////////////////////////////////////////////////////
+// Commenting this out because 'tmp' is not being used anymore?
+// Robert Lefebvre 21/11/2012
+//	int16_t tmp     = ((int32_t)z_target_speed * (int32_t)g.throttle_cruise) / 280;
+//	tmp 			= min(tmp, 500);
 
     // separately calculate p, i, d values for logging
     p = g.pid_throttle.get_p(z_rate_error);
@@ -462,7 +465,7 @@ get_throttle_rate(int16_t z_target_speed)
 
     //
     // limit the rate
-    output +=  constrain(p+i+d, -150, 200);
+    output +=  constrain(p+i+d, THROTTLE_RATE_CONSTRAIN_NEGATIVE, THROTTLE_RATE_CONSTRAIN_POSITIVE);
 
 #if LOGGING_ENABLED == ENABLED
     static int8_t log_counter = 0;                                      // used to slow down logging of PID values to dataflash
