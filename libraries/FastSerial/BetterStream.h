@@ -25,12 +25,13 @@ public:
         void            println_P(const prog_char_t *);
         void            printf(const char *, ...)
                 __attribute__ ((format(__printf__, 2, 3)));
-        void            _printf_P(const prog_char *, ...);
+        void            _printf_P(const prog_char_t *, ...);
                 __attribute__ ((format(__printf__, 2, 3)));
+        void            vprintf_P(const prog_char_t *, va_list);
 
         virtual int     txspace(void);
 
-#define printf_P(fmt, ...) _printf_P((const prog_char *)fmt, ## __VA_ARGS__)
+#define printf_P(fmt, ...) _printf_P((const prog_char_t *)fmt, ## __VA_ARGS__)
 
 private:
         void            _vprintf(unsigned char, const char *, va_list)
