@@ -70,14 +70,14 @@ MENU(test_menu, "test", test_menu_commands);
 static int8_t
 test_mode(uint8_t argc, const Menu::arg *argv)
 {
-    Serial.printf_P(PSTR("Test Mode\n\n"));
+    cliSerial->printf_P(PSTR("Test Mode\n\n"));
     test_menu.run();
     return 0;
 }
 
 static void print_hit_enter()
 {
-    Serial.printf_P(PSTR("Hit Enter to exit.\n\n"));
+    cliSerial->printf_P(PSTR("Hit Enter to exit.\n\n"));
 }
 
 static int8_t
@@ -87,10 +87,10 @@ test_eedump(uint8_t argc, const Menu::arg *argv)
 
     // hexdump the EEPROM
     for (i = 0; i < EEPROM_MAX_ADDR; i += 16) {
-        Serial.printf_P(PSTR("%04x:"), i);
+        cliSerial->printf_P(PSTR("%04x:"), i);
         for (j = 0; j < 16; j++)
-            Serial.printf_P(PSTR(" %02x"), eeprom_read_byte((const uint8_t *)(i + j)));
-        Serial.println();
+            cliSerial->printf_P(PSTR(" %02x"), eeprom_read_byte((const uint8_t *)(i + j)));
+        cliSerial->println();
     }
     return(0);
 }
@@ -108,7 +108,7 @@ test_radio_pwm(uint8_t argc, const Menu::arg *argv)
         // ----------------------------------------------------------
         read_radio();
 
-        Serial.printf_P(PSTR("IN:\t1: %d\t2: %d\t3: %d\t4: %d\t5: %d\t6: %d\t7: %d\t8: %d\n"),
+        cliSerial->printf_P(PSTR("IN:\t1: %d\t2: %d\t3: %d\t4: %d\t5: %d\t6: %d\t7: %d\t8: %d\n"),
                         (int)g.channel_roll.radio_in,
                         (int)g.channel_pitch.radio_in,
                         (int)g.channel_throttle.radio_in,
@@ -118,7 +118,7 @@ test_radio_pwm(uint8_t argc, const Menu::arg *argv)
                         (int)g.rc_7.radio_in,
                         (int)g.rc_8.radio_in);
 
-        if(Serial.available() > 0) {
+        if(cliSerial->available() > 0) {
             return (0);
         }
     }
@@ -136,15 +136,15 @@ test_passthru(uint8_t argc, const Menu::arg *argv)
 
         // New radio frame? (we could use also if((millis()- timer) > 20)
         if (APM_RC.GetState() == 1) {
-            Serial.print_P(PSTR("CH:"));
+            cliSerial->print_P(PSTR("CH:"));
             for(int16_t i = 0; i < 8; i++) {
-                Serial.print(APM_RC.InputCh(i));        // Print channel values
+                cliSerial->print(APM_RC.InputCh(i));        // Print channel values
                 print_comma();
                 APM_RC.OutputCh(i, APM_RC.InputCh(i)); // Copy input to Servos
             }
-            Serial.println();
+            cliSerial->println();
         }
-        if (Serial.available() > 0) {
+        if (cliSerial->available() > 0) {
             return (0);
         }
     }
@@ -174,7 +174,7 @@ test_radio(uint8_t argc, const Menu::arg *argv)
         // ------------------------------
         set_servos();
 
-        Serial.printf_P(PSTR("IN 1: %d\t2: %d\t3: %d\t4: %d\t5: %d\t6: %d\t7: %d\t8: %d\n"),
+        cliSerial->printf_P(PSTR("IN 1: %d\t2: %d\t3: %d\t4: %d\t5: %d\t6: %d\t7: %d\t8: %d\n"),
                         (int)g.channel_roll.control_in,
                         (int)g.channel_pitch.control_in,
                         (int)g.channel_throttle.control_in,
@@ -184,7 +184,7 @@ test_radio(uint8_t argc, const Menu::arg *argv)
                         (int)g.rc_7.control_in,
                         (int)g.rc_8.control_in);
 
-        if(Serial.available() > 0) {
+        if(cliSerial->available() > 0) {
             return (0);
         }
     }
@@ -206,7 +206,7 @@ test_failsafe(uint8_t argc, const Menu::arg *argv)
 
     oldSwitchPosition = readSwitch();
 
-    Serial.printf_P(PSTR("Unplug battery, throttle in neutral, turn off radio.\n"));
+    cliSerial->printf_P(PSTR("Unplug battery, throttle in neutral, turn off radio.\n"));
     while(g.channel_throttle.control_in > 0) {
         delay(20);
         read_radio();
@@ -217,18 +217,18 @@ test_failsafe(uint8_t argc, const Menu::arg *argv)
         read_radio();
 
         if(g.channel_throttle.control_in > 0) {
-            Serial.printf_P(PSTR("THROTTLE CHANGED %d \n"), (int)g.channel_throttle.control_in);
+            cliSerial->printf_P(PSTR("THROTTLE CHANGED %d \n"), (int)g.channel_throttle.control_in);
             fail_test++;
         }
 
         if(oldSwitchPosition != readSwitch()) {
-            Serial.printf_P(PSTR("CONTROL MODE CHANGED: "));
+            cliSerial->printf_P(PSTR("CONTROL MODE CHANGED: "));
             print_flight_mode(readSwitch());
             fail_test++;
         }
 
         if(g.throttle_fs_enabled && g.channel_throttle.get_failsafe()) {
-            Serial.printf_P(PSTR("THROTTLE FAILSAFE ACTIVATED: %d, "), (int)g.channel_throttle.radio_in);
+            cliSerial->printf_P(PSTR("THROTTLE FAILSAFE ACTIVATED: %d, "), (int)g.channel_throttle.radio_in);
             print_flight_mode(readSwitch());
             fail_test++;
         }
@@ -236,8 +236,8 @@ test_failsafe(uint8_t argc, const Menu::arg *argv)
         if(fail_test > 0) {
             return (0);
         }
-        if(Serial.available() > 0) {
-            Serial.printf_P(PSTR("LOS caused no change in APM.\n"));
+        if(cliSerial->available() > 0) {
+            cliSerial->printf_P(PSTR("LOS caused no change in APM.\n"));
             return (0);
         }
     }
@@ -255,12 +255,12 @@ test_battery(uint8_t argc, const Menu::arg *argv)
             read_radio();
             read_battery();
             if (g.battery_monitoring == 3) {
-                Serial.printf_P(PSTR("V: %4.4f\n"),
+                cliSerial->printf_P(PSTR("V: %4.4f\n"),
                                 battery_voltage1,
                                 current_amps1,
                                 current_total1);
             } else {
-                Serial.printf_P(PSTR("V: %4.4f, A: %4.4f, mAh: %4.4f\n"),
+                cliSerial->printf_P(PSTR("V: %4.4f, A: %4.4f, mAh: %4.4f\n"),
                                 battery_voltage1,
                                 current_amps1,
                                 current_total1);
@@ -270,12 +270,12 @@ test_battery(uint8_t argc, const Menu::arg *argv)
             // ------------------------------
             set_servos();
 
-            if(Serial.available() > 0) {
+            if(cliSerial->available() > 0) {
                 return (0);
             }
         }
     } else {
-        Serial.printf_P(PSTR("Not enabled\n"));
+        cliSerial->printf_P(PSTR("Not enabled\n"));
         return (0);
     }
 
@@ -288,17 +288,17 @@ test_relay(uint8_t argc, const Menu::arg *argv)
     delay(1000);
 
     while(1) {
-        Serial.printf_P(PSTR("Relay on\n"));
+        cliSerial->printf_P(PSTR("Relay on\n"));
         relay.on();
         delay(3000);
-        if(Serial.available() > 0) {
+        if(cliSerial->available() > 0) {
             return (0);
         }
 
-        Serial.printf_P(PSTR("Relay off\n"));
+        cliSerial->printf_P(PSTR("Relay off\n"));
         relay.off();
         delay(3000);
-        if(Serial.available() > 0) {
+        if(cliSerial->available() > 0) {
             return (0);
         }
     }
@@ -311,14 +311,14 @@ test_wp(uint8_t argc, const Menu::arg *argv)
 
     // save the alitude above home option
     if (g.RTL_altitude_cm < 0) {
-        Serial.printf_P(PSTR("Hold current altitude\n"));
+        cliSerial->printf_P(PSTR("Hold current altitude\n"));
     }else{
-        Serial.printf_P(PSTR("Hold altitude of %dm\n"), (int)g.RTL_altitude_cm/100);
+        cliSerial->printf_P(PSTR("Hold altitude of %dm\n"), (int)g.RTL_altitude_cm/100);
     }
 
-    Serial.printf_P(PSTR("%d waypoints\n"), (int)g.command_total);
-    Serial.printf_P(PSTR("Hit radius: %d\n"), (int)g.waypoint_radius);
-    Serial.printf_P(PSTR("Loiter radius: %d\n\n"), (int)g.loiter_radius);
+    cliSerial->printf_P(PSTR("%d waypoints\n"), (int)g.command_total);
+    cliSerial->printf_P(PSTR("Hit radius: %d\n"), (int)g.waypoint_radius);
+    cliSerial->printf_P(PSTR("Loiter radius: %d\n\n"), (int)g.loiter_radius);
 
     for(byte i = 0; i <= g.command_total; i++) {
         struct Location temp = get_cmd_with_index(i);
@@ -331,7 +331,7 @@ test_wp(uint8_t argc, const Menu::arg *argv)
 static void
 test_wp_print(struct Location *cmd, byte wp_index)
 {
-    Serial.printf_P(PSTR("command #: %d id:%d options:%d p1:%d p2:%ld p3:%ld p4:%ld \n"),
+    cliSerial->printf_P(PSTR("command #: %d id:%d options:%d p1:%d p2:%ld p3:%ld p4:%ld \n"),
                     (int)wp_index,
                     (int)cmd->id,
                     (int)cmd->options,
@@ -346,14 +346,14 @@ test_xbee(uint8_t argc, const Menu::arg *argv)
 {
     print_hit_enter();
     delay(1000);
-    Serial.printf_P(PSTR("Begin XBee X-CTU Range and RSSI Test:\n"));
+    cliSerial->printf_P(PSTR("Begin XBee X-CTU Range and RSSI Test:\n"));
 
     while(1) {
 
         if (Serial3.available())
             Serial3.write(Serial3.read());
 
-        if(Serial.available() > 0) {
+        if(cliSerial->available() > 0) {
             return (0);
         }
     }
@@ -366,18 +366,18 @@ test_modeswitch(uint8_t argc, const Menu::arg *argv)
     print_hit_enter();
     delay(1000);
 
-    Serial.printf_P(PSTR("Control CH "));
+    cliSerial->printf_P(PSTR("Control CH "));
 
-    Serial.println(FLIGHT_MODE_CHANNEL, DEC);
+    cliSerial->println(FLIGHT_MODE_CHANNEL, DEC);
 
     while(1) {
         delay(20);
         byte switchPosition = readSwitch();
         if (oldSwitchPosition != switchPosition) {
-            Serial.printf_P(PSTR("Position %d\n"),  (int)switchPosition);
+            cliSerial->printf_P(PSTR("Position %d\n"),  (int)switchPosition);
             oldSwitchPosition = switchPosition;
         }
-        if(Serial.available() > 0) {
+        if(cliSerial->available() > 0) {
             return (0);
         }
     }
@@ -389,20 +389,20 @@ test_modeswitch(uint8_t argc, const Menu::arg *argv)
 static int8_t
 test_logging(uint8_t argc, const Menu::arg *argv)
 {
-    Serial.println_P(PSTR("Testing dataflash logging"));
+    cliSerial->println_P(PSTR("Testing dataflash logging"));
     if (!DataFlash.CardInserted()) {
-        Serial.println_P(PSTR("ERR: No dataflash inserted"));
+        cliSerial->println_P(PSTR("ERR: No dataflash inserted"));
         return 0;
     }
     DataFlash.ReadManufacturerID();
-    Serial.printf_P(PSTR("Manufacturer: 0x%02x   Device: 0x%04x\n"),
+    cliSerial->printf_P(PSTR("Manufacturer: 0x%02x   Device: 0x%04x\n"),
                     (unsigned)DataFlash.df_manufacturer,
                     (unsigned)DataFlash.df_device);
-    Serial.printf_P(PSTR("NumPages: %u  PageSize: %u\n"),
+    cliSerial->printf_P(PSTR("NumPages: %u  PageSize: %u\n"),
                     (unsigned)DataFlash.df_NumPages+1,
                     (unsigned)DataFlash.df_PageSize);
     DataFlash.StartRead(DataFlash.df_NumPages+1);
-    Serial.printf_P(PSTR("Format version: %lx  Expected format version: %lx\n"),
+    cliSerial->printf_P(PSTR("Format version: %lx  Expected format version: %lx\n"),
                     (unsigned long)DataFlash.ReadLong(), (unsigned long)DF_LOGGING_FORMAT);
     return 0;
 }
@@ -419,14 +419,14 @@ test_adc(uint8_t argc, const Menu::arg *argv)
     print_hit_enter();
     adc.Init(&timer_scheduler);
     delay(1000);
-    Serial.printf_P(PSTR("ADC\n"));
+    cliSerial->printf_P(PSTR("ADC\n"));
     delay(1000);
 
     while(1) {
-        for (int16_t i=0; i<9; i++) Serial.printf_P(PSTR("%.1f\t"),adc.Ch(i));
-        Serial.println();
+        for (int16_t i=0; i<9; i++) cliSerial->printf_P(PSTR("%.1f\t"),adc.Ch(i));
+        cliSerial->println();
         delay(100);
-        if(Serial.available() > 0) {
+        if(cliSerial->available() > 0) {
             return (0);
         }
     }
@@ -449,15 +449,15 @@ test_gps(uint8_t argc, const Menu::arg *argv)
         g_gps->update();
 
         if (g_gps->new_data) {
-            Serial.printf_P(PSTR("Lat: %ld, Lon %ld, Alt: %ldm, #sats: %d\n"),
+            cliSerial->printf_P(PSTR("Lat: %ld, Lon %ld, Alt: %ldm, #sats: %d\n"),
                             (long)g_gps->latitude,
                             (long)g_gps->longitude,
                             (long)g_gps->altitude/100,
                             (int)g_gps->num_sats);
         }else{
-            Serial.printf_P(PSTR("."));
+            cliSerial->printf_P(PSTR("."));
         }
-        if(Serial.available() > 0) {
+        if(cliSerial->available() > 0) {
             return (0);
         }
     }
@@ -466,7 +466,7 @@ test_gps(uint8_t argc, const Menu::arg *argv)
 static int8_t
 test_ins(uint8_t argc, const Menu::arg *argv)
 {
-    //Serial.printf_P(PSTR("Calibrating."));
+    //cliSerial->printf_P(PSTR("Calibrating."));
     ins.init(AP_InertialSensor::COLD_START, delay, flash_leds, &timer_scheduler);
     ahrs.reset();
 
@@ -496,14 +496,14 @@ test_ins(uint8_t argc, const Menu::arg *argv)
             // ---------------------
             Vector3f gyros  = ins.get_gyro();
             Vector3f accels = ins.get_accel();
-            Serial.printf_P(PSTR("r:%4d  p:%4d  y:%3d  g=(%5.1f %5.1f %5.1f)  a=(%5.1f %5.1f %5.1f)\n"),
+            cliSerial->printf_P(PSTR("r:%4d  p:%4d  y:%3d  g=(%5.1f %5.1f %5.1f)  a=(%5.1f %5.1f %5.1f)\n"),
                             (int)ahrs.roll_sensor / 100,
                             (int)ahrs.pitch_sensor / 100,
                             (uint16_t)ahrs.yaw_sensor / 100,
                             gyros.x, gyros.y, gyros.z,
                             accels.x, accels.y, accels.z);
         }
-        if(Serial.available() > 0) {
+        if(cliSerial->available() > 0) {
             return (0);
         }
     }
@@ -514,14 +514,14 @@ static int8_t
 test_mag(uint8_t argc, const Menu::arg *argv)
 {
     if (!g.compass_enabled) {
-        Serial.printf_P(PSTR("Compass: "));
+        cliSerial->printf_P(PSTR("Compass: "));
         print_enabled(false);
         return (0);
     }
 
     compass.set_orientation(MAG_ORIENTATION);
     if (!compass.init()) {
-        Serial.println_P(PSTR("Compass initialisation failed!"));
+        cliSerial->println_P(PSTR("Compass initialisation failed!"));
         return 0;
     }
     ahrs.set_compass(&compass);
@@ -534,7 +534,7 @@ test_mag(uint8_t argc, const Menu::arg *argv)
     int16_t counter = 0;
     float heading = 0;
 
-    //Serial.printf_P(PSTR("MAG_ORIENTATION: %d\n"), MAG_ORIENTATION);
+    //cliSerial->printf_P(PSTR("MAG_ORIENTATION: %d\n"), MAG_ORIENTATION);
 
     print_hit_enter();
 
@@ -564,7 +564,7 @@ test_mag(uint8_t argc, const Menu::arg *argv)
             if (counter>20) {
                 if (compass.healthy) {
                     Vector3f maggy = compass.get_offsets();
-                    Serial.printf_P(PSTR("Heading: %ld, XYZ: %d, %d, %d,\tXYZoff: %6.2f, %6.2f, %6.2f\n"),
+                    cliSerial->printf_P(PSTR("Heading: %ld, XYZ: %d, %d, %d,\tXYZoff: %6.2f, %6.2f, %6.2f\n"),
                                     (wrap_360_cd(ToDeg(heading) * 100)) /100,
                                     (int)compass.mag_x,
                                     (int)compass.mag_y,
@@ -573,19 +573,19 @@ test_mag(uint8_t argc, const Menu::arg *argv)
                                     maggy.y,
                                     maggy.z);
                 } else {
-                    Serial.println_P(PSTR("compass not healthy"));
+                    cliSerial->println_P(PSTR("compass not healthy"));
                 }
                 counter=0;
             }
         }
-        if (Serial.available() > 0) {
+        if (cliSerial->available() > 0) {
             break;
         }
     }
 
     // save offsets. This allows you to get sane offset values using
     // the CLI before you go flying.
-    Serial.println_P(PSTR("saving offsets"));
+    cliSerial->println_P(PSTR("saving offsets"));
     compass.save_offsets();
     return (0);
 }
@@ -601,26 +601,26 @@ static int8_t
 test_airspeed(uint8_t argc, const Menu::arg *argv)
 {
     float airspeed_ch = pitot_analog_source.read();
-    // Serial.println(pitot_analog_source.read());
-    Serial.printf_P(PSTR("airspeed_ch: %.1f\n"), airspeed_ch);
+    // cliSerial->println(pitot_analog_source.read());
+    cliSerial->printf_P(PSTR("airspeed_ch: %.1f\n"), airspeed_ch);
 
     if (!airspeed.enabled()) {
-        Serial.printf_P(PSTR("airspeed: "));
+        cliSerial->printf_P(PSTR("airspeed: "));
         print_enabled(false);
         return (0);
 
     }else{
         print_hit_enter();
         zero_airspeed();
-        Serial.printf_P(PSTR("airspeed: "));
+        cliSerial->printf_P(PSTR("airspeed: "));
         print_enabled(true);
 
         while(1) {
             delay(20);
             read_airspeed();
-            Serial.printf_P(PSTR("%.1f m/s\n"), airspeed.get_airspeed());
+            cliSerial->printf_P(PSTR("%.1f m/s\n"), airspeed.get_airspeed());
 
-            if(Serial.available() > 0) {
+            if(cliSerial->available() > 0) {
                 return (0);
             }
         }
@@ -631,7 +631,7 @@ test_airspeed(uint8_t argc, const Menu::arg *argv)
 static int8_t
 test_pressure(uint8_t argc, const Menu::arg *argv)
 {
-    Serial.printf_P(PSTR("Uncalibrated relative airpressure\n"));
+    cliSerial->printf_P(PSTR("Uncalibrated relative airpressure\n"));
     print_hit_enter();
 
     home.alt        = 0;
@@ -643,14 +643,14 @@ test_pressure(uint8_t argc, const Menu::arg *argv)
         current_loc.alt = read_barometer() + home.alt;
 
         if (!barometer.healthy) {
-            Serial.println_P(PSTR("not healthy"));
+            cliSerial->println_P(PSTR("not healthy"));
         } else {
-            Serial.printf_P(PSTR("Alt: %0.2fm, Raw: %ld Temperature: %.1f\n"),
+            cliSerial->printf_P(PSTR("Alt: %0.2fm, Raw: %ld Temperature: %.1f\n"),
                             current_loc.alt / 100.0,
                             barometer.get_pressure(), 0.1*barometer.get_temperature());
         }
 
-        if(Serial.available() > 0) {
+        if(cliSerial->available() > 0) {
             return (0);
         }
     }
@@ -673,7 +673,7 @@ test_rawgps(uint8_t argc, const Menu::arg *argv)
             Serial3.write(Serial1.read());
             digitalWrite(C_LED_PIN, LED_OFF);
         }
-        if(Serial.available() > 0) {
+        if(cliSerial->available() > 0) {
             return (0);
         }
     }

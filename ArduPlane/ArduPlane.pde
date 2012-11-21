@@ -91,6 +91,9 @@ FastSerialPort2(Serial3);
 FastSerialPort3(Serial3);        // Telemetry port for APM1
 #endif
 
+// port to use for command line interface
+static FastSerial *cliSerial = &Serial;
+
 // this sets up the parameter table, and sets the default values. This
 // must be the first AP_Param variable declared to ensure its
 // constructor runs before the constructors of the other AP_Param
@@ -828,15 +831,6 @@ static void medium_loop()
             ahrs.set_compass(NULL);
         }
 #endif
-/*{
- *  Serial.print(ahrs.roll_sensor, DEC);	Serial.printf_P(PSTR("\t"));
- *  Serial.print(ahrs.pitch_sensor, DEC);	Serial.printf_P(PSTR("\t"));
- *  Serial.print(ahrs.yaw_sensor, DEC);	Serial.printf_P(PSTR("\t"));
- *  Vector3f tempaccel = ins.get_accel();
- *  Serial.print(tempaccel.x, DEC);	Serial.printf_P(PSTR("\t"));
- *  Serial.print(tempaccel.y, DEC);	Serial.printf_P(PSTR("\t"));
- *  Serial.println(tempaccel.z, DEC);
- *  }*/
 
         break;
 
