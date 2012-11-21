@@ -248,7 +248,7 @@ static bool verify_takeoff()
 static void calc_turn_radius(void)    // JLN update - adjut automaticaly the wp_radius Vs the speed and the turn angle
 {
   wp_radius = ground_speed * 150 / g.roll_limit.get();
-  //Serial.println(wp_radius, DEC);
+  //cliSerial->println(wp_radius, DEC);
 }
 
 

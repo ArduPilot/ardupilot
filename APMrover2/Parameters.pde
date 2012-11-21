@@ -150,17 +150,17 @@ static void load_parameters(void)
 	     g.format_version != Parameters::k_format_version) {
 
 		// erase all parameters
-		Serial.printf_P(PSTR("Firmware change: erasing EEPROM...\n"));
+		cliSerial->printf_P(PSTR("Firmware change: erasing EEPROM...\n"));
 		AP_Param::erase_all();
 
 		// save the current format version
 		g.format_version.set_and_save(Parameters::k_format_version);
-		Serial.println_P(PSTR("done."));
+		cliSerial->println_P(PSTR("done."));
     } else {
 	    unsigned long before = micros();
 	    // Load all auto-loaded EEPROM variables
 	    AP_Param::load_all();
 
-	    Serial.printf_P(PSTR("load_all took %luus\n"), micros() - before);
+	    cliSerial->printf_P(PSTR("load_all took %luus\n"), micros() - before);
 	}
 }

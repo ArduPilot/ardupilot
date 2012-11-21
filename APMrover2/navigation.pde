@@ -29,7 +29,7 @@ static void navigate()
 
 	if (wp_distance < 0){
 		gcs_send_text_P(SEVERITY_HIGH,PSTR("<navigate> WP error - distance < 0"));
-		//Serial.println(wp_distance,DEC);
+		//cliSerial->println(wp_distance,DEC);
 		return;
 	}
 
