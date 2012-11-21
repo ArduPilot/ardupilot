@@ -806,7 +806,11 @@ GCS_MAVLINK::update(void)
 
         // Try to get a new message
         if (mavlink_parse_char(chan, c, &msg, &status)) {
-            mavlink_active = true;
+            // we exclude radio packets to make it possible to use the
+            // CLI over the radio
+            if (msg.msgid != MAVLINK_MSG_ID_RADIO) {
+                mavlink_active = true;
+            }
             handleMessage(&msg);
         }
     }
