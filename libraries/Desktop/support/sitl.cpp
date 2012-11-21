@@ -269,12 +269,14 @@ static void timer_handler(int signum)
 
 	if (update_count == 0) {
 		sitl_update_gps(0, 0, 0, 0, 0, false);
+		timer_scheduler.run();
 		SREG = oldSREG;
 		in_timer = false;
 		return;
 	}
 
 	if (update_count == last_update_count) {
+		timer_scheduler.run();
 		SREG = oldSREG;
 		in_timer = false;
 		return;
