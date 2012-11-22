@@ -493,8 +493,6 @@ static uint32_t rc_override_fs_timer;
 static Vector3f omega;
 // This is used to hold radio tuning values for in-flight CH6 tuning
 float tuning_value;
-// This will keep track of the percent of roll or pitch the user is applying
-//float roll_scale_d, pitch_scale_d;
 
 ////////////////////////////////////////////////////////////////////////////////
 // LED output
@@ -1612,18 +1610,6 @@ void update_roll_pitch_mode(void)
     if(ap_system.new_radio_frame) {
         // clear new radio frame info
         ap_system.new_radio_frame = false;
-
-        // These values can be used to scale the PID gains
-        // This allows for a simple gain scheduling implementation
-        /*
-        roll_scale_d    = g.stabilize_d_schedule * (float)abs(g.rc_1.control_in);
-        roll_scale_d    = (1 - (roll_scale_d / 4500.0));
-        roll_scale_d    = constrain(roll_scale_d, 0, 1) * g.stabilize_d;
-
-        pitch_scale_d   = g.stabilize_d_schedule * (float)abs(g.rc_2.control_in);
-        pitch_scale_d   = (1 - (pitch_scale_d / 4500.0));
-        pitch_scale_d   = constrain(pitch_scale_d, 0, 1) * g.stabilize_d;
-        */
     }
 }
 
