@@ -905,7 +905,7 @@ void ppm_encoder_init( void )
         
         // if no active input channels are found, then re-check until found (might be caused by delayed receiver startup) 
         // Do not perform re-check if there was a brown-out reset
-        if( input_int_mask > 0 && !brownout_reset  )
+        if( input_int_mask == 0 && !brownout_reset  )
         {
             // Re-check active input channels
             goto INPUT_ACTIVE_CHANNEL_CHECK;
