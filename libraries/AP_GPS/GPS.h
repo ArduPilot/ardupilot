@@ -39,6 +39,8 @@ public:
     // this
     enum GPS_Engine_Setting {
         GPS_ENGINE_NONE        = -1,
+        GPS_ENGINE_PORTABLE    = 0,
+        GPS_ENGINE_STATIONARY  = 2,
         GPS_ENGINE_PEDESTRIAN  = 3,
         GPS_ENGINE_AUTOMOTIVE  = 4,
         GPS_ENGINE_SEA         = 5,
