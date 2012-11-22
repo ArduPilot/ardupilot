@@ -53,8 +53,8 @@
 
 // 15-03-2012
 // V2.2.66  - Added APM2 (ATmega32U2) support for using TX and RX status leds to indicate PWM and PPM traffic 
-//			- <RX>: <OFF> = no pwm input detected, <TOGGLE> = speed of toggle indicate how many channel are active, <ON> = input lost (failsafe)
-//			- <TX>: <OFF> = ppm output not started, <FAST TOGGLE> = normal PWM->PPM output or PPM passtrough failsafe, <SLOW TOGGLE> = PPM passtrough
+//            - <RX>: <OFF> = no pwm input detected, <TOGGLE> = speed of toggle indicate how many channel are active, <ON> = input lost (failsafe)
+//            - <TX>: <OFF> = ppm output not started, <FAST TOGGLE> = normal PWM->PPM output or PPM passtrough failsafe, <SLOW TOGGLE> = PPM passtrough
 
 // 03-06-2012
 // V2.2.67 - Implemented detection and failsafe (throttle = 900us) for missing throttle signal. 
@@ -73,6 +73,7 @@
 
 // 22-11-2012
 // V2.3.11 - Very experimental test forcing throttle fail-safe (RTL) on single channel loss. !DO NOT RELEASE TO PUBLIC!
+//              - Test for active input channels during init
 
 // -------------------------------------------------------------
 
@@ -98,7 +99,7 @@
 // -------------------------------------------------------------
 
 #ifndef F_CPU
-#define F_CPU               16000000UL
+#define F_CPU             16000000UL
 #endif
 
 #ifndef true
@@ -162,7 +163,7 @@ volatile uint8_t servo_input_mode = JUMPER_SELECT_MODE;
 // -------------------------------------------------------------
 // PPM OUTPUT SETTINGS
 // -------------------------------------------------------------
-// #define _POSITIVE_PPM_FRAME_	// Switch to positive pulse PPM
+// #define _POSITIVE_PPM_FRAME_    // Switch to positive pulse PPM
 // (the actual timing is encoded in the length of the low between two pulses)
 
 // Number of servo input channels
@@ -342,7 +343,7 @@ void ppm_start( void )
         // Stop interrupts
         cli();
 
-		// Make sure initial output state is low
+        // Make sure initial output state is low
         PPM_PORT &= ~(1 << PPM_OUTPUT_PIN);
         
         // Wait for output pin to settle
@@ -357,8 +358,8 @@ void ppm_start( void )
 
         // Set TIMER1 8x prescaler
         TCCR1B = ( 1 << CS11 );
-		
-		#if defined (_POSITIVE_PPM_FRAME_)
+        
+        #if defined (_POSITIVE_PPM_FRAME_)
         // Force output compare to reverse polarity
         TCCR1C |= (1 << PPM_COMPARE_FORCE_MATCH);
         #endif
@@ -371,11 +372,11 @@ void ppm_start( void )
 
         // Restore interrupt status and register flags
         SREG = SREG_tmp;
-		
-		#if defined (__AVR_ATmega16U2__) || defined (__AVR_ATmega32U2__)		
-		// Turn on TX led if PPM generator is active
-		PORTD &= ~( 1<< PD5 );
-		#endif
+        
+        #if defined (__AVR_ATmega16U2__) || defined (__AVR_ATmega32U2__)        
+        // Turn on TX led if PPM generator is active
+        PORTD &= ~( 1<< PD5 );
+        #endif
 }
 
 // ------------------------------------------------------------------------------
@@ -401,11 +402,11 @@ void ppm_stop( void )
 
         // Restore interrupt status and register flags
         SREG = SREG_tmp;
-		
-		#if defined (__AVR_ATmega16U2__) || defined (__AVR_ATmega32U2__)		
-		// Turn off TX led if PPM generator is off
-		PORTD |= ( 1<< PD5 );
-		#endif
+        
+        #if defined (__AVR_ATmega16U2__) || defined (__AVR_ATmega32U2__)        
+        // Turn off TX led if PPM generator is off
+        PORTD |= ( 1<< PD5 );
+        #endif
 }
 
 // ------------------------------------------------------------------------------
@@ -422,7 +423,7 @@ ISR( WDT_vect ) // If watchdog is triggered then enable missing signal flag and 
             ppm[ i ] = failsafe_ppm[ i ];
         }
 
-	}
+    }
 
     // If we are in PPM passtrough mode and a input signal has been detected, or if chip has been reset from a brown_out then start the PPM generator.
     if( ( servo_input_mode == PPM_PASSTROUGH_MODE && servo_input_missing == false ) || brownout_reset )
@@ -430,18 +431,18 @@ ISR( WDT_vect ) // If watchdog is triggered then enable missing signal flag and 
         // Start PPM generator
         ppm_start();
         brownout_reset = false;
-	}
+    }
 
     // Set missing receiver signal flag
     servo_input_missing = true;
     
     // Reset servo input error flag
     servo_input_errors = 0;
-		
-	#if defined (__AVR_ATmega16U2__) || defined (__AVR_ATmega32U2__)		
-	// Turn on RX led if failsafe has triggered after ppm generator i active
-	if( ppm_generator_active )  PORTD &= ~( 1<< PD4 );
-	#endif
+        
+    #if defined (__AVR_ATmega16U2__) || defined (__AVR_ATmega32U2__)        
+    // Turn on RX led if failsafe has triggered after ppm generator i active
+    if( ppm_generator_active )  PORTD &= ~( 1<< PD4 );
+    #endif
 }
 // ------------------------------------------------------------------------------
 
@@ -453,15 +454,15 @@ ISR( SERVO_INT_VECTOR )
 {
     // Servo pulse start timing
     //static uint16_t servo_start[ SERVO_CHANNELS ] = { 0, 0, 0, 0, 0, 0, 0, 0 };
-	static uint16_t servo_start[ PPM_ARRAY_MAX ] = { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 }; // We sacrefice some memory but save instructions by working with ppm index count (18) instead of input channel count (8)
-	
+    static uint16_t servo_start[ PPM_ARRAY_MAX ] = { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 }; // We sacrefice some memory but save instructions by working with ppm index count (18) instead of input channel count (8)
+    
 
-	#if defined (__AVR_ATmega16U2__) || defined (__AVR_ATmega32U2__)
-	// Toggle LED delay
-	static uint8_t led_delay = 0;
-	#endif
+    #if defined (__AVR_ATmega16U2__) || defined (__AVR_ATmega32U2__)
+    // Toggle LED delay
+    static uint8_t led_delay = 0;
+    #endif
  
-	// Servo input pin storage 
+    // Servo input pin storage 
     static uint8_t servo_pins_old = 0;
 
     // Used to store current servo input pins
@@ -501,16 +502,16 @@ ISR( SERVO_INT_VECTOR )
         // Set servo input missing flag false to indicate that we have received servo input signals
         servo_input_missing = false;
 
-		#if defined (__AVR_ATmega16U2__) || defined (__AVR_ATmega32U2__)
-		// Toggle TX LED at PPM passtrough
-		if( ++led_delay > 128 ) // Toggle every 128th pulse
-		{
-			// Toggle TX led
-			PIND |= ( 1<< PD5 ); 
-			led_delay = 0;
-		}
-		#endif
-		
+        #if defined (__AVR_ATmega16U2__) || defined (__AVR_ATmega32U2__)
+        // Toggle TX LED at PPM passtrough
+        if( ++led_delay > 128 ) // Toggle every 128th pulse
+        {
+            // Toggle TX led
+            PIND |= ( 1<< PD5 ); 
+            led_delay = 0;
+        }
+        #endif
+        
         // Leave interrupt
         return;
     }
@@ -519,9 +520,9 @@ ISR( SERVO_INT_VECTOR )
     // SERVO PWM MODE
     // ------------------------------------------------------------------------------
     uint8_t servo_change;
-	uint8_t servo_pin ;
+    uint8_t servo_pin ;
     //uint8_t servo_channel ;
-	uint8_t ppm_channel;
+    uint8_t ppm_channel;
 
 CHECK_PINS_START: // Start of servo input check
 
@@ -534,7 +535,7 @@ CHECK_PINS_START: // Start of servo input check
     // Set initial servo pin, channel and ppm[..]  index
     servo_pin = 1;
     //servo_channel = 0;
-	ppm_channel = 1;
+    ppm_channel = 1;
 
 CHECK_PINS_LOOP: // Input servo pin check loop
 
@@ -545,37 +546,37 @@ CHECK_PINS_LOOP: // Input servo pin check loop
         if( servo_pins & servo_pin )
         {
             //servo_start[ servo_channel ] = servo_time;
-			servo_start[ ppm_channel ] = servo_time;
+            servo_start[ ppm_channel ] = servo_time;
         }
         else
         {
             
             // Get servo pulse width
             //uint16_t servo_width = servo_time - servo_start[ servo_channel ] - PPM_PRE_PULSE;
-			uint16_t servo_width = servo_time - servo_start[ ppm_channel ] - PPM_PRE_PULSE;
+            uint16_t servo_width = servo_time - servo_start[ ppm_channel ] - PPM_PRE_PULSE;
             
             // Check that servo pulse signal is valid before sending to ppm encoder
             if( servo_width > PPM_SERVO_MAX ) goto CHECK_PINS_ERROR;
             if( servo_width < PPM_SERVO_MIN ) goto CHECK_PINS_ERROR;
 
-			// Reset Watchdog Timer
-			wdt_reset(); 
+            // Reset Watchdog Timer
+            wdt_reset(); 
 
             // Channel has received a valid signal, so it must be connected
-			servo_input_connected [ ppm_channel ] = true;
-			
-			// Check for forced throttle fail-safe
-			if( throttle_failsafe_force && ppm_channel == 5 )
-			{
-					// Force throttle fail-safe
-					ppm_timeout[ ppm_channel ] = 255;
-			}
-			else
-			{
-				//Reset ppm single channel fail-safe timeout
-				ppm_timeout[ ppm_channel ] = 0;
-			}
-			
+            // servo_input_connected [ ppm_channel ] = true; // Removed - Check performed during init
+            
+            // Check for forced throttle fail-safe
+            if( throttle_failsafe_force && ppm_channel == 5 )
+            {
+                    // Force throttle fail-safe
+                    ppm_timeout[ ppm_channel ] = 255;
+            }
+            else
+            {
+                //Reset ppm single channel fail-safe timeout
+                ppm_timeout[ ppm_channel ] = 0;
+            }
+            
         #ifdef _AVERAGE_FILTER_
             // Average filter to smooth input jitter
             servo_width += ppm[ ppm_channel ];
@@ -601,13 +602,13 @@ CHECK_PINS_NEXT:
 
     // Select next servo channel
     //servo_channel++;
-	
-	// Select next ppm[..] index
-	ppm_channel += 2;
-	
+    
+    // Select next ppm[..] index
+    ppm_channel += 2;
+    
     // Check channel and process if needed
     //if( servo_channel < SERVO_CHANNELS ) goto CHECK_PINS_LOOP;
-	if( servo_pin ) goto CHECK_PINS_LOOP; // Bitshift wraps to zero (false)
+    if( servo_pin ) goto CHECK_PINS_LOOP; // Bit shifts to zero when all pins have been checked
     
     goto CHECK_PINS_DONE;
 
@@ -615,11 +616,11 @@ CHECK_PINS_ERROR:
     
     // Used to indicate invalid servo input signals
     servo_input_errors++;
-	
-	#if defined (__AVR_ATmega16U2__) || defined (__AVR_ATmega32U2__)
-	// Delay LED toggle
-	led_delay = 0;
-	#endif
+    
+    #if defined (__AVR_ATmega16U2__) || defined (__AVR_ATmega32U2__)
+    // Delay LED toggle
+    led_delay = 0;
+    #endif
 
     goto CHECK_PINS_NEXT;
     
@@ -636,15 +637,15 @@ CHECK_PINS_DONE:
     // Start PPM generator if not already running
     if( ppm_generator_active == false ) ppm_start();
 
-	#if defined (__AVR_ATmega16U2__) || defined (__AVR_ATmega32U2__)
-	// Toggle RX LED when finished receiving servo pulses
-	if( ++led_delay > 64 ) // Toggle led every 64th time
-	{
-		PIND |= ( 1<< PD4 );
-		led_delay = 0;
-	}
-	#endif	
-	
+    #if defined (__AVR_ATmega16U2__) || defined (__AVR_ATmega32U2__)
+    // Toggle RX LED when finished receiving servo pulses
+    if( ++led_delay > 64 ) // Toggle led every 64th time
+    {
+        PIND |= ( 1<< PD4 );
+        led_delay = 0;
+    }
+    #endif    
+    
     //Has servo input changed while processing pins, if so we need to re-check pins
     if( servo_pins != SERVO_INPUT ) goto CHECK_PINS_START;
 
@@ -667,12 +668,12 @@ ISR( PPM_INT_VECTOR )
     {
         // Use ppm fail-safe value
         PPM_COMPARE += failsafe_ppm[ ppm_channel ]; 
-		
-		// Did we lose an active servo input channel? If so force throttle fail-safe (RTL)
-		if( servo_input_connected[ ppm_channel ] )
-		{
-			throttle_failsafe_force = true;
-		}
+        
+        // Did we lose an active servo input channel? If so force throttle fail-safe (RTL)
+        if( servo_input_connected[ ppm_channel ] )
+        {
+            throttle_failsafe_force = true;
+        }
     }
     else
     {
@@ -685,14 +686,14 @@ ISR( PPM_INT_VECTOR )
     
     // Select the next ppm channel
     if( ++ppm_channel >= PPM_ARRAY_MAX ) 
-	{
-		ppm_channel = 0;
+    {
+        ppm_channel = 0;
 
-		#if defined (__AVR_ATmega16U2__) || defined (__AVR_ATmega32U2__)
-		// Blink TX LED when PPM generator has finished a pulse train
-		PIND |= ( 1<< PD5 );
-		#endif
-	}
+        #if defined (__AVR_ATmega16U2__) || defined (__AVR_ATmega32U2__)
+        // Blink TX LED when PPM generator has finished a pulse train
+        PIND |= ( 1<< PD5 );
+        #endif
+    }
 }
 // ------------------------------------------------------------------------------
 
@@ -817,34 +818,125 @@ void ppm_encoder_init( void )
     // later to set the right value
     DDRD |= 1;
     if (usb_connected) {
-	    PORTD     &= ~1;
+        PORTD     &= ~1;
     } else {
-	    PORTD     |= 1;
+        PORTD     |= 1;
     }
 #endif
 
-    // SERVO/PPM INPUT - PIN CHANGE INTERRUPT
-    // ------------------------------------------------------------------------------
-    if( servo_input_mode == SERVO_PWM_MODE )
-    {
-        // Set servo input interrupt pin mask to all 8 servo input channels
-        SERVO_INT_MASK = 0xFF;
-    }
-
+     // PPM PASS-THROUGH MODE
     if( servo_input_mode == PPM_PASSTROUGH_MODE )
     {
         // Set servo input interrupt pin mask to servo input channel 1
         SERVO_INT_MASK = 0x01;
     }
+
+    // SERVO PWM INPUT MODE
+    // ------------------------------------------------------------------------------
+    if( servo_input_mode == SERVO_PWM_MODE )
+    {
+        // CHECK FOR ACTIVE INPUT CHANNELS
+        // ------------------------------------------------------------------------------    
+        // This will poll the input pins looking for pin level changes, and mark the inputs with active signal connections
+        
+        uint16_t input_channel_count[ SERVO_CHANNELS ];
+        uint8_t input_current; // Input pin level mask
+        uint8_t input_previous; // Input pin level mask
+        uint8_t input_int_mask; // Active input pin interupt mask
+        
+    INPUT_ACTIVE_CHANNEL_CHECK:
+
+        // ~100khz timed polling of input pins for ~0.5sec duration (1us = 16 clocks)
+        for( uint16_t t = 0; t < 50000; t++ ) // 10us * 1000ms * 0.5sec = 50000 delayed loops at 10us
+        {
+                // Get current input pin levels
+                input_current = SERVO_INPUT;
+                
+                // Check input pins against previous levels
+                uint8_t input_change = input_current ^ input_previous;
+                    
+                // Do we need to check for changes?
+                if( input_change )
+                {
+                    // Check for change on all input pins
+                    uint8_t input_pin = 1;
+                    uint8_t input_channel = 0;
+                    
+                    do
+                    {
+                        // Check for change on current input pin
+                        if( input_change & input_pin )
+                        {
+                            // Pin has changed, count it
+                            input_channel_count[ input_channel ]++;
+                        }
+                    
+                        // Select next pin
+                        input_pin <<= 1;
+                        
+                        // Select next channel
+                        input_channel++;
+
+                    } while ( input_channel < SERVO_CHANNELS );
+                
+                    // Store checked input pin levels
+                    input_previous = input_current;
+                }
+                
+                // Delay the next input level check
+                _delay_us( 10 );
+        
+        }
+
+        // Check input_channel_count[..] to see if channels are active.
+        for( uint8_t input_channel = 0; input_channel < SERVO_CHANNELS; input_channel++ )
+        {
+            // Is current channel active?
+            if( input_channel_count[ input_channel ] > 20 ) // 0.5sec * 40hz * 2 = 40 pulse edges - 50% margin = 20 level changes
+            {
+                // Set active channel in servo_input_connected[..]
+                servo_input_connected[ (input_channel << 1) + 1 ] = true;    
+                
+                // Set interupt pin mask for active channel
+                input_int_mask |= 1 << input_channel;
+
+            }
+        }
+        
+        // if no active input channels are found, then re-check until found (might be caused by delayed receiver startup) 
+        // Do not perform re-check if there was a brown-out reset
+        if( input_int_mask > 0 && !brownout_reset  )
+        {
+            // Re-check active input channels
+            goto INPUT_ACTIVE_CHANNEL_CHECK;
+        }
+        
+        // Set servo input interrupt pin mask
+        // Set to all input channel for safety in case of brown-out reset
+        if( brownout_reset)
+        {
+            // Interrupt on all input pins
+            SERVO_INT_MASK = 0xFF;
+        }
+        else
+        {
+            // Interrupt only on active input pins
+            SERVO_INT_MASK = input_int_mask;
+        }
+    }
+
     
     // Enable servo input interrupt
     PCICR |= (1 << SERVO_INT_ENABLE);
 
-    // PPM OUTPUT PIN
+    // PPM OUTPUT
     // ------------------------------------------------------------------------------
+    // PPM generator (PWM output timer/counter) is started either by pin change interrupt or by watchdog interrupt
+
     // Set PPM pin to output
     PPM_DDR |= (1 << PPM_OUTPUT_PIN);
 
+    
     // ------------------------------------------------------------------------------
     // Enable watchdog interrupt mode
     // ------------------------------------------------------------------------------
@@ -856,9 +948,9 @@ void ppm_encoder_init( void )
     WDTCSR |= (1<<WDCE) | (1<<WDE );
     // Set 250 ms watchdog timeout and enable interrupt
     WDTCSR = (1<<WDIE) | (1<<WDP2);
-	
-	
-	
+    
+    
+    
 }
 // ------------------------------------------------------------------------------
 
