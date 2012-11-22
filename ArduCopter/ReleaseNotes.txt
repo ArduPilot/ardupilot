@@ -1,0 +1,31 @@
+ArduCopter Release Notes:
+
+------------------------------------------------------------------
+ArduCopter 2.8.1 22-Oct-2012
+Improvements over 2.8:
+- 430 bytes of RAM freed up to resolve APM1 level issue and reduce chance of memory corruption on both APM1 and APM2
+
+Improvements over 2.7.3:
+- Improved ACRO mode (Leonard Hall)
+- Improved stability patch to reduce "climb-on-yaw" problem (Leonard, Rob Lefebvre, Randy)
+- Rate controller targets moved to body frames (yaw control now works properly when copter is inverted) (Leonard/Randy)
+- Less bouncy Stabilize yaw control (Leonard)
+- OpticalFlow sensor support for APM2.5 (Randy)
+- DMP works again by adding "#define DMP_ENABLED ENABLED" to APM_Config.h You can also log DMP vs DCM to the dataflash by adding "#define SECONDARY_DMP_ENABLED ENABLED" (Randy)
+- Watch dog added to shutdown motors if main loop feezes for 2 seconds (Randy)
+- Thrust curve added to linearize pwm->thrust. Removes deadzone found above 90% throttle in most ESC/motors (Randy)
+- More timing improvements (main loop is now tied to MPU6000s interrupt) (Randy)
+- GPS NMEA bug fix (Alexey Kozin)
+- Logging improvements (log I terms, dump all settings at head of dataflash log) (Jason)
+
+Bug Fixes / Parameter changes:
+- fixed skipping of last waypoint (Jason)
+- resolved twitching when no GPS attached (Tridge)
+- fixed loss of altitude if alt hold is engaged before first GPS lock (Randy/Jason)
+- moved Roll-Pitch I terms from Stabilize controllers to Rate controllers
+- TILT_COMPENSATION param tuned for TradHeli (Rob)
+
+Code Cleanup:
+- HAL changes for platform portability (Pat Hickey)
+- Removed INSTANT_PWM (Randy)
+------------------------------------------------------------------
