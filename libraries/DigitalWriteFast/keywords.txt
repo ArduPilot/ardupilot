@@ -1,0 +1,10 @@
+#######################################
+# Syntax Coloring Map For DigitalWriteFast
+#######################################
+
+#######################################
+# Methods and Functions (KEYWORD2)
+#######################################
+
+digitalWriteFast    KEYWORD2
+digitalReadFast     KEYWORD2
