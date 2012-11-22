@@ -377,7 +377,7 @@ bool AP_InertialSensor::_calibrate_accel( Vector3f accel_sample[6], Vector3f& ac
         success = false;
     }
     // sanity check offsets (2.0 is roughly 2/10th of a G, 5.0 is roughly half a G)
-    if( accel_offsets.is_nan() || fabs(accel_offsets.x) > 2.0 || fabs(accel_offsets.y) > 2.0 || fabs(accel_offsets.z) > 2.0 ) {
+    if( accel_offsets.is_nan() || fabs(accel_offsets.x) > 2.0 || fabs(accel_offsets.y) > 2.0 || fabs(accel_offsets.z) > 3.0 ) {
         success = false;
     }
 
