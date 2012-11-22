@@ -6,8 +6,11 @@
  *       (Works with last PPM_encoder firmware)
  */
 
+#include <FastSerial.h>
 #include <Arduino_Mega_ISR_Registry.h>
 #include <APM_RC.h> // ArduPilot Mega RC Library
+
+FastSerialPort0(Serial);
 
 Arduino_Mega_ISR_Registry isr_registry;
 APM_RC_APM1 APM_RC;
