@@ -70,6 +70,7 @@ public:
                                                         // 2 = med, 3 = slow
 
         k_param_crosstrack_min_distance,
+        k_param_rssi_pin,
 
         // 65: AP_Limits Library
         k_param_limits = 65,
@@ -262,6 +263,7 @@ public:
 
     AP_Int8         battery_volt_pin;
     AP_Int8         battery_curr_pin;
+    AP_Int8         rssi_pin;
 
     // Waypoints
     //

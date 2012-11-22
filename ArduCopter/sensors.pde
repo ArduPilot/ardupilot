@@ -104,3 +104,12 @@ static void read_battery(void)
         low_battery_counter = 0;
     }
 }
+
+// read the receiver RSSI as an 8 bit number for MAVLink
+// RC_CHANNELS_SCALED message
+void read_receiver_rssi(void)
+{
+    RSSI_pin.set_pin(g.rssi_pin);
+    float ret = RSSI_pin.read();
+    receiver_rssi = constrain(ret, 0, 255);
+}
