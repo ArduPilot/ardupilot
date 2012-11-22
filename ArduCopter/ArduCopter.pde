@@ -440,6 +440,9 @@ static int8_t control_mode = STABILIZE;
 // This is set to -1 when we need to re-read the switch
 static byte oldSwitchPosition;
 
+// receiver RSSI
+static uint8_t receiver_rssi;
+
 
 ////////////////////////////////////////////////////////////////////////////////
 // Motor Output
@@ -890,6 +893,10 @@ static uint8_t save_trim_counter;
 // Reference to the AP relay object - APM1 only
 AP_Relay relay;
 
+// a pin for reading the receiver RSSI voltage. The scaling by 0.25 
+// is to take the 0 to 1024 range down to an 8 bit range for MAVLink
+AP_AnalogSource_Arduino RSSI_pin(-1, 0.25);
+
 #if CLI_ENABLED == ENABLED
     static int8_t   setup_show (uint8_t argc, const Menu::arg *argv);
 #endif
@@ -1105,7 +1112,7 @@ static void medium_loop()
     //------------------------------------------------
     case 1:
         medium_loopCounter++;
-
+        read_receiver_rssi();
         break;
 
     // command processing
