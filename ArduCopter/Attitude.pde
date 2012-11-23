@@ -291,6 +291,11 @@ run_rate_controllers()
     g.rc_2.servo_out = get_rate_pitch(pitch_rate_target_bf);
     g.rc_4.servo_out = get_rate_yaw(yaw_rate_target_bf);
 #endif
+
+    // run throttle controller if an accel based target has been provided
+    if( throttle_accel_controller_active ) {
+        g.rc_3.servo_out = get_throttle_accel(throttle_accel_target_ef);
+    }
 }
 
 #if FRAME_CONFIG == HELI_FRAME
@@ -584,11 +589,321 @@ get_rate_yaw(int32_t target_rate)
 }
 #endif // !HELI_FRAME
 
+// calculate modified roll/pitch depending upon optical flow calculated position
+static int32_t
+get_of_roll(int32_t input_roll)
+{
+#ifdef OPTFLOW_ENABLED
+    static float tot_x_cm = 0;      // total distance from target
+    static uint32_t last_of_roll_update = 0;
+    int32_t new_roll = 0;
+    int32_t p,i,d;
+
+    // check if new optflow data available
+    if( optflow.last_update != last_of_roll_update) {
+        last_of_roll_update = optflow.last_update;
+
+        // add new distance moved
+        tot_x_cm += optflow.x_cm;
+
+        // only stop roll if caller isn't modifying roll
+        if( input_roll == 0 && current_loc.alt < 1500) {
+            p = g.pid_optflow_roll.get_p(-tot_x_cm);
+            i = g.pid_optflow_roll.get_i(-tot_x_cm,1.0);              // we could use the last update time to calculate the time change
+            d = g.pid_optflow_roll.get_d(-tot_x_cm,1.0);
+            new_roll = p+i+d;
+        }else{
+            g.pid_optflow_roll.reset_I();
+            tot_x_cm = 0;
+            p = 0;              // for logging
+            i = 0;
+            d = 0;
+        }
+        // limit amount of change and maximum angle
+        of_roll = constrain(new_roll, (of_roll-20), (of_roll+20));
+
+ #if LOGGING_ENABLED == ENABLED
+        static int8_t log_counter = 0;                                  // used to slow down logging of PID values to dataflash
+        // log output if PID logging is on and we are tuning the rate P, I or D gains
+        if( g.log_bitmask & MASK_LOG_PID && (g.radio_tuning == CH6_OPTFLOW_KP || g.radio_tuning == CH6_OPTFLOW_KI || g.radio_tuning == CH6_OPTFLOW_KD) ) {
+            log_counter++;
+            if( log_counter >= 5 ) {                    // (update rate / desired output rate) = (100hz / 10hz) = 10
+                log_counter = 0;
+                Log_Write_PID(CH6_OPTFLOW_KP, tot_x_cm, p, i, d, of_roll, tuning_value);
+            }
+        }
+ #endif // LOGGING_ENABLED == ENABLED
+    }
+
+    // limit max angle
+    of_roll = constrain(of_roll, -1000, 1000);
+
+    return input_roll+of_roll;
+#else
+    return input_roll;
+#endif
+}
+
+static int32_t
+get_of_pitch(int32_t input_pitch)
+{
+#ifdef OPTFLOW_ENABLED
+    static float tot_y_cm = 0;  // total distance from target
+    static uint32_t last_of_pitch_update = 0;
+    int32_t new_pitch = 0;
+    int32_t p,i,d;
+
+    // check if new optflow data available
+    if( optflow.last_update != last_of_pitch_update ) {
+        last_of_pitch_update = optflow.last_update;
+
+        // add new distance moved
+        tot_y_cm += optflow.y_cm;
+
+        // only stop roll if caller isn't modifying pitch
+        if( input_pitch == 0 && current_loc.alt < 1500 ) {
+            p = g.pid_optflow_pitch.get_p(tot_y_cm);
+            i = g.pid_optflow_pitch.get_i(tot_y_cm, 1.0);              // we could use the last update time to calculate the time change
+            d = g.pid_optflow_pitch.get_d(tot_y_cm, 1.0);
+            new_pitch = p + i + d;
+        }else{
+            tot_y_cm = 0;
+            g.pid_optflow_pitch.reset_I();
+            p = 0;              // for logging
+            i = 0;
+            d = 0;
+        }
+
+        // limit amount of change
+        of_pitch = constrain(new_pitch, (of_pitch-20), (of_pitch+20));
+
+ #if LOGGING_ENABLED == ENABLED
+        static int8_t log_counter = 0;                                  // used to slow down logging of PID values to dataflash
+        // log output if PID logging is on and we are tuning the rate P, I or D gains
+        if( g.log_bitmask & MASK_LOG_PID && (g.radio_tuning == CH6_OPTFLOW_KP || g.radio_tuning == CH6_OPTFLOW_KI || g.radio_tuning == CH6_OPTFLOW_KD) ) {
+            log_counter++;
+            if( log_counter >= 5 ) {                    // (update rate / desired output rate) = (100hz / 10hz) = 10
+                log_counter = 0;
+                Log_Write_PID(CH6_OPTFLOW_KP+100, tot_y_cm, p, i, d, of_pitch, tuning_value);
+            }
+        }
+ #endif // LOGGING_ENABLED == ENABLED
+    }
+
+    // limit max angle
+    of_pitch = constrain(of_pitch, -1000, 1000);
+
+    return input_pitch+of_pitch;
+#else
+    return input_pitch;
+#endif
+}
+
+
+/*************************************************************
+ *  throttle control
+ ****************************************************************/
+
+// update_throttle_cruise - update throttle cruise if necessary
+static void update_throttle_cruise(int16_t throttle)
+{
+    // ensure throttle_avg has been initialised
+    if( throttle_avg == 0 ) {
+        throttle_avg = g.throttle_cruise;
+    }
+    // calc average throttle
+    if ((throttle > g.throttle_min) && (abs(climb_rate) < 60) && (g_gps->ground_speed < 200)) {
+        throttle_avg = throttle_avg * .99 + (float)throttle * .01;
+        g.throttle_cruise = throttle_avg;
+    }
+}
+
+static int16_t get_angle_boost(int16_t value)
+{
+    float temp = cos_pitch_x * cos_roll_x;
+    temp = constrain(temp, .75, 1.0);
+    return ((float)(value + 80) / temp) - (value + 80);
+}
+
+#if FRAME_CONFIG == HELI_FRAME
+// heli_angle_boost - adds a boost depending on roll/pitch values
+// equivalent of quad's angle_boost function
+// throttle value should be 0 ~ 1000
+static int16_t heli_get_angle_boost(int16_t throttle)
+{
+    float angle_boost_factor = cos_pitch_x * cos_roll_x;
+    angle_boost_factor = 1.0 - constrain(angle_boost_factor, .5, 1.0);
+    int16_t throttle_above_mid = max(throttle - motors.throttle_mid,0);
+    return throttle + throttle_above_mid*angle_boost_factor;
+
+}
+#endif // HELI_FRAME
+
+ // set_throttle_out - to be called by upper throttle controllers when they wish to provide throttle output directly to motors (instead of using accel based throttle controller)
+ // provide 0 to cut motors
+void set_throttle_out( int16_t throttle_out )
+{
+    g.rc_3.servo_out = throttle_out;
+    throttle_accel_controller_active = false;
+}
+
+// set_throttle_accel_target - to be called by upper throttle controllers to set desired vertical acceleration in earth frame
+void set_throttle_accel_target( int16_t desired_acceleration )
+{
+    throttle_accel_target_ef = desired_acceleration;
+    throttle_accel_controller_active = true;
+}
+
+// get_throttle_accel - accelerometer based throttle controller
+// returns an actual throttle output (0 ~ 1000) to be sent to the motors
 static int16_t
+get_throttle_accel(int16_t z_target_accel)
+{
+    static float accel_one_g = -980;    // filtered estimate of 1G in cm/s/s
+    int32_t p,i,d;      // used to capture pid values for logging
+    int16_t z_accel_error, output;
+    float z_accel_meas_temp;
+
+    Vector3f accel = ins.get_accel();
+    Matrix3f dcm_matrix   = ahrs.get_dcm_matrix();
+
+    // Calculate Earth Frame Z acceleration
+    z_accel_meas_temp = (dcm_matrix.c.x * accel.x + dcm_matrix.c.y * accel.y + dcm_matrix.c.z * accel.z)* 100.0;
+
+    // Filter Earth Frame Z acceleration with fc = 0.01 Hz to find 1 g
+    accel_one_g = accel_one_g + 0.00062792 * (z_accel_meas_temp - accel_one_g);
+
+    z_accel_meas_temp = z_accel_meas_temp - accel_one_g;
+
+    // Filter Earth Frame Z acceleration with fc = 1 Hz
+    z_accel_meas = z_accel_meas + 0.059117 * (z_accel_meas_temp - z_accel_meas);
+
+    // calculate accel error
+    z_accel_error = constrain(z_target_accel + z_accel_meas, -32000, 32000);
+
+    // separately calculate p, i, d values for logging
+    p = g.pid_throttle_accel.get_p(z_accel_error);
+    // freeze I term if we've breached throttle limits
+    if( motors.reached_limit(AP_MOTOR_THROTTLE_LIMIT) ) {
+        i = g.pid_throttle_accel.get_integrator();
+    }else{
+        i = g.pid_throttle_accel.get_i(z_accel_error, .02);
+    }
+    d = g.pid_throttle_accel.get_d(z_accel_error, .02);
+
+    //
+    // limit the rate
+    output =  constrain(p+i+d+g.throttle_cruise, g.throttle_min, g.throttle_max);
+    //Serial.printf("ThAccel 1 z_target_accel:%4.2f  z_accel_meas:%4.2f  z_accel_error:%4.2f  output:%4.2f  p:%4.2f  i:%4.2f  d:%4.2f \n", 1.0*z_target_accel, 1.0*z_accel_meas, 1.0*z_accel_error, 1.0*output, 1.0*p, 1.0*i, 1.0*d);
+    //Serial.printf("motors.reached_limit:%4.2f  reset_accel_throttle_counter:%4.2f  output:%4.2f  p:%4.2f  i:%4.2f  d:%4.2f \n", 1.0*motors.reached_limit(0xff), 1.0*reset_accel_throttle_counter, 1.0*output, 1.0*p, 1.0*i, 1.0*d);
+    //Serial.printf("One G:  z_target_accel:%4.2f  z_accel_meas:%4.2f  accel_one_g:%4.2f \n", 1.0*z_target_accel, 1.0*z_accel_meas, 1.0*accel_one_g);
+
+#if LOGGING_ENABLED == ENABLED
+    static int8_t log_counter = 0;                                      // used to slow down logging of PID values to dataflash
+    // log output if PID loggins is on and we are tuning the yaw
+    if( g.log_bitmask & MASK_LOG_PID && g.radio_tuning == CH6_THROTTLE_KP ) {
+        log_counter++;
+        if( log_counter >= 10 ) {               // (update rate / desired output rate) = (50hz / 10hz) = 5hz
+            log_counter = 0;
+            Log_Write_PID(CH6_THROTTLE_KP, z_accel_error, p, i, d, output, tuning_value);
+        }
+    }
+#endif
+
+    return output;
+}
+
+// get_pilot_desired_climb_rate - transform pilot's throttle input to
+// climb rate in cm/s.  we use radio_in instead of control_in to get the full range
+// without any deadzone at the bottom
+#define THROTTLE_IN_MIDDLE 500          // the throttle mid point
+#define THROTTLE_IN_DEADBAND 100        // the throttle input channel's deadband in PWM
+#define THROTTLE_IN_DEADBAND_TOP (THROTTLE_IN_MIDDLE+THROTTLE_IN_DEADBAND)  // top of the deadband
+#define THROTTLE_IN_DEADBAND_BOTTOM (THROTTLE_IN_MIDDLE-THROTTLE_IN_DEADBAND)  // bottom of the deadband
+static int16_t get_pilot_desired_climb_rate(int16_t throttle_control)
+{
+    int16_t desired_rate = 0;
+
+    // throttle failsafe check
+    if( ap.failsafe ) {
+        return 0;
+    }
+
+    // ensure a reasonable throttle value
+    throttle_control = constrain(throttle_control,0,1000);
+
+    // check throttle is above, below or in the deadband
+    if (throttle_control < THROTTLE_IN_DEADBAND_BOTTOM) {
+        // below the deadband
+        desired_rate = (int32_t)THROTTLE_IN_MIDDLE * (throttle_control-THROTTLE_IN_DEADBAND_BOTTOM) / (THROTTLE_IN_MIDDLE - THROTTLE_IN_DEADBAND);
+    }else if (throttle_control > THROTTLE_IN_DEADBAND_TOP) {
+        // above the deadband
+        desired_rate = (int32_t)THROTTLE_IN_MIDDLE * (throttle_control-THROTTLE_IN_DEADBAND_TOP) / (THROTTLE_IN_MIDDLE - THROTTLE_IN_DEADBAND);
+    }else{
+        // must be in the deadband
+        desired_rate = 0;
+    }
+
+    return desired_rate;
+}
+
+// get_pilot_desired_acceleration - transform pilot's throttle input to a desired acceleration
+// default upper and lower bounds are 500 cm/s/s (roughly 1/2 a G)
+// returns acceleration in cm/s/s
+static int16_t get_pilot_desired_acceleration(int16_t throttle_control)
+{
+    int32_t desired_accel = 0;
+
+    // throttle failsafe check
+    if( ap.failsafe ) {
+        return 0;
+    }
+
+    // ensure a reasonable throttle value
+    throttle_control = constrain(throttle_control,0,1000);
+
+    // check throttle is above, below or in the deadband
+    if (throttle_control < THROTTLE_IN_DEADBAND_BOTTOM) {
+        // below the deadband
+        desired_accel = (int32_t)THROTTLE_IN_MIDDLE * (throttle_control-THROTTLE_IN_DEADBAND_BOTTOM) / (THROTTLE_IN_MIDDLE - THROTTLE_IN_DEADBAND);
+    }else if(throttle_control > THROTTLE_IN_DEADBAND_TOP) {
+        // above the deadband
+        desired_accel = (int32_t)THROTTLE_IN_MIDDLE * (throttle_control-THROTTLE_IN_DEADBAND_TOP) / (THROTTLE_IN_MIDDLE - THROTTLE_IN_DEADBAND);
+    }else{
+        // must be in the deadband
+        desired_accel = 0;
+    }
+
+    return desired_accel;
+}
+
+// get_pilot_desired_direct_alt - transform pilot's throttle input to a desired altitude
+// return altitude in cm between 0 to 10m
+static int32_t get_pilot_desired_direct_alt(int16_t throttle_control)
+{
+    int32_t desired_alt = 0;
+
+    // throttle failsafe check
+    if( ap.failsafe ) {
+        return 0;
+    }
+
+    // ensure a reasonable throttle value
+    throttle_control = constrain(throttle_control,0,1000);
+
+    desired_alt = throttle_control;
+
+    return desired_alt;
+}
+
+// get_throttle_rate - calculates desired accel required to achieve desired z_target_speed
+// sets accel based throttle controller target
+static void
 get_throttle_rate(int16_t z_target_speed)
 {
     int32_t p,i,d;      // used to capture pid values for logging
-    int16_t z_rate_error, output = 0;
+    int16_t z_rate_error;
+    int16_t target_accel;
 
     // calculate rate error
 #if INERTIAL_NAV == ENABLED
@@ -596,12 +911,6 @@ get_throttle_rate(int16_t z_target_speed)
 #else
     z_rate_error    = z_target_speed - climb_rate;              // calc the speed error
 #endif
-
-////////////////////////////////////////////////////////////////////////////////////////
-// Commenting this out because 'tmp' is not being used anymore?
-// Robert Lefebvre 21/11/2012
-//	int16_t tmp     = ((int32_t)z_target_speed * (int32_t)g.throttle_cruise) / 280;
-//	tmp 			= min(tmp, 500);
 
     // separately calculate p, i, d values for logging
     p = g.pid_throttle.get_p(z_rate_error);
@@ -614,54 +923,109 @@ get_throttle_rate(int16_t z_target_speed)
     }
     d = g.pid_throttle.get_d(z_rate_error, .02);
 
-    //
-    // limit the rate
-    output +=  constrain(p+i+d, THROTTLE_RATE_CONSTRAIN_NEGATIVE, THROTTLE_RATE_CONSTRAIN_POSITIVE);
+    // consolidate target acceleration
+    target_accel =  p+i+d;
 
 #if LOGGING_ENABLED == ENABLED
-    static int8_t log_counter = 0;                                      // used to slow down logging of PID values to dataflash
+    static uint8_t log_counter = 0;                                      // used to slow down logging of PID values to dataflash
     // log output if PID loggins is on and we are tuning the yaw
     if( g.log_bitmask & MASK_LOG_PID && g.radio_tuning == CH6_THROTTLE_KP ) {
         log_counter++;
         if( log_counter >= 10 ) {               // (update rate / desired output rate) = (50hz / 10hz) = 5hz
             log_counter = 0;
-            Log_Write_PID(CH6_THROTTLE_KP, z_rate_error, p, i, d, output, tuning_value);
+            Log_Write_PID(CH6_THROTTLE_KP, z_rate_error, p, i, d, target_accel, tuning_value);
         }
     }
 #endif
 
-    return output;
+    // set target for accel based throttle controller
+    set_throttle_accel_target(target_accel);
 }
 
-// Keeps old data out of our calculation / logs
-static void reset_nav_params(void)
+// get_throttle_rate_stabilized - rate controller with additional 'stabilizer'
+// 'stabilizer' ensure desired rate is being met
+// calls normal throttle rate controller which updates accel based throttle controller targets
+static void
+get_throttle_rate_stabilized(int16_t target_rate)
 {
-    nav_throttle                    = 0;
+    static float alt_desired = 0;   // The desired altitude in cm.
+    static float alt_rate = 0;      // the desired climb rate in cm/s.
+    static uint32_t last_call_ms = 0;
 
-    // always start Circle mode at same angle
-    circle_angle                    = 0;
+    float altitude_error;
+    int16_t desired_rate;
+    int16_t alt_error_max;
+    uint32_t now = millis();
 
-    // We must be heading to a new WP, so XTrack must be 0
-    crosstrack_error                = 0;
+    // reset target altitude if this controller has just been engaged
+    if( now - last_call_ms > 1000 ) {
+       alt_desired = current_loc.alt;
+    }
+    last_call_ms = millis();
 
-    // Will be set by new command
-    target_bearing                  = 0;
+    // Limit acceleration of the desired altitude to +-5 m/s^2
+    alt_rate += constrain(target_rate-alt_rate, -10, 10);
+    alt_desired += alt_rate * 0.02;
 
-    // Will be set by new command
-    wp_distance                     = 0;
+    alt_error_max = constrain(600-abs(target_rate),100,600);
+    altitude_error = constrain(alt_desired - current_loc.alt, -alt_error_max, alt_error_max);
+    alt_desired = current_loc.alt + altitude_error;
 
-    // Will be set by new command, used by loiter
-    long_error                      = 0;
-    lat_error                       = 0;
-    nav_lon 						= 0;
-    nav_lat 						= 0;
-    nav_roll 						= 0;
-    nav_pitch 						= 0;
-    auto_roll 						= 0;
-    auto_pitch 						= 0;
+    if(altitude_error > 0){
+        desired_rate = g.pi_alt_hold.get_p(10*sqrt(altitude_error));
+    }else if(altitude_error < 0){
+        desired_rate = g.pi_alt_hold.get_p(-10*sqrt(abs(altitude_error)));
+    }else{
+        desired_rate = g.pi_alt_hold.get_p(0);
+    }
+    desired_rate = constrain(desired_rate, -200, 200) + target_rate;
 
-    // make sure we stick to Nav yaw on takeoff
-    auto_yaw = nav_yaw;
+    // call rate based throttle controller which will update accel based throttle controller targets
+    get_throttle_rate(desired_rate);
+}
+
+// get_throttle_althold - hold at the desired altitude in cm
+// updates accel based throttle controller targets
+// Note: max_climb_rate is an optional parameter to allow reuse of this function by landing controller
+static void
+get_throttle_althold(int32_t target_alt, int16_t max_climb_rate)
+{
+    int32_t altitude_error;
+    int16_t desired_rate;
+
+    altitude_error = target_alt - current_loc.alt;
+    if(altitude_error > 0){
+        desired_rate = g.pi_alt_hold.get_p(10*sqrt(altitude_error));
+    }else if(altitude_error < 0){
+        desired_rate = g.pi_alt_hold.get_p(-10*sqrt(abs(altitude_error)));
+    }else{
+        desired_rate = g.pi_alt_hold.get_p(0);
+    }
+    desired_rate = constrain(desired_rate, ALTHOLD_MIN_CLIMB_RATE, max_climb_rate);
+
+    // call rate based throttle controller which will update accel based throttle controller targets
+    get_throttle_rate(desired_rate);
+
+    // TO-DO: enabled PID logging for this controller
+    //Log_Write_PID(1, (int32_t)target_alt, (int32_t)current_loc.alt, (int32_t)climb_rate, (int32_t)altitude_error, (int32_t)desired_rate, (float)desired_accel);
+    //Log_Write_PID(1, target_alt, current_loc.alt, climb_rate, altitude_error, desired_rate, desired_accel);
+}
+
+// get_throttle_land - high level landing logic
+// sends the desired acceleration in the accel based throttle controller
+// called at 50hz
+#define LAND_START_ALT 1000     // altitude in cm where land controller switches to slow rate of descent
+#define LAND_DESCENT_SPEED -50  // minimum descent speed in cm/s
+static void
+get_throttle_land()
+{
+    // if we are above 10m perform regular alt hold descent
+    if (current_loc.alt >= LAND_START_ALT) {
+        get_throttle_althold(LAND_START_ALT, LAND_DESCENT_SPEED);
+    }else{
+        get_throttle_rate_stabilized(LAND_DESCENT_SPEED);
+    }
+    // TO-DO: add detection of whether we've landed or not and set ap.land_complete
 }
 
 /*
@@ -722,126 +1086,4 @@ static void reset_stability_I(void)
     // This only needs to be reset during Auto-leveling in flight
     g.pi_stabilize_roll.reset_I();
     g.pi_stabilize_pitch.reset_I();
-}
-
-
-/*************************************************************
- *  throttle control
- ****************************************************************/
-
-static int16_t get_angle_boost(int16_t value)
-{
-    float temp = cos_pitch_x * cos_roll_x;
-    temp = constrain(temp, .75, 1.0);
-    return ((float)(value + 80) / temp) - (value + 80);
-}
-
-// calculate modified roll/pitch depending upon optical flow calculated position
-static int32_t
-get_of_roll(int32_t input_roll)
-{
-#if OPTFLOW == ENABLED
-    static float tot_x_cm = 0;      // total distance from target
-    static uint32_t last_of_roll_update = 0;
-    int32_t new_roll = 0;
-    int32_t p,i,d;
-
-    // check if new optflow data available
-    if( optflow.last_update != last_of_roll_update) {
-        last_of_roll_update = optflow.last_update;
-
-        // add new distance moved
-        tot_x_cm += optflow.x_cm;
-
-        // only stop roll if caller isn't modifying roll
-        if( input_roll == 0 && current_loc.alt < 1500) {
-            p = g.pid_optflow_roll.get_p(-tot_x_cm);
-            i = g.pid_optflow_roll.get_i(-tot_x_cm,1.0);              // we could use the last update time to calculate the time change
-            d = g.pid_optflow_roll.get_d(-tot_x_cm,1.0);
-            new_roll = p+i+d;
-        }else{
-            g.pid_optflow_roll.reset_I();
-            tot_x_cm = 0;
-            p = 0;              // for logging
-            i = 0;
-            d = 0;
-        }
-        // limit amount of change and maximum angle
-        of_roll = constrain(new_roll, (of_roll-20), (of_roll+20));
-
- #if LOGGING_ENABLED == ENABLED
-        static int8_t log_counter = 0;                                  // used to slow down logging of PID values to dataflash
-        // log output if PID logging is on and we are tuning the rate P, I or D gains
-        if( g.log_bitmask & MASK_LOG_PID && (g.radio_tuning == CH6_OPTFLOW_KP || g.radio_tuning == CH6_OPTFLOW_KI || g.radio_tuning == CH6_OPTFLOW_KD) ) {
-            log_counter++;
-            if( log_counter >= 5 ) {                    // (update rate / desired output rate) = (100hz / 10hz) = 10
-                log_counter = 0;
-                Log_Write_PID(CH6_OPTFLOW_KP, tot_x_cm, p, i, d, of_roll, tuning_value);
-            }
-        }
- #endif // LOGGING_ENABLED == ENABLED
-    }
-
-    // limit max angle
-    of_roll = constrain(of_roll, -1000, 1000);
-
-    return input_roll+of_roll;
-#else
-    return input_roll;
-#endif  // OPTFLOW == ENABLED
-}
-
-static int32_t
-get_of_pitch(int32_t input_pitch)
-{
-#if OPTFLOW == ENABLED
-    static float tot_y_cm = 0;  // total distance from target
-    static uint32_t last_of_pitch_update = 0;
-    int32_t new_pitch = 0;
-    int32_t p,i,d;
-
-    // check if new optflow data available
-    if( optflow.last_update != last_of_pitch_update ) {
-        last_of_pitch_update = optflow.last_update;
-
-        // add new distance moved
-        tot_y_cm += optflow.y_cm;
-
-        // only stop roll if caller isn't modifying pitch
-        if( input_pitch == 0 && current_loc.alt < 1500 ) {
-            p = g.pid_optflow_pitch.get_p(tot_y_cm);
-            i = g.pid_optflow_pitch.get_i(tot_y_cm, 1.0);              // we could use the last update time to calculate the time change
-            d = g.pid_optflow_pitch.get_d(tot_y_cm, 1.0);
-            new_pitch = p + i + d;
-        }else{
-            tot_y_cm = 0;
-            g.pid_optflow_pitch.reset_I();
-            p = 0;              // for logging
-            i = 0;
-            d = 0;
-        }
-
-        // limit amount of change
-        of_pitch = constrain(new_pitch, (of_pitch-20), (of_pitch+20));
-
- #if LOGGING_ENABLED == ENABLED
-        static int8_t log_counter = 0;                                  // used to slow down logging of PID values to dataflash
-        // log output if PID logging is on and we are tuning the rate P, I or D gains
-        if( g.log_bitmask & MASK_LOG_PID && (g.radio_tuning == CH6_OPTFLOW_KP || g.radio_tuning == CH6_OPTFLOW_KI || g.radio_tuning == CH6_OPTFLOW_KD) ) {
-            log_counter++;
-            if( log_counter >= 5 ) {                    // (update rate / desired output rate) = (100hz / 10hz) = 10
-                log_counter = 0;
-                Log_Write_PID(CH6_OPTFLOW_KP+100, tot_y_cm, p, i, d, of_pitch, tuning_value);
-            }
-        }
- #endif // LOGGING_ENABLED == ENABLED
-    }
-
-    // limit max angle
-    of_pitch = constrain(of_pitch, -1000, 1000);
-
-    return input_pitch+of_pitch;
-#else
-    return input_pitch;
-#endif  // OPTFLOW == ENABLED
 }

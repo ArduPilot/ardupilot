@@ -371,6 +371,8 @@ const AP_Param::Info var_info[] PROGMEM = {
     GGROUP(pid_nav_lon,             "NAV_LON_",  AC_PID),
 
     GGROUP(pid_throttle,      "THR_RATE_", AC_PID),
+    GGROUP(pid_throttle_accel,"THR_ACCEL_", AC_PID),
+
     GGROUP(pid_optflow_roll,  "OF_RLL_",   AC_PID),
     GGROUP(pid_optflow_pitch, "OF_PIT_",   AC_PID),
 

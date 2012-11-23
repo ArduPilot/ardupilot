@@ -278,11 +278,7 @@ static void run_navigation_contollers()
         break;
 
     case LAND:
-        if(g.sonar_enabled)
-            verify_land_sonar();
-        else
-            verify_land_baro();
-
+        verify_land();
         // calculates the desired Roll and Pitch
         update_nav_wp();
         break;
@@ -654,6 +650,36 @@ static void verify_altitude()
     }
 }
 
+// Keeps old data out of our calculation / logs
+static void reset_nav_params(void)
+{
+    nav_throttle                    = 0;
+
+    // always start Circle mode at same angle
+    circle_angle                    = 0;
+
+    // We must be heading to a new WP, so XTrack must be 0
+    crosstrack_error                = 0;
+
+    // Will be set by new command
+    target_bearing                  = 0;
+
+    // Will be set by new command
+    wp_distance                     = 0;
+
+    // Will be set by new command, used by loiter
+    long_error                      = 0;
+    lat_error                       = 0;
+    nav_lon 						= 0;
+    nav_lat 						= 0;
+    nav_roll 						= 0;
+    nav_pitch 						= 0;
+    auto_roll 						= 0;
+    auto_pitch 						= 0;
+
+    // make sure we stick to Nav yaw on takeoff
+    auto_yaw = nav_yaw;
+}
 
 static int32_t wrap_360(int32_t error)
 {
