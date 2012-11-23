@@ -243,6 +243,7 @@ CPPDEFS += $(LUFA_OPTS)
 CFLAGS = -g$(DEBUG)
 CFLAGS += $(CDEFS)
 CFLAGS += -O$(OPT)
+#CFLAGS += -mcall-prologues
 CFLAGS += -funsigned-char
 CFLAGS += -funsigned-bitfields
 CFLAGS += -ffunction-sections
