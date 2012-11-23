@@ -390,21 +390,16 @@ static void startup_ground(void)
 
 static void set_mode(byte mode)
 {
-    // if we don't have GPS lock
-    if(false == ap.home_is_set) {
-        // THOR
-        // We don't care about Home if we don't have lock yet in Toy mode
-        if(mode == TOY_A || mode == TOY_M || mode == OF_LOITER) {
-            // nothing
-        }else if (mode > ALT_HOLD) {
+    // Switch to stabilize mode if requested mode requires a GPS lock
+    if(!ap.home_is_set) {
+        if (mode > ALT_HOLD && mode != TOY_A && mode != TOY_M && mode != OF_LOITER && mode != LAND) {
             mode = STABILIZE;
         }
     }
 
-    // nothing but OF_LOITER for OptFlow only
-    if (g.optflow_enabled && g_gps->status() != GPS::GPS_OK) {
-        if (mode > ALT_HOLD && mode != OF_LOITER)
-            mode = STABILIZE;
+    // Switch to stabilize if OF_LOITER requested but no optical flow sensor
+    if (mode == OF_LOITER && !g.optflow_enabled ) {
+        mode = STABILIZE;
     }
 
     control_mode            = mode;
@@ -417,9 +412,6 @@ static void set_mode(byte mode)
 
     // clearing value used in interactive alt hold
     reset_throttle_counter = 0;
-
-    // clearing value used to force the copter down in landing mode
-    landing_boost = 0;
 
     // do not auto_land if we are leaving RTL
     loiter_timer = 0;
@@ -458,7 +450,7 @@ static void set_mode(byte mode)
     	ap.manual_attitude = true;
         yaw_mode        = YAW_HOLD;
         roll_pitch_mode = ROLL_PITCH_STABLE;
-        throttle_mode   = THROTTLE_MANUAL;
+        throttle_mode   = THROTTLE_MANUAL_TILT_COMPENSATED;
         break;
 
     case ALT_HOLD:
@@ -521,11 +513,19 @@ static void set_mode(byte mode)
         break;
 
     case LAND:
+        if( ap.home_is_set ) {
+            // switch to loiter if we have gps
+            ap.manual_attitude = false;
+            yaw_mode        = LOITER_YAW;
+            roll_pitch_mode = LOITER_RP;
+        }else{
+            // otherwise remain with stabilize roll and pitch
+            ap.manual_attitude = true;
+            yaw_mode        = YAW_HOLD;
+            roll_pitch_mode = ROLL_PITCH_STABLE;
+        }
     	ap.manual_throttle = false;
-    	ap.manual_attitude = false;
-        yaw_mode        = LOITER_YAW;
-        roll_pitch_mode = LOITER_RP;
-        throttle_mode   = THROTTLE_AUTO;
+        throttle_mode   = THROTTLE_LAND;
         do_land();
         break;
 
@@ -613,18 +613,6 @@ init_simple_bearing()
 {
     initial_simple_bearing = ahrs.yaw_sensor;
     Log_Write_Data(DATA_INIT_SIMPLE_BEARING, initial_simple_bearing);
-}
-
-static void update_throttle_cruise(int16_t tmp)
-{
-    if(tmp != 0) {
-        g.throttle_cruise += tmp;
-        reset_throttle_I();
-    }
-
-    // recalc kp
-    //g.pid_throttle.kP((float)g.throttle_cruise.get() / 981.0);
-    //cliSerial->printf("kp:%1.4f\n",kp);
 }
 
 #if CLI_SLIDER_ENABLED == ENABLED && CLI_ENABLED == ENABLED

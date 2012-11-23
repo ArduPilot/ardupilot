@@ -871,10 +871,10 @@
 #endif
 
 #ifndef ALT_HOLD_P
- # define ALT_HOLD_P            0.3            // .5
+ # define ALT_HOLD_P            0.5
 #endif
 #ifndef ALT_HOLD_I
- # define ALT_HOLD_I            0.04
+ # define ALT_HOLD_I            0.0
 #endif
 #ifndef ALT_HOLD_IMAX
  # define ALT_HOLD_IMAX         300
@@ -882,10 +882,10 @@
 
 // RATE control
 #ifndef THROTTLE_P
- # define THROTTLE_P            0.3    // .25
+ # define THROTTLE_P            1.0
 #endif
 #ifndef THROTTLE_I
- # define THROTTLE_I            0.03
+ # define THROTTLE_I            0.0
 #endif
 #ifndef THROTTLE_D
  # define THROTTLE_D            0.0
@@ -894,15 +894,27 @@
  # define THROTTLE_IMAX         300
 #endif
 
-#ifndef THROTTLE_RATE_CONSTRAIN_POSITIVE
- # define THROTTLE_RATE_CONSTRAIN_POSITIVE         200
+// minimum and maximum climb rates while in alt hold mode
+#ifndef ALTHOLD_MAX_CLIMB_RATE
+ # define ALTHOLD_MAX_CLIMB_RATE 500
+#endif
+#ifndef ALTHOLD_MIN_CLIMB_RATE
+ # define ALTHOLD_MIN_CLIMB_RATE -ALTHOLD_MAX_CLIMB_RATE
 #endif
 
-#ifndef THROTTLE_RATE_CONSTRAIN_NEGATIVE
- # define THROTTLE_RATE_CONSTRAIN_NEGATIVE        -150
+// Throttle Accel control
+#ifndef THROTTLE_ACCEL_P
+ # define THROTTLE_ACCEL_P 0.5
 #endif
-
-
+#ifndef THROTTLE_ACCEL_I
+ # define THROTTLE_ACCEL_I 1
+#endif
+#ifndef THROTTLE_ACCEL_D
+ # define THROTTLE_ACCEL_D 0.0
+#endif
+#ifndef THROTTLE_ACCEL_IMAX
+ # define THROTTLE_ACCEL_IMAX 500
+#endif
 
 
 //////////////////////////////////////////////////////////////////////////////

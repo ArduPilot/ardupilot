@@ -148,11 +148,7 @@ static bool verify_must()
         break;
 
     case MAV_CMD_NAV_LAND:
-        if(g.sonar_enabled == true) {
-            return verify_land_sonar();
-        }else{
-            return verify_land_baro();
-        }
+        return verify_land();
         break;
 
     case MAV_CMD_NAV_LOITER_UNLIM:
@@ -276,13 +272,10 @@ static void do_nav_wp()
 static void do_land()
 {
     wp_control = LOITER_MODE;
+    throttle_mode = THROTTLE_LAND;
 
     // just to make sure
     set_land_complete(false);
-
-    // landing boost lowers the main throttle to mimmick
-    // the effect of a user's hand
-    landing_boost           = 0;
 
     // A counter that goes up if our climb rate stalls out.
     ground_detector         = 0;
@@ -361,74 +354,21 @@ static bool verify_takeoff()
     return (current_loc.alt > next_WP.alt);
 }
 
-// called at 10hz
-static bool verify_land_sonar()
+// verify_land - returns true if landing has been completed
+static bool verify_land()
 {
+    // loiter above 3m
     if(current_loc.alt > 300) {
         wp_control = LOITER_MODE;
-        ground_detector = 0;
-    }else{
-        // begin to pull down on the throttle
-        landing_boost++;
-        landing_boost = min(landing_boost, 40);
     }
 
-    if(current_loc.alt < 200 ) {
-        wp_control      = NO_NAV_MODE;
-    }
-
-    if(current_loc.alt < 150 ) {
-        // if we are low or don't seem to be decending much, increment ground detector
-        if(current_loc.alt < 80 || abs(climb_rate) < 20) {
-            landing_boost++;              // reduce the throttle at twice the normal rate
-
-            if(ground_detector < 30) {
-                ground_detector++;
-            }else if (ground_detector == 30) {
-                set_land_complete(true);
-                if(g.rc_3.control_in == 0) {
-                    ground_detector++;
-                    init_disarm_motors();
-                }
-                return true;
-            }
-        }
-    }
-    return false;
-}
-
-static bool verify_land_baro()
-{
-    if(current_loc.alt > 300) {
-        wp_control = LOITER_MODE;
-        ground_detector = 0;
-    }else{
-        // begin to pull down on the throttle
-        landing_boost++;
-        landing_boost = min(landing_boost, 40);
-    }
-
+    // turn off loiter below 1m
     if(current_loc.alt < 100 ) {
         wp_control      = NO_NAV_MODE;
     }
 
-    if(current_loc.alt < 200 ) {
-        if(abs(climb_rate) < 40) {
-            landing_boost++;
-
-            if(ground_detector < 30) {
-                ground_detector++;
-            }else if (ground_detector == 30) {
-                set_land_complete(true);
-                if(g.rc_3.control_in == 0) {
-                    ground_detector++;
-                    init_disarm_motors();
-                }
-                return true;
-            }
-        }
-    }
-    return false;
+    // rely on THROTTLE_LAND mode to correctly update landing status
+    return ap.land_complete;
 }
 
 static bool verify_nav_wp()

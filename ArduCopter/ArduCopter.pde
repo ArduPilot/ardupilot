@@ -610,6 +610,15 @@ static int32_t pitch_rate_target_bf = 0;    // body frame pitch rate target
 static int32_t yaw_rate_target_bf = 0;      // body frame yaw rate target
 
 ////////////////////////////////////////////////////////////////////////////////
+// Throttle variables
+////////////////////////////////////////////////////////////////////////////////
+static int16_t throttle_accel_target_ef = 0;    // earth frame throttle acceleration target
+static bool throttle_accel_controller_active = false;   // true when accel based throttle controller is active, false when higher level throttle controllers are providing throttle output directly
+static float z_accel_meas = 0;              // filtered throttle acceleration
+static float throttle_avg;                  // g.throttle_cruise as a float
+
+
+////////////////////////////////////////////////////////////////////////////////
 // ACRO Mode
 ////////////////////////////////////////////////////////////////////////////////
 // Used to control Axis lock
@@ -714,8 +723,6 @@ static byte throttle_mode;
 ////////////////////////////////////////////////////////////////////////////////
 // An additional throttle added to keep the copter at the same altitude when banking
 static int16_t angle_boost;
-// Push copter down for clean landing
-static int16_t landing_boost;
 // for controlling the landing throttle curve
 //verifies landings
 static int16_t ground_detector;
@@ -941,6 +948,11 @@ AP_Limit_GPSLock        gpslock_limit(g_gps);
 AP_Limit_Geofence       geofence_limit(FENCE_START_BYTE, FENCE_WP_SIZE, MAX_FENCEPOINTS, g_gps, &home, &current_loc);
 AP_Limit_Altitude       altitude_limit(&current_loc);
 #endif
+
+////////////////////////////////////////////////////////////////////////////////
+// function definitions to keep compiler from complaining about undeclared functions
+////////////////////////////////////////////////////////////////////////////////
+void get_throttle_althold(int32_t target_alt, int16_t max_climb_rate = ALTHOLD_MAX_CLIMB_RATE);
 
 ////////////////////////////////////////////////////////////////////////////////
 // Top-level logic
@@ -1657,29 +1669,20 @@ void update_simple_mode(void)
     g.rc_2.control_in = _pitch;
 }
 
-#define THROTTLE_FILTER_SIZE 2
-
 // 50 hz update rate
 // controls all throttle behavior
 void update_throttle_mode(void)
 {
+    int16_t pilot_climb_rate;
+
     if(ap.do_flip)     // this is pretty bad but needed to flip in AP modes.
         return;
 
-    int16_t throttle_out;
-
-#if AUTO_THROTTLE_HOLD != 0
-    static float throttle_avg = 0;      // this is initialised to g.throttle_cruise later
-#endif
-
-#if FRAME_CONFIG != HELI_FRAME
-    // calculate angle boost
-    if(throttle_mode ==  THROTTLE_MANUAL) {
-        angle_boost = get_angle_boost(g.rc_3.control_in);
-    }else{
-        angle_boost = get_angle_boost(g.throttle_cruise);
+    // do not run throttle controllers if motors disarmed
+    if( !motors.armed() ) {
+        set_throttle_out(0);
+        return;
     }
-#endif
 
 #if FRAME_CONFIG == HELI_FRAME
 	if (roll_pitch_mode == ROLL_PITCH_STABLE){
@@ -1690,109 +1693,118 @@ void update_throttle_mode(void)
 #endif // HELI_FRAME
 
     switch(throttle_mode) {
+
     case THROTTLE_MANUAL:
-        if (g.rc_3.control_in > 0) {
-#if FRAME_CONFIG == HELI_FRAME
-            g.rc_3.servo_out = g.rc_3.control_in;
-#else
-            if (control_mode == ACRO) {
-                g.rc_3.servo_out        = g.rc_3.control_in;
-            }else{
-                g.rc_3.servo_out        = g.rc_3.control_in + angle_boost;
-            }
-#endif
+        // completely manual throttle
+        if(g.rc_3.control_in <= 0){
+            set_throttle_out(0);
+        }else{
+            // send pilot's output directly to motors
+            set_throttle_out(g.rc_3.control_in);
 
-#if AUTO_THROTTLE_HOLD != 0
-            // ensure throttle_avg has been initialised
-            if( throttle_avg == 0 ) {
-                throttle_avg = g.throttle_cruise;
-            }
-            // calc average throttle
-            if ((g.rc_3.control_in > g.throttle_min) && (abs(climb_rate) < 60) && (g_gps->ground_speed < 200)) {
-                throttle_avg = throttle_avg * .99 + (float)g.rc_3.control_in * .01;
-                g.throttle_cruise = throttle_avg;
-            }
-#endif
+            // update estimate of throttle cruise
+            update_throttle_cruise(g.rc_3.control_in);
 
-            if (false == ap.takeoff_complete && motors.armed()) {
+            // check if we've taken off yet
+            if (!ap.takeoff_complete && motors.armed()) {
                 if (g.rc_3.control_in > g.throttle_cruise) {
                     // we must be in the air by now
                     set_takeoff_complete(true);
                 }
             }
+        }
+        break;
 
+    case THROTTLE_MANUAL_TILT_COMPENSATED:
+        // manual throttle but with angle boost
+        if (g.rc_3.control_in <= 0) {
+            set_throttle_out(0);
         }else{
+            // TO-DO: combine multicopter and tradheli angle boost functions
+#if FRAME_CONFIG == HELI_FRAME
+            set_throttle_out(heli_get_angle_boost(g.rc_3.control_in));
+#else
+            angle_boost = get_angle_boost(g.rc_3.control_in);
+            set_throttle_out(g.rc_3.control_in + angle_boost);
+#endif
 
-            // make sure we also request 0 throttle out
-            // so the props stop ... properly
-            // ----------------------------------------
-            g.rc_3.servo_out = 0;
+            // update estimate of throttle cruise
+            update_throttle_cruise(g.rc_3.control_in);
+
+            if (!ap.takeoff_complete && motors.armed()) {
+                if (g.rc_3.control_in > g.throttle_cruise) {
+                    // we must be in the air by now
+                    set_takeoff_complete(true);
+                }
+            }
+        }
+        break;
+
+    case THROTTLE_ACCELERATION:
+        // pilot inputs the desired acceleration
+        if(g.rc_3.control_in <= 0){
+            set_throttle_out(0);
+        }else{
+            int16_t desired_acceleration = get_pilot_desired_acceleration(g.rc_3.control_in);
+            set_throttle_accel_target(desired_acceleration);
+        }
+
+    case THROTTLE_RATE:
+        // pilot inputs the desired climb rate.  Note this is the unstabilized rate controller
+        if(g.rc_3.control_in <= 0){
+            set_throttle_out(0);
+        }else{
+            pilot_climb_rate = get_pilot_desired_climb_rate(g.rc_3.control_in);
+            get_throttle_rate(pilot_climb_rate);
+        }
+        break;
+
+    case THROTTLE_STABILIZED_RATE:
+        // pilot inputs the desired climb rate.  Note this is the unstabilized rate controller
+        if(g.rc_3.control_in <= 0){
+            set_throttle_out(0);
+        }else{
+            pilot_climb_rate = get_pilot_desired_climb_rate(g.rc_3.control_in);
+            get_throttle_rate_stabilized(pilot_climb_rate);
+        }
+        break;
+
+    case THROTTLE_DIRECT_ALT:
+        // pilot inputs a desired altitude from 0 ~ 10 meters
+        if(g.rc_3.control_in <= 0){
+            set_throttle_out(0);
+        }else{
+            // To-Do: this should update the global desired altitude variable next_WP.alt
+            int32_t desired_alt = get_pilot_desired_direct_alt(g.rc_3.control_in);
+            get_throttle_althold(desired_alt);
         }
         break;
 
     case THROTTLE_HOLD:
-        // allow interactive changing of atitude
-        if(g.rc_3.radio_in < (g.rc_3.radio_min + 200)){
-            int16_t _rate = 180 - (((g.rc_3.radio_in - g.rc_3.radio_min) * 12) / 20);
-            reset_throttle_counter = 150;
-            nav_throttle        = get_throttle_rate(-_rate);
-            g.rc_3.servo_out    = g.throttle_cruise + nav_throttle + angle_boost;
-            break;
-        }else if(g.rc_3.radio_in > (g.rc_3.radio_max - 200)){
-            int16_t _rate = 300 - ((g.rc_3.radio_max -  g.rc_3.radio_in) * 18) / 20;
-            reset_throttle_counter = 150;
-            nav_throttle        = get_throttle_rate(_rate);
-            g.rc_3.servo_out    = g.throttle_cruise + nav_throttle + angle_boost;
-            break;
+        // alt hold plus pilot input of climb rate
+        pilot_climb_rate = get_pilot_desired_climb_rate(g.rc_3.control_in);
+
+        // check for pilot override
+        if( pilot_climb_rate != 0 ) {
+            get_throttle_rate_stabilized(pilot_climb_rate);
+        }else{
+            get_throttle_rate_stabilized(0);
+            force_new_altitude(current_loc.alt);    //TO-DO: this should be set to stabilized target
         }
-
-
-        // allow 1 second of slow down after pilot moves throttle back into deadzone
-        if(reset_throttle_counter > 0) {
-            reset_throttle_counter--;
-            // if 1 second has passed set the target altitude to the current altitude
-            if(reset_throttle_counter == 0) {
-                force_new_altitude(max(current_loc.alt, 100));
-            }else{
-                nav_throttle            = get_throttle_rate(0);
-                g.rc_3.servo_out        = g.throttle_cruise + nav_throttle + angle_boost;
-                break;
-            }
-        }
-
-    // else fall through
+        break;
 
     case THROTTLE_AUTO:
-
+        // auto pilot altitude controller with target altitude held in next_WP.alt
         if(motors.auto_armed() == true) {
-
-            // how far off are we
-            altitude_error = get_altitude_error();
-
-            //int16_t desired_climb_rate;
-            if(alt_change_flag == REACHED_ALT) {                    // we are at or above the target alt
-                desired_climb_rate      = g.pi_alt_hold.get_p(altitude_error);                                          // calculate desired speed from lon error
-                update_throttle_cruise(g.pi_alt_hold.get_i(altitude_error, .02));
-                desired_climb_rate      = constrain(desired_climb_rate, -250, 250);
-                nav_throttle            = get_throttle_rate(desired_climb_rate);
-            }else{
-                desired_climb_rate      = get_desired_climb_rate();
-                nav_throttle            = get_throttle_rate(desired_climb_rate);
-            }
+            get_throttle_althold(next_WP.alt);
+            // TO-DO: need to somehow set nav_throttle
         }
+        // TO-DO: what if auto_armed is not true?!  throttle stuck at unknown position?
+        break;
 
-        // hack to remove the influence of the ground effect
-        if(g.sonar_enabled && current_loc.alt < 100 && landing_boost != 0) {
-            nav_throttle = min(nav_throttle, 0);
-        }
-
-#if FRAME_CONFIG == HELI_FRAME
-        throttle_out = g.throttle_cruise + nav_throttle - landing_boost;
-#else
-        throttle_out = g.throttle_cruise + nav_throttle + angle_boost - landing_boost;
-#endif
-
-        g.rc_3.servo_out = throttle_out;
+    case THROTTLE_LAND:
+        // landing throttle controller
+        get_throttle_land();
         break;
     }
 }

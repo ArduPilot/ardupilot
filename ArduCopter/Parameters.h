@@ -227,6 +227,7 @@ public:
         k_param_pid_optflow_pitch,
         k_param_acro_balance_roll,
         k_param_acro_balance_pitch,
+        k_param_pid_throttle_accel, // 241
 
         // 254,255: reserved
     };
@@ -368,6 +369,7 @@ public:
     AC_PID                  pid_nav_lon;
 
     AC_PID                  pid_throttle;
+    AC_PID                  pid_throttle_accel;
     AC_PID                  pid_optflow_roll;
     AC_PID                  pid_optflow_pitch;
 
@@ -416,6 +418,7 @@ public:
         pid_nav_lon             (NAV_P,                 NAV_I,                  NAV_D,                  NAV_IMAX * 100),
 
         pid_throttle            (THROTTLE_P,            THROTTLE_I,             THROTTLE_D,             THROTTLE_IMAX),
+        pid_throttle_accel      (THROTTLE_ACCEL_P,      THROTTLE_ACCEL_I,       THROTTLE_ACCEL_D,       THROTTLE_ACCEL_IMAX),
         pid_optflow_roll        (OPTFLOW_ROLL_P,        OPTFLOW_ROLL_I,         OPTFLOW_ROLL_D,         OPTFLOW_IMAX * 100),
         pid_optflow_pitch       (OPTFLOW_PITCH_P,       OPTFLOW_PITCH_I,        OPTFLOW_PITCH_D,        OPTFLOW_IMAX * 100),
 
