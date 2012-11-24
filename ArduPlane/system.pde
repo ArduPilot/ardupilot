@@ -12,6 +12,7 @@
 static int8_t   process_logs(uint8_t argc, const Menu::arg *argv);      // in Log.pde
 static int8_t   setup_mode(uint8_t argc, const Menu::arg *argv);        // in setup.pde
 static int8_t   test_mode(uint8_t argc, const Menu::arg *argv);         // in test.cpp
+static int8_t   reboot_board(uint8_t argc, const Menu::arg *argv);
 
 // This is the help function
 // PSTR is an AVR macro to read strings from flash memory
@@ -22,8 +23,7 @@ static int8_t   main_menu_help(uint8_t argc, const Menu::arg *argv)
                          "  logs        log readback/setup mode\n"
                          "  setup       setup mode\n"
                          "  test        test mode\n"
-                         "\n"
-                         "Move the slide switch and reset to FLY.\n"
+                         "  reboot      reboot to flight mode\n"
                          "\n"));
     return(0);
 }
@@ -35,11 +35,18 @@ static const struct Menu::command main_menu_commands[] PROGMEM = {
     {"logs",                process_logs},
     {"setup",               setup_mode},
     {"test",                test_mode},
+    {"reboot",              reboot_board},
     {"help",                main_menu_help},
 };
 
 // Create the top-level menu object.
 MENU(main_menu, THISFIRMWARE, main_menu_commands);
+
+static int8_t reboot_board(uint8_t argc, const Menu::arg *argv)
+{
+    reboot_apm();
+    return 0;
+}
 
 // the user wants the CLI. It never exits
 static void run_cli(FastSerial *port)
@@ -556,21 +563,27 @@ uint16_t board_voltage(void)
 }
 
 
-#if CONFIG_APM_HARDWARE == APM_HARDWARE_APM2
 /*
   force a software reset of the APM
  */
 static void reboot_apm(void)
 {
-    cliSerial->println_P(PSTR("REBOOTING"));
-    delay(100);
+    cliSerial->printf_P(PSTR("REBOOTING\n"));
+    delay(100); // let serial flush
     // see http://www.arduino.cc/cgi-bin/yabb2/YaBB.pl?num=1250663814/
     // for the method
+#if CONFIG_APM_HARDWARE == APM_HARDWARE_APM2
+    // this relies on the bootloader resetting the watchdog, which
+    // APM1 doesn't do
     cli();
     wdt_enable(WDTO_15MS);
+#else
+    // this works on APM1
+    void (*fn)(void) = NULL;
+    fn();
+#endif
     while (1);
 }
-#endif
 
 
 static void
