@@ -7,6 +7,7 @@
 #include <FastSerial.h>
 #include <AP_Common.h>
 #include <AP_Math.h>
+#include <Filter.h>
 #include <I2C.h>                // Arduino I2C lib
 #include <AP_RangeFinder.h>     // Range finder library
 #include <Arduino_Mega_ISR_Registry.h>
