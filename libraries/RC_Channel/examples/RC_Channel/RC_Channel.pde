@@ -66,6 +66,7 @@ void setup()
 {
     Serial.begin(115200);
     Serial.println("ArduPilot RC Channel test");
+    isr_registry.init();
     APM_RC.Init( &isr_registry );               // APM Radio initialization
 
 
@@ -88,7 +89,6 @@ void setup()
     rc_4.set_angle(6000);
     rc_4.set_dead_zone(500);
     rc_5.set_range(0,1000);
-    rc_5.set_filter(false);
     rc_6.set_range(200,800);
     rc_7.set_range(0,1000);
     rc_8.set_range(0,1000);

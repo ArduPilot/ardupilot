@@ -5,8 +5,15 @@
  *
  */
 
+#include <FastSerial.h>
+#include <AP_Common.h>
+#include <Arduino_Mega_ISR_Registry.h>
+#include <AP_Math.h>        // ArduPilot Mega Vector/Matrix math Library
 #include <APM_RC.h>             // ArduPilot Mega RC Library
 #include <RC_Channel.h>         // ArduPilot Mega RC Library
+
+// set your hardware type here
+#define CONFIG_APM_HARDWARE APM_HARDWARE_APM2
 
 
 #define EE_RADIO_1 0x00 // all gains stored from here
@@ -18,6 +25,17 @@
 #define EE_RADIO_7 0x24 // all gains stored from here
 #define EE_RADIO_8 0x2A // all gains stored from here
 
+
+////////////////////////////////////////////
+// RC Hardware
+////////////////////////////////////////////
+#if CONFIG_APM_HARDWARE == APM_HARDWARE_APM2
+APM_RC_APM2 APM_RC;
+#else
+APM_RC_APM1 APM_RC;
+#endif
+
+Arduino_Mega_ISR_Registry isr_registry;
 
 RC_Channel rc_1(EE_RADIO_1);
 RC_Channel rc_2(EE_RADIO_2);
@@ -41,7 +59,8 @@ void setup()
 {
     Serial.begin(38400);
     Serial.println("ArduPilot RC Channel test");
-    APM_RC.Init();              // APM Radio initialization
+    isr_registry.init();
+    APM_RC.Init( &isr_registry );               // APM Radio initialization
 
 
     delay(500);
@@ -82,15 +101,14 @@ void setup()
 
     // set type of output, symmetrical angles or a number range;
     rc_1.set_angle(4500);
-    rc_1.dead_zone = 80;
+    rc_1.set_dead_zone(80);
     rc_2.set_angle(4500);
-    rc_2.dead_zone = 80;
+    rc_2.set_dead_zone(80);
     rc_3.set_range(0,1000);
-    rc_3.dead_zone = 20;
+    rc_3.set_dead_zone(20);
     rc_4.set_angle(6000);
-    rc_4.dead_zone = 500;
+    rc_4.set_dead_zone(500);
     rc_5.set_range(0,1000);
-    rc_5.set_filter(false);
     rc_6.set_range(200,800);
     rc_7.set_range(0,1000);
     rc_8.set_range(0,1000);
