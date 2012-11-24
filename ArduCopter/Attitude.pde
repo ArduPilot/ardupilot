@@ -294,7 +294,7 @@ run_rate_controllers()
 
     // run throttle controller if an accel based target has been provided
     if( throttle_accel_controller_active ) {
-        g.rc_3.servo_out = get_throttle_accel(throttle_accel_target_ef);
+        set_throttle_out(get_throttle_accel(throttle_accel_target_ef), true);
     }
 }
 
@@ -718,32 +718,52 @@ static void update_throttle_cruise(int16_t throttle)
     }
 }
 
-static int16_t get_angle_boost(int16_t value)
-{
-    float temp = cos_pitch_x * cos_roll_x;
-    temp = constrain(temp, .75, 1.0);
-    return ((float)(value + 80) / temp) - (value + 80);
-}
-
 #if FRAME_CONFIG == HELI_FRAME
-// heli_angle_boost - adds a boost depending on roll/pitch values
-// equivalent of quad's angle_boost function
+// get_angle_boost - returns a throttle including compensation for roll/pitch angle
 // throttle value should be 0 ~ 1000
-static int16_t heli_get_angle_boost(int16_t throttle)
+// for traditional helicopters
+static int16_t get_angle_boost(int16_t throttle)
 {
     float angle_boost_factor = cos_pitch_x * cos_roll_x;
     angle_boost_factor = 1.0 - constrain(angle_boost_factor, .5, 1.0);
     int16_t throttle_above_mid = max(throttle - motors.throttle_mid,0);
-    return throttle + throttle_above_mid*angle_boost_factor;
 
+    // to allow logging of angle boost
+    angle_boost = throttle_above_mid*angle_boost_factor;
+
+    return throttle + angle_boost;
 }
-#endif // HELI_FRAME
+#else   // all multicopters
+// get_angle_boost - returns a throttle including compensation for roll/pitch angle
+// throttle value should be 0 ~ 1000
+static int16_t get_angle_boost(int16_t throttle)
+{
+    float temp = cos_pitch_x * cos_roll_x;
+    int16_t throttle_out;
+
+    temp = constrain(temp, .5, 1.0);
+    temp = constrain(9000-max(labs(roll_axis),labs(pitch_axis)), 0, 3000) / (3000 * temp);
+    throttle_out = constrain((float)(throttle-g.throttle_min) * temp + g.throttle_min, g.throttle_min, 1000);
+    //Serial.printf("Thin:%4.2f  sincos:%4.2f  temp:%4.2f  roll_axis:%4.2f  Out:%4.2f   \n", 1.0*throttle, 1.0*cos_pitch_x * cos_roll_x, 1.0*temp, 1.0*roll_axis, 1.0*constrain((float)value * temp, 0, 1000));
+
+    // to allow logging of angle boost
+    angle_boost = throttle_out - throttle;
+
+    return throttle_out;
+}
+#endif // FRAME_CONFIG == HELI_FRAME
 
  // set_throttle_out - to be called by upper throttle controllers when they wish to provide throttle output directly to motors (instead of using accel based throttle controller)
  // provide 0 to cut motors
-void set_throttle_out( int16_t throttle_out )
+void set_throttle_out( int16_t throttle_out, bool apply_angle_boost )
 {
-    g.rc_3.servo_out = throttle_out;
+    if( apply_angle_boost ) {
+        g.rc_3.servo_out = get_angle_boost(throttle_out);
+    }else{
+        g.rc_3.servo_out = throttle_out;
+        // clear angle_boost for logging purposes
+        angle_boost = 0;
+    }
     throttle_accel_controller_active = false;
 }
 
