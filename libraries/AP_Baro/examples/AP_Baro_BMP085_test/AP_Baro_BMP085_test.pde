@@ -6,6 +6,7 @@
 #include <FastSerial.h>
 #include <I2C.h>
 #include <SPI.h>
+#include <Filter.h>
 #include <AP_Baro.h> // ArduPilot Mega BMP085 Library
 #include <Arduino_Mega_ISR_Registry.h>
 #include <AP_PeriodicProcess.h>
