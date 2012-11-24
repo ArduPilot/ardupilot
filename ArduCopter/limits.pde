@@ -269,7 +269,7 @@ static void limits_loop() {
 
                 //set_recovery_home_alt();
                 set_mode(POSITION);
-                throttle_mode = THROTTLE_AUTO;
+                set_throttle_mode(THROTTLE_AUTO);
                 limits.last_action = millis();
                 gcs_send_message(MSG_LIMITS_STATUS);
                 break;

@@ -864,6 +864,9 @@ static int16_t get_pilot_desired_climb_rate(int16_t throttle_control)
         desired_rate = 0;
     }
 
+    // desired climb rate for logging
+    desired_climb_rate = desired_rate;
+
     return desired_rate;
 }
 
