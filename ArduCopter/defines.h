@@ -167,8 +167,11 @@
 #define CH6_RATE_KD 21
 #define CH6_YAW_RATE_KP 6
 #define CH6_YAW_RATE_KD 26
-// Altitude rate controller
+// Throttle
 #define CH6_THROTTLE_KP 7
+#define CH6_THR_ACCEL_KP 33
+#define CH6_THR_ACCEL_KI 34
+#define CH6_THR_ACCEL_KD 35
 // Extras
 #define CH6_TOP_BOTTOM_RATIO 8
 #define CH6_RELAY 9

@@ -720,9 +720,8 @@ static byte throttle_mode;
 ////////////////////////////////////////////////////////////////////////////////
 // An additional throttle added to keep the copter at the same altitude when banking
 static int16_t angle_boost;
-// for controlling the landing throttle curve
-//verifies landings
-static int16_t ground_detector;
+// counter to verify landings
+static uint16_t land_detector;
 
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -1691,7 +1690,7 @@ bool set_throttle_mode( uint8_t new_throttle_mode )
         case THROTTLE_HOLD:
         case THROTTLE_AUTO:
             set_new_altitude(current_loc.alt);          // by default hold the current altitude
-            if ( throttle_mode <= THROTTLE_HOLD ) {     // reset the alt hold I terms if previous throttle mode was manual
+            if ( throttle_mode < THROTTLE_HOLD ) {      // reset the alt hold I terms if previous throttle mode was manual
                 reset_throttle_I();
             }
             throttle_accel_controller_active = true;    // this controller uses accel based throttle controller
@@ -1700,7 +1699,7 @@ bool set_throttle_mode( uint8_t new_throttle_mode )
 
         case THROTTLE_LAND:
             set_land_complete(false);   // mark landing as incomplete
-            ground_detector = 0;        // A counter that goes up if our climb rate stalls out.
+            land_detector = 0;          // A counter that goes up if our climb rate stalls out.
             set_new_altitude(0);        // Set a new target altitude
             throttle_accel_controller_active = true;    // this controller uses accel based throttle controller
             throttle_initialised = true;
@@ -2153,6 +2152,18 @@ static void tuning(){
         inertial_nav.set_time_constant_z(tuning_value);
         break;
 #endif
+
+    case CH6_THR_ACCEL_KP:
+        g.pid_throttle_accel.kP(tuning_value);
+        break;
+
+    case CH6_THR_ACCEL_KI:
+        g.pid_throttle_accel.kI(tuning_value);
+        break;
+
+    case CH6_THR_ACCEL_KD:
+        g.pid_throttle_accel.kD(tuning_value);
+        break;
     }
 }
 

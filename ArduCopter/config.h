@@ -437,6 +437,9 @@
  # define AUTO_LAND_TIME 5
 #endif
 
+#ifndef LAND_SPEED
+ # define LAND_SPEED    50          // the descent speed for the final stage of landing in cm/s
+#endif
 
 
 //////////////////////////////////////////////////////////////////////////////

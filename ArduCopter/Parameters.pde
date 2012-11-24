@@ -193,6 +193,15 @@ const AP_Param::Info var_info[] PROGMEM = {
 
     GSCALAR(auto_land_timeout,      "AUTO_LAND",    AUTO_LAND_TIME*1000),
 
+    // @Param: LAND_SPEED
+    // @DisplayName: Land speed
+    // @Description: The descent speed for the final stage of landing in cm/s
+    // @Units: cm/s
+    // @Range: 10 200
+    // @Increment: 10
+    // @User: Standard
+    GSCALAR(land_speed,             "LAND_SPEED",   LAND_SPEED),
+
     // @Param: THR_MIN
     // @DisplayName: Minimum Throttle
     // @Description: The minimum throttle which the autopilot will apply.
