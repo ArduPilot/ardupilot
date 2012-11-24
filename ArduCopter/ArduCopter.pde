@@ -431,8 +431,6 @@ static int16_t lon_speed;       // expressed in cm/s.  positive numbers mean mov
 static int16_t lat_speed;       // expressed in cm/s.  positive numbers when moving north
 static int16_t ground_bearing;	// expressed in centidegrees
 
-static int16_t desired_climb_rate;
-
 // The difference between the desired rate of travel and the actual rate of travel
 // updated after GPS read - 5-10hz
 static int16_t x_rate_error;
@@ -616,6 +614,7 @@ static int16_t throttle_accel_target_ef = 0;    // earth frame throttle accelera
 static bool throttle_accel_controller_active = false;   // true when accel based throttle controller is active, false when higher level throttle controllers are providing throttle output directly
 static float z_accel_meas = 0;              // filtered throttle acceleration
 static float throttle_avg;                  // g.throttle_cruise as a float
+static int16_t desired_climb_rate;          // pilot desired climb rate - for logging purposes only
 
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -698,8 +697,6 @@ static int16_t sonar_rate;
 static int32_t baro_alt;
 // The climb_rate as reported by Baro in cm/s
 static int16_t baro_rate;
-// used to switch out of Manual Boost
-static uint8_t reset_throttle_counter;
 
 static int16_t saved_toy_throttle;
 
@@ -1667,6 +1664,64 @@ void update_simple_mode(void)
 
     g.rc_1.control_in = _roll;
     g.rc_2.control_in = _pitch;
+}
+
+// set_throttle_mode - sets the throttle mode and initialises any variables as required
+bool set_throttle_mode( uint8_t new_throttle_mode )
+{
+    // boolean to ensure proper initialisation of throttle modes
+    bool throttle_initialised = false;
+
+    // initialise any variables required for the new throttle mode
+    switch(new_throttle_mode) {
+        case THROTTLE_MANUAL:
+        case THROTTLE_MANUAL_TILT_COMPENSATED:
+            throttle_accel_controller_active = false;   // this controller does not use accel based throttle controller
+            throttle_initialised = true;
+            break;
+
+        case THROTTLE_ACCELERATION:
+        case THROTTLE_RATE:
+        case THROTTLE_STABILIZED_RATE:
+        case THROTTLE_DIRECT_ALT:
+            throttle_accel_controller_active = true;    // this controller uses accel based throttle controller
+            throttle_initialised = true;
+            break;
+
+        case THROTTLE_HOLD:
+        case THROTTLE_AUTO:
+            set_new_altitude(current_loc.alt);          // by default hold the current altitude
+            if ( throttle_mode <= THROTTLE_HOLD ) {     // reset the alt hold I terms if previous throttle mode was manual
+                reset_throttle_I();
+            }
+            throttle_accel_controller_active = true;    // this controller uses accel based throttle controller
+            throttle_initialised = true;
+            break;
+
+        case THROTTLE_LAND:
+            set_land_complete(false);   // mark landing as incomplete
+            ground_detector = 0;        // A counter that goes up if our climb rate stalls out.
+            set_new_altitude(0);        // Set a new target altitude
+            throttle_accel_controller_active = true;    // this controller uses accel based throttle controller
+            throttle_initialised = true;
+            break;
+
+        default:
+            cliSerial->printf_P(PSTR("Unsupported throttle mode: %d!!"),new_throttle_mode);
+            break;
+    }
+
+    // update the throttle mode
+    if( throttle_initialised ) {
+        throttle_mode = new_throttle_mode;
+
+        // reset some variables used for logging
+        desired_climb_rate = 0;
+        nav_throttle = 0;
+    }
+
+    // return success or failure
+    return throttle_initialised;
 }
 
 // 50 hz update rate

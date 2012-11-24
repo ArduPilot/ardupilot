@@ -272,19 +272,10 @@ static void do_nav_wp()
 static void do_land()
 {
     wp_control = LOITER_MODE;
-    throttle_mode = THROTTLE_LAND;
-
-    // just to make sure
-    set_land_complete(false);
-
-    // A counter that goes up if our climb rate stalls out.
-    ground_detector         = 0;
+    set_throttle_mode(THROTTLE_LAND);
 
     // hold at our current location
     set_next_WP(&current_loc);
-
-    // Set a new target altitude
-    set_new_altitude(0);
 }
 
 static void do_loiter_unlimited()

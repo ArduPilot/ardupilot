@@ -410,9 +410,6 @@ static void set_mode(byte mode)
     motors.auto_armed(g.rc_3.control_in > 0);
     set_auto_armed(g.rc_3.control_in > 0);
 
-    // clearing value used in interactive alt hold
-    reset_throttle_counter = 0;
-
     // do not auto_land if we are leaving RTL
     loiter_timer = 0;
 
@@ -436,7 +433,7 @@ static void set_mode(byte mode)
     	ap.manual_attitude = true;
         yaw_mode        = YAW_ACRO;
         roll_pitch_mode = ROLL_PITCH_ACRO;
-        throttle_mode   = THROTTLE_MANUAL;
+        set_throttle_mode(THROTTLE_MANUAL);
         // reset acro axis targets to current attitude
 		if(g.axis_enabled){
             roll_axis 	= ahrs.roll_sensor;
@@ -450,7 +447,7 @@ static void set_mode(byte mode)
     	ap.manual_attitude = true;
         yaw_mode        = YAW_HOLD;
         roll_pitch_mode = ROLL_PITCH_STABLE;
-        throttle_mode   = THROTTLE_MANUAL_TILT_COMPENSATED;
+        set_throttle_mode(THROTTLE_MANUAL_TILT_COMPENSATED);
         break;
 
     case ALT_HOLD:
@@ -458,7 +455,7 @@ static void set_mode(byte mode)
     	ap.manual_attitude = true;
         yaw_mode        = ALT_HOLD_YAW;
         roll_pitch_mode = ALT_HOLD_RP;
-        throttle_mode   = ALT_HOLD_THR;
+        set_throttle_mode(ALT_HOLD_THR);
         force_new_altitude(max(current_loc.alt, 100));
         break;
 
@@ -467,7 +464,7 @@ static void set_mode(byte mode)
     	ap.manual_attitude = false;
         yaw_mode        = AUTO_YAW;
         roll_pitch_mode = AUTO_RP;
-        throttle_mode   = AUTO_THR;
+        set_throttle_mode(AUTO_THR);
 
         // loads the commands from where we left off
         init_commands();
@@ -478,7 +475,7 @@ static void set_mode(byte mode)
     	ap.manual_attitude = false;
         yaw_mode        = CIRCLE_YAW;
         roll_pitch_mode = CIRCLE_RP;
-        throttle_mode   = CIRCLE_THR;
+        set_throttle_mode(CIRCLE_THR);
         set_next_WP(&current_loc);
         circle_WP       = next_WP;
         circle_angle    = 0;
@@ -489,7 +486,7 @@ static void set_mode(byte mode)
     	ap.manual_attitude = false;
         yaw_mode        = LOITER_YAW;
         roll_pitch_mode = LOITER_RP;
-        throttle_mode   = LOITER_THR;
+        set_throttle_mode(LOITER_THR);
         set_next_WP(&current_loc);
         break;
 
@@ -498,7 +495,7 @@ static void set_mode(byte mode)
     	ap.manual_attitude = false;
         yaw_mode        = YAW_HOLD;
         roll_pitch_mode = ROLL_PITCH_AUTO;
-        throttle_mode   = THROTTLE_MANUAL;
+        set_throttle_mode(THROTTLE_MANUAL);
         set_next_WP(&current_loc);
         break;
 
@@ -507,7 +504,7 @@ static void set_mode(byte mode)
     	ap.manual_attitude = false;
         yaw_mode        = YAW_AUTO;
         roll_pitch_mode = ROLL_PITCH_AUTO;
-        throttle_mode   = THROTTLE_AUTO;
+        set_throttle_mode(THROTTLE_AUTO);
         next_WP         = current_loc;
         set_next_WP(&guided_WP);
         break;
@@ -525,7 +522,6 @@ static void set_mode(byte mode)
             roll_pitch_mode = ROLL_PITCH_STABLE;
         }
     	ap.manual_throttle = false;
-        throttle_mode   = THROTTLE_LAND;
         do_land();
         break;
 
@@ -534,7 +530,7 @@ static void set_mode(byte mode)
     	ap.manual_attitude = false;
         yaw_mode        = RTL_YAW;
         roll_pitch_mode = RTL_RP;
-        throttle_mode   = RTL_THR;
+        set_throttle_mode(RTL_THR);
         set_rtl_reached_alt(false);
         set_next_WP(&current_loc);
         set_new_altitude(get_RTL_alt());
@@ -545,7 +541,7 @@ static void set_mode(byte mode)
     	ap.manual_attitude = false;
         yaw_mode        = OF_LOITER_YAW;
         roll_pitch_mode = OF_LOITER_RP;
-        throttle_mode   = OF_LOITER_THR;
+        set_throttle_mode(OF_LOITER_THR);
         set_next_WP(&current_loc);
         break;
 
@@ -557,14 +553,12 @@ static void set_mode(byte mode)
     	ap.manual_attitude = true;
         yaw_mode        = YAW_TOY;
         roll_pitch_mode = ROLL_PITCH_TOY;
-        throttle_mode   = THROTTLE_AUTO;
+        set_throttle_mode(THROTTLE_AUTO);
         wp_control      = NO_NAV_MODE;
 
         // save throttle for fast exit of Alt hold
         saved_toy_throttle = g.rc_3.control_in;
 
-        // hold the current altitude
-        set_new_altitude(current_loc.alt);
         break;
 
     case TOY_M:
@@ -573,7 +567,7 @@ static void set_mode(byte mode)
         yaw_mode            = YAW_TOY;
         roll_pitch_mode 	= ROLL_PITCH_TOY;
         wp_control          = NO_NAV_MODE;
-        throttle_mode       = THROTTLE_HOLD;
+        set_throttle_mode(THROTTLE_HOLD);
         break;
 
     default:
@@ -582,7 +576,7 @@ static void set_mode(byte mode)
 
     if(ap.failsafe) {
         // this is to allow us to fly home without interactive throttle control
-        throttle_mode = THROTTLE_AUTO;
+        set_throttle_mode(THROTTLE_AUTO);
     	ap.manual_throttle = false;
 
         // does not wait for us to be in high throttle, since the
@@ -591,18 +585,12 @@ static void set_mode(byte mode)
     	set_auto_armed(true);
     }
 
-    if(ap.manual_throttle) {
-		desired_climb_rate = 0;
-	}
-
     if(ap.manual_attitude) {
         // We are under manual attitude control
         // remove the navigation from roll and pitch command
         reset_nav_params();
         // remove the wind compenstaion
         reset_wind_I();
-        // Clears the alt hold compensation
-        reset_throttle_I();
     }
 
     Log_Write_Mode(control_mode);
