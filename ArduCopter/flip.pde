@@ -39,7 +39,7 @@ void roll_flip()
         if (roll < 4500) {
             // Roll control
             g.rc_1.servo_out = AAP_ROLL_OUT * flip_dir;
-            set_throttle_out(g.rc_3.control_in + AAP_THR_INC);
+            set_throttle_out(g.rc_3.control_in + AAP_THR_INC, false);
         }else{
             flip_state++;
         }
@@ -52,7 +52,7 @@ void roll_flip()
 		#else
             g.rc_1.servo_out = get_rate_roll(40000 * flip_dir);
 		#endif // HELI_FRAME
-        set_throttle_out(g.rc_3.control_in - AAP_THR_DEC);
+        set_throttle_out(g.rc_3.control_in - AAP_THR_DEC, false);
         }else{
             flip_state++;
             flip_timer = 0;
@@ -63,7 +63,7 @@ void roll_flip()
         if (flip_timer < 100) {
             //g.rc_1.servo_out = get_stabilize_roll(g.rc_1.control_in);
             get_stabilize_roll(g.rc_1.control_in);
-            set_throttle_out(g.rc_3.control_in + AAP_THR_INC);
+            set_throttle_out(g.rc_3.control_in + AAP_THR_INC, false);
             flip_timer++;
         }else{
         	Log_Write_Event(DATA_END_FLIP);

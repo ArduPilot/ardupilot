@@ -1680,7 +1680,7 @@ void update_throttle_mode(void)
 
     // do not run throttle controllers if motors disarmed
     if( !motors.armed() ) {
-        set_throttle_out(0);
+        set_throttle_out(0, false);
         return;
     }
 
@@ -1697,10 +1697,10 @@ void update_throttle_mode(void)
     case THROTTLE_MANUAL:
         // completely manual throttle
         if(g.rc_3.control_in <= 0){
-            set_throttle_out(0);
+            set_throttle_out(0, false);
         }else{
             // send pilot's output directly to motors
-            set_throttle_out(g.rc_3.control_in);
+            set_throttle_out(g.rc_3.control_in, false);
 
             // update estimate of throttle cruise
             update_throttle_cruise(g.rc_3.control_in);
@@ -1718,15 +1718,9 @@ void update_throttle_mode(void)
     case THROTTLE_MANUAL_TILT_COMPENSATED:
         // manual throttle but with angle boost
         if (g.rc_3.control_in <= 0) {
-            set_throttle_out(0);
+            set_throttle_out(0, false); // no need for angle boost with zero throttle
         }else{
-            // TO-DO: combine multicopter and tradheli angle boost functions
-#if FRAME_CONFIG == HELI_FRAME
-            set_throttle_out(heli_get_angle_boost(g.rc_3.control_in));
-#else
-            angle_boost = get_angle_boost(g.rc_3.control_in);
-            set_throttle_out(g.rc_3.control_in + angle_boost);
-#endif
+            set_throttle_out(g.rc_3.control_in, true);
 
             // update estimate of throttle cruise
             update_throttle_cruise(g.rc_3.control_in);
@@ -1743,16 +1737,17 @@ void update_throttle_mode(void)
     case THROTTLE_ACCELERATION:
         // pilot inputs the desired acceleration
         if(g.rc_3.control_in <= 0){
-            set_throttle_out(0);
+            set_throttle_out(0, false);
         }else{
             int16_t desired_acceleration = get_pilot_desired_acceleration(g.rc_3.control_in);
             set_throttle_accel_target(desired_acceleration);
         }
+        break;
 
     case THROTTLE_RATE:
         // pilot inputs the desired climb rate.  Note this is the unstabilized rate controller
         if(g.rc_3.control_in <= 0){
-            set_throttle_out(0);
+            set_throttle_out(0, false);
         }else{
             pilot_climb_rate = get_pilot_desired_climb_rate(g.rc_3.control_in);
             get_throttle_rate(pilot_climb_rate);
@@ -1762,7 +1757,7 @@ void update_throttle_mode(void)
     case THROTTLE_STABILIZED_RATE:
         // pilot inputs the desired climb rate.  Note this is the unstabilized rate controller
         if(g.rc_3.control_in <= 0){
-            set_throttle_out(0);
+            set_throttle_out(0, false);
         }else{
             pilot_climb_rate = get_pilot_desired_climb_rate(g.rc_3.control_in);
             get_throttle_rate_stabilized(pilot_climb_rate);
@@ -1772,7 +1767,7 @@ void update_throttle_mode(void)
     case THROTTLE_DIRECT_ALT:
         // pilot inputs a desired altitude from 0 ~ 10 meters
         if(g.rc_3.control_in <= 0){
-            set_throttle_out(0);
+            set_throttle_out(0, false);
         }else{
             // To-Do: this should update the global desired altitude variable next_WP.alt
             int32_t desired_alt = get_pilot_desired_direct_alt(g.rc_3.control_in);
@@ -1783,14 +1778,7 @@ void update_throttle_mode(void)
     case THROTTLE_HOLD:
         // alt hold plus pilot input of climb rate
         pilot_climb_rate = get_pilot_desired_climb_rate(g.rc_3.control_in);
-
-        // check for pilot override
-        if( pilot_climb_rate != 0 ) {
-            get_throttle_rate_stabilized(pilot_climb_rate);
-        }else{
-            get_throttle_rate_stabilized(0);
-            force_new_altitude(current_loc.alt);    //TO-DO: this should be set to stabilized target
-        }
+        get_throttle_rate_stabilized(pilot_climb_rate);
         break;
 
     case THROTTLE_AUTO:
