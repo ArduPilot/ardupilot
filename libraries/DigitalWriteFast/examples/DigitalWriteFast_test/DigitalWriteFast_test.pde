@@ -9,6 +9,7 @@
 
 #include <FastSerial.h>
 #include <AP_Common.h>
+#include <AP_Math.h>
 #include <DigitalWriteFast.h> // Compass Library
 
 #define LED_ON           LOW
@@ -36,6 +37,21 @@
 #endif
 
 FastSerialPort0(Serial);
+
+void flash_leds()
+{
+    uint8_t i;
+    for(i=0; i<5; i++ ){
+        digitalWriteFast(A_LED_PIN,LED_ON);
+        digitalWriteFast(B_LED_PIN,LED_ON);
+        digitalWriteFast(C_LED_PIN,LED_ON);
+        delay(100);
+        digitalWriteFast(A_LED_PIN,LED_OFF);
+        digitalWriteFast(B_LED_PIN,LED_OFF);
+        digitalWriteFast(C_LED_PIN,LED_OFF);
+        delay(100);
+    }
+}
 
 void setup()
 {
@@ -89,17 +105,3 @@ void loop()
     delay(10000);
 }
 
-void flash_leds()
-{
-    uint8_t i;
-    for(i=0; i<5; i++ ){
-        digitalWriteFast(A_LED_PIN,LED_ON);
-        digitalWriteFast(B_LED_PIN,LED_ON);
-        digitalWriteFast(C_LED_PIN,LED_ON);
-        delay(100);
-        digitalWriteFast(A_LED_PIN,LED_OFF);
-        digitalWriteFast(B_LED_PIN,LED_OFF);
-        digitalWriteFast(C_LED_PIN,LED_OFF);
-        delay(100);
-    }
-}
