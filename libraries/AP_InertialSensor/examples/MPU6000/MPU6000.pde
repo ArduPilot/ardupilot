@@ -101,6 +101,26 @@ void loop(void)
     }
 }
 
+static void setup_printf_P(const prog_char_t *fmt, ...)
+{
+    va_list arg_list;
+    va_start(arg_list, fmt);
+    Serial.vprintf_P(fmt, arg_list);
+    va_end(arg_list);
+}
+
+static void setup_wait_key(void)
+{
+    // wait for user input
+    while (!Serial.available()) {
+        delay(20);
+    }
+    // clear input buffer
+    while( Serial.available() ) {
+        Serial.read();
+    }
+}
+
 void run_calibration()
 {
     // clear off any other characters (like line feeds,etc)
@@ -108,7 +128,7 @@ void run_calibration()
         Serial.read();
     }
 
-    ins.calibrate_accel(delay, NULL);
+    ins.calibrate_accel(delay, NULL, setup_printf_P, setup_wait_key);
 }
 
 void display_offsets_and_scaling()
