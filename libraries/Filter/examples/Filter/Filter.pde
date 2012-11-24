@@ -30,7 +30,7 @@ void printFilter(FilterWithBufferInt16_Size5& filter)
 {
     for(uint8_t i=0; i < filter.get_filter_size(); i++)
     {
-        Serial.printf("%d ",(int)filter.samples[i]);
+	    Serial.printf("%d ",(int)filter.get_sample(i));
     }
     Serial.println();
 }

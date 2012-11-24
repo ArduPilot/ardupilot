@@ -37,6 +37,10 @@ public:
         return FILTER_SIZE;
     };
 
+    virtual T get_sample(uint8_t i) {
+        return samples[i];
+    }
+
 protected:
     T               samples[FILTER_SIZE];       // buffer of samples
     uint8_t         sample_index;               // pointer to the next empty slot in the buffer
