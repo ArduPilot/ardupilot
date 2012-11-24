@@ -201,6 +201,7 @@ public:
         k_param_waypoint_radius,
         k_param_loiter_radius,
         k_param_waypoint_speed_max,
+        k_param_land_speed, // 217
 
         //
         // 220: PI/D Controllers
@@ -281,6 +282,7 @@ public:
     AP_Float        crosstrack_gain;
     AP_Int16 		crosstrack_min_distance;
     AP_Int32        auto_land_timeout;
+    AP_Int16        land_speed;
 
 
     // Throttle

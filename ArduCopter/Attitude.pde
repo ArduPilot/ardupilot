@@ -711,8 +711,8 @@ static void update_throttle_cruise(int16_t throttle)
     if( throttle_avg == 0 ) {
         throttle_avg = g.throttle_cruise;
     }
-    // calc average throttle
-    if ((throttle > g.throttle_min) && (abs(climb_rate) < 60) && (g_gps->ground_speed < 200)) {
+    // calc average throttle if we are in a level hover
+    if (throttle > g.throttle_min && abs(climb_rate) < 60 && labs(ahrs.roll_sensor) < 500 && labs(ahrs.pitch_sensor) < 500) {
         throttle_avg = throttle_avg * .99 + (float)throttle * .01;
         g.throttle_cruise = throttle_avg;
     }
@@ -963,6 +963,11 @@ get_throttle_rate(int16_t z_target_speed)
 
     // set target for accel based throttle controller
     set_throttle_accel_target(target_accel);
+
+    // update throttle cruise
+    if( z_target_speed == 0 ) {
+        update_throttle_cruise(g.rc_3.servo_out);
+    }
 }
 
 // get_throttle_rate_stabilized - rate controller with additional 'stabilizer'
@@ -1037,18 +1042,38 @@ get_throttle_althold(int32_t target_alt, int16_t max_climb_rate)
 // get_throttle_land - high level landing logic
 // sends the desired acceleration in the accel based throttle controller
 // called at 50hz
-#define LAND_START_ALT 1000     // altitude in cm where land controller switches to slow rate of descent
-#define LAND_DESCENT_SPEED -50  // minimum descent speed in cm/s
+#define LAND_START_ALT 1000         // altitude in cm where land controller switches to slow rate of descent
+#define LAND_DETECTOR_TRIGGER 250   // number of 50hz iterations with near zero climb rate that triggers landing complete.
 static void
 get_throttle_land()
 {
     // if we are above 10m perform regular alt hold descent
     if (current_loc.alt >= LAND_START_ALT) {
-        get_throttle_althold(LAND_START_ALT, LAND_DESCENT_SPEED);
+        get_throttle_althold(LAND_START_ALT, -abs(g.land_speed));
     }else{
-        get_throttle_rate_stabilized(LAND_DESCENT_SPEED);
+        get_throttle_rate_stabilized(-abs(g.land_speed));
+
+        // detect whether we have landed
+#if INERTIAL_NAV == ENABLED
+        if (abs(inertial_nav._velocity.z) < 20) {
+#else
+        if (abs(climb_rate) < 20) {
+#endif
+            if( land_detector < LAND_DETECTOR_TRIGGER ) {
+                land_detector++;
+            }else{
+                set_land_complete(true);
+                if( g.rc_3.control_in == 0 ) {
+                    init_disarm_motors();
+                }
+            }
+        }else{
+            // we've sensed movement up or down so decrease land_detector
+            if (land_detector > 0 ) {
+                land_detector--;
+            }
+        }
     }
-    // TO-DO: add detection of whether we've landed or not and set ap.land_complete
 }
 
 /*
