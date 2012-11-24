@@ -1060,7 +1060,7 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
         mavlink_msg_command_long_decode(msg, &packet);
         if (mavlink_check_target(packet.target_system, packet.target_component)) break;
 
-        uint8_t result;
+        uint8_t result = MAV_RESULT_UNSUPPORTED;
 
         // do command
         send_text(SEVERITY_LOW,PSTR("command received: "));
