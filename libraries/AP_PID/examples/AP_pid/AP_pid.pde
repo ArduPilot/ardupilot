@@ -6,6 +6,7 @@
 #include <Arduino_Mega_ISR_Registry.h>
 #include <FastSerial.h>
 #include <AP_Common.h>
+#include <AP_Math.h>
 #include <APM_RC.h> // ArduPilot RC Library
 #include <AP_PID.h> // ArduPilot Mega RC Library
 
