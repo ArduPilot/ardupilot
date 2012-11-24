@@ -862,10 +862,6 @@
 //////////////////////////////////////////////////////////////////////////////
 // Throttle control gains
 //
-#ifndef AUTO_THROTTLE_HOLD
- # define AUTO_THROTTLE_HOLD 1
-#endif
-
 #ifndef THROTTLE_CRUISE
  # define THROTTLE_CRUISE       450            //
 #endif
