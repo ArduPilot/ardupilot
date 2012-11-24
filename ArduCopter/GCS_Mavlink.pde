@@ -1114,6 +1114,15 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
                 result = MAV_RESULT_UNSUPPORTED;
             }
             break;
+
+        case MAV_CMD_PREFLIGHT_REBOOT_SHUTDOWN:
+            if (packet.param1 == 1) {
+                reboot_apm();
+                result = MAV_RESULT_ACCEPTED;
+            }
+            break;
+
+
         default:
             result = MAV_RESULT_UNSUPPORTED;
             break;
