@@ -76,6 +76,14 @@ def build_all():
         return False
     return True
 
+def build_examples():
+    '''run the build_examples.sh script'''
+    print("Running build_examples.sh")
+    if util.run_cmd(util.reltopdir('Tools/scripts/build_examples.sh'), dir=util.reltopdir('.')) != 0:
+        print("Failed build_examples.sh")
+        return False
+    return True
+
 
 def convert_gpx():
     '''convert any mavlog files to GPX and KML'''
@@ -134,6 +142,7 @@ steps = [
     'build1280.ArduPlane',
     'build2560.ArduPlane',
     'build.All',
+    'build.Examples',
     'build.ArduPlane',
     'defaults.ArduPlane',
     'fly.ArduPlane',
@@ -202,6 +211,9 @@ def run_step(step):
 
     if step == 'build.All':
         return build_all()
+
+    if step == 'build.Examples':
+        return build_examples()
 
     if step == 'convertgpx':
         return convert_gpx()
