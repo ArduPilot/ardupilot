@@ -21,8 +21,8 @@ namespace ArdupilotMega.Controls.BackstageView
         private Color _buttonsAreaPencilColor = Color.DarkGray;
         private Color _selectedTextColor = Color.White;
         private Color _unSelectedTextColor = Color.Gray;
-        private Color _highlightColor1 = Color.DarkBlue;
-        private Color _highlightColor2 = Color.Blue;
+        private Color _highlightColor1 = SystemColors.Highlight;
+        private Color _highlightColor2 = SystemColors.MenuHighlight;
 
         private readonly List<BackstageViewItem> _items = new List<BackstageViewItem>();
         private BackstageViewPage _activePage;

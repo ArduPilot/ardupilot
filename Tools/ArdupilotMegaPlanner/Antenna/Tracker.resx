@@ -714,13 +714,13 @@
     <value>94, 40</value>
   </data>
   <data name="label12.Size" type="System.Drawing.Size, System.Drawing">
-    <value>403, 13</value>
+    <value>393, 13</value>
   </data>
   <data name="label12.TabIndex" type="System.Int32, mscorlib">
     <value>28</value>
   </data>
   <data name="label12.Text" xml:space="preserve">
-    <value>Miss using this interface can cause servo damage, use with caution!!!</value>
+    <value>Misusing this interface can cause servo damage, use with caution!!!</value>
   </data>
   <data name="&gt;&gt;label12.Name" xml:space="preserve">
     <value>label12</value>
@@ -750,7 +750,7 @@
     <value>BUT_connect</value>
   </data>
   <data name="&gt;&gt;BUT_connect.Type" xml:space="preserve">
-    <value>ArdupilotMega.Controls.MyButton, ArdupilotMegaPlanner10, Version=1.1.4711.34225, Culture=neutral, PublicKeyToken=null</value>
+    <value>ArdupilotMega.Controls.MyButton, ArdupilotMegaPlanner10, Version=1.1.4712.22193, Culture=neutral, PublicKeyToken=null</value>
   </data>
   <data name="&gt;&gt;BUT_connect.Parent" xml:space="preserve">
     <value>$this</value>
@@ -828,7 +828,7 @@
     <value>BUT_find</value>
   </data>
   <data name="&gt;&gt;BUT_find.Type" xml:space="preserve">
-    <value>ArdupilotMega.Controls.MyButton, ArdupilotMegaPlanner10, Version=1.1.4711.34225, Culture=neutral, PublicKeyToken=null</value>
+    <value>ArdupilotMega.Controls.MyButton, ArdupilotMegaPlanner10, Version=1.1.4712.22193, Culture=neutral, PublicKeyToken=null</value>
   </data>
   <data name="&gt;&gt;BUT_find.Parent" xml:space="preserve">
     <value>$this</value>

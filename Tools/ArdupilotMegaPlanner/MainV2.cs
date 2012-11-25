@@ -2323,13 +2323,25 @@ namespace ArdupilotMega
 
         private void MainMenu_MouseLeave(object sender, EventArgs e)
         {
-            //MainMenu.Visible = false;
+            if (Control.MousePosition.Y < MainMenu.Bottom)
+                return;            
+
+            this.SuspendLayout();
+
+            panel1.Visible = false;
+
+            this.ResumeLayout();
         }
 
-        private void MainV2_MouseMove(object sender, MouseEventArgs e)
+        void menu_MouseEnter(object sender, EventArgs e)
         {
-            // if (e.Y < 50)
-            //     MainMenu.Visible = true;
+            this.SuspendLayout();
+            panel1.Location = new Point(0,0);
+            panel1.Visible = true;
+            panel1.Width = menu.Width;
+            panel1.BringToFront();
+
+            this.ResumeLayout();
         }
     }
 }
