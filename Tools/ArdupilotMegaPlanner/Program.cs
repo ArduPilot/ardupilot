@@ -14,6 +14,7 @@ namespace ArdupilotMega
     {
         private static readonly ILog log = LogManager.GetLogger("Program");
 
+        public static Splash Splash;
         /// <summary>
         /// The main entry point for the application.
         /// </summary>
@@ -38,7 +39,7 @@ namespace ArdupilotMega
 
             //Common.linearRegression();
 
-            Console.WriteLine(srtm.getAltitude(-35.115676879882812, 117.94178754638671,20));
+            //Console.WriteLine(srtm.getAltitude(-35.115676879882812, 117.94178754638671,20));
 
            // Console.ReadLine();
            // return;
@@ -118,6 +119,9 @@ namespace ArdupilotMega
                 mav.DebugPacket(packet, true);
             }
             */
+
+            Splash = new ArdupilotMega.Splash();
+            Splash.Show();
 
             try
             {

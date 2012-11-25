@@ -200,9 +200,17 @@ namespace ArdupilotMega.GCSViews.ConfigurationView
 
             this.SuspendLayout();
 
-            _params.OrderBy(x => x.Key).ForEach(x => 
+            _params.OrderBy(x => x.Key).ForEach(x =>
          {
-            if(!String.IsNullOrEmpty(x.Key))
+             AddControl(x);
+         });
+
+            this.ResumeLayout();
+        }
+
+        void AddControl(KeyValuePair<string,string> x)
+        {
+            if (!String.IsNullOrEmpty(x.Key))
             {
                 try
                 {
@@ -216,49 +224,7 @@ namespace ArdupilotMega.GCSViews.ConfigurationView
                     // If this is a range
                     string rangeRaw = _parameterMetaDataRepository.GetParameterMetaData(x.Key, ParameterMetaDataConstants.Range);
                     string incrementRaw = _parameterMetaDataRepository.GetParameterMetaData(x.Key, ParameterMetaDataConstants.Increment);
-
-                    // modify for scaling
-                    float test = 1;
-                    MAVLink.modifyParamForDisplay(true, x.Key, ref test);
-
-                    if (test != 1)
-                    {
-                        if (units.ToLower() == "centi-degrees")
-                        {
-                            units = "Degrees";
-                            incrementRaw = "0.1";
-                            string[] rangeParts = rangeRaw.Split(new[] { ' ' });
-                            if (rangeParts.Count() == 2)
-                            {
-                                float lowerRange;
-                                float.TryParse(rangeParts[0], out lowerRange);
-                                float upperRange;
-                                float.TryParse(rangeParts[1], out upperRange);
-
-                                rangeRaw = (lowerRange / 100) + " " + (upperRange / 100);
-                            }
-                        }
-                        else if (units.ToLower() == "centimeters")
-                        {
-                            units = "Meters";
-                            incrementRaw = "0.1";
-                            string[] rangeParts = rangeRaw.Split(new[] { ' ' });
-                            if (rangeParts.Count() == 2)
-                            {
-                                float lowerRange;
-                                float.TryParse(rangeParts[0], out lowerRange);
-                                float upperRange;
-                                float.TryParse(rangeParts[1], out upperRange);
-
-                                rangeRaw = (lowerRange / 100) + " " + (upperRange / 100);
-                            }
-                        }
-                        else
-                        {
-                            units += " / " + (int)(1 / test);
-                        }
-                    }
-
+                    
                     if (!String.IsNullOrEmpty(rangeRaw) && !String.IsNullOrEmpty(incrementRaw))
                     {
                         float increment, intValue;
@@ -273,33 +239,56 @@ namespace ArdupilotMega.GCSViews.ConfigurationView
                             float upperRange;
                             float.TryParse(rangeParts[1], out upperRange);
 
-                            int scaler = (int)float.Parse((1 / increment).ToString(CultureInfo.InvariantCulture));
-                            int scaledLowerRange = 0, scaledUpperRange = 0;
-                            int scaledIncrement = (int)increment;
-                            if (scaler > 0)
+                            float displayscale = 1;
+
+                        //    var rangeControl = new RangeControl();
+
+                            if (units.ToLower() == "centi-degrees")
                             {
-                                scaledLowerRange = (int)(lowerRange * scaler);
-                                scaledUpperRange = (int)(upperRange * scaler);
-                                scaledIncrement = (int)float.Parse((increment * scaler).ToString(CultureInfo.InvariantCulture));
-                                intValue *= scaler;
+                                Console.WriteLine(x.Key + " scale");
+                                displayscale = 100;
+                                units = "Degrees (Scaled)";
+                                increment /= 100;
+                            } else if (units.ToLower() == "centimeters")
+                            {
+                                Console.WriteLine(x.Key + " scale");
+                                displayscale = 100;
+                                units = "Meters (Scaled)";
+                                increment /= 100;
                             }
 
-                            var rangeControl = new RangeControl();
+                            var rangeControl = new RangeControl(x.Key, FitDescriptionText(units, description), displayName, increment, displayscale, lowerRange, upperRange, value);
+
+                            /*
                             rangeControl.Name = x.Key;
-                            rangeControl.Scaler = scaler;
+                            rangeControl.Increment = increment;
                             rangeControl.DescriptionText = FitDescriptionText(units, description);
                             rangeControl.LabelText = displayName;
-                            rangeControl.TrackBarControl.Minimum = Math.Min(scaledLowerRange,(int)intValue);
+                            rangeControl.MinRange = lowerRange;
+                            rangeControl.MaxRange = upperRange;
+                            rangeControl.Value = value;
+                            */
+                            Console.WriteLine("{0} {1} {2} {3} {4}", x.Key, increment, lowerRange, upperRange, value);
+
+                            ThemeManager.ApplyThemeTo(rangeControl);
+
+                            if (intValue < lowerRange)
+                                rangeControl.NumericUpDownControl.BackColor = Color.Orange;
+
+                            if (intValue > upperRange)
+                                rangeControl.NumericUpDownControl.BackColor = Color.Orange;
+/*
+                            rangeControl.TrackBarControl.Minimum = Math.Min(scaledLowerRange, (int)intValue);
                             rangeControl.TrackBarControl.Maximum = Math.Max(scaledUpperRange, (int)intValue);
                             rangeControl.TrackBarControl.TickFrequency = scaledIncrement;
                             rangeControl.TrackBarControl.Value = (int)intValue;
 
                             rangeControl.NumericUpDownControl.Increment = (decimal)increment;
                             rangeControl.NumericUpDownControl.DecimalPlaces = scaler.ToString(CultureInfo.InvariantCulture).Length - 1;
-                            rangeControl.NumericUpDownControl.Minimum = (decimal)Math.Min(lowerRange, ((float)MainV2.comPort.param[x.Key]));
-                            rangeControl.NumericUpDownControl.Maximum = (decimal)Math.Max(upperRange, ((float)MainV2.comPort.param[x.Key]));
-                            rangeControl.NumericUpDownControl.Value = (decimal)((float)MainV2.comPort.param[x.Key]);
-
+                            rangeControl.NumericUpDownControl.Minimum = (decimal)Math.Min(lowerRange, intValue);
+                            rangeControl.NumericUpDownControl.Maximum = (decimal)Math.Max(upperRange, intValue);
+                            rangeControl.NumericUpDownControl.Value = (decimal)(intValue);
+                            */
                             rangeControl.AttachEvents();
 
                             tableLayoutPanel1.Controls.Add(rangeControl);
@@ -322,13 +311,15 @@ namespace ArdupilotMega.GCSViews.ConfigurationView
                                 valueControl.DescriptionText = FitDescriptionText(units, description);
                                 valueControl.LabelText = displayName;
 
+                                ThemeManager.ApplyThemeTo(valueControl);
+
                                 var splitValues = new List<KeyValuePair<string, string>>();
                                 // Add the values to the ddl
-                                availableValues.ForEach(val =>
+                                foreach (string val in availableValues)
                                 {
                                     string[] valParts = val.Split(new[] { ':' });
-                                    splitValues.Add(new KeyValuePair<string, string>(valParts[0], (valParts.Length > 1) ? valParts[1] : valParts[0]));
-                                });
+                                    splitValues.Add(new KeyValuePair<string, string>(valParts[0].Trim(), (valParts.Length > 1) ? valParts[1].Trim() : valParts[0].Trim()));
+                                };
                                 valueControl.ComboBoxControl.DisplayMember = "Value";
                                 valueControl.ComboBoxControl.ValueMember = "Key";
                                 valueControl.ComboBoxControl.DataSource = splitValues;
@@ -341,11 +332,6 @@ namespace ArdupilotMega.GCSViews.ConfigurationView
                 } // if there is an error simply dont show it, ie bad pde file, bad scale etc
                 catch (Exception ex) { log.Error(ex); }
             }
-         });
-
-            ThemeManager.ApplyThemeTo(this);
-
-            this.ResumeLayout();
         }
 
         /// <summary>

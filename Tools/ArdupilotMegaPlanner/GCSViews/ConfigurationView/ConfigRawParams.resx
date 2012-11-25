@@ -126,7 +126,7 @@
   </data>
   <assembly alias="System.Drawing" name="System.Drawing, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a" />
   <data name="BUT_compare.Location" type="System.Drawing.Point, System.Drawing">
-    <value>341, 119</value>
+    <value>506, 119</value>
   </data>
   <data name="BUT_compare.Size" type="System.Drawing.Size, System.Drawing">
     <value>103, 19</value>
@@ -142,13 +142,13 @@
     <value>BUT_compare</value>
   </data>
   <data name="&gt;&gt;BUT_compare.Type" xml:space="preserve">
-    <value>ArdupilotMega.Controls.MyButton, ArdupilotMegaPlanner10, Version=1.1.4646.35335, Culture=neutral, PublicKeyToken=null</value>
+    <value>ArdupilotMega.Controls.MyButton, ArdupilotMegaPlanner10, Version=1.1.4711.17948, Culture=neutral, PublicKeyToken=null</value>
   </data>
   <data name="&gt;&gt;BUT_compare.Parent" xml:space="preserve">
     <value>$this</value>
   </data>
   <data name="&gt;&gt;BUT_compare.ZOrder" xml:space="preserve">
-    <value>0</value>
+    <value>1</value>
   </data>
   <data name="BUT_rerequestparams.Anchor" type="System.Windows.Forms.AnchorStyles, System.Windows.Forms">
     <value>Top, Right</value>
@@ -157,7 +157,7 @@
     <value>NoControl</value>
   </data>
   <data name="BUT_rerequestparams.Location" type="System.Drawing.Point, System.Drawing">
-    <value>341, 94</value>
+    <value>506, 94</value>
   </data>
   <data name="BUT_rerequestparams.Size" type="System.Drawing.Size, System.Drawing">
     <value>103, 19</value>
@@ -172,13 +172,13 @@
     <value>BUT_rerequestparams</value>
   </data>
   <data name="&gt;&gt;BUT_rerequestparams.Type" xml:space="preserve">
-    <value>ArdupilotMega.Controls.MyButton, ArdupilotMegaPlanner10, Version=1.1.4646.35335, Culture=neutral, PublicKeyToken=null</value>
+    <value>ArdupilotMega.Controls.MyButton, ArdupilotMegaPlanner10, Version=1.1.4711.17948, Culture=neutral, PublicKeyToken=null</value>
   </data>
   <data name="&gt;&gt;BUT_rerequestparams.Parent" xml:space="preserve">
     <value>$this</value>
   </data>
   <data name="&gt;&gt;BUT_rerequestparams.ZOrder" xml:space="preserve">
-    <value>1</value>
+    <value>2</value>
   </data>
   <data name="BUT_writePIDS.Anchor" type="System.Windows.Forms.AnchorStyles, System.Windows.Forms">
     <value>Top, Right</value>
@@ -187,7 +187,7 @@
     <value>NoControl</value>
   </data>
   <data name="BUT_writePIDS.Location" type="System.Drawing.Point, System.Drawing">
-    <value>341, 69</value>
+    <value>506, 69</value>
   </data>
   <data name="BUT_writePIDS.Size" type="System.Drawing.Size, System.Drawing">
     <value>103, 19</value>
@@ -202,13 +202,13 @@
     <value>BUT_writePIDS</value>
   </data>
   <data name="&gt;&gt;BUT_writePIDS.Type" xml:space="preserve">
-    <value>ArdupilotMega.Controls.MyButton, ArdupilotMegaPlanner10, Version=1.1.4646.35335, Culture=neutral, PublicKeyToken=null</value>
+    <value>ArdupilotMega.Controls.MyButton, ArdupilotMegaPlanner10, Version=1.1.4711.17948, Culture=neutral, PublicKeyToken=null</value>
   </data>
   <data name="&gt;&gt;BUT_writePIDS.Parent" xml:space="preserve">
     <value>$this</value>
   </data>
   <data name="&gt;&gt;BUT_writePIDS.ZOrder" xml:space="preserve">
-    <value>2</value>
+    <value>3</value>
   </data>
   <data name="BUT_save.Anchor" type="System.Windows.Forms.AnchorStyles, System.Windows.Forms">
     <value>Top, Right</value>
@@ -217,7 +217,7 @@
     <value>NoControl</value>
   </data>
   <data name="BUT_save.Location" type="System.Drawing.Point, System.Drawing">
-    <value>341, 35</value>
+    <value>506, 35</value>
   </data>
   <data name="BUT_save.Margin" type="System.Windows.Forms.Padding, System.Windows.Forms">
     <value>0, 0, 0, 0</value>
@@ -235,13 +235,13 @@
     <value>BUT_save</value>
   </data>
   <data name="&gt;&gt;BUT_save.Type" xml:space="preserve">
-    <value>ArdupilotMega.Controls.MyButton, ArdupilotMegaPlanner10, Version=1.1.4646.35335, Culture=neutral, PublicKeyToken=null</value>
+    <value>ArdupilotMega.Controls.MyButton, ArdupilotMegaPlanner10, Version=1.1.4711.17948, Culture=neutral, PublicKeyToken=null</value>
   </data>
   <data name="&gt;&gt;BUT_save.Parent" xml:space="preserve">
     <value>$this</value>
   </data>
   <data name="&gt;&gt;BUT_save.ZOrder" xml:space="preserve">
-    <value>3</value>
+    <value>4</value>
   </data>
   <data name="BUT_load.Anchor" type="System.Windows.Forms.AnchorStyles, System.Windows.Forms">
     <value>Top, Right</value>
@@ -250,7 +250,7 @@
     <value>NoControl</value>
   </data>
   <data name="BUT_load.Location" type="System.Drawing.Point, System.Drawing">
-    <value>341, 7</value>
+    <value>506, 7</value>
   </data>
   <data name="BUT_load.Margin" type="System.Windows.Forms.Padding, System.Windows.Forms">
     <value>0, 0, 0, 0</value>
@@ -268,13 +268,13 @@
     <value>BUT_load</value>
   </data>
   <data name="&gt;&gt;BUT_load.Type" xml:space="preserve">
-    <value>ArdupilotMega.Controls.MyButton, ArdupilotMegaPlanner10, Version=1.1.4646.35335, Culture=neutral, PublicKeyToken=null</value>
+    <value>ArdupilotMega.Controls.MyButton, ArdupilotMegaPlanner10, Version=1.1.4711.17948, Culture=neutral, PublicKeyToken=null</value>
   </data>
   <data name="&gt;&gt;BUT_load.Parent" xml:space="preserve">
     <value>$this</value>
   </data>
   <data name="&gt;&gt;BUT_load.ZOrder" xml:space="preserve">
-    <value>4</value>
+    <value>5</value>
   </data>
   <data name="Params.Anchor" type="System.Windows.Forms.AnchorStyles, System.Windows.Forms">
     <value>Top, Bottom, Left, Right</value>
@@ -297,29 +297,14 @@
   <data name="Value.Width" type="System.Int32, mscorlib">
     <value>80</value>
   </data>
-  <metadata name="Default.UserAddedColumn" type="System.Boolean, mscorlib, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089">
+  <metadata name="Desc.UserAddedColumn" type="System.Boolean, mscorlib, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089">
     <value>True</value>
   </metadata>
-  <data name="Default.HeaderText" xml:space="preserve">
-    <value>Default</value>
+  <data name="Desc.HeaderText" xml:space="preserve">
+    <value>Desc</value>
   </data>
-  <data name="Default.Visible" type="System.Boolean, mscorlib">
-    <value>False</value>
-  </data>
-  <data name="mavScale.HeaderText" xml:space="preserve">
-    <value>mavScale</value>
-  </data>
-  <data name="mavScale.Visible" type="System.Boolean, mscorlib">
-    <value>False</value>
-  </data>
-  <metadata name="RawValue.UserAddedColumn" type="System.Boolean, mscorlib, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089">
-    <value>True</value>
-  </metadata>
-  <data name="RawValue.HeaderText" xml:space="preserve">
-    <value>RawValue</value>
-  </data>
-  <data name="RawValue.Visible" type="System.Boolean, mscorlib">
-    <value>False</value>
+  <data name="Desc.Width" type="System.Int32, mscorlib">
+    <value>57</value>
   </data>
   <data name="Params.Location" type="System.Drawing.Point, System.Drawing">
     <value>14, 3</value>
@@ -328,7 +313,7 @@
     <value>150</value>
   </data>
   <data name="Params.Size" type="System.Drawing.Size, System.Drawing">
-    <value>321, 302</value>
+    <value>486, 302</value>
   </data>
   <data name="Params.TabIndex" type="System.Int32, mscorlib">
     <value>68</value>
@@ -343,11 +328,45 @@
     <value>$this</value>
   </data>
   <data name="&gt;&gt;Params.ZOrder" xml:space="preserve">
-    <value>5</value>
+    <value>6</value>
   </data>
   <metadata name="toolTip1.TrayLocation" type="System.Drawing.Point, System.Drawing, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a">
     <value>17, 17</value>
   </metadata>
+  <data name="label1.Anchor" type="System.Windows.Forms.AnchorStyles, System.Windows.Forms">
+    <value>Top, Right</value>
+  </data>
+  <data name="label1.AutoSize" type="System.Boolean, mscorlib">
+    <value>True</value>
+  </data>
+  <data name="label1.Location" type="System.Drawing.Point, System.Drawing">
+    <value>506, 169</value>
+  </data>
+  <data name="label1.Size" type="System.Drawing.Size, System.Drawing">
+    <value>109, 26</value>
+  </data>
+  <data name="label1.TabIndex" type="System.Int32, mscorlib">
+    <value>73</value>
+  </data>
+  <data name="label1.Text" xml:space="preserve">
+    <value>All Units are in raw 
+format with no scaling</value>
+  </data>
+  <data name="label1.TextAlign" type="System.Drawing.ContentAlignment, System.Drawing">
+    <value>MiddleCenter</value>
+  </data>
+  <data name="&gt;&gt;label1.Name" xml:space="preserve">
+    <value>label1</value>
+  </data>
+  <data name="&gt;&gt;label1.Type" xml:space="preserve">
+    <value>System.Windows.Forms.Label, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </data>
+  <data name="&gt;&gt;label1.Parent" xml:space="preserve">
+    <value>$this</value>
+  </data>
+  <data name="&gt;&gt;label1.ZOrder" xml:space="preserve">
+    <value>0</value>
+  </data>
   <metadata name="$this.Localizable" type="System.Boolean, mscorlib, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089">
     <value>True</value>
   </metadata>
@@ -355,7 +374,13 @@
     <value>6, 13</value>
   </data>
   <data name="$this.Size" type="System.Drawing.Size, System.Drawing">
-    <value>460, 305</value>
+    <value>625, 305</value>
+  </data>
+  <data name="&gt;&gt;toolTip1.Name" xml:space="preserve">
+    <value>toolTip1</value>
+  </data>
+  <data name="&gt;&gt;toolTip1.Type" xml:space="preserve">
+    <value>System.Windows.Forms.ToolTip, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </data>
   <data name="&gt;&gt;Command.Name" xml:space="preserve">
     <value>Command</value>
@@ -369,29 +394,11 @@
   <data name="&gt;&gt;Value.Type" xml:space="preserve">
     <value>System.Windows.Forms.DataGridViewTextBoxColumn, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </data>
-  <data name="&gt;&gt;Default.Name" xml:space="preserve">
-    <value>Default</value>
+  <data name="&gt;&gt;Desc.Name" xml:space="preserve">
+    <value>Desc</value>
   </data>
-  <data name="&gt;&gt;Default.Type" xml:space="preserve">
+  <data name="&gt;&gt;Desc.Type" xml:space="preserve">
     <value>System.Windows.Forms.DataGridViewTextBoxColumn, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
-  </data>
-  <data name="&gt;&gt;mavScale.Name" xml:space="preserve">
-    <value>mavScale</value>
-  </data>
-  <data name="&gt;&gt;mavScale.Type" xml:space="preserve">
-    <value>System.Windows.Forms.DataGridViewTextBoxColumn, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
-  </data>
-  <data name="&gt;&gt;RawValue.Name" xml:space="preserve">
-    <value>RawValue</value>
-  </data>
-  <data name="&gt;&gt;RawValue.Type" xml:space="preserve">
-    <value>System.Windows.Forms.DataGridViewTextBoxColumn, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
-  </data>
-  <data name="&gt;&gt;toolTip1.Name" xml:space="preserve">
-    <value>toolTip1</value>
-  </data>
-  <data name="&gt;&gt;toolTip1.Type" xml:space="preserve">
-    <value>System.Windows.Forms.ToolTip, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </data>
   <data name="&gt;&gt;$this.Name" xml:space="preserve">
     <value>ConfigRawParams</value>

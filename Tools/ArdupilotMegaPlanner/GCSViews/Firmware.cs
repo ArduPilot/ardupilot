@@ -765,7 +765,19 @@ namespace ArdupilotMega.GCSViews
             fd.ShowDialog();
             if (File.Exists(fd.FileName))
             {
-                UploadFlash(fd.FileName, ArduinoDetect.DetectBoard(MainV2.comPortName));
+                string boardtype = "";
+                try
+                {
+                    boardtype = ArduinoDetect.DetectBoard(MainV2.comPortName);
+                }
+                catch
+                {
+                    CustomMessageBox.Show("Can not connect to com port and detect board type");
+                    return;
+                }
+
+
+                UploadFlash(fd.FileName, boardtype);
             }
         }
     }

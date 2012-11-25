@@ -100,17 +100,11 @@ namespace ArdupilotMega.GCSViews
         {
             threadrun = 0;
             MainV2.comPort.logreadmode = false;
-            MainV2.config["FlightSplitter"] = hud1.Width;
-            if (false || !MainV2.MONO)
+            try
             {
-                try
-                {
-                    log.Info("Saving Screen Layout");
-                    //_serializer.Save();
-                }
-                catch (Exception ex) { log.Error(ex); }
-                //SaveWindowLayout();
+                MainV2.config["FlightSplitter"] = hud1.Width;
             }
+            catch { }
             System.Threading.Thread.Sleep(100);
             base.Dispose(disposing);
         }
@@ -347,6 +341,15 @@ namespace ArdupilotMega.GCSViews
                     hud1.Enabled = true;
 
                 hud1.Dock = DockStyle.Fill;
+            }
+
+            if (MainV2.comPort.param.ContainsKey("BATT_MONITOR") && (float)MainV2.comPort.param["BATT_MONITOR"] != 0)
+            {
+                hud1.batteryon = true;
+            }
+            else
+            {
+                hud1.batteryon = false;
             }
 
             foreach (Control ctl in splitContainer1.Panel2.Controls)
@@ -595,7 +598,7 @@ namespace ArdupilotMega.GCSViews
                             MainV2.comPort.logreadmode = false;
                         }
                     }
-                    catch { }
+                    catch { MainV2.comPort.logreadmode = false; }
                 }
                 else
                 {
@@ -1294,7 +1297,7 @@ namespace ArdupilotMega.GCSViews
                     marker = new GMapMarkerRect(point);
                     marker.ToolTip = new GMapToolTip(marker);
                     marker.ToolTipMode = MarkerTooltipMode.Always;
-                    marker.ToolTipText = "Home: " + ((gMapControl1.Manager.GetDistance(point, MainV2.cs.HomeLocation.Point()) * 1000) * MainV2.cs.multiplierdist).ToString("0");
+                    marker.ToolTipText = "Dist to Home: " + ((gMapControl1.Manager.GetDistance(point, MainV2.cs.HomeLocation.Point()) * 1000) * MainV2.cs.multiplierdist).ToString("0");
 
                     routes.Markers.Add(marker);
                 }
@@ -2268,12 +2271,6 @@ print 'Roll complete'
             hud1.doResize();
         }
 
-        private void displayBatteryInfoToolStripMenuItem_Click(object sender, EventArgs e)
-        {
-            hud1.batteryon = !hud1.batteryon;
-            hud1.Refresh();
-        }
-
         private void quickView_DoubleClick(object sender, EventArgs e)
         {
 
@@ -2501,9 +2498,11 @@ print 'Roll complete'
         private void modifyandSetAlt_Click(object sender, EventArgs e)
         {
             int newalt = (int)modifyandSetAlt.Value;
-
-            MainV2.comPort.setNewWPAlt(new Locationwp() { alt = newalt });
-
+            try
+            {
+                MainV2.comPort.setNewWPAlt(new Locationwp() { alt = newalt });
+            }
+            catch { CustomMessageBox.Show("Error sending command"); }
             //MainV2.comPort.setNextWPTargetAlt((ushort)MainV2.cs.wpno, newalt);
         }
 
@@ -2521,18 +2520,30 @@ print 'Roll complete'
             // QUAD
             if (MainV2.comPort.param.ContainsKey("WP_SPEED_MAX"))
             {
-                MainV2.comPort.setParam("WP_SPEED_MAX", (float)modifyandSetSpeed.Value);
+                try
+                {
+                    MainV2.comPort.setParam("WP_SPEED_MAX", (float)modifyandSetSpeed.Value);
+                }
+                catch { CustomMessageBox.Show("Error sending command"); }
             } // plane with airspeed
             else if (MainV2.comPort.param.ContainsKey("TRIM_ARSPD_CM") && MainV2.comPort.param.ContainsKey("ARSPD_ENABLE")
                 && MainV2.comPort.param.ContainsKey("ARSPD_USE") && (float)MainV2.comPort.param["ARSPD_ENABLE"] == 1
                 && (float)MainV2.comPort.param["ARSPD_USE"] == 1)
             {
-                MainV2.comPort.setParam("TRIM_ARSPD_CM", (float)modifyandSetSpeed.Value);
+                try
+                {
+                    MainV2.comPort.setParam("TRIM_ARSPD_CM", (float)modifyandSetSpeed.Value);
+                }
+                catch { CustomMessageBox.Show("Error sending command"); }
             } // plane without airspeed
             else if (MainV2.comPort.param.ContainsKey("TRIM_THROTTLE") && MainV2.comPort.param.ContainsKey("ARSPD_USE")
                 && (float)MainV2.comPort.param["ARSPD_USE"] == 0)
             {
-                MainV2.comPort.setParam("TRIM_THROTTLE", (float)modifyandSetSpeed.Value);
+                try
+                {
+                    MainV2.comPort.setParam("TRIM_THROTTLE", (float)modifyandSetSpeed.Value);
+                }
+                catch { CustomMessageBox.Show("Error sending command"); }
             }
         }
 

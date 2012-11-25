@@ -346,6 +346,7 @@ namespace ArdupilotMega
         private object locker = new object();
         bool useLocation = false;
         bool gotwind = false;
+        internal bool batterymonitoring = false;
 
         public CurrentState()
         {

@@ -23,6 +23,8 @@ namespace ArdupilotMega.Antenna
         public int TiltEndRange { get; set; }
         public int PanPWMRange { get; set; }
         public int TiltPWMRange { get; set; }
+        public int PanPWMCenter { get; set; }
+        public int TiltPWMCenter { get; set; }
 
         public bool PanReverse { get { return _panreverse == 1; } set { _panreverse = value == true ? -1 : 1; } }
         public bool TiltReverse { get { return _tiltreverse == 1; } set { _tiltreverse = value == true ? -1 : 1; } }
@@ -88,7 +90,7 @@ namespace ArdupilotMega.Antenna
             // get relative center based on tracking center
             double rangeleft = PanStartRange - TrimPan;
             double rangeright = PanEndRange - TrimPan;
-            double centerpos = 1500;
+            double centerpos = PanPWMCenter;
 
             // get the output angle the tracker needs to point and constrain the output to the allowed options
             short PointAtAngle = Constrain(wrap_180(Angle - TrimPan), PanStartRange, PanEndRange);
@@ -109,7 +111,7 @@ namespace ArdupilotMega.Antenna
 
             short PointAtAngle = Constrain((Angle - TrimTilt), TiltStartRange, TiltEndRange);
 
-            int target = (int)((((PointAtAngle / range) * 2.0) * (TiltPWMRange / 2) * _tiltreverse + 1500));
+            int target = (int)((((PointAtAngle / range) * 2.0) * (TiltPWMRange / 2) * _tiltreverse + TiltPWMCenter));
 
             // Console.WriteLine("T " + Angle + " " + target + " " + PointAtAngle);
 

@@ -23,13 +23,8 @@ namespace ArdupilotMega.GCSViews.ConfigurationView
         {
             try
             {
-#if MAVLINK10
                 Log.Info("Sending level command (mavlink 1.0)");                
                 MainV2.comPort.doCommand(MAVLink.MAV_CMD.PREFLIGHT_CALIBRATION,1,0,0,0,1,0,0);
-#else
-                Log.Info("Sending level command (mavlink 0.9)");
-                MainV2.comPort.doAction(MAVLink.MAV_ACTION.MAV_ACTION_CALIBRATE_ACC);
-#endif
 
                 BUT_levelac2.Text = "Complete";
             }

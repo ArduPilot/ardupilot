@@ -249,7 +249,7 @@ namespace ArdupilotMega.GCSViews
                         cell.Value = alt.ToString();
                     if (ans == 0) // default
                         cell.Value = 50;
-                    if (ans == 0 && MainV2.cs.firmware == MainV2.Firmwares.ArduCopter2) 
+                    if (ans == 0 && MainV2.cs.firmware == MainV2.Firmwares.ArduCopter2)
                         cell.Value = 15;
                     //   online          verify height
                     if (isonline && CHK_geheight.Checked)
@@ -346,7 +346,7 @@ namespace ArdupilotMega.GCSViews
             // creating a WP
 
             selectedrow = Commands.Rows.Add();
-         //   Commands.CurrentCell = Commands.Rows[selectedrow].Cells[Param1.Index];
+            //   Commands.CurrentCell = Commands.Rows[selectedrow].Cells[Param1.Index];
 
             ChangeColumnHeader(MAVLink.MAV_CMD.WAYPOINT.ToString());
 
@@ -498,7 +498,8 @@ namespace ArdupilotMega.GCSViews
                 if (MainV2.cs.firmware == MainV2.Firmwares.ArduPlane)
                 {
                     reader.ReadToFollowing("APM");
-                } else if (MainV2.cs.firmware == MainV2.Firmwares.ArduRover)
+                }
+                else if (MainV2.cs.firmware == MainV2.Firmwares.ArduRover)
                 {
                     reader.ReadToFollowing("APRover");
                 }
@@ -925,7 +926,7 @@ namespace ArdupilotMega.GCSViews
 
             // this is to share the current mission with the data tab
             pointlist = new List<PointLatLngAlt>();
-			
+
             System.Diagnostics.Debug.WriteLine(DateTime.Now);
             try
             {
@@ -993,7 +994,7 @@ namespace ArdupilotMega.GCSViews
 
                             if (command == (byte)MAVLink.MAV_CMD.ROI)
                             {
-                                pointlist.Add(new PointLatLngAlt(double.Parse(cell3), double.Parse(cell4), (int)double.Parse(cell2) + homealt,"ROI"+(a+1).ToString()) { color = Color.Red });
+                                pointlist.Add(new PointLatLngAlt(double.Parse(cell3), double.Parse(cell4), (int)double.Parse(cell2) + homealt, "ROI" + (a + 1).ToString()) { color = Color.Red });
                                 GMapMarkerGoogleRed m = new GMapMarkerGoogleRed(new PointLatLng(double.Parse(cell3), double.Parse(cell4)));
                                 m.ToolTipMode = MarkerTooltipMode.Always;
                                 m.ToolTipText = (a + 1).ToString();
@@ -1007,13 +1008,13 @@ namespace ArdupilotMega.GCSViews
                                 // order matters
                                 objects.Markers.Add(m);
                                 objects.Markers.Add(mBorders);
-                            } 
-                            else if (command == (byte)MAVLink.MAV_CMD.LOITER_TIME || command == (byte)MAVLink.MAV_CMD.LOITER_TURNS || command == (byte)MAVLink.MAV_CMD.LOITER_UNLIM) 
+                            }
+                            else if (command == (byte)MAVLink.MAV_CMD.LOITER_TIME || command == (byte)MAVLink.MAV_CMD.LOITER_TURNS || command == (byte)MAVLink.MAV_CMD.LOITER_UNLIM)
                             {
-                                pointlist.Add(new PointLatLngAlt(double.Parse(cell3), double.Parse(cell4), (int)double.Parse(cell2) + homealt, (a + 1).ToString()){ color  = Color.LightBlue });
+                                pointlist.Add(new PointLatLngAlt(double.Parse(cell3), double.Parse(cell4), (int)double.Parse(cell2) + homealt, (a + 1).ToString()) { color = Color.LightBlue });
                                 addpolygonmarker((a + 1).ToString(), double.Parse(cell4), double.Parse(cell3), (int)double.Parse(cell2), Color.LightBlue);
-                            } 
-                            else 
+                            }
+                            else
                             {
                                 pointlist.Add(new PointLatLngAlt(double.Parse(cell3), double.Parse(cell4), (int)double.Parse(cell2) + homealt, (a + 1).ToString()));
                                 addpolygonmarker((a + 1).ToString(), double.Parse(cell4), double.Parse(cell3), (int)double.Parse(cell2), null);
@@ -1378,7 +1379,7 @@ namespace ArdupilotMega.GCSViews
 
                 if (CHK_holdalt.Checked)
                 {
-                    port.setParam("ALT_HOLD_RTL", int.Parse(TXT_DefaultAlt.Text) / MainV2.cs.multiplierdist);
+                    port.setParam("ALT_HOLD_RTL", int.Parse(TXT_DefaultAlt.Text) / MainV2.cs.multiplierdist * 100);
                 }
                 else
                 {
@@ -1433,7 +1434,7 @@ namespace ArdupilotMega.GCSViews
                     selectedrow = Commands.Rows.Add();
                 }
                 //if (i == 0 && temp.alt == 0) // skip 0 home
-                  //  continue;
+                //  continue;
                 DataGridViewTextBoxCell cell;
                 DataGridViewComboBoxCell cellcmd;
                 cellcmd = Commands.Rows[i].Cells[Command.Index] as DataGridViewComboBoxCell;
@@ -1483,7 +1484,7 @@ namespace ArdupilotMega.GCSViews
             {
                 log.Info("Setting wp params");
 
-                string hold_alt = ((int)((float)param["ALT_HOLD_RTL"] * MainV2.cs.multiplierdist)).ToString();
+                string hold_alt = ((int)((float)param["ALT_HOLD_RTL"] * MainV2.cs.multiplierdist / 100.0)).ToString();
 
                 log.Info("param ALT_HOLD_RTL " + hold_alt);
 
@@ -1508,7 +1509,7 @@ namespace ArdupilotMega.GCSViews
                 }
                 catch
                 {
-                    
+
                 }
                 CHK_holdalt.Checked = Convert.ToBoolean((float)param["ALT_HOLD_RTL"] > 0);
                 log.Info("param ALT_HOLD_RTL " + CHK_holdalt.Checked.ToString());
@@ -1516,7 +1517,8 @@ namespace ArdupilotMega.GCSViews
             }
             catch (Exception ex) { log.Error(ex); }
 
-            try {
+            try
+            {
 
                 DataGridViewTextBoxCell cellhome;
                 cellhome = Commands.Rows[0].Cells[Lat.Index] as DataGridViewTextBoxCell;
@@ -1646,8 +1648,8 @@ namespace ArdupilotMega.GCSViews
             }
             if (isNumber > 127)
             {
-                CustomMessageBox.Show("The value can only be between 0 and 127");
-                TXT_loiterrad.Text = "127";
+                // CustomMessageBox.Show("The value can only be between 0 and 127");
+                // TXT_loiterrad.Text = "127";
             }
         }
 
@@ -1931,7 +1933,7 @@ namespace ArdupilotMega.GCSViews
                         }
                         catch { }
                     }
-     
+
                     CurentRectMarker = rc;
                 }
             }
@@ -1977,7 +1979,7 @@ namespace ArdupilotMega.GCSViews
         {
             end = MainMap.FromLocalToLatLng(e.X, e.Y);
 
-           // Console.WriteLine("MainMap MU");
+            // Console.WriteLine("MainMap MU");
 
             if (e.Button == MouseButtons.Right) // ignore right clicks
             {
@@ -2031,7 +2033,7 @@ namespace ArdupilotMega.GCSViews
         {
             start = MainMap.FromLocalToLatLng(e.X, e.Y);
 
-         //   Console.WriteLine("MainMap MD");
+            //   Console.WriteLine("MainMap MD");
 
             if (e.Button == MouseButtons.Left && Control.ModifierKeys != Keys.Alt)
             {
@@ -2053,7 +2055,7 @@ namespace ArdupilotMega.GCSViews
             if (start == point)
                 return;
 
-          //  Console.WriteLine("MainMap MM " + point);
+            //  Console.WriteLine("MainMap MM " + point);
 
             currentMarker.Position = point;
 
@@ -2403,7 +2405,7 @@ namespace ArdupilotMega.GCSViews
 
         private void BUT_Prefetch_Click(object sender, EventArgs e)
         {
-            
+
         }
 
         /// <summary>
@@ -2461,7 +2463,7 @@ namespace ArdupilotMega.GCSViews
 
         private void BUT_grid_Click(object sender, EventArgs e)
         {
-            
+
         }
 
         private void label4_LinkClicked(object sender, LinkLabelLinkClickedEventArgs e)
@@ -2677,7 +2679,8 @@ namespace ArdupilotMega.GCSViews
 
                         MainMap.Invalidate();
                     }
-                    catch {
+                    catch
+                    {
                         CustomMessageBox.Show("Remove point Failed. Please try again.");
                     }
                 }
@@ -2741,7 +2744,7 @@ namespace ArdupilotMega.GCSViews
 
         private void BUT_zoomto_Click(object sender, EventArgs e)
         {
-            
+
         }
 
         private void BUT_loadkml_Click(object sender, EventArgs e)
@@ -3173,7 +3176,7 @@ namespace ArdupilotMega.GCSViews
                 return;
             }
 
-            if (!int.TryParse(Directionin, out Direction) )
+            if (!int.TryParse(Directionin, out Direction))
             {
                 CustomMessageBox.Show("Bad Direction value");
                 return;
@@ -3367,7 +3370,7 @@ namespace ArdupilotMega.GCSViews
 
                 while (lines * double.Parse(distance) < diagdist * 1.5) //x < topright.Lat && y < topright.Lng)
                 {
-                   // callMe(y, x, 0);
+                    // callMe(y, x, 0);
                     double nx = x;
                     double ny = y;
                     newpos(ref ny, ref nx, double.Parse(angle), diagdist * 1.5);
@@ -3385,13 +3388,13 @@ namespace ArdupilotMega.GCSViews
                     lines++;
                 }
 
-               // callMe(x, y, 0);
+                // callMe(x, y, 0);
 
                 quickadd = false;
 
-               // writeKML();
+                // writeKML();
 
-               // return;
+                // return;
 
                 // find intersections
                 List<linelatlng> remove = new List<linelatlng>();
@@ -3407,7 +3410,7 @@ namespace ArdupilotMega.GCSViews
                     PointLatLng farestlatlong = PointLatLng.Zero;
 
                     List<PointLatLng> matchs = new List<PointLatLng>();
-                    
+
                     int b = -1;
                     int crosses = 0;
                     PointLatLng newlatlong = PointLatLng.Zero;
@@ -3495,25 +3498,25 @@ namespace ArdupilotMega.GCSViews
                     }
                 }
 
-               // return;
+                // return;
 
                 foreach (linelatlng line in remove)
                 {
-                     grid.Remove(line);
+                    grid.Remove(line);
                 }
 
-               // int fixme;
+                // int fixme;
 
-               // foreach (PointLatLng pnt in PathFind.FindPath(MainV2.cs.HomeLocation.Point(),grid))
-               // {
-               //     callMe(pnt.Lat, pnt.Lng, altitude);
-               // }
+                // foreach (PointLatLng pnt in PathFind.FindPath(MainV2.cs.HomeLocation.Point(),grid))
+                // {
+                //     callMe(pnt.Lat, pnt.Lng, altitude);
+                // }
 
-               // return;
-                
+                // return;
+
                 quickadd = true;
 
-                linelatlng closest = findClosestLine(MainV2.cs.HomeLocation.Point(),grid);
+                linelatlng closest = findClosestLine(MainV2.cs.HomeLocation.Point(), grid);
 
                 PointLatLng lastpnt;
 
@@ -3578,12 +3581,12 @@ namespace ArdupilotMega.GCSViews
                             break;
                         closest = findClosestLine(closest.p1, grid);
                     }
-                } 
+                }
 
                 foreach (linelatlng line in grid)
                 {
-                  //  callMe(line.p1.Lat, line.p1.Lng, 0);
-                  //  callMe(line.p2.Lat, line.p2.Lng, 0);
+                    //  callMe(line.p1.Lat, line.p1.Lng, 0);
+                    //  callMe(line.p2.Lat, line.p2.Lng, 0);
                 }
 
                 quickadd = false;
@@ -4159,7 +4162,7 @@ namespace ArdupilotMega.GCSViews
                     return;
                 }
             }
-            
+
             selectedrow = Commands.Rows.Add();
 
             Commands.Rows[selectedrow].Cells[Command.Index].Value = MAVLink.MAV_CMD.TAKEOFF.ToString();
@@ -4204,14 +4207,14 @@ namespace ArdupilotMega.GCSViews
 
             for (int a = count; a > 0; a--)
             {
-                DataGridViewRow row = Commands.Rows[a-1];
+                DataGridViewRow row = Commands.Rows[a - 1];
                 Commands.Rows.Remove(row);
                 Commands.Rows.Add(row);
             }
 
             quickadd = false;
 
-                writeKML();
+            writeKML();
         }
 
         private void loadAndAppendToolStripMenuItem_Click(object sender, EventArgs e)
@@ -4289,10 +4292,10 @@ namespace ArdupilotMega.GCSViews
                     else
                     {
                         string[] items = line.Split(new char[] { ' ', '\t' }, StringSplitOptions.RemoveEmptyEntries);
-                        
-                            drawnpolygon.Points.Add(new PointLatLng(double.Parse(items[0]), double.Parse(items[1])));
-                            addpolygonmarkergrid(drawnpolygon.Points.Count.ToString(), double.Parse(items[1]), double.Parse(items[0]), 0);
-                        
+
+                        drawnpolygon.Points.Add(new PointLatLng(double.Parse(items[0]), double.Parse(items[1])));
+                        addpolygonmarkergrid(drawnpolygon.Points.Count.ToString(), double.Parse(items[1]), double.Parse(items[0]), 0);
+
                         a++;
                     }
                 }
@@ -4308,6 +4311,18 @@ namespace ArdupilotMega.GCSViews
                 MainMap.UpdatePolygonLocalPosition(drawnpolygon);
 
                 MainMap.Invalidate();
+            }
+        }
+
+        private void contextMenuStrip1_Opening(object sender, CancelEventArgs e)
+        {
+            if (MainV2.cs.firmware != MainV2.Firmwares.ArduPlane)
+            {
+                geoFenceToolStripMenuItem.Enabled = false;
+            }
+            else
+            {
+                geoFenceToolStripMenuItem.Enabled = true;
             }
         }
     }

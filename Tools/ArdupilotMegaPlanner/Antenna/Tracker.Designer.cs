@@ -56,6 +56,10 @@
             this.LBL_pantrim = new System.Windows.Forms.Label();
             this.LBL_tilttrim = new System.Windows.Forms.Label();
             this.BUT_find = new ArdupilotMega.Controls.MyButton();
+            this.TXT_centerpan = new System.Windows.Forms.TextBox();
+            this.TXT_centertilt = new System.Windows.Forms.TextBox();
+            this.label13 = new System.Windows.Forms.Label();
+            this.label14 = new System.Windows.Forms.Label();
             ((System.ComponentModel.ISupportInitialize)(this.TRK_pantrim)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.TRK_tilttrim)).BeginInit();
             this.SuspendLayout();
@@ -68,6 +72,7 @@
             resources.GetString("CMB_interface.Items1")});
             resources.ApplyResources(this.CMB_interface, "CMB_interface");
             this.CMB_interface.Name = "CMB_interface";
+            this.CMB_interface.SelectedIndexChanged += new System.EventHandler(this.CMB_interface_SelectedIndexChanged);
             // 
             // label1
             // 
@@ -230,10 +235,36 @@
             this.BUT_find.UseVisualStyleBackColor = true;
             this.BUT_find.Click += new System.EventHandler(this.BUT_find_Click);
             // 
+            // TXT_centerpan
+            // 
+            resources.ApplyResources(this.TXT_centerpan, "TXT_centerpan");
+            this.TXT_centerpan.Name = "TXT_centerpan";
+            this.TXT_centerpan.TextChanged += new System.EventHandler(this.TXT_centerpan_TextChanged);
+            // 
+            // TXT_centertilt
+            // 
+            resources.ApplyResources(this.TXT_centertilt, "TXT_centertilt");
+            this.TXT_centertilt.Name = "TXT_centertilt";
+            this.TXT_centertilt.TextChanged += new System.EventHandler(this.TXT_centertilt_TextChanged);
+            // 
+            // label13
+            // 
+            resources.ApplyResources(this.label13, "label13");
+            this.label13.Name = "label13";
+            // 
+            // label14
+            // 
+            resources.ApplyResources(this.label14, "label14");
+            this.label14.Name = "label14";
+            // 
             // Tracker
             // 
             resources.ApplyResources(this, "$this");
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
+            this.Controls.Add(this.label14);
+            this.Controls.Add(this.label13);
+            this.Controls.Add(this.TXT_centertilt);
+            this.Controls.Add(this.TXT_centerpan);
             this.Controls.Add(this.BUT_find);
             this.Controls.Add(this.LBL_tilttrim);
             this.Controls.Add(this.LBL_pantrim);
@@ -298,5 +329,9 @@
         private System.Windows.Forms.Label LBL_pantrim;
         private System.Windows.Forms.Label LBL_tilttrim;
         private Controls.MyButton BUT_find;
+        private System.Windows.Forms.TextBox TXT_centerpan;
+        private System.Windows.Forms.TextBox TXT_centertilt;
+        private System.Windows.Forms.Label label13;
+        private System.Windows.Forms.Label label14;
     }
 }

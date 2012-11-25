@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Windows.Forms;
 
 namespace ArdupilotMega.Antenna
 {
@@ -23,6 +24,8 @@ namespace ArdupilotMega.Antenna
         public int TiltEndRange { get; set; }
         public int PanPWMRange { get; set; }
         public int TiltPWMRange { get; set; }
+        public int PanPWMCenter { get; set; }
+        public int TiltPWMCenter { get; set; }
 
         public bool PanReverse { get { return _panreverse == -1; } set { _panreverse = value == true ? -1 : 1; } }
         public bool TiltReverse { get { return _tiltreverse == -1; } set { _tiltreverse = value == true ? -1 : 1; } }
@@ -32,6 +35,14 @@ namespace ArdupilotMega.Antenna
 
         byte PanAddress = 0;
         byte TiltAddress = 1;
+
+        private const byte SetTarget = 0x84;
+        private const byte SetSpeed = 0x87;
+        private const byte SetAccel = 0x89;
+        private const byte GetPos = 0x90;
+        private const byte GetState = 0x93;
+        private const byte GetErrors = 0xA1;
+        private const byte GoHome = 0xA2;
 
         public bool Init()
         {
@@ -56,25 +67,39 @@ namespace ArdupilotMega.Antenna
 
             return true;
         }
+
         public bool Setup()
         {
             int target = 100;
             // speed
-            var buffer = new byte[] { 0x87, PanAddress, (byte)(target & 0x7F), (byte)((target >> 7) & 0x7F) };
-            ComPort.Write(buffer, 0, buffer.Length);
-
-            buffer = new byte[] { 0x87, TiltAddress, (byte)(target & 0x7F), (byte)((target >> 7) & 0x7F) };
-            ComPort.Write(buffer, 0, buffer.Length);
+            SendCompactMaestroCommand(SetSpeed, 0, PanAddress, target);
+            SendCompactMaestroCommand(SetSpeed, 0, TiltAddress, target);
 
             // accel
             target = 5;
-            buffer = new byte[] { 0x89, PanAddress, (byte)(target & 0x7F), (byte)((target >> 7) & 0x7F) };
-            ComPort.Write(buffer, 0, buffer.Length);
+            SendCompactMaestroCommand(SetAccel, 0, PanAddress, target);
+            SendCompactMaestroCommand(SetAccel, 0, TiltAddress, target);
 
-            buffer = new byte[] { 0x89, TiltAddress, (byte)(target & 0x7F), (byte)((target >> 7) & 0x7F) };
-            ComPort.Write(buffer, 0, buffer.Length);
+            //getCenterPWs();
 
             return true;
+        }
+
+        void getCenterPWs()
+        {
+            byte[] buffer;
+            // set all to home (center)
+            SendCompactMaestroCommand(GoHome);
+
+            while (SendCompactMaestroCommand(GetState, 1)[0] == 0x01) { }
+
+            // get center position -- pan
+            buffer = SendCompactMaestroCommand(GetPos, 2, PanAddress);
+            this.PanPWMCenter = (int)((buffer[1] >> 8) | buffer[0]);
+
+            // get center position -- tilt
+            buffer = SendCompactMaestroCommand(GetPos, 2, TiltAddress);
+            this.TiltPWMCenter = (int)((buffer[1] >> 8) | buffer[0]);
         }
 
         double wrap_180(double input)
@@ -86,51 +111,29 @@ namespace ArdupilotMega.Antenna
             return input;
         }
 
-        double wrap_range(double input, double range)
-        {
-            if (input > range)
-                return input - 360;
-            if (input < -range)
-                return input + 360;
-            return input;
-        }
-
         public bool Pan(double Angle)
         {
-            double range = Math.Abs(PanStartRange - PanEndRange);
+            double angleRange = Math.Abs(this.PanStartRange - this.PanEndRange);
 
-            // get relative center based on tracking center
-            double rangeleft = PanStartRange - TrimPan;
-            double rangeright = PanEndRange - TrimPan;
-            double centerpos = 127;
+            double pulseWidth = ((((double)this.PanPWMRange) / angleRange) * wrap_180(Angle- TrimPan) * _panreverse) + (double)this.PanPWMCenter;
+            
+            short target = Constrain(pulseWidth, this.PanPWMCenter - (this.PanPWMRange / 2), this.PanPWMCenter + (this.PanPWMRange / 2));
+            target *= 4;
 
-            // get the output angle the tracker needs to point and constrain the output to the allowed options
-            short PointAtAngle = Constrain(wrap_180(Angle - TrimPan), PanStartRange, PanEndRange);
-
-            // conver the angle into a 0-255 value
-            byte target = (byte)((((PointAtAngle / range) * 2.0) * 127 + centerpos) * _panreverse);
-
-           // Console.WriteLine("P " + Angle + " " + target + " " + PointAtAngle);
-
-            var buffer = new byte[] { 0xff, PanAddress, target };
-            ComPort.Write(buffer, 0, buffer.Length);
-
+            SendCompactMaestroCommand(SetTarget, 0, PanAddress, target);
             return true;
         }
 
         public bool Tilt(double Angle)
         {
-            double range = Math.Abs(TiltStartRange - TiltEndRange);
+            double angleRange = Math.Abs(this.TiltStartRange - this.TiltEndRange);
 
-            short PointAtAngle = Constrain((Angle - TrimTilt), TiltStartRange, TiltEndRange);
+            double pulseWidth = ((((double)this.TiltPWMRange) / angleRange) * (Angle - TrimTilt) * _tiltreverse) + (double)this.TiltPWMCenter;
 
-            byte target = (byte)((((PointAtAngle / range) * 2) * 127 + 127) * _tiltreverse);
+            short target = Constrain(pulseWidth, this.TiltPWMCenter - (this.TiltPWMRange / 2), this.TiltPWMCenter + (this.TiltPWMRange / 2));
+            target *= 4;
 
-            //Console.WriteLine("T " + Angle + " " + target + " " + PointAtAngle);
-
-            var buffer = new byte[] { 0xff, TiltAddress, target };
-            ComPort.Write(buffer, 0, buffer.Length);
-
+            SendCompactMaestroCommand(SetTarget, 0, TiltAddress, target);
             return true;
         }
 
@@ -159,6 +162,26 @@ namespace ArdupilotMega.Antenna
             if (input > max)
                 return (short)max;
             return (short)input;
+        }
+
+        byte[] SendCompactMaestroCommand(byte cmd, int respByteCount = 0, byte addr = 0xFF, int data = -1)
+        {
+            byte[] buffer;
+            if (addr == 0xFF)
+                buffer = new byte[] { cmd };
+            else if (data < 0)
+                buffer = new byte[] { cmd, addr };
+            else
+                buffer = new byte[] { cmd, addr, (byte)(data & 0x7F), (byte)((data >> 7) & 0x7F) };
+            ComPort.DiscardInBuffer();
+            ComPort.Write(buffer, 0, buffer.Length);
+            if (respByteCount > 0)
+            {
+                buffer = new byte[respByteCount];
+                while (ComPort.BytesToRead < respByteCount) { }
+                ComPort.Read(buffer, 0, respByteCount);
+            }
+            return buffer;
         }
     }
 }

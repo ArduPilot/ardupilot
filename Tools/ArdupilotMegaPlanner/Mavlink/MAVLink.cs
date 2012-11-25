@@ -109,6 +109,7 @@ namespace ArdupilotMega
         /// mavlink ap type
         /// </summary>
         public MAV_TYPE aptype { get; set; }
+        public MAV_AUTOPILOT apname { get; set; }
         /// <summary>
         /// used as a snapshot of what is loaded on the ap atm. - derived from the stream
         /// </summary>
@@ -161,6 +162,7 @@ namespace ArdupilotMega
             this.oldlogformat = false;
             this.mavlinkversion = 0;
             this.aptype = 0;
+            this.apname = 0;
             this.debugmavlink = false;
             this.logreadmode = false;
             this.lastlogread = DateTime.MinValue;
@@ -369,6 +371,7 @@ namespace ArdupilotMega
 
                         mavlinkversion = hb.mavlink_version;
                         aptype = (MAV_TYPE)hb.type;
+                        apname = (MAV_AUTOPILOT)hb.autopilot;
 
                         setAPType();
 
@@ -595,7 +598,6 @@ namespace ArdupilotMega
 
             byte[] temp = Encoding.ASCII.GetBytes(paramname);
 
-            modifyParamForDisplay(false, paramname, ref value);
 #if MAVLINK10
             Array.Resize(ref temp, 16);
 #else
@@ -648,8 +650,6 @@ namespace ArdupilotMega
                             log.InfoFormat("MAVLINK bad param responce - {0} vs {1}", paramname, st);
                             continue;
                         }
-
-                        modifyParamForDisplay(true, st, ref par.param_value);
 
                         param[st] = (par.param_value);
 
@@ -806,7 +806,6 @@ namespace ArdupilotMega
 
                         //Console.WriteLine(DateTime.Now.Millisecond + " gp2a ");
 
-                        modifyParamForDisplay(true, paramID, ref par.param_value);
                         param[paramID] = (par.param_value);
 
                         //Console.WriteLine(DateTime.Now.Millisecond + " gp2b ");
@@ -912,6 +911,7 @@ namespace ArdupilotMega
 
         public static void modifyParamForDisplay(bool fromapm, string paramname, ref float value)
         {
+
             if (paramname.ToUpper().EndsWith("_IMAX") || paramname.ToUpper().EndsWith("ALT_HOLD_RTL") || paramname.ToUpper().EndsWith("APPROACH_ALT") || paramname.ToUpper().EndsWith("TRIM_ARSPD_CM") || paramname.ToUpper().EndsWith("MIN_GNDSPD_CM")
                 || paramname.ToUpper().EndsWith("XTRK_ANGLE_CD") || paramname.ToUpper().EndsWith("LIM_PITCH_MAX") || paramname.ToUpper().EndsWith("LIM_PITCH_MIN")
                 || paramname.ToUpper().EndsWith("LIM_ROLL_CD") || paramname.ToUpper().EndsWith("PITCH_MAX") || paramname.ToUpper().EndsWith("WP_SPEED_MAX"))
@@ -2063,7 +2063,7 @@ namespace ArdupilotMega
                 if (ans != MAV_MISSION_RESULT.MAV_MISSION_ACCEPTED)
                     throw new Exception("Alt Change Failed");
             }
-            catch (Exception ex) { log.Error(ex); }
+            catch (Exception ex) { MainV2.giveComport = false; log.Error(ex); throw; }
 
             MainV2.giveComport = false;
         }
@@ -2545,7 +2545,14 @@ namespace ArdupilotMega
             }
             catch { }
 
-            lastvalidpacket = DateTime.Now;
+            if (buffer[3] == '3' && buffer[4] == 'D')
+            {
+                // dont update last packet time for 3dr radio packets
+            }
+            else
+            {
+                lastvalidpacket = DateTime.Now;
+            }
 
             //            Console.Write((DateTime.Now - start).TotalMilliseconds.ToString("00.000") + "\t" + temp.Length + "     \r");
 
@@ -2768,6 +2775,7 @@ namespace ArdupilotMega
 
                 mavlinkversion = hb.mavlink_version;
                 aptype = (MAV_TYPE)hb.type;
+                apname = (MAV_AUTOPILOT)hb.autopilot;
                 setAPType();
             }
 
@@ -2831,18 +2839,26 @@ namespace ArdupilotMega
 
         public void setAPType()
         {
-            switch (aptype)
+            switch (apname)
             {
-                case MAVLink.MAV_TYPE.FIXED_WING:
-                    MainV2.cs.firmware = MainV2.Firmwares.ArduPlane;
+                case MAV_AUTOPILOT.ARDUPILOTMEGA:
+                    switch (aptype)
+                    {
+                        case MAVLink.MAV_TYPE.FIXED_WING:
+                            MainV2.cs.firmware = MainV2.Firmwares.ArduPlane;
+                            break;
+                        case MAVLink.MAV_TYPE.QUADROTOR:
+                            MainV2.cs.firmware = MainV2.Firmwares.ArduCopter2;
+                            break;
+                        case MAVLink.MAV_TYPE.GROUND_ROVER:
+                            MainV2.cs.firmware = MainV2.Firmwares.ArduRover;
+                            break;
+                        default:
+                            break;
+                    }
                     break;
-                case MAVLink.MAV_TYPE.QUADROTOR:
-                    MainV2.cs.firmware = MainV2.Firmwares.ArduCopter2;
-                    break;
-                case MAVLink.MAV_TYPE.GROUND_ROVER:
-                    MainV2.cs.firmware = MainV2.Firmwares.ArduRover;
-                    break;
-                default:
+                case MAV_AUTOPILOT.UDB:
+
                     break;
             }
         }

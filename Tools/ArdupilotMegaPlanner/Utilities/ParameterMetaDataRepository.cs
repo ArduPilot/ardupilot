@@ -4,6 +4,8 @@ using System.IO;
 using System.Windows.Forms;
 using System.Xml.Linq;
 using System.Linq;
+using System.Collections;
+using System.Collections.Generic;
 
 namespace ArdupilotMega.Utilities
 {

@@ -87,12 +87,12 @@
     <Compile Include="..\Attributes\PrivateAttribute.cs">
       <Link>Linked\PrivateAttribute.cs</Link>
     </Compile>
-    <Compile Include="..\Comms\CommsSerialInterface.cs">
-      <Link>Linked\CommsSerialInterface.cs</Link>
-    </Compile>
     <Compile Include="..\Comms\CommsSerialPort.cs">
       <Link>Linked\CommsSerialPort.cs</Link>
       <SubType>Component</SubType>
+    </Compile>
+    <Compile Include="..\Comms\ICommsSerial.cs">
+      <Link>Linked\ICommsSerial.cs</Link>
     </Compile>
     <Compile Include="..\Controls\BackstageView\BackstageView.cs">
       <Link>Linked\BackstageView.cs</Link>

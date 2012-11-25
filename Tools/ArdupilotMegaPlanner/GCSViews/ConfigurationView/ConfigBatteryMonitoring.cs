@@ -82,6 +82,8 @@ namespace ArdupilotMega.GCSViews.ConfigurationView
                     {
                         CMB_batmonsensortype.Enabled = false;
                         groupBox4.Enabled = false;
+                        MainV2.comPort.setParam("BATT_VOLT_PIN", -1);
+                        MainV2.comPort.setParam("BATT_CURR_PIN", -1);
                     }
                     else if (selection == 4)
                     {
@@ -102,7 +104,7 @@ namespace ArdupilotMega.GCSViews.ConfigurationView
                     MainV2.comPort.setParam("BATT_MONITOR", selection);
                 }
             }
-            catch { CustomMessageBox.Show("Set BATT_MONITOR Failed"); }
+            catch { CustomMessageBox.Show("Set BATT_MONITOR,BATT_VOLT_PIN,BATT_CURR_PIN Failed"); }
         }
         private void TXT_inputvoltage_Validating(object sender, CancelEventArgs e)
         {
@@ -289,6 +291,8 @@ namespace ArdupilotMega.GCSViews.ConfigurationView
                 TXT_measuredvoltage.Enabled = true;
                 TXT_inputvoltage.Enabled = true;
             }
+
+            disableinstructionbox();
         }
 
         public void Deactivate()
@@ -408,24 +412,49 @@ namespace ArdupilotMega.GCSViews.ConfigurationView
 
             int selection = int.Parse(CMB_apmversion.Text.Substring(0, 1));
 
-            if (selection == 0)
+            try
             {
-                // apm1
-                MainV2.comPort.setParam("BATT_VOLT_PIN", 0);
-                MainV2.comPort.setParam("BATT_CURR_PIN", 1);
+                if (selection == 0)
+                {
+                    // apm1
+                    MainV2.comPort.setParam("BATT_VOLT_PIN", 0);
+                    MainV2.comPort.setParam("BATT_CURR_PIN", 1);
+                }
+                else if (selection == 1)
+                {
+                    // apm2
+                    MainV2.comPort.setParam("BATT_VOLT_PIN", 1);
+                    MainV2.comPort.setParam("BATT_CURR_PIN", 2);
+                }
+                else if (selection == 2)
+                {
+                    //apm2.5
+                    MainV2.comPort.setParam("BATT_VOLT_PIN", 13);
+                    MainV2.comPort.setParam("BATT_CURR_PIN", 12);
+                }
             }
-            else if (selection == 1)
+            catch { CustomMessageBox.Show("Set BATT_????_PIN Failed"); }
+
+            disableinstructionbox();
+        }
+
+        void disableinstructionbox()
+        {
+            try
             {
-                // apm2
-                MainV2.comPort.setParam("BATT_VOLT_PIN", 1);
-                MainV2.comPort.setParam("BATT_CURR_PIN", 2);
+                if (int.Parse(CMB_apmversion.Text.Substring(0, 1)) == 2)
+                {
+                    if (int.Parse(CMB_batmonsensortype.Text.Substring(0, 1)) == 4)
+                    {
+                        textBox3.Visible = false;
+                    }
+                    else
+                    {
+                        textBox3.Visible = true;
+                    }
+                }
             }
-            else if (selection == 2)
-            {
-                //apm2.5
-                MainV2.comPort.setParam("BATT_VOLT_PIN", 13);
-                MainV2.comPort.setParam("BATT_CURR_PIN", 12);
-            }
+            catch { }
         }
     }
 }
