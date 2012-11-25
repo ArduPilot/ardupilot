@@ -82,6 +82,7 @@
             this.lbl_currentmode.DataBindings.Add(new System.Windows.Forms.Binding("Text", this.currentStateBindingSource, "mode", true));
             resources.ApplyResources(this.lbl_currentmode, "lbl_currentmode");
             this.lbl_currentmode.Name = "lbl_currentmode";
+            this.lbl_currentmode.TextChanged += new System.EventHandler(this.lbl_currentmode_TextChanged);
             // 
             // currentStateBindingSource
             // 

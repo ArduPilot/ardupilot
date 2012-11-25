@@ -102,5 +102,17 @@ namespace ArdupilotMega.GCSViews.ConfigurationView
 
             lbl_gpslock.Text = gps;
         }
+
+        private void lbl_currentmode_TextChanged(object sender, EventArgs e)
+        {
+            if (MainV2.cs.ch3in < (float)MainV2.comPort.param["THR_FS_VALUE"])
+            {
+                lbl_currentmode.ForeColor = Color.Red;
+            }
+            else
+            {
+                lbl_currentmode.ForeColor = Color.White;
+            }
+        }
     }
 }

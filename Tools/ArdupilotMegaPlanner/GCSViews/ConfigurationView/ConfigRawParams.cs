@@ -73,8 +73,6 @@ namespace ArdupilotMega.GCSViews.ConfigurationView
                 }
                 catch (Exception ex) { log.Error(ex); throw new FormatException("Invalid number on param " + name + " : " + items[1].ToString()); }
 
-                MAVLink.modifyParamForDisplay(true, name, ref value);
-
                 if (name == "SYSID_SW_MREV")
                     continue;
                 if (name == "WP_TOTAL")
@@ -184,8 +182,6 @@ namespace ArdupilotMega.GCSViews.ConfigurationView
                 foreach (DataGridViewRow row in Params.Rows)
                 {
                     float value = float.Parse(row.Cells[1].Value.ToString());
-
-                    MAVLink.modifyParamForDisplay(false, row.Cells[0].Value.ToString(), ref value);
 
                     sw.WriteLine(row.Cells[0].Value.ToString() + "," + value.ToString(new System.Globalization.CultureInfo("en-US")));
                 }
@@ -402,16 +398,34 @@ namespace ArdupilotMega.GCSViews.ConfigurationView
                 try
                 {
                     string metaDataDescription = _parameterMetaDataRepository.GetParameterMetaData(value, ParameterMetaDataConstants.Description);
-                    if(!String.IsNullOrEmpty(metaDataDescription))
+                    if (!String.IsNullOrEmpty(metaDataDescription))
                     {
-                       Params.Rows[Params.RowCount - 1].Cells[Command.Index].ToolTipText = metaDataDescription;
-                       Params.Rows[Params.RowCount - 1].Cells[Value.Index].ToolTipText = metaDataDescription;
+                        Params.Rows[Params.RowCount - 1].Cells[Command.Index].ToolTipText = metaDataDescription;
+                        Params.Rows[Params.RowCount - 1].Cells[Value.Index].ToolTipText = metaDataDescription;
+
+                        string range = _parameterMetaDataRepository.GetParameterMetaData(value, ParameterMetaDataConstants.Range);
+                        string options = _parameterMetaDataRepository.GetParameterMetaData(value, ParameterMetaDataConstants.Values);
+
+                        if (!string.IsNullOrEmpty(range))
+                        {
+                            range = " Range: " + range;
+                        }
+
+                        if (!string.IsNullOrEmpty(options))
+                        {
+                            options = " Options: " + options;
+                        }
+
+                        Params.Rows[Params.RowCount - 1].Cells[Desc.Index].Value = range + options;
+
                     }
                     else if (tooltips[value] != null)
                     {
                         Params.Rows[Params.RowCount - 1].Cells[Command.Index].ToolTipText = ((paramsettings)tooltips[value]).desc;
                         //Params.Rows[Params.RowCount - 1].Cells[RawValue.Index].ToolTipText = ((paramsettings)tooltips[value]).desc;
                         Params.Rows[Params.RowCount - 1].Cells[Value.Index].ToolTipText = ((paramsettings)tooltips[value]).desc;
+
+                          Params.Rows[Params.RowCount - 1].Cells[Desc.Index].Value = "Old: "+((paramsettings)tooltips[value]).desc;
 
                         //Params.Rows[Params.RowCount - 1].Cells[Default.Index].Value = ((paramsettings)tooltips[value]).normalvalue;
                         //Params.Rows[Params.RowCount - 1].Cells[mavScale.Index].Value = ((paramsettings)tooltips[value]).scale;

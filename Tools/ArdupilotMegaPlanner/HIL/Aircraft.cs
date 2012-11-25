@@ -27,7 +27,6 @@ namespace ArdupilotMega.HIL
 
         public Vector3 velocity = new Vector3(0, 0, 0); //# m/s, North, East, Up
         public Vector3 position = new Vector3(0, 0, 0); //# m North, East, Up
-        public Vector3 accel = new Vector3(0, 0, 0); //# m/s/s North, East, Up
         public double mass = 0.0;
         public double update_frequency = 50;//# in Hz
         public double gravity = 9.80665;//# m/s/s
@@ -36,6 +35,8 @@ namespace ArdupilotMega.HIL
         public double roll = 0;
         public double pitch = 0; 
         public double yaw = 0;
+
+        public Wind wind = new Wind("0,0,0");
 
         public Aircraft()
         {

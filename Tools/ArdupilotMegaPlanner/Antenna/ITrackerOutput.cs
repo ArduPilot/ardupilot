@@ -18,6 +18,8 @@ namespace ArdupilotMega.Antenna
         int TiltEndRange { get; set; }
         int PanPWMRange { get; set; }
         int TiltPWMRange { get; set; }
+        int PanPWMCenter { get; set; }
+        int TiltPWMCenter { get; set; }
 
         bool PanReverse { get; set; }
         bool TiltReverse { get; set; }

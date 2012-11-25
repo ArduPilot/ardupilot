@@ -99,6 +99,16 @@ namespace ArdupilotMega.Antenna
                 threadrun = false;
                 BUT_connect.Text = "Connect";
                 tracker.Close();
+                foreach (Control ctl in Controls)
+                {
+                    if (ctl.Name.StartsWith("TXT_"))
+                        ctl.Enabled = true;
+
+                    if (ctl.Name.StartsWith("CMB_"))
+                        ctl.Enabled = true;
+                }
+                BUT_find.Enabled = true;
+                //CustomMessageBox.Show("Disconnected!");
                 return;
             }
 
@@ -107,11 +117,11 @@ namespace ArdupilotMega.Antenna
                 tracker.ComPort.Close();
             }
 
-            if (CMB_interface.Text == "Maestro")
+            if (CMB_interface.Text == interfaces.Maestro.ToString())
                 tracker = new ArdupilotMega.Antenna.Maestro();
-            if (CMB_interface.Text == "ArduTracker")
+            if (CMB_interface.Text == interfaces.ArduTracker.ToString())
                 tracker = new ArdupilotMega.Antenna.ArduTracker();
-            if (CMB_interface.Text == "DegreeTracker")
+            if (CMB_interface.Text == interfaces.DegreeTracker.ToString())
                 tracker = new ArdupilotMega.Antenna.DegreeTracker();
 
             try
@@ -140,6 +150,9 @@ namespace ArdupilotMega.Antenna
                 tracker.PanPWMRange = int.Parse(TXT_pwmrangepan.Text);
                 tracker.TiltPWMRange = int.Parse(TXT_pwmrangetilt.Text);
 
+                tracker.PanPWMCenter = int.Parse(TXT_centerpan.Text);
+                tracker.TiltPWMCenter = int.Parse(TXT_centertilt.Text);
+
             }
             catch (Exception ex) { CustomMessageBox.Show("Bad User input " + ex.Message); return; }
 
@@ -147,7 +160,23 @@ namespace ArdupilotMega.Antenna
             {
                 if (tracker.Setup())
                 {
+                    if (TXT_centerpan.Text != tracker.PanPWMCenter.ToString())
+                        TXT_centerpan.Text = tracker.PanPWMCenter.ToString();
+
+                    if (TXT_centertilt.Text != tracker.TiltPWMCenter.ToString())
+                        TXT_centertilt.Text = tracker.TiltPWMCenter.ToString();
+     
                     tracker.PanAndTilt(0, 0);
+
+                    foreach (Control ctl in Controls)
+                    {
+                        if(ctl.Name.StartsWith("TXT_"))
+                            ctl.Enabled = false;
+
+                        if (ctl.Name.StartsWith("CMB_"))
+                            ctl.Enabled = false;
+                    }
+                    //BUT_find.Enabled = false;
 
                     t12 = new System.Threading.Thread(new System.Threading.ThreadStart(mainloop))
                     {
@@ -196,8 +225,8 @@ namespace ArdupilotMega.Antenna
 
             int.TryParse(TXT_panrange.Text, out range);
 
-            TRK_pantrim.Minimum = range / 1 * -1;
-            TRK_pantrim.Maximum = range / 1;
+            TRK_pantrim.Minimum = range / 2 * -1;
+            TRK_pantrim.Maximum = range / 2;
         }
 
         private void TXT_tiltrange_TextChanged(object sender, EventArgs e)
@@ -206,8 +235,8 @@ namespace ArdupilotMega.Antenna
 
             int.TryParse(TXT_tiltrange.Text, out range);
 
-            TRK_tilttrim.Minimum = range / 1 * -1;
-            TRK_tilttrim.Maximum = range / 1;
+            TRK_tilttrim.Minimum = range / 2 * -1;
+            TRK_tilttrim.Maximum = range / 2;
         }
 
         private void CHK_revpan_CheckedChanged(object sender, EventArgs e)
@@ -246,7 +275,7 @@ namespace ArdupilotMega.Antenna
             });
 
 
-            // scan entire range withing 30 degrees
+            // scan half range within 30 degrees
             float ans = checkpos((pan - float.Parse(TXT_panrange.Text) / 4), (pan + float.Parse(TXT_panrange.Text) / 4) - 1, 30);
             
             // scan new range within 30 - little overlap
@@ -256,7 +285,6 @@ namespace ArdupilotMega.Antenna
             ans = checkpos((-5 + ans), (5 + ans), 1);
 
             setpan(ans);
-
 
         }
 
@@ -299,6 +327,21 @@ namespace ArdupilotMega.Antenna
             }
 
             return best;
+        }
+
+        private void CMB_interface_SelectedIndexChanged(object sender, EventArgs e)
+        {
+
+        }
+
+        private void TXT_centerpan_TextChanged(object sender, EventArgs e)
+        {
+
+        }
+
+        private void TXT_centertilt_TextChanged(object sender, EventArgs e)
+        {
+
         }
     }
 }

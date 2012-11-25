@@ -88,10 +88,10 @@ namespace ArdupilotMega.HIL
         self.x = self.y = self.z = 0;
     }
 
-  // public double angle (Vector3 self, Vector3 v) {
+   //public double angle (Vector3 self, Vector3 v) {
      //   '''return the angle between this vector and another vector'''
-   //     return Math.Acos(self * v) / (self.length() * v.length());
-   // }
+      //  return Math.Acos(self * v) / (self.length() * v.length());
+    //}
 
     public Vector3 normalized(){
         return self / self.length();

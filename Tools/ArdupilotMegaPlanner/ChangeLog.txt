@@ -1,4 +1,38 @@
-﻿* Mission Planner 1.2.15
+﻿* Mission Planner 1.2.20
+fix airspeed error scale and min ground speed
+modify mount options
+add german lang
+fix terminal baud rate issue
+msi mod- single msi for x86 and x64 and all win os's
+
+* Mission Planner 1.2.19
+check for serial port name hang. and disable
+add more failsafe screen status items
+fix mavlink log graph bug
+
+* Mission Planner 1.2.18
+fix mono crash
+add rxrssi
+fix altitude mis label on mouse over in flight planner
+add trigger camera now action.
+new win8 msi
+
+* Mission Planner 1.2.17
+add nested config page
+add friendly comport names
+add some exception handlers
+add new old firmware hashs
+remove more crom.controls stuff
+enabled change speed
+
+* Mission Planner 1.2.16
+workaround for global_pos_int problem
+fix 3dr iv sensor pin selection
+add ability to disable dist to home on flight data screen
+remove traces of crom.controls (mono)
+fix arm/disarm button
+
+* Mission Planner 1.2.15
 fix hud battery text overlaying
 tweak hud resize
 tweak main switcher

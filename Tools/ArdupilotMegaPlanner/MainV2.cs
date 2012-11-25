@@ -122,7 +122,8 @@ namespace ArdupilotMega
         {
             ArduPlane,
             ArduCopter2,
-            ArduRover
+            ArduRover,
+            Ateryx
         }
 
         DateTime connectButtonUpdate = DateTime.Now;
@@ -151,7 +152,7 @@ namespace ArdupilotMega
         {
             log.Info("Mainv2 ctor");
 
-            Form splash = new Splash();
+            Form splash = Program.Splash;
             splash.Show();
 
             string strVersion = System.Reflection.Assembly.GetExecutingAssembly().GetName().Version.ToString();
@@ -1587,6 +1588,40 @@ namespace ArdupilotMega
                         GCSViews.FlightData.mymap.streamjpgenable = false;
                         GCSViews.FlightData.myhud.streamjpgenable = false;
                         stream.Close();
+
+                    }
+                    else if (url.Contains("guided?"))
+                    {
+                        //http://127.0.0.1:56781/guided?lat=-34&lng=117.8&alt=30
+
+                        Regex rex = new Regex(@"lat=([\-\.0-9]+)&lng=([\-\.0-9]+)&alt=([\.0-9]+)",RegexOptions.IgnoreCase);
+
+                        Match match = rex.Match(url);
+
+                        if (match.Success)
+                        {
+                            Locationwp gwp = new Locationwp()
+                            {
+                                lat = float.Parse(match.Groups[1].Value),
+                                lng = float.Parse(match.Groups[2].Value),
+                                alt = float.Parse(match.Groups[3].Value)
+                            };
+                            try
+                            {
+                                comPort.setGuidedModeWP(gwp);
+                            }
+                            catch { }
+
+                            string header = "HTTP/1.1 200 OK\r\n\r\nSent Guide Mode Wp";
+                            byte[] temp = asciiEncoding.GetBytes(header);
+                            stream.Write(temp, 0, temp.Length);
+                        }
+                        else
+                        {
+                            string header = "HTTP/1.1 200 OK\r\n\r\nFailed Guide Mode Wp";
+                            byte[] temp = asciiEncoding.GetBytes(header);
+                            stream.Write(temp, 0, temp.Length);
+                        }
 
                     }
                     stream.Close();

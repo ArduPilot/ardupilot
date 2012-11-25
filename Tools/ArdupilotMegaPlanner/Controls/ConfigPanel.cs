@@ -13,7 +13,7 @@ using ArdupilotMega.Utilities;
 
 namespace ArdupilotMega.Controls
 {
-    public partial class ConfigPanel : UserControl
+    public partial class ConfigPanel : UserControl, IActivate
     {
         /// <summary>
         /// store temp pending changes
@@ -44,10 +44,16 @@ namespace ArdupilotMega.Controls
                 {
                     try
                     {
+                        float numbervalue = (float)MainV2.comPort.param[value];
+
+                        MAVLink.modifyParamForDisplay(true, value, ref numbervalue);
+
                         NumericUpDown thisctl = ((NumericUpDown)ctl);
-                        thisctl.Value = (decimal)(float)MainV2.comPort.param[value];
+                        thisctl.Validated -= thisctl_Validated;
+                        thisctl.ValueChanged -= thisctl_Validated;
+                        thisctl.Value = (decimal)numbervalue;
                         thisctl.Enabled = true;
-                        thisctl.Validated += new EventHandler(thisctl_Validated);
+                        thisctl.Validated += thisctl_Validated;
                         thisctl.ValueChanged += thisctl_Validated;
                     }
                     catch (Exception ex) { Console.WriteLine(ex.ToString()); }
@@ -63,7 +69,9 @@ namespace ArdupilotMega.Controls
 
             foreach (string item in (List<string>)_linkedParams[param])
             {
-                _changed[item] = (float)((NumericUpDown)sender).Value;
+                float value = (float)((NumericUpDown)sender).Value;
+                MAVLink.modifyParamForDisplay(false, param, ref value);
+                _changed[item] = value;
             }
         }
 
@@ -319,6 +327,11 @@ namespace ArdupilotMega.Controls
         }
 
         private void ConfigPanel_Load(object sender, EventArgs e)
+        {
+            PopulateData();
+        }
+
+        public void Activate()
         {
             PopulateData();
         }

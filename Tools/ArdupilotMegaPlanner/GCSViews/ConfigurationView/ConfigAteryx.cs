@@ -3,22 +3,28 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.Drawing;
 using System.Data;
+using System.IO;
 using System.Linq;
 using System.Text;
 using System.Windows.Forms;
 using ArdupilotMega.Controls.BackstageView;
 using System.Collections;
+using log4net;
 using ArdupilotMega.Controls;
+using ArdupilotMega.Utilities;
 
 namespace ArdupilotMega.GCSViews.ConfigurationView
 {
-    public partial class ConfigArduplane : UserControl, IActivate
+    public partial class ConfigAteryx : UserControl, IActivate
     {
+        private static readonly ILog log =
+          LogManager.GetLogger(System.Reflection.MethodBase.GetCurrentMethod().DeclaringType);
+        
         Hashtable changes = new Hashtable();
         static Hashtable tooltips = new Hashtable();
         internal bool startup = true;
 
-        public ConfigArduplane()
+        public ConfigAteryx()
         {
             InitializeComponent();
         }
@@ -32,7 +38,7 @@ namespace ArdupilotMega.GCSViews.ConfigurationView
             }
             else
             {
-                if (MainV2.cs.firmware == MainV2.Firmwares.ArduPlane)
+                if (MainV2.cs.firmware == MainV2.Firmwares.Ateryx)
                 {
                     this.Enabled = true;
                 }
@@ -167,14 +173,10 @@ namespace ArdupilotMega.GCSViews.ConfigurationView
                         if (ctl.GetType() == typeof(NumericUpDown))
                         {
 
-                            float numbervalue = (float)MainV2.comPort.param[value];
-
-                            MAVLink.modifyParamForDisplay(true, value,ref numbervalue);
-
                             NumericUpDown thisctl = ((NumericUpDown)ctl);
                             thisctl.Maximum = 9000;
                             thisctl.Minimum = -9000;
-                            thisctl.Value = (decimal)numbervalue;
+                            thisctl.Value = (decimal)(float)MainV2.comPort.param[value];
                             thisctl.Increment = (decimal)0.001;
                             if (thisctl.Name.EndsWith("_P") || thisctl.Name.EndsWith("_I") || thisctl.Name.EndsWith("_D")
                                 || thisctl.Name.EndsWith("_LOW") || thisctl.Name.EndsWith("_HIGH") || thisctl.Value == 0
@@ -251,7 +253,6 @@ namespace ArdupilotMega.GCSViews.ConfigurationView
                 if (sender.GetType() == typeof(NumericUpDown))
                 {
                     value = float.Parse(((Control)sender).Text);
-                    MAVLink.modifyParamForDisplay(false, ((Control)sender).Name, ref value);
                     changes[name] = value;
                 }
                 else if (sender.GetType() == typeof(ComboBox))
@@ -325,6 +326,76 @@ namespace ArdupilotMega.GCSViews.ConfigurationView
 
             this.Activate();
         }
+
+        private void groupBox7_Enter(object sender, EventArgs e)
+        {
+
+        }
+
+        private void numericUpDown1_ValueChanged(object sender, EventArgs e)
+        {
+
+        }
+
+        private void numericUpDown2_ValueChanged(object sender, EventArgs e)
+        {
+
+        }
+
+        private void numericUpDown15_ValueChanged(object sender, EventArgs e)
+        {
+
+        }
+
+        private void BUT_write_flash_Click(object sender, EventArgs e)
+        {
+            try
+            {
+                ((Button)sender).Enabled = false;
+
+                if ((MainV2.cs.airspeed > 7.0) || (MainV2.cs.groundspeed > 10.0))
+                {
+                    MessageBox.Show("Unable - UAV airborne");
+                    ((Button)sender).Enabled = true;
+                    return;
+                }
+
+#if MAVLINK10
+                //MainV2.comPort.doCommand((MAVLink.MAV_CMD)Enum.Parse(typeof(MAVLink.MAV_CMD), "MAV_CMD_PREFLIGHT_STORAGE"));
+                MainV2.comPort.doCommand(MAVLink.MAV_CMD.PREFLIGHT_STORAGE, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f);
+#else
+                MainV2.comPort.doAction((MAVLink.MAV_ACTION)Enum.Parse(typeof(MAVLink.MAV_ACTION), "MAV_ACTION_STORAGE_WRITE"));
+#endif
+            }
+            catch { MessageBox.Show("The Command failed to execute"); }
+            ((Button)sender).Enabled = true;
+        }
+
+        private void BUT_read_flash_Click(object sender, EventArgs e)
+        {
+            try
+            {
+                DialogResult dr = MessageBox.Show("Reset Flash to Factory Defaults?", "Continue", MessageBoxButtons.YesNo);
+                if (dr == System.Windows.Forms.DialogResult.Yes)
+                {
+
+                    if ((MainV2.cs.airspeed > 7.0) || (MainV2.cs.groundspeed > 7.0))
+                    {
+                        MessageBox.Show("Unable - UAV airborne");
+                        ((Button)sender).Enabled = true;
+                        return;
+                    }
+#if MAVLINK10
+                    //MainV2.comPort.doCommand((MAVLink.MAV_CMD)Enum.Parse(typeof(MAVLink.MAV_CMD), "MAV_CMD_PREFLIGHT_STORAGE"));
+                    MainV2.comPort.doCommand(MAVLink.MAV_CMD.PREFLIGHT_STORAGE, 1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f);
+#else
+                MainV2.comPort.doAction((MAVLink.MAV_ACTION)Enum.Parse(typeof(MAVLink.MAV_ACTION), "MAV_ACTION_STORAGE_WRITE"));
+#endif
+                }
+            }
+            catch { MessageBox.Show("The Command failed to execute"); }
+            ((Button)sender).Enabled = true;
+        }    
 
     }
 }

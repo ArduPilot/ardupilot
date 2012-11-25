@@ -38,12 +38,11 @@
             this.BUT_save = new ArdupilotMega.Controls.MyButton();
             this.BUT_load = new ArdupilotMega.Controls.MyButton();
             this.Params = new System.Windows.Forms.DataGridView();
+            this.toolTip1 = new System.Windows.Forms.ToolTip(this.components);
+            this.label1 = new System.Windows.Forms.Label();
             this.Command = new System.Windows.Forms.DataGridViewTextBoxColumn();
             this.Value = new System.Windows.Forms.DataGridViewTextBoxColumn();
-            this.Default = new System.Windows.Forms.DataGridViewTextBoxColumn();
-            this.mavScale = new System.Windows.Forms.DataGridViewTextBoxColumn();
-            this.RawValue = new System.Windows.Forms.DataGridViewTextBoxColumn();
-            this.toolTip1 = new System.Windows.Forms.ToolTip(this.components);
+            this.Desc = new System.Windows.Forms.DataGridViewTextBoxColumn();
             ((System.ComponentModel.ISupportInitialize)(this.Params)).BeginInit();
             this.SuspendLayout();
             // 
@@ -99,9 +98,7 @@
             this.Params.Columns.AddRange(new System.Windows.Forms.DataGridViewColumn[] {
             this.Command,
             this.Value,
-            this.Default,
-            this.mavScale,
-            this.RawValue});
+            this.Desc});
             this.Params.Name = "Params";
             dataGridViewCellStyle2.Alignment = System.Windows.Forms.DataGridViewContentAlignment.MiddleLeft;
             dataGridViewCellStyle2.BackColor = System.Drawing.SystemColors.ActiveCaption;
@@ -114,6 +111,17 @@
             this.Params.RowHeadersVisible = false;
             this.Params.CellValueChanged += new System.Windows.Forms.DataGridViewCellEventHandler(this.Params_CellValueChanged);
             // 
+            // toolTip1
+            // 
+            this.toolTip1.AutoPopDelay = 180000;
+            this.toolTip1.InitialDelay = 500;
+            this.toolTip1.ReshowDelay = 100;
+            // 
+            // label1
+            // 
+            resources.ApplyResources(this.label1, "label1");
+            this.label1.Name = "label1";
+            // 
             // Command
             // 
             resources.ApplyResources(this.Command, "Command");
@@ -125,31 +133,18 @@
             resources.ApplyResources(this.Value, "Value");
             this.Value.Name = "Value";
             // 
-            // Default
+            // Desc
             // 
-            resources.ApplyResources(this.Default, "Default");
-            this.Default.Name = "Default";
-            // 
-            // mavScale
-            // 
-            resources.ApplyResources(this.mavScale, "mavScale");
-            this.mavScale.Name = "mavScale";
-            // 
-            // RawValue
-            // 
-            resources.ApplyResources(this.RawValue, "RawValue");
-            this.RawValue.Name = "RawValue";
-            // 
-            // toolTip1
-            // 
-            this.toolTip1.AutoPopDelay = 20000;
-            this.toolTip1.InitialDelay = 500;
-            this.toolTip1.ReshowDelay = 100;
+            this.Desc.AutoSizeMode = System.Windows.Forms.DataGridViewAutoSizeColumnMode.AllCells;
+            resources.ApplyResources(this.Desc, "Desc");
+            this.Desc.Name = "Desc";
+            this.Desc.ReadOnly = true;
             // 
             // ConfigRawParams
             // 
             resources.ApplyResources(this, "$this");
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
+            this.Controls.Add(this.label1);
             this.Controls.Add(this.BUT_compare);
             this.Controls.Add(this.BUT_rerequestparams);
             this.Controls.Add(this.BUT_writePIDS);
@@ -159,6 +154,7 @@
             this.Name = "ConfigRawParams";
             ((System.ComponentModel.ISupportInitialize)(this.Params)).EndInit();
             this.ResumeLayout(false);
+            this.PerformLayout();
 
         }
 
@@ -170,11 +166,10 @@
         private ArdupilotMega.Controls.MyButton BUT_save;
         private ArdupilotMega.Controls.MyButton BUT_load;
         private System.Windows.Forms.DataGridView Params;
+        private System.Windows.Forms.ToolTip toolTip1;
+        private System.Windows.Forms.Label label1;
         private System.Windows.Forms.DataGridViewTextBoxColumn Command;
         private System.Windows.Forms.DataGridViewTextBoxColumn Value;
-        private System.Windows.Forms.DataGridViewTextBoxColumn Default;
-        private System.Windows.Forms.DataGridViewTextBoxColumn mavScale;
-        private System.Windows.Forms.DataGridViewTextBoxColumn RawValue;
-        private System.Windows.Forms.ToolTip toolTip1;
+        private System.Windows.Forms.DataGridViewTextBoxColumn Desc;
     }
 }

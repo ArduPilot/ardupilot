@@ -65,12 +65,8 @@ namespace ArdupilotMega.GCSViews.ConfigurationView
         private void BUT_levelplane_Click(object sender, EventArgs e)
         {
             try
-            {
-#if MAVLINK10              
+            {           
                             MainV2.comPort.doCommand(MAVLink.MAV_CMD.PREFLIGHT_CALIBRATION,1,0,1,0,0,0,0);
-#else
-                MainV2.comPort.doAction(MAVLink.MAV_ACTION.MAV_ACTION_CALIBRATE_ACC);
-#endif
                 BUT_levelplane.Text = "Complete";
             }
             catch

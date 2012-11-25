@@ -52,6 +52,9 @@ namespace ArdupilotMega.GCSViews.ConfigurationView
 
         private void BUT_videostart_Click(object sender, EventArgs e)
         {
+            if (MainV2.MONO)
+                return;
+
             // stop first
             BUT_videostop_Click(sender, e);
 
@@ -83,6 +86,9 @@ namespace ArdupilotMega.GCSViews.ConfigurationView
 
         private void CMB_videosources_MouseClick(object sender, MouseEventArgs e)
         {
+            if (MainV2.MONO)
+                return;
+
             // the reason why i dont populate this list is because on linux/mac this call will fail.
             WebCamService.Capture capt = new WebCamService.Capture();
 
@@ -95,6 +101,9 @@ namespace ArdupilotMega.GCSViews.ConfigurationView
 
         private void CMB_videosources_SelectedIndexChanged(object sender, EventArgs e)
         {
+            if (MainV2.MONO)
+                return;
+
             int hr;
             int count;
             int size;
@@ -463,6 +472,8 @@ namespace ArdupilotMega.GCSViews.ConfigurationView
 
         private void CMB_videosources_Click(object sender, EventArgs e)
         {
+            if (MainV2.MONO)
+                return;
             // the reason why i dont populate this list is because on linux/mac this call will fail.
             WebCamService.Capture capt = new WebCamService.Capture();
 

@@ -20,6 +20,10 @@ namespace ArdupilotMega.HIL
         {
             return System.Math.Cos(val);
         }
+        public static double acos(double val)
+        {
+            return System.Math.Acos(val);
+        }
         public static double asin(double val)
         {
             return System.Math.Asin(val);
@@ -59,6 +63,11 @@ namespace ArdupilotMega.HIL
         public static double tan(double val)
         {
             return System.Math.Tan(val);
+        }
+
+        public static int len(object[] data) 
+        {
+            return data.Length;
         }
 
 

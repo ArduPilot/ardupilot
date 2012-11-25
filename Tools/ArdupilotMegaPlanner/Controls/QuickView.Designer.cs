@@ -65,7 +65,7 @@
             // labelWithPseudoOpacity2
             // 
             this.labelWithPseudoOpacity2.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.labelWithPseudoOpacity2.DoubleBuffered = true;
+            this.labelWithPseudoOpacity2.DoubleBuffered = false;
             this.labelWithPseudoOpacity2.Font = new System.Drawing.Font("Microsoft Sans Serif", 21.75F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.labelWithPseudoOpacity2.Location = new System.Drawing.Point(3, 20);
             this.labelWithPseudoOpacity2.Name = "labelWithPseudoOpacity2";

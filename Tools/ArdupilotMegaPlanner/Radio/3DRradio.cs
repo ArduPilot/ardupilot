@@ -666,46 +666,48 @@ namespace ArdupilotMega
 
         public bool doConnect(ArdupilotMega.Comms.ICommsSerial comPort)
         {
-            // clear buffer
-            comPort.DiscardInBuffer();
-            // setup a known enviroment
-            comPort.Write("\r\n");
-            // wait
-            Sleep(1100);
-            // send config string
-            comPort.Write("+++");
-            // wait
-            Sleep(1100);
-            // check for config responce "OK"
-            log.Info("Connect btr " + comPort.BytesToRead + " baud " + comPort.BaudRate);
-            string conn = comPort.ReadExisting();
-            log.Info("Connect first responce " + conn.Replace('\0', ' ') + " " + conn.Length);
-            if (conn.Contains("OK"))
+            try
             {
-                //return true;
-            }
-            else
-            {
-                // cleanup incase we are already in cmd mode
+                // clear buffer
+                comPort.DiscardInBuffer();
+                // setup a known enviroment
                 comPort.Write("\r\n");
+                // wait
+                Sleep(1100);
+                // send config string
+                comPort.Write("+++");
+                // wait
+                Sleep(1100);
+                // check for config responce "OK"
+                log.Info("Connect btr " + comPort.BytesToRead + " baud " + comPort.BaudRate);
+                string conn = comPort.ReadExisting();
+                log.Info("Connect first responce " + conn.Replace('\0', ' ') + " " + conn.Length);
+                if (conn.Contains("OK"))
+                {
+                    //return true;
+                }
+                else
+                {
+                    // cleanup incase we are already in cmd mode
+                    comPort.Write("\r\n");
+                }
+
+                doCommand(comPort, "AT&T");
+
+                string version = doCommand(comPort, "ATI");
+
+                log.Info("Connect Version: " + version.Trim() + "\n");
+
+                Regex regex = new Regex(@"SiK\s+(.*)\s+on\s+(.*)");
+
+                if (regex.IsMatch(version))
+                {
+                    return true;
+                }
+
+                return false;
             }
-
-
-
-            doCommand(comPort, "AT&T");
-
-            string version = doCommand(comPort, "ATI");
-
-            log.Info("Connect Version: " + version.Trim() + "\n");
-
-            Regex regex = new Regex(@"SiK\s+(.*)\s+on\s+(.*)");
-
-            if (regex.IsMatch(version))
-            {
-                return true;
-            }
-
-            return false;
+            catch { return false; }
         }
 
         private void BUT_Syncoptions_Click(object sender, EventArgs e)
