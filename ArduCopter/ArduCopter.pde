@@ -2063,6 +2063,10 @@ static void tuning(){
         g.pid_throttle.kP(tuning_value);
         break;
 
+    case CH6_THROTTLE_KI:
+        g.pid_throttle.kI(tuning_value);
+        break;
+
     case CH6_TOP_BOTTOM_RATIO:
         motors.top_bottom_ratio = tuning_value;
         break;
