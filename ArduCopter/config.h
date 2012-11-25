@@ -895,11 +895,15 @@
 
 // minimum and maximum climb rates while in alt hold mode
 #ifndef ALTHOLD_MAX_CLIMB_RATE
- # define ALTHOLD_MAX_CLIMB_RATE 500
+ # define ALTHOLD_MAX_CLIMB_RATE 250
 #endif
 #ifndef ALTHOLD_MIN_CLIMB_RATE
  # define ALTHOLD_MIN_CLIMB_RATE -ALTHOLD_MAX_CLIMB_RATE
 #endif
+
+// max allowed acceleration
+#define VELOCITY_MAX_Z      250     // maximum vertical velocity in cm/s
+#define ACCELERATION_MAX_Z  750     // maximum veritcal acceleration in cm/s/s
 
 // Throttle Accel control
 #ifndef THROTTLE_ACCEL_P

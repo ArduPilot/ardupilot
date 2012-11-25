@@ -855,10 +855,10 @@ static int16_t get_pilot_desired_climb_rate(int16_t throttle_control)
     // check throttle is above, below or in the deadband
     if (throttle_control < THROTTLE_IN_DEADBAND_BOTTOM) {
         // below the deadband
-        desired_rate = (int32_t)THROTTLE_IN_MIDDLE * (throttle_control-THROTTLE_IN_DEADBAND_BOTTOM) / (THROTTLE_IN_MIDDLE - THROTTLE_IN_DEADBAND);
+        desired_rate = (int32_t)VELOCITY_MAX_Z * (throttle_control-THROTTLE_IN_DEADBAND_BOTTOM) / (THROTTLE_IN_MIDDLE - THROTTLE_IN_DEADBAND);
     }else if (throttle_control > THROTTLE_IN_DEADBAND_TOP) {
         // above the deadband
-        desired_rate = (int32_t)THROTTLE_IN_MIDDLE * (throttle_control-THROTTLE_IN_DEADBAND_TOP) / (THROTTLE_IN_MIDDLE - THROTTLE_IN_DEADBAND);
+        desired_rate = (int32_t)VELOCITY_MAX_Z * (throttle_control-THROTTLE_IN_DEADBAND_TOP) / (THROTTLE_IN_MIDDLE - THROTTLE_IN_DEADBAND);
     }else{
         // must be in the deadband
         desired_rate = 0;
@@ -888,10 +888,10 @@ static int16_t get_pilot_desired_acceleration(int16_t throttle_control)
     // check throttle is above, below or in the deadband
     if (throttle_control < THROTTLE_IN_DEADBAND_BOTTOM) {
         // below the deadband
-        desired_accel = (int32_t)THROTTLE_IN_MIDDLE * (throttle_control-THROTTLE_IN_DEADBAND_BOTTOM) / (THROTTLE_IN_MIDDLE - THROTTLE_IN_DEADBAND);
+        desired_accel = (int32_t)ACCELERATION_MAX_Z * (throttle_control-THROTTLE_IN_DEADBAND_BOTTOM) / (THROTTLE_IN_MIDDLE - THROTTLE_IN_DEADBAND);
     }else if(throttle_control > THROTTLE_IN_DEADBAND_TOP) {
         // above the deadband
-        desired_accel = (int32_t)THROTTLE_IN_MIDDLE * (throttle_control-THROTTLE_IN_DEADBAND_TOP) / (THROTTLE_IN_MIDDLE - THROTTLE_IN_DEADBAND);
+        desired_accel = (int32_t)ACCELERATION_MAX_Z * (throttle_control-THROTTLE_IN_DEADBAND_TOP) / (THROTTLE_IN_MIDDLE - THROTTLE_IN_DEADBAND);
     }else{
         // must be in the deadband
         desired_accel = 0;
@@ -999,14 +999,9 @@ get_throttle_rate_stabilized(int16_t target_rate)
     altitude_error = constrain(alt_desired - current_loc.alt, -alt_error_max, alt_error_max);
     alt_desired = current_loc.alt + altitude_error;
 
-    if(altitude_error > 0){
-        desired_rate = g.pi_alt_hold.get_p(10*sqrt(altitude_error));
-    }else if(altitude_error < 0){
-        desired_rate = g.pi_alt_hold.get_p(-10*sqrt(abs(altitude_error)));
-    }else{
-        desired_rate = g.pi_alt_hold.get_p(0);
-    }
+    desired_rate = g.pi_alt_hold.get_p(altitude_error);
     desired_rate = constrain(desired_rate, -200, 200) + target_rate;
+    desired_rate = constrain(desired_rate, -VELOCITY_MAX_Z, VELOCITY_MAX_Z);  // TO-DO: replace constrains with ALTHOLD_MIN_CLIMB_RATE and ALTHOLD_MAX_CLIMB_RATE?
 
     // call rate based throttle controller which will update accel based throttle controller targets
     get_throttle_rate(desired_rate);
@@ -1022,13 +1017,7 @@ get_throttle_althold(int32_t target_alt, int16_t max_climb_rate)
     int16_t desired_rate;
 
     altitude_error = target_alt - current_loc.alt;
-    if(altitude_error > 0){
-        desired_rate = g.pi_alt_hold.get_p(10*sqrt(altitude_error));
-    }else if(altitude_error < 0){
-        desired_rate = g.pi_alt_hold.get_p(-10*sqrt(abs(altitude_error)));
-    }else{
-        desired_rate = g.pi_alt_hold.get_p(0);
-    }
+    desired_rate = g.pi_alt_hold.get_p(altitude_error);
     desired_rate = constrain(desired_rate, ALTHOLD_MIN_CLIMB_RATE, max_climb_rate);
 
     // call rate based throttle controller which will update accel based throttle controller targets
