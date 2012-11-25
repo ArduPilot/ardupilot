@@ -18,8 +18,8 @@ namespace ArdupilotMega.Controls
         int noofchars = 0;
         bool autosize = false;
 
-        SolidBrush s = new SolidBrush(Color.White);
-        SolidBrush b = new SolidBrush(Color.Black);
+        SolidBrush s = new SolidBrush(SystemColors.ControlText);
+        SolidBrush b = new SolidBrush(SystemColors.Control);
 
         StringFormat stringFormat = new StringFormat();
 

@@ -325,6 +325,8 @@ namespace ArdupilotMega.GCSViews
 
             tabStatus.Width = x;
 
+            ThemeManager.ApplyThemeTo(tabStatus);
+
             //   tabStatus.ResumeLayout();
         }
 
@@ -1314,18 +1316,18 @@ namespace ArdupilotMega.GCSViews
             // QUAD
             if (MainV2.comPort.param.ContainsKey("WP_SPEED_MAX"))
             {
-                modifyandSetSpeed.Value = (decimal)(float)MainV2.comPort.param["WP_SPEED_MAX"];
+                modifyandSetSpeed.Value = (decimal)((float)MainV2.comPort.param["WP_SPEED_MAX"] / 100.0);
             } // plane with airspeed
             else if (MainV2.comPort.param.ContainsKey("TRIM_ARSPD_CM") && MainV2.comPort.param.ContainsKey("ARSPD_ENABLE")
                 && MainV2.comPort.param.ContainsKey("ARSPD_USE") && (float)MainV2.comPort.param["ARSPD_ENABLE"] == 1
                 && (float)MainV2.comPort.param["ARSPD_USE"] == 1)
             {
-                modifyandSetSpeed.Value = (decimal)(float)MainV2.comPort.param["TRIM_ARSPD_CM"];
+                modifyandSetSpeed.Value = (decimal)((float)MainV2.comPort.param["TRIM_ARSPD_CM"] / 100.0);
             } // plane without airspeed
             else if (MainV2.comPort.param.ContainsKey("TRIM_THROTTLE") && MainV2.comPort.param.ContainsKey("ARSPD_USE")
                 && (float)MainV2.comPort.param["ARSPD_USE"] == 0)
             {
-                modifyandSetSpeed.Value = (decimal)(float)MainV2.comPort.param["TRIM_THROTTLE"];
+                modifyandSetSpeed.Value = (decimal)(float)MainV2.comPort.param["TRIM_THROTTLE"]; // percent
             }
 
             MainV2.comPort.ParamListChanged += FlightData_ParentChanged;
@@ -2500,7 +2502,7 @@ print 'Roll complete'
             int newalt = (int)modifyandSetAlt.Value;
             try
             {
-                MainV2.comPort.setNewWPAlt(new Locationwp() { alt = newalt });
+                MainV2.comPort.setNewWPAlt(new Locationwp() { alt = newalt / MainV2.cs.multiplierdist });
             }
             catch { CustomMessageBox.Show("Error sending command"); }
             //MainV2.comPort.setNextWPTargetAlt((ushort)MainV2.cs.wpno, newalt);
@@ -2522,7 +2524,7 @@ print 'Roll complete'
             {
                 try
                 {
-                    MainV2.comPort.setParam("WP_SPEED_MAX", (float)modifyandSetSpeed.Value);
+                    MainV2.comPort.setParam("WP_SPEED_MAX", ((float)modifyandSetSpeed.Value * 100.0f));
                 }
                 catch { CustomMessageBox.Show("Error sending command"); }
             } // plane with airspeed
@@ -2532,7 +2534,7 @@ print 'Roll complete'
             {
                 try
                 {
-                    MainV2.comPort.setParam("TRIM_ARSPD_CM", (float)modifyandSetSpeed.Value);
+                    MainV2.comPort.setParam("TRIM_ARSPD_CM", ((float)modifyandSetSpeed.Value * 100.0f));
                 }
                 catch { CustomMessageBox.Show("Error sending command"); }
             } // plane without airspeed

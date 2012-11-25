@@ -182,7 +182,6 @@
             // 
             // SubMainLeft.Panel2
             // 
-            this.SubMainLeft.Panel2.BackColor = System.Drawing.Color.Transparent;
             this.SubMainLeft.Panel2.Controls.Add(this.tabControl1);
             // 
             // hud1
@@ -1031,7 +1030,6 @@
             // 
             resources.ApplyResources(this.tabStatus, "tabStatus");
             this.tabStatus.Name = "tabStatus";
-            this.tabStatus.UseVisualStyleBackColor = true;
             // 
             // tabTLogs
             // 
@@ -1081,7 +1079,6 @@
             // tracklog
             // 
             resources.ApplyResources(this.tracklog, "tracklog");
-            this.tracklog.BackColor = System.Drawing.SystemColors.Control;
             this.tracklog.Maximum = 100;
             this.tracklog.Name = "tracklog";
             this.tracklog.Scroll += new System.EventHandler(this.tracklog_Scroll);

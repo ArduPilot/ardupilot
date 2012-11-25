@@ -29,6 +29,8 @@ namespace ArdupilotMega.Utilities
             /// Standard Planner Charcoal & Green colours
             /// </summary>
             BurntKermit,
+
+            Test,
         }
 
         /// <summary>
@@ -53,12 +55,35 @@ namespace ArdupilotMega.Utilities
                     break;
             
                     // More themes go here
+                case Themes.Test:
+                    ApplyTestTheme(control, 0);
+                    break;
 
                 default:
                     break;
             }
 
                     
+        }
+
+        private static void ApplyTestTheme(Control temp, int level)
+        {
+
+            foreach (Control ctl in temp.Controls)
+            {
+                if (ctl.GetType() == typeof(MyButton))
+                {
+                    ArdupilotMega.Controls.MyButton but = (MyButton)ctl;
+                    but.BGGradTop = SystemColors.ControlLight;
+                    but.BGGradBot = SystemColors.ControlDark;
+                    but.TextColor = SystemColors.ControlText;
+                    but.Outline = SystemColors.ControlDark;
+                    
+                }
+
+                if (ctl.Controls.Count > 0)
+                    ApplyTestTheme(ctl, 1);
+            }
         }
 
         private static void ApplyBurntKermitTheme(Control temp, int level)
@@ -70,45 +95,52 @@ namespace ArdupilotMega.Utilities
             if (level == 0)
             {
                 temp.BackColor = BGColor;
-                temp.ForeColor = TextColor;// Color.FromArgb(0xe6, 0xe8, 0xea);
+                temp.ForeColor = TextColor;
             }
-
-            //temp.Font = new Font("Lucida Console", 8.25f);
 
             foreach (Control ctl in temp.Controls)
             {
-                if (ctl.GetType() == typeof(Button))
+                if (ctl.GetType() == typeof(Panel))
+                {
+                    ctl.BackColor = BGColor;
+                    ctl.ForeColor = TextColor;
+                }
+                else if (ctl.GetType() == typeof(GroupBox))
+                {
+                    ctl.BackColor = BGColor;
+                    ctl.ForeColor = TextColor;
+                }
+                else if (ctl.GetType() == typeof(MyLabel))
+                {
+                    ctl.BackColor = BGColor;
+                    ctl.ForeColor = TextColor;
+                } 
+                else if (ctl.GetType() == typeof(Button))
                 {
                     ctl.ForeColor = Color.Black;
                 }
                 else if (ctl.GetType() == typeof(MyButton))
                 {
-                    Color PrimeColor = Color.FromArgb(0x94, 0xc1, 0x1f);
-
                     ArdupilotMega.Controls.MyButton but = (MyButton)ctl;
-                    //but.BGGradTop = Color.FromArgb(PrimeColor.R, PrimeColor.G, PrimeColor.B);
-                    //but.BGGradBot = Color.FromArgb(255 - (int)(PrimeColor.R * 0.27), 255 - (int)(PrimeColor.G * 0.14), 255 - (int)(PrimeColor.B * 0.79));
-                    //but.ForeColor = Color.FromArgb(0x40, 0x57, 0x04); //Color.FromArgb(255 - (int)(PrimeColor.R * 0.7), 255 - (int)(PrimeColor.G * 0.8), 255 - (int)(PrimeColor.B * 0.1));
-                    //but.Outline = ControlBGColor;
                 }
                 else if (ctl.GetType() == typeof(TextBox))
                 {
                     ctl.BackColor = ControlBGColor;
-                    ctl.ForeColor = TextColor;// Color.FromArgb(0xe6, 0xe8, 0xea);
+                    ctl.ForeColor = TextColor;
                     TextBox txt = (TextBox)ctl;
                     txt.BorderStyle = BorderStyle.None;
                 }
                 else if (ctl.GetType() == typeof(DomainUpDown))
                 {
                     ctl.BackColor = ControlBGColor;
-                    ctl.ForeColor = TextColor;// Color.FromArgb(0xe6, 0xe8, 0xea);
+                    ctl.ForeColor = TextColor;
                     DomainUpDown txt = (DomainUpDown)ctl;
                     txt.BorderStyle = BorderStyle.None;
                 }
                 else if (ctl.GetType() == typeof(GroupBox) || ctl.GetType() == typeof(UserControl))
                 {
                     ctl.BackColor = BGColor;
-                    ctl.ForeColor = TextColor;// Color.FromArgb(0xe6, 0xe8, 0xea);
+                    ctl.ForeColor = TextColor;
                 }
                 else if (ctl.GetType() == typeof(ZedGraph.ZedGraphControl))
                 {
