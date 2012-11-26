@@ -585,20 +585,6 @@ static int16_t get_angle_boost(int16_t value)
     return ((float)(value + 80) / temp) - (value + 80);
 }
 
-#if FRAME_CONFIG == HELI_FRAME
-// heli_angle_boost - adds a boost depending on roll/pitch values
-// equivalent of quad's angle_boost function
-// throttle value should be 0 ~ 1000
-static int16_t heli_get_angle_boost(int16_t throttle)
-{
-    float angle_boost_factor = cos_pitch_x * cos_roll_x;
-    angle_boost_factor = 1.0 - constrain(angle_boost_factor, .5, 1.0);
-    int16_t throttle_above_mid = max(throttle - motors.throttle_mid,0);
-    return throttle + throttle_above_mid*angle_boost_factor;
-
-}
-#endif // HELI_FRAME
-
 // calculate modified roll/pitch depending upon optical flow calculated position
 static int32_t
 get_of_roll(int32_t input_roll)
