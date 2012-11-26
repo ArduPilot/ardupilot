@@ -1675,7 +1675,7 @@ void update_throttle_mode(void)
     case THROTTLE_MANUAL:
         if (g.rc_3.control_in > 0) {
 #if FRAME_CONFIG == HELI_FRAME
-            g.rc_3.servo_out = heli_get_angle_boost(g.rc_3.control_in);
+            g.rc_3.servo_out = g.rc_3.control_in;
 #else
             if (control_mode == ACRO) {
                 g.rc_3.servo_out        = g.rc_3.control_in;
@@ -1769,7 +1769,7 @@ void update_throttle_mode(void)
         }
 
 #if FRAME_CONFIG == HELI_FRAME
-        throttle_out = heli_get_angle_boost(g.throttle_cruise + nav_throttle - landing_boost);
+        throttle_out = g.throttle_cruise + nav_throttle - landing_boost;
 #else
         throttle_out = g.throttle_cruise + nav_throttle + angle_boost - landing_boost;
 #endif
