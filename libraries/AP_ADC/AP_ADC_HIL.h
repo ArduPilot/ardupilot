@@ -15,8 +15,6 @@
 #include <inttypes.h>
 #include "AP_ADC.h"
  
-#include <FastSerial.h>
-
 ///
 // A hardware in the loop model of the ADS7844 analog to digital converter
 // @author James Goppert DIYDrones.com
