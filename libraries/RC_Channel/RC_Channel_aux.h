@@ -67,7 +67,7 @@ public:
 	static void set_radio_to_trim(Aux_servo_function_t function);
 
 	// copy radio_in to radio_out
-	static void copy_radio_in_out(Aux_servo_function_t function);
+	static void copy_radio_in_out(Aux_servo_function_t function, bool do_input_output=false);
 
 	// set servo_out
 	static void set_servo_out(Aux_servo_function_t function, int16_t value);

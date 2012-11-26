@@ -1,3 +1,4 @@
+// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 /*
  *       RC_Channel.cpp - Radio library for Arduino
  *       Code by Jason Short. DIYDrones.com
@@ -322,6 +323,12 @@ void
 RC_Channel::output()
 {
     _apm_rc->OutputCh(_ch_out, radio_out);
+}
+
+void
+RC_Channel::input()
+{
+    radio_in = _apm_rc->InputCh(_ch_out);
 }
 
 void

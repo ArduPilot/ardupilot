@@ -88,6 +88,7 @@ public:
 
     static void                                     set_apm_rc(APM_RC_Class * apm_rc);
     void                                            output();
+    void                                            input();
     void                                            enable_out();
     static APM_RC_Class *                           _apm_rc;
 
