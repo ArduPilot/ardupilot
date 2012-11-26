@@ -14,6 +14,8 @@
 
 #include <inttypes.h>
 #include "AP_ADC.h"
+ 
+#include <FastSerial.h>
 
 ///
 // A hardware in the loop model of the ADS7844 analog to digital converter
@@ -99,6 +101,13 @@ private:
     // TODO: implement
     void        setGyroTemp(int16_t val) {
     }
+    
+        // read function that pretends to capture new data
+    static void read(uint32_t tnow) {
+       _count++;
+    }
+
+    static uint16_t  _count;                    // number of samples captured
 };
 
 #endif
