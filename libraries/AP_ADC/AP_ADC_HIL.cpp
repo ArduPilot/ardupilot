@@ -23,6 +23,8 @@ const float AP_ADC_HIL::accelBias[3]    = {2025,2025,2025};
 // gyroScale = 1/[GyroGain*pi/180]   GyroGains (0.4,0.41,0.41)
 const float AP_ADC_HIL::gyroScale[3] = {143.239, 139.746, 139.746};
 const float AP_ADC_HIL::accelScale[3] = {418,418,418}; // adcPerG
+    
+uint16_t  AP_ADC_HIL::_count; // number of samples captured
 
 AP_ADC_HIL::AP_ADC_HIL()
 {
@@ -45,6 +47,7 @@ AP_ADC_HIL::AP_ADC_HIL()
 
 void AP_ADC_HIL::Init( AP_PeriodicProcess * scheduler )
 {
+    scheduler->register_process( AP_ADC_HIL::read );
 }
 
 // Read one channel value
@@ -56,6 +59,8 @@ float AP_ADC_HIL::Ch(unsigned char ch_num)
 // Read 6 channel values
 uint32_t AP_ADC_HIL::Ch6(const uint8_t *channel_numbers, float *result)
 {
+    _count = 0;
+    
     for (uint8_t i=0; i<6; i++) {
         result[i] = Ch(channel_numbers[i]);
     }
@@ -92,5 +97,5 @@ bool AP_ADC_HIL::new_data_available(const uint8_t *channel_numbers)
 // Get minimum number of samples read from the sensors
 uint16_t AP_ADC_HIL::num_samples_available(const uint8_t *channel_numbers)
 {
-    return 1;
+    return _count;
 }
