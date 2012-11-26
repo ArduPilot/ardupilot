@@ -170,6 +170,7 @@ public:
         k_param_gcs_heartbeat_fs_enabled,
         k_param_throttle_slewrate,
         k_param_throttle_suppress_manual,
+        k_param_throttle_passthru_stabilize,
 
         //
         // 200: Feed-forward gains
@@ -286,6 +287,7 @@ public:
     AP_Int8 throttle_max;
     AP_Int8 throttle_slewrate;
     AP_Int8 throttle_suppress_manual;
+    AP_Int8 throttle_passthru_stabilize;
     AP_Int8 throttle_fs_enabled;
     AP_Int16 throttle_fs_value;
     AP_Int8 throttle_cruise;

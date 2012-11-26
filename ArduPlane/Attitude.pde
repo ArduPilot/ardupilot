@@ -454,6 +454,7 @@ static void set_servos(void)
                                                  g.throttle_max.get());
 
         if (suppress_throttle()) {
+            // throttle is suppressed in auto mode
             g.channel_throttle.servo_out = 0;
             if (g.throttle_suppress_manual) {
                 // manual pass through of throttle while throttle is suppressed
@@ -461,7 +462,13 @@ static void set_servos(void)
             } else {
                 g.channel_throttle.calc_pwm();                
             }
+        } else if (g.throttle_passthru_stabilize && 
+                   (control_mode == STABILIZE || control_mode == FLY_BY_WIRE_A)) {
+            // manual pass through of throttle while in FBWA or
+            // STABILIZE mode with THR_PASS_STAB set
+            g.channel_throttle.radio_out = g.channel_throttle.radio_in;
         } else {
+            // normal throttle calculation based on servo_out
             g.channel_throttle.calc_pwm();
         }
 #endif
