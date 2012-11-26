@@ -1603,17 +1603,13 @@ void update_roll_pitch_mode(void)
         roll_pitch_toy();
         break;
     }
-
+	
+	#if FRAME_CONFIG != HELI_FRAME
     if(g.rc_3.control_in == 0 && control_mode <= ACRO) {
         reset_rate_I();
         reset_stability_I();
     }
-
-    //if(takeoff_complete == false){
-    // reset these I terms to prevent awkward tipping on takeoff
-    //reset_rate_I();
-    //reset_stability_I();
-    //}
+	#endif //HELI_FRAME
 
     if(ap_system.new_radio_frame) {
         // clear new radio frame info
