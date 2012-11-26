@@ -172,11 +172,17 @@ RC_Channel_aux::set_radio_to_trim(RC_Channel_aux::Aux_servo_function_t function)
   copy radio_in to radio_out for a given function
  */
 void
-RC_Channel_aux::copy_radio_in_out(RC_Channel_aux::Aux_servo_function_t function)
+RC_Channel_aux::copy_radio_in_out(RC_Channel_aux::Aux_servo_function_t function, bool do_input_output)
 {
     for (uint8_t i = 0; i < 7; i++) {
         if (_aux_channels[i] && _aux_channels[i]->function.get() == function) {
+			if (do_input_output) {
+				_aux_channels[i]->input();
+			}
 			_aux_channels[i]->radio_out = _aux_channels[i]->radio_in;
+			if (do_input_output) {
+				_aux_channels[i]->output();
+			}
 		}
     }
 }
