@@ -26,7 +26,7 @@ popd
 
 echo "Testing APMRover build"
 pushd APMrover2
-for b in all apm2; do
+for b in all apm2 sitl; do
     pwd
     make clean
     make $b
