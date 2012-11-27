@@ -16,9 +16,11 @@ public:
     void setTimeout(uint16_t ms) { _timeoutDelay = ms; }
     void setHighSpeed(bool active);
 
+    uint8_t write(uint8_t addr, uint8_t len, uint8_t* data);
     uint8_t writeRegister(uint8_t addr, uint8_t reg, uint8_t val);
     uint8_t writeRegisters(uint8_t addr, uint8_t reg,
                            uint8_t len, uint8_t* data);
+    uint8_t read(uint8_t addr, uint8_t len, uint8_t* data);
     uint8_t readRegister(uint8_t addr, uint8_t reg, uint8_t* data);
     uint8_t readRegisters(uint8_t addr, uint8_t reg,
                           uint8_t len, uint8_t* data);
