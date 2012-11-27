@@ -368,33 +368,23 @@ static void set_mode(byte mode)
 
 	control_mode = mode;
 	crash_timer = 0;
-        throttle_last = 0;
-        throttle = 500;
+    throttle_last = 0;
+    throttle = 500;
         
 	switch(control_mode)
 	{
 		case MANUAL:
 		case LEARNING:
 		case CIRCLE:
-		case FLY_BY_WIRE_A:
-		case FLY_BY_WIRE_B: 
 			break;
 
 		case AUTO:
-                        rtl_complete = false;
-                        restart_nav();
+            rtl_complete = false;
+            restart_nav();
 			break;
 
 		case RTL:
 			do_RTL();
-			break;
-
-		case LOITER:
-			do_loiter_at_location();
-			break;
-
-		case GUIDED:
-			set_guided_WP();
 			break;
 
 		default:

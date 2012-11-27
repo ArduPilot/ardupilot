@@ -96,19 +96,12 @@
 #define CIRCLE 1			 // When flying sans GPS, and we loose the radio, just circle
 #define LEARNING 2
 
-#define FLY_BY_WIRE_A 5		// Fly By Wire A has left stick horizontal => desired roll angle, left stick vertical => desired pitch angle, right stick vertical = manual throttle
-#define FLY_BY_WIRE_B 6		// Fly By Wire B has left stick horizontal => desired roll angle, left stick vertical => desired pitch angle, right stick vertical => desired airspeed
-#define FLY_BY_WIRE_C 7		// Fly By Wire C has left stick horizontal => desired roll angle, left stick vertical => desired climb rate, right stick vertical => desired airspeed
-							// Fly By Wire B and Fly By Wire C require airspeed sensor
 #define AUTO 10
 #define RTL 11
 #define LOITER 12
-//#define TAKEOFF 13			// This is not used by APM.  It appears here for consistency with ACM
-//#define LAND 14			// This is not used by APM.  It appears here for consistency with ACM
 #define GUIDED 15
 #define INITIALISING 16     // in startup routines
 #define HEADALT      17   // Lock the current heading and altitude
-#define LAND         21   // Landing mode
 
 // Commands - Note that APM now uses a subset of the MAVLink protocol commands.  See enum MAV_CMD in the GCS_Mavlink library
 #define CMD_BLANK 0 // there is no command stored in the mem location requested

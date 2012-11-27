@@ -11,9 +11,6 @@ static void failsafe_short_on_event(int fstype)
 	{
 		case MANUAL: 
 		case LEARNING:
-		case FLY_BY_WIRE_A: // middle position
-		case FLY_BY_WIRE_B: // middle position
-			set_mode(CIRCLE);
 			break;
 
 		case AUTO: 
@@ -42,8 +39,6 @@ static void failsafe_long_on_event(int fstype)
 	{
 		case MANUAL: 
 		case LEARNING:
-		case FLY_BY_WIRE_A: // middle position
-		case FLY_BY_WIRE_B: // middle position
 		case CIRCLE: 
 			set_mode(RTL);
 			break;

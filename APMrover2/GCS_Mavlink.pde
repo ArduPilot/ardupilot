@@ -42,9 +42,6 @@ static NOINLINE void send_heartbeat(mavlink_channel_t chan)
         base_mode = MAV_MODE_FLAG_MANUAL_INPUT_ENABLED;
         break;
     case LEARNING:
-    case FLY_BY_WIRE_A:
-    case FLY_BY_WIRE_B:
-    case FLY_BY_WIRE_C:
         base_mode = MAV_MODE_FLAG_MANUAL_INPUT_ENABLED;
         break;
     case AUTO:
@@ -141,29 +138,12 @@ static NOINLINE void send_extended_status1(mavlink_channel_t chan, uint16_t pack
         break;
 
     case LEARNING:
-    case FLY_BY_WIRE_A:
         control_sensors_enabled |= (1<<10); // 3D angular rate control
         control_sensors_enabled |= (1<<11); // attitude stabilisation
-        break;
-
-    case FLY_BY_WIRE_B:
-        control_sensors_enabled |= (1<<10); // 3D angular rate control
-        control_sensors_enabled |= (1<<11); // attitude stabilisation
-        control_sensors_enabled |= (1<<15); // motor control
-        break;
-
-    case FLY_BY_WIRE_C:
-        control_sensors_enabled |= (1<<10); // 3D angular rate control
-        control_sensors_enabled |= (1<<11); // attitude stabilisation
-        control_sensors_enabled |= (1<<13); // altitude control
-        control_sensors_enabled |= (1<<15); // motor control
         break;
 
     case AUTO:
     case RTL:
-    case LOITER:
-    case GUIDED:
-    case CIRCLE:
         control_sensors_enabled |= (1<<10); // 3D angular rate control
         control_sensors_enabled |= (1<<11); // attitude stabilisation
         control_sensors_enabled |= (1<<12); // yaw position
@@ -1012,11 +992,6 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
 
             switch(packet.command) {
 
-            case MAV_CMD_NAV_LOITER_UNLIM:
-                set_mode(LOITER);
-                result = MAV_RESULT_ACCEPTED;
-                break;
-
             case MAV_CMD_NAV_RETURN_TO_LAUNCH:
                 set_mode(RTL);
                 result = MAV_RESULT_ACCEPTED;
@@ -1070,14 +1045,9 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
             }
             switch (packet.custom_mode) {
             case MANUAL:
-            case CIRCLE:
             case LEARNING:
-            case FLY_BY_WIRE_A:
-            case FLY_BY_WIRE_B:
-            case FLY_BY_WIRE_C:
             case AUTO:
             case RTL:
-            case LOITER:
                 set_mode(packet.custom_mode);
                 break;
             }

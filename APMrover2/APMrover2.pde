@@ -134,7 +134,7 @@ FastSerialPort1(Serial1);       // GPS port
  FastSerialPort3(Serial3);       // Telemetry port for APM1
 #endif
 
-static FastSerial *cliSerial = &Serial3;
+static FastSerial *cliSerial = &Serial;
 
 // this sets up the parameter table, and sets the default values. This
 // must be the first AP_Param variable declared to ensure its
@@ -296,21 +296,7 @@ ModeFilterInt16_Size5 sonar_mode_filter(2);
     AP_RangeFinder_SharpGP2Y sonar(&sonar_analog_source, &sonar_mode_filter);
 #endif
 
-////////////////////////////////////////////////////////////////////////////////
-// PITOT selection
-////////////////////////////////////////////////////////////////////////////////
-//
-
-#if CONFIG_PITOT_SOURCE == PITOT_SOURCE_ADC
-AP_AnalogSource_ADC pitot_analog_source( &adc,
-                        CONFIG_PITOT_SOURCE_ADC_CHANNEL, 1.0);
-#elif CONFIG_PITOT_SOURCE == PITOT_SOURCE_ANALOG_PIN
-AP_AnalogSource_Arduino pitot_analog_source(CONFIG_PITOT_SOURCE_ANALOG_PIN, 4.0);
-#endif
-
-// Barometer filter
-AverageFilterInt32_Size5 baro_filter;	// filtered pitch acceleration
-
+// relay support
 AP_Relay relay;
 
 // Camera/Antenna mount tracking and stabilisation stuff
@@ -1002,12 +988,8 @@ static void update_GPS(void)
 
 static void update_current_flight_mode(void)
 { 
-	if(control_mode == AUTO){
-
-		switch(nav_command_ID){
-			case MAV_CMD_NAV_TAKEOFF:
-				break;
-			default:
+	if(control_mode == AUTO) {
+		switch (nav_command_ID) {
 				hold_course = -1;
 				calc_nav_roll();
 				calc_throttle();
@@ -1016,15 +998,9 @@ static void update_current_flight_mode(void)
 	}else{
 		switch(control_mode){
 			case RTL:
-			case LOITER:
-			case GUIDED:
 				hold_course = -1;
 				calc_nav_roll();
 				calc_throttle();
-				break;
-
-			case FLY_BY_WIRE_A:
-			case FLY_BY_WIRE_B:
 				break;
 
 			case LEARNING:
@@ -1038,18 +1014,6 @@ static void update_current_flight_mode(void)
 				g.channel_rudder.servo_out = g.channel_roll.pwm_to_angle();                     
                        #endif
 				// throttle is passthrough
-				break;
-
-			case CIRCLE:
-				// we have no GPS installed and have lost radio contact
-				// or we just want to fly around in a gentle circle w/o GPS
-				// ----------------------------------------------------
-				nav_roll = g.roll_limit / 3;
-				nav_pitch 		= 0;
-
-				if (failsafe != FAILSAFE_NONE){
-					g.channel_throttle.servo_out = g.throttle_cruise;
-				}
 				break;
 
 			case MANUAL:
