@@ -646,7 +646,7 @@
 // Navigation defaults
 //
 #ifndef WP_RADIUS_DEFAULT
-# define WP_RADIUS_DEFAULT		30
+# define WP_RADIUS_DEFAULT		2
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
