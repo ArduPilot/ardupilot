@@ -47,7 +47,11 @@ void roll_flip()
 
     case 1:
         if((roll >= 4500) || (roll < -9000)) {
+		#if FRAME_CONFIG == HELI_FRAME
+			g.rc_1.servo_out = get_heli_rate_roll(40000 * flip_dir);
+		#else
             g.rc_1.servo_out = get_rate_roll(40000 * flip_dir);
+		#endif // HELI_FRAME
             g.rc_3.servo_out = g.rc_3.control_in - AAP_THR_DEC;
         }else{
             flip_state++;

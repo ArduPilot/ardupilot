@@ -1532,13 +1532,14 @@ void update_roll_pitch_mode(void)
     }
 
     switch(roll_pitch_mode) {
-    case ROLL_PITCH_ACRO:
-        if(g.axis_enabled) {
+    case ROLL_PITCH_ACRO:    
+
+#if FRAME_CONFIG == HELI_FRAME
+		if(g.axis_enabled) {
             get_roll_rate_stabilized_ef(g.rc_1.control_in);
             get_pitch_rate_stabilized_ef(g.rc_2.control_in);
         }else{
             // ACRO does not get SIMPLE mode ability
-#if FRAME_CONFIG == HELI_FRAME
             if (motors.flybar_mode == 1) {
                 g.rc_1.servo_out = g.rc_1.control_in;
                 g.rc_2.servo_out = g.rc_2.control_in;
@@ -1546,11 +1547,17 @@ void update_roll_pitch_mode(void)
                 get_acro_roll(g.rc_1.control_in);
                 get_acro_pitch(g.rc_2.control_in);
             }
-#else
+		}
+#else  // !HELI_FRAME
+		if(g.axis_enabled) {
+            get_roll_rate_stabilized_ef(g.rc_1.control_in);
+            get_pitch_rate_stabilized_ef(g.rc_2.control_in);
+        }else{
+            // ACRO does not get SIMPLE mode ability
             get_acro_roll(g.rc_1.control_in);
             get_acro_pitch(g.rc_2.control_in);
-#endif
-        }
+		}
+#endif  // HELI_FRAME
         break;
 
     case ROLL_PITCH_STABLE:
