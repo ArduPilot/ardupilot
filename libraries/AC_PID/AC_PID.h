@@ -124,8 +124,6 @@ private:
     float           _integrator;                                ///< integrator value
     int32_t         _last_input;                                ///< last input for derivative
     float           _last_derivative;                           ///< last derivative for low-pass filter
-    float           _output;
-    float           _derivative;
 
     /// Low pass filter cut frequency for derivative calculation.
     ///
