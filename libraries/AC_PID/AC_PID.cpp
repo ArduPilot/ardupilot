@@ -55,7 +55,17 @@ int32_t AC_PID::get_leaky_i(int32_t error, float dt, float leak_rate)
 int32_t AC_PID::get_d(int32_t input, float dt)
 {
     if ((_kd != 0) && (dt != 0)) {
-        float derivative = (input - _last_input) / dt;
+        float derivative;
+		if (isnan(_last_derivative)) {
+			// we've just done a reset, suppress the first derivative
+			// term as we don't want a sudden change in input to cause
+			// a large D output change			
+			derivative = 0;
+			_last_derivative = 0;
+		} else {
+			// calculate instantaneous derivative
+			derivative = (input - _last_input) / dt;
+		}
 
         // discrete low pass filter, cuts out the
         // high frequency noise that can drive the controller crazy
@@ -87,8 +97,8 @@ void
 AC_PID::reset_I()
 {
     _integrator = 0;
-    _last_input = 0;
-    _last_derivative = 0;
+	// mark derivative as invalid
+    _last_derivative = NAN;
 }
 
 void

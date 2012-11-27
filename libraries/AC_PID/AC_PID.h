@@ -34,6 +34,9 @@ public:
         _ki = initial_i;
         _kd = initial_d;
         _imax = abs(initial_imax);
+
+		// derivative is invalid on startup
+		_last_derivative = NAN;
     }
 
     /// Iterate the PID, return the new control value
