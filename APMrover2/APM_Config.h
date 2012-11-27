@@ -10,7 +10,6 @@
 
 #define CLI_ENABLED         ENABLED
 #define CLI_SLIDER_ENABLED  DISABLED
-#define CLOSED_LOOP_NAV     ENABLED
 #define AUTO_WP_RADIUS      DISABLED
 
 #define TRACE               DISABLED

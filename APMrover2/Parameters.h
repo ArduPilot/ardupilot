@@ -122,13 +122,13 @@ public:
 
         k_param_short_fs_action,
         k_param_long_fs_action,
-	k_param_gcs_heartbeat_fs_enabled,
+        k_param_gcs_heartbeat_fs_enabled,
         k_param_throttle_slewrate,
 
  // ************************************************************
         // 180: APMrover parameters - JLN update
         
-        k_param_closed_loop_nav,
+        k_param_closed_loop_nav, // unused
         k_param_auto_wp_radius,
         k_param_sonar_trigger,
         k_param_turn_gain,
@@ -332,7 +332,6 @@ public:
 // ************ ThermoPilot parameters  ************************ 
 //  - JLN update
 
-        AP_Int8     closed_loop_nav;
         AP_Int8     auto_wp_radius;
         AP_Int16    sonar_trigger;
         AP_Int16    turn_gain;
@@ -386,22 +385,4 @@ public:
 extern const AP_Param::Info var_info[];
 
 #endif // PARAMETERS_H
-
-/* ************ ThermoPilot parameters  (old parameters setup ) ************************
-
-        low_rate_turn           (LOW_RATE_TURN,             k_param_low_rate_turn,          PSTR("TP_LOWR_TURN")),
-        medium_rate_turn        (MEDIUM_RATE_TURN,          k_param_medium_rate_turn,       PSTR("TP_MEDR_TURN")),
-        high_rate_turn          (HIGH_RATE_TURN,            k_param_high_rate_turn,         PSTR("TP_HIGR_TURN")),
-        search_mode_turn        (SEARCH_MODE_TURN,          k_param_search_mode_turn,       PSTR("TP_SRCM_TURN")),
-        slope_thermal           (SLOPE_THERMAL,             k_param_slope_thermal,          PSTR("TP_SLOPE_THER")),
-        auto_thermal            (AUTO_THERMAL,              k_param_auto_thermal,           PSTR("TP_AUTO_THER")),
-        stab_thermal            (STAB_THERMAL,              k_param_auto_thermal,           PSTR("TP_STAB_THER")),
-        closed_loop_nav         (CLOSED_LOOP_NAV,           k_param_closed_loop_nav,        PSTR("TP_CL_NAV")),
-        auto_wp_radius          (AUTO_WP_RADIUS,            k_param_closed_loop_nav,        PSTR("TP_AWPR_NAV")), 
-        min_alt                 (MIN_ALT,                   k_param_min_alt,                PSTR("TP_MIN_ALT")),        
-        max_alt                 (MAX_ALT,                   k_param_max_alt,                PSTR("TP_MAX_ALT")), 
-        max_dist                (MAX_DIST,                  k_param_max_dist,               PSTR("TP_MAX_DIST")), 
-        sarsec_branch           (SARSEC_BRANCH,             k_param_sarsec_branch,          PSTR("TP_SARSEC")), 
-       
- ************************************************************/
 

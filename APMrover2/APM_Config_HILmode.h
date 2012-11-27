@@ -46,8 +46,6 @@
 
 #define MANUAL_LEVEL	      DISABLED
 
-#define CLOSED_LOOP_NAV       ENABLED     // set to ENABLED if closed loop navigation else set to DISABLED (Return To Lauch)
-
 #define MAX_DIST       50  //300       // max distance (in m) for the HEADALT mode
 #define SARSEC_BRANCH  50              // Long branch of the SARSEC pattern
 
