@@ -165,6 +165,7 @@ private:
 
 	// waypoints
 	uint16_t waypoint_request_i; // request index
+    uint16_t waypoint_request_last; // last request index
 	uint16_t waypoint_dest_sysid; // where to send requests
 	uint16_t waypoint_dest_compid; // "
 	bool waypoint_sending; // currently in send process

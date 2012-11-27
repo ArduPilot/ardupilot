@@ -761,7 +761,7 @@ GCS_MAVLINK::update(void)
     uint32_t tnow = millis();
 
     if (waypoint_receiving &&
-        waypoint_request_i <= (unsigned)g.command_total &&
+        waypoint_request_i <= waypoint_request_last &&
         tnow > waypoint_timelast_request + 500 + (stream_slowdown*20)) {
         waypoint_timelast_request = tnow;
         send_message(MSG_NEXT_WAYPOINT);
@@ -1259,8 +1259,32 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
             waypoint_receiving   = true;
             waypoint_sending     = false;
             waypoint_request_i   = 0;
+            waypoint_request_last= g.command_total;
             break;
         }
+
+    case MAVLINK_MSG_ID_MISSION_WRITE_PARTIAL_LIST:
+    {
+        // decode
+        mavlink_mission_write_partial_list_t packet;
+        mavlink_msg_mission_write_partial_list_decode(msg, &packet);
+        if (mavlink_check_target(packet.target_system,packet.target_component)) break;
+
+        // start waypoint receiving
+        if (packet.start_index > g.command_total ||
+            packet.end_index > g.command_total ||
+            packet.end_index < packet.start_index) {
+            send_text(SEVERITY_LOW,PSTR("flight plan update rejected"));
+            break;
+        }
+
+        waypoint_timelast_receive = millis();
+        waypoint_timelast_request = 0;
+        waypoint_receiving   = true;
+        waypoint_request_i   = packet.start_index;
+        waypoint_request_last= packet.end_index;
+        break;
+    }
 
 #ifdef MAVLINK_MSG_ID_SET_MAG_OFFSETS
     case MAVLINK_MSG_ID_SET_MAG_OFFSETS:
@@ -1426,7 +1450,7 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
                 waypoint_timelast_request = 0;
 				waypoint_request_i++;
 
-				if (waypoint_request_i > (uint16_t)g.command_total){
+                if (waypoint_request_i > waypoint_request_last) {
 					mavlink_msg_mission_ack_send(
 						chan,
 						msg->sysid,
@@ -1777,7 +1801,7 @@ void
 GCS_MAVLINK::queued_waypoint_send()
 {
     if (waypoint_receiving &&
-        waypoint_request_i <= (unsigned)g.command_total) {
+        waypoint_request_i <= waypoint_request_last) {
         mavlink_msg_mission_request_send(
             chan,
             waypoint_dest_sysid,
