@@ -92,6 +92,10 @@
 # define CURRENT_PIN_1	  2
 #endif
 
+#ifdef DESKTOP_BUILD
+#define CONFIG_SONAR DISABLED
+#endif
+
 //////////////////////////////////////////////////////////////////////////////
 // IMU Selection
 //
