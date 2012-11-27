@@ -119,6 +119,8 @@ def alarm_handler(signum, frame):
         results.addfile('ArduPlane defaults', 'ArduPlane.defaults.txt')
         results.addfile('ArduCopter build log', 'ArduCopter.txt')
         results.addfile('ArduCopter defaults', 'ArduCopter.defaults.txt')
+        results.addfile('APMrover2 build log', 'APMrover2.txt')
+        results.addfile('APMrover2 defaults', 'APMrover2.defaults.txt')
         write_webresults(results)
         os.killpg(0, signal.SIGKILL)
     except Exception:
@@ -135,23 +137,33 @@ parser.add_option("--timeout", default=2400, type='int', help='maximum runtime i
 
 opts, args = parser.parse_args()
 
-import  arducopter, arduplane
+import  arducopter, arduplane, apmrover2
 
 steps = [
     'prerequesites',
-    'build1280.ArduPlane',
-    'build2560.ArduPlane',
     'build.All',
     'build.Examples',
+
+    'build1280.ArduPlane',
+    'build2560.ArduPlane',
     'build.ArduPlane',
     'defaults.ArduPlane',
     'fly.ArduPlane',
     'logs.ArduPlane',
+
+    'build1280.APMrover2',
+    'build2560.APMrover2',
+    'build.APMrover2',
+    'defaults.APMrover2',
+    'drive.APMrover2',
+    'logs.APMrover2',
+
     'build2560.ArduCopter',
     'build.ArduCopter',
     'defaults.ArduCopter',
     'fly.ArduCopter',
     'logs.ArduCopter',
+
     'convertgpx',
     ]
 
@@ -176,6 +188,9 @@ def run_step(step):
     if step == 'build.ArduPlane':
         return util.build_SIL('ArduPlane')
 
+    if step == 'build.APMrover2':
+        return util.build_SIL('APMrover2')
+
     if step == 'build.ArduCopter':
         return util.build_SIL('ArduCopter')
 
@@ -191,11 +206,20 @@ def run_step(step):
     if step == 'build2560.ArduPlane':
         return util.build_AVR('ArduPlane', board='mega2560')
 
+    if step == 'build1280.APMrover2':
+        return util.build_AVR('APMrover2', board='mega')
+
+    if step == 'build2560.APMrover2':
+        return util.build_AVR('APMrover2', board='mega2560')
+
     if step == 'defaults.ArduPlane':
         return get_default_params('ArduPlane')
 
     if step == 'defaults.ArduCopter':
         return get_default_params('ArduCopter')
+
+    if step == 'defaults.APMrover2':
+        return get_default_params('APMrover2')
 
     if step == 'logs.ArduPlane':
         return dump_logs('ArduPlane')
@@ -203,11 +227,17 @@ def run_step(step):
     if step == 'logs.ArduCopter':
         return dump_logs('ArduCopter')
 
+    if step == 'logs.APMrover2':
+        return dump_logs('APMrover2')
+
     if step == 'fly.ArduCopter':
         return arducopter.fly_ArduCopter(viewerip=opts.viewerip)
 
     if step == 'fly.ArduPlane':
         return arduplane.fly_ArduPlane(viewerip=opts.viewerip)
+
+    if step == 'drive.APMrover2':
+        return apmrover2.drive_APMrover2(viewerip=opts.viewerip)
 
     if step == 'build.All':
         return build_all()
@@ -320,6 +350,10 @@ def run_tests(steps):
     results.addfile('ArduCopter code size', 'ArduCopter.sizes.txt')
     results.addfile('ArduCopter stack sizes', 'ArduCopter.framesizes.txt')
     results.addfile('ArduCopter defaults', 'ArduCopter.defaults.txt')
+    results.addfile('APMrover2 build log', 'APMrover2.txt')
+    results.addfile('APMrover2 code size', 'APMrover2.sizes.txt')
+    results.addfile('APMrover2 stack sizes', 'APMrover2.framesizes.txt')
+    results.addfile('APMrover2 defaults', 'APMrover2.defaults.txt')
 
     write_webresults(results)
 
