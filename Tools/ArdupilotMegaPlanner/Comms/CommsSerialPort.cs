@@ -6,6 +6,7 @@ using System.IO;
 using System.Linq;
 using System.Management;
 using ArdupilotMega.Utilities;
+using System.Reflection;
 
 namespace ArdupilotMega.Comms
 {
@@ -17,6 +18,19 @@ namespace ArdupilotMega.Comms
         {
             try
             {
+                try
+                {
+                    Type mytype = typeof(System.IO.Ports.SerialPort);
+                    FieldInfo field = mytype.GetField("internalSerialStream", BindingFlags.Instance | BindingFlags.NonPublic);
+                    Stream stream = (Stream)field.GetValue(this);
+
+                    if (stream != null)
+                    {
+                        stream.Dispose();
+                    }
+                }
+                catch { }
+
                 base.Dispose(disposing);
             }
             catch { }

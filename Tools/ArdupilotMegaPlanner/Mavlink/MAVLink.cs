@@ -1073,6 +1073,9 @@ namespace ArdupilotMega
             {
                 retrys = 1;
                 timeout = 25000;
+            } else if (actionid == MAV_CMD.PREFLIGHT_REBOOT_SHUTDOWN) {
+                generatePacket(MAVLINK_MSG_ID_COMMAND_LONG, req);
+                return true;
             }
 
             while (true)

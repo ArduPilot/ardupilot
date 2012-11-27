@@ -5,6 +5,7 @@ using System.Text;
 using System.ComponentModel;
 using ArdupilotMega.Utilities;
 using log4net;
+using ArdupilotMega.Attributes;
 
 namespace ArdupilotMega
 {
@@ -13,32 +14,46 @@ namespace ArdupilotMega
         private static readonly ILog log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
         // multipliers
         public float multiplierdist = 1;
+        internal string DistanceUnit = "";
         public float multiplierspeed = 1;
+        internal string SpeedUnit = "";
 
         // orientation - rads
+        [DisplayText("Roll (deg)")]
         public float roll { get; set; }
+        [DisplayText("Pitch (deg)")]
         public float pitch { get; set; }
+        [DisplayText("Yaw (deg)")]
         public float yaw { get { return _yaw; } set { if (value < 0) { _yaw = value + 360; } else { _yaw = value; } } }
         private float _yaw = 0;
 
+        [DisplayText("GroundCourse (deg)")]
         public float groundcourse { get { return _groundcourse; } set { if (value < 0) { _groundcourse = value + 360; } else { _groundcourse = value; } } }
         private float _groundcourse = 0;
 
         /// <summary>
         /// time over target in seconds
         /// </summary>
+        [DisplayText("Time over Target (sec)")]
         public int tot { get { if (groundspeed <= 0) return 0; return (int)(wp_dist / groundspeed); } }
+        [DisplayText("Dist Traveled (dist)")]
         public float distTraveled { get; set; }
+        [DisplayText("Time in Air (sec)")]
         public float timeInAir { get; set; }
 
         // speeds
+        [DisplayText("AirSpeed (speed)")]
         public float airspeed { get { return _airspeed * multiplierspeed; } set { _airspeed = value; } }
+        [DisplayText("GroundSpeed (speed)")]
         public float groundspeed { get { return _groundspeed * multiplierspeed; } set { _groundspeed = value; } }
         float _airspeed;
         float _groundspeed;
         float _verticalspeed;
-        public float verticalspeed { get { if (float.IsNaN(_verticalspeed)) _verticalspeed = 0; return _verticalspeed; } set { _verticalspeed = _verticalspeed * 0.4f + value * 0.6f; } }
+        [DisplayText("Vertical Speed (speed)")]
+        public float verticalspeed { get { if (float.IsNaN(_verticalspeed)) _verticalspeed = 0; return _verticalspeed * multiplierspeed; } set { _verticalspeed = _verticalspeed * 0.4f + value * 0.6f; } }
+        [DisplayText("Wind Direction (Deg)")]
         public float wind_dir { get; set; }
+        [DisplayText("Wind Velocity (speed)")]
         public float wind_vel { get; set; }
         /// <summary>
         /// used in wind calc
@@ -52,39 +67,59 @@ namespace ArdupilotMega
         //(alt_now - alt_then)/(time_now-time_then)
 
         // position
+        [DisplayText("Latitude (dd)")]
         public float lat { get; set; }
+        [DisplayText("Longitude (dd)")]
         public float lng { get; set; }
+        [DisplayText("Altitude (dist)")]
         public float alt { get { return (_alt - altoffsethome) * multiplierdist; } set { _alt = value; } }
         DateTime lastalt = DateTime.Now;
         float oldalt = 0;
+        [DisplayText("Alt Home Offset (dist)")]
         public float altoffsethome { get; set; }
         private float _alt = 0;
+        [DisplayText("Gps Status")]
         public float gpsstatus { get; set; }
+        [DisplayText("Gps HDOP")]
         public float gpshdop { get; set; }
+        [DisplayText("Sat Count")]
         public float satcount { get; set; }
 
         public float altd1000 { get { return (alt / 1000) % 10; } }
         public float altd100 { get { return (alt / 100) % 10; } }
 
         // accel
+        [DisplayText("Accel X")]
         public float ax { get; set; }
+        [DisplayText("Accel Y")]
         public float ay { get; set; }
+        [DisplayText("Accel Z")]
         public float az { get; set; }
         // gyro
+        [DisplayText("Gyro X")]
         public float gx { get; set; }
+        [DisplayText("Gyro Y")]
         public float gy { get; set; }
+        [DisplayText("Gyro Z")]
         public float gz { get; set; }
         // mag
+        [DisplayText("Mag X")]
         public float mx { get; set; }
+        [DisplayText("Mag Y")]
         public float my { get; set; }
+        [DisplayText("Mag Z")]
         public float mz { get; set; }
 
+        [DisplayText("Mag Field")]
         public float magfield { get { return (float)Math.Sqrt(Math.Pow(mx, 2) + Math.Pow(my, 2) + Math.Pow(mz, 2)); } }
+        [DisplayText("Accel Strength")]
         public float accelsq { get { return (float)Math.Sqrt(Math.Pow(ax, 2) + Math.Pow(ay, 2) + Math.Pow(az, 2)) / 1000.0f /*980.665f*/; } }
 
         // calced turn rate
+        [DisplayText("Turn Rate (speed)")]
         public float turnrate { get { if (groundspeed <= 1) return 0; return (roll * 9.8f) / groundspeed; } }
         // turn radius
+        [DisplayText("Turn Radius (dist)")]
         public float radius { get { if (groundspeed <= 1) return 0; return ((groundspeed * groundspeed)/(float)(9.8f*Math.Tan(roll * deg2rad))); } }
 
         public float rxrssi { get; set; }
@@ -136,42 +171,127 @@ namespace ArdupilotMega
         float _ch3percent = -1;
 
         //nav state
+        [DisplayText("Roll Target (deg)")]
         public float nav_roll { get; set; }
+        [DisplayText("Pitch Target (deg)")]
         public float nav_pitch { get; set; }
+        [DisplayText("Bearing Target (deg)")]
         public float nav_bearing { get; set; }
+        [DisplayText("Bearing Target (deg)")]
         public float target_bearing { get; set; }
+        [DisplayText("Dist to WP (dist)")]
         public float wp_dist { get { return (_wpdist * multiplierdist); } set { _wpdist = value; } }
+        [DisplayText("Altitude Error (dist)")]
         public float alt_error { get { return _alt_error * multiplierdist; } set { if (_alt_error == value) return; _alt_error = value; _targetalt = _targetalt * 0.5f + (float)Math.Round(alt + alt_error, 0) * 0.5f; } }
+        [DisplayText("Bearing Error (deg)")]
         public float ber_error { get { return (target_bearing - yaw); } set { } }
+        [DisplayText("Airspeed Error (speed)")]
         public float aspd_error { get { return _aspd_error * multiplierspeed; } set { if (_aspd_error == value) return; _aspd_error = value; _targetairspeed = _targetairspeed * 0.5f + (float)Math.Round(airspeed + aspd_error, 0) * 0.5f; } }
+        [DisplayText("Xtrack Error (m)")]
         public float xtrack_error { get; set; }
+        [DisplayText("WP No")]
         public float wpno { get; set; }
+        [DisplayText("Mode")]
         public string mode { get; set; }
-        public float climbrate { get; set; }
+        [DisplayText("ClimbRate (speed)")]
+        public float climbrate { get { return _climbrate * multiplierspeed; } set {_climbrate = value;} }
         float _wpdist;
         float _aspd_error;
         float _alt_error;
         float _targetalt;
         float _targetairspeed;
+        float _climbrate;
 
         public float targetaltd100 { get { return (_targetalt / 100) % 10; } }
         public float targetalt { get { return _targetalt; } }
 
         //airspeed_error = (airspeed_error - airspeed);
+        [DisplayText("Airspeed Target (speed)")]
         public float targetairspeed { get { return _targetairspeed; } }
 
 
         //message
-        public List<string> messages { get; set; }
-        public string message { get { if (messages.Count == 0) return ""; return messages[messages.Count - 1]; } set { } }
+        internal List<string> messages { get; set; }
+        internal string message { get { if (messages.Count == 0) return ""; return messages[messages.Count - 1]; } set { } }
 
         //battery
+        [DisplayText("Bat Voltage (V)")]
         public float battery_voltage { get { return _battery_voltage; } set { _battery_voltage = value / 1000; } }
         private float _battery_voltage;
+        [DisplayText("Bat Remaining (%)")]
         public float battery_remaining { get { return _battery_remaining; } set { _battery_remaining = value / 100; if (_battery_remaining < 0 || _battery_remaining > 1) _battery_remaining = 0; } }
         private float _battery_remaining;
+        [DisplayText("Bat Current (Amps)")]
         public float current { get { return _current; } set { _current = value / 100; } }
         private float _current;
+
+        public float HomeAlt { get { return (float)HomeLocation.Alt; } set { } }
+        internal PointLatLngAlt HomeLocation = new PointLatLngAlt();
+
+        PointLatLngAlt _trackerloc = new PointLatLngAlt();
+        internal PointLatLngAlt TrackerLocation { get { if (_trackerloc.Lng != 0) return _trackerloc; return HomeLocation; } set { _trackerloc = value; } }
+
+        public float DistToMAV
+        {
+            get
+            {
+                // shrinking factor for longitude going to poles direction
+                double rads = Math.Abs(TrackerLocation.Lat) * 0.0174532925;
+                double scaleLongDown = Math.Cos(rads);
+                double scaleLongUp = 1.0f / Math.Cos(rads);
+
+                //DST to Home
+                double dstlat = Math.Abs(TrackerLocation.Lat - lat) * 111319.5;
+                double dstlon = Math.Abs(TrackerLocation.Lng - lng) * 111319.5 * scaleLongDown;
+                return (float)Math.Sqrt((dstlat * dstlat) + (dstlon * dstlon)) * multiplierdist;
+            }
+        }
+
+     [DisplayText("Elevation to Mav (deg)")]
+        public float ELToMAV
+        {
+            get
+            {
+                float dist = DistToMAV / multiplierdist;
+
+                if (dist < 5)
+                    return 0;
+
+                float altdiff = (float)(alt - TrackerLocation.Alt);
+
+                float angle = (float)Math.Atan(altdiff / dist) * rad2deg;
+
+                return angle;
+            }
+        }
+
+         [DisplayText("Bearing to Mav (deg)")]
+        public float AZToMAV
+        {
+            get
+            {
+                // shrinking factor for longitude going to poles direction
+                double rads = Math.Abs(TrackerLocation.Lat) * 0.0174532925;
+                double scaleLongDown = Math.Cos(rads);
+                double scaleLongUp = 1.0f / Math.Cos(rads);
+
+                //DIR to Home
+                double dstlon = (TrackerLocation.Lng - lng); //OffSet_X
+                double dstlat = (TrackerLocation.Lat - lat) * scaleLongUp; //OffSet Y
+                double bearing = 90 + (Math.Atan2(dstlat, -dstlon) * 57.295775); //absolut home direction
+                if (bearing < 0) bearing += 360;//normalization
+                //bearing = bearing - 180;//absolut return direction
+                //if (bearing < 0) bearing += 360;//normalization
+
+                float dist = DistToMAV / multiplierdist;
+
+                if (dist < 5)
+                    return 0;
+
+                return (float)bearing;
+            }
+        }
+
 
         // pressure
         public float press_abs { get; set; }
@@ -212,70 +332,6 @@ namespace ArdupilotMega
         public ushort rcoverridech8 { get; set; }
 
 
-        public float HomeAlt { get { return (float)HomeLocation.Alt; } set { } }
-        internal PointLatLngAlt HomeLocation = new PointLatLngAlt();
-
-        PointLatLngAlt _trackerloc = new PointLatLngAlt();
-        internal PointLatLngAlt TrackerLocation { get { if (_trackerloc.Lng != 0) return _trackerloc; return HomeLocation; } set { _trackerloc = value; } }
-
-        public float DistToMAV
-        {
-            get
-            {
-                // shrinking factor for longitude going to poles direction
-                double rads = Math.Abs(TrackerLocation.Lat) * 0.0174532925;
-                double scaleLongDown = Math.Cos(rads);
-                double scaleLongUp = 1.0f / Math.Cos(rads);
-
-                //DST to Home
-                double dstlat = Math.Abs(TrackerLocation.Lat - lat) * 111319.5;
-                double dstlon = Math.Abs(TrackerLocation.Lng - lng) * 111319.5 * scaleLongDown;
-                return (float)Math.Sqrt((dstlat * dstlat) + (dstlon * dstlon)) * multiplierdist;
-            }
-        }
-
-        public float ELToMAV
-        {
-            get
-            {
-                float dist = DistToMAV / multiplierdist;
-
-                if (dist < 5)
-                    return 0;
-
-                float altdiff = (float)(alt - TrackerLocation.Alt);
-
-                float angle = (float)Math.Atan(altdiff / dist) * rad2deg;
-
-                return angle;
-            }
-        }
-
-        public float AZToMAV
-        {
-            get
-            {
-                // shrinking factor for longitude going to poles direction
-                double rads = Math.Abs(TrackerLocation.Lat) * 0.0174532925;
-                double scaleLongDown = Math.Cos(rads);
-                double scaleLongUp = 1.0f / Math.Cos(rads);
-
-                //DIR to Home
-                double dstlon = (TrackerLocation.Lng - lng); //OffSet_X
-                double dstlat = (TrackerLocation.Lat - lat) * scaleLongUp; //OffSet Y
-                double bearing = 90 + (Math.Atan2(dstlat, -dstlon) * 57.295775); //absolut home direction
-                if (bearing < 0) bearing += 360;//normalization
-                //bearing = bearing - 180;//absolut return direction
-                //if (bearing < 0) bearing += 360;//normalization
-
-                float dist = DistToMAV / multiplierdist;
-
-                if (dist < 5)
-                    return 0;
-
-                return (float)bearing;
-            }
-        }
         // current firmware
         public MainV2.Firmwares firmware = MainV2.Firmwares.ArduPlane;
         public float freemem { get; set; }
@@ -367,6 +423,27 @@ namespace ArdupilotMega
 
         private DateTime lastsecondcounter = DateTime.Now;
         private PointLatLngAlt lastpos = new PointLatLngAlt();
+
+        public string GetNameandUnit(string name)
+        {
+            string desc = name;
+            try
+            {
+                desc = ((Attributes.DisplayTextAttribute)typeof(CurrentState).GetProperty(name).GetCustomAttributes(false)[0]).Text;
+            }
+            catch { }
+
+            if (desc.Contains("(dist)"))
+            {
+                desc = desc.Replace("(dist)", "(" + MainV2.cs.DistanceUnit + ")");
+            }
+            else if (desc.Contains("(speed)"))
+            {
+                desc = desc.Replace("(speed)", "(" + MainV2.cs.SpeedUnit + ")");
+            }
+
+            return desc;
+        }
 
         public void UpdateCurrentSettings(System.Windows.Forms.BindingSource bs)
         {
@@ -485,7 +562,7 @@ namespace ArdupilotMega
                         gotwind = true;
 
                         wind_dir = (wind.direction + 360) % 360;
-                        wind_vel = wind.speed;
+                        wind_vel = wind.speed * multiplierspeed;
 
                         //MAVLink.packets[ArdupilotMega.MAVLink.MAVLINK_MSG_ID_SYS_STATUS] = null;
                     }

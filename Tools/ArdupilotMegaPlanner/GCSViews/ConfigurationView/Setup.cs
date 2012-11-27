@@ -112,7 +112,7 @@ If you are just setting up 3DR radios, you may continue without connecting.");
                 AddBackstageViewPage(configpanel, "ArduCopter Pids", standardpage);
 
                 AddBackstageViewPage(new ConfigArducopter(), "ArduCopter Config", standardpage);
-               // AddBackstageViewPage(new ConfigAP_Limits(), "GeoFence");
+                AddBackstageViewPage(new ConfigAP_Limits(), "GeoFence");
             }
                 /****************************** ArduPlane **************************/
             else if (MainV2.cs.firmware == MainV2.Firmwares.ArduPlane)

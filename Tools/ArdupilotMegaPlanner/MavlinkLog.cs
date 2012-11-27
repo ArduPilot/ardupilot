@@ -1289,19 +1289,20 @@ namespace ArdupilotMega
 
                 foreach (string logfile in openFileDialog1.FileNames)
                 {
-
-                    MAVLink mine = new MAVLink();
                     try
                     {
-                        mine.logplaybackfile = new BinaryReader(File.Open(logfile, FileMode.Open, FileAccess.Read, FileShare.Read));
-                    }
-                    catch (Exception ex) { log.Debug(ex.ToString()); CustomMessageBox.Show("Log Can not be opened. Are you still connected?"); return; }
+                        MAVLink mine = new MAVLink();
+                        try
+                        {
+                            mine.logplaybackfile = new BinaryReader(File.Open(logfile, FileMode.Open, FileAccess.Read, FileShare.Read));
+                        }
+                        catch (Exception ex) { log.Debug(ex.ToString()); CustomMessageBox.Show("Log Can not be opened. Are you still connected?"); return; }
 
-                    mine.logreadmode = true;
+                        mine.logreadmode = true;
 
-                    mine.packets.Initialize(); // clear
+                        mine.packets.Initialize(); // clear
 
-                    StreamWriter sw = new StreamWriter(Path.GetDirectoryName(logfile) + Path.DirectorySeparatorChar + Path.GetFileNameWithoutExtension(logfile) + ".param");
+                        StreamWriter sw = new StreamWriter(Path.GetDirectoryName(logfile) + Path.DirectorySeparatorChar + Path.GetFileNameWithoutExtension(logfile) + ".param");
 
                         // bar moves to 100 % in this step
                         progressBar1.Value = (int)((float)mine.logplaybackfile.BaseStream.Position / (float)mine.logplaybackfile.BaseStream.Length * 100.0f / 1.0f);
@@ -1316,15 +1317,17 @@ namespace ArdupilotMega
                             sw.WriteLine(item + "\t" + mine.param[item]);
                         }
 
-                    sw.Close();
+                        sw.Close();
 
-                    progressBar1.Value = 100;
+                        progressBar1.Value = 100;
 
-                    mine.logreadmode = false;
-                    mine.logplaybackfile.Close();
-                    mine.logplaybackfile = null;
+                        mine.logreadmode = false;
+                        mine.logplaybackfile.Close();
+                        mine.logplaybackfile = null;
 
-                    CustomMessageBox.Show("File Saved with log file");
+                        CustomMessageBox.Show("File Saved with log file");
+                    }
+                    catch { CustomMessageBox.Show("Error Extracting params"); }
                 }
             }
         }

@@ -22,6 +22,8 @@ namespace ArdupilotMega
         static void Main()
         {
 
+            Console.WriteLine("If your error is about Microsoft.DirectX.DirectInput, please install the latest directx redist from here http://www.microsoft.com/en-us/download/details.aspx?id=35 \n\n");
+
             Application.EnableVisualStyles();
             XmlConfigurator.Configure();
             log.Info("******************* Logging Configured *******************");
@@ -131,14 +133,10 @@ namespace ArdupilotMega
             }
             catch (Exception ex)
             {
-                if (ex.GetType() == typeof(FileNotFoundException))
-                {
-                    Console.WriteLine("If your error is about Microsoft.DirectX.DirectInput, please install the latest directx redist from here http://www.microsoft.com/en-us/download/details.aspx?id=35 \n\n");
-                }
-
                 log.Fatal("Fatal app exception", ex);
                 Console.WriteLine(ex.ToString());
 
+                Console.WriteLine("\nPress any key to exit!");
                 Console.ReadLine();
             }
         }

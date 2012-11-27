@@ -1,5 +1,5 @@
 using System;
-using System.IO.Ports;
+using ArdupilotMega.Comms;
 using System.Collections.Generic;
 
 namespace uploader

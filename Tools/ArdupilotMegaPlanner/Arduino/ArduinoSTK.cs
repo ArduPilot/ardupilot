@@ -360,8 +360,12 @@ namespace ArdupilotMega.Arduino
             }
             catch { }
 
-            if (base.IsOpen)
-                base.Close();
+            try
+            {
+                if (base.IsOpen)
+                    base.Close();
+            }
+            catch { }
 
             this.DtrEnable = false;
             this.RtsEnable = false;

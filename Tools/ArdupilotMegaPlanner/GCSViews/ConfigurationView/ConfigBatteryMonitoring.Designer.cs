@@ -53,6 +53,7 @@
             this.timer1 = new System.Windows.Forms.Timer(this.components);
             this.CMB_apmversion = new System.Windows.Forms.ComboBox();
             this.label1 = new System.Windows.Forms.Label();
+            this.label2 = new System.Windows.Forms.Label();
             this.groupBox4.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.pictureBox5)).BeginInit();
             this.SuspendLayout();
@@ -135,6 +136,7 @@
             // 
             // CMB_batmonsensortype
             // 
+            this.CMB_batmonsensortype.DropDownWidth = 150;
             this.CMB_batmonsensortype.FormattingEnabled = true;
             this.CMB_batmonsensortype.Items.AddRange(new object[] {
             resources.GetString("CMB_batmonsensortype.Items"),
@@ -182,7 +184,7 @@
             // pictureBox5
             // 
             this.pictureBox5.BackColor = System.Drawing.Color.White;
-            this.pictureBox5.BackgroundImage = global::ArdupilotMega.Properties.Resources.attocurrent;
+            this.pictureBox5.BackgroundImage = global::ArdupilotMega.Properties.Resources.BR_APMPWRDEAN_2;
             resources.ApplyResources(this.pictureBox5, "pictureBox5");
             this.pictureBox5.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
             this.pictureBox5.Name = "pictureBox5";
@@ -209,10 +211,16 @@
             resources.ApplyResources(this.label1, "label1");
             this.label1.Name = "label1";
             // 
+            // label2
+            // 
+            resources.ApplyResources(this.label2, "label2");
+            this.label2.Name = "label2";
+            // 
             // ConfigBatteryMonitoring
             // 
             resources.ApplyResources(this, "$this");
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
+            this.Controls.Add(this.label2);
             this.Controls.Add(this.label1);
             this.Controls.Add(this.CMB_apmversion);
             this.Controls.Add(this.groupBox4);
@@ -257,5 +265,6 @@
         private System.Windows.Forms.Timer timer1;
         private System.Windows.Forms.ComboBox CMB_apmversion;
         private System.Windows.Forms.Label label1;
+        private System.Windows.Forms.Label label2;
     }
 }

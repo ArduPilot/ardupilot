@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Reflection;
 using System.Text;
-using System.IO.Ports;
+using ArdupilotMega.Comms;
 using System.Threading;
 using log4net;
 
@@ -410,8 +410,12 @@ namespace ArdupilotMega.Arduino
             }
             catch { }
 
-            if (base.IsOpen)
-                base.Close();
+            try
+            {
+                if (base.IsOpen)
+                    base.Close();
+            }
+            catch { }
 
             base.DtrEnable = false;
             base.RtsEnable = false;

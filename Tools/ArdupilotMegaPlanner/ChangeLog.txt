@@ -1,4 +1,19 @@
-﻿* Mission Planner 1.2.20
+﻿* Mission Planner 1.2.22
+fix speed modification scale
+fix typo on antenna Tracker
+setup for ThemeManager.cs
+new auto hide menu
+
+* Mission Planner 1.2.21
+Antenna Tracker mod from William Bryan
+Scaling mods
+battery screen mods
+failsafe screen pwm checking
+remove reverse radio options when we are using a quad
+config menu reorganise
+add Ateryx stuff
+
+* Mission Planner 1.2.20
 fix airspeed error scale and min ground speed
 modify mount options
 add german lang
