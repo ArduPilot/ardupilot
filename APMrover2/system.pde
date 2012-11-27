@@ -297,9 +297,6 @@ static void init_ardupilot()
 #endif
 #endif // CLI_ENABLED
 
-	// read in the flight switches
-	update_servo_switches();
-
 	startup_ground();
 
 #if LITE == DISABLED

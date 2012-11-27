@@ -37,14 +37,14 @@ public:
         k_param_auto_trim,
         k_param_switch_enable,
         k_param_log_bitmask,
-        k_param_mix_mode,
-        k_param_reverse_elevons,
-        k_param_reverse_ch1_elevon,
-        k_param_reverse_ch2_elevon,
-        k_param_flap_1_percent,
-        k_param_flap_1_speed,
-        k_param_flap_2_percent,
-        k_param_flap_2_speed,
+        k_param_mix_mode, // unused
+        k_param_reverse_elevons, // unused
+        k_param_reverse_ch1_elevon, // unused
+        k_param_reverse_ch2_elevon, // unused
+        k_param_flap_1_percent, // unused
+        k_param_flap_1_speed, // unused
+        k_param_flap_2_percent, // unused
+        k_param_flap_2_speed, // unused
         k_param_num_resets,
         k_param_log_last_filenumber,		// *** Deprecated - remove with next eeprom number change
         k_param_reset_switch_chan,
@@ -303,11 +303,6 @@ public:
         // Misc
         //
         AP_Int8     auto_trim;
-        AP_Int8     switch_enable;
-        AP_Int8     mix_mode;
-        AP_Int8     reverse_elevons;
-        AP_Int8     reverse_ch1_elevon;
-        AP_Int8     reverse_ch2_elevon;
         AP_Int16    num_resets;
         AP_Int16    log_bitmask;
         AP_Int16    log_last_filenumber;		// *** Deprecated - remove with next eeprom number change
@@ -334,10 +329,6 @@ public:
 				  // 3 = HRLV 
 #endif
 #endif
-        AP_Int8	    flap_1_percent;
-        AP_Int8	    flap_1_speed;
-        AP_Int8	    flap_2_percent;
-        AP_Int8	    flap_2_speed;
 
 // ************ ThermoPilot parameters  ************************ 
 //  - JLN update

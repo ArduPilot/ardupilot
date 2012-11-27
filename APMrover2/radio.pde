@@ -7,9 +7,6 @@ static byte failsafeCounter = 0;		// we wait a second to take over the throttle 
 
 static void init_rc_in()
 {
-	// set rc reversing
-	update_servo_switches();
-
 	// set rc channel ranges
 	g.channel_roll.set_angle(SERVO_MAX);
 	g.channel_pitch.set_angle(SERVO_MAX);
@@ -47,13 +44,13 @@ static void init_rc_out()
 #if HIL_MODE != HIL_MODE_ATTITUDE
 	APM_RC.OutputCh(CH_1, 	g.channel_roll.radio_trim);					// Initialization of servo outputs
 	APM_RC.OutputCh(CH_2, 	g.channel_pitch.radio_trim);
-	APM_RC.OutputCh(CH_3, 	g.channel_throttle.radio_min);
+	APM_RC.OutputCh(CH_3, 	g.channel_throttle.radio_trim);
 	APM_RC.OutputCh(CH_4, 	g.channel_rudder.radio_trim);
 
 	APM_RC.OutputCh(CH_5, 	g.rc_5.radio_trim);
 	APM_RC.OutputCh(CH_6, 	g.rc_6.radio_trim);
 	APM_RC.OutputCh(CH_7,   g.rc_7.radio_trim);
-        APM_RC.OutputCh(CH_8,   g.rc_8.radio_trim);
+    APM_RC.OutputCh(CH_8,   g.rc_8.radio_trim);
 #else
 	APM_RC.OutputCh(CH_1, 	1500);					// Initialization of servo outputs
 	APM_RC.OutputCh(CH_2, 	1500);
@@ -63,23 +60,15 @@ static void init_rc_out()
 	APM_RC.OutputCh(CH_5, 	1500);
 	APM_RC.OutputCh(CH_6, 	1500);
 	APM_RC.OutputCh(CH_7,   1500);
-        APM_RC.OutputCh(CH_8,   2000);
+    APM_RC.OutputCh(CH_8,   2000);
 #endif
 
 }
 
 static void read_radio()
 {
-	ch1_temp = APM_RC.InputCh(CH_ROLL);
-	ch2_temp = APM_RC.InputCh(CH_PITCH);
-
-	if(g.mix_mode == 0){
-		g.channel_roll.set_pwm(ch1_temp);
-		g.channel_pitch.set_pwm(ch2_temp);
-	}else{
-		g.channel_roll.set_pwm(BOOL_TO_SIGN(g.reverse_elevons) * (BOOL_TO_SIGN(g.reverse_ch2_elevon) * int(ch2_temp - elevon2_trim) - BOOL_TO_SIGN(g.reverse_ch1_elevon) * int(ch1_temp - elevon1_trim)) / 2 + 1500);
-		g.channel_pitch.set_pwm((BOOL_TO_SIGN(g.reverse_ch2_elevon) * int(ch2_temp - elevon2_trim) + BOOL_TO_SIGN(g.reverse_ch1_elevon) * int(ch1_temp - elevon1_trim)) / 2 + 1500);
-	}
+    g.channel_roll.set_pwm(APM_RC.InputCh(CH_ROLL));
+    g.channel_pitch.set_pwm(APM_RC.InputCh(CH_PITCH));
 
 	g.channel_throttle.set_pwm(APM_RC.InputCh(CH_3));
 	g.channel_rudder.set_pwm(APM_RC.InputCh(CH_4));
@@ -87,11 +76,6 @@ static void read_radio()
  	g.rc_6.set_pwm(APM_RC.InputCh(CH_6));        
 	g.rc_7.set_pwm(APM_RC.InputCh(CH_7));
 	g.rc_8.set_pwm(APM_RC.InputCh(CH_8));
-
-	//  TO DO  - go through and patch throttle reverse for RC_Channel library compatibility
-	#if THROTTLE_REVERSE == 1
-		g.channel_throttle.radio_in = g.channel_throttle.radio_max + g.channel_throttle.radio_min - g.channel_throttle.radio_in;
-	#endif
 
 	control_failsafe(g.channel_throttle.radio_in);
 
@@ -162,33 +146,21 @@ static void trim_control_surfaces()
 	read_radio();
 	// Store control surface trim values
 	// ---------------------------------
-	if(g.mix_mode == 0){
-                if ((g.channel_roll.radio_in > 1400) && (g.channel_pitch.radio_trim > 1400)) {
+    if ((g.channel_roll.radio_in > 1400) && (g.channel_pitch.radio_trim > 1400)) {
 		g.channel_roll.radio_trim = g.channel_roll.radio_max + g.channel_roll.radio_min - g.channel_roll.radio_in;
 		g.channel_pitch.radio_trim = g.channel_pitch.radio_max + g.channel_pitch.radio_min - g.channel_pitch.radio_in;
 		g.channel_rudder.radio_trim = g.channel_rudder.radio_max + g.channel_rudder.radio_min - g.channel_rudder.radio_in;
         RC_Channel_aux::set_radio_trim(RC_Channel_aux::k_aileron);
-                } else {
+    } else {
 		g.channel_roll.radio_trim 		= 1500;    // case of HIL test without receiver active
 		g.channel_pitch.radio_trim 		= 1500;
-                g.channel_rudder.radio_trim             = 1500;
-                g.channel_throttle.radio_trim 	        = 1000;
-                }
-
-	}else{
-		elevon1_trim = ch1_temp;
-		elevon2_trim = ch2_temp;
-		//Recompute values here using new values for elevon1_trim and elevon2_trim
-		//We cannot use radio_in[CH_ROLL] and radio_in[CH_PITCH] values from read_radio() because the elevon trim values have changed
-		uint16_t center 			= 1500;
-		g.channel_roll.radio_trim 	= center;
-		g.channel_pitch.radio_trim 	= center;
-	}
+        g.channel_rudder.radio_trim             = 1500;
+        g.channel_throttle.radio_trim 	        = 1000;
+    }
 
 	// save to eeprom
 	g.channel_roll.save_eeprom();
 	g.channel_pitch.save_eeprom();
-	//g.channel_throttle.save_eeprom();
 	g.channel_rudder.save_eeprom();
 }
 
@@ -197,35 +169,5 @@ static void trim_radio()
 	for (int y = 0; y < 30; y++) {
 		read_radio();
 	}
-
-	// Store the trim values
-	// ---------------------
-	if(g.mix_mode == 0){
-                if ((g.channel_roll.radio_in > 1400) && (g.channel_pitch.radio_trim > 1400)) {
-		g.channel_roll.radio_trim 		= g.channel_roll.radio_in;
-		g.channel_pitch.radio_trim 		= g.channel_pitch.radio_in;
-		//g.channel_throttle.radio_trim 	= g.channel_throttle.radio_in;
-		g.channel_rudder.radio_trim 	= g.channel_rudder.radio_in;
-        RC_Channel_aux::set_radio_trim(RC_Channel_aux::k_aileron);
-                } else {
-		g.channel_roll.radio_trim 		= 1500;    // case of HIL test without receiver active
-		g.channel_pitch.radio_trim 		= 1500;
-                g.channel_rudder.radio_trim             = 1500;
-                g.channel_throttle.radio_trim 	        = 1000;
-                }
-
-	} else {
-		elevon1_trim = ch1_temp;
-		elevon2_trim = ch2_temp;
-		uint16_t center = 1500;
-		g.channel_roll.radio_trim 	= center;
-		g.channel_pitch.radio_trim 	= center;
-		g.channel_rudder.radio_trim = g.channel_rudder.radio_in;
-	}
-
-	// save to eeprom
-	g.channel_roll.save_eeprom();
-	g.channel_pitch.save_eeprom();
-	//g.channel_throttle.save_eeprom();
-	g.channel_rudder.save_eeprom();
+    trim_control_surfaces();
 }
