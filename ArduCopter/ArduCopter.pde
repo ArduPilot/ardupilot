@@ -103,6 +103,7 @@
 #include <ModeFilter.h>         // Mode Filter from Filter library
 #include <AverageFilter.h>      // Mode Filter from Filter library
 #include <AP_LeadFilter.h>      // GPS Lead filter
+#include <LowPassFilter.h>      // Low Pass Filter library
 #include <AP_Relay.h>           // APM relay
 #include <AP_Camera.h>          // Photo or video camera
 #include <AP_Mount.h>           // Camera/Antenna mount
@@ -613,9 +614,9 @@ int32_t pitch_axis;
 AP_LeadFilter xLeadFilter;      // Long GPS lag filter
 AP_LeadFilter yLeadFilter;      // Lat  GPS lag filter
 #if FRAME_CONFIG == HELI_FRAME
-// LowPassFilterFloat rate_roll_filter;    // Rate Roll filter
-// LowPassFilterFloat rate_pitch_filter;   // Rate Pitch filter	598	LowPassFilterFloat rate_pitch_filter;   // Rate Pitch filter
-// LowPassFilterFloat rate_yaw_filter;     // Rate Yaw filter	599	LowPassFilterFloat rate_yaw_filter;     // Rate Yaw filter
+LowPassFilterFloat rate_roll_filter;    // Rate Roll filter
+LowPassFilterFloat rate_pitch_filter;   // Rate Pitch filter	598	LowPassFilterFloat rate_pitch_filter;   // Rate Pitch filter
+LowPassFilterFloat rate_yaw_filter;     // Rate Yaw filter	599	LowPassFilterFloat rate_yaw_filter;     // Rate Yaw filter
 #endif // HELI_FRAME
 
 // Barometer filter

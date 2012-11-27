@@ -259,9 +259,7 @@ update_rate_contoller_targets()
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////
-//  FILTERS DOES NOT BUILD -- NEEDS UPDATED LOWPASS FILTER LIBRARY
-/*
+
 #if FRAME_CONFIG == HELI_FRAME
 // init_rate_controllers - set-up filters for rate controller inputs
 void init_rate_controllers()
@@ -274,7 +272,7 @@ void init_rate_controllers()
    // other option for initialisation is rate_roll_filter.set_cutoff_frequency(<time_step>,<cutoff_freq>);
 }
 #endif // HELI_FRAME
-*/
+
 
 // run roll, pitch and yaw rate controllers and send output to motors
 // targets for these controllers comes from stabilize controllers
@@ -308,7 +306,7 @@ get_heli_rate_roll(int32_t target_rate)
 	current_rate    = (omega.x * DEGX100);
 
     // filter input
-    // current_rate = rate_roll_filter.apply(current_rate);
+    current_rate = rate_roll_filter.apply(current_rate);
 	
     // call pid controller
     rate_error  = target_rate - (omega.x * DEGX100);
@@ -361,7 +359,7 @@ get_heli_rate_pitch(int32_t target_rate)
 	current_rate    = (omega.y * DEGX100);
 	
 	// filter input
-	// current_rate = rate_pitch_filter.apply(current_rate);
+	current_rate = rate_pitch_filter.apply(current_rate);
 	
 	// call pid controller
     rate_error      = target_rate - (omega.y * DEGX100);

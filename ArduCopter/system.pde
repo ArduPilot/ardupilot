@@ -291,7 +291,7 @@ static void init_ardupilot()
 
 #if FRAME_CONIG == HELI_FRAME
 // initialise controller filters
-// init_rate_controllers();
+init_rate_controllers();
 #endif // HELI_FRAME
 
     // initialize commands
