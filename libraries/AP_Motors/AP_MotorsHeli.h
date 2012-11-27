@@ -74,7 +74,9 @@ public:
         _roll_scaler = 1;
         _pitch_scaler = 1;
         _collective_scalar = 1;
+		_stab_throttle_scalar = 1;
         _swash_initialised = false;
+		stab_throttle = false;
     };
 
     RC_Channel      *_servo_1;
@@ -97,10 +99,13 @@ public:
     AP_Int16 collective_yaw_effect;
     AP_Int8 servo_manual;                       // used to trigger swash reset from mission planner
     AP_Int16 ext_gov_setpoint;                  // maximum output to the motor governor
-    AP_Int8 rsc_mode;                                   // sets the mode for rotor speed controller
+    AP_Int8 rsc_mode;                           // sets the mode for rotor speed controller
     AP_Int16 rsc_ramp_up_rate;                  // sets the time in 100th seconds the RSC takes to ramp up to speed
     AP_Int8 flybar_mode;                        // selects FBL Acro Mode, or Flybarred Acro Mode
     int16_t throttle_mid;                       // throttle mid point in pwm form (i.e. 0 ~ 1000)
+	AP_Int8 stab_col_min;						// collective pitch minimum in Stabilize Mode
+	AP_Int8 stab_col_max;						// collective pitch maximum in Stabilize Mode
+	bool stab_throttle;							// true if we are in Stabilize Mode for reduced Swash Range
 
 
     // init
@@ -153,12 +158,13 @@ protected:
 
     // internally used variables
 
-    float _roll_scaler;                                 // scaler to convert roll input from radio (i.e. -4500 ~ 4500) to max roll range
+    float _roll_scaler;                         // scaler to convert roll input from radio (i.e. -4500 ~ 4500) to max roll range
     float _pitch_scaler;                        // scaler to convert pitch input from radio (i.e. -4500 ~ 4500) to max pitch range
     float _collective_scalar;                   // throttle scalar to convert pwm form (i.e. 0 ~ 1000) passed in to actual servo range (i.e 1250~1750 would be 500)
+	float _stab_throttle_scalar;				// throttle scalar to reduce the range of the collective movement in stabilize mode
     bool _swash_initialised;                    // true if swash has been initialised
-    int16_t rsc_output;                                 // final output to the external motor governor 1000-2000
-    int16_t rsc_ramp;                                   // current state of ramping
+    int16_t rsc_output;                         // final output to the external motor governor 1000-2000
+    int16_t rsc_ramp;                           // current state of ramping
 
 
 };

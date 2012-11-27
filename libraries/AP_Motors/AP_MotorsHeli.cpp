@@ -159,6 +159,24 @@ const AP_Param::GroupInfo AP_MotorsHeli::var_info[] PROGMEM = {
     // @Range: 0 1
     // @User: Standard
     AP_GROUPINFO("FLYBAR_MODE", 18, AP_MotorsHeli, flybar_mode, 0),
+	
+	// @Param: STAB_COL_MIN
+    // @DisplayName: Stabilize Throttle Minimum
+    // @Description: This is the minimum collective setpoint in Stabilize Mode
+    // @Range: 0 50
+    // @Units: 1%
+    // @Increment: 1
+    // @User: Standard
+    AP_GROUPINFO("STAB_COL_MIN", 19, AP_MotorsHeli, stab_col_min, 0),
+	
+	// @Param: STAB_COL_MAX
+    // @DisplayName: Stabilize Throttle Maximum
+    // @Description: This is the maximum collective setpoint in Stabilize Mode
+    // @Range: 50 100
+    // @Units: 1%
+    // @Increment: 1
+    // @User: Standard
+    AP_GROUPINFO("STAB_COL_MAX", 20, AP_MotorsHeli, stab_col_max, 100),
 
     AP_GROUPEND
 };
@@ -340,6 +358,7 @@ void AP_MotorsHeli::reset_swash()
     _roll_scaler = 1.0;
     _pitch_scaler = 1.0;
     _collective_scalar = ((float)(_rc_throttle->radio_max - _rc_throttle->radio_min))/1000.0;
+	_stab_throttle_scalar = 1.0;
 
     // we must be in set-up mode so mark swash as uninitialised
     _swash_initialised = false;
@@ -369,6 +388,7 @@ void AP_MotorsHeli::init_swash()
     _roll_scaler = (float)roll_max/4500.0;
     _pitch_scaler = (float)pitch_max/4500.0;
     _collective_scalar = ((float)(collective_max-collective_min))/1000.0;
+	_stab_throttle_scalar = ((float)(stab_col_max - stab_col_min))/100.0;
 
     if( swash_type == AP_MOTORS_HELI_SWASH_CCPM ) {                     //CCPM Swashplate, perform control mixing
 
@@ -456,8 +476,11 @@ void AP_MotorsHeli::move_swash(int16_t roll_out, int16_t pitch_out, int16_t coll
 
         // scale collective pitch
         coll_out = constrain(coll_out, 0, 1000);
+		if (stab_throttle){
+			coll_out = coll_out * _stab_throttle_scalar + stab_col_min*10;
+		}
         coll_out_scaled = coll_out * _collective_scalar + collective_min - 1000;
-
+		
         // rudder feed forward based on collective
         if( !ext_gyro_enabled ) {
             yaw_offset = collective_yaw_effect * abs(coll_out_scaled - throttle_mid);
