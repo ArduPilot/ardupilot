@@ -125,3 +125,13 @@
 // Used to set the max roll and pitch angles in Degrees * 100
 //#define MAX_INPUT_ROLL_ANGLE      8000
 //#define MAX_INPUT_PITCH_ANGLE     8000
+
+/////////////////////////////////////////////////////////////////////////////////
+// Bulk defines for TradHeli. Cleans up defines.h and config.h to put these here
+#if FRAME_CONFIG == HELI_FRAME
+  # define RC_FAST_SPEED 				125
+  # define RTL_YAW                  	YAW_LOOK_AT_HOME
+  # define TILT_COMPENSATION 			5
+  # define RATE_INTEGRATOR_LEAK_RATE 	0.02
+  # define RATE_ROLL_D    0
+ #endif
