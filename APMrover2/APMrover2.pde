@@ -363,13 +363,6 @@ byte    control_mode        = INITIALISING;
 // Used to maintain the state of the previous control switch position
 // This is set to -1 when we need to re-read the switch
 byte 	oldSwitchPosition;
-// These are trim values used for elevon control
-// For elevons radio_in[CH_ROLL] and radio_in[CH_PITCH] are equivalent aileron and elevator, not left and right elevon
-static uint16_t elevon1_trim  = 1500; 	
-static uint16_t elevon2_trim  = 1500;
-// These are used in the calculation of elevon1_trim and elevon2_trim
-static uint16_t ch1_temp      = 1500;     
-static uint16_t ch2_temp  	= 1500;
 // These are values received from the GCS if the user is using GCS joystick
 // control and are substituted for the values coming from the RC radio
 static int16_t rc_override[8] = {0,0,0,0,0,0,0,0};
@@ -904,10 +897,6 @@ static void slow_loop()
 			// -------------------------------
 			read_control_switch();
 
-			// Read Control Surfaces/Mix switches
-			// ----------------------------------
-			update_servo_switches();
-
 			update_aux_servo_function(&g.rc_5, &g.rc_6, &g.rc_7, &g.rc_8);
 
 #if MOUNT == ENABLED
@@ -1045,10 +1034,10 @@ static void update_navigation()
 				// update_loiter();
 				calc_nav_roll();
 				calc_bearing_error();
-                                if(verify_RTL()) 
-                                {  g.channel_throttle.servo_out = g.throttle_min.get();
-                                   set_mode(MANUAL);
-                                }
+                if(verify_RTL()) {  
+                    g.channel_throttle.servo_out = g.throttle_min.get();
+                    set_mode(MANUAL);
+                }
 				break;
 
 		}

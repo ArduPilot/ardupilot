@@ -58,7 +58,6 @@ const AP_Param::Info var_info[] PROGMEM = {
 	GSCALAR(pitch_limit_min,        "LIM_PITCH_MIN",    PITCH_MIN_CENTIDEGREE),
 
 	GSCALAR(auto_trim,              "TRIM_AUTO",        AUTO_TRIM),
-	GSCALAR(switch_enable,          "SWITCH_ENABLE",    REVERSE_SWITCH),
 	GSCALAR(num_resets,             "SYS_NUM_RESETS",   0),
 	GSCALAR(log_bitmask,            "LOG_BITMASK",      DEFAULT_LOG_BITMASK),
 	GSCALAR(log_last_filenumber,    "LOG_LASTFILE",     0),
