@@ -78,7 +78,6 @@ void
 PID::reset_I()
 {
     _integrator = 0;
-    _last_error = 0;
     _last_derivative = 0;
 }
 
