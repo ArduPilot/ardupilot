@@ -67,12 +67,22 @@ int main(int argc, char * const argv[])
 		}
 	}
 
+	printf("Starting sketch '%s'\n", SKETCH);
+
 	if (strcmp(SKETCH, "ArduCopter") == 0) {
-		desktop_state.quadcopter = true;
+		desktop_state.vehicle = ArduCopter;
 		if (desktop_state.framerate == 0) {
 			desktop_state.framerate = 200;
 		}
+	} else if (strcmp(SKETCH, "APMrover2") == 0) {
+		desktop_state.vehicle = APMrover2;
+		if (desktop_state.framerate == 0) {
+			desktop_state.framerate = 50;
+		}
+		// set right default throttle for rover (allowing for reverse)
+		ICR4.set(2, 1500);
 	} else {
+		desktop_state.vehicle = ArduPlane;
 		if (desktop_state.framerate == 0) {
 			desktop_state.framerate = 50;
 		}

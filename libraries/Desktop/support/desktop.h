@@ -4,10 +4,16 @@
 #include <unistd.h>
 #include <sys/time.h>
 
+enum vehicle_type {
+	ArduCopter,
+	APMrover2,
+	ArduPlane
+};
+
 struct desktop_info {
 	bool slider; // slider switch state, True means CLI mode
 	struct timeval sketch_start_time;
-	bool quadcopter; // use quadcopter outputs
+	enum vehicle_type vehicle;
 	unsigned framerate;
 	float initial_height;
 	bool console_mode;
