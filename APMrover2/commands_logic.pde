@@ -109,12 +109,8 @@ static void handle_process_do_command()
 
 static void handle_no_commands()
 {      
-	gcs_send_text_fmt(PSTR("Returning to Home"));
-	next_nav_command = home;
-	next_nav_command.id = MAV_CMD_NAV_LOITER_UNLIM;
-	nav_command_ID = MAV_CMD_NAV_LOITER_UNLIM;
-	non_nav_command_ID = WAIT_COMMAND;
-	handle_process_nav_cmd();
+	gcs_send_text_fmt(PSTR("No commands - setting MANUAL"));
+    set_mode(MANUAL);
 }
 
 /********************************************************************************/

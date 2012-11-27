@@ -86,8 +86,6 @@ const AP_Param::Info var_info[] PROGMEM = {
 
  // ************************************************************
         // APMrover parameters - JLN update
-        
-	GSCALAR(closed_loop_nav,        "ROV_CL_NAV",       CLOSED_LOOP_NAV),
 	GSCALAR(auto_wp_radius,         "ROV_AWPR_NAV",     AUTO_WP_RADIUS),
 	GSCALAR(sonar_trigger,          "ROV_SONAR_TRIG",   SONAR_TRIGGER),
 	GSCALAR(turn_gain,              "ROV_GAIN",         TURN_GAIN),

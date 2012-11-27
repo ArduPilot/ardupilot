@@ -1,6 +1,6 @@
 /// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 
-#define THISFIRMWARE "ArduRover v2.20b" //New version of the APMrover for the APM v1 or APM v2 and magnetometer + SONAR
+#define THISFIRMWARE "ArduRover v2.30"
 
 // This is the APMrover firmware derived from the Arduplane v2.32 by Jean-Louis Naudin (JLN) 
 /*
