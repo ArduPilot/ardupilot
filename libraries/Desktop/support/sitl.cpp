@@ -144,8 +144,7 @@ static void sitl_fdm_input(void)
 }
 
 // used for noise generation in the ADC code
-// motor speed in revolutions per second
-float sitl_motor_speed[4] = {0,0,0,0};
+bool sitl_motors_on;
 
 /*
   send RC outputs to simulator
@@ -169,14 +168,18 @@ static void sitl_simulator_output(void)
 		for (i=0; i<11; i++) {
 			(*reg[i]) = 1000*2;
 		}
-		if (!desktop_state.quadcopter) {
+		if (desktop_state.vehicle == ArduPlane) {
 			(*reg[0]) = (*reg[1]) = (*reg[3]) = 1500*2;
+			(*reg[7]) = 1800*2;
+		}
+		if (desktop_state.vehicle == APMrover2) {
+			(*reg[0]) = (*reg[1]) = (*reg[2]) = (*reg[3]) = 1500*2;
 			(*reg[7]) = 1800*2;
 		}
 	}
 
 	// output at chosen framerate
-	if (millis() - last_update < 1000/desktop_state.framerate) {
+	if (last_update != 0 && millis() - last_update < 1000/desktop_state.framerate) {
 		return;
 	}
 	last_update = millis();
@@ -189,19 +192,27 @@ static void sitl_simulator_output(void)
 		}
 	}
 
-	if (!desktop_state.quadcopter) {
+	if (desktop_state.vehicle == ArduPlane) {
 		// add in engine multiplier
 		if (control.pwm[2] > 1000) {
 			control.pwm[2] = ((control.pwm[2]-1000) * sitl.engine_mul) + 1000;
 			if (control.pwm[2] > 2000) control.pwm[2] = 2000;
 		}
-
-		// 400kV motor, 16V
-		sitl_motor_speed[0] = ((control.pwm[2]-1000)/1000.0) * 400 * 16 / 60.0;
+		sitl_motors_on = ((control.pwm[2]-1000)/1000.0) > 0;
+	} else if (desktop_state.vehicle == APMrover2) {
+		// add in engine multiplier
+		if (control.pwm[2] != 1500) {
+			control.pwm[2] = ((control.pwm[2]-1500) * sitl.engine_mul) + 1500;
+			if (control.pwm[2] > 2000) control.pwm[2] = 2000;
+			if (control.pwm[2] < 1000) control.pwm[2] = 1000;
+		}
+		sitl_motors_on = ((control.pwm[2]-1500)/500.0) != 0;
 	} else {
-		// 850kV motor, 16V
+		sitl_motors_on = false;
 		for (i=0; i<4; i++) {
-			sitl_motor_speed[i] = ((control.pwm[i]-1000)/1000.0) * 850 * 12 / 60.0;
+			if ((control.pwm[i]-1000)/1000.0 > 0) {
+				sitl_motors_on = true;
+			}
 		}
 	}
 

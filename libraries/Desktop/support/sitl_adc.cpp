@@ -91,23 +91,16 @@ void sitl_update_adc(float roll, 	float pitch, 	float yaw,		// Relative to earth
 	const float _accel_scale = 9.80665 / 423.8;
 	double adc[7];
 	double p, q, r;
-	extern float sitl_motor_speed[4];
-	bool motors_on = false;
+	extern bool sitl_motors_on;
 
 	SITL::convert_body_frame(roll, pitch,
 				 rollRate, pitchRate, yawRate,
 				 &p, &q, &r);
 
-	for (uint8_t i=0; i<4; i++) {
-		if (sitl_motor_speed[i] > 0.0) {
-			motors_on = true;
-		}
-	}
-
 	// minimum noise levels are 2 bits
 	float accel_noise = _accel_scale*2;
 	float gyro_noise = _gyro_gain_y*2;
-	if (motors_on) {
+	if (sitl_motors_on) {
 		// add extra noise when the motors are on
 		accel_noise += sitl.accel_noise;
 		gyro_noise += ToRad(sitl.gyro_noise);
