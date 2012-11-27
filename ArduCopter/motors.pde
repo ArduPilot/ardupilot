@@ -20,6 +20,13 @@ static void arm_motors()
         arming_counter = 0;
         return;
     }
+	
+	#if FRAME_CONFIG == HELI_FRAME
+	if ((motors.rsc_mode > 0) && (g.rc_8.control_in >= 10)){
+		arming_counter = 0;
+		return;
+	}
+	#endif  // HELI_FRAME
 
 #if TOY_EDF == ENABLED
     int16_t tmp = g.rc_1.control_in;
