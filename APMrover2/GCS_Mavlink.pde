@@ -46,7 +46,6 @@ static NOINLINE void send_heartbeat(mavlink_channel_t chan)
         break;
     case AUTO:
     case RTL:
-    case LOITER:
     case GUIDED:
     case CIRCLE:
         base_mode = MAV_MODE_FLAG_GUIDED_ENABLED;
@@ -215,7 +214,7 @@ static void NOINLINE send_location(mavlink_channel_t chan)
 
 static void NOINLINE send_nav_controller_output(mavlink_channel_t chan)
 {
-    int16_t bearing = (hold_course==-1?nav_bearing:hold_course) / 100;
+    int16_t bearing = nav_bearing / 100;
     mavlink_msg_nav_controller_output_send(
         chan,
         nav_roll / 1.0e2,
@@ -1106,7 +1105,6 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
 
             float param1 = 0, param2 = 0 , param3 = 0, param4 = 0;
 
-            // time that the mav should loiter in milliseconds
             uint8_t current = 0; // 1 (true), 0 (false)
 
 			if (packet.seq == (uint16_t)g.command_index)
@@ -1129,14 +1127,9 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
 
 			switch (tell_command.id) {				// Switch to map APM command fields inot MAVLink command fields
 
-				case MAV_CMD_NAV_LOITER_TURNS:
 				case MAV_CMD_NAV_TAKEOFF:
 				case MAV_CMD_DO_SET_HOME:
 					param1 = tell_command.p1;
-					break;
-
-				case MAV_CMD_NAV_LOITER_TIME:
-					param1 = tell_command.p1*10;    // APM loiter time is in ten second increments
 					break;
 
 				case MAV_CMD_CONDITION_CHANGE_ALT:
@@ -1348,11 +1341,9 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
 
             switch (tell_command.id) {                    // Switch to map APM command fields inot MAVLink command fields
             case MAV_CMD_NAV_WAYPOINT:
-            case MAV_CMD_NAV_LOITER_UNLIM:
             case MAV_CMD_NAV_RETURN_TO_LAUNCH:
                 break;
 
-            case MAV_CMD_NAV_LOITER_TURNS:
             case MAV_CMD_NAV_TAKEOFF:
             case MAV_CMD_DO_SET_HOME:
                 tell_command.p1 = packet.param1;
@@ -1360,10 +1351,6 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
 
             case MAV_CMD_CONDITION_CHANGE_ALT:
                 tell_command.lat = packet.param1;
-                break;
-
-            case MAV_CMD_NAV_LOITER_TIME:
-                tell_command.p1 = packet.param1 / 10;    // APM loiter time is in ten second increments
                 break;
 
             case MAV_CMD_CONDITION_DELAY:
@@ -1807,8 +1794,8 @@ GCS_MAVLINK::queued_waypoint_send()
 */
 static void mavlink_delay(unsigned long t)
 {
-    unsigned long tstart;
-    static unsigned long last_1hz, last_50hz;
+    uint32_t tstart;
+    static uint32_t last_1hz, last_50hz;
 
     if (in_mavlink_delay) {
         // this should never happen, but let's not tempt fate by
@@ -1821,7 +1808,7 @@ static void mavlink_delay(unsigned long t)
 
     tstart = millis();
     do {
-        unsigned long tnow = millis();
+        uint32_t tnow = millis();
         if (tnow - last_1hz > 1000) {
             last_1hz = tnow;
             gcs_send_message(MSG_HEARTBEAT);

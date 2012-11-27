@@ -21,18 +21,6 @@ handle_process_nav_cmd()
 			do_nav_wp();
 			break;
 
-		case MAV_CMD_NAV_LOITER_UNLIM:	// Loiter indefinitely
-			do_loiter_unlimited();
-			break;
-
-		case MAV_CMD_NAV_LOITER_TURNS:	// Loiter N Times
-			do_loiter_turns();
-			break;
-
-		case MAV_CMD_NAV_LOITER_TIME:
-			do_loiter_time();
-			break;
-
 		case MAV_CMD_NAV_RETURN_TO_LAUNCH:
 			do_RTL();
 			break;
@@ -139,32 +127,16 @@ static bool verify_nav_command()	// Returns true if command complete
 
 		case MAV_CMD_NAV_TAKEOFF:
 			return verify_takeoff();
-			break;
 
 		case MAV_CMD_NAV_WAYPOINT:
 			return verify_nav_wp();
-			break;
-
-		case MAV_CMD_NAV_LOITER_UNLIM:
-			return verify_loiter_unlim();
-			break;
-
-		case MAV_CMD_NAV_LOITER_TURNS:
-			return verify_loiter_turns();
-			break;
-
-		case MAV_CMD_NAV_LOITER_TIME:
-			return verify_loiter_time();
-			break;
 
 		case MAV_CMD_NAV_RETURN_TO_LAUNCH:
 			return verify_RTL();
-			break;
 
 		default:
 			gcs_send_text_P(SEVERITY_HIGH,PSTR("verify_nav: Invalid or no current Nav cmd"));
 			return false;
-			break;
 	}
 }
 
@@ -220,24 +192,6 @@ static void do_nav_wp()
 	set_next_WP(&next_nav_command);
 }
 
-static void do_loiter_unlimited()
-{
-	set_next_WP(&next_nav_command);
-}
-
-static void do_loiter_turns()
-{
-	set_next_WP(&next_nav_command);
-	loiter_total = next_nav_command.p1 * 360;
-}
-
-static void do_loiter_time()
-{
-	set_next_WP(&next_nav_command);
-	loiter_time = millis();
-	loiter_time_max = next_nav_command.p1; // units are (seconds * 10)
-}
-
 /********************************************************************************/
 //  Verify Nav (Must) commands
 /********************************************************************************/
@@ -254,7 +208,6 @@ static void calc_turn_radius(void)    // JLN update - adjut automaticaly the wp_
 
 static bool verify_nav_wp()
 {
-    hold_course = -1;
     update_crosstrack();
 
     if ((wp_distance > 0) && (wp_distance <= g.waypoint_radius)) {
@@ -273,13 +226,7 @@ static bool verify_nav_wp()
         }
     }
 
-    // have we circled around the waypoint?
-    if (loiter_sum > 300) {
-        gcs_send_text_P(SEVERITY_MEDIUM,PSTR("Missed WP"));
-        return true;
-    }
-
-    // have we flown past the waypoint?
+    // have we gone past the waypoint?
     if (location_passed_point(current_loc, prev_WP, next_WP)) {
         gcs_send_text_fmt(PSTR("Passed Waypoint #%i dist %um"),
                           (unsigned)nav_command_index,
@@ -288,37 +235,6 @@ static bool verify_nav_wp()
     }
 
     return false;
-}
-
-static bool verify_loiter_unlim()
-{
-	update_loiter();
-	calc_bearing_error();
-	return false;
-}
-
-static bool verify_loiter_time()
-{
-	update_loiter();
-	calc_bearing_error();
-	if ((millis() - loiter_time) > (unsigned long)loiter_time_max * 10000l) {		// scale loiter_time_max from (sec*10) to milliseconds
-		gcs_send_text_P(SEVERITY_LOW,PSTR("verify_nav: LOITER time complete"));
-		return true;
-	}
-	return false;
-}
-
-static bool verify_loiter_turns()
-{
-	update_loiter();
-	calc_bearing_error();
-	if(loiter_sum > loiter_total) {
-		loiter_total = 0;
-		gcs_send_text_P(SEVERITY_LOW,PSTR("verify_nav: LOITER orbits complete"));
-		// clear the command queue;
-		return true;
-	}
-	return false;
 }
 
 static bool verify_RTL()
@@ -361,7 +277,7 @@ static void do_within_distance()
 
 static bool verify_wait_delay()
 {
-	if ((unsigned)(millis() - condition_start) > condition_value){
+	if ((uint32_t)(millis() - condition_start) > (uint32_t)condition_value){
 		condition_value 	= 0;
 		return true;
 	}
@@ -389,11 +305,6 @@ static bool verify_within_distance()
 /********************************************************************************/
 //  Do (Now) commands
 /********************************************************************************/
-
-static void do_loiter_at_location()
-{
-	next_WP = current_loc;
-}
 
 static void do_jump()
 {

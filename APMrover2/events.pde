@@ -15,7 +15,6 @@ static void failsafe_short_on_event(int fstype)
 
 		case AUTO: 
 		case GUIDED: 
-		case LOITER: 
 			if(g.short_fs_action == 1) {
 				set_mode(RTL);
 			}
@@ -45,7 +44,6 @@ static void failsafe_long_on_event(int fstype)
 
 		case AUTO: 
 		case GUIDED: 
-		case LOITER: 
 			if(g.long_fs_action == 1) {
 				set_mode(RTL);
 			}

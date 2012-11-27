@@ -161,7 +161,7 @@ public:
         k_param_command_total,
         k_param_command_index,
         k_param_waypoint_radius,
-        k_param_loiter_radius,
+        k_param_loiter_radius, // unused
         k_param_fence_action,
         k_param_fence_total,
         k_param_fence_channel,
@@ -262,7 +262,6 @@ public:
         AP_Int8     command_total;
         AP_Int8     command_index;
         AP_Int8     waypoint_radius;
-        AP_Int8     loiter_radius;
     
         // Fly-by-wire
         //

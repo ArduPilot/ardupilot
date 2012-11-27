@@ -32,7 +32,6 @@ const AP_Param::Info var_info[] PROGMEM = {
 	GSCALAR(command_total,          "CMD_TOTAL",        0),
 	GSCALAR(command_index,          "CMD_INDEX",        0),
 	GSCALAR(waypoint_radius,        "WP_RADIUS",        WP_RADIUS_DEFAULT),
-	GSCALAR(loiter_radius,          "WP_LOITER_RAD",    LOITER_RADIUS_DEFAULT),
 
 	GSCALAR(throttle_min,           "THR_MIN",          THROTTLE_MIN),
 	GSCALAR(throttle_max,           "THR_MAX",          THROTTLE_MAX),

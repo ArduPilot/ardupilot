@@ -404,25 +404,7 @@
 // mainly intended to allow users to start using the APM without running the
 // WaypointWriter first.
 //
-// LOITER_RADIUS_DEFAULT                    OPTIONAL
-//
-// When the user performs a factory reset on the APM, set the loiter radius
-// (the distance the APM will attempt to maintain from a waypoint while
-// loitering) to this value in meters.  This is mainly intended to allow
-// users to start using the APM without running the WaypointWriter first.
-//
-// USE_CURRENT_ALT							OPTIONAL
-// ALT_HOLD_HOME							OPTIONAL
-//
-// When the user performs a factory reset on the APM, set the flag for weather
-// the current altitude or ALT_HOLD_HOME altitude should be used for Return To Launch.
-// Also, set the value of USE_CURRENT_ALT in meters.  This is mainly intended to allow
-// users to start using the APM without running the WaypointWriter first.
-//
 #define WP_RADIUS_DEFAULT       1   // meters
-#define LOITER_RADIUS_DEFAULT	5   
-#define USE_CURRENT_ALT		TRUE
-#define ALT_HOLD_HOME		0
 
 //////////////////////////////////////////////////////////////////////////////
 // INPUT_VOLTAGE                            OPTIONAL

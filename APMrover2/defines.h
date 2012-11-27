@@ -12,7 +12,6 @@
 #define ToDeg(x) (x*57.2957795131)	// *180/pi
 
 #define DEBUG 0
-#define LOITER_RANGE 60 // for calculating power outside of loiter radius
 #define SERVO_MAX 4500	// This value represents 45 degrees and is just an arbitrary representation of servo max travel.
 
 // failsafe
@@ -98,7 +97,6 @@
 
 #define AUTO 10
 #define RTL 11
-#define LOITER 12
 #define GUIDED 15
 #define INITIALISING 16     // in startup routines
 #define HEADALT      17   // Lock the current heading and altitude
