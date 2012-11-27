@@ -715,6 +715,10 @@
  # define STABILIZE_YAW_IMAX        8.0            // degrees * 100
 #endif
 
+#ifndef YAW_LOOK_AHEAD_RATE
+ # define YAW_LOOK_AHEAD_RATE		1000			// dimensionless, smaller number means stronger effect
+#endif
+
 
 //////////////////////////////////////////////////////////////////////////////
 // Stabilize Rate Control
