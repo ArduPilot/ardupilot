@@ -29,8 +29,6 @@ const AP_Param::Info var_info[] PROGMEM = {
 	GSCALAR(crosstrack_gain,        "XTRK_GAIN_SC",     XTRACK_GAIN_SCALED),
 	GSCALAR(crosstrack_entry_angle, "XTRK_ANGLE_CD",    XTRACK_ENTRY_ANGLE_CENTIDEGREE),
 
-	GSCALAR(altitude_mix,           "ALT_MIX",          ALTITUDE_MIX),
-
 	GSCALAR(command_total,          "CMD_TOTAL",        0),
 	GSCALAR(command_index,          "CMD_INDEX",        0),
 	GSCALAR(waypoint_radius,        "WP_RADIUS",        WP_RADIUS_DEFAULT),
@@ -61,10 +59,6 @@ const AP_Param::Info var_info[] PROGMEM = {
 
 	GSCALAR(auto_trim,              "TRIM_AUTO",        AUTO_TRIM),
 	GSCALAR(switch_enable,          "SWITCH_ENABLE",    REVERSE_SWITCH),
-	GSCALAR(mix_mode,               "ELEVON_MIXING",    ELEVON_MIXING),
-	GSCALAR(reverse_elevons,        "ELEVON_REVERSE",   ELEVON_REVERSE),
-	GSCALAR(reverse_ch1_elevon,     "ELEVON_CH1_REV",   ELEVON_CH1_REVERSE),
-	GSCALAR(reverse_ch2_elevon,     "ELEVON_CH2_REV",   ELEVON_CH2_REVERSE),
 	GSCALAR(num_resets,             "SYS_NUM_RESETS",   0),
 	GSCALAR(log_bitmask,            "LOG_BITMASK",      DEFAULT_LOG_BITMASK),
 	GSCALAR(log_last_filenumber,    "LOG_LASTFILE",     0),
@@ -74,11 +68,6 @@ const AP_Param::Info var_info[] PROGMEM = {
 	GSCALAR(ch7_option,             "CH7_OPT",          CH7_OPTION),
 
 	GSCALAR(compass_enabled,        "MAG_ENABLE",       MAGNETOMETER),
-	GSCALAR(flap_1_percent,         "FLAP_1_PERCNT",    FLAP_1_PERCENT),
-	GSCALAR(flap_1_speed,           "FLAP_1_SPEED",     FLAP_2_SPEED),
-	GSCALAR(flap_2_percent,         "FLAP_2_PERCNT",    FLAP_2_PERCENT),
-	GSCALAR(flap_2_speed,           "FLAP_2_SPEED",     FLAP_2_SPEED),
-
 
 	GSCALAR(battery_monitoring,     "BATT_MONITOR",     DISABLED),
 	GSCALAR(volt_div_ratio,         "VOLT_DIVIDER",     VOLT_DIV_RATIO),

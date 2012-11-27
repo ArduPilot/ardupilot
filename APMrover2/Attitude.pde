@@ -96,20 +96,18 @@ static void set_servos(void)
 		g.channel_throttle.radio_out 	= g.channel_throttle.radio_in;
 		g.channel_rudder.radio_out 	= g.channel_roll.radio_in;
 	} else {       
-                 
-                g.channel_roll.calc_pwm();
+        g.channel_roll.calc_pwm();
 		g.channel_pitch.calc_pwm();
 		g.channel_rudder.calc_pwm();             
 
 		g.channel_throttle.radio_out 	= g.channel_throttle.radio_in;
 		g.channel_throttle.servo_out = constrain(g.channel_throttle.servo_out, g.throttle_min.get(), g.throttle_max.get());
-
-        }
+    }
                 
-        if (control_mode >= FLY_BY_WIRE_B) {
-          // convert 0 to 100% into PWM
-            g.channel_throttle.calc_pwm();
-        }
+    if (control_mode >= AUTO) {
+        // convert 0 to 100% into PWM
+        g.channel_throttle.calc_pwm();
+    }
 
 
 #if HIL_MODE == HIL_MODE_DISABLED || HIL_SERVOS

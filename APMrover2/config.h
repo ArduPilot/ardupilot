@@ -50,23 +50,6 @@
 # define CONFIG_APM_HARDWARE APM_HARDWARE_APM1
 #endif
 
-#ifndef X_PLANE
-# define X_PLANE DISABLED
-#endif
-
-#if X_PLANE == ENABLED
-# define LITE ENABLED
-#else
-#ifndef LITE
-# define LITE DISABLED
-#endif
-#endif
-
-#if defined( __AVR_ATmega1280__ )
-#define CLI_ENABLED DISABLED
-#define LOGGING_ENABLED DISABLED
-#endif
-
 //////////////////////////////////////////////////////////////////////////////
 // APM2 HARDWARE DEFAULTS
 //
@@ -77,13 +60,7 @@
 # define CONFIG_RELAY      DISABLED
 # define MAG_ORIENTATION   AP_COMPASS_APM2_SHIELD
 # define CONFIG_SONAR_SOURCE SONAR_SOURCE_ANALOG_PIN
-# define CONFIG_PITOT_SOURCE PITOT_SOURCE_ANALOG_PIN
 # define MAGNETOMETER ENABLED
-# ifdef APM2_BETA_HARDWARE
-#  define CONFIG_BARO     AP_BARO_BMP085
-# else // APM2 Production Hardware (default)
-#  define CONFIG_BARO     AP_BARO_MS5611
-# endif
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
@@ -181,14 +158,6 @@
 #define HIL_MODE	HIL_MODE_DISABLED
 #endif
 
-#if HIL_MODE != HIL_MODE_DISABLED	// we are in HIL mode
- # undef GPS_PROTOCOL
- # define GPS_PROTOCOL GPS_PROTOCOL_NONE
-
-  #undef CONFIG_SONAR
- #define CONFIG_SONAR DISABLED
-#endif
-
 //////////////////////////////////////////////////////////////////////////////
 // GPS_PROTOCOL
 //
@@ -232,14 +201,10 @@
 #endif
 #ifndef VOLT_DIV_RATIO
 # define VOLT_DIV_RATIO			3.56	// This is the proper value for an on-board APM1 voltage divider with a 3.9kOhm resistor
-//# define VOLT_DIV_RATIO		15.70	// This is the proper value for the AttoPilot 50V/90A sensor
-//# define VOLT_DIV_RATIO		4.127	// This is the proper value for the AttoPilot 13.6V/45A sensor
-
 #endif
 
 #ifndef CURR_AMP_PER_VOLT
 # define CURR_AMP_PER_VOLT		27.32	// This is the proper value for the AttoPilot 50V/90A sensor
-//# define CURR_AMP_PER_VOLT	13.66	// This is the proper value for the AttoPilot 13.6V/45A sensor
 #endif
 
 #ifndef CURR_AMPS_OFFSET
@@ -304,18 +269,6 @@
 #endif
 
 
-#ifndef FLAP_1_PERCENT
-# define FLAP_1_PERCENT 0
-#endif
-#ifndef FLAP_1_SPEED
-# define FLAP_1_SPEED 255
-#endif
-#ifndef FLAP_2_PERCENT
-# define FLAP_2_PERCENT 0
-#endif
-#ifndef FLAP_2_SPEED
-# define FLAP_2_SPEED 255
-#endif
 //////////////////////////////////////////////////////////////////////////////
 // FLIGHT_MODE
 // FLIGHT_MODE_CHANNEL
@@ -433,55 +386,11 @@
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
-// ENABLE ELEVON_MIXING
-//
-#ifndef ELEVON_MIXING
-# define ELEVON_MIXING		DISABLED
-#endif
-#ifndef ELEVON_REVERSE
-# define ELEVON_REVERSE	    DISABLED
-#endif
-#ifndef ELEVON_CH1_REVERSE
-# define ELEVON_CH1_REVERSE	DISABLED
-#endif
-#ifndef ELEVON_CH2_REVERSE
-# define ELEVON_CH2_REVERSE	DISABLED
-#endif
-#ifndef FLAPERON
-# define FLAPERON	DISABLED
-#endif
-
-//////////////////////////////////////////////////////////////////////////////
 // MOUNT (ANTENNA OR CAMERA)
 //
 #ifndef MOUNT
 # define MOUNT		DISABLED
 #endif
-
-#if defined( __AVR_ATmega1280__ ) && CAMERA == ENABLED
-// The small ATmega1280 chip does not have enough memory for camera support
-// so disable CLI, this will allow camera support and other improvements to fit.
-// This should almost have no side effects, because the APM planner can now do a complete board setup.
-#define CLI_ENABLED DISABLED
-#endif
-
-
-//////////////////////////////////////////////////////////////////////////////
-//////////////////////////////////////////////////////////////////////////////
-// FLIGHT AND NAVIGATION CONTROL
-//////////////////////////////////////////////////////////////////////////////
-//////////////////////////////////////////////////////////////////////////////
-
-//////////////////////////////////////////////////////////////////////////////
-// Altitude measurement and control.
-//
-#ifndef ALT_EST_GAIN
-# define ALT_EST_GAIN			0.01
-#endif
-#ifndef ALTITUDE_MIX
-# define ALTITUDE_MIX			1
-#endif
-
 
 //////////////////////////////////////////////////////////////////////////////
 // AIRSPEED_CRUISE
@@ -516,23 +425,6 @@
 # define MIN_GNDSPEED			0 // m/s (0 disables)
 #endif
 #define MIN_GNDSPEED_CM MIN_GNDSPEED*100
-
-/*  The following parmaeters have no corresponding control implementation
-#ifndef THROTTLE_ALT_P
-# define THROTTLE_ALT_P         0.32
-#endif
-#ifndef THROTTLE_ALT_I
-# define THROTTLE_ALT_I         0.0
-#endif
-#ifndef THROTTLE_ALT_D
-# define THROTTLE_ALT_D         0.0
-#endif
-#ifndef THROTTLE_ALT_INT_MAX
-# define THROTTLE_ALT_INT_MAX   20
-#endif
-#define THROTTLE_ALT_INT_MAX_CM THROTTLE_ALT_INT_MAX*100
-*/
-
 
 //////////////////////////////////////////////////////////////////////////////
 // Servo Mapping
