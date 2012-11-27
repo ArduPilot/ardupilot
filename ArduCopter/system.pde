@@ -289,6 +289,11 @@ static void init_ardupilot()
     init_sonar();
 #endif
 
+#if FRAME_CONIG == HELI_FRAME
+// initialise controller filters
+// init_rate_controllers();
+#endif // HELI_FRAME
+
     // initialize commands
     // -------------------
     init_commands();
