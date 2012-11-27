@@ -18,6 +18,7 @@
 #define YAW_AUTO                        2
 #define YAW_LOOK_AT_HOME    		    3
 #define YAW_TOY                         4       // THOR This is the Yaw mode
+#define YAW_LOOK_AHEAD					5		// WARNING!  CODE IN DEVELOPMENT NOT PROVEN
 
 
 #define ROLL_PITCH_STABLE       0

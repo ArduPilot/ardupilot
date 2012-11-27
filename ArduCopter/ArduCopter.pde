@@ -798,6 +798,8 @@ static int8_t alt_change_flag;
 ////////////////////////////////////////////////////////////////////////////////
 // The Commanded Yaw from the autopilot.
 static int32_t nav_yaw;
+// Commanded Yaw to automatically look ahead.
+static int32_t look_ahead_yaw;
 // A speed governer for Yaw control - limits the rate the quad can be turned by the autopilot
 static int32_t auto_yaw;
 static uint8_t yaw_timer;
@@ -1520,6 +1522,17 @@ void update_yaw_mode(void)
         nav_yaw  = wrap_360(nav_yaw);
         get_stabilize_yaw(nav_yaw);
         break;
+		
+	case YAW_LOOK_AHEAD:
+		
+		if (g_gps->ground_speed > 300){														// Speed in cm/s. Create deadband of 3m/s.
+			look_ahead_yaw = (float)((g_gps->ground_speed - 300)/YAW_LOOK_AHEAD_RATE * (g_gps->ground_course - nav_yaw));
+			look_ahead_yaw = constrain ((look_ahead_yaw + g.rc_4.control_in), -4500, 4500);
+		} else { 
+			look_ahead_yaw = g.rc_4.control_in;
+		}
+		get_yaw_rate_stabilized_ef(look_ahead_yaw);
+        break;		
     }
 }
 
