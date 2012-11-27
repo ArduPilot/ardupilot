@@ -7,7 +7,9 @@ static int8_t	setup_radio			(uint8_t argc, const Menu::arg *argv);
 static int8_t	setup_show			(uint8_t argc, const Menu::arg *argv);
 static int8_t	setup_factory		(uint8_t argc, const Menu::arg *argv);
 static int8_t	setup_flightmodes	(uint8_t argc, const Menu::arg *argv);
+#if !defined( __AVR_ATmega1280__ )
 static int8_t   setup_accel_scale                       (uint8_t argc, const Menu::arg *argv);
+#endif
 static int8_t	setup_erase			(uint8_t argc, const Menu::arg *argv);
 static int8_t	setup_compass			(uint8_t argc, const Menu::arg *argv);
 static int8_t	setup_declination		(uint8_t argc, const Menu::arg *argv);
@@ -20,7 +22,9 @@ static const struct Menu::command setup_menu_commands[] PROGMEM = {
 	{"reset", 			setup_factory},
 	{"radio",			setup_radio},
 	{"modes",			setup_flightmodes},
+#if !defined( __AVR_ATmega1280__ )
     {"accel",           setup_accel_scale},
+#endif
 	{"compass",			setup_compass},
 	{"declination",		setup_declination},
 	{"battery",			setup_batt_monitor},
@@ -290,7 +294,7 @@ setup_erase(uint8_t argc, const Menu::arg *argv)
 /*
   handle full accelerometer calibration via user dialog
  */
-
+#if !defined( __AVR_ATmega1280__ )
 static void setup_printf_P(const prog_char_t *fmt, ...)
 {
     va_list arg_list;
@@ -325,6 +329,7 @@ setup_accel_scale(uint8_t argc, const Menu::arg *argv)
     report_ins();
     return(0);
 }
+#endif
 
 static int8_t
 setup_compass(uint8_t argc, const Menu::arg *argv)
