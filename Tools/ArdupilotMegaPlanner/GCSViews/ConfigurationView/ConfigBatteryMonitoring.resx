@@ -427,7 +427,7 @@
     <value>$this</value>
   </data>
   <data name="&gt;&gt;groupBox4.ZOrder" xml:space="preserve">
-    <value>2</value>
+    <value>3</value>
   </data>
   <data name="label47.ImeMode" type="System.Windows.Forms.ImeMode, System.Windows.Forms">
     <value>NoControl</value>
@@ -454,7 +454,7 @@
     <value>$this</value>
   </data>
   <data name="&gt;&gt;label47.ZOrder" xml:space="preserve">
-    <value>3</value>
+    <value>4</value>
   </data>
   <data name="CMB_batmonsensortype.Items" xml:space="preserve">
     <value>0: Other</value>
@@ -469,7 +469,7 @@
     <value>3: AttoPilot 180A</value>
   </data>
   <data name="CMB_batmonsensortype.Items4" xml:space="preserve">
-    <value>4: 3DR IV Sensor</value>
+    <value>4: 3DR Power Module</value>
   </data>
   <data name="CMB_batmonsensortype.Location" type="System.Drawing.Point, System.Drawing">
     <value>160, 68</value>
@@ -490,7 +490,7 @@
     <value>$this</value>
   </data>
   <data name="&gt;&gt;CMB_batmonsensortype.ZOrder" xml:space="preserve">
-    <value>4</value>
+    <value>5</value>
   </data>
   <data name="textBox3.Font" type="System.Drawing.Font, System.Drawing">
     <value>Microsoft Sans Serif, 8.25pt</value>
@@ -526,7 +526,7 @@ Then subtract 0.3v from that value and enter it in field #1 at left.
     <value>$this</value>
   </data>
   <data name="&gt;&gt;textBox3.ZOrder" xml:space="preserve">
-    <value>5</value>
+    <value>6</value>
   </data>
   <data name="label29.AutoSize" type="System.Boolean, mscorlib">
     <value>True</value>
@@ -535,16 +535,16 @@ Then subtract 0.3v from that value and enter it in field #1 at left.
     <value>NoControl</value>
   </data>
   <data name="label29.Location" type="System.Drawing.Point, System.Drawing">
-    <value>288, 45</value>
+    <value>287, 44</value>
   </data>
   <data name="label29.Size" type="System.Drawing.Size, System.Drawing">
-    <value>48, 13</value>
+    <value>84, 13</value>
   </data>
   <data name="label29.TabIndex" type="System.Int32, mscorlib">
     <value>43</value>
   </data>
   <data name="label29.Text" xml:space="preserve">
-    <value>Capacity</value>
+    <value>Battery Capacity</value>
   </data>
   <data name="&gt;&gt;label29.Name" xml:space="preserve">
     <value>label29</value>
@@ -556,7 +556,7 @@ Then subtract 0.3v from that value and enter it in field #1 at left.
     <value>$this</value>
   </data>
   <data name="&gt;&gt;label29.ZOrder" xml:space="preserve">
-    <value>6</value>
+    <value>7</value>
   </data>
   <data name="label30.ImeMode" type="System.Windows.Forms.ImeMode, System.Windows.Forms">
     <value>NoControl</value>
@@ -583,16 +583,19 @@ Then subtract 0.3v from that value and enter it in field #1 at left.
     <value>$this</value>
   </data>
   <data name="&gt;&gt;label30.ZOrder" xml:space="preserve">
-    <value>7</value>
+    <value>8</value>
   </data>
   <data name="TXT_battcapacity.Location" type="System.Drawing.Point, System.Drawing">
-    <value>349, 42</value>
+    <value>377, 41</value>
   </data>
   <data name="TXT_battcapacity.Size" type="System.Drawing.Size, System.Drawing">
-    <value>83, 20</value>
+    <value>50, 20</value>
   </data>
   <data name="TXT_battcapacity.TabIndex" type="System.Int32, mscorlib">
     <value>45</value>
+  </data>
+  <data name="TXT_battcapacity.Text" xml:space="preserve">
+    <value>2200</value>
   </data>
   <data name="&gt;&gt;TXT_battcapacity.Name" xml:space="preserve">
     <value>TXT_battcapacity</value>
@@ -604,7 +607,7 @@ Then subtract 0.3v from that value and enter it in field #1 at left.
     <value>$this</value>
   </data>
   <data name="&gt;&gt;TXT_battcapacity.ZOrder" xml:space="preserve">
-    <value>8</value>
+    <value>9</value>
   </data>
   <data name="CMB_batmontype.Items" xml:space="preserve">
     <value>0: Disabled</value>
@@ -634,7 +637,7 @@ Then subtract 0.3v from that value and enter it in field #1 at left.
     <value>$this</value>
   </data>
   <data name="&gt;&gt;CMB_batmontype.ZOrder" xml:space="preserve">
-    <value>9</value>
+    <value>10</value>
   </data>
   <data name="pictureBox5.BackgroundImageLayout" type="System.Windows.Forms.ImageLayout, System.Windows.Forms">
     <value>Zoom</value>
@@ -643,10 +646,10 @@ Then subtract 0.3v from that value and enter it in field #1 at left.
     <value>NoControl</value>
   </data>
   <data name="pictureBox5.Location" type="System.Drawing.Point, System.Drawing">
-    <value>14, 16</value>
+    <value>3, 41</value>
   </data>
   <data name="pictureBox5.Size" type="System.Drawing.Size, System.Drawing">
-    <value>75, 75</value>
+    <value>97, 75</value>
   </data>
   <data name="pictureBox5.TabIndex" type="System.Int32, mscorlib">
     <value>42</value>
@@ -661,7 +664,7 @@ Then subtract 0.3v from that value and enter it in field #1 at left.
     <value>$this</value>
   </data>
   <data name="&gt;&gt;pictureBox5.ZOrder" xml:space="preserve">
-    <value>10</value>
+    <value>11</value>
   </data>
   <metadata name="timer1.TrayLocation" type="System.Drawing.Point, System.Drawing, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a">
     <value>17, 17</value>
@@ -694,7 +697,7 @@ Then subtract 0.3v from that value and enter it in field #1 at left.
     <value>$this</value>
   </data>
   <data name="&gt;&gt;CMB_apmversion.ZOrder" xml:space="preserve">
-    <value>1</value>
+    <value>2</value>
   </data>
   <data name="label1.ImeMode" type="System.Windows.Forms.ImeMode, System.Windows.Forms">
     <value>NoControl</value>
@@ -721,6 +724,36 @@ Then subtract 0.3v from that value and enter it in field #1 at left.
     <value>$this</value>
   </data>
   <data name="&gt;&gt;label1.ZOrder" xml:space="preserve">
+    <value>1</value>
+  </data>
+  <data name="label2.AutoSize" type="System.Boolean, mscorlib">
+    <value>True</value>
+  </data>
+  <data name="label2.ImeMode" type="System.Windows.Forms.ImeMode, System.Windows.Forms">
+    <value>NoControl</value>
+  </data>
+  <data name="label2.Location" type="System.Drawing.Point, System.Drawing">
+    <value>433, 44</value>
+  </data>
+  <data name="label2.Size" type="System.Drawing.Size, System.Drawing">
+    <value>28, 13</value>
+  </data>
+  <data name="label2.TabIndex" type="System.Int32, mscorlib">
+    <value>53</value>
+  </data>
+  <data name="label2.Text" xml:space="preserve">
+    <value>mAh</value>
+  </data>
+  <data name="&gt;&gt;label2.Name" xml:space="preserve">
+    <value>label2</value>
+  </data>
+  <data name="&gt;&gt;label2.Type" xml:space="preserve">
+    <value>System.Windows.Forms.Label, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </data>
+  <data name="&gt;&gt;label2.Parent" xml:space="preserve">
+    <value>$this</value>
+  </data>
+  <data name="&gt;&gt;label2.ZOrder" xml:space="preserve">
     <value>0</value>
   </data>
   <metadata name="$this.Localizable" type="System.Boolean, mscorlib, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089">

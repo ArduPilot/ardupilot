@@ -1038,7 +1038,7 @@ namespace ArdupilotMega.GCSViews
 
             //            comPort.sendPacket(oldgps);
 
-            comPort.sendPacket(new MAVLink.mavlink_vfr_hud_t() { airspeed = (float)sitldata.airspeed } );
+            //comPort.sendPacket(new MAVLink.mavlink_vfr_hud_t() { airspeed = (float)sitldata.airspeed } );
 
             MAVLink.mavlink_raw_pressure_t pres = new MAVLink.mavlink_raw_pressure_t();
             double calc = (101325 * Math.Pow(1 - 2.25577 * Math.Pow(10, -5) * sitldata.altitude, 5.25588)); // updated from valid gps

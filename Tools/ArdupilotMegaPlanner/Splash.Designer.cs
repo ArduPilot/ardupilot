@@ -74,7 +74,7 @@
             this.MinimumSize = new System.Drawing.Size(600, 375);
             this.Name = "Splash";
             this.StartPosition = System.Windows.Forms.FormStartPosition.CenterScreen;
-            this.Text = "APM Planner";
+            this.Text = "Mission Planner";
             this.TopMost = true;
             this.ResumeLayout(false);
             this.PerformLayout();

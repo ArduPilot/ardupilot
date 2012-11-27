@@ -140,24 +140,6 @@ namespace ArdupilotMega.GCSViews
                 chk_box_CheckedChanged((object)(new CheckBox() { Name = "nav_pitch", Checked = true }), new EventArgs());
             }
 
-            for (int f = 1; f < 10; f++)
-            {
-                // load settings
-                if (MainV2.config["quickView" + f] != null)
-                {
-                    Control[] ctls = this.Controls.Find("quickView" + f, true);
-                    if (ctls.Length > 0)
-                    {
-                        // set description
-                        ((QuickView)ctls[0]).desc = MainV2.config["quickView" + f].ToString();
-
-                        // set databinding for value
-                        ((QuickView)ctls[0]).DataBindings.Clear();
-                        ((QuickView)ctls[0]).DataBindings.Add(new System.Windows.Forms.Binding("number", this.bindingSource1, MainV2.config["quickView" + f].ToString(), true));
-                    }
-                }
-            }
-
             foreach (string item in MainV2.config.Keys)
             {
                 if (item.StartsWith("hud1_useritem_"))
@@ -345,6 +327,24 @@ namespace ArdupilotMega.GCSViews
                 hud1.Dock = DockStyle.Fill;
             }
 
+            for (int f = 1; f < 10; f++)
+            {
+                // load settings
+                if (MainV2.config["quickView" + f] != null)
+                {
+                    Control[] ctls = this.Controls.Find("quickView" + f, true);
+                    if (ctls.Length > 0)
+                    {
+                        // set description
+                        ((QuickView)ctls[0]).desc = MainV2.cs.GetNameandUnit(MainV2.config["quickView" + f].ToString());
+
+                        // set databinding for value
+                        ((QuickView)ctls[0]).DataBindings.Clear();
+                        ((QuickView)ctls[0]).DataBindings.Add(new System.Windows.Forms.Binding("number", this.bindingSource1, MainV2.config["quickView" + f].ToString(), true));
+                    }
+                }
+            }
+
             if (MainV2.comPort.param.ContainsKey("BATT_MONITOR") && (float)MainV2.comPort.param["BATT_MONITOR"] != 0)
             {
                 hud1.batteryon = true;
@@ -396,6 +396,7 @@ namespace ArdupilotMega.GCSViews
 
         void gMapControl1_OnMapZoomChanged()
         {
+            TRK_zoom.Value = gMapControl1.Zoom;
             Zoomlevel.Value = Convert.ToDecimal(gMapControl1.Zoom);
         }
 
@@ -409,6 +410,10 @@ namespace ArdupilotMega.GCSViews
 
             t11.Start();
             //MainH.threads.Add(t11);
+
+            TRK_zoom.Minimum = gMapControl1.MinZoom;
+            TRK_zoom.Maximum = gMapControl1.MaxZoom + 1;
+            TRK_zoom.Value = gMapControl1.Zoom;
 
             Zoomlevel.Minimum = gMapControl1.MinZoom;
             Zoomlevel.Maximum = gMapControl1.MaxZoom + 1;
@@ -2308,7 +2313,7 @@ print 'Roll complete'
 
                 CheckBox chk_box = new CheckBox();
 
-                if (((QuickView)sender).desc == field.Name)
+                if (((QuickView)sender).Tag == field.Name)
                     chk_box.Checked = true;
 
                 chk_box.Text = field.Name;
@@ -2345,7 +2350,12 @@ print 'Roll complete'
                 MainV2.config[((QuickView)((CheckBox)sender).Tag).Name] = ((CheckBox)sender).Name;
 
                 // set description
-                ((QuickView)((CheckBox)sender).Tag).desc = ((CheckBox)sender).Name;
+                string desc = ((CheckBox)sender).Name;
+                ((QuickView)((CheckBox)sender).Tag).Tag = desc;
+
+                desc = MainV2.cs.GetNameandUnit(desc);
+
+                ((QuickView)((CheckBox)sender).Tag).desc = desc;
 
                 // set databinding for value
                 ((QuickView)((CheckBox)sender).Tag).DataBindings.Clear();
@@ -2562,5 +2572,22 @@ print 'Roll complete'
             }
             catch { CustomMessageBox.Show("Error sending command"); }
         }
+
+        private void TRK_zoom_Scroll(object sender, EventArgs e)
+        {
+            try
+            {
+                if (gMapControl1.MaxZoom + 1 == (double)TRK_zoom.Value)
+                {
+                    gMapControl1.Zoom = (double)TRK_zoom.Value - .1;
+                }
+                else
+                {
+                    gMapControl1.Zoom = (double)TRK_zoom.Value;
+                }
+            }
+            catch { }
+        }
+
     }
 }

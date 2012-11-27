@@ -249,6 +249,8 @@ namespace ArdupilotMega
                 }
             }
 
+            ChangeUnits();
+
             try
             {
                 FlightData = new GCSViews.FlightData();
@@ -274,8 +276,6 @@ namespace ArdupilotMega
 
             if (MainV2.config["CHK_GDIPlus"] != null)
                 GCSViews.FlightData.myhud.UseOpenGL = !bool.Parse(MainV2.config["CHK_GDIPlus"].ToString());
-
-            ChangeUnits();
 
             try
             {
@@ -2258,11 +2258,18 @@ namespace ArdupilotMega
                     {
                         case Common.distances.Meters:
                             MainV2.cs.multiplierdist = 1;
+                            MainV2.cs.DistanceUnit = "Meters";
                             break;
                         case Common.distances.Feet:
                             MainV2.cs.multiplierdist = 3.2808399f;
+                            MainV2.cs.DistanceUnit = "Feet";
                             break;
                     }
+                }
+                else
+                {
+                    MainV2.cs.multiplierdist = 1;
+                    MainV2.cs.DistanceUnit = "Meters";
                 }
 
                 // speed
@@ -2272,20 +2279,30 @@ namespace ArdupilotMega
                     {
                         case Common.speeds.ms:
                             MainV2.cs.multiplierspeed = 1;
+                            MainV2.cs.SpeedUnit = "m/s";
                             break;
                         case Common.speeds.fps:
                             MainV2.cs.multiplierdist = 3.2808399f;
+                            MainV2.cs.SpeedUnit = "fps";
                             break;
                         case Common.speeds.kph:
                             MainV2.cs.multiplierspeed = 3.6f;
+                            MainV2.cs.SpeedUnit = "kph";
                             break;
                         case Common.speeds.mph:
                             MainV2.cs.multiplierspeed = 2.23693629f;
+                            MainV2.cs.SpeedUnit = "mph";
                             break;
                         case Common.speeds.knots:
                             MainV2.cs.multiplierspeed = 1.94384449f;
+                            MainV2.cs.SpeedUnit = "knots";
                             break;
                     }
+                }
+                else
+                {
+                    MainV2.cs.multiplierspeed = 1;
+                    MainV2.cs.SpeedUnit = "m/s";
                 }
             }
             catch { }
@@ -2337,10 +2354,9 @@ namespace ArdupilotMega
         {
             this.SuspendLayout();
             panel1.Location = new Point(0,0);
-            panel1.Visible = true;
             panel1.Width = menu.Width;
             panel1.BringToFront();
-
+            panel1.Visible = true;
             this.ResumeLayout();
         }
     }

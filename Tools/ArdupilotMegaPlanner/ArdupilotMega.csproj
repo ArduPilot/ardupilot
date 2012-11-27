@@ -85,10 +85,10 @@
     <ManifestKeyFile>ArdupilotMega_TemporaryKey.pfx</ManifestKeyFile>
   </PropertyGroup>
   <PropertyGroup>
-    <GenerateManifests>true</GenerateManifests>
+    <GenerateManifests>false</GenerateManifests>
   </PropertyGroup>
   <PropertyGroup>
-    <SignManifests>true</SignManifests>
+    <SignManifests>false</SignManifests>
   </PropertyGroup>
   <PropertyGroup>
     <SignAssembly>false</SignAssembly>
@@ -157,7 +157,7 @@
     </Reference>
     <Reference Include="Microsoft.DirectX.DirectInput, Version=1.0.2902.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35">
       <SpecificVersion>False</SpecificVersion>
-      <Private>False</Private>
+      <Private>True</Private>
     </Reference>
     <Reference Include="Microsoft.Dynamic">
     </Reference>
@@ -381,9 +381,15 @@
     <Compile Include="Controls\ValuesControl.Designer.cs">
       <DependentUpon>ValuesControl.cs</DependentUpon>
     </Compile>
-    <None Include="Driver\arduino.cat" />
-    <None Include="Driver\px4fmu.cat" />
-    <None Include="Driver\signed.cer" />
+    <None Include="Driver\arduino.cat">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Include="Driver\px4fmu.cat">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Include="Driver\signed.cer">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
     <None Include="HIL\AeroSimRC.cs">
       <SubType>Code</SubType>
     </None>
@@ -1431,11 +1437,15 @@
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
     <Content Include="ChangeLog.txt" />
-    <Content Include="Driver\arduino.inf" />
+    <Content Include="Driver\arduino.inf">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
     <Content Include="Driver\dpinst.xml" />
     <Content Include="Driver\DPInstx64.exe" />
     <Content Include="Driver\DPInstx86.exe" />
-    <Content Include="Driver\px4fmu.inf" />
+    <Content Include="Driver\px4fmu.inf">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
     <Content Include="hud.html">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
       <SubType>Designer</SubType>
@@ -1462,6 +1472,7 @@
     <None Include="Resources\frames_plus.png" />
     <None Include="Resources\frames_x.png" />
     <None Include="Resources\cameraGimalYaw.png" />
+    <None Include="Resources\BR-APMPWRDEAN-2.jpg" />
     <Content Include="Resources\MAVCmd.zh-Hans.txt" />
     <None Include="Resources\MAVParam.txt" />
     <Content Include="Resources\MAVParam.zh-Hans.txt" />

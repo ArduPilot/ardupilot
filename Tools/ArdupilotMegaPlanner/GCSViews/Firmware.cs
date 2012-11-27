@@ -2,11 +2,11 @@
 using System.Collections.Generic;
 using System.Reflection;
 using System.Windows.Forms;
-using System.IO.Ports;
 using System.IO;
 using System.Xml;
 using System.Net;
 using log4net;
+using ArdupilotMega.Comms;
 using ArdupilotMega.Arduino;
 using ArdupilotMega.Utilities;
 using System.Text.RegularExpressions;
@@ -491,8 +491,8 @@ namespace ArdupilotMega.GCSViews
                            };
             }
             port.DataBits = 8;
-            port.StopBits = StopBits.One;
-            port.Parity = Parity.None;
+            port.StopBits = System.IO.Ports.StopBits.One;
+            port.Parity = System.IO.Ports.Parity.None;
             port.DtrEnable = true;
 
             try
@@ -606,7 +606,11 @@ namespace ArdupilotMega.GCSViews
             {
                 lbl_status.Text = "Failed upload"; 
                 CustomMessageBox.Show("Check port settings or Port in use? " + ex);
-                port.Close();
+                try
+                {
+                    port.Close();
+                }
+                catch { }
             }
             flashing = false;
             MainV2.giveComport = false;
