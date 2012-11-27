@@ -228,12 +228,11 @@ setup_flightmodes(uint8_t argc, const Menu::arg *argv)
 				mode != CIRCLE &&
 				mode != LEARNING &&
 				mode != AUTO &&
-				mode != RTL &&
-				mode != LOITER)
+				mode != RTL) 
 			{
 				if (mode < MANUAL)
-					mode = LOITER;
-				else if (mode >LOITER)
+					mode = RTL;
+				else if (mode > RTL)
 					mode = MANUAL;
 				else
 					mode += radioInputSwitch;

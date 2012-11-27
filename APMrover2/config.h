@@ -649,19 +649,6 @@
 # define WP_RADIUS_DEFAULT		30
 #endif
 
-#ifndef LOITER_RADIUS_DEFAULT
-# define LOITER_RADIUS_DEFAULT 60
-#endif
-
-#ifndef ALT_HOLD_HOME
-# define ALT_HOLD_HOME 100
-#endif
-#define ALT_HOLD_HOME_CM ALT_HOLD_HOME*100
-
-#ifndef USE_CURRENT_ALT
-# define USE_CURRENT_ALT FALSE
-#endif
-
 //////////////////////////////////////////////////////////////////////////////
 // Developer Items
 //

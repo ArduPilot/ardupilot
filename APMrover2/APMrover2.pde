@@ -318,18 +318,18 @@ static const char *comma = ",";
 
 static const char* flight_mode_strings[] = {
 	"Manual",
-	"Circle",
+	"",
 	"Learning",
 	"",
 	"",
-	"FBW_A",
-	"FBW_B",
+	"",
+	"",
 	"",
 	"",
 	"",
 	"Auto",
 	"RTL",
-	"Loiter",
+	"",
 	"",
 	"",
 	"",
@@ -374,7 +374,7 @@ static bool rc_override_active = false;
 ////////////////////////////////////////////////////////////////////////////////
 // A tracking variable for type of failsafe active
 // Used for failsafe based on loss of RC signal or GCS signal
-static int 	failsafe;					
+static int16_t 	failsafe;					
 // Used to track if the value on channel 3 (throtttle) has fallen below the failsafe threshold
 // RC receiver should be set up to output a low throttle value when signal is lost
 static bool 	ch3_failsafe;
@@ -407,7 +407,7 @@ static byte 	ground_start_count	= 5;
 // Used to compute a speed estimate from the first valid gps fixes to decide if we are 
 // on the ground or in the air.  Used to decide if a ground start is appropriate if we
 // booted with an air start.
-static int     ground_start_avg;
+static int16_t     ground_start_avg;
 static int32_t          gps_base_alt;		
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -418,18 +418,15 @@ const	float radius_of_earth 	= 6378100;	// meters
 const	float gravity 			= 9.81;		// meters/ sec^2
 // This is the currently calculated direction to fly.  
 // deg * 100 : 0 to 360
-static long	nav_bearing;
-// This is the direction to the next waypoint or loiter center 
+static int32_t nav_bearing;
+// This is the direction to the next waypoint
 // deg * 100 : 0 to 360
-static long	target_bearing;	
+static int32_t target_bearing;	
 //This is the direction from the last waypoint to the next waypoint 
 // deg * 100 : 0 to 360
-static long	crosstrack_bearing;
+static int32_t crosstrack_bearing;
 // A gain scaler to account for ground speed/headwind/tailwind
 static float	nav_gain_scaler 		= 1;		
-// Direction held during phases of takeoff and landing
-// deg * 100 dir of plane,  A value of -1 indicates the course has not been set/is not in use
-static long    hold_course       	 	= -1;		// deg * 100 dir of plane
 static bool rtl_complete = false;
 
 // There may be two active commands in Auto mode.  
@@ -443,7 +440,7 @@ static byte	non_nav_command_ID	= NO_COMMAND;
 
 static float	groundspeed_error;	
 // 0-(throttle_max - throttle_cruise) : throttle nudge in Auto mode using top 1/2 of throttle stick travel
-static int     throttle_nudge = 0;
+static int16_t     throttle_nudge = 0;
 // The distance as reported by Sonar in cm – Values are 20 to 700 generally.
 static int16_t		sonar_dist;
 static bool obstacle = false;
@@ -452,17 +449,17 @@ static bool obstacle = false;
 // Ground speed
 ////////////////////////////////////////////////////////////////////////////////
 // The amount current ground speed is below min ground speed.  Centimeters per second
-static long		groundspeed_undershoot = 0;
-static long		ground_speed = 0;
-static int throttle_last = 0, throttle = 500;
+static int32_t 	groundspeed_undershoot = 0;
+static int32_t 	ground_speed = 0;
+static int16_t throttle_last = 0, throttle = 500;
 
 ////////////////////////////////////////////////////////////////////////////////
 // Location Errors
 ////////////////////////////////////////////////////////////////////////////////
 // Difference between current bearing and desired bearing.  Hundredths of a degree
-static long	bearing_error;
+static int32_t bearing_error;
 // Difference between current altitude and desired altitude.  Centimeters
-static long	altitude_error;
+static int32_t altitude_error;
 // Distance perpandicular to the course line that we are off trackline.  Meters 
 static float	crosstrack_error;
 
@@ -495,42 +492,26 @@ static float	current_total1;
 //static float	current_total2;									// Totalized current (Amp-hours) from battery 2
 
 // JLN Update
-unsigned long  timesw                  = 0;
+uint32_t  timesw                  = 0;
 static bool speed_boost = false;
-
-////////////////////////////////////////////////////////////////////////////////
-// Loiter management
-////////////////////////////////////////////////////////////////////////////////
-// Previous target bearing.  Used to calculate loiter rotations.  Hundredths of a degree
-static long 	old_target_bearing;
-// Total desired rotation in a loiter.  Used for Loiter Turns commands.  Degrees
-static int		loiter_total; 
-// The amount in degrees we have turned since recording old_target_bearing
-static int 	loiter_delta;
-// Total rotation in a loiter.  Used for Loiter Turns commands and to check for missed waypoints.  Degrees
-static int		loiter_sum;
-// The amount of time we have been in a Loiter.  Used for the Loiter Time command.  Milliseconds.
-static long 	loiter_time;
-// The amount of time we should stay in a loiter for the Loiter Time command.  Milliseconds.
-static int 	loiter_time_max;
 
 ////////////////////////////////////////////////////////////////////////////////
 // Navigation control variables
 ////////////////////////////////////////////////////////////////////////////////
 // The instantaneous desired bank angle.  Hundredths of a degree
-static long	nav_roll;
+static int32_t nav_roll;
 // The instantaneous desired pitch angle.  Hundredths of a degree
-static long	nav_pitch;
+static int32_t nav_pitch;
 // Calculated radius for the wp turn based on ground speed and max turn angle
-static long    wp_radius;
+static int32_t    wp_radius;
 
 ////////////////////////////////////////////////////////////////////////////////
 // Waypoint distances
 ////////////////////////////////////////////////////////////////////////////////
 // Distance between plane and next waypoint.  Meters
-static long	wp_distance;
+static int32_t wp_distance;
 // Distance between previous and next waypoint.  Meters
-static long	wp_totalDistance;
+static int32_t wp_totalDistance;
 
 ////////////////////////////////////////////////////////////////////////////////
 // repeating event control
@@ -538,27 +519,27 @@ static long	wp_totalDistance;
 // Flag indicating current event type
 static byte 		event_id;
 // when the event was started in ms
-static long 		event_timer;
+static int32_t 		event_timer;
 // how long to delay the next firing of event in millis
 static uint16_t 	event_delay;					
 // how many times to cycle : -1 (or -2) = forever, 2 = do one cycle, 4 = do two cycles
-static int 		event_repeat = 0;
+static int16_t 		event_repeat = 0;
 // per command value, such as PWM for servos
-static int 		event_value; 
+static int16_t 		event_value; 
 // the value used to cycle events (alternate value to event_value)
-static int 		event_undo_value;
+static int16_t 		event_undo_value;
 
 ////////////////////////////////////////////////////////////////////////////////
 // Conditional command
 ////////////////////////////////////////////////////////////////////////////////
 // A value used in condition commands (eg delay, change alt, etc.)
 // For example in a change altitude command, it is the altitude to change to.
-static long 	condition_value;
+static int32_t 	condition_value;
 // A starting value used to check the status of a conditional command.
 // For example in a delay command the condition_start records that start time for the delay
-static long 	condition_start;
+static int32_t 	condition_start;
 // A value used in condition commands.  For example the rate at which to change altitude.
-static int 		condition_rate;
+static int16_t 		condition_rate;
 
 ////////////////////////////////////////////////////////////////////////////////
 // 3D Location vectors
@@ -572,7 +553,7 @@ static bool	home_is_set;
 static struct 	Location prev_WP;
 // The plane's current location
 static struct 	Location current_loc;
-// The location of the current/active waypoint.  Used for altitude ramp, track following and loiter calculations.
+// The location of the current/active waypoint.  Used for track following
 static struct 	Location next_WP;
 // The location of the active waypoint in Guided mode.
 static struct  	Location guided_WP;
@@ -593,30 +574,30 @@ static float G_Dt						= 0.02;
 // Performance monitoring
 ////////////////////////////////////////////////////////////////////////////////
 // Timer used to accrue data and trigger recording of the performanc monitoring log message
-static long 	perf_mon_timer;
+static int32_t 	perf_mon_timer;
 // The maximum main loop execution time recorded in the current performance monitoring interval
-static int 	G_Dt_max = 0;
+static int16_t 	G_Dt_max = 0;
 // The number of gps fixes recorded in the current performance monitoring interval
-static int 	gps_fix_count = 0;
+static int16_t 	gps_fix_count = 0;
 // A variable used by developers to track performanc metrics.
 // Currently used to record the number of GCS heartbeat messages received
-static int		pmTest1 = 0;
+static int16_t pmTest1 = 0;
 
 
 ////////////////////////////////////////////////////////////////////////////////
 // System Timers
 ////////////////////////////////////////////////////////////////////////////////
 // Time in miliseconds of start of main control loop.  Milliseconds
-static unsigned long 	fast_loopTimer;
+static uint32_t 	fast_loopTimer;
 // Time Stamp when fast loop was complete.  Milliseconds
-static unsigned long 	fast_loopTimeStamp;
+static uint32_t 	fast_loopTimeStamp;
 // Number of milliseconds used in last main loop cycle
 static uint8_t 		delta_ms_fast_loop;
 // Counter of main loop executions.  Used for performance monitoring and failsafe processing
 static uint16_t			mainLoop_count;
 
 // Time in miliseconds of start of medium control loop.  Milliseconds
-static unsigned long 	medium_loopTimer;
+static uint32_t 	medium_loopTimer;
 // Counters for branching from main control loop to slower loops
 static byte 			medium_loopCounter;	
 // Number of milliseconds used in last medium loop cycle
@@ -977,43 +958,21 @@ static void update_GPS(void)
 
 static void update_current_flight_mode(void)
 { 
-	if(control_mode == AUTO) {
-		switch (nav_command_ID) {
-				hold_course = -1;
-				calc_nav_roll();
-				calc_throttle();
-				break;
-            }
-	}else{
-		switch(control_mode){
-			case RTL:
-				hold_course = -1;
-				calc_nav_roll();
-				calc_throttle();
-				break;
+    switch(control_mode){
+    case AUTO:
+    case RTL:
+        calc_nav_roll();
+        calc_throttle();
+        break;
 
-			case LEARNING:
-				nav_roll        = 0;
-				nav_pitch       = 0;
-                       #if X_PLANE == ENABLED
-  				// servo_out is for Sim control only
-				// ---------------------------------
-				g.channel_roll.servo_out = g.channel_roll.pwm_to_angle();
-				g.channel_pitch.servo_out = g.channel_pitch.pwm_to_angle();
-				g.channel_rudder.servo_out = g.channel_roll.pwm_to_angle();                     
-                       #endif
-				// throttle is passthrough
-				break;
-
-			case MANUAL:
-				// servo_out is for Sim control only
-				// ---------------------------------
-				g.channel_roll.servo_out = g.channel_roll.pwm_to_angle();
-				g.channel_pitch.servo_out = g.channel_pitch.pwm_to_angle();
-				g.channel_rudder.servo_out = g.channel_roll.pwm_to_angle();
-				break;
-
-		}
+    case LEARNING:
+    case MANUAL:
+        nav_roll        = 0;
+        nav_pitch       = 0;
+        g.channel_roll.servo_out = g.channel_roll.pwm_to_angle();
+        g.channel_pitch.servo_out = g.channel_pitch.pwm_to_angle();
+        g.channel_rudder.servo_out = g.channel_roll.pwm_to_angle();
+        break;
 	}
 }
 
@@ -1028,10 +987,8 @@ static void update_navigation()
 	}else{
 
 		switch(control_mode){
-			case LOITER:
 			case RTL:        // no loitering around the wp with the rover, goes direct to the wp position
 			case GUIDED:
-				// update_loiter();
 				calc_nav_roll();
 				calc_bearing_error();
                 if(verify_RTL()) {  

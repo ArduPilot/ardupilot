@@ -13,15 +13,9 @@ static void navigate()
 		return;
 	}
 
-#if HIL_MODE != HIL_MODE_ATTITUDE
-	if((next_WP.lat == 0)||(home_is_set==false)){
-#else
-	if(next_WP.lat == 0){
-#endif
+	if ((next_WP.lat == 0)||(home_is_set==false)){
 		return;
 	}
-
-         if(control_mode < INITIALISING) {
 
 	// waypoint distance from plane
 	// ----------------------------
@@ -29,7 +23,6 @@ static void navigate()
 
 	if (wp_distance < 0){
 		gcs_send_text_P(SEVERITY_HIGH,PSTR("<navigate> WP error - distance < 0"));
-		//cliSerial->println(wp_distance,DEC);
 		return;
 	}
 
@@ -41,33 +34,11 @@ static void navigate()
 	// ------------------------------------------
 	nav_bearing = target_bearing;
 
-	// check if we have missed the WP
-	loiter_delta = (target_bearing - old_target_bearing)/100;
-
-	// reset the old value
-	old_target_bearing = target_bearing;
-
-	// wrap values
-	if (loiter_delta > 180) loiter_delta -= 360;
-	if (loiter_delta < -180) loiter_delta += 360;
-	loiter_sum += abs(loiter_delta);
-                }    
-
 	// control mode specific updates to nav_bearing
 	// --------------------------------------------
 	update_navigation();
 }
 
-
-#if 0
-// Disabled for now
-void calc_distance_error()
-{
-	distance_estimate 	+= (float)ground_speed * .0002 * cos(radians(bearing_error * .01));
-	distance_estimate 	-= DST_EST_GAIN * (float)(distance_estimate - GPS_wp_distance);
-	wp_distance  		= max(distance_estimate,10);
-}
-#endif
 
 static void calc_gndspeed_undershoot()
 {
@@ -95,36 +66,6 @@ static long wrap_180(long error)
 	if (error > 18000)	error -= 36000;
 	if (error < -18000)	error += 36000;
 	return error;
-}
-
-static void update_loiter()
-{
-	float power;
-
-	if(wp_distance <= g.loiter_radius){
-		power = float(wp_distance) / float(g.loiter_radius);
-		power = constrain(power, 0.5, 1);
-		nav_bearing += (int)(9000.0 * (2.0 + power));
-	}else if(wp_distance < (g.loiter_radius + LOITER_RANGE)){
-		power = -((float)(wp_distance - g.loiter_radius - LOITER_RANGE) / LOITER_RANGE);
-		power = constrain(power, 0.5, 1);			//power = constrain(power, 0, 1);
-		nav_bearing -= power * 9000;
-
-	}else{
-		update_crosstrack();
-		loiter_time = millis();			// keep start time for loiter updating till we get within LOITER_RANGE of orbit
-
-	}
-/*
-	if (wp_distance < g.loiter_radius){
-		nav_bearing += 9000;
-	}else{
-		nav_bearing -= 100 * M_PI / 180 * asin(g.loiter_radius / wp_distance);
-	}
-
-	update_crosstrack();
-*/
-	nav_bearing = wrap_360(nav_bearing);
 }
 
 static void update_crosstrack(void)
