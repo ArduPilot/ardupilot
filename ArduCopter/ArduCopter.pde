@@ -1671,6 +1671,14 @@ void update_throttle_mode(void)
     }
 #endif
 
+#if FRAME_CONFIG == HELI_FRAME
+	if (roll_pitch_mode == ROLL_PITCH_STABLE){
+		motors.stab_throttle = true;
+	} else {
+		motors.stab_throttle = false;
+	}
+#endif // HELI_FRAME
+
     switch(throttle_mode) {
     case THROTTLE_MANUAL:
         if (g.rc_3.control_in > 0) {
