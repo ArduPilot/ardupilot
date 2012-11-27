@@ -23,6 +23,9 @@ public:
         _ki = initial_i;
         _kd = initial_d;
         _imax = initial_imax;
+
+		// set _last_derivative as invalid when we startup
+		_last_derivative = NAN;
     }
 
     /// Iterate the PID, return the new control value
@@ -104,7 +107,7 @@ private:
     float           _integrator;                                ///< integrator value
     int32_t         _last_error;                                ///< last error for derivative
     float           _last_derivative;                           ///< last derivative for low-pass filter
-    uint32_t        _last_t;
+    uint32_t        _last_t;                                    ///< last time get_pid() was called in millis
 
     int32_t         _get_pid(int32_t error, uint16_t dt, float scaler);
 
