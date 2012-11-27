@@ -16,7 +16,7 @@ const AP_Param::GroupInfo AP_AHRS::var_info[] PROGMEM = {
 
     // @Param: GPS_GAIN
     // @DisplayName: AHRS GPS gain
-    // @Description: This controls how how much to use the GPS to correct the attitude
+    // @Description: This controls how how much to use the GPS to correct the attitude. This should never be set to zero for a plane as it would result in the plane losing control in turns. For a plane please use the default value of 1.0.
     // @Range: 0.0 1.0
     // @Increment: .01
     AP_GROUPINFO("GPS_GAIN",  2, AP_AHRS, gps_gain, 1.0),
@@ -51,7 +51,7 @@ const AP_Param::GroupInfo AP_AHRS::var_info[] PROGMEM = {
 
     // @Param: BARO_USE
     // @DisplayName: AHRS Use Barometer
-    // @Description: This controls the use of the barometer for vertical acceleration compensation in AHRS
+    // @Description: This controls the use of the barometer for vertical acceleration compensation in AHRS. It is currently recommended that you set this value to zero unless you are a developer experimenting with the AHRS system.
     // @Values: 0:Disabled,1:Enabled
     // @User: Advanced
     AP_GROUPINFO("BARO_USE",  7,    AP_AHRS, _baro_use, 0),
