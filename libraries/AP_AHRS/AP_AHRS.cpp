@@ -22,8 +22,8 @@ const AP_Param::GroupInfo AP_AHRS::var_info[] PROGMEM = {
     AP_GROUPINFO("GPS_GAIN",  2, AP_AHRS, gps_gain, 1.0),
 
     // @Param: GPS_USE
-    // @DisplayName: AHRS use GPS
-    // @Description: This controls how how much to use the GPS to correct the attitude. This is for testing the dead-reckoning code
+    // @DisplayName: AHRS use GPS for navigation
+    // @Description: This controls whether to use dead-reckoning or GPS based navigation. If set to 0 then the GPS won't be used for navigation, and only dead reckoning will be used. A value of zero should never be used for normal flight.
     // @User: Advanced
     AP_GROUPINFO("GPS_USE",  3, AP_AHRS, _gps_use, 1),
 
