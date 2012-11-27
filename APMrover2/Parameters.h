@@ -168,6 +168,9 @@ public:
         k_param_fence_minalt,
         k_param_fence_maxalt,
 
+        // other objects
+        k_param_sitl = 230,
+
         //
         // 240: PID Controllers
         //

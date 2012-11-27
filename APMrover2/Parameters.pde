@@ -125,6 +125,12 @@ const AP_Param::Info var_info[] PROGMEM = {
     GOBJECT(ins,                            "INS_", AP_InertialSensor),
 #endif
 
+#ifdef DESKTOP_BUILD
+    // @Group: SIM_
+    // @Path: ../libraries/SITL/SITL.cpp
+    GOBJECT(sitl, "SIM_", SITL),
+#endif
+
     // @Group: AHRS_
     // @Path: ../libraries/AP_AHRS/AP_AHRS.cpp
     GOBJECT(ahrs,                   "AHRS_",    AP_AHRS),
