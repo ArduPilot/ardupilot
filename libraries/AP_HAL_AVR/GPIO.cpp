@@ -8,8 +8,6 @@
 using namespace AP_HAL_AVR;
 
 
-ArduinoGPIO* ArduinoDigitalSource::parent;
-
 AP_HAL::Proc ArduinoGPIO::_interrupt_6 = NULL;
 
 SIGNAL(INT6_vect) {
@@ -106,23 +104,56 @@ bool ArduinoGPIO::attach_interrupt(
 }
 
 
-AP_HAL::DigitalSource* ArduinoGPIO::channel(int n) {
-  if (ArduinoDigitalSource::parent == NULL) {
-    ArduinoDigitalSource::parent = this;
-  }
-  return new ArduinoDigitalSource(n);
+AP_HAL::DigitalSource* ArduinoGPIO::channel(int pin) {
+    uint8_t bit = digitalPinToBitMask(pin);
+    uint8_t port = digitalPinToPort(pin);
+    if (port == NOT_A_PIN) return NULL;
+    return new ArduinoDigitalSource(bit, port);
 }
 
 void ArduinoDigitalSource::mode(uint8_t output) {
-  parent->pinMode(_pin, output);
+    const uint8_t bit = _bit;
+    const uint8_t port = _port;
+
+    volatile uint8_t* reg;
+    reg = portModeRegister(port);
+
+    if (output == GPIO_INPUT) {
+        uint8_t oldSREG = SREG;
+                cli();
+        *reg &= ~bit;
+        SREG = oldSREG;
+    } else {
+        uint8_t oldSREG = SREG;
+                cli();
+        *reg |= bit;
+        SREG = oldSREG;
+    }
 }
 
 uint8_t ArduinoDigitalSource::read() {
-  return parent->read(_pin);
+    const uint8_t bit = _bit;
+    const uint8_t port = _port;
+    if (*portInputRegister(port) & bit) return 1;
+    return 0;
 }
 
 void ArduinoDigitalSource::write(uint8_t value) {
-  parent->write(_pin, value);
+    const uint8_t bit = _bit;
+    const uint8_t port = _port;
+    volatile uint8_t* out;
+    out = portOutputRegister(port);
+
+    uint8_t oldSREG = SREG;
+    cli();
+
+    if (value == 0) {
+        *out &= ~bit;
+    } else {
+        *out |= bit;
+    }
+
+    SREG = oldSREG;
 }
 
 

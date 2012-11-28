@@ -7,14 +7,14 @@
 
 class AP_HAL_AVR::ArduinoDigitalSource : public AP_HAL::DigitalSource {
 public:
-  ArduinoDigitalSource(int pin) : _pin(pin) {}
+  ArduinoDigitalSource(uint8_t bit, uint8_t port) : _bit(bit), _port(port) {}
   void    mode(uint8_t output);
   uint8_t read();
   void    write(uint8_t value);
 
-  static ArduinoGPIO* parent;
 private:
-  int _pin;
+  const uint8_t _bit;
+  const uint8_t _port;
 };
 
 class AP_HAL_AVR::ArduinoGPIO : public AP_HAL::GPIO {
