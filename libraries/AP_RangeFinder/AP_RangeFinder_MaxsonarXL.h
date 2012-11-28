@@ -1,5 +1,5 @@
-#ifndef AP_RangeFinder_MaxsonarXL_H
-#define AP_RangeFinder_MaxsonarXL_H
+#ifndef __AP_RangeFinder_MaxsonarXL_H__
+#define __AP_RangeFinder_MaxsonarXL_H__
 
 #include "RangeFinder.h"
 
@@ -30,7 +30,7 @@
 class AP_RangeFinder_MaxsonarXL : public RangeFinder
 {
 public:
-    AP_RangeFinder_MaxsonarXL(AP_AnalogSource *source, FilterInt16 *filter);
+    AP_RangeFinder_MaxsonarXL(AP_HAL::AnalogSource *source, FilterInt16 *filter);
     int             convert_raw_to_distance(int _raw_value) {
         return _raw_value * _scaler;
     }                                                                                              // read value from analog port and return distance in cm

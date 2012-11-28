@@ -25,17 +25,11 @@
  *
  */
 
-// AVR LibC Includes
-#if defined(ARDUINO) && ARDUINO >= 100
- #include "Arduino.h"
-#else
- #include "WConstants.h"
-#endif
 #include "AP_RangeFinder_SharpGP2Y.h"
 
 // Constructor //////////////////////////////////////////////////////////////
 
-AP_RangeFinder_SharpGP2Y::AP_RangeFinder_SharpGP2Y(AP_AnalogSource *source, FilterInt16 *filter) :
+AP_RangeFinder_SharpGP2Y::AP_RangeFinder_SharpGP2Y(AP_HAL::AnalogSource *source, FilterInt16 *filter) :
     RangeFinder(source, filter)
 {
     max_distance = AP_RANGEFINDER_SHARPEGP2Y_MAX_DISTANCE;

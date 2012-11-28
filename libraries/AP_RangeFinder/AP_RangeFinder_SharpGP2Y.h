@@ -1,5 +1,5 @@
-#ifndef AP_RangeFinder_SharpGP2Y_H
-#define AP_RangeFinder_SharpGP2Y_H
+#ifndef __AP_RangeFinder_SharpGP2Y_H__
+#define __AP_RangeFinder_SharpGP2Y_H__
 
 #include "RangeFinder.h"
 
@@ -9,12 +9,13 @@
 class AP_RangeFinder_SharpGP2Y : public RangeFinder
 {
 public:
-    AP_RangeFinder_SharpGP2Y(AP_AnalogSource *source, FilterInt16 *filter);
-    int        convert_raw_to_distance(int _raw_value) {
-        if( _raw_value == 0 )
+    AP_RangeFinder_SharpGP2Y(AP_HAL::AnalogSource *source, FilterInt16 *filter);
+    int  convert_raw_to_distance(int _raw_value) {
+        if( _raw_value == 0 ) {
             return max_distance;
-        else
+        } else {
             return 14500/_raw_value;
+        }
     }       // read value from analog port and return distance in cm
 
 };

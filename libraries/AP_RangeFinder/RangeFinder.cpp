@@ -11,16 +11,7 @@
  *
  *       This has the basic functions that all RangeFinders need implemented
  */
-
-// AVR LibC Includes
-#if defined(ARDUINO) && ARDUINO >= 100
- #include "Arduino.h"
-#else
- #include "WConstants.h"
-#endif
 #include "RangeFinder.h"
-
-
 
 // Public Methods //////////////////////////////////////////////////////////////
 
@@ -36,7 +27,7 @@ int RangeFinder::read()
 {
     int temp_dist;
 
-    raw_value = _analog_source->read();
+    raw_value = _analog_source->read_average();
     // convert analog value to distance in cm (using child implementation most likely)
     temp_dist = convert_raw_to_distance(raw_value);
 

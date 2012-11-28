@@ -25,17 +25,11 @@
  *
  */
 
-// AVR LibC Includes
-#if defined(ARDUINO) && ARDUINO >= 100
- #include "Arduino.h"
-#else
- #include "WConstants.h"
-#endif
 #include "AP_RangeFinder_MaxsonarXL.h"
 
 // Constructor //////////////////////////////////////////////////////////////
 
-AP_RangeFinder_MaxsonarXL::AP_RangeFinder_MaxsonarXL(AP_AnalogSource *source, FilterInt16 *filter) :
+AP_RangeFinder_MaxsonarXL::AP_RangeFinder_MaxsonarXL(AP_HAL::AnalogSource *source, FilterInt16 *filter) :
     RangeFinder(source, filter),
     _scaler(AP_RANGEFINDER_MAXSONARXL_SCALER)
 {
