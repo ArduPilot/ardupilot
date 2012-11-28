@@ -15,6 +15,7 @@
 #include <SITL.h>
 #include <AP_GPS.h>
 #include <AP_GPS_UBLOX.h>
+#include <sys/ioctl.h>
 #include "desktop.h"
 #include "util.h"
 
@@ -46,6 +47,17 @@ static struct {
  */
 ssize_t sitl_gps_read(int fd, void *buf, size_t count)
 {
+#ifdef FIONREAD
+	// use FIONREAD to get exact value if possible
+	int num_ready;
+	while (ioctl(fd, FIONREAD, &num_ready) == 0 && num_ready > 256) {
+		// the pipe is filling up - drain it
+		uint8_t tmp[128];
+		if (read(fd, tmp, sizeof(tmp)) != sizeof(tmp)) {
+			break;
+		}
+	}
+#endif
 	return read(fd, buf, count);
 }
 
