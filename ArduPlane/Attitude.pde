@@ -284,9 +284,10 @@ static void calc_nav_roll()
 static void throttle_slew_limit()
 {
     static int16_t last = 1000;
-    if(g.throttle_slewrate) {                   // if slew limit rate is set to zero then do not slew limit
-
-        float temp = g.throttle_slewrate * G_Dt * 10.f;                 //  * 10 to scale % to pwm range of 1000 to 2000
+    // if slew limit rate is set to zero then do not slew limit
+    if (g.throttle_slewrate) {                   
+        // limit throttle change by the given percentage per second
+        float temp = g.throttle_slewrate * G_Dt * 0.01 * fabs(g.channel_throttle.radio_max - g.channel_throttle.radio_min);
         g.channel_throttle.radio_out = constrain(g.channel_throttle.radio_out, last - (int)temp, last + (int)temp);
         last = g.channel_throttle.radio_out;
     }
