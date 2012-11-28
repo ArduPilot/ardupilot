@@ -14,6 +14,20 @@ static void learning()
       g.channel_rudder.servo_out = g.channel_roll.servo_out;
 }
 
+/*****************************************
+* Throttle slew limit
+*****************************************/
+static void throttle_slew_limit()
+{
+    static int16_t last = 1000;
+    // if slew limit rate is set to zero then do not slew limit
+    if (g.throttle_slewrate) {                   
+        // limit throttle change by the given percentage per second
+        float temp = g.throttle_slewrate * G_Dt * 0.01 * fabs(g.channel_throttle.radio_max - g.channel_throttle.radio_min);
+        g.channel_throttle.radio_out = constrain(g.channel_throttle.radio_out, last - (int)temp, last + (int)temp);
+        last = g.channel_throttle.radio_out;
+    }
+}
 
 static void calc_throttle()
 {  int rov_speed;
@@ -27,19 +41,7 @@ static void calc_throttle()
         
    groundspeed_error = rov_speed - (float)ground_speed; 
         
-   int throttle_req = (throttle_target + g.pidTeThrottle.get_pid(groundspeed_error)) * 10;
-        
-   if(g.throttle_slewrate > 0) { 
-       if (throttle_req > throttle_last) 
-           throttle = throttle + g.throttle_slewrate;
-       else if (throttle_req  < throttle_last) {
-           throttle = throttle - g.throttle_slewrate;   
-       }
-       throttle =  constrain(throttle, 500, throttle_req);
-       throttle_last = throttle;
-   } else {
-       throttle = throttle_req;
-   }
+   throttle = (throttle_target + g.pidTeThrottle.get_pid(groundspeed_error)) * 10;
    g.channel_throttle.servo_out = constrain(((float)throttle / 10.0f), 0, g.throttle_max.get());
 }
 
@@ -105,6 +107,9 @@ static void set_servos(void)
     }
                 
     if (control_mode >= AUTO) {
+        // limit throttle movement speed
+        throttle_slew_limit();
+
         // convert 0 to 100% into PWM
         g.channel_throttle.calc_pwm();
     }
