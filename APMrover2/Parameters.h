@@ -138,10 +138,10 @@ public:
 //
         // 200: Feed-forward gains
         //
-        k_param_kff_pitch_compensation = 200,
-        k_param_kff_rudder_mix,
-        k_param_kff_pitch_to_throttle,
-        k_param_kff_throttle_to_pitch,
+        k_param_kff_pitch_compensation = 200, // unused
+        k_param_kff_rudder_mix, // unused
+        k_param_kff_pitch_to_throttle, // unused
+        k_param_kff_throttle_to_pitch, // unused
 
         //
         // 210: flight modes
@@ -238,13 +238,6 @@ public:
         AP_Int8	    serial3_baud;
         AP_Int8     telem_delay;
 
-        // Feed-forward gains
-        //
-        AP_Float    kff_pitch_compensation;
-        AP_Float    kff_rudder_mix;
-        AP_Float    kff_pitch_to_throttle;
-        AP_Float    kff_throttle_to_pitch;
-    
         // Crosstrack navigation
         //
         AP_Float    crosstrack_gain;
