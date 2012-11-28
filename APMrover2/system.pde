@@ -453,7 +453,7 @@ static void startup_INS_ground(bool force_accel_level)
         // when MANUAL_LEVEL is set to 1 we don't do accelerometer
         // levelling on each boot, and instead rely on the user to do
         // it once via the ground station	
-	ins.init_accel(mavlink_delay, flash_leds);
+        ins.init_accel(mavlink_delay, flash_leds);
 	}
 	ahrs.set_fly_forward(true);
     ahrs.reset();
@@ -565,3 +565,26 @@ uint16_t board_voltage(void)
     return vcc.read_vcc();
 }
 #endif
+
+
+static void
+print_flight_mode(uint8_t mode)
+{
+    switch (mode) {
+    case MANUAL:
+        cliSerial->println_P(PSTR("Manual"));
+        break;
+    case LEARNING:
+        cliSerial->println_P(PSTR("Learning"));
+        break;
+    case AUTO:
+        cliSerial->println_P(PSTR("AUTO"));
+        break;
+    case RTL:
+        cliSerial->println_P(PSTR("RTL"));
+        break;
+    default:
+        cliSerial->println_P(PSTR("---"));
+        break;
+    }
+}

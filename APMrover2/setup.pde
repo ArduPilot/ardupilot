@@ -552,7 +552,7 @@ static void
 print_switch(byte p, byte m)
 {
 	cliSerial->printf_P(PSTR("Pos %d: "),p);
-	cliSerial->println(flight_mode_strings[m]);
+    print_flight_mode(m);
 }
 
 static void

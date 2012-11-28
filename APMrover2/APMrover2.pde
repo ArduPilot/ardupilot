@@ -316,36 +316,12 @@ static bool usb_connected;
 
 static const char *comma = ",";
 
-static const char* flight_mode_strings[] = {
-	"Manual",
-	"",
-	"Learning",
-	"",
-	"",
-	"",
-	"",
-	"",
-	"",
-	"",
-	"Auto",
-	"RTL",
-	"",
-	"",
-	"",
-	"",
-	"",
-	"",
-	"",
-	"",
-	"",
-	""};
-
 /* Radio values
 		Channel assignments
-			1   Ailerons (rudder if no ailerons)
-			2   Elevator
+			1   Steering
+			2   ---
 			3   Throttle
-			4   Rudder (if we have ailerons)
+			4   ---
 			5   Aux5
 			6   Aux6
 			7   Aux7
@@ -416,6 +392,11 @@ static int32_t          gps_base_alt;
 // Constants
 const	float radius_of_earth 	= 6378100;	// meters
 const	float gravity 			= 9.81;		// meters/ sec^2
+
+
+// true if we have a position estimate from AHRS
+static bool have_position;
+
 // This is the currently calculated direction to fly.  
 // deg * 100 : 0 to 360
 static int32_t nav_bearing;
@@ -789,16 +770,7 @@ cliSerial->println(tempaccel.z, DEC);
 		//------------------------------------------------
 		case 1:
 			medium_loopCounter++;
-
-
-			if(g_gps->new_data){
-				g_gps->new_data 	= false;
-
-				// calculate the plane's desired bearing
-				// -------------------------------------
-				navigate();
-			}
-
+            navigate();
 			break;
 
 		// command processing
@@ -922,9 +894,9 @@ static void update_GPS(void)
 	g_gps->update();
 	update_GPS_light();
 
-	if (g_gps->new_data && g_gps->fix) {
-		// for performance
-		// ---------------
+    have_position = ahrs.get_position(&current_loc);
+
+	if (g_gps->new_data && g_gps->status() == GPS::GPS_OK) {
 		gps_fix_count++;
 
 		if(ground_start_count > 1){
@@ -947,11 +919,6 @@ static void update_GPS(void)
 				ground_start_count = 0;
 			}
 		}
-
-
-		current_loc.lng = g_gps->longitude;    // Lon * 10**7
-		current_loc.lat = g_gps->latitude;     // Lat * 10**7
-        current_loc.alt = max((g_gps->altitude - home.alt),0);
         ground_speed   = g_gps->ground_speed;
 	}
 }

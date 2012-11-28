@@ -155,39 +155,20 @@ static void set_guided_WP(void)
 // -------------------------------
 void init_home()
 {
+    if (!have_position) {
+        // we need position information
+        return;
+    }
+
 	gcs_send_text_P(SEVERITY_LOW, PSTR("init home"));
 
-	// block until we get a good fix
-	// -----------------------------
-	while (!g_gps->new_data || !g_gps->fix) {
-		g_gps->update();
-	}
-
 	home.id 	= MAV_CMD_NAV_WAYPOINT;
-#if HIL_MODE != HIL_MODE_ATTITUDE
 
 	home.lng 	= g_gps->longitude;				// Lon * 10**7
 	home.lat 	= g_gps->latitude;				// Lat * 10**7
-        gps_base_alt    = max(g_gps->altitude, 0);
-        home.alt        = g_gps->altitude;;
-  					// Home is always 0
-#else
-//	struct Location temp = get_cmd_with_index(0);    // JLN update - for HIL test only get the home param stored in the FPL
-//        if (temp.alt > 0) {
-//        	home.lng 	= temp.lng;			 // Lon * 10**7
-//        	home.lat 	= temp.lat;			 // Lat * 10**7
-//        } else {
-        	home.lng 	= g_gps->longitude;		 // Lon * 10**7
-        	home.lat 	= g_gps->latitude;		 // Lat * 10**7       
-//        }
-        
-         gps_base_alt    = g_gps->altitude;;             // get the stored home altitude as the base ref for AGL calculation.
-         home.alt        = g_gps->altitude;;
-
-#endif
+    gps_base_alt    = max(g_gps->altitude, 0);
+    home.alt        = g_gps->altitude;
 	home_is_set = true;
-
-        //gcs_send_text_fmt(PSTR("gps alt: %lu"), (unsigned long)home.alt);
 
 	// Save Home to EEPROM - Command 0
 	// -------------------
@@ -204,9 +185,9 @@ void init_home()
 
 static void restart_nav()
 {  
-  reset_I();
-  prev_WP = current_loc;
-  nav_command_ID = NO_COMMAND;
-  nav_command_index = 0;
-  process_next_command();
+    reset_I();
+    prev_WP = current_loc;
+    nav_command_ID = NO_COMMAND;
+    nav_command_index = 0;
+    process_next_command();
 }
