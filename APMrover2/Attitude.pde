@@ -14,18 +14,21 @@ static void learning()
       g.channel_rudder.servo_out = g.channel_roll.servo_out;
 }
 
+
 /*****************************************
 * Throttle slew limit
 *****************************************/
-static void throttle_slew_limit()
+static void throttle_slew_limit(int16_t last_throttle)
 {
-    static int16_t last = 1000;
     // if slew limit rate is set to zero then do not slew limit
     if (g.throttle_slewrate) {                   
         // limit throttle change by the given percentage per second
         float temp = g.throttle_slewrate * G_Dt * 0.01 * fabs(g.channel_throttle.radio_max - g.channel_throttle.radio_min);
-        g.channel_throttle.radio_out = constrain(g.channel_throttle.radio_out, last - (int)temp, last + (int)temp);
-        last = g.channel_throttle.radio_out;
+        // allow a minimum change of 1 PWM per cycle
+        if (temp < 1) {
+            temp = 1;
+        }
+        g.channel_throttle.radio_out = constrain(g.channel_throttle.radio_out, last_throttle - temp, last_throttle + temp);
     }
 }
 
@@ -86,6 +89,8 @@ static void reset_I(void)
 *****************************************/
 static void set_servos(void)
 {
+    int16_t last_throttle = g.channel_throttle.radio_out;
+
 	if((control_mode == MANUAL) || (control_mode == LEARNING)){
 		// do a direct pass through of radio values
 		g.channel_roll.radio_out 		= g.channel_roll.radio_in;
@@ -107,11 +112,11 @@ static void set_servos(void)
     }
                 
     if (control_mode >= AUTO) {
-        // limit throttle movement speed
-        throttle_slew_limit();
-
         // convert 0 to 100% into PWM
         g.channel_throttle.calc_pwm();
+
+        // limit throttle movement speed
+        throttle_slew_limit(last_throttle);
     }
 
 
