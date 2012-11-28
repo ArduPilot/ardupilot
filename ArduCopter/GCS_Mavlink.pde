@@ -899,7 +899,7 @@ GCS_MAVLINK::data_stream_send(void)
         send_message(MSG_EXTENDED_STATUS1);
         send_message(MSG_EXTENDED_STATUS2);
         send_message(MSG_CURRENT_WAYPOINT);
-        send_message(MSG_GPS_RAW);                                      // TODO - remove this message after location message is working
+        send_message(MSG_GPS_RAW);
         send_message(MSG_NAV_CONTROLLER_OUTPUT);
         send_message(MSG_LIMITS_STATUS);
 
@@ -915,8 +915,7 @@ GCS_MAVLINK::data_stream_send(void)
     }
 
     if (stream_trigger(STREAM_POSITION)) {
-        // sent with GPS read
-        //cliSerial->printf("mav3 %d\n", (int)streamRatePosition.get());
+        send_message(MSG_LOCATION);
     }
 
     if (stream_trigger(STREAM_RAW_CONTROLLER)) {
