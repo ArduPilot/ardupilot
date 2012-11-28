@@ -37,9 +37,9 @@ def drive_RTL(mavproxy, mav):
     '''drive to home'''
     print("Driving home in RTL")
     mavproxy.send('switch 3\n')
-    wait_mode(mav, 'RTL')
     if not wait_location(mav, homeloc, accuracy=22, timeout=90):
         return False
+    mavproxy.expect('Reached home')
     print("RTL Complete")
     return True
 
