@@ -281,15 +281,17 @@ static void calc_nav_roll()
 /*****************************************
 * Throttle slew limit
 *****************************************/
-static void throttle_slew_limit()
+static void throttle_slew_limit(int16_t last_throttle)
 {
-    static int16_t last = 1000;
     // if slew limit rate is set to zero then do not slew limit
     if (g.throttle_slewrate) {                   
         // limit throttle change by the given percentage per second
         float temp = g.throttle_slewrate * G_Dt * 0.01 * fabs(g.channel_throttle.radio_max - g.channel_throttle.radio_min);
-        g.channel_throttle.radio_out = constrain(g.channel_throttle.radio_out, last - (int)temp, last + (int)temp);
-        last = g.channel_throttle.radio_out;
+        // allow a minimum change of 1 PWM per cycle
+        if (temp < 1) {
+            temp = 1;
+        }
+        g.channel_throttle.radio_out = constrain(g.channel_throttle.radio_out, last_throttle - temp, last_throttle + temp);
     }
 }
 
@@ -347,6 +349,7 @@ static bool suppress_throttle(void)
 static void set_servos(void)
 {
     int16_t flapSpeedSource = 0;
+    int16_t last_throttle = g.channel_throttle.radio_out;
 
     if(control_mode == MANUAL) {
         // do a direct pass through of radio values
@@ -420,12 +423,6 @@ static void set_servos(void)
             g.channel_pitch.radio_out =     elevon2_trim + (BOOL_TO_SIGN(g.reverse_ch2_elevon) * (ch2 * 500.0/ SERVO_MAX));
         }
 
-        if (control_mode >= FLY_BY_WIRE_B) {
-            /* only do throttle slew limiting in modes where throttle
-             *  control is automatic */
-            throttle_slew_limit();
-        }
-
 #if OBC_FAILSAFE == ENABLED
         // this is to allow the failsafe module to deliberately crash 
         // the plane. Only used in extreme circumstances to meet the
@@ -494,6 +491,12 @@ static void set_servos(void)
         } else {
             RC_Channel_aux::set_servo_out(RC_Channel_aux::k_flap_auto, g.flap_2_percent);
         }
+    }
+
+    if (control_mode >= FLY_BY_WIRE_B) {
+        /* only do throttle slew limiting in modes where throttle
+         *  control is automatic */
+        throttle_slew_limit(last_throttle);
     }
 
 #if HIL_MODE == HIL_MODE_DISABLED || HIL_SERVOS
