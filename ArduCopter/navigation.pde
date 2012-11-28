@@ -29,7 +29,7 @@ static void update_navigation()
         log_output = true;
     }
 
-#if INERTIAL_NAV == ENABLED
+#if INERTIAL_NAV_XY == ENABLED
     // TO-DO: clean this up because inertial nav is overwriting the dTnav and pos_updated from above
     // check for inertial nav updates
     if( inertial_nav.position_ok() ) {
@@ -97,7 +97,7 @@ static void calc_velocity_and_position(){
     // this speed is ~ in cm because we are using 10^7 numbers from GPS
     float tmp = 1.0/dTnav;
 
-#if INERTIAL_NAV == ENABLED
+#if INERTIAL_NAV_XY == ENABLED
     if( inertial_nav.position_ok() ) {
         // pull velocity from interial nav library
         lon_speed = inertial_nav.get_longitude_velocity();
@@ -544,7 +544,7 @@ static int32_t get_altitude_error()
     // It changes based on climb rate
     // until it reaches the target_altitude
 
-#if INERTIAL_NAV == ENABLED
+#if INERTIAL_NAV_Z == ENABLED
     // use inertial nav for altitude error
     return next_WP.alt - inertial_nav._position.z;
 #else

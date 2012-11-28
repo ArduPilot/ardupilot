@@ -54,10 +54,11 @@
 
 // Inertia based contollers.  disabled by default, work in progress
 //#define ACCEL_ALT_HOLD 0
-#define INERTIAL_NAV ENABLED
+#define INERTIAL_NAV_XY ENABLED
+#define INERTIAL_NAV_Z ENABLED
 
 
-#if INERTIAL_NAV == ENABLED
+#if INERTIAL_NAV_Z == ENABLED
  //#define ALT_HOLD_P                      3
  //#define ALT_HOLD_I                      0
  //#define ALT_HOLD_IMAX                  300
@@ -66,7 +67,8 @@
  //#define THROTTLE_P                      2.0
  //#define THROTTLE_I                      0.4
  //#define THROTTLE_D                      0.0
-
+#endif
+#if INERTIAL_NAV_XY == ENABLED
  //#define LOITER_P                        0.50
  //#define LOITER_I                        0.0
  //#define LOITER_RATE_P           5                      //

@@ -199,7 +199,7 @@ static void init_home()
     set_cmd_with_index(home, 0);
     //print_wp(&home, 0);
 
-#if INERTIAL_NAV == ENABLED
+#if INERTIAL_NAV_XY == ENABLED
     // set inertial nav's home position
     inertial_nav.set_current_position(g_gps->longitude, g_gps->latitude);
 #endif

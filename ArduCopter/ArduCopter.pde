@@ -866,7 +866,7 @@ static float G_Dt = 0.02;
 ////////////////////////////////////////////////////////////////////////////////
 // Inertial Navigation
 ////////////////////////////////////////////////////////////////////////////////
-#if INERTIAL_NAV == ENABLED
+#if INERTIAL_NAV_XY == ENABLED || INERTIAL_NAV_Z == ENABLED
 AP_InertialNav inertial_nav(&ahrs, &ins, &barometer, &g_gps);
 #endif
 
@@ -2150,7 +2150,7 @@ static void tuning(){
         break;
 #endif
 
-#if INERTIAL_NAV == ENABLED
+#if INERTIAL_NAV_XY == ENABLED || INERTIAL_NAV_Z == ENABLED
     case CH6_INAV_TC:
         inertial_nav.set_time_constant_xy(tuning_value);
         inertial_nav.set_time_constant_z(tuning_value);
