@@ -202,10 +202,18 @@ def fly_failsafe(mavproxy, mav, side=60, timeout=180):
         home_distance = get_distance(HOME, pos)
         print("Alt: %u  HomeDistance: %.0f" % (m.alt, home_distance))
         if m.alt <= 1 and home_distance < 10:
+            # switch modes to reset out of LAND
+            mavproxy.send('switch 2\n')
+            time.sleep(1)
+            mavproxy.send('switch 6\n')
             print("Reached failsafe home OK")
             mavproxy.send('rc 3 1100\n')
             return True
     print("Failed to land on failsafe RTL - timed out after %u seconds" % timeout)
+    # switch modes to reset out of LAND
+    mavproxy.send('switch 2\n')
+    time.sleep(1)
+    mavproxy.send('switch 6\n')
     return False
 
 
