@@ -1095,6 +1095,10 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
             if (packet.param4 == 1) {
                 trim_radio();
             }
+            if (packet.param5 == 1) {
+                // this blocks
+                ins.calibrate_accel(mavlink_delay, flash_leds, gcs_send_text_fmt, setup_wait_key);
+            }
             result = MAV_RESULT_ACCEPTED;
             break;
 
