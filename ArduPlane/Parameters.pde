@@ -274,7 +274,7 @@ const AP_Param::Info var_info[] PROGMEM = {
 
     // @Param: THR_SLEWRATE
     // @DisplayName: Throttlw slew rate
-    // @Description: maximum percentage change in throttle per second
+    // @Description: maximum percentage change in throttle per second. A setting of 10 means to not change the throttle by more than 10% of the full throttle range in one second
     // @Units: Percent
     // @Range: 0 100
     // @Increment: 1
