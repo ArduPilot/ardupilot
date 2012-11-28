@@ -228,7 +228,7 @@ def fly_simple(mavproxy, mav, side=60, timeout=120):
 
     print("# Going forward %u meters" % side)
     mavproxy.send('rc 2 1390\n')
-    if not wait_distance(mav, side, 5, 60):
+    if not wait_distance(mav, side, 10, 60):
         failed = True
     mavproxy.send('rc 2 1500\n')
 
@@ -243,7 +243,7 @@ def fly_simple(mavproxy, mav, side=60, timeout=120):
 
     print("# Going back %u meters" % side)
     mavproxy.send('rc 2 1610\n')
-    if not wait_distance(mav, side, 5, 60):
+    if not wait_distance(mav, side, 10, 60):
         failed = True
     mavproxy.send('rc 2 1500\n')
     #restore to default
