@@ -407,7 +407,7 @@ const AP_Param::Info var_info[] PROGMEM = {
     GOBJECT(ins,            "INS_", AP_InertialSensor),
 #endif
 
-#if INERTIAL_NAV == ENABLED
+#if INERTIAL_NAV_XY == ENABLED || INERTIAL_NAV_Z == ENABLED
     // @Group: INAV_
     // @Path: ../libraries/AP_InertialNav/AP_InertialNav.cpp
     GOBJECT(inertial_nav,           "INAV_",    AP_InertialNav),

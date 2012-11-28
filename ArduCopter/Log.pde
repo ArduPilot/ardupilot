@@ -787,7 +787,7 @@ static void Log_Read_Attitude()
 // Write an INAV packet. Total length : 36 Bytes
 static void Log_Write_INAV(float delta_t)
 {
-#if INERTIAL_NAV == ENABLED
+#if INERTIAL_NAV_XY == ENABLED || INERTIAL_NAV_Z == ENABLED
     DataFlash.WriteByte(HEAD_BYTE1);
     DataFlash.WriteByte(HEAD_BYTE2);
     DataFlash.WriteByte(LOG_INAV_MSG);

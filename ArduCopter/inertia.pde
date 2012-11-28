@@ -3,7 +3,7 @@
 // read_inertia - read inertia in from accelerometers
 static void read_inertia()
 {
-#if INERTIAL_NAV == ENABLED
+#if INERTIAL_NAV_XY == ENABLED || INERTIAL_NAV_Z == ENABLED
     static uint8_t log_counter_inav = 0;
 
     // inertial altitude estimates

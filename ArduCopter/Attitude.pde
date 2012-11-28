@@ -929,7 +929,7 @@ get_throttle_rate(int16_t z_target_speed)
     int16_t target_accel;
 
     // calculate rate error
-#if INERTIAL_NAV == ENABLED
+#if INERTIAL_NAV_Z == ENABLED
     z_rate_error    = z_target_speed - inertial_nav._velocity.z;    // calc the speed error
 #else
     z_rate_error    = z_target_speed - climb_rate;              // calc the speed error
@@ -1043,7 +1043,7 @@ get_throttle_land()
         get_throttle_rate_stabilized(-abs(g.land_speed));
 
         // detect whether we have landed
-#if INERTIAL_NAV == ENABLED
+#if INERTIAL_NAV_Z == ENABLED
         if (abs(inertial_nav._velocity.z) < 20) {
 #else
         if (abs(climb_rate) < 20) {

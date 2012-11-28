@@ -184,7 +184,7 @@ static void init_disarm_motors()
 
     g.throttle_cruise.save();
 
-#if INERTIAL_NAV == ENABLED
+#if INERTIAL_NAV_XY == ENABLED || INERTIAL_NAV_Z == ENABLED
     inertial_nav.save_params();
 #endif
 
