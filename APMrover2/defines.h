@@ -35,32 +35,7 @@
 // CH 7 control
 #define CH7_DO_NOTHING   0
 #define CH7_SAVE_WP      1
-#define CH7_LEO          2
-#define CH7_THERMAL      3
-#define CH7_SARSEC       4
-#define CH7_SARGRID      5
 #define CH7_RTL          6
-#define CH7_TUNING       7
-
-// CH_7 Tuning
-// -----------
-#define TUN_NONE           0
-// Attitude
-#define TUN_STABILIZE_KP   1
-#define TUN_STABILIZE_KI   2
-#define TUN_STABILIZE_KD   3
-#define TUN_YAW_KP         4
-#define TUN_YAW_KI         5
-#define TUN_YAW_KD         6
-#define TUN_STABROLL_KP    7
-#define TUN_STABROLL_KI    8
-#define TUN_STABROLL_KD    9
-#define TUN_STABPITCH_KP   10
-#define TUN_STABPITCH_KI   11
-#define TUN_STABPITCH_KD   12
-
-#define PITOT_SOURCE_ADC 1
-#define PITOT_SOURCE_ANALOG_PIN 2
 
 #define T6 1000000
 #define T7 10000000

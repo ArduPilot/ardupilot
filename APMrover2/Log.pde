@@ -517,7 +517,7 @@ static void Log_Read_Attitude()
 static void Log_Read_Mode()
 {
 	cliSerial->printf_P(PSTR("MOD: "));
-	cliSerial->println(flight_mode_strings[DataFlash.ReadByte()]);
+    print_flight_mode(DataFlash.ReadByte());
 }
 
 // Read a GPS packet

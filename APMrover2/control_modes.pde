@@ -55,69 +55,62 @@ static void reset_control_switch()
 // set this to your trainer switch
 static void read_trim_switch()
 {
-if (g.ch7_option == CH7_SAVE_WP){         // set to 1
+    if (g.ch7_option == CH7_SAVE_WP) {         // set to 1
 		if (g.rc_7.radio_in > CH_7_PWM_TRIGGER){ // switch is engaged
 			trim_flag = true;
-
-		}else{ // switch is disengaged
-			if(trim_flag){
+		} else { // switch is disengaged
+			if(trim_flag) {
 				trim_flag = false;
 
-				if(control_mode == MANUAL){          // if SW7 is ON in MANUAL = Erase the Flight Plan
-					// reset the mission
+				if (control_mode == MANUAL) {
+                    // if SW7 is ON in MANUAL = Erase the Flight Plan
 					CH7_wp_index = 0;
 					g.command_total.set_and_save(CH7_wp_index);
-                                        g.command_total = 0;
-                                        g.command_index =0;
-                                        nav_command_index = 0;
-                                        if(g.channel_roll.control_in > 3000) // if roll is full right store the current location as home
-                                            ground_start_count = 5;
-                                        #if X_PLANE == ENABLED
-                                                cliSerial->printf_P(PSTR("*** RESET the FPL\n"));
-                                        #endif
-                                        CH7_wp_index = 1;                    
+                    g.command_total = 0;
+                    g.command_index =0;
+                    nav_command_index = 0;
+                    if(g.channel_roll.control_in > 3000) // if roll is full right store the current location as home
+                        ground_start_count = 5;
+                    CH7_wp_index = 1;                    
 					return;
-				} else if (control_mode == LEARNING) {    // if SW7 is ON in LEARNING = record the Wp                                 
-        			   // set the next_WP (home is stored at 0)
-        			   // max out at 100 since I think we need to stay under the EEPROM limit
-        			   CH7_wp_index = constrain(CH7_wp_index, 1, 100);
+				} else if (control_mode == LEARNING) {    
+                    // if SW7 is ON in LEARNING = record the Wp
+                    // set the next_WP (home is stored at 0)
+                    CH7_wp_index = constrain(CH7_wp_index, 1, MAX_WAYPOINTS);
         
-    				  current_loc.id = MAV_CMD_NAV_WAYPOINT;  
+                    current_loc.id = MAV_CMD_NAV_WAYPOINT;  
     
-                                  // store the index
-                                  g.command_total.set_and_save(CH7_wp_index);
-                                  g.command_total = CH7_wp_index;
-                                  g.command_index = CH7_wp_index;
-                                  nav_command_index = 0;
+                    // store the index
+                    g.command_total.set_and_save(CH7_wp_index);
+                    g.command_total = CH7_wp_index;
+                    g.command_index = CH7_wp_index;
+                    nav_command_index = 0;
                                    
-        			  // save command
-        			  set_cmd_with_index(current_loc, CH7_wp_index);
-                                                                             
-                                  #if X_PLANE == ENABLED
-                                     cliSerial->printf_P(PSTR("*** Store WP #%d\n"),CH7_wp_index);
-                                  #endif 
+                    // save command
+                    set_cmd_with_index(current_loc, CH7_wp_index);
                                   
-                                    // increment index
-    				   CH7_wp_index++; 
+                    // increment index
+                    CH7_wp_index++; 
 
-                                } else if (control_mode == AUTO) {    // if SW7 is ON in AUTO = set to RTL  
-                                    set_mode(RTL);
-                                }
-                             }
-			}
-		} 
-          else if (g.ch7_option == CH7_RTL){      // set to 6
-		if (g.rc_7.radio_in > CH_7_PWM_TRIGGER){ // switch is engaged
-			trim_flag = true;
-
-		}else{ // switch is disengaged
-			if(trim_flag){
-				trim_flag = false;
-                                if (control_mode == LEARNING) {
-                                    set_mode(RTL);
-                                }
-                               }
+                } else if (control_mode == AUTO) {    
+                    // if SW7 is ON in AUTO = set to RTL  
+                    set_mode(RTL);
                 }
-          }
+            }
+        }
+    } else if (g.ch7_option == CH7_RTL) {
+        // set to 6
+		if (g.rc_7.radio_in > CH_7_PWM_TRIGGER) {
+            // switch is engaged
+			trim_flag = true;
+		} else { // switch is disengaged
+			if (trim_flag) {
+				trim_flag = false;
+                if (control_mode == LEARNING) {
+                    set_mode(RTL);
+                }
+            }
+        }
+    }
 }
 

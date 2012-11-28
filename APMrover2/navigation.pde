@@ -7,9 +7,7 @@ static void navigate()
 {
 	// do not navigate with corrupt data
 	// ---------------------------------
-	if (g_gps->fix == 0)
-	{
-		g_gps->new_data = false;
+	if (!have_position) {
 		return;
 	}
 
