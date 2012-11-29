@@ -49,7 +49,9 @@ void setup(void)
     pinMode(40, OUTPUT);
     digitalWrite(40, HIGH);
 
-    ins.init(AP_InertialSensor::COLD_START, delay, NULL, &scheduler);
+    ins.init(AP_InertialSensor::COLD_START, 
+			 AP_InertialSensor::RATE_100HZ,
+			 delay, NULL, &scheduler);
 }
 
 void loop(void)
