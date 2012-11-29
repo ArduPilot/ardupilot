@@ -34,7 +34,7 @@ public:
     uint16_t        num_samples_available();
 
 protected:
-    uint16_t        _init_sensor(AP_PeriodicProcess * scheduler);
+    uint16_t        _init_sensor(AP_PeriodicProcess * scheduler, Sample_rate sample_rate);
 
 private:
 
@@ -55,6 +55,8 @@ private:
     static const float          _gyro_gain_z;
 
     static const float          _adc_constraint;
+
+    uint8_t                     _sample_threshold;
 };
 
 #endif // __AP_INERTIAL_SENSOR_OILPAN_H__

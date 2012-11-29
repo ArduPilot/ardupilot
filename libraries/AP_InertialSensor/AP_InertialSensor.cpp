@@ -25,11 +25,12 @@ AP_InertialSensor::AP_InertialSensor()
 
 void
 AP_InertialSensor::init( Start_style style,
+                         Sample_rate sample_rate,
                          void (*delay_cb)(unsigned long t),
                          void (*flash_leds_cb)(bool on),
                          AP_PeriodicProcess *  scheduler )
 {
-    _product_id = _init_sensor(scheduler);
+    _product_id = _init_sensor(scheduler, sample_rate);
 
     // check scaling
     Vector3f accel_scale = _accel_scale.get();

@@ -52,7 +52,7 @@ public:
     uint32_t            get_delta_time_micros();
 
 protected:
-    uint16_t                    _init_sensor( AP_PeriodicProcess * scheduler );
+    uint16_t                    _init_sensor( AP_PeriodicProcess * scheduler, Sample_rate sample_rate );
 
 private:
 
@@ -60,7 +60,7 @@ private:
     static void                 data_interrupt(void);
     static uint8_t              register_read( uint8_t reg );
     static void                 register_write( uint8_t reg, uint8_t val );
-    static void                 hardware_init();
+    static void                 hardware_init(Sample_rate sample_rate);
 
     float                       _temp;
 

@@ -210,13 +210,13 @@ AP_InertialSensor_MPU6000::AP_InertialSensor_MPU6000()
     _dmp_initialised = false;
 }
 
-uint16_t AP_InertialSensor_MPU6000::_init_sensor( AP_PeriodicProcess * scheduler )
+uint16_t AP_InertialSensor_MPU6000::_init_sensor( AP_PeriodicProcess * scheduler, Sample_rate sample_rate )
 {
     if (_initialised) return _mpu6000_product_id;
     _initialised = true;
     _scheduler = scheduler;     // store pointer to scheduler so that we can suspend/resume scheduler when we pull data from the MPU6000
     scheduler->suspend_timer();
-    hardware_init();
+    hardware_init(sample_rate);
     scheduler->resume_timer();
     return _mpu6000_product_id;
 }
@@ -381,7 +381,7 @@ void AP_InertialSensor_MPU6000::data_interrupt(void)
     _scheduler->queue_process( AP_InertialSensor_MPU6000::read );
 }
 
-void AP_InertialSensor_MPU6000::hardware_init()
+void AP_InertialSensor_MPU6000::hardware_init(Sample_rate sample_rate)
 {
     // MPU6000 chip select setup
     pinMode(MPU6000_CS_PIN, OUTPUT);
@@ -401,12 +401,36 @@ void AP_InertialSensor_MPU6000::hardware_init()
     // Disable I2C bus (recommended on datasheet)
     register_write(MPUREG_USER_CTRL, BIT_USER_CTRL_I2C_IF_DIS);
     delay(1);
-    // SAMPLE RATE
-    register_write(MPUREG_SMPLRT_DIV, MPUREG_SMPLRT_200HZ);     // Sample rate = 200Hz    Fsample= 1Khz/(4+1) = 200Hz
+
+    uint8_t rate, filter;
+
+    // sample rate and filtering
+    // to minimise the effects of aliasing we choose a filter
+    // that is less than half of the sample rate
+    switch (sample_rate) {
+    case RATE_50HZ:
+        rate = MPUREG_SMPLRT_50HZ;
+        filter = BITS_DLPF_CFG_20HZ;
+        break;
+    case RATE_100HZ:
+        rate = MPUREG_SMPLRT_100HZ;
+        filter = BITS_DLPF_CFG_42HZ;
+        break;
+    case RATE_200HZ:
+    default:
+        rate = MPUREG_SMPLRT_200HZ;
+        filter = BITS_DLPF_CFG_98HZ;
+        break;
+    }
+
+    // set sample rate
+    register_write(MPUREG_SMPLRT_DIV, rate);
     delay(1);
-    // FS & DLPF   FS=2000º/s, DLPF = 98Hz (low pass filter)
-    register_write(MPUREG_CONFIG, BITS_DLPF_CFG_98HZ);
+
+    // set low pass filter
+    register_write(MPUREG_CONFIG, filter);
     delay(1);
+
     register_write(MPUREG_GYRO_CONFIG, BITS_GYRO_FS_2000DPS);  // Gyro scale 2000º/s
     delay(1);
 

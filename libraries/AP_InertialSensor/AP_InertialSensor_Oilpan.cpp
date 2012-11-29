@@ -41,9 +41,21 @@ AP_InertialSensor_Oilpan::AP_InertialSensor_Oilpan( AP_ADC * adc ) :
 {
 }
 
-uint16_t AP_InertialSensor_Oilpan::_init_sensor( AP_PeriodicProcess * scheduler)
+uint16_t AP_InertialSensor_Oilpan::_init_sensor( AP_PeriodicProcess * scheduler, Sample_rate sample_rate)
 {
     _adc->Init(scheduler);
+
+    switch (sample_rate) {
+    case RATE_50HZ:
+        _sample_threshold = 20;
+        break;
+    case RATE_100HZ:
+        _sample_threshold = 10;
+        break;
+    case RATE_200HZ:
+        _sample_threshold = 5;
+        break;
+    }
 
 #if defined(DESKTOP_BUILD)
     return AP_PRODUCT_ID_SITL;
@@ -130,5 +142,8 @@ float AP_InertialSensor_Oilpan::get_gyro_drift_rate(void)
 // get number of samples read from the sensors
 uint16_t AP_InertialSensor_Oilpan::num_samples_available()
 {
-    return _adc->num_samples_available(_sensors);
+    if (_adc->num_samples_available(_sensors) >= _sample_threshold) {
+        return 1;
+    }
+    return 0;
 }
