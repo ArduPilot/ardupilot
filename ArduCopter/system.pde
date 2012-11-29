@@ -360,7 +360,9 @@ static void startup_ground(void)
 
     // Warm up and read Gyro offsets
     // -----------------------------
-    ins.init(AP_InertialSensor::COLD_START, mavlink_delay, flash_leds, &timer_scheduler);
+    ins.init(AP_InertialSensor::COLD_START, 
+             ins_sample_rate,
+             mavlink_delay, flash_leds, &timer_scheduler);
  #if CLI_ENABLED == ENABLED
     report_ins();
  #endif
