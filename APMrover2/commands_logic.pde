@@ -172,9 +172,8 @@ static bool verify_condition_command()		// Returns true if command complete
 
 static void do_RTL(void)
 {
-        prev_WP 		= current_loc;
+    prev_WP 		= current_loc;
 	control_mode 	= RTL;
-	crash_timer 	= 0;
 	next_WP 		= home;
 }
 

@@ -304,7 +304,7 @@ static void Log_Write_Control_Tuning()
 	DataFlash.WriteInt((int)nav_roll);
 	DataFlash.WriteInt((int)ahrs.roll_sensor);
 	DataFlash.WriteInt((int)(g.channel_pitch.servo_out));
-	DataFlash.WriteInt((int)nav_pitch);
+	DataFlash.WriteInt(0); // nav_pitch
 	DataFlash.WriteInt((int)ahrs.pitch_sensor);
 	DataFlash.WriteInt((int)(g.channel_throttle.servo_out));
 	DataFlash.WriteInt((int)(g.channel_rudder.servo_out));

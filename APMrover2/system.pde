@@ -364,7 +364,6 @@ static void set_mode(byte mode)
 		trim_control_surfaces();
 
 	control_mode = mode;
-	crash_timer = 0;
     throttle_last = 0;
     throttle = 500;
         

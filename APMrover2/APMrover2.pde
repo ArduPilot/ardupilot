@@ -354,9 +354,7 @@ static int16_t 	failsafe;
 // Used to track if the value on channel 3 (throtttle) has fallen below the failsafe threshold
 // RC receiver should be set up to output a low throttle value when signal is lost
 static bool 	ch3_failsafe;
-// A timer used to help recovery from unusual attitudes.  If we enter an unusual attitude 
-// while in autonomous flight this variable is used  to hold roll at 0 for a recovery period
-static byte    crash_timer;
+
 // A timer used to track how long since we have received the last GCS heartbeat or rc override message
 static uint32_t rc_override_fs_timer = 0;
 // A timer used to track how long we have been in a "short failsafe" condition due to loss of RC signal
@@ -481,8 +479,6 @@ static bool speed_boost = false;
 ////////////////////////////////////////////////////////////////////////////////
 // The instantaneous desired bank angle.  Hundredths of a degree
 static int32_t nav_roll;
-// The instantaneous desired pitch angle.  Hundredths of a degree
-static int32_t nav_pitch;
 // Calculated radius for the wp turn based on ground speed and max turn angle
 static int32_t    wp_radius;
 
@@ -935,7 +931,6 @@ static void update_current_flight_mode(void)
     case LEARNING:
     case MANUAL:
         nav_roll        = 0;
-        nav_pitch       = 0;
         g.channel_roll.servo_out = g.channel_roll.pwm_to_angle();
         g.channel_pitch.servo_out = g.channel_pitch.pwm_to_angle();
         g.channel_rudder.servo_out = g.channel_roll.pwm_to_angle();
@@ -945,25 +940,20 @@ static void update_current_flight_mode(void)
 
 static void update_navigation()
 {
-	// wp_distance is in ACTUAL meters, not the *100 meters we get from the GPS
-	// ------------------------------------------------------------------------
-
-	// distance and bearing calcs only
-	if(control_mode == AUTO){
+    switch (control_mode) {
+    case AUTO:
 		verify_commands();
-	}else{
+        break;
 
-		switch(control_mode){
-			case RTL:        // no loitering around the wp with the rover, goes direct to the wp position
-			case GUIDED:
-				calc_nav_roll();
-				calc_bearing_error();
-                if(verify_RTL()) {  
-                    g.channel_throttle.servo_out = g.throttle_min.get();
-                    set_mode(MANUAL);
-                }
-				break;
-
-		}
+    case RTL:
+    case GUIDED:
+        // no loitering around the wp with the rover, goes direct to the wp position
+        calc_nav_roll();
+        calc_bearing_error();
+        if(verify_RTL()) {  
+            g.channel_throttle.servo_out = g.throttle_min.get();
+            set_mode(MANUAL);
+        }
+        break;
 	}
 }
