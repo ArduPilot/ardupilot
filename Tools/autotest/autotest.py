@@ -176,7 +176,7 @@ signal.alarm(opts.timeout)
 def skip_step(step):
     '''see if a step should be skipped'''
     for skip in skipsteps:
-        if fnmatch.fnmatch(step, skip):
+        if fnmatch.fnmatch(step.lower(), skip.lower()):
             return True
     return False
 
@@ -366,6 +366,15 @@ if lck is None:
     sys.exit(0)
 
 atexit.register(util.pexpect_close_all)
+
+if len(args) > 0:
+    # allow a wildcard list of steps
+    matched = []
+    for a in args:
+        for s in steps:
+            if fnmatch.fnmatch(s.lower(), a.lower()):
+                matched.append(s)
+    steps = matched
 
 try:
     if not run_tests(steps):
