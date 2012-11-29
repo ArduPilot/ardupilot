@@ -402,7 +402,7 @@ void AP_InertialSensor_MPU6000::hardware_init(Sample_rate sample_rate)
     register_write(MPUREG_USER_CTRL, BIT_USER_CTRL_I2C_IF_DIS);
     delay(1);
 
-    uint8_t rate, filter;
+    uint8_t rate, filter, default_filter;
 
     // sample rate and filtering
     // to minimise the effects of aliasing we choose a filter
@@ -410,17 +410,41 @@ void AP_InertialSensor_MPU6000::hardware_init(Sample_rate sample_rate)
     switch (sample_rate) {
     case RATE_50HZ:
         rate = MPUREG_SMPLRT_50HZ;
-        filter = BITS_DLPF_CFG_20HZ;
+        default_filter = BITS_DLPF_CFG_20HZ;
         break;
     case RATE_100HZ:
         rate = MPUREG_SMPLRT_100HZ;
-        filter = BITS_DLPF_CFG_42HZ;
+        default_filter = BITS_DLPF_CFG_42HZ;
         break;
     case RATE_200HZ:
     default:
         rate = MPUREG_SMPLRT_200HZ;
+        default_filter = BITS_DLPF_CFG_98HZ;
+        break;
+    }
+    
+    // choose filtering frequency
+    switch (_mpu6000_filter) {
+    case 5:
+        filter = BITS_DLPF_CFG_5HZ;
+        break;
+    case 10:
+        filter = BITS_DLPF_CFG_10HZ;
+        break;
+    case 20:
+        filter = BITS_DLPF_CFG_20HZ;
+        break;
+    case 42:
+        filter = BITS_DLPF_CFG_42HZ;
+        break;
+    case 98:
         filter = BITS_DLPF_CFG_98HZ;
         break;
+    case 0:
+    default:
+        // the user hasn't specified a specific frequency,
+        // use the default value for the given sample rate
+        filter = default_filter;
     }
 
     // set sample rate
