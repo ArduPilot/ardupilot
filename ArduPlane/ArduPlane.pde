@@ -106,6 +106,11 @@ AP_Param param_loader(var_info, WP_START_BYTE);
 APM_OBC obc;
 #endif
 
+////////////////////////////////////////////////////////////////////////////////
+// the rate we run the main loop at
+////////////////////////////////////////////////////////////////////////////////
+static const AP_InertialSensor::Sample_rate ins_sample_rate = AP_InertialSensor::RATE_50HZ;
+
 
 ////////////////////////////////////////////////////////////////////////////////
 // ISR Registry
@@ -690,7 +695,7 @@ void loop()
 {
     // We want this to execute at 50Hz, but synchronised with the gyro/accel
     uint16_t num_samples = ins.num_samples_available();
-    if (num_samples >= NUM_INS_SAMPLES_FOR_50HZ) {
+    if (num_samples >= 1) {
         delta_ms_fast_loop      = millis() - fast_loopTimer_ms;
         load                = (float)(fast_loopTimeStamp_ms - fast_loopTimer_ms)/delta_ms_fast_loop;
         G_Dt                = (float)delta_ms_fast_loop / 1000.f;
@@ -724,8 +729,8 @@ void loop()
         }
 
         fast_loopTimeStamp_ms = millis();
-    } else if (num_samples < NUM_INS_SAMPLES_FOR_50HZ-1) {
-        // less than 20ms has passed. We have at least one millisecond
+    } else if (millis() - fast_loopTimeStamp_ms < 19) {
+        // less than 19ms has passed. We have at least one millisecond
         // of free time. The most useful thing to do with that time is
         // to accumulate some sensor readings, specifically the
         // compass, which is often very noisy but is not interrupt
