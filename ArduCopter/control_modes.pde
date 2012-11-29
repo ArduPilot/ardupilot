@@ -1,6 +1,6 @@
 /// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 
-#define CONTROL_SWITCH_COUNTER  5      // 5 iterations (1/10th of a second) at a new switch position will cause flight mode change
+#define CONTROL_SWITCH_COUNTER  10  // 10 iterations at 100hz (i.e. 1/10th of a second) at a new switch position will cause flight mode change
 static void read_control_switch()
 {
     static uint8_t switch_counter = 0;
