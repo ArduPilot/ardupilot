@@ -13,24 +13,24 @@ static volatile uint32_t timer0_overflow_count = 0;
 static volatile uint32_t timer0_millis = 0;
 static uint8_t timer0_fract = 0;
 
-/* ArduinoScheduler timer interrupt period is controlled by TCNT2.
+/* AVRScheduler timer interrupt period is controlled by TCNT2.
  * 256-62 gives a 1kHz period. */
 #define RESET_TCNT2_VALUE (256 - 62)
 
-/* Static ArduinoScheduler variables: */
-AP_HAL::TimedProc ArduinoScheduler::_failsafe = NULL;
-volatile bool ArduinoScheduler::_timer_suspended = false;
-AP_HAL::TimedProc ArduinoScheduler::_timer_proc[AVR_SCHEDULER_MAX_TIMER_PROCS] = {NULL};
-AP_HAL::TimedProc ArduinoScheduler::_defered_timer_proc = NULL;
-uint8_t ArduinoScheduler::_num_timer_procs = 0;
-bool ArduinoScheduler::_in_timer_proc = false;
+/* Static AVRScheduler variables: */
+AP_HAL::TimedProc AVRScheduler::_failsafe = NULL;
+volatile bool AVRScheduler::_timer_suspended = false;
+AP_HAL::TimedProc AVRScheduler::_timer_proc[AVR_SCHEDULER_MAX_TIMER_PROCS] = {NULL};
+AP_HAL::TimedProc AVRScheduler::_defered_timer_proc = NULL;
+uint8_t AVRScheduler::_num_timer_procs = 0;
+bool AVRScheduler::_in_timer_proc = false;
 
 
-ArduinoScheduler::ArduinoScheduler() :
+AVRScheduler::AVRScheduler() :
     _delay_cb(NULL)
 {}
 
-void ArduinoScheduler::init(void* _isrregistry) {
+void AVRScheduler::init(void* _isrregistry) {
     ISRRegistry* isrregistry = (ISRRegistry*) _isrregistry;
 
     // this needs to be called before setup() or some functions won't
@@ -132,7 +132,7 @@ SIGNAL(TIMER0_OVF_vect)
 	timer0_overflow_count++;
 }
 
-uint32_t ArduinoScheduler::millis()
+uint32_t AVRScheduler::millis()
 {
 	uint32_t m;
 	uint8_t oldSREG = SREG;
@@ -148,13 +148,13 @@ uint32_t ArduinoScheduler::millis()
 
 /* micros() is essentially a static method, but we need it to be available
  * via virtual dispatch through the hal. */
-uint32_t ArduinoScheduler::micros() {
+uint32_t AVRScheduler::micros() {
     return _micros();
 }
 
 /* _micros() is the implementation of micros() as a static private method
  * so we can use it from inside _timer_event() without virtual dispatch. */
-uint32_t ArduinoScheduler::_micros() {
+uint32_t AVRScheduler::_micros() {
 	uint32_t m;
 	uint8_t oldSREG = SREG, t;
 	
@@ -170,7 +170,7 @@ uint32_t ArduinoScheduler::_micros() {
 	return ((m << 8) + t) * (64 / clockCyclesPerMicrosecond());
 }
 
-void ArduinoScheduler::delay(uint32_t ms)
+void AVRScheduler::delay(uint32_t ms)
 {
 	uint16_t start = (uint16_t)micros();
     
@@ -188,7 +188,7 @@ void ArduinoScheduler::delay(uint32_t ms)
 }
 
 /* Delay for the given number of microseconds.  Assumes a 16 MHz clock. */
-void ArduinoScheduler::delay_microseconds(uint16_t us)
+void AVRScheduler::delay_microseconds(uint16_t us)
 {
 	// for the 16 MHz clock on most Arduino boards
 	// for a one-microsecond delay, simply return.  the overhead
@@ -211,13 +211,13 @@ void ArduinoScheduler::delay_microseconds(uint16_t us)
 	);
 }
 
-void ArduinoScheduler::register_delay_callback(AP_HAL::Proc proc,
+void AVRScheduler::register_delay_callback(AP_HAL::Proc proc,
         uint16_t min_time_ms) {
     _delay_cb = proc;
     _min_delay_cb_ms = min_time_ms;
 }
 
-void ArduinoScheduler::register_timer_process(AP_HAL::TimedProc proc) {
+void AVRScheduler::register_timer_process(AP_HAL::TimedProc proc) {
     for (int i = 0; i < _num_timer_procs; i++) {
         if (_timer_proc[i] == proc) {
             return;
@@ -237,7 +237,7 @@ void ArduinoScheduler::register_timer_process(AP_HAL::TimedProc proc) {
 
 }
 
-bool ArduinoScheduler::defer_timer_process(AP_HAL::TimedProc proc) {
+bool AVRScheduler::defer_timer_process(AP_HAL::TimedProc proc) {
     if ( _in_timer_proc || _timer_suspended ) {
         _defered_timer_proc = proc;
         return false;
@@ -249,21 +249,21 @@ bool ArduinoScheduler::defer_timer_process(AP_HAL::TimedProc proc) {
     }
 }
 
-void ArduinoScheduler::register_timer_failsafe(
+void AVRScheduler::register_timer_failsafe(
         AP_HAL::TimedProc failsafe, uint32_t period_us) {
     /* XXX Assert period_us == 1000 */
     _failsafe = failsafe;
 }
 
-void ArduinoScheduler::suspend_timer_procs() {
+void AVRScheduler::suspend_timer_procs() {
     _timer_suspended = true;
 }
 
-void ArduinoScheduler::resume_timer_procs() {
+void AVRScheduler::resume_timer_procs() {
     _timer_suspended = false;
 }
 
-void ArduinoScheduler::_timer_event() {
+void AVRScheduler::_timer_event() {
     // we enable the interrupt again immediately and also enable
     // interrupts. This allows other time critical interrupts to
     // run (such as the serial receive interrupt). We catch the
@@ -322,10 +322,10 @@ void ArduinoScheduler::_timer_event() {
     _in_timer_proc = false;
 }
 
-void ArduinoScheduler::begin_atomic() {
+void AVRScheduler::begin_atomic() {
     cli();
 }
 
-void ArduinoScheduler::end_atomic() {
+void AVRScheduler::end_atomic() {
     sei();
 }

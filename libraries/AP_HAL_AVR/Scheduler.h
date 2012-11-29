@@ -7,9 +7,9 @@
 
 #define AVR_SCHEDULER_MAX_TIMER_PROCS 4
 
-class AP_HAL_AVR::ArduinoScheduler : public AP_HAL::Scheduler {
+class AP_HAL_AVR::AVRScheduler : public AP_HAL::Scheduler {
 public:
-    ArduinoScheduler();
+    AVRScheduler();
     /* AP_HAL::Scheduler methods */
 
     /* init: implementation-specific void* argument expected to be an
