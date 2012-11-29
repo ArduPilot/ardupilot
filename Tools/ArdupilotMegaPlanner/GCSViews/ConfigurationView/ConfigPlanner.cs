@@ -518,7 +518,11 @@ namespace ArdupilotMega.GCSViews.ConfigurationView
             {
                 if (currentUiCulture.IsChildOf(_languages[i]))
                 {
-                    CMB_language.SelectedIndex = i;
+                    try
+                    {
+                        CMB_language.SelectedIndex = i;
+                    }
+                    catch { }
                     break;
                 }
             }
@@ -565,7 +569,11 @@ namespace ArdupilotMega.GCSViews.ConfigurationView
             //set hud color state
             string hudcolor = (string)MainV2.config["hudcolor"];
             int index = CMB_osdcolor.Items.IndexOf(hudcolor ?? "White");
-            CMB_osdcolor.SelectedIndex = index;
+            try
+            {
+                CMB_osdcolor.SelectedIndex = index;
+            }
+            catch { }
 
 
             if (MainV2.config["distunits"] != null)

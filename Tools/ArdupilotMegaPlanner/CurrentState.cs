@@ -122,6 +122,7 @@ namespace ArdupilotMega
         [DisplayText("Turn Radius (dist)")]
         public float radius { get { if (groundspeed <= 1) return 0; return ((groundspeed * groundspeed)/(float)(9.8f*Math.Tan(roll * deg2rad))); } }
 
+        [DisplayText("RX Rssi")]
         public float rxrssi { get; set; }
         //radio
         public float ch1in { get; set; }
@@ -231,6 +232,7 @@ namespace ArdupilotMega
         PointLatLngAlt _trackerloc = new PointLatLngAlt();
         internal PointLatLngAlt TrackerLocation { get { if (_trackerloc.Lng != 0) return _trackerloc; return HomeLocation; } set { _trackerloc = value; } }
 
+        [DisplayText("Distance to Mav (dist)")]
         public float DistToMAV
         {
             get

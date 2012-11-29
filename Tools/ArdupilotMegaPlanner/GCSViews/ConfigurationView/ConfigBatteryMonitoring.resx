@@ -616,7 +616,7 @@ Then subtract 0.3v from that value and enter it in field #1 at left.
     <value>3: Battery Volts</value>
   </data>
   <data name="CMB_batmontype.Items2" xml:space="preserve">
-    <value>4: Volts &amp; Current</value>
+    <value>4: Voltage and Current</value>
   </data>
   <data name="CMB_batmontype.Location" type="System.Drawing.Point, System.Drawing">
     <value>160, 41</value>
@@ -676,7 +676,7 @@ Then subtract 0.3v from that value and enter it in field #1 at left.
     <value>1: APM2 - 2.5 non 3DR</value>
   </data>
   <data name="CMB_apmversion.Items2" xml:space="preserve">
-    <value>2: APM2.5 3DR IV</value>
+    <value>2: APM2.5 - 3DR Power Module</value>
   </data>
   <data name="CMB_apmversion.Location" type="System.Drawing.Point, System.Drawing">
     <value>160, 95</value>

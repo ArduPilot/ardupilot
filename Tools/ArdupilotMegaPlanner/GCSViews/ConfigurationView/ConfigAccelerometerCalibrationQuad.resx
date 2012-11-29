@@ -145,7 +145,7 @@
     <value>$this</value>
   </data>
   <data name="&gt;&gt;radioButton_Plus.ZOrder" xml:space="preserve">
-    <value>8</value>
+    <value>10</value>
   </data>
   <data name="radioButton_X.AutoSize" type="System.Boolean, mscorlib">
     <value>True</value>
@@ -172,7 +172,7 @@
     <value>$this</value>
   </data>
   <data name="&gt;&gt;radioButton_X.ZOrder" xml:space="preserve">
-    <value>7</value>
+    <value>9</value>
   </data>
   <data name="label5.AutoSize" type="System.Boolean, mscorlib">
     <value>True</value>
@@ -205,7 +205,7 @@
     <value>$this</value>
   </data>
   <data name="&gt;&gt;label5.ZOrder" xml:space="preserve">
-    <value>6</value>
+    <value>8</value>
   </data>
   <data name="label1.AutoSize" type="System.Boolean, mscorlib">
     <value>True</value>
@@ -238,7 +238,7 @@
     <value>$this</value>
   </data>
   <data name="&gt;&gt;label1.ZOrder" xml:space="preserve">
-    <value>5</value>
+    <value>7</value>
   </data>
   <data name="label2.AutoSize" type="System.Boolean, mscorlib">
     <value>True</value>
@@ -268,7 +268,7 @@
     <value>$this</value>
   </data>
   <data name="&gt;&gt;label2.ZOrder" xml:space="preserve">
-    <value>4</value>
+    <value>6</value>
   </data>
   <data name="label3.AutoSize" type="System.Boolean, mscorlib">
     <value>True</value>
@@ -298,91 +298,13 @@
     <value>$this</value>
   </data>
   <data name="&gt;&gt;label3.ZOrder" xml:space="preserve">
-    <value>3</value>
-  </data>
-  <data name="pictureBoxPlus.ImeMode" type="System.Windows.Forms.ImeMode, System.Windows.Forms">
-    <value>NoControl</value>
-  </data>
-  <data name="pictureBoxPlus.Location" type="System.Drawing.Point, System.Drawing">
-    <value>116, 65</value>
-  </data>
-  <data name="pictureBoxPlus.Size" type="System.Drawing.Size, System.Drawing">
-    <value>248, 81</value>
-  </data>
-  <data name="pictureBoxPlus.SizeMode" type="System.Windows.Forms.PictureBoxSizeMode, System.Windows.Forms">
-    <value>Zoom</value>
-  </data>
-  <data name="pictureBoxPlus.TabIndex" type="System.Int32, mscorlib">
-    <value>17</value>
-  </data>
-  <data name="&gt;&gt;pictureBoxPlus.Name" xml:space="preserve">
-    <value>pictureBoxPlus</value>
-  </data>
-  <data name="&gt;&gt;pictureBoxPlus.Type" xml:space="preserve">
-    <value>ArdupilotMega.Controls.PictureBoxWithPseudoOpacity, ArdupilotMegaPlanner10, Version=1.1.4581.34461, Culture=neutral, PublicKeyToken=null</value>
-  </data>
-  <data name="&gt;&gt;pictureBoxPlus.Parent" xml:space="preserve">
-    <value>$this</value>
-  </data>
-  <data name="&gt;&gt;pictureBoxPlus.ZOrder" xml:space="preserve">
-    <value>9</value>
-  </data>
-  <data name="pictureBoxX.ImeMode" type="System.Windows.Forms.ImeMode, System.Windows.Forms">
-    <value>NoControl</value>
-  </data>
-  <data name="pictureBoxX.Location" type="System.Drawing.Point, System.Drawing">
-    <value>116, 164</value>
-  </data>
-  <data name="pictureBoxX.Size" type="System.Drawing.Size, System.Drawing">
-    <value>248, 85</value>
-  </data>
-  <data name="pictureBoxX.SizeMode" type="System.Windows.Forms.PictureBoxSizeMode, System.Windows.Forms">
-    <value>Zoom</value>
-  </data>
-  <data name="pictureBoxX.TabIndex" type="System.Int32, mscorlib">
-    <value>11</value>
-  </data>
-  <data name="&gt;&gt;pictureBoxX.Name" xml:space="preserve">
-    <value>pictureBoxX</value>
-  </data>
-  <data name="&gt;&gt;pictureBoxX.Type" xml:space="preserve">
-    <value>ArdupilotMega.Controls.PictureBoxWithPseudoOpacity, ArdupilotMegaPlanner10, Version=1.1.4581.34461, Culture=neutral, PublicKeyToken=null</value>
-  </data>
-  <data name="&gt;&gt;pictureBoxX.Parent" xml:space="preserve">
-    <value>$this</value>
-  </data>
-  <data name="&gt;&gt;pictureBoxX.ZOrder" xml:space="preserve">
-    <value>10</value>
-  </data>
-  <data name="BUT_levelac2.ImeMode" type="System.Windows.Forms.ImeMode, System.Windows.Forms">
-    <value>NoControl</value>
-  </data>
-  <data name="BUT_levelac2.Location" type="System.Drawing.Point, System.Drawing">
-    <value>378, 318</value>
-  </data>
-  <data name="BUT_levelac2.Size" type="System.Drawing.Size, System.Drawing">
-    <value>102, 23</value>
-  </data>
-  <data name="BUT_levelac2.TabIndex" type="System.Int32, mscorlib">
-    <value>16</value>
-  </data>
-  <data name="BUT_levelac2.Text" xml:space="preserve">
-    <value>Calibrate Now</value>
-  </data>
-  <data name="&gt;&gt;BUT_levelac2.Name" xml:space="preserve">
-    <value>BUT_levelac2</value>
-  </data>
-  <data name="&gt;&gt;BUT_levelac2.Type" xml:space="preserve">
-    <value>ArdupilotMega.Controls.MyButton, ArdupilotMegaPlanner10, Version=1.1.4581.34461, Culture=neutral, PublicKeyToken=null</value>
-  </data>
-  <data name="&gt;&gt;BUT_levelac2.Parent" xml:space="preserve">
-    <value>$this</value>
-  </data>
-  <data name="&gt;&gt;BUT_levelac2.ZOrder" xml:space="preserve">
-    <value>11</value>
+    <value>5</value>
   </data>
   <data name="label4.AutoSize" type="System.Boolean, mscorlib">
     <value>True</value>
+  </data>
+  <data name="label4.ImeMode" type="System.Windows.Forms.ImeMode, System.Windows.Forms">
+    <value>NoControl</value>
   </data>
   <data name="label4.Location" type="System.Drawing.Point, System.Drawing">
     <value>85, 323</value>
@@ -406,27 +328,63 @@
     <value>$this</value>
   </data>
   <data name="&gt;&gt;label4.ZOrder" xml:space="preserve">
-    <value>2</value>
+    <value>4</value>
   </data>
-  <data name="lineSeparator3.Location" type="System.Drawing.Point, System.Drawing">
-    <value>20, 36</value>
+  <data name="lbl_Accel_user.ImeMode" type="System.Windows.Forms.ImeMode, System.Windows.Forms">
+    <value>NoControl</value>
   </data>
-  <data name="lineSeparator3.Size" type="System.Drawing.Size, System.Drawing">
-    <value>460, 2</value>
+  <data name="lbl_Accel_user.Location" type="System.Drawing.Point, System.Drawing">
+    <value>20, 371</value>
   </data>
-  <data name="lineSeparator3.TabIndex" type="System.Int32, mscorlib">
-    <value>80</value>
+  <data name="lbl_Accel_user.Size" type="System.Drawing.Size, System.Drawing">
+    <value>460, 40</value>
   </data>
-  <data name="&gt;&gt;lineSeparator3.Name" xml:space="preserve">
-    <value>lineSeparator3</value>
+  <data name="lbl_Accel_user.TabIndex" type="System.Int32, mscorlib">
+    <value>83</value>
   </data>
-  <data name="&gt;&gt;lineSeparator3.Type" xml:space="preserve">
-    <value>ArdupilotMega.Controls.LineSeparator, ArdupilotMegaPlanner10, Version=1.1.4581.34461, Culture=neutral, PublicKeyToken=null</value>
+  <data name="lbl_Accel_user.Text" xml:space="preserve">
+    <value>Beta</value>
   </data>
-  <data name="&gt;&gt;lineSeparator3.Parent" xml:space="preserve">
+  <data name="lbl_Accel_user.TextAlign" type="System.Drawing.ContentAlignment, System.Drawing">
+    <value>MiddleCenter</value>
+  </data>
+  <data name="&gt;&gt;lbl_Accel_user.Name" xml:space="preserve">
+    <value>lbl_Accel_user</value>
+  </data>
+  <data name="&gt;&gt;lbl_Accel_user.Type" xml:space="preserve">
+    <value>System.Windows.Forms.Label, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </data>
+  <data name="&gt;&gt;lbl_Accel_user.Parent" xml:space="preserve">
     <value>$this</value>
   </data>
-  <data name="&gt;&gt;lineSeparator3.ZOrder" xml:space="preserve">
+  <data name="&gt;&gt;lbl_Accel_user.ZOrder" xml:space="preserve">
+    <value>0</value>
+  </data>
+  <data name="BUT_calib_accell.ImeMode" type="System.Windows.Forms.ImeMode, System.Windows.Forms">
+    <value>NoControl</value>
+  </data>
+  <data name="BUT_calib_accell.Location" type="System.Drawing.Point, System.Drawing">
+    <value>201, 345</value>
+  </data>
+  <data name="BUT_calib_accell.Size" type="System.Drawing.Size, System.Drawing">
+    <value>102, 23</value>
+  </data>
+  <data name="BUT_calib_accell.TabIndex" type="System.Int32, mscorlib">
+    <value>82</value>
+  </data>
+  <data name="BUT_calib_accell.Text" xml:space="preserve">
+    <value>Calibrate Accel (Beta)</value>
+  </data>
+  <data name="&gt;&gt;BUT_calib_accell.Name" xml:space="preserve">
+    <value>BUT_calib_accell</value>
+  </data>
+  <data name="&gt;&gt;BUT_calib_accell.Type" xml:space="preserve">
+    <value>ArdupilotMega.Controls.MyButton, ArdupilotMegaPlanner10, Version=1.1.4716.29982, Culture=neutral, PublicKeyToken=null</value>
+  </data>
+  <data name="&gt;&gt;BUT_calib_accell.Parent" xml:space="preserve">
+    <value>$this</value>
+  </data>
+  <data name="&gt;&gt;BUT_calib_accell.ZOrder" xml:space="preserve">
     <value>1</value>
   </data>
   <data name="lineSeparator2.Location" type="System.Drawing.Point, System.Drawing">
@@ -442,13 +400,115 @@
     <value>lineSeparator2</value>
   </data>
   <data name="&gt;&gt;lineSeparator2.Type" xml:space="preserve">
-    <value>ArdupilotMega.Controls.LineSeparator, ArdupilotMegaPlanner10, Version=1.1.4581.34461, Culture=neutral, PublicKeyToken=null</value>
+    <value>ArdupilotMega.Controls.LineSeparator, ArdupilotMegaPlanner10, Version=1.1.4716.29982, Culture=neutral, PublicKeyToken=null</value>
   </data>
   <data name="&gt;&gt;lineSeparator2.Parent" xml:space="preserve">
     <value>$this</value>
   </data>
   <data name="&gt;&gt;lineSeparator2.ZOrder" xml:space="preserve">
-    <value>0</value>
+    <value>2</value>
+  </data>
+  <data name="lineSeparator3.Location" type="System.Drawing.Point, System.Drawing">
+    <value>20, 36</value>
+  </data>
+  <data name="lineSeparator3.Size" type="System.Drawing.Size, System.Drawing">
+    <value>460, 2</value>
+  </data>
+  <data name="lineSeparator3.TabIndex" type="System.Int32, mscorlib">
+    <value>80</value>
+  </data>
+  <data name="&gt;&gt;lineSeparator3.Name" xml:space="preserve">
+    <value>lineSeparator3</value>
+  </data>
+  <data name="&gt;&gt;lineSeparator3.Type" xml:space="preserve">
+    <value>ArdupilotMega.Controls.LineSeparator, ArdupilotMegaPlanner10, Version=1.1.4716.29982, Culture=neutral, PublicKeyToken=null</value>
+  </data>
+  <data name="&gt;&gt;lineSeparator3.Parent" xml:space="preserve">
+    <value>$this</value>
+  </data>
+  <data name="&gt;&gt;lineSeparator3.ZOrder" xml:space="preserve">
+    <value>3</value>
+  </data>
+  <data name="pictureBoxPlus.ImeMode" type="System.Windows.Forms.ImeMode, System.Windows.Forms">
+    <value>NoControl</value>
+  </data>
+  <data name="pictureBoxPlus.Location" type="System.Drawing.Point, System.Drawing">
+    <value>116, 65</value>
+  </data>
+  <data name="pictureBoxPlus.Size" type="System.Drawing.Size, System.Drawing">
+    <value>248, 81</value>
+  </data>
+  <data name="pictureBoxPlus.SizeMode" type="System.Windows.Forms.PictureBoxSizeMode, System.Windows.Forms">
+    <value>Zoom</value>
+  </data>
+  <data name="pictureBoxPlus.TabIndex" type="System.Int32, mscorlib">
+    <value>17</value>
+  </data>
+  <data name="&gt;&gt;pictureBoxPlus.Name" xml:space="preserve">
+    <value>pictureBoxPlus</value>
+  </data>
+  <data name="&gt;&gt;pictureBoxPlus.Type" xml:space="preserve">
+    <value>ArdupilotMega.Controls.PictureBoxWithPseudoOpacity, ArdupilotMegaPlanner10, Version=1.1.4716.29982, Culture=neutral, PublicKeyToken=null</value>
+  </data>
+  <data name="&gt;&gt;pictureBoxPlus.Parent" xml:space="preserve">
+    <value>$this</value>
+  </data>
+  <data name="&gt;&gt;pictureBoxPlus.ZOrder" xml:space="preserve">
+    <value>11</value>
+  </data>
+  <data name="pictureBoxX.ImeMode" type="System.Windows.Forms.ImeMode, System.Windows.Forms">
+    <value>NoControl</value>
+  </data>
+  <data name="pictureBoxX.Location" type="System.Drawing.Point, System.Drawing">
+    <value>116, 164</value>
+  </data>
+  <data name="pictureBoxX.Size" type="System.Drawing.Size, System.Drawing">
+    <value>248, 85</value>
+  </data>
+  <data name="pictureBoxX.SizeMode" type="System.Windows.Forms.PictureBoxSizeMode, System.Windows.Forms">
+    <value>Zoom</value>
+  </data>
+  <data name="pictureBoxX.TabIndex" type="System.Int32, mscorlib">
+    <value>11</value>
+  </data>
+  <data name="&gt;&gt;pictureBoxX.Name" xml:space="preserve">
+    <value>pictureBoxX</value>
+  </data>
+  <data name="&gt;&gt;pictureBoxX.Type" xml:space="preserve">
+    <value>ArdupilotMega.Controls.PictureBoxWithPseudoOpacity, ArdupilotMegaPlanner10, Version=1.1.4716.29982, Culture=neutral, PublicKeyToken=null</value>
+  </data>
+  <data name="&gt;&gt;pictureBoxX.Parent" xml:space="preserve">
+    <value>$this</value>
+  </data>
+  <data name="&gt;&gt;pictureBoxX.ZOrder" xml:space="preserve">
+    <value>12</value>
+  </data>
+  <data name="BUT_levelac2.ImeMode" type="System.Windows.Forms.ImeMode, System.Windows.Forms">
+    <value>NoControl</value>
+  </data>
+  <data name="BUT_levelac2.Location" type="System.Drawing.Point, System.Drawing">
+    <value>378, 318</value>
+  </data>
+  <data name="BUT_levelac2.Size" type="System.Drawing.Size, System.Drawing">
+    <value>102, 23</value>
+  </data>
+  <data name="BUT_levelac2.TabIndex" type="System.Int32, mscorlib">
+    <value>16</value>
+  </data>
+  <data name="BUT_levelac2.Text" xml:space="preserve">
+    <value>Calibrate Now</value>
+  </data>
+  <data name="&gt;&gt;BUT_levelac2.Name" xml:space="preserve">
+    <value>BUT_levelac2</value>
+  </data>
+  <data name="&gt;&gt;BUT_levelac2.Type" xml:space="preserve">
+    <value>ArdupilotMega.Controls.MyButton, ArdupilotMegaPlanner10, Version=1.1.4716.29982, Culture=neutral, PublicKeyToken=null</value>
+  </data>
+  <data name="&gt;&gt;BUT_levelac2.Parent" xml:space="preserve">
+    <value>$this</value>
+  </data>
+  <data name="&gt;&gt;BUT_levelac2.ZOrder" xml:space="preserve">
+    <value>13</value>
   </data>
   <metadata name="$this.Localizable" type="System.Boolean, mscorlib, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089">
     <value>True</value>
@@ -457,7 +517,7 @@
     <value>6, 13</value>
   </data>
   <data name="$this.Size" type="System.Drawing.Size, System.Drawing">
-    <value>495, 363</value>
+    <value>495, 411</value>
   </data>
   <data name="&gt;&gt;$this.Name" xml:space="preserve">
     <value>ConfigAccelerometerCalibrationQuad</value>

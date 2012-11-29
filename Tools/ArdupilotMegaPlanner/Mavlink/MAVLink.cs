@@ -1069,12 +1069,19 @@ namespace ArdupilotMega
             int timeout = 2000;
 
             // imu calib take a little while
-            if (actionid == MAV_CMD.PREFLIGHT_CALIBRATION)
+            if (actionid == MAV_CMD.PREFLIGHT_CALIBRATION && p5 == 1)
+            {
+                // this is for advanced accel offsets, and blocks execution
+                return true;
+            }  else if (actionid == MAV_CMD.PREFLIGHT_CALIBRATION)
             {
                 retrys = 1;
                 timeout = 25000;
-            } else if (actionid == MAV_CMD.PREFLIGHT_REBOOT_SHUTDOWN) {
+            }
+            else if (actionid == MAV_CMD.PREFLIGHT_REBOOT_SHUTDOWN)
+            {
                 generatePacket(MAVLINK_MSG_ID_COMMAND_LONG, req);
+                MainV2.giveComport = false;
                 return true;
             }
 
@@ -2785,7 +2792,7 @@ namespace ArdupilotMega
             return temp;
         }
 
-        public static bool translateMode(string modein, ref MAVLink.mavlink_set_mode_t mode)
+        public bool translateMode(string modein, ref MAVLink.mavlink_set_mode_t mode)
         {
             //MAVLink09.mavlink_set_mode_t mode = new MAVLink09.mavlink_set_mode_t();
             mode.target_system = MainV2.comPort.sysid;

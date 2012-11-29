@@ -252,8 +252,137 @@
   <metadata name="toolTip1.TrayLocation" type="System.Drawing.Point, System.Drawing, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a">
     <value>214, 17</value>
   </metadata>
+  <data name="mavlinkCheckBoxlong_fs.AutoSize" type="System.Boolean, mscorlib">
+    <value>True</value>
+  </data>
+  <data name="mavlinkCheckBoxlong_fs.Dock" type="System.Windows.Forms.DockStyle, System.Windows.Forms">
+    <value>Top</value>
+  </data>
+  <data name="mavlinkCheckBoxlong_fs.Enabled" type="System.Boolean, mscorlib">
+    <value>False</value>
+  </data>
+  <data name="mavlinkCheckBoxlong_fs.ImeMode" type="System.Windows.Forms.ImeMode, System.Windows.Forms">
+    <value>NoControl</value>
+  </data>
+  <data name="mavlinkCheckBoxlong_fs.Location" type="System.Drawing.Point, System.Drawing">
+    <value>3, 110</value>
+  </data>
+  <data name="mavlinkCheckBoxlong_fs.Size" type="System.Drawing.Size, System.Drawing">
+    <value>199, 17</value>
+  </data>
+  <data name="mavlinkCheckBoxlong_fs.TabIndex" type="System.Int32, mscorlib">
+    <value>146</value>
+  </data>
+  <data name="mavlinkCheckBoxlong_fs.Text" xml:space="preserve">
+    <value>FailSafe Long (20 sec)</value>
+  </data>
+  <data name="mavlinkCheckBoxlong_fs.ToolTip" xml:space="preserve">
+    <value>Off, no Action, On, RTL</value>
+  </data>
+  <data name="mavlinkCheckBoxlong_fs.Visible" type="System.Boolean, mscorlib">
+    <value>False</value>
+  </data>
+  <data name="&gt;&gt;mavlinkCheckBoxlong_fs.Name" xml:space="preserve">
+    <value>mavlinkCheckBoxlong_fs</value>
+  </data>
+  <data name="&gt;&gt;mavlinkCheckBoxlong_fs.Type" xml:space="preserve">
+    <value>ArdupilotMega.Controls.MavlinkCheckBox, ArdupilotMegaPlanner10, Version=1.1.4715.14139, Culture=neutral, PublicKeyToken=null</value>
+  </data>
+  <data name="&gt;&gt;mavlinkCheckBoxlong_fs.Parent" xml:space="preserve">
+    <value>groupBox1</value>
+  </data>
+  <data name="&gt;&gt;mavlinkCheckBoxlong_fs.ZOrder" xml:space="preserve">
+    <value>1</value>
+  </data>
+  <data name="mavlinkCheckBoxgcs_fs.AutoSize" type="System.Boolean, mscorlib">
+    <value>True</value>
+  </data>
+  <data name="mavlinkCheckBoxgcs_fs.Dock" type="System.Windows.Forms.DockStyle, System.Windows.Forms">
+    <value>Top</value>
+  </data>
+  <data name="mavlinkCheckBoxgcs_fs.Enabled" type="System.Boolean, mscorlib">
+    <value>False</value>
+  </data>
+  <data name="mavlinkCheckBoxgcs_fs.ImeMode" type="System.Windows.Forms.ImeMode, System.Windows.Forms">
+    <value>NoControl</value>
+  </data>
+  <data name="mavlinkCheckBoxgcs_fs.Location" type="System.Drawing.Point, System.Drawing">
+    <value>3, 76</value>
+  </data>
+  <data name="mavlinkCheckBoxgcs_fs.Size" type="System.Drawing.Size, System.Drawing">
+    <value>199, 17</value>
+  </data>
+  <data name="mavlinkCheckBoxgcs_fs.TabIndex" type="System.Int32, mscorlib">
+    <value>144</value>
+  </data>
+  <data name="mavlinkCheckBoxgcs_fs.Text" xml:space="preserve">
+    <value>GCS FailSafe</value>
+  </data>
+  <data name="mavlinkCheckBoxgcs_fs.ToolTip" xml:space="preserve">
+    <value>Enable Failsafe on GCS loss of communication</value>
+  </data>
+  <data name="mavlinkCheckBoxgcs_fs.Visible" type="System.Boolean, mscorlib">
+    <value>False</value>
+  </data>
+  <data name="&gt;&gt;mavlinkCheckBoxgcs_fs.Name" xml:space="preserve">
+    <value>mavlinkCheckBoxgcs_fs</value>
+  </data>
+  <data name="&gt;&gt;mavlinkCheckBoxgcs_fs.Type" xml:space="preserve">
+    <value>ArdupilotMega.Controls.MavlinkCheckBox, ArdupilotMegaPlanner10, Version=1.1.4715.14139, Culture=neutral, PublicKeyToken=null</value>
+  </data>
+  <data name="&gt;&gt;mavlinkCheckBoxgcs_fs.Parent" xml:space="preserve">
+    <value>groupBox1</value>
+  </data>
+  <data name="&gt;&gt;mavlinkCheckBoxgcs_fs.ZOrder" xml:space="preserve">
+    <value>3</value>
+  </data>
+  <data name="mavlinkCheckBoxshort_fs.AutoSize" type="System.Boolean, mscorlib">
+    <value>True</value>
+  </data>
+  <data name="mavlinkCheckBoxshort_fs.Dock" type="System.Windows.Forms.DockStyle, System.Windows.Forms">
+    <value>Top</value>
+  </data>
+  <data name="mavlinkCheckBoxshort_fs.Enabled" type="System.Boolean, mscorlib">
+    <value>False</value>
+  </data>
+  <data name="mavlinkCheckBoxshort_fs.ImeMode" type="System.Windows.Forms.ImeMode, System.Windows.Forms">
+    <value>NoControl</value>
+  </data>
+  <data name="mavlinkCheckBoxshort_fs.Location" type="System.Drawing.Point, System.Drawing">
+    <value>3, 93</value>
+  </data>
+  <data name="mavlinkCheckBoxshort_fs.Size" type="System.Drawing.Size, System.Drawing">
+    <value>199, 17</value>
+  </data>
+  <data name="mavlinkCheckBoxshort_fs.TabIndex" type="System.Int32, mscorlib">
+    <value>145</value>
+  </data>
+  <data name="mavlinkCheckBoxshort_fs.Text" xml:space="preserve">
+    <value>FailSafe Short (1 sec)</value>
+  </data>
+  <data name="mavlinkCheckBoxshort_fs.ToolTip" xml:space="preserve">
+    <value>Off, no Action, On, RTL</value>
+  </data>
+  <data name="mavlinkCheckBoxshort_fs.Visible" type="System.Boolean, mscorlib">
+    <value>False</value>
+  </data>
+  <data name="&gt;&gt;mavlinkCheckBoxshort_fs.Name" xml:space="preserve">
+    <value>mavlinkCheckBoxshort_fs</value>
+  </data>
+  <data name="&gt;&gt;mavlinkCheckBoxshort_fs.Type" xml:space="preserve">
+    <value>ArdupilotMega.Controls.MavlinkCheckBox, ArdupilotMegaPlanner10, Version=1.1.4715.14139, Culture=neutral, PublicKeyToken=null</value>
+  </data>
+  <data name="&gt;&gt;mavlinkCheckBoxshort_fs.Parent" xml:space="preserve">
+    <value>groupBox1</value>
+  </data>
+  <data name="&gt;&gt;mavlinkCheckBoxshort_fs.ZOrder" xml:space="preserve">
+    <value>2</value>
+  </data>
   <data name="mavlinkCheckBoxthr_fs.AutoSize" type="System.Boolean, mscorlib">
     <value>True</value>
+  </data>
+  <data name="mavlinkCheckBoxthr_fs.Dock" type="System.Windows.Forms.DockStyle, System.Windows.Forms">
+    <value>Top</value>
   </data>
   <data name="mavlinkCheckBoxthr_fs.Enabled" type="System.Boolean, mscorlib">
     <value>False</value>
@@ -262,10 +391,10 @@
     <value>NoControl</value>
   </data>
   <data name="mavlinkCheckBoxthr_fs.Location" type="System.Drawing.Point, System.Drawing">
-    <value>6, 19</value>
+    <value>3, 16</value>
   </data>
   <data name="mavlinkCheckBoxthr_fs.Size" type="System.Drawing.Size, System.Drawing">
-    <value>103, 17</value>
+    <value>199, 17</value>
   </data>
   <data name="mavlinkCheckBoxthr_fs.TabIndex" type="System.Int32, mscorlib">
     <value>141</value>
@@ -276,60 +405,26 @@
   <data name="mavlinkCheckBoxthr_fs.ToolTip" xml:space="preserve">
     <value>Enable Failsafe on low throttle pwm</value>
   </data>
+  <data name="mavlinkCheckBoxthr_fs.Visible" type="System.Boolean, mscorlib">
+    <value>False</value>
+  </data>
   <data name="&gt;&gt;mavlinkCheckBoxthr_fs.Name" xml:space="preserve">
     <value>mavlinkCheckBoxthr_fs</value>
   </data>
   <data name="&gt;&gt;mavlinkCheckBoxthr_fs.Type" xml:space="preserve">
-    <value>ArdupilotMega.Controls.MavlinkCheckBox, ArdupilotMegaPlanner10, Version=1.1.4708.37166, Culture=neutral, PublicKeyToken=null</value>
+    <value>ArdupilotMega.Controls.MavlinkCheckBox, ArdupilotMegaPlanner10, Version=1.1.4715.14139, Culture=neutral, PublicKeyToken=null</value>
   </data>
   <data name="&gt;&gt;mavlinkCheckBoxthr_fs.Parent" xml:space="preserve">
     <value>groupBox1</value>
   </data>
   <data name="&gt;&gt;mavlinkCheckBoxthr_fs.ZOrder" xml:space="preserve">
-    <value>1</value>
-  </data>
-  <data name="mavlinkCheckBoxthr_fs_action.AutoSize" type="System.Boolean, mscorlib">
-    <value>True</value>
-  </data>
-  <data name="mavlinkCheckBoxthr_fs_action.Enabled" type="System.Boolean, mscorlib">
-    <value>False</value>
-  </data>
-  <data name="mavlinkCheckBoxthr_fs_action.ImeMode" type="System.Windows.Forms.ImeMode, System.Windows.Forms">
-    <value>NoControl</value>
-  </data>
-  <data name="mavlinkCheckBoxthr_fs_action.Location" type="System.Drawing.Point, System.Drawing">
-    <value>6, 69</value>
-  </data>
-  <data name="mavlinkCheckBoxthr_fs_action.Size" type="System.Drawing.Size, System.Drawing">
-    <value>134, 17</value>
-  </data>
-  <data name="mavlinkCheckBoxthr_fs_action.TabIndex" type="System.Int32, mscorlib">
-    <value>147</value>
-  </data>
-  <data name="mavlinkCheckBoxthr_fs_action.Text" xml:space="preserve">
-    <value>Throttle Failsafe Action</value>
-  </data>
-  <data name="mavlinkCheckBoxthr_fs_action.ToolTip" xml:space="preserve">
-    <value>Arducopter Auto: Off, no Action, On, RTL
-Arducopter Other: if have gps, RTL, Otherwise Land</value>
-  </data>
-  <data name="&gt;&gt;mavlinkCheckBoxthr_fs_action.Name" xml:space="preserve">
-    <value>mavlinkCheckBoxthr_fs_action</value>
-  </data>
-  <data name="&gt;&gt;mavlinkCheckBoxthr_fs_action.Type" xml:space="preserve">
-    <value>ArdupilotMega.Controls.MavlinkCheckBox, ArdupilotMegaPlanner10, Version=1.1.4708.37166, Culture=neutral, PublicKeyToken=null</value>
-  </data>
-  <data name="&gt;&gt;mavlinkCheckBoxthr_fs_action.Parent" xml:space="preserve">
-    <value>groupBox1</value>
-  </data>
-  <data name="&gt;&gt;mavlinkCheckBoxthr_fs_action.ZOrder" xml:space="preserve">
-    <value>2</value>
+    <value>6</value>
   </data>
   <data name="mavlinkNumericUpDownthr_fs_value.Enabled" type="System.Boolean, mscorlib">
     <value>False</value>
   </data>
   <data name="mavlinkNumericUpDownthr_fs_value.Location" type="System.Drawing.Point, System.Drawing">
-    <value>42, 42</value>
+    <value>55, 3</value>
   </data>
   <data name="mavlinkNumericUpDownthr_fs_value.Size" type="System.Drawing.Size, System.Drawing">
     <value>103, 20</value>
@@ -344,121 +439,95 @@ Arducopter Other: if have gps, RTL, Otherwise Land</value>
     <value>mavlinkNumericUpDownthr_fs_value</value>
   </data>
   <data name="&gt;&gt;mavlinkNumericUpDownthr_fs_value.Type" xml:space="preserve">
-    <value>ArdupilotMega.Controls.MavlinkNumericUpDown, ArdupilotMegaPlanner10, Version=1.1.4708.37166, Culture=neutral, PublicKeyToken=null</value>
+    <value>ArdupilotMega.Controls.MavlinkNumericUpDown, ArdupilotMegaPlanner10, Version=1.1.4715.14139, Culture=neutral, PublicKeyToken=null</value>
   </data>
   <data name="&gt;&gt;mavlinkNumericUpDownthr_fs_value.Parent" xml:space="preserve">
-    <value>groupBox1</value>
+    <value>PNL_thr_fs_value</value>
   </data>
   <data name="&gt;&gt;mavlinkNumericUpDownthr_fs_value.ZOrder" xml:space="preserve">
-    <value>3</value>
+    <value>0</value>
   </data>
-  <data name="mavlinkCheckBoxlong_fs.AutoSize" type="System.Boolean, mscorlib">
+  <data name="mavlinkCheckBoxthr_fs_action.AutoSize" type="System.Boolean, mscorlib">
     <value>True</value>
   </data>
-  <data name="mavlinkCheckBoxlong_fs.Enabled" type="System.Boolean, mscorlib">
+  <data name="mavlinkCheckBoxthr_fs_action.Dock" type="System.Windows.Forms.DockStyle, System.Windows.Forms">
+    <value>Top</value>
+  </data>
+  <data name="mavlinkCheckBoxthr_fs_action.Enabled" type="System.Boolean, mscorlib">
     <value>False</value>
   </data>
-  <data name="mavlinkCheckBoxlong_fs.ImeMode" type="System.Windows.Forms.ImeMode, System.Windows.Forms">
+  <data name="mavlinkCheckBoxthr_fs_action.ImeMode" type="System.Windows.Forms.ImeMode, System.Windows.Forms">
     <value>NoControl</value>
   </data>
-  <data name="mavlinkCheckBoxlong_fs.Location" type="System.Drawing.Point, System.Drawing">
-    <value>6, 138</value>
+  <data name="mavlinkCheckBoxthr_fs_action.Location" type="System.Drawing.Point, System.Drawing">
+    <value>3, 59</value>
   </data>
-  <data name="mavlinkCheckBoxlong_fs.Size" type="System.Drawing.Size, System.Drawing">
-    <value>132, 17</value>
+  <data name="mavlinkCheckBoxthr_fs_action.Size" type="System.Drawing.Size, System.Drawing">
+    <value>199, 17</value>
   </data>
-  <data name="mavlinkCheckBoxlong_fs.TabIndex" type="System.Int32, mscorlib">
-    <value>146</value>
+  <data name="mavlinkCheckBoxthr_fs_action.TabIndex" type="System.Int32, mscorlib">
+    <value>147</value>
   </data>
-  <data name="mavlinkCheckBoxlong_fs.Text" xml:space="preserve">
-    <value>FailSafe Long (20 sec)</value>
+  <data name="mavlinkCheckBoxthr_fs_action.Text" xml:space="preserve">
+    <value>Throttle Failsafe Action</value>
   </data>
-  <data name="mavlinkCheckBoxlong_fs.ToolTip" xml:space="preserve">
-    <value>Off, no Action, On, RTL</value>
+  <data name="mavlinkCheckBoxthr_fs_action.ToolTip" xml:space="preserve">
+    <value>Arducopter Auto: Off, no Action, On, RTL
+Arducopter Other: if have gps, RTL, Otherwise Land</value>
   </data>
-  <data name="&gt;&gt;mavlinkCheckBoxlong_fs.Name" xml:space="preserve">
-    <value>mavlinkCheckBoxlong_fs</value>
+  <data name="mavlinkCheckBoxthr_fs_action.Visible" type="System.Boolean, mscorlib">
+    <value>False</value>
   </data>
-  <data name="&gt;&gt;mavlinkCheckBoxlong_fs.Type" xml:space="preserve">
-    <value>ArdupilotMega.Controls.MavlinkCheckBox, ArdupilotMegaPlanner10, Version=1.1.4708.37166, Culture=neutral, PublicKeyToken=null</value>
+  <data name="&gt;&gt;mavlinkCheckBoxthr_fs_action.Name" xml:space="preserve">
+    <value>mavlinkCheckBoxthr_fs_action</value>
   </data>
-  <data name="&gt;&gt;mavlinkCheckBoxlong_fs.Parent" xml:space="preserve">
+  <data name="&gt;&gt;mavlinkCheckBoxthr_fs_action.Type" xml:space="preserve">
+    <value>ArdupilotMega.Controls.MavlinkCheckBox, ArdupilotMegaPlanner10, Version=1.1.4715.14139, Culture=neutral, PublicKeyToken=null</value>
+  </data>
+  <data name="&gt;&gt;mavlinkCheckBoxthr_fs_action.Parent" xml:space="preserve">
     <value>groupBox1</value>
   </data>
-  <data name="&gt;&gt;mavlinkCheckBoxlong_fs.ZOrder" xml:space="preserve">
+  <data name="&gt;&gt;mavlinkCheckBoxthr_fs_action.ZOrder" xml:space="preserve">
     <value>4</value>
   </data>
-  <data name="mavlinkCheckBoxgcs_fs.AutoSize" type="System.Boolean, mscorlib">
+  <data name="mavlinkCheckBoxfs_batt_enable.AutoSize" type="System.Boolean, mscorlib">
     <value>True</value>
   </data>
-  <data name="mavlinkCheckBoxgcs_fs.Enabled" type="System.Boolean, mscorlib">
+  <data name="mavlinkCheckBoxfs_batt_enable.Dock" type="System.Windows.Forms.DockStyle, System.Windows.Forms">
+    <value>Top</value>
+  </data>
+  <data name="mavlinkCheckBoxfs_batt_enable.Enabled" type="System.Boolean, mscorlib">
     <value>False</value>
   </data>
-  <data name="mavlinkCheckBoxgcs_fs.ImeMode" type="System.Windows.Forms.ImeMode, System.Windows.Forms">
+  <data name="mavlinkCheckBoxfs_batt_enable.ImeMode" type="System.Windows.Forms.ImeMode, System.Windows.Forms">
     <value>NoControl</value>
   </data>
-  <data name="mavlinkCheckBoxgcs_fs.Location" type="System.Drawing.Point, System.Drawing">
-    <value>6, 92</value>
+  <data name="mavlinkCheckBoxfs_batt_enable.Location" type="System.Drawing.Point, System.Drawing">
+    <value>3, 127</value>
   </data>
-  <data name="mavlinkCheckBoxgcs_fs.Size" type="System.Drawing.Size, System.Drawing">
-    <value>89, 17</value>
+  <data name="mavlinkCheckBoxfs_batt_enable.Size" type="System.Drawing.Size, System.Drawing">
+    <value>199, 17</value>
   </data>
-  <data name="mavlinkCheckBoxgcs_fs.TabIndex" type="System.Int32, mscorlib">
-    <value>144</value>
+  <data name="mavlinkCheckBoxfs_batt_enable.TabIndex" type="System.Int32, mscorlib">
+    <value>150</value>
   </data>
-  <data name="mavlinkCheckBoxgcs_fs.Text" xml:space="preserve">
-    <value>GCS FailSafe</value>
+  <data name="mavlinkCheckBoxfs_batt_enable.Text" xml:space="preserve">
+    <value>Battery Failsafe</value>
   </data>
-  <data name="mavlinkCheckBoxgcs_fs.ToolTip" xml:space="preserve">
-    <value>Enable Failsafe on GCS loss of communication</value>
-  </data>
-  <data name="&gt;&gt;mavlinkCheckBoxgcs_fs.Name" xml:space="preserve">
-    <value>mavlinkCheckBoxgcs_fs</value>
-  </data>
-  <data name="&gt;&gt;mavlinkCheckBoxgcs_fs.Type" xml:space="preserve">
-    <value>ArdupilotMega.Controls.MavlinkCheckBox, ArdupilotMegaPlanner10, Version=1.1.4708.37166, Culture=neutral, PublicKeyToken=null</value>
-  </data>
-  <data name="&gt;&gt;mavlinkCheckBoxgcs_fs.Parent" xml:space="preserve">
-    <value>groupBox1</value>
-  </data>
-  <data name="&gt;&gt;mavlinkCheckBoxgcs_fs.ZOrder" xml:space="preserve">
-    <value>5</value>
-  </data>
-  <data name="mavlinkCheckBoxshort_fs.AutoSize" type="System.Boolean, mscorlib">
-    <value>True</value>
-  </data>
-  <data name="mavlinkCheckBoxshort_fs.Enabled" type="System.Boolean, mscorlib">
+  <data name="mavlinkCheckBoxfs_batt_enable.Visible" type="System.Boolean, mscorlib">
     <value>False</value>
   </data>
-  <data name="mavlinkCheckBoxshort_fs.ImeMode" type="System.Windows.Forms.ImeMode, System.Windows.Forms">
-    <value>NoControl</value>
+  <data name="&gt;&gt;mavlinkCheckBoxfs_batt_enable.Name" xml:space="preserve">
+    <value>mavlinkCheckBoxfs_batt_enable</value>
   </data>
-  <data name="mavlinkCheckBoxshort_fs.Location" type="System.Drawing.Point, System.Drawing">
-    <value>6, 115</value>
+  <data name="&gt;&gt;mavlinkCheckBoxfs_batt_enable.Type" xml:space="preserve">
+    <value>ArdupilotMega.Controls.MavlinkCheckBox, ArdupilotMegaPlanner10, Version=1.1.4715.14139, Culture=neutral, PublicKeyToken=null</value>
   </data>
-  <data name="mavlinkCheckBoxshort_fs.Size" type="System.Drawing.Size, System.Drawing">
-    <value>127, 17</value>
-  </data>
-  <data name="mavlinkCheckBoxshort_fs.TabIndex" type="System.Int32, mscorlib">
-    <value>145</value>
-  </data>
-  <data name="mavlinkCheckBoxshort_fs.Text" xml:space="preserve">
-    <value>FailSafe Short (1 sec)</value>
-  </data>
-  <data name="mavlinkCheckBoxshort_fs.ToolTip" xml:space="preserve">
-    <value>Off, no Action, On, RTL</value>
-  </data>
-  <data name="&gt;&gt;mavlinkCheckBoxshort_fs.Name" xml:space="preserve">
-    <value>mavlinkCheckBoxshort_fs</value>
-  </data>
-  <data name="&gt;&gt;mavlinkCheckBoxshort_fs.Type" xml:space="preserve">
-    <value>ArdupilotMega.Controls.MavlinkCheckBox, ArdupilotMegaPlanner10, Version=1.1.4708.37166, Culture=neutral, PublicKeyToken=null</value>
-  </data>
-  <data name="&gt;&gt;mavlinkCheckBoxshort_fs.Parent" xml:space="preserve">
+  <data name="&gt;&gt;mavlinkCheckBoxfs_batt_enable.Parent" xml:space="preserve">
     <value>groupBox1</value>
   </data>
-  <data name="&gt;&gt;mavlinkCheckBoxshort_fs.ZOrder" xml:space="preserve">
-    <value>6</value>
+  <data name="&gt;&gt;mavlinkCheckBoxfs_batt_enable.ZOrder" xml:space="preserve">
+    <value>0</value>
   </data>
   <data name="label3.AutoSize" type="System.Boolean, mscorlib">
     <value>True</value>
@@ -467,16 +536,16 @@ Arducopter Other: if have gps, RTL, Otherwise Land</value>
     <value>NoControl</value>
   </data>
   <data name="label3.Location" type="System.Drawing.Point, System.Drawing">
-    <value>6, 48</value>
+    <value>3, 9</value>
   </data>
   <data name="label3.Size" type="System.Drawing.Size, System.Drawing">
-    <value>30, 13</value>
+    <value>46, 13</value>
   </data>
   <data name="label3.TabIndex" type="System.Int32, mscorlib">
     <value>148</value>
   </data>
   <data name="label3.Text" xml:space="preserve">
-    <value>Pwm</value>
+    <value>FS Pwm</value>
   </data>
   <data name="&gt;&gt;label3.Name" xml:space="preserve">
     <value>label3</value>
@@ -485,16 +554,40 @@ Arducopter Other: if have gps, RTL, Otherwise Land</value>
     <value>System.Windows.Forms.Label, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </data>
   <data name="&gt;&gt;label3.Parent" xml:space="preserve">
-    <value>groupBox1</value>
+    <value>PNL_thr_fs_value</value>
   </data>
   <data name="&gt;&gt;label3.ZOrder" xml:space="preserve">
-    <value>0</value>
+    <value>1</value>
+  </data>
+  <data name="PNL_thr_fs_value.Dock" type="System.Windows.Forms.DockStyle, System.Windows.Forms">
+    <value>Top</value>
+  </data>
+  <data name="PNL_thr_fs_value.Location" type="System.Drawing.Point, System.Drawing">
+    <value>3, 33</value>
+  </data>
+  <data name="PNL_thr_fs_value.Size" type="System.Drawing.Size, System.Drawing">
+    <value>199, 26</value>
+  </data>
+  <data name="PNL_thr_fs_value.TabIndex" type="System.Int32, mscorlib">
+    <value>149</value>
+  </data>
+  <data name="&gt;&gt;PNL_thr_fs_value.Name" xml:space="preserve">
+    <value>PNL_thr_fs_value</value>
+  </data>
+  <data name="&gt;&gt;PNL_thr_fs_value.Type" xml:space="preserve">
+    <value>System.Windows.Forms.Panel, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </data>
+  <data name="&gt;&gt;PNL_thr_fs_value.Parent" xml:space="preserve">
+    <value>groupBox1</value>
+  </data>
+  <data name="&gt;&gt;PNL_thr_fs_value.ZOrder" xml:space="preserve">
+    <value>5</value>
   </data>
   <data name="groupBox1.Location" type="System.Drawing.Point, System.Drawing">
-    <value>495, 209</value>
+    <value>480, 174</value>
   </data>
   <data name="groupBox1.Size" type="System.Drawing.Size, System.Drawing">
-    <value>170, 167</value>
+    <value>205, 257</value>
   </data>
   <data name="groupBox1.TabIndex" type="System.Int32, mscorlib">
     <value>148</value>
@@ -596,7 +689,7 @@ Arducopter Other: if have gps, RTL, Otherwise Land</value>
     <value>horizontalProgressBar9</value>
   </data>
   <data name="&gt;&gt;horizontalProgressBar9.Type" xml:space="preserve">
-    <value>ArdupilotMega.HorizontalProgressBar, ArdupilotMegaPlanner10, Version=1.1.4708.37166, Culture=neutral, PublicKeyToken=null</value>
+    <value>ArdupilotMega.HorizontalProgressBar, ArdupilotMegaPlanner10, Version=1.1.4715.14139, Culture=neutral, PublicKeyToken=null</value>
   </data>
   <data name="&gt;&gt;horizontalProgressBar9.Parent" xml:space="preserve">
     <value>$this</value>
@@ -620,7 +713,7 @@ Arducopter Other: if have gps, RTL, Otherwise Land</value>
     <value>horizontalProgressBar10</value>
   </data>
   <data name="&gt;&gt;horizontalProgressBar10.Type" xml:space="preserve">
-    <value>ArdupilotMega.HorizontalProgressBar, ArdupilotMegaPlanner10, Version=1.1.4708.37166, Culture=neutral, PublicKeyToken=null</value>
+    <value>ArdupilotMega.HorizontalProgressBar, ArdupilotMegaPlanner10, Version=1.1.4715.14139, Culture=neutral, PublicKeyToken=null</value>
   </data>
   <data name="&gt;&gt;horizontalProgressBar10.Parent" xml:space="preserve">
     <value>$this</value>
@@ -644,7 +737,7 @@ Arducopter Other: if have gps, RTL, Otherwise Land</value>
     <value>horizontalProgressBar11</value>
   </data>
   <data name="&gt;&gt;horizontalProgressBar11.Type" xml:space="preserve">
-    <value>ArdupilotMega.HorizontalProgressBar, ArdupilotMegaPlanner10, Version=1.1.4708.37166, Culture=neutral, PublicKeyToken=null</value>
+    <value>ArdupilotMega.HorizontalProgressBar, ArdupilotMegaPlanner10, Version=1.1.4715.14139, Culture=neutral, PublicKeyToken=null</value>
   </data>
   <data name="&gt;&gt;horizontalProgressBar11.Parent" xml:space="preserve">
     <value>$this</value>
@@ -668,7 +761,7 @@ Arducopter Other: if have gps, RTL, Otherwise Land</value>
     <value>horizontalProgressBar12</value>
   </data>
   <data name="&gt;&gt;horizontalProgressBar12.Type" xml:space="preserve">
-    <value>ArdupilotMega.HorizontalProgressBar, ArdupilotMegaPlanner10, Version=1.1.4708.37166, Culture=neutral, PublicKeyToken=null</value>
+    <value>ArdupilotMega.HorizontalProgressBar, ArdupilotMegaPlanner10, Version=1.1.4715.14139, Culture=neutral, PublicKeyToken=null</value>
   </data>
   <data name="&gt;&gt;horizontalProgressBar12.Parent" xml:space="preserve">
     <value>$this</value>
@@ -692,7 +785,7 @@ Arducopter Other: if have gps, RTL, Otherwise Land</value>
     <value>horizontalProgressBar13</value>
   </data>
   <data name="&gt;&gt;horizontalProgressBar13.Type" xml:space="preserve">
-    <value>ArdupilotMega.HorizontalProgressBar, ArdupilotMegaPlanner10, Version=1.1.4708.37166, Culture=neutral, PublicKeyToken=null</value>
+    <value>ArdupilotMega.HorizontalProgressBar, ArdupilotMegaPlanner10, Version=1.1.4715.14139, Culture=neutral, PublicKeyToken=null</value>
   </data>
   <data name="&gt;&gt;horizontalProgressBar13.Parent" xml:space="preserve">
     <value>$this</value>
@@ -716,7 +809,7 @@ Arducopter Other: if have gps, RTL, Otherwise Land</value>
     <value>horizontalProgressBar14</value>
   </data>
   <data name="&gt;&gt;horizontalProgressBar14.Type" xml:space="preserve">
-    <value>ArdupilotMega.HorizontalProgressBar, ArdupilotMegaPlanner10, Version=1.1.4708.37166, Culture=neutral, PublicKeyToken=null</value>
+    <value>ArdupilotMega.HorizontalProgressBar, ArdupilotMegaPlanner10, Version=1.1.4715.14139, Culture=neutral, PublicKeyToken=null</value>
   </data>
   <data name="&gt;&gt;horizontalProgressBar14.Parent" xml:space="preserve">
     <value>$this</value>
@@ -740,7 +833,7 @@ Arducopter Other: if have gps, RTL, Otherwise Land</value>
     <value>horizontalProgressBar15</value>
   </data>
   <data name="&gt;&gt;horizontalProgressBar15.Type" xml:space="preserve">
-    <value>ArdupilotMega.HorizontalProgressBar, ArdupilotMegaPlanner10, Version=1.1.4708.37166, Culture=neutral, PublicKeyToken=null</value>
+    <value>ArdupilotMega.HorizontalProgressBar, ArdupilotMegaPlanner10, Version=1.1.4715.14139, Culture=neutral, PublicKeyToken=null</value>
   </data>
   <data name="&gt;&gt;horizontalProgressBar15.Parent" xml:space="preserve">
     <value>$this</value>
@@ -764,7 +857,7 @@ Arducopter Other: if have gps, RTL, Otherwise Land</value>
     <value>horizontalProgressBar16</value>
   </data>
   <data name="&gt;&gt;horizontalProgressBar16.Type" xml:space="preserve">
-    <value>ArdupilotMega.HorizontalProgressBar, ArdupilotMegaPlanner10, Version=1.1.4708.37166, Culture=neutral, PublicKeyToken=null</value>
+    <value>ArdupilotMega.HorizontalProgressBar, ArdupilotMegaPlanner10, Version=1.1.4715.14139, Culture=neutral, PublicKeyToken=null</value>
   </data>
   <data name="&gt;&gt;horizontalProgressBar16.Parent" xml:space="preserve">
     <value>$this</value>
@@ -788,7 +881,7 @@ Arducopter Other: if have gps, RTL, Otherwise Land</value>
     <value>horizontalProgressBar8</value>
   </data>
   <data name="&gt;&gt;horizontalProgressBar8.Type" xml:space="preserve">
-    <value>ArdupilotMega.HorizontalProgressBar, ArdupilotMegaPlanner10, Version=1.1.4708.37166, Culture=neutral, PublicKeyToken=null</value>
+    <value>ArdupilotMega.HorizontalProgressBar, ArdupilotMegaPlanner10, Version=1.1.4715.14139, Culture=neutral, PublicKeyToken=null</value>
   </data>
   <data name="&gt;&gt;horizontalProgressBar8.Parent" xml:space="preserve">
     <value>$this</value>
@@ -812,7 +905,7 @@ Arducopter Other: if have gps, RTL, Otherwise Land</value>
     <value>horizontalProgressBar7</value>
   </data>
   <data name="&gt;&gt;horizontalProgressBar7.Type" xml:space="preserve">
-    <value>ArdupilotMega.HorizontalProgressBar, ArdupilotMegaPlanner10, Version=1.1.4708.37166, Culture=neutral, PublicKeyToken=null</value>
+    <value>ArdupilotMega.HorizontalProgressBar, ArdupilotMegaPlanner10, Version=1.1.4715.14139, Culture=neutral, PublicKeyToken=null</value>
   </data>
   <data name="&gt;&gt;horizontalProgressBar7.Parent" xml:space="preserve">
     <value>$this</value>
@@ -836,7 +929,7 @@ Arducopter Other: if have gps, RTL, Otherwise Land</value>
     <value>horizontalProgressBar6</value>
   </data>
   <data name="&gt;&gt;horizontalProgressBar6.Type" xml:space="preserve">
-    <value>ArdupilotMega.HorizontalProgressBar, ArdupilotMegaPlanner10, Version=1.1.4708.37166, Culture=neutral, PublicKeyToken=null</value>
+    <value>ArdupilotMega.HorizontalProgressBar, ArdupilotMegaPlanner10, Version=1.1.4715.14139, Culture=neutral, PublicKeyToken=null</value>
   </data>
   <data name="&gt;&gt;horizontalProgressBar6.Parent" xml:space="preserve">
     <value>$this</value>
@@ -860,7 +953,7 @@ Arducopter Other: if have gps, RTL, Otherwise Land</value>
     <value>horizontalProgressBar5</value>
   </data>
   <data name="&gt;&gt;horizontalProgressBar5.Type" xml:space="preserve">
-    <value>ArdupilotMega.HorizontalProgressBar, ArdupilotMegaPlanner10, Version=1.1.4708.37166, Culture=neutral, PublicKeyToken=null</value>
+    <value>ArdupilotMega.HorizontalProgressBar, ArdupilotMegaPlanner10, Version=1.1.4715.14139, Culture=neutral, PublicKeyToken=null</value>
   </data>
   <data name="&gt;&gt;horizontalProgressBar5.Parent" xml:space="preserve">
     <value>$this</value>
@@ -884,7 +977,7 @@ Arducopter Other: if have gps, RTL, Otherwise Land</value>
     <value>horizontalProgressBar4</value>
   </data>
   <data name="&gt;&gt;horizontalProgressBar4.Type" xml:space="preserve">
-    <value>ArdupilotMega.HorizontalProgressBar, ArdupilotMegaPlanner10, Version=1.1.4708.37166, Culture=neutral, PublicKeyToken=null</value>
+    <value>ArdupilotMega.HorizontalProgressBar, ArdupilotMegaPlanner10, Version=1.1.4715.14139, Culture=neutral, PublicKeyToken=null</value>
   </data>
   <data name="&gt;&gt;horizontalProgressBar4.Parent" xml:space="preserve">
     <value>$this</value>
@@ -908,7 +1001,7 @@ Arducopter Other: if have gps, RTL, Otherwise Land</value>
     <value>horizontalProgressBar3</value>
   </data>
   <data name="&gt;&gt;horizontalProgressBar3.Type" xml:space="preserve">
-    <value>ArdupilotMega.HorizontalProgressBar, ArdupilotMegaPlanner10, Version=1.1.4708.37166, Culture=neutral, PublicKeyToken=null</value>
+    <value>ArdupilotMega.HorizontalProgressBar, ArdupilotMegaPlanner10, Version=1.1.4715.14139, Culture=neutral, PublicKeyToken=null</value>
   </data>
   <data name="&gt;&gt;horizontalProgressBar3.Parent" xml:space="preserve">
     <value>$this</value>
@@ -932,7 +1025,7 @@ Arducopter Other: if have gps, RTL, Otherwise Land</value>
     <value>horizontalProgressBar2</value>
   </data>
   <data name="&gt;&gt;horizontalProgressBar2.Type" xml:space="preserve">
-    <value>ArdupilotMega.HorizontalProgressBar, ArdupilotMegaPlanner10, Version=1.1.4708.37166, Culture=neutral, PublicKeyToken=null</value>
+    <value>ArdupilotMega.HorizontalProgressBar, ArdupilotMegaPlanner10, Version=1.1.4715.14139, Culture=neutral, PublicKeyToken=null</value>
   </data>
   <data name="&gt;&gt;horizontalProgressBar2.Parent" xml:space="preserve">
     <value>$this</value>
@@ -956,7 +1049,7 @@ Arducopter Other: if have gps, RTL, Otherwise Land</value>
     <value>horizontalProgressBar1</value>
   </data>
   <data name="&gt;&gt;horizontalProgressBar1.Type" xml:space="preserve">
-    <value>ArdupilotMega.HorizontalProgressBar, ArdupilotMegaPlanner10, Version=1.1.4708.37166, Culture=neutral, PublicKeyToken=null</value>
+    <value>ArdupilotMega.HorizontalProgressBar, ArdupilotMegaPlanner10, Version=1.1.4715.14139, Culture=neutral, PublicKeyToken=null</value>
   </data>
   <data name="&gt;&gt;horizontalProgressBar1.Parent" xml:space="preserve">
     <value>$this</value>

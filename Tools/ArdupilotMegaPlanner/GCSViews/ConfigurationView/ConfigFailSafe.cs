@@ -42,6 +42,10 @@ namespace ArdupilotMega.GCSViews.ConfigurationView
 
         public void Activate()
         {
+            // arducopter
+            mavlinkCheckBoxfs_batt_enable.setup(1, 0, "FS_BATT_ENABLE", MainV2.comPort.param);
+
+            // plane
             mavlinkCheckBoxthr_fs.setup(1, 0, "THR_FAILSAFE", MainV2.comPort.param, mavlinkNumericUpDownthr_fs_value);
             mavlinkNumericUpDownthr_fs_value.setup(800, 1200, 1, 1, "THR_FS_VALUE", MainV2.comPort.param);
             mavlinkCheckBoxthr_fs_action.setup(1, 0, "THR_FS_ACTION",MainV2.comPort.param);
