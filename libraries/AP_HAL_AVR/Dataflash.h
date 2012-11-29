@@ -89,7 +89,7 @@ protected:
  */
 class AP_HAL_AVR::APM1Dataflash : public AP_HAL_AVR::CommonDataflash {
 public:
-    void init(void* machtnichts);
+    void init(void* spiDevice);
     void read_mfg_id();
     bool media_present();
 private:
@@ -108,13 +108,12 @@ private:
     uint8_t _read_status_reg();
     uint8_t _read_status();
 
-    void _cs_active();
-    void _cs_inactive();
+    AP_HAL::SPIDeviceDriver *_spi;
 };
 
 class AP_HAL_AVR::APM2Dataflash : public AP_HAL_AVR::CommonDataflash {
 public:
-    void init(void* machtnichts);
+    void init(void* spiDevice);
     void read_mfg_id();
     bool media_present();
 private:
@@ -133,9 +132,7 @@ private:
     uint8_t _read_status_reg();
     uint8_t _read_status();
     
-    void _cs_active();
-    void _cs_inactive();
-    uint8_t _transfer(uint8_t data);
+    AP_HAL::SPIDeviceDriver *_spi;
 };
 
 #endif // __AP_HAL_AVR_DATAFLASH_H__

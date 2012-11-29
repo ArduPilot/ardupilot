@@ -17,30 +17,33 @@
 
 const AP_HAL_AVR::HAL_AVR& hal = AP_HAL_AVR_APM2;
 
-const uint8_t _cs_pin = 53;
 const uint8_t _baro_cs_pin = 40;
 
+AP_HAL::SPIDeviceDriver* spidev;
+
 static void register_write(uint8_t reg, uint8_t val) {
-    hal.gpio->write(_cs_pin, 0);
-    hal.spi->transfer(reg);
-    hal.spi->transfer(val);
-    hal.gpio->write(_cs_pin, 1);
+    hal.console->printf_P(PSTR("write reg %d val %d\r\n"),
+            (int) reg, (int) val);
+    spidev->cs_assert();
+    spidev->transfer(reg);
+    spidev->transfer(val);
+    spidev->cs_release();
 }
 
 static uint8_t register_read(uint8_t reg) {
     /* set most significant bit to read register */
     uint8_t regaddr = reg | 0x80;
-    hal.gpio->write(_cs_pin, 0);
-    hal.spi->transfer(regaddr);
-    uint8_t val = hal.spi->transfer(0);
-    hal.gpio->write(_cs_pin, 1);
+    spidev->cs_assert();
+    spidev->transfer(regaddr);
+    uint8_t val = spidev->transfer(0);
+    spidev->cs_release();
     return val;
 }
 
 static uint16_t spi_read_16(void) {
     uint8_t byte_h, byte_l;
-    byte_h = hal.spi->transfer(0);
-    byte_l = hal.spi->transfer(0);
+    byte_h = spidev->transfer(0);
+    byte_l = spidev->transfer(0);
     return (((int16_t) byte_h)<< 8) | byte_l;
 }
 
@@ -95,30 +98,28 @@ static void mpu6k_init(void) {
 
 static void mpu6k_read(int16_t* data) {
 
-    hal.gpio->write(_cs_pin, 0);
-    hal.spi->transfer( MPUREG_ACCEL_XOUT_H | 0x80 );
+    spidev->cs_assert();
+    spidev->transfer( MPUREG_ACCEL_XOUT_H | 0x80 );
     for (int i = 0; i < 7; i++) {
         data[i] = spi_read_16();
     }
-    hal.gpio->write(_cs_pin, 1);
+    spidev->cs_release();
 }
 
 static void setup() {
     hal.console->printf_P(PSTR("Initializing MPU6000\r\n"));
+    spidev = hal.spi->device(AP_HAL::SPIDevice_MPU6000);
 
+#if 0
     /* Setup the barometer cs to stop it from holding the bus */
     hal.gpio->pinMode(_baro_cs_pin, GPIO_OUTPUT);
     hal.gpio->write(_baro_cs_pin, 1);
+#endif
 
-    /* Setup CS pin hardware */
-    hal.gpio->pinMode(_cs_pin, GPIO_OUTPUT);
-    hal.gpio->write(_cs_pin, 1);
-    hal.scheduler->delay(1);
-
+    spidev->cs_assert();
     uint8_t spcr = SPCR;
     uint8_t spsr = SPSR;
-    hal.console->printf_P(PSTR("SPCR 0x%x, SPSR 0x%x\r\n"),
-            (int)spcr, (int)spsr);
+    spidev->cs_release();
 
     mpu6k_init();
 }
@@ -131,9 +132,6 @@ static void loop() {
         sensors[3], sensors[4], sensors[5], sensors[6]);
     hal.scheduler->delay(10);
 }
-
-
-
 
 extern "C" {
 int main (void) {

@@ -19,7 +19,7 @@ public:
         AP_HAL::UARTDriver* _uart2,
         AP_HAL::UARTDriver* _uart3,
         AP_HAL::I2CDriver*  _i2c,
-        AP_HAL::SPIDriver*  _spi,
+        AP_HAL::SPIDeviceManager*  _spi,
         AP_HAL::AnalogIn*   _analogin,
         AP_HAL::Storage*    _storage,
         AP_HAL::Dataflash*  _dataflash,

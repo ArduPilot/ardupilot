@@ -1,20 +1,38 @@
 
-#ifndef __AP_HAL_ARDUINO_SPI_DRIVER_H__
-#define __AP_HAL_ARDUINO_SPI_DRIVER_H__
+#ifndef __AP_HAL_AVR_SPI_DRIVER_H__
+#define __AP_HAL_AVR_SPI_DRIVER_H__
 
 #include <AP_HAL.h>
 #include "AP_HAL_AVR_Namespace.h"
+#include "GPIO.h"
+#include "SPIDevices.h"
+#include "Semaphore.h"
 
-class AP_HAL_AVR::ArduinoSPIDriver : public AP_HAL::SPIDriver {
+class AP_HAL_AVR::APM1SPIDeviceManager : public AP_HAL::SPIDeviceManager {
 public:
-    ArduinoSPIDriver() {}
     void init(void* machtnichts);
-    void set_freq(uint32_t freq_hz);
-    uint8_t transfer(uint8_t data);
+    AP_HAL::SPIDeviceDriver* device(enum AP_HAL::SPIDevice d);
+
 private:
-    uint8_t _divider_bits(uint8_t divider);
-    void _set_clock_divider_bits(uint8_t b);
+    AVRSPI0DeviceDriver* _dataflash;
+    AVRSPI0DeviceDriver* _optflow;
+
+    AVRSPI2DeviceDriver* _adc;
 };
 
-#endif // __AP_HAL_ARDUINO_SPI_DRIVER_H__
+class AP_HAL_AVR::APM2SPIDeviceManager : public AP_HAL::SPIDeviceManager {
+public:
+    void init(void* machtnichts);
+    AP_HAL::SPIDeviceDriver* device(enum AP_HAL::SPIDevice d);
+
+private:
+    AVRSPI0DeviceDriver* _mpu6k;
+    AVRSPI0DeviceDriver* _ms5611;
+    AVRSPI0DeviceDriver* _optflow_spi0;
+
+    AVRSPI3DeviceDriver* _dataflash;
+    AVRSPI3DeviceDriver* _optflow_spi3;
+};
+
+#endif // __AP_HAL_AVR_SPI_DRIVER_H__
 
