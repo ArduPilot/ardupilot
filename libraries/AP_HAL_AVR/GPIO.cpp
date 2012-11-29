@@ -8,11 +8,11 @@
 using namespace AP_HAL_AVR;
 
 
-AP_HAL::Proc ArduinoGPIO::_interrupt_6 = NULL;
+AP_HAL::Proc AVRGPIO::_interrupt_6 = NULL;
 
 SIGNAL(INT6_vect) {
-    if (ArduinoGPIO::_interrupt_6) {
-        ArduinoGPIO::_interrupt_6();
+    if (AVRGPIO::_interrupt_6) {
+        AVRGPIO::_interrupt_6();
     }
 }   
 
@@ -36,7 +36,7 @@ SIGNAL(INT6_vect) {
 #define portModeRegister(P) ( (volatile uint8_t *)( pgm_read_word( port_to_mode_PGM + (P))) )
 
 
-void ArduinoGPIO::pinMode(uint8_t pin, uint8_t mode) {
+void AVRGPIO::pinMode(uint8_t pin, uint8_t mode) {
     uint8_t bit = digitalPinToBitMask(pin);
     uint8_t port = digitalPinToPort(pin);
     volatile uint8_t *reg;
@@ -59,7 +59,7 @@ void ArduinoGPIO::pinMode(uint8_t pin, uint8_t mode) {
     }
 }
 
-uint8_t ArduinoGPIO::read(uint8_t pin) {
+uint8_t AVRGPIO::read(uint8_t pin) {
     uint8_t bit = digitalPinToBitMask(pin);
     uint8_t port = digitalPinToPort(pin);
 
@@ -69,7 +69,7 @@ uint8_t ArduinoGPIO::read(uint8_t pin) {
     return 0;
 }
 
-void ArduinoGPIO::write(uint8_t pin, uint8_t value) {
+void AVRGPIO::write(uint8_t pin, uint8_t value) {
     uint8_t bit = digitalPinToBitMask(pin);
     uint8_t port = digitalPinToPort(pin);
     volatile uint8_t *out;
@@ -91,7 +91,7 @@ void ArduinoGPIO::write(uint8_t pin, uint8_t value) {
 }
 
 /* Implement GPIO Interrupt 6, used for MPU6000 data ready on APM2. */
-bool ArduinoGPIO::attach_interrupt(
+bool AVRGPIO::attach_interrupt(
         int interrupt_num, AP_HAL::Proc proc, int mode) {
     if (interrupt_num == 6) {
         _interrupt_6 = proc;
@@ -104,14 +104,14 @@ bool ArduinoGPIO::attach_interrupt(
 }
 
 
-AP_HAL::DigitalSource* ArduinoGPIO::channel(int pin) {
+AP_HAL::DigitalSource* AVRGPIO::channel(int pin) {
     uint8_t bit = digitalPinToBitMask(pin);
     uint8_t port = digitalPinToPort(pin);
     if (port == NOT_A_PIN) return NULL;
-    return new ArduinoDigitalSource(bit, port);
+    return new AVRDigitalSource(bit, port);
 }
 
-void ArduinoDigitalSource::mode(uint8_t output) {
+void AVRDigitalSource::mode(uint8_t output) {
     const uint8_t bit = _bit;
     const uint8_t port = _port;
 
@@ -131,14 +131,14 @@ void ArduinoDigitalSource::mode(uint8_t output) {
     }
 }
 
-uint8_t ArduinoDigitalSource::read() {
+uint8_t AVRDigitalSource::read() {
     const uint8_t bit = _bit;
     const uint8_t port = _port;
     if (*portInputRegister(port) & bit) return 1;
     return 0;
 }
 
-void ArduinoDigitalSource::write(uint8_t value) {
+void AVRDigitalSource::write(uint8_t value) {
     const uint8_t bit = _bit;
     const uint8_t port = _port;
     volatile uint8_t* out;
