@@ -175,6 +175,9 @@ protected:
     AP_Vector3f             _accel_scale;
     AP_Vector3f             _accel_offset;
     AP_Vector3f             _gyro_offset;
+
+    // filtering frequency (0 means default)
+    AP_Int8                 _mpu6000_filter;
 };
 
 #include "AP_InertialSensor_Oilpan.h"
