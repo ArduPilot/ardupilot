@@ -201,25 +201,11 @@ static void run_navigation_contollers()
         break;
 
     case RTL:
-        // have we reached the desired Altitude?
-        if(alt_change_flag == REACHED_ALT || alt_change_flag == DESCENDING) {
-            // we are at or above the target alt
-            if(false == ap.rtl_reached_alt) {
-                set_rtl_reached_alt(true);
-                do_RTL();
-            }
-            wp_control = WP_MODE;
-            // checks if we have made it to home
-            update_nav_RTL();
-        } else{
-            // we need to loiter until we are ready to come home
-            wp_control = LOITER_MODE;
-        }
+        // execute the RTL state machine
+        verify_RTL();
 
         // calculates desired Yaw
-#if FRAME_CONFIG ==     HELI_FRAME
         update_auto_yaw();
-#endif
 
         // calculates the desired Roll and Pitch
         update_nav_wp();
@@ -252,25 +238,6 @@ static void run_navigation_contollers()
             }
         }else{
             wp_control = LOITER_MODE;
-        }
-
-        if(loiter_timer != 0) {
-            // If we have a safe approach alt set and we have been loitering for 20 seconds(default), begin approach
-            if((millis() - loiter_timer) > (uint32_t)g.auto_land_timeout.get()) {
-                // just to make sure we clear the timer
-                loiter_timer = 0;
-                if(g.rtl_approach_alt == 0) {
-                    set_mode(LAND);
-                    if(home_distance < 300) {
-                        next_WP.lat = home.lat;
-                        next_WP.lng = home.lng;
-                    }
-                }else{
-                    if(g.rtl_approach_alt < current_loc.alt) {
-                        set_new_altitude(g.rtl_approach_alt);
-                    }
-                }
-            }
         }
 
         // calculates the desired Roll and Pitch
@@ -315,30 +282,6 @@ static void run_navigation_contollers()
         } else {
             nav_yaw = 0;
         }
-    }
-}
-
-static void update_nav_RTL()
-{
-    // Have we have reached Home?
-    if(wp_distance <= 200 || check_missed_wp()) {
-        // if loiter_timer value > 0, we are set to trigger auto_land or approach
-        set_mode(LOITER);
-
-        // just in case we arrive and we aren't at the lower RTL alt yet.
-        set_new_altitude(get_RTL_alt());
-
-        // force loitering above home
-        next_WP.lat = home.lat;
-        next_WP.lng = home.lng;
-
-        // If failsafe OR auto approach altitude is set
-        // we will go into automatic land, (g.rtl_approach_alt) is the lowest point
-        // -1 means disable feature
-        if(ap.failsafe || g.rtl_approach_alt >= 0)
-            loiter_timer = millis();
-        else
-            loiter_timer = 0;
     }
 }
 

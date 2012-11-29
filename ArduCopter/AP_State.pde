@@ -97,15 +97,6 @@ void set_land_complete(bool b)
 }
 
 // ---------------------------------------------
-void set_rtl_reached_alt(bool b)
-{
-	if(b){
-		Log_Write_Event(DATA_RTL_REACHED_ALT);
-	}
-	ap.rtl_reached_alt = b;
-}
-
-// ---------------------------------------------
 
 void set_alt_change(uint8_t flag){
 	alt_change_flag = flag;

@@ -764,6 +764,8 @@ void set_throttle_out( int16_t throttle_out, bool apply_angle_boost )
         // clear angle_boost for logging purposes
         angle_boost = 0;
     }
+
+    // TO-DO: fix line below because this function is also called by accel based throttle controller
     throttle_accel_controller_active = false;
 }
 
@@ -1032,7 +1034,7 @@ get_throttle_althold(int32_t target_alt, int16_t max_climb_rate)
 // sends the desired acceleration in the accel based throttle controller
 // called at 50hz
 #define LAND_START_ALT 1000         // altitude in cm where land controller switches to slow rate of descent
-#define LAND_DETECTOR_TRIGGER 250   // number of 50hz iterations with near zero climb rate that triggers landing complete.
+#define LAND_DETECTOR_TRIGGER 50    // number of 50hz iterations with near zero climb rate and low throttle that triggers landing complete.
 static void
 get_throttle_land()
 {
@@ -1042,17 +1044,17 @@ get_throttle_land()
     }else{
         get_throttle_rate_stabilized(-abs(g.land_speed));
 
-        // detect whether we have landed
+        // detect whether we have landed by watching for minimum throttle and now movement
 #if INERTIAL_NAV_Z == ENABLED
-        if (abs(inertial_nav._velocity.z) < 20) {
+        if (abs(inertial_nav._velocity.z) < 20 && (g.rc_3.servo_out <= get_angle_boost(g.throttle_min) || g.pid_throttle_accel.get_integrator() <= -150)) {
 #else
-        if (abs(climb_rate) < 20) {
+        if (abs(climb_rate) < 20 && (g.rc_3.servo_out <= get_angle_boost(g.throttle_min) || g.pid_throttle_accel.get_integrator() <= -150)) {
 #endif
             if( land_detector < LAND_DETECTOR_TRIGGER ) {
                 land_detector++;
             }else{
                 set_land_complete(true);
-                if( g.rc_3.control_in == 0 ) {
+                if( g.rc_3.control_in == 0 || ap.failsafe ) {
                     init_disarm_motors();
                 }
             }

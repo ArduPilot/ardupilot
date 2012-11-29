@@ -220,12 +220,11 @@
 #define NO_COMMAND 0
 
 
+// Navigation modes held in wp_control variable
 #define LOITER_MODE 1
 #define WP_MODE 2
 #define CIRCLE_MODE 3
 #define NO_NAV_MODE 4
-#define TOY_MODE 5                      // THOR This mode defines the Virtual
-                                        // WP following mode
 
 // TOY mixing options
 #define TOY_LOOKUP_TABLE 0
@@ -242,6 +241,12 @@
 //#define WP_OPTION_					32
 //#define WP_OPTION_					64
 #define WP_OPTION_NEXT_CMD                      128
+
+// RTL state
+#define RTL_STATE_RETURNING_HOME    0
+#define RTL_STATE_LOITERING_AT_HOME 1
+#define RTL_STATE_FINAL_DESCENT     2
+#define RTL_STATE_LAND              3
 
 //repeating events
 #define NO_REPEAT 0

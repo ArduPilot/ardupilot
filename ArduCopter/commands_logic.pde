@@ -209,19 +209,29 @@ static bool verify_may()
 //
 /********************************************************************************/
 
+// do_RTL - start Return-to-Launch
 static void do_RTL(void)
 {
-    // TODO: Altitude option from mission planner
-    Location temp   = home;
-    temp.alt                = get_RTL_alt();
+    // set rtl state
+    rtl_state = RTL_STATE_RETURNING_HOME;
 
-    //so we know where we are navigating from
-    // --------------------------------------
-    next_WP                 = current_loc;
+    // set roll, pitch and yaw modes
+    roll_pitch_mode     = RTL_RP;
+    yaw_mode            = YAW_AUTO;
+    auto_yaw_tracking   = MAV_ROI_WPNEXT;
+    set_throttle_mode(RTL_THR);
 
-    // Loads WP from Memory
-    // --------------------
-    set_next_WP(&temp);
+    // set navigation mode
+    wp_control = WP_MODE;
+
+    // so we know where we are navigating from
+    next_WP = current_loc;
+
+    // Set navigation target to home
+    set_next_WP(&home);
+
+    // override altitude to RTL altitude
+    set_new_altitude(get_RTL_alt());
 
     // output control mode to the ground station
     // -----------------------------------------
@@ -354,6 +364,7 @@ static bool verify_land()
     }
 
     // turn off loiter below 1m
+    // To-Do: instead of turning off loiter we should make loiter less aggressive
     if(current_loc.alt < 100 ) {
         wp_control      = NO_NAV_MODE;
     }
@@ -452,19 +463,79 @@ static bool verify_loiter_turns()
     return false;
 }
 
+// verify_RTL - handles any state changes required to implement RTL
+// do_RTL should have been called once first to initialise all variables
+// returns true with RTL has completed successfully
 static bool verify_RTL()
 {
-    wp_control      = WP_MODE;
+    bool retval = false;
 
-    // Did we pass the WP?	// Distance checking
-    if((wp_distance <= (g.waypoint_radius * 100)) || check_missed_wp()) {
-        wp_control      = LOITER_MODE;
+    switch( rtl_state ) {
 
-        //gcs_send_text_P(SEVERITY_LOW,PSTR("Reached home"));
-        return true;
-    }else{
-        return false;
+        case RTL_STATE_RETURNING_HOME:
+            // if we've reached home initiate loiter
+            if (wp_distance <= g.waypoint_radius * 100 || check_missed_wp()) {
+                rtl_state = RTL_STATE_LOITERING_AT_HOME;
+                wp_control = LOITER_MODE;
+
+                // set loiter timer
+                rtl_loiter_start_time = millis();
+
+                // give pilot back control of yaw
+                yaw_mode = YAW_HOLD;
+            }
+            break;
+
+        case RTL_STATE_LOITERING_AT_HOME:
+            // check if we've loitered long enough
+            if( millis() - rtl_loiter_start_time > (uint32_t)g.rtl_loiter_time.get() ) {
+                // initiate landing or descent
+                if(g.rtl_alt_final == 0) {
+                    // land
+                    do_land();
+                    // override landing location (do_land defaults to current location)
+                    next_WP.lat = home.lat;
+                    next_WP.lng = home.lng;
+                    // update RTL state
+                    rtl_state = RTL_STATE_LAND;
+                }else{
+                    // descend
+                    if(current_loc.alt > g.rtl_alt_final) {
+                        set_new_altitude(g.rtl_alt_final);
+                    }
+                    // update RTL state
+                    rtl_state = RTL_STATE_FINAL_DESCENT;
+                }
+            }
+            break;
+
+        case RTL_STATE_FINAL_DESCENT:
+            // rely on altitude check to confirm we have reached final altitude
+            if(current_loc.alt <= g.rtl_alt_final || alt_change_flag == REACHED_ALT) {
+                // switch to regular loiter mode
+                set_mode(LOITER);
+                // override location and altitude
+                set_next_WP(&home);
+                // override altitude to RTL altitude
+                set_new_altitude(g.rtl_alt_final);
+                retval = true;
+            }
+            break;
+
+        case RTL_STATE_LAND:
+            // rely on verify_land to return correct status
+            retval = verify_land();
+            break;
+
+        default:
+            // this should never happen
+            // TO-DO: log an error
+            retval = true;
+            break;
     }
+
+    // true is returned if we've successfully completed RTL
+    return retval;
 }
 
 /********************************************************************************/
@@ -496,7 +567,7 @@ static void do_within_distance()
 static void do_yaw()
 {
     //cliSerial->println("dyaw ");
-    yaw_tracking = MAV_ROI_NONE;
+    auto_yaw_tracking = MAV_ROI_NONE;
 
     // target angle in degrees
     command_yaw_start               = nav_yaw;     // current position
@@ -669,9 +740,9 @@ static void do_change_speed()
 
 static void do_target_yaw()
 {
-    yaw_tracking = command_cond_queue.p1;
+    auto_yaw_tracking = command_cond_queue.p1;
 
-    if(yaw_tracking == MAV_ROI_LOCATION) {
+    if(auto_yaw_tracking == MAV_ROI_LOCATION) {
         target_WP = command_cond_queue;
     }
 }
@@ -793,7 +864,7 @@ static void do_nav_roi()
 
     // check if mount type requires us to rotate the quad
     if( camera_mount.get_mount_type() != AP_Mount::k_pan_tilt && camera_mount.get_mount_type() != AP_Mount::k_pan_tilt_roll ) {
-        yaw_tracking = MAV_ROI_LOCATION;
+        auto_yaw_tracking = MAV_ROI_LOCATION;
         target_WP = command_nav_queue;
         auto_yaw = get_bearing_cd(&current_loc, &target_WP);
     }
@@ -808,7 +879,7 @@ static void do_nav_roi()
     //		4: point at a target given a target id (can't be implmented)
 #else
     // if we have no camera mount simply rotate the quad
-    yaw_tracking = MAV_ROI_LOCATION;
+    auto_yaw_tracking = MAV_ROI_LOCATION;
     target_WP = command_nav_queue;
     auto_yaw = get_bearing_cd(&current_loc, &target_WP);
 #endif
