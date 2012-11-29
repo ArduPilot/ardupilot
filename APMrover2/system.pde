@@ -447,7 +447,9 @@ static void startup_INS_ground(bool force_accel_level)
     gcs_send_text_P(SEVERITY_MEDIUM, PSTR("Beginning INS calibration; do not move plane"));
 	mavlink_delay(1000);
 
-	ins.init(AP_InertialSensor::COLD_START, mavlink_delay, flash_leds, &timer_scheduler);
+	ins.init(AP_InertialSensor::COLD_START, 
+             ins_sample_rate, 
+             mavlink_delay, flash_leds, &timer_scheduler);
     if (force_accel_level || g.manual_level == 0) {
         // when MANUAL_LEVEL is set to 1 we don't do accelerometer
         // levelling on each boot, and instead rely on the user to do
