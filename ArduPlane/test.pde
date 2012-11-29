@@ -467,7 +467,9 @@ static int8_t
 test_ins(uint8_t argc, const Menu::arg *argv)
 {
     //cliSerial->printf_P(PSTR("Calibrating."));
-    ins.init(AP_InertialSensor::COLD_START, delay, flash_leds, &timer_scheduler);
+    ins.init(AP_InertialSensor::COLD_START, 
+             ins_sample_rate,
+             delay, flash_leds, &timer_scheduler);
     ahrs.reset();
 
     print_hit_enter();
@@ -528,7 +530,9 @@ test_mag(uint8_t argc, const Menu::arg *argv)
     report_compass();
 
     // we need the AHRS initialised for this test
-    ins.init(AP_InertialSensor::COLD_START, delay, flash_leds, &timer_scheduler);
+    ins.init(AP_InertialSensor::COLD_START, 
+             ins_sample_rate,
+             delay, flash_leds, &timer_scheduler);
     ahrs.reset();
 
     int16_t counter = 0;
