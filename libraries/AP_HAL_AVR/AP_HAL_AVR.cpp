@@ -32,17 +32,18 @@ static EmptyUARTDriver  emptyUartDriver;
 
 static AVRI2CDriver     avrI2CDriver;
 static ArduinoSPIDriver arduinoSPIDriver;
-static AVRAnalogIn      analogIn;
+static APM1SPIDriver    apm1SPIDriver;
+static AVRAnalogIn      avrAnalogIn;
 static AVREEPROMStorage avrEEPROMStorage;
 static APM1Dataflash    apm1Dataflash;
 static APM2Dataflash    apm2Dataflash;
 static AVRConsoleDriver consoleDriver;
-static ArduinoGPIO      arduinoGPIO;
+static AVRGPIO          avrGPIO;
 static APM1RCInput      apm1RCInput;
 static APM2RCInput      apm2RCInput;
 static APM1RCOutput     apm1RCOutput;
 static APM2RCOutput     apm2RCOutput;
-static ArduinoScheduler arduinoScheduler;
+static AVRScheduler     avrScheduler;
 
 const HAL_AVR AP_HAL_AVR_APM1(
         (UARTDriver*) &avrUart0Driver,
@@ -51,14 +52,13 @@ const HAL_AVR AP_HAL_AVR_APM1(
         (UARTDriver*) &avrUart3Driver,
         &avrI2CDriver,
         &arduinoSPIDriver,
-        &analogIn,
         &avrEEPROMStorage,
         &apm1Dataflash,
         &consoleDriver,
-        &arduinoGPIO,
+        &avrGPIO,
         &apm1RCInput,
         &apm1RCOutput,
-        &arduinoScheduler );
+        &avrScheduler );
 
 const HAL_AVR AP_HAL_AVR_APM2(
         (UARTDriver*) &avrUart0Driver,
@@ -67,12 +67,11 @@ const HAL_AVR AP_HAL_AVR_APM2(
         (UARTDriver*) &emptyUartDriver,
         &avrI2CDriver,
         &arduinoSPIDriver,
-        &analogIn,
         &avrEEPROMStorage,
         &apm2Dataflash,
         &consoleDriver,
-        &arduinoGPIO,
+        &avrGPIO,
         &apm2RCInput,
         &apm2RCOutput,
-        &arduinoScheduler );
+        &avrScheduler );
 
