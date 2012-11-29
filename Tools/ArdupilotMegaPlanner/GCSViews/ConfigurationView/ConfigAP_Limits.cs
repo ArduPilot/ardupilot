@@ -98,6 +98,7 @@ namespace ArdupilotMega.GCSViews.ConfigurationView
                     else if (ctls[0].GetType() == typeof(NumericUpDown))
                     {
                         NumericUpDown nud = ((NumericUpDown)ctls[0]);
+                        Console.WriteLine(nud.Name + " " + copy[key]);
                         nud.Value = (decimal)(float)copy[key];
                         nud.Enabled = true;
                     }

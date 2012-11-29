@@ -343,6 +343,19 @@ namespace ArdupilotMega.GCSViews
                         ((QuickView)ctls[0]).DataBindings.Add(new System.Windows.Forms.Binding("number", this.bindingSource1, MainV2.config["quickView" + f].ToString(), true));
                     }
                 }
+                else
+                {
+                    // if no config, update description on predefined
+                    try
+                    {
+                          Control[] ctls = this.Controls.Find("quickView" + f, true);
+                          if (ctls.Length > 0)
+                          {
+                              ((QuickView)ctls[0]).desc = MainV2.cs.GetNameandUnit(((QuickView)ctls[0]).desc);
+                          }
+                    }
+                    catch { }
+                }
             }
 
             if (MainV2.comPort.param.ContainsKey("BATT_MONITOR") && (float)MainV2.comPort.param["BATT_MONITOR"] != 0)

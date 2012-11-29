@@ -136,7 +136,7 @@
             // 
             // CMB_batmonsensortype
             // 
-            this.CMB_batmonsensortype.DropDownWidth = 150;
+            this.CMB_batmonsensortype.DropDownWidth = 200;
             this.CMB_batmonsensortype.FormattingEnabled = true;
             this.CMB_batmonsensortype.Items.AddRange(new object[] {
             resources.GetString("CMB_batmonsensortype.Items"),
@@ -172,6 +172,7 @@
             // 
             // CMB_batmontype
             // 
+            this.CMB_batmontype.DropDownWidth = 200;
             this.CMB_batmontype.FormattingEnabled = true;
             this.CMB_batmontype.Items.AddRange(new object[] {
             resources.GetString("CMB_batmontype.Items"),
@@ -197,6 +198,7 @@
             // 
             // CMB_apmversion
             // 
+            this.CMB_apmversion.DropDownWidth = 200;
             this.CMB_apmversion.FormattingEnabled = true;
             this.CMB_apmversion.Items.AddRange(new object[] {
             resources.GetString("CMB_apmversion.Items"),

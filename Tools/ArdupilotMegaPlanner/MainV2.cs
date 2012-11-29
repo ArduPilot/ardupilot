@@ -63,7 +63,7 @@ namespace ArdupilotMega
         /// </summary>
         public static bool MONO = false;
         /// <summary>
-        /// speech engein enable
+        /// speech engine enable
         /// </summary>
         public static bool speechEnable = false;
         /// <summary>
@@ -75,7 +75,7 @@ namespace ArdupilotMega
         /// </summary>
         public static Joystick joystick = null;
         /// <summary>
-        /// track last joystick packet sent. used to track timming
+        /// track last joystick packet sent. used to control rate
         /// </summary>
         DateTime lastjoystick = DateTime.Now;
         /// <summary>
@@ -91,7 +91,7 @@ namespace ArdupilotMega
         /// </summary>
         bool serialThread = false;
         /// <summary>
-        /// used for mini https server for websockets/mjpeg video stream, and network link kmls
+        /// used for mini http server for websockets/mjpeg video stream, and network link kmls
         /// </summary>
         private TcpListener listener;
         /// <summary>
@@ -2340,7 +2340,7 @@ namespace ArdupilotMega
 
         private void MainMenu_MouseLeave(object sender, EventArgs e)
         {
-            if (Control.MousePosition.Y < MainMenu.Bottom)
+            if (_connectionControl.PointToClient(Control.MousePosition).Y < MainMenu.Height)
                 return;            
 
             this.SuspendLayout();

@@ -28,7 +28,7 @@
         /// </summary>
         private void InitializeComponent()
         {
-            System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(SerialOutput));
+            System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(SerialOutput2));
             this.CMB_serialport = new System.Windows.Forms.ComboBox();
             this.BUT_connect = new ArdupilotMega.Controls.MyButton();
             this.CMB_baudrate = new System.Windows.Forms.ComboBox();
@@ -71,7 +71,7 @@
             this.CMB_baudrate.Size = new System.Drawing.Size(121, 21);
             this.CMB_baudrate.TabIndex = 2;
             // 
-            // SerialOutput
+            // SerialOutput2
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
@@ -80,8 +80,8 @@
             this.Controls.Add(this.BUT_connect);
             this.Controls.Add(this.CMB_serialport);
             this.Icon = ((System.Drawing.Icon)(resources.GetObject("$this.Icon")));
-            this.Name = "SerialOutput";
-            this.Text = "SerialOutput";
+            this.Name = "SerialOutput2";
+            this.Text = "SerialOutput - Microdrone";
             this.FormClosing += new System.Windows.Forms.FormClosingEventHandler(this.SerialOutput_FormClosing);
             this.ResumeLayout(false);
 

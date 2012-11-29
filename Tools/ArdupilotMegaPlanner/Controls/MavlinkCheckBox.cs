@@ -46,6 +46,7 @@ namespace ArdupilotMega.Controls
             if (paramlist.ContainsKey(paramname))
             {
                 this.Enabled = true;
+                this.Visible = true;
 
                 if ((float)paramlist[paramname] == OnValue)
                 {
