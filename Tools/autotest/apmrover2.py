@@ -30,6 +30,7 @@ def drive_left_circuit(mavproxy, mav):
         print("Starting leg %u" % i)
         if not wait_distance(mav, 50, accuracy=7):
             return False
+    mavproxy.send('rc 3 1500\n')
     print("Circuit complete")
     return True
 
@@ -39,7 +40,6 @@ def drive_RTL(mavproxy, mav):
     mavproxy.send('switch 3\n')
     if not wait_location(mav, homeloc, accuracy=22, timeout=90):
         return False
-    mavproxy.expect('Reached home')
     print("RTL Complete")
     return True
 
@@ -145,11 +145,11 @@ def drive_APMrover2(viewerip=None):
         if not drive_left_circuit(mavproxy, mav):
             print("Failed left circuit")
             failed = True
-        if not drive_RTL(mavproxy, mav):
-            print("Failed RTL")
-            failed = True
         if not drive_mission(mavproxy, mav, os.path.join(testdir, "rover1.txt")):
             print("Failed mission")
+            failed = True
+        if not drive_RTL(mavproxy, mav):
+            print("Failed RTL")
             failed = True
     except pexpect.TIMEOUT, e:
         print("Failed with timeout")
