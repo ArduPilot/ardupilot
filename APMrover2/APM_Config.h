@@ -14,24 +14,3 @@
 
 #define TRACE               DISABLED
 
-//#define LOGGING_ENABLED DISABLED
-
-//#include "APM_Config_HILmode.h"  // for test in HIL mode with AeroSIM Rc 3.83
-//#include "APM_Config_Rover.h"      // to be used with the real Traxxas model Monster Jam Grinder
-
-// Radio setup:
-// APM INPUT (Rec = receiver)
-// Rec ch1: Roll 
-// Rec ch2: Throttle
-// Rec ch3: Pitch
-// Rec ch4: Yaw
-// Rec ch5: not used
-// Rec ch6: 
-// Rec ch7: Option channel to 2 positions switch
-// Rec ch8: Mode channel to 3 positions switch
-// APM OUTPUT
-// Ch1: Wheel servo (direction)
-// Ch2: not used
-// Ch3: to the motor ESC
-// Ch4: not used
-

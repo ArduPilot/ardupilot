@@ -54,7 +54,6 @@ static void calc_throttle()
 
 static void calc_nav_roll()
 {
-
 	// Adjust gain based on ground speed
 	nav_gain_scaler = (float)ground_speed / (g.airspeed_cruise * 100.0);
 	nav_gain_scaler = constrain(nav_gain_scaler, 0.2, 1.4);
@@ -62,17 +61,16 @@ static void calc_nav_roll()
 	// Calculate the required turn of the wheels rover
 	// ----------------------------------------
 
-        // negative error = left turn
+    // negative error = left turn
 	// positive error = right turn
 
 	nav_roll = g.pidNavRoll.get_pid(bearing_error, nav_gain_scaler);	//returns desired bank angle in degrees*100
 
-      if(obstacle) {  // obstacle avoidance 
+    if(obstacle) {  // obstacle avoidance 
 	    nav_roll += 9000;    // if obstacle in front turn 90° right	
-            speed_boost = false;
-      }
+        speed_boost = false;
+    }
 	nav_roll = constrain(nav_roll, -g.roll_limit.get(), g.roll_limit.get());
-
 }
 
 // Zeros out navigation Integrators if we are changing mode, have passed a waypoint, etc.
@@ -81,7 +79,6 @@ static void reset_I(void)
 {
 	g.pidNavRoll.reset_I();
 	g.pidTeThrottle.reset_I();
-//	g.pidAltitudeThrottle.reset_I();
 }
 
 /*****************************************
