@@ -142,8 +142,5 @@ float AP_InertialSensor_Oilpan::get_gyro_drift_rate(void)
 // get number of samples read from the sensors
 uint16_t AP_InertialSensor_Oilpan::num_samples_available()
 {
-    if (_adc->num_samples_available(_sensors) >= _sample_threshold) {
-        return 1;
-    }
-    return 0;
+    return _adc->num_samples_available(_sensors) / _sample_threshold;
 }
