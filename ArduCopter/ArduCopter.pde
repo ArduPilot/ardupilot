@@ -191,6 +191,11 @@ DataFlash_APM1 DataFlash(&spi_semaphore);
 
 
 ////////////////////////////////////////////////////////////////////////////////
+// the rate we run the main loop at
+////////////////////////////////////////////////////////////////////////////////
+static const AP_InertialSensor::Sample_rate ins_sample_rate = AP_InertialSensor::RATE_50HZ;
+
+////////////////////////////////////////////////////////////////////////////////
 // Sensors
 ////////////////////////////////////////////////////////////////////////////////
 //
@@ -955,7 +960,7 @@ void loop()
     // We want this to execute fast
     // ----------------------------
     num_samples = ins.num_samples_available();
-    if (num_samples >= NUM_IMU_SAMPLES_FOR_100HZ) {
+    if (num_samples >= 1) {
 
         #if DEBUG_FAST_LOOP == ENABLED
         Log_Write_Data(DATA_FAST_LOOP, (int32_t)(timer - fast_loopTimer));
@@ -1021,9 +1026,9 @@ void loop()
 #ifdef DESKTOP_BUILD
         usleep(1000);
 #endif
-        if (num_samples < NUM_IMU_SAMPLES_FOR_100HZ-1) {
+        if (timer - fast_loopTimer < 9) {
             // we have some spare cycles available
-            // less than 20ms has passed. We have at least one millisecond
+            // less than 10ms has passed. We have at least one millisecond
             // of free time. The most useful thing to do with that time is
             // to accumulate some sensor readings, specifically the
             // compass, which is often very noisy but is not interrupt

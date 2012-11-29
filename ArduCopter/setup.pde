@@ -247,7 +247,9 @@ setup_motors(uint8_t argc, const Menu::arg *argv)
 static int8_t
 setup_accel(uint8_t argc, const Menu::arg *argv)
 {
-    ins.init(AP_InertialSensor::COLD_START, delay, flash_leds, &timer_scheduler);
+    ins.init(AP_InertialSensor::COLD_START, 
+             ins_sample_rate,
+             delay, flash_leds, &timer_scheduler);
     ins.init_accel(delay, flash_leds);
     report_ins();
     return(0);
@@ -282,7 +284,9 @@ static int8_t
 setup_accel_scale(uint8_t argc, const Menu::arg *argv)
 {
     cliSerial->println_P(PSTR("Initialising gyros"));
-    ins.init(AP_InertialSensor::COLD_START, delay, flash_leds, &timer_scheduler);
+    ins.init(AP_InertialSensor::COLD_START, 
+             ins_sample_rate,
+             delay, flash_leds, &timer_scheduler);
     ins.calibrate_accel(delay, flash_leds, setup_printf_P, setup_wait_key);
     report_ins();
     return(0);
