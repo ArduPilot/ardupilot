@@ -299,7 +299,7 @@ namespace ArdupilotMega.GCSViews.ConfigurationView
                         {
                             string newname = name.Replace("_RLL_", "_PIT_");
                             Control[] arr = this.Controls.Find(newname, true);
-                            changes[newname] = float.Parse(((Control)sender).Text);
+                            changes[newname] = value;
 
                             if (arr.Length > 0)
                             {
@@ -312,7 +312,7 @@ namespace ArdupilotMega.GCSViews.ConfigurationView
                         {
                             string newname = name.Replace("_PIT_", "_RLL_");
                             Control[] arr = this.Controls.Find(newname, true);
-                            changes[newname] = float.Parse(((Control)sender).Text);
+                            changes[newname] = value;
 
                             if (arr.Length > 0)
                             {
@@ -327,7 +327,7 @@ namespace ArdupilotMega.GCSViews.ConfigurationView
                 {
                     string newname = name.Replace("NAV_LAT_", "NAV_LON_");
                     Control[] arr = this.Controls.Find(newname, true);
-                    changes[newname] = float.Parse(((Control)sender).Text);
+                    changes[newname] = value;
 
                     if (arr.Length > 0)
                     {
@@ -340,7 +340,7 @@ namespace ArdupilotMega.GCSViews.ConfigurationView
                 {
                     string newname = name.Replace("LOITER_LAT_", "LOITER_LON_");
                     Control[] arr = this.Controls.Find(newname, true);
-                    changes[newname] = float.Parse(((Control)sender).Text);
+                    changes[newname] = value;
 
                     if (arr.Length > 0)
                     {
@@ -353,7 +353,7 @@ namespace ArdupilotMega.GCSViews.ConfigurationView
                 {
                     string newname = name.Replace("HLD_LAT_", "HLD_LON_");
                     Control[] arr = this.Controls.Find(newname, true);
-                    changes[newname] = float.Parse(((Control)sender).Text);
+                    changes[newname] = value;
 
                     if (arr.Length > 0)
                     {
