@@ -18,7 +18,31 @@ int AVRAnalogIn::_num_channels = 0;
 int AVRAnalogIn::_active_channel = 0;
 int AVRAnalogIn::_channel_repeat_count = 0;
 
-AVRAnalogIn::AVRAnalogIn() {}
+AVRAnalogIn::AVRAnalogIn() :
+    _vcc(ADCSource(ANALOG_INPUT_BOARD_VCC))
+{}
+
+void AVRAnalogIn::init(void* machtnichts) {
+    /* Register AVRAnalogIn::_timer_event with the scheduler. */
+    hal.scheduler->register_timer_process(_timer_event);
+    /* Register each private channel with AVRAnalogIn. */
+    _register_channel(&_vcc);
+}
+
+ADCSource* AVRAnalogIn::_find_or_create_channel(int pin) {
+    for(int i = 0; i < _num_channels; i++) {
+        if (_channels[i]->_pin == pin) {
+            return _channels[i];
+        }
+    }
+    return _create_channel(pin);
+}
+
+ADCSource* AVRAnalogIn::_create_channel(int chnum) {
+    ADCSource *ch = new ADCSource(chnum);
+    _register_channel(ch);
+    return ch;
+}
 
 void AVRAnalogIn::_register_channel(ADCSource* ch) {
     if (_num_channels >= AVR_INPUT_MAX_CHANNELS) {
@@ -43,6 +67,11 @@ void AVRAnalogIn::_register_channel(ADCSource* ch) {
 }
 
 void AVRAnalogIn::_timer_event(uint32_t t) {
+
+    if (_channels[_active_channel]->_pin == ANALOG_INPUT_NONE) {
+        goto next_channel;
+    }
+
     if (ADCSRA & _BV(ADSC)) {
         /* ADC Conversion is still running - this should not happen, as we
          * are called at 1khz. */
@@ -64,11 +93,14 @@ void AVRAnalogIn::_timer_event(uint32_t t) {
     }
 
     /* Read the conversion registers. */
-    uint8_t low = ADCL;
-    uint8_t high = ADCH;
-    uint16_t sample = low | (((uint16_t)high) << 8);
-    /* Give the active channel a new sample */
-    _channels[_active_channel]->new_sample( sample );
+    {
+        uint8_t low = ADCL;
+        uint8_t high = ADCH;
+        uint16_t sample = low | (((uint16_t)high) << 8);
+        /* Give the active channel a new sample */
+        _channels[_active_channel]->new_sample( sample );
+    }
+next_channel:
     /* Move to the next channel */
     _active_channel = (_active_channel + 1) % _num_channels;
     /* Setup the next channel's conversion */
@@ -78,4 +110,11 @@ void AVRAnalogIn::_timer_event(uint32_t t) {
 }
 
 
+AP_HAL::AnalogSource* AVRAnalogIn::channel(int ch) {
+    if (ch == ANALOG_INPUT_BOARD_VCC) {
+            return &_vcc;
+    } else {
+        return _find_or_create_channel(ch);
+    }
+}
 

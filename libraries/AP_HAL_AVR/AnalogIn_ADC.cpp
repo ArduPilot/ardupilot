@@ -27,7 +27,7 @@ float ADCSource::read_average() {
      * have a way to bubble control upwards at the moment. -pch */
     while( _sum_count == 0 );
 
-    /* Read and clear the */
+    /* Read and clear in a critical section */
     cli();
     sum = _sum;
     sum_count = _sum_count;
@@ -40,14 +40,15 @@ float ADCSource::read_average() {
 }
 
 void ADCSource::setup_read() {
-    if (_pin == AVR_ANALOG_PIN_VCC) {
+    if (_pin == ANALOG_INPUT_BOARD_VCC) {
         ADMUX = _BV(REFS0)|_BV(MUX4)|_BV(MUX3)|_BV(MUX2)|_BV(MUX1);
+    } else if (_pin == ANALOG_INPUT_NONE) {
+        /* noop */
     } else {
         ADCSRB = (ADCSRB & ~(1 << MUX5)) | (((_pin >> 3) & 0x01) << MUX5);
         ADMUX = _BV(REFS0) | (_pin & 0x07);
     }
 }
-
 
 /* new_sample is called from an interrupt. It always has access to
  *  _sum and _sum_count. Lock out the interrupts briefly with

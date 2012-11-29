@@ -32,8 +32,7 @@ static EmptyUARTDriver  emptyUartDriver;
 
 static AVRI2CDriver     avrI2CDriver;
 static ArduinoSPIDriver arduinoSPIDriver;
-static APM1AnalogIn     apm1AnalogIn;
-static APM2AnalogIn     apm2AnalogIn;
+static AVRAnalogIn      analogIn;
 static AVREEPROMStorage avrEEPROMStorage;
 static APM1Dataflash    apm1Dataflash;
 static APM2Dataflash    apm2Dataflash;
@@ -52,7 +51,7 @@ const HAL_AVR AP_HAL_AVR_APM1(
         (UARTDriver*) &avrUart3Driver,
         &avrI2CDriver,
         &arduinoSPIDriver,
-        &apm1AnalogIn,
+        &analogIn,
         &avrEEPROMStorage,
         &apm1Dataflash,
         &consoleDriver,
@@ -68,7 +67,7 @@ const HAL_AVR AP_HAL_AVR_APM2(
         (UARTDriver*) &emptyUartDriver,
         &avrI2CDriver,
         &arduinoSPIDriver,
-        &apm2AnalogIn,
+        &analogIn,
         &avrEEPROMStorage,
         &apm2Dataflash,
         &consoleDriver,
