@@ -55,7 +55,9 @@ void setup(void)
 #if CONFIG_APM_HARDWARE == APM_HARDWARE_APM1
     adc.Init(&scheduler);           // APM ADC library initialization
 #endif
-    ins.init(AP_InertialSensor::COLD_START, delay, NULL, &scheduler);
+    ins.init(AP_InertialSensor::COLD_START, 
+			 AP_InertialSensor::RATE_100HZ,
+			 delay, NULL, &scheduler);
 
     // display initial values
     display_offsets_and_scaling();

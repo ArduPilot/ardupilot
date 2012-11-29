@@ -24,6 +24,13 @@ public:
         WARM_START
     };
 
+    // the rate that updates will be available to the application
+    enum Sample_rate {
+        RATE_50HZ,
+        RATE_100HZ,
+        RATE_200HZ
+    };
+
     /// Perform startup initialisation.
     ///
     /// Called to initialise the state of the IMU.
@@ -38,6 +45,7 @@ public:
     /// @param style	The initialisation startup style.
     ///
     virtual void        init( Start_style           style,
+                              Sample_rate           sample_rate,
                               void                  (*delay_cb)(unsigned long t),
                               void                  (*flash_leds_cb)(bool on),
                               AP_PeriodicProcess *  scheduler );
@@ -135,7 +143,7 @@ public:
 protected:
 
     // sensor specific init to be overwritten by descendant classes
-    virtual uint16_t        _init_sensor( AP_PeriodicProcess * scheduler ) = 0;
+    virtual uint16_t        _init_sensor( AP_PeriodicProcess * scheduler, Sample_rate sample_rate ) = 0;
 
     // no-save implementations of accel and gyro initialisation routines
     virtual void            _init_accel(void    (*delay_cb)(unsigned long t),

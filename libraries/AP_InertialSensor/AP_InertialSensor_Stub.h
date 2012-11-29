@@ -32,7 +32,7 @@ public:
     uint16_t        num_samples_available();
 
 protected:
-    uint16_t        _init_sensor( AP_PeriodicProcess * scheduler );
+    uint16_t        _init_sensor( AP_PeriodicProcess * scheduler, Sample_rate sample_rate );
 };
 
 #endif // __AP_INERTIAL_SENSOR_STUB_H__

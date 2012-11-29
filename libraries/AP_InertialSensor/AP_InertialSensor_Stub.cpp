@@ -2,7 +2,7 @@
 
 #include "AP_InertialSensor_Stub.h"
 
-uint16_t AP_InertialSensor_Stub::_init_sensor( AP_PeriodicProcess * scheduler ) {
+uint16_t AP_InertialSensor_Stub::_init_sensor( AP_PeriodicProcess * scheduler, Sample_rate sample_rate ) {
     return AP_PRODUCT_ID_NONE;
 }
 
