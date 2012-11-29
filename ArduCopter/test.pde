@@ -739,10 +739,10 @@ test_wp(uint8_t argc, const Menu::arg *argv)
 
     // save the alitude above home option
     cliSerial->printf_P(PSTR("Hold alt "));
-    if(g.RTL_altitude < 0) {
+    if(g.rtl_altitude < 0) {
         cliSerial->printf_P(PSTR("\n"));
     }else{
-        cliSerial->printf_P(PSTR("of %dm\n"), (int)g.RTL_altitude / 100);
+        cliSerial->printf_P(PSTR("of %dm\n"), (int)g.rtl_altitude / 100);
     }
 
     cliSerial->printf_P(PSTR("%d wp\n"), (int)g.command_total);
@@ -1068,7 +1068,7 @@ test_logging(uint8_t argc, const Menu::arg *argv)
  *
  *       }
  *
- *       g.RTL_altitude.set_and_save(300);
+ *       g.rtl_altitude.set_and_save(300);
  *       g.command_total.set_and_save(4);
  *       g.waypoint_radius.set_and_save(3);
  *

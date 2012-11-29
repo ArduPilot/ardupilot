@@ -433,8 +433,8 @@
  # define MAXIMUM_THROTTLE       1000
 #endif
 
-#ifndef AUTO_LAND_TIME
- # define AUTO_LAND_TIME 5
+#ifndef RTL_LOITER_TIME
+ # define RTL_LOITER_TIME 5000       // Time (in milliseconds) to loiter above home before begining final descent
 #endif
 
 #ifndef LAND_SPEED
@@ -584,20 +584,12 @@
 
 
 // RTL Mode
-#ifndef RTL_YAW
- #if FRAME_CONFIG == HELI_FRAME
-  # define RTL_YAW                  YAW_LOOK_AT_HOME
- #else
-  # define RTL_YAW                  YAW_HOLD
- #endif
-#endif
-
 #ifndef RTL_RP
  # define RTL_RP                    ROLL_PITCH_AUTO
 #endif
 
 #ifndef RTL_THR
- # define RTL_THR                   THROTTLE_HOLD
+ # define RTL_THR                   THROTTLE_AUTO
 #endif
 
 #ifndef SUPER_SIMPLE
@@ -609,16 +601,16 @@
 #endif
 
 // RTL Mode
-#ifndef RTL_APPROACH_ALT
- # define RTL_APPROACH_ALT       	200 // cm!!!
+#ifndef RTL_ALT_FINAL
+ # define RTL_ALT_FINAL             200     // the altitude the vehicle will move to as the final stage of Returning to Launch.  Set to zero to land.
 #endif
 
-#ifndef RTL_HOLD_ALT
- # define RTL_HOLD_ALT 				1500    // height to return to Home in CM, 0 = Maintain current altitude
+#ifndef RTL_ALT
+ # define RTL_ALT 				    1500    // default alt to return to home in cm, 0 = Maintain current altitude
 #endif
 
-#ifndef MAXIMUM_RTL_ALT
- # define MAXIMUM_RTL_ALT 			8000    // Max height to return to Home in CM
+#ifndef RTL_ALT_MAX
+ # define RTL_ALT_MAX               8000    // Max height to return to home in cm
 #endif
 
 

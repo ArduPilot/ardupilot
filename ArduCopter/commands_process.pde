@@ -217,11 +217,11 @@ static void exit_mission()
         // we will disarm the motors after landing.
     }else{
         // If the approach altitude is valid (above 1m), do approach, else land
-        if(g.rtl_approach_alt == 0) {
+        if(g.rtl_alt_final == 0) {
             set_mode(LAND);
         }else{
             set_mode(LOITER);
-            set_new_altitude(g.rtl_approach_alt);
+            set_new_altitude(g.rtl_alt_final);
         }
     }
 

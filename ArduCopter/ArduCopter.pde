@@ -400,11 +400,10 @@ static union {
         uint8_t failsafe           : 1; // 9    // A status flag for the failsafe state
         uint8_t do_flip            : 1; // 10   // Used to enable flip code
         uint8_t takeoff_complete   : 1; // 11
-        uint8_t rtl_reached_alt    : 1; // 12
-        uint8_t land_complete      : 1; // 13
-        uint8_t compass_status     : 1; // 14
-        uint8_t gps_status         : 1; // 15
-        uint8_t fast_corner        : 1; // 16   // should we take the waypoint quickly or slow down?
+        uint8_t land_complete      : 1; // 12
+        uint8_t compass_status     : 1; // 13
+        uint8_t gps_status         : 1; // 14
+        uint8_t fast_corner        : 1; // 15   // should we take the waypoint quickly or slow down?
     };
     uint16_t value;
 } ap;
@@ -574,6 +573,7 @@ static int16_t max_speed_old;
 static int32_t long_error, lat_error;
 static int16_t control_roll;
 static int16_t control_pitch;
+static uint8_t rtl_state;
 
 ////////////////////////////////////////////////////////////////////////////////
 // Orientation
@@ -812,7 +812,7 @@ static int32_t nav_yaw;
 static int32_t auto_yaw;
 static uint8_t yaw_timer;
 // Options include: no tracking, point at next wp, or at a target
-static byte yaw_tracking = MAV_ROI_WPNEXT;
+static byte auto_yaw_tracking = MAV_ROI_WPNEXT;
 // In AP Mission scripting we have a fine level of control for Yaw
 // This is our initial angle for relative Yaw movements
 static int32_t command_yaw_start;
@@ -828,7 +828,7 @@ static int16_t command_yaw_speed;
 static byte command_yaw_dir;
 // Direction we will turn – 1 = relative, 0 = Absolute
 static byte command_yaw_relative;
-// Yaw will point at this location if yaw_tracking is set to MAV_ROI_LOCATION
+// Yaw will point at this location if auto_yaw_tracking is set to MAV_ROI_LOCATION
 static struct   Location target_WP;
 
 
@@ -897,7 +897,7 @@ static float dTnav;
 // Counters for branching from 4 minute control loop used to save Compass offsets
 static int16_t superslow_loopCounter;
 // Loiter timer - Records how long we have been in loiter
-static uint32_t loiter_timer;
+static uint32_t rtl_loiter_start_time;
 // disarms the copter while in Acro or Stabilize mode after 30 seconds of no flight
 static uint8_t auto_disarming_counter;
 // prevents duplicate GPS messages from entering system
@@ -2242,17 +2242,24 @@ static void update_nav_wp()
 
 static void update_auto_yaw()
 {
-    if(wp_control == CIRCLE_MODE) {
-        auto_yaw = get_bearing_cd(&current_loc, &circle_WP);
-
-    }else if(wp_control == LOITER_MODE) {
-        // just hold nav_yaw
-
-    }else if(yaw_tracking == MAV_ROI_LOCATION) {
-        auto_yaw = get_bearing_cd(&current_loc, &target_WP);
-
-    }else if(yaw_tracking == MAV_ROI_WPNEXT) {
-        // Point towards next WP
-        auto_yaw = original_target_bearing;
+    switch( wp_control ) {
+        case LOITER_MODE:
+            // just hold nav_yaw
+            break;
+        case WP_MODE:
+            if(auto_yaw_tracking == MAV_ROI_LOCATION) {
+                auto_yaw = get_bearing_cd(&current_loc, &target_WP);
+            }else if(auto_yaw_tracking == MAV_ROI_WPNEXT) {
+                // Point towards next WP
+                // we don't use target_bearing because we don't want the copter to turn too much during flight
+                auto_yaw = original_target_bearing;
+            }
+            break;
+        case CIRCLE_MODE:
+            auto_yaw = get_bearing_cd(&current_loc, &circle_WP);
+            break;
+        case NO_NAV_MODE:
+            // just hold nav_yaw
+            break;
     }
 }

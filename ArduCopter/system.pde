@@ -410,14 +410,9 @@ static void set_mode(byte mode)
     motors.auto_armed(g.rc_3.control_in > 0);
     set_auto_armed(g.rc_3.control_in > 0);
 
-    // do not auto_land if we are leaving RTL
-    loiter_timer = 0;
-
     // if we change modes, we must clear landed flag
     set_land_complete(false);
 
-    // have we achieved the proper altitude before RTL is enabled
-    set_rtl_reached_alt(false);
     // debug to Serial terminal
     //cliSerial->println(flight_mode_strings[control_mode]);
 
@@ -528,12 +523,7 @@ static void set_mode(byte mode)
     case RTL:
     	ap.manual_throttle = false;
     	ap.manual_attitude = false;
-        yaw_mode        = RTL_YAW;
-        roll_pitch_mode = RTL_RP;
-        set_throttle_mode(RTL_THR);
-        set_rtl_reached_alt(false);
-        set_next_WP(&current_loc);
-        set_new_altitude(get_RTL_alt());
+        do_RTL();
         break;
 
     case OF_LOITER:

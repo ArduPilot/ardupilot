@@ -36,14 +36,14 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @Increment: 1
     GSCALAR(telem_delay,            "TELEM_DELAY",     0),
 
-    // @Param: ALT_HOLD_RTL
+    // @Param: ALT_RTL
     // @DisplayName: RTL Altitude
-    // @Description: This is the altitude the model will move to before Returning to Launch.  Set to zero to return at current altitude.
+    // @Description: The minimum altitude the model will move to before Returning to Launch.  Set to zero to return at current altitude.
     // @Units: centimeters
     // @Range: 0 4000
     // @Increment: 1
     // @User: Standard
-    GSCALAR(RTL_altitude,   "ALT_HOLD_RTL",     RTL_HOLD_ALT),
+    GSCALAR(rtl_altitude,   "RTL_ALT",     RTL_ALT),
 
     // @Param: SONAR_ENABLE
     // @DisplayName: Enable Sonar
@@ -106,14 +106,14 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @User: Standard
     GSCALAR(super_simple,   "SUPER_SIMPLE",     SUPER_SIMPLE),
 
-    // @Param: APPROACH_ALT
-    // @DisplayName: RTL Approach Altitude
-    // @Description: This is the altitude the vehicle will move to as the final stage of Returning to Launch.  Set to zero to land.
+    // @Param: RTL_ALT_FINAL
+    // @DisplayName: RTL Final Altitude
+    // @Description: This is the altitude the vehicle will move to as the final stage of Returning to Launch or after completing a mission.  Set to -1 to disable, zero to land.
     // @Units: centimeters
-    // @Range: 0 1000
+    // @Range: -1 1000
     // @Increment: 1
     // @User: Standard
-    GSCALAR(rtl_approach_alt,       "APPROACH_ALT", RTL_APPROACH_ALT),
+    GSCALAR(rtl_alt_final,  "RTL_ALT_FINAL", RTL_ALT_FINAL),
 
 	// @Param: TILT
     // @DisplayName: Auto Tilt Compensation
@@ -191,7 +191,14 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @User: Standard
     GSCALAR(crosstrack_min_distance, "XTRK_MIN_DIST",  CROSSTRACK_MIN_DISTANCE),
 
-    GSCALAR(auto_land_timeout,      "AUTO_LAND",    AUTO_LAND_TIME*1000),
+    // @Param: RTL_LOITER_TIME
+    // @DisplayName: RTL loiter time
+    // @Description: Time (in milliseconds) to loiter above home before begining final descent
+    // @Units: ms
+    // @Range: 0 60000
+    // @Increment: 1000
+    // @User: Standard
+    GSCALAR(rtl_loiter_time,      "RTL_LOIT_TIME",    RTL_LOITER_TIME),
 
     // @Param: LAND_SPEED
     // @DisplayName: Land speed

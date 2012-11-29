@@ -134,10 +134,10 @@ public:
         //
         // 160: Navigation parameters
         //
-        k_param_RTL_altitude = 160,
+        k_param_rtl_altitude = 160,
         k_param_crosstrack_gain,
-        k_param_auto_land_timeout,
-        k_param_rtl_approach_alt,
+        k_param_rtl_loiter_time,
+        k_param_rtl_alt_final,
         k_param_tilt_comp, //164
 
 
@@ -243,7 +243,7 @@ public:
     AP_Int8         serial3_baud;
     AP_Int8         telem_delay;
 
-    AP_Int16        RTL_altitude;
+    AP_Int16        rtl_altitude;
     AP_Int8         sonar_enabled;
     AP_Int8         sonar_type;       // 0 = XL, 1 = LV,
                                       // 2 = XLL (XL with 10m range)
@@ -260,7 +260,7 @@ public:
     AP_Int8         optflow_enabled;
     AP_Float        low_voltage;
     AP_Int8         super_simple;
-    AP_Int16        rtl_approach_alt;
+    AP_Int16        rtl_alt_final;
     AP_Int8         tilt_comp;
     AP_Int8         axis_enabled;
     AP_Int8         copter_leds_mode;           // Operating mode of LED
@@ -281,7 +281,7 @@ public:
     AP_Int16        waypoint_speed_max;
     AP_Float        crosstrack_gain;
     AP_Int16 		crosstrack_min_distance;
-    AP_Int32        auto_land_timeout;
+    AP_Int32        rtl_loiter_time;
     AP_Int16        land_speed;
 
 

@@ -12,8 +12,8 @@ static void init_commands()
     ap.fast_corner          = false;
 	reset_desired_speed();
 
-    // default Yaw tracking
-    yaw_tracking                    = MAV_ROI_WPNEXT;
+    // default auto mode yaw tracking
+    auto_yaw_tracking       = MAV_ROI_WPNEXT;
 }
 
 // Getters
@@ -110,12 +110,12 @@ static void set_cmd_with_index(struct Location temp, int i)
 
 static int32_t get_RTL_alt()
 {
-    if(g.RTL_altitude <= 0) {
-		return min(current_loc.alt, MAXIMUM_RTL_ALT);
-    }else if (g.RTL_altitude < current_loc.alt) {
-		return min(current_loc.alt, MAXIMUM_RTL_ALT);
+    if(g.rtl_altitude <= 0) {
+		return min(current_loc.alt, RTL_ALT_MAX);
+    }else if (g.rtl_altitude < current_loc.alt) {
+		return min(current_loc.alt, RTL_ALT_MAX);
     }else{
-        return g.RTL_altitude;
+        return g.rtl_altitude;
     }
 }
 
@@ -202,6 +202,8 @@ static void init_home()
 #if INERTIAL_NAV_XY == ENABLED
     // set inertial nav's home position
     inertial_nav.set_current_position(g_gps->longitude, g_gps->latitude);
+    inertial_nav.set_altitude(home.alt);
+    inertial_nav.set_velocity_z(0);
 #endif
 
     if (g.log_bitmask & MASK_LOG_CMD)
@@ -213,7 +215,7 @@ static void init_home()
     // Load home for a default guided_WP
     // -------------
     guided_WP = home;
-    guided_WP.alt += g.RTL_altitude;
+    guided_WP.alt += g.rtl_altitude;
 }
 
 
