@@ -106,7 +106,9 @@ void setup(void)
     isr_registry.init();
     scheduler.init(&isr_registry);
 
-    ins.init(AP_InertialSensor::COLD_START, delay, flash_leds, &scheduler);
+    ins.init(AP_InertialSensor::COLD_START, 
+			 AP_InertialSensor::RATE_100HZ,
+			 delay, flash_leds, &scheduler);
     ins.init_accel(delay, flash_leds);
 
     compass.set_orientation(MAG_ORIENTATION);
