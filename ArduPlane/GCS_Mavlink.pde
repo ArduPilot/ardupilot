@@ -43,7 +43,6 @@ static NOINLINE void send_heartbeat(mavlink_channel_t chan)
     case STABILIZE:
     case FLY_BY_WIRE_A:
     case FLY_BY_WIRE_B:
-    case FLY_BY_WIRE_C:
         base_mode = MAV_MODE_FLAG_STABILIZE_ENABLED;
         break;
     case AUTO:
@@ -160,13 +159,6 @@ static NOINLINE void send_extended_status1(mavlink_channel_t chan, uint16_t pack
     case FLY_BY_WIRE_B:
         control_sensors_enabled |= (1<<10); // 3D angular rate control
         control_sensors_enabled |= (1<<11); // attitude stabilisation
-        control_sensors_enabled |= (1<<15); // motor control
-        break;
-
-    case FLY_BY_WIRE_C:
-        control_sensors_enabled |= (1<<10); // 3D angular rate control
-        control_sensors_enabled |= (1<<11); // attitude stabilisation
-        control_sensors_enabled |= (1<<13); // altitude control
         control_sensors_enabled |= (1<<15); // motor control
         break;
 
@@ -1153,7 +1145,6 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
         case STABILIZE:
         case FLY_BY_WIRE_A:
         case FLY_BY_WIRE_B:
-        case FLY_BY_WIRE_C:
         case AUTO:
         case RTL:
         case LOITER:
