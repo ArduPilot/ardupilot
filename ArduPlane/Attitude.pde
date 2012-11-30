@@ -97,7 +97,8 @@ static void stabilize()
     // Mix Stick input to allow users to override control surfaces
     // -----------------------------------------------------------
     if (stick_mixing_enabled()) {
-        if (control_mode < FLY_BY_WIRE_A || control_mode > FLY_BY_WIRE_C) {
+        if (control_mode != FLY_BY_WIRE_A && 
+            control_mode != FLY_BY_WIRE_B) {
             // do stick mixing on aileron/elevator if not in a fly by
             // wire mode
             ch1_inf = (float)g.channel_roll.radio_in - (float)g.channel_roll.radio_trim;
