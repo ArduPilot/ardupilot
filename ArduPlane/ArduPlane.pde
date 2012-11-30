@@ -315,7 +315,7 @@ static bool usb_connected;
 ////////////////////////////////////////////////////////////////////////////////
 // This is the state of the flight control system
 // There are multiple states defined such as MANUAL, FBW-A, AUTO
-byte control_mode        = INITIALISING;
+enum FlightMode control_mode  = INITIALISING;
 // Used to maintain the state of the previous control switch position
 // This is set to -1 when we need to re-read the switch
 byte oldSwitchPosition;
@@ -1199,6 +1199,10 @@ static void update_current_flight_mode(void)
             break;
             //roll: -13788.000,  pitch: -13698.000,   thr: 0.000, rud: -13742.000
 
+        case INITIALISING:
+        case AUTO:
+            // handled elsewhere
+            break;
         }
     }
 }
@@ -1209,19 +1213,26 @@ static void update_navigation()
     // ------------------------------------------------------------------------
 
     // distance and bearing calcs only
-    if(control_mode == AUTO) {
+    switch(control_mode) {
+    case AUTO:
         verify_commands();
-    }else{
+        break;
+            
+    case LOITER:
+    case RTL:
+    case GUIDED:
+        update_loiter();
+        calc_bearing_error();
+        break;
 
-        switch(control_mode) {
-        case LOITER:
-        case RTL:
-        case GUIDED:
-            update_loiter();
-            calc_bearing_error();
-            break;
-
-        }
+    case MANUAL:
+    case INITIALISING:
+    case FLY_BY_WIRE_A:
+    case FLY_BY_WIRE_B:
+    case CIRCLE:
+    case STABILIZE:
+        // nothing to do
+        break;
     }
 }
 
