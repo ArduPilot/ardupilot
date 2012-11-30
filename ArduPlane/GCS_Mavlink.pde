@@ -1148,7 +1148,7 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
         case AUTO:
         case RTL:
         case LOITER:
-            set_mode(packet.custom_mode);
+            set_mode((enum FlightMode)packet.custom_mode);
             break;
         }
 
