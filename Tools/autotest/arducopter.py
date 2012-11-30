@@ -111,7 +111,7 @@ def fly_square(mavproxy, mav, side=50, timeout=120):
 
     print("turn")
     hover(mavproxy, mav)
-    mavproxy.send('rc 4 1610\n')
+    mavproxy.send('rc 4 1700\n')
     if not wait_heading(mav, 0):
         return False
     mavproxy.send('rc 4 1500\n')
@@ -126,7 +126,7 @@ def fly_square(mavproxy, mav, side=50, timeout=120):
     save_wp(mavproxy, mav)
 
     print("Going east %u meters" % side)
-    mavproxy.send('rc 1 1610\n')
+    mavproxy.send('rc 1 1700\n')
     if not wait_distance(mav, side):
         failed = True
     mavproxy.send('rc 1 1500\n')
@@ -135,7 +135,7 @@ def fly_square(mavproxy, mav, side=50, timeout=120):
     save_wp(mavproxy, mav)
 
     print("Going south %u meters" % side)
-    mavproxy.send('rc 2 1610\n')
+    mavproxy.send('rc 2 1700\n')
     if not wait_distance(mav, side):
         failed = True
     mavproxy.send('rc 2 1500\n')
@@ -233,7 +233,7 @@ def fly_simple(mavproxy, mav, side=60, timeout=120):
     mavproxy.send('rc 2 1500\n')
 
     print("# Going east for 30 seconds")
-    mavproxy.send('rc 1 1610\n')
+    mavproxy.send('rc 1 1700\n')
     tstart = time.time()
     while time.time() < (tstart + 30):
         m = mav.recv_match(type='VFR_HUD', blocking=True)
@@ -242,7 +242,7 @@ def fly_simple(mavproxy, mav, side=60, timeout=120):
     mavproxy.send('rc 1 1500\n')
 
     print("# Going back %u meters" % side)
-    mavproxy.send('rc 2 1610\n')
+    mavproxy.send('rc 2 1700\n')
     if not wait_distance(mav, side, 10, 60):
         failed = True
     mavproxy.send('rc 2 1500\n')
