@@ -1368,13 +1368,6 @@ static void super_slow_loop()
     if (g.log_bitmask & MASK_LOG_CUR && motors.armed())
         Log_Write_Current();
 
-
-#if 0         //CENTER_THROTTLE == 1
-    // recalibrate the throttle_cruise to center on the sticks
-    g.rc_3.set_range((g.throttle_cruise - (MAXIMUM_THROTTLE - g.throttle_cruise)), MAXIMUM_THROTTLE);
-    g.rc_3.set_range_out(0,1000);
-#endif
-
     // this function disarms the copter if it has been sitting on the ground for any moment of time greater than 25 seconds
     // but only of the control mode is manual
     if((control_mode <= ACRO) && (g.rc_3.control_in == 0)) {
@@ -1394,23 +1387,7 @@ static void super_slow_loop()
     // agmatthews - USERHOOKS
 #ifdef USERHOOK_SUPERSLOWLOOP
     USERHOOK_SUPERSLOWLOOP
-#endif
-
-    /*
-     *  //cliSerial->printf("alt %d, next.alt %d, alt_err: %d, cruise: %d, Alt_I:%1.2f, wp_dist %d, tar_bear %d, home_d %d, homebear %d\n",
-     *                               current_loc.alt,
-     *                               next_WP.alt,
-     *                               altitude_error,
-     *                               g.throttle_cruise.get(),
-     *                               g.pi_alt_hold.get_integrator(),
-     *                               wp_distance,
-     *                               target_bearing,
-     *                               home_distance,
-     *                               home_to_copter_bearing);
-     */
-
-    // debug
-    //dump_state();
+#endif 
 }
 
 // called at 100hz but data from sensor only arrives at 20 Hz
@@ -1973,7 +1950,6 @@ static void update_altitude_est()
         climb_rate += climb_rate_error;
         current_loc.alt += (climb_rate / 50);
     }
-    //cliSerial->printf(" %d, %d, %d, %d\n", climb_rate_actual, climb_rate_error, climb_rate, current_loc.alt);
 }
 
 static void tuning(){
@@ -1996,11 +1972,6 @@ static void tuning(){
         g.pi_stabilize_roll.kI(tuning_value);
         g.pi_stabilize_pitch.kI(tuning_value);
         break;
-
-    //case CH6_DAMP:
-    //case CH6_STABILIZE_KD:
-        //g.stabilize_d = tuning_value;
-        //break;
 
     case CH6_ACRO_KP:
         g.acro_p = tuning_value;
@@ -2154,10 +2125,6 @@ static void update_nav_wp()
         // sum the angle around the WP
         loiter_sum += loiter_delta;
 
-        // create a virtual waypoint that circles the next_WP
-        // Count the degrees we have circulated the WP
-        //int16_t circle_angle = wrap_360(target_bearing + 3000 + 18000) / 100;
-
         circle_angle += (circle_rate * dTnav);
         //1° = 0.0174532925 radians
 
@@ -2179,14 +2146,6 @@ static void update_nav_wp()
 
             calc_loiter(long_error, lat_error);
         }
-
-        //CIRCLE: angle:29, dist:0, lat:400, lon:242
-
-        // debug
-        //int16_t angleTest = degrees(circle_angle);
-        //int16_t nroll = nav_roll;
-        //int16_t npitch = nav_pitch;
-        //cliSerial->printf("CIRCLE: angle:%d, dist:%d, X:%d, Y:%d, P:%d, R:%d  \n", angleTest, (int)wp_distance , (int)long_error, (int)lat_error, npitch, nroll);
 
     }else if(wp_control == WP_MODE) {
         // calc error to target
