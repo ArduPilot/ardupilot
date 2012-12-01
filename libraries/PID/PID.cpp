@@ -6,6 +6,9 @@
 #include <math.h>
 
 #include "PID.h"
+#include <AP_HAL.h>
+
+extern const AP_HAL::HAL& hal;
 
 const AP_Param::GroupInfo PID::var_info[] PROGMEM = {
     AP_GROUPINFO("P",    0, PID, _kp, 0),
@@ -15,10 +18,9 @@ const AP_Param::GroupInfo PID::var_info[] PROGMEM = {
     AP_GROUPEND
 };
 
-int32_t
-PID::get_pid(int32_t error, float scaler)
+int32_t PID::get_pid(int32_t error, float scaler)
 {
-    uint32_t tnow = millis();
+    uint32_t tnow = hal.scheduler->millis();
     uint32_t dt = tnow - _last_t;
     float output            = 0;
     float delta_time;
@@ -57,7 +59,8 @@ PID::get_pid(int32_t error, float scaler)
         // high frequency noise that can drive the controller crazy
         float RC = 1/(2*M_PI*_fCut);
         derivative = _last_derivative +
-                     (delta_time / (RC + delta_time)) * (derivative - _last_derivative);
+                     ((delta_time / (RC + delta_time)) *
+                      (derivative - _last_derivative));
 
         // update state
         _last_error             = error;
