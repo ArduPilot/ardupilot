@@ -3,12 +3,11 @@
 /// @file	PI.h
 /// @brief	Generic PI algorithm, with EEPROM-backed storage of constants.
 
-#ifndef APM_PI_h
-#define APM_PI_h
+#ifndef __APM_PI_H__
+#define __APM_PI_H__
 
-#include <AP_Common.h>
+#include <stdlib.h>
 #include <AP_Param.h>
-//#include <math.h>		// for fabs()
 
 /// @class	APM_PI
 /// @brief	Object managing one PI control
@@ -67,7 +66,8 @@ public:
     /// @name	parameter accessors
     //@{
 
-    /// Overload the function call operator to permit relatively easy initialisation
+    // Overload the function call operator to permit relatively easy
+    //initialisation
     void operator        () (const float    p,
                              const float    i,
                              const int16_t  imaxval) {
@@ -107,7 +107,8 @@ private:
     AP_Float        _ki;
     AP_Int16        _imax;
 
-    float           _integrator;                                ///< integrator value
+    // integrator value
+    float           _integrator;
 };
 
 #endif
