@@ -5,7 +5,8 @@
  *  of false positives with uninitialised stack variables
  */
 
-#include <AP_Common.h>
+#include <stdlib.h>
+#include <stdint.h>
 
 static const uint32_t *stack_low;
 extern unsigned __brkval;
