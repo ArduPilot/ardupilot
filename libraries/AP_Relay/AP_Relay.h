@@ -10,8 +10,8 @@
 /// @file	AP_Relay.h
 /// @brief	APM relay control class
 
-#ifndef AP_RELAY_H_
-#define AP_RELAY_H_
+#ifndef __AP_RELAY_H__
+#define __AP_RELAY_H__
 
 /// @class	AP_Relay
 /// @brief	Class to manage the APM relay

@@ -7,43 +7,37 @@
  *      Author: Amilcar Lucas
  */
 
-#include <avr/io.h>
-#if defined(ARDUINO) && ARDUINO >= 100
- #include "Arduino.h"
-#else
- #include "wiring.h"
-#endif
-
+#include <AP_HAL.h>
 #include "AP_Relay.h"
 
-void AP_Relay::on()
-{
-    PORTL |= B00000100;
+extern const AP_HAL::HAL& hal;
+
+#define RELAY_PIN 47
+
+void AP_Relay::on() {
+    hal.gpio->write(RELAY_PIN, 1);
 }
 
 
-void AP_Relay::off()
-{
-    PORTL &= ~B00000100;
+void AP_Relay::off() {
+    hal.gpio->write(RELAY_PIN, 0);
 }
 
 
-void AP_Relay::toggle()
-{
-    PORTL ^= B00000100;
-}
-
-
-void AP_Relay::set(bool status)
-{
-    if (status)
-        on();
-    else
+void AP_Relay::toggle() {
+    bool ison = hal.gpio->read(RELAY_PIN);
+    if (ison)
         off();
+    else
+        on();
 }
 
 
-bool AP_Relay::get()
-{
-    return PORTL & B00000100;
+void AP_Relay::set(bool status){
+    hal.gpio->write(RELAY_PIN, status);
+}
+
+
+bool AP_Relay::get() {
+    return hal.gpio->read(RELAY_PIN); 
 }
