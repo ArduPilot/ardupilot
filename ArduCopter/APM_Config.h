@@ -54,7 +54,7 @@
 
 // Inertia based contollers.  disabled by default, work in progress
 //#define ACCEL_ALT_HOLD 0
-#define INERTIAL_NAV_XY ENABLED
+//#define INERTIAL_NAV_XY ENABLED
 #define INERTIAL_NAV_Z ENABLED
 
 
