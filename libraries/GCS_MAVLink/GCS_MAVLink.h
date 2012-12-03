@@ -14,8 +14,10 @@
 
 #include "include/mavlink/v1.0/ardupilotmega/version.h"
 
-// this allows us to make mavlink_message_t much smaller
-#define MAVLINK_MAX_PAYLOAD_LEN MAVLINK_MAX_DIALECT_PAYLOAD_SIZE
+// this allows us to make mavlink_message_t much smaller. It means we
+// can't support the largest messages in common.xml, but we don't need
+// those for APM
+#define MAVLINK_MAX_PAYLOAD_LEN 96
 
 #define MAVLINK_COMM_NUM_BUFFERS 2
 #include "include/mavlink/v1.0/mavlink_types.h"
