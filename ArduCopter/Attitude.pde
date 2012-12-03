@@ -292,8 +292,8 @@ run_rate_controllers()
     g.rc_4.servo_out = get_rate_yaw(yaw_rate_target_bf);
 #endif
 
-    // run throttle controller if an accel based target has been provided
-    if( throttle_accel_controller_active ) {
+    // run throttle controller if accel based throttle controller is enabled and active (active means it has been given a target)
+    if( g.throttle_accel_enabled && throttle_accel_controller_active ) {
         set_throttle_out(get_throttle_accel(throttle_accel_target_ef), true);
     }
 }
@@ -753,7 +753,7 @@ static int16_t get_angle_boost(int16_t throttle)
 }
 #endif // FRAME_CONFIG == HELI_FRAME
 
- // set_throttle_out - to be called by upper throttle controllers when they wish to provide throttle output directly to motors (instead of using accel based throttle controller)
+ // set_throttle_out - to be called by upper throttle controllers when they wish to provide throttle output directly to motors
  // provide 0 to cut motors
 void set_throttle_out( int16_t throttle_out, bool apply_angle_boost )
 {
@@ -764,16 +764,26 @@ void set_throttle_out( int16_t throttle_out, bool apply_angle_boost )
         // clear angle_boost for logging purposes
         angle_boost = 0;
     }
-
-    // TO-DO: fix line below because this function is also called by accel based throttle controller
-    throttle_accel_controller_active = false;
 }
 
 // set_throttle_accel_target - to be called by upper throttle controllers to set desired vertical acceleration in earth frame
 void set_throttle_accel_target( int16_t desired_acceleration )
 {
-    throttle_accel_target_ef = desired_acceleration;
-    throttle_accel_controller_active = true;
+    if( g.throttle_accel_enabled ) {
+        throttle_accel_target_ef = desired_acceleration;
+        throttle_accel_controller_active = true;
+    }else{
+        // To-Do log dataflash or tlog error
+        cliSerial->print_P(PSTR("Err: target sent to inactive acc thr controller!\n"));
+    }
+}
+
+// disable_throttle_accel - disables the accel based throttle controller
+// it will be re-enasbled on the next set_throttle_accel_target
+// required when we wish to set motors to zero when pilot inputs zero throttle
+void throttle_accel_deactivate()
+{
+    throttle_accel_controller_active = false;
 }
 
 // get_throttle_accel - accelerometer based throttle controller
@@ -928,7 +938,7 @@ get_throttle_rate(int16_t z_target_speed)
 {
     int32_t p,i,d;      // used to capture pid values for logging
     int16_t z_rate_error;
-    int16_t target_accel;
+    int16_t output;     // the target acceleration if the accel based throttle is enabled, otherwise the output to be sent to the motors
 
     // calculate rate error
 #if INERTIAL_NAV_Z == ENABLED
@@ -949,7 +959,7 @@ get_throttle_rate(int16_t z_target_speed)
     d = g.pid_throttle.get_d(z_rate_error, .02);
 
     // consolidate target acceleration
-    target_accel =  p+i+d;
+    output =  p+i+d;
 
 #if LOGGING_ENABLED == ENABLED
     static uint8_t log_counter = 0;                                      // used to slow down logging of PID values to dataflash
@@ -958,13 +968,18 @@ get_throttle_rate(int16_t z_target_speed)
         log_counter++;
         if( log_counter >= 10 ) {               // (update rate / desired output rate) = (50hz / 10hz) = 5hz
             log_counter = 0;
-            Log_Write_PID(CH6_THROTTLE_KP, z_rate_error, p, i, d, target_accel, tuning_value);
+            Log_Write_PID(CH6_THROTTLE_KP, z_rate_error, p, i, d, output, tuning_value);
         }
     }
 #endif
 
-    // set target for accel based throttle controller
-    set_throttle_accel_target(target_accel);
+    // send output to accelerometer based throttle controller if enabled otherwise send directly to motors
+    if( g.throttle_accel_enabled ) {
+        // set target for accel based throttle controller
+        set_throttle_accel_target(output);
+    }else{
+        set_throttle_out(g.throttle_cruise+output, true);
+    }
 
     // update throttle cruise
     if( z_target_speed == 0 ) {

@@ -144,6 +144,13 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @User: Standard
     GSCALAR(rssi_pin,            "RSSI_PIN",         -1),
 
+    // @Param: THR_ACC_ENABLE
+    // @DisplayName: Enable Accel based throttle controller
+    // @Description: This allows enabling and disabling the accelerometer based throttle controller.  If disabled a velocity based controller is used.
+    // @Values: 0:Disabled, 1:Enabled
+    // @User: Standard
+    GSCALAR(throttle_accel_enabled,  "THR_ACC_ENABLE",   1),
+
     GSCALAR(waypoint_mode,  "WP_MODE",          0),
     GSCALAR(command_total,  "WP_TOTAL",         0),
     GSCALAR(command_index,  "WP_INDEX",         0),
