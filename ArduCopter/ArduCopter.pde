@@ -610,9 +610,9 @@ static int32_t yaw_rate_target_bf = 0;      // body frame yaw rate target
 ////////////////////////////////////////////////////////////////////////////////
 // Throttle variables
 ////////////////////////////////////////////////////////////////////////////////
-static int16_t throttle_accel_target_ef = 0;    // earth frame throttle acceleration target
-static bool throttle_accel_controller_active = false;   // true when accel based throttle controller is active, false when higher level throttle controllers are providing throttle output directly
-static float z_accel_meas = 0;              // filtered throttle acceleration
+static int16_t throttle_accel_target_ef;    // earth frame throttle acceleration target
+static bool throttle_accel_controller_active;   // true when accel based throttle controller is active, false when higher level throttle controllers are providing throttle output directly
+static float z_accel_meas;                  // filtered throttle acceleration
 static float throttle_avg;                  // g.throttle_cruise as a float
 static int16_t desired_climb_rate;          // pilot desired climb rate - for logging purposes only
 
@@ -1675,15 +1675,19 @@ bool set_throttle_mode( uint8_t new_throttle_mode )
     switch(new_throttle_mode) {
         case THROTTLE_MANUAL:
         case THROTTLE_MANUAL_TILT_COMPENSATED:
-            throttle_accel_controller_active = false;   // this controller does not use accel based throttle controller
+            throttle_accel_deactivate();                // this controller does not use accel based throttle controller
             throttle_initialised = true;
             break;
 
-        case THROTTLE_ACCELERATION:
+        case THROTTLE_ACCELERATION:                     // pilot inputs the desired acceleration
+            if( g.throttle_accel_enabled ) {            // this throttle mode requires use of the accel based throttle controller
+                throttle_initialised = true;
+            }
+            break;
+
         case THROTTLE_RATE:
         case THROTTLE_STABILIZED_RATE:
         case THROTTLE_DIRECT_ALT:
-            throttle_accel_controller_active = true;    // this controller uses accel based throttle controller
             throttle_initialised = true;
             break;
 
@@ -1693,7 +1697,6 @@ bool set_throttle_mode( uint8_t new_throttle_mode )
             if ( throttle_mode < THROTTLE_HOLD ) {      // reset the alt hold I terms if previous throttle mode was manual
                 reset_throttle_I();
             }
-            throttle_accel_controller_active = true;    // this controller uses accel based throttle controller
             throttle_initialised = true;
             break;
 
@@ -1701,11 +1704,11 @@ bool set_throttle_mode( uint8_t new_throttle_mode )
             set_land_complete(false);   // mark landing as incomplete
             land_detector = 0;          // A counter that goes up if our climb rate stalls out.
             set_new_altitude(0);        // Set a new target altitude
-            throttle_accel_controller_active = true;    // this controller uses accel based throttle controller
             throttle_initialised = true;
             break;
 
         default:
+            // To-Do: log an error message to the dataflash or tlogs instead of printing to the serial port
             cliSerial->printf_P(PSTR("Unsupported throttle mode: %d!!"),new_throttle_mode);
             break;
     }
@@ -1735,6 +1738,7 @@ void update_throttle_mode(void)
     // do not run throttle controllers if motors disarmed
     if( !motors.armed() ) {
         set_throttle_out(0, false);
+        throttle_accel_deactivate();    // do not allow the accel based throttle to override our command
         return;
     }
 
@@ -1792,6 +1796,7 @@ void update_throttle_mode(void)
         // pilot inputs the desired acceleration
         if(g.rc_3.control_in <= 0){
             set_throttle_out(0, false);
+            throttle_accel_deactivate();    // do not allow the accel based throttle to override our command
         }else{
             int16_t desired_acceleration = get_pilot_desired_acceleration(g.rc_3.control_in);
             set_throttle_accel_target(desired_acceleration);
@@ -1802,6 +1807,7 @@ void update_throttle_mode(void)
         // pilot inputs the desired climb rate.  Note this is the unstabilized rate controller
         if(g.rc_3.control_in <= 0){
             set_throttle_out(0, false);
+            throttle_accel_deactivate();    // do not allow the accel based throttle to override our command
         }else{
             pilot_climb_rate = get_pilot_desired_climb_rate(g.rc_3.control_in);
             get_throttle_rate(pilot_climb_rate);
@@ -1809,9 +1815,10 @@ void update_throttle_mode(void)
         break;
 
     case THROTTLE_STABILIZED_RATE:
-        // pilot inputs the desired climb rate.  Note this is the unstabilized rate controller
+        // pilot inputs the desired climb rate.  Note this is the stabilized rate controller
         if(g.rc_3.control_in <= 0){
             set_throttle_out(0, false);
+            throttle_accel_deactivate();    // do not allow the accel based throttle to override our command
         }else{
             pilot_climb_rate = get_pilot_desired_climb_rate(g.rc_3.control_in);
             get_throttle_rate_stabilized(pilot_climb_rate);
@@ -1822,6 +1829,7 @@ void update_throttle_mode(void)
         // pilot inputs a desired altitude from 0 ~ 10 meters
         if(g.rc_3.control_in <= 0){
             set_throttle_out(0, false);
+            throttle_accel_deactivate();    // do not allow the accel based throttle to override our command
         }else{
             // To-Do: this should update the global desired altitude variable next_WP.alt
             int32_t desired_alt = get_pilot_desired_direct_alt(g.rc_3.control_in);
