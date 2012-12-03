@@ -1812,7 +1812,7 @@ mission_failed:
         mavlink_msg_hil_state_decode(msg, &packet);
 
         float vel = sqrt((packet.vx * (float)packet.vx) + (packet.vy * (float)packet.vy));
-        float cog = wrap_360_cd(ToDeg(atan2(packet.vx, packet.vy)) * 100);
+        float cog = wrap_360_cd(ToDeg(atan2(packet.vy, packet.vx)) * 100);
 
         // set gps hil sensor
         g_gps->setHIL(packet.time_usec/1000,
