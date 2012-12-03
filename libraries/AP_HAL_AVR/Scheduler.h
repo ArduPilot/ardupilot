@@ -49,6 +49,8 @@ private:
     static uint8_t _num_timer_procs;
     static bool    _in_timer_proc;
 
+    uint8_t _nested_atomic_ctr;
+
 };
 #endif // __AP_HAL_AVR_SCHEDULER_H__
 

@@ -27,7 +27,9 @@ bool AVRScheduler::_in_timer_proc = false;
 
 
 AVRScheduler::AVRScheduler() :
-    _delay_cb(NULL)
+    _delay_cb(NULL),
+    _min_delay_cb_ms(65535),
+    _nested_atomic_ctr(0)
 {}
 
 void AVRScheduler::init(void* _isrregistry) {
@@ -323,9 +325,13 @@ void AVRScheduler::_timer_event() {
 }
 
 void AVRScheduler::begin_atomic() {
+    _nested_atomic_ctr++;
     cli();
 }
 
 void AVRScheduler::end_atomic() {
-    sei();
+    _nested_atomic_ctr--;
+    if (_nested_atomic_ctr == 0) {
+        sei();
+    }
 }
