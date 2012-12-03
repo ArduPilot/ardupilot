@@ -33,6 +33,9 @@ public:
 
 protected:
     uint16_t        _init_sensor( AP_PeriodicProcess * scheduler, Sample_rate sample_rate );
+    uint32_t        _sample_period_ms;
+    uint32_t        _last_update_ms;
+    uint32_t        _delta_time_usec;
 };
 
 #endif // __AP_INERTIAL_SENSOR_STUB_H__
