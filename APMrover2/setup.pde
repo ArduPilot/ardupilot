@@ -66,7 +66,6 @@ setup_show(uint8_t argc, const Menu::arg *argv)
 	report_xtrack();
 	report_throttle();
 	report_flight_modes();
-	report_ins();
 	report_compass();
 
 	cliSerial->printf_P(PSTR("Raw Values\n"));
@@ -328,7 +327,6 @@ setup_accel_scale(uint8_t argc, const Menu::arg *argv)
             g.manual_level.set_and_save(1);
         }
     }
-    report_ins();
     return(0);
 }
 #endif
@@ -459,17 +457,6 @@ static void report_throttle()
 						 (int)g.throttle_fs_enabled,
 						 (int)g.throttle_fs_value);
 	print_blanks(2);
-}
-
-static void report_ins()
-{
-    //print_blanks(2);
-    cliSerial->printf_P(PSTR("INS\n"));
-    print_divider();
-
-    print_gyro_offsets();
-    print_accel_offsets_and_scaling();
-    print_blanks(2);
 }
 
 static void report_compass()
@@ -640,15 +627,5 @@ print_accel_offsets_and_scaling(void)
                     (float)accel_scale.y,                             // Roll
                     (float)accel_scale.z);                            // YAW
 }
-
-static void
-print_gyro_offsets(void)
-{
-	cliSerial->printf_P(PSTR("Gyro offsets: %4.2f, %4.2f, %4.2f\n"),
-						(float)ins.gx(),
-						(float)ins.gy(),
-						(float)ins.gz());
-}
-
 
 #endif // CLI_ENABLED
