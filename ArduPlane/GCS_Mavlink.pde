@@ -886,6 +886,17 @@ GCS_MAVLINK::data_stream_send(void)
     }
 
     if (in_mavlink_delay) {
+#if HIL_MODE != HIL_MODE_DISABLED
+        // in HIL we need to keep sending servo values to ensure
+        // the simulator doesn't pause, otherwise our sensor
+        // calibration could stall
+        if (stream_trigger(STREAM_RAW_CONTROLLER)) {
+            send_message(MSG_SERVO_OUT);
+        }
+        if (stream_trigger(STREAM_RC_CHANNELS)) {
+            send_message(MSG_RADIO_OUT);
+        }
+#endif
         // don't send any other stream types while in the delay callback
         return;
     }
@@ -1779,33 +1790,6 @@ mission_failed:
     }
 
 #if HIL_MODE != HIL_MODE_DISABLED
-    // This is used both as a sensor and to pass the location
-    // in HIL_ATTITUDE mode.
-    case MAVLINK_MSG_ID_GPS_RAW_INT:
-    {
-        // decode
-        mavlink_gps_raw_int_t packet;
-        mavlink_msg_gps_raw_int_decode(msg, &packet);
-
-        // set gps hil sensor
-        g_gps->setHIL(packet.time_usec/1000,
-                      packet.lat*1.0e-7, packet.lon*1.0e-7, packet.alt*1.0e-3,
-                      packet.vel*1.0e-2, packet.cog*1.0e-2, 0, 10);
-        break;
-    }
-
-    //    Is this resolved? - MAVLink protocol change.....
-    case MAVLINK_MSG_ID_VFR_HUD:
-    {
-        // decode
-        mavlink_vfr_hud_t packet;
-        mavlink_msg_vfr_hud_decode(msg, &packet);
-
-        // set airspeed
-        airspeed.set_HIL(packet.airspeed);
-        break;
-    }
-
     case MAVLINK_MSG_ID_HIL_STATE:
     {
         mavlink_hil_state_t packet;
@@ -1829,13 +1813,23 @@ mission_failed:
 
         // m/s/s
         Vector3f accels;
-        accels.x = (float)packet.xacc / 1000.0;
-        accels.y = (float)packet.yacc / 1000.0;
-        accels.z = (float)packet.zacc / 1000.0;
+        accels.x = packet.xacc * (gravity/1000.0);
+        accels.y = packet.yacc * (gravity/1000.0);
+        accels.z = packet.zacc * (gravity/1000.0);
 
-        ins.set_gyro_offsets(gyros);
+        ins.set_gyro(gyros);
+        ins.set_accel(accels);
 
-        ins.set_accel_offsets(accels);
+        // approximate a barometer
+        float y;
+        const float Temp = 312;
+
+        y = (packet.alt - 584000.0) / 29271.267;
+        y /= (Temp / 10.0) + 273.15;
+        y = 1.0/exp(y);
+        y *= 95446.0;
+
+        barometer.setHIL(Temp, y);
 
  #else
 
@@ -1845,64 +1839,6 @@ mission_failed:
 
  #endif
 
-        break;
-    }
-#endif // HIL_MODE
-#if HIL_MODE == HIL_MODE_ATTITUDE
-    case MAVLINK_MSG_ID_ATTITUDE:
-    {
-        // decode
-        mavlink_attitude_t packet;
-        mavlink_msg_attitude_decode(msg, &packet);
-
-        // set AHRS hil sensor
-        ahrs.setHil(packet.roll,packet.pitch,packet.yaw,packet.rollspeed,
-                    packet.pitchspeed,packet.yawspeed);
-        break;
-    }
-#endif
-#if HIL_MODE == HIL_MODE_SENSORS
-
-    case MAVLINK_MSG_ID_RAW_IMU:
-    {
-        // decode
-        mavlink_raw_imu_t packet;
-        mavlink_msg_raw_imu_decode(msg, &packet);
-
-        // set imu hil sensors
-        // TODO: check scaling for temp/absPress
-        //float temp = 70;
-        //float absPress = 1;
-
-        // rad/sec
-        Vector3f gyros;
-        gyros.x = (float)packet.xgyro / 1000.0;
-        gyros.y = (float)packet.ygyro / 1000.0;
-        gyros.z = (float)packet.zgyro / 1000.0;
-        // m/s/s
-        Vector3f accels;
-        accels.x = (float)packet.xacc / 1000.0;
-        accels.y = (float)packet.yacc / 1000.0;
-        accels.z = (float)packet.zacc / 1000.0;
-
-        ins.set_gyro_offsets(gyros);
-
-        ins.set_accel_offsets(accels);
-
-        compass.setHIL(packet.xmag,packet.ymag,packet.zmag);
-        break;
-    }
-
-    case MAVLINK_MSG_ID_RAW_PRESSURE:
-    {
-        // decode
-        mavlink_raw_pressure_t packet;
-        mavlink_msg_raw_pressure_decode(msg, &packet);
-
-        // set pressure hil sensor
-        // TODO: check scaling
-        float temp = 70;
-        barometer.setHIL(temp,packet.press_diff1 + 101325);
         break;
     }
 #endif // HIL_MODE

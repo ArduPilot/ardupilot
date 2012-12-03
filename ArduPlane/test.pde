@@ -54,7 +54,6 @@ static const struct Menu::command test_menu_commands[] PROGMEM = {
     {"airpressure", test_pressure},
     {"compass",             test_mag},
 #elif HIL_MODE == HIL_MODE_SENSORS
-    {"adc",                 test_adc},
     {"gps",                 test_gps},
     {"ins",                 test_ins},
     {"compass",             test_mag},

@@ -233,16 +233,14 @@ AP_AHRS_DCM ahrs(&ins, g_gps);
 
 #elif HIL_MODE == HIL_MODE_SENSORS
 // sensor emulators
-AP_ADC_HIL adc;
 AP_Baro_BMP085_HIL barometer;
 AP_Compass_HIL compass;
 AP_GPS_HIL              g_gps_driver(NULL);
-AP_InertialSensor_Oilpan ins( &adc );
+AP_InertialSensor_Stub ins;
 AP_AHRS_DCM  ahrs(&ins, g_gps);
 
 #elif HIL_MODE == HIL_MODE_ATTITUDE
-AP_ADC_HIL adc;
-AP_InertialSensor_Oilpan ins( &adc );
+AP_InertialSensor_Stub ins;
 AP_AHRS_HIL             ahrs(&ins, g_gps);
 AP_GPS_HIL              g_gps_driver(NULL);
 AP_Compass_HIL compass;          // never used

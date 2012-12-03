@@ -186,6 +186,11 @@
 #if HIL_MODE != HIL_MODE_DISABLED       // we are in HIL mode
  # undef GPS_PROTOCOL
  # define GPS_PROTOCOL GPS_PROTOCOL_NONE
+ #undef CONFIG_ADC
+ #define CONFIG_ADC DISABLED
+ #undef CONFIG_PITOT_SOURCE
+ #define CONFIG_PITOT_SOURCE PITOT_SOURCE_ANALOG_PIN
+ #define CONFIG_PITOT_SOURCE_ANALOG_PIN -1
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
