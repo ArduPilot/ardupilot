@@ -32,7 +32,7 @@ public:
     //
     // The enumeration defined here is used to ensure that every parameter
     // or parameter group has a unique ID number.	This number is used by
-    // AP_Var to store and locate parameters in EEPROM.
+    // AP_Param to store and locate parameters in EEPROM.
     //
     // Note that entries without a number are assigned the next number after
     // the entry preceding them.	When adding new entries, ensure that they
@@ -43,7 +43,7 @@ public:
     // at the end of the enumeration.
     //
     // WARNING: Care should be taken when editing this enumeration as the
-    //			AP_Var load/save code depends on the values here to identify
+    //			AP_Param load/save code depends on the values here to identify
     //			variables saved in EEPROM.
     //
     //
