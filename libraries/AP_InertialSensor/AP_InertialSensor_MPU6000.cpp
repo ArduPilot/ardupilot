@@ -279,26 +279,6 @@ bool AP_InertialSensor_MPU6000::new_data_available( void )
     return _count != 0;
 }
 
-float AP_InertialSensor_MPU6000::gx() {
-    return _gyro.x;
-}
-float AP_InertialSensor_MPU6000::gy() {
-    return _gyro.y;
-}
-float AP_InertialSensor_MPU6000::gz() {
-    return _gyro.z;
-}
-
-float AP_InertialSensor_MPU6000::ax() {
-    return _accel.x;
-}
-float AP_InertialSensor_MPU6000::ay() {
-    return _accel.y;
-}
-float AP_InertialSensor_MPU6000::az() {
-    return _accel.z;
-}
-
 float AP_InertialSensor_MPU6000::temperature() {
     return _temp;
 }
