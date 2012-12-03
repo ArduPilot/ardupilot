@@ -1417,18 +1417,18 @@
                <field type="float" name="roll">Roll angle (rad)</field>
                <field type="float" name="pitch">Pitch angle (rad)</field>
                <field type="float" name="yaw">Yaw angle (rad)</field>
-               <field type="float" name="rollspeed">Roll angular speed (rad/s)</field>
-               <field type="float" name="pitchspeed">Pitch angular speed (rad/s)</field>
-               <field type="float" name="yawspeed">Yaw angular speed (rad/s)</field>
+               <field type="float" name="rollspeed">Roll angular speed (rad/s) in body frame</field>
+               <field type="float" name="pitchspeed">Pitch angular speed (rad/s) in body frame</field>
+               <field type="float" name="yawspeed">Yaw angular speed (rad/s) in body frame</field>
                <field type="int32_t" name="lat">Latitude, expressed as * 1E7</field>
                <field type="int32_t" name="lon">Longitude, expressed as * 1E7</field>
                <field type="int32_t" name="alt">Altitude in meters, expressed as * 1000 (millimeters)</field>
                <field type="int16_t" name="vx">Ground X Speed (Latitude), expressed as m/s * 100</field>
                <field type="int16_t" name="vy">Ground Y Speed (Longitude), expressed as m/s * 100</field>
-               <field type="int16_t" name="vz">Ground Z Speed (Altitude), expressed as m/s * 100</field>
-               <field type="int16_t" name="xacc">X acceleration (mg)</field>
-               <field type="int16_t" name="yacc">Y acceleration (mg)</field>
-               <field type="int16_t" name="zacc">Z acceleration (mg)</field>
+               <field type="int16_t" name="vz">Ground Z Speed (Altitude), expressed as m/s * 100 (+ve down)</field>
+               <field type="int16_t" name="xacc">X acceleration (mg) in body frame (+ve forward)</field>
+               <field type="int16_t" name="yacc">Y acceleration (mg) in body frame (+ve right)</field>
+               <field type="int16_t" name="zacc">Z acceleration (mg) in body frame (+ve down)</field>
           </message>
           <message id="91" name="HIL_CONTROLS">
                <description>Sent from autopilot to simulation. Hardware in the loop control outputs</description>
