@@ -105,21 +105,6 @@ public:
     // check if the sensors have new data
     virtual bool            new_data_available(void) = 0;
 
-    /* Getters for individual gyro axes.
-     * Gyros have correct coordinate frame and units (degrees per second).
-     */
-    virtual float           gx() = 0;
-    virtual float           gy() = 0;
-    virtual float           gz() = 0;
-
-    /* Getters for individual accel axes.
-     * Accels have correct coordinate frame ( flat level ax, ay = 0; az = -9.81)
-     * and units (meters per second squared).
-     */
-    virtual float           ax() = 0;
-    virtual float           ay() = 0;
-    virtual float           az() = 0;
-
     /* Temperature, in degrees celsius, of the gyro. */
     virtual float           temperature() = 0;
 

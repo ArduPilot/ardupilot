@@ -28,12 +28,6 @@ public:
     /* Concrete implementation of AP_InertialSensor functions: */
     bool                update();
     bool                new_data_available();
-    float               gx();
-    float               gy();
-    float               gz();
-    float               ax();
-    float               ay();
-    float               az();
     float               temperature();
     float               get_gyro_drift_rate();
 

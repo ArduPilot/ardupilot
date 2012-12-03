@@ -19,12 +19,6 @@ public:
     /* Concrete implementation of AP_InertialSensor functions: */
     bool            update();
     bool            new_data_available();
-    float           gx();
-    float           gy();
-    float           gz();
-    float           ax();
-    float           ay();
-    float           az();
     float           temperature();
     uint32_t        get_delta_time_micros();
     uint32_t        get_last_sample_time_micros();

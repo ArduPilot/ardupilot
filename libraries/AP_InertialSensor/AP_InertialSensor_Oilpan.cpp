@@ -101,27 +101,6 @@ bool AP_InertialSensor_Oilpan::new_data_available( void )
     return _adc->new_data_available(_sensors);
 }
 
-float AP_InertialSensor_Oilpan::gx() {
-    return _gyro.x;
-}
-float AP_InertialSensor_Oilpan::gy() {
-    return _gyro.y;
-}
-float AP_InertialSensor_Oilpan::gz() {
-    return _gyro.z;
-}
-
-float AP_InertialSensor_Oilpan::ax() {
-    return _accel.x;
-}
-float AP_InertialSensor_Oilpan::ay() {
-    return _accel.y;
-}
-float AP_InertialSensor_Oilpan::az() {
-    return _accel.z;
-}
-
-
 float AP_InertialSensor_Oilpan::temperature() {
     return _temp;
 }

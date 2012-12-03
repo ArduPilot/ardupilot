@@ -31,26 +31,6 @@ bool AP_InertialSensor_Stub::new_data_available( void ) {
 }
 
 
-float AP_InertialSensor_Stub::gx() {
-    return 0.0f;
-}
-float AP_InertialSensor_Stub::gy() {
-    return 0.0f;
-}
-float AP_InertialSensor_Stub::gz() {
-    return 0.0f;
-}
-
-float AP_InertialSensor_Stub::ax() {
-    return 0.0f;
-}
-float AP_InertialSensor_Stub::ay() {
-    return 0.0f;
-}
-float AP_InertialSensor_Stub::az() {
-    return 0.0f;
-}
-
 float AP_InertialSensor_Stub::temperature() {
     return 0.0;
 }
