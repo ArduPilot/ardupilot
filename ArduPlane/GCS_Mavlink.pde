@@ -328,6 +328,7 @@ static void NOINLINE send_radio_in(mavlink_channel_t chan)
 
 static void NOINLINE send_radio_out(mavlink_channel_t chan)
 {
+#if HIL_MODE == HIL_MODE_DISABLED || HIL_SERVOS
     mavlink_msg_servo_output_raw_send(
         chan,
         micros(),
@@ -340,6 +341,21 @@ static void NOINLINE send_radio_out(mavlink_channel_t chan)
         APM_RC.OutputCh_current(5),
         APM_RC.OutputCh_current(6),
         APM_RC.OutputCh_current(7));
+#else
+    extern RC_Channel* rc_ch[NUM_CHANNELS];
+    mavlink_msg_servo_output_raw_send(
+        chan,
+        micros(),
+        0,     // port
+        rc_ch[0]->radio_out,
+        rc_ch[1]->radio_out,
+        rc_ch[2]->radio_out,
+        rc_ch[3]->radio_out,
+        rc_ch[4]->radio_out,
+        rc_ch[5]->radio_out,
+        rc_ch[6]->radio_out,
+        rc_ch[7]->radio_out);
+#endif
 }
 
 static void NOINLINE send_vfr_hud(mavlink_channel_t chan)
