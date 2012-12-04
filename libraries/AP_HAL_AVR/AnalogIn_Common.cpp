@@ -29,17 +29,17 @@ void AVRAnalogIn::init(void* machtnichts) {
     _register_channel(&_vcc);
 }
 
-ADCSource* AVRAnalogIn::_find_or_create_channel(int pin) {
+ADCSource* AVRAnalogIn::_find_or_create_channel(int pin, float scale) {
     for(int i = 0; i < _num_channels; i++) {
         if (_channels[i]->_pin == pin) {
             return _channels[i];
         }
     }
-    return _create_channel(pin);
+    return _create_channel(pin, scale);
 }
 
-ADCSource* AVRAnalogIn::_create_channel(int chnum) {
-    ADCSource *ch = new ADCSource(chnum);
+ADCSource* AVRAnalogIn::_create_channel(int chnum, float scale) {
+    ADCSource *ch = new ADCSource(chnum, scale);
     _register_channel(ch);
     return ch;
 }
@@ -55,9 +55,10 @@ void AVRAnalogIn::_register_channel(ADCSource* ch) {
     _channels[_num_channels] = ch;
     /* Need to lock to increment _num_channels as it is used
      * by the interrupt to access _channels */
+    uint8_t sreg = SREG;
     cli();
     _num_channels++;
-    sei();
+    SREG = sreg;
 
     if (_num_channels == 1) {
         /* After registering the first channel, we can enable the ADC */
@@ -111,10 +112,13 @@ next_channel:
 
 
 AP_HAL::AnalogSource* AVRAnalogIn::channel(int ch) {
+    return this->channel(ch, 1.0);
+}
+AP_HAL::AnalogSource* AVRAnalogIn::channel(int ch, float scale) {
     if (ch == ANALOG_INPUT_BOARD_VCC) {
             return &_vcc;
     } else {
-        return _find_or_create_channel(ch);
+        return _find_or_create_channel(ch, scale);
     }
 }
 

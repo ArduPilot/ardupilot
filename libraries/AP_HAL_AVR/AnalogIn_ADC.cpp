@@ -16,6 +16,10 @@ float ADCSource::read() {
     return _prescale * read_average();
 }
 
+void ADCSource::set_pin(uint8_t pin) {
+    _pin = pin;
+}
+
 /* read_average is called from the normal thread (not an interrupt). */
 float ADCSource::read_average() {
     uint16_t sum;
@@ -28,12 +32,16 @@ float ADCSource::read_average() {
     while( _sum_count == 0 );
 
     /* Read and clear in a critical section */
+    uint8_t sreg = SREG;
     cli();
+
     sum = _sum;
     sum_count = _sum_count;
     _sum = 0;
     _sum_count = 0;
-    sei();
+
+    SREG = sreg;
+
     float avg = sum / (float) sum_count;
     return avg;
 

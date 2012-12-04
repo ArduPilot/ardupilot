@@ -16,6 +16,7 @@ public:
 
     /* implement AnalogSource virtual api: */
     float read();
+    void set_pin(uint8_t p);
 
     /* implementation specific interface: */
 
@@ -37,7 +38,7 @@ private:
     volatile uint16_t _sum;
 
     /* _pin designates the ADC input mux for the sample */
-    const uint8_t _pin;
+    uint8_t _pin;
     /* prescale scales the raw measurments for read()*/
     const float _prescale;
 };
@@ -49,10 +50,11 @@ public:
     AVRAnalogIn();
     void init(void* ap_hal_scheduler);
     AP_HAL::AnalogSource* channel(int n);
+    AP_HAL::AnalogSource* channel(int n, float prescale);
 
 protected: 
-    static ADCSource* _find_or_create_channel(int num);
-    static ADCSource* _create_channel(int num);
+    static ADCSource* _find_or_create_channel(int num, float scale);
+    static ADCSource* _create_channel(int num, float scale);
     static void _register_channel(ADCSource*);
     static void _timer_event(uint32_t);
     static ADCSource* _channels[AVR_INPUT_MAX_CHANNELS];
