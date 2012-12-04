@@ -39,7 +39,7 @@ AP_Compass_HMC5843 compass;
 
 GPS *g_gps;
 
-AP_GPS_Auto g_gps_driver(hal.uart1, &g_gps);
+AP_GPS_Auto g_gps_driver(hal.uartB, &g_gps);
 
 // choose which AHRS system to use
 AP_AHRS_DCM  ahrs(&ins, g_gps);
