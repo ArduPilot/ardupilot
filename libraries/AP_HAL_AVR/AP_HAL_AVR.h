@@ -14,5 +14,15 @@
 extern const AP_HAL_AVR::HAL_AVR AP_HAL_AVR_APM1;
 extern const AP_HAL_AVR::HAL_AVR AP_HAL_AVR_APM2;
 
+#define AP_HAL_MAIN() extern "C" {\
+    int main (void) {\
+        hal.init(NULL);\
+        setup();\
+        for(;;) loop();\
+        return 0;\
+    }\
+    }
+
+
 #endif // __AP_HAL_AVR_H__
 

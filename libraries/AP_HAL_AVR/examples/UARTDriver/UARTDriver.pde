@@ -45,12 +45,4 @@ void loop(void)
         hal.console->write(c);
 }
 
-
-extern "C" {
-int main (void) {
-    hal.init(NULL);
-    setup();
-    for(;;) loop();
-    return 0;
-}
-}
+AP_HAL_MAIN();

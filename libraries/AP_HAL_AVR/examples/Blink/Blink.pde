@@ -43,12 +43,4 @@ void setup (void) {
     c_led->write(0);
 }
 
-
-extern "C" {
-int main (void) {
-    hal.init(NULL);
-    setup();
-    for(;;) loop();
-    return 0;
-}
-}
+AP_HAL_MAIN();
