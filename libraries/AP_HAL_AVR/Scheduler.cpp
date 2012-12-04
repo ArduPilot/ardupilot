@@ -1,13 +1,15 @@
 
+#include <avr/io.h>
+#include <avr/interrupt.h>
+
 #include "HAL_AVR.h"
 #include "Scheduler.h"
 using namespace AP_HAL_AVR;
 
-#include <avr/io.h>
-#include <avr/interrupt.h>
-
 #define cbi(sfr, bit) (_SFR_BYTE(sfr) &= ~_BV(bit))
 #define sbi(sfr, bit) (_SFR_BYTE(sfr) |= _BV(bit))
+
+extern const AP_HAL::HAL& hal;
 
 static volatile uint32_t timer0_overflow_count = 0;
 static volatile uint32_t timer0_millis = 0;
@@ -334,4 +336,20 @@ void AVRScheduler::end_atomic() {
     if (_nested_atomic_ctr == 0) {
         sei();
     }
+}
+
+void AVRScheduler::reboot() {
+    hal.uartA->println_P(PSTR("GOING DOWN FOR A REBOOT\r\n"));
+    hal.scheduler->delay(100);
+
+    cli();
+    /* Making a null pointer call will cause all AVRs to reboot
+     * but they may not come back alive properly - we need to setup
+     * the IO the way the bootloader would.
+     * pch will go back and fix this.
+     */
+    void (*fn)(void) = NULL;
+    fn();
+
+    for(;;);
 }
