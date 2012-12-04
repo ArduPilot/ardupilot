@@ -9,11 +9,33 @@
 
 class AP_HAL_AVR::APM1RCInput : public AP_HAL::RCInput {
 public:
-    /* Pass in a AP_HAL_AVR::ISRRegistry* as void*. */
+    /**
+     * init:
+     * HAL_AVR::init should pass in a AP_HAL_AVR::ISRRegistry* as a void*
+     */
     void     init(void* isrregistry);
+
+    /**
+     * valid():
+     * Return the number of currently valid channels.
+     * Typically 0 (no valid radio channels) or 8 (implementation-defined)
+     * Could be less than or greater than 8 depending on your incoming radio
+     * or PPM stream
+     */
     uint8_t  valid();
+
+    /**
+     * read(uint8_t):
+     * Read a single channel at a time
+     */
     uint16_t read(uint8_t ch);
+
+    /**
+     * read(uint16_t*,uint8_t):
+     * Read an array of channels, return the valid count
+     */
     uint8_t  read(uint16_t* periods, uint8_t len);
+
 private:
     /* private callback for input capture ISR */
     static void _timer4_capt_cb(void);
