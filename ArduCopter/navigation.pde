@@ -46,6 +46,9 @@ static void update_navigation()
 
         // calculate velocity
         calc_velocity_and_position();
+		
+		// calculate ground bearing
+		calc_ground_bearing();
 
         // calculate distance, angles to target
         calc_distance_and_bearing();
@@ -125,6 +128,10 @@ static void calc_velocity_and_position(){
     // store gps lat and lon values for next iteration
     last_gps_longitude  = g_gps->longitude;
     last_gps_latitude   = g_gps->latitude;
+}
+
+static void calc_ground_bearing(){
+	ground_bearing = atan2( lat_speed , lon_speed ) * DEGX100;
 }
 
 //****************************************************************
