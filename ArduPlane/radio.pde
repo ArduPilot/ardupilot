@@ -73,17 +73,30 @@ static void read_radio()
 {
     ch1_temp = hal.rcin->read(CH_ROLL);
     ch2_temp = hal.rcin->read(CH_PITCH);
+    uint16_t pwm_roll, pwm_pitch;
 
-    if(g.mix_mode == 0) {
-        g.channel_roll.set_pwm(ch1_temp);
-        g.channel_pitch.set_pwm(ch2_temp);
+    if (g.mix_mode == 0) {
+        pwm_roll = ch1_temp;
+        pwm_pitch = ch2_temp;
     }else{
-        g.channel_roll.set_pwm(BOOL_TO_SIGN(g.reverse_elevons) * (BOOL_TO_SIGN(g.reverse_ch2_elevon) * int(ch2_temp - elevon2_trim) - BOOL_TO_SIGN(g.reverse_ch1_elevon) * int(ch1_temp - elevon1_trim)) / 2 + 1500);
-        g.channel_pitch.set_pwm((BOOL_TO_SIGN(g.reverse_ch2_elevon) * int(ch2_temp - elevon2_trim) + BOOL_TO_SIGN(g.reverse_ch1_elevon) * int(ch1_temp - elevon1_trim)) / 2 + 1500);
+        pwm_roll = BOOL_TO_SIGN(g.reverse_elevons) * (BOOL_TO_SIGN(g.reverse_ch2_elevon) * int(ch2_temp - elevon2_trim) - BOOL_TO_SIGN(g.reverse_ch1_elevon) * int(ch1_temp - elevon1_trim)) / 2 + 1500;
+        pwm_pitch = (BOOL_TO_SIGN(g.reverse_ch2_elevon) * int(ch2_temp - elevon2_trim) + BOOL_TO_SIGN(g.reverse_ch1_elevon) * int(ch1_temp - elevon1_trim)) / 2 + 1500;
+    }
+    
+    if (control_mode == TRAINING) {
+        // in training mode we don't want to use a deadzone, as we
+        // want manual pass through when not exceeding attitude limits
+        g.channel_roll.set_pwm_no_deadzone(pwm_roll);
+        g.channel_pitch.set_pwm_no_deadzone(pwm_pitch);
+        g.channel_throttle.set_pwm_no_deadzone(hal.rcin->read(CH_3));
+        g.channel_rudder.set_pwm_no_deadzone(hal.rcin->read(CH_4));
+    } else {
+        g.channel_roll.set_pwm(pwm_roll);
+        g.channel_pitch.set_pwm(pwm_pitch);
+        g.channel_throttle.set_pwm(hal.rcin->read(CH_3));
+        g.channel_rudder.set_pwm(hal.rcin->read(CH_4));
     }
 
-    g.channel_throttle.set_pwm(hal.rcin->read(CH_3));
-    g.channel_rudder.set_pwm(hal.rcin->read(CH_4));
     g.rc_5.set_pwm(hal.rcin->read(CH_5));
     g.rc_6.set_pwm(hal.rcin->read(CH_6));
     g.rc_7.set_pwm(hal.rcin->read(CH_7));

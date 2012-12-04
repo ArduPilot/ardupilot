@@ -233,6 +233,7 @@ setup_flightmodes(uint8_t argc, const Menu::arg *argv)
                 mode != MANUAL &&
                 mode != CIRCLE &&
                 mode != STABILIZE &&
+                mode != TRAINING &&
                 mode != FLY_BY_WIRE_A &&
                 mode != FLY_BY_WIRE_B &&
                 mode != AUTO &&

@@ -330,6 +330,7 @@ static void set_mode(enum FlightMode mode)
     case MANUAL:
     case CIRCLE:
     case STABILIZE:
+    case TRAINING:
     case FLY_BY_WIRE_A:
     case FLY_BY_WIRE_B:
         break;
@@ -570,6 +571,9 @@ print_flight_mode(uint8_t mode)
         break;
     case STABILIZE:
         cliSerial->println_P(PSTR("Stabilize"));
+        break;
+    case TRAINING:
+        cliSerial->println_P(PSTR("Training"));
         break;
     case FLY_BY_WIRE_A:
         cliSerial->println_P(PSTR("FBW_A"));

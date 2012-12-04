@@ -208,6 +208,10 @@ AP_AHRS_HIL   ahrs(&ins, g_gps);
  #error Unrecognised HIL_MODE setting.
 #endif // HIL MODE
 
+// Training mode
+static bool training_manual_roll;  // user has manual roll control
+static bool training_manual_pitch; // user has manual pitch control
+
 ////////////////////////////////////////////////////////////////////////////////
 // GCS selection
 ////////////////////////////////////////////////////////////////////////////////
@@ -1095,6 +1099,37 @@ static void update_current_flight_mode(void)
             calc_throttle();
             break;
 
+        case TRAINING: {
+            training_manual_roll = false;
+            training_manual_pitch = false;
+
+            // if the roll is past the set roll limit, then
+            // we set target roll to the limit
+            if (ahrs.roll_sensor >= g.roll_limit_cd) {
+                nav_roll_cd = g.roll_limit_cd;
+            } else if (ahrs.roll_sensor <= -g.roll_limit_cd) {
+                nav_roll_cd = -g.roll_limit_cd;                
+            } else {
+                training_manual_roll = true;
+                nav_roll_cd = 0;
+            }
+
+            // if the pitch is past the set pitch limits, then
+            // we set target pitch to the limit
+            if (ahrs.pitch_sensor >= g.pitch_limit_max_cd) {
+                nav_pitch_cd = g.pitch_limit_max_cd;
+            } else if (ahrs.pitch_sensor <= g.pitch_limit_min_cd) {
+                nav_pitch_cd = g.pitch_limit_min_cd;
+            } else {
+                training_manual_pitch = true;
+                nav_pitch_cd = 0;
+            }
+            if (inverted_flight) {
+                nav_pitch_cd = -nav_pitch_cd;
+            }
+            break;
+        }
+
         case FLY_BY_WIRE_A: {
             // set nav_roll and nav_pitch using sticks
             nav_roll_cd  = g.channel_roll.norm_input() * g.roll_limit_cd;
@@ -1192,11 +1227,12 @@ static void update_navigation()
         break;
 
     case MANUAL:
+    case STABILIZE:
+    case TRAINING:
     case INITIALISING:
     case FLY_BY_WIRE_A:
     case FLY_BY_WIRE_B:
     case CIRCLE:
-    case STABILIZE:
         // nothing to do
         break;
     }

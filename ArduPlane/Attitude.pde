@@ -54,14 +54,14 @@ static bool stick_mixing_enabled(void)
 }
 
 
-static void stabilize()
+/*
+  this is the main roll stabilization function. It takes the
+  previously set nav_roll calculates roll servo_out to try to
+  stabilize the plane at the given roll
+ */
+static void stabilize_roll(float speed_scaler)
 {
-    float ch1_inf = 1.0;
-    float ch2_inf = 1.0;
-    float ch4_inf = 1.0;
-    float speed_scaler = get_speed_scaler();
-
-    if(crash_timer > 0) {
+    if (crash_timer > 0) {
         nav_roll_cd = 0;
     }
 
@@ -78,50 +78,80 @@ static void stabilize()
 #if APM_CONTROL == DISABLED
 	// Calculate dersired servo output for the roll
 	// ---------------------------------------------
-	g.channel_roll.servo_out = g.pidServoRoll.get_pid((nav_roll_cd - ahrs.roll_sensor), speed_scaler);
-	int32_t tempcalc = nav_pitch_cd +
-	        fabs(ahrs.roll_sensor * g.kff_pitch_compensation) +
-	        (g.channel_throttle.servo_out * g.kff_throttle_to_pitch) -
-	        (ahrs.pitch_sensor - g.pitch_trim_cd);
+    g.channel_roll.servo_out = g.pidServoRoll.get_pid((nav_roll_cd - ahrs.roll_sensor), speed_scaler);
+#else // APM_CONTROL == ENABLED
+    // calculate roll and pitch control using new APM_Control library
+    g.channel_roll.servo_out = g.rollController.get_servo_out(nav_roll_cd, speed_scaler, control_mode == STABILIZE);
+#endif
+}
+
+/*
+  this is the main pitch stabilization function. It takes the
+  previously set nav_pitch and calculates servo_out values to try to
+  stabilize the plane at the given attitude.
+ */
+static void stabilize_pitch(float speed_scaler)
+{
+#if APM_CONTROL == DISABLED
+    int32_t tempcalc = nav_pitch_cd +
+        fabs(ahrs.roll_sensor * g.kff_pitch_compensation) +
+        (g.channel_throttle.servo_out * g.kff_throttle_to_pitch) -
+        (ahrs.pitch_sensor - g.pitch_trim_cd);
     if (inverted_flight) {
         // when flying upside down the elevator control is inverted
         tempcalc = -tempcalc;
     }
-	g.channel_pitch.servo_out = g.pidServoPitch.get_pid(tempcalc, speed_scaler);
+    g.channel_pitch.servo_out = g.pidServoPitch.get_pid(tempcalc, speed_scaler);
 #else // APM_CONTROL == ENABLED
-    // calculate roll and pitch control using new APM_Control library
-	g.channel_roll.servo_out = g.rollController.get_servo_out(nav_roll_cd, speed_scaler, control_mode == STABILIZE);
-	g.channel_pitch.servo_out = g.pitchController.get_servo_out(nav_pitch_cd, speed_scaler, control_mode == STABILIZE);    
+    g.channel_pitch.servo_out = g.pitchController.get_servo_out(nav_pitch_cd, speed_scaler, control_mode == STABILIZE);    
 #endif
+}
 
-    // Mix Stick input to allow users to override control surfaces
-    // -----------------------------------------------------------
+/*
+  this gives the user control of the aircraft in stabilization modes
+ */
+static void stabilize_stick_mixing()
+{
+    if (!stick_mixing_enabled() ||
+        control_mode == FLY_BY_WIRE_A ||
+        control_mode == FLY_BY_WIRE_B ||
+        control_mode == TRAINING) {
+        return;
+    }
+    // do stick mixing on aileron/elevator
+    float ch1_inf;
+    float ch2_inf;
+        
+    ch1_inf = (float)g.channel_roll.radio_in - (float)g.channel_roll.radio_trim;
+    ch1_inf = fabs(ch1_inf);
+    ch1_inf = min(ch1_inf, 400.0);
+    ch1_inf = ((400.0 - ch1_inf) /400.0);
+        
+    ch2_inf = (float)g.channel_pitch.radio_in - g.channel_pitch.radio_trim;
+    ch2_inf = fabs(ch2_inf);
+    ch2_inf = min(ch2_inf, 400.0);
+    ch2_inf = ((400.0 - ch2_inf) /400.0);
+        
+    // scale the sensor input based on the stick input
+    // -----------------------------------------------
+    g.channel_roll.servo_out  *= ch1_inf;
+    g.channel_pitch.servo_out *= ch2_inf;
+            
+    // Mix in stick inputs
+    // -------------------
+    g.channel_roll.servo_out  +=     g.channel_roll.pwm_to_angle();
+    g.channel_pitch.servo_out +=    g.channel_pitch.pwm_to_angle();
+}
+
+
+/*
+  stabilize the yaw axis
+ */
+static void stabilize_yaw(float speed_scaler)
+{
+    float ch4_inf = 1.0;
+
     if (stick_mixing_enabled()) {
-        if (control_mode != FLY_BY_WIRE_A && 
-            control_mode != FLY_BY_WIRE_B) {
-            // do stick mixing on aileron/elevator if not in a fly by
-            // wire mode
-            ch1_inf = (float)g.channel_roll.radio_in - (float)g.channel_roll.radio_trim;
-            ch1_inf = fabs(ch1_inf);
-            ch1_inf = min(ch1_inf, 400.0);
-            ch1_inf = ((400.0 - ch1_inf) /400.0);
-
-            ch2_inf = (float)g.channel_pitch.radio_in - g.channel_pitch.radio_trim;
-            ch2_inf = fabs(ch2_inf);
-            ch2_inf = min(ch2_inf, 400.0);
-            ch2_inf = ((400.0 - ch2_inf) /400.0);
-            
-            // scale the sensor input based on the stick input
-            // -----------------------------------------------
-            g.channel_roll.servo_out *= ch1_inf;
-            g.channel_pitch.servo_out *= ch2_inf;
-            
-            // Mix in stick inputs
-            // -------------------
-            g.channel_roll.servo_out +=     g.channel_roll.pwm_to_angle();
-            g.channel_pitch.servo_out +=    g.channel_pitch.pwm_to_angle();
-        }
-
         // stick mixing performed for rudder for all cases including FBW
         // important for steering on the ground during landing
         // -----------------------------------------------
@@ -131,18 +161,63 @@ static void stabilize()
         ch4_inf = ((400.0 - ch4_inf) /400.0);
     }
 
-	// Apply output to Rudder
-	// ----------------------
-	calc_nav_yaw(speed_scaler, ch4_inf);
-	g.channel_rudder.servo_out *= ch4_inf;
-	g.channel_rudder.servo_out += g.channel_rudder.pwm_to_angle();
-
-	// Call slew rate limiter if used
-	// ------------------------------
-	//#if(ROLL_SLEW_LIMIT != 0)
-	//	g.channel_roll.servo_out = roll_slew_limit(g.channel_roll.servo_out);
-	//#endif
+    // Apply output to Rudder
+    calc_nav_yaw(speed_scaler, ch4_inf);
+    g.channel_rudder.servo_out *= ch4_inf;
+    g.channel_rudder.servo_out += g.channel_rudder.pwm_to_angle();
 }
+
+
+/*
+  a special stabilization function for training mode
+ */
+static void stabilize_training(float speed_scaler)
+{
+    if (training_manual_roll) {
+        g.channel_roll.servo_out = g.channel_roll.control_in;
+    } else {
+        // calculate what is needed to hold
+        stabilize_roll(speed_scaler);
+        if ((nav_roll_cd > 0 && g.channel_roll.control_in < g.channel_roll.servo_out) ||
+            (nav_roll_cd < 0 && g.channel_roll.control_in > g.channel_roll.servo_out)) {
+            // allow user to get out of the roll
+            g.channel_roll.servo_out = g.channel_roll.control_in;            
+        }
+    }
+
+    if (training_manual_pitch) {
+        g.channel_pitch.servo_out = g.channel_pitch.control_in;
+    } else {
+        stabilize_pitch(speed_scaler);
+        if ((nav_pitch_cd > 0 && g.channel_pitch.control_in < g.channel_pitch.servo_out) ||
+            (nav_pitch_cd < 0 && g.channel_pitch.control_in > g.channel_pitch.servo_out)) {
+            // allow user to get back to level
+            g.channel_pitch.servo_out = g.channel_pitch.control_in;            
+        }
+    }
+
+    stabilize_stick_mixing();
+    stabilize_yaw(speed_scaler);
+}
+
+
+/*
+  main stabilization function for all 3 axes
+ */
+static void stabilize()
+{
+    float speed_scaler = get_speed_scaler();
+
+    if (control_mode == TRAINING) {
+        stabilize_training(speed_scaler);
+    } else {
+        stabilize_roll(speed_scaler);
+        stabilize_pitch(speed_scaler);
+        stabilize_stick_mixing();
+        stabilize_yaw(speed_scaler);
+    }
+}
+
 
 static void crash_checker()
 {
@@ -192,8 +267,8 @@ static void calc_throttle()
 * Calculate desired roll/pitch/yaw angles (in medium freq loop)
 *****************************************/
 
-//  Yaw is separated into a function for future implementation of heading hold on rolling take-off
-// ----------------------------------------------------------------------------------------
+//  Yaw is separated into a function for heading hold on rolling take-off
+// ----------------------------------------------------------------------
 static void calc_nav_yaw(float speed_scaler, float ch4_inf)
 {
     if (hold_course != -1) {
@@ -349,10 +424,9 @@ static bool suppress_throttle(void)
 *****************************************/
 static void set_servos(void)
 {
-    int16_t flapSpeedSource = 0;
     int16_t last_throttle = g.channel_throttle.radio_out;
 
-    if(control_mode == MANUAL) {
+    if (control_mode == MANUAL) {
         // do a direct pass through of radio values
         if (g.mix_mode == 0) {
             g.channel_roll.radio_out                = g.channel_roll.radio_in;
@@ -462,7 +536,9 @@ static void set_servos(void)
                 g.channel_throttle.calc_pwm();                
             }
         } else if (g.throttle_passthru_stabilize && 
-                   (control_mode == STABILIZE || control_mode == FLY_BY_WIRE_A)) {
+                   (control_mode == STABILIZE || 
+                    control_mode == TRAINING ||
+                    control_mode == FLY_BY_WIRE_A)) {
             // manual pass through of throttle while in FBWA or
             // STABILIZE mode with THR_PASS_STAB set
             g.channel_throttle.radio_out = g.channel_throttle.radio_in;
@@ -477,6 +553,8 @@ static void set_servos(void)
     if(control_mode < FLY_BY_WIRE_B) {
         RC_Channel_aux::copy_radio_in_out(RC_Channel_aux::k_flap_auto);
     } else if (control_mode >= FLY_BY_WIRE_B) {
+        int16_t flapSpeedSource = 0;
+
         // FIXME: use target_airspeed in both FBW_B and g.airspeed_enabled cases - Doug?
         if (control_mode == FLY_BY_WIRE_B) {
             flapSpeedSource = target_airspeed_cm * 0.01;

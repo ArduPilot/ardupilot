@@ -38,6 +38,7 @@ static NOINLINE void send_heartbeat(mavlink_channel_t chan)
     // ArduPlane documentation
     switch (control_mode) {
     case MANUAL:
+    case TRAINING:
         base_mode = MAV_MODE_FLAG_MANUAL_INPUT_ENABLED;
         break;
     case STABILIZE:
@@ -59,6 +60,10 @@ static NOINLINE void send_heartbeat(mavlink_channel_t chan)
     case INITIALISING:
         system_status = MAV_STATE_CALIBRATING;
         break;
+    }
+
+    if (!training_manual_pitch || !training_manual_roll) {
+        base_mode |= MAV_MODE_FLAG_STABILIZE_ENABLED;        
     }
 
     if (control_mode != MANUAL && control_mode != INITIALISING) {
@@ -160,6 +165,13 @@ static NOINLINE void send_extended_status1(mavlink_channel_t chan, uint16_t pack
         control_sensors_enabled |= (1<<10); // 3D angular rate control
         control_sensors_enabled |= (1<<11); // attitude stabilisation
         control_sensors_enabled |= (1<<15); // motor control
+        break;
+
+    case TRAINING:
+        if (!training_manual_roll || !training_manual_pitch) {
+            control_sensors_enabled |= (1<<10); // 3D angular rate control
+            control_sensors_enabled |= (1<<11); // attitude stabilisation        
+        }
         break;
 
     case AUTO:
@@ -1156,6 +1168,7 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
         case MANUAL:
         case CIRCLE:
         case STABILIZE:
+        case TRAINING:
         case FLY_BY_WIRE_A:
         case FLY_BY_WIRE_B:
         case AUTO:

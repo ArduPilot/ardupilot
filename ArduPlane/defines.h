@@ -60,16 +60,17 @@
 #define HIL_MODE_SENSORS                        2
 
 enum FlightMode {
-    MANUAL = 0,
-    CIRCLE = 1,
-    STABILIZE = 2,
+    MANUAL        = 0,
+    CIRCLE        = 1,
+    STABILIZE     = 2,
+    TRAINING      = 3,
     FLY_BY_WIRE_A = 5,
     FLY_BY_WIRE_B = 6,
-    AUTO = 10,
-    RTL = 11,
-    LOITER = 12,
-    GUIDED = 15,
-    INITIALISING = 16
+    AUTO          = 10,
+    RTL           = 11,
+    LOITER        = 12,
+    GUIDED        = 15,
+    INITIALISING  = 16
 };
 
 
