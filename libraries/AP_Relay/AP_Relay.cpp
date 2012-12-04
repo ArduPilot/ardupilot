@@ -14,6 +14,10 @@ extern const AP_HAL::HAL& hal;
 
 #define RELAY_PIN 47
 
+void AP_Relay::init() {
+    hal.gpio->pinMode(RELAY_PIN, GPIO_OUTPUT);
+}
+
 void AP_Relay::on() {
     hal.gpio->write(RELAY_PIN, 1);
 }
@@ -32,11 +36,9 @@ void AP_Relay::toggle() {
         on();
 }
 
-
 void AP_Relay::set(bool status){
     hal.gpio->write(RELAY_PIN, status);
 }
-
 
 bool AP_Relay::get() {
     return hal.gpio->read(RELAY_PIN); 

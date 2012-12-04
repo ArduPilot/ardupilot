@@ -17,6 +17,9 @@
 /// @brief	Class to manage the APM relay
 class AP_Relay {
 public:
+    // setup the relay pin
+    void        init();
+
     // activate the relay
     void        on();
 
