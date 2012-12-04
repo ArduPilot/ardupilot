@@ -82,7 +82,7 @@ const AP_Param::Info var_info[] PROGMEM = {
 	GSCALAR(throttle_max,           "THR_MAX",          THROTTLE_MAX),
 
     // @Param: THR_SLEWRATE
-    // @DisplayName: Throttlw slew rate
+    // @DisplayName: Throttle slew rate
     // @Description: maximum percentage change in throttle per second. A setting of 10 means to not change the throttle by more than 10% of the full throttle range in one second
     // @Units: Percent
     // @Range: 0 100
