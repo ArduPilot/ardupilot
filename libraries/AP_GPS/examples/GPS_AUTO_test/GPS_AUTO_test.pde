@@ -16,7 +16,7 @@
 const AP_HAL::HAL& hal = AP_HAL_AVR_APM2;
 
 GPS         *gps;
-AP_GPS_Auto GPS(hal.uart1, &gps);
+AP_GPS_Auto GPS(hal.uartB, &gps);
 
 #define T6 1000000
 #define T7 10000000
@@ -43,7 +43,7 @@ void print_latlon(AP_HAL::BetterStream *s, int32_t lat_or_lon)
 
 void setup()
 {
-    hal.uart1->begin(38400);
+    hal.uartB->begin(38400);
 
     hal.console->println("GPS AUTO library test");
     gps = &GPS;

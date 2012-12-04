@@ -17,13 +17,13 @@
 
 const AP_HAL::HAL& hal = AP_HAL_AVR_APM2;
 
-AP_GPS_UBLOX gps(hal.uart1);
+AP_GPS_UBLOX gps(hal.uartB);
 #define T6 1000000
 #define T7 10000000
 
 void setup()
 {
-    hal.uart1->begin(38400);
+    hal.uartB->begin(38400);
     gps.print_errors = true;
 
     hal.console->println("GPS UBLOX library test");
