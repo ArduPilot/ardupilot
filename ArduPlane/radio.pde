@@ -2,10 +2,10 @@
 
 //Function that will read the radio data, limit servos and trigger a failsafe
 // ----------------------------------------------------------------------------
-static byte failsafeCounter = 0;                // we wait a second to take over the throttle and send the plane circling
+static uint8_t failsafeCounter = 0;                // we wait a second to take over the throttle and send the plane circling
 
 
-extern RC_Channel* rc_ch[NUM_CHANNELS];
+extern RC_Channel* rc_ch[8];
 
 static void init_rc_in()
 {
@@ -45,36 +45,34 @@ static void init_rc_in()
 
 static void init_rc_out()
 {
-    APM_RC.Init( &isr_registry );               // APM Radio initialization
-
-    APM_RC.enable_out(CH_1);
-    APM_RC.enable_out(CH_2);
-    APM_RC.enable_out(CH_3);
-    APM_RC.enable_out(CH_4);
+    hal.rcout->enable_ch(CH_1);
+    hal.rcout->enable_ch(CH_2);
+    hal.rcout->enable_ch(CH_3);
+    hal.rcout->enable_ch(CH_4);
     enable_aux_servos();
 
     // Initialization of servo outputs
-    APM_RC.OutputCh(CH_1,   g.channel_roll.radio_trim);
-    APM_RC.OutputCh(CH_2,   g.channel_pitch.radio_trim);
-    APM_RC.OutputCh(CH_3,   g.channel_throttle.radio_min);
-    APM_RC.OutputCh(CH_4,   g.channel_rudder.radio_trim);
+    hal.rcout->write(CH_1,   g.channel_roll.radio_trim);
+    hal.rcout->write(CH_2,   g.channel_pitch.radio_trim);
+    hal.rcout->write(CH_3,   g.channel_throttle.radio_min);
+    hal.rcout->write(CH_4,   g.channel_rudder.radio_trim);
 
-    APM_RC.OutputCh(CH_5,   g.rc_5.radio_trim);
-    APM_RC.OutputCh(CH_6,   g.rc_6.radio_trim);
-    APM_RC.OutputCh(CH_7,   g.rc_7.radio_trim);
-    APM_RC.OutputCh(CH_8,   g.rc_8.radio_trim);
+    hal.rcout->write(CH_5,   g.rc_5.radio_trim);
+    hal.rcout->write(CH_6,   g.rc_6.radio_trim);
+    hal.rcout->write(CH_7,   g.rc_7.radio_trim);
+    hal.rcout->write(CH_8,   g.rc_8.radio_trim);
 
 #if CONFIG_APM_HARDWARE != APM_HARDWARE_APM1
-    APM_RC.OutputCh(CH_9,   g.rc_9.radio_trim);
-    APM_RC.OutputCh(CH_10,  g.rc_10.radio_trim);
-    APM_RC.OutputCh(CH_11,  g.rc_11.radio_trim);
+    hal.rcout->write(CH_9,   g.rc_9.radio_trim);
+    hal.rcout->write(CH_10,  g.rc_10.radio_trim);
+    hal.rcout->write(CH_11,  g.rc_11.radio_trim);
 #endif
 }
 
 static void read_radio()
 {
-    ch1_temp = APM_RC.InputCh(CH_ROLL);
-    ch2_temp = APM_RC.InputCh(CH_PITCH);
+    ch1_temp = hal.rcin->read(CH_ROLL);
+    ch2_temp = hal.rcin->read(CH_PITCH);
 
     if(g.mix_mode == 0) {
         g.channel_roll.set_pwm(ch1_temp);
@@ -84,12 +82,12 @@ static void read_radio()
         g.channel_pitch.set_pwm((BOOL_TO_SIGN(g.reverse_ch2_elevon) * int(ch2_temp - elevon2_trim) + BOOL_TO_SIGN(g.reverse_ch1_elevon) * int(ch1_temp - elevon1_trim)) / 2 + 1500);
     }
 
-    g.channel_throttle.set_pwm(APM_RC.InputCh(CH_3));
-    g.channel_rudder.set_pwm(APM_RC.InputCh(CH_4));
-    g.rc_5.set_pwm(APM_RC.InputCh(CH_5));
-    g.rc_6.set_pwm(APM_RC.InputCh(CH_6));
-    g.rc_7.set_pwm(APM_RC.InputCh(CH_7));
-    g.rc_8.set_pwm(APM_RC.InputCh(CH_8));
+    g.channel_throttle.set_pwm(hal.rcin->read(CH_3));
+    g.channel_rudder.set_pwm(hal.rcin->read(CH_4));
+    g.rc_5.set_pwm(hal.rcin->read(CH_5));
+    g.rc_6.set_pwm(hal.rcin->read(CH_6));
+    g.rc_7.set_pwm(hal.rcin->read(CH_7));
+    g.rc_8.set_pwm(hal.rcin->read(CH_8));
 
     control_failsafe(g.channel_throttle.radio_in);
 

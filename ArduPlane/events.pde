@@ -36,7 +36,8 @@ static void failsafe_long_on_event(int16_t fstype)
 {
     // This is how to handle a long loss of control signal failsafe.
     gcs_send_text_P(SEVERITY_LOW, PSTR("Failsafe - Long event on, "));
-    APM_RC.clearOverride();             //  If the GCS is locked up we allow control to revert to RC
+    //  If the GCS is locked up we allow control to revert to RC
+    hal.rcin->clear_overrides();
     failsafe = fstype;
     switch(control_mode)
     {
@@ -104,11 +105,11 @@ static void update_events(void)
 
         switch (event_state.type) {
         case EVENT_TYPE_SERVO:
-            APM_RC.enable_out(event_state.rc_channel);
+            hal.rcout->enable_ch(event_state.rc_channel);
             if (event_state.repeat & 1) {
-                APM_RC.OutputCh(event_state.rc_channel, event_state.undo_value);                 
+                hal.rcout->write(event_state.rc_channel, event_state.undo_value);                 
             } else {
-                APM_RC.OutputCh(event_state.rc_channel, event_state.servo_value);                 
+                hal.rcout->write(event_state.rc_channel, event_state.servo_value);                 
             }
             break;
 

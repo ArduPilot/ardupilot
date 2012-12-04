@@ -17,32 +17,21 @@
 // Header includes
 ////////////////////////////////////////////////////////////////////////////////
 
-// AVR runtime
-#include <avr/io.h>
-#include <avr/eeprom.h>
-#include <avr/pgmspace.h>
-#include <avr/wdt.h>
 #include <math.h>
+#include <stdarg.h>
+#include <stdio.h>
 
-// Libraries
-#include <FastSerial.h>
 #include <AP_Common.h>
 #include <AP_Progmem.h>
+#include <AP_HAL.h>
 #include <AP_Menu.h>
 #include <AP_Param.h>
-#include <Arduino_Mega_ISR_Registry.h>
-#include <APM_RC.h>         // ArduPilot Mega RC Library
 #include <AP_GPS.h>         // ArduPilot GPS library
-#include <I2C.h>                        // Wayne Truchsess I2C lib
-#include <SPI.h>                        // Arduino SPI lib
-#include <AP_Semaphore.h>   // for removing conflict between optical flow and dataflash on SPI3 bus
-#include <DataFlash.h>      // ArduPilot Mega Flash Memory Library
-#include <AP_ADC.h>         // ArduPilot Mega Analog to Digital Converter Library
-#include <AP_AnalogSource.h> // ArduPilot Mega polymorphic analog getter
-#include <AP_PeriodicProcess.h> // ArduPilot Mega TimerProcess
 #include <AP_Baro.h>        // ArduPilot barometer library
 #include <AP_Compass.h>     // ArduPilot Mega Magnetometer Library
 #include <AP_Math.h>        // ArduPilot Mega Vector/Matrix math Library
+#include <AP_ADC.h>         // ArduPilot Mega Analog to Digital Converter Library
+#include <AP_ADC_AnalogSource.h>
 #include <AP_InertialSensor.h> // Inertial Sensor Library
 #include <AP_AHRS.h>         // ArduPilot Mega DCM Library
 #include <PID.h>            // PID library
@@ -50,61 +39,58 @@
 #include <AP_RangeFinder.h>     // Range finder library
 #include <Filter.h>                     // Filter library
 #include <AP_Buffer.h>      // APM FIFO Buffer
-#include <ModeFilter.h>         // Mode Filter from Filter library
-#include <LowPassFilter.h>      // LowPassFilter class (inherits from Filter class)
 #include <AP_Relay.h>       // APM relay
 #include <AP_Camera.h>          // Photo or video camera
 #include <AP_Airspeed.h>
 #include <memcheck.h>
+
+#include <APM_OBC.h>
+#include <APM_Control.h>
+#include <GCS_MAVLink.h>    // MAVLink GCS definitions
+#include <AP_Mount.h>           // Camera/Antenna mount
+#include <AP_Declination.h> // ArduPilot Mega Declination Helper Library
+
 
 // optional new controller library
 #if APM_CONTROL == ENABLED
 #include <APM_Control.h>
 #endif
 
+// Pre-AP_HAL compatibility
+#include "compat.h"
+
 // Configuration
 #include "config.h"
-
-#include <GCS_MAVLink.h>    // MAVLink GCS definitions
-
-#include <AP_Mount.h>           // Camera/Antenna mount
 
 // Local modules
 #include "defines.h"
 #include "Parameters.h"
 #include "GCS.h"
 
-#include <AP_Declination.h> // ArduPilot Mega Declination Helper Library
+#include <AP_HAL_AVR.h>
 
-////////////////////////////////////////////////////////////////////////////////
-// Serial ports
-////////////////////////////////////////////////////////////////////////////////
-//
-// Note that FastSerial port buffers are allocated at ::begin time,
-// so there is not much of a penalty to defining ports that we don't
-// use.
-//
-FastSerialPort0(Serial);        // FTDI/console
-FastSerialPort1(Serial1);       // GPS port
-#if TELEMETRY_UART2 == ENABLED
-// solder bridge set to enable UART2 instead of USB MUX
-FastSerialPort2(Serial3);
+AP_HAL::BetterStream* cliSerial;
+
+#if CONFIG_APM_HARDWARE == APM_HARDWARE_APM2
+const AP_HAL::HAL& hal = AP_HAL_AVR_APM2;
 #else
-FastSerialPort3(Serial3);        // Telemetry port for APM1
+const AP_HAL::HAL& hal = AP_HAL_AVR_APM1;
 #endif
 
-// port to use for command line interface
-static FastSerial *cliSerial = &Serial;
 
+////////////////////////////////////////////////////////////////////////////////
+// AP_Param Loader
+////////////////////////////////////////////////////////////////////////////////
 // this sets up the parameter table, and sets the default values. This
 // must be the first AP_Param variable declared to ensure its
 // constructor runs before the constructors of the other AP_Param
 // variables
 AP_Param param_loader(var_info, WP_START_BYTE);
 
-// Outback Challenge failsafe support
+////////////////////////////////////////////////////////////////////////////////
+// Outback Challenge Failsafe Support
+////////////////////////////////////////////////////////////////////////////////
 #if OBC_FAILSAFE == ENABLED
- #include <APM_OBC.h>
 APM_OBC obc;
 #endif
 
@@ -113,32 +99,6 @@ APM_OBC obc;
 ////////////////////////////////////////////////////////////////////////////////
 static const AP_InertialSensor::Sample_rate ins_sample_rate = AP_InertialSensor::RATE_50HZ;
 
-
-////////////////////////////////////////////////////////////////////////////////
-// ISR Registry
-////////////////////////////////////////////////////////////////////////////////
-Arduino_Mega_ISR_Registry isr_registry;
-
-
-////////////////////////////////////////////////////////////////////////////////
-// APM_RC_Class Instance
-////////////////////////////////////////////////////////////////////////////////
-#if CONFIG_APM_HARDWARE == APM_HARDWARE_APM2
-APM_RC_APM2 APM_RC;
-#else
-APM_RC_APM1 APM_RC;
-#endif
-
-////////////////////////////////////////////////////////////////////////////////
-// Dataflash
-////////////////////////////////////////////////////////////////////////////////
-#if CONFIG_APM_HARDWARE == APM_HARDWARE_APM2
-DataFlash_APM2 DataFlash;
-#else
-DataFlash_APM1 DataFlash;
-#endif
-
-
 ////////////////////////////////////////////////////////////////////////////////
 // Parameters
 ////////////////////////////////////////////////////////////////////////////////
@@ -146,7 +106,6 @@ DataFlash_APM1 DataFlash;
 // Global parameters are all contained within the 'g' class.
 //
 static Parameters g;
-
 
 ////////////////////////////////////////////////////////////////////////////////
 // prototypes
@@ -201,22 +160,22 @@ static AP_Compass_HMC5843 compass;
 
 // real GPS selection
  #if   GPS_PROTOCOL == GPS_PROTOCOL_AUTO
-AP_GPS_Auto     g_gps_driver(&Serial1, &g_gps);
+AP_GPS_Auto     g_gps_driver(hal.uartB, &g_gps);
 
  #elif GPS_PROTOCOL == GPS_PROTOCOL_NMEA
-AP_GPS_NMEA     g_gps_driver(&Serial1);
+AP_GPS_NMEA     g_gps_driver(hal.uartB);
 
  #elif GPS_PROTOCOL == GPS_PROTOCOL_SIRF
-AP_GPS_SIRF     g_gps_driver(&Serial1);
+AP_GPS_SIRF     g_gps_driver(hal.uartB);
 
  #elif GPS_PROTOCOL == GPS_PROTOCOL_UBLOX
-AP_GPS_UBLOX    g_gps_driver(&Serial1);
+AP_GPS_UBLOX    g_gps_driver(hal.uartB);
 
  #elif GPS_PROTOCOL == GPS_PROTOCOL_MTK
-AP_GPS_MTK      g_gps_driver(&Serial1);
+AP_GPS_MTK      g_gps_driver(hal.uartB);
 
  #elif GPS_PROTOCOL == GPS_PROTOCOL_MTK16
-AP_GPS_MTK16    g_gps_driver(&Serial1);
+AP_GPS_MTK16    g_gps_driver(hal.uartB);
 
  #elif GPS_PROTOCOL == GPS_PROTOCOL_NONE
 AP_GPS_None     g_gps_driver(NULL);
@@ -252,32 +211,30 @@ AP_AHRS_HIL   ahrs(&ins, g_gps);
  #error Unrecognised HIL_MODE setting.
 #endif // HIL MODE
 
-// we always have a timer scheduler
-AP_TimerProcess timer_scheduler;
-
-
 ////////////////////////////////////////////////////////////////////////////////
 // GCS selection
 ////////////////////////////////////////////////////////////////////////////////
-//
 GCS_MAVLINK gcs0;
 GCS_MAVLINK gcs3;
 
 ////////////////////////////////////////////////////////////////////////////////
-// PITOT selection
+// Analog Inputs
 ////////////////////////////////////////////////////////////////////////////////
-//
 
-#if CONFIG_PITOT_SOURCE == PITOT_SOURCE_ADC
-AP_AnalogSource_ADC pitot_analog_source( &adc,
-                                         CONFIG_PITOT_SOURCE_ADC_CHANNEL, 1.0);
-#elif CONFIG_PITOT_SOURCE == PITOT_SOURCE_ANALOG_PIN
-AP_AnalogSource_Arduino pitot_analog_source(CONFIG_PITOT_SOURCE_ANALOG_PIN, 4.0);
-#endif
+AP_HAL::AnalogSource *pitot_analog_source;
 
 // a pin for reading the receiver RSSI voltage. The scaling by 0.25 
 // is to take the 0 to 1024 range down to an 8 bit range for MAVLink
-AP_AnalogSource_Arduino RSSI_pin(-1, 0.25);
+AP_HAL::AnalogSource *rssi_analog_source;
+
+AP_HAL::AnalogSource *vcc_pin;
+
+AP_HAL::AnalogSource * batt_volt_pin;
+AP_HAL::AnalogSource * batt_curr_pin;
+
+////////////////////////////////////////////////////////////////////////////////
+// Relay
+////////////////////////////////////////////////////////////////////////////////
 
 AP_Relay relay;
 
@@ -314,7 +271,7 @@ static bool usb_connected;
 enum FlightMode control_mode  = INITIALISING;
 // Used to maintain the state of the previous control switch position
 // This is set to -1 when we need to re-read the switch
-byte oldSwitchPosition;
+uint8_t oldSwitchPosition;
 // This is used to enable the inverted flight feature
 bool inverted_flight     = false;
 // These are trim values used for elevon control
@@ -341,7 +298,7 @@ static int16_t failsafe;
 static bool ch3_failsafe;
 // A timer used to help recovery from unusual attitudes.  If we enter an unusual attitude
 // while in autonomous flight this variable is used  to hold roll at 0 for a recovery period
-static byte crash_timer;
+static uint8_t crash_timer;
 // A timer used to track how long since we have received the last GCS heartbeat or rc override message
 static uint32_t rc_override_fs_timer = 0;
 
@@ -367,7 +324,7 @@ static const float t7                        = 10000000.0;
 // We use atan2 and other trig techniques to calaculate angles
 // A counter used to count down valid gps fixes to allow the gps estimate to settle
 // before recording our home position (and executing a ground start if we booted with an air start)
-static byte ground_start_count      = 5;
+static uint8_t ground_start_count      = 5;
 // Used to compute a speed estimate from the first valid gps fixes to decide if we are
 // on the ground or in the air.  Used to decide if a ground start is appropriate if we
 // booted with an air start.
@@ -401,12 +358,12 @@ static int32_t hold_course                   = -1;              // deg * 100 dir
 
 // There may be two active commands in Auto mode.
 // This indicates the active navigation command by index number
-static byte nav_command_index;
+static uint8_t nav_command_index;
 // This indicates the active non-navigation command by index number
-static byte non_nav_command_index;
+static uint8_t non_nav_command_index;
 // This is the command type (eg navigate to waypoint) of the active navigation command
-static byte nav_command_ID          = NO_COMMAND;
-static byte non_nav_command_ID      = NO_COMMAND;
+static uint8_t nav_command_ID          = NO_COMMAND;
+static uint8_t non_nav_command_ID      = NO_COMMAND;
 
 ////////////////////////////////////////////////////////////////////////////////
 // Airspeed
@@ -473,7 +430,7 @@ static float current_total1;
 ////////////////////////////////////////////////////////////////////////////////
 // Airspeed Sensors
 ////////////////////////////////////////////////////////////////////////////////
-AP_Airspeed airspeed(&pitot_analog_source);
+AP_Airspeed airspeed;
 
 ////////////////////////////////////////////////////////////////////////////////
 // Altitude Sensor variables
@@ -645,16 +602,16 @@ static uint16_t mainLoop_count;
 static uint32_t medium_loopTimer_ms;
 
 // Counters for branching from main control loop to slower loops
-static byte medium_loopCounter;
+static uint8_t medium_loopCounter;
 // Number of milliseconds used in last medium loop cycle
 static uint8_t delta_ms_medium_loop;
 
 // Counters for branching from medium control loop to slower loops
-static byte slow_loopCounter;
+static uint8_t slow_loopCounter;
 // Counter to trigger execution of very low rate processes
-static byte superslow_loopCounter;
+static uint8_t superslow_loopCounter;
 // Counter to trigger execution of 1 Hz processes
-static byte counter_one_herz;
+static uint8_t counter_one_herz;
 
 // % MCU cycles used
 static float load;
@@ -683,6 +640,21 @@ AP_Mount camera_mount2(&current_loc, g_gps, &ahrs, 1);
 ////////////////////////////////////////////////////////////////////////////////
 
 void setup() {
+    cliSerial = hal.console;
+    rssi_analog_source = hal.analogin->channel(ANALOG_INPUT_NONE, 0.25);
+
+#if CONFIG_PITOT_SOURCE == PITOT_SOURCE_ADC
+    pitot_analog_source = new AP_ADC_AnalogSource( &adc,
+                                         CONFIG_PITOT_SOURCE_ADC_CHANNEL, 1.0);
+#elif CONFIG_PITOT_SOURCE == PITOT_SOURCE_ANALOG_PIN
+    pitot_analog_source = hal.analogin->channel(CONFIG_PITOT_SOURCE_ANALOG_PIN, 4.0);
+#endif
+    vcc_pin = hal.analogin->channel(ANALOG_INPUT_BOARD_VCC);
+
+    batt_volt_pin = hal.analogin->channel(g.battery_volt_pin);
+    batt_curr_pin = hal.analogin->channel(g.battery_curr_pin);
+    
+    airspeed.init(pitot_analog_source);
     memcheck_init();
     init_ardupilot();
 }
@@ -1248,3 +1220,5 @@ static void update_alt()
     //if(medium_loopCounter == 0 && slow_loopCounter == 0)
     //	add_altitude_data(millis() / 100, g_gps->altitude / 10);
 }
+
+AP_HAL_MAIN();

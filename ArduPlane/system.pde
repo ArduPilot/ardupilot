@@ -49,10 +49,10 @@ static int8_t reboot_board(uint8_t argc, const Menu::arg *argv)
 }
 
 // the user wants the CLI. It never exits
-static void run_cli(FastSerial *port)
+static void run_cli(AP_HAL::UARTDriver *port)
 {
     // disable the failsafe code in the CLI
-    timer_scheduler.set_failsafe(NULL);
+    hal.scheduler->register_timer_failsafe(NULL,1);
 
     cliSerial = port;
     Menu::set_port(port);
@@ -90,44 +90,20 @@ static void init_ardupilot()
     // The console port buffers are defined to be sufficiently large to support
     // the MAVLink protocol efficiently
     //
-    Serial.begin(SERIAL0_BAUD, 128, SERIAL_BUFSIZE);
+    hal.uartA->begin(SERIAL0_BAUD, 128, SERIAL_BUFSIZE);
 
     // GPS serial port.
     //
     // standard gps running
-    Serial1.begin(38400, 256, 16);
+    hal.uartB->begin(38400, 256, 16);
 
     cliSerial->printf_P(PSTR("\n\nInit " THISFIRMWARE
                          "\n\nFree RAM: %u\n"),
                     memcheck_available_memory());
 
-    //
-    // Initialize Wire and SPI libraries
-    //
-#ifndef DESKTOP_BUILD
-    I2c.begin();
-    I2c.timeOut(5);
-    // initially set a fast I2c speed, and drop it on first failures
-    I2c.setSpeed(true);
-#endif
-    SPI.begin();
-    SPI.setClockDivider(SPI_CLOCK_DIV16); // 1MHZ SPI rate
-    //
-    // Initialize the ISR registry.
-    //
-    isr_registry.init();
 
     //
-    // Initialize the timer scheduler to use the ISR registry.
-    //
-
-    timer_scheduler.init( &isr_registry );
-
-    // initialise the analog port reader
-    AP_AnalogSource_Arduino::init_timer(&timer_scheduler);
-
-    //
-    // Check the EEPROM format version before loading any parameters from EEPROM.
+    // Check the EEPROM format version before loading any parameters from EEPROM
     //
     load_parameters();
 
@@ -136,46 +112,47 @@ static void init_ardupilot()
     g.num_resets.set_and_save(g.num_resets+1);
 
     // init the GCS
-    gcs0.init(&Serial);
+    gcs0.init(hal.uartA);
+    // Register mavlink_delay_cb, which will run anytime you have
+    // more than 5ms remaining in your call to hal.scheduler->delay
+    hal.scheduler->register_delay_callback(mavlink_delay_cb, 5);
 
 #if USB_MUX_PIN > 0
     if (!usb_connected) {
         // we are not connected via USB, re-init UART0 with right
         // baud rate
-        Serial.begin(map_baudrate(g.serial3_baud, SERIAL3_BAUD));
+        hal.uartA->begin(map_baudrate(g.serial3_baud, SERIAL3_BAUD));
     }
 #else
     // we have a 2nd serial port for telemetry
-    Serial3.begin(map_baudrate(g.serial3_baud, SERIAL3_BAUD), 128, SERIAL_BUFSIZE);
-    gcs3.init(&Serial3);
+    hal.uartC->begin(map_baudrate(g.serial3_baud, SERIAL3_BAUD),
+            128, SERIAL_BUFSIZE);
+    gcs3.init(hal.uartC);
 #endif
 
     mavlink_system.sysid = g.sysid_this_mav;
 
 #if LOGGING_ENABLED == ENABLED
-    DataFlash.Init();           // DataFlash log initialization
-    if (!DataFlash.CardInserted()) {
+    if (!hal.dataflash->media_present()) {
         gcs_send_text_P(SEVERITY_LOW, PSTR("No dataflash card inserted"));
         g.log_bitmask.set(0);
-    } else if (DataFlash.NeedErase()) {
+    } else if (hal.dataflash->need_erase()) {
         gcs_send_text_P(SEVERITY_LOW, PSTR("ERASING LOGS"));
         do_erase_logs();
+        gcs0.reset_cli_timeout();
     }
     if (g.log_bitmask != 0) {
-        DataFlash.start_new_log();
+        hal.dataflash->start_new_log();
     }
 #endif
 
 #if HIL_MODE != HIL_MODE_ATTITUDE
 
  #if CONFIG_ADC == ENABLED
-    adc.Init(&timer_scheduler);      // APM ADC library initialization
+    adc.Init();      // APM ADC library initialization
  #endif
 
-    // initialise the analog port reader
-    AP_AnalogSource_Arduino::init_timer(&timer_scheduler);
-
-    barometer.init(&timer_scheduler);
+    barometer.init();
 
     if (g.compass_enabled==true) {
         compass.set_orientation(MAG_ORIENTATION);                                                       // set compass's orientation on aircraft
@@ -207,9 +184,9 @@ static void init_ardupilot()
     mavlink_system.compid = 1;          //MAV_COMP_ID_IMU;   // We do not check for comp id
     mavlink_system.type = MAV_TYPE_FIXED_WING;
 
-    rc_override_active = APM_RC.setHIL(rc_override);                    // Set initial values for no override
+    // Set initial values for no override
+    rc_override_active = hal.rcin->set_overrides(rc_override, 8);
 
-    RC_Channel::set_apm_rc( &APM_RC ); // Provide reference to RC outputs.
     init_rc_in();               // sets up rc channels from radio
     init_rc_out();              // sets up the timer libs
 
@@ -217,7 +194,7 @@ static void init_ardupilot()
     pinMode(A_LED_PIN, OUTPUT);                         // GPS status LED
     pinMode(B_LED_PIN, OUTPUT);                         // GPS status LED
 #if CONFIG_RELAY == ENABLED
-    DDRL |= B00000100;                                          // Set Port L, pin 2 to output for the relay
+    relay.init();
 #endif
 
 #if FENCE_TRIGGERED_PIN > 0
@@ -229,12 +206,12 @@ static void init_ardupilot()
      *  setup the 'main loop is dead' check. Note that this relies on
      *  the RC library being initialised.
      */
-    timer_scheduler.set_failsafe(failsafe_check);
+    hal.scheduler->register_timer_failsafe(failsafe_check, 1000);
 
     const prog_char_t *msg = PSTR("\nPress ENTER 3 times to start interactive setup\n");
     cliSerial->println_P(msg);
 #if USB_MUX_PIN == 0
-    Serial3.println_P(msg);
+    hal.uartC->println_P(msg);
 #endif
 
     if (ENABLE_AIR_START == 1) {
@@ -247,19 +224,21 @@ static void init_ardupilot()
 #if HIL_MODE != HIL_MODE_ATTITUDE
         ins.init(AP_InertialSensor::WARM_START, 
                  ins_sample_rate,
-                 mavlink_delay, flash_leds, &timer_scheduler);
+                 flash_leds);
 
-        ahrs.init(&timer_scheduler);
+        ahrs.init();
         ahrs.set_fly_forward(true);
 #endif
 
         // This delay is important for the APM_RC library to work.
         // We need some time for the comm between the 328 and 1280 to be established.
         int old_pulse = 0;
-        while (millis()<=1000 && (abs(old_pulse - APM_RC.InputCh(g.flight_mode_channel)) > 5 ||
-                                  APM_RC.InputCh(g.flight_mode_channel) == 1000 ||
-                                  APM_RC.InputCh(g.flight_mode_channel) == 1200)) {
-            old_pulse = APM_RC.InputCh(g.flight_mode_channel);
+        while (millis()<=1000 
+            && (abs(old_pulse - hal.rcin->read(g.flight_mode_channel)) > 5
+               || hal.rcin->read(g.flight_mode_channel) == 1000
+               || hal.rcin->read(g.flight_mode_channel) == 1200))
+        {
+            old_pulse = hal.rcin->read(g.flight_mode_channel);
             delay(25);
         }
         g_gps->update();
@@ -324,9 +303,9 @@ static void startup_ground(void)
     // we don't want writes to the serial port to cause us to pause
     // mid-flight, so set the serial ports non-blocking once we are
     // ready to fly
-    Serial.set_blocking_writes(false);
+    hal.uartC->set_blocking_writes(false);
     if (gcs3.initialised) {
-        Serial3.set_blocking_writes(false);
+        hal.uartC->set_blocking_writes(false);
     }
 
     gcs_send_text_P(SEVERITY_LOW,PSTR("\n\n Ready to FLY."));
@@ -438,13 +417,13 @@ static void startup_INS_ground(bool force_accel_level)
 
     ins.init(AP_InertialSensor::COLD_START, 
              ins_sample_rate,
-             mavlink_delay, flash_leds, &timer_scheduler);
+             flash_leds);
 #if HIL_MODE == HIL_MODE_DISABLED
     if (force_accel_level || g.manual_level == 0) {
         // when MANUAL_LEVEL is set to 1 we don't do accelerometer
         // levelling on each boot, and instead rely on the user to do
         // it once via the ground station
-        ins.init_accel(mavlink_delay, flash_leds);
+        ins.init_accel(flash_leds);
     }
 #endif
     ahrs.set_fly_forward(true);
@@ -541,9 +520,9 @@ static void check_usb_mux(void)
     // the user has switched to/from the telemetry port
     usb_connected = usb_check;
     if (usb_connected) {
-        Serial.begin(SERIAL0_BAUD);
+        hal.uartA->begin(SERIAL0_BAUD);
     } else {
-        Serial.begin(map_baudrate(g.serial3_baud, SERIAL3_BAUD));
+        hal.uartA->begin(map_baudrate(g.serial3_baud, SERIAL3_BAUD));
     }
 }
 #endif
@@ -564,8 +543,7 @@ void flash_leds(bool on)
  */
 uint16_t board_voltage(void)
 {
-    static AP_AnalogSource_Arduino vcc(ANALOG_PIN_VCC);
-    return vcc.read_vcc();
+    return vcc_pin->read_latest();
 }
 
 
@@ -574,20 +552,7 @@ uint16_t board_voltage(void)
  */
 static void reboot_apm(void)
 {
-    cliSerial->printf_P(PSTR("REBOOTING\n"));
-    delay(100); // let serial flush
-    // see http://www.arduino.cc/cgi-bin/yabb2/YaBB.pl?num=1250663814/
-    // for the method
-#if CONFIG_APM_HARDWARE == APM_HARDWARE_APM2
-    // this relies on the bootloader resetting the watchdog, which
-    // APM1 doesn't do
-    cli();
-    wdt_enable(WDTO_15MS);
-#else
-    // this works on APM1
-    void (*fn)(void) = NULL;
-    fn();
-#endif
+    hal.scheduler->reboot();
     while (1);
 }
 
@@ -630,3 +595,5 @@ static void print_comma(void)
 {
     cliSerial->print_P(PSTR(","));
 }
+
+

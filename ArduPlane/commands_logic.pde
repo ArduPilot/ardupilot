@@ -577,8 +577,8 @@ static void do_set_home()
 
 static void do_set_servo()
 {
-    APM_RC.enable_out(next_nonnav_command.p1 - 1);
-    APM_RC.OutputCh(next_nonnav_command.p1 - 1, next_nonnav_command.alt);
+    hal.rcout->enable_ch(next_nonnav_command.p1 - 1);
+    hal.rcout->write(next_nonnav_command.p1 - 1, next_nonnav_command.alt);
 }
 
 static void do_set_relay()
@@ -595,7 +595,7 @@ static void do_set_relay()
 static void do_repeat_servo(uint8_t channel, uint16_t servo_value,
                             int16_t repeat, uint8_t delay_time)
 {
-    extern RC_Channel *rc_ch[NUM_CHANNELS];
+    extern RC_Channel *rc_ch[8];
     channel = channel - 1;
     if (channel < 5 || channel > 8) {
         // not allowed

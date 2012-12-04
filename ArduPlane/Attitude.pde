@@ -358,8 +358,8 @@ static void set_servos(void)
             g.channel_roll.radio_out                = g.channel_roll.radio_in;
             g.channel_pitch.radio_out               = g.channel_pitch.radio_in;
         } else {
-            g.channel_roll.radio_out                = APM_RC.InputCh(CH_ROLL);
-            g.channel_pitch.radio_out               = APM_RC.InputCh(CH_PITCH);
+            g.channel_roll.radio_out                = hal.rcin->read(CH_ROLL);
+            g.channel_pitch.radio_out               = hal.rcin->read(CH_PITCH);
         }
         g.channel_throttle.radio_out    = g.channel_throttle.radio_in;
         g.channel_rudder.radio_out              = g.channel_rudder.radio_in;
@@ -503,10 +503,10 @@ static void set_servos(void)
 #if HIL_MODE == HIL_MODE_DISABLED || HIL_SERVOS
     // send values to the PWM timers for output
     // ----------------------------------------
-    APM_RC.OutputCh(CH_1, g.channel_roll.radio_out);     // send to Servos
-    APM_RC.OutputCh(CH_2, g.channel_pitch.radio_out);     // send to Servos
-    APM_RC.OutputCh(CH_3, g.channel_throttle.radio_out);     // send to Servos
-    APM_RC.OutputCh(CH_4, g.channel_rudder.radio_out);     // send to Servos
+    hal.rcout->write(CH_1, g.channel_roll.radio_out);     // send to Servos
+    hal.rcout->write(CH_2, g.channel_pitch.radio_out);     // send to Servos
+    hal.rcout->write(CH_3, g.channel_throttle.radio_out);     // send to Servos
+    hal.rcout->write(CH_4, g.channel_rudder.radio_out);     // send to Servos
     // Route configurable aux. functions to their respective servos
     g.rc_5.output_ch(CH_5);
     g.rc_6.output_ch(CH_6);
@@ -522,17 +522,17 @@ static void set_servos(void)
 
 static bool demoing_servos;
 
-static void demo_servos(byte i) {
+static void demo_servos(uint8_t i) {
 
     while(i > 0) {
         gcs_send_text_P(SEVERITY_LOW,PSTR("Demo Servos!"));
         demoing_servos = true;
 #if HIL_MODE == HIL_MODE_DISABLED || HIL_SERVOS
-        APM_RC.OutputCh(1, 1400);
+        hal.rcout->write(1, 1400);
         mavlink_delay(400);
-        APM_RC.OutputCh(1, 1600);
+        hal.rcout->write(1, 1600);
         mavlink_delay(200);
-        APM_RC.OutputCh(1, 1500);
+        hal.rcout->write(1, 1500);
 #endif
         demoing_servos = false;
         mavlink_delay(400);

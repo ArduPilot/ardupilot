@@ -22,7 +22,7 @@ static struct geofence_state {
     uint16_t breach_count;
     uint8_t breach_type;
     uint32_t breach_time;
-    byte old_switch_position;
+    uint8_t old_switch_position;
     /* point 0 is the return point */
     Vector2l boundary[MAX_FENCEPOINTS];
 } *geofence_state;
@@ -129,7 +129,7 @@ static bool geofence_enabled(void)
         g.fence_total < 5 ||
         (g.fence_action != FENCE_ACTION_REPORT &&
          (g.fence_channel == 0 ||
-          APM_RC.InputCh(g.fence_channel-1) < FENCE_ENABLE_PWM))) {
+          hal.rcin->read(g.fence_channel-1) < FENCE_ENABLE_PWM))) {
         // geo-fencing is disabled
         if (geofence_state != NULL) {
             // re-arm for when the channel trigger is switched on

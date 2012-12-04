@@ -315,14 +315,14 @@ static void NOINLINE send_radio_in(mavlink_channel_t chan)
         chan,
         millis(),
         0, // port
-        APM_RC.InputCh(CH_1),
-        APM_RC.InputCh(CH_2),
-        APM_RC.InputCh(CH_3),
-        APM_RC.InputCh(CH_4),
-        APM_RC.InputCh(CH_5),
-        APM_RC.InputCh(CH_6),
-        APM_RC.InputCh(CH_7),
-        APM_RC.InputCh(CH_8),
+        hal.rcin->read(CH_1),
+        hal.rcin->read(CH_2),
+        hal.rcin->read(CH_3),
+        hal.rcin->read(CH_4),
+        hal.rcin->read(CH_5),
+        hal.rcin->read(CH_6),
+        hal.rcin->read(CH_7),
+        hal.rcin->read(CH_8),
         receiver_rssi);
 }
 
@@ -333,16 +333,16 @@ static void NOINLINE send_radio_out(mavlink_channel_t chan)
         chan,
         micros(),
         0,     // port
-        APM_RC.OutputCh_current(0),
-        APM_RC.OutputCh_current(1),
-        APM_RC.OutputCh_current(2),
-        APM_RC.OutputCh_current(3),
-        APM_RC.OutputCh_current(4),
-        APM_RC.OutputCh_current(5),
-        APM_RC.OutputCh_current(6),
-        APM_RC.OutputCh_current(7));
+        hal.rcout->read(0),
+        hal.rcout->read(1),
+        hal.rcout->read(2),
+        hal.rcout->read(3),
+        hal.rcout->read(4),
+        hal.rcout->read(5),
+        hal.rcout->read(6),
+        hal.rcout->read(7));
 #else
-    extern RC_Channel* rc_ch[NUM_CHANNELS];
+    extern RC_Channel* rc_ch[8];
     mavlink_msg_servo_output_raw_send(
         chan,
         micros(),
@@ -460,7 +460,7 @@ static void NOINLINE send_hwstatus(mavlink_channel_t chan)
 #ifdef DESKTOP_BUILD
         0);
 #else
-        I2c.lockup_count());
+        hal.i2c->lockup_count());
 #endif
 }
 
@@ -762,10 +762,10 @@ GCS_MAVLINK::GCS_MAVLINK() :
 }
 
 void
-GCS_MAVLINK::init(FastSerial * port)
+GCS_MAVLINK::init(AP_HAL::UARTDriver *port)
 {
     GCS_Class::init(port);
-    if (port == &Serial) {
+    if (port == (AP_HAL::BetterStream*)hal.uartA) {
         mavlink_comm_0_port = port;
         chan = MAVLINK_COMM_0;
     }else{
@@ -773,6 +773,7 @@ GCS_MAVLINK::init(FastSerial * port)
         chan = MAVLINK_COMM_1;
     }
     _queued_parameter = NULL;
+    reset_cli_timeout();
 }
 
 void
@@ -791,7 +792,7 @@ GCS_MAVLINK::update(void)
 #if CLI_ENABLED == ENABLED
         /* allow CLI to be started by hitting enter 3 times, if no
          *  heartbeat packets have been received */
-        if (mavlink_active == 0 && millis() < 20000) {
+        if (mavlink_active == 0 && (millis() - _cli_timeout) < 30000) {
             if (c == '\n' || c == '\r') {
                 crlf_count++;
             } else {
@@ -1117,8 +1118,8 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
             break;
 
         case MAV_CMD_DO_SET_SERVO:
-            APM_RC.enable_out(packet.param1 - 1);
-            APM_RC.OutputCh(packet.param1 - 1, packet.param2);
+            hal.rcout->enable_ch(packet.param1 - 1);
+            hal.rcout->write(packet.param1 - 1, packet.param2);
             result = MAV_RESULT_ACCEPTED;
             break;
 
@@ -1768,7 +1769,9 @@ mission_failed:
         v[5] = packet.chan6_raw;
         v[6] = packet.chan7_raw;
         v[7] = packet.chan8_raw;
-        rc_override_active = APM_RC.setHIL(v);
+
+        hal.rcin->set_overrides(v, 8);
+
         rc_override_fs_timer = millis();
         break;
     }
@@ -1990,48 +1993,40 @@ GCS_MAVLINK::queued_waypoint_send()
     }
 }
 
+void GCS_MAVLINK::reset_cli_timeout() {
+      _cli_timeout = millis();
+}
 /*
  *  a delay() callback that processes MAVLink packets. We set this as the
  *  callback in long running library initialisation routines to allow
  *  MAVLink to process packets while waiting for the initialisation to
  *  complete
  */
-static void mavlink_delay(unsigned long t)
+static void mavlink_delay_cb()
 {
-    uint32_t tstart;
     static uint32_t last_1hz, last_50hz, last_5s;
-
-    if (in_mavlink_delay) {
-        // this should never happen, but let's not tempt fate by
-        // letting the stack grow too much
-        delay(t);
-        return;
-    }
+    if (!gcs0.initialised) return;
 
     in_mavlink_delay = true;
 
-    tstart = millis();
-    do {
-        uint32_t tnow = millis();
-        if (tnow - last_1hz > 1000) {
-            last_1hz = tnow;
-            gcs_send_message(MSG_HEARTBEAT);
-            gcs_send_message(MSG_EXTENDED_STATUS1);
-        }
-        if (tnow - last_50hz > 20) {
-            last_50hz = tnow;
-            gcs_update();
-            gcs_data_stream_send();
-        }
-        if (tnow - last_5s > 5000) {
-            last_5s = tnow;
-            gcs_send_text_P(SEVERITY_LOW, PSTR("Initialising APM..."));
-        }
-        delay(1);
+    uint32_t tnow = millis();
+    if (tnow - last_1hz > 1000) {
+        last_1hz = tnow;
+        gcs_send_message(MSG_HEARTBEAT);
+        gcs_send_message(MSG_EXTENDED_STATUS1);
+    }
+    if (tnow - last_50hz > 20) {
+        last_50hz = tnow;
+        gcs_update();
+        gcs_data_stream_send();
+    }
+    if (tnow - last_5s > 5000) {
+        last_5s = tnow;
+        gcs_send_text_P(SEVERITY_LOW, PSTR("Initialising APM..."));
+    }
 #if USB_MUX_PIN > 0
-        check_usb_mux();
+    check_usb_mux();
 #endif
-    } while (millis() - tstart < t);
 
     in_mavlink_delay = false;
 }
