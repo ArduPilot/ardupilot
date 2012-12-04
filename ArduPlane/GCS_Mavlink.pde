@@ -379,7 +379,6 @@ static void NOINLINE send_vfr_hud(mavlink_channel_t chan)
         barometer.get_climb_rate());
 }
 
-#if HIL_MODE != HIL_MODE_ATTITUDE
 static void NOINLINE send_raw_imu1(mavlink_channel_t chan)
 {
     Vector3f accel = ins.get_accel();
@@ -444,8 +443,6 @@ static void NOINLINE send_ahrs(mavlink_channel_t chan)
         ahrs.get_error_rp(),
         ahrs.get_error_yaw());
 }
-
-#endif // HIL_MODE != HIL_MODE_ATTITUDE
 
 #ifdef DESKTOP_BUILD
 // report simulator state
@@ -587,7 +584,6 @@ static bool mavlink_try_send_message(mavlink_channel_t chan, enum ap_message id,
         send_vfr_hud(chan);
         break;
 
-#if HIL_MODE != HIL_MODE_ATTITUDE
     case MSG_RAW_IMU1:
         CHECK_PAYLOAD_SIZE(RAW_IMU);
         send_raw_imu1(chan);
@@ -602,7 +598,6 @@ static bool mavlink_try_send_message(mavlink_channel_t chan, enum ap_message id,
         CHECK_PAYLOAD_SIZE(SENSOR_OFFSETS);
         send_raw_imu3(chan);
         break;
-#endif // HIL_MODE != HIL_MODE_ATTITUDE
 
     case MSG_CURRENT_WAYPOINT:
         CHECK_PAYLOAD_SIZE(MISSION_CURRENT);
@@ -640,10 +635,8 @@ static bool mavlink_try_send_message(mavlink_channel_t chan, enum ap_message id,
 #endif
 
     case MSG_AHRS:
-#if HIL_MODE != HIL_MODE_ATTITUDE
         CHECK_PAYLOAD_SIZE(AHRS);
         send_ahrs(chan);
-#endif
         break;
 
     case MSG_SIMSTATE:
@@ -1803,7 +1796,6 @@ mission_failed:
                       packet.lat*1.0e-7, packet.lon*1.0e-7, packet.alt*1.0e-3,
                       vel*1.0e-2, cog*1.0e-2, 0, 10);
 
- #if HIL_MODE == HIL_MODE_SENSORS
 
         // rad/sec
         Vector3f gyros;
@@ -1831,9 +1823,9 @@ mission_failed:
 
         barometer.setHIL(Temp, y);
 
- #else
-
-        // set AHRS hil sensor
+ #if HIL_MODE == HIL_MODE_ATTITUDE
+        // set AHRS hil sensor. We don't do this in sensors mode, as
+        // in that case the attitude is computed via DCM
         ahrs.setHil(packet.roll,packet.pitch,packet.yaw,packet.rollspeed,
                     packet.pitchspeed,packet.yawspeed);
 

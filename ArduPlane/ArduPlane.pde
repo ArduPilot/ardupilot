@@ -240,15 +240,11 @@ AP_InertialSensor_Stub ins;
 AP_AHRS_DCM  ahrs(&ins, g_gps);
 
 #elif HIL_MODE == HIL_MODE_ATTITUDE
-AP_InertialSensor_Stub ins;
-AP_AHRS_HIL             ahrs(&ins, g_gps);
-AP_GPS_HIL              g_gps_driver(NULL);
-AP_Compass_HIL compass;          // never used
 AP_Baro_BMP085_HIL barometer;
- #ifdef DESKTOP_BUILD
-  #include <SITL.h>
-SITL sitl;
- #endif
+AP_Compass_HIL compass;
+AP_GPS_HIL              g_gps_driver(NULL);
+AP_InertialSensor_Stub ins;
+AP_AHRS_HIL   ahrs(&ins, g_gps);
 
 #else
  #error Unrecognised HIL_MODE setting.
@@ -718,10 +714,7 @@ void loop()
         if (millis() - perf_mon_timer > 20000) {
             if (mainLoop_count != 0) {
                 if (g.log_bitmask & MASK_LOG_PM)
-#if HIL_MODE != HIL_MODE_ATTITUDE
                     Log_Write_Performance();
-#endif
-
                     resetPerfData();
             }
         }
@@ -769,13 +762,11 @@ static void fast_loop()
     // uses the yaw from the DCM to give more accurate turns
     calc_bearing_error();
 
-# if HIL_MODE == HIL_MODE_DISABLED
     if (g.log_bitmask & MASK_LOG_ATTITUDE_FAST)
         Log_Write_Attitude(ahrs.roll_sensor, ahrs.pitch_sensor, ahrs.yaw_sensor);
 
     if (g.log_bitmask & MASK_LOG_RAW)
         Log_Write_Raw();
-#endif
 
     // inertial navigation
     // ------------------
@@ -886,13 +877,11 @@ static void medium_loop()
     case 3:
         medium_loopCounter++;
 
-#if HIL_MODE != HIL_MODE_ATTITUDE
         if ((g.log_bitmask & MASK_LOG_ATTITUDE_MED) && !(g.log_bitmask & MASK_LOG_ATTITUDE_FAST))
             Log_Write_Attitude(ahrs.roll_sensor, ahrs.pitch_sensor, ahrs.yaw_sensor);
 
         if (g.log_bitmask & MASK_LOG_CTUN)
             Log_Write_Control_Tuning();
-#endif
 
         if (g.log_bitmask & MASK_LOG_NTUN)
             Log_Write_Nav_Tuning();
