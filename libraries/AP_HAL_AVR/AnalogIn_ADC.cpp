@@ -13,7 +13,14 @@ ADCSource::ADCSource(uint8_t pin, float prescale) :
 {}
 
 float ADCSource::read() {
-    return _prescale * read_average();
+    if (_pin == ANALOG_INPUT_BOARD_VCC) {
+        // XXX we really want a version of this which is using the raw voltage
+        // and a different one for the low passed average vcc
+        uint16_t v = (uint16_t) read_average();
+        return 1126400UL / v;
+    } else {
+        return _prescale * read_average();
+    }
 }
 
 void ADCSource::set_pin(uint8_t pin) {
