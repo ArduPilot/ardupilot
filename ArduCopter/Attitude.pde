@@ -266,9 +266,9 @@ void init_rate_controllers()
 {
    // initalise low pass filters on rate controller inputs
    // 1st parameter is time_step, 2nd parameter is time_constant
-   rate_roll_filter.set_time_constant(0.01, 1.0);
-   rate_pitch_filter.set_time_constant(0.01, 1.0);
-   rate_yaw_filter.set_time_constant(0.01, 1.0);
+   rate_roll_filter.set_cutoff_frequency(0.01, 2.0);
+   rate_pitch_filter.set_cutoff_frequency(0.01, 2.0);
+   // rate_yaw_filter.set_cutoff_frequency(0.01, 2.0);
    // other option for initialisation is rate_roll_filter.set_cutoff_frequency(<time_step>,<cutoff_freq>);
 }
 #endif // HELI_FRAME
@@ -297,7 +297,7 @@ run_rate_controllers()
 static int16_t
 get_heli_rate_roll(int32_t target_rate)
 {
-    int32_t p,i,d;                  // used to capture pid values for logging
+    int32_t p,i,d,ff;                // used to capture pid values for logging
 	int32_t current_rate;			// this iteration's rate
     int32_t rate_error;             // simply target_rate - current_rate
     int32_t output;                 // output from pid controller
@@ -309,7 +309,7 @@ get_heli_rate_roll(int32_t target_rate)
     current_rate = rate_roll_filter.apply(current_rate);
 	
     // call pid controller
-    rate_error  = target_rate - (omega.x * DEGX100);
+    rate_error  = target_rate - current_rate;
     p   = g.pid_rate_roll.get_p(rate_error);
 
     if (motors.flybar_mode == 1) {												// Mechanical Flybars get regular integral for rate auto trim
@@ -322,10 +322,11 @@ get_heli_rate_roll(int32_t target_rate)
 		i			= g.pid_rate_roll.get_leaky_i(rate_error, G_Dt, RATE_INTEGRATOR_LEAK_RATE);		// Flybarless Helis get huge I-terms. I-term controls much of the rate
 	}
 	
-	//d = g.pid_rate_roll.kD()*target_rate;
 	d = g.pid_rate_roll.get_d(rate_error, G_Dt);
+	
+	ff = g.heli_roll_ff * target_rate;
 
-    output = p + i + d;
+    output = p + i + d + ff;
 
     // constrain output
     output = constrain(output, -4500, 4500);
@@ -350,7 +351,7 @@ get_heli_rate_roll(int32_t target_rate)
 static int16_t
 get_heli_rate_pitch(int32_t target_rate)
 {
-    int32_t p,i,d;                                                                      // used to capture pid values for logging
+    int32_t p,i,d,ff;                                                                   // used to capture pid values for logging
 	int32_t current_rate;                                                     			// this iteration's rate
     int32_t rate_error;                                                                 // simply target_rate - current_rate
     int32_t output;                                                                     // output from pid controller
@@ -362,7 +363,7 @@ get_heli_rate_pitch(int32_t target_rate)
 	current_rate = rate_pitch_filter.apply(current_rate);
 	
 	// call pid controller
-    rate_error      = target_rate - (omega.y * DEGX100);
+    rate_error      = target_rate - current_rate;
     p               = g.pid_rate_pitch.get_p(rate_error);						// Helicopters get huge feed-forward
 	
 	if (motors.flybar_mode == 1) {												// Mechanical Flybars get regular integral for rate auto trim
@@ -375,10 +376,11 @@ get_heli_rate_pitch(int32_t target_rate)
 		i			= g.pid_rate_pitch.get_leaky_i(rate_error, G_Dt, RATE_INTEGRATOR_LEAK_RATE);	// Flybarless Helis get huge I-terms. I-term controls much of the rate
 	}
 	
-	//d = g.pid_rate_pitch.kD()*target_rate;
 	d = g.pid_rate_pitch.get_d(rate_error, G_Dt);
+	
+	ff = g.heli_pitch_ff*target_rate;
     
-    output = p + i + d;
+    output = p + i + d + ff;
 
     // constrain output
     output = constrain(output, -4500, 4500);
@@ -402,7 +404,7 @@ get_heli_rate_pitch(int32_t target_rate)
 static int16_t
 get_heli_rate_yaw(int32_t target_rate)
 {
-    int32_t p,i,d;                                                                      // used to capture pid values for logging
+    int32_t p,i,d,ff;                                                                   // used to capture pid values for logging
 	int32_t current_rate;                                                               // this iteration's rate
     int32_t rate_error;
     int32_t output;
@@ -422,8 +424,10 @@ get_heli_rate_yaw(int32_t target_rate)
     i = g.pid_rate_yaw.get_i(rate_error, G_Dt);
 
     d = g.pid_rate_yaw.get_d(rate_error, G_Dt);
+	
+	ff = g.heli_yaw_ff*target_rate;
 
-    output  = p+i+d;
+    output  = p + i + d + ff;
     output = constrain(output, -4500, 4500);
 
 #if LOGGING_ENABLED == ENABLED
