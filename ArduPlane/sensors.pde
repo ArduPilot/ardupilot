@@ -6,6 +6,7 @@ static LowPassFilterInt32 altitude_filter;
 
 static void init_barometer(void)
 {
+    gcs_send_text_P(SEVERITY_LOW, PSTR("Calibrating barometer"));    
     barometer.calibrate(mavlink_delay);
 
     // filter at 100ms sampling, with 0.7Hz cutoff frequency

@@ -222,7 +222,6 @@ static void Log_Write_Attitude(int16_t log_roll, int16_t log_pitch, uint16_t log
 }
 
 // Write a performance monitoring packet. Total length : 19 bytes
- #if HIL_MODE != HIL_MODE_ATTITUDE
 static void Log_Write_Performance()
 {
     DataFlash.WriteByte(HEAD_BYTE1);
@@ -243,7 +242,6 @@ static void Log_Write_Performance()
     DataFlash.WriteInt(pmTest1);
     DataFlash.WriteByte(END_BYTE);
 }
- #endif
 
 // Write a command processing packet. Total length : 19 bytes
 //void Log_Write_Cmd(byte num, byte id, byte p1, int32_t alt, int32_t lat, int32_t lng)
@@ -282,7 +280,6 @@ static void Log_Write_Startup(byte type)
 
 
 // Write a control tuning packet. Total length : 22 bytes
- #if HIL_MODE != HIL_MODE_ATTITUDE
 static void Log_Write_Control_Tuning()
 {
     Vector3f accel = ins.get_accel();
@@ -301,7 +298,6 @@ static void Log_Write_Control_Tuning()
     DataFlash.WriteInt((int)(accel.y * 10000));
     DataFlash.WriteByte(END_BYTE);
 }
- #endif
 
 // Write a navigation tuning packet. Total length : 18 bytes
 static void Log_Write_Nav_Tuning()
@@ -350,7 +346,6 @@ static void Log_Write_GPS(      int32_t log_Time, int32_t log_Lattitude, int32_t
 }
 
 // Write an raw accel/gyro data packet. Total length : 28 bytes
- #if HIL_MODE != HIL_MODE_ATTITUDE
 static void Log_Write_Raw()
 {
     Vector3f gyro = ins.get_gyro();
@@ -370,7 +365,6 @@ static void Log_Write_Raw()
 
     DataFlash.WriteByte(END_BYTE);
 }
- #endif
 
 static void Log_Write_Current()
 {
