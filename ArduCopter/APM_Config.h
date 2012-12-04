@@ -133,5 +133,9 @@
   # define RTL_YAW                  	YAW_LOOK_AT_HOME
   # define TILT_COMPENSATION 			5
   # define RATE_INTEGRATOR_LEAK_RATE 	0.02
-  # define RATE_ROLL_D    0
+  # define RATE_ROLL_D    				0
+  # define RATE_PITCH_D       			0
+  # define HELI_PITCH_FF				0
+  # define HELI_ROLL_FF					0
+  # define HELI_YAW_FF					0  
  #endif
