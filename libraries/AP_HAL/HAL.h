@@ -16,10 +16,9 @@
 
 class AP_HAL::HAL {
 public:
-    HAL(AP_HAL::UARTDriver* _uart0,
-        AP_HAL::UARTDriver* _uart1,
-        AP_HAL::UARTDriver* _uart2,
-        AP_HAL::UARTDriver* _uart3,
+    HAL(AP_HAL::UARTDriver* _uartA,
+        AP_HAL::UARTDriver* _uartB,
+        AP_HAL::UARTDriver* _uartC,
         AP_HAL::I2CDriver*  _i2c,
         AP_HAL::SPIDeviceManager* _spi,
         AP_HAL::AnalogIn*   _analogin,
@@ -31,10 +30,9 @@ public:
         AP_HAL::RCOutput*   _rcout,
         AP_HAL::Scheduler*  _scheduler)
         :
-        uart0(_uart0),
-        uart1(_uart1),
-        uart2(_uart2),
-        uart3(_uart3),
+        uartA(_uartA),
+        uartB(_uartB),
+        uartC(_uartC),
         i2c(_i2c),
         spi(_spi),
         analogin(_analogin),
@@ -49,10 +47,9 @@ public:
 
     virtual void init(void* opts) const = 0;
 
-    AP_HAL::UARTDriver* uart0;
-    AP_HAL::UARTDriver* uart1;
-    AP_HAL::UARTDriver* uart2;
-    AP_HAL::UARTDriver* uart3;
+    AP_HAL::UARTDriver* uartA;
+    AP_HAL::UARTDriver* uartB;
+    AP_HAL::UARTDriver* uartC;
     AP_HAL::I2CDriver*  i2c;
     AP_HAL::SPIDeviceManager* spi;
     AP_HAL::AnalogIn*   analogin;
