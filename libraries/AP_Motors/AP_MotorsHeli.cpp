@@ -527,22 +527,26 @@ void AP_MotorsHeli::rsc_control()
     switch ( rsc_mode ) {
 
     case AP_MOTORSHELI_RSC_MODE_CH8_PASSTHROUGH:
-        if( armed() && _rc_8->control_in > 10 ) {
+        if( armed() && (_rc_8->radio_in > (_rc_8->radio_min + 10))) {
             if (rsc_ramp < rsc_ramp_up_rate) {
                 rsc_ramp++;
-                rsc_output = map(rsc_ramp, 0, rsc_ramp_up_rate, 1000, _rc_8->control_in);
+                rsc_output = map(rsc_ramp, 0, rsc_ramp_up_rate, _rc_8->radio_min, _rc_8->radio_in);
             } else {
-                rsc_output = _rc_8->control_in;
+                rsc_output = _rc_8->radio_in;
             }
-        } else if( !armed() ) {
-            _rc->OutputCh(AP_MOTORS_HELI_EXT_RSC, _rc_8->radio_min);
-            rsc_ramp = 0;                       //Return RSC Ramp to 0
+        } else {
+			rsc_ramp--;                                                 //Return RSC Ramp to 0 slowly, allowing for "warm restart"
+			if (rsc_ramp < 0) {
+                rsc_ramp = 0;
+			}
+			rsc_output = _rc_8->radio_min;
         }
+		_rc->OutputCh(AP_MOTORS_HELI_EXT_RSC, rsc_output);
         break;
 
     case AP_MOTORSHELI_RSC_MODE_EXT_GOV:
 
-        if( armed() && _rc_throttle->control_in > 10) {
+        if( armed() && _rc_8->control_in > 100) {
             if (rsc_ramp < rsc_ramp_up_rate) {
                 rsc_ramp++;
                 rsc_output = map(rsc_ramp, 0, rsc_ramp_up_rate, 1000, ext_gov_setpoint);
