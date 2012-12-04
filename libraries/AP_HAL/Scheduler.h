@@ -25,6 +25,8 @@ public:
 
     virtual void     begin_atomic() = 0;
     virtual void     end_atomic() = 0;
+
+    virtual void     reboot() = 0;
 };
 
 #endif // __AP_HAL_SCHEDULER_H__
