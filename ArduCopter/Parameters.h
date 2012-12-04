@@ -85,6 +85,9 @@ public:
         k_param_heli_servo_2,
         k_param_heli_servo_3,
         k_param_heli_servo_4,
+		k_param_heli_pitch_ff,
+		k_param_heli_roll_ff,
+		k_param_heli_yaw_ff,
 
         //
         // 90: Motors
@@ -319,13 +322,10 @@ public:
 
 #if FRAME_CONFIG ==     HELI_FRAME
     // Heli
-    RC_Channel        heli_servo_1, heli_servo_2, heli_servo_3, heli_servo_4;   //
-                                                                                // servos
-                                                                                // for
-                                                                                // swash
-                                                                                // plate
-                                                                                // and
-                                                                                // tail
+    RC_Channel        heli_servo_1, heli_servo_2, heli_servo_3, heli_servo_4;   // servos for swash plate and tail
+	AP_Float		heli_pitch_ff;												// pitch rate feed-forward
+	AP_Float		heli_roll_ff;												// roll rate feed-forward
+	AP_Float		heli_yaw_ff;												// yaw rate feed-forward																			
 #endif
 
     // Camera
