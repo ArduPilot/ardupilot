@@ -132,6 +132,7 @@ static void calc_velocity_and_position(){
 
 static void calc_ground_bearing(){
 	ground_bearing = atan2( lat_speed , lon_speed ) * DEGX100;
+	ground_bearing = wrap_360(ground_bearing);						// atan2 returns a value of -pi to +pi, so we need to wrap this.
 }
 
 //****************************************************************
