@@ -12,6 +12,7 @@ public:
         _adc(adc), _ch(ch), _prescale(prescale)
     {}
     float           read(void);
+    void            set_pin(uint8_t);
 
 private:
     AP_ADC *        _adc;
