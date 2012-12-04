@@ -42,11 +42,11 @@ void console_loopback() {
 }
 
 void setup(void) {
-    /* Allocate large enough buffers on uart0 to support mavlink */
-    hal.uart0->begin(115200, 128, 256);
+    /* Allocate large enough buffers on uartA to support mavlink */
+    hal.uartA->begin(115200, 128, 256);
 
     /* Setup GCS_Mavlink library's comm 0 port. */
-    mavlink_comm_0_port = hal.uart0;
+    mavlink_comm_0_port = hal.uartA;
     
     char hello[] = "Hello statustext\r\n";
     try_send_statustext(MAVLINK_COMM_0, hello, strlen(hello));
