@@ -37,9 +37,6 @@
 
 extern const AP_HAL::HAL& hal;
 
-/* on APM v.24 MS5661_CS is PG1 (Arduino pin 40) */
-#define MS5611_CS 40
-
 #define CMD_MS5611_RESET 0x1E
 #define CMD_MS5611_PROM_Setup 0xA0
 #define CMD_MS5611_PROM_C1 0xA2
@@ -148,7 +145,9 @@ bool AP_Baro_MS5611::init()
     hal.scheduler->resume_timer_procs();
 
     // wait for at least one value to be read
-    while (!_updated) ;
+    while (!_updated) {
+        hal.scheduler->delay(10);
+    }
 
     healthy = true;
     return true;
