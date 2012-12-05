@@ -160,9 +160,11 @@ uint32_t AVRScheduler::micros() {
  * so we can use it from inside _timer_event() without virtual dispatch. */
 uint32_t AVRScheduler::_micros() {
 	uint32_t m;
-	uint8_t oldSREG = SREG, t;
+    uint8_t t;
 	
+	uint8_t oldSREG = SREG;
 	cli();
+
 	m = timer0_overflow_count;
 	t = TCNT0;
   
@@ -176,16 +178,16 @@ uint32_t AVRScheduler::_micros() {
 
 void AVRScheduler::delay(uint32_t ms)
 {
-	uint16_t start = (uint16_t)micros();
+	uint32_t start = _micros();
     
     while (ms > 0) {
-        if (((uint16_t)micros() - start) >= 1000) {
+        while ((micros() - start) >= 1000) {
             ms--;
             start += 1000;
-            if (_min_delay_cb_ms >= ms) {
-                if (_delay_cb) {
-                    _delay_cb();
-                }
+        }
+        if (_min_delay_cb_ms <= ms) {
+            if (_delay_cb) {
+                _delay_cb();
             }
         }
     }
