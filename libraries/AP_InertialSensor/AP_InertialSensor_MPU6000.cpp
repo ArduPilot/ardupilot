@@ -364,11 +364,8 @@ void AP_InertialSensor_MPU6000::data_interrupt(void)
 {
     // record time that data was available
     _last_sample_time_micros = hal.scheduler->micros();
-
-    // re-enable interrupts
-    sei();
-
-    // queue our read process to run after any currently running timed processes complete
+    // queue our read process to run after any currently running timed
+    // processes complete
     hal.scheduler->defer_timer_process( AP_InertialSensor_MPU6000::read );
 }
 
