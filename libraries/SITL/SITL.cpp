@@ -8,7 +8,6 @@
     of the License, or (at your option) any later version.
 */
 
-#include <FastSerial.h>
 #include <AP_Common.h>
 #include <GCS_MAVLink.h>
 #include <SITL.h>
