@@ -13,6 +13,10 @@
 
 /* AP_InertialSensor is an abstraction for gyro and accel measurements
  * which are correctly aligned to the body axes and scaled to SI units.
+ *
+ * Gauss-Newton accel calibration routines borrowed from Rolfe Schmidt
+ * blog post describing the method: http://chionophilous.wordpress.com/2011/10/24/accelerometer-calibration-iv-1-implementing-gauss-newton-on-an-atmega/
+ * original sketch available at http://rolfeschmidt.com/mathtools/skimetrics/adxl_gn_calibration.pde
  */
 class AP_InertialSensor
 {
@@ -139,6 +143,10 @@ protected:
                                        void (*flash_leds_cb)(bool on) = NULL);
 
 #if !defined( __AVR_ATmega1280__ )
+    // Calibration routines borrowed from Rolfe Schmidt
+    // blog post describing the method: http://chionophilous.wordpress.com/2011/10/24/accelerometer-calibration-iv-1-implementing-gauss-newton-on-an-atmega/
+    // original sketch available at http://rolfeschmidt.com/mathtools/skimetrics/adxl_gn_calibration.pde
+
     // _calibrate_accel - perform low level accel calibration
     virtual bool            _calibrate_accel(Vector3f accel_sample[6], Vector3f& accel_offsets, Vector3f& accel_scale);
     virtual void            _calibrate_update_matrices(float dS[6], float JS[6][6], float beta[6], float data[3]);
