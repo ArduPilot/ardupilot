@@ -30,8 +30,6 @@ extern const AP_HAL::HAL& hal;
 #define DF_CHIP_ERASE_2   0x80
 #define DF_CHIP_ERASE_3   0x9A
 
-#define DEBUG
-
 #ifdef DEBUG
 #define LOGD(format, ...) do { hal.console->printf_P(PSTR("DBG/Dataflash: "format), __VA_ARGS__); } while (0)
 #else
