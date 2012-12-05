@@ -9,13 +9,6 @@ extern const AP_HAL::HAL& hal;
 // 0: When reach the end page stop, 1: Start overwriting from page 1
 #define DF_OVERWRITE_DATA true
 
-// the last page holds the log format in first 4 bytes. Please change
-// this if (and only if!) the low level format changes
-#define DF_LOGGING_FORMAT    0x28122011
-
-// we use an invalie logging format to test the chip erase
-#define DF_LOGGING_FORMAT_INVALID   0x28122012
-
 void CommonDataflash::erase_all() {
     for (uint16_t i = 1; i <= (_num_pages+1)/8; i++) {
         _block_erase(i);

@@ -4,6 +4,13 @@
 
 #include "AP_HAL_Namespace.h"
 
+// the last page holds the log format in first 4 bytes. Please change
+// this if (and only if!) the low level format changes
+#define DF_LOGGING_FORMAT    0x28122011
+
+// we use an invalid logging format to test the chip erase
+#define DF_LOGGING_FORMAT_INVALID   0x28122012
+
 /* Dataflash abstract class:
  * This isn't the abstraction ArduPilot needs, but it is the abstraction
  * ArduPilot deserves.
