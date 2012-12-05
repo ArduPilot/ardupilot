@@ -35,8 +35,8 @@ public:
     virtual void println_P(const prog_char_t *) = 0;
     virtual void printf(const char *, ...)
                         __attribute__ ((format(__printf__, 2, 3))) = 0;
-    virtual void _printf_P(const prog_char *, ...)
-                        __attribute__ ((format(__printf__, 2, 3))) = 0;
+    /* No format checking on printf_P: can't currently support that on AVR */
+    virtual void _printf_P(const prog_char *, ...) = 0;
 
 #define printf_P(fmt, ...) _printf_P((const prog_char *)fmt, ## __VA_ARGS__)
 
