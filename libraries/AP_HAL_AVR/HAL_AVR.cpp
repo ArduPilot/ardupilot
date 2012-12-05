@@ -18,5 +18,6 @@ void HAL_AVR::init(void* opts) const {
     i2c->begin();
     i2c->setTimeout(100);
     analogin->init(NULL);
+    dataflash->init(NULL);
 };
 
