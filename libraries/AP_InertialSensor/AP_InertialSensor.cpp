@@ -263,7 +263,10 @@ AP_InertialSensor::_init_accel(void (*delay_cb)(unsigned long t), void (*flash_l
 }
 
 #if !defined( __AVR_ATmega1280__ )
-// perform accelerometer calibration including providing user instructions and feedback
+// calibrate_accel - perform accelerometer calibration including providing user instructions and feedback
+// Gauss-Newton accel calibration routines borrowed from Rolfe Schmidt
+// blog post describing the method: http://chionophilous.wordpress.com/2011/10/24/accelerometer-calibration-iv-1-implementing-gauss-newton-on-an-atmega/
+// original sketch available at http://rolfeschmidt.com/mathtools/skimetrics/adxl_gn_calibration.pde
 bool AP_InertialSensor::calibrate_accel(void (*delay_cb)(unsigned long t), void (*flash_leds_cb)(bool on), 
                                         void (*send_msg)(const prog_char_t *, ...),
                                         void (*wait_key)(void))
