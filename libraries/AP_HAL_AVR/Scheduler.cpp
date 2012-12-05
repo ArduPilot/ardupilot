@@ -251,6 +251,7 @@ bool AVRScheduler::defer_timer_process(AP_HAL::TimedProc proc) {
         return false;
     } else {
         _timer_suspended = true;
+        sei();
         proc(micros());
         _timer_suspended = false;
         return true;
