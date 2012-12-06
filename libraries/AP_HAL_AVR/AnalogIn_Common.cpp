@@ -70,6 +70,7 @@ void AVRAnalogIn::_register_channel(ADCSource* ch) {
 void AVRAnalogIn::_timer_event(uint32_t t) {
 
     if (_channels[_active_channel]->_pin == ANALOG_INPUT_NONE) {
+        _channels[_active_channel]->new_sample(0);
         goto next_channel;
     }
 
