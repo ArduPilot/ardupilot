@@ -39,14 +39,15 @@
 //#define CH7_OPTION		CH7_SAVE_WP
 /*
  *  CH7_DO_NOTHING
- *  CH7_SET_HOVER
+ *  CH7_SET_HOVER           // deprecated
  *  CH7_FLIP
  *  CH7_SIMPLE_MODE
  *  CH7_RTL
- *  CH7_AUTO_TRIM
- *  CH7_ADC_FILTER (experimental)
+ *  CH7_SAVE_TRIM
+ *  CH7_ADC_FILTER          // deprecated
  *  CH7_SAVE_WP
- *  CH7_MULTI_MODE
+ *  CH7_MULTI_MODE          // deprecated
+ *  CH7_CAMERA_TRIGGER
  */
 
 //#define TOY_EDF	ENABLED

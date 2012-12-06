@@ -48,15 +48,17 @@
 #define SONAR_SOURCE_ANALOG_PIN 2
 
 // CH 7 control
+#define CH7_PWM_TRIGGER 1800    // pwm value above which the channel 7 option will be invoked
 #define CH7_DO_NOTHING 0
-#define CH7_SET_HOVER 1
+#define CH7_SET_HOVER 1         // deprecated
 #define CH7_FLIP 2
 #define CH7_SIMPLE_MODE 3
 #define CH7_RTL 4
-#define CH7_AUTO_TRIM 5
-#define CH7_ADC_FILTER 6
+#define CH7_SAVE_TRIM 5
+#define CH7_ADC_FILTER 6        // deprecated
 #define CH7_SAVE_WP 7
-#define CH7_MULTI_MODE 8
+#define CH7_MULTI_MODE 8        // deprecated
+#define CH7_CAMERA_TRIGGER 9
 
 
 // Frame types
@@ -76,11 +78,6 @@
 #define NORMAL_LEDS 0
 #define SAVE_TRIM_LEDS 1
 
-
-#define CH_7_PWM_TRIGGER 1800
-#define CH_6_PWM_TRIGGER_HIGH 1800
-#define CH_6_PWM_TRIGGER 1500
-#define CH_6_PWM_TRIGGER_LOW 1200
 
 // Internal defines, don't edit and expect things to work
 // -------------------------------------------------------
@@ -249,13 +246,7 @@
 #define RTL_STATE_LAND              3
 
 //repeating events
-#define NO_REPEAT 0
-#define CH_5_TOGGLE 1
-#define CH_6_TOGGLE 2
-#define CH_7_TOGGLE 3
-#define CH_8_TOGGLE 4
 #define RELAY_TOGGLE 5
-#define STOP_REPEAT 10
 
 //  GCS Message ID's
 /// NOTE: to ensure we never block on sending MAVLink messages
