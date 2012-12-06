@@ -39,7 +39,6 @@ public:
 protected:
     uint8_t     _num_items;             // number of items in the buffer
     uint8_t     _head;                  // first item in the buffer (will be returned with the next get call)
-    uint8_t     _tail;                  // last item added to the buffer (most recently added with the add method)
     T           _buff[SIZE];            // x values of each point on the curve
 };
 
@@ -52,6 +51,7 @@ typedef AP_Buffer<uint8_t,128> AP_BufferUInt8_Size128;
 
 typedef AP_Buffer<float,10> AP_BufferFloat_Size10;
 typedef AP_Buffer<float,15> AP_BufferFloat_Size15;
+typedef AP_Buffer<float,20> AP_BufferFloat_Size20;
 
 // Constructor
 template <class T, uint8_t SIZE>
@@ -68,58 +68,34 @@ void AP_Buffer<T,SIZE>::clear() {
 	// clear the curve
 	_num_items = 0;
     _head = 0;
-    _tail = 0;
 }
 
 // add - adds an item to the buffer.  returns TRUE if successfully added
 template <class T, uint8_t SIZE>
 bool AP_Buffer<T,SIZE>::add( T item )
 {
-    // add item at the tail
-    _buff[_tail] = item;
+    // determine position of new item
+    uint8_t tail = _head + _num_items;
+    if( tail >= SIZE ) {
+        tail -= SIZE;
+    }
 
-    // move tail forward one position
-    _tail++;
+    // add item to buffer
+    _buff[tail] = item;
 
-    // wrap around to front of buffer if required
-    if( _tail >= SIZE )
-        _tail = 0;
-
-    // if the tail bumps into the head, move the head forward (throw away the oldest item)
-    if( _tail == _head ) {
-        _head++;
-        if( _head >= SIZE )
-            _head = 0;
-    }else{
-        // increment number of items
+    // increment number of items
+    if( _num_items < SIZE ) {
         _num_items++;
+    }else{
+        // no room for new items so drop oldest item
+        _head++;
+        if( _head >= SIZE ) {
+            _head = 0;
+        }
     }
 
     // indicate success
     return true;
-
-/*   Old method that fails when buffer fills up
-	if( _num_items < SIZE ) {
-        // add item at the tail
-        _buff[_tail] = item;
-
-        // move tail forward one position
-		_tail++;
-
-        // wrap around to front of buffer if required
-        if( _tail >= SIZE )
-            _tail = 0;
-
-        // increment number of items
-        _num_items++;
-
-        // indicate success
-        return true;
-    }else{
-        // we do not have room for the new item
-        return false;
-    }
-*/
 }
 
 // get - returns the next value in the buffer
@@ -155,8 +131,9 @@ T AP_Buffer<T,SIZE>::peek(uint8_t position)
     uint8_t j = _head+position;
 
     // return zero if position is out of range
-    if( position >= _num_items )
+    if( position >= _num_items ) {
         return 0;
+    }
 
     // wrap around if necessary
     if( j >= SIZE )
@@ -165,29 +142,5 @@ T AP_Buffer<T,SIZE>::peek(uint8_t position)
     // return desired value
     return _buff[j];
 }
-
-// displays the contents of the curve (for debugging)
-/*template <class T, uint8_t SIZE>
-void AP_Buffer<T,SIZE>::print_buffer()
-{
-    uint8_t i;
-	Serial.print_P(PSTR("AP_Buffer: "));
-	for( i = 0; i<_num_items; i++ ){
-        if( i > 0 ) {
-            Serial.print_P(PSTR(", "));
-        }
-		Serial.print(peek(i));
-	}
-    Serial.println();
-}*/
-
-/*
-// displays the contents of the curve (for debugging)
-template <class Vector3f, uint8_t SIZE>
-void AP_Buffer<Vector3f,SIZE>::print_buffer()
-{
-    // we cannot print Vector3f types
-}
-*/
 
 #endif  // AP_BUFFER
