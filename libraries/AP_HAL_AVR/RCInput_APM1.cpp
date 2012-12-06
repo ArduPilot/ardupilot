@@ -102,13 +102,13 @@ uint8_t APM1RCInput::read(uint16_t* periods, uint8_t len) {
     if (len > AVR_RC_INPUT_NUM_CHANNELS) { len = AVR_RC_INPUT_NUM_CHANNELS; }
     /* grab channels from isr's memory in critical section */
     cli();
-    for (int i = 0; i < len; i++) {
+    for (uint8_t i = 0; i < len; i++) {
         periods[i] = _pulse_capt[i];
     }
     sei();
     /* Outside of critical section, do the math (in place) to scale and
      * constrain the pulse. */
-    for (int i = 0; i < len; i++) {
+    for (uint8_t i = 0; i < len; i++) {
         /* scale _pulse_capt from 0.5us units to 1us units. */
         periods[i] = constrain_pulse(periods[i] >> 1);
         /* check for override */
@@ -123,7 +123,7 @@ uint8_t APM1RCInput::read(uint16_t* periods, uint8_t len) {
 
 bool APM1RCInput::set_overrides(int16_t *overrides, uint8_t len) {
     bool res = false;
-    for (int i = 0; i < len; i++) {
+    for (uint8_t i = 0; i < len; i++) {
         res |= set_override(i, overrides[i]);
     }
     return res;
@@ -142,7 +142,7 @@ bool APM1RCInput::set_override(uint8_t channel, int16_t override) {
 }
 
 void APM1RCInput::clear_overrides() {
-    for (int i = 0; i < AVR_RC_INPUT_NUM_CHANNELS; i++) {
+    for (uint8_t i = 0; i < AVR_RC_INPUT_NUM_CHANNELS; i++) {
         _override[i] = 0;
     }
 }
