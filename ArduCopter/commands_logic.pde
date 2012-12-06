@@ -920,6 +920,10 @@ static void do_nav_roi()
 // do_take_picture - take a picture with the camera library
 static void do_take_picture()
 {
+#if CAMERA == ENABLED
     g.camera.trigger_pic();
-    Serial.print_P(PSTR("Camera!!"));
+    if (g.log_bitmask & MASK_LOG_CAMERA) {
+        Log_Write_Camera();
+    }
+#endif
 }

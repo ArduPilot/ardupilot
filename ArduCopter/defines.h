@@ -307,6 +307,7 @@ enum gcs_severity {
 #define LOG_ITERM_MSG                   0x0F
 #define LOG_DMP_MSG                     0x10
 #define LOG_INAV_MSG                    0x11
+#define LOG_CAMERA_MSG                  0x12
 #define LOG_INDEX_MSG                   0xF0
 #define MAX_NUM_LOGS                    50
 
@@ -325,19 +326,7 @@ enum gcs_severity {
 #define MASK_LOG_PID                    (1<<12)
 #define MASK_LOG_ITERM                  (1<<13)
 #define MASK_LOG_INAV                   (1<<14)
-
-
-#define MASK_LOG_CTUN                   (1<<4)
-#define MASK_LOG_NTUN                   (1<<5)
-#define MASK_LOG_MODE                   (1<<6)
-#define MASK_LOG_RAW                    (1<<7)
-#define MASK_LOG_CMD                    (1<<8)
-#define MASK_LOG_CUR                    (1<<9)
-#define MASK_LOG_MOTORS                 (1<<10)
-#define MASK_LOG_OPTFLOW                (1<<11)
-#define MASK_LOG_PID                    (1<<12)
-#define MASK_LOG_ITERM                  (1<<13)
-
+#define MASK_LOG_CAMERA                 (1<<15)
 
 // DATA - event logging
 #define DATA_MAVLINK_FLOAT              1
