@@ -41,32 +41,55 @@ void AP_Baro::calibrate()
     float ground_pressure = 0;
     float ground_temperature = 0;
 
-    while (ground_pressure == 0 || !healthy) {
-        read();         // Get initial data from absolute pressure sensor
-        ground_pressure         = get_pressure();
-        ground_temperature      = get_temperature();
-        hal.scheduler->delay(20);
+    {
+        uint32_t tstart = hal.scheduler->millis();
+        while (ground_pressure == 0 || !healthy) {
+            read();         // Get initial data from absolute pressure sensor
+            if (hal.scheduler->millis() - tstart > 500) {
+                hal.console->println_P(PSTR("PANIC: AP_Baro::read unsuccessful "
+                        "for more than 500ms in AP_Baro::calibrate [1]\r\n"));
+                return;
+            }
+            ground_pressure         = get_pressure();
+            ground_temperature      = get_temperature();
+            hal.scheduler->delay(20);
+        }
     }
     // let the barometer settle for a full second after startup
     // the MS5611 reads quite a long way off for the first second,
     // leading to about 1m of error if we don't wait
-    for (uint16_t i = 0; i < 10; i++) {
+    for (uint8_t i = 0; i < 10; i++) {
+        uint32_t tstart = hal.scheduler->millis();
         do {
             read();
+            if (hal.scheduler->millis() - tstart > 500) {
+                hal.console->println_P(PSTR("PANIC: AP_Baro::read unsuccessful "
+                        "for more than 500ms in AP_Baro::calibrate [2]\r\n"));
+                return;
+            }
         } while (!healthy);
-        ground_pressure         = get_pressure();
-        ground_temperature      = get_temperature();
+        ground_pressure     = get_pressure();
+        ground_temperature  = get_temperature();
+
         hal.scheduler->delay(100);
     }
 
     // now average over 5 values for the ground pressure and
     // temperature settings
     for (uint16_t i = 0; i < 5; i++) {
+        uint32_t tstart = hal.scheduler->millis();
         do {
             read();
+            if (hal.scheduler->millis() - tstart > 500) {
+                hal.console->println_P(PSTR("PANIC: AP_Baro::read unsuccessful "
+                        "for more than 500ms in AP_Baro::calibrate [3]\r\n"));
+                return;
+            }
         } while (!healthy);
-        ground_pressure         = ground_pressure * 0.8     + get_pressure() * 0.2;
-        ground_temperature      = ground_temperature * 0.8  + get_temperature() * 0.2;
+        ground_pressure = (ground_pressure * 0.8) + (get_pressure() * 0.2);
+        ground_temperature = (ground_temperature * 0.8) + 
+            (get_temperature() * 0.2);
+
         hal.scheduler->delay(100);
     }
 
