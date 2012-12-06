@@ -274,6 +274,12 @@ const AP_Param::Info var_info[] PROGMEM = {
     GSCALAR(radio_tuning_low, "TUNE_LOW",           0),
     GSCALAR(radio_tuning_high, "TUNE_HIGH",         1000),
     GSCALAR(frame_orientation, "FRAME",             FRAME_ORIENTATION),
+
+    // @Param: CH7_OPT
+    // @DisplayName: Channel 7 option
+    // @Description: Select which function if performed when CH7 is high
+    // @Values: 0:Do Nothing, 2:Flip, 3:Simple Mode, 4:RTL, 5:Save Trim, 7:Save WP, 9:Camera Trigger
+    // @User: Standard
     GSCALAR(ch7_option, "CH7_OPT",                  CH7_OPTION),
 
 	// @Param: AUTO_SLEW

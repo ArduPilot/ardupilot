@@ -147,16 +147,19 @@ apm_option("FRAME_ORIENTATION" TYPE STRING
     )
 
 apm_option("CH7_OPTION" TYPE STRING
-    DESCRIPTION "Channel 7 option? (ADC_FILTER is experimental)"
+    DESCRIPTION "Channel 7 option?"
     DEFAULT "CH7_SAVE_WP" 
     OPTIONS 
         "CH7_DO_NOTHING"
-        "CH7_SET_HOVER"
+        "CH7_DO_NOTHING"
         "CH7_FLIP"
+        "CH7_SIMPLE_MODE"
         "CH7_RTL"
-        "CH7_AUTO_TRIM"
-        "CH7_ADC_FILTER"
-        "CH7_SAVE_WP")
+        "CH7_SAVE_TRIM"
+        "CH7_DO_NOTHING"
+        "CH7_SAVE_WP"
+        "CH7_DO_NOTHING"
+        "CH7_CAMERA_TRIGGER")
 
 apm_option("ACCEL_ALT_HOLD" TYPE BOOL ADVANCED
     DESCRIPTION "Disabled by default, work in progress."
