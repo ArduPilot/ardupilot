@@ -24,8 +24,9 @@ public:
     void    pinMode(uint8_t pin, uint8_t output);
     uint8_t read(uint8_t pin);
     void    write(uint8_t pin, uint8_t value);
-    AP_HAL::DigitalSource* channel(int);
-    bool    attach_interrupt(int interrupt_num, AP_HAL::Proc proc, int mode);
+    AP_HAL::DigitalSource* channel(uint16_t);
+    bool    attach_interrupt(uint8_t interrupt_num, AP_HAL::Proc proc,
+            uint8_t mode);
 /* private-ish: only to be used from the appropriate interrupt */
     static AP_HAL::Proc _interrupt_6;
 };
