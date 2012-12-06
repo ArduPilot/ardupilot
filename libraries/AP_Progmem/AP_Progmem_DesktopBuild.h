@@ -12,9 +12,5 @@
 #undef PROGMEM
 #define PROGMEM __attribute__(())
 
-#undef SITL_debug
-#define SITL_debug(fmt, args ...)  fprintf(stdout, "%s:%u " fmt, __FUNCTION__, __LINE__, ## args)
-
-
 #endif // __AP_PROGMEM_DESKTOP_BUILD_H__
 

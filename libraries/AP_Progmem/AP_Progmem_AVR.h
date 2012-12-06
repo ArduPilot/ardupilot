@@ -4,8 +4,6 @@
 
 #include <avr/pgmspace.h>
 
-#define SITL_debug(fmt, args ...)
-
 // prog_char_t is used as a wrapper type for prog_char, which is
 // a character stored in flash. By using this wrapper type we can
 // auto-detect at compile time if a call to a string function is using

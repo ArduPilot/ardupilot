@@ -4,8 +4,6 @@
 
 #include <string.h>
 
-#define SITL_debug(fmt, args ...)
-
 typedef char prog_char_t;
 typedef char prog_char;
 

@@ -121,7 +121,6 @@ AP_AHRS_DCM::check_matrix(void)
 {
     if (_dcm_matrix.is_nan()) {
         //Serial.printf("ERROR: DCM matrix NAN\n");
-        SITL_debug("ERROR: DCM matrix NAN\n");
         renorm_blowup_count++;
         reset(true);
         return;
@@ -142,8 +141,6 @@ AP_AHRS_DCM::check_matrix(void)
             // in real trouble. All we can do is reset
             //Serial.printf("ERROR: DCM matrix error. _dcm_matrix.c.x=%f\n",
             //	   _dcm_matrix.c.x);
-            SITL_debug("ERROR: DCM matrix error. _dcm_matrix.c.x=%f\n",
-                       _dcm_matrix.c.x);
             renorm_blowup_count++;
             reset(true);
         }
@@ -191,8 +188,6 @@ AP_AHRS_DCM::renorm(Vector3f const &a, Vector3f &result)
             // correction before we hit the ground!
             //Serial.printf("ERROR: DCM renormalisation error. renorm_val=%f\n",
             //	   renorm_val);
-            SITL_debug("ERROR: DCM renormalisation error. renorm_val=%f\n",
-                       renorm_val);
             renorm_blowup_count++;
             return false;
         }
