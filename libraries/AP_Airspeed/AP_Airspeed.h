@@ -21,7 +21,6 @@ public:
 
     // calibrate the airspeed. This must be called on startup if the
     // altitude/climb_rate/acceleration interfaces are ever used
-    // the callback is a delay() like routine
     void            calibrate();
 
     // return the current airspeed in m/s

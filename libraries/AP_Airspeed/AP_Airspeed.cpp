@@ -8,8 +8,7 @@
  *   of the License, or (at your option) any later version.
  */
 
-#include <math.h>
-
+#include <AP_Math.h>
 #include <AP_Common.h>
 #include <AP_HAL.h>
 #include <AP_Airspeed.h>
@@ -55,10 +54,10 @@ void AP_Airspeed::calibrate()
     if (!_enable) {
         return;
     }
-    _source->read();
+    _source->read_average();
     for (c = 0; c < 10; c++) {
         hal.scheduler->delay(100);
-        sum += _source->read();
+        sum += _source->read_average();
     }
     _airspeed_raw = sum/c;
     _offset.set_and_save(_airspeed_raw);
@@ -72,9 +71,8 @@ void AP_Airspeed::read(void)
     if (!_enable) {
         return;
     }
-    _airspeed_raw           = _source->read();
-    airspeed_pressure       = ((_airspeed_raw - _offset) < 0) ?
-                                (_airspeed_raw - _offset) : 0;
+    _airspeed_raw           = _source->read_average();
+    airspeed_pressure       = max(_airspeed_raw - _offset, 0);
     _airspeed               = 0.7 * _airspeed +
                               0.3 * sqrt(airspeed_pressure * _ratio);
 }
