@@ -32,8 +32,6 @@ extern const AP_HAL::HAL& hal;
 void
 AP_AHRS_MPU6000::init()
 {
-    bool timer_running = false;
-
     // suspend timer so interrupts on spi bus do not interfere with
     // communication to mpu6000
     hal.scheduler->suspend_timer_procs();
