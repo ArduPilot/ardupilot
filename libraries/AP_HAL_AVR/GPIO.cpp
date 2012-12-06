@@ -93,7 +93,7 @@ void AVRGPIO::write(uint8_t pin, uint8_t value) {
 /* Implement GPIO Interrupt 6, used for MPU6000 data ready on APM2. */
 bool AVRGPIO::attach_interrupt(
         uint8_t interrupt_num, AP_HAL::Proc proc, uint8_t mode) {
-    if (!((mode == 0)||(mode == 1))) return false;
+    if (!((mode == 0)||(mode == 1)||(mode==3))) return false;
     if (interrupt_num == 6) {
         _interrupt_6 = proc;
         EICRB = (EICRB & ~((1 << ISC60) | (1 << ISC61))) | (mode << ISC60);
