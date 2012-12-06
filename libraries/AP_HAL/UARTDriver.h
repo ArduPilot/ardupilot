@@ -11,7 +11,7 @@
 class AP_HAL::UARTDriver : public AP_HAL::BetterStream {
 public:
     UARTDriver() {}
-    virtual void begin(long baud) = 0;
+    virtual void begin(uint32_t baud) = 0;
 	/// Extended port open method
 	///
 	/// Allows for both opening with specified buffer sizes, and re-opening
@@ -32,9 +32,7 @@ public:
 	///						is open, or set to ::_default_tx_buffer_size if it
 	///						is currently closed.
 	///
-    virtual void begin(long baud,
-                    unsigned int rxSpace,
-                    unsigned int txSpace) = 0;
+    virtual void begin(uint32_t baud, uint16_t rxSpace, uint16_t txSpace) = 0;
     virtual void end() = 0;
     virtual void flush() = 0;
     virtual bool is_initialized() = 0;
@@ -47,8 +45,8 @@ class AP_HAL::EmptyUARTDriver : public AP_HAL::UARTDriver {
 public:
     EmptyUARTDriver() {}
     /* Empty implementations of UARTDriver virtual methods */
-    void begin(long b) {}
-    void begin(long b, unsigned int rxS, unsigned int txS) {}
+    void begin(uint32_t b) {}
+    void begin(uint32_t b, uint16_t rxS, uint16_t txS) {}
     void end() {}
     void flush() {}
     bool is_initialized() { return false; }
@@ -62,10 +60,10 @@ public:
     void _printf_P(const prog_char *pstr, ...) {}
 
     /* Empty implementations of Stream virtual methods */
-    int available() { return 0; }
-    int txspace() { return 1; }
-    int read() { return -1; }
-    int peek() { return -1; }
+    int16_t available() { return 0; }
+    int16_t txspace() { return 1; }
+    int16_t read() { return -1; }
+    int16_t peek() { return -1; }
 
     /* Empty implementations of Print virtual methods */
     size_t write(uint8_t c) { return 0; }
