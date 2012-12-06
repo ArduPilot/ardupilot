@@ -302,6 +302,14 @@ float AP_InertialSensor_MPU6000::temperature() {
 
 /*================ HARDWARE FUNCTIONS ==================== */
 
+static int16_t spi_transfer_16(AP_HAL::SPIDeviceDriver *_spi)
+{
+    uint8_t byte_H, byte_L;
+    byte_H = _spi->transfer(0);
+    byte_L = _spi->transfer(0);
+    return (((int16_t)byte_H)<<8) | byte_L;
+}
+
 /*
  *  this is called from the data_interrupt which fires when the MPU6000 has new
  *  sensor data available and add it to _sum[] to ensure this is the case,
@@ -330,10 +338,7 @@ void AP_InertialSensor_MPU6000::read(uint32_t)
     uint8_t addr = MPUREG_ACCEL_XOUT_H | 0x80;
     _spi->transfer(addr);
     for (uint8_t i=0; i<7; i++) {
-        uint8_t hi = _spi->transfer(0);
-        uint8_t lo =_spi->transfer(0);
-        uint16_t b =  (((int16_t)hi)<<8) | lo;
-        _sum[i] += b;
+        _sum[i] += spi_transfer_16(_spi);
     }
     _spi->cs_release();
 
