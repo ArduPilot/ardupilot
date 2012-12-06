@@ -52,60 +52,50 @@ static void reset_control_switch()
 // set this to your trainer switch
 static void read_trim_switch()
 {
-    int8_t option;
-
-    if(g.ch7_option == CH7_MULTI_MODE) {
-        if (g.rc_6.radio_in < CH_6_PWM_TRIGGER_LOW) {
-            option = CH7_FLIP;
-        }else if (g.rc_6.radio_in > CH_6_PWM_TRIGGER_HIGH) {
-            option = CH7_SAVE_WP;
-        }else{
-            option = CH7_RTL;
-        }
-    }else{
-        option = g.ch7_option;
+    // return immediately if the CH7 switch has not changed position
+    if (ap_system.CH7_flag == (g.rc_7.radio_in >= CH7_PWM_TRIGGER)) {
+        return;
     }
 
-    if(option == CH7_SIMPLE_MODE) {
-        //ap.simple_mode = (g.rc_7.radio_in > CH_7_PWM_TRIGGER);
-        set_simple_mode(g.rc_7.radio_in > CH_7_PWM_TRIGGER);
+    // set the ch7 flag
+    ap_system.CH7_flag = (g.rc_7.radio_in >= CH7_PWM_TRIGGER);
 
-    }else if (option == CH7_FLIP) {
-        if (ap_system.CH7_flag == false && g.rc_7.radio_in > CH_7_PWM_TRIGGER) {
-            ap_system.CH7_flag = true;
-
-            // don't flip if we accidentally engaged flip, but didn't notice and tried to takeoff
-            if(g.rc_3.control_in != 0 && ap.takeoff_complete) {
+    switch(g.ch7_option) {
+        case CH7_FLIP:
+            // flip if switch is on, positive throttle and we're actually flying
+            if(ap_system.CH7_flag && g.rc_3.control_in >= 0 && ap.takeoff_complete) {
                 init_flip();
             }
-        }
-        if (ap_system.CH7_flag == true && g.rc_7.control_in < 800) {
-            ap_system.CH7_flag = false;
-        }
+            break;
 
-    }else if (option == CH7_RTL) {
-        if (ap_system.CH7_flag == false && g.rc_7.radio_in > CH_7_PWM_TRIGGER) {
-            ap_system.CH7_flag = true;
-            set_mode(RTL);
-        }
+        case CH7_SIMPLE_MODE:
+            set_simple_mode(ap_system.CH7_flag);
+            break;
 
-        if (ap_system.CH7_flag == true && g.rc_7.control_in < 800) {
-            ap_system.CH7_flag = false;
-            if (control_mode == RTL || control_mode == LOITER) {
-                reset_control_switch();
+        case CH7_RTL:
+            if (ap_system.CH7_flag) {
+                // engage RTL
+                set_mode(RTL);
+            }else{
+                // disengage RTL to previous flight mode if we are currently in RTL or loiter
+                if (control_mode == RTL || control_mode == LOITER) {
+                    reset_control_switch();
+                }
             }
-        }
+            break;
 
-    }else if (option == CH7_SAVE_WP) {
-        if (g.rc_7.radio_in > CH_7_PWM_TRIGGER) {        // switch is engaged
-            ap_system.CH7_flag = true;
+        case CH7_SAVE_TRIM:
+            if(ap_system.CH7_flag && control_mode <= ACRO && g.rc_3.control_in == 0) {
+                save_trim_counter = 15;
+            }
+            break;
 
-        }else{         // switch is disengaged
-            if(ap_system.CH7_flag) {
-                ap_system.CH7_flag = false;
+        case CH7_SAVE_WP:
+            // save when CH7 switch is switched off
+            if (ap_system.CH7_flag == false) {
 
+                // if in auto mode, reset the mission
                 if(control_mode == AUTO) {
-                    // reset the mission
                     CH7_wp_index = 0;
                     g.command_total.set_and_save(1);
                     set_mode(RTL);
@@ -147,18 +137,18 @@ static void read_trim_switch()
                 // save command
                 set_cmd_with_index(current_loc, CH7_wp_index);
 
-                copter_leds_nav_blink = 10;                     // Cause the CopterLEDs to blink twice to indicate saved waypoint
-
-                // 0 = home
-                // 1 = takeoff
-                // 2 = WP 2
-                // 3 = command total
+                // Cause the CopterLEDs to blink twice to indicate saved waypoint
+                copter_leds_nav_blink = 10;
             }
-        }
-    }else if (option == CH7_AUTO_TRIM) {
-        if(g.rc_7.radio_in > CH_7_PWM_TRIGGER && control_mode <= ACRO && g.rc_3.control_in == 0) {
-            save_trim_counter = 15;
-        }
+            break;
+
+#if CAMERA == ENABLED
+        case CH7_CAMERA_TRIGGER:
+            if(ap_system.CH7_flag) {
+                g.camera.trigger_pic();
+            }
+            break;
+#endif
     }
 }
 
