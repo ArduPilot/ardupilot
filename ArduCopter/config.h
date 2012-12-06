@@ -1003,7 +1003,10 @@
  # define LOG_ITERM                     ENABLED
 #endif
 #ifndef LOG_INAV
- # define LOG_INAV                              DISABLED
+ # define LOG_INAV                      DISABLED
+#endif
+#ifndef LOG_CAMERA
+ # define LOG_CAMERA                    DISABLED
 #endif
 
 // calculate the default log_bitmask

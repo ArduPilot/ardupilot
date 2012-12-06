@@ -88,6 +88,7 @@ print_log_menu(void)
         if (g.log_bitmask & MASK_LOG_PID) cliSerial->printf_P(PSTR(" PID"));
         if (g.log_bitmask & MASK_LOG_ITERM) cliSerial->printf_P(PSTR(" ITERM"));
         if (g.log_bitmask & MASK_LOG_INAV) cliSerial->printf_P(PSTR(" INAV"));
+        if (g.log_bitmask & MASK_LOG_CAMERA) cliSerial->printf_P(PSTR(" CAMERA"));
     }
 
     cliSerial->println();
@@ -205,6 +206,7 @@ select_logs(uint8_t argc, const Menu::arg *argv)
         TARG(PID);
         TARG(ITERM);
         TARG(INAV);
+        TARG(CAMERA);
  #undef TARG
     }
 
@@ -1038,7 +1040,7 @@ static void Log_Write_DMP()
 #endif
 }
 
-// Read an attitude packet
+// Read a DMP attitude packet
 static void Log_Read_DMP()
 {
     int16_t temp1   = DataFlash.ReadInt();
@@ -1056,6 +1058,49 @@ static void Log_Read_DMP()
                     (int)temp4,
                     (unsigned)temp5,
                     (unsigned)temp6);
+}
+
+// Write a Camera packet. Total length : 26 bytes
+static void Log_Write_Camera()
+{
+#if CAMERA == ENABLED
+    DataFlash.WriteByte(HEAD_BYTE1);
+    DataFlash.WriteByte(HEAD_BYTE2);
+    DataFlash.WriteByte(LOG_CAMERA_MSG);
+
+    DataFlash.WriteLong(g_gps->time);           		 // 1
+    DataFlash.WriteLong(current_loc.lat);       		 // 2
+    DataFlash.WriteLong(current_loc.lng);       		 // 3
+    DataFlash.WriteLong(current_loc.alt);       		 // 4
+    DataFlash.WriteInt((int16_t)ahrs.roll_sensor);       // 5
+    DataFlash.WriteInt((int16_t)ahrs.pitch_sensor);      // 6
+    DataFlash.WriteInt((uint16_t)ahrs.yaw_sensor);       // 7
+    DataFlash.WriteByte(END_BYTE);
+#endif
+}
+
+// Read a camera packet
+static void Log_Read_Camera()
+{
+    int32_t temp1   = DataFlash.ReadLong();             // 1 time
+    int32_t temp2   = DataFlash.ReadLong();             // 2 lat
+    int32_t temp3   = DataFlash.ReadLong();             // 3 lon
+    float temp4     = DataFlash.ReadLong() / 100.0;     // 4 altitude
+    int16_t temp5   = DataFlash.ReadInt();              // 5 roll in centidegrees
+    int16_t temp6   = DataFlash.ReadInt();              // 6 pitch in centidegrees
+    uint16_t temp7  = DataFlash.ReadInt();              // 7 yaw in centidegrees
+
+                                     // 1
+    cliSerial->printf_P(PSTR("CAMERA, %ld, "),(long)temp1);  // 1 time
+    print_latlon(cliSerial, temp2);                         // 2 lat
+    cliSerial->print_P(PSTR(", "));
+    print_latlon(cliSerial, temp3);                         // 3 lon
+                                 // 4   5   6   7
+    cliSerial->printf_P(PSTR(", %4.4f, %d, %d, %u\n"),
+                    temp4,                                  // 4 altitude
+                    (int)temp5,                             // 5 roll in centidegrees
+                    (int)temp6,                             // 6 pitch in centidegrees
+                    (unsigned int)temp7);                   // 7 yaw in centidegrees
 }
 
 // Read the DataFlash log memory
@@ -1192,6 +1237,10 @@ static int16_t Log_Read_Process(int16_t start_page, int16_t end_page)
 
 					case LOG_INAV_MSG:
 						Log_Read_INAV();
+						break;
+
+					case LOG_CAMERA_MSG:
+						Log_Read_Camera();
 						break;
 				}
 				break;
