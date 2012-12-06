@@ -108,7 +108,7 @@ AP_InertialSensor::_init_gyro(void (*flash_leds_cb)(bool on))
     // remove existing gyro offsets
     _gyro_offset = Vector3f(0,0,0);
 
-    for(int16_t c = 0; c < 25; c++) {
+    for(int8_t c = 0; c < 25; c++) {
         // Mostly we are just flashing the LED's here
         // to tell the user to keep the IMU still
         FLASH_LEDS(true);
