@@ -48,6 +48,8 @@ void APM1RCInput::init(void* _isrregistry) {
     ISRRegistry* isrregistry = (ISRRegistry*) _isrregistry;
     isrregistry->register_signal(ISR_REGISTRY_TIMER4_CAPT, _timer4_capt_cb);
 
+    /* initialize overrides */
+    clear_overrides();
     /* Arduino pin 49 is ICP4 / PL0,  timer 4 input capture */
     hal.gpio->pinMode(49, GPIO_INPUT);
     /**
@@ -81,15 +83,24 @@ static inline uint16_t constrain_pulse(uint16_t p) {
 }
 
 uint16_t APM1RCInput::read(uint8_t ch) {
+    /* constrain ch */
+    if (ch < AVR_RC_INPUT_NUM_CHANNELS) return 0;
+    /* grab channel from isr's memory in critical section*/
     cli();
     uint16_t capt = _pulse_capt[ch];
     sei();
     _valid = 0;
     /* scale _pulse_capt from 0.5us units to 1us units. */
-    return constrain_pulse(capt >> 1);
+    uint16_t pulse = constrain_pulse(capt >> 1);
+    /* Check for override */
+    uint16_t over = _override[ch];
+    return (over == 0) ? pulse : over;
 }
 
 uint8_t APM1RCInput::read(uint16_t* periods, uint8_t len) {
+    /* constrain len */
+    if (len > AVR_RC_INPUT_NUM_CHANNELS) { len = AVR_RC_INPUT_NUM_CHANNELS; }
+    /* grab channels from isr's memory in critical section */
     cli();
     for (int i = 0; i < len; i++) {
         periods[i] = _pulse_capt[i];
@@ -100,9 +111,38 @@ uint8_t APM1RCInput::read(uint16_t* periods, uint8_t len) {
     for (int i = 0; i < len; i++) {
         /* scale _pulse_capt from 0.5us units to 1us units. */
         periods[i] = constrain_pulse(periods[i] >> 1);
+        /* check for override */
+        if (_override[i] != 0) {
+            periods[i] = _override[i];
+        }
     }
     uint8_t v = _valid;
     _valid = 0;
     return v;
 }
 
+bool APM1RCInput::set_overrides(int16_t *overrides, uint8_t len) {
+    bool res = false;
+    for (int i = 0; i < len; i++) {
+        res |= set_override(i, overrides[i]);
+    }
+    return res;
+}
+
+bool APM1RCInput::set_override(uint8_t channel, int16_t override) {
+    if (override < 0) return false; /* -1: no change. */
+    if (channel < AVR_RC_INPUT_NUM_CHANNELS) {
+        _override[channel] = override;
+        if (override != 0) {
+            _valid = 1;
+            return true;
+        }
+    }
+    return false;
+}
+
+void APM1RCInput::clear_overrides() {
+    for (int i = 0; i < AVR_RC_INPUT_NUM_CHANNELS; i++) {
+        _override[i] = 0;
+    }
+}

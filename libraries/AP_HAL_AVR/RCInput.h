@@ -36,12 +36,31 @@ public:
      */
     uint8_t  read(uint16_t* periods, uint8_t len);
 
+    /**
+     * Overrides: these are really grody and don't belong here but we need
+     * them at the moment to make the port work.
+     * case v of:
+     *  v == -1 -> no change to this channel
+     *  v == 0  -> do not override this channel
+     *  v > 0   -> set v as override.
+     */
+
+    /* set_overrides: array starts at ch 0, for len channels */
+    bool set_overrides(int16_t *overrides, uint8_t len);
+    /* set_override: set just a specific channel */
+    bool set_override(uint8_t channel, int16_t override);
+    /* clear_overrides: equivelant to setting all overrides to 0 */
+    void clear_overrides();
+
 private:
     /* private callback for input capture ISR */
     static void _timer4_capt_cb(void);
     /* private variables to communicate with input capture isr */
     static volatile uint16_t _pulse_capt[AVR_RC_INPUT_NUM_CHANNELS];
     static volatile uint8_t  _valid;
+
+    /* override state */
+    uint16_t _override[AVR_RC_INPUT_NUM_CHANNELS]; 
 };
 
 class AP_HAL_AVR::APM2RCInput : public AP_HAL::RCInput {
@@ -50,12 +69,18 @@ class AP_HAL_AVR::APM2RCInput : public AP_HAL::RCInput {
     uint8_t  valid();
     uint16_t read(uint8_t ch);
     uint8_t  read(uint16_t* periods, uint8_t len);
+    bool set_overrides(int16_t *overrides, uint8_t len);
+    bool set_override(uint8_t channel, int16_t override);
+    void clear_overrides();
 private:
     /* private callback for input capture ISR */
     static void _timer5_capt_cb(void);
     /* private variables to communicate with input capture isr */
     static volatile uint16_t _pulse_capt[AVR_RC_INPUT_NUM_CHANNELS];
     static volatile uint8_t  _valid;
+
+    /* override state */
+    uint16_t _override[AVR_RC_INPUT_NUM_CHANNELS]; 
 };
 
 #endif // __AP_HAL_AVR_RC_INPUT_H__
