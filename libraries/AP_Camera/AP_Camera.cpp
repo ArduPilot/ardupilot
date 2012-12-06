@@ -4,7 +4,7 @@
 #include <AP_Relay.h>
 #include <../RC_Channel/RC_Channel_aux.h>
 
-extern int32_t wp_distance;
+extern int32_t wp_distance;     // Note: unfortunately this variable is in meter for ArduPlane and cm for ArduCopter
 extern AP_Relay relay;
 
 // ------------------------------
@@ -14,9 +14,31 @@ const AP_Param::GroupInfo AP_Camera::var_info[] PROGMEM = {
     // @Param: TRIGG_TYPE
     // @DisplayName: Camera shutter (trigger) type
     // @Description: how to trigger the camera to take a picture
-    // @Values: 0:Servo,1:relay,2:throttle_off_time,3:throttle_off_waypoint,4:transistor
+    // @Values: 0:Servo,1:Relay,2:Servo and turn off throttle,3:Servo when 3m from waypoint,4:transistor
     // @User: Standard
-    AP_GROUPINFO("TRIGG_TYPE",  0, AP_Camera, trigger_type, 0),
+    AP_GROUPINFO("TRIGG_TYPE",  0, AP_Camera, _trigger_type, AP_CAMERA_TRIGGER_DEFAULT_TRIGGER_TYPE),
+
+    // @Param: DURATION
+    // @DisplayName: Duration that shutter is held open
+    // @Description: How long the shutter will be held open in 10ths of a second (i.e. enter 10 for 1second, 50 for 5seconds)
+    // @Range: 0 50
+    // @User: Standard
+    AP_GROUPINFO("DURATION",    1, AP_Camera, _trigger_duration, AP_CAMERA_TRIGGER_DEFAULT_DURATION),
+
+    // @Param: SERVO_ON
+    // @DisplayName: Servo ON PWM value
+    // @Description: PWM value to move servo to when shutter is activated
+    // @Range: 1000 2000
+    // @User: Standard
+    AP_GROUPINFO("SERVO_ON",    2, AP_Camera, _servo_on_pwm, AP_CAMERA_SERVO_ON_PWM),
+
+    // @Param: SERVO_OFF
+    // @DisplayName: Servo OFF PWM value
+    // @Description: PWM value to move servo to when shutter is deactivated
+    // @Range: 1000 2000
+    // @User: Standard
+    AP_GROUPINFO("SERVO_OFF",   3, AP_Camera, _servo_off_pwm, AP_CAMERA_SERVO_OFF_PWM),
+
     AP_GROUPEND
 };
 
@@ -25,9 +47,10 @@ const AP_Param::GroupInfo AP_Camera::var_info[] PROGMEM = {
 void
 AP_Camera::servo_pic()
 {
-	RC_Channel_aux::set_radio_to_max(RC_Channel_aux::k_cam_trigger);
-	// leave a message that it should be active for two event loop cycles
-	keep_cam_trigg_active_cycles = 2;
+	RC_Channel_aux::set_radio(RC_Channel_aux::k_cam_trigger, _servo_on_pwm);
+
+	// leave a message that it should be active for this many loops (assumes 50hz loops)
+	_trigger_counter = constrain(_trigger_duration*5,0,255);
 }
 
 /// basic relay activation
@@ -35,7 +58,9 @@ void
 AP_Camera::relay_pic()
 {
     relay.on();
-    keep_cam_trigg_active_cycles = 2;           // leave a message that it should be active for two event loop cycles
+
+    // leave a message that it should be active for this many loops (assumes 50hz loops)
+    _trigger_counter = constrain(_trigger_duration*5,0,255);
 }
 
 /// pictures blurry? use this trigger. Turns off the throttle until for # of cycles of medium loop then takes the picture and re-enables the throttle.
@@ -44,82 +69,78 @@ AP_Camera::throttle_pic()
 {
 // TODO find a way to do this without using the global parameter g
 //	g.channel_throttle.radio_out = g.throttle_min;
-    if (thr_pic == 10) {
+    if (_thr_pic_counter == 10) {
         servo_pic();            // triggering method
-        thr_pic = 0;
+        _thr_pic_counter = 0;
 //		g.channel_throttle.radio_out = g.throttle_cruise;
     }
-    thr_pic++;
+    _thr_pic_counter++;
 }
 
-/// pictures blurry? use this trigger. Turns off the throttle until closer to waypoint then takes the picture and re-enables the throttle.
+/// distance_pic - triggers picture when within 3m of waypoint
 void
 AP_Camera::distance_pic()
 {
-// TODO find a way to do this without using the global parameter g
-//	g.channel_throttle.radio_out = g.throttle_min;
-    if (wp_distance < 3) {
+    if (wp_distance < AP_CAMERA_WP_DISTANCE) {
         servo_pic();            // triggering method
-//		g.channel_throttle.radio_out = g.throttle_cruise;
     }
 }
 
 /// hacked the circuit to run a transistor? use this trigger to send output.
 void
-AP_Camera::NPN_pic()
+AP_Camera::transistor_pic()
 {
     // TODO: Assign pin spare pin for output
-    digitalWrite(camtrig, HIGH);
-    keep_cam_trigg_active_cycles = 1;           // leave a message that it should be active for two event loop cycles
+    digitalWrite(AP_CAMERA_TRANSISTOR_PIN, HIGH);
+
+    // leave a message that it should be active for two event loop cycles
+    _trigger_counter = 1;
 }
 
 /// single entry point to take pictures
 void
 AP_Camera::trigger_pic()
 {
-    switch (trigger_type)
+    switch (_trigger_type)
     {
-    case 0:
+    case AP_CAMERA_TRIGGER_TYPE_SERVO:
         servo_pic();                    // Servo operated camera
         break;
-    case 1:
+    case AP_CAMERA_TRIGGER_TYPE_RELAY:
         relay_pic();                    // basic relay activation
         break;
-    case 2:
+    case AP_CAMERA_TRIGGER_TYPE_THROTTLE_OFF_TIME:
         throttle_pic();                 // pictures blurry? use this trigger. Turns off the throttle until for # of cycles of medium loop then takes the picture and re-enables the throttle.
         break;
-    case 3:
+    case AP_CAMERA_TRIGGER_TYPE_WP_DISTANCE:
         distance_pic();                 // pictures blurry? use this trigger. Turns off the throttle until closer to waypoint then takes the picture and re-enables the throttle.
         break;
-    case 4:
-        NPN_pic();                              // hacked the circuit to run a transistor? use this trigger to send output.
+    case AP_CAMERA_TRIGGER_TYPE_TRANSISTOR:
+        transistor_pic();                              // hacked the circuit to run a transistor? use this trigger to send output.
         break;
     }
 }
 
 /// de-activate the trigger after some delay, but without using a delay() function
+/// should be called at 50hz
 void
 AP_Camera::trigger_pic_cleanup()
 {
-    if (keep_cam_trigg_active_cycles)
-    {
-        keep_cam_trigg_active_cycles--;
-    }
-    else
-    {
-        switch (trigger_type)
-        {
-        case 0:
-        case 2:
-        case 3:
-			RC_Channel_aux::set_radio_to_min(RC_Channel_aux::k_cam_trigger);
-            break;
-        case 1:
-            relay.off();
-            break;
-        case 4:
-            digitalWrite(camtrig, LOW);
-            break;
+    if (_trigger_counter) {
+        _trigger_counter--;
+    } else {
+        switch (_trigger_type) {
+            case AP_CAMERA_TRIGGER_TYPE_SERVO:
+            case AP_CAMERA_TRIGGER_TYPE_THROTTLE_OFF_TIME:
+            case AP_CAMERA_TRIGGER_TYPE_WP_DISTANCE:
+                RC_Channel_aux::set_radio(RC_Channel_aux::k_cam_trigger, _servo_off_pwm);
+                break;
+            case AP_CAMERA_TRIGGER_TYPE_RELAY:
+                relay.off();
+                break;
+            case AP_CAMERA_TRIGGER_TYPE_TRANSISTOR:
+                digitalWrite(AP_CAMERA_TRANSISTOR_PIN, LOW);
+                break;
         }
     }
 }
