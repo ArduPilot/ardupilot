@@ -145,8 +145,15 @@ bool AP_Baro_MS5611::init()
     hal.scheduler->resume_timer_procs();
 
     // wait for at least one value to be read
+    uint32_t tstart = hal.scheduler->millis();
     while (!_updated) {
         hal.scheduler->delay(10);
+        if (hal.scheduler->millis() - tstart > 1000) {
+            hal.console->println_P(PSTR("PANIC: AP_Baro_MS5611 took more than "
+                        "1000ms to initialize"));
+            healthy = false;
+            return false;
+        }
     }
 
     healthy = true;
@@ -166,15 +173,23 @@ void AP_Baro_MS5611::_update(uint32_t tnow)
         return;
     }
 
+    static int semfail_ctr = 0;
     if (_spi_sem) {
         bool got = _spi_sem->get((void*)&_spi_sem);
-        if (!got) return;
+        if (!got) {
+            semfail_ctr++;
+            if (semfail_ctr > 100) {
+                hal.console->println_P(PSTR("PANIC: failed to take _spi_sem "
+                            "100 times in AP_Baro_MS5611::_update"));
+            }
+            return;
+        }
     }
 
     _timer = tnow;
 
     if (_state == 0) {
-        _s_D2 += _spi_read_adc();                                // On state 0 we read temp
+        _s_D2 += _spi_read_adc();// On state 0 we read temp
         _d2_count++;
         if (_d2_count == 32) {
             // we have summed 32 values. This only happens
@@ -196,7 +211,8 @@ void AP_Baro_MS5611::_update(uint32_t tnow)
             _d1_count = 64;
         }
         _state++;
-        _updated = true;                                                        // New pressure reading
+        // Now a new reading exists
+        _updated = true;
         if (_state == 5) {
             _spi_write(CMD_CONVERT_D2_OSR4096); // Command to read temperature
             _state = 0;
@@ -206,7 +222,11 @@ void AP_Baro_MS5611::_update(uint32_t tnow)
     }
 
     if (_spi_sem) {
-        _spi_sem->release((void*)&_spi_sem);
+        bool released = _spi_sem->release((void*)&_spi_sem);
+        if (!released) {
+            hal.console->println_P(PSTR("PANIC: _spi_sem release failed in "
+                        "AP_Baro_MS5611::_update"));
+        }
     }
 }
 
