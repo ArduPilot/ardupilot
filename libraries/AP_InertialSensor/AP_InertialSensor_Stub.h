@@ -14,7 +14,6 @@ public:
     }
 
     /* Concrete implementation of AP_InertialSensor functions: */
-    uint16_t        init();
     bool            update();
     bool            new_data_available();
     float           temperature();
