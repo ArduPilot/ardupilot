@@ -44,7 +44,7 @@ AVRUARTDriver::AVRUARTDriver(
 }
 /* UARTDriver method implementations */
 
-void AVRUARTDriver::begin(long baud, unsigned int rxSpace, unsigned int txSpace) {
+void AVRUARTDriver::begin(uint32_t baud, uint16_t rxSpace, uint16_t txSpace) {
 	uint16_t ubrr;
 	bool use_u2x = true;
 	bool need_allocate = true;
@@ -71,7 +71,8 @@ void AVRUARTDriver::begin(long baud, unsigned int rxSpace, unsigned int txSpace)
 
 	if (need_allocate) {
 		// allocate buffers
-		if (!_allocBuffer(_rxBuffer, rxSpace ? : _default_rx_buffer_size) || !_allocBuffer(_txBuffer, txSpace ?	: _default_tx_buffer_size)) {
+		if (!_allocBuffer(_rxBuffer, rxSpace ? : _default_rx_buffer_size)
+        || !_allocBuffer(_txBuffer, txSpace ? : _default_tx_buffer_size)) {
 			end();
 			return; // couldn't allocate buffers - fatal
 		}
@@ -118,7 +119,7 @@ void AVRUARTDriver::end() {
 	_open = false;
 }
 
-int AVRUARTDriver::available(void) {
+int16_t AVRUARTDriver::available(void) {
 	if (!_open)
 		return (-1);
 	return ((_rxBuffer->head - _rxBuffer->tail) & _rxBuffer->mask);
@@ -126,13 +127,13 @@ int AVRUARTDriver::available(void) {
 
 
 
-int AVRUARTDriver::txspace(void) {
+int16_t AVRUARTDriver::txspace(void) {
 	if (!_open)
 		return (-1);
 	return ((_txBuffer->mask+1) - ((_txBuffer->head - _txBuffer->tail) & _txBuffer->mask));
 }
 
-int AVRUARTDriver::read(void) {
+int16_t AVRUARTDriver::read(void) {
 	uint8_t c;
 
 	// if the head and tail are equal, the buffer is empty
@@ -146,7 +147,7 @@ int AVRUARTDriver::read(void) {
 	return (c);
 }
 
-int AVRUARTDriver::peek(void) {
+int16_t AVRUARTDriver::peek(void) {
 
 	// if the head and tail are equal, the buffer is empty
 	if (!_open || (_rxBuffer->head == _rxBuffer->tail))
@@ -204,14 +205,12 @@ size_t AVRUARTDriver::write(uint8_t c) {
 }
 
 // Buffer management ///////////////////////////////////////////////////////////
-static inline unsigned int min (unsigned int a, unsigned int b)  {
-    return (a>b)?b:a;
-}
+    
 
-bool AVRUARTDriver::_allocBuffer(Buffer *buffer, unsigned int size)
+bool AVRUARTDriver::_allocBuffer(Buffer *buffer, uint16_t size)
 {
-	uint16_t	mask;
-	uint8_t		shift;
+	uint16_t mask;
+	uint8_t	 shift;
 
 	// init buffer state
 	buffer->head = buffer->tail = 0;
@@ -220,6 +219,7 @@ bool AVRUARTDriver::_allocBuffer(Buffer *buffer, unsigned int size)
 	// and then a mask to simplify wrapping operations.  Using __builtin_clz
 	// would seem to make sense, but it uses a 256(!) byte table.
 	// Note that we ignore requests for more than BUFFER_MAX space.
+    #define min(a,b) ((a>b)?b:a)
 	for (shift = 1; (1U << shift) < min(_max_buffer_size, size); shift++)
 		;
 	mask = (1 << shift) - 1;

@@ -24,8 +24,8 @@ public:
 		const uint8_t portEnableBits, const uint8_t portTxBits);
 
     /* Implementations of UARTDriver virtual methods */
-    void begin(long b) { begin(b, 0, 0); }
-    void begin(long b, unsigned int rxS, unsigned int txS);
+    void begin(uint32_t b) { begin(b, 0, 0); }
+    void begin(uint32_t b, uint16_t rxS, uint16_t txS);
     void end();
     void flush();
     bool is_initialized() { return _initialized; }
@@ -47,10 +47,10 @@ public:
             __attribute__ ((format(__printf__, 2, 3)));
 
     /* Implementations of Stream virtual methods */
-    int available();
-    int txspace();
-    int read();
-    int peek();
+    int16_t available();
+    int16_t txspace();
+    int16_t read();
+    int16_t peek();
 
     /* Implementations of Print virtual methods */
     size_t write(uint8_t c);
@@ -96,7 +96,7 @@ private:
 	/// @param	size		The desired buffer size.
 	/// @returns			True if the buffer was allocated successfully.
 	///
-	static bool _allocBuffer(Buffer *buffer, unsigned int size);
+	static bool _allocBuffer(Buffer *buffer, uint16_t size);
 
 	/// Frees the allocated buffer in a descriptor
 	///
@@ -105,16 +105,16 @@ private:
 	static void _freeBuffer(Buffer *buffer);
 
 	/// default receive buffer size
-	static const unsigned int	_default_rx_buffer_size = 128;
+	static const uint16_t _default_rx_buffer_size = 128;
 
 	/// default transmit buffer size
-	static const unsigned int	_default_tx_buffer_size = 16;
+	static const uint16_t _default_tx_buffer_size = 16;
 
 	/// maxium tx/rx buffer size
 	/// @note if we could bring the max size down to 256, the mask and head/tail
 	///       pointers in the buffer could become uint8_t.
 	///
-	static const unsigned int	_max_buffer_size = 512;
+	static const uint16_t _max_buffer_size = 512;
 };
 
 extern AP_HAL_AVR::AVRUARTDriver::Buffer __AVRUARTDriver__rxBuffer[];
