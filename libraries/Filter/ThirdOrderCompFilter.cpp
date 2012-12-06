@@ -13,31 +13,22 @@
 // update_gains - update gains from time constant (given in seconds)
 void ThirdOrderCompFilter::update_gains(float time_constant_seconds_xy, float time_constant_seconds_z)
 {
-    static float last_time_constant_xy = 0;
-    static float last_time_constant_z = 0;
-
     // X & Y axis time constant
     if( time_constant_seconds_xy == 0 ) {
         _k1_xy = _k2_xy = _k3_xy = 0;
     }else{
-        if( time_constant_seconds_xy != last_time_constant_xy ) {
-            _k1_xy = 3 / time_constant_seconds_xy;
-            _k2_xy = 3 / (time_constant_seconds_xy*time_constant_seconds_xy);
-            _k3_xy = 1 / (time_constant_seconds_xy*time_constant_seconds_xy*time_constant_seconds_xy);
-            last_time_constant_xy = time_constant_seconds_xy;
-        }
+        _k1_xy = 3 / time_constant_seconds_xy;
+        _k2_xy = 3 / (time_constant_seconds_xy*time_constant_seconds_xy);
+        _k3_xy = 1 / (time_constant_seconds_xy*time_constant_seconds_xy*time_constant_seconds_xy);
     }
 
     // Z axis time constant
     if( time_constant_seconds_z == 0 ) {
         _k1_z = _k2_z = _k3_z = 0;
     }else{
-        if( time_constant_seconds_z != last_time_constant_z ) {
-            _k1_z = 3 / time_constant_seconds_z;
-            _k2_z = 3 / (time_constant_seconds_z*time_constant_seconds_z);
-            _k3_z = 1 / (time_constant_seconds_z*time_constant_seconds_z*time_constant_seconds_z);
-            last_time_constant_z = time_constant_seconds_z;
-        }
+        _k1_z = 3 / time_constant_seconds_z;
+        _k2_z = 3 / (time_constant_seconds_z*time_constant_seconds_z);
+        _k3_z = 1 / (time_constant_seconds_z*time_constant_seconds_z*time_constant_seconds_z);
     }
 }
 
