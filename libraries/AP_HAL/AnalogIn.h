@@ -6,7 +6,8 @@
 
 class AP_HAL::AnalogSource {
 public:
-    virtual float read() = 0;
+    virtual float read_average() = 0;
+    virtual float read_latest() = 0;
     virtual void set_pin(uint8_t p) = 0;
 };
 
