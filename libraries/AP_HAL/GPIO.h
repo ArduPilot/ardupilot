@@ -26,11 +26,11 @@ public:
     virtual uint8_t read(uint8_t pin) = 0;
     virtual void    write(uint8_t pin, uint8_t value) = 0;
     /* Alternative interface: */
-    virtual AP_HAL::DigitalSource* channel(int n) = 0;
+    virtual AP_HAL::DigitalSource* channel(uint16_t n) = 0;
 
     /* Interrupt interface: */
-    virtual bool    attach_interrupt(
-                        int interrupt_num, AP_HAL::Proc p, int mode) = 0;
+    virtual bool    attach_interrupt(uint8_t interrupt_num, AP_HAL::Proc p,
+            uint8_t mode) = 0;
 };
 
 #endif // __AP_HAL_GPIO_H__
