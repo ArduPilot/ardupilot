@@ -84,7 +84,7 @@ static inline uint16_t constrain_pulse(uint16_t p) {
 
 uint16_t APM2RCInput::read(uint8_t ch) {
     /* constrain ch */
-    if (ch < AVR_RC_INPUT_NUM_CHANNELS) return 0;
+    if (ch >= AVR_RC_INPUT_NUM_CHANNELS) return 0;
     /* grab channel from isr's memory in critical section*/
     cli();
     uint16_t capt = _pulse_capt[ch];
