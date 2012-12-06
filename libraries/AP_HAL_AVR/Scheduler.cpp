@@ -1,3 +1,4 @@
+/// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 
 #include <avr/io.h>
 #include <avr/interrupt.h>
@@ -183,6 +184,7 @@ void AVRScheduler::delay(uint32_t ms)
     while (ms > 0) {
         while ((micros() - start) >= 1000) {
             ms--;
+            if (ms == 0) break;
             start += 1000;
         }
         if (_min_delay_cb_ms <= ms) {
