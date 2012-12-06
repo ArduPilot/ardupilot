@@ -112,6 +112,7 @@ static void process_now_command()
         break;
 
     case MAV_CMD_DO_DIGICAM_CONTROL:                    // Mission command to control an on-board camera controller system. |Session control e.g. show/hide lens| Zoom's absolute position| Zooming step value to offset zoom from the current position| Focus Locking, Unlocking or Re-locking| Shooting Command| Command Identity| Empty|
+        do_take_picture();
         break;
 #endif
 
@@ -914,4 +915,11 @@ static void do_nav_roi()
     target_WP = command_nav_queue;
     auto_yaw = get_bearing_cd(&current_loc, &target_WP);
 #endif
+}
+
+// do_take_picture - take a picture with the camera library
+static void do_take_picture()
+{
+    g.camera.trigger_pic();
+    Serial.print_P(PSTR("Camera!!"));
 }

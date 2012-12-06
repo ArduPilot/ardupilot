@@ -145,7 +145,7 @@ static void read_trim_switch()
 #if CAMERA == ENABLED
         case CH7_CAMERA_TRIGGER:
             if(ap_system.CH7_flag) {
-                g.camera.trigger_pic();
+                do_take_picture();
             }
             break;
 #endif
