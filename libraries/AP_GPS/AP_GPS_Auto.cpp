@@ -49,7 +49,7 @@ AP_GPS_Auto::read(void)
 		// its been more than 1.2 seconds without detection on this
 		// GPS - switch to another baud rate
     uint32_t newbaud = pgm_read_dword(&baudrates[last_baud]);
-    hal.console->printf_P(PSTR("gps set baud %ld\r\n"), newbaud);
+     /* DEBUG: hal.console->printf_P(PSTR("gps set baud %ld\r\n"), newbaud); */
 		_port->begin(newbaud, 256, 16);		
 		last_baud++;
 		last_baud_change_ms = now;
