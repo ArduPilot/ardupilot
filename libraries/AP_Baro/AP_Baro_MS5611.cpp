@@ -112,9 +112,15 @@ void AP_Baro_MS5611::_spi_write(uint8_t reg)
 // SPI should be initialized externally
 bool AP_Baro_MS5611::init()
 {
-    hal.scheduler->suspend_timer_procs();
     _spi = hal.spi->device(AP_HAL::SPIDevice_MS5611);
+    if (_spi == NULL) {
+        hal.console->println_P(PSTR("PANIC: AP_Baro_MS5611 could not get "
+                    "valid SPI device driver!"));
+        return false;
+    }
     _spi_sem = _spi->get_semaphore();
+
+    hal.scheduler->suspend_timer_procs();
 
     _spi_write(CMD_MS5611_RESET);
     hal.scheduler->delay(4);
