@@ -21,7 +21,15 @@ void CommonDataflash::erase_all() {
 
 bool CommonDataflash::need_erase() {
     start_read(_num_pages+1);
-    return (read_dword() != DF_LOGGING_FORMAT);
+    uint32_t fmtbyte = read_dword();
+    if (fmtbyte != DF_LOGGING_FORMAT) {
+        hal.console->printf_P(
+                PSTR("logging fmt got %lX expected %lX\r\n"),
+                fmtbyte, DF_LOGGING_FORMAT);
+        return true;
+    } else {
+        return false;
+    }
 }
 
 void CommonDataflash::start_write(int16_t page) {
