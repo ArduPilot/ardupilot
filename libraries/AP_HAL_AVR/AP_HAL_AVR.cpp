@@ -62,9 +62,9 @@ const HAL_AVR AP_HAL_AVR_APM1(
 
 /* On APM1 the physical UART3 is used for SPI. */
 const HAL_AVR AP_HAL_AVR_APM2(
-        (UARTDriver*) &avrUart0Driver,
-        (UARTDriver*) &avrUart1Driver,
-        (UARTDriver*) &avrUart2Driver,
+        (UARTDriver*) &avrUart0Driver, /* phys UART0 -> uartA */
+        (UARTDriver*) &avrUart1Driver, /* phys UART1 -> uartB */
+        (UARTDriver*) &avrUart2Driver, /* phys UART2 -> uartC */
         &avrI2CDriver,
         &apm2SPIDriver,
         &avrAnalogIn,
