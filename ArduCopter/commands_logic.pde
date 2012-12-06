@@ -358,17 +358,6 @@ static bool verify_takeoff()
 // verify_land - returns true if landing has been completed
 static bool verify_land()
 {
-    // loiter above 3m
-    if(current_loc.alt > 300) {
-        wp_control = LOITER_MODE;
-    }
-
-    // turn off loiter below 1m
-    // To-Do: instead of turning off loiter we should make loiter less aggressive
-    if(current_loc.alt < 100 ) {
-        wp_control      = NO_NAV_MODE;
-    }
-
     // rely on THROTTLE_LAND mode to correctly update landing status
     return ap.land_complete;
 }
