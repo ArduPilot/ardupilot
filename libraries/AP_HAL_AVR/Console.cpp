@@ -27,9 +27,9 @@ void AVRConsoleDriver::backend_close() {
     _user_backend = false;
 }
 
-int AVRConsoleDriver::backend_read(uint8_t *data, int len) {
-    for (int i = 0; i < len; i++) {
-        int b = _txbuf.pop();
+size_t AVRConsoleDriver::backend_read(uint8_t *data, size_t len) {
+    for (size_t i = 0; i < len; i++) {
+        int16_t b = _txbuf.pop();
         if (b != -1) {
             data[i] = (uint8_t) b;
         } else {
@@ -39,8 +39,8 @@ int AVRConsoleDriver::backend_read(uint8_t *data, int len) {
     return len;
 }
 
-int AVRConsoleDriver::backend_write(const uint8_t *data, int len) {
-    for (int i = 0; i < len; i++) {
+size_t AVRConsoleDriver::backend_write(const uint8_t *data, size_t len) {
+    for (size_t i = 0; i < len; i++) {
         bool valid = _rxbuf.push(data[i]);
         if (!valid) {
             return i;
@@ -78,7 +78,7 @@ void AVRConsoleDriver::_printf_P(const prog_char *fmt, ...) {
 }
 
 // Stream method implementations /////////////////////////////////////////
-int AVRConsoleDriver::available(void) {
+int16_t AVRConsoleDriver::available(void) {
     if (_user_backend) {
         return _rxbuf.bytes_used();
     } else {
@@ -86,7 +86,7 @@ int AVRConsoleDriver::available(void) {
     }
 }
 
-int AVRConsoleDriver::txspace(void) {
+int16_t AVRConsoleDriver::txspace(void) {
     if (_user_backend) {
         return _rxbuf.bytes_free();
     } else {
@@ -94,7 +94,7 @@ int AVRConsoleDriver::txspace(void) {
     }
 }
 
-int AVRConsoleDriver::read() {
+int16_t AVRConsoleDriver::read() {
     if (_user_backend) {
         return _rxbuf.pop();  
     } else {
@@ -102,7 +102,7 @@ int AVRConsoleDriver::read() {
     }
 }
 
-int AVRConsoleDriver::peek() {
+int16_t AVRConsoleDriver::peek() {
     if (_user_backend) {
         return _rxbuf.peek();
     } else {
@@ -126,7 +126,7 @@ size_t AVRConsoleDriver::write(uint8_t c) {
  * A synchronous nonblocking ring buffer, based on the AVRUARTDriver::Buffer
  */
 
-bool AVRConsoleDriver::Buffer::allocate(int size) {
+bool AVRConsoleDriver::Buffer::allocate(uint16_t size) {
     _head = 0;
     _tail = 0;
     uint8_t shift;
@@ -158,21 +158,21 @@ bool AVRConsoleDriver::Buffer::push(uint8_t b) {
     return true;
 }
 
-int AVRConsoleDriver::Buffer::pop() {
+int16_t AVRConsoleDriver::Buffer::pop() {
     if ( _tail == _head ) {
         return -1;
     }
     uint8_t b = _bytes[_tail];
     _tail = ( _tail + 1 ) & _mask;
-    return (int) b;
+    return (int16_t) b;
 }
 
-int AVRConsoleDriver::Buffer::peek() {
+int16_t AVRConsoleDriver::Buffer::peek() {
     if ( _tail == _head ) {
         return -1;
     }
     uint8_t b = _bytes[_tail];
-    return (int) b;
+    return (int16_t) b;
 }
 
 uint16_t AVRConsoleDriver::Buffer::bytes_used() {

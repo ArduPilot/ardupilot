@@ -13,8 +13,8 @@ public:
     void init(void* baseuartdriver);
     void backend_open();
     void backend_close();
-    int backend_read(uint8_t *data, int len);
-    int backend_write(const uint8_t *data, int len);
+    size_t backend_read(uint8_t *data, size_t len);
+    size_t backend_write(const uint8_t *data, size_t len);
 
     /* Implementations of BetterStream virtual methods */
     void print_P(const prog_char_t *s);
@@ -25,20 +25,20 @@ public:
             __attribute__ ((format(__printf__, 2, 3)));
 
     /* Implementations of Stream virtual methods */
-    int available();
-    int txspace();
-    int read();
-    int peek();
+    int16_t available();
+    int16_t txspace();
+    int16_t read();
+    int16_t peek();
 
     /* Implementations of Print virtual methods */
     size_t write(uint8_t c);
 private:
     struct Buffer {
         /* public methods:*/
-        bool allocate(int size);
+        bool allocate(uint16_t size);
         bool push(uint8_t b);
-        int  pop();
-        int  peek();
+        int16_t  pop();
+        int16_t  peek();
 
         uint16_t bytes_free();
         uint16_t bytes_used();
