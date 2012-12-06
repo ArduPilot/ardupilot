@@ -12,14 +12,24 @@ ADCSource::ADCSource(uint8_t pin, float prescale) :
     _prescale(prescale)
 {}
 
-float ADCSource::read() {
+float ADCSource::read_average() {
     if (_pin == ANALOG_INPUT_BOARD_VCC) {
-        // XXX we really want a version of this which is using the raw voltage
-        // and a different one for the low passed average vcc
-        uint16_t v = (uint16_t) read_average();
+        uint16_t v = (uint16_t) _read_average();
         return 1126400UL / v;
     } else {
-        return _prescale * read_average();
+        return _prescale * _read_average();
+    }
+}
+
+float ADCSource::read_latest() {
+    uint8_t sreg = SREG;
+    cli();
+    uint16_t latest = _latest;
+    SREG = sreg;
+    if (_pin == ANALOG_INPUT_BOARD_VCC) {
+        return 1126400UL / latest;
+    } else {
+        return _prescale * latest;
     }
 }
 
@@ -28,7 +38,7 @@ void ADCSource::set_pin(uint8_t pin) {
 }
 
 /* read_average is called from the normal thread (not an interrupt). */
-float ADCSource::read_average() {
+float ADCSource::_read_average() {
     uint16_t sum;
     uint8_t sum_count;
 
@@ -70,6 +80,7 @@ void ADCSource::setup_read() {
  * cli/sei to read these variables from outside an interrupt. */
 void ADCSource::new_sample(uint16_t sample) {
     _sum += sample;
+    _latest = sample;
     if (_sum_count >= 63) {
         _sum >>= 1;
         _sum_count = 32;

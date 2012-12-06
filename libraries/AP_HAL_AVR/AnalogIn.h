@@ -15,7 +15,8 @@ public:
     ADCSource(uint8_t pin, float prescale = 1.0);
 
     /* implement AnalogSource virtual api: */
-    float read();
+    float read_average();
+    float read_latest();
     void set_pin(uint8_t p);
 
     /* implementation specific interface: */
@@ -28,14 +29,15 @@ public:
     void setup_read();
 
     /* read_average: called to calculate and clear the internal average.
-     * implements read(). */
-    float read_average();
+     * implements read_average(), unscaled. */
+    float _read_average();
 
     int16_t get_pin() { return _pin; };
 private:
-    /* _sum_count and _sum are used from both an interrupt and normal thread */
+    /* following three are used from both an interrupt and normal thread */
     volatile uint8_t _sum_count;
     volatile uint16_t _sum;
+    volatile uint16_t _latest;
 
     /* _pin designates the ADC input mux for the sample */
     uint8_t _pin;
