@@ -16,6 +16,8 @@ extern const AP_HAL::HAL& hal;
 
 AVRSemaphore AVRSPI0DeviceDriver::_semaphore;
 
+static volatile bool spi0_transferflag = false;
+
 void AVRSPI0DeviceDriver::init() {
     hal.gpio->pinMode(SPI0_MISO_PIN, GPIO_INPUT);
     hal.gpio->pinMode(SPI0_MOSI_PIN, GPIO_OUTPUT);
@@ -50,12 +52,18 @@ void AVRSPI0DeviceDriver::cs_release() {
 }
 
 uint8_t AVRSPI0DeviceDriver::transfer(uint8_t data) {
+    if (spi0_transferflag) {
+        hal.console->println_P(PSTR("PANIC: SPI0 transfer collision"));
+    }
+    spi0_transferflag = true;
     SPDR = data;
     if (SPSR & _BV(WCOL)) {
         hal.console->println_P(PSTR("PANIC: SPI0 write collision"));
         return 0;
     }
     while(!(SPSR & _BV(SPIF)));
-    return SPDR;
+    uint8_t read_spdr = SPDR;
+    spi0_transferflag = false;
+    return read_spdr;
 }
 
