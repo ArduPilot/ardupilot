@@ -7,6 +7,16 @@
 
 #define AVR_SCHEDULER_MAX_TIMER_PROCS 4
 
+/* Class for managing the AVR Timers: */
+class AP_HAL_AVR::AVRTimer {
+public:
+    static void     init();
+    static uint32_t millis();
+    static uint32_t micros();
+    static void     delay_microseconds(uint16_t us);
+};
+
+/* Scheduler implementation: */
 class AP_HAL_AVR::AVRScheduler : public AP_HAL::Scheduler {
 public:
     AVRScheduler();
@@ -30,15 +40,12 @@ public:
     void     reboot();
 
 private:
-    /* Implementation specific methods: */
+    static AVRTimer _timer;
+
     /* timer_event() is static so it can be called from an interrupt.
      * (This is effectively a singleton class.)
      * _prefix: this method must be public */
     static void _timer_event();
-
-    /* _micros() is the implementation of micros() as a static private method
-     * so we can use it from inside _timer_event() without virtual dispatch. */
-    static uint32_t _micros();
 
     AP_HAL::Proc _delay_cb;
     uint16_t _min_delay_cb_ms;

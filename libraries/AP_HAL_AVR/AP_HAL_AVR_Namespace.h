@@ -26,6 +26,7 @@ namespace AP_HAL_AVR {
     class APM1RCOutput;
     class APM2RCOutput;
     class AVRScheduler;
+    class AVRTimer;
     class AVRSemaphore;
     class ISRRegistry;
 }
