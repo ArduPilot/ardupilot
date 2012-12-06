@@ -75,13 +75,24 @@ static volatile uint32_t _ch6_last_sample_time_micros = 0;
 AP_HAL::SPIDeviceDriver* AP_ADC_ADS7844::_spi = NULL;
 AP_HAL::Semaphore* AP_ADC_ADS7844::_spi_sem = NULL;
 
+
 void AP_ADC_ADS7844::read(uint32_t tnow)
 {
+    static int semfail_ctr = 0;
     uint8_t ch;
 
     if (_spi_sem) {
         bool got = _spi_sem->get((void*)&_spi_sem);
-        if (!got) return;
+        if (!got) { 
+            semfail_ctr++;
+            if (semfail_ctr > 100) {
+                hal.console->println_P(PSTR("PANIC: failed to take _spi_sem "
+                            "100 times in AP_ADC_ADS7844::read"));
+            }
+            return;
+        } else {
+            semfail_ctr = 0;
+        }   
     }
 
     _spi->cs_assert();
@@ -118,7 +129,11 @@ void AP_ADC_ADS7844::read(uint32_t tnow)
     _spi->cs_release();
 
     if (_spi_sem) {
-        _spi_sem->release((void*)&_spi_sem);
+        bool released = _spi_sem->release((void*)&_spi_sem);
+        if (!released) {
+            hal.console->println_P(PSTR("PANIC: _spi_sem release failed in "
+                        "AP_ADC_ADS7844::read"));
+        }   
     }
 
     // record time of this sample
@@ -140,7 +155,11 @@ void AP_ADC_ADS7844::Init()
     _spi_sem = _spi->get_semaphore();
     
     if (_spi_sem) {
-        while (!_spi_sem->get((void*)&_spi_sem));
+        bool taken = _spi_sem->get((void*)&_spi_sem);
+        if (!taken) {
+            hal.console->printf_P(PSTR("PANIC: failed to take _spi_sem in"
+                        "AP_ADC_ADS7844::Init"));
+        }
     }
     
     _spi->cs_assert();
@@ -157,13 +176,17 @@ void AP_ADC_ADS7844::Init()
     _spi->cs_release();
 
     if (_spi_sem) {
-        _spi_sem->release((void*)&_spi_sem);
+        bool released = _spi_sem->release((void*)&_spi_sem);
+        if (!released) {
+            hal.console->println_P(PSTR("PANIC: failed to release_spi_sem in "
+                        "AP_ADC_ADS7844::Init"));
+        }   
     }
 
     _ch6_last_sample_time_micros = hal.scheduler->micros();
 
-    hal.scheduler->resume_timer_procs();
     hal.scheduler->register_timer_process( AP_ADC_ADS7844::read );
+    hal.scheduler->resume_timer_procs();
 
 }
 
