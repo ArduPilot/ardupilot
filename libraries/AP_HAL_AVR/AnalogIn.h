@@ -31,7 +31,7 @@ public:
      * implements read(). */
     float read_average();
 
-    int get_pin() { return _pin; };
+    int16_t get_pin() { return _pin; };
 private:
     /* _sum_count and _sum are used from both an interrupt and normal thread */
     volatile uint8_t _sum_count;
@@ -49,18 +49,18 @@ class AP_HAL_AVR::AVRAnalogIn : public AP_HAL::AnalogIn {
 public:
     AVRAnalogIn();
     void init(void* ap_hal_scheduler);
-    AP_HAL::AnalogSource* channel(int n);
-    AP_HAL::AnalogSource* channel(int n, float prescale);
+    AP_HAL::AnalogSource* channel(int16_t n);
+    AP_HAL::AnalogSource* channel(int16_t n, float prescale);
 
 protected: 
-    static ADCSource* _find_or_create_channel(int num, float scale);
-    static ADCSource* _create_channel(int num, float scale);
+    static ADCSource* _find_or_create_channel(int16_t num, float scale);
+    static ADCSource* _create_channel(int16_t num, float scale);
     static void _register_channel(ADCSource*);
     static void _timer_event(uint32_t);
     static ADCSource* _channels[AVR_INPUT_MAX_CHANNELS];
-    static int _num_channels;
-    static int _active_channel;
-    static int _channel_repeat_count;
+    static int16_t _num_channels;
+    static int16_t _active_channel;
+    static int16_t _channel_repeat_count;
 
 private:
     ADCSource _vcc;

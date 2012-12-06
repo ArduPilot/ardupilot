@@ -14,9 +14,9 @@ extern const AP_HAL::HAL& hal;
 
 /* Static variable instances */
 ADCSource* AVRAnalogIn::_channels[AVR_INPUT_MAX_CHANNELS] = {NULL};
-int AVRAnalogIn::_num_channels = 0;
-int AVRAnalogIn::_active_channel = 0;
-int AVRAnalogIn::_channel_repeat_count = 0;
+int16_t AVRAnalogIn::_num_channels = 0;
+int16_t AVRAnalogIn::_active_channel = 0;
+int16_t AVRAnalogIn::_channel_repeat_count = 0;
 
 AVRAnalogIn::AVRAnalogIn() :
     _vcc(ADCSource(ANALOG_INPUT_BOARD_VCC))
@@ -29,8 +29,8 @@ void AVRAnalogIn::init(void* machtnichts) {
     _register_channel(&_vcc);
 }
 
-ADCSource* AVRAnalogIn::_find_or_create_channel(int pin, float scale) {
-    for(int i = 0; i < _num_channels; i++) {
+ADCSource* AVRAnalogIn::_find_or_create_channel(int16_t pin, float scale) {
+    for(int16_t i = 0; i < _num_channels; i++) {
         if (_channels[i]->_pin == pin) {
             return _channels[i];
         }
@@ -38,7 +38,7 @@ ADCSource* AVRAnalogIn::_find_or_create_channel(int pin, float scale) {
     return _create_channel(pin, scale);
 }
 
-ADCSource* AVRAnalogIn::_create_channel(int chnum, float scale) {
+ADCSource* AVRAnalogIn::_create_channel(int16_t chnum, float scale) {
     ADCSource *ch = new ADCSource(chnum, scale);
     _register_channel(ch);
     return ch;
@@ -112,10 +112,10 @@ next_channel:
 }
 
 
-AP_HAL::AnalogSource* AVRAnalogIn::channel(int ch) {
+AP_HAL::AnalogSource* AVRAnalogIn::channel(int16_t ch) {
     return this->channel(ch, 1.0);
 }
-AP_HAL::AnalogSource* AVRAnalogIn::channel(int ch, float scale) {
+AP_HAL::AnalogSource* AVRAnalogIn::channel(int16_t ch, float scale) {
     if (ch == ANALOG_INPUT_BOARD_VCC) {
             return &_vcc;
     } else {
