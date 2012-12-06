@@ -819,9 +819,9 @@ get_throttle_accel(int16_t z_target_accel)
     if( motors.reached_limit(AP_MOTOR_THROTTLE_LIMIT) ) {
         i = g.pid_throttle_accel.get_integrator();
     }else{
-        i = g.pid_throttle_accel.get_i(z_accel_error, .02);
+        i = g.pid_throttle_accel.get_i(z_accel_error, .01);
     }
-    d = g.pid_throttle_accel.get_d(z_accel_error, .02);
+    d = g.pid_throttle_accel.get_d(z_accel_error, .01);
 
     //
     // limit the rate
@@ -833,11 +833,11 @@ get_throttle_accel(int16_t z_target_accel)
 #if LOGGING_ENABLED == ENABLED
     static int8_t log_counter = 0;                                      // used to slow down logging of PID values to dataflash
     // log output if PID loggins is on and we are tuning the yaw
-    if( g.log_bitmask & MASK_LOG_PID && g.radio_tuning == CH6_THROTTLE_KP ) {
+    if( g.log_bitmask & MASK_LOG_PID && (g.radio_tuning == CH6_THR_ACCEL_KD || g.radio_tuning == CH6_THROTTLE_KP) ) {
         log_counter++;
         if( log_counter >= 10 ) {               // (update rate / desired output rate) = (50hz / 10hz) = 5hz
             log_counter = 0;
-            Log_Write_PID(CH6_THROTTLE_KP, z_accel_error, p, i, d, output, tuning_value);
+            Log_Write_PID(CH6_THR_ACCEL_KD, z_accel_error, p, i, d, output, tuning_value);
         }
     }
 #endif
@@ -982,6 +982,7 @@ get_throttle_rate(int16_t z_target_speed)
     }
 
     // update throttle cruise
+    // TO-DO: this may not be correct because g.rc_3.servo_out has not been updated for this iteration
     if( z_target_speed == 0 ) {
         update_throttle_cruise(g.rc_3.servo_out);
     }
