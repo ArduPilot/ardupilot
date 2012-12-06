@@ -250,7 +250,15 @@ bool AP_InertialSensor_MPU6000::update( void )
     Vector3f accel_offset = _accel_offset.get();
 
     // wait for at least 1 sample
-    while (_count == 0) /* nop */;
+    uint32_t tstart = hal.scheduler->micros();
+    while (_count == 0) {
+        if (hal.scheduler->micros() - tstart > 50000) {
+            hal.console->println_P(
+                    PSTR("PANIC: AP_InertialSensor_MPU6000::update "
+                        "waited 50ms for data from interrupt"));
+            return false;
+        }
+    }
 
     // disable interrupts for mininum time
     hal.scheduler->begin_atomic();
@@ -302,10 +310,21 @@ float AP_InertialSensor_MPU6000::temperature() {
  */
 void AP_InertialSensor_MPU6000::read(uint32_t)
 {
+    static int semfail_ctr = 0;
     if (_spi_sem) {
-      bool has = _spi_sem->get((void*)&_spi_sem);
-      if (!has) return;
+        bool got = _spi_sem->get((void*)&_spi_sem);
+        if (!got) { 
+            semfail_ctr++;
+            if (semfail_ctr > 100) {
+                hal.console->println_P(PSTR("PANIC: failed to take _spi_sem "
+                            "100 times in AP_InertialSensor_MPU6000::read"));
+            }
+            return;
+        } else {
+            semfail_ctr = 0;
+        }   
     }
+
     // now read the data
     _spi->cs_assert();
     uint8_t addr = MPUREG_ACCEL_XOUT_H | 0x80;
@@ -332,7 +351,11 @@ void AP_InertialSensor_MPU6000::read(uint32_t)
     }
 
     if (_spi_sem) {
-      _spi_sem->release((void*)&_spi_sem);
+        bool released = _spi_sem->release((void*)&_spi_sem);
+        if (!released) {
+            hal.console->println_P(PSTR("PANIC: _spi_sem release failed in "
+                        "AP_InertialSensor_MPU6000::read"));
+        }   
     }
 }
 
