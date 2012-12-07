@@ -1124,10 +1124,6 @@
  # define SECONDARY_DMP_ENABLED DISABLED
 #endif
 
-#ifndef ALTERNATIVE_YAW_MODE
- # define ALTERNATIVE_YAW_MODE DISABLED
-#endif
-
 // Inertia based contollers.
 #ifndef INERTIAL_NAV_XY
  # define INERTIAL_NAV_XY DISABLED
