@@ -2158,12 +2158,14 @@ static void tuning(){
         break;
 #endif
 
-#if INERTIAL_NAV_XY == ENABLED || INERTIAL_NAV_Z == ENABLED
     case CH6_INAV_TC:
+#if INERTIAL_NAV_XY == ENABLED
         inertial_nav.set_time_constant_xy(tuning_value);
-        inertial_nav.set_time_constant_z(tuning_value);
-        break;
 #endif
+#if INERTIAL_NAV_Z == ENABLED
+        inertial_nav.set_time_constant_z(tuning_value);
+#endif
+        break;
 
     case CH6_THR_ACCEL_KP:
         g.pid_throttle_accel.kP(tuning_value);
