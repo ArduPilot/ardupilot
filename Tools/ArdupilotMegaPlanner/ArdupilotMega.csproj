@@ -292,6 +292,12 @@
       <DependentUpon>ConnectionStats.cs</DependentUpon>
     </Compile>
     <Compile Include="Controls\CustomMessageBox.cs" />
+    <Compile Include="Controls\FlashMessage.cs">
+      <SubType>Component</SubType>
+    </Compile>
+    <Compile Include="Controls\FlashMessage.designer.cs">
+      <DependentUpon>FlashMessage.cs</DependentUpon>
+    </Compile>
     <Compile Include="Controls\HSI.cs">
       <SubType>UserControl</SubType>
     </Compile>
@@ -411,6 +417,12 @@
     </Compile>
     <Compile Include="GCSViews\ConfigurationView\ConfigAteryxSensors.Designer.cs">
       <DependentUpon>ConfigAteryxSensors.cs</DependentUpon>
+    </Compile>
+    <Compile Include="GCSViews\ConfigurationView\ConfigSignalization.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="GCSViews\ConfigurationView\ConfigSignalization.designer.cs">
+      <DependentUpon>ConfigSignalization.cs</DependentUpon>
     </Compile>
     <Compile Include="HIL\Hil.cs" />
     <None Include="HIL\JSBSim.cs" />
@@ -730,6 +742,9 @@
     <EmbeddedResource Include="Controls\ConnectionStats.resx">
       <DependentUpon>ConnectionStats.cs</DependentUpon>
     </EmbeddedResource>
+    <EmbeddedResource Include="Controls\FlashMessage.resx">
+      <DependentUpon>FlashMessage.cs</DependentUpon>
+    </EmbeddedResource>
     <EmbeddedResource Include="Controls\HSI.resx">
       <DependentUpon>HSI.cs</DependentUpon>
     </EmbeddedResource>
@@ -843,6 +858,9 @@
     </EmbeddedResource>
     <EmbeddedResource Include="GCSViews\ConfigurationView\ConfigRawParams.fr.resx">
       <DependentUpon>ConfigRawParams.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="GCSViews\ConfigurationView\ConfigSignalization.resx">
+      <DependentUpon>ConfigSignalization.cs</DependentUpon>
     </EmbeddedResource>
     <EmbeddedResource Include="GCSViews\ConfigurationView\ConfigTradHeli.de-DE.resx">
       <DependentUpon>ConfigTradHeli.cs</DependentUpon>
@@ -1203,6 +1221,7 @@
     </EmbeddedResource>
     <EmbeddedResource Include="GCSViews\Help.zh-TW.resx">
       <DependentUpon>Help.cs</DependentUpon>
+      <SubType>Designer</SubType>
     </EmbeddedResource>
     <EmbeddedResource Include="GCSViews\Simulation.fr.resx">
       <DependentUpon>Simulation.cs</DependentUpon>
@@ -1343,6 +1362,7 @@
     </EmbeddedResource>
     <EmbeddedResource Include="GCSViews\Help.zh-Hans.resx">
       <DependentUpon>Help.cs</DependentUpon>
+      <SubType>Designer</SubType>
     </EmbeddedResource>
     <EmbeddedResource Include="GCSViews\Simulation.resx">
       <DependentUpon>Simulation.cs</DependentUpon>
@@ -1425,8 +1445,6 @@
     <None Include="block_plane_0.dae">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
-    <None Include="Resources\Welcome_CN.rtf" />
-    <None Include="Resources\Welcome_TW.rtf" />
     <None Include="Resources\Welcome_to_Michael_Oborne.rtf">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>

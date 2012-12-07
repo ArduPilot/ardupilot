@@ -49,7 +49,7 @@ namespace ArdupilotMega.GCSViews.ConfigurationView
                 return;
             try
             {
-                if (MainV2.comPort.param["BATT_CAPACITY"] == null)
+                if (MainV2.comPort.MAV.param["BATT_CAPACITY"] == null)
                 {
                     CustomMessageBox.Show("Not Available");
                 }
@@ -66,7 +66,7 @@ namespace ArdupilotMega.GCSViews.ConfigurationView
                 return;
             try
             {
-                if (MainV2.comPort.param["BATT_MONITOR"] == null)
+                if (MainV2.comPort.MAV.param["BATT_MONITOR"] == null)
                 {
                     CustomMessageBox.Show("Not Available");
                 }
@@ -117,7 +117,7 @@ namespace ArdupilotMega.GCSViews.ConfigurationView
                 return;
             try
             {
-                if (MainV2.comPort.param["INPUT_VOLTS"] == null)
+                if (MainV2.comPort.MAV.param["INPUT_VOLTS"] == null)
                 {
                     CustomMessageBox.Show("Not Available");
                 }
@@ -151,7 +151,7 @@ namespace ArdupilotMega.GCSViews.ConfigurationView
 
             try
             {
-                if (MainV2.comPort.param["VOLT_DIVIDER"] == null)
+                if (MainV2.comPort.MAV.param["VOLT_DIVIDER"] == null)
                 {
                     CustomMessageBox.Show("Not Available");
                 }
@@ -173,7 +173,7 @@ namespace ArdupilotMega.GCSViews.ConfigurationView
                 return;
             try
             {
-                if (MainV2.comPort.param["VOLT_DIVIDER"] == null)
+                if (MainV2.comPort.MAV.param["VOLT_DIVIDER"] == null)
                 {
                     CustomMessageBox.Show("Not Available");
                 }
@@ -195,7 +195,7 @@ namespace ArdupilotMega.GCSViews.ConfigurationView
                 return;
             try
             {
-                if (MainV2.comPort.param["AMP_PER_VOLT"] == null)
+                if (MainV2.comPort.MAV.param["AMP_PER_VOLT"] == null)
                 {
                     CustomMessageBox.Show("Not Available");
                 }
@@ -304,28 +304,28 @@ namespace ArdupilotMega.GCSViews.ConfigurationView
         {
             startup = true;
             bool not_supported = false;
-            if (MainV2.comPort.param["BATT_MONITOR"] != null)
+            if (MainV2.comPort.MAV.param["BATT_MONITOR"] != null)
             {
-                if (MainV2.comPort.param["BATT_MONITOR"].ToString() != "0.0")
+                if (MainV2.comPort.MAV.param["BATT_MONITOR"].ToString() != "0.0")
                 {
-                    CMB_batmontype.SelectedIndex = getIndex(CMB_batmontype, (int)float.Parse(MainV2.comPort.param["BATT_MONITOR"].ToString()));
+                    CMB_batmontype.SelectedIndex = getIndex(CMB_batmontype, (int)float.Parse(MainV2.comPort.MAV.param["BATT_MONITOR"].ToString()));
                 }
             }
 
-            if (MainV2.comPort.param["BATT_CAPACITY"] != null)
-                TXT_battcapacity.Text = MainV2.comPort.param["BATT_CAPACITY"].ToString();
-            if (MainV2.comPort.param["INPUT_VOLTS"] != null)
-                TXT_inputvoltage.Text = MainV2.comPort.param["INPUT_VOLTS"].ToString();
+            if (MainV2.comPort.MAV.param["BATT_CAPACITY"] != null)
+                TXT_battcapacity.Text = MainV2.comPort.MAV.param["BATT_CAPACITY"].ToString();
+            if (MainV2.comPort.MAV.param["INPUT_VOLTS"] != null)
+                TXT_inputvoltage.Text = MainV2.comPort.MAV.param["INPUT_VOLTS"].ToString();
             else
                 not_supported = true;
-            TXT_voltage.Text = MainV2.cs.battery_voltage.ToString();
+            TXT_voltage.Text = MainV2.comPort.MAV.cs.battery_voltage.ToString();
             TXT_measuredvoltage.Text = TXT_voltage.Text;
-            if (MainV2.comPort.param["VOLT_DIVIDER"] != null)
-                TXT_divider.Text = MainV2.comPort.param["VOLT_DIVIDER"].ToString();
+            if (MainV2.comPort.MAV.param["VOLT_DIVIDER"] != null)
+                TXT_divider.Text = MainV2.comPort.MAV.param["VOLT_DIVIDER"].ToString();
             else
                 not_supported = true;
-            if (MainV2.comPort.param["AMP_PER_VOLT"] != null)
-                TXT_ampspervolt.Text = MainV2.comPort.param["AMP_PER_VOLT"].ToString();
+            if (MainV2.comPort.MAV.param["AMP_PER_VOLT"] != null)
+                TXT_ampspervolt.Text = MainV2.comPort.MAV.param["AMP_PER_VOLT"].ToString();
             else
                 not_supported = true;
             if (not_supported)
@@ -359,11 +359,11 @@ namespace ArdupilotMega.GCSViews.ConfigurationView
                 CMB_batmonsensortype.SelectedIndex = 0;
             }
 
-            if (MainV2.comPort.param["BATT_VOLT_PIN"] != null)
+            if (MainV2.comPort.MAV.param["BATT_VOLT_PIN"] != null)
             {
                 CMB_apmversion.Enabled = true;
 
-                float value = (float)MainV2.comPort.param["BATT_VOLT_PIN"];
+                float value = (float)MainV2.comPort.MAV.param["BATT_VOLT_PIN"];
                 if (value == 0) // apm1
                 {
                     CMB_apmversion.SelectedIndex = 0;
@@ -402,7 +402,7 @@ namespace ArdupilotMega.GCSViews.ConfigurationView
 
         private void timer1_Tick(object sender, EventArgs e)
         {
-            TXT_voltage.Text = MainV2.cs.battery_voltage.ToString();
+            TXT_voltage.Text = MainV2.comPort.MAV.cs.battery_voltage.ToString();
         }
 
         private void CMB_apmversion_SelectedIndexChanged(object sender, EventArgs e)

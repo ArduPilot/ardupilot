@@ -235,7 +235,7 @@ namespace ArdupilotMega.GCSViews
             int x = 10;
             int y = 10;
 
-            object thisBoxed = MainV2.cs;
+            object thisBoxed = MainV2.comPort.MAV.cs;
             Type test = thisBoxed.GetType();
 
             foreach (var field in test.GetProperties())
@@ -336,7 +336,7 @@ namespace ArdupilotMega.GCSViews
                     if (ctls.Length > 0)
                     {
                         // set description
-                        ((QuickView)ctls[0]).desc = MainV2.cs.GetNameandUnit(MainV2.config["quickView" + f].ToString());
+                        ((QuickView)ctls[0]).desc = MainV2.comPort.MAV.cs.GetNameandUnit(MainV2.config["quickView" + f].ToString());
 
                         // set databinding for value
                         ((QuickView)ctls[0]).DataBindings.Clear();
@@ -351,14 +351,14 @@ namespace ArdupilotMega.GCSViews
                           Control[] ctls = this.Controls.Find("quickView" + f, true);
                           if (ctls.Length > 0)
                           {
-                              ((QuickView)ctls[0]).desc = MainV2.cs.GetNameandUnit(((QuickView)ctls[0]).desc);
+                              ((QuickView)ctls[0]).desc = MainV2.comPort.MAV.cs.GetNameandUnit(((QuickView)ctls[0]).desc);
                           }
                     }
                     catch { }
                 }
             }
 
-            if (MainV2.comPort.param.ContainsKey("BATT_MONITOR") && (float)MainV2.comPort.param["BATT_MONITOR"] != 0)
+            if (MainV2.comPort.MAV.param.ContainsKey("BATT_MONITOR") && (float)MainV2.comPort.MAV.param["BATT_MONITOR"] != 0)
             {
                 hud1.batteryon = true;
             }
@@ -490,13 +490,13 @@ namespace ArdupilotMega.GCSViews
                         //System.Threading.Thread.Sleep(1000);
 
                         //comPort.requestDatastream((byte)ArdupilotMega.MAVLink09.MAV_DATA_STREAM.RAW_CONTROLLER, 0); // request servoout
-                        MainV2.comPort.requestDatastream((byte)ArdupilotMega.MAVLink.MAV_DATA_STREAM.EXTENDED_STATUS, MainV2.cs.ratestatus); // mode
-                        MainV2.comPort.requestDatastream((byte)ArdupilotMega.MAVLink.MAV_DATA_STREAM.POSITION, MainV2.cs.rateposition); // request gps
-                        MainV2.comPort.requestDatastream((byte)ArdupilotMega.MAVLink.MAV_DATA_STREAM.EXTRA1, MainV2.cs.rateattitude); // request attitude
-                        MainV2.comPort.requestDatastream((byte)ArdupilotMega.MAVLink.MAV_DATA_STREAM.EXTRA2, MainV2.cs.rateattitude); // request vfr
-                        MainV2.comPort.requestDatastream((byte)ArdupilotMega.MAVLink.MAV_DATA_STREAM.EXTRA3, MainV2.cs.ratesensors); // request extra stuff - tridge
-                        MainV2.comPort.requestDatastream((byte)ArdupilotMega.MAVLink.MAV_DATA_STREAM.RAW_SENSORS, MainV2.cs.ratesensors); // request raw sensor
-                        MainV2.comPort.requestDatastream((byte)ArdupilotMega.MAVLink.MAV_DATA_STREAM.RC_CHANNELS, MainV2.cs.raterc); // request rc info
+                        MainV2.comPort.requestDatastream((byte)ArdupilotMega.MAVLink.MAV_DATA_STREAM.EXTENDED_STATUS, MainV2.comPort.MAV.cs.ratestatus); // mode
+                        MainV2.comPort.requestDatastream((byte)ArdupilotMega.MAVLink.MAV_DATA_STREAM.POSITION, MainV2.comPort.MAV.cs.rateposition); // request gps
+                        MainV2.comPort.requestDatastream((byte)ArdupilotMega.MAVLink.MAV_DATA_STREAM.EXTRA1, MainV2.comPort.MAV.cs.rateattitude); // request attitude
+                        MainV2.comPort.requestDatastream((byte)ArdupilotMega.MAVLink.MAV_DATA_STREAM.EXTRA2, MainV2.comPort.MAV.cs.rateattitude); // request vfr
+                        MainV2.comPort.requestDatastream((byte)ArdupilotMega.MAVLink.MAV_DATA_STREAM.EXTRA3, MainV2.comPort.MAV.cs.ratesensors); // request extra stuff - tridge
+                        MainV2.comPort.requestDatastream((byte)ArdupilotMega.MAVLink.MAV_DATA_STREAM.RAW_SENSORS, MainV2.comPort.MAV.cs.ratesensors); // request raw sensor
+                        MainV2.comPort.requestDatastream((byte)ArdupilotMega.MAVLink.MAV_DATA_STREAM.RC_CHANNELS, MainV2.comPort.MAV.cs.raterc); // request rc info
                     }
                     catch { log.Error("Failed to request rates"); }
                     lastdata = DateTime.Now.AddSeconds(120); // prevent flooding
@@ -643,8 +643,8 @@ namespace ArdupilotMega.GCSViews
 
                     if (ArdupilotMega.Controls.OpenGLtest.instance != null)
                     {
-                        ArdupilotMega.Controls.OpenGLtest.instance.rpy = new OpenTK.Vector3(MainV2.cs.roll, MainV2.cs.pitch, MainV2.cs.yaw);
-                        ArdupilotMega.Controls.OpenGLtest.instance.LocationCenter = new PointLatLngAlt(MainV2.cs.lat, MainV2.cs.lng, MainV2.cs.alt, "here");
+                        ArdupilotMega.Controls.OpenGLtest.instance.rpy = new OpenTK.Vector3(MainV2.comPort.MAV.cs.roll, MainV2.comPort.MAV.cs.pitch, MainV2.comPort.MAV.cs.yaw);
+                        ArdupilotMega.Controls.OpenGLtest.instance.LocationCenter = new PointLatLngAlt(MainV2.comPort.MAV.cs.lat, MainV2.comPort.MAV.cs.lng, MainV2.comPort.MAV.cs.alt, "here");
                     }
 
                     if (tunning.AddMilliseconds(50) < DateTime.Now && CB_tuning.Checked == true)
@@ -652,25 +652,25 @@ namespace ArdupilotMega.GCSViews
 
                         double time = (Environment.TickCount - tickStart) / 1000.0;
                         if (list1item != null)
-                            list1.Add(time, (float)list1item.GetValue((object)MainV2.cs, null));
+                            list1.Add(time, (float)list1item.GetValue((object)MainV2.comPort.MAV.cs, null));
                         if (list2item != null)
-                            list2.Add(time, (float)list2item.GetValue((object)MainV2.cs, null));
+                            list2.Add(time, (float)list2item.GetValue((object)MainV2.comPort.MAV.cs, null));
                         if (list3item != null)
-                            list3.Add(time, (float)list3item.GetValue((object)MainV2.cs, null));
+                            list3.Add(time, (float)list3item.GetValue((object)MainV2.comPort.MAV.cs, null));
                         if (list4item != null)
-                            list4.Add(time, (float)list4item.GetValue((object)MainV2.cs, null));
+                            list4.Add(time, (float)list4item.GetValue((object)MainV2.comPort.MAV.cs, null));
                         if (list5item != null)
-                            list5.Add(time, (float)list5item.GetValue((object)MainV2.cs, null));
+                            list5.Add(time, (float)list5item.GetValue((object)MainV2.comPort.MAV.cs, null));
                         if (list6item != null)
-                            list6.Add(time, (float)list6item.GetValue((object)MainV2.cs, null));
+                            list6.Add(time, (float)list6item.GetValue((object)MainV2.comPort.MAV.cs, null));
                         if (list7item != null)
-                            list7.Add(time, (float)list7item.GetValue((object)MainV2.cs, null));
+                            list7.Add(time, (float)list7item.GetValue((object)MainV2.comPort.MAV.cs, null));
                         if (list8item != null)
-                            list8.Add(time, (float)list8item.GetValue((object)MainV2.cs, null));
+                            list8.Add(time, (float)list8item.GetValue((object)MainV2.comPort.MAV.cs, null));
                         if (list9item != null)
-                            list9.Add(time, (float)list9item.GetValue((object)MainV2.cs, null));
+                            list9.Add(time, (float)list9item.GetValue((object)MainV2.comPort.MAV.cs, null));
                         if (list10item != null)
-                            list10.Add(time, (float)list10item.GetValue((object)MainV2.cs, null));
+                            list10.Add(time, (float)list10item.GetValue((object)MainV2.comPort.MAV.cs, null));
                     }
 
                     if (tracklast.AddSeconds(1) < DateTime.Now)
@@ -687,7 +687,7 @@ namespace ArdupilotMega.GCSViews
                             routes.Routes.Add(route);
                         }
 
-                        PointLatLng currentloc = new PointLatLng(MainV2.cs.lat, MainV2.cs.lng);
+                        PointLatLng currentloc = new PointLatLng(MainV2.comPort.MAV.cs.lat, MainV2.comPort.MAV.cs.lng);
 
                         gMapControl1.HoldInvalidation = true;
 
@@ -704,7 +704,7 @@ namespace ArdupilotMega.GCSViews
                             //  trackPoints.RemoveRange(0, trackPoints.Count - int.Parse(MainV2.config["NUM_tracklength"].ToString()));
                             route.Points.RemoveRange(0, route.Points.Count - int.Parse(MainV2.config["NUM_tracklength"].ToString()));
                         }
-                        if (MainV2.cs.lat != 0)
+                        if (MainV2.comPort.MAV.cs.lat != 0)
                         {
                             // trackPoints.Add(currentloc);
                             route.Points.Add(currentloc);
@@ -734,7 +734,7 @@ namespace ArdupilotMega.GCSViews
                                 //Console.WriteLine("Doing FD WP's");
                                 updateMissionRouteMarkers();
 
-                                foreach (MAVLink.mavlink_mission_item_t plla in MainV2.comPort.wps.Values)
+                                foreach (MAVLink.mavlink_mission_item_t plla in MainV2.comPort.MAV.wps.Values)
                                 {
                                     if (plla.x == 0 || plla.y == 0)
                                         continue;
@@ -774,22 +774,22 @@ namespace ArdupilotMega.GCSViews
                                     routes.Markers.Add(new GMapMarkerCross(currentloc));
                                 }
 
-                                if (MainV2.cs.mode.ToLower() == "guided" && MainV2.comPort.GuidedMode.x != 0)
+                                if (MainV2.comPort.MAV.cs.mode.ToLower() == "guided" && MainV2.comPort.MAV.GuidedMode.x != 0)
                                 {
-                                    addpolygonmarker("Guided Mode", MainV2.comPort.GuidedMode.y, MainV2.comPort.GuidedMode.x, (int)MainV2.comPort.GuidedMode.z, Color.Blue, routes);
+                                    addpolygonmarker("Guided Mode", MainV2.comPort.MAV.GuidedMode.y, MainV2.comPort.MAV.GuidedMode.x, (int)MainV2.comPort.MAV.GuidedMode.z, Color.Blue, routes);
                                 }
 
-                                if (MainV2.cs.firmware == MainV2.Firmwares.ArduPlane)
+                                if (MainV2.comPort.MAV.cs.firmware == MainV2.Firmwares.ArduPlane)
                                 {
-                                    routes.Markers[0] = (new GMapMarkerPlane(currentloc, MainV2.cs.yaw, MainV2.cs.groundcourse, MainV2.cs.nav_bearing, MainV2.cs.target_bearing, gMapControl1) { ToolTipText = MainV2.cs.alt.ToString("0"), ToolTipMode = MarkerTooltipMode.Always });
+                                    routes.Markers[0] = (new GMapMarkerPlane(currentloc, MainV2.comPort.MAV.cs.yaw, MainV2.comPort.MAV.cs.groundcourse, MainV2.comPort.MAV.cs.nav_bearing, MainV2.comPort.MAV.cs.target_bearing, gMapControl1) { ToolTipText = MainV2.comPort.MAV.cs.alt.ToString("0"), ToolTipMode = MarkerTooltipMode.Always });
                                 }
-                                else if (MainV2.cs.firmware == MainV2.Firmwares.ArduRover)
+                                else if (MainV2.comPort.MAV.cs.firmware == MainV2.Firmwares.ArduRover)
                                 {
-                                    routes.Markers[0] = (new GMapMarkerRover(currentloc, MainV2.cs.yaw, MainV2.cs.groundcourse, MainV2.cs.nav_bearing, MainV2.cs.target_bearing, gMapControl1));
+                                    routes.Markers[0] = (new GMapMarkerRover(currentloc, MainV2.comPort.MAV.cs.yaw, MainV2.comPort.MAV.cs.groundcourse, MainV2.comPort.MAV.cs.nav_bearing, MainV2.comPort.MAV.cs.target_bearing, gMapControl1));
                                 }
                                 else
                                 {
-                                    routes.Markers[0] = (new GMapMarkerQuad(currentloc, MainV2.cs.yaw, MainV2.cs.groundcourse, MainV2.cs.nav_bearing));
+                                    routes.Markers[0] = (new GMapMarkerQuad(currentloc, MainV2.comPort.MAV.cs.yaw, MainV2.comPort.MAV.cs.groundcourse, MainV2.comPort.MAV.cs.nav_bearing));
                                 }
 
                                 if (route.Points[route.Points.Count - 1].Lat != 0 && (mapupdate.AddSeconds(3) < DateTime.Now) && CHK_autopan.Checked)
@@ -823,7 +823,7 @@ namespace ArdupilotMega.GCSViews
         {
             this.Invoke((System.Windows.Forms.MethodInvoker)delegate()
             {
-                gMapControl1.Bearing = (int)MainV2.cs.yaw;
+                gMapControl1.Bearing = (int)MainV2.comPort.MAV.cs.yaw;
             });
         }
 
@@ -889,7 +889,7 @@ namespace ArdupilotMega.GCSViews
             {
                 try
                 {
-                    MainV2.cs.UpdateCurrentSettings(bindingSource1);
+                    MainV2.comPort.MAV.cs.UpdateCurrentSettings(bindingSource1);
                 }
                 catch { }
             });
@@ -951,7 +951,7 @@ namespace ArdupilotMega.GCSViews
                     mBorders.InnerMarker = m;
                     try
                     {
-                        mBorders.wprad = (int)(float.Parse(ArdupilotMega.MainV2.config["TXT_WPRad"].ToString()) / MainV2.cs.multiplierdist);
+                        mBorders.wprad = (int)(float.Parse(ArdupilotMega.MainV2.config["TXT_WPRad"].ToString()) / MainV2.comPort.MAV.cs.multiplierdist);
                     }
                     catch { }
                     mBorders.MainMap = gMapControl1;
@@ -1243,11 +1243,11 @@ namespace ArdupilotMega.GCSViews
                 return;
             }
 
-            if (MainV2.comPort.GuidedMode.z == 0)
+            if (MainV2.comPort.MAV.GuidedMode.z == 0)
             {
                 flyToHereAltToolStripMenuItem_Click(null, null);
 
-                if (MainV2.comPort.GuidedMode.z == 0)
+                if (MainV2.comPort.MAV.GuidedMode.z == 0)
                     return;
             }
 
@@ -1260,7 +1260,7 @@ namespace ArdupilotMega.GCSViews
             Locationwp gotohere = new Locationwp();
 
             gotohere.id = (byte)MAVLink.MAV_CMD.WAYPOINT;
-            gotohere.alt = (float)(MainV2.comPort.GuidedMode.z); // back to m
+            gotohere.alt = (float)(MainV2.comPort.MAV.GuidedMode.z); // back to m
             gotohere.lat = (float)(gotolocation.Lat);
             gotohere.lng = (float)(gotolocation.Lng);
 
@@ -1317,7 +1317,7 @@ namespace ArdupilotMega.GCSViews
                     marker = new GMapMarkerRect(point);
                     marker.ToolTip = new GMapToolTip(marker);
                     marker.ToolTipMode = MarkerTooltipMode.Always;
-                    marker.ToolTipText = "Dist to Home: " + ((gMapControl1.Manager.GetDistance(point, MainV2.cs.HomeLocation.Point()) * 1000) * MainV2.cs.multiplierdist).ToString("0");
+                    marker.ToolTipText = "Dist to Home: " + ((gMapControl1.Manager.GetDistance(point, MainV2.comPort.MAV.cs.HomeLocation.Point()) * 1000) * MainV2.comPort.MAV.cs.multiplierdist).ToString("0");
 
                     routes.Markers.Add(marker);
                 }
@@ -1332,20 +1332,20 @@ namespace ArdupilotMega.GCSViews
             }
 
             // QUAD
-            if (MainV2.comPort.param.ContainsKey("WP_SPEED_MAX"))
+            if (MainV2.comPort.MAV.param.ContainsKey("WP_SPEED_MAX"))
             {
-                modifyandSetSpeed.Value = (decimal)((float)MainV2.comPort.param["WP_SPEED_MAX"] / 100.0);
+                modifyandSetSpeed.Value = (decimal)((float)MainV2.comPort.MAV.param["WP_SPEED_MAX"] / 100.0);
             } // plane with airspeed
-            else if (MainV2.comPort.param.ContainsKey("TRIM_ARSPD_CM") && MainV2.comPort.param.ContainsKey("ARSPD_ENABLE")
-                && MainV2.comPort.param.ContainsKey("ARSPD_USE") && (float)MainV2.comPort.param["ARSPD_ENABLE"] == 1
-                && (float)MainV2.comPort.param["ARSPD_USE"] == 1)
+            else if (MainV2.comPort.MAV.param.ContainsKey("TRIM_ARSPD_CM") && MainV2.comPort.MAV.param.ContainsKey("ARSPD_ENABLE")
+                && MainV2.comPort.MAV.param.ContainsKey("ARSPD_USE") && (float)MainV2.comPort.MAV.param["ARSPD_ENABLE"] == 1
+                && (float)MainV2.comPort.MAV.param["ARSPD_USE"] == 1)
             {
-                modifyandSetSpeed.Value = (decimal)((float)MainV2.comPort.param["TRIM_ARSPD_CM"] / 100.0);
+                modifyandSetSpeed.Value = (decimal)((float)MainV2.comPort.MAV.param["TRIM_ARSPD_CM"] / 100.0);
             } // plane without airspeed
-            else if (MainV2.comPort.param.ContainsKey("TRIM_THROTTLE") && MainV2.comPort.param.ContainsKey("ARSPD_USE")
-                && (float)MainV2.comPort.param["ARSPD_USE"] == 0)
+            else if (MainV2.comPort.MAV.param.ContainsKey("TRIM_THROTTLE") && MainV2.comPort.MAV.param.ContainsKey("ARSPD_USE")
+                && (float)MainV2.comPort.MAV.param["ARSPD_USE"] == 0)
             {
-                modifyandSetSpeed.Value = (decimal)(float)MainV2.comPort.param["TRIM_THROTTLE"]; // percent
+                modifyandSetSpeed.Value = (decimal)(float)MainV2.comPort.MAV.param["TRIM_THROTTLE"]; // percent
             }
 
             MainV2.comPort.ParamListChanged += FlightData_ParentChanged;
@@ -1358,13 +1358,13 @@ namespace ArdupilotMega.GCSViews
 
         private void BUT_Homealt_Click(object sender, EventArgs e)
         {
-            if (MainV2.cs.altoffsethome != 0)
+            if (MainV2.comPort.MAV.cs.altoffsethome != 0)
             {
-                MainV2.cs.altoffsethome = 0;
+                MainV2.comPort.MAV.cs.altoffsethome = 0;
             }
             else
             {
-                MainV2.cs.altoffsethome = MainV2.cs.alt / MainV2.cs.multiplierdist;
+                MainV2.comPort.MAV.cs.altoffsethome = MainV2.comPort.MAV.cs.alt / MainV2.comPort.MAV.cs.multiplierdist;
             }
         }
 
@@ -1542,9 +1542,9 @@ namespace ArdupilotMega.GCSViews
 
             CMB_setwp.Items.Add("0 (Home)");
 
-            if (MainV2.comPort.param["CMD_TOTAL"] != null)
+            if (MainV2.comPort.MAV.param["CMD_TOTAL"] != null)
             {
-                int wps = int.Parse(MainV2.comPort.param["CMD_TOTAL"].ToString());
+                int wps = int.Parse(MainV2.comPort.MAV.param["CMD_TOTAL"].ToString());
                 for (int z = 1; z <= wps; z++)
                 {
                     CMB_setwp.Items.Add(z.ToString());
@@ -1579,9 +1579,9 @@ namespace ArdupilotMega.GCSViews
             try
             {
                 ((Button)sender).Enabled = false;
-                if (MainV2.cs.firmware == MainV2.Firmwares.ArduPlane)
+                if (MainV2.comPort.MAV.cs.firmware == MainV2.Firmwares.ArduPlane)
                     MainV2.comPort.setMode("Manual");
-                if (MainV2.cs.firmware == MainV2.Firmwares.ArduCopter2)
+                if (MainV2.comPort.MAV.cs.firmware == MainV2.Firmwares.ArduCopter2)
                     MainV2.comPort.setMode("Stabilize");
 
             }
@@ -1763,7 +1763,7 @@ namespace ArdupilotMega.GCSViews
 
             y += 20;
 
-            object thisBoxed = MainV2.cs;
+            object thisBoxed = MainV2.comPort.MAV.cs;
             Type test = thisBoxed.GetType();
 
             foreach (var field in test.GetProperties())
@@ -1844,7 +1844,7 @@ namespace ArdupilotMega.GCSViews
             int x = 10;
             int y = 10;
 
-            object thisBoxed = MainV2.cs;
+            object thisBoxed = MainV2.comPort.MAV.cs;
             Type test = thisBoxed.GetType();
 
             foreach (var field in test.GetProperties())
@@ -1898,7 +1898,7 @@ namespace ArdupilotMega.GCSViews
 
         void addHudUserItem(ref HUD.Custom cust, CheckBox sender)
         {
-            setupPropertyInfo(ref cust.Item, (sender).Name, MainV2.cs);
+            setupPropertyInfo(ref cust.Item, (sender).Name, MainV2.comPort.MAV.cs);
 
             hud1.CustomItems.Add((sender).Name, cust);
 
@@ -1952,7 +1952,7 @@ namespace ArdupilotMega.GCSViews
             {
                 if (list1item == null)
                 {
-                    if (setupPropertyInfo(ref list1item, ((CheckBox)sender).Name, MainV2.cs))
+                    if (setupPropertyInfo(ref list1item, ((CheckBox)sender).Name, MainV2.comPort.MAV.cs))
                     {
                         list1.Clear();
                         list1curve = zg1.GraphPane.AddCurve(((CheckBox)sender).Name, list1, Color.Red, SymbolType.None);
@@ -1960,7 +1960,7 @@ namespace ArdupilotMega.GCSViews
                 }
                 else if (list2item == null)
                 {
-                    if (setupPropertyInfo(ref list2item, ((CheckBox)sender).Name, MainV2.cs))
+                    if (setupPropertyInfo(ref list2item, ((CheckBox)sender).Name, MainV2.comPort.MAV.cs))
                     {
                         list2.Clear();
                         list2curve = zg1.GraphPane.AddCurve(((CheckBox)sender).Name, list2, Color.Blue, SymbolType.None);
@@ -1968,7 +1968,7 @@ namespace ArdupilotMega.GCSViews
                 }
                 else if (list3item == null)
                 {
-                    if (setupPropertyInfo(ref list3item, ((CheckBox)sender).Name, MainV2.cs))
+                    if (setupPropertyInfo(ref list3item, ((CheckBox)sender).Name, MainV2.comPort.MAV.cs))
                     {
                         list3.Clear();
                         list3curve = zg1.GraphPane.AddCurve(((CheckBox)sender).Name, list3, Color.Green, SymbolType.None);
@@ -1976,7 +1976,7 @@ namespace ArdupilotMega.GCSViews
                 }
                 else if (list4item == null)
                 {
-                    if (setupPropertyInfo(ref list4item, ((CheckBox)sender).Name, MainV2.cs))
+                    if (setupPropertyInfo(ref list4item, ((CheckBox)sender).Name, MainV2.comPort.MAV.cs))
                     {
                         list4.Clear();
                         list4curve = zg1.GraphPane.AddCurve(((CheckBox)sender).Name, list4, Color.Orange, SymbolType.None);
@@ -1984,7 +1984,7 @@ namespace ArdupilotMega.GCSViews
                 }
                 else if (list5item == null)
                 {
-                    if (setupPropertyInfo(ref list5item, ((CheckBox)sender).Name, MainV2.cs))
+                    if (setupPropertyInfo(ref list5item, ((CheckBox)sender).Name, MainV2.comPort.MAV.cs))
                     {
                         list5.Clear();
                         list5curve = zg1.GraphPane.AddCurve(((CheckBox)sender).Name, list5, Color.Yellow, SymbolType.None);
@@ -1992,7 +1992,7 @@ namespace ArdupilotMega.GCSViews
                 }
                 else if (list6item == null)
                 {
-                    if (setupPropertyInfo(ref list6item, ((CheckBox)sender).Name, MainV2.cs))
+                    if (setupPropertyInfo(ref list6item, ((CheckBox)sender).Name, MainV2.comPort.MAV.cs))
                     {
                         list6.Clear();
                         list6curve = zg1.GraphPane.AddCurve(((CheckBox)sender).Name, list6, Color.Magenta, SymbolType.None);
@@ -2000,7 +2000,7 @@ namespace ArdupilotMega.GCSViews
                 }
                 else if (list7item == null)
                 {
-                    if (setupPropertyInfo(ref list7item, ((CheckBox)sender).Name, MainV2.cs))
+                    if (setupPropertyInfo(ref list7item, ((CheckBox)sender).Name, MainV2.comPort.MAV.cs))
                     {
                         list7.Clear();
                         list7curve = zg1.GraphPane.AddCurve(((CheckBox)sender).Name, list7, Color.Purple, SymbolType.None);
@@ -2008,7 +2008,7 @@ namespace ArdupilotMega.GCSViews
                 }
                 else if (list8item == null)
                 {
-                    if (setupPropertyInfo(ref list8item, ((CheckBox)sender).Name, MainV2.cs))
+                    if (setupPropertyInfo(ref list8item, ((CheckBox)sender).Name, MainV2.comPort.MAV.cs))
                     {
                         list8.Clear();
                         list8curve = zg1.GraphPane.AddCurve(((CheckBox)sender).Name, list8, Color.LimeGreen, SymbolType.None);
@@ -2016,7 +2016,7 @@ namespace ArdupilotMega.GCSViews
                 }
                 else if (list9item == null)
                 {
-                    if (setupPropertyInfo(ref list9item, ((CheckBox)sender).Name, MainV2.cs))
+                    if (setupPropertyInfo(ref list9item, ((CheckBox)sender).Name, MainV2.comPort.MAV.cs))
                     {
                         list9.Clear();
                         list9curve = zg1.GraphPane.AddCurve(((CheckBox)sender).Name, list9, Color.Cyan, SymbolType.None);
@@ -2024,7 +2024,7 @@ namespace ArdupilotMega.GCSViews
                 }
                 else if (list10item == null)
                 {
-                    if (setupPropertyInfo(ref list10item, ((CheckBox)sender).Name, MainV2.cs))
+                    if (setupPropertyInfo(ref list10item, ((CheckBox)sender).Name, MainV2.comPort.MAV.cs))
                     {
                         list10.Clear();
                         list10curve = zg1.GraphPane.AddCurve(((CheckBox)sender).Name, list10, Color.Violet, SymbolType.None);
@@ -2119,10 +2119,10 @@ namespace ArdupilotMega.GCSViews
                 return;
             }
 
-            string alt = (100 * MainV2.cs.multiplierdist).ToString("0");
+            string alt = (100 * MainV2.comPort.MAV.cs.multiplierdist).ToString("0");
             Common.InputBox("Enter Alt", "Enter Target Alt (absolute)", ref alt);
 
-            int intalt = (int)(100 * MainV2.cs.multiplierdist);
+            int intalt = (int)(100 * MainV2.comPort.MAV.cs.multiplierdist);
             if (!int.TryParse(alt, out intalt))
             {
                 CustomMessageBox.Show("Bad Alt");
@@ -2136,7 +2136,7 @@ namespace ArdupilotMega.GCSViews
             }
 
             MainV2.comPort.setMountConfigure(MAVLink.MAV_MOUNT_MODE.GPS_POINT, true, true, true);
-            MainV2.comPort.setMountControl(gotolocation.Lat, gotolocation.Lng, (int)(intalt / MainV2.cs.multiplierdist), true);
+            MainV2.comPort.setMountControl(gotolocation.Lat, gotolocation.Lng, (int)(intalt / MainV2.comPort.MAV.cs.multiplierdist), true);
 
         }
 
@@ -2305,7 +2305,7 @@ print 'Roll complete'
             int x = 10;
             int y = 10;
 
-            object thisBoxed = MainV2.cs;
+            object thisBoxed = MainV2.comPort.MAV.cs;
             Type test = thisBoxed.GetType();
 
             foreach (var field in test.GetProperties())
@@ -2326,7 +2326,7 @@ print 'Roll complete'
 
                 CheckBox chk_box = new CheckBox();
 
-                if (((QuickView)sender).Tag == field.Name)
+                if (((QuickView)sender).Tag.ToString() == field.Name)
                     chk_box.Checked = true;
 
                 chk_box.Text = field.Name;
@@ -2366,7 +2366,7 @@ print 'Roll complete'
                 string desc = ((CheckBox)sender).Name;
                 ((QuickView)((CheckBox)sender).Tag).Tag = desc;
 
-                desc = MainV2.cs.GetNameandUnit(desc);
+                desc = MainV2.comPort.MAV.cs.GetNameandUnit(desc);
 
                 ((QuickView)((CheckBox)sender).Tag).desc = desc;
 
@@ -2383,13 +2383,13 @@ print 'Roll complete'
         {
             string alt = "100";
 
-            if (MainV2.cs.firmware == MainV2.Firmwares.ArduCopter2)
+            if (MainV2.comPort.MAV.cs.firmware == MainV2.Firmwares.ArduCopter2)
             {
-                alt = (10 * MainV2.cs.multiplierdist).ToString("0");
+                alt = (10 * MainV2.comPort.MAV.cs.multiplierdist).ToString("0");
             }
             else
             {
-                alt = (100 * MainV2.cs.multiplierdist).ToString("0");
+                alt = (100 * MainV2.comPort.MAV.cs.multiplierdist).ToString("0");
             }
 
             if (MainV2.config.ContainsKey("guided_alt"))
@@ -2400,18 +2400,18 @@ print 'Roll complete'
 
             MainV2.config["guided_alt"] = alt;
 
-            int intalt = (int)(100 * MainV2.cs.multiplierdist);
+            int intalt = (int)(100 * MainV2.comPort.MAV.cs.multiplierdist);
             if (!int.TryParse(alt, out intalt))
             {
                 CustomMessageBox.Show("Bad Alt");
                 return;
             }
 
-            MainV2.comPort.GuidedMode.z = intalt;
+            MainV2.comPort.MAV.GuidedMode.z = intalt;
 
-            if (MainV2.cs.mode == "Guided")
+            if (MainV2.comPort.MAV.cs.mode == "Guided")
             {
-                MainV2.comPort.setGuidedModeWP(new Locationwp() { alt = (float)MainV2.comPort.GuidedMode.z, lat = (float)MainV2.comPort.GuidedMode.x, lng = (float)MainV2.comPort.GuidedMode.y });
+                MainV2.comPort.setGuidedModeWP(new Locationwp() { alt = (float)MainV2.comPort.MAV.GuidedMode.z, lat = (float)MainV2.comPort.MAV.GuidedMode.x, lng = (float)MainV2.comPort.MAV.GuidedMode.y });
             }
         }
 
@@ -2511,7 +2511,7 @@ print 'Roll complete'
             // arm the MAV
             try
             {
-                bool ans = MainV2.comPort.doARM(MainV2.cs.armed);
+                bool ans = MainV2.comPort.doARM(MainV2.comPort.MAV.cs.armed);
                 if (ans == false)
                     CustomMessageBox.Show("Error: Arm message rejected by MAV");
             }
@@ -2525,10 +2525,10 @@ print 'Roll complete'
             int newalt = (int)modifyandSetAlt.Value;
             try
             {
-                MainV2.comPort.setNewWPAlt(new Locationwp() { alt = newalt / MainV2.cs.multiplierdist });
+                MainV2.comPort.setNewWPAlt(new Locationwp() { alt = newalt / MainV2.comPort.MAV.cs.multiplierdist });
             }
-            catch { CustomMessageBox.Show("Error sending command"); }
-            //MainV2.comPort.setNextWPTargetAlt((ushort)MainV2.cs.wpno, newalt);
+            catch { CustomMessageBox.Show("Error sending new Alt"); }
+            //MainV2.comPort.setNextWPTargetAlt((ushort)MainV2.comPort.MAV.cs.wpno, newalt);
         }
 
         private void gMapControl1_MouseLeave(object sender, EventArgs e)
@@ -2543,32 +2543,32 @@ print 'Roll complete'
         private void modifyandSetSpeed_Click(object sender, EventArgs e)
         {
             // QUAD
-            if (MainV2.comPort.param.ContainsKey("WP_SPEED_MAX"))
+            if (MainV2.comPort.MAV.param.ContainsKey("WP_SPEED_MAX"))
             {
                 try
                 {
                     MainV2.comPort.setParam("WP_SPEED_MAX", ((float)modifyandSetSpeed.Value * 100.0f));
                 }
-                catch { CustomMessageBox.Show("Error sending command"); }
+                catch { CustomMessageBox.Show("Error sending WP_SPEED_MAX command"); }
             } // plane with airspeed
-            else if (MainV2.comPort.param.ContainsKey("TRIM_ARSPD_CM") && MainV2.comPort.param.ContainsKey("ARSPD_ENABLE")
-                && MainV2.comPort.param.ContainsKey("ARSPD_USE") && (float)MainV2.comPort.param["ARSPD_ENABLE"] == 1
-                && (float)MainV2.comPort.param["ARSPD_USE"] == 1)
+            else if (MainV2.comPort.MAV.param.ContainsKey("TRIM_ARSPD_CM") && MainV2.comPort.MAV.param.ContainsKey("ARSPD_ENABLE")
+                && MainV2.comPort.MAV.param.ContainsKey("ARSPD_USE") && (float)MainV2.comPort.MAV.param["ARSPD_ENABLE"] == 1
+                && (float)MainV2.comPort.MAV.param["ARSPD_USE"] == 1)
             {
                 try
                 {
                     MainV2.comPort.setParam("TRIM_ARSPD_CM", ((float)modifyandSetSpeed.Value * 100.0f));
                 }
-                catch { CustomMessageBox.Show("Error sending command"); }
+                catch { CustomMessageBox.Show("Error sending TRIM_ARSPD_CM command"); }
             } // plane without airspeed
-            else if (MainV2.comPort.param.ContainsKey("TRIM_THROTTLE") && MainV2.comPort.param.ContainsKey("ARSPD_USE")
-                && (float)MainV2.comPort.param["ARSPD_USE"] == 0)
+            else if (MainV2.comPort.MAV.param.ContainsKey("TRIM_THROTTLE") && MainV2.comPort.MAV.param.ContainsKey("ARSPD_USE")
+                && (float)MainV2.comPort.MAV.param["ARSPD_USE"] == 0)
             {
                 try
                 {
                     MainV2.comPort.setParam("TRIM_THROTTLE", (float)modifyandSetSpeed.Value);
                 }
-                catch { CustomMessageBox.Show("Error sending command"); }
+                catch { CustomMessageBox.Show("Error sending TRIM_THROTTLE command"); }
             }
         }
 

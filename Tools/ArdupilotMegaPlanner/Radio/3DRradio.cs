@@ -481,6 +481,14 @@ namespace ArdupilotMega
                         S9.DataSource = Range(414000, 100, 454000);
                         RS9.DataSource = Range(414000, 100, 454000);
                     }
+                    else if (freq == uploader.Uploader.Code.FREQ_868) 
+                    {
+                        S8.DataSource = Range(868000, 100, 869000);
+                        RS8.DataSource = Range(868000, 100, 869000);
+
+                        S9.DataSource = Range(868000, 100, 869000);
+                        RS9.DataSource = Range(868000, 100, 869000);
+                    }
 
                     if (board == uploader.Uploader.Code.DEVICE_ID_RFD900 || board == uploader.Uploader.Code.DEVICE_ID_RFD900A)
                     {

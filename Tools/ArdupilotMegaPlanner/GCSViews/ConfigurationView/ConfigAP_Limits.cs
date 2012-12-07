@@ -41,7 +41,7 @@ namespace ArdupilotMega.GCSViews.ConfigurationView
 
         private void LIM_ENABLED_CheckedChanged(object sender, EventArgs e)
         {
-            if (!MainV2.comPort.param.ContainsKey("LIM_ENABLED"))
+            if (!MainV2.comPort.MAV.param.ContainsKey("LIM_ENABLED"))
             {
                 CustomMessageBox.Show("This feature is not enabled in your firmware.");
                 return;
@@ -80,7 +80,7 @@ namespace ArdupilotMega.GCSViews.ConfigurationView
 
         void PopulateData()
         {
-            Hashtable copy = new Hashtable(MainV2.comPort.param);
+            Hashtable copy = new Hashtable(MainV2.comPort.MAV.param);
 
             foreach (string key in copy.Keys)
             {

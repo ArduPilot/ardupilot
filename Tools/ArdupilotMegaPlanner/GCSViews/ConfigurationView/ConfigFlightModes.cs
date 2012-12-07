@@ -25,43 +25,43 @@ namespace ArdupilotMega.GCSViews.ConfigurationView
         {
             try
             {
-                MainV2.cs.UpdateCurrentSettings(currentStateBindingSource);
+                MainV2.comPort.MAV.cs.UpdateCurrentSettings(currentStateBindingSource);
             }
             catch { }
 
             float pwm = 0;
 
-            if (MainV2.cs.firmware == MainV2.Firmwares.ArduPlane || MainV2.cs.firmware == MainV2.Firmwares.ArduRover) // APM 
+            if (MainV2.comPort.MAV.cs.firmware == MainV2.Firmwares.ArduPlane || MainV2.comPort.MAV.cs.firmware == MainV2.Firmwares.ArduRover) // APM 
             {
-                if (MainV2.comPort.param.ContainsKey("FLTMODE_CH"))
+                if (MainV2.comPort.MAV.param.ContainsKey("FLTMODE_CH"))
                 {
-                    switch ((int)(float)MainV2.comPort.param["FLTMODE_CH"])
+                    switch ((int)(float)MainV2.comPort.MAV.param["FLTMODE_CH"])
                     {
                         case 5:
-                            pwm = MainV2.cs.ch5in;
+                            pwm = MainV2.comPort.MAV.cs.ch5in;
                             break;
                         case 6:
-                            pwm = MainV2.cs.ch6in;
+                            pwm = MainV2.comPort.MAV.cs.ch6in;
                             break;
                         case 7:
-                            pwm = MainV2.cs.ch7in;
+                            pwm = MainV2.comPort.MAV.cs.ch7in;
                             break;
                         case 8:
-                            pwm = MainV2.cs.ch8in;
+                            pwm = MainV2.comPort.MAV.cs.ch8in;
                             break;
                         default:
 
                             break;
                     }
 
-                    LBL_flightmodepwm.Text = MainV2.comPort.param["FLTMODE_CH"].ToString() + ": " + pwm.ToString();
+                    LBL_flightmodepwm.Text = MainV2.comPort.MAV.param["FLTMODE_CH"].ToString() + ": " + pwm.ToString();
                 }
             }
 
-            if (MainV2.cs.firmware == MainV2.Firmwares.ArduCopter2) // ac2
+            if (MainV2.comPort.MAV.cs.firmware == MainV2.Firmwares.ArduCopter2) // ac2
             {
-                pwm = MainV2.cs.ch5in;
-                LBL_flightmodepwm.Text = "5: " + MainV2.cs.ch5in.ToString();
+                pwm = MainV2.comPort.MAV.cs.ch5in;
+                LBL_flightmodepwm.Text = "5: " + MainV2.comPort.MAV.cs.ch5in.ToString();
             }
 
             Control[] fmodelist = new Control[] { CMB_fmode1, CMB_fmode2, CMB_fmode3, CMB_fmode4, CMB_fmode5, CMB_fmode6 };
@@ -100,11 +100,11 @@ namespace ArdupilotMega.GCSViews.ConfigurationView
                 MainV2.comPort.setParam("FLTMODE5", (float)Int32.Parse(CMB_fmode5.SelectedValue.ToString()));
                 MainV2.comPort.setParam("FLTMODE6", (float)Int32.Parse(CMB_fmode6.SelectedValue.ToString()));
 
-                if (MainV2.cs.firmware == MainV2.Firmwares.ArduCopter2) // ac2
+                if (MainV2.comPort.MAV.cs.firmware == MainV2.Firmwares.ArduCopter2) // ac2
                 {
                     float value = (float)(CB_simple1.Checked ? (int)SimpleMode.Simple1 : 0) + (CB_simple2.Checked ? (int)SimpleMode.Simple2 : 0) + (CB_simple3.Checked ? (int)SimpleMode.Simple3 : 0)
                         + (CB_simple4.Checked ? (int)SimpleMode.Simple4 : 0) + (CB_simple5.Checked ? (int)SimpleMode.Simple5 : 0) + (CB_simple6.Checked ? (int)SimpleMode.Simple6 : 0);
-                    if (MainV2.comPort.param.ContainsKey("SIMPLE"))
+                    if (MainV2.comPort.MAV.param.ContainsKey("SIMPLE"))
                         MainV2.comPort.setParam("SIMPLE", value);
                 }
             }
@@ -131,7 +131,7 @@ namespace ArdupilotMega.GCSViews.ConfigurationView
 
         public void Activate()
         {
-            if (MainV2.cs.firmware == MainV2.Firmwares.ArduPlane) // APM
+            if (MainV2.comPort.MAV.cs.firmware == MainV2.Firmwares.ArduPlane) // APM
             {
                 CB_simple1.Visible = false;
                 CB_simple2.Visible = false;
@@ -168,17 +168,17 @@ namespace ArdupilotMega.GCSViews.ConfigurationView
 
                 try
                 {
-                    CMB_fmode1.Text = EnumTranslator.GetDisplayText(Enum.Parse(typeof(Common.apmmodes), MainV2.comPort.param["FLTMODE1"].ToString()));
-                    CMB_fmode2.Text = EnumTranslator.GetDisplayText(Enum.Parse(typeof(Common.apmmodes), MainV2.comPort.param["FLTMODE2"].ToString()));
-                    CMB_fmode3.Text = EnumTranslator.GetDisplayText(Enum.Parse(typeof(Common.apmmodes), MainV2.comPort.param["FLTMODE3"].ToString()));
-                    CMB_fmode4.Text = EnumTranslator.GetDisplayText(Enum.Parse(typeof(Common.apmmodes), MainV2.comPort.param["FLTMODE4"].ToString()));
-                    CMB_fmode5.Text = EnumTranslator.GetDisplayText(Enum.Parse(typeof(Common.apmmodes), MainV2.comPort.param["FLTMODE5"].ToString()));
+                    CMB_fmode1.Text = EnumTranslator.GetDisplayText(Enum.Parse(typeof(Common.apmmodes), MainV2.comPort.MAV.param["FLTMODE1"].ToString()));
+                    CMB_fmode2.Text = EnumTranslator.GetDisplayText(Enum.Parse(typeof(Common.apmmodes), MainV2.comPort.MAV.param["FLTMODE2"].ToString()));
+                    CMB_fmode3.Text = EnumTranslator.GetDisplayText(Enum.Parse(typeof(Common.apmmodes), MainV2.comPort.MAV.param["FLTMODE3"].ToString()));
+                    CMB_fmode4.Text = EnumTranslator.GetDisplayText(Enum.Parse(typeof(Common.apmmodes), MainV2.comPort.MAV.param["FLTMODE4"].ToString()));
+                    CMB_fmode5.Text = EnumTranslator.GetDisplayText(Enum.Parse(typeof(Common.apmmodes), MainV2.comPort.MAV.param["FLTMODE5"].ToString()));
                     CMB_fmode6.Text = Common.apmmodes.MANUAL.ToString();
                     CMB_fmode6.Enabled = false;
                 }
                 catch { }
             }
-            else if (MainV2.cs.firmware == MainV2.Firmwares.ArduRover) // APM
+            else if (MainV2.comPort.MAV.cs.firmware == MainV2.Firmwares.ArduRover) // APM
             {
                 CB_simple1.Visible = false;
                 CB_simple2.Visible = false;
@@ -215,16 +215,16 @@ namespace ArdupilotMega.GCSViews.ConfigurationView
 
                 try
                 {
-                    CMB_fmode1.Text = EnumTranslator.GetDisplayText(Enum.Parse(typeof(Common.aprovermodes), MainV2.comPort.param["FLTMODE1"].ToString()));
-                    CMB_fmode2.Text = EnumTranslator.GetDisplayText(Enum.Parse(typeof(Common.aprovermodes), MainV2.comPort.param["FLTMODE2"].ToString()));
-                    CMB_fmode3.Text = EnumTranslator.GetDisplayText(Enum.Parse(typeof(Common.aprovermodes), MainV2.comPort.param["FLTMODE3"].ToString()));
-                    CMB_fmode4.Text = EnumTranslator.GetDisplayText(Enum.Parse(typeof(Common.aprovermodes), MainV2.comPort.param["FLTMODE4"].ToString()));
-                    CMB_fmode5.Text = EnumTranslator.GetDisplayText(Enum.Parse(typeof(Common.aprovermodes), MainV2.comPort.param["FLTMODE5"].ToString()));
+                    CMB_fmode1.Text = EnumTranslator.GetDisplayText(Enum.Parse(typeof(Common.aprovermodes), MainV2.comPort.MAV.param["FLTMODE1"].ToString()));
+                    CMB_fmode2.Text = EnumTranslator.GetDisplayText(Enum.Parse(typeof(Common.aprovermodes), MainV2.comPort.MAV.param["FLTMODE2"].ToString()));
+                    CMB_fmode3.Text = EnumTranslator.GetDisplayText(Enum.Parse(typeof(Common.aprovermodes), MainV2.comPort.MAV.param["FLTMODE3"].ToString()));
+                    CMB_fmode4.Text = EnumTranslator.GetDisplayText(Enum.Parse(typeof(Common.aprovermodes), MainV2.comPort.MAV.param["FLTMODE4"].ToString()));
+                    CMB_fmode5.Text = EnumTranslator.GetDisplayText(Enum.Parse(typeof(Common.aprovermodes), MainV2.comPort.MAV.param["FLTMODE5"].ToString()));
                     CMB_fmode6.Text = Common.aprovermodes.MANUAL.ToString();
                     CMB_fmode6.Enabled = false;
                 }
                 catch { }
-            } else if (MainV2.cs.firmware == MainV2.Firmwares.ArduCopter2) // ac2
+            } else if (MainV2.comPort.MAV.cs.firmware == MainV2.Firmwares.ArduCopter2) // ac2
             {
                var flightModes = EnumTranslator.Translate<Common.ac2modes>();
 
@@ -254,15 +254,15 @@ namespace ArdupilotMega.GCSViews.ConfigurationView
 
                 try
                 {
-                    CMB_fmode1.Text = EnumTranslator.GetDisplayText(Enum.Parse(typeof(Common.ac2modes), MainV2.comPort.param["FLTMODE1"].ToString()));
-                    CMB_fmode2.Text = EnumTranslator.GetDisplayText(Enum.Parse(typeof(Common.ac2modes), MainV2.comPort.param["FLTMODE2"].ToString()));
-                    CMB_fmode3.Text = EnumTranslator.GetDisplayText(Enum.Parse(typeof(Common.ac2modes), MainV2.comPort.param["FLTMODE3"].ToString()));
-                    CMB_fmode4.Text = EnumTranslator.GetDisplayText(Enum.Parse(typeof(Common.ac2modes), MainV2.comPort.param["FLTMODE4"].ToString()));
-                    CMB_fmode5.Text = EnumTranslator.GetDisplayText(Enum.Parse(typeof(Common.ac2modes), MainV2.comPort.param["FLTMODE5"].ToString()));
-                    CMB_fmode6.Text = EnumTranslator.GetDisplayText(Enum.Parse(typeof(Common.ac2modes), MainV2.comPort.param["FLTMODE6"].ToString()));
+                    CMB_fmode1.Text = EnumTranslator.GetDisplayText(Enum.Parse(typeof(Common.ac2modes), MainV2.comPort.MAV.param["FLTMODE1"].ToString()));
+                    CMB_fmode2.Text = EnumTranslator.GetDisplayText(Enum.Parse(typeof(Common.ac2modes), MainV2.comPort.MAV.param["FLTMODE2"].ToString()));
+                    CMB_fmode3.Text = EnumTranslator.GetDisplayText(Enum.Parse(typeof(Common.ac2modes), MainV2.comPort.MAV.param["FLTMODE3"].ToString()));
+                    CMB_fmode4.Text = EnumTranslator.GetDisplayText(Enum.Parse(typeof(Common.ac2modes), MainV2.comPort.MAV.param["FLTMODE4"].ToString()));
+                    CMB_fmode5.Text = EnumTranslator.GetDisplayText(Enum.Parse(typeof(Common.ac2modes), MainV2.comPort.MAV.param["FLTMODE5"].ToString()));
+                    CMB_fmode6.Text = EnumTranslator.GetDisplayText(Enum.Parse(typeof(Common.ac2modes), MainV2.comPort.MAV.param["FLTMODE6"].ToString()));
                     CMB_fmode6.Enabled = true;
 
-                    int simple = int.Parse(MainV2.comPort.param["SIMPLE"].ToString());
+                    int simple = int.Parse(MainV2.comPort.MAV.param["SIMPLE"].ToString());
 
                     CB_simple1.Checked = ((simple >> 0 & 1) == 1);
                     CB_simple2.Checked = ((simple >> 1 & 1) == 1);

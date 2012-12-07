@@ -388,8 +388,13 @@ namespace ArdupilotMega
                 }
                 if (items[0].Contains("GPS") && items[2] == "1" && items[4] != "0" && items[4] != "-1" && lastline != line) // check gps line and fixed status
                 {
+                    MainV2.comPort.MAV.cs.firmware = MainV2.Firmwares.ArduPlane;
+
                     if (position[positionindex] == null)
                         position[positionindex] = new List<Point3D>();
+
+                    if (double.Parse(items[4], new System.Globalization.CultureInfo("en-US")) == 0)
+                        return;
 
                     double alt = double.Parse(items[6], new System.Globalization.CultureInfo("en-US"));
 
@@ -404,10 +409,15 @@ namespace ArdupilotMega
                     lastpos = (position[positionindex][position[positionindex].Count - 1]);
                     lastline = line;
                 }
-                if (items[0].Contains("GPS") && items[4] != "0" && items[4] != "-1" && items.Length <= 9)
+                if (items[0].Contains("GPS") && items[4] != "0" && items[4] != "-1" && items.Length <= 9) // AC
                 {
+                    MainV2.comPort.MAV.cs.firmware = MainV2.Firmwares.ArduCopter2;
+
                     if (position[positionindex] == null)
                         position[positionindex] = new List<Point3D>();
+
+                    if (double.Parse(items[4], new System.Globalization.CultureInfo("en-US")) == 0)
+                        return;
 
                     double alt = double.Parse(items[5], new System.Globalization.CultureInfo("en-US"));
 
@@ -522,7 +532,7 @@ namespace ArdupilotMega
 
             AltitudeMode altmode = AltitudeMode.absolute;
 
-            if (MainV2.cs.firmware == MainV2.Firmwares.ArduCopter2)
+            if (MainV2.comPort.MAV.cs.firmware == MainV2.Firmwares.ArduCopter2)
             {
                 altmode = AltitudeMode.relativeToGround; // because of sonar, this is both right and wrong. right for sonar, wrong in terms of gps as the land slopes off.
             }

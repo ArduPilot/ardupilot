@@ -68,14 +68,14 @@ namespace ArdupilotMega
             {
                 try
                 {
-                    double lat = (int)MainV2.cs.lat + ((MainV2.cs.lat - (int)MainV2.cs.lat) * .6f);
-                    double lng = (int)MainV2.cs.lng + ((MainV2.cs.lng - (int)MainV2.cs.lng) * .6f);
-                    string line = string.Format("$GP{0},{1:HHmmss},{2},{3},{4},{5},{6},{7},{8},{9},{10},{11},{12},{13},", "GGA", DateTime.Now.ToUniversalTime(), Math.Abs(lat * 100), MainV2.cs.lat < 0 ? "S" : "N", Math.Abs(lng * 100), MainV2.cs.lng < 0 ? "W" : "E", MainV2.cs.gpsstatus, MainV2.cs.satcount, MainV2.cs.gpshdop, MainV2.cs.alt, "M", 0, "M", "");
+                    double lat = (int)MainV2.comPort.MAV.cs.lat + ((MainV2.comPort.MAV.cs.lat - (int)MainV2.comPort.MAV.cs.lat) * .6f);
+                    double lng = (int)MainV2.comPort.MAV.cs.lng + ((MainV2.comPort.MAV.cs.lng - (int)MainV2.comPort.MAV.cs.lng) * .6f);
+                    string line = string.Format("$GP{0},{1:HHmmss},{2},{3},{4},{5},{6},{7},{8},{9},{10},{11},{12},{13},", "GGA", DateTime.Now.ToUniversalTime(), Math.Abs(lat * 100), MainV2.comPort.MAV.cs.lat < 0 ? "S" : "N", Math.Abs(lng * 100), MainV2.comPort.MAV.cs.lng < 0 ? "W" : "E", MainV2.comPort.MAV.cs.gpsstatus, MainV2.comPort.MAV.cs.satcount, MainV2.comPort.MAV.cs.gpshdop, MainV2.comPort.MAV.cs.alt, "M", 0, "M", "");
 
                     string checksum = GetChecksum(line);
                     comPort.WriteLine(line + "*" + checksum);
 
-                    line = string.Format("$GP{0},{1:HHmmss},{2},{3},{4},{5},{6},{7},{8},{9:ddMMyy},{10},", "RMC", DateTime.Now.ToUniversalTime(), "A", Math.Abs(lat * 100), MainV2.cs.lat < 0 ? "S" : "N", Math.Abs(lng * 100), MainV2.cs.lng < 0 ? "W" : "E", MainV2.cs.groundspeed * 3.6, MainV2.cs.groundcourse, DateTime.Now, 0);
+                    line = string.Format("$GP{0},{1:HHmmss},{2},{3},{4},{5},{6},{7},{8},{9:ddMMyy},{10},", "RMC", DateTime.Now.ToUniversalTime(), "A", Math.Abs(lat * 100), MainV2.comPort.MAV.cs.lat < 0 ? "S" : "N", Math.Abs(lng * 100), MainV2.comPort.MAV.cs.lng < 0 ? "W" : "E", MainV2.comPort.MAV.cs.groundspeed * 3.6, MainV2.comPort.MAV.cs.groundcourse, DateTime.Now, 0);
 
                     checksum = GetChecksum(line);
                     comPort.WriteLine(line + "*" + checksum);

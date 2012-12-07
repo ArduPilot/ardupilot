@@ -27,7 +27,7 @@ namespace ArdupilotMega
             engine = Python.CreateEngine(options);
             scope = engine.CreateScope();
 
-            scope.SetVariable("cs", MainV2.cs);
+            scope.SetVariable("cs", MainV2.comPort.MAV.cs);
             scope.SetVariable("Script", this);
             scope.SetVariable("mavutil", this);
 
@@ -35,7 +35,7 @@ namespace ArdupilotMega
             engine.CreateScriptSourceFromString("print cs.roll").Execute(scope);
 
 
-            object thisBoxed = MainV2.cs;
+            object thisBoxed = MainV2.comPort.MAV.cs;
             Type test = thisBoxed.GetType();
 
             foreach (var field in test.GetProperties())
@@ -104,8 +104,8 @@ namespace ArdupilotMega
 
         public float GetParam(string param)
         {
-            if (MainV2.comPort.param[param] != null)
-                return (float)MainV2.comPort.param[param];
+            if (MainV2.comPort.MAV.param[param] != null)
+                return (float)MainV2.comPort.MAV.param[param];
 
             return 0.0f;
         }
@@ -119,7 +119,7 @@ namespace ArdupilotMega
         public bool WaitFor(string message, int timeout)
         {
             int timein = 0;
-            while (!MainV2.cs.message.Contains(message))
+            while (!MainV2.comPort.MAV.cs.message.Contains(message))
             {
                 System.Threading.Thread.Sleep(5);
                 timein += 5;
@@ -135,41 +135,41 @@ namespace ArdupilotMega
             switch (channel)
             {
                 case 1:
-                    MainV2.cs.rcoverridech1 = pwm;
+                    MainV2.comPort.MAV.cs.rcoverridech1 = pwm;
                     rc.chan1_raw = pwm;
                     break;
                 case 2:
-                    MainV2.cs.rcoverridech2 = pwm;
+                    MainV2.comPort.MAV.cs.rcoverridech2 = pwm;
                     rc.chan2_raw = pwm;
                     break;
                 case 3:
-                    MainV2.cs.rcoverridech3 = pwm;
+                    MainV2.comPort.MAV.cs.rcoverridech3 = pwm;
                     rc.chan3_raw = pwm;
                     break;
                 case 4:
-                    MainV2.cs.rcoverridech4 = pwm;
+                    MainV2.comPort.MAV.cs.rcoverridech4 = pwm;
                     rc.chan4_raw = pwm;
                     break;
                 case 5:
-                    MainV2.cs.rcoverridech5 = pwm;
+                    MainV2.comPort.MAV.cs.rcoverridech5 = pwm;
                     rc.chan5_raw = pwm;
                     break;
                 case 6:
-                    MainV2.cs.rcoverridech6 = pwm;
+                    MainV2.comPort.MAV.cs.rcoverridech6 = pwm;
                     rc.chan6_raw = pwm;
                     break;
                 case 7:
-                    MainV2.cs.rcoverridech7 = pwm;
+                    MainV2.comPort.MAV.cs.rcoverridech7 = pwm;
                     rc.chan7_raw = pwm;
                     break;
                 case 8:
-                    MainV2.cs.rcoverridech8 = pwm;
+                    MainV2.comPort.MAV.cs.rcoverridech8 = pwm;
                     rc.chan8_raw = pwm;
                     break;
             }
 
-            rc.target_component = MainV2.comPort.compid;
-            rc.target_system = MainV2.comPort.sysid;
+            rc.target_component = MainV2.comPort.MAV.compid;
+            rc.target_system = MainV2.comPort.MAV.sysid;
 
             if (sendnow)
             {

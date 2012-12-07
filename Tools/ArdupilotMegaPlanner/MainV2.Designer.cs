@@ -28,6 +28,7 @@
         /// </summary>
         private void InitializeComponent()
         {
+            this.components = new System.ComponentModel.Container();
             System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(MainV2));
             this.MyView = new ArdupilotMega.Controls.MainSwitcher();
             this.MainMenu = new System.Windows.Forms.MenuStrip();
@@ -42,8 +43,11 @@
             this.toolStripConnectionControl = new ArdupilotMega.Controls.ToolStripConnectionControl();
             this.menu = new ArdupilotMega.Controls.MyButton();
             this.panel1 = new System.Windows.Forms.Panel();
+            this.CTX_mainmenu = new System.Windows.Forms.ContextMenuStrip(this.components);
+            this.autoHideToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.MainMenu.SuspendLayout();
             this.panel1.SuspendLayout();
+            this.CTX_mainmenu.SuspendLayout();
             this.SuspendLayout();
             // 
             // MyView
@@ -58,6 +62,7 @@
             // MainMenu
             // 
             this.MainMenu.BackgroundImage = ((System.Drawing.Image)(resources.GetObject("MainMenu.BackgroundImage")));
+            this.MainMenu.ContextMenuStrip = this.CTX_mainmenu;
             this.MainMenu.GripMargin = new System.Windows.Forms.Padding(0);
             this.MainMenu.ImageScalingSize = new System.Drawing.Size(76, 76);
             this.MainMenu.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {
@@ -231,6 +236,23 @@
             this.panel1.Visible = false;
             this.panel1.MouseLeave += new System.EventHandler(this.MainMenu_MouseLeave);
             // 
+            // CTX_mainmenu
+            // 
+            this.CTX_mainmenu.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {
+            this.autoHideToolStripMenuItem});
+            this.CTX_mainmenu.Name = "CTX_mainmenu";
+            this.CTX_mainmenu.Size = new System.Drawing.Size(153, 48);
+            // 
+            // autoHideToolStripMenuItem
+            // 
+            this.autoHideToolStripMenuItem.Checked = true;
+            this.autoHideToolStripMenuItem.CheckOnClick = true;
+            this.autoHideToolStripMenuItem.CheckState = System.Windows.Forms.CheckState.Checked;
+            this.autoHideToolStripMenuItem.Name = "autoHideToolStripMenuItem";
+            this.autoHideToolStripMenuItem.Size = new System.Drawing.Size(152, 22);
+            this.autoHideToolStripMenuItem.Text = "AutoHide";
+            this.autoHideToolStripMenuItem.Click += new System.EventHandler(this.autoHideToolStripMenuItem_Click);
+            // 
             // MainV2
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
@@ -254,6 +276,7 @@
             this.MainMenu.PerformLayout();
             this.panel1.ResumeLayout(false);
             this.panel1.PerformLayout();
+            this.CTX_mainmenu.ResumeLayout(false);
             this.ResumeLayout(false);
 
         }
@@ -275,5 +298,7 @@
         private Controls.ToolStripConnectionControl toolStripConnectionControl;
         private Controls.MyButton menu;
         private System.Windows.Forms.Panel panel1;
+        private System.Windows.Forms.ContextMenuStrip CTX_mainmenu;
+        private System.Windows.Forms.ToolStripMenuItem autoHideToolStripMenuItem;
     }
 }

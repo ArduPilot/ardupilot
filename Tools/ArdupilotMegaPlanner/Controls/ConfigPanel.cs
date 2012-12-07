@@ -35,7 +35,7 @@ namespace ArdupilotMega.Controls
         public void PopulateData()
         {
             // process hashdefines and update display
-            foreach (string value in MainV2.comPort.param.Keys)
+            foreach (string value in MainV2.comPort.MAV.param.Keys)
             {
                 if (value == null || value == "") // older ap version have a null param
                     continue;
@@ -44,7 +44,7 @@ namespace ArdupilotMega.Controls
                 {
                     try
                     {
-                        float numbervalue = (float)MainV2.comPort.param[value];
+                        float numbervalue = (float)MainV2.comPort.MAV.param[value];
 
                         MAVLink.modifyParamForDisplay(true, value, ref numbervalue);
 

@@ -174,7 +174,7 @@ namespace ArdupilotMega.GCSViews
 
             if (pointno == "Tracker Home")
             {
-                MainV2.cs.TrackerLocation = new PointLatLngAlt(lat, lng, alt, "");
+                MainV2.comPort.MAV.cs.TrackerLocation = new PointLatLngAlt(lat, lng, alt, "");
                 return;
             }
 
@@ -249,7 +249,7 @@ namespace ArdupilotMega.GCSViews
                         cell.Value = alt.ToString();
                     if (ans == 0) // default
                         cell.Value = 50;
-                    if (ans == 0 && MainV2.cs.firmware == MainV2.Firmwares.ArduCopter2)
+                    if (ans == 0 && MainV2.comPort.MAV.cs.firmware == MainV2.Firmwares.ArduCopter2)
                         cell.Value = 15;
                     //   online          verify height
                     if (isonline && CHK_geheight.Checked)
@@ -495,11 +495,11 @@ namespace ArdupilotMega.GCSViews
             {
                 reader.Read();
                 reader.ReadStartElement("CMD");
-                if (MainV2.cs.firmware == MainV2.Firmwares.ArduPlane)
+                if (MainV2.comPort.MAV.cs.firmware == MainV2.Firmwares.ArduPlane)
                 {
                     reader.ReadToFollowing("APM");
                 }
-                else if (MainV2.cs.firmware == MainV2.Firmwares.ArduRover)
+                else if (MainV2.comPort.MAV.cs.firmware == MainV2.Firmwares.ArduRover)
                 {
                     reader.ReadToFollowing("APRover");
                 }
@@ -595,13 +595,13 @@ namespace ArdupilotMega.GCSViews
 
             config(false);
 
-            if (MainV2.cs.HomeLocation.Lat != 0 && MainV2.cs.HomeLocation.Lng != 0)
+            if (MainV2.comPort.MAV.cs.HomeLocation.Lat != 0 && MainV2.comPort.MAV.cs.HomeLocation.Lng != 0)
             {
-                TXT_homelat.Text = MainV2.cs.HomeLocation.Lat.ToString();
+                TXT_homelat.Text = MainV2.comPort.MAV.cs.HomeLocation.Lat.ToString();
 
-                TXT_homelng.Text = MainV2.cs.HomeLocation.Lng.ToString();
+                TXT_homelng.Text = MainV2.comPort.MAV.cs.HomeLocation.Lng.ToString();
 
-                TXT_homealt.Text = MainV2.cs.HomeLocation.Alt.ToString();
+                TXT_homealt.Text = MainV2.comPort.MAV.cs.HomeLocation.Alt.ToString();
             }
 
 
@@ -848,7 +848,7 @@ namespace ArdupilotMega.GCSViews
                 GMapMarkerRect mBorders = new GMapMarkerRect(point);
                 {
                     mBorders.InnerMarker = m;
-                    mBorders.wprad = (int)(float.Parse(TXT_WPRad.Text) / MainV2.cs.multiplierdist);
+                    mBorders.wprad = (int)(float.Parse(TXT_WPRad.Text) / MainV2.comPort.MAV.cs.multiplierdist);
                     mBorders.MainMap = MainMap;
                     if (color.HasValue)
                     {
@@ -1151,7 +1151,7 @@ namespace ArdupilotMega.GCSViews
                         sw.Write("\t" + double.Parse(Commands.Rows[a].Cells[Param4.Index].Value.ToString()).ToString("0.000000", new System.Globalization.CultureInfo("en-US")));
                         sw.Write("\t" + double.Parse(Commands.Rows[a].Cells[Lat.Index].Value.ToString()).ToString("0.000000", new System.Globalization.CultureInfo("en-US")));
                         sw.Write("\t" + double.Parse(Commands.Rows[a].Cells[Lon.Index].Value.ToString()).ToString("0.000000", new System.Globalization.CultureInfo("en-US")));
-                        sw.Write("\t" + (double.Parse(Commands.Rows[a].Cells[Alt.Index].Value.ToString()) / MainV2.cs.multiplierdist).ToString("0.000000", new System.Globalization.CultureInfo("en-US")));
+                        sw.Write("\t" + (double.Parse(Commands.Rows[a].Cells[Alt.Index].Value.ToString()) / MainV2.comPort.MAV.cs.multiplierdist).ToString("0.000000", new System.Globalization.CultureInfo("en-US")));
                         sw.Write("\t" + 1);
                         sw.WriteLine("");
                     }
@@ -1205,7 +1205,7 @@ namespace ArdupilotMega.GCSViews
 
                 MainV2.giveComport = true;
 
-                param = port.param;
+                param = port.MAV.param;
 
                 log.Info("Getting WP #");
 
@@ -1322,7 +1322,7 @@ namespace ArdupilotMega.GCSViews
                     home.id = (byte)MAVLink.MAV_CMD.WAYPOINT;
                     home.lat = (float.Parse(TXT_homelat.Text));
                     home.lng = (float.Parse(TXT_homelng.Text));
-                    home.alt = (float.Parse(TXT_homealt.Text) / MainV2.cs.multiplierdist); // use saved home
+                    home.alt = (float.Parse(TXT_homealt.Text) / MainV2.comPort.MAV.cs.multiplierdist); // use saved home
                 }
                 catch { throw new Exception("Your home location is invalid"); }
 
@@ -1356,7 +1356,7 @@ namespace ArdupilotMega.GCSViews
                         }
                     }
 
-                    temp.alt = (float)(double.Parse(Commands.Rows[a].Cells[Alt.Index].Value.ToString()) / MainV2.cs.multiplierdist);
+                    temp.alt = (float)(double.Parse(Commands.Rows[a].Cells[Alt.Index].Value.ToString()) / MainV2.comPort.MAV.cs.multiplierdist);
                     temp.lat = (float)(double.Parse(Commands.Rows[a].Cells[Lat.Index].Value.ToString()));
                     temp.lng = (float)(double.Parse(Commands.Rows[a].Cells[Lon.Index].Value.ToString()));
 
@@ -1379,22 +1379,22 @@ namespace ArdupilotMega.GCSViews
 
                 if (CHK_holdalt.Checked)
                 {
-                    port.setParam("ALT_HOLD_RTL", int.Parse(TXT_DefaultAlt.Text) / MainV2.cs.multiplierdist * 100);
+                    port.setParam("ALT_HOLD_RTL", int.Parse(TXT_DefaultAlt.Text) / MainV2.comPort.MAV.cs.multiplierdist * 100);
                 }
                 else
                 {
                     port.setParam("ALT_HOLD_RTL", -1);
                 }
 
-                port.setParam("WP_RADIUS", (byte)int.Parse(TXT_WPRad.Text) / MainV2.cs.multiplierdist);
+                port.setParam("WP_RADIUS", (byte)int.Parse(TXT_WPRad.Text) / MainV2.comPort.MAV.cs.multiplierdist);
 
                 try
                 {
-                    port.setParam("WP_LOITER_RAD", (byte)(int.Parse(TXT_loiterrad.Text) / MainV2.cs.multiplierdist));
+                    port.setParam("WP_LOITER_RAD", (byte)(int.Parse(TXT_loiterrad.Text) / MainV2.comPort.MAV.cs.multiplierdist));
                 }
                 catch
                 {
-                    port.setParam("LOITER_RAD", (byte)int.Parse(TXT_loiterrad.Text) / MainV2.cs.multiplierdist);
+                    port.setParam("LOITER_RAD", (byte)int.Parse(TXT_loiterrad.Text) / MainV2.comPort.MAV.cs.multiplierdist);
                 }
 
                 ((Controls.ProgressReporterDialogue)sender).UpdateProgressAndStatus(100, "Done.");
@@ -1465,7 +1465,7 @@ namespace ArdupilotMega.GCSViews
                 }
 
                 cell = Commands.Rows[i].Cells[Alt.Index] as DataGridViewTextBoxCell;
-                cell.Value = Math.Round((temp.alt * MainV2.cs.multiplierdist), 0);
+                cell.Value = Math.Round((temp.alt * MainV2.comPort.MAV.cs.multiplierdist), 0);
                 cell = Commands.Rows[i].Cells[Lat.Index] as DataGridViewTextBoxCell;
                 cell.Value = (double)temp.lat;
                 cell = Commands.Rows[i].Cells[Lon.Index] as DataGridViewTextBoxCell;
@@ -1484,7 +1484,7 @@ namespace ArdupilotMega.GCSViews
             {
                 log.Info("Setting wp params");
 
-                string hold_alt = ((int)((float)param["ALT_HOLD_RTL"] * MainV2.cs.multiplierdist / 100.0)).ToString();
+                string hold_alt = ((int)((float)param["ALT_HOLD_RTL"] * MainV2.comPort.MAV.cs.multiplierdist / 100.0)).ToString();
 
                 log.Info("param ALT_HOLD_RTL " + hold_alt);
 
@@ -1493,17 +1493,17 @@ namespace ArdupilotMega.GCSViews
                     TXT_DefaultAlt.Text = hold_alt;
                 }
 
-                TXT_WPRad.Text = ((int)((float)param["WP_RADIUS"] * MainV2.cs.multiplierdist)).ToString();
+                TXT_WPRad.Text = ((int)((float)param["WP_RADIUS"] * MainV2.comPort.MAV.cs.multiplierdist)).ToString();
 
                 log.Info("param WP_RADIUS " + TXT_WPRad.Text);
 
                 try
                 {
                     if (param["LOITER_RADIUS"] != null)
-                        TXT_loiterrad.Text = ((int)((float)param["LOITER_RADIUS"] * MainV2.cs.multiplierdist)).ToString();
+                        TXT_loiterrad.Text = ((int)((float)param["LOITER_RADIUS"] * MainV2.comPort.MAV.cs.multiplierdist)).ToString();
 
                     if (param["WP_LOITER_RAD"] != null)
-                        TXT_loiterrad.Text = ((int)((float)param["WP_LOITER_RAD"] * MainV2.cs.multiplierdist)).ToString();
+                        TXT_loiterrad.Text = ((int)((float)param["WP_LOITER_RAD"] * MainV2.comPort.MAV.cs.multiplierdist)).ToString();
 
                     log.Info("param LOITER_RADIUS " + TXT_loiterrad.Text);
                 }
@@ -1534,7 +1534,7 @@ namespace ArdupilotMega.GCSViews
                             cellhome = Commands.Rows[0].Cells[Lon.Index] as DataGridViewTextBoxCell;
                             TXT_homelng.Text = (double.Parse(cellhome.Value.ToString())).ToString();
                             cellhome = Commands.Rows[0].Cells[Alt.Index] as DataGridViewTextBoxCell;
-                            TXT_homealt.Text = (double.Parse(cellhome.Value.ToString()) * MainV2.cs.multiplierdist).ToString();
+                            TXT_homealt.Text = (double.Parse(cellhome.Value.ToString()) * MainV2.comPort.MAV.cs.multiplierdist).ToString();
                         }
                     }
                 }
@@ -1719,7 +1719,7 @@ namespace ArdupilotMega.GCSViews
             sethome = false;
             try
             {
-                MainV2.cs.HomeLocation.Lat = double.Parse(TXT_homelat.Text);
+                MainV2.comPort.MAV.cs.HomeLocation.Lat = double.Parse(TXT_homelat.Text);
             }
             catch { }
             writeKML();
@@ -1731,7 +1731,7 @@ namespace ArdupilotMega.GCSViews
             sethome = false;
             try
             {
-                MainV2.cs.HomeLocation.Lng = double.Parse(TXT_homelng.Text);
+                MainV2.comPort.MAV.cs.HomeLocation.Lng = double.Parse(TXT_homelng.Text);
             }
             catch { }
             writeKML();
@@ -1742,7 +1742,7 @@ namespace ArdupilotMega.GCSViews
             sethome = false;
             try
             {
-                MainV2.cs.HomeLocation.Alt = double.Parse(TXT_homealt.Text);
+                MainV2.comPort.MAV.cs.HomeLocation.Alt = double.Parse(TXT_homealt.Text);
             }
             catch { }
             writeKML();
@@ -2340,7 +2340,7 @@ namespace ArdupilotMega.GCSViews
             }
             catch { }
 
-            return alt * MainV2.cs.multiplierdist;
+            return alt * MainV2.comPort.MAV.cs.multiplierdist;
         }
 
         private void TXT_homelat_Enter(object sender, EventArgs e)
@@ -2468,11 +2468,11 @@ namespace ArdupilotMega.GCSViews
 
         private void label4_LinkClicked(object sender, LinkLabelLinkClickedEventArgs e)
         {
-            if (MainV2.cs.lat != 0)
+            if (MainV2.comPort.MAV.cs.lat != 0)
             {
-                TXT_homealt.Text = (MainV2.cs.alt).ToString("0");
-                TXT_homelat.Text = MainV2.cs.lat.ToString();
-                TXT_homelng.Text = MainV2.cs.lng.ToString();
+                TXT_homealt.Text = (MainV2.comPort.MAV.cs.alt).ToString("0");
+                TXT_homelat.Text = MainV2.comPort.MAV.cs.lat.ToString();
+                TXT_homelng.Text = MainV2.comPort.MAV.cs.lng.ToString();
             }
             else
             {
@@ -2659,7 +2659,11 @@ namespace ArdupilotMega.GCSViews
             {
                 if (int.TryParse(CurentRectMarker.InnerMarker.Tag.ToString(), out no))
                 {
-                    Commands.Rows.RemoveAt(no - 1); // home is 0
+                    try
+                    {
+                        Commands.Rows.RemoveAt(no - 1); // home is 0
+                    }
+                    catch { CustomMessageBox.Show("error selecting wp, please try again."); }
                 }
                 else if (int.TryParse(CurentRectMarker.InnerMarker.Tag.ToString().Replace("grid", ""), out no))
                 {
@@ -2762,32 +2766,32 @@ namespace ArdupilotMega.GCSViews
 
                 routes.Markers.Clear();
 
-                if (MainV2.cs.TrackerLocation != MainV2.cs.HomeLocation && MainV2.cs.TrackerLocation.Lng != 0)
+                if (MainV2.comPort.MAV.cs.TrackerLocation != MainV2.comPort.MAV.cs.HomeLocation && MainV2.comPort.MAV.cs.TrackerLocation.Lng != 0)
                 {
-                    addpolygonmarker("Tracker Home", MainV2.cs.TrackerLocation.Lng, MainV2.cs.TrackerLocation.Lat, (int)MainV2.cs.TrackerLocation.Alt, Color.Blue, routes);
+                    addpolygonmarker("Tracker Home", MainV2.comPort.MAV.cs.TrackerLocation.Lng, MainV2.comPort.MAV.cs.TrackerLocation.Lat, (int)MainV2.comPort.MAV.cs.TrackerLocation.Alt, Color.Blue, routes);
                 }
 
-                if (MainV2.cs.lat == 0 || MainV2.cs.lng == 0)
+                if (MainV2.comPort.MAV.cs.lat == 0 || MainV2.comPort.MAV.cs.lng == 0)
                     return;
 
-                PointLatLng currentloc = new PointLatLng(MainV2.cs.lat, MainV2.cs.lng);
+                PointLatLng currentloc = new PointLatLng(MainV2.comPort.MAV.cs.lat, MainV2.comPort.MAV.cs.lng);
 
-                if (MainV2.cs.firmware == MainV2.Firmwares.ArduPlane)
+                if (MainV2.comPort.MAV.cs.firmware == MainV2.Firmwares.ArduPlane)
                 {
-                    routes.Markers.Add(new GMapMarkerPlane(currentloc, MainV2.cs.yaw, MainV2.cs.groundcourse, MainV2.cs.nav_bearing, MainV2.cs.target_bearing, MainMap));
+                    routes.Markers.Add(new GMapMarkerPlane(currentloc, MainV2.comPort.MAV.cs.yaw, MainV2.comPort.MAV.cs.groundcourse, MainV2.comPort.MAV.cs.nav_bearing, MainV2.comPort.MAV.cs.target_bearing, MainMap));
                 }
-                else if (MainV2.cs.firmware == MainV2.Firmwares.ArduRover)
+                else if (MainV2.comPort.MAV.cs.firmware == MainV2.Firmwares.ArduRover)
                 {
-                    routes.Markers.Add(new GMapMarkerRover(currentloc, MainV2.cs.yaw, MainV2.cs.groundcourse, MainV2.cs.nav_bearing, MainV2.cs.target_bearing, MainMap));
+                    routes.Markers.Add(new GMapMarkerRover(currentloc, MainV2.comPort.MAV.cs.yaw, MainV2.comPort.MAV.cs.groundcourse, MainV2.comPort.MAV.cs.nav_bearing, MainV2.comPort.MAV.cs.target_bearing, MainMap));
                 }
                 else
                 {
-                    routes.Markers.Add(new GMapMarkerQuad(currentloc, MainV2.cs.yaw, MainV2.cs.groundcourse, MainV2.cs.nav_bearing));
+                    routes.Markers.Add(new GMapMarkerQuad(currentloc, MainV2.comPort.MAV.cs.yaw, MainV2.comPort.MAV.cs.groundcourse, MainV2.comPort.MAV.cs.nav_bearing));
                 }
 
-                if (MainV2.cs.mode.ToLower() == "guided" && MainV2.comPort.GuidedMode.x != 0)
+                if (MainV2.comPort.MAV.cs.mode.ToLower() == "guided" && MainV2.comPort.MAV.GuidedMode.x != 0)
                 {
-                    addpolygonmarker("Guided Mode", MainV2.comPort.GuidedMode.y, MainV2.comPort.GuidedMode.x, (int)MainV2.comPort.GuidedMode.z, Color.Blue, routes);
+                    addpolygonmarker("Guided Mode", MainV2.comPort.MAV.GuidedMode.y, MainV2.comPort.MAV.GuidedMode.x, (int)MainV2.comPort.MAV.GuidedMode.z, Color.Blue, routes);
                 }
 
 
@@ -2811,7 +2815,7 @@ namespace ArdupilotMega.GCSViews
                     mBorders.InnerMarker = m;
                     try
                     {
-                        mBorders.wprad = (int)(float.Parse(ArdupilotMega.MainV2.config["TXT_WPRad"].ToString()) / MainV2.cs.multiplierdist);
+                        mBorders.wprad = (int)(float.Parse(ArdupilotMega.MainV2.config["TXT_WPRad"].ToString()) / MainV2.comPort.MAV.cs.multiplierdist);
                     }
                     catch { }
                     mBorders.MainMap = MainMap;
@@ -2831,7 +2835,7 @@ namespace ArdupilotMega.GCSViews
         {
             polygongridmode = false;
             //FENCE_TOTAL
-            if (MainV2.comPort.param["FENCE_ACTION"] == null)
+            if (MainV2.comPort.MAV.param["FENCE_ACTION"] == null)
             {
                 CustomMessageBox.Show("Not Supported");
                 return;
@@ -2866,10 +2870,10 @@ namespace ArdupilotMega.GCSViews
                 return;
             }
 
-            string minalts = (int.Parse(MainV2.comPort.param["FENCE_MINALT"].ToString()) * MainV2.cs.multiplierdist).ToString("0");
+            string minalts = (int.Parse(MainV2.comPort.MAV.param["FENCE_MINALT"].ToString()) * MainV2.comPort.MAV.cs.multiplierdist).ToString("0");
             Common.InputBox("Min Alt", "Box Minimum Altitude?", ref minalts);
 
-            string maxalts = (int.Parse(MainV2.comPort.param["FENCE_MAXALT"].ToString()) * MainV2.cs.multiplierdist).ToString("0");
+            string maxalts = (int.Parse(MainV2.comPort.MAV.param["FENCE_MAXALT"].ToString()) * MainV2.comPort.MAV.cs.multiplierdist).ToString("0");
             Common.InputBox("Max Alt", "Box Maximum Altitude?", ref maxalts);
 
             int minalt = 0;
@@ -2900,7 +2904,7 @@ namespace ArdupilotMega.GCSViews
 
             try
             {
-                if (MainV2.comPort.param["FENCE_ACTION"].ToString() != "0")
+                if (MainV2.comPort.MAV.param["FENCE_ACTION"].ToString() != "0")
                     MainV2.comPort.setParam("FENCE_ACTION", 0);
             }
             catch
@@ -2959,13 +2963,13 @@ namespace ArdupilotMega.GCSViews
             polygongridmode = false;
             int count = 1;
 
-            if (MainV2.comPort.param["FENCE_ACTION"] == null || MainV2.comPort.param["FENCE_TOTAL"] == null)
+            if (MainV2.comPort.MAV.param["FENCE_ACTION"] == null || MainV2.comPort.MAV.param["FENCE_TOTAL"] == null)
             {
                 CustomMessageBox.Show("Not Supported");
                 return;
             }
 
-            if (int.Parse(MainV2.comPort.param["FENCE_TOTAL"].ToString()) <= 1)
+            if (int.Parse(MainV2.comPort.MAV.param["FENCE_TOTAL"].ToString()) <= 1)
             {
                 CustomMessageBox.Show("Nothing to download");
                 return;
@@ -3225,7 +3229,7 @@ namespace ArdupilotMega.GCSViews
         {
             timer1.Start();
 
-            if (MainV2.cs.firmware == MainV2.Firmwares.ArduCopter2)
+            if (MainV2.comPort.MAV.cs.firmware == MainV2.Firmwares.ArduCopter2)
             {
                 CHK_altmode.Visible = false;
             }
@@ -3297,13 +3301,13 @@ namespace ArdupilotMega.GCSViews
                 double heightdist = MainMap.Manager.GetDistance(arearect.LocationTopLeft, bottomleft) * 1000;
                 double widthdist = MainMap.Manager.GetDistance(arearect.LocationTopLeft, topright) * 1000;
 
-                string alt = (100 * MainV2.cs.multiplierdist).ToString("0");
+                string alt = (100 * MainV2.comPort.MAV.cs.multiplierdist).ToString("0");
                 Common.InputBox("Altitude", "Relative Altitude", ref alt);
 
-                string distance = (50 * MainV2.cs.multiplierdist).ToString("0");
+                string distance = (50 * MainV2.comPort.MAV.cs.multiplierdist).ToString("0");
                 Common.InputBox("Distance", "Distance between lines", ref distance);
 
-                string wpevery = (40 * MainV2.cs.multiplierdist).ToString("0");
+                string wpevery = (40 * MainV2.comPort.MAV.cs.multiplierdist).ToString("0");
                 Common.InputBox("Every", "Put a WP every x distance (-1 for none)", ref wpevery);
 
                 string angle = (90).ToString("0");
@@ -3337,8 +3341,8 @@ namespace ArdupilotMega.GCSViews
                 double x1 = Math.Sin((double.Parse(angle)) * deg2rad);
 
                 // get x y step amount in lat lng from m
-                double latdiff = arearect.HeightLat / ((heightdist / (double.Parse(distance) * (x1) / MainV2.cs.multiplierdist)));
-                double lngdiff = arearect.WidthLng / ((widthdist / (double.Parse(distance) * (y1) / MainV2.cs.multiplierdist)));
+                double latdiff = arearect.HeightLat / ((heightdist / (double.Parse(distance) * (x1) / MainV2.comPort.MAV.cs.multiplierdist)));
+                double lngdiff = arearect.WidthLng / ((widthdist / (double.Parse(distance) * (y1) / MainV2.comPort.MAV.cs.multiplierdist)));
 
                 double latlngdiff = Math.Sqrt(latdiff * latdiff + lngdiff * lngdiff);
 
@@ -3347,7 +3351,7 @@ namespace ArdupilotMega.GCSViews
                 double fulllatdiff = arearect.HeightLat * x1 * 2;
                 double fulllngdiff = arearect.WidthLng * y1 * 2;
 
-                int altitude = (int)(double.Parse(alt) / MainV2.cs.multiplierdist);
+                int altitude = (int)(double.Parse(alt) / MainV2.comPort.MAV.cs.multiplierdist);
 
                 // draw a grid
                 double x = arearect.LocationMiddle.Lng;
@@ -3363,8 +3367,8 @@ namespace ArdupilotMega.GCSViews
                 x1 = Math.Sin((double.Parse(angle) + 90) * deg2rad);
 
                 // get x y step amount in lat lng from m
-                latdiff = arearect.HeightLat / ((heightdist / (double.Parse(distance) * (y1) / MainV2.cs.multiplierdist)));
-                lngdiff = arearect.WidthLng / ((widthdist / (double.Parse(distance) * (x1) / MainV2.cs.multiplierdist)));
+                latdiff = arearect.HeightLat / ((heightdist / (double.Parse(distance) * (y1) / MainV2.comPort.MAV.cs.multiplierdist)));
+                lngdiff = arearect.WidthLng / ((widthdist / (double.Parse(distance) * (x1) / MainV2.comPort.MAV.cs.multiplierdist)));
 
                 quickadd = true;
 
@@ -3507,7 +3511,7 @@ namespace ArdupilotMega.GCSViews
 
                 // int fixme;
 
-                // foreach (PointLatLng pnt in PathFind.FindPath(MainV2.cs.HomeLocation.Point(),grid))
+                // foreach (PointLatLng pnt in PathFind.FindPath(MainV2.comPort.MAV.cs.HomeLocation.Point(),grid))
                 // {
                 //     callMe(pnt.Lat, pnt.Lng, altitude);
                 // }
@@ -3516,11 +3520,11 @@ namespace ArdupilotMega.GCSViews
 
                 quickadd = true;
 
-                linelatlng closest = findClosestLine(MainV2.cs.HomeLocation.Point(), grid);
+                linelatlng closest = findClosestLine(MainV2.comPort.MAV.cs.HomeLocation.Point(), grid);
 
                 PointLatLng lastpnt;
 
-                if (MainMap.Manager.GetDistance(closest.p1, MainV2.cs.HomeLocation.Point()) < MainMap.Manager.GetDistance(closest.p2, MainV2.cs.HomeLocation.Point()))
+                if (MainMap.Manager.GetDistance(closest.p1, MainV2.comPort.MAV.cs.HomeLocation.Point()) < MainMap.Manager.GetDistance(closest.p2, MainV2.comPort.MAV.cs.HomeLocation.Point()))
                 {
                     lastpnt = closest.p1;
                 }
@@ -3666,14 +3670,14 @@ namespace ArdupilotMega.GCSViews
 
 
 
-                string alt = (100 * MainV2.cs.multiplierdist).ToString("0");
+                string alt = (100 * MainV2.comPort.MAV.cs.multiplierdist).ToString("0");
                 Common.InputBox("Altitude", "Relative Altitude", ref alt);
 
 
-                string distance = (50 * MainV2.cs.multiplierdist).ToString("0");
+                string distance = (50 * MainV2.comPort.MAV.cs.multiplierdist).ToString("0");
                 Common.InputBox("Distance", "Distance between lines", ref distance);
 
-                string wpevery = (40 * MainV2.cs.multiplierdist).ToString("0");
+                string wpevery = (40 * MainV2.comPort.MAV.cs.multiplierdist).ToString("0");
                 Common.InputBox("Every", "Put a WP every x distance (-1 for none)", ref wpevery);
 
                 string angle = (90).ToString("0");
@@ -3710,8 +3714,8 @@ namespace ArdupilotMega.GCSViews
                 double y1 = Math.Sin((double.Parse(angle)) * deg2rad);
 
                 // get x y step amount in lat lng from m
-                double latdiff = arearect.HeightLat / ((heightdist / (double.Parse(distance) * (y1) / MainV2.cs.multiplierdist)));
-                double lngdiff = arearect.WidthLng / ((widthdist / (double.Parse(distance) * (x1) / MainV2.cs.multiplierdist)));
+                double latdiff = arearect.HeightLat / ((heightdist / (double.Parse(distance) * (y1) / MainV2.comPort.MAV.cs.multiplierdist)));
+                double lngdiff = arearect.WidthLng / ((widthdist / (double.Parse(distance) * (x1) / MainV2.comPort.MAV.cs.multiplierdist)));
 
                 double latlngdiff = Math.Sqrt(latdiff * latdiff + lngdiff * lngdiff);
 
@@ -3721,9 +3725,9 @@ namespace ArdupilotMega.GCSViews
                 // lat - up down
                 // lng - left right
 
-                int overshootdist = 0;// (int)(double.Parse(overshoot) / MainV2.cs.multiplierdist);
+                int overshootdist = 0;// (int)(double.Parse(overshoot) / MainV2.comPort.MAV.cs.multiplierdist);
 
-                int altitude = (int)(double.Parse(alt) / MainV2.cs.multiplierdist);
+                int altitude = (int)(double.Parse(alt) / MainV2.comPort.MAV.cs.multiplierdist);
 
                 double overshootdistlng = arearect.WidthLng / widthdist * overshootdist;
 
@@ -4150,7 +4154,7 @@ namespace ArdupilotMega.GCSViews
             // take off pitch
             int topi = 0;
 
-            if (MainV2.cs.firmware == MainV2.Firmwares.ArduPlane)
+            if (MainV2.comPort.MAV.cs.firmware == MainV2.Firmwares.ArduPlane)
             {
                 string top = "15";
 
@@ -4188,7 +4192,7 @@ namespace ArdupilotMega.GCSViews
 
         private void trackerHomeToolStripMenuItem_Click(object sender, EventArgs e)
         {
-            MainV2.cs.TrackerLocation = new PointLatLngAlt(end) { Alt = MainV2.cs.HomeAlt };
+            MainV2.comPort.MAV.cs.TrackerLocation = new PointLatLngAlt(end) { Alt = MainV2.comPort.MAV.cs.HomeAlt };
         }
 
         private void gridV2ToolStripMenuItem_Click(object sender, EventArgs e)
@@ -4316,7 +4320,7 @@ namespace ArdupilotMega.GCSViews
 
         private void contextMenuStrip1_Opening(object sender, CancelEventArgs e)
         {
-            if (MainV2.cs.firmware != MainV2.Firmwares.ArduPlane)
+            if (MainV2.comPort.MAV.cs.firmware != MainV2.Firmwares.ArduPlane)
             {
                 geoFenceToolStripMenuItem.Enabled = false;
             }

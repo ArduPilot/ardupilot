@@ -133,7 +133,7 @@ namespace ArdupilotMega
                 mine.logplaybackfile = new BinaryReader(File.Open(fn, FileMode.Open, FileAccess.Read, FileShare.Read));
                 mine.logreadmode = true;
 
-                mine.packets.Initialize(); // clear
+                mine.MAV.packets.Initialize(); // clear
 
                 CurrentState cs = new CurrentState();
 

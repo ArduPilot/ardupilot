@@ -25,6 +25,90 @@ namespace ArdupilotMega
         public ICommsSerial BaseStream { get; set; }
         public event EventHandler ParamListChanged;
 
+        /// <summary>
+        /// mavlink remote sysid
+        /// </summary>
+        public byte sysid { get { return MAV.sysid; } set { MAV.sysid = value; } }
+        /// <summary>
+        /// mavlink remove compid
+        /// </summary>
+        public byte compid { get { return MAV.compid; } set { MAV.compid = value; } }
+        /// <summary>
+        /// storage for whole paramater list
+        /// </summary>
+        public Hashtable param { get { return MAV.param; } set { MAV.param = value; } }
+        /// <summary>
+        /// storage of a previous packet recevied of a specific type
+        /// </summary>
+        public byte[][] packets { get { return MAV.packets; } set { MAV.packets = value; } }
+        /// <summary>
+        /// mavlink ap type
+        /// </summary>
+        public MAV_TYPE aptype { get { return MAV.aptype; } set { MAV.aptype = value; } }
+        public MAV_AUTOPILOT apname { get { return MAV.apname; } set { MAV.apname = value; } }
+        /// <summary>
+        /// used as a snapshot of what is loaded on the ap atm. - derived from the stream
+        /// </summary>
+        public Dictionary<int, mavlink_mission_item_t> wps { get { return MAV.wps; } set { MAV.wps = value; } }
+        /// <summary>
+        /// Store the guided mode wp location
+        /// </summary>
+        public mavlink_mission_item_t GuidedMode { get { return MAV.GuidedMode; } set { MAV.GuidedMode = value; } }
+
+        internal int recvpacketcount { get { return MAV.recvpacketcount; } set { MAV.recvpacketcount = value; } }
+
+        public MAVState MAV = new MAVState();
+
+        public class MAVState
+        {
+            public MAVState()
+            {
+                this.sysid = 0;
+                this.compid = 0;
+                this.param = new Hashtable();
+                this.packets = new byte[0x100][];
+                this.aptype = 0;
+                this.apname = 0;
+                this.recvpacketcount = 0;
+            }
+
+            /// <summary>
+            /// the static global state of the currently connected MAV
+            /// </summary>
+            public CurrentState cs = new CurrentState();
+            /// <summary>
+            /// mavlink remote sysid
+            /// </summary>
+            public byte sysid { get; set; }
+            /// <summary>
+            /// mavlink remove compid
+            /// </summary>
+            public byte compid { get; set; }
+            /// <summary>
+            /// storage for whole paramater list
+            /// </summary>
+            public Hashtable param { get; set; }
+            /// <summary>
+            /// storage of a previous packet recevied of a specific type
+            /// </summary>
+            public byte[][] packets { get; set; }
+            /// <summary>
+            /// mavlink ap type
+            /// </summary>
+            public MAV_TYPE aptype { get; set; }
+            public MAV_AUTOPILOT apname { get; set; }
+            /// <summary>
+            /// used as a snapshot of what is loaded on the ap atm. - derived from the stream
+            /// </summary>
+            public Dictionary<int, mavlink_mission_item_t> wps = new Dictionary<int, mavlink_mission_item_t>();
+            /// <summary>
+            /// Store the guided mode wp location
+            /// </summary>
+            public mavlink_mission_item_t GuidedMode = new mavlink_mission_item_t();
+
+            internal int recvpacketcount = 0;
+        }
+
         private const double CONNECT_TIMEOUT_SECONDS = 30;
 
         /// <summary>
@@ -36,22 +120,7 @@ namespace ArdupilotMega
         /// used for outbound packet sending
         /// </summary>
         byte packetcount = 0;
-        /// <summary>
-        /// mavlink remote sysid
-        /// </summary>
-        public byte sysid { get; set; }
-        /// <summary>
-        /// mavlink remove compid
-        /// </summary>
-        public byte compid { get; set; }
-        /// <summary>
-        /// storage for whole paramater list
-        /// </summary>
-        public Hashtable param { get; set; }
-        /// <summary>
-        /// storage of a previous packet recevied of a specific type
-        /// </summary>
-        public byte[][] packets { get; set; }
+      
         /// <summary>
         /// used to calc packets per second on any single message type - used for stream rate comparaison
         /// </summary>
@@ -105,19 +174,7 @@ namespace ArdupilotMega
         /// mavlink version
         /// </summary>
         byte mavlinkversion = 0;
-        /// <summary>
-        /// mavlink ap type
-        /// </summary>
-        public MAV_TYPE aptype { get; set; }
-        public MAV_AUTOPILOT apname { get; set; }
-        /// <summary>
-        /// used as a snapshot of what is loaded on the ap atm. - derived from the stream
-        /// </summary>
-        public Dictionary<int, mavlink_mission_item_t> wps = new Dictionary<int, mavlink_mission_item_t>();
-        /// <summary>
-        /// Store the guided mode wp location
-        /// </summary>
-        public mavlink_mission_item_t GuidedMode = new mavlink_mission_item_t();
+
         /// <summary>
         /// turns on console packet display
         /// </summary>
@@ -135,7 +192,6 @@ namespace ArdupilotMega
         int bps2 = 0;
         public int bps { get; set; }
         public DateTime bpstime { get; set; }
-        int recvpacketcount = 0;
 
         float synclost;
         float packetslost = 0;
@@ -147,10 +203,7 @@ namespace ArdupilotMega
             // init fields
             this.BaseStream = new SerialPort();
             this.packetcount = 0;
-            this.sysid = 0;
-            this.compid = 0;
-            this.param = new Hashtable();
-            this.packets = new byte[0x100][];
+
             this.packetspersecond = new double[0x100];
             this.packetspersecondbuild = new DateTime[0x100];
             this._bytesReceivedSubj = new Subject<int>();
@@ -161,8 +214,7 @@ namespace ArdupilotMega
             this.lastvalidpacket = DateTime.Now;
             this.oldlogformat = false;
             this.mavlinkversion = 0;
-            this.aptype = 0;
-            this.apname = 0;
+
             this.debugmavlink = false;
             this.logreadmode = false;
             this.lastlogread = DateTime.MinValue;
@@ -173,7 +225,7 @@ namespace ArdupilotMega
             this.bps2 = 0;
             this.bps = 0;
             this.bpstime = DateTime.Now;
-            this.recvpacketcount = 0;
+ 
             this.packetslost = 0f;
             this.packetsnotlost = 0f;
             this.packetlosttimer = DateTime.Now;
@@ -1600,7 +1652,7 @@ namespace ArdupilotMega
                         loc.lat = ((wp.x));
                         loc.lng = ((wp.y));
                         /*
-                        if (MainV2.cs.firmware == MainV2.Firmwares.ArduPlane)
+                        if (MainV2.comPort.MAV.cs.firmware == MainV2.Firmwares.ArduPlane)
                         {
                             switch (loc.id)
                             {					// Switch to map APM command fields inot MAVLink command fields
@@ -2239,7 +2291,7 @@ namespace ArdupilotMega
                         }
                         else
                         {
-                            MainV2.cs.datetime = DateTime.Now;
+                            MainV2.comPort.MAV.cs.datetime = DateTime.Now;
 
                             DateTime to = DateTime.Now.AddMilliseconds(BaseStream.ReadTimeout);
 
@@ -2386,7 +2438,7 @@ namespace ArdupilotMega
                 packetsnotlost = (packetsnotlost * 0.8f);
             }
 
-            MainV2.cs.linkqualitygcs = (ushort)((packetsnotlost / (packetsnotlost + packetslost)) * 100.0);
+            MainV2.comPort.MAV.cs.linkqualitygcs = (ushort)((packetsnotlost / (packetsnotlost + packetslost)) * 100.0);
 
             if (bpstime.Second != DateTime.Now.Second && !logreadmode)
             {
@@ -2758,7 +2810,7 @@ namespace ArdupilotMega
             }
             catch { }
 
-            MainV2.cs.datetime = lastlogread;
+            MainV2.comPort.MAV.cs.datetime = lastlogread;
 
             int length = 5;
             int a = 0;
@@ -2795,7 +2847,7 @@ namespace ArdupilotMega
         public bool translateMode(string modein, ref MAVLink.mavlink_set_mode_t mode)
         {
             //MAVLink09.mavlink_set_mode_t mode = new MAVLink09.mavlink_set_mode_t();
-            mode.target_system = MainV2.comPort.sysid;
+            mode.target_system = MainV2.comPort.MAV.sysid;
 
             try
             {
@@ -2855,13 +2907,13 @@ namespace ArdupilotMega
                     switch (aptype)
                     {
                         case MAVLink.MAV_TYPE.FIXED_WING:
-                            MainV2.cs.firmware = MainV2.Firmwares.ArduPlane;
+                            MainV2.comPort.MAV.cs.firmware = MainV2.Firmwares.ArduPlane;
                             break;
                         case MAVLink.MAV_TYPE.QUADROTOR:
-                            MainV2.cs.firmware = MainV2.Firmwares.ArduCopter2;
+                            MainV2.comPort.MAV.cs.firmware = MainV2.Firmwares.ArduCopter2;
                             break;
                         case MAVLink.MAV_TYPE.GROUND_ROVER:
-                            MainV2.cs.firmware = MainV2.Firmwares.ArduRover;
+                            MainV2.comPort.MAV.cs.firmware = MainV2.Firmwares.ArduRover;
                             break;
                         default:
                             break;

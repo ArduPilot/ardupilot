@@ -29,9 +29,9 @@ namespace ArdupilotMega.GCSViews.ConfigurationView
             List<Tuple<float, float, float>> data = new List<Tuple<float, float, float>>();
 
             // backup current rate and set to 10 hz
-            byte backupratesens = MainV2.cs.ratesensors;
-            MainV2.cs.ratesensors = 10;
-            MainV2.comPort.requestDatastream((byte)MAVLink.MAV_DATA_STREAM.RAW_SENSORS, MainV2.cs.ratesensors); // mag captures at 10 hz
+            byte backupratesens = MainV2.comPort.MAV.cs.ratesensors;
+            MainV2.comPort.MAV.cs.ratesensors = 10;
+            MainV2.comPort.requestDatastream((byte)MAVLink.MAV_DATA_STREAM.RAW_SENSORS, MainV2.comPort.MAV.cs.ratesensors); // mag captures at 10 hz
 
             CustomMessageBox.Show("Data will be collected for 30 seconds, Please click ok and move the apm around all axises");
 
@@ -46,24 +46,24 @@ namespace ArdupilotMega.GCSViews.ConfigurationView
                 // dont let the gui hang
                 Application.DoEvents();
 
-                if (oldmx != MainV2.cs.mx &&
-                    oldmy != MainV2.cs.my &&
-                    oldmz != MainV2.cs.mz)
+                if (oldmx != MainV2.comPort.MAV.cs.mx &&
+                    oldmy != MainV2.comPort.MAV.cs.my &&
+                    oldmz != MainV2.comPort.MAV.cs.mz)
                 {
                     data.Add(new Tuple<float, float, float>(
-                        MainV2.cs.mx - (float)MainV2.cs.mag_ofs_x,
-                        MainV2.cs.my - (float)MainV2.cs.mag_ofs_y,
-                        MainV2.cs.mz - (float)MainV2.cs.mag_ofs_z));
+                        MainV2.comPort.MAV.cs.mx - (float)MainV2.comPort.MAV.cs.mag_ofs_x,
+                        MainV2.comPort.MAV.cs.my - (float)MainV2.comPort.MAV.cs.mag_ofs_y,
+                        MainV2.comPort.MAV.cs.mz - (float)MainV2.comPort.MAV.cs.mag_ofs_z));
 
-                    oldmx = MainV2.cs.mx;
-                    oldmy = MainV2.cs.my;
-                    oldmz = MainV2.cs.mz;
+                    oldmx = MainV2.comPort.MAV.cs.mx;
+                    oldmy = MainV2.comPort.MAV.cs.my;
+                    oldmz = MainV2.comPort.MAV.cs.mz;
                 }
             }
 
             // restore old sensor rate
-            MainV2.cs.ratesensors = backupratesens;
-            MainV2.comPort.requestDatastream((byte)MAVLink.MAV_DATA_STREAM.RAW_SENSORS, MainV2.cs.ratesensors);
+            MainV2.comPort.MAV.cs.ratesensors = backupratesens;
+            MainV2.comPort.requestDatastream((byte)MAVLink.MAV_DATA_STREAM.RAW_SENSORS, MainV2.comPort.MAV.cs.ratesensors);
 
             if (data.Count < 10)
             {
@@ -98,7 +98,7 @@ namespace ArdupilotMega.GCSViews.ConfigurationView
                 return;
             try
             {
-                if (MainV2.comPort.param["COMPASS_DEC"] == null)
+                if (MainV2.comPort.MAV.param["COMPASS_DEC"] == null)
                 {
                     CustomMessageBox.Show("Not Available");
                 }
@@ -148,7 +148,7 @@ namespace ArdupilotMega.GCSViews.ConfigurationView
                 return;
             try
             {
-                if (MainV2.comPort.param["MAG_ENABLE"] == null)
+                if (MainV2.comPort.MAV.param["MAG_ENABLE"] == null)
                 {
                     CustomMessageBox.Show("Not Available");
                 }
@@ -166,7 +166,7 @@ namespace ArdupilotMega.GCSViews.ConfigurationView
                 return;
             try
             {
-                if (MainV2.comPort.param["SONAR_ENABLE"] == null)
+                if (MainV2.comPort.MAV.param["SONAR_ENABLE"] == null)
                 {
                     CustomMessageBox.Show("Not Available");
                 }
@@ -184,9 +184,9 @@ namespace ArdupilotMega.GCSViews.ConfigurationView
                 return;
             try
             {
-                if (MainV2.comPort.param["ARSPD_ENABLE"] == null)
+                if (MainV2.comPort.MAV.param["ARSPD_ENABLE"] == null)
                 {
-                    CustomMessageBox.Show("Not Available on " + MainV2.cs.firmware.ToString());
+                    CustomMessageBox.Show("Not Available on " + MainV2.comPort.MAV.cs.firmware.ToString());
                 }
                 else
                 {
@@ -203,9 +203,9 @@ namespace ArdupilotMega.GCSViews.ConfigurationView
                 return;
             try
             {
-                if (MainV2.comPort.param["FLOW_ENABLE"] == null)
+                if (MainV2.comPort.MAV.param["FLOW_ENABLE"] == null)
                 {
-                    CustomMessageBox.Show("Not Available on " + MainV2.cs.firmware.ToString());
+                    CustomMessageBox.Show("Not Available on " + MainV2.comPort.MAV.cs.firmware.ToString());
                 }
                 else
                 {
@@ -221,9 +221,9 @@ namespace ArdupilotMega.GCSViews.ConfigurationView
                 return;
             try
             {
-                if (MainV2.comPort.param["SONAR_TYPE"] == null)
+                if (MainV2.comPort.MAV.param["SONAR_TYPE"] == null)
                 {
-                    CustomMessageBox.Show("Not Available on " + MainV2.cs.firmware.ToString());
+                    CustomMessageBox.Show("Not Available on " + MainV2.comPort.MAV.cs.firmware.ToString());
                 }
                 else
                 {
@@ -247,23 +247,23 @@ namespace ArdupilotMega.GCSViews.ConfigurationView
 
             startup = true;
 
-            CHK_airspeeduse.setup(1, 0, "ARSPD_USE", MainV2.comPort.param);
-            CHK_enableairspeed.setup(1, 0, "ARSPD_ENABLE", MainV2.comPort.param);
-            CHK_enablecompass.setup(1, 0, "MAG_ENABLE", MainV2.comPort.param, TXT_declination);
-            CHK_enableoptflow.setup(1,0,"FLOW_ENABLE", MainV2.comPort.param);
-            CHK_enablesonar.setup(1, 0, "SONAR_ENABLE", MainV2.comPort.param, CMB_sonartype);
+            CHK_airspeeduse.setup(1, 0, "ARSPD_USE", MainV2.comPort.MAV.param);
+            CHK_enableairspeed.setup(1, 0, "ARSPD_ENABLE", MainV2.comPort.MAV.param);
+            CHK_enablecompass.setup(1, 0, "MAG_ENABLE", MainV2.comPort.MAV.param, TXT_declination);
+            CHK_enableoptflow.setup(1,0,"FLOW_ENABLE", MainV2.comPort.MAV.param);
+            CHK_enablesonar.setup(1, 0, "SONAR_ENABLE", MainV2.comPort.MAV.param, CMB_sonartype);
 
-            if (MainV2.comPort.param["COMPASS_DEC"] != null)
+            if (MainV2.comPort.MAV.param["COMPASS_DEC"] != null)
             {
-                TXT_declination.Text = (float.Parse(MainV2.comPort.param["COMPASS_DEC"].ToString()) * rad2deg).ToString();
+                TXT_declination.Text = (float.Parse(MainV2.comPort.MAV.param["COMPASS_DEC"].ToString()) * rad2deg).ToString();
             }
-            if (MainV2.comPort.param["SONAR_TYPE"] != null)
+            if (MainV2.comPort.MAV.param["SONAR_TYPE"] != null)
             {
-                CMB_sonartype.SelectedIndex = int.Parse(MainV2.comPort.param["SONAR_TYPE"].ToString());
+                CMB_sonartype.SelectedIndex = int.Parse(MainV2.comPort.MAV.param["SONAR_TYPE"].ToString());
             }
-            if (MainV2.comPort.param["COMPASS_AUTODEC"] != null)
+            if (MainV2.comPort.MAV.param["COMPASS_AUTODEC"] != null)
             {
-                CHK_autodec.Checked = MainV2.comPort.param["COMPASS_AUTODEC"].ToString() == "1" ? true : false;
+                CHK_autodec.Checked = MainV2.comPort.MAV.param["COMPASS_AUTODEC"].ToString() == "1" ? true : false;
             }
 
             startup = false;
@@ -295,9 +295,9 @@ namespace ArdupilotMega.GCSViews.ConfigurationView
                 return;
             try
             {
-                if (MainV2.comPort.param["COMPASS_AUTODEC"] == null)
+                if (MainV2.comPort.MAV.param["COMPASS_AUTODEC"] == null)
                 {
-                    CustomMessageBox.Show("Not Available on " + MainV2.cs.firmware.ToString());
+                    CustomMessageBox.Show("Not Available on " + MainV2.comPort.MAV.cs.firmware.ToString());
                 }
                 else
                 {

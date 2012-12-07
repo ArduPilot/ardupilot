@@ -47,7 +47,7 @@ namespace ArdupilotMega.Utilities
             // Either it will be pulled from a file in the ArduPlane hierarchy or the ArduCopter hierarchy
              try
              {
-                 var element = _parameterMetaDataXML.Element("Params").Element(MainV2.cs.firmware.ToString());
+                 var element = _parameterMetaDataXML.Element("Params").Element(MainV2.comPort.MAV.cs.firmware.ToString());
                  if (element != null && element.HasElements)
                  {
                      var node = element.Element(nodeKey);

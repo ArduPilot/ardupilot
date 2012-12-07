@@ -59,11 +59,11 @@ namespace ArdupilotMega
         {
             SharpKml.Dom.AltitudeMode altmode = SharpKml.Dom.AltitudeMode.Absolute;
 
-            if (MainV2.cs.firmware == MainV2.Firmwares.ArduPlane || MainV2.cs.firmware == MainV2.Firmwares.ArduRover)
+            if (MainV2.comPort.MAV.cs.firmware == MainV2.Firmwares.ArduPlane || MainV2.comPort.MAV.cs.firmware == MainV2.Firmwares.ArduRover)
             {
                 altmode = SharpKml.Dom.AltitudeMode.Absolute;
             }
-            else if (MainV2.cs.firmware == MainV2.Firmwares.ArduCopter2)
+            else if (MainV2.comPort.MAV.cs.firmware == MainV2.Firmwares.ArduCopter2)
             {
                 altmode = SharpKml.Dom.AltitudeMode.RelativeToGround;
             }
@@ -392,7 +392,7 @@ namespace ArdupilotMega
                     catch (Exception ex) { log.Debug(ex.ToString()); CustomMessageBox.Show("Log Can not be opened. Are you still connected?"); return; }
                     mine.logreadmode = true;
 
-                    mine.packets.Initialize(); // clear
+                    mine.MAV.packets.Initialize(); // clear
 
                     CurrentState cs = new CurrentState();
 
@@ -561,7 +561,7 @@ namespace ArdupilotMega
  
                     mine.logreadmode = true;
 
-                    mine.packets.Initialize(); // clear
+                    mine.MAV.packets.Initialize(); // clear
 
                     StreamWriter sw = new StreamWriter(Path.GetDirectoryName(logfile)+ Path.DirectorySeparatorChar + Path.GetFileNameWithoutExtension(logfile) + ".txt");
 
@@ -676,7 +676,7 @@ namespace ArdupilotMega
                 catch (Exception ex) { log.Debug(ex.ToString()); CustomMessageBox.Show("Log Can not be opened. Are you still connected?"); return options; }
                 MavlinkInterface.logreadmode = true;
 
-                MavlinkInterface.packets.Initialize(); // clear
+                MavlinkInterface.MAV.packets.Initialize(); // clear
 
                 CurrentState cs = new CurrentState();
 
@@ -1235,7 +1235,7 @@ namespace ArdupilotMega
                     catch (Exception ex) { log.Debug(ex.ToString()); CustomMessageBox.Show("Log Can not be opened. Are you still connected?"); return; }
                     mine.logreadmode = true;
 
-                    mine.packets.Initialize(); // clear
+                    mine.MAV.packets.Initialize(); // clear
 
                     StreamWriter sw = new StreamWriter(Path.GetDirectoryName(logfile) + Path.DirectorySeparatorChar + Path.GetFileNameWithoutExtension(logfile) + ".csv");
 
@@ -1300,7 +1300,7 @@ namespace ArdupilotMega
 
                         mine.logreadmode = true;
 
-                        mine.packets.Initialize(); // clear
+                        mine.MAV.packets.Initialize(); // clear
 
                         StreamWriter sw = new StreamWriter(Path.GetDirectoryName(logfile) + Path.DirectorySeparatorChar + Path.GetFileNameWithoutExtension(logfile) + ".param");
 
@@ -1312,9 +1312,9 @@ namespace ArdupilotMega
 
                         mine.getParamList();
 
-                        foreach (string item in mine.param.Keys)
+                        foreach (string item in mine.MAV.param.Keys)
                         {
-                            sw.WriteLine(item + "\t" + mine.param[item]);
+                            sw.WriteLine(item + "\t" + mine.MAV.param[item]);
                         }
 
                         sw.Close();
@@ -1367,7 +1367,7 @@ namespace ArdupilotMega
 
                     mine.logreadmode = true;
 
-                    mine.packets.Initialize(); // clear
+                    mine.MAV.packets.Initialize(); // clear
 
                     while (mine.logplaybackfile.BaseStream.Position < mine.logplaybackfile.BaseStream.Length)
                     {
@@ -1407,7 +1407,7 @@ namespace ArdupilotMega
                             sw.Write("\t" + wp.p4.ToString("0.000000", new System.Globalization.CultureInfo("en-US")));
                             sw.Write("\t" + wp.lat.ToString("0.000000", new System.Globalization.CultureInfo("en-US")));
                             sw.Write("\t" + wp.lng.ToString("0.000000", new System.Globalization.CultureInfo("en-US")));
-                            sw.Write("\t" + (wp.alt / MainV2.cs.multiplierdist).ToString("0.000000", new System.Globalization.CultureInfo("en-US")));
+                            sw.Write("\t" + (wp.alt / MainV2.comPort.MAV.cs.multiplierdist).ToString("0.000000", new System.Globalization.CultureInfo("en-US")));
                             sw.Write("\t" + 1);
                             sw.WriteLine("");
                         }

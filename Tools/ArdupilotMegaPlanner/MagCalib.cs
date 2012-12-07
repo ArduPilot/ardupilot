@@ -91,7 +91,7 @@ namespace ArdupilotMega
 
                 mine.logreadmode = true;
 
-                mine.packets.Initialize(); // clear
+                mine.MAV.packets.Initialize(); // clear
 
                 // gather data
                 while (mine.logplaybackfile.BaseStream.Position < mine.logplaybackfile.BaseStream.Length)
@@ -249,7 +249,7 @@ namespace ArdupilotMega
         /// <param name="ofs">offsets</param>
         public static void SaveOffsets(double[] ofs)
         {
-            if (MainV2.comPort.param.ContainsKey("COMPASS_OFS_X") && MainV2.comPort.BaseStream.IsOpen)
+            if (MainV2.comPort.MAV.param.ContainsKey("COMPASS_OFS_X") && MainV2.comPort.BaseStream.IsOpen)
             {
                 try
                 {

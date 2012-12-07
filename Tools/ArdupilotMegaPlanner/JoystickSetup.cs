@@ -151,8 +151,8 @@ namespace ArdupilotMega
             {
                 MAVLink.mavlink_rc_channels_override_t rc = new MAVLink.mavlink_rc_channels_override_t();
 
-                rc.target_component = MainV2.comPort.compid;
-                rc.target_system = MainV2.comPort.sysid;
+                rc.target_component = MainV2.comPort.MAV.compid;
+                rc.target_system = MainV2.comPort.MAV.sysid;
 
                 rc.chan1_raw = 0;
                 rc.chan2_raw = 0;
@@ -264,28 +264,28 @@ namespace ArdupilotMega
 
                     MainV2.joystick.elevons = CHK_elevons.Checked;
 
-                    MainV2.cs.rcoverridech1 = joy.getValueForChannel(1, CMB_joysticks.Text);
-                    MainV2.cs.rcoverridech2 = joy.getValueForChannel(2, CMB_joysticks.Text);
-                    MainV2.cs.rcoverridech3 = joy.getValueForChannel(3, CMB_joysticks.Text);
-                    MainV2.cs.rcoverridech4 = joy.getValueForChannel(4, CMB_joysticks.Text);
-                    MainV2.cs.rcoverridech5 = joy.getValueForChannel(5, CMB_joysticks.Text);
-                    MainV2.cs.rcoverridech6 = joy.getValueForChannel(6, CMB_joysticks.Text);
-                    MainV2.cs.rcoverridech7 = joy.getValueForChannel(7, CMB_joysticks.Text);
-                    MainV2.cs.rcoverridech8 = joy.getValueForChannel(8, CMB_joysticks.Text);
+                    MainV2.comPort.MAV.cs.rcoverridech1 = joy.getValueForChannel(1, CMB_joysticks.Text);
+                    MainV2.comPort.MAV.cs.rcoverridech2 = joy.getValueForChannel(2, CMB_joysticks.Text);
+                    MainV2.comPort.MAV.cs.rcoverridech3 = joy.getValueForChannel(3, CMB_joysticks.Text);
+                    MainV2.comPort.MAV.cs.rcoverridech4 = joy.getValueForChannel(4, CMB_joysticks.Text);
+                    MainV2.comPort.MAV.cs.rcoverridech5 = joy.getValueForChannel(5, CMB_joysticks.Text);
+                    MainV2.comPort.MAV.cs.rcoverridech6 = joy.getValueForChannel(6, CMB_joysticks.Text);
+                    MainV2.comPort.MAV.cs.rcoverridech7 = joy.getValueForChannel(7, CMB_joysticks.Text);
+                    MainV2.comPort.MAV.cs.rcoverridech8 = joy.getValueForChannel(8, CMB_joysticks.Text);
 
                     //Console.WriteLine(DateTime.Now.Millisecond + " end ");
                 }
             }
             catch { }
 
-            progressBar1.Value = MainV2.cs.rcoverridech1;
-            progressBar2.Value = MainV2.cs.rcoverridech2;
-            progressBar3.Value = MainV2.cs.rcoverridech3;
-            progressBar4.Value = MainV2.cs.rcoverridech4;
-            horizontalProgressBar1.Value = MainV2.cs.rcoverridech5;
-            horizontalProgressBar2.Value = MainV2.cs.rcoverridech6;
-            horizontalProgressBar3.Value = MainV2.cs.rcoverridech7;
-            horizontalProgressBar4.Value = MainV2.cs.rcoverridech8;
+            progressBar1.Value = MainV2.comPort.MAV.cs.rcoverridech1;
+            progressBar2.Value = MainV2.comPort.MAV.cs.rcoverridech2;
+            progressBar3.Value = MainV2.comPort.MAV.cs.rcoverridech3;
+            progressBar4.Value = MainV2.comPort.MAV.cs.rcoverridech4;
+            horizontalProgressBar1.Value = MainV2.comPort.MAV.cs.rcoverridech5;
+            horizontalProgressBar2.Value = MainV2.comPort.MAV.cs.rcoverridech6;
+            horizontalProgressBar3.Value = MainV2.comPort.MAV.cs.rcoverridech7;
+            horizontalProgressBar4.Value = MainV2.comPort.MAV.cs.rcoverridech8;
 
             try
             {

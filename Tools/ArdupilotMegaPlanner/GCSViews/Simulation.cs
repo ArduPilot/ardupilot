@@ -566,7 +566,7 @@ namespace ArdupilotMega.GCSViews
             DateTime lastdata = DateTime.MinValue;
 
             // set enable hil status flag - sends base_mode = 0
-            MainV2.comPort.setMode(new MAVLink.mavlink_set_mode_t() { target_system = MainV2.comPort.sysid }, MAVLink.MAV_MODE_FLAG.HIL_ENABLED);
+            MainV2.comPort.setMode(new MAVLink.mavlink_set_mode_t() { target_system = MainV2.comPort.MAV.sysid }, MAVLink.MAV_MODE_FLAG.HIL_ENABLED);
 
             while (threadrun == 1)
             {
@@ -623,7 +623,7 @@ namespace ArdupilotMega.GCSViews
                 try
                 {
 
-                    MainV2.cs.UpdateCurrentSettings(null); // when true this uses alot more cpu time
+                    MainV2.comPort.MAV.cs.UpdateCurrentSettings(null); // when true this uses alot more cpu time
 
                     if ((DateTime.Now - simsendtime).TotalMilliseconds > 19)
                     {
@@ -677,8 +677,8 @@ namespace ArdupilotMega.GCSViews
 
                 //JSBSimSEND.Client.Send(System.Text.Encoding.ASCII.GetBytes("set position/h-agl-ft 0\r\n"));
 
-                JSBSimSEND.Client.Send(System.Text.Encoding.ASCII.GetBytes("set position/lat-gc-deg " + MainV2.cs.HomeLocation.Lat + "\r\n"));
-                JSBSimSEND.Client.Send(System.Text.Encoding.ASCII.GetBytes("set position/long-gc-deg " + MainV2.cs.HomeLocation.Lng + "\r\n"));
+                JSBSimSEND.Client.Send(System.Text.Encoding.ASCII.GetBytes("set position/lat-gc-deg " + MainV2.comPort.MAV.cs.HomeLocation.Lat + "\r\n"));
+                JSBSimSEND.Client.Send(System.Text.Encoding.ASCII.GetBytes("set position/long-gc-deg " + MainV2.comPort.MAV.cs.HomeLocation.Lng + "\r\n"));
 
                 JSBSimSEND.Client.Send(System.Text.Encoding.ASCII.GetBytes("set attitude/phi-rad 0\r\n"));
                 JSBSimSEND.Client.Send(System.Text.Encoding.ASCII.GetBytes("set attitude/theta-rad 0\r\n"));
@@ -1026,9 +1026,9 @@ namespace ArdupilotMega.GCSViews
             hilstate.yaw = (float)sitldata.yawDeg * deg2rad; // (rad)
             hilstate.yawspeed = (float)sitldata.yawRate * deg2rad; // (rad/s)
             
-            hilstate.vx = (short)(sitldata.speedN * 100); // m/s * 100
-            hilstate.vy = (short)(sitldata.speedE * 100); // m/s * 100
-            hilstate.vz = 0; // m/s * 100
+            hilstate.vx = (short)(sitldata.speedE * 100); // m/s * 100
+            hilstate.vy = (short)(sitldata.speedN * 100); // m/s * 100
+            hilstate.vz = 0; // m/s * 100 - + speed down
 
             hilstate.xacc = (short)(sitldata.xAccel * 1000); // (mg)
             hilstate.yacc = (short)(sitldata.yAccel * 1000); // (mg)
@@ -1084,11 +1084,11 @@ namespace ArdupilotMega.GCSViews
                     TXT_heading.Text = (heading * rad2deg).ToString("0.000");
                     TXT_yaw.Text = (yaw * rad2deg).ToString("0.000");
 
-                    TXT_wpdist.Text = MainV2.cs.wp_dist.ToString();
-                    TXT_bererror.Text = MainV2.cs.ber_error.ToString();
-                    TXT_alterror.Text = MainV2.cs.alt_error.ToString();
-                    TXT_WP.Text = MainV2.cs.wpno.ToString();
-                    TXT_control_mode.Text = MainV2.cs.mode;
+                    TXT_wpdist.Text = MainV2.comPort.MAV.cs.wp_dist.ToString();
+                    TXT_bererror.Text = MainV2.comPort.MAV.cs.ber_error.ToString();
+                    TXT_alterror.Text = MainV2.comPort.MAV.cs.alt_error.ToString();
+                    TXT_WP.Text = MainV2.comPort.MAV.cs.wpno.ToString();
+                    TXT_control_mode.Text = MainV2.comPort.MAV.cs.mode;
                 });
             }
             catch { this.Invoke((MethodInvoker)delegate { OutputLog.AppendText("NO SIM data - exep\n"); }); }
@@ -1104,10 +1104,10 @@ namespace ArdupilotMega.GCSViews
 
                 double[] m = new double[4];
 
-                m[0] = (ushort)MainV2.cs.ch1out;
-                m[1] = (ushort)MainV2.cs.ch2out;
-                m[2] = (ushort)MainV2.cs.ch3out;
-                m[3] = (ushort)MainV2.cs.ch4out;
+                m[0] = (ushort)MainV2.comPort.MAV.cs.ch1out;
+                m[1] = (ushort)MainV2.comPort.MAV.cs.ch2out;
+                m[2] = (ushort)MainV2.comPort.MAV.cs.ch3out;
+                m[3] = (ushort)MainV2.comPort.MAV.cs.ch4out;
 
                 if (!RAD_softFlightGear.Checked)
                 {
@@ -1176,24 +1176,24 @@ namespace ArdupilotMega.GCSViews
 
             if (heli)
             {
-                roll_out = (float)MainV2.cs.hilch1 / rollgain;
-                pitch_out = (float)MainV2.cs.hilch2 / pitchgain;
+                roll_out = (float)MainV2.comPort.MAV.cs.hilch1 / rollgain;
+                pitch_out = (float)MainV2.comPort.MAV.cs.hilch2 / pitchgain;
                 throttle_out = 1;
-                rudder_out = (float)MainV2.cs.hilch4 / -ruddergain;
+                rudder_out = (float)MainV2.comPort.MAV.cs.hilch4 / -ruddergain;
 
-                collective_out = (float)(MainV2.cs.hilch3 - 1500) / throttlegain;
+                collective_out = (float)(MainV2.comPort.MAV.cs.hilch3 - 1500) / throttlegain;
             }
             else
             {
-                roll_out = (float)MainV2.cs.hilch1 / rollgain;
-                pitch_out = (float)MainV2.cs.hilch2 / pitchgain;
-                throttle_out = ((float)MainV2.cs.hilch3) / throttlegain;
-                rudder_out = (float)MainV2.cs.hilch4 / ruddergain;
+                roll_out = (float)MainV2.comPort.MAV.cs.hilch1 / rollgain;
+                pitch_out = (float)MainV2.comPort.MAV.cs.hilch2 / pitchgain;
+                throttle_out = ((float)MainV2.comPort.MAV.cs.hilch3) / throttlegain;
+                rudder_out = (float)MainV2.comPort.MAV.cs.hilch4 / ruddergain;
 
                 if (RAD_aerosimrc.Checked && CHK_quad.Checked)
                 {
-                    throttle_out = ((float)MainV2.cs.hilch7 / 2 + 5000) / throttlegain;
-                    //throttle_out = (float)(MainV2.cs.hilch7 - 1100) / throttlegain;
+                    throttle_out = ((float)MainV2.comPort.MAV.cs.hilch7 / 2 + 5000) / throttlegain;
+                    //throttle_out = (float)(MainV2.comPort.MAV.cs.hilch7 - 1100) / throttlegain;
                 }
             }
 
@@ -1292,10 +1292,10 @@ namespace ArdupilotMega.GCSViews
 
                 if (CHK_quad.Checked)
                 {
-                    //MainV2.cs.ch1out = 1100; 
-                    //MainV2.cs.ch2out = 1100;
-                    //MainV2.cs.ch3out = 1100;
-                    //MainV2.cs.ch4out = 1100;
+                    //MainV2.comPort.MAV.cs.ch1out = 1100; 
+                    //MainV2.comPort.MAV.cs.ch2out = 1100;
+                    //MainV2.comPort.MAV.cs.ch3out = 1100;
+                    //MainV2.comPort.MAV.cs.ch4out = 1100;
 
                     //ac
                     // 3 front
@@ -1303,10 +1303,10 @@ namespace ArdupilotMega.GCSViews
                     // 4 back
                     // 2 left
 
-                    Array.Copy(BitConverter.GetBytes((double)((MainV2.cs.ch3out - 1100) / 800 * 2 - 1)), 0, AeroSimRC, 0, 8); // motor 1 = front
-                    Array.Copy(BitConverter.GetBytes((double)((MainV2.cs.ch1out - 1100) / 800 * 2 - 1)), 0, AeroSimRC, 8, 8); // motor 2 = right
-                    Array.Copy(BitConverter.GetBytes((double)((MainV2.cs.ch4out - 1100) / 800 * 2 - 1)), 0, AeroSimRC, 16, 8);// motor 3 = back
-                    Array.Copy(BitConverter.GetBytes((double)((MainV2.cs.ch2out - 1100) / 800 * 2 - 1)), 0, AeroSimRC, 24, 8);// motor 4 = left
+                    Array.Copy(BitConverter.GetBytes((double)((MainV2.comPort.MAV.cs.ch3out - 1100) / 800 * 2 - 1)), 0, AeroSimRC, 0, 8); // motor 1 = front
+                    Array.Copy(BitConverter.GetBytes((double)((MainV2.comPort.MAV.cs.ch1out - 1100) / 800 * 2 - 1)), 0, AeroSimRC, 8, 8); // motor 2 = right
+                    Array.Copy(BitConverter.GetBytes((double)((MainV2.comPort.MAV.cs.ch4out - 1100) / 800 * 2 - 1)), 0, AeroSimRC, 16, 8);// motor 3 = back
+                    Array.Copy(BitConverter.GetBytes((double)((MainV2.comPort.MAV.cs.ch2out - 1100) / 800 * 2 - 1)), 0, AeroSimRC, 24, 8);// motor 4 = left
 
                 }
                 else

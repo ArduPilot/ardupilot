@@ -83,10 +83,6 @@ namespace ArdupilotMega
         /// </summary>
         public static WebCamService.Capture cam = null;
         /// <summary>
-        /// the static global state of the currently connected MAV
-        /// </summary>
-        public static CurrentState cs = new CurrentState();
-        /// <summary>
         /// controls the main serial reader thread
         /// </summary>
         bool serialThread = false;
@@ -153,7 +149,6 @@ namespace ArdupilotMega
             log.Info("Mainv2 ctor");
 
             Form splash = Program.Splash;
-            splash.Show();
 
             string strVersion = System.Reflection.Assembly.GetExecutingAssembly().GetName().Version.ToString();
 
@@ -303,48 +298,47 @@ namespace ArdupilotMega
                     this.Width = int.Parse(config["MainWidth"].ToString());
 
                 if (config["CMB_rateattitude"] != null)
-                    MainV2.cs.rateattitude = byte.Parse(config["CMB_rateattitude"].ToString());
+                    MainV2.comPort.MAV.cs.rateattitude = byte.Parse(config["CMB_rateattitude"].ToString());
                 if (config["CMB_rateposition"] != null)
-                    MainV2.cs.rateposition = byte.Parse(config["CMB_rateposition"].ToString());
+                    MainV2.comPort.MAV.cs.rateposition = byte.Parse(config["CMB_rateposition"].ToString());
                 if (config["CMB_ratestatus"] != null)
-                    MainV2.cs.ratestatus = byte.Parse(config["CMB_ratestatus"].ToString());
+                    MainV2.comPort.MAV.cs.ratestatus = byte.Parse(config["CMB_ratestatus"].ToString());
                 if (config["CMB_raterc"] != null)
-                    MainV2.cs.raterc = byte.Parse(config["CMB_raterc"].ToString());
+                    MainV2.comPort.MAV.cs.raterc = byte.Parse(config["CMB_raterc"].ToString());
                 if (config["CMB_ratesensors"] != null)
-                    MainV2.cs.ratesensors = byte.Parse(config["CMB_ratesensors"].ToString());
+                    MainV2.comPort.MAV.cs.ratesensors = byte.Parse(config["CMB_ratesensors"].ToString());
 
                 if (config["speechenable"] != null)
                     MainV2.speechEnable = bool.Parse(config["speechenable"].ToString());
 
                 //int fixme;
                 /*
-                MainV2.cs.rateattitude = 50;
-                MainV2.cs.rateposition = 50;
-                MainV2.cs.ratestatus = 50;
-                MainV2.cs.raterc = 50;
-                MainV2.cs.ratesensors = 50;
+                MainV2.comPort.MAV.cs.rateattitude = 50;
+                MainV2.comPort.MAV.cs.rateposition = 50;
+                MainV2.comPort.MAV.cs.ratestatus = 50;
+                MainV2.comPort.MAV.cs.raterc = 50;
+                MainV2.comPort.MAV.cs.ratesensors = 50;
                 */
                 try
                 {
                     if (config["TXT_homelat"] != null)
-                        cs.HomeLocation.Lat = double.Parse(config["TXT_homelat"].ToString());
+                        MainV2.comPort.MAV.cs.HomeLocation.Lat = double.Parse(config["TXT_homelat"].ToString());
 
                     if (config["TXT_homelng"] != null)
-                        cs.HomeLocation.Lng = double.Parse(config["TXT_homelng"].ToString());
+                        MainV2.comPort.MAV.cs.HomeLocation.Lng = double.Parse(config["TXT_homelng"].ToString());
 
                     if (config["TXT_homealt"] != null)
-                        cs.HomeLocation.Alt = double.Parse(config["TXT_homealt"].ToString());
+                        MainV2.comPort.MAV.cs.HomeLocation.Alt = double.Parse(config["TXT_homealt"].ToString());
                 }
                 catch { }
 
             }
             catch { }
 
-            if (cs.rateattitude == 0) // initilised to 10, configured above from save
+            if (MainV2.comPort.MAV.cs.rateattitude == 0) // initilised to 10, configured above from save
             {
                 CustomMessageBox.Show("NOTE: your attitude rate is 0, the hud will not work\nChange in Configuration > Planner > Telemetry Rates");
             }
-
 
             //System.Threading.Thread.Sleep(2000);
 
@@ -484,7 +478,7 @@ namespace ArdupilotMega
             giveComport = false;
 
             // sanity check
-            if (comPort.BaseStream.IsOpen && cs.groundspeed > 4)
+            if (comPort.BaseStream.IsOpen && MainV2.comPort.MAV.cs.groundspeed > 4)
             {
                 if (DialogResult.No == CustomMessageBox.Show("Your model is still moving are you sure you want to disconnect?", "Disconnect", MessageBoxButtons.YesNo))
                 {
@@ -601,17 +595,17 @@ namespace ArdupilotMega
                     comPort.Open(true);
 
                     // detect firmware we are conected to.
-                    if (comPort.param["SYSID_SW_TYPE"] != null)
+                    if (comPort.MAV.param["SYSID_SW_TYPE"] != null)
                     {
-                        if (float.Parse(comPort.param["SYSID_SW_TYPE"].ToString()) == 10)
+                        if (float.Parse(comPort.MAV.param["SYSID_SW_TYPE"].ToString()) == 10)
                         {
                             _connectionControl.TOOL_APMFirmware.SelectedIndex = _connectionControl.TOOL_APMFirmware.Items.IndexOf(Firmwares.ArduCopter2);
                         }
-                        else if (float.Parse(comPort.param["SYSID_SW_TYPE"].ToString()) == 20)
+                        else if (float.Parse(comPort.MAV.param["SYSID_SW_TYPE"].ToString()) == 20)
                         {
                             _connectionControl.TOOL_APMFirmware.SelectedIndex = _connectionControl.TOOL_APMFirmware.Items.IndexOf(Firmwares.ArduRover);
                         }
-                        else if (float.Parse(comPort.param["SYSID_SW_TYPE"].ToString()) == 0)
+                        else if (float.Parse(comPort.MAV.param["SYSID_SW_TYPE"].ToString()) == 0)
                         {
                             _connectionControl.TOOL_APMFirmware.SelectedIndex = _connectionControl.TOOL_APMFirmware.Items.IndexOf(Firmwares.ArduPlane);
                         }
@@ -779,7 +773,7 @@ namespace ArdupilotMega
 
                     xmlwriter.WriteElementString("baudrate", _connectionControl.CMB_baudrate.Text);
 
-                    xmlwriter.WriteElementString("APMFirmware", MainV2.cs.firmware.ToString());
+                    xmlwriter.WriteElementString("APMFirmware", MainV2.comPort.MAV.cs.firmware.ToString());
 
                     foreach (string key in config.Keys)
                     {
@@ -839,7 +833,7 @@ namespace ArdupilotMega
                                         _connectionControl.TOOL_APMFirmware.SelectedIndex = _connectionControl.TOOL_APMFirmware.FindStringExact(temp3);
                                         if (_connectionControl.TOOL_APMFirmware.SelectedIndex == -1)
                                             _connectionControl.TOOL_APMFirmware.SelectedIndex = 0;
-                                        MainV2.cs.firmware = (MainV2.Firmwares)Enum.Parse(typeof(MainV2.Firmwares), _connectionControl.TOOL_APMFirmware.Text);
+                                        MainV2.comPort.MAV.cs.firmware = (MainV2.Firmwares)Enum.Parse(typeof(MainV2.Firmwares), _connectionControl.TOOL_APMFirmware.Text);
                                         break;
                                     case "Config":
                                         break;
@@ -907,40 +901,40 @@ namespace ArdupilotMega
                         {
                             MAVLink.mavlink_rc_channels_override_t rc = new MAVLink.mavlink_rc_channels_override_t();
 
-                            rc.target_component = comPort.compid;
-                            rc.target_system = comPort.sysid;
+                            rc.target_component = comPort.MAV.compid;
+                            rc.target_system = comPort.MAV.sysid;
 
                             if (joystick.getJoystickAxis(1) != Joystick.joystickaxis.None)
-                                rc.chan1_raw = cs.rcoverridech1;//(ushort)(((int)state.Rz / 65.535) + 1000);
+                                rc.chan1_raw = MainV2.comPort.MAV.cs.rcoverridech1;//(ushort)(((int)state.Rz / 65.535) + 1000);
                             if (joystick.getJoystickAxis(2) != Joystick.joystickaxis.None)
-                                rc.chan2_raw = cs.rcoverridech2;//(ushort)(((int)state.Y / 65.535) + 1000);
+                                rc.chan2_raw = MainV2.comPort.MAV.cs.rcoverridech2;//(ushort)(((int)state.Y / 65.535) + 1000);
                             if (joystick.getJoystickAxis(3) != Joystick.joystickaxis.None)
-                                rc.chan3_raw = cs.rcoverridech3;//(ushort)(1000 - ((int)slider[0] / 65.535 ) + 1000);
+                                rc.chan3_raw = MainV2.comPort.MAV.cs.rcoverridech3;//(ushort)(1000 - ((int)slider[0] / 65.535 ) + 1000);
                             if (joystick.getJoystickAxis(4) != Joystick.joystickaxis.None)
-                                rc.chan4_raw = cs.rcoverridech4;//(ushort)(((int)state.X / 65.535) + 1000);
+                                rc.chan4_raw = MainV2.comPort.MAV.cs.rcoverridech4;//(ushort)(((int)state.X / 65.535) + 1000);
                             if (joystick.getJoystickAxis(5) != Joystick.joystickaxis.None)
-                                rc.chan5_raw = cs.rcoverridech5;
+                                rc.chan5_raw = MainV2.comPort.MAV.cs.rcoverridech5;
                             if (joystick.getJoystickAxis(6) != Joystick.joystickaxis.None)
-                                rc.chan6_raw = cs.rcoverridech6;
+                                rc.chan6_raw = MainV2.comPort.MAV.cs.rcoverridech6;
                             if (joystick.getJoystickAxis(7) != Joystick.joystickaxis.None)
-                                rc.chan7_raw = cs.rcoverridech7;
+                                rc.chan7_raw = MainV2.comPort.MAV.cs.rcoverridech7;
                             if (joystick.getJoystickAxis(8) != Joystick.joystickaxis.None)
-                                rc.chan8_raw = cs.rcoverridech8;
+                                rc.chan8_raw = MainV2.comPort.MAV.cs.rcoverridech8;
 
                             if (lastjoystick.AddMilliseconds(rate) < DateTime.Now)
                             {
                                 /*
-                                if (cs.rssi > 0 && cs.remrssi > 0)
+                                if (MainV2.comPort.MAV.cs.rssi > 0 && MainV2.comPort.MAV.cs.remrssi > 0)
                                 {
                                     if (lastratechange.Second != DateTime.Now.Second)
                                     {
-                                        if (cs.txbuffer > 90)
+                                        if (MainV2.comPort.MAV.cs.txbuffer > 90)
                                         {
                                             if (rate < 20)
                                                 rate = 21;
                                             rate--;
 
-                                            if (cs.linkqualitygcs < 70)
+                                            if (MainV2.comPort.MAV.cs.linkqualitygcs < 70)
                                                 rate = 50;
                                         }
                                         else
@@ -1052,13 +1046,13 @@ namespace ArdupilotMega
                     UpdateConnectIcon();
 
                     // 30 seconds interval speech options
-                    if (speechEnable && speechEngine != null && (DateTime.Now - speechcustomtime).TotalSeconds > 30 && MainV2.cs.lat != 0 && (MainV2.comPort.logreadmode || comPort.BaseStream.IsOpen))
+                    if (speechEnable && speechEngine != null && (DateTime.Now - speechcustomtime).TotalSeconds > 30 && MainV2.comPort.MAV.cs.lat != 0 && (MainV2.comPort.logreadmode || comPort.BaseStream.IsOpen))
                     {
                         //speechbatteryvolt
                         float warnvolt = 0;
                         float.TryParse(MainV2.getConfig("speechbatteryvolt"), out warnvolt);
 
-                        if (MainV2.getConfig("speechbatteryenabled") == "True" && MainV2.cs.battery_voltage <= warnvolt)
+                        if (MainV2.getConfig("speechbatteryenabled") == "True" && MainV2.comPort.MAV.cs.battery_voltage <= warnvolt)
                         {
                             MainV2.speechEngine.SpeakAsync(Common.speechConversion(MainV2.getConfig("speechbattery")));
                         }
@@ -1078,7 +1072,7 @@ namespace ArdupilotMega
                         float.TryParse(MainV2.getConfig("speechaltheight"), out warnalt);
                         try
                         {
-                            if (MainV2.getConfig("speechaltenabled") == "True" && (MainV2.cs.alt - (int)double.Parse(MainV2.getConfig("TXT_homealt"))) <= warnalt)
+                            if (MainV2.getConfig("speechaltenabled") == "True" && (MainV2.comPort.MAV.cs.alt - (int)double.Parse(MainV2.getConfig("TXT_homealt"))) <= warnalt)
                             {
                                 if (MainV2.speechEngine.State == SynthesizerState.Ready)
                                     MainV2.speechEngine.SpeakAsync(Common.speechConversion(MainV2.getConfig("speechalt")));
@@ -1097,7 +1091,7 @@ namespace ArdupilotMega
                     // make sure we attenuate the link quality if we dont see any valid packets
                     if ((DateTime.Now - comPort.lastvalidpacket).TotalSeconds > 10)
                     {
-                        MainV2.cs.linkqualitygcs = 0;
+                        MainV2.comPort.MAV.cs.linkqualitygcs = 0;
                     }
 
                     // attenuate the link qualty over time
@@ -1105,7 +1099,7 @@ namespace ArdupilotMega
                     {
                         if (linkqualitytime.Second != DateTime.Now.Second)
                         {
-                            MainV2.cs.linkqualitygcs = (ushort)(MainV2.cs.linkqualitygcs * 0.8f);
+                            MainV2.comPort.MAV.cs.linkqualitygcs = (ushort)(MainV2.comPort.MAV.cs.linkqualitygcs * 0.8f);
                             linkqualitytime = DateTime.Now;
 
                             GCSViews.FlightData.myhud.Invalidate();
@@ -1196,7 +1190,7 @@ namespace ArdupilotMega
                     }
                     using (Pen pen = new Pen(Color.Black))
                     {
-                        //e.Graphics.DrawRectangle(pen, bounds.X, bounds.Y, bounds.Width - 1, bounds.Height - 1);
+                        //e.GraphiMainV2.comPort.MAV.cs.DrawRectangle(pen, bounds.X, bounds.Y, bounds.Width - 1, bounds.Height - 1);
                     }
                 }
             }
@@ -1209,6 +1203,18 @@ namespace ArdupilotMega
 
         private void MainV2_Load(object sender, EventArgs e)
         {
+            // check if its defined, and force to show it if not known about
+            if (config["menu_autohide"] == null)
+            {
+                config["menu_autohide"] = "false";
+               }
+            
+            try
+            {
+                AutoHideMenu(bool.Parse(config["menu_autohide"].ToString()));
+            }
+            catch { }
+
             MyView.AddScreen(new MainSwitcher.Screen("FlightData", FlightData, true));
             MyView.AddScreen(new MainSwitcher.Screen("FlightPlanner", FlightPlanner, true));
             MyView.AddScreen(new MainSwitcher.Screen("Config", new GCSViews.ConfigurationView.Setup(), false));
@@ -1220,6 +1226,7 @@ namespace ArdupilotMega
             // init button depressed - ensures correct action
             //int fixme;
             MenuFlightData_Click(sender, e);
+
 
             // for long running tasks using own threads.
             // for short use threadpool
@@ -1384,7 +1391,7 @@ namespace ArdupilotMega
 
                                 byte[] packet = new byte[256];
 
-                                string sendme = cs.roll + "," + cs.pitch + "," + cs.yaw;
+                                string sendme = MainV2.comPort.MAV.cs.roll + "," + MainV2.comPort.MAV.cs.pitch + "," + MainV2.comPort.MAV.cs.yaw;
 
                                 packet[0] = 0x81; // fin - binary
                                 packet[1] = (byte)sendme.Length;
@@ -1427,17 +1434,17 @@ namespace ArdupilotMega
                         pmplane.Visibility = true;
 
                         SharpKml.Dom.Location loc = new SharpKml.Dom.Location();
-                        loc.Latitude = cs.lat;
-                        loc.Longitude = cs.lng;
-                        loc.Altitude = cs.alt;
+                        loc.Latitude = MainV2.comPort.MAV.cs.lat;
+                        loc.Longitude = MainV2.comPort.MAV.cs.lng;
+                        loc.Altitude = MainV2.comPort.MAV.cs.alt;
 
                         if (loc.Altitude < 0)
                             loc.Altitude = 0.01;
 
                         SharpKml.Dom.Orientation ori = new SharpKml.Dom.Orientation();
-                        ori.Heading = cs.yaw;
-                        ori.Roll = -cs.roll;
-                        ori.Tilt = -cs.pitch;
+                        ori.Heading = MainV2.comPort.MAV.cs.yaw;
+                        ori.Roll = -MainV2.comPort.MAV.cs.roll;
+                        ori.Tilt = -MainV2.comPort.MAV.cs.pitch;
 
                         SharpKml.Dom.Scale sca = new SharpKml.Dom.Scale();
 
@@ -1464,7 +1471,7 @@ namespace ArdupilotMega
                             Latitude = loc.Latitude.Value,
                             Longitude = loc.Longitude.Value,
                             Tilt = 80,
-                            Heading = cs.yaw,
+                            Heading = MainV2.comPort.MAV.cs.yaw,
                             AltitudeMode = SharpKml.Dom.AltitudeMode.Absolute,
                             Range = 50
                         };
@@ -1475,7 +1482,7 @@ namespace ArdupilotMega
 
                         SharpKml.Dom.CoordinateCollection coords = new SharpKml.Dom.CoordinateCollection();
 
-                        foreach (var point in MainV2.comPort.wps.Values)
+                        foreach (var point in MainV2.comPort.MAV.wps.Values)
                         {
                             coords.Add(new SharpKml.Base.Vector(point.x, point.y, point.z));
                         }
@@ -1635,7 +1642,7 @@ namespace ArdupilotMega
 
         private void TOOL_APMFirmware_SelectedIndexChanged(object sender, EventArgs e)
         {
-            MainV2.cs.firmware = (MainV2.Firmwares)Enum.Parse(typeof(MainV2.Firmwares), _connectionControl.TOOL_APMFirmware.Text);
+            MainV2.comPort.MAV.cs.firmware = (MainV2.Firmwares)Enum.Parse(typeof(MainV2.Firmwares), _connectionControl.TOOL_APMFirmware.Text);
         }
 
         private void MainV2_Resize(object sender, EventArgs e)
@@ -2257,19 +2264,19 @@ namespace ArdupilotMega
                     switch ((Common.distances)Enum.Parse(typeof(Common.distances), MainV2.config["distunits"].ToString()))
                     {
                         case Common.distances.Meters:
-                            MainV2.cs.multiplierdist = 1;
-                            MainV2.cs.DistanceUnit = "Meters";
+                            MainV2.comPort.MAV.cs.multiplierdist = 1;
+                            MainV2.comPort.MAV.cs.DistanceUnit = "Meters";
                             break;
                         case Common.distances.Feet:
-                            MainV2.cs.multiplierdist = 3.2808399f;
-                            MainV2.cs.DistanceUnit = "Feet";
+                            MainV2.comPort.MAV.cs.multiplierdist = 3.2808399f;
+                            MainV2.comPort.MAV.cs.DistanceUnit = "Feet";
                             break;
                     }
                 }
                 else
                 {
-                    MainV2.cs.multiplierdist = 1;
-                    MainV2.cs.DistanceUnit = "Meters";
+                    MainV2.comPort.MAV.cs.multiplierdist = 1;
+                    MainV2.comPort.MAV.cs.DistanceUnit = "Meters";
                 }
 
                 // speed
@@ -2278,31 +2285,31 @@ namespace ArdupilotMega
                     switch ((Common.speeds)Enum.Parse(typeof(Common.speeds), MainV2.config["speedunits"].ToString()))
                     {
                         case Common.speeds.ms:
-                            MainV2.cs.multiplierspeed = 1;
-                            MainV2.cs.SpeedUnit = "m/s";
+                            MainV2.comPort.MAV.cs.multiplierspeed = 1;
+                            MainV2.comPort.MAV.cs.SpeedUnit = "m/s";
                             break;
                         case Common.speeds.fps:
-                            MainV2.cs.multiplierdist = 3.2808399f;
-                            MainV2.cs.SpeedUnit = "fps";
+                            MainV2.comPort.MAV.cs.multiplierdist = 3.2808399f;
+                            MainV2.comPort.MAV.cs.SpeedUnit = "fps";
                             break;
                         case Common.speeds.kph:
-                            MainV2.cs.multiplierspeed = 3.6f;
-                            MainV2.cs.SpeedUnit = "kph";
+                            MainV2.comPort.MAV.cs.multiplierspeed = 3.6f;
+                            MainV2.comPort.MAV.cs.SpeedUnit = "kph";
                             break;
                         case Common.speeds.mph:
-                            MainV2.cs.multiplierspeed = 2.23693629f;
-                            MainV2.cs.SpeedUnit = "mph";
+                            MainV2.comPort.MAV.cs.multiplierspeed = 2.23693629f;
+                            MainV2.comPort.MAV.cs.SpeedUnit = "mph";
                             break;
                         case Common.speeds.knots:
-                            MainV2.cs.multiplierspeed = 1.94384449f;
-                            MainV2.cs.SpeedUnit = "knots";
+                            MainV2.comPort.MAV.cs.multiplierspeed = 1.94384449f;
+                            MainV2.comPort.MAV.cs.SpeedUnit = "knots";
                             break;
                     }
                 }
                 else
                 {
-                    MainV2.cs.multiplierspeed = 1;
-                    MainV2.cs.SpeedUnit = "m/s";
+                    MainV2.comPort.MAV.cs.multiplierspeed = 1;
+                    MainV2.comPort.MAV.cs.SpeedUnit = "m/s";
                 }
             }
             catch { }
@@ -2358,6 +2365,43 @@ namespace ArdupilotMega
             panel1.BringToFront();
             panel1.Visible = true;
             this.ResumeLayout();
+        }
+
+        private void autoHideToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            AutoHideMenu(autoHideToolStripMenuItem.Checked);
+
+            config["menu_autohide"] = autoHideToolStripMenuItem.Checked.ToString();
+        }
+
+        void AutoHideMenu(bool hide)
+        {
+            autoHideToolStripMenuItem.Checked = hide;
+
+            if (!hide)
+            {
+                this.SuspendLayout();
+                panel1.Dock = DockStyle.Top;
+                panel1.SendToBack();
+                panel1.Visible = true;
+                menu.Visible = false;
+                MainMenu.MouseLeave -= MainMenu_MouseLeave;
+                panel1.MouseLeave -= MainMenu_MouseLeave;
+                toolStripConnectionControl.MouseLeave -= MainMenu_MouseLeave;
+                this.ResumeLayout();
+            }
+            else
+            {
+                this.SuspendLayout();
+                panel1.Dock = DockStyle.None;
+                panel1.Visible = false;
+                MainMenu.MouseLeave += MainMenu_MouseLeave;
+                panel1.MouseLeave += MainMenu_MouseLeave;
+                toolStripConnectionControl.MouseLeave += MainMenu_MouseLeave;
+                menu.Visible = true;
+                menu.SendToBack();
+                this.ResumeLayout();
+            }
         }
     }
 }

@@ -79,13 +79,13 @@ namespace ArdupilotMega.GCSViews.ConfigurationView
 
         public void Activate()
         {
-            if (!MainV2.comPort.param.ContainsKey("FRAME"))
+            if (!MainV2.comPort.MAV.param.ContainsKey("FRAME"))
             {
                 this.Enabled = false;
                 return;
             }
 
-            if ((float)MainV2.comPort.param["FRAME"] == 0)
+            if ((float)MainV2.comPort.MAV.param["FRAME"] == 0)
             {
                 this.radioButton_Plus.Checked = true;
                 pictureBoxX.Opacity = DisabledOpacity;
@@ -147,13 +147,13 @@ namespace ArdupilotMega.GCSViews.ConfigurationView
         {
             ConfigAccelerometerCalibrationQuad local = (ConfigAccelerometerCalibrationQuad)item;
 
-            while (!(MainV2.cs.message.Contains("Calibration successful") || MainV2.cs.message.Contains("Calibration failed")))
+            while (!(MainV2.comPort.MAV.cs.message.Contains("Calibration successful") || MainV2.comPort.MAV.cs.message.Contains("Calibration failed")))
             {
                 System.Threading.Thread.Sleep(10);
                 // read the message
                 MainV2.comPort.readPacket();
                 // update cs with the message
-                MainV2.cs.UpdateCurrentSettings(null);
+                MainV2.comPort.MAV.cs.UpdateCurrentSettings(null);
                 // update user display
                 local.UpdateUserMessage();
             }
@@ -170,7 +170,7 @@ namespace ArdupilotMega.GCSViews.ConfigurationView
         {
             this.Invoke((MethodInvoker)delegate()
             {
-                 lbl_Accel_user.Text = MainV2.cs.message;
+                 lbl_Accel_user.Text = MainV2.comPort.MAV.cs.message;
             });
         }
     }

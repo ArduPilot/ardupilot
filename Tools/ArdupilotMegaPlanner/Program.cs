@@ -125,6 +125,8 @@ namespace ArdupilotMega
             Splash = new ArdupilotMega.Splash();
             Splash.Show();
 
+            Application.DoEvents();
+
             try
             {
                 Thread.CurrentThread.Name = "Base Thread";

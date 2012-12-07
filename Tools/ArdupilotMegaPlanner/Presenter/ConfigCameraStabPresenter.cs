@@ -268,11 +268,11 @@ namespace ArdupilotMega.Presenter
 
         private object GetParam(string paramName, Type paramType)
         {
-            if (_mavlink.param.ContainsKey(paramName))
+            if (_mavlink.MAV.param.ContainsKey(paramName))
             {
                 return paramType == typeof (bool)
-                           ? _mavlink.param[paramName].ToString() == "1"
-                           : Convert.ChangeType(_mavlink.param[paramName].ToString(), paramType);
+                           ? _mavlink.MAV.param[paramName].ToString() == "1"
+                           : Convert.ChangeType(_mavlink.MAV.param[paramName].ToString(), paramType);
             }
             log.ErrorFormat("Could not get param {0}", paramName);
             return null;

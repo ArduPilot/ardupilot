@@ -22,19 +22,14 @@ namespace ArdupilotMega.GCSViews.ConfigurationView
         public ConfigMount()
         {
             InitializeComponent();
-            PBOX_WarningIcon.Opacity = 0.0F;
-            LBL_Error.Opacity = 0.0F;
+
 
             var delay = new Transition(new TransitionType_Linear(2000));
             var fadeIn = new Transition(new TransitionType_Linear(800));
-            fadeIn.add(PBOX_WarningIcon, "Opacity", 1.0F);
-            fadeIn.add(LBL_Error, "Opacity", 1.0F);
 
             _ErrorTransition = new[] { delay, fadeIn };
 
             _NoErrorTransition = new Transition(new TransitionType_Linear(10));
-            _NoErrorTransition.add(PBOX_WarningIcon, "Opacity", 0.0F);
-            _NoErrorTransition.add(LBL_Error, "Opacity", 0.0F);
 
             //setup button actions
             foreach (var btn in Controls.Cast<Control>().OfType<Button>())
@@ -45,7 +40,9 @@ namespace ArdupilotMega.GCSViews.ConfigurationView
 
             SetErrorMessageOpacity();
 
-            if (MainV2.cs.firmware == MainV2.Firmwares.ArduPlane)
+            comboBox1.Items.AddRange(Enum.GetNames(typeof(ChannelCameraShutter)));
+
+            if (MainV2.comPort.MAV.cs.firmware == MainV2.Firmwares.ArduPlane)
             {
                 mavlinkComboBoxTilt.Items.AddRange(Enum.GetNames(typeof(Channelap)));
                 mavlinkComboBoxRoll.Items.AddRange(Enum.GetNames(typeof(Channelap)));
@@ -84,6 +81,19 @@ namespace ArdupilotMega.GCSViews.ConfigurationView
             RC11 = 1
         }
 
+        enum ChannelCameraShutter
+        {
+            Disable = 0,
+            RC5 = 5,
+            RC6 = 6,
+            RC7 = 7,
+            RC8 = 8,
+            RC10 = 10,
+            RC11 = 11,
+            Relay = 1,
+            Transistor = 4
+        }
+
         enum Channelinput
         {
             Disable = 0,
@@ -95,13 +105,13 @@ namespace ArdupilotMega.GCSViews.ConfigurationView
 
         public void Activate()
         {
-            Hashtable copy = new Hashtable(MainV2.comPort.param);
+            Hashtable copy = new Hashtable(MainV2.comPort.MAV.param);
 
             foreach (string item in copy.Keys)
             {
                 if (item.EndsWith("_FUNCTION"))
                 {
-                    switch (MainV2.comPort.param[item].ToString())
+                    switch (MainV2.comPort.MAV.param[item].ToString())
                     {
                         case "6":
                             mavlinkComboBoxPan.Text = item.Replace("_FUNCTION", "");
@@ -111,6 +121,9 @@ namespace ArdupilotMega.GCSViews.ConfigurationView
                             break;
                         case "8":
                             mavlinkComboBoxRoll.Text = item.Replace("_FUNCTION", "");
+                            break;
+                        case "10":
+                            comboBox1.Text = item.Replace("_FUNCTION", "");
                             break;
                         default:
                             break;
@@ -122,25 +135,26 @@ namespace ArdupilotMega.GCSViews.ConfigurationView
 
             try
             {
+                updateShutter();
                 updatePitch();
                 updateRoll();
                 updateYaw();
 
-                CHK_stab_tilt.setup(1, 0, ParamHead+"STAB_TILT", MainV2.comPort.param);
-                CHK_stab_roll.setup(1, 0, ParamHead+"STAB_ROLL", MainV2.comPort.param);
-                CHK_stab_pan.setup(1, 0, ParamHead+"STAB_PAN", MainV2.comPort.param);
+                CHK_stab_tilt.setup(1, 0, ParamHead+"STAB_TILT", MainV2.comPort.MAV.param);
+                CHK_stab_roll.setup(1, 0, ParamHead+"STAB_ROLL", MainV2.comPort.MAV.param);
+                CHK_stab_pan.setup(1, 0, ParamHead+"STAB_PAN", MainV2.comPort.MAV.param);
 
-                NUD_CONTROL_x.setup(-180, 180, 100, 1, ParamHead+"CONTROL_X",MainV2.comPort.param);
-                NUD_CONTROL_y.setup(-180, 180, 100, 1, ParamHead+"CONTROL_Y", MainV2.comPort.param);
-                NUD_CONTROL_z.setup(-180, 180, 100, 1, ParamHead+"CONTROL_Z", MainV2.comPort.param);
+                NUD_CONTROL_x.setup(-180, 180, 100, 1, ParamHead+"CONTROL_X",MainV2.comPort.MAV.param);
+                NUD_CONTROL_y.setup(-180, 180, 100, 1, ParamHead+"CONTROL_Y", MainV2.comPort.MAV.param);
+                NUD_CONTROL_z.setup(-180, 180, 100, 1, ParamHead+"CONTROL_Z", MainV2.comPort.MAV.param);
 
-                NUD_NEUTRAL_x.setup(-180, 180, 100, 1, ParamHead+"NEUTRAL_X", MainV2.comPort.param);
-                NUD_NEUTRAL_y.setup(-180, 180, 100, 1, ParamHead+"NEUTRAL_Y", MainV2.comPort.param);
-                NUD_NEUTRAL_z.setup(-180, 180, 100, 1, ParamHead+"NEUTRAL_Z", MainV2.comPort.param);
+                NUD_NEUTRAL_x.setup(-180, 180, 100, 1, ParamHead+"NEUTRAL_X", MainV2.comPort.MAV.param);
+                NUD_NEUTRAL_y.setup(-180, 180, 100, 1, ParamHead+"NEUTRAL_Y", MainV2.comPort.MAV.param);
+                NUD_NEUTRAL_z.setup(-180, 180, 100, 1, ParamHead+"NEUTRAL_Z", MainV2.comPort.MAV.param);
 
-                NUD_RETRACT_x.setup(-180, 180, 100, 1, ParamHead+"RETRACT_X", MainV2.comPort.param);
-                NUD_RETRACT_y.setup(-180, 180, 100, 1, ParamHead+"RETRACT_Y", MainV2.comPort.param);
-                NUD_RETRACT_z.setup(-180, 180, 100, 1, ParamHead+"RETRACT_Z", MainV2.comPort.param);
+                NUD_RETRACT_x.setup(-180, 180, 100, 1, ParamHead+"RETRACT_X", MainV2.comPort.MAV.param);
+                NUD_RETRACT_y.setup(-180, 180, 100, 1, ParamHead+"RETRACT_Y", MainV2.comPort.MAV.param);
+                NUD_RETRACT_z.setup(-180, 180, 100, 1, ParamHead+"RETRACT_Z", MainV2.comPort.MAV.param);
             }
             catch (Exception ex) { CustomMessageBox.Show("Failed to set Param\n" + ex.ToString()); this.Enabled = false; return; }
         }
@@ -149,8 +163,8 @@ namespace ArdupilotMega.GCSViews.ConfigurationView
         {
             foreach (string item in cmb.Items) 
             {
-                if (MainV2.comPort.param.ContainsKey(item+"_FUNCTION")) {
-                    float ans = (float)MainV2.comPort.param[item+"_FUNCTION"];
+                if (MainV2.comPort.MAV.param.ContainsKey(item+"_FUNCTION")) {
+                    float ans = (float)MainV2.comPort.MAV.param[item+"_FUNCTION"];
 
                     if (item == exclude)
                         continue;
@@ -161,6 +175,47 @@ namespace ArdupilotMega.GCSViews.ConfigurationView
                     }
                 }
             }
+        }
+
+        void updateShutter()
+        {
+            // shutter
+            if (comboBox1.Text == "")
+                return;
+
+            if (comboBox1.Text != "Disable")
+            {
+                if (comboBox1.Text == ChannelCameraShutter.Relay.ToString())
+                {
+                    ensureDisabled(comboBox1, 10);  
+                    MainV2.comPort.setParam("CAM_TRIGG_TYPE", 1);
+                }
+                else if (comboBox1.Text == ChannelCameraShutter.Transistor.ToString())
+                {
+                    ensureDisabled(comboBox1, 10);  
+                    MainV2.comPort.setParam("CAM_TRIGG_TYPE", 4);
+                }
+                else
+                {
+                    MainV2.comPort.setParam(comboBox1.Text + "_FUNCTION", 10);
+                    // servo
+                    MainV2.comPort.setParam("CAM_TRIGG_TYPE", 0);
+                }
+            }
+            else
+            {
+                // servo
+                MainV2.comPort.setParam("CAM_TRIGG_TYPE", 0);
+                ensureDisabled(comboBox1, 10);
+            }
+
+
+            mavlinkNumericUpDownShutM.setup(800, 2200, 1, 1, comboBox1.Text + "_MIN", MainV2.comPort.MAV.param);
+            mavlinkNumericUpDownShutMX.setup(800, 2200, 1, 1, comboBox1.Text + "_MAX", MainV2.comPort.MAV.param);
+
+            mavlinkNumericUpDown1.setup(800, 2200, 1, 1, "CAM_SERVO_OFF", MainV2.comPort.MAV.param);
+            mavlinkNumericUpDown2.setup(800, 2200, 1, 1, "CAM_SERVO_ON", MainV2.comPort.MAV.param);
+            mavlinkNumericUpDown5.setup(1, 200, 1, 1,  "CAM_DURATION", MainV2.comPort.MAV.param);
         }
 
         void updatePitch()
@@ -181,12 +236,12 @@ namespace ArdupilotMega.GCSViews.ConfigurationView
             }
             
 
-            mavlinkNumericUpDownTSM.setup(800, 2200, 1, 1, mavlinkComboBoxTilt.Text +"_MIN", MainV2.comPort.param);
-            mavlinkNumericUpDownTSMX.setup(800, 2200, 1, 1, mavlinkComboBoxTilt.Text + "_MAX", MainV2.comPort.param);
-            mavlinkNumericUpDownTAM.setup(-90, 0, 100, 1, ParamHead+"ANGMIN_TIL", MainV2.comPort.param);
-            mavlinkNumericUpDownTAMX.setup(0, 90, 100, 1, ParamHead+"ANGMAX_TIL", MainV2.comPort.param);
-            mavlinkCheckBoxTR.setup(-1, 1, mavlinkComboBoxTilt.Text + "_REV", MainV2.comPort.param);
-            CMB_inputch_tilt.setup(typeof(Channelinput), ParamHead+"RC_IN_TILT", MainV2.comPort.param);
+            mavlinkNumericUpDownTSM.setup(800, 2200, 1, 1, mavlinkComboBoxTilt.Text +"_MIN", MainV2.comPort.MAV.param);
+            mavlinkNumericUpDownTSMX.setup(800, 2200, 1, 1, mavlinkComboBoxTilt.Text + "_MAX", MainV2.comPort.MAV.param);
+            mavlinkNumericUpDownTAM.setup(-90, 0, 100, 1, ParamHead+"ANGMIN_TIL", MainV2.comPort.MAV.param);
+            mavlinkNumericUpDownTAMX.setup(0, 90, 100, 1, ParamHead+"ANGMAX_TIL", MainV2.comPort.MAV.param);
+            mavlinkCheckBoxTR.setup(-1, 1, mavlinkComboBoxTilt.Text + "_REV", MainV2.comPort.MAV.param);
+            CMB_inputch_tilt.setup(typeof(Channelinput), ParamHead+"RC_IN_TILT", MainV2.comPort.MAV.param);
         }
 
         void updateRoll()
@@ -206,12 +261,12 @@ namespace ArdupilotMega.GCSViews.ConfigurationView
                 ensureDisabled(mavlinkComboBoxRoll,8);
             }
 
-            mavlinkNumericUpDownRSM.setup(800, 2200, 1, 1, mavlinkComboBoxRoll.Text +"_MIN", MainV2.comPort.param);
-            mavlinkNumericUpDownRSMX.setup(800, 2200, 1, 1, mavlinkComboBoxRoll.Text + "_MAX", MainV2.comPort.param);
-            mavlinkNumericUpDownRAM.setup(-90, 0, 100, 1, ParamHead+"ANGMIN_ROL", MainV2.comPort.param);
-            mavlinkNumericUpDownRAMX.setup(0, 90, 100, 1, ParamHead+"ANGMAX_ROL", MainV2.comPort.param);
-            mavlinkCheckBoxRR.setup(-1, 1, mavlinkComboBoxRoll.Text + "_REV", MainV2.comPort.param);
-            CMB_inputch_roll.setup(typeof(Channelinput), ParamHead+"RC_IN_ROLL", MainV2.comPort.param);
+            mavlinkNumericUpDownRSM.setup(800, 2200, 1, 1, mavlinkComboBoxRoll.Text +"_MIN", MainV2.comPort.MAV.param);
+            mavlinkNumericUpDownRSMX.setup(800, 2200, 1, 1, mavlinkComboBoxRoll.Text + "_MAX", MainV2.comPort.MAV.param);
+            mavlinkNumericUpDownRAM.setup(-90, 0, 100, 1, ParamHead+"ANGMIN_ROL", MainV2.comPort.MAV.param);
+            mavlinkNumericUpDownRAMX.setup(0, 90, 100, 1, ParamHead+"ANGMAX_ROL", MainV2.comPort.MAV.param);
+            mavlinkCheckBoxRR.setup(-1, 1, mavlinkComboBoxRoll.Text + "_REV", MainV2.comPort.MAV.param);
+            CMB_inputch_roll.setup(typeof(Channelinput), ParamHead+"RC_IN_ROLL", MainV2.comPort.MAV.param);
         }
 
         void updateYaw()
@@ -231,12 +286,12 @@ namespace ArdupilotMega.GCSViews.ConfigurationView
                 ensureDisabled(mavlinkComboBoxPan,6);
             }
 
-            mavlinkNumericUpDownPSM.setup(800, 2200, 1, 1, mavlinkComboBoxPan.Text + "_MIN", MainV2.comPort.param);
-            mavlinkNumericUpDownPSMX.setup(800, 2200, 1, 1, mavlinkComboBoxPan.Text + "_MAX", MainV2.comPort.param);
-            mavlinkNumericUpDownPAM.setup(-90, 0, 100, 1, ParamHead+"ANGMIN_PAN", MainV2.comPort.param);
-            mavlinkNumericUpDownPAMX.setup(0, 90, 100, 1, ParamHead+"ANGMAX_PAN", MainV2.comPort.param);
-            mavlinkCheckBoxPR.setup(-1, 1, mavlinkComboBoxPan.Text + "_REV", MainV2.comPort.param);
-            CMB_inputch_pan.setup(typeof(Channelinput), ParamHead+"RC_IN_PAN", MainV2.comPort.param);
+            mavlinkNumericUpDownPSM.setup(800, 2200, 1, 1, mavlinkComboBoxPan.Text + "_MIN", MainV2.comPort.MAV.param);
+            mavlinkNumericUpDownPSMX.setup(800, 2200, 1, 1, mavlinkComboBoxPan.Text + "_MAX", MainV2.comPort.MAV.param);
+            mavlinkNumericUpDownPAM.setup(-90, 0, 100, 1, ParamHead+"ANGMIN_PAN", MainV2.comPort.MAV.param);
+            mavlinkNumericUpDownPAMX.setup(0, 90, 100, 1, ParamHead+"ANGMAX_PAN", MainV2.comPort.MAV.param);
+            mavlinkCheckBoxPR.setup(-1, 1, mavlinkComboBoxPan.Text + "_REV", MainV2.comPort.MAV.param);
+            CMB_inputch_pan.setup(typeof(Channelinput), ParamHead+"RC_IN_PAN", MainV2.comPort.MAV.param);
         }
 
         private void SetErrorMessageOpacity()
@@ -311,9 +366,10 @@ namespace ArdupilotMega.GCSViews.ConfigurationView
                 ensureDisabled(cmb, 8, mavlinkComboBoxRoll.Text);
 
                 // enable 3 axis stabilize
-                if (MainV2.comPort.param.ContainsKey(ParamHead+"MODE"))
+                if (MainV2.comPort.MAV.param.ContainsKey(ParamHead+"MODE"))
                     MainV2.comPort.setParam(ParamHead+"MODE", 3);
 
+                updateShutter();
                 updatePitch();
                 updateRoll();
                 updateYaw();
