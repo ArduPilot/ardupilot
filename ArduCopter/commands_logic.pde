@@ -791,7 +791,7 @@ static void do_set_home()
 
 static void do_set_servo()
 {
-    uint8_t channel_num = -1;
+    uint8_t channel_num = 0xff;
 
     switch( command_cond_queue.p1 ) {
         case 1:
@@ -830,7 +830,7 @@ static void do_set_servo()
     }
 
     // send output to channel
-    if (channel_num != -1) {
+    if (channel_num != 0xff) {
         APM_RC.enable_out(channel_num);
         APM_RC.OutputCh(channel_num, command_cond_queue.alt);
     }
