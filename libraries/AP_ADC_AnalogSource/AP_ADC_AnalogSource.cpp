@@ -1,11 +1,21 @@
 
 #include "AP_ADC_AnalogSource.h"
 
-float AP_ADC_AnalogSource::read() {
+/* Unfortunately we don't have a valid implementaton for read_latest - we
+ * only have access to the average from the ADC driver. Not really a big deal
+ * in our application currently. */
+
+float AP_ADC_AnalogSource::read_latest() {
+    return read_average();
+}
+
+float AP_ADC_AnalogSource::read_average() {
     float fullscale = _adc->Ch(_ch);
     float scaled = _prescale * fullscale;
     return scaled;
 }
+
+
 
 void AP_ADC_AnalogSource::set_pin(uint8_t machtnichts) {
     /* it would be an error to call this

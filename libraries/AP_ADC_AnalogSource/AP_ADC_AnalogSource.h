@@ -11,7 +11,8 @@ public:
     AP_ADC_AnalogSource( AP_ADC * adc, uint8_t ch, float prescale = 1.0 ) :
         _adc(adc), _ch(ch), _prescale(prescale)
     {}
-    float           read(void);
+    float           read_average(void);
+    float           read_latest(void);
     void            set_pin(uint8_t);
 
 private:
