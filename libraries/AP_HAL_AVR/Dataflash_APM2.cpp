@@ -56,6 +56,14 @@ void APM2Dataflash::init(void* machtnichts) {
     LOGD("_page_size set to %d\r\n", _page_size);
 
     read_mfg_id();
+    /* If no card is present, MISO is usually either constant high or constant
+     * low. Result is all 0 or all 1s for _mfg and _device.
+     */
+    if ((_mfg == 0 && _device == 0)
+      ||(_mfg == 0xFF && _device == 0xFFFF)) {
+      _num_pages = 0;
+      return;
+    }
     /* from page 22 of the spec, density code decoder: */
     uint8_t density_code = (_device >> 8) & 0x1F;
     if (density_code == 0x7) {
@@ -81,8 +89,8 @@ void APM2Dataflash::read_mfg_id() {
 }
 
 bool APM2Dataflash::media_present() {
-    /* Assume the card is present if we read a valid mfg id. */
-    return _num_pages >= 4095;
+    /* if init detected a df chip, it set _num_pages > 0. */
+    return _num_pages > 0;
 }
 
 void APM2Dataflash::_wait_ready() {
