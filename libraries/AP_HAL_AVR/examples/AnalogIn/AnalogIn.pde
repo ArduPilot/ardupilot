@@ -18,9 +18,9 @@ void setup (void) {
 }
 
 void loop (void) {
-    float meas_ch0 = ch0->read(); 
-    float meas_ch1 = ch1->read();
-    float meas_vcc = vcc->read();
+    float meas_ch0 = ch0->read_average(); 
+    float meas_ch1 = ch1->read_average();
+    float meas_vcc = vcc->read_average();
     hal.console->printf_P(PSTR("read ch0: %f, ch1: %f, vcc: %f\r\n"),
             meas_ch0, meas_ch1, meas_vcc);
     hal.scheduler->delay(10);
