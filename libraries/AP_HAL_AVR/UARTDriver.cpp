@@ -15,6 +15,7 @@
 #include <avr/pgmspace.h>
 
 #include <AP_HAL.h>
+#include <AP_Math.h>
 
 #include "vprintf.h"
 #include "UARTDriver.h"
@@ -219,7 +220,6 @@ bool AVRUARTDriver::_allocBuffer(Buffer *buffer, uint16_t size)
 	// and then a mask to simplify wrapping operations.  Using __builtin_clz
 	// would seem to make sense, but it uses a 256(!) byte table.
 	// Note that we ignore requests for more than BUFFER_MAX space.
-    #define min(a,b) ((a>b)?b:a)
 	for (shift = 1; (1U << shift) < min(_max_buffer_size, size); shift++)
 		;
 	mask = (1 << shift) - 1;
