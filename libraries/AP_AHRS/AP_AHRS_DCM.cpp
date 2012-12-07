@@ -18,8 +18,6 @@
 
 extern const AP_HAL::HAL& hal;
 
-#define constrain(amt,low,high) ((amt)<(low)?(low):((amt)>(high)?(high):(amt)))
-
 // this is the speed in cm/s above which we first get a yaw lock with
 // the GPS
 #define GPS_SPEED_MIN 300
