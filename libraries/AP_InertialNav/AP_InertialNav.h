@@ -10,7 +10,7 @@
 
 #define AP_INTERTIALNAV_GRAVITY 9.80665
 #define AP_INTERTIALNAV_TC_XY   3.0 // default time constant for complementary filter's X & Y axis
-#define AP_INTERTIALNAV_TC_Z    1.5 // default time constant for complementary filter's Z axis
+#define AP_INTERTIALNAV_TC_Z    3.0 // default time constant for complementary filter's Z axis
 
 /*
  * AP_InertialNav is an attempt to use accelerometers to augment other sensors to improve altitud e position hold
