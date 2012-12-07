@@ -1,4 +1,5 @@
-﻿0.9 - added rfd900a
+﻿1.0 - added rf freeq for 868
+0.9 - added rfd900a
 0.8 - fix settings saving.
 0.7 - fix typos - log rssi screen to log as well
 0.6 - add terminal logging to file, fix remote radio config

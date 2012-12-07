@@ -145,45 +145,45 @@ namespace ArdupilotMega
             //Console.WriteLine(DateTime.Now.Millisecond + " timer2 serial");
             try
             {
-                MainV2.cs.UpdateCurrentSettings(currentStateBindingSource);
+                MainV2.comPort.MAV.cs.UpdateCurrentSettings(currentStateBindingSource);
             }
             catch { }
 
             if (sw != null && sw.BaseStream.CanWrite)
             {
-                sw.WriteLine(string.Format("{0},{1},{2},{3},{4},{5},{6}",DateTime.Now.ToString(), MainV2.cs.ax, MainV2.cs.ay, MainV2.cs.az, MainV2.cs.gx,MainV2.cs.gy, MainV2.cs.gz));
+                sw.WriteLine(string.Format("{0},{1},{2},{3},{4},{5},{6}",DateTime.Now.ToString(), MainV2.comPort.MAV.cs.ax, MainV2.comPort.MAV.cs.ay, MainV2.comPort.MAV.cs.az, MainV2.comPort.MAV.cs.gx,MainV2.comPort.MAV.cs.gy, MainV2.comPort.MAV.cs.gz));
             }
 
             double time = (Environment.TickCount - tickStart) / 1000.0;
 
             if (chkax.Checked)
             {
-                list1.Add(time, ArdupilotMega.MainV2.cs.ax);
+                list1.Add(time, ArdupilotMega.MainV2.comPort.MAV.cs.ax);
             }
             else { list1.Clear(); }
             if (chkay.Checked)
             {
-                list2.Add(time, ArdupilotMega.MainV2.cs.ay);
+                list2.Add(time, ArdupilotMega.MainV2.comPort.MAV.cs.ay);
             }
             else { list2.Clear(); }
             if (chkaz.Checked)
             {
-                list3.Add(time, ArdupilotMega.MainV2.cs.az);
+                list3.Add(time, ArdupilotMega.MainV2.comPort.MAV.cs.az);
             }
             else { list3.Clear(); }
             if (chkgx.Checked)
             {
-                list4.Add(time, ArdupilotMega.MainV2.cs.gx);
+                list4.Add(time, ArdupilotMega.MainV2.comPort.MAV.cs.gx);
             }
             else { list4.Clear(); }
             if (chkgy.Checked)
             {
-                list5.Add(time, ArdupilotMega.MainV2.cs.gy);
+                list5.Add(time, ArdupilotMega.MainV2.comPort.MAV.cs.gy);
             }
             else { list5.Clear(); }
             if (chkgz.Checked)
             {
-                list6.Add(time, ArdupilotMega.MainV2.cs.gz);
+                list6.Add(time, ArdupilotMega.MainV2.comPort.MAV.cs.gz);
             }
             else { list6.Clear(); }
         }
@@ -237,7 +237,7 @@ namespace ArdupilotMega
                         //comPort.requestDatastream((byte)ArdupilotMega.MAVLink09.MAV_DATA_STREAM.POSITION, 3); // request location
                         //comPort.requestDatastream((byte)ArdupilotMega.MAVLink09.MAV_DATA_STREAM.EXTRA1, 3); // request attitude
                         //comPort.requestDatastream((byte)ArdupilotMega.MAVLink09.MAV_DATA_STREAM.EXTRA2, 3); // request vfr
-                        MainV2.comPort.requestDatastream((byte)ArdupilotMega.MAVLink.MAV_DATA_STREAM.RAW_SENSORS, MainV2.cs.ratesensors); // request raw sensor
+                        MainV2.comPort.requestDatastream((byte)ArdupilotMega.MAVLink.MAV_DATA_STREAM.RAW_SENSORS, MainV2.comPort.MAV.cs.ratesensors); // request raw sensor
                         //comPort.requestDatastream((byte)ArdupilotMega.MAVLink09.MAV_DATA_STREAM.RC_CHANNELS, 3); // request rc info
                     }
                     catch
@@ -250,7 +250,7 @@ namespace ArdupilotMega
 
         private void CMB_rawupdaterate_SelectedIndexChanged(object sender, EventArgs e)
         {
-            MainV2.cs.ratesensors = (byte)int.Parse(CMB_rawupdaterate.Text);
+            MainV2.comPort.MAV.cs.ratesensors = (byte)int.Parse(CMB_rawupdaterate.Text);
             MainV2.comPort.requestDatastream((byte)ArdupilotMega.MAVLink.MAV_DATA_STREAM.RAW_SENSORS, (byte)int.Parse(CMB_rawupdaterate.Text)); // request raw sensor
         }
 

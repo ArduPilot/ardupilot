@@ -48,7 +48,7 @@ namespace ArdupilotMega.GCSViews.ConfigurationView
             // update all linked controls - 10hz
             try
             {
-                MainV2.cs.UpdateCurrentSettings(currentStateBindingSource);
+                MainV2.comPort.MAV.cs.UpdateCurrentSettings(currentStateBindingSource);
             }
             catch { }
         }
@@ -61,14 +61,14 @@ namespace ArdupilotMega.GCSViews.ConfigurationView
 
             startup = true;
 
-            if (MainV2.cs.firmware == MainV2.Firmwares.ArduPlane)
+            if (MainV2.comPort.MAV.cs.firmware == MainV2.Firmwares.ArduPlane)
             {
                 try
                 {
-                    CHK_mixmode.Checked = MainV2.comPort.param["ELEVON_MIXING"].ToString() == "1";
-                    CHK_elevonrev.Checked = MainV2.comPort.param["ELEVON_REVERSE"].ToString() == "1";
-                    CHK_elevonch1rev.Checked = MainV2.comPort.param["ELEVON_CH1_REV"].ToString() == "1";
-                    CHK_elevonch2rev.Checked = MainV2.comPort.param["ELEVON_CH2_REV"].ToString() == "1";
+                    CHK_mixmode.Checked = MainV2.comPort.MAV.param["ELEVON_MIXING"].ToString() == "1";
+                    CHK_elevonrev.Checked = MainV2.comPort.MAV.param["ELEVON_REVERSE"].ToString() == "1";
+                    CHK_elevonch1rev.Checked = MainV2.comPort.MAV.param["ELEVON_CH1_REV"].ToString() == "1";
+                    CHK_elevonch2rev.Checked = MainV2.comPort.MAV.param["ELEVON_CH2_REV"].ToString() == "1";
                 }
                 catch { } // this will fail on arducopter
             }
@@ -76,7 +76,7 @@ namespace ArdupilotMega.GCSViews.ConfigurationView
             {
                 groupBoxElevons.Visible = false;
 
-                if (MainV2.cs.firmware == MainV2.Firmwares.ArduCopter2)
+                if (MainV2.comPort.MAV.cs.firmware == MainV2.Firmwares.ArduCopter2)
                 {
                     CHK_revch1.Visible = false;
                     CHK_revch2.Visible = false;
@@ -86,10 +86,10 @@ namespace ArdupilotMega.GCSViews.ConfigurationView
             }
             try
             {
-                CHK_revch1.Checked = MainV2.comPort.param["RC1_REV"].ToString() == "-1";
-                CHK_revch2.Checked = MainV2.comPort.param["RC2_REV"].ToString() == "-1";
-                CHK_revch3.Checked = MainV2.comPort.param["RC3_REV"].ToString() == "-1";
-                CHK_revch4.Checked = MainV2.comPort.param["RC4_REV"].ToString() == "-1";
+                CHK_revch1.Checked = MainV2.comPort.MAV.param["RC1_REV"].ToString() == "-1";
+                CHK_revch2.Checked = MainV2.comPort.MAV.param["RC2_REV"].ToString() == "-1";
+                CHK_revch3.Checked = MainV2.comPort.MAV.param["RC3_REV"].ToString() == "-1";
+                CHK_revch4.Checked = MainV2.comPort.MAV.param["RC4_REV"].ToString() == "-1";
             }
             catch {}//(Exception ex) { CustomMessageBox.Show("Missing RC rev Param " + ex.ToString()); }
             startup = false;
@@ -106,15 +106,15 @@ namespace ArdupilotMega.GCSViews.ConfigurationView
 
             CustomMessageBox.Show("Ensure your transmitter is on and receiver is powered and connected\nEnsure your motor does not have power/no props!!!");
 
-            byte oldrc = MainV2.cs.raterc;
-            byte oldatt = MainV2.cs.rateattitude;
-            byte oldpos = MainV2.cs.rateposition;
-            byte oldstatus = MainV2.cs.ratestatus;
+            byte oldrc = MainV2.comPort.MAV.cs.raterc;
+            byte oldatt = MainV2.comPort.MAV.cs.rateattitude;
+            byte oldpos = MainV2.comPort.MAV.cs.rateposition;
+            byte oldstatus = MainV2.comPort.MAV.cs.ratestatus;
 
-            MainV2.cs.raterc = 10;
-            MainV2.cs.rateattitude = 0;
-            MainV2.cs.rateposition = 0;
-            MainV2.cs.ratestatus = 0;
+            MainV2.comPort.MAV.cs.raterc = 10;
+            MainV2.comPort.MAV.cs.rateattitude = 0;
+            MainV2.comPort.MAV.cs.rateposition = 0;
+            MainV2.comPort.MAV.cs.ratestatus = 0;
 
             try
             {
@@ -135,34 +135,34 @@ namespace ArdupilotMega.GCSViews.ConfigurationView
 
                 System.Threading.Thread.Sleep(5);
 
-                MainV2.cs.UpdateCurrentSettings(currentStateBindingSource, true, MainV2.comPort);
+                MainV2.comPort.MAV.cs.UpdateCurrentSettings(currentStateBindingSource, true, MainV2.comPort);
 
                 // check for non 0 values
-                if (MainV2.cs.ch1in > 800 && MainV2.cs.ch1in < 2200)
+                if (MainV2.comPort.MAV.cs.ch1in > 800 && MainV2.comPort.MAV.cs.ch1in < 2200)
                 {
-                    rcmin[0] = Math.Min(rcmin[0], MainV2.cs.ch1in);
-                    rcmax[0] = Math.Max(rcmax[0], MainV2.cs.ch1in);
+                    rcmin[0] = Math.Min(rcmin[0], MainV2.comPort.MAV.cs.ch1in);
+                    rcmax[0] = Math.Max(rcmax[0], MainV2.comPort.MAV.cs.ch1in);
 
-                    rcmin[1] = Math.Min(rcmin[1], MainV2.cs.ch2in);
-                    rcmax[1] = Math.Max(rcmax[1], MainV2.cs.ch2in);
+                    rcmin[1] = Math.Min(rcmin[1], MainV2.comPort.MAV.cs.ch2in);
+                    rcmax[1] = Math.Max(rcmax[1], MainV2.comPort.MAV.cs.ch2in);
 
-                    rcmin[2] = Math.Min(rcmin[2], MainV2.cs.ch3in);
-                    rcmax[2] = Math.Max(rcmax[2], MainV2.cs.ch3in);
+                    rcmin[2] = Math.Min(rcmin[2], MainV2.comPort.MAV.cs.ch3in);
+                    rcmax[2] = Math.Max(rcmax[2], MainV2.comPort.MAV.cs.ch3in);
 
-                    rcmin[3] = Math.Min(rcmin[3], MainV2.cs.ch4in);
-                    rcmax[3] = Math.Max(rcmax[3], MainV2.cs.ch4in);
+                    rcmin[3] = Math.Min(rcmin[3], MainV2.comPort.MAV.cs.ch4in);
+                    rcmax[3] = Math.Max(rcmax[3], MainV2.comPort.MAV.cs.ch4in);
 
-                    rcmin[4] = Math.Min(rcmin[4], MainV2.cs.ch5in);
-                    rcmax[4] = Math.Max(rcmax[4], MainV2.cs.ch5in);
+                    rcmin[4] = Math.Min(rcmin[4], MainV2.comPort.MAV.cs.ch5in);
+                    rcmax[4] = Math.Max(rcmax[4], MainV2.comPort.MAV.cs.ch5in);
 
-                    rcmin[5] = Math.Min(rcmin[5], MainV2.cs.ch6in);
-                    rcmax[5] = Math.Max(rcmax[5], MainV2.cs.ch6in);
+                    rcmin[5] = Math.Min(rcmin[5], MainV2.comPort.MAV.cs.ch6in);
+                    rcmax[5] = Math.Max(rcmax[5], MainV2.comPort.MAV.cs.ch6in);
 
-                    rcmin[6] = Math.Min(rcmin[6], MainV2.cs.ch7in);
-                    rcmax[6] = Math.Max(rcmax[6], MainV2.cs.ch7in);
+                    rcmin[6] = Math.Min(rcmin[6], MainV2.comPort.MAV.cs.ch7in);
+                    rcmax[6] = Math.Max(rcmax[6], MainV2.comPort.MAV.cs.ch7in);
 
-                    rcmin[7] = Math.Min(rcmin[7], MainV2.cs.ch8in);
-                    rcmax[7] = Math.Max(rcmax[7], MainV2.cs.ch8in);
+                    rcmin[7] = Math.Min(rcmin[7], MainV2.comPort.MAV.cs.ch8in);
+                    rcmax[7] = Math.Max(rcmax[7], MainV2.comPort.MAV.cs.ch8in);
 
                     BARroll.minline = (int)rcmin[0];
                     BARroll.maxline = (int)rcmax[0];
@@ -193,16 +193,16 @@ namespace ArdupilotMega.GCSViews.ConfigurationView
 
             CustomMessageBox.Show("Ensure all your sticks are centered and throttle is down, and click ok to continue");
 
-            MainV2.cs.UpdateCurrentSettings(currentStateBindingSource, true, MainV2.comPort);
+            MainV2.comPort.MAV.cs.UpdateCurrentSettings(currentStateBindingSource, true, MainV2.comPort);
 
-            rctrim[0] = MainV2.cs.ch1in;
-            rctrim[1] = MainV2.cs.ch2in;
-            rctrim[2] = MainV2.cs.ch3in;
-            rctrim[3] = MainV2.cs.ch4in;
-            rctrim[4] = MainV2.cs.ch5in;
-            rctrim[5] = MainV2.cs.ch6in;
-            rctrim[6] = MainV2.cs.ch7in;
-            rctrim[7] = MainV2.cs.ch8in;
+            rctrim[0] = MainV2.comPort.MAV.cs.ch1in;
+            rctrim[1] = MainV2.comPort.MAV.cs.ch2in;
+            rctrim[2] = MainV2.comPort.MAV.cs.ch3in;
+            rctrim[3] = MainV2.comPort.MAV.cs.ch4in;
+            rctrim[4] = MainV2.comPort.MAV.cs.ch5in;
+            rctrim[5] = MainV2.comPort.MAV.cs.ch6in;
+            rctrim[6] = MainV2.comPort.MAV.cs.ch7in;
+            rctrim[7] = MainV2.comPort.MAV.cs.ch8in;
 
             string data = "---------------\n";
 
@@ -225,10 +225,10 @@ namespace ArdupilotMega.GCSViews.ConfigurationView
                 data = data + "CH" + (a + 1) + " " + rcmin[a] + " | " + rcmax[a] + "\n";
             }
 
-            MainV2.cs.raterc = oldrc;
-            MainV2.cs.rateattitude = oldatt;
-            MainV2.cs.rateposition = oldpos;
-            MainV2.cs.ratestatus = oldstatus;
+            MainV2.comPort.MAV.cs.raterc = oldrc;
+            MainV2.comPort.MAV.cs.rateattitude = oldatt;
+            MainV2.comPort.MAV.cs.rateposition = oldpos;
+            MainV2.comPort.MAV.cs.ratestatus = oldstatus;
 
             try
             {
@@ -249,9 +249,9 @@ namespace ArdupilotMega.GCSViews.ConfigurationView
                 return;
             try
             {
-                if (MainV2.comPort.param["ELEVON_MIXING"] == null)
+                if (MainV2.comPort.MAV.param["ELEVON_MIXING"] == null)
                 {
-                    CustomMessageBox.Show("Not Available on " + MainV2.cs.firmware.ToString());
+                    CustomMessageBox.Show("Not Available on " + MainV2.comPort.MAV.cs.firmware.ToString());
                 }
                 else
                 {
@@ -267,9 +267,9 @@ namespace ArdupilotMega.GCSViews.ConfigurationView
                 return;
             try
             {
-                if (MainV2.comPort.param["ELEVON_REVERSE"] == null)
+                if (MainV2.comPort.MAV.param["ELEVON_REVERSE"] == null)
                 {
-                    CustomMessageBox.Show("Not Available on " + MainV2.cs.firmware.ToString());
+                    CustomMessageBox.Show("Not Available on " + MainV2.comPort.MAV.cs.firmware.ToString());
                 }
                 else
                 {
@@ -285,9 +285,9 @@ namespace ArdupilotMega.GCSViews.ConfigurationView
                 return;
             try
             {
-                if (MainV2.comPort.param["ELEVON_CH1_REV"] == null)
+                if (MainV2.comPort.MAV.param["ELEVON_CH1_REV"] == null)
                 {
-                    CustomMessageBox.Show("Not Available on " + MainV2.cs.firmware.ToString());
+                    CustomMessageBox.Show("Not Available on " + MainV2.comPort.MAV.cs.firmware.ToString());
                 }
                 else
                 {
@@ -303,9 +303,9 @@ namespace ArdupilotMega.GCSViews.ConfigurationView
                 return;
             try
             {
-                if (MainV2.comPort.param["ELEVON_CH2_REV"] == null)
+                if (MainV2.comPort.MAV.param["ELEVON_CH2_REV"] == null)
                 {
-                    CustomMessageBox.Show("Not Available on " + MainV2.cs.firmware.ToString());
+                    CustomMessageBox.Show("Not Available on " + MainV2.comPort.MAV.cs.firmware.ToString());
                 }
                 else
                 {
@@ -352,7 +352,7 @@ namespace ArdupilotMega.GCSViews.ConfigurationView
 
             if (startup)
                 return;
-            if (MainV2.comPort.param["SWITCH_ENABLE"] != null && (float)MainV2.comPort.param["SWITCH_ENABLE"] == 1)
+            if (MainV2.comPort.MAV.param["SWITCH_ENABLE"] != null && (float)MainV2.comPort.MAV.param["SWITCH_ENABLE"] == 1)
             {
                 try
                 {

@@ -29,7 +29,7 @@ namespace ArdupilotMega.GCSViews.ConfigurationView
             }
             else
             {
-                if (MainV2.cs.firmware == MainV2.Firmwares.ArduPlane)
+                if (MainV2.comPort.MAV.cs.firmware == MainV2.Firmwares.ArduPlane)
                 {
                     this.Enabled = true;
                 }
@@ -42,8 +42,8 @@ namespace ArdupilotMega.GCSViews.ConfigurationView
 
             startup = true;
 
-            if (MainV2.comPort.param["MANUAL_LEVEL"] != null)
-                CHK_manuallevel.Checked = MainV2.comPort.param["MANUAL_LEVEL"].ToString() == "1" ? true : false;
+            if (MainV2.comPort.MAV.param["MANUAL_LEVEL"] != null)
+                CHK_manuallevel.Checked = MainV2.comPort.MAV.param["MANUAL_LEVEL"].ToString() == "1" ? true : false;
 
             startup = false;
         }

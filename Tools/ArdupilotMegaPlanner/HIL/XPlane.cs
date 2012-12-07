@@ -155,10 +155,10 @@ namespace ArdupilotMega.HIL
         }
         public override void SendToSim()
         {
-            roll_out = (float)MainV2.cs.hilch1 / rollgain;
-            pitch_out = (float)MainV2.cs.hilch2 / pitchgain;
-            throttle_out = ((float)MainV2.cs.hilch3) / throttlegain;
-            rudder_out = (float)MainV2.cs.hilch4 / ruddergain;
+            roll_out = (float)MainV2.comPort.MAV.cs.hilch1 / rollgain;
+            pitch_out = (float)MainV2.comPort.MAV.cs.hilch2 / pitchgain;
+            throttle_out = ((float)MainV2.comPort.MAV.cs.hilch3) / throttlegain;
+            rudder_out = (float)MainV2.comPort.MAV.cs.hilch4 / ruddergain;
 
             // Limit min and max
             roll_out = Constrain(roll_out, -1, 1);

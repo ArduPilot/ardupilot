@@ -38,7 +38,7 @@ namespace ArdupilotMega.GCSViews.ConfigurationView
             }
             else
             {
-                if (MainV2.cs.firmware == MainV2.Firmwares.Ateryx)
+                if (MainV2.comPort.MAV.cs.firmware == MainV2.Firmwares.Ateryx)
                 {
                     this.Enabled = true;
                 }
@@ -159,7 +159,7 @@ namespace ArdupilotMega.GCSViews.ConfigurationView
             disableNumericUpDownControls(this);
 
             // process hashdefines and update display
-            foreach (string value in MainV2.comPort.param.Keys)
+            foreach (string value in MainV2.comPort.MAV.param.Keys)
             {
                 if (value == null || value == "")
                     continue;
@@ -176,7 +176,7 @@ namespace ArdupilotMega.GCSViews.ConfigurationView
                             NumericUpDown thisctl = ((NumericUpDown)ctl);
                             thisctl.Maximum = 9000;
                             thisctl.Minimum = -9000;
-                            thisctl.Value = (decimal)(float)MainV2.comPort.param[value];
+                            thisctl.Value = (decimal)(float)MainV2.comPort.MAV.param[value];
                             thisctl.Increment = (decimal)0.001;
                             if (thisctl.Name.EndsWith("_P") || thisctl.Name.EndsWith("_I") || thisctl.Name.EndsWith("_D")
                                 || thisctl.Name.EndsWith("_LOW") || thisctl.Name.EndsWith("_HIGH") || thisctl.Value == 0
@@ -216,7 +216,7 @@ namespace ArdupilotMega.GCSViews.ConfigurationView
 
                             ComboBox thisctl = ((ComboBox)ctl);
 
-                            thisctl.SelectedIndex = (int)(float)MainV2.comPort.param[value];
+                            thisctl.SelectedIndex = (int)(float)MainV2.comPort.MAV.param[value];
 
                             thisctl.Validated += new EventHandler(ComboBox_Validated);
                         }
@@ -353,7 +353,7 @@ namespace ArdupilotMega.GCSViews.ConfigurationView
             {
                 ((Button)sender).Enabled = false;
 
-                if ((MainV2.cs.airspeed > 7.0) || (MainV2.cs.groundspeed > 10.0))
+                if ((MainV2.comPort.MAV.cs.airspeed > 7.0) || (MainV2.comPort.MAV.cs.groundspeed > 10.0))
                 {
                     MessageBox.Show("Unable - UAV airborne");
                     ((Button)sender).Enabled = true;
@@ -379,7 +379,7 @@ namespace ArdupilotMega.GCSViews.ConfigurationView
                 if (dr == System.Windows.Forms.DialogResult.Yes)
                 {
 
-                    if ((MainV2.cs.airspeed > 7.0) || (MainV2.cs.groundspeed > 7.0))
+                    if ((MainV2.comPort.MAV.cs.airspeed > 7.0) || (MainV2.comPort.MAV.cs.groundspeed > 7.0))
                     {
                         MessageBox.Show("Unable - UAV airborne");
                         ((Button)sender).Enabled = true;

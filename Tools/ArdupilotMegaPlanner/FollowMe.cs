@@ -57,18 +57,18 @@ namespace ArdupilotMega
 
                 string alt = "100";
 
-                if (MainV2.cs.firmware == MainV2.Firmwares.ArduCopter2)
+                if (MainV2.comPort.MAV.cs.firmware == MainV2.Firmwares.ArduCopter2)
                 {
-                    alt = (10 * MainV2.cs.multiplierdist).ToString("0");
+                    alt = (10 * MainV2.comPort.MAV.cs.multiplierdist).ToString("0");
                 }
                 else
                 {
-                    alt = (100 * MainV2.cs.multiplierdist).ToString("0");
+                    alt = (100 * MainV2.comPort.MAV.cs.multiplierdist).ToString("0");
                 }
                 if (DialogResult.Cancel == Common.InputBox("Enter Alt", "Enter Alt (relative to home alt)", ref alt))
                     return;
 
-                intalt = (int)(100 * MainV2.cs.multiplierdist);
+                intalt = (int)(100 * MainV2.comPort.MAV.cs.multiplierdist);
                 if (!int.TryParse(alt, out intalt))
                 {
                     CustomMessageBox.Show("Bad Alt");
@@ -97,7 +97,7 @@ namespace ArdupilotMega
                 {
                     string line = comPort.ReadLine();
 
-                    //string line = string.Format("$GP{0},{1:HHmmss},{2},{3},{4},{5},{6},{7},{8},{9},{10},{11},{12},{13},", "GGA", DateTime.Now.ToUniversalTime(), Math.Abs(lat * 100), MainV2.cs.lat < 0 ? "S" : "N", Math.Abs(lng * 100), MainV2.cs.lng < 0 ? "W" : "E", MainV2.cs.gpsstatus, MainV2.cs.satcount, MainV2.cs.gpshdop, MainV2.cs.alt, "M", 0, "M", "");
+                    //string line = string.Format("$GP{0},{1:HHmmss},{2},{3},{4},{5},{6},{7},{8},{9},{10},{11},{12},{13},", "GGA", DateTime.Now.ToUniversalTime(), Math.Abs(lat * 100), MainV2.comPort.MAV.cs.lat < 0 ? "S" : "N", Math.Abs(lng * 100), MainV2.comPort.MAV.cs.lng < 0 ? "W" : "E", MainV2.comPort.MAV.cs.gpsstatus, MainV2.comPort.MAV.cs.satcount, MainV2.comPort.MAV.cs.gpshdop, MainV2.comPort.MAV.cs.alt, "M", 0, "M", "");
                     if (line.StartsWith("$GPGGA")) // 
                     {
                         string[] items = line.Trim().Split(',','*');

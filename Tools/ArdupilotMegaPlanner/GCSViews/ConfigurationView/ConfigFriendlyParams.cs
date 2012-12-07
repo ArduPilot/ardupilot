@@ -158,7 +158,7 @@ namespace ArdupilotMega.GCSViews.ConfigurationView
             _params.Clear();
 
             // When the parameter list is changed, re sort the list for our View's purposes
-            MainV2.comPort.param.Keys.ForEach(x =>
+            MainV2.comPort.MAV.param.Keys.ForEach(x =>
             {
                 string displayName = _parameterMetaDataRepository.GetParameterMetaData(x.ToString(), ParameterMetaDataConstants.DisplayName);
                 string parameterMode = _parameterMetaDataRepository.GetParameterMetaData(x.ToString(), ParameterMetaDataConstants.User);
@@ -216,7 +216,7 @@ namespace ArdupilotMega.GCSViews.ConfigurationView
                 {
                     bool controlAdded = false;
 
-                    string value = ((float)MainV2.comPort.param[x.Key]).ToString("0.###", CultureInfo.InvariantCulture);
+                    string value = ((float)MainV2.comPort.MAV.param[x.Key]).ToString("0.###", CultureInfo.InvariantCulture);
                     string description = _parameterMetaDataRepository.GetParameterMetaData(x.Key, ParameterMetaDataConstants.Description);
                     string displayName = x.Value + " (" + x.Key + ")";
                     string units = _parameterMetaDataRepository.GetParameterMetaData(x.Key, ParameterMetaDataConstants.Units);

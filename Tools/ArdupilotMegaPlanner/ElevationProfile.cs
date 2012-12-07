@@ -43,7 +43,7 @@ namespace ArdupilotMega
                 lastloc = loc;
             }
 
-            this.homealt = homealt / MainV2.cs.multiplierdist;
+            this.homealt = homealt / MainV2.comPort.MAV.cs.multiplierdist;
 
             Form frm = Common.LoadingBox("Loading", "Downloading Google Earth Data");
 
@@ -82,7 +82,7 @@ namespace ArdupilotMega
                     a += planloc.GetDistance(lastloc);
                 }
 
-                list1.Add(a, planloc.Alt / MainV2.cs.multiplierdist, 0, planloc.Tag); // homealt
+                list1.Add(a, planloc.Alt / MainV2.comPort.MAV.cs.multiplierdist, 0, planloc.Tag); // homealt
 
                 lastloc = planloc;
                 count++;

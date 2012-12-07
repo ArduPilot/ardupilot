@@ -1,4 +1,34 @@
-﻿* Mission Planner 1.2.22
+﻿* Mission Planner 1.2.26
+move mavlink structure/currentstate around for future mods
+update old firmware git hashs
+mod some error descriptions
+AP_mount camera trigger mod
+modify raw param display with units/range/desc
+add radio support for 868mhz
+update ch7 options
+updated dataflashlog format
+small df log parser mod for bad gps loc
+renable menu to always dock. right click for autohide
+
+* Mission Planner 1.2.25
+fix scaling problem on arducopter config tab. when linking is enabled
+
+* Mission Planner 1.2.24
+failsafe: hide element not needed
+ap_limits back - beta
+add new accel setup - beta
+fix planner config screen exception
+fix quickview desc/units if never been configured
+
+* Mission Planner 1.2.23
+ammend serial dispose on usb devices detach
+add item currentstate item description and units
+ammend battery screen for 3dr power module
+add trackbar zoom to flight data
+add unit desccription
+ammend PREFLIGHT_REBOOT_SHUTDOWN timeout
+
+* Mission Planner 1.2.22
 fix speed modification scale
 fix typo on antenna Tracker
 setup for ThemeManager.cs

@@ -304,30 +304,30 @@ namespace ArdupilotMega
                         ushort pitch = pickchannel(2, JoyChannels[2].axis, false, JoyChannels[2].expo);
 
                         if (getJoystickAxis(1) != Joystick.joystickaxis.None)
-                            MainV2.cs.rcoverridech1 = (ushort)(BOOL_TO_SIGN(JoyChannels[1].reverse) * ((int)(pitch - 1500) - (int)(roll - 1500)) / 2 + 1500);
+                            MainV2.comPort.MAV.cs.rcoverridech1 = (ushort)(BOOL_TO_SIGN(JoyChannels[1].reverse) * ((int)(pitch - 1500) - (int)(roll - 1500)) / 2 + 1500);
                         if (getJoystickAxis(2) != Joystick.joystickaxis.None)
-                            MainV2.cs.rcoverridech2 = (ushort)(BOOL_TO_SIGN(JoyChannels[2].reverse) * ((int)(pitch - 1500) + (int)(roll - 1500)) / 2 + 1500);
+                            MainV2.comPort.MAV.cs.rcoverridech2 = (ushort)(BOOL_TO_SIGN(JoyChannels[2].reverse) * ((int)(pitch - 1500) + (int)(roll - 1500)) / 2 + 1500);
                     }
                     else
                     {
                         if (getJoystickAxis(1) != Joystick.joystickaxis.None)
-                            MainV2.cs.rcoverridech1 = pickchannel(1, JoyChannels[1].axis, JoyChannels[1].reverse, JoyChannels[1].expo);//(ushort)(((int)state.Rz / 65.535) + 1000);
+                            MainV2.comPort.MAV.cs.rcoverridech1 = pickchannel(1, JoyChannels[1].axis, JoyChannels[1].reverse, JoyChannels[1].expo);//(ushort)(((int)state.Rz / 65.535) + 1000);
                         if (getJoystickAxis(2) != Joystick.joystickaxis.None)
-                            MainV2.cs.rcoverridech2 = pickchannel(2, JoyChannels[2].axis, JoyChannels[2].reverse, JoyChannels[2].expo);//(ushort)(((int)state.Y / 65.535) + 1000);
+                            MainV2.comPort.MAV.cs.rcoverridech2 = pickchannel(2, JoyChannels[2].axis, JoyChannels[2].reverse, JoyChannels[2].expo);//(ushort)(((int)state.Y / 65.535) + 1000);
                     }
                     if (getJoystickAxis(3) != Joystick.joystickaxis.None)
-                        MainV2.cs.rcoverridech3 = pickchannel(3, JoyChannels[3].axis, JoyChannels[3].reverse, JoyChannels[3].expo);//(ushort)(1000 - ((int)slider[0] / 65.535) + 1000);
+                        MainV2.comPort.MAV.cs.rcoverridech3 = pickchannel(3, JoyChannels[3].axis, JoyChannels[3].reverse, JoyChannels[3].expo);//(ushort)(1000 - ((int)slider[0] / 65.535) + 1000);
                     if (getJoystickAxis(4) != Joystick.joystickaxis.None)
-                        MainV2.cs.rcoverridech4 = pickchannel(4, JoyChannels[4].axis, JoyChannels[4].reverse, JoyChannels[4].expo);//(ushort)(((int)state.X / 65.535) + 1000);
+                        MainV2.comPort.MAV.cs.rcoverridech4 = pickchannel(4, JoyChannels[4].axis, JoyChannels[4].reverse, JoyChannels[4].expo);//(ushort)(((int)state.X / 65.535) + 1000);
 
                     if (getJoystickAxis(5) != Joystick.joystickaxis.None)
-                        MainV2.cs.rcoverridech5 = pickchannel(5, JoyChannels[5].axis, JoyChannels[5].reverse, JoyChannels[5].expo);
+                        MainV2.comPort.MAV.cs.rcoverridech5 = pickchannel(5, JoyChannels[5].axis, JoyChannels[5].reverse, JoyChannels[5].expo);
                     if (getJoystickAxis(6) != Joystick.joystickaxis.None)
-                        MainV2.cs.rcoverridech6 = pickchannel(6, JoyChannels[6].axis, JoyChannels[6].reverse, JoyChannels[6].expo);
+                        MainV2.comPort.MAV.cs.rcoverridech6 = pickchannel(6, JoyChannels[6].axis, JoyChannels[6].reverse, JoyChannels[6].expo);
                     if (getJoystickAxis(7) != Joystick.joystickaxis.None)
-                        MainV2.cs.rcoverridech7 = pickchannel(7, JoyChannels[7].axis, JoyChannels[7].reverse, JoyChannels[7].expo);
+                        MainV2.comPort.MAV.cs.rcoverridech7 = pickchannel(7, JoyChannels[7].axis, JoyChannels[7].reverse, JoyChannels[7].expo);
                     if (getJoystickAxis(8) != Joystick.joystickaxis.None)
-                        MainV2.cs.rcoverridech8 = pickchannel(8, JoyChannels[8].axis, JoyChannels[8].reverse, JoyChannels[8].expo);
+                        MainV2.comPort.MAV.cs.rcoverridech8 = pickchannel(8, JoyChannels[8].axis, JoyChannels[8].reverse, JoyChannels[8].expo);
 
                     foreach (JoyButton but in JoyButtons)
                     {
@@ -346,7 +346,7 @@ namespace ArdupilotMega
                         }
                     }
 
-                    //Console.WriteLine("{0} {1} {2} {3}", MainV2.cs.rcoverridech1, MainV2.cs.rcoverridech2, MainV2.cs.rcoverridech3, MainV2.cs.rcoverridech4);
+                    //Console.WriteLine("{0} {1} {2} {3}", MainV2.comPort.MAV.cs.rcoverridech1, MainV2.comPort.MAV.cs.rcoverridech2, MainV2.comPort.MAV.cs.rcoverridech3, MainV2.comPort.MAV.cs.rcoverridech4);
                 }
                 catch (Exception ex) { log.Info("Joystick thread error "+ex.ToString()); } // so we cant fall out
             }
@@ -503,13 +503,13 @@ namespace ArdupilotMega
         {
             int min, max, trim = 0;
 
-            if (MainV2.comPort.param.Count > 0)
+            if (MainV2.comPort.MAV.param.Count > 0)
             {
                 try
                 {
-                    min = (int)(float)(MainV2.comPort.param["RC" + chan + "_MIN"]);
-                    max = (int)(float)(MainV2.comPort.param["RC" + chan + "_MAX"]);
-                    trim = (int)(float)(MainV2.comPort.param["RC" + chan + "_TRIM"]);
+                    min = (int)(float)(MainV2.comPort.MAV.param["RC" + chan + "_MIN"]);
+                    max = (int)(float)(MainV2.comPort.MAV.param["RC" + chan + "_MAX"]);
+                    trim = (int)(float)(MainV2.comPort.MAV.param["RC" + chan + "_TRIM"]);
                 }
                 catch {
                     min = 1000;

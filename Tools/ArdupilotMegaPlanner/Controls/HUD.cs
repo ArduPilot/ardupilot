@@ -169,7 +169,7 @@ namespace ArdupilotMega.Controls
             //public float FontSize;
             public string Header;
             public System.Reflection.PropertyInfo Item;
-            public float GetValue { get { return (float)Item.GetValue((object)MainV2.cs, null); } }
+            public float GetValue { get { return (float)Item.GetValue((object)MainV2.comPort.MAV.cs, null); } }
         }
 
         public Hashtable CustomItems = new Hashtable();

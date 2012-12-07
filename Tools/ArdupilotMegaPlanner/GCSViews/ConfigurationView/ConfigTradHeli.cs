@@ -29,9 +29,9 @@ namespace ArdupilotMega.GCSViews.ConfigurationView
                 return;
             try
             {
-                if (MainV2.comPort.param["H_SWASH_TYPE"] == null)
+                if (MainV2.comPort.MAV.param["H_SWASH_TYPE"] == null)
                 {
-                    CustomMessageBox.Show("Not Available on " + MainV2.cs.firmware.ToString());
+                    CustomMessageBox.Show("Not Available on " + MainV2.comPort.MAV.cs.firmware.ToString());
                 }
                 else
                 {
@@ -45,7 +45,7 @@ namespace ArdupilotMega.GCSViews.ConfigurationView
         {
             try
             {
-                if (MainV2.comPort.param["H_SV_MAN"].ToString() == "1")
+                if (MainV2.comPort.MAV.param["H_SV_MAN"].ToString() == "1")
                 {
                     MainV2.comPort.setParam("H_COL_MIN", int.Parse(H_COL_MIN.Text));
                     MainV2.comPort.setParam("H_COL_MAX", int.Parse(H_COL_MAX.Text));
@@ -77,7 +77,7 @@ namespace ArdupilotMega.GCSViews.ConfigurationView
         {
             try
             {
-                if (MainV2.comPort.param["H_SV_MAN"].ToString() == "1")
+                if (MainV2.comPort.MAV.param["H_SV_MAN"].ToString() == "1")
                 {
                     MainV2.comPort.setParam("HS4_MIN", int.Parse(HS4_MIN.Text));
                     MainV2.comPort.setParam("HS4_MAX", int.Parse(HS4_MAX.Text));
@@ -255,9 +255,9 @@ namespace ArdupilotMega.GCSViews.ConfigurationView
             try
             {
 
-                MainV2.comPort.setParam("H_COL_MID", MainV2.cs.ch3in);
+                MainV2.comPort.setParam("H_COL_MID", MainV2.comPort.MAV.cs.ch3in);
 
-                H_COL_MID.Text = MainV2.comPort.param["H_COL_MID"].ToString();
+                H_COL_MID.Text = MainV2.comPort.MAV.param["H_COL_MID"].ToString();
             }
             catch { CustomMessageBox.Show("Set H_COL_MID failed"); }
         }
@@ -371,7 +371,7 @@ namespace ArdupilotMega.GCSViews.ConfigurationView
         public void Activate()
         {
 
-            if (MainV2.comPort.param["H_GYR_ENABLE"] == null)
+            if (MainV2.comPort.MAV.param["H_GYR_ENABLE"] == null)
             {
                 this.Enabled = false;
                 return;
@@ -383,26 +383,26 @@ namespace ArdupilotMega.GCSViews.ConfigurationView
             timer.Interval = 100;
             timer.Start();
 
-            mavlinkNumericUpDown1min.setup(800,1400,1,1,"HS1_MIN",MainV2.comPort.param);
-            mavlinkNumericUpDown1max.setup(1600,2200,1,1,"HS1_MAX",MainV2.comPort.param);
-            mavlinkNumericUpDown2min.setup(800, 1400, 1, 1, "HS2_MIN", MainV2.comPort.param);
-            mavlinkNumericUpDown2max.setup(1600, 2200, 1, 1, "HS2_MAX", MainV2.comPort.param);
-            mavlinkNumericUpDown3min.setup(800, 1400, 1, 1, "HS3_MIN", MainV2.comPort.param);
-            mavlinkNumericUpDown3max.setup(1600, 2200, 1, 1, "HS3_MAX", MainV2.comPort.param);
+            mavlinkNumericUpDown1min.setup(800,1400,1,1,"HS1_MIN",MainV2.comPort.MAV.param);
+            mavlinkNumericUpDown1max.setup(1600,2200,1,1,"HS1_MAX",MainV2.comPort.MAV.param);
+            mavlinkNumericUpDown2min.setup(800, 1400, 1, 1, "HS2_MIN", MainV2.comPort.MAV.param);
+            mavlinkNumericUpDown2max.setup(1600, 2200, 1, 1, "HS2_MAX", MainV2.comPort.MAV.param);
+            mavlinkNumericUpDown3min.setup(800, 1400, 1, 1, "HS3_MIN", MainV2.comPort.MAV.param);
+            mavlinkNumericUpDown3max.setup(1600, 2200, 1, 1, "HS3_MAX", MainV2.comPort.MAV.param);
 
-            mavlinkNumericUpDownpitchmax.setup(10, 65, 100, 1, "H_PIT_MAX", MainV2.comPort.param);
-            mavlinkNumericUpDownrollmax.setup(10, 65, 100, 1, "H_ROL_MAX", MainV2.comPort.param);
+            mavlinkNumericUpDownpitchmax.setup(10, 65, 100, 1, "H_PIT_MAX", MainV2.comPort.MAV.param);
+            mavlinkNumericUpDownrollmax.setup(10, 65, 100, 1, "H_ROL_MAX", MainV2.comPort.MAV.param);
 
             startup = true;
             try
             {
-                if (MainV2.comPort.param.ContainsKey("H_SWASH_TYPE"))
+                if (MainV2.comPort.MAV.param.ContainsKey("H_SWASH_TYPE"))
                 {
-                    CCPM.Checked = MainV2.comPort.param["H_SWASH_TYPE"].ToString() == "0" ? true : false;
+                    CCPM.Checked = MainV2.comPort.MAV.param["H_SWASH_TYPE"].ToString() == "0" ? true : false;
                     H_SWASH_TYPE.Checked = !CCPM.Checked;
                 }
 
-                foreach (string value in MainV2.comPort.param.Keys)
+                foreach (string value in MainV2.comPort.MAV.param.Keys)
                 {
                     if (value == "")
                         continue;
@@ -413,34 +413,34 @@ namespace ArdupilotMega.GCSViews.ConfigurationView
                         if (control[0].GetType() == typeof(TextBox))
                         {
                             TextBox temp = (TextBox)control[0];
-                            string option = MainV2.comPort.param[value].ToString();
+                            string option = MainV2.comPort.MAV.param[value].ToString();
                             temp.Text = option;
                         }
                         if (control[0].GetType() == typeof(NumericUpDown))
                         {
                             NumericUpDown temp = (NumericUpDown)control[0];
-                            string option = MainV2.comPort.param[value].ToString();
+                            string option = MainV2.comPort.MAV.param[value].ToString();
                             temp.Text = option;
                         }
                         if (control[0].GetType() == typeof(CheckBox))
                         {
                             CheckBox temp = (CheckBox)control[0];
-                            string option = MainV2.comPort.param[value].ToString();
+                            string option = MainV2.comPort.MAV.param[value].ToString();
                             temp.Checked = option == "1" ? true : false;
                         }
                         if (control[0].GetType() == typeof(MyTrackBar))
                         {
                             ArdupilotMega.Controls.MyTrackBar temp = (MyTrackBar)control[0];
-                            string option = MainV2.comPort.param[value].ToString();
+                            string option = MainV2.comPort.MAV.param[value].ToString();
                             temp.Value = int.Parse(option);
                         }
                     }
                 }
 
-                HS1_REV.Checked = MainV2.comPort.param["HS1_REV"].ToString() == "-1";
-                HS2_REV.Checked = MainV2.comPort.param["HS2_REV"].ToString() == "-1";
-                HS3_REV.Checked = MainV2.comPort.param["HS3_REV"].ToString() == "-1";
-                HS4_REV.Checked = MainV2.comPort.param["HS4_REV"].ToString() == "-1";
+                HS1_REV.Checked = MainV2.comPort.MAV.param["HS1_REV"].ToString() == "-1";
+                HS2_REV.Checked = MainV2.comPort.MAV.param["HS2_REV"].ToString() == "-1";
+                HS3_REV.Checked = MainV2.comPort.MAV.param["HS3_REV"].ToString() == "-1";
+                HS4_REV.Checked = MainV2.comPort.MAV.param["HS4_REV"].ToString() == "-1";
 
             }
             catch { }
@@ -451,11 +451,11 @@ namespace ArdupilotMega.GCSViews.ConfigurationView
         {
             try
             {
-                MainV2.cs.UpdateCurrentSettings(currentStateBindingSource);
+                MainV2.comPort.MAV.cs.UpdateCurrentSettings(currentStateBindingSource);
             }
             catch { }
 
-            if (MainV2.comPort.param["H_SV_MAN"] == null || MainV2.comPort.param["H_SV_MAN"].ToString() == "0")
+            if (MainV2.comPort.MAV.param["H_SV_MAN"] == null || MainV2.comPort.MAV.param["H_SV_MAN"].ToString() == "0")
                 return;
 
             if (HS3.minline == 0)
@@ -464,11 +464,11 @@ namespace ArdupilotMega.GCSViews.ConfigurationView
             if (HS4.minline == 0)
                 HS4.minline = 2200;
 
-            HS3.minline = Math.Min(HS3.minline, (int)MainV2.cs.ch3in);
-            HS3.maxline = Math.Max(HS3.maxline, (int)MainV2.cs.ch3in);
+            HS3.minline = Math.Min(HS3.minline, (int)MainV2.comPort.MAV.cs.ch3in);
+            HS3.maxline = Math.Max(HS3.maxline, (int)MainV2.comPort.MAV.cs.ch3in);
 
-            HS4.minline = Math.Min(HS4.minline, (int)MainV2.cs.ch4in);
-            HS4.maxline = Math.Max(HS4.maxline, (int)MainV2.cs.ch4in);
+            HS4.minline = Math.Min(HS4.minline, (int)MainV2.comPort.MAV.cs.ch4in);
+            HS4.maxline = Math.Max(HS4.maxline, (int)MainV2.comPort.MAV.cs.ch4in);
 
             if (!inpwmdetect)
             {

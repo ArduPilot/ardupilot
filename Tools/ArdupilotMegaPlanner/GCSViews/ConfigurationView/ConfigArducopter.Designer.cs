@@ -30,12 +30,9 @@
         {
             this.components = new System.ComponentModel.Container();
             System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(ConfigArducopter));
-            this.myLabel3 = new ArdupilotMega.Controls.MyLabel();
             this.TUNE_LOW = new System.Windows.Forms.NumericUpDown();
             this.TUNE_HIGH = new System.Windows.Forms.NumericUpDown();
-            this.myLabel2 = new ArdupilotMega.Controls.MyLabel();
             this.TUNE = new System.Windows.Forms.ComboBox();
-            this.myLabel1 = new ArdupilotMega.Controls.MyLabel();
             this.CH7_OPT = new System.Windows.Forms.ComboBox();
             this.groupBox5 = new System.Windows.Forms.GroupBox();
             this.THR_RATE_D = new System.Windows.Forms.NumericUpDown();
@@ -126,8 +123,6 @@
             this.RATE_RLL_P = new System.Windows.Forms.NumericUpDown();
             this.label91 = new System.Windows.Forms.Label();
             this.toolTip1 = new System.Windows.Forms.ToolTip(this.components);
-            this.BUT_writePIDS = new ArdupilotMega.Controls.MyButton();
-            this.BUT_rerequestparams = new ArdupilotMega.Controls.MyButton();
             this.groupBox1 = new System.Windows.Forms.GroupBox();
             this.LOITER_LAT_D = new System.Windows.Forms.NumericUpDown();
             this.label1 = new System.Windows.Forms.Label();
@@ -137,6 +132,11 @@
             this.label3 = new System.Windows.Forms.Label();
             this.LOITER_LAT_P = new System.Windows.Forms.NumericUpDown();
             this.label4 = new System.Windows.Forms.Label();
+            this.BUT_rerequestparams = new ArdupilotMega.Controls.MyButton();
+            this.BUT_writePIDS = new ArdupilotMega.Controls.MyButton();
+            this.myLabel3 = new ArdupilotMega.Controls.MyLabel();
+            this.myLabel2 = new ArdupilotMega.Controls.MyLabel();
+            this.myLabel1 = new ArdupilotMega.Controls.MyLabel();
             ((System.ComponentModel.ISupportInitialize)(this.TUNE_LOW)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.TUNE_HIGH)).BeginInit();
             this.groupBox5.SuspendLayout();
@@ -195,12 +195,6 @@
             ((System.ComponentModel.ISupportInitialize)(this.LOITER_LAT_P)).BeginInit();
             this.SuspendLayout();
             // 
-            // myLabel3
-            // 
-            resources.ApplyResources(this.myLabel3, "myLabel3");
-            this.myLabel3.Name = "myLabel3";
-            this.myLabel3.resize = false;
-            // 
             // TUNE_LOW
             // 
             resources.ApplyResources(this.TUNE_LOW, "TUNE_LOW");
@@ -211,63 +205,19 @@
             resources.ApplyResources(this.TUNE_HIGH, "TUNE_HIGH");
             this.TUNE_HIGH.Name = "TUNE_HIGH";
             // 
-            // myLabel2
-            // 
-            resources.ApplyResources(this.myLabel2, "myLabel2");
-            this.myLabel2.Name = "myLabel2";
-            this.myLabel2.resize = false;
-            // 
             // TUNE
             // 
             this.TUNE.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
             this.TUNE.DropDownWidth = 150;
             this.TUNE.FormattingEnabled = true;
-            this.TUNE.Items.AddRange(new object[] {
-            resources.GetString("TUNE.Items"),
-            resources.GetString("TUNE.Items1"),
-            resources.GetString("TUNE.Items2"),
-            resources.GetString("TUNE.Items3"),
-            resources.GetString("TUNE.Items4"),
-            resources.GetString("TUNE.Items5"),
-            resources.GetString("TUNE.Items6"),
-            resources.GetString("TUNE.Items7"),
-            resources.GetString("TUNE.Items8"),
-            resources.GetString("TUNE.Items9"),
-            resources.GetString("TUNE.Items10"),
-            resources.GetString("TUNE.Items11"),
-            resources.GetString("TUNE.Items12"),
-            resources.GetString("TUNE.Items13"),
-            resources.GetString("TUNE.Items14"),
-            resources.GetString("TUNE.Items15"),
-            resources.GetString("TUNE.Items16"),
-            resources.GetString("TUNE.Items17"),
-            resources.GetString("TUNE.Items18"),
-            resources.GetString("TUNE.Items19"),
-            resources.GetString("TUNE.Items20"),
-            resources.GetString("TUNE.Items21")});
             resources.ApplyResources(this.TUNE, "TUNE");
             this.TUNE.Name = "TUNE";
-            // 
-            // myLabel1
-            // 
-            resources.ApplyResources(this.myLabel1, "myLabel1");
-            this.myLabel1.Name = "myLabel1";
-            this.myLabel1.resize = false;
             // 
             // CH7_OPT
             // 
             this.CH7_OPT.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
             this.CH7_OPT.DropDownWidth = 150;
             this.CH7_OPT.FormattingEnabled = true;
-            this.CH7_OPT.Items.AddRange(new object[] {
-            resources.GetString("CH7_OPT.Items"),
-            resources.GetString("CH7_OPT.Items1"),
-            resources.GetString("CH7_OPT.Items2"),
-            resources.GetString("CH7_OPT.Items3"),
-            resources.GetString("CH7_OPT.Items4"),
-            resources.GetString("CH7_OPT.Items5"),
-            resources.GetString("CH7_OPT.Items6"),
-            resources.GetString("CH7_OPT.Items7")});
             resources.ApplyResources(this.CH7_OPT, "CH7_OPT");
             this.CH7_OPT.Name = "CH7_OPT";
             // 
@@ -812,20 +762,6 @@
             this.toolTip1.InitialDelay = 500;
             this.toolTip1.ReshowDelay = 100;
             // 
-            // BUT_writePIDS
-            // 
-            resources.ApplyResources(this.BUT_writePIDS, "BUT_writePIDS");
-            this.BUT_writePIDS.Name = "BUT_writePIDS";
-            this.BUT_writePIDS.UseVisualStyleBackColor = true;
-            this.BUT_writePIDS.Click += new System.EventHandler(this.BUT_writePIDS_Click);
-            // 
-            // BUT_rerequestparams
-            // 
-            resources.ApplyResources(this.BUT_rerequestparams, "BUT_rerequestparams");
-            this.BUT_rerequestparams.Name = "BUT_rerequestparams";
-            this.BUT_rerequestparams.UseVisualStyleBackColor = true;
-            this.BUT_rerequestparams.Click += new System.EventHandler(this.BUT_rerequestparams_Click);
-            // 
             // groupBox1
             // 
             this.groupBox1.Controls.Add(this.LOITER_LAT_D);
@@ -879,6 +815,38 @@
             // 
             resources.ApplyResources(this.label4, "label4");
             this.label4.Name = "label4";
+            // 
+            // BUT_rerequestparams
+            // 
+            resources.ApplyResources(this.BUT_rerequestparams, "BUT_rerequestparams");
+            this.BUT_rerequestparams.Name = "BUT_rerequestparams";
+            this.BUT_rerequestparams.UseVisualStyleBackColor = true;
+            this.BUT_rerequestparams.Click += new System.EventHandler(this.BUT_rerequestparams_Click);
+            // 
+            // BUT_writePIDS
+            // 
+            resources.ApplyResources(this.BUT_writePIDS, "BUT_writePIDS");
+            this.BUT_writePIDS.Name = "BUT_writePIDS";
+            this.BUT_writePIDS.UseVisualStyleBackColor = true;
+            this.BUT_writePIDS.Click += new System.EventHandler(this.BUT_writePIDS_Click);
+            // 
+            // myLabel3
+            // 
+            resources.ApplyResources(this.myLabel3, "myLabel3");
+            this.myLabel3.Name = "myLabel3";
+            this.myLabel3.resize = false;
+            // 
+            // myLabel2
+            // 
+            resources.ApplyResources(this.myLabel2, "myLabel2");
+            this.myLabel2.Name = "myLabel2";
+            this.myLabel2.resize = false;
+            // 
+            // myLabel1
+            // 
+            resources.ApplyResources(this.myLabel1, "myLabel1");
+            this.myLabel1.Name = "myLabel1";
+            this.myLabel1.resize = false;
             // 
             // ConfigArducopter
             // 

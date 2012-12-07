@@ -15,6 +15,7 @@ namespace ArdupilotMega.GCSViews.ConfigurationView
     {
         // remember the last page accessed
         static string lastpagename = "";
+        public static Controls.FlashMessage flashMessage = new Controls.FlashMessage();
 
         BackstageView.BackstageViewPage hardware;
         BackstageView.BackstageViewPage standardpage;
@@ -24,6 +25,7 @@ namespace ArdupilotMega.GCSViews.ConfigurationView
         {
             InitializeComponent();
             ThemeManager.ApplyThemeTo(this);
+            this.Controls.Add(flashMessage);
         }
 
         private void Setup_Load(object sender, EventArgs e)
@@ -70,7 +72,7 @@ If you are just setting up 3DR radios, you may continue without connecting.");
         {
             /****************************** Common  **************************/
 
-            if ((MainV2.cs.firmware == MainV2.Firmwares.ArduCopter2) || (MainV2.cs.firmware == MainV2.Firmwares.ArduPlane) || (MainV2.cs.firmware == MainV2.Firmwares.ArduRover))
+            if ((MainV2.comPort.MAV.cs.firmware == MainV2.Firmwares.ArduCopter2) || (MainV2.comPort.MAV.cs.firmware == MainV2.Firmwares.ArduPlane) || (MainV2.comPort.MAV.cs.firmware == MainV2.Firmwares.ArduRover))
             {
                 AddBackstageViewPage(new ConfigRadioInput(), "Radio Calibration");
                 AddBackstageViewPage(new ConfigFlightModes(), "Flight Modes");
@@ -79,7 +81,7 @@ If you are just setting up 3DR radios, you may continue without connecting.");
                 AddBackstageViewPage(new ConfigBatteryMonitoring(), "Battery Monitor", hardware);
             }
 
-            if ((MainV2.cs.firmware == MainV2.Firmwares.ArduCopter2) || (MainV2.cs.firmware == MainV2.Firmwares.ArduPlane) || (MainV2.cs.firmware == MainV2.Firmwares.ArduRover))
+            if ((MainV2.comPort.MAV.cs.firmware == MainV2.Firmwares.ArduCopter2) || (MainV2.comPort.MAV.cs.firmware == MainV2.Firmwares.ArduPlane) || (MainV2.comPort.MAV.cs.firmware == MainV2.Firmwares.ArduRover))
             {
                 standardpage = AddBackstageViewPage(new ConfigFriendlyParams { ParameterMode = ParameterMetaDataConstants.Standard }, "Standard Params");
                 advancedpage = AddBackstageViewPage(new ConfigFriendlyParams { ParameterMode = ParameterMetaDataConstants.Advanced }, "Advanced Params");
@@ -87,8 +89,10 @@ If you are just setting up 3DR radios, you may continue without connecting.");
             AddBackstageViewPage(new ConfigRawParams(), "Adv Parameter List", advancedpage);
 
             /******************************HELI **************************/
-            if (MainV2.comPort.param["H_GYR_ENABLE"] != null) // heli
+            if (MainV2.comPort.MAV.param["H_GYR_ENABLE"] != null) // heli
             {
+              //  AddBackstageViewPage(new ConfigSignalization(), "Signalization", hardware);
+
                 AddBackstageViewPage(new ConfigMount(), "Camera Gimbal", hardware);
 
                 AddBackstageViewPage(new ConfigAccelerometerCalibrationQuad(), "ArduCopter Level");
@@ -102,8 +106,10 @@ If you are just setting up 3DR radios, you may continue without connecting.");
                // AddBackstageViewPage(new ConfigAP_Limits(), "GeoFence");
             }
                 /****************************** ArduCopter **************************/
-            else if (MainV2.cs.firmware == MainV2.Firmwares.ArduCopter2)
+            else if (MainV2.comPort.MAV.cs.firmware == MainV2.Firmwares.ArduCopter2)
             {
+              //  AddBackstageViewPage(new ConfigSignalization(), "Signalization", hardware);
+
                 AddBackstageViewPage(new ConfigMount(), "Camera Gimbal", hardware);
 
                 AddBackstageViewPage(new ConfigAccelerometerCalibrationQuad(), "ArduCopter Level");
@@ -115,7 +121,7 @@ If you are just setting up 3DR radios, you may continue without connecting.");
                 AddBackstageViewPage(new ConfigAP_Limits(), "GeoFence");
             }
                 /****************************** ArduPlane **************************/
-            else if (MainV2.cs.firmware == MainV2.Firmwares.ArduPlane)
+            else if (MainV2.comPort.MAV.cs.firmware == MainV2.Firmwares.ArduPlane)
             {
                 AddBackstageViewPage(new ConfigMount(), "Camera Gimbal", hardware);
 
@@ -123,12 +129,12 @@ If you are just setting up 3DR radios, you may continue without connecting.");
                 AddBackstageViewPage(new ConfigArduplane(), "ArduPlane Pids", standardpage);
             }
                 /****************************** ArduRover **************************/
-            else if (MainV2.cs.firmware == MainV2.Firmwares.ArduRover)
+            else if (MainV2.comPort.MAV.cs.firmware == MainV2.Firmwares.ArduRover)
             {
                 //AddBackstageViewPage(new ConfigAccelerometerCalibrationPlane(), "ArduRover Level"));
                 AddBackstageViewPage(new ConfigArdurover(), "ArduRover Pids", standardpage);
             }
-            else if (MainV2.cs.firmware == MainV2.Firmwares.Ateryx)
+            else if (MainV2.comPort.MAV.cs.firmware == MainV2.Firmwares.Ateryx)
             {
 
                 AddBackstageViewPage(new ConfigAteryxSensors(), "Ateryx Zero Sensors");

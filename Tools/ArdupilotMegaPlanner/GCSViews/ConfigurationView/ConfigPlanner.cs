@@ -332,10 +332,10 @@ namespace ArdupilotMega.GCSViews.ConfigurationView
             if (startup)
                 return;
             MainV2.config[((ComboBox)sender).Name] = ((ComboBox)sender).Text;
-            MainV2.cs.rateattitude = byte.Parse(((ComboBox)sender).Text);
+            MainV2.comPort.MAV.cs.rateattitude = byte.Parse(((ComboBox)sender).Text);
 
-            MainV2.comPort.requestDatastream((byte)ArdupilotMega.MAVLink.MAV_DATA_STREAM.EXTRA1, MainV2.cs.rateattitude); // request attitude
-            MainV2.comPort.requestDatastream((byte)ArdupilotMega.MAVLink.MAV_DATA_STREAM.EXTRA2, MainV2.cs.rateattitude); // request vfr
+            MainV2.comPort.requestDatastream((byte)ArdupilotMega.MAVLink.MAV_DATA_STREAM.EXTRA1, MainV2.comPort.MAV.cs.rateattitude); // request attitude
+            MainV2.comPort.requestDatastream((byte)ArdupilotMega.MAVLink.MAV_DATA_STREAM.EXTRA2, MainV2.comPort.MAV.cs.rateattitude); // request vfr
         }
 
         private void CMB_rateposition_SelectedIndexChanged(object sender, EventArgs e)
@@ -343,9 +343,9 @@ namespace ArdupilotMega.GCSViews.ConfigurationView
             if (startup)
                 return;
             MainV2.config[((ComboBox)sender).Name] = ((ComboBox)sender).Text;
-            MainV2.cs.rateposition = byte.Parse(((ComboBox)sender).Text);
+            MainV2.comPort.MAV.cs.rateposition = byte.Parse(((ComboBox)sender).Text);
 
-            MainV2.comPort.requestDatastream((byte)ArdupilotMega.MAVLink.MAV_DATA_STREAM.POSITION, MainV2.cs.rateposition); // request gps
+            MainV2.comPort.requestDatastream((byte)ArdupilotMega.MAVLink.MAV_DATA_STREAM.POSITION, MainV2.comPort.MAV.cs.rateposition); // request gps
         }
 
         private void CMB_ratestatus_SelectedIndexChanged(object sender, EventArgs e)
@@ -353,9 +353,9 @@ namespace ArdupilotMega.GCSViews.ConfigurationView
             if (startup)
                 return;
             MainV2.config[((ComboBox)sender).Name] = ((ComboBox)sender).Text;
-            MainV2.cs.ratestatus = byte.Parse(((ComboBox)sender).Text);
+            MainV2.comPort.MAV.cs.ratestatus = byte.Parse(((ComboBox)sender).Text);
 
-            MainV2.comPort.requestDatastream((byte)ArdupilotMega.MAVLink.MAV_DATA_STREAM.EXTENDED_STATUS, MainV2.cs.ratestatus); // mode
+            MainV2.comPort.requestDatastream((byte)ArdupilotMega.MAVLink.MAV_DATA_STREAM.EXTENDED_STATUS, MainV2.comPort.MAV.cs.ratestatus); // mode
         }
 
         private void CMB_raterc_SelectedIndexChanged(object sender, EventArgs e)
@@ -363,9 +363,9 @@ namespace ArdupilotMega.GCSViews.ConfigurationView
             if (startup)
                 return;
             MainV2.config[((ComboBox)sender).Name] = ((ComboBox)sender).Text;
-            MainV2.cs.raterc = byte.Parse(((ComboBox)sender).Text);
+            MainV2.comPort.MAV.cs.raterc = byte.Parse(((ComboBox)sender).Text);
 
-            MainV2.comPort.requestDatastream((byte)ArdupilotMega.MAVLink.MAV_DATA_STREAM.RC_CHANNELS, MainV2.cs.raterc); // request rc info 
+            MainV2.comPort.requestDatastream((byte)ArdupilotMega.MAVLink.MAV_DATA_STREAM.RC_CHANNELS, MainV2.comPort.MAV.cs.raterc); // request rc info 
         }
 
         private void CMB_ratesensors_SelectedIndexChanged(object sender, EventArgs e)
@@ -373,10 +373,10 @@ namespace ArdupilotMega.GCSViews.ConfigurationView
             if (startup)
                 return;
             MainV2.config[((ComboBox)sender).Name] = ((ComboBox)sender).Text;
-            MainV2.cs.ratesensors = byte.Parse(((ComboBox)sender).Text);
+            MainV2.comPort.MAV.cs.ratesensors = byte.Parse(((ComboBox)sender).Text);
 
-            MainV2.comPort.requestDatastream((byte)ArdupilotMega.MAVLink.MAV_DATA_STREAM.EXTRA3, MainV2.cs.ratesensors); // request extra stuff - tridge
-            MainV2.comPort.requestDatastream((byte)ArdupilotMega.MAVLink.MAV_DATA_STREAM.RAW_SENSORS, MainV2.cs.ratesensors); // request raw sensor
+            MainV2.comPort.requestDatastream((byte)ArdupilotMega.MAVLink.MAV_DATA_STREAM.EXTRA3, MainV2.comPort.MAV.cs.ratesensors); // request extra stuff - tridge
+            MainV2.comPort.requestDatastream((byte)ArdupilotMega.MAVLink.MAV_DATA_STREAM.RAW_SENSORS, MainV2.comPort.MAV.cs.ratesensors); // request raw sensor
         }
 
         private void CHK_mavdebug_CheckedChanged(object sender, EventArgs e)
@@ -407,7 +407,7 @@ namespace ArdupilotMega.GCSViews.ConfigurationView
                 if (MainV2.config["speechaltheight"] != null)
                     speechstring = MainV2.config["speechaltheight"].ToString();
                 Common.InputBox("Min Alt", "What altitude do you want to warn at? (relative to home)", ref speechstring);
-                MainV2.config["speechaltheight"] = (double.Parse(speechstring) / MainV2.cs.multiplierdist).ToString(); // save as m
+                MainV2.config["speechaltheight"] = (double.Parse(speechstring) / MainV2.comPort.MAV.cs.multiplierdist).ToString(); // save as m
 
             }
         }
@@ -555,11 +555,11 @@ namespace ArdupilotMega.GCSViews.ConfigurationView
             // setup other config state
             SetCheckboxFromConfig("CHK_resetapmonconnect", CHK_resetapmonconnect);
 
-            CMB_rateattitude.Text = MainV2.cs.rateattitude.ToString();
-            CMB_rateposition.Text = MainV2.cs.rateposition.ToString();
-            CMB_raterc.Text = MainV2.cs.raterc.ToString();
-            CMB_ratestatus.Text = MainV2.cs.ratestatus.ToString();
-            CMB_ratesensors.Text = MainV2.cs.ratesensors.ToString();
+            CMB_rateattitude.Text = MainV2.comPort.MAV.cs.rateattitude.ToString();
+            CMB_rateposition.Text = MainV2.comPort.MAV.cs.rateposition.ToString();
+            CMB_raterc.Text = MainV2.comPort.MAV.cs.raterc.ToString();
+            CMB_ratestatus.Text = MainV2.comPort.MAV.cs.ratestatus.ToString();
+            CMB_ratesensors.Text = MainV2.comPort.MAV.cs.ratesensors.ToString();
 
             SetCheckboxFromConfig("CHK_GDIPlus", CHK_GDIPlus);
             SetCheckboxFromConfig("CHK_maprotation", CHK_maprotation);

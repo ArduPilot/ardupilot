@@ -130,6 +130,15 @@
       <F17>INS Lat Vel</F17>
       <F18>INS Lon Vel</F18>
     </INAV>
+    <CAMERA>
+      <F1>Time</F1>
+      <F2>Lat</F2>
+      <F3>Lon</F3>
+      <F4>Alt</F4>
+      <F5>Roll</F5>
+      <F6>Pitch</F6>
+      <F7>Yaw</F7>
+    </CAMERA>
     <PID-1>
       <F1>Err</F1>
       <F2>P</F2>

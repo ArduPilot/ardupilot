@@ -201,29 +201,29 @@ namespace ArdupilotMega
                 double width = (MainMap.Manager.GetDistance(MainMap.FromLocalToLatLng(0, 0), MainMap.FromLocalToLatLng(MainMap.Width, 0)) * 1000.0);
                 double m2pixelwidth = MainMap.Width / width;
 
-                float alpha = ((desired_lead_dist * (float)m2pixelwidth) / MainV2.cs.radius) * rad2deg;
+                float alpha = ((desired_lead_dist * (float)m2pixelwidth) / MainV2.comPort.MAV.cs.radius) * rad2deg;
 
-                if (MainV2.cs.radius < -1)
+                if (MainV2.comPort.MAV.cs.radius < -1)
                 {
                     // fixme 
 
-                    float p1 = (float)Math.Cos((cog) * deg2rad) * MainV2.cs.radius + MainV2.cs.radius;
+                    float p1 = (float)Math.Cos((cog) * deg2rad) * MainV2.comPort.MAV.cs.radius + MainV2.comPort.MAV.cs.radius;
 
-                    float p2 = (float)Math.Sin((cog) * deg2rad) * MainV2.cs.radius + MainV2.cs.radius;
+                    float p2 = (float)Math.Sin((cog) * deg2rad) * MainV2.comPort.MAV.cs.radius + MainV2.comPort.MAV.cs.radius;
 
-                    g.DrawArc(new Pen(Color.HotPink, 2), p1, p2, Math.Abs(MainV2.cs.radius) * 2, Math.Abs(MainV2.cs.radius) * 2, cog, alpha);
+                    g.DrawArc(new Pen(Color.HotPink, 2), p1, p2, Math.Abs(MainV2.comPort.MAV.cs.radius) * 2, Math.Abs(MainV2.comPort.MAV.cs.radius) * 2, cog, alpha);
 
                 }
 
-                else if (MainV2.cs.radius > 1)
+                else if (MainV2.comPort.MAV.cs.radius > 1)
                 {
                     // correct
 
-                    float p1 = (float)Math.Cos((cog - 180) * deg2rad) * MainV2.cs.radius + MainV2.cs.radius;
+                    float p1 = (float)Math.Cos((cog - 180) * deg2rad) * MainV2.comPort.MAV.cs.radius + MainV2.comPort.MAV.cs.radius;
 
-                    float p2 = (float)Math.Sin((cog - 180) * deg2rad) * MainV2.cs.radius + MainV2.cs.radius;
+                    float p2 = (float)Math.Sin((cog - 180) * deg2rad) * MainV2.comPort.MAV.cs.radius + MainV2.comPort.MAV.cs.radius;
 
-                    g.DrawArc(new Pen(Color.HotPink, 2), -p1, -p2, MainV2.cs.radius * 2, MainV2.cs.radius * 2, cog - 180, alpha);
+                    g.DrawArc(new Pen(Color.HotPink, 2), -p1, -p2, MainV2.comPort.MAV.cs.radius * 2, MainV2.comPort.MAV.cs.radius * 2, cog - 180, alpha);
                 }
 
             }
@@ -543,20 +543,18 @@ namespace ArdupilotMega
         {
             [DisplayText("Do Nothing")]
             CH7_DO_NOTHING = 0,
-            [DisplayText("Set Hover")]
-            CH7_SET_HOVER = 1,
             [DisplayText("Flip")]
             CH7_FLIP = 2,
             [DisplayText("Simple Mode")]
             CH7_SIMPLE_MODE = 3,
             [DisplayText("Return to Launch")]
             CH7_RTL = 4,
-            [DisplayText("Automatic Trim")]
+            [DisplayText("Save Trim")]
             CH7_AUTO_TRIM = 5,
-            [DisplayText("ADC Filter")]
-            CH7_ADC_FILTER = 6,
             [DisplayText("Save Waypoint")]
-            CH7_SAVE_WP = 7
+            CH7_SAVE_WP = 7,
+             [DisplayText("Camera Trigger")]
+            CH7_CAMERA_TRIGGER = 9
         }
 
         public enum ac2ch6modes
@@ -699,15 +697,15 @@ namespace ArdupilotMega
         
         public static Type getModes()
         {
-            if (MainV2.cs.firmware == MainV2.Firmwares.ArduPlane)
+            if (MainV2.comPort.MAV.cs.firmware == MainV2.Firmwares.ArduPlane)
             {
                 return typeof(apmmodes);
             }
-            else if (MainV2.cs.firmware == MainV2.Firmwares.ArduCopter2)
+            else if (MainV2.comPort.MAV.cs.firmware == MainV2.Firmwares.ArduCopter2)
             {
                 return typeof(ac2modes);
             }
-            else if (MainV2.cs.firmware == MainV2.Firmwares.ArduRover)
+            else if (MainV2.comPort.MAV.cs.firmware == MainV2.Firmwares.ArduRover)
             {
                 return typeof(aprovermodes);
             }
@@ -717,17 +715,17 @@ namespace ArdupilotMega
 
         public static List<KeyValuePair<int,string>> getModesList()
         {
-            if (MainV2.cs.firmware == MainV2.Firmwares.ArduPlane)
+            if (MainV2.comPort.MAV.cs.firmware == MainV2.Firmwares.ArduPlane)
             {
                 var flightModes = EnumTranslator.Translate<apmmodes>();
                 return flightModes.ToList();
             }
-            else if (MainV2.cs.firmware == MainV2.Firmwares.ArduCopter2)
+            else if (MainV2.comPort.MAV.cs.firmware == MainV2.Firmwares.ArduCopter2)
             {
                 var flightModes = EnumTranslator.Translate<ac2modes>();
                 return flightModes.ToList();
             }
-            else if (MainV2.cs.firmware == MainV2.Firmwares.ArduRover)
+            else if (MainV2.comPort.MAV.cs.firmware == MainV2.Firmwares.ArduRover)
             {
                 var flightModes = EnumTranslator.Translate<aprovermodes>();
                 return flightModes.ToList();
@@ -897,26 +895,26 @@ namespace ArdupilotMega
 
         public static string speechConversion(string input)
         {
-            if (MainV2.cs.wpno == 0)
+            if (MainV2.comPort.MAV.cs.wpno == 0)
             {
                 input = input.Replace("{wpn}", "Home");
             }
             else
             {
-                input = input.Replace("{wpn}", MainV2.cs.wpno.ToString());
+                input = input.Replace("{wpn}", MainV2.comPort.MAV.cs.wpno.ToString());
             }
 
-            input = input.Replace("{asp}", MainV2.cs.airspeed.ToString("0"));
+            input = input.Replace("{asp}", MainV2.comPort.MAV.cs.airspeed.ToString("0"));
 
-            input = input.Replace("{alt}", MainV2.cs.alt.ToString("0"));
+            input = input.Replace("{alt}", MainV2.comPort.MAV.cs.alt.ToString("0"));
 
-            input = input.Replace("{wpa}", MainV2.cs.targetalt.ToString("0"));
+            input = input.Replace("{wpa}", MainV2.comPort.MAV.cs.targetalt.ToString("0"));
 
-            input = input.Replace("{gsp}", MainV2.cs.groundspeed.ToString("0"));
+            input = input.Replace("{gsp}", MainV2.comPort.MAV.cs.groundspeed.ToString("0"));
 
-            input = input.Replace("{mode}", MainV2.cs.mode.ToString());
+            input = input.Replace("{mode}", MainV2.comPort.MAV.cs.mode.ToString());
 
-            input = input.Replace("{batv}", MainV2.cs.battery_voltage.ToString("0.00"));
+            input = input.Replace("{batv}", MainV2.comPort.MAV.cs.battery_voltage.ToString("0.00"));
 
             return input;
         }

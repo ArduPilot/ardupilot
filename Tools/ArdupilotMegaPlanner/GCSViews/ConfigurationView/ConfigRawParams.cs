@@ -172,7 +172,7 @@ namespace ArdupilotMega.GCSViews.ConfigurationView
             {
                 StreamWriter sw = new StreamWriter(sfd.OpenFile());
                 string input = DateTime.Now + " Frame : ";
-                if (MainV2.cs.firmware == MainV2.Firmwares.ArduPlane)
+                if (MainV2.comPort.MAV.cs.firmware == MainV2.Firmwares.ArduPlane)
                 {
                     input = DateTime.Now + " Plane: Skywalker";
                 }
@@ -254,7 +254,7 @@ namespace ArdupilotMega.GCSViews.ConfigurationView
             {
                 param2 = loadParamFile(ofd.FileName);
 
-                Form paramCompareForm = new ParamCompare(Params, MainV2.comPort.param, param2);
+                Form paramCompareForm = new ParamCompare(Params, MainV2.comPort.MAV.param, param2);
                 
                 ThemeManager.ApplyThemeTo(paramCompareForm);
                 paramCompareForm.ShowDialog();
@@ -385,7 +385,7 @@ namespace ArdupilotMega.GCSViews.ConfigurationView
             Params.Rows.Clear();
 
             // process hashdefines and update display
-            foreach (string value in MainV2.comPort.param.Keys)
+            foreach (string value in MainV2.comPort.MAV.param.Keys)
             {
                 if (value == null || value == "")
                     continue;
@@ -394,7 +394,7 @@ namespace ArdupilotMega.GCSViews.ConfigurationView
 
                 Params.Rows.Add();
                 Params.Rows[Params.RowCount - 1].Cells[Command.Index].Value = value;
-                Params.Rows[Params.RowCount - 1].Cells[Value.Index].Value = ((float)MainV2.comPort.param[value]).ToString("0.###");
+                Params.Rows[Params.RowCount - 1].Cells[Value.Index].Value = ((float)MainV2.comPort.MAV.param[value]).ToString("0.###");
                 try
                 {
                     string metaDataDescription = _parameterMetaDataRepository.GetParameterMetaData(value, ParameterMetaDataConstants.Description);
@@ -405,27 +405,20 @@ namespace ArdupilotMega.GCSViews.ConfigurationView
 
                         string range = _parameterMetaDataRepository.GetParameterMetaData(value, ParameterMetaDataConstants.Range);
                         string options = _parameterMetaDataRepository.GetParameterMetaData(value, ParameterMetaDataConstants.Values);
+                        string units = _parameterMetaDataRepository.GetParameterMetaData(value, ParameterMetaDataConstants.Units);
 
-                        if (!string.IsNullOrEmpty(range))
-                        {
-                            range = " Range: " + range;
-                        }
-
-                        if (!string.IsNullOrEmpty(options))
-                        {
-                            options = " Options: " + options;
-                        }
-
-                        Params.Rows[Params.RowCount - 1].Cells[Desc.Index].Value = range + options;
+                        Params.Rows[Params.RowCount - 1].Cells[Units.Index].Value = units;
+                        Params.Rows[Params.RowCount - 1].Cells[Options.Index].Value = range + options;
+                        Params.Rows[Params.RowCount - 1].Cells[Desc.Index].Value = metaDataDescription;
 
                     }
                     else if (tooltips[value] != null)
                     {
-                        Params.Rows[Params.RowCount - 1].Cells[Command.Index].ToolTipText = ((paramsettings)tooltips[value]).desc;
+                        //Params.Rows[Params.RowCount - 1].Cells[Command.Index].ToolTipText = ((paramsettings)tooltips[value]).desc;
                         //Params.Rows[Params.RowCount - 1].Cells[RawValue.Index].ToolTipText = ((paramsettings)tooltips[value]).desc;
-                        Params.Rows[Params.RowCount - 1].Cells[Value.Index].ToolTipText = ((paramsettings)tooltips[value]).desc;
+                       // Params.Rows[Params.RowCount - 1].Cells[Value.Index].ToolTipText = ((paramsettings)tooltips[value]).desc;
 
-                          Params.Rows[Params.RowCount - 1].Cells[Desc.Index].Value = "Old: "+((paramsettings)tooltips[value]).desc;
+                        //  Params.Rows[Params.RowCount - 1].Cells[Desc.Index].Value = "Old: "+((paramsettings)tooltips[value]).desc;
 
                         //Params.Rows[Params.RowCount - 1].Cells[Default.Index].Value = ((paramsettings)tooltips[value]).normalvalue;
                         //Params.Rows[Params.RowCount - 1].Cells[mavScale.Index].Value = ((paramsettings)tooltips[value]).scale;

@@ -198,7 +198,7 @@ namespace ArdupilotMega.Antenna
                 try
                 {
                     // 10 hz - position updates default to 3 hz on the stream rate
-                    tracker.PanAndTilt(MainV2.cs.AZToMAV, MainV2.cs.ELToMAV);
+                    tracker.PanAndTilt(MainV2.comPort.MAV.cs.AZToMAV, MainV2.comPort.MAV.cs.ELToMAV);
                     System.Threading.Thread.Sleep(100);
                 }
                 catch { }
@@ -262,7 +262,7 @@ namespace ArdupilotMega.Antenna
         void tm1_Tick(object item)
         {
             
-            float snr = MainV2.cs.localsnrdb;
+            float snr = MainV2.comPort.MAV.cs.localsnrdb;
             float best = snr;
 
             float tilt = 0;
@@ -316,13 +316,13 @@ namespace ArdupilotMega.Antenna
 
                 System.Threading.Thread.Sleep(2000);
 
-                Console.WriteLine("Angle " + n + " snr " + MainV2.cs.localsnrdb);
+                Console.WriteLine("Angle " + n + " snr " + MainV2.comPort.MAV.cs.localsnrdb);
 
-                if (MainV2.cs.localsnrdb > lastsnr)
+                if (MainV2.comPort.MAV.cs.localsnrdb > lastsnr)
                 {
  
                     best = n;
-                    lastsnr = MainV2.cs.localsnrdb;
+                    lastsnr = MainV2.comPort.MAV.cs.localsnrdb;
                 }
             }
 

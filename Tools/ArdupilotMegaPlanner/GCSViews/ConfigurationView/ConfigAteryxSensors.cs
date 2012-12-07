@@ -29,7 +29,7 @@ namespace ArdupilotMega.GCSViews.ConfigurationView
             }
             else
             {
-                if (MainV2.cs.firmware == MainV2.Firmwares.Ateryx)
+                if (MainV2.comPort.MAV.cs.firmware == MainV2.Firmwares.Ateryx)
                 {
                     this.Enabled = true;
                 }
@@ -55,7 +55,7 @@ namespace ArdupilotMega.GCSViews.ConfigurationView
                 ((Button)sender).Enabled = false;
 
 
-                if ((MainV2.cs.airspeed > 7.0) || (MainV2.cs.groundspeed > 10.0))
+                if ((MainV2.comPort.MAV.cs.airspeed > 7.0) || (MainV2.comPort.MAV.cs.groundspeed > 10.0))
                 {
                     MessageBox.Show("Unable - UAV airborne");
                     ((Button)sender).Enabled = true;
@@ -79,7 +79,7 @@ namespace ArdupilotMega.GCSViews.ConfigurationView
             {
                 ((Button)sender).Enabled = false;
 
-                if ((MainV2.cs.airspeed > 7.0) || (MainV2.cs.groundspeed > 10.0))
+                if ((MainV2.comPort.MAV.cs.airspeed > 7.0) || (MainV2.comPort.MAV.cs.groundspeed > 10.0))
                 {
                     MessageBox.Show("Unable - UAV airborne");
                     ((Button)sender).Enabled = true;
@@ -101,7 +101,7 @@ namespace ArdupilotMega.GCSViews.ConfigurationView
 
         private void timer1_Tick(object sender, EventArgs e)
         {
-            MainV2.cs.UpdateCurrentSettings(bindingSource1);
+            MainV2.comPort.MAV.cs.UpdateCurrentSettings(bindingSource1);
         }
     }
 }

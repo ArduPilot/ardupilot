@@ -84,8 +84,6 @@ namespace ArdupilotMega.GCSViews.ConfigurationView
             this.mavlinkNumericUpDownRSM = new ArdupilotMega.Controls.MavlinkNumericUpDown();
             this.mavlinkNumericUpDownRSMX = new ArdupilotMega.Controls.MavlinkNumericUpDown();
             this.mavlinkCheckBoxRR = new ArdupilotMega.Controls.MavlinkCheckBox();
-            this.LBL_Error = new ArdupilotMega.Controls.LabelWithPseudoOpacity();
-            this.PBOX_WarningIcon = new ArdupilotMega.Controls.PictureBoxWithPseudoOpacity();
             this.groupBox4 = new System.Windows.Forms.GroupBox();
             this.label27 = new System.Windows.Forms.Label();
             this.NUD_RETRACT_z = new ArdupilotMega.Controls.MavlinkNumericUpDown();
@@ -110,6 +108,23 @@ namespace ArdupilotMega.GCSViews.ConfigurationView
             this.CHK_stab_tilt = new ArdupilotMega.Controls.MavlinkCheckBox();
             this.CHK_stab_roll = new ArdupilotMega.Controls.MavlinkCheckBox();
             this.CHK_stab_pan = new ArdupilotMega.Controls.MavlinkCheckBox();
+            this.comboBox1 = new System.Windows.Forms.ComboBox();
+            this.label35 = new System.Windows.Forms.Label();
+            this.label36 = new System.Windows.Forms.Label();
+            this.label37 = new System.Windows.Forms.Label();
+            this.label38 = new System.Windows.Forms.Label();
+            this.mavlinkNumericUpDown1 = new ArdupilotMega.Controls.MavlinkNumericUpDown();
+            this.mavlinkNumericUpDown2 = new ArdupilotMega.Controls.MavlinkNumericUpDown();
+            this.label39 = new System.Windows.Forms.Label();
+            this.label40 = new System.Windows.Forms.Label();
+            this.mavlinkNumericUpDownShutM = new ArdupilotMega.Controls.MavlinkNumericUpDown();
+            this.mavlinkNumericUpDownShutMX = new ArdupilotMega.Controls.MavlinkNumericUpDown();
+            this.label41 = new System.Windows.Forms.Label();
+            this.groupBox7 = new System.Windows.Forms.GroupBox();
+            this.pictureBox4 = new System.Windows.Forms.PictureBox();
+            this.label34 = new System.Windows.Forms.Label();
+            this.mavlinkNumericUpDown5 = new ArdupilotMega.Controls.MavlinkNumericUpDown();
+            this.label42 = new System.Windows.Forms.Label();
             ((System.ComponentModel.ISupportInitialize)(this.pictureBox1)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.pictureBox2)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.pictureBox3)).BeginInit();
@@ -125,7 +140,6 @@ namespace ArdupilotMega.GCSViews.ConfigurationView
             ((System.ComponentModel.ISupportInitialize)(this.mavlinkNumericUpDownRAMX)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.mavlinkNumericUpDownRSM)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.mavlinkNumericUpDownRSMX)).BeginInit();
-            ((System.ComponentModel.ISupportInitialize)(this.PBOX_WarningIcon)).BeginInit();
             this.groupBox4.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.NUD_RETRACT_z)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.NUD_RETRACT_y)).BeginInit();
@@ -138,6 +152,12 @@ namespace ArdupilotMega.GCSViews.ConfigurationView
             ((System.ComponentModel.ISupportInitialize)(this.NUD_CONTROL_z)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.NUD_CONTROL_y)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.NUD_CONTROL_x)).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)(this.mavlinkNumericUpDown1)).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)(this.mavlinkNumericUpDown2)).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)(this.mavlinkNumericUpDownShutM)).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)(this.mavlinkNumericUpDownShutMX)).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)(this.pictureBox4)).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)(this.mavlinkNumericUpDown5)).BeginInit();
             this.SuspendLayout();
             // 
             // pictureBox1
@@ -170,13 +190,11 @@ namespace ArdupilotMega.GCSViews.ConfigurationView
             // label5
             // 
             resources.ApplyResources(this.label5, "label5");
-            this.label5.ForeColor = System.Drawing.Color.WhiteSmoke;
             this.label5.Name = "label5";
             // 
             // label6
             // 
             resources.ApplyResources(this.label6, "label6");
-            this.label6.ForeColor = System.Drawing.Color.WhiteSmoke;
             this.label6.Name = "label6";
             // 
             // LNK_wiki
@@ -191,7 +209,6 @@ namespace ArdupilotMega.GCSViews.ConfigurationView
             // label15
             // 
             resources.ApplyResources(this.label15, "label15");
-            this.label15.ForeColor = System.Drawing.Color.WhiteSmoke;
             this.label15.Name = "label15";
             // 
             // groupBox3
@@ -741,21 +758,6 @@ namespace ArdupilotMega.GCSViews.ConfigurationView
             this.mavlinkCheckBoxRR.ParamName = null;
             this.mavlinkCheckBoxRR.UseVisualStyleBackColor = true;
             // 
-            // LBL_Error
-            // 
-            resources.ApplyResources(this.LBL_Error, "LBL_Error");
-            this.LBL_Error.DoubleBuffered = true;
-            this.LBL_Error.ForeColor = System.Drawing.Color.WhiteSmoke;
-            this.LBL_Error.Name = "LBL_Error";
-            // 
-            // PBOX_WarningIcon
-            // 
-            resources.ApplyResources(this.PBOX_WarningIcon, "PBOX_WarningIcon");
-            this.PBOX_WarningIcon.Image = global::ArdupilotMega.Properties.Resources.iconWarning32;
-            this.PBOX_WarningIcon.Name = "PBOX_WarningIcon";
-            this.PBOX_WarningIcon.Opacity = 0.5F;
-            this.PBOX_WarningIcon.TabStop = false;
-            // 
             // groupBox4
             // 
             this.groupBox4.Controls.Add(this.label27);
@@ -1083,9 +1085,226 @@ namespace ArdupilotMega.GCSViews.ConfigurationView
             this.CHK_stab_pan.ParamName = null;
             this.CHK_stab_pan.UseVisualStyleBackColor = true;
             // 
+            // comboBox1
+            // 
+            this.comboBox1.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
+            this.comboBox1.FormattingEnabled = true;
+            resources.ApplyResources(this.comboBox1, "comboBox1");
+            this.comboBox1.Name = "comboBox1";
+            this.comboBox1.SelectedIndexChanged += new System.EventHandler(this.mavlinkComboBox_SelectedIndexChanged);
+            // 
+            // label35
+            // 
+            resources.ApplyResources(this.label35, "label35");
+            this.label35.Name = "label35";
+            // 
+            // label36
+            // 
+            resources.ApplyResources(this.label36, "label36");
+            this.label36.Name = "label36";
+            // 
+            // label37
+            // 
+            resources.ApplyResources(this.label37, "label37");
+            this.label37.Name = "label37";
+            // 
+            // label38
+            // 
+            resources.ApplyResources(this.label38, "label38");
+            this.label38.Name = "label38";
+            // 
+            // mavlinkNumericUpDown1
+            // 
+            resources.ApplyResources(this.mavlinkNumericUpDown1, "mavlinkNumericUpDown1");
+            this.mavlinkNumericUpDown1.Increment = new decimal(new int[] {
+            10,
+            0,
+            0,
+            0});
+            this.mavlinkNumericUpDown1.Max = 1F;
+            this.mavlinkNumericUpDown1.Maximum = new decimal(new int[] {
+            2200,
+            0,
+            0,
+            0});
+            this.mavlinkNumericUpDown1.Min = 0F;
+            this.mavlinkNumericUpDown1.Name = "mavlinkNumericUpDown1";
+            this.mavlinkNumericUpDown1.param = null;
+            this.mavlinkNumericUpDown1.ParamName = null;
+            this.mavlinkNumericUpDown1.Value = new decimal(new int[] {
+            1000,
+            0,
+            0,
+            0});
+            // 
+            // mavlinkNumericUpDown2
+            // 
+            resources.ApplyResources(this.mavlinkNumericUpDown2, "mavlinkNumericUpDown2");
+            this.mavlinkNumericUpDown2.Increment = new decimal(new int[] {
+            10,
+            0,
+            0,
+            0});
+            this.mavlinkNumericUpDown2.Max = 1F;
+            this.mavlinkNumericUpDown2.Maximum = new decimal(new int[] {
+            2200,
+            0,
+            0,
+            0});
+            this.mavlinkNumericUpDown2.Min = 0F;
+            this.mavlinkNumericUpDown2.Minimum = new decimal(new int[] {
+            800,
+            0,
+            0,
+            0});
+            this.mavlinkNumericUpDown2.Name = "mavlinkNumericUpDown2";
+            this.mavlinkNumericUpDown2.param = null;
+            this.mavlinkNumericUpDown2.ParamName = null;
+            this.mavlinkNumericUpDown2.Value = new decimal(new int[] {
+            2000,
+            0,
+            0,
+            0});
+            // 
+            // label39
+            // 
+            resources.ApplyResources(this.label39, "label39");
+            this.label39.Name = "label39";
+            // 
+            // label40
+            // 
+            resources.ApplyResources(this.label40, "label40");
+            this.label40.Name = "label40";
+            // 
+            // mavlinkNumericUpDownShutM
+            // 
+            resources.ApplyResources(this.mavlinkNumericUpDownShutM, "mavlinkNumericUpDownShutM");
+            this.mavlinkNumericUpDownShutM.Increment = new decimal(new int[] {
+            10,
+            0,
+            0,
+            0});
+            this.mavlinkNumericUpDownShutM.Max = 1F;
+            this.mavlinkNumericUpDownShutM.Maximum = new decimal(new int[] {
+            2200,
+            0,
+            0,
+            0});
+            this.mavlinkNumericUpDownShutM.Min = 0F;
+            this.mavlinkNumericUpDownShutM.Minimum = new decimal(new int[] {
+            800,
+            0,
+            0,
+            0});
+            this.mavlinkNumericUpDownShutM.Name = "mavlinkNumericUpDownShutM";
+            this.mavlinkNumericUpDownShutM.param = null;
+            this.mavlinkNumericUpDownShutM.ParamName = null;
+            this.mavlinkNumericUpDownShutM.Value = new decimal(new int[] {
+            1000,
+            0,
+            0,
+            0});
+            // 
+            // mavlinkNumericUpDownShutMX
+            // 
+            resources.ApplyResources(this.mavlinkNumericUpDownShutMX, "mavlinkNumericUpDownShutMX");
+            this.mavlinkNumericUpDownShutMX.Increment = new decimal(new int[] {
+            10,
+            0,
+            0,
+            0});
+            this.mavlinkNumericUpDownShutMX.Max = 1F;
+            this.mavlinkNumericUpDownShutMX.Maximum = new decimal(new int[] {
+            2200,
+            0,
+            0,
+            0});
+            this.mavlinkNumericUpDownShutMX.Min = 0F;
+            this.mavlinkNumericUpDownShutMX.Minimum = new decimal(new int[] {
+            800,
+            0,
+            0,
+            0});
+            this.mavlinkNumericUpDownShutMX.Name = "mavlinkNumericUpDownShutMX";
+            this.mavlinkNumericUpDownShutMX.param = null;
+            this.mavlinkNumericUpDownShutMX.ParamName = null;
+            this.mavlinkNumericUpDownShutMX.Value = new decimal(new int[] {
+            2000,
+            0,
+            0,
+            0});
+            // 
+            // label41
+            // 
+            resources.ApplyResources(this.label41, "label41");
+            this.label41.Name = "label41";
+            // 
+            // groupBox7
+            // 
+            resources.ApplyResources(this.groupBox7, "groupBox7");
+            this.groupBox7.Name = "groupBox7";
+            this.groupBox7.TabStop = false;
+            // 
+            // pictureBox4
+            // 
+            this.pictureBox4.BackgroundImage = global::ArdupilotMega.Properties.Resources.cameraGimalYaw;
+            resources.ApplyResources(this.pictureBox4, "pictureBox4");
+            this.pictureBox4.Name = "pictureBox4";
+            this.pictureBox4.TabStop = false;
+            // 
+            // label34
+            // 
+            resources.ApplyResources(this.label34, "label34");
+            this.label34.Name = "label34";
+            // 
+            // mavlinkNumericUpDown5
+            // 
+            resources.ApplyResources(this.mavlinkNumericUpDown5, "mavlinkNumericUpDown5");
+            this.mavlinkNumericUpDown5.Increment = new decimal(new int[] {
+            10,
+            0,
+            0,
+            0});
+            this.mavlinkNumericUpDown5.Max = 1F;
+            this.mavlinkNumericUpDown5.Min = 0F;
+            this.mavlinkNumericUpDown5.Minimum = new decimal(new int[] {
+            1,
+            0,
+            0,
+            0});
+            this.mavlinkNumericUpDown5.Name = "mavlinkNumericUpDown5";
+            this.mavlinkNumericUpDown5.param = null;
+            this.mavlinkNumericUpDown5.ParamName = null;
+            this.mavlinkNumericUpDown5.Value = new decimal(new int[] {
+            20,
+            0,
+            0,
+            0});
+            // 
+            // label42
+            // 
+            resources.ApplyResources(this.label42, "label42");
+            this.label42.Name = "label42";
+            // 
             // ConfigMount
             // 
-            this.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(43)))), ((int)(((byte)(44)))), ((int)(((byte)(45)))));
+            this.Controls.Add(this.label42);
+            this.Controls.Add(this.label34);
+            this.Controls.Add(this.mavlinkNumericUpDown5);
+            this.Controls.Add(this.comboBox1);
+            this.Controls.Add(this.label35);
+            this.Controls.Add(this.label36);
+            this.Controls.Add(this.label37);
+            this.Controls.Add(this.label38);
+            this.Controls.Add(this.mavlinkNumericUpDown1);
+            this.Controls.Add(this.mavlinkNumericUpDown2);
+            this.Controls.Add(this.label39);
+            this.Controls.Add(this.label40);
+            this.Controls.Add(this.mavlinkNumericUpDownShutM);
+            this.Controls.Add(this.mavlinkNumericUpDownShutMX);
+            this.Controls.Add(this.label41);
+            this.Controls.Add(this.groupBox7);
+            this.Controls.Add(this.pictureBox4);
             this.Controls.Add(this.CHK_stab_pan);
             this.Controls.Add(this.CHK_stab_roll);
             this.Controls.Add(this.CHK_stab_tilt);
@@ -1138,8 +1357,6 @@ namespace ArdupilotMega.GCSViews.ConfigurationView
             this.Controls.Add(this.groupBox3);
             this.Controls.Add(this.pictureBox3);
             this.Controls.Add(this.LNK_wiki);
-            this.Controls.Add(this.LBL_Error);
-            this.Controls.Add(this.PBOX_WarningIcon);
             this.Controls.Add(this.label6);
             this.Controls.Add(this.label5);
             this.Controls.Add(this.groupBox2);
@@ -1163,7 +1380,6 @@ namespace ArdupilotMega.GCSViews.ConfigurationView
             ((System.ComponentModel.ISupportInitialize)(this.mavlinkNumericUpDownRAMX)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.mavlinkNumericUpDownRSM)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.mavlinkNumericUpDownRSMX)).EndInit();
-            ((System.ComponentModel.ISupportInitialize)(this.PBOX_WarningIcon)).EndInit();
             this.groupBox4.ResumeLayout(false);
             this.groupBox4.PerformLayout();
             ((System.ComponentModel.ISupportInitialize)(this.NUD_RETRACT_z)).EndInit();
@@ -1179,6 +1395,12 @@ namespace ArdupilotMega.GCSViews.ConfigurationView
             ((System.ComponentModel.ISupportInitialize)(this.NUD_CONTROL_z)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.NUD_CONTROL_y)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.NUD_CONTROL_x)).EndInit();
+            ((System.ComponentModel.ISupportInitialize)(this.mavlinkNumericUpDown1)).EndInit();
+            ((System.ComponentModel.ISupportInitialize)(this.mavlinkNumericUpDown2)).EndInit();
+            ((System.ComponentModel.ISupportInitialize)(this.mavlinkNumericUpDownShutM)).EndInit();
+            ((System.ComponentModel.ISupportInitialize)(this.mavlinkNumericUpDownShutMX)).EndInit();
+            ((System.ComponentModel.ISupportInitialize)(this.pictureBox4)).EndInit();
+            ((System.ComponentModel.ISupportInitialize)(this.mavlinkNumericUpDown5)).EndInit();
             this.ResumeLayout(false);
             this.PerformLayout();
 
@@ -1192,8 +1414,6 @@ namespace ArdupilotMega.GCSViews.ConfigurationView
         private System.Windows.Forms.GroupBox groupBox2;
         private System.Windows.Forms.Label label6;
         private System.Windows.Forms.Label label5;
-        private PictureBoxWithPseudoOpacity PBOX_WarningIcon;
-        private LabelWithPseudoOpacity LBL_Error;
         private System.Windows.Forms.LinkLabel LNK_wiki;
         private System.Windows.Forms.Label label15;
         private System.Windows.Forms.GroupBox groupBox3;
@@ -1264,6 +1484,23 @@ namespace ArdupilotMega.GCSViews.ConfigurationView
         private MavlinkCheckBox CHK_stab_tilt;
         private MavlinkCheckBox CHK_stab_roll;
         private MavlinkCheckBox CHK_stab_pan;
+        private System.Windows.Forms.ComboBox comboBox1;
+        private System.Windows.Forms.Label label35;
+        private System.Windows.Forms.Label label36;
+        private System.Windows.Forms.Label label37;
+        private System.Windows.Forms.Label label38;
+        private MavlinkNumericUpDown mavlinkNumericUpDown1;
+        private MavlinkNumericUpDown mavlinkNumericUpDown2;
+        private System.Windows.Forms.Label label39;
+        private System.Windows.Forms.Label label40;
+        private MavlinkNumericUpDown mavlinkNumericUpDownShutM;
+        private MavlinkNumericUpDown mavlinkNumericUpDownShutMX;
+        private System.Windows.Forms.Label label41;
+        private System.Windows.Forms.GroupBox groupBox7;
+        private System.Windows.Forms.PictureBox pictureBox4;
+        private System.Windows.Forms.Label label34;
+        private MavlinkNumericUpDown mavlinkNumericUpDown5;
+        private System.Windows.Forms.Label label42;
 
     }
 }

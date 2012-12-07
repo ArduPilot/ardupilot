@@ -43,7 +43,7 @@ namespace ArdupilotMega.GCSViews.ConfigurationView
             }
             else
             {
-                if (MainV2.cs.firmware == MainV2.Firmwares.ArduCopter2)
+                if (MainV2.comPort.MAV.cs.firmware == MainV2.Firmwares.ArduCopter2)
                 {
                     this.Enabled = true;
                 }
@@ -163,7 +163,7 @@ namespace ArdupilotMega.GCSViews.ConfigurationView
 
 
             // process hashdefines and update display
-            foreach (string value in MainV2.comPort.param.Keys)
+            foreach (string value in MainV2.comPort.MAV.param.Keys)
             {
                 if (value == null || value == "")
                     continue;
@@ -180,7 +180,7 @@ namespace ArdupilotMega.GCSViews.ConfigurationView
                         if (ctl.GetType() == typeof(NumericUpDown))
                         {
 
-                            float numbervalue = (float)MainV2.comPort.param[value];
+                            float numbervalue = (float)MainV2.comPort.MAV.param[value];
 
                             MAVLink.modifyParamForDisplay(true, value, ref numbervalue);
 
@@ -231,7 +231,7 @@ namespace ArdupilotMega.GCSViews.ConfigurationView
 
                             ComboBox thisctl = ((ComboBox)ctl);
 
-                            thisctl.SelectedValue = (int)(float)MainV2.comPort.param[value];
+                            thisctl.SelectedValue = (int)(float)MainV2.comPort.MAV.param[value];
 
                             thisctl.Validated += new EventHandler(ComboBox_Validated);
 
