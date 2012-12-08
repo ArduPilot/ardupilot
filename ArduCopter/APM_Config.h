@@ -10,8 +10,6 @@
 // developers have these boards.
 //#define APM2_BETA_HARDWARE
 
-// GPS is auto-selected
-
 //#define MAG_ORIENTATION		AP_COMPASS_COMPONENTS_DOWN_PINS_FORWARD
 //#define HIL_MODE				HIL_MODE_ATTITUDE
 //#define DMP_ENABLED ENABLED
@@ -39,27 +37,18 @@
 //#define CH7_OPTION		CH7_SAVE_WP
 /*
  *  CH7_DO_NOTHING
- *  CH7_SET_HOVER           // deprecated
  *  CH7_FLIP
  *  CH7_SIMPLE_MODE
  *  CH7_RTL
  *  CH7_SAVE_TRIM
- *  CH7_ADC_FILTER          // deprecated
  *  CH7_SAVE_WP
- *  CH7_MULTI_MODE          // deprecated
  *  CH7_CAMERA_TRIGGER
  */
-
-//#define TOY_EDF	ENABLED
-//#define TOY_MIXER TOY_LOOKUP_TABLE
 
 // Inertia based contollers
 //#define INERTIAL_NAV_XY ENABLED
 #define INERTIAL_NAV_Z ENABLED
 
-
-//#define RATE_ROLL_I   0.18
-//#define RATE_PITCH_I	0.18
 //#define MOTORS_JD880
 //#define MOTORS_JD850
 
@@ -80,20 +69,3 @@
 
 //#define LOGGING_ENABLED		DISABLED
 
-// Used to set the max roll and pitch angles in Degrees * 100
-//#define MAX_INPUT_ROLL_ANGLE      8000
-//#define MAX_INPUT_PITCH_ANGLE     8000
-
-/////////////////////////////////////////////////////////////////////////////////
-// Bulk defines for TradHeli. Cleans up defines.h and config.h to put these here
-#if FRAME_CONFIG == HELI_FRAME
-  # define RC_FAST_SPEED 				125
-  # define RTL_YAW                  	YAW_LOOK_AT_HOME
-  # define TILT_COMPENSATION 			5
-  # define RATE_INTEGRATOR_LEAK_RATE 	0.02
-  # define RATE_ROLL_D    				0
-  # define RATE_PITCH_D       			0
-  # define HELI_PITCH_FF				0
-  # define HELI_ROLL_FF					0
-  # define HELI_YAW_FF					0  
- #endif

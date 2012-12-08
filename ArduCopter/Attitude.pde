@@ -259,21 +259,6 @@ update_rate_contoller_targets()
     }
 }
 
-
-#if FRAME_CONFIG == HELI_FRAME
-// init_rate_controllers - set-up filters for rate controller inputs
-void init_rate_controllers()
-{
-   // initalise low pass filters on rate controller inputs
-   // 1st parameter is time_step, 2nd parameter is time_constant
-   rate_roll_filter.set_cutoff_frequency(0.01, 2.0);
-   rate_pitch_filter.set_cutoff_frequency(0.01, 2.0);
-   // rate_yaw_filter.set_cutoff_frequency(0.01, 2.0);
-   // other option for initialisation is rate_roll_filter.set_cutoff_frequency(<time_step>,<cutoff_freq>);
-}
-#endif // HELI_FRAME
-
-
 // run roll, pitch and yaw rate controllers and send output to motors
 // targets for these controllers comes from stabilize controllers
 void
@@ -299,6 +284,17 @@ run_rate_controllers()
 }
 
 #if FRAME_CONFIG == HELI_FRAME
+// init_rate_controllers - set-up filters for rate controller inputs
+void init_rate_controllers()
+{
+   // initalise low pass filters on rate controller inputs
+   // 1st parameter is time_step, 2nd parameter is time_constant
+   rate_roll_filter.set_cutoff_frequency(0.01, 2.0);
+   rate_pitch_filter.set_cutoff_frequency(0.01, 2.0);
+   // rate_yaw_filter.set_cutoff_frequency(0.01, 2.0);
+   // other option for initialisation is rate_roll_filter.set_cutoff_frequency(<time_step>,<cutoff_freq>);
+}
+
 static int16_t
 get_heli_rate_roll(int32_t target_rate)
 {
