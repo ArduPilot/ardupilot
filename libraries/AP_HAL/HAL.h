@@ -8,7 +8,6 @@
 #include "../AP_HAL/SPIDriver.h"
 #include "../AP_HAL/AnalogIn.h"
 #include "../AP_HAL/Storage.h"
-#include "../AP_HAL/Dataflash.h"
 #include "../AP_HAL/Console.h"
 #include "../AP_HAL/GPIO.h"
 #include "../AP_HAL/RCInput.h"
@@ -23,7 +22,6 @@ public:
         AP_HAL::SPIDeviceManager* _spi,
         AP_HAL::AnalogIn*   _analogin,
         AP_HAL::Storage*    _storage,
-        AP_HAL::Dataflash*  _dataflash,
         AP_HAL::ConsoleDriver* _console,
         AP_HAL::GPIO*       _gpio,
         AP_HAL::RCInput*    _rcin,
@@ -37,7 +35,6 @@ public:
         spi(_spi),
         analogin(_analogin),
         storage(_storage),
-        dataflash(_dataflash),
         console(_console),
         gpio(_gpio),
         rcin(_rcin),
@@ -54,7 +51,6 @@ public:
     AP_HAL::SPIDeviceManager* spi;
     AP_HAL::AnalogIn*   analogin;
     AP_HAL::Storage*    storage;
-    AP_HAL::Dataflash*  dataflash;
     AP_HAL::ConsoleDriver* console;
     AP_HAL::GPIO*       gpio;
     AP_HAL::RCInput*    rcin;
