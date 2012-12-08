@@ -2,7 +2,7 @@
 
 #if LOGGING_ENABLED == ENABLED
 
-// Code to Write and Read packets from hal.dataflash->log memory
+// Code to Write and Read packets from DataFlash.log memory
 // Code to interact with the user to dump or erase logs
 
  #define HEAD_BYTE1      0xA3   // Decimal 163
@@ -51,9 +51,9 @@ print_log_menu(void)
     int16_t log_start;
     int16_t log_end;
     int16_t temp;
-    int16_t last_log_num = hal.dataflash->find_last_log();
+    int16_t last_log_num = DataFlash.find_last_log();
 
-    uint16_t num_logs = hal.dataflash->get_num_logs();
+    uint16_t num_logs = DataFlash.get_num_logs();
 
     cliSerial->println_P(PSTR("logs enabled: "));
 
@@ -88,7 +88,7 @@ print_log_menu(void)
         for(int16_t i=num_logs; i>=1; i--) {
             int16_t last_log_start = log_start, last_log_end = log_end;
             temp = last_log_num-i+1;
-            hal.dataflash->get_log_boundaries(temp, log_start, log_end);
+            DataFlash.get_log_boundaries(temp, log_start, log_end);
             cliSerial->printf_P(PSTR("Log %d,    start %d,   end %d\n"), (int)temp, (int)log_start, (int)log_end);
             if (last_log_start == log_start && last_log_end == log_end) {
                 // we are printing bogus logs
@@ -110,29 +110,29 @@ dump_log(uint8_t argc, const Menu::arg *argv)
 
     // check that the requested log number can be read
     dump_log = argv[1].i;
-    last_log_num = hal.dataflash->find_last_log();
+    last_log_num = DataFlash.find_last_log();
 
     if (dump_log == -2) {
-        for(uint16_t count=1; count<=hal.dataflash->num_pages(); count++) {
-            hal.dataflash->start_read(count);
+        for(uint16_t count=1; count<=DataFlash.df_NumPages; count++) {
+            DataFlash.StartRead(count);
             cliSerial->printf_P(PSTR("DF page, log file #, log page: %d,\t"), (int)count);
-            cliSerial->printf_P(PSTR("%d,\t"), (int)hal.dataflash->get_file());
-            cliSerial->printf_P(PSTR("%d\n"), (int)hal.dataflash->get_file_page());
+            cliSerial->printf_P(PSTR("%d,\t"), (int)DataFlash.GetFileNumber());
+            cliSerial->printf_P(PSTR("%d\n"), (int)DataFlash.GetFilePage());
         }
         return(-1);
     } else if (dump_log <= 0) {
         cliSerial->printf_P(PSTR("dumping all\n"));
-        Log_Read(1, hal.dataflash->num_pages());
+        Log_Read(1, DataFlash.df_NumPages);
         return(-1);
     } else if ((argc != 2)
-        || (dump_log <= (last_log_num - hal.dataflash->get_num_logs()))
+        || (dump_log <= (last_log_num - DataFlash.get_num_logs()))
         || (dump_log > last_log_num))
     {
         cliSerial->printf_P(PSTR("bad log number\n"));
         return(-1);
     }
 
-    hal.dataflash->get_log_boundaries(dump_log, dump_log_start, dump_log_end);
+    DataFlash.get_log_boundaries(dump_log, dump_log_start, dump_log_end);
     cliSerial->printf_P(PSTR("Dumping Log %d,    start pg %d,   end pg %d\n"),
                     (int)dump_log,
                     (int)dump_log_start,
@@ -146,7 +146,7 @@ dump_log(uint8_t argc, const Menu::arg *argv)
 static void do_erase_logs(void)
 {
     gcs_send_text_P(SEVERITY_LOW, PSTR("Erasing logs"));
-    hal.dataflash->erase_all();
+    DataFlash.EraseAll();
     gcs_send_text_P(SEVERITY_LOW, PSTR("Log erase complete"));
 }
 
@@ -215,61 +215,61 @@ process_logs(uint8_t argc, const Menu::arg *argv)
 // Write an attitude packet. Total length : 10 bytes
 static void Log_Write_Attitude(int16_t log_roll, int16_t log_pitch, uint16_t log_yaw)
 {
-    hal.dataflash->write_byte(HEAD_BYTE1);
-    hal.dataflash->write_byte(HEAD_BYTE2);
-    hal.dataflash->write_byte(LOG_ATTITUDE_MSG);
-    hal.dataflash->write_word(log_roll);
-    hal.dataflash->write_word(log_pitch);
-    hal.dataflash->write_word(log_yaw);
-    hal.dataflash->write_byte(END_BYTE);
+    DataFlash.WriteByte(HEAD_BYTE1);
+    DataFlash.WriteByte(HEAD_BYTE2);
+    DataFlash.WriteByte(LOG_ATTITUDE_MSG);
+    DataFlash.WriteInt(log_roll);
+    DataFlash.WriteInt(log_pitch);
+    DataFlash.WriteInt(log_yaw);
+    DataFlash.WriteByte(END_BYTE);
 }
 
 // Write a performance monitoring packet. Total length : 19 bytes
 static void Log_Write_Performance()
 {
-    hal.dataflash->write_byte(HEAD_BYTE1);
-    hal.dataflash->write_byte(HEAD_BYTE2);
-    hal.dataflash->write_byte(LOG_PERFORMANCE_MSG);
-    hal.dataflash->write_dword(millis()- perf_mon_timer);
-    hal.dataflash->write_word((int16_t)mainLoop_count);
-    hal.dataflash->write_word(G_Dt_max);
-    hal.dataflash->write_byte(0);
-    hal.dataflash->write_byte(0);
-    hal.dataflash->write_byte(ahrs.renorm_range_count);
-    hal.dataflash->write_byte(ahrs.renorm_blowup_count);
-    hal.dataflash->write_byte(gps_fix_count);
-    hal.dataflash->write_word(1);     // AHRS health
-    hal.dataflash->write_word((int)(ahrs.get_gyro_drift().x * 1000));
-    hal.dataflash->write_word((int)(ahrs.get_gyro_drift().y * 1000));
-    hal.dataflash->write_word((int)(ahrs.get_gyro_drift().z * 1000));
-    hal.dataflash->write_word(pmTest1);
-    hal.dataflash->write_byte(END_BYTE);
+    DataFlash.WriteByte(HEAD_BYTE1);
+    DataFlash.WriteByte(HEAD_BYTE2);
+    DataFlash.WriteByte(LOG_PERFORMANCE_MSG);
+    DataFlash.WriteLong(millis()- perf_mon_timer);
+    DataFlash.WriteInt((int16_t)mainLoop_count);
+    DataFlash.WriteInt(G_Dt_max);
+    DataFlash.WriteByte(0);
+    DataFlash.WriteByte(0);
+    DataFlash.WriteByte(ahrs.renorm_range_count);
+    DataFlash.WriteByte(ahrs.renorm_blowup_count);
+    DataFlash.WriteByte(gps_fix_count);
+    DataFlash.WriteInt(1);     // AHRS health
+    DataFlash.WriteInt((int)(ahrs.get_gyro_drift().x * 1000));
+    DataFlash.WriteInt((int)(ahrs.get_gyro_drift().y * 1000));
+    DataFlash.WriteInt((int)(ahrs.get_gyro_drift().z * 1000));
+    DataFlash.WriteInt(pmTest1);
+    DataFlash.WriteByte(END_BYTE);
 }
 
 // Write a command processing packet. Total length : 19 bytes
 //void Log_Write_Cmd(byte num, byte id, byte p1, int32_t alt, int32_t lat, int32_t lng)
 static void Log_Write_Cmd(uint8_t num, struct Location *wp)
 {
-    hal.dataflash->write_byte(HEAD_BYTE1);
-    hal.dataflash->write_byte(HEAD_BYTE2);
-    hal.dataflash->write_byte(LOG_CMD_MSG);
-    hal.dataflash->write_byte(num);
-    hal.dataflash->write_byte(wp->id);
-    hal.dataflash->write_byte(wp->p1);
-    hal.dataflash->write_dword(wp->alt);
-    hal.dataflash->write_dword(wp->lat);
-    hal.dataflash->write_dword(wp->lng);
-    hal.dataflash->write_byte(END_BYTE);
+    DataFlash.WriteByte(HEAD_BYTE1);
+    DataFlash.WriteByte(HEAD_BYTE2);
+    DataFlash.WriteByte(LOG_CMD_MSG);
+    DataFlash.WriteByte(num);
+    DataFlash.WriteByte(wp->id);
+    DataFlash.WriteByte(wp->p1);
+    DataFlash.WriteLong(wp->alt);
+    DataFlash.WriteLong(wp->lat);
+    DataFlash.WriteLong(wp->lng);
+    DataFlash.WriteByte(END_BYTE);
 }
 
 static void Log_Write_Startup(uint8_t type)
 {
-    hal.dataflash->write_byte(HEAD_BYTE1);
-    hal.dataflash->write_byte(HEAD_BYTE2);
-    hal.dataflash->write_byte(LOG_STARTUP_MSG);
-    hal.dataflash->write_byte(type);
-    hal.dataflash->write_byte(g.command_total);
-    hal.dataflash->write_byte(END_BYTE);
+    DataFlash.WriteByte(HEAD_BYTE1);
+    DataFlash.WriteByte(HEAD_BYTE2);
+    DataFlash.WriteByte(LOG_STARTUP_MSG);
+    DataFlash.WriteByte(type);
+    DataFlash.WriteByte(g.command_total);
+    DataFlash.WriteByte(END_BYTE);
 
     // create a location struct to hold the temp Waypoints for printing
     struct Location cmd = get_cmd_with_index(0);
@@ -287,45 +287,45 @@ static void Log_Write_Control_Tuning()
 {
     Vector3f accel = ins.get_accel();
 
-    hal.dataflash->write_byte(HEAD_BYTE1);
-    hal.dataflash->write_byte(HEAD_BYTE2);
-    hal.dataflash->write_byte(LOG_CONTROL_TUNING_MSG);
-    hal.dataflash->write_word(g.channel_roll.servo_out);
-    hal.dataflash->write_word(nav_roll_cd);
-    hal.dataflash->write_word((int)ahrs.roll_sensor);
-    hal.dataflash->write_word((int)(g.channel_pitch.servo_out));
-    hal.dataflash->write_word((int)nav_pitch_cd);
-    hal.dataflash->write_word((int)ahrs.pitch_sensor);
-    hal.dataflash->write_word((int)(g.channel_throttle.servo_out));
-    hal.dataflash->write_word((int)(g.channel_rudder.servo_out));
-    hal.dataflash->write_word((int)(accel.y * 10000));
-    hal.dataflash->write_byte(END_BYTE);
+    DataFlash.WriteByte(HEAD_BYTE1);
+    DataFlash.WriteByte(HEAD_BYTE2);
+    DataFlash.WriteByte(LOG_CONTROL_TUNING_MSG);
+    DataFlash.WriteInt(g.channel_roll.servo_out);
+    DataFlash.WriteInt(nav_roll_cd);
+    DataFlash.WriteInt((int)ahrs.roll_sensor);
+    DataFlash.WriteInt((int)(g.channel_pitch.servo_out));
+    DataFlash.WriteInt((int)nav_pitch_cd);
+    DataFlash.WriteInt((int)ahrs.pitch_sensor);
+    DataFlash.WriteInt((int)(g.channel_throttle.servo_out));
+    DataFlash.WriteInt((int)(g.channel_rudder.servo_out));
+    DataFlash.WriteInt((int)(accel.y * 10000));
+    DataFlash.WriteByte(END_BYTE);
 }
 
 // Write a navigation tuning packet. Total length : 18 bytes
 static void Log_Write_Nav_Tuning()
 {
-    hal.dataflash->write_byte(HEAD_BYTE1);
-    hal.dataflash->write_byte(HEAD_BYTE2);
-    hal.dataflash->write_byte(LOG_NAV_TUNING_MSG);
-    hal.dataflash->write_word((uint16_t)ahrs.yaw_sensor);
-    hal.dataflash->write_word((int16_t)wp_distance);
-    hal.dataflash->write_word(target_bearing_cd);
-    hal.dataflash->write_word(nav_bearing_cd);
-    hal.dataflash->write_word(altitude_error_cm);
-    hal.dataflash->write_word((int16_t)airspeed.get_airspeed_cm());
-    hal.dataflash->write_word(0);     // was nav_gain_scaler
-    hal.dataflash->write_byte(END_BYTE);
+    DataFlash.WriteByte(HEAD_BYTE1);
+    DataFlash.WriteByte(HEAD_BYTE2);
+    DataFlash.WriteByte(LOG_NAV_TUNING_MSG);
+    DataFlash.WriteInt((uint16_t)ahrs.yaw_sensor);
+    DataFlash.WriteInt((int16_t)wp_distance);
+    DataFlash.WriteInt(target_bearing_cd);
+    DataFlash.WriteInt(nav_bearing_cd);
+    DataFlash.WriteInt(altitude_error_cm);
+    DataFlash.WriteInt((int16_t)airspeed.get_airspeed_cm());
+    DataFlash.WriteInt(0);     // was nav_gain_scaler
+    DataFlash.WriteByte(END_BYTE);
 }
 
 // Write a mode packet. Total length : 5 bytes
 static void Log_Write_Mode(uint8_t mode)
 {
-    hal.dataflash->write_byte(HEAD_BYTE1);
-    hal.dataflash->write_byte(HEAD_BYTE2);
-    hal.dataflash->write_byte(LOG_MODE_MSG);
-    hal.dataflash->write_byte(mode);
-    hal.dataflash->write_byte(END_BYTE);
+    DataFlash.WriteByte(HEAD_BYTE1);
+    DataFlash.WriteByte(HEAD_BYTE2);
+    DataFlash.WriteByte(LOG_MODE_MSG);
+    DataFlash.WriteByte(mode);
+    DataFlash.WriteByte(END_BYTE);
 }
 
 // Write an GPS packet. Total length : 30 bytes
@@ -335,20 +335,20 @@ static void Log_Write_GPS(
         int32_t log_Ground_Speed, int32_t log_Ground_Course, uint8_t log_Fix,
         uint8_t log_NumSats)
 {
-    hal.dataflash->write_byte(HEAD_BYTE1);
-    hal.dataflash->write_byte(HEAD_BYTE2);
-    hal.dataflash->write_byte(LOG_GPS_MSG);
-    hal.dataflash->write_dword(log_Time);
-    hal.dataflash->write_byte(log_Fix);
-    hal.dataflash->write_byte(log_NumSats);
-    hal.dataflash->write_dword(log_Lattitude);
-    hal.dataflash->write_dword(log_Longitude);
-    hal.dataflash->write_word(0); // was sonar_alt
-    hal.dataflash->write_dword(log_mix_alt);
-    hal.dataflash->write_dword(log_gps_alt);
-    hal.dataflash->write_dword(log_Ground_Speed);
-    hal.dataflash->write_dword(log_Ground_Course);
-    hal.dataflash->write_byte(END_BYTE);
+    DataFlash.WriteByte(HEAD_BYTE1);
+    DataFlash.WriteByte(HEAD_BYTE2);
+    DataFlash.WriteByte(LOG_GPS_MSG);
+    DataFlash.WriteLong(log_Time);
+    DataFlash.WriteByte(log_Fix);
+    DataFlash.WriteByte(log_NumSats);
+    DataFlash.WriteLong(log_Lattitude);
+    DataFlash.WriteLong(log_Longitude);
+    DataFlash.WriteInt(0); // was sonar_alt
+    DataFlash.WriteLong(log_mix_alt);
+    DataFlash.WriteLong(log_gps_alt);
+    DataFlash.WriteLong(log_Ground_Speed);
+    DataFlash.WriteLong(log_Ground_Course);
+    DataFlash.WriteByte(END_BYTE);
 }
 
 // Write an raw accel/gyro data packet. Total length : 28 bytes
@@ -358,40 +358,40 @@ static void Log_Write_Raw()
     Vector3f accel = ins.get_accel();
     gyro *= t7;                                                                 // Scale up for storage as long integers
     accel *= t7;
-    hal.dataflash->write_byte(HEAD_BYTE1);
-    hal.dataflash->write_byte(HEAD_BYTE2);
-    hal.dataflash->write_byte(LOG_RAW_MSG);
+    DataFlash.WriteByte(HEAD_BYTE1);
+    DataFlash.WriteByte(HEAD_BYTE2);
+    DataFlash.WriteByte(LOG_RAW_MSG);
 
-    hal.dataflash->write_dword((long)gyro.x);
-    hal.dataflash->write_dword((long)gyro.y);
-    hal.dataflash->write_dword((long)gyro.z);
-    hal.dataflash->write_dword((long)accel.x);
-    hal.dataflash->write_dword((long)accel.y);
-    hal.dataflash->write_dword((long)accel.z);
+    DataFlash.WriteLong((long)gyro.x);
+    DataFlash.WriteLong((long)gyro.y);
+    DataFlash.WriteLong((long)gyro.z);
+    DataFlash.WriteLong((long)accel.x);
+    DataFlash.WriteLong((long)accel.y);
+    DataFlash.WriteLong((long)accel.z);
 
-    hal.dataflash->write_byte(END_BYTE);
+    DataFlash.WriteByte(END_BYTE);
 }
 
 static void Log_Write_Current()
 {
-    hal.dataflash->write_byte(HEAD_BYTE1);
-    hal.dataflash->write_byte(HEAD_BYTE2);
-    hal.dataflash->write_byte(LOG_CURRENT_MSG);
-    hal.dataflash->write_word(g.channel_throttle.control_in);
-    hal.dataflash->write_word((int)(battery_voltage1       * 100.0));
-    hal.dataflash->write_word((int)(current_amps1          * 100.0));
-    hal.dataflash->write_word((int)current_total1);
-    hal.dataflash->write_byte(END_BYTE);
+    DataFlash.WriteByte(HEAD_BYTE1);
+    DataFlash.WriteByte(HEAD_BYTE2);
+    DataFlash.WriteByte(LOG_CURRENT_MSG);
+    DataFlash.WriteInt(g.channel_throttle.control_in);
+    DataFlash.WriteInt((int)(battery_voltage1       * 100.0));
+    DataFlash.WriteInt((int)(current_amps1          * 100.0));
+    DataFlash.WriteInt((int)current_total1);
+    DataFlash.WriteByte(END_BYTE);
 }
 
 // Read a Current packet
 static void Log_Read_Current()
 {
     cliSerial->printf_P(PSTR("CURR: %d, %4.4f, %4.4f, %d\n"),
-                    (int)hal.dataflash->read_word(),
-                    ((float)hal.dataflash->read_word() / 100.f),
-                    ((float)hal.dataflash->read_word() / 100.f),
-                    (int)hal.dataflash->read_word());
+                    (int)DataFlash.ReadInt(),
+                    ((float)DataFlash.ReadInt() / 100.f),
+                    ((float)DataFlash.ReadInt() / 100.f),
+                    (int)DataFlash.ReadInt());
 }
 
 // Read an control tuning packet
@@ -401,7 +401,7 @@ static void Log_Read_Control_Tuning()
 
     cliSerial->printf_P(PSTR("CTUN:"));
     for (int16_t y = 1; y < 10; y++) {
-        logvar = hal.dataflash->read_word();
+        logvar = DataFlash.ReadInt();
         if(y < 8) logvar        = logvar/100.f;
         if(y == 9) logvar       = logvar/10000.f;
         cliSerial->print(logvar);
@@ -415,7 +415,7 @@ static void Log_Read_Nav_Tuning()
 {
     int16_t d[7];
     for (int8_t i=0; i<7; i++) {
-        d[i] = hal.dataflash->read_word();
+        d[i] = DataFlash.ReadInt();
     }
     cliSerial->printf_P(PSTR("NTUN: %4.4f, %d, %4.4f, %4.4f, %4.4f, %4.4f, %4.4f,\n"),              // \n
                     d[0]/100.0,
@@ -434,14 +434,14 @@ static void Log_Read_Performance()
     int16_t logvar;
 
     cliSerial->printf_P(PSTR("PM:"));
-    pm_time = hal.dataflash->read_dword();
+    pm_time = DataFlash.ReadLong();
     cliSerial->print(pm_time);
     print_comma();
     for (int16_t y = 1; y <= 12; y++) {
         if(y < 3 || y > 7) {
-            logvar = hal.dataflash->read_word();
+            logvar = DataFlash.ReadInt();
         }else{
-            logvar = hal.dataflash->read_byte();
+            logvar = DataFlash.ReadByte();
         }
         cliSerial->print(logvar);
         print_comma();
@@ -457,12 +457,12 @@ static void Log_Read_Cmd()
 
     cliSerial->printf_P(PSTR("CMD:"));
     for(int16_t i = 1; i < 4; i++) {
-        logvarb = hal.dataflash->read_byte();
+        logvarb = DataFlash.ReadByte();
         cliSerial->print(logvarb, DEC);
         print_comma();
     }
     for(int16_t i = 1; i < 4; i++) {
-        logvarl = hal.dataflash->read_dword();
+        logvarl = DataFlash.ReadLong();
         cliSerial->print(logvarl, DEC);
         print_comma();
     }
@@ -471,7 +471,7 @@ static void Log_Read_Cmd()
 
 static void Log_Read_Startup()
 {
-    uint8_t logbyte = hal.dataflash->read_byte();
+    uint8_t logbyte = DataFlash.ReadByte();
 
     if (logbyte == TYPE_AIRSTART_MSG)
         cliSerial->printf_P(PSTR("AIR START - "));
@@ -480,16 +480,16 @@ static void Log_Read_Startup()
     else
         cliSerial->printf_P(PSTR("UNKNOWN STARTUP - "));
 
-    cliSerial->printf_P(PSTR(" %d commands in memory\n"),(int)hal.dataflash->read_byte());
+    cliSerial->printf_P(PSTR(" %d commands in memory\n"),(int)DataFlash.ReadByte());
 }
 
 // Read an attitude packet
 static void Log_Read_Attitude()
 {
     int16_t d[3];
-    d[0] = hal.dataflash->read_word();
-    d[1] = hal.dataflash->read_word();
-    d[2] = hal.dataflash->read_word();
+    d[0] = DataFlash.ReadInt();
+    d[1] = DataFlash.ReadInt();
+    d[2] = DataFlash.ReadInt();
     cliSerial->printf_P(PSTR("ATT: %d, %d, %u\n"),
                     (int)d[0], (int)d[1],
                     (unsigned)d[2]);
@@ -499,7 +499,7 @@ static void Log_Read_Attitude()
 static void Log_Read_Mode()
 {
     cliSerial->printf_P(PSTR("MOD:"));
-    print_flight_mode(hal.dataflash->read_byte());
+    print_flight_mode(DataFlash.ReadByte());
 }
 
 // Read a GPS packet
@@ -508,16 +508,16 @@ static void Log_Read_GPS()
     int32_t l[7];
     uint8_t b[2];
     int16_t i;
-    l[0] = hal.dataflash->read_dword();
-    b[0] = hal.dataflash->read_byte();
-    b[1] = hal.dataflash->read_byte();
-    l[1] = hal.dataflash->read_dword();
-    l[2] = hal.dataflash->read_dword();
-    i = hal.dataflash->read_word();
-    l[3] = hal.dataflash->read_dword();
-    l[4] = hal.dataflash->read_dword();
-    l[5] = hal.dataflash->read_dword();
-    l[6] = hal.dataflash->read_dword();
+    l[0] = DataFlash.ReadLong();
+    b[0] = DataFlash.ReadByte();
+    b[1] = DataFlash.ReadByte();
+    l[1] = DataFlash.ReadLong();
+    l[2] = DataFlash.ReadLong();
+    i = DataFlash.ReadInt();
+    l[3] = DataFlash.ReadLong();
+    l[4] = DataFlash.ReadLong();
+    l[5] = DataFlash.ReadLong();
+    l[6] = DataFlash.ReadLong();
     cliSerial->printf_P(PSTR("GPS: %ld, %d, %d, %4.7f, %4.7f, %d, %4.4f, %4.4f, %4.4f, %4.4f\n"),
                     (long)l[0], (int)b[0], (int)b[1],
                     l[1]/t7, l[2]/t7,
@@ -531,14 +531,14 @@ static void Log_Read_Raw()
     float logvar;
     cliSerial->printf_P(PSTR("RAW:"));
     for (int16_t y = 0; y < 6; y++) {
-        logvar = (float)hal.dataflash->read_dword() / t7;
+        logvar = (float)DataFlash.ReadLong() / t7;
         cliSerial->print(logvar);
         print_comma();
     }
     cliSerial->println();
 }
 
-// Read the hal.dataflash->log memory : Packet Parser
+// Read the DataFlash.log memory : Packet Parser
 static void Log_Read(int16_t start_page, int16_t end_page)
 {
     int16_t packet_count = 0;
@@ -552,7 +552,7 @@ static void Log_Read(int16_t start_page, int16_t end_page)
 
     if(start_page > end_page)
     {
-        packet_count = Log_Read_Process(start_page, hal.dataflash->num_pages());
+        packet_count = Log_Read_Process(start_page, DataFlash.df_NumPages);
         packet_count += Log_Read_Process(1, end_page);
     } else {
         packet_count = Log_Read_Process(start_page, end_page);
@@ -561,7 +561,7 @@ static void Log_Read(int16_t start_page, int16_t end_page)
     cliSerial->printf_P(PSTR("Number of packets read: %d\n"), (int) packet_count);
 }
 
-// Read the hal.dataflash->log memory : Packet Parser
+// Read the DataFlash.log memory : Packet Parser
 static int16_t Log_Read_Process(int16_t start_page, int16_t end_page)
 {
     uint8_t data;
@@ -569,9 +569,9 @@ static int16_t Log_Read_Process(int16_t start_page, int16_t end_page)
     int16_t page = start_page;
     int16_t packet_count = 0;
 
-    hal.dataflash->start_read(start_page);
+    DataFlash.StartRead(start_page);
                         while (page < end_page && page != -1) {
-                            data = hal.dataflash->read_byte();
+                            data = DataFlash.ReadByte();
 
                             switch(log_step)     // This is a state machine to read the packets
                             {
@@ -640,7 +640,7 @@ static int16_t Log_Read_Process(int16_t start_page, int16_t end_page)
                                 log_step = 0;                   // Restart sequence: new packet...
                                 break;
                             }
-                            page = hal.dataflash->get_page();
+                            page = DataFlash.GetPage();
                         }
                         return packet_count;
 }

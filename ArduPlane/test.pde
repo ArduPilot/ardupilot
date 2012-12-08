@@ -389,19 +389,19 @@ static int8_t
 test_logging(uint8_t argc, const Menu::arg *argv)
 {
     cliSerial->println_P(PSTR("Testing dataflash logging"));
-    if (!hal.dataflash->media_present()) {
+    if (!DataFlash.CardInserted()) {
         cliSerial->println_P(PSTR("ERR: No dataflash inserted"));
         return 0;
     }
-    hal.dataflash->read_mfg_id();
+    DataFlash.ReadManufacturerID();
     cliSerial->printf_P(PSTR("Manufacturer: 0x%02x   Device: 0x%04x\n"),
-                    (unsigned)hal.dataflash->mfg_id(),
-                    (unsigned)hal.dataflash->device_id());
+                    (unsigned)DataFlash.df_manufacturer,
+                    (unsigned)DataFlash.df_device);
     cliSerial->printf_P(PSTR("NumPages: %u\n"),
-                    (unsigned)hal.dataflash->num_pages()+1);
-    hal.dataflash->start_read(hal.dataflash->num_pages()+1);
+                    (unsigned)DataFlash.df_NumPages+1);
+    DataFlash.StartRead(DataFlash.df_NumPages+1);
     cliSerial->printf_P(PSTR("Format version: %lx  Expected format version: %lx\n"),
-                    (unsigned long)hal.dataflash->read_dword(),
+                    (unsigned long)DataFlash.ReadLong(),
                     (unsigned long)DF_LOGGING_FORMAT);
     return 0;
 }

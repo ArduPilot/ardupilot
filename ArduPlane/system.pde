@@ -133,16 +133,16 @@ static void init_ardupilot()
     mavlink_system.sysid = g.sysid_this_mav;
 
 #if LOGGING_ENABLED == ENABLED
-    if (!hal.dataflash->media_present()) {
+    if (!DataFlash.CardInserted()) {
         gcs_send_text_P(SEVERITY_LOW, PSTR("No dataflash card inserted"));
         g.log_bitmask.set(0);
-    } else if (hal.dataflash->need_erase()) {
+    } else if (DataFlash.NeedErase()) {
         gcs_send_text_P(SEVERITY_LOW, PSTR("ERASING LOGS"));
         do_erase_logs();
         gcs0.reset_cli_timeout();
     }
     if (g.log_bitmask != 0) {
-        hal.dataflash->start_new_log();
+        DataFlash.start_new_log();
     }
 #endif
 
