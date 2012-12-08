@@ -12,33 +12,28 @@
 const AP_Param::GroupInfo AP_Limit_Geofence::var_info[] PROGMEM = {
     // @Param: FNC_ON
     // @DisplayName: Enable Geofence
-    // @Description: Setting this to Enabled(1) will enable the geofence.
-    // Setting this to Disabled(0) will disable the geofence
+    // @Description: Setting this to Enabled(1) will enable the geofence. Setting this to Disabled(0) will disable the geofence
     // @Values: 0:Disabled,1:Enabled
     // @User: Standard
     AP_GROUPINFO("FNC_ON",  0,      AP_Limit_Geofence,      _enabled, 0),
 
     // @Param: FNC_REQ
     // @DisplayName: Require Geofence
-    // @Description: Setting this to Enabled(1) will make being inside the
-    // geofence a required check before arming the vehicle.
+    // @Description: Setting this to Enabled(1) will make being inside the geofence a required check before arming the vehicle.
     // @Values: 0:Disabled,1:Enabled
     // @User: Standard
     AP_GROUPINFO("FNC_REQ", 1,      AP_Limit_Geofence,      _required, 0),
 
     // @Param: FNC_SMPL
     // @DisplayName: Require Geofence
-    // @Description: "Simple" geofence (enabled - 1) is based on a radius from
-    // the home position, "Complex" (disabled - 0) define a complex fence by
-    // lat/long positions
+    // @Description: "Simple" geofence (enabled - 1) is based on a radius from the home position, "Complex" (disabled - 0) define a complex fence by lat/long positions
     // @Values: 0:Disabled,1:Enabled
     // @User: Standard
     AP_GROUPINFO("FNC_SMPL", 2,     AP_Limit_Geofence,      _simple, 0),
 
     // @Param: FNC_RAD
     // @DisplayName: Require Geofence
-    // @Description: Radius of fenced area in meters. A value of 20 creates a
-    // 20-meter radius circle (40-meter diameter) from the home point.
+    // @Description: Radius of fenced area in meters. A value of 20 creates a 20-meter radius circle (40-meter diameter) from the home point.
     // @Units: Meters
     // @Range: 0 32767
     // @Increment: 1

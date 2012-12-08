@@ -13,28 +13,21 @@
 const AP_Param::GroupInfo AP_Limit_Altitude::var_info[] PROGMEM = {
     // @Param: ALT_ON
     // @DisplayName: Enable altitude
-    // @Description: Setting this to Enabled(1) will enable the altitude.
-    // Setting this to Disabled(0) will disable the altitude
+    // @Description: Setting this to Enabled(1) will enable the altitude. Setting this to Disabled(0) will disable the altitude
     // @Values: 0:Disabled,1:Enabled
     // @User: Standard
     AP_GROUPINFO("ALT_ON",  0,      AP_Limit_Altitude,      _enabled, 0),
 
     // @Param: ALT_REQD
     // @DisplayName: Require altitude
-    // @Description: Setting this to Enabled(1) will make being inside the
-    // altitude a required check before arming the vehicle.
+    // @Description: Setting this to Enabled(1) will make being inside the altitude a required check before arming the vehicle.
     // @Values: 0:Disabled,1:Enabled
     // @User: Standard
     AP_GROUPINFO("ALT_REQ", 1,      AP_Limit_Altitude,      _required, 0),
 
     // @Param: ALT_MIN
     // @DisplayName: Minimum Altitude
-    // @Description: Minimum Altitude. Zero to disable. Sets a "floor" that
-    // your vehicle will try to stay above. IF the vehicle is crossing the
-    // threshold at speed, it will take a while to recover, so give yourself
-    // enough room. Caution: minimum altitude limits can cause unexpected
-    // behaviour, such as inability to land, or sudden takeoff. Read the wiki
-    // instructions before setting.
+    // @Description: Minimum Altitude. Zero to disable. Sets a "floor" that your vehicle will try to stay above. IF the vehicle is crossing the threshold at speed, it will take a while to recover, so give yourself enough room. Caution: minimum altitude limits can cause unexpected behaviour, such as inability to land, or sudden takeoff. Read the wiki instructions before setting.
     // @Units: Meters
     // @Range: 0 250000
     // @Increment: 1
@@ -43,9 +36,7 @@ const AP_Param::GroupInfo AP_Limit_Altitude::var_info[] PROGMEM = {
 
     // @Param: ALT_MAX
     // @DisplayName: Maximum Altitude
-    // @Description: Maximum Altitude. Zero to disable. Sets a "ceiling" that
-    // your vehicle will try to stay below. IF the vehicle is crossing the
-    // threshold at speed, it will take a while to recover.
+    // @Description: Maximum Altitude. Zero to disable. Sets a "ceiling" that your vehicle will try to stay below. IF the vehicle is crossing the threshold at speed, it will take a while to recover.
     // @Units: Meters
     // @Range: 0 250000
     // @Increment: 1

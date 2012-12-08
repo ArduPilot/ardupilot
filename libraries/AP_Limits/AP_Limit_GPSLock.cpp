@@ -13,16 +13,14 @@
 const AP_Param::GroupInfo AP_Limit_GPSLock::var_info[] PROGMEM = {
     // @Param: GPSLCK_ON
     // @DisplayName: Enable gpslock
-    // @Description: Setting this to Enabled(1) will enable the gpslock.
-    // Setting this to Disabled(0) will disable the gpslock
+    // @Description: Setting this to Enabled(1) will enable the gpslock. Setting this to Disabled(0) will disable the gpslock
     // @Values: 0:Disabled,1:Enabled
     // @User: Standard
     AP_GROUPINFO("GPSLCK_ON",   0,      AP_Limit_GPSLock,       _enabled, 0),
 
     // @Param: GPSLCK_REQ
     // @DisplayName: Require gpslock
-    // @Description: Setting this to Enabled(1) will make being inside the
-    // gpslock a required check before arming the vehicle.
+    // @Description: Setting this to Enabled(1) will make being inside the gpslock a required check before arming the vehicle.
     // @Values: 0:Disabled,1:Enabled
     // @User: Standard
     AP_GROUPINFO("GPSLCK_REQ",  1,      AP_Limit_GPSLock,       _required, 0),
