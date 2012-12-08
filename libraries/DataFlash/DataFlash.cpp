@@ -4,8 +4,10 @@
  */
 
 #include <stdint.h>
+#include <AP_HAL.h>
 #include "DataFlash.h"
 
+extern AP_HAL::HAL& hal;
 
 // *** DATAFLASH PUBLIC FUNCTIONS ***
 void DataFlash_Class::StartWrite(int16_t PageAdr)
@@ -186,11 +188,13 @@ uint16_t DataFlash_Class::GetFilePage()
     return df_FilePage;
 }
 
-void DataFlash_Class::EraseAll(void (*delay_cb)(unsigned long))
+void DataFlash_Class::EraseAll()
 {
     for(uint16_t j = 1; j <= (df_NumPages+1)/8; j++) {
         BlockErase(j);
-        delay_cb(1);
+        if (j%6 == 0) {
+            hal.scheduler->delay(6);
+        }
     }
     // write the logging format in the last page
     StartWrite(df_NumPages+1);

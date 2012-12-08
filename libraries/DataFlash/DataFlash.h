@@ -59,7 +59,7 @@ public:
     int16_t GetWritePage(void);
 
     // erase handling
-    void EraseAll(void (*delay_cb)(unsigned long));
+    void EraseAll();
     bool NeedErase(void);
 
     // Write methods
