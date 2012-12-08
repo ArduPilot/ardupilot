@@ -1866,7 +1866,12 @@ void update_throttle_mode(void)
             set_throttle_out(g.rc_3.control_in, false);
 
             // update estimate of throttle cruise
-            update_throttle_cruise(g.rc_3.control_in);
+			#if FRAME_CONFIG == HELI_FRAME
+            update_throttle_cruise(motors.coll_out);
+			#else
+			update_throttle_cruise(g.rc_3.control_in);
+			#endif  //HELI_FRAME
+			
 
             // check if we've taken off yet
             if (!ap.takeoff_complete && motors.armed()) {
@@ -1886,7 +1891,11 @@ void update_throttle_mode(void)
             set_throttle_out(g.rc_3.control_in, true);
 
             // update estimate of throttle cruise
-            update_throttle_cruise(g.rc_3.control_in);
+            #if FRAME_CONFIG == HELI_FRAME
+            update_throttle_cruise(motors.coll_out);
+			#else
+			update_throttle_cruise(g.rc_3.control_in);
+			#endif  //HELI_FRAME
 
             if (!ap.takeoff_complete && motors.armed()) {
                 if (g.rc_3.control_in > g.throttle_cruise) {
