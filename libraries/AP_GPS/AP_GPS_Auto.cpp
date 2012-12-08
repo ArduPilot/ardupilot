@@ -48,9 +48,7 @@ AP_GPS_Auto::read(void)
 	if (now - last_baud_change_ms > 1200) {
 		// its been more than 1.2 seconds without detection on this
 		// GPS - switch to another baud rate
-    uint32_t newbaud = pgm_read_dword(&baudrates[last_baud]);
-     /* DEBUG: hal.console->printf_P(PSTR("gps set baud %ld\r\n"), newbaud); */
-		_port->begin(newbaud, 256, 16);		
+		_port->begin(pgm_read_dword(&baudrates[last_baud]), 256, 16);		
 		last_baud++;
 		last_baud_change_ms = now;
 		if (last_baud == sizeof(baudrates) / sizeof(baudrates[0])) {
@@ -67,7 +65,7 @@ AP_GPS_Auto::read(void)
 	if (NULL != (gps = _detect())) {
 		// configure the detected GPS
 		gps->init(_nav_setting);
-    hal.console->println_P(PSTR("gps OK"));
+		hal.console->println_P(PSTR("OK"));
 		*_gps = gps;
 		return true;
     }
@@ -89,28 +87,28 @@ AP_GPS_Auto::_detect(void)
 	while (_port->available() > 0) {
 		uint8_t data = _port->read();
 		if (AP_GPS_UBLOX::_detect(data)) {
-			hal.console->println_P(PSTR("gps ublox"));
+			hal.console->print_P(PSTR(" ublox "));
 			return new AP_GPS_UBLOX(_port);
 		}
 		if (AP_GPS_MTK16::_detect(data)) {
-			hal.console->println_P(PSTR("gps MTK 1.6"));
+			hal.console->print_P(PSTR(" MTK16 "));
 			return new AP_GPS_MTK16(_port);
 		}
 		if (AP_GPS_MTK::_detect(data)) {
-			hal.console->println_P(PSTR("gps MTK 1.0"));
+			hal.console->print_P(PSTR(" MTK "));
 			return new AP_GPS_MTK(_port);
 		}
 #if !defined( __AVR_ATmega1280__ )
 		// save a bit of code space on a 1280
 		if (AP_GPS_SIRF::_detect(data)) {
-			hal.console->println_P(PSTR("gps SIRF"));
+			hal.console->print_P(PSTR(" SIRF "));
 			return new AP_GPS_SIRF(_port);
 		}
 		if (hal.scheduler->millis() - detect_started_ms > 5000) {
 			// prevent false detection of NMEA mode in
 			// a MTK or UBLOX which has booted in NMEA mode
 			if (AP_GPS_NMEA::_detect(data)) {
-				hal.console->println_P(PSTR("gps NMEA"));
+				hal.console->print_P(PSTR(" NMEA "));
 				return new AP_GPS_NMEA(_port);
 			}
 		}
