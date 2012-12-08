@@ -21,7 +21,7 @@ private:
     uint16_t                PageSize();
     void                    PageErase (uint16_t PageAdr);
     void                    BlockErase (uint16_t BlockAdr);
-    void                    ChipErase(void (*delay_cb)(unsigned long));
+    void                    ChipErase();
     
     AP_HAL::SPIDeviceDriver *_spi;
     AP_HAL::Semaphore *_spi_sem;

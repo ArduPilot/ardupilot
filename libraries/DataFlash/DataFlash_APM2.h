@@ -4,7 +4,7 @@
 #ifndef __DATAFLASH_APM2_H__
 #define __DATAFLASH_APM2_H__
 
-#include <AP_Semaphore.h>
+#include <AP_HAL.h>
 #include "DataFlash.h"
 
 class DataFlash_APM2 : public DataFlash_Class
@@ -22,7 +22,7 @@ private:
 
     void                    PageErase (uint16_t PageAdr);
     void                    BlockErase (uint16_t BlockAdr);
-    void                    ChipErase(void (*delay_cb)(unsigned long));
+    void                    ChipErase();
 
     AP_HAL::SPIDeviceDriver* _spi;
     AP_HAL::Semaphore* _spi_sem;

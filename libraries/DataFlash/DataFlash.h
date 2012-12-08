@@ -36,7 +36,7 @@ private:
     virtual uint8_t BufferRead (uint8_t BufferNum, uint16_t IntPageAdr) = 0;
     virtual void PageErase(uint16_t PageAdr) = 0;
     virtual void BlockErase(uint16_t BlockAdr) = 0;
-    virtual void ChipErase(void (*delay_cb)(unsigned long)) = 0;
+    virtual void ChipErase() = 0;
 
     // internal high level functions
     int16_t find_last_page(void);
