@@ -34,10 +34,12 @@
 #include <AP_HAL.h>
 #include "DataFlash_APM2.h"
 
+extern const AP_HAL::HAL& hal;
+
 ///*
 #define ENABLE_FASTSERIAL_DEBUG
 #ifdef ENABLE_FASTSERIAL_DEBUG
- # define serialDebug(fmt, args...)  do {hal.console->printf_P(PSTR( #__FUNCTION__ ":" #__LINE__ ":" fmt "\n"), ##args); } while(0)
+ #define serialDebug(fmt, args...)  do {hal.console->printf_P(PSTR( __FUNCTION__ ":%d:" fmt "\n"), __LINE__, ##args); } while(0)
 #else
  # define serialDebug(fmt, args...)
 #endif
@@ -163,7 +165,7 @@ uint16_t DataFlash_APM1::PageSize()
 {
     if (_spi_sem) {
         bool got = _spi_sem->get(this);        
-        if (!got) return;
+        if (!got) return 0;
     }
     return(528-((ReadStatusReg()&0x01) << 4)); // if first bit 1 trhen 512 else 528 bytes
     if (_spi_sem) {
@@ -278,7 +280,7 @@ uint8_t DataFlash_APM1::BufferRead (uint8_t BufferNum, uint16_t IntPageAdr)
 
     if (_spi_sem) {
         bool got = _spi_sem->get(this);        
-        if (!got) return;
+        if (!got) return 0;
     }
     // activate dataflash command decoder
     _spi->cs_assert();
@@ -376,7 +378,7 @@ void DataFlash_APM1::BlockErase (uint16_t BlockAdr)
 }
 
 
-void DataFlash_APM1::ChipErase(void (*delay_cb)(unsigned long))
+void DataFlash_APM1::ChipErase()
 {
     //serialDebug("Chip Erase\n");
     if (_spi_sem) {
@@ -397,7 +399,7 @@ void DataFlash_APM1::ChipErase(void (*delay_cb)(unsigned long))
     _spi->cs_release();
 
     while(!ReadStatus()) {
-        delay_cb(1);
+        hal.scheduler->delay(6);
     }
     
     if (_spi_sem) {
