@@ -182,8 +182,6 @@ void AP_Baro_BMP085::ReadPress()
 // Send Command to Read Temperature
 void AP_Baro_BMP085::Command_ReadTemp()
 {
-    uint8_t data[1];
-    data[0] = 0x2E;
     if (hal.i2c->writeRegister(BMP085_ADDRESS, 0xF4, 0x2E) != 0) {
         healthy = false;
     }
