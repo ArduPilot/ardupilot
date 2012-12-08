@@ -235,15 +235,7 @@
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
-// Channel Config (custom MOT channel mappings)
-//
-
-#ifndef CONFIG_CHANNELS
- # define CONFIG_CHANNELS CHANNEL_CONFIG_DEFAULT
-#endif
-
-//////////////////////////////////////////////////////////////////////////////
-// Acrobatics
+// Channel 7 default option
 //
 
 #ifndef CH7_OPTION
@@ -532,7 +524,9 @@
 
 // Alt Hold Mode
 #ifndef ALT_HOLD_YAW
- # define ALT_HOLD_YAW           	YAW_HOLD
+ //# define ALT_HOLD_YAW           	YAW_HOLD
+ // debug -- remove me!!
+ # define ALT_HOLD_YAW              YAW_LOOK_AHEAD
 #endif
 
 #ifndef ALT_HOLD_RP
@@ -545,7 +539,7 @@
 
 // AUTO Mode
 #ifndef AUTO_YAW
- # define AUTO_YAW                  YAW_AUTO
+ # define AUTO_YAW                  YAW_LOOK_AT_NEXT_WP
 #endif
 
 #ifndef AUTO_RP
@@ -558,7 +552,7 @@
 
 // CIRCLE Mode
 #ifndef CIRCLE_YAW
- # define CIRCLE_YAW             	YAW_AUTO
+ # define CIRCLE_YAW             	YAW_LOOK_AT_NEXT_WP
 #endif
 
 #ifndef CIRCLE_RP
@@ -698,8 +692,8 @@
  # define STABILIZE_YAW_IMAX        8.0            // degrees * 100
 #endif
 
-#ifndef YAW_LOOK_AHEAD_RATE
- # define YAW_LOOK_AHEAD_RATE		1000			// dimensionless, smaller number means stronger effect
+#ifndef YAW_LOOK_AHEAD_MIN_SPEED
+ # define YAW_LOOK_AHEAD_MIN_SPEED  1000             // minimum ground speed in cm/s required before copter is aimed at ground course
 #endif
 
 
@@ -832,7 +826,11 @@
 #endif
 
 #ifndef AUTO_SLEW_RATE
- # define AUTO_SLEW_RATE         	30                     // degrees
+ # define AUTO_SLEW_RATE         	30                     // degrees/sec
+#endif
+
+#ifndef AUTO_YAW_SLEW_RATE
+ # define AUTO_YAW_SLEW_RATE        60                     // degrees/sec
 #endif
 
 

@@ -46,9 +46,6 @@ static void update_navigation()
 
         // calculate velocity
         calc_velocity_and_position();
-		
-		// calculate ground bearing
-		calc_ground_bearing();
 
         // calculate distance, angles to target
         calc_distance_and_bearing();
@@ -130,11 +127,6 @@ static void calc_velocity_and_position(){
     last_gps_latitude   = g_gps->latitude;
 }
 
-static void calc_ground_bearing(){
-	ground_bearing = atan2( lat_speed , lon_speed ) * DEGX100;
-	ground_bearing = wrap_360(ground_bearing);						// atan2 returns a value of -pi to +pi, so we need to wrap this.
-}
-
 //****************************************************************
 // Function that will calculate the desired direction to fly and distance
 //****************************************************************
@@ -145,10 +137,13 @@ static void calc_distance_and_bearing()
     wp_distance     = get_distance_cm(&current_loc, &next_WP);
     home_distance   = get_distance_cm(&current_loc, &home);
 
-    // target_bearing is where we should be heading
+    // wp_bearing is bearing to next waypoint
     // --------------------------------------------
-    target_bearing          = get_bearing_cd(&current_loc, &next_WP);
-    home_to_copter_bearing  = get_bearing_cd(&home, &current_loc);
+    wp_bearing          = get_bearing_cd(&current_loc, &next_WP);
+    home_bearing        = get_bearing_cd(&current_loc, &home);
+
+    // bearing to target (used when yaw_mode = YAW_LOOK_AT_LOCATION)
+    yaw_look_at_WP_bearing = get_bearing_cd(&current_loc, &yaw_look_at_WP);
 }
 
 static void calc_location_error(struct Location *next_loc)
@@ -179,9 +174,6 @@ static void run_navigation_contollers()
         // note: wp_control is handled by commands_logic
         verify_commands();
 
-        // calculates desired Yaw
-        update_auto_yaw();
-
         // calculates the desired Roll and Pitch
         update_nav_wp();
         break;
@@ -192,9 +184,7 @@ static void run_navigation_contollers()
         wp_verify_byte = 0;
         verify_nav_wp();
 
-        if (wp_control == WP_MODE) {
-            update_auto_yaw();
-        } else {
+        if (wp_control != WP_MODE) {
             set_mode(LOITER);
         }
         update_nav_wp();
@@ -203,9 +193,6 @@ static void run_navigation_contollers()
     case RTL:
         // execute the RTL state machine
         verify_RTL();
-
-        // calculates desired Yaw
-        update_auto_yaw();
 
         // calculates the desired Roll and Pitch
         update_nav_wp();
@@ -252,9 +239,6 @@ static void run_navigation_contollers()
 
     case CIRCLE:
         wp_control              = CIRCLE_MODE;
-
-        // calculates desired Yaw
-        update_auto_yaw();
         update_nav_wp();
         break;
 
@@ -271,16 +255,8 @@ static void run_navigation_contollers()
         // get distance to home
         if(home_distance > SUPER_SIMPLE_RADIUS) {        // 10m from home
             // we reset the angular offset to be a vector from home to the quad
-            initial_simple_bearing = home_to_copter_bearing;
+            initial_simple_bearing = wrap_360(home_bearing+18000);
             //cliSerial->printf("ISB: %d\n", initial_simple_bearing);
-        }
-    }
-
-    if(yaw_mode == YAW_LOOK_AT_HOME) {
-        if(ap.home_is_set) {
-            nav_yaw = get_bearing_cd(&current_loc, &home);
-        } else {
-            nav_yaw = 0;
         }
     }
 }
@@ -288,7 +264,7 @@ static void run_navigation_contollers()
 static bool check_missed_wp()
 {
     int32_t temp;
-    temp = target_bearing - original_target_bearing;
+    temp = wp_bearing - original_wp_bearing;
     temp = wrap_180(temp);
     return (labs(temp) > 9000);         // we passed the waypoint by 100 degrees
 }
@@ -383,7 +359,7 @@ static void calc_nav_rate(int16_t max_speed)
     cross_speed     = constrain(cross_speed, -150, 150);
 
     // rotate by 90 to deal with trig functions
-    temp                    = (9000l - target_bearing) * RADX100;
+    temp                    = (9000l - wp_bearing) * RADX100;
     temp_x                  = cos(temp);
     temp_y                  = sin(temp);
 
@@ -471,9 +447,9 @@ static void update_crosstrack(void)
     // Crosstrack Error
     // ----------------
     if (wp_distance >= (g.crosstrack_min_distance * 100) &&
-        abs(wrap_180(target_bearing - original_target_bearing)) < 4500) {
+        abs(wrap_180(wp_bearing - original_wp_bearing)) < 4500) {
 
-	    float temp = (target_bearing - original_target_bearing) * RADX100;
+	    float temp = (wp_bearing - original_wp_bearing) * RADX100;
     	crosstrack_error = sin(temp) * wp_distance;          // Meters we are off track line
     }else{
         // fade out crosstrack
@@ -549,7 +525,7 @@ static void reset_nav_params(void)
     crosstrack_error                = 0;
 
     // Will be set by new command
-    target_bearing                  = 0;
+    wp_bearing                      = 0;
 
     // Will be set by new command
     wp_distance                     = 0;
@@ -563,9 +539,6 @@ static void reset_nav_params(void)
     nav_pitch 						= 0;
     auto_roll 						= 0;
     auto_pitch 						= 0;
-
-    // make sure we stick to Nav yaw on takeoff
-    auto_yaw = nav_yaw;
 }
 
 static int32_t wrap_360(int32_t error)
@@ -580,4 +553,11 @@ static int32_t wrap_180(int32_t error)
     if (error > 18000) error -= 36000;
     if (error < -18000) error += 36000;
     return error;
+}
+
+// get_yaw_slew - reduces rate of change of yaw to a maximum
+// assumes it is called at 100hz so centi-degrees and update rate cancel each other out
+static int32_t get_yaw_slew(int32_t current_yaw, int32_t desired_yaw, int16_t deg_per_sec)
+{
+    return wrap_360(current_yaw + constrain(wrap_180(desired_yaw - current_yaw), -deg_per_sec, deg_per_sec));
 }

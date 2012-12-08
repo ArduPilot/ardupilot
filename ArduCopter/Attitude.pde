@@ -699,6 +699,23 @@ get_of_pitch(int32_t input_pitch)
 #endif
 }
 
+/*************************************************************
+ * yaw controllers
+ *************************************************************/
+
+ // update_throttle_cruise - update throttle cruise if necessary
+static void get_look_ahead_yaw(int16_t pilot_yaw)
+{
+    // Commanded Yaw to automatically look ahead.
+    if (g_gps->fix && g_gps->ground_course > YAW_LOOK_AHEAD_MIN_SPEED) {
+        nav_yaw = get_yaw_slew(nav_yaw, g_gps->ground_course, AUTO_YAW_SLEW_RATE);
+        get_stabilize_yaw(wrap_360(nav_yaw + pilot_yaw));   // Allow pilot to "skid" around corners up to 45 degrees
+    }else{
+        nav_yaw += pilot_yaw * g.acro_p * G_Dt;
+        nav_yaw = wrap_360(nav_yaw);
+        get_stabilize_yaw(nav_yaw);
+    }
+}
 
 /*************************************************************
  *  throttle control
@@ -826,9 +843,6 @@ get_throttle_accel(int16_t z_target_accel)
     //
     // limit the rate
     output =  constrain(p+i+d+g.throttle_cruise, g.throttle_min, g.throttle_max);
-    //Serial.printf("ThAccel 1 z_target_accel:%4.2f  z_accel_meas:%4.2f  z_accel_error:%4.2f  output:%4.2f  p:%4.2f  i:%4.2f  d:%4.2f \n", 1.0*z_target_accel, 1.0*z_accel_meas, 1.0*z_accel_error, 1.0*output, 1.0*p, 1.0*i, 1.0*d);
-    //Serial.printf("motors.reached_limit:%4.2f  reset_accel_throttle_counter:%4.2f  output:%4.2f  p:%4.2f  i:%4.2f  d:%4.2f \n", 1.0*motors.reached_limit(0xff), 1.0*reset_accel_throttle_counter, 1.0*output, 1.0*p, 1.0*i, 1.0*d);
-    //Serial.printf("One G:  z_target_accel:%4.2f  z_accel_meas:%4.2f  accel_one_g:%4.2f \n", 1.0*z_target_accel, 1.0*z_accel_meas, 1.0*accel_one_g);
 
 #if LOGGING_ENABLED == ENABLED
     static int8_t log_counter = 0;                                      // used to slow down logging of PID values to dataflash

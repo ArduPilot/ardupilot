@@ -79,7 +79,7 @@ static void update_commands()
                 if(tmp_loc.lat == 0) {
                     ap.fast_corner = false;
                 }else{
-                    int32_t temp = get_bearing_cd(&next_WP, &tmp_loc) - original_target_bearing;
+                    int32_t temp = get_bearing_cd(&next_WP, &tmp_loc) - original_wp_bearing;
                     temp = wrap_180(temp);
                     ap.fast_corner = labs(temp) < 6000;
                 }

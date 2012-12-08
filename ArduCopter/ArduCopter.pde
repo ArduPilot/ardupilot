@@ -428,7 +428,6 @@ static struct AP_System{
 // updated after GPS read - 5-10hz
 static int16_t lon_speed;       // expressed in cm/s.  positive numbers mean moving east
 static int16_t lat_speed;       // expressed in cm/s.  positive numbers when moving north
-static int16_t ground_bearing;	// expressed in centidegrees
 
 // The difference between the desired rate of travel and the actual rate of travel
 // updated after GPS read - 5-10hz
@@ -549,7 +548,7 @@ union float_int {
 // Location & Navigation
 ////////////////////////////////////////////////////////////////////////////////
 // This is the angle from the copter to the "next_WP" location in degrees * 100
-static int32_t target_bearing;
+static int32_t wp_bearing;
 // Status of the Waypoint tracking mode. Options include:
 // NO_NAV_MODE, WP_MODE, LOITER_MODE, CIRCLE_MODE
 static byte wp_control;
@@ -646,7 +645,7 @@ static float circle_angle;
 // units are in radians, default is 5° per second
 static const float circle_rate = 0.0872664625;
 // used to track the delat in Circle Mode
-static int32_t old_target_bearing;
+static int32_t old_wp_bearing;
 // deg : how many times to circle * 360 for Loiter/Circle Mission command
 static int16_t loiter_total;
 // deg : how far we have turned around a waypoint
@@ -708,11 +707,11 @@ static int16_t saved_toy_throttle;
 // Each Flight mode is a unique combination of these modes
 //
 // The current desired control scheme for Yaw
-static byte yaw_mode;
+static uint8_t yaw_mode;
 // The current desired control scheme for roll and pitch / navigation
-static byte roll_pitch_mode;
+static uint8_t roll_pitch_mode;
 // The current desired control scheme for altitude hold
-static byte throttle_mode;
+static uint8_t throttle_mode;
 
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -727,8 +726,8 @@ static uint16_t land_detector;
 ////////////////////////////////////////////////////////////////////////////////
 // Navigation general
 ////////////////////////////////////////////////////////////////////////////////
-// The location of the copter in relation to home, updated every GPS read
-static int32_t home_to_copter_bearing;
+// The location of home in relation to the copter, updated every GPS read
+static int32_t home_bearing;
 // distance between plane and home in cm
 static int32_t home_distance;
 // distance between plane and next_WP in cm
@@ -760,8 +759,8 @@ static struct   Location guided_WP;
 ////////////////////////////////////////////////////////////////////////////////
 // deg * 100, The original angle to the next_WP when the next_WP was set
 // Also used to check when we pass a WP
-static int32_t original_target_bearing;
-// The amount of angle correction applied to target_bearing to bring the copter back on its optimum path
+static int32_t original_wp_bearing;
+// The amount of angle correction applied to wp_bearing to bring the copter back on its optimum path
 static int16_t crosstrack_error;
 
 
@@ -808,28 +807,15 @@ static int8_t alt_change_flag;
 ////////////////////////////////////////////////////////////////////////////////
 // The Commanded Yaw from the autopilot.
 static int32_t nav_yaw;
-// A speed governer for Yaw control - limits the rate the quad can be turned by the autopilot
-static int32_t auto_yaw;
 static uint8_t yaw_timer;
-// Options include: no tracking, point at next wp, or at a target
-static byte auto_yaw_tracking = MAV_ROI_WPNEXT;
-// In AP Mission scripting we have a fine level of control for Yaw
-// This is our initial angle for relative Yaw movements
-static int32_t command_yaw_start;
-// Timer values used to control the speed of Yaw movements
-static uint32_t command_yaw_start_time;
-static uint16_t command_yaw_time;                                       // how long we are turning
-static int32_t command_yaw_end;                                         // what angle are we trying to be
-// how many degrees will we turn
-static int32_t command_yaw_delta;
+// Yaw will point at this location if yaw_mode is set to YAW_LOOK_AT_LOCATION
+static struct Location yaw_look_at_WP;
+// bearing from current location to the yaw_look_at_WP
+static int32_t yaw_look_at_WP_bearing;
+// yaw used for YAW_LOOK_AT_HEADING yaw_mode
+static int32_t yaw_look_at_heading;
 // Deg/s we should turn
-static int16_t command_yaw_speed;
-// Direction we will turn –  1 = CW, 0 or -1 = CCW
-static byte command_yaw_dir;
-// Direction we will turn – 1 = relative, 0 = Absolute
-static byte command_yaw_relative;
-// Yaw will point at this location if auto_yaw_tracking is set to MAV_ROI_LOCATION
-static struct   Location target_WP;
+static int16_t yaw_look_at_heading_slew;
 
 
 
@@ -1480,55 +1466,169 @@ static void update_GPS(void)
     }
 }
 
+// set_yaw_mode - update yaw mode and initialise any variables required
+bool set_yaw_mode(uint8_t new_yaw_mode)
+{
+    // boolean to ensure proper initialisation of throttle modes
+    bool yaw_initialised = false;
+
+    // return immediately if no change
+    if( new_yaw_mode == yaw_mode ) {
+        return true;
+    }
+
+    switch( new_yaw_mode ) {
+        case YAW_HOLD:
+        case YAW_ACRO:
+            yaw_initialised = true;
+            break;
+        case YAW_LOOK_AT_NEXT_WP:
+            if( ap.home_is_set ) {
+                yaw_initialised = true;
+            }
+            break;
+        case YAW_LOOK_AT_LOCATION:
+            if( ap.home_is_set ) {
+                // update bearing - assumes yaw_look_at_WP has been intialised before set_yaw_mode was called
+                yaw_look_at_WP_bearing = get_bearing_cd(&current_loc, &yaw_look_at_WP);
+                yaw_initialised = true;
+            }
+            break;
+        case YAW_LOOK_AT_HEADING:
+            yaw_initialised = true;
+            break;
+        case YAW_LOOK_AT_HOME:
+            if( ap.home_is_set ) {
+                yaw_initialised = true;
+            }
+            break;
+        case YAW_TOY:
+            yaw_initialised = true;
+            break;
+        case YAW_LOOK_AHEAD:
+            if( ap.home_is_set ) {
+                yaw_initialised = true;
+            }
+            break;
+    }
+
+    // if initialisation has been successful update the yaw mode
+    if( yaw_initialised ) {
+        yaw_mode = new_yaw_mode;
+    }
+
+    // return success or failure
+    return yaw_initialised;
+}
+
+// update_yaw_mode - run high level yaw controllers
+// 100hz update rate
 void update_yaw_mode(void)
 {
     switch(yaw_mode) {
+
+    case YAW_HOLD:
+        // heading hold at heading held in nav_yaw but allow input from pilot
+        get_yaw_rate_stabilized_ef(g.rc_4.control_in);
+        break;
+
     case YAW_ACRO:
+        // pilot controlled yaw using rate controller
         if(g.axis_enabled) {
             get_yaw_rate_stabilized_ef(g.rc_4.control_in);
         }else{
             get_acro_yaw(g.rc_4.control_in);
         }
-        return;
         break;
 
-        // update to allow external roll/yaw mixing
-#if TOY_LOOKUP == TOY_EXTERNAL_MIXER
-    case YAW_TOY:
-#endif
+    case YAW_LOOK_AT_NEXT_WP:
+        // point towards next waypoint (no pilot input accepted)
+        // we don't use wp_bearing because we don't want the copter to turn too much during flight
+        nav_yaw = get_yaw_slew(nav_yaw, original_wp_bearing, AUTO_YAW_SLEW_RATE);
+        get_stabilize_yaw(nav_yaw);
 
-    case YAW_HOLD:
-    	get_yaw_rate_stabilized_ef(g.rc_4.control_in);
+        // if there is any pilot input, switch to YAW_HOLD mode for the next iteration
+        if( g.rc_4.control_in != 0 ) {
+            set_yaw_mode(YAW_HOLD);
+        }
+        break;
+
+    case YAW_LOOK_AT_LOCATION:
+        // point towards a location held in yaw_look_at_WP (no pilot input accepted)
+        nav_yaw = get_yaw_slew(nav_yaw, yaw_look_at_WP_bearing, AUTO_YAW_SLEW_RATE);
+        get_stabilize_yaw(nav_yaw);
+
+        // if there is any pilot input, switch to YAW_HOLD mode for the next iteration
+        if( g.rc_4.control_in != 0 ) {
+            set_yaw_mode(YAW_HOLD);
+        }
         break;
 
     case YAW_LOOK_AT_HOME:
-        //nav_yaw updated in update_navigation()
+        // keep heading always pointing at home with no pilot input allowed
+        nav_yaw = get_yaw_slew(nav_yaw, home_bearing, AUTO_YAW_SLEW_RATE);
+        get_stabilize_yaw(nav_yaw);
+
+        // if there is any pilot input, switch to YAW_HOLD mode for the next iteration
+        if( g.rc_4.control_in != 0 ) {
+            set_yaw_mode(YAW_HOLD);
+        }
+        break;
+
+    case YAW_LOOK_AT_HEADING:
+        // keep heading pointing in the direction held in yaw_look_at_heading with no pilot input allowed
+        nav_yaw = get_yaw_slew(nav_yaw, yaw_look_at_heading, yaw_look_at_heading_slew);
         get_stabilize_yaw(nav_yaw);
         break;
 
-    case YAW_AUTO:
-        nav_yaw += constrain(wrap_180(auto_yaw - nav_yaw), -60, 60);                 // 40 deg a second
-        //cliSerial->printf("nav_yaw %d ", nav_yaw);
-        nav_yaw  = wrap_360(nav_yaw);
+	case YAW_LOOK_AHEAD:
+		// Commanded Yaw to automatically look ahead.
+        get_look_ahead_yaw(g.rc_4.control_in);
+        break;
+
+#if TOY_LOOKUP == TOY_EXTERNAL_MIXER
+    case YAW_TOY:
+        // update to allow external roll/yaw mixing
+        // keep heading always pointing at home with no pilot input allowed
+        nav_yaw = get_yaw_slew(nav_yaw, home_bearing, AUTO_YAW_SLEW_RATE);
         get_stabilize_yaw(nav_yaw);
         break;
-		
-	case YAW_LOOK_AHEAD:
-		
-		// Commanded Yaw to automatically look ahead.
-		if (g_gps->ground_speed > YAW_LOOK_AHEAD_RATE){									// Speed in cm/s.
-			nav_yaw += constrain(wrap_180(ground_bearing - nav_yaw), -60, 60);    		// 40 deg a second
-			nav_yaw  = wrap_360(nav_yaw);
-			get_stabilize_yaw(nav_yaw + g.rc_4.control_in);								// Allow pilot to "skid" around corners up to 45°
-        } else { 
-			nav_yaw += g.rc_4.control_in * g.acro_p * G_Dt;
-			nav_yaw = wrap_360(nav_yaw);
-			get_stabilize_yaw(nav_yaw);
-		}
-        break;		
+#endif
     }
 }
 
+// set_roll_pitch_mode - update roll/pitch mode and initialise any variables as required
+bool set_roll_pitch_mode(uint8_t new_roll_pitch_mode)
+{
+    // boolean to ensure proper initialisation of throttle modes
+    bool roll_pitch_initialised = false;
+
+    // return immediately if no change
+    if( new_roll_pitch_mode == roll_pitch_mode ) {
+        return true;
+    }
+
+    switch( new_roll_pitch_mode ) {
+        case ROLL_PITCH_STABLE:
+        case ROLL_PITCH_ACRO:
+        case ROLL_PITCH_AUTO:
+        case ROLL_PITCH_STABLE_OF:
+        case ROLL_PITCH_TOY:
+            roll_pitch_initialised = true;
+            break;
+    }
+
+    // if initialisation has been successful update the yaw mode
+    if( roll_pitch_initialised ) {
+        roll_pitch_mode = new_roll_pitch_mode;
+    }
+
+    // return success or failure
+    return roll_pitch_initialised;
+}
+
+// update_roll_pitch_mode - run high level roll and pitch controllers
+// 100hz update rate
 void update_roll_pitch_mode(void)
 {
     if (ap.do_flip) {
@@ -1671,6 +1771,11 @@ bool set_throttle_mode( uint8_t new_throttle_mode )
     // boolean to ensure proper initialisation of throttle modes
     bool throttle_initialised = false;
 
+    // return immediately if no change
+    if( new_throttle_mode == throttle_mode ) {
+        return true;
+    }
+
     // initialise any variables required for the new throttle mode
     switch(new_throttle_mode) {
         case THROTTLE_MANUAL:
@@ -1726,8 +1831,8 @@ bool set_throttle_mode( uint8_t new_throttle_mode )
     return throttle_initialised;
 }
 
+// update_throttle_mode - run high level throttle controllers
 // 50 hz update rate
-// controls all throttle behavior
 void update_throttle_mode(void)
 {
     int16_t pilot_climb_rate;
@@ -2195,10 +2300,10 @@ static void update_nav_wp()
     }else if(wp_control == CIRCLE_MODE) {
 
         // check if we have missed the WP
-        int16_t loiter_delta = (target_bearing - old_target_bearing)/100;
+        int16_t loiter_delta = (wp_bearing - old_wp_bearing)/100;
 
         // reset the old value
-        old_target_bearing = target_bearing;
+        old_wp_bearing = wp_bearing;
 
         // wrap values
         if (loiter_delta > 180) loiter_delta -= 360;
@@ -2247,29 +2352,5 @@ static void update_nav_wp()
 
         nav_lon                 = constrain(nav_lon, -2000, 2000);                              // 20°
         nav_lat                 = constrain(nav_lat, -2000, 2000);                              // 20°
-    }
-}
-
-static void update_auto_yaw()
-{
-    switch( wp_control ) {
-        case LOITER_MODE:
-            // just hold nav_yaw
-            break;
-        case WP_MODE:
-            if(auto_yaw_tracking == MAV_ROI_LOCATION) {
-                auto_yaw = get_bearing_cd(&current_loc, &target_WP);
-            }else if(auto_yaw_tracking == MAV_ROI_WPNEXT) {
-                // Point towards next WP
-                // we don't use target_bearing because we don't want the copter to turn too much during flight
-                auto_yaw = original_target_bearing;
-            }
-            break;
-        case CIRCLE_MODE:
-            auto_yaw = get_bearing_cd(&current_loc, &circle_WP);
-            break;
-        case NO_NAV_MODE:
-            // just hold nav_yaw
-            break;
     }
 }

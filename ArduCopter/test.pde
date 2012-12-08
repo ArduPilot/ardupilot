@@ -981,7 +981,7 @@ test_wp_nav(uint8_t argc, const Menu::arg *argv)
 
     // got 23506;, should be 22800
     update_navigation();
-    cliSerial->printf_P(PSTR("bear: %ld\n"), target_bearing);
+    cliSerial->printf_P(PSTR("bear: %ld\n"), wp_bearing);
     return 0;
 }
 
