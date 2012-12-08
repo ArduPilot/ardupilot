@@ -83,6 +83,22 @@
  # define TOY_MIXER      TOY_LINEAR_MIXER
 #endif
 
+/////////////////////////////////////////////////////////////////////////////////
+// Bulk defines for TradHeli
+#if FRAME_CONFIG == HELI_FRAME
+  # define RC_FAST_SPEED 				125
+  # define RTL_YAW                  	YAW_LOOK_AT_HOME
+  # define TILT_COMPENSATION 			5
+  # define RATE_INTEGRATOR_LEAK_RATE 	0.02
+  # define RATE_ROLL_D    				0
+  # define RATE_PITCH_D       			0
+  # define HELI_PITCH_FF				0
+  # define HELI_ROLL_FF					0
+  # define HELI_YAW_FF					0  
+  # define RC_FAST_SPEED 				125
+ #endif
+
+
 // optical flow doesn't work in SITL yet
 #ifdef DESKTOP_BUILD
 # define OPTFLOW DISABLED
@@ -111,11 +127,7 @@
 // PWM control
 // default RC speed in Hz
 #ifndef RC_FAST_SPEED
- # if FRAME_CONFIG == HELI_FRAME
-  #   define RC_FAST_SPEED 125
- # else
-  #   define RC_FAST_SPEED 490
- # endif
+   #   define RC_FAST_SPEED 490
 #endif
 
 ////////////////////////////////////////////////////////
@@ -841,11 +853,7 @@
 #endif
 
 #ifndef TILT_COMPENSATION
- # if FRAME_CONFIG == HELI_FRAME
-  #   define TILT_COMPENSATION 5
- # else
   #   define TILT_COMPENSATION 54
- # endif
 #endif
 
 
