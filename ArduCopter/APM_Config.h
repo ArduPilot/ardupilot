@@ -53,29 +53,9 @@
 //#define TOY_EDF	ENABLED
 //#define TOY_MIXER TOY_LOOKUP_TABLE
 
-// Inertia based contollers.  disabled by default, work in progress
-//#define ACCEL_ALT_HOLD 0
+// Inertia based contollers
 //#define INERTIAL_NAV_XY ENABLED
 #define INERTIAL_NAV_Z ENABLED
-
-
-#if INERTIAL_NAV_Z == ENABLED
- //#define ALT_HOLD_P                      3
- //#define ALT_HOLD_I                      0
- //#define ALT_HOLD_IMAX                  300
-
-// RATE control
- //#define THROTTLE_P                      2.0
- //#define THROTTLE_I                      0.4
- //#define THROTTLE_D                      0.0
-#endif
-#if INERTIAL_NAV_XY == ENABLED
- //#define LOITER_P                        0.50
- //#define LOITER_I                        0.0
- //#define LOITER_RATE_P           5                      //
- //#define LOITER_RATE_I           0.1                    // Wind control
- //#define LOITER_RATE_D           0.0                    // try 2 or 3 for LOITER_RATE 1
-#endif
 
 
 //#define RATE_ROLL_I   0.18
@@ -98,32 +78,7 @@
 // Ensure the defined file exists and is in the arducopter directory
 #define USERHOOK_VARIABLES "UserVariables.h"
 
-// to enable, set to 1
-// to disable, set to 0
-// #define AUTO_THROTTLE_HOLD 1
-
 //#define LOGGING_ENABLED		DISABLED
-
-
-// Custom channel config - Expert Use Only.
-// this for defining your own MOT_n to CH_n mapping.
-// Overrides defaults (for APM1 or APM2) found in config_channels.h
-// MOT_n variables are used by the Frame mixing code. You must define
-// MOT_1 through MOT_m where m is the number of motors on your frame.
-// CH_n variables are used for RC output. These can be CH_1 through CH_8,
-// and CH_10 or CH_12.
-// Sample channel config. Must define all MOT_ channels used by
-// your FRAME_TYPE.
-// #define CONFIG_CHANNELS CHANNEL_CONFIG_CUSTOM
-// #define MOT_1 CH_6
-// #define MOT_2 CH_3
-// #define MOT_3 CH_2
-// #define MOT_4 CH_5
-// #define MOT_5 CH_1
-// #define MOT_6 CH_4
-// #define MOT_7 CH_7
-// #define MOT_8 CH_8
-
 
 // Used to set the max roll and pitch angles in Degrees * 100
 //#define MAX_INPUT_ROLL_ANGLE      8000
