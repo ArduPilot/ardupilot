@@ -4,7 +4,7 @@
 #ifndef __DATAFLASH_APM1_H__
 #define __DATAFLASH_APM1_H__
 
-#include <AP_Semaphore.h>
+#include <AP_HAL.h>
 #include "DataFlash.h"
 
 class DataFlash_APM1 : public DataFlash_Class
@@ -19,17 +19,15 @@ private:
     uint8_t           ReadStatusReg();
     uint8_t           ReadStatus();
     uint16_t                PageSize();
-    void                    CS_inactive();
-    void                    CS_active();
     void                    PageErase (uint16_t PageAdr);
     void                    BlockErase (uint16_t BlockAdr);
     void                    ChipErase(void (*delay_cb)(unsigned long));
-
-    uint8_t           SPI_transfer(uint8_t data);
-    AP_Semaphore*           _spi_semaphore;
+    
+    AP_HAL::SPIDeviceDriver *_spi;
+    AP_HAL::Semaphore *_spi_sem;
 public:
 
-    DataFlash_APM1(AP_Semaphore* spi_semaphore = NULL) : _spi_semaphore(spi_semaphore) {}
+    DataFlash_APM1() {}
     void        Init();
     void        ReadManufacturerID();
     bool        CardInserted();

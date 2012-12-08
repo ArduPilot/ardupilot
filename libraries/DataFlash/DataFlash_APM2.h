@@ -20,16 +20,14 @@ private:
     uint8_t           ReadStatus();
     uint16_t                PageSize();
 
-    uint8_t           SPI_transfer(uint8_t data);
-    void                    CS_inactive();
-    void                    CS_active();
     void                    PageErase (uint16_t PageAdr);
     void                    BlockErase (uint16_t BlockAdr);
     void                    ChipErase(void (*delay_cb)(unsigned long));
 
-    AP_Semaphore*           _spi3_semaphore;
+    AP_HAL::SPIDeviceDriver* _spi;
+    AP_HAL::Semaphore* _spi_sem;
 public:
-    DataFlash_APM2(AP_Semaphore* spi3_semaphore = NULL) : _spi3_semaphore(spi3_semaphore) {}
+    DataFlash_APM2() {}
 
     void        Init();
     void        ReadManufacturerID();
