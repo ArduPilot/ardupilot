@@ -524,9 +524,7 @@
 
 // Alt Hold Mode
 #ifndef ALT_HOLD_YAW
- //# define ALT_HOLD_YAW           	YAW_HOLD
- // debug -- remove me!!
- # define ALT_HOLD_YAW              YAW_LOOK_AHEAD
+ # define ALT_HOLD_YAW           	YAW_HOLD
 #endif
 
 #ifndef ALT_HOLD_RP
