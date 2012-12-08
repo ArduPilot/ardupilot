@@ -284,7 +284,7 @@ const AP_Param::Info var_info[] PROGMEM = {
 
 	// @Param: AUTO_SLEW
     // @DisplayName: Auto Slew Rate
-    // @Description: This restricts the rate of change of the attitude allowed by the Auto Controller
+    // @Description: This restricts the rate of change of the roll and pitch attitude commanded by the auto pilot
     // @Units: Degrees/Second
 	// @Range: 1 45
     // @Increment: 1

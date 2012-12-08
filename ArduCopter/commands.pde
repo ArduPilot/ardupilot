@@ -11,9 +11,6 @@ static void init_commands()
 
     ap.fast_corner          = false;
 	reset_desired_speed();
-
-    // default auto mode yaw tracking
-    auto_yaw_tracking       = MAV_ROI_WPNEXT;
 }
 
 // Getters
@@ -169,14 +166,14 @@ static void set_next_WP(struct Location *wp)
     // this is handy for the groundstation
     // -----------------------------------
     wp_distance             = get_distance_cm(&current_loc, &next_WP);
-    target_bearing          = get_bearing_cd(&prev_WP, &next_WP);
+    wp_bearing              = get_bearing_cd(&prev_WP, &next_WP);
 
     // calc the location error:
     calc_location_error(&next_WP);
 
     // to check if we have missed the WP
     // ---------------------------------
-    original_target_bearing = target_bearing;
+    original_wp_bearing = wp_bearing;
 }
 
 
@@ -190,14 +187,10 @@ static void init_home()
     home.lat        = g_gps->latitude;                                  // Lat * 10**7
     home.alt        = 0;                                                        // Home is always 0
 
-    // to point yaw towards home until we set it with Mavlink
-    target_WP       = home;
-
     // Save Home to EEPROM
     // -------------------
     // no need to save this to EPROM
     set_cmd_with_index(home, 0);
-    //print_wp(&home, 0);
 
 #if INERTIAL_NAV_XY == ENABLED
     // set inertial nav's home position

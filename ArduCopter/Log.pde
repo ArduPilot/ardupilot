@@ -562,7 +562,7 @@ static void Log_Write_Nav_Tuning()
     DataFlash.WriteByte(LOG_NAV_TUNING_MSG);
 
 	DataFlash.WriteInt(wp_distance);                        // 1
-	DataFlash.WriteInt(target_bearing/100);                 // 2
+	DataFlash.WriteInt(wp_bearing/100);                 // 2
 	DataFlash.WriteInt(long_error);                         // 3
 	DataFlash.WriteInt(lat_error);                          // 4
 

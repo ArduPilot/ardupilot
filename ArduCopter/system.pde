@@ -392,6 +392,7 @@ static void startup_ground(void)
     reset_I_all();
 }
 
+// set_mode - change flight mode and perform any necessary initialisation
 static void set_mode(byte mode)
 {
     // Switch to stabilize mode if requested mode requires a GPS lock
@@ -430,8 +431,8 @@ static void set_mode(byte mode)
     case ACRO:
     	ap.manual_throttle = true;
     	ap.manual_attitude = true;
-        yaw_mode        = YAW_ACRO;
-        roll_pitch_mode = ROLL_PITCH_ACRO;
+        set_yaw_mode(YAW_ACRO);
+        set_roll_pitch_mode(ROLL_PITCH_ACRO);
         set_throttle_mode(THROTTLE_MANUAL);
         // reset acro axis targets to current attitude
 		if(g.axis_enabled){
@@ -444,16 +445,16 @@ static void set_mode(byte mode)
     case STABILIZE:
     	ap.manual_throttle = true;
     	ap.manual_attitude = true;
-        yaw_mode        = YAW_HOLD;
-        roll_pitch_mode = ROLL_PITCH_STABLE;
+        set_yaw_mode(YAW_HOLD);
+        set_roll_pitch_mode(ROLL_PITCH_STABLE);
         set_throttle_mode(THROTTLE_MANUAL_TILT_COMPENSATED);
         break;
 
     case ALT_HOLD:
     	ap.manual_throttle = false;
     	ap.manual_attitude = true;
-        yaw_mode        = ALT_HOLD_YAW;
-        roll_pitch_mode = ALT_HOLD_RP;
+        set_yaw_mode(ALT_HOLD_YAW);
+        set_roll_pitch_mode(ALT_HOLD_RP);
         set_throttle_mode(ALT_HOLD_THR);
         force_new_altitude(max(current_loc.alt, 100));
         break;
@@ -461,8 +462,8 @@ static void set_mode(byte mode)
     case AUTO:
     	ap.manual_throttle = false;
     	ap.manual_attitude = false;
-        yaw_mode        = AUTO_YAW;
-        roll_pitch_mode = AUTO_RP;
+        set_yaw_mode(AUTO_YAW);
+        set_roll_pitch_mode(AUTO_RP);
         set_throttle_mode(AUTO_THR);
 
         // loads the commands from where we left off
@@ -472,19 +473,24 @@ static void set_mode(byte mode)
     case CIRCLE:
     	ap.manual_throttle = false;
     	ap.manual_attitude = false;
-        yaw_mode        = CIRCLE_YAW;
-        roll_pitch_mode = CIRCLE_RP;
-        set_throttle_mode(CIRCLE_THR);
+
+        // start circling around current location
         set_next_WP(&current_loc);
         circle_WP       = next_WP;
+
+        // set yaw to point to center of circle
+        yaw_look_at_WP = circle_WP;
+        set_yaw_mode(YAW_LOOK_AT_LOCATION);
+        set_roll_pitch_mode(CIRCLE_RP);
+        set_throttle_mode(CIRCLE_THR);
         circle_angle    = 0;
         break;
 
     case LOITER:
     	ap.manual_throttle = false;
     	ap.manual_attitude = false;
-        yaw_mode        = LOITER_YAW;
-        roll_pitch_mode = LOITER_RP;
+        set_yaw_mode(LOITER_YAW);
+        set_roll_pitch_mode(LOITER_RP);
         set_throttle_mode(LOITER_THR);
         set_next_WP(&current_loc);
         break;
@@ -492,8 +498,8 @@ static void set_mode(byte mode)
     case POSITION:
     	ap.manual_throttle = true;
     	ap.manual_attitude = false;
-        yaw_mode        = YAW_HOLD;
-        roll_pitch_mode = ROLL_PITCH_AUTO;
+        set_yaw_mode(YAW_HOLD);
+        set_roll_pitch_mode(ROLL_PITCH_AUTO);
         set_throttle_mode(THROTTLE_MANUAL);
         set_next_WP(&current_loc);
         break;
@@ -501,10 +507,10 @@ static void set_mode(byte mode)
     case GUIDED:
     	ap.manual_throttle = false;
     	ap.manual_attitude = false;
-        yaw_mode        = YAW_AUTO;
-        roll_pitch_mode = ROLL_PITCH_AUTO;
+        set_yaw_mode(YAW_LOOK_AT_NEXT_WP);
+        set_roll_pitch_mode(ROLL_PITCH_AUTO);
         set_throttle_mode(THROTTLE_AUTO);
-        next_WP         = current_loc;
+        next_WP = current_loc;
         set_next_WP(&guided_WP);
         break;
 
@@ -512,13 +518,13 @@ static void set_mode(byte mode)
         if( ap.home_is_set ) {
             // switch to loiter if we have gps
             ap.manual_attitude = false;
-            yaw_mode        = LOITER_YAW;
-            roll_pitch_mode = LOITER_RP;
+            set_yaw_mode(LOITER_YAW);
+            set_roll_pitch_mode(LOITER_RP);
         }else{
             // otherwise remain with stabilize roll and pitch
             ap.manual_attitude = true;
-            yaw_mode        = YAW_HOLD;
-            roll_pitch_mode = ROLL_PITCH_STABLE;
+            set_yaw_mode(YAW_HOLD);
+            set_roll_pitch_mode(ROLL_PITCH_STABLE);
         }
     	ap.manual_throttle = false;
         do_land();
@@ -533,8 +539,8 @@ static void set_mode(byte mode)
     case OF_LOITER:
     	ap.manual_throttle = false;
     	ap.manual_attitude = false;
-        yaw_mode        = OF_LOITER_YAW;
-        roll_pitch_mode = OF_LOITER_RP;
+        set_yaw_mode(OF_LOITER_YAW);
+        set_roll_pitch_mode(OF_LOITER_RP);
         set_throttle_mode(OF_LOITER_THR);
         set_next_WP(&current_loc);
         break;
@@ -545,8 +551,8 @@ static void set_mode(byte mode)
     case TOY_A:
     	ap.manual_throttle = false;
     	ap.manual_attitude = true;
-        yaw_mode        = YAW_TOY;
-        roll_pitch_mode = ROLL_PITCH_TOY;
+        set_yaw_mode(YAW_TOY);
+        set_roll_pitch_mode(ROLL_PITCH_TOY);
         set_throttle_mode(THROTTLE_AUTO);
         wp_control      = NO_NAV_MODE;
 
@@ -558,8 +564,8 @@ static void set_mode(byte mode)
     case TOY_M:
     	ap.manual_throttle = false;
     	ap.manual_attitude = true;
-        yaw_mode            = YAW_TOY;
-        roll_pitch_mode 	= ROLL_PITCH_TOY;
+        set_yaw_mode(YAW_TOY);
+        set_roll_pitch_mode(ROLL_PITCH_TOY);
         wp_control          = NO_NAV_MODE;
         set_throttle_mode(THROTTLE_HOLD);
         break;
