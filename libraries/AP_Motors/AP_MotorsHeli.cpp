@@ -445,7 +445,7 @@ void AP_MotorsHeli::init_swash()
 //                       collective: 0 ~ 1000
 //                       yaw:   -4500 ~ 4500
 //
-void AP_MotorsHeli::move_swash(int16_t roll_out, int16_t pitch_out, int16_t coll_out, int16_t yaw_out)
+void AP_MotorsHeli::move_swash(int16_t roll_out, int16_t pitch_out, int16_t coll_in, int16_t yaw_out)
 {
     int16_t yaw_offset = 0;
     int16_t coll_out_scaled;
@@ -455,7 +455,7 @@ void AP_MotorsHeli::move_swash(int16_t roll_out, int16_t pitch_out, int16_t coll
         if( _swash_initialised ) {
             reset_swash();
         }
-        coll_out_scaled = coll_out * _collective_scalar + _rc_throttle->radio_min - 1000;
+        coll_out_scaled = coll_in * _collective_scalar + _rc_throttle->radio_min - 1000;
     }else{      // regular flight mode
 
         // check if we need to reinitialise the swash
@@ -475,7 +475,7 @@ void AP_MotorsHeli::move_swash(int16_t roll_out, int16_t pitch_out, int16_t coll
         pitch_out = constrain(pitch_out, (int16_t)-pitch_max, (int16_t)pitch_max);
 
         // scale collective pitch
-        coll_out = constrain(coll_out, 0, 1000);
+        coll_out = constrain(coll_in, 0, 1000);
 		if (stab_throttle){
 			coll_out = coll_out * _stab_throttle_scalar + stab_col_min*10;
 		}

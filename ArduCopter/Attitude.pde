@@ -699,7 +699,6 @@ get_of_pitch(int32_t input_pitch)
  * yaw controllers
  *************************************************************/
 
- // update_throttle_cruise - update throttle cruise if necessary
 static void get_look_ahead_yaw(int16_t pilot_yaw)
 {
     // Commanded Yaw to automatically look ahead.

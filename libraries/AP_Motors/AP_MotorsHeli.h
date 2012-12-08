@@ -106,7 +106,7 @@ public:
 	AP_Int8 stab_col_min;						// collective pitch minimum in Stabilize Mode
 	AP_Int8 stab_col_max;						// collective pitch maximum in Stabilize Mode
 	bool stab_throttle;							// true if we are in Stabilize Mode for reduced Swash Range
-
+	AP_Int16 coll_out;							// returns the actual collective in use to the main code
 
     // init
     void Init();
@@ -141,7 +141,7 @@ public:
 protected:
 
     // heli_move_swash - moves swash plate to attitude of parameters passed in
-    void move_swash(int16_t roll_out, int16_t pitch_out, int16_t coll_out, int16_t yaw_out);
+    void move_swash(int16_t roll_out, int16_t pitch_out, int16_t coll_in, int16_t yaw_out);
 
     // reset_swash - free up swash for maximum movements. Used for set-up
     void reset_swash();
