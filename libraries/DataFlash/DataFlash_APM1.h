@@ -11,13 +11,13 @@ class DataFlash_APM1 : public DataFlash_Class
 {
 private:
     //Methods
-    unsigned char           BufferRead (unsigned char BufferNum, uint16_t IntPageAdr);
-    void                    BufferWrite (unsigned char BufferNum, uint16_t IntPageAdr, unsigned char Data);
-    void                    BufferToPage (unsigned char BufferNum, uint16_t PageAdr, unsigned char wait);
-    void                    PageToBuffer(unsigned char BufferNum, uint16_t PageAdr);
+    uint8_t           BufferRead (uint8_t BufferNum, uint16_t IntPageAdr);
+    void                    BufferWrite (uint8_t BufferNum, uint16_t IntPageAdr, uint8_t Data);
+    void                    BufferToPage (uint8_t BufferNum, uint16_t PageAdr, uint8_t wait);
+    void                    PageToBuffer(uint8_t BufferNum, uint16_t PageAdr);
     void                    WaitReady();
-    unsigned char           ReadStatusReg();
-    unsigned char           ReadStatus();
+    uint8_t           ReadStatusReg();
+    uint8_t           ReadStatus();
     uint16_t                PageSize();
     void                    CS_inactive();
     void                    CS_active();
@@ -25,7 +25,7 @@ private:
     void                    BlockErase (uint16_t BlockAdr);
     void                    ChipErase(void (*delay_cb)(unsigned long));
 
-    unsigned char           SPI_transfer(unsigned char data);
+    uint8_t           SPI_transfer(uint8_t data);
     AP_Semaphore*           _spi_semaphore;
 public:
 

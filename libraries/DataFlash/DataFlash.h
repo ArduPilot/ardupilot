@@ -19,21 +19,21 @@ class DataFlash_Class
 {
 private:
     // DataFlash Log variables...
-    unsigned char df_BufferNum;
-    unsigned char df_Read_BufferNum;
+    uint8_t df_BufferNum;
+    uint8_t df_Read_BufferNum;
     uint16_t df_BufferIdx;
     uint16_t df_Read_BufferIdx;
     uint16_t df_PageAdr;
     uint16_t df_Read_PageAdr;
-    unsigned char df_Stop_Write;
+    uint8_t df_Stop_Write;
     uint16_t df_FileNumber;
     uint16_t df_FilePage;
 
     virtual void WaitReady() = 0;
-    virtual void BufferWrite (unsigned char BufferNum, uint16_t IntPageAdr, unsigned char Data) = 0;
-    virtual void BufferToPage (unsigned char BufferNum, uint16_t PageAdr, unsigned char wait) = 0;
-    virtual void PageToBuffer(unsigned char BufferNum, uint16_t PageAdr) = 0;
-    virtual unsigned char BufferRead (unsigned char BufferNum, uint16_t IntPageAdr) = 0;
+    virtual void BufferWrite (uint8_t BufferNum, uint16_t IntPageAdr, uint8_t Data) = 0;
+    virtual void BufferToPage (uint8_t BufferNum, uint16_t PageAdr, uint8_t wait) = 0;
+    virtual void PageToBuffer(uint8_t BufferNum, uint16_t PageAdr) = 0;
+    virtual uint8_t BufferRead (uint8_t BufferNum, uint16_t IntPageAdr) = 0;
     virtual void PageErase(uint16_t PageAdr) = 0;
     virtual void BlockErase(uint16_t BlockAdr) = 0;
     virtual void ChipErase(void (*delay_cb)(unsigned long)) = 0;
@@ -44,7 +44,7 @@ private:
     bool check_wrapped(void);
 
 public:
-    unsigned char df_manufacturer;
+    uint8_t df_manufacturer;
     uint16_t df_device;
     uint16_t df_PageSize;
 
@@ -65,13 +65,13 @@ public:
     // Write methods
     void StartWrite(int16_t PageAdr);
     void FinishWrite(void);
-    void WriteByte(unsigned char data);
+    void WriteByte(uint8_t data);
     void WriteInt(int16_t data);
     void WriteLong(int32_t data);
 
     // Read methods
     void StartRead(int16_t PageAdr);
-    unsigned char ReadByte();
+    uint8_t ReadByte();
     int16_t ReadInt();
     int32_t ReadLong();
 
