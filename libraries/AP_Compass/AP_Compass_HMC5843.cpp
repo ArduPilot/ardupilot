@@ -73,6 +73,9 @@ bool AP_Compass_HMC5843::read_raw()
     uint8_t buff[6];
 
     if (hal.i2c->readRegisters(COMPASS_ADDRESS, 0x03, 6, buff) != 0) {
+        if (healthy) {
+			hal.i2c->setHighSpeed(false);
+        }
         healthy = false;
         return false;
     }
