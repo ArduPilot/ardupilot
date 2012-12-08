@@ -99,7 +99,7 @@ void AP_OpticalFlow::update_position(float roll, float pitch,
     // over 45 degrees
     if( surface_quality >= 10 && fabs(roll) <= FORTYFIVE_DEGREES
      && fabs(pitch) <= FORTYFIVE_DEGREES ) {
-        altitude = (altitude > 0 ? altitude : 0);
+	altitude = max(altitude, 0);
         // calculate expected x,y diff due to roll and pitch change
         exp_change_x = diff_roll * radians_to_pixels;
         exp_change_y = -diff_pitch * radians_to_pixels;
