@@ -9,7 +9,6 @@
 #include "SPIDriver.h"
 #include "AnalogIn.h"
 #include "Storage.h"
-#include "Dataflash.h"
 #include "Console.h"
 #include "GPIO.h"
 #include "RCInput.h"
@@ -34,8 +33,6 @@ static APM1SPIDeviceManager apm1SPIDriver;
 static APM2SPIDeviceManager apm2SPIDriver;
 static AVRAnalogIn      avrAnalogIn;
 static AVREEPROMStorage avrEEPROMStorage;
-static APM1Dataflash    apm1Dataflash;
-static APM2Dataflash    apm2Dataflash;
 static AVRConsoleDriver consoleDriver;
 static AVRGPIO          avrGPIO;
 static APM1RCInput      apm1RCInput;
@@ -53,7 +50,6 @@ const HAL_AVR AP_HAL_AVR_APM1(
         &apm1SPIDriver,
         &avrAnalogIn,
         &avrEEPROMStorage,
-        &apm1Dataflash,
         &consoleDriver,
         &avrGPIO,
         &apm1RCInput,
@@ -69,7 +65,6 @@ const HAL_AVR AP_HAL_AVR_APM2(
         &apm2SPIDriver,
         &avrAnalogIn,
         &avrEEPROMStorage,
-        &apm2Dataflash,
         &consoleDriver,
         &avrGPIO,
         &apm2RCInput,

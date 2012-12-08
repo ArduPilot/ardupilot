@@ -21,7 +21,6 @@ public:
         AP_HAL::SPIDeviceManager*  _spi,
         AP_HAL::AnalogIn*   _analogin,
         AP_HAL::Storage*    _storage,
-        AP_HAL::Dataflash*  _dataflash,
         AP_HAL::ConsoleDriver* _console,
         AP_HAL::GPIO*       _gpio,
         AP_HAL::RCInput*    _rcin,
@@ -29,7 +28,7 @@ public:
         AP_HAL::Scheduler*  _scheduler)
         : AP_HAL::HAL(  _uartA, _uartB, _uartC,
                         _i2c, _spi, _analogin, _storage,
-                        _dataflash, _console, _gpio, _rcin,
+                        _console, _gpio, _rcin,
                         _rcout, _scheduler) {}
 
     void init(void* opts) const;
