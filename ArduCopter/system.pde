@@ -456,7 +456,6 @@ static void set_mode(byte mode)
         set_yaw_mode(ALT_HOLD_YAW);
         set_roll_pitch_mode(ALT_HOLD_RP);
         set_throttle_mode(ALT_HOLD_THR);
-        force_new_altitude(max(current_loc.alt, 100));
         break;
 
     case AUTO:
