@@ -25,7 +25,6 @@
 #include <AC_PID.h>             // PID library
 #include <APM_PI.h>             // PID library
 #include <AP_InertialNav.h>
-#include <ThirdOrderCompFilter.h>   // Complementary filter for combining barometer altitude with accelerometers
 #include <AP_Buffer.h>          // ArduPilot general purpose FIFO buffer
 
 FastSerialPort(Serial, 0);
