@@ -96,7 +96,8 @@
   # define HELI_ROLL_FF					0
   # define HELI_YAW_FF					0  
   # define RC_FAST_SPEED 				125
- #endif
+  # define STABILIZE_THROTTLE			THROTTLE_MANUAL
+#endif
 
 
 // optical flow doesn't work in SITL yet
@@ -533,6 +534,11 @@
 // used to specify frame to rate controllers
 #define EARTH_FRAME     0
 #define BODY_FRAME      1
+
+// Stabilize Mode
+#ifndef STABILIZE_THROTTLE
+ # define STABILIZE_THROTTLE		THROTTLE_MANUAL_TILT_COMPENSATED
+#endif
 
 // Alt Hold Mode
 #ifndef ALT_HOLD_YAW
