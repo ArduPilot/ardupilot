@@ -193,7 +193,7 @@ DataFlash_APM1 DataFlash(&spi_semaphore);
 ////////////////////////////////////////////////////////////////////////////////
 // the rate we run the main loop at
 ////////////////////////////////////////////////////////////////////////////////
-static const AP_InertialSensor::Sample_rate ins_sample_rate = AP_InertialSensor::RATE_100HZ;
+static const AP_InertialSensor::Sample_rate ins_sample_rate = AP_InertialSensor::RATE_200HZ;
 
 ////////////////////////////////////////////////////////////////////////////////
 // Sensors
@@ -953,7 +953,7 @@ void loop()
     // We want this to execute fast
     // ----------------------------
     num_samples = ins.num_samples_available();
-    if (num_samples >= 1) {
+    if (num_samples >= 2) {
 
         #if DEBUG_FAST_LOOP == ENABLED
         Log_Write_Data(DATA_FAST_LOOP, (int32_t)(timer - fast_loopTimer));
