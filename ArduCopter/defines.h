@@ -192,6 +192,10 @@
 #define CIRCLE_MODE 3
 #define NO_NAV_MODE 4
 
+// Yaw override behaviours - used for setting yaw_override_behaviour
+#define YAW_OVERRIDE_BEHAVIOUR_AT_NEXT_WAYPOINT     0   // auto pilot takes back yaw control at next waypoint
+#define YAW_OVERRIDE_BEHAVIOUR_AT_MISSION_RESTART   1   // auto pilot tkaes back control only when mission is restarted
+
 // TOY mixing options
 #define TOY_LOOKUP_TABLE 0
 #define TOY_LINEAR_MIXER 1

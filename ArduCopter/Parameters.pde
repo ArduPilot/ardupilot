@@ -151,6 +151,13 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @User: Standard
     GSCALAR(throttle_accel_enabled,  "THR_ACC_ENABLE",   1),
 
+    // @Param: YAW_OVR_BEHAVE
+    // @DisplayName: Yaw override behaviour
+    // @Description: Controls when autopilot takes back normal control of yaw after pilot overrides
+    // @Values: 0:At Next WP, 1:On Mission Restart
+    // @User: Advanced
+    GSCALAR(yaw_override_behaviour,  "YAW_OVR_BEHAVE",   YAW_OVERRIDE_BEHAVIOUR_AT_NEXT_WAYPOINT),
+
     GSCALAR(waypoint_mode,  "WP_MODE",          0),
     GSCALAR(command_total,  "WP_TOTAL",         0),
     GSCALAR(command_index,  "WP_INDEX",         0),

@@ -72,6 +72,7 @@ public:
         k_param_crosstrack_min_distance,
         k_param_rssi_pin,
         k_param_throttle_accel_enabled,
+        k_param_yaw_override_behaviour,
 
         // 65: AP_Limits Library
         k_param_limits = 65,
@@ -271,6 +272,7 @@ public:
     AP_Int8         battery_curr_pin;
     AP_Int8         rssi_pin;
     AP_Int8         throttle_accel_enabled;      // enable/disable accel based throttle controller
+    AP_Int8         yaw_override_behaviour;     // controls when autopilot takes back normal control of yaw after pilot overrides
 
     // Waypoints
     //

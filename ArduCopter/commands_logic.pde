@@ -284,6 +284,11 @@ static void do_nav_wp()
     if((next_WP.options & WP_OPTION_ALT_REQUIRED) == false) {
         wp_verify_byte |= NAV_ALTITUDE;
     }
+
+    // reset control of yaw
+    if( g.yaw_override_behaviour == YAW_OVERRIDE_BEHAVIOUR_AT_NEXT_WAYPOINT ) {
+        set_yaw_mode(YAW_LOOK_AT_NEXT_WP);
+    }
 }
 
 // do_land - initiate landing procedure
