@@ -9,6 +9,10 @@
 #include <AP_Common.h>
 #include <APM_RC.h>
 
+#define RC_CHANNEL_TYPE_ANGLE       0
+#define RC_CHANNEL_TYPE_RANGE       1
+#define RC_CHANNEL_TYPE_ANGLE_RAW   2
+
 /// @class	RC_Channel
 /// @brief	Object managing one RC channel
 class RC_Channel {
