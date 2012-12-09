@@ -261,6 +261,82 @@ static void run_navigation_contollers()
     }
 }
 
+// update_nav_wp - high level calculation of nav_lat and nav_lon based on wp_control
+// called after gps read from run_navigation_controller
+static void update_nav_wp()
+{
+    int16_t loiter_delta;
+    int16_t speed;
+
+    switch( wp_control ) {
+        case LOITER_MODE:
+            // calc error to target
+            calc_location_error(&next_WP);
+
+            // use error as the desired rate towards the target
+            calc_loiter(long_error, lat_error);
+            break;
+
+        case CIRCLE_MODE:
+            // check if we have missed the WP
+            loiter_delta = (wp_bearing - old_wp_bearing)/100;
+
+            // reset the old value
+            old_wp_bearing = wp_bearing;
+
+            // wrap values
+            if (loiter_delta > 180) loiter_delta -= 360;
+            if (loiter_delta < -180) loiter_delta += 360;
+
+            // sum the angle around the WP
+            loiter_sum += loiter_delta;
+
+            circle_angle += (circle_rate * dTnav);
+            //1° = 0.0174532925 radians
+
+            // wrap
+            if (circle_angle > 6.28318531)
+                circle_angle -= 6.28318531;
+
+            next_WP.lng = circle_WP.lng + (g.loiter_radius * 100 * cos(1.57 - circle_angle) * scaleLongUp);
+            next_WP.lat = circle_WP.lat + (g.loiter_radius * 100 * sin(1.57 - circle_angle));
+
+            // use error as the desired rate towards the target
+            // nav_lon, nav_lat is calculated
+
+            if(wp_distance > 400) {
+                calc_nav_rate(get_desired_speed(g.waypoint_speed_max));
+            }else{
+                // calc the lat and long error to the target
+                calc_location_error(&next_WP);
+
+                calc_loiter(long_error, lat_error);
+            }
+            break;
+
+        case WP_MODE:
+            // calc error to target
+            calc_location_error(&next_WP);
+
+            speed = get_desired_speed(g.waypoint_speed_max);
+            // use error as the desired rate towards the target
+            calc_nav_rate(speed);
+            break;
+
+        case NO_NAV_MODE:
+            // clear out our nav so we can do things like land straight down
+            // or change Loiter position
+
+            // We bring copy over our Iterms for wind control, but we don't navigate
+            nav_lon = g.pid_loiter_rate_lon.get_integrator();
+            nav_lat = g.pid_loiter_rate_lon.get_integrator();
+
+            nav_lon                 = constrain(nav_lon, -2000, 2000);                              // 20°
+            nav_lat                 = constrain(nav_lat, -2000, 2000);                              // 20°
+            break;
+    }
+}
+
 static bool check_missed_wp()
 {
     int32_t temp;
