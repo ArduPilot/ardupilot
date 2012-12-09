@@ -724,10 +724,10 @@
  # define MAX_INPUT_PITCH_ANGLE     4500
 #endif
 #ifndef RATE_ROLL_P
- # define RATE_ROLL_P        		0.175
+ # define RATE_ROLL_P        		0.150
 #endif
 #ifndef RATE_ROLL_I
- # define RATE_ROLL_I        		0.010
+ # define RATE_ROLL_I        		0.100
 #endif
 #ifndef RATE_ROLL_D
  # define RATE_ROLL_D        		0.004
@@ -737,10 +737,10 @@
 #endif
 
 #ifndef RATE_PITCH_P
- # define RATE_PITCH_P       		0.175
+ # define RATE_PITCH_P       		0.150
 #endif
 #ifndef RATE_PITCH_I
- # define RATE_PITCH_I       		0.010
+ # define RATE_PITCH_I       		0.100
 #endif
 #ifndef RATE_PITCH_D
  # define RATE_PITCH_D       		0.004
