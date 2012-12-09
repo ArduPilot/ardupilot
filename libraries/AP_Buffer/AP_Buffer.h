@@ -49,6 +49,7 @@ typedef AP_Buffer<uint8_t,32> AP_BufferUInt8_Size32;
 typedef AP_Buffer<uint8_t,64> AP_BufferUInt8_Size64;
 typedef AP_Buffer<uint8_t,128> AP_BufferUInt8_Size128;
 
+typedef AP_Buffer<float,5> AP_BufferFloat_Size5;
 typedef AP_Buffer<float,10> AP_BufferFloat_Size10;
 typedef AP_Buffer<float,15> AP_BufferFloat_Size15;
 typedef AP_Buffer<float,20> AP_BufferFloat_Size20;
