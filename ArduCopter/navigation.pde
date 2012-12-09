@@ -541,7 +541,7 @@ static int32_t get_altitude_error()
 
 #if INERTIAL_NAV_Z == ENABLED
     // use inertial nav for altitude error
-    return next_WP.alt - inertial_nav._position.z;
+    return next_WP.alt - inertial_nav.get_altitude();
 #else
     return next_WP.alt - current_loc.alt;
 #endif
