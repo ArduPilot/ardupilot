@@ -34,9 +34,9 @@ static void init_rc_in()
     // reverse: CW = left
     // normal:  CW = left???
 
-    g.rc_1.set_type(RC_CHANNEL_ANGLE_RAW);
-    g.rc_2.set_type(RC_CHANNEL_ANGLE_RAW);
-    g.rc_4.set_type(RC_CHANNEL_ANGLE_RAW);
+    g.rc_1.set_type(RC_CHANNEL_TYPE_ANGLE_RAW);
+    g.rc_2.set_type(RC_CHANNEL_TYPE_ANGLE_RAW);
+    g.rc_4.set_type(RC_CHANNEL_TYPE_ANGLE_RAW);
 
     rc_ch[CH_1] = &g.rc_1;
     rc_ch[CH_2] = &g.rc_2;
