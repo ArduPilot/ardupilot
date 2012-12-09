@@ -399,7 +399,7 @@ void AP_InertialSensor_MPU6000::hardware_init(Sample_rate sample_rate)
     case RATE_200HZ:
     default:
         rate = MPUREG_SMPLRT_200HZ;
-        default_filter = BITS_DLPF_CFG_98HZ;
+        default_filter = BITS_DLPF_CFG_42HZ;
         break;
     }
     
