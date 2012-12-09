@@ -106,21 +106,12 @@
 #define GPS_PROTOCOL_MTK16      6
 #define GPS_PROTOCOL_AUTO       7
 
-#define CH_ROLL CH_1
-#define CH_PITCH CH_2
-#define CH_THROTTLE CH_3
-#define CH_RUDDER CH_4
-#define CH_YAW CH_4
-
-#define RC_CHANNEL_ANGLE 0
-#define RC_CHANNEL_RANGE 1
-#define RC_CHANNEL_ANGLE_RAW 2
-
 // HIL enumerations
 #define HIL_MODE_DISABLED               0
 #define HIL_MODE_ATTITUDE               1
 #define HIL_MODE_SENSORS                2
 
+// Altitude status definitions
 #define REACHED_ALT                     0
 #define DESCENDING                      1
 #define ASCENDING                       2
@@ -143,67 +134,43 @@
 #define TOY_M 12                        // THOR Enum for Toy mode
 #define NUM_MODES 13
 
-#define SIMPLE_1 1
-#define SIMPLE_2 2
-#define SIMPLE_3 4
-#define SIMPLE_4 8
-#define SIMPLE_5 16
-#define SIMPLE_6 32
-
 // CH_6 Tuning
 // -----------
-#define CH6_NONE 0
-// Attitude
-#define CH6_STABILIZE_KP 1
-#define CH6_STABILIZE_KI 2
-#define CH6_STABILIZE_KD 29             // duplicate with CH6_DAMP
-#define CH6_YAW_KP 3
-#define CH6_YAW_KI 24
-// Rate
-#define CH6_ACRO_KP 25
-#define CH6_RATE_KP 4
-#define CH6_RATE_KI 5
-#define CH6_RATE_KD 21
-#define CH6_YAW_RATE_KP 6
-#define CH6_YAW_RATE_KD 26
-// Throttle
-#define CH6_THROTTLE_KP 7
-#define CH6_THROTTLE_KI 33
-#define CH6_THR_ACCEL_KP 34
-#define CH6_THR_ACCEL_KI 35
-#define CH6_THR_ACCEL_KD 36
-// Extras
-#define CH6_TOP_BOTTOM_RATIO 8
-#define CH6_RELAY 9
-// Navigation
-#define CH6_TRAVERSE_SPEED 10   // maximum speed to next way point
-#define CH6_NAV_KP 11
-#define CH6_LOITER_KP 12
-#define CH6_LOITER_KI 27
-
-// Trad Heli specific
-#define CH6_HELI_EXTERNAL_GYRO 13
-
-// altitude controller
-#define CH6_THR_HOLD_KP 14
-#define CH6_Z_GAIN 15
-#define CH6_DAMP 16             // duplicate with CH6_YAW_RATE_KD
-
-// optical flow controller
-#define CH6_OPTFLOW_KP 17
-#define CH6_OPTFLOW_KI 18
-#define CH6_OPTFLOW_KD 19
-
-#define CH6_NAV_I 20
-#define CH6_LOITER_RATE_KP 22
-#define CH6_LOITER_RATE_KI 28
-#define CH6_LOITER_RATE_KD 23
-
-#define CH6_AHRS_YAW_KP 30
-#define CH6_AHRS_KP             31
-
-// Inertial Nav
-#define CH6_INAV_TC     32
+#define CH6_NONE            0           // no tuning performed
+#define CH6_STABILIZE_KP    1           // stabilize roll/pitch angle controller's P term
+#define CH6_STABILIZE_KI    2           // stabilize roll/pitch angle controller's I term
+#define CH6_STABILIZE_KD    29          // stabilize roll/pitch angle controller's D term
+#define CH6_YAW_KP          3           // stabilize yaw heading controller's P term
+#define CH6_YAW_KI          24          // stabilize yaw heading controller's P term
+#define CH6_ACRO_KP         25          // acro controller's P term.  converts pilot input to a desired roll, pitch or yaw rate
+#define CH6_RATE_KP         4           // body frame roll/pitch rate controller's P term
+#define CH6_RATE_KI         5           // body frame roll/pitch rate controller's I term
+#define CH6_RATE_KD         21          // body frame roll/pitch rate controller's D term
+#define CH6_YAW_RATE_KP     6           // body frame yaw rate controller's P term
+#define CH6_YAW_RATE_KD     26          // body frame yaw rate controller's D term
+#define CH6_THR_HOLD_KP     14          // altitude hold controller's P term (alt error to desired rate)
+#define CH6_THROTTLE_KP     7           // throttle rate controller's P term (desired rate to acceleration or motor output)
+#define CH6_THROTTLE_KI     33          // throttle rate controller's I term (desired rate to acceleration or motor output)
+#define CH6_THR_ACCEL_KP    34          // accel based throttle controller's P term
+#define CH6_THR_ACCEL_KI    35          // accel based throttle controller's I term
+#define CH6_THR_ACCEL_KD    36          // accel based throttle controller's D term
+#define CH6_TOP_BOTTOM_RATIO 8          // upper/lower motor ratio (not used)
+#define CH6_RELAY           9           // switch relay on if ch6 high, off if low
+#define CH6_TRAVERSE_SPEED  10          // maximum speed to next way point (0 to 10m/s)
+#define CH6_NAV_KP          11          // navigation rate controller's P term (speed error to tilt angle)
+#define CH6_NAV_KI          20          // navigation rate controller's I term (speed error to tilt angle)
+#define CH6_LOITER_KP       12          // loiter distance controller's P term (position error to speed)
+#define CH6_LOITER_KI       27          // loiter distance controller's I term (position error to speed)
+#define CH6_HELI_EXTERNAL_GYRO 13       // TradHeli specific external tail gyro gain
+#define CH6_OPTFLOW_KP      17          // optical flow loiter controller's P term (position error to tilt angle)
+#define CH6_OPTFLOW_KI      18          // optical flow loiter controller's I term (position error to tilt angle)
+#define CH6_OPTFLOW_KD      19          // optical flow loiter controller's D term (position error to tilt angle)
+#define CH6_LOITER_RATE_KP  22          // loiter rate controller's P term (speed error to tilt angle)
+#define CH6_LOITER_RATE_KI  28          // loiter rate controller's I term (speed error to tilt angle)
+#define CH6_LOITER_RATE_KD  23          // loiter rate controller's D term (speed error to tilt angle)
+#define CH6_AHRS_YAW_KP     30          // ahrs's compass effect on yaw angle (0 = very low, 1 = very high)
+#define CH6_AHRS_KP         31          // accelerometer effect on roll/pitch angle (0=low)
+#define CH6_INAV_TC         32          // inertial navigation baro/accel and gps/accel time constant (1.5 = strong baro/gps correction on accel estimatehas very strong does not correct accel estimate, 7 = very weak correction)
 
 // nav byte mask
 // -------------
@@ -363,33 +330,9 @@ enum gcs_severity {
 #define DATA_DESCENDING                 30
 #define DATA_RTL_REACHED_ALT            31
 
-
-// Waypoint Modes
-// ----------------
-#define ABS_WP 0
-#define REL_WP 1
-
-// Command Queues
-// ---------------
-#define COMMAND_MUST 0
-#define COMMAND_MAY 1
-#define COMMAND_NOW 2
-
-// Events
-// ------
-#define EVENT_WILL_REACH_WAYPOINT 1
-#define EVENT_SET_NEW_WAYPOINT_INDEX 2
-#define EVENT_LOADED_WAYPOINT 3
-#define EVENT_LOOP 4
-
-// Climb rate calculations
-#define ALTITUDE_HISTORY_LENGTH 8       //Number of (time,altitude) points to
-                                        // regress a climb rate from
-
+// battery monitoring macros
 #define BATTERY_VOLTAGE(x) (x*(g.input_voltage/1024.0))*g.volt_div_ratio
 #define CURRENT_AMPS(x) ((x*(g.input_voltage/1024.0))-CURR_AMPS_OFFSET)*g.curr_amp_per_volt
-
-//#define BARO_FILTER_SIZE 8
 
 /* ************************************************************** */
 /* Expansion PIN's that people can use for various things. */
@@ -433,11 +376,6 @@ enum gcs_severity {
 #define RELAY_PIN 47
 
 #define PIEZO_PIN AN5           //Last pin on the back ADC connector
-
-
-
-// sonar
-//#define SonarToCm(x) (x*1.26)   // Sonar raw value to centimeters
 
 // RADIANS
 #define RADX100 0.000174532925
