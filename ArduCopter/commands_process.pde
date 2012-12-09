@@ -28,8 +28,8 @@ static void change_command(uint8_t cmd_index)
     }
 }
 
+// update_commands - initiates new navigation commands if we have completed the previous command
 // called by 10 Hz loop
-// --------------------
 static void update_commands()
 {
     //cliSerial->printf("update_commands: %d\n",increment );
@@ -148,6 +148,7 @@ static void update_commands()
     }
 }
 
+// execute_nav_command - performs minor initialisation and logging before next navigation command in the queue is executed
 static void execute_nav_command(void)
 {
     // This is what we report to MAVLINK
@@ -168,7 +169,8 @@ static void execute_nav_command(void)
     command_cond_index      = NO_COMMAND;
 }
 
-// called with GPS navigation update - not constantly
+// verify_commands - high level function to check if navigation and conditional commands have completed
+// called after GPS navigation update - not constantly
 static void verify_commands(void)
 {
     if(verify_must()) {
