@@ -447,7 +447,7 @@ static void set_mode(byte mode)
     	ap.manual_attitude = true;
         set_yaw_mode(YAW_HOLD);
         set_roll_pitch_mode(ROLL_PITCH_STABLE);
-        set_throttle_mode(THROTTLE_MANUAL_TILT_COMPENSATED);
+        set_throttle_mode(STABILIZE_THROTTLE);
         break;
 
     case ALT_HOLD:
