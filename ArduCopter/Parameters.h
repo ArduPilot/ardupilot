@@ -172,9 +172,9 @@ public:
         k_param_rc_11,
         k_param_throttle_min,
         k_param_throttle_max,
-        k_param_throttle_fs_enabled,
-        k_param_throttle_fs_action,
-        k_param_throttle_fs_value,
+        k_param_failsafe_throttle,
+        k_param_throttle_fs_action,     // remove
+        k_param_failsafe_throttle_value,
         k_param_throttle_cruise,
         k_param_esc_calibrate,
         k_param_radio_tuning,
@@ -290,9 +290,8 @@ public:
     //
     AP_Int16        throttle_min;
     AP_Int16        throttle_max;
-    AP_Int8         throttle_fs_enabled;
-    AP_Int8         throttle_fs_action;
-    AP_Int16        throttle_fs_value;
+    AP_Int8         failsafe_throttle;
+    AP_Int16        failsafe_throttle_value;
     AP_Int16        throttle_cruise;
 
     // Flight modes
