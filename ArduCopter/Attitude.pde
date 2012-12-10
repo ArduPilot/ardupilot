@@ -589,7 +589,7 @@ get_rate_yaw(int32_t target_rate)
 static int32_t
 get_of_roll(int32_t input_roll)
 {
-#ifdef OPTFLOW_ENABLED
+#if OPTFLOW == ENABLED
     static float tot_x_cm = 0;      // total distance from target
     static uint32_t last_of_roll_update = 0;
     int32_t new_roll = 0;
@@ -643,7 +643,7 @@ get_of_roll(int32_t input_roll)
 static int32_t
 get_of_pitch(int32_t input_pitch)
 {
-#ifdef OPTFLOW_ENABLED
+#if OPTFLOW == ENABLED
     static float tot_y_cm = 0;  // total distance from target
     static uint32_t last_of_pitch_update = 0;
     int32_t new_pitch = 0;

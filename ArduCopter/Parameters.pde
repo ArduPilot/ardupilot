@@ -122,7 +122,7 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @Description: Setting this to Enabled(1) will enable optical flow. Setting this to Disabled(0) will disable optical flow
     // @Values: 0:Disabled,1:Enabled
     // @User: Standard
-    GSCALAR(optflow_enabled,        "FLOW_ENABLE",  OPTFLOW),
+    GSCALAR(optflow_enabled,        "FLOW_ENABLE",  DISABLED),
 
     // @Param: LOW_VOLT
     // @DisplayName: Low Voltage
