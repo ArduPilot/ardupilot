@@ -65,7 +65,7 @@ static void low_battery_event(void)
     gcs_send_text_P(SEVERITY_LOW,PSTR("Low Battery!"));
 
     // failsafe check
-    if (g.battery_fs_enabled && !ap.low_battery && motors.armed()) {
+    if (g.failsafe_battery_enabled && !ap.low_battery && motors.armed()) {
         switch(control_mode) {
             case STABILIZE:
             case ACRO:
