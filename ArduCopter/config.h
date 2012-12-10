@@ -667,15 +667,9 @@
  # define ACRO_P                 4.5
 #endif
 
-
 #ifndef AXIS_LOCK_ENABLED
  # define AXIS_LOCK_ENABLED      ENABLED
 #endif
-
-#ifndef AXIS_LOCK_P
- # define AXIS_LOCK_P            .02
-#endif
-
 
 // Good for smaller payload motors.
 #ifndef STABILIZE_ROLL_P
@@ -760,15 +754,6 @@
 #endif
 #ifndef RATE_YAW_IMAX
  # define RATE_YAW_IMAX            	8.0          // degrees
-#endif
-
-
-#ifndef STABILIZE_D
- # define STABILIZE_D            	0.00
-#endif
-
-#ifndef STABILIZE_D_SCHEDULE
- # define STABILIZE_D_SCHEDULE      0.5
 #endif
 
 
@@ -1052,8 +1037,8 @@
  # define WP_RADIUS_DEFAULT      2
 #endif
 
-#ifndef LOITER_RADIUS
- # define LOITER_RADIUS 10              // meters for circle mode
+#ifndef CIRCLE_RADIUS
+ # define CIRCLE_RADIUS 10              // meters for circle mode
 #endif
 
 #ifndef USE_CURRENT_ALT
