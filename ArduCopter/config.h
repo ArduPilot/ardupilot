@@ -318,8 +318,8 @@
 #endif
 
 // Battery failsafe
-#ifndef BATTERY_FAILSAFE
- # define BATTERY_FAILSAFE              DISABLED
+#ifndef FS_BATTERY
+ # define FS_BATTERY              DISABLED
 #endif
 
 
