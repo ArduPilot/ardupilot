@@ -533,25 +533,6 @@ static void update_crosstrack(void)
     }
 }
 
-static int32_t get_altitude_error()
-{
-    // Next_WP alt is our target alt
-    // It changes based on climb rate
-    // until it reaches the target_altitude
-
-#if INERTIAL_NAV_Z == ENABLED
-    // use inertial nav for altitude error
-    return next_WP.alt - inertial_nav.get_altitude();
-#else
-    return next_WP.alt - current_loc.alt;
-#endif
-}
-
-static void clear_new_altitude()
-{
-    set_alt_change(REACHED_ALT);
-}
-
 static void force_new_altitude(int32_t new_alt)
 {
     next_WP.alt     = new_alt;
