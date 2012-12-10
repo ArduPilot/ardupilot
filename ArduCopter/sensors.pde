@@ -54,17 +54,18 @@ static void init_optflow()
     if( optflow.init(false, &timer_scheduler, &spi_semaphore, &spi3_semaphore) == false ) {
         g.optflow_enabled = false;
         cliSerial->print_P(PSTR("\nFailed to Init OptFlow "));
+    }else{
+        // suspend timer while we set-up SPI communication
+        timer_scheduler.suspend_timer();
+
+        optflow.set_orientation(OPTFLOW_ORIENTATION);   // set optical flow sensor's orientation on aircraft
+        optflow.set_frame_rate(2000);                   // set minimum update rate (which should lead to maximum low light performance
+        optflow.set_resolution(OPTFLOW_RESOLUTION);     // set optical flow sensor's resolution
+        optflow.set_field_of_view(OPTFLOW_FOV);         // set optical flow sensor's field of view
+
+        // resume timer
+        timer_scheduler.resume_timer();
     }
-    // suspend timer while we set-up SPI communication
-    timer_scheduler.suspend_timer();
-
-    optflow.set_orientation(OPTFLOW_ORIENTATION);                       // set optical flow sensor's orientation on aircraft
-    optflow.set_frame_rate(2000);                                                       // set minimum update rate (which should lead to maximum low light performance
-    optflow.set_resolution(OPTFLOW_RESOLUTION);                                 // set optical flow sensor's resolution
-    optflow.set_field_of_view(OPTFLOW_FOV);                                     // set optical flow sensor's field of view
-
-    // resume timer
-    timer_scheduler.resume_timer();
 #endif      // OPTFLOW == ENABLED
 }
 
