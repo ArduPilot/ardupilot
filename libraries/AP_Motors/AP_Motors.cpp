@@ -12,10 +12,29 @@
 
 // parameters for the motor class
 const AP_Param::GroupInfo AP_Motors::var_info[] PROGMEM = {
+    // @Param: TB_RATIO
+    // @DisplayName: Top Bottom Ratio
+    // @Description: Not Used.  Will control the speed of the top motors vs bottom motors on frames such as the Octo-Quad and Y6
     AP_GROUPINFO("TB_RATIO", 0, AP_Motors,  top_bottom_ratio, AP_MOTORS_TOP_BOTTOM_RATIO),      // not used
+
+    // @Param: TCRV_ENABLE
+    // @DisplayName: Thrust Curve Enable
+    // @Description: Controls whether a curve is used to linearize the thrust produced by the motors
+    // @Values: 0:Disabled,1:Enable
     AP_GROUPINFO("TCRV_ENABLE", 1, AP_Motors, _throttle_curve_enabled, THROTTLE_CURVE_ENABLED),
+
+    // @Param: TCRV_MIDPCT
+    // @DisplayName: Thrust Curve mid-point percentage
+    // @Description: Set the pwm position that produces half the maximum thrust of the motors
+    // @Range: 20 80
     AP_GROUPINFO("TCRV_MIDPCT", 2, AP_Motors, _throttle_curve_mid, THROTTLE_CURVE_MID_THRUST),
+
+    // @Param: TCRV_MAXPCT
+    // @DisplayName: Thrust Curve max thrust percentage
+    // @Description: Set to the lowest pwm position that produces the maximum thrust of the motors.  Most motors produce maximum thrust below the maximum pwm value that they accept.
+    // @Range: 20 80
     AP_GROUPINFO("TCRV_MAXPCT", 3, AP_Motors, _throttle_curve_max, THROTTLE_CURVE_MAX_THRUST),
+
     AP_GROUPEND
 };
 
