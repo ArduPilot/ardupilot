@@ -499,6 +499,13 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @User: Advanced
     GSCALAR(acro_balance_pitch,     "ACRO_BAL_PITCH",   ACRO_BALANCE_PITCH),
 
+    // @Param: ACRO_TRAINER
+    // @DisplayName: Acro Trainer Enabled
+    // @Description: Set to 1 (Enabled) to make roll return to within 45 degrees of level automatically
+    // @Values: 0:Disabled,1:Enabled
+    // @User: Advanced
+    GSCALAR(acro_trainer_enabled,   "ACRO_TRAINER",     ACRO_TRAINER_ENABLED),
+
     // @Param: LED_MODE
     // @DisplayName: Copter LED Mode
     // @Description: bitmap to control the copter led mode

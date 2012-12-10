@@ -130,7 +130,7 @@ get_roll_rate_stabilized_ef(int32_t stick_angle)
     roll_axis = wrap_180(roll_axis);
 
     // ensure that we don't reach gimbal lock
-    if (roll_axis > 4500 || roll_axis < -4500) {
+    if (labs(roll_axis > 4500) && g.acro_trainer_enabled) {
         roll_axis	= constrain(roll_axis, -4500, 4500);
         angle_error = wrap_180(roll_axis - ahrs.roll_sensor);
     } else {
@@ -166,7 +166,7 @@ get_pitch_rate_stabilized_ef(int32_t stick_angle)
     pitch_axis = wrap_180(pitch_axis);
 
     // ensure that we don't reach gimbal lock
-    if (pitch_axis > 4500 || pitch_axis < -4500) {
+    if (labs(pitch_axis) > 4500) {
         pitch_axis	= constrain(pitch_axis, -4500, 4500);
         angle_error = wrap_180(pitch_axis - ahrs.pitch_sensor);
     } else {
