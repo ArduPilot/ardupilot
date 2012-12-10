@@ -294,11 +294,11 @@ static void do_nav_wp()
 // do_land - initiate landing procedure
 static void do_land()
 {
-    wp_control = LOITER_MODE;
-    set_throttle_mode(THROTTLE_LAND);
-
     // hold at our current location
     set_next_WP(&current_loc);
+    wp_control = LOITER_MODE;
+
+    set_throttle_mode(THROTTLE_LAND);
 }
 
 static void do_loiter_unlimited()

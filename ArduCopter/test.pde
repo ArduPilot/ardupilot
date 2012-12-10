@@ -309,7 +309,7 @@ test_radio(uint8_t argc, const Menu::arg *argv)
  *                       fail_test++;
  *               }
  *
- *               if(g.throttle_fs_enabled && g.rc_3.get_failsafe()){
+ *               if(g.failsafe_throttle && g.rc_3.get_failsafe()){
  *                       cliSerial->printf_P(PSTR("THROTTLE FAILSAFE ACTIVATED: %d, "), g.rc_3.radio_in);
  *                       cliSerial->println(flight_mode_strings[readSwitch()]);
  *                       fail_test++;

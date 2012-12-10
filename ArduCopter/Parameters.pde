@@ -281,20 +281,18 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @User: Standard
     GSCALAR(throttle_max,   "THR_MAX",          MAXIMUM_THROTTLE),
 
-    // @Param: THR_FAILSAFE
+    // @Param: FS_THR_ENABLE
     // @DisplayName: Throttle Failsafe Enable
     // @Description: The throttle failsafe allows you to configure a software failsafe activated by a setting on the throttle input channel
-    // @Values: 0:Disabled,1:Enabled
+    // @Values: 0:Disabled,1:Enabled always RTL,2:Enabled Continue with Mission in Auto Mode
     // @User: Standard
-    GSCALAR(throttle_fs_enabled,    "THR_FAILSAFE", THROTTLE_FAILSAFE),
+    GSCALAR(failsafe_throttle,  "FS_THR_ENABLE",   FS_THR_DISABLED),
 
-    GSCALAR(throttle_fs_action,     "THR_FS_ACTION",    THROTTLE_FAILSAFE_ACTION),
-
-    // @Param: THR_FS_VALUE
+    // @Param: FS_THR_VALUE
     // @DisplayName: Throttle Failsafe Value
     // @Description: The PWM level on channel 3 below which throttle sailsafe triggers
     // @User: Standard
-    GSCALAR(throttle_fs_value, "THR_FS_VALUE",      THROTTLE_FS_VALUE),
+    GSCALAR(failsafe_throttle_value, "FS_THR_VALUE",      FS_THR_VALUE_DEFAULT),
 
     // @Param: TRIM_THROTTLE
     // @DisplayName: Throttle Trim

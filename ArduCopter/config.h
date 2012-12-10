@@ -414,22 +414,17 @@
 
 
 //////////////////////////////////////////////////////////////////////////////
-// THROTTLE_FAILSAFE
-// THROTTLE_FS_VALUE
-// THROTTLE_FAILSAFE_ACTION
+// Throttle Failsafe
 //
-#ifndef THROTTLE_FAILSAFE
- # define THROTTLE_FAILSAFE                      DISABLED
-#endif
-#ifndef THROTTE_FS_VALUE
- # define THROTTLE_FS_VALUE                      975
+// possible values for FS_THR parameter
+#define FS_THR_DISABLED                    0
+#define FS_THR_ENABLED_ALWAYS_RTL          1
+#define FS_THR_ENABLED_CONTINUE_MISSION    2
+
+#ifndef FS_THR_VALUE_DEFAULT
+ # define FS_THR_VALUE_DEFAULT             975
 #endif
 
-#define THROTTLE_FAILSAFE_ACTION_ALWAYS_RTL         1
-#define THROTTLE_FAILSAFE_ACTION_CONTINUE_MISSION   2
-#ifndef THROTTLE_FAILSAFE_ACTION
- # define THROTTLE_FAILSAFE_ACTION                  THROTTLE_FAILSAFE_ACTION_CONTINUE_MISSION
-#endif
 
 #ifndef MINIMUM_THROTTLE
  # define MINIMUM_THROTTLE       130

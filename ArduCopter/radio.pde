@@ -147,7 +147,7 @@ static void read_radio()
 #endif
     }else{
         // turn on throttle failsafe if no update from ppm encoder for 2 seconds
-        if ((millis() - APM_RC.get_last_update() >= RADIO_FS_TIMEOUT_MS) && g.throttle_fs_enabled && motors.armed() && !ap.failsafe) {
+        if ((millis() - APM_RC.get_last_update() >= RADIO_FS_TIMEOUT_MS) && g.failsafe_throttle && motors.armed() && !ap.failsafe) {
             set_failsafe(true);
         }
     }
@@ -159,13 +159,13 @@ static void set_throttle_and_failsafe(uint16_t throttle_pwm)
     static int8_t failsafe_counter = 0;
 
     // if failsafe not enabled pass through throttle and exit
-    if(g.throttle_fs_enabled == 0) {
+    if(g.failsafe_throttle == FS_THR_DISABLED) {
         g.rc_3.set_pwm(throttle_pwm);
         return;
     }
 
     //check for low throttle value
-    if (throttle_pwm < (uint16_t)g.throttle_fs_value) {
+    if (throttle_pwm < (uint16_t)g.failsafe_throttle_value) {
 
         // if we are already in failsafe or motors not armed pass through throttle and exit
         if (ap.failsafe || !motors.armed()) {
