@@ -298,8 +298,8 @@ static void update_nav_wp()
             if (circle_angle > 6.28318531)
                 circle_angle -= 6.28318531;
 
-            next_WP.lng = circle_WP.lng + (g.loiter_radius * 100 * cos(1.57 - circle_angle) * scaleLongUp);
-            next_WP.lat = circle_WP.lat + (g.loiter_radius * 100 * sin(1.57 - circle_angle));
+            next_WP.lng = circle_WP.lng + (g.circle_radius * 100 * cos(1.57 - circle_angle) * scaleLongUp);
+            next_WP.lat = circle_WP.lat + (g.circle_radius * 100 * sin(1.57 - circle_angle));
 
             // use error as the desired rate towards the target
             // nav_lon, nav_lat is calculated

@@ -199,19 +199,17 @@ public:
         k_param_waypoint_mode = 210, // remove
         k_param_command_total,
         k_param_command_index,
-        k_param_command_nav_index,
+        k_param_command_nav_index,   // remove
         k_param_waypoint_radius,
-        k_param_loiter_radius,
+        k_param_circle_radius,
         k_param_waypoint_speed_max,
         k_param_land_speed, // 217
 
         //
         // 220: PI/D Controllers
         //
-        //k_param_stabilize_d_schedule = 219,
-        //k_param_stabilize_d = 220,
         k_param_acro_p = 221,
-        k_param_axis_lock_p,
+        k_param_axis_lock_p,    // remove
         k_param_pid_rate_roll,
         k_param_pid_rate_pitch,
         k_param_pid_rate_yaw,
@@ -276,12 +274,10 @@ public:
 
     // Waypoints
     //
-    AP_Int8         waypoint_mode;
     AP_Int8         command_total;
     AP_Int8         command_index;
-    AP_Int8         command_nav_index;
     AP_Int16        waypoint_radius;
-    AP_Int16        loiter_radius;
+    AP_Int16        circle_radius;
     AP_Int16        waypoint_speed_max;
     AP_Float        crosstrack_gain;
     AP_Int16 		crosstrack_min_distance;
@@ -311,9 +307,7 @@ public:
     // Misc
     //
     AP_Int16        log_bitmask;
-    AP_Int16        log_last_filenumber;        // *** Deprecated - remove
-                                                // with next eeprom number
-                                                // change
+
     AP_Int8         toy_yaw_rate;                               // THOR The
                                                                 // Yaw Rate 1
                                                                 // = fast, 2 =
@@ -356,12 +350,8 @@ public:
 #endif
     AP_Int16                rc_speed; // speed of fast RC Channels in Hz
 
-    //AP_Float                stabilize_d;
-    //AP_Float                stabilize_d_schedule;
-
     // Acro parameters
     AP_Float                acro_p;
-    AP_Float                axis_lock_p;
     AP_Int16                acro_balance_roll;
     AP_Int16                acro_balance_pitch;
 
