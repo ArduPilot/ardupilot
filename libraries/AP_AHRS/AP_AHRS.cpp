@@ -59,6 +59,7 @@ const AP_Param::GroupInfo AP_AHRS::var_info[] PROGMEM = {
     // @Param: TRIM
     // @DisplayName: AHRS Trim
     // @Description: Compensates for the difference between the control board and the frame
+    // @Units: Radians
     // @User: Advanced
     AP_GROUPINFO("TRIM", 8, AP_AHRS, _trim, 0),
 
