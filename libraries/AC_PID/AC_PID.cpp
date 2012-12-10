@@ -7,9 +7,21 @@
 #include "AC_PID.h"
 
 const AP_Param::GroupInfo AC_PID::var_info[] PROGMEM = {
+    // @Param: P
+    // @DisplayName: PID Proportional Gain
+    // @Description: P Gain which produces an output value that is proportional to the current error value
     AP_GROUPINFO("P",    0, AC_PID, _kp, 0),
+    // @Param: I
+    // @DisplayName: PID Integral Gain
+    // @Description: I Gain which produces an output that is proportional to both the magnitude and the duration of the error
     AP_GROUPINFO("I",    1, AC_PID, _ki, 0),
+    // @Param: D
+    // @DisplayName: PID Derivative Gain
+    // @Description: D Gain which produces an output that is proportional to the rate of change of the error
     AP_GROUPINFO("D",    2, AC_PID, _kd, 0),
+    // @Param: IMAX
+    // @DisplayName: PID Integral Maximum
+    // @Description: The maximum/minimum value that the I term can output
     AP_GROUPINFO("IMAX", 3, AC_PID, _imax, 0),
     AP_GROUPEND
 };
