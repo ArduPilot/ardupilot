@@ -693,28 +693,6 @@ static void do_change_speed()
     g.waypoint_speed_max = command_cond_queue.p1 * 100;
 }
 
-// do_target_yaw - initialise yaw mode based on requested yaw target
-static void do_target_yaw()
-{
-    switch( command_cond_queue.p1 ) {
-        case MAV_ROI_NONE:
-            set_yaw_mode(YAW_HOLD);
-            break;
-        case MAV_ROI_WPNEXT:
-            set_yaw_mode(YAW_LOOK_AT_NEXT_WP);
-            break;
-        case MAV_ROI_LOCATION:
-            yaw_look_at_WP = command_cond_queue;
-            set_yaw_mode(YAW_LOOK_AT_LOCATION);
-            break;
-    }
-}
-
-static void do_loiter_at_location()
-{
-    next_WP = current_loc;
-}
-
 static void do_jump()
 {
     // Used to track the state of the jump command in Mission scripting
