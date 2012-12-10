@@ -73,6 +73,7 @@ public:
         k_param_rssi_pin,
         k_param_throttle_accel_enabled,
         k_param_yaw_override_behaviour,
+        k_param_acro_trainer_enabled,   // 27
 
         // 65: AP_Limits Library
         k_param_limits = 65,
@@ -226,8 +227,8 @@ public:
         k_param_pid_throttle,
         k_param_pid_optflow_roll,
         k_param_pid_optflow_pitch,
-        k_param_acro_balance_roll,
-        k_param_acro_balance_pitch,
+        k_param_acro_balance_roll,      // scalar (not PID)
+        k_param_acro_balance_pitch,     // scalar (not PID)
         k_param_pid_throttle_accel, // 241
 
         // 254,255: reserved
@@ -354,6 +355,7 @@ public:
     AP_Float                acro_p;
     AP_Int16                acro_balance_roll;
     AP_Int16                acro_balance_pitch;
+    AP_Int8                 acro_trainer_enabled;
 
     // PI/D controllers
     AC_PID                  pid_rate_roll;

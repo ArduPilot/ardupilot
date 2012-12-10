@@ -781,6 +781,10 @@
  #define ACRO_BALANCE_PITCH			200
 #endif
 
+#ifndef ACRO_TRAINER_ENABLED
+ #define ACRO_TRAINER_ENABLED       ENABLED
+#endif
+
 //////////////////////////////////////////////////////////////////////////////
 // Loiter control gains
 //
