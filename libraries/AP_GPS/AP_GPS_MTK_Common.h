@@ -24,10 +24,12 @@
 
 #define MTK_BAUD_RATE_38400 "$PMTK251,38400*27\r\n"
 
-#define SBAS_ON			"$PMTK313,1*2E\r\n"
-#define SBAS_OFF		"$PMTK313,0*2F\r\n"
+#define MTK_NAVTHRES_OFF "$PMTK397,0*23\r\n"  // Set Nav Threshold (the minimum speed the GPS must be moving to update the position) to 0 m/s
 
-#define WAAS_ON			"$PSRF151,1*3F\r\n"
-#define WAAS_OFF		"$PSRF151,0*3E\r\n"
+#define SBAS_ON	        "$PMTK313,1*2E\r\n"
+#define SBAS_OFF	"$PMTK313,0*2F\r\n"
+
+#define WAAS_ON         "$PMTK301,2*2E\r\n"
+#define WAAS_OFF        "$PMTK301,0*2C\r\n"
 
 #endif // AP_GPS_MTK_Common_h

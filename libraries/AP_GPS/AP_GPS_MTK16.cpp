@@ -44,6 +44,9 @@ AP_GPS_MTK16::init(enum GPS_Engine_Setting nav_setting)
     // set WAAS on
     _port->print(WAAS_ON);
 
+    // Set Nav Threshold to 0 m/s
+    _port->print(MTK_NAVTHRES_OFF);
+
     // set initial epoch code
     _epoch = TIME_OF_DAY;
     _time_offset = 0;
