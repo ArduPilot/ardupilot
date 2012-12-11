@@ -411,9 +411,9 @@ const AP_Param::Info var_info[] PROGMEM = {
     GGROUP(heli_servo_2,    "HS2_", RC_Channel),
     GGROUP(heli_servo_3,    "HS3_", RC_Channel),
     GGROUP(heli_servo_4,    "HS4_", RC_Channel),
-	GSCALAR(heli_pitch_ff, "H_PITCH_FF",            HELI_PITCH_FF),
-	GSCALAR(heli_roll_ff, "H_ROLL_FF",            HELI_ROLL_FF),
-	GSCALAR(heli_yaw_ff, "H_YAW_FF",            HELI_YAW_FF),
+	GSCALAR(heli_pitch_ff, "RATE_PIT_FF",            HELI_PITCH_FF),
+	GSCALAR(heli_roll_ff, "RATE_RLL_FF",            HELI_ROLL_FF),
+	GSCALAR(heli_yaw_ff, "RATE_YAW_FF",            HELI_YAW_FF),
 #endif
 
 #if CAMERA == ENABLED
