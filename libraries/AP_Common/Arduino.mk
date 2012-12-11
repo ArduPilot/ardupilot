@@ -229,6 +229,7 @@ endif
 # Tool options
 #
 DEFINES			=	-DF_CPU=$(F_CPU) -DARDUINO=$(ARDUINO_VERS) $(EXTRAFLAGS) 
+EXTRAFLAGS      =
 OPTFLAGS		=	-Os -Wformat -Wall -Wshadow -Wpointer-arith -Wcast-align -Wwrite-strings -Wformat=2 -Wno-reorder
 DEPFLAGS		=	-MD -MT $@
 
@@ -397,7 +398,11 @@ else
 #if EXCLUDE_CORE is nonempty (true), set COREINCLUDES and CORELIBOBJS to empty
 COREINCLUDES :=
 CORELIBOBJS := 
-EXTRAFLAGS := -DEXCLUDECORE
+EXTRAFLAGS += -DEXCLUDECORE
+endif
+
+ifneq ($(HAL_BOARD),)
+EXTRAFLAGS += -DCONFIG_HAL_BOARD=$(HAL_BOARD)
 endif
 
 ################################################################################
