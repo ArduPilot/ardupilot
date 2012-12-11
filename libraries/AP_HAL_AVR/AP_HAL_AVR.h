@@ -3,16 +3,15 @@
 #define __AP_HAL_AVR_H__
 
 #include <AP_HAL.h>
-#include "HAL_AVR.h"
+
+#include "HAL_AVR_APM1_Class.h"
+#include "HAL_AVR_APM2_Class.h"
 
 /**
  * This module exports AP_HAL instances only.
  * All internal drivers must conform to AP_HAL interfaces
  * and not expose implementation details.
  */
-
-extern const AP_HAL_AVR::HAL_AVR AP_HAL_AVR_APM1;
-extern const AP_HAL_AVR::HAL_AVR AP_HAL_AVR_APM2;
 
 #define AP_HAL_MAIN() extern "C" {\
     int main (void) {\
