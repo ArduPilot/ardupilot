@@ -53,7 +53,6 @@
 //#define MOTORS_JD850
 
 
-// agmatthews USERHOOKS
 // the choice of function names is up to the user and does not have to match these
 // uncomment these hooks and ensure there is a matching function on your "UserCode.pde" file
 //#define USERHOOK_FASTLOOP userhook_FastLoop();

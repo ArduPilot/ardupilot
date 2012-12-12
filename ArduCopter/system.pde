@@ -257,7 +257,6 @@ static void init_ardupilot()
     inertial_nav.init();
 #endif
 
-// agmatthews USERHOOKS
 #ifdef USERHOOK_INIT
     USERHOOK_INIT
 #endif
