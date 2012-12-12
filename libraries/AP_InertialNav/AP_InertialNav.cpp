@@ -1,12 +1,8 @@
 /// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
-#include <FastSerial.h>
+#include <AP_HAL.h>
 #include <AP_InertialNav.h>
 
-#if defined(ARDUINO) && ARDUINO >= 100
- #include "Arduino.h"
-#else
- #include <wiring.h>
-#endif
+extern const AP_HAL::HAL& hal;
 
 // table of user settable parameters
 const AP_Param::GroupInfo AP_InertialNav::var_info[] PROGMEM = {
@@ -119,7 +115,7 @@ void AP_InertialNav::set_time_constant_xy( float time_constant_in_seconds )
 // position_ok - return true if position has been initialised and have received gps data within 3 seconds
 bool AP_InertialNav::position_ok()
 {
-    return _xy_enabled && (millis() - _gps_last_update < 3000);
+    return _xy_enabled && (hal.scheduler->millis() - _gps_last_update < 3000);
 }
 
 // check_gps - check if new gps readings have arrived and use them to correct position estimates
@@ -138,7 +134,7 @@ void AP_InertialNav::check_gps()
     if( gps_time != _gps_last_time ) {
 
         // calculate time since last gps reading
-        now = millis();
+        now = hal.scheduler->millis();
         float dt = (float)(now - _gps_last_update) / 1000.0;
 
         // call position correction method
