@@ -21,6 +21,7 @@ Compass::Compass(void) :
     _orientation(ROTATION_NONE),
     _null_init_done(false)
 {
+    AP_Param::setup_object_defaults(this, var_info);
 }
 
 // Default init method, just returns success.
