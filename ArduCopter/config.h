@@ -577,6 +577,19 @@
  # define AUTO_THR                  THROTTLE_AUTO
 #endif
 
+// Guided Mode
+#ifndef GUIDED_YAW
+ # define GUIDED_YAW                YAW_LOOK_AT_NEXT_WP
+#endif
+
+#ifndef GUIDED_RP
+ # define GUIDED_RP                 ROLL_PITCH_AUTO
+#endif
+
+#ifndef GUIDED_THR
+ # define GUIDED_THR                THROTTLE_AUTO
+#endif
+
 // CIRCLE Mode
 #ifndef CIRCLE_YAW
  # define CIRCLE_YAW             	YAW_LOOK_AT_NEXT_WP

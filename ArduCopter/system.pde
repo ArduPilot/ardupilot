@@ -477,9 +477,9 @@ static void set_mode(uint8_t mode)
     case GUIDED:
     	ap.manual_throttle = false;
     	ap.manual_attitude = false;
-        set_yaw_mode(YAW_LOOK_AT_NEXT_WP);
-        set_roll_pitch_mode(ROLL_PITCH_AUTO);
-        set_throttle_mode(THROTTLE_AUTO);
+        set_yaw_mode(GUIDED_YAW);
+        set_roll_pitch_mode(GUIDED_RP);
+        set_throttle_mode(GUIDED_THR);
         next_WP = current_loc;
         set_next_WP(&guided_WP);
         break;
