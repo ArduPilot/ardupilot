@@ -603,8 +603,7 @@ init_simple_bearing()
 }
 
 #if CLI_SLIDER_ENABLED == ENABLED && CLI_ENABLED == ENABLED
-static boolean
-check_startup_for_CLI()
+static bool check_startup_for_CLI()
 {
     return (digitalReadFast(SLIDE_SWITCH_PIN) == 0);
 }
