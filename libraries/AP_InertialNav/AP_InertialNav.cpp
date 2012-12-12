@@ -339,6 +339,7 @@ void AP_InertialNav::correct_with_baro(float baro_alt, float dt)
 {
     static uint8_t first_reads = 0;
     float hist_position_base_z;
+    float accel_ef_z_correction;
 
     // discard samples where dt is too large
     if( dt > 0.2 ) {
@@ -365,9 +366,16 @@ void AP_InertialNav::correct_with_baro(float baro_alt, float dt)
     // calculate error in position from baro with our estimate
     float err = baro_alt - (hist_position_base_z + _position_correction.z);
 
-    // calculate correction to accelerometers and apply in the body frame
+    // retrieve the existing accelerometer corrections
     Vector3f accel_corr = accel_correction.get();
-    accel_corr += dcm.mul_transpose(Vector3f(0,0,(err*_k3_z) * dt));
+
+    // calculate the accelerometer correction from this iteration in the earth frame
+    accel_ef_z_correction = err * _k3_z * dt;
+
+    // rotate the correction into the body frame (note: this is a shortened form of dcm.mul_transpose(..) because we have only one axis
+    accel_corr.x += accel_ef_z_correction * dcm.c.x;
+    accel_corr.y += accel_ef_z_correction * dcm.c.y;
+    accel_corr.z += accel_ef_z_correction * dcm.c.z;
     accel_correction.set(accel_corr);
 
     // correct velocity
