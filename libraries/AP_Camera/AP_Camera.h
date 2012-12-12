@@ -7,6 +7,7 @@
 #ifndef AP_CAMERA_H
 #define AP_CAMERA_H
 
+#include <AP_Param.h>
 #include <AP_Common.h>
 #include <GCS_MAVLink.h>
 

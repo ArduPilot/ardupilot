@@ -2,8 +2,11 @@
 
 #include <AP_Camera.h>
 #include <AP_Relay.h>
-#include <../RC_Channel/RC_Channel_aux.h>
+#include <AP_Math.h>
+#include <RC_Channel.h>
+#include <AP_HAL.h>
 
+extern const AP_HAL::HAL& hal;
 extern int32_t wp_distance;     // Note: unfortunately this variable is in meter for ArduPlane and cm for ArduCopter
 extern AP_Relay relay;
 
@@ -91,7 +94,7 @@ void
 AP_Camera::transistor_pic()
 {
     // TODO: Assign pin spare pin for output
-    digitalWrite(AP_CAMERA_TRANSISTOR_PIN, HIGH);
+    hal.gpio->write(AP_CAMERA_TRANSISTOR_PIN,1);
 
     // leave a message that it should be active for two event loop cycles
     _trigger_counter = 1;
@@ -139,7 +142,7 @@ AP_Camera::trigger_pic_cleanup()
                 relay.off();
                 break;
             case AP_CAMERA_TRIGGER_TYPE_TRANSISTOR:
-                digitalWrite(AP_CAMERA_TRANSISTOR_PIN, LOW);
+                hal.gpio->write(AP_CAMERA_TRANSISTOR_PIN, 0);
                 break;
         }
     }
