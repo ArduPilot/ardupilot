@@ -29,6 +29,9 @@
   ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
   POSSIBILITY OF SUCH DAMAGE. */
 
+#include <AP_HAL_Boards.h>
+#if CONFIG_HAL_BOARD == HAL_BOARD_APM1 || CONFIG_HAL_BOARD == HAL_BOARD_APM2
+
 /*
    macros.inc - macros for use in assembler sources
 
@@ -363,3 +366,4 @@
   #endif
 #endif
 	.endm
+#endif

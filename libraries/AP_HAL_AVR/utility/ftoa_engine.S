@@ -28,6 +28,8 @@
 
 /* $Id: ftoa_engine.S,v 1.3 2009/04/01 23:11:00 arcanum Exp $ */
 
+#include <AP_HAL_Boards.h>
+#if CONFIG_HAL_BOARD == HAL_BOARD_APM1 || CONFIG_HAL_BOARD == HAL_BOARD_APM2
 #ifndef	__DOXYGEN__
 
 #include "macros.inc"
@@ -530,3 +532,4 @@ __ftoa_engine:
 
 	.end
 #endif	/* !__DOXYGEN__ */
+#endif

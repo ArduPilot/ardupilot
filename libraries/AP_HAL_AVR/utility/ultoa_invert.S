@@ -29,6 +29,8 @@
 /* $Id: ultoa_invert.S 1944 2009-04-01 23:12:20Z arcanum $	*/
 
 #ifndef	__DOXYGEN__
+#include <AP_HAL_Boards.h>
+#if CONFIG_HAL_BOARD == HAL_BOARD_APM1 || CONFIG_HAL_BOARD == HAL_BOARD_APM2
 
 #include "macros.inc"
 #include "ntz.h"
@@ -214,3 +216,5 @@ __ultoa_invert:
 	.end
 
 #endif	/* !__DOXYGEN__ */
+#endif
+	

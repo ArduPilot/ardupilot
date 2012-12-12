@@ -38,7 +38,9 @@
 /* $Id: vfprintf.c,v 1.18.2.1 2009/04/01 23:12:06 arcanum Exp $ */
 
 
-#include <avr/pgmspace.h>
+#include <AP_HAL.h>
+#if CONFIG_HAL_BOARD == HAL_BOARD_APM1 || CONFIG_HAL_BOARD == HAL_BOARD_APM2
+#include <AP_Progmem.h>
 #include <stdarg.h>
 #include <string.h>
 
@@ -519,3 +521,5 @@ void vprintf (AP_HAL::Print *s, unsigned char in_progmem, const char *fmt, va_li
                 }
         } /* for (;;) */
 }
+
+#endif

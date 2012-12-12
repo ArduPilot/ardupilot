@@ -1,3 +1,5 @@
+#include <AP_HAL.h>
+#if (CONFIG_HAL_BOARD == HAL_BOARD_APM1 || CONFIG_HAL_BOARD == HAL_BOARD_APM2)
 
 #include <stdlib.h>
 #include <avr/interrupt.h>
@@ -44,3 +46,4 @@ extern "C" ISR(TIMER5_CAPT_vect) {
          ISRRegistry::_registry[ISR_REGISTRY_TIMER5_CAPT]();
 }
 
+#endif
