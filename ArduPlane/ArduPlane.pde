@@ -72,7 +72,7 @@
 
 AP_HAL::BetterStream* cliSerial;
 
-#if CONFIG_APM_HARDWARE == APM_HARDWARE_APM2
+#if CONFIG_HAL_BOARD == HAL_BOARD_APM2
 const AP_HAL::HAL& hal = AP_HAL_AVR_APM2;
 #else
 const AP_HAL::HAL& hal = AP_HAL_AVR_APM1;
@@ -116,7 +116,7 @@ static void update_events(void);
 ////////////////////////////////////////////////////////////////////////////////
 // DataFlash
 ////////////////////////////////////////////////////////////////////////////////
-#if CONFIG_APM_HARDWARE == APM_HARDWARE_APM2
+#if CONFIG_HAL_BOARD == HAL_BOARD_APM2
 DataFlash_APM2 DataFlash;
 #else
 DataFlash_APM1 DataFlash;
@@ -155,7 +155,7 @@ SITL sitl;
  #else
 
   #if CONFIG_BARO == AP_BARO_BMP085
-   # if CONFIG_APM_HARDWARE == APM_HARDWARE_APM2
+   # if CONFIG_HAL_BOARD == HAL_BOARD_APM2
 static AP_Baro_BMP085          barometer(true);
    # else
 static AP_Baro_BMP085          barometer(false);
@@ -920,7 +920,7 @@ static void slow_loop()
     case 1:
         slow_loopCounter++;
 
-#if CONFIG_APM_HARDWARE == APM_HARDWARE_APM1
+#if CONFIG_HAL_BOARD == HAL_BOARD_APM1
         update_aux_servo_function(&g.rc_5, &g.rc_6, &g.rc_7, &g.rc_8);
 #else
         update_aux_servo_function(&g.rc_5, &g.rc_6, &g.rc_7, &g.rc_8, &g.rc_9, &g.rc_10, &g.rc_11);

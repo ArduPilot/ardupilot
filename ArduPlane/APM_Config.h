@@ -4,13 +4,9 @@
 // you wish to change any of the setup parameters from their default
 // values, place the appropriate #define statements here.
 
-//#define CONFIG_APM_HARDWARE APM_HARDWARE_APM2
-
-// Ordinary users should please ignore the following define.
-// APM2_BETA_HARDWARE is used to support early (September-October 2011) APM2
-// hardware which had the BMP085 barometer onboard. Only a handful of
-// developers have these boards.
-//#define APM2_BETA_HARDWARE
+// If you used to define your CONFIG_APM_HARDWARE setting here, it is no
+// longer valid! You should switch to using CONFIG_HAL_BOARD via the HAL_BOARD
+// flag in your local config.mk instead.
 
 // The following are the recommended settings for Xplane
 // simulation. Remove the leading "/* and trailing "*/" to enable:

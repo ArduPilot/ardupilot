@@ -50,13 +50,13 @@
 //////////////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////////////
 
+#ifdef CONFIG_APM_HARDWARE
+#error CONFIG_APM_HARDWARE option is depreated! use CONFIG_HAL_BOARD instead.
+#endif
+
 //////////////////////////////////////////////////////////////////////////////
 // APM HARDWARE
 //
-
-#ifndef CONFIG_APM_HARDWARE
- # define CONFIG_APM_HARDWARE APM_HARDWARE_APM1
-#endif
 
 #if defined( __AVR_ATmega1280__ )
  // default choices for a 1280. We can't fit everything in, so we 
@@ -86,7 +86,7 @@
 // APM2 HARDWARE DEFAULTS
 //
 
-#if CONFIG_APM_HARDWARE == APM_HARDWARE_APM2
+#if CONFIG_HAL_BOARD == HAL_BOARD_APM2
  # define CONFIG_INS_TYPE   CONFIG_INS_MPU6000
  # define CONFIG_RELAY      DISABLED
  # define MAG_ORIENTATION   AP_COMPASS_APM2_SHIELD
@@ -108,7 +108,7 @@
 //////////////////////////////////////////////////////////////////////////////
 // LED and IO Pins
 //
-#if CONFIG_APM_HARDWARE == APM_HARDWARE_APM1
+#if CONFIG_HAL_BOARD == HAL_BOARD_APM1
  # define A_LED_PIN        37
  # define B_LED_PIN        36
  # define C_LED_PIN        35
@@ -118,7 +118,7 @@
  # define CONFIG_RELAY     ENABLED
  # define BATTERY_VOLT_PIN      0      // Battery voltage on A0
  # define BATTERY_CURR_PIN      1      // Battery current on A1
-#elif CONFIG_APM_HARDWARE == APM_HARDWARE_APM2
+#elif CONFIG_HAL_BOARD == HAL_BOARD_APM2
  # define A_LED_PIN        27
  # define B_LED_PIN        26
  # define C_LED_PIN        25

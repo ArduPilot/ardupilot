@@ -368,7 +368,7 @@ public:
     RC_Channel_aux rc_6;
     RC_Channel_aux rc_7;
     RC_Channel_aux rc_8;
-#if CONFIG_APM_HARDWARE == APM_HARDWARE_APM2
+#if CONFIG_HAL_BOARD == HAL_BOARD_APM2
     RC_Channel_aux rc_9;
     RC_Channel_aux rc_10;
     RC_Channel_aux rc_11;
@@ -403,7 +403,7 @@ public:
         rc_6                                    (CH_6),
         rc_7                                    (CH_7),
         rc_8                                    (CH_8),
-#if CONFIG_APM_HARDWARE == APM_HARDWARE_APM2
+#if CONFIG_HAL_BOARD == HAL_BOARD_APM2
         rc_9                                    (CH_9),
         rc_10                                   (CH_10),
         rc_11                                   (CH_11),

@@ -512,7 +512,7 @@ static void set_servos(void)
     g.rc_6.output_ch(CH_6);
     g.rc_7.output_ch(CH_7);
     g.rc_8.output_ch(CH_8);
- # if CONFIG_APM_HARDWARE != APM_HARDWARE_APM1
+ # if CONFIG_HAL_BOARD == HAL_BOARD_APM2
     g.rc_9.output_ch(CH_9);
     g.rc_10.output_ch(CH_10);
     g.rc_11.output_ch(CH_11);
