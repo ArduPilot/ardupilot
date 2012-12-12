@@ -9,6 +9,10 @@
 
 class AP_RollController {
 public:
+	AP_RollController() { 
+		AP_Param::setup_object_defaults(this, var_info);
+	}
+
 	void set_ahrs(AP_AHRS *ahrs) { _ahrs = ahrs; }
 
 	int32_t get_servo_out(int32_t angle, float scaler=1.0, bool stabilize=false);

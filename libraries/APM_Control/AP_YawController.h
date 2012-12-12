@@ -9,6 +9,10 @@
 
 class AP_YawController {
 public:                      
+	AP_YawController() { 
+		AP_Param::setup_object_defaults(this, var_info);
+	}
+
 	void set_ahrs(AP_AHRS *ahrs) { 
 		_ahrs = ahrs; 
 		_ins = _ahrs->get_ins();
