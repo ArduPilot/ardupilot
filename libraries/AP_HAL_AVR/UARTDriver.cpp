@@ -7,6 +7,8 @@
 // Free Software Foundation; either version 2.1 of the License, or (at
 // your option) any later version.
 //
+#include <AP_HAL.h>
+#if (CONFIG_HAL_BOARD == HAL_BOARD_APM1 || CONFIG_HAL_BOARD == HAL_BOARD_APM2)
 
 #include <limits.h>
 #include <stdlib.h>
@@ -279,3 +281,4 @@ void AVRUARTDriver::_printf_P(const prog_char *fmt, ...) {
         vprintf((AP_HAL::Print*)this, 1, fmt, ap);
         va_end(ap);
 }
+#endif

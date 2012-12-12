@@ -31,6 +31,9 @@
  *  Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
  */
 
+#include <AP_HAL.h>
+#if (CONFIG_HAL_BOARD == HAL_BOARD_APM1 || CONFIG_HAL_BOARD == HAL_BOARD_APM2)
+
 #include <inttypes.h>
 
 #include <avr/io.h>
@@ -314,3 +317,4 @@ SIGNAL(TWI_vect)
 }
 
 
+#endif

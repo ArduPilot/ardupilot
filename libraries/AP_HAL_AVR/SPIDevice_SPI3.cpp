@@ -1,3 +1,5 @@
+#include <AP_HAL.h>
+#if (CONFIG_HAL_BOARD == HAL_BOARD_APM1 || CONFIG_HAL_BOARD == HAL_BOARD_APM2)
 
 
 #include <avr/io.h>
@@ -71,3 +73,4 @@ uint8_t AVRSPI3DeviceDriver::transfer(uint8_t data) {
     return UDR3;
 }
 
+#endif

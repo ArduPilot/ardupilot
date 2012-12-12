@@ -1,3 +1,5 @@
+#include <AP_HAL.h>
+#if (CONFIG_HAL_BOARD == HAL_BOARD_APM1 || CONFIG_HAL_BOARD == HAL_BOARD_APM2)
 
 #include <avr/interrupt.h>
 
@@ -225,3 +227,4 @@ void APM1RCOutput::read(uint16_t* period_us, uint8_t len) {
 uint16_t APM1RCOutput::_timer_period(uint16_t speed_hz) {
     return 2000000UL / speed_hz;
 }
+#endif

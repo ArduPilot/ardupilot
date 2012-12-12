@@ -1,6 +1,7 @@
 
 #ifndef __AP_HAL_AVR_UART_DRIVER_H__
 #define __AP_HAL_AVR_UART_DRIVER_H__
+#if (CONFIG_HAL_BOARD == HAL_BOARD_APM1 || CONFIG_HAL_BOARD == HAL_BOARD_APM2)
 
 #include <stdint.h>
 #include <stdarg.h>
@@ -212,6 +213,6 @@ struct hack
                           UCSR##_num##B,                                \
                           _BV(UDRIE##_num))
 
-
+#endif
 #endif // __AP_HAL_AVR_UART_DRIVER_H__
 

@@ -1,3 +1,5 @@
+#include <AP_HAL.h>
+#if (CONFIG_HAL_BOARD == HAL_BOARD_APM1 || CONFIG_HAL_BOARD == HAL_BOARD_APM2)
 
 #include <avr/io.h>
 #include <AP_HAL.h>
@@ -47,3 +49,4 @@ AP_HAL::SPIDeviceDriver* APM1SPIDeviceManager::device(enum AP_HAL::SPIDevice d)
     };
 }
 
+#endif

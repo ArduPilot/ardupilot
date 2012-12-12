@@ -1,3 +1,5 @@
+#include <AP_HAL.h>
+#if (CONFIG_HAL_BOARD == HAL_BOARD_APM1 || CONFIG_HAL_BOARD == HAL_BOARD_APM2)
 
 #include <avr/io.h>
 #include <avr/interrupt.h>
@@ -146,3 +148,5 @@ void APM1RCInput::clear_overrides() {
         _override[i] = 0;
     }
 }
+
+#endif
