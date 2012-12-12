@@ -27,6 +27,7 @@ public:
            const float &    initial_i = 0.0,
            const int16_t &  initial_imax = 0.0)
     {
+		AP_Param::setup_object_defaults(this, var_info);
         _kp = initial_p;
         _ki = initial_i;
         _imax = initial_imax;
