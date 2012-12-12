@@ -803,21 +803,16 @@ void throttle_accel_deactivate()
 static int16_t
 get_throttle_accel(int16_t z_target_accel)
 {
-    static float accel_one_g = -980;    // filtered estimate of 1G in cm/s/s
     int32_t p,i,d;      // used to capture pid values for logging
     int16_t z_accel_error, output;
     float z_accel_meas_temp;
 
     Vector3f accel = ins.get_accel();
-    Matrix3f dcm_matrix   = ahrs.get_dcm_matrix();
+    //Matrix3f dcm_matrix   = ahrs.get_dcm_matrix();
 
     // Calculate Earth Frame Z acceleration
-    z_accel_meas_temp = (dcm_matrix.c.x * accel.x + dcm_matrix.c.y * accel.y + dcm_matrix.c.z * accel.z)* 100.0;
-
-    // Filter Earth Frame Z acceleration with fc = 0.01 Hz to find 1 g
-    accel_one_g = accel_one_g + 0.00062792 * (z_accel_meas_temp - accel_one_g);
-
-    z_accel_meas_temp = z_accel_meas_temp - accel_one_g;
+    //z_accel_meas_temp = (dcm_matrix.c.x * accel.x + dcm_matrix.c.y * accel.y + dcm_matrix.c.z * accel.z)* 100.0;
+    z_accel_meas_temp = ahrs.get_accel_ef().z;
 
     // Filter Earth Frame Z acceleration with fc = 1 Hz
     z_accel_meas = z_accel_meas + 0.059117 * (z_accel_meas_temp - z_accel_meas);
