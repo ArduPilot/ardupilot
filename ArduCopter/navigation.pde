@@ -292,7 +292,8 @@ static void update_nav_wp()
             loiter_sum += loiter_delta;
 
             circle_angle += (circle_rate * dTnav);
-            //1deg = 0.0174532925 radians
+
+            //1 degree = 0.0174532925 radians
 
             // wrap
             if (circle_angle > 6.28318531)
