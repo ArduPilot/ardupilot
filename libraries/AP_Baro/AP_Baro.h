@@ -11,8 +11,11 @@ class AP_Baro
 {
 public:
     bool                    healthy;
+
     AP_Baro() {
+		AP_Param::setup_object_defaults(this, var_info);
     }
+
     virtual bool            init()=0;
     virtual uint8_t         read() = 0;
     virtual float           get_pressure() = 0;
