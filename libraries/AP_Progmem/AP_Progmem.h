@@ -4,9 +4,7 @@
 
 #if defined(__AVR__) 
 #include "AP_Progmem_AVR.h"
-#elif defined(DESKTOP_BUILD)
-#include "AP_Progmem_DesktopBuild.h"
-#elif defined(PX4FMU_BUILD)
+#elif defined(PX4FMU_BUILD) || (CONFIG_HAL_BOARD==HAL_BOARD_AVR_SITL)
 #include "AP_Progmem_Identity.h"
 #else
 #error "this build type is unknown"
