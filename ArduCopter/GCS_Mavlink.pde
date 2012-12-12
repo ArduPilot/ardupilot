@@ -1090,7 +1090,8 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
             if (packet.param1 == 1 ||
                 packet.param2 == 1 ||
                 packet.param3 == 1) {
-                ins.init_accel(mavlink_delay, flash_leds);
+                ins.init_accel(mavlink_delay, flash_leds);  // level accelerometer values
+                ahrs.set_trim(Vector3f(0,0,0));             // clear out saved trim
             }
             if (packet.param4 == 1) {
                 trim_radio();

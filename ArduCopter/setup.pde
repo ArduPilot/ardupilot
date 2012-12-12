@@ -250,7 +250,8 @@ setup_accel(uint8_t argc, const Menu::arg *argv)
     ins.init(AP_InertialSensor::COLD_START, 
              ins_sample_rate,
              delay, flash_leds, &timer_scheduler);
-    ins.init_accel(delay, flash_leds);
+    ins.init_accel(delay, flash_leds);  // level accelerometer values
+    ahrs.set_trim(Vector3f(0,0,0));     // clear out saved trim
     report_ins();
     return(0);
 }
