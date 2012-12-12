@@ -62,6 +62,9 @@ public:
 	    return _ins;
     }
 
+    // accelerometer values in the earth frame in m/s/s
+    Vector3f        get_accel_ef(void) { return _accel_ef; }
+
     // Methods
     virtual void update(void) = 0;
 
@@ -191,6 +194,9 @@ protected:
     // the limit of the gyro drift claimed by the sensors, in
     // radians/s/s
     float _gyro_drift_limit;
+
+    // accelerometer values in the earth frame in m/s/s
+    Vector3f        _accel_ef;
 
     // acceleration due to gravity in m/s/s
     static const float _gravity = 9.80665;
