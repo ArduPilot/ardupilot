@@ -145,7 +145,7 @@ public:
     Vector3f                get_trim() { return _trim; }
 
     // set_trim
-    virtual void            set_trim(Vector3f new_trim) { _trim.set(new_trim); }
+    virtual void            set_trim(Vector3f new_trim) { _trim.set_and_save(new_trim); }
 
     // add_trim - adjust the roll and pitch trim up to a total of 10 degrees
     virtual void            add_trim(float roll_in_radians, float pitch_in_radians);
