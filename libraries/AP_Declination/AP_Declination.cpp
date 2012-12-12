@@ -18,7 +18,7 @@
 #include <AP_Progmem.h>
 #include <AP_Math.h>
 #include <AP_Declination.h>
-#include <avr/pgmspace.h>
+#include <AP_Progmem.h>
 #include <math.h>
 
 // 1 byte - 4 bits for value + 1 bit for sign + 3 bits for repeats => 8 bits
@@ -105,7 +105,7 @@ static const row_value declination_values[] PROGMEM = \
     {0,0,0},{3,0,5},{2,0,1},{1,0,0},{0,0,0},{1,1,0},{2,1,0},{5,1,0},{8,1,0},{12,1,0},{14,1,0},{13,1,0},{9,1,0},{6,1,0},{3,1,0},{1,1,0},{0,0,0},{2,0,0},{1,0,0},{3,0,0},{2,0,0},{3,0,0},{4,0,0},{3,0,1},{4,0,0},{3,0,0},{4,0,1},{3,0,0},{4,0,0},{3,0,2},{4,0,0},{3,0,1},{4,0,0},{3,0,0},{2,0,0},{3,0,0},{2,0,2},{0,0,1},{1,1,0},{2,1,0},{4,1,0},{5,1,0},{7,1,0},{8,1,0},{6,1,1},{5,1,0},{3,1,0},{1,1,1},{1,0,1},{2,0,0},{3,0,0},{2,0,0},{3,0,1},{2,0,0},{3,0,0}, \
 };
 
-#define PGM_UINT8(p) (uint8_t)pgm_read_byte_far(p)
+#define PGM_UINT8(p) pgm_read_byte_far(p)
 
 float
 AP_Declination::get_declination(float lat, float lon)
