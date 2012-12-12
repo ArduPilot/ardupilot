@@ -69,24 +69,22 @@
 #include "GCS.h"
 
 #include <AP_HAL_AVR.h>
+#include <AP_HAL_AVR_SITL.h>
 
 AP_HAL::BetterStream* cliSerial;
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_APM2
 const AP_HAL::HAL& hal = AP_HAL_AVR_APM2;
-#else
+#elif CONFIG_HAL_BOARD == HAL_BOARD_APM1
 const AP_HAL::HAL& hal = AP_HAL_AVR_APM1;
+#elif CONFIG_HAL_BOARD == HAL_BOARD_AVR_SITL
+const AP_HAL::HAL& hal = AP_HAL_AVR_SITL;
+#include <SITL.h>
+SITL sitl;
+#else
+#error "Unknown CONFIG_HAL_BOARD type"
 #endif
 
-
-////////////////////////////////////////////////////////////////////////////////
-// AP_Param Loader
-////////////////////////////////////////////////////////////////////////////////
-// this sets up the parameter table, and sets the default values. This
-// must be the first AP_Param variable declared to ensure its
-// constructor runs before the constructors of the other AP_Param
-// variables
-AP_Param param_loader(var_info, WP_START_BYTE);
 
 ////////////////////////////////////////////////////////////////////////////////
 // Outback Challenge Failsafe Support
@@ -116,11 +114,14 @@ static void update_events(void);
 ////////////////////////////////////////////////////////////////////////////////
 // DataFlash
 ////////////////////////////////////////////////////////////////////////////////
-#if CONFIG_HAL_BOARD == HAL_BOARD_APM2
-DataFlash_APM2 DataFlash;
-#else
+#if CONFIG_HAL_BOARD == HAL_BOARD_APM1
 DataFlash_APM1 DataFlash;
+#elif CONFIG_HAL_BOARD == HAL_BOARD_APM2
+DataFlash_APM2 DataFlash;
+#elif CONFIG_HAL_BOARD == HAL_BOARD_AVR_SITL
+DataFlash_SITL DataFlash;
 #endif
+
 ////////////////////////////////////////////////////////////////////////////////
 // Sensors
 ////////////////////////////////////////////////////////////////////////////////
@@ -147,19 +148,13 @@ static AP_Int8          *flight_modes = &g.flight_mode1;
 static AP_ADC_ADS7844 adc;
  #endif
 
- #ifdef DESKTOP_BUILD
+ # if CONFIG_HAL_BOARD == HAL_BOARD_AVR_SITL
 AP_Baro_BMP085_HIL barometer;
 AP_Compass_HIL compass;
-  #include <SITL.h>
-SITL sitl;
  #else
 
   #if CONFIG_BARO == AP_BARO_BMP085
-   # if CONFIG_HAL_BOARD == HAL_BOARD_APM2
-static AP_Baro_BMP085          barometer(true);
-   # else
-static AP_Baro_BMP085          barometer(false);
-   # endif
+static AP_Baro_BMP085 barometer;
   #elif CONFIG_BARO == AP_BARO_MS5611
 static AP_Baro_MS5611 barometer;
   #endif
@@ -650,6 +645,10 @@ AP_Mount camera_mount2(&current_loc, g_gps, &ahrs, 1);
 
 void setup() {
     cliSerial = hal.console;
+
+    // setup the default values of variables listed in var_info[]
+    AP_Param::setup_sketch_defaults(var_info, WP_START_BYTE);
+
     rssi_analog_source = hal.analogin->channel(ANALOG_INPUT_NONE, 0.25);
 
 #if CONFIG_PITOT_SOURCE == PITOT_SOURCE_ADC
@@ -920,7 +919,7 @@ static void slow_loop()
     case 1:
         slow_loopCounter++;
 
-#if CONFIG_HAL_BOARD == HAL_BOARD_APM1
+#if CONFIG_HAL_BOARD == HAL_BOARD_APM1 || CONFIG_HAL_BOARD == HAL_BOARD_AVR_SITL
         update_aux_servo_function(&g.rc_5, &g.rc_6, &g.rc_7, &g.rc_8);
 #else
         update_aux_servo_function(&g.rc_5, &g.rc_6, &g.rc_7, &g.rc_8, &g.rc_9, &g.rc_10, &g.rc_11);
