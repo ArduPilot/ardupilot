@@ -29,9 +29,7 @@ public:
     RC_Channel(uint8_t ch_out) :
         _high(1),
         _ch_out(ch_out) {
-		if (_reverse == 0) {
-			_reverse = 1;
-		}
+		AP_Param::setup_object_defaults(this, var_info);
     }
 
     // setup min and max radio values in CLI

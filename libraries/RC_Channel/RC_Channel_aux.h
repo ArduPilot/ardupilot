@@ -21,6 +21,7 @@ public:
     RC_Channel_aux(uint8_t ch_out) :
         RC_Channel(ch_out)
     {
+		AP_Param::setup_object_defaults(this, var_info);
     }
 
     typedef enum
