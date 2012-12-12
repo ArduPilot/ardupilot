@@ -11,7 +11,9 @@ class AP_Airspeed
 {
 public:
     // constructor
-    AP_Airspeed() {};
+    AP_Airspeed() {
+		AP_Param::setup_object_defaults(this, var_info);
+    };
 
     void        init(AP_HAL::AnalogSource *source) {
         _source = source;
