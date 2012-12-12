@@ -176,6 +176,7 @@ extern RC_Channel* rc_ch[8];
 AP_Mount::AP_Mount(const struct Location *current_loc, GPS *&gps, AP_AHRS *ahrs, uint8_t id) :
     _gps(gps)
 {
+	AP_Param::setup_object_defaults(this, var_info);
     _ahrs = ahrs;
     _current_loc = current_loc;
 
