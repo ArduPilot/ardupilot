@@ -1,3 +1,5 @@
+/// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
+
 #ifndef __AP_AHRS_H__
 #define __AP_AHRS_H__
 /*
@@ -27,6 +29,9 @@ public:
         _gps(gps),
         _barometer(NULL)
     {
+        // load default values from var_info table
+        AP_Param::setup_object_defaults(this, var_info);
+
         // base the ki values by the sensors maximum drift
         // rate. The APM2 has gyros which are much less drift
         // prone than the APM1, so we should have a lower ki,
