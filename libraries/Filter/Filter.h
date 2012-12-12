@@ -10,7 +10,6 @@
 #include "FilterWithBuffer.h"
 #include "LowPassFilter.h"
 #include "ModeFilter.h"
-#include "ThirdOrderCompFilter.h"
 
 #endif //__FILTER_H__
 
