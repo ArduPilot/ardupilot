@@ -48,7 +48,7 @@ static int8_t reboot_board(uint8_t argc, const Menu::arg *argv)
 }
 
 // the user wants the CLI. It never exits
-static void run_cli(FastSerial *port)
+static void run_cli(AP_HAL::UARTDriver *port)
 {
     cliSerial = port;
     Menu::set_port(port);
@@ -393,7 +393,7 @@ static void startup_ground(void)
 }
 
 // set_mode - change flight mode and perform any necessary initialisation
-static void set_mode(byte mode)
+static void set_mode(uint8_t mode)
 {
     // Switch to stabilize mode if requested mode requires a GPS lock
     if(!ap.home_is_set) {

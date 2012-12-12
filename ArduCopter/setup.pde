@@ -316,8 +316,8 @@ setup_frame(uint8_t argc, const Menu::arg *argv)
 static int8_t
 setup_flightmodes(uint8_t argc, const Menu::arg *argv)
 {
-    byte _switchPosition = 0;
-    byte _oldSwitchPosition = 0;
+    uint8_t _switchPosition = 0;
+    uint8_t _oldSwitchPosition = 0;
     int8_t mode = 0;
 
     cliSerial->printf_P(PSTR("\nMode switch to edit, aileron: select modes, rudder: Simple on/off\n"));
@@ -780,10 +780,10 @@ static void report_batt_monitor()
     print_blanks(2);
 }
 
-static void report_wp(byte index = 255)
+static void report_wp(uint8_t index = 255)
 {
     if(index == 255) {
-        for(byte i = 0; i < g.command_total; i++) {
+        for(uint8_t i = 0; i < g.command_total; i++) {
             struct Location temp = get_cmd_with_index(i);
             print_wp(&temp, i);
         }
@@ -966,7 +966,7 @@ print_radio_values()
 }
 
 static void
-print_switch(byte p, byte m, bool b)
+print_switch(uint8_t p, uint8_t m, bool b)
 {
     cliSerial->printf_P(PSTR("Pos %d:\t"),p);
     print_flight_mode(m);
@@ -986,7 +986,7 @@ print_done()
 
 static void zero_eeprom(void)
 {
-    byte b = 0;
+    uint8_t b = 0;
 
     cliSerial->printf_P(PSTR("\nErasing EEPROM\n"));
 
@@ -1038,8 +1038,8 @@ heli_get_servo(int16_t servo_num){
 
 // Used to read integer values from the serial port
 static int16_t read_num_from_serial() {
-    byte index = 0;
-    byte timeout = 0;
+    uint8_t index = 0;
+    uint8_t timeout = 0;
     char data[5] = "";
 
     do {
@@ -1118,7 +1118,7 @@ init_esc()
     }
 }
 
-static void print_wp(struct Location *cmd, byte index)
+static void print_wp(struct Location *cmd, uint8_t index)
 {
    	//float t1 = (float)cmd->lat / t7;
     //float t2 = (float)cmd->lng / t7;

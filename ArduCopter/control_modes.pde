@@ -5,7 +5,7 @@ static void read_control_switch()
 {
     static uint8_t switch_counter = 0;
 
-    byte switchPosition = readSwitch();
+    uint8_t switchPosition = readSwitch();
 
     if (oldSwitchPosition != switchPosition) {
         switch_counter++;

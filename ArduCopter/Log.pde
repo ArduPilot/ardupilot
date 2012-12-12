@@ -228,7 +228,7 @@ process_logs(uint8_t argc, const Menu::arg *argv)
 
 // print_latlon - prints an latitude or longitude value held in an int32_t
 // probably this should be moved to AP_Common
-void print_latlon(BetterStream *s, int32_t lat_or_lon)
+void print_latlon(AL_HAL::BetterStream *s, int32_t lat_or_lon)
 {
     int32_t dec_portion, frac_portion;
     int32_t abs_lat_or_lon = labs(lat_or_lon);
@@ -703,7 +703,7 @@ static void Log_Read_Performance()
 }
 
 // Write a command processing packet.  Total length : 21 bytes
-static void Log_Write_Cmd(byte num, struct Location *wp)
+static void Log_Write_Cmd(uint8_t num, struct Location *wp)
 {
     DataFlash.WriteByte(HEAD_BYTE1);
     DataFlash.WriteByte(HEAD_BYTE2);
@@ -851,7 +851,7 @@ static void Log_Read_INAV()
 }
 
 // Write a mode packet. Total length : 7 bytes
-static void Log_Write_Mode(byte mode)
+static void Log_Write_Mode(uint8_t mode)
 {
     DataFlash.WriteByte(HEAD_BYTE1);
     DataFlash.WriteByte(HEAD_BYTE2);
@@ -1131,8 +1131,8 @@ static void Log_Read(int16_t start_page, int16_t end_page)
 // Read the DataFlash log memory : Packet Parser
 static int16_t Log_Read_Process(int16_t start_page, int16_t end_page)
 {
-    byte data;
-    byte log_step           = 0;
+    uint8_t data;
+    uint8_t log_step           = 0;
     int16_t page                    = start_page;
     int16_t packet_count = 0;
 
@@ -1257,9 +1257,9 @@ static void Log_Read_Startup() {
 }
 static void Log_Read(int16_t start_page, int16_t end_page) {
 }
-static void Log_Write_Cmd(byte num, struct Location *wp) {
+static void Log_Write_Cmd(uint8_t num, struct Location *wp) {
 }
-static void Log_Write_Mode(byte mode) {
+static void Log_Write_Mode(uint8_t mode) {
 }
 static void Log_Write_Raw() {
 }

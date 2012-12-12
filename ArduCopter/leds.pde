@@ -67,7 +67,7 @@ static void update_motor_light(void)
 
 static void dancing_light()
 {
-    static byte step;
+    static uint8_t step;
 
     if (step++ == 3)
         step = 0;

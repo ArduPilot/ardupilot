@@ -7,11 +7,8 @@
 #ifndef __GCS_H
 #define __GCS_H
 
-#include <FastSerial.h>
-#include <AP_Common.h>
+#include <AP_HAL.h>
 #include <GPS.h>
-#include <Stream.h>
-#include <stdint.h>
 
 ///
 /// @class	GCS
@@ -40,7 +37,7 @@ public:
     ///
     /// @param	port		The stream over which messages are exchanged.
     ///
-    void        init(FastSerial *port) {
+    void        init(AP_HAL::UARTDriver *port) {
         _port = port;
         initialised = true;
         last_gps_satellites = 255;
@@ -91,7 +88,7 @@ public:
 
 protected:
     /// The stream we are communicating over
-    FastSerial *      _port;
+    AP_HAL::UARTDriver *      _port;
 };
 
 //
@@ -110,7 +107,7 @@ class GCS_MAVLINK : public GCS_Class
 public:
     GCS_MAVLINK();
     void        update(void);
-    void        init(FastSerial *port);
+    void        init(AP_HAL::UARTDriver *port);
     void        send_message(enum ap_message id);
     void        send_text(gcs_severity severity, const char *str);
     void        send_text(gcs_severity severity, const prog_char_t *str);

@@ -54,64 +54,44 @@
 // Header includes
 ////////////////////////////////////////////////////////////////////////////////
 
-// AVR runtime
-#include <avr/io.h>
-#include <avr/eeprom.h>
-#include <avr/pgmspace.h>
-#include <avr/wdt.h>
-#include <math.h>
-
 // Libraries
-#include <FastSerial.h>
+
+// Common dependencies
 #include <AP_Common.h>
 #include <AP_Progmem.h>
 #include <AP_Menu.h>
 #include <AP_Param.h>
-#include <Arduino_Mega_ISR_Registry.h>
-#include <APM_RC.h>             // ArduPilot Mega RC Library
+// AP_HAL
+#include <AP_HAL.h>
+#include <AP_HAL_AVR.h>
+#include <AP_HAL_AVR_SITL.h>
+// Application dependencies
+#include <GCS_MAVLink.h>        // MAVLink GCS definitions
 #include <AP_GPS.h>             // ArduPilot GPS library
-#include <I2C.h>                // Arduino I2C lib
-#include <SPI.h>                // Arduino SPI lib
-#include <SPI3.h>               // SPI3 library
-#include <AP_Semaphore.h>       // for removing conflict between optical flow and dataflash on SPI3 bus
 #include <DataFlash.h>          // ArduPilot Mega Flash Memory Library
 #include <AP_ADC.h>             // ArduPilot Mega Analog to Digital Converter Library
-#include <AP_AnalogSource.h>
 #include <AP_Baro.h>
 #include <AP_Compass.h>         // ArduPilot Mega Magnetometer Library
 #include <AP_Math.h>            // ArduPilot Mega Vector/Matrix math Library
 #include <AP_Curve.h>           // Curve used to linearlise throttle pwm to thrust
 #include <AP_InertialSensor.h>  // ArduPilot Mega Inertial Sensor (accel & gyro) Library
-#include <AP_PeriodicProcess.h> // Parent header of Timer
-                                // (only included for makefile libpath to work)
-#include <AP_TimerProcess.h>    // TimerProcess is the scheduler for MPU6000 reads.
 #include <AP_AHRS.h>
 #include <APM_PI.h>             // PI library
 #include <AC_PID.h>             // PID library
 #include <RC_Channel.h>         // RC Channel Library
 #include <AP_Motors.h>          // AP Motors library
-#include <AP_MotorsQuad.h>      // AP Motors library for Quad
-#include <AP_MotorsTri.h>       // AP Motors library for Tri
-#include <AP_MotorsHexa.h>      // AP Motors library for Hexa
-#include <AP_MotorsY6.h>        // AP Motors library for Y6
-#include <AP_MotorsOcta.h>      // AP Motors library for Octa
-#include <AP_MotorsOctaQuad.h>  // AP Motors library for OctaQuad
-#include <AP_MotorsHeli.h>      // AP Motors library for Heli
-#include <AP_MotorsMatrix.h>    // AP Motors library for Heli
 #include <AP_RangeFinder.h>     // Range finder library
 #include <AP_OpticalFlow.h>     // Optical Flow library
 #include <Filter.h>             // Filter library
 #include <AP_Buffer.h>          // APM FIFO Buffer
-#include <ModeFilter.h>         // Mode Filter from Filter library
-#include <AverageFilter.h>      // Mode Filter from Filter library
 #include <AP_LeadFilter.h>      // GPS Lead filter
-#include <LowPassFilter.h>      // Low Pass Filter library
 #include <AP_Relay.h>           // APM relay
 #include <AP_Camera.h>          // Photo or video camera
 #include <AP_Mount.h>           // Camera/Antenna mount
 #include <AP_Airspeed.h>        // needed for AHRS build
 #include <AP_InertialNav.h>     // ArduPilot Mega inertial navigation library
-#include <DigitalWriteFast.h>   // faster digital write for LEDs
+#include <AP_Declination.h>     // ArduPilot Mega Declination Helper Library
+#include <AP_Limits.h>
 #include <memcheck.h>
 
 // Configuration
@@ -119,43 +99,24 @@
 #include "config.h"
 #include "config_channels.h"
 
-#include <GCS_MAVLink.h>        // MAVLink GCS definitions
-
 // Local modules
 #include "Parameters.h"
 #include "GCS.h"
 
-#include <AP_Declination.h>     // ArduPilot Mega Declination Helper Library
-
-// Limits library - Puts limits on the vehicle, and takes recovery actions
-#include <AP_Limits.h>
-#include <AP_Limit_GPSLock.h>   // a limits library module
-#include <AP_Limit_Geofence.h>  // a limits library module
-#include <AP_Limit_Altitude.h>  // a limits library module
-
-
 ////////////////////////////////////////////////////////////////////////////////
-// Serial ports
+// AP_HAL instance
 ////////////////////////////////////////////////////////////////////////////////
-//
-// Note that FastSerial port buffers are allocated at ::begin time,
-// so there is not much of a penalty to defining ports that we don't
-// use.
-//
-FastSerialPort0(Serial);        // FTDI/console
-FastSerialPort1(Serial1);       // GPS port
-FastSerialPort3(Serial3);       // Telemetry port
+#if CONFIG_HAL_BOARD == HAL_BOARD_APM2
+const AP_HAL::HAL& hal = AP_HAL_AVR_APM2;
+#elif CONFIG_HAL_BOARD == HAL_BOARD_APM1
+const AP_HAL::HAL& hal = AP_HAL_AVR_APM1;
+#elif CONFIG_HAL_BOARD == HAL_BOARD_AVR_SITL
+const AP_HAL::HAL& hal = AP_HAL_AVR_SITL;
+#include <SITL.h>
+SITL sitl;
+#endif
 
-// port to use for command line interface
-static FastSerial *cliSerial = &Serial;
-
-// this sets up the parameter table, and sets the default values. This
-// must be the first AP_Param variable declared to ensure its
-// constructor runs before the constructors of the other AP_Param
-// variables
-AP_Param param_loader(var_info, WP_START_BYTE);
-
-Arduino_Mega_ISR_Registry isr_registry;
+AP_HAL::BetterStream* cliSerial;
 
 ////////////////////////////////////////////////////////////////////////////////
 // Parameters
@@ -168,26 +129,16 @@ static Parameters g;
 
 ////////////////////////////////////////////////////////////////////////////////
 // prototypes
+////////////////////////////////////////////////////////////////////////////////
 static void update_events(void);
-
-////////////////////////////////////////////////////////////////////////////////
-// RC Hardware
-////////////////////////////////////////////////////////////////////////////////
-#if CONFIG_APM_HARDWARE == APM_HARDWARE_APM2
-APM_RC_APM2 APM_RC;
-#else
-APM_RC_APM1 APM_RC;
-#endif
 
 ////////////////////////////////////////////////////////////////////////////////
 // Dataflash
 ////////////////////////////////////////////////////////////////////////////////
-AP_Semaphore spi_semaphore;
-AP_Semaphore spi3_semaphore;
-#if CONFIG_APM_HARDWARE == APM_HARDWARE_APM2
-DataFlash_APM2 DataFlash(&spi3_semaphore);
+#if CONFIG_HAL_BOARD == HAL_BOARD_APM2
+DataFlash_APM2 DataFlash;
 #else
-DataFlash_APM1 DataFlash(&spi_semaphore);
+DataFlash_APM1 DataFlash;
 #endif
 
 
@@ -213,7 +164,7 @@ static const AP_InertialSensor::Sample_rate ins_sample_rate = AP_InertialSensor:
 static GPS         *g_gps;
 
 // flight modes convenience array
-static AP_Int8                *flight_modes = &g.flight_mode1;
+static AP_Int8 *flight_modes = &g.flight_mode1;
 
 #if HIL_MODE == HIL_MODE_DISABLED
 
@@ -222,15 +173,13 @@ static AP_Int8                *flight_modes = &g.flight_mode1;
 AP_ADC_ADS7844 adc;
  #endif
 
- #ifdef DESKTOP_BUILD
+ #if CONFIG_HIL_BOARD == HIL_BOARD_AVR_SITL
 AP_Baro_BMP085_HIL barometer;
 AP_Compass_HIL compass;
-  #include <SITL.h>
-SITL sitl;
  #else
 
   #if CONFIG_BARO == AP_BARO_BMP085
-   # if CONFIG_APM_HARDWARE == APM_HARDWARE_APM2
+   # if CONFIG_HAL_BOARD == HAL_BOARD_APM2
 AP_Baro_BMP085 barometer(true);
    # else
 AP_Baro_BMP085 barometer(false);
@@ -243,7 +192,7 @@ AP_Compass_HMC5843 compass;
  #endif
 
  #if OPTFLOW == ENABLED
-  #if CONFIG_APM_HARDWARE == APM_HARDWARE_APM2
+  #if CONFIG_HAL_BOARD == HAL_BOARD_APM2
 AP_OpticalFlow_ADNS3080 optflow(OPTFLOW_CS_PIN);
   #else
 AP_OpticalFlow_ADNS3080 optflow(OPTFLOW_CS_PIN);
@@ -254,22 +203,22 @@ AP_OpticalFlow optflow;
 
 // real GPS selection
  #if   GPS_PROTOCOL == GPS_PROTOCOL_AUTO
-AP_GPS_Auto     g_gps_driver(&Serial1, &g_gps);
+AP_GPS_Auto     g_gps_driver(hal.uartB, &g_gps);
 
  #elif GPS_PROTOCOL == GPS_PROTOCOL_NMEA
-AP_GPS_NMEA     g_gps_driver(&Serial1);
+AP_GPS_NMEA     g_gps_driver(hal.uartB);
 
  #elif GPS_PROTOCOL == GPS_PROTOCOL_SIRF
-AP_GPS_SIRF     g_gps_driver(&Serial1);
+AP_GPS_SIRF     g_gps_driver(hal.uartB);
 
  #elif GPS_PROTOCOL == GPS_PROTOCOL_UBLOX
-AP_GPS_UBLOX    g_gps_driver(&Serial1);
+AP_GPS_UBLOX    g_gps_driver(hal.uartB);
 
  #elif GPS_PROTOCOL == GPS_PROTOCOL_MTK
-AP_GPS_MTK      g_gps_driver(&Serial1);
+AP_GPS_MTK      g_gps_driver(hal.uartB);
 
  #elif GPS_PROTOCOL == GPS_PROTOCOL_MTK16
-AP_GPS_MTK16    g_gps_driver(&Serial1);
+AP_GPS_MTK16    g_gps_driver(hal.uartB);
 
  #elif GPS_PROTOCOL == GPS_PROTOCOL_NONE
 AP_GPS_None     g_gps_driver(NULL);
@@ -288,14 +237,14 @@ AP_InertialSensor_Oilpan ins(&adc);
 // a NULL GPS object pointer
 static GPS         *g_gps_null;
 
- #if DMP_ENABLED == ENABLED && CONFIG_APM_HARDWARE == APM_HARDWARE_APM2
+ #if DMP_ENABLED == ENABLED && CONFIG_HAL_BOARD == HAL_BOARD_APM2
 AP_AHRS_MPU6000  ahrs(&ins, g_gps);               // only works with APM2
  #else
 AP_AHRS_DCM ahrs(&ins, g_gps);
  #endif
 
 // ahrs2 object is the secondary ahrs to allow running DMP in parallel with DCM
-  #if SECONDARY_DMP_ENABLED == ENABLED && CONFIG_APM_HARDWARE == APM_HARDWARE_APM2
+  #if SECONDARY_DMP_ENABLED == ENABLED && CONFIG_HAL_BOARD == HAL_BOARD_APM2
 AP_AHRS_MPU6000  ahrs2(&ins, g_gps);               // only works with APM2
   #endif
 
@@ -320,24 +269,17 @@ AP_Compass_HIL          compass;                  // never used
 AP_Baro_BMP085_HIL      barometer;
 
  #if OPTFLOW == ENABLED
-  #if CONFIG_APM_HARDWARE == APM_HARDWARE_APM2
+  #if CONFIG_HAL_BOARD == HAL_BOARD_APM2
 AP_OpticalFlow_ADNS3080 optflow(OPTFLOW_CS_PIN);
   #else
 AP_OpticalFlow_ADNS3080 optflow(OPTFLOW_CS_PIN);
-  #endif    // CONFIG_APM_HARDWARE == APM_HARDWARE_APM2
+  #endif    // CONFIG_HAL_BOARD == HAL_BOARD_APM2
  #endif     // OPTFLOW == ENABLED
 
- #ifdef DESKTOP_BUILD
-  #include <SITL.h>
-SITL sitl;
- #endif     // DESKTOP_BUILD
 static int32_t gps_base_alt;
 #else
  #error Unrecognised HIL_MODE setting.
 #endif // HIL MODE
-
-// we always have a timer scheduler
-AP_TimerProcess timer_scheduler;
 
 ////////////////////////////////////////////////////////////////////////////////
 // GCS selection
@@ -443,7 +385,7 @@ static int16_t y_rate_error;
 static int8_t control_mode = STABILIZE;
 // Used to maintain the state of the previous control switch position
 // This is set to -1 when we need to re-read the switch
-static byte oldSwitchPosition;
+static uint8_t oldSwitchPosition;
 
 // receiver RSSI
 static uint8_t receiver_rssi;
@@ -475,11 +417,11 @@ static uint8_t receiver_rssi;
 #endif
 
 #if FRAME_CONFIG == HELI_FRAME  // helicopter constructor requires more arguments
-MOTOR_CLASS motors(CONFIG_APM_HARDWARE, &APM_RC, &g.rc_1, &g.rc_2, &g.rc_3, &g.rc_4, &g.rc_8, &g.heli_servo_1, &g.heli_servo_2, &g.heli_servo_3, &g.heli_servo_4);
+MOTOR_CLASS motors(CONFIG_HAL_BOARD, &APM_RC, &g.rc_1, &g.rc_2, &g.rc_3, &g.rc_4, &g.rc_8, &g.heli_servo_1, &g.heli_servo_2, &g.heli_servo_3, &g.heli_servo_4);
 #elif FRAME_CONFIG == TRI_FRAME  // tri constructor requires additional rc_7 argument to allow tail servo reversing
-MOTOR_CLASS motors(CONFIG_APM_HARDWARE, &APM_RC, &g.rc_1, &g.rc_2, &g.rc_3, &g.rc_4, &g.rc_7);
+MOTOR_CLASS motors(CONFIG_HAL_BOARD, &APM_RC, &g.rc_1, &g.rc_2, &g.rc_3, &g.rc_4, &g.rc_7);
 #else
-MOTOR_CLASS motors(CONFIG_APM_HARDWARE, &APM_RC, &g.rc_1, &g.rc_2, &g.rc_3, &g.rc_4);
+MOTOR_CLASS motors(CONFIG_HAL_BOARD, &APM_RC, &g.rc_1, &g.rc_2, &g.rc_3, &g.rc_4);
 #endif
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -507,11 +449,11 @@ float tuning_value;
 ////////////////////////////////////////////////////////////////////////////////
 // This is current status for the LED lights state machine
 // setting this value changes the output of the LEDs
-static byte led_mode = NORMAL_LEDS;
+static uint8_t led_mode = NORMAL_LEDS;
 // Blinking indicates GPS status
-static byte copter_leds_GPS_blink;
+static uint8_t copter_leds_GPS_blink;
 // Blinking indicates battery status
-static byte copter_leds_motor_blink;
+static uint8_t copter_leds_motor_blink;
 // Navigation confirmation blinks
 static int8_t copter_leds_nav_blink;
 
@@ -552,7 +494,7 @@ union float_int {
 static int32_t wp_bearing;
 // Status of the Waypoint tracking mode. Options include:
 // NO_NAV_MODE, WP_MODE, LOITER_MODE, CIRCLE_MODE
-static byte wp_control;
+static uint8_t wp_control;
 // Register containing the index of the current navigation command in the mission script
 static int16_t command_nav_index;
 // Register containing the index of the previous navigation command in the mission script
@@ -824,7 +766,7 @@ static int16_t yaw_look_at_heading_slew;
 // Repeat Mission Scripting Command
 ////////////////////////////////////////////////////////////////////////////////
 // The type of repeating event - Toggle a servo channel, Toggle the APM1 relay, etc
-static byte event_id;
+static uint8_t event_id;
 // Used to manage the timimng of repeating events
 static uint32_t event_timer;
 // How long to delay the next firing of event in millis
@@ -872,11 +814,11 @@ static uint32_t fast_loopTimer;
 // Time in microseconds of 50hz control loop
 static uint32_t fiftyhz_loopTimer;
 // Counters for branching from 10 hz control loop
-static byte medium_loopCounter;
+static uint8_t medium_loopCounter;
 // Counters for branching from 3 1/3hz control loop
-static byte slow_loopCounter;
+static uint8_t slow_loopCounter;
 // Counters for branching at 1 hz
-static byte counter_one_herz;
+static uint8_t counter_one_herz;
 // Counter of main loop executions.  Used for performance monitoring and failsafe processing
 static uint16_t mainLoop_count;
 // Delta Time in milliseconds for navigation computations, updated with every good GPS read
@@ -1017,7 +959,7 @@ void loop()
             }
         }
     } else {
-#ifdef DESKTOP_BUILD
+#if CONFIG_HAL_BOARD == HAL_BOARD_AVR_SITL
         usleep(1000);
 #endif
         if (timer - fast_loopTimer < 9) {
@@ -1412,7 +1354,7 @@ static void update_optical_flow(void)
 static void update_GPS(void)
 {
     // A counter that is used to grab at least 10 reads before commiting the Home location
-    static byte ground_start_count  = 10;
+    static uint8_t ground_start_count  = 10;
 
     g_gps->update();
     update_GPS_light();
@@ -1739,7 +1681,7 @@ void update_roll_pitch_mode(void)
 // new radio frame is used to make sure we only call this at 50hz
 void update_simple_mode(void)
 {
-    static byte simple_counter = 0;             // State machine counter for Simple Mode
+    static uint8_t simple_counter = 0;             // State machine counter for Simple Mode
     static float simple_sin_y=0, simple_cos_x=0;
 
     // used to manage state machine

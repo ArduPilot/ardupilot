@@ -68,7 +68,7 @@ static void init_rc_out()
     motors.set_min_throttle(g.throttle_min);
     motors.set_max_throttle(g.throttle_max);
 
-    for(byte i = 0; i < 5; i++) {
+    for(uint8_t i = 0; i < 5; i++) {
         delay(20);
         read_radio();
     }
@@ -199,7 +199,7 @@ static void set_throttle_and_failsafe(uint16_t throttle_pwm)
 
 static void trim_radio()
 {
-    for (byte i = 0; i < 30; i++) {
+    for (uint8_t i = 0; i < 30; i++) {
         read_radio();
     }
 
