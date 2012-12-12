@@ -3,17 +3,23 @@
 // Test for AP_GPS_NMEA
 //
 
-#include <FastSerial.h>
 #include <AP_Common.h>
-#include <AP_Math.h>
 #include <AP_Param.h>
+#include <AP_Progmem.h>
+#include <AP_Math.h>
+
+#include <AP_HAL.h>
 #include <AP_GPS.h>
+#include <AP_HAL_AVR.h>
 
-FastSerialPort0(Serial);
-FastSerialPort1(Serial1);
+#if CONFIG_HAL_BOARD == HAL_BOARD_APM1
+const AP_HAL::HAL& hal = AP_HAL_AVR_APM1;
+#elif CONFIG_HAL_BOARD == HAL_BOARD_APM2
+const AP_HAL::HAL& hal = AP_HAL_AVR_APM2;
+#endif
 
-AP_GPS_NMEA NMEA_gps(&Serial1);
-GPS                     *gps = &NMEA_gps;
+AP_GPS_NMEA NMEA_gps(hal.uartB);
+GPS *gps = &NMEA_gps;
 
 #define T6 1000000
 #define T7 10000000
@@ -37,16 +43,15 @@ const uint8_t sirf_to_nmea[] = { 0xa0, 0xa2, // preamble
 
 void setup()
 {
-    Serial.begin(38400);
-    Serial1.begin(38400);
+    hal.console->println_P(PSTR("GPS_NMEA library test"));
+    hal.uartB->begin(38400);
 
     // try to coerce a SiRF unit that's been traumatized by
     // AP_GPS_AUTO back into NMEA mode so that we can test
     // it.
     for (uint8_t i = 0; i < sizeof(sirf_to_nmea); i++)
-        Serial1.write(sirf_to_nmea[i]);
+        hal.uartB->write(sirf_to_nmea[i]);
 
-    Serial.println("GPS NMEA library test");
     gps->init();
 }
 
@@ -55,7 +60,9 @@ void loop()
     gps->update();
     if (gps->new_data) {
         if (gps->fix) {
-            Serial.printf("\nLat: %.7f Lon: %.7f Alt: %.2fm GSP: %.2fm/s CoG: %d SAT: %d TIM: %lu",
+            hal.console->printf_P(
+                PSTR("Lat: %.7f Lon: %.7f Alt: %.2fm GSP: %.2fm/s "
+                    "CoG: %d SAT: %d TIM: %lu\r\n"),
                           (float)gps->latitude / T7,
                           (float)gps->longitude / T7,
                           (float)gps->altitude / 100.0,
@@ -64,9 +71,10 @@ void loop()
                           gps->num_sats,
                           gps->time);
         } else {
-            Serial.println("No fix");
+            hal.console->println_P(PSTR("No fix"));
         }
         gps->new_data = false;
     }
 }
 
+AP_HAL_MAIN();
