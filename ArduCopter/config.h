@@ -618,6 +618,10 @@
 
 
 // RTL Mode
+#ifndef RTL_YAW
+ # define RTL_YAW                   YAW_LOOK_AT_NEXT_WP
+#endif
+
 #ifndef RTL_RP
  # define RTL_RP                    ROLL_PITCH_AUTO
 #endif
