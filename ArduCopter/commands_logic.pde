@@ -285,9 +285,9 @@ static void do_nav_wp()
         wp_verify_byte |= NAV_ALTITUDE;
     }
 
-    // reset control of yaw
+    // reset control of yaw to default
     if( g.yaw_override_behaviour == YAW_OVERRIDE_BEHAVIOUR_AT_NEXT_WAYPOINT ) {
-        set_yaw_mode(YAW_LOOK_AT_NEXT_WP);
+        set_yaw_mode(AUTO_YAW);
     }
 }
 
