@@ -291,17 +291,13 @@ GCS_MAVLINK gcs3;
 // SONAR selection
 ////////////////////////////////////////////////////////////////////////////////
 //
-ModeFilterInt16_Size5 sonar_mode_filter(2);
+
 #if CONFIG_SONAR == ENABLED
- #if CONFIG_SONAR_SOURCE == SONAR_SOURCE_ADC
-AP_AnalogSource_ADC sonar_analog_source( &adc, CONFIG_SONAR_SOURCE_ADC_CHANNEL, 0.25);
- #elif CONFIG_SONAR_SOURCE == SONAR_SOURCE_ANALOG_PIN
-AP_AnalogSource_Arduino sonar_analog_source(CONFIG_SONAR_SOURCE_ANALOG_PIN);
- #endif
-AP_RangeFinder_MaxsonarXL sonar(&sonar_analog_source, &sonar_mode_filter);
+ModeFilterInt16_Size5 sonar_mode_filter(2);
+AP_HAL::AnalogSource *sonar_analog_source;
+AP_RangeFinder_MaxsonarXL *sonar;
 #endif
 
-// agmatthews USERHOOKS
 ////////////////////////////////////////////////////////////////////////////////
 // User variables
 ////////////////////////////////////////////////////////////////////////////////
@@ -884,6 +880,21 @@ void get_throttle_althold(int32_t target_alt, int16_t max_climb_rate = ALTHOLD_M
 ////////////////////////////////////////////////////////////////////////////////
 
 void setup() {
+
+#if CONFIG_SONAR == ENABLED
+ #if CONFIG_SONAR_SOURCE == SONAR_SOURCE_ADC
+    sonar_analog_source = new AP_AnalogSource_ADC(
+            &adc, CONFIG_SONAR_SOURCE_ADC_CHANNEL, 0.25);
+ #elif CONFIG_SONAR_SOURCE == SONAR_SOURCE_ANALOG_PIN
+    sonar_analog_source = hal.analogin->channel(
+            CONFIG_SONAR_SOURCE_ANALOG_PIN);
+ #else
+  #warning "Invalid CONFIG_SONAR_SOURCE"
+ #endif
+    sonar = new AP_RangeFinder_MaxsonarXL(&sonar_analog_source,
+            &sonar_mode_filter);
+#endif
+
     memcheck_init();
     init_ardupilot();
 }
@@ -1024,7 +1035,6 @@ static void fast_loop()
     // update targets to rate controllers
     update_rate_contoller_targets();
 
-    // agmatthews - USERHOOKS
 #ifdef USERHOOK_FASTLOOP
     USERHOOK_FASTLOOP
 #endif
@@ -1125,7 +1135,6 @@ static void medium_loop()
         // -----------------------
         arm_motors();
 
-        // agmatthews - USERHOOKS
 #ifdef USERHOOK_MEDIUMLOOP
         USERHOOK_MEDIUMLOOP
 #endif
@@ -1267,7 +1276,6 @@ static void slow_loop()
         camera_mount2.update_mount_type();
 #endif
 
-        // agmatthews - USERHOOKS
 #ifdef USERHOOK_SLOWLOOP
         USERHOOK_SLOWLOOP
 #endif
@@ -1320,7 +1328,6 @@ static void super_slow_loop()
 
     gcs_send_message(MSG_HEARTBEAT);
 
-    // agmatthews - USERHOOKS
 #ifdef USERHOOK_SUPERSLOWLOOP
     USERHOOK_SUPERSLOWLOOP
 #endif
