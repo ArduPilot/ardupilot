@@ -3,59 +3,61 @@
  *       Example of GPS 406 library.
  *       Code by Jordi Munoz and Jose Julio. DIYDrones.com
  *
- *       Works with Ardupilot Mega Hardware (GPS on Serial Port1)
+ *       Works with Ardupilot Mega Hardware (GPS on hal.console->Port1)
  */
 
-#include <FastSerial.h>
 #include <AP_Common.h>
+#include <AP_Progmem.h>
 #include <AP_Math.h>
 #include <AP_Param.h>
+#include <AP_HAL.h>
+#include <AP_HAL_AVR.h>
 #include <AP_GPS.h>
 
-FastSerialPort0(Serial);
-FastSerialPort1(Serial1);
+#if CONFIG_HAL_BOARD == HAL_BOARD_APM1
+const AP_HAL::HAL& hal = AP_HAL_AVR_APM1;
+#elif CONFIG_HAL_BOARD == HAL_BOARD_APM2
+const AP_HAL::HAL& hal = AP_HAL_AVR_APM2;
+#endif
 
-AP_GPS_406 gps(&Serial1);
+AP_GPS_406 gps(hal.uartB);
 #define T6 1000000
 #define T7 10000000
 
 void setup()
 {
-    tone(A6, 1000, 200);
-
-    Serial.begin(38400, 16, 128);
-    Serial1.begin(57600, 128, 16);
-    stderr = stdout;
+    hal.console->println("GPS 406 library test");
+    hal.uartB->begin(57600, 128, 16);
     gps.print_errors = true;
 
-    Serial.println("GPS 406 library test");
     gps.init();  // GPS Initialization
-    delay(1000);
+    hal.scheduler->delay(1000);
 }
 void loop()
 {
-    delay(20);
+    hal.scheduler->delay(20);
     gps.update();
     if (gps.new_data) {
-        Serial.print("gps:");
-        Serial.print(" Lat:");
-        Serial.print((float)gps.latitude / T7, DEC);
-        Serial.print(" Lon:");
-        Serial.print((float)gps.longitude / T7, DEC);
-        Serial.print(" Alt:");
-        Serial.print((float)gps.altitude / 100.0, DEC);
-        Serial.print(" GSP:");
-        Serial.print(gps.ground_speed / 100.0);
-        Serial.print(" COG:");
-        Serial.print(gps.ground_course / 100, DEC);
-        Serial.print(" SAT:");
-        Serial.print(gps.num_sats, DEC);
-        Serial.print(" FIX:");
-        Serial.print(gps.fix, DEC);
-        Serial.print(" TIM:");
-        Serial.print(gps.time, DEC);
-        Serial.println();
+        hal.console->print("gps:");
+        hal.console->print(" Lat:");
+        hal.console->print((float)gps.latitude / T7, DEC);
+        hal.console->print(" Lon:");
+        hal.console->print((float)gps.longitude / T7, DEC);
+        hal.console->print(" Alt:");
+        hal.console->print((float)gps.altitude / 100.0, DEC);
+        hal.console->print(" GSP:");
+        hal.console->print(gps.ground_speed / 100.0);
+        hal.console->print(" COG:");
+        hal.console->print(gps.ground_course / 100, DEC);
+        hal.console->print(" SAT:");
+        hal.console->print(gps.num_sats, DEC);
+        hal.console->print(" FIX:");
+        hal.console->print(gps.fix, DEC);
+        hal.console->print(" TIM:");
+        hal.console->print(gps.time, DEC);
+        hal.console->println();
         gps.new_data = 0; // We have readed the data
     }
 }
 
+AP_HAL_MAIN();
