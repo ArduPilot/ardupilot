@@ -32,6 +32,7 @@ AP_Limit_GPSLock::AP_Limit_GPSLock(GPS *&gps) :
     AP_Limit_Module(AP_LIMITS_GPSLOCK),     // enabled and required
     _gps(gps)
 {
+    AP_Param::setup_object_defaults(this, var_info);
 }
 
 

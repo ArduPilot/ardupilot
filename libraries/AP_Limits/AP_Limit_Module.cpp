@@ -29,6 +29,7 @@ extern const prog_char_t *get_module_name(enum moduleid i) {
 }
 
 AP_Limit_Module::AP_Limit_Module(enum moduleid i) {
+    AP_Param::setup_object_defaults(this, var_info);
     _id = i;
     _next = NULL;
 }

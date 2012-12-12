@@ -59,6 +59,7 @@ AP_Limit_Geofence::AP_Limit_Geofence(uint32_t efs, uint8_t f_wp_s,
     _max_fence_points(max_fp),
     _boundary_uptodate(false)
 {
+    AP_Param::setup_object_defaults(this, var_info);
     update_boundary();
 }
 

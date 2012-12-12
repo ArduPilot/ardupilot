@@ -57,18 +57,7 @@ const AP_Param::GroupInfo AP_Limits::var_info[] PROGMEM = {
 };
 
 AP_Limits::AP_Limits() {
-    last_trigger = 0;
-    last_action = 0;
-    last_recovery = 0;
-    last_clear = 0;
-    last_status_update = 0;
-    breach_count = 0;
-    mods_enabled = 0;
-    mods_required = 0;
-    mods_triggered = 0;
-    mods_recovering = 0;
-    old_mode_switch = 0;
-    _channel = 0;
+    AP_Param::setup_object_defaults(this, var_info);
     _state = LIMITS_INIT;
 }
 
