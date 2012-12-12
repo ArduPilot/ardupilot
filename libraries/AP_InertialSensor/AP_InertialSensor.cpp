@@ -52,10 +52,6 @@ const AP_Param::GroupInfo AP_InertialSensor::var_info[] PROGMEM = {
     AP_GROUPEND
 };
 
-AP_InertialSensor::AP_InertialSensor()
-{
-}
-
 void
 AP_InertialSensor::init( Start_style style,
                          Sample_rate sample_rate,
