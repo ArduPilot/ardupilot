@@ -9,7 +9,7 @@
 #include <AP_HAL.h>
 
 #include <inttypes.h>
-#include <avr/pgmspace.h>
+#include <AP_Progmem.h>
 
 /// @class	GPS
 /// @brief	Abstract base class for GPS receiver drivers.

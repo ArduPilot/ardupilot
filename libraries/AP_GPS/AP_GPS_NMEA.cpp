@@ -27,7 +27,7 @@
 
 #include <AP_Common.h>
 
-#include <avr/pgmspace.h>
+#include <AP_Progmem.h>
 #include <ctype.h>
 #include <stdint.h>
 #include <stdlib.h>

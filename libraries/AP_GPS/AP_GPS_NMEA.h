@@ -44,7 +44,7 @@
 
 #include <AP_HAL.h>
 #include "GPS.h"
-#include <avr/pgmspace.h>
+#include <AP_Progmem.h>
 
 
 /// NMEA parser
