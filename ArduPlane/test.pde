@@ -82,13 +82,13 @@ static void print_hit_enter()
 static int8_t
 test_eedump(uint8_t argc, const Menu::arg *argv)
 {
-    intptr_t i, j;
+    uint16_t i, j;
 
     // hexdump the EEPROM
     for (i = 0; i < EEPROM_MAX_ADDR; i += 16) {
         cliSerial->printf_P(PSTR("%04x:"), i);
         for (j = 0; j < 16; j++)
-            cliSerial->printf_P(PSTR(" %02x"), eeprom_read_byte((const uint8_t *)(i + j)));
+            cliSerial->printf_P(PSTR(" %02x"), hal.storage->read_byte(i + j));
         cliSerial->println();
     }
     return(0);

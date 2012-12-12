@@ -55,22 +55,22 @@ static struct Location get_cmd_with_index_raw(int16_t i)
     }else{
         // read WP position
         mem = (WP_START_BYTE) + (i * WP_SIZE);
-        temp.id = eeprom_read_byte((uint8_t*)(uintptr_t)mem);
+        temp.id = hal.storage->read_byte(mem);
 
         mem++;
-        temp.options = eeprom_read_byte((uint8_t*)(uintptr_t)mem);
+        temp.options = hal.storage->read_byte(mem);
 
         mem++;
-        temp.p1 = eeprom_read_byte((uint8_t*)(uintptr_t)mem);
+        temp.p1 = hal.storage->read_byte(mem);
 
         mem++;
-        temp.alt = (long)eeprom_read_dword((uint32_t*)(uintptr_t)mem);
+        temp.alt = hal.storage->read_dword(mem);
 
         mem += 4;
-        temp.lat = (long)eeprom_read_dword((uint32_t*)(uintptr_t)mem);
+        temp.lat = hal.storage->read_dword(mem);
 
         mem += 4;
-        temp.lng = (long)eeprom_read_dword((uint32_t*)(uintptr_t)mem);
+        temp.lng = hal.storage->read_dword(mem);
     }
 
     return temp;
@@ -100,7 +100,7 @@ static struct Location get_cmd_with_index(int16_t i)
 static void set_cmd_with_index(struct Location temp, int16_t i)
 {
     i = constrain(i, 0, g.command_total.get());
-    intptr_t mem = WP_START_BYTE + (i * WP_SIZE);
+    uint16_t mem = WP_START_BYTE + (i * WP_SIZE);
 
     // Set altitude options bitmask
     // XXX What is this trying to do?
@@ -110,22 +110,22 @@ static void set_cmd_with_index(struct Location temp, int16_t i)
         temp.options = 0;
     }
 
-    eeprom_write_byte((uint8_t *)   mem, temp.id);
+    hal.storage->write_byte(mem, temp.id);
 
     mem++;
-    eeprom_write_byte((uint8_t *)   mem, temp.options);
+    hal.storage->write_byte(mem, temp.options);
 
     mem++;
-    eeprom_write_byte((uint8_t *)   mem, temp.p1);
+    hal.storage->write_byte(mem, temp.p1);
 
     mem++;
-    eeprom_write_dword((uint32_t *) mem, temp.alt);
+    hal.storage->write_dword(mem, temp.alt);
 
     mem += 4;
-    eeprom_write_dword((uint32_t *) mem, temp.lat);
+    hal.storage->write_dword(mem, temp.lat);
 
     mem += 4;
-    eeprom_write_dword((uint32_t *) mem, temp.lng);
+    hal.storage->write_dword(mem, temp.lng);
 }
 
 static void decrement_cmd_index()

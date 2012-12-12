@@ -607,8 +607,8 @@ static void zero_eeprom(void)
 {
     uint8_t b = 0;
     cliSerial->printf_P(PSTR("\nErasing EEPROM\n"));
-    for (intptr_t i = 0; i < EEPROM_MAX_ADDR; i++) {
-        eeprom_write_byte((uint8_t *) i, b);
+    for (uint16_t i = 0; i < EEPROM_MAX_ADDR; i++) {
+        hal.storage->write_byte(i, b);
     }
     cliSerial->printf_P(PSTR("done\n"));
 }

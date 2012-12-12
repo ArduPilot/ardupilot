@@ -33,7 +33,7 @@ static struct geofence_state {
  */
 static Vector2l get_fence_point_with_index(unsigned i)
 {
-    intptr_t mem;
+    uint16_t mem;
     Vector2l ret;
 
     if (i > (unsigned)g.fence_total) {
@@ -42,9 +42,9 @@ static Vector2l get_fence_point_with_index(unsigned i)
 
     // read fence point
     mem = FENCE_START_BYTE + (i * FENCE_WP_SIZE);
-    ret.x = eeprom_read_dword((uint32_t *)mem);
+    ret.x = hal.storage->read_dword(mem);
     mem += sizeof(uint32_t);
-    ret.y = eeprom_read_dword((uint32_t *)mem);
+    ret.y = hal.storage->read_dword(mem);
 
     return ret;
 }
@@ -52,7 +52,7 @@ static Vector2l get_fence_point_with_index(unsigned i)
 // save a fence point
 static void set_fence_point_with_index(Vector2l &point, unsigned i)
 {
-    intptr_t mem;
+    uint16_t mem;
 
     if (i >= (unsigned)g.fence_total.get()) {
         // not allowed
@@ -61,9 +61,9 @@ static void set_fence_point_with_index(Vector2l &point, unsigned i)
 
     mem = FENCE_START_BYTE + (i * FENCE_WP_SIZE);
 
-    eeprom_write_dword((uint32_t *)mem, point.x);
+    hal.storage->write_dword(mem, point.x);
     mem += sizeof(uint32_t);
-    eeprom_write_dword((uint32_t *)mem, point.y);
+    hal.storage->write_dword(mem, point.y);
 
     if (geofence_state != NULL) {
         geofence_state->boundary_uptodate = false;
