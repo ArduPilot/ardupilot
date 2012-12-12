@@ -223,7 +223,7 @@ static void do_RTL(void)
 
     // set roll, pitch and yaw modes
     set_roll_pitch_mode(RTL_RP);
-    set_yaw_mode(YAW_LOOK_AT_HOME);
+    set_yaw_mode(RTL_YAW);
     set_throttle_mode(RTL_THR);
 
     // set navigation mode
