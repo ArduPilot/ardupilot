@@ -16,8 +16,7 @@
 #include <string.h>
 #include <stdint.h>
 
-#include <avr/pgmspace.h>
-#include <avr/eeprom.h>
+#include <AP_Progmem.h>
 
 #define AP_MAX_NAME_SIZE 16
 #define AP_NESTED_GROUPS_ENABLED
@@ -89,15 +88,8 @@ public:
     // wrong version is found
     static bool        setup(const struct Info *info, uint16_t eeprom_size);
 
-    // constructor to load default values and setup var_info table
-    AP_Param(const struct Info *info, uint16_t eeprom_size) {
-        setup(info, eeprom_size);
-        load_defaults();
-    }
-
-    // empty constructor for child classes
-    AP_Param() {
-    }
+    // empty constructor
+    AP_Param() {}
 
     // a token used for first()/next() state
     typedef struct {
@@ -167,10 +159,11 @@ public:
     static void         set_value(enum ap_var_type type, void *ptr, float def_value);
 
     // load default values for scalars in a group
-    static void         load_defaults_group(const struct GroupInfo *group_info, uintptr_t base);
+    static void         setup_object_defaults(const void *object_pointer, const struct GroupInfo *group_info);
 
-    // load default values for all scalars
-    static void         load_defaults(void);
+    // load default values for all scalars in the main sketch. This
+    // does not recurse into the sub-objects    
+    static void         setup_sketch_defaults(const struct Info *info, uint16_t eeprom_size);
 
     /// Erase all variables in EEPROM.
     ///

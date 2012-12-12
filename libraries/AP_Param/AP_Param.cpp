@@ -753,17 +753,17 @@ void AP_Param::set_value(enum ap_var_type type, void *ptr, float def_value)
     }
 }
 
-// load default values for scalars in a group
-void AP_Param::load_defaults_group(const struct GroupInfo *group_info, uintptr_t base)
+// load default values for scalars in a group. This does not recurse
+// into other objects. This is a static function that should be called
+// in the objects constructor
+void AP_Param::setup_object_defaults(const void *object_pointer, const struct GroupInfo *group_info)
 {
+    uintptr_t base = (uintptr_t)object_pointer;
     uint8_t type;
     for (uint8_t i=0;
          (type=PGM_UINT8(&group_info[i].type)) != AP_PARAM_NONE;
          i++) {
-        if (type == AP_PARAM_GROUP) {
-            const struct GroupInfo *ginfo = (const struct GroupInfo *)PGM_POINTER(&group_info[i].group_info);
-            load_defaults_group(ginfo, base);
-        } else if (type <= AP_PARAM_FLOAT) {
+        if (type <= AP_PARAM_FLOAT) {
             void *ptr = (void *)(base + PGM_UINT16(&group_info[i].offset));
             set_value((enum ap_var_type)type, ptr, PGM_FLOAT(&group_info[i].def_value));
         }
@@ -771,16 +771,14 @@ void AP_Param::load_defaults_group(const struct GroupInfo *group_info, uintptr_t
 }
 
 
-// load default values for all scalars
-void AP_Param::load_defaults(void)
+// load default values for all scalars in a sketch. This does not
+// recurse into sub-objects
+void AP_Param::setup_sketch_defaults(const struct Info *info, uint16_t eeprom_size)
 {
+    setup(info, eeprom_size);
     for (uint8_t i=0; i<_num_vars; i++) {
         uint8_t type = PGM_UINT8(&_var_info[i].type);
-        if (type == AP_PARAM_GROUP) {
-            const struct GroupInfo *group_info = (const struct GroupInfo *)PGM_POINTER(&_var_info[i].group_info);
-            uintptr_t base = PGM_POINTER(&_var_info[i].ptr);
-            load_defaults_group(group_info, base);
-        } else if (type <= AP_PARAM_FLOAT) {
+        if (type <= AP_PARAM_FLOAT) {
             void *ptr = (void*)PGM_POINTER(&_var_info[i].ptr);
             set_value((enum ap_var_type)type, ptr, PGM_FLOAT(&_var_info[i].def_value));
         }
