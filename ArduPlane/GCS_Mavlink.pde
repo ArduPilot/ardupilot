@@ -223,8 +223,10 @@ static NOINLINE void send_extended_status1(mavlink_channel_t chan, uint16_t pack
 
 static void NOINLINE send_meminfo(mavlink_channel_t chan)
 {
+#if CONFIG_HAL_BOARD != HAL_BOARD_AVR_SITL
     extern unsigned __brkval;
     mavlink_msg_meminfo_send(chan, __brkval, memcheck_available_memory());
+#endif
 }
 
 static void NOINLINE send_location(mavlink_channel_t chan)
@@ -955,7 +957,7 @@ GCS_MAVLINK::send_text(gcs_severity severity, const char *str)
 }
 
 void
-GCS_MAVLINK::send_text(gcs_severity severity, const prog_char_t *str)
+GCS_MAVLINK::send_text_P(gcs_severity severity, const prog_char_t *str)
 {
     mavlink_statustext_t m;
     uint8_t i;
@@ -1057,7 +1059,7 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
         uint8_t result = MAV_RESULT_UNSUPPORTED;
 
         // do command
-        send_text(SEVERITY_LOW,PSTR("command received: "));
+        send_text_P(SEVERITY_LOW,PSTR("command received: "));
 
         switch(packet.command) {
 
@@ -1421,7 +1423,7 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
         if (packet.start_index > g.command_total ||
             packet.end_index > g.command_total ||
             packet.end_index < packet.start_index) {
-            send_text(SEVERITY_LOW,PSTR("flight plan update rejected"));
+            send_text_P(SEVERITY_LOW,PSTR("flight plan update rejected"));
             break;
         }
 
@@ -1625,7 +1627,7 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
                     msg->compid,
                     result);
 
-                send_text(SEVERITY_LOW,PSTR("flight plan received"));
+                send_text_P(SEVERITY_LOW,PSTR("flight plan received"));
                 waypoint_receiving = false;
                 // XXX ignores waypoint radius for individual waypoints, can
                 // only set WP_RADIUS parameter
@@ -1651,9 +1653,9 @@ mission_failed:
         if (mavlink_check_target(packet.target_system, packet.target_component))
             break;
         if (g.fence_action != FENCE_ACTION_NONE) {
-            send_text(SEVERITY_LOW,PSTR("fencing must be disabled"));
+            send_text_P(SEVERITY_LOW,PSTR("fencing must be disabled"));
         } else if (packet.count != g.fence_total) {
-            send_text(SEVERITY_LOW,PSTR("bad fence point"));
+            send_text_P(SEVERITY_LOW,PSTR("bad fence point"));
         } else {
             Vector2l point;
             point.x = packet.lat*1.0e7;
@@ -1670,7 +1672,7 @@ mission_failed:
         if (mavlink_check_target(packet.target_system, packet.target_component))
             break;
         if (packet.idx >= g.fence_total) {
-            send_text(SEVERITY_LOW,PSTR("bad fence point"));
+            send_text_P(SEVERITY_LOW,PSTR("bad fence point"));
         } else {
             Vector2l point = get_fence_point_with_index(packet.idx);
             mavlink_msg_fence_point_send(chan, 0, 0, packet.idx, g.fence_total,
@@ -2066,9 +2068,9 @@ static void gcs_update(void)
 
 static void gcs_send_text_P(gcs_severity severity, const prog_char_t *str)
 {
-    gcs0.send_text(severity, str);
+    gcs0.send_text_P(severity, str);
     if (gcs3.initialised) {
-        gcs3.send_text(severity, str);
+        gcs3.send_text_P(severity, str);
     }
 }
 
