@@ -60,6 +60,7 @@ public:
         _servo_4(yaw_servo),
         _rc_8(rc_8)
     {
+		AP_Param::setup_object_defaults(this, var_info);
         throttle_mid = 0;
         _roll_scaler = 1;
         _pitch_scaler = 1;

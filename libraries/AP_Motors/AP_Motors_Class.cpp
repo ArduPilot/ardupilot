@@ -55,6 +55,8 @@ AP_Motors::AP_Motors( uint8_t APM_version, RC_Channel* rc_roll, RC_Channel* rc_p
 {
     uint8_t i;
 
+    AP_Param::setup_object_defaults(this, var_info);
+
     top_bottom_ratio = AP_MOTORS_TOP_BOTTOM_RATIO;
 
     // initialise motor map
