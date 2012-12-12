@@ -20,7 +20,7 @@
 class HAL_AVR_APM1 : public AP_HAL::HAL {
 public:
     HAL_AVR_APM1();
-    void init(void* opts) const;
+    void init(int argc, const char *argv[]) const;
 };
 
 /**

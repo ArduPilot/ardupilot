@@ -12,7 +12,7 @@
 class HAL_AVR_SITL : public AP_HAL::HAL {
 public:
     HAL_AVR_SITL();    
-    void init(void*) const;
+    void init(int argc, const char *argv[]) const;
 };
 
 extern const HAL_AVR_SITL AP_HAL_AVR_SITL;

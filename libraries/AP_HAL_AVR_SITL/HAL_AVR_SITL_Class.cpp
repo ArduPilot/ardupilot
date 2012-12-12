@@ -38,7 +38,7 @@ HAL_AVR_SITL::HAL_AVR_SITL() :
         &sitlScheduler) /* scheduler */
 {}
 
-void HAL_AVR_SITL::init(void* machtnichts) const {
+void HAL_AVR_SITL::init(int argc, const char *argv[]) const {
 
     scheduler->init(NULL);
     uartA->begin(115200);
