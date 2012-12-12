@@ -1,3 +1,4 @@
+/// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 
 #include <AP_HAL.h>
 
@@ -8,35 +9,42 @@
 #include <AP_HAL_AVR_SITL.h>
 #include "AP_HAL_AVR_SITL_Namespace.h"
 #include "HAL_AVR_SITL_Class.h"
+#include "Scheduler.h"
+#include "UARTDriver.h"
+#include "Storage.h"
+#include "Console.h"
 
-// XXX placeholder
-uint8_t isrRegistry;
+static SITLScheduler sitlScheduler;
+static SITLEEPROMStorage sitlEEPROMStorage;
+static SITLConsoleDriver consoleDriver;
 
-static AVRScheduler avrScheduler;
+static AVR_SITL::SITLUARTDriver sitlUart0Driver(0);
+static AVR_SITL::SITLUARTDriver sitlUart1Driver(1);
+static AVR_SITL::SITLUARTDriver sitlUart2Driver(2);
 
 HAL_AVR_SITL::HAL_AVR_SITL() :
     AP_HAL::HAL(
-        NULL, /* uartA */
-        NULL, /* uartB */
-        NULL, /* uartC */
+	    &sitlUart0Driver,  /* uartA */
+        &sitlUart1Driver, /* uartB */
+        &sitlUart2Driver,  /* uartC */
         NULL, /* i2c */
         NULL, /* spi */
         NULL, /* analogin */
-        NULL, /* storage */
-        NULL, /* console */
+        &sitlEEPROMStorage, /* storage */
+        &consoleDriver, /* console */
         NULL, /* gpio */
         NULL, /* rcinput */
         NULL, /* rcoutput */
-        &avrScheduler) /* scheduler */
+        &sitlScheduler) /* scheduler */
 {}
 
 void HAL_AVR_SITL::init(void* machtnichts) const {
 
-    scheduler->init((void*)&isrRegistry);
+    scheduler->init(NULL);
     uartA->begin(115200);
     console->init((void*) uartA);
 
-    rcin->init((void*)&isrRegistry);
+    rcin->init(NULL);
     rcout->init(NULL);
     spi->init(NULL);
     i2c->begin();

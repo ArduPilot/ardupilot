@@ -6,7 +6,11 @@
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_AVR_SITL
 
-class HAL_AVR_SITL :: public AP_HAL::HAL {
+#include <AP_HAL_AVR_SITL.h>
+#include "AP_HAL_AVR_SITL_Namespace.h"
+
+class HAL_AVR_SITL : public AP_HAL::HAL {
+public:
     HAL_AVR_SITL();    
     void init(void*) const;
 };
