@@ -3,7 +3,6 @@
   hacked up DataFlash library for Desktop support
 */
 
-#if 0
 #include <AP_HAL.h>
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_AVR_SITL
@@ -130,5 +129,5 @@ void DataFlash_SITL::ChipErase()
 
 
 #endif
-#endif
+
 
