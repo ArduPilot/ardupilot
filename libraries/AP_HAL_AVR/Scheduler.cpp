@@ -199,6 +199,10 @@ void AVRScheduler::begin_atomic() {
 }
 
 void AVRScheduler::end_atomic() {
+	if (_nested_atomic_ctr == 0) {
+        hal.uartA->println_P(PSTR("ATOMIC NESTING ERROR"));
+        return;
+    }
     _nested_atomic_ctr--;
     if (_nested_atomic_ctr == 0) {
         sei();
