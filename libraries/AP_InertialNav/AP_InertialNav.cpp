@@ -65,7 +65,7 @@ void AP_InertialNav::update(float dt)
 
     // convert accelerometer readings to earth frame
     Matrix3f dcm = _ahrs->get_dcm_matrix();
-    accel_ef = dcm * _ins->get_accel();
+    accel_ef = _ahrs->get_accel_ef();
 
     // remove influence of gravity
     accel_ef.z += AP_INTERTIALNAV_GRAVITY;
