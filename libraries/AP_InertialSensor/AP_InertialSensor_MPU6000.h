@@ -6,6 +6,7 @@
 #include <stdint.h>
 #include <AP_HAL.h>
 #include <AP_Math.h>
+#include <AP_Progmem.h>
 #include "AP_InertialSensor.h"
 
 #define MPU6000_CS_PIN       53        // APM pin connected to mpu6000's chip select pin
