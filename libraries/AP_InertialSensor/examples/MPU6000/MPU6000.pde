@@ -14,13 +14,7 @@
 #include <AP_ADC.h>
 #include <AP_InertialSensor.h>
 
-#define APM_HARDWARE_APM1 1
-#define APM_HARDWARE_APM2 2
-
-#define CONFIG_APM_HARDWARE APM_HARDWARE_APM2
-//#define CONFIG_APM_HARDWARE APM_HARDWARE_APM1
-
-#if CONFIG_APM_HARDWARE == APM_HARDWARE_APM2
+#if CONFIG_HAL_BOARD == HAL_BOARD_APM2
 #define SAMPLE_UNIT 1
 #define A_LED_PIN 27
 #define C_LED_PIN 25
@@ -32,7 +26,7 @@
 #endif
 
 
-#if CONFIG_APM_HARDWARE == APM_HARDWARE_APM2
+#if CONFIG_HAL_BOARD == HAL_BOARD_APM2
 
 const AP_HAL::HAL& hal = AP_HAL_AVR_APM2;
 AP_InertialSensor_MPU6000 ins;
@@ -57,13 +51,13 @@ void setup(void)
     hal.gpio->pinMode(A_LED_PIN, GPIO_OUTPUT);
     hal.gpio->pinMode(C_LED_PIN, GPIO_OUTPUT);
 
-#if CONFIG_APM_HARDWARE == APM_HARDWARE_APM2
+#if CONFIG_HAL_BOARD == HAL_BOARD_APM2
     // we need to stop the barometer from holding the SPI bus
     hal.gpio->pinMode(40, GPIO_OUTPUT);
     hal.gpio->write(40, 1);
 #endif
 
-#if CONFIG_APM_HARDWARE == APM_HARDWARE_APM1
+#if CONFIG_HAL_BOARD == HAL_BOARD_APM1
     adc.Init(&scheduler);           // APM ADC library initialization
 #endif
     ins.init(AP_InertialSensor::COLD_START, 

@@ -15,7 +15,11 @@
 #include <AP_GPS.h>
 #include <AP_Math.h>
 
+#if CONFIG_HAL_BOARD == HAL_BOARD_APM2
 const AP_HAL::HAL& hal = AP_HAL_AVR_APM2;
+#elif CONFIG_HAL_BOARD == HAL_BOARD_APM1
+const AP_HAL::HAL& hal = AP_HAL_AVR_APM1;
+#endif
 
 AP_GPS_UBLOX gps(hal.uartB);
 #define T6 1000000

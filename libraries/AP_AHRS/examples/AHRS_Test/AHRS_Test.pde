@@ -23,13 +23,10 @@
 
 #include <AP_HAL_AVR.h>
 
-/* Only testing with APM2 for now. */
-#define APM2_HARDWARE
-
-#ifdef APM2_HARDWARE
-AP_InertialSensor_MPU6000 ins;
+#if CONFIG_HAL_BOARD == HAL_BOARD_APM2
 const AP_HAL::HAL& hal = AP_HAL_AVR_APM2;
-# else
+AP_InertialSensor_MPU6000 ins;
+#elif CONFIG_HAL_BOARD == HAL_BOARD_APM1
 AP_ADC_ADS7844 adc;
 AP_InertialSensor_Oilpan ins( &adc );
 const AP_HAL::HAL& hal = AP_HAL_AVR_APM1;
@@ -51,7 +48,7 @@ AP_Baro_BMP085_HIL barometer;
 #define HIGH 1
 #define LOW 0
 
-#ifdef APM2_HARDWARE
+#if CONFIG_HAL_BOARD == HAL_BOARD_APM2
  # define A_LED_PIN        27
  # define C_LED_PIN        25
  # define LED_ON           LOW

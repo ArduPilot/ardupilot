@@ -15,13 +15,6 @@
 #include <AP_Buffer.h>
 #include <AP_HAL_AVR.h>
 
-#define APM_HARDWARE_APM1   1
-#define APM_HARDWARE_APM2   2
-
-// uncomment appropriate line for your APM hardware type
-//#define CONFIG_APM_HARDWARE APM_HARDWARE_APM1
-#define CONFIG_APM_HARDWARE APM_HARDWARE_APM2   // also applies to APM2.5
-
 // uncomment appropriate line corresponding to your sonar
 #define SONAR_TYPE AP_RANGEFINDER_MAXSONARXL      // 0 - XL (default)
 //#define SONAR_TYPE AP_RANGEFINDER_MAXSONARLV      // 1 - LV (cheaper)
@@ -30,7 +23,7 @@
 //#define SONAR_TYPE AP_RANGEFINDER_MAXSONARI2CXL   // 4 - XLI2C (XL with I2C interface and 7m range)
 
 // For APM1 we use built in ADC for sonar reads from an analog pin
-#if CONFIG_APM_HARDWARE == APM_HARDWARE_APM1 && SONAR_TYPE <= AP_RANGEFINDER_MAXSONARHRLV
+#if CONFIG_HAL_BOARD == HAL_BOARD_APM1 && SONAR_TYPE <= AP_RANGEFINDER_MAXSONARHRLV
 # define USE_ADC_ADS7844  // use APM1's built in ADC and connect sonar to pitot tube
 #endif
 
@@ -42,7 +35,7 @@
 ////////////////////////////////////////////////////////////////////////////////
 
 
-#if CONFIG_APM_HARDWARE == APM_HARDWARE_APM2   // also applies to APM2.5
+#if CONFIG_HAL_BOARD == HAL_BOARD_APM2
 const AP_HAL::HAL& hal = AP_HAL_AVR_APM2;
 #else
 const AP_HAL::HAL& hal = AP_HAL_AVR_APM1;

@@ -38,13 +38,20 @@
 // include the library code:
 
 #include <AP_Common.h>
+#include <AP_Math.h>
+#include <AP_Param.h>
 #include <AP_Progmem.h>
+
 #include <AP_HAL.h>
 #include <AP_HAL_AVR.h>
 
 #include "LCrystal.h"
 
+#if CONFIG_HAL_BOARD == HAL_BOARD_APM2
+const AP_HAL::HAL& hal = AP_HAL_AVR_APM2;
+#elif CONFIG_HAL_BOARD == HAL_BOARD_APM1
 const AP_HAL::HAL& hal = AP_HAL_AVR_APM1;
+#endif
 
 // initialize the library with the numbers of the interface pins
 LiquidCrystal lcd(8, 9, 4, 5, 6, 7);

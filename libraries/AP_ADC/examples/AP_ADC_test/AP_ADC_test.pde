@@ -7,12 +7,17 @@
 #include <math.h>
 
 #include <AP_Common.h>
+#include <AP_Math.h>
+#include <AP_Param.h>
 #include <AP_Progmem.h>
+
 #include <AP_HAL.h>
 #include <AP_HAL_AVR.h>
 
 #include <AP_ADC.h>
 
+#if CONFIG_HAL_BOARD == HAL_BOARD_APM1
+/* Only build this sketch for APM1 */
 const AP_HAL::HAL& hal = AP_HAL_AVR_APM1;
 
 AP_ADC_ADS7844 adc;
@@ -67,7 +72,7 @@ static void show_data()
         /* clearly out of bounds values: */
         min[i] = 99999999.0f;
         max[i] = -88888888.0f;
-    }
+    
 
 
     do {
@@ -100,5 +105,12 @@ void loop()
         show_data();
     }
 }
+
+#else // Non-APM1:
+#warning AP_ADC_test built as stub for APM2
+const AP_HAL::HAL& hal = AP_HAL_AVR_APM2;
+void setup () {}
+void loop () {}
+#endif  // CONFIG_HAL_BOARD
 
 AP_HAL_MAIN();

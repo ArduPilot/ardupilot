@@ -5,7 +5,10 @@
 *******************************************/
 
 #include <AP_Common.h>
+#include <AP_Math.h>
+#include <AP_Param.h>
 #include <AP_Progmem.h>
+
 #include <AP_HAL.h>
 #include <AP_HAL_AVR.h>
 
@@ -15,9 +18,11 @@
 // debug only:
 #include <avr/io.h>
 
-const AP_HAL_AVR::HAL_AVR& hal = AP_HAL_AVR_APM2;
-
-const uint8_t _baro_cs_pin = 40;
+#if CONFIG_HAL_BOARD == HAL_BOARD_APM2
+const AP_HAL::HAL& hal = AP_HAL_AVR_APM2;
+#elif CONFIG_HAL_BOARD == HAL_BOARD_APM1
+const AP_HAL::HAL& hal = AP_HAL_AVR_APM1;
+#endif
 
 AP_HAL::SPIDeviceDriver* spidev;
 
@@ -109,17 +114,6 @@ static void mpu6k_read(int16_t* data) {
 static void setup() {
     hal.console->printf_P(PSTR("Initializing MPU6000\r\n"));
     spidev = hal.spi->device(AP_HAL::SPIDevice_MPU6000);
-
-#if 0
-    /* Setup the barometer cs to stop it from holding the bus */
-    hal.gpio->pinMode(_baro_cs_pin, GPIO_OUTPUT);
-    hal.gpio->write(_baro_cs_pin, 1);
-#endif
-
-    spidev->cs_assert();
-    uint8_t spcr = SPCR;
-    uint8_t spsr = SPSR;
-    spidev->cs_release();
 
     mpu6k_init();
 }

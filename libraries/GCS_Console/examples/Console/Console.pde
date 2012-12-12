@@ -18,7 +18,11 @@
 
 #include "simplegcs.h"
 
+#if CONFIG_HAL_BOARD == HAL_BOARD_APM2
 const AP_HAL::HAL& hal = AP_HAL_AVR_APM2;
+#elif CONFIG_HAL_BOARD == HAL_BOARD_APM1
+const AP_HAL::HAL& hal = AP_HAL_AVR_APM1;
+#endif
 
 void flush_console_to_statustext() {
     uint8_t data[50];

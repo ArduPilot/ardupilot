@@ -21,7 +21,11 @@
 #include <AP_Mount.h>
 
 #include <AP_HAL_AVR.h>
+#if CONFIG_HAL_BOARD == HAL_BOARD_APM2
 const AP_HAL::HAL& hal = AP_HAL_AVR_APM2;
+#elif CONFIG_HAL_BOARD == HAL_BOARD_APM1
+const AP_HAL::HAL& hal = AP_HAL_AVR_APM1;
+#endif
 
 void setup () {
     hal.console->println_P(PSTR("Unit test for AP_Mount. This sketch"

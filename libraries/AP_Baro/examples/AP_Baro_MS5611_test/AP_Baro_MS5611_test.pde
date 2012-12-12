@@ -4,13 +4,14 @@
 #include <AP_Param.h>
 #include <AP_Math.h>
 #include <AP_HAL.h>
-#include <AP_HAL_AVR.h>
-
-const AP_HAL::HAL& hal = AP_HAL_AVR_APM2;
-
 #include <AP_Buffer.h>
 #include <Filter.h>
 #include <AP_Baro.h>
+
+#include <AP_HAL_AVR.h>
+
+#if CONFIG_HAL_BOARD == HAL_BOARD_APM2
+const AP_HAL::HAL& hal = AP_HAL_AVR_APM2;
 
 AP_Baro_MS5611 baro;
 static uint32_t timer;
@@ -54,5 +55,12 @@ void loop()
         hal.console->println();
     }
 }
+
+#else // Non-APM2
+#warning AP_Baro_MS5611_test built as stub for APM1
+const AP_HAL::HAL& hal = AP_HAL_AVR_APM1;
+void setup () {}
+void loop () {}
+#endif
 
 AP_HAL_MAIN();

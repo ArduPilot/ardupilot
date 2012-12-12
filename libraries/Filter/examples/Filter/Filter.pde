@@ -15,7 +15,11 @@
 #include <AverageFilter.h>      // AverageFilter class (inherits from Filter class)
 #include <AP_Buffer.h>
 
+#if CONFIG_HAL_BOARD == HAL_BOARD_APM2
 const AP_HAL::HAL& hal = AP_HAL_AVR_APM2;
+#elif CONFIG_HAL_BOARD == HAL_BOARD_APM1
+const AP_HAL::HAL& hal = AP_HAL_AVR_APM1;
+#endif
 
 int16_t rangevalue[] = {31000, 31000, 50, 55, 60, 55, 10, 0, 31000};
 

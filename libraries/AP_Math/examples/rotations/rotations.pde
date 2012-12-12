@@ -11,7 +11,11 @@
 #include <AP_Declination.h> // ArduPilot Mega Declination Helper Library
 
 #include <AP_HAL_AVR.h>
+#if CONFIG_HAL_BOARD == HAL_BOARD_APM2
 const AP_HAL::HAL& hal = AP_HAL_AVR_APM2;
+#elif CONFIG_HAL_BOARD == HAL_BOARD_APM1
+const AP_HAL::HAL& hal = AP_HAL_AVR_APM1;
+#endif
 
 // standard rotation matrices (these are the originals from the old code)
 #define MATRIX_ROTATION_NONE               Matrix3f(1, 0, 0, 0, 1, 0, 0,0, 1)

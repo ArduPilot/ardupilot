@@ -18,6 +18,8 @@
 
 #include <AP_HAL_AVR.h>
 
+#if CONFIG_HAL_BOARD == HAL_BOARD_APM1
+/* Build this example sketch only for the APM1. */
 const AP_HAL::HAL& hal = AP_HAL_AVR_APM1;
 
 AP_Baro_BMP085 bmp085(0);
@@ -64,5 +66,12 @@ void loop()
         hal.console->println();
     }
 }
+
+#else // Non-APM1
+#warning AP_Baro_BMP085_test built as stub for APM2
+const AP_HAL::HAL& hal = AP_HAL_AVR_APM2;
+void setup() {}
+void loop() {}
+#endif
 
 AP_HAL_MAIN();
