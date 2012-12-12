@@ -1082,6 +1082,7 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
                 packet.param2 == 1 ||
                 packet.param3 == 1) {
                 ins.init_accel(flash_leds);
+                ahrs.set_trim(Vector3f(0,0,0));             // clear out saved trim
             }
             if (packet.param4 == 1) {
                 trim_radio();

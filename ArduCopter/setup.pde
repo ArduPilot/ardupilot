@@ -251,6 +251,7 @@ setup_accel(uint8_t argc, const Menu::arg *argv)
              ins_sample_rate,
              flash_leds);
     ins.init_accel(flash_leds);
+    ahrs.set_trim(Vector3f(0,0,0));     // clear out saved trim
     report_ins();
     return(0);
 }
