@@ -66,6 +66,9 @@ AP_AHRS_MPU6000::update(void)
 
     // Calculate pitch, roll, yaw for stabilization and navigation
     euler_angles();
+
+    // prepare earth frame accelerometer values for ArduCopter Inertial Navigation and accel-based throttle
+    _accel_ef = _dcm_matrix * _ins->get_accel();
 }
 
 // wrap_PI - ensure an angle (expressed in radians) is between -PI and PI

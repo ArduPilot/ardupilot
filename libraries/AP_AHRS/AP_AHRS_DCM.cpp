@@ -393,8 +393,11 @@ AP_AHRS_DCM::drift_correction(float deltat)
     // apply trim
     temp_dcm.rotate(_trim);
 
+    // rotate accelerometer values into the earth frame
+    _accel_ef = temp_dcm * _accel_vector;
+
     // integrate the accel vector in the earth frame between GPS readings
-    _ra_sum += temp_dcm * (_accel_vector * deltat);
+    _ra_sum += _accel_ef * deltat;
 
     // keep a sum of the deltat values, so we know how much time
     // we have integrated over
