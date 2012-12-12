@@ -27,6 +27,11 @@ struct sitl_fdm {
 class SITL
 {
 public:
+    
+    SITL() {
+        AP_Param::setup_object_defaults(this, var_info);        
+    }
+
 	struct sitl_fdm state;
 
 	static const struct AP_Param::GroupInfo var_info[];
