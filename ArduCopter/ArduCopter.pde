@@ -1018,7 +1018,7 @@ void loop()
 #ifdef DESKTOP_BUILD
         usleep(1000);
 #endif
-        if (timer - fast_loopTimer < 9) {
+        if (timer - fast_loopTimer < 9000) {
             // we have some spare cycles available
             // less than 10ms has passed. We have at least one millisecond
             // of free time. The most useful thing to do with that time is
