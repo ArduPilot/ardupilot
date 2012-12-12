@@ -16,7 +16,10 @@
 
 #include <stdint.h>
 #include <AP_Param.h>
-#include <AP_Limit_Module.h>
+#include "AP_Limit_Module.h"
+#include "AP_Limit_Altitude.h"
+#include "AP_Limit_Geofence.h"
+#include "AP_Limit_GPSLock.h"
 
 #ifndef HAVE_ENUM_LIMITS_STATE
  #define HAVE_ENUM_LIMITS_STATE
