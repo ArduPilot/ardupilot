@@ -40,7 +40,7 @@ void memcheck_update_stackptr(void)
  */
 void memcheck_init(void)
 {
-#ifndef DESKTOP_BUILD
+#if CONFIG_HAL_BOARD != HAL_BOARD_AVR_SITL
     uint32_t *p;
     free(malloc(1)); // ensure heap is initialised
     stack_low = current_stackptr();
@@ -57,7 +57,7 @@ void memcheck_init(void)
  */
 unsigned memcheck_available_memory(void)
 {
-#ifdef DESKTOP_BUILD
+#if CONFIG_HAL_BOARD == HAL_BOARD_AVR_SITL
     return 0x1000;
 #else
     memcheck_update_stackptr();
