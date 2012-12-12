@@ -37,7 +37,6 @@
 
 // AVR LibC Includes
 #include <inttypes.h>
-#include <avr/interrupt.h>
 
 #include <AP_Common.h>
 #include <AP_Math.h>            // ArduPilot Mega Vector/Matrix math Library
@@ -55,7 +54,11 @@ extern const AP_HAL::HAL& hal;
 // chip using a direct IO port
 // On APM2 prerelease hw, the data ready port is hooked up to PE7, which
 // is not available to the arduino digitalRead function.
-#define BMP_DATA_READY() (_apm2_hardware ? (PINE&0x80) : hal.gpio->read(BMP085_EOC))
+#if CONFIG_HAL_BOARD == HAL_BOARD_APM2
+#define BMP_DATA_READY() (PINE&0x80)
+#else
+#define BMP_DATA_READY() hal.gpio->read(BMP085_EOC)
+#endif
 
 // oversampling 3 gives highest resolution
 #define OVERSAMPLING 3

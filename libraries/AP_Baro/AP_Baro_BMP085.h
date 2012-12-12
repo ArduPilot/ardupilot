@@ -10,8 +10,7 @@
 class AP_Baro_BMP085 : public AP_Baro
 {
 public:
-    AP_Baro_BMP085(bool apm2_hardware) :
-        _apm2_hardware(apm2_hardware) {
+    AP_Baro_BMP085() {
         _pressure_samples = 1;
     };       // Constructor
 
@@ -30,8 +29,6 @@ private:
     int32_t         RawTemp;
     int16_t         Temp;
     uint32_t        Press;
-    bool            _apm2_hardware;
-
 
     // State machine
     uint8_t                         BMP085_State;
