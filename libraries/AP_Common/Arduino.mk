@@ -206,15 +206,26 @@ FIND_TOOL		=	$(firstword $(wildcard $(addsuffix /$(1),$(TOOLPATH))))
 else
 FIND_TOOL		=	$(firstword $(wildcard $(addsuffix /$(1).exe,$(TOOLPATH))))
 endif
+
+ifeq ($(HAL_BOARD),HAL_BOARD_AVR_SITL)
+CXX			:=	$(call FIND_TOOL,g++)
+CC			:=	$(call FIND_TOOL,gcc)
+AS			:=	$(call FIND_TOOL,gcc)
+AR			:=	$(call FIND_TOOL,ar)
+LD			:=	$(call FIND_TOOL,g++)
+GDB			:=	$(call FIND_TOOL,gdb)
+OBJCOPY			:=	$(call FIND_TOOL,objcopy)
+else
 CXX			:=	$(call FIND_TOOL,avr-g++)
 CC			:=	$(call FIND_TOOL,avr-gcc)
 AS			:=	$(call FIND_TOOL,avr-gcc)
 AR			:=	$(call FIND_TOOL,avr-ar)
 LD			:=	$(call FIND_TOOL,avr-gcc)
 GDB			:=	$(call FIND_TOOL,avr-gdb)
-AVRDUDE		:=	$(call FIND_TOOL,avrdude)
-AVARICE		:=	$(call FIND_TOOL,avarice)
+AVRDUDE			:=	$(call FIND_TOOL,avrdude)
+AVARICE			:=	$(call FIND_TOOL,avarice)
 OBJCOPY			:=	$(call FIND_TOOL,avr-objcopy)
+endif
 ifeq ($(CXX),)
 $(error ERROR: cannot find the compiler tools anywhere on the path $(TOOLPATH))
 endif
@@ -234,19 +245,27 @@ OPTFLAGS		=	-Os -Wformat -Wall -Wshadow -Wpointer-arith -Wcast-align -Wwrite-str
 DEPFLAGS		=	-MD -MT $@
 
 # XXX warning options TBD
-CXXOPTS			= 	-mcall-prologues -ffunction-sections -fdata-sections -fno-exceptions
-COPTS			=	-mcall-prologues -ffunction-sections -fdata-sections
+CXXOPTS			= 	-ffunction-sections -fdata-sections -fno-exceptions
+COPTS			=	-ffunction-sections -fdata-sections
 
 ASOPTS			=	-x assembler-with-cpp 
 LISTOPTS		=	-adhlns=$(@:.o=.lst)
 
-CXXFLAGS		=	-g -mmcu=$(MCU) $(DEFINES) -Wa,$(LISTOPTS) $(OPTFLAGS) $(DEPFLAGS) $(CXXOPTS)
-CFLAGS			=	-g -mmcu=$(MCU) $(DEFINES) -Wa,$(LISTOPTS) $(OPTFLAGS) $(DEPFLAGS) $(COPTS)
-ASFLAGS			=	-g -mmcu=$(MCU) $(DEFINES) -Wa,$(LISTOPTS) $(DEPFLAGS) $(ASOPTS)
-LDFLAGS			=	-g -mmcu=$(MCU) $(OPTFLAGS) -Wl,--gc-sections -Wl,-Map -Wl,$(SKETCHMAP) -Wl,-m,avr6
+ifeq ($(HAL_BOARD),HAL_BOARD_AVR_SITL)
+CPUFLAGS                = -D_GNU_SOURCE
+CPULDFLAGS		=
+else
+CPUFLAGS                = -mmcu=$(MCU) -mcall-prologues 
+CPULDFLAGS		= -Wl,-m,avr6
+endif
+
+CXXFLAGS		=	-g $(CPUFLAGS) $(DEFINES) -Wa,$(LISTOPTS) $(OPTFLAGS) $(DEPFLAGS) $(CXXOPTS)
+CFLAGS			=	-g $(CPUFLAGS) $(DEFINES) -Wa,$(LISTOPTS) $(OPTFLAGS) $(DEPFLAGS) $(COPTS)
+ASFLAGS			=	-g $(CPUFLAGS) $(DEFINES) -Wa,$(LISTOPTS) $(DEPFLAGS) $(ASOPTS)
+LDFLAGS			=	-g $(CPUFLAGS) $(OPTFLAGS) -Wl,--gc-sections -Wl,-Map -Wl,$(SKETCHMAP) $(CPULDFLAGS)
 
 ifeq ($(BOARD),mega)
-  LDFLAGS		=	-g -mmcu=$(MCU) $(OPTFLAGS) -Wl,--gc-sections -Wl,-Map -Wl,$(SKETCHMAP)
+  LDFLAGS		=	-g $(CPUFLAGS) $(OPTFLAGS) -Wl,--gc-sections -Wl,-Map -Wl,$(SKETCHMAP)
 endif
 
 # under certain situations with certain avr-gcc versions the --relax flag causes
