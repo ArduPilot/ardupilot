@@ -2326,7 +2326,8 @@ print 'Roll complete'
 
                 CheckBox chk_box = new CheckBox();
 
-                if (((QuickView)sender).Tag.ToString() == field.Name)
+                // dont change to ToString() = null exception
+                if (((QuickView)sender).Tag == field.Name)
                     chk_box.Checked = true;
 
                 chk_box.Text = field.Name;

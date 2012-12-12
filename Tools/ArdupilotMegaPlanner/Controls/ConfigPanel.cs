@@ -216,7 +216,7 @@ namespace ArdupilotMega.Controls
                                 nud.Maximum = (decimal)rangemax;
                                 nud.Minimum = (decimal)rangemin;
                                 nud.Increment = (decimal)step;
-                                nud.DecimalPlaces = (int)(step.ToString().Length - step.ToString(new System.Globalization.CultureInfo("en-US")).IndexOf('.') - 1);
+                                nud.DecimalPlaces = (int)(step.ToString().Length - step.ToString(new System.Globalization.CultureInfo("en-US")).IndexOf('.') -1);
                                 nud.Name = paramname[0];
 
                                 this.Controls.Add(nud);

@@ -1,4 +1,13 @@
-﻿* Mission Planner 1.2.26
+﻿* Mission Planner 1.2.27
+add extra decimal place on arducopter config screens
+update ch6_list
+fix quickview double click error
+fix terminal/logview comport problem
+add AC thr accel pids
+modify driver (line ending issue) and resign
+fix config view doubleclick popout
+
+* Mission Planner 1.2.26
 move mavlink structure/currentstate around for future mods
 update old firmware git hashs
 mod some error descriptions

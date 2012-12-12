@@ -226,6 +226,9 @@ namespace ArdupilotMega.Controls.BackstageView
 
         private void DrawMenu(BackstageViewPage CurrentPage)
         {
+            if (_activePage == CurrentPage)
+                return;
+
             pnlMenu.Visible = false;
             pnlMenu.SuspendLayout();
 

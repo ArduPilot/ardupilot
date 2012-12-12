@@ -74,6 +74,8 @@ namespace ArdupilotMega.GCSViews.ConfigurationView
             // prefill all fields
             processToScreen();
 
+            MVCHK_thr_Acc_enable.setup(1, 0, "THR_ACC_ENABLE", MainV2.comPort.MAV.param, groupBox2);
+
             startup = false;
         }
 
@@ -188,12 +190,12 @@ namespace ArdupilotMega.GCSViews.ConfigurationView
                             thisctl.Maximum = 9000;
                             thisctl.Minimum = -9000;
                             thisctl.Value = (decimal)numbervalue;
-                            thisctl.Increment = (decimal)0.001;
+                            thisctl.Increment = (decimal)0.0001;
                             if (thisctl.Name.EndsWith("_P") || thisctl.Name.EndsWith("_I") || thisctl.Name.EndsWith("_D")
                                 || thisctl.Name.EndsWith("_LOW") || thisctl.Name.EndsWith("_HIGH") || thisctl.Value == 0
-                                || thisctl.Value.ToString("0.###", new System.Globalization.CultureInfo("en-US")).Contains("."))
+                                || thisctl.Value.ToString("0.####", new System.Globalization.CultureInfo("en-US")).Contains("."))
                             {
-                                thisctl.DecimalPlaces = 3;
+                                thisctl.DecimalPlaces = 4;
                             }
                             else
                             {
@@ -423,6 +425,51 @@ namespace ArdupilotMega.GCSViews.ConfigurationView
 
 
             this.Activate();
+        }
+
+        private void groupBox1_Enter(object sender, EventArgs e)
+        {
+
+        }
+
+        private void groupBox4_Enter(object sender, EventArgs e)
+        {
+
+        }
+
+        private void groupBox6_Enter(object sender, EventArgs e)
+        {
+
+        }
+
+        private void groupBox7_Enter(object sender, EventArgs e)
+        {
+
+        }
+
+        private void groupBox19_Enter(object sender, EventArgs e)
+        {
+
+        }
+
+        private void groupBox20_Enter(object sender, EventArgs e)
+        {
+
+        }
+
+        private void groupBox21_Enter(object sender, EventArgs e)
+        {
+
+        }
+
+        private void groupBox23_Enter(object sender, EventArgs e)
+        {
+
+        }
+
+        private void groupBox24_Enter(object sender, EventArgs e)
+        {
+
         }
       
         

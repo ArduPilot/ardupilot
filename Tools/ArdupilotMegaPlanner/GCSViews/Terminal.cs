@@ -217,7 +217,7 @@ namespace ArdupilotMega.GCSViews
         {
             DateTime start = DateTime.Now;
 
-            while ((DateTime.Now - start).TotalMilliseconds < time)
+            while ((DateTime.Now - start).TotalMilliseconds < time && !inlogview)
             {
                 try
                 {
@@ -234,7 +234,7 @@ namespace ArdupilotMega.GCSViews
         {
              DateTime start = DateTime.Now;
 
-                    while ((DateTime.Now - start).TotalMilliseconds < time)
+             while ((DateTime.Now - start).TotalMilliseconds < time && !inlogview)
                     {
                         try
                         {
@@ -273,20 +273,25 @@ namespace ArdupilotMega.GCSViews
                     threadrun = true;
 
                     // 10 sec
-                    waitandsleep(10000);
+                    if (!inlogview)
+                        waitandsleep(10000);
 
                     // 100 ms
-                    readandsleep(100);
+                    if (!inlogview)
+                        readandsleep(100);
                     try
                     {
-                        comPort.Write("\n\n\n");
+                        if (!inlogview)
+                            comPort.Write("\n\n\n");
 
                         // 1 secs
-                        readandsleep(1000);
+                        if (!inlogview)
+                            readandsleep(1000);
 
-                        comPort.Write("\r\r\r?\r");
+                        if (!inlogview)
+                            comPort.Write("\r\r\r?\r");
                     }
-                    catch { threadrun = false; return; }                  
+                    catch { threadrun = false; return; }
 
                     while (threadrun)
                     {

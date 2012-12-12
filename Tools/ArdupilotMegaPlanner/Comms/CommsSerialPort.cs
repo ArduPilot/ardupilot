@@ -49,23 +49,33 @@ namespace ArdupilotMega.Comms
 
         public void toggleDTR()
         {
-            bool open = this.IsOpen;
+                bool open = this.IsOpen;
+                Console.WriteLine("toggleDTR " + this.IsOpen);
+                try
+                {
+                    if (!open)
+                        this.Open();
+                }
+                catch { }
 
-            if (!open)
-                this.Open();
 
-            base.DtrEnable = false;
-            base.RtsEnable = false;
+                base.DtrEnable = false;
+                base.RtsEnable = false;
 
-            System.Threading.Thread.Sleep(50);
+                System.Threading.Thread.Sleep(50);
 
-            base.DtrEnable = true;
-            base.RtsEnable = true;
+                base.DtrEnable = true;
+                base.RtsEnable = true;
 
-            System.Threading.Thread.Sleep(50);
+                System.Threading.Thread.Sleep(50);
 
-            if (!open)
-                this.Close();
+                try
+                {
+                    if (!open)
+                        this.Close();
+                }
+                catch { }
+                Console.WriteLine("toggleDTR done " + this.IsOpen);
         }
 
         public new static string[] GetPortNames()

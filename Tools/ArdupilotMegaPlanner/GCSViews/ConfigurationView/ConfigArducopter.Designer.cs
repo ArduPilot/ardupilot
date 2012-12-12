@@ -137,6 +137,16 @@
             this.myLabel3 = new ArdupilotMega.Controls.MyLabel();
             this.myLabel2 = new ArdupilotMega.Controls.MyLabel();
             this.myLabel1 = new ArdupilotMega.Controls.MyLabel();
+            this.groupBox2 = new System.Windows.Forms.GroupBox();
+            this.THR_ACCEL_D = new System.Windows.Forms.NumericUpDown();
+            this.label5 = new System.Windows.Forms.Label();
+            this.label6 = new System.Windows.Forms.Label();
+            this.THR_ACCEL_IMAX = new System.Windows.Forms.NumericUpDown();
+            this.THR_ACCEL_I = new System.Windows.Forms.NumericUpDown();
+            this.label7 = new System.Windows.Forms.Label();
+            this.THR_ACCEL_P = new System.Windows.Forms.NumericUpDown();
+            this.label8 = new System.Windows.Forms.Label();
+            this.MVCHK_thr_Acc_enable = new ArdupilotMega.Controls.MavlinkCheckBox();
             ((System.ComponentModel.ISupportInitialize)(this.TUNE_LOW)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.TUNE_HIGH)).BeginInit();
             this.groupBox5.SuspendLayout();
@@ -193,6 +203,11 @@
             ((System.ComponentModel.ISupportInitialize)(this.LOITER_LAT_IMAX)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.LOITER_LAT_I)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.LOITER_LAT_P)).BeginInit();
+            this.groupBox2.SuspendLayout();
+            ((System.ComponentModel.ISupportInitialize)(this.THR_ACCEL_D)).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)(this.THR_ACCEL_IMAX)).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)(this.THR_ACCEL_I)).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)(this.THR_ACCEL_P)).BeginInit();
             this.SuspendLayout();
             // 
             // TUNE_LOW
@@ -303,6 +318,7 @@
             resources.ApplyResources(this.groupBox4, "groupBox4");
             this.groupBox4.Name = "groupBox4";
             this.groupBox4.TabStop = false;
+            this.groupBox4.Enter += new System.EventHandler(this.groupBox4_Enter);
             // 
             // NAV_LAT_D
             // 
@@ -361,6 +377,7 @@
             resources.ApplyResources(this.groupBox6, "groupBox6");
             this.groupBox6.Name = "groupBox6";
             this.groupBox6.TabStop = false;
+            this.groupBox6.Enter += new System.EventHandler(this.groupBox6_Enter);
             // 
             // XTRK_GAIN_SC
             // 
@@ -383,6 +400,7 @@
             resources.ApplyResources(this.groupBox7, "groupBox7");
             this.groupBox7.Name = "groupBox7";
             this.groupBox7.TabStop = false;
+            this.groupBox7.Enter += new System.EventHandler(this.groupBox7_Enter);
             // 
             // THR_ALT_IMAX
             // 
@@ -425,6 +443,7 @@
             resources.ApplyResources(this.groupBox19, "groupBox19");
             this.groupBox19.Name = "groupBox19";
             this.groupBox19.TabStop = false;
+            this.groupBox19.Enter += new System.EventHandler(this.groupBox19_Enter);
             // 
             // HLD_LAT_IMAX
             // 
@@ -467,6 +486,7 @@
             resources.ApplyResources(this.groupBox20, "groupBox20");
             this.groupBox20.Name = "groupBox20";
             this.groupBox20.TabStop = false;
+            this.groupBox20.Enter += new System.EventHandler(this.groupBox20_Enter);
             // 
             // STB_YAW_IMAX
             // 
@@ -511,6 +531,7 @@
             resources.ApplyResources(this.groupBox21, "groupBox21");
             this.groupBox21.Name = "groupBox21";
             this.groupBox21.TabStop = false;
+            this.groupBox21.Enter += new System.EventHandler(this.groupBox21_Enter);
             // 
             // STAB_D
             // 
@@ -607,6 +628,7 @@
             resources.ApplyResources(this.groupBox23, "groupBox23");
             this.groupBox23.Name = "groupBox23";
             this.groupBox23.TabStop = false;
+            this.groupBox23.Enter += new System.EventHandler(this.groupBox23_Enter);
             // 
             // RATE_YAW_D
             // 
@@ -661,6 +683,7 @@
             resources.ApplyResources(this.groupBox24, "groupBox24");
             this.groupBox24.Name = "groupBox24";
             this.groupBox24.TabStop = false;
+            this.groupBox24.Enter += new System.EventHandler(this.groupBox24_Enter);
             // 
             // RATE_PIT_D
             // 
@@ -775,6 +798,7 @@
             resources.ApplyResources(this.groupBox1, "groupBox1");
             this.groupBox1.Name = "groupBox1";
             this.groupBox1.TabStop = false;
+            this.groupBox1.Enter += new System.EventHandler(this.groupBox1_Enter);
             // 
             // LOITER_LAT_D
             // 
@@ -848,10 +872,81 @@
             this.myLabel1.Name = "myLabel1";
             this.myLabel1.resize = false;
             // 
+            // groupBox2
+            // 
+            this.groupBox2.Controls.Add(this.THR_ACCEL_D);
+            this.groupBox2.Controls.Add(this.label5);
+            this.groupBox2.Controls.Add(this.label6);
+            this.groupBox2.Controls.Add(this.THR_ACCEL_IMAX);
+            this.groupBox2.Controls.Add(this.THR_ACCEL_I);
+            this.groupBox2.Controls.Add(this.label7);
+            this.groupBox2.Controls.Add(this.THR_ACCEL_P);
+            this.groupBox2.Controls.Add(this.label8);
+            resources.ApplyResources(this.groupBox2, "groupBox2");
+            this.groupBox2.Name = "groupBox2";
+            this.groupBox2.TabStop = false;
+            // 
+            // THR_ACCEL_D
+            // 
+            resources.ApplyResources(this.THR_ACCEL_D, "THR_ACCEL_D");
+            this.THR_ACCEL_D.Name = "THR_ACCEL_D";
+            // 
+            // label5
+            // 
+            resources.ApplyResources(this.label5, "label5");
+            this.label5.Name = "label5";
+            // 
+            // label6
+            // 
+            resources.ApplyResources(this.label6, "label6");
+            this.label6.Name = "label6";
+            // 
+            // THR_ACCEL_IMAX
+            // 
+            resources.ApplyResources(this.THR_ACCEL_IMAX, "THR_ACCEL_IMAX");
+            this.THR_ACCEL_IMAX.Maximum = new decimal(new int[] {
+            1000,
+            0,
+            0,
+            0});
+            this.THR_ACCEL_IMAX.Name = "THR_ACCEL_IMAX";
+            // 
+            // THR_ACCEL_I
+            // 
+            resources.ApplyResources(this.THR_ACCEL_I, "THR_ACCEL_I");
+            this.THR_ACCEL_I.Name = "THR_ACCEL_I";
+            // 
+            // label7
+            // 
+            resources.ApplyResources(this.label7, "label7");
+            this.label7.Name = "label7";
+            // 
+            // THR_ACCEL_P
+            // 
+            resources.ApplyResources(this.THR_ACCEL_P, "THR_ACCEL_P");
+            this.THR_ACCEL_P.Name = "THR_ACCEL_P";
+            // 
+            // label8
+            // 
+            resources.ApplyResources(this.label8, "label8");
+            this.label8.Name = "label8";
+            // 
+            // MVCHK_thr_Acc_enable
+            // 
+            resources.ApplyResources(this.MVCHK_thr_Acc_enable, "MVCHK_thr_Acc_enable");
+            this.MVCHK_thr_Acc_enable.Name = "MVCHK_thr_Acc_enable";
+            this.MVCHK_thr_Acc_enable.OffValue = 0F;
+            this.MVCHK_thr_Acc_enable.OnValue = 1F;
+            this.MVCHK_thr_Acc_enable.param = null;
+            this.MVCHK_thr_Acc_enable.ParamName = null;
+            this.MVCHK_thr_Acc_enable.UseVisualStyleBackColor = true;
+            // 
             // ConfigArducopter
             // 
             resources.ApplyResources(this, "$this");
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
+            this.Controls.Add(this.MVCHK_thr_Acc_enable);
+            this.Controls.Add(this.groupBox2);
             this.Controls.Add(this.groupBox1);
             this.Controls.Add(this.BUT_rerequestparams);
             this.Controls.Add(this.BUT_writePIDS);
@@ -931,6 +1026,11 @@
             ((System.ComponentModel.ISupportInitialize)(this.LOITER_LAT_IMAX)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.LOITER_LAT_I)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.LOITER_LAT_P)).EndInit();
+            this.groupBox2.ResumeLayout(false);
+            ((System.ComponentModel.ISupportInitialize)(this.THR_ACCEL_D)).EndInit();
+            ((System.ComponentModel.ISupportInitialize)(this.THR_ACCEL_IMAX)).EndInit();
+            ((System.ComponentModel.ISupportInitialize)(this.THR_ACCEL_I)).EndInit();
+            ((System.ComponentModel.ISupportInitialize)(this.THR_ACCEL_P)).EndInit();
             this.ResumeLayout(false);
             this.PerformLayout();
 
@@ -1045,5 +1145,15 @@
         private System.Windows.Forms.Label label3;
         private System.Windows.Forms.NumericUpDown LOITER_LAT_P;
         private System.Windows.Forms.Label label4;
+        private System.Windows.Forms.GroupBox groupBox2;
+        private System.Windows.Forms.NumericUpDown THR_ACCEL_D;
+        private System.Windows.Forms.Label label5;
+        private System.Windows.Forms.Label label6;
+        private System.Windows.Forms.NumericUpDown THR_ACCEL_IMAX;
+        private System.Windows.Forms.NumericUpDown THR_ACCEL_I;
+        private System.Windows.Forms.Label label7;
+        private System.Windows.Forms.NumericUpDown THR_ACCEL_P;
+        private System.Windows.Forms.Label label8;
+        private Controls.MavlinkCheckBox MVCHK_thr_Acc_enable;
     }
 }

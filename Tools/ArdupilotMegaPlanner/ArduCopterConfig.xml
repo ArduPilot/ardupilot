@@ -16,7 +16,7 @@ Large:  P = 0.090</DESC>
         <PARAMNAME>RATE_PIT_P</PARAMNAME>
         <RANGEMIN>0.001</RANGEMIN>
         <RANGEMAX>5</RANGEMAX>
-        <STEP>0.001</STEP>
+        <STEP>0.0001</STEP>
       </FIELD>
       <FIELD>
         <NAME>I</NAME>
@@ -24,7 +24,7 @@ Large:  P = 0.090</DESC>
         <PARAMNAME>RATE_PIT_I</PARAMNAME>
         <RANGEMIN>0</RANGEMIN>
         <RANGEMAX>5</RANGEMAX>
-        <STEP>0.001</STEP>
+        <STEP>0.0001</STEP>
       </FIELD>
       <FIELD>
         <NAME>D</NAME>
@@ -32,7 +32,7 @@ Large:  P = 0.090</DESC>
         <PARAMNAME>RATE_PIT_D</PARAMNAME>
         <RANGEMIN>0</RANGEMIN>
         <RANGEMAX>5</RANGEMAX>
-        <STEP>0.001</STEP>
+        <STEP>0.0001</STEP>
       </FIELD>
       <FIELD>
         <NAME>IMAX</NAME>
@@ -58,14 +58,14 @@ When the sticks are fully deflected:
         <PARAMNAME>STAB_D</PARAMNAME>
         <RANGEMIN>0</RANGEMIN>
         <RANGEMAX>5</RANGEMAX>
-        <STEP>0.001</STEP>
+        <STEP>0.0001</STEP>
       </FIELD>
       <FIELD>
         <NAME>Dynamic</NAME>
         <PARAMNAME>STAB_D_S</PARAMNAME>
         <RANGEMIN>0</RANGEMIN>
         <RANGEMAX>1</RANGEMAX>
-        <STEP>0.001</STEP>
+        <STEP>0.0001</STEP>
       </FIELD>
     </FIELDS>
 
@@ -82,7 +82,7 @@ Too high = slow wobbles
         <PARAMNAME>STB_PIT_P</PARAMNAME>
         <RANGEMIN>0.001</RANGEMIN>
         <RANGEMAX>5</RANGEMAX>
-        <STEP>0.001</STEP>
+        <STEP>0.0001</STEP>
       </FIELD>
       <FIELD>
         <NAME>I</NAME>
@@ -90,7 +90,7 @@ Too high = slow wobbles
         <PARAMNAME>STB_PIT_I</PARAMNAME>
         <RANGEMIN>0</RANGEMIN>
         <RANGEMAX>5</RANGEMAX>
-        <STEP>0.001</STEP>
+        <STEP>0.0001</STEP>
       </FIELD>
       <FIELD>
         <NAME>IMAX</NAME>
@@ -98,7 +98,7 @@ Too high = slow wobbles
         <PARAMNAME>STB_PIT_IMAX</PARAMNAME>
         <RANGEMIN>0</RANGEMIN>
         <RANGEMAX>50</RANGEMAX>
-        <STEP>0.001</STEP>
+        <STEP>0.0001</STEP>
       </FIELD>
     </FIELDS>
 
@@ -111,21 +111,21 @@ Too high = slow wobbles
         <PARAMNAME>RATE_YAW_P</PARAMNAME>
         <RANGEMIN>0.001</RANGEMIN>
         <RANGEMAX>5</RANGEMAX>
-        <STEP>0.001</STEP>
+        <STEP>0.0001</STEP>
       </FIELD>
       <FIELD>
         <NAME>I</NAME>
         <PARAMNAME>RATE_YAW_I</PARAMNAME>
         <RANGEMIN>0</RANGEMIN>
         <RANGEMAX>5</RANGEMAX>
-        <STEP>0.001</STEP>
+        <STEP>0.0001</STEP>
       </FIELD>
       <FIELD>
         <NAME>D</NAME>
         <PARAMNAME>RATE_YAW_D</PARAMNAME>
         <RANGEMIN>0</RANGEMIN>
         <RANGEMAX>5</RANGEMAX>
-        <STEP>0.001</STEP>
+        <STEP>0.0001</STEP>
       </FIELD>
       <FIELD>
         <NAME>IMAX</NAME>
@@ -148,14 +148,14 @@ Too high = slow wobbles
         <PARAMNAME>STB_YAW_P</PARAMNAME>
         <RANGEMIN>0.001</RANGEMIN>
         <RANGEMAX>10</RANGEMAX>
-        <STEP>0.001</STEP>
+        <STEP>0.0001</STEP>
       </FIELD>
       <FIELD>
         <NAME>I</NAME>
         <PARAMNAME>STB_YAW_I</PARAMNAME>
         <RANGEMIN>0</RANGEMIN>
         <RANGEMAX>5</RANGEMAX>
-        <STEP>0.001</STEP>
+        <STEP>0.0001</STEP>
       </FIELD>
       <FIELD>
         <NAME>IMAX</NAME>
@@ -180,7 +180,7 @@ How much angle is applied to make the copter accelerate to the desired speed.
         <PARAMNAME>LOITER_LON_P</PARAMNAME>
         <RANGEMIN>0.001</RANGEMIN>
         <RANGEMAX>5</RANGEMAX>
-        <STEP>0.001</STEP>
+        <STEP>0.0001</STEP>
       </FIELD>
       <FIELD>
         <NAME>I</NAME>
@@ -188,7 +188,7 @@ How much angle is applied to make the copter accelerate to the desired speed.
         <PARAMNAME>LOITER_LON_I</PARAMNAME>
         <RANGEMIN>0</RANGEMIN>
         <RANGEMAX>5</RANGEMAX>
-        <STEP>0.001</STEP>
+        <STEP>0.0001</STEP>
       </FIELD>
       <FIELD>
         <NAME>D</NAME>
@@ -196,7 +196,7 @@ How much angle is applied to make the copter accelerate to the desired speed.
         <PARAMNAME>LOITER_LON_D</PARAMNAME>
         <RANGEMIN>0</RANGEMIN>
         <RANGEMAX>5</RANGEMAX>
-        <STEP>0.001</STEP>
+        <STEP>0.0001</STEP>
       </FIELD>
       <FIELD>
         <NAME>IMAX</NAME>
@@ -220,7 +220,7 @@ A distance error of 100cm * P of .25 = 25 cm/s
         <PARAMNAME>HLD_LON_P</PARAMNAME>
         <RANGEMIN>0.001</RANGEMIN>
         <RANGEMAX>5</RANGEMAX>
-        <STEP>0.001</STEP>
+        <STEP>0.0001</STEP>
       </FIELD>
     </FIELDS>
   </Item>
@@ -238,7 +238,7 @@ A distance error of 100cm * P of .25 = 25 cm/s
         <PARAMNAME>NAV_LON_P</PARAMNAME>
         <RANGEMIN>0.001</RANGEMIN>
         <RANGEMAX>5</RANGEMAX>
-        <STEP>0.001</STEP>
+        <STEP>0.0001</STEP>
       </FIELD>
       <FIELD>
         <NAME>I</NAME>
@@ -246,7 +246,7 @@ A distance error of 100cm * P of .25 = 25 cm/s
         <PARAMNAME>NAV_LON_I</PARAMNAME>
         <RANGEMIN>0</RANGEMIN>
         <RANGEMAX>5</RANGEMAX>
-        <STEP>0.001</STEP>
+        <STEP>0.0001</STEP>
       </FIELD>
       <FIELD>
         <NAME>D</NAME>
@@ -254,7 +254,7 @@ A distance error of 100cm * P of .25 = 25 cm/s
         <PARAMNAME>NAV_LON_D</PARAMNAME>
         <RANGEMIN>0</RANGEMIN>
         <RANGEMAX>5</RANGEMAX>
-        <STEP>0.001</STEP>
+        <STEP>0.0001</STEP>
       </FIELD>
       <FIELD>
         <NAME>IMAX</NAME>
@@ -294,14 +294,14 @@ A distance error of 100cm * P of .25 = 25 cm/s
         <PARAMNAME>THR_ALT_P</PARAMNAME>
         <RANGEMIN>0.001</RANGEMIN>
         <RANGEMAX>5</RANGEMAX>
-        <STEP>0.001</STEP>
+        <STEP>0.0001</STEP>
       </FIELD>
       <FIELD>
         <NAME>I</NAME>
         <PARAMNAME>THR_ALT_I</PARAMNAME>
         <RANGEMIN>0</RANGEMIN>
         <RANGEMAX>5</RANGEMAX>
-        <STEP>0.001</STEP>
+        <STEP>0.0001</STEP>
       </FIELD>
       <FIELD>
         <NAME>IMAX</NAME>
@@ -323,21 +323,21 @@ A distance error of 100cm * P of .25 = 25 cm/s
         <PARAMNAME>THR_RATE_P</PARAMNAME>
         <RANGEMIN>0.001</RANGEMIN>
         <RANGEMAX>5</RANGEMAX>
-        <STEP>0.001</STEP>
+        <STEP>0.0001</STEP>
       </FIELD>
       <FIELD>
         <NAME>I</NAME>
         <PARAMNAME>THR_RATE_I</PARAMNAME>
         <RANGEMIN>0</RANGEMIN>
         <RANGEMAX>5</RANGEMAX>
-        <STEP>0.001</STEP>
+        <STEP>0.0001</STEP>
       </FIELD>
       <FIELD>
         <NAME>D</NAME>
         <PARAMNAME>THR_RATE_D</PARAMNAME>
         <RANGEMIN>0</RANGEMIN>
         <RANGEMAX>5</RANGEMAX>
-        <STEP>0.001</STEP>
+        <STEP>0.0001</STEP>
       </FIELD>
       <FIELD>
         <NAME>IMAX</NAME>
