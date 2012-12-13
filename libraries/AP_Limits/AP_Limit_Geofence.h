@@ -20,7 +20,7 @@
 class AP_Limit_Geofence : public AP_Limit_Module {
 
 public:
-    AP_Limit_Geofence(uint32_t _eeprom_fence_start, uint8_t fpsize, uint8_t max_fp, GPS *&gps, struct Location *home_loc, struct Location *current_loc);
+    AP_Limit_Geofence(uint16_t eeprom_fence_start, uint8_t fpsize, uint8_t max_fp, GPS *&gps, struct Location *home_loc, struct Location *current_loc);
     bool        init();
     bool        triggered();
 
@@ -51,7 +51,7 @@ protected:
     AP_Int8                 _num_points;
 
 private:
-    const uint32_t          _eeprom_fence_start;
+    const uint16_t          _eeprom_fence_start;
     const unsigned          _fence_wp_size;
     const unsigned          _max_fence_points;
     bool                    _boundary_uptodate;

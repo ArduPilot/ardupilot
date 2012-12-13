@@ -7,7 +7,10 @@
 /// @author Andrew Tridgell
 ///         Andreas Antonopoulos
 
-#include <AP_Limit_Geofence.h>
+#include "AP_Limit_Geofence.h"
+#include <AP_HAL.h>
+
+extern const AP_HAL::HAL& hal;
 
 const AP_Param::GroupInfo AP_Limit_Geofence::var_info[] PROGMEM = {
     // @Param: FNC_ON
@@ -47,7 +50,7 @@ const AP_Param::GroupInfo AP_Limit_Geofence::var_info[] PROGMEM = {
 };
 
 
-AP_Limit_Geofence::AP_Limit_Geofence(uint32_t efs, uint8_t f_wp_s,
+AP_Limit_Geofence::AP_Limit_Geofence(uint16_t efs, uint8_t f_wp_s,
         uint8_t max_fp, GPS *&gps, struct Location *h_loc,
         struct Location *c_loc) :
     AP_Limit_Module(AP_LIMITS_GEOFENCE),
@@ -156,18 +159,16 @@ AP_Int8 AP_Limit_Geofence::fence_total() {
 // save a fence point
 void AP_Limit_Geofence::set_fence_point_with_index(Vector2l &point, uint8_t i)
 {
-    uintptr_t mem;
-
     if (i >= (unsigned)fence_total()) {
         // not allowed
         return;
     }
 
-    mem = _eeprom_fence_start + (i * _fence_wp_size);
+    uint16_t mem = _eeprom_fence_start + (i * _fence_wp_size);
 
-    eeprom_write_dword((uint32_t *)mem, point.x);
-    mem += sizeof(uint32_t);
-    eeprom_write_dword((uint32_t *)mem, point.y);
+    hal.storage->write_dword(mem, point.x);
+    mem += 4;
+    hal.storage->write_dword(mem, point.y);
 
     _boundary_uptodate = false;
 }
@@ -177,7 +178,6 @@ void AP_Limit_Geofence::set_fence_point_with_index(Vector2l &point, uint8_t i)
  */
 Vector2l AP_Limit_Geofence::get_fence_point_with_index(uint8_t i)
 {
-    uintptr_t mem;
     Vector2l ret;
 
     if (i > (unsigned) fence_total()) {
@@ -185,10 +185,10 @@ Vector2l AP_Limit_Geofence::get_fence_point_with_index(uint8_t i)
     }
 
     // read fence point
-    mem = _eeprom_fence_start + (i * _fence_wp_size);
-    ret.x = eeprom_read_dword((uint32_t *)mem);
-    mem += sizeof(uint32_t);
-    ret.y = eeprom_read_dword((uint32_t *)mem);
+    uint16_t mem = _eeprom_fence_start + (i * _fence_wp_size);
+    ret.x = hal.storage->read_dword(mem);
+    mem += 4;
+    ret.y = hal.storage->read_dword(mem);
 
     return ret;
 }
