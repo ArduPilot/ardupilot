@@ -103,6 +103,7 @@
   # define HELI_YAW_FF					0  
   # define RC_FAST_SPEED 				125
   # define STABILIZE_THROTTLE			THROTTLE_MANUAL
+  # define MPU6K_FILTER                 10
 #endif
 
 
@@ -117,6 +118,9 @@
 //
 #ifndef CONFIG_IMU_TYPE
  # define CONFIG_IMU_TYPE CONFIG_IMU_OILPAN
+#endif
+#ifndef MPU6K_FILTER
+ # define MPU6K_FILTER MPU6K_DEFAULT_FILTER
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
