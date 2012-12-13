@@ -43,7 +43,7 @@ static void arm_motors()
 ////////////////////////////////////////////////////////////////////////////////
 // Experimental AP_Limits library - set constraints, limits, fences, minima, maxima on various parameters
 ////////////////////////////////////////////////////////////////////////////////
-#ifdef AP_LIMITS
+#if AP_LIMITS == ENABLED
                 if (limits.enabled() && limits.required()) {
                     gcs_send_text_P(SEVERITY_LOW, PSTR("Limits - Running pre-arm checks"));
 
