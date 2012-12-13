@@ -70,6 +70,7 @@
 #include <AP_GPS.h>             // ArduPilot GPS library
 #include <DataFlash.h>          // ArduPilot Mega Flash Memory Library
 #include <AP_ADC.h>             // ArduPilot Mega Analog to Digital Converter Library
+#include <AP_ADC_AnalogSource.h>
 #include <AP_Baro.h>
 #include <AP_Compass.h>         // ArduPilot Mega Magnetometer Library
 #include <AP_Math.h>            // ArduPilot Mega Vector/Matrix math Library
@@ -94,6 +95,8 @@
 #include <AP_Limits.h>
 #include <memcheck.h>
 
+// AP_HAL to Arduino compatibility layer
+#include "compat.h"
 // Configuration
 #include "defines.h"
 #include "config.h"
@@ -413,11 +416,11 @@ static uint8_t receiver_rssi;
 #endif
 
 #if FRAME_CONFIG == HELI_FRAME  // helicopter constructor requires more arguments
-MOTOR_CLASS motors(CONFIG_HAL_BOARD, &APM_RC, &g.rc_1, &g.rc_2, &g.rc_3, &g.rc_4, &g.rc_8, &g.heli_servo_1, &g.heli_servo_2, &g.heli_servo_3, &g.heli_servo_4);
+MOTOR_CLASS motors(CONFIG_HAL_BOARD, &g.rc_1, &g.rc_2, &g.rc_3, &g.rc_4, &g.rc_8, &g.heli_servo_1, &g.heli_servo_2, &g.heli_servo_3, &g.heli_servo_4);
 #elif FRAME_CONFIG == TRI_FRAME  // tri constructor requires additional rc_7 argument to allow tail servo reversing
-MOTOR_CLASS motors(CONFIG_HAL_BOARD, &APM_RC, &g.rc_1, &g.rc_2, &g.rc_3, &g.rc_4, &g.rc_7);
+MOTOR_CLASS motors(CONFIG_HAL_BOARD, &g.rc_1, &g.rc_2, &g.rc_3, &g.rc_4, &g.rc_7);
 #else
-MOTOR_CLASS motors(CONFIG_HAL_BOARD, &APM_RC, &g.rc_1, &g.rc_2, &g.rc_3, &g.rc_4);
+MOTOR_CLASS motors(CONFIG_HAL_BOARD, &g.rc_1, &g.rc_2, &g.rc_3, &g.rc_4);
 #endif
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -836,7 +839,7 @@ AP_Relay relay;
 
 // a pin for reading the receiver RSSI voltage. The scaling by 0.25
 // is to take the 0 to 1024 range down to an 8 bit range for MAVLink
-AP_AnalogSource_Arduino RSSI_pin(-1, 0.25);
+AP_HAL::AnalogSource* rssi_analog_source;
 
 #if CLI_ENABLED == ENABLED
     static int8_t   setup_show (uint8_t argc, const Menu::arg *argv);
@@ -883,7 +886,7 @@ void setup() {
 
 #if CONFIG_SONAR == ENABLED
  #if CONFIG_SONAR_SOURCE == SONAR_SOURCE_ADC
-    sonar_analog_source = new AP_AnalogSource_ADC(
+    sonar_analog_source = new AP_ADC_AnalogSource(
             &adc, CONFIG_SONAR_SOURCE_ADC_CHANNEL, 0.25);
  #elif CONFIG_SONAR_SOURCE == SONAR_SOURCE_ANALOG_PIN
     sonar_analog_source = hal.analogin->channel(
@@ -891,9 +894,11 @@ void setup() {
  #else
   #warning "Invalid CONFIG_SONAR_SOURCE"
  #endif
-    sonar = new AP_RangeFinder_MaxsonarXL(&sonar_analog_source,
+    sonar = new AP_RangeFinder_MaxsonarXL(sonar_analog_source,
             &sonar_mode_filter);
 #endif
+
+    rssi_analog_source = hal.analogin->channel(g.rssi_pin, 0.25);
 
     memcheck_init();
     init_ardupilot();
