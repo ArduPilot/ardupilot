@@ -873,7 +873,7 @@ AP_Mount camera_mount2(&current_loc, g_gps, &ahrs, 1);
 ////////////////////////////////////////////////////////////////////////////////
 // Experimental AP_Limits library - set constraints, limits, fences, minima, maxima on various parameters
 ////////////////////////////////////////////////////////////////////////////////
-#ifdef AP_LIMITS
+#if AP_LIMITS == ENABLED
 AP_Limits               limits;
 AP_Limit_GPSLock        gpslock_limit(g_gps);
 AP_Limit_Geofence       geofence_limit(FENCE_START_BYTE, FENCE_WP_SIZE, MAX_FENCEPOINTS, g_gps, &home, &current_loc);

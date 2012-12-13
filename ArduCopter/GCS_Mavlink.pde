@@ -1929,7 +1929,7 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
         break;
     }
 
-#ifdef AP_LIMITS
+#if AP_LIMITS == ENABLED
 
     // receive an AP_Limits fence point from GCS and store in EEPROM
     // receive a fence point from GCS and store in EEPROM

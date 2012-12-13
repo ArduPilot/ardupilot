@@ -294,11 +294,7 @@ init_rate_controllers();
 // Experimental AP_Limits library - set constraints, limits, fences, minima,
 // maxima on various parameters
 ////////////////////////////////////////////////////////////////////////////////
-static void init_ap_limits() {
-#ifdef AP_LIMITS
-    // AP_Limits modules are stored as a _linked list_. That allows us to
-    // define an infinite number of modules and also to allocate no space until
-    // we actually need to.
+#if AP_LIMITS == ENABLED
 
     // The linked list looks (logically) like this [limits module] -> [first
     // limit module] -> [second limit module] -> [third limit module] -> NULL
