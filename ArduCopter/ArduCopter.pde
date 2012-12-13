@@ -110,8 +110,19 @@
 #include "GCS.h"
 
 ////////////////////////////////////////////////////////////////////////////////
+// cliSerial
+////////////////////////////////////////////////////////////////////////////////
+// cliSerial isn't strictly necessary - it is an alias for hal.console. It may
+// be deprecated in favor of hal.console in later releases.
+AP_HAL::BetterStream* cliSerial;
+
+// N.B. we need to keep a static declaration which isn't guarded by macros
+// at the top to cooperate with the prototype mangler. 
+
+////////////////////////////////////////////////////////////////////////////////
 // AP_HAL instance
 ////////////////////////////////////////////////////////////////////////////////
+
 #if CONFIG_HAL_BOARD == HAL_BOARD_APM2
 const AP_HAL::HAL& hal = AP_HAL_AVR_APM2;
 #elif CONFIG_HAL_BOARD == HAL_BOARD_APM1
@@ -122,7 +133,6 @@ const AP_HAL::HAL& hal = AP_HAL_AVR_SITL;
 SITL sitl;
 #endif
 
-AP_HAL::BetterStream* cliSerial;
 
 ////////////////////////////////////////////////////////////////////////////////
 // Parameters

@@ -149,11 +149,16 @@ static void init_ardupilot()
     // init the GCS
     gcs0.init(hal.uartA);
 
+    // Register the mavlink service callback. This will run
+    // anytime there are more than 5ms remaining in a call to
+    // hal.scheduler->delay.
+    hal.scheduler->register_delay_callback(mavlink_delay_cb, 5);
+
 #if USB_MUX_PIN > 0
     if (!ap_system.usb_connected) {
         // we are not connected via USB, re-init UART0 with right
         // baud rate
-        cliSerial->begin(map_baudrate(g.serial3_baud, SERIAL3_BAUD));
+        hal.uartA->begin(map_baudrate(g.serial3_baud, SERIAL3_BAUD));
     }
 #else
     // we have a 2nd serial port for telemetry
@@ -603,9 +608,9 @@ static void check_usb_mux(void)
     // the user has switched to/from the telemetry port
     ap_system.usb_connected = usb_check;
     if (ap_system.usb_connected) {
-        cliSerial->begin(SERIAL0_BAUD);
+        hal.uartA->begin(SERIAL0_BAUD);
     } else {
-        cliSerial->begin(map_baudrate(g.serial3_baud, SERIAL3_BAUD));
+        hal.uartA->begin(map_baudrate(g.serial3_baud, SERIAL3_BAUD));
     }
 }
 #endif
@@ -633,23 +638,8 @@ uint16_t board_voltage(void)
 /*
   force a software reset of the APM
  */
-static void reboot_apm(void)
-{
-    cliSerial->printf_P(PSTR("REBOOTING\n"));
-    delay(100); // let serial flush
-    // see http://www.arduino.cc/cgi-bin/yabb2/YaBB.pl?num=1250663814/
-    // for the method
-#if CONFIG_APM_HARDWARE == APM_HARDWARE_APM2
-    // this relies on the bootloader resetting the watchdog, which
-    // APM1 doesn't do
-    cli();
-    wdt_enable(WDTO_15MS);
-#else
-    // this works on APM1
-    void (*fn)(void) = NULL;
-    fn();
-#endif
-    while (1);
+static void reboot_apm(void) {
+    hal.scheduler->reboot();
 }
 
 //

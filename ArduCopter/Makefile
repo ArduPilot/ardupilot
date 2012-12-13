@@ -18,8 +18,11 @@ hilnocli:
 heli:
 	make -f Makefile EXTRAFLAGS="-DFRAME_CONFIG=HELI_FRAME"
 
+apm1:
+	make -f Makefile HAL_BOARD=HAL_BOARD_APM1
+
 apm2:
-	make -f Makefile EXTRAFLAGS="-DCONFIG_APM_HARDWARE=APM_HARDWARE_APM2"
+	make -f Makefile HAL_BOARD=HAL_BOARD_APM2
 
 dmp:
 	make -f Makefile EXTRAFLAGS="-DDMP_ENABLED=ENABLED"

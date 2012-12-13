@@ -41,19 +41,16 @@
 //////////////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////////////
 
-//////////////////////////////////////////////////////////////////////////////
-// APM HARDWARE
-//
 
-#ifndef CONFIG_APM_HARDWARE
- # define CONFIG_APM_HARDWARE APM_HARDWARE_APM1
+#ifdef CONFIG_APM_HARDWARE
+#error CONFIG_APM_HARDWARE option is deprecated! use CONFIG_HAL_BOARD instead
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
 // APM2 HARDWARE DEFAULTS
 //
 
-#if CONFIG_APM_HARDWARE == APM_HARDWARE_APM2
+#if CONFIG_HAL_BOARD == HAL_BOARD_APM2
  # define CONFIG_IMU_TYPE   CONFIG_IMU_MPU6000
  # define CONFIG_PUSHBUTTON DISABLED
  # define CONFIG_RELAY      DISABLED
@@ -134,7 +131,7 @@
 ////////////////////////////////////////////////////////
 // LED and IO Pins
 //
-#if CONFIG_APM_HARDWARE == APM_HARDWARE_APM1
+#if CONFIG_HAL_BOARD == HAL_BOARD_APM1
  # define A_LED_PIN        37
  # define B_LED_PIN        36
  # define C_LED_PIN        35
@@ -147,7 +144,7 @@
  # define OPTFLOW_CS_PIN   34
  # define BATTERY_VOLT_PIN      0      // Battery voltage on A0
  # define BATTERY_CURR_PIN      1      // Battery current on A1
-#elif CONFIG_APM_HARDWARE == APM_HARDWARE_APM2
+#elif CONFIG_HAL_BOARD == HAL_BOARD_APM2
  # define A_LED_PIN        27
  # define B_LED_PIN        26
  # define C_LED_PIN        25
@@ -157,7 +154,7 @@
  # define PUSHBUTTON_PIN   (-1)
  # define CLI_SLIDER_ENABLED DISABLED
  # define USB_MUX_PIN      23
- # define OPTFLOW_CS_PIN   A3
+ # define OPTFLOW_CS_PIN   57          // Optflow CS on A3
  # define BATTERY_VOLT_PIN      1      // Battery voltage on A1
  # define BATTERY_CURR_PIN      2      // Battery current on A2
 #endif
@@ -173,7 +170,7 @@
 #define COPTER_LED_ON           HIGH
 #define COPTER_LED_OFF          LOW
 
-#if CONFIG_APM_HARDWARE == APM_HARDWARE_APM2
+#if CONFIG_HAL_BOARD == HAL_BOARD_APM2
  #define COPTER_LED_1 AN4       // Motor or Aux LED
  #define COPTER_LED_2 AN5       // Motor LED or Beeper
  #define COPTER_LED_3 AN6       // Motor or GPS LED
@@ -182,7 +179,7 @@
  #define COPTER_LED_6 AN9       // Motor LED
  #define COPTER_LED_7 AN10      // Motor LED
  #define COPTER_LED_8 AN11      // Motor LED
-#elif CONFIG_APM_HARDWARE == APM_HARDWARE_APM1
+#elif CONFIG_HAL_BOARD == HAL_BOARD_APM1
  #define COPTER_LED_1 AN8       // Motor or Aux LED
  #define COPTER_LED_2 AN9       // Motor LED
  #define COPTER_LED_3 AN10      // Motor or GPS LED
@@ -235,7 +232,7 @@
  # endif
 #elif CONFIG_SONAR_SOURCE == SONAR_SOURCE_ANALOG_PIN
  # ifndef CONFIG_SONAR_SOURCE_ANALOG_PIN
-  #  define CONFIG_SONAR_SOURCE_ANALOG_PIN A0
+  #  define CONFIG_SONAR_SOURCE_ANALOG_PIN 0
  # endif
 #else
  # warning Invalid value for CONFIG_SONAR_SOURCE, disabling sonar

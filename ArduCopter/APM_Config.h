@@ -1,14 +1,11 @@
 // -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 
-// Example config file. Take a look at config.h. Any term define there can be overridden by defining it here.
+// Example config file. Take a look at config.h. Any term define there can be
+// overridden by defining it here.
 
-//#define CONFIG_APM_HARDWARE APM_HARDWARE_APM2
 
-// Ordinary users should please ignore the following define.
-// APM2_BETA_HARDWARE is used to support early (September-October 2011) APM2
-// hardware which had the BMP085 barometer onboard. Only a handful of
-// developers have these boards.
-//#define APM2_BETA_HARDWARE
+// If you used to define your CONFIG_APM_HARDWARE setting here, it is no longer
+// valid! You should switch to using a HAL_BOARD flag in your local config.mk.
 
 //#define MAG_ORIENTATION		AP_COMPASS_COMPONENTS_DOWN_PINS_FORWARD
 //#define HIL_MODE				HIL_MODE_ATTITUDE
