@@ -4,6 +4,7 @@
 #if (CONFIG_HAL_BOARD == HAL_BOARD_APM1 || CONFIG_HAL_BOARD == HAL_BOARD_APM2)
 
 #include <avr/io.h>
+#include <avr/wdt.h>
 #include <avr/interrupt.h>
 
 #include "HAL_AVR.h"
@@ -212,17 +213,24 @@ void AVRScheduler::end_atomic() {
 void AVRScheduler::reboot() {
     hal.uartA->println_P(PSTR("GOING DOWN FOR A REBOOT\r\n"));
     hal.scheduler->delay(100);
-
+#if CONFIG_HAL_BOARD == HAL_BOARD_APM2
+    /* The APM2 bootloader will reset the watchdog shortly after
+     * starting, so we can use the watchdog to force a reboot
+     */
+    cli();
+    wdt_enable(WDTO_15MS);
+    for(;;);
+#else
     cli();
     /* Making a null pointer call will cause all AVRs to reboot
      * but they may not come back alive properly - we need to setup
      * the IO the way the bootloader would.
-     * pch will go back and fix this.
      */
     void (*fn)(void) = NULL;
     fn();
-
     for(;;);
+#endif
+
 }
 
 #endif
