@@ -86,41 +86,19 @@ static void init_ardupilot()
     // The console port buffers are defined to be sufficiently large to support
     // the MAVLink protocol efficiently
     //
-    cliSerial->begin(SERIAL0_BAUD, 128, 256);
+    hal.uartA->begin(SERIAL0_BAUD, 128, 256);
 
     // GPS serial port.
     //
 #if GPS_PROTOCOL != GPS_PROTOCOL_IMU
     // standard gps running. Note that we need a 256 byte buffer for some
     // GPS types (eg. UBLOX)
-    Serial1.begin(38400, 256, 16);
+    hal.uartB->begin(38400, 256, 16);
 #endif
 
     cliSerial->printf_P(PSTR("\n\nInit " THISFIRMWARE
                          "\n\nFree RAM: %u\n"),
                     memcheck_available_memory());
-
-    //
-    // Initialize Wire and SPI libraries
-    //
-#ifndef DESKTOP_BUILD
-    I2c.begin();
-    I2c.timeOut(5);
-    // initially set a fast I2c speed, and drop it on first failures
-    I2c.setSpeed(true);
-#endif
-    SPI.begin();
-    SPI.setClockDivider(SPI_CLOCK_DIV16); // 1MHZ SPI rate
-
-#if CONFIG_APM_HARDWARE == APM_HARDWARE_APM2
-    SPI3.begin();
-    SPI3.setSpeed(SPI3_SPEED_2MHZ);
-#endif
-
-    //
-    // Initialize the isr_registry.
-    //
-    isr_registry.init();
 
     //
     // Report firmware version code expect on console (check of actual EEPROM format version is done in load_parameters function)
@@ -143,8 +121,9 @@ static void init_ardupilot()
 #if CONFIG_PUSHBUTTON == ENABLED
     pinMode(PUSHBUTTON_PIN, INPUT);                     // unused
 #endif
+
 #if CONFIG_RELAY == ENABLED
-    DDRL |= B00000100;                                                  // Set Port L, pin 2 to output for the relay
+    relay.init(); 
 #endif
 
 #if COPTER_LEDS == ENABLED
@@ -168,7 +147,7 @@ static void init_ardupilot()
     load_parameters();
 
     // init the GCS
-    gcs0.init(&Serial);
+    gcs0.init(hal.uartA);
 
 #if USB_MUX_PIN > 0
     if (!ap_system.usb_connected) {
@@ -178,8 +157,8 @@ static void init_ardupilot()
     }
 #else
     // we have a 2nd serial port for telemetry
-    Serial3.begin(map_baudrate(g.serial3_baud, SERIAL3_BAUD), 128, 256);
-    gcs3.init(&Serial3);
+    hal.uartC->begin(map_baudrate(g.serial3_baud, SERIAL3_BAUD), 128, 256);
+    gcs3.init(hal.uartC);
 #endif
 
     // identify ourselves correctly with the ground station
@@ -200,42 +179,26 @@ static void init_ardupilot()
     }
 #endif
 
-/*
-#ifdef RADIO_OVERRIDE_DEFAULTS
-    {
-        int16_t rc_override[8] = RADIO_OVERRIDE_DEFAULTS;
-        APM_RC.setHIL(rc_override);
-    }
-#endif
-*/
-
 #if FRAME_CONFIG == HELI_FRAME
     motors.servo_manual = false;
     motors.init_swash();              // heli initialisation
 #endif
 
-    RC_Channel::set_apm_rc(&APM_RC);
     init_rc_in();               // sets up rc channels from radio
     init_rc_out();              // sets up the timer libs
-
-    timer_scheduler.init( &isr_registry );
-
     /*
      *  setup the 'main loop is dead' check. Note that this relies on
      *  the RC library being initialised.
      */
-    timer_scheduler.set_failsafe(failsafe_check);
-
-    // initialise the analog port reader
-    AP_AnalogSource_Arduino::init_timer(&timer_scheduler);
+    hal.scheduler->register_timer_failsafe(failsafe_check, 1000);
 
 #if HIL_MODE != HIL_MODE_ATTITUDE
  #if CONFIG_ADC == ENABLED
     // begin filtering the ADC Gyros
-    adc.Init(&timer_scheduler);           // APM ADC library initialization
+    adc.Init();           // APM ADC library initialization
  #endif // CONFIG_ADC
 
-    barometer.init(&timer_scheduler);
+    barometer.init();
 
 #endif // HIL_MODE
 
@@ -277,7 +240,7 @@ static void init_ardupilot()
     const prog_char_t *msg = PSTR("\nPress ENTER 3 times to start interactive setup\n");
     cliSerial->println_P(msg);
 #if USB_MUX_PIN == 0
-    Serial3.println_P(msg);
+    hal.uartC->println_P(msg);
 #endif
 #endif // CLI_ENABLED
 
@@ -308,25 +271,29 @@ init_rate_controllers();
 
     startup_ground();
 
-    // now that initialisation of IMU has occurred increase SPI to 2MHz
-    SPI.setClockDivider(SPI_CLOCK_DIV8); // 2MHZ SPI rate
-
 #if LOGGING_ENABLED == ENABLED
     Log_Write_Startup();
 #endif
 
+    init_ap_limits();
+
+    cliSerial->print_P(PSTR("\nReady to FLY "));
+}
+
 
 
 ///////////////////////////////////////////////////////////////////////////////
-// Experimental AP_Limits library - set constraints, limits, fences, minima, maxima on various parameters
+// Experimental AP_Limits library - set constraints, limits, fences, minima,
+// maxima on various parameters
 ////////////////////////////////////////////////////////////////////////////////
+static void init_ap_limits() {
 #ifdef AP_LIMITS
+    // AP_Limits modules are stored as a _linked list_. That allows us to
+    // define an infinite number of modules and also to allocate no space until
+    // we actually need to.
 
-    // AP_Limits modules are stored as a _linked list_. That allows us to define an infinite number of modules
-    // and also to allocate no space until we actually need to.
-
-    // The linked list looks (logically) like this
-    //   [limits module] -> [first limit module] -> [second limit module] -> [third limit module] -> NULL
+    // The linked list looks (logically) like this [limits module] -> [first
+    // limit module] -> [second limit module] -> [third limit module] -> NULL
 
 
     // The details of the linked list are handled by the methods
@@ -347,16 +314,13 @@ init_rate_controllers();
             m = limits.modules_next();
         }
     }
-
 #endif
-
-    cliSerial->print_P(PSTR("\nReady to FLY "));
 }
 
 
-//********************************************************************************
+//******************************************************************************
 //This function does all the calibrations, etc. that we need during a ground start
-//********************************************************************************
+//******************************************************************************
 static void startup_ground(void)
 {
     gcs_send_text_P(SEVERITY_LOW,PSTR("GROUND START"));
@@ -365,13 +329,13 @@ static void startup_ground(void)
     // -----------------------------
     ins.init(AP_InertialSensor::COLD_START,
              ins_sample_rate,
-             mavlink_delay, flash_leds, &timer_scheduler);
+             flash_leds);
  #if CLI_ENABLED == ENABLED
     report_ins();
  #endif
 
     // initialise ahrs (may push imu calibration into the mpu6000 if using that device).
-    ahrs.init(&timer_scheduler);
+    ahrs.init();
 
     // setup fast AHRS gains to get right attitude
     ahrs.set_fast_gains(true);
@@ -662,8 +626,7 @@ void flash_leds(bool on)
  */
 uint16_t board_voltage(void)
 {
-    static AP_AnalogSource_Arduino vcc(ANALOG_PIN_VCC);
-    return vcc.read_vcc();
+    return board_vcc_analog_source->read_latest();
 }
 #endif
 

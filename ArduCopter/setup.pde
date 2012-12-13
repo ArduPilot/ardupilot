@@ -207,7 +207,7 @@ setup_radio(uint8_t argc, const Menu::arg *argv)
 
         if(cliSerial->available() > 0) {
             delay(20);
-            cliSerial->flush();
+            while (cliSerial->read() != -1); /* flush */
 
             g.rc_1.save_eeprom();
             g.rc_2.save_eeprom();
@@ -249,8 +249,8 @@ setup_accel(uint8_t argc, const Menu::arg *argv)
 {
     ins.init(AP_InertialSensor::COLD_START, 
              ins_sample_rate,
-             delay, flash_leds, &timer_scheduler);
-    ins.init_accel(delay, flash_leds);
+             flash_leds);
+    ins.init_accel(flash_leds);
     report_ins();
     return(0);
 }
@@ -263,7 +263,7 @@ static void setup_printf_P(const prog_char_t *fmt, ...)
 {
     va_list arg_list;
     va_start(arg_list, fmt);
-    cliSerial->vprintf_P(fmt, arg_list);
+    cliSerial->printf_P(fmt, arg_list);
     va_end(arg_list);
 }
 
@@ -286,8 +286,8 @@ setup_accel_scale(uint8_t argc, const Menu::arg *argv)
     cliSerial->println_P(PSTR("Initialising gyros"));
     ins.init(AP_InertialSensor::COLD_START, 
              ins_sample_rate,
-             delay, flash_leds, &timer_scheduler);
-    ins.calibrate_accel(delay, flash_leds, setup_printf_P, setup_wait_key);
+             flash_leds);
+    ins.calibrate_accel(flash_leds, cliSerial);
     report_ins();
     return(0);
 }
@@ -986,12 +986,10 @@ print_done()
 
 static void zero_eeprom(void)
 {
-    uint8_t b = 0;
-
     cliSerial->printf_P(PSTR("\nErasing EEPROM\n"));
 
-    for (uintptr_t i = 0; i < EEPROM_MAX_ADDR; i++) {
-        eeprom_write_byte((uint8_t *) i, b);
+    for (uint16_t i = 0; i < EEPROM_MAX_ADDR; i++) {
+        hal.storage->write_byte(i, 0);
     }
 
     cliSerial->printf_P(PSTR("done\n"));
@@ -1073,7 +1071,7 @@ static bool
 wait_for_yes()
 {
     int c;
-    cliSerial->flush();
+    while (cliSerial->read() != -1); /* flush */
     cliSerial->printf_P(PSTR("Y to save\n"));
 
     do {

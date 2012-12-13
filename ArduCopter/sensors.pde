@@ -82,14 +82,12 @@ static void read_battery(void)
     }
 
     if(g.battery_monitoring == 3 || g.battery_monitoring == 4) {
-        static AP_AnalogSource_Arduino batt_volt_pin(g.battery_volt_pin);
-        batt_volt_pin.set_pin(g.battery_volt_pin);
-        battery_voltage1 = BATTERY_VOLTAGE(batt_volt_pin.read_average());
+        batt_volt_analog_source->set_pin(g.battery_volt_pin);
+        battery_voltage1 = BATTERY_VOLTAGE(batt_volt_analog_source->read_average());
     }
     if(g.battery_monitoring == 4) {
-        static AP_AnalogSource_Arduino batt_curr_pin(g.battery_curr_pin);
-        batt_curr_pin.set_pin(g.battery_curr_pin);
-        current_amps1    = CURRENT_AMPS(batt_curr_pin.read_average());
+        batt_curr_analog_source->set_pin(g.battery_curr_pin);
+        current_amps1    = CURRENT_AMPS(batt_curr_analog_source->read_average());
         current_total1   += current_amps1 * 0.02778;            // called at 100ms on average, .0002778 is 1/3600 (conversion to hours)
     }
 
@@ -111,6 +109,6 @@ static void read_battery(void)
 void read_receiver_rssi(void)
 {
     rssi_analog_source->set_pin(g.rssi_pin);
-    float ret = rssi_analog_source->read();
+    float ret = rssi_analog_source->read_latest();
     receiver_rssi = constrain(ret, 0, 255);
 }

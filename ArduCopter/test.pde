@@ -37,7 +37,7 @@ static int8_t   test_rawgps(uint8_t argc,               const Menu::arg *argv);
 //static int8_t	test_mission(uint8_t argc,      const Menu::arg *argv);
 
 // this is declared here to remove compiler errors
-extern void             print_latlon(BetterStream *s, int32_t lat_or_lon);      // in Log.pde
+extern void print_latlon(AP_HAL::BetterStream *s, int32_t lat_or_lon);      // in Log.pde
 
 // This is the help function
 // PSTR is an AVR macro to read strings from flash memory
@@ -104,13 +104,14 @@ test_mode(uint8_t argc, const Menu::arg *argv)
 static int8_t
 test_eedump(uint8_t argc, const Menu::arg *argv)
 {
-    uintptr_t i, j;
 
     // hexdump the EEPROM
-    for (i = 0; i < EEPROM_MAX_ADDR; i += 16) {
+    for (uint16_t i = 0; i < EEPROM_MAX_ADDR; i += 16) {
         cliSerial->printf_P(PSTR("%04x:"), i);
-        for (j = 0; j < 16; j++)
-            cliSerial->printf_P(PSTR(" %02x"), eeprom_read_byte((const uint8_t *)(i + j)));
+        for (uint16_t j = 0; j < 16; j++)  {
+            int b = hal.storage->read_byte(i+j);
+            cliSerial->printf_P(PSTR(" %02x"), b);
+        }
         cliSerial->println();
     }
     return(0);
@@ -462,7 +463,7 @@ test_ins(uint8_t argc, const Menu::arg *argv)
 
     ins.init(AP_InertialSensor::COLD_START, 
              ins_sample_rate,
-             delay, flash_leds, &timer_scheduler);
+             flash_leds);
 
     delay(50);
 
@@ -509,9 +510,9 @@ test_gps(uint8_t argc, const Menu::arg *argv)
 
         if (g_gps->new_data) {
             cliSerial->printf_P(PSTR("Lat: "));
-            print_latlon(&Serial, g_gps->latitude);
+            print_latlon(cliSerial, g_gps->latitude);
             cliSerial->printf_P(PSTR(", Lon "));
-            print_latlon(&Serial, g_gps->longitude);
+            print_latlon(cliSerial, g_gps->longitude);
             cliSerial->printf_P(PSTR(", Alt: %ldm, #sats: %d\n"),
                             g_gps->altitude/100,
                             g_gps->num_sats);
@@ -665,11 +666,11 @@ test_battery(uint8_t argc, const Menu::arg *argv)
     return (0);
 #else
     cliSerial->printf_P(PSTR("\nCareful! Motors will spin! Press Enter to start.\n"));
-    cliSerial->flush();
-    while(!cliSerial->available()) {
+    while (cliSerial->read() != -1); /* flush */
+    while(!cliSerial->available()) { /* wait for input */
         delay(100);
     }
-    cliSerial->flush();
+    while (cliSerial->read() != -1); /* flush */
     print_hit_enter();
 
     // allow motors to spin
@@ -921,7 +922,7 @@ test_sonar(uint8_t argc, const Menu::arg *argv)
     while(1) {
         delay(100);
 
-        cliSerial->printf_P(PSTR("Sonar: %d cm\n"), sonar.read());
+        cliSerial->printf_P(PSTR("Sonar: %d cm\n"), sonar->read());
         //cliSerial->printf_P(PSTR("Sonar, %d, %d\n"), sonar.read(), sonar.raw_value);
 
         if(cliSerial->available() > 0) {

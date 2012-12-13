@@ -844,6 +844,13 @@ AP_Relay relay;
 // is to take the 0 to 1024 range down to an 8 bit range for MAVLink
 AP_HAL::AnalogSource* rssi_analog_source;
 
+
+// Input sources for battery voltage, battery current, board vcc
+AP_HAL::AnalogSource* batt_volt_analog_source;
+AP_HAL::AnalogSource* batt_curr_analog_source;
+AP_HAL::AnalogSource* board_vcc_analog_source;
+
+
 #if CLI_ENABLED == ENABLED
     static int8_t   setup_show (uint8_t argc, const Menu::arg *argv);
 #endif
@@ -901,7 +908,10 @@ void setup() {
             &sonar_mode_filter);
 #endif
 
-    rssi_analog_source = hal.analogin->channel(g.rssi_pin, 0.25);
+    rssi_analog_source      = hal.analogin->channel(g.rssi_pin, 0.25);
+    batt_volt_analog_source = hal.analogin->channel(g.battery_volt_pin);
+    batt_curr_analog_source = hal.analogin->channel(g.battery_curr_pin);
+    board_vcc_analog_source = hal.analogin->channel(ANALOG_INPUT_BOARD_VCC);
 
     memcheck_init();
     init_ardupilot();
