@@ -8,7 +8,7 @@
 #include <AP_HAL.h>
 #include "AP_HAL_AVR_SITL_Namespace.h"
 
-class SITLConsoleDriver : public AP_HAL::ConsoleDriver {
+class AVR_SITL::SITLConsoleDriver : public AP_HAL::ConsoleDriver {
 public:
 	SITLConsoleDriver();
     void init(void* baseuartdriver);

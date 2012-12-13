@@ -31,6 +31,8 @@ using namespace AVR_SITL;
 
 #define LISTEN_BASE_PORT 5760
 
+bool SITLUARTDriver::_console;
+
 /* UARTDriver method implementations */
 
 void SITLUARTDriver::begin(uint32_t baud, uint16_t rxSpace, uint16_t txSpace) 
@@ -201,6 +203,15 @@ void SITLUARTDriver::_tcp_start_connection(bool wait_for_connection)
 	int one=1;
 	struct sockaddr_in sockaddr;
 	int ret;
+
+	if (_console) {
+            // hack for console access
+            _connected = true;
+            _listen_fd = -1;
+            _fd = 1;
+            _set_nonblocking(0);
+            return;
+	}
 
 	memset(&sockaddr,0,sizeof(sockaddr));
 

@@ -11,6 +11,8 @@
 
 class AVR_SITL::SITLUARTDriver : public AP_HAL::UARTDriver {
 public:
+    friend class AVR_SITL::SITL_State;
+
 	SITLUARTDriver(const uint8_t portNumber) {
 		_portNumber = portNumber;
         _rxSpace = _default_rx_buffer_size;
@@ -56,7 +58,7 @@ private:
 	int _listen_fd;  // socket we are listening on
 	int _fd;         // data socket
 	int _serial_port;
-	bool _console;
+	static bool _console;
 	bool _nonblocking_writes;
     uint16_t _rxSpace;
     uint16_t _txSpace;

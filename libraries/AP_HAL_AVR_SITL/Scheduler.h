@@ -3,13 +3,14 @@
 #define __AP_HAL_SITL_SCHEDULER_H__
 
 #include <AP_HAL.h>
+#if CONFIG_HAL_BOARD == HAL_BOARD_AVR_SITL
 #include "AP_HAL_AVR_SITL_Namespace.h"
 #include <sys/time.h>
 
 #define SITL_SCHEDULER_MAX_TIMER_PROCS 4
 
 /* Scheduler implementation: */
-class SITLScheduler : public AP_HAL::Scheduler {
+class AVR_SITL::SITLScheduler : public AP_HAL::Scheduler {
 public:
     SITLScheduler();
     /* AP_HAL::Scheduler methods */
@@ -29,11 +30,18 @@ public:
     void     end_atomic();
     void     reboot();
 
+    bool     interrupts_are_blocked(void) { return _nested_atomic_ctr != 0; }
+
+    static void timer_event(void);
+
+    // callable from interrupt handler
+    static uint32_t _micros();
+
 private:
     uint8_t _nested_atomic_ctr;
     AP_HAL::Proc _delay_cb;
     uint16_t _min_delay_cb_ms;
-    struct timeval _sketch_start_time;
+    static struct timeval _sketch_start_time;
     static AP_HAL::TimedProc _failsafe;
 
     static volatile bool _timer_suspended;
@@ -43,5 +51,7 @@ private:
     static bool    _in_timer_proc;
 
 };
+#endif
 #endif // __AP_HAL_SITL_SCHEDULER_H__
+
 

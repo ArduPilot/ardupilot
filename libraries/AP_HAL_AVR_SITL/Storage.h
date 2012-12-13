@@ -6,7 +6,7 @@
 #include <AP_HAL.h>
 #include "AP_HAL_AVR_SITL_Namespace.h"
 
-class SITLEEPROMStorage : public AP_HAL::Storage {
+class AVR_SITL::SITLEEPROMStorage : public AP_HAL::Storage {
 public:
     SITLEEPROMStorage() {
 	    _eeprom_fd = -1;

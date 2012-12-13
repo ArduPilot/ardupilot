@@ -7,7 +7,7 @@
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_AVR_SITL
 #define AP_HAL_MAIN() extern "C" {\
-    int main (int argc, const char *argv[]) {	\
+    int main (int argc, char * const argv[]) {	\
 	hal.init(argc, argv);		\
         setup();\
         for(;;) loop();\
