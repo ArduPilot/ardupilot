@@ -2,7 +2,7 @@
 #include "HAL_AVR.h"
 using namespace AP_HAL_AVR;
 
-void HAL_AVR::init(int argc, const char *argv[]) const {
+void HAL_AVR::init(int argc, char * const argv[]) const {
 
     scheduler->init((void*)&isr_registry);
    

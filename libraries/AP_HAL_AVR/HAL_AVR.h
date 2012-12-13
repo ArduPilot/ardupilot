@@ -31,7 +31,7 @@ public:
                         _console, _gpio, _rcin,
                         _rcout, _scheduler) {}
 
-    void init(int argc, const char *argv[]) const;
+    void init(int argc, char * const argv[]) const;
     AP_HAL_AVR::ISRRegistry isr_registry;
 };
 #endif // __AP_HAL_AVR_HAL_AVR_H__

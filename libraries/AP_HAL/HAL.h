@@ -42,7 +42,7 @@ public:
         scheduler(_scheduler)
     {}
 
-    virtual void init(int argc, const char *argv[]) const = 0;
+    virtual void init(int argc, char * const argv[]) const = 0;
 
     AP_HAL::UARTDriver* uartA;
     AP_HAL::UARTDriver* uartB;

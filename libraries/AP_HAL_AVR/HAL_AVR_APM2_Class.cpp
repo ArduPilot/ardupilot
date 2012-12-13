@@ -49,7 +49,7 @@ HAL_AVR_APM2::HAL_AVR_APM2() :
         &avrScheduler )
 {}
 
-void HAL_AVR_APM2::init(int argc, const char *argv[]) const {
+void HAL_AVR_APM2::init(int argc, char * const argv[]) const {
 
     scheduler->init((void*)&isrRegistry);
    
