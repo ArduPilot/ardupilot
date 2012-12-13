@@ -684,7 +684,7 @@ const AP_Param::Info var_info[] PROGMEM = {
     GOBJECT(camera_mount2,           "MNT2_",       AP_Mount),
 #endif
 
-#ifdef DESKTOP_BUILD
+#if CONFIG_HAL_BOARD == HAL_BOARD_AVR_SITL
     // @Group: SIM_
     // @Path: ../libraries/SITL/SITL.cpp
     GOBJECT(sitl, "SIM_", SITL),

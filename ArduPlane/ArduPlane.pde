@@ -151,6 +151,7 @@ static AP_ADC_ADS7844 adc;
  # if CONFIG_HAL_BOARD == HAL_BOARD_AVR_SITL
 AP_Baro_BMP085_HIL barometer;
 AP_Compass_HIL compass;
+AP_InertialSensor_Stub ins;
  #else
 
   #if CONFIG_BARO == AP_BARO_BMP085
@@ -190,7 +191,7 @@ AP_GPS_None     g_gps_driver(NULL);
 
  # if CONFIG_INS_TYPE == CONFIG_INS_MPU6000
 AP_InertialSensor_MPU6000 ins;
- # else
+ # elif CONFIG_HAL_BOARD != HAL_BOARD_AVR_SITL
 AP_InertialSensor_Oilpan ins( &adc );
  #endif // CONFIG_INS_TYPE
 
@@ -643,11 +644,14 @@ AP_Mount camera_mount2(&current_loc, g_gps, &ahrs, 1);
 // Top-level logic
 ////////////////////////////////////////////////////////////////////////////////
 
+// setup the var_info table
+AP_Param param_loader(var_info, WP_START_BYTE);
+
 void setup() {
     cliSerial = hal.console;
 
-    // setup the default values of variables listed in var_info[]
-    AP_Param::setup_sketch_defaults(var_info, WP_START_BYTE);
+    // load the default values of variables listed in var_info[]
+    AP_Param::setup_sketch_defaults();
 
     rssi_analog_source = hal.analogin->channel(ANALOG_INPUT_NONE, 0.25);
 
