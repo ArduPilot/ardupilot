@@ -210,20 +210,9 @@ bool AP_Param::check_var_info(void)
 
 
 // setup the _var_info[] table
-bool AP_Param::setup(const struct AP_Param::Info *info, uint16_t eeprom_size)
+bool AP_Param::setup(void)
 {
     struct EEPROM_header hdr;
-    uint8_t i;
-
-    _eeprom_size = eeprom_size;
-    _var_info = info;
-
-    for (i=0; PGM_UINT8(&info[i].type) != AP_PARAM_NONE; i++) ;
-    _num_vars = i;
-
-    if (!check_var_info()) {
-        return false;
-    }
 
     serialDebug("setup %u vars", (unsigned)_num_vars);
 
@@ -600,6 +589,20 @@ AP_Param::find_by_index(uint16_t idx, enum ap_var_type *ptype)
     return ap;    
 }
 
+// Find a object by name.
+//
+AP_Param *
+AP_Param::find_object(const char *name)
+{
+    for (uint8_t i=0; i<_num_vars; i++) {
+        if (strcasecmp_P(name, _var_info[i].name) == 0) {
+            return (AP_Param *)PGM_POINTER(&_var_info[i].ptr);
+        }
+    }
+    return NULL;
+}
+
+
 // Save the variable to EEPROM, if supported
 //
 bool AP_Param::save(void)
@@ -773,9 +776,9 @@ void AP_Param::setup_object_defaults(const void *object_pointer, const struct Gr
 
 // load default values for all scalars in a sketch. This does not
 // recurse into sub-objects
-void AP_Param::setup_sketch_defaults(const struct Info *info, uint16_t eeprom_size)
+void AP_Param::setup_sketch_defaults(void)
 {
-    setup(info, eeprom_size);
+    setup();
     for (uint8_t i=0; i<_num_vars; i++) {
         uint8_t type = PGM_UINT8(&_var_info[i].type);
         if (type <= AP_PARAM_FLOAT) {

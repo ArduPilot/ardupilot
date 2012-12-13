@@ -86,7 +86,19 @@ public:
     // called once at startup to setup the _var_info[] table. This
     // will also check the EEPROM header and re-initialise it if the
     // wrong version is found
-    static bool        setup(const struct Info *info, uint16_t eeprom_size);
+    static bool setup();
+
+    // constructor with var_info
+    AP_Param(const struct Info *info, uint16_t eeprom_size) {
+        _eeprom_size = eeprom_size;
+        _var_info = info;
+
+        uint16_t i;
+        for (i=0; pgm_read_byte(&info[i].type) != AP_PARAM_NONE; i++) ;
+        _num_vars = i;
+        
+        check_var_info();
+    }
 
     // empty constructor
     AP_Param() {}
@@ -133,6 +145,14 @@ public:
     ///
     static AP_Param * find_by_index(uint16_t idx, enum ap_var_type *ptype);
 
+    /// Find a object in the top level var_info table
+    ///
+    /// If the variable has no name, it cannot be found by this interface.
+    ///
+    /// @param  name            The full name of the variable to be found.
+    ///
+    static AP_Param * find_object(const char *name);
+
     /// Save the current value of the variable to EEPROM.
     ///
     /// @return                True if the variable was saved successfully.
@@ -163,7 +183,7 @@ public:
 
     // load default values for all scalars in the main sketch. This
     // does not recurse into the sub-objects    
-    static void         setup_sketch_defaults(const struct Info *info, uint16_t eeprom_size);
+    static void         setup_sketch_defaults(void);
 
     /// Erase all variables in EEPROM.
     ///
