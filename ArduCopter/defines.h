@@ -411,6 +411,16 @@ enum gcs_severity {
 #define CONFIG_IMU_OILPAN 1
 #define CONFIG_IMU_MPU6000 2
 
+// MPU6K Filter Rates
+# define MPU6K_DEFAULT_FILTER   0
+# define MPU6K_5HZ_FILTER       5
+# define MPU6K_10HZ_FILTER      10
+# define MPU6K_20HZ_FILTER      20
+# define MPU6K_42HZ_FILTER      42
+# define MPU6K_98HZ_FILTER      98
+
+
+
 // APM Hardware selection
 #define APM_HARDWARE_APM1 1
 #define APM_HARDWARE_APM2 2
