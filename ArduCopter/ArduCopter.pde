@@ -1003,6 +1003,11 @@ void loop()
                 compass.accumulate();
             }
         }
+
+        // process communications with the GCS
+        if (timer - fast_loopTimer < 6000) {
+            gcs_check();
+        }
     }
 
 }
@@ -1010,10 +1015,6 @@ void loop()
 // Main loop - 100hz
 static void fast_loop()
 {
-    // try to send any deferred messages if the serial port now has
-    // some space available
-    gcs_send_message(MSG_RETRY_DEFERRED);
-
     // run low level rate controllers that only require IMU data
     run_rate_controllers();
 
@@ -1232,10 +1233,6 @@ static void fifty_hz_loop()
     if (g.log_bitmask & MASK_LOG_RAW && motors.armed())
         Log_Write_Raw();
 #endif
-
-    // kick the GCS to process uplink data
-    gcs_update();
-    gcs_data_stream_send();
 }
 
 

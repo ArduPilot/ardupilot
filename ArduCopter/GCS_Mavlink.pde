@@ -18,6 +18,36 @@ static bool mavlink_active;
 // prototype this for use inside the GCS class
 static void gcs_send_text_fmt(const prog_char_t *fmt, ...);
 
+// gcs_check - throttles communication with ground station.
+// should be called regularly
+// returns true if it has sent a message to the ground station
+static bool gcs_check()
+{
+    static uint32_t last_1hz, last_50hz, last_5s;
+    bool sent_message = false;
+
+    uint32_t tnow = millis();
+    if (tnow - last_1hz > 1000) {
+        last_1hz = tnow;
+        gcs_send_message(MSG_HEARTBEAT);
+        gcs_send_message(MSG_EXTENDED_STATUS1);
+        sent_message = true;
+    }
+    if (tnow - last_50hz > 20 && !sent_message) {
+        last_50hz = tnow;
+        gcs_update();
+        gcs_data_stream_send();
+        sent_message = true;
+    }
+    if (tnow - last_5s > 5000 && !sent_message) {
+        last_5s = tnow;
+        gcs_send_text_P(SEVERITY_LOW, PSTR("Initialising APM..."));
+        sent_message = true;
+    }
+
+    return sent_message;
+}
+
 /*
  *  !!NOTE!!
  *
