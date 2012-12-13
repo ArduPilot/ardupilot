@@ -10,16 +10,16 @@ static void ReadSCP1000(void) {
 static void init_sonar(void)
 {
   #if CONFIG_SONAR_SOURCE == SONAR_SOURCE_ADC
-    sonar.calculate_scaler(g.sonar_type, 3.3);
+    sonar->calculate_scaler(g.sonar_type, 3.3);
   #else
-    sonar.calculate_scaler(g.sonar_type, 5.0);
+    sonar->calculate_scaler(g.sonar_type, 5.0);
   #endif
 }
  #endif
 
 static void init_barometer(void)
 {
-    barometer.calibrate(mavlink_delay);
+    barometer.calibrate();
     ahrs.set_barometer(&barometer);
     gcs_send_text_P(SEVERITY_LOW, PSTR("barometer calibration complete"));
 }
@@ -51,12 +51,12 @@ static void init_compass()
 static void init_optflow()
 {
 #if OPTFLOW == ENABLED
-    if( optflow.init(false, &timer_scheduler, &spi_semaphore, &spi3_semaphore) == false ) {
+    if( optflow.init() == false ) {
         g.optflow_enabled = false;
         cliSerial->print_P(PSTR("\nFailed to Init OptFlow "));
     }else{
         // suspend timer while we set-up SPI communication
-        timer_scheduler.suspend_timer();
+        hal.scheduler->suspend_timer_procs();
 
         optflow.set_orientation(OPTFLOW_ORIENTATION);   // set optical flow sensor's orientation on aircraft
         optflow.set_frame_rate(2000);                   // set minimum update rate (which should lead to maximum low light performance
@@ -64,7 +64,7 @@ static void init_optflow()
         optflow.set_field_of_view(OPTFLOW_FOV);         // set optical flow sensor's field of view
 
         // resume timer
-        timer_scheduler.resume_timer();
+        hal.scheduler->resume_timer_procs();
     }
 #endif      // OPTFLOW == ENABLED
 }
