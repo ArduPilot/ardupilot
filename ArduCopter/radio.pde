@@ -3,7 +3,7 @@
 // Function that will read the radio data, limit servos and trigger a failsafe
 // ----------------------------------------------------------------------------
 
-extern RC_Channel* rc_ch[NUM_CHANNELS];
+extern RC_Channel* rc_ch[8];
 
 static void default_dead_zones()
 {
@@ -60,8 +60,6 @@ static void init_rc_in()
 
 static void init_rc_out()
 {
-    APM_RC.Init( &isr_registry );               // APM Radio initialization
-
     motors.set_update_rate(g.rc_speed);
     motors.set_frame_orientation(g.frame_orientation);
     motors.Init();                                              // motor initialisation
@@ -128,26 +126,32 @@ void output_min()
 #define RADIO_FS_TIMEOUT_MS 2000       // 2 seconds
 static void read_radio()
 {
-    if (APM_RC.GetState() == 1) {
+    static uint32_t last_update = 0;
+    if (hal.rcin->valid() > 0) {
+        last_update = millis();
         ap_system.new_radio_frame = true;
-        g.rc_1.set_pwm(APM_RC.InputCh(CH_1));
-        g.rc_2.set_pwm(APM_RC.InputCh(CH_2));
+        uint16_t periods[8];
+        hal.rcin->read(periods,8);
+        g.rc_1.set_pwm(periods[0]);
+        g.rc_2.set_pwm(periods[1]);
 
-        set_throttle_and_failsafe(APM_RC.InputCh(CH_3));
+        set_throttle_and_failsafe(periods[2]);
 
-        g.rc_4.set_pwm(APM_RC.InputCh(CH_4));
-        g.rc_5.set_pwm(APM_RC.InputCh(CH_5));
-        g.rc_6.set_pwm(APM_RC.InputCh(CH_6));
-        g.rc_7.set_pwm(APM_RC.InputCh(CH_7));
-        g.rc_8.set_pwm(APM_RC.InputCh(CH_8));
+        g.rc_4.set_pwm(periods[3]);
+        g.rc_5.set_pwm(periods[4]);
+        g.rc_6.set_pwm(periods[5]);
+        g.rc_7.set_pwm(periods[6]);
+        g.rc_8.set_pwm(periods[7]);
 
 #if FRAME_CONFIG != HELI_FRAME
         // limit our input to 800 so we can still pitch and roll
         g.rc_3.control_in = min(g.rc_3.control_in, MAXIMUM_THROTTLE);
 #endif
     }else{
+        uint32_t elapsed = millis() - last_update;
         // turn on throttle failsafe if no update from ppm encoder for 2 seconds
-        if ((millis() - APM_RC.get_last_update() >= RADIO_FS_TIMEOUT_MS) && g.failsafe_throttle && motors.armed() && !ap.failsafe) {
+        if ((elapsed >= RADIO_FS_TIMEOUT_MS)
+                && g.failsafe_throttle && motors.armed() && !ap.failsafe) {
             set_failsafe(true);
         }
     }
