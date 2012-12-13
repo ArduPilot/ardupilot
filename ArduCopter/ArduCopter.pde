@@ -2263,3 +2263,5 @@ static void tuning(){
     }
 }
 
+AP_HAL_MAIN();
+
