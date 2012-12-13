@@ -156,7 +156,7 @@ dump_log(uint8_t argc, const Menu::arg *argv)
 static void do_erase_logs(void)
 {
 	gcs_send_text_P(SEVERITY_LOW, PSTR("Erasing logs\n"));
-    DataFlash.EraseAll(mavlink_delay);
+    DataFlash.EraseAll();
 	gcs_send_text_P(SEVERITY_LOW, PSTR("Log erase complete\n"));
 }
 
@@ -228,7 +228,7 @@ process_logs(uint8_t argc, const Menu::arg *argv)
 
 // print_latlon - prints an latitude or longitude value held in an int32_t
 // probably this should be moved to AP_Common
-void print_latlon(AL_HAL::BetterStream *s, int32_t lat_or_lon)
+void print_latlon(AP_HAL::BetterStream *s, int32_t lat_or_lon)
 {
     int32_t dec_portion, frac_portion;
     int32_t abs_lat_or_lon = labs(lat_or_lon);
@@ -283,9 +283,9 @@ static void Log_Read_GPS()
     cliSerial->printf_P(PSTR("GPS, %ld, %d, "),
                     (long)temp1,                          // 1 time
                     (int)temp2);                          // 2 sats
-    print_latlon(&Serial, temp3);
+    print_latlon(cliSerial, temp3);
     cliSerial->print_P(PSTR(", "));
-    print_latlon(&Serial, temp4);
+    print_latlon(cliSerial, temp4);
     cliSerial->printf_P(PSTR(", %4.4f, %4.4f, %d, %ld\n"),
                     temp5,                                // 5 gps alt
                     temp6,                                // 6 sensor alt

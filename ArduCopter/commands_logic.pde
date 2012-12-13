@@ -782,8 +782,8 @@ static void do_set_servo()
 
     // send output to channel
     if (channel_num != 0xff) {
-        APM_RC.enable_out(channel_num);
-        APM_RC.OutputCh(channel_num, command_cond_queue.alt);
+        hal.rcout->enable_ch(channel_num);
+        hal.rcout->write(channel_num, command_cond_queue.alt);
     }
 }
 

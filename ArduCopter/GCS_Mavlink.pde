@@ -266,7 +266,7 @@ static void NOINLINE send_hwstatus(mavlink_channel_t chan)
     mavlink_msg_hwstatus_send(
         chan,
         board_voltage(),
-        I2c.lockup_count());
+        hal.i2c->lockup_count());
 }
 #endif
 
@@ -1090,14 +1090,14 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
             if (packet.param1 == 1 ||
                 packet.param2 == 1 ||
                 packet.param3 == 1) {
-                ins.init_accel(mavlink_delay, flash_leds);
+                ins.init_accel(flash_leds);
             }
             if (packet.param4 == 1) {
                 trim_radio();
             }
             if (packet.param5 == 1) {
                 // this blocks
-                ins.calibrate_accel(mavlink_delay, flash_leds, gcs_send_text_fmt, setup_wait_key);
+                ins.calibrate_accel(flash_leds, hal.console);
             }
             result = MAV_RESULT_ACCEPTED;
             break;
@@ -1750,7 +1750,7 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
         v[5] = packet.chan6_raw;
         v[6] = packet.chan7_raw;
         v[7] = packet.chan8_raw;
-        APM_RC.setHIL(v);
+        hal.rcin->set_overrides(v, 8);
         break;
     }
 
@@ -2048,42 +2048,32 @@ GCS_MAVLINK::queued_waypoint_send()
  *  MAVLink to process packets while waiting for the initialisation to
  *  complete
  */
-static void mavlink_delay(unsigned long t)
+static void mavlink_delay_cb()
 {
-    uint32_t tstart;
     static uint32_t last_1hz, last_50hz, last_5s;
 
-    if (in_mavlink_delay) {
-        // this should never happen, but let's not tempt fate by
-        // letting the stack grow too much
-        delay(t);
-        return;
-    }
+    if (!gcs0.initialised) return;
 
     in_mavlink_delay = true;
 
-    tstart = millis();
-    do {
-        uint32_t tnow = millis();
-        if (tnow - last_1hz > 1000) {
-            last_1hz = tnow;
-            gcs_send_message(MSG_HEARTBEAT);
-            gcs_send_message(MSG_EXTENDED_STATUS1);
-        }
-        if (tnow - last_50hz > 20) {
-            last_50hz = tnow;
-            gcs_update();
-            gcs_data_stream_send();
-        }
-        if (tnow - last_5s > 5000) {
-            last_5s = tnow;
-            gcs_send_text_P(SEVERITY_LOW, PSTR("Initialising APM..."));
-        }
-        delay(1);
+    uint32_t tnow = millis();
+    if (tnow - last_1hz > 1000) {
+        last_1hz = tnow;
+        gcs_send_message(MSG_HEARTBEAT);
+        gcs_send_message(MSG_EXTENDED_STATUS1);
+    }
+    if (tnow - last_50hz > 20) {
+        last_50hz = tnow;
+        gcs_update();
+        gcs_data_stream_send();
+    }
+    if (tnow - last_5s > 5000) {
+        last_5s = tnow;
+        gcs_send_text_P(SEVERITY_LOW, PSTR("Initialising APM..."));
+    }
 #if USB_MUX_PIN > 0
-        check_usb_mux();
+    check_usb_mux();
 #endif
-    } while (millis() - tstart < t);
 
     in_mavlink_delay = false;
 }

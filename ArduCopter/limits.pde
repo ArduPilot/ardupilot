@@ -43,10 +43,12 @@ static void limits_loop() {
     lim_state = limits.state();
 
     // Use limits channel to determine LIMITS_ENABLED or LIMITS_DISABLED state
-    if (lim_state != LIMITS_DISABLED  && limits.channel() !=0 && APM_RC.InputCh(limits.channel()-1) < LIMITS_ENABLE_PWM) {
+    if (lim_state != LIMITS_DISABLED  && limits.channel() !=0 
+            && hal.rcin->read(limits.channel()-1) < LIMITS_ENABLE_PWM) {
         limits.set_state(LIMITS_DISABLED);
     }
-    else if (lim_state == LIMITS_DISABLED && limits.channel() !=0 && APM_RC.InputCh(limits.channel()-1) >= LIMITS_ENABLE_PWM) {
+    else if (lim_state == LIMITS_DISABLED && limits.channel() !=0
+            && hal.rcin->read(limits.channel()-1) >= LIMITS_ENABLE_PWM) {
         limits.set_state(LIMITS_ENABLED);
     }
 

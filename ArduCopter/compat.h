@@ -11,5 +11,8 @@
 /* Forward declarations to avoid broken auto-prototyper (coughs on '::'?) */
 static void run_cli(AP_HAL::UARTDriver *port);
 
+// XXX AP_HAL tofix - what is bitRead? temporarily disable.
+#define bitRead(a,b) false
+
 #endif // __COMPAT_H__
 

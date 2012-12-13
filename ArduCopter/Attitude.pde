@@ -1007,7 +1007,7 @@ get_throttle_rate_stabilized(int16_t target_rate)
     static float alt_rate = 0;      // the desired climb rate in cm/s.
     static uint32_t last_call_ms = 0;
 
-    float altitude_error;
+    float _altitude_error;
     int16_t desired_rate;
     int16_t alt_error_max;
     uint32_t now = millis();
@@ -1023,10 +1023,10 @@ get_throttle_rate_stabilized(int16_t target_rate)
     alt_desired += alt_rate * 0.02;
 
     alt_error_max = constrain(600-abs(target_rate),100,600);
-    altitude_error = constrain(alt_desired - current_loc.alt, -alt_error_max, alt_error_max);
-    alt_desired = current_loc.alt + altitude_error;
+    _altitude_error = constrain(alt_desired - current_loc.alt, -alt_error_max, alt_error_max);
+    alt_desired = current_loc.alt + _altitude_error;
 
-    desired_rate = g.pi_alt_hold.get_p(altitude_error);
+    desired_rate = g.pi_alt_hold.get_p(_altitude_error);
     desired_rate = constrain(desired_rate, -200, 200) + target_rate;
     desired_rate = constrain(desired_rate, -VELOCITY_MAX_Z, VELOCITY_MAX_Z);  // TO-DO: replace constrains with ALTHOLD_MIN_CLIMB_RATE and ALTHOLD_MAX_CLIMB_RATE?
 
@@ -1040,11 +1040,11 @@ get_throttle_rate_stabilized(int16_t target_rate)
 static void
 get_throttle_althold(int32_t target_alt, int16_t max_climb_rate)
 {
-    int32_t altitude_error;
+    int32_t _altitude_error;
     int16_t desired_rate;
 
-    altitude_error = target_alt - current_loc.alt;
-    desired_rate = g.pi_alt_hold.get_p(altitude_error);
+    _altitude_error = target_alt - current_loc.alt;
+    desired_rate = g.pi_alt_hold.get_p(_altitude_error);
     desired_rate = constrain(desired_rate, ALTHOLD_MIN_CLIMB_RATE, max_climb_rate);
 
     // call rate based throttle controller which will update accel based throttle controller targets

@@ -54,7 +54,9 @@
 // Header includes
 ////////////////////////////////////////////////////////////////////////////////
 
-// Libraries
+#include <math.h>
+#include <stdio.h>
+#include <stdarg.h>
 
 // Common dependencies
 #include <AP_Common.h>
@@ -65,6 +67,7 @@
 #include <AP_HAL.h>
 #include <AP_HAL_AVR.h>
 #include <AP_HAL_AVR_SITL.h>
+
 // Application dependencies
 #include <GCS_MAVLink.h>        // MAVLink GCS definitions
 #include <AP_GPS.h>             // ArduPilot GPS library
@@ -1175,7 +1178,7 @@ static void fifty_hz_loop()
     // ----------
 # if CONFIG_SONAR == ENABLED
     if(g.sonar_enabled) {
-        sonar_alt = sonar.read();
+        sonar_alt = sonar->read();
     }
 #endif
 

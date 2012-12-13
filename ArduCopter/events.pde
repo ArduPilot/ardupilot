@@ -111,9 +111,9 @@ static void update_events()     // Used for MAV_CMD_DO_REPEAT_SERVO and MAV_CMD_
 
         if (event_id >= CH_5 && event_id <= CH_8) {
             if(event_repeat%2) {
-                APM_RC.OutputCh(event_id, event_value);                 // send to Servos
+                hal.rcout->write(event_id, event_value);                 // send to Servos
             } else {
-                APM_RC.OutputCh(event_id, event_undo_value);
+                hal.rcout->write(event_id, event_undo_value);
             }
         }
 
