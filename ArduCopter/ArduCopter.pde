@@ -153,8 +153,10 @@ static void update_events(void);
 ////////////////////////////////////////////////////////////////////////////////
 #if CONFIG_HAL_BOARD == HAL_BOARD_APM2
 DataFlash_APM2 DataFlash;
-#else
+#elif CONFIG_HAL_BOARD == HAL_BOARD_APM1
 DataFlash_APM1 DataFlash;
+#elif CONFIG_HAL_BOARD == HAL_BOARD_AVR_SITL
+DataFlash_SITL DataFlash;
 #endif
 
 
@@ -903,6 +905,10 @@ void get_throttle_althold(int32_t target_alt, int16_t max_climb_rate = ALTHOLD_M
 ////////////////////////////////////////////////////////////////////////////////
 
 void setup() {
+    cliSerial = hal.console;
+
+    // Load the default values of variables listed in var_info[]s
+    AP_Param::setup_sketch_defaults();
 
 #if CONFIG_SONAR == ENABLED
  #if CONFIG_SONAR_SOURCE == SONAR_SOURCE_ADC
