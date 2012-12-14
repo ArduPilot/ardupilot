@@ -42,10 +42,6 @@
  *  CH7_CAMERA_TRIGGER
  */
 
-// Inertia based contollers
-//#define INERTIAL_NAV_XY ENABLED
-#define INERTIAL_NAV_Z ENABLED
-
 //#define MOTORS_JD880
 //#define MOTORS_JD850
 
