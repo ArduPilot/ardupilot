@@ -868,7 +868,7 @@ static int16_t gps_fix_count;
 // Time in microseconds of main control loop
 static uint32_t fast_loopTimer;
 // Time in microseconds of 50hz control loop
-static uint32_t fiftyhz_loopTimer = 0;
+static uint32_t fiftyhz_loopTimer;
 // Counters for branching from 10 hz control loop
 static byte medium_loopCounter;
 // Counters for branching from 3 1/3hz control loop
@@ -894,7 +894,7 @@ static uint8_t save_trim_counter;
 // Reference to the AP relay object - APM1 only
 AP_Relay relay;
 
-// a pin for reading the receiver RSSI voltage. The scaling by 0.25 
+// a pin for reading the receiver RSSI voltage. The scaling by 0.25
 // is to take the 0 to 1024 range down to an 8 bit range for MAVLink
 AP_AnalogSource_Arduino RSSI_pin(-1, 0.25);
 
@@ -961,8 +961,8 @@ void loop()
         // check loop time
         perf_info_check_loop_time(timer - fast_loopTimer);
 
-        G_Dt                            = (float)(timer - fast_loopTimer) / 1000000.f;                  // used by PI Loops
-        fast_loopTimer          = timer;
+        G_Dt            = (float)(timer - fast_loopTimer) / 1000000.f;                  // used by PI Loops
+        fast_loopTimer  = timer;
 
         // for mainloop failure monitoring
         mainLoop_count++;
@@ -981,7 +981,7 @@ void loop()
             #endif
 
             // store the micros for the 50 hz timer
-            fiftyhz_loopTimer               = timer;
+            fiftyhz_loopTimer = timer;
 
             // check for new GPS messages
             // --------------------------
@@ -1379,7 +1379,7 @@ static void super_slow_loop()
     // agmatthews - USERHOOKS
 #ifdef USERHOOK_SUPERSLOWLOOP
     USERHOOK_SUPERSLOWLOOP
-#endif 
+#endif
 }
 
 // called at 100hz but data from sensor only arrives at 20 Hz
@@ -1642,7 +1642,7 @@ void update_roll_pitch_mode(void)
     }
 
     switch(roll_pitch_mode) {
-    case ROLL_PITCH_ACRO:    
+    case ROLL_PITCH_ACRO:
 
 #if FRAME_CONFIG == HELI_FRAME
 		if(g.axis_enabled) {
@@ -1720,7 +1720,7 @@ void update_roll_pitch_mode(void)
         roll_pitch_toy();
         break;
     }
-	
+
 	#if FRAME_CONFIG != HELI_FRAME
     if(g.rc_3.control_in == 0 && control_mode <= ACRO) {
         reset_rate_I();
@@ -1870,7 +1870,7 @@ void update_throttle_mode(void)
 			#else
 			update_throttle_cruise(g.rc_3.control_in);
 			#endif  //HELI_FRAME
-			
+
 
             // check if we've taken off yet
             if (!ap.takeoff_complete && motors.armed()) {
@@ -1998,19 +1998,19 @@ static void update_trig(void){
     yawvector.normalize();
 
     cos_pitch_x     = safe_sqrt(1 - (temp.c.x * temp.c.x));     // level = 1
-    cos_roll_x          = temp.c.z / cos_pitch_x;                       // level = 1
+    cos_roll_x      = temp.c.z / cos_pitch_x;                       // level = 1
 
-    cos_pitch_x = constrain(cos_pitch_x, 0, 1.0);
+    cos_pitch_x     = constrain(cos_pitch_x, 0, 1.0);
     // this relies on constrain() of infinity doing the right thing,
     // which it does do in avr-libc
-    cos_roll_x  = constrain(cos_roll_x, -1.0, 1.0);
+    cos_roll_x      = constrain(cos_roll_x, -1.0, 1.0);
 
-    sin_yaw_y               = yawvector.x;                                              // 1y = north
-    cos_yaw_x               = yawvector.y;                                              // 0x = north
+    sin_yaw_y       = yawvector.x;                                              // 1y = north
+    cos_yaw_x       = yawvector.y;                                              // 0x = north
 
     // added to convert earth frame to body frame for rate controllers
-    sin_pitch = -temp.c.x;
-    sin_roll = temp.c.y / cos_pitch_x;
+    sin_pitch       = -temp.c.x;
+    sin_roll        = temp.c.y / cos_pitch_x;
 
     //flat:
     // 0 ° = cos_yaw:  0.00, sin_yaw:  1.00,

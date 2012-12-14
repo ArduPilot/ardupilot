@@ -13,7 +13,7 @@ static void update_navigation()
 
         // used to calculate speed in X and Y, iterms
         // ------------------------------------------
-        dTnav               = (float)(millis() - nav_last_gps_update)/ 1000.0;
+        dTnav = (float)(millis() - nav_last_gps_update)/ 1000.0;
         nav_last_gps_update = millis();
 
         // prevent runup from bad GPS
@@ -292,7 +292,7 @@ static void update_nav_wp()
             loiter_sum += loiter_delta;
 
             circle_angle += (circle_rate * dTnav);
-            //1° = 0.0174532925 radians
+            //1deg = 0.0174532925 radians
 
             // wrap
             if (circle_angle > 6.28318531)
@@ -331,8 +331,8 @@ static void update_nav_wp()
             nav_lon = g.pid_loiter_rate_lon.get_integrator();
             nav_lat = g.pid_loiter_rate_lon.get_integrator();
 
-            nav_lon                 = constrain(nav_lon, -2000, 2000);                              // 20°
-            nav_lat                 = constrain(nav_lat, -2000, 2000);                              // 20°
+            nav_lon = constrain(nav_lon, -2000, 2000); // 20m
+            nav_lat = constrain(nav_lat, -2000, 2000); // 20m
             break;
     }
 }

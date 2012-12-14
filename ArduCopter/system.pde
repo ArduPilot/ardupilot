@@ -364,7 +364,7 @@ static void startup_ground(void)
 
     // Warm up and read Gyro offsets
     // -----------------------------
-    ins.init(AP_InertialSensor::COLD_START, 
+    ins.init(AP_InertialSensor::COLD_START,
              ins_sample_rate,
              mavlink_delay, flash_leds, &timer_scheduler);
  #if CLI_ENABLED == ENABLED
@@ -407,8 +407,8 @@ static void set_mode(byte mode)
         mode = STABILIZE;
     }
 
-    control_mode            = mode;
-    control_mode            = constrain(control_mode, 0, NUM_MODES - 1);
+    control_mode 	= mode;
+    control_mode    = constrain(control_mode, 0, NUM_MODES - 1);
 
     // used to stop fly_aways
     // set to false if we have low throttle

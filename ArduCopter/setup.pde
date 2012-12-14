@@ -3,27 +3,27 @@
 #if CLI_ENABLED == ENABLED
 
 // Functions called from the setup menu
-static int8_t   setup_radio                             (uint8_t argc, const Menu::arg *argv);
-static int8_t   setup_motors                    (uint8_t argc, const Menu::arg *argv);
-static int8_t   setup_accel                             (uint8_t argc, const Menu::arg *argv);
-static int8_t   setup_accel_scale               (uint8_t argc, const Menu::arg *argv);
-static int8_t   setup_frame                             (uint8_t argc, const Menu::arg *argv);
-static int8_t   setup_factory                   (uint8_t argc, const Menu::arg *argv);
-static int8_t   setup_erase                             (uint8_t argc, const Menu::arg *argv);
-static int8_t   setup_flightmodes               (uint8_t argc, const Menu::arg *argv);
-static int8_t   setup_batt_monitor              (uint8_t argc, const Menu::arg *argv);
-static int8_t   setup_sonar                             (uint8_t argc, const Menu::arg *argv);
-static int8_t   setup_compass                   (uint8_t argc, const Menu::arg *argv);
-static int8_t   setup_tune                              (uint8_t argc, const Menu::arg *argv);
-static int8_t   setup_range                             (uint8_t argc, const Menu::arg *argv);
+static int8_t   setup_radio             (uint8_t argc, const Menu::arg *argv);
+static int8_t   setup_motors            (uint8_t argc, const Menu::arg *argv);
+static int8_t   setup_accel             (uint8_t argc, const Menu::arg *argv);
+static int8_t   setup_accel_scale       (uint8_t argc, const Menu::arg *argv);
+static int8_t   setup_frame             (uint8_t argc, const Menu::arg *argv);
+static int8_t   setup_factory           (uint8_t argc, const Menu::arg *argv);
+static int8_t   setup_erase             (uint8_t argc, const Menu::arg *argv);
+static int8_t   setup_flightmodes       (uint8_t argc, const Menu::arg *argv);
+static int8_t   setup_batt_monitor      (uint8_t argc, const Menu::arg *argv);
+static int8_t   setup_sonar             (uint8_t argc, const Menu::arg *argv);
+static int8_t   setup_compass           (uint8_t argc, const Menu::arg *argv);
+static int8_t   setup_tune              (uint8_t argc, const Menu::arg *argv);
+static int8_t   setup_range             (uint8_t argc, const Menu::arg *argv);
 //static int8_t	setup_mag_offset		(uint8_t argc, const Menu::arg *argv);
-static int8_t   setup_declination               (uint8_t argc, const Menu::arg *argv);
-static int8_t   setup_optflow                   (uint8_t argc, const Menu::arg *argv);
+static int8_t   setup_declination       (uint8_t argc, const Menu::arg *argv);
+static int8_t   setup_optflow           (uint8_t argc, const Menu::arg *argv);
 
 
  #if FRAME_CONFIG == HELI_FRAME
-static int8_t   setup_heli                              (uint8_t argc, const Menu::arg *argv);
-static int8_t   setup_gyro                              (uint8_t argc, const Menu::arg *argv);
+static int8_t   setup_heli              (uint8_t argc, const Menu::arg *argv);
+static int8_t   setup_gyro              (uint8_t argc, const Menu::arg *argv);
  #endif
 
 // Command/function table for the setup menu

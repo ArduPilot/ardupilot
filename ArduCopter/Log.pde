@@ -5,9 +5,9 @@
 // Code to Write and Read packets from DataFlash log memory
 // Code to interact with the user to dump or erase logs
 
- #define HEAD_BYTE1      0xA3   // Decimal 163
- #define HEAD_BYTE2      0x95   // Decimal 149
- #define END_BYTE        0xBA   // Decimal 186
+#define HEAD_BYTE1  0xA3    // Decimal 163
+#define HEAD_BYTE2  0x95    // Decimal 149
+#define END_BYTE    0xBA    // Decimal 186
 
 
 // These are function definitions so the Menu can be constructed before the functions
