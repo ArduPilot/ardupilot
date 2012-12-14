@@ -20,8 +20,8 @@
 #include <AP_HAL.h>
 
 #define MENU_COMMANDLINE_MAX    32      ///< maximum input line length
-#define MENU_ARGS_MAX                   4       ///< maximum number of arguments
-#define MENU_COMMAND_MAX                14      ///< maximum size of a command name
+#define MENU_ARGS_MAX           3       ///< maximum number of arguments
+#define MENU_COMMAND_MAX        14      ///< maximum size of a command name
 
 /// Class defining and handling one menu tree
 class Menu {
