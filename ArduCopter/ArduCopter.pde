@@ -892,11 +892,14 @@ void get_throttle_althold(int32_t target_alt, int16_t max_climb_rate = ALTHOLD_M
 // Top-level logic
 ////////////////////////////////////////////////////////////////////////////////
 
+// setup the var_info table
+AP_Param param_loader(var_info, WP_START_BYTE);
+
 void setup() {
     cliSerial = hal.console;
 
     // Load the default values of variables listed in var_info[]s
-    //AP_Param::setup_sketch_defaults();
+    AP_Param::setup_sketch_defaults();
 
 #if CONFIG_SONAR == ENABLED
  #if CONFIG_SONAR_SOURCE == SONAR_SOURCE_ADC
