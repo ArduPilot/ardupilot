@@ -1,75 +1,83 @@
 include ../libraries/AP_Common/Arduino.mk
 
-nologging:
-	make -f Makefile EXTRAFLAGS="-DLOGGING_ENABLED=DISABLED"
+nologging: EXTRAFLAGS += "DLOGGING_ENABLED=DISABLED "
+nologging: all
 
-nogps:
-	make -f Makefile EXTRAFLAGS="-DGPS_PROTOCOL=GPS_PROTOCOL_NONE -DLOGGING_ENABLED=DISABLED"
+nogps: EXTRAFLAGS += "-DGPS_PROTOCOL=GPS_PROTOCOL_NONE "
+nogps: all
 
-hil:
-	make -f Makefile EXTRAFLAGS="-DHIL_MODE=HIL_MODE_ATTITUDE"
+hil: EXTRAFLAGS += "-DHIL_MODE=HIL_MODE_ATTITUDE "
+hil: all
 
-hil-apm2:
-	make -f Makefile HAL_BOARD=HAL_BOARD_AVR_SITL EXTRAFLAGS="-DHIL_MODE=HIL_MODE_ATTITUDE"
+hil-apm2: HAL_BOARD = "HAL_BOARD_APM2"
+hil-apm2: hil
 
-hil-apm2-nologging:
-	make -f Makefile HAL_BOARD=HAL_BOARD_APM2 EXTRAFLAGS="-DHIL_MODE=HIL_MODE_ATTITUDE -DLOGGING_ENABLED=DISABLED"
+hil-apm1: HAL_BOARD = "HAL_BOARD_APM1"
+hil-apm1: hil
 
-hilsensors:
-	make -f Makefile EXTRAFLAGS="-DHIL_MODE=HIL_MODE_SENSORS"
+hil-apm2-nologging: EXTRAFLAGS += "DLOGGING_ENABLED=DISABLED "
+hil-apm2-nologging: hil-apm2
 
-hilsensors-apm2:
-	make -f Makefile HAL_BOARD=HAL_BOARD_APM2 EXTRAFLAGS="-DHIL_MODE=HIL_MODE_SENSORS"
+hilsensors: EXTRAFLAGS += "-DHIL_MODE=HIL_MODE_SENSORS "
+hilsensors: all
 
-hilsensors-apm2-nologging:
-	make -f Makefile HAL_BOARD=HAL_BOARD_APM2 EXTRAFLAGS="-DHIL_MODE=HIL_MODE_SENSORS -DLOGGING_ENABLED=DISABLED"
+hilsensors-apm2: HAL_BOARD = "HAL_BOARD_APM2"
+hilsensors-apm2: hilsensors
 
-hilnocli:
-	make -f Makefile EXTRAFLAGS="-DHIL_MODE=HIL_MODE_ATTITUDE -DCLI_ENABLED=DISABLED"
+hilsensors-apm1: HAL_BOARD = "HAL_BOARD_APM1"
+hilsensors-apm1: hilsensors
 
-nocli:
-	make -f Makefile EXTRAFLAGS="-DCLI_ENABLED=DISABLED -DLOGGING_ENABLED=DISABLED"
+hilsensors-apm2-nologging: EXTRAFLAGS += "DLOGGING_ENABLED=DISABLED "
+hilsensors-apm2-nologging: hilsensors-apm2
 
-ublox:
-	make -f Makefile EXTRAFLAGS="-DGPS_PROTOCOL=GPS_PROTOCOL_UBLOX"
+hilnocli: EXTRAFLAGS += "-DCLI_ENABLED=DISABLED "
+hilnocli: hil
 
-mtk:
-	make -f Makefile EXTRAFLAGS="-DGPS_PROTOCOL=GPS_PROTOCOL_MTK"
+nocli: EXTRAFLAGS +="-DCLI_ENABLED=DISABLED "
+nocli: nologging
 
-mtk16:
-	make -f Makefile EXTRAFLAGS="-DGPS_PROTOCOL=GPS_PROTOCOL_MTK16"
+ublox: EXTRAFLAGS += "-DGPS_PROTOCOL=GPS_PROTOCOL_UBLOX "
+ublox: all
 
-heli:
-	make -f Makefile EXTRAFLAGS="-DFRAME_CONFIG=HELI_FRAME"
+mtk: EXTRAFLAGS += "-DGPS_PROTOCOL=GPS_PROTOCOL_MTK "
+mtk: all
 
-apm2:
-	make -f Makefile HAL_BOARD=HAL_BOARD_APM2
+mtk16: EXTRAFLAGS += "-DGPS_PROTOCOL=GPS_PROTOCOL_MTK16 "
+mtk16: all
 
-apm2-nologging:
-	make -f Makefile HAL_BOARD=HAL_BOARD_APM2 EXTRAFLAGS="-DLOGGING_ENABLED=DISABLED"
+heli: EXTRAFLAGS += "-DFRAME_CONFIG=HELI_FRAME "
+heli: all
 
-apm2-uart2:
-	make -f Makefile HAL_BOARD=HAL_BOARD_APM2 EXTRAFLAGS="-DTELEMETRY_UART2=ENABLED"
+apm2: HAL_BOARD = "HAL_BOARD_APM2"
+apm2: all
 
-apm2beta:
-	make -f Makefile HAL_BOARD=HAL_BOARD_APM2 EXTRAFLAGS="-DAPM2_BETA_HARDWARE"
+apm2-nologging: HAL_BOARD = "HAL_BOARD_APM2"
+apm2-nologging: nologging
+
+apm2-uart2: EXTRAFLAGS += "-DTELEMETRY_UART2=ENABLED "
+apm2-uart2: apm2
+
+apm2beta: EXTRAFLAGS += "-DAPM2_BETA_HARDWARE "
+apm2beta: apm2
+
+sitl: HAL_BOARD = "HAL_BOARD_AVR_SITL"
+sitl: all
+
+sitl-mount: EXTRAFLAGS += "-DMOUNT=ENABLED"
+sitl-mount: sitl
 
 
-sitl:
-	make -f Makefile HAL_BOARD=HAL_BOARD_AVR_SITL
+obc: EXTRAFLAGS += "-DOBC_FAILSAFE=ENABLED "
+obc: EXTRAFLAGS += "-DTELEMETRY_UART2=ENABLED "
+obc: EXTRAFLAGS += "-DSERIAL_BUFSIZE=512 "
+obc: apm2
 
-sitl-mount:
-	make -f ../libraries/Desktop/Makefile.desktop EXTRAFLAGS="-DMOUNT=ENABLED"
+obc-sitl: EXTRAFLAGS += "-DOBC_FAILSAFE=ENABLED "
+obc-sitl: EXTRAFLAGS += "-DSERIAL_BUFSIZE=512 "
+obc-sitl: sitl
+
+sitl-newcontrollers: EXTRAFLAGS += "-DAPM_CONTROL=ENABLED "
+sitl-newcontrollers: sitl
 
 etags:
 	cd .. && etags -f ArduPlane/TAGS --langmap=C++:.pde.cpp.h $$(git ls-files ArduPlane libraries)
-
-obc:
-	make -f Makefile HAL_BOARD=HAL_BOARD_APM2 EXTRAFLAGS="-DOBC_FAILSAFE=ENABLED -DTELEMETRY_UART2=ENABLED -DSERIAL_BUFSIZE=512"
-
-obc-sitl:
-	make -f ../libraries/Desktop/Makefile.desktop EXTRAFLAGS="-DOBC_FAILSAFE=ENABLED -DSERIAL_BUFSIZE=512"
-
-sitl-newcontrollers:
-	make -f ../libraries/Desktop/Makefile.desktop EXTRAFLAGS="-DAPM_CONTROL=ENABLED"
-

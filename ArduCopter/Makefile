@@ -1,6 +1,6 @@
 include ../libraries/AP_Common/Arduino.mk
 
-nologging: EXTRAFLAGS += "-DLOGGING_ENABLED=DISABLED"
+nologging: EXTRAFLAGS += "-DLOGGING_ENABLED=DISABLED "
 nologging: all
 
 nogps: EXTRAFLAGS += "-DGPS_PROTOCOL=GPS_PROTOCOL_NONE "
@@ -45,17 +45,17 @@ apm2hexa: apm2
 apm2beta: EXTRAFLAGS += "-DAPM2_BETA_HARDWARE "
 apm2beta: apm2
 
-sitl:
-	make -f ../libraries/Desktop/Makefile.desktop
+sitl: HAL_BOARD = "HAL_BOARD_AVR_SITL"
+sitl: all
 
-sitl-octa:
-	make -f ../libraries/Desktop/Makefile.desktop octa
+sitl-octa: EXTRAFLAGS += "-DFRAME_CONFIG=OCTA_FRAME "
+sitl-octa: sitl
 
-sitl-hexa:
-	make -f ../libraries/Desktop/Makefile.desktop hexa
+sitl-hexa: EXTRAFLAGS += "-DFRAME_CONFIG=HEXA_FRAME "
+sitl-hexa: sitl
 
-sitl-y6:
-	make -f ../libraries/Desktop/Makefile.desktop y6
+sitl-y6: EXTRAFLAGS += "-DFRAME_CONFIG=OCTA_FRAME "
+sitl-y6: sitl
 
 etags:
 	cd .. && etags -f ArduCopter/TAGS --langmap=C++:.pde.cpp.h $$(git ls-files ArduCopter libraries)
