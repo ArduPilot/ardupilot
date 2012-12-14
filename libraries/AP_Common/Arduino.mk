@@ -239,8 +239,8 @@ endif
 #
 # Tool options
 #
-DEFINES			=	-DF_CPU=$(F_CPU) -DARDUINO=$(ARDUINO_VERS) $(EXTRAFLAGS) 
-EXTRAFLAGS      =
+EXTRAFLAGS     ?=
+DEFINES			=	-DF_CPU=$(F_CPU) -DARDUINO=$(ARDUINO_VERS) $(EXTRAFLAGS) -DSKETCH=\"$(SKETCH)\"
 OPTFLAGS		=	-Os -Wformat -Wall -Wshadow -Wpointer-arith -Wcast-align -Wwrite-strings -Wformat=2 -Wno-reorder
 DEPFLAGS		=	-MD -MT $@
 

@@ -21,7 +21,6 @@
 //
 // - Try to keep this file organised in the same order as APM_Config.h.example
 //
-
 #include "defines.h"
 
 ///
@@ -46,6 +45,9 @@
 #error CONFIG_APM_HARDWARE option is deprecated! use CONFIG_HAL_BOARD instead
 #endif
 
+#ifndef CONFIG_HAL_BOARD
+#error CONFIG_HAL_BOARD must be defined to build ArduCopter
+#endif
 //////////////////////////////////////////////////////////////////////////////
 // APM2 HARDWARE DEFAULTS
 //

@@ -3,6 +3,8 @@
 #ifndef _DEFINES_H
 #define _DEFINES_H
 
+#include <AP_HAL_Boards.h>
+
 // Just so that it's completely clear...
 #define ENABLED                 1
 #define DISABLED                0
