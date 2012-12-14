@@ -32,14 +32,14 @@ static void read_control_switch()
 }
 
 static byte readSwitch(void){
-    int16_t pulsewidth = g.rc_5.radio_in;                       // default for Arducopter
+    int16_t pulsewidth = g.rc_5.radio_in;   // default for Arducopter
 
-    if (pulsewidth > 1230 && pulsewidth <= 1360) return 1;
-    if (pulsewidth > 1360 && pulsewidth <= 1490) return 2;
-    if (pulsewidth > 1490 && pulsewidth <= 1620) return 3;
-    if (pulsewidth > 1620 && pulsewidth <= 1749) return 4;
-    if (pulsewidth >= 1750) return 5;
-    return 0;
+    if (pulsewidth < 1231) return 0;
+    if (pulsewidth < 1361) return 1;
+    if (pulsewidth < 1491) return 2;
+    if (pulsewidth < 1621) return 3;
+    if (pulsewidth < 1750) return 4;        // Software Manual
+    return 5;                               // Hardware Manual
 }
 
 static void reset_control_switch()
