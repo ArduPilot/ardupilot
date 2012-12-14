@@ -908,7 +908,7 @@ void setup() {
     cliSerial = hal.console;
 
     // Load the default values of variables listed in var_info[]s
-    AP_Param::setup_sketch_defaults();
+    //AP_Param::setup_sketch_defaults();
 
 #if CONFIG_SONAR == ENABLED
  #if CONFIG_SONAR_SOURCE == SONAR_SOURCE_ADC
