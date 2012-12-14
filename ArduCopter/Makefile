@@ -1,37 +1,49 @@
 include ../libraries/AP_Common/Arduino.mk
 
-nologging:
-	make -f Makefile EXTRAFLAGS="-DLOGGING_ENABLED=DISABLED"
+nologging: EXTRAFLAGS += "-DLOGGING_ENABLED=DISABLED"
+nologging: all
 
-nogps:
-	make -f Makefile EXTRAFLAGS="-DGPS_PROTOCOL=GPS_PROTOCOL_NONE -DLOGGING_ENABLED=DISABLED"
+nogps: EXTRAFLAGS += "-DGPS_PROTOCOL=GPS_PROTOCOL_NONE "
+nogps: nologging
 
-hil:
-	make -f Makefile EXTRAFLAGS="-DHIL_MODE=HIL_MODE_ATTITUDE -DCLI_SLIDER_ENABLED=DISABLED -DLOGGING_ENABLED=DISABLED"
+clidisabled-nologging: EXTRAFLAGS += "-DCLI_SLIDER_ENABLED=DISABLED "
+clidisabled-nologging: nologging
 
-hilsensors:
-	make -f Makefile EXTRAFLAGS="-DHIL_MODE=HIL_MODE_SENSORS -DCLI_SLIDER_ENABLED=DISABLED -DLOGGING_ENABLED=DISABLED"
+hil: EXTRAFLAGS += "-DHIL_MODE=HIL_MODE_ATTITUDE "
+hil: nologging
 
-hilnocli:
-	make -f Makefile EXTRAFLAGS="-DHIL_MODE=HIL_MODE_ATTITUDE -DCLI_ENABLED=DISABLED -DLOGGING_ENABLED=DISABLED"
+apm1-hil: HAL_BOARD = "HAL_BOARD_APM1"
+apm1-hil: hil
 
-heli:
-	make -f Makefile EXTRAFLAGS="-DFRAME_CONFIG=HELI_FRAME"
+apm2-hil: HAL_BOARD="HAL_BOARD_APM2"
+apm2-hil: hil
 
-apm1:
-	make -f Makefile HAL_BOARD=HAL_BOARD_APM1
+hilsensors: EXTRAFLAGS += "-DHIL_MODE=HIL_MODE_SENSORS "
+hilsensors: clidisabled-nologging
 
-apm2:
-	make -f Makefile HAL_BOARD=HAL_BOARD_APM2
+apm1-hilsensors: HAL_BOARD = "HAL_BOARD_APM1"
+apm1-hilsensors: hilsensors
 
-dmp:
-	make -f Makefile EXTRAFLAGS="-DDMP_ENABLED=ENABLED"
+apm2-hilsensors: HAL_BOARD = "HAL_BOARD_APM2"
+apm2-hilsensors: hilsensors
 
-apm2hexa:
-	make -f Makefile EXTRAFLAGS="-DCONFIG_APM_HARDWARE=APM_HARDWARE_APM2 -DFRAME_CONFIG=HEXA_FRAME"
+heli: EXTRAFLAGS += "-DFRAME_CONFIG=HELI_FRAME "
+heli: all
 
-apm2beta:
-	make -f Makefile EXTRAFLAGS="-DCONFIG_APM_HARDWARE=APM_HARDWARE_APM2 -DAPM2_BETA_HARDWARE"
+apm1: HAL_BOARD = "HAL_BOARD_APM1"
+apm1: all
+
+apm2: HAL_BOARD="HAL_BOARD_APM2"
+apm2: all
+
+dmp: EXTRAFLAGS += "-DDMP_ENABLED=ENABLED"
+dmp: apm2
+
+apm2hexa: EXTRAFLAGS += "-DFRAME_CONFIG=HEXA_FRAME "
+apm2hexa: apm2
+
+apm2beta: EXTRAFLAGS += "-DAPM2_BETA_HARDWARE "
+apm2beta: apm2
 
 sitl:
 	make -f ../libraries/Desktop/Makefile.desktop
