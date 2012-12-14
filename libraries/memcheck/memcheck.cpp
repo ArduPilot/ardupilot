@@ -7,6 +7,7 @@
 
 #include <stdlib.h>
 #include <stdint.h>
+#include <AP_HAL_Boards.h>
 
 static const uint32_t *stack_low;
 extern unsigned __brkval;
