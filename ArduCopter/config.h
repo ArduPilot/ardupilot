@@ -143,7 +143,6 @@
  # define PUSHBUTTON_PIN   41
  # define USB_MUX_PIN      -1
  # define CLI_SLIDER_ENABLED DISABLED
- # define OPTFLOW_CS_PIN   34
  # define BATTERY_VOLT_PIN      0      // Battery voltage on A0
  # define BATTERY_CURR_PIN      1      // Battery current on A1
 #elif CONFIG_HAL_BOARD == HAL_BOARD_APM2
@@ -156,7 +155,6 @@
  # define PUSHBUTTON_PIN   (-1)
  # define CLI_SLIDER_ENABLED DISABLED
  # define USB_MUX_PIN      23
- # define OPTFLOW_CS_PIN   57          // Optflow CS on A3
  # define BATTERY_VOLT_PIN      1      // Battery voltage on A1
  # define BATTERY_CURR_PIN      2      // Battery current on A2
 #endif

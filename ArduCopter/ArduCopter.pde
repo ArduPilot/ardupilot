@@ -186,22 +186,24 @@ static AP_Int8 *flight_modes = &g.flight_mode1;
 
 #if HIL_MODE == HIL_MODE_DISABLED
 
-// real sensors
  #if CONFIG_ADC == ENABLED
 AP_ADC_ADS7844 adc;
  #endif
 
- #if CONFIG_HIL_BOARD == HIL_BOARD_AVR_SITL
+ #if CONFIG_IMU_TYPE == CONFIG_IMU_MPU6000
+AP_InertialSensor_MPU6000 ins;
+ #else
+AP_InertialSensor_Oilpan ins(&adc);
+ #endif
+
+ #if CONFIG_HAL_BOARD == HAL_BOARD_AVR_SITL
+ // When building for SITL we use the HIL barometer and compass drivers
 AP_Baro_BMP085_HIL barometer;
 AP_Compass_HIL compass;
  #else
-
+// Otherwise, instantiate a real barometer and compass driver
   #if CONFIG_BARO == AP_BARO_BMP085
-   # if CONFIG_HAL_BOARD == HAL_BOARD_APM2
-AP_Baro_BMP085 barometer(true);
-   # else
-AP_Baro_BMP085 barometer(false);
-   # endif
+AP_Baro_BMP085 barometer;
   #elif CONFIG_BARO == AP_BARO_MS5611
 AP_Baro_MS5611 barometer;
   #endif
@@ -210,11 +212,7 @@ AP_Compass_HMC5843 compass;
  #endif
 
  #if OPTFLOW == ENABLED
-  #if CONFIG_HAL_BOARD == HAL_BOARD_APM2
-AP_OpticalFlow_ADNS3080 optflow(OPTFLOW_CS_PIN);
-  #else
-AP_OpticalFlow_ADNS3080 optflow(OPTFLOW_CS_PIN);
-  #endif
+AP_OpticalFlow_ADNS3080 optflow;
  #else
 AP_OpticalFlow optflow;
  #endif
@@ -244,16 +242,6 @@ AP_GPS_None     g_gps_driver(NULL);
  #else
   #error Unrecognised GPS_PROTOCOL setting.
  #endif // GPS PROTOCOL
-
- #if CONFIG_IMU_TYPE == CONFIG_IMU_MPU6000
-AP_InertialSensor_MPU6000 ins;
- #else
-AP_InertialSensor_Oilpan ins(&adc);
- #endif
-
-// we don't want to use gps for yaw correction on ArduCopter, so pass
-// a NULL GPS object pointer
-static GPS         *g_gps_null;
 
  #if DMP_ENABLED == ENABLED && CONFIG_HAL_BOARD == HAL_BOARD_APM2
 AP_AHRS_MPU6000  ahrs(&ins, g_gps);               // only works with APM2
@@ -288,9 +276,9 @@ AP_Baro_BMP085_HIL      barometer;
 
  #if OPTFLOW == ENABLED
   #if CONFIG_HAL_BOARD == HAL_BOARD_APM2
-AP_OpticalFlow_ADNS3080 optflow(OPTFLOW_CS_PIN);
+AP_OpticalFlow_ADNS3080 optflow;
   #else
-AP_OpticalFlow_ADNS3080 optflow(OPTFLOW_CS_PIN);
+AP_OpticalFlow_ADNS3080 optflow;
   #endif    // CONFIG_HAL_BOARD == HAL_BOARD_APM2
  #endif     // OPTFLOW == ENABLED
 
