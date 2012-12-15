@@ -456,6 +456,16 @@ endif
 
 all:	$(SKETCHELF) $(SKETCHEEP) $(SKETCHHEX)
 
+# convenient targets for our supported boards
+sitl:
+	make -f Makefile HAL_BOARD=HAL_BOARD_AVR_SITL 
+
+apm1:
+	make -f Makefile HAL_BOARD=HAL_BOARD_APM1
+
+apm2:
+	make -f Makefile HAL_BOARD=HAL_BOARD_APM2
+
 .PHONY: upload
 upload: $(SKETCHHEX)
 	$(AVRDUDE) -c $(UPLOAD_PROTOCOL) -p $(MCU) -P $(PORT) -b$(UPLOAD_SPEED) $(USERAVRDUDEFLAGS) -U flash:w:$(SKETCHHEX):i

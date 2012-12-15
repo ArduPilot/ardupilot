@@ -48,9 +48,6 @@ mtk16: all
 heli: EXTRAFLAGS += "-DFRAME_CONFIG=HELI_FRAME "
 heli: all
 
-apm2: HAL_BOARD = "HAL_BOARD_APM2"
-apm2: all
-
 apm2-nologging: HAL_BOARD = "HAL_BOARD_APM2"
 apm2-nologging: nologging
 
@@ -59,9 +56,6 @@ apm2-uart2: apm2
 
 apm2beta: EXTRAFLAGS += "-DAPM2_BETA_HARDWARE "
 apm2beta: apm2
-
-sitl: HAL_BOARD = "HAL_BOARD_AVR_SITL"
-sitl: all
 
 sitl-mount: EXTRAFLAGS += "-DMOUNT=ENABLED"
 sitl-mount: sitl
