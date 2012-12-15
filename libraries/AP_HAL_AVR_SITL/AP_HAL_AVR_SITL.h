@@ -2,19 +2,10 @@
 #ifndef __AP_HAL_AVR_SITL_H__
 #define __AP_HAL_AVR_SITL_H__
 
-#include "AP_HAL_AVR_SITL_Namespace.h"
-#include "HAL_AVR_SITL_Class.h"
+#include <AP_HAL.h>
 
-#if CONFIG_HAL_BOARD == HAL_BOARD_AVR_SITL
-#define AP_HAL_MAIN() extern "C" {\
-    int main (int argc, char * const argv[]) {	\
-	hal.init(argc, argv);		\
-        setup();\
-        for(;;) loop();\
-        return 0;\
-    }\
-    }
-#endif
+#include "HAL_AVR_SITL_Class.h"
+#include "AP_HAL_AVR_SITL_Main.h"
 
 #endif // __AP_HAL_AVR_SITL_H__
 
