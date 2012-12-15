@@ -968,7 +968,7 @@ get_throttle_rate(int16_t z_target_speed)
 #if LOGGING_ENABLED == ENABLED
     static uint8_t log_counter = 0;                                      // used to slow down logging of PID values to dataflash
     // log output if PID loggins is on and we are tuning the yaw
-    if( g.log_bitmask & MASK_LOG_PID && g.radio_tuning == CH6_THROTTLE_KP ) {
+    if( g.log_bitmask & MASK_LOG_PID && (g.radio_tuning == CH6_THROTTLE_KP || g.radio_tuning == CH6_THROTTLE_KI || g.radio_tuning == CH6_THROTTLE_KD) ) {
         log_counter++;
         if( log_counter >= 10 ) {               // (update rate / desired output rate) = (50hz / 10hz) = 5hz
             log_counter = 0;
