@@ -13,6 +13,7 @@
 #define HAL_BOARD_APM1     1
 #define HAL_BOARD_APM2     2
 #define HAL_BOARD_AVR_SITL 3
+#define HAL_BOARD_EMPTY    99
 
 #endif // __AP_HAL_BOARDS_H__
 
