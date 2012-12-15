@@ -40,35 +40,5 @@ public:
     virtual bool tx_pending() = 0;
 };
 
-/* Concrete EmptyUARTDriver class provided for convenience */
-class AP_HAL::EmptyUARTDriver : public AP_HAL::UARTDriver {
-public:
-    EmptyUARTDriver() {}
-    /* Empty implementations of UARTDriver virtual methods */
-    void begin(uint32_t b) {}
-    void begin(uint32_t b, uint16_t rxS, uint16_t txS) {}
-    void end() {}
-    void flush() {}
-    bool is_initialized() { return false; }
-    void set_blocking_writes(bool blocking) {}
-    bool tx_pending() { return false; }
-
-    /* Empty implementations of BetterStream virtual methods */
-    void print_P(const prog_char_t *pstr) {}
-    void println_P(const prog_char_t *pstr) {}
-    void printf(const char *pstr, ...) {}
-    void _printf_P(const prog_char *pstr, ...) {}
-
-    /* Empty implementations of Stream virtual methods */
-    int16_t available() { return 0; }
-    int16_t txspace() { return 1; }
-    int16_t read() { return -1; }
-    int16_t peek() { return -1; }
-
-    /* Empty implementations of Print virtual methods */
-    size_t write(uint8_t c) { return 0; }
-};
-
-
 #endif // __AP_HAL_UART_DRIVER_H__
 
