@@ -4,25 +4,15 @@
 
 #include <AP_HAL.h>
 
-#include "HAL_AVR_APM1_Class.h"
-#include "HAL_AVR_APM2_Class.h"
-
 /**
- * This module exports AP_HAL instances only.
+ * This module exports AP_HAL::HAL instances only.
  * All internal drivers must conform to AP_HAL interfaces
  * and not expose implementation details.
  */
 
-#if CONFIG_HAL_BOARD == HAL_BOARD_APM1 || CONFIG_HAL_BOARD == HAL_BOARD_APM2
-#define AP_HAL_MAIN() extern "C" {\
-    int main (void) {\
-	hal.init(0, NULL);			\
-        setup();\
-        for(;;) loop();\
-        return 0;\
-    }\
-    }
-#endif
+#include "HAL_AVR_APM1_Class.h"
+#include "HAL_AVR_APM2_Class.h"
+#include "AP_HAL_AVR_Main.h"
 
 #endif // __AP_HAL_AVR_H__
 
