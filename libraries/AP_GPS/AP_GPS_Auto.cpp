@@ -91,9 +91,9 @@ AP_GPS_Auto::_detect(void)
 			hal.console->print_P(PSTR(" ublox "));
 			new_gps = new AP_GPS_UBLOX();
 		} 
-		else if (AP_GPS_MTK16::_detect(data)) {
-			hal.console->print_P(PSTR(" MTK16 "));
-			new_gps = new AP_GPS_MTK16();
+		else if (AP_GPS_MTK19::_detect(data)) {
+			hal.console->print_P(PSTR(" MTK19 "));
+			new_gps = new AP_GPS_MTK19();
 		} 
 		else if (AP_GPS_MTK::_detect(data)) {
 			hal.console->print_P(PSTR(" MTK "));

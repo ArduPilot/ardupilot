@@ -17,7 +17,7 @@
 
 const AP_HAL::HAL& hal = AP_HAL_BOARD_DRIVER;
 
-AP_GPS_MTK16 gps;
+AP_GPS_MTK19 gps;
 #define T6 1000000
 #define T7 10000000
 

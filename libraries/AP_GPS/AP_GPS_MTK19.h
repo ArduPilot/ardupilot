@@ -8,20 +8,24 @@
 //	License as published by the Free Software Foundation; either
 //	version 2.1 of the License, or (at your option) any later version.
 //
-//	GPS configuration : Custom protocol per "Customize Function Specification, 3D Robotics, v1.6, v1.7, v1.8"
+//	GPS configuration : Custom protocol per "Customize Function Specification, 3D Robotics, v1.6, v1.7, v1.8, v1.9"
 //
-#ifndef __AP_GPS_MTK16_H__
-#define __AP_GPS_MTK16_H__
+#ifndef AP_GPS_MTK19_h
+#define AP_GPS_MTK19_h
 
-#include <AP_HAL.h>
 #include "GPS.h"
 #include "AP_GPS_MTK_Common.h"
 
-class AP_GPS_MTK16 : public GPS {
+#define MTK_GPS_REVISION_V16  16
+#define MTK_GPS_REVISION_V19  19
+
+
+class AP_GPS_MTK19 : public GPS {
 public:
-    virtual void        init(AP_HAL::UARTDriver *s, enum GPS_Engine_Setting nav_setting = GPS_ENGINE_NONE);
+    AP_GPS_MTK19(Stream *s);
+    virtual void        init(enum GPS_Engine_Setting nav_setting = GPS_ENGINE_NONE);
     virtual bool        read(void);
-    static bool _detect(uint8_t );
+    static bool 		_detect(uint8_t );
 
 private:
 // XXX this is being ignored by the compiler #pragma pack(1)
@@ -42,12 +46,17 @@ private:
         FIX_NONE = 1,
         FIX_2D = 2,
         FIX_3D = 3,
+		FIX_2D_SBAS = 6,
         FIX_3D_SBAS = 7
     };
 
     enum diyd_mtk_protocol_bytes {
-        PREAMBLE1 = 0xd0,
+	    PREAMBLE1 = 0xd0,
         PREAMBLE2 = 0xdd,
+	    PREAMBLE1_V16 = 0xd0,
+        PREAMBLE2_V16 = 0xdd,
+        PREAMBLE1_V19 = 0xd1,
+        PREAMBLE2_V19 = 0xdd
     };
 
     // Packet checksum accumulators
@@ -57,6 +66,8 @@ private:
     // State machine state
     uint8_t         _step;
     uint8_t         _payload_counter;
+	uint8_t			_mtk_type_step1;
+	uint8_t 		_mtk_type_step2;
 
     // Time from UNIX Epoch offset
     long            _time_offset;
@@ -69,4 +80,4 @@ private:
     } _buffer;
 };
 
-#endif  // __AP_GPS_MTK16_H__
+#endif  // AP_GPS_MTK19_H
