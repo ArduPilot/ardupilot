@@ -27,8 +27,6 @@ namespace AP_HAL {
     class Scheduler;
     class Semaphore;
 
-    class EmptyUARTDriver;
-
     /* Utility Classes */
     class Print;
     class Stream;
