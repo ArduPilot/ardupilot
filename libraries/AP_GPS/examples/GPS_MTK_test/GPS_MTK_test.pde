@@ -14,7 +14,7 @@
 FastSerialPort0(Serial);
 FastSerialPort1(Serial1);
 
-AP_GPS_MTK16 gps(&Serial1);
+AP_GPS_MTK19 gps(&Serial1);
 #define T6 1000000
 #define T7 10000000
 
@@ -24,7 +24,6 @@ void setup()
     Serial1.begin(38400);
     stderr = stdout;
     gps.print_errors = true;
-
     Serial.println("GPS MTK library test");
     gps.init();  // GPS Initialization
     delay(1000);

@@ -89,9 +89,9 @@ AP_GPS_Auto::_detect(void)
 			Serial.print_P(PSTR(" ublox "));
 			return new AP_GPS_UBLOX(_port);
 		}
-		if (AP_GPS_MTK16::_detect(data)) {
-			Serial.print_P(PSTR(" MTK16 "));
-			return new AP_GPS_MTK16(_port);
+		if (AP_GPS_MTK19::_detect(data)) {
+			Serial.print_P(PSTR(" MTK19 "));
+			return new AP_GPS_MTK19(_port);
 		}
 		if (AP_GPS_MTK::_detect(data)) {
 			Serial.print_P(PSTR(" MTK "));
