@@ -223,7 +223,7 @@ AP_GPS_MTK16::_detect(uint8_t data)
         case 4:
             step++;
             if (ck_a != data) {
-				Serial.printf("wrong ck_a\n");
+				Serial.print_P(PSTR("wrong ck_a\n"));
                 step = 0;
             }
             break;
@@ -232,7 +232,7 @@ AP_GPS_MTK16::_detect(uint8_t data)
             if (ck_b == data) {
 				return true;
             }
-			Serial.printf("wrong ck_b\n");
+			Serial.print_P(PSTR("wrong ck_b\n"));
 			break;
 	}
     return false;
