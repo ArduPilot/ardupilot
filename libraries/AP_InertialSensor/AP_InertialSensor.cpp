@@ -306,6 +306,7 @@ bool AP_InertialSensor::calibrate_accel(void (*delay_cb)(unsigned long t), void 
             case 4:
                 msg = PSTR("nose up");
                 break;
+            default:    // default added to avoid compiler warning
             case 5:
                 msg = PSTR("on it's back");
                 break;
