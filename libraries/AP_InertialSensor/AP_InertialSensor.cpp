@@ -308,6 +308,7 @@ bool AP_InertialSensor::calibrate_accel(void (*flash_leds_cb)(bool on),
             case 4:
                 msg = PSTR("nose up");
                 break;
+            default:    // default added to avoid compiler warning
             case 5:
                 msg = PSTR("on it's back");
                 break;
