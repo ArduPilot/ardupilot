@@ -257,7 +257,6 @@ AP_GPS_MTK19::_detect(uint8_t data)
         case 4:
             step++;
             if (ck_a != data) {
-				Serial.print_P(PSTR("wrong ck_a\n"));
                 step 				= 0;
             }
             break;
@@ -266,7 +265,6 @@ AP_GPS_MTK19::_detect(uint8_t data)
             if (ck_b == data) {
 				return true;
             }
-			Serial.print_P(PSTR("wrong ck_b\n"));
 			break;
 	}
     return false;
