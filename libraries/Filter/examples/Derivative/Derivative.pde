@@ -7,7 +7,6 @@
 #include <AP_Math.h>
 #include <Filter.h>
 #include <DerivativeFilter.h>
-#include <AP_Buffer.h>
 
 #ifdef DESKTOP_BUILD
 // all of this is needed to build with SITL
