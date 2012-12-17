@@ -489,7 +489,7 @@ static void set_mode(byte mode)
     	ap.manual_throttle = true;
     	ap.manual_attitude = false;
         set_yaw_mode(YAW_HOLD);
-        set_roll_pitch_mode(ROLL_PITCH_AUTO);
+        set_roll_pitch_mode(LOITER_RP);
         set_throttle_mode(THROTTLE_MANUAL);
         set_next_WP(&current_loc);
         break;
