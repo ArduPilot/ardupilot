@@ -1,8 +1,6 @@
 
 #include <AP_HAL.h>
 
-#if CONFIG_HAL_BOARD == HAL_BOARD_EMPTY
-
 #include "HAL_Empty_Class.h"
 #include "AP_HAL_Empty_Private.h"
 
@@ -42,6 +40,4 @@ void HAL_Empty::init(int argc, const char * argv[]) const {
 }
 
 const HAL_Empty AP_HAL_Empty;
-
-#endif // CONFIG_HAL_BOARD == HAL_BOARD_EMPTY
 

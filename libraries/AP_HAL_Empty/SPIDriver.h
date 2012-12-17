@@ -3,7 +3,7 @@
 #define __AP_HAL_EMPTY_SPIDRIVER_H__
 
 #include <AP_HAL_Empty.h>
-
+#include "Semaphore.h"
 
 class Empty::EmptySPIDeviceDriver : public AP_HAL::SPIDeviceDriver {
 public:
@@ -13,6 +13,8 @@ public:
     void cs_assert();
     void cs_release();
     uint8_t transfer (uint8_t data);
+private:
+    EmptySemaphore _semaphore;
 };
 
 class Empty::EmptySPIDeviceManager : public AP_HAL::SPIDeviceManager {
