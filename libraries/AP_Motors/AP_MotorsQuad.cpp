@@ -19,15 +19,15 @@ void AP_MotorsQuad::setup_motors()
     // hard coded config for supported frames
     if( _frame_orientation == AP_MOTORS_PLUS_FRAME ) {
         // plus frame set-up
-        add_motor(AP_MOTORS_MOT_1,  90, AP_MOTORS_MATRIX_MOTOR_CCW, AP_MOTORS_MOT_2, 2);
-        add_motor(AP_MOTORS_MOT_2, -90, AP_MOTORS_MATRIX_MOTOR_CCW, AP_MOTORS_MOT_1, 4);
-        add_motor(AP_MOTORS_MOT_3,   0, AP_MOTORS_MATRIX_MOTOR_CW,  AP_MOTORS_MOT_4, 1);
-        add_motor(AP_MOTORS_MOT_4, 180, AP_MOTORS_MATRIX_MOTOR_CW,  AP_MOTORS_MOT_3, 3);
+        add_motor(AP_MOTORS_MOT_1,  90, AP_MOTORS_MATRIX_MOTOR_CCW, 2);
+        add_motor(AP_MOTORS_MOT_2, -90, AP_MOTORS_MATRIX_MOTOR_CCW, 4);
+        add_motor(AP_MOTORS_MOT_3,   0, AP_MOTORS_MATRIX_MOTOR_CW,  1);
+        add_motor(AP_MOTORS_MOT_4, 180, AP_MOTORS_MATRIX_MOTOR_CW,  3);
     }else{
         // X frame set-up
-        add_motor(AP_MOTORS_MOT_1,   45, AP_MOTORS_MATRIX_MOTOR_CCW, AP_MOTORS_MOT_2, 1);
-        add_motor(AP_MOTORS_MOT_2, -135, AP_MOTORS_MATRIX_MOTOR_CCW, AP_MOTORS_MOT_1, 3);
-        add_motor(AP_MOTORS_MOT_3,  -45, AP_MOTORS_MATRIX_MOTOR_CW,  AP_MOTORS_MOT_4, 4);
-        add_motor(AP_MOTORS_MOT_4,  135, AP_MOTORS_MATRIX_MOTOR_CW,  AP_MOTORS_MOT_3, 2);
+        add_motor(AP_MOTORS_MOT_1,   45, AP_MOTORS_MATRIX_MOTOR_CCW, 1);
+        add_motor(AP_MOTORS_MOT_2, -135, AP_MOTORS_MATRIX_MOTOR_CCW, 3);
+        add_motor(AP_MOTORS_MOT_3,  -45, AP_MOTORS_MATRIX_MOTOR_CW,  4);
+        add_motor(AP_MOTORS_MOT_4,  135, AP_MOTORS_MATRIX_MOTOR_CW,  2);
     }
 }
