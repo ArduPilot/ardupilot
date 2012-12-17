@@ -8,7 +8,6 @@
 
 class AP_HAL::I2CDriver {
 public:
-    I2CDriver() {}
     virtual void begin() = 0;
     virtual void end() = 0;
     virtual void setTimeout(uint16_t ms) = 0;
@@ -32,7 +31,7 @@ public:
     virtual uint8_t readRegisters(uint8_t addr, uint8_t reg,
                                   uint8_t len, uint8_t* data) = 0;
 
-    virtual uint8_t lockup_count();
+    virtual uint8_t lockup_count() = 0;
 };
 
 #endif // __AP_HAL_I2C_DRIVER_H__
