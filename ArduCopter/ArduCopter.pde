@@ -424,17 +424,6 @@ MOTOR_CLASS motors(CONFIG_HAL_BOARD, &g.rc_1, &g.rc_2, &g.rc_3, &g.rc_4);
 #endif
 
 ////////////////////////////////////////////////////////////////////////////////
-// Mavlink/HIL control
-////////////////////////////////////////////////////////////////////////////////
-// Used to track the GCS based control input
-// Allow override of RC channel values for HIL
-static int16_t rc_override[8] = {0,0,0,0,0,0,0,0};
-// Status flag that tracks whether we are under GCS control
-static bool rc_override_active = false;
-// Status flag that tracks whether we are under GCS control
-static uint32_t rc_override_fs_timer;
-
-////////////////////////////////////////////////////////////////////////////////
 // PIDs
 ////////////////////////////////////////////////////////////////////////////////
 // This is a convienience accessor for the IMU roll rates. It's currently the raw IMU rates
