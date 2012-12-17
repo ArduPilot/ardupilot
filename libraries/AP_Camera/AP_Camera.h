@@ -2,13 +2,13 @@
 
 /// @file	AP_Camera.h
 /// @brief	Photo or video camera manager, with EEPROM-backed storage of constants.
-/// @author Amilcar Lucas
 
 #ifndef AP_CAMERA_H
 #define AP_CAMERA_H
 
 #include <AP_Common.h>
 #include <GCS_MAVLink.h>
+#include <AP_Relay.h>
 
 #define AP_CAMERA_TRIGGER_TYPE_SERVO                0
 #define AP_CAMERA_TRIGGER_TYPE_RELAY                1
@@ -34,10 +34,11 @@ class AP_Camera {
 public:
     /// Constructor
     ///
-    AP_Camera() :
+    AP_Camera(Relay *obj_relay) :
         _trigger_counter(0),            // count of number of cycles shutter has been held open
         _thr_pic_counter(0)             // timer variable for throttle_pic
     {
+        _apm_relay = obj_relay;
     }
 
     // single entry point to take pictures
@@ -60,6 +61,7 @@ private:
     AP_Int16        _servo_off_pwm;     // PWM value to move servo to when shutter is deactivated
     uint8_t         _trigger_counter;   // count of number of cycles shutter has been held open
     uint8_t         _thr_pic_counter;   // timer variable for throttle_pic
+    Relay          *_apm_relay;         // pointer to relay object from the base class Relay. The subclasses could be AP_Relay_APM1 or AP_Relay_APM2
 
     void            servo_pic();        // Servo operated camera
     void            relay_pic();        // basic relay activation
