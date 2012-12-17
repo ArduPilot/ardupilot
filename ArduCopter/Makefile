@@ -10,31 +10,28 @@ clidisabled-nologging: EXTRAFLAGS += "-DCLI_SLIDER_ENABLED=DISABLED "
 clidisabled-nologging: nologging
 
 hil: EXTRAFLAGS += "-DHIL_MODE=HIL_MODE_ATTITUDE "
-hil: nologging
+hil: EXTRAFLAGS += "-DLOGGING_ENABLED=DISABLED "
 
-apm1-hil: HAL_BOARD = "HAL_BOARD_APM1"
-apm1-hil: hil
+apm1-hil: EXTRAFLAGS += "-DHIL_MODE=HIL_MODE_ATTITUDE "
+apm1-hil: EXTRAFLAGS += "-DLOGGING_ENABLED=DISABLED "
+apm1-hil: apm1
 
-apm2-hil: HAL_BOARD="HAL_BOARD_APM2"
-apm2-hil: hil
+apm2-hil: EXTRAFLAGS += "-DHIL_MODE=HIL_MODE_ATTITUDE "
+apm2-hil: EXTRAFLAGS += "-DLOGGING_ENABLED=DISABLED "
+apm2-hil: apm2
 
-hilsensors: EXTRAFLAGS += "-DHIL_MODE=HIL_MODE_SENSORS "
-hilsensors: clidisabled-nologging
+apm1-hilsensors: EXTRAFLAGS += "-DHIL_MODE=HIL_MODE_SENSORS "
+apm1-hilsensors: EXTRAFLAGS += "-DCLI_SLIDER_ENABLED=DISABLED "
+apm1-hilsensors: EXTRAFLAGS += "-DLOGGING_ENABLED=DISABLED "
+apm1-hilsensors: apm1
 
-apm1-hilsensors: HAL_BOARD = "HAL_BOARD_APM1"
-apm1-hilsensors: hilsensors
-
-apm2-hilsensors: HAL_BOARD = "HAL_BOARD_APM2"
-apm2-hilsensors: hilsensors
+apm2-hilsensors: EXTRAFLAGS += "-DHIL_MODE=HIL_MODE_SENSORS "
+apm2-hilsensors: EXTRAFLAGS += "-DCLI_SLIDER_ENABLED=DISABLED "
+apm2-hilsensors: EXTRAFLAGS += "-DLOGGING_ENABLED=DISABLED "
+apm2-hilsensors: apm2
 
 heli: EXTRAFLAGS += "-DFRAME_CONFIG=HELI_FRAME "
 heli: all
-
-apm1: HAL_BOARD = "HAL_BOARD_APM1"
-apm1: all
-
-apm2: HAL_BOARD="HAL_BOARD_APM2"
-apm2: all
 
 dmp: EXTRAFLAGS += "-DDMP_ENABLED=ENABLED"
 dmp: apm2
