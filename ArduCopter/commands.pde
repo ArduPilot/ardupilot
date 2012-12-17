@@ -158,11 +158,6 @@ static void set_next_WP(struct Location *wp)
     // Save new altitude so we can track it for climb_rate
     set_new_altitude(next_WP.alt);
 
-    // this is used to offset the shrinking longitude as we go towards the poles
-    float rads              = (fabs((float)next_WP.lat)/t7) * 0.0174532925;
-    scaleLongDown           = cos(rads);
-    scaleLongUp             = 1.0f/cos(rads);
-
     // this is handy for the groundstation
     // -----------------------------------
     wp_distance             = get_distance_cm(&current_loc, &next_WP);
@@ -201,6 +196,11 @@ static void init_home()
 
     if (g.log_bitmask & MASK_LOG_CMD)
         Log_Write_Cmd(0, &home);
+
+    // update navigation scalers.  used to offset the shrinking longitude as we go towards the poles
+    float rads              = (fabs((float)next_WP.lat)/t7) * 0.0174532925;
+    scaleLongDown           = cos(rads);
+    scaleLongUp             = 1.0f/cos(rads);
 
     // Save prev loc this makes the calcs look better before commands are loaded
     prev_WP = home;
