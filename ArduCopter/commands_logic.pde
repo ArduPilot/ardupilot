@@ -219,28 +219,21 @@ static bool verify_may()
 static void do_RTL(void)
 {
     // set rtl state
-    rtl_state = RTL_STATE_RETURNING_HOME;
+    rtl_state = RTL_STATE_INITIAL_CLIMB;
 
     // set roll, pitch and yaw modes
     set_roll_pitch_mode(RTL_RP);
-    set_yaw_mode(RTL_YAW);
+    set_yaw_mode(YAW_HOLD);     // first stage of RTL is the initial climb so just hold current yaw
     set_throttle_mode(RTL_THR);
 
     // set navigation mode
-    wp_control = WP_MODE;
+    wp_control = LOITER_MODE;
 
-    // so we know where we are navigating from
+    // initial climb starts at current location
     next_WP = current_loc;
-
-    // Set navigation target to home
-    set_next_WP(&home);
 
     // override altitude to RTL altitude
     set_new_altitude(get_RTL_alt());
-
-    // output control mode to the ground station
-    // -----------------------------------------
-    gcs_send_message(MSG_HEARTBEAT);
 }
 
 /********************************************************************************/
@@ -479,6 +472,26 @@ static bool verify_RTL()
     bool retval = false;
 
     switch( rtl_state ) {
+
+        case RTL_STATE_INITIAL_CLIMB:
+            // rely on verify_altitude function to update alt_change_flag when we've reached the target
+            if(alt_change_flag == REACHED_ALT) {
+                // Set navigation target to home
+                set_next_WP(&home);
+
+                // override target altitude to RTL altitude
+                set_new_altitude(get_RTL_alt());
+
+                // set navigation mode
+                wp_control = WP_MODE;
+
+                // set yaw mode
+                set_yaw_mode(RTL_YAW);
+
+                // advance to next rtl state
+                rtl_state = RTL_STATE_RETURNING_HOME;
+            }
+            break;
 
         case RTL_STATE_RETURNING_HOME:
             // if we've reached home initiate loiter
