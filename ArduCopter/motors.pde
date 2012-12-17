@@ -210,8 +210,8 @@ static void init_disarm_motors()
 static void
 set_servos_4()
 {
-#if FRAME_CONFIG != HELI_FRAME || FRAME_CONFIG != QUAD_FRAME || FRAME_CONFIG != HEXA_FRAME || FRAME_CONFIG != OCTA_FRAME
-    // temp fix for bad attitude
+#if FRAME_CONFIG == TRI_FRAME
+    // To-Do: implement improved stability patch for tri so that we do not need to limit throttle input to motors
     g.rc_3.servo_out = min(g.rc_3.servo_out, 800);
 #endif
     motors.output();
