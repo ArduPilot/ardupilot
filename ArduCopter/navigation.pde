@@ -542,6 +542,12 @@ static void force_new_altitude(int32_t new_alt)
 
 static void set_new_altitude(int32_t new_alt)
 {
+    // if no change exit immediately
+    if(new_alt == next_WP.alt) {
+        return;
+    }
+
+    // update new target altitude
     next_WP.alt     = new_alt;
 
     if(next_WP.alt > (current_loc.alt + 80)) {

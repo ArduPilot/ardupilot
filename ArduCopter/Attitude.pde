@@ -1010,7 +1010,7 @@ get_throttle_rate_stabilized(int16_t target_rate)
     // do not let target altitude get too far from current altitude
     target_alt = constrain(target_alt,current_loc.alt-750,current_loc.alt+750);
 
-    force_new_altitude(target_alt);
+    set_new_altitude(target_alt);
 
     get_throttle_althold(target_alt, ALTHOLD_MAX_CLIMB_RATE);
 }
