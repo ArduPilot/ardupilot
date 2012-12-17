@@ -1,19 +1,13 @@
 include ../libraries/AP_Common/Arduino.mk
 
-nologging: EXTRAFLAGS += "DLOGGING_ENABLED=DISABLED "
-nologging: all
-
 nogps: EXTRAFLAGS += "-DGPS_PROTOCOL=GPS_PROTOCOL_NONE "
 nogps: all
 
-hil: EXTRAFLAGS += "-DHIL_MODE=HIL_MODE_ATTITUDE "
-hil: all
+hil-apm2: EXTRAFLAGS += "-DHIL_MODE=HIL_MODE_ATTITUDE "
+hil-apm2: apm2
 
-hil-apm2: HAL_BOARD = "HAL_BOARD_APM2"
-hil-apm2: hil
-
-hil-apm1: HAL_BOARD = "HAL_BOARD_APM1"
-hil-apm1: hil
+hil-apm1: EXTRAFLAGS += "-DHIL_MODE=HIL_MODE_ATTITUDE "
+hil-apm1: apm1
 
 hil-apm2-nologging: EXTRAFLAGS += "DLOGGING_ENABLED=DISABLED "
 hil-apm2-nologging: hil-apm2
@@ -34,7 +28,8 @@ hilnocli: EXTRAFLAGS += "-DCLI_ENABLED=DISABLED "
 hilnocli: hil
 
 nocli: EXTRAFLAGS +="-DCLI_ENABLED=DISABLED "
-nocli: nologging
+nocli: EXTRAFLAGS += "DLOGGING_ENABLED=DISABLED "
+nocli: all
 
 ublox: EXTRAFLAGS += "-DGPS_PROTOCOL=GPS_PROTOCOL_UBLOX "
 ublox: all
@@ -48,8 +43,8 @@ mtk16: all
 heli: EXTRAFLAGS += "-DFRAME_CONFIG=HELI_FRAME "
 heli: all
 
-apm2-nologging: HAL_BOARD = "HAL_BOARD_APM2"
-apm2-nologging: nologging
+apm2-nologging: EXTRAFLAGS += "DLOGGING_ENABLED=DISABLED "
+apm2-nologging: apm2
 
 apm2-uart2: EXTRAFLAGS += "-DTELEMETRY_UART2=ENABLED "
 apm2-uart2: apm2
