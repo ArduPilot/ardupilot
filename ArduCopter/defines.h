@@ -216,10 +216,11 @@
 #define WP_OPTION_NEXT_CMD                      128
 
 // RTL state
-#define RTL_STATE_RETURNING_HOME    0
-#define RTL_STATE_LOITERING_AT_HOME 1
-#define RTL_STATE_FINAL_DESCENT     2
-#define RTL_STATE_LAND              3
+#define RTL_STATE_INITIAL_CLIMB     0
+#define RTL_STATE_RETURNING_HOME    1
+#define RTL_STATE_LOITERING_AT_HOME 2
+#define RTL_STATE_FINAL_DESCENT     3
+#define RTL_STATE_LAND              4
 
 //repeating events
 #define RELAY_TOGGLE 5
