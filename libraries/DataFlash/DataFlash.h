@@ -94,5 +94,6 @@ public:
 #include "DataFlash_APM1.h"
 #include "DataFlash_APM2.h"
 #include "DataFlash_SITL.h"
+#include "DataFlash_Empty.h"
 
 #endif
