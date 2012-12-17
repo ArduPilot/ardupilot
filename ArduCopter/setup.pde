@@ -1068,24 +1068,6 @@ print_blanks(int16_t num)
     }
 }
 
-
-static bool
-wait_for_yes()
-{
-    int c;
-    while (cliSerial->read() != -1); /* flush */
-    cliSerial->printf_P(PSTR("Y to save\n"));
-
-    do {
-        c = cliSerial->read();
-    } while (-1 == c);
-
-    if (('y' == c) || ('Y' == c))
-        return true;
-    else
-        return false;
-}
-
 static void
 print_divider(void)
 {
