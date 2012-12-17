@@ -13,7 +13,6 @@
 #include <Filter.h>                     // Filter library
 #include <ModeFilter.h>         // ModeFilter class (inherits from Filter class)
 #include <AverageFilter.h>      // AverageFilter class (inherits from Filter class)
-#include <AP_Buffer.h>
 
 const AP_HAL::HAL& hal = AP_HAL_BOARD_DRIVER;
 

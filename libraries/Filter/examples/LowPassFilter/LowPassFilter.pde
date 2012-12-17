@@ -11,7 +11,6 @@
 #include <AP_Math.h>            // ArduPilot Mega Vector/Matrix math Library
 #include <Filter.h>                     // Filter library
 #include <LowPassFilter.h>      // LowPassFilter class (inherits from Filter class)
-#include <AP_Buffer.h>
 
 const AP_HAL::HAL& hal = AP_HAL_BOARD_DRIVER;
 

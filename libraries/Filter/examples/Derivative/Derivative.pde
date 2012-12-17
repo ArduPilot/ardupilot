@@ -11,7 +11,6 @@
 #include <AP_Math.h>
 #include <Filter.h>
 #include <DerivativeFilter.h>
-#include <AP_Buffer.h>
 
 const AP_HAL::HAL& hal = AP_HAL_BOARD_DRIVER;
 
