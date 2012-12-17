@@ -19,19 +19,19 @@ void AP_MotorsHexa::setup_motors()
     // hard coded config for supported frames
     if( _frame_orientation == AP_MOTORS_PLUS_FRAME ) {
         // plus frame set-up
-        add_motor(AP_MOTORS_MOT_1,   0, AP_MOTORS_MATRIX_MOTOR_CW,  AP_MOTORS_MOT_2, 1);
-        add_motor(AP_MOTORS_MOT_2, 180, AP_MOTORS_MATRIX_MOTOR_CCW, AP_MOTORS_MOT_1, 4);
-        add_motor(AP_MOTORS_MOT_3,-120, AP_MOTORS_MATRIX_MOTOR_CW,  AP_MOTORS_MOT_4, 5);
-        add_motor(AP_MOTORS_MOT_4,  60, AP_MOTORS_MATRIX_MOTOR_CCW, AP_MOTORS_MOT_3, 2);
-        add_motor(AP_MOTORS_MOT_5, -60, AP_MOTORS_MATRIX_MOTOR_CCW, AP_MOTORS_MOT_6, 6);
-        add_motor(AP_MOTORS_MOT_6, 120, AP_MOTORS_MATRIX_MOTOR_CW,  AP_MOTORS_MOT_5, 3);
+        add_motor(AP_MOTORS_MOT_1,   0, AP_MOTORS_MATRIX_MOTOR_CW,  1);
+        add_motor(AP_MOTORS_MOT_2, 180, AP_MOTORS_MATRIX_MOTOR_CCW, 4);
+        add_motor(AP_MOTORS_MOT_3,-120, AP_MOTORS_MATRIX_MOTOR_CW,  5);
+        add_motor(AP_MOTORS_MOT_4,  60, AP_MOTORS_MATRIX_MOTOR_CCW, 2);
+        add_motor(AP_MOTORS_MOT_5, -60, AP_MOTORS_MATRIX_MOTOR_CCW, 6);
+        add_motor(AP_MOTORS_MOT_6, 120, AP_MOTORS_MATRIX_MOTOR_CW,  3);
     }else{
         // X frame set-up
-        add_motor(AP_MOTORS_MOT_1,  90, AP_MOTORS_MATRIX_MOTOR_CW,  AP_MOTORS_MOT_2, 2);
-        add_motor(AP_MOTORS_MOT_2, -90, AP_MOTORS_MATRIX_MOTOR_CCW, AP_MOTORS_MOT_1, 5);
-        add_motor(AP_MOTORS_MOT_3, -30, AP_MOTORS_MATRIX_MOTOR_CW,  AP_MOTORS_MOT_4, 6);
-        add_motor(AP_MOTORS_MOT_4, 150, AP_MOTORS_MATRIX_MOTOR_CCW, AP_MOTORS_MOT_3, 3);
-        add_motor(AP_MOTORS_MOT_5,  30, AP_MOTORS_MATRIX_MOTOR_CCW, AP_MOTORS_MOT_6, 1);
-        add_motor(AP_MOTORS_MOT_6,-150, AP_MOTORS_MATRIX_MOTOR_CW,  AP_MOTORS_MOT_5, 4);
+        add_motor(AP_MOTORS_MOT_1,  90, AP_MOTORS_MATRIX_MOTOR_CW,  2);
+        add_motor(AP_MOTORS_MOT_2, -90, AP_MOTORS_MATRIX_MOTOR_CCW, 5);
+        add_motor(AP_MOTORS_MOT_3, -30, AP_MOTORS_MATRIX_MOTOR_CW,  6);
+        add_motor(AP_MOTORS_MOT_4, 150, AP_MOTORS_MATRIX_MOTOR_CCW, 3);
+        add_motor(AP_MOTORS_MOT_5,  30, AP_MOTORS_MATRIX_MOTOR_CCW, 1);
+        add_motor(AP_MOTORS_MOT_6,-150, AP_MOTORS_MATRIX_MOTOR_CW,  4);
     }
 }

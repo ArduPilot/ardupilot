@@ -15,19 +15,11 @@ extern const AP_HAL::HAL& hal;
 // Init
 void AP_MotorsMatrix::Init()
 {
-    int8_t i;
-
     // call parent Init function to set-up throttle curve
     AP_Motors::Init();
 
     // setup the motors
     setup_motors();
-
-    // double check that opposite motor definitions are ok
-    for( i=0; i<AP_MOTORS_MAX_NUM_MOTORS; i++ ) {
-        if( opposite_motor[i] <= 0 || opposite_motor[i] >= AP_MOTORS_MAX_NUM_MOTORS || !motor_enabled[opposite_motor[i]] )
-            opposite_motor[i] = AP_MOTORS_MATRIX_MOTOR_UNDEFINED;
-    }
 
     // enable fast channels or instant pwm
     set_update_rate(_speed_hz);
@@ -328,7 +320,7 @@ void AP_MotorsMatrix::output_test()
 }
 
 // add_motor
-void AP_MotorsMatrix::add_motor_raw(int8_t motor_num, float roll_fac, float pitch_fac, float yaw_fac, int8_t opposite_motor_num, int8_t testing_order)
+void AP_MotorsMatrix::add_motor_raw(int8_t motor_num, float roll_fac, float pitch_fac, float yaw_fac, int8_t testing_order)
 {
     // ensure valid motor number is provided
     if( motor_num >= 0 && motor_num < AP_MOTORS_MAX_NUM_MOTORS ) {
@@ -344,13 +336,6 @@ void AP_MotorsMatrix::add_motor_raw(int8_t motor_num, float roll_fac, float pitc
         _pitch_factor[motor_num] = pitch_fac;
         _yaw_factor[motor_num] = yaw_fac;
 
-        // set opposite motor after checking it's somewhat valid
-        if( opposite_motor_num == AP_MOTORS_MATRIX_MOTOR_UNDEFINED || (opposite_motor_num >=0 && opposite_motor_num < AP_MOTORS_MAX_NUM_MOTORS) ) {
-            opposite_motor[motor_num] = opposite_motor_num;
-        }else{
-            opposite_motor[motor_num] = AP_MOTORS_MATRIX_MOTOR_UNDEFINED;
-        }
-
         // set order that motor appears in test
         if( testing_order == AP_MOTORS_MATRIX_ORDER_UNDEFINED ) {
             test_order[motor_num] = motor_num;
@@ -361,7 +346,7 @@ void AP_MotorsMatrix::add_motor_raw(int8_t motor_num, float roll_fac, float pitc
 }
 
 // add_motor using just position and prop direction
-void AP_MotorsMatrix::add_motor(int8_t motor_num, float angle_degrees, int8_t direction, int8_t opposite_motor_num, int8_t testing_order)
+void AP_MotorsMatrix::add_motor(int8_t motor_num, float angle_degrees, int8_t direction, int8_t testing_order)
 {
     // call raw motor set-up method
     add_motor_raw(
@@ -369,7 +354,6 @@ void AP_MotorsMatrix::add_motor(int8_t motor_num, float angle_degrees, int8_t di
         cos(radians(angle_degrees + 90)),               // roll factor
         cos(radians(angle_degrees)),                    // pitch factor
         (float)direction,                                               // yaw factor
-        opposite_motor_num,
         testing_order);
 
 }
@@ -377,8 +361,6 @@ void AP_MotorsMatrix::add_motor(int8_t motor_num, float angle_degrees, int8_t di
 // remove_motor - disabled motor and clears all roll, pitch, throttle factors for this motor
 void AP_MotorsMatrix::remove_motor(int8_t motor_num)
 {
-    int8_t i;
-
     // ensure valid motor number is provided
     if( motor_num >= 0 && motor_num < AP_MOTORS_MAX_NUM_MOTORS ) {
 
@@ -391,13 +373,6 @@ void AP_MotorsMatrix::remove_motor(int8_t motor_num)
         _roll_factor[motor_num] = 0;
         _pitch_factor[motor_num] = 0;
         _yaw_factor[motor_num] = 0;
-        opposite_motor[motor_num] = AP_MOTORS_MATRIX_MOTOR_UNDEFINED;
-    }
-
-    // if another motor has referred to this motor as it's opposite, remove that reference
-    for( i=0; i<AP_MOTORS_MAX_NUM_MOTORS; i++ ) {
-        if( opposite_motor[i] == motor_num )
-            opposite_motor[i] = AP_MOTORS_MATRIX_MOTOR_UNDEFINED;
     }
 }
 
