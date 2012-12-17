@@ -553,7 +553,6 @@ static int32_t yaw_rate_target_bf = 0;      // body frame yaw rate target
 ////////////////////////////////////////////////////////////////////////////////
 static int16_t throttle_accel_target_ef;    // earth frame throttle acceleration target
 static bool throttle_accel_controller_active;   // true when accel based throttle controller is active, false when higher level throttle controllers are providing throttle output directly
-static float z_accel_meas;                  // filtered throttle acceleration
 static float throttle_avg;                  // g.throttle_cruise as a float
 static int16_t desired_climb_rate;          // pilot desired climb rate - for logging purposes only
 
@@ -2153,6 +2152,10 @@ static void tuning(){
 
     case CH6_THROTTLE_KI:
         g.pid_throttle.kI(tuning_value);
+        break;
+
+    case CH6_THROTTLE_KD:
+        g.pid_throttle.kD(tuning_value);
         break;
 
     case CH6_TOP_BOTTOM_RATIO:

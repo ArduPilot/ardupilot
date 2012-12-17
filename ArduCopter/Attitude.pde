@@ -803,22 +803,18 @@ void throttle_accel_deactivate()
 static int16_t
 get_throttle_accel(int16_t z_target_accel)
 {
-    int32_t p,i,d;      // used to capture pid values for logging
-    int16_t z_accel_error, output;
-    float z_accel_meas_temp;
+    static float z_accel_error = 0;     // The acceleration error in cm.
+    int32_t p,i,d;                      // used to capture pid values for logging
+    int16_t output;
+    float z_accel_meas;
 
     Vector3f accel = ins.get_accel();
-    //Matrix3f dcm_matrix   = ahrs.get_dcm_matrix();
 
     // Calculate Earth Frame Z acceleration
-    //z_accel_meas_temp = (dcm_matrix.c.x * accel.x + dcm_matrix.c.y * accel.y + dcm_matrix.c.z * accel.z)* 100.0;
-    z_accel_meas_temp = ahrs.get_accel_ef().z;
+    z_accel_meas = ahrs.get_accel_ef().z;
 
-    // Filter Earth Frame Z acceleration with fc = 1 Hz
-    z_accel_meas = z_accel_meas + 0.059117 * (z_accel_meas_temp - z_accel_meas);
-
-    // calculate accel error
-    z_accel_error = constrain(z_target_accel + z_accel_meas, -32000, 32000);
+    // calculate accel error and Filter with fc = 1 Hz
+    z_accel_error = z_accel_error + 0.11164 * (constrain(z_target_accel + z_accel_meas, -32000, 32000) - z_accel_error);
 
     // separately calculate p, i, d values for logging
     p = g.pid_throttle_accel.get_p(z_accel_error);
@@ -940,15 +936,15 @@ static int32_t get_pilot_desired_direct_alt(int16_t throttle_control)
 static void
 get_throttle_rate(int16_t z_target_speed)
 {
+    static float z_rate_error = 0;   // The velocity error in cm.
     int32_t p,i,d;      // used to capture pid values for logging
-    int16_t z_rate_error;
     int16_t output;     // the target acceleration if the accel based throttle is enabled, otherwise the output to be sent to the motors
 
-    // calculate rate error
+    // calculate rate error and filter with cut off frequency of 2 Hz
 #if INERTIAL_NAV_Z == ENABLED
-    z_rate_error    = z_target_speed - inertial_nav.get_velocity_z();    // calc the speed error
+    z_rate_error    = z_rate_error + 0.20085 * ((z_target_speed - inertial_nav.get_velocity_z()) - z_rate_error);
 #else
-    z_rate_error    = z_target_speed - climb_rate;              // calc the speed error
+    z_rate_error    = z_rate_error + 0.20085 * ((z_target_speed - climb_rate) - z_rate_error);
 #endif
 
     // separately calculate p, i, d values for logging
@@ -998,35 +994,25 @@ get_throttle_rate(int16_t z_target_speed)
 static void
 get_throttle_rate_stabilized(int16_t target_rate)
 {
-    static float alt_desired = 0;   // The desired altitude in cm.
-    static float alt_rate = 0;      // the desired climb rate in cm/s.
+    static float target_alt = 0;   // The desired altitude in cm.
     static uint32_t last_call_ms = 0;
 
-    float _altitude_error;
-    int16_t desired_rate;
-    int16_t alt_error_max;
     uint32_t now = millis();
 
     // reset target altitude if this controller has just been engaged
     if( now - last_call_ms > 1000 ) {
-       alt_desired = current_loc.alt;
+        target_alt = current_loc.alt;
     }
     last_call_ms = millis();
 
-    // Limit acceleration of the desired altitude to +-5 m/s^2
-    alt_rate += constrain(target_rate-alt_rate, -10, 10);
-    alt_desired += alt_rate * 0.02;
+    target_alt += target_rate * 0.02;
 
-    alt_error_max = constrain(600-abs(target_rate),100,600);
-    _altitude_error = constrain(alt_desired - current_loc.alt, -alt_error_max, alt_error_max);
-    alt_desired = current_loc.alt + _altitude_error;
+    // do not let target altitude get too far from current altitude
+    target_alt = constrain(target_alt,current_loc.alt-750,current_loc.alt+750);
 
-    desired_rate = g.pi_alt_hold.get_p(_altitude_error);
-    desired_rate = constrain(desired_rate, -200, 200) + target_rate;
-    desired_rate = constrain(desired_rate, -VELOCITY_MAX_Z, VELOCITY_MAX_Z);  // TO-DO: replace constrains with ALTHOLD_MIN_CLIMB_RATE and ALTHOLD_MAX_CLIMB_RATE?
+    force_new_altitude(target_alt);
 
-    // call rate based throttle controller which will update accel based throttle controller targets
-    get_throttle_rate(desired_rate);
+    get_throttle_althold(target_alt, ALTHOLD_MAX_CLIMB_RATE);
 }
 
 // get_throttle_althold - hold at the desired altitude in cm
@@ -1037,17 +1023,29 @@ get_throttle_althold(int32_t target_alt, int16_t max_climb_rate)
 {
     int32_t _altitude_error;
     int16_t desired_rate;
+    int32_t linear_distance;      // the distace we swap between linear and sqrt.
 
-    _altitude_error = target_alt - current_loc.alt;
-    desired_rate = g.pi_alt_hold.get_p(_altitude_error);
+    // calculate altitude error
+#if INERTIAL_NAV_Z == ENABLED
+    altitude_error    = target_alt - inertial_nav.get_altitude();
+#else
+    altitude_error    = target_alt - current_loc.alt;
+#endif
+
+    linear_distance = 250/(2*g.pi_alt_hold.kP()*g.pi_alt_hold.kP());
+
+    if( altitude_error < linear_distance ) {
+        desired_rate = g.pi_alt_hold.get_p(altitude_error);
+    }else{
+        desired_rate = sqrt(2*250*(altitude_error-linear_distance));
+    }
+
     desired_rate = constrain(desired_rate, ALTHOLD_MIN_CLIMB_RATE, max_climb_rate);
 
     // call rate based throttle controller which will update accel based throttle controller targets
     get_throttle_rate(desired_rate);
 
     // TO-DO: enabled PID logging for this controller
-    //Log_Write_PID(1, (int32_t)target_alt, (int32_t)current_loc.alt, (int32_t)climb_rate, (int32_t)altitude_error, (int32_t)desired_rate, (float)desired_accel);
-    //Log_Write_PID(1, target_alt, current_loc.alt, climb_rate, altitude_error, desired_rate, desired_accel);
 }
 
 // get_throttle_land - high level landing logic
@@ -1076,6 +1074,7 @@ get_throttle_land()
                 set_land_complete(true);
                 if( g.rc_3.control_in == 0 || ap.failsafe ) {
                     init_disarm_motors();
+                    reset_throttle_I();
                 }
             }
         }else{
@@ -1137,6 +1136,7 @@ static void reset_throttle_I(void)
     // For Altitude Hold
     g.pi_alt_hold.reset_I();
     g.pid_throttle.reset_I();
+    g.pid_throttle_accel.reset_I();
 }
 
 static void reset_stability_I(void)
