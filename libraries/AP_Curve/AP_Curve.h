@@ -7,6 +7,7 @@
 #define __AP_CURVE_H__
 
 #include <AP_Common.h>
+#include <AP_Progmem.h>
 #include <AP_Math.h>        // ArduPilot Mega Vector/Matrix math Library
 #include <AP_HAL.h>
 
@@ -38,107 +39,19 @@ protected:
     bool        _constrained;       // if true, first and last points added will constrain the y values returned by get_y function
 };
 
-// Typedef for convenience
+
+/* Typedefs for template instansations of AP_Curve.
+ * Only use the AP_Curve instances listed here!
+ * If you need a different one, you must first instantiate the template at the
+ * end of AP_Curve.cpp, then add a typedef here.  We can't leave the whole
+ * template implementation in the header due to PSTR related issues.
+ */
+
 typedef AP_Curve<int16_t,3> AP_CurveInt16_Size3;
 typedef AP_Curve<int16_t,4> AP_CurveInt16_Size4;
 typedef AP_Curve<int16_t,5> AP_CurveInt16_Size5;
-
 typedef AP_Curve<uint16_t,3> AP_CurveUInt16_Size3;
 typedef AP_Curve<uint16_t,4> AP_CurveUInt16_Size4;
 typedef AP_Curve<uint16_t,5> AP_CurveUInt16_Size5;
-
-// Constructor
-template <class T, uint8_t SIZE>
-AP_Curve<T,SIZE>::AP_Curve() :
-	_num_points(0)
-{
-	// clear the curve
-	clear();
-};
-
-// clear the curve
-template <class T, uint8_t SIZE>
-void AP_Curve<T,SIZE>::clear() {
-	// clear the curve
-	for( uint8_t i=0; i<SIZE; i++ ) {
-		_x[i] = 0;
-		_y[i] = 0;
-		_slope[i] = 0.0;
-	}
-	_num_points = 0;
-}
-
-// add_point - adds a point to the curve
-template <class T, uint8_t SIZE>
-bool AP_Curve<T,SIZE>::add_point( T x, T y )
-{
-	if( _num_points < SIZE ) {
-		_x[_num_points] = x;
-		_y[_num_points] = y;
-
-		// increment the number of points
-		_num_points++;
-
-		// if we have at least two points calculate the slope
-		if( _num_points > 1 ) {
-			_slope[_num_points-2] = (float)(_y[_num_points-1] - _y[_num_points-2]) / (float)(_x[_num_points-1] - _x[_num_points-2]);
-			_slope[_num_points-1] = _slope[_num_points-2];	// the final slope is for interpolation beyond the end of the curve
-		}
-		return true;
-	}else{
-		// we do not have room for the new point
-		return false;
-	}
-}
-
-// get_y - returns the y value on the curve for a given x value
-template <class T, uint8_t SIZE>
-T AP_Curve<T,SIZE>::get_y( T x )
-{
-	uint8_t i;
-	T result;
-
-	// deal with case where ther is no curve
-	if( _num_points == 0 ) {
-		return x;
-	}
-
-	// when x value is lower than the first point's x value, return minimum y value
-	if( x <= _x[0] ) {
-		return _y[0];
-	}
-
-    // when x value is higher than the last point's x value, return maximum y value
-	if( x >= _x[_num_points-1] ) {
-		return _y[_num_points-1];
-	}
-
-	// deal with the normal case
-	for( i=0; i<_num_points-1; i++ ) {
-		if( x >= _x[i] && x <= _x[i+1] ) {
-			result = _y[i] + (x - _x[i]) * _slope[i];
-			return result;
-		}
-	}
-
-	// we should never get here
-	return x;
-}
-
-// displays the contents of the curve (for debugging)
-template <class T, uint8_t SIZE>
-void AP_Curve<T,SIZE>::dump_curve(AP_HAL::BetterStream* s)
-{
-	s->println_P(PSTR("Curve:"));
-	for( uint8_t i = 0; i<_num_points; i++ ){
-		s->print_P(PSTR("x:"));
-		s->print(_x[i]);
-		s->print_P(PSTR("\ty:"));
-		s->print(_y[i]);
-		s->print_P(PSTR("\tslope:"));
-		s->print(_slope[i],4);
-		s->println();
-	}
-}
 
 #endif  // __AP_CURVE_H__
