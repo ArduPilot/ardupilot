@@ -12,7 +12,13 @@
 
 extern const AP_HAL::HAL& hal;
 
+#if CONFIG_HAL_BOARD == HAL_BOARD_APM1
 #define RELAY_PIN 47
+#else CONFIG_HAL_BOARD == HAL_BOARD_APM2
+#define RELAY_PIN 26
+#else
+#error "no RELAY_PIN defined for this board"
+#endif
 
 void AP_Relay::init() {
     hal.gpio->pinMode(RELAY_PIN, GPIO_OUTPUT);

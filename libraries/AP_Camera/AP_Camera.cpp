@@ -60,9 +60,7 @@ AP_Camera::servo_pic()
 void
 AP_Camera::relay_pic()
 {
-#if CONFIG_HAL_BOARD == HAL_BOARD_APM1
-    relay.on();
-#endif
+    _apm_relay->on();
 
     // leave a message that it should be active for this many loops (assumes 50hz loops)
     _trigger_counter = constrain_int16(_trigger_duration*5,0,255);
@@ -142,7 +140,7 @@ AP_Camera::trigger_pic_cleanup()
                 break;
 #if CONFIG_HAL_BOARD == HAL_BOARD_APM1
             case AP_CAMERA_TRIGGER_TYPE_RELAY:
-                relay.off();
+                _apm_relay->off();
                 break;
 #endif
             case AP_CAMERA_TRIGGER_TYPE_TRANSISTOR:
@@ -162,7 +160,8 @@ AP_Camera::configure_msg(mavlink_message_t* msg)
         // not for us
         return;
     }
-    // TODO do something with these values
+    // This values may or not be used by APM
+    // They are bypassed as "echo" to a external specialized board
     /*
      *  packet.aperture
      *  packet.command_id
@@ -190,7 +189,8 @@ AP_Camera::control_msg(mavlink_message_t* msg)
         // not for us
         return;
     }
-    // TODO do something with these values
+    // This values may or not be used by APM (the shot is)
+    // They are bypassed as "echo" to a external specialized board
     /*
      *  packet.command_id
      *  packet.extra_param

@@ -36,5 +36,4 @@ public:
     bool        get();
 };
 
-
 #endif /* AP_RELAY_H_ */
