@@ -21,7 +21,7 @@ void EmptyGPIO::write(uint8_t pin, uint8_t value)
 {}
 
 /* Alternative interface: */
-AP_HAL::DigitalSource* channel(uint16_t n) {
+AP_HAL::DigitalSource* EmptyGPIO::channel(uint16_t n) {
     return new EmptyDigitalSource(0);
 }
 

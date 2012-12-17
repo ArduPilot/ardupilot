@@ -25,11 +25,11 @@ EmptyAnalogIn::EmptyAnalogIn()
 void EmptyAnalogIn::init(void* machtnichts)
 {}
 
-AP_HAL::AnalogSource* channel(int16_t n) {
+AP_HAL::AnalogSource* EmptyAnalogIn::channel(int16_t n) {
     return new EmptyAnalogSource(1.11);
 }
 
-AP_HAL::AnalogSource* channel(int16_t n, float scale) {
+AP_HAL::AnalogSource* EmptyAnalogIn::channel(int16_t n, float scale) {
     return new EmptyAnalogSource(scale/2);
 }
 

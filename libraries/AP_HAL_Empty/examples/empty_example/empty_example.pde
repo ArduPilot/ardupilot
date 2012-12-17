@@ -7,7 +7,7 @@
 #include <AP_HAL.h>
 #include <AP_HAL_Empty.h>
 
-extern const AP_HAL::HAL& hal;// = AP_HAL_Empty;
+const AP_HAL::HAL& hal = AP_HAL_Empty;
 
 void setup() {}
 void loop() {}
