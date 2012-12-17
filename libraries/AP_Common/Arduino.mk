@@ -457,14 +457,17 @@ endif
 all:	$(SKETCHELF) $(SKETCHEEP) $(SKETCHHEX)
 
 # convenient targets for our supported boards
-sitl:
-	make -f Makefile HAL_BOARD=HAL_BOARD_AVR_SITL 
+sitl: HAL_BOARD = "HAL_BOARD_AVR_SITL"
+sitl: all
 
-apm1:
-	make -f Makefile HAL_BOARD=HAL_BOARD_APM1
+apm1: HAL_BOARD = "HAL_BOARD_APM1"
+apm1: all
 
-apm2:
-	make -f Makefile HAL_BOARD=HAL_BOARD_APM2
+apm2: HAL_BOARD = "HAL_BOARD_APM2"
+apm2: all
+
+emptyhal: HAL_BOARD = "HAL_BOARD_EMPTY"
+emptyhal: all
 
 .PHONY: upload
 upload: $(SKETCHHEX)
