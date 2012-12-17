@@ -4,6 +4,7 @@
 #define __AP_MOTORS_CLASS_H__
 
 #include <AP_Common.h>
+#include <AP_Progmem.h>
 #include <AP_Math.h>        // ArduPilot Mega Vector/Matrix math Library
 #include <AP_Curve.h>       // Curve used to linearlise throttle pwm to thrust
 #include <RC_Channel.h>     // RC Channel Library
