@@ -5,6 +5,7 @@
 #include <AP_HAL_Empty.h>
 
 class Empty::EmptyI2CDriver : public AP_HAL::I2CDriver {
+public:
     void begin();
     void end();
     void setTimeout(uint16_t ms);
