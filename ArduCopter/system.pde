@@ -200,15 +200,6 @@ static void init_ardupilot()
     }
 #endif
 
-/*
-#ifdef RADIO_OVERRIDE_DEFAULTS
-    {
-        int16_t rc_override[8] = RADIO_OVERRIDE_DEFAULTS;
-        APM_RC.setHIL(rc_override);
-    }
-#endif
-*/
-
 #if FRAME_CONFIG == HELI_FRAME
     motors.servo_manual = false;
     motors.init_swash();              // heli initialisation
