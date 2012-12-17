@@ -29,8 +29,8 @@
 #define ROLL_PITCH_ACRO         1
 #define ROLL_PITCH_AUTO         2
 #define ROLL_PITCH_STABLE_OF    3
-#define ROLL_PITCH_TOY          4       // THOR This is the Roll and Pitch
-                                        // mode
+#define ROLL_PITCH_TOY          4       // THOR This is the Roll and Pitch mode
+#define ROLL_PITCH_LOITER_PR    5
 
 #define THROTTLE_MANUAL                     0   // manual throttle mode - pilot input goes directly to motors
 #define THROTTLE_MANUAL_TILT_COMPENSATED    1   // mostly manual throttle but with some tilt compensation

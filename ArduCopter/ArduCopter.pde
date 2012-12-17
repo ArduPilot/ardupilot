@@ -1568,6 +1568,7 @@ bool set_roll_pitch_mode(uint8_t new_roll_pitch_mode)
         case ROLL_PITCH_AUTO:
         case ROLL_PITCH_STABLE_OF:
         case ROLL_PITCH_TOY:
+        case ROLL_PITCH_LOITER_PR:
             roll_pitch_initialised = true;
             break;
     }
@@ -1673,6 +1674,17 @@ void update_roll_pitch_mode(void)
     // a call out to the main toy logic
     case ROLL_PITCH_TOY:
         roll_pitch_toy();
+        break;
+        
+    case ROLL_PITCH_LOITER_PR:
+    
+        // LOITER does not get SIMPLE mode ability
+        
+        nav_roll                += constrain(wrap_180(auto_roll  - nav_roll),  -g.auto_slew_rate.get(), g.auto_slew_rate.get());                 // 40 deg a second
+        nav_pitch               += constrain(wrap_180(auto_pitch - nav_pitch), -g.auto_slew_rate.get(), g.auto_slew_rate.get());                 // 40 deg a second
+
+        get_stabilize_roll(nav_roll);
+        get_stabilize_pitch(nav_pitch);
         break;
     }
 

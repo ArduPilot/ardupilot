@@ -829,6 +829,10 @@
 #ifndef LOITER_IMAX
  # define LOITER_IMAX          		30             // degrees
 #endif
+#ifndef LOITER_REPOSITION_RATE
+ # define LOITER_REPOSITION_RATE   500.0            // cm/s
+#endif
+
 
 //////////////////////////////////////////////////////////////////////////////
 // Loiter Navigation control gains

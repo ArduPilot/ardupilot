@@ -61,3 +61,6 @@
 
 //#define LOGGING_ENABLED		DISABLED
 
+#define LOITER_REPOSITIONING    DISABLED                          // Experimental Do Not Use
+// #define LOITER_RP               ROLL_PITCH_LOITER_PR
+
