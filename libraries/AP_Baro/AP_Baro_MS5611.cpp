@@ -62,50 +62,37 @@ AP_HAL::Semaphore* AP_Baro_MS5611::_spi_sem = NULL;
 
 uint8_t AP_Baro_MS5611::_spi_read(uint8_t reg)
 {
-    uint8_t return_value;
-    uint8_t addr = reg; // | 0x80; // Set most significant bit
-    _spi->cs_assert();
-    _spi->transfer(addr); // discarded
-    return_value = _spi->transfer(0);
-    _spi->cs_release();
-    return return_value;
+    uint8_t tx[2];
+    uint8_t rx[2];
+    tx[0] = reg; tx[1] = 0;
+    _spi->transaction(tx, rx, 2);
+    return rx[1];
 }
 
 uint16_t AP_Baro_MS5611::_spi_read_16bits(uint8_t reg)
 {
-    uint8_t byteH, byteL;
-    uint16_t return_value;
-    uint8_t addr = reg; // | 0x80; // Set most significant bit
-    _spi->cs_assert();
-    _spi->transfer(addr); // discarded
-    byteH = _spi->transfer(0);
-    byteL = _spi->transfer(0);
-    _spi->cs_release();
-    return_value = ((uint16_t)byteH<<8) | (byteL);
-    return return_value;
+    uint8_t tx[3];
+    uint8_t rx[3];
+    tx[0] = reg; tx[1] = 0; tx[2] = 0;
+    _spi->transaction(tx, rx, 3);
+    return ((uint16_t) rx[1] << 8 ) | ( rx[2] );
 }
 
 uint32_t AP_Baro_MS5611::_spi_read_adc()
 {
-    uint8_t byteH,byteM,byteL;
-    uint32_t return_value;
-    uint8_t addr = 0x00;
-    _spi->cs_assert();
-    _spi->transfer(addr); // discarded
-    byteH = _spi->transfer(0);
-    byteM = _spi->transfer(0);
-    byteL = _spi->transfer(0);
-    _spi->cs_release();
-    return_value = (((uint32_t)byteH)<<16) | (((uint32_t)byteM)<<8) | (byteL);
-    return return_value;
+    uint8_t tx[4];
+    uint8_t rx[4];
+    memset(tx, 0, 4); /* first byte is addr = 0 */
+    _spi->transaction(tx, rx, 4);
+    return (((uint32_t)rx[1])<<16) | (((uint32_t)rx[2])<<8) | ((uint32_t)rx[3]);
 }
 
 
 void AP_Baro_MS5611::_spi_write(uint8_t reg)
 {
-    _spi->cs_assert();
-    _spi->transfer(reg); // discarded
-    _spi->cs_release();
+    uint8_t tx[1];
+    tx[0] = reg;
+    _spi->transaction(tx, NULL, 1);
 }
 
 // Public Methods //////////////////////////////////////////////////////////////
