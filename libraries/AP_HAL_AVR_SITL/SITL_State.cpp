@@ -17,6 +17,7 @@
 #include <unistd.h>
 #include <stdlib.h>
 #include <errno.h>
+#include <sys/select.h>
 
 #include <AP_Param.h>
 
@@ -449,5 +450,36 @@ void SITL_State::init(int argc, char * const argv[])
     _scheduler = (SITLScheduler *)hal.scheduler;
 	_parse_command_line(argc, argv);
 }
+
+// wait for serial input, or 100usec
+void SITL_State::loop_hook(void)
+{
+    struct timeval tv;
+    fd_set fds;
+    int fd, max_fd = 0;
+
+    FD_ZERO(&fds);
+    fd = ((AVR_SITL::SITLUARTDriver*)hal.uartA)->_fd;
+    if (fd != -1) {
+        FD_SET(fd, &fds);
+        max_fd = max(fd, max_fd);
+    }
+    fd = ((AVR_SITL::SITLUARTDriver*)hal.uartB)->_fd;
+    if (fd != -1) {
+        FD_SET(fd, &fds);
+        max_fd = max(fd, max_fd);
+    }
+    fd = ((AVR_SITL::SITLUARTDriver*)hal.uartC)->_fd;
+    if (fd != -1) {
+        FD_SET(fd, &fds);
+        max_fd = max(fd, max_fd);
+    }
+    tv.tv_sec = 0;
+    tv.tv_usec = 100;
+    fflush(stdout);
+    fflush(stderr);
+    select(max_fd+1, &fds, NULL, NULL, &tv);
+}
+
 
 #endif

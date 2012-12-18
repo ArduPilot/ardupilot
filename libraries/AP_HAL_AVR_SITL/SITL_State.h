@@ -37,6 +37,7 @@ public:
     ssize_t gps_read(int fd, void *buf, size_t count);
     static uint16_t pwm_output[11];
     static uint16_t pwm_input[8];
+    static void loop_hook(void);
 
 private:
     void _parse_command_line(int argc, char * const argv[]);

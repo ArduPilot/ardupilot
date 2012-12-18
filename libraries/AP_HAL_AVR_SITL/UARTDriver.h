@@ -56,11 +56,13 @@ public:
     /* Implementations of Print virtual methods */
     size_t write(uint8_t c);
 
+    // file descriptor, exposed so SITL_State::loop_hook() can use it
+	int _fd;
+
 private:
     uint8_t _portNumber;
 	bool _connected; // true if a client has connected
 	int _listen_fd;  // socket we are listening on
-	int _fd;         // data socket
 	int _serial_port;
 	static bool _console;
 	bool _nonblocking_writes;
