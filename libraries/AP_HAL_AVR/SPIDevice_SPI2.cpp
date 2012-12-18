@@ -71,8 +71,14 @@ inline uint8_t AVRSPI2DeviceDriver::_transfer(uint8_t data) {
 void AVRSPI2DeviceDriver::transaction(const uint8_t *tx, uint8_t *rx,
         uint16_t len) {
     _cs_assert();
-    for (uint16_t i = 0; i < len; i++) {
-        rx[i] = _transfer(tx[i]);
+    if (rx == NULL) {
+        for (uint16_t i = 0; i < len; i++) {
+            _transfer(tx[i]);
+        }
+    } else {
+        for (uint16_t i = 0; i < len; i++) {
+            rx[i] = _transfer(tx[i]);
+        }
     }
     _cs_release();
 }
