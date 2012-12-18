@@ -92,8 +92,8 @@ static void set_servos(void)
 		// do a direct pass through of radio values
 		g.channel_roll.radio_out 		= g.channel_roll.radio_in;
 
-                if(obstacle)    // obstacle in front, turn right in Stabilize mode
-                  g.channel_roll.radio_out -= 500;
+        if(obstacle)    // obstacle in front, turn right in Stabilize mode
+            g.channel_roll.radio_out -= 500;
 
 		g.channel_pitch.radio_out 		= g.channel_pitch.radio_in;
 
