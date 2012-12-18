@@ -243,9 +243,7 @@ bool AP_InertialSensor_MPU6000::update( void )
     int32_t sum[7];
     uint16_t count;
     float count_scale;
-    Vector3f gyro_offset = _gyro_offset.get();
     Vector3f accel_scale = _accel_scale.get();
-    Vector3f accel_offset = _accel_offset.get();
 
     // wait for at least 1 sample
     uint32_t tstart = hal.scheduler->micros();
@@ -276,7 +274,7 @@ bool AP_InertialSensor_MPU6000::update( void )
     _gyro.x = _gyro_scale * _gyro_data_sign[0] * sum[_gyro_data_index[0]] * count_scale;
     _gyro.y = _gyro_scale * _gyro_data_sign[1] * sum[_gyro_data_index[1]] * count_scale;
     _gyro.z = _gyro_scale * _gyro_data_sign[2] * sum[_gyro_data_index[2]] * count_scale;
-    _gyro -= gyro_offset;
+    _gyro -= _gyro_offset;
 
     _accel.x = accel_scale.x * _accel_data_sign[0] * sum[_accel_data_index[0]] * count_scale * MPU6000_ACCEL_SCALE_1G;
     _accel.y = accel_scale.y * _accel_data_sign[1] * sum[_accel_data_index[1]] * count_scale * MPU6000_ACCEL_SCALE_1G;
@@ -357,7 +355,6 @@ void AP_InertialSensor_MPU6000::read(uint32_t)
 
 uint8_t AP_InertialSensor_MPU6000::register_read( uint8_t reg )
 {
-    uint8_t return_value;
     uint8_t addr = reg | 0x80; // Set most significant bit
 
     uint8_t tx[2];
