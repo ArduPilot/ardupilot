@@ -15,6 +15,7 @@
 #include "Storage.h"
 #include "Console.h"
 #include "RCInput.h"
+#include "RCOutput.h"
 #include "SITL_State.h"
 
 #include <AP_HAL_Empty.h>
@@ -26,9 +27,9 @@ static SITLScheduler sitlScheduler;
 static SITLEEPROMStorage sitlEEPROMStorage;
 static SITLConsoleDriver consoleDriver;
 static SITL_State sitlState;
+static SITLRCInput  sitlRCInput(&sitlState);
+static SITLRCOutput sitlRCOutput(&sitlState);
 
-static Empty::EmptyRCInput  emptyRCInput;
-static Empty::EmptyRCOutput emptyRCOutput;
 static Empty::EmptyGPIO emptyGPIO;
 static Empty::EmptyAnalogIn emptyAnalogIn;
 
@@ -46,11 +47,9 @@ HAL_AVR_SITL::HAL_AVR_SITL() :
         &emptyAnalogIn, /* analogin */
         &sitlEEPROMStorage, /* storage */
         &consoleDriver, /* console */
-
         &emptyGPIO, /* gpio */
-        &emptyRCInput,  /* rcinput */
-        &emptyRCOutput, /* rcoutput */
-
+        &sitlRCInput,  /* rcinput */
+        &sitlRCOutput, /* rcoutput */
         &sitlScheduler), /* scheduler */
     _sitl_state(&sitlState)
 {}

@@ -9,7 +9,6 @@
 #include <AP_HAL_AVR_SITL.h>
 #include "AP_HAL_AVR_SITL_Namespace.h"
 #include "HAL_AVR_SITL_Class.h"
-#include "sitl_rc.h"
 
 #include <sys/types.h>
 #include <sys/socket.h>
@@ -21,8 +20,6 @@
 #include "../AP_InertialSensor/AP_InertialSensor.h"
 #include "../AP_Compass/AP_Compass.h"
 #include "../SITL/SITL.h"
-
-extern struct RC_ICR4 ICR4;
 
 class HAL_AVR_SITL;
 
@@ -38,6 +35,8 @@ public:
 
     int gps_pipe(void);
     ssize_t gps_read(int fd, void *buf, size_t count);
+    static uint16_t pwm_output[11];
+    static uint16_t pwm_input[8];
 
 private:
     void _parse_command_line(int argc, char * const argv[]);
@@ -88,8 +87,6 @@ private:
     static SITL *_sitl;
     static const uint16_t _rcout_port = 5502;
     static const uint16_t _simin_port = 5501;
-
-    static uint16_t _pwm_output[11];
 };
 
 #endif // CONFIG_HAL_BOARD == HAL_BOARD_AVR_SITL

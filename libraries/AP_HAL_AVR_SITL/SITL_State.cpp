@@ -22,9 +22,6 @@
 
 extern const AP_HAL::HAL& hal;
 
-// emulate RC input
-struct RC_ICR4 ICR4;
-
 using namespace AVR_SITL;
 
 enum SITL_State::vehicle_type SITL_State::_vehicle;
@@ -41,7 +38,8 @@ AP_Compass_HIL *SITL_State::_compass;
 
 int SITL_State::_sitl_fd;
 SITL *SITL_State::_sitl;
-uint16_t SITL_State::_pwm_output[11];
+uint16_t SITL_State::pwm_output[11];
+uint16_t SITL_State::pwm_input[8];
 
 // catch floating point exceptions
 void SITL_State::_sig_fpe(int signum)
@@ -99,7 +97,7 @@ void SITL_State::_parse_command_line(int argc, char * const argv[])
 			_framerate = 50;
 		}
 		// set right default throttle for rover (allowing for reverse)
-		ICR4.set(2, 1500);
+        pwm_input[2] = 1500;
 	} else {
 		_vehicle = ArduPlane;
 		if (_framerate == 0) {
@@ -302,10 +300,9 @@ void SITL_State::_fdm_input(void)
 		// a packet giving the receiver PWM inputs
 		uint8_t i;
 		for (i=0; i<8; i++) {
-			// setup the ICR4 register for the RC channel
-			// inputs
+			// setup the pwn input for the RC channel inputs
 			if (d.pwm_pkt.pwm[i] != 0) {
-				ICR4.set(i, d.pwm_pkt.pwm[i]);
+				pwm_input[i] = d.pwm_pkt.pwm[i];
 			}
 		}
 		break;
@@ -331,15 +328,15 @@ void SITL_State::_simulator_output(void)
 
 	if (last_update == 0) {
 		for (i=0; i<11; i++) {
-			_pwm_output[i] = 1000;
+			pwm_output[i] = 1000;
 		}
 		if (_vehicle == ArduPlane) {
-			_pwm_output[0] = _pwm_output[1] = _pwm_output[3] = 1500;
-			_pwm_output[7] = 1800;
+			pwm_output[0] = pwm_output[1] = pwm_output[3] = 1500;
+			pwm_output[7] = 1800;
 		}
 		if (_vehicle == APMrover2) {
-			_pwm_output[0] = _pwm_output[1] = _pwm_output[2] = _pwm_output[3] = 1500;
-			_pwm_output[7] = 1800;
+			pwm_output[0] = pwm_output[1] = pwm_output[2] = pwm_output[3] = 1500;
+			pwm_output[7] = 1800;
 		}
 	}
 
@@ -354,10 +351,10 @@ void SITL_State::_simulator_output(void)
 	last_update = hal.scheduler->millis();
 
 	for (i=0; i<11; i++) {
-		if (_pwm_output[i] == 0xFFFF) {
+		if (pwm_output[i] == 0xFFFF) {
 			control.pwm[i] = 0;
 		} else {
-			control.pwm[i] = _pwm_output[i];
+			control.pwm[i] = pwm_output[i];
 		}
 	}
 
@@ -445,6 +442,10 @@ Vector3f SITL_State::_rand_vec3f(void)
 
 void SITL_State::init(int argc, char * const argv[])
 {
+    pwm_input[0] = pwm_input[1] = pwm_input[3] = 1500;
+    pwm_input[4] = pwm_input[7] = 1800;
+    pwm_input[2] = pwm_input[5] = pwm_input[6] = 1000;
+
     _scheduler = (SITLScheduler *)hal.scheduler;
 	_parse_command_line(argc, argv);
 }

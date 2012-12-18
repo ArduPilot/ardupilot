@@ -8,8 +8,10 @@ namespace AVR_SITL {
     class SITL_State;
     class SITLConsoleDriver;
     class SITLEEPROMStorage;
-    class SITLAnalogIn;
-    class ADCSource;
+    class SITLAnalogIn; 
+    class SITLRCInput;
+    class SITLRCOutput;
+   class ADCSource;
     class RCInput;
 }
 
