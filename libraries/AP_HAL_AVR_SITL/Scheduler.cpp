@@ -192,4 +192,9 @@ void SITLScheduler::timer_event()
     _in_timer_proc = false;
 }
 
+void SITLScheduler::panic(const prog_char_t *errormsg) {
+    hal.console->println_P(errormsg);
+    for(;;);
+}
+
 #endif

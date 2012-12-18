@@ -29,6 +29,7 @@ public:
     void     begin_atomic();
     void     end_atomic();
     void     reboot();
+    void     panic(const prog_char_t *errormsg);
 
     bool     interrupts_are_blocked(void) { return _nested_atomic_ctr != 0; }
 
