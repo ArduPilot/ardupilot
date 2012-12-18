@@ -13,18 +13,26 @@ using namespace AVR_SITL;
 extern const AP_HAL::HAL& hal;
 
 ADCSource::ADCSource(uint8_t pin, float prescale) :
+    _pin(pin),
     _prescale(prescale)
 {}
 
 float ADCSource::read_average() {
-	return 0;
+	return read_latest();
 }
 
 float ADCSource::read_latest() {
-	return 0;
+    switch (_pin) {
+    case ANALOG_INPUT_BOARD_VCC:
+        return 4900;
+    case ANALOG_INPUT_NONE:
+    default:
+        return 0.0;
+    }
 }
 
 void ADCSource::set_pin(uint8_t pin) {
+    _pin = pin;
 }
 
 SITLAnalogIn::SITLAnalogIn() {}
@@ -32,12 +40,12 @@ SITLAnalogIn::SITLAnalogIn() {}
 void SITLAnalogIn::init(void *ap_hal_scheduler) {
 }
 
-AP_HAL::AnalogSource* SITLAnalogIn::channel(int16_t n) {
-    return NULL;
+AP_HAL::AnalogSource* SITLAnalogIn::channel(int16_t pin) {
+    return channel(pin, 1.0);
 }
 
-AP_HAL::AnalogSource* SITLAnalogIn::channel(int16_t n, float prescale) {
-    return NULL;	
+AP_HAL::AnalogSource* SITLAnalogIn::channel(int16_t pin, float prescale) {
+    return new ADCSource(pin, prescale);	
 }
 
 #endif

@@ -29,9 +29,9 @@ static SITLConsoleDriver consoleDriver;
 static SITL_State sitlState;
 static SITLRCInput  sitlRCInput(&sitlState);
 static SITLRCOutput sitlRCOutput(&sitlState);
+static SITLAnalogIn sitlAnalogIn;
 
 static Empty::EmptyGPIO emptyGPIO;
-static Empty::EmptyAnalogIn emptyAnalogIn;
 
 static SITLUARTDriver sitlUart0Driver(0, &sitlState);
 static SITLUARTDriver sitlUart1Driver(1, &sitlState);
@@ -44,7 +44,7 @@ HAL_AVR_SITL::HAL_AVR_SITL() :
         &sitlUart2Driver,  /* uartC */
         NULL, /* i2c */
         NULL, /* spi */
-        &emptyAnalogIn, /* analogin */
+        &sitlAnalogIn, /* analogin */
         &sitlEEPROMStorage, /* storage */
         &consoleDriver, /* console */
         &emptyGPIO, /* gpio */

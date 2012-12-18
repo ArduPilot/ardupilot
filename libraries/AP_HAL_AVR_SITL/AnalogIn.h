@@ -21,6 +21,7 @@ public:
 
 private:
     /* prescale scales the raw measurments for read()*/
+    uint8_t _pin;
     const float _prescale;
 };
 
