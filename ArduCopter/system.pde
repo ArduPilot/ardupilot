@@ -210,7 +210,7 @@ static void init_ardupilot()
     // Do GPS init
     g_gps = &g_gps_driver;
     // GPS Initialization
-    g_gps->init(GPS::GPS_ENGINE_AIRBORNE_1G);
+    g_gps->init(hal.uartB, GPS::GPS_ENGINE_AIRBORNE_1G);
 
     if(g.compass_enabled)
         init_compass();

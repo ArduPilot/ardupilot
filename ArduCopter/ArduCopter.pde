@@ -219,25 +219,25 @@ AP_OpticalFlow optflow;
 
 // real GPS selection
  #if   GPS_PROTOCOL == GPS_PROTOCOL_AUTO
-AP_GPS_Auto     g_gps_driver(hal.uartB, &g_gps);
+AP_GPS_Auto     g_gps_driver(&g_gps);
 
  #elif GPS_PROTOCOL == GPS_PROTOCOL_NMEA
-AP_GPS_NMEA     g_gps_driver(hal.uartB);
+AP_GPS_NMEA     g_gps_driver();
 
  #elif GPS_PROTOCOL == GPS_PROTOCOL_SIRF
-AP_GPS_SIRF     g_gps_driver(hal.uartB);
+AP_GPS_SIRF     g_gps_driver();
 
  #elif GPS_PROTOCOL == GPS_PROTOCOL_UBLOX
-AP_GPS_UBLOX    g_gps_driver(hal.uartB);
+AP_GPS_UBLOX    g_gps_driver();
 
  #elif GPS_PROTOCOL == GPS_PROTOCOL_MTK
-AP_GPS_MTK      g_gps_driver(hal.uartB);
+AP_GPS_MTK      g_gps_driver();
 
  #elif GPS_PROTOCOL == GPS_PROTOCOL_MTK16
-AP_GPS_MTK16    g_gps_driver(hal.uartB);
+AP_GPS_MTK16    g_gps_driver();
 
  #elif GPS_PROTOCOL == GPS_PROTOCOL_NONE
-AP_GPS_None     g_gps_driver(NULL);
+AP_GPS_None     g_gps_driver();
 
  #else
   #error Unrecognised GPS_PROTOCOL setting.
