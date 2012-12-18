@@ -241,7 +241,7 @@ endif
 #
 EXTRAFLAGS     ?=
 DEFINES			=	-DF_CPU=$(F_CPU) -DARDUINO=$(ARDUINO_VERS) $(EXTRAFLAGS) -DSKETCH=\"$(SKETCH)\"
-OPTFLAGS		=	-Os -Wformat -Wall -Wshadow -Wpointer-arith -Wcast-align -Wwrite-strings -Wformat=2 -Wno-reorder
+WARNFLAGS		=	-Wformat -Wall -Wshadow -Wpointer-arith -Wcast-align -Wwrite-strings -Wformat=2 -Wno-reorder
 DEPFLAGS		=	-MD -MT $@
 
 # XXX warning options TBD
@@ -252,20 +252,22 @@ ASOPTS			=	-x assembler-with-cpp
 LISTOPTS		=	-adhlns=$(@:.o=.lst)
 
 ifeq ($(HAL_BOARD),HAL_BOARD_AVR_SITL)
-CPUFLAGS                = -D_GNU_SOURCE -g
+CPUFLAGS                = -D_GNU_SOURCE
 CPULDFLAGS		= -g
+OPTFLAGS		= -O0 -g
 else
 CPUFLAGS                = -mmcu=$(MCU) -mcall-prologues 
 CPULDFLAGS		= -Wl,-m,avr6
+OPTFLAGS		= -Os
 endif
 
-CXXFLAGS		=	-g $(CPUFLAGS) $(DEFINES) -Wa,$(LISTOPTS) $(OPTFLAGS) $(DEPFLAGS) $(CXXOPTS)
-CFLAGS			=	-g $(CPUFLAGS) $(DEFINES) -Wa,$(LISTOPTS) $(OPTFLAGS) $(DEPFLAGS) $(COPTS)
+CXXFLAGS		=	-g $(CPUFLAGS) $(DEFINES) -Wa,$(LISTOPTS) $(OPTFLAGS) $(WARNFLAGS) $(DEPFLAGS) $(CXXOPTS)
+CFLAGS			=	-g $(CPUFLAGS) $(DEFINES) -Wa,$(LISTOPTS) $(OPTFLAGS) $(WARNFLAGS) $(DEPFLAGS) $(COPTS)
 ASFLAGS			=	-g $(CPUFLAGS) $(DEFINES) -Wa,$(LISTOPTS) $(DEPFLAGS) $(ASOPTS)
-LDFLAGS			=	-g $(CPUFLAGS) $(OPTFLAGS) -Wl,--gc-sections -Wl,-Map -Wl,$(SKETCHMAP) $(CPULDFLAGS)
+LDFLAGS			=	-g $(CPUFLAGS) $(OPTFLAGS) $(WARNFLAGS) -Wl,--gc-sections -Wl,-Map -Wl,$(SKETCHMAP) $(CPULDFLAGS)
 
 ifeq ($(BOARD),mega)
-  LDFLAGS		=	-g $(CPUFLAGS) $(OPTFLAGS) -Wl,--gc-sections -Wl,-Map -Wl,$(SKETCHMAP)
+  LDFLAGS		=	-g $(CPUFLAGS) $(OPTFLAGS) $(WARNFLAGS) -Wl,--gc-sections -Wl,-Map -Wl,$(SKETCHMAP)
 endif
 
 # under certain situations with certain avr-gcc versions the --relax flag causes
