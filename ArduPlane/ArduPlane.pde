@@ -50,7 +50,7 @@
 #include <AP_Mount.h>           // Camera/Antenna mount
 #include <AP_Declination.h> // ArduPilot Mega Declination Helper Library
 #include <DataFlash.h>
-
+#include <SITL.h>
 
 // optional new controller library
 #if APM_CONTROL == ENABLED
@@ -74,17 +74,7 @@
 
 AP_HAL::BetterStream* cliSerial;
 
-#if CONFIG_HAL_BOARD == HAL_BOARD_APM2
-const AP_HAL::HAL& hal = AP_HAL_AVR_APM2;
-#elif CONFIG_HAL_BOARD == HAL_BOARD_APM1
-const AP_HAL::HAL& hal = AP_HAL_AVR_APM1;
-#elif CONFIG_HAL_BOARD == HAL_BOARD_AVR_SITL
-const AP_HAL::HAL& hal = AP_HAL_AVR_SITL;
-#include <SITL.h>
-SITL sitl;
-#else
-#error "Unknown CONFIG_HAL_BOARD type"
-#endif
+const AP_HAL::HAL& hal = AP_HAL_BOARD_DRIVER;
 
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -153,6 +143,7 @@ static AP_ADC_ADS7844 adc;
 AP_Baro_BMP085_HIL barometer;
 AP_Compass_HIL compass;
 AP_InertialSensor_Stub ins;
+SITL sitl;
  #else
 
   #if CONFIG_BARO == AP_BARO_BMP085
