@@ -256,8 +256,8 @@ static void Log_Write_GPS()
     DataFlash.WriteLong(g_gps->time);           		 // 1
     DataFlash.WriteByte(g_gps->num_sats);       		 // 2
 
-    DataFlash.WriteLong(current_loc.lat);       		 // 3
-    DataFlash.WriteLong(current_loc.lng);       		 // 4
+    DataFlash.WriteLong(g_gps->latitude);       		 // 3
+    DataFlash.WriteLong(g_gps->longitude);       		 // 4
     DataFlash.WriteLong(current_loc.alt);       		 // 5
     DataFlash.WriteLong(g_gps->altitude);       		 // 6
 
