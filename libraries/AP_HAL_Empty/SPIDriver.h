@@ -10,6 +10,8 @@ public:
     EmptySPIDeviceDriver();
     void init();
     AP_HAL::Semaphore* get_semaphore();
+    void transaction(const uint8_t *tx, uint8_t *rx, uint16_t len);
+
     void cs_assert();
     void cs_release();
     uint8_t transfer (uint8_t data);
