@@ -43,22 +43,10 @@
 //////////////////////////////////////////////////////////////////////////////
 
 //////////////////////////////////////////////////////////////////////////////
-// APM2 HARDWARE DEFAULTS
-//
-
-#if CONFIG_HAL_BOARD == HAL_BOARD_APM2
-# define CONFIG_INS_TYPE   CONFIG_INS_MPU6000
-# define CONFIG_PUSHBUTTON DISABLED
-# define CONFIG_RELAY      DISABLED
-# define MAG_ORIENTATION   AP_COMPASS_APM2_SHIELD
-# define CONFIG_SONAR_SOURCE SONAR_SOURCE_ANALOG_PIN
-# define MAGNETOMETER ENABLED
-#endif
-
-//////////////////////////////////////////////////////////////////////////////
 // LED and IO Pins
 //
 #if CONFIG_HAL_BOARD == HAL_BOARD_APM1
+# define CONFIG_INS_TYPE   CONFIG_INS_OILPAN
 # define A_LED_PIN        37
 # define B_LED_PIN        36
 # define C_LED_PIN        35
@@ -71,6 +59,12 @@
 # define BATTERY_PIN_1	  0
 # define CURRENT_PIN_1	  1
 #elif CONFIG_HAL_BOARD == HAL_BOARD_APM2
+# define CONFIG_INS_TYPE   CONFIG_INS_MPU6000
+# define CONFIG_PUSHBUTTON DISABLED
+# define CONFIG_RELAY      DISABLED
+# define MAG_ORIENTATION   AP_COMPASS_APM2_SHIELD
+# define CONFIG_SONAR_SOURCE SONAR_SOURCE_ANALOG_PIN
+# define MAGNETOMETER ENABLED
 # define A_LED_PIN        27
 # define B_LED_PIN        26
 # define C_LED_PIN        25
@@ -83,6 +77,9 @@
 # define BATTERY_PIN_1	  1
 # define CURRENT_PIN_1	  2
 #elif CONFIG_HAL_BOARD == HAL_BOARD_AVR_SITL
+# define CONFIG_INS_TYPE   CONFIG_INS_SITL
+# define CONFIG_PUSHBUTTON DISABLED
+# define CONFIG_RELAY      DISABLED
 # define A_LED_PIN        27
 # define B_LED_PIN        26
 # define C_LED_PIN        25
