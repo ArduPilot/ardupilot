@@ -243,7 +243,7 @@ void SITLUARTDriver::_tcp_start_connection(bool wait_for_connection)
                     (unsigned)ntohs(sockaddr.sin_port),
                     (unsigned)_portNumber),
 
-                ret = bind(_listen_fd, (struct sockaddr *)&sockaddr, sizeof(sockaddr));
+            ret = bind(_listen_fd, (struct sockaddr *)&sockaddr, sizeof(sockaddr));
             if (ret == -1) {
 		fprintf(stderr, "bind failed on port %u - %s\n",
                         (unsigned)ntohs(sockaddr.sin_port),
@@ -257,12 +257,13 @@ void SITLUARTDriver::_tcp_start_connection(bool wait_for_connection)
                 exit(1);
             }
 
-            printf("Serial port %u on TCP port %u\n", _portNumber, LISTEN_BASE_PORT + _portNumber);
+            fprintf(stderr, "Serial port %u on TCP port %u\n", _portNumber, LISTEN_BASE_PORT + _portNumber);
             fflush(stdout);
         }
 
 	if (wait_for_connection) {
-            printf("Waiting for connection ....\n");
+            fprintf(stdout, "Waiting for connection ....\n");
+            fflush(stdout);
             _fd = accept(_listen_fd, NULL, NULL);
             if (_fd == -1) {
                 fprintf(stderr, "accept() error - %s", strerror(errno));
@@ -291,7 +292,7 @@ void SITLUARTDriver::_check_connection(void)
                 _connected = true;
                 setsockopt(_fd, IPPROTO_TCP, TCP_NODELAY, &one, sizeof(one));
                 setsockopt(_fd, SOL_SOCKET, SO_REUSEADDR, &one, sizeof(one));
-                printf("New connection on serial port %u\n", _portNumber);
+                fprintf(stdout, "New connection on serial port %u\n", _portNumber);
                 _set_nonblocking(_fd);
             }
 	}

@@ -45,17 +45,17 @@ uint16_t SITL_State::pwm_input[8];
 // catch floating point exceptions
 void SITL_State::_sig_fpe(int signum)
 {
-	printf("ERROR: Floating point exception\n");
+	fprintf(stderr, "ERROR: Floating point exception\n");
 	exit(1);
 }
 
 void SITL_State::_usage(void)
 {
-	printf("Options:\n");
-	printf("\t-w          wipe eeprom and dataflash\n");
-	printf("\t-r RATE     set SITL framerate\n");
-	printf("\t-H HEIGHT   initial barometric height\n");
-	printf("\t-C          use console instead of TCP ports\n");
+	fprintf(stdout, "Options:\n");
+	fprintf(stdout, "\t-w          wipe eeprom and dataflash\n");
+	fprintf(stdout, "\t-r RATE     set SITL framerate\n");
+	fprintf(stdout, "\t-H HEIGHT   initial barometric height\n");
+	fprintf(stdout, "\t-C          use console instead of TCP ports\n");
 }
 
 void SITL_State::_parse_command_line(int argc, char * const argv[])
@@ -85,7 +85,7 @@ void SITL_State::_parse_command_line(int argc, char * const argv[])
 		}
 	}
 
-	printf("Starting sketch '%s'\n", SKETCH);
+	fprintf(stdout, "Starting sketch '%s'\n", SKETCH);
 
 	if (strcmp(SKETCH, "ArduCopter") == 0) {
 		_vehicle = ArduCopter;
@@ -124,7 +124,7 @@ void SITL_State::_sitl_setup(void)
 
 	_setup_timer();
 	_setup_fdm();
-	printf("Starting SITL input\n");
+	fprintf(stdout, "Starting SITL input\n");
 
 	// find the barometer object if it exists
 	_sitl = (SITL *)AP_Param::find_object("SIM_");
@@ -205,7 +205,7 @@ void SITL_State::_timer_handler(int signum)
         
     	count++;
 	if (millis() - last_report > 1000) {
-		printf("TH %u cps\n", count);
+		fprintf(stdout, "TH %u cps\n", count);
 		count = 0;
 		last_report = millis();
 	}
@@ -275,7 +275,7 @@ void SITL_State::_fdm_input(void)
 		static uint32_t count;
 
 		if (d.fg_pkt.magic != 0x4c56414e) {
-			printf("Bad FDM packet - magic=0x%08x\n", d.fg_pkt.magic);
+			fprintf(stdout, "Bad FDM packet - magic=0x%08x\n", d.fg_pkt.magic);
 			return;
 		}
 
@@ -291,7 +291,7 @@ void SITL_State::_fdm_input(void)
 
 		count++;
 		if (hal.scheduler->millis() - last_report > 1000) {
-			//printf("SIM %u FPS\n", count);
+			//fprintf(stdout, "SIM %u FPS\n", count);
 			count = 0;
 			last_report = hal.scheduler->millis();
 		}
