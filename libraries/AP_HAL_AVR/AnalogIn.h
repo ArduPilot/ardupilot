@@ -55,7 +55,6 @@ public:
     AP_HAL::AnalogSource* channel(int16_t n, float prescale);
 
 protected: 
-    static ADCSource* _find_or_create_channel(int16_t num, float scale);
     static ADCSource* _create_channel(int16_t num, float scale);
     static void _register_channel(ADCSource*);
     static void _timer_event(uint32_t);
