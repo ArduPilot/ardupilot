@@ -55,12 +55,12 @@ void AVRSPI0DeviceDriver::cs_release() {
 
 uint8_t AVRSPI0DeviceDriver::transfer(uint8_t data) {
     if (spi0_transferflag) {
-        hal.console->println_P(PSTR("PANIC: SPI0 transfer collision"));
+        hal.scheduler->panic(PSTR("PANIC: SPI0 transfer collision"));
     }
     spi0_transferflag = true;
     SPDR = data;
     if (SPSR & _BV(WCOL)) {
-        hal.console->println_P(PSTR("PANIC: SPI0 write collision"));
+        hal.scheduler->panic(PSTR("PANIC: SPI0 write collision"));
         return 0;
     }
     while(!(SPSR & _BV(SPIF)));
