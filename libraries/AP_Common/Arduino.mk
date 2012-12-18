@@ -252,8 +252,8 @@ ASOPTS			=	-x assembler-with-cpp
 LISTOPTS		=	-adhlns=$(@:.o=.lst)
 
 ifeq ($(HAL_BOARD),HAL_BOARD_AVR_SITL)
-CPUFLAGS                = -D_GNU_SOURCE
-CPULDFLAGS		=
+CPUFLAGS                = -D_GNU_SOURCE -g
+CPULDFLAGS		= -g
 else
 CPUFLAGS                = -mmcu=$(MCU) -mcall-prologues 
 CPULDFLAGS		= -Wl,-m,avr6
