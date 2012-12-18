@@ -16,12 +16,13 @@
 
 #include <AP_ADC.h>
 
+uint32_t timer;
+
 #if CONFIG_HAL_BOARD == HAL_BOARD_APM1
 /* Only build this sketch for APM1 */
 const AP_HAL::HAL& hal = AP_HAL_AVR_APM1;
 
 AP_ADC_ADS7844 adc;
-uint32_t timer;
 
 void setup()
 {
@@ -72,7 +73,7 @@ static void show_data()
         /* clearly out of bounds values: */
         min[i] = 99999999.0f;
         max[i] = -88888888.0f;
-    
+    } 
 
 
     do {
