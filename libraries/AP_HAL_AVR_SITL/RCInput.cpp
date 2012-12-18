@@ -1,3 +1,5 @@
+#include <AP_HAL.h>
+#if CONFIG_HAL_BOARD == HAL_BOARD_AVR_SITL
 
 #include "RCInput.h"
 
@@ -50,3 +52,4 @@ void SITLRCInput::clear_overrides()
 	_override[i] = 0;
     }
 }
+#endif

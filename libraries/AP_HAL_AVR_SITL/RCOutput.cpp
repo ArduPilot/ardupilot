@@ -1,3 +1,5 @@
+#include <AP_HAL.h>
+#if CONFIG_HAL_BOARD == HAL_BOARD_AVR_SITL
 
 #include "RCOutput.h"
 
@@ -43,3 +45,5 @@ void SITLRCOutput::read(uint16_t* period_us, uint8_t len)
 {
 	memcpy(period_us, _sitlState->pwm_output, len*sizeof(uint16_t));
 }
+
+#endif

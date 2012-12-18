@@ -2,6 +2,8 @@
 #ifndef __AP_HAL_AVR_SITL_RCINPUT_H__
 #define __AP_HAL_AVR_SITL_RCINPUT_H__
 
+#include <AP_HAL.h>
+#if CONFIG_HAL_BOARD == HAL_BOARD_AVR_SITL
 #include <AP_HAL_AVR_SITL.h>
 
 class AVR_SITL::SITLRCInput : public AP_HAL::RCInput {
@@ -24,5 +26,6 @@ private:
     uint16_t _override[8];
 };
 
+#endif
 #endif // __AP_HAL_AVR_SITL_RCINPUT_H__
 

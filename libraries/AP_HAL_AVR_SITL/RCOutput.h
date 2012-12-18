@@ -2,6 +2,8 @@
 #ifndef __AP_HAL_AVR_SITL_RCOUTPUT_H__
 #define __AP_HAL_AVR_SITL_RCOUTPUT_H__
 
+#include <AP_HAL.h>
+#if CONFIG_HAL_BOARD == HAL_BOARD_AVR_SITL
 #include <AP_HAL_AVR_SITL.h>
 
 class AVR_SITL::SITLRCOutput : public AP_HAL::RCOutput {
@@ -27,5 +29,6 @@ private:
     uint16_t _freq_hz;
 };
 
+#endif
 #endif // __AP_HAL_AVR_SITL_RCOUTPUT_H__
 
