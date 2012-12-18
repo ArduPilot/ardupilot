@@ -251,10 +251,9 @@ bool AP_InertialSensor_MPU6000::update( void )
     uint32_t tstart = hal.scheduler->micros();
     while (_count == 0) {
         if (hal.scheduler->micros() - tstart > 50000) {
-            hal.console->println_P(
+            hal.scheduler->panic(
                     PSTR("PANIC: AP_InertialSensor_MPU6000::update "
                         "waited 50ms for data from interrupt"));
-            return false;
         }
     }
 
@@ -322,7 +321,7 @@ void AP_InertialSensor_MPU6000::read(uint32_t)
         if (!got) { 
             semfail_ctr++;
             if (semfail_ctr > 100) {
-                hal.console->println_P(PSTR("PANIC: failed to take _spi_sem "
+                hal.scheduler->panic(PSTR("PANIC: failed to take _spi_sem "
                             "100 times in AP_InertialSensor_MPU6000::read"));
             }
             return;
@@ -356,7 +355,7 @@ void AP_InertialSensor_MPU6000::read(uint32_t)
     if (_spi_sem) {
         bool released = _spi_sem->release((void*)&_spi_sem);
         if (!released) {
-            hal.console->println_P(PSTR("PANIC: _spi_sem release failed in "
+            hal.scheduler->panic(PSTR("PANIC: _spi_sem release failed in "
                         "AP_InertialSensor_MPU6000::read"));
         }   
     }
