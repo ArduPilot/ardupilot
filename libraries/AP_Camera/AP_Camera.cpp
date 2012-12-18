@@ -8,7 +8,6 @@
 
 extern const AP_HAL::HAL& hal;
 extern int32_t wp_distance;     // Note: unfortunately this variable is in meter for ArduPlane and cm for ArduCopter
-extern AP_Relay relay;
 
 // ------------------------------
 #define CAM_DEBUG DISABLED
