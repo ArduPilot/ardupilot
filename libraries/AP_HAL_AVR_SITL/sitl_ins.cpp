@@ -119,6 +119,8 @@ void SITL_State::_update_ins(float roll, 	float pitch, 	float yaw,		// Relative 
 
 	_ins->set_gyro(Vector3f(p, q, r));
 	_ins->set_accel(Vector3f(xAccel, yAccel, zAccel));
+
+	airspeed_pin_value = _airspeed_sensor(airspeed);
 }
 
 #endif

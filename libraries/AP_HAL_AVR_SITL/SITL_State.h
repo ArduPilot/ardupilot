@@ -39,6 +39,9 @@ public:
     static uint16_t pwm_input[8];
     static void loop_hook(void);
 
+    // simulated airspeed
+    static uint16_t airspeed_pin_value;
+
 private:
     void _parse_command_line(int argc, char * const argv[]);
     void _usage(void);

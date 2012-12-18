@@ -29,7 +29,7 @@ static SITLConsoleDriver consoleDriver;
 static SITL_State sitlState;
 static SITLRCInput  sitlRCInput(&sitlState);
 static SITLRCOutput sitlRCOutput(&sitlState);
-static SITLAnalogIn sitlAnalogIn;
+static SITLAnalogIn sitlAnalogIn(&sitlState);
 
 static Empty::EmptyGPIO emptyGPIO;
 
