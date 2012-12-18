@@ -19,24 +19,29 @@
 #include <AP_Baro.h>
 #include <GCS_MAVLink.h>
 #include <Filter.h>
+#include <SITL.h>
 #include <AP_Buffer.h>
 
 #include <AP_HAL_AVR.h>
+#include <AP_HAL_AVR_SITL.h>
+#include <AP_HAL_Empty.h>
+
+const AP_HAL::HAL& hal = AP_HAL_BOARD_DRIVER;
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_APM2
-const AP_HAL::HAL& hal = AP_HAL_AVR_APM2;
 AP_InertialSensor_MPU6000 ins;
 #elif CONFIG_HAL_BOARD == HAL_BOARD_APM1
 AP_ADC_ADS7844 adc;
 AP_InertialSensor_Oilpan ins( &adc );
-const AP_HAL::HAL& hal = AP_HAL_AVR_APM1;
+#else
+AP_InertialSensor_Stub ins;
 #endif
 
 AP_Compass_HMC5843 compass;
 
 GPS *g_gps;
 
-AP_GPS_Auto g_gps_driver(hal.uartB, &g_gps);
+AP_GPS_Auto g_gps_driver(&g_gps);
 
 // choose which AHRS system to use
 AP_AHRS_DCM  ahrs(&ins, g_gps);
@@ -94,7 +99,7 @@ void setup(void)
     }
     g_gps = &g_gps_driver;
 #if WITH_GPS
-    g_gps->init();
+    g_gps->init(hal.uartB);
 #endif
 }
 
