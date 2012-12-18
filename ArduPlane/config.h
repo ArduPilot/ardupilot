@@ -82,23 +82,6 @@
  #endif
 #endif
 
-//////////////////////////////////////////////////////////////////////////////
-// APM2 HARDWARE DEFAULTS
-//
-
-#if CONFIG_HAL_BOARD == HAL_BOARD_APM2
- # define CONFIG_INS_TYPE   CONFIG_INS_MPU6000
- # define CONFIG_RELAY      DISABLED
- # define MAG_ORIENTATION   AP_COMPASS_APM2_SHIELD
- # define CONFIG_PITOT_SOURCE PITOT_SOURCE_ANALOG_PIN
- # define MAGNETOMETER ENABLED
- # ifdef APM2_BETA_HARDWARE
-  #  define CONFIG_BARO     AP_BARO_BMP085
- # else // APM2 Production Hardware (default)
-  #  define CONFIG_BARO     AP_BARO_MS5611
- # endif
-#endif
-
 // use this to enable telemetry on UART2. This is used
 // when you have setup the solder bridge on an APM2 to enable UART2
 #ifndef TELEMETRY_UART2
@@ -106,7 +89,7 @@
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
-// LED and IO Pins
+// main board differences
 //
 #if CONFIG_HAL_BOARD == HAL_BOARD_APM1
  # define A_LED_PIN        37
@@ -118,6 +101,10 @@
  # define CONFIG_RELAY     ENABLED
  # define BATTERY_VOLT_PIN      0      // Battery voltage on A0
  # define BATTERY_CURR_PIN      1      // Battery current on A1
+ # define CONFIG_INS_TYPE CONFIG_INS_OILPAN
+ # define CONFIG_PITOT_SOURCE PITOT_SOURCE_ADC
+ # define CONFIG_RELAY      ENABLED
+ # define CONFIG_BARO     AP_BARO_BMP085
 #elif CONFIG_HAL_BOARD == HAL_BOARD_APM2
  # define A_LED_PIN        27
  # define B_LED_PIN        26
@@ -131,6 +118,15 @@
  #endif
  # define BATTERY_VOLT_PIN      1      // Battery voltage on A1
  # define BATTERY_CURR_PIN      2      // Battery current on A2
+ # define CONFIG_INS_TYPE CONFIG_INS_MPU6000
+ # define CONFIG_PITOT_SOURCE PITOT_SOURCE_ANALOG_PIN
+ # define MAG_ORIENTATION   AP_COMPASS_APM2_SHIELD
+ # define MAGNETOMETER ENABLED
+ # ifdef APM2_BETA_HARDWARE
+ #  define CONFIG_BARO     AP_BARO_BMP085
+ # else // APM2 Production Hardware (default)
+ #  define CONFIG_BARO     AP_BARO_MS5611
+ # endif
 #elif CONFIG_HAL_BOARD == HAL_BOARD_AVR_SITL
  # define A_LED_PIN        27
  # define B_LED_PIN        26
@@ -139,15 +135,11 @@
  # define LED_OFF          HIGH
  # define BATTERY_VOLT_PIN      1      // Battery voltage on A1
  # define BATTERY_CURR_PIN      2      // Battery current on A2
+ # define CONFIG_INS_TYPE CONFIG_INS_STUB
+ # define CONFIG_PITOT_SOURCE PITOT_SOURCE_ANALOG_PIN
+ # define MAGNETOMETER ENABLED
 #endif
 
-
-//////////////////////////////////////////////////////////////////////////////
-// INS Selection
-//
-#ifndef CONFIG_INS_TYPE
- # define CONFIG_INS_TYPE CONFIG_INS_OILPAN
-#endif
 
 //////////////////////////////////////////////////////////////////////////////
 // ADC Enable - used to eliminate for systems which don't have ADC.
@@ -260,6 +252,7 @@
 #ifndef MAGNETOMETER
  # define MAGNETOMETER                   DISABLED
 #endif
+
 #ifndef MAG_ORIENTATION
  # define MAG_ORIENTATION                AP_COMPASS_COMPONENTS_DOWN_PINS_FORWARD
 #endif
