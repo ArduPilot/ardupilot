@@ -19,11 +19,18 @@ public:
 
     void init();
     AP_HAL::Semaphore* get_semaphore();
+
+    void transaction(const uint8_t *tx, uint8_t *rx, uint16_t len);
+
     void cs_assert();
     void cs_release();
     uint8_t transfer(uint8_t data);
 
 private:
+    void _cs_assert();
+    void _cs_release();
+    uint8_t _transfer(uint8_t data);
+
     static AP_HAL_AVR::AVRSemaphore _semaphore;
 
     AP_HAL_AVR::AVRDigitalSource *_cs_pin;
@@ -46,11 +53,18 @@ public:
 
     void init();
     AP_HAL::Semaphore* get_semaphore();
+
+    void transaction(const uint8_t *tx, uint8_t *rx, uint16_t len);
+
     void cs_assert();
     void cs_release();
     uint8_t transfer(uint8_t data);
 
 private:
+    void _cs_assert();
+    void _cs_release();
+    uint8_t _transfer(uint8_t data);
+
     static AP_HAL_AVR::AVRSemaphore _semaphore;
 
     AP_HAL_AVR::AVRDigitalSource *_cs_pin;
@@ -72,11 +86,17 @@ public:
 
     void init();
     AP_HAL::Semaphore* get_semaphore();
+
+    void transaction(const uint8_t *tx, uint8_t *rx, uint16_t len);
+
     void cs_assert();
     void cs_release();
     uint8_t transfer(uint8_t data);
 
 private:
+    void _cs_assert();
+    void _cs_release();
+    uint8_t _transfer(uint8_t data);
     static AP_HAL_AVR::AVRSemaphore _semaphore;
 
     AP_HAL_AVR::AVRDigitalSource *_cs_pin;

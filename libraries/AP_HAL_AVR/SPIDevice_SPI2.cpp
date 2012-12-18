@@ -38,7 +38,7 @@ AP_HAL::Semaphore* AVRSPI2DeviceDriver::get_semaphore() {
     return &_semaphore;
 }
 
-void AVRSPI2DeviceDriver::cs_assert() {
+inline void AVRSPI2DeviceDriver::_cs_assert() {
     /* set the device UCSRnC configuration bits.
      * only sets data order, clock phase, and clock polarity bits (lowest
      * three bits)  */
@@ -50,11 +50,11 @@ void AVRSPI2DeviceDriver::cs_assert() {
     _cs_pin->write(0);
 }
 
-void AVRSPI2DeviceDriver::cs_release() {
+inline void AVRSPI2DeviceDriver::_cs_release() {
     _cs_pin->write(1);
 }
 
-uint8_t AVRSPI2DeviceDriver::transfer(uint8_t data) {
+inline uint8_t AVRSPI2DeviceDriver::_transfer(uint8_t data) {
     /* Wait for empty transmit buffer */
     while ( !( UCSR2A & _BV(UDRE2)) ) ;
 
@@ -66,6 +66,27 @@ uint8_t AVRSPI2DeviceDriver::transfer(uint8_t data) {
 
     /* Get and return received data from buffer */
     return UDR2;
+}
+
+void AVRSPI2DeviceDriver::transaction(const uint8_t *tx, uint8_t *rx,
+        uint16_t len) {
+    _cs_assert();
+    for (uint16_t i = 0; i < len; i++) {
+        rx[i] = _transfer(tx[i]);
+    }
+    _cs_release();
+}
+
+void AVRSPI2DeviceDriver::cs_assert() {
+    _cs_assert();
+}
+
+void AVRSPI2DeviceDriver::cs_release() {
+    _cs_release();
+}
+
+uint8_t AVRSPI2DeviceDriver::transfer(uint8_t data) {
+    return _transfer(data);
 }
 
 #endif

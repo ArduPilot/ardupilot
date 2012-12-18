@@ -36,7 +36,7 @@ AP_HAL::Semaphore* AVRSPI0DeviceDriver::get_semaphore() {
     return &_semaphore;
 }
 
-void AVRSPI0DeviceDriver::cs_assert() {
+inline void AVRSPI0DeviceDriver::_cs_assert() {
     const uint8_t valid_spcr_mask = 
         (_BV(CPOL) | _BV(CPHA) | _BV(SPR1) | _BV(SPR0));
     uint8_t new_spcr = SPCR | (_spcr & valid_spcr_mask);
@@ -49,11 +49,11 @@ void AVRSPI0DeviceDriver::cs_assert() {
     _cs_pin->write(0);
 }
 
-void AVRSPI0DeviceDriver::cs_release() {
+inline void AVRSPI0DeviceDriver::_cs_release() {
     _cs_pin->write(1);
 }
 
-uint8_t AVRSPI0DeviceDriver::transfer(uint8_t data) {
+inline uint8_t AVRSPI0DeviceDriver::_transfer(uint8_t data) {
     if (spi0_transferflag) {
         hal.scheduler->panic(PSTR("PANIC: SPI0 transfer collision"));
     }
@@ -67,6 +67,27 @@ uint8_t AVRSPI0DeviceDriver::transfer(uint8_t data) {
     uint8_t read_spdr = SPDR;
     spi0_transferflag = false;
     return read_spdr;
+}
+
+void AVRSPI0DeviceDriver::transaction(const uint8_t *tx, uint8_t *rx,
+        uint16_t len) {
+    _cs_assert();
+    for (uint16_t i = 0; i < len; i++) {
+        rx[i] = _transfer(tx[i]);
+    }
+    _cs_release();
+}
+
+void AVRSPI0DeviceDriver::cs_assert() {
+    _cs_assert();
+}
+
+void AVRSPI0DeviceDriver::cs_release() {
+    _cs_release();
+}
+
+uint8_t AVRSPI0DeviceDriver::transfer(uint8_t data) {
+    return _transfer(data);
 }
 
 #endif
