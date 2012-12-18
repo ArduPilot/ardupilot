@@ -36,6 +36,9 @@ public:
 	    ArduPlane
     };
 
+    int gps_pipe(void);
+    ssize_t gps_read(int fd, void *buf, size_t count);
+
 private:
     void _parse_command_line(int argc, char * const argv[]);
     void _usage(void);
@@ -62,8 +65,6 @@ private:
     static Vector3f _rand_vec3f(void);
     static Vector3f _heading_to_mag(float roll, float pitch, float yaw);
     static void _gps_send(uint8_t msgid, uint8_t *buf, uint16_t size);
-    ssize_t _gps_read(int fd, void *buf, size_t count);
-    int _gps_pipe(void);
 
     // signal handlers
     static void _sig_fpe(int signum);

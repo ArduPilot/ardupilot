@@ -13,10 +13,14 @@ class AVR_SITL::SITLUARTDriver : public AP_HAL::UARTDriver {
 public:
     friend class AVR_SITL::SITL_State;
 
-	SITLUARTDriver(const uint8_t portNumber) {
+	SITLUARTDriver(const uint8_t portNumber, SITL_State *sitlState) {
 		_portNumber = portNumber;
         _rxSpace = _default_rx_buffer_size;
         _txSpace = _default_tx_buffer_size;
+        _sitlState = sitlState;
+        
+        _fd = -1;
+        _listen_fd = -1;
 	}
 
     /* Implementations of UARTDriver virtual methods */
@@ -79,6 +83,8 @@ private:
 	///       pointers in the buffer could become uint8_t.
 	///
 	static const uint16_t _max_buffer_size = 512;
+
+    SITL_State *_sitlState;
 
 };
 

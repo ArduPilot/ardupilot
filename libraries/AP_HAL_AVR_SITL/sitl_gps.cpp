@@ -50,7 +50,7 @@ static struct {
 /*
   hook for reading from the GPS pipe
  */
-ssize_t SITL_State::_gps_read(int fd, void *buf, size_t count)
+ssize_t SITL_State::gps_read(int fd, void *buf, size_t count)
 {
 #ifdef FIONREAD
 	// use FIONREAD to get exact value if possible
@@ -69,7 +69,7 @@ ssize_t SITL_State::_gps_read(int fd, void *buf, size_t count)
 /*
   setup GPS input pipe
  */
-int SITL_State::_gps_pipe(void)
+int SITL_State::gps_pipe(void)
 {
 	int fd[2];
 	if (gps_state.client_fd != 0) {

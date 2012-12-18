@@ -27,6 +27,8 @@
 
 #include "vprintf.h"
 #include "UARTDriver.h"
+#include "SITL_State.h"
+
 using namespace AVR_SITL;
 
 #define LISTEN_BASE_PORT 5760
@@ -51,7 +53,7 @@ void SITLUARTDriver::begin(uint32_t baud, uint16_t rxSpace, uint16_t txSpace)
     case 1:
         /* gps */
         _connected = true;
-        _fd = -1; // sitl_gps_pipe();
+        _fd = _sitlState->gps_pipe();
         break;
         
     default:
@@ -111,14 +113,12 @@ int16_t SITLUARTDriver::read(void)
         return -1;
     }
 
-#if 0
     if (_portNumber == 1) {
-        if (sitl_gps_read(_fd, &c, 1) == 1) {
+        if (_sitlState->gps_read(_fd, &c, 1) == 1) {
             return (uint8_t)c;
         }
         return -1;
     }
-#endif
 
     if (_console) {
         return ::read(0, &c, 1);
@@ -204,6 +204,10 @@ void SITLUARTDriver::_tcp_start_connection(bool wait_for_connection)
 	struct sockaddr_in sockaddr;
 	int ret;
 
+        if (_connected) {
+            return;
+        }
+
 	if (_console) {
             // hack for console access
             _connected = true;
@@ -213,39 +217,49 @@ void SITLUARTDriver::_tcp_start_connection(bool wait_for_connection)
             return;
 	}
 
-	memset(&sockaddr,0,sizeof(sockaddr));
+        if (_fd != -1) {
+            close(_fd);
+        }
+
+        if (_listen_fd == -1) {
+            memset(&sockaddr,0,sizeof(sockaddr));
 
 #ifdef HAVE_SOCK_SIN_LEN
-	sockaddr.sin_len = sizeof(sockaddr);
+            sockaddr.sin_len = sizeof(sockaddr);
 #endif
-	sockaddr.sin_port = htons(LISTEN_BASE_PORT + _portNumber);
-	sockaddr.sin_family = AF_INET;
+            sockaddr.sin_port = htons(LISTEN_BASE_PORT + _portNumber);
+            sockaddr.sin_family = AF_INET;
 
-	_listen_fd = socket(AF_INET, SOCK_STREAM, 0);
-	if (_listen_fd == -1) {
+            _listen_fd = socket(AF_INET, SOCK_STREAM, 0);
+            if (_listen_fd == -1) {
 		fprintf(stderr, "socket failed - %s\n", strerror(errno));
 		exit(1);
-	}
+            }
 
-	/* we want to be able to re-use ports quickly */
-	setsockopt(_listen_fd, SOL_SOCKET, SO_REUSEADDR, &one, sizeof(one));
+            /* we want to be able to re-use ports quickly */
+            setsockopt(_listen_fd, SOL_SOCKET, SO_REUSEADDR, &one, sizeof(one));
 
-	ret = bind(_listen_fd, (struct sockaddr *)&sockaddr, sizeof(sockaddr));
-	if (ret == -1) {
+            fprintf(stderr, "bind port %u for %u\n", 
+                    (unsigned)ntohs(sockaddr.sin_port),
+                    (unsigned)_portNumber),
+
+                ret = bind(_listen_fd, (struct sockaddr *)&sockaddr, sizeof(sockaddr));
+            if (ret == -1) {
 		fprintf(stderr, "bind failed on port %u - %s\n",
-				(unsigned)ntohs(sockaddr.sin_port),
-				strerror(errno));
+                        (unsigned)ntohs(sockaddr.sin_port),
+                        strerror(errno));
 		exit(1);
-	}
+            }
 
-	ret = listen(_listen_fd, 5);
-	if (ret == -1) {
-            fprintf(stderr, "listen failed - %s\n", strerror(errno));
-            exit(1);
-	}
+            ret = listen(_listen_fd, 5);
+            if (ret == -1) {
+                fprintf(stderr, "listen failed - %s\n", strerror(errno));
+                exit(1);
+            }
 
-	printf("Serial port %u on TCP port %u\n", _portNumber, LISTEN_BASE_PORT + _portNumber);
-	fflush(stdout);
+            printf("Serial port %u on TCP port %u\n", _portNumber, LISTEN_BASE_PORT + _portNumber);
+            fflush(stdout);
+        }
 
 	if (wait_for_connection) {
             printf("Waiting for connection ....\n");
