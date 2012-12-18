@@ -3,6 +3,8 @@
 
 using namespace Empty;
 
+extern const AP_HAL::HAL& hal;
+
 EmptyScheduler::EmptyScheduler()
 {}
 
@@ -50,6 +52,11 @@ void EmptyScheduler::begin_atomic()
 
 void EmptyScheduler::end_atomic()
 {}
+
+void EmptyScheduler::panic(const prog_char_t *errormsg) {
+    hal.console->println_P(errormsg);
+    for(;;);
+}
 
 void EmptyScheduler::reboot() {
     for(;;);
