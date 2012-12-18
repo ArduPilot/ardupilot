@@ -11,8 +11,7 @@ class AP_GPS_IMU : public GPS {
 public:
 
     // Methods
-    AP_GPS_IMU(AP_HAL::UARTDriver *s);
-    virtual void init(enum GPS_Engine_Setting nav_setting);
+    virtual void init(AP_HAL::UARTDriver *s, enum GPS_Engine_Setting nav_setting);
     virtual bool read(void);
 
     // Properties

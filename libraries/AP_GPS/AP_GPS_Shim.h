@@ -17,10 +17,8 @@
 class AP_GPS_Shim : public GPS
 {
 public:
-    AP_GPS_Shim() : GPS(NULL) {
-    }
-
-    virtual void        init(enum GPS_Engine_Setting nav_setting = GPS_ENGINE_NONE) {
+    virtual void        init(AP_HAL::UARTDriver *s, enum GPS_Engine_Setting nav_setting = GPS_ENGINE_NONE) {
+		_port = s;
     };
     virtual bool        read(void) {
         bool        updated = _updated;

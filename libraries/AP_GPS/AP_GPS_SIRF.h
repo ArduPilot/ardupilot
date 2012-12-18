@@ -18,9 +18,7 @@
 
 class AP_GPS_SIRF : public GPS {
 public:
-    AP_GPS_SIRF(AP_HAL::UARTDriver *s);
-
-    virtual void        init(enum GPS_Engine_Setting nav_setting = GPS_ENGINE_NONE);
+    virtual void        init(AP_HAL::UARTDriver *s, enum GPS_Engine_Setting nav_setting = GPS_ENGINE_NONE);
     virtual bool        read();
 	static bool         _detect(uint8_t data);
 

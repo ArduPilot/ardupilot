@@ -23,15 +23,11 @@ static uint8_t init_messages[] = {
     0xa0, 0xa2, 0x00, 0x08, 0xa6, 0x00, 0x29, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0xd0, 0xb0, 0xb3
 };
 
-// Constructors ////////////////////////////////////////////////////////////////
-AP_GPS_SIRF::AP_GPS_SIRF(AP_HAL::UARTDriver *s) : GPS(s)
-{
-}
-
 // Public Methods //////////////////////////////////////////////////////////////
 void
-AP_GPS_SIRF::init(enum GPS_Engine_Setting nav_setting)
+AP_GPS_SIRF::init(AP_HAL::UARTDriver *s, enum GPS_Engine_Setting nav_setting)
 {
+	_port = s;
     _port->flush();
 
     // For modules that default to something other than SiRF binary,

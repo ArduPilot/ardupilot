@@ -17,18 +17,13 @@ extern const AP_HAL::HAL& hal;
 
 static const char init_str[] = "$PSRF100,0,57600,8,1,0*37";
 
-// Constructors ////////////////////////////////////////////////////////////////
-AP_GPS_406::AP_GPS_406(AP_HAL::UARTDriver *s) : AP_GPS_SIRF(s)
-{
-}
-
 // Public Methods ////////////////////////////////////////////////////////////////////
-void AP_GPS_406::init(enum GPS_Engine_Setting nav_setting)
+void AP_GPS_406::init(AP_HAL::UARTDriver *s, enum GPS_Engine_Setting nav_setting)
 {
     _change_to_sirf_protocol();         // Changes to SIRF protocol and sets baud rate
     _configure_gps();                           // Function to configure GPS, to output only the desired msg's
 
-    AP_GPS_SIRF::init(nav_setting);                     // let the superclass do anything it might need here
+    AP_GPS_SIRF::init(s, nav_setting);                     // let the superclass do anything it might need here
 
     idleTimeout = 1200;
 }

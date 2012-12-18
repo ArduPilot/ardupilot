@@ -21,10 +21,10 @@ public:
     /// @param	ptr		Pointer to a GPS * that will be fixed up by ::init
     ///					when the GPS type has been detected.
     ///
-    AP_GPS_Auto(AP_HAL::UARTDriver *s, GPS **gps);
+    AP_GPS_Auto(GPS **gps);
 
     /// Dummy init routine, does nothing
-    virtual void        init(enum GPS_Engine_Setting nav_setting = GPS_ENGINE_NONE);
+    virtual void        init(AP_HAL::UARTDriver *s, enum GPS_Engine_Setting nav_setting = GPS_ENGINE_NONE);
 
     /// Detect and initialise the attached GPS unit.  Updates the
     /// pointer passed into the constructor when a GPS is detected.

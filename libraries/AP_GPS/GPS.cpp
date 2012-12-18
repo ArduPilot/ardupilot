@@ -34,7 +34,7 @@ GPS::update(void)
             Debug("gps read timeout %lu %lu", (unsigned long)tnow, (unsigned long)_idleTimer);
             _status = NO_GPS;
 
-            init(_nav_setting);
+            init(_port, _nav_setting);
             // reset the idle timer
             _idleTimer = tnow;
         }

@@ -86,7 +86,7 @@ public:
     ///
     /// Must be implemented by the GPS driver.
     ///
-    virtual void        init(enum GPS_Engine_Setting engine_setting = GPS_ENGINE_NONE) = 0;
+    virtual void        init(AP_HAL::UARTDriver *s, enum GPS_Engine_Setting engine_setting = GPS_ENGINE_NONE) = 0;
 
     // Properties
     uint32_t time;                      ///< GPS time (milliseconds from epoch)
@@ -152,16 +152,6 @@ public:
 
 protected:
     AP_HAL::UARTDriver *_port;   ///< port the GPS is attached to
-
-    /// Constructor
-    ///
-    /// @note The stream is expected to be set up and configured for the
-    ///       correct bitrate before ::init is called.
-    ///
-    /// @param	u	UARTDriver connected to the GPS module.
-    ///
-    GPS(AP_HAL::UARTDriver *u) : _port(u) {
-    };
 
     /// read from the GPS stream and update properties
     ///

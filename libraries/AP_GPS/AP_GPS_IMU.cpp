@@ -31,17 +31,12 @@
 #include <AP_HAL.h>
 #include "AP_GPS_IMU.h"
 
-// Constructors ////////////////////////////////////////////////////////////////
-AP_GPS_IMU::AP_GPS_IMU(AP_HAL::UARTDriver *s) : GPS(s)
-{
-}
-
-
 // Public Methods //////////////////////////////////////////////////////////////
 void
-AP_GPS_IMU::init(enum GPS_Engine_Setting nav_setting)
+AP_GPS_IMU::init(AP_HAL::UARTDriver *s, enum GPS_Engine_Setting nav_setting)
 {
     // we expect the stream to already be open at the corret bitrate
+	_port = s;
     idleTimeout = 1200;
 }
 

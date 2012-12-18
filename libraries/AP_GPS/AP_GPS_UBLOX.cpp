@@ -28,17 +28,13 @@ extern const AP_HAL::HAL& hal;
 const prog_char AP_GPS_UBLOX::_ublox_set_binary[] PROGMEM = UBLOX_SET_BINARY;
 const uint8_t AP_GPS_UBLOX::_ublox_set_binary_size = sizeof(AP_GPS_UBLOX::_ublox_set_binary);
 
-// Constructors ////////////////////////////////////////////////////////////////
-
-AP_GPS_UBLOX::AP_GPS_UBLOX(AP_HAL::UARTDriver *s) : GPS(s)
-{
-}
-
 // Public Methods //////////////////////////////////////////////////////////////
 
 void
-AP_GPS_UBLOX::init(enum GPS_Engine_Setting nav_setting)
+AP_GPS_UBLOX::init(AP_HAL::UARTDriver *s, enum GPS_Engine_Setting nav_setting)
 {
+	_port = s;
+
     // XXX it might make sense to send some CFG_MSG,CFG_NMEA messages to get the
     // right reporting configuration.
 

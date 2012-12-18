@@ -52,14 +52,10 @@
 class AP_GPS_NMEA : public GPS
 {
 public:
-    /// Constructor
-    ///
-    AP_GPS_NMEA(AP_HAL::UARTDriver* s);
-
     /// Perform a (re)initialisation of the GPS; sends the
     /// protocol configuration messages.
     ///
-    virtual void        init(enum GPS_Engine_Setting nav_setting = GPS_ENGINE_NONE);
+    virtual void        init(AP_HAL::UARTDriver *s, enum GPS_Engine_Setting nav_setting = GPS_ENGINE_NONE);
 
     /// Checks the serial receive buffer for characters,
     /// attempts to parse NMEA data and updates internal state

@@ -22,8 +22,7 @@ class AP_GPS_406 : public AP_GPS_SIRF
 {
 public:
     // Methods
-    AP_GPS_406(AP_HAL::UARTDriver *port);
-    virtual void        init(enum GPS_Engine_Setting nav_setting = GPS_ENGINE_NONE);
+    virtual void        init(AP_HAL::UARTDriver *s, enum GPS_Engine_Setting nav_setting = GPS_ENGINE_NONE);
 
 private:
     void                _change_to_sirf_protocol(void);

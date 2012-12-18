@@ -17,15 +17,11 @@
 
 #include "AP_GPS_MTK.h"
 
-// Constructors ////////////////////////////////////////////////////////////////
-AP_GPS_MTK::AP_GPS_MTK(AP_HAL::UARTDriver *s) : GPS(s)
-{
-}
-
 // Public Methods //////////////////////////////////////////////////////////////
 void
-AP_GPS_MTK::init(enum GPS_Engine_Setting nav_setting)
+AP_GPS_MTK::init(AP_HAL::UARTDriver *s, enum GPS_Engine_Setting nav_setting)
 {
+	_port = s;
     _port->flush();
     // initialize serial port for binary protocol use
     // XXX should assume binary, let GPS_AUTO handle dynamic config?

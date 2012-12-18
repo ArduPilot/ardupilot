@@ -16,15 +16,11 @@
 
 extern const AP_HAL::HAL& hal;
 
-// Constructors ////////////////////////////////////////////////////////////////
-AP_GPS_MTK16::AP_GPS_MTK16(AP_HAL::UARTDriver *s) : GPS(s)
-{
-}
-
 // Public Methods //////////////////////////////////////////////////////////////
 void
-AP_GPS_MTK16::init(enum GPS_Engine_Setting nav_setting)
+AP_GPS_MTK16::init(AP_HAL::UARTDriver *s, enum GPS_Engine_Setting nav_setting)
 {
+	_port = s;
     _port->flush();
 
     // initialize serial port for binary protocol use

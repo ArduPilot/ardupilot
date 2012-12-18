@@ -90,15 +90,11 @@ const char AP_GPS_NMEA::_gpvtg_string[] PROGMEM = "GPVTG";
 //
 #define DIGIT_TO_VAL(_x)        (_x - '0')
 
-// Constructors ////////////////////////////////////////////////////////////////
-AP_GPS_NMEA::AP_GPS_NMEA(AP_HAL::UARTDriver *s) :
-    GPS(s)
-{
-}
-
 // Public Methods //////////////////////////////////////////////////////////////
-void AP_GPS_NMEA::init(enum GPS_Engine_Setting nav_setting)
+void AP_GPS_NMEA::init(AP_HAL::UARTDriver *s, enum GPS_Engine_Setting nav_setting)
 {
+	_port = s;
+
     // send the SiRF init strings
     _port->print_P((const prog_char_t *)_SiRF_init_string);
 

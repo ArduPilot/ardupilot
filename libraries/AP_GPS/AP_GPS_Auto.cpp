@@ -16,8 +16,7 @@ const prog_char AP_GPS_Auto::_mtk_set_binary[]   PROGMEM = MTK_SET_BINARY;
 const prog_char AP_GPS_Auto::_sirf_set_binary[]  PROGMEM = SIRF_SET_BINARY;
 
 
-AP_GPS_Auto::AP_GPS_Auto(AP_HAL::UARTDriver *u, GPS **gps)  :
-    GPS(u),
+AP_GPS_Auto::AP_GPS_Auto(GPS **gps)  :
     _gps(gps)
 {
 }
@@ -25,8 +24,9 @@ AP_GPS_Auto::AP_GPS_Auto(AP_HAL::UARTDriver *u, GPS **gps)  :
 // Do nothing at init time - it may be too early to try detecting the GPS
 //
 void
-AP_GPS_Auto::init(enum GPS_Engine_Setting nav_setting)
+AP_GPS_Auto::init(AP_HAL::UARTDriver *s, enum GPS_Engine_Setting nav_setting)
 {
+	_port = s;
     idleTimeout = 1200;
     _nav_setting = nav_setting;
 }
@@ -64,7 +64,7 @@ AP_GPS_Auto::read(void)
 
 	if (NULL != (gps = _detect())) {
 		// configure the detected GPS
-		gps->init(_nav_setting);
+		gps->init(_port, _nav_setting);
 		hal.console->println_P(PSTR("OK"));
 		*_gps = gps;
 		return true;
@@ -79,6 +79,7 @@ GPS *
 AP_GPS_Auto::_detect(void)
 {
 	static uint32_t detect_started_ms;
+	GPS *new_gps = NULL;
 
 	if (detect_started_ms == 0 && _port->available() > 0) {
 		detect_started_ms = hal.scheduler->millis();
@@ -88,34 +89,38 @@ AP_GPS_Auto::_detect(void)
 		uint8_t data = _port->read();
 		if (AP_GPS_UBLOX::_detect(data)) {
 			hal.console->print_P(PSTR(" ublox "));
-			return new AP_GPS_UBLOX(_port);
-		}
-		if (AP_GPS_MTK16::_detect(data)) {
+			new_gps = new AP_GPS_UBLOX();
+		} 
+		else if (AP_GPS_MTK16::_detect(data)) {
 			hal.console->print_P(PSTR(" MTK16 "));
-			return new AP_GPS_MTK16(_port);
-		}
-		if (AP_GPS_MTK::_detect(data)) {
+			new_gps = new AP_GPS_MTK16();
+		} 
+		else if (AP_GPS_MTK::_detect(data)) {
 			hal.console->print_P(PSTR(" MTK "));
-			return new AP_GPS_MTK(_port);
+			new_gps = new AP_GPS_MTK();
 		}
 #if !defined( __AVR_ATmega1280__ )
 		// save a bit of code space on a 1280
-		if (AP_GPS_SIRF::_detect(data)) {
+		else if (AP_GPS_SIRF::_detect(data)) {
 			hal.console->print_P(PSTR(" SIRF "));
-			return new AP_GPS_SIRF(_port);
+			new_gps = new AP_GPS_SIRF();
 		}
-		if (hal.scheduler->millis() - detect_started_ms > 5000) {
+		else if (hal.scheduler->millis() - detect_started_ms > 5000) {
 			// prevent false detection of NMEA mode in
 			// a MTK or UBLOX which has booted in NMEA mode
 			if (AP_GPS_NMEA::_detect(data)) {
 				hal.console->print_P(PSTR(" NMEA "));
-				return new AP_GPS_NMEA(_port);
+				new_gps = new AP_GPS_NMEA();
 			}
 		}
 #endif
 	}
 
-	return NULL;
+	if (new_gps != NULL) {
+		new_gps->init(_port);
+	}
+
+	return new_gps;
 }
 
 
