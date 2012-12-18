@@ -579,6 +579,9 @@ void setup() {
 	memcheck_init();
     cliSerial = hal.console;
 
+    // load the default values of variables listed in var_info[]
+    AP_Param::setup_sketch_defaults();
+
     rssi_analog_source = hal.analogin->channel(ANALOG_INPUT_NONE, 0.25);
     vcc_pin = hal.analogin->channel(ANALOG_INPUT_BOARD_VCC);
     batt_volt_pin = hal.analogin->channel(g.battery_volt_pin);
