@@ -51,6 +51,7 @@ void AP_InertialNav::update(float dt)
 {
     Vector3f acc_corr = accel_correction.get();
     Vector3f accel_ef;
+    Vector3f velocity_increase;
 
     // discard samples where dt is too large
     if( dt > 0.1 ) {
@@ -80,11 +81,14 @@ void AP_InertialNav::update(float dt)
     // get earth frame accelerometer correction
     accel_correction_ef = dcm * acc_corr;
 
-    // calculate velocity by adding new acceleration from accelerometers
-    _velocity += (-accel_ef + accel_correction_ef) * dt;
+    // calculate velocity increase adding new acceleration from accelerometers
+    velocity_increase = (-accel_ef + accel_correction_ef) * dt;
 
     // calculate new estimate of position
-    _position_base += _velocity * dt;
+    _position_base += (_velocity + velocity_increase*0.5) * dt;
+
+    // calculate new velocity
+    _velocity += velocity_increase;
 
     // store 3rd order estimate (i.e. estimated vertical position) for future use
     _hist_position_estimate_z.add(_position_base.z);
