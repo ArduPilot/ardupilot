@@ -67,6 +67,7 @@
 #include <AP_HAL.h>
 #include <AP_HAL_AVR.h>
 #include <AP_HAL_AVR_SITL.h>
+#include <AP_HAL_Empty.h>
 
 // Application dependencies
 #include <GCS_MAVLink.h>        // MAVLink GCS definitions
@@ -97,6 +98,7 @@
 #include <AP_Declination.h>     // ArduPilot Mega Declination Helper Library
 #include <AP_Limits.h>
 #include <memcheck.h>
+#include <SITL.h>
 
 // AP_HAL to Arduino compatibility layer
 #include "compat.h"
@@ -123,15 +125,7 @@ AP_HAL::BetterStream* cliSerial;
 // AP_HAL instance
 ////////////////////////////////////////////////////////////////////////////////
 
-#if CONFIG_HAL_BOARD == HAL_BOARD_APM2
-const AP_HAL::HAL& hal = AP_HAL_AVR_APM2;
-#elif CONFIG_HAL_BOARD == HAL_BOARD_APM1
-const AP_HAL::HAL& hal = AP_HAL_AVR_APM1;
-#elif CONFIG_HAL_BOARD == HAL_BOARD_AVR_SITL
-const AP_HAL::HAL& hal = AP_HAL_AVR_SITL;
-#include <SITL.h>
-SITL sitl;
-#endif
+const AP_HAL::HAL& hal = AP_HAL_BOARD_DRIVER;
 
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -192,14 +186,17 @@ AP_ADC_ADS7844 adc;
 
  #if CONFIG_IMU_TYPE == CONFIG_IMU_MPU6000
 AP_InertialSensor_MPU6000 ins;
- #else
+#elif CONFIG_IMU_TYPE == CONFIG_IMU_OILPAN
 AP_InertialSensor_Oilpan ins(&adc);
+#elif CONFIG_IMU_TYPE == CONFIG_IMU_SITL
+AP_InertialSensor_Stub ins;
  #endif
 
  #if CONFIG_HAL_BOARD == HAL_BOARD_AVR_SITL
  // When building for SITL we use the HIL barometer and compass drivers
 AP_Baro_BMP085_HIL barometer;
 AP_Compass_HIL compass;
+SITL sitl;
  #else
 // Otherwise, instantiate a real barometer and compass driver
   #if CONFIG_BARO == AP_BARO_BMP085
@@ -995,9 +992,6 @@ void loop()
             }
         }
     } else {
-#if CONFIG_HAL_BOARD == HAL_BOARD_AVR_SITL
-        usleep(1000);
-#endif
         if (timer - fast_loopTimer < 9) {
             // we have some spare cycles available
             // less than 10ms has passed. We have at least one millisecond

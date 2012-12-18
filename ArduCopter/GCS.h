@@ -61,20 +61,12 @@ public:
     void        send_message(enum ap_message id) {
     }
 
-    /// Send a text message.
-    ///
-    /// @param	severity	A value describing the importance of the message.
-    /// @param	str			The text to be sent.
-    ///
-    void        send_text(gcs_severity severity, const char *str) {
-    }
-
     /// Send a text message with a PSTR()
     ///
     /// @param	severity	A value describing the importance of the message.
     /// @param	str			The text to be sent.
     ///
-    void        send_text(gcs_severity severity, const prog_char_t *str) {
+    void        send_text_P(gcs_severity severity, const prog_char_t *str) {
     }
 
     // send streams which match frequency range
@@ -110,7 +102,7 @@ public:
     void        init(AP_HAL::UARTDriver *port);
     void        send_message(enum ap_message id);
     void        send_text(gcs_severity severity, const char *str);
-    void        send_text(gcs_severity severity, const prog_char_t *str);
+    void        send_text_P(gcs_severity severity, const prog_char_t *str);
     void        data_stream_send(void);
     void        queued_param_send();
     void        queued_waypoint_send();

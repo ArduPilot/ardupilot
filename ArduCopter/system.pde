@@ -625,7 +625,6 @@ void flash_leds(bool on)
     digitalWrite(C_LED_PIN, on ? LED_ON : LED_OFF);
 }
 
-#ifndef DESKTOP_BUILD
 /*
  * Read Vcc vs 1.1v internal reference
  */
@@ -633,7 +632,6 @@ uint16_t board_voltage(void)
 {
     return board_vcc_analog_source->read_latest();
 }
-#endif
 
 /*
   force a software reset of the APM

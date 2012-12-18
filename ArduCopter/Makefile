@@ -42,9 +42,6 @@ apm2hexa: apm2
 apm2beta: EXTRAFLAGS += "-DAPM2_BETA_HARDWARE "
 apm2beta: apm2
 
-sitl: HAL_BOARD = "HAL_BOARD_AVR_SITL"
-sitl: all
-
 sitl-octa: EXTRAFLAGS += "-DFRAME_CONFIG=OCTA_FRAME "
 sitl-octa: sitl
 
