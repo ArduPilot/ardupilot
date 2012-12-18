@@ -247,11 +247,11 @@ endif
 #
 # Tool options
 #
-EXTRAFLAGS     ?=
 DEFINES         =   -DF_CPU=$(F_CPU)
 DEFINES        +=   -DARDUINO=$(ARDUINO_VERS)
-DEFINES        +=   $(EXTRAFLAGS)
 DEFINES        +=   -DSKETCH=\"$(SKETCH)\"
+DEFINES        +=   $(EXTRAFLAGS) # from user config.mk
+DEFINES        +=   -DCONFIG_HAL_BOARD=$(HAL_BOARD)
 WARNFLAGS       =   -Wformat -Wall -Wshadow -Wpointer-arith -Wcast-align
 WARNFLAGS      +=   -Wwrite-strings -Wformat=2 -Wno-reorder
 DEPFLAGS        =   -MD -MT $@
@@ -439,8 +439,10 @@ CORELIBOBJS :=
 EXTRAFLAGS += -DEXCLUDECORE
 endif
 
-ifneq ($(HAL_BOARD),)
-EXTRAFLAGS += -DCONFIG_HAL_BOARD=$(HAL_BOARD)
+ifeq ($(HAL_BOARD),HAL_BOARD_AVR_SITL)
+  TOOLCHAIN = NATIVE
+else
+  TOOLCHAIN = AVR
 endif
 
 ################################################################################
@@ -472,8 +474,6 @@ endif
 ################################################################################
 # Targets
 #
-
-default: apm2
 
 all: $(SKETCHELF) $(SKETCHEEP) $(SKETCHHEX)
 
