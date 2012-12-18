@@ -68,12 +68,12 @@ static void read_radio()
     g.channel_roll.set_pwm(hal.rcin->read(CH_ROLL));
     g.channel_pitch.set_pwm(hal.rcin->read(CH_PITCH));
 
-	g.channel_throttle.set_pwm(hal.rcout->read(CH_3));
-	g.channel_rudder.set_pwm(hal.rcout->read(CH_4));
-  	g.rc_5.set_pwm(hal.rcout->read(CH_5));
- 	g.rc_6.set_pwm(hal.rcout->read(CH_6));        
-	g.rc_7.set_pwm(hal.rcout->read(CH_7));
-	g.rc_8.set_pwm(hal.rcout->read(CH_8));
+	g.channel_throttle.set_pwm(hal.rcin->read(CH_3));
+	g.channel_rudder.set_pwm(hal.rcin->read(CH_4));
+  	g.rc_5.set_pwm(hal.rcin->read(CH_5));
+ 	g.rc_6.set_pwm(hal.rcin->read(CH_6));        
+	g.rc_7.set_pwm(hal.rcin->read(CH_7));
+	g.rc_8.set_pwm(hal.rcin->read(CH_8));
 
 	control_failsafe(g.channel_throttle.radio_in);
 

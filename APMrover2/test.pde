@@ -119,9 +119,9 @@ test_passthru(uint8_t argc, const Menu::arg *argv)
         if (hal.rcin->valid() > 0) {
             cliSerial->print("CH:");
             for(int i = 0; i < 8; i++){
-                cliSerial->print(hal.rcout->read(i));	// Print channel values
+                cliSerial->print(hal.rcin->read(i));	// Print channel values
                 cliSerial->print(",");
-                hal.rcout->write(i, hal.rcout->read(i)); // Copy input to Servos
+                hal.rcout->write(i, hal.rcin->read(i)); // Copy input to Servos
             }
             cliSerial->println();
         }
