@@ -46,9 +46,8 @@ void AP_Baro::calibrate()
         while (ground_pressure == 0 || !healthy) {
             read();         // Get initial data from absolute pressure sensor
             if (hal.scheduler->millis() - tstart > 500) {
-                hal.console->println_P(PSTR("PANIC: AP_Baro::read unsuccessful "
+                hal.scheduler->panic(PSTR("PANIC: AP_Baro::read unsuccessful "
                         "for more than 500ms in AP_Baro::calibrate [1]\r\n"));
-                return;
             }
             ground_pressure         = get_pressure();
             ground_temperature      = get_temperature();
@@ -63,9 +62,8 @@ void AP_Baro::calibrate()
         do {
             read();
             if (hal.scheduler->millis() - tstart > 500) {
-                hal.console->println_P(PSTR("PANIC: AP_Baro::read unsuccessful "
+                hal.scheduler->panic(PSTR("PANIC: AP_Baro::read unsuccessful "
                         "for more than 500ms in AP_Baro::calibrate [2]\r\n"));
-                return;
             }
         } while (!healthy);
         ground_pressure     = get_pressure();
@@ -81,9 +79,8 @@ void AP_Baro::calibrate()
         do {
             read();
             if (hal.scheduler->millis() - tstart > 500) {
-                hal.console->println_P(PSTR("PANIC: AP_Baro::read unsuccessful "
+                hal.scheduler->panic(PSTR("PANIC: AP_Baro::read unsuccessful "
                         "for more than 500ms in AP_Baro::calibrate [3]\r\n"));
-                return;
             }
         } while (!healthy);
         ground_pressure = (ground_pressure * 0.8) + (get_pressure() * 0.2);
