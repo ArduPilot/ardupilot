@@ -31,7 +31,10 @@ static SITLRCInput  sitlRCInput(&sitlState);
 static SITLRCOutput sitlRCOutput(&sitlState);
 static SITLAnalogIn sitlAnalogIn(&sitlState);
 
+// use the Empty HAL for hardware we don't emulate
 static Empty::EmptyGPIO emptyGPIO;
+static Empty::EmptyI2CDriver emptyI2C;
+static Empty::EmptySPIDeviceManager emptySPI;
 
 static SITLUARTDriver sitlUart0Driver(0, &sitlState);
 static SITLUARTDriver sitlUart1Driver(1, &sitlState);
@@ -42,8 +45,8 @@ HAL_AVR_SITL::HAL_AVR_SITL() :
 	    &sitlUart0Driver,  /* uartA */
         &sitlUart1Driver, /* uartB */
         &sitlUart2Driver,  /* uartC */
-        NULL, /* i2c */
-        NULL, /* spi */
+        &emptyI2C, /* i2c */
+        &emptySPI, /* spi */
         &sitlAnalogIn, /* analogin */
         &sitlEEPROMStorage, /* storage */
         &consoleDriver, /* console */

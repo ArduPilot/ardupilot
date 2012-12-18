@@ -37,6 +37,7 @@ public:
     ssize_t gps_read(int fd, void *buf, size_t count);
     static uint16_t pwm_output[11];
     static uint16_t pwm_input[8];
+    static bool pwm_valid;
     static void loop_hook(void);
 
     // simulated airspeed

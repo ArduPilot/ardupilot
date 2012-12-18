@@ -42,6 +42,7 @@ int SITL_State::_sitl_fd;
 SITL *SITL_State::_sitl;
 uint16_t SITL_State::pwm_output[11];
 uint16_t SITL_State::pwm_input[8];
+bool SITL_State::pwm_valid;
 
 // catch floating point exceptions
 void SITL_State::_sig_fpe(int signum)
@@ -185,6 +186,8 @@ void SITL_State::_setup_fdm(void)
 void SITL_State::_timer_handler(int signum)
 {
 	static uint32_t last_update_count;
+    static uint32_t last_pwm_input;
+
 	static bool in_timer;
 
 	if (in_timer || ((SITLScheduler *)hal.scheduler)->interrupts_are_blocked()) {
@@ -204,13 +207,19 @@ void SITL_State::_timer_handler(int signum)
 	static uint16_t count = 0;
 	static uint32_t last_report;
         
-    	count++;
+    count++;
 	if (millis() - last_report > 1000) {
 		fprintf(stdout, "TH %u cps\n", count);
 		count = 0;
 		last_report = millis();
 	}
 #endif
+
+    // simulate RC input at 50Hz
+    if (hal.scheduler->millis() - last_pwm_input >= 20) {
+        last_pwm_input = hal.scheduler->millis();
+        pwm_valid = true;
+    }
 
 	/* check for packet from flight sim */
 	_fdm_input();
@@ -287,7 +296,9 @@ void SITL_State::_fdm_input(void)
 			return;
 		}
 
-		_sitl->state = d.fg_pkt;
+        if (_sitl != NULL) {
+            _sitl->state = d.fg_pkt;
+        }
 		_update_count++;
 
 		count++;
