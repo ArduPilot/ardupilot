@@ -362,8 +362,8 @@ static void update_nav_wp()
             nav_lon = g.pid_loiter_rate_lon.get_integrator();
             nav_lat = g.pid_loiter_rate_lon.get_integrator();
 
-            nav_lon = constrain(nav_lon, -2000, 2000); // 20m
-            nav_lat = constrain(nav_lat, -2000, 2000); // 20m
+            nav_lon                 = constrain(nav_lon, -2000, 2000);                              // 20 degrees
+            nav_lat                 = constrain(nav_lat, -2000, 2000);                              // 20 degrees
             break;
     }
 }
