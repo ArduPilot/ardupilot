@@ -8,8 +8,11 @@
 #include <AP_HAL.h>
 #include <AP_HAL_AVR.h>
 #include <AP_HAL_AVR_SITL.h>
+#include <AP_HAL_Empty.h>
 #include <AP_Common.h>
 #include <AP_Baro.h>
+#include <AP_ADC.h>
+#include <GCS_MAVLink.h>
 #include <AP_Compass.h>
 #include <AP_Declination.h>
 #include <SITL.h>
@@ -18,15 +21,7 @@
 #include <AP_Progmem.h>
 #include <AP_Math.h>
 
-#if CONFIG_HAL_BOARD == HAL_BOARD_APM2
-const AP_HAL::HAL& hal = AP_HAL_AVR_APM2;
-#elif CONFIG_HAL_BOARD == HAL_BOARD_APM1
-const AP_HAL::HAL& hal = AP_HAL_AVR_APM1;
-#elif CONFIG_HAL_BOARD == HAL_BOARD_AVR_SITL
-const AP_HAL::HAL& hal = AP_HAL_AVR_SITL;
-#else
-#error "Unknown CONFIG_HAL_BOARD type"
-#endif
+const AP_HAL::HAL& hal = AP_HAL_BOARD_DRIVER;
 
 void setup() {
 }
