@@ -947,12 +947,6 @@ GCS_MAVLINK::send_message(enum ap_message id)
 }
 
 void
-GCS_MAVLINK::send_text(gcs_severity severity, const char *str)
-{
-    mavlink_send_text(chan,severity,str);
-}
-
-void
 GCS_MAVLINK::send_text_P(gcs_severity severity, const prog_char_t *str)
 {
     mavlink_statustext_t m;
