@@ -56,8 +56,8 @@ extern const AP_HAL::HAL& hal;
 // DO NOT CHANGE FROM 8!!
 #define ADC_ACCEL_FILTER_SIZE 8
 // Commands for reading ADC channels on ADS7844
-static const unsigned char adc_cmd[9] =
-    { 0x87, 0xC7, 0x97, 0xD7, 0xA7, 0xE7, 0xB7, 0xF7, 0x00 };
+static const unsigned char adc_cmd[17] =
+    { 0x87, 0, 0xC7, 0, 0x97, 0, 0xD7, 0, 0xA7, 0, 0xE7, 0, 0xB7, 0, 0xF7};
 
 // the sum of the values since last read
 static volatile uint32_t _sum[8];
@@ -95,25 +95,17 @@ void AP_ADC_ADS7844::read(uint32_t tnow)
         }   
     }
 
-    _spi->cs_assert();
-    // Command to read the first channel
-    _spi->transfer(adc_cmd[0]);
+    uint8_t rx[17];
+    _spi->transaction(adc_cmd, rx, 17);
 
     for (ch = 0; ch < 8; ch++) {
-        uint16_t v;
-
-        // Read first byte
-        v = _spi->transfer(0) << 8;
-        // Read second byte and send next command
-        v |= _spi->transfer(adc_cmd[ch + 1]);
-
+        uint16_t v = (rx[2*ch+1] << 8) | rx[2*ch+2];
         if (v & 0x8007) {
             // this is a 12-bit ADC, shifted by 3 bits.
             // if we get other bits set then the value is
             // bogus and should be ignored
             continue;
         }
-
         if (++_count[ch] == 0) {
             // overflow ... shouldn't happen too often
             // unless we're just not using the
@@ -125,8 +117,6 @@ void AP_ADC_ADS7844::read(uint32_t tnow)
         }
         _sum[ch] += (v >> 3);
     }
-
-    _spi->cs_release();
 
     if (_spi_sem) {
         bool released = _spi_sem->release((void*)&_spi_sem);
