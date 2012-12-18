@@ -1,11 +1,13 @@
 // -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 
 /// @file	GCS.h
-/// @brief	Interface definition for the various Ground Control System protocols.
+/// @brief	Interface definition for the various Ground Control System
+// protocols.
 
 #ifndef __GCS_H
 #define __GCS_H
 
+#include <AP_HAL.h>
 #include <AP_Common.h>
 #include <GPS.h>
 #include <stdint.h>
@@ -40,14 +42,14 @@ public:
 	void		init(AP_HAL::UARTDriver *port) {
         _port = port;
         initialised = true;
-        last_gps_satellites = 255;
     }
 
 	/// Update GCS state.
 	///
 	/// This may involve checking for received bytes on the stream,
 	/// or sending additional periodic messages.
-	void		update(void) {}
+    void        update(void) {
+    }
 
 	/// Send a message with a single numeric parameter.
 	///
@@ -57,23 +59,30 @@ public:
 	/// @param	id			ID of the message to send.
 	/// @param	param		Explicit message parameter.
 	///
-	void		send_message(enum ap_message id) {}
+    void        send_message(enum ap_message id) {
+    }
+
+    /// Send a text message.
+    ///
+    /// @param	severity	A value describing the importance of the message.
+    /// @param	str			The text to be sent.
+    ///
+    void        send_text(gcs_severity severity, const char *str) {
+    }
 
 	/// Send a text message with a PSTR()
 	///
 	/// @param	severity	A value describing the importance of the message.
 	/// @param	str			The text to be sent.
 	///
-	void		send_text_P(gcs_severity severity, const prog_char_t *str) {}
+    void        send_text_P(gcs_severity severity, const prog_char_t *str) {
+    }
 
     // send streams which match frequency range
     void data_stream_send(void);
 
     // set to true if this GCS link is active
     bool initialised;
-
-    // used to prevent wasting bandwidth with GPS_STATUS messages
-    uint8_t last_gps_satellites;
 
 protected:
 	/// The stream we are communicating over
@@ -98,6 +107,7 @@ public:
 	void    update(void);
     void    init(AP_HAL::UARTDriver *port);
 	void	send_message(enum ap_message id);
+    void        send_text(gcs_severity severity, const char *str);
 	void	send_text_P(gcs_severity severity, const prog_char_t *str);
     void    data_stream_send(void);
 	void    queued_param_send();
@@ -126,28 +136,41 @@ public:
 	// messages don't block the CPU
     mavlink_statustext_t pending_status;
 
+    // call to reset the timeout window for entering the cli
+    void reset_cli_timeout();
 private:
 	void 	handleMessage(mavlink_message_t * msg);
 
 	/// Perform queued sending operations
 	///
-	AP_Param   *_queued_parameter;                  ///< next parameter to be sent in queue
-    enum ap_var_type _queued_parameter_type;        ///< type of the next parameter
-    AP_Param::ParamToken	_queued_parameter_token;///AP_Param token for next() call
-	uint16_t    _queued_parameter_index;            ///< next queued parameter's index
-    uint16_t    _queued_parameter_count;            ///< saved count of parameters for queued send
+    AP_Param *                  _queued_parameter;      ///< next parameter to
+                                                        // be sent in queue
+    enum ap_var_type            _queued_parameter_type; ///< type of the next
+                                                        // parameter
+    AP_Param::ParamToken        _queued_parameter_token; ///AP_Param token for
+                                                         // next() call
+    uint16_t                    _queued_parameter_index; ///< next queued
+                                                         // parameter's index
+    uint16_t                    _queued_parameter_count; ///< saved count of
+                                                         // parameters for
+                                                         // queued send
+    uint32_t                    _queued_parameter_send_time_ms;
 
 	/// Count the number of reportable parameters.
 	///
-	/// Not all parameters can be reported via MAVlink.  We count the number that are
-	/// so that we can report to a GCS the number of parameters it should expect when it
+    /// Not all parameters can be reported via MAVlink.  We count the number
+    // that are
+    /// so that we can report to a GCS the number of parameters it should
+    // expect when it
 	/// requests the full set.
 	///
 	/// @return         The number of reportable parameters.
 	///
-    uint16_t    _count_parameters();                ///< count reportable parameters
+    uint16_t                    _count_parameters(); ///< count reportable
+                                                     // parameters
 
-    uint16_t    _parameter_count;                   ///< cache of reportable parameters
+    uint16_t                    _parameter_count;   ///< cache of reportable
+                                                    // parameters
 
 	mavlink_channel_t chan;
     uint16_t packet_drops;
@@ -162,7 +185,6 @@ private:
     uint16_t waypoint_request_last; // last request index
 	uint16_t waypoint_dest_sysid; // where to send requests
 	uint16_t waypoint_dest_compid; // "
-	bool waypoint_sending; // currently in send process
 	bool waypoint_receiving; // currently receiving
 	uint16_t waypoint_count;
 	uint32_t waypoint_timelast_send; // milliseconds
@@ -188,6 +210,10 @@ private:
 
     // number of extra ticks to add to slow things down for the radio
     uint8_t stream_slowdown;
+
+    // millis value to calculate cli timeout relative to.
+    // exists so we can separate the cli entry time from the system start time
+    uint32_t _cli_timeout;
 };
 
 #endif // __GCS_H

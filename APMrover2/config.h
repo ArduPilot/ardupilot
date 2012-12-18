@@ -80,6 +80,7 @@
 # define CONFIG_INS_TYPE   CONFIG_INS_SITL
 # define CONFIG_PUSHBUTTON DISABLED
 # define CONFIG_RELAY      DISABLED
+# define CONFIG_SONAR_SOURCE SONAR_SOURCE_ANALOG_PIN
 # define A_LED_PIN        27
 # define B_LED_PIN        26
 # define C_LED_PIN        25

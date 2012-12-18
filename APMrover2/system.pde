@@ -560,3 +560,12 @@ print_flight_mode(uint8_t mode)
         break;
     }
 }
+
+/*
+  force a software reset of the APM
+ */
+static void reboot_apm(void)
+{
+    hal.scheduler->reboot();
+    while (1);
+}

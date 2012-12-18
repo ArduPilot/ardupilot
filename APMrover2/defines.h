@@ -114,7 +114,6 @@ enum ap_message {
     MSG_RADIO_IN,
     MSG_RAW_IMU1,
     MSG_RAW_IMU3,
-    MSG_GPS_STATUS,
     MSG_GPS_RAW,
     MSG_SERVO_OUT,
     MSG_NEXT_WAYPOINT,

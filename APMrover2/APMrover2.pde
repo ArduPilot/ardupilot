@@ -394,6 +394,13 @@ static uint8_t	non_nav_command_ID	= NO_COMMAND;
 static float	groundspeed_error;	
 // 0-(throttle_max - throttle_cruise) : throttle nudge in Auto mode using top 1/2 of throttle stick travel
 static int16_t     throttle_nudge = 0;
+
+// receiver RSSI
+static uint8_t receiver_rssi;
+
+// the time when the last HEARTBEAT message arrived from a GCS
+static uint32_t last_heartbeat_ms;
+
 // The distance as reported by Sonar in cm – Values are 20 to 700 generally.
 static int16_t		sonar_dist;
 static bool obstacle = false;
