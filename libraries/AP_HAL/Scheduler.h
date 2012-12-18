@@ -5,6 +5,7 @@
 #include "AP_HAL_Namespace.h"
 
 #include <stdint.h>
+#include <AP_Progmem.h>
 
 class AP_HAL::Scheduler {
 public:
@@ -26,6 +27,7 @@ public:
     virtual void     begin_atomic() = 0;
     virtual void     end_atomic() = 0;
 
+    virtual void     panic(const prog_char_t *errormsg) = 0;
     virtual void     reboot() = 0;
 };
 
