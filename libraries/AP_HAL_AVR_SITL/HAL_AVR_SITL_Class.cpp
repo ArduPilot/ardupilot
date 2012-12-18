@@ -14,19 +14,27 @@
 #include "UARTDriver.h"
 #include "Storage.h"
 #include "Console.h"
+#include "RCInput.h"
 #include "SITL_State.h"
+
+#include <AP_HAL_Empty.h>
+#include <AP_HAL_Empty_Private.h>
 
 using namespace AVR_SITL;
 
 static SITLScheduler sitlScheduler;
 static SITLEEPROMStorage sitlEEPROMStorage;
 static SITLConsoleDriver consoleDriver;
-static SITLAnalogIn sitlAnalogIn;
 static SITL_State sitlState;
 
-static SITLUARTDriver sitlUart0Driver(0);
-static SITLUARTDriver sitlUart1Driver(1);
-static SITLUARTDriver sitlUart2Driver(2);
+static Empty::EmptyRCInput  emptyRCInput;
+static Empty::EmptyRCOutput emptyRCOutput;
+static Empty::EmptyGPIO emptyGPIO;
+static Empty::EmptyAnalogIn emptyAnalogIn;
+
+static SITLUARTDriver sitlUart0Driver(0, &sitlState);
+static SITLUARTDriver sitlUart1Driver(1, &sitlState);
+static SITLUARTDriver sitlUart2Driver(2, &sitlState);
 
 HAL_AVR_SITL::HAL_AVR_SITL() :
     AP_HAL::HAL(
@@ -35,12 +43,14 @@ HAL_AVR_SITL::HAL_AVR_SITL() :
         &sitlUart2Driver,  /* uartC */
         NULL, /* i2c */
         NULL, /* spi */
-        &sitlAnalogIn, /* analogin */
+        &emptyAnalogIn, /* analogin */
         &sitlEEPROMStorage, /* storage */
         &consoleDriver, /* console */
-        NULL, /* gpio */
-        NULL, /* rcinput */
-        NULL, /* rcoutput */
+
+        &emptyGPIO, /* gpio */
+        &emptyRCInput,  /* rcinput */
+        &emptyRCOutput, /* rcoutput */
+
         &sitlScheduler), /* scheduler */
     _sitl_state(&sitlState)
 {}
@@ -52,8 +62,9 @@ void HAL_AVR_SITL::init(int argc, char * const argv[]) const
     uartA->begin(115200);
     console->init((void*) uartA);
 
-    //rcin->init(NULL);
-    //rcout->init(NULL);
+    rcin->init(NULL);
+    rcout->init(NULL);
+
     //spi->init(NULL);
     //i2c->begin();
     //i2c->setTimeout(100);

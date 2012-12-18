@@ -10,6 +10,7 @@ namespace AVR_SITL {
     class SITLEEPROMStorage;
     class SITLAnalogIn;
     class ADCSource;
+    class RCInput;
 }
 
 #endif // __AP_HAL_AVR_SITL_NAMESPACE_H__
