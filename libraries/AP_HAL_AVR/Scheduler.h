@@ -37,6 +37,7 @@ public:
     void     resume_timer_procs();
     void     begin_atomic();
     void     end_atomic();
+    void     panic(const prog_char_t *errormsg);
     void     reboot();
 
 private:

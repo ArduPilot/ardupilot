@@ -210,6 +210,17 @@ void AVRScheduler::end_atomic() {
     }
 }
 
+void AVRScheduler::panic(const prog_char_t* errormsg) {
+    /* Suspend timer processes. We still want the timer event to go off
+     * to run the _failsafe code, however. */
+    _timer_suspended = true;
+    /* Print the error message on both ports */
+    hal.uartA->println_P(errormsg);
+    hal.uartC->println_P(errormsg);
+    /* Spin forever. */
+    for(;;);
+}
+
 void AVRScheduler::reboot() {
     hal.uartA->println_P(PSTR("GOING DOWN FOR A REBOOT\r\n"));
     hal.scheduler->delay(100);
