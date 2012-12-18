@@ -459,11 +459,7 @@ static void NOINLINE send_hwstatus(mavlink_channel_t chan)
     mavlink_msg_hwstatus_send(
         chan,
         board_voltage(),
-#if CONFIG_HAL_BOARD == HAL_BOARD_AVR_SITL
-        0);
-#else
         hal.i2c->lockup_count());
-#endif
 }
 
 static void NOINLINE send_wind(mavlink_channel_t chan)
