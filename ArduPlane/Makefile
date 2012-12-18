@@ -1,4 +1,4 @@
-include ../libraries/AP_Common/Arduino.mk
+include ../mk/Arduino.mk
 
 nogps: EXTRAFLAGS += "-DGPS_PROTOCOL=GPS_PROTOCOL_NONE "
 nogps: all

@@ -1,2 +1,1 @@
-include ../../libraries/AP_Common/Arduino.mk
-
+include ../../mk/Arduino.mk

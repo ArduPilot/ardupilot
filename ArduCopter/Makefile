@@ -1,4 +1,4 @@
-include ../libraries/AP_Common/Arduino.mk
+include ../mk/Arduino.mk
 
 nologging: EXTRAFLAGS += "-DLOGGING_ENABLED=DISABLED "
 nologging: all
