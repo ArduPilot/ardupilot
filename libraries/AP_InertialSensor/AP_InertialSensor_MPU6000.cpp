@@ -299,14 +299,6 @@ float AP_InertialSensor_MPU6000::temperature() {
 
 /*================ HARDWARE FUNCTIONS ==================== */
 
-static int16_t spi_transfer_16(AP_HAL::SPIDeviceDriver *_spi)
-{
-    uint8_t byte_H, byte_L;
-    byte_H = _spi->transfer(0);
-    byte_L = _spi->transfer(0);
-    return (((int16_t)byte_H)<<8) | byte_L;
-}
-
 /*
  *  this is called from the data_interrupt which fires when the MPU6000 has new
  *  sensor data available and add it to _sum[] to ensure this is the case,
@@ -330,15 +322,17 @@ void AP_InertialSensor_MPU6000::read(uint32_t)
         }   
     }
 
-    // now read the data
-    _spi->cs_assert();
-    uint8_t addr = MPUREG_ACCEL_XOUT_H | 0x80;
-    _spi->transfer(addr);
-    for (uint8_t i=0; i<7; i++) {
-        _sum[i] += spi_transfer_16(_spi);
-    }
-    _spi->cs_release();
-
+    /* one resister address followed by seven 2-byte registers */
+    uint8_t tx[15];
+    uint8_t rx[15];
+    memset(tx,0,15);
+    tx[0] = MPUREG_ACCEL_XOUT_H | 0x80;
+    _spi->transaction(tx, rx, 15);
+    
+    for (uint8_t i = 0; i < 7; i++) {
+        _sum[i] += ((rx[2*i+1] << 8) | rx[2*i+2]);
+    }   
+    
     _count++;
     if (_count == 0) {
         // rollover - v unlikely
@@ -366,22 +360,24 @@ uint8_t AP_InertialSensor_MPU6000::register_read( uint8_t reg )
     uint8_t return_value;
     uint8_t addr = reg | 0x80; // Set most significant bit
 
-    _spi->cs_assert();
+    uint8_t tx[2];
+    uint8_t rx[2];
 
-    _spi->transfer(addr);
-    return_value = _spi->transfer(0);
+    tx[0] = addr;
+    tx[1] = 0;
+    _spi->transaction(tx, rx, 2);
 
-    _spi->cs_release();
-
-    return return_value;
+    return rx[1];
 }
 
 void AP_InertialSensor_MPU6000::register_write(uint8_t reg, uint8_t val)
 {
-    _spi->cs_assert();
-    _spi->transfer(reg);
-    _spi->transfer(val);
-    _spi->cs_release();
+    uint8_t tx[2];
+    uint8_t rx[2];
+
+    tx[0] = reg;
+    tx[1] = val;
+    _spi->transaction(tx, rx, 2);
 }
 
 // MPU6000 new data interrupt on INT6
