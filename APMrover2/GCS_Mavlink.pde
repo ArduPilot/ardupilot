@@ -347,7 +347,6 @@ static void NOINLINE send_vfr_hud(mavlink_channel_t chan)
         0);
 }
 
-#if HIL_MODE != HIL_MODE_ATTITUDE
 static void NOINLINE send_raw_imu1(mavlink_channel_t chan)
 {
     Vector3f accel = ins.get_accel();
@@ -401,8 +400,6 @@ static void NOINLINE send_ahrs(mavlink_channel_t chan)
         ahrs.get_error_yaw());
 }
 
-#endif // HIL_MODE != HIL_MODE_ATTITUDE
-
 #if CONFIG_HAL_BOARD == HAL_BOARD_AVR_SITL
 // report simulator state
 static void NOINLINE send_simstate(mavlink_channel_t chan)
@@ -417,18 +414,6 @@ static void NOINLINE send_hwstatus(mavlink_channel_t chan)
         chan,
         board_voltage(),
         hal.i2c->lockup_count());
-}
-
-static void NOINLINE send_gps_status(mavlink_channel_t chan)
-{
-    mavlink_msg_gps_status_send(
-        chan,
-        g_gps->num_sats,
-        NULL,
-        NULL,
-        NULL,
-        NULL,
-        NULL);
 }
 
 static void NOINLINE send_current_waypoint(mavlink_channel_t chan)
@@ -826,7 +811,11 @@ GCS_MAVLINK::data_stream_send(void)
         if (stream_trigger(STREAM_RAW_CONTROLLER)) {
             send_message(MSG_SERVO_OUT);
         }
+        if (stream_trigger(STREAM_RC_CHANNELS)) {
+            send_message(MSG_RADIO_OUT);
+        }
 #endif
+        // don't send any other stream types while in the delay callback
         return;
     }
 
@@ -1636,70 +1625,44 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
             break;
         }
 
-	#if HIL_MODE != HIL_MODE_DISABLED
+#if HIL_MODE != HIL_MODE_DISABLED
 	case MAVLINK_MSG_ID_HIL_STATE:
 		{
 			mavlink_hil_state_t packet;
 			mavlink_msg_hil_state_decode(msg, &packet);
 			
 			float vel = sqrt((packet.vx * (float)packet.vx) + (packet.vy * (float)packet.vy));
-        float cog = wrap_360_cd(ToDeg(atan2(packet.vy, packet.vx)) * 100);
+            float cog = wrap_360_cd(ToDeg(atan2(packet.vy, packet.vx)) * 100);
 			
             // set gps hil sensor
-        g_gps->setHIL(packet.time_usec/1000,
+            g_gps->setHIL(packet.time_usec/1000,
                           packet.lat*1.0e-7, packet.lon*1.0e-7, packet.alt*1.0e-3,
-                      vel*1.0e-2, cog*1.0e-2, 0, 10);
-			
-			#if HIL_MODE == HIL_MODE_SENSORS
+                          vel*1.0e-2, cog*1.0e-2, 0, 10);
 			
 			// rad/sec
             Vector3f gyros;
-        gyros.x = packet.rollspeed;
-        gyros.y = packet.pitchspeed;
-        gyros.z = packet.yawspeed;
+            gyros.x = packet.rollspeed;
+            gyros.y = packet.pitchspeed;
+            gyros.z = packet.yawspeed;
 
             // m/s/s
             Vector3f accels;
-        accels.x = packet.xacc * (gravity/1000.0);
-        accels.y = packet.yacc * (gravity/1000.0);
-        accels.z = packet.zacc * (gravity/1000.0);
-
+            accels.x = packet.xacc * (gravity/1000.0);
+            accels.y = packet.yacc * (gravity/1000.0);
+            accels.z = packet.zacc * (gravity/1000.0);
+            
             ins.set_gyro(gyros);
 
             ins.set_accel(accels);
 			
-			#else
-
+ #if HIL_MODE == HIL_MODE_ATTITUDE
 			// set AHRS hil sensor
             ahrs.setHil(packet.roll,packet.pitch,packet.yaw,packet.rollspeed,
             packet.pitchspeed,packet.yawspeed);
-
-			#endif
+ #endif
 
 			break;
 		}
-#endif
-#if HIL_MODE == HIL_MODE_ATTITUDE
-    case MAVLINK_MSG_ID_ATTITUDE:
-        {
-            // decode
-            mavlink_attitude_t packet;
-            mavlink_msg_attitude_decode(msg, &packet);
-
-            // set AHRS hil sensor
-            ahrs.setHil(packet.roll,packet.pitch,packet.yaw,packet.rollspeed,
-            packet.pitchspeed,packet.yawspeed);
-            break;
-        }
-#endif
-#if HIL_MODE == HIL_MODE_SENSORS
-
-    case MAVLINK_MSG_ID_DIGICAM_CONTROL:
-        {
-        g.camera.control_msg(msg);
-            break;
-        }
-
 #endif // HIL_MODE
 
 #if MOUNT == ENABLED
