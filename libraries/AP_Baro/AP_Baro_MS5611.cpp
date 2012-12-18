@@ -114,7 +114,7 @@ bool AP_Baro_MS5611::init()
 {
     _spi = hal.spi->device(AP_HAL::SPIDevice_MS5611);
     if (_spi == NULL) {
-        hal.console->println_P(PSTR("PANIC: AP_Baro_MS5611 could not get "
+        hal.scheduler->panic(PSTR("PANIC: AP_Baro_MS5611 could not get "
                     "valid SPI device driver!"));
         return false;
     }
@@ -155,7 +155,7 @@ bool AP_Baro_MS5611::init()
     while (!_updated) {
         hal.scheduler->delay(10);
         if (hal.scheduler->millis() - tstart > 1000) {
-            hal.console->println_P(PSTR("PANIC: AP_Baro_MS5611 took more than "
+            hal.scheduler->panic(PSTR("PANIC: AP_Baro_MS5611 took more than "
                         "1000ms to initialize"));
             healthy = false;
             return false;
@@ -185,7 +185,7 @@ void AP_Baro_MS5611::_update(uint32_t tnow)
         if (!got) {
             semfail_ctr++;
             if (semfail_ctr > 100) {
-                hal.console->println_P(PSTR("PANIC: failed to take _spi_sem "
+                hal.scheduler->panic(PSTR("PANIC: failed to take _spi_sem "
                             "100 times in AP_Baro_MS5611::_update"));
             }
             return;
@@ -230,7 +230,7 @@ void AP_Baro_MS5611::_update(uint32_t tnow)
     if (_spi_sem) {
         bool released = _spi_sem->release((void*)&_spi_sem);
         if (!released) {
-            hal.console->println_P(PSTR("PANIC: _spi_sem release failed in "
+            hal.scheduler->panic(PSTR("PANIC: _spi_sem release failed in "
                         "AP_Baro_MS5611::_update"));
         }
     }
