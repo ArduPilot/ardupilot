@@ -329,7 +329,7 @@ static void NOINLINE send_vfr_hud(mavlink_channel_t chan)
         (float)g_gps->ground_speed / 100.0,
         (float)g_gps->ground_speed / 100.0,
         (ahrs.yaw_sensor / 100) % 360,
-        (uint16_t)(100 * (g.channel_throttle.norm_output() / 2.0 + 0.5)), // scale -1,1 to 0-100
+        (uint16_t)(100 * g.channel_throttle.norm_output()),
         current_loc.alt / 100.0,
         0);
 }

@@ -11,7 +11,7 @@ static void init_rc_in()
 	g.channel_roll.set_angle(SERVO_MAX);
 	g.channel_pitch.set_angle(SERVO_MAX);
 	g.channel_rudder.set_angle(SERVO_MAX);
-	g.channel_throttle.set_range(0, 100);
+	g.channel_throttle.set_angle(100);
 
 	// set rc dead zones
 	g.channel_roll.set_dead_zone(60);

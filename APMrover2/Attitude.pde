@@ -33,9 +33,9 @@ static void throttle_slew_limit(int16_t last_throttle)
 }
 
 static void calc_throttle()
-{  int rov_speed;
-    
-   int throttle_target = g.throttle_cruise + throttle_nudge + 50;   
+{  
+   int rov_speed;
+   int throttle_target = g.throttle_cruise + throttle_nudge;  
    
    rov_speed = g.airspeed_cruise;    
      
@@ -44,8 +44,8 @@ static void calc_throttle()
         
    groundspeed_error = rov_speed - (float)ground_speed; 
         
-   throttle = (throttle_target + g.pidTeThrottle.get_pid(groundspeed_error)) * 10;
-   g.channel_throttle.servo_out = constrain(((float)throttle / 10.0f), 0, g.throttle_max.get());
+   throttle = throttle_target + g.pidTeThrottle.get_pid(groundspeed_error);
+   g.channel_throttle.servo_out = constrain(throttle, 0, g.throttle_max.get());
 }
 
 /*****************************************
