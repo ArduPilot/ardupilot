@@ -189,45 +189,53 @@ endif
 #
 ifeq ($(SYSTYPE),Darwin)
   # use the tools that come with Arduino
-  TOOLPATH		:=	$(ARDUINOS)/hardware/tools/avr/bin
+  TOOLPATH :=  $(ARDUINOS)/hardware/tools/avr/bin
   # use BWK awk
-  AWK			=	awk
+  AWK =  awk
 endif
 ifeq ($(SYSTYPE),Linux)
   # expect that tools are on the path
-  TOOLPATH		:=	$(subst :, ,$(PATH))
+  TOOLPATH :=  $(subst :, ,$(PATH))
 endif
 ifeq ($(findstring CYGWIN, $(SYSTYPE)),CYGWIN) 
-  TOOLPATH		:=	$(ARDUINO)/hardware/tools/avr/bin
+  TOOLPATH :=  $(ARDUINO)/hardware/tools/avr/bin
 endif
 
 ifeq ($(findstring CYGWIN, $(SYSTYPE)),) 
-FIND_TOOL		=	$(firstword $(wildcard $(addsuffix /$(1),$(TOOLPATH))))
+FIND_TOOL    =  $(firstword $(wildcard $(addsuffix /$(1),$(TOOLPATH))))
 else
-FIND_TOOL		=	$(firstword $(wildcard $(addsuffix /$(1).exe,$(TOOLPATH))))
+FIND_TOOL    =  $(firstword $(wildcard $(addsuffix /$(1).exe,$(TOOLPATH))))
 endif
 
-ifeq ($(HAL_BOARD),HAL_BOARD_AVR_SITL)
-CXX			:=	$(call FIND_TOOL,g++)
-CC			:=	$(call FIND_TOOL,gcc)
-AS			:=	$(call FIND_TOOL,gcc)
-AR			:=	$(call FIND_TOOL,ar)
-LD			:=	$(call FIND_TOOL,g++)
-GDB			:=	$(call FIND_TOOL,gdb)
-OBJCOPY			:=	$(call FIND_TOOL,objcopy)
-else
-CXX			:=	$(call FIND_TOOL,avr-g++)
-CC			:=	$(call FIND_TOOL,avr-gcc)
-AS			:=	$(call FIND_TOOL,avr-gcc)
-AR			:=	$(call FIND_TOOL,avr-ar)
-LD			:=	$(call FIND_TOOL,avr-gcc)
-GDB			:=	$(call FIND_TOOL,avr-gdb)
-AVRDUDE			:=	$(call FIND_TOOL,avrdude)
-AVARICE			:=	$(call FIND_TOOL,avarice)
-OBJCOPY			:=	$(call FIND_TOOL,avr-objcopy)
-endif
-ifeq ($(CXX),)
-$(error ERROR: cannot find the compiler tools anywhere on the path $(TOOLPATH))
+NATIVE_CXX     :=  $(call FIND_TOOL,g++)
+NATIVE_CC      :=  $(call FIND_TOOL,gcc)
+NATIVE_AS      :=  $(call FIND_TOOL,gcc)
+NATIVE_AR      :=  $(call FIND_TOOL,ar)
+NATIVE_LD      :=  $(call FIND_TOOL,g++)
+NATIVE_GDB     :=  $(call FIND_TOOL,gdb)
+NATIVE_OBJCOPY :=  $(call FIND_TOOL,objcopy)
+
+AVR_CXX     :=  $(call FIND_TOOL,avr-g++)
+AVR_CC      :=  $(call FIND_TOOL,avr-gcc)
+AVR_AS      :=  $(call FIND_TOOL,avr-gcc)
+AVR_AR      :=  $(call FIND_TOOL,avr-ar)
+AVR_LD      :=  $(call FIND_TOOL,avr-gcc)
+AVR_GDB     :=  $(call FIND_TOOL,avr-gdb)
+AVR_OBJCOPY :=  $(call FIND_TOOL,avr-objcopy)
+
+AVRDUDE      :=  $(call FIND_TOOL,avrdude)
+AVARICE      :=  $(call FIND_TOOL,avarice)
+
+CXX = $($(TOOLCHAIN)_CXX)
+CC = $($(TOOLCHAIN)_CC)
+AS = $($(TOOLCHAIN)_AS)
+AR = $($(TOOLCHAIN)_AR)
+LD = $($(TOOLCHAIN)_LD)
+GDB = $($(TOOLCHAIN)_GDB)
+OBJCOPY = $($(TOOLCHAIN)_OBJCOPY)
+
+ifeq ($(AVR_CXX),)
+$(error ERROR: cannot find the AVR compiler tools anywhere on the path $(TOOLPATH))
 endif
 
 # Find awk
@@ -240,34 +248,43 @@ endif
 # Tool options
 #
 EXTRAFLAGS     ?=
-DEFINES			=	-DF_CPU=$(F_CPU) -DARDUINO=$(ARDUINO_VERS) $(EXTRAFLAGS) -DSKETCH=\"$(SKETCH)\"
-WARNFLAGS		=	-Wformat -Wall -Wshadow -Wpointer-arith -Wcast-align -Wwrite-strings -Wformat=2 -Wno-reorder
-DEPFLAGS		=	-MD -MT $@
+DEFINES         =   -DF_CPU=$(F_CPU)
+DEFINES        +=   -DARDUINO=$(ARDUINO_VERS)
+DEFINES        +=   $(EXTRAFLAGS)
+DEFINES        +=   -DSKETCH=\"$(SKETCH)\"
+WARNFLAGS       =   -Wformat -Wall -Wshadow -Wpointer-arith -Wcast-align
+WARNFLAGS      +=   -Wwrite-strings -Wformat=2 -Wno-reorder
+DEPFLAGS        =   -MD -MT $@
 
-# XXX warning options TBD
-CXXOPTS			= 	-ffunction-sections -fdata-sections -fno-exceptions
-COPTS			=	-ffunction-sections -fdata-sections
+CXXOPTS         =   -ffunction-sections -fdata-sections -fno-exceptions
+COPTS           =   -ffunction-sections -fdata-sections
 
-ASOPTS			=	-x assembler-with-cpp 
-LISTOPTS		=	-adhlns=$(@:.o=.lst)
+ASOPTS          =   -x assembler-with-cpp 
+LISTOPTS        =   -adhlns=$(@:.o=.lst)
 
-ifeq ($(HAL_BOARD),HAL_BOARD_AVR_SITL)
-CPUFLAGS                = -D_GNU_SOURCE
-CPULDFLAGS		= -g
-OPTFLAGS		= -O0 -g
-else
-CPUFLAGS                = -mmcu=$(MCU) -mcall-prologues 
-CPULDFLAGS		= -Wl,-m,avr6
-OPTFLAGS		= -Os
-endif
+NATIVE_CPUFLAGS     = -D_GNU_SOURCE
+NATIVE_CPULDFLAGS   = -g
+NATIVE_OPTFLAGS     = -O0 -g
 
-CXXFLAGS		=	-g $(CPUFLAGS) $(DEFINES) -Wa,$(LISTOPTS) $(OPTFLAGS) $(WARNFLAGS) $(DEPFLAGS) $(CXXOPTS)
-CFLAGS			=	-g $(CPUFLAGS) $(DEFINES) -Wa,$(LISTOPTS) $(OPTFLAGS) $(WARNFLAGS) $(DEPFLAGS) $(COPTS)
-ASFLAGS			=	-g $(CPUFLAGS) $(DEFINES) -Wa,$(LISTOPTS) $(DEPFLAGS) $(ASOPTS)
-LDFLAGS			=	-g $(CPUFLAGS) $(OPTFLAGS) $(WARNFLAGS) -Wl,--gc-sections -Wl,-Map -Wl,$(SKETCHMAP) $(CPULDFLAGS)
+AVR_CPUFLAGS        = -mmcu=$(MCU) -mcall-prologues 
+AVR_CPULDFLAGS      = -Wl,-m,avr6
+AVR_OPTFLAGS        = -Os
 
-ifeq ($(BOARD),mega)
-  LDFLAGS		=	-g $(CPUFLAGS) $(OPTFLAGS) $(WARNFLAGS) -Wl,--gc-sections -Wl,-Map -Wl,$(SKETCHMAP)
+CPUFLAGS= $($(TOOLCHAIN)_CPUFLAGS)
+CPULDFLAGS= $($(TOOLCHAIN)_CPULDFLAGS)
+OPTFLAGS= $($(TOOLCHAIN)_OPTFLAGS)
+
+CXXFLAGS        =   -g $(CPUFLAGS) $(DEFINES) -Wa,$(LISTOPTS) $(OPTFLAGS)
+CXXFLAGS       +=   $(WARNFLAGS) $(DEPFLAGS) $(CXXOPTS)
+CFLAGS          =   -g $(CPUFLAGS) $(DEFINES) -Wa,$(LISTOPTS) $(OPTFLAGS)
+CFLAGS         +=   $(WARNFLAGS) $(DEPFLAGS) $(COPTS)
+ASFLAGS         =   -g $(CPUFLAGS) $(DEFINES) -Wa,$(LISTOPTS) $(DEPFLAGS)
+ASFLAGS        +=   $(ASOPTS)
+LDFLAGS         =   -g $(CPUFLAGS) $(OPTFLAGS) $(WARNFLAGS)
+LDFLAGS        +=   -Wl,--gc-sections -Wl,-Map -Wl,$(SKETCHMAP)
+
+ifneq ($(BOARD),mega)
+  LDFLAGS      +=   $(CPULDFLAGS)
 endif
 
 # under certain situations with certain avr-gcc versions the --relax flag causes
@@ -275,17 +292,17 @@ endif
 # I know this is a rotten hack but we're really close to sunset on AVR.
 EXCLUDE_RELAX := $(wildcard $(SRCROOT)/norelax.inoflag)
 ifeq ($(EXCLUDE_RELAX),)
-	LDFLAGS    +=   -Wl,--relax
+  LDFLAGS      +=   -Wl,--relax
 endif
 
-LIBS			=	-lm
+LIBS = -lm
 
-SRCSUFFIXES		=	*.cpp *.c *.S
+SRCSUFFIXES = *.cpp *.c *.S
 
 ifeq ($(VERBOSE),)
-v			=	@
+v = @
 else
-v			=
+v =
 endif
 
 
@@ -294,21 +311,21 @@ endif
 #
 
 # Sketch source files
-SKETCHPDESRCS		:=	$(wildcard $(SRCROOT)/*.pde $(SRCROOT)/*.ino)
-SKETCHSRCS		:=	$(wildcard $(addprefix $(SRCROOT)/,$(SRCSUFFIXES)))
-SKETCHPDE		:=	$(wildcard $(SRCROOT)/$(SKETCH).pde $(SRCROOT)/$(SKETCH).ino)
-SKETCHCPP		:=	$(BUILDROOT)/$(SKETCH).cpp
+SKETCHPDESRCS  := $(wildcard $(SRCROOT)/*.pde $(SRCROOT)/*.ino)
+SKETCHSRCS     := $(wildcard $(addprefix $(SRCROOT)/,$(SRCSUFFIXES)))
+SKETCHPDE      := $(wildcard $(SRCROOT)/$(SKETCH).pde $(SRCROOT)/$(SKETCH).ino)
+SKETCHCPP      := $(BUILDROOT)/$(SKETCH).cpp
 ifneq ($(words $(SKETCHPDE)),1)
 $(error ERROR: sketch $(SKETCH) must contain exactly one of $(SKETCH).pde or $(SKETCH).ino)
 endif
 
 # Sketch object files
-SKETCHOBJS		:=	$(subst $(SRCROOT),$(BUILDROOT),$(SKETCHSRCS)) $(SKETCHCPP)
-SKETCHOBJS		:=	$(addsuffix .o,$(basename $(SKETCHOBJS)))
+SKETCHOBJS := $(subst $(SRCROOT),$(BUILDROOT),$(SKETCHSRCS)) $(SKETCHCPP)
+SKETCHOBJS := $(addsuffix .o,$(basename $(SKETCHOBJS)))
 
 # List of input files to the sketch.cpp file in the order they should
 # be appended to create it
-SKETCHCPP_SRC		:=	$(SKETCHPDE) $(sort $(filter-out $(SKETCHPDE),$(SKETCHPDESRCS)))
+SKETCHCPP_SRC := $(SKETCHPDE) $(sort $(filter-out $(SKETCHPDE),$(SKETCHPDESRCS)))
 
 ################################################################################
 # Libraries
@@ -325,7 +342,7 @@ SKETCHCPP_SRC		:=	$(SKETCHPDE) $(sort $(filter-out $(SKETCHPDE),$(SKETCHPDESRCS)
 # Note that the # and $ require special treatment to avoid upsetting
 # make.
 #
-SEXPR			=	's/^[[:space:]]*\#include[[:space:]][<\"]([^>\"./]+).*$$/\1/p'
+SEXPR = 's/^[[:space:]]*\#include[[:space:]][<\"]([^>\"./]+).*$$/\1/p'
 ifeq ($(SYSTYPE),Darwin)
   LIBTOKENS        :=    $(sort $(shell cat $(SKETCHPDESRCS) $(SKETCHSRCS) | sed -nEe $(SEXPR)))
 else
@@ -382,9 +399,9 @@ endif
 
 # Extract needed build parameters from the boardfile
 MCU			:=	$(shell grep $(BOARD).build.mcu $(BOARDFILE) | cut -d = -f 2)
-F_CPU			:=	$(shell grep $(BOARD).build.f_cpu $(BOARDFILE) | cut -d = -f 2)
-HARDWARE_CORE		:=	$(shell grep $(BOARD).build.core $(BOARDFILE) | cut -d = -f 2)
-UPLOAD_SPEED		:=	$(shell grep $(BOARD).upload.speed $(BOARDFILE) | cut -d = -f 2)
+F_CPU		:=	$(shell grep $(BOARD).build.f_cpu $(BOARDFILE) | cut -d = -f 2)
+HARDWARE_CORE :=	$(shell grep $(BOARD).build.core $(BOARDFILE) | cut -d = -f 2)
+UPLOAD_SPEED :=	$(shell grep $(BOARD).upload.speed $(BOARDFILE) | cut -d = -f 2)
 
 # User can define USERAVRDUDEFLAGS = -V in their config.mk to skip verification
 USERAVRDUDEFLAGS ?= 
@@ -456,17 +473,25 @@ endif
 # Targets
 #
 
-all:	$(SKETCHELF) $(SKETCHEEP) $(SKETCHHEX)
+default: apm2
+
+all: $(SKETCHELF) $(SKETCHEEP) $(SKETCHHEX)
+
+print-%:
+	echo "$*=$($*)"
 
 # convenient targets for our supported boards
-sitl:
-	make -f Makefile HAL_BOARD=HAL_BOARD_AVR_SITL 
+sitl: HAL_BOARD = HAL_BOARD_AVR_SITL
+sitl: TOOLCHAIN = NATIVE
+sitl: all
 
-apm1:
-	make -f Makefile HAL_BOARD=HAL_BOARD_APM1
+apm1: HAL_BOARD = HAL_BOARD_APM1
+apm1: TOOLCHAIN = AVR
+apm1: all
 
-apm2:
-	make -f Makefile HAL_BOARD=HAL_BOARD_APM2
+apm2: HAL_BOARD = HAL_BOARD_APM2
+apm2: TOOLCHAIN = AVR
+apm2: all
 
 .PHONY: upload
 upload: $(SKETCHHEX)
