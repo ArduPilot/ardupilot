@@ -14,7 +14,6 @@ static int8_t	process_logs(uint8_t argc, const Menu::arg *argv);	// in Log.pde
 #endif
 static int8_t	setup_mode(uint8_t argc, const Menu::arg *argv);	// in setup.pde
 static int8_t	test_mode(uint8_t argc, const Menu::arg *argv);		// in test.cpp
-static int8_t	planner_mode(uint8_t argc, const Menu::arg *argv);	// in planner.pde
 
 // This is the help function
 // PSTR is an AVR macro to read strings from flash memory
@@ -40,18 +39,17 @@ static const struct Menu::command main_menu_commands[] PROGMEM = {
 #endif
 	{"setup",		setup_mode},
 	{"test",		test_mode},
-	{"help",		main_menu_help},
-	{"planner",		planner_mode}
+	{"help",		main_menu_help}
 };
 
 // Create the top-level menu object.
 MENU(main_menu, THISFIRMWARE, main_menu_commands);
 
 // the user wants the CLI. It never exits
-static void run_cli(FastSerial *port)
+static void run_cli(AP_HAL::UARTDriver *port)
 {
     // disable the failsafe code in the CLI
-    timer_scheduler.set_failsafe(NULL);
+    hal.scheduler->register_timer_failsafe(NULL,1);
 
     cliSerial = port;
     Menu::set_port(port);
@@ -93,7 +91,7 @@ static void init_ardupilot()
 	// XXX This could be optimised to reduce the buffer sizes in the cases
 	// where they are not otherwise required.
 	//
-	cliSerial->begin(SERIAL0_BAUD, 128, 128);
+    hal.uartA->begin(SERIAL0_BAUD, 128, 128);
 
 	// GPS serial port.
 	//
@@ -105,37 +103,12 @@ static void init_ardupilot()
 	// on the message set configured.
 	//
     // standard gps running
-    Serial1.begin(115200, 128, 16);
+    hal.uartB->begin(115200, 128, 16);
 
 	cliSerial->printf_P(PSTR("\n\nInit " THISFIRMWARE
 						 "\n\nFree RAM: %u\n"),
                     memcheck_available_memory());
                     
-	//
-	// Initialize Wire and SPI libraries
-	//
-#ifndef DESKTOP_BUILD
-    I2c.begin();
-    I2c.timeOut(5);
-    // initially set a fast I2c speed, and drop it on first failures
-    I2c.setSpeed(true);
-#endif
-    SPI.begin();
-    SPI.setClockDivider(SPI_CLOCK_DIV16); // 1MHZ SPI rate
-	//
-	// Initialize the ISR registry.
-	//
-    isr_registry.init();
-
-    //
-	// Initialize the timer scheduler to use the ISR registry.
-	//
-
-    timer_scheduler.init( & isr_registry );
-
-    // initialise the analog port reader
-    AP_AnalogSource_Arduino::init_timer(&timer_scheduler);
-
 	//
 	// Check the EEPROM format version before loading any parameters from EEPROM.
 	//
@@ -147,18 +120,22 @@ static void init_ardupilot()
     g.num_resets.set_and_save(g.num_resets+1);
 
 	// init the GCS
-	gcs0.init(&Serial);
+	gcs0.init(hal.uartA);
+
+    // Register mavlink_delay_cb, which will run anytime you have
+    // more than 5ms remaining in your call to hal.scheduler->delay
+    hal.scheduler->register_delay_callback(mavlink_delay_cb, 5);
 
 #if USB_MUX_PIN > 0
     if (!usb_connected) {
         // we are not connected via USB, re-init UART0 with right
         // baud rate
-        cliSerial->begin(map_baudrate(g.serial3_baud, SERIAL3_BAUD), 128, 128);
+        hal.uartA->begin(map_baudrate(g.serial3_baud, SERIAL3_BAUD));
     }
 #else
     // we have a 2nd serial port for telemetry
-    Serial3.begin(map_baudrate(g.serial3_baud, SERIAL3_BAUD), 128, 128);
-	gcs3.init(&Serial3);
+    hal.uartC->begin(map_baudrate(g.serial3_baud, SERIAL3_BAUD), 128, 128);
+	gcs3.init(hal.uartC);
 #endif
 
 	mavlink_system.sysid = g.sysid_this_mav;
@@ -182,7 +159,7 @@ static void init_ardupilot()
 #if HIL_MODE != HIL_MODE_ATTITUDE
 
 #if CONFIG_ADC == ENABLED
-    adc.Init(&timer_scheduler);      // APM ADC library initialization
+    adc.Init();      // APM ADC library initialization
 #endif
 
 #if LITE == DISABLED
@@ -239,15 +216,14 @@ static void init_ardupilot()
 	// Do GPS init
 	g_gps = &g_gps_driver;
     // GPS initialisation
-	g_gps->init(GPS::GPS_ENGINE_AUTOMOTIVE);
+	g_gps->init(hal.uartB, GPS::GPS_ENGINE_AUTOMOTIVE);
 
 	//mavlink_system.sysid = MAV_SYSTEM_ID;				// Using g.sysid_this_mav
 	mavlink_system.compid = 1;	//MAV_COMP_ID_IMU;   // We do not check for comp id
 	mavlink_system.type = MAV_TYPE_GROUND_ROVER;
 
-	rc_override_active = APM_RC.setHIL(rc_override);		// Set initial values for no override
+    rc_override_active = hal.rcin->set_overrides(rc_override, 8);
 
-    RC_Channel::set_apm_rc( &APM_RC ); // Provide reference to RC outputs.
 	init_rc_in();		// sets up rc channels from radio
 	init_rc_out();		// sets up the timer libs
 
@@ -261,15 +237,14 @@ static void init_ardupilot()
 	pinMode(PUSHBUTTON_PIN, INPUT);		// unused
 #endif
 #if CONFIG_RELAY == ENABLED
-	DDRL |= B00000100;					// Set Port L, pin 2 to output for the relay
+    relay.init();
 #endif
 
     /*
       setup the 'main loop is dead' check. Note that this relies on
       the RC library being initialised.
      */
-    timer_scheduler.set_failsafe(failsafe_check);
-
+    hal.scheduler->register_timer_failsafe(failsafe_check, 1000);
 
 	// If the switch is in 'menu' mode, run the main menu.
 	//
@@ -293,7 +268,7 @@ static void init_ardupilot()
     const prog_char_t *msg = PSTR("\nPress ENTER 3 times to start interactive setup\n");
     cliSerial->println_P(msg);
 #if USB_MUX_PIN == 0
-    Serial3.println_P(msg);
+    hal.uartC->println_P(msg);
 #endif
 #endif // CLI_ENABLED
 
@@ -353,7 +328,7 @@ static void startup_ground(void)
 	gcs_send_text_P(SEVERITY_LOW,PSTR("\n\n Ready to drive."));
 }
 
-static void set_mode(byte mode)
+static void set_mode(uint8_t mode)
 {       
 
 	if(control_mode == mode){
@@ -449,12 +424,12 @@ static void startup_INS_ground(bool force_accel_level)
 
 	ins.init(AP_InertialSensor::COLD_START, 
              ins_sample_rate, 
-             mavlink_delay, flash_leds, &timer_scheduler);
+             flash_leds);
     if (force_accel_level || g.manual_level == 0) {
         // when MANUAL_LEVEL is set to 1 we don't do accelerometer
         // levelling on each boot, and instead rely on the user to do
         // it once via the ground station	
-        ins.init_accel(mavlink_delay, flash_leds);
+        ins.init_accel(flash_leds);
 	}
 	ahrs.set_fly_forward(true);
     ahrs.reset();
@@ -538,9 +513,9 @@ static void check_usb_mux(void)
     // the user has switched to/from the telemetry port
     usb_connected = usb_check;
     if (usb_connected) {
-        cliSerial->begin(SERIAL0_BAUD, 128, 128);
+        hal.uartA->begin(SERIAL0_BAUD, 128, 128);
     } else {
-        cliSerial->begin(map_baudrate(g.serial3_baud, SERIAL3_BAUD), 128, 128);
+        hal.uartA->begin(map_baudrate(g.serial3_baud, SERIAL3_BAUD), 128, 128);
     }
 }
 #endif
@@ -556,17 +531,13 @@ void flash_leds(bool on)
     digitalWrite(C_LED_PIN, on?LED_ON:LED_OFF);
 }
 
-#ifndef DESKTOP_BUILD
 /*
  * Read Vcc vs 1.1v internal reference
  */
 uint16_t board_voltage(void)
 {
-    static AP_AnalogSource_Arduino vcc(ANALOG_PIN_VCC);
-    return vcc.read_vcc();
+    return vcc_pin->read_latest();
 }
-#endif
-
 
 static void
 print_flight_mode(uint8_t mode)

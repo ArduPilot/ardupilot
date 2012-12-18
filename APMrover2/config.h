@@ -43,18 +43,10 @@
 //////////////////////////////////////////////////////////////////////////////
 
 //////////////////////////////////////////////////////////////////////////////
-// APM HARDWARE
-//
-
-#ifndef CONFIG_APM_HARDWARE
-# define CONFIG_APM_HARDWARE APM_HARDWARE_APM1
-#endif
-
-//////////////////////////////////////////////////////////////////////////////
 // APM2 HARDWARE DEFAULTS
 //
 
-#if CONFIG_APM_HARDWARE == APM_HARDWARE_APM2
+#if CONFIG_HAL_BOARD == HAL_BOARD_APM2
 # define CONFIG_INS_TYPE   CONFIG_INS_MPU6000
 # define CONFIG_PUSHBUTTON DISABLED
 # define CONFIG_RELAY      DISABLED
@@ -66,7 +58,7 @@
 //////////////////////////////////////////////////////////////////////////////
 // LED and IO Pins
 //
-#if CONFIG_APM_HARDWARE == APM_HARDWARE_APM1
+#if CONFIG_HAL_BOARD == HAL_BOARD_APM1
 # define A_LED_PIN        37
 # define B_LED_PIN        36
 # define C_LED_PIN        35
@@ -78,7 +70,7 @@
 # define CONFIG_RELAY     ENABLED
 # define BATTERY_PIN_1	  0
 # define CURRENT_PIN_1	  1
-#elif CONFIG_APM_HARDWARE == APM_HARDWARE_APM2
+#elif CONFIG_HAL_BOARD == HAL_BOARD_APM2
 # define A_LED_PIN        27
 # define B_LED_PIN        26
 # define C_LED_PIN        25
@@ -90,9 +82,21 @@
 # define USB_MUX_PIN 23
 # define BATTERY_PIN_1	  1
 # define CURRENT_PIN_1	  2
+#elif CONFIG_HAL_BOARD == HAL_BOARD_AVR_SITL
+# define A_LED_PIN        27
+# define B_LED_PIN        26
+# define C_LED_PIN        25
+# define LED_ON           LOW
+# define LED_OFF          HIGH
+# define SLIDE_SWITCH_PIN (-1)
+# define PUSHBUTTON_PIN   (-1)
+# define CLI_SLIDER_ENABLED DISABLED
+# define USB_MUX_PIN -1
+# define BATTERY_PIN_1	  1
+# define CURRENT_PIN_1	  2
 #endif
 
-#ifdef DESKTOP_BUILD
+#if CONFIG_HAL_BOARD == HAL_BOARD_AVR_SITL
 #define CONFIG_SONAR DISABLED
 #endif
 
@@ -139,7 +143,7 @@
 # endif
 #elif CONFIG_SONAR_SOURCE == SONAR_SOURCE_ANALOG_PIN
 # ifndef CONFIG_SONAR_SOURCE_ANALOG_PIN
-#  define CONFIG_SONAR_SOURCE_ANALOG_PIN A0
+#  define CONFIG_SONAR_SOURCE_ANALOG_PIN 0
 # endif
 #else
 # warning Invalid value for CONFIG_SONAR_SOURCE, disabling sonar

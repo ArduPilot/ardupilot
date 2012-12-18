@@ -3,10 +3,6 @@
 // use this to prevent recursion during sensor init
 static bool in_mavlink_delay;
 
-// this costs us 51 bytes, but means that low priority
-// messages don't block the CPU
-static mavlink_statustext_t pending_status;
-
 // true when we have received at least 1 MAVLink packet
 static bool mavlink_active;
 
@@ -192,8 +188,10 @@ static NOINLINE void send_extended_status1(mavlink_channel_t chan, uint16_t pack
 
 static void NOINLINE send_meminfo(mavlink_channel_t chan)
 {
+#if CONFIG_HAL_BOARD != HAL_BOARD_AVR_SITL
     extern unsigned __brkval;
     mavlink_msg_meminfo_send(chan, __brkval, memcheck_available_memory());
+#endif
 }
 
 static void NOINLINE send_location(mavlink_channel_t chan)
@@ -308,18 +306,34 @@ static void NOINLINE send_radio_in(mavlink_channel_t chan)
 
 static void NOINLINE send_radio_out(mavlink_channel_t chan)
 {
-        mavlink_msg_servo_output_raw_send(
-            chan,
-            micros(),
-            0, // port
-            APM_RC.OutputCh_current(0),
-            APM_RC.OutputCh_current(1),
-            APM_RC.OutputCh_current(2),
-            APM_RC.OutputCh_current(3),
-            APM_RC.OutputCh_current(4),
-            APM_RC.OutputCh_current(5),
-            APM_RC.OutputCh_current(6),
-            APM_RC.OutputCh_current(7));
+#if HIL_MODE == HIL_MODE_DISABLED || HIL_SERVOS
+    mavlink_msg_servo_output_raw_send(
+        chan,
+        micros(),
+        0,     // port
+        hal.rcout->read(0),
+        hal.rcout->read(1),
+        hal.rcout->read(2),
+        hal.rcout->read(3),
+        hal.rcout->read(4),
+        hal.rcout->read(5),
+        hal.rcout->read(6),
+        hal.rcout->read(7));
+#else
+    extern RC_Channel* rc_ch[8];
+    mavlink_msg_servo_output_raw_send(
+        chan,
+        micros(),
+        0,     // port
+        rc_ch[0]->radio_out,
+        rc_ch[1]->radio_out,
+        rc_ch[2]->radio_out,
+        rc_ch[3]->radio_out,
+        rc_ch[4]->radio_out,
+        rc_ch[5]->radio_out,
+        rc_ch[6]->radio_out,
+        rc_ch[7]->radio_out);
+#endif
 }
 
 static void NOINLINE send_vfr_hud(mavlink_channel_t chan)
@@ -390,7 +404,7 @@ static void NOINLINE send_ahrs(mavlink_channel_t chan)
 
 #endif // HIL_MODE != HIL_MODE_ATTITUDE
 
-#ifdef DESKTOP_BUILD
+#if CONFIG_HAL_BOARD == HAL_BOARD_AVR_SITL
 // report simulator state
 static void NOINLINE send_simstate(mavlink_channel_t chan)
 {
@@ -398,15 +412,13 @@ static void NOINLINE send_simstate(mavlink_channel_t chan)
 }
 #endif
 
-#ifndef DESKTOP_BUILD
 static void NOINLINE send_hwstatus(mavlink_channel_t chan)
 {
     mavlink_msg_hwstatus_send(
         chan,
         board_voltage(),
-        I2c.lockup_count());
+        hal.i2c->lockup_count());
 }
-#endif
 
 static void NOINLINE send_gps_status(mavlink_channel_t chan)
 {
@@ -429,10 +441,11 @@ static void NOINLINE send_current_waypoint(mavlink_channel_t chan)
 
 static void NOINLINE send_statustext(mavlink_channel_t chan)
 {
+    mavlink_statustext_t *s = (chan == MAVLINK_COMM_0?&gcs0.pending_status:&gcs3.pending_status);
     mavlink_msg_statustext_send(
         chan,
-        pending_status.severity,
-        pending_status.text);
+        s->severity,
+        s->text);
 }
 
 // are we still delaying telemetry to try to avoid Xbee bricking?
@@ -581,17 +594,15 @@ static bool mavlink_try_send_message(mavlink_channel_t chan, enum ap_message id,
         break;
 
     case MSG_SIMSTATE:
-#ifdef DESKTOP_BUILD
+#if CONFIG_HAL_BOARD == HAL_BOARD_AVR_SITL
         CHECK_PAYLOAD_SIZE(SIMSTATE);
         send_simstate(chan);
 #endif
         break;
 
     case MSG_HWSTATUS:
-#ifndef DESKTOP_BUILD
         CHECK_PAYLOAD_SIZE(HWSTATUS);
         send_hwstatus(chan);
-#endif
         break;
 
     case MSG_RETRY_DEFERRED:
@@ -668,8 +679,9 @@ void mavlink_send_text(mavlink_channel_t chan, gcs_severity severity, const char
 
     if (severity == SEVERITY_LOW) {
         // send via the deferred queuing system
-        pending_status.severity = (uint8_t)severity;
-        strncpy((char *)pending_status.text, str, sizeof(pending_status.text));
+        mavlink_statustext_t *s = (chan == MAVLINK_COMM_0?&gcs0.pending_status:&gcs3.pending_status);
+        s->severity = (uint8_t)severity;
+        strncpy((char *)s->text, str, sizeof(s->text));
         mavlink_send_message(chan, MSG_STATUSTEXT, 0);
     } else {
         // send immediately
@@ -699,17 +711,17 @@ GCS_MAVLINK::GCS_MAVLINK() :
 }
 
 void
-GCS_MAVLINK::init(FastSerial * port)
+GCS_MAVLINK::init(AP_HAL::UARTDriver *port)
 {
     GCS_Class::init(port);
-    if (port == &Serial) {
+    if (port == (AP_HAL::BetterStream*)hal.uartA) {
         mavlink_comm_0_port = port;
         chan = MAVLINK_COMM_0;
     }else{
         mavlink_comm_1_port = port;
         chan = MAVLINK_COMM_1;
     }
-	_queued_parameter = NULL;
+    _queued_parameter = NULL;
 }
 
 void
@@ -881,13 +893,7 @@ GCS_MAVLINK::send_message(enum ap_message id)
 }
 
 void
-GCS_MAVLINK::send_text(gcs_severity severity, const char *str)
-{
-    mavlink_send_text(chan,severity,str);
-}
-
-void
-GCS_MAVLINK::send_text(gcs_severity severity, const prog_char_t *str)
+GCS_MAVLINK::send_text_P(gcs_severity severity, const prog_char_t *str)
 {
     mavlink_statustext_t m;
     uint8_t i;
@@ -987,7 +993,7 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
             uint8_t result;
 
             // do command
-            send_text(SEVERITY_LOW,PSTR("command received: "));
+            send_text_P(SEVERITY_LOW,PSTR("command received: "));
 
             switch(packet.command) {
 
@@ -1274,7 +1280,7 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
         if (packet.start_index > g.command_total ||
             packet.end_index > g.command_total ||
             packet.end_index < packet.start_index) {
-            send_text(SEVERITY_LOW,PSTR("flight plan update rejected"));
+            send_text_P(SEVERITY_LOW,PSTR("flight plan update rejected"));
             break;
         }
 
@@ -1457,7 +1463,7 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
 						msg->compid,
 						result);
 
-					send_text(SEVERITY_LOW,PSTR("flight plan received"));
+					send_text_P(SEVERITY_LOW,PSTR("flight plan received"));
 					waypoint_receiving = false;
 					// XXX ignores waypoint radius for individual waypoints, can
 					// only set WP_RADIUS parameter
@@ -1545,30 +1551,32 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
         } // end case
 
     case MAVLINK_MSG_ID_RC_CHANNELS_OVERRIDE:
-        {
-            // allow override of RC channel values for HIL
-            // or for complete GCS control of switch position
-            // and RC PWM values.
-			if(msg->sysid != g.sysid_my_gcs) break;		// Only accept control from our gcs
-            mavlink_rc_channels_override_t packet;
-            int16_t v[8];
-            mavlink_msg_rc_channels_override_decode(msg, &packet);
+    {
+        // allow override of RC channel values for HIL
+        // or for complete GCS control of switch position
+        // and RC PWM values.
+        if(msg->sysid != g.sysid_my_gcs) break;                         // Only accept control from our gcs
+        mavlink_rc_channels_override_t packet;
+        int16_t v[8];
+        mavlink_msg_rc_channels_override_decode(msg, &packet);
 
-			if (mavlink_check_target(packet.target_system,packet.target_component))
-				break;
-
-            v[0] = packet.chan1_raw;
-            v[1] = packet.chan2_raw;
-            v[2] = packet.chan3_raw;
-            v[3] = packet.chan4_raw;
-            v[4] = packet.chan5_raw;
-            v[5] = packet.chan6_raw;
-            v[6] = packet.chan7_raw;
-            v[7] = packet.chan8_raw;
-            rc_override_active = APM_RC.setHIL(v);
-			rc_override_fs_timer = millis();
+        if (mavlink_check_target(packet.target_system,packet.target_component))
             break;
-        }
+
+        v[0] = packet.chan1_raw;
+        v[1] = packet.chan2_raw;
+        v[2] = packet.chan3_raw;
+        v[3] = packet.chan4_raw;
+        v[4] = packet.chan5_raw;
+        v[5] = packet.chan6_raw;
+        v[6] = packet.chan7_raw;
+        v[7] = packet.chan8_raw;
+
+        hal.rcin->set_overrides(v, 8);
+
+        rc_override_fs_timer = millis();
+        break;
+    }
 
     case MAVLINK_MSG_ID_HEARTBEAT:
         {
@@ -1811,42 +1819,36 @@ GCS_MAVLINK::queued_waypoint_send()
 }
 
 /*
- a delay() callback that processes MAVLink packets. We set this as the
- callback in long running library initialisation routines to allow
- MAVLink to process packets while waiting for the initialisation to
- complete
-*/
-static void mavlink_delay(unsigned long t)
+ *  a delay() callback that processes MAVLink packets. We set this as the
+ *  callback in long running library initialisation routines to allow
+ *  MAVLink to process packets while waiting for the initialisation to
+ *  complete
+ */
+static void mavlink_delay_cb()
 {
-    uint32_t tstart;
-    static uint32_t last_1hz, last_50hz;
-
-    if (in_mavlink_delay) {
-        // this should never happen, but let's not tempt fate by
-        // letting the stack grow too much
-        delay(t);
-        return;
-    }
+    static uint32_t last_1hz, last_50hz, last_5s;
+    if (!gcs0.initialised) return;
 
     in_mavlink_delay = true;
 
-    tstart = millis();
-    do {
-        uint32_t tnow = millis();
-        if (tnow - last_1hz > 1000) {
-            last_1hz = tnow;
-            gcs_send_message(MSG_HEARTBEAT);
-            gcs_send_message(MSG_EXTENDED_STATUS1);
-        }
-        if (tnow - last_50hz > 20) {
-            last_50hz = tnow;
-            gcs_update();
-        }
-        delay(1);
+    uint32_t tnow = millis();
+    if (tnow - last_1hz > 1000) {
+        last_1hz = tnow;
+        gcs_send_message(MSG_HEARTBEAT);
+        gcs_send_message(MSG_EXTENDED_STATUS1);
+    }
+    if (tnow - last_50hz > 20) {
+        last_50hz = tnow;
+        gcs_update();
+        gcs_data_stream_send();
+    }
+    if (tnow - last_5s > 5000) {
+        last_5s = tnow;
+        gcs_send_text_P(SEVERITY_LOW, PSTR("Initialising APM..."));
+    }
 #if USB_MUX_PIN > 0
-        check_usb_mux();
+    check_usb_mux();
 #endif
-    } while (millis() - tstart < t);
 
     in_mavlink_delay = false;
 }
@@ -1886,31 +1888,32 @@ static void gcs_update(void)
 
 static void gcs_send_text_P(gcs_severity severity, const prog_char_t *str)
 {
-    gcs0.send_text(severity, str);
+    gcs0.send_text_P(severity, str);
     if (gcs3.initialised) {
-        gcs3.send_text(severity, str);
+        gcs3.send_text_P(severity, str);
     }
 }
 
 /*
-  send a low priority formatted message to the GCS
-  only one fits in the queue, so if you send more than one before the
-  last one gets into the serial buffer then the old one will be lost
+ *  send a low priority formatted message to the GCS
+ *  only one fits in the queue, so if you send more than one before the
+ *  last one gets into the serial buffer then the old one will be lost
  */
-static void gcs_send_text_fmt(const prog_char_t *fmt, ...)
+void gcs_send_text_fmt(const prog_char_t *fmt, ...)
 {
     char fmtstr[40];
-    va_list ap;
+    va_list arg_list;
     uint8_t i;
     for (i=0; i<sizeof(fmtstr)-1; i++) {
         fmtstr[i] = pgm_read_byte((const prog_char *)(fmt++));
         if (fmtstr[i] == 0) break;
     }
     fmtstr[i] = 0;
-    pending_status.severity = (uint8_t)SEVERITY_LOW;
-    va_start(ap, fmt);
-    vsnprintf((char *)pending_status.text, sizeof(pending_status.text), fmtstr, ap);
-    va_end(ap);
+    gcs0.pending_status.severity = (uint8_t)SEVERITY_LOW;
+    va_start(arg_list, fmt);
+    vsnprintf((char *)gcs0.pending_status.text, sizeof(gcs0.pending_status.text), fmtstr, arg_list);
+    va_end(arg_list);
+    gcs3.pending_status = gcs0.pending_status;
     mavlink_send_message(MAVLINK_COMM_0, MSG_STATUSTEXT, 0);
     if (gcs3.initialised) {
         mavlink_send_message(MAVLINK_COMM_1, MSG_STATUSTEXT, 0);

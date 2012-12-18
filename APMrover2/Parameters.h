@@ -50,6 +50,9 @@ public:
         k_param_reset_switch_chan,
         k_param_manual_level,
         k_param_ins,                        // libraries/AP_InertialSensor variables        
+        k_param_rssi_pin,
+        k_param_battery_volt_pin,
+        k_param_battery_curr_pin,
 
 
 	// 110: Telemetry control
@@ -312,7 +315,11 @@ public:
         AP_Float    volt_div_ratio;
         AP_Float    curr_amp_per_volt;
         AP_Float    input_voltage;
-	AP_Int16    pack_capacity;		// Battery pack capacity less reserve
+		AP_Int16    pack_capacity;		// Battery pack capacity less reserve
+    	AP_Int8 rssi_pin;
+    	AP_Int8 battery_volt_pin;
+    	AP_Int8 battery_curr_pin;
+
 #if HIL_MODE != HIL_MODE_ATTITUDE
 #if CONFIG_SONAR == ENABLED     
         AP_Int8	    sonar_enabled;

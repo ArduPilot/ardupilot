@@ -32,7 +32,7 @@ static void failsafe_long_on_event(int fstype)
 {
 	// This is how to handle a long loss of control signal failsafe.
 	gcs_send_text_P(SEVERITY_LOW, PSTR("Failsafe - Long event on, "));
-	APM_RC.clearOverride();		//  If the GCS is locked up we allow control to revert to RC
+    hal.rcin->clear_overrides();
 	failsafe = fstype;
 	switch(control_mode)
 	{
@@ -94,9 +94,9 @@ static void update_events(void)	// Used for MAV_CMD_DO_REPEAT_SERVO and MAV_CMD_
 
 		if (event_id >= CH_5 && event_id <= CH_8) {
 			if(event_repeat%2) {
-				APM_RC.OutputCh(event_id, event_value); // send to Servos
+				hal.rcout->write(event_id, event_value); // send to Servos
 			} else {
-				APM_RC.OutputCh(event_id, event_undo_value);
+				hal.rcout->write(event_id, event_undo_value);
 			}
 		}
 

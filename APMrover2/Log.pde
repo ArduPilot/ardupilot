@@ -108,7 +108,7 @@ dump_log(uint8_t argc, const Menu::arg *argv)
 	int16_t dump_log;
 	int16_t dump_log_start;
 	int16_t dump_log_end;
-	byte last_log_num;
+	uint8_t last_log_num;
 
 	// check that the requested log number can be read
 	dump_log = argv[1].i;
@@ -153,7 +153,7 @@ void erase_callback(unsigned long t) {
 static void do_erase_logs(void)
 {
 	cliSerial->printf_P(PSTR("\nErasing log...\n"));
-    DataFlash.EraseAll(erase_callback);
+    DataFlash.EraseAll();
 	cliSerial->printf_P(PSTR("\nLog erased.\n"));
 }
 
@@ -257,7 +257,7 @@ static void Log_Write_Performance()
 
 // Write a command processing packet. Total length : 19 bytes
 //void Log_Write_Cmd(byte num, byte id, byte p1, int32_t alt, int32_t lat, int32_t lng)
-static void Log_Write_Cmd(byte num, struct Location *wp)
+static void Log_Write_Cmd(uint8_t num, struct Location *wp)
 {
 	DataFlash.WriteByte(HEAD_BYTE1);
 	DataFlash.WriteByte(HEAD_BYTE2);
@@ -271,7 +271,7 @@ static void Log_Write_Cmd(byte num, struct Location *wp)
 	DataFlash.WriteByte(END_BYTE);
 }
 
-static void Log_Write_Startup(byte type)
+static void Log_Write_Startup(uint8_t type)
 {
 	DataFlash.WriteByte(HEAD_BYTE1);
 	DataFlash.WriteByte(HEAD_BYTE2);
@@ -330,7 +330,7 @@ static void Log_Write_Nav_Tuning()
 }
 
 // Write a mode packet. Total length : 5 bytes
-static void Log_Write_Mode(byte mode)
+static void Log_Write_Mode(uint8_t mode)
 {
 	DataFlash.WriteByte(HEAD_BYTE1);
 	DataFlash.WriteByte(HEAD_BYTE2);
@@ -341,7 +341,7 @@ static void Log_Write_Mode(byte mode)
 
 // Write an GPS packet. Total length : 30 bytes
 static void Log_Write_GPS(	int32_t log_Time, int32_t log_Lattitude, int32_t log_Longitude, int32_t log_gps_alt, int32_t log_mix_alt,
-                            int32_t log_Ground_Speed, int32_t log_Ground_Course, byte log_Fix, byte log_NumSats)
+                            int32_t log_Ground_Speed, int32_t log_Ground_Course, uint8_t log_Fix, uint8_t log_NumSats)
 {
 	DataFlash.WriteByte(HEAD_BYTE1);
 	DataFlash.WriteByte(HEAD_BYTE2);
@@ -468,7 +468,7 @@ static void Log_Read_Performance()
 // Read a command processing packet
 static void Log_Read_Cmd()
 {
-	byte logvarb;
+	uint8_t logvarb;
 	int32_t logvarl;
 
 	cliSerial->printf_P(PSTR("CMD: "));
@@ -489,7 +489,7 @@ static void Log_Read_Cmd()
 
 static void Log_Read_Startup()
 {
-	byte logbyte = DataFlash.ReadByte();
+	uint8_t logbyte = DataFlash.ReadByte();
 
 	if (logbyte == TYPE_AIRSTART_MSG)
 		cliSerial->printf_P(PSTR("AIR START - "));
@@ -524,7 +524,7 @@ static void Log_Read_Mode()
 static void Log_Read_GPS()
 {
     int32_t l[7];
-    byte b[2];
+    uint8_t b[2];
     int16_t j,k,m;
     l[0] = DataFlash.ReadLong();
     b[0] = DataFlash.ReadByte();
@@ -595,8 +595,8 @@ static void Log_Read(int16_t start_page, int16_t end_page)
 // Read the DataFlash log memory : Packet Parser
 static int Log_Read_Process(int16_t start_page, int16_t end_page)
 {
-	byte data;
-	byte log_step = 0;
+	uint8_t data;
+	uint8_t log_step = 0;
 	int page = start_page;
 	int packet_count = 0;
 
@@ -679,13 +679,13 @@ static int Log_Read_Process(int16_t start_page, int16_t end_page)
 #else // LOGGING_ENABLED
 
 // dummy functions
-static void Log_Write_Mode(byte mode) {}
-static void Log_Write_Startup(byte type) {}
-static void Log_Write_Cmd(byte num, struct Location *wp) {}
+static void Log_Write_Mode(uint8_t mode) {}
+static void Log_Write_Startup(uint8_t type) {}
+static void Log_Write_Cmd(uint8_t num, struct Location *wp) {}
 static void Log_Write_Current() {}
 static void Log_Write_Nav_Tuning() {}
 static void Log_Write_GPS(	int32_t log_Time, int32_t log_Lattitude, int32_t log_Longitude, int32_t log_gps_alt, int32_t log_mix_alt,
-                            int32_t log_Ground_Speed, int32_t log_Ground_Course, byte log_Fix, byte log_NumSats) {}
+                            int32_t log_Ground_Speed, int32_t log_Ground_Course, uint8_t log_Fix, uint8_t log_NumSats) {}
 static void Log_Write_Performance() {}
 static int8_t process_logs(uint8_t argc, const Menu::arg *argv) { return 0; }
 static void Log_Write_Attitude(int16_t log_roll, int16_t log_pitch, uint16_t log_yaw) {}

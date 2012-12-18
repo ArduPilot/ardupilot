@@ -3,7 +3,7 @@
 static void read_control_switch()
 {
 	
-	byte switchPosition = readSwitch();
+	uint8_t switchPosition = readSwitch();
 	
 	// If switchPosition = 255 this indicates that the mode control channel input was out of range
 	// If we get this value we do not want to change modes.
@@ -17,7 +17,7 @@ static void read_control_switch()
     // as a spring loaded trainer switch).
 	if (oldSwitchPosition != switchPosition ||
         (g.reset_switch_chan != 0 && 
-         APM_RC.InputCh(g.reset_switch_chan-1) > RESET_SWITCH_CHAN_PWM)) {
+         hal.rcin->read(g.reset_switch_chan-1) > RESET_SWITCH_CHAN_PWM)) {
 
 		set_mode(flight_modes[switchPosition]);
 
@@ -32,8 +32,8 @@ static void read_control_switch()
 
 }
 
-static byte readSwitch(void){
-	uint16_t pulsewidth = APM_RC.InputCh(g.flight_mode_channel - 1);
+static uint8_t readSwitch(void){
+    uint16_t pulsewidth = hal.rcin->read(g.flight_mode_channel - 1);
 	if (pulsewidth <= 910 || pulsewidth >= 2090) 	return 255;	// This is an error condition
 	if (pulsewidth > 1230 && pulsewidth <= 1360) 	return 1;
 	if (pulsewidth > 1360 && pulsewidth <= 1490) 	return 2;

@@ -363,7 +363,8 @@ static void do_set_home()
 
 static void do_set_servo()
 {
-	APM_RC.OutputCh(next_nonnav_command.p1 - 1, next_nonnav_command.alt);
+    hal.rcout->enable_ch(next_nonnav_command.p1 - 1);
+    hal.rcout->write(next_nonnav_command.p1 - 1, next_nonnav_command.alt);
 }
 
 static void do_set_relay()

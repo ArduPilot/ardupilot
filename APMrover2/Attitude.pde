@@ -120,10 +120,10 @@ static void set_servos(void)
 #if HIL_MODE == HIL_MODE_DISABLED || HIL_SERVOS
 	// send values to the PWM timers for output
 	// ----------------------------------------
-	APM_RC.OutputCh(CH_1, g.channel_roll.radio_out); // send to Servos
-	APM_RC.OutputCh(CH_2, g.channel_pitch.radio_out); // send to Servos
-	APM_RC.OutputCh(CH_3, g.channel_throttle.radio_out); // send to Servos
-	APM_RC.OutputCh(CH_4, g.channel_rudder.radio_out); // send to Servos
+    hal.rcout->write(CH_1, g.channel_roll.radio_out);     // send to Servos
+    hal.rcout->write(CH_2, g.channel_pitch.radio_out);     // send to Servos
+    hal.rcout->write(CH_3, g.channel_throttle.radio_out);     // send to Servos
+    hal.rcout->write(CH_4, g.channel_rudder.radio_out);     // send to Servos
 	// Route configurable aux. functions to their respective servos
 
 	g.rc_5.output_ch(CH_5);
@@ -134,18 +134,22 @@ static void set_servos(void)
 #endif
 }
 
-static void demo_servos(byte i) {
+static bool demoing_servos;
 
-	while(i > 0){
-		gcs_send_text_P(SEVERITY_LOW,PSTR("Demo Servos!"));
+static void demo_servos(uint8_t i) {
+
+    while(i > 0) {
+        gcs_send_text_P(SEVERITY_LOW,PSTR("Demo Servos!"));
+        demoing_servos = true;
 #if HIL_MODE == HIL_MODE_DISABLED || HIL_SERVOS
-		APM_RC.OutputCh(1, 1400);
-		mavlink_delay(400);
-		APM_RC.OutputCh(1, 1600);
-		mavlink_delay(200);
-		APM_RC.OutputCh(1, 1500);
+        hal.rcout->write(1, 1400);
+        mavlink_delay(400);
+        hal.rcout->write(1, 1600);
+        mavlink_delay(200);
+        hal.rcout->write(1, 1500);
 #endif
-		mavlink_delay(400);
-		i--;
-	}
+        demoing_servos = false;
+        mavlink_delay(400);
+        i--;
+    }
 }

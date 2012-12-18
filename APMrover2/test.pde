@@ -20,9 +20,6 @@ static int8_t	test_wp(uint8_t argc, 			const Menu::arg *argv);
 static int8_t	test_sonar(uint8_t argc, 	const Menu::arg *argv);
 #endif
 static int8_t	test_mag(uint8_t argc, 			const Menu::arg *argv);
-static int8_t	test_xbee(uint8_t argc, 		const Menu::arg *argv);
-static int8_t	test_eedump(uint8_t argc, 		const Menu::arg *argv);
-static int8_t	test_rawgps(uint8_t argc, 			const Menu::arg *argv);
 static int8_t	test_modeswitch(uint8_t argc, 		const Menu::arg *argv);
 static int8_t	test_logging(uint8_t argc, 		const Menu::arg *argv);
 
@@ -38,8 +35,6 @@ static const struct Menu::command test_menu_commands[] PROGMEM = {
 	{"battery",	test_battery},
 	{"relay",			test_relay},
 	{"waypoints",		test_wp},
-	{"xbee",			test_xbee},
-	{"eedump",			test_eedump},
 	{"modeswitch",		test_modeswitch},
 
 	// Tests below here are for hardware sensors only present
@@ -49,7 +44,6 @@ static const struct Menu::command test_menu_commands[] PROGMEM = {
 	{"adc", 		test_adc},
 #endif
 	{"gps",			test_gps},
-	{"rawgps",		test_rawgps},
 	{"ins",			test_ins},
 #if CONFIG_SONAR == ENABLED
 	{"sonartest",	test_sonar},
@@ -80,21 +74,6 @@ test_mode(uint8_t argc, const Menu::arg *argv)
 static void print_hit_enter()
 {
 	cliSerial->printf_P(PSTR("Hit Enter to exit.\n\n"));
-}
-
-static int8_t
-test_eedump(uint8_t argc, const Menu::arg *argv)
-{
-	intptr_t i, j;
-
-	// hexdump the EEPROM
-	for (i = 0; i < EEPROM_MAX_ADDR; i += 16) {
-		cliSerial->printf_P(PSTR("%04x:"), i);
-		for (j = 0; j < 16; j++)
-			cliSerial->printf_P(PSTR(" %02x"), eeprom_read_byte((const uint8_t *)(i + j)));
-		cliSerial->println();
-	}
-	return(0);
 }
 
 static int8_t
@@ -137,12 +116,12 @@ test_passthru(uint8_t argc, const Menu::arg *argv)
 		delay(20);
 
         // New radio frame? (we could use also if((millis()- timer) > 20)
-        if (APM_RC.GetState() == 1){
+        if (hal.rcin->valid() > 0) {
             cliSerial->print("CH:");
             for(int i = 0; i < 8; i++){
-                cliSerial->print(APM_RC.InputCh(i));	// Print channel values
+                cliSerial->print(hal.rcout->read(i));	// Print channel values
                 cliSerial->print(",");
-                APM_RC.OutputCh(i, APM_RC.InputCh(i)); // Copy input to Servos
+                hal.rcout->write(i, hal.rcout->read(i)); // Copy input to Servos
             }
             cliSerial->println();
         }
@@ -198,7 +177,7 @@ test_radio(uint8_t argc, const Menu::arg *argv)
 static int8_t
 test_failsafe(uint8_t argc, const Menu::arg *argv)
 {
-	byte fail_test;
+	uint8_t fail_test;
 	print_hit_enter();
 	for(int i = 0; i < 50; i++){
 		delay(20);
@@ -317,7 +296,7 @@ test_wp(uint8_t argc, const Menu::arg *argv)
 	cliSerial->printf_P(PSTR("%d waypoints\n"), (int)g.command_total);
 	cliSerial->printf_P(PSTR("Hit radius: %d\n"), (int)g.waypoint_radius);
 
-	for(byte i = 0; i <= g.command_total; i++){
+	for(uint8_t i = 0; i <= g.command_total; i++){
 		struct Location temp = get_cmd_with_index(i);
 		test_wp_print(&temp, i);
 	}
@@ -326,7 +305,7 @@ test_wp(uint8_t argc, const Menu::arg *argv)
 }
 
 static void
-test_wp_print(struct Location *cmd, byte wp_index)
+test_wp_print(struct Location *cmd, uint8_t wp_index)
 {
 	cliSerial->printf_P(PSTR("command #: %d id:%d options:%d p1:%d p2:%ld p3:%ld p4:%ld \n"),
 		(int)wp_index,
@@ -337,25 +316,6 @@ test_wp_print(struct Location *cmd, byte wp_index)
 		cmd->lat,
 		cmd->lng);
 }
-
-static int8_t
-test_xbee(uint8_t argc, const Menu::arg *argv)
-{
-	print_hit_enter();
-	delay(1000);
-	cliSerial->printf_P(PSTR("Begin XBee X-CTU Range and RSSI Test:\n"));
-
-	while(1){
-
-	    if (Serial3.available())
-   			Serial3.write(Serial3.read());
-
-		if(cliSerial->available() > 0){
-			return (0);
-		}
-	}
-}
-
 
 static int8_t
 test_modeswitch(uint8_t argc, const Menu::arg *argv)
@@ -369,7 +329,7 @@ test_modeswitch(uint8_t argc, const Menu::arg *argv)
 
 	while(1){
 		delay(20);
-		byte switchPosition = readSwitch();
+		uint8_t switchPosition = readSwitch();
 		if (oldSwitchPosition != switchPosition){
 			cliSerial->printf_P(PSTR("Position %d\n"),  switchPosition);
 			oldSwitchPosition = switchPosition;
@@ -415,7 +375,7 @@ static int8_t
 test_adc(uint8_t argc, const Menu::arg *argv)
 {
 	print_hit_enter();
-	adc.Init(&timer_scheduler);
+	adc.Init();
 	delay(1000);
 	cliSerial->printf_P(PSTR("ADC\n"));
 	delay(1000);
@@ -467,7 +427,7 @@ test_ins(uint8_t argc, const Menu::arg *argv)
 	//cliSerial->printf_P(PSTR("Calibrating."));
 	ins.init(AP_InertialSensor::COLD_START, 
              ins_sample_rate, 
-             delay, flash_leds, &timer_scheduler);
+             flash_leds);
     ahrs.reset();
 
 	print_hit_enter();
@@ -530,7 +490,7 @@ test_mag(uint8_t argc, const Menu::arg *argv)
     // we need the AHRS initialised for this test
 	ins.init(AP_InertialSensor::COLD_START, 
              ins_sample_rate, 
-             delay, flash_leds, &timer_scheduler);
+             flash_leds);
     ahrs.reset();
 
 	int counter = 0;
@@ -597,31 +557,6 @@ test_mag(uint8_t argc, const Menu::arg *argv)
 //-------------------------------------------------------------------------------------------
 // real sensors that have not been simulated yet go here
 
-#if HIL_MODE == HIL_MODE_DISABLED
-
-static int8_t
-test_rawgps(uint8_t argc, const Menu::arg *argv)
-{
-  print_hit_enter();
-	delay(1000);
-
-	while(1){
-		if (Serial3.available()){
-			digitalWrite(B_LED_PIN, LED_ON); 		// Blink Yellow LED if we are sending data to GPS
-			Serial1.write(Serial3.read());
-			digitalWrite(B_LED_PIN, LED_OFF);
-		}
-		if (Serial1.available()){
-			digitalWrite(C_LED_PIN, LED_ON);		// Blink Red LED if we are receiving data from GPS
-			Serial3.write(Serial1.read());
-			digitalWrite(C_LED_PIN, LED_OFF);
-		}
-		if(cliSerial->available() > 0){
-			return (0);
-		}
-  }
-}
-
 #if CONFIG_SONAR == ENABLED
 static int8_t
 test_sonar(uint8_t argc, const Menu::arg *argv)
@@ -634,7 +569,7 @@ test_sonar(uint8_t argc, const Menu::arg *argv)
 	while(1){
 	  delay(20);
 	  if(g.sonar_enabled){
-		sonar_dist = sonar.read();
+		sonar_dist = sonar->read();
 	  }
     	  cliSerial->printf_P(PSTR("sonar_dist = %d\n"), (int)sonar_dist);
 
@@ -645,6 +580,5 @@ test_sonar(uint8_t argc, const Menu::arg *argv)
   return (0);
 }
 #endif // SONAR == ENABLED
-#endif // HIL_MODE == HIL_MODE_DISABLED
 
 #endif // CLI_ENABLED

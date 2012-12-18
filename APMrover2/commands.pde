@@ -27,7 +27,7 @@ static void init_commands()
 static struct Location get_cmd_with_index(int i)
 {
 	struct Location temp;
-	long mem;
+	uint16_t mem;
 
 	// Find out proper location in memory by using the start_byte position + the index
 	// --------------------------------------------------------------------------------
@@ -37,22 +37,22 @@ static struct Location get_cmd_with_index(int i)
 	}else{
 		// read WP position
 		mem = (WP_START_BYTE) + (i * WP_SIZE);
-		temp.id = eeprom_read_byte((uint8_t*)mem);
+		temp.id = hal.storage->read_byte(mem);
 
 		mem++;
-		temp.options = eeprom_read_byte((uint8_t*)mem);
+		temp.options = hal.storage->read_byte(mem);
 
 		mem++;
-		temp.p1 = eeprom_read_byte((uint8_t*)mem);
+		temp.p1 = hal.storage->read_byte(mem);
 
 		mem++;
-		temp.alt = (long)eeprom_read_dword((uint32_t*)mem);
+		temp.alt = (long)hal.storage->read_dword(mem);
 
 		mem += 4;
-		temp.lat = (long)eeprom_read_dword((uint32_t*)mem);
+		temp.lat = (long)hal.storage->read_dword(mem);
 
 		mem += 4;
-		temp.lng = (long)eeprom_read_dword((uint32_t*)mem);
+		temp.lng = (long)hal.storage->read_dword(mem);
 	}
 
 	// Add on home altitude if we are a nav command (or other command with altitude) and stored alt is relative
@@ -68,7 +68,7 @@ static struct Location get_cmd_with_index(int i)
 static void set_cmd_with_index(struct Location temp, int i)
 {
 	i = constrain(i, 0, g.command_total.get());
-	intptr_t mem = WP_START_BYTE + (i * WP_SIZE);
+	uint16_t mem = WP_START_BYTE + (i * WP_SIZE);
 
 	// Set altitude options bitmask
 	// XXX What is this trying to do?
@@ -78,22 +78,22 @@ static void set_cmd_with_index(struct Location temp, int i)
 		temp.options = 0;
 	}
 
-	eeprom_write_byte((uint8_t *)	mem, temp.id);
+	hal.storage->write_byte(mem, temp.id);
 
-        mem++;
-	eeprom_write_byte((uint8_t *)	mem, temp.options);
-
-	mem++;
-	eeprom_write_byte((uint8_t *)	mem, temp.p1);
+    mem++;
+	hal.storage->write_byte(mem, temp.options);
 
 	mem++;
-	eeprom_write_dword((uint32_t *)	mem, temp.alt);
+	hal.storage->write_byte(mem, temp.p1);
+
+	mem++;
+	hal.storage->write_dword(mem, temp.alt);
 
 	mem += 4;
-	eeprom_write_dword((uint32_t *)	mem, temp.lat);
+	hal.storage->write_dword(mem, temp.lat);
 
 	mem += 4;
-	eeprom_write_dword((uint32_t *)	mem, temp.lng);
+	hal.storage->write_dword(mem, temp.lng);
 }
 
 /*

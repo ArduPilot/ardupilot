@@ -169,7 +169,9 @@ setup_radio(uint8_t argc, const Menu::arg *argv)
 		g.rc_8.update_min_max();
 
 		if(cliSerial->available() > 0){
-			cliSerial->flush();
+            while (cliSerial->available() > 0) {
+                cliSerial->read();
+            }
 			g.channel_roll.save_eeprom();
 			g.channel_pitch.save_eeprom();
 			g.channel_throttle.save_eeprom();
@@ -191,7 +193,7 @@ setup_radio(uint8_t argc, const Menu::arg *argv)
 static int8_t
 setup_flightmodes(uint8_t argc, const Menu::arg *argv)
 {
-	byte switchPosition, mode = 0;
+	uint8_t switchPosition, mode = 0;
 
 	cliSerial->printf_P(PSTR("\nMove RC toggle switch to each position to edit, move aileron stick to select modes."));
 	print_hit_enter();
@@ -294,34 +296,14 @@ setup_erase(uint8_t argc, const Menu::arg *argv)
   handle full accelerometer calibration via user dialog
  */
 #if !defined( __AVR_ATmega1280__ )
-static void setup_printf_P(const prog_char_t *fmt, ...)
-{
-    va_list arg_list;
-    va_start(arg_list, fmt);
-    cliSerial->vprintf_P(fmt, arg_list);
-    va_end(arg_list);
-}
-
-static void setup_wait_key(void)
-{
-    // wait for user input
-    while (!cliSerial->available()) {
-        delay(20);
-    }
-    // clear input buffer
-    while( cliSerial->available() ) {
-        cliSerial->read();
-    }
-}
-
 static int8_t
 setup_accel_scale(uint8_t argc, const Menu::arg *argv)
 {
     cliSerial->println_P(PSTR("Initialising gyros"));
     ins.init(AP_InertialSensor::COLD_START, 
              ins_sample_rate,
-             delay, flash_leds, &timer_scheduler);
-    if (ins.calibrate_accel(delay, flash_leds, setup_printf_P, setup_wait_key)) {
+             flash_leds);
+    if (ins.calibrate_accel(flash_leds, hal.console)) {
         if (g.manual_level == 0) {
             cliSerial->println_P(PSTR("Setting MANUAL_LEVEL to 1"));
             g.manual_level.set_and_save(1);
@@ -538,7 +520,7 @@ print_radio_values()
 }
 
 static void
-print_switch(byte p, byte m)
+print_switch(uint8_t p, uint8_t m)
 {
 	cliSerial->printf_P(PSTR("Pos %d: "),p);
     print_flight_mode(m);
@@ -597,10 +579,10 @@ radio_input_switch(void)
 
 static void zero_eeprom(void)
 {
-	byte b = 0;
+	uint8_t b = 0;
 	cliSerial->printf_P(PSTR("\nErasing EEPROM\n"));
-	for (intptr_t i = 0; i < EEPROM_MAX_ADDR; i++) {
-		eeprom_write_byte((uint8_t *) i, b);
+	for (uint16_t i = 0; i < EEPROM_MAX_ADDR; i++) {
+		hal.storage->write_byte(i, b);
 	}
 	cliSerial->printf_P(PSTR("done\n"));
 }
@@ -612,20 +594,6 @@ static void print_enabled(bool b)
 	else
 		cliSerial->printf_P(PSTR("dis"));
 	cliSerial->printf_P(PSTR("abled\n"));
-}
-
-static void
-print_accel_offsets_and_scaling(void)
-{
-    Vector3f accel_offsets = ins.get_accel_offsets();
-    Vector3f accel_scale = ins.get_accel_scale();
-    cliSerial->printf_P(PSTR("Accel offsets: %4.2f, %4.2f, %4.2f\tscale: %4.2f, %4.2f, %4.2f\n"),
-                    (float)accel_offsets.x,                           // Pitch
-                    (float)accel_offsets.y,                           // Roll
-                    (float)accel_offsets.z,                           // YAW
-                    (float)accel_scale.x,                             // Pitch
-                    (float)accel_scale.y,                             // Roll
-                    (float)accel_scale.z);                            // YAW
 }
 
 #endif // CLI_ENABLED

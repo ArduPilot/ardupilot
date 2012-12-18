@@ -201,6 +201,28 @@ const AP_Param::Info var_info[] PROGMEM = {
 	GSCALAR(curr_amp_per_volt,      "AMP_PER_VOLT",     CURR_AMP_PER_VOLT),
 	GSCALAR(input_voltage,          "INPUT_VOLTS",      INPUT_VOLTAGE),
 	GSCALAR(pack_capacity,          "BATT_CAPACITY",    HIGH_DISCHARGE),
+
+    // @Param: BATT_VOLT_PIN
+    // @DisplayName: Battery Voltage sensing pin
+    // @Description: Setting this to 0 ~ 13 will enable battery current sensing on pins A0 ~ A13.
+    // @Values: -1:Disabled, 0:A0, 1:A1, 13:A13
+    // @User: Standard
+    GSCALAR(battery_volt_pin,    "BATT_VOLT_PIN",    1),
+
+    // @Param: BATT_CURR_PIN
+    // @DisplayName: Battery Current sensing pin
+    // @Description: Setting this to 0 ~ 13 will enable battery current sensing on pins A0 ~ A13.
+    // @Values: -1:Disabled, 1:A1, 2:A2, 12:A12
+    // @User: Standard
+    GSCALAR(battery_curr_pin,    "BATT_CURR_PIN",    2),
+
+    // @Param: RSSI_PIN
+    // @DisplayName: Receiver RSSI sensing pin
+    // @Description: This selects an analog pin for the receiver RSSI voltage. It assumes the voltage is 5V for max rssi, 0V for minimum
+    // @Values: -1:Disabled, 0:A0, 1:A1, 13:A13
+    // @User: Standard
+    GSCALAR(rssi_pin,            "RSSI_PIN",         -1),
+
 #if HIL_MODE != HIL_MODE_ATTITUDE
 #if CONFIG_SONAR == ENABLED     
 	// @Param: SONAR_ENABLE
@@ -250,7 +272,7 @@ const AP_Param::Info var_info[] PROGMEM = {
     GOBJECT(ins,                            "INS_", AP_InertialSensor),
 #endif
 
-#ifdef DESKTOP_BUILD
+#if CONFIG_HAL_BOARD == HAL_BOARD_AVR_SITL
     // @Group: SIM_
     // @Path: ../libraries/SITL/SITL.cpp
     GOBJECT(sitl, "SIM_", SITL),

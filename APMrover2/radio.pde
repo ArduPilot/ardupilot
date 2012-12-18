@@ -2,7 +2,7 @@
 
 //Function that will read the radio data, limit servos and trigger a failsafe
 // ----------------------------------------------------------------------------
-static byte failsafeCounter = 0;		// we wait a second to take over the throttle and send the plane circling
+static uint8_t failsafeCounter = 0;		// we wait a second to take over the throttle and send the plane circling
 
 
 static void init_rc_in()
@@ -30,52 +30,50 @@ static void init_rc_in()
 
 static void init_rc_out()
 {
-  APM_RC.Init( &isr_registry );		// APM Radio initialization
-
-  APM_RC.enable_out(CH_1);
-  APM_RC.enable_out(CH_2);
-  APM_RC.enable_out(CH_3);
-  APM_RC.enable_out(CH_4);
-  APM_RC.enable_out(CH_5);
-  APM_RC.enable_out(CH_6);
-  APM_RC.enable_out(CH_7);
-  APM_RC.enable_out(CH_8);
+    hal.rcout->enable_ch(CH_1);
+    hal.rcout->enable_ch(CH_2);
+    hal.rcout->enable_ch(CH_3);
+    hal.rcout->enable_ch(CH_4);
+    hal.rcout->enable_ch(CH_5);
+    hal.rcout->enable_ch(CH_6);
+    hal.rcout->enable_ch(CH_7);
+    hal.rcout->enable_ch(CH_8);
 
 #if HIL_MODE != HIL_MODE_ATTITUDE
-	APM_RC.OutputCh(CH_1, 	g.channel_roll.radio_trim);					// Initialization of servo outputs
-	APM_RC.OutputCh(CH_2, 	g.channel_pitch.radio_trim);
-	APM_RC.OutputCh(CH_3, 	g.channel_throttle.radio_trim);
-	APM_RC.OutputCh(CH_4, 	g.channel_rudder.radio_trim);
+	hal.rcout->write(CH_1, 	g.channel_roll.radio_trim);					// Initialization of servo outputs
+	hal.rcout->write(CH_2, 	g.channel_pitch.radio_trim);
+	hal.rcout->write(CH_3, 	g.channel_throttle.radio_trim);
+	hal.rcout->write(CH_4, 	g.channel_rudder.radio_trim);
 
-	APM_RC.OutputCh(CH_5, 	g.rc_5.radio_trim);
-	APM_RC.OutputCh(CH_6, 	g.rc_6.radio_trim);
-	APM_RC.OutputCh(CH_7,   g.rc_7.radio_trim);
-    APM_RC.OutputCh(CH_8,   g.rc_8.radio_trim);
+	hal.rcout->write(CH_5, 	g.rc_5.radio_trim);
+	hal.rcout->write(CH_6, 	g.rc_6.radio_trim);
+	hal.rcout->write(CH_7,   g.rc_7.radio_trim);
+    hal.rcout->write(CH_8,   g.rc_8.radio_trim);
 #else
-	APM_RC.OutputCh(CH_1, 	1500);					// Initialization of servo outputs
-	APM_RC.OutputCh(CH_2, 	1500);
-	APM_RC.OutputCh(CH_3, 	1000);
-	APM_RC.OutputCh(CH_4, 	1500);
+	hal.rcout->write(CH_1, 	1500);					// Initialization of servo outputs
+	hal.rcout->write(CH_2, 	1500);
+	hal.rcout->write(CH_3, 	1000);
+	hal.rcout->write(CH_4, 	1500);
 
-	APM_RC.OutputCh(CH_5, 	1500);
-	APM_RC.OutputCh(CH_6, 	1500);
-	APM_RC.OutputCh(CH_7,   1500);
-    APM_RC.OutputCh(CH_8,   2000);
+	hal.rcout->write(CH_5, 	1500);
+	hal.rcout->write(CH_6, 	1500);
+	hal.rcout->write(CH_7,   1500);
+    hal.rcout->write(CH_8,   2000);
 #endif
 
 }
 
 static void read_radio()
 {
-    g.channel_roll.set_pwm(APM_RC.InputCh(CH_ROLL));
-    g.channel_pitch.set_pwm(APM_RC.InputCh(CH_PITCH));
+    g.channel_roll.set_pwm(hal.rcin->read(CH_ROLL));
+    g.channel_pitch.set_pwm(hal.rcin->read(CH_PITCH));
 
-	g.channel_throttle.set_pwm(APM_RC.InputCh(CH_3));
-	g.channel_rudder.set_pwm(APM_RC.InputCh(CH_4));
-  	g.rc_5.set_pwm(APM_RC.InputCh(CH_5));
- 	g.rc_6.set_pwm(APM_RC.InputCh(CH_6));        
-	g.rc_7.set_pwm(APM_RC.InputCh(CH_7));
-	g.rc_8.set_pwm(APM_RC.InputCh(CH_8));
+	g.channel_throttle.set_pwm(hal.rcout->read(CH_3));
+	g.channel_rudder.set_pwm(hal.rcout->read(CH_4));
+  	g.rc_5.set_pwm(hal.rcout->read(CH_5));
+ 	g.rc_6.set_pwm(hal.rcout->read(CH_6));        
+	g.rc_7.set_pwm(hal.rcout->read(CH_7));
+	g.rc_8.set_pwm(hal.rcout->read(CH_8));
 
 	control_failsafe(g.channel_throttle.radio_in);
 

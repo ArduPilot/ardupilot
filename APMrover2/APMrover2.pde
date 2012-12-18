@@ -69,28 +69,19 @@ version 2.1 of the License, or (at your option) any later version.
 // Header includes
 ////////////////////////////////////////////////////////////////////////////////
 
-// AVR runtime
-#include <avr/io.h>
-#include <avr/eeprom.h>
-#include <avr/pgmspace.h>
 #include <math.h>
+#include <stdarg.h>
+#include <stdio.h>
 
 // Libraries
-#include <FastSerial.h>
 #include <AP_Common.h>
 #include <AP_Progmem.h>
+#include <AP_HAL.h>
 #include <AP_Menu.h>
 #include <AP_Param.h>
-#include <Arduino_Mega_ISR_Registry.h>
-#include <APM_RC.h>         // ArduPilot Mega RC Library
 #include <AP_GPS.h>         // ArduPilot GPS library
-#include <I2C.h>			// Wayne Truchsess I2C lib
-#include <SPI.h>			// Arduino SPI lib
-#include <AP_Semaphore.h>   // for removing conflict between optical flow and dataflash on SPI3 bus
-#include <DataFlash.h>      // ArduPilot Mega Flash Memory Library
 #include <AP_ADC.h>         // ArduPilot Mega Analog to Digital Converter Library
-#include <AP_AnalogSource.h>// ArduPilot Mega polymorphic analog getter
-#include <AP_PeriodicProcess.h> // ArduPilot Mega TimerProcess
+#include <AP_ADC_AnalogSource.h>
 #include <AP_Baro.h>
 #include <AP_Compass.h>     // ArduPilot Mega Magnetometer Library
 #include <AP_Math.h>        // ArduPilot Mega Vector/Matrix math Library
@@ -108,6 +99,14 @@ version 2.1 of the License, or (at your option) any later version.
 #include <GCS_MAVLink.h>    // MAVLink GCS definitions
 #include <AP_Airspeed.h>    // needed for AHRS build
 #include <memcheck.h>
+#include <DataFlash.h>
+#include <SITL.h>
+#include <stdarg.h>
+
+#include <AP_HAL_AVR.h>
+#include <AP_HAL_AVR_SITL.h>
+#include <AP_HAL_Empty.h>
+#include "compat.h"
 
 // Configuration
 #include "config.h"
@@ -119,55 +118,15 @@ version 2.1 of the License, or (at your option) any later version.
 
 #include <AP_Declination.h> // ArduPilot Mega Declination Helper Library
 
-////////////////////////////////////////////////////////////////////////////////
-// Serial ports
-////////////////////////////////////////////////////////////////////////////////
-//
-// Note that FastSerial port buffers are allocated at ::begin time,
-// so there is not much of a penalty to defining ports that we don't
-// use.
-//
-FastSerialPort0(Serial);        // FTDI/console
-FastSerialPort1(Serial1);       // GPS port
-#if TELEMETRY_UART2 == ENABLED
- // solder bridge set to enable UART2 instead of USB MUX
- FastSerialPort2(Serial3);
-#else
- FastSerialPort3(Serial3);       // Telemetry port for APM1
-#endif
+AP_HAL::BetterStream* cliSerial;
 
-static FastSerial *cliSerial = &Serial;
+const AP_HAL::HAL& hal = AP_HAL_BOARD_DRIVER;
 
 // this sets up the parameter table, and sets the default values. This
 // must be the first AP_Param variable declared to ensure its
 // constructor runs before the constructors of the other AP_Param
 // variables
 AP_Param param_loader(var_info, WP_START_BYTE);
-
-////////////////////////////////////////////////////////////////////////////////
-// ISR Registry
-////////////////////////////////////////////////////////////////////////////////
-Arduino_Mega_ISR_Registry isr_registry;
-
-
-////////////////////////////////////////////////////////////////////////////////
-// APM_RC_Class Instance
-////////////////////////////////////////////////////////////////////////////////
-#if CONFIG_APM_HARDWARE == APM_HARDWARE_APM2
-    APM_RC_APM2 APM_RC;
-#else
-    APM_RC_APM1 APM_RC;
-#endif
-
-////////////////////////////////////////////////////////////////////////////////
-// Dataflash
-////////////////////////////////////////////////////////////////////////////////
-#if CONFIG_APM_HARDWARE == APM_HARDWARE_APM2
-AP_Semaphore spi3_semaphore;
-DataFlash_APM2 DataFlash(&spi3_semaphore);
-#else
-DataFlash_APM1 DataFlash;
-#endif
 
 ////////////////////////////////////////////////////////////////////////////////
 // the rate we run the main loop at
@@ -186,6 +145,17 @@ static Parameters      g;
 ////////////////////////////////////////////////////////////////////////////////
 // prototypes
 static void update_events(void);
+
+////////////////////////////////////////////////////////////////////////////////
+// DataFlash
+////////////////////////////////////////////////////////////////////////////////
+#if CONFIG_HAL_BOARD == HAL_BOARD_APM1
+DataFlash_APM1 DataFlash;
+#elif CONFIG_HAL_BOARD == HAL_BOARD_APM2
+DataFlash_APM2 DataFlash;
+#elif CONFIG_HAL_BOARD == HAL_BOARD_AVR_SITL
+DataFlash_SITL DataFlash;
+#endif
 
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -214,36 +184,34 @@ static AP_Int8		*flight_modes = &g.flight_mode1;
 static AP_ADC_ADS7844          adc;
 #endif
 
-#ifdef DESKTOP_BUILD
-AP_Baro_BMP085_HIL barometer;
-AP_Compass_HIL compass;
-#include <SITL.h>
-SITL sitl;
+#if CONFIG_HAL_BOARD == HAL_BOARD_AVR_SITL
+static AP_Compass_HIL compass;
+static SITL sitl;
 #else
 static AP_Compass_HMC5843      compass;
 #endif
 
 // real GPS selection
 #if   GPS_PROTOCOL == GPS_PROTOCOL_AUTO
-AP_GPS_Auto     g_gps_driver(&Serial1, &g_gps);
+AP_GPS_Auto     g_gps_driver(&g_gps);
 
 #elif GPS_PROTOCOL == GPS_PROTOCOL_NMEA
-AP_GPS_NMEA     g_gps_driver(&Serial1);
+AP_GPS_NMEA     g_gps_driver();
 
 #elif GPS_PROTOCOL == GPS_PROTOCOL_SIRF
-AP_GPS_SIRF     g_gps_driver(&Serial1);
+AP_GPS_SIRF     g_gps_driver();
 
 #elif GPS_PROTOCOL == GPS_PROTOCOL_UBLOX
-AP_GPS_UBLOX    g_gps_driver(&Serial1);
+AP_GPS_UBLOX    g_gps_driver();
 
 #elif GPS_PROTOCOL == GPS_PROTOCOL_MTK
-AP_GPS_MTK      g_gps_driver(&Serial1);
+AP_GPS_MTK      g_gps_driver();
 
 #elif GPS_PROTOCOL == GPS_PROTOCOL_MTK16
-AP_GPS_MTK16    g_gps_driver(&Serial1);
+AP_GPS_MTK16    g_gps_driver();
 
 #elif GPS_PROTOCOL == GPS_PROTOCOL_NONE
-AP_GPS_None     g_gps_driver(NULL);
+AP_GPS_None     g_gps_driver();
 
 #else
  #error Unrecognised GPS_PROTOCOL setting.
@@ -251,7 +219,9 @@ AP_GPS_None     g_gps_driver(NULL);
 
 # if CONFIG_INS_TYPE == CONFIG_INS_MPU6000
   AP_InertialSensor_MPU6000 ins;
-# else
+# elif CONFIG_INS_TYPE == CONFIG_INS_SITL
+  AP_InertialSensor_Stub ins;
+#else
   AP_InertialSensor_Oilpan ins( &adc );
 #endif // CONFIG_INS_TYPE
 
@@ -274,9 +244,6 @@ AP_Compass_HIL          compass; // never used
  #error Unrecognised HIL_MODE setting.
 #endif // HIL MODE
 
-// we always have a timer scheduler
-AP_TimerProcess timer_scheduler;
-
 ////////////////////////////////////////////////////////////////////////////////
 // GCS selection
 ////////////////////////////////////////////////////////////////////////////////
@@ -284,22 +251,23 @@ AP_TimerProcess timer_scheduler;
 GCS_MAVLINK	gcs0;
 GCS_MAVLINK	gcs3;
 
+// a pin for reading the receiver RSSI voltage. The scaling by 0.25 
+// is to take the 0 to 1024 range down to an 8 bit range for MAVLink
+AP_HAL::AnalogSource *rssi_analog_source;
+
+AP_HAL::AnalogSource *vcc_pin;
+
+AP_HAL::AnalogSource * batt_volt_pin;
+AP_HAL::AnalogSource * batt_curr_pin;
+
 ////////////////////////////////////////////////////////////////////////////////
 // SONAR selection
 ////////////////////////////////////////////////////////////////////////////////
 //
 ModeFilterInt16_Size5 sonar_mode_filter(2);
 #if CONFIG_SONAR == ENABLED
-/*
-	#if CONFIG_SONAR_SOURCE == SONAR_SOURCE_ADC
-	AP_AnalogSource_ADC sonar_analog_source( &adc, CONFIG_SONAR_SOURCE_ADC_CHANNEL, 0.25);
-	#elif CONFIG_SONAR_SOURCE == SONAR_SOURCE_ANALOG_PIN
-		AP_AnalogSource_Arduino sonar_analog_source(CONFIG_SONAR_SOURCE_ANALOG_PIN);
-	#endif
-	AP_RangeFinder_MaxsonarXL sonar(&sonar_analog_source, &sonar_mode_filter);
-*/
-    AP_AnalogSource_Arduino sonar_analog_source(A0);   // use AN0 analog pin for APM2 on left
-    AP_RangeFinder_SharpGP2Y sonar(&sonar_analog_source, &sonar_mode_filter);
+    AP_HAL::AnalogSource *sonar_analog_source;
+    AP_RangeFinder_MaxsonarXL *sonar;
 #endif
 
 // relay support
@@ -341,10 +309,10 @@ static const char *comma = ",";
 ////////////////////////////////////////////////////////////////////////////////
 // This is the state of the flight control system
 // There are multiple states defined such as MANUAL, FBW-A, AUTO
-byte    control_mode        = INITIALISING;
+uint8_t    control_mode        = INITIALISING;
 // Used to maintain the state of the previous control switch position
 // This is set to -1 when we need to re-read the switch
-byte 	oldSwitchPosition;
+uint8_t 	oldSwitchPosition;
 // These are values received from the GCS if the user is using GCS joystick
 // control and are substituted for the values coming from the RC radio
 static int16_t rc_override[8] = {0,0,0,0,0,0,0,0};
@@ -383,7 +351,7 @@ static const 	float t7			= 10000000.0;
 
 // A counter used to count down valid gps fixes to allow the gps estimate to settle
 // before recording our home position (and executing a ground start if we booted with an air start)
-static byte 	ground_start_count	= 5;
+static uint8_t 	ground_start_count	= 5;
 // Used to compute a speed estimate from the first valid gps fixes to decide if we are 
 // on the ground or in the air.  Used to decide if a ground start is appropriate if we
 // booted with an air start.
@@ -416,12 +384,12 @@ static bool rtl_complete = false;
 
 // There may be two active commands in Auto mode.  
 // This indicates the active navigation command by index number
-static byte	nav_command_index;					
+static uint8_t	nav_command_index;					
 // This indicates the active non-navigation command by index number
-static byte	non_nav_command_index;				
+static uint8_t	non_nav_command_index;				
 // This is the command type (eg navigate to waypoint) of the active navigation command
-static byte	nav_command_ID		= NO_COMMAND;	
-static byte	non_nav_command_ID	= NO_COMMAND;	
+static uint8_t	nav_command_ID		= NO_COMMAND;	
+static uint8_t	non_nav_command_ID	= NO_COMMAND;	
 
 static float	groundspeed_error;	
 // 0-(throttle_max - throttle_cruise) : throttle nudge in Auto mode using top 1/2 of throttle stick travel
@@ -455,7 +423,7 @@ static float	crosstrack_error;
 // Used to track the CH7 toggle state.
 // When CH7 goes LOW PWM from HIGH PWM, this value will have been set true
 // This allows advanced functionality to know when to execute
-static boolean trim_flag;
+static bool trim_flag;
 // This register tracks the current Mission Command index when writing
 // a mission using CH7 in flight
 static int8_t CH7_wp_index;
@@ -500,7 +468,7 @@ static int32_t wp_totalDistance;
 // repeating event control
 ////////////////////////////////////////////////////////////////////////////////
 // Flag indicating current event type
-static byte 		event_id;
+static uint8_t 		event_id;
 // when the event was started in ms
 static int32_t 		event_timer;
 // how long to delay the next firing of event in millis
@@ -582,16 +550,16 @@ static uint16_t			mainLoop_count;
 // Time in miliseconds of start of medium control loop.  Milliseconds
 static uint32_t 	medium_loopTimer;
 // Counters for branching from main control loop to slower loops
-static byte 			medium_loopCounter;	
+static uint8_t 			medium_loopCounter;	
 // Number of milliseconds used in last medium loop cycle
 static uint8_t			delta_ms_medium_loop;
 
 // Counters for branching from medium control loop to slower loops
-static byte 			slow_loopCounter;
+static uint8_t 			slow_loopCounter;
 // Counter to trigger execution of very low rate processes
-static byte 			superslow_loopCounter;
+static uint8_t 			superslow_loopCounter;
 // Counter to trigger execution of 1 Hz processes
-static byte				counter_one_herz;
+static uint8_t				counter_one_herz;
 
 // % MCU cycles used
 static float 			load;
@@ -602,6 +570,27 @@ static float 			load;
 
 void setup() {
 	memcheck_init();
+    cliSerial = hal.console;
+
+    rssi_analog_source = hal.analogin->channel(ANALOG_INPUT_NONE, 0.25);
+    vcc_pin = hal.analogin->channel(ANALOG_INPUT_BOARD_VCC);
+    batt_volt_pin = hal.analogin->channel(g.battery_volt_pin);
+    batt_curr_pin = hal.analogin->channel(g.battery_curr_pin);
+
+#if CONFIG_SONAR == ENABLED
+ #if CONFIG_SONAR_SOURCE == SONAR_SOURCE_ADC
+    sonar_analog_source = new AP_ADC_AnalogSource(
+        &adc, CONFIG_SONAR_SOURCE_ADC_CHANNEL, 0.25);
+ #elif CONFIG_SONAR_SOURCE == SONAR_SOURCE_ANALOG_PIN
+    sonar_analog_source = hal.analogin->channel(
+        CONFIG_SONAR_SOURCE_ANALOG_PIN);
+ #else
+  #warning "Invalid CONFIG_SONAR_SOURCE"
+ #endif
+    sonar = new AP_RangeFinder_MaxsonarXL(sonar_analog_source,
+                                          &sonar_mode_filter);
+#endif
+
 	init_ardupilot();
 }
 
@@ -688,7 +677,7 @@ static void fast_loop()
 	// ----------
 #if CONFIG_SONAR == ENABLED
 	if(g.sonar_enabled){
-		sonar_dist = sonar.read();
+		sonar_dist = sonar->read();
 
 	if(sonar_dist <= g.sonar_trigger)  {  // obstacle detected in front 
             obstacle = true;
@@ -972,3 +961,5 @@ static void update_navigation()
         break;
 	}
 }
+
+AP_HAL_MAIN();
