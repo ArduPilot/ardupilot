@@ -42,7 +42,7 @@ uint8_t DataFlash_Empty::ReadStatus()
 
 
 inline uint16_t DataFlash_Empty::PageSize()
-{ }
+{ return 0; }
 
 
 // Wait until DataFlash is in ready state...
