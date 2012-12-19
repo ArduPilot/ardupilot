@@ -53,6 +53,9 @@
 
 // CH 7 control
 #define CH7_PWM_TRIGGER 1800    // pwm value above which the channel 7 option will be invoked
+#define CH6_PWM_TRIGGER_HIGH 1800
+#define CH6_PWM_TRIGGER_LOW 1200
+
 #define CH7_DO_NOTHING 0
 #define CH7_SET_HOVER 1         // deprecated
 #define CH7_FLIP 2
@@ -61,8 +64,9 @@
 #define CH7_SAVE_TRIM 5
 #define CH7_ADC_FILTER 6        // deprecated
 #define CH7_SAVE_WP 7
-#define CH7_MULTI_MODE 8        // deprecated
+#define CH7_MULTI_MODE 8
 #define CH7_CAMERA_TRIGGER 9
+
 
 
 // Frame types

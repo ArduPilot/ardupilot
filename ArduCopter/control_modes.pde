@@ -60,7 +60,22 @@ static void read_trim_switch()
     // set the ch7 flag
     ap_system.CH7_flag = (g.rc_7.radio_in >= CH7_PWM_TRIGGER);
 
-    switch(g.ch7_option) {
+    // multi-mode
+    int8_t option;
+
+    if(g.ch7_option == CH7_MULTI_MODE) {
+        if (g.rc_6.radio_in < CH6_PWM_TRIGGER_LOW) {
+            option = CH7_FLIP;
+        }else if (g.rc_6.radio_in > CH6_PWM_TRIGGER_HIGH) {
+            option = CH7_SAVE_WP;
+        }else{
+            option = CH7_RTL;
+        }
+    }else{
+        option = g.ch7_option;
+    }
+
+    switch(option) {
         case CH7_FLIP:
             // flip if switch is on, positive throttle and we're actually flying
             if(ap_system.CH7_flag && g.rc_3.control_in >= 0 && ap.takeoff_complete) {
