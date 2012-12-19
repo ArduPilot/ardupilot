@@ -819,8 +819,8 @@ static uint8_t auto_disarming_counter;
 // prevents duplicate GPS messages from entering system
 static uint32_t last_gps_time;
 
-// Used to auto exit the roll_pitch_trim saving function
-static uint8_t save_trim_counter;
+// Used to exit the roll and pitch auto trim function
+static uint8_t auto_trim_counter;
 
 // Reference to the AP relay object - APM1 only
 AP_Relay relay;
@@ -1068,8 +1068,8 @@ static void medium_loop()
         }
 #endif
 
-        // save_trim - stores roll and pitch radio inputs to ahrs
-        save_trim();
+        // auto_trim - stores roll and pitch radio inputs to ahrs
+        auto_trim();
 
         // record throttle output
         // ------------------------------

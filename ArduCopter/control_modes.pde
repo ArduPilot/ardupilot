@@ -86,7 +86,7 @@ static void read_trim_switch()
 
         case CH7_SAVE_TRIM:
             if(ap_system.CH7_flag && control_mode <= ACRO && g.rc_3.control_in == 0) {
-                save_trim_counter = 15;
+                save_trim();
             }
             break;
 
@@ -155,28 +155,40 @@ static void read_trim_switch()
 // save_trim - adds roll and pitch trims from the radio to ahrs
 static void save_trim()
 {
-    float roll_trim, pitch_trim;
+    // save roll and pitch trim
+    float roll_trim = ToRad((float)g.rc_1.control_in/100.0);
+    float pitch_trim = ToRad((float)g.rc_2.control_in/100.0);
+    ahrs.add_trim(roll_trim, pitch_trim);
+}
 
-    if(save_trim_counter > 0) {
-        save_trim_counter--;
+// auto_trim - slightly adjusts the ahrs.roll_trim and ahrs.pitch_trim towards the current stick positions
+// meant to be called continuously while the pilot attempts to keep the copter level
+static void auto_trim()
+{
+    if(auto_trim_counter > 0) {
+        auto_trim_counter--;
 
-        // first few iterations we simply flash the leds
+        // flash the leds
         led_mode = SAVE_TRIM_LEDS;
 
-        if(save_trim_counter == 1) {
-            // save roll trim
-            roll_trim = ToRad((float)g.rc_1.control_in/100.0);
-            pitch_trim = ToRad((float)g.rc_2.control_in/100.0);
-            ahrs.add_trim(roll_trim, pitch_trim);
+        // calculate roll trim adjustment
+        float roll_trim_adjustment = ToRad((float)-g.rc_1.control_in / 4000.0);
 
-            reset_control_switch();
+        // calculate pitch trim adjustment
+        float pitch_trim_adjustment = ToRad((float)g.rc_2.control_in / 4000.0);
 
-            // switch back leds to normal
+        // make sure accelerometer values impact attitude quickly
+        ahrs.set_fast_gains(true);
+
+        // add trim to ahrs object
+        // save to eeprom on last iteration
+        ahrs.add_trim(roll_trim_adjustment, pitch_trim_adjustment, (auto_trim_counter == 0));
+
+        // on last iteration restore leds and accel gains to normal
+        if(auto_trim_counter == 0) {
+            ahrs.set_fast_gains(false);
             led_mode = NORMAL_LEDS;
-
-            save_trim_counter = 0;
         }
     }
 }
-
 
