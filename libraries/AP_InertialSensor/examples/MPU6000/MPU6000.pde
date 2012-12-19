@@ -107,7 +107,8 @@ void run_calibration()
 
 
 #if !defined( __AVR_ATmega1280__ )
-    ins.calibrate_accel(NULL, hal.console);
+    AP_InertialSensor_UserInteractStream interact(hal.console);
+    ins.calibrate_accel(NULL, &interact);
 #else
 	hal.console->println_P(PSTR("calibrate_accel not available on 1280"));
 #endif
