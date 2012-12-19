@@ -11,8 +11,9 @@ namespace AVR_SITL {
     class SITLAnalogIn; 
     class SITLRCInput;
     class SITLRCOutput;
-   class ADCSource;
+    class ADCSource;
     class RCInput;
+    class SITLUtil;
 }
 
 #endif // __AP_HAL_AVR_SITL_NAMESPACE_H__

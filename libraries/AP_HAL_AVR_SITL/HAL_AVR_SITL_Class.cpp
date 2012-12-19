@@ -17,6 +17,7 @@
 #include "RCInput.h"
 #include "RCOutput.h"
 #include "SITL_State.h"
+#include "Util.h"
 
 #include <AP_HAL_Empty.h>
 #include <AP_HAL_Empty_Private.h>
@@ -40,6 +41,8 @@ static SITLUARTDriver sitlUart0Driver(0, &sitlState);
 static SITLUARTDriver sitlUart1Driver(1, &sitlState);
 static SITLUARTDriver sitlUart2Driver(2, &sitlState);
 
+static SITLUtil utilInstance;
+
 HAL_AVR_SITL::HAL_AVR_SITL() :
     AP_HAL::HAL(
 	    &sitlUart0Driver,  /* uartA */
@@ -53,7 +56,8 @@ HAL_AVR_SITL::HAL_AVR_SITL() :
         &emptyGPIO, /* gpio */
         &sitlRCInput,  /* rcinput */
         &sitlRCOutput, /* rcoutput */
-        &sitlScheduler), /* scheduler */
+        &sitlScheduler, /* scheduler */
+        &utilInstance), /* util */
     _sitl_state(&sitlState)
 {}
 

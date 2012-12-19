@@ -3,7 +3,6 @@
 #include <AP_HAL.h>
 #if CONFIG_HAL_BOARD == HAL_BOARD_AVR_SITL
 
-#include "HAL_AVR.h"
 #include "AP_HAL_AVR_SITL.h"
 #include "Scheduler.h"
 #include <sys/time.h>
