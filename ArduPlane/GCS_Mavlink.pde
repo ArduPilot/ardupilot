@@ -2081,7 +2081,8 @@ void gcs_send_text_fmt(const prog_char_t *fmt, ...)
     fmtstr[i] = 0;
     gcs0.pending_status.severity = (uint8_t)SEVERITY_LOW;
     va_start(arg_list, fmt);
-    vsnprintf((char *)gcs0.pending_status.text, sizeof(gcs0.pending_status.text), fmtstr, arg_list);
+    hal.util->vsnprintf((char *)gcs0.pending_status.text,
+            sizeof(gcs0.pending_status.text), fmtstr, arg_list);
     va_end(arg_list);
     gcs3.pending_status = gcs0.pending_status;
     mavlink_send_message(MAVLINK_COMM_0, MSG_STATUSTEXT, 0);
