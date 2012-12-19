@@ -46,20 +46,6 @@
 // APM HARDWARE
 //
 
-#ifndef CONFIG_APM_HARDWARE
-# define CONFIG_APM_HARDWARE APM_HARDWARE_APM1
-#endif
-
-#if defined( __AVR_ATmega1280__ )
-#define CLI_ENABLED DISABLED
-#define LOGGING_ENABLED DISABLED
-#endif
-
-//////////////////////////////////////////////////////////////////////////////
-// APM2 HARDWARE DEFAULTS
-//
-
-#if CONFIG_APM_HARDWARE == APM_HARDWARE_APM2
 # define CONFIG_IMU_TYPE   CONFIG_IMU_MPU6000
 # define CONFIG_PUSHBUTTON DISABLED
 # define CONFIG_RELAY      DISABLED
@@ -67,29 +53,8 @@
 # define CONFIG_SONAR_SOURCE SONAR_SOURCE_ANALOG_PIN
 # define CONFIG_PITOT_SOURCE PITOT_SOURCE_ANALOG_PIN
 # define MAGNETOMETER ENABLED
-# ifdef APM2_BETA_HARDWARE
-#  define CONFIG_BARO     AP_BARO_BMP085
-# else // APM2 Production Hardware (default)
-#  define CONFIG_BARO     AP_BARO_MS5611
-# endif
-#endif
+# define CONFIG_BARO     AP_BARO_MS5611
 
-//////////////////////////////////////////////////////////////////////////////
-// LED and IO Pins
-//
-#if CONFIG_APM_HARDWARE == APM_HARDWARE_APM1
-# define A_LED_PIN        37
-# define B_LED_PIN        36
-# define C_LED_PIN        35
-# define LED_ON           HIGH
-# define LED_OFF          LOW
-# define SLIDE_SWITCH_PIN 40
-# define PUSHBUTTON_PIN   41
-# define USB_MUX_PIN      -1
-# define CONFIG_RELAY     ENABLED
-# define BATTERY_PIN_1	  0
-# define CURRENT_PIN_1	  1
-#elif CONFIG_APM_HARDWARE == APM_HARDWARE_APM2
 # define A_LED_PIN        27
 # define B_LED_PIN        26
 # define C_LED_PIN        25
@@ -101,7 +66,6 @@
 # define USB_MUX_PIN 23
 # define BATTERY_PIN_1	  1
 # define CURRENT_PIN_1	  2
-#endif
 
 //////////////////////////////////////////////////////////////////////////////
 // AIRSPEED_SENSOR
