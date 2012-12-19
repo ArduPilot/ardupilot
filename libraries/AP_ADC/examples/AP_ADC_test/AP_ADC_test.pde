@@ -89,7 +89,7 @@ static void show_data()
     } while ((hal.scheduler->millis() - timer) < 200);
 
     timer = hal.scheduler->millis();
-    hal.console->printf("g=(%f,%f,%f) a=(%f,%f,%f) +/-(%u,%u,%u,%u,%u,%u) gt=%u dt=%u\n",
+    hal.console->printf("g=(%f,%f,%f) a=(%f,%f,%f) +/-(%.0f,%.0f,%.0f,%.0f,%.0f,%.0f) gt=%u dt=%u\n",
                   result[0], result[1], result[2],
                   result[3], result[4], result[5],
                   (max[0]-min[0]), (max[1]-min[1]), (max[2]-min[2]),
