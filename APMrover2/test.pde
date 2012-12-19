@@ -155,7 +155,7 @@ test_radio(uint8_t argc, const Menu::arg *argv)
 		// ------------------------------
 		set_servos();
 
-                tuning_value = constrain(((float)(g.rc_7.radio_in - g.rc_7.radio_min) / (float)(g.rc_7.radio_max - g.rc_7.radio_min)),0,1);
+        tuning_value = constrain(((float)(g.rc_7.radio_in - g.rc_7.radio_min) / (float)(g.rc_7.radio_max - g.rc_7.radio_min)),0,1);
                 
 		cliSerial->printf_P(PSTR("IN 1: %d\t2: %d\t3: %d\t4: %d\t5: %d\t6: %d\t7: %d\t8: %d  Tuning = %2.3f\n"),
 							g.channel_roll.control_in,

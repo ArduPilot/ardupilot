@@ -76,7 +76,7 @@ static void read_trim_switch()
 				} else if (control_mode == LEARNING) {    
                     // if SW7 is ON in LEARNING = record the Wp
                     // set the next_WP (home is stored at 0)
-                    CH7_wp_index = constrain(CH7_wp_index, 1, MAX_WAYPOINTS);
+                    CH7_wp_index = constrain_int16(CH7_wp_index, 1, MAX_WAYPOINTS);
         
                     current_loc.id = MAV_CMD_NAV_WAYPOINT;  
     
