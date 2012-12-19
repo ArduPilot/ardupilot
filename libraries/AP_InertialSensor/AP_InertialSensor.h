@@ -22,9 +22,7 @@
 class AP_InertialSensor
 {
 public:
-    AP_InertialSensor() {
-		AP_Param::setup_object_defaults(this, var_info);        
-    }
+    AP_InertialSensor();
 
     enum Start_style {
         COLD_START = 0,
