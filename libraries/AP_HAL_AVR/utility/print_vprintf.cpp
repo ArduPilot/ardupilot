@@ -50,7 +50,7 @@ extern "C" {
 #include "xtoa_fast.h"
 }
 
-#include "vprintf.h"
+#include "print_vprintf.h"
 
 // workaround for GCC bug c++/34734
 #undef PROGMEM 

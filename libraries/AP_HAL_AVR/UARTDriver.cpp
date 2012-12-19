@@ -19,7 +19,7 @@
 #include <AP_HAL.h>
 #include <AP_Math.h>
 
-#include "vprintf.h"
+#include "print_vprintf.h"
 #include "UARTDriver.h"
 using namespace AP_HAL_AVR;
 
@@ -271,14 +271,23 @@ void AVRUARTDriver::println_P(const prog_char_t *s) {
 void AVRUARTDriver::printf(const char *fmt, ...) {
         va_list ap;
         va_start(ap, fmt);
-        vprintf((AP_HAL::Print*)this, 0, fmt, ap);
+        vprintf(fmt, ap);
         va_end(ap);
+}
+
+void AVRUARTDriver::vprintf(const char *fmt, va_list ap) {
+        print_vprintf((AP_HAL::Print*)this, 0, fmt, ap);
 }
 
 void AVRUARTDriver::_printf_P(const prog_char *fmt, ...) {
         va_list ap;
         va_start(ap, fmt);
-        vprintf((AP_HAL::Print*)this, 1, fmt, ap);
+        vprintf_P(fmt, ap);
         va_end(ap);
 }
+
+void AVRUARTDriver::vprintf_P(const prog_char *fmt, va_list ap) {
+        print_vprintf((AP_HAL::Print*)this, 1, fmt, ap);
+}
+
 #endif

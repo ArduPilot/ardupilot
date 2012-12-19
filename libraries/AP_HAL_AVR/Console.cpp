@@ -1,7 +1,7 @@
 
 #include <limits.h>
 
-#include "vprintf.h"
+#include "print_vprintf.h"
 
 #include <AP_HAL.h>
 #include "Console.h"
@@ -63,18 +63,27 @@ void AVRConsoleDriver::println_P(const prog_char_t *s) {
         println();
 }
 
+    
 void AVRConsoleDriver::printf(const char *fmt, ...) {
         va_list ap;
         va_start(ap, fmt);
-        vprintf((AP_HAL::Print*)this, 0, fmt, ap);
+        vprintf(fmt, ap);
         va_end(ap);
 }
 
 void AVRConsoleDriver::_printf_P(const prog_char *fmt, ...) {
         va_list ap;
         va_start(ap, fmt);
-        vprintf((AP_HAL::Print*)this, 1, fmt, ap);
+        vprintf_P(fmt, ap);
         va_end(ap);
+}
+
+void AVRConsoleDriver::vprintf(const char *fmt, va_list ap){
+    print_vprintf((AP_HAL::Print*)this, 0, fmt, ap); 
+}
+
+void AVRConsoleDriver::vprintf_P(const prog_char *fmt, va_list ap){
+    print_vprintf((AP_HAL::Print*)this, 1, fmt, ap); 
 }
 
 // Stream method implementations /////////////////////////////////////////
