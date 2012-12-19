@@ -18,6 +18,7 @@ static EmptyGPIO gpioDriver;
 static EmptyRCInput rcinDriver;
 static EmptyRCOutput rcoutDriver;
 static EmptyScheduler schedulerInstance;
+static EmptyUtil utilInstance;
 
 HAL_Empty::HAL_Empty() :
     AP_HAL::HAL(
@@ -32,7 +33,8 @@ HAL_Empty::HAL_Empty() :
         &gpioDriver,
         &rcinDriver,
         &rcoutDriver,
-        &schedulerInstance),
+        &schedulerInstance,
+        &utilInstance),
     _member(new EmptyPrivateMember(123))
 {}
 

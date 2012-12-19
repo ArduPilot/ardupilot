@@ -17,6 +17,7 @@
 #include "RCOutput.h"
 #include "Semaphore.h"
 #include "Scheduler.h"
+#include "Util.h"
 #include "PrivateMember.h"
 
 #endif // __AP_HAL_EMPTY_PRIVATE_H__

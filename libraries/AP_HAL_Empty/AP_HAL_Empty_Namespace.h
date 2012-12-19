@@ -22,6 +22,7 @@ namespace Empty {
     class EmptyRCOutput;
     class EmptySemaphore;
     class EmptyScheduler;
+    class EmptyUtil;
     class EmptyPrivateMember;
 }
 
