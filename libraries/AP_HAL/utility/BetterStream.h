@@ -10,6 +10,7 @@
 #ifndef __AP_HAL_UTILITY_BETTERSTREAM_H__
 #define __AP_HAL_UTILITY_BETTERSTREAM_H__
 
+#include <stdarg.h>
 #include "../AP_HAL_Namespace.h"
 #include "Stream.h"
 
@@ -39,7 +40,9 @@ public:
     virtual void _printf_P(const prog_char *, ...) = 0;
 
 #define printf_P(fmt, ...) _printf_P((const prog_char *)fmt, ## __VA_ARGS__)
-
+    
+    virtual void vprintf(const char *, va_list) = 0;
+    virtual void vprintf_P(const prog_char *, va_list) = 0;
 };
 
 #endif // __AP_HAL_UTILITY_BETTERSTREAM_H__
