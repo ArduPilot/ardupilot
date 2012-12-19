@@ -53,7 +53,7 @@ AP_Camera::servo_pic()
 	RC_Channel_aux::set_radio(RC_Channel_aux::k_cam_trigger, _servo_on_pwm);
 
 	// leave a message that it should be active for this many loops (assumes 50hz loops)
-	_trigger_counter = constrain(_trigger_duration*5,0,255);
+	_trigger_counter = constrain_int16(_trigger_duration*5,0,255);
 }
 
 /// basic relay activation
@@ -63,7 +63,7 @@ AP_Camera::relay_pic()
     relay.on();
 
     // leave a message that it should be active for this many loops (assumes 50hz loops)
-    _trigger_counter = constrain(_trigger_duration*5,0,255);
+    _trigger_counter = constrain_int16(_trigger_duration*5,0,255);
 }
 
 /// pictures blurry? use this trigger. Turns off the throttle until for # of cycles of medium loop then takes the picture and re-enables the throttle.

@@ -88,7 +88,7 @@ bool AP_Limit_Geofence::triggered() {
 
     // simple mode, pointers to current and home exist.
     if (_simple && _current_loc && _home) {
-        distance = (uint32_t) get_distance_meters(_current_loc, _home);
+        distance = (uint32_t) get_distance(_current_loc, _home);
         if (distance > 0 &&  distance > (uint16_t) _radius) {
 
             // TRIGGER
@@ -126,28 +126,6 @@ bool AP_Limit_Geofence::triggered() {
         }
     }
     return _triggered;
-}
-
-
-
-uint32_t get_distance_meters(struct Location *loc1, struct Location *loc2)  // distance in meters between two locations
-{
-    // pointers missing (dangling)
-    if (!loc1 || !loc2) {
-        return -1;  
-    }
-    // do not trigger a false positive on erroneous location data
-    if(loc1->lat == 0 || loc1->lng == 0) {
-        return -1;
-    }
-    // do not trigger a false positive on erroneous location data
-    if(loc2->lat == 0 || loc2->lng == 0) {
-        return -1;
-    }
-
-    float dlat  = (float)(loc2->lat - loc1->lat);
-    float dlong = (float)(loc2->lng - loc1->lng);
-    return (sqrt(sq(dlat) + sq(dlong)) * .01113195);
 }
 
 

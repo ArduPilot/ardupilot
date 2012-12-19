@@ -111,7 +111,7 @@ RC_Channel_aux::set_radio(RC_Channel_aux::Aux_servo_function_t function, int16_t
 {
     for (uint8_t i = 0; i < 7; i++) {
         if (_aux_channels[i] && _aux_channels[i]->function.get() == function) {
-			_aux_channels[i]->radio_out = constrain(value,_aux_channels[i]->radio_min,_aux_channels[i]->radio_max);
+			_aux_channels[i]->radio_out = constrain_int16(value,_aux_channels[i]->radio_min,_aux_channels[i]->radio_max);
             _aux_channels[i]->output();
 		}
     }

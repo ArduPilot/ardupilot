@@ -512,7 +512,7 @@ AP_AHRS_DCM::drift_correction(float deltat)
     float earth_error_Z = error.z;
 
     // equation 10
-    float tilt = sqrt(sq(GA_e.x) + sq(GA_e.y));
+    float tilt = pythagorous2(GA_e.x, GA_e.y);
 
     // equation 11
     float theta = atan2(GA_b.y, GA_b.x);
