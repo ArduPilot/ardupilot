@@ -22,7 +22,9 @@ for b in $TESTS; do
     if [ -r nobuild.txt ]; then
 	echo "Skipping build of $b"
     else
-	make $targets
+	for t in $targets; do
+	    make $t
+	done
     fi
     popd
 done
