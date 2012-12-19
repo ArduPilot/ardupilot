@@ -256,7 +256,7 @@ AP_AHRS_MPU6000  ahrs2(&ins, g_gps);               // only works with APM2
 AP_ADC_HIL              adc;
 AP_Baro_BMP085_HIL      barometer;
 AP_Compass_HIL          compass;
-AP_GPS_HIL              g_gps_driver(NULL);
+AP_GPS_HIL              g_gps_driver;
 AP_InertialSensor_Stub  ins;
 AP_AHRS_DCM             ahrs(&ins, g_gps);
 
@@ -267,7 +267,7 @@ static int32_t gps_base_alt;
 AP_ADC_HIL              adc;
 AP_InertialSensor_Stub  ins;
 AP_AHRS_HIL             ahrs(&ins, g_gps);
-AP_GPS_HIL              g_gps_driver(NULL);
+AP_GPS_HIL              g_gps_driver;
 AP_Compass_HIL          compass;                  // never used
 AP_Baro_BMP085_HIL      barometer;
 
