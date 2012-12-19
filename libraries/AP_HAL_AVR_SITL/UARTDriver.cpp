@@ -25,7 +25,7 @@
 #include <netinet/in.h>
 #include <netinet/tcp.h>
 
-#include "vprintf.h"
+#include "print_vprintf.h"
 #include "UARTDriver.h"
 #include "SITL_State.h"
 
@@ -182,18 +182,25 @@ void SITLUARTDriver::printf(const char *fmt, ...)
 {
     va_list ap;
     va_start(ap, fmt);
-    vprintf((AP_HAL::Print*)this, 0, fmt, ap);
+    vprintf(fmt, ap);
     va_end(ap);
+}
+
+void SITLUARTDriver::vprintf(const char *fmt, va_list ap) {
+    print_vprintf((AP_HAL::Print*)this, 0, fmt, ap);
 }
 
 void SITLUARTDriver::_printf_P(const prog_char *fmt, ...) 
 {
     va_list ap;
     va_start(ap, fmt);
-    vprintf((AP_HAL::Print*)this, 1, fmt, ap);
+    vprintf_P(fmt, ap);
     va_end(ap);
 }
 
+void SITLUARTDriver::vprintf_P(const prog_char *fmt, va_list ap) {
+    print_vprintf((AP_HAL::Print*)this, 1, fmt, ap);
+}
 /*
   start a TCP connection for the serial port. If wait_for_connection
   is true then block until a client connects

@@ -6,7 +6,7 @@
 #include <limits.h>
 #include <stdarg.h>
 #include "Console.h"
-#include "vprintf.h"
+#include "print_vprintf.h"
 
 using namespace AVR_SITL;
 
@@ -57,16 +57,26 @@ void SITLConsoleDriver::printf(const char *fmt, ...)
 {
         va_list ap;
         va_start(ap, fmt);
-        vprintf((AP_HAL::Print*)this, 0, fmt, ap);
+        vprintf(fmt, ap);
         va_end(ap);
+}
+
+void SITLConsoleDriver::vprintf(const char *fmt, va_list ap) 
+{
+        print_vprintf((AP_HAL::Print*)this, 0, fmt, ap);
 }
 
 void SITLConsoleDriver::_printf_P(const prog_char *fmt, ...) 
 {
         va_list ap;
         va_start(ap, fmt);
-        vprintf((AP_HAL::Print*)this, 1, fmt, ap);
+        vprintf_P(fmt, ap);
         va_end(ap);
+}
+
+void SITLConsoleDriver::vprintf_P(const prog_char *fmt, va_list ap) 
+{
+        print_vprintf((AP_HAL::Print*)this, 1, fmt, ap);
 }
 
 // Stream method implementations /////////////////////////////////////////

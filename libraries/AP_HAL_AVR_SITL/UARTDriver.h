@@ -46,6 +46,8 @@ public:
             __attribute__ ((format(__printf__, 2, 3)));
     void _printf_P(const prog_char *s, ...)
             __attribute__ ((format(__printf__, 2, 3)));
+    void vprintf(const char *s, va_list ap);
+    void vprintf_P(const prog_char *s, va_list ap);
 
     /* Implementations of Stream virtual methods */
     int16_t available();

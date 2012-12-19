@@ -14,11 +14,11 @@
 #include <AP_Progmem.h>
 #include <stdarg.h>
 #include <string.h>
-#include "vprintf.h"
+#include "print_vprintf.h"
 #include <stdio.h>
 #include <stdlib.h>
 
-void vprintf(AP_HAL::Print *s, unsigned char in_progmem, const char *fmt, va_list ap)
+void print_vprintf(AP_HAL::Print *s, unsigned char in_progmem, const char *fmt, va_list ap)
 {
         char *str = NULL;
         int i;
