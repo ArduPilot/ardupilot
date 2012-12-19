@@ -61,12 +61,7 @@ void readTemp()
 //Main loop where the action takes place
 void loop()
 {
-    uint8_t i = 0;
-    int16_t filtered_value;
-
-    int16_t j;
-
-    for(j=0; j<0xFF; j++ ) {
+    for (uint8_t j=0; j<0xFF; j++ ) {
         readTemp();
         hal.scheduler->delay(100);
     }

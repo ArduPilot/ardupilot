@@ -44,7 +44,6 @@ void loop()
     uint32_t t1 = hal.scheduler->micros();
     derivative.update(s, t1);
     float output = derivative.slope() * 1.0e6;
-    uint32_t t2 = hal.scheduler->micros();
     hal.console->printf("%f %f %f %f\n", t, output, s, cos(t));
 }
 
