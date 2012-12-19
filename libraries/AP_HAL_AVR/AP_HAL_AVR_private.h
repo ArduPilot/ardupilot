@@ -12,6 +12,7 @@
 #include "RCInput.h"
 #include "RCOutput.h"
 #include "Scheduler.h"
+#include "Util.h"
 #include "utility/ISRRegistry.h"
 
 #endif // __AP_HAL_AVR_PRIVATE_H__

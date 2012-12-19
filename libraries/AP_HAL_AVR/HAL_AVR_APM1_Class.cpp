@@ -30,6 +30,7 @@ static AVRGPIO          avrGPIO;
 static APM1RCInput      apm1RCInput;
 static APM1RCOutput     apm1RCOutput;
 static AVRScheduler     avrScheduler;
+static AVRUtil          avrUtil;
 
 static ISRRegistry isrRegistry;
 
@@ -47,7 +48,8 @@ HAL_AVR_APM1::HAL_AVR_APM1() :
         &avrGPIO,
         &apm1RCInput,
         &apm1RCOutput,
-        &avrScheduler )
+        &avrScheduler,
+        &avrUtil )
 {}
 
 void HAL_AVR_APM1::init(int argc, char * const argv[]) const {

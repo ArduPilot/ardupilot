@@ -4,7 +4,6 @@
 #include <avr/io.h>
 #include <avr/interrupt.h>
 
-#include "HAL_AVR.h"
 #include "Scheduler.h"
 using namespace AP_HAL_AVR;
 

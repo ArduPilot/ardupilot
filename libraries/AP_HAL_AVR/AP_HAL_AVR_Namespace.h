@@ -26,6 +26,7 @@ namespace AP_HAL_AVR {
     class AVRTimer;
     class AVRSemaphore;
     class ISRRegistry;
+    class AVRUtil;
 }
 
 #endif //__AP_HAL_AVR_NAMESPACE_H__
