@@ -287,7 +287,8 @@ setup_accel_scale(uint8_t argc, const Menu::arg *argv)
     ins.init(AP_InertialSensor::COLD_START, 
              ins_sample_rate,
              flash_leds);
-    ins.calibrate_accel(flash_leds, cliSerial);
+    AP_InertialSensor_UserInteractStream interact(hal.console);
+    ins.calibrate_accel(flash_leds, &interact);
     report_ins();
     return(0);
 }

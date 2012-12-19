@@ -1088,7 +1088,8 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
             }
             if (packet.param5 == 1) {
                 // this blocks
-                ins.calibrate_accel(flash_leds, hal.console);
+                AP_InertialSensor_UserInteractStream interact(hal.console);
+                ins.calibrate_accel(flash_leds, &interact);
             }
             result = MAV_RESULT_ACCEPTED;
             break;
