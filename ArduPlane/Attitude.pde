@@ -172,7 +172,7 @@ static void calc_throttle()
             g.channel_throttle.servo_out = throttle_target - (throttle_target - g.throttle_min) * nav_pitch_cd / g.pitch_limit_min_cd;
         }
 
-        g.channel_throttle.servo_out = constrain(g.channel_throttle.servo_out, g.throttle_min.get(), g.throttle_max.get());
+        g.channel_throttle.servo_out = constrain_int16(g.channel_throttle.servo_out, g.throttle_min.get(), g.throttle_max.get());
     } else {
         // throttle control with airspeed compensation
         // -------------------------------------------
@@ -182,8 +182,8 @@ static void calc_throttle()
         g.channel_throttle.servo_out = g.throttle_cruise + g.pidTeThrottle.get_pid(energy_error);
         g.channel_throttle.servo_out += (g.channel_pitch.servo_out * g.kff_pitch_to_throttle);
 
-        g.channel_throttle.servo_out = constrain(g.channel_throttle.servo_out,
-                                                 g.throttle_min.get(), g.throttle_max.get());
+        g.channel_throttle.servo_out = constrain_int16(g.channel_throttle.servo_out,
+                                                       g.throttle_min.get(), g.throttle_max.get());
     }
 
 }
@@ -228,7 +228,7 @@ static void calc_nav_pitch()
     } else {
         nav_pitch_cd = g.pidNavPitchAltitude.get_pid(altitude_error_cm);
     }
-    nav_pitch_cd = constrain(nav_pitch_cd, g.pitch_limit_min_cd.get(), g.pitch_limit_max_cd.get());
+    nav_pitch_cd = constrain_int32(nav_pitch_cd, g.pitch_limit_min_cd.get(), g.pitch_limit_max_cd.get());
 }
 
 
@@ -263,7 +263,7 @@ static void calc_nav_roll()
     nav_roll_cd = g.pidNavRoll.get_pid(bearing_error_cd, nav_gain_scaler); //returns desired bank angle in degrees*100
 #endif
 
-    nav_roll_cd = constrain(nav_roll_cd, -g.roll_limit_cd.get(), g.roll_limit_cd.get());
+    nav_roll_cd = constrain_int32(nav_roll_cd, -g.roll_limit_cd.get(), g.roll_limit_cd.get());
 }
 
 
@@ -292,7 +292,7 @@ static void throttle_slew_limit(int16_t last_throttle)
         if (temp < 1) {
             temp = 1;
         }
-        g.channel_throttle.radio_out = constrain(g.channel_throttle.radio_out, last_throttle - temp, last_throttle + temp);
+        g.channel_throttle.radio_out = constrain_int16(g.channel_throttle.radio_out, last_throttle - temp, last_throttle + temp);
     }
 }
 
@@ -448,9 +448,9 @@ static void set_servos(void)
         g.channel_throttle.servo_out = 0;
 #else
         // convert 0 to 100% into PWM
-        g.channel_throttle.servo_out = constrain(g.channel_throttle.servo_out, 
-                                                 g.throttle_min.get(), 
-                                                 g.throttle_max.get());
+        g.channel_throttle.servo_out = constrain_int16(g.channel_throttle.servo_out, 
+                                                       g.throttle_min.get(), 
+                                                       g.throttle_max.get());
 
         if (suppress_throttle()) {
             // throttle is suppressed in auto mode

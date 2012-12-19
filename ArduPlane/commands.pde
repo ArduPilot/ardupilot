@@ -99,7 +99,7 @@ static struct Location get_cmd_with_index(int16_t i)
 // -------
 static void set_cmd_with_index(struct Location temp, int16_t i)
 {
-    i = constrain(i, 0, g.command_total.get());
+    i = constrain_int16(i, 0, g.command_total.get());
     uint16_t mem = WP_START_BYTE + (i * WP_SIZE);
 
     // Set altitude options bitmask

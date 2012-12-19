@@ -1023,7 +1023,7 @@ static void update_current_flight_mode(void)
                     nav_pitch_cd = takeoff_pitch_cd;
             } else {
                 nav_pitch_cd = (g_gps->ground_speed / (float)g.airspeed_cruise_cm) * takeoff_pitch_cd;
-                nav_pitch_cd = constrain(nav_pitch_cd, 500, takeoff_pitch_cd);
+                nav_pitch_cd = constrain_int32(nav_pitch_cd, 500, takeoff_pitch_cd);
             }
 
 #if APM_CONTROL == DISABLED
@@ -1058,7 +1058,7 @@ static void update_current_flight_mode(void)
                 if (!alt_control_airspeed()) {
                     // when not under airspeed control, don't allow
                     // down pitch in landing
-                    nav_pitch_cd = constrain(nav_pitch_cd, 0, nav_pitch_cd);
+                    nav_pitch_cd = constrain_int32(nav_pitch_cd, 0, nav_pitch_cd);
                 }
             }
             calc_throttle();
@@ -1103,7 +1103,7 @@ static void update_current_flight_mode(void)
             } else {
                 nav_pitch_cd = -(pitch_input * g.pitch_limit_min_cd);
             }
-            nav_pitch_cd = constrain(nav_pitch_cd, g.pitch_limit_min_cd.get(), g.pitch_limit_max_cd.get());
+            nav_pitch_cd = constrain_int32(nav_pitch_cd, g.pitch_limit_min_cd.get(), g.pitch_limit_max_cd.get());
             if (inverted_flight) {
                 nav_pitch_cd = -nav_pitch_cd;
             }

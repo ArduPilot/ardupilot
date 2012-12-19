@@ -119,9 +119,9 @@ static void calc_altitude_error()
 
         // stay within a certain range
         if(prev_WP.alt > next_WP.alt) {
-            target_altitude_cm = constrain(target_altitude_cm, next_WP.alt, prev_WP.alt);
+            target_altitude_cm = constrain_int32(target_altitude_cm, next_WP.alt, prev_WP.alt);
         }else{
-            target_altitude_cm = constrain(target_altitude_cm, prev_WP.alt, next_WP.alt);
+            target_altitude_cm = constrain_int32(target_altitude_cm, prev_WP.alt, next_WP.alt);
         }
     } else if (non_nav_command_ID != MAV_CMD_CONDITION_CHANGE_ALT) {
         target_altitude_cm = next_WP.alt;
@@ -195,7 +195,7 @@ static void update_crosstrack(void)
         abs(wrap_180_cd(target_bearing_cd - crosstrack_bearing_cd)) < 4500) {
         // Meters we are off track line
         crosstrack_error = sin(radians((target_bearing_cd - crosstrack_bearing_cd) * 0.01)) * wp_distance;               
-        nav_bearing_cd += constrain(crosstrack_error * g.crosstrack_gain, -g.crosstrack_entry_angle.get(), g.crosstrack_entry_angle.get());
+        nav_bearing_cd += constrain_int32(crosstrack_error * g.crosstrack_gain, -g.crosstrack_entry_angle.get(), g.crosstrack_entry_angle.get());
         nav_bearing_cd = wrap_360_cd(nav_bearing_cd);
     }
 

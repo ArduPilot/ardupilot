@@ -369,7 +369,7 @@ static void NOINLINE send_vfr_hud(mavlink_channel_t chan)
         aspeed = 0;
     }
     float throttle_norm = g.channel_throttle.norm_output() * 100;
-    throttle_norm = constrain(throttle_norm, -100, 100);
+    throttle_norm = constrain_int16(throttle_norm, -100, 100);
     uint16_t throttle = ((uint16_t)(throttle_norm + 100)) / 2;
     mavlink_msg_vfr_hud_send(
         chan,
@@ -469,7 +469,7 @@ static void NOINLINE send_wind(mavlink_channel_t chan)
         chan,
         degrees(atan2(-wind.y, -wind.x)), // use negative, to give
                                           // direction wind is coming from
-        sqrt(sq(wind.x)+sq(wind.y)),
+        wind.length(),
         wind.z);
 }
 
@@ -1783,7 +1783,7 @@ mission_failed:
         mavlink_hil_state_t packet;
         mavlink_msg_hil_state_decode(msg, &packet);
 
-        float vel = sqrt((packet.vx * (float)packet.vx) + (packet.vy * (float)packet.vy));
+        float vel = pythagorous2(packet.vx, packet.vy);
         float cog = wrap_360_cd(ToDeg(atan2(packet.vy, packet.vx)) * 100);
 
         // set gps hil sensor
