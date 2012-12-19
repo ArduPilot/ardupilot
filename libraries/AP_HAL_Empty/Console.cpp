@@ -32,18 +32,26 @@ void EmptyConsoleDriver::println_P(const prog_char_t *pstr) {
     _d->println_P(pstr);
 }
 
-void EmptyConsoleDriver::printf(const char *pstr, ...) {
+void EmptyConsoleDriver::printf(const char *fmt, ...) {
     va_list ap;
-    va_start(ap, pstr);
-    _d->printf(pstr, ap);
+    va_start(ap, fmt);
+    vprintf(fmt, ap);
     va_end(ap);
 }
 
-void EmptyConsoleDriver::_printf_P(const prog_char *pstr, ...) {
+void EmptyConsoleDriver::_printf_P(const prog_char *fmt, ...) {
     va_list ap;
-    va_start(ap, pstr);
-    _d->printf_P(pstr, ap);
+    va_start(ap,fmt);
+    vprintf_P(fmt, ap);
     va_end(ap);
+}
+
+void EmptyConsoleDriver::vprintf(const char *fmt, va_list ap) {
+    _d->vprintf(fmt, ap);
+}
+
+void EmptyConsoleDriver::vprintf_P(const prog_char *fmt, va_list ap) {
+    _d->vprintf_P(fmt, ap);
 }
 
 int16_t EmptyConsoleDriver::available() {

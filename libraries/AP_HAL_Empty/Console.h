@@ -17,6 +17,8 @@ public:
     void println_P(const prog_char_t *pstr);
     void printf(const char *pstr, ...);
     void _printf_P(const prog_char *pstr, ...);
+    void vprintf(const char *pstr, va_list ap);
+    void vprintf_P(const prog_char *pstr, va_list ap);
 
     int16_t available();
     int16_t txspace();

@@ -18,6 +18,8 @@ void EmptyUARTDriver::print_P(const prog_char_t *pstr) {}
 void EmptyUARTDriver::println_P(const prog_char_t *pstr) {}
 void EmptyUARTDriver::printf(const char *pstr, ...) {}
 void EmptyUARTDriver::_printf_P(const prog_char *pstr, ...) {}
+void EmptyUARTDriver::vprintf(const char *pstr, va_list ap) {}
+void EmptyUARTDriver::vprintf_P(const prog_char *pstr, va_list ap) {}
 
 /* Empty implementations of Stream virtual methods */
 int16_t EmptyUARTDriver::available() { return 0; }

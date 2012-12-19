@@ -22,6 +22,9 @@ public:
     void printf(const char *pstr, ...);
     void _printf_P(const prog_char *pstr, ...);
 
+    void vprintf(const char* fmt, va_list ap);
+    void vprintf_P(const prog_char* fmt, va_list ap);
+
     /* Empty implementations of Stream virtual methods */
     int16_t available();
     int16_t txspace();
