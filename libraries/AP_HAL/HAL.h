@@ -26,7 +26,8 @@ public:
         AP_HAL::GPIO*       _gpio,
         AP_HAL::RCInput*    _rcin,
         AP_HAL::RCOutput*   _rcout,
-        AP_HAL::Scheduler*  _scheduler)
+        AP_HAL::Scheduler*  _scheduler,
+        AP_HAL::Util*       _util)
         :
         uartA(_uartA),
         uartB(_uartB),
@@ -39,7 +40,8 @@ public:
         gpio(_gpio),
         rcin(_rcin),
         rcout(_rcout),
-        scheduler(_scheduler)
+        scheduler(_scheduler),
+        util(_util)
     {}
 
     virtual void init(int argc, char * const argv[]) const = 0;
@@ -56,6 +58,7 @@ public:
     AP_HAL::RCInput*    rcin;
     AP_HAL::RCOutput*   rcout;
     AP_HAL::Scheduler*  scheduler;
+    AP_HAL::Util*       util;
 };
 
 #endif // __AP_HAL_HAL_H__

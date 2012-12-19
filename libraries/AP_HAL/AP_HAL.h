@@ -17,6 +17,7 @@
 #include "RCOutput.h"
 #include "Scheduler.h"
 #include "Semaphore.h"
+#include "Util.h"
 
 #include "utility/Print.h"
 #include "utility/Stream.h"
