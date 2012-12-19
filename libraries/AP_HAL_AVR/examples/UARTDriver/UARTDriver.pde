@@ -36,8 +36,10 @@ void setup(void)
     hal.console->println(1000, 10);
     hal.console->println(1000, 16);
     hal.console->println_P(PSTR("progmem"));
-    hal.console->printf("printf %d %u %#x %p %f %S\n", -1000, 1000, 1000, 1000, 1.2345, PSTR("progmem"));
-    hal.console->printf_P(PSTR("printf_P %d %u %#x %p %f %S\n"), -1000, 1000, 1000, 1000, 1.2345, PSTR("progmem"));
+    int x = 3;
+    int *ptr = &x;
+    hal.console->printf("printf %d %u %#x %p %f %S\n", -1000, 1000, 1000, ptr, 1.2345, PSTR("progmem"));
+    hal.console->printf_P(PSTR("printf_P %d %u %#x %p %f %S\n"), -1000, 1000, 1000, ptr, 1.2345, PSTR("progmem"));
     hal.console->println("done");
 }
 
