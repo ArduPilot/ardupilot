@@ -11,11 +11,10 @@
 #include <PID.h> // ArduPilot Mega RC Library
 
 #include <AP_HAL_AVR.h>
-#if CONFIG_APM_HARDWARE == APM_HARDWARE_APM2
-const AP_HAL::HAL& hal = AP_HAL_AVR_APM2;
-#else
-const AP_HAL::HAL& hal = AP_HAL_AVR_APM1;
-#endif
+#include <AP_HAL_AVR_SITL.h>
+#include <AP_HAL_Empty.h>
+
+const AP_HAL::HAL& hal = AP_HAL_BOARD_DRIVER;
 
 long radio_in;
 long radio_trim;
