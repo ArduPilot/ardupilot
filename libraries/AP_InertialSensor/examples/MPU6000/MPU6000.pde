@@ -9,6 +9,8 @@
 #include <AP_Progmem.h>
 #include <AP_HAL.h>
 #include <AP_HAL_AVR.h>
+#include <AP_HAL_AVR_SITL.h>
+#include <AP_HAL_Empty.h>
 #include <AP_Math.h>
 #include <AP_Param.h>
 #include <AP_ADC.h>
@@ -25,19 +27,8 @@
 #define C_LED_PIN 35
 #endif
 
-
-#if CONFIG_HAL_BOARD == HAL_BOARD_APM2
-
-const AP_HAL::HAL& hal = AP_HAL_AVR_APM2;
+const AP_HAL::HAL& hal = AP_HAL_BOARD_DRIVER;
 AP_InertialSensor_MPU6000 ins;
-
-#else
-
-const AP_HAL::HAL& hal = AP_HAL_AVR_APM1;
-AP_ADC_ADS7844 adc;
-AP_InertialSensor_Oilpan ins(&adc);
-
-#endif
 
 static void flash_leds(bool on) {
     hal.gpio->write(A_LED_PIN, on);
@@ -57,9 +48,6 @@ void setup(void)
     hal.gpio->write(40, 1);
 #endif
 
-#if CONFIG_HAL_BOARD == HAL_BOARD_APM1
-    adc.Init(&scheduler);           // APM ADC library initialization
-#endif
     ins.init(AP_InertialSensor::COLD_START, 
 			 AP_InertialSensor::RATE_100HZ,
 			 NULL);
