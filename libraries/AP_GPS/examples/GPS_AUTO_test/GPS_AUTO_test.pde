@@ -10,17 +10,15 @@
 #include <AP_Param.h>
 #include <AP_HAL.h>
 #include <AP_HAL_AVR.h>
+#include <AP_HAL_AVR_SITL.h>
+#include <AP_HAL_Empty.h>
 #include <AP_GPS.h>
 #include <AP_Math.h>
 
-#if CONFIG_HAL_BOARD == HAL_BOARD_APM2
-const AP_HAL::HAL& hal = AP_HAL_AVR_APM2;
-#elif CONFIG_HAL_BOARD == HAL_BOARD_APM1
-const AP_HAL::HAL& hal = AP_HAL_AVR_APM1;
-#endif
+const AP_HAL::HAL& hal = AP_HAL_BOARD_DRIVER;
 
 GPS         *gps;
-AP_GPS_Auto GPS(hal.uartB, &gps);
+AP_GPS_Auto GPS(&gps);
 
 #define T6 1000000
 #define T7 10000000
@@ -51,7 +49,7 @@ void setup()
 
     hal.console->println("GPS AUTO library test");
     gps = &GPS;
-    gps->init(GPS::GPS_ENGINE_AIRBORNE_2G);
+    gps->init(hal.uartB, GPS::GPS_ENGINE_AIRBORNE_2G);
 }
 
 void loop()

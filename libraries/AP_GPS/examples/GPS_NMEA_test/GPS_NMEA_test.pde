@@ -11,14 +11,12 @@
 #include <AP_HAL.h>
 #include <AP_GPS.h>
 #include <AP_HAL_AVR.h>
+#include <AP_HAL_AVR_SITL.h>
+#include <AP_HAL_Empty.h>
 
-#if CONFIG_HAL_BOARD == HAL_BOARD_APM1
-const AP_HAL::HAL& hal = AP_HAL_AVR_APM1;
-#elif CONFIG_HAL_BOARD == HAL_BOARD_APM2
-const AP_HAL::HAL& hal = AP_HAL_AVR_APM2;
-#endif
+const AP_HAL::HAL& hal = AP_HAL_BOARD_DRIVER;
 
-AP_GPS_NMEA NMEA_gps(hal.uartB);
+AP_GPS_NMEA NMEA_gps;
 GPS *gps = &NMEA_gps;
 
 #define T6 1000000
@@ -52,7 +50,7 @@ void setup()
     for (uint8_t i = 0; i < sizeof(sirf_to_nmea); i++)
         hal.uartB->write(sirf_to_nmea[i]);
 
-    gps->init();
+    gps->init(hal.uartB);
 }
 
 void loop()

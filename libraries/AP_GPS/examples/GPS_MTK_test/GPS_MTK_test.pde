@@ -15,13 +15,9 @@
 #include <AP_GPS.h>
 #include <AP_Math.h>
 
-#if CONFIG_HAL_BOARD == HAL_BOARD_APM2
-const AP_HAL::HAL& hal = AP_HAL_AVR_APM2;
-#elif CONFIG_HAL_BOARD == HAL_BOARD_APM1
-const AP_HAL::HAL& hal = AP_HAL_AVR_APM1;
-#endif
+const AP_HAL::HAL& hal = AP_HAL_BOARD_DRIVER;
 
-AP_GPS_MTK16 gps(hal.uartB);
+AP_GPS_MTK16 gps;
 #define T6 1000000
 #define T7 10000000
 
@@ -31,7 +27,7 @@ void setup()
     gps.print_errors = true;
 
     hal.console->println("GPS MTK library test");
-    gps.init();  // GPS Initialization
+    gps.init(hal.uartB);  // GPS Initialization
 }
 
 void loop()
