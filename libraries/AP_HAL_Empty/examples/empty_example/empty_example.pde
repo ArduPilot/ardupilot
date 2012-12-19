@@ -5,9 +5,11 @@
 #include <AP_Math.h>
 
 #include <AP_HAL.h>
+#include <AP_HAL_AVR.h>
+#include <AP_HAL_AVR_SITL.h>
 #include <AP_HAL_Empty.h>
 
-const AP_HAL::HAL& hal = AP_HAL_Empty;
+const AP_HAL::HAL& hal = AP_HAL_BOARD_DRIVER;
 
 void setup() {}
 void loop() {}
