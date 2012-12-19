@@ -303,7 +303,9 @@ setup_accel_scale(uint8_t argc, const Menu::arg *argv)
     ins.init(AP_InertialSensor::COLD_START, 
              ins_sample_rate,
              flash_leds);
-    if (ins.calibrate_accel(flash_leds, hal.console)) {
+    AP_InertialSensor_UserInteractStream interact(hal.console);
+    bool success = ins.calibrate_accel(flash_leds, &interact);
+    if (success) {
         if (g.manual_level == 0) {
             cliSerial->println_P(PSTR("Setting MANUAL_LEVEL to 1"));
             g.manual_level.set_and_save(1);
