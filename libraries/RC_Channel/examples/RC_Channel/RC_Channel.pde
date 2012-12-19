@@ -21,11 +21,10 @@
 #include <RC_Channel.h>
 
 #include <AP_HAL_AVR.h>
-#if CONFIG_HAL_BOARD == HAL_BOARD_APM2
-const AP_HAL::HAL& hal = AP_HAL_AVR_APM2;
-#elif CONFIG_HAL_BOARD == HAL_BOARD_APM1
-const AP_HAL::HAL& hal = AP_HAL_AVR_APM1;
-#endif
+#include <AP_HAL_AVR_SITL.h>
+#include <AP_HAL_Empty.h>
+
+const AP_HAL::HAL& hal = AP_HAL_BOARD_DRIVER;
 
 RC_Channel rc_1(CH_1);
 RC_Channel rc_2(CH_2);
@@ -43,7 +42,6 @@ void setup()
     hal.console->println("ArduPilot RC Channel test");
     hal.scheduler->delay(500);
 
-    // interactive setup
     setup_radio();
 
     print_radio_values();
@@ -136,8 +134,7 @@ void print_radio_values()
 }
 
 
-void
-setup_radio()
+void setup_radio(void)
 {
 	hal.console->println("\n\nRadio Setup:");
 	uint8_t i;
