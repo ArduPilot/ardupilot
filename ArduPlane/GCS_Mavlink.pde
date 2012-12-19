@@ -2071,18 +2071,11 @@ static void gcs_send_text_P(gcs_severity severity, const prog_char_t *str)
  */
 void gcs_send_text_fmt(const prog_char_t *fmt, ...)
 {
-    char fmtstr[40];
     va_list arg_list;
-    uint8_t i;
-    for (i=0; i<sizeof(fmtstr)-1; i++) {
-        fmtstr[i] = pgm_read_byte((const prog_char *)(fmt++));
-        if (fmtstr[i] == 0) break;
-    }
-    fmtstr[i] = 0;
     gcs0.pending_status.severity = (uint8_t)SEVERITY_LOW;
     va_start(arg_list, fmt);
-    hal.util->vsnprintf((char *)gcs0.pending_status.text,
-            sizeof(gcs0.pending_status.text), fmtstr, arg_list);
+    hal.util->vsnprintf_P((char *)gcs0.pending_status.text,
+            sizeof(gcs0.pending_status.text), fmt, arg_list);
     va_end(arg_list);
     gcs3.pending_status = gcs0.pending_status;
     mavlink_send_message(MAVLINK_COMM_0, MSG_STATUSTEXT, 0);
