@@ -8,7 +8,7 @@ set -x
 
 echo "Testing ArduPlane build"
 pushd ArduPlane
-for b in all apm2 apm2beta hil hilsensors hil-apm2 hilsensors-apm2 sitl sitl-mount sitl-newcontrollers; do
+for b in all apm2 apm2beta apm1-hil apm1-hilsensors apm2-hil apm2-hilsensors sitl sitl-mount sitl-newcontrollers; do
     pwd
     make clean
     make $b
@@ -17,7 +17,7 @@ popd
 
 echo "Testing ArduCopter build"
 pushd ArduCopter
-for b in all apm2 apm2beta hil sitl heli dmp; do
+for b in all apm2 apm2beta apm1-hil apm2-hil sitl heli dmp; do
     pwd
     make clean
     make $b

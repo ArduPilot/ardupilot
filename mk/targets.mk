@@ -9,6 +9,7 @@ clidisabled-nologging: EXTRAFLAGS += "-DCLI_ENABLED=DISABLED "
 clidisabled-nologging: nologging
 
 hil: EXTRAFLAGS += "-DHIL_MODE=HIL_MODE_ATTITUDE "
+hil: apm1
 
 hilsensors: EXTRAFLAGS += "-DHIL_MODE=HIL_MODE_SENSORS "
 
@@ -56,6 +57,9 @@ obc: EXTRAFLAGS += "-DOBC_FAILSAFE=ENABLED "
 obc: EXTRAFLAGS += "-DTELEMETRY_UART2=ENABLED "
 obc: EXTRAFLAGS += "-DSERIAL_BUFSIZE=512 "
 obc: apm2
+
+sitl-mount: EXTRAFLAGS += "-DMOUNT=ENABLED"
+sitl-mount: sitl
 
 etags:
 	cd .. && etags -f ArduCopter/TAGS --langmap=C++:.pde.cpp.h $$(git ls-files ArduCopter libraries)
