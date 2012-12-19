@@ -105,7 +105,12 @@ void run_calibration()
         hal.console->read();
     }
 
+
+#if !defined( __AVR_ATmega1280__ )
     ins.calibrate_accel(NULL, hal.console);
+#else
+	hal.console->println_P(PSTR("calibrate_accel not available on 1280"));
+#endif
 }
 
 void display_offsets_and_scaling()
