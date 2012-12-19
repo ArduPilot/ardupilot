@@ -22,7 +22,7 @@
 /* Build this example sketch only for the APM1. */
 const AP_HAL::HAL& hal = AP_HAL_AVR_APM1;
 
-AP_Baro_BMP085 bmp085(0);
+AP_Baro_BMP085 bmp085;
 
 uint32_t timer;
 
