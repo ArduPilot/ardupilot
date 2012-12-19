@@ -13,11 +13,7 @@
 #include <AP_Declination.h>
 #include <AP_Compass.h> // Compass Library
 
-#if CONFIG_HAL_BOARD == HAL_BOARD_APM2
-const AP_HAL::HAL& hal = AP_HAL_AVR_APM2;
-#elif CONFIG_HAL_BOARD == HAL_BOARD_APM1
-const AP_HAL::HAL& hal = AP_HAL_AVR_APM1;
-#endif
+const AP_HAL::HAL& hal = AP_HAL_BOARD_DRIVER;
 
 AP_Compass_HMC5843 compass;
 uint32_t timer;

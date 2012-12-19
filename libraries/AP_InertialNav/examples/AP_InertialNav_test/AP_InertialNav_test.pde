@@ -21,19 +21,19 @@
 #include <AP_Buffer.h>          // ArduPilot general purpose FIFO buffer
 
 #include <AP_InertialNav.h>
+const AP_HAL::HAL& hal = AP_HAL_BOARD_DRIVER;
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_APM2
 
 #define A_LED_PIN 27
 #define C_LED_PIN 25
-const AP_HAL::HAL& hal = AP_HAL_AVR_APM2;
 AP_InertialSensor_MPU6000 ins;
 AP_Baro_MS5611 baro;
+
 #else
 
 #define A_LED_PIN 37
 #define C_LED_PIN 35
-const AP_HAL::HAL& hal = AP_HAL_AVR_APM1;
 AP_ADC_ADS7844 adc;
 AP_InertialSensor_Oilpan ins(&adc);
 AP_Baro_BMP085 baro;

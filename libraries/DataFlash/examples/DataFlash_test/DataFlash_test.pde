@@ -17,11 +17,11 @@
 #define HEAD_BYTE1 0xA3
 #define HEAD_BYTE2 0x95
 
+const AP_HAL::HAL& hal = AP_HAL_BOARD_DRIVER;
+
 #if CONFIG_HAL_BOARD == HAL_BOARD_APM2
-const AP_HAL::HAL& hal = AP_HAL_AVR_APM2;
 DataFlash_APM2 DataFlash;
 #elif CONFIG_HAL_BOARD == HAL_BOARD_APM1
-const AP_HAL::HAL& hal = AP_HAL_AVR_APM1;
 DataFlash_APM1 DataFlash;
 #endif
 

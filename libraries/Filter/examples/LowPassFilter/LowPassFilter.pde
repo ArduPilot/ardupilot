@@ -13,11 +13,7 @@
 #include <LowPassFilter.h>      // LowPassFilter class (inherits from Filter class)
 #include <AP_Buffer.h>
 
-#if CONFIG_HAL_BOARD == HAL_BOARD_APM2
-const AP_HAL::HAL& hal = AP_HAL_AVR_APM2;
-#elif CONFIG_HAL_BOARD == HAL_BOARD_APM1
-const AP_HAL::HAL& hal = AP_HAL_AVR_APM1;
-#endif
+const AP_HAL::HAL& hal = AP_HAL_BOARD_DRIVER;
 
 // create a global instance of the class
 LowPassFilterFloat low_pass_filter;

@@ -8,11 +8,7 @@
 #include <AP_HAL.h>
 #include <AP_HAL_AVR.h>
 
-#if CONFIG_HAL_BOARD == HAL_BOARD_APM2
-const AP_HAL::HAL& hal = AP_HAL_AVR_APM2;
-#elif CONFIG_HAL_BOARD == HAL_BOARD_APM1
-const AP_HAL::HAL& hal = AP_HAL_AVR_APM1;
-#endif
+const AP_HAL::HAL& hal = AP_HAL_BOARD_DRIVER;
 
 int8_t
 menu_test(uint8_t argc, const Menu::arg *argv)

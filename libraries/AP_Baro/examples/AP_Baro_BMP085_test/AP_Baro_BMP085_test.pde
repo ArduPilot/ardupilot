@@ -20,7 +20,7 @@
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_APM1
 /* Build this example sketch only for the APM1. */
-const AP_HAL::HAL& hal = AP_HAL_AVR_APM1;
+const AP_HAL::HAL& hal = AP_HAL_BOARD_DRIVER;
 
 AP_Baro_BMP085 bmp085;
 

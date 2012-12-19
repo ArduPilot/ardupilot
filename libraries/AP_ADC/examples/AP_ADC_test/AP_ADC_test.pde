@@ -20,7 +20,7 @@ uint32_t timer;
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_APM1
 /* Only build this sketch for APM1 */
-const AP_HAL::HAL& hal = AP_HAL_AVR_APM1;
+const AP_HAL::HAL& hal = AP_HAL_BOARD_DRIVER;
 
 AP_ADC_ADS7844 adc;
 
