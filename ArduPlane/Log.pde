@@ -570,81 +570,81 @@ static int16_t Log_Read_Process(int16_t start_page, int16_t end_page)
     int16_t packet_count = 0;
 
     DataFlash.StartRead(start_page);
-                        while (page < end_page && page != -1) {
-                            data = DataFlash.ReadByte();
+    while (page < end_page && page != -1) {
+        data = DataFlash.ReadByte();
 
-                            switch(log_step)     // This is a state machine to read the packets
-                            {
-                            case 0:
-                                if(data == HEAD_BYTE1)  // Head byte 1
-                                    log_step++;
-                                break;
-                            case 1:
-                                if(data == HEAD_BYTE2)  // Head byte 2
-                                    log_step++;
-                                else
-                                    log_step = 0;
-                                break;
-                            case 2:
-                                if(data == LOG_ATTITUDE_MSG) {
-                                    Log_Read_Attitude();
-                                    log_step++;
-
-                                }else if(data == LOG_MODE_MSG) {
-                                    Log_Read_Mode();
-                                    log_step++;
-
-                                }else if(data == LOG_CONTROL_TUNING_MSG) {
-                                    Log_Read_Control_Tuning();
-                                    log_step++;
-
-                                }else if(data == LOG_NAV_TUNING_MSG) {
-                                    Log_Read_Nav_Tuning();
-                                    log_step++;
-
-                                }else if(data == LOG_PERFORMANCE_MSG) {
-                                    Log_Read_Performance();
-                                    log_step++;
-
-                                }else if(data == LOG_RAW_MSG) {
-                                    Log_Read_Raw();
-                                    log_step++;
-
-                                }else if(data == LOG_CMD_MSG) {
-                                    Log_Read_Cmd();
-                                    log_step++;
-
-                                }else if(data == LOG_CURRENT_MSG) {
-                                    Log_Read_Current();
-                                    log_step++;
-
-                                }else if(data == LOG_STARTUP_MSG) {
-                                    Log_Read_Startup();
-                                    log_step++;
-                                }else {
-                                    if(data == LOG_GPS_MSG) {
-                                        Log_Read_GPS();
-                                        log_step++;
-                                    }else{
-                                        cliSerial->printf_P(PSTR("Error Reading Packet: %d\n"),packet_count);
-                                        log_step = 0;            // Restart, we have a problem...
-                                    }
-                                }
-                                break;
-                            case 3:
-                                if(data == END_BYTE) {
-                                    packet_count++;
-                                }else{
-                                    cliSerial->printf_P(PSTR("Error Reading END_BYTE: %d\n"),(int)data);
-                                }
-                                log_step = 0;                   // Restart sequence: new packet...
-                                break;
-                            }
-                            page = DataFlash.GetPage();
-                        }
-                        return packet_count;
+        switch(log_step)     // This is a state machine to read the packets
+        {
+        case 0:
+            if(data == HEAD_BYTE1)  // Head byte 1
+                log_step++;
+            break;
+        case 1:
+            if(data == HEAD_BYTE2)  // Head byte 2
+                log_step++;
+            else
+                log_step = 0;
+            break;
+        case 2:
+            if(data == LOG_ATTITUDE_MSG) {
+                Log_Read_Attitude();
+                log_step++;
+                
+            }else if(data == LOG_MODE_MSG) {
+                Log_Read_Mode();
+                log_step++;
+                
+            }else if(data == LOG_CONTROL_TUNING_MSG) {
+                Log_Read_Control_Tuning();
+                log_step++;
+                
+            }else if(data == LOG_NAV_TUNING_MSG) {
+                Log_Read_Nav_Tuning();
+                log_step++;
+                
+            }else if(data == LOG_PERFORMANCE_MSG) {
+                Log_Read_Performance();
+                log_step++;
+                
+            }else if(data == LOG_RAW_MSG) {
+                Log_Read_Raw();
+                log_step++;
+                
+            }else if(data == LOG_CMD_MSG) {
+                Log_Read_Cmd();
+                log_step++;
+                
+            }else if(data == LOG_CURRENT_MSG) {
+                Log_Read_Current();
+                log_step++;
+                
+            }else if(data == LOG_STARTUP_MSG) {
+                Log_Read_Startup();
+                log_step++;
+            }else {
+                if(data == LOG_GPS_MSG) {
+                    Log_Read_GPS();
+                    log_step++;
+                }else{
+                    cliSerial->printf_P(PSTR("Error Reading Packet: %d\n"),packet_count);
+                    log_step = 0;            // Restart, we have a problem...
+                }
+            }
+            break;
+        case 3:
+            if(data == END_BYTE) {
+                packet_count++;
+            }else{
+                cliSerial->printf_P(PSTR("Error Reading END_BYTE: %d\n"),(int)data);
+            }
+            log_step = 0;                   // Restart sequence: new packet...
+            break;
+        }
+        page = DataFlash.GetPage();
+    }
+    return packet_count;
 }
-
+                        
 #else // LOGGING_ENABLED
 
 // dummy functions
