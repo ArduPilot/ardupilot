@@ -61,17 +61,32 @@ void        location_update(struct Location *loc, float bearing, float distance)
 // extrapolate latitude/longitude given distances north and east
 void        location_offset(struct Location *loc, float ofs_north, float ofs_east);
 
+// constrain a value
+float   constrain(float amt, float low, float high);
+int16_t constrain_int16(int16_t amt, int16_t low, int16_t high);
+int32_t constrain_int32(int32_t amt, int32_t low, int32_t high);
+
+// degrees -> radians
+float radians(float deg);
+
+// radians -> degrees
+float degrees(float rad);
+
+// square
+float sq(float v);
+
+// sqrt of sum of squares
+float pythagorous2(float a, float b);
+float pythagorous3(float a, float b, float c);
+
 #ifdef radians
 #error "You need to add empty nocore.inoflag and Arduino.h files to your sketch"
 #endif
 
 /* The following three functions used to be arduino core macros */
-#define radians(deg) ((deg) * DEG_TO_RAD)
-#define degrees(rad) ((rad) * RAD_TO_DEG)
-#define sq(x) ((x)*(x))
 #define max(a,b) ((a)>(b)?(a):(b))
 #define min(a,b) ((a)<(b)?(a):(b))
-#define constrain(amt,low,high) ((amt)<(low)?(low):((amt)>(high)?(high):(amt)))
+
 
 #endif // AP_MATH_H
 

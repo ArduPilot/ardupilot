@@ -130,10 +130,7 @@ struct Vector2
     }
 
     // gets the length of this vector
-    T   length() const
-    {
-        return (T)sqrt(*this * *this);
-    }
+    float           length(void) const;
 
     // normalizes this vector
     void    normalize()

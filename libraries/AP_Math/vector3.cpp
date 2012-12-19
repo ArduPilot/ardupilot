@@ -127,7 +127,7 @@ T Vector3<T>::operator *(const Vector3<T> &v) const
 template <typename T>
 float Vector3<T>::length(void) const
 {
-    return (T)sqrt(*this * *this);
+    return pythagorous3(x, y, z);
 }
 
 // only define for signed numbers
