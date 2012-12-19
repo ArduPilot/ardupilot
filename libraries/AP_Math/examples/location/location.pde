@@ -79,7 +79,7 @@ static void test_one_offset(struct Location &loc,
     uint32_t t1 = hal.scheduler->micros();
     location_offset(&loc2, ofs_north, ofs_east);
     hal.console->printf("location_offset took %u usec\n",
-                  hal.scheduler->micros() - t1);
+                        (unsigned)(hal.scheduler->micros() - t1));
     dist2 = get_distance(&loc, &loc2);
     bearing2 = get_bearing_cd(&loc, &loc2) * 0.01;
     float brg_error = bearing2-bearing;
