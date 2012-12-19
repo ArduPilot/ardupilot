@@ -271,7 +271,7 @@ AP_InertialSensor::_init_accel(void (*flash_leds_cb)(bool on))
 // original sketch available at
 // http://rolfeschmidt.com/mathtools/skimetrics/adxl_gn_calibration.pde
 bool AP_InertialSensor::calibrate_accel(void (*flash_leds_cb)(bool on),
-                                        AP_HAL::BetterStream* c)
+                            AP_InertialSensor_UserInteract* interact)
 {
     Vector3f samples[6];
     Vector3f new_offsets;
@@ -312,16 +312,11 @@ bool AP_InertialSensor::calibrate_accel(void (*flash_leds_cb)(bool on),
                 msg = PSTR("on it's back");
                 break;
         }
-        c->printf_P(PSTR("USER: Place APM %S and press any key.\n"), msg);
+        interact->printf_P(
+                PSTR("USER: Place APM %S and press any key.\n"), msg);
 
         // wait for user input
-        while (!c->available()) {
-            hal.scheduler->delay(20);
-        }
-        // clear input buffer
-        while( c->available() ) {
-            c->read();
-        }
+        interact->blocking_read();
 
         // clear out any existing samples from ins
         update();
@@ -340,7 +335,7 @@ bool AP_InertialSensor::calibrate_accel(void (*flash_leds_cb)(bool on),
 
     // run the calibration routine
     if( _calibrate_accel(samples, new_offsets, new_scaling) ) {
-        c->printf_P(PSTR("Calibration successful\n"));
+        interact->printf_P(PSTR("Calibration successful\n"));
 
         // set and save calibration
         _accel_offset.set(new_offsets);
@@ -349,7 +344,8 @@ bool AP_InertialSensor::calibrate_accel(void (*flash_leds_cb)(bool on),
         return true;
     }
 
-    c->printf_P(PSTR("Calibration failed (%.1f %.1f %.1f %.1f %.1f %.1f)\n"),
+    interact->printf_P(
+            PSTR("Calibration failed (%.1f %.1f %.1f %.1f %.1f %.1f)\n"),
              new_offsets.x, new_offsets.y, new_offsets.z,
              new_scaling.x, new_scaling.y, new_scaling.z);
     // restore original scaling and offsets

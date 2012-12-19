@@ -64,7 +64,7 @@ public:
     // perform accelerometer calibration including providing user instructions
     // and feedback
     virtual bool calibrate_accel(void (*flash_leds_cb)(bool on),
-                                 AP_HAL::BetterStream *c);
+                                 AP_InertialSensor_UserInteract *interact);
 #endif
 
     /// Perform cold-start initialisation for just the gyros.
@@ -172,5 +172,6 @@ protected:
 #include "AP_InertialSensor_Oilpan.h"
 #include "AP_InertialSensor_MPU6000.h"
 #include "AP_InertialSensor_Stub.h"
+#include "AP_InertialSensor_UserInteract_Stream.h"
 
 #endif // __AP_INERTIAL_SENSOR_H__
