@@ -24,12 +24,14 @@ menu_test(uint8_t argc, const Menu::arg *argv)
         hal.console->printf("%d: int %ld  float ", i, argv[i].i);
         hal.console->println(argv[i].f, 6);    // gross
     }
+    return 0;
 }
 
 int8_t
 menu_auto(uint8_t argc, const Menu::arg *argv)
 {
     hal.console->println("auto text");
+    return 0;
 }
 
 const struct Menu::command top_menu_commands[] PROGMEM = {
