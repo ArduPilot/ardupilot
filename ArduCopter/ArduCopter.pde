@@ -1660,8 +1660,8 @@ void update_roll_pitch_mode(void)
             update_simple_mode();
         }
         // mix in user control with Nav control
-        nav_roll                += constrain(wrap_180(auto_roll  - nav_roll),  -g.auto_slew_rate.get(), g.auto_slew_rate.get());                 // 40 deg a second
-        nav_pitch               += constrain(wrap_180(auto_pitch - nav_pitch), -g.auto_slew_rate.get(), g.auto_slew_rate.get());                 // 40 deg a second
+        nav_roll                += constrain_int32(wrap_180(auto_roll  - nav_roll),  -g.auto_slew_rate.get(), g.auto_slew_rate.get());                 // 40 deg a second
+        nav_pitch               += constrain_int32(wrap_180(auto_pitch - nav_pitch), -g.auto_slew_rate.get(), g.auto_slew_rate.get());                 // 40 deg a second
 
         control_roll            = g.rc_1.control_mix(nav_roll);
         control_pitch           = g.rc_2.control_mix(nav_pitch);

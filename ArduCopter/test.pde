@@ -473,7 +473,7 @@ test_ins(uint8_t argc, const Menu::arg *argv)
         accel = ins.get_accel();
         temp = ins.temperature();
 
-        float test = sqrt(sq(accel.x) + sq(accel.y) + sq(accel.z)) / 9.80665;
+        float test = accel.length() / 9.80665;
 
         cliSerial->printf_P(PSTR("a %7.4f %7.4f %7.4f g %7.4f %7.4f %7.4f t %74f | %7.4f\n"),
             accel.x, accel.y, accel.z,
