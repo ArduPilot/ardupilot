@@ -11,7 +11,7 @@ class AP_HAL::Scheduler {
 public:
     Scheduler() {}
     virtual void     init(void* implspecific) = 0;
-    virtual void     delay(uint32_t ms) = 0;
+    virtual void     delay(uint16_t ms) = 0;
     virtual uint32_t millis() = 0;
     virtual uint32_t micros() = 0;
     virtual void     delay_microseconds(uint16_t us) = 0;

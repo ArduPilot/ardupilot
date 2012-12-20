@@ -64,7 +64,7 @@ void AVRScheduler::delay_microseconds(uint16_t us) {
     _timer.delay_microseconds(us);
 }
 
-void AVRScheduler::delay(uint32_t ms)
+void AVRScheduler::delay(uint16_t ms)
 {
 	uint32_t start = _timer.micros();
     

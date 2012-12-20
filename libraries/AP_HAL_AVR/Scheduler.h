@@ -25,7 +25,7 @@ public:
     /* init: implementation-specific void* argument expected to be an
      * AP_HAL_AVR::ISRRegistry*. */
     void     init(void *isrregistry);
-    void     delay(uint32_t ms);
+    void     delay(uint16_t ms);
     uint32_t millis();
     uint32_t micros();
     void     delay_microseconds(uint16_t us);

@@ -60,7 +60,7 @@ void SITLScheduler::delay_microseconds(uint16_t usec)
 	}
 }
 
-void SITLScheduler::delay(uint32_t ms)
+void SITLScheduler::delay(uint16_t ms)
 {
 	uint32_t start = micros();
     

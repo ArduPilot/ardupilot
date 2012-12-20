@@ -11,7 +11,7 @@ EmptyScheduler::EmptyScheduler()
 void EmptyScheduler::init(void* machtnichts)
 {}
 
-void EmptyScheduler::delay(uint32_t ms)
+void EmptyScheduler::delay(uint16_t ms)
 {}
 
 uint32_t EmptyScheduler::millis() {

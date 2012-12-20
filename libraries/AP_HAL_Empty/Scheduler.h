@@ -8,7 +8,7 @@ class Empty::EmptyScheduler : public AP_HAL::Scheduler {
 public:
     EmptyScheduler();
     void     init(void* machtnichts);
-    void     delay(uint32_t ms);
+    void     delay(uint16_t ms);
     uint32_t millis();
     uint32_t micros();
     void     delay_microseconds(uint16_t us);
