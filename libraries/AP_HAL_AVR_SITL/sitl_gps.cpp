@@ -222,8 +222,7 @@ void SITL_State::_update_gps(double latitude, double longitude, float altitude,
 	velned.ned_north = 100.0 * d.speedN;
 	velned.ned_east  = 100.0 * d.speedE;
 	velned.ned_down  = 0;
-#define sqr(x) ((x)*(x))
-	velned.speed_2d = sqrt(sqr(d.speedN)+sqr(d.speedE)) * 100;
+	velned.speed_2d = pythagorous2(d.speedN, d.speedE) * 100;
 	velned.speed_3d = velned.speed_2d;
 	velned.heading_2d = ToDeg(atan2(d.speedE, d.speedN)) * 100000.0;
 	if (velned.heading_2d < 0.0) {
