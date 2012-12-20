@@ -458,13 +458,13 @@ static void NOINLINE send_ahrs(mavlink_channel_t chan)
         ahrs.get_error_yaw());
 }
 
-#if CONFIG_HAL_BOARD == HAL_BOARD_AVR_SITL
 // report simulator state
 static void NOINLINE send_simstate(mavlink_channel_t chan)
 {
+#if CONFIG_HAL_BOARD == HAL_BOARD_AVR_SITL
     sitl.simstate_send(chan);
-}
 #endif
+}
 
 static void NOINLINE send_hwstatus(mavlink_channel_t chan)
 {
@@ -650,10 +650,8 @@ static bool mavlink_try_send_message(mavlink_channel_t chan, enum ap_message id,
         break;
 
     case MSG_SIMSTATE:
-#if CONFIG_HAL_BOARD == HAL_BOARD_AVR_SITL
         CHECK_PAYLOAD_SIZE(SIMSTATE);
         send_simstate(chan);
-#endif
         break;
 
     case MSG_HWSTATUS:
@@ -2029,9 +2027,7 @@ static void mavlink_delay_cb()
         last_5s = tnow;
         gcs_send_text_P(SEVERITY_LOW, PSTR("Initialising APM..."));
     }
-#if USB_MUX_PIN > 0
     check_usb_mux();
-#endif
 
     in_mavlink_delay = false;
 }

@@ -941,9 +941,7 @@ static void slow_loop()
 
         mavlink_system.sysid = g.sysid_this_mav;                // This is just an ugly hack to keep mavlink_system.sysid sync'd with our parameter
 
-#if USB_MUX_PIN > 0
         check_usb_mux();
-#endif
 
         break;
     }
