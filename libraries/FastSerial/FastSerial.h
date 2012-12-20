@@ -165,6 +165,9 @@ public:
 		_nonblocking_writes = !blocking;
 	}
 
+    // get status of whether writes are blocking
+    bool get_blocking_writes() { return !_nonblocking_writes; }
+
 	// return true if there are bytes pending transmission
 	bool tx_pending(void) {
         return (_txBuffer->head != _txBuffer->tail);
