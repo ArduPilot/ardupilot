@@ -85,7 +85,7 @@ AP_GPS_Auto::_detect(void)
 		detect_started_ms = hal.scheduler->millis();
 	}
 
-	while (_port->available() > 0) {
+	while (_port->available() > 0 && new_gps == NULL) {
 		uint8_t data = _port->read();
 		if (AP_GPS_UBLOX::_detect(data)) {
 			hal.console->print_P(PSTR(" ublox "));
