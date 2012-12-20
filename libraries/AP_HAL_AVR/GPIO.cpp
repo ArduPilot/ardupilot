@@ -97,9 +97,12 @@ bool AVRGPIO::attach_interrupt(
         uint8_t interrupt_num, AP_HAL::Proc proc, uint8_t mode) {
     if (!((mode == 0)||(mode == 1)||(mode==3))) return false;
     if (interrupt_num == 6) {
+	uint8_t oldSREG = SREG;
+	cli();	
         _interrupt_6 = proc;
         EICRB = (EICRB & ~((1 << ISC60) | (1 << ISC61))) | (mode << ISC60);
         EIMSK |= (1 << INT6);
+	SREG = oldSREG;
         return true;
     } else {
         return false;
