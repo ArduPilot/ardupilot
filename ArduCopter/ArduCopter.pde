@@ -1001,6 +1001,9 @@ void loop()
                 gps_fix_count           = 0;
                 perf_mon_counter        = 0;
             }
+        }else{
+            // process communications with the GCS
+            gcs_check();
         }
     } else {
 #ifdef DESKTOP_BUILD
@@ -1016,11 +1019,6 @@ void loop()
             if (g.compass_enabled) {
                 compass.accumulate();
             }
-        }
-
-        // process communications with the GCS
-        if (timer - fast_loopTimer < 6000) {
-            gcs_check();
         }
     }
 
@@ -1358,8 +1356,6 @@ static void super_slow_loop()
     }else{
         auto_disarming_counter = 0;
     }
-
-    gcs_send_message(MSG_HEARTBEAT);
 
     // agmatthews - USERHOOKS
 #ifdef USERHOOK_SUPERSLOWLOOP
