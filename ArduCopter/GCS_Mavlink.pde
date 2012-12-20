@@ -39,11 +39,6 @@ static bool gcs_check()
         gcs_data_stream_send();
         sent_message = true;
     }
-    if (tnow - last_5s > 5000 && !sent_message) {
-        last_5s = tnow;
-        gcs_send_text_P(SEVERITY_LOW, PSTR("Initialising APM..."));
-        sent_message = true;
-    }
 
     return sent_message;
 }
