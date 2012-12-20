@@ -23,7 +23,7 @@ static void gcs_send_text_fmt(const prog_char_t *fmt, ...);
 // returns true if it has sent a message to the ground station
 static bool gcs_check()
 {
-    static uint32_t last_1hz, last_50hz, last_5s;
+    static uint32_t last_1hz, last_50hz;
     bool sent_message = false;
 
     uint32_t tnow = millis();
