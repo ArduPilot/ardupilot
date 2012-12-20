@@ -215,7 +215,6 @@ AP_GPS_MTK16::_detect(uint8_t data)
         case 4:
             step++;
             if (ck_a != data) {
-                hal.console->println_P(PSTR("wrong ck_a\n"));
                 step = 0;
             }
             break;
@@ -224,7 +223,6 @@ AP_GPS_MTK16::_detect(uint8_t data)
             if (ck_b == data) {
                 return true;
             }
-            hal.console->println_P(PSTR("wrong ck_b"));
             break;
     }
     return false;
