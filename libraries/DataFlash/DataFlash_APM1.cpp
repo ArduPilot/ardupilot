@@ -36,14 +36,12 @@
 
 extern const AP_HAL::HAL& hal;
 
-///*
-#define ENABLE_FASTSERIAL_DEBUG
+//#define ENABLE_FASTSERIAL_DEBUG
 #ifdef ENABLE_FASTSERIAL_DEBUG
  #define serialDebug(fmt, args...)  do {hal.console->printf_P(PSTR( __FUNCTION__ ":%d:" fmt "\n"), __LINE__, ##args); } while(0)
 #else
  # define serialDebug(fmt, args...)
 #endif
-//*/
 
 
 
