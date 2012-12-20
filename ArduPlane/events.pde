@@ -113,9 +113,11 @@ static void update_events(void)
             }
             break;
 
+#if CONFIG_RELAY == ENABLED
         case EVENT_TYPE_RELAY:
             relay.toggle();
             break;
+#endif
         }
 
         if (event_state.repeat > 0) {

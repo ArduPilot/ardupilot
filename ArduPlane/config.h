@@ -60,13 +60,13 @@
 
 #if defined( __AVR_ATmega1280__ )
  // default choices for a 1280. We can't fit everything in, so we 
- // make some popular choices
+ // make some popular choices by default
  #define LOGGING_ENABLED DISABLED
  #ifndef CONFIG_RELAY
- # define CONFIG_RELAY    DISABLED
+ # define CONFIG_RELAY DISABLED
  #endif
  #ifndef GEOFENCE_ENABLED
- # define GEOFENCE_ENABLED    DISABLED
+ # define GEOFENCE_ENABLED DISABLED
  #endif
  #ifndef CLI_ENABLED
  # define CLI_ENABLED DISABLED
@@ -75,7 +75,7 @@
  # define MOUNT2 DISABLED
  #endif
  #ifndef MOUNT
- # define MOUNT ENABLED
+ # define MOUNT DISABLED
  #endif
  #ifndef CAMERA
  # define CAMERA DISABLED
