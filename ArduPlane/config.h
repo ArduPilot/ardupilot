@@ -98,12 +98,13 @@
  # define LED_ON           HIGH
  # define LED_OFF          LOW
  # define USB_MUX_PIN      -1
+#ifndef CONFIG_RELAY
  # define CONFIG_RELAY     ENABLED
+#endif
  # define BATTERY_VOLT_PIN      0      // Battery voltage on A0
  # define BATTERY_CURR_PIN      1      // Battery current on A1
  # define CONFIG_INS_TYPE CONFIG_INS_OILPAN
  # define CONFIG_PITOT_SOURCE PITOT_SOURCE_ADC
- # define CONFIG_RELAY      ENABLED
  # define CONFIG_BARO     AP_BARO_BMP085
 #elif CONFIG_HAL_BOARD == HAL_BOARD_APM2
  # define A_LED_PIN        27
@@ -116,6 +117,7 @@
  #else
   # define USB_MUX_PIN 23
  #endif
+ # define CONFIG_RELAY    DISABLED
  # define BATTERY_VOLT_PIN      1      // Battery voltage on A1
  # define BATTERY_CURR_PIN      2      // Battery current on A2
  # define CONFIG_INS_TYPE CONFIG_INS_MPU6000
@@ -133,6 +135,7 @@
  # define C_LED_PIN        25
  # define LED_ON           LOW
  # define LED_OFF          HIGH
+ # define CONFIG_RELAY    DISABLED
  # define BATTERY_VOLT_PIN      1      // Battery voltage on A1
  # define BATTERY_CURR_PIN      2      // Battery current on A2
  # define CONFIG_INS_TYPE CONFIG_INS_STUB
