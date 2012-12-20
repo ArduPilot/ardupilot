@@ -17,12 +17,9 @@
 #include <AP_InertialSensor.h>
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_APM2
-#define SAMPLE_UNIT 1
 #define A_LED_PIN 27
 #define C_LED_PIN 25
 #else
-// we need 5x as many samples on the oilpan
-#define SAMPLE_UNIT 5
 #define A_LED_PIN 37
 #define C_LED_PIN 35
 #endif
@@ -182,7 +179,7 @@ void run_test()
     while( !hal.console->available() ) {
 
         // wait until we have 8 samples
-        while( ins.num_samples_available() < 8 * SAMPLE_UNIT ) {
+        while (ins.num_samples_available() == 0) {
             hal.scheduler->delay(1);
         }
 
@@ -192,7 +189,7 @@ void run_test()
         gyro = ins.get_gyro();
         temperature = ins.temperature();
 
-        length = sqrt(accel.x*accel.x + accel.y*accel.y + accel.z*accel.z);
+        length = accel.length();
 
         // display results
         hal.console->printf_P(PSTR("Accel X:%4.2f \t Y:%4.2f \t Z:%4.2f \t len:%4.2f \t Gyro X:%4.2f \t Y:%4.2f \t Z:%4.2f \t Temp:%4.2f\n"), 
