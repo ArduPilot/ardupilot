@@ -78,8 +78,6 @@ bool AP_Baro_BMP085::init()
         return false;
     }
 
-    hal.console->println_P(PSTR("read bmp085 calibration regs"));
-
     ac1 = ((int)buff[0] << 8) | buff[1];
     ac2 = ((int)buff[2] << 8) | buff[3];
     ac3 = ((int)buff[4] << 8) | buff[5];
@@ -95,8 +93,6 @@ bool AP_Baro_BMP085::init()
     //Send a command to read Temp
     Command_ReadTemp();
     
-    hal.console->println_P(PSTR("read bmp085 temp"));
-
     BMP085_State = 1;
 
     // init raw temo
