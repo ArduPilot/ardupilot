@@ -5,7 +5,7 @@
 #include <stdarg.h>
 
 int libc_vsnprintf(char* str, size_t size, const char *format, va_list ap) {
-    vsnprintf(str, size, format, ap);
+    return vsnprintf(str, size, format, ap);
 }
 
 #include "Util.h"
