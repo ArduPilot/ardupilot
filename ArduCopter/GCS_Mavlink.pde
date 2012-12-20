@@ -30,7 +30,6 @@ static bool gcs_check()
     if (tnow - last_1hz > 1000) {
         last_1hz = tnow;
         gcs_send_message(MSG_HEARTBEAT);
-        gcs_send_message(MSG_EXTENDED_STATUS1);
         sent_message = true;
     }
     if (tnow - last_50hz > 20 && !sent_message) {
