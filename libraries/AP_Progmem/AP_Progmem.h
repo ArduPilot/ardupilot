@@ -2,6 +2,7 @@
 #ifndef __AP_PROGMEM_H__
 #define __AP_PROGMEM_H__
 
+#include <AP_HAL_Boards.h>
 #if defined(__AVR__) 
 #include "AP_Progmem_AVR.h"
 #elif defined(PX4FMU_BUILD) || (CONFIG_HAL_BOARD==HAL_BOARD_AVR_SITL)
