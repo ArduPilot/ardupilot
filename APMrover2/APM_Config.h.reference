@@ -67,7 +67,7 @@
 // GPS_PROTOCOL_NONE        No GPS attached
 // GPS_PROTOCOL_IMU         X-Plane interface or ArduPilot IMU.
 // GPS_PROTOCOL_MTK         MediaTek-based GPS running the DIYDrones firmware 1.4
-// GPS_PROTOCOL_MTK16       MediaTek-based GPS running the DIYDrones firmware 1.6
+// GPS_PROTOCOL_MTK19       MediaTek-based GPS running the DIYDrones firmware 1.6, 1.7, 1.8, 1.9
 // GPS_PROTOCOL_UBLOX       UBLOX GPS
 // GPS_PROTOCOL_SIRF        SiRF-based GPS in Binary mode.  NOT TESTED
 // GPS_PROTOCOL_NMEA        Standard NMEA GPS.      NOT SUPPORTED (yet?)

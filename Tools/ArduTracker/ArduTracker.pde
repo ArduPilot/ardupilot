@@ -91,6 +91,8 @@ AP_GPS_SIRF		gps(&Serial1);
 AP_GPS_UBLOX	gps(&Serial1);
 #elif GPS_PROTOCOL == GPS_PROTOCOL_MTK
 AP_GPS_MTK		gps(&Serial1);
+#elif GPS_PROTOCOL == GPS_PROTOCOL_MTK19
+AP_GPS_MTK19		gps(&Serial1);
 #elif GPS_PROTOCOL == GPS_PROTOCOL_NONE
 AP_GPS_NONE		gps(NULL);
 #else
