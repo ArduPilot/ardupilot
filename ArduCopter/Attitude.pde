@@ -941,11 +941,7 @@ get_throttle_rate(int16_t z_target_speed)
     int16_t output;     // the target acceleration if the accel based throttle is enabled, otherwise the output to be sent to the motors
 
     // calculate rate error and filter with cut off frequency of 2 Hz
-#if INERTIAL_NAV_Z == ENABLED
-    z_rate_error    = z_rate_error + 0.20085 * ((z_target_speed - inertial_nav.get_velocity_z()) - z_rate_error);
-#else
     z_rate_error    = z_rate_error + 0.20085 * ((z_target_speed - climb_rate) - z_rate_error);
-#endif
 
     // separately calculate p, i, d values for logging
     p = g.pid_throttle.get_p(z_rate_error);
@@ -1026,11 +1022,7 @@ get_throttle_althold(int32_t target_alt, int16_t max_climb_rate)
     int32_t linear_distance;      // the distace we swap between linear and sqrt.
 
     // calculate altitude error
-#if INERTIAL_NAV_Z == ENABLED
-    altitude_error    = target_alt - inertial_nav.get_altitude();
-#else
     altitude_error    = target_alt - current_loc.alt;
-#endif
 
     linear_distance = 250/(2*g.pi_alt_hold.kP()*g.pi_alt_hold.kP());
 
@@ -1063,11 +1055,7 @@ get_throttle_land()
         get_throttle_rate_stabilized(-abs(g.land_speed));
 
         // detect whether we have landed by watching for minimum throttle and now movement
-#if INERTIAL_NAV_Z == ENABLED
-        if (abs(inertial_nav.get_velocity_z()) < 20 && (g.rc_3.servo_out <= get_angle_boost(g.throttle_min) || g.pid_throttle_accel.get_integrator() <= -150)) {
-#else
         if (abs(climb_rate) < 20 && (g.rc_3.servo_out <= get_angle_boost(g.throttle_min) || g.pid_throttle_accel.get_integrator() <= -150)) {
-#endif
             if( land_detector < LAND_DETECTOR_TRIGGER ) {
                 land_detector++;
             }else{

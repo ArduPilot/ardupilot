@@ -604,7 +604,7 @@ static void Log_Write_Control_Tuning()
     DataFlash.WriteInt(next_WP.alt);                        // 4
     DataFlash.WriteInt(nav_throttle);                       // 5
     DataFlash.WriteInt(angle_boost);                        // 6
-    DataFlash.WriteInt(climb_rate_actual);                 	// 7
+    DataFlash.WriteInt(climb_rate);                 	    // 7
     DataFlash.WriteInt(g.rc_3.servo_out);                  	// 8
     DataFlash.WriteInt(desired_climb_rate);                  // 9
 
@@ -798,7 +798,7 @@ static void Log_Write_INAV(float delta_t)
 
     DataFlash.WriteInt((int16_t)baro_alt);                                  // 1 barometer altitude
     DataFlash.WriteInt((int16_t)inertial_nav.get_altitude());               // 2 accel + baro filtered altitude
-    DataFlash.WriteInt((int16_t)climb_rate_actual);                         // 3 barometer based climb rate
+    DataFlash.WriteInt((int16_t)baro_rate);                                 // 3 barometer based climb rate
     DataFlash.WriteInt((int16_t)inertial_nav.get_velocity_z());             // 4 accel + baro based climb rate
     DataFlash.WriteLong(get_int(accel_corr.x));                             // 5 accel correction x-axis
     DataFlash.WriteLong(get_int(accel_corr.y));                             // 6 accel correction y-axis

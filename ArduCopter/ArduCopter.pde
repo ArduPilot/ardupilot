@@ -1172,14 +1172,6 @@ static void fifty_hz_loop()
     // -------------------------
     update_throttle_mode();
 
-    // Read Sonar
-    // ----------
-# if CONFIG_SONAR == ENABLED
-    if(g.sonar_enabled) {
-        sonar_alt = sonar->read();
-    }
-#endif
-
 #if TOY_EDF == ENABLED
     edf_toy();
 #endif
@@ -1407,7 +1399,6 @@ static void update_GPS(void)
             }
 
 #if HIL_MODE == HIL_MODE_ATTITUDE                                                               // only execute in HIL mode
-            //update_altitude();
             ap_system.alt_sensor_flag = true;
 #endif
         }
@@ -1986,67 +1977,48 @@ static void update_trig(void){
 // updated at 10hz
 static void update_altitude()
 {
-    static int16_t old_sonar_alt   = 0;
-    static int32_t old_baro_alt    = 0;
+    int32_t old_baro_alt    = baro_alt;
+    int16_t old_sonar_alt   = sonar_alt;
 
 #if HIL_MODE == HIL_MODE_ATTITUDE
     // we are in the SIM, fake out the baro and Sonar
     int16_t fake_relative_alt = g_gps->altitude - gps_base_alt;
     baro_alt                = fake_relative_alt;
-    sonar_alt               = fake_relative_alt;
-
     baro_rate               = (baro_alt - old_baro_alt) * 5;             // 5hz
-    old_baro_alt            = baro_alt;
-
-#else
-    // This is real life
-
-    // read in Actual Baro Altitude
-    baro_alt                        = read_barometer();
-
-    // calc the vertical accel rate
-
-     // 2.6 way
-     int16_t temp		= (baro_alt - old_baro_alt) * 10;
-     baro_rate          = (temp + baro_rate) >> 1;
-     baro_rate			= constrain(baro_rate, -500, 500);
-     old_baro_alt		= baro_alt;
-
-    // Using Tridge's new clamb rate calc
-    /*
-    int16_t temp                    = barometer.get_climb_rate() * 100;
-    baro_rate                       = (temp + baro_rate) >> 1;
-    baro_rate                       = constrain(baro_rate, -300, 300);
-    */
-
-    // Note: sonar_alt is calculated in a faster loop and filtered with a mode filter
-#endif
-
     if(g.sonar_enabled) {
-        // filter out offset
-        float scale;
-
-        // calc rate of change for Sonar
-#if HIL_MODE == HIL_MODE_ATTITUDE
-        // we are in the SIM, fake outthe Sonar rate
-        sonar_rate              = baro_rate;
+        sonar_alt           = fake_relative_alt;
+        sonar_rate          = baro_rate;
+    }
+    current_loc.alt = baro_alt;
+    climb_rate_actual = baro_rate;
 #else
-        // This is real life
-        // calc the vertical accel rate
-        // positive = going up.
-        sonar_rate              = (sonar_alt - old_sonar_alt) * 10;
-        sonar_rate              = constrain(sonar_rate, -150, 150);
-        old_sonar_alt   = sonar_alt;
-#endif
+    // read in actual baro altitude
+    baro_alt            = read_barometer();
 
+    // calc baro based vertical velocity
+    int16_t temp		= (baro_alt - old_baro_alt) * 10;
+    baro_rate           = (temp + baro_rate) >> 1;
+    baro_rate			= constrain(baro_rate, -500, 500);
+
+    // read in sonar altitude and calculate sonar rate
+    if(g.sonar_enabled) {
+        sonar_alt       = read_sonar();
+        sonar_rate      = (sonar_alt - old_sonar_alt) * 10;
+        sonar_rate      = constrain(sonar_rate, -150, 150);
+    }
+
+    // Note: with inertial nav, alt and rate are pulled from the inav lib at 50hz in update_altitude_est function
+    // so none of the below is required
+# if INERTIAL_NAV_Z != ENABLED
+    // if no sonar set current alt to baro alt
+    if(!g.sonar_enabled) {
+        // NO Sonar case
+        current_loc.alt = baro_alt;
+        climb_rate_actual = baro_rate;
+    }else{
+        // Blend barometer and sonar data together
+        float scale;
         if(baro_alt < 800) {
-#if SONAR_TILT_CORRECTION == 1
-            // correct alt for angle of the sonar
-            float temp = cos_pitch_x * cos_roll_x;
-            temp = max(temp, 0.707);
-            sonar_alt = (float)sonar_alt * temp;
-#endif
-
             scale = (float)(sonar_alt - 400) / 200.0;
             scale = constrain(scale, 0.0, 1.0);
             // solve for a blended altitude
@@ -2059,25 +2031,35 @@ static void update_altitude()
             // we must be higher than sonar (>800), don't get tricked by bad sonar reads
             current_loc.alt = baro_alt;
             // dont blend, go straight baro
-
             climb_rate_actual       = baro_rate;
         }
-
-    }else{
-        // NO Sonar case
-        current_loc.alt = baro_alt;
-        climb_rate_actual = baro_rate;
     }
+    // climb_rate_error is used to spread the change in climb rate across the next 5 samples
+    climb_rate_error = (climb_rate_actual - climb_rate) / 5;
+# endif // INERTIAL_NAV_Z != ENABLED
+#endif  // HIL_MODE == HIL_MODE_ATTITUDE
 
     // update the target altitude
     verify_altitude();
-
-    // calc error
-    climb_rate_error = (climb_rate_actual - climb_rate) / 5;
 }
 
 static void update_altitude_est()
 {
+#if INERTIAL_NAV_Z == ENABLED
+    // with inertial nav we can update the altitude and climb rate at 50hz
+    current_loc.alt = inertial_nav.get_altitude();
+    climb_rate = inertial_nav.get_velocity_z();
+
+    // update baro and sonar alt and climb rate just for logging purposes
+    // To-Do: remove alt_sensor_flag and move update_altitude to be called from 10hz loop
+    if(ap_system.alt_sensor_flag) {
+        ap_system.alt_sensor_flag = false;
+        update_altitude();
+        if(g.log_bitmask & MASK_LOG_CTUN && motors.armed()) {
+            Log_Write_Control_Tuning();
+        }
+    }
+#else
     if(ap_system.alt_sensor_flag) {
         update_altitude();
         ap_system.alt_sensor_flag = false;
@@ -2085,12 +2067,12 @@ static void update_altitude_est()
         if(g.log_bitmask & MASK_LOG_CTUN && motors.armed()) {
             Log_Write_Control_Tuning();
         }
-
     }else{
         // simple dithering of climb rate
         climb_rate += climb_rate_error;
         current_loc.alt += (climb_rate / 50);
     }
+#endif
 }
 
 static void tuning(){
