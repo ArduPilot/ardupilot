@@ -95,11 +95,15 @@ void AVRGPIO::write(uint8_t pin, uint8_t value) {
 /* Implement GPIO Interrupt 6, used for MPU6000 data ready on APM2. */
 bool AVRGPIO::attach_interrupt(
         uint8_t interrupt_num, AP_HAL::Proc proc, uint8_t mode) {
-    if (!((mode == 0)||(mode == 1)||(mode==3))) return false;
+    /* Mode is to set the ISCn0 and ISCn1 bits.
+     * These correspond to the GPIO_INTERRUPT_ defs in AP_HAL.h */
+    if (!((mode == 0)||(mode == 1)||(mode == 2)||(mode==3))) return false;
     if (interrupt_num == 6) {
 	uint8_t oldSREG = SREG;
 	cli();	
         _interrupt_6 = proc;
+        /* Set the ISC60 and ICS61 bits in EICRB according to the value
+         * of mode. */
         EICRB = (EICRB & ~((1 << ISC60) | (1 << ISC61))) | (mode << ISC60);
         EIMSK |= (1 << INT6);
 	SREG = oldSREG;
