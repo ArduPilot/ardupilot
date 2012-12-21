@@ -31,7 +31,6 @@ public:
     void     delay_microseconds(uint16_t us);
     void     register_delay_callback(AP_HAL::Proc, uint16_t min_time_ms);
     void     register_timer_process(AP_HAL::TimedProc);
-    bool     defer_timer_process(AP_HAL::TimedProc);
     void     register_timer_failsafe(AP_HAL::TimedProc, uint32_t period_us);
     void     suspend_timer_procs();
     void     resume_timer_procs();
@@ -54,7 +53,6 @@ private:
 
     static volatile bool _timer_suspended;
     static AP_HAL::TimedProc _timer_proc[AVR_SCHEDULER_MAX_TIMER_PROCS];
-    static AP_HAL::TimedProc _defered_timer_proc;
     static uint8_t _num_timer_procs;
     static bool    _in_timer_proc;
 

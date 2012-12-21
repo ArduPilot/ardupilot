@@ -16,7 +16,6 @@ extern const AP_HAL::HAL& hal;
 AP_HAL::TimedProc SITLScheduler::_failsafe = NULL;
 volatile bool SITLScheduler::_timer_suspended = false;
 AP_HAL::TimedProc SITLScheduler::_timer_proc[SITL_SCHEDULER_MAX_TIMER_PROCS] = {NULL};
-AP_HAL::TimedProc SITLScheduler::_defered_timer_proc = NULL;
 uint8_t SITLScheduler::_num_timer_procs = 0;
 bool SITLScheduler::_in_timer_proc = false;
 struct timeval SITLScheduler::_sketch_start_time;
@@ -100,19 +99,6 @@ void SITLScheduler::register_timer_process(AP_HAL::TimedProc proc)
 
 }
 
-bool SITLScheduler::defer_timer_process(AP_HAL::TimedProc proc) 
-{
-    if ( _in_timer_proc || _timer_suspended ) {
-        _defered_timer_proc = proc;
-        return false;
-    } else {
-        _timer_suspended = true;
-        proc(micros());
-        _timer_suspended = false;
-        return true;
-    }
-}
-
 void SITLScheduler::register_timer_failsafe(AP_HAL::TimedProc failsafe, uint32_t period_us) 
 {
     _failsafe = failsafe;
@@ -171,16 +157,6 @@ void SITLScheduler::timer_event()
                 _timer_proc[i](tnow);
             }
         }
-    }
-
-    /* Run any defered procedures, if they exist.*/
-    /* Atomic read and clear: */
-    AP_HAL::TimedProc defered = _defered_timer_proc;
-    _defered_timer_proc = NULL;
-    if (defered != NULL) {
-        _timer_suspended = true;
-        defered(tnow);
-        _timer_suspended = false;
     }
 
     // and the failsafe, if one is setup
