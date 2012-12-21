@@ -207,8 +207,8 @@ AP_GPS_UBLOX    g_gps_driver();
 #elif GPS_PROTOCOL == GPS_PROTOCOL_MTK
 AP_GPS_MTK      g_gps_driver();
 
-#elif GPS_PROTOCOL == GPS_PROTOCOL_MTK16
-AP_GPS_MTK16    g_gps_driver();
+#elif GPS_PROTOCOL == GPS_PROTOCOL_MTK19
+AP_GPS_MTK19    g_gps_driver();
 
 #elif GPS_PROTOCOL == GPS_PROTOCOL_NONE
 AP_GPS_None     g_gps_driver();
