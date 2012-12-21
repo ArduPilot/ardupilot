@@ -31,6 +31,25 @@ static int32_t read_barometer(void)
     return baro_filter.apply(barometer.get_altitude() * 100.0);
 }
 
+// return sonar altitude in centimeters
+static int16_t read_sonar(void)
+{
+#if CONFIG_SONAR == ENABLED
+    int16_t temp_alt = sonar.read();
+
+ #if SONAR_TILT_CORRECTION == 1
+    // correct alt for angle of the sonar
+    float temp = cos_pitch_x * cos_roll_x;
+    temp = max(temp, 0.707);
+    temp_alt = (float)temp_alt * temp;
+ #endif
+
+    return temp_alt;
+#else
+    return 0;
+#endif
+}
+
 
 #endif // HIL_MODE != HIL_MODE_ATTITUDE
 
