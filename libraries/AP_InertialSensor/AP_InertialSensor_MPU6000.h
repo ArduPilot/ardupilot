@@ -50,7 +50,7 @@ protected:
 private:
 
     static void                 read_data();
-    static void                 data_interrupt(void);
+    static AP_HAL::DigitalSource *_drdy_pin;
     static uint8_t              register_read( uint8_t reg );
     static void                 register_write( uint8_t reg, uint8_t val );
     void                        hardware_init(Sample_rate sample_rate);
@@ -58,9 +58,6 @@ private:
     static AP_HAL::SPIDeviceDriver *_spi;
     static AP_HAL::Semaphore *_spi_sem;
 
-    // set to true when data interrupt from MPU6k fires
-    static volatile bool		_data_ready;
-    
     float                       _temp;
 
     float                       _temp_to_celsius( uint16_t );

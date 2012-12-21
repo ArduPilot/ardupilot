@@ -180,6 +180,7 @@ const int8_t AP_InertialSensor_MPU6000::_accel_data_sign[3]  = { 1, 1, -1 };
 const uint8_t AP_InertialSensor_MPU6000::_temp_data_index = 3;
 
 int16_t AP_InertialSensor_MPU6000::_mpu6000_product_id = AP_PRODUCT_ID_NONE;
+AP_HAL::DigitalSource *AP_InertialSensor_MPU6000::_drdy_pin = NULL;
 
 // variables to calculate time period over which a group of samples were
 // collected
@@ -190,9 +191,6 @@ static volatile uint32_t _delta_time_micros = 1;
 static volatile uint32_t _delta_time_start_micros = 0;
 // time latest sample was collected
 static volatile uint32_t _last_sample_time_micros = 0;
-
-// data ready interrupt fired
-volatile bool AP_InertialSensor_MPU6000::_data_ready;
 
 // DMP related static variables
 bool AP_InertialSensor_MPU6000::_dmp_initialised = false;
@@ -301,10 +299,10 @@ float AP_InertialSensor_MPU6000::temperature() {
 /*================ HARDWARE FUNCTIONS ==================== */
 
 /*
- *  this is called from the data_interrupt which fires when the MPU6000 has new
- *  sensor data available and add it to _sum[] to ensure this is the case,
- *  these other devices must perform their spi reads after being called by the
- *  AP_TimerProcess.
+ *  this is called from the num_samples_available() when the MPU6000
+ *  has new sensor data available and add it to _sum[] to ensure this
+ *  is the case, these other devices must perform their spi reads
+ *  after being called by the AP_TimerProcess.
  */
 void AP_InertialSensor_MPU6000::read_data(void)
 {
@@ -378,14 +376,6 @@ void AP_InertialSensor_MPU6000::register_write(uint8_t reg, uint8_t val)
     tx[0] = reg;
     tx[1] = val;
     _spi->transaction(tx, rx, 2);
-}
-
-// MPU6000 new data interrupt on INT6
-void AP_InertialSensor_MPU6000::data_interrupt(void)
-{
-    _data_ready = true;
-    // record time that data was available
-    _last_sample_time_micros = hal.scheduler->micros();
 }
 
 void AP_InertialSensor_MPU6000::hardware_init(Sample_rate sample_rate)
@@ -483,11 +473,10 @@ void AP_InertialSensor_MPU6000::hardware_init(Sample_rate sample_rate)
     register_write(MPUREG_INT_PIN_CFG, BIT_INT_RD_CLEAR);               // clear interrupt on any read
     hal.scheduler->delay(1);
 
-    if (!hal.gpio->attach_interrupt(6, data_interrupt, GPIO_RISING)) {
-        hal.console->println_P(
-            PSTR("Critical Error: AP_InertialSensor_MPU6000 could not "
-                 "attach data ready interrupt."));
-    }
+    /* Pin 70 defined especially to hook
+       up PE6 to the hal.gpio abstraction.
+       (It is not a valid pin under Arduino.) */
+    _drdy_pin = hal.gpio->channel(70);
 }
 
 float AP_InertialSensor_MPU6000::_temp_to_celsius ( uint16_t regval )
@@ -507,13 +496,12 @@ float AP_InertialSensor_MPU6000::get_gyro_drift_rate(void)
 // get number of samples read from the sensors
 uint16_t AP_InertialSensor_MPU6000::num_samples_available()
 {
-    if (_data_ready) {
+    if (_drdy_pin->read()) {
         // a data interrupt has occurred - read the data. 
         // Note that doing it this way means we doing the read out of
         // interrupt context, called from the main loop. This avoids
         // all possible conflicts with the DataFlash SPI bus
         read_data();
-        _data_ready = false;
     }
     return _count;
 }
