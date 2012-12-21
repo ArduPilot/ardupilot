@@ -8,8 +8,10 @@
 
 #define GPIO_INPUT  0
 #define GPIO_OUTPUT 1
-#define GPIO_FALLING 2
-#define GPIO_RISING 3
+#define GPIO_INTERRUPT_LOW 0
+#define GPIO_INTERRUPT_HIGH 1
+#define GPIO_INTERRUPT_FALLING 2
+#define GPIO_INTERRUPT_RISING 3
 
 class AP_HAL::DigitalSource {
 public:
