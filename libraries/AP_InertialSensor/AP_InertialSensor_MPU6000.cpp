@@ -191,6 +191,9 @@ static volatile uint32_t _delta_time_start_micros = 0;
 // time latest sample was collected
 static volatile uint32_t _last_sample_time_micros = 0;
 
+// data ready interrupt fired
+volatile bool AP_InertialSensor_MPU6000::_data_ready;
+
 // DMP related static variables
 bool AP_InertialSensor_MPU6000::_dmp_initialised = false;
 // high byte of number of elements in fifo buffer
@@ -247,7 +250,7 @@ bool AP_InertialSensor_MPU6000::update( void )
 
     // wait for at least 1 sample
     uint32_t tstart = hal.scheduler->micros();
-    while (_count == 0) {
+    while (num_samples_available() == 0) {
         if (hal.scheduler->micros() - tstart > 50000) {
             hal.scheduler->panic(
                     PSTR("PANIC: AP_InertialSensor_MPU6000::update "
@@ -303,7 +306,7 @@ float AP_InertialSensor_MPU6000::temperature() {
  *  these other devices must perform their spi reads after being called by the
  *  AP_TimerProcess.
  */
-void AP_InertialSensor_MPU6000::read(uint32_t)
+void AP_InertialSensor_MPU6000::read_data(void)
 {
     static int semfail_ctr = 0;
     if (_spi_sem) {
@@ -380,11 +383,9 @@ void AP_InertialSensor_MPU6000::register_write(uint8_t reg, uint8_t val)
 // MPU6000 new data interrupt on INT6
 void AP_InertialSensor_MPU6000::data_interrupt(void)
 {
+    _data_ready = true;
     // record time that data was available
     _last_sample_time_micros = hal.scheduler->micros();
-    // queue our read process to run after any currently running timed
-    // processes complete
-    hal.scheduler->defer_timer_process( AP_InertialSensor_MPU6000::read );
 }
 
 void AP_InertialSensor_MPU6000::hardware_init(Sample_rate sample_rate)
@@ -506,6 +507,14 @@ float AP_InertialSensor_MPU6000::get_gyro_drift_rate(void)
 // get number of samples read from the sensors
 uint16_t AP_InertialSensor_MPU6000::num_samples_available()
 {
+    if (_data_ready) {
+        // a data interrupt has occurred - read the data. 
+        // Note that doing it this way means we doing the read out of
+        // interrupt context, called from the main loop. This avoids
+        // all possible conflicts with the DataFlash SPI bus
+        read_data();
+        _data_ready = false;
+    }
     return _count;
 }
 
