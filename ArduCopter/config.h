@@ -445,16 +445,16 @@
  # define FS_THR_VALUE_DEFAULT             975
 #endif
 
+#ifndef FS_THR_RTL_MIN_DISTANCE
+ # define FS_THR_RTL_MIN_DISTANCE          1500     // the minimum distance from home in which
+#endif
+
 
 #ifndef MINIMUM_THROTTLE
  # define MINIMUM_THROTTLE       130
 #endif
 #ifndef MAXIMUM_THROTTLE
  # define MAXIMUM_THROTTLE       1000
-#endif
-
-#ifndef RTL_LOITER_TIME
- # define RTL_LOITER_TIME 5000       // Time (in milliseconds) to loiter above home before begining final descent
 #endif
 
 #ifndef LAND_SPEED
@@ -652,7 +652,11 @@
 #endif
 
 #ifndef RTL_ALT_MAX
- # define RTL_ALT_MAX               8000    // Max height to return to home in cm
+ # define RTL_ALT_MAX               8000    // Max height to return to home in cm (i.e 80m)
+#endif
+
+#ifndef RTL_LOITER_TIME
+ # define RTL_LOITER_TIME           5000    // Time (in milliseconds) to loiter above home before begining final descent
 #endif
 
 
