@@ -176,6 +176,8 @@ void AP_Baro_MS5611::_update(uint32_t tnow)
                             "100 times in AP_Baro_MS5611::_update"));
             }
             return;
+        } else {
+            semfail_ctr = 0;
         }
     }
 
