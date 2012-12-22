@@ -32,6 +32,24 @@
 /// change in your local copy of APM_Config.h.
 ///
 
+#if defined( __AVR_ATmega1280__ )
+ // default choices for a 1280. We can't fit everything in, so we 
+ // make some popular choices by default
+ #define LOGGING_ENABLED DISABLED
+ #ifndef CONFIG_RELAY
+ # define CONFIG_RELAY DISABLED
+ #endif
+ #ifndef MOUNT2
+ # define MOUNT2 DISABLED
+ #endif
+ #ifndef MOUNT
+ # define MOUNT DISABLED
+ #endif
+ #ifndef CAMERA
+ # define CAMERA DISABLED
+ #endif
+#endif
+
 // Just so that it's completely clear...
 #define ENABLED			1
 #define DISABLED		0
