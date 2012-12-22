@@ -179,12 +179,8 @@ static void run_navigation_contollers()
         break;
 
     case GUIDED:
-        wp_control = WP_MODE;
-        // check if we are close to point > loiter
-        wp_verify_byte = 0;
-        verify_nav_wp();
-
-        if (wp_control != WP_MODE) {
+        // switch to loiter once we've reached the target location and altitude
+        if(verify_nav_wp()) {
             set_mode(LOITER);
         }
         update_nav_wp();
