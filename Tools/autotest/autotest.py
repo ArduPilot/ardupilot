@@ -37,7 +37,7 @@ def get_default_params(atype):
 def dump_logs(atype):
     '''dump DataFlash logs'''
     print("Dumping logs for %s" % atype)
-    sil = util.start_SIL(atype, CLI=True)
+    sil = util.start_SIL(atype)
     logfile = util.reltopdir('../buildlogs/%s.flashlog' % atype)
     log = open(logfile, mode='w')
     mavproxy = util.start_MAVProxy_SIL(atype, setup=True, logfile=log)
@@ -172,6 +172,11 @@ skipsteps = opts.skip.split(',')
 # ensure we catch timeouts
 signal.signal(signal.SIGALRM, alarm_handler)
 signal.alarm(opts.timeout)
+
+if opts.list:
+    for step in steps:
+        print(step)
+    sys.exit(0)
 
 def skip_step(step):
     '''see if a step should be skipped'''

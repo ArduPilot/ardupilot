@@ -55,7 +55,7 @@ def get_default_params(atype):
 def dump_logs(atype):
     '''dump DataFlash logs'''
     print("Dumping logs for %s" % atype)
-    sil = util.start_SIL(atype, CLI=True)
+    sil = util.start_SIL(atype)
     logfile = util.reltopdir('../buildlogs/%s.flashlog' % atype)
     log = open(logfile, mode='w')
     mavproxy = util.start_MAVProxy_SIL(atype, setup=True, logfile=log)
