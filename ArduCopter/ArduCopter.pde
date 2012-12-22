@@ -282,10 +282,6 @@ AP_InertialSensor_MPU6000 ins;
 AP_InertialSensor_Oilpan ins(&adc);
  #endif
 
-// we don't want to use gps for yaw correction on ArduCopter, so pass
-// a NULL GPS object pointer
-static GPS         *g_gps_null;
-
  #if DMP_ENABLED == ENABLED && CONFIG_APM_HARDWARE == APM_HARDWARE_APM2
 AP_AHRS_MPU6000  ahrs(&ins, g_gps);               // only works with APM2
  #else
