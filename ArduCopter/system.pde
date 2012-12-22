@@ -476,7 +476,8 @@ static void set_mode(uint8_t mode)
         set_yaw_mode(GUIDED_YAW);
         set_roll_pitch_mode(GUIDED_RP);
         set_throttle_mode(GUIDED_THR);
-        next_WP = current_loc;
+        wp_control = WP_MODE;
+        wp_verify_byte = 0;
         set_next_WP(&guided_WP);
         break;
 

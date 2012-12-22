@@ -179,8 +179,8 @@
 #define CH6_AHRS_KP         31          // accelerometer effect on roll/pitch angle (0=low)
 #define CH6_INAV_TC         32          // inertial navigation baro/accel and gps/accel time constant (1.5 = strong baro/gps correction on accel estimatehas very strong does not correct accel estimate, 7 = very weak correction)
 
-// nav byte mask
-// -------------
+// nav byte mask used with wp_verify_byte variable
+// -----------------------------------------------
 #define NAV_LOCATION 1
 #define NAV_ALTITUDE 2
 #define NAV_DELAY    4

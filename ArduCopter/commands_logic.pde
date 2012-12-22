@@ -268,15 +268,16 @@ static void do_nav_wp()
     // this is our bitmask to verify we have met all conditions to move on
     wp_verify_byte  = 0;
 
+    // if no alt requirement in the waypoint, set the altitude achieved bit of wp_verify_byte
+    if((next_WP.options & WP_OPTION_ALT_REQUIRED) == false) {
+        wp_verify_byte |= NAV_ALTITUDE;
+    }
+
     // this will be used to remember the time in millis after we reach or pass the WP.
     loiter_time     = 0;
 
     // this is the delay, stored in seconds and expanded to millis
     loiter_time_max = command_nav_queue.p1 * 1000;
-
-    if((next_WP.options & WP_OPTION_ALT_REQUIRED) == false) {
-        wp_verify_byte |= NAV_ALTITUDE;
-    }
 
     // reset control of yaw to default
     if( g.yaw_override_behaviour == YAW_OVERRIDE_BEHAVIOUR_AT_NEXT_WAYPOINT ) {
@@ -411,8 +412,7 @@ static bool verify_nav_wp()
         }
     }
 
-    if(wp_verify_byte >= 7) {
-        //if(wp_verify_byte & NAV_LOCATION){
+    if( wp_verify_byte == (NAV_LOCATION | NAV_ALTITUDE | NAV_DELAY) ) {
         gcs_send_text_fmt(PSTR("Reached Command #%i"),command_nav_index);
         wp_verify_byte = 0;
         copter_leds_nav_blink = 15;             // Cause the CopterLEDs to blink three times to indicate waypoint reached

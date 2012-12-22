@@ -1605,9 +1605,6 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
 
             set_mode(GUIDED);
 
-            // make any new wp uploaded instant (in case we are already in Guided mode)
-            set_next_WP(&guided_WP);
-
             // verify we recevied the command
             mavlink_msg_mission_ack_send(
                 chan,
