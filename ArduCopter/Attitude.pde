@@ -809,10 +809,10 @@ get_throttle_accel(int16_t z_target_accel)
     float z_accel_meas;
 
     // Calculate Earth Frame Z acceleration
-    z_accel_meas = (ahrs.get_accel_ef().z - gravity) * 100;
+    z_accel_meas = -(ahrs.get_accel_ef().z + gravity) * 100;
 
     // calculate accel error and Filter with fc = 2 Hz
-    z_accel_error = z_accel_error + 0.11164 * (constrain(z_target_accel + z_accel_meas, -32000, 32000) - z_accel_error);
+    z_accel_error = z_accel_error + 0.11164 * (constrain(z_target_accel - z_accel_meas, -32000, 32000) - z_accel_error);
 
     // separately calculate p, i, d values for logging
     p = g.pid_throttle_accel.get_p(z_accel_error);
