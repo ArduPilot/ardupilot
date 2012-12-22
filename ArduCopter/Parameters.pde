@@ -263,6 +263,33 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @User: Standard
     GSCALAR(land_speed,             "LAND_SPEED",   LAND_SPEED),
 
+    // @Param: AUTO_VELZ_MIN
+    // @DisplayName: Autopilot's min vertical speed (max descent) in cm/s
+    // @Description: The minimum vertical velocity (i.e. descent speed) the autopilot may request in cm/s
+    // @Units: Centimeters/Second
+    // @Range: -500 -50
+    // @Increment: 10
+    // @User: Standard
+    GSCALAR(auto_velocity_z_min,     "AUTO_VELZ_MIN",   AUTO_VELZ_MIN),
+
+    // @Param: AUTO_VELZ_MAX
+    // @DisplayName: Auto pilot's max vertical speed in cm/s
+    // @Description: The maximum vertical velocity the autopilot may request in cm/s
+    // @Units: Centimeters/Second
+    // @Range: 50 500
+    // @Increment: 10
+    // @User: Standard
+    GSCALAR(auto_velocity_z_max,     "AUTO_VELZ_MAX",   AUTO_VELZ_MAX),
+
+    // @Param: PILOT_VELZ_MAX
+    // @DisplayName: Pilot maximum vertical speed
+    // @Description: The maximum vertical velocity the pilot may request in cm/s
+    // @Units: Centimeters/Second
+    // @Range: 10 500
+    // @Increment: 10
+    // @User: Standard
+    GSCALAR(pilot_velocity_z_max,     "PILOT_VELZ_MAX",   PILOT_VELZ_MAX),
+
     // @Param: THR_MIN
     // @DisplayName: Minimum Throttle
     // @Description: The minimum throttle that will be sent to the motors to keep them spinning
