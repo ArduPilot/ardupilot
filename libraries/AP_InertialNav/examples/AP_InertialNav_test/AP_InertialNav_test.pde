@@ -40,7 +40,7 @@ AP_Baro_BMP085 baro;
 #endif
 
 GPS *gps;
-AP_GPS_Auto auto_gps(hal.uartB, &gps);
+AP_GPS_Auto auto_gps(&gps);
 
 AP_Compass_HMC5843 compass;
 AP_AHRS_DCM ahrs(&ins, gps);
@@ -61,7 +61,7 @@ void setup(void)
     hal.gpio->pinMode(C_LED_PIN, GPIO_OUTPUT);
 
     gps = &auto_gps;
-    gps->init(GPS::GPS_ENGINE_AIRBORNE_2G);
+    gps->init(hal.uartB, GPS::GPS_ENGINE_AIRBORNE_2G);
 
     ins.init(AP_InertialSensor::COLD_START, 
 			 AP_InertialSensor::RATE_100HZ,
