@@ -501,6 +501,7 @@ uint16_t AP_InertialSensor_MPU6000::num_samples_available()
         // Note that doing it this way means we doing the read out of
         // interrupt context, called from the main loop. This avoids
         // all possible conflicts with the DataFlash SPI bus
+        _last_sample_time_micros = hal.scheduler->micros();
         read_data();
     }
     return _count;
