@@ -808,10 +808,8 @@ get_throttle_accel(int16_t z_target_accel)
     int16_t output;
     float z_accel_meas;
 
-    Vector3f accel = ins.get_accel();
-
     // Calculate Earth Frame Z acceleration
-    z_accel_meas = ahrs.get_accel_ef().z;
+    z_accel_meas = (ahrs.get_accel_ef().z - gravity) * 100;
 
     // calculate accel error and Filter with fc = 2 Hz
     z_accel_error = z_accel_error + 0.11164 * (constrain(z_target_accel + z_accel_meas, -32000, 32000) - z_accel_error);
