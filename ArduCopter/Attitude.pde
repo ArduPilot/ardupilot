@@ -997,7 +997,7 @@ get_throttle_althold(int32_t target_alt, int16_t min_climb_rate, int16_t max_cli
 
     linear_distance = 250/(2*g.pi_alt_hold.kP()*g.pi_alt_hold.kP());
 
-    if( altitude_error < linear_distance ) {
+    if( altitude_error < linear_distance*2 ) {
         desired_rate = g.pi_alt_hold.get_p(altitude_error);
     }else{
         desired_rate = sqrt(2*250*(altitude_error-linear_distance));
