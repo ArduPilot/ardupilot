@@ -31,21 +31,21 @@ AP_GPS_MTK19::init(enum GPS_Engine_Setting nav_setting)
 {
     _port->flush();
 
-    // set WAAS on
-    _port->print(WAAS_ON);
-    
-    // set SBAS on
-    _port->print(SBAS_ON);
-    
-    // Set Nav Threshold to 0 m/s
-    _port->print(MTK_NAVTHRES_OFF);
-    
-    // set 5Hz update rate
-    _port->print(MTK_OUTPUT_5HZ);
-    
     // initialize serial port for binary protocol use
     // XXX should assume binary, let GPS_AUTO handle dynamic config?
     _port->print(MTK_SET_BINARY);
+
+    // set 5Hz update rate
+    _port->print(MTK_OUTPUT_5HZ);
+
+    // set SBAS on
+    _port->print(SBAS_ON);
+
+    // set WAAS on
+    _port->print(WAAS_ON);
+
+    // Set Nav Threshold to 0 m/s
+    _port->print(MTK_NAVTHRES_OFF);
 
     // set initial epoch code
     _epoch = TIME_OF_DAY;
@@ -114,15 +114,15 @@ restart:
             _mtk_type_step1         = 0;
             _mtk_type_step2         = 0;
             _step                   = 0;
-            goto restart;
+            //goto restart;
         case 2:
             if (sizeof(_buffer) == data) {
                 _step++;
-                _ck_b = _ck_a       = data;                           // reset the checksum accumulators
+                _ck_b = _ck_a       = data;                    // reset the checksum accumulators
                 _payload_counter    = 0;
             } else {
                 _step               = 0;                       // reset and wait for a message of the right class
-                goto restart;
+                //goto restart;
             }
             break;
 
@@ -172,7 +172,6 @@ restart:
             temp                    = (time_utc/100000);
             time_utc               -= temp*100000;
             time                   += temp * 60000 + time_utc;
-
             parsed                  = true;
 
 #ifdef FAKE_GPS_LOCK_TIME
@@ -204,7 +203,7 @@ restart:
 
 
 /*
-  detect a MTK16 GPS
+  detect a MTK16 or MTK19 GPS
  */
 bool
 AP_GPS_MTK19::_detect(uint8_t data)
@@ -214,7 +213,7 @@ AP_GPS_MTK19::_detect(uint8_t data)
     static uint8_t mtk_type_step1, mtk_type_step2;
     static uint8_t ck_a, ck_b;
 
-    switch (step) {
+	switch (step) {
         case 0:
             ck_b = ck_a = payload_counter = 0;
             if (data == PREAMBLE1_V16) {
@@ -225,7 +224,6 @@ AP_GPS_MTK19::_detect(uint8_t data)
                 mtk_type_step1      = MTK_GPS_REVISION_V19;
                 step++;
             }    
-            mtk_type_step1          = 0;
             break;
         case 1:
             if ((mtk_type_step1 == MTK_GPS_REVISION_V16) && (PREAMBLE2_V16 == data)){
