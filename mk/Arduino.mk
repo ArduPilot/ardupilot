@@ -124,6 +124,7 @@ endif
 
 # default to APM2
 ifeq ($(HAL_BOARD),)
+#$(warning No HAL_BOARD in config.mk - defaulting to HAL_BOARD_APM2)
 HAL_BOARD = HAL_BOARD_APM2
 endif
 
