@@ -813,7 +813,7 @@ get_throttle_accel(int16_t z_target_accel)
     // Calculate Earth Frame Z acceleration
     z_accel_meas = ahrs.get_accel_ef().z;
 
-    // calculate accel error and Filter with fc = 1 Hz
+    // calculate accel error and Filter with fc = 2 Hz
     z_accel_error = z_accel_error + 0.11164 * (constrain(z_target_accel + z_accel_meas, -32000, 32000) - z_accel_error);
 
     // separately calculate p, i, d values for logging
@@ -867,10 +867,10 @@ static int16_t get_pilot_desired_climb_rate(int16_t throttle_control)
     // check throttle is above, below or in the deadband
     if (throttle_control < THROTTLE_IN_DEADBAND_BOTTOM) {
         // below the deadband
-        desired_rate = (int32_t)VELOCITY_MAX_Z * (throttle_control-THROTTLE_IN_DEADBAND_BOTTOM) / (THROTTLE_IN_MIDDLE - THROTTLE_IN_DEADBAND);
+        desired_rate = (int32_t)g.pilot_velocity_z_max * (throttle_control-THROTTLE_IN_DEADBAND_BOTTOM) / (THROTTLE_IN_MIDDLE - THROTTLE_IN_DEADBAND);
     }else if (throttle_control > THROTTLE_IN_DEADBAND_TOP) {
         // above the deadband
-        desired_rate = (int32_t)VELOCITY_MAX_Z * (throttle_control-THROTTLE_IN_DEADBAND_TOP) / (THROTTLE_IN_MIDDLE - THROTTLE_IN_DEADBAND);
+        desired_rate = (int32_t)g.pilot_velocity_z_max * (throttle_control-THROTTLE_IN_DEADBAND_TOP) / (THROTTLE_IN_MIDDLE - THROTTLE_IN_DEADBAND);
     }else{
         // must be in the deadband
         desired_rate = 0;
@@ -984,6 +984,35 @@ get_throttle_rate(int16_t z_target_speed)
     }
 }
 
+// get_throttle_althold - hold at the desired altitude in cm
+// updates accel based throttle controller targets
+// Note: max_climb_rate is an optional parameter to allow reuse of this function by landing controller
+static void
+get_throttle_althold(int32_t target_alt, int16_t min_climb_rate, int16_t max_climb_rate)
+{
+    int32_t _altitude_error;
+    int16_t desired_rate;
+    int32_t linear_distance;      // the distace we swap between linear and sqrt.
+
+    // calculate altitude error
+    altitude_error    = target_alt - current_loc.alt;
+
+    linear_distance = 250/(2*g.pi_alt_hold.kP()*g.pi_alt_hold.kP());
+
+    if( altitude_error < linear_distance ) {
+        desired_rate = g.pi_alt_hold.get_p(altitude_error);
+    }else{
+        desired_rate = sqrt(2*250*(altitude_error-linear_distance));
+    }
+
+    desired_rate = constrain(desired_rate, min_climb_rate, max_climb_rate);
+
+    // call rate based throttle controller which will update accel based throttle controller targets
+    get_throttle_rate(desired_rate);
+
+    // TO-DO: enabled PID logging for this controller
+}
+
 // get_throttle_rate_stabilized - rate controller with additional 'stabilizer'
 // 'stabilizer' ensure desired rate is being met
 // calls normal throttle rate controller which updates accel based throttle controller targets
@@ -1008,36 +1037,7 @@ get_throttle_rate_stabilized(int16_t target_rate)
 
     set_new_altitude(target_alt);
 
-    get_throttle_althold(target_alt, ALTHOLD_MAX_CLIMB_RATE);
-}
-
-// get_throttle_althold - hold at the desired altitude in cm
-// updates accel based throttle controller targets
-// Note: max_climb_rate is an optional parameter to allow reuse of this function by landing controller
-static void
-get_throttle_althold(int32_t target_alt, int16_t max_climb_rate)
-{
-    int32_t _altitude_error;
-    int16_t desired_rate;
-    int32_t linear_distance;      // the distace we swap between linear and sqrt.
-
-    // calculate altitude error
-    altitude_error    = target_alt - current_loc.alt;
-
-    linear_distance = 250/(2*g.pi_alt_hold.kP()*g.pi_alt_hold.kP());
-
-    if( altitude_error < linear_distance ) {
-        desired_rate = g.pi_alt_hold.get_p(altitude_error);
-    }else{
-        desired_rate = sqrt(2*250*(altitude_error-linear_distance));
-    }
-
-    desired_rate = constrain(desired_rate, ALTHOLD_MIN_CLIMB_RATE, max_climb_rate);
-
-    // call rate based throttle controller which will update accel based throttle controller targets
-    get_throttle_rate(desired_rate);
-
-    // TO-DO: enabled PID logging for this controller
+    get_throttle_althold(target_alt, -g.pilot_velocity_z_max-250, g.pilot_velocity_z_max+250);   // 250 is added to give head room to alt hold controller
 }
 
 // get_throttle_land - high level landing logic
@@ -1050,7 +1050,7 @@ get_throttle_land()
 {
     // if we are above 10m perform regular alt hold descent
     if (current_loc.alt >= LAND_START_ALT) {
-        get_throttle_althold(LAND_START_ALT, -abs(g.land_speed));
+        get_throttle_althold(LAND_START_ALT, g.auto_velocity_z_min, -abs(g.land_speed));
     }else{
         get_throttle_rate_stabilized(-abs(g.land_speed));
 

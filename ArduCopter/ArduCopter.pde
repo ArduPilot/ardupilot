@@ -871,7 +871,7 @@ AP_Limit_Altitude       altitude_limit(&current_loc);
 ////////////////////////////////////////////////////////////////////////////////
 // function definitions to keep compiler from complaining about undeclared functions
 ////////////////////////////////////////////////////////////////////////////////
-void get_throttle_althold(int32_t target_alt, int16_t max_climb_rate = ALTHOLD_MAX_CLIMB_RATE);
+void get_throttle_althold(int32_t target_alt, int16_t min_climb_rate, int16_t max_climb_rate);
 
 ////////////////////////////////////////////////////////////////////////////////
 // Top-level logic
@@ -1901,7 +1901,7 @@ void update_throttle_mode(void)
         }else{
             // To-Do: this should update the global desired altitude variable next_WP.alt
             int32_t desired_alt = get_pilot_desired_direct_alt(g.rc_3.control_in);
-            get_throttle_althold(desired_alt);
+            get_throttle_althold(desired_alt, g.auto_velocity_z_min, g.auto_velocity_z_max);
         }
         break;
 
@@ -1914,10 +1914,8 @@ void update_throttle_mode(void)
     case THROTTLE_AUTO:
         // auto pilot altitude controller with target altitude held in next_WP.alt
         if(motors.auto_armed() == true) {
-            get_throttle_althold(next_WP.alt);
-            // TO-DO: need to somehow set nav_throttle
+            get_throttle_althold(next_WP.alt, g.auto_velocity_z_min, g.auto_velocity_z_max);
         }
-        // TO-DO: what if auto_armed is not true?!  throttle stuck at unknown position?
         break;
 
     case THROTTLE_LAND:

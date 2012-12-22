@@ -926,16 +926,18 @@
 #endif
 
 
-// minimum and maximum climb rates while in alt hold mode
-#ifndef ALTHOLD_MAX_CLIMB_RATE
- # define ALTHOLD_MAX_CLIMB_RATE 250
+// default minimum and maximum vertical velocity the autopilot may request
+#ifndef AUTO_VELZ_MIN
+ # define AUTO_VELZ_MIN -125
 #endif
-#ifndef ALTHOLD_MIN_CLIMB_RATE
- # define ALTHOLD_MIN_CLIMB_RATE -ALTHOLD_MAX_CLIMB_RATE
+#ifndef AUTO_VELZ_MAX
+ # define AUTO_VELZ_MAX 125
 #endif
 
-// max allowed acceleration
-#define VELOCITY_MAX_Z      250     // maximum vertical velocity in cm/s
+// default maximum vertical velocity the pilot may request
+#ifndef PILOT_VELZ_MAX
+ # define PILOT_VELZ_MAX    250     // maximum vertical velocity in cm/s
+#endif
 #define ACCELERATION_MAX_Z  750     // maximum veritcal acceleration in cm/s/s
 
 // Throttle Accel control
