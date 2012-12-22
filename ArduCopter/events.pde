@@ -75,8 +75,12 @@ static void low_battery_event(void)
                 }
                 break;
             case AUTO:
-                // To-Do: check distance to home before initiating RTL?
-                set_mode(RTL);
+                if(ap.home_is_set == true && home_distance >= FS_THR_RTL_MIN_DISTANCE) {
+                    set_mode(RTL);
+                }else{
+                    // We have no GPS or are very close to home so we will land
+                    set_mode(LAND);
+                }
                 break;
             default:
                 set_mode(LAND);
