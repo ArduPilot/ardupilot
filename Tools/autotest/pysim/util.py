@@ -69,6 +69,7 @@ def build_AVR(atype, board='mega2560'):
     '''build AVR binaries'''
     config = open(reltopdir('config.mk'), mode='w')
     config.write('''
+HAL_BOARD=HAL_BOARD_APM1
 BOARD=%s
 PORT=/dev/null
 ''' % board)
