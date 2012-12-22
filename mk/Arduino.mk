@@ -122,6 +122,11 @@ ifeq ($(PORT),)
 $(error ERROR: could not locate $(SKETCHBOOK)/config.mk, please run 'make configure' first)
 endif
 
+# default to APM2
+ifeq ($(HAL_BOARD),)
+HAL_BOARD = HAL_BOARD_APM2
+endif
+
 HARDWARE		?=	arduino
 ifeq ($(BOARD),)
 $(error ERROR: must set BOARD before including this file)
