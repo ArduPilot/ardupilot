@@ -385,7 +385,8 @@ enum gcs_severity {
 #define AN14  68 // NC
 #define AN15  69 // NC
 
-#define RELAY_PIN 47
+#define RELAY_APM1_PIN 47
+#define RELAY_APM2_PIN 13
 
 #define PIEZO_PIN AN5           //Last pin on the back ADC connector
 

@@ -822,8 +822,13 @@ static uint32_t last_gps_time;
 // Used to exit the roll and pitch auto trim function
 static uint8_t auto_trim_counter;
 
-// Reference to the AP relay object - APM1 only
+// Reference to the relay object (APM1 -> PORTL 2) (APM2 -> PORTB 7)
 AP_Relay relay;
+
+//Reference to the camera object (it uses the relay object inside it)
+#if CAMERA == ENABLED
+  AP_Camera camera(&relay);
+#endif
 
 // a pin for reading the receiver RSSI voltage. The scaling by 0.25
 // is to take the 0 to 1024 range down to an 8 bit range for MAVLink
@@ -854,9 +859,6 @@ AP_Mount camera_mount(&current_loc, g_gps, &ahrs, 0);
 AP_Mount camera_mount2(&current_loc, g_gps, &ahrs, 1);
 #endif
 
-#if CAMERA == ENABLED
-//pinMode(camtrig, OUTPUT);			// these are free pins PE3(5), PH3(15), PH6(18), PB4(23), PB5(24), PL1(36), PL3(38), PA6(72), PA7(71), PK0(89), PK1(88), PK2(87), PK3(86), PK4(83), PK5(84), PK6(83), PK7(82)
-#endif
 
 ////////////////////////////////////////////////////////////////////////////////
 // Experimental AP_Limits library - set constraints, limits, fences, minima, maxima on various parameters
@@ -1197,7 +1199,7 @@ static void fifty_hz_loop()
 #endif
 
 #if CAMERA == ENABLED
-    g.camera.trigger_pic_cleanup();
+    camera.trigger_pic_cleanup();
 #endif
 
 # if HIL_MODE == HIL_MODE_DISABLED

@@ -125,9 +125,7 @@ static void init_ardupilot()
     pinMode(PUSHBUTTON_PIN, INPUT);                     // unused
 #endif
 
-#if CONFIG_RELAY == ENABLED
     relay.init(); 
-#endif
 
 #if COPTER_LEDS == ENABLED
     pinMode(COPTER_LED_1, OUTPUT);              //Motor LED

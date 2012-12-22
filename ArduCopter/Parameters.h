@@ -338,11 +338,6 @@ public:
 	AP_Float		heli_yaw_ff;												// yaw rate feed-forward																			
 #endif
 
-    // Camera
-#if CAMERA == ENABLED
-    AP_Camera        camera;
-#endif
-
     // RC channels
     RC_Channel              rc_1;
     RC_Channel              rc_2;
