@@ -443,12 +443,6 @@ const AP_Param::Info var_info[] PROGMEM = {
 	GSCALAR(heli_yaw_ff, "RATE_YAW_FF",            HELI_YAW_FF),
 #endif
 
-#if CAMERA == ENABLED
-    // @Group: CAM_
-    // @Path: ../libraries/AP_Camera/AP_Camera.cpp
-    GGROUP(camera,                  "CAM_", AP_Camera),
-#endif
-
     // RC channel
     //-----------
     // @Group: RC1_
@@ -568,6 +562,13 @@ const AP_Param::Info var_info[] PROGMEM = {
     GGROUP(pi_loiter_lon,   "HLD_LON_", APM_PI),
 
     // variables not in the g class which contain EEPROM saved variables
+
+    // variables not in the g class which contain EEPROM saved variables
+#if CAMERA == ENABLED
+    // @Group: CAM_
+    // @Path: ../libraries/AP_Camera/AP_Camera.cpp
+    GOBJECT(camera,           "CAM_", AP_Camera),
+#endif
 
     // @Group: COMPASS_
     // @Path: ../libraries/AP_Compass/Compass.cpp

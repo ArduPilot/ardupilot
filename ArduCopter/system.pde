@@ -137,14 +137,19 @@ static void init_ardupilot()
     pinMode(C_LED_PIN, OUTPUT);                         // GPS status LED
     digitalWrite(C_LED_PIN, LED_OFF);
 
+#if CONFIG_APM_HARDWARE == APM_HARDWARE_APM2
+  // Set Port B, pin 7 as output for an external relay (A9 Enclosure's label)
+  pinMode(RELAY_APM2_PIN, OUTPUT);
+#else
+  // Set Port L, pin 2 as output for the onboard relay
+  pinMode(RELAY_APM1_PIN, OUTPUT);
+#endif
+
 #if SLIDE_SWITCH_PIN > 0
     pinMode(SLIDE_SWITCH_PIN, INPUT);           // To enter interactive mode
 #endif
 #if CONFIG_PUSHBUTTON == ENABLED
     pinMode(PUSHBUTTON_PIN, INPUT);                     // unused
-#endif
-#if CONFIG_RELAY == ENABLED
-    DDRL |= B00000100;                                                  // Set Port L, pin 2 to output for the relay
 #endif
 
 #if COPTER_LEDS == ENABLED

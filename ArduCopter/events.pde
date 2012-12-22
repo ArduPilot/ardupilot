@@ -100,10 +100,6 @@ static void update_events()     // Used for MAV_CMD_DO_REPEAT_SERVO and MAV_CMD_
     if(event_repeat == 0 || (millis() - event_timer) < event_delay)
         return;
 
-    if (event_repeat > 0) {
-        event_repeat--;
-    }
-
     if(event_repeat != 0) {             // event_repeat = -1 means repeat forever
         event_timer = millis();
 
@@ -117,6 +113,9 @@ static void update_events()     // Used for MAV_CMD_DO_REPEAT_SERVO and MAV_CMD_
 
         if  (event_id == RELAY_TOGGLE) {
             relay.toggle();
+        }
+        if (event_repeat > 0) {
+            event_repeat--;
         }
     }
 }
