@@ -80,7 +80,7 @@ float pythagorous2(float a, float b);
 float pythagorous3(float a, float b, float c);
 
 #ifdef radians
-#error "You need to add empty nocore.inoflag and Arduino.h files to your sketch"
+#error "Build is including Arduino base headers"
 #endif
 
 /* The following three functions used to be arduino core macros */
