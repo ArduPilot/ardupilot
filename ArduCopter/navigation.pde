@@ -612,6 +612,7 @@ static int16_t get_desired_speed(int16_t max_speed)
     	 	int32_t temp 	= 2 * 100 * (int32_t)(wp_distance - g.waypoint_radius * 100);
     	 	int32_t s_min 	= WAYPOINT_SPEED_MIN;
     	 	temp 			+= s_min * s_min;
+            if( temp < 0 ) temp = 0;                // check to ensure we don't try to take the sqrt of a negative number
     		max_speed 		= sqrt((float)temp);
             max_speed 		= min(max_speed, g.waypoint_speed_max);
         }
