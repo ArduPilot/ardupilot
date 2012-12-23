@@ -66,6 +66,9 @@ void SITL_State::_parse_command_line(int argc, char * const argv[])
 
 	signal(SIGFPE, _sig_fpe);
 
+    setvbuf(stdout, (char *)0, _IONBF, 0);
+    setvbuf(stderr, (char *)0, _IONBF, 0);
+
 	while ((opt = getopt(argc, argv, "swhr:H:C")) != -1) {
 		switch (opt) {
 		case 'w':
