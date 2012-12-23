@@ -499,6 +499,10 @@ apm2: HAL_BOARD = HAL_BOARD_APM2
 apm2: TOOLCHAIN = AVR
 apm2: all
 
+empty: HAL_BOARD = HAL_BOARD_EMPTY
+empty: TOOLCHAIN = AVR
+empty: all
+
 .PHONY: upload
 upload: $(SKETCHHEX)
 	$(AVRDUDE) -c $(UPLOAD_PROTOCOL) -p $(MCU) -P $(PORT) -b$(UPLOAD_SPEED) $(USERAVRDUDEFLAGS) -U flash:w:$(SKETCHHEX):i
