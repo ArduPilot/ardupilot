@@ -54,6 +54,7 @@ extern const AP_HAL::HAL& hal;
 #define MPUREG_FIFO_EN                                  0x23
 #define MPUREG_INT_PIN_CFG                              0x37
 #       define BIT_INT_RD_CLEAR                                 0x10    // clear the interrupt when any read occurs
+#       define BIT_LATCH_INT_EN                                 0x20    // latch data ready pin 
 #define MPUREG_INT_ENABLE                               0x38
 // bit definitions for MPUREG_INT_ENABLE
 #       define BIT_RAW_RDY_EN                                   0x01
@@ -470,7 +471,10 @@ void AP_InertialSensor_MPU6000::hardware_init(Sample_rate sample_rate)
 
     register_write(MPUREG_INT_ENABLE, BIT_RAW_RDY_EN);                  // configure interrupt to fire when new data arrives
     hal.scheduler->delay(1);
-    register_write(MPUREG_INT_PIN_CFG, BIT_INT_RD_CLEAR);               // clear interrupt on any read
+
+    // clear interrupt on any read, and hold the data ready pin high
+    // until we clear the interrupt
+    register_write(MPUREG_INT_PIN_CFG, BIT_INT_RD_CLEAR | BIT_LATCH_INT_EN);               
     hal.scheduler->delay(1);
 
     /* Pin 70 defined especially to hook
@@ -497,7 +501,7 @@ float AP_InertialSensor_MPU6000::get_gyro_drift_rate(void)
 uint16_t AP_InertialSensor_MPU6000::num_samples_available()
 {
     if (_drdy_pin->read()) {
-        // a data interrupt has occurred - read the data. 
+        // data is available from the MPU6000 - read the data. 
         // Note that doing it this way means we doing the read out of
         // interrupt context, called from the main loop. This avoids
         // all possible conflicts with the DataFlash SPI bus
