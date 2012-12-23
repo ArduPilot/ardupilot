@@ -1,6 +1,58 @@
 ArduCopter Release Notes:
 
 ------------------------------------------------------------------
+ArduCopter 2.9-rc1 23-Dec-2012
+Improvements over 2.8.1:
+1) altitude hold improvements:
+    a)inertial navigation for vertical axis [Randy/Jonathan/Leonard/Jason]
+    b)accel based throttle controller [Leonard/Randy]
+    c)accelerometer calibration routine updated to use gauss-newton method [Randy/Tridge/Rolfe Schmidt]
+    d)parameters to control climb rate:
+        AUTO_VELZ_MIN, AUTO_VELZ_MAX - allows you to control the maximum climb and descent rates of the autopilot (in cm/s)
+        PILOT_VELZ_MAX - allows you to control the maximum climb/descent rate when in alt hold or loiter (in cm/s)
+2) landing improvements [Leonard/Randy]
+    LAND_SPEED - allows you to set the landing speed in cm/s
+3) camera related improvements:
+    a) AP_Relay enabled for APM2 and integrated with AP_Camera [Sandro Benigno]
+    b) camera trigger with channel 7 switch or DO_DIGICAM_CONTROL mission command [Randy]
+    c) allow yaw override by pilot or with CONDITIONAL_YAW command during missions [Randy]
+        YAW_OVR_BEHAVE - Controls when autopilot takes back normal control of yaw after pilot overrides (0=after next wp, 1=never)
+4) trad heli improvements [Rob]
+    a) code tested and brought back into the fold (2.8.1 was never released for trad helis)
+    b) enabled rate controller (previously only used angle controllers)
+    c) fix to rotor speed controllers - now operates by switching off channel 8
+    d) allow wider collective pitch range in acro and alt hold modes vs stabilize mode
+    e) removed angle boost function because it created more problems than it solved
+    f) bug fix to allow collective pitch to use the entire range of servos
+5) mediatek gps driver improvements [Craig]
+    a) added support for 1.9 firmware
+    b) bug fix to start-up routine so sbas can be enabled
+6) failsafe improvements (both throttle and battery) [Randy/Craig/John Arne Birkeland]
+    a) RTL will not trigger if your throttle is zero - reduces risk of accidentally invoking RTL if you switch off your receiver before disarming
+    b) failsafe triggered in unlikely case of a PPM encoder failure
+    c) bug fix to resolve motors momentarily reducing to zero after failsafe is triggered
+7) mpu6k filtering made configurable and default changed to 42hz for copters [Leonard/Tridge]
+8) support ppm sum for transmitters with as few as 5 channels [Randy/John Arne Birkeland]
+9) acro trainer - copter will return to be generally upright if you release the sticks in acro mode [Leonard]
+    ACRO_BAL_ROLL, ACRO_BAL_PITCH - controls rate at which roll returns to level
+    ACRO_TRAINER - 1 to enable the auto-bring-upright feature
+10) other changes and bug fixes:
+    a) allow >45 degrees when in stabilize mode by adding lines like below to APM_Config (compile time option only) [Jason]
+        #define MAX_INPUT_ROLL_ANGLE 6000     // 60 degrees
+        #define MAX_INPUT_PITCH_ANGLE 6000    // 60 degrees
+    b) bug fix to stop RTL from ever climbing to an unreasonable height (i.e. >80m) [Jason]
+    c) event and state logging [Jason]
+    d) allow cli to be used over telemetry link [Tridge]
+    e) bug fix to allow compass accumulate to run when we have spare cpu cycles [Randy]
+    f) bug fix so do_set_servo command works [Randy]
+    g) bug fix to PID controller's so they don't calculate crazy D term on the first call [Tridge]
+    h) bug fix to initialise navigation parameter to resolve twitch when entering some navigation modes [Jason]
+    i) performance improvement to copter leds - use DigitalFastWrite and DigitalFastRead instead of native arduino functions  [Randy]
+    j) removed unused stab_d from roll and pitch controller [Jason]
+    k) bug fix for guided mode not reaching target altitude if it reaches horizontal target first [Randy]
+    l) code clean-up, parameter documentation improvements [Randy/Jason/Rob/others]
+
+------------------------------------------------------------------
 ArduCopter 2.8.1 22-Oct-2012
 Improvements over 2.8:
 - 430 bytes of RAM freed up to resolve APM1 level issue and reduce chance of memory corruption on both APM1 and APM2
