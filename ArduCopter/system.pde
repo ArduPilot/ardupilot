@@ -54,6 +54,9 @@ static void run_cli(AP_HAL::UARTDriver *port)
     Menu::set_port(port);
     port->set_blocking_writes(true);
 
+    // disable the mavlink delay callback
+    hal.scheduler->register_delay_callback(NULL, 5);
+
     while (1) {
         main_menu.run();
     }

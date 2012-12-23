@@ -51,6 +51,9 @@ static void run_cli(AP_HAL::UARTDriver *port)
     // disable the failsafe code in the CLI
     hal.scheduler->register_timer_failsafe(NULL,1);
 
+    // disable the mavlink delay callback
+    hal.scheduler->register_delay_callback(NULL, 5);
+
     cliSerial = port;
     Menu::set_port(port);
     port->set_blocking_writes(true);
