@@ -384,9 +384,16 @@ void AP_InertialSensor_MPU6000::hardware_init(Sample_rate sample_rate)
     _spi = hal.spi->device(AP_HAL::SPIDevice_MPU6000);
     _spi_sem = _spi->get_semaphore();
 
+    /* Pin 70 defined especially to hook
+       up PE6 to the hal.gpio abstraction.
+       (It is not a valid pin under Arduino.) */
+    _drdy_pin = hal.gpio->channel(70);
+
+reset_chip:
     // Chip reset
     register_write(MPUREG_PWR_MGMT_1, BIT_PWR_MGMT_1_DEVICE_RESET);
     hal.scheduler->delay(100);
+
     // Wake up device and select GyroZ clock (better performance)
     register_write(MPUREG_PWR_MGMT_1, BIT_PWR_MGMT_1_CLK_ZGYRO);
     hal.scheduler->delay(1);
@@ -400,6 +407,7 @@ void AP_InertialSensor_MPU6000::hardware_init(Sample_rate sample_rate)
     hal.scheduler->delay(1);
 
     uint8_t rate, filter, default_filter;
+    uint8_t msec_per_sample;
 
     // sample rate and filtering
     // to minimise the effects of aliasing we choose a filter
@@ -408,15 +416,18 @@ void AP_InertialSensor_MPU6000::hardware_init(Sample_rate sample_rate)
     case RATE_50HZ:
         rate = MPUREG_SMPLRT_50HZ;
         default_filter = BITS_DLPF_CFG_20HZ;
+        msec_per_sample = 20;
         break;
     case RATE_100HZ:
         rate = MPUREG_SMPLRT_100HZ;
         default_filter = BITS_DLPF_CFG_42HZ;
+        msec_per_sample = 10;
         break;
     case RATE_200HZ:
     default:
         rate = MPUREG_SMPLRT_200HZ;
         default_filter = BITS_DLPF_CFG_42HZ;
+        msec_per_sample = 5;
         break;
     }
     
@@ -455,7 +466,8 @@ void AP_InertialSensor_MPU6000::hardware_init(Sample_rate sample_rate)
     register_write(MPUREG_GYRO_CONFIG, BITS_GYRO_FS_2000DPS);  // Gyro scale 2000º/s
     hal.scheduler->delay(1);
 
-    _mpu6000_product_id = register_read(MPUREG_PRODUCT_ID);     // read the product ID rev c has 1/2 the sensitivity of rev d
+    // read the product ID rev c has 1/2 the sensitivity of rev d
+    _mpu6000_product_id = register_read(MPUREG_PRODUCT_ID);
     //Serial.printf("Product_ID= 0x%x\n", (unsigned) _mpu6000_product_id);
 
     if ((_mpu6000_product_id == MPU6000ES_REV_C4) || (_mpu6000_product_id == MPU6000ES_REV_C5) ||
@@ -469,7 +481,8 @@ void AP_InertialSensor_MPU6000::hardware_init(Sample_rate sample_rate)
     }
     hal.scheduler->delay(1);
 
-    register_write(MPUREG_INT_ENABLE, BIT_RAW_RDY_EN);                  // configure interrupt to fire when new data arrives
+    // configure interrupt to fire when new data arrives
+    register_write(MPUREG_INT_ENABLE, BIT_RAW_RDY_EN);
     hal.scheduler->delay(1);
 
     // clear interrupt on any read, and hold the data ready pin high
@@ -477,10 +490,19 @@ void AP_InertialSensor_MPU6000::hardware_init(Sample_rate sample_rate)
     register_write(MPUREG_INT_PIN_CFG, BIT_INT_RD_CLEAR | BIT_LATCH_INT_EN);               
     hal.scheduler->delay(1);
 
-    /* Pin 70 defined especially to hook
-       up PE6 to the hal.gpio abstraction.
-       (It is not a valid pin under Arduino.) */
-    _drdy_pin = hal.gpio->channel(70);
+    // wait for enough time that we should get a sample
+    hal.scheduler->delay(msec_per_sample+2);
+
+    if (_drdy_pin->read() == 0) {
+        // we didn't get a sample - run the whole chip setup
+        // again. This sometimes happens after a DTR reset or warm
+        // boot of the board
+        hal.console->println_P(PSTR("MPU6000 startup reset"));
+        goto reset_chip;
+    }
+
+    // read the first lot of data
+    read_data();
 }
 
 float AP_InertialSensor_MPU6000::_temp_to_celsius ( uint16_t regval )
