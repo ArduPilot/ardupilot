@@ -166,6 +166,7 @@ void run_test()
     Vector3f gyro;
     float temperature;
     float length;
+	uint8_t counter = 0;
 
     // flush any user input
     while( hal.console->available() ) {
@@ -178,10 +179,8 @@ void run_test()
     // loop as long as user does not press a key
     while( !hal.console->available() ) {
 
-        // wait until we have 8 samples
-        while (ins.num_samples_available() == 0) {
-            hal.scheduler->delay(1);
-        }
+        // wait until we have a sample
+        while (ins.num_samples_available() == 0) /* noop */ ;
 
         // read samples from ins
         ins.update();
@@ -191,9 +190,11 @@ void run_test()
 
         length = accel.length();
 
-        // display results
-        hal.console->printf_P(PSTR("Accel X:%4.2f \t Y:%4.2f \t Z:%4.2f \t len:%4.2f \t Gyro X:%4.2f \t Y:%4.2f \t Z:%4.2f \t Temp:%4.2f\n"), 
-            accel.x, accel.y, accel.z, length, gyro.x, gyro.y, gyro.z, temperature);
+		if (counter++ % 50 == 0) {
+			// display results
+			hal.console->printf_P(PSTR("Accel X:%4.2f \t Y:%4.2f \t Z:%4.2f \t len:%4.2f \t Gyro X:%4.2f \t Y:%4.2f \t Z:%4.2f \t Temp:%4.2f\n"), 
+								  accel.x, accel.y, accel.z, length, gyro.x, gyro.y, gyro.z, temperature);
+		}
     }
 
     // clear user input
