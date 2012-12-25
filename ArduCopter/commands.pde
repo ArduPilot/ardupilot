@@ -190,8 +190,6 @@ static void init_home()
 #if INERTIAL_NAV_XY == ENABLED
     // set inertial nav's home position
     inertial_nav.set_current_position(g_gps->longitude, g_gps->latitude);
-    inertial_nav.set_altitude(home.alt);
-    inertial_nav.set_velocity_z(0);
 #endif
 
     if (g.log_bitmask & MASK_LOG_CMD)
