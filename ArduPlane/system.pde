@@ -304,6 +304,10 @@ static void startup_ground(void)
     // -----------------------
     demo_servos(3);
 
+    // reset last heartbeat time, so we don't trigger failsafe on slow
+    // startup
+    last_heartbeat_ms = millis();
+
     // we don't want writes to the serial port to cause us to pause
     // mid-flight, so set the serial ports non-blocking once we are
     // ready to fly
@@ -371,23 +375,31 @@ static void set_mode(enum FlightMode mode)
 
 static void check_long_failsafe()
 {
+    uint32_t tnow = millis();
     // only act on changes
     // -------------------
     if(failsafe != FAILSAFE_LONG  && failsafe != FAILSAFE_GCS) {
-        if(rc_override_active && millis() - rc_override_fs_timer > FAILSAFE_LONG_TIME) {
+        if (rc_override_active && tnow - last_heartbeat_ms > FAILSAFE_LONG_TIME) {
             failsafe_long_on_event(FAILSAFE_LONG);
         }
-        if(!rc_override_active && failsafe == FAILSAFE_SHORT && millis() - ch3_failsafe_timer > FAILSAFE_LONG_TIME) {
+        if(!rc_override_active && failsafe == FAILSAFE_SHORT && 
+           (tnow - ch3_failsafe_timer) > FAILSAFE_LONG_TIME) {
             failsafe_long_on_event(FAILSAFE_LONG);
         }
-        if(g.gcs_heartbeat_fs_enabled && millis() - rc_override_fs_timer > FAILSAFE_LONG_TIME) {
+        if (g.gcs_heartbeat_fs_enabled && 
+            (tnow - last_heartbeat_ms) > FAILSAFE_LONG_TIME) {
             failsafe_long_on_event(FAILSAFE_GCS);
         }
     } else {
         // We do not change state but allow for user to change mode
-        if(failsafe == FAILSAFE_GCS && millis() - rc_override_fs_timer < FAILSAFE_SHORT_TIME) failsafe = FAILSAFE_NONE;
-        if(failsafe == FAILSAFE_LONG && rc_override_active && millis() - rc_override_fs_timer < FAILSAFE_SHORT_TIME) failsafe = FAILSAFE_NONE;
-        if(failsafe == FAILSAFE_LONG && !rc_override_active && !ch3_failsafe) failsafe = FAILSAFE_NONE;
+        if (failsafe == FAILSAFE_GCS && 
+            (tnow - last_heartbeat_ms) < FAILSAFE_SHORT_TIME) 
+            failsafe = FAILSAFE_NONE;
+        if (failsafe == FAILSAFE_LONG && rc_override_active && 
+            (tnow - last_heartbeat_ms) < FAILSAFE_SHORT_TIME) 
+            failsafe = FAILSAFE_NONE;
+        if (failsafe == FAILSAFE_LONG && !rc_override_active && !ch3_failsafe) 
+            failsafe = FAILSAFE_NONE;
     }
 }
 

@@ -1775,15 +1775,18 @@ mission_failed:
 
         hal.rcin->set_overrides(v, 8);
 
-        rc_override_fs_timer = millis();
+        // a RC override message is consiered to be a 'heartbeat' from
+        // the ground station for failsafe purposes
+        last_heartbeat_ms = millis();
         break;
     }
 
     case MAVLINK_MSG_ID_HEARTBEAT:
     {
-        // We keep track of the last time we received a heartbeat from our GCS for failsafe purposes
-        if(msg->sysid != g.sysid_my_gcs) break;
-        last_heartbeat_ms = rc_override_fs_timer = millis();
+        // We keep track of the last time we received a heartbeat from
+        // our GCS for failsafe purposes
+        if (msg->sysid != g.sysid_my_gcs) break;
+        last_heartbeat_ms = millis();
         pmTest1++;
         break;
     }

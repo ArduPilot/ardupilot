@@ -301,8 +301,6 @@ static bool ch3_failsafe;
 // A timer used to help recovery from unusual attitudes.  If we enter an unusual attitude
 // while in autonomous flight this variable is used  to hold roll at 0 for a recovery period
 static uint8_t crash_timer;
-// A timer used to track how long since we have received the last GCS heartbeat or rc override message
-static uint32_t rc_override_fs_timer = 0;
 
 // the time when the last HEARTBEAT message arrived from a GCS
 static uint32_t last_heartbeat_ms;
