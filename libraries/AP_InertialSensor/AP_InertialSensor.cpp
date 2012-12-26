@@ -311,7 +311,7 @@ bool AP_InertialSensor::calibrate_accel(void (*delay_cb)(unsigned long t), void 
                 msg = PSTR("on it's back");
                 break;
         }
-        send_msg(PSTR("USER: Place APM %S and press any key.\n"), msg);
+        send_msg(PSTR("Place APM %S and press any key.\n"), msg);
 
         wait_key();
 
