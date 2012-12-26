@@ -162,10 +162,8 @@ void AP_InertialNav::correct_with_gps(int32_t lon, int32_t lat, float dt)
     }
 
     // calculate distance from base location
-    //x = (float)(lat - _base_lat) * 1.113195;
-    //y = (float)(lon - _base_lon) * _lon_to_m_scaling * 1.113195;
-    x = (float)(lat - _base_lat);
-    y = (float)(lon - _base_lon) * _lon_to_m_scaling;
+    x = (float)(lat - _base_lat) * AP_INERTIALNAV_LATLON_TO_CM;
+    y = (float)(lon - _base_lon) * _lon_to_m_scaling * AP_INERTIALNAV_LATLON_TO_CM;
 
     // convert accelerometer readings to earth frame
     Matrix3f dcm = _ahrs->get_dcm_matrix();
@@ -209,8 +207,7 @@ int32_t AP_InertialNav::get_latitude()
         return 0;
     }
 
-    //return _base_lat - (int32_t)(_position.x / 1.113195);
-    return _base_lat - (int32_t)(_position_base.x + _position_correction.x);
+    return _base_lat - (int32_t)((_position_base.x + _position_correction.x)/AP_INERTIALNAV_LATLON_TO_CM);
 }
 
 // get accel based longitude
@@ -221,8 +218,7 @@ int32_t AP_InertialNav::get_longitude()
         return 0;
     }
 
-    //return _base_lon - (int32_t)(_position.y / (_lon_to_m_scaling * 1.113195) );
-    return _base_lon - (int32_t)((_position_base.y+_position_correction.y) / _lon_to_m_scaling );
+    return _base_lon - (int32_t)((_position_base.y+_position_correction.y) / (_lon_to_m_scaling*AP_INERTIALNAV_LATLON_TO_CM));
 }
 
 // set_current_position - all internal calculations are recorded as the distances from this point
@@ -258,9 +254,7 @@ float AP_InertialNav::get_latitude_diff()
         return 0;
     }
 
-    //return _base_lat + (int32_t)_position.x;
-    //return -_position.x / 1.113195;
-    return -(_position_base.x+_position_correction.x);
+    return -((_position_base.x+_position_correction.x)/AP_INERTIALNAV_LATLON_TO_CM);
 }
 
 // get accel based longitude
@@ -271,9 +265,7 @@ float AP_InertialNav::get_longitude_diff()
         return 0;
     }
 
-    //return _base_lon - (int32_t)(_position.x / _lon_to_m_scaling);
-    //return -_position.y / (_lon_to_m_scaling * 1.113195);
-    return -(_position_base.y+_position_correction.y) / _lon_to_m_scaling;
+    return -(_position_base.y+_position_correction.y) / (_lon_to_m_scaling*AP_INERTIALNAV_LATLON_TO_CM);
 }
 
 // get velocity in latitude & longitude directions

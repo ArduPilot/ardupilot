@@ -17,6 +17,8 @@
 #define AP_INTERTIALNAV_SAVE_POS_AFTER_ITERATIONS   10
 #define AP_INTERTIALNAV_GPS_LAG_IN_10HZ_INCREMENTS  4       // must not be larger than size of _hist_position_estimate_x and _hist_position_estimate_y
 
+#define AP_INERTIALNAV_LATLON_TO_CM 1.1113175
+
 /*
  * AP_InertialNav is an attempt to use accelerometers to augment other sensors to improve altitud e position hold
  */
