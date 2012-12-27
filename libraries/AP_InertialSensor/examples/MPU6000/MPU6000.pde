@@ -64,7 +64,8 @@ void loop(void)
     "    c) calibrate accelerometers\r\n"
     "    d) display offsets and scaling\r\n"
     "    l) level (capture offsets from level)\r\n"
-    "    t) test"));
+    "    t) test\r\n"
+    "    r) reboot"));
 
     // wait for user input
     while( !hal.console->available() ) {
@@ -91,6 +92,10 @@ void loop(void)
 
         if( user_input == 't' || user_input == 'T' ) {
             run_test();
+        }
+
+        if( user_input == 'r' || user_input == 'R' ) {
+			hal.scheduler->reboot();
         }
     }
 }
