@@ -391,19 +391,32 @@ void AP_InertialSensor_MPU6000::hardware_init(Sample_rate sample_rate)
 
 reset_chip:
     // Chip reset
-    register_write(MPUREG_PWR_MGMT_1, BIT_PWR_MGMT_1_DEVICE_RESET);
-    hal.scheduler->delay(100);
+    uint8_t tries;
+    for (tries = 0; tries<5; tries++) {
+        register_write(MPUREG_PWR_MGMT_1, BIT_PWR_MGMT_1_DEVICE_RESET);
+        hal.scheduler->delay(100);
 
-    // Wake up device and select GyroZ clock (better performance)
-    register_write(MPUREG_PWR_MGMT_1, BIT_PWR_MGMT_1_CLK_ZGYRO);
-    hal.scheduler->delay(1);
+        // Wake up device and select GyroZ clock. Note that the
+        // MPU6000 starts up in sleep mode, and it can take some time
+        // for it to come out of sleep
+        register_write(MPUREG_PWR_MGMT_1, BIT_PWR_MGMT_1_CLK_ZGYRO);
+        hal.scheduler->delay(5);
+
+        // check it has woken up
+        if (register_read(MPUREG_PWR_MGMT_1) == BIT_PWR_MGMT_1_CLK_ZGYRO) {
+            break;
+        }
+    }
+    if (tries == 5) {
+        hal.console->println_P(PSTR("Failed to boot MPU6000 - retrying"));
+        goto reset_chip;
+    }
 
     register_write(MPUREG_PWR_MGMT_2, 0x00);            // only used for wake-up in accelerometer only low power mode
     hal.scheduler->delay(1);
 
     // Disable I2C bus (recommended on datasheet)
     register_write(MPUREG_USER_CTRL, BIT_USER_CTRL_I2C_IF_DIS);
-
     hal.scheduler->delay(1);
 
     uint8_t rate, filter, default_filter;
@@ -493,6 +506,10 @@ reset_chip:
     // wait for enough time that we should get a sample
     hal.scheduler->delay(msec_per_sample+2);
 
+#if MPU6000_DEBUG
+    _dump_registers();
+#endif
+
     if (_drdy_pin->read() == 0) {
         // we didn't get a sample - run the whole chip setup
         // again. This sometimes happens after a DTR reset or warm
@@ -532,6 +549,23 @@ uint16_t AP_InertialSensor_MPU6000::num_samples_available()
     }
     return _count;
 }
+
+
+#if MPU6000_DEBUG
+// dump all config registers - used for debug
+void AP_InertialSensor_MPU6000::_dump_registers(void)
+{
+    for (uint8_t reg=25; reg<=108; reg++) {
+        uint8_t v = register_read(reg);
+        hal.console->printf_P(PSTR("%02x:%02x "), (unsigned)reg, (unsigned)v);
+        if ((reg - 24) % 16 == 0) {
+            hal.console->println();
+        }
+    }
+    hal.console->println();
+}
+#endif
+
 
 // get_delta_time returns the time period in seconds overwhich the sensor data was collected
 uint32_t AP_InertialSensor_MPU6000::get_delta_time_micros() 

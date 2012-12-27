@@ -12,6 +12,9 @@
 #define MPU6000_CS_PIN       53        // APM pin connected to mpu6000's chip select pin
 #define DMP_FIFO_BUFFER_SIZE 72        // DMP FIFO buffer size
 
+// enable debug to see a register dump on startup
+#define MPU6000_DEBUG 0
+
 // DMP memory
 extern const uint8_t        dmpMem[8][16][16] PROGMEM;
 
@@ -105,6 +108,10 @@ public:
     static uint8_t              _fifoCountL;                    // low byte of number of elements in fifo buffer
 
     static bool                 _dmp_initialised;
+
+#if MPU6000_DEBUG
+    void						_dump_registers(void);
+#endif
 };
 
 #endif // __AP_INERTIAL_SENSOR_MPU6000_H__
