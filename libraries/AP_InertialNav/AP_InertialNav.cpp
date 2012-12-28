@@ -338,7 +338,7 @@ void AP_InertialNav::correct_with_baro(float baro_alt, float dt)
     float accel_ef_z_correction;
 
     // discard samples where dt is too large
-    if( dt > 0.2 ) {
+    if( dt > 0.5 ) {
         return;
     }
 

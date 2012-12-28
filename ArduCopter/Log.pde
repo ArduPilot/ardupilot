@@ -787,7 +787,7 @@ static void Log_Read_Attitude()
 }
 
 // Write an INAV packet. Total length : 52 Bytes
-static void Log_Write_INAV(float delta_t)
+static void Log_Write_INAV()
 {
 #if INERTIAL_NAV_XY == ENABLED || INERTIAL_NAV_Z == ENABLED
     Vector3f accel_corr = inertial_nav.accel_correction.get();
