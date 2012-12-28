@@ -13,7 +13,7 @@ static void read_inertia()
         log_counter_inav++;
         if( log_counter_inav >= 10 ) {
             log_counter_inav = 0;
-            Log_Write_INAV(G_Dt);
+            Log_Write_INAV();
         }
     }
 #endif
