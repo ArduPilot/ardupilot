@@ -37,6 +37,12 @@ static int16_t read_sonar(void)
 #if CONFIG_SONAR == ENABLED
     int16_t temp_alt = sonar.read();
 
+    if(temp_alt >= sonar.min_distance && temp_alt <= sonar.max_distance * 0.70) {
+        sonar_alt_ok = true;
+    }else{
+        sonar_alt_ok = false;
+    }
+
  #if SONAR_TILT_CORRECTION == 1
     // correct alt for angle of the sonar
     float temp = cos_pitch_x * cos_roll_x;

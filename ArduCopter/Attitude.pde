@@ -1052,8 +1052,8 @@ get_throttle_rate_stabilized(int16_t target_rate)
 static void
 get_throttle_land()
 {
-    // if we are above 10m perform regular alt hold descent
-    if (current_loc.alt >= LAND_START_ALT) {
+    // if we are above 10m and the sonar does not sense anything perform regular alt hold descent
+    if (current_loc.alt >= LAND_START_ALT && !(g.sonar_enabled && sonar_alt_ok)) {
         get_throttle_althold(LAND_START_ALT, g.auto_velocity_z_min, -abs(g.land_speed));
     }else{
         get_throttle_rate_stabilized(-abs(g.land_speed));
@@ -1076,6 +1076,32 @@ get_throttle_land()
             }
         }
     }
+}
+
+// get_throttle_surface_tracking - hold copter at the desired distance above the ground
+// updates accel based throttle controller targets
+static void
+get_throttle_surface_tracking(int16_t target_rate)
+{
+    static float target_sonar_alt = 0;   // The desired altitude in cm above the ground
+    static uint32_t last_call_ms = 0;
+
+    uint32_t now = millis();
+
+    // reset target altitude if this controller has just been engaged
+    if( now - last_call_ms > 1000 ) {
+        target_sonar_alt = sonar_alt + next_WP.alt - current_loc.alt;
+    }
+    last_call_ms = millis();
+
+    target_sonar_alt += target_rate * 0.02;
+
+    // do not let target altitude get too far from current altitude above ground
+    // Note: the 750cm limit is perhaps too wide but is consistent with the regular althold limits and helps ensure a smooth transition
+    target_sonar_alt = constrain(target_sonar_alt,sonar_alt-750,sonar_alt+750);
+    set_new_altitude(current_loc.alt+(target_sonar_alt-sonar_alt));
+
+    get_throttle_althold(next_WP.alt, -g.pilot_velocity_z_max-250, g.pilot_velocity_z_max+250);   // 250 is added to give head room to alt hold controller
 }
 
 /*
