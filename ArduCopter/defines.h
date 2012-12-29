@@ -41,6 +41,7 @@
 #define THROTTLE_HOLD                       6   // alt hold plus pilot input of climb rate
 #define THROTTLE_AUTO                       7   // auto pilot altitude controller with target altitude held in next_WP.alt
 #define THROTTLE_LAND                       8   // landing throttle controller
+#define THROTTLE_SURFACE_TRACKING           9   // ground tracking with sonar or other rangefinder
 
 
 // active altitude sensor

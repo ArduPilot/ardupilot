@@ -620,6 +620,7 @@ static int16_t climb_rate_error;
 static int16_t climb_rate;
 // The altitude as reported by Sonar in cm – Values are 20 to 700 generally.
 static int16_t sonar_alt;
+static bool sonar_alt_ok;   // true if we can trust the altitude from the sonar
 // The climb_rate as reported by sonar in cm/s
 static int16_t sonar_rate;
 // The altitude as reported by Baro in cm – Values can be quite high
@@ -1768,6 +1769,17 @@ bool set_throttle_mode( uint8_t new_throttle_mode )
             throttle_initialised = true;
             break;
 
+        case THROTTLE_SURFACE_TRACKING:
+            if( g.sonar_enabled ) {
+                set_new_altitude(current_loc.alt);          // by default hold the current altitude
+                if ( throttle_mode < THROTTLE_HOLD ) {      // reset the alt hold I terms if previous throttle mode was manual
+                    reset_throttle_I();
+                }
+                throttle_initialised = true;
+            }
+            // To-Do: handle the case where the sonar is not enabled
+            break;
+
         default:
             // To-Do: log an error message to the dataflash or tlogs instead of printing to the serial port
             cliSerial->printf_P(PSTR("Unsupported throttle mode: %d!!"),new_throttle_mode);
@@ -1923,6 +1935,18 @@ void update_throttle_mode(void)
     case THROTTLE_LAND:
         // landing throttle controller
         get_throttle_land();
+        break;
+
+    case THROTTLE_SURFACE_TRACKING:
+        // surface tracking with sonar or other rangefinder plus pilot input of climb rate
+        pilot_climb_rate = get_pilot_desired_climb_rate(g.rc_3.control_in);
+        if( sonar_alt_ok ) {
+            // if sonar is ok, use surface tracking
+            get_throttle_surface_tracking(pilot_climb_rate);
+        }else{
+            // if no sonar fall back stabilize rate controller
+            get_throttle_rate_stabilized(pilot_climb_rate);
+        }
         break;
     }
 }
