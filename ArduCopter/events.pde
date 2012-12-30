@@ -48,7 +48,7 @@ static void failsafe_on_event()
     }
 
     // log the error to the dataflash
-    Log_Write_Error(ERROR_CODE_RADIO_FAILSAFE_THROTTLE, ERROR_CODE_RADIO_FAILSAFE_THROTTLE);
+    Log_Write_Error(ERROR_SUBSYSTEM_FAILSAFE, ERROR_CODE_RADIO_FAILSAFE_THROTTLE);
 
 }
 
@@ -59,7 +59,7 @@ static void failsafe_off_event()
 {
     // no need to do anything except log the error as resolved
     // user can now override roll, pitch, yaw and throttle and even use flight mode switch to restore previous flight mode
-    Log_Write_Error(ERROR_CODE_RADIO_FAILSAFE_THROTTLE, ERROR_CODE_ERROR_RESOLVED);
+    Log_Write_Error(ERROR_SUBSYSTEM_FAILSAFE, ERROR_CODE_ERROR_RESOLVED);
 }
 
 static void low_battery_event(void)
