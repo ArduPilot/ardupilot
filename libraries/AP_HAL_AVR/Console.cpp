@@ -1,9 +1,10 @@
+#include <AP_HAL.h>
+#if CONFIG_HAL_BOARD == HAL_BOARD_APM1 || CONFIG_HAL_BOARD == HAL_BOARD_APM2
 
 #include <limits.h>
 
 #include "print_vprintf.h"
 
-#include <AP_HAL.h>
 #include "Console.h"
 using namespace AP_HAL_AVR;
 
@@ -192,3 +193,4 @@ uint16_t AVRConsoleDriver::Buffer::bytes_free() {
     return ((_mask+1) - ((_head - _tail) & _mask));
 }
 
+#endif

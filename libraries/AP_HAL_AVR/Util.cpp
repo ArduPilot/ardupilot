@@ -1,3 +1,5 @@
+#include <AP_HAL.h>
+#if CONFIG_HAL_BOARD == HAL_BOARD_APM1 || CONFIG_HAL_BOARD == HAL_BOARD_APM2
 
 #include "Util.h"
 #include "print_vprintf.h"
@@ -56,3 +58,4 @@ int AVRUtil::vsnprintf_P(char* str, size_t size, const prog_char_t *format,
 }
 
 
+#endif
