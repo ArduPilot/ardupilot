@@ -152,6 +152,7 @@ static void read_radio()
         // turn on throttle failsafe if no update from ppm encoder for 2 seconds
         if ((elapsed >= RADIO_FS_TIMEOUT_MS)
                 && g.failsafe_throttle && motors.armed() && !ap.failsafe) {
+            Log_Write_Error(ERROR_SUBSYSTEM_RADIO, ERROR_CODE_RADIO_LATE_FRAME);
             set_failsafe(true);
         }
     }

@@ -57,13 +57,10 @@ static void set_failsafe(bool mode)
             // We've regained radio contact
             // ----------------------------
             failsafe_off_event();
-			Log_Write_Event(DATA_FAILSAFE_OFF);
-
         }else{
             // We've lost radio contact
             // ------------------------
             failsafe_on_event();
-            Log_Write_Event(DATA_FAILSAFE_ON);
         }
     }
 }
@@ -72,9 +69,6 @@ static void set_failsafe(bool mode)
 // ---------------------------------------------
 void set_low_battery(bool b)
 {
-	if(ap.low_battery != b && true == b){
-		Log_Write_Event(DATA_LOW_BATTERY);
-	}
 	ap.low_battery = b;
 }
 

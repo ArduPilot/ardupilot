@@ -1093,6 +1093,53 @@ static void Log_Read_Camera()
                     (unsigned int)temp7);                   // 7 yaw in centidegrees
 }
 
+// Write an error packet. Total length : 6 bytes
+static void Log_Write_Error(uint8_t sub_system, uint8_t error_code)
+{
+    DataFlash.WriteByte(HEAD_BYTE1);
+    DataFlash.WriteByte(HEAD_BYTE2);
+    DataFlash.WriteByte(LOG_ERROR_MSG);
+
+    DataFlash.WriteByte(sub_system);                // 1 sub system
+    DataFlash.WriteByte(error_code);                // 2 error code
+    DataFlash.WriteByte(END_BYTE);
+}
+
+// Read an error packet
+static void Log_Read_Error()
+{
+    uint8_t sub_system   = DataFlash.ReadByte();    // 1 sub system
+    uint8_t error_code   = DataFlash.ReadByte();    // 2 error code
+
+    cliSerial->print_P(PSTR("ERR, "));
+
+    // print subsystem
+    switch(sub_system) {
+        case ERROR_SUBSYSTEM_MAIN:
+            cliSerial->print_P(PSTR("MAIN"));
+            break;
+        case ERROR_SUBSYSTEM_RADIO:
+            cliSerial->print_P(PSTR("RADIO"));
+            break;
+        case ERROR_SUBSYSTEM_COMPASS:
+            cliSerial->print_P(PSTR("COM"));
+            break;
+        case ERROR_SUBSYSTEM_OPTFLOW:
+            cliSerial->print_P(PSTR("OF"));
+            break;
+        case ERROR_SUBSYSTEM_FAILSAFE:
+            cliSerial->print_P(PSTR("FS"));
+            break;
+        default:
+            cliSerial->printf_P(PSTR("%d"),(int)sub_system);    // 1 sub system
+            break;
+    }
+
+    // print error code
+    cliSerial->printf_P(PSTR(", %d\n"),(int)error_code);    // 2 error code
+}
+
+
 // Read the DataFlash log memory
 static void Log_Read(int16_t start_page, int16_t end_page)
 {
@@ -1232,6 +1279,10 @@ static int16_t Log_Read_Process(int16_t start_page, int16_t end_page)
 					case LOG_CAMERA_MSG:
 						Log_Read_Camera();
 						break;
+
+                    case LOG_ERROR_MSG:
+                        Log_Read_Error();
+                        break;
 				}
 				break;
 		case 3:
@@ -1263,6 +1314,8 @@ static void Log_Write_Mode(uint8_t mode) {
 }
 static void Log_Write_Raw() {
 }
+void print_latlon(BetterStream *s, int32_t lat_or_lon) {
+}
 static void Log_Write_GPS() {
 }
 static void Log_Write_Current() {
@@ -1270,6 +1323,8 @@ static void Log_Write_Current() {
 static void Log_Write_Iterm() {
 }
 static void Log_Write_Attitude() {
+}
+static void Log_Write_INAV() {
 }
 static void Log_Write_Data(uint8_t _index, float _data){
 }
@@ -1294,6 +1349,10 @@ static void Log_Write_Performance() {
 static void Log_Write_PID(int8_t pid_id, int32_t error, int32_t p, int32_t i, int32_t d, int32_t output, float gain) {
 }
 static void Log_Write_DMP() {
+}
+static void Log_Write_Camera() {
+}
+static void Log_Write_Error(uint8_t sub_system, uint8_t error_code) {
 }
 static int8_t process_logs(uint8_t argc, const Menu::arg *argv) {
     return 0;

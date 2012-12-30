@@ -65,6 +65,7 @@ static void init_compass()
     if (!compass.init() || !compass.read()) {
         // make sure we don't pass a broken compass to DCM
         cliSerial->println_P(PSTR("COMPASS INIT ERROR"));
+        Log_Write_Error(ERROR_SUBSYSTEM_COMPASS,ERROR_CODE_FAILED_TO_INITIALISE);
         return;
     }
     ahrs.set_compass(&compass);
@@ -79,6 +80,7 @@ static void init_optflow()
     if( optflow.init() == false ) {
         g.optflow_enabled = false;
         cliSerial->print_P(PSTR("\nFailed to Init OptFlow "));
+        Log_Write_Error(ERROR_SUBSYSTEM_OPTFLOW,ERROR_CODE_FAILED_TO_INITIALISE);
     }else{
         // suspend timer while we set-up SPI communication
         hal.scheduler->suspend_timer_procs();

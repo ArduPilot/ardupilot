@@ -290,6 +290,7 @@ enum gcs_severity {
 #define LOG_DMP_MSG                     0x10
 #define LOG_INAV_MSG                    0x11
 #define LOG_CAMERA_MSG                  0x12
+#define LOG_ERROR_MSG                   0x13
 #define LOG_INDEX_MSG                   0xF0
 #define MAX_NUM_LOGS                    50
 
@@ -322,9 +323,6 @@ enum gcs_severity {
 #define DATA_INIT_SIMPLE_BEARING        9
 #define DATA_ARMED                      10
 #define DATA_DISARMED                   11
-#define DATA_FAILSAFE_ON                12
-#define DATA_FAILSAFE_OFF               13
-#define DATA_LOW_BATTERY                14
 #define DATA_AUTO_ARMED                 15
 #define DATA_TAKEOFF                    16
 #define DATA_DID_REACH_ALT              17
@@ -424,5 +422,22 @@ enum gcs_severity {
 
 #define AP_BARO_BMP085    1
 #define AP_BARO_MS5611    2
+
+// Error message sub systems and error codes
+#define ERROR_SUBSYSTEM_MAIN                1
+#define ERROR_SUBSYSTEM_RADIO               2
+#define ERROR_SUBSYSTEM_COMPASS             3
+#define ERROR_SUBSYSTEM_OPTFLOW             4
+#define ERROR_SUBSYSTEM_FAILSAFE            5
+// general error codes
+#define ERROR_CODE_ERROR_RESOLVED           0
+#define ERROR_CODE_FAILED_TO_INITIALISE     1
+// subsystem specific error codes -- radio
+#define ERROR_CODE_RADIO_LATE_FRAME         2
+// subsystem specific error codes -- failsafe
+#define ERROR_CODE_RADIO_FAILSAFE_THROTTLE  2
+#define ERROR_CODE_RADIO_FAILSAFE_BATTERY   3
+
+
 
 #endif // _DEFINES_H
