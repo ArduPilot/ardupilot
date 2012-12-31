@@ -1,6 +1,11 @@
 ArduCopter Release Notes:
 
 ------------------------------------------------------------------
+ArduCopter 2.9-rc2 31-Dec-2012
+Improvements over 2.9-rc2:
+1) increased throttle rate gains from 1.0 to 6.0
+2) APM1 fix so it works with inertial nav (5hz update rate of baro was beyond the tolerance set in the inav library)
+------------------------------------------------------------------
 ArduCopter 2.9-rc1 23-Dec-2012
 Improvements over 2.8.1:
 1) altitude hold improvements:
