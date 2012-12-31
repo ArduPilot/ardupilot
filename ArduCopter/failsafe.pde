@@ -48,13 +48,14 @@ void failsafe_check(uint32_t tnow)
         in_failsafe = true;
     }
 
-    if (in_failsafe && tnow - failsafe_last_timestamp > 1000000) {
+    if (failsafe_enabled && in_failsafe && tnow - failsafe_last_timestamp > 1000000) {
         // disarm motors every second
         failsafe_last_timestamp = tnow;
         if(motors.armed()) {
             motors.armed(false);
         	set_armed(true);
             motors.output();
+            Log_Write_Error(ERROR_SUBSYSTEM_FAILSAFE, ERROR_CODE_FAILSAFE_WATCHDOG);
         }
     }
 }

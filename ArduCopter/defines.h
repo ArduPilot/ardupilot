@@ -435,8 +435,9 @@ enum gcs_severity {
 // subsystem specific error codes -- radio
 #define ERROR_CODE_RADIO_LATE_FRAME         2
 // subsystem specific error codes -- failsafe
-#define ERROR_CODE_RADIO_FAILSAFE_THROTTLE  2
-#define ERROR_CODE_RADIO_FAILSAFE_BATTERY   3
+#define ERROR_CODE_FAILSAFE_THROTTLE  2
+#define ERROR_CODE_FAILSAFE_BATTERY   3
+#define ERROR_CODE_FAILSAFE_WATCHDOG  4
 
 
 
