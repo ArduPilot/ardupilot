@@ -901,7 +901,7 @@
 #endif
 
 #ifndef ALT_HOLD_P
- # define ALT_HOLD_P            1.0
+ # define ALT_HOLD_P            2.0
 #endif
 #ifndef ALT_HOLD_I
  # define ALT_HOLD_I            0.0
@@ -912,7 +912,7 @@
 
 // RATE control
 #ifndef THROTTLE_P
- # define THROTTLE_P            1.0
+ # define THROTTLE_P            6.0
 #endif
 #ifndef THROTTLE_I
  # define THROTTLE_I            0.0
