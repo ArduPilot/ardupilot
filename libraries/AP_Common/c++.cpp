@@ -5,11 +5,11 @@
 //
 // Note: use new/delete with caution.  The heap is small and
 // easily fragmented.
-//
 
+#include <AP_HAL.h>
 #include <stdlib.h>
 
-#ifndef PX4FMU_BUILD
+#if CONFIG_HAL_BOARD == HAL_BOARD_APM1 || CONFIG_HAL_BOARD == HAL_BOARD_APM2
 
 void * operator new(size_t size)
 {
@@ -49,5 +49,5 @@ void __cxa_guard_release (__guard *g){
 void __cxa_guard_abort (__guard *) {
 };
 
-#endif // PX4FMU_BUILD
+#endif // CONFIG_HAL_BOARD
 
