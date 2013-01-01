@@ -142,7 +142,7 @@ bool AVRConsoleDriver::Buffer::allocate(uint16_t size) {
     uint8_t shift;
     /* Hardcoded max size of 1024. sue me. */
     for ( shift = 1;
-          ( 1 << shift ) < 1024 && ( 1 << shift) < size;
+          ( 1U << shift ) < 1024 && ( 1U << shift) < size;
           shift++
         ) ;
     uint16_t tmpmask  = (1 << shift) - 1;
