@@ -101,16 +101,17 @@ restart:
                 _step++;
                 _mtk_type_step2     = MTK_GPS_REVISION_V16;
                 break;
-            }
-            if ((_mtk_type_step1 == MTK_GPS_REVISION_V19) && (data == PREAMBLE2_V19)){
+            } else if ((_mtk_type_step1 == MTK_GPS_REVISION_V19) && (data == PREAMBLE2_V19)){
                 _step++;
                 _mtk_type_step2     = MTK_GPS_REVISION_V19;
                 break;
-            }
-            _mtk_type_step1         = 0;
-            _mtk_type_step2         = 0;
-            _step                   = 0;
-            //goto restart;
+            } else {
+				_mtk_type_step1         = 0;
+				_mtk_type_step2         = 0;
+				_step                   = 0;
+				goto restart;
+			}
+			break;
         case 2:
             if (sizeof(_buffer) == data) {
                 _step++;
@@ -118,7 +119,7 @@ restart:
                 _payload_counter    = 0;
             } else {
                 _step               = 0;                       // reset and wait for a message of the right class
-                //goto restart;
+                goto restart;
             }
             break;
 
@@ -206,17 +207,17 @@ AP_GPS_MTK19::_detect(uint8_t data)
 {
     static uint8_t payload_counter;
     static uint8_t step;
-    static uint8_t mtk_type_step1, mtk_type_step2;
+    static uint8_t mtk_type_step1;
     static uint8_t ck_a, ck_b;
 
+restart:
 	switch (step) {
         case 0:
             ck_b = ck_a = payload_counter = 0;
             if (data == PREAMBLE1_V16) {
                 mtk_type_step1      = MTK_GPS_REVISION_V16;
                 step++;
-            }    
-            if (data == PREAMBLE1_V19) {
+            } else if (data == PREAMBLE1_V19) {
                 mtk_type_step1      = MTK_GPS_REVISION_V19;
                 step++;
             }    
@@ -224,17 +225,13 @@ AP_GPS_MTK19::_detect(uint8_t data)
         case 1:
             if ((mtk_type_step1 == MTK_GPS_REVISION_V16) && (PREAMBLE2_V16 == data)){
                 step++;
-                mtk_type_step2      = MTK_GPS_REVISION_V16;
-                break;
-            }
-            if ((mtk_type_step1 == MTK_GPS_REVISION_V19) && (PREAMBLE2_V19 == data)){
+            } else if ((mtk_type_step1 == MTK_GPS_REVISION_V19) && (PREAMBLE2_V19 == data)){
                 step++;
-                mtk_type_step2      = MTK_GPS_REVISION_V19;
-                break;
-            }
-            mtk_type_step1          = 0;
-            mtk_type_step2          = 0;
-            step                    = 0;
+            } else {
+				step = 0;
+				goto restart;
+			}
+			break;
         case 2:
             if (data == sizeof(struct diyd_mtk_msg)) {
                 step++;
