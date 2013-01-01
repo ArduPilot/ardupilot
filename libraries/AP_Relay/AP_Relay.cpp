@@ -14,7 +14,7 @@ extern const AP_HAL::HAL& hal;
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_APM1
 #define RELAY_PIN 47
-#elif CONFIG_HAL_BOARD == HAL_BOARD_APM2
+#elif CONFIG_HAL_BOARD == HAL_BOARD_APM2 || CONFIG_HAL_BOARD == HAL_BOARD_AVR_SITL
 #define RELAY_PIN 26
 #else
 #error "no RELAY_PIN defined for this board"
