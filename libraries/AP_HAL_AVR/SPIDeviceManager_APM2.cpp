@@ -11,20 +11,28 @@ using namespace AP_HAL_AVR;
 extern const AP_HAL::HAL& hal;
 
 void APM2SPIDeviceManager::init(void* machtnichts) {
-   
+
+    /* Note that the order of the init() of the MS5611 and MPU6k is
+     * critical for the APM2. If you initialise in the wrong order
+     * then the MS5611 doesn't initialise itself correctly. This
+     * indicates an electrical fault in the APM2 which needs to be
+     * investigated. Meanwhile, initialising the MPU6k CS pin before
+     * the MS5611 CS pin works around the problem
+     */
+
+    /* mpu6k cs is on Arduino pin 53, PORTB0 */
+    AVRDigitalSource* mpu6k_cs = new AVRDigitalSource(_BV(0), PB);
+    /* mpu6k: divide clock by 32 to 500khz
+     * spcr gets bit SPR1,  spsr gets bit SPI2X */
+    _mpu6k = new AVRSPI0DeviceDriver(mpu6k_cs, _BV(SPR1), _BV(SPI2X));
+    _mpu6k->init();
+
     /* ms5611 cs is on Arduino pin 40, PORTG1 */
     AVRDigitalSource* ms5611_cs = new AVRDigitalSource(_BV(1), PG);
     /* ms5611: divide clock by 32 to 500khz
      * spcr gets bit SPR1,  spsr gets bit SPI2X */
     _ms5611 = new AVRSPI0DeviceDriver(ms5611_cs, _BV(SPR1), _BV(SPI2X));
     _ms5611->init();
-
-    /* ms5611 cs is on Arduino pin 53, PORTB0 */
-    AVRDigitalSource* mpu6k_cs = new AVRDigitalSource(_BV(0), PB);
-    /* mpu6k: divide clock by 32 to 500khz
-     * spcr gets bit SPR1,  spsr gets bit SPI2X */
-    _mpu6k = new AVRSPI0DeviceDriver(mpu6k_cs, _BV(SPR1), _BV(SPI2X));
-    _mpu6k->init();
    
     /* optflow cs is on Arduino pin A3, PORTF3 */
     AVRDigitalSource* optflow_cs = new AVRDigitalSource(_BV(3), PF);
