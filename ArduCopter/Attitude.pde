@@ -988,7 +988,6 @@ get_throttle_rate(int16_t z_target_speed)
 static void
 get_throttle_althold(int32_t target_alt, int16_t min_climb_rate, int16_t max_climb_rate)
 {
-    int32_t _altitude_error;
     int16_t desired_rate;
     int32_t linear_distance;      // the distace we swap between linear and sqrt.
 
