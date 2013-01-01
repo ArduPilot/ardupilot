@@ -7,9 +7,12 @@
 #include <AP_HAL_PX4.h>
 #include "AP_HAL_PX4_Namespace.h"
 #include "HAL_PX4_Class.h"
+#include "Console.h"
 
 #include <AP_HAL_Empty.h>
 #include <AP_HAL_Empty_Private.h>
+
+#include <stdio.h>
 
 using namespace PX4;
 
@@ -26,7 +29,7 @@ static Empty::EmptyRCOutput rcoutDriver;
 static Empty::EmptyScheduler schedulerInstance;
 static Empty::EmptyUtil utilInstance;
 
-static Empty::EmptyConsoleDriver consoleDriver(&uartADriver);
+static PX4ConsoleDriver consoleDriver;
 
 HAL_PX4::HAL_PX4() :
     AP_HAL::HAL(
@@ -50,9 +53,6 @@ void HAL_PX4::init(int argc, char * const argv[]) const
     scheduler->init(NULL);
     uartA->begin(115200);
     console->init((void*) uartA);
-    rcin->init(NULL);
-    rcout->init(NULL);
-    analogin->init(NULL);
 }
 
 const HAL_PX4 AP_HAL_PX4;
