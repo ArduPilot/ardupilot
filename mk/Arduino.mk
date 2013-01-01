@@ -259,7 +259,8 @@ DEFINES        +=   -DSKETCH=\"$(SKETCH)\"
 DEFINES        +=   $(EXTRAFLAGS) # from user config.mk
 DEFINES        +=   -DCONFIG_HAL_BOARD=$(HAL_BOARD)
 WARNFLAGS       =   -Wformat -Wall -Wshadow -Wpointer-arith -Wcast-align
-WARNFLAGS      +=   -Wwrite-strings -Wformat=2 -Wno-reorder
+WARNFLAGS      +=   -Wwrite-strings -Wformat=2
+WARNFLAGSCXX    =   -Wno-reorder
 DEPFLAGS        =   -MD -MT $@
 
 CXXOPTS         =   -ffunction-sections -fdata-sections -fno-exceptions
@@ -281,7 +282,7 @@ CPULDFLAGS= $($(TOOLCHAIN)_CPULDFLAGS)
 OPTFLAGS= $($(TOOLCHAIN)_OPTFLAGS)
 
 CXXFLAGS        =   -g $(CPUFLAGS) $(DEFINES) -Wa,$(LISTOPTS) $(OPTFLAGS)
-CXXFLAGS       +=   $(WARNFLAGS) $(DEPFLAGS) $(CXXOPTS)
+CXXFLAGS       +=   $(WARNFLAGS) $(WARNFLAGSCXX) $(DEPFLAGS) $(CXXOPTS)
 CFLAGS          =   -g $(CPUFLAGS) $(DEFINES) -Wa,$(LISTOPTS) $(OPTFLAGS)
 CFLAGS         +=   $(WARNFLAGS) $(DEPFLAGS) $(COPTS)
 ASFLAGS         =   -g $(CPUFLAGS) $(DEFINES) -Wa,$(LISTOPTS) $(DEPFLAGS)
