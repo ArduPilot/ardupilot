@@ -11,24 +11,20 @@
 //    GPS configuration : Custom protocol per "DIYDrones Custom Binary Sentence Specification V1.6, v1.7, v1.8, v1.9"
 //
 
-#include <FastSerial.h>
+#include <AP_HAL.h>
 #include "AP_GPS_MTK19.h"
 #include <stdint.h>
-#if defined(ARDUINO) && ARDUINO >= 100
- #include "Arduino.h"
-#else
- #include <wiring.h>
-#endif
 
 // Constructors ////////////////////////////////////////////////////////////////
-AP_GPS_MTK19::AP_GPS_MTK19(Stream *s) : GPS(s)
+AP_GPS_MTK19::AP_GPS_MTK19() : GPS()
 {
 }
 
 // Public Methods //////////////////////////////////////////////////////////////
 void
-AP_GPS_MTK19::init(enum GPS_Engine_Setting nav_setting)
+AP_GPS_MTK19::init(AP_HAL::UARTDriver *s, enum GPS_Engine_Setting nav_setting)
 {
+	_port = s;
     _port->flush();
 
     // initialize serial port for binary protocol use
