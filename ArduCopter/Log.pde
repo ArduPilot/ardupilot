@@ -1153,12 +1153,10 @@ static void Log_Read(int16_t start_page, int16_t end_page)
                          "\nFree RAM: %u\n"),
                     (unsigned) memcheck_available_memory());
 
- #if CONFIG_APM_HARDWARE == APM_HARDWARE_APM2
-    cliSerial->printf_P(PSTR("APM 2\n"));
- #elif  CONFIG_APM_HARDWARE == APM2_BETA_HARDWARE
-    cliSerial->printf_P(PSTR("APM 2Beta\n"));
- #else
+ #if CONFIG_HAL_BOARD == HAL_BOARD_APM1
     cliSerial->printf_P(PSTR("APM 1\n"));
+ #elif CONFIG_HAL_BOARD == HAL_BOARD_APM2
+    cliSerial->printf_P(PSTR("APM 2\n"));
  #endif
 
 #if CLI_ENABLED == ENABLED
