@@ -1314,7 +1314,7 @@ static void Log_Write_Mode(uint8_t mode) {
 }
 static void Log_Write_Raw() {
 }
-void print_latlon(BetterStream *s, int32_t lat_or_lon) {
+void print_latlon(AP_HAL::BetterStream *s, int32_t lat_or_lon) {
 }
 static void Log_Write_GPS() {
 }
