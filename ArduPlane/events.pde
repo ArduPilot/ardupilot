@@ -116,9 +116,7 @@ static void update_events(void)
             break;
 
         case EVENT_TYPE_RELAY:
-#if CONFIG_RELAY == ENABLED
             relay.toggle();
-#endif
             break;
         }
 

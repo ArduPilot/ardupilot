@@ -588,7 +588,7 @@ const AP_Param::Info var_info[] PROGMEM = {
 #if CAMERA == ENABLED
     // @Group: CAM_
     // @Path: ../libraries/AP_Camera/AP_Camera.cpp
-    GGROUP(camera,                  "CAM_", AP_Camera),
+    GOBJECT(camera,                  "CAM_", AP_Camera),
 #endif
 
     // RC channel

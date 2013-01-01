@@ -14,9 +14,7 @@ static int8_t   test_adc(uint8_t argc,                  const Menu::arg *argv);
 #endif
 static int8_t   test_ins(uint8_t argc,                  const Menu::arg *argv);
 static int8_t   test_battery(uint8_t argc,              const Menu::arg *argv);
-#if CONFIG_RELAY == ENABLED
 static int8_t   test_relay(uint8_t argc,                const Menu::arg *argv);
-#endif
 static int8_t   test_wp(uint8_t argc,                   const Menu::arg *argv);
 static int8_t   test_airspeed(uint8_t argc,     const Menu::arg *argv);
 static int8_t   test_pressure(uint8_t argc,     const Menu::arg *argv);
@@ -37,9 +35,7 @@ static const struct Menu::command test_menu_commands[] PROGMEM = {
     {"passthru",            test_passthru},
     {"failsafe",            test_failsafe},
     {"battery",     test_battery},
-#if CONFIG_RELAY == ENABLED
     {"relay",                       test_relay},
-#endif
     {"waypoints",           test_wp},
     {"xbee",                        test_xbee},
     {"eedump",                      test_eedump},
@@ -284,7 +280,6 @@ test_battery(uint8_t argc, const Menu::arg *argv)
 
 }
 
-#if CONFIG_RELAY == ENABLED
 static int8_t
 test_relay(uint8_t argc, const Menu::arg *argv)
 {
@@ -307,7 +302,6 @@ test_relay(uint8_t argc, const Menu::arg *argv)
         }
     }
 }
-#endif
 
 static int8_t
 test_wp(uint8_t argc, const Menu::arg *argv)

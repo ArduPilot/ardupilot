@@ -236,11 +236,12 @@ AP_HAL::AnalogSource * batt_curr_pin;
 ////////////////////////////////////////////////////////////////////////////////
 // Relay
 ////////////////////////////////////////////////////////////////////////////////
-
-#if CONFIG_RELAY == ENABLED
 AP_Relay relay;
-#endif
 
+// Camera
+#if CAMERA == ENABLED
+AP_Camera camera(&relay);
+#endif
 
 ////////////////////////////////////////////////////////////////////////////////
 // Global variables
@@ -784,7 +785,7 @@ static void medium_loop()
 #endif
 
 #if CAMERA == ENABLED
-    g.camera.trigger_pic_cleanup();
+    camera.trigger_pic_cleanup();
 #endif
 
     // This is the start of the medium (10 Hz) loop pieces

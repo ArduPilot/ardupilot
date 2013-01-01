@@ -354,11 +354,6 @@ public:
     AP_Int8 stick_mixing;
     AP_Int8 rudder_steer;
 
-    // Camera
-#if CAMERA == ENABLED
-    AP_Camera camera;
-#endif
-
     // RC channels
     RC_Channel channel_roll;
     RC_Channel channel_pitch;

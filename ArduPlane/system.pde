@@ -197,9 +197,7 @@ static void init_ardupilot()
     pinMode(C_LED_PIN, OUTPUT);                         // GPS status LED
     pinMode(A_LED_PIN, OUTPUT);                         // GPS status LED
     pinMode(B_LED_PIN, OUTPUT);                         // GPS status LED
-#if CONFIG_RELAY == ENABLED
     relay.init();
-#endif
 
 #if FENCE_TRIGGERED_PIN > 0
     pinMode(FENCE_TRIGGERED_PIN, OUTPUT);

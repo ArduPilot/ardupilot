@@ -505,7 +505,7 @@ static void NOINLINE send_statustext(mavlink_channel_t chan)
 static bool telemetry_delayed(mavlink_channel_t chan)
 {
     uint32_t tnow = millis() >> 10;
-    if (tnow > g.telem_delay) {
+    if (tnow > (uint32_t)g.telem_delay) {
         return false;
     }
 #if USB_MUX_PIN > 0
@@ -1847,13 +1847,13 @@ mission_failed:
 #if CAMERA == ENABLED
     case MAVLINK_MSG_ID_DIGICAM_CONFIGURE:
     {
-        g.camera.configure_msg(msg);
+        camera.configure_msg(msg);
         break;
     }
 
     case MAVLINK_MSG_ID_DIGICAM_CONTROL:
     {
-        g.camera.control_msg(msg);
+        camera.control_msg(msg);
         break;
     }
 #endif // CAMERA == ENABLED
