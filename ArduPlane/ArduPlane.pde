@@ -70,6 +70,7 @@
 
 #include <AP_HAL_AVR.h>
 #include <AP_HAL_AVR_SITL.h>
+#include <AP_HAL_PX4.h>
 #include <AP_HAL_Empty.h>
 
 AP_HAL::BetterStream* cliSerial;
@@ -111,6 +112,9 @@ DataFlash_APM1 DataFlash;
 DataFlash_APM2 DataFlash;
 #elif CONFIG_HAL_BOARD == HAL_BOARD_AVR_SITL
 DataFlash_SITL DataFlash;
+#else
+// no dataflash driver
+DataFlash_Empty DataFlash;
 #endif
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -919,10 +923,10 @@ static void slow_loop()
     case 1:
         slow_loopCounter++;
 
-#if CONFIG_HAL_BOARD == HAL_BOARD_APM1 || CONFIG_HAL_BOARD == HAL_BOARD_AVR_SITL
-        update_aux_servo_function(&g.rc_5, &g.rc_6, &g.rc_7, &g.rc_8);
-#else
+#if CONFIG_HAL_BOARD == HAL_BOARD_APM2
         update_aux_servo_function(&g.rc_5, &g.rc_6, &g.rc_7, &g.rc_8, &g.rc_9, &g.rc_10, &g.rc_11);
+#else
+        update_aux_servo_function(&g.rc_5, &g.rc_6, &g.rc_7, &g.rc_8);
 #endif
         enable_aux_servos();
 

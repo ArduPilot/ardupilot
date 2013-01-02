@@ -133,6 +133,17 @@
  # define CONFIG_INS_TYPE CONFIG_INS_STUB
  # define CONFIG_PITOT_SOURCE PITOT_SOURCE_ANALOG_PIN
  # define MAGNETOMETER ENABLED
+#elif CONFIG_HAL_BOARD == HAL_BOARD_PX4
+ # define A_LED_PIN        27
+ # define B_LED_PIN        26
+ # define C_LED_PIN        25
+ # define LED_ON           LOW
+ # define LED_OFF          HIGH
+ # define BATTERY_VOLT_PIN      -1
+ # define BATTERY_CURR_PIN      -1
+ # define CONFIG_INS_TYPE CONFIG_INS_STUB
+ # define CONFIG_PITOT_SOURCE PITOT_SOURCE_ANALOG_PIN
+ # define MAGNETOMETER ENABLED
 #endif
 
 
