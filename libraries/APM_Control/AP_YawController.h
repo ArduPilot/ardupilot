@@ -42,7 +42,7 @@ private:
 	// Low pass filter cut frequency for derivative calculation.
 	// FCUT macro computes a frequency cut based on an acceptable delay.
 	#define FCUT(d) (1 / ( 2 * 3.14 * (d) ) )
-	static const float _fCut = FCUT(.5);
+	static constexpr float _fCut = FCUT(.5);
 };
 
 #endif // __AP_YAW_CONTROLLER_H__
