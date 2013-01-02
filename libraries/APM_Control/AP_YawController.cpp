@@ -20,6 +20,11 @@ const AP_Param::GroupInfo AP_YawController::var_info[] PROGMEM = {
 	AP_GROUPEND
 };
 
+// Low pass filter cut frequency for derivative calculation.
+// FCUT macro computes a frequency cut based on an acceptable delay.
+#define FCUT(d) (1 / ( 2 * 3.14 * (d) ) )
+const float AP_YawController::_fCut = FCUT(.5);
+
 int32_t AP_YawController::get_servo_out(float scaler, bool stick_movement)
 {
 	uint32_t tnow = hal.scheduler->millis();

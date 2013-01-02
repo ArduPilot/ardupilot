@@ -9,7 +9,8 @@
 
 class AP_YawController {
 public:                      
-	AP_YawController() { 
+	AP_YawController()
+	{
 		AP_Param::setup_object_defaults(this, var_info);
 	}
 
@@ -39,10 +40,7 @@ private:
 	AP_AHRS *_ahrs;
 	AP_InertialSensor *_ins;
 
-	// Low pass filter cut frequency for derivative calculation.
-	// FCUT macro computes a frequency cut based on an acceptable delay.
-	#define FCUT(d) (1 / ( 2 * 3.14 * (d) ) )
-	const float _fCut = FCUT(.5);
+	static const float _fCut;
 };
 
 #endif // __AP_YAW_CONTROLLER_H__
