@@ -5,7 +5,7 @@ ifneq ($(PX4_ROOT),)
 px4:
 	make -C $(PX4_ROOT) EXTERNAL_APPS=$(PWD)
 
-px4-clean:
+px4-clean: clean
 	make -C $(PX4_ROOT) EXTERNAL_APPS=$(PWD) clean
 
 px4-upload:
