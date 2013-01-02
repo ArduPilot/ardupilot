@@ -2,8 +2,6 @@
 #ifndef __AP_HAL_NAMESPACE_H__
 #define __AP_HAL_NAMESPACE_H__
 
-#include <stdint.h>
-
 namespace AP_HAL {
 
     /* Toplevel pure virtual class Hal.*/
