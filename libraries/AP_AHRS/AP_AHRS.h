@@ -198,9 +198,6 @@ protected:
     // accelerometer values in the earth frame in m/s/s
     Vector3f        _accel_ef;
 
-    // acceleration due to gravity in m/s/s
-    const float _gravity = 9.80665;
-
 };
 
 #include <AP_AHRS_DCM.h>
