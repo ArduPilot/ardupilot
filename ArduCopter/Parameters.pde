@@ -458,25 +458,25 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @Path: ../libraries/RC_Channel/RC_Channel.cpp
     GGROUP(rc_4,    "RC4_", RC_Channel),
     // @Group: RC5_
-    // @Path: ../libraries/RC_Channel/RC_Channel.cpp, ../libraries/RC_Channel/RC_Channel_aux.cpp
+    // @Path: ../libraries/RC_Channel/RC_Channel.cpp,../libraries/RC_Channel/RC_Channel_aux.cpp
     GGROUP(rc_5,    "RC5_", RC_Channel_aux),
     // @Group: RC6_
-    // @Path: ../libraries/RC_Channel/RC_Channel.cpp, ../libraries/RC_Channel/RC_Channel_aux.cpp
+    // @Path: ../libraries/RC_Channel/RC_Channel.cpp,../libraries/RC_Channel/RC_Channel_aux.cpp
     GGROUP(rc_6,    "RC6_", RC_Channel_aux),
     // @Group: RC7_
-    // @Path: ../libraries/RC_Channel/RC_Channel.cpp, ../libraries/RC_Channel/RC_Channel_aux.cpp
+    // @Path: ../libraries/RC_Channel/RC_Channel.cpp,../libraries/RC_Channel/RC_Channel_aux.cpp
     GGROUP(rc_7,    "RC7_", RC_Channel_aux),
     // @Group: RC8_
-    // @Path: ../libraries/RC_Channel/RC_Channel.cpp, ../libraries/RC_Channel/RC_Channel_aux.cpp
+    // @Path: ../libraries/RC_Channel/RC_Channel.cpp,../libraries/RC_Channel/RC_Channel_aux.cpp
     GGROUP(rc_8,    "RC8_", RC_Channel_aux),
 
 #if MOUNT == ENABLED
     // @Group: RC10_
-    // @Path: ../libraries/RC_Channel/RC_Channel.cpp, ../libraries/RC_Channel/RC_Channel_aux.cpp
+    // @Path: ../libraries/RC_Channel/RC_Channel.cpp,../libraries/RC_Channel/RC_Channel_aux.cpp
     GGROUP(rc_10,                    "RC10_", RC_Channel_aux),
 
     // @Group: RC11_
-    // @Path: ../libraries/RC_Channel/RC_Channel.cpp, ../libraries/RC_Channel/RC_Channel_aux.cpp
+    // @Path: ../libraries/RC_Channel/RC_Channel.cpp,../libraries/RC_Channel/RC_Channel_aux.cpp
     GGROUP(rc_11,                    "RC11_", RC_Channel_aux),
 #endif
 
@@ -994,7 +994,7 @@ const AP_Param::Info var_info[] PROGMEM = {
 
 #if AP_LIMITS == ENABLED
     //@Group: LIM_
-    //@Path: ../libraries/AP_Limits/AP_Limits.cpp,../libraries/AP_Limits/AP_Limit_GPSLock.cpp, ../libraries/AP_Limits/AP_Limit_Geofence.cpp, ../libraries/AP_Limits/AP_Limit_Altitude.cpp, ../libraries/AP_Limits/AP_Limit_Module.cpp
+    //@Path: ../libraries/AP_Limits/AP_Limits.cpp,../libraries/AP_Limits/AP_Limit_GPSLock.cpp,../libraries/AP_Limits/AP_Limit_Geofence.cpp,../libraries/AP_Limits/AP_Limit_Altitude.cpp,../libraries/AP_Limits/AP_Limit_Module.cpp
     GOBJECT(limits,                 "LIM_",    AP_Limits),
     GOBJECT(gpslock_limit,          "LIM_",    AP_Limit_GPSLock),
     GOBJECT(geofence_limit,         "LIM_",    AP_Limit_Geofence),
