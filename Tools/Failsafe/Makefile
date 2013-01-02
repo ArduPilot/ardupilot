@@ -1,5 +1,5 @@
 #
 # Trivial makefile for building APM
 #
-include ../../mk/Arduino.mk
+include ../../mk/apm.mk
 

@@ -1,3 +1,3 @@
-include ../mk/Arduino.mk
+include ../mk/apm.mk
 include ../mk/targets.mk
 
