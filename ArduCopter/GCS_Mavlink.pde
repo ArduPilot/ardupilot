@@ -2077,7 +2077,7 @@ GCS_MAVLINK::_count_parameters()
 }
 
 /**
- * @brief Send the next pending parameter, called from deferred message
+ * queued_param_send - Send the next pending parameter, called from deferred message
  * handling code
  */
 void
@@ -2111,7 +2111,7 @@ GCS_MAVLINK::queued_param_send()
 }
 
 /**
- * @brief Send the next pending waypoint, called from deferred message
+ * queued_waypoint_send - Send the next pending waypoint, called from deferred message
  * handling code
  */
 void
