@@ -363,7 +363,6 @@ static int32_t          gps_base_alt;
 ////////////////////////////////////////////////////////////////////////////////
 // Constants
 const	float radius_of_earth 	= 6378100;	// meters
-const	float gravity 			= 9.81;		// meters/ sec^2
 
 
 // true if we have a position estimate from AHRS
