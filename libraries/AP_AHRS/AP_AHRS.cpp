@@ -45,7 +45,7 @@ const AP_Param::GroupInfo AP_AHRS::var_info[] PROGMEM = {
     // @DisplayName: Maximum wind
     // @Description: This sets the maximum allowable difference between ground speed and airspeed. This allows the plane to cope with a failing airspeed sensor. A value of zero means to use the airspeed as is.
     // @Range: 0 127
-    // QUnits: m/s
+    // @Units: m/s
     // @Increment: 1
     AP_GROUPINFO("WIND_MAX",  6,    AP_AHRS, _wind_max, 0.0),
 
