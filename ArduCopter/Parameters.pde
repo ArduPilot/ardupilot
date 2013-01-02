@@ -458,25 +458,25 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @Path: ../libraries/RC_Channel/RC_Channel.cpp
     GGROUP(rc_4,    "RC4_", RC_Channel),
     // @Group: RC5_
-    // @Path: ../libraries/RC_Channel/RC_Channel_aux.cpp
+    // @Path: ../libraries/RC_Channel/RC_Channel.cpp, ../libraries/RC_Channel/RC_Channel_aux.cpp
     GGROUP(rc_5,    "RC5_", RC_Channel_aux),
     // @Group: RC6_
-    // @Path: ../libraries/RC_Channel/RC_Channel_aux.cpp
+    // @Path: ../libraries/RC_Channel/RC_Channel.cpp, ../libraries/RC_Channel/RC_Channel_aux.cpp
     GGROUP(rc_6,    "RC6_", RC_Channel_aux),
     // @Group: RC7_
-    // @Path: ../libraries/RC_Channel/RC_Channel_aux.cpp
+    // @Path: ../libraries/RC_Channel/RC_Channel.cpp, ../libraries/RC_Channel/RC_Channel_aux.cpp
     GGROUP(rc_7,    "RC7_", RC_Channel_aux),
     // @Group: RC8_
-    // @Path: ../libraries/RC_Channel/RC_Channel_aux.cpp
+    // @Path: ../libraries/RC_Channel/RC_Channel.cpp, ../libraries/RC_Channel/RC_Channel_aux.cpp
     GGROUP(rc_8,    "RC8_", RC_Channel_aux),
 
 #if MOUNT == ENABLED
     // @Group: RC10_
-    // @Path: ../libraries/RC_Channel/RC_Channel_aux.cpp
+    // @Path: ../libraries/RC_Channel/RC_Channel.cpp, ../libraries/RC_Channel/RC_Channel_aux.cpp
     GGROUP(rc_10,                    "RC10_", RC_Channel_aux),
 
     // @Group: RC11_
-    // @Path: ../libraries/RC_Channel/RC_Channel_aux.cpp
+    // @Path: ../libraries/RC_Channel/RC_Channel.cpp, ../libraries/RC_Channel/RC_Channel_aux.cpp
     GGROUP(rc_11,                    "RC11_", RC_Channel_aux),
 #endif
 
@@ -768,17 +768,178 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @User: Standard
     GGROUP(pid_throttle_accel,"THR_ACCEL_", AC_PID),
 
+    // @Param: OF_RLL_P
+    // @DisplayName: Optical Flow based loiter controller roll axis P gain
+    // @Description: Optical Flow based loiter controller roll axis P gain.  Converts the position error from the target point to a roll angle
+    // @Range: 2.000 3.000
+    // @User: Standard
+
+    // @Param: OF_RLL_I
+    // @DisplayName: Optical Flow based loiter controller roll axis I gain
+    // @Description: Optical Flow based loiter controller roll axis I gain.  Corrects long-term position error by more persistently rolling left or right
+    // @Range: 0.250 0.750
+    // @User: Standard
+
+    // @Param: OF_RLL_IMAX
+    // @DisplayName: Optical Flow based loiter controller roll axis I gain maximum
+    // @Description: Optical Flow based loiter controller roll axis I gain maximum.  Constrains the maximum roll angle that the I term will generate
+    // @Range: 0 4500
+    // @Unit: Centi-Degrees
+    // @User: Standard
+
+    // @Param: OF_RLL_D
+    // @DisplayName: Optical Flow based loiter controller roll axis D gain
+    // @Description: Optical Flow based loiter controller roll axis D gain.  Compensates for short-term change in speed in the roll direction
+    // @Range: 0.100 0.140
+    // @User: Standard
     GGROUP(pid_optflow_roll,  "OF_RLL_",   AC_PID),
+
+    // @Param: OF_PIT_P
+    // @DisplayName: Optical Flow based loiter controller pitch axis P gain
+    // @Description: Optical Flow based loiter controller pitch axis P gain.  Converts the position error from the target point to a pitch angle
+    // @Range: 2.000 3.000
+    // @User: Standard
+
+    // @Param: OF_PIT_I
+    // @DisplayName: Optical Flow based loiter controller pitch axis I gain
+    // @Description: Optical Flow based loiter controller pitch axis I gain.  Corrects long-term position error by more persistently pitching left or right
+    // @Range: 0.250 0.750
+    // @User: Standard
+
+    // @Param: OF_PIT_IMAX
+    // @DisplayName: Optical Flow based loiter controller pitch axis I gain maximum
+    // @Description: Optical Flow based loiter controller pitch axis I gain maximum.  Constrains the maximum pitch angle that the I term will generate
+    // @Range: 0 4500
+    // @Unit: Centi-Degrees
+    // @User: Standard
+
+    // @Param: OF_PIT_D
+    // @DisplayName: Optical Flow based loiter controller pitch axis D gain
+    // @Description: Optical Flow based loiter controller pitch axis D gain.  Compensates for short-term change in speed in the pitch direction
+    // @Range: 0.100 0.140
+    // @User: Standard
     GGROUP(pid_optflow_pitch, "OF_PIT_",   AC_PID),
 
     // PI controller
     //--------------
+    // @Param: STB_RLL_P
+    // @DisplayName: Roll axis stabilize controller P gain
+    // @Description: Roll axis stabilize (i.e. angle) controller P gain.  Converts the error between the desired roll angle and actual angle to a desired roll rate
+    // @Range: 3.000 6.000
+    // @User: Standard
+
+    // @Param: STB_RLL_I
+    // @DisplayName: Roll axis stabilize controller I gain
+    // @Description: Roll axis stabilize (i.e. angle) controller I gain.  Corrects for longer-term difference in desired roll angle and actual angle
+    // @Range: 0.000 0.100
+    // @User: Standard
+
+    // @Param: STB_RLL_IMAX
+    // @DisplayName: Roll axis stabilize controller I gain maximum
+    // @Description: Roll axis stabilize (i.e. angle) controller I gain maximum.  Constrains the maximum roll rate that the I term will generate
+    // @Range: 0 4500
+    // @Unit: Centi-Degrees/Sec
+    // @User: Standard
     GGROUP(pi_stabilize_roll,       "STB_RLL_", APM_PI),
+
+    // @Param: STB_PIT_P
+    // @DisplayName: Pitch axis stabilize controller P gain
+    // @Description: Pitch axis stabilize (i.e. angle) controller P gain.  Converts the error between the desired pitch angle and actual angle to a desired pitch rate
+    // @Range: 3.000 6.000
+    // @User: Standard
+
+    // @Param: STB_PIT_I
+    // @DisplayName: Pitch axis stabilize controller I gain
+    // @Description: Pitch axis stabilize (i.e. angle) controller I gain.  Corrects for longer-term difference in desired pitch angle and actual angle
+    // @Range: 0.000 0.100
+    // @User: Standard
+
+    // @Param: STB_PIT_IMAX
+    // @DisplayName: Pitch axis stabilize controller I gain maximum
+    // @Description: Pitch axis stabilize (i.e. angle) controller I gain maximum.  Constrains the maximum pitch rate that the I term will generate
+    // @Range: 0 4500
+    // @Unit: Centi-Degrees/Sec
+    // @User: Standard
     GGROUP(pi_stabilize_pitch,      "STB_PIT_", APM_PI),
+
+    // @Param: STB_YAW_P
+    // @DisplayName: Yaw axis stabilize controller P gain
+    // @Description: Yaw axis stabilize (i.e. angle) controller P gain.  Converts the error between the desired yaw angle and actual angle to a desired yaw rate
+    // @Range: 3.000 6.000
+    // @User: Standard
+
+    // @Param: STB_YAW_I
+    // @DisplayName: Yaw axis stabilize controller I gain
+    // @Description: Yaw axis stabilize (i.e. angle) controller I gain.  Corrects for longer-term difference in desired yaw angle and actual angle
+    // @Range: 0.000 0.100
+    // @User: Standard
+
+    // @Param: STB_YAW_IMAX
+    // @DisplayName: Yaw axis stabilize controller I gain maximum
+    // @Description: Yaw axis stabilize (i.e. angle) controller I gain maximum.  Constrains the maximum yaw rate that the I term will generate
+    // @Range: 0 4500
+    // @Unit: Centi-Degrees/Sec
+    // @User: Standard
     GGROUP(pi_stabilize_yaw,        "STB_YAW_", APM_PI),
 
-    GGROUP(pi_alt_hold,             "THR_ALT_", APM_PI),
+    // @Param: THR_ALT_P
+    // @DisplayName: Altitude controller P gain
+    // @Description: Altitude controller P gain.  Converts the difference between the desired altitude and actual altitude into a climb or descent rate which is passed to the throttle rate controller
+    // @Range: 3.000 6.000
+    // @User: Standard
+
+    // @Param: THR_ALT_I
+    // @DisplayName: Altitude controller I gain
+    // @Description: Altitude controller I gain.  Corrects for longer-term difference in desired altitude and actual altitude
+    // @Range: 0.000 0.100
+    // @User: Standard
+
+    // @Param: THR_ALT_IMAX
+    // @DisplayName: Altitude controller I gain maximum
+    // @Description: Altitude controller I gain maximum.  Constrains the maximum climb rate rate that the I term will generate
+    // @Range: 0 500
+    // @Unit: cm/s
+    // @User: Standard
+    GGROUP(pi_alt_hold,     "THR_ALT_", APM_PI),
+
+    // @Param: HLD_LAT_P
+    // @DisplayName: Loiter latitude position controller P gain
+    // @Description: Loiter latitude position controller P gain.  Converts the distance (in the latitude direction) to the target location into a desired speed which is then passed to the loiter latitude rate controller
+    // @Range: 0.100 0.300
+    // @User: Standard
+
+    // @Param: HLD_LAT_I
+    // @DisplayName: Loiter latitude position controller I gain
+    // @Description: Loiter latitude position controller I gain.  Corrects for longer-term distance (in latitude) to the target location
+    // @Range: 0.000 0.100
+    // @User: Standard
+
+    // @Param: HLD_LAT_IMAX
+    // @DisplayName: Loiter latitude position controller I gain maximum
+    // @Description: Loiter latitude position controller I gain maximum.  Constrains the maximum desired speed that the I term will generate
+    // @Range: 0 3000
+    // @Unit: cm/s
+    // @User: Standard
     GGROUP(pi_loiter_lat,   "HLD_LAT_", APM_PI),
+
+    // @Param: HLD_LON_P
+    // @DisplayName: Loiter longitude position controller P gain
+    // @Description: Loiter longitude position controller P gain.  Converts the distance (in the longitude direction) to the target location into a desired speed which is then passed to the loiter longitude rate controller
+    // @Range: 0.100 0.300
+    // @User: Standard
+
+    // @Param: HLD_LON_I
+    // @DisplayName: Loiter longitude position controller I gain
+    // @Description: Loiter longitude position controller I gain.  Corrects for longer-term distance (in longitude direction) to the target location
+    // @Range: 0.000 0.100
+    // @User: Standard
+
+    // @Param: HLD_LON_IMAX
+    // @DisplayName: Loiter longitudeposition controller I gain maximum
+    // @Description: Loiter  longitudeposition controller I gain maximum.  Constrains the maximum desired speed that the I term will generate
+    // @Range: 0 3000
+    // @Unit: cm/s
+    // @User: Standard
     GGROUP(pi_loiter_lon,   "HLD_LON_", APM_PI),
 
     // variables not in the g class which contain EEPROM saved variables
