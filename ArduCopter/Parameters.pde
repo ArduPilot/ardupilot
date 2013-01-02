@@ -534,10 +534,62 @@ const AP_Param::Info var_info[] PROGMEM = {
 
     // PID controller
     //---------------
-    GGROUP(pid_rate_roll,     "RATE_RLL_", AC_PID),
-    GGROUP(pid_rate_pitch,    "RATE_PIT_", AC_PID),
-    GGROUP(pid_rate_yaw,      "RATE_YAW_", AC_PID),
+    // @Param: RATE_RLL_P
+    // @DisplayName: Roll axis rate controller P gain
+    // @Description: Roll axis rate controller P gain.  Converts the difference between desired roll rate and actual roll rate into a motor speed output
+    // @Range 0.08 0.20
+    // @User: Standard
 
+    // @Param: RATE_RLL_I
+    // @DisplayName: Roll axis rate controller I gain
+    // @Description: Roll axis rate controller I gain.  Corrects long-term difference in desired roll rate vs actual roll rate
+    // @Range 0.01 0.5
+    // @User: Standard
+
+    // @Param: RATE_RLL_D
+    // @DisplayName: Roll axis rate controller D gain
+    // @Description: Roll axis rate controller D gain.  Compensates for short-term change in desired roll rate vs actual roll rate
+    // @Range 0.001 0.008
+    // @User: Standard
+    GGROUP(pid_rate_roll,     "RATE_RLL_", AC_PID),
+
+    // @Param: RATE_PIT_P
+    // @DisplayName: Pitch axis rate controller P gain
+    // @Description: Pitch axis rate controller P gain.  Converts the difference between desired pitch rate and actual pitch rate into a motor speed output
+    // @Range 0.08 0.20
+    // @User: Standard
+
+    // @Param: RATE_PIT_I
+    // @DisplayName: Pitch axis rate controller I gain
+    // @Description: Pitch axis rate controller I gain.  Corrects long-term difference in desired pitch rate vs actual pitch rate
+    // @Range 0.01 0.5
+    // @User: Standard
+
+    // @Param: RATE_PIT_D
+    // @DisplayName: Pitch axis rate controller D gain
+    // @Description: Pitch axis rate controller D gain.  Compensates for short-term change in desired pitch rate vs actual pitch rate
+    // @Range 0.001 0.008
+    // @User: Standard
+    GGROUP(pid_rate_pitch,    "RATE_PIT_", AC_PID),
+
+    // @Param: RATE_YAW_P
+    // @DisplayName: Yaw axis rate controller P gain
+    // @Description: Yaw axis rate controller P gain.  Converts the difference between desired yaw rate and actual yaw rate into a motor speed output
+    // @Range 0.150 0.250
+    // @User: Standard
+
+    // @Param: RATE_YAW_I
+    // @DisplayName: Yaw axis rate controller I gain
+    // @Description: Yaw axis rate controller I gain.  Corrects long-term difference in desired yaw rate vs actual yaw rate
+    // @Range 0.010 0.020
+    // @User: Standard
+
+    // @Param: RATE_YAW_D
+    // @DisplayName: Yaw axis rate controller D gain
+    // @Description: Yaw axis rate controller D gain.  Compensates for short-term change in desired yaw rate vs actual yaw rate
+    // @Range 0.000 0.001
+    // @User: Standard
+    GGROUP(pid_rate_yaw,      "RATE_YAW_", AC_PID),
 
     GGROUP(pid_loiter_rate_lat,      "LOITER_LAT_",  AC_PID),
     GGROUP(pid_loiter_rate_lon,      "LOITER_LON_",  AC_PID),
@@ -625,6 +677,8 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @Path: ../libraries/AP_Motors/AP_MotorsHeli.cpp
     GOBJECT(motors, "H_",           AP_MotorsHeli),
 #else
+    // @Group: MOT_
+    // @Path: ../libraries/AP_Motors/AP_Motors_Class.cpp
     GOBJECT(motors, "MOT_",         AP_Motors),
 #endif
 
