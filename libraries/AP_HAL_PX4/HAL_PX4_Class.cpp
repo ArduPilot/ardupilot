@@ -8,6 +8,7 @@
 #include "AP_HAL_PX4_Namespace.h"
 #include "HAL_PX4_Class.h"
 #include "Console.h"
+#include "Scheduler.h"
 
 #include <AP_HAL_Empty.h>
 #include <AP_HAL_Empty_Private.h>
@@ -26,10 +27,10 @@ static Empty::EmptyStorage storageDriver;
 static Empty::EmptyGPIO gpioDriver;
 static Empty::EmptyRCInput rcinDriver;
 static Empty::EmptyRCOutput rcoutDriver;
-static Empty::EmptyScheduler schedulerInstance;
 static Empty::EmptyUtil utilInstance;
 
 static PX4ConsoleDriver consoleDriver;
+static PX4Scheduler schedulerInstance;
 
 HAL_PX4::HAL_PX4() :
     AP_HAL::HAL(
