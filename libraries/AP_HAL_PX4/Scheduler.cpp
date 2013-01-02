@@ -164,6 +164,12 @@ void PX4Scheduler::resume_timer_procs() {
 
 void PX4Scheduler::begin_atomic() {
     _nested_atomic_ctr++;
+    if (_nested_atomic_ctr == 1) {
+        sigset_t set;
+        sigemptyset(&set);
+        sigaddset(&set, MAIN_TIMER_SIGNAL);
+        sigprocmask(SIG_BLOCK, &set, NULL);
+    }
 }
 
 void PX4Scheduler::end_atomic() {
@@ -172,6 +178,12 @@ void PX4Scheduler::end_atomic() {
         return;
     }
     _nested_atomic_ctr--;
+    if (_nested_atomic_ctr == 0) {
+        sigset_t set;
+        sigemptyset(&set);
+        sigaddset(&set, MAIN_TIMER_SIGNAL);
+        sigprocmask(SIG_UNBLOCK, &set, NULL);
+    }
 }
 
 void PX4Scheduler::reboot() 
