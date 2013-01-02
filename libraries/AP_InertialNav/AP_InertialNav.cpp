@@ -6,10 +6,23 @@ extern const AP_HAL::HAL& hal;
 
 // table of user settable parameters
 const AP_Param::GroupInfo AP_InertialNav::var_info[] PROGMEM = {
-    // @Param: ACORR
-    // @DisplayName: Inertial Nav calculated accelerometer corrections
-    // @Description: calculated accelerometer corrections
-    // @Increment: 1
+    // @Param: ACORR_X
+    // @DisplayName: Inertial Nav accelerometer offset correction on x-axis
+    // @Description: Accelerometer offset correction for the x-axis.  Calculated automatically
+    // @Range: -100 100
+    // @Increment: 0.1
+
+    // @Param: ACORR_Y
+    // @DisplayName: Inertial Nav accelerometer correction on y-axis
+    // @Description: Accelerometer offset correction for the y-axis.  Calculated automatically
+    // @Range: -100 100
+    // @Increment: 0.1
+
+    // @Param: ACORR_Z
+    // @DisplayName: Inertial Nav accelerometer correction on z-axis
+    // @Description: Accelerometer offset correction for the z-axis.  Calculated automatically
+    // @Range: -100 100
+    // @Increment: 0.1
     AP_GROUPINFO("ACORR",   0, AP_InertialNav, accel_correction, 0),
 
     // @Param: TC_XY
