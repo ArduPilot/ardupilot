@@ -11,4 +11,9 @@ px4-clean:
 px4-upload:
 	make -C $(PX4_ROOT) EXTERNAL_APPS=$(PWD) upload
 
+else
+
+px4:
+	$(error ERROR: You need to add PX4_ROOT to your config.mk)
+
 endif
