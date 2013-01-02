@@ -51,12 +51,9 @@ private:
     };
 
     enum diyd_mtk_protocol_bytes {
-	    PREAMBLE1 = 0xd0,
-        PREAMBLE2 = 0xdd,
 	    PREAMBLE1_V16 = 0xd0,
-        PREAMBLE2_V16 = 0xdd,
         PREAMBLE1_V19 = 0xd1,
-        PREAMBLE2_V19 = 0xdd
+        PREAMBLE2     = 0xdd,
     };
 
     // Packet checksum accumulators
@@ -66,8 +63,7 @@ private:
     // State machine state
     uint8_t         _step;
     uint8_t         _payload_counter;
-	uint8_t			_mtk_type_step1;
-	uint8_t 		_mtk_type_step2;
+	uint8_t			_mtk_revision;
 
     // Time from UNIX Epoch offset
     long            _time_offset;

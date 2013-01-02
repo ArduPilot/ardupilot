@@ -88,27 +88,18 @@ restart:
         //
         case 0:
             if (data == PREAMBLE1_V16) {
-                _mtk_type_step1     = MTK_GPS_REVISION_V16;
+                _mtk_revision     = MTK_GPS_REVISION_V16;
                 _step++;
-            }    
-            if (data == PREAMBLE1_V19) {
-                _mtk_type_step1     = MTK_GPS_REVISION_V19;
+            } else if (data == PREAMBLE1_V19) {
+                _mtk_revision     = MTK_GPS_REVISION_V19;
                 _step++;
             }    
             break;
         case 1:
-            if ((_mtk_type_step1 == MTK_GPS_REVISION_V16) && (data == PREAMBLE2_V16)){
+            if (data == PREAMBLE2) {
                 _step++;
-                _mtk_type_step2     = MTK_GPS_REVISION_V16;
-                break;
-            } else if ((_mtk_type_step1 == MTK_GPS_REVISION_V19) && (data == PREAMBLE2_V19)){
-                _step++;
-                _mtk_type_step2     = MTK_GPS_REVISION_V19;
-                break;
             } else {
-				_mtk_type_step1         = 0;
-				_mtk_type_step2         = 0;
-				_step                   = 0;
+				_step = 0;
 				goto restart;
 			}
 			break;
@@ -148,12 +139,13 @@ restart:
 
             fix                     = ((_buffer.msg.fix_type == FIX_3D) ||
                                        (_buffer.msg.fix_type == FIX_3D_SBAS));                   
-            latitude                = _buffer.msg.latitude;
-            longitude               = _buffer.msg.longitude;
-            if    (_mtk_type_step2 == MTK_GPS_REVISION_V16){
+            if (_mtk_revision == MTK_GPS_REVISION_V16) {
                 latitude            = _buffer.msg.latitude  * 10;  // V16, V17,V18 doc says *10e7 but device says otherwise
                 longitude           = _buffer.msg.longitude * 10;  // V16, V17,V18 doc says *10e7 but device says otherwise
-            }
+            } else {
+				latitude            = _buffer.msg.latitude;
+				longitude           = _buffer.msg.longitude;
+			}
             altitude                = _buffer.msg.altitude;
             ground_speed            = _buffer.msg.ground_speed;
             ground_course           = _buffer.msg.ground_course;
@@ -179,20 +171,6 @@ restart:
                 altitude            = 584;
             }
 #endif
-
-            /*    Waiting on clarification of MAVLink protocol!
-             *  if(!_offset_calculated && parsed) {
-             *                   int32_t tempd1 = date;
-             *                   int32_t day    = tempd1/10000;
-             *   tempd1         -= day * 10000;
-             *                   int32_t month    = tempd1/100;
-             *                   int32_t year    = tempd1 - month * 100;
-             *   _time_offset = _calc_epoch_offset(day, month, year);
-             *   _epoch = UNIX_EPOCH;
-             *   _offset_calculated = TRUE;
-             *  }
-             */
-
         }
     }
     return parsed;
@@ -207,25 +185,18 @@ AP_GPS_MTK19::_detect(uint8_t data)
 {
     static uint8_t payload_counter;
     static uint8_t step;
-    static uint8_t mtk_type_step1;
     static uint8_t ck_a, ck_b;
 
 restart:
 	switch (step) {
         case 0:
             ck_b = ck_a = payload_counter = 0;
-            if (data == PREAMBLE1_V16) {
-                mtk_type_step1      = MTK_GPS_REVISION_V16;
-                step++;
-            } else if (data == PREAMBLE1_V19) {
-                mtk_type_step1      = MTK_GPS_REVISION_V19;
+            if (data == PREAMBLE1_V16 || data == PREAMBLE1_V19) {
                 step++;
             }    
             break;
         case 1:
-            if ((mtk_type_step1 == MTK_GPS_REVISION_V16) && (PREAMBLE2_V16 == data)){
-                step++;
-            } else if ((mtk_type_step1 == MTK_GPS_REVISION_V19) && (PREAMBLE2_V19 == data)){
+            if (PREAMBLE2 == data) {
                 step++;
             } else {
 				step = 0;
