@@ -15,7 +15,7 @@
 #include "GPIO.h"
 #include "RCInput.h"
 #include "RCOutput.h"
-#include "Semaphore.h"
+#include "Semaphores.h"
 #include "Scheduler.h"
 #include "Util.h"
 #include "PrivateMember.h"

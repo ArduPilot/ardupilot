@@ -6,7 +6,7 @@
 #include "AP_HAL_AVR_Namespace.h"
 #include "GPIO.h"
 #include "SPIDevices.h"
-#include "Semaphore.h"
+#include "Semaphores.h"
 
 class AP_HAL_AVR::APM1SPIDeviceManager : public AP_HAL::SPIDeviceManager {
 public:

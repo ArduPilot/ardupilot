@@ -2,7 +2,7 @@
 
 #include <AP_HAL.h>
 #include <AP_HAL_AVR.h>
-#include "Semaphore.h"
+#include "Semaphores.h"
 using namespace AP_HAL_AVR;
 
 extern const AP_HAL::HAL& hal;

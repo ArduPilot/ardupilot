@@ -6,7 +6,7 @@
 #include <AP_HAL.h>
 #include "SPIDevices.h"
 #include "GPIO.h"
-#include "Semaphore.h"
+#include "Semaphores.h"
 #include "pins_arduino_mega.h"
 using namespace AP_HAL_AVR;
 

@@ -19,7 +19,7 @@
 #include "RCInput.h"
 #include "RCOutput.h"
 #include "Scheduler.h"
-#include "Semaphore.h"
+#include "Semaphores.h"
 #include "Util.h"
 
 #include "utility/Print.h"
