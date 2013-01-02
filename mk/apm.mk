@@ -15,12 +15,8 @@ else
 
 ####################
 # PX4 build
-APPNAME		 = ArduPlane
-PRIORITY	 = SCHED_PRIORITY_DEFAULT
-STACKSIZE	 = 4096
 
-SKETCHBOOK=..
-include $(APPDIR)/mk/apm.mk
+include $(MK_DIR)/px4_core.mk
 
 endif
 
