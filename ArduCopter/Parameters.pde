@@ -328,7 +328,9 @@ const AP_Param::Info var_info[] PROGMEM = {
 
     // @Param: TRIM_THROTTLE
     // @DisplayName: Throttle Trim
-    // @Description: The PWM level on channel 3 below which throttle sailsafe triggers
+    // @Description: The autopilot's estimate of the throttle required to maintain a level hover.  Calculated automatically from the pilot's throttle input while in stabilize mode
+    // @Range: 0 1000
+    // @Units: PWM
     // @User: Standard
     GSCALAR(throttle_cruise,        "TRIM_THROTTLE",    THROTTLE_CRUISE),
 
