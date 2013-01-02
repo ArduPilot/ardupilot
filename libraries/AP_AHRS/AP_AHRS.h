@@ -199,7 +199,7 @@ protected:
     Vector3f        _accel_ef;
 
     // acceleration due to gravity in m/s/s
-    static constexpr float _gravity = 9.80665;
+    const float _gravity = 9.80665;
 
 };
 
