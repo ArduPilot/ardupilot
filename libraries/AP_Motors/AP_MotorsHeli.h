@@ -42,8 +42,7 @@ class AP_MotorsHeli : public AP_Motors {
 public:
 
     /// Constructor
-    AP_MotorsHeli( uint8_t          APM_version,
-                   RC_Channel*      rc_roll,
+    AP_MotorsHeli( RC_Channel*      rc_roll,
                    RC_Channel*      rc_pitch,
                    RC_Channel*      rc_throttle,
                    RC_Channel*      rc_yaw,
@@ -53,7 +52,7 @@ public:
                    RC_Channel*      swash_servo_3,
                    RC_Channel*      yaw_servo,
                    uint16_t         speed_hz = AP_MOTORS_HELI_SPEED_DEFAULT) :
-        AP_Motors(APM_version, rc_roll, rc_pitch, rc_throttle, rc_yaw, speed_hz),
+        AP_Motors(rc_roll, rc_pitch, rc_throttle, rc_yaw, speed_hz),
         _servo_1(swash_servo_1),
         _servo_2(swash_servo_2),
         _servo_3(swash_servo_3),

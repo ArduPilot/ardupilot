@@ -41,7 +41,7 @@ const AP_Param::GroupInfo AP_Motors::var_info[] PROGMEM = {
 };
 
 // Constructor
-AP_Motors::AP_Motors( uint8_t APM_version, RC_Channel* rc_roll, RC_Channel* rc_pitch, RC_Channel* rc_throttle, RC_Channel* rc_yaw, uint16_t speed_hz ) :
+AP_Motors::AP_Motors( RC_Channel* rc_roll, RC_Channel* rc_pitch, RC_Channel* rc_throttle, RC_Channel* rc_yaw, uint16_t speed_hz ) :
     _rc_roll(rc_roll),
     _rc_pitch(rc_pitch),
     _rc_throttle(rc_throttle),
@@ -60,11 +60,11 @@ AP_Motors::AP_Motors( uint8_t APM_version, RC_Channel* rc_roll, RC_Channel* rc_p
     top_bottom_ratio = AP_MOTORS_TOP_BOTTOM_RATIO;
 
     // initialise motor map
-    if( APM_version == AP_MOTORS_APM1 ) {
+#if CONFIG_HAL_BOARD == HAL_BOARD_APM1
         set_motor_to_channel_map(APM1_MOTOR_TO_CHANNEL_MAP);
-    } else {
+#else
         set_motor_to_channel_map(APM2_MOTOR_TO_CHANNEL_MAP);
-    }
+#endif
 
     // clear output arrays
     for(i=0; i<AP_MOTORS_MAX_NUM_MOTORS; i++) {
