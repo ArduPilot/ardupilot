@@ -4,11 +4,55 @@
 
 const AP_Param::GroupInfo Compass::var_info[] PROGMEM = {
     // index 0 was used for the old orientation matrix
+
+    // @Param: OFS_X
+    // @DisplayName: Compass offsets on the X axis
+    // @Description: Offset to be added to the compass x-axis values to compensate for metal in the frame
+    // @Range: -400 400
+    // @Increment: 1
+
+    // @Param: OFS_Y
+    // @DisplayName: Compass offsets on the Y axis
+    // @Description: Offset to be added to the compass y-axis values to compensate for metal in the frame
+    // @Range: -400 400
+    // @Increment: 1
+
+    // @Param: OFS_Z
+    // @DisplayName: Compass offsets on the Z axis
+    // @Description: Offset to be added to the compass z-axis values to compensate for metal in the frame
+    // @Range: -400 400
+    // @Increment: 1
     AP_GROUPINFO("OFS",    1, Compass, _offset, 0),
+
+    // @Param: DEC
+    // @DisplayName: Compass declination
+    // @Description: An angle to compensate between the true north and magnetic north
+    // @Range: -3.142 3.142
+    // @Units: Radians
+    // @Increment: 0.01
+    // @User: Standard
     AP_GROUPINFO("DEC",    2, Compass, _declination, 0),
+
+    // @Param: LEARN
+    // @DisplayName: Learn compass offsets automatically
+    // @Description: Enable or disable the automatic learning of compass offsets
+    // @Values: 0:Disabled,1:Enabled
+    // @User: Advanced
     AP_GROUPINFO("LEARN",  3, Compass, _learn, 1), // true if learning calibration
+
+    // @Param: USE
+    // @DisplayName: Use compass for yaw
+    // @Description: Enable or disable the use of the compass (instead of the GPS) for determining heading
+    // @Values: 0:Disabled,1:Enabled
+    // @User: Advanced
     AP_GROUPINFO("USE",    4, Compass, _use_for_yaw, 1), // true if used for DCM yaw
+
 #if !defined( __AVR_ATmega1280__ )
+    // @Param: AUTODEC
+    // @DisplayName: Auto Declination
+    // @Description: Enable or disable the automatic calculation of the declination based on gps location
+    // @Values: 0:Disabled,1:Enabled
+    // @User: Advanced
     AP_GROUPINFO("AUTODEC",5, Compass, _auto_declination, 1),
 #endif
     AP_GROUPEND
