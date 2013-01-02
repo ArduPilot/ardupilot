@@ -9,6 +9,7 @@
 
 #include <math.h>
 #include <AP_HAL.h>
+#include <AP_Common.h>
 #include "AP_PitchController.h"
 
 extern const AP_HAL::HAL& hal;
