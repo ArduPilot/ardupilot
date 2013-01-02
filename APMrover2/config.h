@@ -110,6 +110,22 @@
 # define USB_MUX_PIN -1
 # define BATTERY_PIN_1	  1
 # define CURRENT_PIN_1	  2
+#elif CONFIG_HAL_BOARD == HAL_BOARD_PX4
+# define CONFIG_INS_TYPE   CONFIG_INS_SITL
+# define CONFIG_PUSHBUTTON DISABLED
+# define CONFIG_RELAY      DISABLED
+# define CONFIG_SONAR_SOURCE SONAR_SOURCE_ANALOG_PIN
+# define A_LED_PIN        27
+# define B_LED_PIN        26
+# define C_LED_PIN        25
+# define LED_ON           LOW
+# define LED_OFF          HIGH
+# define SLIDE_SWITCH_PIN (-1)
+# define PUSHBUTTON_PIN   (-1)
+# define CLI_SLIDER_ENABLED DISABLED
+# define USB_MUX_PIN -1
+# define BATTERY_PIN_1	  -1
+# define CURRENT_PIN_1	  -1
 #endif
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_AVR_SITL

@@ -105,6 +105,7 @@ version 2.1 of the License, or (at your option) any later version.
 
 #include <AP_HAL_AVR.h>
 #include <AP_HAL_AVR_SITL.h>
+#include <AP_HAL_PX4.h>
 #include <AP_HAL_Empty.h>
 #include "compat.h"
 
@@ -155,6 +156,8 @@ DataFlash_APM1 DataFlash;
 DataFlash_APM2 DataFlash;
 #elif CONFIG_HAL_BOARD == HAL_BOARD_AVR_SITL
 DataFlash_SITL DataFlash;
+#elif CONFIG_HAL_BOARD == HAL_BOARD_PX4
+DataFlash_Empty DataFlash;
 #endif
 
 
