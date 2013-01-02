@@ -57,7 +57,7 @@ uint16_t AP_InertialSensor_Oilpan::_init_sensor( Sample_rate sample_rate)
         break;
     }
 
-#if defined(DESKTOP_BUILD)
+#if CONFIG_HAL_BOARD == HAL_BOARD_AVR_SITL
     return AP_PRODUCT_ID_SITL;
 #elif defined(__AVR_ATmega1280__)
     return AP_PRODUCT_ID_APM1_1280;
