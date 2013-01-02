@@ -56,19 +56,19 @@ const AP_Param::GroupInfo AP_AHRS::var_info[] PROGMEM = {
     // @User: Advanced
     AP_GROUPINFO("BARO_USE",  7,    AP_AHRS, _baro_use, 0),
 
-    // @Param: AHRS_TRIM_X
+    // @Param: TRIM_X
     // @DisplayName: AHRS Trim Roll
     // @Description: Compensates for the roll angle difference between the control board and the frame
     // @Units: Radians
     // @User: Advanced
 
-    // @Param: AHRS_TRIM_Y
+    // @Param: TRIM_Y
     // @DisplayName: AHRS Trim Pitch
     // @Description: Compensates for the pitch angle difference between the control board and the frame
     // @Units: Radians
     // @User: Advanced
 
-    // @Param: AHRS_TRIM_Z
+    // @Param: TRIM_Z
     // @DisplayName: AHRS Trim Yaw
     // @Description: Not Used
     // @Units: Radians
