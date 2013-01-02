@@ -32,52 +32,97 @@ const AP_Param::GroupInfo AP_Mount::var_info[] PROGMEM = {
     AP_GROUPINFO("MODE",       0, AP_Mount, _mount_mode, MAV_MOUNT_MODE_RETRACT), // see MAV_MOUNT_MODE at ardupilotmega.h
 
 #if MNT_RETRACT_OPTION == ENABLED
-    // @Param: RETRACT
-    // @DisplayName: Mount retract angles
-    // @Description: Mount angles when in retract operation mode
-    // @Units: centi-Degrees
+    // @Param: RETRACT_X
+    // @DisplayName: Mount roll angle when in retracted position
+    // @Description: Mount roll angle when in retracted position
+    // @Units: Centi-Degrees
+    // @Range: -18000 17999
+    // @Increment: 1
+    // @User: Standard
+
+    // @Param: RETRACT_Y
+    // @DisplayName: Mount tilt/pitch angle when in retracted position
+    // @Description: Mount tilt/pitch angle when in retracted position
+    // @Units: Centi-Degrees
+    // @Range: -18000 17999
+    // @Increment: 1
+    // @User: Standard
+
+    // @Param: RETRACT_Z
+    // @DisplayName: Mount yaw/pan angle when in retracted position
+    // @Description: Mount yaw/pan angle when in retracted position
+    // @Units: Centi-Degrees
     // @Range: -18000 17999
     // @Increment: 1
     // @User: Standard
     AP_GROUPINFO("RETRACT",    1, AP_Mount, _retract_angles, 0),
 #endif
 
-    // @Param: NEUTRAL
-    // @DisplayName: Mount neutral angles
-    // @Description: Mount angles when in neutral operation mode
-    // @Units: centi-Degrees
+    // @Param: NEUTRAL_X
+    // @DisplayName: Mount roll angle when in neutral position
+    // @Description: Mount roll angle when in neutral position
+    // @Units: Centi-Degrees
+    // @Range: -18000 17999
+    // @Increment: 1
+    // @User: Standard
+
+    // @Param: NEUTRAL_Y
+    // @DisplayName: Mount tilt/pitch angle when in neutral position
+    // @Description: Mount tilt/pitch angle when in neutral position
+    // @Units: Centi-Degrees
+    // @Range: -18000 17999
+    // @Increment: 1
+    // @User: Standard
+
+    // @Param: NEUTRAL_Z
+    // @DisplayName: Mount pan/yaw angle when in neutral position
+    // @Description: Mount pan/yaw angle when in neutral position
+    // @Units: Centi-Degrees
     // @Range: -18000 17999
     // @Increment: 1
     // @User: Standard
     AP_GROUPINFO("NEUTRAL",    2, AP_Mount, _neutral_angles, 0),
 
-    // @Param: CONTROL
-    // @DisplayName: Mount control angles
-    // @Description: Mount angles when in MavLink or RC control operation mode
-    // @Units: centi-Degrees
+    // @Param: CONTROL_X
+    // @DisplayName: Mount roll angle command from groundstation
+    // @Description: Mount roll angle when in MavLink or RC control operation mode
+    // @Units: Centi-Degrees
     // @Range: -18000 17999
     // @Increment: 1
-    // @User: Standard
+
+    // @Param: CONTROL_Y
+    // @DisplayName: Mount tilt/pitch angle command from groundstation
+    // @Description: Mount tilt/pitch angle when in MavLink or RC control operation mode
+    // @Units: Centi-Degrees
+    // @Range: -18000 17999
+    // @Increment: 1
+
+    // @Param: CONTROL_Z
+    // @DisplayName: Mount pan/yaw angle command from groundstation
+    // @Description: Mount pan/yaw angle when in MavLink or RC control operation mode
+    // @Units: Centi-Degrees
+    // @Range: -18000 17999
+    // @Increment: 1
     AP_GROUPINFO("CONTROL",    3, AP_Mount, _control_angles, 0),
 
 #if MNT_STABILIZE_OPTION == ENABLED
     // @Param: STAB_ROLL
-    // @DisplayName: Stabilize mount roll
+    // @DisplayName: Stabilize mount's roll angle
     // @Description:enable roll stabilisation relative to Earth
     // @Values: 0:Disabled,1:Enabled
     // @User: Standard
     AP_GROUPINFO("STAB_ROLL",  4, AP_Mount, _stab_roll, 0),
 
     // @Param: STAB_TILT
-    // @DisplayName: Stabilize mount tilt
-    // @Description: enable tilt (pitch) stabilisation relative to Earth
+    // @DisplayName: Stabilize mount's pitch/tilt angle
+    // @Description: enable tilt/pitch stabilisation relative to Earth
     // @Values: 0:Disabled,1:Enabled
     // @User: Standard
     AP_GROUPINFO("STAB_TILT", 5, AP_Mount, _stab_tilt,  0),
 
     // @Param: STAB_PAN
-    // @DisplayName: Stabilize mount pan
-    // @Description: enable pan (yaw) stabilisation relative to Earth
+    // @DisplayName: Stabilize mount pan/yaw angle
+    // @Description: enable pan/yaw stabilisation relative to Earth
     // @Values: 0:Disabled,1:Enabled
     // @User: Standard
     AP_GROUPINFO("STAB_PAN",   6, AP_Mount, _stab_pan,  0),
@@ -93,7 +138,7 @@ const AP_Param::GroupInfo AP_Mount::var_info[] PROGMEM = {
     // @Param: ANGMIN_ROL
     // @DisplayName: Minimum roll angle
     // @Description: Minimum physical roll angular position of mount.
-    // @Units: centi-Degrees
+    // @Units: Centi-Degrees
     // @Range: -18000 17999
     // @Increment: 1
     // @User: Standard
@@ -102,7 +147,7 @@ const AP_Param::GroupInfo AP_Mount::var_info[] PROGMEM = {
     // @Param: ANGMAX_ROL
     // @DisplayName: Maximum roll angle
     // @Description: Maximum physical roll angular position of the mount
-    // @Units: centi-Degrees
+    // @Units: Centi-Degrees
     // @Range: -18000 17999
     // @Increment: 1
     // @User: Standard
@@ -118,7 +163,7 @@ const AP_Param::GroupInfo AP_Mount::var_info[] PROGMEM = {
     // @Param: ANGMIN_TIL
     // @DisplayName: Minimum tilt angle
     // @Description: Minimum physical tilt (pitch) angular position of mount.
-    // @Units: centi-Degrees
+    // @Units: Centi-Degrees
     // @Range: -18000 17999
     // @Increment: 1
     // @User: Standard
@@ -127,7 +172,7 @@ const AP_Param::GroupInfo AP_Mount::var_info[] PROGMEM = {
     // @Param: ANGMAX_TIL
     // @DisplayName: Maximum tilt angle
     // @Description: Maximum physical tilt (pitch) angular position of the mount
-    // @Units: centi-Degrees
+    // @Units: Centi-Degrees
     // @Range: -18000 17999
     // @Increment: 1
     // @User: Standard
@@ -143,7 +188,7 @@ const AP_Param::GroupInfo AP_Mount::var_info[] PROGMEM = {
     // @Param: ANGMIN_PAN
     // @DisplayName: Minimum pan angle
     // @Description: Minimum physical pan (yaw) angular position of mount.
-    // @Units: centi-Degrees
+    // @Units: Centi-Degrees
     // @Range: -18000 17999
     // @Increment: 1
     // @User: Standard
@@ -152,7 +197,7 @@ const AP_Param::GroupInfo AP_Mount::var_info[] PROGMEM = {
     // @Param: ANGMAX_PAN
     // @DisplayName: Maximum pan angle
     // @Description: Maximum physical pan (yaw) angular position of the mount
-    // @Units: centi-Degrees
+    // @Units: Centi-Degrees
     // @Range: -18000 17999
     // @Increment: 1
     // @User: Standard
