@@ -134,13 +134,7 @@ private:
 
     /// Low pass filter cut frequency for derivative calculation.
     ///
-    static const float        _filter = 7.9577e-3; // Set to  "1 / ( 2 * PI * f_cut )";
-    // Examples for _filter:
-    // f_cut = 10 Hz -> _filter = 15.9155e-3
-    // f_cut = 15 Hz -> _filter = 10.6103e-3
-    // f_cut = 20 Hz -> _filter =  7.9577e-3
-    // f_cut = 25 Hz -> _filter =  6.3662e-3
-    // f_cut = 30 Hz -> _filter =  5.3052e-3
+    static const float  _filter;
 };
 
 #endif // __AC_PID_H__

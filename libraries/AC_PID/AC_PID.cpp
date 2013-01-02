@@ -6,6 +6,14 @@
 #include <math.h>
 #include "AC_PID.h"
 
+// Examples for _filter:
+// f_cut = 10 Hz -> _filter = 15.9155e-3
+// f_cut = 15 Hz -> _filter = 10.6103e-3
+// f_cut = 20 Hz -> _filter =  7.9577e-3
+// f_cut = 25 Hz -> _filter =  6.3662e-3
+// f_cut = 30 Hz -> _filter =  5.3052e-3
+const float  AC_PID::_filter = 7.9577e-3; // Set to  "1 / ( 2 * PI * f_cut )";
+
 const AP_Param::GroupInfo AC_PID::var_info[] PROGMEM = {
     // @Param: P
     // @DisplayName: PID Proportional Gain
