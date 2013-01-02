@@ -664,10 +664,108 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @User: Standard
     GGROUP(pid_loiter_rate_lon,      "LOITER_LON_",  AC_PID),
 
+    // @Param: NAV_LAT_P
+    // @DisplayName: Navigation latitude rate controller P gain
+    // @Description: Navigation latitude rate controller P gain.  Converts the difference between desired speed and actual speed into a lean angle in the latitude direction
+    // @Range: 2.000 2.800
+    // @User: Standard
+
+    // @Param: NAV_LAT_I
+    // @DisplayName: Navigation latitude rate controller I gain
+    // @Description: Navigation latitude rate controller I gain.  Corrects long-term difference in desired speed and actual speed in the latitude direction
+    // @Range: 0.140 0.200
+    // @User: Standard
+
+    // @Param: NAV_LAT_IMAX
+    // @DisplayName: Navigation rate controller I gain maximum
+    // @Description: Navigation rate controller I gain maximum.  Constrains the lean angle that the I gain will output
+    // @Range: 0 4500
+    // @Unit: Centi-Degrees
+    // @User: Standard
+
+    // @Param: NAV_LAT_D
+    // @DisplayName: Navigation latitude rate controller D gain
+    // @Description: Navigation latitude rate controller D gain.  Compensates for short-term change in desired speed vs actual speed
+    // @Range: 0.000 0.100
+    // @User: Standard
     GGROUP(pid_nav_lat,             "NAV_LAT_",  AC_PID),
+
+    // @Param: NAV_LON_P
+    // @DisplayName: Navigation longitude rate controller P gain
+    // @Description: Navigation longitude rate controller P gain.  Converts the difference between desired speed and actual speed into a lean angle in the longitude direction
+    // @Range: 2.000 2.800
+    // @User: Standard
+
+    // @Param: NAV_LON_I
+    // @DisplayName: Navigation longitude rate controller I gain
+    // @Description: Navigation longitude rate controller I gain.  Corrects long-term difference in desired speed and actual speed in the longitude direction
+    // @Range: 0.140 0.200
+    // @User: Standard
+
+    // @Param: NAV_LON_IMAX
+    // @DisplayName: Navigation longitude rate controller I gain maximum
+    // @Description: Navigation longitude rate controller I gain maximum.  Constrains the lean angle that the I gain will generate
+    // @Range: 0 4500
+    // @Unit: Centi-Degrees
+    // @User: Standard
+
+    // @Param: NAV_LON_D
+    // @DisplayName: Navigation longituderate controller D gain
+    // @Description: Navigation longitude rate controller D gain.  Compensates for short-term change in desired speed vs actual speed
+    // @Range: 0.000 0.100
+    // @User: Standard
     GGROUP(pid_nav_lon,             "NAV_LON_",  AC_PID),
 
+    // @Param: THR_RATE_P
+    // @DisplayName: Throttle rate controller P gain
+    // @Description: Throttle rate controller P gain.  Converts the difference between desired vertical speed and actual speed into a desired acceleration that is passed to the throttle acceleration controller
+    // @Range: 1.000 8.000
+    // @User: Standard
+
+    // @Param: THR_RATE_I
+    // @DisplayName: Throttle rate controller I gain
+    // @Description: Throttle rate controller I gain.  Corrects long-term difference in desired vertical speed and actual speed
+    // @Range: 0.000 0.100
+    // @User: Standard
+
+    // @Param: THR_RATE_IMAX
+    // @DisplayName: Throttle rate controller I gain maximum
+    // @Description: Throttle rate controller I gain maximum.  Constrains the desired acceleration that the I gain will generate
+    // @Range: 0 500
+    // @Unit: cm/s/s
+    // @User: Standard
+
+    // @Param: THR_RATE_D
+    // @DisplayName: Throttle rate controller D gain
+    // @Description: Throttle rate controller D gain.  Compensates for short-term change in desired vertical speed vs actual speed
+    // @Range: 0.000 0.400
+    // @User: Standard
     GGROUP(pid_throttle,      "THR_RATE_", AC_PID),
+
+    // @Param: THR_ACCEL_P
+    // @DisplayName: Throttle acceleration controller P gain
+    // @Description: Throttle acceleration controller P gain.  Converts the difference between desired vertical acceleration and actual acceleration into a motor output
+    // @Range: 0.500 1.500
+    // @User: Standard
+
+    // @Param: THR_ACCEL_I
+    // @DisplayName: Throttle acceleration controller I gain
+    // @Description: Throttle acceleration controller I gain.  Corrects long-term difference in desired vertical acceleration and actual acceleration
+    // @Range: 0.000 3.000
+    // @User: Standard
+
+    // @Param: THR_ACCEL_IMAX
+    // @DisplayName: Throttle acceleration controller I gain maximum
+    // @Description: Throttle acceleration controller I gain maximum.  Constrains the maximum pwm that the I term will generate
+    // @Range: 0 500
+    // @Unit: PWM
+    // @User: Standard
+
+    // @Param: THR_ACCEL_D
+    // @DisplayName: Throttle acceleration controller D gain
+    // @Description: Throttle acceleration controller D gain.  Compensates for short-term change in desired vertical acceleration vs actual acceleration
+    // @Range: 0.000 0.400
+    // @User: Standard
     GGROUP(pid_throttle_accel,"THR_ACCEL_", AC_PID),
 
     GGROUP(pid_optflow_roll,  "OF_RLL_",   AC_PID),
