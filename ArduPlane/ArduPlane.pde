@@ -343,7 +343,6 @@ static bool have_position;
 ////////////////////////////////////////////////////////////////////////////////
 // Constants
 const float radius_of_earth   = 6378100;        // meters
-const float gravity                   = 9.81;           // meters/ sec^2
 
 // This is the currently calculated direction to fly.
 // deg * 100 : 0 to 360

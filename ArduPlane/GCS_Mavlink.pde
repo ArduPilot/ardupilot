@@ -235,7 +235,7 @@ static NOINLINE void send_extended_status1(mavlink_channel_t chan, uint16_t pack
 
 static void NOINLINE send_meminfo(mavlink_channel_t chan)
 {
-#if CONFIG_HAL_BOARD != HAL_BOARD_AVR_SITL
+#if CONFIG_HAL_BOARD == HAL_BOARD_APM1 || CONFIG_HAL_BOARD == HAL_BOARD_APM2
     extern unsigned __brkval;
     mavlink_msg_meminfo_send(chan, __brkval, memcheck_available_memory());
 #endif
@@ -401,9 +401,9 @@ static void NOINLINE send_raw_imu1(mavlink_channel_t chan)
     mavlink_msg_raw_imu_send(
         chan,
         micros(),
-        accel.x * 1000.0 / gravity,
-        accel.y * 1000.0 / gravity,
-        accel.z * 1000.0 / gravity,
+        accel.x * 1000.0 / GRAVITY_MSS,
+        accel.y * 1000.0 / GRAVITY_MSS,
+        accel.z * 1000.0 / GRAVITY_MSS,
         gyro.x * 1000.0,
         gyro.y * 1000.0,
         gyro.z * 1000.0,
@@ -1814,9 +1814,9 @@ mission_failed:
 
         // m/s/s
         Vector3f accels;
-        accels.x = packet.xacc * (gravity/1000.0);
-        accels.y = packet.yacc * (gravity/1000.0);
-        accels.z = packet.zacc * (gravity/1000.0);
+        accels.x = packet.xacc * (GRAVITY_MSS/1000.0);
+        accels.y = packet.yacc * (GRAVITY_MSS/1000.0);
+        accels.z = packet.zacc * (GRAVITY_MSS/1000.0);
 
         ins.set_gyro(gyros);
         ins.set_accel(accels);

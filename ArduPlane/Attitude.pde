@@ -328,7 +328,7 @@ static void calc_nav_roll()
     }
 
     // Bank angle = V*R/g, where V is airspeed, R is turn rate, and g is gravity.
-    nav_roll = ToDeg(atan(speed*turn_rate/9.81)*100);
+    nav_roll = ToDeg(atan(speed*turn_rate/GRAVITY_MSS)*100);
 
 #else
     // this is the old nav_roll calculation. We will use this for 2.50
