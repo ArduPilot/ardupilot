@@ -1,8 +1,7 @@
 #ifndef AP_ADC_H
 #define AP_ADC_H
 
-#include <stdint.h>
-#include <stdlib.h>
+#include <AP_Common.h>
 
 /*
  *       AP_ADC.cpp - Analog Digital Converter Base Class for Ardupilot Mega
