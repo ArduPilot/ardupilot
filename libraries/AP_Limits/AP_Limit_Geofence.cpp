@@ -43,6 +43,11 @@ const AP_Param::GroupInfo AP_Limit_Geofence::var_info[] PROGMEM = {
     // @User: Standard
     AP_GROUPINFO("FNC_RAD", 3,      AP_Limit_Geofence,      _radius, 0),
 
+    // @Param: FNC_TOT
+    // @DisplayName: Total number of geofence points
+    // @Description: Total number of geofence points.  This parameter should not be updated manually
+    // @Range: 0 6
+    // @Increment: 1
     AP_GROUPINFO("FNC_TOT", 4,      AP_Limit_Geofence,      _fence_total, 0),
     AP_GROUPEND
 

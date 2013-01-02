@@ -18,7 +18,7 @@ const AP_Param::GroupInfo AP_Limit_Altitude::var_info[] PROGMEM = {
     // @User: Standard
     AP_GROUPINFO("ALT_ON",  0,      AP_Limit_Altitude,      _enabled, 0),
 
-    // @Param: ALT_REQD
+    // @Param: ALT_REQ
     // @DisplayName: Require altitude
     // @Description: Setting this to Enabled(1) will make being inside the altitude a required check before arming the vehicle.
     // @Values: 0:Disabled,1:Enabled
