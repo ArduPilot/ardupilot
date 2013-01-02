@@ -16,6 +16,7 @@
 #define __AP_COMMON_H__
 
 #include <stdint.h>
+#include <stdbool.h>
 
 #pragma GCC diagnostic warning "-Wall"
 #pragma GCC diagnostic warning "-Wextra"
