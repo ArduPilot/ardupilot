@@ -439,9 +439,9 @@ static void NOINLINE send_raw_imu1(mavlink_channel_t chan)
     mavlink_msg_raw_imu_send(
         chan,
         micros(),
-        accel.x * 1000.0 / gravity,
-        accel.y * 1000.0 / gravity,
-        accel.z * 1000.0 / gravity,
+        accel.x * 1000.0 / GRAVITY_MSS,
+        accel.y * 1000.0 / GRAVITY_MSS,
+        accel.z * 1000.0 / GRAVITY_MSS,
         gyro.x * 1000.0,
         gyro.y * 1000.0,
         gyro.z * 1000.0,
