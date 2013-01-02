@@ -67,6 +67,7 @@
 #include <AP_HAL.h>
 #include <AP_HAL_AVR.h>
 #include <AP_HAL_AVR_SITL.h>
+#include <AP_HAL_PX4.h>
 #include <AP_HAL_Empty.h>
 
 // Application dependencies
@@ -151,6 +152,8 @@ DataFlash_APM2 DataFlash;
 DataFlash_APM1 DataFlash;
 #elif CONFIG_HAL_BOARD == HAL_BOARD_AVR_SITL
 DataFlash_SITL DataFlash;
+#else
+DataFlash_Empty DataFlash;
 #endif
 
 
