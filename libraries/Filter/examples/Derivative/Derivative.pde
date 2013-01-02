@@ -14,11 +14,6 @@
 
 const AP_HAL::HAL& hal = AP_HAL_BOARD_DRIVER;
 
-#ifdef DESKTOP_BUILD
-#error Desktop build not supported with AP_HAL
-#endif
-
-
 DerivativeFilter<float,11> derivative;
 
 // setup routine
