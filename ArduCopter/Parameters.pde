@@ -31,6 +31,11 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @Description: Allows reconising the mavlink version
     // @User: Advanced
     GSCALAR(sysid_this_mav, "SYSID_THISMAV",   MAV_SYSTEM_ID),
+
+    // @Param: SYSID_MYGCS
+    // @DisplayName: My ground station number
+    // @Description: Allows restricting radio overrides to only come from my ground station
+    // @User: Advanced
     GSCALAR(sysid_my_gcs,   "SYSID_MYGCS",     255),
 
     // @Param: SERIAL3_BAUD
@@ -49,7 +54,7 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @Increment: 1
     GSCALAR(telem_delay,            "TELEM_DELAY",     0),
 
-    // @Param: ALT_RTL
+    // @Param: RTL_ALT
     // @DisplayName: RTL Altitude
     // @Description: The minimum altitude the model will move to before Returning to Launch.  Set to zero to return at current altitude.
     // @Units: Centimeters
@@ -245,7 +250,7 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @User: Standard
     GSCALAR(crosstrack_min_distance, "XTRK_MIN_DIST",  CROSSTRACK_MIN_DISTANCE),
 
-    // @Param: RTL_LOITER_TIME
+    // @Param: RTL_LOIT_TIME
     // @DisplayName: RTL loiter time
     // @Description: Time (in milliseconds) to loiter above home before begining final descent
     // @Units: ms
