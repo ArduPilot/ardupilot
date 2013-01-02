@@ -285,7 +285,7 @@ private:
     bool                        scan(
                                     const struct Param_header *phdr,
                                     uint16_t *pofs);
-    static const uint8_t        type_size(enum ap_var_type type);
+    static uint8_t				type_size(enum ap_var_type type);
     static void                 eeprom_write_check(
                                     const void *ptr,
                                     uint16_t ofs,

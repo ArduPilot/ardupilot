@@ -389,7 +389,7 @@ const struct AP_Param::Info *AP_Param::find_var_info(uint32_t *                 
 }
 
 // return the storage size for a AP_PARAM_* type
-const uint8_t AP_Param::type_size(enum ap_var_type type)
+uint8_t AP_Param::type_size(enum ap_var_type type)
 {
     switch (type) {
     case AP_PARAM_NONE:
