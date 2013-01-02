@@ -471,6 +471,10 @@ public:
         return _value[i];
     }
 
+    T & operator[](int8_t i) {
+        return _value[(uint8_t)i];
+    }
+
     /// Value getter
     ///
     /// @note   Returns zero for index values out of range.
@@ -531,12 +535,5 @@ AP_PARAMDEFA(float, Vector6f, 6, AP_PARAM_VECTOR6F);
 // _suffix is the suffix on the AP_* type name
 // _pt is the enum ap_var_type type
 #define AP_PARAMDEFV(_t, _suffix, _pt)   typedef AP_ParamV<_t, _pt> AP_ ## _suffix;
-
-/// Rely on built in casting for other variable types
-/// to minimize template creation and save memory
-#define AP_Uint8    AP_Int8
-#define AP_Uint16   AP_Int16
-#define AP_Uint32   AP_Int32
-#define AP_Bool     AP_Int8
 
 #endif // AP_PARAM_H
