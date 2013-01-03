@@ -12,7 +12,7 @@
 #define __AP_HAL_SMACCM_SPIDRIVER_H__
 
 #include <AP_HAL_SMACCM.h>
-#include "Semaphore.h"
+#include "Semaphores.h"
 
 #include <hwf4/spi.h>
 

@@ -24,6 +24,7 @@ SMACCMSPIDeviceDriver::SMACCMSPIDeviceDriver(spi_bus *bus, spi_device *device)
 
 void SMACCMSPIDeviceDriver::init()
 {
+  _semaphore.init();
 }
 
 AP_HAL::Semaphore* SMACCMSPIDeviceDriver::get_semaphore()
@@ -88,6 +89,7 @@ void SMACCMSPIDeviceManager::init(void *)
   spi_init(spi1);
 
   spi_device_init(&g_mpu6000_spi_dev);
+  g_mpu6000_dev.init();
 }
 
 AP_HAL::SPIDeviceDriver* SMACCMSPIDeviceManager::device(AP_HAL::SPIDevice dev)
