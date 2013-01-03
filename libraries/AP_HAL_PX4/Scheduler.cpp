@@ -183,9 +183,8 @@ void PX4Scheduler::_timer_event(void *arg)
 }
 
 void PX4Scheduler::panic(const prog_char_t *errormsg) {
-    hal.console->println_P(errormsg);
-    hal.scheduler->usleep(10000);
-    fflush(stdout);
+    write(1, errormsg, strlen(errormsg));
+    hal.scheduler->delay_microseconds(10000);
     exit(1);
 }
 
