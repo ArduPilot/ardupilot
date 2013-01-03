@@ -5,12 +5,15 @@
 
 #include "AP_HAL_PX4.h"
 #include "Scheduler.h"
+
 #include <unistd.h>
+#include <stdlib.h>
 #include <sched.h>
 #include <errno.h>
 #include <stdio.h>
 #include <drivers/drv_hrt.h>
 #include <nuttx/arch.h>
+#include <systemlib/systemlib.h>
 
 using namespace PX4;
 
@@ -133,7 +136,7 @@ void PX4Scheduler::end_atomic() {
 
 void PX4Scheduler::reboot() 
 {
-    hal.uartA->println_P(PSTR("REBOOT NOT IMPLEMENTED\r\n"));
+	up_systemreset();
 }
 
 void PX4Scheduler::_timer_event(void *arg)
@@ -181,7 +184,9 @@ void PX4Scheduler::_timer_event(void *arg)
 
 void PX4Scheduler::panic(const prog_char_t *errormsg) {
     hal.console->println_P(errormsg);
-    for(;;);
+    hal.scheduler->usleep(10000);
+    fflush(stdout);
+    exit(1);
 }
 
 #endif
