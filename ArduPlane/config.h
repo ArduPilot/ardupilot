@@ -144,6 +144,9 @@
  # define CONFIG_INS_TYPE CONFIG_INS_STUB
  # define CONFIG_PITOT_SOURCE PITOT_SOURCE_ANALOG_PIN
  # define MAGNETOMETER ENABLED
+
+ // force HIL mode until we have the drivers done
+ # define HIL_MODE HIL_MODE_SENSORS
 #endif
 
 
