@@ -1845,7 +1845,7 @@ void update_throttle_mode(void)
     }
 
 #if FRAME_CONFIG == HELI_FRAME
-	if (roll_pitch_mode == ROLL_PITCH_STABLE){
+	if (control_mode == STABILIZE){
 		motors.stab_throttle = true;
 	} else {
 		motors.stab_throttle = false;
